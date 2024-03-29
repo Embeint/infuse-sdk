@@ -1,0 +1,24 @@
+# The west manifest file for the Embeint SDK.
+
+manifest:
+  defaults:
+    remote: embeint
+
+  remotes:
+    - name: embeint
+      url-base: https://github.com/embeint
+
+  projects:
+    - name: zephyr
+      revision: 468eb56cf242eedba62006ee758700ee6148763f
+      # Limit imported repositories to limit clone time
+      import:
+        name-allowlist:
+          - cmsis
+          - cmsis-dsp
+          - hal_nordic
+          - segger
+
+  self:
+    path: embeint-sdk
+    west-commands: scripts/west-commands.yml

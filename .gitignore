@@ -1,0 +1,7 @@
+# Build folders
+build
+doc/_build
+
+# Python files
+__pycache__
+*.pyc

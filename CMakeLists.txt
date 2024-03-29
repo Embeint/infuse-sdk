@@ -1,0 +1,1 @@
+# Embedded Intelligence SDK compilation
