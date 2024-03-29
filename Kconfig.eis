@@ -1,0 +1,4 @@
+# Embedded Intelligence SDK options
+
+config EIS_SDK
+	bool "Build application with EIS"
