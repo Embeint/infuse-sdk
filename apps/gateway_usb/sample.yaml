@@ -1,0 +1,12 @@
+sample:
+  description: Bluetooth <-> USB bridge
+  name: gateway USB
+common:
+  build_only: true
+  depends_on:
+    - usb_cdc
+  integration_platforms:
+    - nrf52840dk_nrf52840
+tests:
+  sample.app.gateway_usb:
+    tags: gateway
