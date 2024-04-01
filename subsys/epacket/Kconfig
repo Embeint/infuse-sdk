@@ -1,0 +1,35 @@
+# ePacket configuration
+
+menuconfig EPACKET
+	bool "ePacket subsystem"
+	depends on NET_BUF
+
+if EPACKET
+
+module = EPACKET
+module-str = epacket
+source "subsys/logging/Kconfig.template.log_config"
+
+config EPACKET_BUFFERS_TX
+	int "Number of ePacket buffers for TX"
+	range 1 16
+	default 3
+
+config EPACKET_BUFFERS_RX
+	int "Number of ePacket buffers for RX"
+	range 1 16
+	default 3
+
+config EPACKET_PAYLOAD_MAX
+	int "Maximum supported ePacket payload size"
+	range 64 1024
+	default 512 if NET_IPV4
+	default 256
+	help
+	  Default value of 512 for IPV4 networks is due to the
+	  larger minimum MTU of 576. 256 is sufficient for Bluetooth
+	  only devices.
+
+rsource "interfaces/Kconfig"
+
+endif # EPACKET

@@ -1,0 +1,15 @@
+# Copyright (c) 2024 Jordan Yates <jordan@embeint.com>
+# SPDX-License-Identifier: LicenseRef-Embeint
+
+description: ePacket USB interface
+
+compatible: "embeint,epacket-usb"
+
+include: base.yaml
+
+properties:
+  cdc-acm:
+    type: phandle
+    required: true
+    description: |
+        USB CDC-ACM backend.

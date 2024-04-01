@@ -1,0 +1,33 @@
+# Embedded Intelligence SDK core defaults
+
+if EIS_SDK
+
+# ePacket API
+configdefault EPACKET
+	default y
+configdefault NET_BUF
+	default y
+
+# Random numbers
+configdefault ENTROPY_GENERATOR
+	default y
+
+# Logging
+configdefault PRINTK
+	default y
+configdefault LOG
+	default y
+configdefault LOG_PRINTK
+	default y
+
+# Debug options
+configdefault DEBUG_INFO
+	default y
+configdefault DEBUG_THREAD_INFO
+	default y
+
+# Misc options
+configdefault USB_CDC_ACM_LOG_LEVEL
+	default 0
+
+endif

@@ -1,0 +1,21 @@
+/* Common nordic USB */
+
+/ {
+	chosen {
+		zephyr,console = &cdc_acm_uart;
+	};
+
+	epacket_usb: epacket_usb {
+		compatible = "embeint,epacket-usb";
+		cdc-acm = <&cdc_acm_uart>;
+	};
+};
+
+zephyr_udc0: &usbd {
+	compatible = "nordic,nrf-usbd";
+	status = "okay";
+
+	cdc_acm_uart: cdc_acm_uart {
+		compatible = "zephyr,cdc-acm-uart";
+	};
+};

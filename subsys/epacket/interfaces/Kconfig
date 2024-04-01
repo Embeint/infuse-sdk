@@ -1,0 +1,15 @@
+# ePacket interfaces
+
+config EPACKET_INTERFACE_USB
+	bool "ePacket USB interface"
+	depends on DT_HAS_EMBEINT_EPACKET_USB_ENABLED
+	depends on USB_CDC_ACM
+	default y
+
+if EPACKET_INTERFACE_USB
+
+module = EPACKET_USB
+module-str = epacket_usb
+source "subsys/logging/Kconfig.template.log_config"
+
+endif # EPACKET_INTERFACE_USB
