@@ -1,0 +1,27 @@
+# Embedded Intelligence SDK networking defaults
+
+if EIS_SDK
+if NETWORKING
+
+# Core Protocols
+configdefault NET_UDP
+	default y
+configdefault NET_IPV4
+	default y
+configdefault NET_IPV6
+	default y
+
+# IP assignment
+configdefault NET_DHCPV4
+	default y
+
+# Sockets
+configdefault NET_SOCKETS
+	default y
+
+# Zephyr networking
+configdefault NET_CONNECTION_MANAGER
+	default y
+
+endif # NETWORKING
+endif # EIS_SDK
