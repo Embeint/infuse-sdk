@@ -7,6 +7,11 @@ configdefault EPACKET
 	default y
 configdefault NET_BUF
 	default y
+# ePacket key derivation
+configdefault MBEDTLS
+	default y
+configdefault MBEDTLS_HKDF_C
+	default y
 
 # Random numbers
 configdefault ENTROPY_GENERATOR
