@@ -13,6 +13,9 @@ configdefault MBEDTLS
 configdefault MBEDTLS_HKDF_C
 	default y
 
+configdefault EIS_CIVIL_TIME
+	default y
+
 # Random numbers
 configdefault ENTROPY_GENERATOR
 	default y
