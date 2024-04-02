@@ -18,7 +18,9 @@ manifest:
           - cmsis-dsp
           - hal_nordic
           - segger
+          - mcuboot
           - mbedtls
+          - trusted-firmware-m
 
   self:
     path: embeint-sdk

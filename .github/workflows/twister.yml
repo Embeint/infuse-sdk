@@ -1,9 +1,6 @@
 name: Run tests with twister
 
 on:
-  push:
-    branches:
-      - main
   pull_request:
     branches:
       - main
@@ -26,6 +23,8 @@ jobs:
     env:
       TWISTER_COMMON: ' --force-color --inline-logs -v -N -M --retry-failed 3 '
       DAILY_OPTIONS: ' -M --build-only --all --show-footprint'
+      VENDOR_FILTER: ' --vendor nordic --vendor zephyr '
+      UNIT_TESTING: ' --platform unit_testing '
       PR_OPTIONS: ' --clobber-output --integration'
       COMMIT_RANGE: ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}
       BASE_REF: ${{ github.base_ref }}
@@ -33,7 +32,7 @@ jobs:
     steps:
       - name: Workspace cleanup
         run: |
-          rm -rf ./* ./*.
+          rm -rf ./{*,.*}
 
       - name: Clone cached Embeint SDK repository
         continue-on-error: true
@@ -79,13 +78,25 @@ jobs:
           echo "github.ref_name: ${{ github.ref_name }}"
 
       - if: github.event_name == 'pull_request'
+        name: Run Unit Tests with Twister (Pull Request)
+        run: |
+          export ZEPHYR_BASE=${PWD}/zephyr
+          $ZEPHYR_BASE/scripts/twister ${TWISTER_COMMON} ${UNIT_TESTING} -T embeint-sdk
+
+      - if: github.event_name == 'pull_request'
         name: Run Tests with Twister (Pull Request)
         run: |
           export ZEPHYR_BASE=${PWD}/zephyr
-          $ZEPHYR_BASE/scripts/twister ${TWISTER_COMMON} ${PR_OPTIONS} -T embeint-sdk
+          $ZEPHYR_BASE/scripts/twister ${TWISTER_COMMON} ${VENDOR_FILTER} ${PR_OPTIONS} -T embeint-sdk
+
+      - if: github.event_name == 'schedule'
+        name: Run Unit Tests with Twister (Daily)
+        run: |
+          export ZEPHYR_BASE=${PWD}/zephyr
+          $ZEPHYR_BASE/scripts/twister ${TWISTER_COMMON} ${UNIT_TESTING} -T embeint-sdk
 
       - if: github.event_name == 'schedule'
         name: Run Tests with Twister (Daily)
         run: |
           export ZEPHYR_BASE=${PWD}/zephyr
-          $ZEPHYR_BASE/scripts/twister ${TWISTER_COMMON} ${DAILY_OPTIONS} -T embeint-sdk
+          $ZEPHYR_BASE/scripts/twister ${TWISTER_COMMON} ${VENDOR_FILTER} ${DAILY_OPTIONS} -T embeint-sdk
