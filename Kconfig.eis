@@ -3,6 +3,7 @@
 config EIS_SDK
 	bool "Build application with EIS"
 
+rsource "lib/Kconfig"
 rsource "subsys/Kconfig"
 
 # EIS defaults

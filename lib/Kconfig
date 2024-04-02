@@ -1,0 +1,4 @@
+# EIS libraries
+
+config EIS_CIVIL_TIME
+	bool "EIS civil time library"
