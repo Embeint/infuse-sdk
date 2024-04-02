@@ -26,6 +26,20 @@ extern "C" {
  * @{
  */
 
+/* Identifier for ePacket interface */
+enum epacket_interface_id {
+	EPACKET_INTERFACE_SERIAL = 0,
+};
+
+struct epacket_receive_metadata {
+	/* ePacket interface packet was received on */
+	const struct device *interface;
+	/* Numerical ID for interface */
+	enum epacket_interface_id interface_id;
+	/* RSSI of packet (0 = 0dBm, 20 = 20dBm, etc) */
+	int16_t rssi;
+};
+
 struct epacket_interface_api {
 	int (*send)(const struct device *dev, struct net_buf *buf);
 };
@@ -45,6 +59,14 @@ static inline int epacket_send(const struct device *dev, struct net_buf *buf)
 
 	return api->send(dev, buf);
 }
+
+/**
+ * @brief Handle raw received ePackets from interfaces
+ *
+ * @param metadata Interface receive metadata
+ * @param buf ePacket that was received
+ */
+void epacket_raw_receive_handler(struct epacket_receive_metadata *metadata, struct net_buf *buf);
 
 /**
  * @}

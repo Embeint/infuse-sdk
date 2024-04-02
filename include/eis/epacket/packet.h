@@ -55,15 +55,6 @@ struct net_buf *epacket_alloc_tx(k_timeout_t timeout);
 struct net_buf *epacket_alloc_rx(k_timeout_t timeout);
 
 /**
- * @brief Handle raw received ePacket's from interfaces
- *
- * @param dev ePacket interface packet was received on
- * @param buf ePacket that was received
- * @param rssi Inverted RSSI of packet (0 = 0dBm, 20 = -20dBm, etc)
- */
-void epacket_raw_receive_handler(const struct device *dev, struct net_buf *buf, uint8_t rssi);
-
-/**
  * @}
  */
 
