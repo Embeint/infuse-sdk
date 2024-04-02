@@ -84,8 +84,11 @@ static void packet_reconstructor(const struct device *dev, uint8_t *buffer, size
 		/* Is packet done? */
 		if (payload_remaining == 0) {
 			LOG_DBG("Packet received");
+			struct epacket_receive_metadata meta = {
+				.interface = dev, .interface_id = EPACKET_INTERFACE_SERIAL, .rssi = 0};
+
 			/* Hand off to core ePacket functions */
-			epacket_raw_receive_handler(dev, rx_buffer, 0);
+			epacket_raw_receive_handler(&meta, rx_buffer);
 			/* Reset parsing state */
 			rx_buffer = NULL;
 			header_idx = 0;
