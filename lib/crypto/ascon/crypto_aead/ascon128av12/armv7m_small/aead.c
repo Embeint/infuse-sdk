@@ -188,11 +188,10 @@ forceinline void ascon_final(ascon_state_t* s, const ascon_key_t* key) {
 int crypto_aead_encrypt(unsigned char* c, unsigned long long* clen,
                         const unsigned char* m, unsigned long long mlen,
                         const unsigned char* ad, unsigned long long adlen,
-                        const unsigned char* nsec, const unsigned char* npub,
+                        unsigned char* tag, const unsigned char* npub,
                         const unsigned char* k) {
   ascon_state_t s;
-  (void)nsec;
-  *clen = mlen + CRYPTO_ABYTES;
+  *clen = mlen;
   /* perform ascon computation */
   ascon_key_t key;
   ascon_loadkey(&key, k);
@@ -201,20 +200,18 @@ int crypto_aead_encrypt(unsigned char* c, unsigned long long* clen,
   ascon_encrypt(&s, c, m, mlen);
   ascon_final(&s, &key);
   /* set tag */
-  STOREBYTES(c + mlen, s.x[3], 8);
-  STOREBYTES(c + mlen + 8, s.x[4], 8);
+  STOREBYTES(tag, s.x[3], 8);
+  STOREBYTES(tag + 8, s.x[4], 8);
   return 0;
 }
 
 int crypto_aead_decrypt(unsigned char* m, unsigned long long* mlen,
-                        unsigned char* nsec, const unsigned char* c,
+                        const unsigned char* tag, const unsigned char* c,
                         unsigned long long clen, const unsigned char* ad,
                         unsigned long long adlen, const unsigned char* npub,
                         const unsigned char* k) {
   ascon_state_t s;
-  (void)nsec;
-  if (clen < CRYPTO_ABYTES) return -1;
-  *mlen = clen = clen - CRYPTO_ABYTES;
+  *mlen = clen;
   /* perform ascon computation */
   ascon_key_t key;
   ascon_loadkey(&key, k);
@@ -223,8 +220,8 @@ int crypto_aead_decrypt(unsigned char* m, unsigned long long* mlen,
   ascon_decrypt(&s, m, c, clen);
   ascon_final(&s, &key);
   /* verify tag (should be constant time, check compiler output) */
-  s.x[3] ^= LOADBYTES(c + clen, 8);
-  s.x[4] ^= LOADBYTES(c + clen + 8, 8);
+  s.x[3] ^= LOADBYTES(tag, 8);
+  s.x[4] ^= LOADBYTES(tag + 8, 8);
   return NOTZERO(s.x[3], s.x[4]);
 }
 
