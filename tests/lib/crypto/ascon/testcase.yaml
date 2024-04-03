@@ -1,0 +1,23 @@
+common:
+  tags: crypto
+  min_flash: 64
+  min_ram: 32
+tests:
+  libraries.ascon.default:
+    integration_platforms:
+      - native_sim
+      - qemu_cortex_m3
+  libraries.ascon.armv7m:
+    arch_allow: arm
+    filter: CONFIG_ARMV7_M_ARMV8_M_MAINLINE
+    integration_platforms:
+      - qemu_cortex_m3
+    extra_configs:
+      - CONFIG_CRYPTO_ASCON_IMPL="armv7m"
+  libraries.ascon.armv7m_lowsize:
+    arch_allow: arm
+    filter: CONFIG_ARMV7_M_ARMV8_M_MAINLINE
+    integration_platforms:
+      - qemu_cortex_m3
+    extra_configs:
+      - CONFIG_CRYPTO_ASCON_IMPL="armv7m_lowsize"
