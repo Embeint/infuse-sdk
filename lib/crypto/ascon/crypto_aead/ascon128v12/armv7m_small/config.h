@@ -1,5 +1,5 @@
-#ifndef CONFIG_H_
-#define CONFIG_H_
+#ifndef ASCON_CONFIG_H_
+#define ASCON_CONFIG_H_
 
 /* inline the ascon mode */
 #ifndef ASCON_INLINE_MODE
@@ -16,4 +16,4 @@
 #define ASCON_UNROLL_LOOPS 0
 #endif
 
-#endif /* CONFIG_H_ */
+#endif /* ASCON_CONFIG_H_ */

@@ -22,3 +22,4 @@ Imported from https://github.com/ascon/ascon-c at commit hash `f1601cb5ff52e65ba
 1. AEAD encrypt and decrypt functions build with explicit algorithm names
 2. AEAD encrypt and decrypt functions take explicit tag bytes location (Used variants only)
 3. Custom build system integration
+4. Renaming `config.h` header guards to avoid kconfig CI errors
