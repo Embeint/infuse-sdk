@@ -1,1 +1,2 @@
 scripts/coccinelle/* linguist-vendored
+lib/crypto/ascon/* linguist-vendored
