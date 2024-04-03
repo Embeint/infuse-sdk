@@ -8,12 +8,10 @@
 int crypto_aead_encrypt(unsigned char* c, unsigned long long* clen,
                         const unsigned char* m, unsigned long long mlen,
                         const unsigned char* ad, unsigned long long adlen,
-                        const unsigned char* nsec, const unsigned char* npub,
+                        unsigned char* tag, const unsigned char* npub,
                         const unsigned char* k) {
-  (void)nsec;
-
   /* set ciphertext size */
-  *clen = mlen + CRYPTO_ABYTES;
+  *clen = mlen;
 
   /* load key and nonce */
   const uint64_t K0 = LOADBYTES(k, 8);
@@ -80,23 +78,19 @@ int crypto_aead_encrypt(unsigned char* c, unsigned long long* clen,
   printstate("final 2nd key xor", &s);
 
   /* set tag */
-  STOREBYTES(c, s.x[3], 8);
-  STOREBYTES(c + 8, s.x[4], 8);
+  STOREBYTES(tag, s.x[3], 8);
+  STOREBYTES(tag + 8, s.x[4], 8);
 
   return 0;
 }
 
 int crypto_aead_decrypt(unsigned char* m, unsigned long long* mlen,
-                        unsigned char* nsec, const unsigned char* c,
+                        const unsigned char* tag, const unsigned char* c,
                         unsigned long long clen, const unsigned char* ad,
                         unsigned long long adlen, const unsigned char* npub,
                         const unsigned char* k) {
-  (void)nsec;
-
-  if (clen < CRYPTO_ABYTES) return -1;
-
   /* set plaintext size */
-  *mlen = clen - CRYPTO_ABYTES;
+  *mlen = clen;
 
   /* load key and nonce */
   const uint64_t K0 = LOADBYTES(k, 8);
@@ -137,7 +131,6 @@ int crypto_aead_decrypt(unsigned char* m, unsigned long long* mlen,
   printstate("domain separation", &s);
 
   /* full ciphertext blocks */
-  clen -= CRYPTO_ABYTES;
   while (clen >= ASCON_128_RATE) {
     uint64_t c0 = LOADBYTES(c, 8);
     STOREBYTES(m, s.x[0] ^ c0, 8);
@@ -174,7 +167,7 @@ int crypto_aead_decrypt(unsigned char* m, unsigned long long* mlen,
   /* verify tag (should be constant time, check compiler output) */
   int i;
   int result = 0;
-  for (i = 0; i < CRYPTO_ABYTES; ++i) result |= c[i] ^ t[i];
+  for (i = 0; i < CRYPTO_ABYTES; ++i) result |= tag[i] ^ t[i];
   result = (((result - 1) >> 8) & 1) - 1;
 
   return result;
