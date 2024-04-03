@@ -1,0 +1,10 @@
+sample:
+  description: Profiling of cryptographic operations
+  name: crypto_profiling
+common:
+  build_only: true
+  integration_platforms:
+    - nrf52840dk_nrf52840
+tests:
+  sample.app.crypto_profiling:
+    tags: crypto
