@@ -1,0 +1,50 @@
+# Crypto library configuration
+
+config CRYPTO_ASCON
+	bool "ASCON lightweight cryptographic algorithms"
+	help
+	  Ascon is a family of lightweight cryptographic algorithms and consists of:
+	  - Authenticated encryption schemes with associated data (AEAD)
+	  - Hash functions (HASH) and extendible output functions (XOF)
+	  - Pseudo-random functions (PRF) and message authentication codes (MAC)
+	  More information can be found here: https://ascon.iaik.tugraz.at/
+
+if CRYPTO_ASCON
+
+config CRYPTO_ASCON_INLINE_MODE
+	bool
+	default y if (CRYPTO_ASCON_128 && CRYPTO_ASCON_128A) || \
+		(CRYPTO_ASCON_128 && CRYPTO_ASCON_80PQ) || \
+		(CRYPTO_ASCON_80PQ && CRYPTO_ASCON_128A)
+	help
+	  Due to naming conflicts inline mode is required when multiple algorithms
+	  are selected. This results in significantly larger binaries and slightly
+	  slower implementations
+
+config CRYPTO_ASCON_IMPL
+	string "ASCON implementation"
+	default "armv7m_small" if ARMV7_M_ARMV8_M_MAINLINE
+	default "ref"
+	help
+	  Valid options are "ref", "armv7m", "armv7m_lowsize", "armv7m_small".
+	  Additional implementations require updates to ascon library.
+	  See samples/crypto/profiling for size and performance comparisons.
+
+config CRYPTO_ASCON_128
+	bool "ascon-128"
+	help
+	  6 rounds, 64bit data rate.
+	  Higher robustness in case of state recovery.
+
+config CRYPTO_ASCON_128A
+	bool "ascon-128a"
+	help
+	  8 rounds, 128bit data rate.
+	  33% more performance due to larger data rate.
+
+config CRYPTO_ASCON_80PQ
+	bool "ascon-80pq"
+	help
+	  Post-Quantum variant, increased key size of 160 bits.
+
+endif # CRYPTO_ASCON

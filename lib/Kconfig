@@ -2,3 +2,5 @@
 
 config EIS_CIVIL_TIME
 	bool "EIS civil time library"
+
+rsource "crypto/Kconfig"

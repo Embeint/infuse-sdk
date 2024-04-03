@@ -16,3 +16,8 @@ For more information on Ascon visit: https://ascon.iaik.tugraz.at/
 ## Imported
 
 Imported from https://github.com/ascon/ascon-c at commit hash `f1601cb5ff52e65baa475fcc6959e7d6e0be8d77` on 03/04/2024. Only used backends are currently imported.
+
+## Changes
+
+1. AEAD encrypt and decrypt functions build with explicit algorithm names
+2. Custom build system integration
