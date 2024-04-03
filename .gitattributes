@@ -1,2 +1,1 @@
-scripts/checkpatch.pl linguist-vendored
 scripts/coccinelle/* linguist-vendored
