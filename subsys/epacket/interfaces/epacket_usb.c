@@ -15,6 +15,8 @@
 #include <eis/epacket/packet.h>
 #include <eis/epacket/interface/epacket_usb.h>
 
+#include "epacket_internal.h"
+
 #define DT_DRV_COMPAT embeint_epacket_usb
 
 #define SYNC_A 0xD5
@@ -166,6 +168,13 @@ static int epacket_usb_send(const struct device *dev, struct net_buf *buf)
 {
 	const struct epacket_usb_config *config = dev->config;
 	struct epacket_usb_data *data = dev->data;
+
+	/* Encrypt the payload */
+	if (epacket_serial_encrypt(buf) < 0) {
+		LOG_WRN("Failed to encrypt");
+		net_buf_unref(buf);
+		return -EIO;
+	}
 
 	/* Push packet onto queue */
 	net_buf_put(&data->tx_fifo, buf);
