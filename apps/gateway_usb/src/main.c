@@ -33,7 +33,7 @@ int main(void)
 
 		net_buf_add_le32(buf, cnt);
 
-		ret = epacket_send(epacket_usb, buf);
+		epacket_queue(epacket_usb, buf);
 		LOG_INF("Sent %s %d %d", epacket_usb->name, ret, cnt++);
 		k_sleep(K_SECONDS(1));
 	}

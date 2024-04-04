@@ -60,20 +60,12 @@ static inline void epacket_packet_overhead(const struct device *dev, size_t *hea
 }
 
 /**
- * @brief Send an ePacket over an interface
+ * @brief Queue an ePacket for sending over an interface
  *
  * @param dev Interface to send packet on
  * @param buf Packet to send
- *
- * @retval 0 on success
- * @retval -errno negative error code on failure
  */
-static inline int epacket_send(const struct device *dev, struct net_buf *buf)
-{
-	const struct epacket_interface_api *api = dev->api;
-
-	return api->send(dev, buf);
-}
+void epacket_queue(const struct device *dev, struct net_buf *buf);
 
 /**
  * @brief Handle raw received ePackets from interfaces

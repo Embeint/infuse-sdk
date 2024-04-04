@@ -2,8 +2,10 @@
 
 menuconfig EPACKET
 	bool "ePacket subsystem"
+	depends on POLL
 	depends on NET_BUF
 	depends on MBEDTLS_HKDF_C
+	depends on MBEDTLS_CHACHAPOLY_AEAD_ENABLED
 
 if EPACKET
 
