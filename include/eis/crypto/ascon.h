@@ -37,14 +37,14 @@ extern "C" {
  * @param mlen Message length
  * @param ad Associated data
  * @param adlen Associated data length
- * @param nsec Secret nonce (Unused)
+ * @param tag 16 byte ciphertext tag
  * @param npub 16 byte nonce (Initialisation vector)
  * @param k 16 byte key
  *
  * @retval 0 on success
  */
 int ascon128_aead_encrypt(unsigned char *c, unsigned long long *clen, const unsigned char *m, unsigned long long mlen,
-			  const unsigned char *ad, unsigned long long adlen, const unsigned char *nsec,
+			  const unsigned char *ad, unsigned long long adlen, unsigned char *tag,
 			  const unsigned char *npub, const unsigned char *k);
 
 /**
@@ -52,7 +52,7 @@ int ascon128_aead_encrypt(unsigned char *c, unsigned long long *clen, const unsi
  *
  * @param m Message (Decrypted output)
  * @param mlen Length of output message
- * @param nsec Secret nonce (Unused)
+ * @param tag 16 byte ciphertext tag
  * @param c Ciphertext (Encrypted input)
  * @param clen Ciphertext length
  * @param ad Associated data
@@ -63,7 +63,7 @@ int ascon128_aead_encrypt(unsigned char *c, unsigned long long *clen, const unsi
  * @retval 0 on success
  * @retval -1 on error
  */
-int ascon128_aead_decrypt(unsigned char *m, unsigned long long *mlen, unsigned char *nsec, const unsigned char *c,
+int ascon128_aead_decrypt(unsigned char *m, unsigned long long *mlen, const unsigned char *tag, const unsigned char *c,
 			  unsigned long long clen, const unsigned char *ad, unsigned long long adlen,
 			  const unsigned char *npub, const unsigned char *k);
 
@@ -76,14 +76,14 @@ int ascon128_aead_decrypt(unsigned char *m, unsigned long long *mlen, unsigned c
  * @param mlen Message length
  * @param ad Associated data
  * @param adlen Associated data length
- * @param nsec Secret nonce (Unused)
+ * @param tag 16 byte ciphertext tag
  * @param npub 16 byte nonce (Initialisation vector)
  * @param k 16 byte key
  *
  * @retval 0 on success
  */
 int ascon128a_aead_encrypt(unsigned char *c, unsigned long long *clen, const unsigned char *m, unsigned long long mlen,
-			   const unsigned char *ad, unsigned long long adlen, const unsigned char *nsec,
+			   const unsigned char *ad, unsigned long long adlen, unsigned char *tag,
 			   const unsigned char *npub, const unsigned char *k);
 
 /**
@@ -91,7 +91,7 @@ int ascon128a_aead_encrypt(unsigned char *c, unsigned long long *clen, const uns
  *
  * @param m Message (Decrypted output)
  * @param mlen Length of output message
- * @param nsec Secret nonce (Unused)
+ * @param tag 16 byte ciphertext tag
  * @param c Ciphertext (Encrypted input)
  * @param clen Ciphertext length
  * @param ad Associated data
@@ -102,7 +102,7 @@ int ascon128a_aead_encrypt(unsigned char *c, unsigned long long *clen, const uns
  * @retval 0 on success
  * @retval -1 on error
  */
-int ascon128a_aead_decrypt(unsigned char *m, unsigned long long *mlen, unsigned char *nsec, const unsigned char *c,
+int ascon128a_aead_decrypt(unsigned char *m, unsigned long long *mlen, const unsigned char *tag, const unsigned char *c,
 			   unsigned long long clen, const unsigned char *ad, unsigned long long adlen,
 			   const unsigned char *npub, const unsigned char *k);
 
@@ -115,14 +115,14 @@ int ascon128a_aead_decrypt(unsigned char *m, unsigned long long *mlen, unsigned 
  * @param mlen Message length
  * @param ad Associated data
  * @param adlen Associated data length
- * @param nsec Secret nonce (Unused)
+ * @param tag 16 byte ciphertext tag
  * @param npub 16 byte nonce (Initialisation vector)
  * @param k 16 byte key
  *
  * @retval 0 on success
  */
 int ascon80pq_aead_encrypt(unsigned char *c, unsigned long long *clen, const unsigned char *m, unsigned long long mlen,
-			   const unsigned char *ad, unsigned long long adlen, const unsigned char *nsec,
+			   const unsigned char *ad, unsigned long long adlen, unsigned char *tag,
 			   const unsigned char *npub, const unsigned char *k);
 
 /**
@@ -130,7 +130,7 @@ int ascon80pq_aead_encrypt(unsigned char *c, unsigned long long *clen, const uns
  *
  * @param m Message (Decrypted output)
  * @param mlen Length of output message
- * @param nsec Secret nonce (Unused)
+ * @param tag 16 byte ciphertext tag
  * @param c Ciphertext (Encrypted input)
  * @param clen Ciphertext length
  * @param ad Associated data
@@ -141,7 +141,7 @@ int ascon80pq_aead_encrypt(unsigned char *c, unsigned long long *clen, const uns
  * @retval 0 on success
  * @retval -1 on error
  */
-int ascon80pq_aead_decrypt(unsigned char *m, unsigned long long *mlen, unsigned char *nsec, const unsigned char *c,
+int ascon80pq_aead_decrypt(unsigned char *m, unsigned long long *mlen, const unsigned char *tag, const unsigned char *c,
 			   unsigned long long clen, const unsigned char *ad, unsigned long long adlen,
 			   const unsigned char *npub, const unsigned char *k);
 
