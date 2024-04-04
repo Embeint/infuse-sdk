@@ -19,8 +19,10 @@ NET_BUF_POOL_DEFINE(epacket_pool_tx, CONFIG_EPACKET_BUFFERS_TX, CONFIG_EPACKET_P
 NET_BUF_POOL_DEFINE(epacket_pool_rx, CONFIG_EPACKET_BUFFERS_RX, CONFIG_EPACKET_PAYLOAD_MAX,
 		    sizeof(struct epacket_metadata), NULL);
 
-static K_FIFO_DEFINE(epacket_process_queue);
+static K_FIFO_DEFINE(epacket_rx_queue);
+static K_FIFO_DEFINE(epacket_tx_queue);
 static struct epacket_receive_metadata rx_metadata[CONFIG_EPACKET_BUFFERS_RX];
+static const struct device *tx_device[CONFIG_EPACKET_BUFFERS_TX];
 
 LOG_MODULE_REGISTER(epacket, CONFIG_EPACKET_LOG_LEVEL);
 
@@ -39,37 +41,96 @@ struct net_buf *epacket_alloc_rx(k_timeout_t timeout)
 	return net_buf_alloc(&epacket_pool_rx, timeout);
 }
 
+void epacket_queue(const struct device *dev, struct net_buf *buf)
+{
+	/* Store transmit device */
+	tx_device[net_buf_id(buf)] = dev;
+
+	/* Push packet at processing queue */
+	net_buf_put(&epacket_tx_queue, buf);
+}
+
 void epacket_raw_receive_handler(struct epacket_receive_metadata *metadata, struct net_buf *buf)
 {
 	/* Store metadata */
 	rx_metadata[net_buf_id(buf)] = *metadata;
 
 	/* Push packet at processing queue */
-	net_buf_put(&epacket_process_queue, buf);
+	net_buf_put(&epacket_rx_queue, buf);
 }
 
-int epacket_processor(void *a, void *b, void *c)
+static void epacket_handle_rx(struct net_buf *buf)
 {
 	struct epacket_receive_metadata *metadata;
-	struct net_buf *buf;
+	int rc;
 
-	while (true) {
-		buf = net_buf_get(&epacket_process_queue, K_FOREVER);
-		metadata = &rx_metadata[net_buf_id(buf)];
+	metadata = &rx_metadata[net_buf_id(buf)];
 
-		LOG_WRN("%s: received %d byte packet (%d dBm)", metadata->interface->name, buf->len, metadata->rssi);
+	LOG_WRN("%s: received %d byte packet (%d dBm)", metadata->interface->name, buf->len, metadata->rssi);
 
-		/* Payload decoding */
-		switch (metadata->interface_id) {
-		case EPACKET_INTERFACE_SERIAL:
-			break;
-		default:
-			LOG_WRN("Unknown interface ID %d", metadata->interface_id);
-		}
-
-		/* Payload handling */
-		net_buf_unref(buf);
+	/* Payload decoding */
+	switch (metadata->interface_id) {
+	default:
+		LOG_WRN("Unknown interface ID %d", metadata->interface_id);
+		rc = -1;
 	}
+	LOG_DBG("Decrypt result: %d", rc);
+
+	if (rc == 0) {
+		LOG_HEXDUMP_INF(buf->data, buf->len, "Received");
+	}
+
+	/* Payload handling */
+	net_buf_unref(buf);
 }
 
-K_THREAD_DEFINE(epacket_processor_thread, 1024, epacket_processor, NULL, NULL, NULL, 0, K_ESSENTIAL, 0);
+static void epacket_handle_tx(struct net_buf *buf)
+{
+	const struct epacket_interface_api *api;
+	const struct device *dev;
+	int rc;
+
+	dev = tx_device[net_buf_id(buf)];
+	api = dev->api;
+
+	LOG_DBG("%s: TX %d byte packet", dev->name, buf->len);
+	rc = api->send(dev, buf);
+	/* TODO: Notify interested parties of TX failures */
+	(void)rc;
+}
+
+static int epacket_processor(void *a, void *b, void *c)
+{
+	struct k_poll_event events[2] = {
+		K_POLL_EVENT_STATIC_INITIALIZER(K_POLL_TYPE_FIFO_DATA_AVAILABLE, K_POLL_MODE_NOTIFY_ONLY,
+						&epacket_rx_queue, 0),
+		K_POLL_EVENT_STATIC_INITIALIZER(K_POLL_TYPE_FIFO_DATA_AVAILABLE, K_POLL_MODE_NOTIFY_ONLY,
+						&epacket_tx_queue, 0),
+	};
+
+	struct net_buf *buf;
+	int rc;
+
+	while (true) {
+		rc = k_poll(events, ARRAY_SIZE(events), K_FOREVER);
+		if (rc != 0) {
+			LOG_WRN("Processor timeout (%d)", rc);
+			continue;
+		}
+
+		if (events[0].state == K_POLL_STATE_FIFO_DATA_AVAILABLE) {
+			buf = net_buf_get(events[0].fifo, K_NO_WAIT);
+			epacket_handle_rx(buf);
+			events[0].state = K_POLL_STATE_NOT_READY;
+		}
+
+		if (events[1].state == K_POLL_STATE_FIFO_DATA_AVAILABLE) {
+			buf = net_buf_get(events[1].fifo, K_NO_WAIT);
+			epacket_handle_tx(buf);
+			events[1].state = K_POLL_STATE_NOT_READY;
+		}
+	}
+	return 0;
+}
+
+K_THREAD_DEFINE(epacket_processor_thread, 2048, epacket_processor, NULL, NULL, NULL, 0, K_ESSENTIAL, 0);
