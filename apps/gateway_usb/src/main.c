@@ -22,6 +22,7 @@ int main(void)
 	const struct device *epacket_usb = DEVICE_DT_GET(DT_NODELABEL(epacket_usb));
 	struct net_buf *buf;
 	int ret, cnt = 0;
+	uint8_t auth;
 
 	ret = usb_enable(NULL);
 	if (ret != 0) {
@@ -33,6 +34,9 @@ int main(void)
 
 		net_buf_add_le32(buf, cnt);
 
+		auth = cnt & 0b1 ? EPACKET_AUTH_NETWORK : EPACKET_AUTH_DEVICE;
+
+		epacket_set_tx_metadata(buf, auth, 0x12, 0xF0);
 		epacket_queue(epacket_usb, buf);
 		LOG_INF("Sent %s %d %d", epacket_usb->name, ret, cnt++);
 		k_sleep(K_SECONDS(1));
