@@ -6,6 +6,7 @@ import shutil
 import pathlib
 import json
 import subprocess
+import sys
 
 from west.commands import WestCommand
 from west.util import west_topdir
@@ -193,9 +194,12 @@ class vscode(WestCommand):
             with (vscode_folder / 'eis.code-snippets').open('w') as f:
                 json.dump(file_snippets, f, indent=4)
         else:
-            log.inf(f"Writing `c_cpp_properties.json` and `launch.json` to {vscode_folder}")
-
             dir = pathlib.Path(args.dir).absolute().resolve()
+
+            if not (dir / 'CMakeCache.txt').exists():
+                log.err(f"{args.dir} does not appear to be a valid cmake build directory")
+                sys.exit(1)
+
             cache = zcmake.CMakeCache.from_build_dir(dir)
 
             c_cpp_properties['configurations'][0]['includePath'] = [str(dir / 'zephyr' / 'include' / 'generated')]
@@ -208,6 +212,8 @@ class vscode(WestCommand):
             launch['configurations'][1]['device'] = "NRF5340_XXAA_APP"
             launch['configurations'][0]['gdbPath'] = cache.get('CMAKE_GDB')
             launch['configurations'][1]['gdbPath'] = cache.get('CMAKE_GDB')
+
+            log.inf(f"Writing `c_cpp_properties.json` and `launch.json` to {vscode_folder}")
 
             with (vscode_folder / 'c_cpp_properties.json').open('w') as f:
                 json.dump(c_cpp_properties, f, indent=4)
