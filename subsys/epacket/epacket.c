@@ -13,6 +13,7 @@
 #include <eis/epacket/packet.h>
 #include <eis/epacket/interface.h>
 
+NET_BUF_POOL_DEFINE(epacket_scratch, 1, CONFIG_EPACKET_PAYLOAD_MAX, 0, NULL);
 NET_BUF_POOL_DEFINE(epacket_pool_tx, CONFIG_EPACKET_BUFFERS_TX, CONFIG_EPACKET_PAYLOAD_MAX,
 		    sizeof(struct epacket_metadata), NULL);
 NET_BUF_POOL_DEFINE(epacket_pool_rx, CONFIG_EPACKET_BUFFERS_RX, CONFIG_EPACKET_PAYLOAD_MAX,
@@ -22,6 +23,11 @@ static K_FIFO_DEFINE(epacket_process_queue);
 static struct epacket_receive_metadata rx_metadata[CONFIG_EPACKET_BUFFERS_RX];
 
 LOG_MODULE_REGISTER(epacket, CONFIG_EPACKET_LOG_LEVEL);
+
+struct net_buf *epacket_encryption_scratch(void)
+{
+	return net_buf_alloc(&epacket_scratch, K_FOREVER);
+}
 
 struct net_buf *epacket_alloc_tx(k_timeout_t timeout)
 {
