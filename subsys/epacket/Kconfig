@@ -23,7 +23,7 @@ config EPACKET_BUFFERS_RX
 
 config EPACKET_PAYLOAD_MAX
 	int "Maximum supported ePacket payload size"
-	range 64 1024
+	range 64 2048
 	default 512 if NET_IPV4
 	default 256
 	help
