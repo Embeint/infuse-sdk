@@ -12,6 +12,11 @@ configdefault MBEDTLS
 	default y
 configdefault MBEDTLS_HKDF_C
 	default y
+# ePacket cryptography
+configdefault CRYPTO_ASCON
+	default y
+configdefault CRYPTO_ASCON_128A
+	default y
 
 configdefault EIS_CIVIL_TIME
 	default y
