@@ -13,6 +13,8 @@
 #include <eis/epacket/packet.h>
 #include <eis/epacket/interface.h>
 
+#include "interfaces/epacket_internal.h"
+
 NET_BUF_POOL_DEFINE(epacket_scratch, 1, CONFIG_EPACKET_PAYLOAD_MAX, 0, NULL);
 NET_BUF_POOL_DEFINE(epacket_pool_tx, CONFIG_EPACKET_BUFFERS_TX, CONFIG_EPACKET_PAYLOAD_MAX,
 		    sizeof(struct epacket_metadata), NULL);
@@ -70,6 +72,11 @@ static void epacket_handle_rx(struct net_buf *buf)
 
 	/* Payload decoding */
 	switch (metadata->interface_id) {
+#ifdef CONFIG_EPACKET_INTERFACE_USB
+	case EPACKET_INTERFACE_SERIAL:
+		rc = epacket_serial_decrypt(buf);
+		break;
+#endif /* CONFIG_EPACKET_INTERFACE_USB */
 	default:
 		LOG_WRN("Unknown interface ID %d", metadata->interface_id);
 		rc = -1;

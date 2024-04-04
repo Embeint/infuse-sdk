@@ -7,4 +7,5 @@ zephyr_library_sources(
   keys.c
 )
 zephyr_library_sources_ifdef(CONFIG_EPACKET_INTERFACE_USB interfaces/epacket_usb.c)
+zephyr_library_sources_ifdef(CONFIG_EPACKET_INTERFACE_USB interfaces/epacket_usb_crypt.c)
 zephyr_library_link_libraries_ifdef(CONFIG_MBEDTLS mbedTLS)
