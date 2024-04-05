@@ -182,6 +182,7 @@ static int epacket_usb_init(const struct device *dev)
 
 	k_fifo_init(&data->tx_fifo);
 	uart_irq_callback_user_data_set(config->backend, interrupt_handler, (void *)dev);
+	uart_irq_rx_enable(config->backend);
 	return 0;
 }
 
