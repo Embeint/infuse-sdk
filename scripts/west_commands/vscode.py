@@ -138,20 +138,12 @@ launch = {
             "name": "Attach",
             "type": "cortex-debug",
             "request": "attach",
-            "servertype": "jlink",
-            "rtos": "Zephyr",
-            "gdbPath": "",
-            "device": "",
             "executable": "",
         },
         {
             "name": "Launch",
             "type": "cortex-debug",
             "request": "launch",
-            "servertype": "jlink",
-            "rtos": "Zephyr",
-            "gdbPath": "",
-            "device": "",
             "executable": "",
         },
     ]
@@ -208,8 +200,6 @@ class vscode(WestCommand):
 
             launch['configurations'][0]['executable'] = str(dir / 'zephyr' / 'zephyr.elf')
             launch['configurations'][1]['executable'] = str(dir / 'zephyr' / 'zephyr.elf')
-            launch['configurations'][0]['device'] = "NRF5340_XXAA_APP"
-            launch['configurations'][1]['device'] = "NRF5340_XXAA_APP"
             launch['configurations'][0]['gdbPath'] = cache.get('CMAKE_GDB')
             launch['configurations'][1]['gdbPath'] = cache.get('CMAKE_GDB')
 
@@ -219,6 +209,22 @@ class vscode(WestCommand):
                     f"add-symbol-file {str(dir)}/tfm/bin/bl2.elf",
                     f"add-symbol-file {str(dir)}/tfm/bin/tfm_s.elf",
                 ]
+
+            if 'qemu' in cache.get('BOARD'):
+                # Attach doesn't make sense in the qemu context
+                launch['configurations'].pop()
+                launch['configurations'][0]['name'] = 'Launch'
+                launch['configurations'][0]['servertype'] = 'qemu'
+                launch['configurations'][0]['serverpath'] = shutil.which('qemu-system-arm')
+                launch['configurations'][0]['runToEntryPoint'] = False
+            else:
+                launch['configurations'][0]['rtos'] = 'Zephyr'
+                launch['configurations'][1]['rtos'] = 'Zephyr'
+                launch['configurations'][0]['servertype'] = 'jlink'
+                launch['configurations'][1]['servertype'] = 'jlink'
+                launch['configurations'][0]['device'] = 'NRF5340_XXAA_APP'
+                launch['configurations'][1]['device'] = 'NRF5340_XXAA_APP'
+
             log.inf(f"Writing `c_cpp_properties.json` and `launch.json` to {vscode_folder}")
 
             with (vscode_folder / 'c_cpp_properties.json').open('w') as f:
