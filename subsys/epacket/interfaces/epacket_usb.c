@@ -13,6 +13,7 @@
 
 #include <eis/epacket/interface.h>
 #include <eis/epacket/packet.h>
+#include <eis/epacket/interface/epacket_usb.h>
 
 #define DT_DRV_COMPAT embeint_epacket_usb
 
@@ -154,6 +155,13 @@ static void interrupt_handler(const struct device *dev, void *user_data)
 	}
 }
 
+static void epacket_usb_packet_overhead(const struct device *dev, size_t *header, size_t *footer)
+{
+	/* ChaCha20-Poly1305 adds a 16 byte tag after the ciphertext */
+	*header = sizeof(struct epacket_usb_frame);
+	*footer = 16;
+}
+
 static int epacket_usb_send(const struct device *dev, struct net_buf *buf)
 {
 	const struct epacket_usb_config *config = dev->config;
@@ -178,6 +186,7 @@ static int epacket_usb_init(const struct device *dev)
 }
 
 static const struct epacket_interface_api usb_api = {
+	.packet_overhead = epacket_usb_packet_overhead,
 	.send = epacket_usb_send,
 };
 

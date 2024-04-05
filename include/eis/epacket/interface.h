@@ -41,8 +41,23 @@ struct epacket_receive_metadata {
 };
 
 struct epacket_interface_api {
+	void (*packet_overhead)(const struct device *dev, size_t *header, size_t *footer);
 	int (*send)(const struct device *dev, struct net_buf *buf);
 };
+
+/**
+ * @brief Get the packet overhead for an interface
+ *
+ * @param dev Interface to query
+ * @param header Bytes required at start of payload
+ * @param footer Bytes required at end of payload
+ */
+static inline void epacket_packet_overhead(const struct device *dev, size_t *header, size_t *footer)
+{
+	const struct epacket_interface_api *api = dev->api;
+
+	api->packet_overhead(dev, header, footer);
+}
 
 /**
  * @brief Send an ePacket over an interface
