@@ -29,7 +29,7 @@ int main(void)
 	}
 
 	for (;;) {
-		buf = epacket_alloc_tx(K_FOREVER);
+		buf = epacket_alloc_tx_for_interface(epacket_usb, K_FOREVER);
 
 		net_buf_add_le32(buf, cnt);
 
