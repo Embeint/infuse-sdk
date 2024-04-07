@@ -213,6 +213,12 @@ class vscode(WestCommand):
             launch['configurations'][0]['gdbPath'] = cache.get('CMAKE_GDB')
             launch['configurations'][1]['gdbPath'] = cache.get('CMAKE_GDB')
 
+            if cache.get('BOARD')[-3:] == '_ns':
+                # Add TF-M .elf files
+                launch['configurations'][0]['preAttachCommands'] = [
+                    f"add-symbol-file {str(dir)}/tfm/bin/bl2.elf",
+                    f"add-symbol-file {str(dir)}/tfm/bin/tfm_s.elf",
+                ]
             log.inf(f"Writing `c_cpp_properties.json` and `launch.json` to {vscode_folder}")
 
             with (vscode_folder / 'c_cpp_properties.json').open('w') as f:
