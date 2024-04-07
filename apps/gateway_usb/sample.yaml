@@ -3,6 +3,8 @@ sample:
   name: gateway USB
 common:
   build_only: true
+  required_snippets:
+    - eis
   depends_on:
     - usb_cdc
   integration_platforms:
