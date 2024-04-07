@@ -9,3 +9,4 @@ rsource "subsys/Kconfig"
 # EIS defaults
 rsource "Kconfig.defaults.core"
 rsource "Kconfig.defaults.net"
+rsource "Kconfig.defaults.nrf"
