@@ -109,7 +109,7 @@ ZTEST(ascon, test_ascon128_unaligned)
 					   sizeof(associated_data), nonce + i, key + i);
 		zassert_equal(0, rc, "Decryption failed");
 		zassert_equal(size, mlen, "Unexpected decrypt length");
-		zassert_mem_equal(plaintext, decrypted, size, "Decrypted does not equal input");
+		zassert_mem_equal(plaintext + i, decrypted + i, size, "Decrypted does not equal input");
 	}
 }
 
@@ -187,7 +187,7 @@ ZTEST(ascon, test_ascon128a_unaligned)
 					    sizeof(associated_data), nonce + i, key + i);
 		zassert_equal(0, rc, "Decryption failed");
 		zassert_equal(size, mlen, "Unexpected decrypt length");
-		zassert_mem_equal(plaintext, decrypted, size, "Decrypted does not equal input");
+		zassert_mem_equal(plaintext + i, decrypted + i, size, "Decrypted does not equal input");
 	}
 }
 
@@ -265,7 +265,7 @@ ZTEST(ascon, test_ascon80pq_unaligned)
 					    sizeof(associated_data), nonce + i, key + i);
 		zassert_equal(0, rc, "Decryption failed");
 		zassert_equal(size, mlen, "Unexpected decrypt length");
-		zassert_mem_equal(plaintext, decrypted, size, "Decrypted does not equal input");
+		zassert_mem_equal(plaintext + i, decrypted + i, size, "Decrypted does not equal input");
 	}
 }
 
