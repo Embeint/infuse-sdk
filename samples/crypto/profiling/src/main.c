@@ -10,6 +10,7 @@
 
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
+#include <zephyr/random/random.h>
 #include <zephyr/timing/timing.h>
 
 #include <eis/crypto/ascon.h>
@@ -50,15 +51,11 @@ int main(void)
 
 	timing_t start_time, end_time;
 
-	/* Generate some arbitrary data */
-	for (int i = 0; i < 256; i++) {
-		plaintext[i] = i;
-	}
-	for (int i = 0; i < 16; i++) {
-		associated_data[i] = (2 * i) - 3;
-		nonce[i] = i + 1;
-		key[i] = (i - 1) * 5;
-	}
+	/* Randomise inputs */
+	sys_rand_get(plaintext, sizeof(plaintext));
+	sys_rand_get(associated_data, sizeof(associated_data));
+	sys_rand_get(nonce, sizeof(nonce));
+	sys_rand_get(key, sizeof(key));
 
 	/* Start hardware cycle counters */
 	timing_init();
@@ -152,4 +149,5 @@ int main(void)
 		}
 	}
 	k_sleep(K_FOREVER);
+	return 0;
 }
