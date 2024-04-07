@@ -8,6 +8,7 @@
 
 #include <zephyr/ztest.h>
 #include <zephyr/kernel.h>
+#include <zephyr/random/random.h>
 
 #include <eis/crypto/ascon.h>
 
@@ -24,16 +25,10 @@ uint8_t tag[16 + ALIGNMENT];
 static void buffers_init(void)
 {
 	/* Generate some arbitrary data */
-	for (int i = 0; i < 128; i++) {
-		plaintext[i] = (2 * i) - 3;
-	}
-	for (int i = 0; i < 20; i++) {
-		key[i] = (i - 1) * 5;
-	}
-	for (int i = 0; i < 16; i++) {
-		associated_data[i] = (2 * i) - 3;
-		nonce[i] = i + 1;
-	}
+	sys_rand_get(plaintext, sizeof(plaintext));
+	sys_rand_get(key, sizeof(key));
+	sys_rand_get(associated_data, sizeof(associated_data));
+	sys_rand_get(nonce, sizeof(nonce));
 }
 
 ZTEST(ascon, test_ascon128)
