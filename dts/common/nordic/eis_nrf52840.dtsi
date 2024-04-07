@@ -1,0 +1,9 @@
+/ {
+	chosen {
+		zephyr,entropy = &cryptocell;
+	};
+};
+
+&cryptocell {
+	status = "okay";
+};
