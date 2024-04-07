@@ -3,6 +3,8 @@ sample:
   name: crypto_profiling
 common:
   build_only: true
+  required_snippets:
+    - eis
   integration_platforms:
     - nrf52840dk_nrf52840
 tests:
