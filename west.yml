@@ -21,6 +21,10 @@ manifest:
           - mcuboot
           - mbedtls
           - trusted-firmware-m
+    - name: sdk-nrf
+      path: modules/nrfconnect/sdk-nrf
+      revision: 6f4888392597b9b21d93db3c27d3a2f3cfa11d9c
+      import: true
 
   self:
     path: embeint-sdk
