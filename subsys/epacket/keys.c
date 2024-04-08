@@ -12,10 +12,9 @@
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
 
-#include <eis/crypto/ascon.h>
 #include <eis/epacket/keys.h>
 
-#include "mbedtls/hkdf.h"
+#include <psa/crypto.h>
 
 /* Hardcoded for initial dev */
 static const uint8_t network_key[16] = {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
@@ -25,8 +24,11 @@ static const uint8_t device_key[16] = {0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16,
 
 struct key_storage {
 	uint32_t rotation;
-	uint8_t key[16];
+	psa_key_id_t id;
 };
+
+static psa_key_id_t network_root_key_id;
+static psa_key_id_t device_root_key_id;
 
 static struct key_storage network_keys[EPACKET_KEY_INTERFACE_NUM];
 static struct key_storage device_keys[EPACKET_KEY_INTERFACE_NUM];
@@ -38,36 +40,107 @@ BUILD_ASSERT(ARRAY_SIZE(key_info) == EPACKET_KEY_INTERFACE_NUM, "");
 
 LOG_MODULE_REGISTER(epacket_keys, CONFIG_EPACKET_LOG_LEVEL);
 
-int epacket_key_derive(enum epacket_key_type base_key, uint8_t *output_key, uint8_t output_key_len, const uint8_t *info,
-		       uint8_t info_len, uint32_t salt)
+static int epacket_import_root_keys(void)
 {
-	const uint8_t *input_key;
+	psa_key_attributes_t key_attributes = PSA_KEY_ATTRIBUTES_INIT;
+	psa_status_t status;
+
+	/* Configure the input key attributes */
+	psa_set_key_usage_flags(&key_attributes, PSA_KEY_USAGE_DERIVE);
+	psa_set_key_lifetime(&key_attributes, PSA_KEY_LIFETIME_VOLATILE);
+	psa_set_key_algorithm(&key_attributes, PSA_ALG_HKDF(PSA_ALG_SHA_256));
+	psa_set_key_type(&key_attributes, PSA_KEY_TYPE_DERIVE);
+	psa_set_key_bits(&key_attributes, 128);
+
+	/* Import the base keys into the keystore */
+	status = psa_import_key(&key_attributes, device_key, sizeof(device_key), &device_root_key_id);
+	if (status != PSA_SUCCESS) {
+		LOG_WRN("Failed to import %s root (%d)", "device", status);
+	}
+	status = psa_import_key(&key_attributes, network_key, sizeof(network_key), &network_root_key_id);
+	if (status != PSA_SUCCESS) {
+		LOG_WRN("Failed to import %s root (%d)", "root", status);
+	}
+	return 0;
+}
+
+int epacket_key_derive(enum epacket_key_type base_key, const uint8_t *info, uint8_t info_len, uint32_t salt,
+		       psa_key_id_t *output_key_id)
+{
+	psa_key_id_t input_key;
+	static bool inited;
+
+	/* Import base keys to PSA */
+	if (!inited) {
+		epacket_import_root_keys();
+		inited = true;
+	}
 
 	/* Select base key */
 	switch (base_key) {
 	case EPACKET_KEY_NETWORK:
-		input_key = network_key;
+		input_key = network_root_key_id;
 		break;
 	case EPACKET_KEY_DEVICE:
-		input_key = device_key;
+		input_key = device_root_key_id;
 		break;
 	default:
 		return -EINVAL;
 	}
 
-	/* Derive new key */
-	return mbedtls_hkdf(mbedtls_md_info_from_type(MBEDTLS_MD_SHA256), (uint8_t *)&salt, sizeof(salt), input_key, 16,
-			    info, info_len, output_key, output_key_len);
+	psa_key_attributes_t key_attributes = PSA_KEY_ATTRIBUTES_INIT;
+	psa_key_derivation_operation_t operation = PSA_KEY_DERIVATION_OPERATION_INIT;
+	psa_status_t status;
+
+	psa_set_key_usage_flags(&key_attributes, PSA_KEY_USAGE_ENCRYPT | PSA_KEY_USAGE_DECRYPT);
+	psa_set_key_lifetime(&key_attributes, PSA_KEY_LIFETIME_VOLATILE);
+	psa_set_key_algorithm(&key_attributes, PSA_ALG_CHACHA20_POLY1305);
+	psa_set_key_type(&key_attributes, PSA_KEY_TYPE_CHACHA20);
+	psa_set_key_bits(&key_attributes, 256);
+#ifdef CONFIG_EPACKET_KEY_EXPORT
+	psa_set_key_usage_flags(&key_attributes, PSA_KEY_USAGE_EXPORT);
+#endif /* CONFIG_EPACKET_KEY_EXPORT */
+
+	status = psa_key_derivation_setup(&operation, PSA_ALG_HKDF(PSA_ALG_SHA_256));
+	if (status != PSA_SUCCESS) {
+		return -EIO;
+	}
+	status = psa_key_derivation_input_bytes(&operation, PSA_KEY_DERIVATION_INPUT_SALT, (uint8_t *)&salt,
+						sizeof(salt));
+	if (status != PSA_SUCCESS) {
+		return -EIO;
+	}
+	status = psa_key_derivation_input_bytes(&operation, PSA_KEY_DERIVATION_INPUT_INFO, info, info_len);
+	if (status != PSA_SUCCESS) {
+		return -EIO;
+	}
+	status = psa_key_derivation_input_key(&operation, PSA_KEY_DERIVATION_INPUT_SECRET, input_key);
+	if (status != PSA_SUCCESS) {
+		return -EIO;
+	}
+	status = psa_key_derivation_output_key(&key_attributes, &operation, output_key_id);
+	if (status != PSA_SUCCESS) {
+		return -EIO;
+	}
+	status = psa_key_derivation_abort(&operation);
+	if (status != PSA_SUCCESS) {
+		return -EIO;
+	}
+	return 0;
 }
 
-static uint8_t *key_get(uint8_t key_id, uint32_t key_rotation)
+int epacket_key_delete(psa_key_id_t key_id)
+{
+	return psa_destroy_key(key_id) == PSA_SUCCESS ? 0 : -EINVAL;
+}
+
+psa_key_id_t epacket_key_id_get(uint8_t key_id, uint32_t key_rotation)
 {
 	enum epacket_key_type base;
 	enum epacket_key_interface interface;
 	struct key_storage *storage;
 	const char *info;
 	int64_t ticks;
-	uint8_t *key;
 	int rc;
 
 	/* Extract key info */
@@ -81,54 +154,39 @@ static uint8_t *key_get(uint8_t key_id, uint32_t key_rotation)
 	interface = key_id & EPACKET_KEY_INTERFACE_MASK;
 
 	/* Handle key rotation */
-	key = storage[interface].key;
 	if (storage[interface].rotation != key_rotation) {
 		info = key_info[interface];
+		/* Delete previous derived key */
+		if (storage[interface].id) {
+			epacket_key_delete(storage[interface].id);
+		}
 		LOG_INF("Regenerating derived key %02X (%s) for rotation %d", key_id, info, key_rotation);
 		ticks = k_uptime_ticks();
-		rc = epacket_key_derive(base, key, 16, info, strlen(info), key_rotation);
+		rc = epacket_key_derive(base, info, strlen(info), key_rotation, &storage[interface].id);
 		ticks = k_uptime_ticks() - ticks;
 		LOG_DBG("Generation took %d uS", k_cyc_to_us_near32(ticks));
 		if (rc == 0) {
 			storage[interface].rotation = key_rotation;
 		} else {
 			LOG_ERR("Key derivation failed (%d)", rc);
-			return NULL;
+			return 0;
 		}
 	}
-	return key;
+	return storage[interface].id;
 }
 
-int epacket_encrypt(uint8_t key_id, uint32_t key_rotation, const uint8_t *associated_data, uint32_t associated_data_len,
-		    const uint8_t *plaintext, uint32_t plaintext_len, const uint8_t *nonce, uint8_t *tag,
-		    uint8_t *ciphertext)
+#ifdef CONFIG_EPACKET_KEY_EXPORT
+
+int epacket_key_export(psa_key_id_t key_id, uint8_t key[32])
 {
-	unsigned long long clen;
-	uint8_t *key;
+	psa_status_t status;
+	size_t olen;
 
-	key = key_get(key_id, key_rotation);
-	if (key == NULL) {
-		return -1;
+	status = psa_export_key(key_id, key, 32, &olen);
+	if ((status != PSA_SUCCESS) || (olen != 32)) {
+		return -EINVAL;
 	}
-
-	/* Encrypt payload */
-	return ascon128a_aead_encrypt(ciphertext, &clen, plaintext, plaintext_len, associated_data, associated_data_len,
-				      tag, nonce, key);
+	return 0;
 }
 
-int epacket_decrypt(uint8_t key_id, uint32_t key_rotation, const uint8_t *associated_data, uint32_t associated_data_len,
-		    const uint8_t *ciphertext, uint32_t ciphertext_len, const uint8_t *nonce, const uint8_t *tag,
-		    uint8_t *plaintext)
-{
-	unsigned long long plen;
-	uint8_t *key;
-
-	key = key_get(key_id, key_rotation);
-	if (key == NULL) {
-		return -1;
-	}
-
-	/* Decrypt payload */
-	return ascon128a_aead_decrypt(plaintext, &plen, tag, ciphertext, ciphertext_len, associated_data,
-				      associated_data_len, nonce, key);
-}
+#endif /* CONFIG_EPACKET_KEY_EXPORT */
