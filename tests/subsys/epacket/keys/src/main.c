@@ -14,13 +14,7 @@
 
 #include <eis/epacket/keys.h>
 
-#define KEY_SIZE 16
-
-uint8_t plaintext[1024];
-uint8_t ciphertext1[1024];
-uint8_t ciphertext2[1024];
-uint8_t decrypted1[1024];
-uint8_t decrypted2[1024];
+#define KEY_SIZE 32
 
 /* How many bits differ between two arrays */
 static uint32_t bit_difference(const void *a, const void *b, size_t size)
@@ -35,14 +29,14 @@ static uint32_t bit_difference(const void *a, const void *b, size_t size)
 	return difference;
 }
 
-/* For 128-bit keys the average binary difference should be 64 bits.
- * For validation purposes accept anything in the range 48 to 80.
+/* For 256-bit keys the average binary difference should be 128 bits.
+ * For validation purposes accept anything in the range 96 to 160.
  */
 static bool keys_different(uint8_t *a, uint8_t *b)
 {
 	uint32_t difference = bit_difference(a, b, KEY_SIZE);
 
-	return (difference >= 48) && (difference <= 80);
+	return (difference >= 96) && (difference <= 160);
 }
 
 ZTEST(epacket_keys, test_bit_difference)
@@ -68,6 +62,7 @@ ZTEST(epacket_keys, test_key_derive)
 	uint8_t key_1[KEY_SIZE];
 	uint8_t key_2[KEY_SIZE];
 	const char *info, *info2, *info3;
+	psa_key_id_t id_1, id_2;
 	uint32_t rotation;
 	int rc1, rc2;
 
@@ -77,125 +72,91 @@ ZTEST(epacket_keys, test_key_derive)
 	rotation = 1;
 
 	/* Same inputs give same key */
-	rc1 = epacket_key_derive(EPACKET_KEY_DEVICE, key_1, KEY_SIZE, info, strlen(info), rotation);
-	rc2 = epacket_key_derive(EPACKET_KEY_DEVICE, key_2, KEY_SIZE, info, strlen(info), rotation);
+	rc1 = epacket_key_derive(EPACKET_KEY_DEVICE, info, strlen(info), rotation, &id_1);
+	rc2 = epacket_key_derive(EPACKET_KEY_DEVICE, info, strlen(info), rotation, &id_2);
 
 	zassert_equal(0, rc1, "Derivation failed");
 	zassert_equal(0, rc2, "Derivation failed");
+	zassert_equal(0, epacket_key_export(id_1, key_1), "Export failed");
+	zassert_equal(0, epacket_key_export(id_2, key_2), "Export failed");
+	zassert_equal(0, epacket_key_delete(id_1), "Delete failed");
+	zassert_equal(0, epacket_key_delete(id_2), "Delete failed");
 	zassert_equal(0, bit_difference(key_1, key_2, KEY_SIZE), "Derivation not deterministic");
 
 	/* Base change gives different keys */
-	rc1 = epacket_key_derive(EPACKET_KEY_DEVICE, key_1, KEY_SIZE, info, strlen(info), rotation);
-	rc2 = epacket_key_derive(EPACKET_KEY_NETWORK, key_2, KEY_SIZE, info, strlen(info), rotation);
+	rc1 = epacket_key_derive(EPACKET_KEY_DEVICE, info, strlen(info), rotation, &id_1);
+	rc2 = epacket_key_derive(EPACKET_KEY_NETWORK, info, strlen(info), rotation, &id_2);
 
 	zassert_equal(0, rc1, "Derivation failed");
 	zassert_equal(0, rc2, "Derivation failed");
+	zassert_equal(0, epacket_key_export(id_1, key_1), "Export failed");
+	zassert_equal(0, epacket_key_export(id_2, key_2), "Export failed");
+	zassert_equal(0, epacket_key_delete(id_1), "Delete failed");
+	zassert_equal(0, epacket_key_delete(id_2), "Delete failed");
 	zassert_true(keys_different(key_1, key_2), "Keys too similar");
 
 	/* Rotation gives different keys */
 	for (int i = 1; i < 100; i++) {
-		rc1 = epacket_key_derive(EPACKET_KEY_DEVICE, key_1, KEY_SIZE, info, strlen(info), rotation);
-		rc2 = epacket_key_derive(EPACKET_KEY_DEVICE, key_2, KEY_SIZE, info, strlen(info), rotation + i);
+		rc1 = epacket_key_derive(EPACKET_KEY_DEVICE, info, strlen(info), rotation, &id_1);
+		rc2 = epacket_key_derive(EPACKET_KEY_DEVICE, info, strlen(info), rotation + i, &id_2);
 
 		zassert_equal(0, rc1, "Derivation failed");
 		zassert_equal(0, rc2, "Derivation failed");
+		zassert_equal(0, epacket_key_export(id_1, key_1), "Export failed");
+		zassert_equal(0, epacket_key_export(id_2, key_2), "Export failed");
+		zassert_equal(0, epacket_key_delete(id_1), "Delete failed");
+		zassert_equal(0, epacket_key_delete(id_2), "Delete failed");
 		zassert_true(keys_different(key_1, key_2), "Keys too similar");
 	}
 
 	/* Info change gives different keys */
-	rc1 = epacket_key_derive(EPACKET_KEY_DEVICE, key_1, KEY_SIZE, info, strlen(info), rotation);
-	rc2 = epacket_key_derive(EPACKET_KEY_DEVICE, key_2, KEY_SIZE, info2, strlen(info2), rotation);
+	rc1 = epacket_key_derive(EPACKET_KEY_DEVICE, info, strlen(info), rotation, &id_1);
+	rc2 = epacket_key_derive(EPACKET_KEY_DEVICE, info2, strlen(info2), rotation, &id_2);
 
 	zassert_equal(0, rc1, "Derivation failed");
 	zassert_equal(0, rc2, "Derivation failed");
+	zassert_equal(0, epacket_key_export(id_1, key_1), "Export failed");
+	zassert_equal(0, epacket_key_export(id_2, key_2), "Export failed");
+	zassert_equal(0, epacket_key_delete(id_1), "Delete failed");
+	zassert_equal(0, epacket_key_delete(id_2), "Delete failed");
 	zassert_true(keys_different(key_1, key_2), "Keys too similar");
 
-	rc1 = epacket_key_derive(EPACKET_KEY_DEVICE, key_1, KEY_SIZE, info, strlen(info), rotation);
-	rc2 = epacket_key_derive(EPACKET_KEY_DEVICE, key_2, KEY_SIZE, info3, strlen(info3), rotation);
+	rc1 = epacket_key_derive(EPACKET_KEY_DEVICE, info, strlen(info), rotation, &id_1);
+	rc2 = epacket_key_derive(EPACKET_KEY_DEVICE, info3, strlen(info3), rotation, &id_2);
 
 	zassert_equal(0, rc1, "Derivation failed");
 	zassert_equal(0, rc2, "Derivation failed");
+	zassert_equal(0, epacket_key_export(id_1, key_1), "Export failed");
+	zassert_equal(0, epacket_key_export(id_2, key_2), "Export failed");
+	zassert_equal(0, epacket_key_delete(id_1), "Delete failed");
+	zassert_equal(0, epacket_key_delete(id_2), "Delete failed");
 	zassert_true(keys_different(key_1, key_2), "Keys too similar");
 }
 
-ZTEST(epacket_keys, test_encrypt_decrypt_params)
+ZTEST(epacket_keys, test_key_id_get)
 {
-	uint8_t associated[4];
-	uint8_t nonce[16];
-	uint8_t tag1[16];
-	uint8_t tag2[16];
-	uint16_t len = 64;
-	int rc1, rc2;
+	psa_key_id_t id_1, id_2;
 
-	sys_rand_get(plaintext, sizeof(plaintext));
-	sys_rand_get(associated, sizeof(associated));
-	sys_rand_get(nonce, sizeof(nonce));
+	/* We expect rotations of the same interface key to have the same ID */
+	id_1 = epacket_key_id_get(EPACKET_KEY_DEVICE | EPACKET_KEY_INTERFACE_SERIAL, 1);
+	id_2 = epacket_key_id_get(EPACKET_KEY_DEVICE | EPACKET_KEY_INTERFACE_SERIAL, 1);
+	zassert_equal(id_1, id_2, "");
 
-	/* Same inputs = same outputs */
-	rc1 = epacket_encrypt(EPACKET_KEY_NETWORK | EPACKET_KEY_INTERFACE_SERIAL, 1, associated, sizeof(associated),
-			      plaintext, len, nonce, tag1, ciphertext1);
-	rc2 = epacket_encrypt(EPACKET_KEY_NETWORK | EPACKET_KEY_INTERFACE_SERIAL, 1, associated, sizeof(associated),
-			      plaintext, len, nonce, tag2, ciphertext2);
+	id_2 = epacket_key_id_get(EPACKET_KEY_DEVICE | EPACKET_KEY_INTERFACE_SERIAL, 2);
+	zassert_equal(id_1, id_2, "");
 
-	zassert_equal(0, rc1, "Encryption failed");
-	zassert_equal(0, rc2, "Encryption failed");
-	zassert_mem_equal(ciphertext1, ciphertext2, len, "Encryption not deterministic");
+	/* Device and network keys should have different IDs*/
+	id_2 = epacket_key_id_get(EPACKET_KEY_NETWORK | EPACKET_KEY_INTERFACE_SERIAL, 1);
+	zassert_not_equal(id_1, id_2, "");
 
-	/* Try decrypting with incorrect params */
-	rc1 = epacket_decrypt(EPACKET_KEY_DEVICE | EPACKET_KEY_INTERFACE_SERIAL, 1, associated, sizeof(associated),
-			      ciphertext1, len, nonce, tag1, decrypted1);
-	zassert_equal(-1, rc1, "Decryption unexpectedly passed");
-	rc1 = epacket_decrypt(EPACKET_KEY_NETWORK | EPACKET_KEY_INTERFACE_SERIAL, 1 + 1, associated, sizeof(associated),
-			      ciphertext1, len, nonce, tag1, decrypted1);
-	zassert_equal(-1, rc1, "Decryption unexpectedly passed");
-	rc1 = epacket_decrypt(EPACKET_KEY_NETWORK | EPACKET_KEY_INTERFACE_UDP, 1, associated, sizeof(associated),
-			      ciphertext1, len, nonce, tag1, decrypted1);
-	zassert_equal(-1, rc1, "Decryption unexpectedly passed");
-	rc1 = epacket_decrypt(EPACKET_KEY_DEVICE | EPACKET_KEY_INTERFACE_UDP, 1, associated, sizeof(associated),
-			      ciphertext1, len, nonce, tag1, decrypted1);
-	zassert_equal(-1, rc1, "Decryption unexpectedly passed");
-
-	/* Decrypt with correct params */
-	rc1 = epacket_decrypt(EPACKET_KEY_NETWORK | EPACKET_KEY_INTERFACE_SERIAL, 1, associated, sizeof(associated),
-			      ciphertext1, len, nonce, tag1, decrypted1);
-	zassert_equal(0, rc1, "Decryption failed");
-	zassert_mem_equal(plaintext, decrypted1, len, "Plaintext not recovered");
+	/* Different interface keys should have different IDs */
+	id_2 = epacket_key_id_get(EPACKET_KEY_DEVICE | EPACKET_KEY_INTERFACE_UDP, 1);
+	zassert_not_equal(id_1, id_2, "");
 }
 
-ZTEST(epacket_keys, test_encrypt_decrypt_length)
+static bool psa_init(const void *global_state)
 {
-	const uint16_t payload_lengths[] = {1, 16, 64, 256, 1024};
-	uint8_t associated[4];
-	uint8_t nonce[16];
-	uint8_t tag1[16];
-	uint8_t tag2[16];
-	uint16_t len = 64;
-	int rc1, rc2;
-
-	sys_rand_get(plaintext, sizeof(plaintext));
-	sys_rand_get(associated, sizeof(associated));
-	sys_rand_get(nonce, sizeof(nonce));
-
-	for (int i = 0; i < ARRAY_SIZE(payload_lengths); i++) {
-		len = payload_lengths[i];
-
-		rc1 = epacket_encrypt(EPACKET_KEY_NETWORK | EPACKET_KEY_INTERFACE_SERIAL, i, associated,
-				      sizeof(associated), plaintext, len, nonce, tag1, ciphertext1);
-
-		rc2 = epacket_decrypt(EPACKET_KEY_NETWORK | EPACKET_KEY_INTERFACE_SERIAL, i, associated,
-				      sizeof(associated), ciphertext1, len, nonce, tag1, decrypted1);
-		zassert_equal(0, rc1, "Encryption failed");
-		zassert_equal(0, rc2, "Decryption failed");
-		zassert_mem_equal(plaintext, decrypted1, len, "Plaintext not recovered");
-
-		rc1 = epacket_encrypt(EPACKET_KEY_DEVICE | EPACKET_KEY_INTERFACE_SERIAL, i + 1, associated,
-				      sizeof(associated), plaintext, len, nonce, tag2, ciphertext2);
-		rc2 = epacket_decrypt(EPACKET_KEY_DEVICE | EPACKET_KEY_INTERFACE_SERIAL, i + 1, associated,
-				      sizeof(associated), ciphertext2, len, nonce, tag2, decrypted2);
-		zassert_equal(0, rc1, "Encryption failed");
-		zassert_equal(0, rc2, "Decryption failed");
-		zassert_mem_equal(plaintext, decrypted2, len, "Plaintext not recovered");
-	}
+	return psa_crypto_init() == PSA_SUCCESS;
 }
 
-ZTEST_SUITE(epacket_keys, NULL, NULL, NULL, NULL, NULL);
+ZTEST_SUITE(epacket_keys, psa_init, NULL, NULL, NULL, NULL);
