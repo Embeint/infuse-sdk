@@ -1,0 +1,31 @@
+/**
+ * @file
+ * @brief Additional MbedTLS user config
+ * @copyright 2024 Embeint Pty Ltd
+ * @author Jordan Yates <jordan@embeint.com>
+ *
+ * SPDX-License-Identifier: LicenseRef-Embeint
+ */
+
+#ifndef EMBEINT_SDK_INCLUDE_EIS_CRYPTO_MBEDTLS_MBEDTLS_USER_CONFIG_H_
+#define EMBEINT_SDK_INCLUDE_EIS_CRYPTO_MBEDTLS_MBEDTLS_USER_CONFIG_H_
+
+#ifdef CONFIG_NRF_OBERON
+
+#define MBEDTLS_CHACHA20_ALT
+#define MBEDTLS_POLY1305_ALT
+
+#define MBEDTLS_SHA1_ALT
+#define MBEDTLS_SHA224_ALT
+#define MBEDTLS_SHA256_ALT
+
+#define MBEDTLS_ECDH_GEN_PUBLIC_ALT
+#define MBEDTLS_ECDH_GEN_PUBLIC_ALT
+#define MBEDTLS_ECDH_COMPUTE_SHARED_ALT
+#define MBEDTLS_ECDSA_GENKEY_ALT
+#define MBEDTLS_ECDSA_SIGN_ALT
+#define MBEDTLS_ECDSA_VERIFY_ALT
+
+#endif /* CONFIG_NRF_OBERON */
+
+#endif /* EMBEINT_SDK_INCLUDE_EIS_CRYPTO_MBEDTLS_MBEDTLS_USER_CONFIG_H_ */

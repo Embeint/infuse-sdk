@@ -17,3 +17,5 @@ if (CONFIG_EIS_SDK)
     )
   endif()
 endif()
+
+include(cmake/sdk_nrf.cmake)

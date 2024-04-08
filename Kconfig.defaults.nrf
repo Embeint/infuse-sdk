@@ -11,6 +11,8 @@ config MULTITHREADING_LOCK
 	bool
 config NORDIC_SECURITY_BACKEND
 	bool
+config TFM_CRYPTO_BUILTIN_KEYS
+	bool
 config ZIGBEE
 	bool
 config ZIGBEE_ROLE_END_DEVICE
