@@ -95,10 +95,19 @@ static void epacket_handle_tx(struct net_buf *buf)
 {
 	const struct epacket_interface_api *api;
 	const struct device *dev;
+	size_t pool_max;
+	int pool_id;
 	int rc;
 
-	dev = tx_device[net_buf_id(buf)];
+	pool_id = net_buf_id(buf);
+	dev = tx_device[pool_id];
 	api = dev->api;
+	pool_max = net_buf_pool_get(pool_id)->alloc->max_alloc_size;
+
+	/* Reverse any footer reservation that was done at allocation */
+	if (buf->size < pool_max) {
+		buf->size = pool_max;
+	}
 
 	LOG_DBG("%s: TX %d byte packet", dev->name, buf->len);
 	rc = api->send(dev, buf);
