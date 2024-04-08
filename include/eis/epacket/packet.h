@@ -98,6 +98,8 @@ static inline struct net_buf *epacket_alloc_tx_for_interface(const struct device
 	epacket_packet_overhead(dev, &header, &footer);
 	/* Reserve space for header */
 	net_buf_reserve(buf, header);
+	/* Hacky reservation for footer, automatically reversed by epacket_queue */
+	buf->size -= footer;
 	return buf;
 }
 
