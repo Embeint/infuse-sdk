@@ -10,12 +10,17 @@ configdefault EPACKET
 	default y
 configdefault NET_BUF
 	default y
-# ePacket key derivation
+
+configdefault EIS_CIVIL_TIME
+	default y
+
+# Random numbers
+configdefault ENTROPY_GENERATOR
+	default y
+
+# MbedTLS through the PSA API
 configdefault MBEDTLS
 	default y
-configdefault MBEDTLS_HKDF_C
-	default y
-# ChaCha20-Poly1305 support through PSA API
 configdefault MBEDTLS_ENABLE_HEAP
 	default y
 configdefault MBEDTLS_HEAP_SIZE
@@ -26,24 +31,15 @@ configdefault MBEDTLS_ENTROPY_ENABLED
 	default y
 configdefault MBEDTLS_ZEPHYR_ENTROPY
 	default y
+# Key derivation
+configdefault MBEDTLS_HKDF_C
+	default y
+# chacha20-poly1305 AEAD
 configdefault MBEDTLS_CHACHAPOLY_AEAD_ENABLED
 	default y
 configdefault MBEDTLS_CIPHER_CHACHA20_ENABLED
 	default y
 configdefault MBEDTLS_MAC_POLY1305_ENABLED
-	default y
-
-# ePacket cryptography
-configdefault CRYPTO_ASCON
-	default y
-configdefault CRYPTO_ASCON_128A
-	default y
-
-configdefault EIS_CIVIL_TIME
-	default y
-
-# Random numbers
-configdefault ENTROPY_GENERATOR
 	default y
 
 # Logging
