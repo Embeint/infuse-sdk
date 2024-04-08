@@ -31,6 +31,12 @@ config EPACKET_PAYLOAD_MAX
 	  larger minimum MTU of 576. 256 is sufficient for Bluetooth
 	  only devices.
 
+config EPACKET_KEY_EXPORT
+	bool "Support exporting ePacket derived keys"
+	depends on ZTEST
+	help
+	  DO NOT enable this in production
+
 rsource "interfaces/Kconfig"
 
 endif # EPACKET

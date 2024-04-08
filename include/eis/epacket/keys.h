@@ -16,6 +16,8 @@ extern "C" {
 
 #include <stdint.h>
 
+#include <psa/crypto.h>
+
 /**
  * @brief ePacket key API
  * @defgroup epacket_key_apis ePacket key APIs
@@ -37,55 +39,55 @@ enum epacket_key_interface {
 /**
  * @brief HKDF-SHA256 based key derivation
  *
+ * Derived key lifetime is `PSA_KEY_LIFETIME_VOLATILE`.
+ * Derived key is only valid for `PSA_ALG_CHACHA20_POLY1305`.
+ *
  * @param base_key Derive from network key or device key
- * @param output_key Output key storage
- * @param output_key_len Length of @a output_key
  * @param info Optional application/usage specific array
  * @param info_len Length of @a info
  * @param salt Key derivation randomisation
+ * @param output_key_id Output key ID
  *
  * @retval 0 on success
- * @retval -errno on error
+ * @retval -EINVAL on invalid @a base_key
+ * @retval -EIO on error
  */
-int epacket_key_derive(enum epacket_key_type base_key, uint8_t *output_key, uint8_t output_key_len, const uint8_t *info,
-		       uint8_t info_len, uint32_t salt);
+int epacket_key_derive(enum epacket_key_type base_key, const uint8_t *info, uint8_t info_len, uint32_t salt,
+		       psa_key_id_t *output_key_id);
 
 /**
- * @brief Encrypt an ePacket payload
+ * @brief Get PSA key ID from ePacket key ID
  *
- * @param key_id Derived key to encrypt payload with
- * @param key_rotation Rotation index of derived key
- * @param associated_data Associated data array
- * @param associated_data_len Length of associated data
- * @param plaintext Input plaintext
- * @param plaintext_len Length of plaintext
- * @param nonce 16 byte nonce (Initialisation vector)
- * @param tag 16 byte ciphertext tag
- * @param ciphertext Output ciphertext of length @a plaintext_len
+ * @param key_id ePacket key ID
+ * @param key_rotation Rotation index of ePacket key
+ *
+ * @return psa_key_id_t PSA key ID to use for operations, 0 on error
+ */
+psa_key_id_t epacket_key_id_get(uint8_t key_id, uint32_t key_rotation);
+
+/**
+ * @brief Delete a PSA key ID
+ *
+ * @param key_id PSA key ID
+ * @retval 0 on success
+ * @retval -EINVAL on invalid key
+ */
+int epacket_key_delete(psa_key_id_t key_id);
+
+#ifdef CONFIG_EPACKET_KEY_EXPORT
+
+/**
+ * @brief Export ePacket key for test purposes
+ *
+ * @param key_id PSA key ID
+ * @param key Storage for key
  *
  * @retval 0 on success
- * @retval -1 on error
+ * @retval -EINVAL on invalid key
  */
-int epacket_encrypt(uint8_t key_id, uint32_t key_rotation, const uint8_t *associated_data, uint32_t associated_data_len,
-		    const uint8_t *plaintext, uint32_t plaintext_len, const uint8_t *nonce, uint8_t *tag,
-		    uint8_t *ciphertext);
+int epacket_key_export(psa_key_id_t key_id, uint8_t key[32]);
 
-/**
- * @brief Decrypt an ePacket payload
- *
- * @param key_id Derived key to decrypt payload with
- * @param key_rotation Rotation index of derived key
- * @param associated_data Associated data array
- * @param associated_data_len Length of associated data
- * @param ciphertext Input ciphertext
- * @param ciphertext_len Length of ciphertext
- * @param nonce 16 byte nonce (Initialisation vector)
- * @param tag 16 byte ciphertext tag
- * @param plaintext Output plaintext of length @a message_len
- */
-int epacket_decrypt(uint8_t key_id, uint32_t key_rotation, const uint8_t *associated_data, uint32_t associated_data_len,
-		    const uint8_t *ciphertext, uint32_t ciphertext_len, const uint8_t *nonce, const uint8_t *tag,
-		    uint8_t *plaintext);
+#endif /* CONFIG_EPACKET_KEY_EXPORT */
 
 /**
  * @}
