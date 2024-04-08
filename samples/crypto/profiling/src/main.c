@@ -13,6 +13,9 @@
 #include <zephyr/random/random.h>
 #include <zephyr/timing/timing.h>
 
+#include <psa/crypto.h>
+#include <psa/crypto_extra.h>
+
 #include <eis/crypto/ascon.h>
 
 LOG_MODULE_REGISTER(app, LOG_LEVEL_INF);
@@ -29,6 +32,7 @@ enum algorithms {
 	ASCON_128A = 0,
 	ASCON_128,
 	ASCON_80PQ,
+	CHACHA20_POLY1305,
 	NUM_ALGORITHMS,
 };
 
@@ -36,6 +40,7 @@ const char *algorithm_names[] = {
 	[ASCON_128] = "ascon-128",
 	[ASCON_128A] = "ascon-128a",
 	[ASCON_80PQ] = "ascon-80pq",
+	[CHACHA20_POLY1305] = "chacha20-poly1305",
 };
 
 uint64_t encrypt_cycles[NUM_ALGORITHMS][ARRAY_SIZE(plaintext_lengths)][REPEATS] = {0};
@@ -45,7 +50,7 @@ int main(void)
 {
 	uint8_t associated_data[16];
 	uint8_t nonce[16];
-	uint8_t key[16];
+	uint8_t key[32];
 	uint8_t tag[16];
 	int rc = 0;
 
@@ -56,6 +61,31 @@ int main(void)
 	sys_rand_get(associated_data, sizeof(associated_data));
 	sys_rand_get(nonce, sizeof(nonce));
 	sys_rand_get(key, sizeof(key));
+
+	/* Initialize PSA Crypto */
+	psa_key_attributes_t key_attributes = PSA_KEY_ATTRIBUTES_INIT;
+	psa_key_id_t key_id;
+	psa_status_t status;
+
+	status = psa_crypto_init();
+	if (status != PSA_SUCCESS) {
+		LOG_ERR("PSA init failed! (%d)", status);
+		k_sleep(K_FOREVER);
+	}
+
+	/* Crypto settings for Chacha20-Poly1305 */
+	psa_set_key_usage_flags(&key_attributes, PSA_KEY_USAGE_ENCRYPT | PSA_KEY_USAGE_DECRYPT);
+	psa_set_key_lifetime(&key_attributes, PSA_KEY_LIFETIME_VOLATILE);
+	psa_set_key_algorithm(&key_attributes, PSA_ALG_CHACHA20_POLY1305);
+	psa_set_key_type(&key_attributes, PSA_KEY_TYPE_CHACHA20);
+	psa_set_key_bits(&key_attributes, 256);
+
+	/* Import Chacha20 key */
+	status = psa_import_key(&key_attributes, key, 32, &key_id);
+	if (status != PSA_SUCCESS) {
+		LOG_ERR("Import key failed! (%d)", status);
+		k_sleep(K_FOREVER);
+	}
 
 	/* Start hardware cycle counters */
 	timing_init();
@@ -122,6 +152,29 @@ int main(void)
 			decrypt_cycles[ASCON_80PQ][i][r] = timing_cycles_get(&start_time, &end_time);
 		}
 #endif /* CONFIG_CRYPTO_ASCON_80PQ */
+		for (int r = 0; r < REPEATS; r++) {
+			size_t clen, mlen;
+
+			start_time = timing_counter_get();
+
+			status = psa_aead_encrypt(key_id, PSA_ALG_CHACHA20_POLY1305, nonce, 12, associated_data, 4,
+						  plaintext, plaintext_lengths[i], ciphertext, sizeof(ciphertext),
+						  &clen);
+			end_time = timing_counter_get();
+			if (status != PSA_SUCCESS) {
+				LOG_INF("psa_aead_encrypt failed! (Error: %d)", status);
+			}
+			encrypt_cycles[CHACHA20_POLY1305][i][r] = timing_cycles_get(&start_time, &end_time);
+
+			start_time = timing_counter_get();
+			status = psa_aead_decrypt(key_id, PSA_ALG_CHACHA20_POLY1305, nonce, 12, associated_data, 4,
+						  ciphertext, clen, decrypted, sizeof(decrypted), &mlen);
+			end_time = timing_counter_get();
+			if (status != PSA_SUCCESS) {
+				LOG_INF("psa_aead_decrypt failed! (Error: %d)", status);
+			}
+			decrypt_cycles[CHACHA20_POLY1305][i][r] = timing_cycles_get(&start_time, &end_time);
+		}
 	}
 
 	/* Log timing results */
