@@ -1,3 +1,4 @@
+name: embeint
 build:
   settings:
     dts_root: .
