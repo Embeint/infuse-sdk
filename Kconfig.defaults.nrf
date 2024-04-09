@@ -29,5 +29,9 @@ config ZIGBEE_ROLE_END_DEVICE
 	bool
 config TEMP_NRF5_MPSL
 	bool
+config PARTITION_MANAGER_ENABLED
+	bool
+config XIP_SPLIT_IMAGE
+	bool
 
 endif # SOC_FAMILY_NRF
