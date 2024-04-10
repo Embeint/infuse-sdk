@@ -171,6 +171,7 @@ class vscode(WestCommand):
 
     def do_run(self, args, unknown_args):
         vscode_folder = pathlib.Path(args.workspace) / '.vscode'
+        vscode_folder.mkdir(exist_ok=True)
 
         if args.dir is None:
             log.inf(f"Writing `settings.json`, `extensions.json` and `eis.code-snippets` to {vscode_folder}")
