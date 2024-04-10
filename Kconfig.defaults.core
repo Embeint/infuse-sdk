@@ -13,6 +13,9 @@ configdefault POLL
 configdefault NET_BUF
 	default y
 
+configdefault TDF
+	default y
+
 configdefault EIS_CIVIL_TIME
 	default y
 
