@@ -1,0 +1,5 @@
+# TDF configuration
+
+config TDF
+	bool "TDF subsystem"
+	depends on NET_BUF
