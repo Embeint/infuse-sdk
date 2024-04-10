@@ -36,6 +36,21 @@ struct tdf_buffer_state {
 	struct net_buf_simple buf;
 };
 
+struct tdf_parsed {
+	/* TDF time (0 for none) */
+	uint64_t time;
+	/* TDF ID */
+	uint16_t tdf_id;
+	/* Length of single TDF */
+	uint8_t tdf_len;
+	/* Number of TDFs */
+	uint8_t tdf_num;
+	/* Time period between TDFs */
+	uint16_t period;
+	/* TDF data */
+	void *data;
+};
+
 enum tdf_flags {
 	/* Timestamp flags */
 	TDF_TIMESTAMP_NONE = 0x0000,
@@ -77,6 +92,31 @@ static inline void tdf_buffer_state_reset(struct tdf_buffer_state *state)
  */
 int tdf_add(uint16_t tdf_id, uint8_t tdf_len, uint8_t tdf_num, uint64_t time, uint16_t period,
 	    struct tdf_buffer_state *state, const void *data);
+
+/**
+ * @brief Initialise TDF parsing state
+ *
+ * @param state State to initialise
+ * @param data Pointer to TDF memory buffer
+ * @param size Size of TDF memory buffer
+ */
+static inline void tdf_parse_start(struct tdf_buffer_state *state, void *data, size_t size)
+{
+	net_buf_simple_init_with_data(&state->buf, data, size);
+	state->time = 0;
+}
+
+/**
+ * @brief Parse the next TDF from a memory buffer
+ *
+ * @param state TDF parsing state
+ * @param parsed Pointer to output TDF information
+ *
+ * @retval 0 on successful parse
+ * @retval -EINVAL on invalid TDF
+ * @retval -ENOMEM on no more TDFs
+ */
+int tdf_parse(struct tdf_buffer_state *state, struct tdf_parsed *parsed);
 
 /**
  * @}

@@ -29,6 +29,14 @@ struct tdf_time {
 	uint16_t subseconds;
 } __packed;
 
+static uint32_t sign_extend_24_bits(uint32_t x)
+{
+	const int bits = 24;
+	uint32_t m = 1u << (bits - 1);
+
+	return (x ^ m) - m;
+}
+
 int tdf_add(uint16_t tdf_id, uint8_t tdf_len, uint8_t tdf_num, uint64_t time, uint16_t period,
 	    struct tdf_buffer_state *state, const void *data)
 {
@@ -133,4 +141,91 @@ int tdf_add(uint16_t tdf_id, uint8_t tdf_len, uint8_t tdf_num, uint64_t time, ui
 	net_buf_simple_add_mem(&state->buf, data, total_data);
 
 	return tdf_num;
+}
+
+int tdf_parse(struct tdf_buffer_state *state, struct tdf_parsed *parsed)
+{
+	if (state->buf.len <= sizeof(struct tdf_header)) {
+		return -ENOMEM;
+	}
+
+	struct tdf_header *header = net_buf_simple_pull_mem(&state->buf, sizeof(struct tdf_header));
+	uint16_t flags = header->id_flags & TDF_FLAGS_MASK;
+	uint16_t data_len;
+	int32_t time_diff;
+
+	parsed->tdf_id = header->id_flags & TDF_ID_MASK;
+	parsed->tdf_len = header->size;
+	parsed->tdf_num = 1;
+	parsed->period = 0;
+
+	/* Invalid TDF ID */
+	if ((parsed->tdf_id == 0) || (parsed->tdf_id == 4095)) {
+		return -EINVAL;
+	}
+
+	/* Validate header length */
+	switch (flags & TDF_TIMESTAMP_MASK) {
+	case TDF_TIMESTAMP_ABSOLUTE:
+		data_len = sizeof(struct tdf_time);
+		break;
+	case TDF_TIMESTAMP_RELATIVE:
+		data_len = sizeof(uint16_t);
+		break;
+	case TDF_TIMESTAMP_EXTENDED_RELATIVE:
+		data_len = 3;
+		break;
+	default:
+		data_len = 0;
+	}
+	if (state->buf.len <= data_len) {
+		return -EINVAL;
+	}
+
+	switch (flags & TDF_TIMESTAMP_MASK) {
+	case TDF_TIMESTAMP_ABSOLUTE:
+		struct tdf_time *t = net_buf_simple_pull_mem(&state->buf, sizeof(struct tdf_time));
+
+		state->time = civil_time_from(t->seconds, t->subseconds);
+		parsed->time = state->time;
+		break;
+	case TDF_TIMESTAMP_RELATIVE:
+		time_diff = net_buf_simple_pull_le16(&state->buf);
+
+		if (state->time == 0) {
+			return -EINVAL;
+		}
+		state->time += time_diff;
+		parsed->time = state->time;
+		break;
+	case TDF_TIMESTAMP_EXTENDED_RELATIVE:
+		time_diff = net_buf_simple_pull_le24(&state->buf);
+		time_diff = sign_extend_24_bits(time_diff);
+
+		if (state->time == 0) {
+			return -EINVAL;
+		}
+		state->time += time_diff;
+		parsed->time = state->time;
+		break;
+	default:
+		parsed->time = 0;
+		break;
+	}
+	if (flags & TDF_TIME_ARRAY) {
+		if (state->buf.len <= sizeof(struct tdf_time_array_header)) {
+			return -EINVAL;
+		}
+		struct tdf_time_array_header *t =
+			net_buf_simple_pull_mem(&state->buf, sizeof(struct tdf_time_array_header));
+
+		parsed->tdf_num = t->num;
+		parsed->period = t->period;
+	}
+	data_len = (uint16_t)parsed->tdf_len * parsed->tdf_num;
+	if (state->buf.len < data_len) {
+		return -EINVAL;
+	}
+	parsed->data = net_buf_simple_pull_mem(&state->buf, data_len);
+	return 0;
 }
