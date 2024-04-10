@@ -37,7 +37,10 @@ settings = {
         "editor.insertSpaces": False,
         "editor.tabSize": 8,
         "editor.indentSize": "tabSize"
-    }
+    },
+    "[jinja]": {
+        "editor.formatOnSave": False
+    },
 }
 
 recommended_extensions = {
