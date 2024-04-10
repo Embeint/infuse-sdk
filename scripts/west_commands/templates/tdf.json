@@ -1,0 +1,49 @@
+{
+    "structs": {
+        "tdf_struct_mcuboot_img_sem_ver": {
+            "description": "MCUboot semantic versioning struct",
+            "fields": [
+                {"name": "major", "type": "uint8_t"},
+                {"name": "minor", "type": "uint8_t"},
+                {"name": "revision", "type": "uint16_t"},
+                {"name": "build_num", "type": "uint32_t"}
+            ]
+        },
+        "tdf_struct_xyz_16bit": {
+            "description": "Generic 3-axis sensor reading",
+            "fields": [
+                {"name": "x", "type": "int16_t"},
+                {"name": "y", "type": "int16_t"},
+                {"name": "z", "type": "int16_t"}
+            ]
+        }
+    },
+    "definitions": {
+        "0": {
+            "name": "ANNOUNCE",
+            "description": "Common announcement packet",
+            "fields": [
+                {"name": "application", "type": "uint32_t", "description": "Unique application ID"},
+                {"name": "version", "type": "tdf_struct_mcuboot_img_sem_ver", "description": "Running application version"},
+                {"name": "uptime", "type": "uint32_t", "description": "Uptime in seconds"},
+                {"name": "reboots", "type": "uint16_t", "description": "Reboot counter"}
+            ]
+        },
+        "1": {
+            "name": "BATTERY_STATE",
+            "description": "General battery state",
+            "fields": [
+                {"name": "voltage_mv", "type": "uint32_t", "description": "Battery voltage in millivolts", "display_postfix": "mV"},
+                {"name": "charge_ua", "type": "uint16_t", "description": "Charge current in microamps", "display_postfix": "uA"},
+                {"name": "soc", "type": "uint8_t", "description": "State of charge in percent", "display_postfix": "%", "conversion": {"m": 0.5, "c": 0}}
+            ]
+        },
+        "2": {
+            "name": "ARRAY_TYPE",
+            "description": "Example array type",
+            "fields": [
+                {"name": "array", "type": "uint8_t", "num": 4, "description": "I am an array of length 4"}
+            ]
+        }
+    }
+}

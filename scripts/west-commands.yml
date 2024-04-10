@@ -5,3 +5,8 @@ west-commands:
       - name: vscode
         class: vscode
         help: generate Visual Studio code configuration
+  - file: scripts/west_commands/cloudgen.py
+    commands:
+      - name: cloudgen
+        class: cloudgen
+        help: generate files from EIS cloud definitions
