@@ -1,0 +1,25 @@
+{# Add rst-badge after rst-versions for small badge style. #}
+  <div class="rst-versions" data-toggle="rst-versions" role="note" aria-label="versions">
+    <span class="rst-current-version" data-toggle="rst-current-version">
+      <span class="fa fa-book"> EIS Project</span>
+      v: latest
+      <span class="fa fa-caret-down"></span>
+    </span>
+    <div class="rst-other-versions">
+      <dl>
+        <dt>{{ _('Document Release Versions') }}</dt>
+        {% for slug, url in versions %}
+          <dd><a href="{{ url }}">{{ slug }}</a></dd>
+        {% endfor %}
+      </dl>
+      <dl>
+        <dt>{{ _('Embeint Links') }}</dt>
+        <dd>
+          <a href="https://embeint.com/en/">Embeint Homepage</a>
+        </dd>
+          <dd>
+            <a href="https://www.zephyrproject.org/">Zephyr Project</a>
+          </dd>
+      </dl>
+    </div>
+  </div>
