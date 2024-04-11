@@ -16,6 +16,8 @@
    src="https://github.com/embeint/embeint-sdk/actions/workflows/twister.yml/badge.svg?event=push"></a>
 
 
+.. start_include_here
+
 The Embeint SDK (EIS) is a platform designed to make it simple to create ultra
 low-power Internet-of-Thing (IoT) devices.
 
