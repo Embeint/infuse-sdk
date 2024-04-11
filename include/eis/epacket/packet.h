@@ -108,6 +108,8 @@ static inline struct net_buf *epacket_alloc_tx_for_interface(const struct device
  *
  * @param buf ePacket TX buffer
  * @param auth Authentication level to use for packet
+ * @param flags Desired packet flags
+ * @param type Packet type
  */
 static inline void epacket_set_tx_metadata(struct net_buf *buf, enum epacket_auth auth, uint16_t flags, uint8_t type)
 {
