@@ -25,6 +25,8 @@ static uint8_t buf[32];
 static uint8_t input_buffer[128] = {0};
 static uint64_t base_time;
 
+#define __DEBUG__ 0
+
 static void run_test_case(struct tdf_test_case *tdfs, size_t num_tdfs)
 {
 	struct tdf_buffer_state state;
@@ -73,6 +75,16 @@ static void run_test_case(struct tdf_test_case *tdfs, size_t num_tdfs)
 			}
 			zassert_equal(t->expected_rc, parsed.tdf_num);
 			zassert_mem_equal(input_buffer, parsed.data, parsed.tdf_len);
+#if __DEBUG__
+			printk("TDF %d:\n", i);
+			printk("\t     ID: %d\n", parsed.tdf_id);
+			printk("\t   Time: %lld\n", parsed.time);
+			printk("\t Length: %d\n", parsed.tdf_len);
+			if (t->expected_rc > 1) {
+				printk("\t    Num: %d\n", parsed.tdf_num);
+				printk("\t Period: %d\n", parsed.period);
+			}
+#endif /* __DEBUG__ */
 		}
 	}
 
