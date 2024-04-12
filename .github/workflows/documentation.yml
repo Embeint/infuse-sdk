@@ -1,0 +1,116 @@
+# Copyright (c) 2020 Linaro Limited.
+# SPDX-License-Identifier: Apache-2.0
+
+name: Documentation Build
+
+on:
+  push:
+    branches:
+    - main
+  pull_request:
+    paths:
+    - '.github/workflows/documentation.yml'
+    - 'doc/**'
+    - 'doc/requirements.txt'
+    - '**.rst'
+    - 'include/**'
+    - 'tests/**'
+    - '**/Kconfig*'
+    - 'west.yml'
+
+jobs:
+  doc-build-html:
+    name: "Documentation Build (HTML)"
+    runs-on: self-hosted
+    container:
+      image: ghcr.io/zephyrproject-rtos/ci:v0.26.11
+      options: '--entrypoint /bin/bash'
+      volumes:
+      - /repo-cache/embeint:/github/cache/embeint
+      env:
+        # NOTE: west docstrings will be extracted from the version listed here
+        WEST_VERSION: 1.2.0
+        # The latest CMake available directly with apt is 3.18, but we need >=3.20
+        # so we fetch that through pip.
+        CMAKE_VERSION: 3.20.5
+        DOXYGEN_VERSION: 1.9.6
+        BASE_REF: ${{ github.base_ref }}
+        ZEPHYR_TOOLCHAIN_VARIANT: zephyr
+    timeout-minutes: 10
+    concurrency:
+      group: doc-build-html-${{ github.ref }}
+      cancel-in-progress: true
+
+    steps:
+    - name: Workspace cleanup
+      run: |
+        rm -rf ./{*,.*}
+
+    - name: Clone cached Embeint SDK repository
+      continue-on-error: true
+      run: |
+        git clone --shared /github/cache/embeint/embeint-sdk embeint-sdk
+        cd embeint-sdk
+        git remote set-url origin ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}
+
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        ref: ${{ github.event.pull_request.head.sha }}
+        path: embeint-sdk
+        fetch-depth: 0
+        persist-credentials: false
+
+    - name: Environment Setup
+      working-directory: embeint-sdk
+      run: |
+        if [ "${{github.event_name}}" = "pull_request" ]; then
+          git config --global user.email "ci@embeint.com"
+          git config --global user.name "Embeint CI"
+          rm -fr ".git/rebase-apply"
+          git rebase origin/${BASE_REF}
+          git log  --pretty=oneline | head -n 10
+        fi
+
+        west init -l . || true
+        west config --global update.narrow true
+        west update --path-cache /github/cache/embeint
+        west forall -c 'git reset --hard HEAD'
+
+        echo "ZEPHYR_SDK_INSTALL_DIR=/opt/toolchains/zephyr-sdk-$( cat SDK_VERSION )" >> $GITHUB_ENV
+
+    - name: install-pkgs
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y ninja-build graphviz lcov
+        wget --no-verbose "https://github.com/doxygen/doxygen/releases/download/Release_${DOXYGEN_VERSION//./_}/doxygen-${DOXYGEN_VERSION}.linux.bin.tar.gz"
+        tar xf doxygen-${DOXYGEN_VERSION}.linux.bin.tar.gz
+        echo "${PWD}/doxygen-${DOXYGEN_VERSION}/bin" >> $GITHUB_PATH
+
+    - name: cache-pip
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/pip
+        key: pip-${{ hashFiles('doc/requirements.txt') }}
+
+    - name: install-pip
+      working-directory: embeint-sdk
+      run: |
+        sudo pip3 install -U setuptools wheel pip
+        pip3 install -r doc/requirements.txt
+        pip3 install west==${WEST_VERSION}
+        pip3 install cmake==${CMAKE_VERSION}
+        pip3 install coverxygen
+
+    - name: build-docs
+      working-directory: embeint-sdk
+      shell: bash
+      run: |
+        if [[ "$GITHUB_REF" =~ "refs/tags/v" ]]; then
+          DOC_TAG="release"
+        else
+          DOC_TAG="development"
+        fi
+
+        DOC_TAG=${DOC_TAG} SPHINXOPTS="-q -j auto" make -C doc
