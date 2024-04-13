@@ -2,6 +2,11 @@
 
 if EIS_SDK
 
+# Picolibc is smaller and more performant
+choice LIBC_IMPLEMENTATION
+	default PICOLIBC
+endchoice
+
 configdefault MAIN_STACK_SIZE
 	default 2048
 
