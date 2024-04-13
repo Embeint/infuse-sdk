@@ -15,8 +15,6 @@ configdefault MBEDTLS_USER_CONFIG_FILE
 
 # Undefined symbols from sdk-nrf referenced by nrfxlib
 # Defined here for compliance checks
-config MPSL
-	bool
 config MULTITHREADING_LOCK
 	bool
 config NORDIC_SECURITY_BACKEND
