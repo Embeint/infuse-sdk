@@ -41,7 +41,7 @@ configdefault NRF_OBERON
 configdefault MBEDTLS_USER_CONFIG_ENABLE
 	default y if NRF_OBERON
 configdefault MBEDTLS_USER_CONFIG_FILE
-	default "eis/crypto/mbedtls/mbedtls_user_config.h" if NRF_OBERON
+	default "eis/crypto/mbedtls/oberon_user_config.h" if NRF_OBERON
 # Key derivation
 configdefault MBEDTLS_HKDF_C
 	default y
