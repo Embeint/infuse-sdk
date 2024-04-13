@@ -13,6 +13,28 @@ configdefault MBEDTLS_USER_CONFIG_ENABLE
 configdefault MBEDTLS_USER_CONFIG_FILE
 	default "infuse/crypto/mbedtls/oberon_user_config.h" if NRF_OBERON
 
+# WiFi defaults
+configdefault WIFI_NRF700X
+	default y if WIFI
+configdefault NET_L2_ETHERNET
+	default y if WIFI_NRF700X
+configdefault WPA_SUPP
+	default y if WIFI_NRF700X
+configdefault NET_CONNECTION_MANAGER_MONITOR_STACK_SIZE
+	default 4096 if NRF700X_STA_MODE
+
+# MbedTLS requirements for WiFi connectivity
+configdefault MBEDTLS_ECP_ALL_ENABLED
+	default y if NRF700X_STA_MODE
+configdefault MBEDTLS_ECP_C
+	default y if NRF700X_STA_MODE
+configdefault MBEDTLS_MAC_CMAC_ENABLED
+	default y if NRF700X_STA_MODE
+configdefault MBEDTLS_CIPHER_AES_ENABLED
+	default y if NRF700X_STA_MODE
+configdefault MBEDTLS_CIPHER_MODE_CTR_ENABLED
+	default y if NRF700X_STA_MODE
+
 # Undefined symbols from sdk-nrf referenced by nrfxlib
 # Defined here for compliance checks
 config MULTITHREADING_LOCK
