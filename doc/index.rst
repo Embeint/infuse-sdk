@@ -1,7 +1,7 @@
 ..
     Infuse IoT SDK documentation main file
 
-.. _zephyr-home:
+.. _infuse-iot-home:
 
 Infuse IoT SDK Documentation
 ############################
@@ -20,8 +20,19 @@ documentation for a specific version of the SDK.
 
 .. toctree::
    :maxdepth: 1
+   :hidden:
+   :caption: Cloud
 
-   /snippets/index.rst
+   cloud/index.rst
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+   :caption: Embedded
+
+   embedded/index.rst
+   embedded/services.rst
+   embedded/hardware.rst
 
 .. include:: ../README.rst
    :start-after: start_include_here

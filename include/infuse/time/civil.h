@@ -9,7 +9,7 @@
  * @details
  * Infuse IoT uses the GPS epoch for local civil timekeeping.
  * For simplicity, seconds and subseconds are encoded into a single uint64_t.
- * The top 48 bits are the number of seconds elapsed since the GPS epoch (00:00:00 01/01/1980 UTC).
+ * The top 48 bits are the number of seconds elapsed since the GPS epoch (00:00:00 06/01/1980 UTC).
  * The bottom 16 bits are in units of (1/65536) seconds.
  */
 
@@ -28,7 +28,7 @@ extern "C" {
 
 /**
  * @brief civil_time API
- * @defgroup CIVIL_apis CIVIL APIs
+ * @defgroup civil_time_apis CIVIL APIs
  * @{
  */
 
