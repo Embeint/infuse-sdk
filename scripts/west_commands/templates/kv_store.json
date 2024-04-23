@@ -1,0 +1,68 @@
+{
+    "structs": {
+        "gcs_location": {
+            "description": "Geographic Co-ordinate System location",
+            "fields": [
+                {"name": "latitude", "type": "int32_t", "description": "Degrees north/south, scaled by 1e-7"},
+                {"name": "longitude", "type": "int32_t", "description": "Degrees north/south, scaled by 1e-7"},
+                {"name": "height", "type": "int32_t", "description": "Height above WGS-84 ellipsoid, mm"}
+            ]
+        },
+        "kv_string": {
+            "description": "String type",
+            "fields": [
+                {"name": "value", "type": "char", "num": 0, "description": "NULL terminated C string"}
+            ]
+        }
+    },
+    "definitions": [
+        {
+            "name": "REBOOTS",
+            "key": 0,
+            "description": "Nunmber of times device has rebooted",
+            "fields": [
+                {"name": "count", "type": "uint32_t"}
+            ]
+        },
+        {
+            "name": "FIXED_LOCATION",
+            "key": 10,
+            "description": "Fixed global location of the device",
+            "reflect": true,
+            "fields": [
+                {"name": "location", "type": "struct gcs_location", "description": "Location"}
+            ]
+        },
+        {
+            "name": "WIFI_SSID",
+            "key": 20,
+            "description": "WiFi network name",
+            "reflect": true,
+            "depends_on": "WIFI",
+            "fields": [
+                {"name": "ssid", "type": "struct kv_string", "description": "WiFi network name"}
+            ]
+        },
+        {
+            "name": "WIFI_PSK",
+            "key": 21,
+            "description": "WiFi network password",
+            "reflect": true,
+            "readback_protection": true,
+            "depends_on": "WIFI",
+            "fields": [
+                {"name": "psk", "type": "struct kv_string", "description": "WiFi pre-shared-key"}
+            ]
+        },
+        {
+            "name": "GEOFENCE",
+            "key": 100,
+            "range": 16,
+            "description": "Array of points defining a closed polygon",
+            "reflect": true,
+            "fields": [
+                {"name": "points", "type": "struct gcs_location", "num": 0, "description": "Points in geofence"}
+            ]
+        }
+    ]
+}
