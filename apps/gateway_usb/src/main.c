@@ -12,8 +12,8 @@
 #include <zephyr/logging/log.h>
 #include <zephyr/usb/usb_device.h>
 
-#include <eis/epacket/interface.h>
-#include <eis/epacket/packet.h>
+#include <infuse/epacket/interface.h>
+#include <infuse/epacket/packet.h>
 
 LOG_MODULE_REGISTER(app, LOG_LEVEL_INF);
 

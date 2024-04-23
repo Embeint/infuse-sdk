@@ -10,7 +10,7 @@
 #include <zephyr/kernel.h>
 #include <zephyr/random/random.h>
 
-#include <eis/crypto/ascon.h>
+#include <infuse/crypto/ascon.h>
 
 #define ALIGNMENT 8
 

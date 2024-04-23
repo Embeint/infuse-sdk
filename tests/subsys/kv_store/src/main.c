@@ -10,8 +10,8 @@
 #include <zephyr/kernel.h>
 #include <zephyr/random/random.h>
 
-#include <eis/fs/kv_store.h>
-#include <eis/fs/kv_types.h>
+#include <infuse/fs/kv_store.h>
+#include <infuse/fs/kv_types.h>
 
 ZTEST(kv_store, test_key_enabled)
 {

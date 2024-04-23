@@ -12,7 +12,7 @@
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
 
-#include <eis/epacket/keys.h>
+#include <infuse/epacket/keys.h>
 
 #include <psa/crypto.h>
 

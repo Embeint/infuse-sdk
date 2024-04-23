@@ -11,7 +11,7 @@
 #include <zephyr/logging/log.h>
 #include <zephyr/fs/nvs.h>
 
-#include <eis/fs/kv_store.h>
+#include <infuse/fs/kv_store.h>
 
 #include "kv_internal.h"
 
