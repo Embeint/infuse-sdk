@@ -120,6 +120,72 @@ ZTEST(kv_store, test_read_fallback)
 	zassert_equal(110, reboots.count);
 }
 
+struct cb_context {
+	int32_t key;
+	const void *data;
+	size_t data_len;
+	int cb_cnt;
+};
+
+static void value_changed_callback(uint16_t key, const void *data, size_t data_len, void *user_ctx)
+{
+	struct cb_context *ctx = user_ctx;
+
+	ctx->key = key;
+	ctx->data = data;
+	ctx->data_len = data_len;
+	ctx->cb_cnt += 1;
+}
+
+ZTEST(kv_store, test_callbacks)
+{
+	static struct cb_context ctx;
+	static struct kv_store_cb cb = {
+		.value_changed = value_changed_callback,
+		.user_ctx = &ctx,
+	};
+	KV_KEY_TYPE(KV_KEY_REBOOTS) reboots = {0};
+	KV_KEY_TYPE(KV_KEY_REBOOTS) fallback[2] = {{100}, {101}};
+
+	/* Register for callbacks */
+	kv_store_register_callback(&cb);
+
+	/* Callback not run if key doesn't exist */
+	ctx.key = -1;
+	(void)kv_store_delete(KV_KEY_REBOOTS);
+	zassert_equal(-1, ctx.key);
+	zassert_equal(0, ctx.cb_cnt);
+
+	/* Callback run on write */
+	(void)KV_STORE_WRITE(KV_KEY_REBOOTS, &reboots);
+	zassert_equal(KV_KEY_REBOOTS, ctx.key);
+	zassert_not_null(ctx.data);
+	zassert_equal(sizeof(reboots), ctx.data_len);
+	zassert_equal(1, ctx.cb_cnt);
+
+	/* Callback not run on duplicate data */
+	ctx.key = -1;
+	(void)KV_STORE_WRITE(KV_KEY_REBOOTS, &reboots);
+	zassert_equal(-1, ctx.key);
+	zassert_equal(1, ctx.cb_cnt);
+
+	/* Callback run on delete */
+	ctx.key = -1;
+	(void)kv_store_delete(KV_KEY_REBOOTS);
+	zassert_equal(KV_KEY_REBOOTS, ctx.key);
+	zassert_is_null(ctx.data);
+	zassert_equal(0, ctx.data_len);
+	zassert_equal(2, ctx.cb_cnt);
+
+	/* Callback run on fallback */
+	ctx.key = -1;
+	(void)kv_store_read_fallback(KV_KEY_REBOOTS, &reboots, sizeof(reboots), &fallback, sizeof(fallback));
+	zassert_equal(KV_KEY_REBOOTS, ctx.key);
+	zassert_not_null(ctx.data);
+	zassert_equal(sizeof(fallback), ctx.data_len);
+	zassert_equal(3, ctx.cb_cnt);
+}
+
 ZTEST(kv_store, test_kv_var_macro)
 {
 	KV_KEY_TYPE_VAR(KV_KEY_GEOFENCE, 2) geofence = {2, {{1, 2, 3}, {4, 5, 6}}};
