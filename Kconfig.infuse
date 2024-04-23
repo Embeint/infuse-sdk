@@ -1,12 +1,12 @@
-# Embedded Intelligence SDK options
+# Infuse IoT SDK options
 
-config EIS_SDK
-	bool "Build application with EIS"
+config INFUSE_SDK
+	bool "Build application with Infuse IoT SDK"
 
 rsource "lib/Kconfig"
 rsource "subsys/Kconfig"
 
-# EIS defaults
+# Infuse IoT SDK defaults
 rsource "Kconfig.defaults.core"
 rsource "Kconfig.defaults.net"
 rsource "Kconfig.defaults.nrf"

@@ -1,6 +1,6 @@
 /**
  * @file
- * @brief Typed key-value store for EIS
+ * @brief Typed key-value store for Infuse IoT
  * @copyright 2024 Embeint Pty Ltd
  * @author Jordan Yates <jordan@embeint.com>
  *

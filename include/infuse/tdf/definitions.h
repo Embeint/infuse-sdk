@@ -77,7 +77,7 @@ struct tdf_array_type {
 	uint8_t array[4];
 } __packed;
 
-/* EIS builtin TDF definitions */
+/* Infuse IoT builtin TDF definitions */
 enum tdf_builtin_id {
 	TDF_ANNOUNCE = 0,
 	TDF_BATTERY_STATE = 1,

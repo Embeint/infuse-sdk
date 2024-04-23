@@ -1,6 +1,6 @@
 # Embedded Intelligence SDK networking defaults
 
-if EIS_SDK
+if INFUSE_SDK
 if NETWORKING
 
 # Core Protocols
@@ -24,4 +24,4 @@ configdefault NET_CONNECTION_MANAGER
 	default y
 
 endif # NETWORKING
-endif # EIS_SDK
+endif # INFUSE_SDK

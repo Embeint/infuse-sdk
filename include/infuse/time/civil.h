@@ -1,13 +1,13 @@
 /**
  * @file
- * @brief EIS civil time based on the GPS epoch
+ * @brief Infuse IoT civil time based on the GPS epoch
  * @copyright 2024 Embeint Pty Ltd
  * @author Jordan Yates <jordan@embeint.com>
  *
  * SPDX-License-Identifier: LicenseRef-Embeint
  *
  * @details
- * EIS uses the GPS epoch for local civil timekeeping.
+ * Infuse IoT uses the GPS epoch for local civil timekeeping.
  * For simplicity, seconds and subseconds are encoded into a single uint64_t.
  * The top 48 bits are the number of seconds elapsed since the GPS epoch (00:00:00 01/01/1980 UTC).
  * The bottom 16 bits are in units of (1/65536) seconds.
@@ -42,17 +42,17 @@ extern "C" {
  *
  * @warning This value will be incorrect after the next leap-second
  */
-#define EIS_CIVIL_TIME_GPS_UNIX_OFFSET_SECONDS_LEAP 18
+#define INFUSE_CIVIL_TIME_GPS_UNIX_OFFSET_SECONDS_LEAP 18
 
 /**
  * @brief Unix time at the instant of the GPS epoch
  */
-#define EIS_CIVIL_TIME_GPS_UNIX_OFFSET_SECONDS_BASE 315964800
+#define INFUSE_CIVIL_TIME_GPS_UNIX_OFFSET_SECONDS_BASE 315964800
 
 /**
- * @brief Base tick rate of EIS civil time
+ * @brief Base tick rate of Infuse IoT civil time
  */
-#define EIS_CIVIL_TIME_TICKS_PER_SEC (UINT16_MAX + 1)
+#define INFUSE_CIVIL_TIME_TICKS_PER_SEC (UINT16_MAX + 1)
 
 /* Source of time knowledge */
 enum civil_time_source {
@@ -131,8 +131,8 @@ static inline uint64_t civil_time_from_gps(uint16_t week, uint32_t week_seconds,
  */
 static inline uint32_t unix_time_from_civil(uint64_t civil_time)
 {
-	return civil_time_seconds(civil_time) + EIS_CIVIL_TIME_GPS_UNIX_OFFSET_SECONDS_BASE -
-	       EIS_CIVIL_TIME_GPS_UNIX_OFFSET_SECONDS_LEAP;
+	return civil_time_seconds(civil_time) + INFUSE_CIVIL_TIME_GPS_UNIX_OFFSET_SECONDS_BASE -
+	       INFUSE_CIVIL_TIME_GPS_UNIX_OFFSET_SECONDS_LEAP;
 }
 
 /**
@@ -148,8 +148,8 @@ static inline uint32_t unix_time_from_civil(uint64_t civil_time)
  */
 static inline uint64_t civil_time_from_unix(uint32_t unix_time, uint16_t subseconds)
 {
-	uint64_t civil_seconds =
-		unix_time - EIS_CIVIL_TIME_GPS_UNIX_OFFSET_SECONDS_BASE + EIS_CIVIL_TIME_GPS_UNIX_OFFSET_SECONDS_LEAP;
+	uint64_t civil_seconds = unix_time - INFUSE_CIVIL_TIME_GPS_UNIX_OFFSET_SECONDS_BASE +
+				 INFUSE_CIVIL_TIME_GPS_UNIX_OFFSET_SECONDS_LEAP;
 
 	return civil_time_from(civil_seconds, subseconds);
 }

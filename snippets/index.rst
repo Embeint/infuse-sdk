@@ -1,7 +1,7 @@
 .. _built-in-snippets:
 
-EIS snippets
-############
+Infuse IoT snippets
+###################
 
 .. toctree::
    :maxdepth: 1

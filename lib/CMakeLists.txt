@@ -1,7 +1,7 @@
-# EIS libraries compilation
+# Infuse IoT libraries compilation
 
-zephyr_sources_ifdef(CONFIG_EIS_SDK identifiers.c)
+zephyr_sources_ifdef(CONFIG_INFUSE_SDK identifiers.c)
 
-zephyr_sources_ifdef(CONFIG_EIS_CIVIL_TIME time/civil.c)
+zephyr_sources_ifdef(CONFIG_INFUSE_CIVIL_TIME time/civil.c)
 
 add_subdirectory_ifdef(CONFIG_CRYPTO_ASCON crypto/ascon)

@@ -51,7 +51,7 @@ struct epacket_usb_frame {
 	/* AEAD encryption nonce (IV) */
 	union {
 		struct {
-			/* EIS unique device ID:
+			/* Infuse IoT unique device ID:
 			 *   Transmitting device for network key encryption
 			 *   Source/destination device for device key encryption
 			 */

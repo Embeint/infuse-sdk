@@ -74,7 +74,7 @@ int epacket_serial_encrypt(struct net_buf *buf)
 			},
 		.nonce =
 			{
-				.device_id = eis_device_id(),
+				.device_id = infuse_device_id(),
 				.gps_time = civil_time,
 				.entropy = entropy,
 			},
@@ -122,7 +122,7 @@ int epacket_serial_decrypt(struct net_buf *buf)
 
 	if (frame->associated_data.flags & EPACKET_FLAGS_ENCRYPTION_DEVICE) {
 		/* Validate packet is for us */
-		if (frame->nonce.device_id != eis_device_id()) {
+		if (frame->nonce.device_id != infuse_device_id()) {
 			/* Add frame header back to packet */
 			net_buf_push(buf, sizeof(struct epacket_usb_frame));
 			return -1;

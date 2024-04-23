@@ -1,4 +1,4 @@
-name: eis
+name: infuse
 
 boards:
   nrf52840dk_nrf52840:

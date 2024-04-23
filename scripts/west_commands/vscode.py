@@ -27,7 +27,7 @@ settings = {
     "editor.trimAutoWhitespace": True,
     "editor.formatOnSave": True,
     "editor.defaultFormatter": "ms-vscode.cpptools",
-    "C_Cpp.clang_format_style": "file:${workspaceFolder}/embeint-sdk/.clang-format",
+    "C_Cpp.clang_format_style": "file:${workspaceFolder}/infuse-sdk/.clang-format",
     "[cmake]": {
         "editor.insertSpaces": True,
         "editor.tabSize": 2,
@@ -177,7 +177,7 @@ class vscode(WestCommand):
         vscode_folder.mkdir(exist_ok=True)
 
         if args.dir is None:
-            log.inf(f"Writing `settings.json`, `extensions.json` and `eis.code-snippets` to {vscode_folder}")
+            log.inf(f"Writing `settings.json`, `extensions.json` and `infuse.code-snippets` to {vscode_folder}")
 
             settings['python.defaultInterpreterPath'] = shutil.which('python3')
             file_snippets['new_file_c']['body'] = c_source_header().splitlines()
@@ -187,7 +187,7 @@ class vscode(WestCommand):
                 json.dump(settings, f, indent=4)
             with (vscode_folder / 'extensions.json').open('w') as f:
                 json.dump(recommended_extensions, f, indent=4)
-            with (vscode_folder / 'eis.code-snippets').open('w') as f:
+            with (vscode_folder / 'infuse.code-snippets').open('w') as f:
                 json.dump(file_snippets, f, indent=4)
         else:
             dir = pathlib.Path(args.dir).absolute().resolve()

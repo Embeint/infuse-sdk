@@ -15,7 +15,7 @@ jobs:
       uses: actions/checkout@v4
       with:
         ref: ${{ github.event.pull_request.head.sha }}
-        path: embeint-sdk
+        path: infuse-sdk
         fetch-depth: 0
 
     - name: cache-pip
@@ -32,7 +32,7 @@ jobs:
         pip3 install west
 
     - name: west setup
-      working-directory: embeint-sdk
+      working-directory: infuse-sdk
       env:
         GITHUB_TOKEN: ${{ github.token }}
         BASE_REF: ${{ github.base_ref }}
@@ -50,7 +50,7 @@ jobs:
         GIT_SSH_COMMAND="ssh -v"; west update -o=--depth=1 -n 2>&1 1> west.update.log || west update -o=--depth=1 -n 2>&1 1> west.update2.log
 
     - name: Run Compliance Tests
-      working-directory: embeint-sdk
+      working-directory: infuse-sdk
       continue-on-error: true
       id: compliance
       env:
@@ -63,7 +63,7 @@ jobs:
         $ZEPHYR_BASE/scripts/ci/check_compliance.py --annotate -e KconfigBasic -c origin/${BASE_REF}..
 
     - name: check-warns
-      working-directory: embeint-sdk
+      working-directory: infuse-sdk
       run: |
         export ZEPHYR_BASE=$PWD/../zephyr
         if [[ ! -s "compliance.xml" ]]; then

@@ -5,12 +5,12 @@ project(Zephyr-Kernel-Doc LANGUAGES)
 
 set(MIN_WEST_VERSION 1.0.0)
 file(TO_CMAKE_PATH "${CMAKE_CURRENT_LIST_DIR}/../../zephyr" ZEPHYR_BASE)
-file(TO_CMAKE_PATH "${CMAKE_CURRENT_LIST_DIR}/../" EIS_BASE)
+file(TO_CMAKE_PATH "${CMAKE_CURRENT_LIST_DIR}/../" INFUSE_BASE)
 
 find_package(Zephyr REQUIRED HINTS ${ZEPHYR_BASE} .. COMPONENTS doc)
 
 message(STATUS "Zephyr base: ${ZEPHYR_BASE}")
-message(STATUS "   EIS base: ${EIS_BASE}")
+message(STATUS "Infuse base: ${INFUSE_BASE}")
 
 #-------------------------------------------------------------------------------
 # Options
@@ -20,7 +20,7 @@ set(SPHINXOPTS_EXTRA "" CACHE STRING "Extra Sphinx Options (added to defaults)")
 set(LATEXMKOPTS "-halt-on-error -no-shell-escape" CACHE STRING "Default latexmk options")
 set(DT_TURBO_MODE OFF CACHE BOOL "Enable DT turbo mode")
 set(DOC_TAG "development" CACHE STRING "Documentation tag")
-set(DTS_ROOTS "${ZEPHYR_BASE} ${EIS_BASE}" CACHE STRING "DT bindings root folders")
+set(DTS_ROOTS "${ZEPHYR_BASE} ${INFUSE_BASE}" CACHE STRING "DT bindings root folders")
 
 separate_arguments(SPHINXOPTS)
 separate_arguments(SPHINXOPTS_EXTRA)
@@ -82,8 +82,8 @@ endfunction()
 # Doxygen (standalone)
 
 set(DOXY_OUT ${CMAKE_CURRENT_BINARY_DIR}/doxygen)
-set(DOXYFILE_IN ${CMAKE_CURRENT_LIST_DIR}/eis.doxyfile.in)
-set(DOXYFILE_OUT ${CMAKE_CURRENT_BINARY_DIR}/eis.doxyfile)
+set(DOXYFILE_IN ${CMAKE_CURRENT_LIST_DIR}/infuse.doxyfile.in)
+set(DOXYFILE_OUT ${CMAKE_CURRENT_BINARY_DIR}/infuse.doxyfile)
 set(ZEPHYR_VERSION "${Zephyr_VERSION}")
 
 configure_file(${DOXYFILE_IN} ${DOXYFILE_OUT} @ONLY)

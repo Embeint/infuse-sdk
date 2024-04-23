@@ -1,4 +1,4 @@
-# The west manifest file for the Embeint SDK.
+# The west manifest file for the Infuse SDK.
 
 manifest:
   defaults:
@@ -27,5 +27,5 @@ manifest:
       import: true
 
   self:
-    path: embeint-sdk
+    path: infuse-sdk
     west-commands: scripts/west-commands.yml

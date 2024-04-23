@@ -1,6 +1,6 @@
 /**
  * @file
- * @brief EIS device identifiers
+ * @brief Infuse IoT device identifiers
  * @copyright 2024 Embeint Pty Ltd
  * @author Jordan Yates <jordan@embeint.com>
  *
@@ -17,8 +17,8 @@ extern "C" {
 #endif
 
 /**
- * @brief EIS identifier API
- * @defgroup eis_identifier_apis EIS identifier APIs
+ * @brief Infuse IoT identifier API
+ * @defgroup infuse_identifier_apis Infuse IoT identifier APIs
  * @{
  */
 
@@ -27,7 +27,7 @@ extern "C" {
  *
  * @return uint32_t local device ID
  */
-uint32_t eis_device_id(void);
+uint32_t infuse_device_id(void);
 
 /**
  * @}

@@ -1,22 +1,22 @@
 ..
-    EIS Project documentation main file
+    Infuse IoT SDK documentation main file
 
 .. _zephyr-home:
 
-EIS Project Documentation
+Infuse IoT SDK Documentation
 ############################
 
 .. only:: release
 
-   Welcome to the EIS Project's documentation for version |version|.
+   Welcome to the Infuse IoT SDK's documentation for version |version|.
 
 .. only:: (development or daily)
 
-   **Welcome to the EIS Project's documentation
+   **Welcome to the Infuse IoT SDK's documentation
    for the main tree under development** (version |version|).
 
 Use the version selection menu on the left to view
-documentation for a specific version of EIS.
+documentation for a specific version of the SDK.
 
 .. toctree::
    :maxdepth: 1
