@@ -15,8 +15,8 @@
  * For more details see https://ascon.iaik.tugraz.at/
  */
 
-#ifndef EMBEINT_SDK_INCLUDE_EIS_CRYPTO_ASCON_H_
-#define EMBEINT_SDK_INCLUDE_EIS_CRYPTO_ASCON_H_
+#ifndef INFUSE_SDK_INCLUDE_INFUSE_CRYPTO_ASCON_H_
+#define INFUSE_SDK_INCLUDE_INFUSE_CRYPTO_ASCON_H_
 
 #ifdef __cplusplus
 extern "C" {
@@ -153,4 +153,4 @@ int ascon80pq_aead_decrypt(unsigned char *m, unsigned long long *mlen, const uns
 }
 #endif
 
-#endif /* EMBEINT_SDK_INCLUDE_EIS_CRYPTO_ASCON_H_ */
+#endif /* INFUSE_SDK_INCLUDE_INFUSE_CRYPTO_ASCON_H_ */

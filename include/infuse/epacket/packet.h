@@ -10,8 +10,8 @@
  * Structures for ePacket packets
  */
 
-#ifndef EMBEINT_SDK_INCLUDE_EIS_EPACKET_PACKET_H_
-#define EMBEINT_SDK_INCLUDE_EIS_EPACKET_PACKET_H_
+#ifndef INFUSE_SDK_INCLUDE_INFUSE_EPACKET_PACKET_H_
+#define INFUSE_SDK_INCLUDE_INFUSE_EPACKET_PACKET_H_
 
 #include <stdint.h>
 
@@ -128,4 +128,4 @@ static inline void epacket_set_tx_metadata(struct net_buf *buf, enum epacket_aut
 }
 #endif
 
-#endif /* EMBEINT_SDK_INCLUDE_EIS_EPACKET_PACKET_H_ */
+#endif /* INFUSE_SDK_INCLUDE_INFUSE_EPACKET_PACKET_H_ */

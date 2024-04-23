@@ -7,8 +7,8 @@
  * SPDX-License-Identifier: LicenseRef-Embeint
  */
 
-#ifndef EMBEINT_SDK_INCLUDE_EIS_KV_DEFINITIONS_H_
-#define EMBEINT_SDK_INCLUDE_EIS_KV_DEFINITIONS_H_
+#ifndef INFUSE_SDK_INCLUDE_INFUSE_KV_DEFINITIONS_H_
+#define INFUSE_SDK_INCLUDE_INFUSE_KV_DEFINITIONS_H_
 
 #include <stdint.h>
 
@@ -156,4 +156,4 @@ enum kv_builtin_size {
 }
 #endif
 
-#endif /* EMBEINT_SDK_INCLUDE_EIS_KV_DEFINITIONS_H_ */
+#endif /* INFUSE_SDK_INCLUDE_INFUSE_KV_DEFINITIONS_H_ */
