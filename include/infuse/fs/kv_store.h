@@ -57,8 +57,9 @@ bool kv_store_key_enabled(uint16_t key);
  *
  * @param key Key to delete
  *
- * @retval 0 if key was deleted or didn't exist
+ * @retval 0 if key was deleted
  * @retval -EACCES if key is not enabled
+ * @retval -ENOENT if key does not exist
  */
 ssize_t kv_store_delete(uint16_t key);
 
