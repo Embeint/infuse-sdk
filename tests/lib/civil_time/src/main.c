@@ -9,7 +9,7 @@
 #include <zephyr/ztest.h>
 #include <zephyr/kernel.h>
 
-#include <eis/time/civil.h>
+#include <infuse/time/civil.h>
 
 static void validate_unix_conversions(uint64_t gps_time, uint64_t unix_time, uint16_t subseconds)
 {

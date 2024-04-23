@@ -8,7 +8,7 @@
 
 #include <zephyr/sys/timeutil.h>
 
-#include <eis/time/civil.h>
+#include <infuse/time/civil.h>
 
 #define JAN_01_01_2020 (1261872018ULL * EIS_CIVIL_TIME_TICKS_PER_SEC)
 

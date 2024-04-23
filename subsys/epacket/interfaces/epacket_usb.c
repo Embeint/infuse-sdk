@@ -11,9 +11,9 @@
 #include <zephyr/drivers/uart.h>
 #include <zephyr/sys/byteorder.h>
 
-#include <eis/epacket/interface.h>
-#include <eis/epacket/packet.h>
-#include <eis/epacket/interface/epacket_usb.h>
+#include <infuse/epacket/interface.h>
+#include <infuse/epacket/packet.h>
+#include <infuse/epacket/interface/epacket_usb.h>
 
 #include "epacket_internal.h"
 

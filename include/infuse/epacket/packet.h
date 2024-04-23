@@ -18,7 +18,7 @@
 #include <zephyr/toolchain.h>
 #include <zephyr/net/buf.h>
 
-#include <eis/epacket/interface.h>
+#include <infuse/epacket/interface.h>
 
 #ifdef __cplusplus
 extern "C" {

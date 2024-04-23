@@ -6,7 +6,7 @@
  * SPDX-License-Identifier: LicenseRef-Embeint
  */
 
-#include <eis/identifiers.h>
+#include <infuse/identifiers.h>
 
 uint32_t eis_device_id(void)
 {

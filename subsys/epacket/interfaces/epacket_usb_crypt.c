@@ -15,11 +15,11 @@
 
 #include <psa/crypto.h>
 
-#include <eis/identifiers.h>
-#include <eis/time/civil.h>
-#include <eis/epacket/packet.h>
-#include <eis/epacket/keys.h>
-#include <eis/epacket/interface/epacket_usb.h>
+#include <infuse/identifiers.h>
+#include <infuse/time/civil.h>
+#include <infuse/epacket/packet.h>
+#include <infuse/epacket/keys.h>
+#include <infuse/epacket/interface/epacket_usb.h>
 
 #include "epacket_internal.h"
 

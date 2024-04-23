@@ -16,7 +16,7 @@
 #include <psa/crypto.h>
 #include <psa/crypto_extra.h>
 
-#include <eis/crypto/ascon.h>
+#include <infuse/crypto/ascon.h>
 
 LOG_MODULE_REGISTER(app, LOG_LEVEL_INF);
 

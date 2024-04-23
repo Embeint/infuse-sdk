@@ -12,7 +12,7 @@
 #include <zephyr/kernel.h>
 #include <zephyr/random/random.h>
 
-#include <eis/epacket/keys.h>
+#include <infuse/epacket/keys.h>
 
 #define KEY_SIZE 32
 

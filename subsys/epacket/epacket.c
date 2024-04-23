@@ -10,8 +10,8 @@
 #include <zephyr/logging/log.h>
 #include <zephyr/net/buf.h>
 
-#include <eis/epacket/packet.h>
-#include <eis/epacket/interface.h>
+#include <infuse/epacket/packet.h>
+#include <infuse/epacket/interface.h>
 
 #include "interfaces/epacket_internal.h"
 

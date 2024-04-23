@@ -12,8 +12,8 @@
 #include <zephyr/kernel.h>
 #include <zephyr/random/random.h>
 
-#include <eis/tdf/tdf.h>
-#include <eis/time/civil.h>
+#include <infuse/tdf/tdf.h>
+#include <infuse/time/civil.h>
 
 struct tdf_test_case {
 	struct tdf_parsed p;
