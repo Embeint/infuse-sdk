@@ -58,7 +58,7 @@ ZTEST(kv_store, test_basic_operation)
 	rc = kv_store_read(KV_KEY_REBOOTS, &reboots, sizeof(reboots));
 	zassert_equal(-ENOENT, rc);
 	rc = kv_store_delete(KV_KEY_REBOOTS);
-	zassert_equal(0, rc);
+	zassert_equal(-ENOENT, rc);
 
 	/* Basic write, write duplicate, write new sequence */
 	reboots.count = 10;

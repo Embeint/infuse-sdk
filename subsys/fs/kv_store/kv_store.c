@@ -90,6 +90,11 @@ ssize_t kv_store_delete(uint16_t key)
 	}
 	LOG_DBG("Erasing %04x", key);
 
+	/* Check if value exists */
+	if (nvs_read(&fs, key, NULL, 0) == -ENOENT) {
+		return -ENOENT;
+	}
+
 	/* Delete from NVS */
 	return nvs_delete(&fs, key);
 }
