@@ -43,13 +43,70 @@ class cloudgen(WestCommand):
         self.tdfgen()
 
     def tdfgen(self):
-        template = self.env.get_template('tdf_definitions.h.jinja')
         tdf_def_file = self.template_dir / 'tdf.json'
-        output_file = self.eis_root_dir / 'include' / 'eis' / 'tdf' / 'definitions.h'
+        tdf_template = self.env.get_template('tdf_definitions.h.jinja')
+        tdf_output = self.eis_root_dir / 'include' / 'eis' / 'tdf' / 'definitions.h'
+
+        kv_def_file = self.template_dir / 'kv_store.json'
+        kv_defs_template = self.env.get_template('kv_types.h.jinja')
+        kv_defs_output = self.eis_root_dir / 'include' / 'eis' / 'fs' / 'kv_types.h'
+
+        kv_kconfig_template = self.env.get_template('Kconfig.keys.jinja')
+        kv_kconfig_output = self.eis_root_dir / 'subsys' / 'fs' / 'kv_store' / 'Kconfig.keys'
+
+        kv_keys_template = self.env.get_template('kv_keys.c.jinja')
+        kv_keys_output = self.eis_root_dir / 'subsys' / 'fs' / 'kv_store' / 'kv_keys.c'
 
         with tdf_def_file.open('r') as f:
             tdf_defs = json.load(f)
 
-        with output_file.open('w') as f:
-            f.write(template.render(structs=tdf_defs['structs'], definitions=tdf_defs['definitions']))
+        with tdf_output.open('w') as f:
+            f.write(tdf_template.render(structs=tdf_defs['structs'], definitions=tdf_defs['definitions']))
+            f.write(os.linesep)
+
+        with kv_def_file.open('r') as f:
+            kv_defs = json.load(f)
+
+        with kv_kconfig_output.open('w') as f:
+            f.write(kv_kconfig_template.render(definitions=kv_defs['definitions']))
+
+        with kv_keys_output.open('w') as f:
+            for d in kv_defs['definitions']:
+                flags = []
+                if d.get('reflect', False):
+                    flags.append('KV_FLAGS_REFLECT')
+                if d.get('readback_protection', False):
+                    flags.append('KV_FLAGS_WRITE_ONLY')
+                if len(flags) > 0:
+                    d['flags'] = ' | '.join(flags)
+                else:
+                    d['flags'] = 0
+            f.write(kv_keys_template.render(definitions=kv_defs['definitions']))
+            f.write(os.linesep)
+
+        with kv_defs_output.open('w') as f:
+            # Simplify template logic for array postfix
+            def array_postfix(d, field):
+                field['array'] = ''
+                if 'num' in field:
+                    if field['num'] == 0:
+                        field['array'] = '[]'
+                        d['flexible'] = True
+                    else:
+                        field['array'] = f"[{field['num']}]"
+
+            for d in kv_defs['structs'].values():
+                for field in d['fields']:
+                    array_postfix(d, field)
+            for d in kv_defs['definitions']:
+                for field in d['fields']:
+                    array_postfix(d, field)
+                    # If contained struct is flexible, so is this struct
+                    if field['type'].startswith('struct '):
+                        s = field['type'].removeprefix('struct ')
+                        if kv_defs['structs'][s].get('flexible', False):
+                            field['flexible'] = s
+                            d['flexible'] = True
+
+            f.write(kv_defs_template.render(structs=kv_defs['structs'], definitions=kv_defs['definitions']))
             f.write(os.linesep)
