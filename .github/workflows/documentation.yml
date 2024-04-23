@@ -92,7 +92,7 @@ jobs:
       uses: actions/cache@v4
       with:
         path: ~/.cache/pip
-        key: pip-${{ hashFiles('doc/requirements.txt') }}
+        key: pip-${{ hashFiles('embeint-sdk/doc/requirements.txt') }}
 
     - name: install-pip
       working-directory: embeint-sdk
