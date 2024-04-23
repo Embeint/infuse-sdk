@@ -1,2 +1,3 @@
 rsource "epacket/Kconfig"
 rsource "tdf/Kconfig"
+rsource "fs/Kconfig"

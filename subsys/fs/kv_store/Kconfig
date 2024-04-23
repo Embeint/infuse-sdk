@@ -1,0 +1,16 @@
+# Embedded Intelligence SDK key-value store
+
+config KV_STORE
+	bool "EIS key-value storage"
+	depends on NVS
+	depends on FLASH_MAP
+
+if KV_STORE
+
+module = KV_STORE
+module-str = key-value store
+source "subsys/logging/Kconfig.template.log_config"
+
+rsource "Kconfig.keys"
+
+endif # KV_STORE
