@@ -37,20 +37,20 @@ jobs:
       - name: Clone cached Embeint SDK repository
         continue-on-error: true
         run: |
-          git clone --shared /github/cache/embeint/embeint-sdk embeint-sdk
-          cd embeint-sdk
+          git clone --shared /github/cache/embeint/infuse-sdk infuse-sdk
+          cd infuse-sdk
           git remote set-url origin ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}
 
       - name: Checkout
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha }}
-          path: embeint-sdk
+          path: infuse-sdk
           fetch-depth: 0
           persist-credentials: false
 
       - name: Environment Setup
-        working-directory: embeint-sdk
+        working-directory: infuse-sdk
         run: |
           if [ "${{github.event_name}}" = "pull_request" ]; then
             git config --global user.email "ci@embeint.com"
@@ -81,22 +81,22 @@ jobs:
         name: Run Unit Tests with Twister (Pull Request)
         run: |
           export ZEPHYR_BASE=${PWD}/zephyr
-          $ZEPHYR_BASE/scripts/twister ${TWISTER_COMMON} ${UNIT_TESTING} -T embeint-sdk
+          $ZEPHYR_BASE/scripts/twister ${TWISTER_COMMON} ${UNIT_TESTING} -T infuse-sdk
 
       - if: github.event_name == 'pull_request'
         name: Run Tests with Twister (Pull Request)
         run: |
           export ZEPHYR_BASE=${PWD}/zephyr
-          $ZEPHYR_BASE/scripts/twister ${TWISTER_COMMON} ${VENDOR_FILTER} ${PR_OPTIONS} -T embeint-sdk
+          $ZEPHYR_BASE/scripts/twister ${TWISTER_COMMON} ${VENDOR_FILTER} ${PR_OPTIONS} -T infuse-sdk
 
       - if: github.event_name == 'schedule'
         name: Run Unit Tests with Twister (Daily)
         run: |
           export ZEPHYR_BASE=${PWD}/zephyr
-          $ZEPHYR_BASE/scripts/twister ${TWISTER_COMMON} ${UNIT_TESTING} -T embeint-sdk
+          $ZEPHYR_BASE/scripts/twister ${TWISTER_COMMON} ${UNIT_TESTING} -T infuse-sdk
 
       - if: github.event_name == 'schedule'
         name: Run Tests with Twister (Daily)
         run: |
           export ZEPHYR_BASE=${PWD}/zephyr
-          $ZEPHYR_BASE/scripts/twister ${TWISTER_COMMON} ${VENDOR_FILTER} ${DAILY_OPTIONS} -T embeint-sdk
+          $ZEPHYR_BASE/scripts/twister ${TWISTER_COMMON} ${VENDOR_FILTER} ${DAILY_OPTIONS} -T infuse-sdk

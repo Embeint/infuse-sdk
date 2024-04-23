@@ -1,6 +1,6 @@
 /**
  * @file
- * @brief EIS wrapper for ASCON encryption library
+ * @brief Infuse wrapper for ASCON encryption library
  * @copyright 2024 Embeint Pty Ltd
  * @author Jordan Yates <jordan@embeint.com>
  *

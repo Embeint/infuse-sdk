@@ -1,6 +1,6 @@
-# EIS libraries
+# Infuse IoT libraries
 
-config EIS_CIVIL_TIME
-	bool "EIS civil time library"
+config INFUSE_CIVIL_TIME
+	bool "Infuse IoT civil time library"
 
 rsource "crypto/Kconfig"

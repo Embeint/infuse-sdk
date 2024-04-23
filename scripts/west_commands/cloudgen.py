@@ -19,7 +19,7 @@ class cloudgen(WestCommand):
         super().__init__(
             'cloudgen',
             # Keep this in sync with the string in west-commands.yml.
-            'generate files from EIS cloud definitions',
+            'generate files from Infuse IoT cloud definitions',
             EXPORT_DESCRIPTION,
             accepts_unknown_args=False)
 
@@ -33,7 +33,7 @@ class cloudgen(WestCommand):
 
     def do_run(self, args, unknown_args):
         self.template_dir = pathlib.Path(__file__).parent / 'templates'
-        self.eis_root_dir = pathlib.Path(__file__).parent.parent.parent
+        self.infuse_root_dir = pathlib.Path(__file__).parent.parent.parent
         self.env = Environment(
             loader = FileSystemLoader(self.template_dir),
             autoescape=select_autoescape(),
@@ -45,17 +45,17 @@ class cloudgen(WestCommand):
     def tdfgen(self):
         tdf_def_file = self.template_dir / 'tdf.json'
         tdf_template = self.env.get_template('tdf_definitions.h.jinja')
-        tdf_output = self.eis_root_dir / 'include' / 'eis' / 'tdf' / 'definitions.h'
+        tdf_output = self.infuse_root_dir / 'include' / 'infuse' / 'tdf' / 'definitions.h'
 
         kv_def_file = self.template_dir / 'kv_store.json'
         kv_defs_template = self.env.get_template('kv_types.h.jinja')
-        kv_defs_output = self.eis_root_dir / 'include' / 'eis' / 'fs' / 'kv_types.h'
+        kv_defs_output = self.infuse_root_dir / 'include' / 'infuse' / 'fs' / 'kv_types.h'
 
         kv_kconfig_template = self.env.get_template('Kconfig.keys.jinja')
-        kv_kconfig_output = self.eis_root_dir / 'subsys' / 'fs' / 'kv_store' / 'Kconfig.keys'
+        kv_kconfig_output = self.infuse_root_dir / 'subsys' / 'fs' / 'kv_store' / 'Kconfig.keys'
 
         kv_keys_template = self.env.get_template('kv_keys.c.jinja')
-        kv_keys_output = self.eis_root_dir / 'subsys' / 'fs' / 'kv_store' / 'kv_keys.c'
+        kv_keys_output = self.infuse_root_dir / 'subsys' / 'fs' / 'kv_store' / 'kv_keys.c'
 
         with tdf_def_file.open('r') as f:
             tdf_defs = json.load(f)

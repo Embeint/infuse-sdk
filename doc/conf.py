@@ -9,7 +9,7 @@ import re
 from sphinx.cmd.build import get_parser
 
 args = get_parser().parse_args()
-EIS_BASE = (Path(__file__).parents[1]).resolve()
+INFUSE_BASE = (Path(__file__).parents[1]).resolve()
 ZEPHYR_BASE = (Path(__file__).parents[2] / 'zephyr').resolve()
 ZEPHYR_BUILD = Path(args.outputdir).resolve()
 
@@ -40,7 +40,7 @@ copyright = "2015-2024 Zephyr Project members and individual contributors"
 author = "The Zephyr Project Contributors"
 
 # parse version from 'VERSION' file
-with open(EIS_BASE / "VERSION") as f:
+with open(INFUSE_BASE / "VERSION") as f:
     m = re.match(
         (
             r"^VERSION_MAJOR\s*=\s*(\d+)$\n"
@@ -159,10 +159,10 @@ html_theme_options = {
     "prev_next_buttons_location": None
 }
 html_baseurl = "https://docs.zephyrproject.org/latest/"
-html_title = "EIS Project Documentation"
-html_logo = str(EIS_BASE / "doc" / "_static" / "images" / "logo-dark.svg")
-html_favicon = str(EIS_BASE / "doc" / "_static" / "images" / "favicon.png")
-html_static_path = [str(EIS_BASE / "doc" / "_static")]
+html_title = "Infuse IoT SDK Documentation"
+html_logo = str(INFUSE_BASE / "doc" / "_static" / "images" / "logo-dark.svg")
+html_favicon = str(INFUSE_BASE / "doc" / "_static" / "images" / "favicon.png")
+html_static_path = [str(INFUSE_BASE / "doc" / "_static")]
 html_last_updated_fmt = "%b %d, %Y"
 html_domain_indices = False
 html_split_index = True
@@ -201,10 +201,10 @@ html_context = {
 # -- Options for zephyr.doxyrunner plugin ---------------------------------
 
 doxyrunner_doxygen = os.environ.get("DOXYGEN_EXECUTABLE", "doxygen")
-doxyrunner_doxyfile = EIS_BASE / "doc" / "eis.doxyfile.in"
+doxyrunner_doxyfile = INFUSE_BASE / "doc" / "infuse.doxyfile.in"
 doxyrunner_outdir = ZEPHYR_BUILD / "doxygen"
 doxyrunner_fmt = True
-doxyrunner_fmt_vars = {"ZEPHYR_BASE": str(ZEPHYR_BASE), "EIS_BASE": str(EIS_BASE), "ZEPHYR_VERSION": version}
+doxyrunner_fmt_vars = {"ZEPHYR_BASE": str(ZEPHYR_BASE), "INFUSE_BASE": str(INFUSE_BASE), "ZEPHYR_VERSION": version}
 doxyrunner_outdir_var = "DOXY_OUT"
 
 # -- Options for Breathe plugin -------------------------------------------
@@ -240,8 +240,8 @@ warnings_filter_config = str(ZEPHYR_BASE / "doc" / "known-warnings.txt")
 
 # -- Options for zephyr.link-roles ----------------------------------------
 
-link_roles_manifest_project = "embeint-sdk"
-link_roles_manifest_baseurl = "https://github.com/Embeint/embeint-sdk"
+link_roles_manifest_project = "infuse-sdk"
+link_roles_manifest_baseurl = "https://github.com/Embeint/infuse-sdk"
 
 # -- Options for notfound.extension ---------------------------------------
 
@@ -250,7 +250,7 @@ notfound_urls_prefix = f"/{version}/" if is_release else "/latest/"
 # -- Options for zephyr.gh_utils ------------------------------------------
 
 gh_link_version = f"v{version}" if is_release else "main"
-gh_link_base_url = f"https://github.com/Embeint/embeint-sdk"
+gh_link_base_url = f"https://github.com/Embeint/infuse-sdk"
 gh_link_prefixes = {
     "samples/.*": "",
     "boards/.*": "",
@@ -266,19 +266,19 @@ gh_link_exclude = [
 # -- Options for zephyr.kconfig -------------------------------------------
 
 kconfig_generate_db = True
-kconfig_ext_paths = [EIS_BASE, ZEPHYR_BASE]
+kconfig_ext_paths = [INFUSE_BASE, ZEPHYR_BASE]
 
 # -- Options for zephyr.external_content ----------------------------------
 
 external_content_contents = [
-    (EIS_BASE / "doc", "[!_]*"),
-    (EIS_BASE, "boards/**/*.rst"),
-    (EIS_BASE, "boards/**/doc"),
-    (EIS_BASE, "samples/**/*.html"),
-    (EIS_BASE, "samples/**/*.rst"),
-    (EIS_BASE, "samples/**/doc"),
-    (EIS_BASE, "snippets/**/*.rst"),
-    (EIS_BASE, "snippets/**/doc"),
+    (INFUSE_BASE / "doc", "[!_]*"),
+    (INFUSE_BASE, "boards/**/*.rst"),
+    (INFUSE_BASE, "boards/**/doc"),
+    (INFUSE_BASE, "samples/**/*.html"),
+    (INFUSE_BASE, "samples/**/*.rst"),
+    (INFUSE_BASE, "samples/**/doc"),
+    (INFUSE_BASE, "snippets/**/*.rst"),
+    (INFUSE_BASE, "snippets/**/doc"),
 ]
 external_content_keep = [
     "reference/kconfig/*",

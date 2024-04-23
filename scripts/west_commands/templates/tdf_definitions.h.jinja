@@ -55,7 +55,7 @@ struct tdf_{{ info['name'] | lower }} {
 } __packed;
 
 {% endfor %}
-/* EIS builtin TDF definitions */
+/* Infuse IoT builtin TDF definitions */
 enum tdf_builtin_id {
 {% for id, info in definitions.items() %}
 	TDF_{{ info['name'] | upper }} = {{ id }},

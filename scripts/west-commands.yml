@@ -9,4 +9,4 @@ west-commands:
     commands:
       - name: cloudgen
         class: cloudgen
-        help: generate files from EIS cloud definitions
+        help: generate files from Infuse IoT cloud definitions

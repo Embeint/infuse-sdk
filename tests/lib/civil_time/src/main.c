@@ -82,11 +82,11 @@ ZTEST(civil_time, test_local_time_conversion)
 	zassert_equal(0, rc, "Set reference instant failed");
 
 	/* Validate different local device times */
-	zassert_equal((0 * EIS_CIVIL_TIME_TICKS_PER_SEC) + 1000,
+	zassert_equal((0 * INFUSE_CIVIL_TIME_TICKS_PER_SEC) + 1000,
 		      civil_time_from_ticks(0 * CONFIG_SYS_CLOCK_TICKS_PER_SEC), "");
-	zassert_equal((1 * EIS_CIVIL_TIME_TICKS_PER_SEC) + 1000,
+	zassert_equal((1 * INFUSE_CIVIL_TIME_TICKS_PER_SEC) + 1000,
 		      civil_time_from_ticks(1 * CONFIG_SYS_CLOCK_TICKS_PER_SEC), "");
-	zassert_equal((2 * EIS_CIVIL_TIME_TICKS_PER_SEC) + 1000,
+	zassert_equal((2 * INFUSE_CIVIL_TIME_TICKS_PER_SEC) + 1000,
 		      civil_time_from_ticks(2 * CONFIG_SYS_CLOCK_TICKS_PER_SEC), "");
 }
 

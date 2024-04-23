@@ -1,6 +1,6 @@
 # Embedded Intelligence SDK core defaults
 
-if EIS_SDK
+if INFUSE_SDK
 
 # Picolibc is smaller and more performant
 choice LIBC_IMPLEMENTATION
@@ -21,7 +21,7 @@ configdefault NET_BUF
 configdefault TDF
 	default y
 
-configdefault EIS_CIVIL_TIME
+configdefault INFUSE_CIVIL_TIME
 	default y
 
 # Random numbers
@@ -46,7 +46,7 @@ configdefault NRF_OBERON
 configdefault MBEDTLS_USER_CONFIG_ENABLE
 	default y if NRF_OBERON
 configdefault MBEDTLS_USER_CONFIG_FILE
-	default "eis/crypto/mbedtls/oberon_user_config.h" if NRF_OBERON
+	default "infuse/crypto/mbedtls/oberon_user_config.h" if NRF_OBERON
 # Key derivation
 configdefault MBEDTLS_HKDF_C
 	default y

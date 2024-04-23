@@ -46,23 +46,23 @@ jobs:
       run: |
         rm -rf ./{*,.*}
 
-    - name: Clone cached Embeint SDK repository
+    - name: Clone cached Infuse SDK repository
       continue-on-error: true
       run: |
-        git clone --shared /github/cache/embeint/embeint-sdk embeint-sdk
-        cd embeint-sdk
+        git clone --shared /github/cache/embeint/infuse-sdk infuse-sdk
+        cd infuse-sdk
         git remote set-url origin ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}
 
     - name: Checkout
       uses: actions/checkout@v4
       with:
         ref: ${{ github.event.pull_request.head.sha }}
-        path: embeint-sdk
+        path: infuse-sdk
         fetch-depth: 0
         persist-credentials: false
 
     - name: Environment Setup
-      working-directory: embeint-sdk
+      working-directory: infuse-sdk
       run: |
         if [ "${{github.event_name}}" = "pull_request" ]; then
           git config --global user.email "ci@embeint.com"
@@ -92,10 +92,10 @@ jobs:
       uses: actions/cache@v4
       with:
         path: ~/.cache/pip
-        key: pip-${{ hashFiles('embeint-sdk/doc/requirements.txt') }}
+        key: pip-${{ hashFiles('infuse-sdk/doc/requirements.txt') }}
 
     - name: install-pip
-      working-directory: embeint-sdk
+      working-directory: infuse-sdk
       run: |
         sudo pip3 install -U setuptools wheel pip
         pip3 install -r doc/requirements.txt
@@ -104,7 +104,7 @@ jobs:
         pip3 install coverxygen
 
     - name: build-docs
-      working-directory: embeint-sdk
+      working-directory: infuse-sdk
       shell: bash
       run: |
         if [[ "$GITHUB_REF" =~ "refs/tags/v" ]]; then

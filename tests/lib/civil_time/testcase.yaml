@@ -3,6 +3,6 @@ tests:
     integration_platforms:
       - native_sim
       - qemu_cortex_m3
-    tags: eis
+    tags: infuse
     min_flash: 64
     min_ram: 32

@@ -4,4 +4,4 @@ build:
     dts_root: .
     snippet_root: .
   cmake: .
-  kconfig: Kconfig.eis
+  kconfig: Kconfig.infuse

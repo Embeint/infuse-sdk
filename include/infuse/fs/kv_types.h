@@ -111,7 +111,7 @@ struct kv_geofence {
 	} __packed
 /* clang-format on */
 
-/* EIS builtin KV definitions */
+/* Infuse IoT builtin KV definitions */
 enum kv_builtin_id {
 	KV_KEY_REBOOTS = 0,
 	KV_KEY_FIXED_LOCATION = 10,

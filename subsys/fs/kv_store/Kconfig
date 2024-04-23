@@ -1,7 +1,7 @@
 # Embedded Intelligence SDK key-value store
 
 config KV_STORE
-	bool "EIS key-value storage"
+	bool "Infuse IoT key-value storage"
 	depends on NVS
 	depends on FLASH_MAP
 
