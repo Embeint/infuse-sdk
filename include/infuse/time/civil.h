@@ -13,8 +13,8 @@
  * The bottom 16 bits are in units of (1/65536) seconds.
  */
 
-#ifndef EMBEINT_SDK_INCLUDE_EIS_TIME_CIVIL_H_
-#define EMBEINT_SDK_INCLUDE_EIS_TIME_CIVIL_H_
+#ifndef INFUSE_SDK_INCLUDE_INFUSE_TIME_CIVIL_H_
+#define INFUSE_SDK_INCLUDE_INFUSE_TIME_CIVIL_H_
 
 #include <stdint.h>
 
@@ -197,4 +197,4 @@ int civil_time_set_reference(enum civil_time_source source, struct timeutil_sync
 }
 #endif
 
-#endif /* EMBEINT_SDK_INCLUDE_EIS_TIME_CIVIL_H_ */
+#endif /* INFUSE_SDK_INCLUDE_INFUSE_TIME_CIVIL_H_ */

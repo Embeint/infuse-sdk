@@ -10,8 +10,8 @@
  * API for the ePacket interfaces.
  */
 
-#ifndef EMBEINT_SDK_INCLUDE_EIS_EPACKET_INTERFACE_H_
-#define EMBEINT_SDK_INCLUDE_EIS_EPACKET_INTERFACE_H_
+#ifndef INFUSE_SDK_INCLUDE_INFUSE_EPACKET_INTERFACE_H_
+#define INFUSE_SDK_INCLUDE_INFUSE_EPACKET_INTERFACE_H_
 
 #include <zephyr/device.h>
 #include <zephyr/net/buf.h>
@@ -83,4 +83,4 @@ void epacket_raw_receive_handler(struct epacket_receive_metadata *metadata, stru
 }
 #endif
 
-#endif /* EMBEINT_SDK_INCLUDE_EIS_EPACKET_INTERFACE_H_ */
+#endif /* INFUSE_SDK_INCLUDE_INFUSE_EPACKET_INTERFACE_H_ */

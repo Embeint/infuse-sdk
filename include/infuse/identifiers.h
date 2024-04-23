@@ -7,8 +7,8 @@
  * SPDX-License-Identifier: LicenseRef-Embeint
  */
 
-#ifndef EMBEINT_SDK_INCLUDE_EIS_IDENTIFIERS_H_
-#define EMBEINT_SDK_INCLUDE_EIS_IDENTIFIERS_H_
+#ifndef INFUSE_SDK_INCLUDE_INFUSE_IDENTIFIERS_H_
+#define INFUSE_SDK_INCLUDE_INFUSE_IDENTIFIERS_H_
 
 #include <stdint.h>
 
@@ -37,4 +37,4 @@ uint32_t eis_device_id(void);
 }
 #endif
 
-#endif /* EMBEINT_SDK_INCLUDE_EIS_IDENTIFIERS_H_ */
+#endif /* INFUSE_SDK_INCLUDE_INFUSE_IDENTIFIERS_H_ */

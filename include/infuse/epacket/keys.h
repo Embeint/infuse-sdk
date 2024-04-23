@@ -7,8 +7,8 @@
  * SPDX-License-Identifier: LicenseRef-Embeint
  */
 
-#ifndef EMBEINT_SDK_INCLUDE_EIS_EPACKET_KEYS_H_
-#define EMBEINT_SDK_INCLUDE_EIS_EPACKET_KEYS_H_
+#ifndef INFUSE_SDK_INCLUDE_INFUSE_EPACKET_KEYS_H_
+#define INFUSE_SDK_INCLUDE_INFUSE_EPACKET_KEYS_H_
 
 #ifdef __cplusplus
 extern "C" {
@@ -104,4 +104,4 @@ int epacket_key_export(psa_key_id_t key_id, uint8_t key[32]);
 }
 #endif
 
-#endif /* EMBEINT_SDK_INCLUDE_EIS_EPACKET_KEYS_H_ */
+#endif /* INFUSE_SDK_INCLUDE_INFUSE_EPACKET_KEYS_H_ */

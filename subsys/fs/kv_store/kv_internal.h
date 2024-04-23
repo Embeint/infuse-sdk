@@ -7,8 +7,8 @@
  * SPDX-License-Identifier: LicenseRef-Embeint
  */
 
-#ifndef EMBEINT_SDK_SUBSYS_FS_KV_INTERNAL_H_
-#define EMBEINT_SDK_SUBSYS_FS_KV_INTERNAL_H_
+#ifndef INFUSE_SDK_SUBSYS_FS_KV_INTERNAL_H_
+#define INFUSE_SDK_SUBSYS_FS_KV_INTERNAL_H_
 
 #include <stdint.h>
 
@@ -41,4 +41,4 @@ struct key_value_slot_definition *kv_internal_slot_definitions(size_t *num);
 }
 #endif
 
-#endif /* EMBEINT_SDK_SUBSYS_FS_KV_INTERNAL_H_ */
+#endif /* INFUSE_SDK_SUBSYS_FS_KV_INTERNAL_H_ */

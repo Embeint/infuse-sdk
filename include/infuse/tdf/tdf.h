@@ -12,8 +12,8 @@
  *   https://doi.org/10.1007/978-3-319-03071-5_2
  */
 
-#ifndef EMBEINT_SDK_INCLUDE_EIS_TDF_TDF_H_
-#define EMBEINT_SDK_INCLUDE_EIS_TDF_TDF_H_
+#ifndef INFUSE_SDK_INCLUDE_INFUSE_TDF_TDF_H_
+#define INFUSE_SDK_INCLUDE_INFUSE_TDF_TDF_H_
 
 #include <stdint.h>
 
@@ -126,4 +126,4 @@ int tdf_parse(struct tdf_buffer_state *state, struct tdf_parsed *parsed);
 }
 #endif
 
-#endif /* EMBEINT_SDK_INCLUDE_EIS_TDF_TDF_H_ */
+#endif /* INFUSE_SDK_INCLUDE_INFUSE_TDF_TDF_H_ */

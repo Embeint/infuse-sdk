@@ -10,8 +10,8 @@
  * Built on top of Zephyr NVS with the addition of defined types per key
  */
 
-#ifndef EMBEINT_SDK_INCLUDE_EIS_FS_KV_STORE_H_
-#define EMBEINT_SDK_INCLUDE_EIS_FS_KV_STORE_H_
+#ifndef INFUSE_SDK_INCLUDE_INFUSE_FS_KV_STORE_H_
+#define INFUSE_SDK_INCLUDE_INFUSE_FS_KV_STORE_H_
 
 #include <stdint.h>
 #include <sys/types.h>
@@ -131,4 +131,4 @@ ssize_t kv_store_read_fallback(uint16_t key, void *data, size_t max_data_len, co
 }
 #endif
 
-#endif /* EMBEINT_SDK_INCLUDE_EIS_FS_KV_STORE_H_ */
+#endif /* INFUSE_SDK_INCLUDE_INFUSE_FS_KV_STORE_H_ */
