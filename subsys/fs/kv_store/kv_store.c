@@ -16,6 +16,7 @@
 #include "kv_internal.h"
 
 static struct nvs_fs fs;
+static sys_slist_t cb_list;
 
 #define NVS_PARTITION        storage_partition
 #define NVS_PARTITION_ID     FIXED_PARTITION_ID(NVS_PARTITION)
@@ -68,6 +69,11 @@ int kv_store_reset(void)
 	return rc;
 }
 
+void kv_store_register_callback(struct kv_store_cb *cb)
+{
+	sys_slist_append(&cb_list, &cb->node);
+}
+
 bool kv_store_key_enabled(uint16_t key)
 {
 	struct key_value_slot_definition *defs;
@@ -84,6 +90,9 @@ bool kv_store_key_enabled(uint16_t key)
 
 ssize_t kv_store_delete(uint16_t key)
 {
+	struct kv_store_cb *cb;
+	ssize_t rc;
+
 	/* Validate key is enabled */
 	if (!kv_store_key_enabled(key)) {
 		return -EACCES;
@@ -96,11 +105,23 @@ ssize_t kv_store_delete(uint16_t key)
 	}
 
 	/* Delete from NVS */
-	return nvs_delete(&fs, key);
+	rc = nvs_delete(&fs, key);
+	if (rc == 0) {
+		/* Notify interested parties of value deletion */
+		SYS_SLIST_FOR_EACH_CONTAINER(&cb_list, cb, node) {
+			if (cb->value_changed) {
+				cb->value_changed(key, NULL, 0, cb->user_ctx);
+			}
+		}
+	}
+	return rc;
 }
 
 ssize_t kv_store_write(uint16_t key, const void *data, size_t data_len)
 {
+	struct kv_store_cb *cb;
+	ssize_t rc;
+
 	/* Validate key is enabled */
 	if (!kv_store_key_enabled(key)) {
 		return -EACCES;
@@ -108,7 +129,16 @@ ssize_t kv_store_write(uint16_t key, const void *data, size_t data_len)
 	LOG_DBG("Writing to %04x", key);
 
 	/* Write to NVS */
-	return nvs_write(&fs, key, data, data_len);
+	rc = nvs_write(&fs, key, data, data_len);
+	if (rc > 0) {
+		/* Notify interested parties of value changes */
+		SYS_SLIST_FOR_EACH_CONTAINER(&cb_list, cb, node) {
+			if (cb->value_changed) {
+				cb->value_changed(key, data, rc, cb->user_ctx);
+			}
+		}
+	}
+	return rc;
 }
 
 ssize_t kv_store_read(uint16_t key, void *data, size_t max_data_len)
@@ -125,6 +155,7 @@ ssize_t kv_store_read(uint16_t key, void *data, size_t max_data_len)
 
 ssize_t kv_store_read_fallback(uint16_t key, void *data, size_t max_data_len, const void *fallback, size_t fallback_len)
 {
+	struct kv_store_cb *cb;
 	ssize_t rc;
 
 	/* Validate key is enabled */
@@ -140,6 +171,12 @@ ssize_t kv_store_read_fallback(uint16_t key, void *data, size_t max_data_len, co
 		/* Key doesn't exist, write fallback data */
 		rc = nvs_write(&fs, key, fallback, fallback_len);
 		if (rc == fallback_len) {
+			/* Notify interested parties of value write */
+			SYS_SLIST_FOR_EACH_CONTAINER(&cb_list, cb, node) {
+				if (cb->value_changed) {
+					cb->value_changed(key, fallback, fallback_len, cb->user_ctx);
+				}
+			}
 			/* Read data back out */
 			rc = nvs_read(&fs, key, data, max_data_len);
 		}

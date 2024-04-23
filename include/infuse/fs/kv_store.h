@@ -14,7 +14,10 @@
 #define INFUSE_SDK_INCLUDE_INFUSE_FS_KV_STORE_H_
 
 #include <stdint.h>
+#include <stdbool.h>
 #include <sys/types.h>
+
+#include <zephyr/sys/slist.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -25,6 +28,26 @@ extern "C" {
  * @defgroup kv_store_apis kv_store APIs
  * @{
  */
+
+/** @brief KV store callback structure. */
+struct kv_store_cb {
+	/** @brief The value for a key has changed.
+	 *
+	 * This callback notifies the application that the value stored
+	 * for a key has changed or been deleted.
+	 *
+	 * @param key Key that has changed
+	 * @param data Pointer to value, or NULL if deleted
+	 * @param data_len Length of value in bytes
+	 * @param user_ctx User context pointer
+	 */
+	void (*value_changed)(uint16_t key, const void *data, size_t data_len, void *user_ctx);
+
+	/* User provided context pointer */
+	void *user_ctx;
+
+	sys_snode_t node;
+};
 
 /**
  * @brief Initialise key-value storage
@@ -41,6 +64,13 @@ int kv_store_init(void);
  * @retval -errno on failure
  */
 int kv_store_reset(void);
+
+/**
+ * @brief Register to be notified of KV store events
+ *
+ * @param cb Callback struct to register
+ */
+void kv_store_register_callback(struct kv_store_cb *cb);
 
 /**
  * @brief Check whether a given key is valid for reading/writing
