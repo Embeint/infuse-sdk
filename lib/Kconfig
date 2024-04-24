@@ -1,6 +1,16 @@
 # Infuse IoT libraries
 
+config INFUSE_COMMON_BOOT
+	bool "Infuse IoT common boot logic"
+	default y if INFUSE_SDK
+
 config INFUSE_CIVIL_TIME
 	bool "Infuse IoT civil time library"
+
+if INFUSE_SDK
+module = INFUSE_COMMON
+module-str = infuse
+source "subsys/logging/Kconfig.template.log_config"
+endif # INFUSE_SDK
 
 rsource "crypto/Kconfig"
