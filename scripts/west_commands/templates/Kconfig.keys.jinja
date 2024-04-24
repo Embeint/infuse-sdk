@@ -13,6 +13,7 @@ config KV_STORE_{{ info['name'] }}
 
 config KV_STORE_{{ info['name'] }}_RANGE
 	int "Number of {{ info['name'] }} slots to enable"
+	depends on KV_STORE_{{ info['name'] }}
 	range 1 {{ info['range'] }}
 	default 1
 {% endif %}
