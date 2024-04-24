@@ -35,23 +35,4 @@ configdefault MBEDTLS_CIPHER_AES_ENABLED
 configdefault MBEDTLS_CIPHER_MODE_CTR_ENABLED
 	default y if NRF700X_STA_MODE
 
-# Undefined symbols from sdk-nrf referenced by nrfxlib
-# Defined here for compliance checks
-config MULTITHREADING_LOCK
-	bool
-config NORDIC_SECURITY_BACKEND
-	bool
-config TFM_CRYPTO_BUILTIN_KEYS
-	bool
-config ZIGBEE
-	bool
-config ZIGBEE_ROLE_END_DEVICE
-	bool
-config TEMP_NRF5_MPSL
-	bool
-config PARTITION_MANAGER_ENABLED
-	bool
-config XIP_SPLIT_IMAGE
-	bool
-
 endif # SOC_FAMILY_NRF
