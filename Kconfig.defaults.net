@@ -8,7 +8,8 @@ configdefault NET_UDP
 configdefault NET_IPV4
 	default y
 configdefault NET_IPV6
-	default y
+	# Disabled due to IPV6 addresses not being removed on network down
+	default n
 
 # IP assignment
 configdefault NET_DHCPV4
