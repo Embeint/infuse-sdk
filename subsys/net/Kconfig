@@ -1,0 +1,3 @@
+# Infuse IoT networking options
+
+rsource "conn_mgr/Kconfig"
