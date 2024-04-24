@@ -1,6 +1,5 @@
-# Embedded Intelligence SDK networking defaults
+# Infuse IoT SDK networking defaults
 
-if INFUSE_SDK
 if NETWORKING
 
 # Core Protocols
@@ -24,4 +23,3 @@ configdefault NET_CONNECTION_MANAGER
 	default y
 
 endif # NETWORKING
-endif # INFUSE_SDK

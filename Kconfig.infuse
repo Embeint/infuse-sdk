@@ -7,6 +7,11 @@ rsource "lib/Kconfig"
 rsource "subsys/Kconfig"
 
 # Infuse IoT SDK defaults
+if INFUSE_SDK
+
 rsource "Kconfig.defaults.core"
 rsource "Kconfig.defaults.net"
 rsource "Kconfig.defaults.nrf"
+rsource "Kconfig.defaults.log"
+
+endif # INFUSE_SDK
