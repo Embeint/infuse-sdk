@@ -22,5 +22,9 @@ configdefault NET_SOCKETS
 # Zephyr networking
 configdefault NET_CONNECTION_MANAGER
 	default y
+configdefault NET_CONNECTION_MANAGER_CONNECTIVITY_WIFI_MGMT
+	default y if WIFI
+configdefault CONN_MGR_WIFI_KV_STORE
+	default y if WIFI
 
 endif # NETWORKING

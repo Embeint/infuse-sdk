@@ -1,0 +1,23 @@
+# Infuse IoT WiFi Connection Manager
+
+config CONN_MGR_WIFI_KV_STORE
+	bool "WiFi connection manager based on KV store"
+	depends on KV_STORE
+	depends on KV_STORE_WIFI_SSID
+	depends on KV_STORE_WIFI_PSK
+
+if CONN_MGR_WIFI_KV_STORE
+
+config CONN_MGR_WIFI_KV_STORE_AUTO_CONNECT
+	bool "WiFi connection should be created at boot"
+	default y
+
+config CONN_MGR_WIFI_KV_STORE_PERSISTENT
+	bool "WiFi connection should be persistent"
+	default y
+
+module = CONN_MGR_WIFI_KV_STORE
+module-str = conn_mgr_wifi
+source "subsys/logging/Kconfig.template.log_config"
+
+endif
