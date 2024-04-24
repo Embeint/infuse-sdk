@@ -1,7 +1,17 @@
-# Embedded Intelligence SDK Nordic defaults
+# Infuse IoT SDK Nordic defaults
+
+if SOC_FAMILY_NRF
 
 configdefault NRF_CC3XX_PLATFORM
 	default y
+
+# Oberon backend
+configdefault NRF_OBERON
+	default y if !BUILD_WITH_TFM
+configdefault MBEDTLS_USER_CONFIG_ENABLE
+	default y if NRF_OBERON
+configdefault MBEDTLS_USER_CONFIG_FILE
+	default "infuse/crypto/mbedtls/oberon_user_config.h" if NRF_OBERON
 
 # Undefined symbols from sdk-nrf referenced by nrfxlib
 # Defined here for compliance checks
@@ -19,3 +29,5 @@ config ZIGBEE_ROLE_END_DEVICE
 	bool
 config TEMP_NRF5_MPSL
 	bool
+
+endif # SOC_FAMILY_NRF
