@@ -22,6 +22,18 @@ configdefault TDF
 configdefault INFUSE_CIVIL_TIME
 	default y
 
+# KV store
+configdefault FLASH
+	default y
+configdefault FLASH_MAP
+	default y
+configdefault NVS
+	default y
+configdefault KV_STORE
+	default y
+configdefault KV_STORE_REBOOTS
+	default y
+
 # Random numbers
 configdefault ENTROPY_GENERATOR
 	default y
