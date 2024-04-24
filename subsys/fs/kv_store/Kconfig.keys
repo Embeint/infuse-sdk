@@ -30,5 +30,6 @@ config KV_STORE_GEOFENCE
 
 config KV_STORE_GEOFENCE_RANGE
 	int "Number of GEOFENCE slots to enable"
+	depends on KV_STORE_GEOFENCE
 	range 1 16
 	default 1
