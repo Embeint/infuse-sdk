@@ -1,5 +1,0 @@
-config WIFI
-	bool "Test override"
-	default y
-
-source "Kconfig.zephyr"
