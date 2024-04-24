@@ -7,6 +7,9 @@ config KV_STORE_{{ info['name'] }}
 	{% if 'depends_on' in info %}
 	depends on {{ info['depends_on'] }}
 	{% endif %}
+	{% if 'default' in info %}
+	default {{ info['default'] }}
+	{% endif %}
 	help
 	  {{ info['description'] }}
 {% if 'range' in info %}

@@ -38,7 +38,7 @@
             "key": 20,
             "description": "WiFi network name",
             "reflect": true,
-            "depends_on": "WIFI",
+            "default": "y if WIFI",
             "fields": [
                 {"name": "ssid", "type": "struct kv_string", "description": "WiFi network name"}
             ]
@@ -49,7 +49,7 @@
             "description": "WiFi network password",
             "reflect": true,
             "readback_protection": true,
-            "depends_on": "WIFI",
+            "default": "y if WIFI",
             "fields": [
                 {"name": "psk", "type": "struct kv_string", "description": "WiFi pre-shared-key"}
             ]

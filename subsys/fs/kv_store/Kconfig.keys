@@ -13,13 +13,13 @@ config KV_STORE_FIXED_LOCATION
 
 config KV_STORE_WIFI_SSID
 	bool "Enable KV key WIFI_SSID"
-	depends on WIFI
+	default y if WIFI
 	help
 	  WiFi network name
 
 config KV_STORE_WIFI_PSK
 	bool "Enable KV key WIFI_PSK"
-	depends on WIFI
+	default y if WIFI
 	help
 	  WiFi network password
 
