@@ -60,7 +60,7 @@ jobs:
         # debug
         ls -la
         git log  --pretty=oneline | head -n 10
-        $ZEPHYR_BASE/scripts/ci/check_compliance.py --annotate -e KconfigBasic -c origin/${BASE_REF}..
+        $ZEPHYR_BASE/scripts/ci/check_compliance.py --annotate -e Kconfig -e KconfigBasic -c origin/${BASE_REF}..
 
     - name: check-warns
       working-directory: infuse-sdk
