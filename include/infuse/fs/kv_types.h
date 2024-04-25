@@ -109,6 +109,26 @@ struct kv_ntp_server_url {
 	} __packed
 /* clang-format on */
 
+/* ePacket UDP server hostname */
+struct kv_epacket_udp_url {
+	/* UDP server hostname */
+	struct kv_string server;
+} __packed;
+
+/* clang-format off */
+/* Compile time definition for known array length */
+#define _KV_KEY_EPACKET_UDP_URL_VAR(num) \
+	struct { \
+		KV_STRUCT_KV_STRING_VAR(num) server; \
+	} __packed
+/* clang-format on */
+
+/* ePacket UDP server port */
+struct kv_epacket_udp_port {
+	/* UDP server port */
+	uint32_t port;
+} __packed;
+
 /* Array of points defining a closed polygon */
 struct kv_geofence {
 	/* Points in geofence */
@@ -132,6 +152,8 @@ enum kv_builtin_id {
 	KV_KEY_WIFI_SSID = 20,
 	KV_KEY_WIFI_PSK = 21,
 	KV_KEY_NTP_SERVER_URL = 30,
+	KV_KEY_EPACKET_UDP_URL = 31,
+	KV_KEY_EPACKET_UDP_PORT = 32,
 	KV_KEY_GEOFENCE = 100,
 	/* End of builtin KV range */
 	KV_KEY_BUILTIN_END = 1024,
@@ -141,6 +163,7 @@ enum kv_builtin_id {
 enum kv_builtin_size {
 	_KV_KEY_REBOOTS_SIZE = sizeof(struct kv_reboots),
 	_KV_KEY_FIXED_LOCATION_SIZE = sizeof(struct kv_fixed_location),
+	_KV_KEY_EPACKET_UDP_PORT_SIZE = sizeof(struct kv_epacket_udp_port),
 };
 
 /* clang-format off */
@@ -150,6 +173,8 @@ enum kv_builtin_size {
 #define _KV_KEY_WIFI_SSID_TYPE struct kv_wifi_ssid
 #define _KV_KEY_WIFI_PSK_TYPE struct kv_wifi_psk
 #define _KV_KEY_NTP_SERVER_URL_TYPE struct kv_ntp_server_url
+#define _KV_KEY_EPACKET_UDP_URL_TYPE struct kv_epacket_udp_url
+#define _KV_KEY_EPACKET_UDP_PORT_TYPE struct kv_epacket_udp_port
 #define _KV_KEY_GEOFENCE_TYPE struct kv_geofence
 /* clang-format on */
 

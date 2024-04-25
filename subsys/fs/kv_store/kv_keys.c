@@ -47,6 +47,20 @@ static struct key_value_slot_definition kv_slots[] = {
 		.flags = KV_FLAGS_REFLECT,
 	},
 #endif /* CONFIG_KV_STORE_NTP_SERVER_URL */
+#ifdef CONFIG_KV_STORE_EPACKET_UDP_URL
+	{
+		.key = 31,
+		.range = 1,
+		.flags = KV_FLAGS_REFLECT,
+	},
+#endif /* CONFIG_KV_STORE_EPACKET_UDP_URL */
+#ifdef CONFIG_KV_STORE_EPACKET_UDP_PORT
+	{
+		.key = 32,
+		.range = 1,
+		.flags = KV_FLAGS_REFLECT,
+	},
+#endif /* CONFIG_KV_STORE_EPACKET_UDP_PORT */
 #ifdef CONFIG_KV_STORE_GEOFENCE
 	{
 		.key = 100,

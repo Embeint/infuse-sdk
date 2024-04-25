@@ -29,6 +29,18 @@ config KV_STORE_NTP_SERVER_URL
 	help
 	  URL of the NTP server to use for time synchronisation
 
+config KV_STORE_EPACKET_UDP_URL
+	bool "Enable KV key EPACKET_UDP_URL"
+	default y if EPACKET_INTERFACE_UDP
+	help
+	  ePacket UDP server hostname
+
+config KV_STORE_EPACKET_UDP_PORT
+	bool "Enable KV key EPACKET_UDP_PORT"
+	default y if EPACKET_INTERFACE_UDP
+	help
+	  ePacket UDP server port
+
 config KV_STORE_GEOFENCE
 	bool "Enable KV key GEOFENCE"
 	help
