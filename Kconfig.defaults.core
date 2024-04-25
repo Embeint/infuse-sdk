@@ -15,6 +15,8 @@ configdefault POLL
 	default y
 configdefault NET_BUF
 	default y
+configdefault EVENTS
+	default y
 
 configdefault TDF
 	default y
@@ -47,6 +49,8 @@ configdefault MBEDTLS_HEAP_SIZE
 	default 8192
 configdefault MBEDTLS_PSA_CRYPTO_C
 	default y
+configdefault MBEDTLS_PSA_CRYPTO_EXTERNAL_RNG
+	default y if NRF_CC3XX_PLATFORM
 configdefault MBEDTLS_ENTROPY_ENABLED
 	default y
 configdefault MBEDTLS_ZEPHYR_ENTROPY

@@ -29,6 +29,7 @@ extern "C" {
 /* Identifier for ePacket interface */
 enum epacket_interface_id {
 	EPACKET_INTERFACE_SERIAL = 0,
+	EPACKET_INTERFACE_UDP = 1,
 };
 
 struct epacket_receive_metadata {
@@ -41,7 +42,24 @@ struct epacket_receive_metadata {
 };
 
 struct epacket_interface_api {
+	/**
+	 * @brief Query packet overhead for the interface
+	 *
+	 * @param dev Interface device
+	 * @param header Packet header overhead
+	 * @param footer Packet footer overhead
+	 */
 	void (*packet_overhead)(const struct device *dev, size_t *header, size_t *footer);
+	/**
+	 * @brief Send a packet over the interface
+	 *
+	 * @param dev Interface device
+	 * @param buf Packet to send
+	 *
+	 * @retval 0 on success
+	 * @retval -ENOTCONN if interface not connected
+	 * @retval -errno on other error
+	 */
 	int (*send)(const struct device *dev, struct net_buf *buf);
 };
 

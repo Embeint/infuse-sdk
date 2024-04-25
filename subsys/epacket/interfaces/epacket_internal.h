@@ -43,6 +43,26 @@ int epacket_serial_encrypt(struct net_buf *buf);
  */
 int epacket_serial_decrypt(struct net_buf *buf);
 
+/**
+ * @brief Encrypt UDP packet for transmission
+ *
+ * @param buf Packet to encrypt
+ *
+ * @retval 0 on success
+ * @retval -1 on failure
+ */
+int epacket_udp_encrypt(struct net_buf *buf);
+
+/**
+ * @brief Decrypt received UDP packet
+ *
+ * @param buf Packet to decrypt
+ *
+ * @retval 0 on success
+ * @retval -1 on failure
+ */
+int epacket_udp_decrypt(struct net_buf *buf);
+
 #ifdef __cplusplus
 }
 #endif
