@@ -77,6 +77,11 @@ static void epacket_handle_rx(struct net_buf *buf)
 		rc = epacket_serial_decrypt(buf);
 		break;
 #endif /* CONFIG_EPACKET_INTERFACE_USB */
+#ifdef CONFIG_EPACKET_INTERFACE_UDP
+	case EPACKET_INTERFACE_UDP:
+		rc = epacket_udp_decrypt(buf);
+		break;
+#endif /* CONFIG_EPACKET_INTERFACE_UDP */
 	default:
 		LOG_WRN("Unknown interface ID %d", metadata->interface_id);
 		rc = -1;
