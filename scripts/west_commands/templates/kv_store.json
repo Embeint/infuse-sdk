@@ -65,6 +65,26 @@
             ]
         },
         {
+            "name": "EPACKET_UDP_URL",
+            "key": 31,
+            "description": "ePacket UDP server hostname",
+            "reflect": true,
+            "default": "y if EPACKET_INTERFACE_UDP",
+            "fields": [
+                {"name": "server", "type": "struct kv_string", "description": "UDP server hostname"}
+            ]
+        },
+        {
+            "name": "EPACKET_UDP_PORT",
+            "key": 32,
+            "description": "ePacket UDP server port",
+            "reflect": true,
+            "default": "y if EPACKET_INTERFACE_UDP",
+            "fields": [
+                {"name": "port", "type": "uint32_t", "description": "UDP server port"}
+            ]
+        },
+        {
             "name": "GEOFENCE",
             "key": 100,
             "range": 16,
