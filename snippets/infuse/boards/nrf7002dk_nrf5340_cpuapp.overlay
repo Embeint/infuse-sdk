@@ -1,1 +1,7 @@
 #include <common/nordic/infuse_nrf5340_cpuapp.dtsi>
+
+/ {
+    epacket_udp: epacket_udp {
+		compatible = "embeint,epacket-udp";
+	};
+};
