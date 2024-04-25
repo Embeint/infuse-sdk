@@ -17,39 +17,33 @@
 
 #include <infuse/fs/kv_store.h>
 #include <infuse/fs/kv_types.h>
+#include <infuse/epacket/interface.h>
+#include <infuse/epacket/packet.h>
 
 LOG_MODULE_REGISTER(app, LOG_LEVEL_INF);
-
-/* Callback struct where the callback will be stored */
-struct net_mgmt_event_callback l4_callback;
-
-/* Callback handler */
-static void l4_event_handler(struct net_mgmt_event_callback *cb, uint32_t event, struct net_if *iface)
-{
-	if (event == NET_EVENT_L4_CONNECTED) {
-		LOG_WRN("Network connectivity gained!");
-	} else if (event == NET_EVENT_L4_DISCONNECTED) {
-		LOG_WRN("Network connectivity lost!");
-	}
-}
 
 int main(void)
 {
 	KV_STRING_CONST(wifi_ssid, CONFIG_WIFI_SSID);
 	KV_STRING_CONST(wifi_psk, CONFIG_WIFI_PSK);
+	const struct device *epacket_udp = DEVICE_DT_GET(DT_NODELABEL(epacket_udp));
+	struct net_buf *buf;
 	int cnt = 0;
+	uint8_t auth;
 
 	/* Write WiFi configuration */
 	kv_store_write(KV_KEY_WIFI_SSID, &wifi_ssid, sizeof(wifi_ssid));
 	kv_store_write(KV_KEY_WIFI_PSK, &wifi_psk, sizeof(wifi_psk));
 
-	net_mgmt_init_event_callback(&l4_callback, l4_event_handler,
-				     NET_EVENT_L4_CONNECTED | NET_EVENT_L4_DISCONNECTED);
-	/* Register the callback */
-	net_mgmt_add_event_callback(&l4_callback);
-
 	for (;;) {
-		LOG_INF("Uptime: %d", cnt++);
+		buf = epacket_alloc_tx_for_interface(epacket_udp, K_FOREVER);
+		net_buf_add_le32(buf, cnt);
+
+		auth = cnt & 0b1 ? EPACKET_AUTH_NETWORK : EPACKET_AUTH_DEVICE;
+
+		epacket_set_tx_metadata(buf, auth, 0x12, 0xF0);
+		epacket_queue(epacket_udp, buf);
+		LOG_INF("Sent %s %d", epacket_udp->name, cnt++);
 		k_sleep(K_SECONDS(1));
 	}
 	return 0;
