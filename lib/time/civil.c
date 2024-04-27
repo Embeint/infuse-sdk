@@ -55,3 +55,11 @@ int civil_time_set_reference(enum civil_time_source source, struct timeutil_sync
 	}
 	return rc;
 }
+
+uint32_t civil_time_reference_age(void)
+{
+	if ((infuse_time_source & ~TIME_SOURCE_RECOVERED) == TIME_SOURCE_NONE) {
+		return UINT32_MAX;
+	}
+	return k_ticks_to_ms_floor64(k_uptime_ticks() - infuse_sync_state.base.local) / 1000;
+}
