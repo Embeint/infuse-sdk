@@ -6,6 +6,8 @@
  * SPDX-License-Identifier: LicenseRef-Embeint
  */
 
+#include <stdint.h>
+
 #include <zephyr/ztest.h>
 #include <zephyr/kernel.h>
 
@@ -117,6 +119,44 @@ ZTEST(civil_time, test_local_time_conversion)
 		      civil_time_from_ticks(1 * CONFIG_SYS_CLOCK_TICKS_PER_SEC), "");
 	zassert_equal((2 * INFUSE_CIVIL_TIME_TICKS_PER_SEC) + 1000,
 		      civil_time_from_ticks(2 * CONFIG_SYS_CLOCK_TICKS_PER_SEC), "");
+}
+
+ZTEST(civil_time, test_reference_age)
+{
+	struct timeutil_sync_instant reference;
+	int rc;
+
+	/* Reset the reference time to no time knowledge */
+	reference.local = k_uptime_ticks();
+	reference.ref = 1000;
+	rc = civil_time_set_reference(TIME_SOURCE_NONE, &reference);
+	zassert_equal(0, rc, "Set reference instant failed");
+
+	zassert_equal(UINT32_MAX, civil_time_reference_age());
+	k_sleep(K_SECONDS(1));
+	zassert_equal(UINT32_MAX, civil_time_reference_age());
+
+	/* Reset the reference time to no time knowledge over reboot */
+	reference.local = k_uptime_ticks();
+	reference.ref = 1000;
+	rc = civil_time_set_reference(TIME_SOURCE_RECOVERED | TIME_SOURCE_NONE, &reference);
+	zassert_equal(0, rc, "Set reference instant failed");
+
+	zassert_equal(UINT32_MAX, civil_time_reference_age());
+	k_sleep(K_SECONDS(1));
+	zassert_equal(UINT32_MAX, civil_time_reference_age());
+
+	/* Reference instant with valid time knowledge */
+	reference.local = k_uptime_ticks();
+	reference.ref = 1000;
+	rc = civil_time_set_reference(TIME_SOURCE_NTP, &reference);
+	zassert_equal(0, rc, "Set reference instant failed");
+
+	zassert_equal(0, civil_time_reference_age());
+	k_sleep(K_SECONDS(1));
+	zassert_equal(1, civil_time_reference_age());
+	k_sleep(K_SECONDS(1));
+	zassert_equal(2, civil_time_reference_age());
 }
 
 ZTEST_SUITE(civil_time, NULL, NULL, NULL, NULL, NULL);
