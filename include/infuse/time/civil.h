@@ -17,6 +17,7 @@
 #define INFUSE_SDK_INCLUDE_INFUSE_TIME_CIVIL_H_
 
 #include <stdint.h>
+#include <stdbool.h>
 
 #include <zephyr/kernel.h>
 #include <zephyr/toolchain.h>
@@ -69,6 +70,23 @@ enum civil_time_source {
 	/* Time has been preserved across a reboot */
 	TIME_SOURCE_RECOVERED = 0x80,
 } __packed;
+
+/**
+ * @brief Determine whether a given time source should be trusted
+ *
+ * @param source Time source
+ * @param recovered_ok Should a time source recovered across a reboot be trusted
+ * @return true Time source can be trusted
+ * @return false Time source should not be trusted
+ */
+static inline bool civil_time_trusted_source(enum civil_time_source source, bool recovered_ok)
+{
+	enum civil_time_source base = source & ~TIME_SOURCE_RECOVERED;
+	bool recovered = !!(source & TIME_SOURCE_RECOVERED);
+	bool base_good = IN_RANGE(base, TIME_SOURCE_NONE + 1, TIME_SOURCE_INVALID - 1);
+
+	return base_good && (!recovered || recovered_ok);
+}
 
 /**
  * @brief Extracts epoch seconds from a complete civil time
