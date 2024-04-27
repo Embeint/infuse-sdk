@@ -11,6 +11,35 @@
 
 #include <infuse/time/civil.h>
 
+ZTEST(civil_time, test_time_source_valid)
+{
+	zassert_false(civil_time_trusted_source(TIME_SOURCE_NONE, false));
+	zassert_false(civil_time_trusted_source(TIME_SOURCE_NONE, true));
+	zassert_false(civil_time_trusted_source(TIME_SOURCE_INVALID, false));
+	zassert_false(civil_time_trusted_source(TIME_SOURCE_INVALID, true));
+	zassert_false(civil_time_trusted_source(33, false));
+	zassert_false(civil_time_trusted_source(33, true));
+	zassert_false(civil_time_trusted_source(TIME_SOURCE_RECOVERED | TIME_SOURCE_NONE, false));
+	zassert_false(civil_time_trusted_source(TIME_SOURCE_RECOVERED | TIME_SOURCE_NONE, true));
+	zassert_false(civil_time_trusted_source(TIME_SOURCE_RECOVERED | TIME_SOURCE_INVALID, false));
+	zassert_false(civil_time_trusted_source(TIME_SOURCE_RECOVERED | TIME_SOURCE_INVALID, true));
+	zassert_false(civil_time_trusted_source(TIME_SOURCE_RECOVERED | 33, false));
+	zassert_false(civil_time_trusted_source(TIME_SOURCE_RECOVERED | 33, true));
+
+	zassert_true(civil_time_trusted_source(TIME_SOURCE_GNSS, false));
+	zassert_true(civil_time_trusted_source(TIME_SOURCE_GNSS, true));
+	zassert_true(civil_time_trusted_source(TIME_SOURCE_NTP, false));
+	zassert_true(civil_time_trusted_source(TIME_SOURCE_NTP, true));
+	zassert_true(civil_time_trusted_source(TIME_SOURCE_RPC, false));
+	zassert_true(civil_time_trusted_source(TIME_SOURCE_RPC, true));
+	zassert_false(civil_time_trusted_source(TIME_SOURCE_RECOVERED | TIME_SOURCE_GNSS, false));
+	zassert_true(civil_time_trusted_source(TIME_SOURCE_RECOVERED | TIME_SOURCE_GNSS, true));
+	zassert_false(civil_time_trusted_source(TIME_SOURCE_RECOVERED | TIME_SOURCE_NTP, false));
+	zassert_true(civil_time_trusted_source(TIME_SOURCE_RECOVERED | TIME_SOURCE_NTP, true));
+	zassert_false(civil_time_trusted_source(TIME_SOURCE_RECOVERED | TIME_SOURCE_RPC, false));
+	zassert_true(civil_time_trusted_source(TIME_SOURCE_RECOVERED | TIME_SOURCE_RPC, true));
+}
+
 static void validate_unix_conversions(uint64_t gps_time, uint64_t unix_time, uint16_t subseconds)
 {
 	uint64_t civil_time;
