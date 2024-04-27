@@ -28,6 +28,12 @@ static struct timeutil_sync_state infuse_sync_state = {
 	.skew = 1.0f,
 };
 static enum civil_time_source infuse_time_source;
+static sys_slist_t cb_list;
+
+void civil_time_register_callback(struct civil_time_cb *cb)
+{
+	sys_slist_append(&cb_list, &cb->node);
+}
 
 uint64_t civil_time_from_ticks(uint64_t ticks)
 {
@@ -47,11 +53,19 @@ enum civil_time_source civil_time_get_source(void)
 
 int civil_time_set_reference(enum civil_time_source source, struct timeutil_sync_instant *reference)
 {
+	struct timeutil_sync_instant prev = infuse_sync_state.base;
+	struct civil_time_cb *cb;
 	int rc;
 
 	rc = timeutil_sync_state_set_skew(&infuse_sync_state, 1.0f, reference);
 	if (rc == 0) {
 		infuse_time_source = source;
+		/* Notify interested parties of reference instant change */
+		SYS_SLIST_FOR_EACH_CONTAINER(&cb_list, cb, node) {
+			if (cb->reference_time_updated) {
+				cb->reference_time_updated(source, prev, *reference, cb->user_ctx);
+			}
+		}
 	}
 	return rc;
 }

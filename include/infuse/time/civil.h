@@ -71,6 +71,31 @@ enum civil_time_source {
 	TIME_SOURCE_RECOVERED = 0x80,
 } __packed;
 
+/** @brief Civil time event callback structure. */
+struct civil_time_cb {
+	/** @brief The local reference instant has been updated.
+	 *
+	 * @param source The time source of the new reference instant
+	 * @param old Old reference instant
+	 * @param new New reference instant
+	 * @param user_ctx User context pointer
+	 */
+	void (*reference_time_updated)(enum civil_time_source source, struct timeutil_sync_instant old,
+				       struct timeutil_sync_instant new, void *user_ctx);
+
+	/* User provided context pointer */
+	void *user_ctx;
+
+	sys_snode_t node;
+};
+
+/**
+ * @brief Register to be notified of civil time events
+ *
+ * @param cb Callback struct to register
+ */
+void civil_time_register_callback(struct civil_time_cb *cb);
+
 /**
  * @brief Determine whether a given time source should be trusted
  *
