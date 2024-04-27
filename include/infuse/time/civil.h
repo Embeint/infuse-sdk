@@ -208,6 +208,14 @@ enum civil_time_source civil_time_get_source(void);
 int civil_time_set_reference(enum civil_time_source source, struct timeutil_sync_instant *reference);
 
 /**
+ * @brief Query how many seconds ago the reference instant was set
+ *
+ * @retval UINT32_MAX if not yet set
+ * @retval seconds since reference instant was set
+ */
+uint32_t civil_time_reference_age(void);
+
+/**
  * @}
  */
 
