@@ -159,4 +159,68 @@ ZTEST(civil_time, test_reference_age)
 	zassert_equal(2, civil_time_reference_age());
 }
 
+struct test_cb_context {
+	enum civil_time_source source;
+	struct timeutil_sync_instant old;
+	struct timeutil_sync_instant new;
+	int cnt;
+};
+
+static void reference_time_updated(enum civil_time_source source, struct timeutil_sync_instant old,
+				   struct timeutil_sync_instant new, void *user_ctx)
+{
+	struct test_cb_context *context = user_ctx;
+
+	zassert_not_null(user_ctx);
+
+	context->source = source;
+	context->old = old;
+	context->new = new;
+	context->cnt += 1;
+}
+
+ZTEST(civil_time, test_reference_changed_cb)
+{
+	static struct test_cb_context context;
+	static struct civil_time_cb callback = {
+		.reference_time_updated = reference_time_updated,
+		.user_ctx = &context,
+	};
+	struct timeutil_sync_instant reference;
+	int rc;
+
+	civil_time_register_callback(&callback);
+
+	reference.local = 100;
+	reference.ref = 1000;
+	rc = civil_time_set_reference(TIME_SOURCE_NTP, &reference);
+	zassert_equal(0, rc);
+	zassert_equal(1, context.cnt);
+	zassert_equal(100, context.new.local);
+	zassert_equal(1000, context.new.ref);
+	zassert_equal(TIME_SOURCE_NTP, context.source);
+
+	reference.local = 200;
+	reference.ref = 2000;
+	rc = civil_time_set_reference(TIME_SOURCE_GNSS, &reference);
+	zassert_equal(0, rc);
+	zassert_equal(2, context.cnt);
+	zassert_equal(200, context.new.local);
+	zassert_equal(2000, context.new.ref);
+	zassert_equal(100, context.old.local);
+	zassert_equal(1000, context.old.ref);
+	zassert_equal(TIME_SOURCE_GNSS, context.source);
+
+	reference.local = 300;
+	reference.ref = 3000;
+	rc = civil_time_set_reference(TIME_SOURCE_RECOVERED | TIME_SOURCE_RPC, &reference);
+	zassert_equal(0, rc);
+	zassert_equal(3, context.cnt);
+	zassert_equal(300, context.new.local);
+	zassert_equal(3000, context.new.ref);
+	zassert_equal(200, context.old.local);
+	zassert_equal(2000, context.old.ref);
+	zassert_equal(TIME_SOURCE_RECOVERED | TIME_SOURCE_RPC, context.source);
+}
+
 ZTEST_SUITE(civil_time, NULL, NULL, NULL, NULL, NULL);
