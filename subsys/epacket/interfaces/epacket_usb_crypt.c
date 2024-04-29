@@ -23,8 +23,72 @@
 
 #include "epacket_internal.h"
 
+static const uint8_t sync_bytes[2] = {SERIAL_SYNC_A, SERIAL_SYNC_B};
+
 /* Validate frame sizes match expected */
 BUILD_ASSERT(sizeof(struct epacket_usb_frame) == EPACKET_USB_FRAME_EXPECTED_SIZE, "USB frame changed size");
+
+void epacket_serial_reconstruct(const struct device *dev, uint8_t *buffer, size_t len,
+				void (*handler)(struct epacket_receive_metadata *, struct net_buf *))
+{
+	static struct net_buf *rx_buffer;
+	static uint16_t payload_remaining;
+	static uint8_t len_lsb;
+	static uint16_t header_idx;
+
+	for (int i = 0; i < len; i++) {
+		switch (header_idx) {
+		case 0:
+		case 1:
+			if (buffer[i] != sync_bytes[header_idx]) {
+				header_idx = 0;
+				continue;
+			}
+			break;
+		case 2:
+			len_lsb = buffer[i];
+			break;
+		case 3:
+			payload_remaining = ((uint16_t)buffer[i] << 8) | len_lsb;
+			if (payload_remaining > CONFIG_EPACKET_PAYLOAD_MAX) {
+				/* Can't receive this packet */
+				header_idx = 0;
+			}
+			break;
+		}
+		/* Still waiting on the payload length */
+		if (header_idx <= 3) {
+			header_idx++;
+			continue;
+		}
+		/* Claim memory if none */
+		if (rx_buffer == NULL) {
+			rx_buffer = epacket_alloc_rx(K_FOREVER);
+		}
+		/* Payload bytes */
+		uint16_t to_add = MIN(payload_remaining, len - i);
+
+		/* Add payload to buffer */
+		net_buf_add_mem(rx_buffer, buffer + i, to_add);
+		payload_remaining -= to_add;
+		i += to_add - 1;
+
+		/* Is packet done? */
+		if (payload_remaining == 0) {
+			struct epacket_receive_metadata meta = {
+				.interface = dev,
+				.interface_id = EPACKET_INTERFACE_SERIAL,
+				.rssi = 0,
+			};
+
+			/* Hand off to core ePacket functions */
+			handler(&meta, rx_buffer);
+			/* Reset parsing state */
+			rx_buffer = NULL;
+			header_idx = 0;
+		}
+	}
+}
 
 int epacket_serial_encrypt(struct net_buf *buf)
 {
