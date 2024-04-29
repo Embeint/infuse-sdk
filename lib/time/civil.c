@@ -46,6 +46,13 @@ uint64_t civil_time_from_ticks(uint64_t ticks)
 	return civil;
 }
 
+void civil_time_unix_calendar(uint64_t civil_time, struct tm *calendar)
+{
+	time_t unix_time = unix_time_from_civil(civil_time);
+
+	*calendar = *gmtime(&unix_time);
+}
+
 enum civil_time_source civil_time_get_source(void)
 {
 	return infuse_time_source;
