@@ -39,7 +39,9 @@ struct epacket_usb_data {
 
 LOG_MODULE_REGISTER(epacket_usb, CONFIG_EPACKET_USB_LOG_LEVEL);
 
-static void packet_reconstructor(const struct device *dev, uint8_t *buffer, size_t len)
+IF_DISABLED(CONFIG_ZTEST, (static))
+void packet_reconstructor(const struct device *dev, uint8_t *buffer, size_t len,
+			  void (*handler)(struct epacket_receive_metadata *, struct net_buf *))
 {
 	static struct net_buf *rx_buffer;
 	static uint16_t payload_remaining;
@@ -91,7 +93,7 @@ static void packet_reconstructor(const struct device *dev, uint8_t *buffer, size
 				.interface = dev, .interface_id = EPACKET_INTERFACE_SERIAL, .rssi = 0};
 
 			/* Hand off to core ePacket functions */
-			epacket_raw_receive_handler(&meta, rx_buffer);
+			handler(&meta, rx_buffer);
 			/* Reset parsing state */
 			rx_buffer = NULL;
 			header_idx = 0;
@@ -116,7 +118,8 @@ static void interrupt_handler(const struct device *dev, void *user_data)
 				recv_len = uart_fifo_read(dev, buffer, sizeof(buffer));
 				/* Extract ePacket packets */
 				if (recv_len > 0) {
-					packet_reconstructor(epacket_dev, buffer, recv_len);
+					packet_reconstructor(epacket_dev, buffer, recv_len,
+							     epacket_raw_receive_handler);
 				}
 			} while (recv_len);
 		}

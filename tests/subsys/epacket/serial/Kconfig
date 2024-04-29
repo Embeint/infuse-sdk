@@ -1,0 +1,8 @@
+config EPACKET_INTERFACE_USB
+	bool "Redefine for test"
+
+config CDC_ACM_BULK_EP_MPS
+	int "Redefine for test"
+	default 64
+
+source "Kconfig.zephyr"
