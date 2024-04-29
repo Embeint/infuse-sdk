@@ -23,6 +23,20 @@ extern "C" {
  */
 struct net_buf *epacket_encryption_scratch(void);
 
+#define SERIAL_SYNC_A 0xD5
+#define SERIAL_SYNC_B 0xCA
+
+/**
+ * @brief Reconstruct serial packet from byte stream
+ *
+ * @param dev Serial device
+ * @param buffer Byte stream buffer
+ * @param len Length of byte stream
+ * @param handler Function to call on recovered packet
+ */
+void epacket_serial_reconstruct(const struct device *dev, uint8_t *buffer, size_t len,
+				void (*handler)(struct epacket_receive_metadata *, struct net_buf *));
+
 /**
  * @brief Encrypt serial packet for transmission
  *

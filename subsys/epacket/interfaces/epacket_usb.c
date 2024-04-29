@@ -19,11 +19,6 @@
 
 #define DT_DRV_COMPAT embeint_epacket_usb
 
-#define SYNC_A 0xD5
-#define SYNC_B 0xCA
-
-static const uint8_t sync_bytes[2] = {SYNC_A, SYNC_B};
-
 struct serial_header {
 	uint8_t sync[2];
 	uint16_t len;
@@ -38,68 +33,6 @@ struct epacket_usb_data {
 };
 
 LOG_MODULE_REGISTER(epacket_usb, CONFIG_EPACKET_USB_LOG_LEVEL);
-
-IF_DISABLED(CONFIG_ZTEST, (static))
-void packet_reconstructor(const struct device *dev, uint8_t *buffer, size_t len,
-			  void (*handler)(struct epacket_receive_metadata *, struct net_buf *))
-{
-	static struct net_buf *rx_buffer;
-	static uint16_t payload_remaining;
-	static uint8_t len_lsb;
-	static uint16_t header_idx;
-
-	for (int i = 0; i < len; i++) {
-		switch (header_idx) {
-		case 0:
-		case 1:
-			if (buffer[i] != sync_bytes[header_idx]) {
-				header_idx = 0;
-				continue;
-			}
-			break;
-		case 2:
-			len_lsb = buffer[i];
-			break;
-		case 3:
-			payload_remaining = ((uint16_t)buffer[i] << 8) | len_lsb;
-			LOG_DBG("%d byte packet incoming", payload_remaining);
-			if (payload_remaining > CONFIG_EPACKET_PAYLOAD_MAX) {
-				LOG_WRN("Sent payload too large (%d > %d)", payload_remaining,
-					CONFIG_EPACKET_PAYLOAD_MAX);
-			}
-			break;
-		}
-		/* Still waiting on the payload length */
-		if (header_idx <= 3) {
-			header_idx++;
-			continue;
-		}
-		/* Claim memory if none */
-		if (rx_buffer == NULL) {
-			rx_buffer = epacket_alloc_rx(K_FOREVER);
-		}
-		/* Payload bytes */
-		uint16_t to_add = MIN(payload_remaining, len - i);
-
-		/* Add payload to buffer */
-		net_buf_add_mem(rx_buffer, buffer + i, to_add);
-		payload_remaining -= to_add;
-		i += to_add - 1;
-
-		/* Is packet done? */
-		if (payload_remaining == 0) {
-			LOG_DBG("Packet received");
-			struct epacket_receive_metadata meta = {
-				.interface = dev, .interface_id = EPACKET_INTERFACE_SERIAL, .rssi = 0};
-
-			/* Hand off to core ePacket functions */
-			handler(&meta, rx_buffer);
-			/* Reset parsing state */
-			rx_buffer = NULL;
-			header_idx = 0;
-		}
-	}
-}
 
 static void interrupt_handler(const struct device *dev, void *user_data)
 {
@@ -118,8 +51,8 @@ static void interrupt_handler(const struct device *dev, void *user_data)
 				recv_len = uart_fifo_read(dev, buffer, sizeof(buffer));
 				/* Extract ePacket packets */
 				if (recv_len > 0) {
-					packet_reconstructor(epacket_dev, buffer, recv_len,
-							     epacket_raw_receive_handler);
+					epacket_serial_reconstruct(epacket_dev, buffer, recv_len,
+								   epacket_raw_receive_handler);
 				}
 			} while (recv_len);
 		}
@@ -144,7 +77,7 @@ static void interrupt_handler(const struct device *dev, void *user_data)
 				return;
 			}
 
-			struct serial_header header = {.sync = {SYNC_A, SYNC_B}, .len = buf->len};
+			struct serial_header header = {.sync = {SERIAL_SYNC_A, SERIAL_SYNC_B}, .len = buf->len};
 
 			/* Push header */
 			sent = uart_fifo_fill(dev, (const uint8_t *)&header, sizeof(header));

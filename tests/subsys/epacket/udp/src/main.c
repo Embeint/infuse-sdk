@@ -27,14 +27,14 @@ uint32_t infuse_device_id(void)
 
 ZTEST(epacket_udp, test_encrypt_decrypt)
 {
-	const struct device *epacket_udp = DEVICE_DT_GET(DT_NODELABEL(epacket_udp));
 	struct net_buf *orig_buf, *encr_buf, *copy_buf;
 	uint8_t *p;
 	int rc;
 
 	/* Create original buffer */
-	orig_buf = epacket_alloc_tx_for_interface(epacket_udp, K_NO_WAIT);
+	orig_buf = epacket_alloc_tx(K_NO_WAIT);
 	zassert_not_null(orig_buf);
+	net_buf_reserve(orig_buf, EPACKET_UDP_FRAME_EXPECTED_SIZE);
 	epacket_set_tx_metadata(orig_buf, EPACKET_AUTH_DEVICE, 0, 0x10);
 	p = net_buf_add(orig_buf, 60);
 	sys_rand_get(p, 60);
