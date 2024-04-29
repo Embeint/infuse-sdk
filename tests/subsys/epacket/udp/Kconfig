@@ -1,0 +1,4 @@
+config EPACKET_INTERFACE_UDP
+	bool "Redefine for test"
+
+source "Kconfig.zephyr"
