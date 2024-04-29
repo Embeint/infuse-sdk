@@ -40,6 +40,13 @@ static struct key_value_slot_definition kv_slots[] = {
 		.flags = KV_FLAGS_REFLECT | KV_FLAGS_WRITE_ONLY,
 	},
 #endif /* CONFIG_KV_STORE_WIFI_PSK */
+#ifdef CONFIG_KV_STORE_NTP_SERVER_URL
+	{
+		.key = 30,
+		.range = 1,
+		.flags = KV_FLAGS_REFLECT,
+	},
+#endif /* CONFIG_KV_STORE_NTP_SERVER_URL */
 #ifdef CONFIG_KV_STORE_GEOFENCE
 	{
 		.key = 100,

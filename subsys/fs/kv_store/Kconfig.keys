@@ -23,6 +23,12 @@ config KV_STORE_WIFI_PSK
 	help
 	  WiFi network password
 
+config KV_STORE_NTP_SERVER_URL
+	bool "Enable KV key NTP_SERVER_URL"
+	default y if SNTP
+	help
+	  URL of the NTP server to use for time synchronisation
+
 config KV_STORE_GEOFENCE
 	bool "Enable KV key GEOFENCE"
 	help

@@ -55,6 +55,16 @@
             ]
         },
         {
+            "name": "NTP_SERVER_URL",
+            "key": 30,
+            "description": "URL of the NTP server to use for time synchronisation",
+            "reflect": true,
+            "default": "y if SNTP",
+            "fields": [
+                {"name": "url", "type": "struct kv_string", "description": "NTP server URL"}
+            ]
+        },
+        {
             "name": "GEOFENCE",
             "key": 100,
             "range": 16,
