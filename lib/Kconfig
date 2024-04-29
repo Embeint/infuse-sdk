@@ -7,6 +7,11 @@ config INFUSE_COMMON_BOOT
 config INFUSE_CIVIL_TIME
 	bool "Infuse IoT civil time library"
 
+config INFUSE_CIVIL_TIME_PRINT_ON_SYNC
+	bool "Print current time on time sync"
+	depends on INFUSE_CIVIL_TIME
+	default y
+
 if INFUSE_SDK
 module = INFUSE_COMMON
 module-str = infuse

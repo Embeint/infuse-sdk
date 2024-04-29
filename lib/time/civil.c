@@ -7,6 +7,7 @@
  */
 
 #include <zephyr/sys/timeutil.h>
+#include <zephyr/logging/log.h>
 
 #include <infuse/time/civil.h>
 
@@ -29,6 +30,8 @@ static struct timeutil_sync_state infuse_sync_state = {
 };
 static enum civil_time_source infuse_time_source;
 static sys_slist_t cb_list;
+
+LOG_MODULE_REGISTER(civil_time, LOG_LEVEL_INF);
 
 void civil_time_register_callback(struct civil_time_cb *cb)
 {
@@ -73,6 +76,14 @@ int civil_time_set_reference(enum civil_time_source source, struct timeutil_sync
 				cb->reference_time_updated(source, prev, *reference, cb->user_ctx);
 			}
 		}
+#ifdef CONFIG_INFUSE_CIVIL_TIME_PRINT_ON_SYNC
+		uint64_t now = civil_time_now();
+		struct tm c;
+
+		civil_time_unix_calendar(now, &c);
+		LOG_INF("Now: %d-%02d-%02dT%02d:%02d:%02d.%03d UTC", 1900 + c.tm_year, 1 + c.tm_mon, c.tm_mday,
+			c.tm_hour, c.tm_min, c.tm_sec, civil_time_milliseconds(now));
+#endif /* CONFIG_INFUSE_CIVIL_TIME_PRINT_ON_SYNC */
 	}
 	return rc;
 }
