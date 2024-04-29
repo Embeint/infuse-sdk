@@ -76,9 +76,9 @@ static void validate_internal(uint64_t civil_time)
 	seconds = civil_time_seconds(civil_time);
 	subseconds = civil_time_subseconds(civil_time);
 
-	zassert_not_equal(civil_time, seconds, "");
-	zassert_not_equal(civil_time, subseconds, "");
-	zassert_equal(civil_time, civil_time_from(seconds, subseconds), "");
+	zassert_not_equal(civil_time, seconds);
+	zassert_not_equal(civil_time, subseconds);
+	zassert_equal(civil_time, civil_time_from(seconds, subseconds));
 }
 
 ZTEST(civil_time, test_internal_conversions)
@@ -92,9 +92,9 @@ ZTEST(civil_time, test_internal_conversions)
 ZTEST(civil_time, test_gps_conversions)
 {
 	/* Time equivalents generated from https://gnsscalc.com/ */
-	zassert_equal(civil_time_from(1393460764, 0), civil_time_from_gps(2304, 1564, 0), "");
-	zassert_equal(civil_time_from(1396138875, 0), civil_time_from_gps(2308, 260475, 0), "");
-	zassert_equal(civil_time_from(1446122663, 0), civil_time_from_gps(2391, 45863, 0), "");
+	zassert_equal(civil_time_from(1393460764, 0), civil_time_from_gps(2304, 1564, 0));
+	zassert_equal(civil_time_from(1396138875, 0), civil_time_from_gps(2308, 260475, 0));
+	zassert_equal(civil_time_from(1446122663, 0), civil_time_from_gps(2391, 45863, 0));
 }
 
 ZTEST(civil_time, test_local_time_conversion)
@@ -103,8 +103,8 @@ ZTEST(civil_time, test_local_time_conversion)
 	int rc;
 
 	/* Should boot with 01/01/2020 and TIME_SOURCE_UNKNOWN */
-	zassert_equal(TIME_SOURCE_NONE, civil_time_get_source(), "");
-	zassert_equal(civil_time_from(1261872018, 0), civil_time_from_ticks(0), "");
+	zassert_equal(TIME_SOURCE_NONE, civil_time_get_source());
+	zassert_equal(civil_time_from(1261872018, 0), civil_time_from_ticks(0));
 
 	/* Set new reference point */
 	reference.local = 0;
@@ -114,11 +114,11 @@ ZTEST(civil_time, test_local_time_conversion)
 
 	/* Validate different local device times */
 	zassert_equal((0 * INFUSE_CIVIL_TIME_TICKS_PER_SEC) + 1000,
-		      civil_time_from_ticks(0 * CONFIG_SYS_CLOCK_TICKS_PER_SEC), "");
+		      civil_time_from_ticks(0 * CONFIG_SYS_CLOCK_TICKS_PER_SEC));
 	zassert_equal((1 * INFUSE_CIVIL_TIME_TICKS_PER_SEC) + 1000,
-		      civil_time_from_ticks(1 * CONFIG_SYS_CLOCK_TICKS_PER_SEC), "");
+		      civil_time_from_ticks(1 * CONFIG_SYS_CLOCK_TICKS_PER_SEC));
 	zassert_equal((2 * INFUSE_CIVIL_TIME_TICKS_PER_SEC) + 1000,
-		      civil_time_from_ticks(2 * CONFIG_SYS_CLOCK_TICKS_PER_SEC), "");
+		      civil_time_from_ticks(2 * CONFIG_SYS_CLOCK_TICKS_PER_SEC));
 }
 
 ZTEST(civil_time, test_reference_age)
