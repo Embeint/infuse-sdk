@@ -108,14 +108,16 @@ ssize_t kv_store_delete(uint16_t key);
 ssize_t kv_store_write(uint16_t key, const void *data, size_t data_len);
 
 /**
- * @brief Write a constant length key to the KV store
+ * @brief Write a key to the KV store
+ *
+ * @note Data size is automatically determined from provided argument type
  *
  * @param key Key to write to
  * @param data Pointer to value
  *
  * @return a value from @a kv_store_write
  */
-#define KV_STORE_WRITE(key, data) kv_store_write(key, data, _##key##_SIZE)
+#define KV_STORE_WRITE(key, data) kv_store_write(key, data, sizeof(*data))
 
 /**
  * @brief Read a value from the KV store
@@ -131,14 +133,16 @@ ssize_t kv_store_write(uint16_t key, const void *data, size_t data_len);
 ssize_t kv_store_read(uint16_t key, void *data, size_t max_data_len);
 
 /**
- * @brief Read a constant length key from the KV store
+ * @brief Read a key from the KV store
+ *
+ * @note Data size is automatically determined from provided argument type
  *
  * @param key Key to read from
  * @param data Pointer to value
  *
  * @return a value from @a kv_store_read
  */
-#define KV_STORE_READ(key, data) kv_store_read(key, data, _##key##_SIZE)
+#define KV_STORE_READ(key, data) kv_store_read(key, data, sizeof(*data))
 
 /**
  * @brief Read a key from the KV store, with a fallback if it doesn't exist
@@ -149,7 +153,7 @@ ssize_t kv_store_read(uint16_t key, void *data, size_t max_data_len);
  * @param fallback Pointer to the fallback value
  * @param fallback_len Size of the fallback value
  *
- * @return ssize_t
+ * @return ssize_t Size of read data
  */
 ssize_t kv_store_read_fallback(uint16_t key, void *data, size_t max_data_len, const void *fallback,
 			       size_t fallback_len);
