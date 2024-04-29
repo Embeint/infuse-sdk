@@ -95,6 +95,20 @@ struct kv_wifi_psk {
 	} __packed
 /* clang-format on */
 
+/* URL of the NTP server to use for time synchronisation */
+struct kv_ntp_server_url {
+	/* NTP server URL */
+	struct kv_string url;
+} __packed;
+
+/* clang-format off */
+/* Compile time definition for known array length */
+#define _KV_KEY_NTP_SERVER_URL_VAR(num) \
+	struct { \
+		KV_STRUCT_KV_STRING_VAR(num) url; \
+	} __packed
+/* clang-format on */
+
 /* Array of points defining a closed polygon */
 struct kv_geofence {
 	/* Points in geofence */
@@ -117,6 +131,7 @@ enum kv_builtin_id {
 	KV_KEY_FIXED_LOCATION = 10,
 	KV_KEY_WIFI_SSID = 20,
 	KV_KEY_WIFI_PSK = 21,
+	KV_KEY_NTP_SERVER_URL = 30,
 	KV_KEY_GEOFENCE = 100,
 	/* End of builtin KV range */
 	KV_KEY_BUILTIN_END = 1024,
@@ -134,6 +149,7 @@ enum kv_builtin_size {
 #define _KV_KEY_FIXED_LOCATION_TYPE struct kv_fixed_location
 #define _KV_KEY_WIFI_SSID_TYPE struct kv_wifi_ssid
 #define _KV_KEY_WIFI_PSK_TYPE struct kv_wifi_psk
+#define _KV_KEY_NTP_SERVER_URL_TYPE struct kv_ntp_server_url
 #define _KV_KEY_GEOFENCE_TYPE struct kv_geofence
 /* clang-format on */
 
