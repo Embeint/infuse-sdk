@@ -156,7 +156,8 @@ ZTEST(epacket_keys, test_key_id_get)
 
 static bool psa_init(const void *global_state)
 {
-	return psa_crypto_init() == PSA_SUCCESS;
+	zassert_equal(PSA_SUCCESS, psa_crypto_init());
+	return true;
 }
 
 ZTEST_SUITE(epacket_keys, psa_init, NULL, NULL, NULL, NULL);

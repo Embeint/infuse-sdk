@@ -1,0 +1,6 @@
+/ {
+	epacket_usb: epacket_usb {
+		compatible = "embeint,epacket-usb";
+		cdc-acm = <&uart0>;
+	};
+};
