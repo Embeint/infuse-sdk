@@ -84,6 +84,8 @@ ZTEST(kv_store, test_basic_operation)
 
 ZTEST(kv_store, test_basic_macro_helper)
 {
+	KV_STRING_CONST(fallback, "small_fallback");
+	KV_KEY_TYPE_VAR(KV_KEY_WIFI_PSK, 32) psk;
 	KV_KEY_TYPE(KV_KEY_REBOOTS) reboots;
 	ssize_t rc;
 
@@ -96,6 +98,9 @@ ZTEST(kv_store, test_basic_macro_helper)
 	rc = KV_STORE_READ(KV_KEY_REBOOTS, &reboots);
 	zassert_equal(sizeof(reboots), rc);
 	zassert_equal(15, reboots.count);
+
+	rc = KV_STORE_READ_FALLBACK(KV_KEY_WIFI_PSK, &psk, &fallback);
+	zassert_equal(sizeof(fallback), rc);
 }
 
 ZTEST(kv_store, test_read_fallback)

@@ -159,6 +159,18 @@ ssize_t kv_store_read_fallback(uint16_t key, void *data, size_t max_data_len, co
 			       size_t fallback_len);
 
 /**
+ * @brief Read a key from the KV store, with a fallback if it doesn't exist
+ *
+ * @param key Key to read from
+ * @param data Pointer to value
+ * @param fallback Pointer to fallback value
+ *
+ * @return a value from @a kv_store_read_fallback
+ */
+#define KV_STORE_READ_FALLBACK(key, data, fallback)                                                                    \
+	kv_store_read_fallback(key, data, sizeof(*data), fallback, sizeof(*fallback))
+
+/**
  * @}
  */
 
