@@ -132,6 +132,13 @@ ZTEST(civil_time, test_internal_conversions)
 	for (int i = 0; i < 100000; i++) {
 		validate_internal(12345678910 + i);
 	}
+
+	zassert_equal(0, civil_time_milliseconds(0));
+	zassert_equal(250, civil_time_milliseconds((UINT16_MAX + 1) / 4));
+	zassert_equal(333, civil_time_milliseconds((UINT16_MAX + 1) / 3));
+	zassert_equal(500, civil_time_milliseconds((UINT16_MAX + 1) / 2));
+	zassert_equal(999, civil_time_milliseconds(UINT16_MAX));
+	zassert_equal(0, civil_time_milliseconds(UINT16_MAX + 1));
 }
 
 ZTEST(civil_time, test_gps_conversions)

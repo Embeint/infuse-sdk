@@ -137,6 +137,17 @@ static inline uint16_t civil_time_subseconds(uint64_t civil_time)
 }
 
 /**
+ * @brief Extracts epoch milliseconds from a complete civil time
+ *
+ * @param civil_time Complete civil time
+ * @retval milliseconds Fractional component of time since GPS epoch
+ */
+static inline uint16_t civil_time_milliseconds(uint64_t civil_time)
+{
+	return ((uint32_t)civil_time_subseconds(civil_time) * 1000) / 0x10000;
+}
+
+/**
  * @brief Convert seconds and subseconds to complete civil time
  *
  * @param seconds Number of seconds since GPS epoch
