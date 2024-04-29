@@ -11,6 +11,22 @@ configdefault NET_IPV6
 	# Disabled due to IPV6 addresses not being removed on network down
 	default n
 
+# DNS support
+configdefault DNS_RESOLVER
+	default y
+configdefault DNS_RESOLVER_AUTO_INIT
+	default y
+configdefault DNS_SERVER_IP_ADDRESSES
+	default y
+configdefault DNS_SERVER1
+	default "8.8.8.8"
+
+# SNTP time sync
+configdefault SNTP
+	default y
+configdefault SNTP_AUTO
+	default y
+
 # IP assignment
 configdefault NET_DHCPV4
 	default y

@@ -1,0 +1,28 @@
+# Automatic SNTP time synchronisation
+
+config SNTP_AUTO
+	bool "Automatically synchronise device time through SNTP"
+	depends on INFUSE_CIVIL_TIME
+	depends on SNTP
+	default y
+
+if SNTP_AUTO
+
+config SNTP_AUTO_DEFAULT_SERVER
+	string "Default SNTP server"
+	default "pool.ntp.org"
+
+config SNTP_AUTO_RESYNC_AGE
+	int "Resynchronise time from SNTP once time sync is this far out of date"
+	default 86400
+	help
+	   SNTP is typically going to be the least accurate time sync source. We
+	   don't want to override other sync sources, and there is little value in
+	   resynchronising at a high frequency. Therefore set the default period
+	   to 24 hours.
+
+module = SNTP_AUTO
+module-str = sntp_auto
+source "subsys/logging/Kconfig.template.log_config"
+
+endif # SNTP_AUTO
