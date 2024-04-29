@@ -18,6 +18,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include <time.h>
 
 #include <zephyr/kernel.h>
 #include <zephyr/toolchain.h>
@@ -214,6 +215,17 @@ static inline uint64_t civil_time_now(void)
 {
 	return civil_time_from_ticks(k_uptime_ticks());
 }
+
+/**
+ * @brief Convert a civil time to a unix time calendar
+ *
+ * @note Output depends on current leap seconds count, and is therefore only
+ *       valid until the next leap second change.
+ *
+ * @param civil_time Complete civil time
+ * @param calendar Output calendar
+ */
+void civil_time_unix_calendar(uint64_t civil_time, struct tm *calendar);
 
 /**
  * @brief Get the current source of civil time knowledge
