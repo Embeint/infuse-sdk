@@ -1,0 +1,9 @@
+# Infuse Data Logging backends
+
+config DATA_LOGGER_EPACKET
+	bool "Logging to ePacket instance"
+	depends on EPACKET
+
+config DATA_LOGGER_FLASH_MAP
+	bool "Logging to flash_map instance"
+	depends on FLASH_MAP

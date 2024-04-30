@@ -1,0 +1,15 @@
+# Copyright (c) 2024 Jordan Yates <jordan@embeint.com>
+# SPDX-License-Identifier: LicenseRef-Embeint
+
+description: Data logging backend using the flash_map API
+
+compatible: "embeint,data-logger-flash-map"
+
+include: base.yaml
+
+properties:
+  partition:
+    type: phandle
+    required: true
+    description: |
+        Flash Map partition to log data to.

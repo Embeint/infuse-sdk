@@ -1,5 +1,6 @@
 # Infuse IoT subsys compilation
 
+add_subdirectory_ifdef(CONFIG_DATA_LOGGER data_logger)
 add_subdirectory_ifdef(CONFIG_EPACKET epacket)
 add_subdirectory_ifdef(CONFIG_TDF tdf)
 
