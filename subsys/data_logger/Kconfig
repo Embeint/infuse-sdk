@@ -1,0 +1,17 @@
+# Infuse Data Logging
+
+config DATA_LOGGER
+	bool "Infuse IoT data logging abstraction"
+	help
+	  Abstraction of logging Infuse IoT payloads to arbitrary backends,
+	  whether wireless interfaces (ePacket) or persistent storage (Flash).
+
+if DATA_LOGGER
+
+module = DATA_LOGGER
+module-str = data logger
+source "subsys/logging/Kconfig.template.log_config"
+
+rsource "backends/Kconfig"
+
+endif # DATA_LOGGER

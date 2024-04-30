@@ -1,0 +1,15 @@
+# Copyright (c) 2024 Jordan Yates <jordan@embeint.com>
+# SPDX-License-Identifier: LicenseRef-Embeint
+
+description: Data logging backend using the ePacket API
+
+compatible: "embeint,data-logger-epacket"
+
+include: base.yaml
+
+properties:
+  epacket:
+    type: phandle
+    required: true
+    description: |
+        ePacket instance to log data to.
