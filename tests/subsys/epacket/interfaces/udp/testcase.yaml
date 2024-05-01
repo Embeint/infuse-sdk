@@ -3,7 +3,7 @@ common:
   min_flash: 64
   min_ram: 32
 tests:
-  epacket.dummy:
+  epacket.interface.udp:
     integration_platforms:
       - native_sim
       - qemu_cortex_m3
