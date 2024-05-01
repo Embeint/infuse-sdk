@@ -99,8 +99,9 @@ int epacket_udp_encrypt(struct net_buf *buf)
 	return status == PSA_SUCCESS ? 0 : -1;
 }
 
-int epacket_udp_decrypt(struct net_buf *buf, uint16_t *sequence)
+int epacket_udp_decrypt(struct net_buf *buf)
 {
+	struct epacket_rx_metadata *meta = net_buf_user_data(buf);
 	struct epacket_udp_frame *frame;
 	struct net_buf *scratch;
 	uint64_t device_id;
@@ -117,7 +118,7 @@ int epacket_udp_decrypt(struct net_buf *buf, uint16_t *sequence)
 
 	/* Pull off the frame header */
 	frame = (void *)buf->data;
-	*sequence = frame->nonce.sequence;
+	meta->sequence = frame->nonce.sequence;
 	net_buf_pull(buf, sizeof(struct epacket_udp_frame));
 
 	/* Validate packet should be for us and device encrypted */

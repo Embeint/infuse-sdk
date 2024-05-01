@@ -61,7 +61,6 @@ static void epacket_handle_rx(struct net_buf *buf)
 {
 	struct epacket_interface_common_data *interface_data;
 	struct epacket_rx_metadata *metadata = net_buf_user_data(buf);
-	uint16_t sequence = 0;
 	int rc;
 
 	interface_data = metadata->interface->data;
@@ -72,12 +71,12 @@ static void epacket_handle_rx(struct net_buf *buf)
 	switch (metadata->interface_id) {
 #ifdef CONFIG_EPACKET_INTERFACE_SERIAL
 	case EPACKET_INTERFACE_SERIAL:
-		rc = epacket_serial_decrypt(buf, &sequence);
+		rc = epacket_serial_decrypt(buf);
 		break;
 #endif /* CONFIG_EPACKET_INTERFACE_SERIAL */
 #ifdef CONFIG_EPACKET_INTERFACE_UDP
 	case EPACKET_INTERFACE_UDP:
-		rc = epacket_udp_decrypt(buf, &sequence);
+		rc = epacket_udp_decrypt(buf);
 		break;
 #endif /* CONFIG_EPACKET_INTERFACE_UDP */
 #ifdef CONFIG_EPACKET_INTERFACE_DUMMY
@@ -90,7 +89,6 @@ static void epacket_handle_rx(struct net_buf *buf)
 		LOG_WRN("Unknown interface ID %d", metadata->interface_id);
 		rc = -1;
 	}
-	metadata->sequence = sequence;
 	LOG_DBG("Decrypt result: %d", rc);
 
 	/* Payload handling */
