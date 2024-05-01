@@ -11,6 +11,10 @@ configdefault NET_IPV6
 	# Disabled due to IPV6 addresses not being removed on network down
 	default n
 
+configdefault NET_MAX_CONN
+	# DNS + SNTP + UDP + WPA_SUPP consume the default 4
+	default 6
+
 # DNS support
 configdefault DNS_RESOLVER
 	default y
@@ -20,6 +24,9 @@ configdefault DNS_SERVER_IP_ADDRESSES
 	default y
 configdefault DNS_SERVER1
 	default "8.8.8.8"
+configdefault DNS_NUM_CONCUR_QUERIES
+	# Both libraries do DNS queries immediately upon connection
+	default 2 if SNTP_AUTO && EPACKET_INTERFACE_UDP
 
 # SNTP time sync
 configdefault SNTP
