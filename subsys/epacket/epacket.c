@@ -17,9 +17,9 @@
 
 NET_BUF_POOL_DEFINE(epacket_scratch, 1, CONFIG_EPACKET_PAYLOAD_MAX, 0, NULL);
 NET_BUF_POOL_DEFINE(epacket_pool_tx, CONFIG_EPACKET_BUFFERS_TX, CONFIG_EPACKET_PAYLOAD_MAX,
-		    sizeof(struct epacket_metadata), NULL);
+		    sizeof(struct epacket_tx_metadata), NULL);
 NET_BUF_POOL_DEFINE(epacket_pool_rx, CONFIG_EPACKET_BUFFERS_RX, CONFIG_EPACKET_PAYLOAD_MAX,
-		    sizeof(struct epacket_metadata), NULL);
+		    sizeof(struct epacket_tx_metadata), NULL);
 
 static K_FIFO_DEFINE(epacket_rx_queue);
 static K_FIFO_DEFINE(epacket_tx_queue);

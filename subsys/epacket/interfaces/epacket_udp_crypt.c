@@ -28,7 +28,7 @@ BUILD_ASSERT(sizeof(struct epacket_udp_frame) == EPACKET_UDP_FRAME_EXPECTED_SIZE
 
 int epacket_udp_encrypt(struct net_buf *buf)
 {
-	struct epacket_metadata *meta = net_buf_user_data(buf);
+	struct epacket_tx_metadata *meta = net_buf_user_data(buf);
 	uint64_t civil_time = civil_time_seconds(civil_time_now());
 	uint64_t device_id = infuse_device_id();
 	struct epacket_udp_frame *frame;

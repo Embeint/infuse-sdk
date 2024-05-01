@@ -55,7 +55,7 @@ static void epacket_dummy_packet_overhead(const struct device *dev, size_t *head
 static int epacket_dummy_send(const struct device *dev, struct net_buf *buf)
 {
 	struct epacket_dummy_frame *header = net_buf_push(buf, sizeof(struct epacket_dummy_frame));
-	struct epacket_metadata *meta = net_buf_user_data(buf);
+	struct epacket_tx_metadata *meta = net_buf_user_data(buf);
 
 	header->type = meta->type;
 	header->auth = meta->auth;
