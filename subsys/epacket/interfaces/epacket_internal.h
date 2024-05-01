@@ -23,6 +23,14 @@ extern "C" {
  */
 struct net_buf *epacket_encryption_scratch(void);
 
+/**
+ * @brief Handle raw received ePackets from interfaces
+ *
+ * @param metadata Interface receive metadata
+ * @param buf ePacket that was received
+ */
+void epacket_raw_receive_handler(struct epacket_receive_metadata *metadata, struct net_buf *buf);
+
 #define SERIAL_SYNC_A 0xD5
 #define SERIAL_SYNC_B 0xCA
 
