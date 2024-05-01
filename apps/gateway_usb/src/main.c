@@ -10,7 +10,6 @@
 
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
-#include <zephyr/usb/usb_device.h>
 
 #include <infuse/epacket/interface.h>
 #include <infuse/epacket/packet.h>
@@ -21,13 +20,8 @@ int main(void)
 {
 	const struct device *epacket_usb = DEVICE_DT_GET(DT_NODELABEL(epacket_usb));
 	struct net_buf *buf;
-	int ret, cnt = 0;
+	int cnt = 0;
 	uint8_t auth;
-
-	ret = usb_enable(NULL);
-	if (ret != 0) {
-		LOG_ERR("usb enable error %d", ret);
-	}
 
 	for (;;) {
 		buf = epacket_alloc_tx_for_interface(epacket_usb, K_FOREVER);
@@ -38,7 +32,7 @@ int main(void)
 
 		epacket_set_tx_metadata(buf, auth, 0x12, 0xF0);
 		epacket_queue(epacket_usb, buf);
-		LOG_INF("Sent %s %d %d", epacket_usb->name, ret, cnt++);
+		LOG_INF("Sent %s %d", epacket_usb->name, cnt++);
 		k_sleep(K_SECONDS(1));
 	}
 	return 0;
