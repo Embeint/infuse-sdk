@@ -73,11 +73,11 @@ static void epacket_handle_rx(struct net_buf *buf)
 
 	/* Payload decoding */
 	switch (metadata->interface_id) {
-#ifdef CONFIG_EPACKET_INTERFACE_USB
+#ifdef CONFIG_EPACKET_INTERFACE_SERIAL
 	case EPACKET_INTERFACE_SERIAL:
 		rc = epacket_serial_decrypt(buf, &sequence);
 		break;
-#endif /* CONFIG_EPACKET_INTERFACE_USB */
+#endif /* CONFIG_EPACKET_INTERFACE_SERIAL */
 #ifdef CONFIG_EPACKET_INTERFACE_UDP
 	case EPACKET_INTERFACE_UDP:
 		rc = epacket_udp_decrypt(buf, &sequence);
