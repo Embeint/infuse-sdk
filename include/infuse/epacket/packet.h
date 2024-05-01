@@ -36,10 +36,10 @@ enum epacket_auth {
 	EPACKET_AUTH_DEVICE
 } __packed;
 
-struct epacket_metadata {
+struct epacket_tx_metadata {
 	enum epacket_auth auth;
-	uint16_t flags;
 	enum infuse_type type;
+	uint16_t flags;
 };
 
 /* Global ePacket flags */
@@ -115,7 +115,7 @@ static inline struct net_buf *epacket_alloc_tx_for_interface(const struct device
 static inline void epacket_set_tx_metadata(struct net_buf *buf, enum epacket_auth auth, uint16_t flags,
 					   enum infuse_type type)
 {
-	struct epacket_metadata *meta = net_buf_user_data(buf);
+	struct epacket_tx_metadata *meta = net_buf_user_data(buf);
 
 	meta->auth = auth;
 	meta->flags = flags;
