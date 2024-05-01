@@ -15,6 +15,7 @@
 
 #include <stdint.h>
 
+#include <zephyr/device.h>
 #include <zephyr/toolchain.h>
 #include <zephyr/net/buf.h>
 
@@ -40,6 +41,23 @@ struct epacket_tx_metadata {
 	enum epacket_auth auth;
 	enum infuse_type type;
 	uint16_t flags;
+};
+
+struct epacket_rx_metadata {
+	/* Authentication level of packet */
+	enum epacket_auth auth;
+	/* Type of packet */
+	enum infuse_type type;
+	/* Flags associated with packet */
+	uint16_t flags;
+	/* ePacket interface packet was received on */
+	const struct device *interface;
+	/* Numerical ID for interface */
+	enum epacket_interface_id interface_id;
+	/* RSSI of packet (0 = 0dBm, 20 = 20dBm, etc) */
+	int16_t rssi;
+	/* Sequence number of packet */
+	uint16_t sequence;
 };
 
 /* Global ePacket flags */

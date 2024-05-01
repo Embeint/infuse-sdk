@@ -15,7 +15,7 @@
 
 static K_FIFO_DEFINE(handler_fifo);
 
-static void custom_handler(struct epacket_receive_metadata *metadata, struct net_buf *packet)
+static void custom_handler(struct net_buf *packet)
 {
 	net_buf_put(&handler_fifo, packet);
 }
@@ -28,7 +28,7 @@ ZTEST(epacket_handlers, test_custom_handler)
 		.auth = EPACKET_AUTH_NETWORK,
 		.flags = 0xAFFA,
 	};
-	struct epacket_receive_metadata *meta;
+	struct epacket_rx_metadata *meta;
 	uint8_t payload[16];
 	struct net_buf *rx;
 
@@ -43,7 +43,7 @@ ZTEST(epacket_handlers, test_custom_handler)
 	epacket_dummy_receive(epacket_dummy, &header, payload, sizeof(payload));
 	rx = net_buf_get(&handler_fifo, K_MSEC(10));
 	zassert_not_null(rx);
-	meta = epacket_rx_packet_metadata(rx);
+	meta = net_buf_user_data(rx);
 
 	/* Free the buffer */
 	net_buf_unref(rx);

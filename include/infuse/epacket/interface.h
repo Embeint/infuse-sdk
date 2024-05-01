@@ -33,17 +33,6 @@ enum epacket_interface_id {
 	EPACKET_INTERFACE_DUMMY = 255,
 };
 
-struct epacket_receive_metadata {
-	/* ePacket interface packet was received on */
-	const struct device *interface;
-	/* Numerical ID for interface */
-	enum epacket_interface_id interface_id;
-	/* RSSI of packet (0 = 0dBm, 20 = 20dBm, etc) */
-	int16_t rssi;
-	/* Sequence number of packet */
-	uint16_t sequence;
-};
-
 struct epacket_interface_api {
 	/**
 	 * @brief Query packet overhead for the interface
@@ -69,10 +58,9 @@ struct epacket_interface_api {
 /**
  * @brief Callback to run on received packet
  *
- * @param metadata Received packet metadata
  * @param packet Received packet payload
  */
-typedef void (*epacket_receive_handler)(struct epacket_receive_metadata *metadata, struct net_buf *packet);
+typedef void (*epacket_receive_handler)(struct net_buf *packet);
 
 /** Common data struct for all interfaces. Must be first member in interface data struct */
 struct epacket_interface_common_data {
@@ -115,23 +103,13 @@ static inline void epacket_set_receive_handler(const struct device *dev, epacket
 }
 
 /**
- * @brief Get RX metadata associated with a packet
- *
- * @param buf ePacket RX message
- *
- * @return Pointer to metadata struct
- */
-struct epacket_receive_metadata *epacket_rx_packet_metadata(struct net_buf *buf);
-
-/**
  * @brief Default ePacket receive handler
  *
  * Currently only prints received packets.
  *
- * @param metadata Interface receive metadata
  * @param buf ePacket that was received
  */
-void epacket_default_receive_handler(struct epacket_receive_metadata *metadata, struct net_buf *buf);
+void epacket_default_receive_handler(struct net_buf *buf);
 
 /**
  * @}

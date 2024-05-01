@@ -99,6 +99,7 @@ static int epacket_udp_dns_query(void)
 static int epacket_udp_loop(void *a, void *b, void *c)
 {
 	struct sockaddr_in local_addr = {0};
+	struct epacket_rx_metadata *meta;
 	struct sockaddr from;
 	socklen_t from_len;
 	struct net_buf *buf;
@@ -142,6 +143,7 @@ static int epacket_udp_loop(void *a, void *b, void *c)
 		LOG_INF("Waiting for UDP packets on port %d", ntohs(local_addr.sin_port));
 		while (true) {
 			buf = epacket_alloc_rx(K_FOREVER);
+			meta = net_buf_user_data(buf);
 			/* Receive data into local buffer */
 			received = zsock_recvfrom(udp_state.sock, buf->data, buf->size, 0, &from, &from_len);
 			if (received < 0) {
@@ -154,14 +156,13 @@ static int epacket_udp_loop(void *a, void *b, void *c)
 			port = ((struct sockaddr_in *)&from)->sin_port;
 			LOG_DBG("Received %d bytes from %d.%d.%d.%d:%d", received, addr[0], addr[1], addr[2], addr[3],
 				port);
-			struct epacket_receive_metadata meta = {
-				.interface = DEVICE_DT_GET(DT_DRV_INST(0)),
-				.interface_id = EPACKET_INTERFACE_UDP,
-				.rssi = 0,
-			};
+
+			meta->interface = DEVICE_DT_GET(DT_DRV_INST(0));
+			meta->interface_id = EPACKET_INTERFACE_UDP;
+			meta->rssi = 0;
 
 			/* Hand off to core ePacket functions */
-			epacket_raw_receive_handler(&meta, buf);
+			epacket_raw_receive_handler(buf);
 		}
 
 		/* clang-format off */

@@ -19,11 +19,10 @@ NET_BUF_POOL_DEFINE(epacket_scratch, 1, CONFIG_EPACKET_PAYLOAD_MAX, 0, NULL);
 NET_BUF_POOL_DEFINE(epacket_pool_tx, CONFIG_EPACKET_BUFFERS_TX, CONFIG_EPACKET_PAYLOAD_MAX,
 		    sizeof(struct epacket_tx_metadata), NULL);
 NET_BUF_POOL_DEFINE(epacket_pool_rx, CONFIG_EPACKET_BUFFERS_RX, CONFIG_EPACKET_PAYLOAD_MAX,
-		    sizeof(struct epacket_tx_metadata), NULL);
+		    sizeof(struct epacket_rx_metadata), NULL);
 
 static K_FIFO_DEFINE(epacket_rx_queue);
 static K_FIFO_DEFINE(epacket_tx_queue);
-static struct epacket_receive_metadata rx_metadata[CONFIG_EPACKET_BUFFERS_RX];
 static const struct device *tx_device[CONFIG_EPACKET_BUFFERS_TX];
 
 LOG_MODULE_REGISTER(epacket, CONFIG_EPACKET_LOG_LEVEL);
@@ -52,28 +51,19 @@ void epacket_queue(const struct device *dev, struct net_buf *buf)
 	net_buf_put(&epacket_tx_queue, buf);
 }
 
-void epacket_raw_receive_handler(struct epacket_receive_metadata *metadata, struct net_buf *buf)
+void epacket_raw_receive_handler(struct net_buf *buf)
 {
-	/* Store metadata */
-	rx_metadata[net_buf_id(buf)] = *metadata;
-
 	/* Push packet at processing queue */
 	net_buf_put(&epacket_rx_queue, buf);
-}
-
-struct epacket_receive_metadata *epacket_rx_packet_metadata(struct net_buf *buf)
-{
-	return &rx_metadata[net_buf_id(buf)];
 }
 
 static void epacket_handle_rx(struct net_buf *buf)
 {
 	struct epacket_interface_common_data *interface_data;
-	struct epacket_receive_metadata *metadata;
+	struct epacket_rx_metadata *metadata = net_buf_user_data(buf);
 	uint16_t sequence = 0;
 	int rc;
 
-	metadata = &rx_metadata[net_buf_id(buf)];
 	interface_data = metadata->interface->data;
 
 	LOG_WRN("%s: received %d byte packet (%d dBm)", metadata->interface->name, buf->len, metadata->rssi);
@@ -104,7 +94,7 @@ static void epacket_handle_rx(struct net_buf *buf)
 	LOG_DBG("Decrypt result: %d", rc);
 
 	/* Payload handling */
-	interface_data->receive_handler(metadata, buf);
+	interface_data->receive_handler(buf);
 }
 
 static void epacket_handle_tx(struct net_buf *buf)

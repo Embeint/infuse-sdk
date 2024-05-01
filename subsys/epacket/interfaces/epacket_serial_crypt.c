@@ -29,12 +29,13 @@ static const uint8_t sync_bytes[2] = {SERIAL_SYNC_A, SERIAL_SYNC_B};
 BUILD_ASSERT(sizeof(struct epacket_serial_frame) == EPACKET_SERIAL_FRAME_EXPECTED_SIZE, "USB frame changed size");
 
 void epacket_serial_reconstruct(const struct device *dev, uint8_t *buffer, size_t len,
-				void (*handler)(struct epacket_receive_metadata *, struct net_buf *))
+				void (*handler)(struct net_buf *))
 {
 	static struct net_buf *rx_buffer;
 	static uint16_t payload_remaining;
 	static uint8_t len_lsb;
 	static uint16_t header_idx;
+	struct epacket_rx_metadata *meta;
 
 	for (int i = 0; i < len; i++) {
 		switch (header_idx) {
@@ -75,14 +76,13 @@ void epacket_serial_reconstruct(const struct device *dev, uint8_t *buffer, size_
 
 		/* Is packet done? */
 		if (payload_remaining == 0) {
-			struct epacket_receive_metadata meta = {
-				.interface = dev,
-				.interface_id = EPACKET_INTERFACE_SERIAL,
-				.rssi = 0,
-			};
+			meta = net_buf_user_data(rx_buffer);
+			meta->interface = dev;
+			meta->interface_id = EPACKET_INTERFACE_SERIAL;
+			meta->interface_id = 0;
 
 			/* Hand off to core ePacket functions */
-			handler(&meta, rx_buffer);
+			handler(rx_buffer);
 			/* Reset parsing state */
 			rx_buffer = NULL;
 			header_idx = 0;

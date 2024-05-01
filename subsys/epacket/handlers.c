@@ -12,7 +12,7 @@
 
 LOG_MODULE_DECLARE(epacket);
 
-void epacket_default_receive_handler(struct epacket_receive_metadata *metadata, struct net_buf *buf)
+void epacket_default_receive_handler(struct net_buf *buf)
 {
 	LOG_HEXDUMP_INF(buf->data, buf->len, "Received");
 	net_buf_unref(buf);
