@@ -58,12 +58,11 @@ int epacket_serial_encrypt(struct net_buf *buf);
  * @brief Decrypt received serial packet
  *
  * @param buf Packet to decrypt
- * @param sequence Sequence number of packet
  *
  * @retval 0 on success
  * @retval -1 on failure
  */
-int epacket_serial_decrypt(struct net_buf *buf, uint16_t *sequence);
+int epacket_serial_decrypt(struct net_buf *buf);
 
 /**
  * @brief Encrypt UDP packet for transmission
@@ -79,12 +78,11 @@ int epacket_udp_encrypt(struct net_buf *buf);
  * @brief Decrypt received UDP packet
  *
  * @param buf Packet to decrypt
- * @param sequence Sequence number of packet
  *
  * @retval 0 on success
  * @retval -1 on failure
  */
-int epacket_udp_decrypt(struct net_buf *buf, uint16_t *sequence);
+int epacket_udp_decrypt(struct net_buf *buf);
 
 #ifdef __cplusplus
 }

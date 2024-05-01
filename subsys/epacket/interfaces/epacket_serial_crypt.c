@@ -168,8 +168,9 @@ int epacket_serial_encrypt(struct net_buf *buf)
 	return status == PSA_SUCCESS ? 0 : -1;
 }
 
-int epacket_serial_decrypt(struct net_buf *buf, uint16_t *sequence)
+int epacket_serial_decrypt(struct net_buf *buf)
 {
+	struct epacket_rx_metadata *meta = net_buf_user_data(buf);
 	struct epacket_serial_frame *frame;
 	struct net_buf *scratch;
 	uint32_t key_rotation, key_period;
@@ -187,7 +188,7 @@ int epacket_serial_decrypt(struct net_buf *buf, uint16_t *sequence)
 
 	/* Pull off the frame header */
 	frame = (void *)buf->data;
-	*sequence = frame->nonce.sequence;
+	meta->sequence = frame->nonce.sequence;
 	net_buf_pull(buf, sizeof(struct epacket_serial_frame));
 
 	if (frame->associated_data.flags & EPACKET_FLAGS_ENCRYPTION_DEVICE) {

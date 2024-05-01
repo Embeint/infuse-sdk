@@ -55,6 +55,7 @@ ZTEST(epacket_serial, test_reconstructor)
 	epacket_serial_reconstruct(NULL, buffer, 1, receive_handler);
 	out = k_fifo_get(&packet_queue, K_MSEC(10));
 	zassert_not_null(out);
+	net_buf_unref(out);
 
 	/* Valid packet 2 */
 	s.len = 4;
@@ -65,6 +66,7 @@ ZTEST(epacket_serial, test_reconstructor)
 	epacket_serial_reconstruct(NULL, buffer, 1, receive_handler);
 	out = k_fifo_get(&packet_queue, K_MSEC(10));
 	zassert_not_null(out);
+	net_buf_unref(out);
 
 	/* Random junk ascii */
 	for (int i = 0; i < 128; i++) {
@@ -85,6 +87,7 @@ ZTEST(epacket_serial, test_reconstructor)
 	epacket_serial_reconstruct(NULL, buffer, 1, receive_handler);
 	out = k_fifo_get(&packet_queue, K_MSEC(10));
 	zassert_not_null(out);
+	net_buf_unref(out);
 
 	/* Bad sync bytes */
 	s.sync[0] += 1;
@@ -103,40 +106,50 @@ ZTEST(epacket_serial, test_reconstructor)
 
 ZTEST(epacket_serial, test_sequence)
 {
-	struct net_buf *buf;
+	struct epacket_rx_metadata *meta;
+	struct net_buf *tx, *rx;
 	uint16_t seqs[8];
 	uint8_t *p;
 	int rc;
 
+	rx = epacket_alloc_rx(K_NO_WAIT);
+	zassert_not_null(rx);
+
 	for (int i = 0; i < ARRAY_SIZE(seqs); i++) {
 		/* Construct buffer */
-		buf = epacket_alloc_tx(K_NO_WAIT);
-		zassert_not_null(buf);
-		net_buf_reserve(buf, EPACKET_SERIAL_FRAME_EXPECTED_SIZE);
-		epacket_set_tx_metadata(buf, EPACKET_AUTH_DEVICE, 0, 0x10);
-		p = net_buf_add(buf, 60);
+		tx = epacket_alloc_tx(K_NO_WAIT);
+		zassert_not_null(tx);
+		net_buf_reserve(tx, EPACKET_SERIAL_FRAME_EXPECTED_SIZE);
+		epacket_set_tx_metadata(tx, EPACKET_AUTH_DEVICE, 0, 0x10);
+		p = net_buf_add(tx, 60);
 		sys_rand_get(p, 60);
 
 		/* Encrypt payload */
-		rc = epacket_serial_encrypt(buf);
+		rc = epacket_serial_encrypt(tx);
 		zassert_equal(0, rc);
 
+		/* Copy message contents across to RX buffer */
+		net_buf_reset(rx);
+		net_buf_add_mem(rx, tx->data, tx->len);
+		net_buf_unref(tx);
+
 		/* Decrypt and free */
-		rc = epacket_serial_decrypt(buf, &seqs[i]);
+		rc = epacket_serial_decrypt(rx);
 		zassert_equal(0, rc);
-		net_buf_unref(buf);
+		meta = net_buf_user_data(rx);
+		seqs[i] = meta->sequence;
 
 		if (i > 0) {
 			/* Sequence number should increase on each packet */
 			zassert_equal(seqs[i - 1] + 1, seqs[i]);
 		}
 	}
+	net_buf_unref(rx);
 }
 
 ZTEST(epacket_serial, test_encrypt_decrypt)
 {
-	struct net_buf *orig_buf, *encr_buf, *copy_buf;
-	uint16_t seq;
+	struct net_buf *orig_buf, *encr_buf, *rx, *rx_copy_buf;
 	uint8_t *p;
 	int rc;
 
@@ -155,24 +168,31 @@ ZTEST(epacket_serial, test_encrypt_decrypt)
 	zassert_equal(0, rc);
 	zassert_equal(orig_buf->len + EPACKET_SERIAL_FRAME_EXPECTED_SIZE + 16, encr_buf->len);
 
+	/* Copy message contents across to RX buffer */
+	rx = epacket_alloc_rx(K_NO_WAIT);
+	zassert_not_null(rx);
+	net_buf_add_mem(rx, encr_buf->data, encr_buf->len);
+	net_buf_unref(encr_buf);
+
 	/* Decrypt unmodified packet */
-	copy_buf = net_buf_clone(encr_buf, K_NO_WAIT);
-	zassert_not_null(copy_buf);
-	rc = epacket_serial_decrypt(copy_buf, &seq);
+	rx_copy_buf = net_buf_clone(rx, K_NO_WAIT);
+	zassert_not_null(rx_copy_buf);
+	rc = epacket_serial_decrypt(rx_copy_buf);
 	zassert_equal(0, rc);
-	zassert_equal(orig_buf->len, copy_buf->len);
-	zassert_mem_equal(orig_buf->data, copy_buf->data, copy_buf->len);
-	net_buf_unref(copy_buf);
+	zassert_equal(orig_buf->len, rx_copy_buf->len);
+	zassert_mem_equal(orig_buf->data, rx_copy_buf->data, rx_copy_buf->len);
+	net_buf_unref(rx_copy_buf);
 
 	/* Test failure on modified encryption buffer */
-	for (int i = 0; i < encr_buf->len; i++) {
-		copy_buf = net_buf_clone(encr_buf, K_NO_WAIT);
-		zassert_not_null(copy_buf);
-		copy_buf->data[i]++;
-		rc = epacket_serial_decrypt(copy_buf, &seq);
+	for (int i = 0; i < rx->len; i++) {
+		rx_copy_buf = net_buf_clone(rx, K_NO_WAIT);
+		zassert_not_null(rx_copy_buf);
+		rx_copy_buf->data[i]++;
+		rc = epacket_serial_decrypt(rx_copy_buf);
 		zassert_equal(-1, rc);
-		net_buf_unref(copy_buf);
+		net_buf_unref(rx_copy_buf);
 	}
+	net_buf_unref(rx);
 }
 
 static bool psa_init(const void *global_state)
