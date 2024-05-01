@@ -65,7 +65,7 @@ static void epacket_handle_rx(struct net_buf *buf)
 
 	interface_data = metadata->interface->data;
 
-	LOG_WRN("%s: received %d byte packet (%d dBm)", metadata->interface->name, buf->len, metadata->rssi);
+	LOG_DBG("%s: received %d byte packet (%d dBm)", metadata->interface->name, buf->len, metadata->rssi);
 
 	/* Payload decoding */
 	switch (metadata->interface_id) {

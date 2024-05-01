@@ -9,11 +9,15 @@
 #include <zephyr/logging/log.h>
 
 #include <infuse/epacket/interface.h>
+#include <infuse/epacket/packet.h>
 
 LOG_MODULE_DECLARE(epacket);
 
 void epacket_default_receive_handler(struct net_buf *buf)
 {
-	LOG_HEXDUMP_INF(buf->data, buf->len, "Received");
+	struct epacket_rx_metadata *meta = net_buf_user_data(buf);
+
+	LOG_INF("Received on %s: Auth=%d Type=%d Seq=%d Len=%d", meta->interface->name, meta->auth, meta->type,
+		meta->sequence, buf->len);
 	net_buf_unref(buf);
 }
