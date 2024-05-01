@@ -115,17 +115,19 @@ int epacket_udp_decrypt(struct net_buf *buf)
 	if (buf->len <= sizeof(struct epacket_udp_frame)) {
 		return -1;
 	}
-
-	/* Pull off the frame header */
 	frame = (void *)buf->data;
-	meta->sequence = frame->nonce.sequence;
-	net_buf_pull(buf, sizeof(struct epacket_udp_frame));
 
 	/* Validate packet should be for us and device encrypted */
 	device_id = ((uint64_t)frame->associated_data.device_id_upper << 32) | frame->nonce.device_id_lower;
 	if ((device_id != infuse_device_id()) || !(frame->associated_data.flags & EPACKET_FLAGS_ENCRYPTION_DEVICE)) {
 		return -1;
 	}
+
+	/* Packet metadata */
+	meta->type = frame->associated_data.type;
+	meta->flags = frame->associated_data.flags;
+	meta->auth = EPACKET_AUTH_DEVICE;
+	meta->sequence = frame->nonce.sequence;
 
 	/* Get the PSA key ID for packet */
 	key_id = EPACKET_KEY_DEVICE | EPACKET_KEY_INTERFACE_UDP;
@@ -139,6 +141,7 @@ int epacket_udp_decrypt(struct net_buf *buf)
 	scratch = epacket_encryption_scratch();
 
 	/* Copy ciphertext across to scratch space */
+	net_buf_pull(buf, sizeof(struct epacket_udp_frame));
 	net_buf_add_mem(scratch, buf->data, buf->len);
 	net_buf_reset(buf);
 

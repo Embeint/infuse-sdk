@@ -25,7 +25,7 @@ uint64_t infuse_device_id(void)
 	return 0x0123456789ABCDEF;
 }
 
-ZTEST(epacket_udp, test_sequence)
+ZTEST(epacket_udp, test_metadata)
 {
 	struct epacket_rx_metadata *meta;
 	struct net_buf *tx, *rx;
@@ -41,7 +41,7 @@ ZTEST(epacket_udp, test_sequence)
 		tx = epacket_alloc_tx(K_NO_WAIT);
 		zassert_not_null(tx);
 		net_buf_reserve(tx, EPACKET_UDP_FRAME_EXPECTED_SIZE);
-		epacket_set_tx_metadata(tx, EPACKET_AUTH_DEVICE, 0, 0x10);
+		epacket_set_tx_metadata(tx, EPACKET_AUTH_DEVICE, i, 0x10 + i);
 		p = net_buf_add(tx, 60);
 		sys_rand_get(p, 60);
 
@@ -58,6 +58,9 @@ ZTEST(epacket_udp, test_sequence)
 		rc = epacket_udp_decrypt(rx);
 		zassert_equal(0, rc);
 		meta = net_buf_user_data(rx);
+		zassert_equal(EPACKET_AUTH_DEVICE, meta->auth);
+		zassert_equal(0x10 + i, meta->type);
+		zassert_equal(EPACKET_FLAGS_ENCRYPTION_DEVICE | i, meta->flags);
 		seqs[i] = meta->sequence;
 
 		if (i > 0) {
