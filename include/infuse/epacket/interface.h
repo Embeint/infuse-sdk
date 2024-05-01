@@ -66,6 +66,19 @@ struct epacket_interface_api {
 };
 
 /**
+ * @brief Callback to run on received packet
+ *
+ * @param metadata Received packet metadata
+ * @param packet Received packet payload
+ */
+typedef void (*epacket_receive_handler)(struct epacket_receive_metadata *metadata, struct net_buf *packet);
+
+/** Common data struct for all interfaces. Must be first member in interface data struct */
+struct epacket_interface_common_data {
+	epacket_receive_handler receive_handler;
+};
+
+/**
  * @brief Get the packet overhead for an interface
  *
  * @param dev Interface to query
@@ -88,12 +101,27 @@ static inline void epacket_packet_overhead(const struct device *dev, size_t *hea
 void epacket_queue(const struct device *dev, struct net_buf *buf);
 
 /**
- * @brief Handle raw received ePackets from interfaces
+ * @brief Set the ePacket receive handler for an interface
+ *
+ * @param dev Interface to set handler for
+ * @param handler Handler function to run on received packets
+ */
+static inline void epacket_set_receive_handler(const struct device *dev, epacket_receive_handler handler)
+{
+	struct epacket_interface_common_data *data = dev->data;
+
+	data->receive_handler = handler;
+}
+
+/**
+ * @brief Default ePacket receive handler
+ *
+ * Currently only prints received packets.
  *
  * @param metadata Interface receive metadata
  * @param buf ePacket that was received
  */
-void epacket_raw_receive_handler(struct epacket_receive_metadata *metadata, struct net_buf *buf);
+void epacket_default_receive_handler(struct epacket_receive_metadata *metadata, struct net_buf *buf);
 
 /**
  * @}

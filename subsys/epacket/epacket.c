@@ -63,11 +63,13 @@ void epacket_raw_receive_handler(struct epacket_receive_metadata *metadata, stru
 
 static void epacket_handle_rx(struct net_buf *buf)
 {
+	struct epacket_interface_common_data *interface_data;
 	struct epacket_receive_metadata *metadata;
 	uint16_t sequence = 0;
 	int rc;
 
 	metadata = &rx_metadata[net_buf_id(buf)];
+	interface_data = metadata->interface->data;
 
 	LOG_WRN("%s: received %d byte packet (%d dBm)", metadata->interface->name, buf->len, metadata->rssi);
 
@@ -90,12 +92,8 @@ static void epacket_handle_rx(struct net_buf *buf)
 	metadata->sequence = sequence;
 	LOG_DBG("Decrypt result: %d", rc);
 
-	if (rc == 0) {
-		LOG_HEXDUMP_INF(buf->data, buf->len, "Received");
-	}
-
 	/* Payload handling */
-	net_buf_unref(buf);
+	interface_data->receive_handler(metadata, buf);
 }
 
 static void epacket_handle_tx(struct net_buf *buf)

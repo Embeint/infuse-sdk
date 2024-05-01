@@ -48,6 +48,9 @@ static int epacket_dummy_send(const struct device *dev, struct net_buf *buf)
 
 static int epacket_dummy_init(const struct device *dev)
 {
+	struct epacket_interface_common_data *data = dev->data;
+
+	data->receive_handler = epacket_default_receive_handler;
 	k_fifo_init(&epacket_dummy_fifo);
 	return 0;
 }
@@ -58,6 +61,8 @@ static const struct epacket_interface_api dummy_api = {
 };
 
 #define EPACKET_DUMMY_DEFINE(inst)                                                                                     \
-	DEVICE_DT_INST_DEFINE(inst, epacket_dummy_init, NULL, NULL, NULL, POST_KERNEL, 0, &dummy_api);
+	static struct epacket_interface_common_data epacket_dummy_data##inst;                                          \
+	DEVICE_DT_INST_DEFINE(inst, epacket_dummy_init, NULL, &epacket_dummy_data##inst, NULL, POST_KERNEL, 0,         \
+			      &dummy_api);
 
 DT_INST_FOREACH_STATUS_OKAY(EPACKET_DUMMY_DEFINE)
