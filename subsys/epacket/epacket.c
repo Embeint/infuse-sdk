@@ -85,6 +85,12 @@ static void epacket_handle_rx(struct net_buf *buf)
 		rc = epacket_udp_decrypt(buf, &sequence);
 		break;
 #endif /* CONFIG_EPACKET_INTERFACE_UDP */
+#ifdef CONFIG_EPACKET_INTERFACE_DUMMY
+	case EPACKET_INTERFACE_DUMMY:
+		/* Dummy interface is not encrypted */
+		rc = 0;
+		break;
+#endif /* CONFIG_EPACKET_INTERFACE_DUMMY */
 	default:
 		LOG_WRN("Unknown interface ID %d", metadata->interface_id);
 		rc = -1;

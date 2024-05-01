@@ -40,7 +40,23 @@ struct epacket_dummy_frame {
 	uint8_t payload[];
 } __packed;
 
+/**
+ * @brief Get the FIFO that the dummy interface "sends" packets on
+ *
+ * @return Pointer to the transmit FIFO
+ */
 struct k_fifo *epacket_dummmy_transmit_fifo_get(void);
+
+/**
+ * @brief Simulate the dummy interface receiving a packet
+ *
+ * @param dev Dummy interface
+ * @param header Packet header
+ * @param payload Packet payload
+ * @param payload_len Length of payload
+ */
+void epacket_dummy_receive(const struct device *dev, struct epacket_dummy_frame *header, uint8_t *payload,
+			   size_t payload_len);
 
 /**
  * @}

@@ -27,6 +27,25 @@ struct k_fifo *epacket_dummmy_transmit_fifo_get(void)
 	return &epacket_dummy_fifo;
 }
 
+void epacket_dummy_receive(const struct device *dev, struct epacket_dummy_frame *header, uint8_t *payload,
+			   size_t payload_len)
+{
+	struct net_buf *rx = epacket_alloc_rx(K_FOREVER);
+
+	/* Construct payload */
+	net_buf_add_mem(rx, header, sizeof(*header));
+	net_buf_add_mem(rx, payload, payload_len);
+
+	struct epacket_receive_metadata meta = {
+		.interface = dev,
+		.interface_id = EPACKET_INTERFACE_DUMMY,
+		.rssi = 0,
+	};
+
+	/* Push at handling thread */
+	epacket_raw_receive_handler(&meta, rx);
+}
+
 static void epacket_dummy_packet_overhead(const struct device *dev, size_t *header, size_t *footer)
 {
 	*header = sizeof(struct epacket_dummy_frame);
