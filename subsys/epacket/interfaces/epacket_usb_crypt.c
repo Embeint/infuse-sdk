@@ -168,7 +168,7 @@ int epacket_serial_encrypt(struct net_buf *buf)
 	return status == PSA_SUCCESS ? 0 : -1;
 }
 
-int epacket_serial_decrypt(struct net_buf *buf)
+int epacket_serial_decrypt(struct net_buf *buf, uint16_t *sequence)
 {
 	struct epacket_usb_frame *frame;
 	struct net_buf *scratch;
@@ -187,6 +187,7 @@ int epacket_serial_decrypt(struct net_buf *buf)
 
 	/* Pull off the frame header */
 	frame = (void *)buf->data;
+	*sequence = frame->nonce.sequence;
 	net_buf_pull(buf, sizeof(struct epacket_usb_frame));
 
 	if (frame->associated_data.flags & EPACKET_FLAGS_ENCRYPTION_DEVICE) {

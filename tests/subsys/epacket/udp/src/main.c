@@ -25,9 +25,42 @@ uint64_t infuse_device_id(void)
 	return 0x0123456789ABCDEF;
 }
 
+ZTEST(epacket_udp, test_sequence)
+{
+	struct net_buf *buf;
+	uint16_t seqs[8];
+	uint8_t *p;
+	int rc;
+
+	for (int i = 0; i < ARRAY_SIZE(seqs); i++) {
+		/* Construct buffer */
+		buf = epacket_alloc_tx(K_NO_WAIT);
+		zassert_not_null(buf);
+		net_buf_reserve(buf, EPACKET_UDP_FRAME_EXPECTED_SIZE);
+		epacket_set_tx_metadata(buf, EPACKET_AUTH_DEVICE, 0, 0x10);
+		p = net_buf_add(buf, 60);
+		sys_rand_get(p, 60);
+
+		/* Encrypt payload */
+		rc = epacket_udp_encrypt(buf);
+		zassert_equal(0, rc);
+
+		/* Decrypt and free */
+		rc = epacket_udp_decrypt(buf, &seqs[i]);
+		zassert_equal(0, rc);
+		net_buf_unref(buf);
+
+		if (i > 0) {
+			/* Sequence number should increase on each packet */
+			zassert_equal(seqs[i - 1] + 1, seqs[i]);
+		}
+	}
+}
+
 ZTEST(epacket_udp, test_encrypt_decrypt)
 {
 	struct net_buf *orig_buf, *encr_buf, *copy_buf;
+	uint16_t seq;
 	uint8_t *p;
 	int rc;
 
@@ -49,7 +82,7 @@ ZTEST(epacket_udp, test_encrypt_decrypt)
 	/* Decrypt unmodified packet */
 	copy_buf = net_buf_clone(encr_buf, K_NO_WAIT);
 	zassert_not_null(copy_buf);
-	rc = epacket_udp_decrypt(copy_buf);
+	rc = epacket_udp_decrypt(copy_buf, &seq);
 	zassert_equal(0, rc);
 	zassert_equal(orig_buf->len, copy_buf->len);
 	zassert_mem_equal(orig_buf->data, copy_buf->data, copy_buf->len);
@@ -60,7 +93,7 @@ ZTEST(epacket_udp, test_encrypt_decrypt)
 		copy_buf = net_buf_clone(encr_buf, K_NO_WAIT);
 		zassert_not_null(copy_buf);
 		copy_buf->data[i]++;
-		rc = epacket_udp_decrypt(copy_buf);
+		rc = epacket_udp_decrypt(copy_buf, &seq);
 		zassert_equal(-1, rc);
 		net_buf_unref(copy_buf);
 	}

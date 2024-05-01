@@ -39,6 +39,8 @@ struct epacket_receive_metadata {
 	enum epacket_interface_id interface_id;
 	/* RSSI of packet (0 = 0dBm, 20 = 20dBm, etc) */
 	int16_t rssi;
+	/* Sequence number of packet */
+	uint16_t sequence;
 };
 
 struct epacket_interface_api {

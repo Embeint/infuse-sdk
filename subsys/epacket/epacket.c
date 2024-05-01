@@ -64,6 +64,7 @@ void epacket_raw_receive_handler(struct epacket_receive_metadata *metadata, stru
 static void epacket_handle_rx(struct net_buf *buf)
 {
 	struct epacket_receive_metadata *metadata;
+	uint16_t sequence = 0;
 	int rc;
 
 	metadata = &rx_metadata[net_buf_id(buf)];
@@ -74,18 +75,19 @@ static void epacket_handle_rx(struct net_buf *buf)
 	switch (metadata->interface_id) {
 #ifdef CONFIG_EPACKET_INTERFACE_USB
 	case EPACKET_INTERFACE_SERIAL:
-		rc = epacket_serial_decrypt(buf);
+		rc = epacket_serial_decrypt(buf, &sequence);
 		break;
 #endif /* CONFIG_EPACKET_INTERFACE_USB */
 #ifdef CONFIG_EPACKET_INTERFACE_UDP
 	case EPACKET_INTERFACE_UDP:
-		rc = epacket_udp_decrypt(buf);
+		rc = epacket_udp_decrypt(buf, &sequence);
 		break;
 #endif /* CONFIG_EPACKET_INTERFACE_UDP */
 	default:
 		LOG_WRN("Unknown interface ID %d", metadata->interface_id);
 		rc = -1;
 	}
+	metadata->sequence = sequence;
 	LOG_DBG("Decrypt result: %d", rc);
 
 	if (rc == 0) {
