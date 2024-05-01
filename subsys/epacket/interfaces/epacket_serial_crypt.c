@@ -19,14 +19,14 @@
 #include <infuse/time/civil.h>
 #include <infuse/epacket/packet.h>
 #include <infuse/epacket/keys.h>
-#include <infuse/epacket/interface/epacket_usb.h>
+#include <infuse/epacket/interface/epacket_serial.h>
 
 #include "epacket_internal.h"
 
 static const uint8_t sync_bytes[2] = {SERIAL_SYNC_A, SERIAL_SYNC_B};
 
 /* Validate frame sizes match expected */
-BUILD_ASSERT(sizeof(struct epacket_usb_frame) == EPACKET_USB_FRAME_EXPECTED_SIZE, "USB frame changed size");
+BUILD_ASSERT(sizeof(struct epacket_serial_frame) == EPACKET_SERIAL_FRAME_EXPECTED_SIZE, "USB frame changed size");
 
 void epacket_serial_reconstruct(const struct device *dev, uint8_t *buffer, size_t len,
 				void (*handler)(struct epacket_receive_metadata *, struct net_buf *))
@@ -95,7 +95,7 @@ int epacket_serial_encrypt(struct net_buf *buf)
 	struct epacket_metadata *meta = net_buf_user_data(buf);
 	uint64_t civil_time = civil_time_seconds(civil_time_now());
 	uint64_t device_id = infuse_device_id();
-	struct epacket_usb_frame *frame;
+	struct epacket_serial_frame *frame;
 	uint16_t buf_len = buf->len;
 	struct net_buf *scratch;
 	uint32_t key_rotation, key_meta;
@@ -107,7 +107,7 @@ int epacket_serial_encrypt(struct net_buf *buf)
 	static uint16_t sequence_num;
 
 	/* Validate space for frame header */
-	__ASSERT_NO_MSG(net_buf_headroom(buf) >= sizeof(struct epacket_usb_frame));
+	__ASSERT_NO_MSG(net_buf_headroom(buf) >= sizeof(struct epacket_serial_frame));
 
 	if (meta->auth == EPACKET_AUTH_NETWORK) {
 		key_id = EPACKET_KEY_NETWORK | EPACKET_KEY_INTERFACE_SERIAL;
@@ -130,8 +130,8 @@ int epacket_serial_encrypt(struct net_buf *buf)
 	}
 
 	/* Push buffer */
-	frame = net_buf_push(buf, sizeof(struct epacket_usb_frame));
-	*frame = (struct epacket_usb_frame){
+	frame = net_buf_push(buf, sizeof(struct epacket_serial_frame));
+	*frame = (struct epacket_serial_frame){
 		.associated_data =
 			{
 				.version = 0,
@@ -170,7 +170,7 @@ int epacket_serial_encrypt(struct net_buf *buf)
 
 int epacket_serial_decrypt(struct net_buf *buf, uint16_t *sequence)
 {
-	struct epacket_usb_frame *frame;
+	struct epacket_serial_frame *frame;
 	struct net_buf *scratch;
 	uint32_t key_rotation, key_period;
 	uint32_t network_id;
@@ -181,21 +181,21 @@ int epacket_serial_decrypt(struct net_buf *buf, uint16_t *sequence)
 	size_t out_len;
 
 	/* Not enough data in buffer */
-	if (buf->len <= sizeof(struct epacket_usb_frame)) {
+	if (buf->len <= sizeof(struct epacket_serial_frame)) {
 		return -1;
 	}
 
 	/* Pull off the frame header */
 	frame = (void *)buf->data;
 	*sequence = frame->nonce.sequence;
-	net_buf_pull(buf, sizeof(struct epacket_usb_frame));
+	net_buf_pull(buf, sizeof(struct epacket_serial_frame));
 
 	if (frame->associated_data.flags & EPACKET_FLAGS_ENCRYPTION_DEVICE) {
 		/* Validate packet is for us */
 		device_id = ((uint64_t)frame->associated_data.device_id_upper << 32) | frame->nonce.device_id_lower;
 		if (device_id != infuse_device_id()) {
 			/* Add frame header back to packet */
-			net_buf_push(buf, sizeof(struct epacket_usb_frame));
+			net_buf_push(buf, sizeof(struct epacket_serial_frame));
 			return -1;
 		}
 		key_id = EPACKET_KEY_DEVICE | EPACKET_KEY_INTERFACE_SERIAL;
@@ -205,7 +205,7 @@ int epacket_serial_decrypt(struct net_buf *buf, uint16_t *sequence)
 		network_id = sys_get_le24(frame->associated_data.network_id);
 		if (network_id != epacket_network_key_id()) {
 			/* Add frame header back to packet */
-			net_buf_push(buf, sizeof(struct epacket_usb_frame));
+			net_buf_push(buf, sizeof(struct epacket_serial_frame));
 			return -1;
 		}
 		key_id = EPACKET_KEY_NETWORK | EPACKET_KEY_INTERFACE_SERIAL;

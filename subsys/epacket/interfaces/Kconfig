@@ -1,9 +1,13 @@
 # ePacket interfaces
 
-config EPACKET_INTERFACE_USB
-	bool "ePacket USB interface"
-	depends on DT_HAS_EMBEINT_EPACKET_USB_ENABLED
+config EPACKET_INTERFACE_SERIAL
+	bool "ePacket serial interface"
 	depends on EPACKET_CRYPTO
+
+config EPACKET_INTERFACE_USB
+	bool "ePacket USB serial interface"
+	select EPACKET_INTERFACE_SERIAL
+	depends on DT_HAS_EMBEINT_EPACKET_USB_ENABLED
 	depends on USB_CDC_ACM
 	default y
 

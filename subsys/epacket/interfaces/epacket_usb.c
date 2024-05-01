@@ -13,7 +13,7 @@
 
 #include <infuse/epacket/interface.h>
 #include <infuse/epacket/packet.h>
-#include <infuse/epacket/interface/epacket_usb.h>
+#include <infuse/epacket/interface/epacket_serial.h>
 
 #include "epacket_internal.h"
 
@@ -96,7 +96,7 @@ static void interrupt_handler(const struct device *dev, void *user_data)
 static void epacket_usb_packet_overhead(const struct device *dev, size_t *header, size_t *footer)
 {
 	/* ChaCha20-Poly1305 adds a 16 byte tag after the ciphertext */
-	*header = sizeof(struct epacket_usb_frame);
+	*header = sizeof(struct epacket_serial_frame);
 	*footer = 16;
 }
 

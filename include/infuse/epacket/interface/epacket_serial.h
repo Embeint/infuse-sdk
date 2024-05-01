@@ -1,14 +1,14 @@
 /**
  * @file
- * @brief ePacket USB packet format
+ * @brief ePacket serial packet format
  * @copyright 2024 Embeint Pty Ltd
  * @author Jordan Yates <jordan@embeint.com>
  *
  * SPDX-License-Identifier: LicenseRef-Embeint
  */
 
-#ifndef INFUSE_SDK_INCLUDE_INFUSE_EPACKET_INTERFACE_EPACKET_USB_H_
-#define INFUSE_SDK_INCLUDE_INFUSE_EPACKET_INTERFACE_EPACKET_USB_H_
+#ifndef INFUSE_SDK_INCLUDE_INFUSE_EPACKET_INTERFACE_EPACKET_SERIAL_H_
+#define INFUSE_SDK_INCLUDE_INFUSE_EPACKET_INTERFACE_EPACKET_SERIAL_H_
 
 #include <stdint.h>
 
@@ -19,16 +19,16 @@ extern "C" {
 #endif
 
 /**
- * @brief epacket_usb API
- * @defgroup epacket_usb_apis epacket_usb APIs
+ * @brief epacket_serial API
+ * @defgroup epacket_serial_apis epacket_serial APIs
  * @{
  */
 
-/* Expected size of the USB frame header */
-#define EPACKET_USB_FRAME_EXPECTED_SIZE 23
+/* Expected size of the SERIAL frame header */
+#define EPACKET_SERIAL_FRAME_EXPECTED_SIZE 23
 
-/* ePacket USB data frame */
-struct epacket_usb_frame {
+/* ePacket serial data frame */
+struct epacket_serial_frame {
 	/* AEAD associated data */
 	union {
 		struct {
@@ -76,4 +76,4 @@ struct epacket_usb_frame {
 }
 #endif
 
-#endif /* INFUSE_SDK_INCLUDE_INFUSE_EPACKET_INTERFACE_EPACKET_USB_H_ */
+#endif /* INFUSE_SDK_INCLUDE_INFUSE_EPACKET_INTERFACE_EPACKET_SERIAL_H_ */
