@@ -25,9 +25,9 @@ extern "C" {
 /**
  * @brief Get local device ID
  *
- * @return uint32_t local device ID
+ * @return uint64_t local device ID
  */
-uint32_t infuse_device_id(void);
+uint64_t infuse_device_id(void);
 
 /**
  * @}
