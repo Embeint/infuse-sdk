@@ -3,6 +3,7 @@
 config EPACKET_INTERFACE_USB
 	bool "ePacket USB interface"
 	depends on DT_HAS_EMBEINT_EPACKET_USB_ENABLED
+	depends on EPACKET_CRYPTO
 	depends on USB_CDC_ACM
 	default y
 
@@ -17,6 +18,7 @@ endif # EPACKET_INTERFACE_USB
 config EPACKET_INTERFACE_UDP
 	bool "ePacket UDP interface"
 	depends on DT_HAS_EMBEINT_EPACKET_UDP_ENABLED
+	depends on EPACKET_CRYPTO
 	depends on DNS_RESOLVER
 	depends on NET_UDP
 	depends on EVENTS
@@ -37,3 +39,8 @@ module-str = epacket_udp
 source "subsys/logging/Kconfig.template.log_config"
 
 endif # EPACKET_INTERFACE_UDP
+
+config EPACKET_INTERFACE_DUMMY
+	bool "ePacket dummy interface"
+	depends on DT_HAS_EMBEINT_EPACKET_DUMMY_ENABLED
+	default y
