@@ -81,8 +81,7 @@ static void epacket_handle_rx(struct net_buf *buf)
 #endif /* CONFIG_EPACKET_INTERFACE_UDP */
 #ifdef CONFIG_EPACKET_INTERFACE_DUMMY
 	case EPACKET_INTERFACE_DUMMY:
-		/* Dummy interface is not encrypted */
-		rc = 0;
+		rc = epacket_dummy_decrypt(buf);
 		break;
 #endif /* CONFIG_EPACKET_INTERFACE_DUMMY */
 	default:
