@@ -20,9 +20,9 @@
 
 static K_FIFO_DEFINE(packet_queue);
 
-uint32_t infuse_device_id(void)
+uint64_t infuse_device_id(void)
 {
-	return 0x123456;
+	return 0x0123456789ABCDEF;
 }
 
 ZTEST(epacket_udp, test_encrypt_decrypt)

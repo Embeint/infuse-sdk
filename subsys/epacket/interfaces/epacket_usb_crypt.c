@@ -94,7 +94,7 @@ int epacket_serial_encrypt(struct net_buf *buf)
 {
 	struct epacket_metadata *meta = net_buf_user_data(buf);
 	uint64_t civil_time = civil_time_seconds(civil_time_now());
-	uint32_t entropy = sys_rand32_get();
+	uint64_t device_id = infuse_device_id();
 	struct epacket_usb_frame *frame;
 	uint16_t buf_len = buf->len;
 	struct net_buf *scratch;
@@ -103,6 +103,8 @@ int epacket_serial_encrypt(struct net_buf *buf)
 	psa_status_t status;
 	size_t out_len;
 	uint8_t key_id;
+
+	static uint16_t sequence_num;
 
 	/* Validate space for frame header */
 	__ASSERT_NO_MSG(net_buf_headroom(buf) >= sizeof(struct epacket_usb_frame));
@@ -135,12 +137,14 @@ int epacket_serial_encrypt(struct net_buf *buf)
 				.version = 0,
 				.type = meta->type,
 				.flags = meta->flags,
+				.device_id_upper = (device_id >> 32),
 			},
 		.nonce =
 			{
-				.device_id = infuse_device_id(),
+				.device_id_lower = device_id & UINT32_MAX,
 				.gps_time = civil_time,
-				.entropy = entropy,
+				.sequence = sequence_num++,
+				.entropy = sys_rand32_get(),
 			},
 	};
 	sys_put_le24(key_meta, frame->associated_data.device_rotation);
@@ -170,6 +174,7 @@ int epacket_serial_decrypt(struct net_buf *buf)
 	struct net_buf *scratch;
 	uint32_t key_rotation, key_period;
 	uint32_t network_id;
+	uint64_t device_id;
 	uint8_t key_id;
 	psa_key_id_t psa_key_id;
 	psa_status_t status;
@@ -186,7 +191,8 @@ int epacket_serial_decrypt(struct net_buf *buf)
 
 	if (frame->associated_data.flags & EPACKET_FLAGS_ENCRYPTION_DEVICE) {
 		/* Validate packet is for us */
-		if (frame->nonce.device_id != infuse_device_id()) {
+		device_id = ((uint64_t)frame->associated_data.device_id_upper << 32) | frame->nonce.device_id_lower;
+		if (device_id != infuse_device_id()) {
 			/* Add frame header back to packet */
 			net_buf_push(buf, sizeof(struct epacket_usb_frame));
 			return -1;

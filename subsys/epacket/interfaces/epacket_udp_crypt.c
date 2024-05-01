@@ -30,7 +30,7 @@ int epacket_udp_encrypt(struct net_buf *buf)
 {
 	struct epacket_metadata *meta = net_buf_user_data(buf);
 	uint64_t civil_time = civil_time_seconds(civil_time_now());
-	uint32_t entropy = sys_rand32_get();
+	uint64_t device_id = infuse_device_id();
 	struct epacket_udp_frame *frame;
 	uint16_t buf_len = buf->len;
 	struct net_buf *scratch;
@@ -39,6 +39,8 @@ int epacket_udp_encrypt(struct net_buf *buf)
 	psa_status_t status;
 	size_t out_len;
 	uint8_t key_id;
+
+	static uint16_t sequence_num;
 
 	/* Validate space for frame header */
 	__ASSERT_NO_MSG(net_buf_headroom(buf) >= sizeof(struct epacket_udp_frame));
@@ -66,12 +68,14 @@ int epacket_udp_encrypt(struct net_buf *buf)
 			{
 				.type = meta->type,
 				.flags = meta->flags,
+				.device_id_upper = (device_id >> 32),
 			},
 		.nonce =
 			{
-				.device_id = infuse_device_id(),
+				.device_id_lower = device_id & UINT32_MAX,
 				.gps_time = civil_time,
-				.entropy = entropy,
+				.sequence = sequence_num++,
+				.entropy = sys_rand32_get(),
 			},
 	};
 	sys_put_le24(key_meta, frame->associated_data.device_rotation);
@@ -99,6 +103,7 @@ int epacket_udp_decrypt(struct net_buf *buf)
 {
 	struct epacket_udp_frame *frame;
 	struct net_buf *scratch;
+	uint64_t device_id;
 	uint32_t key_rotation;
 	uint8_t key_id;
 	psa_key_id_t psa_key_id;
@@ -115,8 +120,8 @@ int epacket_udp_decrypt(struct net_buf *buf)
 	net_buf_pull(buf, sizeof(struct epacket_udp_frame));
 
 	/* Validate packet should be for us and device encrypted */
-	if ((frame->nonce.device_id != infuse_device_id()) ||
-	    !(frame->associated_data.flags & EPACKET_FLAGS_ENCRYPTION_DEVICE)) {
+	device_id = ((uint64_t)frame->associated_data.device_id_upper << 32) | frame->nonce.device_id_lower;
+	if ((device_id != infuse_device_id()) || !(frame->associated_data.flags & EPACKET_FLAGS_ENCRYPTION_DEVICE)) {
 		return -1;
 	}
 

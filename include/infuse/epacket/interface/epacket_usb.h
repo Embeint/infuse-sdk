@@ -25,7 +25,7 @@ extern "C" {
  */
 
 /* Expected size of the USB frame header */
-#define EPACKET_USB_FRAME_EXPECTED_SIZE 19
+#define EPACKET_USB_FRAME_EXPECTED_SIZE 23
 
 /* ePacket USB data frame */
 struct epacket_usb_frame {
@@ -45,21 +45,22 @@ struct epacket_usb_frame {
 				/* Device key rotation */
 				uint8_t device_rotation[3];
 			};
+			/* Infuse device ID (upper 4 bytes) */
+			uint32_t device_id_upper;
 		} __packed;
-		uint8_t raw[7];
+		uint8_t raw[11];
 	} associated_data;
 	/* AEAD encryption nonce (IV) */
 	union {
 		struct {
-			/* Infuse IoT unique device ID:
-			 *   Transmitting device for network key encryption
-			 *   Source/destination device for device key encryption
-			 */
-			uint32_t device_id;
+			/* Infuse device ID (lower 4 bytes) */
+			uint32_t device_id_lower;
 			/* Local GPS time (seconds) */
 			uint32_t gps_time;
+			/* Packet sequence number */
+			uint16_t sequence;
 			/* Random entropy */
-			uint32_t entropy;
+			uint16_t entropy;
 		} __packed;
 		uint8_t raw[12];
 	} nonce;
