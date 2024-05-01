@@ -185,28 +185,21 @@ int epacket_serial_decrypt(struct net_buf *buf)
 	if (buf->len <= sizeof(struct epacket_serial_frame)) {
 		return -1;
 	}
-
-	/* Pull off the frame header */
 	frame = (void *)buf->data;
-	meta->sequence = frame->nonce.sequence;
-	net_buf_pull(buf, sizeof(struct epacket_serial_frame));
 
 	if (frame->associated_data.flags & EPACKET_FLAGS_ENCRYPTION_DEVICE) {
 		/* Validate packet is for us */
 		device_id = ((uint64_t)frame->associated_data.device_id_upper << 32) | frame->nonce.device_id_lower;
 		if (device_id != infuse_device_id()) {
-			/* Add frame header back to packet */
-			net_buf_push(buf, sizeof(struct epacket_serial_frame));
 			return -1;
 		}
 		key_id = EPACKET_KEY_DEVICE | EPACKET_KEY_INTERFACE_SERIAL;
 		key_rotation = sys_get_le24(frame->associated_data.device_rotation);
+		meta->auth = EPACKET_AUTH_DEVICE;
 	} else {
 		/* Validate the network IDs match */
 		network_id = sys_get_le24(frame->associated_data.network_id);
 		if (network_id != epacket_network_key_id()) {
-			/* Add frame header back to packet */
-			net_buf_push(buf, sizeof(struct epacket_serial_frame));
 			return -1;
 		}
 		key_id = EPACKET_KEY_NETWORK | EPACKET_KEY_INTERFACE_SERIAL;
@@ -227,7 +220,13 @@ int epacket_serial_decrypt(struct net_buf *buf)
 			break;
 		}
 		key_rotation = frame->nonce.gps_time / key_period;
+		meta->auth = EPACKET_AUTH_NETWORK;
 	}
+
+	/* Packet metadata */
+	meta->type = frame->associated_data.type;
+	meta->flags = frame->associated_data.flags;
+	meta->sequence = frame->nonce.sequence;
 
 	/* Get the PSA key ID for packet */
 	psa_key_id = epacket_key_id_get(key_id, key_rotation);
@@ -239,6 +238,7 @@ int epacket_serial_decrypt(struct net_buf *buf)
 	scratch = epacket_encryption_scratch();
 
 	/* Copy ciphertext across to scratch space */
+	net_buf_pull(buf, sizeof(struct epacket_serial_frame));
 	net_buf_add_mem(scratch, buf->data, buf->len);
 	net_buf_reset(buf);
 
