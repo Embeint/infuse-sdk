@@ -67,6 +67,22 @@ static int epacket_dummy_send(const struct device *dev, struct net_buf *buf)
 	return 0;
 }
 
+int epacket_dummy_decrypt(struct net_buf *buf)
+{
+	if (buf->len <= sizeof(struct epacket_dummy_frame)) {
+		return -EINVAL;
+	}
+	struct epacket_dummy_frame *header = (void *)buf->data;
+	struct epacket_rx_metadata *meta = net_buf_user_data(buf);
+
+	net_buf_pull(buf, sizeof(struct epacket_dummy_frame));
+	meta->auth = header->auth;
+	meta->type = header->type;
+	meta->flags = header->flags;
+	meta->sequence = 0;
+	return 0;
+}
+
 static int epacket_dummy_init(const struct device *dev)
 {
 	struct epacket_interface_common_data *data = dev->data;

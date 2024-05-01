@@ -84,6 +84,15 @@ int epacket_udp_encrypt(struct net_buf *buf);
  */
 int epacket_udp_decrypt(struct net_buf *buf);
 
+/**
+ * @brief Decrypt received dummy packet
+ *
+ * @param buf Packet to decrypt
+ *
+ * @retval 0 on success
+ */
+int epacket_dummy_decrypt(struct net_buf *buf);
+
 #ifdef __cplusplus
 }
 #endif
