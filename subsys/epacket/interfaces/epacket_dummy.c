@@ -9,6 +9,7 @@
 #include <zephyr/device.h>
 #include <zephyr/logging/log.h>
 #include <zephyr/sys/byteorder.h>
+#include <zephyr/sys/__assert.h>
 
 #include <infuse/epacket/interface.h>
 #include <infuse/epacket/packet.h>
@@ -30,8 +31,10 @@ struct k_fifo *epacket_dummmy_transmit_fifo_get(void)
 void epacket_dummy_receive(const struct device *dev, struct epacket_dummy_frame *header, uint8_t *payload,
 			   size_t payload_len)
 {
-	struct net_buf *rx = epacket_alloc_rx(K_FOREVER);
+	struct net_buf *rx = epacket_alloc_rx(K_NO_WAIT);
 	struct epacket_rx_metadata *meta = net_buf_user_data(rx);
+
+	__ASSERT_NO_MSG(rx != NULL);
 
 	/* Construct payload */
 	net_buf_add_mem(rx, header, sizeof(*header));
