@@ -8,7 +8,7 @@
 
 #include <infuse/identifiers.h>
 
-uint32_t infuse_device_id(void)
+uint64_t infuse_device_id(void)
 {
 	return 1234;
 }
