@@ -149,6 +149,7 @@ static int epacket_udp_loop(void *a, void *b, void *c)
 				net_buf_unref(buf);
 				goto socket_error;
 			}
+			net_buf_add(buf, received);
 			addr = ((struct sockaddr_in *)&from)->sin_addr.s4_addr;
 			port = ((struct sockaddr_in *)&from)->sin_port;
 			LOG_DBG("Received %d bytes from %d.%d.%d.%d:%d", received, addr[0], addr[1], addr[2], addr[3],
