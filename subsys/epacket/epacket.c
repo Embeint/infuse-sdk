@@ -61,6 +61,11 @@ void epacket_raw_receive_handler(struct epacket_receive_metadata *metadata, stru
 	net_buf_put(&epacket_rx_queue, buf);
 }
 
+struct epacket_receive_metadata *epacket_rx_packet_metadata(struct net_buf *buf)
+{
+	return &rx_metadata[net_buf_id(buf)];
+}
+
 static void epacket_handle_rx(struct net_buf *buf)
 {
 	struct epacket_interface_common_data *interface_data;
