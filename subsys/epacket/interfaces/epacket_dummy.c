@@ -31,19 +31,18 @@ void epacket_dummy_receive(const struct device *dev, struct epacket_dummy_frame 
 			   size_t payload_len)
 {
 	struct net_buf *rx = epacket_alloc_rx(K_FOREVER);
+	struct epacket_rx_metadata *meta = net_buf_user_data(rx);
 
 	/* Construct payload */
 	net_buf_add_mem(rx, header, sizeof(*header));
 	net_buf_add_mem(rx, payload, payload_len);
 
-	struct epacket_receive_metadata meta = {
-		.interface = dev,
-		.interface_id = EPACKET_INTERFACE_DUMMY,
-		.rssi = 0,
-	};
+	meta->interface = dev;
+	meta->interface_id = EPACKET_INTERFACE_DUMMY;
+	meta->rssi = 0;
 
 	/* Push at handling thread */
-	epacket_raw_receive_handler(&meta, rx);
+	epacket_raw_receive_handler(rx);
 }
 
 static void epacket_dummy_packet_overhead(const struct device *dev, size_t *header, size_t *footer)

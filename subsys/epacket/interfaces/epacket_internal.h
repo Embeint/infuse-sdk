@@ -26,10 +26,9 @@ struct net_buf *epacket_encryption_scratch(void);
 /**
  * @brief Handle raw received ePackets from interfaces
  *
- * @param metadata Interface receive metadata
  * @param buf ePacket that was received
  */
-void epacket_raw_receive_handler(struct epacket_receive_metadata *metadata, struct net_buf *buf);
+void epacket_raw_receive_handler(struct net_buf *buf);
 
 #define SERIAL_SYNC_A 0xD5
 #define SERIAL_SYNC_B 0xCA
@@ -43,7 +42,7 @@ void epacket_raw_receive_handler(struct epacket_receive_metadata *metadata, stru
  * @param handler Function to call on recovered packet
  */
 void epacket_serial_reconstruct(const struct device *dev, uint8_t *buffer, size_t len,
-				void (*handler)(struct epacket_receive_metadata *, struct net_buf *));
+				void (*handler)(struct net_buf *));
 
 /**
  * @brief Encrypt serial packet for transmission

@@ -33,7 +33,7 @@ uint64_t infuse_device_id(void)
 	return 0x0123456789ABCDEF;
 }
 
-void receive_handler(struct epacket_receive_metadata *metadata, struct net_buf *buf)
+void receive_handler(struct net_buf *buf)
 {
 	k_fifo_put(&packet_queue, buf);
 }
