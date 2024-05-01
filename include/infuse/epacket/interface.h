@@ -115,6 +115,15 @@ static inline void epacket_set_receive_handler(const struct device *dev, epacket
 }
 
 /**
+ * @brief Get RX metadata associated with a packet
+ *
+ * @param buf ePacket RX message
+ *
+ * @return Pointer to metadata struct
+ */
+struct epacket_receive_metadata *epacket_rx_packet_metadata(struct net_buf *buf);
+
+/**
  * @brief Default ePacket receive handler
  *
  * Currently only prints received packets.
