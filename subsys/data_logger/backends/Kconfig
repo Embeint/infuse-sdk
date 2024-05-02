@@ -2,8 +2,12 @@
 
 config DATA_LOGGER_EPACKET
 	bool "Logging to ePacket instance"
+	depends on DT_HAS_EMBEINT_DATA_LOGGER_EPACKET_ENABLED
 	depends on EPACKET
+	default y
 
 config DATA_LOGGER_FLASH_MAP
 	bool "Logging to flash_map instance"
+	depends on DT_HAS_EMBEINT_DATA_LOGGER_FLASH_MAP_ENABLED
 	depends on FLASH_MAP
+	default y
