@@ -109,8 +109,8 @@ ZTEST(epacket_udp, test_encrypt_decrypt)
 	net_buf_unref(rx_copy_buf);
 
 	/* Test failure on modified encryption buffer */
-	for (int i = 0; i < encr_buf->len; i++) {
-		rx_copy_buf = net_buf_clone(encr_buf, K_NO_WAIT);
+	for (int i = 0; i < rx->len; i++) {
+		rx_copy_buf = net_buf_clone(rx, K_NO_WAIT);
 		zassert_not_null(rx_copy_buf);
 		rx_copy_buf->data[i]++;
 		rc = epacket_udp_decrypt(rx_copy_buf);
