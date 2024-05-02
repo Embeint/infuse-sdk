@@ -155,7 +155,7 @@ ZTEST(epacket_serial, test_sequence)
 
 ZTEST(epacket_serial, test_encrypt_decrypt)
 {
-	struct net_buf *orig_buf, *encr_buf, *rx, *rx_copy_buf;
+	struct net_buf *orig_buf, *encr_buf, *rx, *rx_copy_buf, *in;
 	struct epacket_rx_metadata *meta;
 	uint8_t *p;
 	int rc;
@@ -195,11 +195,16 @@ ZTEST(epacket_serial, test_encrypt_decrypt)
 		rx_copy_buf = net_buf_clone(rx, K_NO_WAIT);
 		zassert_not_null(rx_copy_buf);
 		rx_copy_buf->data[i]++;
+		in = net_buf_clone(rx_copy_buf, K_NO_WAIT);
+		zassert_not_null(in);
 		rc = epacket_serial_decrypt(rx_copy_buf);
 		meta = net_buf_user_data(rx_copy_buf);
 		zassert_equal(-1, rc);
 		zassert_equal(EPACKET_AUTH_FAILURE, meta->auth);
+		zassert_equal(in->len, rx_copy_buf->len);
+		zassert_mem_equal(in->data, rx_copy_buf->data, in->len);
 		net_buf_unref(rx_copy_buf);
+		net_buf_unref(in);
 	}
 	net_buf_unref(rx);
 }

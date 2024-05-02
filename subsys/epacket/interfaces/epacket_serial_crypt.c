@@ -171,7 +171,7 @@ int epacket_serial_encrypt(struct net_buf *buf)
 int epacket_serial_decrypt(struct net_buf *buf)
 {
 	struct epacket_rx_metadata *meta = net_buf_user_data(buf);
-	struct epacket_serial_frame *frame;
+	struct epacket_serial_frame frame;
 	struct net_buf *scratch;
 	uint32_t key_rotation, key_period;
 	uint32_t network_id;
@@ -185,31 +185,31 @@ int epacket_serial_decrypt(struct net_buf *buf)
 	if (buf->len <= sizeof(struct epacket_serial_frame)) {
 		return -1;
 	}
-	frame = (void *)buf->data;
+	memcpy(&frame, buf->data, sizeof(frame));
 
 	/* Packet metadata */
-	meta->type = frame->associated_data.type;
-	meta->flags = frame->associated_data.flags;
-	meta->sequence = frame->nonce.sequence;
+	meta->type = frame.associated_data.type;
+	meta->flags = frame.associated_data.flags;
+	meta->sequence = frame.nonce.sequence;
 
-	if (frame->associated_data.flags & EPACKET_FLAGS_ENCRYPTION_DEVICE) {
+	if (frame.associated_data.flags & EPACKET_FLAGS_ENCRYPTION_DEVICE) {
 		meta->auth = EPACKET_AUTH_DEVICE;
 		/* Validate packet is for us */
-		device_id = ((uint64_t)frame->associated_data.device_id_upper << 32) | frame->nonce.device_id_lower;
+		device_id = ((uint64_t)frame.associated_data.device_id_upper << 32) | frame.nonce.device_id_lower;
 		if (device_id != infuse_device_id()) {
 			goto error;
 		}
 		key_id = EPACKET_KEY_DEVICE | EPACKET_KEY_INTERFACE_SERIAL;
-		key_rotation = sys_get_le24(frame->associated_data.device_rotation);
+		key_rotation = sys_get_le24(frame.associated_data.device_rotation);
 	} else {
 		meta->auth = EPACKET_AUTH_NETWORK;
 		/* Validate the network IDs match */
-		network_id = sys_get_le24(frame->associated_data.network_id);
+		network_id = sys_get_le24(frame.associated_data.network_id);
 		if (network_id != epacket_network_key_id()) {
 			goto error;
 		}
 		key_id = EPACKET_KEY_NETWORK | EPACKET_KEY_INTERFACE_SERIAL;
-		key_rotation = (frame->associated_data.flags & EPACKET_FLAGS_ROTATE_NETWORK_MASK) >> 12;
+		key_rotation = (frame.associated_data.flags & EPACKET_FLAGS_ROTATE_NETWORK_MASK) >> 12;
 		switch (key_rotation) {
 		case EPACKET_FLAGS_ROTATE_NETWORK_EACH_MINUTE:
 			key_period = SECONDS_PER_MINUTE;
@@ -225,7 +225,7 @@ int epacket_serial_decrypt(struct net_buf *buf)
 			key_period = SECONDS_PER_WEEK;
 			break;
 		}
-		key_rotation = frame->nonce.gps_time / key_period;
+		key_rotation = frame.nonce.gps_time / key_period;
 	}
 
 	/* Get the PSA key ID for packet */
@@ -243,17 +243,19 @@ int epacket_serial_decrypt(struct net_buf *buf)
 	net_buf_reset(buf);
 
 	/* Decrypt back into original buffer */
-	status = psa_aead_decrypt(psa_key_id, PSA_ALG_CHACHA20_POLY1305, frame->nonce.raw, sizeof(frame->nonce),
-				  frame->associated_data.raw, sizeof(frame->associated_data), scratch->data,
-				  scratch->len, net_buf_tail(buf), net_buf_tailroom(buf), &out_len);
-	net_buf_add(buf, out_len);
-
-	/* Free scratch space */
-	net_buf_unref(scratch);
+	status = psa_aead_decrypt(psa_key_id, PSA_ALG_CHACHA20_POLY1305, frame.nonce.raw, sizeof(frame.nonce),
+				  frame.associated_data.raw, sizeof(frame.associated_data), scratch->data, scratch->len,
+				  net_buf_tail(buf), net_buf_tailroom(buf), &out_len);
 
 	if (status != PSA_SUCCESS) {
+		/* Restore original buffer */
+		net_buf_add_mem(buf, &frame, sizeof(frame));
+		net_buf_add_mem(buf, scratch->data, scratch->len);
+		net_buf_unref(scratch);
 		goto error;
 	}
+	net_buf_add(buf, out_len);
+	net_buf_unref(scratch);
 	return 0;
 error:
 	meta->auth = EPACKET_AUTH_FAILURE;
