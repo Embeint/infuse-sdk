@@ -73,7 +73,8 @@ ZTEST(epacket_udp, test_metadata)
 
 ZTEST(epacket_udp, test_encrypt_decrypt)
 {
-	struct net_buf *orig_buf, *encr_buf, *copy_buf;
+	struct net_buf *orig_buf, *encr_buf, *rx, *rx_copy_buf;
+	struct epacket_rx_metadata *meta;
 	uint8_t *p;
 	int rc;
 
@@ -92,23 +93,31 @@ ZTEST(epacket_udp, test_encrypt_decrypt)
 	zassert_equal(0, rc);
 	zassert_equal(orig_buf->len + EPACKET_UDP_FRAME_EXPECTED_SIZE + 16, encr_buf->len);
 
+	/* Copy message contents across to RX buffer */
+	rx = epacket_alloc_rx(K_NO_WAIT);
+	zassert_not_null(rx);
+	net_buf_add_mem(rx, encr_buf->data, encr_buf->len);
+	net_buf_unref(encr_buf);
+
 	/* Decrypt unmodified packet */
-	copy_buf = net_buf_clone(encr_buf, K_NO_WAIT);
-	zassert_not_null(copy_buf);
-	rc = epacket_udp_decrypt(copy_buf);
+	rx_copy_buf = net_buf_clone(rx, K_NO_WAIT);
+	zassert_not_null(rx_copy_buf);
+	rc = epacket_udp_decrypt(rx_copy_buf);
 	zassert_equal(0, rc);
-	zassert_equal(orig_buf->len, copy_buf->len);
-	zassert_mem_equal(orig_buf->data, copy_buf->data, copy_buf->len);
-	net_buf_unref(copy_buf);
+	zassert_equal(orig_buf->len, rx_copy_buf->len);
+	zassert_mem_equal(orig_buf->data, rx_copy_buf->data, rx_copy_buf->len);
+	net_buf_unref(rx_copy_buf);
 
 	/* Test failure on modified encryption buffer */
 	for (int i = 0; i < encr_buf->len; i++) {
-		copy_buf = net_buf_clone(encr_buf, K_NO_WAIT);
-		zassert_not_null(copy_buf);
-		copy_buf->data[i]++;
-		rc = epacket_udp_decrypt(copy_buf);
+		rx_copy_buf = net_buf_clone(encr_buf, K_NO_WAIT);
+		zassert_not_null(rx_copy_buf);
+		rx_copy_buf->data[i]++;
+		rc = epacket_udp_decrypt(rx_copy_buf);
+		meta = net_buf_user_data(rx_copy_buf);
 		zassert_equal(-1, rc);
-		net_buf_unref(copy_buf);
+		zassert_equal(EPACKET_AUTH_FAILURE, meta->auth);
+		net_buf_unref(rx_copy_buf);
 	}
 }
 

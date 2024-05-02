@@ -117,24 +117,24 @@ int epacket_udp_decrypt(struct net_buf *buf)
 	}
 	frame = (void *)buf->data;
 
-	/* Validate packet should be for us and device encrypted */
-	device_id = ((uint64_t)frame->associated_data.device_id_upper << 32) | frame->nonce.device_id_lower;
-	if ((device_id != infuse_device_id()) || !(frame->associated_data.flags & EPACKET_FLAGS_ENCRYPTION_DEVICE)) {
-		return -1;
-	}
-
 	/* Packet metadata */
 	meta->type = frame->associated_data.type;
 	meta->flags = frame->associated_data.flags;
 	meta->auth = EPACKET_AUTH_DEVICE;
 	meta->sequence = frame->nonce.sequence;
 
+	/* Validate packet should be for us and device encrypted */
+	device_id = ((uint64_t)frame->associated_data.device_id_upper << 32) | frame->nonce.device_id_lower;
+	if ((device_id != infuse_device_id()) || !(frame->associated_data.flags & EPACKET_FLAGS_ENCRYPTION_DEVICE)) {
+		goto error;
+	}
+
 	/* Get the PSA key ID for packet */
 	key_id = EPACKET_KEY_DEVICE | EPACKET_KEY_INTERFACE_UDP;
 	key_rotation = sys_get_le24(frame->associated_data.device_rotation);
 	psa_key_id = epacket_key_id_get(key_id, key_rotation);
 	if (psa_key_id == 0) {
-		return -1;
+		goto error;
 	}
 
 	/* Claim scratch space as decryption cannot be applied in place */
@@ -154,5 +154,11 @@ int epacket_udp_decrypt(struct net_buf *buf)
 	/* Free scratch space */
 	net_buf_unref(scratch);
 
-	return status == PSA_SUCCESS ? 0 : -1;
+	if (status != PSA_SUCCESS) {
+		goto error;
+	}
+	return 0;
+error:
+	meta->auth = EPACKET_AUTH_FAILURE;
+	return -1;
 }
