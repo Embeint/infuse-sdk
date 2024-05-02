@@ -19,7 +19,7 @@ static int logger_flash_map_write(const struct data_logger_backend_config *backe
 				  enum infuse_type data_type, const void *mem, uint16_t mem_len)
 {
 	struct data_logger_backend_data *data = backend->data;
-	off_t offset = BLOCK_SIZE * phy_block;
+	off_t offset = DATA_LOGGER_FLASH_MAP_MAX_WRAPS * phy_block;
 
 	/* Data type already encoded into the mem buffer */
 	ARG_UNUSED(data_type);
@@ -31,7 +31,7 @@ static int logger_flash_map_read(const struct data_logger_backend_config *backen
 				 uint16_t block_offset, void *mem, uint16_t mem_len)
 {
 	struct data_logger_backend_data *data = backend->data;
-	off_t offset = (BLOCK_SIZE * phy_block) + block_offset;
+	off_t offset = (DATA_LOGGER_FLASH_MAP_MAX_WRAPS * phy_block) + block_offset;
 
 	return flash_area_read(data->area, offset, mem, mem_len);
 }
@@ -39,8 +39,8 @@ static int logger_flash_map_read(const struct data_logger_backend_config *backen
 static int logger_flash_map_erase(const struct data_logger_backend_config *backend, uint32_t phy_block, uint32_t num)
 {
 	struct data_logger_backend_data *data = backend->data;
-	off_t offset = BLOCK_SIZE * phy_block;
-	size_t len = BLOCK_SIZE * num;
+	off_t offset = DATA_LOGGER_FLASH_MAP_MAX_WRAPS * phy_block;
+	size_t len = DATA_LOGGER_FLASH_MAP_MAX_WRAPS * num;
 
 	return flash_area_erase(data->area, offset, len);
 }
