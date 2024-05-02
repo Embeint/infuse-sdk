@@ -192,7 +192,7 @@ static int current_block_search(const struct device *dev, uint8_t counter)
 }
 
 /* Need to hook into this function when testing */
-IF_DISABLED(CONFIG_ZTEST, static)
+IF_DISABLED(CONFIG_ZTEST, (static))
 int data_logger_init(const struct device *dev)
 {
 	const struct data_logger_config *config = dev->config;
