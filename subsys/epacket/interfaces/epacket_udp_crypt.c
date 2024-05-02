@@ -23,6 +23,9 @@
 
 #include "epacket_internal.h"
 
+#include <zephyr/logging/log.h>
+LOG_MODULE_DECLARE(epacket);
+
 /* Validate frame sizes match expected */
 BUILD_ASSERT(sizeof(struct epacket_udp_frame) == EPACKET_UDP_FRAME_EXPECTED_SIZE, "UDP frame changed size");
 
@@ -102,7 +105,7 @@ int epacket_udp_encrypt(struct net_buf *buf)
 int epacket_udp_decrypt(struct net_buf *buf)
 {
 	struct epacket_rx_metadata *meta = net_buf_user_data(buf);
-	struct epacket_udp_frame *frame;
+	struct epacket_udp_frame frame;
 	struct net_buf *scratch;
 	uint64_t device_id;
 	uint32_t key_rotation;
@@ -115,23 +118,23 @@ int epacket_udp_decrypt(struct net_buf *buf)
 	if (buf->len <= sizeof(struct epacket_udp_frame)) {
 		return -1;
 	}
-	frame = (void *)buf->data;
+	memcpy(&frame, buf->data, sizeof(frame));
 
 	/* Packet metadata */
-	meta->type = frame->associated_data.type;
-	meta->flags = frame->associated_data.flags;
+	meta->type = frame.associated_data.type;
+	meta->flags = frame.associated_data.flags;
 	meta->auth = EPACKET_AUTH_DEVICE;
-	meta->sequence = frame->nonce.sequence;
+	meta->sequence = frame.nonce.sequence;
 
 	/* Validate packet should be for us and device encrypted */
-	device_id = ((uint64_t)frame->associated_data.device_id_upper << 32) | frame->nonce.device_id_lower;
-	if ((device_id != infuse_device_id()) || !(frame->associated_data.flags & EPACKET_FLAGS_ENCRYPTION_DEVICE)) {
+	device_id = ((uint64_t)frame.associated_data.device_id_upper << 32) | frame.nonce.device_id_lower;
+	if ((device_id != infuse_device_id()) || !(frame.associated_data.flags & EPACKET_FLAGS_ENCRYPTION_DEVICE)) {
 		goto error;
 	}
 
 	/* Get the PSA key ID for packet */
 	key_id = EPACKET_KEY_DEVICE | EPACKET_KEY_INTERFACE_UDP;
-	key_rotation = sys_get_le24(frame->associated_data.device_rotation);
+	key_rotation = sys_get_le24(frame.associated_data.device_rotation);
 	psa_key_id = epacket_key_id_get(key_id, key_rotation);
 	if (psa_key_id == 0) {
 		goto error;
@@ -146,17 +149,19 @@ int epacket_udp_decrypt(struct net_buf *buf)
 	net_buf_reset(buf);
 
 	/* Decrypt into the allocated packet buffer */
-	status = psa_aead_decrypt(psa_key_id, PSA_ALG_CHACHA20_POLY1305, frame->nonce.raw, sizeof(frame->nonce),
-				  frame->associated_data.raw, sizeof(frame->associated_data), scratch->data,
-				  scratch->len, net_buf_tail(buf), net_buf_tailroom(buf), &out_len);
-	net_buf_add(buf, out_len);
-
-	/* Free scratch space */
-	net_buf_unref(scratch);
+	status = psa_aead_decrypt(psa_key_id, PSA_ALG_CHACHA20_POLY1305, frame.nonce.raw, sizeof(frame.nonce),
+				  frame.associated_data.raw, sizeof(frame.associated_data), scratch->data, scratch->len,
+				  net_buf_tail(buf), net_buf_tailroom(buf), &out_len);
 
 	if (status != PSA_SUCCESS) {
+		/* Restore original buffer */
+		net_buf_add_mem(buf, &frame, sizeof(frame));
+		net_buf_add_mem(buf, scratch->data, scratch->len);
+		net_buf_unref(scratch);
 		goto error;
 	}
+	net_buf_add(buf, out_len);
+	net_buf_unref(scratch);
 	return 0;
 error:
 	meta->auth = EPACKET_AUTH_FAILURE;
