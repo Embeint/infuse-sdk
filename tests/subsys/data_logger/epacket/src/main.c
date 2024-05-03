@@ -12,6 +12,7 @@
 #include <zephyr/kernel.h>
 #include <zephyr/net/buf.h>
 
+#include <infuse/epacket/interface.h>
 #include <infuse/epacket/packet.h>
 #include <infuse/data_logger/logger.h>
 #include <infuse/epacket/interface/epacket_dummy.h>
@@ -42,6 +43,17 @@ ZTEST(data_logger_epacket, test_block_read)
 	zassert_equal(-ENOTSUP, data_logger_block_read(logger, UINT32_MAX, 0, buffer, sizeof(buffer)));
 }
 
+ZTEST(data_logger_epacket, test_block_write_error)
+{
+	const struct device *logger = DEVICE_DT_GET(DT_NODELABEL(data_logger_epacket));
+	uint8_t payload[EPACKET_INTERFACE_MAX_PAYLOAD(DT_NODELABEL(epacket_dummy)) + 1];
+	int rc;
+
+	/* Write random block */
+	rc = data_logger_block_write(logger, 0, payload, sizeof(payload));
+	zassert_equal(-EINVAL, rc);
+}
+
 ZTEST(data_logger_epacket, test_block_write)
 {
 	const struct device *logger = DEVICE_DT_GET(DT_NODELABEL(data_logger_epacket));
@@ -49,7 +61,7 @@ ZTEST(data_logger_epacket, test_block_write)
 	struct data_logger_state state;
 	struct k_fifo *sent_queue = epacket_dummmy_transmit_fifo_get();
 	struct net_buf *sent;
-	uint8_t payload[16];
+	uint8_t payload[EPACKET_INTERFACE_MAX_PAYLOAD(DT_NODELABEL(epacket_dummy))];
 	int rc;
 
 	for (int i = 0; i < 100; i++) {
@@ -79,4 +91,11 @@ ZTEST(data_logger_epacket, test_block_write)
 	zassert_equal(0, state.current_block);
 }
 
-ZTEST_SUITE(data_logger_epacket, NULL, NULL, NULL, NULL, NULL);
+static void data_logger_setup(void *fixture)
+{
+	const struct device *logger = DEVICE_DT_GET(DT_NODELABEL(data_logger_epacket));
+
+	(void)data_logger_init(logger);
+}
+
+ZTEST_SUITE(data_logger_epacket, NULL, NULL, data_logger_setup, NULL, NULL);
