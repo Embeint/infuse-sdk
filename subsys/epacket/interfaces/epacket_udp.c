@@ -216,6 +216,7 @@ static int epacket_udp_send(const struct device *dev, struct net_buf *buf)
 	/* Don't do work unless the socket is open */
 	if (!k_event_test(&udp_state.state, UDP_STATE_SOCKET_OPEN)) {
 		LOG_DBG("No socket");
+		epacket_notify_tx_failure(dev, buf, -ENOTCONN);
 		rc = -ENOTCONN;
 		goto end;
 	}
@@ -231,6 +232,7 @@ static int epacket_udp_send(const struct device *dev, struct net_buf *buf)
 	rc = zsock_sendto(udp_state.sock, buf->data, buf->len, 0, &udp_state.remote, udp_state.remote_len);
 	if (rc == -1) {
 		LOG_WRN("Failed to send (%d)", errno);
+		epacket_notify_tx_failure(dev, buf, -errno);
 		rc = -errno;
 	} else {
 		rc = 0;
