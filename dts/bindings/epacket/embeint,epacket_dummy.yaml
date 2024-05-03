@@ -5,4 +5,10 @@ description: ePacket dummy interface
 
 compatible: "embeint,epacket-dummy"
 
-include: base.yaml
+include: "epacket-base.yaml"
+
+properties:
+  header-size:
+    default: 4
+  footer-size:
+    default: 0

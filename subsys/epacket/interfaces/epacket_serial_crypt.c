@@ -25,9 +25,6 @@
 
 static const uint8_t sync_bytes[2] = {SERIAL_SYNC_A, SERIAL_SYNC_B};
 
-/* Validate frame sizes match expected */
-BUILD_ASSERT(sizeof(struct epacket_serial_frame) == EPACKET_SERIAL_FRAME_EXPECTED_SIZE, "USB frame changed size");
-
 void epacket_serial_reconstruct(const struct device *dev, uint8_t *buffer, size_t len,
 				void (*handler)(struct net_buf *))
 {

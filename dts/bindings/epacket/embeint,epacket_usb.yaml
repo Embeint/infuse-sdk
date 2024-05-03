@@ -5,7 +5,7 @@ description: ePacket USB interface
 
 compatible: "embeint,epacket-usb"
 
-include: base.yaml
+include: "epacket-base.yaml"
 
 properties:
   cdc-acm:
@@ -13,3 +13,7 @@ properties:
     required: true
     description: |
         USB CDC-ACM backend.
+  header-size:
+    default: 23
+  footer-size:
+    default: 16

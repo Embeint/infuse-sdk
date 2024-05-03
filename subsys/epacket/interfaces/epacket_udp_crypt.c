@@ -26,9 +26,6 @@
 #include <zephyr/logging/log.h>
 LOG_MODULE_DECLARE(epacket);
 
-/* Validate frame sizes match expected */
-BUILD_ASSERT(sizeof(struct epacket_udp_frame) == EPACKET_UDP_FRAME_EXPECTED_SIZE, "UDP frame changed size");
-
 int epacket_udp_encrypt(struct net_buf *buf)
 {
 	struct epacket_tx_metadata *meta = net_buf_user_data(buf);

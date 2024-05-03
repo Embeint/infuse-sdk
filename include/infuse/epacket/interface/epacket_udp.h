@@ -24,9 +24,6 @@ extern "C" {
  * @{
  */
 
-/* Expected size of the UDP frame header */
-#define EPACKET_UDP_FRAME_EXPECTED_SIZE 22
-
 /* ePacket UDP data frame */
 struct epacket_udp_frame {
 	/* AEAD associated data */

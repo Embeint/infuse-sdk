@@ -139,6 +139,7 @@ static const struct epacket_interface_api usb_api = {
 };
 
 #define EPACKET_USB_DEFINE(inst)                                                                                       \
+	BUILD_ASSERT(sizeof(struct epacket_serial_frame) == DT_INST_PROP(inst, header_size));                          \
 	static struct epacket_usb_data usb_data_##inst;                                                                \
 	static const struct epacket_usb_config usb_config_##inst = {                                                   \
 		.backend = DEVICE_DT_GET(DT_INST_PROP(inst, cdc_acm)),                                                 \
