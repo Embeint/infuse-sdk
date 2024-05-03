@@ -1,0 +1,166 @@
+name: Code Coverage with codecov
+
+on:
+  pull_request:
+    branches:
+      - main
+  schedule:
+    # Run at 14:37 UTC every day
+    - cron: '37 14 * * *'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  codecov:
+    runs-on: self-hosted
+    container:
+      image: ghcr.io/zephyrproject-rtos/ci:v0.26.11
+      options: '--entrypoint /bin/bash'
+      volumes:
+        - /repo-cache/embeint:/github/cache/embeint
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: ["native_sim", "qemu_cortex_m3"]
+
+    env:
+      BASE_REF: ${{ github.base_ref }}
+      ZEPHYR_TOOLCHAIN_VARIANT: zephyr
+    steps:
+      - name: Workspace cleanup
+        run: |
+          rm -rf ./{*,.*}
+
+      - name: Clone cached Embeint SDK repository
+        continue-on-error: true
+        run: |
+          rm -rf infuse-sdk
+          git clone --shared /github/cache/embeint/infuse-sdk infuse-sdk
+          cd infuse-sdk
+          git remote set-url origin ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          path: infuse-sdk
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Environment Setup
+        working-directory: infuse-sdk
+        run: |
+          if [ "${{github.event_name}}" = "pull_request" ]; then
+            git config --global user.email "ci@embeint.com"
+            git config --global user.name "Embeint CI"
+            rm -fr ".git/rebase-apply"
+            git rebase origin/${BASE_REF}
+            git log  --pretty=oneline | head -n 10
+          fi
+
+          west init -l . || true
+          west config --global update.narrow true
+          west update --path-cache /github/cache/embeint 2>&1 1> west.update.log || west update --path-cache /github/cache/embeint 2>&1 1> west.update.log || ( rm -rf ../modules ../bootloader ../tools && west update --path-cache /github/cache/embeint)
+          west forall -c 'git reset --hard HEAD'
+
+          echo "ZEPHYR_SDK_INSTALL_DIR=/opt/toolchains/zephyr-sdk-$( cat SDK_VERSION )" >> $GITHUB_ENV
+
+      - name: Check Environment
+        run: |
+          cmake --version
+          gcc --version
+          ls -la /opt/toolchains
+          ls -la
+          echo "github.ref: ${{ github.ref }}"
+          echo "github.base_ref: ${{ github.base_ref }}"
+          echo "github.ref_name: ${{ github.ref_name }}"
+
+      - name: Run Tests with Coverage Information
+        continue-on-error: true
+        run: |
+          mkdir -p coverage/reports
+          pip3 install gcovr==6.0
+          export ZEPHYR_BASE=${PWD}/zephyr
+          $ZEPHYR_BASE/scripts/twister -i --force-color -N -v --filter runnable -p ${{ matrix.platform }} --coverage -T infuse-sdk/tests --coverage-tool gcovr -xCONFIG_TEST_EXTRA_STACK_SIZE=4096 -e nano
+
+      - name: Rename coverage files
+        if: always()
+        run: |
+          cp twister-out/coverage.json coverage/reports/${{ matrix.platform }}.json
+
+      - name: Upload Coverage Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Coverage Data (Subset ${{ matrix.platform }})
+          path: coverage/reports/${{ matrix.platform }}.json
+          retention-days: 1
+
+  codecov-results:
+    name: "Publish Coverage Results"
+    needs: codecov
+    runs-on: ubuntu-22.04
+    # the codecov job might be skipped, we don't need to run this job then
+    if: success() || failure()
+
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: coverage/reports
+
+      - name: Move coverage files
+        run: |
+          mv ./coverage/reports/*/*.json ./coverage/reports
+          ls -la ./coverage/reports
+
+      - name: Generate list of coverage files
+        id: get-coverage-files
+        shell: cmake -P {0}
+        run: |
+          file(GLOB INPUT_FILES_LIST  "coverage/reports/*.json")
+          set(MERGELIST "")
+          set(FILELIST "")
+          foreach(ITEM ${INPUT_FILES_LIST})
+            get_filename_component(f ${ITEM} NAME)
+            if(FILELIST STREQUAL "")
+              set(FILELIST "${f}")
+            else()
+              set(FILELIST "${FILELIST},${f}")
+            endif()
+          endforeach()
+          foreach(ITEM ${INPUT_FILES_LIST})
+            get_filename_component(f ${ITEM} NAME)
+            if(MERGELIST STREQUAL "")
+              set(MERGELIST "--add-tracefile ${f}")
+            else()
+              set(MERGELIST "${MERGELIST} -a ${f}")
+            endif()
+          endforeach()
+          file(APPEND $ENV{GITHUB_OUTPUT} "mergefiles=${MERGELIST}\n")
+          file(APPEND $ENV{GITHUB_OUTPUT} "covfiles=${FILELIST}\n")
+
+      - name: Merge coverage files
+        run: |
+          cd ./coverage/reports
+          pip3 install gcovr==6.0
+          gcovr ${{ steps.get-coverage-files.outputs.mergefiles }}  --merge-mode-functions=separate --json merged.json
+          gcovr ${{ steps.get-coverage-files.outputs.mergefiles }} --merge-mode-functions=separate --cobertura merged.xml
+
+      - name: Upload coverage to Codecov
+        if: always()
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          directory: ./coverage/reports
+          env_vars: OS,PYTHON
+          fail_ci_if_error: false
+          verbose: true
+          files: merged.xml
