@@ -27,15 +27,14 @@ config EPACKET_BUFFERS_RX
 	range 1 16
 	default 3
 
-config EPACKET_PAYLOAD_MAX
-	int "Maximum supported ePacket payload size"
+config EPACKET_PACKET_SIZE_MAX
+	int "Maximum supported ePacket packet size"
 	range 64 2048
-	default 512 if NET_IPV4
+	default 548 if NET_IPV4
 	default 256
 	help
-	  Default value of 512 for IPV4 networks is due to the
-	  larger minimum MTU of 576. 256 is sufficient for Bluetooth
-	  only devices.
+	  IPv4 minimum MTU = 576 (28 byte IP + UDP header)
+	  256 is sufficient for Bluetooth only devices.
 
 config EPACKET_KEY_EXPORT
 	bool "Support exporting ePacket derived keys"
