@@ -19,17 +19,17 @@
         }
     },
     "definitions": {
-        "0": {
+        "1": {
             "name": "ANNOUNCE",
             "description": "Common announcement packet",
             "fields": [
                 {"name": "application", "type": "uint32_t", "description": "Unique application ID"},
-                {"name": "version", "type": "tdf_struct_mcuboot_img_sem_ver", "description": "Running application version"},
+                {"name": "version", "type": "struct tdf_struct_mcuboot_img_sem_ver", "description": "Running application version"},
                 {"name": "uptime", "type": "uint32_t", "description": "Uptime in seconds"},
                 {"name": "reboots", "type": "uint16_t", "description": "Reboot counter"}
             ]
         },
-        "1": {
+        "2": {
             "name": "BATTERY_STATE",
             "description": "General battery state",
             "fields": [
@@ -38,7 +38,7 @@
                 {"name": "soc", "type": "uint8_t", "description": "State of charge in percent", "display_postfix": "%", "conversion": {"m": 0.5, "c": 0}}
             ]
         },
-        "2": {
+        "3": {
             "name": "ARRAY_TYPE",
             "description": "Example array type",
             "fields": [
