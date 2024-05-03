@@ -79,9 +79,7 @@ int epacket_dummy_decrypt(struct net_buf *buf)
 
 static int epacket_dummy_init(const struct device *dev)
 {
-	struct epacket_interface_common_data *data = dev->data;
-
-	data->receive_handler = epacket_default_receive_handler;
+	epacket_interface_common_init(dev);
 	k_fifo_init(&epacket_dummy_fifo);
 	return 0;
 }

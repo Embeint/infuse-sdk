@@ -28,6 +28,13 @@ static const struct device *tx_device[CONFIG_EPACKET_BUFFERS_TX];
 
 LOG_MODULE_REGISTER(epacket, CONFIG_EPACKET_LOG_LEVEL);
 
+void epacket_interface_common_init(const struct device *dev)
+{
+	struct epacket_interface_common_data *data = dev->data;
+
+	data->receive_handler = epacket_default_receive_handler;
+}
+
 struct net_buf *epacket_encryption_scratch(void)
 {
 	return net_buf_alloc(&epacket_scratch, K_FOREVER);

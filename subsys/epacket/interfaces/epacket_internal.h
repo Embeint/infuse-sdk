@@ -17,6 +17,13 @@ extern "C" {
 #endif
 
 /**
+ * @brief Common initialisation for all interfaces
+ *
+ * @param dev Interface
+ */
+void epacket_interface_common_init(const struct device *dev);
+
+/**
  * @brief Claim scratch space for encryption
  *
  * @return struct net_buf* scratch space
