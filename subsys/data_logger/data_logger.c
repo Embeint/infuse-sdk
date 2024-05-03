@@ -43,7 +43,7 @@ void data_logger_get_state(const struct device *dev, struct data_logger_state *s
 	state->physical_blocks = config->backend_config.physical_blocks;
 	state->current_block = data->current_block;
 	state->earliest_block = data->earliest_block;
-	state->block_size = config->backend_config.max_block_size;
+	state->block_size = data->backend_data.block_size;
 	state->block_overhead =
 		config->backend_api->read == NULL ? 0 : sizeof(struct data_logger_persistent_block_header);
 	state->erase_unit = config->backend_config.erase_size;
@@ -58,7 +58,7 @@ int data_logger_block_write(const struct device *dev, enum infuse_type type, voi
 	int rc;
 
 	/* Validate block length */
-	if (block_len > config->backend_config.max_block_size) {
+	if (block_len > data->backend_data.block_size) {
 		return -EINVAL;
 	}
 	/* Check there is still space on the logger */
