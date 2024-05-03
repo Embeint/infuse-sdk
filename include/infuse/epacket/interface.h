@@ -42,14 +42,6 @@ enum epacket_interface_id {
 
 struct epacket_interface_api {
 	/**
-	 * @brief Query packet overhead for the interface
-	 *
-	 * @param dev Interface device
-	 * @param header Packet header overhead
-	 * @param footer Packet footer overhead
-	 */
-	void (*packet_overhead)(const struct device *dev, size_t *header, size_t *footer);
-	/**
 	 * @brief Send a packet over the interface
 	 *
 	 * @param dev Interface device
@@ -79,20 +71,6 @@ struct epacket_interface_common_config {
 	uint8_t header_size;
 	uint8_t footer_size;
 };
-
-/**
- * @brief Get the packet overhead for an interface
- *
- * @param dev Interface to query
- * @param header Bytes required at start of payload
- * @param footer Bytes required at end of payload
- */
-static inline void epacket_packet_overhead(const struct device *dev, size_t *header, size_t *footer)
-{
-	const struct epacket_interface_api *api = dev->api;
-
-	api->packet_overhead(dev, header, footer);
-}
 
 /**
  * @brief Queue an ePacket for sending over an interface

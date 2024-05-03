@@ -180,13 +180,6 @@ socket_error:
 
 K_THREAD_DEFINE(epacket_udp_thread, 2048, epacket_udp_loop, NULL, NULL, NULL, 0, K_ESSENTIAL, 0);
 
-static void epacket_udp_packet_overhead(const struct device *dev, size_t *header, size_t *footer)
-{
-	/* ChaCha20-Poly1305 adds a 16 byte tag after the ciphertext */
-	*header = sizeof(struct epacket_udp_frame);
-	*footer = 16;
-}
-
 static int epacket_udp_send(const struct device *dev, struct net_buf *buf)
 {
 	ssize_t rc;
@@ -234,7 +227,6 @@ static int epacket_udp_init(const struct device *dev)
 }
 
 static const struct epacket_interface_api udp_api = {
-	.packet_overhead = epacket_udp_packet_overhead,
 	.send = epacket_udp_send,
 };
 

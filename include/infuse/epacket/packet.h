@@ -108,18 +108,16 @@ struct net_buf *epacket_alloc_rx(k_timeout_t timeout);
  */
 static inline struct net_buf *epacket_alloc_tx_for_interface(const struct device *dev, k_timeout_t timeout)
 {
+	const struct epacket_interface_common_config *config = dev->config;
 	struct net_buf *buf = epacket_alloc_tx(timeout);
-	size_t header, footer;
 
 	if (buf == NULL) {
 		return NULL;
 	}
-	/* Query interface overheads */
-	epacket_packet_overhead(dev, &header, &footer);
 	/* Reserve space for header */
-	net_buf_reserve(buf, header);
+	net_buf_reserve(buf, config->header_size);
 	/* Hacky reservation for footer, automatically reversed by epacket_queue */
-	buf->size -= footer;
+	buf->size -= config->footer_size;
 	return buf;
 }
 

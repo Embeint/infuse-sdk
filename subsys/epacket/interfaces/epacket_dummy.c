@@ -48,12 +48,6 @@ void epacket_dummy_receive(const struct device *dev, struct epacket_dummy_frame 
 	epacket_raw_receive_handler(rx);
 }
 
-static void epacket_dummy_packet_overhead(const struct device *dev, size_t *header, size_t *footer)
-{
-	*header = sizeof(struct epacket_dummy_frame);
-	*footer = 0;
-}
-
 static int epacket_dummy_send(const struct device *dev, struct net_buf *buf)
 {
 	struct epacket_dummy_frame *header = net_buf_push(buf, sizeof(struct epacket_dummy_frame));
@@ -93,7 +87,6 @@ static int epacket_dummy_init(const struct device *dev)
 }
 
 static const struct epacket_interface_api dummy_api = {
-	.packet_overhead = epacket_dummy_packet_overhead,
 	.send = epacket_dummy_send,
 };
 
