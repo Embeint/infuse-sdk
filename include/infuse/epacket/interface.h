@@ -44,6 +44,32 @@ enum epacket_interface_id {
 	EPACKET_INTERFACE_DUMMY = 255,
 };
 
+/** @brief ePacket interface callback structure. */
+struct epacket_interface_cb {
+	/**
+	 * @brief The interface connection state has changed.
+	 *
+	 * @param connected True when the interface is connected
+	 * @param current_max_payload Current maximum payload size
+	 * @param user_ctx User context pointer
+	 */
+	void (*interface_state)(bool connected, uint16_t current_max_payload, void *user_ctx);
+
+	/**
+	 * @brief A packet failed to transmit on the interface
+	 *
+	 * @param buf The packet that failed to transmit
+	 * @param reason The error code from the interface
+	 * @param user_ctx User context pointer
+	 */
+	void (*tx_failure)(const struct net_buf *buf, int reason, void *user_ctx);
+
+	/* User provided context pointer */
+	void *user_ctx;
+
+	sys_snode_t node;
+};
+
 struct epacket_interface_api {
 	/**
 	 * @brief Send a packet over the interface
@@ -68,6 +94,7 @@ typedef void (*epacket_receive_handler)(struct net_buf *packet);
 /** Common data struct for all interfaces. Must be first member in interface data struct */
 struct epacket_interface_common_data {
 	epacket_receive_handler receive_handler;
+	sys_slist_t callback_list;
 };
 
 /** Common config struct for all interfaces. Must be first member in interface config struct */
@@ -95,6 +122,19 @@ static inline void epacket_set_receive_handler(const struct device *dev, epacket
 	struct epacket_interface_common_data *data = dev->data;
 
 	data->receive_handler = handler;
+}
+
+/**
+ * @brief Register to be notified of interface events
+ *
+ * @param dev Interface to receive callbacks for
+ * @param cb Callback struct to register
+ */
+static inline void epacket_register_callback(const struct device *dev, struct epacket_interface_cb *cb)
+{
+	struct epacket_interface_common_data *data = dev->data;
+
+	sys_slist_append(&data->callback_list, &cb->node);
 }
 
 /**

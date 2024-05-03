@@ -24,6 +24,15 @@ extern "C" {
 void epacket_interface_common_init(const struct device *dev);
 
 /**
+ * @brief Run callback logic for TX failures
+ *
+ * @param dev Interface that failed to send
+ * @param buf ePacket that failed to send
+ * @param reason Reason that the packet failed to send
+ */
+void epacket_notify_tx_failure(const struct device *dev, struct net_buf *buf, int reason);
+
+/**
  * @brief Claim scratch space for encryption
  *
  * @return struct net_buf* scratch space
