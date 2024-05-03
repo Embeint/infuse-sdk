@@ -29,13 +29,9 @@ static int logger_epacket_write(const struct data_logger_backend_config *backend
 static int logger_epacket_init(const struct data_logger_backend_config *backend)
 {
 	struct data_logger_backend_data *data = backend->data;
-	size_t header, footer;
-
-	/* Get overhead for the interface */
-	epacket_packet_overhead(backend->backend, &header, &footer);
 
 	/* Fixed block size */
-	data->block_size = backend->max_block_size - header - footer;
+	data->block_size = backend->max_block_size;
 	return 0;
 }
 

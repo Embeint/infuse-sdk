@@ -13,6 +13,8 @@
 
 #include <zephyr/devicetree.h>
 
+#include <infuse/epacket/interface.h>
+
 #include "backend_api.h"
 
 #ifdef __cplusplus
@@ -27,7 +29,7 @@ extern "C" {
 		.logical_blocks = UINT32_MAX,                                                                          \
 		.physical_blocks = UINT32_MAX,                                                                         \
 		.erase_size = 0,                                                                                       \
-		.max_block_size = CONFIG_EPACKET_PACKET_SIZE_MAX,                                                      \
+		.max_block_size = EPACKET_INTERFACE_MAX_PAYLOAD(DT_PROP(node, epacket)),                               \
 	},
 
 extern const struct data_logger_backend_api data_logger_epacket_api;
