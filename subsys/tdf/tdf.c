@@ -37,8 +37,8 @@ static uint32_t sign_extend_24_bits(uint32_t x)
 	return (x ^ m) - m;
 }
 
-int tdf_add(uint16_t tdf_id, uint8_t tdf_len, uint8_t tdf_num, uint64_t time, uint16_t period,
-	    struct tdf_buffer_state *state, const void *data)
+int tdf_add(struct tdf_buffer_state *state, uint16_t tdf_id, uint8_t tdf_len, uint8_t tdf_num, uint64_t time,
+	    uint16_t period, const void *data)
 {
 	uint16_t buffer_remaining = net_buf_simple_tailroom(&state->buf);
 	uint16_t payload_space;

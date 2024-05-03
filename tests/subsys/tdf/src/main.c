@@ -42,7 +42,7 @@ static void run_test_case(struct tdf_test_case *tdfs, size_t num_tdfs)
 	/* Add the requested TDFs */
 	for (int i = 0; i < num_tdfs; i++) {
 		t = &tdfs[i];
-		rc = tdf_add(t->p.tdf_id, t->p.tdf_len, t->p.tdf_num, t->p.time, t->p.period, &state, input_buffer);
+		rc = tdf_add(&state, t->p.tdf_id, t->p.tdf_len, t->p.tdf_num, t->p.time, t->p.period, input_buffer);
 		total_size += t->expected_size;
 		zassert_equal(t->expected_rc, rc);
 		zassert_equal(total_size, state.buf.len);
