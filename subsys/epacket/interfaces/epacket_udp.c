@@ -238,5 +238,6 @@ static const struct epacket_interface_api udp_api = {
 	.send = epacket_udp_send,
 };
 
+BUILD_ASSERT(sizeof(struct epacket_udp_frame) == DT_INST_PROP(0, header_size));
 static struct epacket_interface_common_data epacket_udp_data;
 DEVICE_DT_DEFINE(DT_DRV_INST(0), epacket_udp_init, NULL, &epacket_udp_data, NULL, POST_KERNEL, 0, &udp_api);

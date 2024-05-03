@@ -98,6 +98,7 @@ static const struct epacket_interface_api dummy_api = {
 };
 
 #define EPACKET_DUMMY_DEFINE(inst)                                                                                     \
+	BUILD_ASSERT(sizeof(struct epacket_dummy_frame) == DT_INST_PROP(inst, header_size));                           \
 	static struct epacket_interface_common_data epacket_dummy_data##inst;                                          \
 	DEVICE_DT_INST_DEFINE(inst, epacket_dummy_init, NULL, &epacket_dummy_data##inst, NULL, POST_KERNEL, 0,         \
 			      &dummy_api);

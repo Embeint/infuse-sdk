@@ -24,9 +24,6 @@ extern "C" {
  * @{
  */
 
-/* Expected size of the SERIAL frame header */
-#define EPACKET_SERIAL_FRAME_EXPECTED_SIZE 23
-
 /* ePacket serial data frame */
 struct epacket_serial_frame {
 	/* AEAD associated data */

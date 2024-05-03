@@ -5,4 +5,12 @@ description: ePacket UDP interface
 
 compatible: "embeint,epacket-udp"
 
-include: base.yaml
+include: "epacket-base.yaml"
+
+properties:
+  max-packet-size:
+    default: 1500
+  header-size:
+    default: 22
+  footer-size:
+    default: 16

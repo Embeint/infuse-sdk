@@ -1,0 +1,22 @@
+# Copyright (c) 2024 Jordan Yates <jordan@embeint.com>
+# SPDX-License-Identifier: LicenseRef-Embeint
+
+include: base.yaml
+
+properties:
+  max-packet-size:
+    type: int
+    description: |
+      Maximum packet size (header + payload + footer) supported
+      by the interface. If not set, supports arbitrary sized
+      payloads (limited by CONFIG_EPACKET_PACKET_SIZE_MAX).
+  header-size:
+    type: int
+    description: |
+      Size of the interface header in bytes.
+      Do NOT modify defaults.
+  footer-size:
+    type: int
+    description: |
+      Size of the interface footer in bytes
+      Do NOT modify defaults.
