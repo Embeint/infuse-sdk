@@ -1,7 +1,18 @@
 # Copyright (c) 2024 Jordan Yates <jordan@embeint.com>
 # SPDX-License-Identifier: LicenseRef-Embeint
 
-description: Data logging parent class
+description: |
+  Data logging parent class. It is also used to enumerate higher
+  level logging abstractions.
+
+    data_logger_udp: data_logger_udp {
+      compatible = "embeint,data-logger-epacket", "embeint,data-logger";
+      epacket = <&epacket_udp>;
+
+      tdf_logger_udp: tdf_logger_udp {
+          compatible = "embeint,tdf-data-logger";
+      };
+    };
 
 compatible: "embeint,data-logger"
 

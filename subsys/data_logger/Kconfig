@@ -17,3 +17,17 @@ source "subsys/logging/Kconfig.template.log_config"
 rsource "backends/Kconfig"
 
 endif # DATA_LOGGER
+
+config TDF_DATA_LOGGER
+	bool "TDF data logging"
+	depends on DT_HAS_EMBEINT_TDF_DATA_LOGGER_ENABLED
+	depends on DATA_LOGGER
+	default y
+
+if TDF_DATA_LOGGER
+
+module = TDF_DATA_LOGGER
+module-str = TDF data logger
+source "subsys/logging/Kconfig.template.log_config"
+
+endif # TDF_DATA_LOGGER
