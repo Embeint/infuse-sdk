@@ -33,6 +33,7 @@ void epacket_interface_common_init(const struct device *dev)
 	struct epacket_interface_common_data *data = dev->data;
 
 	data->receive_handler = epacket_default_receive_handler;
+	sys_slist_init(&data->callback_list);
 }
 
 struct net_buf *epacket_encryption_scratch(void)
@@ -63,6 +64,18 @@ void epacket_raw_receive_handler(struct net_buf *buf)
 {
 	/* Push packet at processing queue */
 	net_buf_put(&epacket_rx_queue, buf);
+}
+
+void epacket_notify_tx_failure(const struct device *dev, struct net_buf *buf, int reason)
+{
+	struct epacket_interface_common_data *data = dev->data;
+	struct epacket_interface_cb *cb;
+
+	SYS_SLIST_FOR_EACH_CONTAINER(&data->callback_list, cb, node) {
+		if (cb->tx_failure) {
+			cb->tx_failure(buf, reason, cb->user_ctx);
+		}
+	}
 }
 
 static void epacket_handle_rx(struct net_buf *buf)
