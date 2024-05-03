@@ -26,6 +26,13 @@ extern "C" {
  * @{
  */
 
+/* Maximum packet size on an interface, limited by CONFIG_EPACKET_PACKET_SIZE_MAX */
+#define EPACKET_INTERFACE_MAX_PACKET(node_id)                                                                          \
+	(MIN(CONFIG_EPACKET_PACKET_SIZE_MAX, (DT_PROP_OR(node_id, max_packet_size, CONFIG_EPACKET_PACKET_SIZE_MAX))))
+/* Maximum payload size on an interface */
+#define EPACKET_INTERFACE_MAX_PAYLOAD(node_id)                                                                         \
+	(EPACKET_INTERFACE_MAX_PACKET(node_id) - DT_PROP(node_id, header_size) - DT_PROP(node_id, footer_size))
+
 /* Identifier for ePacket interface */
 enum epacket_interface_id {
 	EPACKET_INTERFACE_SERIAL = 0,
