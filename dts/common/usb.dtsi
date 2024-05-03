@@ -9,6 +9,15 @@
 		compatible = "embeint,epacket-usb";
 		cdc-acm = <&cdc_acm_uart>;
 	};
+
+	data_logger_serial: data_logger_serial {
+		compatible = "embeint,data-logger-epacket", "embeint,data-logger";
+		epacket = <&epacket_usb>;
+
+		tdf_logger_serial: tdf_logger_serial {
+			compatible = "embeint,tdf-data-logger";
+		};
+	};
 };
 
 zephyr_udc0: &usbd {
