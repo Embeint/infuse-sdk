@@ -14,7 +14,6 @@
 #include <zephyr/drivers/flash/flash_simulator.h>
 
 #include <infuse/data_logger/logger.h>
-#include <infuse/data_logger/backends/flash_map.h>
 
 static uint8_t input_buffer[1024] = {0};
 static uint8_t output_buffer[1024];
@@ -33,7 +32,7 @@ ZTEST(data_logger_flash_map, test_init_constants)
 	zassert_not_equal(0, state.erase_unit);
 	zassert_equal(sizeof(struct data_logger_persistent_block_header), state.block_overhead);
 	zassert_equal(flash_buffer_size / state.block_size, state.physical_blocks);
-	zassert_equal(DATA_LOGGER_FLASH_MAP_MAX_WRAPS * state.physical_blocks, state.logical_blocks);
+	zassert_equal(254 * state.physical_blocks, state.logical_blocks);
 	zassert_equal(0, flash_buffer_size % state.erase_unit);
 	zassert_equal(0, state.erase_unit % state.block_size);
 }
@@ -242,7 +241,7 @@ static void test_sequence(bool reinit)
 	zassert_equal(0, data_logger_init(logger));
 	data_logger_get_state(logger, &state);
 
-	for (int i = 0; i < DATA_LOGGER_FLASH_MAP_MAX_WRAPS * state.physical_blocks; i++) {
+	for (int i = 0; i < 254 * state.physical_blocks; i++) {
 		/* Predicatable block data per page */
 		type = (i % 10) + 1;
 		memset(input_buffer, i, sizeof(input_buffer));
