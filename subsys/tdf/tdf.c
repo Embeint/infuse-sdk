@@ -41,6 +41,8 @@ int tdf_add(struct tdf_buffer_state *state, uint16_t tdf_id, uint8_t tdf_len, ui
 	    uint16_t period, const void *data)
 {
 	uint16_t buffer_remaining = net_buf_simple_tailroom(&state->buf);
+	uint16_t max_space = state->buf.size - (state->buf.data - state->buf.__buf);
+	uint16_t min_size = sizeof(struct tdf_header) + (time ? sizeof(struct tdf_time) : 0) + tdf_len;
 	uint16_t payload_space;
 	uint16_t total_header, total_data;
 	uint16_t array_header = 0;
@@ -51,6 +53,11 @@ int tdf_add(struct tdf_buffer_state *state, uint16_t tdf_id, uint8_t tdf_len, ui
 	/* Invalid TDF ID */
 	if ((tdf_id == 0) || (tdf_id >= 4095) || (tdf_len == 0) || (tdf_num == 0)) {
 		return -EINVAL;
+	}
+
+	/* TDF can never fit on the buffer */
+	if (min_size > max_space) {
+		return -ENOSPC;
 	}
 
 	/* Evaluate headers sizes assuming all data will fit */

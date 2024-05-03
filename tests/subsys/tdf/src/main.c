@@ -542,6 +542,40 @@ ZTEST(tdf, test_add_time_to_no_time)
 	run_test_case(tests, ARRAY_SIZE(tests));
 }
 
+ZTEST(tdf, test_invalid_sizes)
+{
+	struct tdf_buffer_state state;
+	int rc;
+
+	net_buf_simple_init_with_data(&state.buf, buf, sizeof(buf));
+	tdf_buffer_state_reset(&state);
+
+	/* Too large to ever fit without a timestamp */
+	for (int i = 30; i < 64; i++) {
+		rc = tdf_add(&state, 10, i, 1, 0, 0, input_buffer);
+		zassert_equal(-ENOSPC, rc);
+	}
+	/* Too large to ever fit with a timestamp */
+	for (int i = 24; i < 64; i++) {
+		rc = tdf_add(&state, 10, i, 1, 1000, 0, input_buffer);
+		zassert_equal(-ENOSPC, rc);
+	}
+
+	/* Reserve space at start of buffer */
+	net_buf_simple_reserve(&state.buf, 2);
+
+	/* Too large to ever fit without a timestamp */
+	for (int i = 28; i < 64; i++) {
+		rc = tdf_add(&state, 10, i, 1, 0, 0, input_buffer);
+		zassert_equal(-ENOSPC, rc);
+	}
+	/* Too large to ever fit with a timestamp */
+	for (int i = 22; i < 64; i++) {
+		rc = tdf_add(&state, 10, i, 1, 1000, 0, input_buffer);
+		zassert_equal(-ENOSPC, rc);
+	}
+}
+
 ZTEST(tdf, test_parse_invalid_lengths)
 {
 	struct tdf_buffer_state parser;
