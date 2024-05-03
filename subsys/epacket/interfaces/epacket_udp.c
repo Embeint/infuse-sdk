@@ -27,10 +27,13 @@
 
 #define DT_DRV_COMPAT embeint_epacket_udp
 
+#define STATIC_MAX_PAYLOAD EPACKET_INTERFACE_PAYLOAD_FROM_PACKET(DT_DRV_INST(0), NET_IPV4_MTU)
+
 enum {
 	UDP_STATE_L4_CONNECTED = BIT(0),
 	UDP_STATE_VALID_DNS = BIT(1),
 	UDP_STATE_SOCKET_OPEN = BIT(2),
+	UDP_STATE_CLIENTS_NOTIFIED_UP = BIT(3),
 };
 
 struct udp_state {
@@ -45,6 +48,25 @@ static struct udp_state udp_state;
 
 LOG_MODULE_REGISTER(epacket_udp, CONFIG_EPACKET_UDP_LOG_LEVEL);
 
+static void cleanup_interface(const struct device *epacket_udp)
+{
+	struct epacket_interface_common_data *data = epacket_udp->data;
+	struct epacket_interface_cb *cb;
+
+	if (k_event_clear(&udp_state.state, UDP_STATE_SOCKET_OPEN)) {
+		(void)close(udp_state.sock);
+		LOG_DBG("Closed %d", udp_state.sock);
+	}
+	if (k_event_clear(&udp_state.state, UDP_STATE_CLIENTS_NOTIFIED_UP)) {
+		/* Interface is now disconnected */
+		SYS_SLIST_FOR_EACH_CONTAINER(&data->callback_list, cb, node) {
+			if (cb->interface_state) {
+				cb->interface_state(false, STATIC_MAX_PAYLOAD, cb->user_ctx);
+			}
+		}
+	}
+}
+
 static void l4_event_handler(struct net_mgmt_event_callback *cb, uint32_t event, struct net_if *iface)
 {
 	if (event == NET_EVENT_L4_CONNECTED) {
@@ -52,11 +74,8 @@ static void l4_event_handler(struct net_mgmt_event_callback *cb, uint32_t event,
 		k_event_post(&udp_state.state, UDP_STATE_L4_CONNECTED);
 	} else if (event == NET_EVENT_L4_DISCONNECTED) {
 		k_event_clear(&udp_state.state, UDP_STATE_L4_CONNECTED);
+		cleanup_interface(DEVICE_DT_GET(DT_DRV_INST(0)));
 		LOG_INF("Network disconnected");
-		if (k_event_clear(&udp_state.state, UDP_STATE_SOCKET_OPEN)) {
-			(void)close(udp_state.sock);
-			LOG_DBG("Closed %d", udp_state.sock);
-		}
 	}
 }
 
@@ -98,8 +117,11 @@ static int epacket_udp_dns_query(void)
 
 static int epacket_udp_loop(void *a, void *b, void *c)
 {
+	const struct device *epacket_udp = DEVICE_DT_GET(DT_DRV_INST(0));
+	struct epacket_interface_common_data *data = epacket_udp->data;
 	struct sockaddr_in local_addr = {0};
 	struct epacket_rx_metadata *meta;
+	struct epacket_interface_cb *cb;
 	struct sockaddr from;
 	socklen_t from_len;
 	struct net_buf *buf;
@@ -134,13 +156,22 @@ static int epacket_udp_loop(void *a, void *b, void *c)
 		k_event_post(&udp_state.state, UDP_STATE_SOCKET_OPEN);
 		LOG_DBG("Opened %d", udp_state.sock);
 
+		/* Bind so we can receive downlink packets */
 		rc = zsock_bind(udp_state.sock, (struct sockaddr *)&local_addr, sizeof(local_addr));
 		if (rc < 0) {
 			LOG_ERR("Failed to bind socket (%d)", errno);
 			goto socket_error;
 		}
+		LOG_INF("Waiting for UDP packets on port %d %d", ntohs(local_addr.sin_port), STATIC_MAX_PAYLOAD);
 
-		LOG_INF("Waiting for UDP packets on port %d", ntohs(local_addr.sin_port));
+		/* Interface is now connected */
+		SYS_SLIST_FOR_EACH_CONTAINER(&data->callback_list, cb, node) {
+			if (cb->interface_state) {
+				cb->interface_state(true, STATIC_MAX_PAYLOAD, cb->user_ctx);
+			}
+		}
+		k_event_post(&udp_state.state, UDP_STATE_CLIENTS_NOTIFIED_UP);
+
 		while (true) {
 			buf = epacket_alloc_rx(K_FOREVER);
 			meta = net_buf_user_data(buf);
@@ -157,7 +188,7 @@ static int epacket_udp_loop(void *a, void *b, void *c)
 			LOG_DBG("Received %d bytes from %d.%d.%d.%d:%d", received, addr[0], addr[1], addr[2], addr[3],
 				port);
 
-			meta->interface = DEVICE_DT_GET(DT_DRV_INST(0));
+			meta->interface = epacket_udp;
 			meta->interface_id = EPACKET_INTERFACE_UDP;
 			meta->rssi = 0;
 
@@ -170,9 +201,7 @@ socket_error:
 		/* clang-format on */
 
 		/* Close socket if still open */
-		if (k_event_clear(&udp_state.state, UDP_STATE_SOCKET_OPEN)) {
-			(void)zsock_close(udp_state.sock);
-		}
+		cleanup_interface(epacket_udp);
 		k_sleep(K_SECONDS(1));
 	}
 	return 0;
