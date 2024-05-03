@@ -19,6 +19,8 @@
 #include <infuse/fs/kv_types.h>
 #include <infuse/epacket/interface.h>
 #include <infuse/epacket/packet.h>
+#include <infuse/data_logger/high_level/tdf.h>
+#include <infuse/tdf/definitions.h>
 
 LOG_MODULE_REGISTER(app, LOG_LEVEL_INF);
 
@@ -26,24 +28,28 @@ int main(void)
 {
 	KV_STRING_CONST(wifi_ssid, CONFIG_WIFI_SSID);
 	KV_STRING_CONST(wifi_psk, CONFIG_WIFI_PSK);
-	const struct device *epacket_udp = DEVICE_DT_GET(DT_NODELABEL(epacket_udp));
-	struct net_buf *buf;
-	int cnt = 0;
-	uint8_t auth;
+	const struct device *tdf_logger_udp = DEVICE_DT_GET(DT_NODELABEL(tdf_logger_udp));
+	struct tdf_announce announce;
 
 	/* Write WiFi configuration */
 	kv_store_write(KV_KEY_WIFI_SSID, &wifi_ssid, sizeof(wifi_ssid));
 	kv_store_write(KV_KEY_WIFI_PSK, &wifi_psk, sizeof(wifi_psk));
 
 	for (;;) {
-		buf = epacket_alloc_tx_for_interface(epacket_udp, K_FOREVER);
-		net_buf_add_le32(buf, cnt);
+		announce.application = 0x1234;
+		announce.reboots = 0;
+		announce.uptime = k_uptime_get() / 1000;
+		announce.version = (struct tdf_struct_mcuboot_img_sem_ver){
+			.major = 1,
+			.minor = 2,
+			.revision = 3,
+			.build_num = 4,
+		};
 
-		auth = cnt & 0b1 ? EPACKET_AUTH_NETWORK : EPACKET_AUTH_DEVICE;
+		tdf_data_logger_log(tdf_logger_udp, TDF_ANNOUNCE, (sizeof(announce)), 0, &announce);
+		tdf_data_logger_flush(tdf_logger_udp);
 
-		epacket_set_tx_metadata(buf, auth, 0x12, 0xF0);
-		epacket_queue(epacket_udp, buf);
-		LOG_INF("Sent %s %d", epacket_udp->name, cnt++);
+		LOG_INF("Sent uptime %d on %s", announce.uptime, tdf_logger_udp->name);
 		k_sleep(K_SECONDS(1));
 	}
 	return 0;
