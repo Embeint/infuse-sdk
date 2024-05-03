@@ -79,19 +79,19 @@ static inline void tdf_buffer_state_reset(struct tdf_buffer_state *state)
 /**
  * @brief Add TDFs to memory buffer
  *
+ * @param state Pointer to current buffer state
  * @param tdf_id TDF sensor ID
  * @param tdf_len Length of a single TDF
  * @param tdf_num Number of TDFs to try to add
  * @param time Civil time associated with the first TDF. 0 for no timestamp.
  * @param period Civil time between tdfs when @a tdf_num > 0.
- * @param state Pointer to current buffer state
  * @param data TDF data
  *
  * @retval >0 Number of TDFs successfully added to buffer
  * @return -ENOMEM Insufficient space to add any TDFs to buffer
  */
-int tdf_add(uint16_t tdf_id, uint8_t tdf_len, uint8_t tdf_num, uint64_t time, uint16_t period,
-	    struct tdf_buffer_state *state, const void *data);
+int tdf_add(struct tdf_buffer_state *state, uint16_t tdf_id, uint8_t tdf_len, uint8_t tdf_num, uint64_t time,
+	    uint16_t period, const void *data);
 
 /**
  * @brief Initialise TDF parsing state
