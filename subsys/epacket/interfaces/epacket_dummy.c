@@ -22,10 +22,16 @@
 LOG_MODULE_REGISTER(epacket_dummy, CONFIG_EPACKET_LOG_LEVEL);
 
 static K_FIFO_DEFINE(epacket_dummy_fifo);
+static int send_error_code;
 
 struct k_fifo *epacket_dummmy_transmit_fifo_get(void)
 {
 	return &epacket_dummy_fifo;
+}
+
+void epacket_dummy_set_tx_failure(int error_code)
+{
+	send_error_code = error_code;
 }
 
 void epacket_dummy_receive(const struct device *dev, struct epacket_dummy_frame *header, uint8_t *payload,
@@ -57,7 +63,12 @@ static void epacket_dummy_send(const struct device *dev, struct net_buf *buf)
 	header->auth = meta->auth;
 	header->flags = meta->flags;
 
-	net_buf_put(&epacket_dummy_fifo, buf);
+	if (send_error_code == 0) {
+		net_buf_put(&epacket_dummy_fifo, buf);
+	} else {
+		epacket_notify_tx_failure(dev, buf, send_error_code);
+		net_buf_unref(buf);
+	}
 }
 
 int epacket_dummy_decrypt(struct net_buf *buf)
