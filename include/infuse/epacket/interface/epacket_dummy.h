@@ -48,6 +48,13 @@ struct epacket_dummy_frame {
 struct k_fifo *epacket_dummmy_transmit_fifo_get(void);
 
 /**
+ * @brief If set to a non-zero value, treat all sends as errors
+ *
+ * @param error_code Error code to return.
+ */
+void epacket_dummy_set_tx_failure(int error_code);
+
+/**
  * @brief Simulate the dummy interface receiving a packet
  *
  * @param dev Dummy interface
