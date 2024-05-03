@@ -209,7 +209,7 @@ socket_error:
 
 K_THREAD_DEFINE(epacket_udp_thread, 2048, epacket_udp_loop, NULL, NULL, NULL, 0, K_ESSENTIAL, 0);
 
-static int epacket_udp_send(const struct device *dev, struct net_buf *buf)
+static void epacket_udp_send(const struct device *dev, struct net_buf *buf)
 {
 	ssize_t rc;
 
@@ -217,14 +217,12 @@ static int epacket_udp_send(const struct device *dev, struct net_buf *buf)
 	if (!k_event_test(&udp_state.state, UDP_STATE_SOCKET_OPEN)) {
 		LOG_DBG("No socket");
 		epacket_notify_tx_failure(dev, buf, -ENOTCONN);
-		rc = -ENOTCONN;
 		goto end;
 	}
 
 	/* Encrypt the payload */
 	if (epacket_udp_encrypt(buf) < 0) {
 		LOG_WRN("Failed to encrypt");
-		rc = -EINVAL;
 		goto end;
 	}
 
@@ -233,13 +231,9 @@ static int epacket_udp_send(const struct device *dev, struct net_buf *buf)
 	if (rc == -1) {
 		LOG_WRN("Failed to send (%d)", errno);
 		epacket_notify_tx_failure(dev, buf, -errno);
-		rc = -errno;
-	} else {
-		rc = 0;
 	}
 end:
 	net_buf_unref(buf);
-	return rc;
 }
 
 static int epacket_udp_init(const struct device *dev)

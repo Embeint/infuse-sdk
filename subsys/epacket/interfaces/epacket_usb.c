@@ -95,7 +95,7 @@ static void interrupt_handler(const struct device *dev, void *user_data)
 	}
 }
 
-static int epacket_usb_send(const struct device *dev, struct net_buf *buf)
+static void epacket_usb_send(const struct device *dev, struct net_buf *buf)
 {
 	const struct epacket_usb_config *config = dev->config;
 	struct epacket_usb_data *data = dev->data;
@@ -104,7 +104,7 @@ static int epacket_usb_send(const struct device *dev, struct net_buf *buf)
 	if (epacket_serial_encrypt(buf) < 0) {
 		LOG_WRN("Failed to encrypt");
 		net_buf_unref(buf);
-		return -EIO;
+		return;
 	}
 
 	/* Push packet onto queue */
@@ -112,7 +112,6 @@ static int epacket_usb_send(const struct device *dev, struct net_buf *buf)
 
 	/* Enable interrupt to trigger send */
 	uart_irq_tx_enable(config->backend);
-	return 0;
 }
 
 static int epacket_usb_init(const struct device *dev)
