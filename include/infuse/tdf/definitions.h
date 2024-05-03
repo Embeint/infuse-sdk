@@ -54,7 +54,7 @@ struct tdf_announce {
 	/* Unique application ID */
 	uint32_t application;
 	/* Running application version */
-	tdf_struct_mcuboot_img_sem_ver version;
+	struct tdf_struct_mcuboot_img_sem_ver version;
 	/* Uptime in seconds */
 	uint32_t uptime;
 	/* Reboot counter */
@@ -79,9 +79,9 @@ struct tdf_array_type {
 
 /* Infuse IoT builtin TDF definitions */
 enum tdf_builtin_id {
-	TDF_ANNOUNCE = 0,
-	TDF_BATTERY_STATE = 1,
-	TDF_ARRAY_TYPE = 2,
+	TDF_ANNOUNCE = 1,
+	TDF_BATTERY_STATE = 2,
+	TDF_ARRAY_TYPE = 3,
 	/* End of builtin TDF range */
 	TDF_BUILTIN_END = 1024,
 };
