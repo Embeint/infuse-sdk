@@ -1,0 +1,9 @@
+# Copyright (c) 2024 Jordan Yates <jordan@embeint.com>
+# SPDX-License-Identifier: LicenseRef-Embeint
+
+description: |
+  TDF Data logging. Must be a child node of "embeint,data-logger"
+
+compatible: "embeint,tdf-data-logger"
+
+include: base.yaml
