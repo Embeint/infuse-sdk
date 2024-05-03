@@ -51,7 +51,7 @@ void epacket_serial_reconstruct(const struct device *dev, uint8_t *buffer, size_
 			break;
 		case 3:
 			payload_remaining = ((uint16_t)buffer[i] << 8) | len_lsb;
-			if (payload_remaining > CONFIG_EPACKET_PAYLOAD_MAX) {
+			if (payload_remaining > CONFIG_EPACKET_PACKET_SIZE_MAX) {
 				/* Can't receive this packet */
 				header_idx = 0;
 			}
