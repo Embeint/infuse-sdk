@@ -74,14 +74,12 @@ struct epacket_interface_api {
 	/**
 	 * @brief Send a packet over the interface
 	 *
+	 * @note Transmission errors can be detected through @ref epacket_interface_cb
+	 *
 	 * @param dev Interface device
 	 * @param buf Packet to send
-	 *
-	 * @retval 0 on success
-	 * @retval -ENOTCONN if interface not connected
-	 * @retval -errno on other error
 	 */
-	int (*send)(const struct device *dev, struct net_buf *buf);
+	void (*send)(const struct device *dev, struct net_buf *buf);
 };
 
 /**

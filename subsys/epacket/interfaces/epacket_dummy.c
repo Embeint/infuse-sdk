@@ -48,7 +48,7 @@ void epacket_dummy_receive(const struct device *dev, struct epacket_dummy_frame 
 	epacket_raw_receive_handler(rx);
 }
 
-static int epacket_dummy_send(const struct device *dev, struct net_buf *buf)
+static void epacket_dummy_send(const struct device *dev, struct net_buf *buf)
 {
 	struct epacket_dummy_frame *header = net_buf_push(buf, sizeof(struct epacket_dummy_frame));
 	struct epacket_tx_metadata *meta = net_buf_user_data(buf);
@@ -58,7 +58,6 @@ static int epacket_dummy_send(const struct device *dev, struct net_buf *buf)
 	header->flags = meta->flags;
 
 	net_buf_put(&epacket_dummy_fifo, buf);
-	return 0;
 }
 
 int epacket_dummy_decrypt(struct net_buf *buf)

@@ -121,7 +121,6 @@ static void epacket_handle_tx(struct net_buf *buf)
 	const struct device *dev;
 	size_t pool_max;
 	int pool_id;
-	int rc;
 
 	pool_id = net_buf_id(buf);
 	dev = tx_device[pool_id];
@@ -134,9 +133,8 @@ static void epacket_handle_tx(struct net_buf *buf)
 	}
 
 	LOG_DBG("%s: TX %d byte packet", dev->name, buf->len);
-	rc = api->send(dev, buf);
-	/* TODO: Notify interested parties of TX failures */
-	(void)rc;
+	/* Run the send function of the interface*/
+	api->send(dev, buf);
 }
 
 static int epacket_processor(void *a, void *b, void *c)
