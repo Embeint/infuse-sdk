@@ -12,13 +12,16 @@
 
 #include <infuse/epacket/packet.h>
 #include <infuse/epacket/interface.h>
+#include <infuse/epacket/interface/epacket_serial.h>
 
 #include "interfaces/epacket_internal.h"
 
-NET_BUF_POOL_DEFINE(epacket_scratch, 1, CONFIG_EPACKET_PAYLOAD_MAX, 0, NULL);
-NET_BUF_POOL_DEFINE(epacket_pool_tx, CONFIG_EPACKET_BUFFERS_TX, CONFIG_EPACKET_PAYLOAD_MAX,
+#define MAX_OVERHEAD (EPACKET_SERIAL_FRAME_EXPECTED_SIZE + 16)
+
+NET_BUF_POOL_DEFINE(epacket_scratch, 1, CONFIG_EPACKET_PAYLOAD_MAX + MAX_OVERHEAD, 0, NULL);
+NET_BUF_POOL_DEFINE(epacket_pool_tx, CONFIG_EPACKET_BUFFERS_TX, CONFIG_EPACKET_PAYLOAD_MAX + MAX_OVERHEAD,
 		    sizeof(struct epacket_tx_metadata), NULL);
-NET_BUF_POOL_DEFINE(epacket_pool_rx, CONFIG_EPACKET_BUFFERS_RX, CONFIG_EPACKET_PAYLOAD_MAX,
+NET_BUF_POOL_DEFINE(epacket_pool_rx, CONFIG_EPACKET_BUFFERS_RX, CONFIG_EPACKET_PAYLOAD_MAX + MAX_OVERHEAD,
 		    sizeof(struct epacket_rx_metadata), NULL);
 
 static K_FIFO_DEFINE(epacket_rx_queue);
