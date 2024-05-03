@@ -213,9 +213,7 @@ end:
 
 static int epacket_udp_init(const struct device *dev)
 {
-	struct epacket_interface_common_data *data = dev->data;
-
-	data->receive_handler = epacket_default_receive_handler;
+	epacket_interface_common_init(dev);
 	k_event_init(&udp_state.state);
 
 	/* Register for callbacks on network connectivity */
