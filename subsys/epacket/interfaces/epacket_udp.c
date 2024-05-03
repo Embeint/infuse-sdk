@@ -240,4 +240,9 @@ static const struct epacket_interface_api udp_api = {
 
 BUILD_ASSERT(sizeof(struct epacket_udp_frame) == DT_INST_PROP(0, header_size));
 static struct epacket_interface_common_data epacket_udp_data;
-DEVICE_DT_DEFINE(DT_DRV_INST(0), epacket_udp_init, NULL, &epacket_udp_data, NULL, POST_KERNEL, 0, &udp_api);
+static const struct epacket_interface_common_config epacket_udp_config = {
+	.header_size = DT_INST_PROP(0, header_size),
+	.footer_size = DT_INST_PROP(0, footer_size),
+};
+DEVICE_DT_DEFINE(DT_DRV_INST(0), epacket_udp_init, NULL, &epacket_udp_data, &epacket_udp_config, POST_KERNEL, 0,
+		 &udp_api);

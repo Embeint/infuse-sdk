@@ -74,6 +74,12 @@ struct epacket_interface_common_data {
 	epacket_receive_handler receive_handler;
 };
 
+/** Common config struct for all interfaces. Must be first member in interface config struct */
+struct epacket_interface_common_config {
+	uint8_t header_size;
+	uint8_t footer_size;
+};
+
 /**
  * @brief Get the packet overhead for an interface
  *

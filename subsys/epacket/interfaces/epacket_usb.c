@@ -25,6 +25,7 @@ struct serial_header {
 } __packed;
 
 struct epacket_usb_config {
+	struct epacket_interface_common_config common;
 	const struct device *backend;
 };
 
@@ -142,6 +143,11 @@ static const struct epacket_interface_api usb_api = {
 	BUILD_ASSERT(sizeof(struct epacket_serial_frame) == DT_INST_PROP(inst, header_size));                          \
 	static struct epacket_usb_data usb_data_##inst;                                                                \
 	static const struct epacket_usb_config usb_config_##inst = {                                                   \
+		.common =                                                                                              \
+			{                                                                                              \
+				.header_size = DT_INST_PROP(inst, header_size),                                        \
+				.footer_size = DT_INST_PROP(inst, footer_size),                                        \
+			},                                                                                             \
 		.backend = DEVICE_DT_GET(DT_INST_PROP(inst, cdc_acm)),                                                 \
 	};                                                                                                             \
 	DEVICE_DT_INST_DEFINE(inst, epacket_usb_init, NULL, &usb_data_##inst, &usb_config_##inst, POST_KERNEL, 0,      \
