@@ -13,26 +13,31 @@
 
 #include <infuse/epacket/interface.h>
 #include <infuse/epacket/packet.h>
+#include <infuse/data_logger/high_level/tdf.h>
+#include <infuse/tdf/definitions.h>
 
 LOG_MODULE_REGISTER(app, LOG_LEVEL_INF);
 
 int main(void)
 {
-	const struct device *epacket_usb = DEVICE_DT_GET(DT_NODELABEL(epacket_usb));
-	struct net_buf *buf;
-	int cnt = 0;
-	uint8_t auth;
+	const struct device *tdf_logger_serial = DEVICE_DT_GET(DT_NODELABEL(tdf_logger_serial));
+	struct tdf_announce announce;
 
 	for (;;) {
-		buf = epacket_alloc_tx_for_interface(epacket_usb, K_FOREVER);
+		announce.application = 0x1234;
+		announce.reboots = 0;
+		announce.uptime = k_uptime_get() / 1000;
+		announce.version = (struct tdf_struct_mcuboot_img_sem_ver){
+			.major = 1,
+			.minor = 2,
+			.revision = 3,
+			.build_num = 4,
+		};
 
-		net_buf_add_le32(buf, cnt);
+		tdf_data_logger_log(tdf_logger_serial, TDF_ANNOUNCE, (sizeof(announce)), 0, &announce);
+		tdf_data_logger_flush(tdf_logger_serial);
 
-		auth = cnt & 0b1 ? EPACKET_AUTH_NETWORK : EPACKET_AUTH_DEVICE;
-
-		epacket_set_tx_metadata(buf, auth, 0x12, 0xF0);
-		epacket_queue(epacket_usb, buf);
-		LOG_INF("Sent %s %d", epacket_usb->name, cnt++);
+		LOG_INF("Sent uptime %d on %s", announce.uptime, tdf_logger_serial->name);
 		k_sleep(K_SECONDS(1));
 	}
 	return 0;
