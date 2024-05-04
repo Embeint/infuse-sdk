@@ -104,6 +104,20 @@ ZTEST(epacket_serial, test_reconstructor)
 	zassert_is_null(out);
 }
 
+ZTEST(epacket_serial, test_reconstructor_too_large)
+{
+	struct serial_header s = {
+		.sync = {SYNC_A, SYNC_B},
+		.len = CONFIG_EPACKET_PACKET_SIZE_MAX + 1,
+	};
+	uint8_t buffer[CONFIG_EPACKET_PACKET_SIZE_MAX + 1];
+
+	epacket_serial_reconstruct(NULL, (void *)&s, sizeof(s), receive_handler);
+	epacket_serial_reconstruct(NULL, (void *)buffer, sizeof(buffer), receive_handler);
+	/* Too large packet should be dropped */
+	zassert_is_null(k_fifo_get(&packet_queue, K_MSEC(10)));
+}
+
 ZTEST(epacket_serial, test_decrypt_error)
 {
 	struct net_buf *rx;
