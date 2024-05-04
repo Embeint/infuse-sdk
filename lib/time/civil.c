@@ -43,8 +43,12 @@ uint64_t civil_time_from_ticks(uint64_t ticks)
 	uint64_t civil;
 
 	if (timeutil_sync_ref_from_local(&infuse_sync_state, ticks, &civil) < 0) {
-		/* Fallback if conversion fails */
-		civil = JAN_01_01_2020;
+		/* Reset to default state */
+		infuse_sync_state.base.local = 0;
+		infuse_sync_state.base.ref = JAN_01_01_2020;
+		infuse_sync_state.skew = 1.0f;
+		/* Reconvert */
+		(void)timeutil_sync_ref_from_local(&infuse_sync_state, ticks, &civil);
 	}
 	return civil;
 }
