@@ -104,6 +104,23 @@ ZTEST(epacket_serial, test_reconstructor)
 	zassert_is_null(out);
 }
 
+ZTEST(epacket_serial, test_decrypt_error)
+{
+	struct net_buf *rx;
+	uint8_t payload[64];
+
+	for (int i = 1; i <= sizeof(struct epacket_serial_frame) + 16; i++) {
+		/* Create too small buffer */
+		rx = epacket_alloc_rx(K_NO_WAIT);
+		zassert_not_null(rx);
+		net_buf_add_mem(rx, payload, i);
+
+		/* Ensure decode errors */
+		zassert_equal(-1, epacket_serial_decrypt(rx));
+		net_buf_unref(rx);
+	}
+}
+
 ZTEST(epacket_serial, test_sequence)
 {
 	struct epacket_rx_metadata *meta;
