@@ -48,17 +48,12 @@ static int logger_flash_map_erase(const struct data_logger_backend_config *backe
 static int logger_flash_map_init(const struct data_logger_backend_config *backend)
 {
 	struct data_logger_backend_data *data = backend->data;
-	int rc;
 
 	/* Fixed block size */
 	data->block_size = backend->max_block_size;
 
 	/* Open flash area */
-	rc = flash_area_open(backend->flash_area_id, &data->area);
-	if (rc < 0) {
-		return rc;
-	}
-	return rc;
+	return flash_area_open(backend->flash_area_id, &data->area);
 }
 
 const struct data_logger_backend_api data_logger_flash_map_api = {
