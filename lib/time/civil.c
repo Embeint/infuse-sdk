@@ -19,7 +19,8 @@ static const struct timeutil_sync_config infuse_civil_config = {
 };
 
 /* Base date is 00:00:00 01/01/2020 */
-static struct timeutil_sync_state infuse_sync_state = {
+IF_DISABLED(CONFIG_ZTEST, (static))
+struct timeutil_sync_state infuse_sync_state = {
 	.cfg = &infuse_civil_config,
 	.base =
 		{

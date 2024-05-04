@@ -275,4 +275,40 @@ ZTEST(civil_time, test_reference_changed_cb)
 	zassert_equal(TIME_SOURCE_RECOVERED | TIME_SOURCE_RPC, context.source);
 }
 
+ZTEST(civil_time, test_set_invalid)
+{
+	struct timeutil_sync_instant reference = {
+		.local = 1000,
+		.ref = 0,
+	};
+	int rc;
+
+	rc = civil_time_set_reference(TIME_SOURCE_RECOVERED | TIME_SOURCE_RPC, &reference);
+	zassert_equal(-EINVAL, rc);
+}
+
+ZTEST(civil_time, test_get_failure)
+{
+	extern struct timeutil_sync_state infuse_sync_state;
+
+	/* Manually force sync state to be invalid */
+	infuse_sync_state.base.local = 1234560;
+	infuse_sync_state.base.ref = 0;
+
+	/* Sync state should be reset  */
+	zassert_equal(1261872018 + 0, civil_time_seconds(civil_time_from_ticks(0 * CONFIG_SYS_CLOCK_TICKS_PER_SEC)));
+	zassert_equal(1261872018 + 1, civil_time_seconds(civil_time_from_ticks(1 * CONFIG_SYS_CLOCK_TICKS_PER_SEC)));
+	zassert_equal(1261872018 + 2, civil_time_seconds(civil_time_from_ticks(2 * CONFIG_SYS_CLOCK_TICKS_PER_SEC)));
+
+	/* Manually force sync state to be invalid */
+	infuse_sync_state.base.local = 1234560;
+	infuse_sync_state.base.ref = 1000;
+	infuse_sync_state.skew = -0.1f;
+
+	/* Sync state should be reset  */
+	zassert_equal(1261872018 + 0, civil_time_seconds(civil_time_from_ticks(0 * CONFIG_SYS_CLOCK_TICKS_PER_SEC)));
+	zassert_equal(1261872018 + 1, civil_time_seconds(civil_time_from_ticks(1 * CONFIG_SYS_CLOCK_TICKS_PER_SEC)));
+	zassert_equal(1261872018 + 2, civil_time_seconds(civil_time_from_ticks(2 * CONFIG_SYS_CLOCK_TICKS_PER_SEC)));
+}
+
 ZTEST_SUITE(civil_time, NULL, NULL, NULL, NULL, NULL);
