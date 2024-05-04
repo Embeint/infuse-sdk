@@ -83,7 +83,7 @@ jobs:
           mkdir -p coverage/reports
           pip3 install gcovr==6.0
           export ZEPHYR_BASE=${PWD}/zephyr
-          $ZEPHYR_BASE/scripts/twister -i --force-color -N -v --filter runnable -p ${{ matrix.platform }} --coverage -T infuse-sdk/tests --coverage-tool gcovr -xCONFIG_TEST_EXTRA_STACK_SIZE=4096 -e nano
+          $ZEPHYR_BASE/scripts/twister -i --force-color -N -v --filter runnable -p ${{ matrix.platform }} --coverage -T infuse-sdk/tests --coverage-tool gcovr -xCONFIG_TEST_EXTRA_STACK_SIZE=4096 -e nano --coverage-basedir infuse-sdk
 
       - name: Rename coverage files
         if: always()
@@ -151,7 +151,7 @@ jobs:
         run: |
           cd ./coverage/reports
           pip3 install gcovr==6.0
-          gcovr ${{ steps.get-coverage-files.outputs.mergefiles }}  --merge-mode-functions=separate --json merged.json
+          gcovr ${{ steps.get-coverage-files.outputs.mergefiles }} --merge-mode-functions=separate --json merged.json
           gcovr ${{ steps.get-coverage-files.outputs.mergefiles }} --merge-mode-functions=separate --cobertura merged.xml
 
       - name: Upload coverage to Codecov
