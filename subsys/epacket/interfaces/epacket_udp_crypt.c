@@ -112,7 +112,7 @@ int epacket_udp_decrypt(struct net_buf *buf)
 	size_t out_len;
 
 	/* Not enough data in buffer */
-	if (buf->len <= sizeof(struct epacket_udp_frame)) {
+	if (buf->len <= sizeof(struct epacket_udp_frame) + 16) {
 		return -1;
 	}
 	memcpy(&frame, buf->data, sizeof(frame));
