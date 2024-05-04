@@ -49,4 +49,33 @@ ZTEST(epacket_handlers, test_custom_handler)
 	net_buf_unref(rx);
 }
 
+ZTEST(epacket_handlers, test_alloc_failure)
+{
+	const struct device *epacket_dummy = DEVICE_DT_GET(DT_NODELABEL(epacket_dummy));
+	struct net_buf *tx_bufs[CONFIG_EPACKET_BUFFERS_TX];
+	struct net_buf *rx_bufs[CONFIG_EPACKET_BUFFERS_TX];
+
+	/* Allocate all TX buffers, then check failure */
+	for (int i = 0; i < CONFIG_EPACKET_BUFFERS_TX; i++) {
+		tx_bufs[i] = epacket_alloc_tx_for_interface(epacket_dummy, K_NO_WAIT);
+		zassert_not_null(tx_bufs[i]);
+	}
+	zassert_is_null(epacket_alloc_tx_for_interface(epacket_dummy, K_NO_WAIT));
+
+	/* Allocate all RX buffers, then check failure */
+	for (int i = 0; i < CONFIG_EPACKET_BUFFERS_RX; i++) {
+		rx_bufs[i] = epacket_alloc_rx(K_NO_WAIT);
+		zassert_not_null(rx_bufs[i]);
+	}
+	zassert_is_null(epacket_alloc_rx(K_NO_WAIT));
+
+	/* Free all buffers */
+	for (int i = 0; i < CONFIG_EPACKET_BUFFERS_TX; i++) {
+		net_buf_unref(tx_bufs[i]);
+	}
+	for (int i = 0; i < CONFIG_EPACKET_BUFFERS_RX; i++) {
+		net_buf_unref(rx_bufs[i]);
+	}
+}
+
 ZTEST_SUITE(epacket_handlers, NULL, NULL, NULL, NULL, NULL);
