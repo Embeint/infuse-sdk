@@ -23,7 +23,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        platform: ["native_sim", "qemu_cortex_m3"]
+        platform: ["native_sim", "mps2_an385"]
 
     env:
       BASE_REF: ${{ github.base_ref }}
