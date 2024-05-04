@@ -9,7 +9,8 @@ tests:
       - qemu_cortex_m3
   libraries.ascon.armv7m:
     arch_allow: arm
-    filter: CONFIG_ARMV7_M_ARMV8_M_MAINLINE
+    # Optimised assembly for this backend causes compilation errors when built for coverage.
+    filter: CONFIG_ARMV7_M_ARMV8_M_MAINLINE and not CONFIG_COVERAGE
     integration_platforms:
       - qemu_cortex_m3
     extra_configs:
