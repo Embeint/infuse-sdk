@@ -252,6 +252,7 @@ enum civil_time_source civil_time_get_source(void);
  * @param reference Same instant in local and civil time bases
  *
  * @retval 0 on success
+ * @retval -EINVAL if reference instant is invalid
  */
 int civil_time_set_reference(enum civil_time_source source, struct timeutil_sync_instant *reference);
 

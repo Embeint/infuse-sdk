@@ -67,6 +67,11 @@ int civil_time_set_reference(enum civil_time_source source, struct timeutil_sync
 	struct civil_time_cb *cb;
 	int rc;
 
+	/* Reference time of 0 is invalid */
+	if (reference->ref == 0) {
+		return -EINVAL;
+	}
+
 	rc = timeutil_sync_state_set_skew(&infuse_sync_state, 1.0f, reference);
 	if (rc == 0) {
 		infuse_time_source = source;
