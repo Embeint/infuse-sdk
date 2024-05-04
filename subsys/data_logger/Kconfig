@@ -22,6 +22,7 @@ config TDF_DATA_LOGGER
 	bool "TDF data logging"
 	depends on DT_HAS_EMBEINT_TDF_DATA_LOGGER_ENABLED
 	depends on DATA_LOGGER
+	depends on TDF
 	default y
 
 if TDF_DATA_LOGGER
