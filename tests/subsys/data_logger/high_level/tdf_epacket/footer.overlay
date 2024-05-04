@@ -1,0 +1,3 @@
+&epacket_dummy {
+    footer-size = <2>;
+};

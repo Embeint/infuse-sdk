@@ -21,9 +21,6 @@ enum {
 	TDF_RANDOM = 37,
 };
 
-/* Tests are expecting this value */
-BUILD_ASSERT(CONFIG_EPACKET_PACKET_SIZE_MAX == 68);
-
 ZTEST(tdf_data_logger, test_log_error)
 {
 	const struct device *logger = DEVICE_DT_GET(DT_NODELABEL(tdf_logger_epacket));
