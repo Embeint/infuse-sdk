@@ -1,0 +1,11 @@
+common:
+  tags: data_logger tdf
+  min_flash: 64
+  min_ram: 32
+tests:
+  data_logger.tdf.persistent:
+    platform_allow:
+      - mps2_an385
+      - qemu_cortex_m3
+    integration_platforms:
+      - qemu_cortex_m3
