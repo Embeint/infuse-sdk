@@ -4,6 +4,14 @@ on:
   pull_request:
     branches:
       - main
+    paths:
+      - '.github/workflows/codecov.yml'
+      - 'include/**'
+      - 'lib/**'
+      - 'subsys/**'
+      - 'tests/**'
+      - '**/Kconfig*'
+      - 'west.yml'
   schedule:
     # Run at 14:37 UTC every day
     - cron: '37 14 * * *'
