@@ -179,7 +179,7 @@ int epacket_serial_decrypt(struct net_buf *buf)
 	size_t out_len;
 
 	/* Not enough data in buffer */
-	if (buf->len <= sizeof(struct epacket_serial_frame)) {
+	if (buf->len <= sizeof(struct epacket_serial_frame) + 16) {
 		return -1;
 	}
 	memcpy(&frame, buf->data, sizeof(frame));
