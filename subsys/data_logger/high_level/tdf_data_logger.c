@@ -97,6 +97,7 @@ relog:
 	return 0;
 }
 
+IF_DISABLED(CONFIG_ZTEST, (static))
 int tdf_data_logger_init(const struct device *dev)
 {
 	const struct tdf_logger_config *config = dev->config;
