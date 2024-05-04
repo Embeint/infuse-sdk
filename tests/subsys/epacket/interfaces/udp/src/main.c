@@ -71,6 +71,23 @@ ZTEST(epacket_udp, test_metadata)
 	net_buf_unref(rx);
 }
 
+ZTEST(epacket_udp, test_decrypt_error)
+{
+	struct net_buf *rx;
+	uint8_t payload[64];
+
+	for (int i = 1; i <= sizeof(struct epacket_udp_frame) + 16; i++) {
+		/* Create too small buffer */
+		rx = epacket_alloc_rx(K_NO_WAIT);
+		zassert_not_null(rx);
+		net_buf_add_mem(rx, payload, i);
+
+		/* Ensure decode errors */
+		zassert_equal(-1, epacket_udp_decrypt(rx));
+		net_buf_unref(rx);
+	}
+}
+
 ZTEST(epacket_udp, test_encrypt_decrypt)
 {
 	struct net_buf *orig_buf, *encr_buf, *rx, *rx_copy_buf, *in;
