@@ -153,14 +153,25 @@ jobs:
           pip3 install gcovr==6.0
           gcovr ${{ steps.get-coverage-files.outputs.mergefiles }} --merge-mode-functions=separate --json merged.json
           gcovr ${{ steps.get-coverage-files.outputs.mergefiles }} --merge-mode-functions=separate --cobertura merged.xml
+          ls -la .
+
+      - name: Upload Merged Coverage Results and Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Coverage Data and report
+          path: |
+            coverage/reports/merged.json
+            coverage/reports/merged.xml
+          retention-days: 2
 
       - name: Upload coverage to Codecov
         if: always()
         uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          directory: ./coverage/reports
+          files: ./coverage/reports/merged.xml
+          root_dir: infuse-sdk
           env_vars: OS,PYTHON
           fail_ci_if_error: false
           verbose: true
-          files: merged.xml
