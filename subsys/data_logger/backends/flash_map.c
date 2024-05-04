@@ -20,9 +20,15 @@ static int logger_flash_map_write(const struct data_logger_backend_config *backe
 {
 	struct data_logger_backend_data *data = backend->data;
 	off_t offset = DATA_LOGGER_FLASH_MAP_BLOCK_SIZE * phy_block;
+	uint8_t *ptr = (uint8_t *)mem;
 
 	/* Data type already encoded into the mem buffer */
 	ARG_UNUSED(data_type);
+
+	/* Ensure writes are word aligned */
+	while (mem_len % sizeof(uint32_t)) {
+		ptr[mem_len++] = data->erase_val;
+	}
 
 	return flash_area_write(data->area, offset, mem, mem_len);
 }
@@ -48,12 +54,20 @@ static int logger_flash_map_erase(const struct data_logger_backend_config *backe
 static int logger_flash_map_init(const struct data_logger_backend_config *backend)
 {
 	struct data_logger_backend_data *data = backend->data;
+	const struct flash_parameters *params;
+	int rc;
 
 	/* Fixed block size */
 	data->block_size = backend->max_block_size;
+	data->erase_val = 0xFF;
 
 	/* Open flash area */
-	return flash_area_open(backend->flash_area_id, &data->area);
+	rc = flash_area_open(backend->flash_area_id, &data->area);
+	if (rc == 0) {
+		params = flash_get_parameters(data->area->fa_dev);
+		data->erase_val = params->erase_value;
+	}
+	return rc;
 }
 
 const struct data_logger_backend_api data_logger_flash_map_api = {

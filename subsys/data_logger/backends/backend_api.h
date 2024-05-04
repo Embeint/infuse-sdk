@@ -34,6 +34,7 @@ struct data_logger_backend_data {
 		const struct flash_area *area;
 	};
 	uint16_t block_size;
+	uint8_t erase_val;
 };
 
 struct data_logger_backend_config {
