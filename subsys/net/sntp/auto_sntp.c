@@ -136,7 +136,8 @@ int sntp_auto_init(void)
 	civil_time_register_callback(&time_callback);
 
 	/* Register for callbacks on network connectivity */
-	net_mgmt_init_event_callback(&l4_callback, l4_event_handler, NET_EVENT_L4_CONNECTED);
+	net_mgmt_init_event_callback(&l4_callback, l4_event_handler,
+				     NET_EVENT_L4_CONNECTED | NET_EVENT_L4_DISCONNECTED);
 	net_mgmt_add_event_callback(&l4_callback);
 
 	return 0;
