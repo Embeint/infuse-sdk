@@ -34,11 +34,11 @@ jobs:
       - name: Workspace cleanup
         run: |
           rm -rf ./{*,.*}
+          rm -rf infuse-sdk twister-out*
 
       - name: Clone cached Embeint SDK repository
         continue-on-error: true
         run: |
-          rm -rf infuse-sdk
           git clone --shared /github/cache/embeint/infuse-sdk infuse-sdk
           cd infuse-sdk
           git remote set-url origin ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}
