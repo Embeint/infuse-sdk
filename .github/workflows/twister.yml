@@ -102,4 +102,4 @@ jobs:
         run: |
           export ZEPHYR_BASE=${PWD}/zephyr
           $ZEPHYR_BASE/scripts/twister ${TWISTER_COMMON} ${VENDOR_FILTER} ${DAILY_OPTIONS} -T infuse-sdk
-          $ZEPHYR_BASE/scripts/twister ${TWISTER_COMMON} ${EXTRA_BOARDS} ${PR_OPTIONS} -T infuse-sdk
+          $ZEPHYR_BASE/scripts/twister ${TWISTER_COMMON} ${EXTRA_BOARDS} ${DAILY_OPTIONS} -T infuse-sdk
