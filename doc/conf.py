@@ -8,7 +8,7 @@ import re
 
 from sphinx.cmd.build import get_parser
 
-args = get_parser().parse_args()
+args, unknown = get_parser().parse_known_args()
 INFUSE_BASE = (Path(__file__).parents[1]).resolve()
 ZEPHYR_BASE = (Path(__file__).parents[2] / 'zephyr').resolve()
 ZEPHYR_BUILD = Path(args.outputdir).resolve()
