@@ -35,6 +35,7 @@ find_program(SPHINXBUILD sphinx-build)
 if(NOT SPHINXBUILD)
   message(FATAL_ERROR "The 'sphinx-build' command was not found")
 endif()
+find_program(SPHINXAUTOBUILD sphinx-autobuild)
 
 #-------------------------------------------------------------------------------
 # Environment & Paths
@@ -44,6 +45,7 @@ set(SPHINX_ENV
   DOT_EXECUTABLE=${DOXYGEN_DOT_EXECUTABLE}
 )
 
+set(DOCS_README ${CMAKE_CURRENT_LIST_DIR}/../README.rst)
 set(DOCS_CFG_DIR ${CMAKE_CURRENT_LIST_DIR})
 set(DOCS_DOCTREE_DIR ${CMAKE_CURRENT_BINARY_DIR}/doctrees)
 set(DOCS_BUILD_DIR ${CMAKE_CURRENT_BINARY_DIR})
@@ -158,6 +160,37 @@ set_target_properties(
 )
 
 add_dependencies(html devicetree)
+
+#-------------------------------------------------------------------------------
+# html-live
+
+add_doc_target(
+  html-live
+  COMMAND ${CMAKE_COMMAND} -E env ${SPHINX_ENV}
+  ${SPHINXAUTOBUILD}
+    --watch ${DOCS_README}
+    --watch ${DOCS_CFG_DIR}
+    --ignore ${DOCS_BUILD_DIR}
+    -b html
+    -c ${DOCS_CFG_DIR}
+    -d ${DOCS_DOCTREE_DIR}
+    -w ${DOCS_BUILD_DIR}/html.log
+    -t ${DOC_TAG}
+    ${SPHINXOPTS}
+    ${SPHINXOPTS_EXTRA}
+    ${DOCS_SRC_DIR}
+    ${DOCS_HTML_DIR}
+  USES_TERMINAL
+  COMMENT "Running Sphinx HTML autobuild..."
+)
+
+set_target_properties(
+  html-live html-live-nodeps
+  PROPERTIES
+    ADDITIONAL_CLEAN_FILES "${DOCS_SRC_DIR};${DOCS_HTML_DIR};${DOCS_DOCTREE_DIR}"
+)
+
+add_dependencies(html-live devicetree)
 
 #-------------------------------------------------------------------------------
 # linkcheck
