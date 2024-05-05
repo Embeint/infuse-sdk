@@ -57,6 +57,19 @@ ZTEST(epacket_keys, test_bit_difference)
 	zassert_equal(16, bit_difference(&a, &b, sizeof(a)), "");
 }
 
+ZTEST(epacket_keys, test_invalid_key)
+{
+	const char *info = "test";
+	psa_key_id_t id;
+
+	for (int i = 0; i < UINT8_MAX; i++) {
+		if ((i == EPACKET_KEY_DEVICE) || (i == EPACKET_KEY_NETWORK)) {
+			continue;
+		}
+		zassert_equal(-EINVAL, epacket_key_derive(i, info, strlen(info), 1, &id));
+	}
+}
+
 ZTEST(epacket_keys, test_key_derive)
 {
 	uint8_t key_1[KEY_SIZE];
