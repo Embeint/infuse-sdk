@@ -9,9 +9,30 @@
 #include <zephyr/ztest.h>
 #include <zephyr/kernel.h>
 #include <zephyr/random/random.h>
+#include <zephyr/drivers/flash.h>
+#include <zephyr/storage/flash_map.h>
 
 #include <infuse/fs/kv_store.h>
 #include <infuse/fs/kv_types.h>
+
+#define NVS_PARTITION        storage_partition
+#define NVS_PARTITION_DEVICE FIXED_PARTITION_DEVICE(NVS_PARTITION)
+#define NVS_PARTITION_OFFSET FIXED_PARTITION_OFFSET(NVS_PARTITION)
+#define NVS_PARTITION_SIZE   FIXED_PARTITION_SIZE(NVS_PARTITION)
+
+ZTEST(kv_store, test_init_failure)
+{
+	const struct device *dev = NVS_PARTITION_DEVICE;
+	uint8_t zeroes[64] = {0x00};
+
+	/* Write all the flash to 0 */
+	for (int i = 0; i < NVS_PARTITION_SIZE; i += sizeof(zeroes)) {
+		zassert_equal(0, flash_write(dev, NVS_PARTITION_OFFSET + i, zeroes, sizeof(zeroes)));
+	}
+
+	/* Ensure init still succeeds */
+	zassert_equal(0, kv_store_init());
+}
 
 ZTEST(kv_store, test_key_enabled)
 {
