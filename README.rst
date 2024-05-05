@@ -10,11 +10,12 @@
      </p>
    </a>
 
-   <a
-   href="https://github.com/embeint/infuse-sdk/actions/workflows/twister.yml?query=branch%3Amain">
-   <img
-   src="https://github.com/embeint/infuse-sdk/actions/workflows/twister.yml/badge.svg?event=push"></a>
-
+   <a href="https://github.com/embeint/infuse-sdk/actions/workflows/twister.yml?query=branch%3Amain">
+     <img src="https://github.com/embeint/infuse-sdk/actions/workflows/twister.yml/badge.svg?event=push">
+   </a>
+   <a href="https://codecov.io/gh/Embeint/infuse-sdk">
+     <img src="https://codecov.io/gh/Embeint/infuse-sdk/branch/main/graph/badge.svg?token=YR697LEP1F"/>
+   </a>
 
 .. start_include_here
 
