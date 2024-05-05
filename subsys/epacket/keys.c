@@ -111,29 +111,12 @@ int epacket_key_derive(enum epacket_key_type base_key, const uint8_t *info, uint
 	psa_set_key_usage_flags(&key_attributes, PSA_KEY_USAGE_EXPORT);
 #endif /* CONFIG_EPACKET_KEY_EXPORT */
 
-	status = psa_key_derivation_setup(&operation, PSA_ALG_HKDF(PSA_ALG_SHA_256));
-	if (status != PSA_SUCCESS) {
-		return -EIO;
-	}
-	status = psa_key_derivation_input_bytes(&operation, PSA_KEY_DERIVATION_INPUT_SALT, (uint8_t *)&salt,
-						sizeof(salt));
-	if (status != PSA_SUCCESS) {
-		return -EIO;
-	}
-	status = psa_key_derivation_input_bytes(&operation, PSA_KEY_DERIVATION_INPUT_INFO, info, info_len);
-	if (status != PSA_SUCCESS) {
-		return -EIO;
-	}
-	status = psa_key_derivation_input_key(&operation, PSA_KEY_DERIVATION_INPUT_SECRET, input_key);
-	if (status != PSA_SUCCESS) {
-		return -EIO;
-	}
-	status = psa_key_derivation_output_key(&key_attributes, &operation, output_key_id);
-	if (status != PSA_SUCCESS) {
-		return -EIO;
-	}
-	status = psa_key_derivation_abort(&operation);
-	if (status != PSA_SUCCESS) {
+	if (psa_key_derivation_setup(&operation, PSA_ALG_HKDF(PSA_ALG_SHA_256)) ||
+	    psa_key_derivation_input_bytes(&operation, PSA_KEY_DERIVATION_INPUT_SALT, (uint8_t *)&salt, sizeof(salt)) ||
+	    psa_key_derivation_input_bytes(&operation, PSA_KEY_DERIVATION_INPUT_INFO, info, info_len) ||
+	    psa_key_derivation_input_key(&operation, PSA_KEY_DERIVATION_INPUT_SECRET, input_key) ||
+	    psa_key_derivation_output_key(&key_attributes, &operation, output_key_id) ||
+	    psa_key_derivation_abort(&operation)) {
 		return -EIO;
 	}
 	return 0;
