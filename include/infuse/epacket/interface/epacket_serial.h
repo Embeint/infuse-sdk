@@ -24,6 +24,12 @@ extern "C" {
  * @{
  */
 
+/* ePacket serial data frame header */
+struct epacket_serial_frame_header {
+	uint8_t sync[2];
+	uint16_t len;
+} __packed;
+
 /* ePacket serial data frame */
 struct epacket_serial_frame {
 	/* AEAD associated data */

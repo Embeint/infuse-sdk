@@ -14,6 +14,6 @@ properties:
     description: |
         Serial port backend supporting interrupt driven API.
   header-size:
-    default: 23
+    default: 27
   footer-size:
     default: 16

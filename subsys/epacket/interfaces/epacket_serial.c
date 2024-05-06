@@ -72,7 +72,7 @@ static void interrupt_handler(const struct device *dev, void *user_data)
 				return;
 			}
 
-			required = sizeof(struct serial_header) + buf->len;
+			required = buf->len;
 			if (available < required) {
 				LOG_WRN("Insufficient buffer space");
 				net_buf_put(&data->tx_fifo, buf);
@@ -81,12 +81,8 @@ static void interrupt_handler(const struct device *dev, void *user_data)
 				return;
 			}
 
-			struct serial_header header = {.sync = {SERIAL_SYNC_A, SERIAL_SYNC_B}, .len = buf->len};
-
-			/* Push header */
-			sent = uart_fifo_fill(dev, (const uint8_t *)&header, sizeof(header));
 			/* Push payload */
-			sent += uart_fifo_fill(dev, buf->data, buf->len);
+			sent = uart_fifo_fill(dev, buf->data, buf->len);
 
 			/* Free TX buffer */
 			net_buf_unref(buf);
@@ -101,6 +97,7 @@ static void epacket_serial_send(const struct device *dev, struct net_buf *buf)
 {
 	const struct epacket_serial_config *config = dev->config;
 	struct epacket_serial_data *data = dev->data;
+	struct epacket_serial_frame_header *header;
 
 	/* Encrypt the payload */
 	if (epacket_serial_encrypt(buf) < 0) {
@@ -108,6 +105,13 @@ static void epacket_serial_send(const struct device *dev, struct net_buf *buf)
 		net_buf_unref(buf);
 		return;
 	}
+
+	/* Push frame header on */
+	header = net_buf_push(buf, sizeof(*header));
+	*header = (struct epacket_serial_frame_header){
+		.sync = {SERIAL_SYNC_A, SERIAL_SYNC_B},
+		.len = buf->len - sizeof(*header),
+	};
 
 	/* Push packet onto queue */
 	net_buf_put(&data->tx_fifo, buf);
@@ -133,7 +137,8 @@ static const struct epacket_interface_api serial_api = {
 };
 
 #define EPACKET_SERIAL_DEFINE(inst)                                                                                    \
-	BUILD_ASSERT(sizeof(struct epacket_serial_frame) == DT_INST_PROP(inst, header_size));                          \
+	BUILD_ASSERT(sizeof(struct epacket_serial_frame_header) + sizeof(struct epacket_serial_frame) ==               \
+		     DT_INST_PROP(inst, header_size));                                                                 \
 	static struct epacket_serial_data serial_data_##inst;                                                          \
 	static const struct epacket_serial_config serial_config_##inst = {                                             \
 		.common =                                                                                              \
