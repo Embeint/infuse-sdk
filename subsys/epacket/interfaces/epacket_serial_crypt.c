@@ -23,7 +23,7 @@
 
 #include "epacket_internal.h"
 
-static const uint8_t sync_bytes[2] = {SERIAL_SYNC_A, SERIAL_SYNC_B};
+static const uint8_t sync_bytes[2] = {EPACKET_SERIAL_SYNC_A, EPACKET_SERIAL_SYNC_B};
 
 void epacket_serial_reconstruct(const struct device *dev, uint8_t *buffer, size_t len,
 				void (*handler)(struct net_buf *))

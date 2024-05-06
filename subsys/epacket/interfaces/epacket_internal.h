@@ -46,9 +46,6 @@ struct net_buf *epacket_encryption_scratch(void);
  */
 void epacket_raw_receive_handler(struct net_buf *buf);
 
-#define SERIAL_SYNC_A 0xD5
-#define SERIAL_SYNC_B 0xCA
-
 /**
  * @brief Reconstruct serial packet from byte stream
  *

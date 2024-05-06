@@ -24,6 +24,9 @@ extern "C" {
  * @{
  */
 
+#define EPACKET_SERIAL_SYNC_A 0xD5
+#define EPACKET_SERIAL_SYNC_B 0xCA
+
 /* ePacket serial data frame header */
 struct epacket_serial_frame_header {
 	uint8_t sync[2];
