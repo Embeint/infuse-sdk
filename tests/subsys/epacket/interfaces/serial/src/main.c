@@ -104,6 +104,30 @@ ZTEST(epacket_serial, test_reconstructor)
 	zassert_is_null(out);
 }
 
+ZTEST(epacket_serial, test_reconstructor_zero)
+{
+	struct serial_header s = {
+		.sync = {SYNC_A, SYNC_B},
+		.len = 0,
+	};
+	struct net_buf *out;
+
+	epacket_serial_reconstruct(NULL, (void *)&s, sizeof(s), receive_handler);
+	out = k_fifo_get(&packet_queue, K_MSEC(10));
+	zassert_not_null(out);
+	net_buf_unref(out);
+
+	epacket_serial_reconstruct(NULL, (void *)&s, sizeof(s), receive_handler);
+	out = k_fifo_get(&packet_queue, K_MSEC(10));
+	zassert_not_null(out);
+	net_buf_unref(out);
+
+	epacket_serial_reconstruct(NULL, (void *)&s, sizeof(s), receive_handler);
+	out = k_fifo_get(&packet_queue, K_MSEC(10));
+	zassert_not_null(out);
+	net_buf_unref(out);
+}
+
 ZTEST(epacket_serial, test_reconstructor_too_large)
 {
 	struct serial_header s = {
