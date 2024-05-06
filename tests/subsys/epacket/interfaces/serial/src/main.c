@@ -18,14 +18,6 @@
 
 #include "../subsys/epacket/interfaces/epacket_internal.h"
 
-#define SYNC_A 0xD5
-#define SYNC_B 0xCA
-
-struct serial_header {
-	uint8_t sync[2];
-	uint16_t len;
-} __packed;
-
 static K_FIFO_DEFINE(packet_queue);
 
 uint64_t infuse_device_id(void)
@@ -40,8 +32,8 @@ void receive_handler(struct net_buf *buf)
 
 ZTEST(epacket_serial, test_reconstructor)
 {
-	struct serial_header s = {
-		.sync = {SYNC_A, SYNC_B},
+	struct epacket_serial_frame_header s = {
+		.sync = {EPACKET_SERIAL_SYNC_A, EPACKET_SERIAL_SYNC_B},
 	};
 	uint8_t buffer[64];
 	struct net_buf *out;
@@ -106,8 +98,8 @@ ZTEST(epacket_serial, test_reconstructor)
 
 ZTEST(epacket_serial, test_reconstructor_zero)
 {
-	struct serial_header s = {
-		.sync = {SYNC_A, SYNC_B},
+	struct epacket_serial_frame_header s = {
+		.sync = {EPACKET_SERIAL_SYNC_A, EPACKET_SERIAL_SYNC_B},
 		.len = 0,
 	};
 	struct net_buf *out;
@@ -130,8 +122,8 @@ ZTEST(epacket_serial, test_reconstructor_zero)
 
 ZTEST(epacket_serial, test_reconstructor_too_large)
 {
-	struct serial_header s = {
-		.sync = {SYNC_A, SYNC_B},
+	struct epacket_serial_frame_header s = {
+		.sync = {EPACKET_SERIAL_SYNC_A, EPACKET_SERIAL_SYNC_B},
 		.len = CONFIG_EPACKET_PACKET_SIZE_MAX + 1,
 	};
 	uint8_t buffer[CONFIG_EPACKET_PACKET_SIZE_MAX + 1];

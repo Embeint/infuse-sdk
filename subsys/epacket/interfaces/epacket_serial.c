@@ -109,7 +109,7 @@ static void epacket_serial_send(const struct device *dev, struct net_buf *buf)
 	/* Push frame header on */
 	header = net_buf_push(buf, sizeof(*header));
 	*header = (struct epacket_serial_frame_header){
-		.sync = {SERIAL_SYNC_A, SERIAL_SYNC_B},
+		.sync = {EPACKET_SERIAL_SYNC_A, EPACKET_SERIAL_SYNC_B},
 		.len = buf->len - sizeof(*header),
 	};
 
