@@ -17,6 +17,8 @@ configdefault NET_BUF
 	default y
 configdefault EVENTS
 	default y
+configdefault UART_INTERRUPT_DRIVEN
+	default y
 
 configdefault TDF
 	default y
