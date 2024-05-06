@@ -7,6 +7,11 @@ coverage:
   round: down
   range: "70...100"
 
+  status:
+    project: no
+    patch: no
+    changes: no
+
 parsers:
   gcov:
     branch_detection:
