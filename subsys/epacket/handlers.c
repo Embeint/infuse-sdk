@@ -23,11 +23,15 @@ void epacket_default_receive_handler(struct net_buf *buf)
 
 	if ((meta->auth != EPACKET_AUTH_FAILURE) && (meta->type == INFUSE_ECHO_REQ)) {
 		/* Respond to valid echo requests */
-		struct net_buf *echo = epacket_alloc_tx_for_interface(meta->interface, K_FOREVER);
+		struct net_buf *echo = epacket_alloc_tx_for_interface(meta->interface, K_NO_WAIT);
 
-		epacket_set_tx_metadata(echo, meta->auth, 0, INFUSE_ECHO_RSP);
-		net_buf_add_mem(echo, buf->data, buf->len);
-		epacket_queue(meta->interface, echo);
+		if (echo == NULL) {
+			LOG_WRN("Failed to allocate echo response");
+		} else {
+			epacket_set_tx_metadata(echo, meta->auth, 0, INFUSE_ECHO_RSP);
+			net_buf_add_mem(echo, buf->data, buf->len);
+			epacket_queue(meta->interface, echo);
+		}
 	}
 
 	net_buf_unref(buf);
