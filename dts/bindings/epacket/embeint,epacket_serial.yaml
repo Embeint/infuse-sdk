@@ -1,18 +1,18 @@
 # Copyright (c) 2024 Jordan Yates <jordan@embeint.com>
 # SPDX-License-Identifier: LicenseRef-Embeint
 
-description: ePacket USB interface
+description: ePacket serial interface
 
-compatible: "embeint,epacket-usb"
+compatible: "embeint,epacket-serial"
 
 include: "epacket-base.yaml"
 
 properties:
-  cdc-acm:
+  serial:
     type: phandle
     required: true
     description: |
-        USB CDC-ACM backend.
+        Serial port backend supporting interrupt driven API.
   header-size:
     default: 23
   footer-size:

@@ -3,21 +3,17 @@
 config EPACKET_INTERFACE_SERIAL
 	bool "ePacket serial interface"
 	depends on EPACKET_CRYPTO
-
-config EPACKET_INTERFACE_USB
-	bool "ePacket USB serial interface"
-	select EPACKET_INTERFACE_SERIAL
-	depends on DT_HAS_EMBEINT_EPACKET_USB_ENABLED
-	depends on USB_CDC_ACM
+	depends on DT_HAS_EMBEINT_EPACKET_SERIAL_ENABLED
+	depends on UART_INTERRUPT_DRIVEN
 	default y
 
-if EPACKET_INTERFACE_USB
+if EPACKET_INTERFACE_SERIAL
 
-module = EPACKET_USB
-module-str = epacket_usb
+module = EPACKET_SERIAL
+module-str = epacket_serial
 source "subsys/logging/Kconfig.template.log_config"
 
-endif # EPACKET_INTERFACE_USB
+endif # EPACKET_INTERFACE_SERIAL
 
 config EPACKET_INTERFACE_UDP
 	bool "ePacket UDP interface"

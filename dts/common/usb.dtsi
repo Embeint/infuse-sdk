@@ -5,14 +5,14 @@
 		zephyr,console = &cdc_acm_uart;
 	};
 
-	epacket_usb: epacket_usb {
-		compatible = "embeint,epacket-usb";
-		cdc-acm = <&cdc_acm_uart>;
+	epacket_serial: epacket_serial {
+		compatible = "embeint,epacket-serial";
+		serial = <&cdc_acm_uart>;
 	};
 
 	data_logger_serial: data_logger_serial {
 		compatible = "embeint,data-logger-epacket", "embeint,data-logger";
-		epacket = <&epacket_usb>;
+		epacket = <&epacket_serial>;
 
 		tdf_logger_serial: tdf_logger_serial {
 			compatible = "embeint,tdf-data-logger";
