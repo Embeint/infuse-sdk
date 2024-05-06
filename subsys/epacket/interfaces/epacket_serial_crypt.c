@@ -81,7 +81,7 @@ void epacket_serial_reconstruct(const struct device *dev, uint8_t *buffer, size_
 			meta = net_buf_user_data(rx_buffer);
 			meta->interface = dev;
 			meta->interface_id = EPACKET_INTERFACE_SERIAL;
-			meta->interface_id = 0;
+			meta->rssi = 0;
 
 			/* Hand off to core ePacket functions */
 			handler(rx_buffer);
