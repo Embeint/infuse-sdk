@@ -41,6 +41,7 @@ jobs:
         git config --global user.name "CI Bot"
         git remote -v
         git rebase origin/${BASE_REF}
+        export PATH=$PATH:$ZEPHYR_BASE/scripts
         # debug
         ls -la
         git log  --pretty=oneline | head -n 10
