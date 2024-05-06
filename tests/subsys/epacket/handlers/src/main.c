@@ -9,6 +9,7 @@
 #include <zephyr/ztest.h>
 #include <zephyr/kernel.h>
 
+#include <infuse/types.h>
 #include <infuse/epacket/interface.h>
 #include <infuse/epacket/packet.h>
 #include <infuse/epacket/interface/epacket_dummy.h>
@@ -47,6 +48,53 @@ ZTEST(epacket_handlers, test_custom_handler)
 
 	/* Free the buffer */
 	net_buf_unref(rx);
+}
+
+ZTEST(epacket_handlers, test_echo_response)
+{
+	const struct device *epacket_dummy = DEVICE_DT_GET(DT_NODELABEL(epacket_dummy));
+	struct k_fifo *tx_fifo = epacket_dummmy_transmit_fifo_get();
+	struct epacket_dummy_frame *rx_header, header = {0};
+	uint8_t payload[64];
+	struct net_buf *rx;
+
+	zassert_not_null(tx_fifo);
+
+	/* Set the default handler */
+	epacket_set_receive_handler(epacket_dummy, epacket_default_receive_handler);
+
+	/* Send an echo request */
+	header.type = INFUSE_ECHO_REQ;
+	header.auth = EPACKET_AUTH_DEVICE;
+	epacket_dummy_receive(epacket_dummy, &header, payload, 16);
+
+	rx = net_buf_get(tx_fifo, K_MSEC(10));
+	zassert_not_null(rx);
+	rx_header = (void *)rx->data;
+	zassert_equal(INFUSE_ECHO_RSP, rx_header->type);
+	zassert_equal(EPACKET_AUTH_DEVICE, rx_header->auth);
+	zassert_equal(sizeof(struct epacket_dummy_frame) + 16, rx->len);
+	net_buf_unref(rx);
+
+	/* Send a different echo request */
+	header.type = INFUSE_ECHO_REQ;
+	header.auth = EPACKET_AUTH_NETWORK;
+	epacket_dummy_receive(epacket_dummy, &header, payload, 64);
+
+	rx = net_buf_get(tx_fifo, K_MSEC(10));
+	zassert_not_null(rx);
+	rx_header = (void *)rx->data;
+	zassert_equal(INFUSE_ECHO_RSP, rx_header->type);
+	zassert_equal(EPACKET_AUTH_NETWORK, rx_header->auth);
+	zassert_equal(sizeof(struct epacket_dummy_frame) + 64, rx->len);
+	net_buf_unref(rx);
+
+	/* Send an auth failure echo request */
+	header.type = INFUSE_ECHO_REQ;
+	header.auth = EPACKET_AUTH_FAILURE;
+	epacket_dummy_receive(epacket_dummy, &header, payload, 16);
+
+	zassert_is_null(net_buf_get(tx_fifo, K_MSEC(10)));
 }
 
 ZTEST(epacket_handlers, test_alloc_failure)
