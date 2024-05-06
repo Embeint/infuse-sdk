@@ -57,7 +57,10 @@ void epacket_serial_reconstruct(const struct device *dev, uint8_t *buffer, size_
 		/* Still waiting on the payload length */
 		if (header_idx <= 3) {
 			header_idx++;
-			continue;
+			/* Next iteration unless a 0 byte packet */
+			if (header_idx < 4 || payload_remaining) {
+				continue;
+			}
 		}
 		/* Claim memory if none */
 		if (rx_buffer == NULL) {
@@ -67,9 +70,11 @@ void epacket_serial_reconstruct(const struct device *dev, uint8_t *buffer, size_
 		uint16_t to_add = MIN(payload_remaining, len - i);
 
 		/* Add payload to buffer */
-		net_buf_add_mem(rx_buffer, buffer + i, to_add);
-		payload_remaining -= to_add;
-		i += to_add - 1;
+		if (to_add > 0) {
+			net_buf_add_mem(rx_buffer, buffer + i, to_add);
+			payload_remaining -= to_add;
+			i += to_add - 1;
+		}
 
 		/* Is packet done? */
 		if (payload_remaining == 0) {
