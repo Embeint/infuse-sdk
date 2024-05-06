@@ -64,9 +64,10 @@ static void interrupt_handler(const struct device *dev, void *user_data)
 
 		available = uart_irq_tx_ready(dev);
 		if (available > 0) {
-			/* Only need to push if we*/
+			/* Only need to push if we have a packet */
 			buf = net_buf_get(&data->tx_fifo, K_NO_WAIT);
 			if (buf == NULL) {
+				uart_irq_tx_disable(dev);
 				irq_unlock(key);
 				return;
 			}
@@ -75,6 +76,7 @@ static void interrupt_handler(const struct device *dev, void *user_data)
 			if (available < required) {
 				LOG_WRN("Insufficient buffer space");
 				net_buf_put(&data->tx_fifo, buf);
+				uart_irq_tx_disable(dev);
 				irq_unlock(key);
 				return;
 			}
