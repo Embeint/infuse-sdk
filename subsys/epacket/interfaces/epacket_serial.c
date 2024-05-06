@@ -17,29 +17,29 @@
 
 #include "epacket_internal.h"
 
-#define DT_DRV_COMPAT embeint_epacket_usb
+#define DT_DRV_COMPAT embeint_epacket_serial
 
 struct serial_header {
 	uint8_t sync[2];
 	uint16_t len;
 } __packed;
 
-struct epacket_usb_config {
+struct epacket_serial_config {
 	struct epacket_interface_common_config common;
 	const struct device *backend;
 };
 
-struct epacket_usb_data {
+struct epacket_serial_data {
 	struct epacket_interface_common_data common_data;
 	struct k_fifo tx_fifo;
 };
 
-LOG_MODULE_REGISTER(epacket_usb, CONFIG_EPACKET_USB_LOG_LEVEL);
+LOG_MODULE_REGISTER(epacket_serial, CONFIG_EPACKET_SERIAL_LOG_LEVEL);
 
 static void interrupt_handler(const struct device *dev, void *user_data)
 {
 	const struct device *epacket_dev = user_data;
-	struct epacket_usb_data *data = epacket_dev->data;
+	struct epacket_serial_data *data = epacket_dev->data;
 	struct net_buf *buf;
 	int sent, required, available;
 
@@ -95,10 +95,10 @@ static void interrupt_handler(const struct device *dev, void *user_data)
 	}
 }
 
-static void epacket_usb_send(const struct device *dev, struct net_buf *buf)
+static void epacket_serial_send(const struct device *dev, struct net_buf *buf)
 {
-	const struct epacket_usb_config *config = dev->config;
-	struct epacket_usb_data *data = dev->data;
+	const struct epacket_serial_config *config = dev->config;
+	struct epacket_serial_data *data = dev->data;
 
 	/* Encrypt the payload */
 	if (epacket_serial_encrypt(buf) < 0) {
@@ -114,10 +114,10 @@ static void epacket_usb_send(const struct device *dev, struct net_buf *buf)
 	uart_irq_tx_enable(config->backend);
 }
 
-static int epacket_usb_init(const struct device *dev)
+static int epacket_serial_init(const struct device *dev)
 {
-	const struct epacket_usb_config *config = dev->config;
-	struct epacket_usb_data *data = dev->data;
+	const struct epacket_serial_config *config = dev->config;
+	struct epacket_serial_data *data = dev->data;
 
 	epacket_interface_common_init(dev);
 	k_fifo_init(&data->tx_fifo);
@@ -126,22 +126,22 @@ static int epacket_usb_init(const struct device *dev)
 	return 0;
 }
 
-static const struct epacket_interface_api usb_api = {
-	.send = epacket_usb_send,
+static const struct epacket_interface_api serial_api = {
+	.send = epacket_serial_send,
 };
 
-#define EPACKET_USB_DEFINE(inst)                                                                                       \
+#define EPACKET_SERIAL_DEFINE(inst)                                                                                    \
 	BUILD_ASSERT(sizeof(struct epacket_serial_frame) == DT_INST_PROP(inst, header_size));                          \
-	static struct epacket_usb_data usb_data_##inst;                                                                \
-	static const struct epacket_usb_config usb_config_##inst = {                                                   \
+	static struct epacket_serial_data serial_data_##inst;                                                          \
+	static const struct epacket_serial_config serial_config_##inst = {                                             \
 		.common =                                                                                              \
 			{                                                                                              \
 				.header_size = DT_INST_PROP(inst, header_size),                                        \
 				.footer_size = DT_INST_PROP(inst, footer_size),                                        \
 			},                                                                                             \
-		.backend = DEVICE_DT_GET(DT_INST_PROP(inst, cdc_acm)),                                                 \
+		.backend = DEVICE_DT_GET(DT_INST_PROP(inst, serial)),                                                  \
 	};                                                                                                             \
-	DEVICE_DT_INST_DEFINE(inst, epacket_usb_init, NULL, &usb_data_##inst, &usb_config_##inst, POST_KERNEL, 0,      \
-			      &usb_api);
+	DEVICE_DT_INST_DEFINE(inst, epacket_serial_init, NULL, &serial_data_##inst, &serial_config_##inst,             \
+			      POST_KERNEL, 0, &serial_api);
 
-DT_INST_FOREACH_STATUS_OKAY(EPACKET_USB_DEFINE)
+DT_INST_FOREACH_STATUS_OKAY(EPACKET_SERIAL_DEFINE)
