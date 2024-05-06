@@ -30,9 +30,11 @@ config EPACKET_BUFFERS_RX
 config EPACKET_PACKET_SIZE_MAX
 	int "Maximum supported ePacket packet size"
 	range 64 2048
+	default 555 if EPACKET_INTERFACE_SERIAL
 	default 548 if NET_IPV4
 	default 256
 	help
+	  512 byte serial payload + overhead = 555
 	  IPv4 minimum MTU = 576 (28 byte IP + UDP header)
 	  256 is sufficient for Bluetooth only devices.
 
