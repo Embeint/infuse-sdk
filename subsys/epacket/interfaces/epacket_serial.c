@@ -45,7 +45,7 @@ static void interrupt_handler(const struct device *dev, void *user_data)
 
 	while (uart_irq_update(dev) && uart_irq_is_pending(dev)) {
 		if (uart_irq_rx_ready(dev)) {
-			uint8_t buffer[CONFIG_CDC_ACM_BULK_EP_MPS];
+			uint8_t buffer[64];
 			int recv_len;
 
 			do {
