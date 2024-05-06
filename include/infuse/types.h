@@ -24,6 +24,8 @@ extern "C" {
 
 /* Core Infuse Data Types */
 enum infuse_type {
+	/* Echo of received data */
+	INFUSE_ECHO = 0,
 	/* Tagged Data Format */
 	INFUSE_TDF = 1,
 	/* 128 - 255 can be freely defined by customers */
