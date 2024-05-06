@@ -96,7 +96,7 @@ static void epacket_handle_rx(struct net_buf *buf)
 			/* Serial echo packet, respond */
 			struct net_buf *echo = epacket_alloc_tx_for_interface(metadata->interface, K_FOREVER);
 
-			epacket_set_tx_metadata(echo, EPACKET_AUTH_DEVICE, 0, INFUSE_ECHO);
+			epacket_set_tx_metadata(echo, EPACKET_AUTH_DEVICE, 0, INFUSE_ECHO_RSP);
 			epacket_queue(metadata->interface, echo);
 			net_buf_unref(buf);
 		}

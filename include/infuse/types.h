@@ -24,10 +24,12 @@ extern "C" {
 
 /* Core Infuse Data Types */
 enum infuse_type {
-	/* Echo of received data */
-	INFUSE_ECHO = 0,
+	/* Request device to echo data */
+	INFUSE_ECHO_REQ = 0,
+	/* Response to echo request */
+	INFUSE_ECHO_RSP = 1,
 	/* Tagged Data Format */
-	INFUSE_TDF = 1,
+	INFUSE_TDF = 2,
 	/* 128 - 255 can be freely defined by customers */
 	INFUSE_CUSTOMER_RANGE_START = 128,
 } __packed;
