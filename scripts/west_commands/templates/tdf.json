@@ -39,6 +39,15 @@
             ]
         },
         "3": {
+            "name": "ENVIRONMENTAL",
+            "description": "General battery state",
+            "fields": [
+                {"name": "temperature", "type": "int32_t", "description": "Ambient temperature (millidegrees)", "display_postfix": "deg", "conversion": {"m": 0.001, "c": 0}},
+                {"name": "pressure", "type": "uint32_t", "description": "Atmospheric pressure (pascals)", "display_postfix": "kPa", "conversion": {"m": 0.001, "c": 0} },
+                {"name": "humidity", "type": "uint8_t", "description": "Relative humidity (percent)", "display_postfix": "%"}
+            ]
+        },
+        "100": {
             "name": "ARRAY_TYPE",
             "description": "Example array type",
             "fields": [
