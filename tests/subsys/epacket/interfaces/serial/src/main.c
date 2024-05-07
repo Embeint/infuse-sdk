@@ -134,6 +134,35 @@ ZTEST(epacket_serial, test_reconstructor_too_large)
 	zassert_is_null(k_fifo_get(&packet_queue, K_MSEC(10)));
 }
 
+ZTEST(epacket_serial, test_reconstructor_rx_pressure)
+{
+	struct epacket_serial_frame_header s = {
+		.sync = {EPACKET_SERIAL_SYNC_A, EPACKET_SERIAL_SYNC_B},
+		.len = 16,
+	};
+	uint8_t buffer[16];
+	struct net_buf *out;
+
+	/* Consume all RX buffers */
+	for (int i = 0; i < CONFIG_EPACKET_BUFFERS_RX; i++) {
+		epacket_serial_reconstruct(NULL, (void *)&s, sizeof(s), receive_handler);
+		epacket_serial_reconstruct(NULL, buffer, sizeof(buffer), receive_handler);
+	}
+	/* Receive more packets */
+	for (int i = 0; i < 3; i++) {
+		epacket_serial_reconstruct(NULL, (void *)&s, sizeof(s), receive_handler);
+		epacket_serial_reconstruct(NULL, buffer, sizeof(buffer), receive_handler);
+	}
+
+	/* Receive and free the original buffers */
+	for (int i = 0; i < CONFIG_EPACKET_BUFFERS_RX; i++) {
+		out = k_fifo_get(&packet_queue, K_NO_WAIT);
+		zassert_not_null(out);
+		net_buf_unref(out);
+	}
+	zassert_is_null(k_fifo_get(&packet_queue, K_MSEC(10)));
+}
+
 ZTEST(epacket_serial, test_decrypt_error)
 {
 	struct net_buf *rx;
