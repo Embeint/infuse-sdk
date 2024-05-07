@@ -97,11 +97,40 @@ ZTEST(epacket_handlers, test_echo_response)
 	zassert_is_null(net_buf_get(tx_fifo, K_MSEC(10)));
 }
 
+ZTEST(epacket_handlers, test_echo_no_block)
+{
+	const struct device *epacket_dummy = DEVICE_DT_GET(DT_NODELABEL(epacket_dummy));
+	struct k_fifo *tx_fifo = epacket_dummmy_transmit_fifo_get();
+	struct epacket_dummy_frame header = {0};
+	struct net_buf *tx;
+	uint8_t payload[16];
+
+	zassert_not_null(tx_fifo);
+
+	/* Set the default handler */
+	epacket_set_receive_handler(epacket_dummy, epacket_default_receive_handler);
+
+	/* Multiple echo requests don't block */
+	zassert_true(CONFIG_EPACKET_BUFFERS_RX > CONFIG_EPACKET_BUFFERS_TX);
+	for (int i = 0; i < CONFIG_EPACKET_BUFFERS_RX; i++) {
+		header.type = INFUSE_ECHO_REQ;
+		header.auth = EPACKET_AUTH_DEVICE;
+		epacket_dummy_receive(epacket_dummy, &header, payload, sizeof(payload));
+	}
+	k_sleep(K_MSEC(1));
+	for (int i = 0; i < CONFIG_EPACKET_BUFFERS_TX; i++) {
+		tx = net_buf_get(tx_fifo, K_MSEC(10));
+		zassert_not_null(tx);
+		net_buf_unref(tx);
+	}
+	zassert_is_null(net_buf_get(tx_fifo, K_MSEC(10)));
+}
+
 ZTEST(epacket_handlers, test_alloc_failure)
 {
 	const struct device *epacket_dummy = DEVICE_DT_GET(DT_NODELABEL(epacket_dummy));
 	struct net_buf *tx_bufs[CONFIG_EPACKET_BUFFERS_TX];
-	struct net_buf *rx_bufs[CONFIG_EPACKET_BUFFERS_TX];
+	struct net_buf *rx_bufs[CONFIG_EPACKET_BUFFERS_RX];
 
 	/* Allocate all TX buffers, then check failure */
 	for (int i = 0; i < CONFIG_EPACKET_BUFFERS_TX; i++) {
