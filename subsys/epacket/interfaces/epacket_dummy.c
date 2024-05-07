@@ -37,7 +37,7 @@ void epacket_dummy_set_tx_failure(int error_code)
 void epacket_dummy_receive(const struct device *dev, struct epacket_dummy_frame *header, uint8_t *payload,
 			   size_t payload_len)
 {
-	struct net_buf *rx = epacket_alloc_rx(K_NO_WAIT);
+	struct net_buf *rx = epacket_alloc_rx(K_FOREVER);
 	struct epacket_rx_metadata *meta = net_buf_user_data(rx);
 
 	__ASSERT_NO_MSG(rx != NULL);

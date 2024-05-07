@@ -33,9 +33,9 @@ extern "C" {
  */
 
 enum epacket_auth {
+	EPACKET_AUTH_FAILURE,
 	EPACKET_AUTH_NETWORK,
 	EPACKET_AUTH_DEVICE,
-	EPACKET_AUTH_FAILURE,
 } __packed;
 
 struct epacket_tx_metadata {
