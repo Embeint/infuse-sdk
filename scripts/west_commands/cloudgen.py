@@ -41,12 +41,21 @@ class cloudgen(WestCommand):
             lstrip_blocks = True,
         )
         self.tdfgen()
+        self.kvgen()
 
     def tdfgen(self):
         tdf_def_file = self.template_dir / 'tdf.json'
         tdf_template = self.env.get_template('tdf_definitions.h.jinja')
         tdf_output = self.infuse_root_dir / 'include' / 'infuse' / 'tdf' / 'definitions.h'
 
+        with tdf_def_file.open('r') as f:
+            tdf_defs = json.load(f)
+
+        with tdf_output.open('w') as f:
+            f.write(tdf_template.render(structs=tdf_defs['structs'], definitions=tdf_defs['definitions']))
+            f.write(os.linesep)
+
+    def kvgen(self):
         kv_def_file = self.template_dir / 'kv_store.json'
         kv_defs_template = self.env.get_template('kv_types.h.jinja')
         kv_defs_output = self.infuse_root_dir / 'include' / 'infuse' / 'fs' / 'kv_types.h'
@@ -56,13 +65,6 @@ class cloudgen(WestCommand):
 
         kv_keys_template = self.env.get_template('kv_keys.c.jinja')
         kv_keys_output = self.infuse_root_dir / 'subsys' / 'fs' / 'kv_store' / 'kv_keys.c'
-
-        with tdf_def_file.open('r') as f:
-            tdf_defs = json.load(f)
-
-        with tdf_output.open('w') as f:
-            f.write(tdf_template.render(structs=tdf_defs['structs'], definitions=tdf_defs['definitions']))
-            f.write(os.linesep)
 
         with kv_def_file.open('r') as f:
             kv_defs = json.load(f)
