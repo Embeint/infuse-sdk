@@ -128,12 +128,10 @@ static void epacket_handle_tx(struct net_buf *buf)
 	const struct epacket_interface_api *api;
 	const struct device *dev;
 	size_t pool_max;
-	int pool_id;
 
-	pool_id = net_buf_id(buf);
-	dev = tx_device[pool_id];
+	dev = tx_device[net_buf_id(buf)];
 	api = dev->api;
-	pool_max = net_buf_pool_get(pool_id)->alloc->max_alloc_size;
+	pool_max = net_buf_pool_get(buf->pool_id)->alloc->max_alloc_size;
 
 	/* Reverse any footer reservation that was done at allocation */
 	if (buf->size < pool_max) {
