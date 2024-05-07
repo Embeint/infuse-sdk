@@ -30,6 +30,14 @@ enum infuse_type {
 	INFUSE_ECHO_RSP = 1,
 	/* Tagged Data Format */
 	INFUSE_TDF = 2,
+	/* Infuse RPC command */
+	INFUSE_RPC_CMD = 3,
+	/* Infuse RPC chunked data */
+	INFUSE_RPC_DATA = 4,
+	/* Infuse RPC data acknowledgment */
+	INFUSE_RPC_DATA_ACK = 5,
+	/* Infuse RPC response */
+	INFUSE_RPC_RSP = 6,
 	/* 128 - 255 can be freely defined by customers */
 	INFUSE_CUSTOMER_RANGE_START = 128,
 } __packed;

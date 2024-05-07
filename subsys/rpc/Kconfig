@@ -1,0 +1,19 @@
+# Infuse Remote Procedure Calls
+
+config INFUSE_RPC
+	bool "Infuse IoT Remote Procedure Call support"
+	depends on EPACKET
+
+if INFUSE_RPC
+
+module = INFUSE_RPC
+module-str = Infuse rpc
+source "subsys/logging/Kconfig.template.log_config"
+
+config INFUSE_RPC_SERVER_STACK_SIZE
+	int "Server thread stack size"
+	default 2048
+
+rsource "commands/Kconfig.commands"
+
+endif # INFUSE_RPC

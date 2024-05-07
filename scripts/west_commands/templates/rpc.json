@@ -1,0 +1,47 @@
+{
+    "structs": {
+        "rpc_struct_mcuboot_img_sem_ver": {
+            "description": "MCUboot semantic versioning struct",
+            "fields": [
+                {"name": "major", "type": "uint8_t"},
+                {"name": "minor", "type": "uint8_t"},
+                {"name": "revision", "type": "uint16_t"},
+                {"name": "build_num", "type": "uint32_t"}
+            ]
+        }
+    },
+    "commands": {
+        "32765": {
+            "name": "data_sender",
+            "description": "Send multiple INFUSE_RPC_DATA packets",
+            "default": "y if ZTEST",
+            "default_auth": "EPACKET_AUTH_DEVICE",
+            "rpc_data": true,
+            "request_params": [],
+            "response_params": []
+        },
+        "32766": {
+            "name": "data_receiver",
+            "description": "Receive multiple INFUSE_RPC_DATA packets",
+            "default": "y if ZTEST",
+            "default_auth": "EPACKET_AUTH_DEVICE",
+            "rpc_data": true,
+            "request_params": [],
+            "response_params": [
+                {"name": "received", "type": "uint32_t", "description": "Number of bytes received"}
+            ]
+        },
+        "32767": {
+            "name": "echo",
+            "description": "Echo any input data in the response",
+            "default": "y if ZTEST",
+            "default_auth": "EPACKET_AUTH_NETWORK",
+            "request_params": [
+                {"name": "array", "type": "uint8_t", "num": 0, "description": "Binary data"}
+            ],
+            "response_params": [
+                {"name": "array", "type": "uint8_t", "num": 0, "description": "Binary data"}
+            ]
+        }
+    }
+}

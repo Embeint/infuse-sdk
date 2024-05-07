@@ -1,0 +1,5 @@
+# Infuse Remote Procedure Call commands
+
+zephyr_library_sources_ifdef(CONFIG_INFUSE_RPC_COMMAND_ECHO echo.c)
+zephyr_library_sources_ifdef(CONFIG_INFUSE_RPC_COMMAND_DATA_RECEIVER data_receiver.c)
+zephyr_library_sources_ifdef(CONFIG_INFUSE_RPC_COMMAND_DATA_SENDER data_sender.c)

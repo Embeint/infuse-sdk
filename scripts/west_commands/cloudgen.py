@@ -42,6 +42,7 @@ class cloudgen(WestCommand):
         )
         self.tdfgen()
         self.kvgen()
+        self.rpcgen()
 
     def tdfgen(self):
         tdf_def_file = self.template_dir / 'tdf.json'
@@ -111,4 +112,55 @@ class cloudgen(WestCommand):
                             d['flexible'] = True
 
             f.write(kv_defs_template.render(structs=kv_defs['structs'], definitions=kv_defs['definitions']))
+            f.write(os.linesep)
+
+    def rpcgen(self):
+        rpc_def_file = self.template_dir / 'rpc.json'
+        rpc_defs_template = self.env.get_template('rpc_types.h.jinja')
+        rpc_defs_output = self.infuse_root_dir / 'include' / 'infuse' / 'rpc' / 'types.h'
+
+        rpc_kconfig_template = self.env.get_template('Kconfig.commands.jinja')
+        rpc_kconfig_output = self.infuse_root_dir / 'subsys' / 'rpc' / 'commands' / 'Kconfig.commands'
+
+        rpc_commands_template = self.env.get_template('rpc_commands.h.jinja')
+        rpc_commands_output = self.infuse_root_dir / 'subsys' / 'rpc' / 'commands' / 'commands.h'
+
+        rpc_runner_template = self.env.get_template('rpc_runner.c.jinja')
+        rpc_runner_output = self.infuse_root_dir / 'subsys' / 'rpc' / 'command_runner.c'
+
+        with rpc_def_file.open('r') as f:
+            rpc_defs = json.load(f)
+
+        with rpc_kconfig_output.open('w') as f:
+            f.write(rpc_kconfig_template.render(commands=rpc_defs['commands']))
+
+        with rpc_commands_output.open('w') as f:
+            f.write(rpc_commands_template.render(commands=rpc_defs['commands']))
+            f.write(os.linesep)
+
+        with rpc_runner_output.open('w') as f:
+            f.write(rpc_runner_template.render(commands=rpc_defs['commands']))
+            f.write(os.linesep)
+
+        with rpc_defs_output.open('w') as f:
+            # Simplify template logic for array postfix
+            def array_postfix(d, field):
+                field['array'] = ''
+                if 'num' in field:
+                    if field['num'] == 0:
+                        field['array'] = '[]'
+                        d['flexible'] = True
+                    else:
+                        field['array'] = f"[{field['num']}]"
+
+            for d in rpc_defs['structs'].values():
+                for field in d['fields']:
+                    array_postfix(d, field)
+            for d in rpc_defs['commands'].values():
+                for field in d['request_params']:
+                    array_postfix(d, field)
+                for field in d['response_params']:
+                    array_postfix(d, field)
+
+            f.write(rpc_defs_template.render(structs=rpc_defs['structs'], commands=rpc_defs['commands']))
             f.write(os.linesep)
