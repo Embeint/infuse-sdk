@@ -126,7 +126,10 @@ ZTEST(epacket_serial, test_reconstructor_too_large)
 		.sync = {EPACKET_SERIAL_SYNC_A, EPACKET_SERIAL_SYNC_B},
 		.len = CONFIG_EPACKET_PACKET_SIZE_MAX + 1,
 	};
-	uint8_t buffer[CONFIG_EPACKET_PACKET_SIZE_MAX + 1];
+	uint8_t buffer[CONFIG_EPACKET_PACKET_SIZE_MAX + 1] = {
+		/* Payload contains data that looks like a frame but should be skipped */
+		0x00, EPACKET_SERIAL_SYNC_A, EPACKET_SERIAL_SYNC_B, 0x10, 0x00,
+	};
 
 	epacket_serial_reconstruct(NULL, (void *)&s, sizeof(s), receive_handler);
 	epacket_serial_reconstruct(NULL, (void *)buffer, sizeof(buffer), receive_handler);
