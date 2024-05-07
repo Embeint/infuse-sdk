@@ -542,6 +542,19 @@ ZTEST(tdf, test_add_time_to_no_time)
 	run_test_case(tests, ARRAY_SIZE(tests));
 }
 
+ZTEST(tdf, test_invalid_params)
+{
+	struct tdf_buffer_state state;
+
+	net_buf_simple_init_with_data(&state.buf, buf, sizeof(buf));
+	tdf_buffer_state_reset(&state);
+
+	zassert_equal(-EINVAL, tdf_add(&state, 0, 10, 1, 0, 0, input_buffer));
+	zassert_equal(-EINVAL, tdf_add(&state, UINT16_MAX, 10, 1, 0, 0, input_buffer));
+	zassert_equal(-EINVAL, tdf_add(&state, 100, 0, 1, 0, 0, input_buffer));
+	zassert_equal(-EINVAL, tdf_add(&state, 100, 10, 0, 0, 0, input_buffer));
+}
+
 ZTEST(tdf, test_invalid_sizes)
 {
 	struct tdf_buffer_state state;
