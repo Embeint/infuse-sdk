@@ -1,0 +1,9 @@
+common:
+  tags: rpc
+  min_flash: 64
+  min_ram: 32
+tests:
+  rpc.server:
+    integration_platforms:
+      - native_sim
+      - qemu_cortex_m3
