@@ -162,7 +162,7 @@ static int epacket_udp_loop(void *a, void *b, void *c)
 			LOG_ERR("Failed to bind socket (%d)", errno);
 			goto socket_error;
 		}
-		LOG_INF("Waiting for UDP packets on port %d %d", ntohs(local_addr.sin_port), STATIC_MAX_PAYLOAD);
+		LOG_INF("Waiting for UDP packets on port %d", ntohs(local_addr.sin_port));
 
 		/* Interface is now connected */
 		SYS_SLIST_FOR_EACH_CONTAINER(&data->callback_list, cb, node) {
