@@ -151,16 +151,10 @@ static int epacket_processor(void *a, void *b, void *c)
 		K_POLL_EVENT_STATIC_INITIALIZER(K_POLL_TYPE_FIFO_DATA_AVAILABLE, K_POLL_MODE_NOTIFY_ONLY,
 						&epacket_tx_queue, 0),
 	};
-
 	struct net_buf *buf;
-	int rc;
 
 	while (true) {
-		rc = k_poll(events, ARRAY_SIZE(events), K_FOREVER);
-		if (rc != 0) {
-			LOG_WRN("Processor timeout (%d)", rc);
-			continue;
-		}
+		(void)k_poll(events, ARRAY_SIZE(events), K_FOREVER);
 
 		if (events[0].state == K_POLL_STATE_FIFO_DATA_AVAILABLE) {
 			buf = net_buf_get(events[0].fifo, K_NO_WAIT);
