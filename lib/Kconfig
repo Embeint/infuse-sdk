@@ -12,10 +12,10 @@ config INFUSE_CIVIL_TIME_PRINT_ON_SYNC
 	depends on INFUSE_CIVIL_TIME
 	default y
 
-if INFUSE_SDK
+if INFUSE_COMMON_BOOT
 module = INFUSE_COMMON
 module-str = infuse
 source "subsys/logging/Kconfig.template.log_config"
-endif # INFUSE_SDK
+endif # INFUSE_COMMON_BOOT
 
 rsource "crypto/Kconfig"

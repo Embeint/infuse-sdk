@@ -19,7 +19,11 @@ LOG_MODULE_REGISTER(infuse, CONFIG_INFUSE_COMMON_LOG_LEVEL);
 static int infuse_common_boot(void)
 {
 	KV_KEY_TYPE(KV_KEY_REBOOTS) reboot = {0};
+#ifdef CONFIG_INFUSE_SDK
 	uint64_t device_id = infuse_device_id();
+#else
+	uint64_t device_id = 0;
+#endif /* CONFIG_INFUSE_SDK */
 
 #ifdef CONFIG_KV_STORE
 	KV_KEY_TYPE(KV_KEY_REBOOTS) reboot_fallback = {0};
