@@ -30,7 +30,7 @@ ZTEST(epacket_handlers, test_custom_handler)
 		.flags = 0xAFFA,
 	};
 	struct epacket_rx_metadata *meta;
-	uint8_t payload[16];
+	uint8_t payload[16] = {0};
 	struct net_buf *rx;
 
 	/* Receive without a custom handler */
@@ -55,7 +55,7 @@ ZTEST(epacket_handlers, test_echo_response)
 	const struct device *epacket_dummy = DEVICE_DT_GET(DT_NODELABEL(epacket_dummy));
 	struct k_fifo *tx_fifo = epacket_dummmy_transmit_fifo_get();
 	struct epacket_dummy_frame *rx_header, header = {0};
-	uint8_t payload[64];
+	uint8_t payload[64] = {0};
 	struct net_buf *rx;
 
 	zassert_not_null(tx_fifo);
@@ -103,7 +103,7 @@ ZTEST(epacket_handlers, test_echo_no_block)
 	struct k_fifo *tx_fifo = epacket_dummmy_transmit_fifo_get();
 	struct epacket_dummy_frame header = {0};
 	struct net_buf *tx;
-	uint8_t payload[16];
+	uint8_t payload[16] = {0};
 
 	zassert_not_null(tx_fifo);
 
