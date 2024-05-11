@@ -17,6 +17,15 @@ extern "C" {
 #endif
 
 /**
+ * @brief Run reboot RPC
+ *
+ * @param request @ref INFUSE_RPC_REQ packet to respond to
+ *
+ * @return struct net_buf* @ref INFUSE_RPC_RSP packet buffer
+ */
+struct net_buf *rpc_command_reboot(struct net_buf *request);
+
+/**
  * @brief Run data_sender RPC
  *
  * @param request @ref INFUSE_RPC_REQ packet to respond to

@@ -106,12 +106,26 @@ struct rpc_struct_mcuboot_img_sem_ver {
 
 /* Infuse IoT builtin RPC commands */
 enum rpc_builtin_id {
+	RPC_ID_REBOOT = 1,
 	RPC_ID_DATA_SENDER = 32765,
 	RPC_ID_DATA_RECEIVER = 32766,
 	RPC_ID_ECHO = 32767,
 	/* End of builtin RPC range */
 	RPC_BUILTIN_END = 32768,
 };
+
+/* Reboot the device after a delay */
+struct rpc_reboot_request {
+	struct infuse_rpc_req_header header;
+	/* Requested delay (0 == default) */
+	uint32_t delay_ms;
+} __packed;
+
+struct rpc_reboot_response {
+	struct infuse_rpc_rsp_header header;
+	/* Duration until reboot */
+	uint32_t delay_ms;
+} __packed;
 
 /* Send multiple INFUSE_RPC_DATA packets */
 struct rpc_data_sender_request {
