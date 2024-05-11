@@ -8,6 +8,22 @@ endchoice
 configdefault MAIN_STACK_SIZE
 	default 2048
 
+# Reboot state storage
+configdefault REBOOT
+	default y
+configdefault HWINFO
+	default y
+configdefault INFUSE_REBOOT
+	default y
+configdefault RETENTION
+	default y
+configdefault RETENTION_MUTEX_FORCE_DISABLE
+	default y
+configdefault RETAINED_MEM
+	default y
+configdefault RETAINED_MEM_MUTEX_FORCE_DISABLE
+	default y
+
 # ePacket API
 configdefault EPACKET
 	default y
