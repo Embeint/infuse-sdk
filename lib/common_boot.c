@@ -9,16 +9,28 @@
 #include <zephyr/init.h>
 #include <zephyr/logging/log.h>
 #include <zephyr/usb/usb_device.h>
+#include <zephyr/drivers/hwinfo.h>
 
 #include <infuse/identifiers.h>
 #include <infuse/fs/kv_store.h>
 #include <infuse/fs/kv_types.h>
+#include <infuse/reboot.h>
+#include <infuse/time/civil.h>
 
 LOG_MODULE_REGISTER(infuse, CONFIG_INFUSE_COMMON_LOG_LEVEL);
+
+static struct infuse_reboot_state reboot_state;
+
+int infuse_common_boot_last_reboot(struct infuse_reboot_state *state)
+{
+	*state = reboot_state;
+	return state->reason == INFUSE_REBOOT_UNKNOWN ? -ENOENT : 0;
+}
 
 static int infuse_common_boot(void)
 {
 	KV_KEY_TYPE(KV_KEY_REBOOTS) reboot = {0};
+	int rc;
 #ifdef CONFIG_INFUSE_SDK
 	uint64_t device_id = infuse_device_id();
 #else
@@ -27,7 +39,6 @@ static int infuse_common_boot(void)
 
 #ifdef CONFIG_KV_STORE
 	KV_KEY_TYPE(KV_KEY_REBOOTS) reboot_fallback = {0};
-	int rc;
 
 	/* Initialise KV store */
 	rc = kv_store_init();
@@ -54,6 +65,44 @@ static int infuse_common_boot(void)
 	LOG_INF("\t Device: %016llx", device_id);
 	LOG_INF("\t  Board: %s", CONFIG_BOARD);
 	LOG_INF("\tReboots: %d", reboot.count);
+
+#ifdef CONFIG_INFUSE_REBOOT
+	struct timeutil_sync_instant reference;
+	uint32_t reset_cause = 0;
+
+	/* Query any reboot state */
+	rc = infuse_reboot_state_query(&reboot_state);
+	if (rc != 0) {
+		/* No stored state, so fallback to hardware flags only */
+		(void)hwinfo_get_reset_cause(&reset_cause);
+		(void)hwinfo_clear_reset_cause();
+		reboot_state.hardware_reason = reset_cause;
+		reboot_state.reason = INFUSE_REBOOT_UNKNOWN;
+	}
+
+	/* Print the reboot information/causes */
+	LOG_INF("");
+	LOG_INF("Reboot Information");
+	LOG_INF("\tHardware: %08X", reboot_state.hardware_reason);
+	if (rc == 0) {
+		LOG_INF("\t   Cause: %d", reboot_state.reason);
+		LOG_INF("\t  Uptime: %d", reboot_state.uptime);
+		LOG_INF("\t  Thread: %s", reboot_state.thread_name);
+		LOG_INF("\t PC/WDOG: %08X", reboot_state.param_1.program_counter);
+		LOG_INF("\t      LR: %08X", reboot_state.param_2.link_register);
+
+		/* Restore time knowledge (Assume reboot took 0 ms) */
+		reference.local = 0;
+		reference.ref = reboot_state.civil_time;
+		civil_time_set_reference(TIME_SOURCE_RECOVERED | reboot_state.civil_time_source, &reference);
+	} else {
+		LOG_INF("\t   Cause: Unknown");
+	}
+#else
+	reboot_state.reason = INFUSE_REBOOT_UNKNOWN;
+#endif /* CONFIG_INFUSE_REBOOT */
+
+	(void)rc;
 	return 0;
 }
 
