@@ -11,6 +11,19 @@
         }
     },
     "commands": {
+        "1": {
+            "name": "reboot",
+            "description": "Reboot the device after a delay",
+            "depends_on": "INFUSE_REBOOT",
+            "default": "y if INFUSE_SDK",
+            "default_auth": "EPACKET_AUTH_DEVICE",
+            "request_params": [
+                {"name": "delay_ms", "type": "uint32_t", "description": "Requested delay (0 == default)"}
+            ],
+            "response_params": [
+                {"name": "delay_ms", "type": "uint32_t", "description": "Duration until reboot"}
+            ]
+        },
         "32765": {
             "name": "data_sender",
             "description": "Send multiple INFUSE_RPC_DATA packets",
