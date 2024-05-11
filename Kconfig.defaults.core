@@ -36,6 +36,10 @@ configdefault EVENTS
 configdefault UART_INTERRUPT_DRIVEN
 	default y
 
+# Remote Procedure Calls
+configdefault INFUSE_RPC
+	default y
+
 configdefault TDF
 	default y
 
