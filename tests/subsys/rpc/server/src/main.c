@@ -24,7 +24,7 @@ ZTEST(rpc_server, test_drop_data)
 	struct k_fifo *tx_fifo = epacket_dummmy_transmit_fifo_get();
 	struct epacket_dummy_frame header = {0};
 	struct infuse_rpc_data *data;
-	uint8_t payload[16];
+	uint8_t payload[16] = {0};
 
 	data = (void *)payload;
 	zassert_not_null(tx_fifo);
@@ -45,7 +45,7 @@ ZTEST(rpc_server, test_auth_failure)
 	struct k_fifo *tx_fifo = epacket_dummmy_transmit_fifo_get();
 	struct epacket_dummy_frame header = {0};
 	struct infuse_rpc_req_header *req_header;
-	uint8_t payload[64];
+	uint8_t payload[16] = {0};
 
 	req_header = (void *)payload;
 	zassert_not_null(tx_fifo);
@@ -68,7 +68,7 @@ ZTEST(rpc_server, test_invalid)
 	struct epacket_dummy_frame *tx_header, header = {0};
 	struct infuse_rpc_req_header *req_header;
 	struct infuse_rpc_rsp_header *rsp_header;
-	uint8_t payload[64];
+	uint8_t payload[16] = {0};
 	struct net_buf *tx;
 
 	req_header = (void *)payload;
@@ -103,7 +103,7 @@ ZTEST(rpc_server, test_auth_level)
 	struct infuse_rpc_req_header *req_header;
 	struct rpc_echo_response *rsp;
 	uint32_t request_id = sys_rand32_get();
-	uint8_t payload[16];
+	uint8_t payload[16] = {0};
 	struct net_buf *tx;
 
 	req_header = (void *)payload;
@@ -160,7 +160,7 @@ ZTEST(rpc_server, test_echo_response)
 	struct infuse_rpc_req_header *req_header;
 	struct rpc_echo_response *rsp;
 	uint32_t request_id = sys_rand32_get();
-	uint8_t payload[64];
+	uint8_t payload[64] = {0};
 	struct net_buf *tx;
 
 	sys_rand_get(payload, sizeof(payload));
@@ -201,7 +201,7 @@ static void test_data_sender(uint32_t to_send)
 	struct rpc_data_sender_request *req;
 	struct rpc_data_sender_response *rsp;
 	struct infuse_rpc_data *data;
-	uint8_t payload[64];
+	uint8_t payload[64] = {0};
 	struct net_buf *tx;
 	bool receiving = true;
 	uint32_t received, bytes_received = 0;
@@ -271,7 +271,7 @@ static void test_data_receiver(uint32_t total_send, uint8_t skip_after, uint8_t 
 	struct rpc_data_receiver_request *req;
 	struct rpc_data_receiver_response *rsp;
 	struct infuse_rpc_data *data_hdr;
-	uint8_t payload[sizeof(struct infuse_rpc_data) + 64];
+	uint8_t payload[sizeof(struct infuse_rpc_data) + 64] = {0};
 	uint32_t request_id = sys_rand32_get();
 	uint32_t send_remaining = total_send;
 	uint32_t tx_offset = 0;
