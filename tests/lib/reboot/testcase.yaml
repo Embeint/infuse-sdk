@@ -4,7 +4,7 @@ common:
   min_ram: 32
 tests:
   lib.reboot:
-    platform_allow:
-      - mps2_an385
+    required_snippets:
+      - infuse
     integration_platforms:
       - mps2_an385
