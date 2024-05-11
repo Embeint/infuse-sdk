@@ -142,4 +142,25 @@ ZTEST(infuse_reboot, test_reboot)
 	}
 }
 
-ZTEST_SUITE(infuse_reboot, NULL, NULL, NULL, NULL, NULL);
+void *test_init(void)
+{
+	KV_KEY_TYPE(KV_KEY_REBOOTS) reboot_fallback = {0}, reboot = {0};
+	int rc;
+
+	/* Initialise KV store */
+	rc = kv_store_init();
+
+	/* Get current reboot count */
+	if (rc == 0) {
+		rc = kv_store_read_fallback(KV_KEY_REBOOTS, &reboot, sizeof(reboot), &reboot_fallback,
+					    sizeof(reboot_fallback));
+		if (rc == sizeof(reboot)) {
+			/* Increment reboot counter */
+			reboot.count += 1;
+			(void)KV_STORE_WRITE(KV_KEY_REBOOTS, &reboot);
+		}
+	}
+	return NULL;
+}
+
+ZTEST_SUITE(infuse_reboot, NULL, test_init, NULL, NULL, NULL);
