@@ -1,6 +1,10 @@
 name: infuse
 
 boards:
+  mps2_an385:
+    append:
+      EXTRA_DTC_OVERLAY_FILE: boards/mps2_an385.overlay
+      EXTRA_CONF_FILE: boards/mps2_an385.conf
   nrf52840dk_nrf52840:
     append:
       EXTRA_DTC_OVERLAY_FILE: boards/nrf52840dk_nrf52840.overlay
