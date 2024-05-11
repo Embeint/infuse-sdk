@@ -62,7 +62,7 @@ void epacket_dummy_set_tx_failure(int error_code);
  * @param payload Packet payload
  * @param payload_len Length of payload
  */
-void epacket_dummy_receive(const struct device *dev, struct epacket_dummy_frame *header, uint8_t *payload,
+void epacket_dummy_receive(const struct device *dev, const struct epacket_dummy_frame *header, const void *payload,
 			   size_t payload_len);
 
 /**
