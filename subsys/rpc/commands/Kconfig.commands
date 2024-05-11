@@ -15,6 +15,7 @@ config INFUSE_RPC_COMMAND_REBOOT_REQUIRED_AUTH
 
 config INFUSE_RPC_COMMAND_DATA_SENDER
 	bool "Enable RPC data_sender"
+	depends on ENTROPY_GENERATOR
 	default y if ZTEST
 	help
 	  Send multiple INFUSE_RPC_DATA packets
