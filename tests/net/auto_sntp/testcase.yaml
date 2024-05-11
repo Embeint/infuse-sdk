@@ -10,7 +10,6 @@ tests:
     depends_on:
       - net
   net.auto_sntp.native:
-    timeout: 15
     platform_allow:
       - native_sim
     integration_platforms:
