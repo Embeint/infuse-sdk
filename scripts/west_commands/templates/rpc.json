@@ -27,6 +27,7 @@
         "32765": {
             "name": "data_sender",
             "description": "Send multiple INFUSE_RPC_DATA packets",
+            "depends_on": "ENTROPY_GENERATOR",
             "default": "y if ZTEST",
             "default_auth": "EPACKET_AUTH_DEVICE",
             "rpc_data": true,
