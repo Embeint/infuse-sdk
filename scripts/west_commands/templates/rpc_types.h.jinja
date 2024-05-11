@@ -108,6 +108,7 @@ struct {{ name }} {
 /* Infuse IoT builtin RPC commands */
 enum rpc_builtin_id {
 {% for id, info in commands.items() %}
+	/* {{ info['description' ]}} */
 	RPC_ID_{{ info['name'] | upper }} = {{ id }},
 {% endfor %}
 	/* End of builtin RPC range */
