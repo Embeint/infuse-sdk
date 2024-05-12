@@ -49,6 +49,13 @@ void rpc_command_runner(struct net_buf *request)
 		}
 		break;
 #endif /* CONFIG_INFUSE_RPC_COMMAND_REBOOT */
+#ifdef CONFIG_INFUSE_RPC_COMMAND_FAULT
+	case RPC_ID_FAULT:
+		if (auth >= CONFIG_INFUSE_RPC_COMMAND_FAULT_REQUIRED_AUTH) { /* GCOVR_EXCL_BR_LINE */
+			response = rpc_command_fault(request);
+		}
+		break;
+#endif /* CONFIG_INFUSE_RPC_COMMAND_FAULT */
 #ifdef CONFIG_INFUSE_RPC_COMMAND_DATA_SENDER
 	case RPC_ID_DATA_SENDER:
 		if (auth >= CONFIG_INFUSE_RPC_COMMAND_DATA_SENDER_REQUIRED_AUTH) { /* GCOVR_EXCL_BR_LINE */

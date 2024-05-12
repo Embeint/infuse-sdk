@@ -108,6 +108,8 @@ struct rpc_struct_mcuboot_img_sem_ver {
 enum rpc_builtin_id {
 	/* Reboot the device after a delay */
 	RPC_ID_REBOOT = 1,
+	/* Immediately trigger an exception on the device */
+	RPC_ID_FAULT = 2,
 	/* Send multiple INFUSE_RPC_DATA packets */
 	RPC_ID_DATA_SENDER = 32765,
 	/* Receive multiple INFUSE_RPC_DATA packets */
@@ -129,6 +131,19 @@ struct rpc_reboot_response {
 	struct infuse_rpc_rsp_header header;
 	/* Duration until reboot */
 	uint32_t delay_ms;
+} __packed;
+
+/* Immediately trigger an exception on the device */
+struct rpc_fault_request {
+	struct infuse_rpc_req_header header;
+	/* K_ERR_* fault type to trigger */
+	uint8_t fault;
+	/* Zero that the compiler doesn't know about */
+	uint32_t zero;
+} __packed;
+
+struct rpc_fault_response {
+	struct infuse_rpc_rsp_header header;
 } __packed;
 
 /* Send multiple INFUSE_RPC_DATA packets */

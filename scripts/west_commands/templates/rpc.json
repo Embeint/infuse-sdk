@@ -24,6 +24,19 @@
                 {"name": "delay_ms", "type": "uint32_t", "description": "Duration until reboot"}
             ]
         },
+        "2": {
+            "name": "fault",
+            "description": "Immediately trigger an exception on the device",
+            "depends_on": "INFUSE_REBOOT && ARM",
+            "default": "y if INFUSE_SDK",
+            "default_auth": "EPACKET_AUTH_DEVICE",
+            "request_params": [
+                {"name": "fault", "type": "uint8_t", "description": "K_ERR_* fault type to trigger"},
+                {"name": "zero", "type": "uint32_t", "description": "Zero that the compiler doesn't know about"}
+
+            ],
+            "response_params": []
+        },
         "32765": {
             "name": "data_sender",
             "description": "Send multiple INFUSE_RPC_DATA packets",

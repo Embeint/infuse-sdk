@@ -13,6 +13,18 @@ config INFUSE_RPC_COMMAND_REBOOT_REQUIRED_AUTH
 	depends on INFUSE_RPC_COMMAND_REBOOT
 	default 2
 
+config INFUSE_RPC_COMMAND_FAULT
+	bool "Enable RPC fault"
+	depends on INFUSE_REBOOT && ARM
+	default y if INFUSE_SDK
+	help
+	  Immediately trigger an exception on the device
+
+config INFUSE_RPC_COMMAND_FAULT_REQUIRED_AUTH
+	int "Required authorisation level to run fault"
+	depends on INFUSE_RPC_COMMAND_FAULT
+	default 2
+
 config INFUSE_RPC_COMMAND_DATA_SENDER
 	bool "Enable RPC data_sender"
 	depends on ENTROPY_GENERATOR
