@@ -63,12 +63,12 @@ struct tdf_announce {
 
 /* General battery state */
 struct tdf_battery_state {
-	/* Battery voltage in millivolts */
+	/* Battery voltage (milliVolts) */
 	uint32_t voltage_mv;
-	/* Charge current in microamps */
+	/* Charge current (microamps) */
 	uint16_t charge_ua;
-	/* State of charge in percent */
-	uint8_t soc;
+	/* State of charge (centipercent) */
+	uint16_t soc;
 } __packed;
 
 /* General battery state */
@@ -77,8 +77,32 @@ struct tdf_environmental {
 	int32_t temperature;
 	/* Atmospheric pressure (pascals) */
 	uint32_t pressure;
-	/* Relative humidity (percent) */
-	uint8_t humidity;
+	/* Relative humidity (centipercent) */
+	uint16_t humidity;
+} __packed;
+
+/* Accelerometer +-2G */
+struct tdf_acc_2g {
+	/* Raw sample */
+	struct tdf_struct_xyz_16bit sample;
+} __packed;
+
+/* Accelerometer +-4G */
+struct tdf_acc_4g {
+	/* Raw sample */
+	struct tdf_struct_xyz_16bit sample;
+} __packed;
+
+/* Accelerometer +-8G */
+struct tdf_acc_8g {
+	/* Raw sample */
+	struct tdf_struct_xyz_16bit sample;
+} __packed;
+
+/* Accelerometer +-16G */
+struct tdf_acc_16g {
+	/* Raw sample */
+	struct tdf_struct_xyz_16bit sample;
 } __packed;
 
 /* Example array type */
@@ -92,6 +116,10 @@ enum tdf_builtin_id {
 	TDF_ANNOUNCE = 1,
 	TDF_BATTERY_STATE = 2,
 	TDF_ENVIRONMENTAL = 3,
+	TDF_ACC_2G = 10,
+	TDF_ACC_4G = 11,
+	TDF_ACC_8G = 12,
+	TDF_ACC_16G = 13,
 	TDF_ARRAY_TYPE = 100,
 	/* End of builtin TDF range */
 	TDF_BUILTIN_END = 1024,
@@ -102,6 +130,10 @@ enum tdf_builtin_size {
 	_TDF_ANNOUNCE_SIZE = sizeof(struct tdf_announce),
 	_TDF_BATTERY_STATE_SIZE = sizeof(struct tdf_battery_state),
 	_TDF_ENVIRONMENTAL_SIZE = sizeof(struct tdf_environmental),
+	_TDF_ACC_2G_SIZE = sizeof(struct tdf_acc_2g),
+	_TDF_ACC_4G_SIZE = sizeof(struct tdf_acc_4g),
+	_TDF_ACC_8G_SIZE = sizeof(struct tdf_acc_8g),
+	_TDF_ACC_16G_SIZE = sizeof(struct tdf_acc_16g),
 	_TDF_ARRAY_TYPE_SIZE = sizeof(struct tdf_array_type),
 };
 

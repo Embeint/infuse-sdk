@@ -33,9 +33,9 @@
             "name": "BATTERY_STATE",
             "description": "General battery state",
             "fields": [
-                {"name": "voltage_mv", "type": "uint32_t", "description": "Battery voltage in millivolts", "display_postfix": "mV"},
-                {"name": "charge_ua", "type": "uint16_t", "description": "Charge current in microamps", "display_postfix": "uA"},
-                {"name": "soc", "type": "uint8_t", "description": "State of charge in percent", "display_postfix": "%", "conversion": {"m": 0.5, "c": 0}}
+                {"name": "voltage_mv", "type": "uint32_t", "description": "Battery voltage (milliVolts)", "display_postfix": "mV"},
+                {"name": "charge_ua", "type": "uint16_t", "description": "Charge current (microamps)", "display_postfix": "uA"},
+                {"name": "soc", "type": "uint16_t", "description": "State of charge (centipercent)", "display_postfix": "%", "conversion": {"m": 0.01, "c": 0}}
             ]
         },
         "3": {
@@ -44,7 +44,35 @@
             "fields": [
                 {"name": "temperature", "type": "int32_t", "description": "Ambient temperature (millidegrees)", "display_postfix": "deg", "conversion": {"m": 0.001, "c": 0}},
                 {"name": "pressure", "type": "uint32_t", "description": "Atmospheric pressure (pascals)", "display_postfix": "kPa", "conversion": {"m": 0.001, "c": 0} },
-                {"name": "humidity", "type": "uint8_t", "description": "Relative humidity (percent)", "display_postfix": "%"}
+                {"name": "humidity", "type": "uint16_t", "description": "Relative humidity (centipercent)", "display_postfix": "%", "conversion": {"m": 0.01, "c": 0}}
+            ]
+        },
+        "10": {
+            "name": "ACC_2G",
+            "description": "Accelerometer +-2G",
+            "fields": [
+                {"name": "sample", "type": "struct tdf_struct_xyz_16bit", "description": "Raw sample"}
+            ]
+        },
+        "11": {
+            "name": "ACC_4G",
+            "description": "Accelerometer +-4G",
+            "fields": [
+                {"name": "sample", "type": "struct tdf_struct_xyz_16bit", "description": "Raw sample"}
+            ]
+        },
+        "12": {
+            "name": "ACC_8G",
+            "description": "Accelerometer +-8G",
+            "fields": [
+                {"name": "sample", "type": "struct tdf_struct_xyz_16bit", "description": "Raw sample"}
+            ]
+        },
+        "13": {
+            "name": "ACC_16G",
+            "description": "Accelerometer +-16G",
+            "fields": [
+                {"name": "sample", "type": "struct tdf_struct_xyz_16bit", "description": "Raw sample"}
             ]
         },
         "100": {
