@@ -1,6 +1,5 @@
 / {
 	chosen {
-		zephyr,entropy = &cryptocell;
 		infuse,reboot-state = &retention0;
 	};
 
@@ -26,8 +25,4 @@
 			};
 		};
 	};
-};
-
-&cryptocell {
-	status = "okay";
 };
