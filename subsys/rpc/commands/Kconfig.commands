@@ -25,6 +25,30 @@ config INFUSE_RPC_COMMAND_FAULT_REQUIRED_AUTH
 	depends on INFUSE_RPC_COMMAND_FAULT
 	default 2
 
+config INFUSE_RPC_COMMAND_TIME_GET
+	bool "Enable RPC time_get"
+	depends on INFUSE_CIVIL_TIME
+	default y if INFUSE_SDK
+	help
+	  Get the current time knowledge of the device
+
+config INFUSE_RPC_COMMAND_TIME_GET_REQUIRED_AUTH
+	int "Required authorisation level to run time_get"
+	depends on INFUSE_RPC_COMMAND_TIME_GET
+	default 1
+
+config INFUSE_RPC_COMMAND_TIME_SET
+	bool "Enable RPC time_set"
+	depends on INFUSE_CIVIL_TIME
+	default y if INFUSE_SDK
+	help
+	  Set the current time of the device
+
+config INFUSE_RPC_COMMAND_TIME_SET_REQUIRED_AUTH
+	int "Required authorisation level to run time_set"
+	depends on INFUSE_RPC_COMMAND_TIME_SET
+	default 2
+
 config INFUSE_RPC_COMMAND_DATA_SENDER
 	bool "Enable RPC data_sender"
 	depends on ENTROPY_GENERATOR

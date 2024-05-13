@@ -110,6 +110,10 @@ enum rpc_builtin_id {
 	RPC_ID_REBOOT = 1,
 	/* Immediately trigger an exception on the device */
 	RPC_ID_FAULT = 2,
+	/* Get the current time knowledge of the device */
+	RPC_ID_TIME_GET = 3,
+	/* Set the current time of the device */
+	RPC_ID_TIME_SET = 4,
 	/* Send multiple INFUSE_RPC_DATA packets */
 	RPC_ID_DATA_SENDER = 32765,
 	/* Receive multiple INFUSE_RPC_DATA packets */
@@ -143,6 +147,32 @@ struct rpc_fault_request {
 } __packed;
 
 struct rpc_fault_response {
+	struct infuse_rpc_rsp_header header;
+} __packed;
+
+/* Get the current time knowledge of the device */
+struct rpc_time_get_request {
+	struct infuse_rpc_req_header header;
+} __packed;
+
+struct rpc_time_get_response {
+	struct infuse_rpc_rsp_header header;
+	/* Source of the time knowledge */
+	uint8_t time_source;
+	/* Current civil time on the device */
+	uint64_t civil_time;
+	/* How old the time knowledge is (seconds) */
+	uint32_t sync_age;
+} __packed;
+
+/* Set the current time of the device */
+struct rpc_time_set_request {
+	struct infuse_rpc_req_header header;
+	/* Current civil time on the device */
+	uint64_t civil_time;
+} __packed;
+
+struct rpc_time_set_response {
 	struct infuse_rpc_rsp_header header;
 } __packed;
 

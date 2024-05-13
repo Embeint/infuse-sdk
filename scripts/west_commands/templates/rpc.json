@@ -37,6 +37,31 @@
             ],
             "response_params": []
         },
+        "3": {
+            "name": "time_get",
+            "description": "Get the current time knowledge of the device",
+            "depends_on": "INFUSE_CIVIL_TIME",
+            "default": "y if INFUSE_SDK",
+            "default_auth": "EPACKET_AUTH_NETWORK",
+            "request_params": [],
+            "response_params": [
+                {"name": "time_source", "type": "uint8_t", "description": "Source of the time knowledge"},
+                {"name": "civil_time", "type": "uint64_t", "description": "Current civil time on the device"},
+                {"name": "sync_age", "type": "uint32_t", "description": "How old the time knowledge is (seconds)"}
+            ]
+        },
+        "4": {
+            "name": "time_set",
+            "description": "Set the current time of the device",
+            "depends_on": "INFUSE_CIVIL_TIME",
+            "default": "y if INFUSE_SDK",
+            "default_auth": "EPACKET_AUTH_DEVICE",
+            "request_params": [
+                {"name": "civil_time", "type": "uint64_t", "description": "Current civil time on the device"}
+
+            ],
+            "response_params": []
+        },
         "32765": {
             "name": "data_sender",
             "description": "Send multiple INFUSE_RPC_DATA packets",
