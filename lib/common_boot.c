@@ -56,10 +56,12 @@ static int infuse_common_boot(void)
 #endif /* CONFIG_KV_STORE */
 
 #ifdef CONFIG_USB_DEVICE_STACK
+#ifndef CONFIG_USB_DEVICE_INITIALIZE_AT_BOOT
 	rc = usb_enable(NULL);
 	if (rc != 0) {
 		LOG_ERR("USB enable error (%d)", rc);
 	}
+#endif /* CONFIG_USB_DEVICE_INITIALIZE_AT_BOOT */
 #endif /* CONFIG_USB_DEVICE_STACK */
 
 	LOG_INF("\t Device: %016llx", device_id);
