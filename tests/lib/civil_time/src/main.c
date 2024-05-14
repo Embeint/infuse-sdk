@@ -171,6 +171,12 @@ ZTEST(civil_time, test_local_time_conversion)
 		      civil_time_from_ticks(1 * CONFIG_SYS_CLOCK_TICKS_PER_SEC));
 	zassert_equal((2 * INFUSE_CIVIL_TIME_TICKS_PER_SEC) + 1000,
 		      civil_time_from_ticks(2 * CONFIG_SYS_CLOCK_TICKS_PER_SEC));
+	zassert_equal((0 * CONFIG_SYS_CLOCK_TICKS_PER_SEC),
+		      ticks_from_civil_time(0 * INFUSE_CIVIL_TIME_TICKS_PER_SEC + 1000));
+	zassert_equal((1 * CONFIG_SYS_CLOCK_TICKS_PER_SEC),
+		      ticks_from_civil_time(1 * INFUSE_CIVIL_TIME_TICKS_PER_SEC + 1000));
+	zassert_equal((2 * CONFIG_SYS_CLOCK_TICKS_PER_SEC),
+		      ticks_from_civil_time(2 * INFUSE_CIVIL_TIME_TICKS_PER_SEC + 1000));
 }
 
 ZTEST(civil_time, test_reference_age)

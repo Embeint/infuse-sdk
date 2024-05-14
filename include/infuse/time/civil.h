@@ -210,10 +210,20 @@ static inline uint64_t civil_time_from_unix(uint32_t unix_time, uint16_t subseco
 }
 
 /**
+ * @brief Get a tick count associated with a civil time
+ *
+ * @param civil_time Civil time
+ *
+ * @return uint64_t Equivalent time in ticks
+ */
+uint64_t ticks_from_civil_time(uint64_t civil_time);
+
+/**
  * @brief Get the civil time associated with a local uptime
  *
  * @param ticks Kernel tick count
- * @return uint64_t
+ *
+ * @return uint64_t Equivalent time in civil time
  */
 uint64_t civil_time_from_ticks(uint64_t ticks);
 
