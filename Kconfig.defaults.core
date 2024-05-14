@@ -101,3 +101,5 @@ configdefault DEBUG_INFO
 	default y
 configdefault DEBUG_THREAD_INFO
 	default y
+configdefault OUTPUT_DISASSEMBLY
+	default y if !ZTEST
