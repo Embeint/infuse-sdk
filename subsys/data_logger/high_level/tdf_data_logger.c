@@ -71,13 +71,13 @@ static int flush_internal(const struct device *dev, bool locked)
 	return rc;
 }
 
-int tdf_data_logger_flush(const struct device *dev)
+int tdf_data_logger_flush_dev(const struct device *dev)
 {
 	return flush_internal(dev, false);
 }
 
-int tdf_data_logger_log_array(const struct device *dev, uint16_t tdf_id, uint8_t tdf_len, uint8_t tdf_num,
-			      uint64_t time, uint16_t period, void *mem)
+int tdf_data_logger_log_array_dev(const struct device *dev, uint16_t tdf_id, uint8_t tdf_len, uint8_t tdf_num,
+				  uint64_t time, uint16_t period, void *mem)
 {
 	struct tdf_logger_data *data = dev->data;
 	int rc;

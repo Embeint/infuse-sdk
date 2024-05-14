@@ -34,8 +34,8 @@ int main(void)
 			.build_num = 4,
 		};
 
-		tdf_data_logger_log(tdf_logger_serial, TDF_ANNOUNCE, (sizeof(announce)), 0, &announce);
-		tdf_data_logger_flush(tdf_logger_serial);
+		tdf_data_logger_log_dev(tdf_logger_serial, TDF_ANNOUNCE, (sizeof(announce)), 0, &announce);
+		tdf_data_logger_flush_dev(tdf_logger_serial);
 
 		LOG_INF("Sent uptime %d on %s", announce.uptime, tdf_logger_serial->name);
 		k_sleep(K_SECONDS(1));
