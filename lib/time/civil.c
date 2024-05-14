@@ -39,6 +39,14 @@ void civil_time_register_callback(struct civil_time_cb *cb)
 	sys_slist_append(&cb_list, &cb->node);
 }
 
+uint64_t ticks_from_civil_time(uint64_t civil_time)
+{
+	int64_t local = 0;
+
+	(void)timeutil_sync_local_from_ref(&infuse_sync_state, civil_time, &local);
+	return local;
+}
+
 uint64_t civil_time_from_ticks(uint64_t ticks)
 {
 	uint64_t civil;
