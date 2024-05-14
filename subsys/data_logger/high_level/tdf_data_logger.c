@@ -18,6 +18,7 @@
 #include <infuse/types.h>
 #include <infuse/tdf/tdf.h>
 #include <infuse/data_logger/logger.h>
+#include <infuse/data_logger/high_level/tdf.h>
 #include <infuse/epacket/interface.h>
 
 struct tdf_logger_config {
@@ -32,7 +33,37 @@ struct tdf_logger_data {
 	uint8_t block_overhead;
 };
 
+/* Mapping of logger bitmask */
+static const struct device *logger_mapping[] = {
+	[_TDF_DATA_LOGGER_SERIAL_OFFSET] = DEVICE_DT_GET_OR_NULL(DT_NODELABEL(tdf_logger_serial)),
+	[_TDF_DATA_LOGGER_UDP_OFFSET] = DEVICE_DT_GET_OR_NULL(DT_NODELABEL(tdf_logger_udp)),
+	[_TDF_DATA_LOGGER_FLASH_OFFSET] = DEVICE_DT_GET_OR_NULL(DT_NODELABEL(tdf_logger_flash)),
+};
+
 LOG_MODULE_REGISTER(tdf_logger, CONFIG_TDF_DATA_LOGGER_LOG_LEVEL);
+
+/* Return next valid logger from mask */
+static const struct device *logger_mask_iter(uint8_t *mask)
+{
+	const struct device *dev;
+	uint8_t offset;
+
+	while (*mask) {
+		/* Find next set bit */
+		offset = __builtin_ffs(*mask) - 1;
+		if (offset >= ARRAY_SIZE(logger_mapping)) {
+			return NULL;
+		}
+		/* Clear bit */
+		*mask ^= 1 << offset;
+
+		dev = logger_mapping[offset];
+		if (dev) {
+			return dev;
+		}
+	}
+	return NULL;
+}
 
 static int flush_internal(const struct device *dev, bool locked)
 {
@@ -76,6 +107,19 @@ int tdf_data_logger_flush_dev(const struct device *dev)
 	return flush_internal(dev, false);
 }
 
+void tdf_data_logger_flush(uint8_t logger_mask)
+{
+	const struct device *dev;
+
+	/* Flush all loggers given */
+	do {
+		dev = logger_mask_iter(&logger_mask);
+		if (dev) {
+			(void)tdf_data_logger_flush_dev(dev);
+		}
+	} while (dev);
+}
+
 int tdf_data_logger_log_array_dev(const struct device *dev, uint16_t tdf_id, uint8_t tdf_len, uint8_t tdf_num,
 				  uint64_t time, uint16_t period, void *mem)
 {
@@ -114,6 +158,20 @@ relog:
 unlock:
 	k_sem_give(&data->lock);
 	return rc < 0 ? rc : 0;
+}
+
+void tdf_data_logger_log_array(uint8_t logger_mask, uint16_t tdf_id, uint8_t tdf_len, uint8_t tdf_num, uint64_t time,
+			       uint16_t period, void *data)
+{
+	const struct device *dev;
+
+	/* Flush all loggers given */
+	do {
+		dev = logger_mask_iter(&logger_mask);
+		if (dev) {
+			(void)tdf_data_logger_log_array_dev(dev, tdf_id, tdf_len, tdf_num, time, period, data);
+		}
+	} while (dev);
 }
 
 IF_DISABLED(CONFIG_ZTEST, (static))
