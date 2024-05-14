@@ -37,7 +37,7 @@ struct tdf_buffer_state {
 };
 
 struct tdf_parsed {
-	/* TDF time (0 for none) */
+	/* Time of last TDF (0 for none) */
 	uint64_t time;
 	/* TDF ID */
 	uint16_t tdf_id;
@@ -83,7 +83,7 @@ static inline void tdf_buffer_state_reset(struct tdf_buffer_state *state)
  * @param tdf_id TDF sensor ID
  * @param tdf_len Length of a single TDF
  * @param tdf_num Number of TDFs to try to add
- * @param time Civil time associated with the first TDF. 0 for no timestamp.
+ * @param time Civil time associated with the last TDF. 0 for no timestamp.
  * @param period Civil time between tdfs when @a tdf_num > 0.
  * @param data TDF data
  *
