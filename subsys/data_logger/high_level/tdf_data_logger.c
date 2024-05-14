@@ -27,13 +27,14 @@ struct tdf_logger_config {
 };
 
 struct tdf_logger_data {
+	struct k_sem lock;
 	struct tdf_buffer_state tdf_state;
 	uint8_t block_overhead;
 };
 
 LOG_MODULE_REGISTER(tdf_logger, CONFIG_TDF_DATA_LOGGER_LOG_LEVEL);
 
-int tdf_data_logger_flush(const struct device *dev)
+static int flush_internal(const struct device *dev, bool locked)
 {
 	const struct tdf_logger_config *config = dev->config;
 	struct tdf_logger_data *data = dev->data;
@@ -43,6 +44,11 @@ int tdf_data_logger_flush(const struct device *dev)
 	if (data->tdf_state.buf.len == 0) {
 		LOG_DBG("%s no data to log", dev->name);
 		return 0;
+	}
+
+	if (!locked) {
+		/* Lock access */
+		k_sem_take(&data->lock, K_FOREVER);
 	}
 
 	/* Re-add the overhead */
@@ -57,7 +63,17 @@ int tdf_data_logger_flush(const struct device *dev)
 	/* Reset buffer and reserve overhead */
 	tdf_buffer_state_reset(&data->tdf_state);
 	net_buf_simple_reserve(&data->tdf_state.buf, data->block_overhead);
+
+	if (!locked) {
+		/* Unlock access */
+		k_sem_give(&data->lock);
+	}
 	return rc;
+}
+
+int tdf_data_logger_flush(const struct device *dev)
+{
+	return flush_internal(dev, false);
 }
 
 int tdf_data_logger_log_array(const struct device *dev, uint16_t tdf_id, uint8_t tdf_len, uint8_t tdf_num,
@@ -66,18 +82,19 @@ int tdf_data_logger_log_array(const struct device *dev, uint16_t tdf_id, uint8_t
 	struct tdf_logger_data *data = dev->data;
 	int rc;
 
+	k_sem_take(&data->lock, K_FOREVER);
 relog:
 	rc = tdf_add(&data->tdf_state, tdf_id, tdf_len, tdf_num, time, period, mem);
 	if (rc == -ENOMEM) {
 		LOG_DBG("%s no space, flush and retry", dev->name);
-		rc = tdf_data_logger_flush(dev);
+		rc = flush_internal(dev, true);
 		if (rc < 0) {
-			return rc;
+			goto unlock;
 		}
 		goto relog;
 	} else if (rc < 0) {
 		LOG_WRN("%s failed to add (%d)", dev->name, rc);
-		return rc;
+		goto unlock;
 	} else if (rc != tdf_num) {
 		/* Only some TDFs added */
 		LOG_DBG("%s logged %d/%d", dev->name, rc, tdf_num);
@@ -91,10 +108,12 @@ relog:
 	/* Auto flush if no space left for more TDFs (3 byte header + 1 byte data) */
 	if (net_buf_simple_tailroom(&data->tdf_state.buf) < 4) {
 		LOG_DBG("%s auto flush", dev->name);
-		return tdf_data_logger_flush(dev);
+		rc = flush_internal(dev, true);
 	}
 
-	return 0;
+unlock:
+	k_sem_give(&data->lock);
+	return rc < 0 ? rc : 0;
 }
 
 IF_DISABLED(CONFIG_ZTEST, (static))
@@ -103,6 +122,9 @@ int tdf_data_logger_init(const struct device *dev)
 	const struct tdf_logger_config *config = dev->config;
 	struct tdf_logger_data *data = dev->data;
 	struct data_logger_state logger_state;
+
+	/* Init lock semaphore */
+	k_sem_init(&data->lock, 1, 1);
 
 	/* Link data buffer to net buf */
 	net_buf_simple_init_with_data(&data->tdf_state.buf, config->tdf_buffer, config->tdf_buffer_max_size);
