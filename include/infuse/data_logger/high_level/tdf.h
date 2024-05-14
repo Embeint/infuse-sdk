@@ -38,8 +38,8 @@ extern "C" {
  * @retval 0 On success
  * @retval -errno Error code from @a tdf_add or @a tdf_data_logger_flush on error
  */
-int tdf_data_logger_log_array(const struct device *dev, uint16_t tdf_id, uint8_t tdf_len, uint8_t tdf_num,
-			      uint64_t time, uint16_t period, void *data);
+int tdf_data_logger_log_array_dev(const struct device *dev, uint16_t tdf_id, uint8_t tdf_len, uint8_t tdf_num,
+				  uint64_t time, uint16_t period, void *data);
 
 /**
  * @brief Add a single TDF to a data logger
@@ -53,10 +53,10 @@ int tdf_data_logger_log_array(const struct device *dev, uint16_t tdf_id, uint8_t
  * @retval 0 On success
  * @retval -errno Error code from @a tdf_add or @a tdf_data_logger_flush on error
  */
-static inline int tdf_data_logger_log(const struct device *dev, uint16_t tdf_id, uint8_t tdf_len, uint64_t time,
-				      void *data)
+static inline int tdf_data_logger_log_dev(const struct device *dev, uint16_t tdf_id, uint8_t tdf_len, uint64_t time,
+					  void *data)
 {
-	return tdf_data_logger_log_array(dev, tdf_id, tdf_len, 1, time, 0, data);
+	return tdf_data_logger_log_array_dev(dev, tdf_id, tdf_len, 1, time, 0, data);
 }
 
 /**
@@ -67,7 +67,7 @@ static inline int tdf_data_logger_log(const struct device *dev, uint16_t tdf_id,
  * @retval 0 On success (Or no data to flush)
  * @retval -errno Error code from @a data_logger_block_write
  */
-int tdf_data_logger_flush(const struct device *dev);
+int tdf_data_logger_flush_dev(const struct device *dev);
 
 /**
  * @}

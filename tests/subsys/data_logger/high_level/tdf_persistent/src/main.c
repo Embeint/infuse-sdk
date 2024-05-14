@@ -37,14 +37,14 @@ ZTEST(tdf_data_logger_flash, test_standard)
 
 	/* 20 bytes per log (3 overhead, 17 data) = 160 bytes */
 	for (int i = 0; i < 8; i++) {
-		rc = tdf_data_logger_log(tdf_logger, TDF_RANDOM, 17, 0, tdf_data);
+		rc = tdf_data_logger_log_dev(tdf_logger, TDF_RANDOM, 17, 0, tdf_data);
 		zassert_equal(0, rc);
 	}
 	data_logger_get_state(data_logger, &state);
 	zassert_equal(0, state.current_block);
 
 	/* Flush logger */
-	rc = tdf_data_logger_flush(tdf_logger);
+	rc = tdf_data_logger_flush_dev(tdf_logger);
 	zassert_equal(0, rc);
 	data_logger_get_state(data_logger, &state);
 	zassert_equal(1, state.current_block);
@@ -59,20 +59,20 @@ ZTEST(tdf_data_logger_flash, test_multi)
 	int rc;
 
 	/* 156 bytes (6 overhead, 25 * 6 data) */
-	rc = tdf_data_logger_log_array(tdf_logger, TDF_RANDOM, 6, 25, 0, 0, tdf_data);
+	rc = tdf_data_logger_log_array_dev(tdf_logger, TDF_RANDOM, 6, 25, 0, 0, tdf_data);
 	zassert_equal(0, rc);
 	/* 156 bytes (6 overhead, 25 * 6 data) */
-	rc = tdf_data_logger_log_array(tdf_logger, TDF_RANDOM, 6, 25, 0, 0, tdf_data);
+	rc = tdf_data_logger_log_array_dev(tdf_logger, TDF_RANDOM, 6, 25, 0, 0, tdf_data);
 	zassert_equal(0, rc);
 	/* 156 bytes (6 overhead, 25 * 6 data) */
-	rc = tdf_data_logger_log_array(tdf_logger, TDF_RANDOM, 6, 25, 0, 0, tdf_data);
+	rc = tdf_data_logger_log_array_dev(tdf_logger, TDF_RANDOM, 6, 25, 0, 0, tdf_data);
 	zassert_equal(0, rc);
 
 	data_logger_get_state(data_logger, &state);
 	zassert_equal(0, state.current_block);
 
 	/* 156 bytes (6 overhead, 25 * 6 data) */
-	rc = tdf_data_logger_log_array(tdf_logger, TDF_RANDOM, 6, 25, 0, 0, tdf_data);
+	rc = tdf_data_logger_log_array_dev(tdf_logger, TDF_RANDOM, 6, 25, 0, 0, tdf_data);
 	zassert_equal(0, rc);
 
 	data_logger_get_state(data_logger, &state);
@@ -85,7 +85,7 @@ static void log_400(const struct device *tdf_logger)
 	int rc;
 
 	for (int i = 0; i < 4; i++) {
-		rc = tdf_data_logger_log(tdf_logger, TDF_RANDOM, 97, 0, tdf_data);
+		rc = tdf_data_logger_log_dev(tdf_logger, TDF_RANDOM, 97, 0, tdf_data);
 		zassert_equal(0, rc);
 	}
 }
@@ -102,12 +102,12 @@ ZTEST(tdf_data_logger_flash, test_auto_flush)
 	log_400(tdf_logger);
 
 	/* Up to 506 bytes should not flush */
-	rc = tdf_data_logger_log(tdf_logger, TDF_RANDOM, 103, 0, tdf_data);
+	rc = tdf_data_logger_log_dev(tdf_logger, TDF_RANDOM, 103, 0, tdf_data);
 	zassert_equal(0, rc);
 	data_logger_get_state(data_logger, &state);
 	zassert_equal(0, state.current_block);
 
-	rc = tdf_data_logger_flush(tdf_logger);
+	rc = tdf_data_logger_flush_dev(tdf_logger);
 	zassert_equal(0, rc);
 	data_logger_get_state(data_logger, &state);
 	zassert_equal(1, state.current_block);
@@ -116,7 +116,7 @@ ZTEST(tdf_data_logger_flash, test_auto_flush)
 	for (int i = 0; i < 4; i++) {
 		log_400(tdf_logger);
 
-		rc = tdf_data_logger_log(tdf_logger, TDF_RANDOM, 104 + i, 0, tdf_data);
+		rc = tdf_data_logger_log_dev(tdf_logger, TDF_RANDOM, 104 + i, 0, tdf_data);
 		zassert_equal(0, rc);
 		data_logger_get_state(data_logger, &state);
 		zassert_equal(2 + i, state.current_block);
@@ -129,7 +129,7 @@ void data_logger_reset(void *fixture)
 	const struct device *data_logger = DEVICE_DT_GET(DT_NODELABEL(data_logger_flash));
 
 	/* Clear any pending data */
-	tdf_data_logger_flush(tdf_logger);
+	tdf_data_logger_flush_dev(tdf_logger);
 
 	/* Erase amd reinitialise loggers */
 	memset(flash_buffer, 0xFF, flash_buffer_size);
