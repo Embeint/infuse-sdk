@@ -70,6 +70,20 @@ void rpc_command_runner(struct net_buf *request)
 		}
 		break;
 #endif /* CONFIG_INFUSE_RPC_COMMAND_TIME_SET */
+#ifdef CONFIG_INFUSE_RPC_COMMAND_KV_WRITE
+	case RPC_ID_KV_WRITE:
+		if (auth >= CONFIG_INFUSE_RPC_COMMAND_KV_WRITE_REQUIRED_AUTH) { /* GCOVR_EXCL_BR_LINE */
+			response = rpc_command_kv_write(request);
+		}
+		break;
+#endif /* CONFIG_INFUSE_RPC_COMMAND_KV_WRITE */
+#ifdef CONFIG_INFUSE_RPC_COMMAND_KV_READ
+	case RPC_ID_KV_READ:
+		if (auth >= CONFIG_INFUSE_RPC_COMMAND_KV_READ_REQUIRED_AUTH) { /* GCOVR_EXCL_BR_LINE */
+			response = rpc_command_kv_read(request);
+		}
+		break;
+#endif /* CONFIG_INFUSE_RPC_COMMAND_KV_READ */
 #ifdef CONFIG_INFUSE_RPC_COMMAND_DATA_SENDER
 	case RPC_ID_DATA_SENDER:
 		if (auth >= CONFIG_INFUSE_RPC_COMMAND_DATA_SENDER_REQUIRED_AUTH) { /* GCOVR_EXCL_BR_LINE */

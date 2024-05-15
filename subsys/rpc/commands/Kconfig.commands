@@ -49,6 +49,30 @@ config INFUSE_RPC_COMMAND_TIME_SET_REQUIRED_AUTH
 	depends on INFUSE_RPC_COMMAND_TIME_SET
 	default 2
 
+config INFUSE_RPC_COMMAND_KV_WRITE
+	bool "Enable RPC kv_write"
+	depends on KV_STORE
+	default y if INFUSE_SDK
+	help
+	  Write values to the KV store
+
+config INFUSE_RPC_COMMAND_KV_WRITE_REQUIRED_AUTH
+	int "Required authorisation level to run kv_write"
+	depends on INFUSE_RPC_COMMAND_KV_WRITE
+	default 2
+
+config INFUSE_RPC_COMMAND_KV_READ
+	bool "Enable RPC kv_read"
+	depends on KV_STORE
+	default y if INFUSE_SDK
+	help
+	  Read values from the KV store
+
+config INFUSE_RPC_COMMAND_KV_READ_REQUIRED_AUTH
+	int "Required authorisation level to run kv_read"
+	depends on INFUSE_RPC_COMMAND_KV_READ
+	default 2
+
 config INFUSE_RPC_COMMAND_DATA_SENDER
 	bool "Enable RPC data_sender"
 	depends on ENTROPY_GENERATOR

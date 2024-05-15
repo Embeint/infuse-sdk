@@ -8,6 +8,14 @@
                 {"name": "revision", "type": "uint16_t"},
                 {"name": "build_num", "type": "uint32_t"}
             ]
+        },
+        "rpc_struct_kv_store_value": {
+            "description": "KV store data value",
+            "fields": [
+                {"name": "id", "type": "uint16_t"},
+                {"name": "len", "type": "int16_t"},
+                {"name": "data", "type": "uint8_t", "num": 0}
+            ]
         }
     },
     "commands": {
@@ -61,6 +69,34 @@
 
             ],
             "response_params": []
+        },
+        "5": {
+            "name": "kv_write",
+            "description": "Write values to the KV store",
+            "depends_on": "KV_STORE",
+            "default": "y if INFUSE_SDK",
+            "default_auth": "EPACKET_AUTH_DEVICE",
+            "request_params": [
+                {"name": "num", "type": "uint8_t", "description": "Number of values in buffer"},
+                {"name": "values", "type": "struct rpc_struct_kv_store_value", "num": 0, "description": "Array of KV values"}
+            ],
+            "response_params": [
+                {"name": "rc", "type": "int16_t", "num": 0, "description": "Result of writes"}
+             ]
+        },
+        "6": {
+            "name": "kv_read",
+            "description": "Read values from the KV store",
+            "depends_on": "KV_STORE",
+            "default": "y if INFUSE_SDK",
+            "default_auth": "EPACKET_AUTH_DEVICE",
+            "request_params": [
+                {"name": "num", "type": "uint8_t", "description": "Number of values to read"},
+                {"name": "keys", "type": "uint16_t", "num": 0, "description": "Array of KV keys"}
+            ],
+            "response_params": [
+                {"name": "values", "type": "struct rpc_struct_kv_store_value", "num": 0, "description": "Array of KV values"}
+             ]
         },
         "32765": {
             "name": "data_sender",
