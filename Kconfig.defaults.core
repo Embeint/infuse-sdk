@@ -58,6 +58,13 @@ configdefault KV_STORE
 configdefault KV_STORE_REBOOTS
 	default y
 
+configdefault SENSOR
+	default y
+
+# Power Management
+configdefault POWER_DOMAIN
+	default y
+
 # Random numbers
 configdefault ENTROPY_GENERATOR
 	default y
