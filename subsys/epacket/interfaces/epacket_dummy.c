@@ -34,8 +34,8 @@ void epacket_dummy_set_tx_failure(int error_code)
 	send_error_code = error_code;
 }
 
-void epacket_dummy_receive(const struct device *dev, const struct epacket_dummy_frame *header, const void *payload,
-			   size_t payload_len)
+void epacket_dummy_receive_extra(const struct device *dev, const struct epacket_dummy_frame *header,
+				 const void *payload, size_t payload_len, const void *extra, size_t extra_len)
 {
 	struct net_buf *rx = epacket_alloc_rx(K_FOREVER);
 	struct epacket_rx_metadata *meta = net_buf_user_data(rx);
@@ -45,6 +45,9 @@ void epacket_dummy_receive(const struct device *dev, const struct epacket_dummy_
 	/* Construct payload */
 	net_buf_add_mem(rx, header, sizeof(*header));
 	net_buf_add_mem(rx, payload, payload_len);
+	if (extra_len > 0) {
+		net_buf_add_mem(rx, extra, extra_len);
+	}
 
 	meta->interface = dev;
 	meta->interface_id = EPACKET_INTERFACE_DUMMY;
