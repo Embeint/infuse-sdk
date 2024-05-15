@@ -1,0 +1,14 @@
+sample:
+  description: Basic data logger
+  name: Data Logger
+common:
+  build_only: true
+  required_snippets:
+    - infuse
+  platform_allow:
+    - thingy53_nrf5340_cpuapp
+  integration_platforms:
+    - thingy53_nrf5340_cpuapp
+tests:
+  sample.app.data_logger:
+    tags: gateway
