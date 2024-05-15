@@ -11,4 +11,7 @@ common:
     - thingy53_nrf5340_cpuapp
 tests:
   sample.app.data_logger:
-    tags: gateway
+    tags: app
+  sample.app.data_logger.wifi:
+    tags: app
+    extra_args: SHIELD=nrf7002eb
