@@ -5,6 +5,7 @@ import argparse
 import pathlib
 import json
 import os
+import importlib
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
@@ -49,11 +50,54 @@ class cloudgen(WestCommand):
         tdf_template = self.env.get_template('tdf_definitions.h.jinja')
         tdf_output = self.infuse_root_dir / 'include' / 'infuse' / 'tdf' / 'definitions.h'
 
+        loader = importlib.util.find_spec('infuse_iot.generated.tdf_definitions')
+        tdf_definitions_template = self.env.get_template('tdf_definitions.py.jinja')
+        tdf_definitions_output = pathlib.Path(loader.origin)
+
         with tdf_def_file.open('r') as f:
             tdf_defs = json.load(f)
 
         with tdf_output.open('w') as f:
             f.write(tdf_template.render(structs=tdf_defs['structs'], definitions=tdf_defs['definitions']))
+            f.write(os.linesep)
+
+        ctype_mapping = {
+            'uint8_t': 'ctypes.c_uint8',
+            'uint16_t': 'ctypes.c_uint16',
+            'uint32_t': 'ctypes.c_uint32',
+            'uint64_t': 'ctypes.c_uint64',
+            'int8_t': 'ctypes.c_int8',
+            'int16_t': 'ctypes.c_int16',
+            'int32_t': 'ctypes.c_int32',
+            'int64_t': 'ctypes.c_int64',
+        }
+
+        for s in tdf_defs['structs'].values():
+            for p in s['fields']:
+                p['py_type'] = ctype_mapping[p['type']]
+
+        for s in tdf_defs['definitions'].values():
+            s['conversions'] = []
+            for f in s['fields']:
+                if 'conversion' in f:
+                    f['py_name'] = f"_{f['name']}"
+                    p = ""
+                    if f['conversion']['m'] != 1:
+                        p += f" * {f['conversion']['m']}"
+                    if f['conversion']['c'] != 0:
+                        p += f" + {f['conversion']['c']}"
+                    s['conversions'].append({'name': f['name'], 'conv': p})
+                else:
+                    f['py_name'] = f['name']
+
+                t : str = f['type']
+                if t.startswith('struct'):
+                    f['py_type'] = f'structs.{t[7:]}'
+                else:
+                    f['py_type'] = ctype_mapping[t]
+
+        with tdf_definitions_output.open('w') as f:
+            f.write(tdf_definitions_template.render(structs=tdf_defs['structs'], definitions=tdf_defs['definitions']))
             f.write(os.linesep)
 
     def kvgen(self):
