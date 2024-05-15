@@ -90,7 +90,7 @@ struct infuse_rpc_rsp_header {
 /* {{ info['description'] }} */
 struct {{ name }} {
 {% for field in info['fields'] %}
-	{{ field['type'] }} {{ field['name'] }};
+	{{ field['type'] }} {{ field['name'] }}{{ field['array'] }};
 {% endfor %}
 } __packed;
 

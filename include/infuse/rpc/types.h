@@ -94,6 +94,13 @@ struct rpc_struct_mcuboot_img_sem_ver {
 	uint32_t build_num;
 } __packed;
 
+/* KV store data value */
+struct rpc_struct_kv_store_value {
+	uint16_t id;
+	int16_t len;
+	uint8_t data[];
+} __packed;
+
 /**
  * @}
  */
@@ -114,6 +121,10 @@ enum rpc_builtin_id {
 	RPC_ID_TIME_GET = 3,
 	/* Set the current time of the device */
 	RPC_ID_TIME_SET = 4,
+	/* Write values to the KV store */
+	RPC_ID_KV_WRITE = 5,
+	/* Read values from the KV store */
+	RPC_ID_KV_READ = 6,
 	/* Send multiple INFUSE_RPC_DATA packets */
 	RPC_ID_DATA_SENDER = 32765,
 	/* Receive multiple INFUSE_RPC_DATA packets */
@@ -174,6 +185,36 @@ struct rpc_time_set_request {
 
 struct rpc_time_set_response {
 	struct infuse_rpc_rsp_header header;
+} __packed;
+
+/* Write values to the KV store */
+struct rpc_kv_write_request {
+	struct infuse_rpc_req_header header;
+	/* Number of values in buffer */
+	uint8_t num;
+	/* Array of KV values */
+	struct rpc_struct_kv_store_value values[];
+} __packed;
+
+struct rpc_kv_write_response {
+	struct infuse_rpc_rsp_header header;
+	/* Result of writes */
+	int16_t rc[];
+} __packed;
+
+/* Read values from the KV store */
+struct rpc_kv_read_request {
+	struct infuse_rpc_req_header header;
+	/* Number of values to read */
+	uint8_t num;
+	/* Array of KV keys */
+	uint16_t keys[];
+} __packed;
+
+struct rpc_kv_read_response {
+	struct infuse_rpc_rsp_header header;
+	/* Array of KV values */
+	struct rpc_struct_kv_store_value values[];
 } __packed;
 
 /* Send multiple INFUSE_RPC_DATA packets */
