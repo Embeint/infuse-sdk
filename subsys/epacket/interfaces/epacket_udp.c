@@ -227,6 +227,7 @@ static void epacket_udp_send(const struct device *dev, struct net_buf *buf)
 	}
 
 	/* Send to remote server */
+	LOG_DBG("Sending %d bytes to server", buf->len);
 	rc = zsock_sendto(udp_state.sock, buf->data, buf->len, 0, &udp_state.remote, udp_state.remote_len);
 	if (rc == -1) {
 		LOG_WRN("Failed to send (%d)", errno);
