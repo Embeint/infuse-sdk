@@ -1,0 +1,16 @@
+/* Copyright (c) 2023 Nordic Semiconductor ASA
+ *
+ * SPDX-License-Identifier: LicenseRef-Nordic-5-Clause
+ */
+
+ /* The below overlays might not be explicitly required but still
+  * kept here to warn of the conflicting pins that could hamper
+  * functionality later
+  */
+
+/*
+ * This uses gpio0 pin 8 that conflicts with STATUS pin of Wi-Fi SR coex
+ */
+&npm1100_force_pwm_mode {
+	status = "disabled";
+};
