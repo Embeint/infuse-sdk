@@ -128,6 +128,8 @@ ZTEST(rpc_command_time, test_time_get_set)
 	zassert_equal(0, civil_time_reference_age());
 	zassert_equal(test_time, infuse_sync_state.base.ref);
 
+	k_sleep(K_MSEC(10));
+
 	/* Send the time get RPC */
 	send_time_get_command(100);
 	time_get = expect_time_get_response(100, 0);
