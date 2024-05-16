@@ -31,10 +31,35 @@ struct epacket_serial_config {
 
 struct epacket_serial_data {
 	struct epacket_interface_common_data common_data;
+	struct k_work_delayable dc_handler;
 	struct k_fifo tx_fifo;
 };
 
 LOG_MODULE_REGISTER(epacket_serial, CONFIG_EPACKET_SERIAL_LOG_LEVEL);
+
+/* For USB, there is no way of knowing whether a device is on the other end
+ * triggering the transmission of the ePackets we are queuing. To avoid
+ * queuing all our TX buffers and then blocking the system, we give the
+ * system up to 100ms to start the transmission of a packet. If that timeout
+ * expires, purge the queue instead.
+ */
+static void disconnected_handler(struct k_work *work)
+{
+	struct k_work_delayable *delayable = k_work_delayable_from_work(work);
+	struct epacket_serial_data *data = CONTAINER_OF(delayable, struct epacket_serial_data, dc_handler);
+	struct net_buf *buf;
+	int cnt = 0;
+
+	do {
+		/* Drop any pending messages */
+		buf = net_buf_get(&data->tx_fifo, K_NO_WAIT);
+		if (buf) {
+			net_buf_unref(buf);
+			cnt++;
+		}
+	} while (buf);
+	LOG_DBG("Dropped %d packets", cnt);
+}
 
 static void interrupt_handler(const struct device *dev, void *user_data)
 {
@@ -64,6 +89,8 @@ static void interrupt_handler(const struct device *dev, void *user_data)
 
 		available = uart_irq_tx_ready(dev);
 		if (available > 0) {
+			/* Cancel the buffer flusher */
+			k_work_cancel_delayable(&data->dc_handler);
 			/* Only need to push if we have a packet */
 			buf = net_buf_get(&data->tx_fifo, K_NO_WAIT);
 			if (buf == NULL) {
@@ -116,6 +143,9 @@ static void epacket_serial_send(const struct device *dev, struct net_buf *buf)
 	/* Push packet onto queue */
 	net_buf_put(&data->tx_fifo, buf);
 
+	/* Driver has 100ms to queue the packet or it will be dropped */
+	k_work_reschedule(&data->dc_handler, K_MSEC(100));
+
 	/* Enable interrupt to trigger send */
 	uart_irq_tx_enable(config->backend);
 }
@@ -126,6 +156,7 @@ static int epacket_serial_init(const struct device *dev)
 	struct epacket_serial_data *data = dev->data;
 
 	epacket_interface_common_init(dev);
+	k_work_init_delayable(&data->dc_handler, disconnected_handler);
 	k_fifo_init(&data->tx_fifo);
 	uart_irq_callback_user_data_set(config->backend, interrupt_handler, (void *)dev);
 	uart_irq_rx_enable(config->backend);
