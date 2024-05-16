@@ -14,7 +14,7 @@ configdefault REBOOT
 configdefault HWINFO
 	default y
 configdefault INFUSE_REBOOT
-	default y
+	default y if !ZTEST
 configdefault RETENTION
 	default y
 configdefault RETENTION_MUTEX_FORCE_DISABLE
