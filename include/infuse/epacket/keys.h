@@ -59,8 +59,8 @@ uint32_t epacket_network_key_id(void);
  * @retval -EINVAL on invalid @a base_key
  * @retval -EIO on error
  */
-int epacket_key_derive(enum epacket_key_type base_key, const uint8_t *info, uint8_t info_len, uint32_t salt,
-		       psa_key_id_t *output_key_id);
+int epacket_key_derive(enum epacket_key_type base_key, const uint8_t *info, uint8_t info_len,
+		       uint32_t salt, psa_key_id_t *output_key_id);
 
 /**
  * @brief Get PSA key ID from ePacket key ID

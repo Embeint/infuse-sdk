@@ -15,8 +15,9 @@
 #include "backend_api.h"
 #include "flash_map.h"
 
-static int logger_flash_map_write(const struct data_logger_backend_config *backend, uint32_t phy_block,
-				  enum infuse_type data_type, const void *mem, uint16_t mem_len)
+static int logger_flash_map_write(const struct data_logger_backend_config *backend,
+				  uint32_t phy_block, enum infuse_type data_type, const void *mem,
+				  uint16_t mem_len)
 {
 	struct data_logger_backend_data *data = backend->data;
 	off_t offset = DATA_LOGGER_FLASH_MAP_BLOCK_SIZE * phy_block;
@@ -33,8 +34,9 @@ static int logger_flash_map_write(const struct data_logger_backend_config *backe
 	return flash_area_write(data->area, offset, mem, mem_len);
 }
 
-static int logger_flash_map_read(const struct data_logger_backend_config *backend, uint32_t phy_block,
-				 uint16_t block_offset, void *mem, uint16_t mem_len)
+static int logger_flash_map_read(const struct data_logger_backend_config *backend,
+				 uint32_t phy_block, uint16_t block_offset, void *mem,
+				 uint16_t mem_len)
 {
 	struct data_logger_backend_data *data = backend->data;
 	off_t offset = (DATA_LOGGER_FLASH_MAP_BLOCK_SIZE * phy_block) + block_offset;
@@ -42,7 +44,8 @@ static int logger_flash_map_read(const struct data_logger_backend_config *backen
 	return flash_area_read(data->area, offset, mem, mem_len);
 }
 
-static int logger_flash_map_erase(const struct data_logger_backend_config *backend, uint32_t phy_block, uint32_t num)
+static int logger_flash_map_erase(const struct data_logger_backend_config *backend,
+				  uint32_t phy_block, uint32_t num)
 {
 	struct data_logger_backend_data *data = backend->data;
 	off_t offset = DATA_LOGGER_FLASH_MAP_BLOCK_SIZE * phy_block;

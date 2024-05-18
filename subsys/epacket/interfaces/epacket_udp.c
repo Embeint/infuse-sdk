@@ -67,7 +67,8 @@ static void cleanup_interface(const struct device *epacket_udp)
 	}
 }
 
-static void l4_event_handler(struct net_mgmt_event_callback *cb, uint32_t event, struct net_if *iface)
+static void l4_event_handler(struct net_mgmt_event_callback *cb, uint32_t event,
+			     struct net_if *iface)
 {
 	if (event == NET_EVENT_L4_CONNECTED) {
 		LOG_INF("Network connected");
@@ -82,7 +83,8 @@ static void l4_event_handler(struct net_mgmt_event_callback *cb, uint32_t event,
 static int epacket_udp_dns_query(void)
 {
 	KV_STRING_CONST(udp_url_default, CONFIG_EPACKET_INTERFACE_UDP_DEFAULT_URL);
-	KV_KEY_TYPE(KV_KEY_EPACKET_UDP_PORT) udp_port, udp_port_default = {CONFIG_EPACKET_INTERFACE_UDP_DEFAULT_PORT};
+	KV_KEY_TYPE(KV_KEY_EPACKET_UDP_PORT)
+	udp_port, udp_port_default = {CONFIG_EPACKET_INTERFACE_UDP_DEFAULT_PORT};
 	KV_KEY_TYPE_VAR(KV_KEY_EPACKET_UDP_URL, 64) udp_url;
 	struct zsock_addrinfo hints = {
 		.ai_family = AF_INET,
@@ -111,7 +113,8 @@ static int epacket_udp_dns_query(void)
 	sockaddr->sin_port = htons(udp_port.port);
 	addr = sockaddr->sin_addr.s4_addr;
 
-	LOG_INF("%s -> %d.%d.%d.%d:%d", udp_url.server.value, addr[0], addr[1], addr[2], addr[3], udp_port.port);
+	LOG_INF("%s -> %d.%d.%d.%d:%d", udp_url.server.value, addr[0], addr[1], addr[2], addr[3],
+		udp_port.port);
 	return rc;
 }
 
@@ -176,7 +179,8 @@ static int epacket_udp_loop(void *a, void *b, void *c)
 			buf = epacket_alloc_rx(K_FOREVER);
 			meta = net_buf_user_data(buf);
 			/* Receive data into local buffer */
-			received = zsock_recvfrom(udp_state.sock, buf->data, buf->size, 0, &from, &from_len);
+			received = zsock_recvfrom(udp_state.sock, buf->data, buf->size, 0, &from,
+						  &from_len);
 			if (received < 0) {
 				LOG_ERR("Failed to receive (%d)", errno);
 				net_buf_unref(buf);
@@ -185,8 +189,8 @@ static int epacket_udp_loop(void *a, void *b, void *c)
 			net_buf_add(buf, received);
 			addr = ((struct sockaddr_in *)&from)->sin_addr.s4_addr;
 			port = ((struct sockaddr_in *)&from)->sin_port;
-			LOG_DBG("Received %d bytes from %d.%d.%d.%d:%d", received, addr[0], addr[1], addr[2], addr[3],
-				port);
+			LOG_DBG("Received %d bytes from %d.%d.%d.%d:%d", received, addr[0], addr[1],
+				addr[2], addr[3], port);
 
 			meta->interface = epacket_udp;
 			meta->interface_id = EPACKET_INTERFACE_UDP;
@@ -228,7 +232,8 @@ static void epacket_udp_send(const struct device *dev, struct net_buf *buf)
 
 	/* Send to remote server */
 	LOG_DBG("Sending %d bytes to server", buf->len);
-	rc = zsock_sendto(udp_state.sock, buf->data, buf->len, 0, &udp_state.remote, udp_state.remote_len);
+	rc = zsock_sendto(udp_state.sock, buf->data, buf->len, 0, &udp_state.remote,
+			  udp_state.remote_len);
 	if (rc == -1) {
 		LOG_WRN("Failed to send (%d)", errno);
 		epacket_notify_tx_failure(dev, buf, -errno);
@@ -260,5 +265,5 @@ static const struct epacket_interface_common_config epacket_udp_config = {
 	.header_size = DT_INST_PROP(0, header_size),
 	.footer_size = DT_INST_PROP(0, footer_size),
 };
-DEVICE_DT_DEFINE(DT_DRV_INST(0), epacket_udp_init, NULL, &epacket_udp_data, &epacket_udp_config, POST_KERNEL, 0,
-		 &udp_api);
+DEVICE_DT_DEFINE(DT_DRV_INST(0), epacket_udp_init, NULL, &epacket_udp_data, &epacket_udp_config,
+		 POST_KERNEL, 0, &udp_api);

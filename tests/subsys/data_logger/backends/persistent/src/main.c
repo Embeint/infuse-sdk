@@ -151,7 +151,8 @@ ZTEST(data_logger_flash_map, test_init_all_written_with_end_erase)
 		memset(flash_buffer_end - state.erase_unit, 0x04, state.block_size * i);
 		zassert_equal(0, data_logger_init(logger));
 		data_logger_get_state(logger, &state);
-		zassert_equal(0x04 * state.physical_blocks - blocks_in_erase + i, state.current_block);
+		zassert_equal(0x04 * state.physical_blocks - blocks_in_erase + i,
+			      state.current_block);
 		zassert_equal(0x03 * state.physical_blocks, state.earliest_block);
 	}
 }
@@ -166,8 +167,10 @@ ZTEST(data_logger_flash_map, test_write_errors)
 	zassert_equal(0, data_logger_init(logger));
 	data_logger_get_state(logger, &state);
 
-	zassert_equal(-EINVAL, data_logger_block_write(logger, 0x10, input_buffer, state.block_size + 1));
-	zassert_equal(-ENOMEM, data_logger_block_write(logger, 0x10, input_buffer, state.block_size));
+	zassert_equal(-EINVAL,
+		      data_logger_block_write(logger, 0x10, input_buffer, state.block_size + 1));
+	zassert_equal(-ENOMEM,
+		      data_logger_block_write(logger, 0x10, input_buffer, state.block_size));
 }
 
 ZTEST(data_logger_flash_map, test_read_errors)
@@ -181,19 +184,21 @@ ZTEST(data_logger_flash_map, test_read_errors)
 	data_logger_get_state(logger, &state);
 
 	/* Start of logger */
-	zassert_equal(-ENOENT, data_logger_block_read(logger, 0, 0, output_buffer, state.block_size));
-	/* Just before start of data */
-	zassert_equal(-ENOENT, data_logger_block_read(logger, 0x03 * state.physical_blocks - 1, 0, output_buffer,
-						      state.block_size));
-	/* Just after end of data */
 	zassert_equal(-ENOENT,
-		      data_logger_block_read(logger, 0x04 * state.physical_blocks, 0, output_buffer, state.block_size));
-	/* Reading from valid data into invalid data */
-	zassert_equal(-ENOENT, data_logger_block_read(logger, 0x05 * state.physical_blocks - 1, 0, output_buffer,
-						      2 * state.block_size));
-	/* Invalid block offset */
-	zassert_equal(-ENOENT, data_logger_block_read(logger, 0x03 * state.physical_blocks, state.block_size,
+		      data_logger_block_read(logger, 0, 0, output_buffer, state.block_size));
+	/* Just before start of data */
+	zassert_equal(-ENOENT, data_logger_block_read(logger, 0x03 * state.physical_blocks - 1, 0,
 						      output_buffer, state.block_size));
+	/* Just after end of data */
+	zassert_equal(-ENOENT, data_logger_block_read(logger, 0x04 * state.physical_blocks, 0,
+						      output_buffer, state.block_size));
+	/* Reading from valid data into invalid data */
+	zassert_equal(-ENOENT, data_logger_block_read(logger, 0x05 * state.physical_blocks - 1, 0,
+						      output_buffer, 2 * state.block_size));
+	/* Invalid block offset */
+	zassert_equal(-ENOENT,
+		      data_logger_block_read(logger, 0x03 * state.physical_blocks, state.block_size,
+					     output_buffer, state.block_size));
 }
 
 ZTEST(data_logger_flash_map, test_read_wrap)
@@ -210,19 +215,21 @@ ZTEST(data_logger_flash_map, test_read_wrap)
 	zassert_equal(state.physical_blocks / 2, state.earliest_block);
 
 	/* Read across block boundary */
-	zassert_equal(0, data_logger_block_read(logger, state.physical_blocks, 200, output_buffer, state.block_size));
+	zassert_equal(0, data_logger_block_read(logger, state.physical_blocks, 200, output_buffer,
+						state.block_size));
 	memset(input_buffer, 0x02, state.block_size);
 	zassert_mem_equal(input_buffer, output_buffer, state.block_size);
 
 	/* Read across wrap around boundary */
-	zassert_equal(
-		0, data_logger_block_read(logger, state.physical_blocks - 1, 0, output_buffer, 2 * state.block_size));
+	zassert_equal(0, data_logger_block_read(logger, state.physical_blocks - 1, 0, output_buffer,
+						2 * state.block_size));
 	memset(input_buffer, 0x01, state.block_size);
 	memset(input_buffer + state.block_size, 0x02, state.block_size);
 	zassert_mem_equal(input_buffer, output_buffer, 2 * state.block_size);
 
 	/* Read across wrap around boundary with offset */
-	zassert_equal(0, data_logger_block_read(logger, state.physical_blocks - 1, 500, output_buffer, 20));
+	zassert_equal(0, data_logger_block_read(logger, state.physical_blocks - 1, 500,
+						output_buffer, 20));
 	memset(input_buffer, 0x01, state.block_size - 500);
 	memset(input_buffer + state.block_size - 500, 0x02, 20 - (state.block_size - 500));
 	zassert_mem_equal(input_buffer, output_buffer, 20);
@@ -230,7 +237,8 @@ ZTEST(data_logger_flash_map, test_read_wrap)
 
 static void test_sequence(bool reinit)
 {
-	const struct flash_parameters *params = flash_get_parameters(DEVICE_DT_GET(DT_NODELABEL(sim_flash)));
+	const struct flash_parameters *params =
+		flash_get_parameters(DEVICE_DT_GET(DT_NODELABEL(sim_flash)));
 	const struct device *logger = DEVICE_DT_GET(DT_NODELABEL(data_logger_flash));
 	struct data_logger_persistent_block_header *header = (void *)output_buffer;
 	struct data_logger_state state;
@@ -246,14 +254,17 @@ static void test_sequence(bool reinit)
 		type = (i % 10) + 1;
 		memset(input_buffer, i, sizeof(input_buffer));
 		/* Write block to logger */
-		zassert_equal(0, data_logger_block_write(logger, type, input_buffer, state.block_size));
+		zassert_equal(
+			0, data_logger_block_write(logger, type, input_buffer, state.block_size));
 		data_logger_get_state(logger, &state);
 		zassert_equal(i + 1, state.current_block);
 		/* Read block back from logger and check against input */
-		zassert_equal(0, data_logger_block_read(logger, i, 0, output_buffer, state.block_size));
+		zassert_equal(
+			0, data_logger_block_read(logger, i, 0, output_buffer, state.block_size));
 		zassert_equal(type, header->block_type);
 		zassert_equal((i / state.physical_blocks) + 1, header->block_wrap);
-		zassert_mem_equal(input_buffer + sizeof(*header), output_buffer + sizeof(*header), sizeof(*header));
+		zassert_mem_equal(input_buffer + sizeof(*header), output_buffer + sizeof(*header),
+				  sizeof(*header));
 
 		/* Reinit logger and validate state not lost */
 		if (reinit) {
@@ -274,7 +285,8 @@ ZTEST(data_logger_flash_map, test_standard_operation)
 
 static bool test_data_init(const void *global_state)
 {
-	flash_buffer = flash_simulator_get_memory(DEVICE_DT_GET(DT_NODELABEL(sim_flash)), &flash_buffer_size);
+	flash_buffer = flash_simulator_get_memory(DEVICE_DT_GET(DT_NODELABEL(sim_flash)),
+						  &flash_buffer_size);
 	return true;
 }
 

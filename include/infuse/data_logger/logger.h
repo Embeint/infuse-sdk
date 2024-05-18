@@ -72,7 +72,8 @@ void data_logger_get_state(const struct device *dev, struct data_logger_state *s
  * @retval -ENOMEM data logger is full
  * @retval -errno on error
  */
-int data_logger_block_write(const struct device *dev, enum infuse_type type, void *block, uint16_t block_len);
+int data_logger_block_write(const struct device *dev, enum infuse_type type, void *block,
+			    uint16_t block_len);
 
 /**
  * @brief Read a block from the data logger
@@ -92,8 +93,8 @@ int data_logger_block_write(const struct device *dev, enum infuse_type type, voi
  * @retval -ENOENT requested data that does not exist
  * @retval -errno on error
  */
-int data_logger_block_read(const struct device *dev, uint32_t block_idx, uint16_t block_offset, void *block,
-			   uint16_t block_len);
+int data_logger_block_read(const struct device *dev, uint32_t block_idx, uint16_t block_offset,
+			   void *block, uint16_t block_len);
 
 /**
  * @}

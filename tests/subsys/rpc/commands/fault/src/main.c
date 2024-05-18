@@ -92,7 +92,8 @@ ZTEST(rpc_command_fault, test_does_fault)
 		/* Validate previous reboot information */
 		rc = infuse_common_boot_last_reboot(&reboot_state);
 		zassert_equal(0, rc);
-		zassert_equal((enum infuse_reboot_reason)K_ERR_ARM_MEM_DATA_ACCESS, reboot_state.reason);
+		zassert_equal((enum infuse_reboot_reason)K_ERR_ARM_MEM_DATA_ACCESS,
+			      reboot_state.reason);
 		/* Divide by 0 */
 		send_fault_command(0, K_ERR_ARM_USAGE_DIV_0);
 		k_sleep(K_MSEC(10));
@@ -102,17 +103,20 @@ ZTEST(rpc_command_fault, test_does_fault)
 		/* Validate previous reboot information */
 		rc = infuse_common_boot_last_reboot(&reboot_state);
 		zassert_equal(0, rc);
-		zassert_equal((enum infuse_reboot_reason)K_ERR_ARM_USAGE_DIV_0, reboot_state.reason);
+		zassert_equal((enum infuse_reboot_reason)K_ERR_ARM_USAGE_DIV_0,
+			      reboot_state.reason);
 		/* Unaligned memory access */
 		send_fault_command(0, K_ERR_ARM_USAGE_UNDEFINED_INSTRUCTION);
 		k_sleep(K_MSEC(10));
-		zassert_unreachable("K_ERR_ARM_USAGE_UNDEFINED_INSTRUCTION did not trigger exception");
+		zassert_unreachable(
+			"K_ERR_ARM_USAGE_UNDEFINED_INSTRUCTION did not trigger exception");
 		break;
 	case 5:
 		/* Validate previous reboot information */
 		rc = infuse_common_boot_last_reboot(&reboot_state);
 		zassert_equal(0, rc);
-		zassert_equal((enum infuse_reboot_reason)K_ERR_ARM_USAGE_UNDEFINED_INSTRUCTION, reboot_state.reason);
+		zassert_equal((enum infuse_reboot_reason)K_ERR_ARM_USAGE_UNDEFINED_INSTRUCTION,
+			      reboot_state.reason);
 		/* Unaligned memory access */
 		send_fault_command(0, K_ERR_ARM_MEM_INSTRUCTION_ACCESS);
 		k_sleep(K_MSEC(10));
@@ -122,7 +126,8 @@ ZTEST(rpc_command_fault, test_does_fault)
 		/* Validate previous reboot information */
 		rc = infuse_common_boot_last_reboot(&reboot_state);
 		zassert_equal(0, rc);
-		zassert_equal((enum infuse_reboot_reason)K_ERR_ARM_MEM_INSTRUCTION_ACCESS, reboot_state.reason);
+		zassert_equal((enum infuse_reboot_reason)K_ERR_ARM_MEM_INSTRUCTION_ACCESS,
+			      reboot_state.reason);
 		/* Unknown fault code */
 		send_fault_command(0x123456, 255);
 		expect_fault_response(0x123456, -EINVAL);

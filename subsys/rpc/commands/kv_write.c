@@ -32,7 +32,8 @@ struct net_buf *rpc_command_kv_write(struct net_buf *request)
 		consumed = sizeof(struct rpc_struct_kv_store_value) + v->len;
 		offset += consumed;
 		if (offset > request->len) {
-			LOG_WRN("%s invalid buffer (idx %d key %d len %d)", __func__, i, v->id, v->len);
+			LOG_WRN("%s invalid buffer (idx %d key %d len %d)", __func__, i, v->id,
+				v->len);
 			return rpc_response_simple_req(request, -EINVAL, &rsp, sizeof(rsp));
 		}
 	}

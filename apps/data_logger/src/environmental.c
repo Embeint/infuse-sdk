@@ -48,8 +48,8 @@ static int env_sampler(void *a, void *b, void *c)
 		tdf_env.humidity = sensor_value_to_centi(&value);
 
 		/* Push the output TDF over serial */
-		tdf_data_logger_log(TDF_DATA_LOGGER_SERIAL | TDF_DATA_LOGGER_UDP, TDF_ENVIRONMENTAL, sizeof(tdf_env),
-				    civil_time_now(), &tdf_env);
+		tdf_data_logger_log(TDF_DATA_LOGGER_SERIAL | TDF_DATA_LOGGER_UDP, TDF_ENVIRONMENTAL,
+				    sizeof(tdf_env), civil_time_now(), &tdf_env);
 
 		/* Print the measured values */
 		LOG_INF("Sensor: %s", env->name);

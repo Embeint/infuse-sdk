@@ -60,7 +60,8 @@ ZTEST(tdf_data_logger_multi, test_standard)
 	validate_loggers(expected_flash, expected_epacket);
 
 	/* Add to both */
-	tdf_data_logger_log(TDF_DATA_LOGGER_FLASH | TDF_DATA_LOGGER_UDP, TDF_RANDOM, 17, 0, tdf_data);
+	tdf_data_logger_log(TDF_DATA_LOGGER_FLASH | TDF_DATA_LOGGER_UDP, TDF_RANDOM, 17, 0,
+			    tdf_data);
 	validate_loggers(expected_flash, expected_epacket);
 
 	/* Flush both */

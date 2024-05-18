@@ -27,7 +27,8 @@ extern "C" {
  *
  * @return struct net_buf* packet buffer
  */
-struct net_buf *rpc_response_simple_if(const struct device *interface, int16_t rc, void *response, size_t len);
+struct net_buf *rpc_response_simple_if(const struct device *interface, int16_t rc, void *response,
+				       size_t len);
 
 /**
  * @brief Create an @ref INFUSE_RPC_RSP packet buffer from a request
@@ -39,7 +40,8 @@ struct net_buf *rpc_response_simple_if(const struct device *interface, int16_t r
  *
  * @return struct net_buf* packet buffer
  */
-struct net_buf *rpc_response_simple_req(struct net_buf *request, int16_t rc, void *response, size_t len);
+struct net_buf *rpc_response_simple_req(struct net_buf *request, int16_t rc, void *response,
+					size_t len);
 
 /**
  * @brief Get the size of the variable component of the @ref INFUSE_RPC_REQ packet
@@ -61,7 +63,8 @@ struct net_buf *rpc_response_simple_req(struct net_buf *request, int16_t rc, voi
  * @retval buf @ref INFUSE_RPC_DATA packet on success
  * @retval NULL on timeout
  */
-struct net_buf *rpc_server_pull_data(uint32_t request_id, uint32_t expected_offset, k_timeout_t timeout);
+struct net_buf *rpc_server_pull_data(uint32_t request_id, uint32_t expected_offset,
+				     k_timeout_t timeout);
 
 /**
  * @brief Acknowledge received data packets
@@ -71,7 +74,8 @@ struct net_buf *rpc_server_pull_data(uint32_t request_id, uint32_t expected_offs
  * @param offset Offset of the received data
  * @param ack_period RX acknowledgment period
  */
-void rpc_server_ack_data(const struct device *interface, uint32_t request_id, uint32_t offset, uint8_t ack_period);
+void rpc_server_ack_data(const struct device *interface, uint32_t request_id, uint32_t offset,
+			 uint8_t ack_period);
 
 #ifdef __cplusplus
 }

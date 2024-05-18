@@ -26,7 +26,8 @@ static int kv_init(void)
 
 SYS_INIT(kv_init, POST_KERNEL, 60);
 
-static void l4_event_handler(struct net_mgmt_event_callback *cb, uint32_t mgmt_event, struct net_if *iface)
+static void l4_event_handler(struct net_mgmt_event_callback *cb, uint32_t mgmt_event,
+			     struct net_if *iface)
 {
 	ARG_UNUSED(iface);
 	ARG_UNUSED(cb);
@@ -97,11 +98,13 @@ ZTEST(auto_sntp, test_boot)
 	/* Wait a while, manually set the reference to reset the resync age */
 	reference.local = k_uptime_ticks();
 	reference.ref = 10000000;
-	zassert_equal(-EAGAIN, k_sem_take(&time_ref_updated, K_SECONDS(CONFIG_SNTP_AUTO_RESYNC_AGE - 1)));
+	zassert_equal(-EAGAIN,
+		      k_sem_take(&time_ref_updated, K_SECONDS(CONFIG_SNTP_AUTO_RESYNC_AGE - 1)));
 	zassert_equal(0, civil_time_set_reference(TIME_SOURCE_INVALID, &reference));
 
 	/* Ensure the time sync was delayed by the previous reference */
-	zassert_equal(-EAGAIN, k_sem_take(&time_ref_updated, K_SECONDS(CONFIG_SNTP_AUTO_RESYNC_AGE - 1)));
+	zassert_equal(-EAGAIN,
+		      k_sem_take(&time_ref_updated, K_SECONDS(CONFIG_SNTP_AUTO_RESYNC_AGE - 1)));
 	zassert_equal(0, k_sem_take(&time_ref_updated, K_SECONDS(2)));
 
 #ifdef CONFIG_NET_NATIVE_OFFLOADED_SOCKETS
@@ -109,7 +112,8 @@ ZTEST(auto_sntp, test_boot)
 	zassert_true(net_if_ipv4_addr_rm(iface, &addr));
 
 	/* No more callbacks */
-	zassert_equal(-EAGAIN, k_sem_take(&time_ref_updated, K_SECONDS(CONFIG_SNTP_AUTO_RESYNC_AGE + 1)));
+	zassert_equal(-EAGAIN,
+		      k_sem_take(&time_ref_updated, K_SECONDS(CONFIG_SNTP_AUTO_RESYNC_AGE + 1)));
 
 	/* Set time sync while disconnected */
 	k_sleep(K_MSEC(500));

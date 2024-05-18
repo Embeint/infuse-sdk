@@ -19,8 +19,8 @@ void epacket_default_receive_handler(struct net_buf *buf)
 {
 	struct epacket_rx_metadata *meta = net_buf_user_data(buf);
 
-	LOG_DBG("Received on %s: Auth=%d Type=%d Seq=%d Len=%d", meta->interface->name, meta->auth, meta->type,
-		meta->sequence, buf->len);
+	LOG_DBG("Received on %s: Auth=%d Type=%d Seq=%d Len=%d", meta->interface->name, meta->auth,
+		meta->type, meta->sequence, buf->len);
 
 	if (meta->auth == EPACKET_AUTH_FAILURE) {
 		goto done;

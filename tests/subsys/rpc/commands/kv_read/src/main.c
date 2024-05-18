@@ -18,7 +18,8 @@
 #include <infuse/epacket/packet.h>
 #include <infuse/epacket/interface/epacket_dummy.h>
 
-static void send_kv_read_command(uint32_t request_id, uint16_t *keys, uint8_t req_num, uint8_t actual_num)
+static void send_kv_read_command(uint32_t request_id, uint16_t *keys, uint8_t req_num,
+				 uint8_t actual_num)
 {
 	const struct device *epacket_dummy = DEVICE_DT_GET(DT_NODELABEL(epacket_dummy));
 	struct epacket_dummy_frame header = {
@@ -86,7 +87,8 @@ ZTEST(rpc_command_kv_read, test_single)
 	send_kv_read_command(0x1234, &key, 1, 1);
 	rsp = expect_kv_read_response(0x1234, 0);
 	response = (void *)rsp->data;
-	zassert_equal(sizeof(struct rpc_kv_read_response) + sizeof(struct rpc_struct_kv_store_value) + sizeof(uint32_t),
+	zassert_equal(sizeof(struct rpc_kv_read_response) +
+			      sizeof(struct rpc_struct_kv_store_value) + sizeof(uint32_t),
 		      rsp->len);
 	zassert_equal(KV_KEY_REBOOTS, response->values[0].id);
 	zassert_equal(sizeof(uint32_t), response->values[0].len);
@@ -98,7 +100,9 @@ ZTEST(rpc_command_kv_read, test_single)
 	send_kv_read_command(1000, &key, 1, 1);
 	rsp = expect_kv_read_response(1000, 0);
 	response = (void *)rsp->data;
-	zassert_equal(sizeof(struct rpc_kv_read_response) + sizeof(struct rpc_struct_kv_store_value), rsp->len);
+	zassert_equal(sizeof(struct rpc_kv_read_response) +
+			      sizeof(struct rpc_struct_kv_store_value),
+		      rsp->len);
 	zassert_equal(KV_KEY_WIFI_SSID, response->values[0].id);
 	zassert_equal(-ENOENT, response->values[0].len);
 	net_buf_unref(rsp);
@@ -108,7 +112,9 @@ ZTEST(rpc_command_kv_read, test_single)
 	send_kv_read_command(1001, &key, 1, 1);
 	rsp = expect_kv_read_response(1001, 0);
 	response = (void *)rsp->data;
-	zassert_equal(sizeof(struct rpc_kv_read_response) + sizeof(struct rpc_struct_kv_store_value), rsp->len);
+	zassert_equal(sizeof(struct rpc_kv_read_response) +
+			      sizeof(struct rpc_struct_kv_store_value),
+		      rsp->len);
 	zassert_equal(0x4567, response->values[0].id);
 	zassert_equal(-EACCES, response->values[0].len);
 	net_buf_unref(rsp);

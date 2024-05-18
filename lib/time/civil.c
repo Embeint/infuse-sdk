@@ -99,8 +99,8 @@ int civil_time_set_reference(enum civil_time_source source, struct timeutil_sync
 		struct tm c;
 
 		civil_time_unix_calendar(now, &c);
-		LOG_INF("Now: %d-%02d-%02dT%02d:%02d:%02d.%03d UTC", 1900 + c.tm_year, 1 + c.tm_mon, c.tm_mday,
-			c.tm_hour, c.tm_min, c.tm_sec, civil_time_milliseconds(now));
+		LOG_INF("Now: %d-%02d-%02dT%02d:%02d:%02d.%03d UTC", 1900 + c.tm_year, 1 + c.tm_mon,
+			c.tm_mday, c.tm_hour, c.tm_min, c.tm_sec, civil_time_milliseconds(now));
 #endif /* CONFIG_INFUSE_CIVIL_TIME_PRINT_ON_SYNC */
 	}
 	return rc;

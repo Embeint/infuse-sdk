@@ -139,7 +139,8 @@ void data_logger_reset(void *fixture)
 
 static bool test_data_init(const void *global_state)
 {
-	flash_buffer = flash_simulator_get_memory(DEVICE_DT_GET(DT_NODELABEL(sim_flash)), &flash_buffer_size);
+	flash_buffer = flash_simulator_get_memory(DEVICE_DT_GET(DT_NODELABEL(sim_flash)),
+						  &flash_buffer_size);
 	return true;
 }
 

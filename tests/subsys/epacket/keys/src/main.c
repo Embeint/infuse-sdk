@@ -111,7 +111,8 @@ ZTEST(epacket_keys, test_key_derive)
 	/* Rotation gives different keys */
 	for (int i = 1; i < 100; i++) {
 		rc1 = epacket_key_derive(EPACKET_KEY_DEVICE, info, strlen(info), rotation, &id_1);
-		rc2 = epacket_key_derive(EPACKET_KEY_DEVICE, info, strlen(info), rotation + i, &id_2);
+		rc2 = epacket_key_derive(EPACKET_KEY_DEVICE, info, strlen(info), rotation + i,
+					 &id_2);
 
 		zassert_equal(0, rc1, "Derivation failed");
 		zassert_equal(0, rc2, "Derivation failed");

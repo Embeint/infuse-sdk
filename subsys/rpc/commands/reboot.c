@@ -27,7 +27,8 @@ struct net_buf *rpc_command_reboot(struct net_buf *request)
 	/* Allocate the response packet */
 	response = rpc_response_simple_req(request, 0, &rsp, sizeof(rsp));
 	/* Schedule the reboot */
-	infuse_reboot_delayed(INFUSE_REBOOT_RPC, (uintptr_t)rpc_command_reboot, 0x00, K_MSEC(rsp.delay_ms));
+	infuse_reboot_delayed(INFUSE_REBOOT_RPC, (uintptr_t)rpc_command_reboot, 0x00,
+			      K_MSEC(rsp.delay_ms));
 	LOG_INF("%s: Rebooting in %d ms", __func__, rsp.delay_ms);
 	/* Return the response */
 	return response;

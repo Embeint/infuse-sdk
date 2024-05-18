@@ -153,7 +153,8 @@ ssize_t kv_store_read(uint16_t key, void *data, size_t max_data_len)
 	return nvs_read(&fs, key, data, max_data_len);
 }
 
-ssize_t kv_store_read_fallback(uint16_t key, void *data, size_t max_data_len, const void *fallback, size_t fallback_len)
+ssize_t kv_store_read_fallback(uint16_t key, void *data, size_t max_data_len, const void *fallback,
+			       size_t fallback_len)
 {
 	struct kv_store_cb *cb;
 	ssize_t rc;
@@ -174,7 +175,8 @@ ssize_t kv_store_read_fallback(uint16_t key, void *data, size_t max_data_len, co
 			/* Notify interested parties of value write */
 			SYS_SLIST_FOR_EACH_CONTAINER(&cb_list, cb, node) {
 				if (cb->value_changed) {
-					cb->value_changed(key, fallback, fallback_len, cb->user_ctx);
+					cb->value_changed(key, fallback, fallback_len,
+							  cb->user_ctx);
 				}
 			}
 			/* Read data back out */

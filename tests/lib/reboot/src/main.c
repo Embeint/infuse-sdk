@@ -89,10 +89,12 @@ ZTEST(infuse_reboot, test_reboot)
 		/* Uptime should be roughly correct */
 		zassert_within(3, reboot_state.uptime, 1);
 		/* Program counter should be somewhere in civil_time_set_reference */
-		zassert_between_inclusive(reboot_state.param_1.program_counter, (uintptr_t)civil_time_set_reference,
+		zassert_between_inclusive(reboot_state.param_1.program_counter,
+					  (uintptr_t)civil_time_set_reference,
 					  (uintptr_t)civil_time_set_reference + 64);
 		/* Link register should be somewhere in null_dereference */
-		zassert_between_inclusive(reboot_state.param_2.link_register, (uintptr_t)null_dereference,
+		zassert_between_inclusive(reboot_state.param_2.link_register,
+					  (uintptr_t)null_dereference,
 					  (uintptr_t)null_dereference + 64);
 		/* No time knowledge again */
 		zassert_equal(TIME_SOURCE_NONE, reboot_state.civil_time_source);
@@ -132,7 +134,8 @@ ZTEST(infuse_reboot, test_reboot)
 		zassert_true(reboot_state.uptime >= 3);
 		/* Time reference should be valid and about half a second after the reference */
 		zassert_equal(TIME_SOURCE_NTP, reboot_state.civil_time_source);
-		zassert_within(reboot_state.civil_time, time_2025 + INFUSE_CIVIL_TIME_TICKS_PER_SEC / 2,
+		zassert_within(reboot_state.civil_time,
+			       time_2025 + INFUSE_CIVIL_TIME_TICKS_PER_SEC / 2,
 			       INFUSE_CIVIL_TIME_TICKS_PER_SEC / 10);
 		/* Test sequence complete */
 		break;
@@ -152,8 +155,8 @@ void *test_init(void)
 
 	/* Get current reboot count */
 	if (rc == 0) {
-		rc = kv_store_read_fallback(KV_KEY_REBOOTS, &reboot, sizeof(reboot), &reboot_fallback,
-					    sizeof(reboot_fallback));
+		rc = kv_store_read_fallback(KV_KEY_REBOOTS, &reboot, sizeof(reboot),
+					    &reboot_fallback, sizeof(reboot_fallback));
 		if (rc == sizeof(reboot)) {
 			/* Increment reboot counter */
 			reboot.count += 1;

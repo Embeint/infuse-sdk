@@ -63,8 +63,9 @@ static int imu_sampler(void *a, void *b, void *c)
 		}
 		sample_cnt = 0;
 
-		tdf_data_logger_log_array(TDF_DATA_LOGGER_SERIAL | TDF_DATA_LOGGER_UDP, TDF_ACC_4G, sizeof(tdf_acc[0]),
-					  ARRAY_SIZE(tdf_acc), civil_time_now(), 65536 / 10, tdf_acc);
+		tdf_data_logger_log_array(TDF_DATA_LOGGER_SERIAL | TDF_DATA_LOGGER_UDP, TDF_ACC_4G,
+					  sizeof(tdf_acc[0]), ARRAY_SIZE(tdf_acc), civil_time_now(),
+					  65536 / 10, tdf_acc);
 
 		/* Print the measured values */
 		LOG_INF("Sensor: %s", imu->name);

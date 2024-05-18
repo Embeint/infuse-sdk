@@ -81,7 +81,8 @@ struct civil_time_cb {
 	 * @param new New reference instant
 	 * @param user_ctx User context pointer
 	 */
-	void (*reference_time_updated)(enum civil_time_source source, struct timeutil_sync_instant old,
+	void (*reference_time_updated)(enum civil_time_source source,
+				       struct timeutil_sync_instant old,
 				       struct timeutil_sync_instant new, void *user_ctx);
 
 	/* User provided context pointer */
@@ -167,7 +168,8 @@ static inline uint64_t civil_time_from(uint64_t seconds, uint16_t subseconds)
  * @param subseconds Fractional component of time since GPS epoch
  * @retval civil_time Complete civil time
  */
-static inline uint64_t civil_time_from_gps(uint16_t week, uint32_t week_seconds, uint16_t subseconds)
+static inline uint64_t civil_time_from_gps(uint16_t week, uint32_t week_seconds,
+					   uint16_t subseconds)
 {
 	uint64_t seconds = (SECONDS_PER_WEEK * (uint64_t)week) + week_seconds;
 
@@ -264,7 +266,8 @@ enum civil_time_source civil_time_get_source(void);
  * @retval 0 on success
  * @retval -EINVAL if reference instant is invalid
  */
-int civil_time_set_reference(enum civil_time_source source, struct timeutil_sync_instant *reference);
+int civil_time_set_reference(enum civil_time_source source,
+			     struct timeutil_sync_instant *reference);
 
 /**
  * @brief Query how many seconds ago the reference instant was set

@@ -43,9 +43,10 @@ extern "C" {
  *
  * @retval 0 on success
  */
-int ascon128_aead_encrypt(unsigned char *c, unsigned long long *clen, const unsigned char *m, unsigned long long mlen,
-			  const unsigned char *ad, unsigned long long adlen, unsigned char *tag,
-			  const unsigned char *npub, const unsigned char *k);
+int ascon128_aead_encrypt(unsigned char *c, unsigned long long *clen, const unsigned char *m,
+			  unsigned long long mlen, const unsigned char *ad,
+			  unsigned long long adlen, unsigned char *tag, const unsigned char *npub,
+			  const unsigned char *k);
 
 /**
  * @brief Decrypt ciphertext with ascon-128
@@ -63,9 +64,10 @@ int ascon128_aead_encrypt(unsigned char *c, unsigned long long *clen, const unsi
  * @retval 0 on success
  * @retval -1 on error
  */
-int ascon128_aead_decrypt(unsigned char *m, unsigned long long *mlen, const unsigned char *tag, const unsigned char *c,
-			  unsigned long long clen, const unsigned char *ad, unsigned long long adlen,
-			  const unsigned char *npub, const unsigned char *k);
+int ascon128_aead_decrypt(unsigned char *m, unsigned long long *mlen, const unsigned char *tag,
+			  const unsigned char *c, unsigned long long clen, const unsigned char *ad,
+			  unsigned long long adlen, const unsigned char *npub,
+			  const unsigned char *k);
 
 /**
  * @brief Encrypt plaintext with ascon-128a
@@ -82,9 +84,10 @@ int ascon128_aead_decrypt(unsigned char *m, unsigned long long *mlen, const unsi
  *
  * @retval 0 on success
  */
-int ascon128a_aead_encrypt(unsigned char *c, unsigned long long *clen, const unsigned char *m, unsigned long long mlen,
-			   const unsigned char *ad, unsigned long long adlen, unsigned char *tag,
-			   const unsigned char *npub, const unsigned char *k);
+int ascon128a_aead_encrypt(unsigned char *c, unsigned long long *clen, const unsigned char *m,
+			   unsigned long long mlen, const unsigned char *ad,
+			   unsigned long long adlen, unsigned char *tag, const unsigned char *npub,
+			   const unsigned char *k);
 
 /**
  * @brief Decrypt ciphertext with ascon-128a
@@ -102,9 +105,10 @@ int ascon128a_aead_encrypt(unsigned char *c, unsigned long long *clen, const uns
  * @retval 0 on success
  * @retval -1 on error
  */
-int ascon128a_aead_decrypt(unsigned char *m, unsigned long long *mlen, const unsigned char *tag, const unsigned char *c,
-			   unsigned long long clen, const unsigned char *ad, unsigned long long adlen,
-			   const unsigned char *npub, const unsigned char *k);
+int ascon128a_aead_decrypt(unsigned char *m, unsigned long long *mlen, const unsigned char *tag,
+			   const unsigned char *c, unsigned long long clen, const unsigned char *ad,
+			   unsigned long long adlen, const unsigned char *npub,
+			   const unsigned char *k);
 
 /**
  * @brief Encrypt plaintext with ascon-80pq
@@ -121,9 +125,10 @@ int ascon128a_aead_decrypt(unsigned char *m, unsigned long long *mlen, const uns
  *
  * @retval 0 on success
  */
-int ascon80pq_aead_encrypt(unsigned char *c, unsigned long long *clen, const unsigned char *m, unsigned long long mlen,
-			   const unsigned char *ad, unsigned long long adlen, unsigned char *tag,
-			   const unsigned char *npub, const unsigned char *k);
+int ascon80pq_aead_encrypt(unsigned char *c, unsigned long long *clen, const unsigned char *m,
+			   unsigned long long mlen, const unsigned char *ad,
+			   unsigned long long adlen, unsigned char *tag, const unsigned char *npub,
+			   const unsigned char *k);
 
 /**
  * @brief Decrypt ciphertext with ascon-80pq
@@ -141,9 +146,10 @@ int ascon80pq_aead_encrypt(unsigned char *c, unsigned long long *clen, const uns
  * @retval 0 on success
  * @retval -1 on error
  */
-int ascon80pq_aead_decrypt(unsigned char *m, unsigned long long *mlen, const unsigned char *tag, const unsigned char *c,
-			   unsigned long long clen, const unsigned char *ad, unsigned long long adlen,
-			   const unsigned char *npub, const unsigned char *k);
+int ascon80pq_aead_decrypt(unsigned char *m, unsigned long long *mlen, const unsigned char *tag,
+			   const unsigned char *c, unsigned long long clen, const unsigned char *ad,
+			   unsigned long long adlen, const unsigned char *npub,
+			   const unsigned char *k);
 
 /**
  * @}

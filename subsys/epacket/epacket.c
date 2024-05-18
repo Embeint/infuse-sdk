@@ -86,7 +86,8 @@ static void epacket_handle_rx(struct net_buf *buf)
 
 	interface_data = metadata->interface->data;
 
-	LOG_DBG("%s: received %d byte packet (%d dBm)", metadata->interface->name, buf->len, metadata->rssi);
+	LOG_DBG("%s: received %d byte packet (%d dBm)", metadata->interface->name, buf->len,
+		metadata->rssi);
 
 	/* Payload decoding */
 	switch (metadata->interface_id) {
@@ -94,7 +95,8 @@ static void epacket_handle_rx(struct net_buf *buf)
 	case EPACKET_INTERFACE_SERIAL:
 		if (buf->len == 0) {
 			/* Serial echo packet, respond */
-			struct net_buf *echo = epacket_alloc_tx_for_interface(metadata->interface, K_FOREVER);
+			struct net_buf *echo =
+				epacket_alloc_tx_for_interface(metadata->interface, K_FOREVER);
 
 			epacket_set_tx_metadata(echo, EPACKET_AUTH_DEVICE, 0, INFUSE_ECHO_RSP);
 			epacket_queue(metadata->interface, echo);
@@ -146,10 +148,10 @@ static void epacket_handle_tx(struct net_buf *buf)
 static int epacket_processor(void *a, void *b, void *c)
 {
 	struct k_poll_event events[2] = {
-		K_POLL_EVENT_STATIC_INITIALIZER(K_POLL_TYPE_FIFO_DATA_AVAILABLE, K_POLL_MODE_NOTIFY_ONLY,
-						&epacket_rx_queue, 0),
-		K_POLL_EVENT_STATIC_INITIALIZER(K_POLL_TYPE_FIFO_DATA_AVAILABLE, K_POLL_MODE_NOTIFY_ONLY,
-						&epacket_tx_queue, 0),
+		K_POLL_EVENT_STATIC_INITIALIZER(K_POLL_TYPE_FIFO_DATA_AVAILABLE,
+						K_POLL_MODE_NOTIFY_ONLY, &epacket_rx_queue, 0),
+		K_POLL_EVENT_STATIC_INITIALIZER(K_POLL_TYPE_FIFO_DATA_AVAILABLE,
+						K_POLL_MODE_NOTIFY_ONLY, &epacket_tx_queue, 0),
 	};
 	struct net_buf *buf;
 
@@ -171,4 +173,5 @@ static int epacket_processor(void *a, void *b, void *c)
 	return 0;
 }
 
-K_THREAD_DEFINE(epacket_processor_thread, 2048, epacket_processor, NULL, NULL, NULL, 0, K_ESSENTIAL, 0);
+K_THREAD_DEFINE(epacket_processor_thread, 2048, epacket_processor, NULL, NULL, NULL, 0, K_ESSENTIAL,
+		0);
