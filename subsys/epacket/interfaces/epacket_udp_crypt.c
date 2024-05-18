@@ -88,9 +88,10 @@ int epacket_udp_encrypt(struct net_buf *buf)
 	net_buf_add_mem(scratch, net_buf_remove_mem(buf, buf_len), buf_len);
 
 	/* Encrypt back into the original buffer */
-	status = psa_aead_encrypt(psa_key_id, PSA_ALG_CHACHA20_POLY1305, frame->nonce.raw, sizeof(frame->nonce.raw),
-				  frame->associated_data.raw, sizeof(frame->associated_data), scratch->data,
-				  scratch->len, net_buf_tail(buf), net_buf_tailroom(buf), &out_len);
+	status = psa_aead_encrypt(psa_key_id, PSA_ALG_CHACHA20_POLY1305, frame->nonce.raw,
+				  sizeof(frame->nonce.raw), frame->associated_data.raw,
+				  sizeof(frame->associated_data), scratch->data, scratch->len,
+				  net_buf_tail(buf), net_buf_tailroom(buf), &out_len);
 	net_buf_add(buf, out_len);
 
 	/* Free scratch space */
@@ -124,8 +125,10 @@ int epacket_udp_decrypt(struct net_buf *buf)
 	meta->sequence = frame.nonce.sequence;
 
 	/* Validate packet should be for us and device encrypted */
-	device_id = ((uint64_t)frame.associated_data.device_id_upper << 32) | frame.nonce.device_id_lower;
-	if ((device_id != infuse_device_id()) || !(frame.associated_data.flags & EPACKET_FLAGS_ENCRYPTION_DEVICE)) {
+	device_id = ((uint64_t)frame.associated_data.device_id_upper << 32) |
+		    frame.nonce.device_id_lower;
+	if ((device_id != infuse_device_id()) ||
+	    !(frame.associated_data.flags & EPACKET_FLAGS_ENCRYPTION_DEVICE)) {
 		goto error;
 	}
 
@@ -146,8 +149,9 @@ int epacket_udp_decrypt(struct net_buf *buf)
 	net_buf_reset(buf);
 
 	/* Decrypt into the allocated packet buffer */
-	status = psa_aead_decrypt(psa_key_id, PSA_ALG_CHACHA20_POLY1305, frame.nonce.raw, sizeof(frame.nonce),
-				  frame.associated_data.raw, sizeof(frame.associated_data), scratch->data, scratch->len,
+	status = psa_aead_decrypt(psa_key_id, PSA_ALG_CHACHA20_POLY1305, frame.nonce.raw,
+				  sizeof(frame.nonce), frame.associated_data.raw,
+				  sizeof(frame.associated_data), scratch->data, scratch->len,
 				  net_buf_tail(buf), net_buf_tailroom(buf), &out_len);
 
 	if (status != PSA_SUCCESS) {

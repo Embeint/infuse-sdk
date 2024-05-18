@@ -40,7 +40,8 @@ ZTEST(data_logger_epacket, test_block_read)
 	/* Reading from ePacket should always fail */
 	zassert_equal(-ENOTSUP, data_logger_block_read(logger, 0, 0, buffer, sizeof(buffer)));
 	zassert_equal(-ENOTSUP, data_logger_block_read(logger, 10, 0, buffer, sizeof(buffer)));
-	zassert_equal(-ENOTSUP, data_logger_block_read(logger, UINT32_MAX, 0, buffer, sizeof(buffer)));
+	zassert_equal(-ENOTSUP,
+		      data_logger_block_read(logger, UINT32_MAX, 0, buffer, sizeof(buffer)));
 }
 
 ZTEST(data_logger_epacket, test_block_write_error)

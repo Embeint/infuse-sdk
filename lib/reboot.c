@@ -75,7 +75,8 @@ FUNC_NORETURN void infuse_reboot(enum infuse_reboot_reason reason, uint32_t info
 	sys_reboot(SYS_REBOOT_WARM);
 }
 
-void infuse_reboot_delayed(enum infuse_reboot_reason reason, uint32_t info1, uint32_t info2, k_timeout_t delay)
+void infuse_reboot_delayed(enum infuse_reboot_reason reason, uint32_t info1, uint32_t info2,
+			   k_timeout_t delay)
 {
 	static struct k_work_delayable reboot_worker;
 

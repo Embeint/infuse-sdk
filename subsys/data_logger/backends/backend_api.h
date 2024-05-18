@@ -72,8 +72,8 @@ struct data_logger_backend_api {
 	 * @retval 0 on success
 	 * @retval -errno otherwise
 	 */
-	int (*write)(const struct data_logger_backend_config *config, uint32_t phy_block, enum infuse_type data_type,
-		     const void *data, uint16_t data_len);
+	int (*write)(const struct data_logger_backend_config *config, uint32_t phy_block,
+		     enum infuse_type data_type, const void *data, uint16_t data_len);
 
 	/**
 	 * @brief Read data from the given backend block
@@ -89,8 +89,8 @@ struct data_logger_backend_api {
 	 * @retval 0 on success
 	 * @retval -errno otherwise
 	 */
-	int (*read)(const struct data_logger_backend_config *config, uint32_t phy_block, uint16_t block_offset,
-		    void *data, uint16_t data_len);
+	int (*read)(const struct data_logger_backend_config *config, uint32_t phy_block,
+		    uint16_t block_offset, void *data, uint16_t data_len);
 
 	/**
 	 * @brief Erase all data from the given backend
@@ -102,7 +102,8 @@ struct data_logger_backend_api {
 	 * @retval 0 on success
 	 * @retval -errno otherwise
 	 */
-	int (*erase)(const struct data_logger_backend_config *config, uint32_t phy_block, uint32_t num);
+	int (*erase)(const struct data_logger_backend_config *config, uint32_t phy_block,
+		     uint32_t num);
 };
 
 /**

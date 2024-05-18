@@ -45,8 +45,8 @@ static int infuse_common_boot(void)
 
 	/* Get current reboot count */
 	if (rc == 0) {
-		rc = kv_store_read_fallback(KV_KEY_REBOOTS, &reboot, sizeof(reboot), &reboot_fallback,
-					    sizeof(reboot_fallback));
+		rc = kv_store_read_fallback(KV_KEY_REBOOTS, &reboot, sizeof(reboot),
+					    &reboot_fallback, sizeof(reboot_fallback));
 		if (rc == sizeof(reboot)) {
 			/* Increment reboot counter */
 			reboot.count += 1;
@@ -96,7 +96,8 @@ static int infuse_common_boot(void)
 		/* Restore time knowledge (Assume reboot took 0 ms) */
 		reference.local = 0;
 		reference.ref = reboot_state.civil_time;
-		civil_time_set_reference(TIME_SOURCE_RECOVERED | reboot_state.civil_time_source, &reference);
+		civil_time_set_reference(TIME_SOURCE_RECOVERED | reboot_state.civil_time_source,
+					 &reference);
 	} else {
 		LOG_INF("\t   Cause: Unknown");
 	}

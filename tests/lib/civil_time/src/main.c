@@ -23,7 +23,8 @@ ZTEST(civil_time, test_time_source_valid)
 	zassert_false(civil_time_trusted_source(33, true));
 	zassert_false(civil_time_trusted_source(TIME_SOURCE_RECOVERED | TIME_SOURCE_NONE, false));
 	zassert_false(civil_time_trusted_source(TIME_SOURCE_RECOVERED | TIME_SOURCE_NONE, true));
-	zassert_false(civil_time_trusted_source(TIME_SOURCE_RECOVERED | TIME_SOURCE_INVALID, false));
+	zassert_false(
+		civil_time_trusted_source(TIME_SOURCE_RECOVERED | TIME_SOURCE_INVALID, false));
 	zassert_false(civil_time_trusted_source(TIME_SOURCE_RECOVERED | TIME_SOURCE_INVALID, true));
 	zassert_false(civil_time_trusted_source(TIME_SOURCE_RECOVERED | 33, false));
 	zassert_false(civil_time_trusted_source(TIME_SOURCE_RECOVERED | 33, true));
@@ -42,7 +43,8 @@ ZTEST(civil_time, test_time_source_valid)
 	zassert_true(civil_time_trusted_source(TIME_SOURCE_RECOVERED | TIME_SOURCE_RPC, true));
 }
 
-static void validate_unix_conversions(struct tm *expected, uint64_t gps_time, uint64_t unix_time, uint16_t subseconds)
+static void validate_unix_conversions(struct tm *expected, uint64_t gps_time, uint64_t unix_time,
+				      uint16_t subseconds)
 {
 	struct tm calendar;
 	uint64_t civil_time;
@@ -302,9 +304,12 @@ ZTEST(civil_time, test_get_failure)
 	infuse_sync_state.base.ref = 0;
 
 	/* Sync state should be reset  */
-	zassert_equal(1261872018 + 0, civil_time_seconds(civil_time_from_ticks(0 * CONFIG_SYS_CLOCK_TICKS_PER_SEC)));
-	zassert_equal(1261872018 + 1, civil_time_seconds(civil_time_from_ticks(1 * CONFIG_SYS_CLOCK_TICKS_PER_SEC)));
-	zassert_equal(1261872018 + 2, civil_time_seconds(civil_time_from_ticks(2 * CONFIG_SYS_CLOCK_TICKS_PER_SEC)));
+	zassert_equal(1261872018 + 0, civil_time_seconds(civil_time_from_ticks(
+					      0 * CONFIG_SYS_CLOCK_TICKS_PER_SEC)));
+	zassert_equal(1261872018 + 1, civil_time_seconds(civil_time_from_ticks(
+					      1 * CONFIG_SYS_CLOCK_TICKS_PER_SEC)));
+	zassert_equal(1261872018 + 2, civil_time_seconds(civil_time_from_ticks(
+					      2 * CONFIG_SYS_CLOCK_TICKS_PER_SEC)));
 
 	/* Manually force sync state to be invalid */
 	infuse_sync_state.base.local = 1234560;
@@ -312,9 +317,12 @@ ZTEST(civil_time, test_get_failure)
 	infuse_sync_state.skew = -0.1f;
 
 	/* Sync state should be reset  */
-	zassert_equal(1261872018 + 0, civil_time_seconds(civil_time_from_ticks(0 * CONFIG_SYS_CLOCK_TICKS_PER_SEC)));
-	zassert_equal(1261872018 + 1, civil_time_seconds(civil_time_from_ticks(1 * CONFIG_SYS_CLOCK_TICKS_PER_SEC)));
-	zassert_equal(1261872018 + 2, civil_time_seconds(civil_time_from_ticks(2 * CONFIG_SYS_CLOCK_TICKS_PER_SEC)));
+	zassert_equal(1261872018 + 0, civil_time_seconds(civil_time_from_ticks(
+					      0 * CONFIG_SYS_CLOCK_TICKS_PER_SEC)));
+	zassert_equal(1261872018 + 1, civil_time_seconds(civil_time_from_ticks(
+					      1 * CONFIG_SYS_CLOCK_TICKS_PER_SEC)));
+	zassert_equal(1261872018 + 2, civil_time_seconds(civil_time_from_ticks(
+					      2 * CONFIG_SYS_CLOCK_TICKS_PER_SEC)));
 }
 
 ZTEST_SUITE(civil_time, NULL, NULL, NULL, NULL, NULL);

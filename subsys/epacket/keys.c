@@ -59,11 +59,13 @@ static int epacket_import_root_keys(void)
 	psa_set_key_bits(&key_attributes, 128);
 
 	/* Import the base keys into the keystore */
-	status = psa_import_key(&key_attributes, device_key, sizeof(device_key), &device_root_key_id);
+	status = psa_import_key(&key_attributes, device_key, sizeof(device_key),
+				&device_root_key_id);
 	if (status != PSA_SUCCESS) {
 		LOG_WRN("Failed to import %s root (%d)", "device", status);
 	}
-	status = psa_import_key(&key_attributes, network_key, sizeof(network_key), &network_root_key_id);
+	status = psa_import_key(&key_attributes, network_key, sizeof(network_key),
+				&network_root_key_id);
 	if (status != PSA_SUCCESS) {
 		LOG_WRN("Failed to import %s root (%d)", "root", status);
 	}
@@ -75,8 +77,8 @@ uint32_t epacket_network_key_id(void)
 	return network_id;
 }
 
-int epacket_key_derive(enum epacket_key_type base_key, const uint8_t *info, uint8_t info_len, uint32_t salt,
-		       psa_key_id_t *output_key_id)
+int epacket_key_derive(enum epacket_key_type base_key, const uint8_t *info, uint8_t info_len,
+		       uint32_t salt, psa_key_id_t *output_key_id)
 {
 	psa_key_attributes_t key_attributes = PSA_KEY_ATTRIBUTES_INIT;
 	psa_key_derivation_operation_t operation = PSA_KEY_DERIVATION_OPERATION_INIT;
@@ -117,8 +119,10 @@ int epacket_key_derive(enum epacket_key_type base_key, const uint8_t *info, uint
 #endif /* CONFIG_EPACKET_KEY_EXPORT */
 
 	if (psa_key_derivation_setup(&operation, PSA_ALG_HKDF(PSA_ALG_SHA_256)) ||
-	    psa_key_derivation_input_bytes(&operation, PSA_KEY_DERIVATION_INPUT_SALT, (uint8_t *)&salt, sizeof(salt)) ||
-	    psa_key_derivation_input_bytes(&operation, PSA_KEY_DERIVATION_INPUT_INFO, info, info_len) ||
+	    psa_key_derivation_input_bytes(&operation, PSA_KEY_DERIVATION_INPUT_SALT,
+					   (uint8_t *)&salt, sizeof(salt)) ||
+	    psa_key_derivation_input_bytes(&operation, PSA_KEY_DERIVATION_INPUT_INFO, info,
+					   info_len) ||
 	    psa_key_derivation_input_key(&operation, PSA_KEY_DERIVATION_INPUT_SECRET, input_key) ||
 	    psa_key_derivation_output_key(&key_attributes, &operation, output_key_id) ||
 	    psa_key_derivation_abort(&operation)) {
@@ -158,9 +162,11 @@ psa_key_id_t epacket_key_id_get(uint8_t key_id, uint32_t key_rotation)
 		if (storage[interface].id) {
 			epacket_key_delete(storage[interface].id);
 		}
-		LOG_INF("Regenerating derived key %02X (%s) for rotation %d", key_id, info, key_rotation);
+		LOG_INF("Regenerating derived key %02X (%s) for rotation %d", key_id, info,
+			key_rotation);
 		ticks = k_uptime_ticks();
-		rc = epacket_key_derive(base, info, strlen(info), key_rotation, &storage[interface].id);
+		rc = epacket_key_derive(base, info, strlen(info), key_rotation,
+					&storage[interface].id);
 		ticks = k_uptime_ticks() - ticks;
 		LOG_DBG("Generation took %d uS", k_cyc_to_us_near32(ticks));
 		if (rc == 0) {

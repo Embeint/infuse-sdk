@@ -86,7 +86,8 @@ static int flush_internal(const struct device *dev, bool locked)
 	net_buf_simple_push(&data->tdf_state.buf, data->block_overhead);
 
 	/* Push data to logger */
-	rc = data_logger_block_write(config->logger, INFUSE_TDF, data->tdf_state.buf.data, data->tdf_state.buf.len);
+	rc = data_logger_block_write(config->logger, INFUSE_TDF, data->tdf_state.buf.data,
+				     data->tdf_state.buf.len);
 	if (rc < 0) {
 		LOG_ERR("%s failed to write block (%d)", dev->name, rc);
 	}
@@ -120,8 +121,8 @@ void tdf_data_logger_flush(uint8_t logger_mask)
 	} while (dev);
 }
 
-int tdf_data_logger_log_array_dev(const struct device *dev, uint16_t tdf_id, uint8_t tdf_len, uint8_t tdf_num,
-				  uint64_t time, uint16_t period, void *mem)
+int tdf_data_logger_log_array_dev(const struct device *dev, uint16_t tdf_id, uint8_t tdf_len,
+				  uint8_t tdf_num, uint64_t time, uint16_t period, void *mem)
 {
 	struct tdf_logger_data *data = dev->data;
 	int rc;
@@ -147,7 +148,8 @@ relog:
 		tdf_num -= rc;
 		goto relog;
 	}
-	LOG_DBG("%s current offset (%d/%d)", dev->name, data->tdf_state.buf.len, data->tdf_state.buf.size);
+	LOG_DBG("%s current offset (%d/%d)", dev->name, data->tdf_state.buf.len,
+		data->tdf_state.buf.size);
 
 	/* Auto flush if no space left for more TDFs (3 byte header + 1 byte data) */
 	if (net_buf_simple_tailroom(&data->tdf_state.buf) < 4) {
@@ -160,8 +162,8 @@ unlock:
 	return rc < 0 ? rc : 0;
 }
 
-void tdf_data_logger_log_array(uint8_t logger_mask, uint16_t tdf_id, uint8_t tdf_len, uint8_t tdf_num, uint64_t time,
-			       uint16_t period, void *data)
+void tdf_data_logger_log_array(uint8_t logger_mask, uint16_t tdf_id, uint8_t tdf_len,
+			       uint8_t tdf_num, uint64_t time, uint16_t period, void *data)
 {
 	const struct device *dev;
 
@@ -169,7 +171,8 @@ void tdf_data_logger_log_array(uint8_t logger_mask, uint16_t tdf_id, uint8_t tdf
 	do {
 		dev = logger_mask_iter(&logger_mask);
 		if (dev) {
-			(void)tdf_data_logger_log_array_dev(dev, tdf_id, tdf_len, tdf_num, time, period, data);
+			(void)tdf_data_logger_log_array_dev(dev, tdf_id, tdf_len, tdf_num, time,
+							    period, data);
 		}
 	} while (dev);
 }
@@ -185,7 +188,8 @@ int tdf_data_logger_init(const struct device *dev)
 	k_sem_init(&data->lock, 1, 1);
 
 	/* Link data buffer to net buf */
-	net_buf_simple_init_with_data(&data->tdf_state.buf, config->tdf_buffer, config->tdf_buffer_max_size);
+	net_buf_simple_init_with_data(&data->tdf_state.buf, config->tdf_buffer,
+				      config->tdf_buffer_max_size);
 
 	/* Get required overhead for message buffers */
 	data_logger_get_state(config->logger, &logger_state);
@@ -194,25 +198,26 @@ int tdf_data_logger_init(const struct device *dev)
 	/* Reset buffer with overhead */
 	tdf_buffer_state_reset(&data->tdf_state);
 	net_buf_simple_reserve(&data->tdf_state.buf, data->block_overhead);
-	LOG_DBG("%s max size %d (overhead %d)\n", dev->name, data->tdf_state.buf.size, data->block_overhead);
+	LOG_DBG("%s max size %d (overhead %d)\n", dev->name, data->tdf_state.buf.size,
+		data->block_overhead);
 	return 0;
 }
 
 /* Maximum required block size for each logger backend */
-#define DATA_LOGGER_MAX_SIZE(logger)                                                                                   \
-	COND_CODE_1(DT_NODE_HAS_COMPAT(logger, embeint_data_logger_flash_map), (512),                                  \
-		    (COND_CODE_1(DT_NODE_HAS_COMPAT(logger, embeint_data_logger_epacket),                              \
+#define DATA_LOGGER_MAX_SIZE(logger)                                                               \
+	COND_CODE_1(DT_NODE_HAS_COMPAT(logger, embeint_data_logger_flash_map), (512),              \
+		    (COND_CODE_1(DT_NODE_HAS_COMPAT(logger, embeint_data_logger_epacket),          \
 				 (EPACKET_INTERFACE_MAX_PAYLOAD(DT_PROP(logger, epacket))), ())))
 
-#define TDF_DATA_LOGGER_DEFINE(inst)                                                                                   \
-	static struct tdf_logger_data tdf_logger_data##inst;                                                           \
-	static uint8_t tdf_mem_buffer##inst[DATA_LOGGER_MAX_SIZE(DT_PARENT(DT_DRV_INST(inst)))];                       \
-	const struct tdf_logger_config tdf_logger_config##inst = {                                                     \
-		.logger = DEVICE_DT_GET(DT_PARENT(DT_DRV_INST(inst))),                                                 \
-		.tdf_buffer = tdf_mem_buffer##inst,                                                                    \
-		.tdf_buffer_max_size = sizeof(tdf_mem_buffer##inst),                                                   \
-	};                                                                                                             \
-	DEVICE_DT_INST_DEFINE(inst, tdf_data_logger_init, NULL, &tdf_logger_data##inst, &tdf_logger_config##inst,      \
-			      POST_KERNEL, 81, NULL);
+#define TDF_DATA_LOGGER_DEFINE(inst)                                                               \
+	static struct tdf_logger_data tdf_logger_data##inst;                                       \
+	static uint8_t tdf_mem_buffer##inst[DATA_LOGGER_MAX_SIZE(DT_PARENT(DT_DRV_INST(inst)))];   \
+	const struct tdf_logger_config tdf_logger_config##inst = {                                 \
+		.logger = DEVICE_DT_GET(DT_PARENT(DT_DRV_INST(inst))),                             \
+		.tdf_buffer = tdf_mem_buffer##inst,                                                \
+		.tdf_buffer_max_size = sizeof(tdf_mem_buffer##inst),                               \
+	};                                                                                         \
+	DEVICE_DT_INST_DEFINE(inst, tdf_data_logger_init, NULL, &tdf_logger_data##inst,            \
+			      &tdf_logger_config##inst, POST_KERNEL, 81, NULL);
 
 DT_INST_FOREACH_STATUS_OKAY(TDF_DATA_LOGGER_DEFINE)

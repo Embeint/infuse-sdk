@@ -36,10 +36,12 @@ static void send_kv_write_command(uint32_t request_id, struct net_buf_simple *va
 	};
 
 	/* Push command at RPC server */
-	epacket_dummy_receive_extra(epacket_dummy, &header, &params, sizeof(params), values->data, values->len);
+	epacket_dummy_receive_extra(epacket_dummy, &header, &params, sizeof(params), values->data,
+				    values->len);
 }
 
-static struct net_buf *expect_kv_write_response(uint32_t request_id, int16_t rc, uint8_t expected_responses)
+static struct net_buf *expect_kv_write_response(uint32_t request_id, int16_t rc,
+						uint8_t expected_responses)
 {
 	struct k_fifo *response_queue = epacket_dummmy_transmit_fifo_get();
 	struct rpc_kv_write_response *response;

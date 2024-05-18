@@ -50,7 +50,8 @@ static void conn_create_worker(struct k_work *work)
 
 	/* Initiate connection */
 	LOG_INF("Initiating connection to '%s'", params.ssid);
-	(void)net_mgmt(NET_REQUEST_WIFI_CONNECT, wifi_if, &params, sizeof(struct wifi_connect_req_params));
+	(void)net_mgmt(NET_REQUEST_WIFI_CONNECT, wifi_if, &params,
+		       sizeof(struct wifi_connect_req_params));
 }
 
 static void conn_timeout_worker(struct k_work *work)
@@ -62,7 +63,8 @@ static void conn_timeout_worker(struct k_work *work)
 	net_mgmt_event_notify(NET_EVENT_CONN_IF_TIMEOUT, wifi_if);
 }
 
-static void wifi_mgmt_event_handler(struct net_mgmt_event_callback *cb, uint32_t mgmt_event, struct net_if *iface)
+static void wifi_mgmt_event_handler(struct net_mgmt_event_callback *cb, uint32_t mgmt_event,
+				    struct net_if *iface)
 {
 	const struct wifi_status *status = cb->info;
 	bool persistent = conn_mgr_if_get_flag(wifi_if, CONN_MGR_IF_PERSISTENT);
@@ -85,7 +87,8 @@ static void wifi_mgmt_event_handler(struct net_mgmt_event_callback *cb, uint32_t
 		}
 		break;
 	case NET_EVENT_WIFI_DISCONNECT_RESULT:
-		LOG_INF("Connection lost (%d)%s", status->disconn_reason, persistent ? ", retrying" : "");
+		LOG_INF("Connection lost (%d)%s", status->disconn_reason,
+			persistent ? ", retrying" : "");
 		if (persistent) {
 #ifdef CONFIG_WPA_SUPP
 			/* WPA SUPP automatically attempts to reconnect */
@@ -115,7 +118,8 @@ static void wifi_mgmt_event_handler(struct net_mgmt_event_callback *cb, uint32_t
 static struct net_mgmt_event_callback wpa_supp_cb;
 static K_SEM_DEFINE(wpa_supp_ready_sem, 0, 1);
 
-static void wpa_supp_event_handler(struct net_mgmt_event_callback *cb, uint32_t mgmt_event, struct net_if *iface)
+static void wpa_supp_event_handler(struct net_mgmt_event_callback *cb, uint32_t mgmt_event,
+				   struct net_if *iface)
 {
 	switch (mgmt_event) {
 	case NET_EVENT_WPA_SUPP_READY:
@@ -173,7 +177,8 @@ static void wifi_mgmt_init(struct conn_mgr_conn_binding *const binding)
 	net_mgmt_add_event_callback(&wifi_mgmt_cb);
 
 #ifdef CONFIG_WPA_SUPP
-	net_mgmt_init_event_callback(&wpa_supp_cb, wpa_supp_event_handler, NET_EVENT_WPA_SUPP_READY);
+	net_mgmt_init_event_callback(&wpa_supp_cb, wpa_supp_event_handler,
+				     NET_EVENT_WPA_SUPP_READY);
 	net_mgmt_add_event_callback(&wpa_supp_cb);
 	k_sem_take(&wpa_supp_ready_sem, K_FOREVER);
 #endif /* CONFIG_WPA_SUPP */

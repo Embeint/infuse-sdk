@@ -106,7 +106,8 @@ struct net_buf *epacket_alloc_rx(k_timeout_t timeout);
  * @retval NULL On timeout
  * @retval buf When successfully allocated
  */
-static inline struct net_buf *epacket_alloc_tx_for_interface(const struct device *dev, k_timeout_t timeout)
+static inline struct net_buf *epacket_alloc_tx_for_interface(const struct device *dev,
+							     k_timeout_t timeout)
 {
 	const struct epacket_interface_common_config *config = dev->config;
 	struct net_buf *buf = epacket_alloc_tx(timeout);
@@ -129,8 +130,8 @@ static inline struct net_buf *epacket_alloc_tx_for_interface(const struct device
  * @param flags Desired packet flags
  * @param type Packet type
  */
-static inline void epacket_set_tx_metadata(struct net_buf *buf, enum epacket_auth auth, uint16_t flags,
-					   enum infuse_type type)
+static inline void epacket_set_tx_metadata(struct net_buf *buf, enum epacket_auth auth,
+					   uint16_t flags, enum infuse_type type)
 {
 	struct epacket_tx_metadata *meta = net_buf_user_data(buf);
 

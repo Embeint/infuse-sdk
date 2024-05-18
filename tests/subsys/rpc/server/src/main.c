@@ -115,7 +115,8 @@ ZTEST(rpc_server, test_auth_level)
 	/* ECHO with EPACKET_AUTH_DEVICE */
 	req_header->command_id = RPC_ID_ECHO;
 	header.auth = EPACKET_AUTH_DEVICE;
-	epacket_dummy_receive(epacket_dummy, &header, payload, sizeof(struct rpc_echo_request) + sizeof(payload));
+	epacket_dummy_receive(epacket_dummy, &header, payload,
+			      sizeof(struct rpc_echo_request) + sizeof(payload));
 	tx = net_buf_get(tx_fifo, K_MSEC(10));
 	zassert_not_null(tx);
 	tx_header = (void *)tx->data;
@@ -128,7 +129,8 @@ ZTEST(rpc_server, test_auth_level)
 	/* ECHO with EPACKET_AUTH_NETWORK */
 	req_header->command_id = RPC_ID_ECHO;
 	header.auth = EPACKET_AUTH_NETWORK;
-	epacket_dummy_receive(epacket_dummy, &header, payload, sizeof(struct rpc_echo_request) + sizeof(payload));
+	epacket_dummy_receive(epacket_dummy, &header, payload,
+			      sizeof(struct rpc_echo_request) + sizeof(payload));
 	tx = net_buf_get(tx_fifo, K_MSEC(10));
 	zassert_not_null(tx);
 	tx_header = (void *)tx->data;
@@ -141,7 +143,8 @@ ZTEST(rpc_server, test_auth_level)
 	/* DATA_SENDER with EPACKET_AUTH_NETWORK */
 	req_header->command_id = RPC_ID_DATA_SENDER;
 	header.auth = EPACKET_AUTH_NETWORK;
-	epacket_dummy_receive(epacket_dummy, &header, payload, sizeof(struct rpc_echo_request) + sizeof(payload));
+	epacket_dummy_receive(epacket_dummy, &header, payload,
+			      sizeof(struct rpc_echo_request) + sizeof(payload));
 	tx = net_buf_get(tx_fifo, K_MSEC(10));
 	zassert_not_null(tx);
 	tx_header = (void *)tx->data;
@@ -176,7 +179,8 @@ ZTEST(rpc_server, test_echo_response)
 		req_header->command_id = RPC_ID_ECHO;
 		req_header->request_id = request_id;
 
-		epacket_dummy_receive(epacket_dummy, &header, payload, sizeof(struct rpc_echo_request) + lens[i]);
+		epacket_dummy_receive(epacket_dummy, &header, payload,
+				      sizeof(struct rpc_echo_request) + lens[i]);
 
 		tx = net_buf_get(tx_fifo, K_MSEC(10));
 		zassert_not_null(tx);
@@ -219,7 +223,8 @@ static void test_data_sender(uint32_t to_send)
 	req->data_header.size = to_send;
 	req->data_header.rx_ack_period = 0;
 
-	epacket_dummy_receive(epacket_dummy, &header, payload, sizeof(struct rpc_data_sender_request));
+	epacket_dummy_receive(epacket_dummy, &header, payload,
+			      sizeof(struct rpc_data_sender_request));
 
 	while (receiving) {
 		tx = net_buf_get(tx_fifo, K_MSEC(10));
@@ -262,8 +267,8 @@ ZTEST(rpc_server, test_data_sender)
 	test_data_sender(33333);
 }
 
-static void test_data_receiver(uint32_t total_send, uint8_t skip_after, uint8_t stop_after, uint8_t bad_id_after,
-			       uint8_t ack_period, bool too_much_data)
+static void test_data_receiver(uint32_t total_send, uint8_t skip_after, uint8_t stop_after,
+			       uint8_t bad_id_after, uint8_t ack_period, bool too_much_data)
 {
 	const struct device *epacket_dummy = DEVICE_DT_GET(DT_NODELABEL(epacket_dummy));
 	struct k_fifo *tx_fifo = epacket_dummmy_transmit_fifo_get();
@@ -292,7 +297,8 @@ static void test_data_receiver(uint32_t total_send, uint8_t skip_after, uint8_t 
 	req->header.request_id = request_id;
 	req->data_header.size = send_remaining;
 	req->data_header.rx_ack_period = ack_period;
-	epacket_dummy_receive(epacket_dummy, &header, payload, sizeof(struct rpc_data_receiver_request));
+	epacket_dummy_receive(epacket_dummy, &header, payload,
+			      sizeof(struct rpc_data_receiver_request));
 
 	while (send_remaining > 0) {
 		/* Send randomised data to the server */
@@ -317,7 +323,8 @@ static void test_data_receiver(uint32_t total_send, uint8_t skip_after, uint8_t 
 		} else {
 			packets_sent++;
 			epacket_dummy_receive(epacket_dummy, &header, payload,
-					      sizeof(struct infuse_rpc_data) + (too_much_data ? 64 : to_send));
+					      sizeof(struct infuse_rpc_data) +
+						      (too_much_data ? 64 : to_send));
 		}
 		send_remaining -= to_send;
 		tx_offset += to_send;
@@ -332,7 +339,8 @@ ack_handler:
 				/* clang-format on */
 				struct infuse_rpc_data_ack *data_ack;
 				uint8_t num_offsets =
-					(tx->len - sizeof(*tx_header) - sizeof(*data_ack)) / sizeof(uint32_t);
+					(tx->len - sizeof(*tx_header) - sizeof(*data_ack)) /
+					sizeof(uint32_t);
 
 				tx_header = (void *)tx->data;
 				data_ack = (void *)(tx->data + sizeof(*tx_header));
@@ -340,7 +348,8 @@ ack_handler:
 				zassert_equal(ack_period, num_offsets);
 				packets_acked += num_offsets;
 				for (int i = 1; i < ack_period; i++) {
-					zassert_true(data_ack->offsets[i - 1] < data_ack->offsets[i]);
+					zassert_true(data_ack->offsets[i - 1] <
+						     data_ack->offsets[i]);
 				}
 				net_buf_unref(tx);
 			}

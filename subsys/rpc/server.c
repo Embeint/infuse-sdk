@@ -33,7 +33,8 @@ void rpc_server_queue_data(struct net_buf *buf)
 	net_buf_put(&data_fifo, buf);
 }
 
-struct net_buf *rpc_response_simple_if(const struct device *interface, int16_t rc, void *response, size_t len)
+struct net_buf *rpc_response_simple_if(const struct device *interface, int16_t rc, void *response,
+				       size_t len)
 {
 	struct net_buf *response_buf = epacket_alloc_tx_for_interface(interface, K_FOREVER);
 	struct infuse_rpc_rsp_header *header = net_buf_add_mem(response_buf, response, len);
@@ -42,7 +43,8 @@ struct net_buf *rpc_response_simple_if(const struct device *interface, int16_t r
 	return response_buf;
 }
 
-struct net_buf *rpc_response_simple_req(struct net_buf *request, int16_t rc, void *response, size_t len)
+struct net_buf *rpc_response_simple_req(struct net_buf *request, int16_t rc, void *response,
+					size_t len)
 {
 	struct epacket_rx_metadata *metadata = net_buf_user_data(request);
 
@@ -55,7 +57,8 @@ void rpc_server_pull_data_reset(void)
 	data_packet_ack_counter = 0;
 }
 
-struct net_buf *rpc_server_pull_data(uint32_t request_id, uint32_t expected_offset, k_timeout_t timeout)
+struct net_buf *rpc_server_pull_data(uint32_t request_id, uint32_t expected_offset,
+				     k_timeout_t timeout)
 {
 	struct infuse_rpc_data *data;
 	struct net_buf *buf;
@@ -73,7 +76,8 @@ struct net_buf *rpc_server_pull_data(uint32_t request_id, uint32_t expected_offs
 		}
 		data = (void *)buf->data;
 		if (data->request_id != request_id) {
-			LOG_WRN("Mismatched request ID (%08X != %08X)", data->request_id, request_id);
+			LOG_WRN("Mismatched request ID (%08X != %08X)", data->request_id,
+				request_id);
 			net_buf_unref(buf);
 			continue;
 		}
@@ -84,7 +88,8 @@ struct net_buf *rpc_server_pull_data(uint32_t request_id, uint32_t expected_offs
 	}
 }
 
-void rpc_server_ack_data(const struct device *interface, uint32_t request_id, uint32_t offset, uint8_t ack_period)
+void rpc_server_ack_data(const struct device *interface, uint32_t request_id, uint32_t offset,
+			 uint8_t ack_period)
 {
 	struct infuse_rpc_data_ack *data_ack;
 	struct net_buf *ack;
@@ -100,7 +105,8 @@ void rpc_server_ack_data(const struct device *interface, uint32_t request_id, ui
 			epacket_set_tx_metadata(ack, EPACKET_AUTH_NETWORK, 0, INFUSE_RPC_DATA_ACK);
 			/* Populate data */
 			data_ack->request_id = request_id;
-			net_buf_add_mem(ack, data_packet_acks, data_packet_ack_counter * sizeof(uint32_t));
+			net_buf_add_mem(ack, data_packet_acks,
+					data_packet_ack_counter * sizeof(uint32_t));
 			/* Send the RPC_DATA_ACK and reset */
 			epacket_queue(interface, ack);
 			rpc_server_pull_data_reset();
@@ -111,10 +117,10 @@ void rpc_server_ack_data(const struct device *interface, uint32_t request_id, ui
 static int rpc_server(void *a, void *b, void *c)
 {
 	struct k_poll_event events[2] = {
-		K_POLL_EVENT_STATIC_INITIALIZER(K_POLL_TYPE_FIFO_DATA_AVAILABLE, K_POLL_MODE_NOTIFY_ONLY, &command_fifo,
-						0),
-		K_POLL_EVENT_STATIC_INITIALIZER(K_POLL_TYPE_FIFO_DATA_AVAILABLE, K_POLL_MODE_NOTIFY_ONLY, &data_fifo,
-						0),
+		K_POLL_EVENT_STATIC_INITIALIZER(K_POLL_TYPE_FIFO_DATA_AVAILABLE,
+						K_POLL_MODE_NOTIFY_ONLY, &command_fifo, 0),
+		K_POLL_EVENT_STATIC_INITIALIZER(K_POLL_TYPE_FIFO_DATA_AVAILABLE,
+						K_POLL_MODE_NOTIFY_ONLY, &data_fifo, 0),
 	};
 	struct infuse_rpc_data *data;
 	struct net_buf *buf;
@@ -131,10 +137,11 @@ static int rpc_server(void *a, void *b, void *c)
 
 		if (events[1].state == K_POLL_STATE_FIFO_DATA_AVAILABLE) {
 			buf = net_buf_get(events[1].fifo, K_NO_WAIT);
-			/* Can return NULL if data packet was queued before `rpc_command_runner` started */
+			/* Can return NULL if data packet was queued before runner started */
 			if (buf) {
 				data = (void *)buf->data;
-				LOG_WRN("Dropping data for command %08X %08x", data->request_id, data->offset);
+				LOG_WRN("Dropping data for command %08X %08x", data->request_id,
+					data->offset);
 				net_buf_unref(buf);
 			}
 			events[1].state = K_POLL_STATE_NOT_READY;
@@ -143,5 +150,5 @@ static int rpc_server(void *a, void *b, void *c)
 	return 0;
 }
 
-K_THREAD_DEFINE(rpc_server_thread, CONFIG_INFUSE_RPC_SERVER_STACK_SIZE, rpc_server, NULL, NULL, NULL, 0, K_ESSENTIAL,
-		0);
+K_THREAD_DEFINE(rpc_server_thread, CONFIG_INFUSE_RPC_SERVER_STACK_SIZE, rpc_server, NULL, NULL,
+		NULL, 0, K_ESSENTIAL, 0);

@@ -98,18 +98,20 @@ int main(void)
 			unsigned long long mlen;
 
 			start_time = timing_counter_get();
-			ascon128a_aead_encrypt(ciphertext, &clen, plaintext, plaintext_lengths[i], associated_data, 4,
-					       tag, nonce, key);
+			ascon128a_aead_encrypt(ciphertext, &clen, plaintext, plaintext_lengths[i],
+					       associated_data, 4, tag, nonce, key);
 			end_time = timing_counter_get();
 
-			encrypt_cycles[ASCON_128A][i][r] = timing_cycles_get(&start_time, &end_time);
+			encrypt_cycles[ASCON_128A][i][r] =
+				timing_cycles_get(&start_time, &end_time);
 
 			start_time = timing_counter_get();
-			rc = ascon128a_aead_decrypt(decrypted, &mlen, tag, ciphertext, clen, associated_data, 4, nonce,
-						    key);
+			rc = ascon128a_aead_decrypt(decrypted, &mlen, tag, ciphertext, clen,
+						    associated_data, 4, nonce, key);
 			end_time = timing_counter_get();
 
-			decrypt_cycles[ASCON_128A][i][r] = timing_cycles_get(&start_time, &end_time);
+			decrypt_cycles[ASCON_128A][i][r] =
+				timing_cycles_get(&start_time, &end_time);
 		}
 #endif /* CONFIG_CRYPTO_ASCON_128A */
 #ifdef CONFIG_CRYPTO_ASCON_128
@@ -118,15 +120,15 @@ int main(void)
 			unsigned long long mlen;
 
 			start_time = timing_counter_get();
-			ascon128_aead_encrypt(ciphertext, &clen, plaintext, plaintext_lengths[i], associated_data, 4,
-					      tag, nonce, key);
+			ascon128_aead_encrypt(ciphertext, &clen, plaintext, plaintext_lengths[i],
+					      associated_data, 4, tag, nonce, key);
 			end_time = timing_counter_get();
 
 			encrypt_cycles[ASCON_128][i][r] = timing_cycles_get(&start_time, &end_time);
 
 			start_time = timing_counter_get();
-			rc = ascon128_aead_decrypt(decrypted, &mlen, tag, ciphertext, clen, associated_data, 4, nonce,
-						   key);
+			rc = ascon128_aead_decrypt(decrypted, &mlen, tag, ciphertext, clen,
+						   associated_data, 4, nonce, key);
 			end_time = timing_counter_get();
 
 			decrypt_cycles[ASCON_128][i][r] = timing_cycles_get(&start_time, &end_time);
@@ -138,18 +140,20 @@ int main(void)
 			unsigned long long mlen;
 
 			start_time = timing_counter_get();
-			ascon80pq_aead_encrypt(ciphertext, &clen, plaintext, plaintext_lengths[i], associated_data, 4,
-					       tag, nonce, key);
+			ascon80pq_aead_encrypt(ciphertext, &clen, plaintext, plaintext_lengths[i],
+					       associated_data, 4, tag, nonce, key);
 			end_time = timing_counter_get();
 
-			encrypt_cycles[ASCON_80PQ][i][r] = timing_cycles_get(&start_time, &end_time);
+			encrypt_cycles[ASCON_80PQ][i][r] =
+				timing_cycles_get(&start_time, &end_time);
 
 			start_time = timing_counter_get();
-			rc = ascon80pq_aead_decrypt(decrypted, &mlen, tag, ciphertext, clen, associated_data, 4, nonce,
-						    key);
+			rc = ascon80pq_aead_decrypt(decrypted, &mlen, tag, ciphertext, clen,
+						    associated_data, 4, nonce, key);
 			end_time = timing_counter_get();
 
-			decrypt_cycles[ASCON_80PQ][i][r] = timing_cycles_get(&start_time, &end_time);
+			decrypt_cycles[ASCON_80PQ][i][r] =
+				timing_cycles_get(&start_time, &end_time);
 		}
 #endif /* CONFIG_CRYPTO_ASCON_80PQ */
 		for (int r = 0; r < REPEATS; r++) {
@@ -157,23 +161,27 @@ int main(void)
 
 			start_time = timing_counter_get();
 
-			status = psa_aead_encrypt(key_id, PSA_ALG_CHACHA20_POLY1305, nonce, 12, associated_data, 4,
-						  plaintext, plaintext_lengths[i], ciphertext, sizeof(ciphertext),
-						  &clen);
+			status = psa_aead_encrypt(key_id, PSA_ALG_CHACHA20_POLY1305, nonce, 12,
+						  associated_data, 4, plaintext,
+						  plaintext_lengths[i], ciphertext,
+						  sizeof(ciphertext), &clen);
 			end_time = timing_counter_get();
 			if (status != PSA_SUCCESS) {
 				LOG_INF("psa_aead_encrypt failed! (Error: %d)", status);
 			}
-			encrypt_cycles[CHACHA20_POLY1305][i][r] = timing_cycles_get(&start_time, &end_time);
+			encrypt_cycles[CHACHA20_POLY1305][i][r] =
+				timing_cycles_get(&start_time, &end_time);
 
 			start_time = timing_counter_get();
-			status = psa_aead_decrypt(key_id, PSA_ALG_CHACHA20_POLY1305, nonce, 12, associated_data, 4,
-						  ciphertext, clen, decrypted, sizeof(decrypted), &mlen);
+			status = psa_aead_decrypt(key_id, PSA_ALG_CHACHA20_POLY1305, nonce, 12,
+						  associated_data, 4, ciphertext, clen, decrypted,
+						  sizeof(decrypted), &mlen);
 			end_time = timing_counter_get();
 			if (status != PSA_SUCCESS) {
 				LOG_INF("psa_aead_decrypt failed! (Error: %d)", status);
 			}
-			decrypt_cycles[CHACHA20_POLY1305][i][r] = timing_cycles_get(&start_time, &end_time);
+			decrypt_cycles[CHACHA20_POLY1305][i][r] =
+				timing_cycles_get(&start_time, &end_time);
 		}
 	}
 
@@ -197,8 +205,8 @@ int main(void)
 			encr_ns = timing_cycles_to_ns(encr_avg);
 			decr_ns = timing_cycles_to_ns(decr_avg);
 
-			LOG_INF("\tLength %4d Encrypt %6llu (%7llu ns) Decrypt %6llu (%7llu ns)", plaintext_lengths[j],
-				encr_avg, encr_ns, decr_avg, decr_ns);
+			LOG_INF("\tLength %4d Encrypt %6llu (%7llu ns) Decrypt %6llu (%7llu ns)",
+				plaintext_lengths[j], encr_avg, encr_ns, decr_avg, decr_ns);
 		}
 	}
 	k_sleep(K_FOREVER);

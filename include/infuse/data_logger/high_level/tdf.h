@@ -55,8 +55,8 @@ enum {
  * @retval 0 On success
  * @retval -errno Error code from @a tdf_add or @a tdf_data_logger_flush on error
  */
-int tdf_data_logger_log_array_dev(const struct device *dev, uint16_t tdf_id, uint8_t tdf_len, uint8_t tdf_num,
-				  uint64_t time, uint16_t period, void *data);
+int tdf_data_logger_log_array_dev(const struct device *dev, uint16_t tdf_id, uint8_t tdf_len,
+				  uint8_t tdf_num, uint64_t time, uint16_t period, void *data);
 
 /**
  * @brief Add multiple TDFs to multiple data loggers
@@ -69,8 +69,8 @@ int tdf_data_logger_log_array_dev(const struct device *dev, uint16_t tdf_id, uin
  * @param period Time period between the TDF samples
  * @param data TDF data array
  */
-void tdf_data_logger_log_array(uint8_t logger_mask, uint16_t tdf_id, uint8_t tdf_len, uint8_t tdf_num, uint64_t time,
-			       uint16_t period, void *data);
+void tdf_data_logger_log_array(uint8_t logger_mask, uint16_t tdf_id, uint8_t tdf_len,
+			       uint8_t tdf_num, uint64_t time, uint16_t period, void *data);
 
 /**
  * @brief Add a single TDF to a data logger
@@ -84,8 +84,8 @@ void tdf_data_logger_log_array(uint8_t logger_mask, uint16_t tdf_id, uint8_t tdf
  * @retval 0 On success
  * @retval -errno Error code from @a tdf_add or @a tdf_data_logger_flush on error
  */
-static inline int tdf_data_logger_log_dev(const struct device *dev, uint16_t tdf_id, uint8_t tdf_len, uint64_t time,
-					  void *data)
+static inline int tdf_data_logger_log_dev(const struct device *dev, uint16_t tdf_id,
+					  uint8_t tdf_len, uint64_t time, void *data)
 {
 	return tdf_data_logger_log_array_dev(dev, tdf_id, tdf_len, 1, time, 0, data);
 }
@@ -99,7 +99,8 @@ static inline int tdf_data_logger_log_dev(const struct device *dev, uint16_t tdf
  * @param time Civil time associated with the TDF. 0 for no timestamp.
  * @param data TDF data
  */
-static inline void tdf_data_logger_log(uint8_t logger_mask, uint16_t tdf_id, uint8_t tdf_len, uint64_t time, void *data)
+static inline void tdf_data_logger_log(uint8_t logger_mask, uint16_t tdf_id, uint8_t tdf_len,
+				       uint64_t time, void *data)
 {
 	tdf_data_logger_log_array(logger_mask, tdf_id, tdf_len, 1, time, 0, data);
 }

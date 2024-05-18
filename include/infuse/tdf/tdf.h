@@ -91,8 +91,8 @@ static inline void tdf_buffer_state_reset(struct tdf_buffer_state *state)
  * @retval -ENOSPC TDF too large to ever fit on buffer
  * @return -ENOMEM Insufficient space to add any TDFs to buffer
  */
-int tdf_add(struct tdf_buffer_state *state, uint16_t tdf_id, uint8_t tdf_len, uint8_t tdf_num, uint64_t time,
-	    uint16_t period, const void *data);
+int tdf_add(struct tdf_buffer_state *state, uint16_t tdf_id, uint8_t tdf_len, uint8_t tdf_num,
+	    uint64_t time, uint16_t period, const void *data);
 
 /**
  * @brief Initialise TDF parsing state

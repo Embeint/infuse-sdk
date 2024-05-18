@@ -35,7 +35,8 @@ void epacket_dummy_set_tx_failure(int error_code)
 }
 
 void epacket_dummy_receive_extra(const struct device *dev, const struct epacket_dummy_frame *header,
-				 const void *payload, size_t payload_len, const void *extra, size_t extra_len)
+				 const void *payload, size_t payload_len, const void *extra,
+				 size_t extra_len)
 {
 	struct net_buf *rx = epacket_alloc_rx(K_FOREVER);
 	struct epacket_rx_metadata *meta = net_buf_user_data(rx);
@@ -101,14 +102,14 @@ static const struct epacket_interface_api dummy_api = {
 	.send = epacket_dummy_send,
 };
 
-#define EPACKET_DUMMY_DEFINE(inst)                                                                                     \
-	BUILD_ASSERT(sizeof(struct epacket_dummy_frame) == DT_INST_PROP(inst, header_size));                           \
-	static struct epacket_interface_common_data epacket_dummy_data##inst;                                          \
-	static const struct epacket_interface_common_config epacket_dummy_config##inst = {                             \
-		.header_size = DT_INST_PROP(inst, header_size),                                                        \
-		.footer_size = DT_INST_PROP(inst, footer_size),                                                        \
-	};                                                                                                             \
-	DEVICE_DT_INST_DEFINE(inst, epacket_dummy_init, NULL, &epacket_dummy_data##inst, &epacket_dummy_config##inst,  \
-			      POST_KERNEL, 0, &dummy_api);
+#define EPACKET_DUMMY_DEFINE(inst)                                                                 \
+	BUILD_ASSERT(sizeof(struct epacket_dummy_frame) == DT_INST_PROP(inst, header_size));       \
+	static struct epacket_interface_common_data epacket_dummy_data##inst;                      \
+	static const struct epacket_interface_common_config epacket_dummy_config##inst = {         \
+		.header_size = DT_INST_PROP(inst, header_size),                                    \
+		.footer_size = DT_INST_PROP(inst, footer_size),                                    \
+	};                                                                                         \
+	DEVICE_DT_INST_DEFINE(inst, epacket_dummy_init, NULL, &epacket_dummy_data##inst,           \
+			      &epacket_dummy_config##inst, POST_KERNEL, 0, &dummy_api);
 
 DT_INST_FOREACH_STATUS_OKAY(EPACKET_DUMMY_DEFINE)

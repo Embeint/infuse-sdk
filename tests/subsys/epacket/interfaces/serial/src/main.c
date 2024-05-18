@@ -197,7 +197,8 @@ ZTEST(epacket_serial, test_sequence)
 
 	for (int i = 0; i < ARRAY_SIZE(seqs); i++) {
 		iter_auth = i % 2 ? EPACKET_AUTH_DEVICE : EPACKET_AUTH_NETWORK;
-		extra_flags = i % 2 ? EPACKET_FLAGS_ENCRYPTION_DEVICE : EPACKET_FLAGS_ENCRYPTION_NETWORK;
+		extra_flags =
+			i % 2 ? EPACKET_FLAGS_ENCRYPTION_DEVICE : EPACKET_FLAGS_ENCRYPTION_NETWORK;
 		/* Construct buffer */
 		tx = epacket_alloc_tx(K_NO_WAIT);
 		zassert_not_null(tx);

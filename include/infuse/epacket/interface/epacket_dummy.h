@@ -65,7 +65,8 @@ void epacket_dummy_set_tx_failure(int error_code);
  * @param extra_len Length of extra payload
  */
 void epacket_dummy_receive_extra(const struct device *dev, const struct epacket_dummy_frame *header,
-				 const void *payload, size_t payload_len, const void *extra, size_t extra_len);
+				 const void *payload, size_t payload_len, const void *extra,
+				 size_t extra_len);
 
 /**
  * @brief Simulate the dummy interface receiving a packet
@@ -75,7 +76,8 @@ void epacket_dummy_receive_extra(const struct device *dev, const struct epacket_
  * @param payload Packet payload
  * @param payload_len Length of payload
  */
-static inline void epacket_dummy_receive(const struct device *dev, const struct epacket_dummy_frame *header,
+static inline void epacket_dummy_receive(const struct device *dev,
+					 const struct epacket_dummy_frame *header,
 					 const void *payload, size_t payload_len)
 {
 	epacket_dummy_receive_extra(dev, header, payload, payload_len, NULL, 0);

@@ -15,8 +15,9 @@
 #include "backend_api.h"
 #include "epacket.h"
 
-static int logger_epacket_write(const struct data_logger_backend_config *backend, uint32_t phy_block,
-				enum infuse_type data_type, const void *mem, uint16_t mem_len)
+static int logger_epacket_write(const struct data_logger_backend_config *backend,
+				uint32_t phy_block, enum infuse_type data_type, const void *mem,
+				uint16_t mem_len)
 {
 	struct net_buf *buf = epacket_alloc_tx_for_interface(backend->backend, K_FOREVER);
 

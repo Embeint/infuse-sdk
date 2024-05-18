@@ -167,7 +167,7 @@ ssize_t kv_store_read_fallback(uint16_t key, void *data, size_t max_data_len, co
  *
  * @return a value from @a kv_store_read_fallback
  */
-#define KV_STORE_READ_FALLBACK(key, data, fallback)                                                                    \
+#define KV_STORE_READ_FALLBACK(key, data, fallback)                                                \
 	kv_store_read_fallback(key, data, sizeof(*data), fallback, sizeof(*fallback))
 
 /**

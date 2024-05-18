@@ -27,7 +27,8 @@ ZTEST(kv_store, test_init_failure)
 
 	/* Write all the flash to 0 */
 	for (int i = 0; i < NVS_PARTITION_SIZE; i += sizeof(zeroes)) {
-		zassert_equal(0, flash_write(dev, NVS_PARTITION_OFFSET + i, zeroes, sizeof(zeroes)));
+		zassert_equal(0,
+			      flash_write(dev, NVS_PARTITION_OFFSET + i, zeroes, sizeof(zeroes)));
 	}
 
 	/* Ensure init still succeeds */
@@ -62,7 +63,8 @@ ZTEST(kv_store, test_disabled_key)
 
 	rc = kv_store_read(KV_KEY_FIXED_LOCATION, &location, sizeof(location));
 	zassert_equal(-EACCES, rc);
-	rc = kv_store_read_fallback(KV_KEY_FIXED_LOCATION, &location, sizeof(location), &fallback, sizeof(fallback));
+	rc = kv_store_read_fallback(KV_KEY_FIXED_LOCATION, &location, sizeof(location), &fallback,
+				    sizeof(fallback));
 	zassert_equal(-EACCES, rc);
 	rc = kv_store_write(KV_KEY_FIXED_LOCATION, &location, sizeof(location));
 	zassert_equal(-EACCES, rc);
@@ -131,7 +133,8 @@ ZTEST(kv_store, test_read_fallback)
 	ssize_t rc;
 
 	/* Initial fallback read */
-	rc = kv_store_read_fallback(KV_KEY_REBOOTS, &reboots, sizeof(reboots), &fallback, sizeof(fallback));
+	rc = kv_store_read_fallback(KV_KEY_REBOOTS, &reboots, sizeof(reboots), &fallback,
+				    sizeof(fallback));
 	zassert_equal(sizeof(reboots), rc);
 	zassert_equal(100, reboots.count);
 
@@ -141,7 +144,8 @@ ZTEST(kv_store, test_read_fallback)
 	zassert_equal(sizeof(reboots), rc);
 
 	/* Second fallback read */
-	rc = kv_store_read_fallback(KV_KEY_REBOOTS, &reboots, sizeof(reboots), &fallback, sizeof(fallback));
+	rc = kv_store_read_fallback(KV_KEY_REBOOTS, &reboots, sizeof(reboots), &fallback,
+				    sizeof(fallback));
 	zassert_equal(sizeof(reboots), rc);
 	zassert_equal(110, reboots.count);
 }
@@ -205,7 +209,8 @@ ZTEST(kv_store, test_callbacks)
 
 	/* Callback run on fallback */
 	ctx.key = -1;
-	(void)kv_store_read_fallback(KV_KEY_REBOOTS, &reboots, sizeof(reboots), &fallback, sizeof(fallback));
+	(void)kv_store_read_fallback(KV_KEY_REBOOTS, &reboots, sizeof(reboots), &fallback,
+				     sizeof(fallback));
 	zassert_equal(KV_KEY_REBOOTS, ctx.key);
 	zassert_not_null(ctx.data);
 	zassert_equal(sizeof(fallback), ctx.data_len);

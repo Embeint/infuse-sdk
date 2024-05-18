@@ -46,7 +46,8 @@ LOG_MODULE_REGISTER(epacket_serial, CONFIG_EPACKET_SERIAL_LOG_LEVEL);
 static void disconnected_handler(struct k_work *work)
 {
 	struct k_work_delayable *delayable = k_work_delayable_from_work(work);
-	struct epacket_serial_data *data = CONTAINER_OF(delayable, struct epacket_serial_data, dc_handler);
+	struct epacket_serial_data *data =
+		CONTAINER_OF(delayable, struct epacket_serial_data, dc_handler);
 	struct net_buf *buf;
 	int cnt = 0;
 
@@ -167,19 +168,20 @@ static const struct epacket_interface_api serial_api = {
 	.send = epacket_serial_send,
 };
 
-#define EPACKET_SERIAL_DEFINE(inst)                                                                                    \
-	BUILD_ASSERT(sizeof(struct epacket_serial_frame_header) + sizeof(struct epacket_serial_frame) ==               \
-		     DT_INST_PROP(inst, header_size));                                                                 \
-	static struct epacket_serial_data serial_data_##inst;                                                          \
-	static const struct epacket_serial_config serial_config_##inst = {                                             \
-		.common =                                                                                              \
-			{                                                                                              \
-				.header_size = DT_INST_PROP(inst, header_size),                                        \
-				.footer_size = DT_INST_PROP(inst, footer_size),                                        \
-			},                                                                                             \
-		.backend = DEVICE_DT_GET(DT_INST_PROP(inst, serial)),                                                  \
-	};                                                                                                             \
-	DEVICE_DT_INST_DEFINE(inst, epacket_serial_init, NULL, &serial_data_##inst, &serial_config_##inst,             \
-			      POST_KERNEL, 0, &serial_api);
+#define EPACKET_SERIAL_DEFINE(inst)                                                                \
+	BUILD_ASSERT(sizeof(struct epacket_serial_frame_header) +                                  \
+			     sizeof(struct epacket_serial_frame) ==                                \
+		     DT_INST_PROP(inst, header_size));                                             \
+	static struct epacket_serial_data serial_data_##inst;                                      \
+	static const struct epacket_serial_config serial_config_##inst = {                         \
+		.common =                                                                          \
+			{                                                                          \
+				.header_size = DT_INST_PROP(inst, header_size),                    \
+				.footer_size = DT_INST_PROP(inst, footer_size),                    \
+			},                                                                         \
+		.backend = DEVICE_DT_GET(DT_INST_PROP(inst, serial)),                              \
+	};                                                                                         \
+	DEVICE_DT_INST_DEFINE(inst, epacket_serial_init, NULL, &serial_data_##inst,                \
+			      &serial_config_##inst, POST_KERNEL, 0, &serial_api);
 
 DT_INST_FOREACH_STATUS_OKAY(EPACKET_SERIAL_DEFINE)

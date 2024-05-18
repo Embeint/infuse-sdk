@@ -23,7 +23,8 @@ static struct k_work_delayable sntp_worker;
 
 LOG_MODULE_REGISTER(sntp_auto, CONFIG_SNTP_AUTO_LOG_LEVEL);
 
-static void l4_event_handler(struct net_mgmt_event_callback *cb, uint32_t event, struct net_if *iface)
+static void l4_event_handler(struct net_mgmt_event_callback *cb, uint32_t event,
+			     struct net_if *iface)
 {
 	k_timeout_t delay = K_NO_WAIT;
 	uint32_t sync_age;
@@ -78,7 +79,8 @@ static void sntp_work(struct k_work *work)
 	addr.sin_port = htons(123);
 
 	a = addr.sin_addr.s4_addr;
-	LOG_INF("%s -> %d.%d.%d.%d:%d", ntp_server.url.value, a[0], a[1], a[2], a[3], ntohs(addr.sin_port));
+	LOG_INF("%s -> %d.%d.%d.%d:%d", ntp_server.url.value, a[0], a[1], a[2], a[3],
+		ntohs(addr.sin_port));
 
 	rc = sntp_init(&ctx, (struct sockaddr *)&addr, sizeof(struct sockaddr_in));
 	if (rc < 0) {

@@ -95,7 +95,8 @@ FUNC_NORETURN void infuse_reboot(enum infuse_reboot_reason reason, uint32_t info
  * @param info2 Link register at exception
  * @param delay Time delay or absolute time to execute the reboot
  */
-void infuse_reboot_delayed(enum infuse_reboot_reason reason, uint32_t info1, uint32_t info2, k_timeout_t delay);
+void infuse_reboot_delayed(enum infuse_reboot_reason reason, uint32_t info1, uint32_t info2,
+			   k_timeout_t delay);
 
 /**
  * @brief Query the reason for the previous reboot

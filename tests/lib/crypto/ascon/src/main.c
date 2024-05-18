@@ -41,8 +41,8 @@ ZTEST(ascon, test_ascon128)
 
 	for (int size = 1; size < 128; size++) {
 		/* Encrypt the payload */
-		rc = ascon128_aead_encrypt(ciphertext, &clen, plaintext, size, associated_data, sizeof(associated_data),
-					   tag, nonce, key);
+		rc = ascon128_aead_encrypt(ciphertext, &clen, plaintext, size, associated_data,
+					   sizeof(associated_data), tag, nonce, key);
 		zassert_equal(0, rc, "Encryption failed");
 		zassert_equal(size, clen, "Unexpected ciphertext length");
 
@@ -102,10 +102,12 @@ ZTEST(ascon, test_ascon128_associated_data)
 	zassert_mem_equal(plaintext, decrypted, size, "Decrypted does not equal input");
 
 	/* Small associated data */
-	rc = ascon128_aead_encrypt(ciphertext, &clen, plaintext, size, associated_data, 4, tag, nonce, key);
+	rc = ascon128_aead_encrypt(ciphertext, &clen, plaintext, size, associated_data, 4, tag,
+				   nonce, key);
 	zassert_equal(0, rc, "Encryption failed");
 	zassert_equal(size, clen, "Unexpected ciphertext length");
-	rc = ascon128_aead_decrypt(decrypted, &mlen, tag, ciphertext, clen, associated_data, 4, nonce, key);
+	rc = ascon128_aead_decrypt(decrypted, &mlen, tag, ciphertext, clen, associated_data, 4,
+				   nonce, key);
 	zassert_equal(0, rc, "Decryption failed");
 	zassert_equal(size, mlen, "Unexpected decrypt length");
 	zassert_mem_equal(plaintext, decrypted, size, "Decrypted does not equal input");
@@ -122,17 +124,20 @@ ZTEST(ascon, test_ascon128_unaligned)
 
 	for (int i = 1; i < 8; i++) {
 		/* Encrypt the payload */
-		rc = ascon128_aead_encrypt(ciphertext + i, &clen, plaintext + i, size, associated_data + i,
-					   sizeof(associated_data), tag + i, nonce + i, key + i);
+		rc = ascon128_aead_encrypt(ciphertext + i, &clen, plaintext + i, size,
+					   associated_data + i, sizeof(associated_data), tag + i,
+					   nonce + i, key + i);
 		zassert_equal(0, rc, "Encryption failed");
 		zassert_equal(size, clen, "Unexpected ciphertext length");
 
 		/* Decrypt the payload */
-		rc = ascon128_aead_decrypt(decrypted + i, &mlen, tag + i, ciphertext + i, clen, associated_data + i,
-					   sizeof(associated_data), nonce + i, key + i);
+		rc = ascon128_aead_decrypt(decrypted + i, &mlen, tag + i, ciphertext + i, clen,
+					   associated_data + i, sizeof(associated_data), nonce + i,
+					   key + i);
 		zassert_equal(0, rc, "Decryption failed");
 		zassert_equal(size, mlen, "Unexpected decrypt length");
-		zassert_mem_equal(plaintext + i, decrypted + i, size, "Decrypted does not equal input");
+		zassert_mem_equal(plaintext + i, decrypted + i, size,
+				  "Decrypted does not equal input");
 	}
 }
 
@@ -154,35 +159,35 @@ ZTEST(ascon, test_ascon128a)
 
 		/* Ciphertext error */
 		ciphertext[0]++;
-		rc = ascon128a_aead_decrypt(decrypted, &mlen, tag, ciphertext, clen, associated_data,
-					    sizeof(associated_data), nonce, key);
+		rc = ascon128a_aead_decrypt(decrypted, &mlen, tag, ciphertext, clen,
+					    associated_data, sizeof(associated_data), nonce, key);
 		zassert_equal(-1, rc, "Decryption did not fail");
 		ciphertext[0]--;
 
 		/* Tag error */
 		tag[0]++;
-		rc = ascon128a_aead_decrypt(decrypted, &mlen, tag, ciphertext, clen, associated_data,
-					    sizeof(associated_data), nonce, key);
+		rc = ascon128a_aead_decrypt(decrypted, &mlen, tag, ciphertext, clen,
+					    associated_data, sizeof(associated_data), nonce, key);
 		zassert_equal(-1, rc, "Decryption did not fail");
 		tag[0]--;
 
 		/* Key error */
 		key[0]++;
-		rc = ascon128a_aead_decrypt(decrypted, &mlen, tag, ciphertext, clen, associated_data,
-					    sizeof(associated_data), nonce, key);
+		rc = ascon128a_aead_decrypt(decrypted, &mlen, tag, ciphertext, clen,
+					    associated_data, sizeof(associated_data), nonce, key);
 		zassert_equal(-1, rc, "Decryption did not fail");
 		key[0]--;
 
 		/* Associated data error */
 		associated_data[0]++;
-		rc = ascon128a_aead_decrypt(decrypted, &mlen, tag, ciphertext, clen, associated_data,
-					    sizeof(associated_data), nonce, key);
+		rc = ascon128a_aead_decrypt(decrypted, &mlen, tag, ciphertext, clen,
+					    associated_data, sizeof(associated_data), nonce, key);
 		zassert_equal(-1, rc, "Decryption did not fail");
 		associated_data[0]--;
 
 		/* Decrypt the payload */
-		rc = ascon128a_aead_decrypt(decrypted, &mlen, tag, ciphertext, clen, associated_data,
-					    sizeof(associated_data), nonce, key);
+		rc = ascon128a_aead_decrypt(decrypted, &mlen, tag, ciphertext, clen,
+					    associated_data, sizeof(associated_data), nonce, key);
 		zassert_equal(0, rc, "Decryption failed");
 		zassert_equal(size, mlen, "Unexpected decrypt length");
 		zassert_mem_equal(plaintext, decrypted, size, "Decrypted does not equal input");
@@ -208,10 +213,12 @@ ZTEST(ascon, test_ascon128a_associated_data)
 	zassert_mem_equal(plaintext, decrypted, size, "Decrypted does not equal input");
 
 	/* Small associated data */
-	rc = ascon128a_aead_encrypt(ciphertext, &clen, plaintext, size, associated_data, 4, tag, nonce, key);
+	rc = ascon128a_aead_encrypt(ciphertext, &clen, plaintext, size, associated_data, 4, tag,
+				    nonce, key);
 	zassert_equal(0, rc, "Encryption failed");
 	zassert_equal(size, clen, "Unexpected ciphertext length");
-	rc = ascon128a_aead_decrypt(decrypted, &mlen, tag, ciphertext, clen, associated_data, 4, nonce, key);
+	rc = ascon128a_aead_decrypt(decrypted, &mlen, tag, ciphertext, clen, associated_data, 4,
+				    nonce, key);
 	zassert_equal(0, rc, "Decryption failed");
 	zassert_equal(size, mlen, "Unexpected decrypt length");
 	zassert_mem_equal(plaintext, decrypted, size, "Decrypted does not equal input");
@@ -228,17 +235,20 @@ ZTEST(ascon, test_ascon128a_unaligned)
 
 	for (int i = 1; i < 8; i++) {
 		/* Encrypt the payload */
-		rc = ascon128a_aead_encrypt(ciphertext + i, &clen, plaintext + i, size, associated_data + i,
-					    sizeof(associated_data), tag + i, nonce + i, key + i);
+		rc = ascon128a_aead_encrypt(ciphertext + i, &clen, plaintext + i, size,
+					    associated_data + i, sizeof(associated_data), tag + i,
+					    nonce + i, key + i);
 		zassert_equal(0, rc, "Encryption failed");
 		zassert_equal(size, clen, "Unexpected ciphertext length");
 
 		/* Decrypt the payload */
-		rc = ascon128a_aead_decrypt(decrypted + i, &mlen, tag + i, ciphertext + i, clen, associated_data + i,
-					    sizeof(associated_data), nonce + i, key + i);
+		rc = ascon128a_aead_decrypt(decrypted + i, &mlen, tag + i, ciphertext + i, clen,
+					    associated_data + i, sizeof(associated_data), nonce + i,
+					    key + i);
 		zassert_equal(0, rc, "Decryption failed");
 		zassert_equal(size, mlen, "Unexpected decrypt length");
-		zassert_mem_equal(plaintext + i, decrypted + i, size, "Decrypted does not equal input");
+		zassert_mem_equal(plaintext + i, decrypted + i, size,
+				  "Decrypted does not equal input");
 	}
 }
 
@@ -260,35 +270,35 @@ ZTEST(ascon, test_ascon80pq)
 
 		/* Ciphertext error */
 		ciphertext[0]++;
-		rc = ascon80pq_aead_decrypt(decrypted, &mlen, tag, ciphertext, clen, associated_data,
-					    sizeof(associated_data), nonce, key);
+		rc = ascon80pq_aead_decrypt(decrypted, &mlen, tag, ciphertext, clen,
+					    associated_data, sizeof(associated_data), nonce, key);
 		zassert_equal(-1, rc, "Decryption did not fail");
 		ciphertext[0]--;
 
 		/* Tag error */
 		tag[0]++;
-		rc = ascon80pq_aead_decrypt(decrypted, &mlen, tag, ciphertext, clen, associated_data,
-					    sizeof(associated_data), nonce, key);
+		rc = ascon80pq_aead_decrypt(decrypted, &mlen, tag, ciphertext, clen,
+					    associated_data, sizeof(associated_data), nonce, key);
 		zassert_equal(-1, rc, "Decryption did not fail");
 		tag[0]--;
 
 		/* Key error */
 		key[0]++;
-		rc = ascon80pq_aead_decrypt(decrypted, &mlen, tag, ciphertext, clen, associated_data,
-					    sizeof(associated_data), nonce, key);
+		rc = ascon80pq_aead_decrypt(decrypted, &mlen, tag, ciphertext, clen,
+					    associated_data, sizeof(associated_data), nonce, key);
 		zassert_equal(-1, rc, "Decryption did not fail");
 		key[0]--;
 
 		/* Associated data error */
 		associated_data[0]++;
-		rc = ascon80pq_aead_decrypt(decrypted, &mlen, tag, ciphertext, clen, associated_data,
-					    sizeof(associated_data), nonce, key);
+		rc = ascon80pq_aead_decrypt(decrypted, &mlen, tag, ciphertext, clen,
+					    associated_data, sizeof(associated_data), nonce, key);
 		zassert_equal(-1, rc, "Decryption did not fail");
 		associated_data[0]--;
 
 		/* Decrypt the payload */
-		rc = ascon80pq_aead_decrypt(decrypted, &mlen, tag, ciphertext, clen, associated_data,
-					    sizeof(associated_data), nonce, key);
+		rc = ascon80pq_aead_decrypt(decrypted, &mlen, tag, ciphertext, clen,
+					    associated_data, sizeof(associated_data), nonce, key);
 		zassert_equal(0, rc, "Decryption failed");
 		zassert_equal(size, mlen, "Unexpected decrypt length");
 		zassert_mem_equal(plaintext, decrypted, size, "Decrypted does not equal input");
@@ -314,10 +324,12 @@ ZTEST(ascon, test_ascon80pq_associated_data)
 	zassert_mem_equal(plaintext, decrypted, size, "Decrypted does not equal input");
 
 	/* Small associated data */
-	rc = ascon80pq_aead_encrypt(ciphertext, &clen, plaintext, size, associated_data, 4, tag, nonce, key);
+	rc = ascon80pq_aead_encrypt(ciphertext, &clen, plaintext, size, associated_data, 4, tag,
+				    nonce, key);
 	zassert_equal(0, rc, "Encryption failed");
 	zassert_equal(size, clen, "Unexpected ciphertext length");
-	rc = ascon80pq_aead_decrypt(decrypted, &mlen, tag, ciphertext, clen, associated_data, 4, nonce, key);
+	rc = ascon80pq_aead_decrypt(decrypted, &mlen, tag, ciphertext, clen, associated_data, 4,
+				    nonce, key);
 	zassert_equal(0, rc, "Decryption failed");
 	zassert_equal(size, mlen, "Unexpected decrypt length");
 	zassert_mem_equal(plaintext, decrypted, size, "Decrypted does not equal input");
@@ -334,17 +346,20 @@ ZTEST(ascon, test_ascon80pq_unaligned)
 
 	for (int i = 1; i < 8; i++) {
 		/* Encrypt the payload */
-		rc = ascon80pq_aead_encrypt(ciphertext + i, &clen, plaintext + i, size, associated_data + i,
-					    sizeof(associated_data), tag + i, nonce + i, key + i);
+		rc = ascon80pq_aead_encrypt(ciphertext + i, &clen, plaintext + i, size,
+					    associated_data + i, sizeof(associated_data), tag + i,
+					    nonce + i, key + i);
 		zassert_equal(0, rc, "Encryption failed");
 		zassert_equal(size, clen, "Unexpected ciphertext length");
 
 		/* Decrypt the payload */
-		rc = ascon80pq_aead_decrypt(decrypted + i, &mlen, tag + i, ciphertext + i, clen, associated_data + i,
-					    sizeof(associated_data), nonce + i, key + i);
+		rc = ascon80pq_aead_decrypt(decrypted + i, &mlen, tag + i, ciphertext + i, clen,
+					    associated_data + i, sizeof(associated_data), nonce + i,
+					    key + i);
 		zassert_equal(0, rc, "Decryption failed");
 		zassert_equal(size, mlen, "Unexpected decrypt length");
-		zassert_mem_equal(plaintext + i, decrypted + i, size, "Decrypted does not equal input");
+		zassert_mem_equal(plaintext + i, decrypted + i, size,
+				  "Decrypted does not equal input");
 	}
 }
 
