@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-# Copyright (c) 2024 Embeint Pty Ltd
+# Copyright (c) 2024 Embeint Inc
 
 import argparse
 import pathlib
