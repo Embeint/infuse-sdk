@@ -19,6 +19,7 @@
 #define WIFI_MGMT_EVENTS (NET_EVENT_WIFI_CONNECT_RESULT | NET_EVENT_WIFI_DISCONNECT_RESULT)
 
 static struct net_mgmt_event_callback wifi_mgmt_cb;
+static struct k_work_delayable conn_config_changed;
 static struct k_work_delayable conn_create;
 static struct k_work_delayable conn_timeout;
 static struct net_if *wifi_if;
@@ -61,6 +62,24 @@ static void conn_timeout_worker(struct k_work *work)
 
 	/* Notify stack of timeout */
 	net_mgmt_event_notify(NET_EVENT_CONN_IF_TIMEOUT, wifi_if);
+}
+
+static void conn_config_changed_worker(struct k_work *work)
+{
+	int timeout;
+
+	/* Configuration changed, trigger a disconnect */
+	(void)net_mgmt(NET_REQUEST_WIFI_DISCONNECT, wifi_if, NULL, 0);
+	/* Reschedule connection */
+	if (conn_mgr_if_get_flag(wifi_if, CONN_MGR_IF_PERSISTENT)) {
+		/* Schedule reconnection attempt */
+		k_work_schedule(&conn_create, K_SECONDS(1));
+		/* Schedule the timeout if set */
+		timeout = conn_mgr_if_get_timeout(wifi_if);
+		if (timeout > CONN_MGR_IF_NO_TIMEOUT) {
+			k_work_schedule(&conn_timeout, K_SECONDS(timeout));
+		}
+	}
 }
 
 static void wifi_mgmt_event_handler(struct net_mgmt_event_callback *cb, uint32_t mgmt_event,
@@ -160,7 +179,8 @@ static void kv_value_changed(uint16_t key, const void *data, size_t data_len, vo
 	switch (key) {
 	case KV_KEY_WIFI_SSID:
 	case KV_KEY_WIFI_PSK:
-		/* TODO: Handle reconfiguration */
+		LOG_INF("Configuration changed (%d %s)", key, data ? "updated" : "deleted");
+		k_work_reschedule(&conn_config_changed, K_MSEC(100));
 	}
 }
 
@@ -172,6 +192,8 @@ static void wifi_mgmt_init(struct conn_mgr_conn_binding *const binding)
 
 	wifi_if = binding->iface;
 	kv_cb.user_ctx = wifi_if;
+
+	kv_store_register_callback(&kv_cb);
 
 	net_mgmt_init_event_callback(&wifi_mgmt_cb, wifi_mgmt_event_handler, WIFI_MGMT_EVENTS);
 	net_mgmt_add_event_callback(&wifi_mgmt_cb);
@@ -191,6 +213,7 @@ static void wifi_mgmt_init(struct conn_mgr_conn_binding *const binding)
 
 	k_work_init_delayable(&conn_create, conn_create_worker);
 	k_work_init_delayable(&conn_timeout, conn_timeout_worker);
+	k_work_init_delayable(&conn_config_changed, conn_config_changed_worker);
 }
 
 static struct conn_mgr_conn_api l2_wifi_conn_api = {
