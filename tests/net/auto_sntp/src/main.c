@@ -62,7 +62,7 @@ static void reference_time_updated(enum civil_time_source source, struct timeuti
 	k_sem_give(&time_ref_updated);
 }
 
-ZTEST(auto_sntp, test_boot)
+ZTEST(auto_sntp, test_auto_sntp)
 {
 	struct timeutil_sync_instant reference;
 	static struct civil_time_cb time_cb;
@@ -117,14 +117,18 @@ ZTEST(auto_sntp, test_boot)
 
 	/* Set time sync while disconnected */
 	k_sleep(K_MSEC(500));
+	reference.local = k_uptime_ticks();
 	zassert_equal(0, civil_time_set_reference(TIME_SOURCE_INVALID, &reference));
 	k_sleep(K_SECONDS(CONFIG_SNTP_AUTO_RESYNC_AGE - 1));
 
 	/* Reconnect by adding IP address */
 	zassert_not_null(net_if_ipv4_addr_add(iface, &addr, NET_ADDR_MANUAL, 0));
 
-	/* Ensure time sync happends quickly */
-	zassert_equal(0, k_sem_take(&time_ref_updated, K_SECONDS(2)));
+	/* Time sync shouldn't trigger immediately */
+	zassert_equal(-EAGAIN, k_sem_take(&time_ref_updated, K_MSEC(500)));
+
+	/* But should occur at the expected time */
+	zassert_equal(0, k_sem_take(&time_ref_updated, K_SECONDS(1)));
 #endif /* CONFIG_NET_NATIVE_OFFLOADED_SOCKETS */
 }
 
