@@ -40,9 +40,10 @@ static int bat_sampler(void *a, void *b, void *c)
 		}
 
 		/* Populate the output TDF */
-		rc = sensor_channel_get(bat, SENSOR_CHAN_VOLTAGE, &value);
+		(void)sensor_channel_get(bat, SENSOR_CHAN_GAUGE_VOLTAGE, &value);
 		tdf_battery.voltage_mv = sensor_value_to_milli(&value);
-		tdf_battery.soc = 0;
+		(void)sensor_channel_get(bat, SENSOR_CHAN_GAUGE_STATE_OF_CHARGE, &value);
+		tdf_battery.soc = sensor_value_to_centi(&value);
 		tdf_battery.charge_ua = 0;
 
 		/* Push the output TDF over serial */
