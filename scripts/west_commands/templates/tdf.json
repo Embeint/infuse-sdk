@@ -75,6 +75,41 @@
                 {"name": "sample", "type": "struct tdf_struct_xyz_16bit", "description": "Raw sample"}
             ]
         },
+        "14": {
+            "name": "GYR_125DPS",
+            "description": "Gyroscope +-125 DPS",
+            "fields": [
+                {"name": "sample", "type": "struct tdf_struct_xyz_16bit", "description": "Raw sample"}
+            ]
+        },
+        "15": {
+            "name": "GYR_250DPS",
+            "description": "Gyroscope +-250 DPS",
+            "fields": [
+                {"name": "sample", "type": "struct tdf_struct_xyz_16bit", "description": "Raw sample"}
+            ]
+        },
+        "16": {
+            "name": "GYR_500DPS",
+            "description": "Gyroscope +-500 DPS",
+            "fields": [
+                {"name": "sample", "type": "struct tdf_struct_xyz_16bit", "description": "Raw sample"}
+            ]
+        },
+        "17": {
+            "name": "GYR_1000DPS",
+            "description": "Gyroscope +-1000 DPS",
+            "fields": [
+                {"name": "sample", "type": "struct tdf_struct_xyz_16bit", "description": "Raw sample"}
+            ]
+        },
+        "18": {
+            "name": "GYR_2000DPS",
+            "description": "Gyroscope +-2000 DPS",
+            "fields": [
+                {"name": "sample", "type": "struct tdf_struct_xyz_16bit", "description": "Raw sample"}
+            ]
+        },
         "100": {
             "name": "ARRAY_TYPE",
             "description": "Example array type",
