@@ -1,0 +1,11 @@
+# Infuse IoT IMU driver configuration
+
+config INFUSE_IMU
+	bool "Infuse IoT IMU driver API"
+	depends on SENSOR
+
+if INFUSE_IMU
+
+rsource "bmi270/Kconfig"
+
+endif # INFUSE_IMU

@@ -1,0 +1,3 @@
+# Infuse IoT driver configuration
+
+rsource "imu/Kconfig"
