@@ -15,64 +15,105 @@
 #include <infuse/time/civil.h>
 #include <infuse/tdf/definitions.h>
 #include <infuse/data_logger/high_level/tdf.h>
+#include <infuse/drivers/imu.h>
+
+#define IMU_SAMPLE_ARRAY_LEN 256
+IMU_SAMPLE_ARRAY_CREATE(imu_sample_buffer, IMU_SAMPLE_ARRAY_LEN);
+
+/* Validate IMU and TDFs match */
+BUILD_ASSERT(sizeof(struct imu_sample) == sizeof(struct tdf_acc_4g));
 
 LOG_MODULE_DECLARE(app);
+
+static void imu_sample_handler(struct imu_sample_array *samples)
+{
+	struct imu_sample *last_acc, *last_gyr;
+	uint64_t civil_time;
+
+	/* Print last sample from each array */
+	last_acc = &imu_sample_buffer->samples[imu_sample_buffer->accelerometer.offset +
+					       imu_sample_buffer->accelerometer.num - 1];
+	last_gyr = &imu_sample_buffer->samples[imu_sample_buffer->gyroscope.offset +
+					       imu_sample_buffer->gyroscope.num - 1];
+	if (imu_sample_buffer->accelerometer.num) {
+		LOG_INF("ACC [%3d] %6d %6d %6d", imu_sample_buffer->accelerometer.num - 1,
+			last_acc->x, last_acc->y, last_acc->z);
+	}
+	if (imu_sample_buffer->gyroscope.num) {
+		LOG_INF("GYR [%3d] %6d %6d %6d", imu_sample_buffer->gyroscope.num - 1, last_gyr->x,
+			last_gyr->y, last_gyr->z);
+	}
+
+	/* Log data as TDFs */
+	if (imu_sample_buffer->accelerometer.num) {
+		civil_time =
+			civil_time_from_ticks(imu_sample_buffer->accelerometer.timestamp_ticks);
+		tdf_data_logger_log_array(
+			TDF_DATA_LOGGER_SERIAL | TDF_DATA_LOGGER_UDP, TDF_ACC_4G,
+			sizeof(struct imu_sample), imu_sample_buffer->accelerometer.num, civil_time,
+			civil_period_from_ticks(imu_sample_buffer->accelerometer.period_ticks),
+			&imu_sample_buffer->samples[imu_sample_buffer->accelerometer.offset]);
+	}
+	if (imu_sample_buffer->gyroscope.num) {
+		civil_time = civil_time_from_ticks(imu_sample_buffer->gyroscope.timestamp_ticks);
+		tdf_data_logger_log_array(
+			TDF_DATA_LOGGER_SERIAL | TDF_DATA_LOGGER_UDP, TDF_GYR_500DPS,
+			sizeof(struct imu_sample), imu_sample_buffer->gyroscope.num, civil_time,
+			civil_period_from_ticks(imu_sample_buffer->gyroscope.period_ticks),
+			&imu_sample_buffer->samples[imu_sample_buffer->gyroscope.offset]);
+	}
+}
 
 static int imu_sampler(void *a, void *b, void *c)
 {
 	const struct device *imu = DEVICE_DT_GET(DT_NODELABEL(bmi270));
-	struct tdf_acc_2g tdf_acc[64];
-	struct sensor_value value;
-	int sample_cnt = 0;
+	struct imu_config config = {
+		.accelerometer =
+			{
+				.full_scale_range = 4,
+				.sample_rate_hz = 50,
+				.low_power = false,
+			},
+		.gyroscope =
+			{
+				.full_scale_range = 500,
+				.sample_rate_hz = 50,
+				.low_power = false,
+			},
+		.fifo_sample_buffer = 100,
+	};
+	struct imu_config_output config_output;
+	k_timeout_t interrupt_timeout;
 	int rc;
 
-	value.val1 = 50;
-	value.val2 = 0;
-	rc = sensor_attr_set(imu, SENSOR_CHAN_ACCEL_XYZ, SENSOR_ATTR_SAMPLING_FREQUENCY, &value);
+	rc = imu_configure(imu, &config, &config_output);
 
-	value.val1 = 4;
-	value.val2 = 0;
-	rc = sensor_attr_set(imu, SENSOR_CHAN_ACCEL_XYZ, SENSOR_ATTR_FULL_SCALE, &value);
+	LOG_WRN("%d Acc period: %d us Gyr period: %d us Int period: %d us", rc,
+		config_output.accelerometer_period_us, config_output.gyroscope_period_us,
+		config_output.expected_interrupt_period_us);
 
-	uint64_t now = k_uptime_get();
-
+	interrupt_timeout = K_USEC(2 * config_output.expected_interrupt_period_us);
 	while (true) {
-		now += 100;
-		/* Wait until the next sample time */
-		k_sleep(K_TIMEOUT_ABS_MS(now));
-
-		/* Read the latest value */
-		rc = sensor_sample_fetch(imu);
+		/* Wait for the next IMU interrupt */
+		rc = imu_data_wait(imu, interrupt_timeout);
 		if (rc < 0) {
-			LOG_ERR("Failed to fetch %s (%d)", imu->name, rc);
+			LOG_ERR("Timed out waiting for data");
 			break;
 		}
 
-		/* Push into the TDF array */
-		rc = sensor_channel_get(imu, SENSOR_CHAN_ACCEL_X, &value);
-		tdf_acc[sample_cnt].sample.x = sensor_value_to_milli(&value);
-		rc = sensor_channel_get(imu, SENSOR_CHAN_ACCEL_Y, &value);
-		tdf_acc[sample_cnt].sample.y = sensor_value_to_milli(&value);
-		rc = sensor_channel_get(imu, SENSOR_CHAN_ACCEL_Z, &value);
-		tdf_acc[sample_cnt].sample.z = sensor_value_to_milli(&value);
-		sample_cnt++;
-
-		/* Buffer not filled */
-		if (sample_cnt != ARRAY_SIZE(tdf_acc)) {
-			continue;
+		/* Read IMU samples */
+		rc = imu_data_read(imu, imu_sample_buffer, IMU_SAMPLE_ARRAY_LEN);
+		if (rc < 0) {
+			LOG_ERR("Failed to read IMU samples (%d)", rc);
+			break;
 		}
-		sample_cnt = 0;
 
-		tdf_data_logger_log_array(TDF_DATA_LOGGER_SERIAL | TDF_DATA_LOGGER_UDP, TDF_ACC_4G,
-					  sizeof(tdf_acc[0]), ARRAY_SIZE(tdf_acc), civil_time_now(),
-					  65536 / 10, tdf_acc);
-
-		/* Print the measured values */
-		LOG_INF("Sensor: %s", imu->name);
-		LOG_INF("\tX: %6d", tdf_acc[15].sample.x);
-		LOG_INF("\tY: %6d", tdf_acc[15].sample.y);
-		LOG_INF("\tZ: %6d", tdf_acc[15].sample.z);
+		/* Handle the samples */
+		imu_sample_handler(imu_sample_buffer);
 	}
+
+	/* Put IMU back into low power mode */
+	(void)imu_configure(imu, NULL, NULL);
 	k_sleep(K_FOREVER);
 	return 0;
 }
