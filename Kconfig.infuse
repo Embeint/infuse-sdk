@@ -3,6 +3,7 @@
 config INFUSE_SDK
 	bool "Build application with Infuse IoT SDK"
 
+rsource "drivers/Kconfig"
 rsource "lib/Kconfig"
 rsource "subsys/Kconfig"
 

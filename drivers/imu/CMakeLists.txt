@@ -1,0 +1,3 @@
+# Infuse IoT IMU drivers
+
+add_subdirectory_ifdef(CONFIG_INFUSE_IMU_BMI270 bmi270)
