@@ -105,6 +105,36 @@ struct tdf_acc_16g {
 	struct tdf_struct_xyz_16bit sample;
 } __packed;
 
+/* Gyroscope +-125 DPS */
+struct tdf_gyr_125dps {
+	/* Raw sample */
+	struct tdf_struct_xyz_16bit sample;
+} __packed;
+
+/* Gyroscope +-250 DPS */
+struct tdf_gyr_250dps {
+	/* Raw sample */
+	struct tdf_struct_xyz_16bit sample;
+} __packed;
+
+/* Gyroscope +-500 DPS */
+struct tdf_gyr_500dps {
+	/* Raw sample */
+	struct tdf_struct_xyz_16bit sample;
+} __packed;
+
+/* Gyroscope +-1000 DPS */
+struct tdf_gyr_1000dps {
+	/* Raw sample */
+	struct tdf_struct_xyz_16bit sample;
+} __packed;
+
+/* Gyroscope +-2000 DPS */
+struct tdf_gyr_2000dps {
+	/* Raw sample */
+	struct tdf_struct_xyz_16bit sample;
+} __packed;
+
 /* Example array type */
 struct tdf_array_type {
 	/* I am an array of length 4 */
@@ -120,6 +150,11 @@ enum tdf_builtin_id {
 	TDF_ACC_4G = 11,
 	TDF_ACC_8G = 12,
 	TDF_ACC_16G = 13,
+	TDF_GYR_125DPS = 14,
+	TDF_GYR_250DPS = 15,
+	TDF_GYR_500DPS = 16,
+	TDF_GYR_1000DPS = 17,
+	TDF_GYR_2000DPS = 18,
 	TDF_ARRAY_TYPE = 100,
 	/* End of builtin TDF range */
 	TDF_BUILTIN_END = 1024,
@@ -134,6 +169,11 @@ enum tdf_builtin_size {
 	_TDF_ACC_4G_SIZE = sizeof(struct tdf_acc_4g),
 	_TDF_ACC_8G_SIZE = sizeof(struct tdf_acc_8g),
 	_TDF_ACC_16G_SIZE = sizeof(struct tdf_acc_16g),
+	_TDF_GYR_125DPS_SIZE = sizeof(struct tdf_gyr_125dps),
+	_TDF_GYR_250DPS_SIZE = sizeof(struct tdf_gyr_250dps),
+	_TDF_GYR_500DPS_SIZE = sizeof(struct tdf_gyr_500dps),
+	_TDF_GYR_1000DPS_SIZE = sizeof(struct tdf_gyr_1000dps),
+	_TDF_GYR_2000DPS_SIZE = sizeof(struct tdf_gyr_2000dps),
 	_TDF_ARRAY_TYPE_SIZE = sizeof(struct tdf_array_type),
 };
 
