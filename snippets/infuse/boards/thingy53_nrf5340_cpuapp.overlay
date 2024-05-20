@@ -1,3 +1,4 @@
+#include <zephyr/dt-bindings/gpio/gpio.h>
 #include <common/nordic/infuse_nrf5340_cpuapp.dtsi>
 
 /* Dynamic power domains, not regulators that are always on */
@@ -42,6 +43,7 @@
 
 &bmi270 {
     status = "okay";
+    irq-gpios = <&gpio0 23 GPIO_ACTIVE_HIGH>;
     power-domain = <&power_domain_sensor>;
 };
 
