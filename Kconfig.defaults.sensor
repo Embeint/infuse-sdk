@@ -1,0 +1,10 @@
+# Infuse IoT SDK sensor defaults
+
+configdefault SENSOR
+	default y
+configdefault INFUSE_IMU
+	default y
+
+# Disable Zephyr IMU drivers
+configdefault BMI270
+	default n if INFUSE_IMU
