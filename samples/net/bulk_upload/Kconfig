@@ -1,0 +1,17 @@
+# Increased defaults for bulk uploads
+
+config BULK_UPLOAD_BYTES
+	int "Number of payload bytes to uplink (default 1MB)"
+	default 1048576
+
+config BULK_UPLOAD_PERIOD
+	int "Time between bulk uploads"
+	default 60
+
+configdefault HEAP_MEM_POOL_SIZE
+	default 200000 if WIFI_NRF700X
+
+configdefault NRF_WIFI_IF_AUTO_START
+	default n
+
+source "Kconfig.zephyr"
