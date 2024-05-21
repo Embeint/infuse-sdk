@@ -230,6 +230,15 @@ uint64_t ticks_from_civil_time(uint64_t civil_time);
 uint64_t civil_time_from_ticks(uint64_t ticks);
 
 /**
+ * @brief Get the civil time period from a tick duration
+ *
+ * @param ticks Tick period
+ *
+ * @return uint32_t Equivalent period in civil time units
+ */
+uint32_t civil_period_from_ticks(uint64_t ticks);
+
+/**
  * @brief Get the current civil time
  *
  * @retval civil_time Complete civil time
