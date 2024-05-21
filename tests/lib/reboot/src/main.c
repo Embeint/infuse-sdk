@@ -150,18 +150,13 @@ void *test_init(void)
 	KV_KEY_TYPE(KV_KEY_REBOOTS) reboot_fallback = {0}, reboot = {0};
 	int rc;
 
-	/* Initialise KV store */
-	rc = kv_store_init();
-
 	/* Get current reboot count */
-	if (rc == 0) {
-		rc = kv_store_read_fallback(KV_KEY_REBOOTS, &reboot, sizeof(reboot),
-					    &reboot_fallback, sizeof(reboot_fallback));
-		if (rc == sizeof(reboot)) {
-			/* Increment reboot counter */
-			reboot.count += 1;
-			(void)KV_STORE_WRITE(KV_KEY_REBOOTS, &reboot);
-		}
+	rc = kv_store_read_fallback(KV_KEY_REBOOTS, &reboot, sizeof(reboot), &reboot_fallback,
+				    sizeof(reboot_fallback));
+	if (rc == sizeof(reboot)) {
+		/* Increment reboot counter */
+		reboot.count += 1;
+		(void)KV_STORE_WRITE(KV_KEY_REBOOTS, &reboot);
 	}
 	return NULL;
 }
