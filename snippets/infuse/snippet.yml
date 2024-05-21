@@ -4,22 +4,28 @@ boards:
   mps2_an385:
     append:
       EXTRA_DTC_OVERLAY_FILE: boards/mps2_an385.overlay
-      EXTRA_CONF_FILE: boards/mps2_an385.conf
+      EXTRA_CONF_FILE: infuse_snippet.conf
   nrf52840dk_nrf52840:
     append:
       EXTRA_DTC_OVERLAY_FILE: boards/nrf52840dk_nrf52840.overlay
+      EXTRA_CONF_FILE: infuse_snippet.conf
   nrf5340dk_nrf5340_cpuapp:
     append:
       EXTRA_DTC_OVERLAY_FILE: boards/nrf5340dk_nrf5340_cpuapp.overlay
+      EXTRA_CONF_FILE: infuse_snippet.conf
   nrf5340dk_nrf5340_cpuapp_ns:
     append:
       EXTRA_DTC_OVERLAY_FILE: boards/nrf5340dk_nrf5340_cpuapp_ns.overlay
+      EXTRA_CONF_FILE: infuse_snippet.conf
   nrf7002dk_nrf5340_cpuapp:
     append:
       EXTRA_DTC_OVERLAY_FILE: boards/nrf7002dk_nrf5340_cpuapp.overlay
+      EXTRA_CONF_FILE: infuse_snippet.conf
   nrf7002dk_nrf5340_cpuapp_ns:
     append:
       EXTRA_DTC_OVERLAY_FILE: boards/nrf7002dk_nrf5340_cpuapp_ns.overlay
+      EXTRA_CONF_FILE: infuse_snippet.conf
   thingy53_nrf5340_cpuapp:
     append:
       EXTRA_DTC_OVERLAY_FILE: boards/thingy53_nrf5340_cpuapp.overlay
+      EXTRA_CONF_FILE: infuse_snippet.conf

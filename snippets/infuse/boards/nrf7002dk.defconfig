@@ -1,0 +1,9 @@
+if BOARD_NRF7002DK_NRF5340_CPUAPP
+
+configdefault NETWORKING
+    default y
+
+configdefault WIFI
+    default y
+
+endif # BOARD_NRF7002DK_NRF5340_CPUAPP

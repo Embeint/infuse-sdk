@@ -6,6 +6,7 @@ config INFUSE_SDK
 rsource "drivers/Kconfig"
 rsource "lib/Kconfig"
 rsource "subsys/Kconfig"
+rsource "snippets/infuse/Kconfig"
 
 # Infuse IoT SDK defaults
 if INFUSE_SDK
