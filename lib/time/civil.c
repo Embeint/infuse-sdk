@@ -62,6 +62,11 @@ uint64_t civil_time_from_ticks(uint64_t ticks)
 	return civil;
 }
 
+uint32_t civil_period_from_ticks(uint64_t ticks)
+{
+	return ticks * infuse_civil_config.ref_Hz / infuse_civil_config.local_Hz;
+}
+
 void civil_time_unix_calendar(uint64_t civil_time, struct tm *calendar)
 {
 	time_t unix_time = unix_time_from_civil(civil_time);

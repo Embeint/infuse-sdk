@@ -181,6 +181,16 @@ ZTEST(civil_time, test_local_time_conversion)
 		      ticks_from_civil_time(2 * INFUSE_CIVIL_TIME_TICKS_PER_SEC + 1000));
 }
 
+ZTEST(civil_time, test_period_conversion)
+{
+	zassert_equal(INFUSE_CIVIL_TIME_TICKS_PER_SEC / 2,
+		      civil_period_from_ticks(CONFIG_SYS_CLOCK_TICKS_PER_SEC / 2));
+	zassert_equal(INFUSE_CIVIL_TIME_TICKS_PER_SEC,
+		      civil_period_from_ticks(CONFIG_SYS_CLOCK_TICKS_PER_SEC));
+	zassert_equal(2 * INFUSE_CIVIL_TIME_TICKS_PER_SEC,
+		      civil_period_from_ticks(2 * CONFIG_SYS_CLOCK_TICKS_PER_SEC));
+}
+
 ZTEST(civil_time, test_reference_age)
 {
 	struct timeutil_sync_instant reference;
