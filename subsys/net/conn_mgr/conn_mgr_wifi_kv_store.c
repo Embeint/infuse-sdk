@@ -68,6 +68,11 @@ static void conn_config_changed_worker(struct k_work *work)
 {
 	int timeout;
 
+	/* If interface is not requested to be up, nothing to do */
+	if (!net_if_is_admin_up(wifi_if)) {
+		return;
+	}
+
 	/* Configuration changed, trigger a disconnect */
 	(void)net_mgmt(NET_REQUEST_WIFI_DISCONNECT, wifi_if, NULL, 0);
 	/* Reschedule connection */
@@ -198,6 +203,10 @@ static void wifi_mgmt_init(struct conn_mgr_conn_binding *const binding)
 	net_mgmt_init_event_callback(&wifi_mgmt_cb, wifi_mgmt_event_handler, WIFI_MGMT_EVENTS);
 	net_mgmt_add_event_callback(&wifi_mgmt_cb);
 
+	k_work_init_delayable(&conn_create, conn_create_worker);
+	k_work_init_delayable(&conn_timeout, conn_timeout_worker);
+	k_work_init_delayable(&conn_config_changed, conn_config_changed_worker);
+
 #ifdef CONFIG_WPA_SUPP
 	net_mgmt_init_event_callback(&wpa_supp_cb, wpa_supp_event_handler,
 				     NET_EVENT_WPA_SUPP_READY);
@@ -210,10 +219,6 @@ static void wifi_mgmt_init(struct conn_mgr_conn_binding *const binding)
 				  IS_ENABLED(CONFIG_CONN_MGR_WIFI_KV_STORE_PERSISTENT));
 	conn_mgr_binding_set_flag(binding, CONN_MGR_IF_NO_AUTO_CONNECT,
 				  !IS_ENABLED(CONFIG_CONN_MGR_WIFI_KV_STORE_AUTO_CONNECT));
-
-	k_work_init_delayable(&conn_create, conn_create_worker);
-	k_work_init_delayable(&conn_timeout, conn_timeout_worker);
-	k_work_init_delayable(&conn_config_changed, conn_config_changed_worker);
 }
 
 static struct conn_mgr_conn_api l2_wifi_conn_api = {
