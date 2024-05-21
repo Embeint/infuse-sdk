@@ -1,0 +1,11 @@
+# Infuse snippet options
+
+config SNIPPET_INFUSE
+	bool "Application is compiling with Infuse snippet"
+
+if SNIPPET_INFUSE
+
+rsource "boards/mps2_an385.defconfig"
+rsource "boards/nrf7002dk.defconfig"
+
+endif # SNIPPET_INFUSE

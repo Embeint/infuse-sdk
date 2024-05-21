@@ -1,0 +1,6 @@
+if BOARD_MPS2_AN385
+
+configdefault TEST_RANDOM_GENERATOR
+    default y
+
+endif # BOARD_MPS2_AN385
