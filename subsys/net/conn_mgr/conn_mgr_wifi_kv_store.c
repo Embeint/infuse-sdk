@@ -26,11 +26,47 @@ static struct net_if *wifi_if;
 
 LOG_MODULE_REGISTER(wifi_mgmt, CONFIG_CONN_MGR_WIFI_KV_STORE_LOG_LEVEL);
 
+#ifdef CONFIG_WPA_SUPP
+
+#include <supp_events.h>
+
+static struct net_mgmt_event_callback wpa_supp_cb;
+static bool wpa_ready;
+
+static void wpa_supp_event_handler(struct net_mgmt_event_callback *cb, uint32_t mgmt_event,
+				   struct net_if *iface)
+{
+	switch (mgmt_event) {
+	case NET_EVENT_WPA_SUPP_READY:
+		LOG_DBG("WPA_SUPP_READY");
+		wpa_ready = true;
+		break;
+	case NET_EVENT_WPA_SUPP_NOT_READY:
+		LOG_DBG("WPA_SUPP_NOT_READY");
+		wpa_ready = false;
+		break;
+	default:
+		break;
+	}
+}
+#endif /* CONFIG_WPA_SUPP */
+
 static void conn_create_worker(struct k_work *work)
 {
 	KV_KEY_TYPE_VAR(KV_KEY_WIFI_SSID, WIFI_SSID_MAX_LEN) wifi_ssid;
 	KV_KEY_TYPE_VAR(KV_KEY_WIFI_PSK, WIFI_PSK_MAX_LEN) wifi_psk;
 	struct wifi_connect_req_params params = {0};
+
+#ifdef CONFIG_WPA_SUPP
+	if (!wpa_ready) {
+		struct k_work_delayable *delayable = k_work_delayable_from_work(work);
+
+		/* WPA supplicant needs a few milliseconds to initialise after IF up */
+		k_work_reschedule(delayable, K_MSEC(5));
+		LOG_DBG("Delaying for WPA supplicant");
+		return;
+	}
+#endif /* CONFIG_WPA_SUPP */
 
 	/* Load connection parameters */
 	params.band = WIFI_FREQ_BAND_UNKNOWN;
@@ -135,27 +171,6 @@ static void wifi_mgmt_event_handler(struct net_mgmt_event_callback *cb, uint32_t
 	}
 }
 
-#ifdef CONFIG_WPA_SUPP
-
-#include <supp_events.h>
-
-static struct net_mgmt_event_callback wpa_supp_cb;
-static K_SEM_DEFINE(wpa_supp_ready_sem, 0, 1);
-
-static void wpa_supp_event_handler(struct net_mgmt_event_callback *cb, uint32_t mgmt_event,
-				   struct net_if *iface)
-{
-	switch (mgmt_event) {
-	case NET_EVENT_WPA_SUPP_READY:
-		LOG_DBG("WPA_SUPP ready");
-		k_sem_give(&wpa_supp_ready_sem);
-		break;
-	default:
-		break;
-	}
-}
-#endif /* CONFIG_WPA_SUPP */
-
 static int wifi_mgmt_connect(struct conn_mgr_conn_binding *const binding)
 {
 	int timeout;
@@ -209,9 +224,8 @@ static void wifi_mgmt_init(struct conn_mgr_conn_binding *const binding)
 
 #ifdef CONFIG_WPA_SUPP
 	net_mgmt_init_event_callback(&wpa_supp_cb, wpa_supp_event_handler,
-				     NET_EVENT_WPA_SUPP_READY);
+				     NET_EVENT_WPA_SUPP_READY | NET_EVENT_WPA_SUPP_NOT_READY);
 	net_mgmt_add_event_callback(&wpa_supp_cb);
-	k_sem_take(&wpa_supp_ready_sem, K_FOREVER);
 #endif /* CONFIG_WPA_SUPP */
 
 	/* Optional binding flags */
