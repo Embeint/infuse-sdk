@@ -20,6 +20,8 @@
 #define NVS_PARTITION_OFFSET FIXED_PARTITION_OFFSET(NVS_PARTITION)
 #define NVS_PARTITION_SIZE   FIXED_PARTITION_SIZE(NVS_PARTITION)
 
+int kv_store_init(void);
+
 ZTEST(kv_store, test_init_failure)
 {
 	const struct device *dev = NVS_PARTITION_DEVICE;

@@ -50,14 +50,6 @@ struct kv_store_cb {
 };
 
 /**
- * @brief Initialise key-value storage
- *
- * @retval 0 on success
- * @retval -errno on failure
- */
-int kv_store_init(void);
-
-/**
  * @brief Reset key-value storage
  *
  * @retval 0 on success

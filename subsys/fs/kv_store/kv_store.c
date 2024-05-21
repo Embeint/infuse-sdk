@@ -26,35 +26,6 @@ static sys_slist_t cb_list;
 
 LOG_MODULE_REGISTER(kv_store, CONFIG_KV_STORE_LOG_LEVEL);
 
-int kv_store_init(void)
-{
-	const struct flash_area *area;
-	struct flash_pages_info info;
-	int rc;
-
-	fs.flash_device = NVS_PARTITION_DEVICE;
-	fs.offset = NVS_PARTITION_OFFSET;
-	rc = flash_get_page_info_by_offs(fs.flash_device, fs.offset, &info);
-	if (rc) {
-		LOG_ERR("No page info");
-		return rc;
-	}
-	fs.sector_size = info.size;
-	fs.sector_count = NVS_PARTITION_SIZE / info.size;
-
-	rc = nvs_mount(&fs);
-	if (rc == -EDEADLK) {
-		/* Doesn't look like a filesystem, erase */
-		LOG_WRN("No NVS FS detected, resetting");
-		flash_area_open(NVS_PARTITION_ID, &area);
-		flash_area_erase(area, 0, NVS_PARTITION_SIZE);
-		flash_area_close(area);
-		/* Try mounting again */
-		rc = nvs_mount(&fs);
-	}
-	return rc;
-}
-
 int kv_store_reset(void)
 {
 	int rc;
@@ -185,3 +156,35 @@ ssize_t kv_store_read_fallback(uint16_t key, void *data, size_t max_data_len, co
 	}
 	return rc;
 }
+
+IF_DISABLED(CONFIG_ZTEST, (static))
+int kv_store_init(void)
+{
+	const struct flash_area *area;
+	struct flash_pages_info info;
+	int rc;
+
+	fs.flash_device = NVS_PARTITION_DEVICE;
+	fs.offset = NVS_PARTITION_OFFSET;
+	rc = flash_get_page_info_by_offs(fs.flash_device, fs.offset, &info);
+	if (rc) {
+		LOG_ERR("No page info");
+		return rc;
+	}
+	fs.sector_size = info.size;
+	fs.sector_count = NVS_PARTITION_SIZE / info.size;
+
+	rc = nvs_mount(&fs);
+	if (rc == -EDEADLK) {
+		/* Doesn't look like a filesystem, erase */
+		LOG_WRN("No NVS FS detected, resetting");
+		flash_area_open(NVS_PARTITION_ID, &area);
+		flash_area_erase(area, 0, NVS_PARTITION_SIZE);
+		flash_area_close(area);
+		/* Try mounting again */
+		rc = nvs_mount(&fs);
+	}
+	return rc;
+}
+
+SYS_INIT(kv_store_init, POST_KERNEL, 80);
