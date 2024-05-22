@@ -33,6 +33,7 @@ struct epacket_serial_data {
 	struct epacket_interface_common_data common_data;
 	struct k_work_delayable dc_handler;
 	struct k_fifo tx_fifo;
+	const struct device *interface;
 };
 
 LOG_MODULE_REGISTER(epacket_serial, CONFIG_EPACKET_SERIAL_LOG_LEVEL);
@@ -55,6 +56,9 @@ static void disconnected_handler(struct k_work *work)
 		/* Drop any pending messages */
 		buf = net_buf_get(&data->tx_fifo, K_NO_WAIT);
 		if (buf) {
+			/* Notify TX result */
+			epacket_notify_tx_result(data->interface, buf, -ETIMEDOUT);
+			/* Free buffer */
 			net_buf_unref(buf);
 			cnt++;
 		}
@@ -112,6 +116,9 @@ static void interrupt_handler(const struct device *dev, void *user_data)
 			/* Push payload */
 			sent = uart_fifo_fill(dev, buf->data, buf->len);
 
+			/* Notify TX result */
+			epacket_notify_tx_result(data->interface, buf, 0);
+
 			/* Free TX buffer */
 			net_buf_unref(buf);
 
@@ -130,6 +137,7 @@ static void epacket_serial_send(const struct device *dev, struct net_buf *buf)
 	/* Encrypt the payload */
 	if (epacket_serial_encrypt(buf) < 0) {
 		LOG_WRN("Failed to encrypt");
+		epacket_notify_tx_result(data->interface, buf, -EIO);
 		net_buf_unref(buf);
 		return;
 	}
@@ -156,6 +164,7 @@ static int epacket_serial_init(const struct device *dev)
 	const struct epacket_serial_config *config = dev->config;
 	struct epacket_serial_data *data = dev->data;
 
+	data->interface = dev;
 	epacket_interface_common_init(dev);
 	k_work_init_delayable(&data->dc_handler, disconnected_handler);
 	k_fifo_init(&data->tx_fifo);
