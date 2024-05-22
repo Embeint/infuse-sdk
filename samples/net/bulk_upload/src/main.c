@@ -22,6 +22,7 @@
 
 static struct epacket_interface_cb epacket_cb;
 static K_SEM_DEFINE(epacket_udp_ready, 0, 1);
+static K_SEM_DEFINE(tx_complete, 0, 1);
 
 LOG_MODULE_REGISTER(app, LOG_LEVEL_INF);
 
@@ -30,6 +31,11 @@ static void udp_interface_state(bool connected, uint16_t current_max_payload, vo
 	if (connected) {
 		k_sem_give(&epacket_udp_ready);
 	}
+}
+
+static void last_packet_sent(const struct device *dev, struct net_buf *pkt, int result)
+{
+	k_sem_give(&tx_complete);
 }
 
 int main(void)
@@ -62,24 +68,31 @@ int main(void)
 			buf = epacket_alloc_tx_for_interface(udp, K_FOREVER);
 			epacket_set_tx_metadata(buf, EPACKET_AUTH_DEVICE, 0x00, 0xFF);
 
+			/* Add "payload" and update counters */
 			tailroom = net_buf_tailroom(buf);
 			net_buf_add(buf, tailroom);
-
-			epacket_queue(udp, buf);
-
 			bytes_sent += tailroom;
 			pkts_sent++;
+
+			/* Attach callback on last packet */
+			if (bytes_sent >= CONFIG_BULK_UPLOAD_BYTES) {
+				epacket_set_tx_callback(buf, last_packet_sent);
+			}
+
+			/* Queue packet for transmission */
+			epacket_queue(udp, buf);
 		}
+		/* Wait for transmissions to finish */
+		k_sem_take(&tx_complete, K_FOREVER);
 		t_end = k_uptime_get();
 
-		/* Calculate throughput and output stats */
+		/* Power down interfaces */
+		conn_mgr_all_if_down(false);
+
+		/* Calculate throughput and print stats */
 		throughput = bytes_sent * 8 * 1000 / (t_end - t_start) / 1024;
 		LOG_INF("Sent %d packets in %lld ms (%d kbps)", pkts_sent, t_end - t_start,
 			throughput);
-
-		/* Give the interface a bit of time to finish sending, then power down */
-		k_sleep(K_MSEC(500));
-		conn_mgr_all_if_down(false);
 
 		/* Wait for the next round */
 		k_sleep(K_SECONDS(CONFIG_BULK_UPLOAD_PERIOD));
