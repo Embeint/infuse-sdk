@@ -39,6 +39,7 @@ enum epacket_auth {
 } __packed;
 
 struct epacket_tx_metadata {
+	void (*tx_done)(const struct device *dev, struct net_buf *pkt, int result);
 	enum epacket_auth auth;
 	enum infuse_type type;
 	uint16_t flags;
@@ -138,6 +139,22 @@ static inline void epacket_set_tx_metadata(struct net_buf *buf, enum epacket_aut
 	meta->auth = auth;
 	meta->flags = flags;
 	meta->type = type;
+	meta->tx_done = NULL;
+}
+
+/**
+ * @brief Set callback to be run after packet sent
+ *
+ * @param buf ePacket TX buffer
+ * @param tx_done Callback to run on transmission
+ */
+static inline void epacket_set_tx_callback(struct net_buf *buf,
+					   void (*tx_done)(const struct device *dev,
+							   struct net_buf *pkt, int result))
+{
+	struct epacket_tx_metadata *meta = net_buf_user_data(buf);
+
+	meta->tx_done = tx_done;
 }
 
 /**

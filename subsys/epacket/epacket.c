@@ -68,9 +68,16 @@ void epacket_raw_receive_handler(struct net_buf *buf)
 
 void epacket_notify_tx_result(const struct device *dev, struct net_buf *buf, int result)
 {
+	struct epacket_tx_metadata *meta = net_buf_user_data(buf);
 	struct epacket_interface_common_data *data = dev->data;
 	struct epacket_interface_cb *cb;
 
+	/* Per buffer notification */
+	if (meta->tx_done) {
+		meta->tx_done(dev, buf, result);
+	}
+
+	/* Interface error notification */
 	if (result < 0) {
 		SYS_SLIST_FOR_EACH_CONTAINER(&data->callback_list, cb, node) {
 			if (cb->tx_failure) {
