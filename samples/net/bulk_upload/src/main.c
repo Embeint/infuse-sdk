@@ -84,6 +84,8 @@ int main(void)
 		}
 		/* Wait for transmissions to finish */
 		k_sem_take(&tx_complete, K_FOREVER);
+		/* Unfortunately zsock_send() returns before actually sending */
+		k_sleep(K_MSEC(50));
 		t_end = k_uptime_get();
 
 		/* Power down interfaces */
