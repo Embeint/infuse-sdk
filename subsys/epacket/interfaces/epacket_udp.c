@@ -220,13 +220,14 @@ static void epacket_udp_send(const struct device *dev, struct net_buf *buf)
 	/* Don't do work unless the socket is open */
 	if (!k_event_test(&udp_state.state, UDP_STATE_SOCKET_OPEN)) {
 		LOG_DBG("No socket");
-		epacket_notify_tx_failure(dev, buf, -ENOTCONN);
+		rc = -ENOTCONN;
 		goto end;
 	}
 
 	/* Encrypt the payload */
 	if (epacket_udp_encrypt(buf) < 0) {
 		LOG_WRN("Failed to encrypt");
+		rc = -EIO;
 		goto end;
 	}
 
@@ -236,9 +237,10 @@ static void epacket_udp_send(const struct device *dev, struct net_buf *buf)
 			  udp_state.remote_len);
 	if (rc == -1) {
 		LOG_WRN("Failed to send (%d)", errno);
-		epacket_notify_tx_failure(dev, buf, -errno);
+		rc = -errno;
 	}
 end:
+	epacket_notify_tx_result(dev, buf, rc);
 	net_buf_unref(buf);
 }
 

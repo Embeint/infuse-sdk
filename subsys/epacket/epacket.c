@@ -66,14 +66,16 @@ void epacket_raw_receive_handler(struct net_buf *buf)
 	net_buf_put(&epacket_rx_queue, buf);
 }
 
-void epacket_notify_tx_failure(const struct device *dev, struct net_buf *buf, int reason)
+void epacket_notify_tx_result(const struct device *dev, struct net_buf *buf, int result)
 {
 	struct epacket_interface_common_data *data = dev->data;
 	struct epacket_interface_cb *cb;
 
-	SYS_SLIST_FOR_EACH_CONTAINER(&data->callback_list, cb, node) {
-		if (cb->tx_failure) {
-			cb->tx_failure(buf, reason, cb->user_ctx);
+	if (result < 0) {
+		SYS_SLIST_FOR_EACH_CONTAINER(&data->callback_list, cb, node) {
+			if (cb->tx_failure) {
+				cb->tx_failure(buf, result, cb->user_ctx);
+			}
 		}
 	}
 }

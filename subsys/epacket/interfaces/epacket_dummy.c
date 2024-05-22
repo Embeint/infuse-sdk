@@ -67,10 +67,10 @@ static void epacket_dummy_send(const struct device *dev, struct net_buf *buf)
 	header->auth = meta->auth;
 	header->flags = meta->flags;
 
+	epacket_notify_tx_result(dev, buf, send_error_code);
 	if (send_error_code == 0) {
 		net_buf_put(&epacket_dummy_fifo, buf);
 	} else {
-		epacket_notify_tx_failure(dev, buf, send_error_code);
 		net_buf_unref(buf);
 	}
 }
