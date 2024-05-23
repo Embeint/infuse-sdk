@@ -78,6 +78,7 @@ ZTEST(rpc_command_kv_read, test_kv_read_bad_input)
 
 ZTEST(rpc_command_kv_read, test_single)
 {
+	KV_STRING_CONST(test_psk, "AAAAAAAA");
 	struct rpc_kv_read_response *response;
 	struct net_buf *rsp;
 	uint16_t key;
@@ -117,6 +118,19 @@ ZTEST(rpc_command_kv_read, test_single)
 		      rsp->len);
 	zassert_equal(0x4567, response->values[0].id);
 	zassert_equal(-EACCES, response->values[0].len);
+	net_buf_unref(rsp);
+
+	/* Read a single key that is enabled, has been written, has readback protection */
+	key = KV_KEY_WIFI_PSK;
+	kv_store_write(key, &test_psk, sizeof(test_psk));
+	send_kv_read_command(1002, &key, 1, 1);
+	rsp = expect_kv_read_response(1002, 0);
+	response = (void *)rsp->data;
+	zassert_equal(sizeof(struct rpc_kv_read_response) +
+			      sizeof(struct rpc_struct_kv_store_value),
+		      rsp->len);
+	zassert_equal(KV_KEY_WIFI_PSK, response->values[0].id);
+	zassert_equal(-EPERM, response->values[0].len);
 	net_buf_unref(rsp);
 }
 
