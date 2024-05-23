@@ -28,7 +28,7 @@ if EPACKET_INTERFACE_UDP
 
 config EPACKET_INTERFACE_UDP_DEFAULT_URL
 	string "ePacket UDP default server URL"
-	default "ec2-52-62-243-129.ap-southeast-2.compute.amazonaws.com"
+	default "54.66.102.196"
 
 config EPACKET_INTERFACE_UDP_DEFAULT_PORT
 	int "ePacket UDP default server port"
