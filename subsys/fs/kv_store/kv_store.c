@@ -59,6 +59,22 @@ bool kv_store_key_enabled(uint16_t key)
 	return false;
 }
 
+int kv_store_external_readback_enabled(uint16_t key)
+{
+	struct key_value_slot_definition *defs;
+	size_t num;
+
+	defs = kv_internal_slot_definitions(&num);
+	for (size_t i = 0; i < num; i++) {
+		if (IN_RANGE(key, defs[i].key, defs[i].key + defs[i].range - 1)) {
+			/* If write only, no external readback */
+			return defs[i].flags & KV_FLAGS_WRITE_ONLY ? -EPERM : 0;
+		}
+	}
+	/* Key not enabled */
+	return -EACCES;
+}
+
 ssize_t kv_store_delete(uint16_t key)
 {
 	struct kv_store_cb *cb;
