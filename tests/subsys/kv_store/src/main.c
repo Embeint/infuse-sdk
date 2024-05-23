@@ -58,6 +58,29 @@ ZTEST(kv_store, test_key_enabled)
 	}
 }
 
+ZTEST(kv_store, test_key_readback_protection)
+{
+	/* Exhaustive check over every key */
+	for (int i = 0; i <= UINT16_MAX; i++) {
+		switch (i) {
+		case KV_KEY_REBOOTS:
+		case KV_KEY_GEOFENCE + 0:
+		case KV_KEY_GEOFENCE + 1:
+		case KV_KEY_GEOFENCE + 2:
+		case KV_KEY_GEOFENCE + 3:
+		case KV_KEY_GEOFENCE + 4:
+			zassert_equal(0, kv_store_external_readback_enabled(i));
+			break;
+		case KV_KEY_WIFI_PSK:
+			zassert_equal(-EPERM, kv_store_external_readback_enabled(i));
+			break;
+		default:
+			zassert_equal(-EACCES, kv_store_external_readback_enabled(i));
+			break;
+		}
+	}
+}
+
 ZTEST(kv_store, test_disabled_key)
 {
 	struct kv_fixed_location location, fallback;
