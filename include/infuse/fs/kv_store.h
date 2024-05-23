@@ -75,6 +75,17 @@ void kv_store_register_callback(struct kv_store_cb *cb);
 bool kv_store_key_enabled(uint16_t key);
 
 /**
+ * @brief Check whether a given keys data is valid to return externally
+ *
+ * @param key Key to check
+ *
+ * @retval 0 key data is valid to return
+ * @retval -EACCESS key is not enabled
+ * @retval -EPERM key data should not be returned
+ */
+int kv_store_external_readback_enabled(uint16_t key);
+
+/**
  * @brief Delete a value from the KV store
  *
  * @param key Key to delete
