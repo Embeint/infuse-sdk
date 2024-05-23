@@ -40,19 +40,24 @@ struct net_buf *rpc_command_kv_read(struct net_buf *request)
 		val_hdr = net_buf_add(response, sizeof(*val_hdr));
 		val_hdr->id = net_buf_pull_le16(request);
 
-		/* Read the key value */
-		space = net_buf_tailroom(response);
-		LOG_DBG("%s reading key %d (max %d)", __func__, val_hdr->id, space);
-		val_hdr->len = kv_store_read(val_hdr->id, net_buf_tail(response), space);
-		/* Not enough room in buffer for data */
-		if (val_hdr->len > space) {
-			val_hdr->len = -ENOSPC;
-			break;
+		/* Check for readback protection */
+		val_hdr->len = kv_store_external_readback_enabled(val_hdr->id);
+		if (val_hdr->len == 0) {
+			/* Read the key value */
+			space = net_buf_tailroom(response);
+			LOG_DBG("%s reading key %d (max %d)", __func__, val_hdr->id, space);
+			val_hdr->len = kv_store_read(val_hdr->id, net_buf_tail(response), space);
+			/* Not enough room in buffer for data */
+			if (val_hdr->len > space) {
+				val_hdr->len = -ENOSPC;
+				break;
+			}
+			/* Data read successful */
+			if (val_hdr->len > 0) {
+				net_buf_add(response, val_hdr->len);
+			}
 		}
-		/* Data read successful */
-		if (val_hdr->len > 0) {
-			net_buf_add(response, val_hdr->len);
-		}
+
 		/* Exit if no more space for data */
 		if (net_buf_tailroom(response) < sizeof(*val_hdr)) {
 			break;
