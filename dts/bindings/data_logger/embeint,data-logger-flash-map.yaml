@@ -12,4 +12,4 @@ properties:
     type: phandle
     required: true
     description: |
-        Flash Map partition to log data to.
+      Flash Map partition to log data to.
