@@ -13,6 +13,7 @@
 #include <stdint.h>
 
 #include <infuse/types.h>
+#include <infuse/epacket/interface.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -48,6 +49,18 @@ struct data_logger_persistent_block_header {
 	/* Type of block data */
 	uint8_t block_type;
 } __packed;
+
+/**
+ * @brief Maximum required block size for each logger backend
+ *
+ * @param node_id `embeint,data-logger` node ID
+ *
+ * @returns Maximum size of a block on the logger
+ */
+#define DATA_LOGGER_MAX_SIZE(node_id)                                                              \
+	COND_CODE_1(DT_NODE_HAS_COMPAT(node_id, embeint_data_logger_flash_map), (512),             \
+		    (COND_CODE_1(DT_NODE_HAS_COMPAT(node_id, embeint_data_logger_epacket),         \
+				 (EPACKET_INTERFACE_MAX_PAYLOAD(DT_PROP(node_id, epacket))), ())))
 
 /**
  * @brief Get the current data logger state

@@ -203,12 +203,6 @@ int tdf_data_logger_init(const struct device *dev)
 	return 0;
 }
 
-/* Maximum required block size for each logger backend */
-#define DATA_LOGGER_MAX_SIZE(logger)                                                               \
-	COND_CODE_1(DT_NODE_HAS_COMPAT(logger, embeint_data_logger_flash_map), (512),              \
-		    (COND_CODE_1(DT_NODE_HAS_COMPAT(logger, embeint_data_logger_epacket),          \
-				 (EPACKET_INTERFACE_MAX_PAYLOAD(DT_PROP(logger, epacket))), ())))
-
 #define TDF_DATA_LOGGER_DEFINE(inst)                                                               \
 	static struct tdf_logger_data tdf_logger_data##inst;                                       \
 	static uint8_t tdf_mem_buffer##inst[DATA_LOGGER_MAX_SIZE(DT_PARENT(DT_DRV_INST(inst)))];   \
