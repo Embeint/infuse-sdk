@@ -38,6 +38,7 @@ struct data_logger_backend_data {
 };
 
 struct data_logger_backend_config {
+	const struct data_logger_backend_api *api;
 	struct data_logger_backend_data *data;
 	union {
 		const struct device *backend;

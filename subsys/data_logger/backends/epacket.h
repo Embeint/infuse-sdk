@@ -22,15 +22,12 @@ extern "C" {
 #endif
 
 #define DATA_LOGGER_BACKEND_CONFIG_EPACKET(node, data_ptr)                                         \
-	.backend_api = &data_logger_epacket_api,                                                   \
-	.backend_config = {                                                                        \
-		.data = data_ptr,                                                                  \
-		.backend = DEVICE_DT_GET(DT_PROP(node, epacket)),                                  \
-		.logical_blocks = UINT32_MAX,                                                      \
-		.physical_blocks = UINT32_MAX,                                                     \
-		.erase_size = 0,                                                                   \
+	{                                                                                          \
+		.api = &data_logger_epacket_api, .data = data_ptr,                                 \
+		.backend = DEVICE_DT_GET(DT_PROP(node, epacket)), .logical_blocks = UINT32_MAX,    \
+		.physical_blocks = UINT32_MAX, .erase_size = 0,                                    \
 		.max_block_size = EPACKET_INTERFACE_MAX_PAYLOAD(DT_PROP(node, epacket)),           \
-	},
+	}
 
 extern const struct data_logger_backend_api data_logger_epacket_api;
 
