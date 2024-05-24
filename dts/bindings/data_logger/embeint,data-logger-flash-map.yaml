@@ -5,7 +5,7 @@ description: Data logging backend using the flash_map API
 
 compatible: "embeint,data-logger-flash-map"
 
-include: base.yaml
+include: data-logger-base.yaml
 
 properties:
   partition:
