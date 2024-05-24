@@ -19,7 +19,7 @@
 #include "backends/flash_map.h"
 #include "backends/epacket.h"
 
-#define PERSISTENT_LOGGER(config) (config->backend_api->read != NULL)
+#define IS_PERSISTENT_LOGGER(config) (config->backend_api->read != NULL)
 
 struct data_logger_config {
 	const struct data_logger_backend_api *backend_api;
@@ -85,7 +85,7 @@ int data_logger_block_write(const struct device *dev, enum infuse_type type, voi
 	}
 
 	/* Add persistent block header if required */
-	if (PERSISTENT_LOGGER(config)) {
+	if (IS_PERSISTENT_LOGGER(config)) {
 		struct data_logger_persistent_block_header *header = block;
 
 		header->block_type = type;
@@ -117,7 +117,7 @@ int data_logger_block_read(const struct device *dev, uint32_t block_idx, uint16_
 	int rc;
 
 	/* Can only read from persistent loggers */
-	if (!PERSISTENT_LOGGER(config)) {
+	if (!IS_PERSISTENT_LOGGER(config)) {
 		return -ENOTSUP;
 	}
 
@@ -224,7 +224,7 @@ int data_logger_init(const struct device *dev)
 	data->current_block = 0;
 	data->earliest_block = 0;
 
-	if (!PERSISTENT_LOGGER(config)) {
+	if (!IS_PERSISTENT_LOGGER(config)) {
 		/* Wireless loggers don't need further initialisation */
 		LOG_INF("Wireless logger %s", dev->name);
 		return 0;
