@@ -49,23 +49,14 @@ void data_logger_get_state(const struct device *dev, struct data_logger_state *s
 	state->erase_unit = config->backend.erase_size;
 }
 
-int data_logger_block_write(const struct device *dev, enum infuse_type type, void *block,
-			    uint16_t block_len)
+static int do_block_write(const struct device *dev, enum infuse_type type, void *block,
+			  uint16_t block_len)
 {
 	const struct data_logger_config *config = dev->config;
 	struct data_logger_data *data = dev->data;
 	uint16_t erase_blocks = config->backend.erase_size / config->backend.max_block_size;
 	uint32_t phy_block = data->current_block % config->backend.physical_blocks;
 	int rc;
-
-	/* Validate block length */
-	if (block_len > data->backend_data.block_size) {
-		return -EINVAL;
-	}
-	/* Check there is still space on the logger */
-	if (data->current_block >= config->backend.logical_blocks) {
-		return -ENOMEM;
-	}
 
 	LOG_DBG("%s writing to logical block %d (Phy block %d)", dev->name, data->current_block,
 		phy_block);
@@ -98,6 +89,25 @@ int data_logger_block_write(const struct device *dev, enum infuse_type type, voi
 	}
 	data->current_block += 1;
 	return 0;
+}
+
+int data_logger_block_write(const struct device *dev, enum infuse_type type, void *block,
+			    uint16_t block_len)
+{
+	const struct data_logger_config *config = dev->config;
+	struct data_logger_data *data = dev->data;
+
+	/* Validate block length */
+	if (block_len > data->backend_data.block_size) {
+		return -EINVAL;
+	}
+	/* Check there is still space on the logger */
+	if (data->current_block >= config->backend.logical_blocks) {
+		return -ENOMEM;
+	}
+
+	/* Perform the block write */
+	return do_block_write(dev, type, block, block_len);
 }
 
 int data_logger_block_read(const struct device *dev, uint32_t block_idx, uint16_t block_offset,
