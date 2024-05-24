@@ -12,4 +12,4 @@ properties:
     type: phandle
     required: true
     description: |
-        ePacket instance to log data to.
+      ePacket instance to log data to.

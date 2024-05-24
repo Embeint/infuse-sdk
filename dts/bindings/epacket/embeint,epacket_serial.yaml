@@ -12,7 +12,7 @@ properties:
     type: phandle
     required: true
     description: |
-        Serial port backend supporting interrupt driven API.
+      Serial port backend supporting interrupt driven API.
   header-size:
     default: 27
   footer-size:
