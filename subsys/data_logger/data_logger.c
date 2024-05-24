@@ -12,6 +12,7 @@
 #include <zephyr/device.h>
 #include <zephyr/devicetree.h>
 #include <zephyr/logging/log.h>
+#include <zephyr/sys/byteorder.h>
 
 #include <infuse/data_logger/logger.h>
 
@@ -23,13 +24,26 @@
 
 struct data_logger_config {
 	struct data_logger_backend_config backend;
+#ifdef CONFIG_DATA_LOGGER_RAM_BUFFER
+	uint8_t *ram_buf_data;
+	size_t ram_buf_len;
+#endif /* CONFIG_DATA_LOGGER_RAM_BUFFER */
 };
 
 struct data_logger_data {
 	struct data_logger_backend_data backend_data;
 	uint32_t current_block;
 	uint32_t earliest_block;
+#ifdef CONFIG_DATA_LOGGER_RAM_BUFFER
+	size_t ram_buf_offset;
+#endif /* CONFIG_DATA_LOGGER_RAM_BUFFER */
 };
+
+/* Block header on the ram buffer */
+struct ram_buf_header {
+	uint8_t block_type;
+	uint16_t block_len;
+} __packed;
 
 LOG_MODULE_REGISTER(data_logger, CONFIG_DATA_LOGGER_LOG_LEVEL);
 
@@ -105,6 +119,48 @@ int data_logger_block_write(const struct device *dev, enum infuse_type type, voi
 	if (data->current_block >= config->backend.logical_blocks) {
 		return -ENOMEM;
 	}
+
+#ifdef CONFIG_DATA_LOGGER_RAM_BUFFER
+	if (config->ram_buf_len) {
+		uint32_t space = config->ram_buf_len - data->ram_buf_offset;
+		int rc;
+
+		if (space > (sizeof(struct ram_buf_header) + block_len)) {
+			/* Space for this block, add header and data to FIFO */
+			struct ram_buf_header header = {
+				.block_type = type,
+				.block_len = block_len,
+			};
+
+			LOG_DBG("Pending %d byte %02X block", block_len, type);
+			memcpy(config->ram_buf_data + data->ram_buf_offset, &header,
+			       sizeof(header));
+			data->ram_buf_offset += sizeof(header);
+			memcpy(config->ram_buf_data + data->ram_buf_offset, block, block_len);
+			data->ram_buf_offset += block_len;
+			return 0;
+		} else if (data->ram_buf_offset == 0) {
+			/* No space in RAM buffer, no data logged, write per usual */
+		} else {
+			/* No space, data previously logged. Flush all pending data */
+			struct ram_buf_header *hdr;
+			uint32_t offset = 0;
+
+			while (offset < data->ram_buf_offset) {
+				/* Push the next block */
+				hdr = (void *)(config->ram_buf_data + offset);
+				offset += sizeof(*hdr);
+				rc = do_block_write(dev, hdr->block_type,
+						    config->ram_buf_data + offset, hdr->block_len);
+				offset += hdr->block_len;
+
+				LOG_DBG("Flushed %d byte %02X block (%d)", hdr->block_len,
+					hdr->block_type, rc);
+			}
+			data->ram_buf_offset = 0;
+		}
+	}
+#endif /* CONFIG_DATA_LOGGER_RAM_BUFFER */
 
 	/* Perform the block write */
 	return do_block_write(dev, type, block, block_len);
@@ -276,6 +332,11 @@ int data_logger_init(const struct device *dev)
 
 	LOG_INF("%s -> %d/%d blocks", dev->name, data->current_block,
 		config->backend.logical_blocks);
+#ifdef CONFIG_DATA_LOGGER_RAM_BUFFER
+	if (config->ram_buf_len) {
+		LOG_INF("%s -> Extra %zu byte RAM buffer", dev->name, config->ram_buf_len);
+	}
+#endif /* CONFIG_DATA_LOGGER_RAM_BUFFER */
 	return 0;
 }
 
@@ -291,11 +352,16 @@ int data_logger_init(const struct device *dev)
 
 #define DATA_LOGGER_BACKEND_CONFIG(inst) DATA_LOGGER_FLASH_MAP(inst) DATA_LOGGER_EPACKET(inst)
 
+#define RAM_BUFFER_CONFIG(inst)                                                                    \
+	.ram_buf_data = ram_buf_##inst, .ram_buf_len = sizeof(ram_buf_##inst),
+
 #define DATA_LOGGER_DEFINE(inst)                                                                   \
+	IF_ENABLED(CONFIG_DATA_LOGGER_RAM_BUFFER,                                                  \
+		   (static uint8_t ram_buf_##inst[DT_INST_PROP(inst, extra_ram_buffer)];))         \
 	static struct data_logger_data data##inst;                                                 \
 	static struct data_logger_config config##inst = {                                          \
 		.backend = DATA_LOGGER_BACKEND_CONFIG(inst),                                       \
-	};                                                                                         \
+		IF_ENABLED(CONFIG_DATA_LOGGER_RAM_BUFFER, (RAM_BUFFER_CONFIG(inst)))};             \
 	DEVICE_DT_INST_DEFINE(inst, data_logger_init, NULL, &data##inst, &config##inst,            \
 			      POST_KERNEL, 80, NULL);
 

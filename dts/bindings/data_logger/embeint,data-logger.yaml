@@ -16,4 +16,4 @@ description: |
 
 compatible: "embeint,data-logger"
 
-include: base.yaml
+include: data-logger-base.yaml

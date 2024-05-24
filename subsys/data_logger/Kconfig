@@ -10,6 +10,14 @@ config DATA_LOGGER
 
 if DATA_LOGGER
 
+config DATA_LOGGER_RAM_BUFFER
+	bool "Enable support for buffering blocks in RAM before writing"
+	help
+	  Buffering blocks in RAM before writing can reduce the overhead of connecting
+	  to or powering up the interface backend by sharing it across multiple
+	  blocks. When enabled, must be configured for individual loggers with the
+	  `extra-ram-buffer` devicetree property.
+
 module = DATA_LOGGER
 module-str = data logger
 source "subsys/logging/Kconfig.template.log_config"

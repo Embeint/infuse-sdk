@@ -1,0 +1,14 @@
+# Copyright (c) 2024 Jordan Yates <jordan@embeint.com>
+# SPDX-License-Identifier: LicenseRef-Embeint
+
+include: base.yaml
+
+properties:
+  extra-ram-buffer:
+    type: int
+    default: 0
+    description:
+      When a block fills, buffer it in RAM until additional blocks
+      fill. This allows multiple blocks to be written one after the
+      other, amortising the power-up and power-down costs associated
+      with an interface.
