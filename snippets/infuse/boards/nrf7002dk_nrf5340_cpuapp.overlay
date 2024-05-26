@@ -28,3 +28,36 @@
         };
     };
 };
+
+/* MCUboot secondary image on external flash */
+/delete-node/ &slot0_partition;
+/delete-node/ &slot0_ns_partition;
+/delete-node/ &slot1_partition;
+/delete-node/ &slot1_ns_partition;
+/delete-node/ &scratch_partition;
+
+&flash0 {
+	partitions {
+		compatible = "fixed-partitions";
+		#address-cells = <1>;
+		#size-cells = <1>;
+
+        slot0_partition: partition@10000 {
+			label = "image-0";
+            reg = <0x00010000 0xea000>;
+		};
+    };
+};
+
+&mx25r64 {
+    partitions {
+		compatible = "fixed-partitions";
+		#address-cells = <1>;
+		#size-cells = <1>;
+
+        slot1_partition: partition@0 {
+			label = "image-1";
+            reg = <0x00000000 0xea000>;
+		};
+    };
+};

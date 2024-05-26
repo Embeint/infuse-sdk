@@ -1,0 +1,7 @@
+if BOARD_THINGY53_NRF5340_CPUAPP
+
+# External flash layout needs to match internal
+configdefault SPI_NOR_FLASH_LAYOUT_PAGE_SIZE
+    default 4096 if MCUBOOT
+
+endif # BOARD_THINGY53_NRF5340_CPUAPP

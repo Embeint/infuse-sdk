@@ -7,5 +7,6 @@ if SNIPPET_INFUSE
 
 rsource "boards/mps2_an385.defconfig"
 rsource "boards/nrf7002dk.defconfig"
+rsource "boards/thingy53.defconfig"
 
 endif # SNIPPET_INFUSE
