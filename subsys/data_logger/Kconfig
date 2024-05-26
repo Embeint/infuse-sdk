@@ -3,7 +3,6 @@
 config DATA_LOGGER
 	bool "Infuse IoT data logging abstraction"
 	depends on DT_HAS_EMBEINT_DATA_LOGGER_ENABLED
-	default y
 	help
 	  Abstraction of logging Infuse IoT payloads to arbitrary backends,
 	  whether wireless interfaces (ePacket) or persistent storage (Flash).
