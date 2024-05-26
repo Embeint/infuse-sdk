@@ -1,9 +1,9 @@
 if BOARD_NRF7002DK_NRF5340_CPUAPP
 
 configdefault NETWORKING
-    default y
+    default y if !MCUBOOT
 
 configdefault WIFI
-    default y
+    default y if !MCUBOOT
 
 endif # BOARD_NRF7002DK_NRF5340_CPUAPP
