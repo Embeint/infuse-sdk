@@ -43,6 +43,9 @@ configdefault INFUSE_RPC
 configdefault TDF
 	default y
 
+configdefault DATA_LOGGER
+	default y
+
 configdefault INFUSE_CIVIL_TIME
 	default y
 
