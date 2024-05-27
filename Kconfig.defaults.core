@@ -49,6 +49,12 @@ configdefault DATA_LOGGER
 configdefault INFUSE_CIVIL_TIME
 	default y
 
+# Application management
+configdefault STREAM_FLASH
+	default y if BOOTLOADER_MCUBOOT
+configdefault IMG_MANAGER
+	default y if BOOTLOADER_MCUBOOT
+
 # KV store
 configdefault FLASH
 	default y
