@@ -14,3 +14,7 @@ common:
 tests:
   sample.app.gateway_usb:
     tags: gateway
+  sample.app.gateway_usb.sysbuild:
+    tags: gateway
+    sysbuild: true
+    filter: not CONFIG_BUILD_WITH_TFM

@@ -13,3 +13,7 @@ common:
 tests:
   sample.app.gateway_wifi:
     tags: gateway
+  sample.app.gateway_wifi.sysbuild:
+    tags: gateway
+    sysbuild: true
+    filter: not CONFIG_BUILD_WITH_TFM
