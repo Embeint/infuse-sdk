@@ -15,3 +15,8 @@ tests:
   sample.app.data_logger.wifi:
     tags: app
     extra_args: SHIELD=nrf7002eb
+  sample.app.data_logger.wifi.sysbuild:
+    tags: app
+    sysbuild: true
+    filter: not CONFIG_BUILD_WITH_TFM
+    extra_args: SHIELD=nrf7002eb
