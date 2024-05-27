@@ -9,9 +9,9 @@ config SHIELD_NRF7002EB
 if SHIELD_NRF7002EB
 
 configdefault NETWORKING
-	default y
+	default y if !MCUBOOT
 
 configdefault WIFI
-	default y
+	default y if !MCUBOOT
 
 endif # SHIELD_NRF7002EB
