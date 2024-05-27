@@ -6,3 +6,5 @@ build:
     snippet_root: .
   cmake: .
   kconfig: Kconfig.infuse
+  sysbuild-cmake: sysbuild
+  sysbuild-kconfig: sysbuild/Kconfig
