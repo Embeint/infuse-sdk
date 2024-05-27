@@ -115,6 +115,10 @@ static void interrupt_handler(const struct device *dev, void *user_data)
 
 			/* Push payload */
 			sent = uart_fifo_fill(dev, buf->data, buf->len);
+			if (sent != buf->len) {
+				/* Should be impossible with the IRQ lock and previous checks */
+				LOG_ERR("FIFO fail? %d != %d", sent, buf->len);
+			}
 
 			/* Notify TX result */
 			epacket_notify_tx_result(data->interface, buf, 0);
