@@ -127,6 +127,8 @@ static void interrupt_handler(const struct device *dev, void *user_data)
 			net_buf_unref(buf);
 
 			LOG_DBG("sent %d/%d", sent, available);
+		} else {
+			uart_irq_tx_disable(dev);
 		}
 		irq_unlock(key);
 	}
