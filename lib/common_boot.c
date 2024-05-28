@@ -11,6 +11,7 @@
 #include <zephyr/usb/usb_device.h>
 #include <zephyr/drivers/hwinfo.h>
 
+#include <infuse/version.h>
 #include <infuse/identifiers.h>
 #include <infuse/fs/kv_store.h>
 #include <infuse/fs/kv_types.h>
@@ -30,6 +31,7 @@ int infuse_common_boot_last_reboot(struct infuse_reboot_state *state)
 static int infuse_common_boot(void)
 {
 	KV_KEY_TYPE(KV_KEY_REBOOTS) reboot = {0};
+	struct infuse_version v = application_version_get();
 	int rc;
 #ifdef CONFIG_INFUSE_SDK
 	uint64_t device_id = infuse_device_id();
@@ -59,6 +61,7 @@ static int infuse_common_boot(void)
 #endif /* CONFIG_USB_DEVICE_INITIALIZE_AT_BOOT */
 #endif /* CONFIG_USB_DEVICE_STACK */
 
+	LOG_INF("\tVersion: %d.%d.%d+%08x", v.major, v.minor, v.revision, v.build_num);
 	LOG_INF("\t Device: %016llx", device_id);
 	LOG_INF("\t  Board: %s", CONFIG_BOARD);
 	LOG_INF("\tReboots: %d", reboot.count);
