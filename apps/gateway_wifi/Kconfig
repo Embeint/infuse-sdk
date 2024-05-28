@@ -1,9 +1,0 @@
-# Temporary hardcoding
-
-config WIFI_SSID
-	string "WiFi network name"
-
-config WIFI_PSK
-	string "WiFi password"
-
-source "Kconfig.zephyr"
