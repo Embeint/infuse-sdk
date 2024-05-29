@@ -12,6 +12,7 @@ source "subsys/logging/Kconfig.template.log_config"
 
 config INFUSE_RPC_SERVER_STACK_SIZE
 	int "Server thread stack size"
+	default 4096 if NETWORKING
 	default 2048
 
 rsource "commands/Kconfig.commands"
