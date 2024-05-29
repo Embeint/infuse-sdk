@@ -155,6 +155,24 @@ struct rpc_struct_wifi_state {
 	uint8_t twt_capable;
 } __packed;
 
+/* WiFi interface status */
+struct rpc_struct_wifi_scan_result {
+	/* Frequency band */
+	uint8_t band;
+	/* Channel index */
+	uint8_t channel;
+	/* IEEE 802.11 security type */
+	uint8_t security;
+	/* Received signal strength (dBm) */
+	int8_t rssi;
+	/* Basic Service Set Identifier (MAC address) */
+	char bssid[6];
+	/* SSID length */
+	uint8_t ssid_len;
+	/* Service Set Identifier (Network Name) */
+	char ssid[];
+} __packed;
+
 /**
  * @}
  */
@@ -179,6 +197,8 @@ enum rpc_builtin_id {
 	RPC_ID_KV_WRITE = 5,
 	/* Read values from the KV store */
 	RPC_ID_KV_READ = 6,
+	/* Scan for WiFi networks */
+	RPC_ID_WIFI_SCAN = 10,
 	/* Get current WiFi interface state */
 	RPC_ID_WIFI_STATE = 11,
 	/* Send multiple INFUSE_RPC_DATA packets */
@@ -271,6 +291,19 @@ struct rpc_kv_read_response {
 	struct infuse_rpc_rsp_header header;
 	/* Array of KV values */
 	struct rpc_struct_kv_store_value values[];
+} __packed;
+
+/* Scan for WiFi networks */
+struct rpc_wifi_scan_request {
+	struct infuse_rpc_req_header header;
+} __packed;
+
+struct rpc_wifi_scan_response {
+	struct infuse_rpc_rsp_header header;
+	/* Number of scanned networks */
+	uint8_t network_count;
+	/* Array of scanned networks */
+	struct rpc_struct_wifi_scan_result networks[];
 } __packed;
 
 /* Get current WiFi interface state */

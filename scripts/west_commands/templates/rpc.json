@@ -55,6 +55,18 @@
                 {"name": "beacon_interval", "type": "uint16_t", "description": "Beacon interval (ms)"},
                 {"name": "twt_capable", "type": "uint8_t", "description": "Target Wake Time capable?"}
             ]
+        },
+        "rpc_struct_wifi_scan_result": {
+            "description": "WiFi interface status",
+            "fields": [
+                {"name": "band", "type": "uint8_t", "description": "Frequency band"},
+                {"name": "channel", "type": "uint8_t", "description": "Channel index"},
+                {"name": "security", "type": "uint8_t", "description": "IEEE 802.11 security type"},
+                {"name": "rssi", "type": "int8_t", "description": "Received signal strength (dBm)"},
+                {"name": "bssid", "type": "char", "num": 6, "description": "Basic Service Set Identifier (MAC address)"},
+                {"name": "ssid_len", "type": "uint8_t", "description": "SSID length"},
+                {"name": "ssid", "type": "char", "num": 0, "description": "Service Set Identifier (Network Name)"}
+            ]
         }
     },
     "commands": {
@@ -135,6 +147,18 @@
             ],
             "response_params": [
                 {"name": "values", "type": "struct rpc_struct_kv_store_value", "num": 0, "description": "Array of KV values"}
+            ]
+        },
+        "10": {
+            "name": "wifi_scan",
+            "description": "Scan for WiFi networks",
+            "depends_on": "WIFI",
+            "default": "y if INFUSE_SDK",
+            "default_auth": "EPACKET_AUTH_DEVICE",
+            "request_params": [],
+            "response_params": [
+                {"name": "network_count", "type": "uint8_t", "description": "Number of scanned networks"},
+                {"name": "networks", "type": "struct rpc_struct_wifi_scan_result", "num": 0, "description": "Array of scanned networks"}
             ]
         },
         "11": {

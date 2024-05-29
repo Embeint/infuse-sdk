@@ -84,6 +84,13 @@ void rpc_command_runner(struct net_buf *request)
 		}
 		break;
 #endif /* CONFIG_INFUSE_RPC_COMMAND_KV_READ */
+#ifdef CONFIG_INFUSE_RPC_COMMAND_WIFI_SCAN
+	case RPC_ID_WIFI_SCAN:
+		if (auth >= CONFIG_INFUSE_RPC_COMMAND_WIFI_SCAN_REQUIRED_AUTH) { /* GCOVR_EXCL_BR_LINE */
+			response = rpc_command_wifi_scan(request);
+		}
+		break;
+#endif /* CONFIG_INFUSE_RPC_COMMAND_WIFI_SCAN */
 #ifdef CONFIG_INFUSE_RPC_COMMAND_WIFI_STATE
 	case RPC_ID_WIFI_STATE:
 		if (auth >= CONFIG_INFUSE_RPC_COMMAND_WIFI_STATE_REQUIRED_AUTH) { /* GCOVR_EXCL_BR_LINE */
