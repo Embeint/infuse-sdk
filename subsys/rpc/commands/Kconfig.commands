@@ -73,6 +73,18 @@ config INFUSE_RPC_COMMAND_KV_READ_REQUIRED_AUTH
 	depends on INFUSE_RPC_COMMAND_KV_READ
 	default 2
 
+config INFUSE_RPC_COMMAND_WIFI_SCAN
+	bool "Enable RPC wifi_scan"
+	depends on WIFI
+	default y if INFUSE_SDK
+	help
+	  Scan for WiFi networks
+
+config INFUSE_RPC_COMMAND_WIFI_SCAN_REQUIRED_AUTH
+	int "Required authorisation level to run wifi_scan"
+	depends on INFUSE_RPC_COMMAND_WIFI_SCAN
+	default 2
+
 config INFUSE_RPC_COMMAND_WIFI_STATE
 	bool "Enable RPC wifi_state"
 	depends on WIFI
