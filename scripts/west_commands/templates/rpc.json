@@ -16,6 +16,45 @@
                 {"name": "len", "type": "int16_t"},
                 {"name": "data", "type": "uint8_t", "num": 0}
             ]
+        },
+        "rpc_struct_ipv4_address": {
+            "description": "IPv4 address",
+            "fields": [
+                {"name": "addr", "type": "uint8_t", "num": 4}
+            ]
+        },
+        "rpc_struct_ipv6_address": {
+            "description": "IPv6 address",
+            "fields": [
+                {"name": "addr", "type": "uint8_t", "num": 16}
+            ]
+        },
+        "rpc_struct_network_state": {
+            "description": "Common network state",
+            "fields": [
+                {"name": "state", "type": "uint8_t", "description": "Operational state"},
+                {"name": "if_flags", "type": "uint32_t", "description": "Interface flags"},
+                {"name": "l2_flags", "type": "uint16_t", "description": "L2 flags"},
+                {"name": "mtu", "type": "uint16_t", "description": "Maximum transmission unit"},
+                {"name": "ipv4", "type": "struct rpc_struct_ipv4_address", "description": "Self IPv4 address"},
+                {"name": "ipv6", "type": "struct rpc_struct_ipv6_address", "description": "Self IPv6 address"}
+            ]
+        },
+        "rpc_struct_wifi_state": {
+            "description": "WiFi interface status",
+            "fields": [
+                {"name": "state", "type": "uint8_t", "description": "Operational state"},
+                {"name": "ssid", "type": "char", "num": 32, "description": "Service Set Identifier (Network Name)"},
+                {"name": "bssid", "type": "char", "num": 6, "description": "Basic Service Set Identifier (MAC address)"},
+                {"name": "band", "type": "uint8_t", "description": "Frequency band"},
+                {"name": "channel", "type": "uint8_t", "description": "Channel index"},
+                {"name": "iface_mode", "type": "uint8_t", "description": "https://w1.fi/wpa_supplicant/devel/defs_8h.html#a4aeb27c1e4abd046df3064ea9756f0bc"},
+                {"name": "link_mode", "type": "uint8_t", "description": "WiFi link operating mode (https://en.wikipedia.org/wiki/Wi-Fi#Versions_and_generations)"},
+                {"name": "security", "type": "uint8_t", "description": "IEEE 802.11 security type"},
+                {"name": "rssi", "type": "int8_t", "description": "Received signal strength (dBm)"},
+                {"name": "beacon_interval", "type": "uint16_t", "description": "Beacon interval (ms)"},
+                {"name": "twt_capable", "type": "uint8_t", "description": "Target Wake Time capable?"}
+            ]
         }
     },
     "commands": {
@@ -96,7 +135,19 @@
             ],
             "response_params": [
                 {"name": "values", "type": "struct rpc_struct_kv_store_value", "num": 0, "description": "Array of KV values"}
-             ]
+            ]
+        },
+        "11": {
+            "name": "wifi_state",
+            "description": "Get current WiFi interface state",
+            "depends_on": "WIFI",
+            "default": "y if INFUSE_SDK",
+            "default_auth": "EPACKET_AUTH_DEVICE",
+            "request_params": [],
+            "response_params": [
+                {"name": "common", "type": "struct rpc_struct_network_state", "description": "Common network state"},
+                {"name": "wifi", "type": "struct rpc_struct_wifi_state", "description": "WiFi state"}
+            ]
         },
         "32765": {
             "name": "data_sender",

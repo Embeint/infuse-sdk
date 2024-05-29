@@ -80,6 +80,8 @@ struct infuse_rpc_rsp_header {
  * @}
  */
 
+/* clang-format off */
+
 /**
  * @brief Common RPC struct fields
  * @defgroup rpc_struct_definitions Common RPC struct fields
@@ -99,6 +101,58 @@ struct rpc_struct_kv_store_value {
 	uint16_t id;
 	int16_t len;
 	uint8_t data[];
+} __packed;
+
+/* IPv4 address */
+struct rpc_struct_ipv4_address {
+	uint8_t addr[4];
+} __packed;
+
+/* IPv6 address */
+struct rpc_struct_ipv6_address {
+	uint8_t addr[16];
+} __packed;
+
+/* Common network state */
+struct rpc_struct_network_state {
+	/* Operational state */
+	uint8_t state;
+	/* Interface flags */
+	uint32_t if_flags;
+	/* L2 flags */
+	uint16_t l2_flags;
+	/* Maximum transmission unit */
+	uint16_t mtu;
+	/* Self IPv4 address */
+	struct rpc_struct_ipv4_address ipv4;
+	/* Self IPv6 address */
+	struct rpc_struct_ipv6_address ipv6;
+} __packed;
+
+/* WiFi interface status */
+struct rpc_struct_wifi_state {
+	/* Operational state */
+	uint8_t state;
+	/* Service Set Identifier (Network Name) */
+	char ssid[32];
+	/* Basic Service Set Identifier (MAC address) */
+	char bssid[6];
+	/* Frequency band */
+	uint8_t band;
+	/* Channel index */
+	uint8_t channel;
+	/* https://w1.fi/wpa_supplicant/devel/defs_8h.html#a4aeb27c1e4abd046df3064ea9756f0bc */
+	uint8_t iface_mode;
+	/* WiFi link operating mode (https://en.wikipedia.org/wiki/Wi-Fi#Versions_and_generations) */
+	uint8_t link_mode;
+	/* IEEE 802.11 security type */
+	uint8_t security;
+	/* Received signal strength (dBm) */
+	int8_t rssi;
+	/* Beacon interval (ms) */
+	uint16_t beacon_interval;
+	/* Target Wake Time capable? */
+	uint8_t twt_capable;
 } __packed;
 
 /**
@@ -125,6 +179,8 @@ enum rpc_builtin_id {
 	RPC_ID_KV_WRITE = 5,
 	/* Read values from the KV store */
 	RPC_ID_KV_READ = 6,
+	/* Get current WiFi interface state */
+	RPC_ID_WIFI_STATE = 11,
 	/* Send multiple INFUSE_RPC_DATA packets */
 	RPC_ID_DATA_SENDER = 32765,
 	/* Receive multiple INFUSE_RPC_DATA packets */
@@ -217,6 +273,19 @@ struct rpc_kv_read_response {
 	struct rpc_struct_kv_store_value values[];
 } __packed;
 
+/* Get current WiFi interface state */
+struct rpc_wifi_state_request {
+	struct infuse_rpc_req_header header;
+} __packed;
+
+struct rpc_wifi_state_response {
+	struct infuse_rpc_rsp_header header;
+	/* Common network state */
+	struct rpc_struct_network_state common;
+	/* WiFi state */
+	struct rpc_struct_wifi_state wifi;
+} __packed;
+
 /* Send multiple INFUSE_RPC_DATA packets */
 struct rpc_data_sender_request {
 	struct infuse_rpc_req_header header;
@@ -255,6 +324,8 @@ struct rpc_echo_response {
 /**
  * @}
  */
+
+/* clang-format on */
 
 #ifdef __cplusplus
 }

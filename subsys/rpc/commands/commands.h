@@ -71,6 +71,15 @@ struct net_buf *rpc_command_kv_write(struct net_buf *request);
 struct net_buf *rpc_command_kv_read(struct net_buf *request);
 
 /**
+ * @brief Run wifi_state RPC
+ *
+ * @param request @ref INFUSE_RPC_REQ packet to respond to
+ *
+ * @return struct net_buf* @ref INFUSE_RPC_RSP packet buffer
+ */
+struct net_buf *rpc_command_wifi_state(struct net_buf *request);
+
+/**
  * @brief Run data_sender RPC
  *
  * @param request @ref INFUSE_RPC_REQ packet to respond to
