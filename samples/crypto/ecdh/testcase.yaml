@@ -1,0 +1,10 @@
+common:
+  tags: crypto ecdh
+  build_only: true
+  min_flash: 64
+  min_ram: 32
+tests:
+  crypto.ecdh:
+    integration_platforms:
+      - native_sim
+      - qemu_cortex_m3
