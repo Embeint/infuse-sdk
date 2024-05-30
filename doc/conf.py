@@ -32,9 +32,9 @@ except ImportError:
 
 # -- Project --------------------------------------------------------------
 
-project = "Zephyr Project"
-copyright = "2015-2024 Zephyr Project members and individual contributors"
-author = "The Zephyr Project Contributors"
+project = "Infuse IoT SDK"
+copyright = "2024 Embeint Inc"
+author = "Embeint Inc"
 
 # parse version from 'VERSION' file
 with open(INFUSE_BASE / "VERSION") as f:
