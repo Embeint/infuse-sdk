@@ -6,12 +6,9 @@ import os
 from pathlib import Path
 import re
 
-from sphinx.cmd.build import get_parser
-
-args, unknown = get_parser().parse_known_args()
 INFUSE_BASE = (Path(__file__).parents[1]).resolve()
 ZEPHYR_BASE = (Path(__file__).parents[2] / 'zephyr').resolve()
-ZEPHYR_BUILD = Path(args.outputdir).resolve()
+ZEPHYR_BUILD = Path(os.environ.get("DOCS_HTML_DIR")).resolve()
 
 # Add the '_extensions' directory to sys.path, to enable finding Sphinx
 # extensions within.
