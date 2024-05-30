@@ -1,4 +1,4 @@
-name: embeint
+name: infuse-iot
 build:
   settings:
     board_root: .
