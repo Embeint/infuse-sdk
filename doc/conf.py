@@ -279,6 +279,9 @@ external_content_contents = [
 ]
 external_content_keep = [
     "reference/kconfig/*",
+    "build/dts/api/bindings.rst",
+    "build/dts/api/bindings/**/*",
+    "build/dts/api/compatibles/**/*",
 ]
 
 # -- Options for zephyr.domain --------------------------------------------

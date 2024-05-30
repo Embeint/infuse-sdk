@@ -10,3 +10,11 @@ Snippets
    :maxdepth: 1
 
    /snippets/index.rst
+
+Devicetree
+**********
+
+.. toctree::
+   :maxdepth: 1
+
+   dts/devicetree.rst
