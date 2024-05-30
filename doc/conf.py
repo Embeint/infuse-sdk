@@ -309,11 +309,12 @@ copybutton_prompt_is_regexp = True
 # -- Linkcheck options ----------------------------------------------------
 
 linkcheck_ignore = [
-    r"https://github.com/zephyrproject-rtos/zephyr/issues/.*"
+    r"https://github.com/zephyrproject-rtos/zephyr/issues/.*",
+    r"https://github.com/Embeint/infuse-sdk/issues/.*"
 ]
 
 extlinks = {
-    "github": ("https://github.com/zephyrproject-rtos/zephyr/issues/%s", "GitHub #%s"),
+    "github": ("https://github.com/Embeint/infuse-sdk/issues/%s", "GitHub #%s"),
 }
 
 linkcheck_timeout = 30
