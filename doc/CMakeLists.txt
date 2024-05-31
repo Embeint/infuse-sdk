@@ -175,6 +175,7 @@ add_doc_target(
   ${SPHINXAUTOBUILD}
     --watch ${DOCS_README}
     --watch ${DOCS_CFG_DIR}
+    --watch ${DOCS_CFG_DIR}/../snippets
     --ignore ${DOCS_BUILD_DIR}
     -b html
     -c ${DOCS_CFG_DIR}
