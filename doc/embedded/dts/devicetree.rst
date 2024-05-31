@@ -3,7 +3,15 @@
 Infuse Bindings
 ###############
 
-Infuse IoT devicetree bindings: :ref:`devicetree_binding_index`.
+These pages contain reference material for Infuse IoT's built-in bindings.
+
+.. We use ":glob:" with "*" here to add the generated bindings page.
+
+.. toctree::
+   :maxdepth: 3
+   :glob:
+
+   /build/dts/api/*
 
 .. _dt-important-props:
 
