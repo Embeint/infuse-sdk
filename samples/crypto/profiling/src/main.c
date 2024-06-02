@@ -16,6 +16,8 @@
 #include <psa/crypto.h>
 #include <psa/crypto_extra.h>
 
+#include <mbedtls/poly1305.h>
+
 #include <infuse/crypto/ascon.h>
 
 LOG_MODULE_REGISTER(app, LOG_LEVEL_INF);
@@ -27,6 +29,8 @@ static const uint16_t plaintext_lengths[] = {1, 16, 64, 128, 256, 512, 1024};
 uint8_t plaintext[1024];
 uint8_t ciphertext[1024 + 16];
 uint8_t decrypted[1024];
+uint8_t hash[32];
+uint8_t signature[64];
 
 enum algorithms {
 	ASCON_128A = 0,
@@ -43,11 +47,83 @@ const char *algorithm_names[] = {
 	[CHACHA20_POLY1305] = "chacha20-poly1305",
 };
 
+enum sign_alg {
+	SHA256 = 0,
+	HMAC_SHA256,
+	ECDSA_SHA256,
+	POLY1305,
+	NUM_SIGN_ALGORITHMS,
+};
+
+const char *sign_algorithm_names[] = {
+	[SHA256] = "SHA256",
+	[HMAC_SHA256] = "HMAC-SHA256",
+	[ECDSA_SHA256] = "ECDSA-SHA256",
+	[POLY1305] = "POLY1305",
+};
+
 uint64_t encrypt_cycles[NUM_ALGORITHMS][ARRAY_SIZE(plaintext_lengths)][REPEATS] = {0};
 uint64_t decrypt_cycles[NUM_ALGORITHMS][ARRAY_SIZE(plaintext_lengths)][REPEATS] = {0};
+uint64_t sign_cycles[NUM_SIGN_ALGORITHMS][ARRAY_SIZE(plaintext_lengths)][REPEATS] = {0};
+
+psa_key_id_t chacha_key_id, hmac_key_id, ecdsa_key_id, poly1305_key_id;
+
+static int key_setup(uint8_t key[32])
+{
+	psa_key_attributes_t key_attributes;
+	psa_status_t status;
+
+	/* Crypto settings for Chacha20-Poly1305 */
+	key_attributes = psa_key_attributes_init();
+	psa_set_key_usage_flags(&key_attributes, PSA_KEY_USAGE_ENCRYPT | PSA_KEY_USAGE_DECRYPT);
+	psa_set_key_lifetime(&key_attributes, PSA_KEY_LIFETIME_VOLATILE);
+	psa_set_key_algorithm(&key_attributes, PSA_ALG_CHACHA20_POLY1305);
+	psa_set_key_type(&key_attributes, PSA_KEY_TYPE_CHACHA20);
+	psa_set_key_bits(&key_attributes, 256);
+
+	/* Import Chacha20 key */
+	status = psa_import_key(&key_attributes, key, 32, &chacha_key_id);
+	if (status != PSA_SUCCESS) {
+		LOG_ERR("Import key failed! (%d)", status);
+		return -1;
+	}
+
+	/* Crypto settings for HMAC */
+	key_attributes = psa_key_attributes_init();
+	psa_set_key_usage_flags(&key_attributes, PSA_KEY_USAGE_SIGN_MESSAGE);
+	psa_set_key_lifetime(&key_attributes, PSA_KEY_LIFETIME_VOLATILE);
+	psa_set_key_algorithm(&key_attributes, PSA_ALG_HMAC(PSA_ALG_SHA_256));
+	psa_set_key_type(&key_attributes, PSA_KEY_TYPE_HMAC);
+	psa_set_key_bits(&key_attributes, 256);
+
+	/* Import HMAC key */
+	status = psa_generate_key(&key_attributes, &hmac_key_id);
+	if (status != PSA_SUCCESS) {
+		LOG_ERR("Failed to generate key pair! (%d)", status);
+		return -1;
+	}
+
+	/* Crypto settings for ECDSA */
+	key_attributes = psa_key_attributes_init();
+	psa_set_key_usage_flags(&key_attributes, PSA_KEY_USAGE_SIGN_HASH);
+	psa_set_key_lifetime(&key_attributes, PSA_KEY_LIFETIME_VOLATILE);
+	psa_set_key_algorithm(&key_attributes, PSA_ALG_ECDSA(PSA_ALG_SHA_256));
+	psa_set_key_type(&key_attributes, PSA_KEY_TYPE_ECC_KEY_PAIR(PSA_ECC_FAMILY_SECP_R1));
+	psa_set_key_bits(&key_attributes, 256);
+
+	/* Import ECDSA key */
+	status = psa_generate_key(&key_attributes, &ecdsa_key_id);
+	if (status != PSA_SUCCESS) {
+		LOG_ERR("Failed to generate key pair! (%d)", status);
+		return -1;
+	}
+
+	return 0;
+}
 
 int main(void)
 {
+	psa_status_t status;
 	uint8_t associated_data[16];
 	uint8_t nonce[16];
 	uint8_t key[32];
@@ -63,27 +139,14 @@ int main(void)
 	sys_rand_get(key, sizeof(key));
 
 	/* Initialize PSA Crypto */
-	psa_key_attributes_t key_attributes = PSA_KEY_ATTRIBUTES_INIT;
-	psa_key_id_t chacha_key_id;
-	psa_status_t status;
-
 	status = psa_crypto_init();
 	if (status != PSA_SUCCESS) {
 		LOG_ERR("PSA init failed! (%d)", status);
 		k_sleep(K_FOREVER);
 	}
 
-	/* Crypto settings for Chacha20-Poly1305 */
-	psa_set_key_usage_flags(&key_attributes, PSA_KEY_USAGE_ENCRYPT | PSA_KEY_USAGE_DECRYPT);
-	psa_set_key_lifetime(&key_attributes, PSA_KEY_LIFETIME_VOLATILE);
-	psa_set_key_algorithm(&key_attributes, PSA_ALG_CHACHA20_POLY1305);
-	psa_set_key_type(&key_attributes, PSA_KEY_TYPE_CHACHA20);
-	psa_set_key_bits(&key_attributes, 256);
-
-	/* Import Chacha20 key */
-	status = psa_import_key(&key_attributes, key, 32, &chacha_key_id);
-	if (status != PSA_SUCCESS) {
-		LOG_ERR("Import key failed! (%d)", status);
+	/* Create PSA key identities */
+	if (key_setup(key) < 0) {
 		k_sleep(K_FOREVER);
 	}
 
@@ -183,6 +246,65 @@ int main(void)
 			decrypt_cycles[CHACHA20_POLY1305][i][r] =
 				timing_cycles_get(&start_time, &end_time);
 		}
+		for (int r = 0; r < REPEATS; r++) {
+			size_t hlen;
+
+			start_time = timing_counter_get();
+			status = psa_hash_compute(PSA_ALG_SHA_256, plaintext, plaintext_lengths[i],
+						  hash, sizeof(hash), &hlen);
+			end_time = timing_counter_get();
+			if (status != PSA_SUCCESS) {
+				LOG_INF("psa_sign_hash failed! (Error: %d)", status);
+			}
+			sign_cycles[SHA256][i][r] = timing_cycles_get(&start_time, &end_time);
+		}
+		for (int r = 0; r < REPEATS; r++) {
+			mbedtls_poly1305_context ctx;
+
+			start_time = timing_counter_get();
+			mbedtls_poly1305_init(&ctx);
+			mbedtls_poly1305_starts(&ctx, key);
+			mbedtls_poly1305_update(&ctx, plaintext, plaintext_lengths[i]);
+			mbedtls_poly1305_finish(&ctx, signature);
+			mbedtls_poly1305_free(&ctx);
+			end_time = timing_counter_get();
+			if (status != PSA_SUCCESS) {
+				LOG_INF("psa_sign_hash failed! (Error: %d)", status);
+			}
+			sign_cycles[POLY1305][i][r] = timing_cycles_get(&start_time, &end_time);
+		}
+		for (int r = 0; r < REPEATS; r++) {
+			size_t slen;
+
+			start_time = timing_counter_get();
+			status = psa_mac_compute(hmac_key_id, PSA_ALG_HMAC(PSA_ALG_SHA_256),
+						 plaintext, plaintext_lengths[i], signature,
+						 sizeof(signature), &slen);
+			end_time = timing_counter_get();
+			if (status != PSA_SUCCESS) {
+				LOG_INF("psa_mac_compute failed! (Error: %d)", status);
+			}
+			sign_cycles[HMAC_SHA256][i][r] = timing_cycles_get(&start_time, &end_time);
+		}
+#ifdef CONFIG_MBEDTLS_ECDSA_C
+		for (int r = 0; r < REPEATS; r++) {
+			size_t hlen, slen;
+
+			start_time = timing_counter_get();
+			status = psa_hash_compute(PSA_ALG_SHA_256, plaintext, plaintext_lengths[i],
+						  hash, sizeof(hash), &hlen);
+			if (status == PSA_SUCCESS) {
+				status = psa_sign_hash(ecdsa_key_id, PSA_ALG_ECDSA(PSA_ALG_SHA_256),
+						       hash, sizeof(hash), signature,
+						       sizeof(signature), &slen);
+			}
+			end_time = timing_counter_get();
+			if (status != PSA_SUCCESS) {
+				LOG_INF("psa_sign_hash failed! (Error: %d)", status);
+			}
+			sign_cycles[ECDSA_SHA256][i][r] = timing_cycles_get(&start_time, &end_time);
+		}
+#endif /* CONFIG_MBEDTLS_ECDSA_C */
 	}
 
 	/* Log timing results */
@@ -210,6 +332,27 @@ int main(void)
 				encr_avg, encr_ns, decr_avg, decr_ns);
 		}
 	}
+
+	LOG_INF("");
+	LOG_INF("MAC/HASH Algorithms");
+	for (int i = 0; i < NUM_SIGN_ALGORITHMS; i++) {
+		LOG_INF("%s", sign_algorithm_names[i]);
+		LOG_INF("\t%6s | %17s", "Length", "Sign: Cycles (ns)");
+		for (int j = 0; j < ARRAY_SIZE(plaintext_lengths); j++) {
+			/* Average results */
+			uint64_t sign_avg = 0;
+			uint64_t sign_ns;
+
+			for (int k = 0; k < REPEATS; k++) {
+				sign_avg += sign_cycles[i][j][k];
+			}
+			sign_avg /= REPEATS;
+
+			sign_ns = timing_cycles_to_ns(sign_avg);
+			LOG_INF("\t%6d |  %6llu (%7llu)", plaintext_lengths[j], sign_avg, sign_ns);
+		}
+	}
+
 	k_sleep(K_FOREVER);
 	return 0;
 }
