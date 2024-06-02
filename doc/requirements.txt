@@ -5,6 +5,7 @@ sphinx~=6.2
 sphinx_rtd_theme~=1.2
 sphinx-tabs
 sphinxcontrib-svg2pdfconverter
+sphinxcontrib-mscgen
 pygments>=2.9
 sphinx-notfound-page
 sphinx-copybutton

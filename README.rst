@@ -17,8 +17,6 @@
      <img src="https://codecov.io/gh/Embeint/infuse-sdk/branch/main/graph/badge.svg?token=YR697LEP1F"/>
    </a>
 
-.. start_include_here
-
 The Infuse IoT SDK is a platform designed to make it simple to create ultra
 low-power Internet-of-Thing (IoT) devices.
 
