@@ -64,7 +64,7 @@ int main(void)
 
 	/* Initialize PSA Crypto */
 	psa_key_attributes_t key_attributes = PSA_KEY_ATTRIBUTES_INIT;
-	psa_key_id_t key_id;
+	psa_key_id_t chacha_key_id;
 	psa_status_t status;
 
 	status = psa_crypto_init();
@@ -81,7 +81,7 @@ int main(void)
 	psa_set_key_bits(&key_attributes, 256);
 
 	/* Import Chacha20 key */
-	status = psa_import_key(&key_attributes, key, 32, &key_id);
+	status = psa_import_key(&key_attributes, key, 32, &chacha_key_id);
 	if (status != PSA_SUCCESS) {
 		LOG_ERR("Import key failed! (%d)", status);
 		k_sleep(K_FOREVER);
@@ -161,8 +161,8 @@ int main(void)
 
 			start_time = timing_counter_get();
 
-			status = psa_aead_encrypt(key_id, PSA_ALG_CHACHA20_POLY1305, nonce, 12,
-						  associated_data, 4, plaintext,
+			status = psa_aead_encrypt(chacha_key_id, PSA_ALG_CHACHA20_POLY1305, nonce,
+						  12, associated_data, 4, plaintext,
 						  plaintext_lengths[i], ciphertext,
 						  sizeof(ciphertext), &clen);
 			end_time = timing_counter_get();
@@ -173,9 +173,9 @@ int main(void)
 				timing_cycles_get(&start_time, &end_time);
 
 			start_time = timing_counter_get();
-			status = psa_aead_decrypt(key_id, PSA_ALG_CHACHA20_POLY1305, nonce, 12,
-						  associated_data, 4, ciphertext, clen, decrypted,
-						  sizeof(decrypted), &mlen);
+			status = psa_aead_decrypt(chacha_key_id, PSA_ALG_CHACHA20_POLY1305, nonce,
+						  12, associated_data, 4, ciphertext, clen,
+						  decrypted, sizeof(decrypted), &mlen);
 			end_time = timing_counter_get();
 			if (status != PSA_SUCCESS) {
 				LOG_INF("psa_aead_decrypt failed! (Error: %d)", status);
@@ -189,6 +189,7 @@ int main(void)
 	LOG_INF("ASCON backend - %s", CONFIG_CRYPTO_ASCON_IMPL);
 	for (int i = 0; i < NUM_ALGORITHMS; i++) {
 		LOG_INF("%s", algorithm_names[i]);
+		LOG_INF("\t%6s | %17s | %17s", "Length", "Enc: Cycles (ns)", "Dec: Cycles (ns)");
 		for (int j = 0; j < ARRAY_SIZE(plaintext_lengths); j++) {
 			/* Average results */
 			uint64_t encr_avg = 0;
@@ -205,8 +206,8 @@ int main(void)
 			encr_ns = timing_cycles_to_ns(encr_avg);
 			decr_ns = timing_cycles_to_ns(decr_avg);
 
-			LOG_INF("\tLength %4d Encrypt %6llu (%7llu ns) Decrypt %6llu (%7llu ns)",
-				plaintext_lengths[j], encr_avg, encr_ns, decr_avg, decr_ns);
+			LOG_INF("\t%6d |  %6llu (%7llu) |  %6llu (%7llu)", plaintext_lengths[j],
+				encr_avg, encr_ns, decr_avg, decr_ns);
 		}
 	}
 	k_sleep(K_FOREVER);

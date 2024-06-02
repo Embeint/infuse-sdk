@@ -30,14 +30,15 @@ Memory region         Used Size  Region Size  %age Used
 ### Runtime performance
 ```
 [00:00:00.504,730] <inf> app: ASCON backend - ref
-[00:00:00.509,826] <inf> app: ascon-128a
-[00:00:00.514,221] <inf> app:   Length    1 Encrypt   6570 ( 102656 ns) Decrypt   6662 ( 104093 ns)
-[00:00:00.523,620] <inf> app:   Length   16 Encrypt   8396 ( 131187 ns) Decrypt   8522 ( 133156 ns)
-[00:00:00.533,050] <inf> app:   Length   64 Encrypt  14208 ( 222000 ns) Decrypt  14349 ( 224203 ns)
-[00:00:00.542,449] <inf> app:   Length  128 Encrypt  21960 ( 343125 ns) Decrypt  22125 ( 345703 ns)
-[00:00:00.551,879] <inf> app:   Length  256 Encrypt  37464 ( 585375 ns) Decrypt  37677 ( 588703 ns)
-[00:00:00.561,279] <inf> app:   Length  512 Encrypt  68472 (1069875 ns) Decrypt  68781 (1074703 ns)
-[00:00:00.570,709] <inf> app:   Length 1024 Encrypt 130488 (2038875 ns) Decrypt 130989 (2046703 ns)
+[00:00:00.486,846] <inf> app: ascon-128a
+[00:00:00.491,333] <inf> app:   Length |  Enc: Cycles (ns) |  Dec: Cycles (ns)
+[00:00:00.499,176] <inf> app:        1 |    7521 ( 117515) |    7663 ( 119734)
+[00:00:00.507,019] <inf> app:       16 |    9708 ( 151687) |    9820 ( 153437)
+[00:00:00.514,862] <inf> app:       64 |   16380 ( 255937) |   16453 ( 257078)
+[00:00:00.537,597] <inf> app:      128 |   25276 ( 394937) |   25297 ( 395265)
+[00:00:00.560,302] <inf> app:      256 |   43068 ( 672937) |   42985 ( 671640)
+[00:00:00.583,007] <inf> app:      512 |   78652 (1228937) |   78361 (1224390)
+[00:00:00.605,712] <inf> app:     1024 |  149820 (2340937) |  149113 (2329890)
 ```
 
 ## Full Results (armv7m)
@@ -53,13 +54,14 @@ Memory region         Used Size  Region Size  %age Used
 ```
 [00:00:00.484,344] <inf> app: ASCON backend - armv7m
 [00:00:00.489,685] <inf> app: ascon-128a
-[00:00:00.494,079] <inf> app:   Length    1 Encrypt   3684 (  57562 ns) Decrypt   3266 (  51031 ns)
-[00:00:00.503,509] <inf> app:   Length   16 Encrypt   3885 (  60703 ns) Decrypt   3848 (  60125 ns)
-[00:00:00.512,908] <inf> app:   Length   64 Encrypt   5852 (  91437 ns) Decrypt   5840 (  91250 ns)
-[00:00:00.522,338] <inf> app:   Length  128 Encrypt   8476 ( 132437 ns) Decrypt   8500 ( 132812 ns)
-[00:00:00.531,768] <inf> app:   Length  256 Encrypt  13724 ( 214437 ns) Decrypt  13820 ( 215937 ns)
-[00:00:00.541,168] <inf> app:   Length  512 Encrypt  24220 ( 378437 ns) Decrypt  24460 ( 382187 ns)
-[00:00:00.550,598] <inf> app:   Length 1024 Encrypt  45212 ( 706437 ns) Decrypt  45740 ( 714687 ns)
+[00:00:00.403,900] <inf> app:   Length |  Enc: Cycles (ns) |  Dec: Cycles (ns)
+[00:00:00.411,712] <inf> app:        1 |    4619 (  72171) |    4654 (  72718)
+[00:00:00.419,555] <inf> app:       16 |    5648 (  88250) |    5631 (  87984)
+[00:00:00.427,398] <inf> app:       64 |    8036 ( 125562) |    7998 ( 124968)
+[00:00:00.450,134] <inf> app:      128 |   11220 ( 175312) |   11154 ( 174281)
+[00:00:00.472,839] <inf> app:      256 |   17588 ( 274812) |   17466 ( 272906)
+[00:00:00.495,574] <inf> app:      512 |   30324 ( 473812) |   30090 ( 470156)
+[00:00:00.518,280] <inf> app:     1024 |   55796 ( 871812) |   55338 ( 864656)
 ```
 
 ## Full Results (armv7m_lowsize)
@@ -75,13 +77,14 @@ Memory region         Used Size  Region Size  %age Used
 ```
 [00:00:00.507,171] <inf> app: ASCON backend - armv7m_lowsize
 [00:00:00.513,214] <inf> app: ascon-128a
-[00:00:00.517,639] <inf> app:   Length    1 Encrypt   3146 (  49156 ns) Decrypt   3244 (  50687 ns)
-[00:00:00.527,038] <inf> app:   Length   16 Encrypt   3835 (  59921 ns) Decrypt   3972 (  62062 ns)
-[00:00:00.536,468] <inf> app:   Length   64 Encrypt   6118 (  95593 ns) Decrypt   6243 (  97546 ns)
-[00:00:00.545,898] <inf> app:   Length  128 Encrypt   9170 ( 143281 ns) Decrypt   9271 ( 144859 ns)
-[00:00:00.555,297] <inf> app:   Length  256 Encrypt  15274 ( 238656 ns) Decrypt  15327 ( 239484 ns)
-[00:00:00.564,727] <inf> app:   Length  512 Encrypt  27482 ( 429406 ns) Decrypt  27439 ( 428734 ns)
-[00:00:00.574,157] <inf> app:   Length 1024 Encrypt  51898 ( 810906 ns) Decrypt  51663 ( 807234 ns)
+[00:00:00.402,374] <inf> app:   Length |  Enc: Cycles (ns) |  Dec: Cycles (ns)
+[00:00:00.410,217] <inf> app:        1 |    3321 (  51890) |    3459 (  54046)
+[00:00:00.418,060] <inf> app:       16 |    4099 (  64046) |    4216 (  65875)
+[00:00:00.425,933] <inf> app:       64 |    6436 ( 100562) |    6553 ( 102390)
+[00:00:00.448,669] <inf> app:      128 |    9552 ( 149250) |    9669 ( 151078)
+[00:00:00.471,405] <inf> app:      256 |   15784 ( 246625) |   15901 ( 248453)
+[00:00:00.494,110] <inf> app:      512 |   28248 ( 441375) |   28365 ( 443203)
+[00:00:00.516,845] <inf> app:     1024 |   53176 ( 830875) |   53293 ( 832703)
 ```
 ## Full Results (armv7m_small)
 ### Code size
@@ -96,11 +99,12 @@ Memory region         Used Size  Region Size  %age Used
 ```
 [00:00:00.479,034] <inf> app: ASCON backend - armv7m_small
 [00:00:00.484,893] <inf> app: ascon-128a
-[00:00:00.489,288] <inf> app:   Length    1 Encrypt   3095 (  48359 ns) Decrypt   3091 (  48296 ns)
-[00:00:00.498,718] <inf> app:   Length   16 Encrypt   3684 (  57562 ns) Decrypt   3681 (  57515 ns)
-[00:00:00.508,117] <inf> app:   Length   64 Encrypt   5820 (  90937 ns) Decrypt   5806 (  90718 ns)
-[00:00:00.517,547] <inf> app:   Length  128 Encrypt   8672 ( 135500 ns) Decrypt   8642 ( 135031 ns)
-[00:00:00.526,947] <inf> app:   Length  256 Encrypt  14376 ( 224625 ns) Decrypt  14314 ( 223656 ns)
-[00:00:00.536,376] <inf> app:   Length  512 Encrypt  25784 ( 402875 ns) Decrypt  25658 ( 400906 ns)
-[00:00:00.545,806] <inf> app:   Length 1024 Encrypt  48600 ( 759375 ns) Decrypt  48346 ( 755406 ns)
+[00:00:00.399,932] <inf> app:   Length |  Enc: Cycles (ns) |  Dec: Cycles (ns)
+[00:00:00.407,745] <inf> app:        1 |    3239 (  50609) |    3255 (  50859)
+[00:00:00.415,588] <inf> app:       16 |    3935 (  61484) |    3953 (  61765)
+[00:00:00.423,461] <inf> app:       64 |    6075 (  94921) |    6095 (  95234)
+[00:00:00.446,166] <inf> app:      128 |    8927 ( 139484) |    8951 ( 139859)
+[00:00:00.468,841] <inf> app:      256 |   14631 ( 228609) |   14663 ( 229109)
+[00:00:00.491,546] <inf> app:      512 |   26039 ( 406859) |   26087 ( 407609)
+[00:00:00.514,251] <inf> app:     1024 |   48855 ( 763359) |   48935 ( 764609)
 ```
