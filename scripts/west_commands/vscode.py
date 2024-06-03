@@ -231,16 +231,17 @@ class vscode(WestCommand):
                 launch['configurations'][1]['servertype'] = 'jlink'
 
             # Get the JLink device name
-            runners_yaml = pathlib.Path(cache.get('ZEPHYR_RUNNERS_YAML'))
-            with runners_yaml.open('r') as f:
-                r = yaml.safe_load(f)
-                jlink_args = r['args']['jlink']
-                for arg in jlink_args:
-                    if arg.startswith('--device='):
-                        device = arg.removeprefix('--device=')
-                        launch['configurations'][0]['device'] = device
-                        launch['configurations'][1]['device'] = device
-                        break
+            runners_yaml = cache.get('ZEPHYR_RUNNERS_YAML')
+            if runners_yaml is not None:
+                with pathlib.Path(runners_yaml).open('r') as f:
+                    r = yaml.safe_load(f)
+                    if 'jlink' in r['args']:
+                        for arg in r['args']['jlink']:
+                            if arg.startswith('--device='):
+                                device = arg.removeprefix('--device=')
+                                launch['configurations'][0]['device'] = device
+                                launch['configurations'][1]['device'] = device
+                                break
 
             log.inf(f"Writing `c_cpp_properties.json` and `launch.json` to {vscode_folder}")
 
