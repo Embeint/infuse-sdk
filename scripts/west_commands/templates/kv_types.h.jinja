@@ -100,11 +100,14 @@ struct kv_{{ info['name'] | lower }} {
 /* Infuse IoT builtin KV definitions */
 enum kv_builtin_id {
 {% for info in definitions %}
+	/* {{ info['description'] }} */
 	KV_KEY_{{ info['name'] | upper }} = {{ info['key'] }},
 {% if 'range' in info %}
 #ifdef CONFIG_KV_STORE_{{ info['name'] }}_RANGE
+	/* End of currently enabled KV_KEY_{{ info['name'] | upper }} range */
 	KV_KEY_{{ info['name'] | upper }}_END = {{ info['key'] }} + CONFIG_KV_STORE_{{ info['name'] }}_RANGE - 1,
 #endif
+	/* Maximum number of KV_KEY_{{ info['name'] | upper }} slots that can be enabled */
 	KV_KEY_{{ info['name'] | upper }}_MAX = {{ info['key'] + info['range'] - 1 }},
 {% endif %}
 {% endfor %}
