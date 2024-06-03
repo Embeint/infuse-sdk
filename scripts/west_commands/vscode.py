@@ -206,6 +206,8 @@ class vscode(WestCommand):
             launch['configurations'][1]['executable'] = str(dir / 'zephyr' / 'zephyr.elf')
             launch['configurations'][0]['gdbPath'] = cache.get('CMAKE_GDB')
             launch['configurations'][1]['gdbPath'] = cache.get('CMAKE_GDB')
+            launch['configurations'][0]['svdFile'] = cache.get('SOC_SVD_FILE')
+            launch['configurations'][1]['svdFile'] = cache.get('SOC_SVD_FILE')
 
             if cache.get('BOARD')[-3:] == '_ns':
                 # Add TF-M .elf files
