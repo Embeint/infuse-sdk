@@ -3,9 +3,9 @@
    <a href="https://www.embeint.com">
      <p align="center">
        <picture>
-         <source media="(prefers-color-scheme: dark)" srcset="doc/_static/images/logo-dark.svg">
-         <source media="(prefers-color-scheme: light)" srcset="doc/_static/images/logo-light.svg">
-         <img src="doc/_static/images/logo-light.svg">
+         <source media="(prefers-color-scheme: dark)" srcset="doc/_static/images/infuse-dark.svg">
+         <source media="(prefers-color-scheme: light)" srcset="doc/_static/images/infuse-light.svg">
+         <img src="doc/_static/images/infuse-light.svg">
        </picture>
      </p>
    </a>

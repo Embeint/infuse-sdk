@@ -158,7 +158,7 @@ html_theme_options = {
 }
 html_baseurl = "https://docs.zephyrproject.org/latest/"
 html_title = "Infuse IoT SDK Documentation"
-html_logo = str(INFUSE_BASE / "doc" / "_static" / "images" / "logo-dark.svg")
+html_logo = str(INFUSE_BASE / "doc" / "_static" / "images" / "infuse-dark.svg")
 html_favicon = str(INFUSE_BASE / "doc" / "_static" / "images" / "favicon.png")
 html_static_path = [str(INFUSE_BASE / "doc" / "_static")]
 html_last_updated_fmt = "%b %d, %Y"
