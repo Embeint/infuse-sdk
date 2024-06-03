@@ -50,6 +50,13 @@ struct kv_store_cb {
 };
 
 /**
+ * @brief Get filesystem used by KV store
+ *
+ * @return void* `struct nvs_fs` pointer
+ */
+void *kv_store_fs(void);
+
+/**
  * @brief Reset key-value storage
  *
  * @retval 0 on success
