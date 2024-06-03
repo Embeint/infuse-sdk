@@ -8,3 +8,9 @@ tests:
     integration_platforms:
       - native_sim
       - qemu_cortex_m3
+      - nrf52840dk_nrf52840
+    harness: console
+    harness_config:
+      type: one_line
+      regex:
+        - "Shared secret:"
