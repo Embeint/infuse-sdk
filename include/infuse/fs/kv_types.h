@@ -147,17 +147,27 @@ struct kv_geofence {
 
 /* Infuse IoT builtin KV definitions */
 enum kv_builtin_id {
+	/* Nunmber of times device has rebooted */
 	KV_KEY_REBOOTS = 0,
+	/* Fixed global location of the device */
 	KV_KEY_FIXED_LOCATION = 10,
+	/* WiFi network name */
 	KV_KEY_WIFI_SSID = 20,
+	/* WiFi network password */
 	KV_KEY_WIFI_PSK = 21,
+	/* URL of the NTP server to use for time synchronisation */
 	KV_KEY_NTP_SERVER_URL = 30,
+	/* ePacket UDP server hostname */
 	KV_KEY_EPACKET_UDP_URL = 31,
+	/* ePacket UDP server port */
 	KV_KEY_EPACKET_UDP_PORT = 32,
+	/* Array of points defining a closed polygon */
 	KV_KEY_GEOFENCE = 100,
 #ifdef CONFIG_KV_STORE_GEOFENCE_RANGE
+	/* End of currently enabled KV_KEY_GEOFENCE range */
 	KV_KEY_GEOFENCE_END = 100 + CONFIG_KV_STORE_GEOFENCE_RANGE - 1,
 #endif
+	/* Maximum number of KV_KEY_GEOFENCE slots that can be enabled */
 	KV_KEY_GEOFENCE_MAX = 115,
 	/* End of builtin KV range */
 	KV_KEY_BUILTIN_END = 1024,
