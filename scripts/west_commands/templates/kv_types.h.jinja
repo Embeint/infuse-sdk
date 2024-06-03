@@ -101,6 +101,12 @@ struct kv_{{ info['name'] | lower }} {
 enum kv_builtin_id {
 {% for info in definitions %}
 	KV_KEY_{{ info['name'] | upper }} = {{ info['key'] }},
+{% if 'range' in info %}
+#ifdef CONFIG_KV_STORE_{{ info['name'] }}_RANGE
+	KV_KEY_{{ info['name'] | upper }}_END = {{ info['key'] }} + CONFIG_KV_STORE_{{ info['name'] }}_RANGE - 1,
+#endif
+	KV_KEY_{{ info['name'] | upper }}_MAX = {{ info['key'] + info['range'] - 1 }},
+{% endif %}
 {% endfor %}
 	/* End of builtin KV range */
 	KV_KEY_BUILTIN_END = 1024,
