@@ -1,0 +1,17 @@
+# Infuse IoT SDK secure storage
+
+config INFUSE_SECURE_STORAGE
+	bool "Secure storage API implementing PSA ITS"
+	depends on MBEDTLS_PSA_CRYPTO_C
+	depends on !BUILD_WITH_TFM
+	depends on KV_STORE
+	depends on HWINFO
+	default y
+
+if INFUSE_SECURE_STORAGE
+
+config INFUSE_SECURE_STORAGE_MAX_SIZE
+	int "Maximum size of stored values"
+	default 100
+
+endif

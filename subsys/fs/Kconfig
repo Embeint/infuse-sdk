@@ -1,1 +1,2 @@
 rsource "kv_store/Kconfig"
+rsource "secure_storage/Kconfig"
