@@ -5,6 +5,7 @@ import argparse
 import shutil
 import pathlib
 import json
+import yaml
 import subprocess
 import sys
 
@@ -228,8 +229,18 @@ class vscode(WestCommand):
                 launch['configurations'][1]['rtos'] = 'Zephyr'
                 launch['configurations'][0]['servertype'] = 'jlink'
                 launch['configurations'][1]['servertype'] = 'jlink'
-                launch['configurations'][0]['device'] = 'NRF5340_XXAA_APP'
-                launch['configurations'][1]['device'] = 'NRF5340_XXAA_APP'
+
+            # Get the JLink device name
+            runners_yaml = pathlib.Path(cache.get('ZEPHYR_RUNNERS_YAML'))
+            with runners_yaml.open('r') as f:
+                r = yaml.safe_load(f)
+                jlink_args = r['args']['jlink']
+                for arg in jlink_args:
+                    if arg.startswith('--device='):
+                        device = arg.removeprefix('--device=')
+                        launch['configurations'][0]['device'] = device
+                        launch['configurations'][1]['device'] = device
+                        break
 
             log.inf(f"Writing `c_cpp_properties.json` and `launch.json` to {vscode_folder}")
 
