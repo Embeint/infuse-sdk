@@ -22,6 +22,11 @@
 
 int kv_store_init(void);
 
+ZTEST(kv_store, test_fs_get)
+{
+	zassert_not_null(kv_store_fs());
+}
+
 ZTEST(kv_store, test_init_failure)
 {
 	const struct device *dev = NVS_PARTITION_DEVICE;

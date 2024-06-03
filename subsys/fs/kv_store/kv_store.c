@@ -26,6 +26,11 @@ static sys_slist_t cb_list;
 
 LOG_MODULE_REGISTER(kv_store, CONFIG_KV_STORE_LOG_LEVEL);
 
+void *kv_store_fs(void)
+{
+	return &fs;
+}
+
 int kv_store_reset(void)
 {
 	int rc;
