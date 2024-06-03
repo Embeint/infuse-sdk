@@ -93,6 +93,16 @@
             "fields": [
                 {"name": "points", "type": "struct gcs_location", "num": 0, "description": "Points in geofence"}
             ]
+        },
+        {
+            "name": "SECURE_STORAGE_RESERVED",
+            "key": 30000,
+            "range": 10,
+            "description": "Keys reserved for secure storage (do not enable)",
+            "depends_on": "!INFUSE_SDK",
+            "fields": [
+                {"name": "data", "type": "uint8_t", "num": 0, "description": "Opaque data"}
+            ]
         }
     ]
 }

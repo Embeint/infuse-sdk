@@ -68,6 +68,13 @@ static struct key_value_slot_definition kv_slots[] = {
 		.flags = KV_FLAGS_REFLECT,
 	},
 #endif /* CONFIG_KV_STORE_GEOFENCE */
+#ifdef CONFIG_KV_STORE_SECURE_STORAGE_RESERVED
+	{
+		.key = 30000,
+		.range = CONFIG_KV_STORE_SECURE_STORAGE_RESERVED_RANGE,
+		.flags = 0,
+	},
+#endif /* CONFIG_KV_STORE_SECURE_STORAGE_RESERVED */
 };
 
 /* Detect changes in struct size as this array exists in every application */
