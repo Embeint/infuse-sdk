@@ -1,0 +1,10 @@
+common:
+  tags: nvs psa
+tests:
+  fs.secure_storage:
+    platform_allow:
+      - native_sim
+      - qemu_cortex_m0
+    integration_platforms:
+      - native_sim
+      - qemu_cortex_m0
