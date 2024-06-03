@@ -82,6 +82,10 @@ configdefault MBEDTLS_ENABLE_HEAP
 	default y
 configdefault MBEDTLS_HEAP_SIZE
 	default 8192
+configdefault MBEDTLS_USER_CONFIG_ENABLE
+	default y
+configdefault MBEDTLS_USER_CONFIG_FILE
+	default "infuse/crypto/mbedtls/infuse_user_config.h"
 configdefault MBEDTLS_PSA_CRYPTO_C
 	default y
 configdefault MBEDTLS_PSA_CRYPTO_EXTERNAL_RNG
