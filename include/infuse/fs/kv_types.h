@@ -145,6 +145,22 @@ struct kv_geofence {
 	} __packed
 /* clang-format on */
 
+/* Keys reserved for secure storage (do not enable) */
+struct kv_secure_storage_reserved {
+	/* Opaque data */
+	uint8_t data_num;
+	uint8_t data[];
+} __packed;
+
+/* clang-format off */
+/* Compile time definition for known array length */
+#define _KV_KEY_SECURE_STORAGE_RESERVED_VAR(num) \
+	struct { \
+		uint8_t data_num; \
+		uint8_t data[num]; \
+	} __packed
+/* clang-format on */
+
 /* Infuse IoT builtin KV definitions */
 enum kv_builtin_id {
 	/* Nunmber of times device has rebooted */
@@ -169,6 +185,15 @@ enum kv_builtin_id {
 #endif
 	/* Maximum number of KV_KEY_GEOFENCE slots that can be enabled */
 	KV_KEY_GEOFENCE_MAX = 115,
+	/* Keys reserved for secure storage (do not enable) */
+	KV_KEY_SECURE_STORAGE_RESERVED = 30000,
+#ifdef CONFIG_KV_STORE_SECURE_STORAGE_RESERVED_RANGE
+	/* End of currently enabled KV_KEY_SECURE_STORAGE_RESERVED range */
+	KV_KEY_SECURE_STORAGE_RESERVED_END =
+		30000 + CONFIG_KV_STORE_SECURE_STORAGE_RESERVED_RANGE - 1,
+#endif
+	/* Maximum number of KV_KEY_SECURE_STORAGE_RESERVED slots that can be enabled */
+	KV_KEY_SECURE_STORAGE_RESERVED_MAX = 30009,
 	/* End of builtin KV range */
 	KV_KEY_BUILTIN_END = 1024,
 };
@@ -190,6 +215,7 @@ enum kv_builtin_size {
 #define _KV_KEY_EPACKET_UDP_URL_TYPE struct kv_epacket_udp_url
 #define _KV_KEY_EPACKET_UDP_PORT_TYPE struct kv_epacket_udp_port
 #define _KV_KEY_GEOFENCE_TYPE struct kv_geofence
+#define _KV_KEY_SECURE_STORAGE_RESERVED_TYPE struct kv_secure_storage_reserved
 /* clang-format on */
 
 /* Convert key ID to key type */
