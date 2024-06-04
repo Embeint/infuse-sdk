@@ -1,0 +1,73 @@
+/**
+ * @file
+ * @copyright 2024 Embeint Inc
+ * @author Jordan Yates <jordan@embeint.com>
+ *
+ * SPDX-License-Identifier: LicenseRef-Embeint
+ */
+
+#include <zephyr/net/buf.h>
+#include <zephyr/logging/log.h>
+#include <zephyr/random/random.h>
+
+#include <infuse/identifiers.h>
+#include <infuse/security.h>
+#include <infuse/rpc/types.h>
+#include <infuse/rpc/commands/security_state.h>
+
+#include <psa/crypto.h>
+#include <mbedtls/platform_util.h>
+
+#include "../server.h"
+
+LOG_MODULE_DECLARE(rpc_server);
+
+struct net_buf *rpc_command_security_state(struct net_buf *request)
+{
+	struct rpc_security_state_request *req = (void *)request->data;
+	psa_key_id_t sign_key = infuse_security_device_sign_key();
+	struct rpc_security_state_response rsp_header = {0};
+	struct security_state_response_pss challenge_response;
+	struct security_state_response_pss_encrypted *rsp;
+	struct net_buf *rsp_buf;
+	uint32_t network_id;
+	psa_status_t status;
+	size_t ad_len, olen;
+
+	/* Populate security state */
+	(void)infuse_security_network_root_key(&network_id);
+	infuse_security_cloud_public_key(rsp_header.cloud_public_key);
+	infuse_security_device_public_key(rsp_header.device_public_key);
+	rsp_header.network_id = network_id;
+	rsp_header.challenge_response_type = CHALLENGE_RESPONSE_PRE_SHARED_SECRET;
+
+	/* Allocate response */
+	rsp_buf = rpc_response_simple_req(request, 0, &rsp_header, sizeof(rsp_header));
+	rsp = net_buf_add(rsp_buf, sizeof(*rsp));
+
+	/* TODO: Populate identity_secret */
+	memcpy(challenge_response.challenge, req->challenge, sizeof(req->challenge));
+	memset(challenge_response.identity_secret, 0x00,
+	       sizeof(challenge_response.identity_secret));
+	challenge_response.device_id = infuse_device_id();
+
+	/* Encrypt the challenge response */
+	ad_len = offsetof(struct rpc_security_state_response, challenge_response) -
+		 offsetof(struct rpc_security_state_response, cloud_public_key);
+	sys_rand_get(rsp->nonce, sizeof(rsp->nonce));
+	status = psa_aead_encrypt(sign_key, PSA_ALG_CHACHA20_POLY1305, rsp->nonce,
+				  sizeof(rsp->nonce), rsp_header.cloud_public_key, ad_len,
+				  (void *)&challenge_response, sizeof(challenge_response),
+				  (void *)&rsp->ciphertext, sizeof(rsp->ciphertext), &olen);
+	if (status != PSA_SUCCESS) {
+		LOG_ERR("Failed to encrypt challenge response (%d)", status);
+		/* Don't forward any response on failure */
+		net_buf_remove_mem(rsp_buf, sizeof(*rsp));
+	}
+
+	/* Clear sensitive information */
+	mbedtls_platform_zeroize(&challenge_response, sizeof(challenge_response));
+
+	/* Return the response */
+	return rsp_buf;
+}

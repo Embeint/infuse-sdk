@@ -173,6 +173,22 @@
                 {"name": "wifi", "type": "struct rpc_struct_wifi_state", "description": "WiFi state"}
             ]
         },
+        "30000": {
+            "name": "security_state",
+            "description": "Query current security state and validate identity",
+            "default": "y if INFUSE_SECURITY",
+            "default_auth": "EPACKET_AUTH_NETWORK",
+            "request_params": [
+                {"name": "challenge", "type": "uint8_t", "num": 16, "description": "Random challenge data"}
+            ],
+            "response_params": [
+                {"name": "cloud_public_key", "type": "uint8_t", "num": 32, "description": "Cloud public ECC key"},
+                {"name": "device_public_key", "type": "uint8_t", "num": 32, "description": "Device public ECC key"},
+                {"name": "network_id", "type": "uint32_t", "description": "Current network ID"},
+                {"name": "challenge_response_type", "type": "uint8_t", "description": "Type of the challenge response"},
+                {"name": "challenge_response", "type": "uint8_t", "num": 0, "description": "Type of the challenge response"}
+            ]
+        },
         "32765": {
             "name": "data_sender",
             "description": "Send multiple INFUSE_RPC_DATA packets",
