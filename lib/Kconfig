@@ -17,7 +17,9 @@ config INFUSE_REBOOT
 config INFUSE_SECURITY
 	bool "Infuse IoT security"
 	depends on MBEDTLS
-	default y if !ZTEST
+	depends on MBEDTLS_HKDF_C
+	depends on MBEDTLS_CHACHAPOLY_AEAD_ENABLED
+	default y if INFUSE_SDK
 
 config INFUSE_SECURITY_CHACHA_KEY_EXPORT
 	bool "Enable exporting ChaCha20-Poly1305 symmetric keys"
