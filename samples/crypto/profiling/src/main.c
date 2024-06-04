@@ -138,13 +138,6 @@ int main(void)
 	sys_rand_get(nonce, sizeof(nonce));
 	sys_rand_get(key, sizeof(key));
 
-	/* Initialize PSA Crypto */
-	status = psa_crypto_init();
-	if (status != PSA_SUCCESS) {
-		LOG_ERR("PSA init failed! (%d)", status);
-		k_sleep(K_FOREVER);
-	}
-
 	/* Create PSA key identities */
 	if (key_setup(key) < 0) {
 		k_sleep(K_FOREVER);

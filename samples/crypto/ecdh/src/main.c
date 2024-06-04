@@ -49,13 +49,6 @@ int main(void)
 	psa_status_t status;
 	size_t olen;
 
-	/* Initialise PSA Crypto */
-	status = psa_crypto_init();
-	if (status != PSA_SUCCESS) {
-		LOG_ERR("PSA init failed! (%d)", status);
-		return -EINVAL;
-	}
-
 	/* Create device private/public key */
 	create_device_keypair(&device_keypair);
 
