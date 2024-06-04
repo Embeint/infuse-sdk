@@ -18,6 +18,9 @@
 
 #include "commands/commands.h"
 
+/* Authorised to run command */
+#define AUTHORISED(auth, name) (auth >= CONFIG_INFUSE_RPC_COMMAND_ ## name ## _REQUIRED_AUTH)
+
 static bool command_freed;
 
 void rpc_command_runner_request_unref(struct net_buf *request)
@@ -40,12 +43,11 @@ void rpc_command_runner(struct net_buf *request)
 	/* Reset command freed state */
 	command_freed = false;
 
-	/* clang-format off */
 	switch (req_header->command_id) {
 {% for command in commands.values() %}
 #ifdef CONFIG_INFUSE_RPC_COMMAND_{{ command['name'] | upper }}
 	case RPC_ID_{{ command['name'] | upper }}:
-		if (auth >= CONFIG_INFUSE_RPC_COMMAND_{{ command['name'] | upper }}_REQUIRED_AUTH) { /* GCOVR_EXCL_BR_LINE */
+		if (AUTHORISED(auth, {{ command['name'] | upper }})) { /* GCOVR_EXCL_BR_LINE */
 			response = rpc_command_{{ command['name'] }}(request);
 		}
 		break;
@@ -54,7 +56,6 @@ void rpc_command_runner(struct net_buf *request)
 	default:
 		rc = -ENOTSUP;
 	};
-	/* clang-format on */
 
 	/* Free the request */
 	if (!command_freed) {

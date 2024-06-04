@@ -18,6 +18,9 @@
 
 #include "commands/commands.h"
 
+/* Authorised to run command*/
+#define AUTHORISED(auth, name) (auth >= CONFIG_INFUSE_RPC_COMMAND_##name##_REQUIRED_AUTH)
+
 static bool command_freed;
 
 void rpc_command_runner_request_unref(struct net_buf *request)
@@ -40,81 +43,80 @@ void rpc_command_runner(struct net_buf *request)
 	/* Reset command freed state */
 	command_freed = false;
 
-	/* clang-format off */
 	switch (req_header->command_id) {
 #ifdef CONFIG_INFUSE_RPC_COMMAND_REBOOT
 	case RPC_ID_REBOOT:
-		if (auth >= CONFIG_INFUSE_RPC_COMMAND_REBOOT_REQUIRED_AUTH) { /* GCOVR_EXCL_BR_LINE */
+		if (AUTHORISED(auth, REBOOT)) { /* GCOVR_EXCL_BR_LINE */
 			response = rpc_command_reboot(request);
 		}
 		break;
 #endif /* CONFIG_INFUSE_RPC_COMMAND_REBOOT */
 #ifdef CONFIG_INFUSE_RPC_COMMAND_FAULT
 	case RPC_ID_FAULT:
-		if (auth >= CONFIG_INFUSE_RPC_COMMAND_FAULT_REQUIRED_AUTH) { /* GCOVR_EXCL_BR_LINE */
+		if (AUTHORISED(auth, FAULT)) { /* GCOVR_EXCL_BR_LINE */
 			response = rpc_command_fault(request);
 		}
 		break;
 #endif /* CONFIG_INFUSE_RPC_COMMAND_FAULT */
 #ifdef CONFIG_INFUSE_RPC_COMMAND_TIME_GET
 	case RPC_ID_TIME_GET:
-		if (auth >= CONFIG_INFUSE_RPC_COMMAND_TIME_GET_REQUIRED_AUTH) { /* GCOVR_EXCL_BR_LINE */
+		if (AUTHORISED(auth, TIME_GET)) { /* GCOVR_EXCL_BR_LINE */
 			response = rpc_command_time_get(request);
 		}
 		break;
 #endif /* CONFIG_INFUSE_RPC_COMMAND_TIME_GET */
 #ifdef CONFIG_INFUSE_RPC_COMMAND_TIME_SET
 	case RPC_ID_TIME_SET:
-		if (auth >= CONFIG_INFUSE_RPC_COMMAND_TIME_SET_REQUIRED_AUTH) { /* GCOVR_EXCL_BR_LINE */
+		if (AUTHORISED(auth, TIME_SET)) { /* GCOVR_EXCL_BR_LINE */
 			response = rpc_command_time_set(request);
 		}
 		break;
 #endif /* CONFIG_INFUSE_RPC_COMMAND_TIME_SET */
 #ifdef CONFIG_INFUSE_RPC_COMMAND_KV_WRITE
 	case RPC_ID_KV_WRITE:
-		if (auth >= CONFIG_INFUSE_RPC_COMMAND_KV_WRITE_REQUIRED_AUTH) { /* GCOVR_EXCL_BR_LINE */
+		if (AUTHORISED(auth, KV_WRITE)) { /* GCOVR_EXCL_BR_LINE */
 			response = rpc_command_kv_write(request);
 		}
 		break;
 #endif /* CONFIG_INFUSE_RPC_COMMAND_KV_WRITE */
 #ifdef CONFIG_INFUSE_RPC_COMMAND_KV_READ
 	case RPC_ID_KV_READ:
-		if (auth >= CONFIG_INFUSE_RPC_COMMAND_KV_READ_REQUIRED_AUTH) { /* GCOVR_EXCL_BR_LINE */
+		if (AUTHORISED(auth, KV_READ)) { /* GCOVR_EXCL_BR_LINE */
 			response = rpc_command_kv_read(request);
 		}
 		break;
 #endif /* CONFIG_INFUSE_RPC_COMMAND_KV_READ */
 #ifdef CONFIG_INFUSE_RPC_COMMAND_WIFI_SCAN
 	case RPC_ID_WIFI_SCAN:
-		if (auth >= CONFIG_INFUSE_RPC_COMMAND_WIFI_SCAN_REQUIRED_AUTH) { /* GCOVR_EXCL_BR_LINE */
+		if (AUTHORISED(auth, WIFI_SCAN)) { /* GCOVR_EXCL_BR_LINE */
 			response = rpc_command_wifi_scan(request);
 		}
 		break;
 #endif /* CONFIG_INFUSE_RPC_COMMAND_WIFI_SCAN */
 #ifdef CONFIG_INFUSE_RPC_COMMAND_WIFI_STATE
 	case RPC_ID_WIFI_STATE:
-		if (auth >= CONFIG_INFUSE_RPC_COMMAND_WIFI_STATE_REQUIRED_AUTH) { /* GCOVR_EXCL_BR_LINE */
+		if (AUTHORISED(auth, WIFI_STATE)) { /* GCOVR_EXCL_BR_LINE */
 			response = rpc_command_wifi_state(request);
 		}
 		break;
 #endif /* CONFIG_INFUSE_RPC_COMMAND_WIFI_STATE */
 #ifdef CONFIG_INFUSE_RPC_COMMAND_DATA_SENDER
 	case RPC_ID_DATA_SENDER:
-		if (auth >= CONFIG_INFUSE_RPC_COMMAND_DATA_SENDER_REQUIRED_AUTH) { /* GCOVR_EXCL_BR_LINE */
+		if (AUTHORISED(auth, DATA_SENDER)) { /* GCOVR_EXCL_BR_LINE */
 			response = rpc_command_data_sender(request);
 		}
 		break;
 #endif /* CONFIG_INFUSE_RPC_COMMAND_DATA_SENDER */
 #ifdef CONFIG_INFUSE_RPC_COMMAND_DATA_RECEIVER
 	case RPC_ID_DATA_RECEIVER:
-		if (auth >= CONFIG_INFUSE_RPC_COMMAND_DATA_RECEIVER_REQUIRED_AUTH) { /* GCOVR_EXCL_BR_LINE */
+		if (AUTHORISED(auth, DATA_RECEIVER)) { /* GCOVR_EXCL_BR_LINE */
 			response = rpc_command_data_receiver(request);
 		}
 		break;
 #endif /* CONFIG_INFUSE_RPC_COMMAND_DATA_RECEIVER */
 #ifdef CONFIG_INFUSE_RPC_COMMAND_ECHO
 	case RPC_ID_ECHO:
-		if (auth >= CONFIG_INFUSE_RPC_COMMAND_ECHO_REQUIRED_AUTH) { /* GCOVR_EXCL_BR_LINE */
+		if (AUTHORISED(auth, ECHO)) { /* GCOVR_EXCL_BR_LINE */
 			response = rpc_command_echo(request);
 		}
 		break;
@@ -122,7 +124,6 @@ void rpc_command_runner(struct net_buf *request)
 	default:
 		rc = -ENOTSUP;
 	};
-	/* clang-format on */
 
 	/* Free the request */
 	if (!command_freed) {
