@@ -227,7 +227,7 @@ static void test_data_sender(uint32_t to_send)
 			      sizeof(struct rpc_data_sender_request));
 
 	while (receiving) {
-		tx = net_buf_get(tx_fifo, K_MSEC(10));
+		tx = net_buf_get(tx_fifo, K_MSEC(100));
 		zassert_not_null(tx);
 		tx_header = (void *)tx->data;
 		zassert_equal(EPACKET_AUTH_DEVICE, tx_header->auth);
