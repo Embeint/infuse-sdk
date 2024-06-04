@@ -6,6 +6,7 @@ import pathlib
 import json
 import os
 import importlib
+import subprocess
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
@@ -44,6 +45,10 @@ class cloudgen(WestCommand):
         self.tdfgen()
         self.kvgen()
         self.rpcgen()
+
+    def clang_format(self, file):
+        args = ['clang-format', '-i', f'--style=file:{self.infuse_root_dir/".clang-format"}', str(file)]
+        subprocess.run(args)
 
     def tdfgen(self):
         tdf_def_file = self.template_dir / 'tdf.json'
@@ -99,6 +104,8 @@ class cloudgen(WestCommand):
         with tdf_definitions_output.open('w') as f:
             f.write(tdf_definitions_template.render(structs=tdf_defs['structs'], definitions=tdf_defs['definitions']))
             f.write(os.linesep)
+
+        self.clang_format(tdf_output)
 
     def kvgen(self):
         kv_def_file = self.template_dir / 'kv_store.json'
@@ -158,6 +165,9 @@ class cloudgen(WestCommand):
             f.write(kv_defs_template.render(structs=kv_defs['structs'], definitions=kv_defs['definitions']))
             f.write(os.linesep)
 
+        self.clang_format(kv_defs_output)
+        self.clang_format(kv_keys_output)
+
     def rpcgen(self):
         rpc_def_file = self.template_dir / 'rpc.json'
         rpc_defs_template = self.env.get_template('rpc_types.h.jinja')
@@ -208,3 +218,7 @@ class cloudgen(WestCommand):
 
             f.write(rpc_defs_template.render(structs=rpc_defs['structs'], commands=rpc_defs['commands']))
             f.write(os.linesep)
+
+        self.clang_format(rpc_defs_output)
+        self.clang_format(rpc_commands_output)
+        self.clang_format(rpc_runner_output)
