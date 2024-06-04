@@ -19,4 +19,7 @@ if (CONFIG_INFUSE_SDK)
   endif()
 endif()
 
+# Required for PSA headers
+zephyr_link_libraries_ifdef(CONFIG_MBEDTLS mbedTLS)
+
 include(cmake/sdk_nrf.cmake)

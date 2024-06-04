@@ -14,6 +14,11 @@ config INFUSE_REBOOT
 	depends on RETENTION_MUTEX_FORCE_DISABLE
 	depends on RETAINED_MEM_MUTEX_FORCE_DISABLE
 
+config INFUSE_SECURITY
+	bool "Infuse IoT security"
+	depends on MBEDTLS
+	default y if !ZTEST
+
 config INFUSE_CIVIL_TIME
 	bool "Infuse IoT civil time library"
 
