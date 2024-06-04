@@ -83,16 +83,10 @@ int epacket_key_derive(enum epacket_key_type base_key, const uint8_t *info, uint
 	psa_key_attributes_t key_attributes = PSA_KEY_ATTRIBUTES_INIT;
 	psa_key_derivation_operation_t operation = PSA_KEY_DERIVATION_OPERATION_INIT;
 	psa_key_id_t input_key;
-	psa_status_t status;
 	static bool inited;
 
 	/* Import base keys to PSA */
 	if (!inited) {
-		/* TODO: init in common application code */
-		status = psa_crypto_init();
-		if (status != PSA_SUCCESS) {
-			LOG_ERR("PSA init failed! (%d)", status);
-		}
 		epacket_import_root_keys();
 		inited = true;
 	}
