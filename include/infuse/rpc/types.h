@@ -201,6 +201,8 @@ enum rpc_builtin_id {
 	RPC_ID_WIFI_SCAN = 10,
 	/* Get current WiFi interface state */
 	RPC_ID_WIFI_STATE = 11,
+	/* Query current security state and validate identity */
+	RPC_ID_SECURITY_STATE = 30000,
 	/* Send multiple INFUSE_RPC_DATA packets */
 	RPC_ID_DATA_SENDER = 32765,
 	/* Receive multiple INFUSE_RPC_DATA packets */
@@ -317,6 +319,27 @@ struct rpc_wifi_state_response {
 	struct rpc_struct_network_state common;
 	/* WiFi state */
 	struct rpc_struct_wifi_state wifi;
+} __packed;
+
+/* Query current security state and validate identity */
+struct rpc_security_state_request {
+	struct infuse_rpc_req_header header;
+	/* Random challenge data */
+	uint8_t challenge[16];
+} __packed;
+
+struct rpc_security_state_response {
+	struct infuse_rpc_rsp_header header;
+	/* Cloud public ECC key */
+	uint8_t cloud_public_key[32];
+	/* Device public ECC key */
+	uint8_t device_public_key[32];
+	/* Current network ID */
+	uint32_t network_id;
+	/* Type of the challenge response */
+	uint8_t challenge_response_type;
+	/* Type of the challenge response */
+	uint8_t challenge_response[];
 } __packed;
 
 /* Send multiple INFUSE_RPC_DATA packets */

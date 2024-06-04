@@ -18,7 +18,7 @@
 
 #include "commands/commands.h"
 
-/* Authorised to run command*/
+/* Authorised to run command */
 #define AUTHORISED(auth, name) (auth >= CONFIG_INFUSE_RPC_COMMAND_##name##_REQUIRED_AUTH)
 
 static bool command_freed;
@@ -100,6 +100,13 @@ void rpc_command_runner(struct net_buf *request)
 		}
 		break;
 #endif /* CONFIG_INFUSE_RPC_COMMAND_WIFI_STATE */
+#ifdef CONFIG_INFUSE_RPC_COMMAND_SECURITY_STATE
+	case RPC_ID_SECURITY_STATE:
+		if (AUTHORISED(auth, SECURITY_STATE)) { /* GCOVR_EXCL_BR_LINE */
+			response = rpc_command_security_state(request);
+		}
+		break;
+#endif /* CONFIG_INFUSE_RPC_COMMAND_SECURITY_STATE */
 #ifdef CONFIG_INFUSE_RPC_COMMAND_DATA_SENDER
 	case RPC_ID_DATA_SENDER:
 		if (AUTHORISED(auth, DATA_SENDER)) { /* GCOVR_EXCL_BR_LINE */
