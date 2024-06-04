@@ -32,7 +32,7 @@ static const uint8_t default_network_key[32] = {
 	0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15,
 	0x16, 0x17, 0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f,
 };
-static psa_key_id_t device_root_key, network_root_key;
+static psa_key_id_t device_root_key, device_sign_key, network_root_key;
 static uint32_t cached_network_id;
 
 LOG_MODULE_REGISTER(security, LOG_LEVEL_INF);
@@ -106,6 +106,7 @@ static psa_key_id_t derive_shared_secret(psa_key_id_t root_key_id)
 	}
 	return key_id;
 }
+
 #endif /* CONFIG_INFUSE_SECURE_STORAGE */
 
 static psa_key_id_t network_key_load(void)
@@ -137,6 +138,7 @@ int infuse_security_init(void)
 	}
 
 #ifdef CONFIG_INFUSE_SECURE_STORAGE
+	uint32_t salt = 0x1234;
 	int rc;
 
 	/* Initialise secure storage  */
@@ -157,6 +159,13 @@ int infuse_security_init(void)
 		LOG_ERR("Failed to derive shared secret! (%d)", status);
 		return -EINVAL;
 	}
+	/* Derive */
+	device_sign_key =
+		infuse_security_derive_chacha_key(device_root_key, &salt, sizeof(salt), "sign", 4);
+	if (device_sign_key == PSA_KEY_ID_NULL) {
+		LOG_ERR("Failed to derive signing key! (%d)", status);
+		return -EINVAL;
+	}
 #endif /* CONFIG_INFUSE_SECURE_STORAGE */
 
 	/* Load root network key */
@@ -166,6 +175,36 @@ int infuse_security_init(void)
 		return -EINVAL;
 	}
 	return 0;
+}
+
+psa_key_id_t infuse_security_derive_chacha_key(psa_key_id_t base_key, const void *salt,
+					       size_t salt_len, const void *info, size_t info_len)
+{
+	psa_key_attributes_t key_attributes = PSA_KEY_ATTRIBUTES_INIT;
+	psa_key_derivation_operation_t operation = PSA_KEY_DERIVATION_OPERATION_INIT;
+	psa_key_id_t output_key = PSA_KEY_ID_NULL;
+	psa_key_usage_t usage = PSA_KEY_USAGE_ENCRYPT | PSA_KEY_USAGE_DECRYPT;
+
+#ifdef CONFIG_INFUSE_SECURITY_CHACHA_KEY_EXPORT
+	usage |= PSA_KEY_USAGE_EXPORT;
+#endif /* CONFIG_INFUSE_SECURITY_CHACHA_KEY_EXPORT */
+	psa_set_key_usage_flags(&key_attributes, usage);
+	psa_set_key_lifetime(&key_attributes, PSA_KEY_LIFETIME_VOLATILE);
+	psa_set_key_algorithm(&key_attributes, PSA_ALG_CHACHA20_POLY1305);
+	psa_set_key_type(&key_attributes, PSA_KEY_TYPE_CHACHA20);
+	psa_set_key_bits(&key_attributes, 256);
+
+	if (psa_key_derivation_setup(&operation, PSA_ALG_HKDF(PSA_ALG_SHA_256)) ||
+	    psa_key_derivation_input_bytes(&operation, PSA_KEY_DERIVATION_INPUT_SALT, salt,
+					   salt_len) ||
+	    psa_key_derivation_input_bytes(&operation, PSA_KEY_DERIVATION_INPUT_INFO, info,
+					   info_len) ||
+	    psa_key_derivation_input_key(&operation, PSA_KEY_DERIVATION_INPUT_SECRET, base_key) ||
+	    psa_key_derivation_output_key(&key_attributes, &operation, &output_key)) {
+		output_key = PSA_KEY_ID_NULL;
+	}
+	psa_key_derivation_abort(&operation);
+	return output_key;
 }
 
 void infuse_security_cloud_public_key(uint8_t public_key[32])
@@ -188,6 +227,11 @@ void infuse_security_device_public_key(uint8_t public_key[32])
 psa_key_id_t infuse_security_device_root_key(void)
 {
 	return device_root_key;
+}
+
+psa_key_id_t infuse_security_device_sign_key(void)
+{
+	return device_sign_key;
 }
 
 psa_key_id_t infuse_security_network_root_key(uint32_t *network_id)

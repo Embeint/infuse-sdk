@@ -14,6 +14,8 @@
 #ifndef INFUSE_SDK_INCLUDE_INFUSE_SECURITY_H_
 #define INFUSE_SDK_INCLUDE_INFUSE_SECURITY_H_
 
+#include <stdint.h>
+
 #include <psa/crypto_types.h>
 
 #ifdef __cplusplus
@@ -67,6 +69,20 @@ psa_key_id_t infuse_security_device_root_key(void);
  * @return psa_key_id_t Network root key identifier
  */
 psa_key_id_t infuse_security_network_root_key(uint32_t *network_id);
+
+/**
+ * @brief Derive a key for use with ChaCha20-Poly1305
+ *
+ * @param base_key Base key to use for HKDF
+ * @param salt Key derivation randomisation
+ * @param salt_len Length of @a salt
+ * @param info Optional application/usage specific array
+ * @param info_len Length of @a info
+ *
+ * @return psa_key_id_t Derived key identifier
+ */
+psa_key_id_t infuse_security_derive_chacha_key(psa_key_id_t base_key, const void *salt,
+					       size_t salt_len, const void *info, size_t info_len);
 
 /**
  * @}
