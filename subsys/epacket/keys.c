@@ -17,26 +17,12 @@
 
 #include <psa/crypto.h>
 
-/* Hardcoded for initial dev */
-static uint32_t network_id = 0x123456;
-static const uint8_t network_key[16] = {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
-					0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f};
-#ifdef CONFIG_BOARD_THINGY53_NRF5340_CPUAPP
-static const uint8_t device_key[16] = {0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17,
-				       0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x20};
-#else
-static const uint8_t device_key[16] = {0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17,
-				       0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f};
-#endif
-
 struct key_storage {
 	uint32_t rotation;
 	psa_key_id_t id;
 };
 
-static psa_key_id_t network_root_key_id;
-static psa_key_id_t device_root_key_id;
-
+static uint32_t network_id;
 static struct key_storage network_keys[EPACKET_KEY_INTERFACE_NUM];
 static struct key_storage device_keys[EPACKET_KEY_INTERFACE_NUM];
 static const char *const key_info[] = {
@@ -47,32 +33,6 @@ BUILD_ASSERT(ARRAY_SIZE(key_info) == EPACKET_KEY_INTERFACE_NUM, "");
 
 LOG_MODULE_REGISTER(epacket_keys, CONFIG_EPACKET_LOG_LEVEL);
 
-static int epacket_import_root_keys(void)
-{
-	psa_key_attributes_t key_attributes = PSA_KEY_ATTRIBUTES_INIT;
-	psa_status_t status;
-
-	/* Configure the input key attributes */
-	psa_set_key_usage_flags(&key_attributes, PSA_KEY_USAGE_DERIVE);
-	psa_set_key_lifetime(&key_attributes, PSA_KEY_LIFETIME_VOLATILE);
-	psa_set_key_algorithm(&key_attributes, PSA_ALG_HKDF(PSA_ALG_SHA_256));
-	psa_set_key_type(&key_attributes, PSA_KEY_TYPE_DERIVE);
-	psa_set_key_bits(&key_attributes, 128);
-
-	/* Import the base keys into the keystore */
-	status = psa_import_key(&key_attributes, device_key, sizeof(device_key),
-				&device_root_key_id);
-	if (status != PSA_SUCCESS) {
-		LOG_WRN("Failed to import %s root (%d)", "device", status);
-	}
-	status = psa_import_key(&key_attributes, network_key, sizeof(network_key),
-				&network_root_key_id);
-	if (status != PSA_SUCCESS) {
-		LOG_WRN("Failed to import %s root (%d)", "root", status);
-	}
-	return 0;
-}
-
 uint32_t epacket_network_key_id(void)
 {
 	return network_id;
@@ -82,21 +42,14 @@ int epacket_key_derive(enum epacket_key_type base_key, const uint8_t *info, uint
 		       uint32_t salt, psa_key_id_t *output_key_id)
 {
 	psa_key_id_t input_key;
-	static bool inited;
-
-	/* Import base keys to PSA */
-	if (!inited) {
-		epacket_import_root_keys();
-		inited = true;
-	}
 
 	/* Select base key */
 	switch (base_key) {
 	case EPACKET_KEY_NETWORK:
-		input_key = network_root_key_id;
+		input_key = infuse_security_network_root_key(&network_id);
 		break;
 	case EPACKET_KEY_DEVICE:
-		input_key = device_root_key_id;
+		input_key = infuse_security_device_root_key();
 		break;
 	default:
 		return -EINVAL;
