@@ -81,7 +81,7 @@ psa_key_id_t epacket_key_id_get(uint8_t key_id, uint32_t key_rotation);
  */
 int epacket_key_delete(psa_key_id_t key_id);
 
-#ifdef CONFIG_EPACKET_KEY_EXPORT
+#ifdef CONFIG_INFUSE_SECURITY_CHACHA_KEY_EXPORT
 
 /**
  * @brief Export ePacket key for test purposes
@@ -94,7 +94,7 @@ int epacket_key_delete(psa_key_id_t key_id);
  */
 int epacket_key_export(psa_key_id_t key_id, uint8_t key[32]);
 
-#endif /* CONFIG_EPACKET_KEY_EXPORT */
+#endif /* CONFIG_INFUSE_SECURITY_CHACHA_KEY_EXPORT */
 
 /**
  * @}

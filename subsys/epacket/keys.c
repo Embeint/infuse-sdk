@@ -12,6 +12,7 @@
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
 
+#include <infuse/security.h>
 #include <infuse/epacket/keys.h>
 
 #include <psa/crypto.h>
@@ -80,8 +81,6 @@ uint32_t epacket_network_key_id(void)
 int epacket_key_derive(enum epacket_key_type base_key, const uint8_t *info, uint8_t info_len,
 		       uint32_t salt, psa_key_id_t *output_key_id)
 {
-	psa_key_attributes_t key_attributes = PSA_KEY_ATTRIBUTES_INIT;
-	psa_key_derivation_operation_t operation = PSA_KEY_DERIVATION_OPERATION_INIT;
 	psa_key_id_t input_key;
 	static bool inited;
 
@@ -103,23 +102,9 @@ int epacket_key_derive(enum epacket_key_type base_key, const uint8_t *info, uint
 		return -EINVAL;
 	}
 
-	psa_set_key_usage_flags(&key_attributes, PSA_KEY_USAGE_ENCRYPT | PSA_KEY_USAGE_DECRYPT);
-	psa_set_key_lifetime(&key_attributes, PSA_KEY_LIFETIME_VOLATILE);
-	psa_set_key_algorithm(&key_attributes, PSA_ALG_CHACHA20_POLY1305);
-	psa_set_key_type(&key_attributes, PSA_KEY_TYPE_CHACHA20);
-	psa_set_key_bits(&key_attributes, 256);
-#ifdef CONFIG_EPACKET_KEY_EXPORT
-	psa_set_key_usage_flags(&key_attributes, PSA_KEY_USAGE_EXPORT);
-#endif /* CONFIG_EPACKET_KEY_EXPORT */
-
-	if (psa_key_derivation_setup(&operation, PSA_ALG_HKDF(PSA_ALG_SHA_256)) ||
-	    psa_key_derivation_input_bytes(&operation, PSA_KEY_DERIVATION_INPUT_SALT,
-					   (uint8_t *)&salt, sizeof(salt)) ||
-	    psa_key_derivation_input_bytes(&operation, PSA_KEY_DERIVATION_INPUT_INFO, info,
-					   info_len) ||
-	    psa_key_derivation_input_key(&operation, PSA_KEY_DERIVATION_INPUT_SECRET, input_key) ||
-	    psa_key_derivation_output_key(&key_attributes, &operation, output_key_id) ||
-	    psa_key_derivation_abort(&operation)) {
+	*output_key_id =
+		infuse_security_derive_chacha_key(input_key, &salt, sizeof(salt), info, info_len);
+	if (*output_key_id == PSA_KEY_ID_NULL) {
 		return -EIO;
 	}
 	return 0;
@@ -173,7 +158,7 @@ psa_key_id_t epacket_key_id_get(uint8_t key_id, uint32_t key_rotation)
 	return storage[interface].id;
 }
 
-#ifdef CONFIG_EPACKET_KEY_EXPORT
+#ifdef CONFIG_INFUSE_SECURITY_CHACHA_KEY_EXPORT
 
 int epacket_key_export(psa_key_id_t key_id, uint8_t key[32])
 {
@@ -187,4 +172,4 @@ int epacket_key_export(psa_key_id_t key_id, uint8_t key[32])
 	return 0;
 }
 
-#endif /* CONFIG_EPACKET_KEY_EXPORT */
+#endif /* CONFIG_INFUSE_SECURITY_CHACHA_KEY_EXPORT */
