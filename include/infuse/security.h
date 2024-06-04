@@ -35,6 +35,20 @@ extern "C" {
 int infuse_security_init(void);
 
 /**
+ * @brief Retrieve current cloud public key
+ *
+ * @param public_key Storage for public key
+ */
+void infuse_security_cloud_public_key(uint8_t public_key[32]);
+
+/**
+ * @brief Retrieve current device public key
+ *
+ * @param public_key Storage for public key
+ */
+void infuse_security_device_public_key(uint8_t public_key[32]);
+
+/**
  * @brief Get device root key identifier
  *
  * @note This key is only valid for key derivation options through HKDF
