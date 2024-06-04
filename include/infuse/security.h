@@ -60,6 +60,15 @@ void infuse_security_device_public_key(uint8_t public_key[32]);
 psa_key_id_t infuse_security_device_root_key(void);
 
 /**
+ * @brief Get device signing key identifier
+ *
+ * @note This key is only valid for ChaCha20-Poly1305 operations
+ *
+ * @return psa_key_id_t Device signing key identifier
+ */
+psa_key_id_t infuse_security_device_sign_key(void);
+
+/**
  * @brief Get network root key identifier
  *
  * @note This key is only valid for key derivation options through HKDF
