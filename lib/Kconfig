@@ -19,6 +19,14 @@ config INFUSE_SECURITY
 	depends on MBEDTLS
 	default y if !ZTEST
 
+config INFUSE_SECURITY_CHACHA_KEY_EXPORT
+	bool "Enable exporting ChaCha20-Poly1305 symmetric keys"
+	depends on INFUSE_SECURITY
+	depends on ZTEST
+	default y if ZTEST
+	help
+	  DO NOT enable this in production
+
 config INFUSE_CIVIL_TIME
 	bool "Infuse IoT civil time library"
 
