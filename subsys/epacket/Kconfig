@@ -7,8 +7,7 @@ menuconfig EPACKET
 
 config EPACKET_CRYPTO
 	bool
-	depends on MBEDTLS_HKDF_C
-	depends on MBEDTLS_CHACHAPOLY_AEAD_ENABLED
+	depends on INFUSE_SECURITY
 	default y
 
 if EPACKET
@@ -37,12 +36,6 @@ config EPACKET_PACKET_SIZE_MAX
 	  512 byte serial payload + overhead = 555
 	  IPv4 minimum MTU = 576 (28 byte IP + UDP header)
 	  256 is sufficient for Bluetooth only devices.
-
-config EPACKET_KEY_EXPORT
-	bool "Support exporting ePacket derived keys"
-	depends on ZTEST
-	help
-	  DO NOT enable this in production
 
 rsource "interfaces/Kconfig"
 
