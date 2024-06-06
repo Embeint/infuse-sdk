@@ -5,6 +5,9 @@
 name: Documentation Publish
 
 on:
+  push:
+    branches:
+    - feature-build-docs
   workflow_run:
     workflows: [Documentation Build]
     branches:
