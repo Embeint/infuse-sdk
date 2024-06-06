@@ -10,6 +10,7 @@ on:
     - feature-build-docs
   pull_request:
     paths:
+    - '.github/workflows/documentation-publish.yml'
     - '.github/workflows/documentation.yml'
     - 'doc/**'
     - 'doc/requirements.txt'
