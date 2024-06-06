@@ -6,7 +6,7 @@ name: Documentation Publish
 
 on:
   workflow_run:
-    workflows: ["Documentation Build"]
+    workflows: [Documentation Build]
     branches:
     - main
     - v*
