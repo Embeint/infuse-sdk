@@ -83,3 +83,11 @@ connectivity down into the application.
    embedded/index.rst
    embedded/services.rst
    embedded/hardware.rst
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+   :caption: Contributing
+
+   contributing/index.rst
+   contributing/documentation.rst
