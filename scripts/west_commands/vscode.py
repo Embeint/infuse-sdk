@@ -5,9 +5,9 @@ import argparse
 import shutil
 import pathlib
 import json
-import yaml
 import subprocess
 import sys
+import yaml
 
 from west.commands import WestCommand
 from west.util import west_topdir
@@ -15,10 +15,10 @@ from west import log
 
 import zcmake
 
-EXPORT_DESCRIPTION = '''\
+EXPORT_DESCRIPTION = """\
 This command generates default VSCode configuration files for
 use with the Embeint SDK.
-'''
+"""
 
 settings = {
     "files.trimTrailingWhitespace": True,
@@ -32,22 +32,23 @@ settings = {
     "[cmake]": {
         "editor.insertSpaces": True,
         "editor.tabSize": 2,
-        "editor.indentSize": "tabSize"
+        "editor.indentSize": "tabSize",
     },
     "[c]": {
         "editor.insertSpaces": False,
         "editor.tabSize": 8,
-        "editor.indentSize": "tabSize"
+        "editor.indentSize": "tabSize",
     },
-    "[jinja]": {
-        "editor.formatOnSave": False
-    },
+    "[jinja]": {"editor.formatOnSave": False},
+    "[python]": {"editor.defaultFormatter": "ms-python.black-formatter"},
 }
 
 recommended_extensions = {
     "recommendations": [
         "ms-vscode.cpptools",
         "ms-vscode.cmake-tools",
+        "ms-python.black-formatter",
+        "ms-python.pylint",
         "marus25.cortex-debug",
         "nordic-semiconductor.nrf-devicetree",
         "nordic-semiconductor.nrf-kconfig",
@@ -56,43 +57,59 @@ recommended_extensions = {
 }
 
 file_snippets = {
-	"new_file_c": {
+    "new_file_c": {
         "prefix": "new_file_c",
-		"scope": "c,cpp",
-		"description": "Generate file header for C source file",
-		"body": []
-	},
+        "scope": "c,cpp",
+        "description": "Generate file header for C source file",
+        "body": [],
+    },
     "new_file_h": {
         "prefix": "new_file_h",
-		"scope": "c,cpp",
-		"description": "Generate file header for C header file",
-		"body": []
-	},
+        "scope": "c,cpp",
+        "description": "Generate file header for C header file",
+        "body": [],
+    },
 }
 
+
 def author():
+    """Get current git user configuration"""
+
     def git_config(config):
-        proc = subprocess.run(["git", "config", config], stdout=subprocess.PIPE)
+        proc = subprocess.run(
+            ["git", "config", config], stdout=subprocess.PIPE, check=False
+        )
         return proc.stdout.strip().decode()
 
     return f" * @author {git_config('user.name')} <{git_config('user.email')}>"
 
+
 def c_source_header():
-    return """/**
+    """File header for C source files"""
+    return (
+        """/**
  * @file
  * @copyright $CURRENT_YEAR Embeint Inc
-""" + author() + """
+"""
+        + author()
+        + """
  *
  * SPDX-License-Identifier: LicenseRef-Embeint
  */
 """
+    )
+
 
 def c_header_header():
-    return """/**
+    """File header for C header files"""
+    return (
+        """/**
  * @file
  * @brief $1
  * @copyright $CURRENT_YEAR Embeint Inc
-""" + author() + """
+"""
+        + author()
+        + """
  *
  * SPDX-License-Identifier: LicenseRef-Embeint
  *
@@ -122,6 +139,8 @@ extern "C" {
 
 #endif /* ${RELATIVE_FILEPATH/(?:^.*\\\\src\\\\)?(\\w+)(?!\\w*$)|(\\W)|(\\w+)$/${1:/upcase}${2:+_}${3:/upcase}${3:+_}/g} */
 """
+    )
+
 
 c_cpp_properties = {
     "configurations": [
@@ -130,10 +149,10 @@ c_cpp_properties = {
             "configurationProvider": "ms-vscode.cmake-tools",
             "compilerPath": "",
             "compileCommands": "",
-            "includePath": ""
+            "includePath": "",
         }
     ],
-    "version": 4
+    "version": 4,
 }
 
 launch = {
@@ -153,99 +172,124 @@ launch = {
     ]
 }
 
-class vscode(WestCommand):
 
+class vscode(WestCommand):
     def __init__(self):
         super().__init__(
-            'vscode',
+            "vscode",
             # Keep this in sync with the string in west-commands.yml.
-            'generate Visual Studio code configuration',
+            "generate Visual Studio code configuration",
             EXPORT_DESCRIPTION,
-            accepts_unknown_args=False)
+            accepts_unknown_args=False,
+        )
 
     def do_add_parser(self, parser_adder):
         parser = parser_adder.add_parser(
             self.name,
             help=self.help,
             formatter_class=argparse.RawDescriptionHelpFormatter,
-            description=self.description)
-        parser.add_argument('--workspace', type=str, default=west_topdir(), help='VSCode workspace folder')
-        parser.add_argument('--dir', '-d', type=str, help='Application build folder')
+            description=self.description,
+        )
+        parser.add_argument(
+            "--workspace",
+            type=str,
+            default=west_topdir(),
+            help="VSCode workspace folder",
+        )
+        parser.add_argument("--dir", "-d", type=str, help="Application build folder")
         return parser
 
-    def do_run(self, args, unknown_args):
-        vscode_folder = pathlib.Path(args.workspace) / '.vscode'
+    def do_run(self, args, _):
+        vscode_folder = pathlib.Path(args.workspace) / ".vscode"
         vscode_folder.mkdir(exist_ok=True)
 
         if args.dir is None:
-            log.inf(f"Writing `settings.json`, `extensions.json` and `infuse.code-snippets` to {vscode_folder}")
+            log.inf(
+                f"Writing `settings.json`, `extensions.json` and `infuse.code-snippets` to {vscode_folder}"
+            )
 
-            settings['python.defaultInterpreterPath'] = shutil.which('python3')
-            file_snippets['new_file_c']['body'] = c_source_header().splitlines()
-            file_snippets['new_file_h']['body'] = c_header_header().splitlines()
+            settings["python.defaultInterpreterPath"] = shutil.which("python3")
+            file_snippets["new_file_c"]["body"] = c_source_header().splitlines()
+            file_snippets["new_file_h"]["body"] = c_header_header().splitlines()
 
-            with (vscode_folder / 'settings.json').open('w') as f:
+            with (vscode_folder / "settings.json").open("w") as f:
                 json.dump(settings, f, indent=4)
-            with (vscode_folder / 'extensions.json').open('w') as f:
+            with (vscode_folder / "extensions.json").open("w") as f:
                 json.dump(recommended_extensions, f, indent=4)
-            with (vscode_folder / 'infuse.code-snippets').open('w') as f:
+            with (vscode_folder / "infuse.code-snippets").open("w") as f:
                 json.dump(file_snippets, f, indent=4)
         else:
-            dir = pathlib.Path(args.dir).absolute().resolve()
+            build_dir = pathlib.Path(args.dir).absolute().resolve()
 
-            if not (dir / 'CMakeCache.txt').exists():
-                log.err(f"{args.dir} does not appear to be a valid cmake build directory")
+            if not (build_dir / "CMakeCache.txt").exists():
+                log.err(
+                    f"{args.build_dir} does not appear to be a valid cmake build directory"
+                )
                 sys.exit(1)
 
-            cache = zcmake.CMakeCache.from_build_dir(dir)
+            cache = zcmake.CMakeCache.from_build_dir(build_dir)
 
-            c_cpp_properties['configurations'][0]['includePath'] = [str(dir / 'zephyr' / 'include' / 'generated')]
-            c_cpp_properties['configurations'][0]['compileCommands'] = str(dir / 'compile_commands.json')
-            c_cpp_properties['configurations'][0]['compilerPath'] = cache.get('CMAKE_C_COMPILER')
+            c_cpp_properties["configurations"][0]["includePath"] = [
+                str(build_dir / "zephyr" / "include" / "generated")
+            ]
+            c_cpp_properties["configurations"][0]["compileCommands"] = str(
+                build_dir / "compile_commands.json"
+            )
+            c_cpp_properties["configurations"][0]["compilerPath"] = cache.get(
+                "CMAKE_C_COMPILER"
+            )
 
-            launch['configurations'][0]['executable'] = str(dir / 'zephyr' / 'zephyr.elf')
-            launch['configurations'][1]['executable'] = str(dir / 'zephyr' / 'zephyr.elf')
-            launch['configurations'][0]['gdbPath'] = cache.get('CMAKE_GDB')
-            launch['configurations'][1]['gdbPath'] = cache.get('CMAKE_GDB')
-            launch['configurations'][0]['svdFile'] = cache.get('SOC_SVD_FILE')
-            launch['configurations'][1]['svdFile'] = cache.get('SOC_SVD_FILE')
+            launch["configurations"][0]["executable"] = str(
+                build_dir / "zephyr" / "zephyr.elf"
+            )
+            launch["configurations"][1]["executable"] = str(
+                build_dir / "zephyr" / "zephyr.elf"
+            )
+            launch["configurations"][0]["gdbPath"] = cache.get("CMAKE_GDB")
+            launch["configurations"][1]["gdbPath"] = cache.get("CMAKE_GDB")
+            launch["configurations"][0]["svdFile"] = cache.get("SOC_SVD_FILE")
+            launch["configurations"][1]["svdFile"] = cache.get("SOC_SVD_FILE")
 
-            if cache.get('BOARD')[-3:] == '_ns':
+            if cache.get("BOARD")[-3:] == "_ns":
                 # Add TF-M .elf files
-                launch['configurations'][0]['preAttachCommands'] = [
+                launch["configurations"][0]["preAttachCommands"] = [
                     f"add-symbol-file {str(dir)}/tfm/bin/bl2.elf",
                     f"add-symbol-file {str(dir)}/tfm/bin/tfm_s.elf",
                 ]
 
-            if 'qemu' in cache.get('BOARD'):
+            if "qemu" in cache.get("BOARD"):
                 # Attach doesn't make sense in the qemu context
-                launch['configurations'].pop()
-                launch['configurations'][0]['name'] = 'Launch'
-                launch['configurations'][0]['servertype'] = 'qemu'
-                launch['configurations'][0]['serverpath'] = shutil.which('qemu-system-arm')
-                launch['configurations'][0]['runToEntryPoint'] = False
+                launch["configurations"].pop()
+                launch["configurations"][0]["name"] = "Launch"
+                launch["configurations"][0]["servertype"] = "qemu"
+                launch["configurations"][0]["serverpath"] = shutil.which(
+                    "qemu-system-arm"
+                )
+                launch["configurations"][0]["runToEntryPoint"] = False
             else:
-                launch['configurations'][0]['rtos'] = 'Zephyr'
-                launch['configurations'][1]['rtos'] = 'Zephyr'
-                launch['configurations'][0]['servertype'] = 'jlink'
-                launch['configurations'][1]['servertype'] = 'jlink'
+                launch["configurations"][0]["rtos"] = "Zephyr"
+                launch["configurations"][1]["rtos"] = "Zephyr"
+                launch["configurations"][0]["servertype"] = "jlink"
+                launch["configurations"][1]["servertype"] = "jlink"
 
             # Get the JLink device name
-            runners_yaml = cache.get('ZEPHYR_RUNNERS_YAML')
+            runners_yaml = cache.get("ZEPHYR_RUNNERS_YAML")
             if runners_yaml is not None:
-                with pathlib.Path(runners_yaml).open('r') as f:
+                with pathlib.Path(runners_yaml).open("r", encoding="utf-8") as f:
                     r = yaml.safe_load(f)
-                    if 'jlink' in r['args']:
-                        for arg in r['args']['jlink']:
-                            if arg.startswith('--device='):
-                                device = arg.removeprefix('--device=')
-                                launch['configurations'][0]['device'] = device
-                                launch['configurations'][1]['device'] = device
+                    if "jlink" in r["args"]:
+                        for arg in r["args"]["jlink"]:
+                            if arg.startswith("--device="):
+                                device = arg.removeprefix("--device=")
+                                launch["configurations"][0]["device"] = device
+                                launch["configurations"][1]["device"] = device
                                 break
 
-            log.inf(f"Writing `c_cpp_properties.json` and `launch.json` to {vscode_folder}")
+            log.inf(
+                f"Writing `c_cpp_properties.json` and `launch.json` to {vscode_folder}"
+            )
 
-            with (vscode_folder / 'c_cpp_properties.json').open('w') as f:
+            with (vscode_folder / "c_cpp_properties.json").open("w") as f:
                 json.dump(c_cpp_properties, f, indent=4)
-            with (vscode_folder / 'launch.json').open('w') as f:
+            with (vscode_folder / "launch.json").open("w") as f:
                 json.dump(launch, f, indent=4)
