@@ -183,7 +183,7 @@ struct rpc_struct_wifi_scan_result {
  * @{
  */
 
-/* Infuse IoT builtin RPC commands */
+/* Infuse-IoT builtin RPC commands */
 enum rpc_builtin_id {
 	/* Reboot the device after a delay */
 	RPC_ID_REBOOT = 1,

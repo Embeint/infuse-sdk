@@ -161,7 +161,7 @@ struct kv_secure_storage_reserved {
 	} __packed
 /* clang-format on */
 
-/* Infuse IoT builtin KV definitions */
+/* Infuse-IoT builtin KV definitions */
 enum kv_builtin_id {
 	/* Nunmber of times device has rebooted */
 	KV_KEY_REBOOTS = 0,

@@ -3,7 +3,7 @@
 Security Model
 ##############
 
-The Infuse IoT security model has been designed to enable the platform
+The Infuse-IoT security model has been designed to enable the platform
 :ref:`platform-design-goals` while maintaining confidentiality and authenticity
 of data to the greatest extent possible.
 

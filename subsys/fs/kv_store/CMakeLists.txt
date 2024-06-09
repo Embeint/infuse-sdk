@@ -1,4 +1,4 @@
-# Infuse IoT key-value store compilation
+# Infuse-IoT key-value store compilation
 
 zephyr_sources(
   kv_store.c

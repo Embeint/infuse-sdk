@@ -1,14 +1,14 @@
-# Infuse IoT SDK options
+# Infuse-IoT SDK options
 
 config INFUSE_SDK
-	bool "Build application with Infuse IoT SDK"
+	bool "Build application with Infuse-IoT SDK"
 
 rsource "drivers/Kconfig"
 rsource "lib/Kconfig"
 rsource "subsys/Kconfig"
 rsource "snippets/infuse/Kconfig"
 
-# Infuse IoT SDK defaults
+# Infuse-IoT SDK defaults
 if INFUSE_SDK
 
 rsource "Kconfig.defaults.core"

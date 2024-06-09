@@ -3,7 +3,7 @@
 Design Goals
 ############
 
-The Infuse IoT platform is designed in alignment with the following goals.
+The Infuse-IoT platform is designed in alignment with the following goals.
 
 Machine learning support
 ************************
@@ -62,14 +62,14 @@ and more.
 Hardware Agnostic
 *****************
 
-The Infuse IoT platform is intended to be reasonably agnostic to the choice
+The Infuse-IoT platform is intended to be reasonably agnostic to the choice
 of microcontroller and sensors on the board. Infuse leverages the Zephyr RTOS
 project to provide the required abstractions that makes this possible.
 
 Observability
 *************
 
-Debugging embedded devices can be a challenging endevour. Infuse IoT aims to
+Debugging embedded devices can be a challenging endevour. Infuse-IoT aims to
 provide as much visibility as possible into both the embedded SDK code and
 the flow of data through the cloud services to simplify this process and
 monitor standard operations.

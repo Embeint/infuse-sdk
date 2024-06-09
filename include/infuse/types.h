@@ -1,6 +1,6 @@
 /**
  * @file
- * @brief Core Infuse IoT platform types
+ * @brief Core Infuse-IoT platform types
  * @copyright 2024 Embeint Inc
  * @author Jordan Yates <jordan@embeint.com>
  *

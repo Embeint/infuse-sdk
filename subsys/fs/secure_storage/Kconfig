@@ -1,4 +1,4 @@
-# Infuse IoT SDK secure storage
+# Infuse-IoT SDK secure storage
 
 config INFUSE_SECURE_STORAGE
 	bool "Secure storage API implementing PSA ITS"

@@ -1,4 +1,4 @@
-# Infuse IoT SDK core defaults
+# Infuse-IoT SDK core defaults
 
 # Picolibc is smaller and more performant
 choice LIBC_IMPLEMENTATION

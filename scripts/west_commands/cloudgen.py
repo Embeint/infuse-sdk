@@ -22,7 +22,7 @@ class cloudgen(WestCommand):
         super().__init__(
             "cloudgen",
             # Keep this in sync with the string in west-commands.yml.
-            "generate files from Infuse IoT cloud definitions",
+            "generate files from Infuse-IoT cloud definitions",
             EXPORT_DESCRIPTION,
             accepts_unknown_args=False,
         )

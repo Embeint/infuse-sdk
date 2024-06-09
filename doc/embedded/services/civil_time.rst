@@ -15,14 +15,14 @@ the number of non-leap seconds that have elapsed since
 continuous time source, which means that times can both decrease in value and
 jump backwards or forward in time.
 
-As we require a monotonic and continuous time source, the Infuse IoT platform
+As we require a monotonic and continuous time source, the Infuse-IoT platform
 uses the GPS time epoch as the base for all timestamped operations. The GPS
 time epoch begins at ``00:00:00 1980-01-06 UTC``.
 
 Implementation Details
 **********************
 
-The Infuse IoT civil time functionality is built upon the `Zephyr timeutil`_
+The Infuse-IoT civil time functionality is built upon the `Zephyr timeutil`_
 library.
 
 To obtain sub-second time resolution, the civil time API encodes the current

@@ -1,7 +1,7 @@
 # Infuse Remote Procedure Calls
 
 config INFUSE_RPC
-	bool "Infuse IoT Remote Procedure Call support"
+	bool "Infuse-IoT Remote Procedure Call support"
 	depends on EPACKET
 
 if INFUSE_RPC

@@ -3,4 +3,4 @@
 Introduction
 ############
 
-Infuse IoT Cloud documentation introduction.
+Infuse-IoT Cloud documentation introduction.

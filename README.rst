@@ -17,13 +17,13 @@
      <img src="https://codecov.io/gh/Embeint/infuse-sdk/branch/main/graph/badge.svg?token=YR697LEP1F"/>
    </a>
 
-The Infuse IoT SDK is a platform designed to make it simple to create ultra
+The Infuse-IoT SDK is a platform designed to make it simple to create ultra
 low-power Internet-of-Thing (IoT) devices.
 
 Supported Hardware
 ******************
 
-The Infuse IoT SDK currently supports `Nordic Semiconductor`_ System-on-Chips.
+The Infuse-IoT SDK currently supports `Nordic Semiconductor`_ System-on-Chips.
 For a complete list of supported boards, see :ref:`snippet-infuse`.
 
 Resources

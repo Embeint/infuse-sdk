@@ -1,4 +1,4 @@
-# Infuse IoT secure storage compilation
+# Infuse-IoT secure storage compilation
 
 zephyr_include_directories(include)
 

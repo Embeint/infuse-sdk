@@ -1,4 +1,4 @@
-# Infuse IoT sysbuild integration
+# Infuse-IoT sysbuild integration
 
 if (NOT ${SB_CONFIG_INFUSE_INTEGRATION})
   # Not Infuse sysbuild, exit
