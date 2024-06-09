@@ -73,11 +73,9 @@ psa_key_id_t infuse_security_device_sign_key(void);
  *
  * @note This key is only valid for key derivation options through HKDF
  *
- * @param network_id Output for Infuse network identifier
- *
  * @return psa_key_id_t Network root key identifier
  */
-psa_key_id_t infuse_security_network_root_key(uint32_t *network_id);
+psa_key_id_t infuse_security_network_root_key(void);
 
 /**
  * @brief Derive a key for use with ChaCha20-Poly1305
@@ -92,6 +90,23 @@ psa_key_id_t infuse_security_network_root_key(uint32_t *network_id);
  */
 psa_key_id_t infuse_security_derive_chacha_key(psa_key_id_t base_key, const void *salt,
 					       size_t salt_len, const void *info, size_t info_len);
+
+/**
+ * @brief Get the current device key identifier
+ *
+ * The device key identifier is constructed as a CRC32 hash computed over the
+ * cloud and device public keys, truncated to 24 bits.
+ *
+ * @return uint32_t 24bit device key identifier
+ */
+uint32_t infuse_security_device_key_identifier(void);
+
+/**
+ * @brief Get the current network key identifier
+ *
+ * @return uint32_t 24 bit network key identifier
+ */
+uint32_t infuse_security_network_key_identifier(void);
 
 /**
  * @}

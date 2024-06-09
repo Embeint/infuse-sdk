@@ -7,6 +7,7 @@
  */
 
 #include <zephyr/logging/log.h>
+#include <zephyr/sys/crc.h>
 
 #include <infuse/security.h>
 #include <infuse/fs/kv_types.h>
@@ -33,7 +34,7 @@ static const uint8_t default_network_key[32] = {
 	0x16, 0x17, 0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f,
 };
 static psa_key_id_t device_root_key, device_sign_key, network_root_key;
-static uint32_t cached_network_id;
+static uint32_t cached_network_id, cached_device_id;
 static uint8_t device_public_key[32];
 
 LOG_MODULE_REGISTER(security, LOG_LEVEL_INF);
@@ -111,6 +112,12 @@ static psa_key_id_t derive_shared_secret(psa_key_id_t root_key_id)
 
 	/* Clear sensitive stack content */
 	mbedtls_platform_zeroize(shared_secret, sizeof(shared_secret));
+
+	/* Calculate device key identifier (CRC32 over the two public keys) */
+	cached_device_id = crc32_ieee(infuse_cloud_public_key, sizeof(infuse_cloud_public_key));
+	cached_device_id =
+		crc32_ieee_update(cached_device_id, device_public_key, sizeof(device_public_key));
+	cached_device_id &= 0x00FFFFFF;
 
 	if (status != PSA_SUCCESS) {
 		LOG_WRN("Failed to import %s root (%d)", "device", status);
@@ -239,8 +246,17 @@ psa_key_id_t infuse_security_device_sign_key(void)
 	return device_sign_key;
 }
 
-psa_key_id_t infuse_security_network_root_key(uint32_t *network_id)
+psa_key_id_t infuse_security_network_root_key(void)
 {
-	*network_id = cached_network_id;
 	return network_root_key;
+}
+
+uint32_t infuse_security_device_key_identifier(void)
+{
+	return cached_device_id;
+}
+
+uint32_t infuse_security_network_key_identifier(void)
+{
+	return cached_network_id;
 }
