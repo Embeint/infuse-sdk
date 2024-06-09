@@ -22,7 +22,6 @@ struct key_storage {
 	psa_key_id_t id;
 };
 
-static uint32_t network_id;
 static struct key_storage network_keys[EPACKET_KEY_INTERFACE_NUM];
 static struct key_storage device_keys[EPACKET_KEY_INTERFACE_NUM];
 static const char *const key_info[] = {
@@ -33,11 +32,6 @@ BUILD_ASSERT(ARRAY_SIZE(key_info) == EPACKET_KEY_INTERFACE_NUM, "");
 
 LOG_MODULE_REGISTER(epacket_keys, CONFIG_EPACKET_LOG_LEVEL);
 
-uint32_t epacket_network_key_id(void)
-{
-	return network_id;
-}
-
 int epacket_key_derive(enum epacket_key_type base_key, const uint8_t *info, uint8_t info_len,
 		       uint32_t salt, psa_key_id_t *output_key_id)
 {
@@ -46,7 +40,7 @@ int epacket_key_derive(enum epacket_key_type base_key, const uint8_t *info, uint
 	/* Select base key */
 	switch (base_key) {
 	case EPACKET_KEY_NETWORK:
-		input_key = infuse_security_network_root_key(&network_id);
+		input_key = infuse_security_network_root_key();
 		break;
 	case EPACKET_KEY_DEVICE:
 		input_key = infuse_security_device_root_key();

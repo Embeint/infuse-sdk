@@ -37,13 +37,6 @@ enum epacket_key_interface {
 };
 
 /**
- * @brief Get ID of the current network
- *
- * @return uint32_t Network key ID
- */
-uint32_t epacket_network_key_id(void);
-
-/**
  * @brief HKDF-SHA256 based key derivation
  *
  * Derived key lifetime is `PSA_KEY_LIFETIME_VOLATILE`.

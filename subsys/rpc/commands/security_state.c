@@ -30,15 +30,13 @@ struct net_buf *rpc_command_security_state(struct net_buf *request)
 	struct security_state_response_pss challenge_response;
 	struct security_state_response_pss_encrypted *rsp;
 	struct net_buf *rsp_buf;
-	uint32_t network_id;
 	psa_status_t status;
 	size_t ad_len, olen;
 
 	/* Populate security state */
-	(void)infuse_security_network_root_key(&network_id);
 	infuse_security_cloud_public_key(rsp_header.cloud_public_key);
 	infuse_security_device_public_key(rsp_header.device_public_key);
-	rsp_header.network_id = network_id;
+	rsp_header.network_id = infuse_security_network_key_identifier();
 	rsp_header.challenge_response_type = CHALLENGE_RESPONSE_PRE_SHARED_SECRET;
 
 	/* Allocate response */
