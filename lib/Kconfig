@@ -1,11 +1,11 @@
-# Infuse IoT libraries
+# Infuse-IoT libraries
 
 config INFUSE_COMMON_BOOT
-	bool "Infuse IoT common boot logic"
+	bool "Infuse-IoT common boot logic"
 	default y if INFUSE_SDK
 
 config INFUSE_REBOOT
-	bool "Infuse IoT reboot logic"
+	bool "Infuse-IoT reboot logic"
 	depends on REBOOT
 	depends on HWINFO
 	depends on INFUSE_CIVIL_TIME
@@ -15,7 +15,7 @@ config INFUSE_REBOOT
 	depends on RETAINED_MEM_MUTEX_FORCE_DISABLE
 
 config INFUSE_SECURITY
-	bool "Infuse IoT security"
+	bool "Infuse-IoT security"
 	depends on MBEDTLS
 	depends on MBEDTLS_HKDF_C
 	depends on MBEDTLS_CHACHAPOLY_AEAD_ENABLED
@@ -30,7 +30,7 @@ config INFUSE_SECURITY_CHACHA_KEY_EXPORT
 	  DO NOT enable this in production
 
 config INFUSE_CIVIL_TIME
-	bool "Infuse IoT civil time library"
+	bool "Infuse-IoT civil time library"
 
 config INFUSE_CIVIL_TIME_PRINT_ON_SYNC
 	bool "Print current time on time sync"

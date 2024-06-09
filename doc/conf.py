@@ -7,7 +7,7 @@ from pathlib import Path
 import re
 
 INFUSE_BASE = (Path(__file__).parents[1]).resolve()
-ZEPHYR_BASE = (Path(__file__).parents[2] / 'zephyr').resolve()
+ZEPHYR_BASE = (Path(__file__).parents[2] / "zephyr").resolve()
 ZEPHYR_BUILD = Path(os.environ.get("DOCS_HTML_DIR")).resolve()
 
 # Add the '_extensions' directory to sys.path, to enable finding Sphinx
@@ -23,7 +23,9 @@ sys.path.insert(0, str(ZEPHYR_BASE / "doc" / "_scripts"))
 sys.path.insert(0, str(ZEPHYR_BASE / "scripts" / "west_commands"))
 
 # Add the directory which contains the pytest-twister-pytest
-sys.path.insert(0, str(ZEPHYR_BASE / "scripts" / "pylib" / "pytest-twister-harness" / "src"))
+sys.path.insert(
+    0, str(ZEPHYR_BASE / "scripts" / "pylib" / "pytest-twister-harness" / "src")
+)
 
 try:
     import west as west_found
@@ -32,7 +34,7 @@ except ImportError:
 
 # -- Project --------------------------------------------------------------
 
-project = "Infuse IoT SDK"
+project = "Infuse-IoT SDK"
 copyright = "2024 Embeint Inc"
 author = "Embeint Inc"
 
@@ -131,7 +133,7 @@ nitpick_ignore = [
     ("c:identifier", "va_list"),
 ]
 
-SDK_URL_BASE="https://github.com/zephyrproject-rtos/sdk-ng/releases/download"
+SDK_URL_BASE = "https://github.com/zephyrproject-rtos/sdk-ng/releases/download"
 
 rst_epilog = f"""
 .. include:: /substitutions.txt
@@ -152,12 +154,9 @@ rst_epilog = f"""
 # -- Options for HTML output ----------------------------------------------
 
 html_theme = "sphinx_rtd_theme"
-html_theme_options = {
-    "logo_only": True,
-    "prev_next_buttons_location": None
-}
+html_theme_options = {"logo_only": True, "prev_next_buttons_location": None}
 html_baseurl = "https://docs.zephyrproject.org/latest/"
-html_title = "Infuse IoT SDK Documentation"
+html_title = "Infuse-IoT SDK Documentation"
 html_logo = str(INFUSE_BASE / "doc" / "_static" / "images" / "infuse-dark.svg")
 html_favicon = str(INFUSE_BASE / "doc" / "_static" / "images" / "favicon.png")
 html_static_path = [str(INFUSE_BASE / "doc" / "_static")]
@@ -167,9 +166,7 @@ html_split_index = True
 html_show_sourcelink = False
 html_show_sphinx = False
 html_search_scorer = str(ZEPHYR_BASE / "doc" / "_static" / "js" / "scorer.js")
-html_additional_pages = {
-    "gsearch": "gsearch.html"
-}
+html_additional_pages = {"gsearch": "gsearch.html"}
 
 is_release = tags.has("release")  # pylint: disable=undefined-variable
 reference_prefix = ""
@@ -181,9 +178,7 @@ html_context = {
     "docs_title": docs_title,
     "is_release": is_release,
     "current_version": version,
-    "versions": (
-        ("latest", "/"),
-    ),
+    "versions": (("latest", "/"),),
     "display_gh_links": True,
     "reference_links": {
         "API": f"{reference_prefix}/doxygen/html/index.html",
@@ -202,7 +197,11 @@ doxyrunner_doxygen = os.environ.get("DOXYGEN_EXECUTABLE", "doxygen")
 doxyrunner_doxyfile = INFUSE_BASE / "doc" / "infuse.doxyfile.in"
 doxyrunner_outdir = ZEPHYR_BUILD / "doxygen"
 doxyrunner_fmt = True
-doxyrunner_fmt_vars = {"ZEPHYR_BASE": str(ZEPHYR_BASE), "INFUSE_BASE": str(INFUSE_BASE), "ZEPHYR_VERSION": version}
+doxyrunner_fmt_vars = {
+    "ZEPHYR_BASE": str(ZEPHYR_BASE),
+    "INFUSE_BASE": str(INFUSE_BASE),
+    "ZEPHYR_VERSION": version,
+}
 doxyrunner_outdir_var = "DOXY_OUT"
 
 # -- Options for Breathe plugin -------------------------------------------
@@ -214,7 +213,7 @@ breathe_domain_by_extension = {
     "c": "c",
 }
 breathe_show_enumvalue_initializer = True
-breathe_default_members = ("members", )
+breathe_default_members = ("members",)
 
 cpp_id_attributes = [
     "__syscall",
@@ -311,7 +310,7 @@ copybutton_prompt_is_regexp = True
 
 linkcheck_ignore = [
     r"https://github.com/zephyrproject-rtos/zephyr/issues/.*",
-    r"https://github.com/Embeint/infuse-sdk/issues/.*"
+    r"https://github.com/Embeint/infuse-sdk/issues/.*",
 ]
 
 extlinks = {

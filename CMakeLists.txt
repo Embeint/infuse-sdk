@@ -1,6 +1,6 @@
-# Infuse IoT SDK compilation
+# Infuse-IoT SDK compilation
 
-set(INFUSE_DIR ${CMAKE_CURRENT_LIST_DIR} CACHE PATH "Infuse IoT SDK root directory")
+set(INFUSE_DIR ${CMAKE_CURRENT_LIST_DIR} CACHE PATH "Infuse-IoT SDK root directory")
 
 zephyr_include_directories(include)
 

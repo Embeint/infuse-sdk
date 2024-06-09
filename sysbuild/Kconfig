@@ -1,7 +1,7 @@
-# Infuse IoT sysbuild integration
+# Infuse-IoT sysbuild integration
 
 config INFUSE_INTEGRATION
-	bool "Sysbuild compilation according to Infuse IoT"
+	bool "Sysbuild compilation according to Infuse-IoT"
 
 choice BOOTLOADER
 	default BOOTLOADER_MCUBOOT if INFUSE_INTEGRATION

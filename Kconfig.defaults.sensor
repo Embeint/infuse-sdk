@@ -1,4 +1,4 @@
-# Infuse IoT SDK sensor defaults
+# Infuse-IoT SDK sensor defaults
 
 configdefault SENSOR
 	default y

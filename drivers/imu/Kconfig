@@ -1,7 +1,7 @@
-# Infuse IoT IMU driver configuration
+# Infuse-IoT IMU driver configuration
 
 config INFUSE_IMU
-	bool "Infuse IoT IMU driver API"
+	bool "Infuse-IoT IMU driver API"
 	depends on SENSOR
 
 if INFUSE_IMU

@@ -1,6 +1,6 @@
 /**
  * @file
- * @brief Infuse IoT device identifiers
+ * @brief Infuse-IoT device identifiers
  * @copyright 2024 Embeint Inc
  * @author Jordan Yates <jordan@embeint.com>
  *
@@ -17,8 +17,8 @@ extern "C" {
 #endif
 
 /**
- * @brief Infuse IoT identifier API
- * @defgroup infuse_identifier_apis Infuse IoT identifier APIs
+ * @brief Infuse-IoT identifier API
+ * @defgroup infuse_identifier_apis Infuse-IoT identifier APIs
  * @{
  */
 

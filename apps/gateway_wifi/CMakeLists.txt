@@ -2,7 +2,7 @@
 
 cmake_minimum_required(VERSION 3.20.0)
 
-# Infuse IoT application
+# Infuse-IoT application
 if(NOT infuse IN_LIST SNIPPET)
   set(SNIPPET infuse ${SNIPPET} CACHE STRING "" FORCE)
 endif()

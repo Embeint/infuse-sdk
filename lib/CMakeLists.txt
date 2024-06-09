@@ -1,4 +1,4 @@
-# Infuse IoT libraries compilation
+# Infuse-IoT libraries compilation
 
 zephyr_sources_ifdef(CONFIG_INFUSE_SDK identifiers.c)
 

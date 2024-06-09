@@ -1,4 +1,4 @@
-# Infuse IoT WiFi Connection Manager
+# Infuse-IoT WiFi Connection Manager
 
 config CONN_MGR_WIFI_KV_STORE
 	bool "WiFi connection manager based on KV store"

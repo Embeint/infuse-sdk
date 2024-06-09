@@ -1,6 +1,6 @@
 /**
  * @file
- * @brief Reboot handling for Infuse IoT applications
+ * @brief Reboot handling for Infuse-IoT applications
  * @copyright 2024 Embeint Inc
  * @author Jordan Yates <jordan@embeint.com>
  *

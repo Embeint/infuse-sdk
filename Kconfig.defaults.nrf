@@ -1,4 +1,4 @@
-# Infuse IoT SDK Nordic defaults
+# Infuse-IoT SDK Nordic defaults
 
 if SOC_FAMILY_NRF
 

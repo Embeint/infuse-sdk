@@ -1,7 +1,7 @@
-# Infuse IoT SDK key-value store
+# Infuse-IoT SDK key-value store
 
 config KV_STORE
-	bool "Infuse IoT key-value storage"
+	bool "Infuse-IoT key-value storage"
 	depends on NVS
 	depends on FLASH_MAP
 

@@ -1,4 +1,4 @@
-# Infuse IoT ascon compilation
+# Infuse-IoT ascon compilation
 
 # Algorithm libraries
 if(CONFIG_CRYPTO_ASCON_128)

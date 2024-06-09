@@ -3,7 +3,7 @@
 Infuse Bindings
 ###############
 
-These pages contain reference material for Infuse IoT's built-in bindings.
+These pages contain reference material for Infuse-IoT's built-in bindings.
 
 .. We use ":glob:" with "*" here to add the generated bindings page.
 

@@ -3,7 +3,7 @@
 Key-Value Store
 ###############
 
-The Infuse IoT platform implements a type layer over the top of the
+The Infuse-IoT platform implements a type layer over the top of the
 `Zephyr NVS`_ filesystem.
 
 Callbacks
