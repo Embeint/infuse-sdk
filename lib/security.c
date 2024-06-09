@@ -34,6 +34,7 @@ static const uint8_t default_network_key[32] = {
 };
 static psa_key_id_t device_root_key, device_sign_key, network_root_key;
 static uint32_t cached_network_id;
+static uint8_t device_public_key[32];
 
 LOG_MODULE_REGISTER(security, LOG_LEVEL_INF);
 
@@ -58,6 +59,7 @@ static psa_key_id_t generate_root_ecc_key_pair(void)
 	psa_key_attributes_t key_attributes = PSA_KEY_ATTRIBUTES_INIT;
 	psa_status_t status;
 	psa_key_id_t key_id;
+	size_t olen;
 
 	/* ECDH, Curve25519 */
 	psa_set_key_usage_flags(&key_attributes, PSA_KEY_USAGE_DERIVE);
@@ -75,6 +77,16 @@ static psa_key_id_t generate_root_ecc_key_pair(void)
 	} else if (status != PSA_SUCCESS) {
 		key_id = PSA_KEY_ID_NULL;
 	}
+
+	/* Export public key once */
+	if (key_id == INFUSE_ROOT_ECC_KEY_ID) {
+		status = psa_export_public_key(key_id, device_public_key, 32, &olen);
+		if ((status != PSA_SUCCESS) || (olen != 32)) {
+			LOG_ERR("Public key export failed (%d %d)", status, olen);
+			memset(device_public_key, 0x00, 32);
+		}
+	}
+
 	return key_id;
 }
 
@@ -214,14 +226,7 @@ void infuse_security_cloud_public_key(uint8_t public_key[32])
 
 void infuse_security_device_public_key(uint8_t public_key[32])
 {
-	psa_status_t status;
-	size_t olen;
-
-	status = psa_export_public_key(INFUSE_ROOT_ECC_KEY_ID, public_key, 32, &olen);
-	if ((status != PSA_SUCCESS) || (olen != 32)) {
-		LOG_ERR("Public key export failed (%d %d)", status, olen);
-		memset(public_key, 0x00, 32);
-	}
+	memcpy(public_key, device_public_key, sizeof(device_public_key));
 }
 
 psa_key_id_t infuse_security_device_root_key(void)
