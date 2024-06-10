@@ -5,6 +5,7 @@ tests:
     platform_allow:
       - native_sim
       - qemu_cortex_m0
+      - mps2_an385
     integration_platforms:
       - native_sim
-      - qemu_cortex_m0
+      - mps2_an385
