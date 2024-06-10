@@ -1,6 +1,6 @@
 # Infuse-IoT libraries compilation
 
-zephyr_sources_ifdef(CONFIG_INFUSE_SDK identifiers.c)
+add_subdirectory_ifdef(CONFIG_INFUSE_SDK vendor)
 
 zephyr_sources_ifdef(CONFIG_INFUSE_SECURITY security.c)
 
