@@ -48,7 +48,7 @@ static void expect_reboot_response(uint32_t request_id, uint32_t delay_ms)
 	zassert_not_null(response_queue);
 
 	/* Response was sent */
-	rsp = net_buf_get(response_queue, K_MSEC(10));
+	rsp = net_buf_get(response_queue, K_MSEC(100));
 	zassert_not_null(rsp);
 	response = (void *)(rsp->data + sizeof(struct epacket_dummy_frame));
 

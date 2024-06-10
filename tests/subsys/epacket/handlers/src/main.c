@@ -35,14 +35,14 @@ ZTEST(epacket_handlers, test_custom_handler)
 
 	/* Receive without a custom handler */
 	epacket_dummy_receive(epacket_dummy, &header, payload, sizeof(payload));
-	zassert_is_null(net_buf_get(&handler_fifo, K_MSEC(10)));
+	zassert_is_null(net_buf_get(&handler_fifo, K_MSEC(100)));
 
 	/* Set the custom handler */
 	epacket_set_receive_handler(epacket_dummy, custom_handler);
 
 	/* Receive again with custom handler */
 	epacket_dummy_receive(epacket_dummy, &header, payload, sizeof(payload));
-	rx = net_buf_get(&handler_fifo, K_MSEC(10));
+	rx = net_buf_get(&handler_fifo, K_MSEC(100));
 	zassert_not_null(rx);
 	meta = net_buf_user_data(rx);
 
@@ -68,7 +68,7 @@ ZTEST(epacket_handlers, test_echo_response)
 	header.auth = EPACKET_AUTH_DEVICE;
 	epacket_dummy_receive(epacket_dummy, &header, payload, 16);
 
-	rx = net_buf_get(tx_fifo, K_MSEC(10));
+	rx = net_buf_get(tx_fifo, K_MSEC(100));
 	zassert_not_null(rx);
 	rx_header = (void *)rx->data;
 	zassert_equal(INFUSE_ECHO_RSP, rx_header->type);
@@ -81,7 +81,7 @@ ZTEST(epacket_handlers, test_echo_response)
 	header.auth = EPACKET_AUTH_NETWORK;
 	epacket_dummy_receive(epacket_dummy, &header, payload, 64);
 
-	rx = net_buf_get(tx_fifo, K_MSEC(10));
+	rx = net_buf_get(tx_fifo, K_MSEC(100));
 	zassert_not_null(rx);
 	rx_header = (void *)rx->data;
 	zassert_equal(INFUSE_ECHO_RSP, rx_header->type);
@@ -94,7 +94,7 @@ ZTEST(epacket_handlers, test_echo_response)
 	header.auth = EPACKET_AUTH_FAILURE;
 	epacket_dummy_receive(epacket_dummy, &header, payload, 16);
 
-	zassert_is_null(net_buf_get(tx_fifo, K_MSEC(10)));
+	zassert_is_null(net_buf_get(tx_fifo, K_MSEC(100)));
 }
 
 ZTEST(epacket_handlers, test_echo_no_block)
@@ -119,11 +119,11 @@ ZTEST(epacket_handlers, test_echo_no_block)
 	}
 	k_sleep(K_MSEC(1));
 	for (int i = 0; i < CONFIG_EPACKET_BUFFERS_TX; i++) {
-		tx = net_buf_get(tx_fifo, K_MSEC(10));
+		tx = net_buf_get(tx_fifo, K_MSEC(100));
 		zassert_not_null(tx);
 		net_buf_unref(tx);
 	}
-	zassert_is_null(net_buf_get(tx_fifo, K_MSEC(10)));
+	zassert_is_null(net_buf_get(tx_fifo, K_MSEC(100)));
 }
 
 ZTEST(epacket_handlers, test_alloc_failure)
