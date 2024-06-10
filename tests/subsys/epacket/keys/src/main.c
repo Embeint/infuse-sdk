@@ -12,6 +12,7 @@
 #include <zephyr/kernel.h>
 #include <zephyr/random/random.h>
 
+#include <infuse/security.h>
 #include <infuse/epacket/keys.h>
 
 #define KEY_SIZE 32
@@ -168,10 +169,10 @@ ZTEST(epacket_keys, test_key_id_get)
 	zassert_not_equal(id_1, id_2, "");
 }
 
-static bool psa_init(const void *global_state)
+static bool security_init(const void *global_state)
 {
-	zassert_equal(PSA_SUCCESS, psa_crypto_init());
+	infuse_security_init();
 	return true;
 }
 
-ZTEST_SUITE(epacket_keys, psa_init, NULL, NULL, NULL, NULL);
+ZTEST_SUITE(epacket_keys, security_init, NULL, NULL, NULL, NULL);
