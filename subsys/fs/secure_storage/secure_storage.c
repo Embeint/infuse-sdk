@@ -214,7 +214,7 @@ int secure_storage_init(void)
 	psa_key_attributes_t key_attributes = PSA_KEY_ATTRIBUTES_INIT;
 	psa_status_t status;
 	uint8_t key[32] = {0};
-	uint8_t hw_id[16];
+	uint8_t hw_id[8];
 	ssize_t hlen, rc;
 
 	psa_set_key_usage_flags(&key_attributes, PSA_KEY_USAGE_ENCRYPT | PSA_KEY_USAGE_DECRYPT);
