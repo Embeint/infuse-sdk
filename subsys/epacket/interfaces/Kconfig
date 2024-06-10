@@ -32,7 +32,7 @@ config EPACKET_INTERFACE_UDP_DEFAULT_URL
 
 config EPACKET_INTERFACE_UDP_DEFAULT_PORT
 	int "ePacket UDP default server port"
-	default 3000
+	default 3001
 
 module = EPACKET_UDP
 module-str = epacket_udp
