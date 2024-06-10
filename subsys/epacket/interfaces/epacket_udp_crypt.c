@@ -15,6 +15,7 @@
 
 #include <psa/crypto.h>
 
+#include <infuse/security.h>
 #include <infuse/identifiers.h>
 #include <infuse/time/civil.h>
 #include <infuse/epacket/packet.h>
@@ -34,7 +35,7 @@ int epacket_udp_encrypt(struct net_buf *buf)
 	struct epacket_udp_frame *frame;
 	uint16_t buf_len = buf->len;
 	struct net_buf *scratch;
-	uint32_t key_rotation, key_meta;
+	uint32_t key_identifier;
 	psa_key_id_t psa_key_id;
 	psa_status_t status;
 	size_t out_len;
@@ -52,11 +53,10 @@ int epacket_udp_encrypt(struct net_buf *buf)
 
 	key_id = EPACKET_KEY_DEVICE | EPACKET_KEY_INTERFACE_UDP;
 	meta->flags |= EPACKET_FLAGS_ENCRYPTION_DEVICE;
-	key_meta = 1;
-	key_rotation = 1;
+	key_identifier = infuse_security_device_key_identifier();
 
 	/* Get the PSA key ID for packet */
-	psa_key_id = epacket_key_id_get(key_id, key_rotation);
+	psa_key_id = epacket_key_id_get(key_id, civil_time / SECONDS_PER_DAY);
 	if (psa_key_id == 0) {
 		return -1;
 	}
@@ -78,7 +78,7 @@ int epacket_udp_encrypt(struct net_buf *buf)
 				.entropy = sys_rand32_get(),
 			},
 	};
-	sys_put_le24(key_meta, frame->associated_data.device_rotation);
+	sys_put_le24(key_identifier, frame->associated_data.key_identifier);
 
 	/* Claim scratch space as encryption cannot be applied in place */
 	scratch = epacket_encryption_scratch();
@@ -106,9 +106,9 @@ int epacket_udp_decrypt(struct net_buf *buf)
 	struct epacket_udp_frame frame;
 	struct net_buf *scratch;
 	uint64_t device_id;
-	uint32_t key_rotation;
-	uint8_t key_id;
+	uint32_t key_identifier;
 	psa_key_id_t psa_key_id;
+	uint8_t epacket_key_id;
 	psa_status_t status;
 	size_t out_len;
 
@@ -123,6 +123,7 @@ int epacket_udp_decrypt(struct net_buf *buf)
 	meta->flags = frame.associated_data.flags;
 	meta->auth = EPACKET_AUTH_DEVICE;
 	meta->sequence = frame.nonce.sequence;
+	key_identifier = sys_get_le24(frame.associated_data.key_identifier);
 
 	/* Validate packet should be for us and device encrypted */
 	device_id = ((uint64_t)frame.associated_data.device_id_upper << 32) |
@@ -131,11 +132,13 @@ int epacket_udp_decrypt(struct net_buf *buf)
 	    !(frame.associated_data.flags & EPACKET_FLAGS_ENCRYPTION_DEVICE)) {
 		goto error;
 	}
+	if (key_identifier != infuse_security_device_key_identifier()) {
+		goto error;
+	}
 
 	/* Get the PSA key ID for packet */
-	key_id = EPACKET_KEY_DEVICE | EPACKET_KEY_INTERFACE_UDP;
-	key_rotation = sys_get_le24(frame.associated_data.device_rotation);
-	psa_key_id = epacket_key_id_get(key_id, key_rotation);
+	epacket_key_id = EPACKET_KEY_DEVICE | EPACKET_KEY_INTERFACE_UDP;
+	psa_key_id = epacket_key_id_get(epacket_key_id, frame.nonce.gps_time / SECONDS_PER_DAY);
 	if (psa_key_id == 0) {
 		goto error;
 	}
