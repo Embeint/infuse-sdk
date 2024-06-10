@@ -12,6 +12,7 @@
 #include <zephyr/kernel.h>
 #include <zephyr/random/random.h>
 
+#include <infuse/security.h>
 #include <infuse/epacket/keys.h>
 #include <infuse/epacket/packet.h>
 #include <infuse/epacket/interface/epacket_serial.h>
@@ -289,10 +290,10 @@ ZTEST(epacket_serial, test_encrypt_decrypt)
 	net_buf_unref(rx);
 }
 
-static bool psa_init(const void *global_state)
+static bool security_init(const void *global_state)
 {
-	zassert_equal(PSA_SUCCESS, psa_crypto_init());
+	infuse_security_init();
 	return true;
 }
 
-ZTEST_SUITE(epacket_serial, psa_init, NULL, NULL, NULL, NULL);
+ZTEST_SUITE(epacket_serial, security_init, NULL, NULL, NULL, NULL);
