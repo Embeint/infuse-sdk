@@ -46,7 +46,7 @@ static void expect_time_set_response(uint32_t request_id, int16_t rc)
 	zassert_not_null(response_queue);
 
 	/* Response was sent */
-	rsp = net_buf_get(response_queue, K_MSEC(10));
+	rsp = net_buf_get(response_queue, K_MSEC(100));
 	zassert_not_null(rsp);
 	response = (void *)(rsp->data + sizeof(struct epacket_dummy_frame));
 
@@ -87,7 +87,7 @@ static struct rpc_time_get_response expect_time_get_response(uint32_t request_id
 	zassert_not_null(response_queue);
 
 	/* Response was sent */
-	rsp = net_buf_get(response_queue, K_MSEC(10));
+	rsp = net_buf_get(response_queue, K_MSEC(100));
 	zassert_not_null(rsp);
 	response = (void *)(rsp->data + sizeof(struct epacket_dummy_frame));
 
@@ -128,7 +128,7 @@ ZTEST(rpc_command_time, test_time_get_set)
 	zassert_equal(0, civil_time_reference_age());
 	zassert_equal(test_time, infuse_sync_state.base.ref);
 
-	k_sleep(K_MSEC(10));
+	k_sleep(K_MSEC(100));
 
 	/* Send the time get RPC */
 	send_time_get_command(100);

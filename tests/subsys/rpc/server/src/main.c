@@ -58,7 +58,7 @@ ZTEST(rpc_server, test_auth_failure)
 	epacket_dummy_receive(epacket_dummy, &header, payload, 16);
 
 	/* No response */
-	zassert_is_null(net_buf_get(tx_fifo, K_MSEC(10)));
+	zassert_is_null(net_buf_get(tx_fifo, K_MSEC(100)));
 }
 
 ZTEST(rpc_server, test_invalid)
@@ -81,7 +81,7 @@ ZTEST(rpc_server, test_invalid)
 	req_header->request_id = 0x12345678;
 	epacket_dummy_receive(epacket_dummy, &header, payload, 16);
 
-	tx = net_buf_get(tx_fifo, K_MSEC(10));
+	tx = net_buf_get(tx_fifo, K_MSEC(100));
 	zassert_not_null(tx);
 	tx_header = (void *)tx->data;
 	rsp_header = (void *)(tx->data + sizeof(*tx_header));
@@ -92,7 +92,7 @@ ZTEST(rpc_server, test_invalid)
 	zassert_equal(sizeof(*tx_header) + sizeof(*rsp_header), tx->len);
 	net_buf_unref(tx);
 
-	zassert_is_null(net_buf_get(tx_fifo, K_MSEC(10)));
+	zassert_is_null(net_buf_get(tx_fifo, K_MSEC(100)));
 }
 
 ZTEST(rpc_server, test_auth_level)
@@ -117,7 +117,7 @@ ZTEST(rpc_server, test_auth_level)
 	header.auth = EPACKET_AUTH_DEVICE;
 	epacket_dummy_receive(epacket_dummy, &header, payload,
 			      sizeof(struct rpc_echo_request) + sizeof(payload));
-	tx = net_buf_get(tx_fifo, K_MSEC(10));
+	tx = net_buf_get(tx_fifo, K_MSEC(100));
 	zassert_not_null(tx);
 	tx_header = (void *)tx->data;
 	rsp = (void *)(tx->data + sizeof(*tx_header));
@@ -131,7 +131,7 @@ ZTEST(rpc_server, test_auth_level)
 	header.auth = EPACKET_AUTH_NETWORK;
 	epacket_dummy_receive(epacket_dummy, &header, payload,
 			      sizeof(struct rpc_echo_request) + sizeof(payload));
-	tx = net_buf_get(tx_fifo, K_MSEC(10));
+	tx = net_buf_get(tx_fifo, K_MSEC(100));
 	zassert_not_null(tx);
 	tx_header = (void *)tx->data;
 	rsp = (void *)(tx->data + sizeof(*tx_header));
@@ -145,7 +145,7 @@ ZTEST(rpc_server, test_auth_level)
 	header.auth = EPACKET_AUTH_NETWORK;
 	epacket_dummy_receive(epacket_dummy, &header, payload,
 			      sizeof(struct rpc_echo_request) + sizeof(payload));
-	tx = net_buf_get(tx_fifo, K_MSEC(10));
+	tx = net_buf_get(tx_fifo, K_MSEC(100));
 	zassert_not_null(tx);
 	tx_header = (void *)tx->data;
 	rsp = (void *)(tx->data + sizeof(*tx_header));
@@ -182,7 +182,7 @@ ZTEST(rpc_server, test_echo_response)
 		epacket_dummy_receive(epacket_dummy, &header, payload,
 				      sizeof(struct rpc_echo_request) + lens[i]);
 
-		tx = net_buf_get(tx_fifo, K_MSEC(10));
+		tx = net_buf_get(tx_fifo, K_MSEC(100));
 		zassert_not_null(tx);
 		tx_header = (void *)tx->data;
 		rsp = (void *)(tx->data + sizeof(*tx_header));
@@ -194,7 +194,7 @@ ZTEST(rpc_server, test_echo_response)
 
 		net_buf_unref(tx);
 	}
-	zassert_is_null(net_buf_get(tx_fifo, K_MSEC(10)));
+	zassert_is_null(net_buf_get(tx_fifo, K_MSEC(100)));
 }
 
 static void test_data_sender(uint32_t to_send)

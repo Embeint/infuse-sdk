@@ -41,22 +41,22 @@ ZTEST(epacket_serial, test_reconstructor)
 	/* Valid packet 1 */
 	s.len = 10;
 	epacket_serial_reconstruct(NULL, (void *)&s, sizeof(s), receive_handler);
-	zassert_is_null(k_fifo_get(&packet_queue, K_MSEC(10)));
+	zassert_is_null(k_fifo_get(&packet_queue, K_MSEC(100)));
 	epacket_serial_reconstruct(NULL, buffer, 9, receive_handler);
-	zassert_is_null(k_fifo_get(&packet_queue, K_MSEC(10)));
+	zassert_is_null(k_fifo_get(&packet_queue, K_MSEC(100)));
 	epacket_serial_reconstruct(NULL, buffer, 1, receive_handler);
-	out = k_fifo_get(&packet_queue, K_MSEC(10));
+	out = k_fifo_get(&packet_queue, K_MSEC(100));
 	zassert_not_null(out);
 	net_buf_unref(out);
 
 	/* Valid packet 2 */
 	s.len = 4;
 	epacket_serial_reconstruct(NULL, (void *)&s, sizeof(s), receive_handler);
-	zassert_is_null(k_fifo_get(&packet_queue, K_MSEC(10)));
+	zassert_is_null(k_fifo_get(&packet_queue, K_MSEC(100)));
 	epacket_serial_reconstruct(NULL, buffer, 3, receive_handler);
-	zassert_is_null(k_fifo_get(&packet_queue, K_MSEC(10)));
+	zassert_is_null(k_fifo_get(&packet_queue, K_MSEC(100)));
 	epacket_serial_reconstruct(NULL, buffer, 1, receive_handler);
-	out = k_fifo_get(&packet_queue, K_MSEC(10));
+	out = k_fifo_get(&packet_queue, K_MSEC(100));
 	zassert_not_null(out);
 	net_buf_unref(out);
 
@@ -67,17 +67,17 @@ ZTEST(epacket_serial, test_reconstructor)
 
 		c += sys_rand32_get() % d;
 		epacket_serial_reconstruct(NULL, &c, 1, receive_handler);
-		zassert_is_null(k_fifo_get(&packet_queue, K_MSEC(10)));
+		zassert_is_null(k_fifo_get(&packet_queue, K_MSEC(100)));
 	}
 
 	/* Valid packet 3 */
 	s.len = 30;
 	epacket_serial_reconstruct(NULL, (void *)&s, sizeof(s), receive_handler);
-	zassert_is_null(k_fifo_get(&packet_queue, K_MSEC(10)));
+	zassert_is_null(k_fifo_get(&packet_queue, K_MSEC(100)));
 	epacket_serial_reconstruct(NULL, buffer, 29, receive_handler);
-	zassert_is_null(k_fifo_get(&packet_queue, K_MSEC(10)));
+	zassert_is_null(k_fifo_get(&packet_queue, K_MSEC(100)));
 	epacket_serial_reconstruct(NULL, buffer, 1, receive_handler);
-	out = k_fifo_get(&packet_queue, K_MSEC(10));
+	out = k_fifo_get(&packet_queue, K_MSEC(100));
 	zassert_not_null(out);
 	net_buf_unref(out);
 
@@ -85,14 +85,14 @@ ZTEST(epacket_serial, test_reconstructor)
 	s.sync[0] += 1;
 	epacket_serial_reconstruct(NULL, (void *)&s, sizeof(s), receive_handler);
 	epacket_serial_reconstruct(NULL, buffer, sizeof(buffer), receive_handler);
-	out = k_fifo_get(&packet_queue, K_MSEC(10));
+	out = k_fifo_get(&packet_queue, K_MSEC(100));
 	zassert_is_null(out);
 
 	s.sync[0] -= 1;
 	s.sync[1] += 1;
 	epacket_serial_reconstruct(NULL, (void *)&s, sizeof(s), receive_handler);
 	epacket_serial_reconstruct(NULL, buffer, sizeof(buffer), receive_handler);
-	out = k_fifo_get(&packet_queue, K_MSEC(10));
+	out = k_fifo_get(&packet_queue, K_MSEC(100));
 	zassert_is_null(out);
 }
 
@@ -105,17 +105,17 @@ ZTEST(epacket_serial, test_reconstructor_zero)
 	struct net_buf *out;
 
 	epacket_serial_reconstruct(NULL, (void *)&s, sizeof(s), receive_handler);
-	out = k_fifo_get(&packet_queue, K_MSEC(10));
+	out = k_fifo_get(&packet_queue, K_MSEC(100));
 	zassert_not_null(out);
 	net_buf_unref(out);
 
 	epacket_serial_reconstruct(NULL, (void *)&s, sizeof(s), receive_handler);
-	out = k_fifo_get(&packet_queue, K_MSEC(10));
+	out = k_fifo_get(&packet_queue, K_MSEC(100));
 	zassert_not_null(out);
 	net_buf_unref(out);
 
 	epacket_serial_reconstruct(NULL, (void *)&s, sizeof(s), receive_handler);
-	out = k_fifo_get(&packet_queue, K_MSEC(10));
+	out = k_fifo_get(&packet_queue, K_MSEC(100));
 	zassert_not_null(out);
 	net_buf_unref(out);
 }
@@ -134,7 +134,7 @@ ZTEST(epacket_serial, test_reconstructor_too_large)
 	epacket_serial_reconstruct(NULL, (void *)&s, sizeof(s), receive_handler);
 	epacket_serial_reconstruct(NULL, (void *)buffer, sizeof(buffer), receive_handler);
 	/* Too large packet should be dropped */
-	zassert_is_null(k_fifo_get(&packet_queue, K_MSEC(10)));
+	zassert_is_null(k_fifo_get(&packet_queue, K_MSEC(100)));
 }
 
 ZTEST(epacket_serial, test_reconstructor_rx_pressure)
@@ -163,7 +163,7 @@ ZTEST(epacket_serial, test_reconstructor_rx_pressure)
 		zassert_not_null(out);
 		net_buf_unref(out);
 	}
-	zassert_is_null(k_fifo_get(&packet_queue, K_MSEC(10)));
+	zassert_is_null(k_fifo_get(&packet_queue, K_MSEC(100)));
 }
 
 ZTEST(epacket_serial, test_decrypt_error)

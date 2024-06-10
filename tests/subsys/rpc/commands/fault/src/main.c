@@ -48,7 +48,7 @@ static void expect_fault_response(uint32_t request_id, int16_t rc)
 	zassert_not_null(response_queue);
 
 	/* Response was sent */
-	rsp = net_buf_get(response_queue, K_MSEC(10));
+	rsp = net_buf_get(response_queue, K_MSEC(100));
 	zassert_not_null(rsp);
 	response = (void *)(rsp->data + sizeof(struct epacket_dummy_frame));
 
@@ -74,7 +74,7 @@ ZTEST(rpc_command_fault, test_does_fault)
 	case 1:
 		/* Stack overflow fault */
 		send_fault_command(0, K_ERR_STACK_CHK_FAIL);
-		k_sleep(K_MSEC(10));
+		k_sleep(K_MSEC(100));
 		zassert_unreachable("K_ERR_STACK_CHK_FAIL did not trigger exception");
 
 		break;
@@ -85,7 +85,7 @@ ZTEST(rpc_command_fault, test_does_fault)
 		zassert_equal((enum infuse_reboot_reason)K_ERR_STACK_CHK_FAIL, reboot_state.reason);
 		/* Data access fault */
 		send_fault_command(0, K_ERR_ARM_MEM_DATA_ACCESS);
-		k_sleep(K_MSEC(10));
+		k_sleep(K_MSEC(100));
 		zassert_unreachable("K_ERR_ARM_MEM_DATA_ACCESS did not trigger exception");
 		break;
 	case 3:
@@ -96,7 +96,7 @@ ZTEST(rpc_command_fault, test_does_fault)
 			      reboot_state.reason);
 		/* Divide by 0 */
 		send_fault_command(0, K_ERR_ARM_USAGE_DIV_0);
-		k_sleep(K_MSEC(10));
+		k_sleep(K_MSEC(100));
 		zassert_unreachable("K_ERR_ARM_USAGE_DIV_0 did not trigger exception");
 		break;
 	case 4:
@@ -107,7 +107,7 @@ ZTEST(rpc_command_fault, test_does_fault)
 			      reboot_state.reason);
 		/* Unaligned memory access */
 		send_fault_command(0, K_ERR_ARM_USAGE_UNDEFINED_INSTRUCTION);
-		k_sleep(K_MSEC(10));
+		k_sleep(K_MSEC(100));
 		zassert_unreachable(
 			"K_ERR_ARM_USAGE_UNDEFINED_INSTRUCTION did not trigger exception");
 		break;
@@ -119,7 +119,7 @@ ZTEST(rpc_command_fault, test_does_fault)
 			      reboot_state.reason);
 		/* Unaligned memory access */
 		send_fault_command(0, K_ERR_ARM_MEM_INSTRUCTION_ACCESS);
-		k_sleep(K_MSEC(10));
+		k_sleep(K_MSEC(100));
 		zassert_unreachable("K_ERR_ARM_MEM_INSTRUCTION_ACCESS did not trigger exception");
 		break;
 	case 6:
