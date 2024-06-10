@@ -50,6 +50,7 @@ const char *algorithm_names[] = {
 enum sign_alg {
 	SHA256 = 0,
 	HMAC_SHA256,
+	CMAC,
 	ECDSA_SHA256,
 	POLY1305,
 	NUM_SIGN_ALGORITHMS,
@@ -60,13 +61,14 @@ const char *sign_algorithm_names[] = {
 	[HMAC_SHA256] = "HMAC-SHA256",
 	[ECDSA_SHA256] = "ECDSA-SHA256",
 	[POLY1305] = "POLY1305",
+	[CMAC] = "CMAC",
 };
 
 uint64_t encrypt_cycles[NUM_ALGORITHMS][ARRAY_SIZE(plaintext_lengths)][REPEATS] = {0};
 uint64_t decrypt_cycles[NUM_ALGORITHMS][ARRAY_SIZE(plaintext_lengths)][REPEATS] = {0};
 uint64_t sign_cycles[NUM_SIGN_ALGORITHMS][ARRAY_SIZE(plaintext_lengths)][REPEATS] = {0};
 
-psa_key_id_t chacha_key_id, hmac_key_id, ecdsa_key_id, poly1305_key_id;
+psa_key_id_t chacha_key_id, hmac_key_id, cmac_key_id, ecdsa_key_id, poly1305_key_id;
 
 static int key_setup(uint8_t key[32])
 {
@@ -99,7 +101,22 @@ static int key_setup(uint8_t key[32])
 	/* Import HMAC key */
 	status = psa_generate_key(&key_attributes, &hmac_key_id);
 	if (status != PSA_SUCCESS) {
-		LOG_ERR("Failed to generate key pair! (%d)", status);
+		LOG_ERR("Failed to import HMAC key! (%d)", status);
+		return -1;
+	}
+
+	/* Crypto settings for CMAC */
+	key_attributes = psa_key_attributes_init();
+	psa_set_key_usage_flags(&key_attributes, PSA_KEY_USAGE_SIGN_MESSAGE);
+	psa_set_key_lifetime(&key_attributes, PSA_KEY_LIFETIME_VOLATILE);
+	psa_set_key_algorithm(&key_attributes, PSA_ALG_CMAC);
+	psa_set_key_type(&key_attributes, PSA_KEY_TYPE_AES);
+	psa_set_key_bits(&key_attributes, 256);
+
+	/* Import CMAC key */
+	status = psa_generate_key(&key_attributes, &cmac_key_id);
+	if (status != PSA_SUCCESS) {
+		LOG_ERR("Failed to import CMAC key! (%d)", status);
 		return -1;
 	}
 
@@ -278,6 +295,19 @@ int main(void)
 				LOG_INF("psa_mac_compute failed! (Error: %d)", status);
 			}
 			sign_cycles[HMAC_SHA256][i][r] = timing_cycles_get(&start_time, &end_time);
+		}
+		for (int r = 0; r < REPEATS; r++) {
+			size_t slen;
+
+			start_time = timing_counter_get();
+			status = psa_mac_compute(cmac_key_id, PSA_ALG_CMAC, plaintext,
+						 plaintext_lengths[i], signature, sizeof(signature),
+						 &slen);
+			end_time = timing_counter_get();
+			if (status != PSA_SUCCESS) {
+				LOG_INF("psa_mac_compute failed! (Error: %d)", status);
+			}
+			sign_cycles[CMAC][i][r] = timing_cycles_get(&start_time, &end_time);
 		}
 #ifdef CONFIG_MBEDTLS_ECDSA_C
 		for (int r = 0; r < REPEATS; r++) {
