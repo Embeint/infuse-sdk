@@ -33,8 +33,8 @@ struct epacket_udp_frame {
 			uint8_t type;
 			/* Payload flags */
 			uint16_t flags;
-			/* Device key rotation */
-			uint8_t device_rotation[3];
+			/* Device key identifier */
+			uint8_t key_identifier[3];
 			/* Infuse device ID (upper 4 bytes) */
 			uint32_t device_id_upper;
 		} __packed;

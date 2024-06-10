@@ -17,6 +17,7 @@
 #include <psa/crypto.h>
 
 #include <infuse/identifiers.h>
+#include <infuse/security.h>
 #include <infuse/time/civil.h>
 #include <infuse/epacket/packet.h>
 #include <infuse/epacket/keys.h>
@@ -121,11 +122,11 @@ int epacket_serial_encrypt(struct net_buf *buf)
 	struct epacket_serial_frame *frame;
 	uint16_t buf_len = buf->len;
 	struct net_buf *scratch;
-	uint32_t key_rotation, key_meta;
+	uint32_t key_identifier;
 	psa_key_id_t psa_key_id;
+	uint8_t epacket_key_id;
 	psa_status_t status;
 	size_t out_len;
-	uint8_t key_id;
 
 	static uint16_t sequence_num;
 
@@ -133,21 +134,17 @@ int epacket_serial_encrypt(struct net_buf *buf)
 	__ASSERT_NO_MSG(net_buf_headroom(buf) >= sizeof(struct epacket_serial_frame));
 
 	if (meta->auth == EPACKET_AUTH_NETWORK) {
-		key_id = EPACKET_KEY_NETWORK | EPACKET_KEY_INTERFACE_SERIAL;
+		epacket_key_id = EPACKET_KEY_NETWORK | EPACKET_KEY_INTERFACE_SERIAL;
 		meta->flags |= EPACKET_FLAGS_ENCRYPTION_NETWORK;
-		meta->flags |= EPACKET_FLAGS_ROTATE_NETWORK_EACH_MINUTE;
-		key_meta = epacket_network_key_id();
-		/* TODO: increase rotation period once cloud handles it correctly */
-		key_rotation = civil_time / SECONDS_PER_MINUTE;
+		key_identifier = infuse_security_network_key_identifier();
 	} else {
-		key_id = EPACKET_KEY_DEVICE | EPACKET_KEY_INTERFACE_SERIAL;
+		epacket_key_id = EPACKET_KEY_DEVICE | EPACKET_KEY_INTERFACE_SERIAL;
 		meta->flags |= EPACKET_FLAGS_ENCRYPTION_DEVICE;
-		key_meta = 1;
-		key_rotation = 1;
+		key_identifier = infuse_security_device_key_identifier();
 	}
 
 	/* Get the PSA key ID for packet */
-	psa_key_id = epacket_key_id_get(key_id, key_rotation);
+	psa_key_id = epacket_key_id_get(epacket_key_id, civil_time / SECONDS_PER_DAY);
 	if (psa_key_id == 0) {
 		return -1;
 	}
@@ -170,7 +167,7 @@ int epacket_serial_encrypt(struct net_buf *buf)
 				.entropy = sys_rand32_get(),
 			},
 	};
-	sys_put_le24(key_meta, frame->associated_data.device_rotation);
+	sys_put_le24(key_identifier, frame->associated_data.key_identifier);
 
 	/* Claim scratch space as encryption cannot be applied in place */
 	scratch = epacket_encryption_scratch();
@@ -197,11 +194,10 @@ int epacket_serial_decrypt(struct net_buf *buf)
 	struct epacket_rx_metadata *meta = net_buf_user_data(buf);
 	struct epacket_serial_frame frame;
 	struct net_buf *scratch;
-	uint32_t key_rotation, key_period;
-	uint32_t network_id;
+	uint32_t key_identifier;
 	uint64_t device_id;
-	uint8_t key_id;
 	psa_key_id_t psa_key_id;
+	uint8_t epacket_key_id;
 	psa_status_t status;
 	size_t out_len;
 
@@ -215,6 +211,7 @@ int epacket_serial_decrypt(struct net_buf *buf)
 	meta->type = frame.associated_data.type;
 	meta->flags = frame.associated_data.flags;
 	meta->sequence = frame.nonce.sequence;
+	key_identifier = sys_get_le24(frame.associated_data.key_identifier);
 
 	if (frame.associated_data.flags & EPACKET_FLAGS_ENCRYPTION_DEVICE) {
 		meta->auth = EPACKET_AUTH_DEVICE;
@@ -224,38 +221,21 @@ int epacket_serial_decrypt(struct net_buf *buf)
 		if (device_id != infuse_device_id()) {
 			goto error;
 		}
-		key_id = EPACKET_KEY_DEVICE | EPACKET_KEY_INTERFACE_SERIAL;
-		key_rotation = sys_get_le24(frame.associated_data.device_rotation);
+		if (key_identifier != infuse_security_device_key_identifier()) {
+			goto error;
+		}
+		epacket_key_id = EPACKET_KEY_DEVICE | EPACKET_KEY_INTERFACE_SERIAL;
 	} else {
 		meta->auth = EPACKET_AUTH_NETWORK;
 		/* Validate the network IDs match */
-		network_id = sys_get_le24(frame.associated_data.network_id);
-		if (network_id != epacket_network_key_id()) {
+		if (key_identifier != infuse_security_network_key_identifier()) {
 			goto error;
 		}
-		key_id = EPACKET_KEY_NETWORK | EPACKET_KEY_INTERFACE_SERIAL;
-		key_rotation =
-			(frame.associated_data.flags & EPACKET_FLAGS_ROTATE_NETWORK_MASK) >> 12;
-		switch (key_rotation) {
-		case EPACKET_FLAGS_ROTATE_NETWORK_EACH_MINUTE:
-			key_period = SECONDS_PER_MINUTE;
-			break;
-		case EPACKET_FLAGS_ROTATE_NETWORK_EACH_HOUR:
-			key_period = SECONDS_PER_HOUR;
-			break;
-		case EPACKET_FLAGS_ROTATE_NETWORK_EACH_DAY:
-			key_period = SECONDS_PER_DAY;
-			break;
-		case EPACKET_FLAGS_ROTATE_NETWORK_EACH_WEEK:
-		default:
-			key_period = SECONDS_PER_WEEK;
-			break;
-		}
-		key_rotation = frame.nonce.gps_time / key_period;
+		epacket_key_id = EPACKET_KEY_NETWORK | EPACKET_KEY_INTERFACE_SERIAL;
 	}
 
 	/* Get the PSA key ID for packet */
-	psa_key_id = epacket_key_id_get(key_id, key_rotation);
+	psa_key_id = epacket_key_id_get(epacket_key_id, frame.nonce.gps_time / SECONDS_PER_DAY);
 	if (psa_key_id == 0) {
 		goto error;
 	}

@@ -67,13 +67,7 @@ enum epacket_flags {
 	/* Bit 15: Encryption Type */
 	EPACKET_FLAGS_ENCRYPTION_DEVICE = BIT(15),
 	EPACKET_FLAGS_ENCRYPTION_NETWORK = 0,
-	/* Bits 12-14: Network key rotation frequency */
-	EPACKET_FLAGS_ROTATE_NETWORK_EACH_MINUTE = (0x00 << 12),
-	EPACKET_FLAGS_ROTATE_NETWORK_EACH_HOUR = (0x01 << 12),
-	EPACKET_FLAGS_ROTATE_NETWORK_EACH_DAY = (0x02 << 12),
-	EPACKET_FLAGS_ROTATE_NETWORK_EACH_WEEK = (0x03 << 12),
-	EPACKET_FLAGS_ROTATE_NETWORK_MASK = (0x07 << 12),
-	/* Bits 8-11: Reserved */
+	/* Bits 8-14: Reserved */
 	/* Bits 0-7: Interface specific */
 	EPACKET_FLAGS_INTERFACE_MASK = 0x00FF,
 };
