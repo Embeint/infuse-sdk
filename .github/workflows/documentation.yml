@@ -1,12 +1,13 @@
 # Copyright (c) 2020 Linaro Limited.
 # SPDX-License-Identifier: Apache-2.0
 
-name: Documentation Build
+name: Documentation Build & Deploy
 
 on:
   push:
     branches:
     - main
+    - v*
   pull_request:
     paths:
     - '.github/workflows/documentation.yml'
@@ -17,6 +18,13 @@ on:
     - 'tests/**'
     - '**/Kconfig*'
     - 'west.yml'
+
+env:
+  AWS_REGION: ap-southeast-2
+
+permissions:
+  id-token: write
+  contents: read
 
 jobs:
   doc-build-html:
@@ -114,4 +122,72 @@ jobs:
           DOC_TAG="development"
         fi
 
-        DOC_TAG=${DOC_TAG} SPHINXOPTS="-q -j auto" make -C doc
+        if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+          DOC_TARGET="html-fast"
+        else
+          DOC_TARGET="html"
+        fi
+
+        DOC_TAG=${DOC_TAG} SPHINXOPTS="-q -t publish" make -C doc ${DOC_TARGET}
+
+    - name: compress-docs
+      if: ${{ github.event_name == 'push' }}
+      run: |
+        tar cfJ html-output.tar.xz --directory=infuse-sdk/doc/_build html
+
+    - name: upload-build
+      if: ${{ github.event_name == 'push' }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: html-output
+        path: html-output.tar.xz
+
+  doc-publish:
+    name: Publish Documentation
+    if: ${{ github.event_name == 'push' }}
+    runs-on: ubuntu-22.04
+    needs: doc-build-html
+
+    steps:
+    - name: Download html artifacts
+      uses: actions/download-artifact@v4
+
+
+    - name: Uncompress docs
+      run: |
+        ls -l
+        mkdir -p html-output
+        tar xf html-output/html-output.tar.xz -C html-output
+
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        role-to-assume: ${{ secrets.AWS_DEV_DOCS_ROLE_ARN }}
+        role-session-name: GitHub_to_AWS_via_FederatedOIDC
+        aws-region: ${{ env.AWS_REGION }}
+
+    - name: Upload to AWS S3
+      env:
+        HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
+      run: |
+        if [ "${HEAD_BRANCH:0:1}" == "v" ]; then
+          VERSION=${HEAD_BRANCH:1}
+        else
+          VERSION="latest"
+        fi
+
+        echo "Uploading to s3://dev.infuse-iot.com/${VERSION}"
+        aws s3 sync --quiet html-output/html s3://dev.infuse-iot.com/${VERSION} --delete
+
+    - name: Invalidate CloudFront
+      env:
+        HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
+      run: |
+        if [ "${HEAD_BRANCH:0:1}" == "v" ]; then
+          VERSION=${HEAD_BRANCH:1}
+        else
+          VERSION="latest"
+        fi
+
+        echo "Invalidating CloudFront cache for ${VERSION}"
+        aws cloudfront create-invalidation --distribution-id ${{ secrets.AWS_DEV_CLOUDFRONT_DIST_ID }} --paths "/${VERSION}/*"
