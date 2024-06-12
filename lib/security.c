@@ -17,6 +17,7 @@
 #ifdef CONFIG_INFUSE_SECURE_STORAGE
 #include <psa/internal_trusted_storage.h>
 #endif
+#include <mbedtls/platform_util.h>
 
 enum {
 	INFUSE_ROOT_ECC_KEY_ID = KV_KEY_SECURE_STORAGE_RESERVED,
@@ -33,7 +34,7 @@ static const uint8_t default_network_key[32] = {
 	0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15,
 	0x16, 0x17, 0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f,
 };
-static psa_key_id_t device_root_key, device_sign_key, network_root_key;
+static psa_key_id_t root_ecc_key_id, device_root_key, device_sign_key, network_root_key;
 static uint32_t cached_network_id, cached_device_id;
 static uint8_t device_public_key[32];
 
@@ -51,9 +52,6 @@ static psa_key_attributes_t hkdf_derive_attributes(void)
 
 	return key_attributes;
 }
-
-#ifdef CONFIG_INFUSE_SECURE_STORAGE
-static psa_key_id_t root_ecc_key_id;
 
 static psa_key_id_t generate_root_ecc_key_pair(void)
 {
@@ -126,8 +124,6 @@ static psa_key_id_t derive_shared_secret(psa_key_id_t root_key_id)
 	return key_id;
 }
 
-#endif /* CONFIG_INFUSE_SECURE_STORAGE */
-
 static psa_key_id_t network_key_load(void)
 {
 	psa_key_attributes_t key_attributes = hkdf_derive_attributes();
@@ -147,6 +143,7 @@ static psa_key_id_t network_key_load(void)
 
 int infuse_security_init(void)
 {
+	uint32_t salt = 0x1234;
 	psa_status_t status;
 
 	/* Initialise crypto system */
@@ -157,7 +154,6 @@ int infuse_security_init(void)
 	}
 
 #ifdef CONFIG_INFUSE_SECURE_STORAGE
-	uint32_t salt = 0x1234;
 	int rc;
 
 	/* Initialise secure storage  */
@@ -166,6 +162,8 @@ int infuse_security_init(void)
 		LOG_ERR("Failed to init secure storage! (%d)", rc);
 		return -EINVAL;
 	}
+#endif /* CONFIG_INFUSE_SECURE_STORAGE */
+
 	/* Create/import device root ECC key pair */
 	root_ecc_key_id = generate_root_ecc_key_pair();
 	if (root_ecc_key_id == PSA_KEY_ID_NULL) {
@@ -185,7 +183,6 @@ int infuse_security_init(void)
 		LOG_ERR("Failed to derive signing key! (%d)", status);
 		return -EINVAL;
 	}
-#endif /* CONFIG_INFUSE_SECURE_STORAGE */
 
 	/* Load root network key */
 	network_root_key = network_key_load();
