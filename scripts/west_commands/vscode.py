@@ -251,10 +251,16 @@ class vscode(WestCommand):
             launch["configurations"][1]["svdFile"] = cache.get("SOC_SVD_FILE")
 
             if cache.get("BOARD")[-3:] == "_ns":
+                tfm_elfs = [
+                    "bl2.elf",
+                    "tfm_s.elf",
+                ]
+                tfm_paths = [build_dir / "tfm" / "bin" / elf for elf in tfm_elfs]
+                tfm_exists = [p for p in tfm_paths if p.exists()]
+
                 # Add TF-M .elf files
                 launch["configurations"][0]["preAttachCommands"] = [
-                    f"add-symbol-file {str(dir)}/tfm/bin/bl2.elf",
-                    f"add-symbol-file {str(dir)}/tfm/bin/tfm_s.elf",
+                    f"add-symbol-file {str(path)}" for path in tfm_exists
                 ]
 
             if "qemu" in cache.get("BOARD"):
