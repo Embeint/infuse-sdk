@@ -18,3 +18,7 @@ rsource "Kconfig.defaults.sensor"
 rsource "Kconfig.defaults.log"
 
 endif # INFUSE_SDK
+
+if ZTEST
+rsource "Kconfig.defaults.ztest"
+endif

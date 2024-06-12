@@ -1,0 +1,10 @@
+# Test defaults for Infuse-IoT libraries
+
+if INFUSE_SECURITY
+
+configdefault MAIN_STACK_SIZE
+	default 2048
+configdefault ZTEST_STACK_SIZE
+	default 2048
+
+endif # INFUSE_SECURITY
