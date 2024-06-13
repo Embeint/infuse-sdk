@@ -88,6 +88,7 @@ ZTEST(rpc_server, test_invalid)
 	zassert_equal(INFUSE_RPC_RSP, tx_header->type);
 	zassert_equal(EPACKET_AUTH_NETWORK, tx_header->auth);
 	zassert_equal(0x12345678, rsp_header->request_id);
+	zassert_equal(RPC_BUILTIN_END, rsp_header->command_id);
 	zassert_equal(-ENOTSUP, rsp_header->return_code);
 	zassert_equal(sizeof(*tx_header) + sizeof(*rsp_header), tx->len);
 	net_buf_unref(tx);
@@ -189,6 +190,7 @@ ZTEST(rpc_server, test_echo_response)
 		zassert_equal(INFUSE_RPC_RSP, tx_header->type);
 		zassert_equal(EPACKET_AUTH_DEVICE, tx_header->auth);
 		zassert_equal(request_id, rsp->header.request_id);
+		zassert_equal(RPC_ID_ECHO, rsp->header.command_id);
 		zassert_equal(0, rsp->header.return_code);
 		zassert_equal(sizeof(*tx_header) + sizeof(*rsp) + lens[i], tx->len);
 
@@ -236,6 +238,7 @@ static void test_data_sender(uint32_t to_send)
 			receiving = false;
 			rsp = (void *)(tx->data + sizeof(*tx_header));
 			zassert_equal(request_id, rsp->header.request_id);
+			zassert_equal(RPC_ID_DATA_SENDER, rsp->header.command_id);
 			zassert_equal(0, rsp->header.return_code);
 		} else if (tx_header->type == INFUSE_RPC_DATA) {
 			data = (void *)(tx->data + sizeof(*tx_header));
@@ -369,6 +372,7 @@ ack_handler:
 	zassert_equal(INFUSE_RPC_RSP, tx_header->type);
 	zassert_equal(EPACKET_AUTH_DEVICE, tx_header->auth);
 	zassert_equal(request_id, rsp->header.request_id);
+	zassert_equal(RPC_ID_DATA_RECEIVER, rsp->header.command_id);
 	if (had_stop) {
 		zassert_equal(-ETIMEDOUT, rsp->header.return_code);
 	} else if (too_much_data) {
