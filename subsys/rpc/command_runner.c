@@ -38,12 +38,13 @@ void rpc_command_runner(struct net_buf *request)
 	struct net_buf *response = NULL;
 	enum epacket_auth auth = metadata->auth;
 	uint32_t request_id = req_header->request_id;
+	uint16_t command_id = req_header->command_id;
 	int16_t rc = -EACCES;
 
 	/* Reset command freed state */
 	command_freed = false;
 
-	switch (req_header->command_id) {
+	switch (command_id) {
 #ifdef CONFIG_INFUSE_RPC_COMMAND_REBOOT
 	case RPC_ID_REBOOT:
 		if (AUTHORISED(auth, REBOOT)) { /* GCOVR_EXCL_BR_LINE */
@@ -146,6 +147,7 @@ void rpc_command_runner(struct net_buf *request)
 		rsp_header = (void *)response->data;
 	}
 	rsp_header->request_id = request_id;
+	rsp_header->command_id = command_id;
 
 	/* Metadata and core response info */
 	epacket_set_tx_metadata(response, auth, 0x00, INFUSE_RPC_RSP);
