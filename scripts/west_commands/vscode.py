@@ -199,6 +199,84 @@ class vscode(WestCommand):
         parser.add_argument("--dir", "-d", type=str, help="Application build folder")
         return parser
 
+    def _jlink_device(self, cache):
+        # Get the JLink device name
+        runners_yaml = cache.get("ZEPHYR_RUNNERS_YAML")
+        if runners_yaml is not None:
+            with pathlib.Path(runners_yaml).open("r", encoding="utf-8") as f:
+                r = yaml.safe_load(f)
+                if "jlink" in r["args"]:
+                    for arg in r["args"]["jlink"]:
+                        if arg.startswith("--device="):
+                            device = arg.removeprefix("--device=")
+                            launch["configurations"][0]["device"] = device
+                            launch["configurations"][1]["device"] = device
+                            break
+
+    def _tfm_build(self, build_dir, cache):
+        launch["configurations"][0]["executable"] = str(build_dir / "bin" / "tfm_s.elf")
+        launch["configurations"][1]["executable"] = str(build_dir / "bin" / "tfm_s.elf")
+
+        # Get options from parent Zephyr build
+        parent_cache = zcmake.CMakeCache.from_build_dir(build_dir.parent)
+        c_cpp_properties["configurations"][0]["compilerPath"] = parent_cache.get(
+            "CMAKE_C_COMPILER"
+        )
+        launch["configurations"][0]["gdbPath"] = parent_cache.get("CMAKE_GDB")
+        launch["configurations"][1]["gdbPath"] = parent_cache.get("CMAKE_GDB")
+
+        launch["configurations"][0]["servertype"] = "jlink"
+        launch["configurations"][1]["servertype"] = "jlink"
+        self._jlink_device(parent_cache)
+
+    def _zephyr_build(self, build_dir, cache):
+        c_cpp_properties["configurations"][0]["includePath"] = [
+            str(build_dir / "zephyr" / "include" / "generated")
+        ]
+        c_cpp_properties["configurations"][0]["compilerPath"] = cache.get(
+            "CMAKE_C_COMPILER"
+        )
+
+        launch["configurations"][0]["gdbPath"] = cache.get("CMAKE_GDB")
+        launch["configurations"][1]["gdbPath"] = cache.get("CMAKE_GDB")
+        launch["configurations"][0]["svdFile"] = cache.get("SOC_SVD_FILE")
+        launch["configurations"][1]["svdFile"] = cache.get("SOC_SVD_FILE")
+
+        launch["configurations"][0]["executable"] = str(
+            build_dir / "zephyr" / "zephyr.elf"
+        )
+        launch["configurations"][1]["executable"] = str(
+            build_dir / "zephyr" / "zephyr.elf"
+        )
+
+        if cache.get("BOARD")[-3:] == "_ns":
+            tfm_elfs = [
+                "bl2.elf",
+                "tfm_s.elf",
+            ]
+            tfm_paths = [build_dir / "tfm" / "bin" / elf for elf in tfm_elfs]
+            tfm_exists = [p for p in tfm_paths if p.exists()]
+
+            # Add TF-M .elf files
+            launch["configurations"][0]["preAttachCommands"] = [
+                f"add-symbol-file {str(path)}" for path in tfm_exists
+            ]
+
+        if "qemu" in cache.get("BOARD"):
+            # Attach doesn't make sense in the qemu context
+            launch["configurations"].pop()
+            launch["configurations"][0]["name"] = "Launch"
+            launch["configurations"][0]["servertype"] = "qemu"
+            launch["configurations"][0]["serverpath"] = shutil.which("qemu-system-arm")
+            launch["configurations"][0]["runToEntryPoint"] = False
+        else:
+            launch["configurations"][0]["rtos"] = "Zephyr"
+            launch["configurations"][1]["rtos"] = "Zephyr"
+            launch["configurations"][0]["servertype"] = "jlink"
+            launch["configurations"][1]["servertype"] = "jlink"
+
+        self._jlink_device(cache)
+
     def do_run(self, args, _):
         vscode_folder = pathlib.Path(args.workspace) / ".vscode"
         vscode_folder.mkdir(exist_ok=True)
@@ -229,67 +307,14 @@ class vscode(WestCommand):
 
             cache = zcmake.CMakeCache.from_build_dir(build_dir)
 
-            c_cpp_properties["configurations"][0]["includePath"] = [
-                str(build_dir / "zephyr" / "include" / "generated")
-            ]
             c_cpp_properties["configurations"][0]["compileCommands"] = str(
                 build_dir / "compile_commands.json"
             )
-            c_cpp_properties["configurations"][0]["compilerPath"] = cache.get(
-                "CMAKE_C_COMPILER"
-            )
 
-            launch["configurations"][0]["executable"] = str(
-                build_dir / "zephyr" / "zephyr.elf"
-            )
-            launch["configurations"][1]["executable"] = str(
-                build_dir / "zephyr" / "zephyr.elf"
-            )
-            launch["configurations"][0]["gdbPath"] = cache.get("CMAKE_GDB")
-            launch["configurations"][1]["gdbPath"] = cache.get("CMAKE_GDB")
-            launch["configurations"][0]["svdFile"] = cache.get("SOC_SVD_FILE")
-            launch["configurations"][1]["svdFile"] = cache.get("SOC_SVD_FILE")
-
-            if cache.get("BOARD")[-3:] == "_ns":
-                tfm_elfs = [
-                    "bl2.elf",
-                    "tfm_s.elf",
-                ]
-                tfm_paths = [build_dir / "tfm" / "bin" / elf for elf in tfm_elfs]
-                tfm_exists = [p for p in tfm_paths if p.exists()]
-
-                # Add TF-M .elf files
-                launch["configurations"][0]["preAttachCommands"] = [
-                    f"add-symbol-file {str(path)}" for path in tfm_exists
-                ]
-
-            if "qemu" in cache.get("BOARD"):
-                # Attach doesn't make sense in the qemu context
-                launch["configurations"].pop()
-                launch["configurations"][0]["name"] = "Launch"
-                launch["configurations"][0]["servertype"] = "qemu"
-                launch["configurations"][0]["serverpath"] = shutil.which(
-                    "qemu-system-arm"
-                )
-                launch["configurations"][0]["runToEntryPoint"] = False
+            if build_dir.parts[-1] == "tfm":
+                self._tfm_build(build_dir, cache)
             else:
-                launch["configurations"][0]["rtos"] = "Zephyr"
-                launch["configurations"][1]["rtos"] = "Zephyr"
-                launch["configurations"][0]["servertype"] = "jlink"
-                launch["configurations"][1]["servertype"] = "jlink"
-
-            # Get the JLink device name
-            runners_yaml = cache.get("ZEPHYR_RUNNERS_YAML")
-            if runners_yaml is not None:
-                with pathlib.Path(runners_yaml).open("r", encoding="utf-8") as f:
-                    r = yaml.safe_load(f)
-                    if "jlink" in r["args"]:
-                        for arg in r["args"]["jlink"]:
-                            if arg.startswith("--device="):
-                                device = arg.removeprefix("--device=")
-                                launch["configurations"][0]["device"] = device
-                                launch["configurations"][1]["device"] = device
-                                break
+                self._zephyr_build(build_dir, cache)
 
             log.inf(
                 f"Writing `c_cpp_properties.json` and `launch.json` to {vscode_folder}"

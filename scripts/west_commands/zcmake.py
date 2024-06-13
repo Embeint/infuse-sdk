@@ -67,6 +67,8 @@ class CMakeCacheEntry:
             return False
         elif val.endswith('-NOTFOUND'):
             return False
+        elif val == 'NEVER':
+            return False
         else:
             try:
                 v = int(val)
