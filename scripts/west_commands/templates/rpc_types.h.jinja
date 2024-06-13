@@ -72,6 +72,8 @@ struct infuse_rpc_data_ack {
 struct infuse_rpc_rsp_header {
 	/* Request ID matching original @ref infuse_rpc_req_header */
 	uint32_t request_id;
+	/* Command that was run */
+	uint16_t command_id;
 	/* Result of the RPC */
 	int16_t return_code;
 } __packed;
