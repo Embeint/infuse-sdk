@@ -110,6 +110,8 @@ static void interrupt_handler(const struct device *dev, void *user_data)
 				net_buf_put(&data->tx_fifo, buf);
 				uart_irq_tx_disable(dev);
 				irq_unlock(key);
+				/* Reschedule the buffer flusher */
+				k_work_reschedule(&data->dc_handler, K_MSEC(100));
 				return;
 			}
 
