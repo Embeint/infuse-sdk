@@ -190,7 +190,7 @@ static int epacket_udp_loop(void *a, void *b, void *c)
 			addr = ((struct sockaddr_in *)&from)->sin_addr.s4_addr;
 			port = ((struct sockaddr_in *)&from)->sin_port;
 			LOG_DBG("Received %d bytes from %d.%d.%d.%d:%d", received, addr[0], addr[1],
-				addr[2], addr[3], port);
+				addr[2], addr[3], ntohs(port));
 
 			meta->interface = epacket_udp;
 			meta->interface_id = EPACKET_INTERFACE_UDP;
