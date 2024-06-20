@@ -1,10 +1,10 @@
 / {
-    data_logger_epacket: data_logger_epacket {
-        compatible = "embeint,data-logger-epacket", "embeint,data-logger";
-        epacket = <&epacket_dummy>;
-    };
+	data_logger_epacket: data_logger_epacket {
+		compatible = "embeint,data-logger-epacket", "embeint,data-logger";
+		epacket = <&epacket_dummy>;
+	};
 
-    epacket_dummy: epacket_dummy {
-        compatible = "embeint,epacket-dummy";
-    };
+	epacket_dummy: epacket_dummy {
+		compatible = "embeint,epacket-dummy";
+	};
 };

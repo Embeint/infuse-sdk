@@ -1,44 +1,44 @@
 #include <common/nordic/infuse_nrf52840.dtsi>
 
 / {
-    chosen {
-        infuse,reboot-state = &retention0;
-    };
+	chosen {
+		infuse,reboot-state = &retention0;
+	};
 
-    epacket_serial: epacket_serial {
-        compatible = "embeint,epacket-serial";
-        serial = <&uart0>;
-    };
+	epacket_serial: epacket_serial {
+		compatible = "embeint,epacket-serial";
+		serial = <&uart0>;
+	};
 
-    data_logger_serial: data_logger_serial {
-        compatible = "embeint,data-logger-epacket", "embeint,data-logger";
-        epacket = <&epacket_serial>;
+	data_logger_serial: data_logger_serial {
+		compatible = "embeint,data-logger-epacket", "embeint,data-logger";
+		epacket = <&epacket_serial>;
 
-        tdf_logger_serial: tdf_logger_serial {
-            compatible = "embeint,tdf-data-logger";
-        };
-    };
+		tdf_logger_serial: tdf_logger_serial {
+			compatible = "embeint,tdf-data-logger";
+		};
+	};
 
-    /* End of application SRAM */
-    memory@2003FF00 {
-        compatible = "zephyr,memory-region", "mmio-sram";
-        reg = <0x2003FF00 0x100>;
-        zephyr,memory-region = "RetainedMem";
-        status = "okay";
+	/* End of application SRAM */
+	memory@2003FF00 {
+		compatible = "zephyr,memory-region", "mmio-sram";
+		reg = <0x2003FF00 0x100>;
+		zephyr,memory-region = "RetainedMem";
+		status = "okay";
 
-        retainedmem {
-            compatible = "zephyr,retained-ram";
-            status = "okay";
-            #address-cells = <1>;
-            #size-cells = <1>;
+		retainedmem {
+			compatible = "zephyr,retained-ram";
+			status = "okay";
+			#address-cells = <1>;
+			#size-cells = <1>;
 
-            retention0: retention@0 {
-                    compatible = "zephyr,retention";
-                    status = "okay";
-                    reg = <0x0 0x100>;
-                    prefix = [DE 03];
-                    checksum = <4>;
-            };
-        };
-    };
+			retention0: retention@0 {
+					compatible = "zephyr,retention";
+					status = "okay";
+					reg = <0x0 0x100>;
+					prefix = [DE 03];
+					checksum = <4>;
+			};
+		};
+	};
 };

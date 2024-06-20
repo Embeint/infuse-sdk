@@ -1,5 +1,5 @@
 / {
-    epacket_dummy: epacket_dummy {
-        compatible = "embeint,epacket-dummy";
-    };
+	epacket_dummy: epacket_dummy {
+		compatible = "embeint,epacket-dummy";
+	};
 };
