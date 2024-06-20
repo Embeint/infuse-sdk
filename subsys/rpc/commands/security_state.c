@@ -52,7 +52,7 @@ struct net_buf *rpc_command_security_state(struct net_buf *request)
 	/* Encrypt the challenge response */
 	ad_len = offsetof(struct rpc_security_state_response, challenge_response) -
 		 offsetof(struct rpc_security_state_response, cloud_public_key);
-	sys_rand_get(rsp->nonce, sizeof(rsp->nonce));
+	sys_csrand_get(rsp->nonce, sizeof(rsp->nonce));
 	status = psa_aead_encrypt(sign_key, PSA_ALG_CHACHA20_POLY1305, rsp->nonce,
 				  sizeof(rsp->nonce), rsp_header.cloud_public_key, ad_len,
 				  (void *)&challenge_response, sizeof(challenge_response),

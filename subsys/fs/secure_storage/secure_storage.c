@@ -62,7 +62,7 @@ psa_status_t psa_its_set(psa_storage_uid_t uid, uint32_t data_length, const void
 	/* Populate header and nonce */
 	data.info.flags = create_flags;
 	data.info.size = data_length;
-	sys_rand_get(data.nonce, sizeof(data.nonce));
+	sys_csrand_get(data.nonce, sizeof(data.nonce));
 
 	/* Encrypt data */
 	status = psa_aead_encrypt(secure_storage_key_id, PSA_ALG_CHACHA20_POLY1305, data.nonce,
