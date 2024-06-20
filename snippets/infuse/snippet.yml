@@ -25,6 +25,10 @@ boards:
     append:
       EXTRA_DTC_OVERLAY_FILE: boards/nrf7002dk_nrf5340_cpuapp_ns.overlay
       EXTRA_CONF_FILE: infuse_snippet.conf
+  nrf9161dk_nrf9161_ns:
+    append:
+      EXTRA_DTC_OVERLAY_FILE: boards/nrf9161dk_nrf9161_ns.overlay
+      EXTRA_CONF_FILE: infuse_snippet.conf
   thingy53_nrf5340_cpuapp:
     append:
       EXTRA_DTC_OVERLAY_FILE: boards/thingy53_nrf5340_cpuapp.overlay

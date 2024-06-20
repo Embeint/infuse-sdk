@@ -1,0 +1,13 @@
+if BOARD_NRF9191DK_NRF9161_NS
+
+configdefault NETWORKING
+    default y if !MCUBOOT
+
+configdefault LTE_LINK_CONTROL
+    default y if !MCUBOOT
+
+# External flash layout needs to match internal
+configdefault SPI_NOR_FLASH_LAYOUT_PAGE_SIZE
+    default 4096 if MCUBOOT
+
+endif # BOARD_NRF9191DK_NRF9161_NS
