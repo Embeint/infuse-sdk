@@ -74,6 +74,12 @@ configdefault POWER_DOMAIN
 # Random numbers
 configdefault ENTROPY_GENERATOR
 	default y
+choice RNG_GENERATOR_CHOICE
+	# PSA API adds significant overhead for standard random numbers.
+	# Cryptographically secure random numbers directly from PSA
+	# can still be obtained with sys_csrand_get.
+	default XOSHIRO_RANDOM_GENERATOR if ENTROPY_PSA_CRYPTO_RNG
+endchoice
 
 # Trusted-Firmware M
 configdefault TFM_DEVICETREE_LAYOUT
