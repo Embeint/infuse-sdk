@@ -75,6 +75,14 @@ configdefault POWER_DOMAIN
 configdefault ENTROPY_GENERATOR
 	default y
 
+# Trusted-Firmware M
+configdefault TFM_DEVICETREE_LAYOUT
+	default y
+configdefault TFM_BL2_SPI_NOR_FLASH
+	default y if $(dt_has_compat,$(DT_COMPAT_JEDEC_SPI_NOR))
+configdefault TFM_BL2_QSPI_FLASH
+	default y if $(dt_has_compat,$(DT_COMPAT_NORDIC_QSPI_NOR))
+
 # MbedTLS through the PSA API
 configdefault MBEDTLS
 	default y

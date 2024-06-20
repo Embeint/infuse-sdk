@@ -1,16 +1,49 @@
 #include <common/nordic/infuse_nrf5340_cpuapp_ns.dtsi>
+#include "nrf7002dk_nrf5340_cpuapp_common.dtsi"
 
 / {
-    epacket_udp: epacket_udp {
-		compatible = "embeint,epacket-udp";
-	};
+	tfm_config {
+		compatible = "arm,trusted-firmware-m";
+		sram = <&sram0>;
+		sram-secure = <&sram0_s>;
+		sram-nonsecure = <&sram0_ns>;
+		spu-flash-region-size = <0x00004000>;
+		spu-sram-region-size = <0x00002000>;
 
-	data_logger_udp: data_logger_udp {
-		compatible = "embeint,data-logger-epacket", "embeint,data-logger";
-		epacket = <&epacket_udp>;
+		onboard_flash {
+			driver = "Driver_FLASH0";
+			complete = <&flash0>;
+			img-bl2 = <&boot_partition>;
+			img-primary-secure = <&slot0_partition>;
+			img-primary-nonsecure = <&slot0_ns_partition>;
+			partition-ps = <&tfm_ps_partition>;
+			partition-its = <&tfm_its_partition>;
+			partition-otp = <&tfm_otp_partition>;
+			partition-nonsecure-storage = <&storage_partition>;
+		};
 
-		tdf_logger_udp: tdf_logger_udp {
-			compatible = "embeint,tdf-data-logger";
+		spi_flash {
+			driver = "Driver_FLASH_SPI_NOR0";
+			define-prefix = "SPI_";
+			complete = <&mx25r64>;
+			erase-block-size = <4096>;
+			write-block-size = <1>;
+			img-secondary-secure = <&slot1_partition>;
+			img-secondary-nonsecure = <&slot1_ns_partition>;
 		};
 	};
+
+    epacket_serial: epacket_serial {
+        compatible = "embeint,epacket-serial";
+        serial = <&uart0>;
+    };
+
+	data_logger_serial: data_logger_serial {
+        compatible = "embeint,data-logger-epacket", "embeint,data-logger";
+        epacket = <&epacket_serial>;
+
+        tdf_logger_serial: tdf_logger_serial {
+            compatible = "embeint,tdf-data-logger";
+        };
+    };
 };

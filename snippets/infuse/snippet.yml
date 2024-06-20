@@ -29,3 +29,7 @@ boards:
     append:
       EXTRA_DTC_OVERLAY_FILE: boards/thingy53_nrf5340_cpuapp.overlay
       EXTRA_CONF_FILE: infuse_snippet.conf
+  thingy53_nrf5340_cpuapp_ns:
+    append:
+      EXTRA_DTC_OVERLAY_FILE: boards/thingy53_nrf5340_cpuapp_ns.overlay
+      EXTRA_CONF_FILE: infuse_snippet.conf
