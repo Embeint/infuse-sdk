@@ -1,0 +1,13 @@
+sample:
+  description: Low power application
+  name: Low power
+common:
+  build_only: true
+  required_snippets:
+    - infuse
+  integration_platforms:
+    - nrf5340dk_nrf5340_cpuapp
+    - nrf5340dk_nrf5340_cpuapp_ns
+tests:
+  sample.low_power:
+    tags: validation
