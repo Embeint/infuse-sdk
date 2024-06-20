@@ -1,15 +1,14 @@
 / {
+	data_logger_epacket: data_logger_epacket {
+		compatible = "embeint,data-logger-epacket", "embeint,data-logger";
+		epacket = <&epacket_dummy>;
 
-    data_logger_epacket: data_logger_epacket {
-        compatible = "embeint,data-logger-epacket", "embeint,data-logger";
-        epacket = <&epacket_dummy>;
+		tdf_logger_epacket: tdf_logger_epacket {
+			compatible = "embeint,tdf-data-logger";
+		};
+	};
 
-        tdf_logger_epacket: tdf_logger_epacket {
-            compatible = "embeint,tdf-data-logger";
-        };
-    };
-
-    epacket_dummy: epacket_dummy {
-        compatible = "embeint,epacket-dummy";
-    };
+	epacket_dummy: epacket_dummy {
+		compatible = "embeint,epacket-dummy";
+	};
 };

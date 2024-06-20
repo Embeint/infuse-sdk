@@ -14,22 +14,22 @@
 		#address-cells = <1>;
 		#size-cells = <1>;
 
-        slot0_partition: partition@10000 {
+		slot0_partition: partition@10000 {
 			label = "image-0";
-            reg = <0x00010000 0xea000>;
+			reg = <0x00010000 0xea000>;
 		};
-    };
+	};
 };
 
 &mx25r64 {
-    partitions {
+	partitions {
 		compatible = "fixed-partitions";
 		#address-cells = <1>;
 		#size-cells = <1>;
 
-        slot1_partition: partition@0 {
+		slot1_partition: partition@0 {
 			label = "image-1";
-            reg = <0x00000000 0xea000>;
+			reg = <0x00000000 0xea000>;
 		};
-    };
+	};
 };
