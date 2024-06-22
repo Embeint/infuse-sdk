@@ -1,5 +1,7 @@
 # Infuse Remote Procedure Call commands
 
+zephyr_library_sources_ifdef(CONFIG_INFUSE_RPC_COMMON_NET_QUERY common_net_query.c)
+
 zephyr_library_sources_ifdef(CONFIG_INFUSE_RPC_COMMAND_REBOOT reboot.c)
 zephyr_library_sources_ifdef(CONFIG_INFUSE_RPC_COMMAND_FAULT fault.c)
 zephyr_library_sources_ifdef(CONFIG_INFUSE_RPC_COMMAND_TIME_GET time_get.c)

@@ -15,6 +15,10 @@ config INFUSE_RPC_SERVER_STACK_SIZE
 	default 4096 if NETWORKING
 	default 2048
 
+config INFUSE_RPC_COMMON_NET_QUERY
+	bool
+	default INFUSE_RPC_COMMAND_WIFI_STATE
+
 rsource "commands/Kconfig.commands"
 
 endif # INFUSE_RPC
