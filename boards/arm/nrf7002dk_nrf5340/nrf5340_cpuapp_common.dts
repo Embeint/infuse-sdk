@@ -6,7 +6,6 @@
 #include "nrf5340_cpuapp_common-pinctrl.dtsi"
 
 / {
-
 	chosen {
 		zephyr,console = &uart0;
 		zephyr,shell-uart = &uart0;
@@ -186,21 +185,6 @@ arduino_i2c: &i2c1 {
 		has-dpd;
 		t-enter-dpd = <10000>;
 		t-exit-dpd = <5000>;
-
-		partitions {
-			compatible = "fixed-partitions";
-			#address-cells = <1>;
-			#size-cells = <1>;
-
-			slot1_partition: partition@0 {
-				label = "image-1";
-				reg = <0x00000000 0x30000>;
-			};
-			slot1_ns_partition: partition@30000 {
-				label = "image-1-nonsecure";
-				reg = <0x00030000 0xC0000>;
-			};
-		};
 	};
 };
 
@@ -239,42 +223,6 @@ arduino_spi: &spi3 {
 	pinctrl-names = "default", "sleep";
 };
 
-&flash0 {
-
-	partitions {
-		compatible = "fixed-partitions";
-		#address-cells = <1>;
-		#size-cells = <1>;
-
-		boot_partition: partition@0 {
-			label = "mcuboot";
-			reg = <0x00000000 0x00010000>;
-		};
-		slot0_partition: partition@10000 {
-			label = "image-0";
-		};
-		slot0_ns_partition: partition@40000 {
-			label = "image-0-nonsecure";
-		};
-		tfm_ps_partition: partition@f0000 {
-			label = "tfm-ps";
-			reg = <0x000f0000 0x00004000>;
-		};
-		tfm_its_partition: partition@f4000 {
-			label = "tfm-its";
-			reg = <0x000f4000 0x00002000>;
-		};
-		tfm_otp_partition: partition@f6000 {
-			label = "tfm-otp";
-			reg = <0x000f6000 0x00002000>;
-		};
-		storage_partition: partition@f8000 {
-			label = "storage";
-			reg = <0x000f8000 0x00008000>;
-		};
-	};
-};
-
 &ieee802154 {
 	status = "okay";
 };
@@ -284,26 +232,5 @@ zephyr_udc0: &usbd {
 	status = "okay";
 };
 
-/ {
-
-	reserved-memory {
-		#address-cells = <1>;
-		#size-cells = <1>;
-		ranges;
-
-		sram0_image: image@20000000 {
-			/* Zephyr image(s) memory */
-		};
-
-		sram0_s: image_s@20000000 {
-			/* Secure image memory */
-		};
-
-		sram0_ns: image_ns@20018000 {
-			/* Non-Secure image memory */
-		};
-	};
-};
-
-/* Include partition configuration file */
-#include "nrf5340_cpuapp_partition_conf.dts"
+/* Include default memory partition configuration file */
+#include <common/nordic/nrf5340_cpuapp_partition.dtsi>

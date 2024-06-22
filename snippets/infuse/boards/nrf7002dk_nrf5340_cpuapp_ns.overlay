@@ -1,6 +1,11 @@
 #include <common/nordic/infuse_nrf5340_cpuapp_ns.dtsi>
 #include "nrf7002dk_nrf5340_cpuapp_common.dtsi"
 
+/* Allocate more memory to non-secure application  */
+/delete-node/ &sram0_s;
+/delete-node/ &sram0_ns;
+/delete-node/ &sram0_ns_app;
+
 / {
 	tfm_config {
 		compatible = "arm,trusted-firmware-m";
@@ -44,6 +49,27 @@
 
 		tdf_logger_serial: tdf_logger_serial {
 			compatible = "embeint,tdf-data-logger";
+		};
+	};
+
+	reserved-memory {
+		#address-cells = <1>;
+		#size-cells = <1>;
+		ranges;
+
+		sram0_s: image_s@20000000 {
+			/* Secure image memory */
+			reg = <0x20000000 DT_SIZE_K(96)>;
+		};
+
+		sram0_ns: image_ns@20018000 {
+			/* Non-Secure image memory */
+			reg = <0x20018000 DT_SIZE_K(416)>;
+		};
+
+		sram0_ns_app: image_ns_app@20018000 {
+			/* Non-Secure application memory */
+			reg = <0x20018000 DT_SIZE_K(352)>;
 		};
 	};
 };
