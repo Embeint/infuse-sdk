@@ -97,6 +97,30 @@ config INFUSE_RPC_COMMAND_WIFI_STATE_REQUIRED_AUTH
 	depends on INFUSE_RPC_COMMAND_WIFI_STATE
 	default 2
 
+config INFUSE_RPC_COMMAND_LTE_AT_CMD
+	bool "Enable RPC lte_at_cmd"
+	depends on NRF_MODEM_LIB
+	default y if INFUSE_SDK
+	help
+	  Run AT command against LTE modem
+
+config INFUSE_RPC_COMMAND_LTE_AT_CMD_REQUIRED_AUTH
+	int "Required authorisation level to run lte_at_cmd"
+	depends on INFUSE_RPC_COMMAND_LTE_AT_CMD
+	default 2
+
+config INFUSE_RPC_COMMAND_LTE_STATE
+	bool "Enable RPC lte_state"
+	depends on NRF_MODEM_LIB
+	default y if INFUSE_SDK
+	help
+	  Get current LTE interface state
+
+config INFUSE_RPC_COMMAND_LTE_STATE_REQUIRED_AUTH
+	int "Required authorisation level to run lte_state"
+	depends on INFUSE_RPC_COMMAND_LTE_STATE
+	default 2
+
 config INFUSE_RPC_COMMAND_SECURITY_STATE
 	bool "Enable RPC security_state"
 	default y if INFUSE_SECURITY

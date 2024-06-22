@@ -101,6 +101,20 @@ void rpc_command_runner(struct net_buf *request)
 		}
 		break;
 #endif /* CONFIG_INFUSE_RPC_COMMAND_WIFI_STATE */
+#ifdef CONFIG_INFUSE_RPC_COMMAND_LTE_AT_CMD
+	case RPC_ID_LTE_AT_CMD:
+		if (AUTHORISED(auth, LTE_AT_CMD)) { /* GCOVR_EXCL_BR_LINE */
+			response = rpc_command_lte_at_cmd(request);
+		}
+		break;
+#endif /* CONFIG_INFUSE_RPC_COMMAND_LTE_AT_CMD */
+#ifdef CONFIG_INFUSE_RPC_COMMAND_LTE_STATE
+	case RPC_ID_LTE_STATE:
+		if (AUTHORISED(auth, LTE_STATE)) { /* GCOVR_EXCL_BR_LINE */
+			response = rpc_command_lte_state(request);
+		}
+		break;
+#endif /* CONFIG_INFUSE_RPC_COMMAND_LTE_STATE */
 #ifdef CONFIG_INFUSE_RPC_COMMAND_SECURITY_STATE
 	case RPC_ID_SECURITY_STATE:
 		if (AUTHORISED(auth, SECURITY_STATE)) { /* GCOVR_EXCL_BR_LINE */

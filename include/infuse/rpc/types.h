@@ -157,6 +157,38 @@ struct rpc_struct_wifi_state {
 	uint8_t twt_capable;
 } __packed;
 
+/* LTE interface status */
+struct rpc_struct_lte_state {
+	/* Network registration state */
+	uint8_t registration_state;
+	/* 0 = None, 7 = LTE-M, 9 = NB-IoT */
+	uint8_t access_technology;
+	/* Mobile Country Code */
+	uint16_t mcc;
+	/* Mobile Network Code */
+	uint16_t mnc;
+	/* E-UTRAN cell ID */
+	uint32_t cell_id;
+	/* Tracking area code */
+	uint32_t tac;
+	/* Tracking area update period */
+	uint32_t tau;
+	/* Tracking area code (3GPP TS 36.101) */
+	uint16_t earfcn;
+	/* LTE Band (3GPP 36.101) */
+	uint8_t band;
+	/* Seconds between RRC idle and PSM */
+	uint16_t psm_active_time;
+	/* Period between eDRX paging windows */
+	float edrx_interval;
+	/* Duration of eDRX paging window */
+	float edrx_paging_window;
+	/* Reference signal received power (dBm) */
+	int16_t rsrp;
+	/* Reference signal received quality (dB) */
+	int8_t rsrq;
+} __packed;
+
 /* WiFi interface status */
 struct rpc_struct_wifi_scan_result {
 	/* Frequency band */
@@ -203,6 +235,10 @@ enum rpc_builtin_id {
 	RPC_ID_WIFI_SCAN = 10,
 	/* Get current WiFi interface state */
 	RPC_ID_WIFI_STATE = 11,
+	/* Run AT command against LTE modem */
+	RPC_ID_LTE_AT_CMD = 20,
+	/* Get current LTE interface state */
+	RPC_ID_LTE_STATE = 21,
 	/* Query current security state and validate identity */
 	RPC_ID_SECURITY_STATE = 30000,
 	/* Send multiple INFUSE_RPC_DATA packets */
@@ -321,6 +357,32 @@ struct rpc_wifi_state_response {
 	struct rpc_struct_network_state common;
 	/* WiFi state */
 	struct rpc_struct_wifi_state wifi;
+} __packed;
+
+/* Run AT command against LTE modem */
+struct rpc_lte_at_cmd_request {
+	struct infuse_rpc_req_header header;
+	/* AT command string */
+	char cmd[];
+} __packed;
+
+struct rpc_lte_at_cmd_response {
+	struct infuse_rpc_rsp_header header;
+	/* AT command response */
+	char rsp[];
+} __packed;
+
+/* Get current LTE interface state */
+struct rpc_lte_state_request {
+	struct infuse_rpc_req_header header;
+} __packed;
+
+struct rpc_lte_state_response {
+	struct infuse_rpc_rsp_header header;
+	/* Common network state */
+	struct rpc_struct_network_state common;
+	/* LTE state */
+	struct rpc_struct_lte_state lte;
 } __packed;
 
 /* Query current security state and validate identity */
