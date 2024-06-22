@@ -14,27 +14,9 @@
 #include <infuse/rpc/types.h>
 
 #include "../server.h"
+#include "common_net_query.h"
 
 LOG_MODULE_DECLARE(rpc_server);
-
-static void populate_common_state(struct net_if *iface, struct rpc_struct_network_state *out)
-{
-	out->state = net_if_oper_state(iface);
-	out->if_flags = iface->if_dev->flags[0];
-	out->l2_flags = iface->if_dev->l2->get_flags(iface);
-	out->mtu = net_if_get_mtu(iface);
-
-	if (out->state != NET_IF_OPER_UP) {
-		/* Extra fields are invalid */
-		return;
-	}
-#if defined(CONFIG_NET_NATIVE_IPV4)
-	memcpy(out->ipv4.addr, iface->config.ip.ipv4->unicast[0].address.in_addr.s4_addr, 4);
-#endif
-#if defined(CONFIG_NET_NATIVE_IPV6)
-	memcpy(out->ipv6.addr, iface->config.ip.ipv6->unicast[0].address.in6_addr.s6_addr, 16);
-#endif
-}
 
 struct net_buf *rpc_command_wifi_state(struct net_buf *request)
 {
@@ -48,7 +30,7 @@ struct net_buf *rpc_command_wifi_state(struct net_buf *request)
 	}
 
 	/* Common networking state */
-	populate_common_state(iface, &rsp.common);
+	rpc_common_net_query(iface, &rsp.common);
 
 	/* WiFi state */
 	rc = net_mgmt(NET_REQUEST_WIFI_IFACE_STATUS, iface, &status,
