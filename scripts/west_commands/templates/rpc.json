@@ -56,6 +56,25 @@
                 {"name": "twt_capable", "type": "uint8_t", "description": "Target Wake Time capable?"}
             ]
         },
+        "rpc_struct_lte_state": {
+            "description": "LTE interface status",
+            "fields": [
+                {"name": "registration_state", "type": "uint8_t", "description": "Network registration state"},
+                {"name": "access_technology", "type": "uint8_t", "description": "0 = None, 7 = LTE-M, 9 = NB-IoT"},
+                {"name": "mcc", "type": "uint16_t", "description": "Mobile Country Code"},
+                {"name": "mnc", "type": "uint16_t", "description": "Mobile Network Code"},
+                {"name": "cell_id", "type": "uint32_t", "description": "E-UTRAN cell ID"},
+                {"name": "tac", "type": "uint32_t", "description": "Tracking area code"},
+                {"name": "tau", "type": "uint32_t", "description": "Tracking area update period"},
+                {"name": "earfcn", "type": "uint16_t", "description": "Tracking area code (3GPP TS 36.101)"},
+                {"name": "band", "type": "uint8_t", "description": "LTE Band (3GPP 36.101)"},
+                {"name": "psm_active_time", "type": "uint16_t", "description": "Seconds between RRC idle and PSM"},
+                {"name": "edrx_interval", "type": "float", "description": "Period between eDRX paging windows"},
+                {"name": "edrx_paging_window", "type": "float", "description": "Duration of eDRX paging window"},
+                {"name": "rsrp", "type": "int16_t", "description": "Reference signal received power (dBm)"},
+                {"name": "rsrq", "type": "int8_t", "description": "Reference signal received quality (dB)"}
+            ]
+        },
         "rpc_struct_wifi_scan_result": {
             "description": "WiFi interface status",
             "fields": [
@@ -171,6 +190,31 @@
             "response_params": [
                 {"name": "common", "type": "struct rpc_struct_network_state", "description": "Common network state"},
                 {"name": "wifi", "type": "struct rpc_struct_wifi_state", "description": "WiFi state"}
+            ]
+        },
+        "20": {
+            "name": "lte_at_cmd",
+            "description": "Run AT command against LTE modem",
+            "depends_on": "NRF_MODEM_LIB",
+            "default": "y if INFUSE_SDK",
+            "default_auth": "EPACKET_AUTH_DEVICE",
+            "request_params": [
+                {"name": "cmd", "type": "char", "num": 0, "description": "AT command string"}
+            ],
+            "response_params": [
+                {"name": "rsp", "type": "char", "num": 0, "description": "AT command response"}
+            ]
+        },
+        "21": {
+            "name": "lte_state",
+            "description": "Get current LTE interface state",
+            "depends_on": "NRF_MODEM_LIB",
+            "default": "y if INFUSE_SDK",
+            "default_auth": "EPACKET_AUTH_DEVICE",
+            "request_params": [],
+            "response_params": [
+                {"name": "common", "type": "struct rpc_struct_network_state", "description": "Common network state"},
+                {"name": "lte", "type": "struct rpc_struct_lte_state", "description": "LTE state"}
             ]
         },
         "30000": {
