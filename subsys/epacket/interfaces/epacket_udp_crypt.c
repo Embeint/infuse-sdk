@@ -24,9 +24,6 @@
 
 #include "epacket_internal.h"
 
-#include <zephyr/logging/log.h>
-LOG_MODULE_DECLARE(epacket);
-
 int epacket_udp_encrypt(struct net_buf *buf)
 {
 	struct epacket_tx_metadata *meta = net_buf_user_data(buf);

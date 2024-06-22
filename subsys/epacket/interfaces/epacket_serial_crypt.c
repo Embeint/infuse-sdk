@@ -25,7 +25,7 @@
 
 #include "epacket_internal.h"
 
-#ifdef CONFIG_ZTEST
+#ifdef CONFIG_EPACKET_INTERFACE_ZTEST_PACKETS
 LOG_MODULE_REGISTER(epacket_serial, LOG_LEVEL_INF);
 #else
 LOG_MODULE_DECLARE(epacket_serial);

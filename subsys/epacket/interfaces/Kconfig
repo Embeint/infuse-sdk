@@ -44,3 +44,7 @@ config EPACKET_INTERFACE_DUMMY
 	bool "ePacket dummy interface"
 	depends on DT_HAS_EMBEINT_EPACKET_DUMMY_ENABLED
 	default y
+
+config EPACKET_INTERFACE_ZTEST_PACKETS
+	bool "Compile in the packet construction functions without the interfaces"
+	depends on ZTEST
