@@ -16,6 +16,8 @@ configdefault NET_IPV6_NBR_CACHE
 	default n if NRF_MODEM_LIB
 configdefault NRF_MODEM_LIB_NET_IF
 	default y
+configdefault NRF_MODEM_LIB_NET_IF_APPLICATION_ERROR_HANDLER
+	default y
 choice NRF_MODEM_LIB_ON_FAULT
 	default NRF_MODEM_LIB_ON_FAULT_APPLICATION_SPECIFIC
 endchoice

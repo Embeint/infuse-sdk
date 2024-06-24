@@ -14,6 +14,7 @@
 #include <infuse/lib/nrf_modem_monitor.h>
 #include <infuse/fs/kv_store.h>
 #include <infuse/fs/kv_types.h>
+#include <infuse/reboot.h>
 
 #include <modem/nrf_modem_lib.h>
 #include <modem/lte_lc.h>
@@ -197,6 +198,14 @@ static void infuse_modem_info(enum lte_lc_func_mode mode, void *ctx)
 	(void)KV_STORE_WRITE(KV_KEY_LTE_MODEM_IMEI, &modem_imei);
 	/* Modem info has been stored */
 	modem_info_stored = true;
+}
+
+void lte_net_if_modem_fault_handler(struct nrf_modem_fault_info *fault_info)
+{
+	/* Handling any fault properly is uncertain, safest option is to trigger a reboot */
+	LOG_WRN("Modem fault, rebooting in 2 seconds...");
+	infuse_reboot_delayed(INFUSE_REBOOT_LTE_MODEM_FAULT, fault_info->program_counter,
+			      fault_info->reason, K_SECONDS(2));
 }
 
 int nrf_modem_monitor_init(void)
