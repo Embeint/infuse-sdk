@@ -124,32 +124,32 @@ static void lte_reg_handler(const struct lte_lc_evt *const evt)
 {
 	switch (evt->type) {
 	case LTE_LC_EVT_NW_REG_STATUS:
-		LOG_DBG("LTE_LC_EVT_NW_REG_STATUS");
+		LOG_DBG("NW_REG_STATUS");
 		LOG_DBG("  STATUS: %d", evt->nw_reg_status);
 		latest_state.nw_reg_status = evt->nw_reg_status;
 		/* Update knowledge of network info */
 		network_info_update();
 		break;
 	case LTE_LC_EVT_PSM_UPDATE:
-		LOG_DBG("LTE_LC_EVT_PSM_UPDATE");
+		LOG_DBG("PSM_UPDATE");
 		LOG_DBG("     TAU: %d", evt->psm_cfg.tau);
 		LOG_DBG("  ACTIVE: %d", evt->psm_cfg.active_time);
 		latest_state.psm_cfg = evt->psm_cfg;
 		break;
 	case LTE_LC_EVT_EDRX_UPDATE:
-		LOG_DBG("LTE_LC_EVT_EDRX_UPDATE");
+		LOG_DBG("EDRX_UPDATE");
 		LOG_DBG("    Mode: %d", evt->edrx_cfg.mode);
 		LOG_DBG("     PTW: %d", (int)evt->edrx_cfg.ptw);
 		LOG_DBG("Interval: %d", (int)evt->edrx_cfg.edrx);
 		latest_state.edrx_cfg = evt->edrx_cfg;
 		break;
 	case LTE_LC_EVT_RRC_UPDATE:
-		LOG_DBG("LTE_LC_EVT_RRC_UPDATE");
+		LOG_DBG("RRC_UPDATE");
 		LOG_DBG("   State: %s", evt->rrc_mode == LTE_LC_RRC_MODE_IDLE ? "Idle" : "Active");
 		latest_state.rrc_mode = evt->rrc_mode;
 		break;
 	case LTE_LC_EVT_CELL_UPDATE:
-		LOG_DBG("LTE_LC_EVT_CELL_UPDATE");
+		LOG_DBG("CELL_UPDATE");
 		LOG_DBG("     TAC: %d", evt->cell.tac);
 		LOG_DBG("      ID: %d", evt->cell.id);
 		/* Update knowledge of network info */
@@ -159,9 +159,18 @@ static void lte_reg_handler(const struct lte_lc_evt *const evt)
 		latest_state.cell.id = evt->cell.id;
 		break;
 	case LTE_LC_EVT_LTE_MODE_UPDATE:
-		LOG_DBG("LTE_LC_EVT_LTE_MODE_UPDATE");
+		LOG_DBG("LTE_MODE_UPDATE");
 		LOG_DBG("    Mode: %d", evt->lte_mode);
 		latest_state.lte_mode = evt->lte_mode;
+		break;
+	case LTE_LC_EVT_MODEM_SLEEP_ENTER:
+		LOG_DBG("MODEM_SLEEP_ENTER");
+		LOG_DBG("    Type: %d", evt->modem_sleep.type);
+		LOG_DBG("     Dur: %lld", evt->modem_sleep.time);
+		break;
+	case LTE_LC_EVT_MODEM_SLEEP_EXIT:
+		LOG_DBG("MODEM_SLEEP_EXIT");
+		LOG_DBG("    Type: %d", evt->modem_sleep.type);
 		break;
 	default:
 		LOG_DBG("LTE EVENT: %d", evt->type);
