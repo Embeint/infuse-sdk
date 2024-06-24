@@ -49,6 +49,7 @@ ZTEST(kv_store, test_key_enabled)
 		switch (i) {
 		case KV_KEY_REBOOTS:
 		case KV_KEY_WIFI_PSK:
+		case KV_KEY_LTE_SIM_UICC:
 		case KV_KEY_GEOFENCE + 0:
 		case KV_KEY_GEOFENCE + 1:
 		case KV_KEY_GEOFENCE + 2:
@@ -69,6 +70,7 @@ ZTEST(kv_store, test_key_write_only)
 	for (int i = 0; i <= UINT16_MAX; i++) {
 		switch (i) {
 		case KV_KEY_REBOOTS:
+		case KV_KEY_LTE_SIM_UICC:
 		case KV_KEY_GEOFENCE + 0:
 		case KV_KEY_GEOFENCE + 1:
 		case KV_KEY_GEOFENCE + 2:
@@ -78,6 +80,30 @@ ZTEST(kv_store, test_key_write_only)
 			break;
 		case KV_KEY_WIFI_PSK:
 			zassert_equal(-EPERM, kv_store_external_write_only(i));
+			break;
+		default:
+			zassert_equal(-EACCES, kv_store_external_write_only(i));
+			break;
+		}
+	}
+}
+
+ZTEST(kv_store, test_key_read_only)
+{
+	/* Exhaustive check over every key */
+	for (int i = 0; i <= UINT16_MAX; i++) {
+		switch (i) {
+		case KV_KEY_REBOOTS:
+		case KV_KEY_WIFI_PSK:
+		case KV_KEY_GEOFENCE + 0:
+		case KV_KEY_GEOFENCE + 1:
+		case KV_KEY_GEOFENCE + 2:
+		case KV_KEY_GEOFENCE + 3:
+		case KV_KEY_GEOFENCE + 4:
+			zassert_equal(0, kv_store_external_read_only(i));
+			break;
+		case KV_KEY_LTE_SIM_UICC:
+			zassert_equal(-EPERM, kv_store_external_read_only(i));
 			break;
 		default:
 			zassert_equal(-EACCES, kv_store_external_write_only(i));
