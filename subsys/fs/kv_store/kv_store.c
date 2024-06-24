@@ -64,7 +64,7 @@ bool kv_store_key_enabled(uint16_t key)
 	return false;
 }
 
-int kv_store_external_write_only(uint16_t key)
+static int key_has_flag(uint16_t key, uint8_t flag)
 {
 	struct key_value_slot_definition *defs;
 	size_t num;
@@ -72,12 +72,22 @@ int kv_store_external_write_only(uint16_t key)
 	defs = kv_internal_slot_definitions(&num);
 	for (size_t i = 0; i < num; i++) {
 		if (IN_RANGE(key, defs[i].key, defs[i].key + defs[i].range - 1)) {
-			/* If write only, no external readback */
-			return defs[i].flags & KV_FLAGS_WRITE_ONLY ? -EPERM : 0;
+			/* If flag is set, operation not permitted */
+			return defs[i].flags & flag ? -EPERM : 0;
 		}
 	}
 	/* Key not enabled */
 	return -EACCES;
+}
+
+int kv_store_external_write_only(uint16_t key)
+{
+	return key_has_flag(key, KV_FLAGS_WRITE_ONLY);
+}
+
+int kv_store_external_read_only(uint16_t key)
+{
+	return key_has_flag(key, KV_FLAGS_READ_ONLY);
 }
 
 ssize_t kv_store_delete(uint16_t key)

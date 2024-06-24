@@ -21,6 +21,7 @@ extern "C" {
 enum {
 	KV_FLAGS_REFLECT = BIT(0),
 	KV_FLAGS_WRITE_ONLY = BIT(1),
+	KV_FLAGS_READ_ONLY = BIT(2),
 };
 
 struct key_value_slot_definition {
