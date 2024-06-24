@@ -71,8 +71,14 @@ static int infuse_common_boot(void)
 	LOG_INF("\tVersion: %d.%d.%d+%08x", v.major, v.minor, v.revision, v.build_num);
 	LOG_INF("\t Device: %016llx", device_id);
 	LOG_INF("\t  Board: %s", CONFIG_BOARD);
-	LOG_INF("\tReboots: %d", reboot.count);
+#ifdef CONFIG_KV_STORE_LTE_SIM_UICC
+	KV_KEY_TYPE(KV_KEY_LTE_SIM_UICC) sim_uicc;
 
+	if (KV_STORE_READ(KV_KEY_LTE_SIM_UICC, &sim_uicc) == sizeof(sim_uicc)) {
+		LOG_INF("\t    SIM: %d%lld", sim_uicc.industry, sim_uicc.uicc);
+	}
+#endif /* CONFIG_KV_STORE_LTE_SIM_UICC */
+	LOG_INF("\tReboots: %d", reboot.count);
 #ifdef CONFIG_INFUSE_REBOOT
 	struct timeutil_sync_instant reference;
 	uint32_t reset_cause = 0;
