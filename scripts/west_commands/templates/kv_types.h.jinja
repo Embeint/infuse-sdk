@@ -13,6 +13,7 @@
 #include <stdint.h>
 
 #include <zephyr/toolchain.h>
+#include <zephyr/sys/util_macro.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -129,6 +130,17 @@ enum kv_builtin_size {
 {% for info in definitions %}
 #define _KV_KEY_{{ info['name'] | upper }}_TYPE struct kv_{{ info['name'] | lower }}
 {% endfor %}
+/* clang-format on */
+
+/* clang-format off */
+/* Number of KV pairs that can be reflected */
+#define KV_REFLECT_NUM ( \
+{% for info in definitions %}
+{% if info.get('reflect', false) %}
+	IF_ENABLED(CONFIG_KV_STORE_{{ info['name'] }}, ({{info['range_val']}} +)) \
+{% endif %}
+{% endfor %}
+	0)
 /* clang-format on */
 
 /* Convert key ID to key type */
