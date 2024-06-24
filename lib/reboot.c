@@ -14,6 +14,7 @@
 #include <zephyr/toolchain.h>
 #include <zephyr/retention/retention.h>
 #include <zephyr/drivers/hwinfo.h>
+#include <zephyr/net/conn_mgr_connectivity.h>
 #include <zephyr/logging/log_ctrl.h>
 
 #include <infuse/time/civil.h>
@@ -38,8 +39,17 @@ static void reboot_state_store(enum infuse_reboot_reason reason, uint32_t info1,
 	retention_write(retention, 0, (void *)&state, sizeof(state));
 }
 
-static void cleanup_and_reboot(void)
+FUNC_NORETURN static void cleanup_and_reboot(void)
 {
+#ifdef CONFIG_NET_CONNECTION_MANAGER
+	if (!k_is_in_isr()) {
+		/* If not in an interrupt context, attempt to cleanly bring
+		 * down all networking interfaces before rebooting.
+		 */
+		(void)conn_mgr_all_if_disconnect(false);
+		(void)conn_mgr_all_if_down(false);
+	}
+#endif /* CONFIG_NET_CONNECTION_MANAGER*/
 	/* Flush any logs */
 	LOG_PANIC();
 	/* Trigger the reboot */
