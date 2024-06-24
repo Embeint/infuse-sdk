@@ -64,7 +64,7 @@ bool kv_store_key_enabled(uint16_t key)
 	return false;
 }
 
-int kv_store_external_readback_enabled(uint16_t key)
+int kv_store_external_write_only(uint16_t key)
 {
 	struct key_value_slot_definition *defs;
 	size_t num;

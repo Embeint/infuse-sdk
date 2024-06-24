@@ -90,7 +90,7 @@ bool kv_store_key_enabled(uint16_t key);
  * @retval -EACCESS key is not enabled
  * @retval -EPERM key data should not be returned
  */
-int kv_store_external_readback_enabled(uint16_t key);
+int kv_store_external_write_only(uint16_t key);
 
 /**
  * @brief Delete a value from the KV store

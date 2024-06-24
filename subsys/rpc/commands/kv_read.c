@@ -40,8 +40,8 @@ struct net_buf *rpc_command_kv_read(struct net_buf *request)
 		val_hdr = net_buf_add(response, sizeof(*val_hdr));
 		val_hdr->id = net_buf_pull_le16(request);
 
-		/* Check for readback protection */
-		val_hdr->len = kv_store_external_readback_enabled(val_hdr->id);
+		/* Check for write only protection */
+		val_hdr->len = kv_store_external_write_only(val_hdr->id);
 		if (val_hdr->len == 0) {
 			/* Read the key value */
 			space = net_buf_tailroom(response);
