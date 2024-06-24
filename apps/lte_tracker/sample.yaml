@@ -1,0 +1,14 @@
+sample:
+  description: LTE tracker application
+  name: LTE Tracker
+common:
+  build_only: true
+  required_snippets:
+    - infuse
+  platform_allow:
+    - nrf9161dk_nrf9161_ns
+  integration_platforms:
+    - nrf9161dk_nrf9161_ns
+tests:
+  sample.app.lte_tracker:
+    tags: app
