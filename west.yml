@@ -23,7 +23,7 @@ manifest:
           - trusted-firmware-m
     - name: sdk-nrf
       path: modules/nrfconnect/sdk-nrf
-      revision: c46564d21f6cc8ec942ff6dac3c4ee79e4c104fb
+      revision: c220f25c9678f8abab809b2a55e96c857e9d9fe2
       import: true
 
   self:
