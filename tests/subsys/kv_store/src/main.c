@@ -63,7 +63,7 @@ ZTEST(kv_store, test_key_enabled)
 	}
 }
 
-ZTEST(kv_store, test_key_readback_protection)
+ZTEST(kv_store, test_key_write_only)
 {
 	/* Exhaustive check over every key */
 	for (int i = 0; i <= UINT16_MAX; i++) {
@@ -74,13 +74,13 @@ ZTEST(kv_store, test_key_readback_protection)
 		case KV_KEY_GEOFENCE + 2:
 		case KV_KEY_GEOFENCE + 3:
 		case KV_KEY_GEOFENCE + 4:
-			zassert_equal(0, kv_store_external_readback_enabled(i));
+			zassert_equal(0, kv_store_external_write_only(i));
 			break;
 		case KV_KEY_WIFI_PSK:
-			zassert_equal(-EPERM, kv_store_external_readback_enabled(i));
+			zassert_equal(-EPERM, kv_store_external_write_only(i));
 			break;
 		default:
-			zassert_equal(-EACCES, kv_store_external_readback_enabled(i));
+			zassert_equal(-EACCES, kv_store_external_write_only(i));
 			break;
 		}
 	}

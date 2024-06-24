@@ -48,7 +48,7 @@
             "key": 21,
             "description": "WiFi network password",
             "reflect": true,
-            "readback_protection": true,
+            "write_only": true,
             "default": "y if WIFI",
             "fields": [
                 {"name": "psk", "type": "struct kv_string", "description": "WiFi pre-shared-key"}
