@@ -129,6 +129,62 @@ struct kv_epacket_udp_port {
 	uint32_t port;
 } __packed;
 
+/* Modem model as returned by AT+CGMM */
+struct kv_lte_modem_model {
+	/* Modem model */
+	struct kv_string model;
+} __packed;
+
+/* clang-format off */
+/* Compile time definition for known array length */
+#define _KV_KEY_LTE_MODEM_MODEL_VAR(num) \
+	struct { \
+		KV_STRUCT_KV_STRING_VAR(num) model; \
+	} __packed
+/* clang-format on */
+
+/* Modem firmware revision as returned by AT+CGMR */
+struct kv_lte_modem_firmware_revision {
+	/* Firmware revision */
+	struct kv_string revision;
+} __packed;
+
+/* clang-format off */
+/* Compile time definition for known array length */
+#define _KV_KEY_LTE_MODEM_FIRMWARE_REVISION_VAR(num) \
+	struct { \
+		KV_STRUCT_KV_STRING_VAR(num) revision; \
+	} __packed
+/* clang-format on */
+
+/* 'Electronic Serial Number' as returned by AT+CGSN=0 */
+struct kv_lte_modem_esn {
+	/* ESN or IMEI if not available */
+	struct kv_string esn;
+} __packed;
+
+/* clang-format off */
+/* Compile time definition for known array length */
+#define _KV_KEY_LTE_MODEM_ESN_VAR(num) \
+	struct { \
+		KV_STRUCT_KV_STRING_VAR(num) esn; \
+	} __packed
+/* clang-format on */
+
+/* 'International Modem Equiment Identifier' as returned by AT+CGSN=1 */
+struct kv_lte_modem_imei {
+	/* 15 digit IMEI */
+	uint64_t imei;
+} __packed;
+
+/* SIM Universal Identifier (https://www.itu.int/en/ITU-T/inr/forms/Pages/iin.aspx) */
+struct kv_lte_sim_uicc {
+	/* Type Code (89 for SIM) */
+	uint8_t industry;
+	/* Remainder of UICC */
+	uint64_t uicc;
+} __packed;
+
 /* Array of points defining a closed polygon */
 struct kv_geofence {
 	/* Points in geofence */
@@ -177,6 +233,16 @@ enum kv_builtin_id {
 	KV_KEY_EPACKET_UDP_URL = 31,
 	/* ePacket UDP server port */
 	KV_KEY_EPACKET_UDP_PORT = 32,
+	/* Modem model as returned by AT+CGMM */
+	KV_KEY_LTE_MODEM_MODEL = 40,
+	/* Modem firmware revision as returned by AT+CGMR */
+	KV_KEY_LTE_MODEM_FIRMWARE_REVISION = 41,
+	/* 'Electronic Serial Number' as returned by AT+CGSN=0 */
+	KV_KEY_LTE_MODEM_ESN = 42,
+	/* 'International Modem Equiment Identifier' as returned by AT+CGSN=1 */
+	KV_KEY_LTE_MODEM_IMEI = 43,
+	/* SIM Universal Identifier (https://www.itu.int/en/ITU-T/inr/forms/Pages/iin.aspx) */
+	KV_KEY_LTE_SIM_UICC = 44,
 	/* Array of points defining a closed polygon */
 	KV_KEY_GEOFENCE = 100,
 #ifdef CONFIG_KV_STORE_GEOFENCE_RANGE
@@ -203,6 +269,8 @@ enum kv_builtin_size {
 	_KV_KEY_REBOOTS_SIZE = sizeof(struct kv_reboots),
 	_KV_KEY_FIXED_LOCATION_SIZE = sizeof(struct kv_fixed_location),
 	_KV_KEY_EPACKET_UDP_PORT_SIZE = sizeof(struct kv_epacket_udp_port),
+	_KV_KEY_LTE_MODEM_IMEI_SIZE = sizeof(struct kv_lte_modem_imei),
+	_KV_KEY_LTE_SIM_UICC_SIZE = sizeof(struct kv_lte_sim_uicc),
 };
 
 /* clang-format off */
@@ -214,6 +282,11 @@ enum kv_builtin_size {
 #define _KV_KEY_NTP_SERVER_URL_TYPE struct kv_ntp_server_url
 #define _KV_KEY_EPACKET_UDP_URL_TYPE struct kv_epacket_udp_url
 #define _KV_KEY_EPACKET_UDP_PORT_TYPE struct kv_epacket_udp_port
+#define _KV_KEY_LTE_MODEM_MODEL_TYPE struct kv_lte_modem_model
+#define _KV_KEY_LTE_MODEM_FIRMWARE_REVISION_TYPE struct kv_lte_modem_firmware_revision
+#define _KV_KEY_LTE_MODEM_ESN_TYPE struct kv_lte_modem_esn
+#define _KV_KEY_LTE_MODEM_IMEI_TYPE struct kv_lte_modem_imei
+#define _KV_KEY_LTE_SIM_UICC_TYPE struct kv_lte_sim_uicc
 #define _KV_KEY_GEOFENCE_TYPE struct kv_geofence
 #define _KV_KEY_SECURE_STORAGE_RESERVED_TYPE struct kv_secure_storage_reserved
 /* clang-format on */

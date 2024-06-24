@@ -61,6 +61,41 @@ static struct key_value_slot_definition kv_slots[] = {
 		.flags = KV_FLAGS_REFLECT,
 	},
 #endif /* CONFIG_KV_STORE_EPACKET_UDP_PORT */
+#ifdef CONFIG_KV_STORE_LTE_MODEM_MODEL
+	{
+		.key = 40,
+		.range = 1,
+		.flags = KV_FLAGS_REFLECT,
+	},
+#endif /* CONFIG_KV_STORE_LTE_MODEM_MODEL */
+#ifdef CONFIG_KV_STORE_LTE_MODEM_FIRMWARE_REVISION
+	{
+		.key = 41,
+		.range = 1,
+		.flags = KV_FLAGS_REFLECT,
+	},
+#endif /* CONFIG_KV_STORE_LTE_MODEM_FIRMWARE_REVISION */
+#ifdef CONFIG_KV_STORE_LTE_MODEM_ESN
+	{
+		.key = 42,
+		.range = 1,
+		.flags = KV_FLAGS_REFLECT,
+	},
+#endif /* CONFIG_KV_STORE_LTE_MODEM_ESN */
+#ifdef CONFIG_KV_STORE_LTE_MODEM_IMEI
+	{
+		.key = 43,
+		.range = 1,
+		.flags = KV_FLAGS_REFLECT,
+	},
+#endif /* CONFIG_KV_STORE_LTE_MODEM_IMEI */
+#ifdef CONFIG_KV_STORE_LTE_SIM_UICC
+	{
+		.key = 44,
+		.range = 1,
+		.flags = KV_FLAGS_REFLECT,
+	},
+#endif /* CONFIG_KV_STORE_LTE_SIM_UICC */
 #ifdef CONFIG_KV_STORE_GEOFENCE
 	{
 		.key = 100,
