@@ -9,6 +9,17 @@ configdefault NRF_CC3XX_PLATFORM
 configdefault NRF_OBERON
 	default y if !BUILD_WITH_TFM
 
+# LTE defaults
+configdefault NET_IPV6_MLD
+	default n if NRF_MODEM_LIB
+configdefault NET_IPV6_NBR_CACHE
+	default n if NRF_MODEM_LIB
+configdefault NRF_MODEM_LIB_NET_IF
+	default y
+choice NRF_MODEM_LIB_ON_FAULT
+	default NRF_MODEM_LIB_ON_FAULT_APPLICATION_SPECIFIC
+endchoice
+
 # WiFi defaults
 configdefault WIFI_NRF700X
 	default y if WIFI
@@ -18,6 +29,7 @@ configdefault WPA_SUPP
 	default y if WIFI_NRF700X
 configdefault NET_CONNECTION_MANAGER_MONITOR_STACK_SIZE
 	default 4096 if NRF700X_STA_MODE
+	default 1024 if NRF_MODEM_LIB_NET_IF
 
 # MbedTLS requirements for WiFi connectivity
 configdefault MBEDTLS_ECP_ALL_ENABLED
