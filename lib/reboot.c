@@ -38,7 +38,15 @@ static void reboot_state_store(enum infuse_reboot_reason reason, uint32_t info1,
 	retention_write(retention, 0, (void *)&state, sizeof(state));
 }
 
-static void do_reboot(struct k_work *work)
+static void cleanup_and_reboot(void)
+{
+	/* Flush any logs */
+	LOG_PANIC();
+	/* Trigger the reboot */
+	sys_reboot(SYS_REBOOT_WARM);
+}
+
+static void delayed_do_reboot(struct k_work *work)
 {
 	struct infuse_reboot_state state;
 	/* Update the first three state values in the retention as they depend on time */
@@ -46,8 +54,8 @@ static void do_reboot(struct k_work *work)
 	state.civil_time = civil_time_now();
 	state.uptime = k_uptime_seconds();
 	retention_write(retention, 0, (void *)&state, offsetof(struct infuse_reboot_state, reason));
-	/* Trigger the reboot */
-	sys_reboot(SYS_REBOOT_WARM);
+	/* Do the reboot */
+	cleanup_and_reboot();
 }
 
 void k_sys_fatal_error_handler(unsigned int reason, const z_arch_esf_t *esf)
@@ -59,20 +67,17 @@ void k_sys_fatal_error_handler(unsigned int reason, const z_arch_esf_t *esf)
 		pc = esf->basic.pc;
 		lr = esf->basic.lr;
 	}
-	/* Store reboot metadata */
-	reboot_state_store(reason, pc, lr);
-	/* Flush any logs */
-	LOG_PANIC();
-	/* Reboot */
-	sys_reboot(SYS_REBOOT_WARM);
+
+	/* Standard reboot process */
+	infuse_reboot(reason, pc, lr);
 }
 
 FUNC_NORETURN void infuse_reboot(enum infuse_reboot_reason reason, uint32_t info1, uint32_t info2)
 {
 	/* Store reboot metadata */
 	reboot_state_store(reason, info1, info2);
-	/* Trigger the reboot */
-	sys_reboot(SYS_REBOOT_WARM);
+	/* Do the reboot */
+	cleanup_and_reboot();
 }
 
 void infuse_reboot_delayed(enum infuse_reboot_reason reason, uint32_t info1, uint32_t info2,
@@ -81,7 +86,7 @@ void infuse_reboot_delayed(enum infuse_reboot_reason reason, uint32_t info1, uin
 	static struct k_work_delayable reboot_worker;
 
 	/* Init the worker */
-	k_work_init_delayable(&reboot_worker, do_reboot);
+	k_work_init_delayable(&reboot_worker, delayed_do_reboot);
 
 	/* Store initial reboot metadata */
 	reboot_state_store(reason, info1, info2);
