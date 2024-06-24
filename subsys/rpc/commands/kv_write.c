@@ -45,9 +45,13 @@ struct net_buf *rpc_command_kv_write(struct net_buf *request)
 	for (int i = 0; i < req->num; i++) {
 		struct rpc_struct_kv_store_value *v = (void *)(request->data + offset);
 
-		/* Write the value */
-		LOG_DBG("%s writing key %d len %d", __func__, v->id, v->len);
-		rc = kv_store_write(v->id, v->data, v->len);
+		/* Check for write only protection */
+		rc = kv_store_external_read_only(v->id);
+		if (rc == 0) {
+			/* Write the value */
+			LOG_DBG("Writing key %d len %d", v->id, v->len);
+			rc = kv_store_write(v->id, v->data, v->len);
+		}
 		/* Push response onto the buffer */
 		net_buf_add_le16(response, rc);
 

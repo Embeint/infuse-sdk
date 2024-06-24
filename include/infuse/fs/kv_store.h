@@ -93,6 +93,17 @@ bool kv_store_key_enabled(uint16_t key);
 int kv_store_external_write_only(uint16_t key);
 
 /**
+ * @brief Check whether a given keys data is valid to update externally
+ *
+ * @param key Key to check
+ *
+ * @retval 0 key data is valid to update
+ * @retval -EACCESS key is not enabled
+ * @retval -EPERM key data should not be updated
+ */
+int kv_store_external_read_only(uint16_t key);
+
+/**
  * @brief Delete a value from the KV store
  *
  * @param key Key to delete

@@ -155,6 +155,8 @@ class cloudgen(WestCommand):
                     flags.append("KV_FLAGS_REFLECT")
                 if d.get("write_only", False):
                     flags.append("KV_FLAGS_WRITE_ONLY")
+                if d.get("read_only", False):
+                    flags.append("KV_FLAGS_READ_ONLY")
                 if len(flags) > 0:
                     d["flags"] = " | ".join(flags)
                 else:
