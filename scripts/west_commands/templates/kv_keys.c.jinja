@@ -16,11 +16,7 @@ static struct key_value_slot_definition kv_slots[] = {
 #ifdef CONFIG_KV_STORE_{{ info['name'] }}
 	{
 		.key = {{ info['key'] }},
-{% if 'range' in info %}
-		.range = CONFIG_KV_STORE_{{ info['name'] }}_RANGE,
-{% else %}
-		.range = 1,
-{% endif %}
+		.range = {{ info['range_val'] }},
 		.flags = {{ info['flags'] }},
 	},
 #endif /* CONFIG_KV_STORE_{{ info['name'] }} */

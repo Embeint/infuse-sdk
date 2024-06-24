@@ -13,6 +13,7 @@
 #include <stdint.h>
 
 #include <zephyr/toolchain.h>
+#include <zephyr/sys/util_macro.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -289,6 +290,24 @@ enum kv_builtin_size {
 #define _KV_KEY_LTE_SIM_UICC_TYPE struct kv_lte_sim_uicc
 #define _KV_KEY_GEOFENCE_TYPE struct kv_geofence
 #define _KV_KEY_SECURE_STORAGE_RESERVED_TYPE struct kv_secure_storage_reserved
+/* clang-format on */
+
+/* clang-format off */
+/* Number of KV pairs that can be reflected */
+#define KV_REFLECT_NUM ( \
+	IF_ENABLED(CONFIG_KV_STORE_FIXED_LOCATION, (1 +)) \
+	IF_ENABLED(CONFIG_KV_STORE_WIFI_SSID, (1 +)) \
+	IF_ENABLED(CONFIG_KV_STORE_WIFI_PSK, (1 +)) \
+	IF_ENABLED(CONFIG_KV_STORE_NTP_SERVER_URL, (1 +)) \
+	IF_ENABLED(CONFIG_KV_STORE_EPACKET_UDP_URL, (1 +)) \
+	IF_ENABLED(CONFIG_KV_STORE_EPACKET_UDP_PORT, (1 +)) \
+	IF_ENABLED(CONFIG_KV_STORE_LTE_MODEM_MODEL, (1 +)) \
+	IF_ENABLED(CONFIG_KV_STORE_LTE_MODEM_FIRMWARE_REVISION, (1 +)) \
+	IF_ENABLED(CONFIG_KV_STORE_LTE_MODEM_ESN, (1 +)) \
+	IF_ENABLED(CONFIG_KV_STORE_LTE_MODEM_IMEI, (1 +)) \
+	IF_ENABLED(CONFIG_KV_STORE_LTE_SIM_UICC, (1 +)) \
+	IF_ENABLED(CONFIG_KV_STORE_GEOFENCE, (CONFIG_KV_STORE_GEOFENCE_RANGE +)) \
+	0)
 /* clang-format on */
 
 /* Convert key ID to key type */

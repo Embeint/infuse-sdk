@@ -15,6 +15,8 @@
 #include <infuse/fs/kv_store.h>
 #include <infuse/fs/kv_types.h>
 
+#include "../../../../subsys/fs/kv_store/kv_internal.h"
+
 #define NVS_PARTITION        storage_partition
 #define NVS_PARTITION_DEVICE FIXED_PARTITION_DEVICE(NVS_PARTITION)
 #define NVS_PARTITION_OFFSET FIXED_PARTITION_OFFSET(NVS_PARTITION)
@@ -302,6 +304,22 @@ ZTEST(kv_store, test_kv_string_helper)
 	zassert_equal(sizeof(string_2), sizeof(string_2.value) + 1);
 	zassert_equal(string_1.value_num, strlen(string_1.value) + 1);
 	zassert_equal(string_2.value_num, strlen(string_2.value) + 1);
+}
+
+ZTEST(kv_store, test_kv_reflect_slots)
+{
+	struct key_value_slot_definition *defs;
+	int expected = 0;
+	size_t num;
+
+	defs = kv_internal_slot_definitions(&num);
+	for (int i = 0; i < num; i++) {
+		if (defs[i].flags & KV_FLAGS_REFLECT) {
+			expected += defs[i].range;
+		}
+	}
+	zassert_not_equal(0, expected);
+	zassert_equal(expected, KV_REFLECT_NUM);
 }
 
 static void *kv_setup(void)
