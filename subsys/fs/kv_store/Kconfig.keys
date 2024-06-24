@@ -41,6 +41,36 @@ config KV_STORE_EPACKET_UDP_PORT
 	help
 	  ePacket UDP server port
 
+config KV_STORE_LTE_MODEM_MODEL
+	bool "Enable KV key LTE_MODEM_MODEL"
+	default y if NRF_MODEM_LIB
+	help
+	  Modem model as returned by AT+CGMM
+
+config KV_STORE_LTE_MODEM_FIRMWARE_REVISION
+	bool "Enable KV key LTE_MODEM_FIRMWARE_REVISION"
+	default y if NRF_MODEM_LIB
+	help
+	  Modem firmware revision as returned by AT+CGMR
+
+config KV_STORE_LTE_MODEM_ESN
+	bool "Enable KV key LTE_MODEM_ESN"
+	default y if NRF_MODEM_LIB
+	help
+	  'Electronic Serial Number' as returned by AT+CGSN=0
+
+config KV_STORE_LTE_MODEM_IMEI
+	bool "Enable KV key LTE_MODEM_IMEI"
+	default y if NRF_MODEM_LIB
+	help
+	  'International Modem Equiment Identifier' as returned by AT+CGSN=1
+
+config KV_STORE_LTE_SIM_UICC
+	bool "Enable KV key LTE_SIM_UICC"
+	default y if NRF_MODEM_LIB
+	help
+	  SIM Universal Identifier (https://www.itu.int/en/ITU-T/inr/forms/Pages/iin.aspx)
+
 config KV_STORE_GEOFENCE
 	bool "Enable KV key GEOFENCE"
 	help

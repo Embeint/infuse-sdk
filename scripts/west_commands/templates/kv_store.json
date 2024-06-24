@@ -85,6 +85,57 @@
             ]
         },
         {
+            "name": "LTE_MODEM_MODEL",
+            "key": 40,
+            "description": "Modem model as returned by AT+CGMM",
+            "reflect": true,
+            "default": "y if NRF_MODEM_LIB",
+            "fields": [
+                {"name": "model", "type": "struct kv_string", "description": "Modem model"}
+            ]
+        },
+        {
+            "name": "LTE_MODEM_FIRMWARE_REVISION",
+            "key": 41,
+            "description": "Modem firmware revision as returned by AT+CGMR",
+            "reflect": true,
+            "default": "y if NRF_MODEM_LIB",
+            "fields": [
+                {"name": "revision", "type": "struct kv_string", "description": "Firmware revision"}
+            ]
+        },
+        {
+            "name": "LTE_MODEM_ESN",
+            "key": 42,
+            "description": "'Electronic Serial Number' as returned by AT+CGSN=0",
+            "reflect": true,
+            "default": "y if NRF_MODEM_LIB",
+            "fields": [
+                {"name": "esn", "type": "struct kv_string", "description": "ESN or IMEI if not available"}
+            ]
+        },
+        {
+            "name": "LTE_MODEM_IMEI",
+            "key": 43,
+            "description": "'International Modem Equiment Identifier' as returned by AT+CGSN=1",
+            "reflect": true,
+            "default": "y if NRF_MODEM_LIB",
+            "fields": [
+                {"name": "imei", "type": "uint64_t", "description": "15 digit IMEI"}
+            ]
+        },
+        {
+            "name": "LTE_SIM_UICC",
+            "key": 44,
+            "description": "SIM Universal Identifier (https://www.itu.int/en/ITU-T/inr/forms/Pages/iin.aspx)",
+            "reflect": true,
+            "default": "y if NRF_MODEM_LIB",
+            "fields": [
+                {"name": "industry", "type": "uint8_t", "description": "Type Code (89 for SIM)"},
+                {"name": "uicc", "type": "uint64_t", "description": "Remainder of UICC"}
+            ]
+        },
+        {
             "name": "GEOFENCE",
             "key": 100,
             "range": 16,
