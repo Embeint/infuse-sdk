@@ -211,10 +211,14 @@ static void infuse_modem_info(enum lte_lc_func_mode mode, void *ctx)
 
 void lte_net_if_modem_fault_handler(struct nrf_modem_fault_info *fault_info)
 {
+#ifdef CONFIG_INFUSE_REBOOT
 	/* Handling any fault properly is uncertain, safest option is to trigger a reboot */
-	LOG_WRN("Modem fault, rebooting in 2 seconds...");
+	LOG_ERR("Modem fault, rebooting in 2 seconds...");
 	infuse_reboot_delayed(INFUSE_REBOOT_LTE_MODEM_FAULT, fault_info->program_counter,
 			      fault_info->reason, K_SECONDS(2));
+#else
+	LOG_ERR("Modem fault, no reboot support!");
+#endif /* CONFIG_INFUSE_REBOOT */
 }
 
 int nrf_modem_monitor_init(void)
