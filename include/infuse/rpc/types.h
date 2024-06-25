@@ -105,6 +105,12 @@ struct rpc_struct_kv_store_value {
 	uint8_t data[];
 } __packed;
 
+/* KV store data CRC */
+struct rpc_struct_kv_store_crc {
+	uint16_t id;
+	int32_t crc;
+} __packed;
+
 /* IPv4 address */
 struct rpc_struct_ipv4_address {
 	uint8_t addr[4];
@@ -231,6 +237,8 @@ enum rpc_builtin_id {
 	RPC_ID_KV_WRITE = 5,
 	/* Read values from the KV store */
 	RPC_ID_KV_READ = 6,
+	/* Read KV store CRC's */
+	RPC_ID_KV_REFLECT_CRCS = 7,
 	/* Scan for WiFi networks */
 	RPC_ID_WIFI_SCAN = 10,
 	/* Get current WiFi interface state */
@@ -331,6 +339,23 @@ struct rpc_kv_read_response {
 	struct infuse_rpc_rsp_header header;
 	/* Array of KV values */
 	struct rpc_struct_kv_store_value values[];
+} __packed;
+
+/* Read KV store CRC's */
+struct rpc_kv_reflect_crcs_request {
+	struct infuse_rpc_req_header header;
+	/* Number of CRCs to skip in response */
+	uint16_t offset;
+} __packed;
+
+struct rpc_kv_reflect_crcs_response {
+	struct infuse_rpc_rsp_header header;
+	/* Number of CRCs in crcs array */
+	uint16_t num;
+	/* Number of CRCs that did not fit in this response */
+	uint16_t remaining;
+	/* Array of KV CRCs */
+	struct rpc_struct_kv_store_crc crcs[];
 } __packed;
 
 /* Scan for WiFi networks */

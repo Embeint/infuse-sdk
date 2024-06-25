@@ -1,0 +1,65 @@
+/**
+ * @file
+ * @copyright 2024 Embeint Inc
+ * @author Jordan Yates <jordan@embeint.com>
+ *
+ * SPDX-License-Identifier: LicenseRef-Embeint
+ */
+
+#include <zephyr/net/buf.h>
+#include <zephyr/logging/log.h>
+
+#include <infuse/rpc/types.h>
+#include <infuse/fs/kv_store.h>
+#include <infuse/fs/kv_types.h>
+
+#include "../server.h"
+#include "../../fs/kv_store/kv_internal.h"
+
+LOG_MODULE_DECLARE(rpc_server);
+
+struct net_buf *rpc_command_kv_reflect_crcs(struct net_buf *request)
+{
+	struct rpc_kv_reflect_crcs_request *req = (void *)request->data;
+	struct rpc_kv_reflect_crcs_response *rp, rsp = {.num = 0, .remaining = KV_REFLECT_NUM};
+	struct net_buf *response;
+	struct key_value_slot_definition *defs;
+	uint16_t idx = 0;
+	size_t num;
+
+	/* Allocate response object */
+	response = rpc_response_simple_req(request, 0, &rsp, sizeof(rsp));
+	rp = (void *)response->data;
+
+	/* Iterate over slot definitions */
+	defs = kv_internal_slot_definitions(&num);
+	for (int i = 0; i < num; i++) {
+		/* Ignore slots without the reflect flag */
+		if (!(defs[i].flags & KV_FLAGS_REFLECT)) {
+			continue;
+		}
+		/* Iterate over every key in slot */
+		for (int j = 0; j < defs[i].range; j++) {
+			/* Skip first N keys */
+			if (idx < req->offset) {
+				rp->remaining--;
+				idx++;
+				continue;
+			}
+			/* Populate data */
+			rp->crcs[rp->num].id = defs[i].key + j;
+			rp->crcs[rp->num].crc = kv_reflect_key_crc(idx);
+			rp->remaining--;
+			rp->num++;
+			idx++;
+
+			net_buf_add(response, sizeof(rp->crcs[0]));
+			if (net_buf_tailroom(response) < sizeof(rp->crcs[0])) {
+				/* No space left for more CRCs */
+				goto loop_terminate;
+			}
+		}
+	}
+loop_terminate:
+	return response;
+}

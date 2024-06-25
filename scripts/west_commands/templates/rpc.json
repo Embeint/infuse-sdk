@@ -17,6 +17,13 @@
                 {"name": "data", "type": "uint8_t", "num": 0}
             ]
         },
+        "rpc_struct_kv_store_crc": {
+            "description": "KV store data CRC",
+            "fields": [
+                {"name": "id", "type": "uint16_t"},
+                {"name": "crc", "type": "int32_t"}
+            ]
+        },
         "rpc_struct_ipv4_address": {
             "description": "IPv4 address",
             "fields": [
@@ -166,6 +173,21 @@
             ],
             "response_params": [
                 {"name": "values", "type": "struct rpc_struct_kv_store_value", "num": 0, "description": "Array of KV values"}
+            ]
+        },
+        "7": {
+            "name": "kv_reflect_crcs",
+            "description": "Read KV store CRC's",
+            "depends_on": "KV_STORE",
+            "default": "y if INFUSE_SDK",
+            "default_auth": "EPACKET_AUTH_DEVICE",
+            "request_params": [
+                {"name": "offset", "type": "uint16_t", "description": "Number of CRCs to skip in response"}
+            ],
+            "response_params": [
+                {"name": "num", "type": "uint16_t", "description": "Number of CRCs in crcs array"},
+                {"name": "remaining", "type": "uint16_t", "description": "Number of CRCs that did not fit in this response"},
+                {"name": "crcs", "type": "struct rpc_struct_kv_store_crc", "num": 0, "description": "Array of KV CRCs"}
             ]
         },
         "10": {
