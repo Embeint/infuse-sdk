@@ -29,6 +29,7 @@ uint64_t infuse_device_id(void)
 ZTEST(epacket_udp, test_metadata)
 {
 	struct epacket_rx_metadata *meta;
+	enum epacket_auth iter_auth;
 	struct net_buf *tx, *rx;
 	uint16_t seqs[8];
 	uint8_t *p;
@@ -38,11 +39,13 @@ ZTEST(epacket_udp, test_metadata)
 	zassert_not_null(rx);
 
 	for (int i = 0; i < ARRAY_SIZE(seqs); i++) {
+		iter_auth = i % 2 ? EPACKET_AUTH_DEVICE : EPACKET_AUTH_NETWORK;
+
 		/* Construct buffer */
 		tx = epacket_alloc_tx(K_NO_WAIT);
 		zassert_not_null(tx);
 		net_buf_reserve(tx, sizeof(struct epacket_udp_frame));
-		epacket_set_tx_metadata(tx, EPACKET_AUTH_DEVICE, i, 0x10 + i);
+		epacket_set_tx_metadata(tx, iter_auth, i, 0x10 + i);
 		p = net_buf_add(tx, 60);
 		sys_rand_get(p, 60);
 
@@ -59,9 +62,13 @@ ZTEST(epacket_udp, test_metadata)
 		rc = epacket_udp_decrypt(rx);
 		zassert_equal(0, rc);
 		meta = net_buf_user_data(rx);
-		zassert_equal(EPACKET_AUTH_DEVICE, meta->auth);
+		zassert_equal(iter_auth, meta->auth);
 		zassert_equal(0x10 + i, meta->type);
-		zassert_equal(EPACKET_FLAGS_ENCRYPTION_DEVICE | i, meta->flags);
+		if (iter_auth == EPACKET_AUTH_DEVICE) {
+			zassert_equal(EPACKET_FLAGS_ENCRYPTION_DEVICE | i, meta->flags);
+		} else {
+			zassert_equal(EPACKET_FLAGS_ENCRYPTION_NETWORK | i, meta->flags);
+		}
 		seqs[i] = meta->sequence;
 
 		if (i > 0) {
