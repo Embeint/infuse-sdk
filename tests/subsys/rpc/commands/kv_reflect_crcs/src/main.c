@@ -18,7 +18,8 @@
 #include <infuse/epacket/packet.h>
 #include <infuse/epacket/interface/epacket_dummy.h>
 
-#include "../../../fs/kv_store/kv_internal.h"
+/* From kv_internal.h */
+uint32_t kv_reflect_key_crc(size_t reflect_idx);
 
 static void send_kv_reflect_crcs_command(uint32_t request_id, uint8_t offset)
 {
