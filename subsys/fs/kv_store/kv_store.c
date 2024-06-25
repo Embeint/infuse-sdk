@@ -50,44 +50,59 @@ void kv_store_register_callback(struct kv_store_cb *cb)
 	sys_slist_append(&cb_list, &cb->node);
 }
 
-bool kv_store_key_enabled(uint16_t key)
+bool kv_store_key_metadata(uint16_t key, uint8_t *flags, size_t *reflect_idx)
 {
 	struct key_value_slot_definition *defs;
+	size_t idx = 0;
 	size_t num;
 
 	defs = kv_internal_slot_definitions(&num);
 	for (size_t i = 0; i < num; i++) {
 		if (IN_RANGE(key, defs[i].key, defs[i].key + defs[i].range - 1)) {
+			if (flags != NULL) {
+				*flags = defs[i].flags;
+			}
+			if (reflect_idx != NULL) {
+				if (defs[i].flags & KV_FLAGS_REFLECT) {
+					*reflect_idx = idx + (key - defs[i].key);
+				} else {
+					*reflect_idx = SIZE_MAX;
+				}
+			}
 			return true;
+		}
+		if (defs[i].flags & KV_FLAGS_REFLECT) {
+			idx += defs[i].range;
 		}
 	}
 	return false;
 }
 
-static int key_has_flag(uint16_t key, uint8_t flag)
+bool kv_store_key_enabled(uint16_t key)
 {
-	struct key_value_slot_definition *defs;
-	size_t num;
-
-	defs = kv_internal_slot_definitions(&num);
-	for (size_t i = 0; i < num; i++) {
-		if (IN_RANGE(key, defs[i].key, defs[i].key + defs[i].range - 1)) {
-			/* If flag is set, operation not permitted */
-			return defs[i].flags & flag ? -EPERM : 0;
-		}
-	}
-	/* Key not enabled */
-	return -EACCES;
+	return kv_store_key_metadata(key, NULL, NULL);
 }
 
 int kv_store_external_write_only(uint16_t key)
 {
-	return key_has_flag(key, KV_FLAGS_WRITE_ONLY);
+	uint8_t flags;
+
+	if (!kv_store_key_metadata(key, &flags, NULL)) {
+		return -EACCES;
+	}
+	/* If flag is set, operation not permitted */
+	return flags & KV_FLAGS_WRITE_ONLY ? -EPERM : 0;
 }
 
 int kv_store_external_read_only(uint16_t key)
 {
-	return key_has_flag(key, KV_FLAGS_READ_ONLY);
+	uint8_t flags;
+
+	if (!kv_store_key_metadata(key, &flags, NULL)) {
+		return -EACCES;
+	}
+	/* If flag is set, operation not permitted */
+	return flags & KV_FLAGS_READ_ONLY ? -EPERM : 0;
 }
 
 ssize_t kv_store_delete(uint16_t key)

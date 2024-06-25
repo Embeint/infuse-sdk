@@ -38,6 +38,23 @@ struct key_value_slot_definition {
  */
 struct key_value_slot_definition *kv_internal_slot_definitions(size_t *num);
 
+/**
+ * @brief Retrieve key metadata
+ *
+ * @param key Key to query
+ * @param flags Flags associated with key, if key is valid, can be NULL
+ * @param reflect_idx Key reflection index, SIZE_MAX if reflection disabled, can be NULL
+ *
+ * @return true Key is valid to use
+ * @return false Key is invalid
+ */
+bool kv_store_key_metadata(uint16_t key, uint8_t *flags, size_t *reflect_idx);
+
+/**
+ * @brief Initialise KV reflection
+ */
+void kv_reflect_init(void);
+
 #ifdef __cplusplus
 }
 #endif
