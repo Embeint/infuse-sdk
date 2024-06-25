@@ -73,6 +73,18 @@ config INFUSE_RPC_COMMAND_KV_READ_REQUIRED_AUTH
 	depends on INFUSE_RPC_COMMAND_KV_READ
 	default 2
 
+config INFUSE_RPC_COMMAND_KV_REFLECT_CRCS
+	bool "Enable RPC kv_reflect_crcs"
+	depends on KV_STORE
+	default y if INFUSE_SDK
+	help
+	  Read KV store CRC's
+
+config INFUSE_RPC_COMMAND_KV_REFLECT_CRCS_REQUIRED_AUTH
+	int "Required authorisation level to run kv_reflect_crcs"
+	depends on INFUSE_RPC_COMMAND_KV_REFLECT_CRCS
+	default 2
+
 config INFUSE_RPC_COMMAND_WIFI_SCAN
 	bool "Enable RPC wifi_scan"
 	depends on WIFI

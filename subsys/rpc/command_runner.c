@@ -87,6 +87,13 @@ void rpc_command_runner(struct net_buf *request)
 		}
 		break;
 #endif /* CONFIG_INFUSE_RPC_COMMAND_KV_READ */
+#ifdef CONFIG_INFUSE_RPC_COMMAND_KV_REFLECT_CRCS
+	case RPC_ID_KV_REFLECT_CRCS:
+		if (AUTHORISED(auth, KV_REFLECT_CRCS)) { /* GCOVR_EXCL_BR_LINE */
+			response = rpc_command_kv_reflect_crcs(request);
+		}
+		break;
+#endif /* CONFIG_INFUSE_RPC_COMMAND_KV_REFLECT_CRCS */
 #ifdef CONFIG_INFUSE_RPC_COMMAND_WIFI_SCAN
 	case RPC_ID_WIFI_SCAN:
 		if (AUTHORISED(auth, WIFI_SCAN)) { /* GCOVR_EXCL_BR_LINE */
