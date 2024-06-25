@@ -39,6 +39,16 @@ settings = {
         "editor.tabSize": 8,
         "editor.indentSize": "tabSize",
     },
+    "[dts]": {
+        "editor.insertSpaces": False,
+        "editor.tabSize": 8,
+        "editor.indentSize": "tabSize",
+    },
+    "[kconfig]": {
+        "editor.insertSpaces": False,
+        "editor.tabSize": 4,
+        "editor.indentSize": "tabSize",
+    },
     "[jinja]": {"editor.formatOnSave": False},
     "[python]": {"editor.defaultFormatter": "ms-python.black-formatter"},
 }
