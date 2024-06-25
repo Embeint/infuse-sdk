@@ -358,6 +358,106 @@ ZTEST(kv_store, test_kv_reflect_slots)
 	}
 	zassert_not_equal(0, expected);
 	zassert_equal(expected, KV_REFLECT_NUM);
+
+	/* All slots should start at 0x00 */
+	for (int i = i < KV_REFLECT_NUM; i++) {
+		zassert_equal(0x00, kv_reflect_key_crc(i));
+	}
+}
+
+ZTEST(kv_store, test_kv_reflect_crc)
+{
+	KV_KEY_TYPE(KV_KEY_REBOOTS) reboots = {.count = 42};
+	KV_KEY_TYPE_VAR(KV_KEY_WIFI_PSK, 16) psk_read;
+	KV_STRING_CONST(psk, "psk_string");
+	KV_STRING_CONST(psk2, "psk_string_2");
+	uint32_t reflect_crc, prev_crc, initial_crc;
+
+	/* Initial value */
+	reflect_crc = kv_store_reflect_crc();
+	initial_crc = reflect_crc;
+	zassert_not_equal(0x00, reflect_crc);
+
+	/* Write to key that is not reflected */
+	prev_crc = reflect_crc;
+	zassert_equal(sizeof(reboots), KV_STORE_WRITE(KV_KEY_REBOOTS, &reboots));
+	reflect_crc = kv_store_reflect_crc();
+	zassert_equal(prev_crc, reflect_crc);
+
+	/* Write to key that is reflected */
+	prev_crc = reflect_crc;
+	zassert_equal(sizeof(psk), KV_STORE_WRITE(KV_KEY_WIFI_PSK, &psk));
+	reflect_crc = kv_store_reflect_crc();
+	zassert_not_equal(prev_crc, reflect_crc);
+
+	/* Writing the same value again shouldn't change the CRC */
+	prev_crc = reflect_crc;
+	zassert_equal(0, KV_STORE_WRITE(KV_KEY_WIFI_PSK, &psk));
+	reflect_crc = kv_store_reflect_crc();
+	zassert_equal(prev_crc, reflect_crc);
+
+	/* Changing the value should change the CRC */
+	prev_crc = reflect_crc;
+	zassert_equal(sizeof(psk2), KV_STORE_WRITE(KV_KEY_WIFI_PSK, &psk2));
+	reflect_crc = kv_store_reflect_crc();
+	zassert_not_equal(prev_crc, reflect_crc);
+
+	/* Delete key that is reflected */
+	prev_crc = reflect_crc;
+	zassert_equal(0, kv_store_delete(KV_KEY_WIFI_PSK));
+	reflect_crc = kv_store_reflect_crc();
+	zassert_not_equal(prev_crc, reflect_crc);
+	/* Should revert back to the initial CRC */
+	zassert_equal(initial_crc, reflect_crc);
+
+	/* Indirect write to key that is reflected */
+	prev_crc = reflect_crc;
+	KV_STORE_READ_FALLBACK(KV_KEY_WIFI_PSK, &psk_read, &psk);
+	reflect_crc = kv_store_reflect_crc();
+	zassert_not_equal(prev_crc, reflect_crc);
+
+	/* Reset back */
+	prev_crc = reflect_crc;
+	zassert_equal(0, kv_store_delete(KV_KEY_WIFI_PSK));
+	reflect_crc = kv_store_reflect_crc();
+	zassert_not_equal(prev_crc, reflect_crc);
+	/* Should revert back to the initial CRC */
+	zassert_equal(initial_crc, reflect_crc);
+}
+
+ZTEST(kv_store, test_kv_reflect_order_invariant)
+{
+	KV_KEY_TYPE_VAR(KV_KEY_GEOFENCE, 2) geofence1 = {2, {{1, 2, 3}, {4, 5, 6}}};
+	KV_KEY_TYPE_VAR(KV_KEY_GEOFENCE, 2) geofence2 = {2, {{7, 8, 9}, {1, 2, 3}}};
+	KV_KEY_TYPE_VAR(KV_KEY_GEOFENCE, 2) geofence3 = {2, {{4, 5, 6}, {9, 8, 7}}};
+	uint32_t initial_crc, final_crc;
+
+	/* Initial value */
+	initial_crc = kv_store_reflect_crc();
+	zassert_not_equal(0x00, initial_crc);
+
+	/* Write values in one order */
+	zassert_equal(sizeof(geofence1), KV_STORE_WRITE(KV_KEY_GEOFENCE + 0, &geofence1));
+	zassert_equal(sizeof(geofence2), KV_STORE_WRITE(KV_KEY_GEOFENCE + 1, &geofence2));
+	zassert_equal(sizeof(geofence3), KV_STORE_WRITE(KV_KEY_GEOFENCE + 2, &geofence3));
+	final_crc = kv_store_reflect_crc();
+	zassert_not_equal(initial_crc, final_crc);
+
+	/* Erase values */
+	zassert_equal(0, kv_store_delete(KV_KEY_GEOFENCE + 0));
+	zassert_equal(0, kv_store_delete(KV_KEY_GEOFENCE + 1));
+	zassert_equal(0, kv_store_delete(KV_KEY_GEOFENCE + 2));
+	zassert_equal(initial_crc, kv_store_reflect_crc());
+
+	/* Write values in a different order, CRC should be the same */
+	zassert_equal(sizeof(geofence3), KV_STORE_WRITE(KV_KEY_GEOFENCE + 2, &geofence3));
+	zassert_equal(sizeof(geofence2), KV_STORE_WRITE(KV_KEY_GEOFENCE + 1, &geofence2));
+	zassert_equal(sizeof(geofence1), KV_STORE_WRITE(KV_KEY_GEOFENCE + 0, &geofence1));
+	zassert_equal(final_crc, kv_store_reflect_crc());
+
+	/* Erase through resetting the store */
+	zassert_equal(0, kv_store_reset());
+	zassert_equal(initial_crc, kv_store_reflect_crc());
 }
 
 static void *kv_setup(void)

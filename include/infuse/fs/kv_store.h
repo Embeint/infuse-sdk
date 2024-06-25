@@ -72,6 +72,16 @@ int kv_store_reset(void);
 void kv_store_register_callback(struct kv_store_cb *cb);
 
 /**
+ * @brief Get the current KV store reflect CRC
+ *
+ * While this value does not change value, there have been no changes
+ * to any KV data that need to be actioned by the cloud.
+ *
+ * @return uint32_t Current global CRC over KV store data
+ */
+uint32_t kv_store_reflect_crc(void);
+
+/**
  * @brief Check whether a given key is valid for reading/writing
  *
  * @param key Key to check

@@ -39,6 +39,8 @@ int kv_store_reset(void)
 	rc = nvs_clear(&fs);
 	if (rc == 0) {
 		rc = nvs_mount(&fs);
+		/* Reset the KV store reflection state */
+		kv_reflect_init();
 	} else {
 		LOG_WRN("Failed to reset KV store (%d)", rc);
 	}
@@ -108,10 +110,11 @@ int kv_store_external_read_only(uint16_t key)
 ssize_t kv_store_delete(uint16_t key)
 {
 	struct kv_store_cb *cb;
+	size_t reflect_idx;
 	ssize_t rc;
 
 	/* Validate key is enabled */
-	if (!kv_store_key_enabled(key)) {
+	if (!kv_store_key_metadata(key, NULL, &reflect_idx)) {
 		return -EACCES;
 	}
 	LOG_DBG("Erasing %04x", key);
@@ -124,6 +127,10 @@ ssize_t kv_store_delete(uint16_t key)
 	/* Delete from NVS */
 	rc = nvs_delete(&fs, key);
 	if (rc == 0) {
+		/* Update reflection state */
+		if (reflect_idx != SIZE_MAX) {
+			kv_reflect_key_updated(reflect_idx, NULL, 0);
+		}
 		/* Notify interested parties of value deletion */
 		SYS_SLIST_FOR_EACH_CONTAINER(&cb_list, cb, node) {
 			if (cb->value_changed) {
@@ -137,10 +144,11 @@ ssize_t kv_store_delete(uint16_t key)
 ssize_t kv_store_write(uint16_t key, const void *data, size_t data_len)
 {
 	struct kv_store_cb *cb;
+	size_t reflect_idx;
 	ssize_t rc;
 
 	/* Validate key is enabled */
-	if (!kv_store_key_enabled(key)) {
+	if (!kv_store_key_metadata(key, NULL, &reflect_idx)) {
 		return -EACCES;
 	}
 	LOG_DBG("Writing to %04x", key);
@@ -148,6 +156,10 @@ ssize_t kv_store_write(uint16_t key, const void *data, size_t data_len)
 	/* Write to NVS */
 	rc = nvs_write(&fs, key, data, data_len);
 	if (rc > 0) {
+		/* Update reflection state */
+		if (reflect_idx != SIZE_MAX) {
+			kv_reflect_key_updated(reflect_idx, data, data_len);
+		}
 		/* Notify interested parties of value changes */
 		SYS_SLIST_FOR_EACH_CONTAINER(&cb_list, cb, node) {
 			if (cb->value_changed) {
@@ -174,10 +186,11 @@ ssize_t kv_store_read_fallback(uint16_t key, void *data, size_t max_data_len, co
 			       size_t fallback_len)
 {
 	struct kv_store_cb *cb;
+	size_t reflect_idx;
 	ssize_t rc;
 
 	/* Validate key is enabled */
-	if (!kv_store_key_enabled(key)) {
+	if (!kv_store_key_metadata(key, NULL, &reflect_idx)) {
 		return -EACCES;
 	}
 	LOG_DBG("Read from %04x", key);
@@ -189,6 +202,10 @@ ssize_t kv_store_read_fallback(uint16_t key, void *data, size_t max_data_len, co
 		/* Key doesn't exist, write fallback data */
 		rc = nvs_write(&fs, key, fallback, fallback_len);
 		if (rc == fallback_len) {
+			/* Update reflection state */
+			if (reflect_idx != SIZE_MAX) {
+				kv_reflect_key_updated(reflect_idx, fallback, fallback_len);
+			}
 			/* Notify interested parties of value write */
 			SYS_SLIST_FOR_EACH_CONTAINER(&cb_list, cb, node) {
 				if (cb->value_changed) {
@@ -229,6 +246,10 @@ int kv_store_init(void)
 		flash_area_close(area);
 		/* Try mounting again */
 		rc = nvs_mount(&fs);
+	}
+
+	if (rc == 0) {
+		kv_reflect_init();
 	}
 	return rc;
 }
