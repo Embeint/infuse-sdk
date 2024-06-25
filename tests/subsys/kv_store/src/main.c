@@ -360,7 +360,7 @@ ZTEST(kv_store, test_kv_reflect_slots)
 	zassert_equal(expected, KV_REFLECT_NUM);
 
 	/* All slots should start at 0x00 */
-	for (int i = i < KV_REFLECT_NUM; i++) {
+	for (int i = 0; i < KV_REFLECT_NUM; i++) {
 		zassert_equal(0x00, kv_reflect_key_crc(i));
 	}
 }
@@ -393,8 +393,11 @@ ZTEST(kv_store, test_kv_reflect_crc)
 	/* Writing the same value again shouldn't change the CRC */
 	prev_crc = reflect_crc;
 	zassert_equal(0, KV_STORE_WRITE(KV_KEY_WIFI_PSK, &psk));
-	reflect_crc = kv_store_reflect_crc();
-	zassert_equal(prev_crc, reflect_crc);
+	zassert_equal(prev_crc, kv_store_reflect_crc());
+
+	/* Re-inialising the KV store shouldn't change the CRC */
+	zassert_equal(0, kv_store_init());
+	zassert_equal(prev_crc, kv_store_reflect_crc());
 
 	/* Changing the value should change the CRC */
 	prev_crc = reflect_crc;
