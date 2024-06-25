@@ -114,6 +114,44 @@ ZTEST(kv_store, test_key_read_only)
 	}
 }
 
+ZTEST(kv_store, test_metadata_reflect_idx)
+{
+	size_t idx;
+	/* Exhaustive check over every key */
+	for (int i = 0; i <= UINT16_MAX; i++) {
+		kv_store_key_metadata(i, NULL, &idx);
+
+		switch (i) {
+		case KV_KEY_REBOOTS:
+			zassert_equal(SIZE_MAX, idx);
+			break;
+		case KV_KEY_WIFI_PSK:
+			zassert_equal(0, idx);
+			break;
+		case KV_KEY_LTE_SIM_UICC:
+			zassert_equal(1, idx);
+			break;
+		case KV_KEY_GEOFENCE + 0:
+			zassert_equal(2, idx);
+			break;
+		case KV_KEY_GEOFENCE + 1:
+			zassert_equal(3, idx);
+			break;
+		case KV_KEY_GEOFENCE + 2:
+			zassert_equal(4, idx);
+			break;
+		case KV_KEY_GEOFENCE + 3:
+			zassert_equal(5, idx);
+			break;
+		case KV_KEY_GEOFENCE + 4:
+			zassert_equal(6, idx);
+			break;
+		default:
+			break;
+		}
+	}
+}
+
 ZTEST(kv_store, test_disabled_key)
 {
 	struct kv_fixed_location location, fallback;
