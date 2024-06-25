@@ -1,0 +1,8 @@
+# Modem monitor configuration
+
+config INFUSE_NRF_MODEM_MONITOR
+	bool "Infuse-IoT integration with Nordic LTE modem"
+	depends on NRF_MODEM_LIB
+	depends on LTE_LINK_CONTROL
+	depends on KV_STORE
+	default y

@@ -44,3 +44,4 @@ source "subsys/logging/Kconfig.template.log_config"
 endif # INFUSE_COMMON_BOOT
 
 rsource "crypto/Kconfig"
+rsource "nrf_modem_lib/Kconfig"
