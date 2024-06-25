@@ -55,6 +55,24 @@ bool kv_store_key_metadata(uint16_t key, uint8_t *flags, size_t *reflect_idx);
  */
 void kv_reflect_init(void);
 
+/**
+ * @brief Update reflection storage with new data
+ *
+ * @param reflect_idx Index from @ref kv_store_key_metadata
+ * @param data Pointer to updated data, NULL on deletion
+ * @param len Length of updated data, 0 on deletion
+ */
+void kv_reflect_key_updated(size_t reflect_idx, const void *data, size_t len);
+
+/**
+ * @brief CRC value associated with a given reflection index
+ *
+ * @param reflect_idx Index from @ref kv_store_key_metadata
+ *
+ * @retval uint32_t CRC of data in index
+ */
+uint32_t kv_reflect_key_crc(size_t reflect_idx);
+
 #ifdef __cplusplus
 }
 #endif
