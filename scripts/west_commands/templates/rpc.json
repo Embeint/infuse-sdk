@@ -230,7 +230,7 @@
         "21": {
             "name": "lte_state",
             "description": "Get current LTE interface state",
-            "depends_on": "NRF_MODEM_LIB",
+            "depends_on": "INFUSE_NRF_MODEM_MONITOR",
             "default": "y if INFUSE_SDK",
             "default_auth": "EPACKET_AUTH_DEVICE",
             "request_params": [],

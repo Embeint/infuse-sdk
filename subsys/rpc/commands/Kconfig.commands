@@ -123,7 +123,7 @@ config INFUSE_RPC_COMMAND_LTE_AT_CMD_REQUIRED_AUTH
 
 config INFUSE_RPC_COMMAND_LTE_STATE
 	bool "Enable RPC lte_state"
-	depends on NRF_MODEM_LIB
+	depends on INFUSE_NRF_MODEM_MONITOR
 	default y if INFUSE_SDK
 	help
 	  Get current LTE interface state
