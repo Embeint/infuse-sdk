@@ -21,6 +21,7 @@ static void null_dereference(void)
 
 ZTEST(common_boot, test_boot)
 {
+	KV_KEY_TYPE(KV_KEY_LTE_SIM_UICC) sim_uicc = {89, 1000};
 	KV_KEY_TYPE(KV_KEY_REBOOTS) reboots;
 	uint64_t time_2020 = civil_time_from_gps(2086, 259218, 0);
 	uint64_t time_2025 = civil_time_from_gps(2347, 259218, 0);
@@ -34,6 +35,8 @@ ZTEST(common_boot, test_boot)
 
 	switch (reboots.count) {
 	case 1:
+		/* Set SIM value */
+		zassert_equal(sizeof(sim_uicc), KV_STORE_WRITE(KV_KEY_LTE_SIM_UICC, &sim_uicc));
 		/* No reboot information yet */
 		rc = infuse_common_boot_last_reboot(&reboot_state);
 		zassert_equal(-ENOENT, rc);
