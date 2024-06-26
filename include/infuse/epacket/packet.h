@@ -112,6 +112,8 @@ static inline struct net_buf *epacket_alloc_tx_for_interface(const struct device
 	}
 	/* Reserve space for header */
 	net_buf_reserve(buf, config->header_size);
+	/* Limit size based on interface */
+	buf->size = epacket_interface_max_packet_size(dev);
 	/* Hacky reservation for footer, automatically reversed by epacket_queue */
 	buf->size -= config->footer_size;
 	return buf;
