@@ -81,6 +81,14 @@ struct epacket_interface_api {
 	 * @param buf Packet to send
 	 */
 	void (*send)(const struct device *dev, struct net_buf *buf);
+	/**
+	 * @brief Get current maximum packet size
+	 *
+	 * If not defined, @a max_packet_size from @ref epacket_interface_common_config is used
+	 *
+	 * @param dev Interface device
+	 */
+	uint16_t (*max_packet_size)(const struct device *dev);
 };
 
 /**
@@ -110,6 +118,25 @@ struct epacket_interface_common_config {
  * @param buf Packet to send
  */
 void epacket_queue(const struct device *dev, struct net_buf *buf);
+
+/**
+ * @brief Get current maximum packet size
+ *
+ * @param dev Interface to query
+ *
+ * @retval size Maximum packet size (ignoring headers and footers)
+ */
+static inline uint16_t epacket_interface_max_packet_size(const struct device *dev)
+{
+	const struct epacket_interface_common_config *cfg = dev->config;
+	const struct epacket_interface_api *api = dev->api;
+
+	if (api->max_packet_size) {
+		return api->max_packet_size(dev);
+	} else {
+		return cfg->max_packet_size;
+	}
+}
 
 /**
  * @brief Set the ePacket receive handler for an interface
