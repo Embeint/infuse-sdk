@@ -62,4 +62,27 @@ ZTEST(epacket_dummy, test_send_queue)
 	zassert_is_null(net_buf_get(sent_queue, K_NO_WAIT));
 }
 
+ZTEST(epacket_dummy, test_packet_size)
+{
+	const struct device *epacket_dummy = DEVICE_DT_GET(DT_NODELABEL(epacket_dummy));
+	struct net_buf *tx;
+
+	/* Default sizes */
+	tx = epacket_alloc_tx_for_interface(epacket_dummy, K_NO_WAIT);
+	zassert_equal(tx->size, CONFIG_EPACKET_PACKET_SIZE_MAX);
+	net_buf_unref(tx);
+
+	/* Override sizes */
+	epacket_dummy_set_max_packet(100);
+	tx = epacket_alloc_tx_for_interface(epacket_dummy, K_NO_WAIT);
+	zassert_equal(tx->size, 100);
+	net_buf_unref(tx);
+
+	/* Reset to default */
+	epacket_dummy_set_max_packet(UINT16_MAX);
+	tx = epacket_alloc_tx_for_interface(epacket_dummy, K_NO_WAIT);
+	zassert_equal(tx->size, CONFIG_EPACKET_PACKET_SIZE_MAX);
+	net_buf_unref(tx);
+}
+
 ZTEST_SUITE(epacket_dummy, NULL, NULL, NULL, NULL, NULL);

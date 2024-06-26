@@ -55,6 +55,13 @@ struct k_fifo *epacket_dummmy_transmit_fifo_get(void);
 void epacket_dummy_set_tx_failure(int error_code);
 
 /**
+ * @brief Set the maximum packet size for the interface
+ *
+ * @param packet_size New maximum packet size
+ */
+void epacket_dummy_set_max_packet(uint16_t packet_size);
+
+/**
  * @brief Simulate the dummy interface receiving a packet
  *
  * @param dev Dummy interface
