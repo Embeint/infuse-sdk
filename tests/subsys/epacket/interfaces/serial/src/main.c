@@ -251,6 +251,7 @@ ZTEST(epacket_serial, test_encrypt_decrypt)
 
 	/* Encrypt original buffer */
 	encr_buf = net_buf_clone(orig_buf, K_NO_WAIT);
+	memcpy(encr_buf->user_data, orig_buf->user_data, encr_buf->user_data_size);
 	zassert_not_null(encr_buf);
 	rc = epacket_serial_encrypt(encr_buf);
 	zassert_equal(0, rc);
