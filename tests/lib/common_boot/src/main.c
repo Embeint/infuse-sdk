@@ -21,7 +21,7 @@ static void null_dereference(void)
 
 ZTEST(common_boot, test_boot)
 {
-	KV_KEY_TYPE(KV_KEY_LTE_SIM_UICC) sim_uicc = {89, 1000};
+	KV_STRING_CONST(sim_uicc, "89000000000012345");
 	KV_KEY_TYPE(KV_KEY_REBOOTS) reboots;
 	uint64_t time_2020 = civil_time_from_gps(2086, 259218, 0);
 	uint64_t time_2025 = civil_time_from_gps(2347, 259218, 0);

@@ -37,16 +37,15 @@ static void network_info_update(void)
 	int rc;
 
 	if (!sim_card_queried) {
-		KV_KEY_TYPE(KV_KEY_LTE_SIM_UICC) sim_uicc;
-		uint64_t uicc;
+		KV_STRUCT_KV_STRING_VAR(24) sim_uicc;
 
-		rc = nrf_modem_at_scanf("AT%XICCID", "%%XICCID: 89%" SCNu64, &uicc);
+		rc = nrf_modem_at_scanf("AT%XICCID", "%%XICCID: %24s", &sim_uicc.value);
 		if (rc == 1) {
-			sim_uicc.industry = 89;
-			sim_uicc.uicc = uicc;
-			if (KV_STORE_WRITE(KV_KEY_LTE_SIM_UICC, &sim_uicc) > 0) {
+			sim_uicc.value_num = strlen(sim_uicc.value) + 1;
+			if (kv_store_write(KV_KEY_LTE_SIM_UICC, &sim_uicc, 1 + sim_uicc.value_num) >
+			    0) {
 				/* Print value when first saved to KV store */
-				LOG_INF("SIM: 89%llu", sim_uicc.uicc);
+				LOG_INF("SIM: %s", sim_uicc.value);
 			}
 			sim_card_queried = true;
 		}

@@ -180,11 +180,17 @@ struct kv_lte_modem_imei {
 
 /* SIM Universal Identifier (https://www.itu.int/en/ITU-T/inr/forms/Pages/iin.aspx) */
 struct kv_lte_sim_uicc {
-	/* Type Code (89 for SIM) */
-	uint8_t industry;
-	/* Remainder of UICC */
-	uint64_t uicc;
+	/* Variable length UICC string */
+	struct kv_string uicc;
 } __packed;
+
+/* clang-format off */
+/* Compile time definition for known array length */
+#define _KV_KEY_LTE_SIM_UICC_VAR(num) \
+	struct { \
+		KV_STRUCT_KV_STRING_VAR(num) uicc; \
+	} __packed
+/* clang-format on */
 
 /* Array of points defining a closed polygon */
 struct kv_geofence {
@@ -271,7 +277,6 @@ enum kv_builtin_size {
 	_KV_KEY_FIXED_LOCATION_SIZE = sizeof(struct kv_fixed_location),
 	_KV_KEY_EPACKET_UDP_PORT_SIZE = sizeof(struct kv_epacket_udp_port),
 	_KV_KEY_LTE_MODEM_IMEI_SIZE = sizeof(struct kv_lte_modem_imei),
-	_KV_KEY_LTE_SIM_UICC_SIZE = sizeof(struct kv_lte_sim_uicc),
 };
 
 /* clang-format off */
