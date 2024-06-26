@@ -82,6 +82,9 @@ choice RNG_GENERATOR_CHOICE
 endchoice
 
 # Trusted-Firmware M
+configdefault TFM_MCUBOOT_IMAGE_NUMBER
+	# A single image reduces upgrade complexity
+	default 1
 configdefault TFM_DEVICETREE_LAYOUT
 	# Only a subset of boards currently support this
 	default y if BOARD_THINGY53_NRF5340_CPUAPP_NS
