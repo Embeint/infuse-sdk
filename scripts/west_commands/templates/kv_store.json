@@ -136,8 +136,7 @@
             "read_only": true,
             "default": "y if NRF_MODEM_LIB",
             "fields": [
-                {"name": "industry", "type": "uint8_t", "description": "Type Code (89 for SIM)"},
-                {"name": "uicc", "type": "uint64_t", "description": "Remainder of UICC"}
+                {"name": "uicc", "type": "struct kv_string", "description": "Variable length UICC string"}
             ]
         },
         {
