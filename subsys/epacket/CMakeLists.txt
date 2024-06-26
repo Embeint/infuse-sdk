@@ -2,8 +2,11 @@
 
 zephyr_library_named(epacket)
 
-zephyr_library_sources(epacket.c handlers.c interfaces/epacket_common_crypt.c)
-zephyr_library_sources_ifdef(CONFIG_EPACKET_CRYPTO keys.c)
+zephyr_library_sources(epacket.c handlers.c)
+zephyr_library_sources_ifdef(CONFIG_EPACKET_CRYPTO
+  keys.c
+  interfaces/epacket_common_crypt.c
+)
 
 zephyr_library_sources_ifdef(CONFIG_EPACKET_INTERFACE_UDP interfaces/epacket_udp.c)
 zephyr_library_sources_ifdef(CONFIG_EPACKET_INTERFACE_UDP interfaces/epacket_udp_crypt.c)
@@ -12,6 +15,7 @@ zephyr_library_sources_ifdef(CONFIG_EPACKET_INTERFACE_SERIAL interfaces/epacket_
 zephyr_library_sources_ifdef(CONFIG_EPACKET_INTERFACE_DUMMY interfaces/epacket_dummy.c)
 
 if(CONFIG_EPACKET_INTERFACE_ZTEST_PACKETS)
+  zephyr_library_sources(interfaces/epacket_bt_adv_crypt.c)
   zephyr_library_sources(interfaces/epacket_udp_crypt.c)
   zephyr_library_sources(interfaces/epacket_serial_crypt.c)
 endif()

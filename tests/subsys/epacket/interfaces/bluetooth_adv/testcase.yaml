@@ -1,0 +1,12 @@
+common:
+  tags: crypto epacket
+  min_flash: 64
+  min_ram: 32
+tests:
+  epacket.interface.bluetooth_adv:
+    platform_allow:
+      - native_sim
+      - mps2_an385
+    integration_platforms:
+      - native_sim
+      - mps2_an385
