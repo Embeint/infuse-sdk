@@ -14,6 +14,8 @@
 
 #include <zephyr/toolchain.h>
 
+#include <infuse/epacket/interface/common.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -33,41 +35,7 @@ struct epacket_serial_frame_header {
 	uint16_t len;
 } __packed;
 
-/* ePacket serial data frame */
-struct epacket_serial_frame {
-	/* AEAD associated data */
-	union {
-		struct {
-			/* Frame version */
-			uint8_t version;
-			/* Payload type */
-			uint8_t type;
-			/* Payload flags */
-			uint16_t flags;
-			/* Network or device key identifier */
-			uint8_t key_identifier[3];
-			/* Infuse device ID (upper 4 bytes) */
-			uint32_t device_id_upper;
-		} __packed;
-		uint8_t raw[11];
-	} associated_data;
-	/* AEAD encryption nonce (IV) */
-	union {
-		struct {
-			/* Infuse device ID (lower 4 bytes) */
-			uint32_t device_id_lower;
-			/* Local GPS time (seconds) */
-			uint32_t gps_time;
-			/* Packet sequence number */
-			uint16_t sequence;
-			/* Random entropy */
-			uint16_t entropy;
-		} __packed;
-		uint8_t raw[12];
-	} nonce;
-	/* Ciphertext + tag bytes */
-	uint8_t ciphertext_tag[];
-} __packed;
+#define epacket_serial_frame epacket_v0_versioned_frame_format
 
 /**
  * @}
