@@ -96,7 +96,7 @@ ZTEST(epacket_udp, test_decrypt_error)
 	}
 }
 
-ZTEST(epacket_udp, test_encrypt_decrypt)
+static void test_encrypt_decrypt_auth(enum epacket_auth auth)
 {
 	struct net_buf *orig_buf, *encr_buf, *rx, *rx_copy_buf, *in;
 	struct epacket_rx_metadata *meta;
@@ -107,7 +107,7 @@ ZTEST(epacket_udp, test_encrypt_decrypt)
 	orig_buf = epacket_alloc_tx(K_NO_WAIT);
 	zassert_not_null(orig_buf);
 	net_buf_reserve(orig_buf, sizeof(struct epacket_udp_frame));
-	epacket_set_tx_metadata(orig_buf, EPACKET_AUTH_DEVICE, 0, 0x10);
+	epacket_set_tx_metadata(orig_buf, auth, 0, 0x10);
 	p = net_buf_add(orig_buf, 60);
 	sys_rand_get(p, 60);
 
@@ -149,6 +149,14 @@ ZTEST(epacket_udp, test_encrypt_decrypt)
 		net_buf_unref(rx_copy_buf);
 		net_buf_unref(in);
 	}
+	net_buf_unref(orig_buf);
+	net_buf_unref(rx);
+}
+
+ZTEST(epacket_udp, test_encrypt_decrypt)
+{
+	test_encrypt_decrypt_auth(EPACKET_AUTH_DEVICE);
+	test_encrypt_decrypt_auth(EPACKET_AUTH_NETWORK);
 }
 
 static bool security_init(const void *global_state)
