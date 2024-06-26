@@ -23,6 +23,7 @@ LOG_MODULE_REGISTER(epacket_dummy, CONFIG_EPACKET_LOG_LEVEL);
 
 static K_FIFO_DEFINE(epacket_dummy_fifo);
 static int send_error_code;
+static uint16_t max_packet_size = EPACKET_INTERFACE_MAX_PACKET(DT_DRV_INST(0));
 
 struct k_fifo *epacket_dummmy_transmit_fifo_get(void)
 {
@@ -32,6 +33,11 @@ struct k_fifo *epacket_dummmy_transmit_fifo_get(void)
 void epacket_dummy_set_tx_failure(int error_code)
 {
 	send_error_code = error_code;
+}
+
+void epacket_dummy_set_max_packet(uint16_t packet_size)
+{
+	max_packet_size = MIN(packet_size, EPACKET_INTERFACE_MAX_PACKET(DT_DRV_INST(0)));
 }
 
 void epacket_dummy_receive_extra(const struct device *dev, const struct epacket_dummy_frame *header,
@@ -75,6 +81,11 @@ static void epacket_dummy_send(const struct device *dev, struct net_buf *buf)
 	}
 }
 
+uint16_t epacket_dummy_max_packet_size(const struct device *dev)
+{
+	return max_packet_size;
+}
+
 int epacket_dummy_decrypt(struct net_buf *buf)
 {
 	if (buf->len <= sizeof(struct epacket_dummy_frame)) {
@@ -100,6 +111,7 @@ static int epacket_dummy_init(const struct device *dev)
 
 static const struct epacket_interface_api dummy_api = {
 	.send = epacket_dummy_send,
+	.max_packet_size = epacket_dummy_max_packet_size,
 };
 
 #define EPACKET_DUMMY_DEFINE(inst)                                                                 \
