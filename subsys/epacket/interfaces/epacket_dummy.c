@@ -106,6 +106,7 @@ static const struct epacket_interface_api dummy_api = {
 	BUILD_ASSERT(sizeof(struct epacket_dummy_frame) == DT_INST_PROP(inst, header_size));       \
 	static struct epacket_interface_common_data epacket_dummy_data##inst;                      \
 	static const struct epacket_interface_common_config epacket_dummy_config##inst = {         \
+		.max_packet_size = EPACKET_INTERFACE_MAX_PACKET(DT_DRV_INST(inst)),                \
 		.header_size = DT_INST_PROP(inst, header_size),                                    \
 		.footer_size = DT_INST_PROP(inst, footer_size),                                    \
 	};                                                                                         \

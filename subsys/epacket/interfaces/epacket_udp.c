@@ -264,6 +264,7 @@ static const struct epacket_interface_api udp_api = {
 BUILD_ASSERT(sizeof(struct epacket_udp_frame) == DT_INST_PROP(0, header_size));
 static struct epacket_interface_common_data epacket_udp_data;
 static const struct epacket_interface_common_config epacket_udp_config = {
+	.max_packet_size = EPACKET_INTERFACE_MAX_PACKET(DT_DRV_INST(0)),
 	.header_size = DT_INST_PROP(0, header_size),
 	.footer_size = DT_INST_PROP(0, footer_size),
 };
