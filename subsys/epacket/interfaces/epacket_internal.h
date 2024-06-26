@@ -78,6 +78,26 @@ int epacket_serial_encrypt(struct net_buf *buf);
 int epacket_serial_decrypt(struct net_buf *buf);
 
 /**
+ * @brief Encrypt Bluetooth advertising packet for transmission
+ *
+ * @param buf Packet to encrypt
+ *
+ * @retval 0 on success
+ * @retval -1 on failure
+ */
+int epacket_bt_adv_encrypt(struct net_buf *buf);
+
+/**
+ * @brief Decrypt received Bluetooth advertising packet
+ *
+ * @param buf Packet to decrypt
+ *
+ * @retval 0 on success
+ * @retval -1 on failure
+ */
+int epacket_bt_adv_decrypt(struct net_buf *buf);
+
+/**
  * @brief Encrypt UDP packet for transmission
  *
  * @param buf Packet to encrypt
