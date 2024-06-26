@@ -87,14 +87,47 @@ ZTEST(rpc_command_kv_reflect_crcs, test_kv_reflect_crcs_basic)
 	net_buf_unref(rsp);
 }
 
+ZTEST(rpc_command_kv_reflect_crcs, test_kv_reflect_crcs_overflow)
+{
+	struct rpc_kv_reflect_crcs_response *response;
+	struct net_buf *rsp;
+	size_t expect_len;
+
+	/* Limit payload size:
+	 *   4 byte dummy header
+	 *   0 byte dummy footer
+	 *   8 byte RPC response header
+	 *   4 byte Command response header
+	 *
+	 * 6 bytes per ID:CRC pair, should fit 2.
+	 */
+	epacket_dummy_set_max_packet(32);
+
+	send_kv_reflect_crcs_command(1001, 0);
+	rsp = expect_kv_reflect_crcs_response(1001, 0);
+
+	response = (void *)rsp->data;
+	zassert_equal(2, response->num);
+	zassert_equal(KV_REFLECT_NUM - 2, response->remaining);
+	expect_len = sizeof(struct rpc_kv_reflect_crcs_response) +
+		     response->num * sizeof(struct rpc_struct_kv_store_crc);
+	zassert_equal(expect_len, rsp->len);
+
+	for (int i = 0; i < response->num; i++) {
+		zassert_equal(kv_reflect_key_crc(i), response->crcs[i].crc);
+	}
+
+	net_buf_unref(rsp);
+}
+
 ZTEST(rpc_command_kv_reflect_crcs, test_kv_reflect_crcs_offset)
 {
 	struct rpc_kv_reflect_crcs_response *response;
 	struct net_buf *rsp;
 	size_t expect_len;
 
-	send_kv_reflect_crcs_command(1001, 1);
-	rsp = expect_kv_reflect_crcs_response(1001, 0);
+	send_kv_reflect_crcs_command(1002, 1);
+	rsp = expect_kv_reflect_crcs_response(1002, 0);
 
 	response = (void *)rsp->data;
 	zassert_equal(KV_REFLECT_NUM - 1, response->num);
@@ -124,6 +157,7 @@ static void *kv_setup(void)
 	zassert_equal(sizeof(geofence2), KV_STORE_WRITE(KV_KEY_GEOFENCE + 1, &geofence2));
 	zassert_equal(sizeof(geofence3), KV_STORE_WRITE(KV_KEY_GEOFENCE + 2, &geofence3));
 
+	epacket_dummy_set_max_packet(UINT16_MAX);
 	return NULL;
 }
 
