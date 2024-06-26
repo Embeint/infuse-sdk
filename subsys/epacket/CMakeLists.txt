@@ -2,7 +2,7 @@
 
 zephyr_library_named(epacket)
 
-zephyr_library_sources(epacket.c handlers.c)
+zephyr_library_sources(epacket.c handlers.c interfaces/epacket_common_crypt.c)
 zephyr_library_sources_ifdef(CONFIG_EPACKET_CRYPTO keys.c)
 
 zephyr_library_sources_ifdef(CONFIG_EPACKET_INTERFACE_UDP interfaces/epacket_udp.c)

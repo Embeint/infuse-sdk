@@ -16,6 +16,8 @@ extern "C" {
 
 #include <stdint.h>
 
+#include <zephyr/sys/util.h>
+
 #include <psa/crypto.h>
 
 /**
