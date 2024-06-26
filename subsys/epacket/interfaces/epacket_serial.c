@@ -193,6 +193,8 @@ static const struct epacket_interface_api serial_api = {
 	static const struct epacket_serial_config serial_config_##inst = {                         \
 		.common =                                                                          \
 			{                                                                          \
+				.max_packet_size =                                                 \
+					EPACKET_INTERFACE_MAX_PACKET(DT_DRV_INST(inst)),           \
 				.header_size = DT_INST_PROP(inst, header_size),                    \
 				.footer_size = DT_INST_PROP(inst, footer_size),                    \
 			},                                                                         \

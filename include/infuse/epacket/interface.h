@@ -98,6 +98,7 @@ struct epacket_interface_common_data {
 
 /** Common config struct for all interfaces. Must be first member in interface config struct */
 struct epacket_interface_common_config {
+	uint16_t max_packet_size;
 	uint8_t header_size;
 	uint8_t footer_size;
 };
