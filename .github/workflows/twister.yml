@@ -22,7 +22,7 @@ jobs:
         - /repo-cache/embeint:/github/cache/embeint
     env:
       TWISTER_COMMON: ' --force-color --inline-logs -v -N -M --retry-failed 3 '
-      DAILY_OPTIONS: ' -M --build-only --all --show-footprint'
+      DAILY_OPTIONS: ' -M --build-only --show-footprint'
       VENDOR_FILTER: ' --vendor nordic --vendor zephyr '
       EXTRA_BOARDS: ' --platform qemu_cortex_m3 --platform qemu_cortex_m0 '
       UNIT_TESTING: ' --platform unit_testing '
@@ -101,7 +101,6 @@ jobs:
         name: Run Board Tests with Twister (Daily)
         run: |
           export ZEPHYR_BASE=${PWD}/zephyr
-          echo 'twister ${TWISTER_COMMON} ${EXTRA_BOARDS} ${DAILY_OPTIONS} -T infuse-sdk'
           $ZEPHYR_BASE/scripts/twister ${TWISTER_COMMON} ${EXTRA_BOARDS} ${DAILY_OPTIONS} -T infuse-sdk
 
       - if: github.event_name == 'schedule'
@@ -109,4 +108,4 @@ jobs:
         run: |
           export ZEPHYR_BASE=${PWD}/zephyr
           echo 'twister ${TWISTER_COMMON} ${VENDOR_FILTER} ${DAILY_OPTIONS} -T infuse-sdk'
-          $ZEPHYR_BASE/scripts/twister ${TWISTER_COMMON} ${VENDOR_FILTER} ${DAILY_OPTIONS} -T infuse-sdk
+          $ZEPHYR_BASE/scripts/twister ${TWISTER_COMMON} ${VENDOR_FILTER} ${DAILY_OPTIONS} --all -T infuse-sdk
