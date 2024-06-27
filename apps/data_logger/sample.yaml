@@ -21,4 +21,4 @@ tests:
     tags: app
     sysbuild: true
     filter: not CONFIG_BUILD_WITH_TFM
-    extra_args: SHIELD=nrf7002eb
+    extra_args: data_logger_SHIELD=nrf7002eb
