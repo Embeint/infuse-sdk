@@ -8,6 +8,8 @@ zephyr_library_sources_ifdef(CONFIG_EPACKET_CRYPTO
   interfaces/epacket_common_crypt.c
 )
 
+zephyr_library_sources_ifdef(CONFIG_EPACKET_INTERFACE_BT_ADV interfaces/epacket_bt_adv.c)
+zephyr_library_sources_ifdef(CONFIG_EPACKET_INTERFACE_BT_ADV interfaces/epacket_bt_adv_crypt.c)
 zephyr_library_sources_ifdef(CONFIG_EPACKET_INTERFACE_UDP interfaces/epacket_udp.c)
 zephyr_library_sources_ifdef(CONFIG_EPACKET_INTERFACE_UDP interfaces/epacket_udp_crypt.c)
 zephyr_library_sources_ifdef(CONFIG_EPACKET_INTERFACE_SERIAL interfaces/epacket_serial.c)
