@@ -10,7 +10,7 @@ manifest:
 
   projects:
     - name: zephyr
-      revision: c9817fec277c5fd9e3e2fd1da12b104c19e1e62f
+      revision: f7444d92688bdfac1ecc1f18f87a393c25e6c482
       # Limit imported repositories to reduce clone time
       import:
         name-allowlist:
@@ -23,7 +23,7 @@ manifest:
           - trusted-firmware-m
     - name: sdk-nrf
       path: modules/nrfconnect/sdk-nrf
-      revision: c220f25c9678f8abab809b2a55e96c857e9d9fe2
+      revision: 4f746c93846b6eaee869f834e6565c10dbba2755
       import: true
 
   self:
