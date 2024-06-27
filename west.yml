@@ -17,9 +17,12 @@ manifest:
           - cmsis
           - cmsis-dsp
           - hal_nordic
-          - segger
+          - libmetal
           - mcuboot
           - mbedtls
+          - open-amp
+          - segger
+          - tinycrypt
           - trusted-firmware-m
     - name: sdk-nrf
       path: modules/nrfconnect/sdk-nrf
