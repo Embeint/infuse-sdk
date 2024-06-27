@@ -7,6 +7,7 @@
  */
 
 #include <zephyr/init.h>
+#include <zephyr/bluetooth/bluetooth.h>
 #include <zephyr/logging/log.h>
 #include <zephyr/usb/usb_device.h>
 #include <zephyr/drivers/hwinfo.h>
@@ -115,6 +116,13 @@ static int infuse_common_boot(void)
 #else
 	reboot_state.reason = INFUSE_REBOOT_UNKNOWN;
 #endif /* CONFIG_INFUSE_REBOOT */
+
+#ifdef CONFIG_BT
+	rc = bt_enable(NULL);
+	if (rc) {
+		LOG_ERR("Failed to enable Bluetooth (%d)", rc);
+	}
+#endif /* CONFIG_BT */
 
 	(void)rc;
 	return 0;
