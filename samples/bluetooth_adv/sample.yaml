@@ -1,0 +1,14 @@
+sample:
+  description: ePacket Bluetooth advertising sample
+  name: Bluetooth advertising
+common:
+  build_only: true
+  required_snippets:
+    - infuse
+  platform_allow:
+    - nrf52840dk_nrf52840
+  integration_platforms:
+    - nrf52840dk_nrf52840
+tests:
+  sample.bluetooth_adv:
+    tags: bluetooth
