@@ -8,6 +8,8 @@ compatible: "embeint,epacket-udp"
 include: "epacket-base.yaml"
 
 properties:
+  depends-on:
+    default: "CONFIG_EPACKET_INTERFACE_UDP"
   max-packet-size:
     default: 1500
   header-size:

@@ -4,6 +4,15 @@
 include: base.yaml
 
 properties:
+  depends-on:
+    type: string
+    description: |
+      Kconfig symbol that instance depends on in order to be compiled into
+      build. This is required so devicetree nodes can permanently exist
+      with `status=okay` while enabling users to determine whether it is
+      safe to get a compile-time reference with `DEVICE_DT_GET`. Otherwise
+      every application would require board specific overlays to set `status`
+      depending on the Kconfig features enabled.
   max-packet-size:
     type: int
     description: |
