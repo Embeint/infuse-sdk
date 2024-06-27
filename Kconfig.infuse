@@ -12,6 +12,7 @@ rsource "snippets/infuse/Kconfig"
 if INFUSE_SDK
 
 rsource "Kconfig.defaults.core"
+rsource "Kconfig.defaults.bluetooth"
 rsource "Kconfig.defaults.net"
 rsource "Kconfig.defaults.nrf"
 rsource "Kconfig.defaults.sensor"

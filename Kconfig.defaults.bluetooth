@@ -1,0 +1,17 @@
+# Infuse-IoT SDK Bluetooth defaults
+
+if BT
+
+# Extended advertising is a requirement
+configdefault BT_EXT_ADV
+	default y
+
+# TX Bluetooth advertising packets
+configdefault BT_BROADCASTER
+	default y
+
+# While extended advertising can support 255 bytes, iOS only supports 124 bytes
+configdefault BT_CTLR_ADV_DATA_LEN_MAX
+	default 124
+
+endif # BT
