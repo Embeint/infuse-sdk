@@ -365,4 +365,7 @@ int data_logger_init(const struct device *dev)
 	DEVICE_DT_INST_DEFINE(inst, data_logger_init, NULL, &data##inst, &config##inst,            \
 			      POST_KERNEL, 80, NULL);
 
-DT_INST_FOREACH_STATUS_OKAY(DATA_LOGGER_DEFINE)
+#define DATA_LOGGER_DEFINE_WRAPPER(inst)                                                           \
+	IF_ENABLED(DATA_LOGGER_DEPENDENCIES_MET(DT_DRV_INST(inst)), (DATA_LOGGER_DEFINE(inst)))
+
+DT_INST_FOREACH_STATUS_OKAY(DATA_LOGGER_DEFINE_WRAPPER)
