@@ -5,10 +5,19 @@ common:
   build_only: true
   required_snippets:
     - infuse
-  platform_allow:
-    - nrf52840dk_nrf52840
-  integration_platforms:
-    - nrf52840dk_nrf52840
 tests:
   sample.bluetooth_adv:
     tags: bluetooth
+    platform_allow:
+      - nrf52840dk_nrf52840
+    integration_platforms:
+      - nrf52840dk_nrf52840
+  sample.bluetooth_adv.sysbuild:
+    tags: bluetooth
+    sysbuild: true
+    platform_allow:
+      - nrf5340dk_nrf5340_cpuapp
+      - nrf7002dk_nrf5340_cpuapp
+      - thingy53_nrf5340_cpuapp
+    integration_platforms:
+      - nrf5340dk_nrf5340_cpuapp
