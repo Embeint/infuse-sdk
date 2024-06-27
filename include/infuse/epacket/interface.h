@@ -38,6 +38,16 @@ extern "C" {
 #define EPACKET_INTERFACE_MAX_PAYLOAD(node_id)                                                     \
 	(EPACKET_INTERFACE_PAYLOAD_FROM_PACKET(node_id, EPACKET_INTERFACE_MAX_PACKET(node_id)))
 
+/**
+ * @brief Will this ePacket interface be compiled in?
+ *
+ * @param node_id ePacket interface node identitier
+ *
+ * @retval 1 if interface will be compiled in
+ * @retval 0 if interface will NOT be compiled in
+ */
+#define EPACKET_INTERFACE_IS_COMPILED_IN(node_id) IS_ENABLED(DT_STRING_TOKEN(node_id, depends_on))
+
 /* Identifier for ePacket interface */
 enum epacket_interface_id {
 	EPACKET_INTERFACE_SERIAL = 0,

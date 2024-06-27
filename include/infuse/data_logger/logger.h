@@ -51,6 +51,18 @@ struct data_logger_persistent_block_header {
 } __packed;
 
 /**
+ * @brief Are the dependencies for this data logger met?
+ *
+ * @param node_id `embeint,data-logger` node ID
+ *
+ * @retval 1 if data logger dependencies exist in build
+ * @retval 0 if data logger dependencies do NOT exist in build
+ */
+#define DATA_LOGGER_DEPENDENCIES_MET(node_id)                                                      \
+	COND_CODE_1(DT_NODE_HAS_COMPAT(node_id, embeint_data_logger_epacket),                      \
+		    (EPACKET_INTERFACE_IS_COMPILED_IN(DT_PROP(node_id, epacket))), (1))
+
+/**
  * @brief Maximum required block size for each logger backend
  *
  * @param node_id `embeint,data-logger` node ID

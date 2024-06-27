@@ -214,4 +214,8 @@ int tdf_data_logger_init(const struct device *dev)
 	DEVICE_DT_INST_DEFINE(inst, tdf_data_logger_init, NULL, &tdf_logger_data##inst,            \
 			      &tdf_logger_config##inst, POST_KERNEL, 81, NULL);
 
-DT_INST_FOREACH_STATUS_OKAY(TDF_DATA_LOGGER_DEFINE)
+#define TDF_DATA_LOGGER_DEFINE_WRAPPER(inst)                                                       \
+	IF_ENABLED(DATA_LOGGER_DEPENDENCIES_MET(DT_PARENT(DT_DRV_INST(inst))),                     \
+		   (TDF_DATA_LOGGER_DEFINE(inst)))
+
+DT_INST_FOREACH_STATUS_OKAY(TDF_DATA_LOGGER_DEFINE_WRAPPER)
