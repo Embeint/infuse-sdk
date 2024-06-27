@@ -13,6 +13,8 @@ properties:
     required: true
     description: |
       Serial port backend supporting interrupt driven API.
+  depends-on:
+    default: "CONFIG_EPACKET_INTERFACE_SERIAL"
   header-size:
     default: 27
   footer-size:
