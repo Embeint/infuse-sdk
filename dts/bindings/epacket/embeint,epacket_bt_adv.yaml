@@ -1,0 +1,18 @@
+# Copyright (c) 2024 Jordan Yates <jordan@embeint.com>
+# SPDX-License-Identifier: LicenseRef-Embeint
+
+description: ePacket Bluetooth advertising interface
+
+compatible: "embeint,epacket-bt-adv"
+
+include: "epacket-base.yaml"
+
+properties:
+  depends-on:
+    default: "CONFIG_EPACKET_INTERFACE_BT_ADV"
+  max-packet-size:
+    default: 113
+  header-size:
+    default: 22
+  footer-size:
+    default: 16

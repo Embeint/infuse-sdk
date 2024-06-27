@@ -40,6 +40,22 @@ source "subsys/logging/Kconfig.template.log_config"
 
 endif # EPACKET_INTERFACE_UDP
 
+config EPACKET_INTERFACE_BT_ADV
+	bool "ePacket Bluetooth advertising interface"
+	depends on DT_HAS_EMBEINT_EPACKET_BT_ADV_ENABLED
+	depends on EPACKET_CRYPTO
+	depends on BT
+	depends on BT_BROADCASTER
+	default y
+
+if EPACKET_INTERFACE_BT_ADV
+
+module = EPACKET_BT_ADV
+module-str = epacket_bt_adv
+source "subsys/logging/Kconfig.template.log_config"
+
+endif # EPACKET_INTERFACE_BT_ADV
+
 config EPACKET_INTERFACE_DUMMY
 	bool "ePacket dummy interface"
 	depends on DT_HAS_EMBEINT_EPACKET_DUMMY_ENABLED
