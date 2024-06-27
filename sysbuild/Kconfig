@@ -3,6 +3,20 @@
 config INFUSE_INTEGRATION
 	bool "Sysbuild compilation according to Infuse-IoT"
 
+config INFUSE_INTEGRATION_NRF_NET_CORE_BOARD
+	string
+	default "nrf5340dk_nrf5340_cpunet" if $(BOARD) = "nrf5340dk_nrf5340_cpuapp_ns"
+	default "nrf5340dk_nrf5340_cpunet" if $(BOARD) = "nrf5340dk_nrf5340_cpuapp"
+	default "nrf7002dk_nrf5340_cpunet" if $(BOARD) = "nrf7002dk_nrf5340_cpuapp_ns"
+	default "nrf7002dk_nrf5340_cpunet" if $(BOARD) = "nrf7002dk_nrf5340_cpuapp"
+	default "thingy53_nrf5340_cpunet" if $(BOARD) = "thingy53_nrf5340_cpuapp_ns"
+	default "thingy53_nrf5340_cpunet" if $(BOARD) = "thingy53_nrf5340_cpuapp"
+	default ""
+
+config INFUSE_INTEGRATION_NRF_NET_CORE_IMAGE_HCI_IPC
+	bool "HCI IPC image on network core"
+	default y if INFUSE_INTEGRATION_NRF_NET_CORE_BOARD != ""
+
 choice BOOTLOADER
 	default BOOTLOADER_MCUBOOT if INFUSE_INTEGRATION
 endchoice
