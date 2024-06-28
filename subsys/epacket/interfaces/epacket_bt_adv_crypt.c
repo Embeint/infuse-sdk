@@ -60,7 +60,8 @@ void *epacket_bt_adv_pkt_to_ad(struct net_buf *pkt, size_t *num)
 {
 	/* Copy payload into data structure */
 	memcpy(mfg_data.payload, pkt->data, pkt->len);
-	ad_structures[2].data_len = pkt->len;
+	/* Manufacturer ID + payload */
+	ad_structures[2].data_len = sizeof(mfg_data.company_code) + pkt->len;
 
 	*num = ARRAY_SIZE(ad_structures);
 	return ad_structures;
