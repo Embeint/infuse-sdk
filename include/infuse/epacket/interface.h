@@ -52,6 +52,7 @@ extern "C" {
 enum epacket_interface_id {
 	EPACKET_INTERFACE_SERIAL = 0,
 	EPACKET_INTERFACE_UDP = 1,
+	EPACKET_INTERFACE_BT_ADV = 2,
 	EPACKET_INTERFACE_DUMMY = 255,
 };
 

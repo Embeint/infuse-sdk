@@ -32,6 +32,18 @@ static const struct bt_le_ext_adv_start_param adv_start_param = {
 	.timeout = 0,
 	.num_events = 1,
 };
+
+/* While we want to scan with 100% duty cycle, the Nordic Softdevice controller
+ * currently fails to transmit packets if scanning at 100%:
+ *   https://devzone.nordicsemi.com/f/nordic-q-a/112568/softdevice-controller-tx-with-100-duty-cycle-scanning
+ */
+static const struct bt_le_scan_param scan_param = {
+	.type = BT_LE_SCAN_TYPE_PASSIVE,
+	.options = BT_LE_SCAN_OPT_NONE,
+	/* 32 * 0.625 = 20ms */
+	.interval = 0x0020,
+	.window = 0x001F,
+};
 static struct net_buf *adv_set_bufs[CONFIG_BT_EXT_ADV_MAX_ADV_SET];
 static struct k_spinlock queue_lock;
 static K_FIFO_DEFINE(tx_buf_queue);
@@ -139,6 +151,53 @@ static void epacket_bt_adv_send(const struct device *dev, struct net_buf *buf)
 	}
 }
 
+static void scan_cb(const bt_addr_le_t *addr, int8_t rssi, uint8_t adv_type,
+		    struct net_buf_simple *buf)
+{
+	const char *bt_addr_le_str(const bt_addr_le_t *addr);
+	struct epacket_rx_metadata *meta;
+	struct net_buf *rx_buffer;
+
+	if (!epacket_bt_adv_is_epacket(adv_type, buf)) {
+		return;
+	}
+	LOG_DBG("%s: %d bytes %d dBm", bt_addr_le_str(addr), buf->len, rssi);
+
+	/* Allocate RX buffer.
+	 * Bluetooth advertising is best effort and this function executes from
+	 * the Bluetooth stack so don't wait for a buffer
+	 */
+	rx_buffer = epacket_alloc_rx(K_NO_WAIT);
+	if (rx_buffer == NULL) {
+		LOG_WRN("Dropping packet from %s", bt_addr_le_str(addr));
+		return;
+	}
+
+	/* Copy payload across */
+	net_buf_add_mem(rx_buffer, buf->data, buf->len);
+
+	/* Save metadata */
+	meta = net_buf_user_data(rx_buffer);
+	meta->interface = DEVICE_DT_INST_GET(0);
+	meta->interface_id = EPACKET_INTERFACE_BT_ADV;
+	meta->rssi = rssi;
+
+	/* Hand off to ePacket core */
+	epacket_raw_receive_handler(rx_buffer);
+}
+
+static int epacket_bt_adv_receive_control(const struct device *dev, bool enable)
+{
+	int rc;
+
+	if (enable) {
+		rc = bt_le_scan_start(&scan_param, scan_cb);
+	} else {
+		rc = bt_le_scan_stop();
+	}
+	return rc;
+}
+
 static int epacket_bt_adv_init(const struct device *dev)
 {
 	epacket_interface_common_init(dev);
@@ -149,6 +208,7 @@ static int epacket_bt_adv_init(const struct device *dev)
 
 static const struct epacket_interface_api bt_adv_api = {
 	.send = epacket_bt_adv_send,
+	.receive_ctrl = epacket_bt_adv_receive_control,
 };
 
 BUILD_ASSERT(113 == DT_INST_PROP(0, max_packet_size));
