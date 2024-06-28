@@ -68,10 +68,24 @@ static int infuse_common_boot(void)
 	}
 #endif /* CONFIG_USB_DEVICE_INITIALIZE_AT_BOOT */
 #endif /* CONFIG_USB_DEVICE_STACK */
+#ifdef CONFIG_BT
+	rc = bt_enable(NULL);
+	if (rc) {
+		LOG_ERR("Failed to enable Bluetooth (%d)", rc);
+	}
+#endif /* CONFIG_BT */
 
 	LOG_INF("\tVersion: %d.%d.%d+%08x", v.major, v.minor, v.revision, v.build_num);
 	LOG_INF("\t Device: %016llx", device_id);
 	LOG_INF("\t  Board: %s", CONFIG_BOARD);
+#ifdef CONFIG_BT
+	const char *bt_addr_le_str(const bt_addr_le_t *addr);
+	bt_addr_le_t bt_addr[CONFIG_BT_ID_MAX];
+	size_t bt_addr_cnt = ARRAY_SIZE(bt_addr);
+
+	bt_id_get(bt_addr, &bt_addr_cnt);
+	LOG_INF("\tBT Addr: %s", bt_addr_le_str(&bt_addr[0]));
+#endif /* CONFIG_BT */
 #ifdef CONFIG_KV_STORE_LTE_SIM_UICC
 	KV_STRUCT_KV_STRING_VAR(24) sim_uicc;
 
@@ -116,13 +130,6 @@ static int infuse_common_boot(void)
 #else
 	reboot_state.reason = INFUSE_REBOOT_UNKNOWN;
 #endif /* CONFIG_INFUSE_REBOOT */
-
-#ifdef CONFIG_BT
-	rc = bt_enable(NULL);
-	if (rc) {
-		LOG_ERR("Failed to enable Bluetooth (%d)", rc);
-	}
-#endif /* CONFIG_BT */
 
 	(void)rc;
 	return 0;
