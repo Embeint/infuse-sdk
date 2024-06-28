@@ -12,6 +12,7 @@
 #include <zephyr/kernel.h>
 #include <zephyr/random/random.h>
 #include <zephyr/bluetooth/bluetooth.h>
+#include <zephyr/bluetooth/uuid.h>
 
 #include <infuse/security.h>
 #include <infuse/epacket/keys.h>
@@ -182,6 +183,8 @@ ZTEST(epacket_bt_adv, test_ad_serialization)
 	size_t ad_num;
 	uint8_t *p;
 
+	epacket_bt_adv_ad_init();
+
 	/* Create random original buffer */
 	orig_buf = epacket_alloc_tx(K_NO_WAIT);
 	zassert_not_null(orig_buf);
@@ -205,9 +208,75 @@ ZTEST(epacket_bt_adv, test_ad_serialization)
 	/* Ensure parsed output matches input */
 	zassert_not_null(parse_state.payload_ptr);
 	zassert_equal(orig_buf->len, parse_state.payload_len);
-	zassert_mem_equal(parse_state.payload_ptr, orig_buf->data, orig_buf->len);
+	zassert_mem_equal(orig_buf->data, parse_state.payload_ptr, orig_buf->len);
+
+	/* Re-serialize packet */
+	net_buf_simple_reset(&flat_buffer);
+	flat_buffer.len += bt_data_serialize(&data[0], net_buf_simple_tail(&flat_buffer));
+	flat_buffer.len += bt_data_serialize(&data[1], net_buf_simple_tail(&flat_buffer));
+	flat_buffer.len += bt_data_serialize(&data[2], net_buf_simple_tail(&flat_buffer));
+
+	/* Our detection function should pass, and buffers match */
+	zassert_true(epacket_bt_adv_is_epacket(BT_GAP_ADV_TYPE_EXT_ADV, &flat_buffer));
+	zassert_equal(orig_buf->len, flat_buffer.len);
+	zassert_mem_equal(orig_buf->data, flat_buffer.data, orig_buf->len);
 
 	net_buf_unref(orig_buf);
+}
+
+static struct {
+	uint16_t company_code;
+	uint8_t payload[10];
+} __packed mfg_data;
+
+ZTEST(epacket_bt_adv, test_epacket_detection)
+{
+	NET_BUF_SIMPLE_DEFINE(flat_buffer, 256);
+
+	struct bt_data flags = BT_DATA_BYTES(BT_DATA_FLAGS, (BT_LE_AD_GENERAL | BT_LE_AD_NO_BREDR));
+	struct bt_data not_flags = BT_DATA_BYTES(BT_DATA_TX_POWER, 0x01);
+	struct bt_data uuid16 = BT_DATA_BYTES(BT_DATA_UUID16_SOME, 0x00, 0x00);
+	struct bt_data not_uuid16 = BT_DATA_BYTES(BT_DATA_NAME_SHORTENED, 'a', '\x00');
+	struct bt_data manu = BT_DATA(BT_DATA_MANUFACTURER_DATA, &mfg_data, sizeof(mfg_data));
+
+	/* Not extended advertising */
+	net_buf_simple_reset(&flat_buffer);
+	zassert_false(epacket_bt_adv_is_epacket(BT_GAP_ADV_TYPE_ADV_IND, &flat_buffer));
+
+	/* First structure not AD flags */
+	net_buf_simple_reset(&flat_buffer);
+	flat_buffer.len += bt_data_serialize(&uuid16, net_buf_simple_tail(&flat_buffer));
+	zassert_false(epacket_bt_adv_is_epacket(BT_GAP_ADV_TYPE_EXT_ADV, &flat_buffer));
+
+	net_buf_simple_reset(&flat_buffer);
+	flat_buffer.len += bt_data_serialize(&not_flags, net_buf_simple_tail(&flat_buffer));
+	zassert_false(epacket_bt_adv_is_epacket(BT_GAP_ADV_TYPE_EXT_ADV, &flat_buffer));
+
+	/* Second structure not UUID16_SOME */
+	net_buf_simple_reset(&flat_buffer);
+	flat_buffer.len += bt_data_serialize(&flags, net_buf_simple_tail(&flat_buffer));
+	flat_buffer.len += bt_data_serialize(&flags, net_buf_simple_tail(&flat_buffer));
+	zassert_false(epacket_bt_adv_is_epacket(BT_GAP_ADV_TYPE_EXT_ADV, &flat_buffer));
+
+	net_buf_simple_reset(&flat_buffer);
+	flat_buffer.len += bt_data_serialize(&flags, net_buf_simple_tail(&flat_buffer));
+	flat_buffer.len += bt_data_serialize(&not_uuid16, net_buf_simple_tail(&flat_buffer));
+	zassert_false(epacket_bt_adv_is_epacket(BT_GAP_ADV_TYPE_EXT_ADV, &flat_buffer));
+
+	/* Third structure not MANUFACTURER_DATA */
+	net_buf_simple_reset(&flat_buffer);
+	flat_buffer.len += bt_data_serialize(&flags, net_buf_simple_tail(&flat_buffer));
+	flat_buffer.len += bt_data_serialize(&uuid16, net_buf_simple_tail(&flat_buffer));
+	flat_buffer.len += bt_data_serialize(&flags, net_buf_simple_tail(&flat_buffer));
+	zassert_false(epacket_bt_adv_is_epacket(BT_GAP_ADV_TYPE_EXT_ADV, &flat_buffer));
+
+	/* Bad manufacturer ID */
+	mfg_data.company_code = 0x1234;
+	net_buf_simple_reset(&flat_buffer);
+	flat_buffer.len += bt_data_serialize(&flags, net_buf_simple_tail(&flat_buffer));
+	flat_buffer.len += bt_data_serialize(&uuid16, net_buf_simple_tail(&flat_buffer));
+	flat_buffer.len += bt_data_serialize(&manu, net_buf_simple_tail(&flat_buffer));
+	zassert_false(epacket_bt_adv_is_epacket(BT_GAP_ADV_TYPE_EXT_ADV, &flat_buffer));
 }
 
 static bool security_init(const void *global_state)

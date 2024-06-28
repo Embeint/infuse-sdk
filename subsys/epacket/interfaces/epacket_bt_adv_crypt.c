@@ -8,6 +8,7 @@
 
 #include <zephyr/bluetooth/bluetooth.h>
 #include <zephyr/bluetooth/uuid.h>
+#include <zephyr/bluetooth/gap.h>
 #include <zephyr/sys/byteorder.h>
 
 #include <infuse/epacket/keys.h>
@@ -65,6 +66,33 @@ void *epacket_bt_adv_pkt_to_ad(struct net_buf *pkt, size_t *num)
 
 	*num = ARRAY_SIZE(ad_structures);
 	return ad_structures;
+}
+
+bool epacket_bt_adv_is_epacket(uint8_t adv_type, struct net_buf_simple *buf)
+{
+	/* Infuse packets are always extended advertising */
+	if (adv_type != BT_GAP_ADV_TYPE_EXT_ADV) {
+		return false;
+	}
+	/* First field is always BT_DATA_FLAGS */
+	if (buf->data[0] != 2 || buf->data[1] != BT_DATA_FLAGS) {
+		return false;
+	}
+	/* Second field is always BT_DATA_UUID16_SOME */
+	if (buf->data[3] != 3 || buf->data[4] != BT_DATA_UUID16_SOME) {
+		return false;
+	}
+	/* Third field is always BT_DATA_MANUFACTURER_DATA */
+	if (buf->data[8] != BT_DATA_MANUFACTURER_DATA) {
+		return false;
+	}
+	/* Manufacturer ID is 0xFFFF */
+	if (sys_get_be16(buf->data + 9) != EMBEINT_COMPANY_CODE) {
+		return false;
+	}
+	/* Remove Bluetooth advertising headers */
+	net_buf_simple_pull(buf, 11);
+	return true;
 }
 
 int epacket_bt_adv_encrypt(struct net_buf *buf)
