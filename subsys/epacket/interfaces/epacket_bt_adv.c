@@ -113,25 +113,24 @@ static void adv_set_complete(struct bt_le_ext_adv *adv, struct bt_le_ext_adv_sen
 {
 	uint8_t set_idx = bt_le_ext_adv_get_index(adv);
 	struct net_buf *curr, *next;
-	k_spinlock_key_t key;
 	int rc;
 
 	curr = adv_set_bufs[set_idx];
 	adv_set_bufs[set_idx] = NULL;
 
-	key = k_spin_lock(&queue_lock);
-	next = net_buf_get(&tx_buf_queue, K_NO_WAIT);
-	if (next) {
-		LOG_DBG("Chaining next buf: %p", next);
-		bt_adv_broadcast(DEVICE_DT_INST_GET(0), adv, next);
-	} else {
-		LOG_DBG("Deleting set %d", set_idx);
-		rc = bt_le_ext_adv_delete(adv);
-		if (rc != 0) {
-			LOG_WRN("Failed to delete set %d", set_idx);
+	K_SPINLOCK(&queue_lock) {
+		next = net_buf_get(&tx_buf_queue, K_NO_WAIT);
+		if (next) {
+			LOG_DBG("Chaining next buf: %p", next);
+			bt_adv_broadcast(DEVICE_DT_INST_GET(0), adv, next);
+		} else {
+			LOG_DBG("Deleting set %d", set_idx);
+			rc = bt_le_ext_adv_delete(adv);
+			if (rc != 0) {
+				LOG_WRN("Failed to delete set %d", set_idx);
+			}
 		}
 	}
-	k_spin_unlock(&queue_lock, key);
 
 	/* Notify TX result */
 	epacket_notify_tx_result(DEVICE_DT_INST_GET(0), curr, 0);
@@ -150,7 +149,6 @@ static void epacket_bt_adv_send(const struct device *dev, struct net_buf *buf)
 		.peer = NULL,
 	};
 	struct bt_le_ext_adv *adv;
-	k_spinlock_key_t key;
 	int rc;
 
 	/* Encrypt the payload */
@@ -161,17 +159,17 @@ static void epacket_bt_adv_send(const struct device *dev, struct net_buf *buf)
 	}
 
 	/* Create advertising set */
-	key = k_spin_lock(&queue_lock);
-	rc = bt_le_ext_adv_create(&adv_param, &adv_cb, &adv);
-	if (rc == -ENOMEM) {
-		LOG_DBG("Queueing buf %p", buf);
-		net_buf_put(&tx_buf_queue, buf);
-	} else if (rc < 0) {
-		LOG_ERR("Failed to create advertising set (%d)", rc);
-		epacket_notify_tx_result(dev, buf, rc);
-		net_buf_unref(buf);
+	K_SPINLOCK(&queue_lock) {
+		rc = bt_le_ext_adv_create(&adv_param, &adv_cb, &adv);
+		if (rc == -ENOMEM) {
+			LOG_DBG("Queueing buf %p", buf);
+			net_buf_put(&tx_buf_queue, buf);
+		} else if (rc < 0) {
+			LOG_ERR("Failed to create advertising set (%d)", rc);
+			epacket_notify_tx_result(dev, buf, rc);
+			net_buf_unref(buf);
+		}
 	}
-	k_spin_unlock(&queue_lock, key);
 
 	if (rc == 0) {
 		/* Broadcast on the set on success */
