@@ -78,6 +78,21 @@ int epacket_serial_encrypt(struct net_buf *buf);
 int epacket_serial_decrypt(struct net_buf *buf);
 
 /**
+ * @brief Initialise Bluetooth AD structures
+ */
+void epacket_bt_adv_ad_init(void);
+
+/**
+ * @brief Convert ePacket net_buf to Bluetooth AD structure
+ *
+ * @param buf ePacket buffer to convert
+ * @param num Number of AD structures to advertise
+ *
+ * @returns Pointer to array of `struct bt_data` to advertise
+ */
+void *epacket_bt_adv_pkt_to_ad(struct net_buf *buf, size_t *num);
+
+/**
  * @brief Encrypt Bluetooth advertising packet for transmission
  *
  * @param buf Packet to encrypt

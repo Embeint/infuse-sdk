@@ -6,9 +6,65 @@
  * SPDX-License-Identifier: LicenseRef-Embeint
  */
 
+#include <zephyr/bluetooth/bluetooth.h>
+#include <zephyr/bluetooth/uuid.h>
+#include <zephyr/sys/byteorder.h>
+
 #include <infuse/epacket/keys.h>
 
 #include "epacket_internal.h"
+
+#define INFUSE_SERVICE_UUID  0xC001
+#define EMBEINT_COMPANY_CODE 0xFFFF
+#define BT_MFG_DATA_LEN      113
+
+static struct {
+	uint16_t company_code;
+	uint8_t payload[BT_MFG_DATA_LEN];
+} __packed mfg_data;
+
+/* Maximum serialized data structure length is 124 bytes in order to be
+ * received by iOS devices. Layout:
+ *                Flags = (2 + 1) bytes
+ *         Service UUID = (2 + 2) bytes
+ *    Manufacturer Data = (2 + 2 + 113) bytes
+ */
+static struct bt_data ad_structures[] = {
+	/* From BT Core Specification Supplement v11:
+	 *   The Flags data type shall be included when any of the Flag bits
+	 *   are non-zero and the advertising packet is connectable, otherwise
+	 *   the Flags data type may be omitted.
+	 * Bits are non-zero and most packets will be connectable, therefore
+	 * include the data type.
+	 */
+	BT_DATA_BYTES(BT_DATA_FLAGS, (BT_LE_AD_GENERAL | BT_LE_AD_NO_BREDR)),
+	/* Background Bluetooth Advertising scanning on iOS requires a service
+	 * UUID to be present:
+	 *   https://developer.apple.com/documentation/corebluetooth/cbcentralmanager/scanforperipherals(withservices:options:)
+	 */
+	BT_DATA_BYTES(BT_DATA_UUID16_SOME, BT_UUID_16_ENCODE(INFUSE_SERVICE_UUID)),
+	/* Manufacturer specific data.
+	 * First 2 bytes are the Company Identifier Code from:
+	 *   https://www.bluetooth.com/specifications/assigned-numbers/
+	 * Remainder is arbitrary binary payload.
+	 */
+	BT_DATA(BT_DATA_MANUFACTURER_DATA, &mfg_data, sizeof(mfg_data)),
+};
+
+void epacket_bt_adv_ad_init(void)
+{
+	mfg_data.company_code = sys_cpu_to_be16(EMBEINT_COMPANY_CODE);
+}
+
+void *epacket_bt_adv_pkt_to_ad(struct net_buf *pkt, size_t *num)
+{
+	/* Copy payload into data structure */
+	memcpy(mfg_data.payload, pkt->data, pkt->len);
+	ad_structures[2].data_len = pkt->len;
+
+	*num = ARRAY_SIZE(ad_structures);
+	return ad_structures;
+}
 
 int epacket_bt_adv_encrypt(struct net_buf *buf)
 {
