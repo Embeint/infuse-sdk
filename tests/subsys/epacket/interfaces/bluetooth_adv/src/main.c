@@ -11,6 +11,7 @@
 #include <zephyr/ztest.h>
 #include <zephyr/kernel.h>
 #include <zephyr/random/random.h>
+#include <zephyr/bluetooth/bluetooth.h>
 
 #include <infuse/security.h>
 #include <infuse/epacket/keys.h>
@@ -156,6 +157,57 @@ ZTEST(epacket_bt_adv, test_encrypt_decrypt)
 {
 	test_encrypt_decrypt_auth(EPACKET_AUTH_DEVICE);
 	test_encrypt_decrypt_auth(EPACKET_AUTH_NETWORK);
+}
+
+static struct {
+	const uint8_t *payload_ptr;
+	size_t payload_len;
+} parse_state;
+
+bool parse_func(struct bt_data *data, void *user_data)
+{
+	if (data->type == BT_DATA_MANUFACTURER_DATA) {
+		/* Minus the manufacturer ID */
+		parse_state.payload_ptr = data->data + sizeof(uint16_t);
+		parse_state.payload_len = data->data_len - sizeof(uint16_t);
+	}
+	return true;
+}
+
+ZTEST(epacket_bt_adv, test_ad_serialization)
+{
+	NET_BUF_SIMPLE_DEFINE(flat_buffer, 256);
+	struct net_buf *orig_buf;
+	struct bt_data *data;
+	size_t ad_num;
+	uint8_t *p;
+
+	/* Create random original buffer */
+	orig_buf = epacket_alloc_tx(K_NO_WAIT);
+	zassert_not_null(orig_buf);
+	p = net_buf_add(orig_buf, 60);
+	sys_rand_get(p, 60);
+
+	/* Serialise it to an AD structure */
+	data = epacket_bt_adv_pkt_to_ad(orig_buf, &ad_num);
+	zassert_not_null(data);
+	zassert_equal(3, ad_num);
+
+	/* Serialize packet to a flat array */
+	net_buf_simple_reset(&flat_buffer);
+	flat_buffer.len += bt_data_serialize(&data[0], net_buf_simple_tail(&flat_buffer));
+	flat_buffer.len += bt_data_serialize(&data[1], net_buf_simple_tail(&flat_buffer));
+	flat_buffer.len += bt_data_serialize(&data[2], net_buf_simple_tail(&flat_buffer));
+
+	/* Parse flat array using Bluetooth parser */
+	bt_data_parse(&flat_buffer, parse_func, 0);
+
+	/* Ensure parsed output matches input */
+	zassert_not_null(parse_state.payload_ptr);
+	zassert_equal(orig_buf->len, parse_state.payload_len);
+	zassert_mem_equal(parse_state.payload_ptr, orig_buf->data, orig_buf->len);
+
+	net_buf_unref(orig_buf);
 }
 
 static bool security_init(const void *global_state)
