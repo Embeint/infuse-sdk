@@ -7,5 +7,6 @@ find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
 project(epacket_bluetooth_adv)
 
 target_sources(app PRIVATE
+  ${ZEPHYR_BASE}/subsys/bluetooth/host/data.c
   src/main.c
 )
