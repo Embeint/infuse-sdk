@@ -93,6 +93,20 @@ void epacket_bt_adv_ad_init(void);
 void *epacket_bt_adv_pkt_to_ad(struct net_buf *buf, size_t *num);
 
 /**
+ * @brief Check if Bluetooth advertising packet is an ePacket
+ *
+ * @note On success, the Bluetooth headers are removed from @a buf,
+ *       leaving only the ePacket payload.
+ *
+ * @param adv_type Bluetooth advertising type
+ * @param buf Serialised Bluetooth advertising buffer
+ *
+ * @return true Packet is an ePacket
+ * @return false Packet is not an ePacket
+ */
+bool epacket_bt_adv_is_epacket(uint8_t adv_type, struct net_buf_simple *buf);
+
+/**
  * @brief Encrypt Bluetooth advertising packet for transmission
  *
  * @param buf Packet to encrypt
