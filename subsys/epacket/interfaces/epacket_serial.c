@@ -167,6 +167,18 @@ static void epacket_serial_send(const struct device *dev, struct net_buf *buf)
 	uart_irq_tx_enable(config->backend);
 }
 
+static int epacket_receive_control(const struct device *dev, bool enable)
+{
+	const struct epacket_serial_config *config = dev->config;
+
+	if (enable) {
+		uart_irq_rx_enable(config->backend);
+	} else {
+		uart_irq_rx_disable(config->backend);
+	}
+	return 0;
+}
+
 static int epacket_serial_init(const struct device *dev)
 {
 	const struct epacket_serial_config *config = dev->config;
@@ -177,12 +189,12 @@ static int epacket_serial_init(const struct device *dev)
 	k_work_init_delayable(&data->dc_handler, disconnected_handler);
 	k_fifo_init(&data->tx_fifo);
 	uart_irq_callback_user_data_set(config->backend, interrupt_handler, (void *)dev);
-	uart_irq_rx_enable(config->backend);
 	return 0;
 }
 
 static const struct epacket_interface_api serial_api = {
 	.send = epacket_serial_send,
+	.receive_ctrl = epacket_receive_control,
 };
 
 #define EPACKET_SERIAL_DEFINE(inst)                                                                \
