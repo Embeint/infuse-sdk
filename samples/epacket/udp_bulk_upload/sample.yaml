@@ -6,14 +6,14 @@ common:
   required_snippets:
     - infuse
 tests:
-  sample.net.bulk_upload:
-    tags: net
+  sample.epacket.udp_bulk_upload:
+    tags: net epacket
     platform_allow:
       - nrf7002dk_nrf5340_cpuapp
     integration_platforms:
       - nrf7002dk_nrf5340_cpuapp
-  sample.net.bulk_upload.nrf7002eb:
-    tags: net
+  sample.epacket.udp_bulk_upload.nrf7002eb:
+    tags: net epacket
     platform_allow:
       - thingy53_nrf5340_cpuapp
     extra_args: SHIELD=nrf7002eb

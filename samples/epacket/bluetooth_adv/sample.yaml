@@ -6,14 +6,14 @@ common:
   required_snippets:
     - infuse
 tests:
-  sample.bluetooth_adv:
-    tags: bluetooth
+  sample.epacket.bluetooth_adv:
+    tags: bluetooth epacket
     platform_allow:
       - nrf52840dk_nrf52840
     integration_platforms:
       - nrf52840dk_nrf52840
-  sample.bluetooth_adv.sysbuild:
-    tags: bluetooth
+  sample.epacket.bluetooth_adv.sysbuild:
+    tags: bluetooth epacket
     sysbuild: true
     platform_allow:
       - nrf5340dk_nrf5340_cpuapp
