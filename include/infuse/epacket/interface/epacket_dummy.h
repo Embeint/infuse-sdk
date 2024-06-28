@@ -62,6 +62,22 @@ void epacket_dummy_set_tx_failure(int error_code);
 void epacket_dummy_set_max_packet(uint16_t packet_size);
 
 /**
+ * @brief Is receiving currently scheduled on the interface
+ *
+ * @retval true Receiving has been enabled
+ * @retval false Receiving has been disabled
+ */
+bool epacket_dummy_receive_scheduled(void);
+
+/**
+ * @brief Override the behaviour of `.receive_ctrl`
+ *
+ * @param func_exists True to populate function in API struct, false to remove
+ * @param rc Return code of `.receive_ctrl`
+ */
+void epacket_dummy_receive_api_override(bool func_exists, int rc);
+
+/**
  * @brief Simulate the dummy interface receiving a packet
  *
  * @param dev Dummy interface
