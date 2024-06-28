@@ -28,11 +28,25 @@ static const struct device *tx_device[CONFIG_EPACKET_BUFFERS_TX];
 
 LOG_MODULE_REGISTER(epacket, CONFIG_EPACKET_LOG_LEVEL);
 
+static void epacket_receive_timeout(struct k_work *work)
+{
+	struct k_work_delayable *delayable = k_work_delayable_from_work(work);
+	struct epacket_interface_common_data *data =
+		CONTAINER_OF(delayable, struct epacket_interface_common_data, receive_timeout);
+	const struct epacket_interface_api *api = data->dev->api;
+
+	/* Disable reception on the interface */
+	LOG_DBG("Receive on %s expired", data->dev->name);
+	api->receive_ctrl(data->dev, false);
+}
+
 void epacket_interface_common_init(const struct device *dev)
 {
 	struct epacket_interface_common_data *data = dev->data;
 
+	data->dev = dev;
 	data->receive_handler = epacket_default_receive_handler;
+	k_work_init_delayable(&data->receive_timeout, epacket_receive_timeout);
 	sys_slist_init(&data->callback_list);
 }
 
@@ -58,6 +72,34 @@ void epacket_queue(const struct device *dev, struct net_buf *buf)
 
 	/* Push packet at processing queue */
 	net_buf_put(&epacket_tx_queue, buf);
+}
+
+int epacket_receive(const struct device *dev, k_timeout_t timeout)
+{
+	struct epacket_interface_common_data *data = dev->data;
+	const struct epacket_interface_api *api = dev->api;
+	int rc;
+
+	/* If not control is available there is nothing to do */
+	if (api->receive_ctrl == NULL) {
+		return -ENOTSUP;
+	}
+
+	/* Enable receiving if the timeout is not immediate */
+	if (!K_TIMEOUT_EQ(timeout, K_NO_WAIT)) {
+		rc = api->receive_ctrl(dev, true);
+		if (rc < 0) {
+			return rc;
+		}
+	}
+
+	/* No timeout required */
+	if (K_TIMEOUT_EQ(timeout, K_FOREVER)) {
+		return 0;
+	}
+
+	/* Schedule the receive termination work */
+	return k_work_reschedule(&data->receive_timeout, timeout);
 }
 
 void epacket_raw_receive_handler(struct net_buf *buf)

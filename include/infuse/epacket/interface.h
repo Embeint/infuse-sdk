@@ -92,11 +92,23 @@ struct epacket_interface_api {
 	 */
 	void (*send)(const struct device *dev, struct net_buf *buf);
 	/**
+	 * @brief Control receiving on the interface
+	 *
+	 * @param dev Interface device
+	 * @param enable True to enable receiving, false to disable
+	 *
+	 * @retval 0 on success
+	 * @retval -errno on failure
+	 */
+	int (*receive_ctrl)(const struct device *dev, bool enable);
+	/**
 	 * @brief Get current maximum packet size
 	 *
 	 * If not defined, @a max_packet_size from @ref epacket_interface_common_config is used
 	 *
 	 * @param dev Interface device
+	 *
+	 * @returns Maximum packet size
 	 */
 	uint16_t (*max_packet_size)(const struct device *dev);
 };
@@ -111,7 +123,9 @@ typedef void (*epacket_receive_handler)(struct net_buf *packet);
 /** Common data struct for all interfaces. Must be first member in interface data struct */
 struct epacket_interface_common_data {
 	epacket_receive_handler receive_handler;
+	struct k_work_delayable receive_timeout;
 	sys_slist_t callback_list;
+	const struct device *dev;
 };
 
 /** Common config struct for all interfaces. Must be first member in interface config struct */
@@ -128,6 +142,25 @@ struct epacket_interface_common_config {
  * @param buf Packet to send
  */
 void epacket_queue(const struct device *dev, struct net_buf *buf);
+
+/**
+ * @brief Enable receiving on the interface for a duration
+ *
+ * @note Each call to this function overrides any previous configured duration.
+ *       For example, scheduling a 100 second receive then immediately
+ *       scheduling a 10 second receive will result in a 10 second receive
+ *       window.
+ *
+ * @param dev Interface to control receive on
+ * @param timeout Duration to receive for.
+ *                K_FOREVER = Receive forever
+ *                K_NO_WAIT = Stop receiving immediately
+ *
+ * @retval -ENOTSUP if interface does not support RX control
+ * @retval result return value from @ref k_work_reschedule_for_queue
+ *
+ */
+int epacket_receive(const struct device *dev, k_timeout_t timeout);
 
 /**
  * @brief Get current maximum packet size
