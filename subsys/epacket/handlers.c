@@ -7,6 +7,7 @@
  */
 
 #include <zephyr/logging/log.h>
+#include <zephyr/sys/byteorder.h>
 
 #include <infuse/types.h>
 #include <infuse/epacket/interface.h>
@@ -51,4 +52,58 @@ void epacket_default_receive_handler(struct net_buf *buf)
 
 done:
 	net_buf_unref(buf);
+}
+
+int epacket_received_packet_append(struct net_buf *storage_buf, struct net_buf *received_buf)
+{
+	struct epacket_rx_metadata *rx_meta = net_buf_user_data(received_buf);
+	struct epacket_received_common_header common;
+	struct epacket_received_decrypted_header decrypted;
+	uint8_t interface_addr[7];
+	uint8_t addr_len = 0;
+
+	/* Determine total length */
+	common.len_encrypted = sizeof(common) + received_buf->len;
+	if (rx_meta->auth != EPACKET_AUTH_FAILURE) {
+		common.len_encrypted += sizeof(decrypted);
+	}
+	switch (rx_meta->interface_id) {
+	case EPACKET_INTERFACE_BT_ADV:
+		interface_addr[0] = rx_meta->interface_address.bluetooth.type;
+		memcpy(interface_addr + 1, rx_meta->interface_address.bluetooth.a.val, 6);
+		addr_len = 7;
+		break;
+	default:
+		break;
+	}
+	common.len_encrypted += addr_len;
+
+	/* Validate size against storage buffer capacity */
+	if (net_buf_tailroom(storage_buf) < common.len_encrypted) {
+		return -ENOMEM;
+	}
+
+	/* Common header + interface address */
+	common.len_encrypted |= rx_meta->auth == EPACKET_AUTH_FAILURE ? 0x8000 : 0x00;
+	common.interface = rx_meta->interface_id;
+	common.rssi = -MIN(0, rx_meta->rssi);
+	net_buf_add_mem(storage_buf, &common, sizeof(common));
+	net_buf_add_mem(storage_buf, interface_addr, addr_len);
+
+	if (rx_meta->auth != EPACKET_AUTH_FAILURE) {
+		/* Decrypted data header */
+		decrypted.type = rx_meta->type;
+		decrypted.device_id = rx_meta->packet_device_id;
+		decrypted.gps_time = rx_meta->packet_gps_time;
+		decrypted.flags = rx_meta->flags;
+		decrypted.sequence = rx_meta->sequence;
+		sys_put_le24(rx_meta->key_identifier, decrypted.key_id);
+
+		net_buf_add_mem(storage_buf, &decrypted, sizeof(decrypted));
+	}
+	/* Payload */
+	net_buf_add_mem(storage_buf, received_buf->data, received_buf->len);
+
+	net_buf_unref(received_buf);
+	return 0;
 }
