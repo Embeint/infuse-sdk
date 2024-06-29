@@ -107,8 +107,6 @@ int epacket_versioned_v0_decrypt(struct net_buf *buf, uint8_t interface_key)
 	struct epacket_rx_metadata *meta = net_buf_user_data(buf);
 	struct epacket_v0_versioned_frame_format frame;
 	struct net_buf *scratch;
-	uint32_t key_identifier;
-	uint64_t device_id;
 	psa_key_id_t psa_key_id;
 	uint8_t epacket_key_id;
 	psa_status_t status;
@@ -129,24 +127,25 @@ int epacket_versioned_v0_decrypt(struct net_buf *buf, uint8_t interface_key)
 	meta->type = frame.associated_data.type;
 	meta->flags = frame.associated_data.flags;
 	meta->sequence = frame.nonce.sequence;
-	key_identifier = sys_get_le24(frame.associated_data.key_identifier);
+	meta->key_identifier = sys_get_le24(frame.associated_data.key_identifier);
+	meta->packet_gps_time = frame.nonce.gps_time;
+	meta->packet_device_id = ((uint64_t)frame.associated_data.device_id_upper << 32) |
+				 frame.nonce.device_id_lower;
 
 	if (frame.associated_data.flags & EPACKET_FLAGS_ENCRYPTION_DEVICE) {
 		meta->auth = EPACKET_AUTH_DEVICE;
 		/* Validate packet is for us */
-		device_id = ((uint64_t)frame.associated_data.device_id_upper << 32) |
-			    frame.nonce.device_id_lower;
-		if (device_id != infuse_device_id()) {
+		if (meta->packet_device_id != infuse_device_id()) {
 			goto error;
 		}
-		if (key_identifier != infuse_security_device_key_identifier()) {
+		if (meta->key_identifier != infuse_security_device_key_identifier()) {
 			goto error;
 		}
 		epacket_key_id = EPACKET_KEY_DEVICE | interface_key;
 	} else {
 		meta->auth = EPACKET_AUTH_NETWORK;
 		/* Validate the network IDs match */
-		if (key_identifier != infuse_security_network_key_identifier()) {
+		if (meta->key_identifier != infuse_security_network_key_identifier()) {
 			goto error;
 		}
 		epacket_key_id = EPACKET_KEY_NETWORK | interface_key;
@@ -268,8 +267,6 @@ int epacket_unversioned_v0_decrypt(struct net_buf *buf, uint8_t interface_key)
 	struct epacket_rx_metadata *meta = net_buf_user_data(buf);
 	struct epacket_v0_unversioned_frame_format frame;
 	struct net_buf *scratch;
-	uint64_t device_id;
-	uint32_t key_identifier;
 	psa_key_id_t psa_key_id;
 	uint8_t epacket_key_id;
 	psa_status_t status;
@@ -286,24 +283,25 @@ int epacket_unversioned_v0_decrypt(struct net_buf *buf, uint8_t interface_key)
 	meta->flags = frame.associated_data.flags;
 	meta->auth = EPACKET_AUTH_DEVICE;
 	meta->sequence = frame.nonce.sequence;
-	key_identifier = sys_get_le24(frame.associated_data.key_identifier);
+	meta->key_identifier = sys_get_le24(frame.associated_data.key_identifier);
+	meta->packet_gps_time = frame.nonce.gps_time;
+	meta->packet_device_id = ((uint64_t)frame.associated_data.device_id_upper << 32) |
+				 frame.nonce.device_id_lower;
 
 	if (frame.associated_data.flags & EPACKET_FLAGS_ENCRYPTION_DEVICE) {
 		meta->auth = EPACKET_AUTH_DEVICE;
 		/* Validate packet is for us */
-		device_id = ((uint64_t)frame.associated_data.device_id_upper << 32) |
-			    frame.nonce.device_id_lower;
-		if (device_id != infuse_device_id()) {
+		if (meta->packet_device_id != infuse_device_id()) {
 			goto error;
 		}
-		if (key_identifier != infuse_security_device_key_identifier()) {
+		if (meta->key_identifier != infuse_security_device_key_identifier()) {
 			goto error;
 		}
 		epacket_key_id = EPACKET_KEY_DEVICE | interface_key;
 	} else {
 		meta->auth = EPACKET_AUTH_NETWORK;
 		/* Validate the network IDs match */
-		if (key_identifier != infuse_security_network_key_identifier()) {
+		if (meta->key_identifier != infuse_security_network_key_identifier()) {
 			goto error;
 		}
 		epacket_key_id = EPACKET_KEY_NETWORK | interface_key;
