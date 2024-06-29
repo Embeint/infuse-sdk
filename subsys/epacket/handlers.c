@@ -54,6 +54,35 @@ done:
 	net_buf_unref(buf);
 }
 
+void epacket_gateway_receive_handler(const struct device *backhaul, struct net_buf *buf)
+{
+	struct epacket_rx_metadata *meta = net_buf_user_data(buf);
+
+	/* Forward Bluetooth advertising packets */
+	if (meta->interface_id == EPACKET_INTERFACE_BT_ADV) {
+		LOG_DBG("Received on %s: Auth=%d Type=%d Seq=%d Len=%d", meta->interface->name,
+			meta->auth, meta->type, meta->sequence, buf->len);
+
+		struct net_buf *forward = epacket_alloc_tx_for_interface(backhaul, K_FOREVER);
+
+		if (epacket_received_packet_append(forward, buf) == 0) {
+			/* Add metadata */
+			epacket_set_tx_metadata(forward, EPACKET_AUTH_DEVICE, 0x00,
+						INFUSE_RECEIVED_EPACKET);
+			/* Queue for transmission on backhaul */
+			epacket_queue(backhaul, forward);
+		} else {
+			LOG_WRN("Could not forward packet");
+			net_buf_unref(forward);
+			net_buf_unref(buf);
+		}
+		return;
+	}
+
+	/* Run default handler */
+	epacket_default_receive_handler(buf);
+}
+
 int epacket_received_packet_append(struct net_buf *storage_buf, struct net_buf *received_buf)
 {
 	struct epacket_rx_metadata *rx_meta = net_buf_user_data(received_buf);
