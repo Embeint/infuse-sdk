@@ -213,11 +213,34 @@ static inline void epacket_register_callback(const struct device *dev,
 /**
  * @brief Default ePacket receive handler
  *
- * Currently only prints received packets.
+ * Currently handles echo and RPC requests.
  *
  * @param buf ePacket that was received
  */
 void epacket_default_receive_handler(struct net_buf *buf);
+
+/**
+ * @brief Default gateway receive handler
+ *
+ * Received Bluetooth advertising packets are forwarded over backhaul.
+ * All other packets handled by @ref epacket_default_receive_handler.
+ *
+ * @param backhaul ePacket interface to forward packets on.
+ * @param buf ePacket that was received
+ */
+void epacket_gateway_receive_handler(const struct device *backhaul, struct net_buf *buf);
+
+/**
+ * @brief Define a handler for a specific backhaul interface
+ *
+ * @param name Name of handler function
+ * @param backhaul Backhaul interface
+ */
+#define GATEWAY_HANDLER_DEFINE(name, backhaul)                                                     \
+	static void name(struct net_buf *buf)                                                      \
+	{                                                                                          \
+		epacket_gateway_receive_handler(backhaul, buf);                                    \
+	}
 
 /**
  * @}
