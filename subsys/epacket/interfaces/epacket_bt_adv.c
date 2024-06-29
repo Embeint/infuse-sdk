@@ -180,6 +180,7 @@ static void scan_cb(const bt_addr_le_t *addr, int8_t rssi, uint8_t adv_type,
 	meta = net_buf_user_data(rx_buffer);
 	meta->interface = DEVICE_DT_INST_GET(0);
 	meta->interface_id = EPACKET_INTERFACE_BT_ADV;
+	meta->interface_address.bluetooth = *addr;
 	meta->rssi = rssi;
 
 	/* Hand off to ePacket core */
