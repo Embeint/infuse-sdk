@@ -116,9 +116,14 @@ int epacket_versioned_v0_decrypt(struct net_buf *buf, uint8_t interface_key)
 
 	/* Not enough data in buffer */
 	if (buf->len <= sizeof(struct epacket_v0_versioned_frame_format) + 16) {
-		return -1;
+		goto error;
 	}
 	memcpy(&frame, buf->data, sizeof(frame));
+
+	/* Not V0 */
+	if (frame.associated_data.version != 0) {
+		goto error;
+	}
 
 	/* Packet metadata */
 	meta->type = frame.associated_data.type;
