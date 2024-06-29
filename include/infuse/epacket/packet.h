@@ -18,6 +18,7 @@
 #include <zephyr/device.h>
 #include <zephyr/toolchain.h>
 #include <zephyr/net/buf.h>
+#include <zephyr/bluetooth/bluetooth.h>
 
 #include <infuse/types.h>
 #include <infuse/epacket/interface.h>
@@ -56,6 +57,10 @@ struct epacket_rx_metadata {
 	const struct device *interface;
 	/* Numerical ID for interface */
 	enum epacket_interface_id interface_id;
+	/* Interface specific address */
+	union {
+		bt_addr_le_t bluetooth;
+	} interface_address;
 	/* RSSI of packet (0 = 0dBm, 20 = 20dBm, etc) */
 	int16_t rssi;
 	/* Sequence number of packet */
