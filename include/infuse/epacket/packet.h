@@ -39,6 +39,7 @@ enum epacket_auth {
 	EPACKET_AUTH_DEVICE,
 } __packed;
 
+/* Metadata for packets that will be transmitted */
 struct epacket_tx_metadata {
 	void (*tx_done)(const struct device *dev, struct net_buf *pkt, int result);
 	enum epacket_auth auth;
@@ -46,6 +47,7 @@ struct epacket_tx_metadata {
 	uint16_t flags;
 };
 
+/* Metadata for packets that have been received */
 struct epacket_rx_metadata {
 	/* Device ID in packet */
 	uint64_t packet_device_id;
@@ -82,6 +84,35 @@ enum epacket_flags {
 	/* Bits 0-7: Interface specific */
 	EPACKET_FLAGS_INTERFACE_MASK = 0x00FF,
 };
+
+/** Common header for @ref INFUSE_RECEIVED_EPACKET */
+struct epacket_received_common_header {
+	/*    Bit 16: 1 when packet is still encrypted
+	 *            0 when packet is decrypted
+	 * Bits 0-15: Total length of headers + data
+	 */
+	uint16_t len_encrypted;
+	/* Received packet signal strength (0 - val) */
+	uint8_t rssi;
+	/* Value from `EPACKET_INTERFACE_*` */
+	uint8_t interface;
+} __packed;
+
+/** Header for @ref INFUSE_RECEIVED_EPACKET where packet was decrypted */
+struct epacket_received_decrypted_header {
+	/* Device ID in the packet */
+	uint64_t device_id;
+	/* GPS time in the packet */
+	uint32_t gps_time;
+	/* Packet type */
+	uint8_t type;
+	/* Packet flags */
+	uint16_t flags;
+	/* Sequence number */
+	uint16_t sequence;
+	/* ID associated with the key */
+	uint8_t key_id[3];
+} __packed;
 
 /**
  * @brief Allocate ePacket TX buffer
@@ -163,6 +194,17 @@ static inline void epacket_set_tx_callback(struct net_buf *buf,
 
 	meta->tx_done = tx_done;
 }
+
+/**
+ * @brief Append received packet to storage buffer
+ *
+ * @param storage_buf Buffer of type @ref INFUSE_RECEIVED_EPACKET
+ * @param received_buf Receive ePacket to append to @a storage_buf
+ *
+ * @retval 0 on success
+ * @retval -ENOMEM if insufficient space exists on @a storage_buf
+ */
+int epacket_received_packet_append(struct net_buf *storage_buf, struct net_buf *received_buf);
 
 /**
  * @}

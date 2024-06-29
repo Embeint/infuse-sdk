@@ -38,6 +38,8 @@ enum infuse_type {
 	INFUSE_RPC_DATA_ACK = 5,
 	/* Infuse RPC response */
 	INFUSE_RPC_RSP = 6,
+	/* Infuse ePacket received by device */
+	INFUSE_RECEIVED_EPACKET = 7,
 	/* 128 - 255 can be freely defined by customers */
 	INFUSE_CUSTOMER_RANGE_START = 128,
 } __packed;
