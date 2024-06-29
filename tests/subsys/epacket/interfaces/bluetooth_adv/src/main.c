@@ -64,10 +64,16 @@ ZTEST(epacket_bt_adv, test_metadata)
 		meta = net_buf_user_data(rx);
 		zassert_equal(iter_auth, meta->auth);
 		zassert_equal(0x10 + i, meta->type);
+		zassert_equal(infuse_device_id(), meta->packet_device_id);
+		zassert_not_equal(0, meta->packet_gps_time);
 		if (iter_auth == EPACKET_AUTH_DEVICE) {
 			zassert_equal(EPACKET_FLAGS_ENCRYPTION_DEVICE | i, meta->flags);
+			zassert_equal(infuse_security_device_key_identifier(),
+				      meta->key_identifier);
 		} else {
 			zassert_equal(EPACKET_FLAGS_ENCRYPTION_NETWORK | i, meta->flags);
+			zassert_equal(infuse_security_network_key_identifier(),
+				      meta->key_identifier);
 		}
 		seqs[i] = meta->sequence;
 

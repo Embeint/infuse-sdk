@@ -189,7 +189,7 @@ ZTEST(epacket_serial, test_sequence)
 	struct epacket_rx_metadata *meta;
 	enum epacket_auth iter_auth;
 	struct net_buf *tx, *rx;
-	uint16_t extra_flags, seqs[8];
+	uint16_t seqs[8];
 	uint8_t *p;
 	int rc;
 
@@ -198,8 +198,6 @@ ZTEST(epacket_serial, test_sequence)
 
 	for (int i = 0; i < ARRAY_SIZE(seqs); i++) {
 		iter_auth = i % 2 ? EPACKET_AUTH_DEVICE : EPACKET_AUTH_NETWORK;
-		extra_flags =
-			i % 2 ? EPACKET_FLAGS_ENCRYPTION_DEVICE : EPACKET_FLAGS_ENCRYPTION_NETWORK;
 		/* Construct buffer */
 		tx = epacket_alloc_tx(K_NO_WAIT);
 		zassert_not_null(tx);
@@ -223,7 +221,17 @@ ZTEST(epacket_serial, test_sequence)
 		meta = net_buf_user_data(rx);
 		zassert_equal(iter_auth, meta->auth);
 		zassert_equal(0x10 + i, meta->type);
-		zassert_equal(extra_flags | i, meta->flags);
+		zassert_equal(infuse_device_id(), meta->packet_device_id);
+		zassert_not_equal(0, meta->packet_gps_time);
+		if (iter_auth == EPACKET_AUTH_DEVICE) {
+			zassert_equal(EPACKET_FLAGS_ENCRYPTION_DEVICE | i, meta->flags);
+			zassert_equal(infuse_security_device_key_identifier(),
+				      meta->key_identifier);
+		} else {
+			zassert_equal(EPACKET_FLAGS_ENCRYPTION_NETWORK | i, meta->flags);
+			zassert_equal(infuse_security_network_key_identifier(),
+				      meta->key_identifier);
+		}
 		seqs[i] = meta->sequence;
 
 		if (i > 0) {
