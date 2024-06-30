@@ -6,4 +6,4 @@ tests:
   epacket.common:
     integration_platforms:
       - native_sim
-      - qemu_cortex_m3
+      - mps2_an385
