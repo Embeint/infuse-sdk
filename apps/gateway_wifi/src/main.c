@@ -22,10 +22,25 @@
 
 LOG_MODULE_REGISTER(app, LOG_LEVEL_INF);
 
+GATEWAY_HANDLER_DEFINE(udp_backhaul_handler, DEVICE_DT_GET(DT_NODELABEL(epacket_udp)));
+
 int main(void)
 {
 	const struct device *tdf_logger_udp = DEVICE_DT_GET(DT_NODELABEL(tdf_logger_udp));
+	const struct device *epacket_bt_adv = DEVICE_DT_GET(DT_NODELABEL(epacket_bt_adv));
+	const struct device *epacket_serial = DEVICE_DT_GET(DT_NODELABEL(epacket_serial));
+	const struct device *epacket_udp = DEVICE_DT_GET(DT_NODELABEL(epacket_udp));
 	struct tdf_announce announce;
+
+	/* Gateway receive handlers */
+	epacket_set_receive_handler(epacket_serial, udp_backhaul_handler);
+	epacket_set_receive_handler(epacket_bt_adv, udp_backhaul_handler);
+	epacket_set_receive_handler(epacket_udp, udp_backhaul_handler);
+
+	/* Always listening on Bluetooth, serial and UDP */
+	epacket_receive(epacket_serial, K_FOREVER);
+	epacket_receive(epacket_bt_adv, K_FOREVER);
+	epacket_receive(epacket_udp, K_FOREVER);
 
 	for (;;) {
 		announce.application = 0x1234;

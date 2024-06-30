@@ -18,10 +18,22 @@
 
 LOG_MODULE_REGISTER(app, LOG_LEVEL_INF);
 
+GATEWAY_HANDLER_DEFINE(serial_backhaul_handler, DEVICE_DT_GET(DT_NODELABEL(epacket_serial)));
+
 int main(void)
 {
 	const struct device *tdf_logger_serial = DEVICE_DT_GET(DT_NODELABEL(tdf_logger_serial));
+	const struct device *epacket_bt_adv = DEVICE_DT_GET(DT_NODELABEL(epacket_bt_adv));
+	const struct device *epacket_serial = DEVICE_DT_GET(DT_NODELABEL(epacket_serial));
 	struct tdf_announce announce;
+
+	/* Gateway receive handlers */
+	epacket_set_receive_handler(epacket_serial, serial_backhaul_handler);
+	epacket_set_receive_handler(epacket_bt_adv, serial_backhaul_handler);
+
+	/* Always listening on Bluetooth and serial */
+	epacket_receive(epacket_serial, K_FOREVER);
+	epacket_receive(epacket_bt_adv, K_FOREVER);
 
 	for (;;) {
 		announce.application = 0x1234;
