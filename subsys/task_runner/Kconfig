@@ -1,0 +1,4 @@
+# Infuse-IoT Task Runner
+
+config TASK_RUNNER
+	bool "Infuse-IoT Task Runner"
