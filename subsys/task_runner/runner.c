@@ -7,6 +7,7 @@
  */
 
 #include <zephyr/logging/log.h>
+#include <zephyr/sys/__assert.h>
 
 #include <infuse/task_runner/runner.h>
 
@@ -34,6 +35,11 @@ void task_runner_init(const struct task_schedule *schedules,
 	for (int i = 0; i < tsk_num; i++) {
 		tsk_states[i].running = false;
 		tsk_states[i].schedule_idx = UINT8_MAX;
+		/* Initialise delayable workers */
+		if (tsk[i].exec_type == TASK_EXECUTOR_WORKQUEUE) {
+			k_work_init_delayable(&tsk_states[i].executor.workqueue.work,
+					      tsk[i].executor.workqueue.worker_fn);
+		}
 	}
 
 	for (int i = 0; i < sch_num; i++) {
@@ -79,11 +85,19 @@ static void task_start(uint8_t schedule_index, uint32_t uptime)
 
 	k_poll_signal_init(&d->terminate_signal);
 
-	/* Boot the thread */
-	(void)k_thread_create(&d->executor.thread, c->executor.thread.stack,
-			      c->executor.thread.stack_size,
-			      (k_thread_entry_t)c->executor.thread.task_fn, (void *)s,
-			      &d->terminate_signal, NULL, 5, 0, K_NO_WAIT);
+	if (c->exec_type == TASK_EXECUTOR_THREAD) {
+		/* Boot the thread */
+		(void)k_thread_create(&d->executor.thread, c->executor.thread.stack,
+				      c->executor.thread.stack_size,
+				      (k_thread_entry_t)c->executor.thread.task_fn, (void *)s,
+				      &d->terminate_signal, NULL, 5, 0, K_NO_WAIT);
+	} else {
+		__ASSERT_NO_MSG(c->exec_type == TASK_EXECUTOR_WORKQUEUE);
+		/* Reset the reschedule counter */
+		d->executor.workqueue.reschedule_counter = 0;
+		/* Schedule the work on the queue */
+		k_work_schedule(&d->executor.workqueue.work, K_NO_WAIT);
+	}
 }
 
 static void task_terminate(uint8_t schedule_index)
@@ -97,6 +111,24 @@ static void task_terminate(uint8_t schedule_index)
 	k_poll_signal_raise(&d->terminate_signal, 0);
 }
 
+static bool task_has_terminated(uint8_t task_idx)
+{
+	const struct task_config *c = &tsk[task_idx];
+	struct task_data *d = &tsk_states[task_idx];
+
+	if (c->exec_type == TASK_EXECUTOR_THREAD) {
+		if (k_thread_join(&d->executor.thread, K_NO_WAIT) == 0) {
+			return true;
+		}
+	} else {
+		__ASSERT_NO_MSG(c->exec_type == TASK_EXECUTOR_WORKQUEUE);
+		if (k_work_busy_get(&d->executor.workqueue.work.work) == 0) {
+			return true;
+		}
+	}
+	return false;
+}
+
 void task_runner_iterate(uint32_t uptime, uint32_t gps_time, uint8_t battery_charge)
 {
 	bool transition;
@@ -104,7 +136,7 @@ void task_runner_iterate(uint32_t uptime, uint32_t gps_time, uint8_t battery_cha
 	/* Determine if any running tasks have terminated */
 	for (int i = 0; i < tsk_num; i++) {
 		if (tsk_states[i].running) {
-			if (k_thread_join(&tsk_states[i].executor.thread, K_NO_WAIT) == 0) {
+			if (task_has_terminated(i)) {
 				LOG_INF("Task %s terminated", tsk[i].name);
 				tsk_states[i].running = false;
 			}

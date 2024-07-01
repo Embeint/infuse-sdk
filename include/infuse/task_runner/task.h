@@ -24,6 +24,13 @@ extern "C" {
  * @{
  */
 
+enum {
+	/** Task runs on its own thread */
+	TASK_EXECUTOR_THREAD,
+	/** Task runs on the system workqueue */
+	TASK_EXECUTOR_WORKQUEUE,
+};
+
 typedef void (*task_runner_task_fn)(const struct task_schedule *schedule,
 				    struct k_poll_signal *terminate);
 
@@ -35,6 +42,8 @@ struct task_config {
 	const char *name;
 	/** Task identifier */
 	uint8_t task_id;
+	/** Execution context `TASK_EXECUTOR_*` */
+	uint8_t exec_type;
 	union {
 		struct {
 			/** Thread function */
@@ -44,6 +53,12 @@ struct task_config {
 			/** Size of stack memory */
 			size_t stack_size;
 		} thread;
+		struct {
+			/** Handler function */
+			k_work_handler_t worker_fn;
+			/** Persistent state */
+			void *state;
+		} workqueue;
 	} executor;
 };
 
@@ -54,6 +69,13 @@ struct task_data {
 	union {
 		/** Thread state storage */
 		struct k_thread thread;
+		/** Workqueue state storage */
+		struct {
+			/* Workqueue item */
+			struct k_work_delayable work;
+			/* Counter for the number of times the work has been rescheduled this run */
+			int reschedule_counter;
+		} workqueue;
 	} executor;
 	/** Thread termination signal */
 	struct k_poll_signal terminate_signal;
@@ -97,6 +119,7 @@ struct task_data {
  *        ({                                                                    \
  *            .name = "sleepy",                                                 \
  *            .task_id = TASK_ID_SLEEPY,                                        \
+ *            .exec_type = TASK_EXECUTOR_THREAD,                                \
  *            .executor.thread = {                                              \
  *                .task_fn = example_task_fn,                                   \
  *                .thread_stack = sleep_stack_area,                             \
@@ -104,7 +127,18 @@ struct task_data {
  *            },
  *        }))
  *
- * TASK_RUNNER_TASKS_DEFINE(config, data, SLEEPY_TASK);
+ * #define WORKQ_TASK(define_mem, define_config)      \
+ *     IF_ENABLED(define_config,                      \
+ *         ({                                         \
+ *             .name = "workq",                       \
+ *             .task_id = TASK_ID_WORKQ,              \
+ *             .exec_type = TASK_EXECUTOR_WORKQUEUE,  \
+ *             .executor.workqueue = {                \
+ *                 .worker_fn = example_workqueue_fn, \
+ *             },                                     \
+ *         }))
+ *
+ * TASK_RUNNER_TASKS_DEFINE(config, data, SLEEPY_TASK, WORKQ_TASK);
  *
  * @param config_name Name of the created @ref task_config array
  * @param data_name Name of the created @ref task_data array
@@ -122,6 +156,35 @@ struct task_data {
 	static struct task_data data_name[ARRAY_SIZE(config_name)]
 
 /* clang-format on */
+
+/**
+ * @brief Get the parent task_data struct from the work pointer
+ *
+ * @param work Work pointer provided to handler
+ *
+ * @return struct task_data* Parent struct
+ */
+static inline struct task_data *task_data_from_work(struct k_work *work)
+{
+	struct k_work_delayable *dwork = k_work_delayable_from_work(work);
+
+	return CONTAINER_OF(dwork, struct task_data, executor.workqueue.work);
+}
+
+/**
+ * @brief Reschedule the task to run again after a delay
+ *
+ * @param task Task data structure
+ *
+ * @param delay Delay until running again
+ */
+static inline void task_workqueue_reschedule(struct task_data *task, k_timeout_t delay)
+{
+	/* Increment reschedule count */
+	task->executor.workqueue.reschedule_counter += 1;
+	/* Reschedule on queue */
+	k_work_reschedule(&task->executor.workqueue.work, delay);
+}
 
 /**
  * @brief Block on the termination signal for a duration
