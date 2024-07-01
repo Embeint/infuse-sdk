@@ -33,12 +33,18 @@ struct tdf_logger_data {
 	uint8_t block_overhead;
 };
 
+#define LOGGER_GET(node_id)                                                                        \
+	COND_CODE_1(DT_NODE_HAS_STATUS(node_id, okay),                                             \
+		    (COND_CODE_1(DATA_LOGGER_DEPENDENCIES_MET(DT_PARENT(node_id)),                 \
+				 (DEVICE_DT_GET(node_id)), (NULL))),                               \
+		    (NULL))
+
 /* Mapping of logger bitmask */
 static const struct device *logger_mapping[] = {
-	[_TDF_DATA_LOGGER_FLASH_OFFSET] = DEVICE_DT_GET_OR_NULL(DT_NODELABEL(tdf_logger_flash)),
-	[_TDF_DATA_LOGGER_SERIAL_OFFSET] = DEVICE_DT_GET_OR_NULL(DT_NODELABEL(tdf_logger_serial)),
-	[_TDF_DATA_LOGGER_UDP_OFFSET] = DEVICE_DT_GET_OR_NULL(DT_NODELABEL(tdf_logger_udp)),
-	[_TDF_DATA_LOGGER_BT_ADV_OFFSET] = DEVICE_DT_GET_OR_NULL(DT_NODELABEL(tdf_logger_bt_adv)),
+	[_TDF_DATA_LOGGER_FLASH_OFFSET] = LOGGER_GET(DT_NODELABEL(tdf_logger_flash)),
+	[_TDF_DATA_LOGGER_SERIAL_OFFSET] = LOGGER_GET(DT_NODELABEL(tdf_logger_serial)),
+	[_TDF_DATA_LOGGER_UDP_OFFSET] = LOGGER_GET(DT_NODELABEL(tdf_logger_udp)),
+	[_TDF_DATA_LOGGER_BT_ADV_OFFSET] = LOGGER_GET(DT_NODELABEL(tdf_logger_bt_adv)),
 };
 
 LOG_MODULE_REGISTER(tdf_logger, CONFIG_TDF_DATA_LOGGER_LOG_LEVEL);
