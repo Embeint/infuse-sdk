@@ -15,6 +15,8 @@
 
 #include <zephyr/toolchain.h>
 
+#include <infuse/task_runner/tasks/infuse_task_args.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -69,6 +71,7 @@ struct task_schedule {
 	/** Task specific arguments  */
 	union {
 		uint8_t raw[16];
+		union infuse_task_arguments infuse;
 	} task_args;
 } __packed;
 
