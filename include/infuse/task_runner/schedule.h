@@ -77,6 +77,8 @@ struct task_schedule_state {
 	uint32_t last_run;
 	/** Duration of current run */
 	uint32_t runtime;
+	/** Index into task array that corresponds with schedule @a task_id */
+	uint8_t task_idx;
 };
 
 /**

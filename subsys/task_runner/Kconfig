@@ -2,3 +2,12 @@
 
 config TASK_RUNNER
 	bool "Infuse-IoT Task Runner"
+	depends on POLL
+
+if TASK_RUNNER
+
+module = TASK_RUNNER
+module-str = Task Runner
+source "subsys/logging/Kconfig.template.log_config"
+
+endif # TASK_RUNNER
