@@ -66,6 +66,11 @@ void example_workqueue_fn(struct k_work *work)
 	struct task_data *task = task_data_from_work(work);
 	const struct task_schedule *sch = task_schedule_from_data(task);
 
+	if (task_runner_task_block(&task->terminate_signal, K_NO_WAIT) == 1) {
+		/* Early wake by runner to terminate */
+		return;
+	}
+
 	if (task->executor.workqueue.reschedule_counter == 0) {
 		/* Increment on first entry only */
 		example_workqueue_run_cnt += 1;
@@ -228,6 +233,7 @@ ZTEST(task_runner_runner, test_workqueue_task)
 		{
 			.task_id = TASK_ID_WORKQ,
 			.validity = TASK_VALID_ALWAYS,
+			.timeout_s = 4,
 			.periodicity_type = TASK_PERIODICITY_FIXED,
 			.periodicity.fixed.period_s = 5,
 			.task_args.raw = {0xB2},
@@ -256,6 +262,17 @@ ZTEST(task_runner_runner, test_workqueue_task)
 	/* "run" for a few seconds before terminating */
 	example_workqueue_reschedule_delay = K_MSEC(200);
 	example_workqueue_reschedule_cnt = 10;
+	example_workqueue_run_cnt = 0;
+	for (int i = 0; i < 10; i++) {
+		task_runner_iterate(uptime++, gps_time++, 100);
+		k_sleep(K_TIMEOUT_ABS_MS(iter * MSEC_PER_SEC));
+		iter++;
+	}
+	zassert_equal(2, example_workqueue_run_cnt);
+
+	/* Run until runner requests termination */
+	example_workqueue_reschedule_delay = K_SECONDS(10);
+	example_workqueue_reschedule_cnt = INT_MAX;
 	example_workqueue_run_cnt = 0;
 	for (int i = 0; i < 10; i++) {
 		task_runner_iterate(uptime++, gps_time++, 100);
