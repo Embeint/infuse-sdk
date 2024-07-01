@@ -35,20 +35,26 @@ struct task_config {
 	const char *name;
 	/** Task identifier */
 	uint8_t task_id;
-	/** Thread function */
-	task_runner_task_fn task_fn;
-	/** Pointer to stack memory for thread */
-	k_thread_stack_t *thread_stack;
-	/** Size of stack memory */
-	size_t thread_stack_size;
+	union {
+		struct {
+			/** Thread function */
+			task_runner_task_fn task_fn;
+			/** Pointer to stack memory for thread */
+			k_thread_stack_t *stack;
+			/** Size of stack memory */
+			size_t stack_size;
+		} thread;
+	} executor;
 };
 
 /**
  * @brief Task runtime state
  */
 struct task_data {
-	/** Thread state storage */
-	struct k_thread thread;
+	union {
+		/** Thread state storage */
+		struct k_thread thread;
+	} executor;
 	/** Thread termination signal */
 	struct k_poll_signal terminate_signal;
 	/** Schedule that triggered the task to run */
@@ -91,9 +97,11 @@ struct task_data {
  *        ({                                                                    \
  *            .name = "sleepy",                                                 \
  *            .task_id = TASK_ID_SLEEPY,                                        \
- *            .task_fn = example_task_fn,                                       \
- *            .thread_stack = sleep_stack_area,                                 \
- *            .thread_stack_size = K_THREAD_STACK_SIZEOF(sleep_stack_area),     \
+ *            .executor.thread = {                                              \
+ *                .task_fn = example_task_fn,                                   \
+ *                .thread_stack = sleep_stack_area,                             \
+ *                .thread_stack_size = K_THREAD_STACK_SIZEOF(sleep_stack_area), \
+ *            },
  *        }))
  *
  * TASK_RUNNER_TASKS_DEFINE(config, data, SLEEPY_TASK);
