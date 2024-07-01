@@ -172,6 +172,15 @@ static inline struct task_data *task_data_from_work(struct k_work *work)
 }
 
 /**
+ * @brief Retrieve the schedule associated with a task
+ *
+ * @param data Task data struct
+ *
+ * @return struct task_schedule* Task schedule
+ */
+const struct task_schedule *task_schedule_from_data(struct task_data *data);
+
+/**
  * @brief Reschedule the task to run again after a delay
  *
  * @param task Task data structure

@@ -68,6 +68,11 @@ void task_runner_init(const struct task_schedule *schedules,
 	}
 }
 
+const struct task_schedule *task_schedule_from_data(struct task_data *data)
+{
+	return &sch[data->schedule_idx];
+}
+
 static void task_start(uint8_t schedule_index, uint32_t uptime)
 {
 	const struct task_schedule *s = &sch[schedule_index];
