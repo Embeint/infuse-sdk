@@ -13,6 +13,8 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#include <zephyr/toolchain.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -49,14 +51,12 @@ struct task_schedule {
 	uint8_t validity;
 	/** TASK_PERIODICITY_* value */
 	uint8_t periodicity_type;
-	uint8_t reserved1;
 	/** Duration after which task is requested to terminate */
 	uint32_t timeout_s;
 	/** Task can start when battery is at least this charged */
 	uint8_t battery_start_threshold;
 	/** Task will terminate when battery falls to this level */
 	uint8_t battery_terminate_threshold;
-	uint16_t reserved2;
 	union {
 		struct {
 			uint32_t period_s;
