@@ -58,6 +58,64 @@ struct task_data {
 };
 
 /**
+ * @brief Expand @a task_macro to define variable sized memory
+ *
+ * @param task_macro Macro that evaluates to a task variable memory
+ *                   definition when the first argument is 1.
+ */
+#define _TASK_MEM_DEFINE(task_macro)    task_macro(1, 0)
+/**
+ * @brief Expand @a task_macro to define a task configuration
+ *
+ * @param task_macro Macro that evaluates to a task config definition
+ *                   when the second argument is 1.
+ */
+#define _TASK_CONFIG_DEFINE(task_macro) task_macro(0, 1)
+
+/* clang-format off */
+
+/**
+ * @brief Instantiate tasks information for task runner
+ *
+ * Helper macro that automatically creates the 3 items needed for correct
+ * operation of the task runner:
+ *    1. Instantiate variably sized memory for the task (e.g. thread stack)
+ *    2. Array of task configuration structs for the runner
+ *    3. Array of task data structs for the runner
+ *
+ * Example Usage:
+ *
+ * #define SLEEPY_TASK(define_mem, define_config)                               \
+ *    IF_ENABLED(define_mem, (K_THREAD_STACK_DEFINE(sleep_stack_area, 1024)))   \
+ *    IF_ENABLED(define_config,                                                 \
+ *        ({                                                                    \
+ *            .name = "sleepy",                                                 \
+ *            .task_id = TASK_ID_SLEEPY,                                        \
+ *            .task_fn = example_task_fn,                                       \
+ *            .thread_stack = sleep_stack_area,                                 \
+ *            .thread_stack_size = K_THREAD_STACK_SIZEOF(sleep_stack_area),     \
+ *        }))
+ *
+ * TASK_RUNNER_TASKS_DEFINE(config, data, SLEEPY_TASK);
+ *
+ * @param config_name Name of the created @ref task_config array
+ * @param data_name Name of the created @ref task_data array
+ * @param ... List of task definition macros to evaluate
+ */
+#define TASK_RUNNER_TASKS_DEFINE(config_name, data_name, ...)                                      \
+	/* Define variable memory for the task */                                                  \
+	FOR_EACH(_TASK_MEM_DEFINE, (;), __VA_ARGS__)                                               \
+		;                                                                                  \
+	/* Define the configurations for each task */                                              \
+	static const struct task_config config_name[] = {                                          \
+		FOR_EACH(_TASK_CONFIG_DEFINE, (,), __VA_ARGS__),                                   \
+	};                                                                                         \
+	/* Define the runtime task data array */                                                   \
+	static struct task_data data_name[ARRAY_SIZE(config_name)]
+
+/* clang-format on */
+
+/**
  * @brief Block on the termination signal for a duration
  *
  * @param terminate_signal Termination signal received from the runner

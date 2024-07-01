@@ -36,17 +36,18 @@ void example_task_fn(const struct task_schedule *schedule, struct k_poll_signal 
 	zassert_equal(example_task_expected_block_rc, rc);
 }
 
-K_THREAD_STACK_DEFINE(example_stack_area, 1024);
-static const struct task_config task_configs[] = {
-	{
-		.name = "sleepy",
-		.task_id = TASK_ID_SLEEPY,
-		.task_fn = example_task_fn,
-		.thread_stack = example_stack_area,
-		.thread_stack_size = K_THREAD_STACK_SIZEOF(example_stack_area),
-	},
-};
-static struct task_data task_data[ARRAY_SIZE(task_configs)];
+#define SLEEPY_TASK(define_mem, define_config)                                                     \
+	IF_ENABLED(define_mem, (K_THREAD_STACK_DEFINE(sleep_stack_area, 2048)))                    \
+	IF_ENABLED(define_config,                                                                  \
+		   ({                                                                              \
+			   .name = "sleepy",                                                       \
+			   .task_id = TASK_ID_SLEEPY,                                              \
+			   .task_fn = example_task_fn,                                             \
+			   .thread_stack = sleep_stack_area,                                       \
+			   .thread_stack_size = K_THREAD_STACK_SIZEOF(sleep_stack_area),           \
+		   }))
+
+TASK_RUNNER_TASKS_DEFINE(app_tasks, app_tasks_data, SLEEPY_TASK);
 
 ZTEST(task_runner_runner, test_init_invalid)
 {
@@ -65,8 +66,8 @@ ZTEST(task_runner_runner, test_init_invalid)
 	uint32_t iter = k_uptime_seconds() + 1;
 
 	/* Schedule refers to task that does not exist */
-	task_runner_init(schedules, states, ARRAY_SIZE(schedules), task_configs, task_data,
-			 ARRAY_SIZE(task_configs));
+	task_runner_init(schedules, states, ARRAY_SIZE(schedules), app_tasks, app_tasks_data,
+			 ARRAY_SIZE(app_tasks));
 	for (int i = 0; i < 10; i++) {
 		task_runner_iterate(uptime++, gps_time++, 100);
 		k_sleep(K_TIMEOUT_ABS_MS(iter * MSEC_PER_SEC));
@@ -77,8 +78,8 @@ ZTEST(task_runner_runner, test_init_invalid)
 	/* Schedule is invalid */
 	schedules[0].task_id = TASK_ID_SLEEPY;
 	schedules[0].battery_start_threshold = 110;
-	task_runner_init(schedules, states, ARRAY_SIZE(schedules), task_configs, task_data,
-			 ARRAY_SIZE(task_configs));
+	task_runner_init(schedules, states, ARRAY_SIZE(schedules), app_tasks, app_tasks_data,
+			 ARRAY_SIZE(app_tasks));
 	for (int i = 0; i < 10; i++) {
 		task_runner_iterate(uptime++, gps_time++, 100);
 		k_sleep(K_TIMEOUT_ABS_MS(iter * MSEC_PER_SEC));
@@ -103,8 +104,8 @@ ZTEST(task_runner_runner, test_basic_behaviour)
 	uint32_t uptime = 0;
 	uint32_t iter = k_uptime_seconds() + 1;
 
-	task_runner_init(schedules, states, ARRAY_SIZE(schedules), task_configs, task_data,
-			 ARRAY_SIZE(task_configs));
+	task_runner_init(schedules, states, ARRAY_SIZE(schedules), app_tasks, app_tasks_data,
+			 ARRAY_SIZE(app_tasks));
 
 	/* Immediate termination (10 seconds with 5 second period == 2 runs) */
 	for (int i = 0; i < 10; i++) {
@@ -160,8 +161,8 @@ ZTEST(task_runner_runner, test_multi_schedule)
 	uint32_t uptime = 0;
 	uint32_t iter = k_uptime_seconds() + 1;
 
-	task_runner_init(schedules, states, ARRAY_SIZE(schedules), task_configs, task_data,
-			 ARRAY_SIZE(task_configs));
+	task_runner_init(schedules, states, ARRAY_SIZE(schedules), app_tasks, app_tasks_data,
+			 ARRAY_SIZE(app_tasks));
 
 	/* "run" for a few seconds before terminating.
 	 * If second schedule terminates first, we would see a different return code
