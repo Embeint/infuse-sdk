@@ -21,6 +21,7 @@ enum task_ids {
 
 static k_timeout_t example_task_block_timeout;
 static int example_task_expected_block_rc;
+static uint8_t example_task_expected_arg;
 static int example_task_run_cnt;
 
 void example_task_fn(const struct task_schedule *schedule, struct k_poll_signal *terminate)
@@ -30,6 +31,9 @@ void example_task_fn(const struct task_schedule *schedule, struct k_poll_signal 
 	zassert_not_null(schedule);
 	zassert_not_null(terminate);
 	example_task_run_cnt += 1;
+
+	/* Validate expected argument value */
+	zassert_equal(example_task_expected_arg, schedule->task_args.raw[0]);
 
 	/* Block for the expected duration */
 	rc = task_runner_task_block(terminate, example_task_block_timeout);
@@ -54,16 +58,21 @@ void example_task_fn(const struct task_schedule *schedule, struct k_poll_signal 
 
 static k_timeout_t example_workqueue_reschedule_delay;
 static int example_workqueue_reschedule_cnt;
+static uint8_t example_workqueue_expected_arg;
 static int example_workqueue_run_cnt;
 
 void example_workqueue_fn(struct k_work *work)
 {
 	struct task_data *task = task_data_from_work(work);
+	const struct task_schedule *sch = task_schedule_from_data(task);
 
 	if (task->executor.workqueue.reschedule_counter == 0) {
 		/* Increment on first entry only */
 		example_workqueue_run_cnt += 1;
 	}
+
+	/* Validate expected argument value */
+	zassert_equal(example_workqueue_expected_arg, sch->task_args.raw[0]);
 
 	/* Reschedule until limit reached */
 	if (task->executor.workqueue.reschedule_counter < example_workqueue_reschedule_cnt) {
@@ -129,12 +138,15 @@ ZTEST(task_runner_runner, test_basic_behaviour)
 			.periodicity_type = TASK_PERIODICITY_FIXED,
 			.periodicity.fixed.period_s = 5,
 			.timeout_s = 4,
+			.task_args.raw = {0xA5},
 		},
 	};
 	struct task_schedule_state states[ARRAY_SIZE(schedules)];
 	uint32_t gps_time = 7000;
 	uint32_t uptime = 0;
 	uint32_t iter = k_uptime_seconds() + 1;
+
+	example_task_expected_arg = schedules[0].task_args.raw[0];
 
 	task_runner_init(schedules, states, ARRAY_SIZE(schedules), app_tasks, app_tasks_data,
 			 ARRAY_SIZE(app_tasks));
@@ -218,12 +230,15 @@ ZTEST(task_runner_runner, test_workqueue_task)
 			.validity = TASK_VALID_ALWAYS,
 			.periodicity_type = TASK_PERIODICITY_FIXED,
 			.periodicity.fixed.period_s = 5,
+			.task_args.raw = {0xB2},
 		},
 	};
 	struct task_schedule_state states[ARRAY_SIZE(schedules)];
 	uint32_t gps_time = 7000;
 	uint32_t uptime = 0;
 	uint32_t iter = k_uptime_seconds() + 1;
+
+	example_workqueue_expected_arg = schedules[0].task_args.raw[0];
 
 	task_runner_init(schedules, states, ARRAY_SIZE(schedules), app_tasks, app_tasks_data,
 			 ARRAY_SIZE(app_tasks));
@@ -254,6 +269,7 @@ static void runner_before(void *fixture)
 {
 	example_task_block_timeout = K_NO_WAIT;
 	example_task_expected_block_rc = 0;
+	example_task_expected_arg = 0;
 	example_task_run_cnt = 0;
 	example_workqueue_run_cnt = 0;
 }
