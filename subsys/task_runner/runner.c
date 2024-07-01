@@ -114,6 +114,10 @@ static void task_terminate(uint8_t schedule_index)
 	LOG_INF("Requesting task %s to terminate", c->name);
 	/* Raise the termination signal */
 	k_poll_signal_raise(&d->terminate_signal, 0);
+	if (c->exec_type == TASK_EXECUTOR_WORKQUEUE) {
+		/* Reschedule immediately to terminate */
+		k_work_reschedule(&d->executor.workqueue.work, K_NO_WAIT);
+	}
 }
 
 static bool task_has_terminated(uint8_t task_idx)
