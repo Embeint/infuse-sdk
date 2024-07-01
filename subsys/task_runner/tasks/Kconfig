@@ -1,0 +1,12 @@
+# Task Runner tasks
+
+config TASK_RUNNER_TASK_TDF_LOGGER
+	bool "TDF logger task"
+
+if TASK_RUNNER_TASK_TDF_LOGGER
+
+module = TASK_TDF_LOGGER
+module-str = TDF logger task
+source "subsys/logging/Kconfig.template.log_config"
+
+endif # TASK_RUNNER_TASK_TDF_LOGGER

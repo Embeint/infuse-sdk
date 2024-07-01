@@ -5,3 +5,5 @@ zephyr_library_sources(
   runner.c
   schedule.c
 )
+
+add_subdirectory(tasks)
