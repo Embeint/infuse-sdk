@@ -57,6 +57,7 @@ struct task_schedule {
 	uint8_t battery_start_threshold;
 	/** Task will terminate when battery falls to this level */
 	uint8_t battery_terminate_threshold;
+	/** Periodicity parameters */
 	union {
 		struct {
 			uint32_t period_s;
@@ -65,6 +66,10 @@ struct task_schedule {
 			uint32_t lockout_s;
 		} lockout;
 	} periodicity;
+	/** Task specific arguments  */
+	union {
+		uint8_t raw[16];
+	} task_args;
 } __packed;
 
 /**
