@@ -80,9 +80,10 @@ static void task_start(uint8_t schedule_index, uint32_t uptime)
 	k_poll_signal_init(&d->terminate_signal);
 
 	/* Boot the thread */
-	(void)k_thread_create(&d->thread, c->thread_stack, c->thread_stack_size,
-			      (k_thread_entry_t)c->task_fn, (void *)s, &d->terminate_signal, NULL,
-			      5, 0, K_NO_WAIT);
+	(void)k_thread_create(&d->executor.thread, c->executor.thread.stack,
+			      c->executor.thread.stack_size,
+			      (k_thread_entry_t)c->executor.thread.task_fn, (void *)s,
+			      &d->terminate_signal, NULL, 5, 0, K_NO_WAIT);
 }
 
 static void task_terminate(uint8_t schedule_index)
@@ -103,7 +104,7 @@ void task_runner_iterate(uint32_t uptime, uint32_t gps_time, uint8_t battery_cha
 	/* Determine if any running tasks have terminated */
 	for (int i = 0; i < tsk_num; i++) {
 		if (tsk_states[i].running) {
-			if (k_thread_join(&tsk_states[i].thread, K_NO_WAIT) == 0) {
+			if (k_thread_join(&tsk_states[i].executor.thread, K_NO_WAIT) == 0) {
 				LOG_INF("Task %s terminated", tsk[i].name);
 				tsk_states[i].running = false;
 			}

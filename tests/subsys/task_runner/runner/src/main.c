@@ -42,9 +42,12 @@ void example_task_fn(const struct task_schedule *schedule, struct k_poll_signal 
 		   ({                                                                              \
 			   .name = "sleepy",                                                       \
 			   .task_id = TASK_ID_SLEEPY,                                              \
-			   .task_fn = example_task_fn,                                             \
-			   .thread_stack = sleep_stack_area,                                       \
-			   .thread_stack_size = K_THREAD_STACK_SIZEOF(sleep_stack_area),           \
+			   .executor.thread =                                                      \
+				   {                                                               \
+					   .task_fn = example_task_fn,                             \
+					   .stack = sleep_stack_area,                              \
+					   .stack_size = K_THREAD_STACK_SIZEOF(sleep_stack_area),  \
+				   },                                                              \
 		   }))
 
 TASK_RUNNER_TASKS_DEFINE(app_tasks, app_tasks_data, SLEEPY_TASK);
