@@ -85,17 +85,20 @@ ZTEST(epacket_udp, test_metadata)
 
 ZTEST(epacket_udp, test_decrypt_error)
 {
+	struct epacket_rx_metadata *meta;
 	struct net_buf *rx;
 	uint8_t payload[64];
 
 	for (int i = 1; i <= sizeof(struct epacket_udp_frame) + 16; i++) {
 		/* Create too small buffer */
 		rx = epacket_alloc_rx(K_NO_WAIT);
+		meta = net_buf_user_data(rx);
 		zassert_not_null(rx);
 		net_buf_add_mem(rx, payload, i);
 
 		/* Ensure decode errors */
 		zassert_equal(-1, epacket_udp_decrypt(rx));
+		zassert_equal(EPACKET_AUTH_FAILURE, meta->auth);
 		net_buf_unref(rx);
 	}
 }
