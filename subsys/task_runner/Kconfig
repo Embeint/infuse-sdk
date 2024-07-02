@@ -6,6 +6,10 @@ config TASK_RUNNER
 
 if TASK_RUNNER
 
+config TASK_RUNNER_AUTO_ITERATE
+	bool "Enable the auto iteration functions"
+	depends on INFUSE_CIVIL_TIME
+
 config TASK_RUNNER_WORKQ_STACK_SIZE
 	int "Stack size of the Task Runner workqueue"
 	default 1024

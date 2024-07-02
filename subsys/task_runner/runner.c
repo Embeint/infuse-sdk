@@ -18,7 +18,7 @@ static const struct task_config *tsk;
 static struct task_data *tsk_states;
 static uint8_t tsk_num;
 
-static struct k_work_q task_runner_workq;
+struct k_work_q task_runner_workq;
 
 K_THREAD_STACK_DEFINE(workq_stack_area, CONFIG_TASK_RUNNER_WORKQ_STACK_SIZE);
 
