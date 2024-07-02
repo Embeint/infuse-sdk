@@ -14,6 +14,10 @@
 #include <infuse/epacket/interface.h>
 #include <infuse/epacket/interface/epacket_serial.h>
 
+#ifdef CONFIG_INFUSE_SECURITY
+#include <infuse/security.h>
+#endif
+
 #include "interfaces/epacket_internal.h"
 
 NET_BUF_POOL_DEFINE(epacket_scratch, 1, CONFIG_EPACKET_PACKET_SIZE_MAX, 0, NULL);
@@ -140,25 +144,29 @@ static void epacket_handle_rx(struct net_buf *buf)
 	LOG_DBG("%s: received %d byte packet (%d dBm)", metadata->interface->name, buf->len,
 		metadata->rssi);
 
+#ifdef CONFIG_INFUSE_SECURITY
+	/* Key ID request */
+	if (buf->len == 0) {
+		struct net_buf *rsp =
+			epacket_alloc_tx_for_interface(metadata->interface, K_NO_WAIT);
+
+		if (rsp) {
+			/* Infuse ID and network key ID in header, device key ID in payload */
+			epacket_set_tx_metadata(rsp, EPACKET_AUTH_NETWORK, 0, INFUSE_KEY_IDS);
+			net_buf_add_le24(rsp, infuse_security_device_key_identifier());
+			epacket_queue(metadata->interface, rsp);
+		} else {
+			LOG_WRN("Unable to respond to key ID request");
+		}
+		net_buf_unref(buf);
+		return;
+	}
+#endif /* CONFIG_INFUSE_SECURITY */
+
 	/* Payload decoding */
 	switch (metadata->interface_id) {
 #ifdef CONFIG_EPACKET_INTERFACE_SERIAL
 	case EPACKET_INTERFACE_SERIAL:
-		if (buf->len == 0) {
-			/* Serial echo packet, respond */
-			struct net_buf *echo =
-				epacket_alloc_tx_for_interface(metadata->interface, K_NO_WAIT);
-
-			if (echo) {
-				epacket_set_tx_metadata(echo, EPACKET_AUTH_NETWORK, 0,
-							INFUSE_ECHO_RSP);
-				epacket_queue(metadata->interface, echo);
-			} else {
-				LOG_WRN("Unable to respond to serial ping");
-			}
-			net_buf_unref(buf);
-			return;
-		}
 		rc = epacket_serial_decrypt(buf);
 		break;
 #endif /* CONFIG_EPACKET_INTERFACE_SERIAL */

@@ -85,6 +85,16 @@ enum epacket_flags {
 	EPACKET_FLAGS_INTERFACE_MASK = 0x00FF,
 };
 
+/** If a single byte payload with this value is received on an interface,
+ * respond with a @ref INFUSE_KEY_IDS packet.
+ */
+#define EPACKET_KEY_ID_REQ_MAGIC 0x4D
+
+/** Format of @ref INFUSE_KEY_IDS packet */
+struct epacket_key_ids_data {
+	uint8_t device_key_id[3];
+};
+
 /** Common header for @ref INFUSE_RECEIVED_EPACKET */
 struct epacket_received_common_header {
 	/*    Bit 16: 1 when packet is still encrypted
