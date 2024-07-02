@@ -43,6 +43,16 @@ enum {
 };
 
 /**
+ * @brief Control TDF logging output of a task
+ */
+struct task_schedule_tdf_logging {
+	/** TDF loggers to log to */
+	uint8_t loggers;
+	/** TDFs to log (bitmask defined by the activity) */
+	uint8_t tdf_mask;
+} __packed;
+
+/**
  * @brief Schedule for a given task
  *
  * Multiple schedules can exist for a single task.
@@ -68,6 +78,8 @@ struct task_schedule {
 			uint32_t lockout_s;
 		} lockout;
 	} periodicity;
+	/** Task logging configuration */
+	struct task_schedule_tdf_logging task_logging[2];
 	/** Task specific arguments  */
 	union {
 		uint8_t raw[16];
@@ -133,6 +145,22 @@ bool task_schedule_should_start(const struct task_schedule *schedule,
 bool task_schedule_should_terminate(const struct task_schedule *schedule,
 				    struct task_schedule_state *state, uint32_t uptime,
 				    uint32_t civil_time, uint8_t battery);
+
+/**
+ * @brief Determine if a given TDF was requested by the schedule
+ *
+ * @param schedule
+ * @param tdf_mask
+ *
+ * @retval true TDF was requested
+ * @retval false TDF was not requested
+ */
+static inline bool task_schedule_tdf_requested(const struct task_schedule *schedule,
+					       uint8_t tdf_mask)
+{
+	return (schedule->task_logging[0].tdf_mask & tdf_mask) ||
+	       (schedule->task_logging[1].tdf_mask & tdf_mask);
+}
 
 /**
  * @}
