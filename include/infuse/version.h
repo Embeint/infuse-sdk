@@ -41,7 +41,7 @@ extern "C" {
  *
  * @returns Current application version
  */
-struct infuse_version application_version_get(void)
+static inline struct infuse_version application_version_get(void)
 {
 #ifdef CONFIG_MCUBOOT_IMG_MANAGER
 	struct mcuboot_img_header header;
