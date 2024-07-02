@@ -46,17 +46,13 @@ TASK_RUNNER_TASKS_DEFINE(app_tasks, app_tasks_data, TDF_LOGGER_TASK);
 
 int main(void)
 {
-	int iterate = k_uptime_seconds() + 1;
-
 	/* Initialise task runner */
 	task_runner_init(schedules, states, ARRAY_SIZE(schedules), app_tasks, app_tasks_data,
 			 ARRAY_SIZE(app_tasks));
 
-	/* Iterate task runner forever */
-	while (true) {
-		task_runner_iterate(k_uptime_seconds(), civil_time_seconds(civil_time_now()), 100);
+	/* Start auto iteration */
+	task_runner_start_auto_iterate();
 
-		k_sleep(K_TIMEOUT_ABS_MS(iterate * MSEC_PER_SEC));
-		iterate += 1;
-	}
+	/* No more work to do in this context */
+	k_sleep(K_FOREVER);
 }
