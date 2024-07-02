@@ -18,6 +18,10 @@ static const struct task_config *tsk;
 static struct task_data *tsk_states;
 static uint8_t tsk_num;
 
+static struct k_work_q task_runner_workq;
+
+K_THREAD_STACK_DEFINE(workq_stack_area, CONFIG_TASK_RUNNER_WORKQ_STACK_SIZE);
+
 LOG_MODULE_REGISTER(task_runner, CONFIG_TASK_RUNNER_LOG_LEVEL);
 
 void task_runner_init(const struct task_schedule *schedules,
@@ -25,12 +29,24 @@ void task_runner_init(const struct task_schedule *schedules,
 		      const struct task_config *tasks, struct task_data *task_states,
 		      uint8_t num_tasks)
 {
+	static bool workq_running;
+
 	sch = schedules;
 	sch_states = schedule_states;
 	sch_num = num_schedules;
 	tsk = tasks;
 	tsk_states = task_states;
 	tsk_num = num_tasks;
+
+	if (!workq_running) {
+		/* Boot the task runner workqueue */
+		k_work_queue_init(&task_runner_workq);
+		k_work_queue_start(&task_runner_workq, workq_stack_area,
+				   K_THREAD_STACK_SIZEOF(workq_stack_area),
+				   CONFIG_SYSTEM_WORKQUEUE_PRIORITY, NULL);
+		k_thread_name_set(k_work_queue_thread_get(&task_runner_workq), "task_workq");
+		workq_running = true;
+	}
 
 	for (int i = 0; i < tsk_num; i++) {
 		tsk_states[i].running = false;
@@ -73,6 +89,14 @@ const struct task_schedule *task_schedule_from_data(struct task_data *data)
 	return &sch[data->schedule_idx];
 }
 
+void task_workqueue_reschedule(struct task_data *task, k_timeout_t delay)
+{
+	/* Increment reschedule count */
+	task->executor.workqueue.reschedule_counter += 1;
+	/* Reschedule on queue */
+	k_work_reschedule_for_queue(&task_runner_workq, &task->executor.workqueue.work, delay);
+}
+
 static void task_start(uint8_t schedule_index, uint32_t uptime)
 {
 	const struct task_schedule *s = &sch[schedule_index];
@@ -100,8 +124,9 @@ static void task_start(uint8_t schedule_index, uint32_t uptime)
 		__ASSERT_NO_MSG(c->exec_type == TASK_EXECUTOR_WORKQUEUE);
 		/* Reset the reschedule counter */
 		d->executor.workqueue.reschedule_counter = 0;
-		/* Schedule the work on the queue */
-		k_work_schedule(&d->executor.workqueue.work, K_NO_WAIT);
+		/* Schedule the work on our work queue */
+		k_work_schedule_for_queue(&task_runner_workq, &d->executor.workqueue.work,
+					  K_NO_WAIT);
 	}
 }
 
@@ -116,7 +141,8 @@ static void task_terminate(uint8_t schedule_index)
 	k_poll_signal_raise(&d->terminate_signal, 0);
 	if (c->exec_type == TASK_EXECUTOR_WORKQUEUE) {
 		/* Reschedule immediately to terminate */
-		k_work_reschedule(&d->executor.workqueue.work, K_NO_WAIT);
+		k_work_reschedule_for_queue(&task_runner_workq, &d->executor.workqueue.work,
+					    K_NO_WAIT);
 	}
 }
 

@@ -6,6 +6,10 @@ config TASK_RUNNER
 
 if TASK_RUNNER
 
+config TASK_RUNNER_WORKQ_STACK_SIZE
+	int "Stack size of the Task Runner workqueue"
+	default 1024
+
 module = TASK_RUNNER
 module-str = Task Runner
 source "subsys/logging/Kconfig.template.log_config"
