@@ -100,6 +100,12 @@ ZTEST(epacket_handlers, test_key_ids)
 	/* Ensure processing thread didn't spend this time waiting for a buffer */
 	rx = net_buf_get(tx_fifo, K_MSEC(100));
 	zassert_is_null(rx);
+
+	/* Bad magic byte generates no response */
+	magic_byte = 0x02;
+	epacket_dummy_receive(epacket_dummy, NULL, &magic_byte, sizeof(magic_byte));
+	rx = net_buf_get(tx_fifo, K_MSEC(100));
+	zassert_is_null(rx);
 }
 
 ZTEST(epacket_handlers, test_echo_response)
