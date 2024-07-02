@@ -274,7 +274,7 @@ int epacket_unversioned_v0_decrypt(struct net_buf *buf, uint8_t interface_key)
 
 	/* Not enough data in buffer */
 	if (buf->len <= sizeof(struct epacket_v0_unversioned_frame_format) + 16) {
-		return -1;
+		goto error;
 	}
 	memcpy(&frame, buf->data, sizeof(frame));
 
