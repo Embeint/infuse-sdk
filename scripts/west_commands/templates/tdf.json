@@ -25,6 +25,7 @@
             "fields": [
                 {"name": "application", "type": "uint32_t", "description": "Unique application ID"},
                 {"name": "version", "type": "struct tdf_struct_mcuboot_img_sem_ver", "description": "Running application version"},
+                {"name": "kv_crc", "type": "uint32_t", "description": "Key-Value store reflect global CRC"},
                 {"name": "uptime", "type": "uint32_t", "description": "Uptime in seconds"},
                 {"name": "reboots", "type": "uint16_t", "description": "Reboot counter"}
             ]
