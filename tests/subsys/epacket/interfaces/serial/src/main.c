@@ -132,20 +132,25 @@ ZTEST(epacket_serial, test_reconstructor_key_req)
 	epacket_serial_reconstruct(NULL, (void *)&test, sizeof(test), receive_handler);
 	out = k_fifo_get(&packet_queue, K_MSEC(100));
 	zassert_not_null(out);
-	zassert_equal(0, out->len);
+	zassert_equal(1, out->len);
+	zassert_equal(EPACKET_KEY_ID_REQ_MAGIC, out->data[0]);
 	net_buf_unref(out);
 
 	epacket_serial_reconstruct(NULL, (void *)&test, sizeof(test), receive_handler);
 	out = k_fifo_get(&packet_queue, K_MSEC(100));
 	zassert_not_null(out);
-	zassert_equal(0, out->len);
+	zassert_equal(1, out->len);
+	zassert_equal(EPACKET_KEY_ID_REQ_MAGIC, out->data[0]);
 	net_buf_unref(out);
 
 	/* Bad magic number */
-	test.magic = 0x01;
+	test.magic = 0x05;
 	epacket_serial_reconstruct(NULL, (void *)&test, sizeof(test), receive_handler);
 	out = k_fifo_get(&packet_queue, K_MSEC(100));
-	zassert_is_null(out);
+	zassert_not_null(out);
+	zassert_equal(1, out->len);
+	zassert_equal(0x05, out->data[0]);
+	net_buf_unref(out);
 }
 
 ZTEST(epacket_serial, test_reconstructor_too_large)

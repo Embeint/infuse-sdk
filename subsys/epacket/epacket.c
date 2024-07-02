@@ -153,7 +153,7 @@ static void epacket_handle_rx(struct net_buf *buf)
 
 #ifdef CONFIG_INFUSE_SECURITY
 	/* Key ID request */
-	if (buf->len == 0) {
+	if ((buf->len == 1) && (buf->data[0] == EPACKET_KEY_ID_REQ_MAGIC)) {
 		struct net_buf *rsp =
 			epacket_alloc_tx_for_interface(metadata->interface, K_NO_WAIT);
 

@@ -60,13 +60,6 @@ void epacket_dummy_receive_extra(const struct device *dev, const struct epacket_
 	meta->interface_id = EPACKET_INTERFACE_DUMMY;
 	meta->rssi = 0;
 
-	if ((header == NULL) && (payload_len == 1) && (extra_len == 0) &&
-	    (((const uint8_t *)payload)[0] == EPACKET_KEY_ID_REQ_MAGIC)) {
-		/* Key ID request */
-		epacket_raw_receive_handler(rx);
-		return;
-	}
-
 	/* Construct payload */
 	if (header != NULL) {
 		net_buf_add_mem(rx, header, sizeof(*header));
