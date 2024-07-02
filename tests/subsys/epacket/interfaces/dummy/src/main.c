@@ -17,6 +17,18 @@
 
 #include "../subsys/epacket/interfaces/epacket_internal.h"
 
+ZTEST(epacket_dummy, test_bad_payloads)
+{
+	const struct device *epacket_dummy = DEVICE_DT_GET(DT_NODELABEL(epacket_dummy));
+	struct k_fifo *tx_fifo = epacket_dummmy_transmit_fifo_get();
+	uint8_t bad_magic_byte = EPACKET_KEY_ID_REQ_MAGIC + 1;
+
+	zassert_not_null(tx_fifo);
+
+	epacket_dummy_receive(epacket_dummy, NULL, &bad_magic_byte, sizeof(bad_magic_byte));
+	zassert_is_null(net_buf_get(tx_fifo, K_MSEC(100)));
+}
+
 ZTEST(epacket_dummy, test_send_queue)
 {
 	const struct device *epacket_dummy = DEVICE_DT_GET(DT_NODELABEL(epacket_dummy));
