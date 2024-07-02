@@ -187,13 +187,7 @@ const struct task_schedule *task_schedule_from_data(struct task_data *data);
  *
  * @param delay Delay until running again
  */
-static inline void task_workqueue_reschedule(struct task_data *task, k_timeout_t delay)
-{
-	/* Increment reschedule count */
-	task->executor.workqueue.reschedule_counter += 1;
-	/* Reschedule on queue */
-	k_work_reschedule(&task->executor.workqueue.work, delay);
-}
+void task_workqueue_reschedule(struct task_data *task, k_timeout_t delay);
 
 /**
  * @brief Block on the termination signal for a duration
