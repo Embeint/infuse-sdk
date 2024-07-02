@@ -147,22 +147,6 @@ bool task_schedule_should_terminate(const struct task_schedule *schedule,
 				    uint32_t civil_time, uint8_t battery);
 
 /**
- * @brief Determine if a given TDF was requested by the schedule
- *
- * @param schedule
- * @param tdf_mask
- *
- * @retval true TDF was requested
- * @retval false TDF was not requested
- */
-static inline bool task_schedule_tdf_requested(const struct task_schedule *schedule,
-					       uint8_t tdf_mask)
-{
-	return (schedule->task_logging[0].tdf_mask & tdf_mask) ||
-	       (schedule->task_logging[1].tdf_mask & tdf_mask);
-}
-
-/**
  * @}
  */
 
