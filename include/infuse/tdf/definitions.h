@@ -55,6 +55,8 @@ struct tdf_announce {
 	uint32_t application;
 	/* Running application version */
 	struct tdf_struct_mcuboot_img_sem_ver version;
+	/* Key-Value store reflect global CRC */
+	uint32_t kv_crc;
 	/* Uptime in seconds */
 	uint32_t uptime;
 	/* Reboot counter */
