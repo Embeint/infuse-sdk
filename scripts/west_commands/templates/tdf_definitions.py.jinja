@@ -4,9 +4,11 @@
 
 import ctypes
 
+from collections.abc import Generator
+
 class structs:
     class _struct_type(ctypes.LittleEndianStructure):
-        def iter_fields(self):
+        def iter_fields(self) -> Generator[str, ctypes._SimpleCData]:
             for field in self._fields_:
                 if field[0][0] == '_':
                     f_name = field[0][1:]
@@ -28,7 +30,7 @@ class structs:
 {% endfor %}
 class readings:
     class _reading_type(ctypes.LittleEndianStructure):
-        def iter_fields(self):
+        def iter_fields(self) -> Generator[str, ctypes._SimpleCData, str, str]:
             for field in self._fields_:
                 if field[0][0] == '_':
                     f_name = field[0][1:]
