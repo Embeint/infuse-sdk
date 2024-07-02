@@ -147,10 +147,15 @@ static void epacket_handle_rx(struct net_buf *buf)
 		if (buf->len == 0) {
 			/* Serial echo packet, respond */
 			struct net_buf *echo =
-				epacket_alloc_tx_for_interface(metadata->interface, K_FOREVER);
+				epacket_alloc_tx_for_interface(metadata->interface, K_NO_WAIT);
 
-			epacket_set_tx_metadata(echo, EPACKET_AUTH_NETWORK, 0, INFUSE_ECHO_RSP);
-			epacket_queue(metadata->interface, echo);
+			if (echo) {
+				epacket_set_tx_metadata(echo, EPACKET_AUTH_NETWORK, 0,
+							INFUSE_ECHO_RSP);
+				epacket_queue(metadata->interface, echo);
+			} else {
+				LOG_WRN("Unable to respond to serial ping");
+			}
 			net_buf_unref(buf);
 			return;
 		}
