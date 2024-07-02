@@ -52,19 +52,29 @@ void epacket_serial_reconstruct(const struct device *dev, uint8_t *buffer, size_
 			break;
 		case 3:
 			payload_remaining = ((uint16_t)buffer[i] << 8) | len_lsb;
+			if (payload_remaining == 0) {
+				pkt_idx = 0;
+				continue;
+			}
 			break;
 		}
 		pkt_idx++;
-		if (pkt_idx == 4 && payload_remaining == 0) {
-			/* Zero length packet */
-			rx_buffer = epacket_alloc_rx(K_NO_WAIT);
-			goto packet_complete;
-		}
 		if (pkt_idx <= 4) {
 			continue;
 		}
 		/* Allocate RX buffer */
 		if (pkt_idx == 5) {
+			if (payload_remaining == 1) {
+				if (buffer[i] == EPACKET_KEY_ID_REQ_MAGIC) {
+					/* Key ID request */
+					rx_buffer = epacket_alloc_rx(K_NO_WAIT);
+					goto packet_complete;
+				} else {
+					/* Bad request */
+					pkt_idx = 0;
+					continue;
+				}
+			}
 			if (payload_remaining > CONFIG_EPACKET_PACKET_SIZE_MAX) {
 				LOG_WRN("Payload %d too large", payload_remaining);
 			} else {
