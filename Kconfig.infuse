@@ -11,6 +11,10 @@ rsource "snippets/infuse/Kconfig"
 # Infuse-IoT SDK defaults
 if INFUSE_SDK
 
+config INFUSE_APPLICATION_ID
+	hex "Unique application identifier"
+	default 0x00
+
 rsource "Kconfig.defaults.core"
 rsource "Kconfig.defaults.bluetooth"
 rsource "Kconfig.defaults.net"
