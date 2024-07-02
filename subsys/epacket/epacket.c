@@ -66,7 +66,14 @@ struct net_buf *epacket_alloc_tx(k_timeout_t timeout)
 
 struct net_buf *epacket_alloc_rx(k_timeout_t timeout)
 {
-	return net_buf_alloc(&epacket_pool_rx, timeout);
+	struct net_buf *buf = net_buf_alloc(&epacket_pool_rx, timeout);
+
+	if (buf != NULL) {
+		struct epacket_rx_metadata *meta = net_buf_user_data(buf);
+		/* Default authorisation state is failure */
+		meta->auth = EPACKET_AUTH_FAILURE;
+	}
+	return buf;
 }
 
 void epacket_queue(const struct device *dev, struct net_buf *buf)
