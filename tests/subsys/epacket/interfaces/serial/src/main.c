@@ -97,28 +97,55 @@ ZTEST(epacket_serial, test_reconstructor)
 	zassert_is_null(out);
 }
 
-ZTEST(epacket_serial, test_reconstructor_zero)
+ZTEST(epacket_serial, test_reconstructor_zero_length)
 {
-	struct epacket_serial_frame_header s = {
+	struct epacket_serial_frame_header header = {
 		.sync = {EPACKET_SERIAL_SYNC_A, EPACKET_SERIAL_SYNC_B},
 		.len = 0,
 	};
 	struct net_buf *out;
 
-	epacket_serial_reconstruct(NULL, (void *)&s, sizeof(s), receive_handler);
+	/* Empty packets should not result in anything */
+	for (int i = 0; i < 4; i++) {
+		epacket_serial_reconstruct(NULL, (void *)&header, sizeof(header), receive_handler);
+		out = k_fifo_get(&packet_queue, K_MSEC(100));
+		zassert_is_null(out);
+	}
+}
+
+ZTEST(epacket_serial, test_reconstructor_key_req)
+{
+	struct epacket_serial_key_req {
+		struct epacket_serial_frame_header header;
+		uint8_t magic;
+	} __packed test = {
+		.header =
+			{
+				.sync = {EPACKET_SERIAL_SYNC_A, EPACKET_SERIAL_SYNC_B},
+				.len = 1,
+			},
+		.magic = EPACKET_KEY_ID_REQ_MAGIC,
+	};
+	struct net_buf *out;
+
+	/* Test key request packet */
+	epacket_serial_reconstruct(NULL, (void *)&test, sizeof(test), receive_handler);
 	out = k_fifo_get(&packet_queue, K_MSEC(100));
 	zassert_not_null(out);
+	zassert_equal(0, out->len);
 	net_buf_unref(out);
 
-	epacket_serial_reconstruct(NULL, (void *)&s, sizeof(s), receive_handler);
+	epacket_serial_reconstruct(NULL, (void *)&test, sizeof(test), receive_handler);
 	out = k_fifo_get(&packet_queue, K_MSEC(100));
 	zassert_not_null(out);
+	zassert_equal(0, out->len);
 	net_buf_unref(out);
 
-	epacket_serial_reconstruct(NULL, (void *)&s, sizeof(s), receive_handler);
+	/* Bad magic number */
+	test.magic = 0x01;
+	epacket_serial_reconstruct(NULL, (void *)&test, sizeof(test), receive_handler);
 	out = k_fifo_get(&packet_queue, K_MSEC(100));
-	zassert_not_null(out);
-	net_buf_unref(out);
+	zassert_is_null(out);
 }
 
 ZTEST(epacket_serial, test_reconstructor_too_large)
