@@ -52,6 +52,15 @@ void task_runner_init(const struct task_schedule *schedules,
 void task_runner_iterate(uint32_t uptime, uint32_t gps_time, uint8_t battery_charge);
 
 /**
+ * @brief Automatically iterate the task runner
+ *
+ * Automatically calls @ref task_runner_iterate once a second forever.
+ *
+ * @warning Do NOT call @ref task_runner_iterate after this function.
+ */
+void task_runner_start_auto_iterate(void);
+
+/**
  * @}
  */
 
