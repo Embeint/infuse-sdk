@@ -53,6 +53,7 @@ void epacket_serial_reconstruct(const struct device *dev, uint8_t *buffer, size_
 		case 3:
 			payload_remaining = ((uint16_t)buffer[i] << 8) | len_lsb;
 			if (payload_remaining == 0) {
+				/* Empty payload is invalid */
 				pkt_idx = 0;
 				continue;
 			}
@@ -64,17 +65,6 @@ void epacket_serial_reconstruct(const struct device *dev, uint8_t *buffer, size_
 		}
 		/* Allocate RX buffer */
 		if (pkt_idx == 5) {
-			if (payload_remaining == 1) {
-				if (buffer[i] == EPACKET_KEY_ID_REQ_MAGIC) {
-					/* Key ID request */
-					rx_buffer = epacket_alloc_rx(K_NO_WAIT);
-					goto packet_complete;
-				} else {
-					/* Bad request */
-					pkt_idx = 0;
-					continue;
-				}
-			}
 			if (payload_remaining > CONFIG_EPACKET_PACKET_SIZE_MAX) {
 				LOG_WRN("Payload %d too large", payload_remaining);
 			} else {
@@ -100,10 +90,6 @@ void epacket_serial_reconstruct(const struct device *dev, uint8_t *buffer, size_
 
 		/* Is packet done? */
 		if (payload_remaining == 0) {
-
-			/* clang-format off */
-packet_complete:
-			/* clang-format on */
 			if (rx_buffer) {
 				meta = net_buf_user_data(rx_buffer);
 				meta->interface = dev;
