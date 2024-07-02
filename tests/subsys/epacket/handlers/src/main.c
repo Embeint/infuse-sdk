@@ -9,6 +9,7 @@
 #include <zephyr/ztest.h>
 #include <zephyr/kernel.h>
 #include <zephyr/random/random.h>
+#include <zephyr/sys/byteorder.h>
 
 #include <infuse/types.h>
 #include <infuse/epacket/interface.h>
@@ -58,6 +59,47 @@ ZTEST(epacket_handlers, test_custom_handler)
 
 	/* Free the buffer */
 	net_buf_unref(rx);
+}
+
+ZTEST(epacket_handlers, test_key_ids)
+{
+	const struct device *epacket_dummy = DEVICE_DT_GET(DT_NODELABEL(epacket_dummy));
+	struct k_fifo *tx_fifo = epacket_dummmy_transmit_fifo_get();
+	struct net_buf *tx_bufs[CONFIG_EPACKET_BUFFERS_TX];
+	struct epacket_dummy_frame *rx_header;
+	struct epacket_key_ids_data *rx_data;
+	struct net_buf *rx;
+
+	uint8_t magic_byte = EPACKET_KEY_ID_REQ_MAGIC;
+
+	epacket_dummy_receive(epacket_dummy, NULL, &magic_byte, sizeof(magic_byte));
+
+	/* Standard key ID request */
+	rx = net_buf_get(tx_fifo, K_MSEC(100));
+	zassert_not_null(rx);
+	rx_header = (void *)rx->data;
+	rx_data = (void *)(rx->data + sizeof(struct epacket_dummy_frame));
+	zassert_equal(INFUSE_KEY_IDS, rx_header->type);
+	zassert_equal(EPACKET_AUTH_NETWORK, rx_header->auth);
+	zassert_equal(sizeof(struct epacket_dummy_frame) + sizeof(struct epacket_key_ids_data),
+		      rx->len);
+	zassert_equal(infuse_security_device_key_identifier(),
+		      sys_get_le24(rx_data->device_key_id));
+	net_buf_unref(rx);
+
+	/* Validate INFUSE_KEY_IDS doesn't block waiting for a buffer in RX processor */
+	for (int i = 0; i < ARRAY_SIZE(tx_bufs); i++) {
+		tx_bufs[i] = epacket_alloc_tx(K_FOREVER);
+	}
+	epacket_dummy_receive(epacket_dummy, NULL, &magic_byte, sizeof(magic_byte));
+	rx = net_buf_get(tx_fifo, K_MSEC(100));
+	zassert_is_null(rx);
+	for (int i = 0; i < ARRAY_SIZE(tx_bufs); i++) {
+		net_buf_unref(tx_bufs[i]);
+	}
+	/* Ensure processing thread didn't spend this time waiting for a buffer */
+	rx = net_buf_get(tx_fifo, K_MSEC(100));
+	zassert_is_null(rx);
 }
 
 ZTEST(epacket_handlers, test_echo_response)
