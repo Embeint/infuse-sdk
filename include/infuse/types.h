@@ -40,6 +40,8 @@ enum infuse_type {
 	INFUSE_RPC_RSP = 6,
 	/* Infuse ePacket received by device */
 	INFUSE_RECEIVED_EPACKET = 7,
+	/* Infuse key identifiers */
+	INFUSE_KEY_IDS = 127,
 	/* 128 - 255 can be freely defined by customers */
 	INFUSE_CUSTOMER_RANGE_START = 128,
 } __packed;
