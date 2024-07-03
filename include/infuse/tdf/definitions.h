@@ -73,14 +73,20 @@ struct tdf_battery_state {
 	uint16_t soc;
 } __packed;
 
-/* General battery state */
-struct tdf_environmental {
+/* Ambient temperature, pressure & humidity */
+struct tdf_ambient_temp_pres_hum {
 	/* Ambient temperature (millidegrees) */
 	int32_t temperature;
 	/* Atmospheric pressure (pascals) */
 	uint32_t pressure;
 	/* Relative humidity (centipercent) */
 	uint16_t humidity;
+} __packed;
+
+/* Ambient temperature */
+struct tdf_ambient_temperature {
+	/* Ambient temperature (millidegrees) */
+	int32_t temperature;
 } __packed;
 
 /* Accelerometer +-2G */
@@ -147,7 +153,8 @@ struct tdf_array_type {
 enum tdf_builtin_id {
 	TDF_ANNOUNCE = 1,
 	TDF_BATTERY_STATE = 2,
-	TDF_ENVIRONMENTAL = 3,
+	TDF_AMBIENT_TEMP_PRES_HUM = 3,
+	TDF_AMBIENT_TEMPERATURE = 4,
 	TDF_ACC_2G = 10,
 	TDF_ACC_4G = 11,
 	TDF_ACC_8G = 12,
@@ -166,7 +173,8 @@ enum tdf_builtin_id {
 enum tdf_builtin_size {
 	_TDF_ANNOUNCE_SIZE = sizeof(struct tdf_announce),
 	_TDF_BATTERY_STATE_SIZE = sizeof(struct tdf_battery_state),
-	_TDF_ENVIRONMENTAL_SIZE = sizeof(struct tdf_environmental),
+	_TDF_AMBIENT_TEMP_PRES_HUM_SIZE = sizeof(struct tdf_ambient_temp_pres_hum),
+	_TDF_AMBIENT_TEMPERATURE_SIZE = sizeof(struct tdf_ambient_temperature),
 	_TDF_ACC_2G_SIZE = sizeof(struct tdf_acc_2g),
 	_TDF_ACC_4G_SIZE = sizeof(struct tdf_acc_4g),
 	_TDF_ACC_8G_SIZE = sizeof(struct tdf_acc_8g),
