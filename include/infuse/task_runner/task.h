@@ -97,19 +97,23 @@ struct task_data {
 };
 
 /**
- * @brief Expand @a task_macro to define variable sized memory
+ * @brief Expand @a macro to define task specific variables
  *
- * @param task_macro Macro that evaluates to a task variable memory
- *                   definition when the first argument is 1.
+ * @param macro Macro that instantiates task specific variables
+ *              when the first argument is 1.
  */
-#define _TASK_MEM_DEFINE(task_macro, arg)    task_macro(1, 0, arg)
+#define ___TASK_VAR_DEFINE(macro, ...)    macro(1, 0, __VA_ARGS__)
+#define __TASK_VAR_DEFINE(...)            ___TASK_VAR_DEFINE(__VA_ARGS__)
+#define _TASK_VAR_DEFINE(task)            __TASK_VAR_DEFINE(__DEBRACKET task)
 /**
- * @brief Expand @a task_macro to define a task configuration
+ * @brief Expand @a macro to define a task configuration
  *
- * @param task_macro Macro that evaluates to a task config definition
- *                   when the second argument is 1.
+ * @param macro Macro that evaluates to a task config struct definition
+ *              when the second argument is 1.
  */
-#define _TASK_CONFIG_DEFINE(task_macro, arg) task_macro(0, 1, arg)
+#define ___TASK_CONFIG_DEFINE(macro, ...) macro(0, 1, __VA_ARGS__)
+#define __TASK_CONFIG_DEFINE(...)         ___TASK_CONFIG_DEFINE(__VA_ARGS__)
+#define _TASK_CONFIG_DEFINE(task)         __TASK_CONFIG_DEFINE(__DEBRACKET task)
 
 /* clang-format off */
 
@@ -152,20 +156,19 @@ struct task_data {
  *         }))
  *
  * TASK_RUNNER_TASKS_DEFINE(config, data,
- *   SLEEPY_TASK, DEVICE_DT_GET(DT_NODELABEL(dev)),
- *   WORKQ_TASK, &some_pointer);
+ *   (SLEEPY_TASK, DEVICE_DT_GET(DT_NODELABEL(dev))),
+ *   (WORKQ_TASK, &some_pointer));
  *
  * @param config_name Name of the created @ref task_config array
  * @param data_name Name of the created @ref task_data array
- * @param ... Paired list of task definition macros to evaluate and their arguments
+ * @param ... Grouped list of task definition macros and their arguments
  */
 #define TASK_RUNNER_TASKS_DEFINE(config_name, data_name, ...)                                      \
-	/* Define variable memory for the task */                                                  \
-	PAIRWISE_FOR_EACH(_TASK_MEM_DEFINE, (;), __VA_ARGS__)                                      \
-		;                                                                                  \
+	/* Define task specific variables */                                                       \
+	FOR_EACH(_TASK_VAR_DEFINE, (;), __VA_ARGS__);                                              \
 	/* Define the configurations for each task */                                              \
 	static const struct task_config config_name[] = {                                          \
-		PAIRWISE_FOR_EACH(_TASK_CONFIG_DEFINE, (,), __VA_ARGS__),                          \
+		FOR_EACH(_TASK_CONFIG_DEFINE, (,), __VA_ARGS__)                                    \
 	};                                                                                         \
 	/* Define the runtime task data array */                                                   \
 	static struct task_data data_name[ARRAY_SIZE(config_name)]
