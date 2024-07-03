@@ -152,8 +152,21 @@ static void epacket_handle_rx(struct net_buf *buf)
 		metadata->rssi);
 
 #ifdef CONFIG_INFUSE_SECURITY
+	static uint32_t prev_key_request;
+	uint32_t uptime = k_uptime_seconds();
+
 	/* Key ID request */
 	if ((buf->len == 1) && (buf->data[0] == EPACKET_KEY_ID_REQ_MAGIC)) {
+		/* Limit responses to one per second to limit the number of packets
+		 * an unauthenticated peer can trigger.
+		 */
+		if (prev_key_request == uptime) {
+			LOG_WRN("Too many INFUSE_KEY_IDS requests");
+			net_buf_unref(buf);
+			return;
+		}
+		prev_key_request = uptime;
+
 		struct net_buf *rsp =
 			epacket_alloc_tx_for_interface(metadata->interface, K_NO_WAIT);
 

@@ -87,7 +87,20 @@ ZTEST(epacket_handlers, test_key_ids)
 		      sys_get_le24(rx_data->device_key_id));
 	net_buf_unref(rx);
 
+	/* Second request immediately should fail */
+	epacket_dummy_receive(epacket_dummy, NULL, &magic_byte, sizeof(magic_byte));
+	rx = net_buf_get(tx_fifo, K_MSEC(100));
+	zassert_is_null(rx);
+
+	/* Request after a second should work */
+	k_sleep(K_SECONDS(1));
+	epacket_dummy_receive(epacket_dummy, NULL, &magic_byte, sizeof(magic_byte));
+	rx = net_buf_get(tx_fifo, K_MSEC(100));
+	zassert_not_null(rx);
+	net_buf_unref(rx);
+
 	/* Validate INFUSE_KEY_IDS doesn't block waiting for a buffer in RX processor */
+	k_sleep(K_SECONDS(1));
 	for (int i = 0; i < ARRAY_SIZE(tx_bufs); i++) {
 		tx_bufs[i] = epacket_alloc_tx(K_FOREVER);
 	}
