@@ -10,6 +10,7 @@
 #ifndef INFUSE_SDK_INCLUDE_INFUSE_TASK_RUNNER_TASKS_INFUSE_TASK_ARGS_H_
 #define INFUSE_SDK_INCLUDE_INFUSE_TASK_RUNNER_TASKS_INFUSE_TASK_ARGS_H_
 
+#include <infuse/task_runner/tasks/battery_args.h>
 #include <infuse/task_runner/tasks/tdf_logger_args.h>
 #include <infuse/task_runner/tasks/imu_args.h>
 
@@ -26,6 +27,7 @@ extern "C" {
 union infuse_task_arguments {
 	struct task_tdf_logger_args tdf_logger;
 	struct task_imu_args imu;
+	struct task_battery_args battery;
 };
 
 /**
