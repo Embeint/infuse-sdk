@@ -63,11 +63,25 @@ static const struct task_schedule schedules[] = {
 				.fifo_sample_buffer = 100,
 			},
 	},
+	{
+		.task_id = TASK_ID_BATTERY,
+		.validity = TASK_VALID_ALWAYS,
+		.periodicity_type = TASK_PERIODICITY_FIXED,
+		.periodicity.fixed.period_s = 5,
+		.task_logging =
+			{
+				{
+					.loggers = TDF_DATA_LOGGER_SERIAL | TDF_DATA_LOGGER_UDP,
+					.tdf_mask = TASK_BATTERY_LOG_COMPLETE,
+				},
+			},
+	},
 };
 struct task_schedule_state states[ARRAY_SIZE(schedules)];
 
 TASK_RUNNER_TASKS_DEFINE(app_tasks, app_tasks_data, (TDF_LOGGER_TASK),
-			 (IMU_TASK, DEVICE_DT_GET(DT_NODELABEL(bmi270))));
+			 (IMU_TASK, DEVICE_DT_GET(DT_NODELABEL(bmi270))),
+			 (BATTERY_TASK, DEVICE_DT_GET(DT_NODELABEL(vbatt))));
 
 int main(void)
 {
