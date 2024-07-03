@@ -10,3 +10,18 @@ module-str = TDF logger task
 source "subsys/logging/Kconfig.template.log_config"
 
 endif # TASK_RUNNER_TASK_TDF_LOGGER
+
+config TASK_RUNNER_TASK_IMU
+	bool "IMU task"
+
+if TASK_RUNNER_TASK_IMU
+
+config TASK_RUNNER_TASK_IMU_MAX_FIFO
+	int "Maximum number of samples that can be read"
+	default 256
+
+module = TASK_IMU
+module-str = IMU task
+source "subsys/logging/Kconfig.template.log_config"
+
+endif # TASK_RUNNER_TASK_IMU
