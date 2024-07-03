@@ -105,6 +105,7 @@ static void task_start(uint8_t schedule_index, uint32_t uptime)
 	struct task_schedule_state *state = &sch_states[schedule_index];
 	const struct task_config *c = &tsk[state->task_idx];
 	struct task_data *d = &tsk_states[state->task_idx];
+	k_tid_t tid;
 
 	LOG_INF("Booting task %s from schedule %d", c->name, schedule_index);
 
@@ -118,10 +119,12 @@ static void task_start(uint8_t schedule_index, uint32_t uptime)
 
 	if (c->exec_type == TASK_EXECUTOR_THREAD) {
 		/* Boot the thread */
-		(void)k_thread_create(&d->executor.thread, c->executor.thread.stack,
+		tid = k_thread_create(&d->executor.thread, c->executor.thread.stack,
 				      c->executor.thread.stack_size,
 				      (k_thread_entry_t)c->executor.thread.task_fn, (void *)s,
 				      &d->terminate_signal, c->task_arg.arg, 5, 0, K_NO_WAIT);
+		/* Set the thread name */
+		k_thread_name_set(tid, c->name);
 	} else {
 		__ASSERT_NO_MSG(c->exec_type == TASK_EXECUTOR_WORKQUEUE);
 		/* Reset the reschedule counter */
