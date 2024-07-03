@@ -1,4 +1,5 @@
 # Task Runner tasks compilation
 
-zephyr_library_sources_ifdef(CONFIG_TASK_RUNNER_TASK_TDF_LOGGER task_tdf_logger.c)
+zephyr_library_sources_ifdef(CONFIG_TASK_RUNNER_TASK_BATTERY task_battery.c)
 zephyr_library_sources_ifdef(CONFIG_TASK_RUNNER_TASK_IMU task_imu.c)
+zephyr_library_sources_ifdef(CONFIG_TASK_RUNNER_TASK_TDF_LOGGER task_tdf_logger.c)
