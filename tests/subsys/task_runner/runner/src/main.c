@@ -24,9 +24,15 @@ static int example_task_expected_block_rc;
 static uint8_t example_task_expected_arg;
 static int example_task_run_cnt;
 
+struct sleepy_args {
+	void *some_function_pointer;
+	int should_be_two;
+};
+
 void example_task_fn(const struct task_schedule *schedule, struct k_poll_signal *terminate,
 		     void *arg)
 {
+	const struct sleepy_args *args = arg;
 	int rc;
 
 	zassert_not_null(schedule);
@@ -37,7 +43,8 @@ void example_task_fn(const struct task_schedule *schedule, struct k_poll_signal 
 	zassert_equal(example_task_expected_arg, schedule->task_args.raw[0]);
 
 	/* Validate expected compile-time argument value */
-	zassert_equal(example_task_fn, arg);
+	zassert_equal(example_task_fn, args->some_function_pointer);
+	zassert_equal(2, args->should_be_two);
 
 	/* Block for the expected duration */
 	rc = task_runner_task_block(terminate, example_task_block_timeout);
@@ -45,14 +52,15 @@ void example_task_fn(const struct task_schedule *schedule, struct k_poll_signal 
 	zassert_equal(example_task_expected_block_rc, rc);
 }
 
-#define SLEEPY_TASK(define_mem, define_config, arg)                                                \
-	IF_ENABLED(define_mem, (K_THREAD_STACK_DEFINE(sleep_stack_area, 2048)))                    \
+#define SLEEPY_TASK(define_mem, define_config, arg1, arg2)                                         \
+	IF_ENABLED(define_mem, (K_THREAD_STACK_DEFINE(sleep_stack_area, 2048);                     \
+				const struct sleepy_args sleepy_args_inst = {arg1, arg2}))         \
 	IF_ENABLED(define_config,                                                                  \
 		   ({                                                                              \
 			   .name = "sleepy",                                                       \
 			   .task_id = TASK_ID_SLEEPY,                                              \
 			   .exec_type = TASK_EXECUTOR_THREAD,                                      \
-			   .task_arg.const_arg = arg,                                              \
+			   .task_arg.const_arg = &sleepy_args_inst,                                \
 			   .executor.thread =                                                      \
 				   {                                                               \
 					   .task_fn = example_task_fn,                             \
@@ -102,8 +110,16 @@ void example_workqueue_fn(struct k_work *work)
 					    .worker_fn = example_workqueue_fn,                     \
 				    }}))
 
-TASK_RUNNER_TASKS_DEFINE(app_tasks, app_tasks_data, SLEEPY_TASK, example_task_fn, WORKQUEUE_TASK,
-			 example_task_fn);
+#define NO_ARG_TASK(define_mem, define_config, ...)                                                \
+	IF_ENABLED(define_config, ({.name = "no_arg",                                              \
+				    .task_id = TASK_ID_WORKQ,                                      \
+				    .exec_type = TASK_EXECUTOR_WORKQUEUE,                          \
+				    .executor.workqueue = {                                        \
+					    .worker_fn = example_workqueue_fn,                     \
+				    }}))
+
+TASK_RUNNER_TASKS_DEFINE(app_tasks, app_tasks_data, (SLEEPY_TASK, example_task_fn, 2),
+			 (WORKQUEUE_TASK, example_task_fn), (NO_ARG_TASK));
 
 ZTEST(task_runner_runner, test_init_invalid)
 {
