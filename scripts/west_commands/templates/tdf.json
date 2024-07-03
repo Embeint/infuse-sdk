@@ -40,12 +40,19 @@
             ]
         },
         "3": {
-            "name": "ENVIRONMENTAL",
-            "description": "General battery state",
+            "name": "AMBIENT_TEMP_PRES_HUM",
+            "description": "Ambient temperature, pressure & humidity",
             "fields": [
                 {"name": "temperature", "type": "int32_t", "description": "Ambient temperature (millidegrees)", "display_postfix": "deg", "conversion": {"m": 0.001, "c": 0}},
                 {"name": "pressure", "type": "uint32_t", "description": "Atmospheric pressure (pascals)", "display_postfix": "kPa", "conversion": {"m": 0.001, "c": 0} },
                 {"name": "humidity", "type": "uint16_t", "description": "Relative humidity (centipercent)", "display_postfix": "%", "conversion": {"m": 0.01, "c": 0}}
+            ]
+        },
+        "4": {
+            "name": "AMBIENT_TEMPERATURE",
+            "description": "Ambient temperature",
+            "fields": [
+                {"name": "temperature", "type": "int32_t", "description": "Ambient temperature (millidegrees)", "display_postfix": "deg", "conversion": {"m": 0.001, "c": 0}}
             ]
         },
         "10": {
