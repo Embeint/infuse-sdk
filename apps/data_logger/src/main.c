@@ -21,7 +21,6 @@
 
 #include <infuse/task_runner/runner.h>
 #include <infuse/task_runner/tasks/infuse_tasks.h>
-#include <infuse/task_runner/tasks/infuse_tasks.h>
 
 LOG_MODULE_REGISTER(app, LOG_LEVEL_INF);
 
@@ -39,10 +38,36 @@ static const struct task_schedule schedules[] = {
 				.tdfs = TASK_TDF_LOGGER_LOG_ANNOUNCE,
 			},
 	},
+	{
+		.task_id = TASK_ID_IMU,
+		.validity = TASK_VALID_ALWAYS,
+		.task_logging =
+			{
+				{
+					.loggers = TDF_DATA_LOGGER_SERIAL | TDF_DATA_LOGGER_UDP,
+					.tdf_mask = TASK_IMU_LOG_ACC | TASK_IMU_LOG_GYR,
+				},
+			},
+		.task_args.infuse.imu =
+			{
+				.accelerometer =
+					{
+						.range_g = 4,
+						.rate_hz = 50,
+					},
+				.gyroscope =
+					{
+						.range_dps = 500,
+						.rate_hz = 50,
+					},
+				.fifo_sample_buffer = 100,
+			},
+	},
 };
 struct task_schedule_state states[ARRAY_SIZE(schedules)];
 
-TASK_RUNNER_TASKS_DEFINE(app_tasks, app_tasks_data, (TDF_LOGGER_TASK));
+TASK_RUNNER_TASKS_DEFINE(app_tasks, app_tasks_data, (TDF_LOGGER_TASK),
+			 (IMU_TASK, DEVICE_DT_GET(DT_NODELABEL(bmi270))));
 
 int main(void)
 {
