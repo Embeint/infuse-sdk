@@ -53,6 +53,8 @@ void task_runner_init(const struct task_schedule *schedules,
 		tsk_states[i].schedule_idx = UINT8_MAX;
 		/* Initialise delayable workers */
 		if (tsk[i].exec_type == TASK_EXECUTOR_WORKQUEUE) {
+			tsk_states[i].executor.workqueue.task_arg.const_arg =
+				tsk[i].task_arg.const_arg;
 			k_work_init_delayable(&tsk_states[i].executor.workqueue.work,
 					      tsk[i].executor.workqueue.worker_fn);
 		}
@@ -119,7 +121,7 @@ static void task_start(uint8_t schedule_index, uint32_t uptime)
 		(void)k_thread_create(&d->executor.thread, c->executor.thread.stack,
 				      c->executor.thread.stack_size,
 				      (k_thread_entry_t)c->executor.thread.task_fn, (void *)s,
-				      &d->terminate_signal, NULL, 5, 0, K_NO_WAIT);
+				      &d->terminate_signal, c->task_arg.arg, 5, 0, K_NO_WAIT);
 	} else {
 		__ASSERT_NO_MSG(c->exec_type == TASK_EXECUTOR_WORKQUEUE);
 		/* Reset the reschedule counter */

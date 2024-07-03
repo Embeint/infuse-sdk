@@ -33,7 +33,7 @@ enum {
 };
 
 typedef void (*task_runner_task_fn)(const struct task_schedule *schedule,
-				    struct k_poll_signal *terminate);
+				    struct k_poll_signal *terminate, void *arg);
 
 /**
  * @brief Constant task configuration
@@ -45,6 +45,11 @@ struct task_config {
 	uint8_t task_id;
 	/** Execution context `TASK_EXECUTOR_*` */
 	uint8_t exec_type;
+	/* Task specific argument */
+	union {
+		const void *const_arg;
+		void *arg;
+	} task_arg;
 	union {
 		struct {
 			/** Thread function */
@@ -76,6 +81,11 @@ struct task_data {
 			struct k_work_delayable work;
 			/* Counter for the number of times the work has been rescheduled this run */
 			int reschedule_counter;
+			/* Compile-time argument */
+			union {
+				const void *const_arg;
+				void *arg;
+			} task_arg;
 		} workqueue;
 	} executor;
 	/** Thread termination signal */
@@ -92,14 +102,14 @@ struct task_data {
  * @param task_macro Macro that evaluates to a task variable memory
  *                   definition when the first argument is 1.
  */
-#define _TASK_MEM_DEFINE(task_macro)    task_macro(1, 0)
+#define _TASK_MEM_DEFINE(task_macro, arg)    task_macro(1, 0, arg)
 /**
  * @brief Expand @a task_macro to define a task configuration
  *
  * @param task_macro Macro that evaluates to a task config definition
  *                   when the second argument is 1.
  */
-#define _TASK_CONFIG_DEFINE(task_macro) task_macro(0, 1)
+#define _TASK_CONFIG_DEFINE(task_macro, arg) task_macro(0, 1, arg)
 
 /* clang-format off */
 
@@ -108,18 +118,19 @@ struct task_data {
  *
  * Helper macro that automatically creates the 3 items needed for correct
  * operation of the task runner:
- *    1. Instantiate variably sized memory for the task (e.g. thread stack)
+ *    1. Variably sized memory for the task (e.g. thread stack)
  *    2. Array of task configuration structs for the runner
  *    3. Array of task data structs for the runner
  *
  * Example Usage:
  *
- * #define SLEEPY_TASK(define_mem, define_config)                               \
+ * #define SLEEPY_TASK(define_mem, define_config, dev_pointer)                  \
  *    IF_ENABLED(define_mem, (K_THREAD_STACK_DEFINE(sleep_stack_area, 1024)))   \
  *    IF_ENABLED(define_config,                                                 \
  *        ({                                                                    \
  *            .name = "sleepy",                                                 \
  *            .task_id = TASK_ID_SLEEPY,                                        \
+ *            .task_args.const_arg = dev_pointer,                               \
  *            .exec_type = TASK_EXECUTOR_THREAD,                                \
  *            .executor.thread = {                                              \
  *                .task_fn = example_task_fn,                                   \
@@ -128,30 +139,33 @@ struct task_data {
  *            },
  *        }))
  *
- * #define WORKQ_TASK(define_mem, define_config)      \
- *     IF_ENABLED(define_config,                      \
- *         ({                                         \
- *             .name = "workq",                       \
- *             .task_id = TASK_ID_WORKQ,              \
- *             .exec_type = TASK_EXECUTOR_WORKQUEUE,  \
- *             .executor.workqueue = {                \
- *                 .worker_fn = example_workqueue_fn, \
- *             },                                     \
+ * #define WORKQ_TASK(define_mem, define_config, ptr)  \
+ *     IF_ENABLED(define_config,                       \
+ *         ({                                          \
+ *             .name = "workq",                        \
+ *             .task_id = TASK_ID_WORKQ,               \
+ *             .task_args.arg = ptr,                   \
+ *             .exec_type = TASK_EXECUTOR_WORKQUEUE,   \
+ *             .executor.workqueue = {                 \
+ *                 .worker_fn = example_workqueue_fn,  \
+ *             },                                      \
  *         }))
  *
- * TASK_RUNNER_TASKS_DEFINE(config, data, SLEEPY_TASK, WORKQ_TASK);
+ * TASK_RUNNER_TASKS_DEFINE(config, data,
+ *   SLEEPY_TASK, DEVICE_DT_GET(DT_NODELABEL(dev)),
+ *   WORKQ_TASK, &some_pointer);
  *
  * @param config_name Name of the created @ref task_config array
  * @param data_name Name of the created @ref task_data array
- * @param ... List of task definition macros to evaluate
+ * @param ... Paired list of task definition macros to evaluate and their arguments
  */
 #define TASK_RUNNER_TASKS_DEFINE(config_name, data_name, ...)                                      \
 	/* Define variable memory for the task */                                                  \
-	FOR_EACH(_TASK_MEM_DEFINE, (;), __VA_ARGS__)                                               \
+	PAIRWISE_FOR_EACH(_TASK_MEM_DEFINE, (;), __VA_ARGS__)                                      \
 		;                                                                                  \
 	/* Define the configurations for each task */                                              \
 	static const struct task_config config_name[] = {                                          \
-		FOR_EACH(_TASK_CONFIG_DEFINE, (,), __VA_ARGS__),                                   \
+		PAIRWISE_FOR_EACH(_TASK_CONFIG_DEFINE, (,), __VA_ARGS__),                          \
 	};                                                                                         \
 	/* Define the runtime task data array */                                                   \
 	static struct task_data data_name[ARRAY_SIZE(config_name)]
