@@ -73,11 +73,11 @@ static void imu_sample_handler(const struct task_schedule *schedule,
 	last_gyr = &imu_sample_buffer->samples[imu_sample_buffer->gyroscope.offset +
 					       imu_sample_buffer->gyroscope.num - 1];
 	if (imu_sample_buffer->accelerometer.num) {
-		LOG_INF("ACC [%3d] %6d %6d %6d", imu_sample_buffer->accelerometer.num - 1,
+		LOG_DBG("ACC [%3d] %6d %6d %6d", imu_sample_buffer->accelerometer.num - 1,
 			last_acc->x, last_acc->y, last_acc->z);
 	}
 	if (imu_sample_buffer->gyroscope.num) {
-		LOG_INF("GYR [%3d] %6d %6d %6d", imu_sample_buffer->gyroscope.num - 1, last_gyr->x,
+		LOG_DBG("GYR [%3d] %6d %6d %6d", imu_sample_buffer->gyroscope.num - 1, last_gyr->x,
 			last_gyr->y, last_gyr->z);
 	}
 
