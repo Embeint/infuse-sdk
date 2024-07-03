@@ -428,7 +428,7 @@ int bmi270_configure(const struct device *dev, const struct imu_config *imu_cfg,
 		rc |= bmi270_reg_write(dev, BMI270_REG_GYR_CONF, &config_regs.config, 1);
 		rc |= bmi270_reg_write(dev, BMI270_REG_GYR_RANGE, &config_regs.range, 1);
 
-		output->gyroscope_period_us = USEC_PER_SEC / 25;
+		output->gyroscope_period_us = config_regs.period_us;
 		frame_period_us = MIN(frame_period_us, output->gyroscope_period_us);
 
 		fifo_config_1 |= BMI270_FIFO_CONFIG_1_GYR_EN;
