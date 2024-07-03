@@ -31,8 +31,9 @@ void task_tdf_logger_fn(struct k_work *work);
  *
  * @param define_mem Define memory (None required)
  * @param define_config Define task
+ * @param unused Compile-time argument unused
  */
-#define TDF_LOGGER_TASK(define_mem, define_config)                                                 \
+#define TDF_LOGGER_TASK(define_mem, define_config, unused)                                         \
 	IF_ENABLED(define_config, ({.name = "tdfl",                                                \
 				    .task_id = TASK_ID_TDF_LOGGER,                                 \
 				    .exec_type = TASK_EXECUTOR_WORKQUEUE,                          \
