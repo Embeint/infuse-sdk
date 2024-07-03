@@ -24,7 +24,8 @@ static int example_task_expected_block_rc;
 static uint8_t example_task_expected_arg;
 static int example_task_run_cnt;
 
-void example_task_fn(const struct task_schedule *schedule, struct k_poll_signal *terminate)
+void example_task_fn(const struct task_schedule *schedule, struct k_poll_signal *terminate,
+		     void *arg)
 {
 	int rc;
 
@@ -32,8 +33,11 @@ void example_task_fn(const struct task_schedule *schedule, struct k_poll_signal 
 	zassert_not_null(terminate);
 	example_task_run_cnt += 1;
 
-	/* Validate expected argument value */
+	/* Validate expected schedule argument value */
 	zassert_equal(example_task_expected_arg, schedule->task_args.raw[0]);
+
+	/* Validate expected compile-time argument value */
+	zassert_equal(example_task_fn, arg);
 
 	/* Block for the expected duration */
 	rc = task_runner_task_block(terminate, example_task_block_timeout);
@@ -41,13 +45,14 @@ void example_task_fn(const struct task_schedule *schedule, struct k_poll_signal 
 	zassert_equal(example_task_expected_block_rc, rc);
 }
 
-#define SLEEPY_TASK(define_mem, define_config)                                                     \
+#define SLEEPY_TASK(define_mem, define_config, arg)                                                \
 	IF_ENABLED(define_mem, (K_THREAD_STACK_DEFINE(sleep_stack_area, 2048)))                    \
 	IF_ENABLED(define_config,                                                                  \
 		   ({                                                                              \
 			   .name = "sleepy",                                                       \
 			   .task_id = TASK_ID_SLEEPY,                                              \
 			   .exec_type = TASK_EXECUTOR_THREAD,                                      \
+			   .task_arg.const_arg = arg,                                              \
 			   .executor.thread =                                                      \
 				   {                                                               \
 					   .task_fn = example_task_fn,                             \
@@ -76,8 +81,11 @@ void example_workqueue_fn(struct k_work *work)
 		example_workqueue_run_cnt += 1;
 	}
 
-	/* Validate expected argument value */
+	/* Validate expected schedule argument value */
 	zassert_equal(example_workqueue_expected_arg, sch->task_args.raw[0]);
+
+	/* Validate expected compile-time argument value */
+	zassert_equal(example_task_fn, task->executor.workqueue.task_arg.const_arg);
 
 	/* Reschedule until limit reached */
 	if (task->executor.workqueue.reschedule_counter < example_workqueue_reschedule_cnt) {
@@ -85,15 +93,17 @@ void example_workqueue_fn(struct k_work *work)
 	}
 }
 
-#define WORKQUEUE_TASK(define_mem, define_config)                                                  \
+#define WORKQUEUE_TASK(define_mem, define_config, ptr)                                             \
 	IF_ENABLED(define_config, ({.name = "workq",                                               \
 				    .task_id = TASK_ID_WORKQ,                                      \
+				    .task_arg.arg = ptr,                                           \
 				    .exec_type = TASK_EXECUTOR_WORKQUEUE,                          \
 				    .executor.workqueue = {                                        \
 					    .worker_fn = example_workqueue_fn,                     \
 				    }}))
 
-TASK_RUNNER_TASKS_DEFINE(app_tasks, app_tasks_data, SLEEPY_TASK, WORKQUEUE_TASK);
+TASK_RUNNER_TASKS_DEFINE(app_tasks, app_tasks_data, SLEEPY_TASK, example_task_fn, WORKQUEUE_TASK,
+			 example_task_fn);
 
 ZTEST(task_runner_runner, test_init_invalid)
 {
