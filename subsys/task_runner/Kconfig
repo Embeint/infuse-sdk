@@ -6,6 +6,11 @@ config TASK_RUNNER
 
 if TASK_RUNNER
 
+config TASK_RUNNER_INFUSE_WATCHDOG
+	bool "Install watchdog on the Task Runner iteration function"
+	depends on INFUSE_WATCHDOG
+	default y
+
 config TASK_RUNNER_AUTO_ITERATE
 	bool "Enable the auto iteration functions"
 	depends on INFUSE_CIVIL_TIME

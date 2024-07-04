@@ -59,13 +59,14 @@ static struct log_source_dynamic_data *__log_current_dynamic_data __unused;
 static const uint32_t __log_level __unused;
 #endif /* CONFIG_LOG */
 
-#define INFUSE_WATCHDOG_REGISTER_SYS_INIT(name, chan_name, period_name)                            \
+#define INFUSE_WATCHDOG_REGISTER_SYS_INIT(name, dependency, chan_name, period_name)                \
 	static k_timeout_t period_name = K_FOREVER;                                                \
 	static int chan_name;                                                                      \
 	static int name##_register(void)                                                           \
 	{                                                                                          \
 		(void)period_name;                                                                 \
-		wdog_channel = infuse_watchdog_install(&loop_period);                              \
+		wdog_channel =                                                                     \
+			IS_ENABLED(dependency) ? infuse_watchdog_install(&loop_period) : -ENODEV;  \
 		return 0;                                                                          \
 	}                                                                                          \
 	SYS_INIT(name##_register, POST_KERNEL, 0);
@@ -123,7 +124,7 @@ static inline void infuse_watchdog_feed(int wdog_channel)
 
 #else
 
-#define INFUSE_WATCHDOG_REGISTER_SYS_INIT(name, chan_name, period_name)                            \
+#define INFUSE_WATCHDOG_REGISTER_SYS_INIT(name, dependency, chan_name, period_name)                \
 	static k_timeout_t period_name = K_FOREVER;                                                \
 	static int chan_name = 0
 

@@ -10,6 +10,7 @@
 #include <zephyr/logging/log.h>
 #include <zephyr/net/buf.h>
 
+#include <infuse/drivers/watchdog.h>
 #include <infuse/epacket/packet.h>
 #include <infuse/epacket/interface.h>
 #include <infuse/epacket/interface/epacket_serial.h>
@@ -235,6 +236,9 @@ static void epacket_handle_tx(struct net_buf *buf)
 	api->send(dev, buf);
 }
 
+INFUSE_WATCHDOG_REGISTER_SYS_INIT(epacket_wdog, CONFIG_EPACKET_INFUSE_WATCHDOG, wdog_channel,
+				  loop_period);
+
 static int epacket_processor(void *a, void *b, void *c)
 {
 	struct k_poll_event events[2] = {
@@ -244,9 +248,15 @@ static int epacket_processor(void *a, void *b, void *c)
 						K_POLL_MODE_NOTIFY_ONLY, &epacket_tx_queue, 0),
 	};
 	struct net_buf *buf;
+	int rc;
 
 	while (true) {
-		(void)k_poll(events, ARRAY_SIZE(events), K_FOREVER);
+		rc = k_poll(events, ARRAY_SIZE(events), loop_period);
+		infuse_watchdog_feed(wdog_channel);
+		if (rc == -EAGAIN) {
+			/* Only woke to feed the watchdog */
+			continue;
+		}
 
 		if (events[0].state == K_POLL_STATE_FIFO_DATA_AVAILABLE) {
 			buf = net_buf_get(events[0].fifo, K_NO_WAIT);

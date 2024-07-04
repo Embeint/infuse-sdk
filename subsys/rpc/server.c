@@ -12,6 +12,7 @@
 
 #include <infuse/rpc/types.h>
 #include <infuse/epacket/packet.h>
+#include <infuse/drivers/watchdog.h>
 
 #include "command_runner.h"
 #include "server.h"
@@ -114,6 +115,9 @@ void rpc_server_ack_data(const struct device *interface, uint32_t request_id, ui
 	}
 }
 
+INFUSE_WATCHDOG_REGISTER_SYS_INIT(rpc_wdog, CONFIG_INFUSE_RPC_SERVER_WATCHDOG, wdog_channel,
+				  loop_period);
+
 static int rpc_server(void *a, void *b, void *c)
 {
 	struct k_poll_event events[2] = {
@@ -124,9 +128,15 @@ static int rpc_server(void *a, void *b, void *c)
 	};
 	struct infuse_rpc_data *data;
 	struct net_buf *buf;
+	int rc;
 
 	while (true) {
-		(void)k_poll(events, ARRAY_SIZE(events), K_FOREVER);
+		rc = k_poll(events, ARRAY_SIZE(events), loop_period);
+		infuse_watchdog_feed(wdog_channel);
+		if (rc == -EAGAIN) {
+			/* Only woke to feed the watchdog */
+			continue;
+		}
 
 		if (events[0].state == K_POLL_STATE_FIFO_DATA_AVAILABLE) {
 			buf = net_buf_get(events[0].fifo, K_NO_WAIT);
