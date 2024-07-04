@@ -1,0 +1,64 @@
+/**
+ * @file
+ * @copyright 2024 Embeint Inc
+ * @author Jordan Yates <jordan@embeint.com>
+ *
+ * SPDX-License-Identifier: LicenseRef-Embeint
+ */
+
+#include <zephyr/logging/log.h>
+#include <zephyr/drivers/sensor.h>
+
+#include <infuse/task_runner/task.h>
+#include <infuse/task_runner/tasks/environmental.h>
+#include <infuse/tdf/definitions.h>
+#include <infuse/time/civil.h>
+
+LOG_MODULE_REGISTER(task_env, CONFIG_TASK_ENVIRONMENTAL_LOG_LEVEL);
+
+void environmental_task_fn(struct k_work *work)
+{
+	struct task_data *task = task_data_from_work(work);
+	const struct task_schedule *sch = task_schedule_from_data(task);
+	const struct device *env = task->executor.workqueue.task_arg.const_arg;
+	struct tdf_ambient_temp_pres_hum tdf_tph;
+	struct tdf_ambient_temperature tdf_temp;
+	struct sensor_value value;
+	bool has_pressure;
+	bool has_humidity;
+	int rc;
+
+	/* Trigger the sample */
+	rc = sensor_sample_fetch(env);
+	if (rc < 0) {
+		LOG_ERR("Terminating due to %s", "fetch failure");
+		return;
+	}
+
+	/* Populate the output TDFs */
+	rc = sensor_channel_get(env, SENSOR_CHAN_AMBIENT_TEMP, &value);
+	tdf_tph.temperature = sensor_value_to_milli(&value);
+	tdf_temp.temperature = tdf_tph.temperature;
+	rc = sensor_channel_get(env, SENSOR_CHAN_PRESS, &value);
+	has_pressure = rc == 0;
+	tdf_tph.pressure = has_pressure ? sensor_value_to_milli(&value) : 0;
+	rc = sensor_channel_get(env, SENSOR_CHAN_HUMIDITY, &value);
+	has_humidity = rc == 0;
+	tdf_tph.humidity = has_humidity ? sensor_value_to_centi(&value) : 0;
+
+	/* Log output TDFs */
+	task_schedule_tdf_log(sch, TASK_ENVIRONMENTAL_LOG_TPH, TDF_AMBIENT_TEMP_PRES_HUM,
+			      sizeof(tdf_tph), civil_time_now(), &tdf_tph);
+	task_schedule_tdf_log(sch, TASK_ENVIRONMENTAL_LOG_T, TDF_AMBIENT_TEMPERATURE,
+			      sizeof(tdf_temp), civil_time_now(), &tdf_temp);
+
+	/* Print the measured values */
+	LOG_INF("Sensor: %s", env->name);
+	LOG_INF("\tTemperature: %6d mDeg", tdf_tph.temperature);
+	if (has_pressure) {
+		LOG_INF("\t   Pressure: %6d Pa", tdf_tph.pressure);
+	}
+	if (has_humidity) {
+		LOG_INF("\t   Humidity: %6d %%", tdf_tph.humidity / 100);
+	}
+}
