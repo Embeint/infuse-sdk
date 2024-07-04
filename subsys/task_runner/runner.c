@@ -9,6 +9,7 @@
 #include <zephyr/logging/log.h>
 #include <zephyr/sys/__assert.h>
 
+#include <infuse/drivers/watchdog.h>
 #include <infuse/task_runner/runner.h>
 
 static const struct task_schedule *sch;
@@ -176,9 +177,15 @@ static bool task_has_terminated(uint8_t task_idx)
 	return false;
 }
 
+INFUSE_WATCHDOG_REGISTER_SYS_INIT(tr_wdog, CONFIG_TASK_RUNNER_INFUSE_WATCHDOG, wdog_channel,
+				  loop_period);
+
 void task_runner_iterate(uint32_t uptime, uint32_t gps_time, uint8_t battery_charge)
 {
 	bool transition;
+
+	infuse_watchdog_feed(wdog_channel);
+	(void)loop_period;
 
 	/* Determine if any running tasks have terminated */
 	for (int i = 0; i < tsk_num; i++) {

@@ -10,6 +10,11 @@ module = INFUSE_RPC
 module-str = Infuse rpc
 source "subsys/logging/Kconfig.template.log_config"
 
+config INFUSE_RPC_SERVER_WATCHDOG
+	bool "Install watchdog on the RPC server thread"
+	depends on INFUSE_WATCHDOG
+	default y
+
 config INFUSE_RPC_SERVER_STACK_SIZE
 	int "Server thread stack size"
 	default 8192 if COVERAGE
