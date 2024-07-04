@@ -15,6 +15,7 @@
 #include <infuse/task_runner/runner.h>
 
 enum task_ids {
+	TASK_ID_NO_ARG = 10,
 	TASK_ID_SLEEPY = 113,
 	TASK_ID_WORKQ = 239,
 };
@@ -112,7 +113,7 @@ void example_workqueue_fn(struct k_work *work)
 
 #define NO_ARG_TASK(define_mem, define_config, ...)                                                \
 	IF_ENABLED(define_config, ({.name = "no_arg",                                              \
-				    .task_id = TASK_ID_WORKQ,                                      \
+				    .task_id = TASK_ID_NO_ARG,                                     \
 				    .exec_type = TASK_EXECUTOR_WORKQUEUE,                          \
 				    .executor.workqueue = {                                        \
 					    .worker_fn = example_workqueue_fn,                     \
@@ -158,6 +159,22 @@ ZTEST(task_runner_runner, test_init_invalid)
 		iter++;
 	}
 	zassert_equal(0, example_task_run_cnt);
+}
+
+ZTEST(task_runner_runner, test_init_duplicate_task_ids)
+{
+	struct task_schedule schedules[] = {
+		{
+			.task_id = TASK_ID_NO_ARG,
+		},
+	};
+	struct task_schedule_state states[ARRAY_SIZE(schedules)];
+
+	TASK_RUNNER_TASKS_DEFINE(dup_tasks, dup_tasks_data, (NO_ARG_TASK), (NO_ARG_TASK));
+
+	/* Warning text should be output */
+	task_runner_init(schedules, states, ARRAY_SIZE(schedules), dup_tasks, dup_tasks_data,
+			 ARRAY_SIZE(dup_tasks));
 }
 
 ZTEST(task_runner_runner, test_basic_behaviour)

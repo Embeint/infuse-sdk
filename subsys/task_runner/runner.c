@@ -58,6 +58,13 @@ void task_runner_init(const struct task_schedule *schedules,
 			k_work_init_delayable(&tsk_states[i].executor.workqueue.work,
 					      tsk[i].executor.workqueue.worker_fn);
 		}
+		/* Check for duplicate task definitions */
+		for (int j = 0; j < i; j++) {
+			if (tsk[i].task_id == tsk[j].task_id) {
+				LOG_WRN("Task %d and %d share a task ID (%d)!", j, i,
+					tsk[i].task_id);
+			}
+		}
 	}
 
 	for (int i = 0; i < sch_num; i++) {
