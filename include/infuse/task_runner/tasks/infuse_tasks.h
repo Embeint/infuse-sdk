@@ -10,34 +10,10 @@
 #ifndef INFUSE_SDK_INCLUDE_INFUSE_TASK_RUNNER_TASKS_INFUSE_TASKS_H_
 #define INFUSE_SDK_INCLUDE_INFUSE_TASK_RUNNER_TASKS_INFUSE_TASKS_H_
 
+/* Simple list of infuse tasks to simplify application includes */
 #include <infuse/task_runner/tasks/battery.h>
 #include <infuse/task_runner/tasks/environmental.h>
 #include <infuse/task_runner/tasks/imu.h>
 #include <infuse/task_runner/tasks/tdf_logger.h>
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-/**
- * @brief infuse_tasks API
- * @defgroup infuse_tasks_apis infuse_tasks APIs
- * @{
- */
-
-enum infuse_task_ids {
-	TASK_ID_TDF_LOGGER = 0,
-	TASK_ID_IMU = 1,
-	TASK_ID_BATTERY = 2,
-	TASK_ID_ENVIRONMENTAL = 3,
-};
-
-/**
- * @}
- */
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif /* INFUSE_SDK_INCLUDE_INFUSE_TASK_RUNNER_TASKS_INFUSE_TASKS_H_ */

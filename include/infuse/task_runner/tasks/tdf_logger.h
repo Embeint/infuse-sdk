@@ -13,7 +13,7 @@
 #include <infuse/task_runner/task.h>
 #include <infuse/task_runner/schedule.h>
 
-#include <infuse/task_runner/tasks/infuse_tasks.h>
+#include <infuse/task_runner/tasks/infuse_task_ids.h>
 
 #ifdef __cplusplus
 extern "C" {
