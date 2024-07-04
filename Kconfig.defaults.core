@@ -24,6 +24,12 @@ configdefault RETAINED_MEM
 configdefault RETAINED_MEM_MUTEX_FORCE_DISABLE
 	default y
 
+# Watchdog
+configdefault WATCHDOG
+	default y if !ZTEST
+configdefault INFUSE_WATCHDOG
+	default y if !ZTEST
+
 # ePacket API
 configdefault EPACKET
 	default y
