@@ -11,8 +11,9 @@
 #define INFUSE_SDK_INCLUDE_INFUSE_TASK_RUNNER_TASKS_INFUSE_TASKS_H_
 
 #include <infuse/task_runner/tasks/battery.h>
-#include <infuse/task_runner/tasks/tdf_logger.h>
+#include <infuse/task_runner/tasks/environmental.h>
 #include <infuse/task_runner/tasks/imu.h>
+#include <infuse/task_runner/tasks/tdf_logger.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -28,6 +29,7 @@ enum infuse_task_ids {
 	TASK_ID_TDF_LOGGER = 0,
 	TASK_ID_IMU = 1,
 	TASK_ID_BATTERY = 2,
+	TASK_ID_ENVIRONMENTAL = 3,
 };
 
 /**

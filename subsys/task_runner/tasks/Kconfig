@@ -27,7 +27,7 @@ source "subsys/logging/Kconfig.template.log_config"
 endif # TASK_RUNNER_TASK_IMU
 
 config TASK_RUNNER_TASK_BATTERY
-	bool "Battery task"
+	bool "Battery sampling task"
 
 if TASK_RUNNER_TASK_BATTERY
 
@@ -36,3 +36,14 @@ module-str = Battery task
 source "subsys/logging/Kconfig.template.log_config"
 
 endif # TASK_RUNNER_TASK_BATTERY
+
+config TASK_RUNNER_TASK_ENVIRONMENTAL
+	bool "Environmental sensing task"
+
+if TASK_RUNNER_TASK_ENVIRONMENTAL
+
+module = TASK_ENVIRONMENTAL
+module-str = Environmental task
+source "subsys/logging/Kconfig.template.log_config"
+
+endif # TASK_RUNNER_TASK_ENVIRONMENTAL
