@@ -76,12 +76,26 @@ static const struct task_schedule schedules[] = {
 				},
 			},
 	},
+	{
+		.task_id = TASK_ID_ENVIRONMENTAL,
+		.validity = TASK_VALID_ALWAYS,
+		.periodicity_type = TASK_PERIODICITY_FIXED,
+		.periodicity.fixed.period_s = 5,
+		.task_logging =
+			{
+				{
+					.loggers = TDF_DATA_LOGGER_SERIAL | TDF_DATA_LOGGER_UDP,
+					.tdf_mask = TASK_ENVIRONMENTAL_LOG_TPH,
+				},
+			},
+	},
 };
 struct task_schedule_state states[ARRAY_SIZE(schedules)];
 
 TASK_RUNNER_TASKS_DEFINE(app_tasks, app_tasks_data, (TDF_LOGGER_TASK),
 			 (IMU_TASK, DEVICE_DT_GET(DT_NODELABEL(bmi270))),
-			 (BATTERY_TASK, DEVICE_DT_GET(DT_NODELABEL(vbatt))));
+			 (BATTERY_TASK, DEVICE_DT_GET(DT_NODELABEL(vbatt))),
+			 (ENVIRONMENTAL_TASK, DEVICE_DT_GET(DT_NODELABEL(bme688))));
 
 int main(void)
 {

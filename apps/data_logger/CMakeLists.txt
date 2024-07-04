@@ -12,5 +12,4 @@ project(data_logger)
 
 target_sources(app PRIVATE
   src/main.c
-  src/environmental.c
 )
