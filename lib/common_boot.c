@@ -82,9 +82,14 @@ static int infuse_common_boot(void)
 	const char *bt_addr_le_str(const bt_addr_le_t *addr);
 	bt_addr_le_t bt_addr[CONFIG_BT_ID_MAX];
 	size_t bt_addr_cnt = ARRAY_SIZE(bt_addr);
+	KV_KEY_TYPE(KV_KEY_BLUETOOTH_ADDR) bluetooth_addr = {0};
 
 	bt_id_get(bt_addr, &bt_addr_cnt);
 	LOG_INF("\tBT Addr: %s", bt_addr_le_str(&bt_addr[0]));
+
+	/* Push address into KV store */
+	memcpy(&bluetooth_addr, &bt_addr[0], sizeof(bluetooth_addr));
+	(void)KV_STORE_WRITE(KV_KEY_BLUETOOTH_ADDR, &bluetooth_addr);
 #endif /* CONFIG_BT */
 #ifdef CONFIG_KV_STORE_LTE_SIM_UICC
 	KV_STRUCT_KV_STRING_VAR(24) sim_uicc;
