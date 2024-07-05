@@ -8,7 +8,7 @@ if(NOT infuse IN_LIST SNIPPET)
 endif()
 
 find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
-project(infuse_reboot)
+project(infuse_reboot_a)
 
 target_sources(app PRIVATE
   src/main.c
