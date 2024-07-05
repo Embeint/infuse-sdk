@@ -272,12 +272,12 @@ class vscode(WestCommand):
                 f"add-symbol-file {str(path)}" for path in tfm_exists
             ]
 
-        if "qemu" in cache.get("BOARD"):
+        if cache.get("QEMU", False):
             # Attach doesn't make sense in the qemu context
             launch["configurations"].pop()
-            launch["configurations"][0]["name"] = "Launch"
+            launch["configurations"][0]["name"] = "QEMU Launch"
             launch["configurations"][0]["servertype"] = "qemu"
-            launch["configurations"][0]["serverpath"] = shutil.which("qemu-system-arm")
+            launch["configurations"][0]["serverpath"] = cache.get("QEMU")
             launch["configurations"][0]["runToEntryPoint"] = False
         else:
             launch["configurations"][0]["rtos"] = "Zephyr"
