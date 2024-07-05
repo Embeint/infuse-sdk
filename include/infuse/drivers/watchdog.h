@@ -47,7 +47,7 @@ extern "C" {
 				.min = 0,                                                          \
 				.max = CONFIG_INFUSE_WATCHDOG_PERIOD_MS,                           \
 			},                                                                         \
-		.flags = WDT_FLAG_RESET_SOC, .callback = NULL,                                     \
+		.flags = WDT_FLAG_RESET_SOC, .callback = infuse_watchdog_expired,                  \
 	}
 
 #if defined(CONFIG_INFUSE_WATCHDOG) || defined(__doxygen__)
@@ -70,6 +70,19 @@ static const uint32_t __log_level __unused;
 		return 0;                                                                          \
 	}                                                                                          \
 	SYS_INIT(name##_register, POST_KERNEL, 0);
+
+/**
+ * @brief Function that is called on watchdog expiry
+ *
+ * The standard implementation of this function is in lib/reboot.c
+ *
+ * @note With multiple channels installed with @ref INFUSE_WATCHDOG_REGISTER_SYS_INIT this
+ *       function will be called multiple times.
+ *
+ * @param dev Watchdog instance that expired
+ * @param channel_id Channel ID that expired
+ */
+void infuse_watchdog_expired(const struct device *dev, int channel_id);
 
 /**
  * @brief Install an Infuse watchdog channel
@@ -140,7 +153,6 @@ static inline int infuse_watchdog_start(void)
 
 static inline void infuse_watchdog_feed(int wdog_channel)
 {
-	return;
 }
 
 #endif /* defined(CONFIG_INFUSE_WATCHDOG) || defined(__doxygen__) */
