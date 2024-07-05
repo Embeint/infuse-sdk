@@ -9,6 +9,7 @@
 #include <zephyr/net/buf.h>
 #include <zephyr/logging/log.h>
 
+#include <infuse/reboot.h>
 #include <infuse/rpc/types.h>
 #include <infuse/time/civil.h>
 
@@ -52,6 +53,12 @@ struct net_buf *rpc_command_fault(struct net_buf *request)
 	case K_ERR_ARM_USAGE_UNDEFINED_INSTRUCTION:
 		__asm__ volatile("udf #255; nop;");
 		break;
+#ifdef CONFIG_INFUSE_RPC_SERVER_WATCHDOG
+	case INFUSE_REBOOT_WATCHDOG:
+		/* Blocking */
+		k_sleep(K_FOREVER);
+		break;
+#endif /* CONFIG_INFUSE_RPC_SERVER_WATCHDOG */
 	default:
 		break;
 	}
