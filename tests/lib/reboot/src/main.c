@@ -7,11 +7,15 @@
  */
 
 #include <zephyr/ztest.h>
+#include <zephyr/logging/log.h>
 
 #include <infuse/fs/kv_store.h>
 #include <infuse/fs/kv_types.h>
 #include <infuse/reboot.h>
 #include <infuse/time/civil.h>
+#include <infuse/drivers/watchdog.h>
+
+LOG_MODULE_REGISTER(test, LOG_LEVEL_INF);
 
 static void null_dereference(void)
 {
@@ -26,6 +30,8 @@ ZTEST(infuse_reboot, test_reboot)
 	struct timeutil_sync_instant time_reference;
 	struct infuse_reboot_state reboot_state;
 	uint64_t time_2025 = civil_time_from_gps(2347, 259218, 0);
+	k_timeout_t feed_period;
+	int wdog_channel;
 	ssize_t rc;
 
 	/* KV store should have been initialised and populated with a reboot count */
@@ -137,6 +143,28 @@ ZTEST(infuse_reboot, test_reboot)
 		zassert_within(reboot_state.civil_time,
 			       time_2025 + INFUSE_CIVIL_TIME_TICKS_PER_SEC / 2,
 			       INFUSE_CIVIL_TIME_TICKS_PER_SEC / 10);
+		/* Set the time reference 2 seconds before the reboot */
+		time_reference.local = k_uptime_ticks();
+		time_reference.ref = time_2025;
+		civil_time_set_reference(TIME_SOURCE_NTP, &time_reference);
+		/* Reboot through watchdog timeout */
+		wdog_channel = infuse_watchdog_install(&feed_period);
+		zassert_equal(0, wdog_channel);
+		zassert_equal(0, infuse_watchdog_start());
+		infuse_watchdog_feed(0);
+		k_sleep(feed_period);
+		k_sleep(feed_period);
+		zassert_unreachable("Watchdog failed to reboot");
+	case 7:
+		/* Reboot information */
+		rc = infuse_reboot_state_query(&reboot_state);
+		zassert_equal(0, rc);
+		zassert_equal(INFUSE_REBOOT_WATCHDOG, reboot_state.reason);
+		/* Time reference should be valid and about 2 seconds after the reference */
+		zassert_equal(TIME_SOURCE_NTP, reboot_state.civil_time_source);
+		zassert_within(reboot_state.civil_time,
+			       time_2025 + 2 * INFUSE_CIVIL_TIME_TICKS_PER_SEC,
+			       INFUSE_CIVIL_TIME_TICKS_PER_SEC);
 		/* Test sequence complete */
 		break;
 	default:
