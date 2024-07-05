@@ -125,7 +125,7 @@ int infuse_reboot_state_query(struct infuse_reboot_state *state)
 
 	/* Check data validity */
 	rc = retention_is_valid(retention);
-	if (retention_is_valid(retention) != 1) {
+	if (rc != 1) {
 		return -ENOENT;
 	}
 
