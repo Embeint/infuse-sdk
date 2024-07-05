@@ -1,0 +1,10 @@
+common:
+  tags: rpc
+  min_flash: 64
+  min_ram: 32
+tests:
+  rpc.watchdog:
+    platform_allow:
+      - mps2_an385
+    integration_platforms:
+      - mps2_an385
