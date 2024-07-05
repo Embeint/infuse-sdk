@@ -1,0 +1,10 @@
+common:
+  tags: task_runner
+  min_flash: 64
+  min_ram: 32
+tests:
+  task_runner.watchdog:
+    platform_allow:
+      - mps2_an385
+    integration_platforms:
+      - mps2_an385
