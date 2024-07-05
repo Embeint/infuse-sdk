@@ -6,6 +6,12 @@ config KV_STORE_REBOOTS
 	help
 	  Nunmber of times device has rebooted
 
+config KV_STORE_BLUETOOTH_ADDR
+	bool "Enable KV key BLUETOOTH_ADDR"
+	default y if BT
+	help
+	  Bluetooth advertising address
+
 config KV_STORE_FIXED_LOCATION
 	bool "Enable KV key FIXED_LOCATION"
 	help

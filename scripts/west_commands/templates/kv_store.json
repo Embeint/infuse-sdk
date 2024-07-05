@@ -8,6 +8,13 @@
                 {"name": "height", "type": "int32_t", "description": "Height above WGS-84 ellipsoid, mm"}
             ]
         },
+        "bt_addr_le": {
+            "description": "Bluetooth address type (bt_addr_le_t)",
+            "fields": [
+                {"name": "type", "type": "uint8_t", "description": "Address type (0 == Public, 1 == Random)"},
+                {"name": "val", "type": "uint8_t", "num": 6, "description": "Address bytes"}
+            ]
+        },
         "kv_string": {
             "description": "String type",
             "fields": [
@@ -22,6 +29,16 @@
             "description": "Nunmber of times device has rebooted",
             "fields": [
                 {"name": "count", "type": "uint32_t"}
+            ]
+        },
+        {
+            "name": "BLUETOOTH_ADDR",
+            "key": 1,
+            "description": "Bluetooth advertising address",
+            "reflect": true,
+            "default": "y if BT",
+            "fields": [
+                {"name": "address", "type": "struct bt_addr_le", "description": "Broadcasting address"}
             ]
         },
         {
