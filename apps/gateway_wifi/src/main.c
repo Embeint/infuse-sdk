@@ -19,6 +19,7 @@
 #include <infuse/epacket/packet.h>
 #include <infuse/data_logger/high_level/tdf.h>
 #include <infuse/tdf/definitions.h>
+#include <infuse/drivers/watchdog.h>
 
 LOG_MODULE_REGISTER(app, LOG_LEVEL_INF);
 
@@ -31,6 +32,9 @@ int main(void)
 	const struct device *epacket_serial = DEVICE_DT_GET(DT_NODELABEL(epacket_serial));
 	const struct device *epacket_udp = DEVICE_DT_GET(DT_NODELABEL(epacket_udp));
 	struct tdf_announce announce;
+
+	/* Start watchdog */
+	infuse_watchdog_start();
 
 	/* Gateway receive handlers */
 	epacket_set_receive_handler(epacket_serial, udp_backhaul_handler);

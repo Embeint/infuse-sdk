@@ -15,6 +15,7 @@
 #include <infuse/time/civil.h>
 #include <infuse/tdf/definitions.h>
 #include <infuse/data_logger/high_level/tdf.h>
+#include <infuse/drivers/watchdog.h>
 
 LOG_MODULE_REGISTER(app, LOG_LEVEL_INF);
 
@@ -22,6 +23,9 @@ int main(void)
 {
 	const struct device *tdf_logger_udp = DEVICE_DT_GET(DT_NODELABEL(tdf_logger_udp));
 	struct tdf_announce announce;
+
+	/* Start watchdog */
+	infuse_watchdog_start();
 
 	k_sleep(K_SECONDS(2));
 
