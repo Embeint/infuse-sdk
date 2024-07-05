@@ -82,6 +82,19 @@ void k_sys_fatal_error_handler(unsigned int reason, const z_arch_esf_t *esf)
 	infuse_reboot(reason, pc, lr);
 }
 
+void infuse_watchdog_expired(const struct device *dev, int channel_id)
+{
+	/* Store reboot metadata */
+	reboot_state_store(INFUSE_REBOOT_WATCHDOG, (uintptr_t)dev, channel_id);
+	/* Wait for watchdog to reboot us */
+	for (;;)
+		;
+	/* Coverage information is challenging to obtain here as QEMU doesn't
+	 * like sitting in the NMI handler for long enough to dump the information,
+	 * even if we were to return.
+	 */
+}
+
 FUNC_NORETURN void infuse_reboot(enum infuse_reboot_reason reason, uint32_t info1, uint32_t info2)
 {
 	/* Store reboot metadata */
