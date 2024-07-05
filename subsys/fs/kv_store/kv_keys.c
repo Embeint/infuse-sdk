@@ -19,6 +19,13 @@ static struct key_value_slot_definition kv_slots[] = {
 		.flags = 0,
 	},
 #endif /* CONFIG_KV_STORE_REBOOTS */
+#ifdef CONFIG_KV_STORE_BLUETOOTH_ADDR
+	{
+		.key = 1,
+		.range = 1,
+		.flags = KV_FLAGS_REFLECT,
+	},
+#endif /* CONFIG_KV_STORE_BLUETOOTH_ADDR */
 #ifdef CONFIG_KV_STORE_FIXED_LOCATION
 	{
 		.key = 10,

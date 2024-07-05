@@ -32,6 +32,12 @@ struct gcs_location {
 	int32_t height;
 } __packed;
 
+/* Bluetooth address type (bt_addr_le_t) */
+struct bt_addr_le {
+	uint8_t type;
+	uint8_t val[6];
+} __packed;
+
 /* String type */
 struct kv_string {
 	uint8_t value_num;
@@ -60,6 +66,12 @@ struct kv_string {
 /* Nunmber of times device has rebooted */
 struct kv_reboots {
 	uint32_t count;
+} __packed;
+
+/* Bluetooth advertising address */
+struct kv_bluetooth_addr {
+	/* Broadcasting address */
+	struct bt_addr_le address;
 } __packed;
 
 /* Fixed global location of the device */
@@ -228,6 +240,8 @@ struct kv_secure_storage_reserved {
 enum kv_builtin_id {
 	/* Nunmber of times device has rebooted */
 	KV_KEY_REBOOTS = 0,
+	/* Bluetooth advertising address */
+	KV_KEY_BLUETOOTH_ADDR = 1,
 	/* Fixed global location of the device */
 	KV_KEY_FIXED_LOCATION = 10,
 	/* WiFi network name */
@@ -274,6 +288,7 @@ enum kv_builtin_id {
 /* Size of builtin KV definitions */
 enum kv_builtin_size {
 	_KV_KEY_REBOOTS_SIZE = sizeof(struct kv_reboots),
+	_KV_KEY_BLUETOOTH_ADDR_SIZE = sizeof(struct kv_bluetooth_addr),
 	_KV_KEY_FIXED_LOCATION_SIZE = sizeof(struct kv_fixed_location),
 	_KV_KEY_EPACKET_UDP_PORT_SIZE = sizeof(struct kv_epacket_udp_port),
 	_KV_KEY_LTE_MODEM_IMEI_SIZE = sizeof(struct kv_lte_modem_imei),
@@ -282,6 +297,7 @@ enum kv_builtin_size {
 /* clang-format off */
 /* Types of builtin KV definitions */
 #define _KV_KEY_REBOOTS_TYPE struct kv_reboots
+#define _KV_KEY_BLUETOOTH_ADDR_TYPE struct kv_bluetooth_addr
 #define _KV_KEY_FIXED_LOCATION_TYPE struct kv_fixed_location
 #define _KV_KEY_WIFI_SSID_TYPE struct kv_wifi_ssid
 #define _KV_KEY_WIFI_PSK_TYPE struct kv_wifi_psk
@@ -300,6 +316,7 @@ enum kv_builtin_size {
 /* clang-format off */
 /* Number of KV pairs that can be reflected */
 #define KV_REFLECT_NUM ( \
+	IF_ENABLED(CONFIG_KV_STORE_BLUETOOTH_ADDR, (1 +)) \
 	IF_ENABLED(CONFIG_KV_STORE_FIXED_LOCATION, (1 +)) \
 	IF_ENABLED(CONFIG_KV_STORE_WIFI_SSID, (1 +)) \
 	IF_ENABLED(CONFIG_KV_STORE_WIFI_PSK, (1 +)) \
