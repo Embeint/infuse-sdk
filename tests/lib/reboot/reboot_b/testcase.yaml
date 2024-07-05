@@ -3,7 +3,7 @@ common:
   min_flash: 64
   min_ram: 32
 tests:
-  lib.reboot:
+  lib.reboot.b:
     required_snippets:
       - infuse
     integration_platforms:
