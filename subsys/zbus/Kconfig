@@ -1,0 +1,11 @@
+# Infuse-IoT zbus channel configuration
+
+config INFUSE_ZBUS_CHAN_BATTERY
+	bool
+	help
+	  INFUSE_ZBUS_CHAN_BATTERY producer is compiled in
+
+config INFUSE_ZBUS_CHAN_AMBIENT_ENV
+	bool
+	help
+	  INFUSE_ZBUS_CHAN_AMBIENT_ENV producer is compiled in
