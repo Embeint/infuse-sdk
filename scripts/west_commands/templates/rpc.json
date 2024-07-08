@@ -190,6 +190,22 @@
                 {"name": "crcs", "type": "struct rpc_struct_kv_store_crc", "num": 0, "description": "Array of KV CRCs"}
             ]
         },
+        "8": {
+            "name": "zbus_channel_state",
+            "description": "Query current state of zbus channel",
+            "depends_on": "ZBUS",
+            "default": "y if INFUSE_SDK",
+            "default_auth": "EPACKET_AUTH_DEVICE",
+            "request_params": [
+                {"name": "channel_id", "type": "uint32_t", "description": "Channel ID to query"}
+            ],
+            "response_params": [
+                {"name": "publish_timestamp", "type": "uint64_t", "description": "Civil time of last data publish"},
+                {"name": "publish_count", "type": "uint32_t", "description": "Number of times data has been published to channel"},
+                {"name": "publish_period_avg_ms", "type": "uint32_t", "description": "Average time between publishing"},
+                {"name": "data", "type": "uint8_t", "num": 0, "description": "Channel data"}
+            ]
+        },
         "10": {
             "name": "wifi_scan",
             "description": "Scan for WiFi networks",

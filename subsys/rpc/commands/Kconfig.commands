@@ -85,6 +85,18 @@ config INFUSE_RPC_COMMAND_KV_REFLECT_CRCS_REQUIRED_AUTH
 	depends on INFUSE_RPC_COMMAND_KV_REFLECT_CRCS
 	default 2
 
+config INFUSE_RPC_COMMAND_ZBUS_CHANNEL_STATE
+	bool "Enable RPC zbus_channel_state"
+	depends on ZBUS
+	default y if INFUSE_SDK
+	help
+	  Query current state of zbus channel
+
+config INFUSE_RPC_COMMAND_ZBUS_CHANNEL_STATE_REQUIRED_AUTH
+	int "Required authorisation level to run zbus_channel_state"
+	depends on INFUSE_RPC_COMMAND_ZBUS_CHANNEL_STATE
+	default 2
+
 config INFUSE_RPC_COMMAND_WIFI_SCAN
 	bool "Enable RPC wifi_scan"
 	depends on WIFI
