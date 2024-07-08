@@ -8,13 +8,18 @@
 
 #include <zephyr/logging/log.h>
 #include <zephyr/drivers/sensor.h>
+#include <zephyr/zbus/zbus.h>
 
 #include <infuse/task_runner/task.h>
 #include <infuse/task_runner/tasks/environmental.h>
 #include <infuse/tdf/definitions.h>
 #include <infuse/time/civil.h>
+#include <infuse/zbus/channels.h>
 
 LOG_MODULE_REGISTER(task_env, CONFIG_TASK_ENVIRONMENTAL_LOG_LEVEL);
+
+INFUSE_ZBUS_CHAN_DEFINE(INFUSE_ZBUS_CHAN_AMBIENT_ENV);
+#define ZBUS_CHAN INFUSE_ZBUS_CHAN_GET(INFUSE_ZBUS_CHAN_AMBIENT_ENV)
 
 void environmental_task_fn(struct k_work *work)
 {
@@ -51,6 +56,9 @@ void environmental_task_fn(struct k_work *work)
 			      sizeof(tdf_tph), civil_time_now(), &tdf_tph);
 	task_schedule_tdf_log(sch, TASK_ENVIRONMENTAL_LOG_T, TDF_AMBIENT_TEMPERATURE,
 			      sizeof(tdf_temp), civil_time_now(), &tdf_temp);
+
+	/* Publish new data reading */
+	zbus_chan_pub(ZBUS_CHAN, &tdf_tph, K_FOREVER);
 
 	/* Print the measured values */
 	LOG_INF("Sensor: %s", env->name);
