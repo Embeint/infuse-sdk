@@ -8,13 +8,18 @@
 
 #include <zephyr/logging/log.h>
 #include <zephyr/drivers/sensor.h>
+#include <zephyr/zbus/zbus.h>
 
 #include <infuse/task_runner/task.h>
 #include <infuse/task_runner/tasks/battery.h>
 #include <infuse/tdf/definitions.h>
 #include <infuse/time/civil.h>
+#include <infuse/zbus/channels.h>
 
 LOG_MODULE_REGISTER(task_bat, CONFIG_TASK_BATTERY_LOG_LEVEL);
+
+INFUSE_ZBUS_CHAN_DEFINE(INFUSE_ZBUS_CHAN_BATTERY);
+#define ZBUS_CHAN INFUSE_ZBUS_CHAN_GET(INFUSE_ZBUS_CHAN_BATTERY)
 
 void battery_task_fn(struct k_work *work)
 {
@@ -42,6 +47,9 @@ void battery_task_fn(struct k_work *work)
 	/* Log output TDF */
 	task_schedule_tdf_log(sch, TASK_BATTERY_LOG_COMPLETE, TDF_BATTERY_STATE,
 			      sizeof(tdf_battery), civil_time_now(), &tdf_battery);
+
+	/* Publish new data reading */
+	zbus_chan_pub(ZBUS_CHAN, &tdf_battery, K_FOREVER);
 
 	/* Print the measured values */
 	LOG_INF("Sensor: %s", battery->name);
