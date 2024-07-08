@@ -14,6 +14,8 @@ config TASK_RUNNER_INFUSE_WATCHDOG
 config TASK_RUNNER_AUTO_ITERATE
 	bool "Enable the auto iteration functions"
 	depends on INFUSE_CIVIL_TIME
+	depends on ZBUS
+	depends on ZBUS_CHANNEL_PUBLISH_STATS
 
 config TASK_RUNNER_WORKQ_STACK_SIZE
 	int "Stack size of the Task Runner workqueue"
