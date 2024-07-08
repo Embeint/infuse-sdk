@@ -33,10 +33,11 @@ static const struct task_schedule schedules[] = {
 		.periodicity.fixed.period_s = 10,
 		.task_args.infuse.tdf_logger =
 			{
-				.logger = TDF_DATA_LOGGER_BT_ADV | TDF_DATA_LOGGER_UDP |
-					  TDF_DATA_LOGGER_SERIAL,
+				.loggers = TDF_DATA_LOGGER_BT_ADV | TDF_DATA_LOGGER_UDP |
+					   TDF_DATA_LOGGER_SERIAL,
 				.random_delay_ms = 1000,
-				.tdfs = TASK_TDF_LOGGER_LOG_ANNOUNCE,
+				.tdfs = TASK_TDF_LOGGER_LOG_ANNOUNCE | TASK_TDF_LOGGER_LOG_BATTERY |
+					TASK_TDF_LOGGER_LOG_AMBIENT_ENV,
 			},
 	},
 	{
@@ -72,7 +73,7 @@ static const struct task_schedule schedules[] = {
 		.task_logging =
 			{
 				{
-					.loggers = TDF_DATA_LOGGER_SERIAL | TDF_DATA_LOGGER_UDP,
+					.loggers = TDF_DATA_LOGGER_FLASH,
 					.tdf_mask = TASK_BATTERY_LOG_COMPLETE,
 				},
 			},
@@ -85,7 +86,7 @@ static const struct task_schedule schedules[] = {
 		.task_logging =
 			{
 				{
-					.loggers = TDF_DATA_LOGGER_SERIAL | TDF_DATA_LOGGER_UDP,
+					.loggers = TDF_DATA_LOGGER_FLASH,
 					.tdf_mask = TASK_ENVIRONMENTAL_LOG_TPH,
 				},
 			},
