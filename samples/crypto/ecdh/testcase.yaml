@@ -1,14 +1,19 @@
 common:
   tags: crypto ecdh
-  build_only: true
   min_flash: 64
   min_ram: 32
 tests:
   crypto.ecdh:
+    platform_allow:
+      - native_sim
+      - qemu_cortex_m3
+      - nrf52840dk_nrf52840
+      - nrf5340dk_nrf5340_cpuapp
     integration_platforms:
       - native_sim
       - qemu_cortex_m3
       - nrf52840dk_nrf52840
+      - nrf5340dk_nrf5340_cpuapp
     harness: console
     harness_config:
       type: one_line
