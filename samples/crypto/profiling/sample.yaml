@@ -2,6 +2,12 @@ sample:
   description: Profiling of cryptographic operations
   name: crypto_profiling
 common:
+  platform_allow:
+    - qemu_cortex_m3
+    - native_sim
+    - nrf52840dk_nrf52840
+    - nrf5340dk_nrf5340_cpuapp
+    - nrf5340dk_nrf5340_cpuapp_ns
   integration_platforms:
     - qemu_cortex_m3
     - native_sim
