@@ -8,6 +8,7 @@
 
 #include <zephyr/logging/log.h>
 #include <zephyr/random/random.h>
+#include <zephyr/zbus/zbus.h>
 
 #include <infuse/version.h>
 #include <infuse/data_logger/high_level/tdf.h>
@@ -15,10 +16,69 @@
 #include <infuse/fs/kv_types.h>
 #include <infuse/tdf/tdf.h>
 #include <infuse/tdf/definitions.h>
+#include <infuse/zbus/channels.h>
 
 #include <infuse/task_runner/tasks/tdf_logger.h>
 
+INFUSE_ZBUS_CHAN_DECLARE(INFUSE_ZBUS_CHAN_BATTERY, INFUSE_ZBUS_CHAN_AMBIENT_ENV);
+#define C_GET INFUSE_ZBUS_CHAN_GET
+
 LOG_MODULE_REGISTER(task_tdfl, CONFIG_TASK_TDF_LOGGER_LOG_LEVEL);
+
+static void log_announce(uint8_t loggers)
+{
+	KV_KEY_TYPE(KV_KEY_REBOOTS) reboots;
+	struct infuse_version v = application_version_get();
+
+	KV_STORE_READ(KV_KEY_REBOOTS, &reboots);
+	struct tdf_announce announce = {
+		.application = CONFIG_INFUSE_APPLICATION_ID,
+		.version =
+			{
+				.major = v.major,
+				.minor = v.minor,
+				.revision = v.revision,
+				.build_num = v.build_num,
+			},
+		.kv_crc = kv_store_reflect_crc(),
+		.uptime = k_uptime_seconds(),
+		.reboots = reboots.count,
+	};
+
+	tdf_data_logger_log(loggers, TDF_ANNOUNCE, sizeof(announce), 0, &announce);
+}
+
+static void log_battery(uint8_t loggers)
+{
+#ifdef CONFIG_INFUSE_ZBUS_CHAN_BATTERY
+	INFUSE_ZBUS_TYPE(INFUSE_ZBUS_CHAN_BATTERY) battery;
+
+	if (zbus_chan_publish_count(C_GET(INFUSE_ZBUS_CHAN_BATTERY)) == 0) {
+		return;
+	}
+	/* Get latest value */
+	zbus_chan_read(C_GET(INFUSE_ZBUS_CHAN_BATTERY), &battery, K_FOREVER);
+	/* Add to specified loggers */
+	tdf_data_logger_log(loggers, TDF_BATTERY_STATE, sizeof(battery), 0, &battery);
+#endif
+}
+
+static void log_ambient_env(uint8_t loggers)
+{
+#ifdef CONFIG_INFUSE_ZBUS_CHAN_AMBIENT_ENV
+	INFUSE_ZBUS_TYPE(INFUSE_ZBUS_CHAN_AMBIENT_ENV) ambient_env;
+
+	if (zbus_chan_publish_count(C_GET(INFUSE_ZBUS_CHAN_AMBIENT_ENV)) == 0) {
+		return;
+	}
+	/* Get latest value */
+	zbus_chan_read(C_GET(INFUSE_ZBUS_CHAN_AMBIENT_ENV), &ambient_env, K_FOREVER);
+	/* Add to specified loggers */
+	tdf_data_logger_log(loggers, TDF_AMBIENT_TEMP_PRES_HUM, sizeof(ambient_env), 0,
+			    &ambient_env);
+
+#endif
+}
 
 void task_tdf_logger_fn(struct k_work *work)
 {
@@ -42,27 +102,15 @@ void task_tdf_logger_fn(struct k_work *work)
 
 	LOG_INF("TDFs %08X", args->tdfs);
 	if (args->tdfs & TASK_TDF_LOGGER_LOG_ANNOUNCE) {
-		KV_KEY_TYPE(KV_KEY_REBOOTS) reboots;
-		struct infuse_version v = application_version_get();
-
-		KV_STORE_READ(KV_KEY_REBOOTS, &reboots);
-		struct tdf_announce announce = {
-			.application = CONFIG_INFUSE_APPLICATION_ID,
-			.version =
-				{
-					.major = v.major,
-					.minor = v.minor,
-					.revision = v.revision,
-					.build_num = v.build_num,
-				},
-			.kv_crc = kv_store_reflect_crc(),
-			.uptime = k_uptime_seconds(),
-			.reboots = reboots.count,
-		};
-
-		tdf_data_logger_log(args->logger, TDF_ANNOUNCE, sizeof(announce), 0, &announce);
+		log_announce(args->loggers);
+	}
+	if (args->tdfs & TASK_TDF_LOGGER_LOG_BATTERY) {
+		log_battery(args->loggers);
+	}
+	if (args->tdfs & TASK_TDF_LOGGER_LOG_AMBIENT_ENV) {
+		log_ambient_env(args->loggers);
 	}
 
 	/* Flush the logger to transmit */
-	tdf_data_logger_flush(args->logger);
+	tdf_data_logger_flush(args->loggers);
 }

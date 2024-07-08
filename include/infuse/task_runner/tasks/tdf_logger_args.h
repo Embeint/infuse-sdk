@@ -20,12 +20,14 @@ extern "C" {
 
 enum {
 	TASK_TDF_LOGGER_LOG_ANNOUNCE = BIT(0),
+	TASK_TDF_LOGGER_LOG_BATTERY = BIT(1),
+	TASK_TDF_LOGGER_LOG_AMBIENT_ENV = BIT(2),
 };
 
 /** @brief TDF logger task arguments */
 struct task_tdf_logger_args {
-	/** `TDF_DATA_LOGGER_*` to log to */
-	uint8_t logger;
+	/** Mask of `TDF_DATA_LOGGER_*` to log to */
+	uint8_t loggers;
 	/* Randomise delay before logging */
 	uint16_t random_delay_ms;
 	/* TDFs to log */
