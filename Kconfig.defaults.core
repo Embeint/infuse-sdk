@@ -30,6 +30,14 @@ configdefault WATCHDOG
 configdefault INFUSE_WATCHDOG
 	default y if !ZTEST
 
+# Zephyr bus
+configdefault ZBUS
+	default y
+configdefault ZBUS_CHANNEL_ID
+	default y
+configdefault ZBUS_CHANNEL_PUBLISH_STATS
+	default y
+
 # ePacket API
 configdefault EPACKET
 	default y
