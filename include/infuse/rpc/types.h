@@ -239,6 +239,8 @@ enum rpc_builtin_id {
 	RPC_ID_KV_READ = 6,
 	/* Read KV store CRC's */
 	RPC_ID_KV_REFLECT_CRCS = 7,
+	/* Query current state of zbus channel */
+	RPC_ID_ZBUS_CHANNEL_STATE = 8,
 	/* Scan for WiFi networks */
 	RPC_ID_WIFI_SCAN = 10,
 	/* Get current WiFi interface state */
@@ -356,6 +358,25 @@ struct rpc_kv_reflect_crcs_response {
 	uint16_t remaining;
 	/* Array of KV CRCs */
 	struct rpc_struct_kv_store_crc crcs[];
+} __packed;
+
+/* Query current state of zbus channel */
+struct rpc_zbus_channel_state_request {
+	struct infuse_rpc_req_header header;
+	/* Channel ID to query */
+	uint32_t channel_id;
+} __packed;
+
+struct rpc_zbus_channel_state_response {
+	struct infuse_rpc_rsp_header header;
+	/* Civil time of last data publish */
+	uint64_t publish_timestamp;
+	/* Number of times data has been published to channel */
+	uint32_t publish_count;
+	/* Average time between publishing */
+	uint32_t publish_period_avg_ms;
+	/* Channel data */
+	uint8_t data[];
 } __packed;
 
 /* Scan for WiFi networks */

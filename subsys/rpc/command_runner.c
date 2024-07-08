@@ -94,6 +94,13 @@ void rpc_command_runner(struct net_buf *request)
 		}
 		break;
 #endif /* CONFIG_INFUSE_RPC_COMMAND_KV_REFLECT_CRCS */
+#ifdef CONFIG_INFUSE_RPC_COMMAND_ZBUS_CHANNEL_STATE
+	case RPC_ID_ZBUS_CHANNEL_STATE:
+		if (AUTHORISED(auth, ZBUS_CHANNEL_STATE)) { /* GCOVR_EXCL_BR_LINE */
+			response = rpc_command_zbus_channel_state(request);
+		}
+		break;
+#endif /* CONFIG_INFUSE_RPC_COMMAND_ZBUS_CHANNEL_STATE */
 #ifdef CONFIG_INFUSE_RPC_COMMAND_WIFI_SCAN
 	case RPC_ID_WIFI_SCAN:
 		if (AUTHORISED(auth, WIFI_SCAN)) { /* GCOVR_EXCL_BR_LINE */

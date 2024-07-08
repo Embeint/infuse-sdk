@@ -80,6 +80,15 @@ struct net_buf *rpc_command_kv_read(struct net_buf *request);
 struct net_buf *rpc_command_kv_reflect_crcs(struct net_buf *request);
 
 /**
+ * @brief Run zbus_channel_state RPC
+ *
+ * @param request @ref INFUSE_RPC_REQ packet to respond to
+ *
+ * @return struct net_buf* @ref INFUSE_RPC_RSP packet buffer
+ */
+struct net_buf *rpc_command_zbus_channel_state(struct net_buf *request);
+
+/**
  * @brief Run wifi_scan RPC
  *
  * @param request @ref INFUSE_RPC_REQ packet to respond to
