@@ -68,7 +68,7 @@ enum infuse_zbus_channel_id {
  *
  * @param channel Infuse channel identifier (@ref infuse_zbus_channel_id)
  */
-#define INFUSE_ZBUS_CHAN_GET(channel) &INFUSE_ZBUS_NAME(channel)
+#define INFUSE_ZBUS_CHAN_GET(channel) (&INFUSE_ZBUS_NAME(channel))
 
 /**
  * @}
