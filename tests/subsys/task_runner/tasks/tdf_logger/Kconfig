@@ -1,0 +1,9 @@
+# Enable all channels for test
+
+configdefault INFUSE_ZBUS_CHAN_BATTERY
+	default y
+
+configdefault INFUSE_ZBUS_CHAN_AMBIENT_ENV
+	default y
+
+source "Kconfig.zephyr"
