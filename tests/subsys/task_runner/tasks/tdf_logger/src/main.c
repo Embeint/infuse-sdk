@@ -88,6 +88,37 @@ ZTEST(task_tdf_logger, test_log_before_data)
 	zassert_not_null(pkt);
 	net_buf_pull(pkt, sizeof(struct epacket_dummy_frame));
 	zassert_equal(0, tdf_find_in_buf(&tdf, TDF_ANNOUNCE, pkt));
+	zassert_equal(0, tdf.time);
+	zassert_equal(-ENOMEM, tdf_find_in_buf(&tdf, TDF_BATTERY_STATE, pkt));
+	zassert_equal(-ENOMEM, tdf_find_in_buf(&tdf, TDF_AMBIENT_TEMP_PRES_HUM, pkt));
+	net_buf_unref(pkt);
+}
+
+ZTEST(task_tdf_logger, test_no_flush)
+{
+	struct k_fifo *tx_queue = epacket_dummmy_transmit_fifo_get();
+	struct tdf_parsed tdf;
+	struct net_buf *pkt;
+
+	zassert_not_null(tx_queue);
+
+	schedule.task_args.infuse.tdf_logger = (struct task_tdf_logger_args){
+		.loggers = TDF_DATA_LOGGER_SERIAL,
+		.tdfs = TASK_TDF_LOGGER_LOG_ANNOUNCE,
+		.flags = TASK_TDF_LOGGER_FLAGS_NO_FLUSH,
+	};
+	/* No data should be sent yet */
+	task_schedule(&data);
+	pkt = net_buf_get(tx_queue, K_MSEC(100));
+	zassert_is_null(pkt);
+
+	/* Manually flush the logger */
+	tdf_data_logger_flush(TDF_DATA_LOGGER_SERIAL);
+	pkt = net_buf_get(tx_queue, K_MSEC(100));
+	zassert_not_null(pkt);
+	net_buf_pull(pkt, sizeof(struct epacket_dummy_frame));
+	zassert_equal(0, tdf_find_in_buf(&tdf, TDF_ANNOUNCE, pkt));
+	zassert_not_equal(0, tdf.time);
 	zassert_equal(-ENOMEM, tdf_find_in_buf(&tdf, TDF_BATTERY_STATE, pkt));
 	zassert_equal(-ENOMEM, tdf_find_in_buf(&tdf, TDF_AMBIENT_TEMP_PRES_HUM, pkt));
 	net_buf_unref(pkt);
@@ -167,6 +198,7 @@ ZTEST(task_tdf_logger, test_battery)
 	zassert_not_null(pkt);
 	net_buf_pull(pkt, sizeof(struct epacket_dummy_frame));
 	zassert_equal(0, tdf_find_in_buf(&tdf, TDF_BATTERY_STATE, pkt));
+	zassert_equal(0, tdf.time);
 	net_buf_unref(pkt);
 }
 
@@ -194,6 +226,7 @@ ZTEST(task_tdf_logger, test_ambient_env)
 	zassert_not_null(pkt);
 	net_buf_pull(pkt, sizeof(struct epacket_dummy_frame));
 	zassert_equal(0, tdf_find_in_buf(&tdf, TDF_AMBIENT_TEMP_PRES_HUM, pkt));
+	zassert_equal(0, tdf.time);
 	net_buf_unref(pkt);
 }
 
