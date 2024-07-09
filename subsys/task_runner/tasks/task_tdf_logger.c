@@ -85,6 +85,7 @@ void task_tdf_logger_fn(struct k_work *work)
 	struct task_data *task = task_data_from_work(work);
 	const struct task_schedule *sch = task_schedule_from_data(task);
 	const struct task_tdf_logger_args *args = &sch->task_args.infuse.tdf_logger;
+	bool announce, battery, ambient_env;
 	uint32_t delay_ms;
 
 	if (task_runner_task_block(&task->terminate_signal, K_NO_WAIT) == 1) {
@@ -100,14 +101,18 @@ void task_tdf_logger_fn(struct k_work *work)
 		return;
 	}
 
-	LOG_INF("TDFs %08X", args->tdfs);
-	if (args->tdfs & TASK_TDF_LOGGER_LOG_ANNOUNCE) {
+	announce = args->tdfs & TASK_TDF_LOGGER_LOG_ANNOUNCE;
+	battery = args->tdfs & TASK_TDF_LOGGER_LOG_BATTERY;
+	ambient_env = args->tdfs & TASK_TDF_LOGGER_LOG_AMBIENT_ENV;
+
+	LOG_INF("Ann: %d Bat: %d Env: %d", announce, battery, ambient_env);
+	if (announce) {
 		log_announce(args->loggers);
 	}
-	if (args->tdfs & TASK_TDF_LOGGER_LOG_BATTERY) {
+	if (battery) {
 		log_battery(args->loggers);
 	}
-	if (args->tdfs & TASK_TDF_LOGGER_LOG_AMBIENT_ENV) {
+	if (ambient_env) {
 		log_ambient_env(args->loggers);
 	}
 
