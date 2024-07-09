@@ -24,6 +24,11 @@ enum {
 	TASK_TDF_LOGGER_LOG_AMBIENT_ENV = BIT(2),
 };
 
+enum {
+	/** Don't flush logger after logging (Logs with timestamp) */
+	TASK_TDF_LOGGER_FLAGS_NO_FLUSH = BIT(0),
+};
+
 /** @brief TDF logger task arguments */
 struct task_tdf_logger_args {
 	/** Mask of `TDF_DATA_LOGGER_*` to log to */
@@ -32,6 +37,8 @@ struct task_tdf_logger_args {
 	uint16_t random_delay_ms;
 	/* TDFs to log */
 	uint16_t tdfs;
+	/* Operation flags */
+	uint8_t flags;
 } __packed;
 
 #ifdef __cplusplus

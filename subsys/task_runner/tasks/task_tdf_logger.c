@@ -16,6 +16,7 @@
 #include <infuse/fs/kv_types.h>
 #include <infuse/tdf/tdf.h>
 #include <infuse/tdf/definitions.h>
+#include <infuse/time/civil.h>
 #include <infuse/zbus/channels.h>
 
 #include <infuse/task_runner/tasks/tdf_logger.h>
@@ -25,7 +26,7 @@ INFUSE_ZBUS_CHAN_DECLARE(INFUSE_ZBUS_CHAN_BATTERY, INFUSE_ZBUS_CHAN_AMBIENT_ENV)
 
 LOG_MODULE_REGISTER(task_tdfl, CONFIG_TASK_TDF_LOGGER_LOG_LEVEL);
 
-static void log_announce(uint8_t loggers)
+static void log_announce(uint8_t loggers, uint64_t timestamp)
 {
 	KV_KEY_TYPE(KV_KEY_REBOOTS) reboots;
 	struct infuse_version v = application_version_get();
@@ -45,10 +46,10 @@ static void log_announce(uint8_t loggers)
 		.reboots = reboots.count,
 	};
 
-	tdf_data_logger_log(loggers, TDF_ANNOUNCE, sizeof(announce), 0, &announce);
+	tdf_data_logger_log(loggers, TDF_ANNOUNCE, sizeof(announce), timestamp, &announce);
 }
 
-static void log_battery(uint8_t loggers)
+static void log_battery(uint8_t loggers, uint64_t timestamp)
 {
 #ifdef CONFIG_INFUSE_ZBUS_CHAN_BATTERY
 	INFUSE_ZBUS_TYPE(INFUSE_ZBUS_CHAN_BATTERY) battery;
@@ -59,11 +60,11 @@ static void log_battery(uint8_t loggers)
 	/* Get latest value */
 	zbus_chan_read(C_GET(INFUSE_ZBUS_CHAN_BATTERY), &battery, K_FOREVER);
 	/* Add to specified loggers */
-	tdf_data_logger_log(loggers, TDF_BATTERY_STATE, sizeof(battery), 0, &battery);
+	tdf_data_logger_log(loggers, TDF_BATTERY_STATE, sizeof(battery), timestamp, &battery);
 #endif
 }
 
-static void log_ambient_env(uint8_t loggers)
+static void log_ambient_env(uint8_t loggers, uint64_t timestamp)
 {
 #ifdef CONFIG_INFUSE_ZBUS_CHAN_AMBIENT_ENV
 	INFUSE_ZBUS_TYPE(INFUSE_ZBUS_CHAN_AMBIENT_ENV) ambient_env;
@@ -74,7 +75,7 @@ static void log_ambient_env(uint8_t loggers)
 	/* Get latest value */
 	zbus_chan_read(C_GET(INFUSE_ZBUS_CHAN_AMBIENT_ENV), &ambient_env, K_FOREVER);
 	/* Add to specified loggers */
-	tdf_data_logger_log(loggers, TDF_AMBIENT_TEMP_PRES_HUM, sizeof(ambient_env), 0,
+	tdf_data_logger_log(loggers, TDF_AMBIENT_TEMP_PRES_HUM, sizeof(ambient_env), timestamp,
 			    &ambient_env);
 
 #endif
@@ -86,6 +87,7 @@ void task_tdf_logger_fn(struct k_work *work)
 	const struct task_schedule *sch = task_schedule_from_data(task);
 	const struct task_tdf_logger_args *args = &sch->task_args.infuse.tdf_logger;
 	bool announce, battery, ambient_env;
+	uint64_t log_timestamp;
 	uint32_t delay_ms;
 
 	if (task_runner_task_block(&task->terminate_signal, K_NO_WAIT) == 1) {
@@ -104,18 +106,21 @@ void task_tdf_logger_fn(struct k_work *work)
 	announce = args->tdfs & TASK_TDF_LOGGER_LOG_ANNOUNCE;
 	battery = args->tdfs & TASK_TDF_LOGGER_LOG_BATTERY;
 	ambient_env = args->tdfs & TASK_TDF_LOGGER_LOG_AMBIENT_ENV;
+	log_timestamp = (args->flags & TASK_TDF_LOGGER_FLAGS_NO_FLUSH) ? civil_time_now() : 0;
 
 	LOG_INF("Ann: %d Bat: %d Env: %d", announce, battery, ambient_env);
 	if (announce) {
-		log_announce(args->loggers);
+		log_announce(args->loggers, log_timestamp);
 	}
 	if (battery) {
-		log_battery(args->loggers);
+		log_battery(args->loggers, log_timestamp);
 	}
 	if (ambient_env) {
-		log_ambient_env(args->loggers);
+		log_ambient_env(args->loggers, log_timestamp);
 	}
 
-	/* Flush the logger to transmit */
-	tdf_data_logger_flush(args->loggers);
+	if (!(args->flags & TASK_TDF_LOGGER_FLAGS_NO_FLUSH)) {
+		/* Flush the logger to transmit */
+		tdf_data_logger_flush(args->loggers);
+	}
 }
