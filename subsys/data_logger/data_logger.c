@@ -72,7 +72,7 @@ static int do_block_write(const struct device *dev, enum infuse_type type, void 
 	uint32_t phy_block = data->current_block % config->backend.physical_blocks;
 	int rc;
 
-	LOG_DBG("%s writing to logical block %d (Phy block %d)", dev->name, data->current_block,
+	LOG_DBG("%s writing to logical block %u (Phy block %u)", dev->name, data->current_block,
 		phy_block);
 	/* Erase next chunk if required */
 	if ((data->current_block >= config->backend.physical_blocks) &&
@@ -80,7 +80,7 @@ static int do_block_write(const struct device *dev, enum infuse_type type, void 
 		LOG_DBG("%s preparing block for write", dev->name);
 		rc = config->backend.api->erase(&config->backend, phy_block, erase_blocks);
 		if (rc < 0) {
-			LOG_ERR("%s failed to prepare block (%d)", dev->name, rc);
+			LOG_ERR("%s failed to prepare block (%u)", dev->name, rc);
 			return rc;
 		}
 		/* Old data is no longer present */
@@ -337,7 +337,7 @@ int data_logger_init(const struct device *dev)
 		}
 	}
 
-	LOG_INF("%s -> %d/%d blocks", dev->name, data->current_block,
+	LOG_INF("%s -> %u/%u blocks", dev->name, data->current_block,
 		config->backend.logical_blocks);
 #ifdef CONFIG_DATA_LOGGER_RAM_BUFFER
 	if (config->ram_buf_len) {
