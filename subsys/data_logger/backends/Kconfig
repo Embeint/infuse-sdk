@@ -11,3 +11,27 @@ config DATA_LOGGER_FLASH_MAP
 	depends on DT_HAS_EMBEINT_DATA_LOGGER_FLASH_MAP_ENABLED
 	depends on FLASH_MAP
 	default y
+
+config DATA_LOGGER_EXFAT
+	bool "Logging to exFAT filesystem"
+	depends on DT_HAS_EMBEINT_DATA_LOGGER_EXFAT_ENABLED
+	depends on FAT_FILESYSTEM_ELM
+	depends on FS_FATFS_EXFAT
+	depends on DISK_ACCESS
+	default y
+
+if DATA_LOGGER_EXFAT
+
+module = DATA_LOGGER_EXFAT
+module-str = Data Logger exFAT
+source "subsys/logging/Kconfig.template.log_config"
+
+config DATA_LOGGER_EXFAT_FILE_SIZE
+	int "Size of individual .bin files on filesystem"
+	default 10485760
+	help
+	  Smaller file size provide finer visual indication of the amount of
+	  data logged, at the cost of increased filesystem overhead. Default
+	  size is 10MB.
+
+endif
