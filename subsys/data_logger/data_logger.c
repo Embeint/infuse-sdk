@@ -241,7 +241,14 @@ static int current_block_search(const struct device *dev, uint8_t counter)
 	}
 	data->current_block = ((counter - 1) * config->backend.physical_blocks) + res + 1;
 
+	/* Logger has not yet wrapped, all data still present */
+	if (counter == 1) {
+		data->earliest_block = 0;
+		return 0;
+	}
+
 	/* Find next block with valid data */
+	__ASSERT_NO_MSG(data->current_block >= config->backend.physical_blocks);
 	data->earliest_block = data->current_block - config->backend.physical_blocks;
 	res = (data->earliest_block % config->backend.physical_blocks);
 	while (true) {
