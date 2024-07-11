@@ -1,0 +1,15 @@
+# Copyright (c) 2024 Jordan Yates <jordan@embeint.com>
+# SPDX-License-Identifier: LicenseRef-Embeint
+
+description: Data logging backend using a dedicated exFAT filesystem
+
+compatible: "embeint,data-logger-exfat"
+
+include: data-logger-base.yaml
+
+properties:
+  disk:
+    type: phandle
+    required: true
+    description: |
+      Disk to use for filesystem.

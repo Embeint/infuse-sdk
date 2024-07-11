@@ -32,6 +32,12 @@ extern "C" {
 struct data_logger_backend_data {
 	union {
 		const struct flash_area *area;
+#ifdef CONFIG_DATA_LOGGER_EXFAT
+		struct {
+			uint32_t cached_file_num;
+			uint32_t cached_file_lba;
+		} exfat;
+#endif /* CONFIG_DATA_LOGGER_EXFAT */
 	};
 	uint16_t block_size;
 	uint8_t erase_val;
@@ -42,6 +48,7 @@ struct data_logger_backend_config {
 	struct data_logger_backend_data *data;
 	union {
 		const struct device *backend;
+		const char *disk;
 		uint8_t flash_area_id;
 	};
 	uint32_t logical_blocks;

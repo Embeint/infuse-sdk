@@ -19,6 +19,7 @@
 #include "backends/backend_api.h"
 #include "backends/flash_map.h"
 #include "backends/epacket.h"
+#include "backends/exfat.h"
 
 #define IS_PERSISTENT_LOGGER(config) (config->backend.api->read != NULL)
 
@@ -357,7 +358,13 @@ int data_logger_init(const struct device *dev)
 		DT_NODE_HAS_COMPAT(DT_DRV_INST(inst), embeint_data_logger_epacket),                \
 		(DATA_LOGGER_BACKEND_CONFIG_EPACKET(DT_DRV_INST(inst), &data##inst.backend_data)))
 
-#define DATA_LOGGER_BACKEND_CONFIG(inst) DATA_LOGGER_FLASH_MAP(inst) DATA_LOGGER_EPACKET(inst)
+#define DATA_LOGGER_EXFAT(inst)                                                                    \
+	IF_ENABLED(                                                                                \
+		DT_NODE_HAS_COMPAT(DT_DRV_INST(inst), embeint_data_logger_exfat),                  \
+		(DATA_LOGGER_BACKEND_CONFIG_EXFAT(DT_DRV_INST(inst), &data##inst.backend_data)))
+
+#define DATA_LOGGER_BACKEND_CONFIG(inst)                                                           \
+	DATA_LOGGER_FLASH_MAP(inst) DATA_LOGGER_EPACKET(inst) DATA_LOGGER_EXFAT(inst)
 
 #define RAM_BUFFER_CONFIG(inst)                                                                    \
 	.ram_buf_data = ram_buf_##inst, .ram_buf_len = sizeof(ram_buf_##inst),
