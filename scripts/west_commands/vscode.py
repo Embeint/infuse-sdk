@@ -249,8 +249,9 @@ class vscode(WestCommand):
 
         launch["configurations"][0]["gdbPath"] = cache.get("CMAKE_GDB")
         launch["configurations"][1]["gdbPath"] = cache.get("CMAKE_GDB")
-        launch["configurations"][0]["svdFile"] = cache.get("SOC_SVD_FILE")
-        launch["configurations"][1]["svdFile"] = cache.get("SOC_SVD_FILE")
+        if cache.get("SOC_SVD_FILE", False):
+            launch["configurations"][0]["svdFile"] = cache.get("SOC_SVD_FILE")
+            launch["configurations"][1]["svdFile"] = cache.get("SOC_SVD_FILE")
 
         launch["configurations"][0]["executable"] = str(
             build_dir / "zephyr" / "zephyr.elf"
@@ -273,12 +274,26 @@ class vscode(WestCommand):
             ]
 
         if cache.get("QEMU", False):
-            # Attach doesn't make sense in the qemu context
-            launch["configurations"].pop()
-            launch["configurations"][0]["name"] = "QEMU Launch"
-            launch["configurations"][0]["servertype"] = "qemu"
+            launch["configurations"][0]["name"] = "QEMU Attach"
+            launch["configurations"][0]["servertype"] = "external"
+            launch["configurations"][0]["gdbTarget"] = "localhost:1234"
             launch["configurations"][0]["serverpath"] = cache.get("QEMU")
             launch["configurations"][0]["runToEntryPoint"] = False
+
+            launch["configurations"][1]["name"] = "QEMU Launch"
+            launch["configurations"][1]["servertype"] = "qemu"
+            launch["configurations"][1]["serverpath"] = cache.get("QEMU")
+            launch["configurations"][1]["runToEntryPoint"] = False
+        elif cache.get("BOARD")[:10] == "native_sim":
+            # Native Sim GDB does not support `west debugserver`
+            launch["configurations"].pop(0)
+
+            launch["configurations"][0]["name"] = "Native Launch"
+            launch["configurations"][0]["type"] = "cppdbg"
+            launch["configurations"][0]["program"] = str(
+                build_dir / "zephyr" / "zephyr.exe"
+            )
+            launch["configurations"][0]["cwd"] = str(build_dir)
         else:
             launch["configurations"][0]["rtos"] = "Zephyr"
             launch["configurations"][1]["rtos"] = "Zephyr"
