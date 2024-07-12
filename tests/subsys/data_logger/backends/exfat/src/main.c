@@ -12,6 +12,7 @@
 #include <zephyr/kernel.h>
 #include <zephyr/drivers/flash.h>
 #include <zephyr/drivers/flash/flash_simulator.h>
+#include <zephyr/storage/disk_access.h>
 
 #include <infuse/data_logger/logger.h>
 
@@ -21,8 +22,8 @@
 
 static uint8_t input_buffer[1024] = {0};
 static uint8_t output_buffer[1024];
-static uint8_t *memory;
-static size_t memory_size;
+static uint32_t sector_count;
+static uint32_t sector_size;
 
 int data_logger_init(const struct device *dev);
 
@@ -35,9 +36,8 @@ ZTEST(data_logger_exfat, test_init_constants)
 	zassert_equal(512, state.block_size);
 	zassert_equal(512, state.erase_unit);
 	zassert_equal(sizeof(struct data_logger_persistent_block_header), state.block_overhead);
-	zassert_equal(memory_size / state.block_size, state.physical_blocks);
 	zassert_equal(state.physical_blocks, state.logical_blocks);
-	zassert_equal(0, memory_size % state.erase_unit);
+	zassert_equal(0, sector_size % state.erase_unit);
 	zassert_equal(0, state.erase_unit % state.block_size);
 }
 
@@ -178,16 +178,14 @@ ZTEST(data_logger_exfat, test_standard_operation_reinit)
 
 static bool test_data_init(const void *global_state)
 {
-	memory = flash_simulator_get_memory(DEVICE_DT_GET_ONE(zephyr_sim_flash), &memory_size);
+	disk_access_ioctl(DISK_NAME, DISK_IOCTL_GET_SECTOR_COUNT, &sector_count);
+	disk_access_ioctl(DISK_NAME, DISK_IOCTL_GET_SECTOR_SIZE, &sector_size);
 	return true;
 }
 
 static void partition_wipe(void *fixture)
 {
-	const struct flash_parameters *params =
-		flash_get_parameters(DEVICE_DT_GET_ONE(zephyr_sim_flash));
-
-	memset(memory, params->erase_value, memory_size);
+	disk_access_erase(DISK_NAME, 0, sector_count);
 }
 
 ZTEST_SUITE(data_logger_exfat, test_data_init, NULL, partition_wipe, NULL, NULL);
