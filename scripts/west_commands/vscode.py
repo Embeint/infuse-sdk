@@ -8,6 +8,9 @@ import json
 import subprocess
 import sys
 import yaml
+import pylink
+
+from simple_term_menu import TerminalMenu
 
 from west.commands import WestCommand
 from west.util import west_topdir
@@ -299,6 +302,18 @@ class vscode(WestCommand):
             launch["configurations"][1]["rtos"] = "Zephyr"
             launch["configurations"][0]["servertype"] = "jlink"
             launch["configurations"][1]["servertype"] = "jlink"
+
+            jlink = pylink.JLink()
+            emulators = jlink.connected_emulators()
+            if len(emulators) > 1:
+                # Select which emulator should be used
+                options = [str(e) for e in emulators]
+                terminal_menu = TerminalMenu(options)
+                idx = terminal_menu.show()
+                serial = str(emulators[idx].SerialNumber)
+
+                launch["configurations"][0]["serialNumber"] = serial
+                launch["configurations"][1]["serialNumber"] = serial
 
         self._jlink_device(cache)
 
