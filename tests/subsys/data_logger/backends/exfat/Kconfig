@@ -1,0 +1,13 @@
+configdefault FLASH_SIMULATOR
+	default y
+
+configdefault FLASH_SIMULATOR_UNALIGNED_READ
+	default y
+
+configdefault SDHC_INIT_PRIORITY
+	default 75
+
+configdefault SD_INIT_PRIORITY
+	default 76
+
+source "Kconfig.zephyr"

@@ -8,3 +8,10 @@ tests:
       - native_sim
     integration_platforms:
       - native_sim
+  data_logger.exfat.sd:
+    build_only: true
+    depends_on: arduino_spi
+    extra_args:
+      - SHIELD=sparkfun_microsd
+    integration_platforms:
+      - nrf52840dk_nrf52840
