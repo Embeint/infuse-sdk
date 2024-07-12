@@ -8,3 +8,9 @@ configdefault INFUSE_IMU
 # Disable Zephyr IMU drivers
 configdefault BMI270
 	default n if INFUSE_IMU
+
+# Bring SD card init forward so it occurs before data loggers
+configdefault SDHC_INIT_PRIORITY
+	default 75
+configdefault SD_INIT_PRIORITY
+	default 76
