@@ -193,7 +193,12 @@ static int filesystem_init(const struct data_logger_backend_config *backend)
 {
 	const MKFS_PARM mkfs_opt = {
 		.fmt = FM_EXFAT,
-		.au_size = DATA_LOGGER_EXFAT_BLOCK_SIZE,
+#ifdef CONFIG_DISK_DRIVER_SDMMC
+		/* We know our filesystem only hosts large block files, so for
+		 * SD cards use the largest recommended cluster size (128kB).
+		 */
+		.au_size = 128 * 1024,
+#endif /* CONFIG_DISK_DRIVER_SDMMC */
 	};
 	char work_mem[FF_MAX_SS];
 	char disk_path[16];
