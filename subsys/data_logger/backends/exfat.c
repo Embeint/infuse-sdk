@@ -21,12 +21,13 @@
 #include "backend_api.h"
 #include "exfat.h"
 
-#define LBA_NO_FILE (UINT32_MAX)
-#define LBA_NO_MEM  (UINT32_MAX - 1)
+#define LBA_NO_FILE      (UINT32_MAX)
+#define LBA_NO_MEM       (UINT32_MAX - 1)
+#define MIN_CLUSTER_SIZE 4096
 
 #define BLOCKS_PER_FILE (CONFIG_DATA_LOGGER_EXFAT_FILE_SIZE / DATA_LOGGER_EXFAT_BLOCK_SIZE)
-BUILD_ASSERT(CONFIG_DATA_LOGGER_EXFAT_FILE_SIZE % DATA_LOGGER_EXFAT_BLOCK_SIZE == 0,
-	     "File size must be multiple of block size");
+BUILD_ASSERT(CONFIG_DATA_LOGGER_EXFAT_FILE_SIZE % MIN_CLUSTER_SIZE == 0,
+	     "File size must be multiple of minimum cluster size");
 
 /** Generate filename for Infuse binary container */
 #define GEN_FILENAME(buffer, backend, index)                                                       \
