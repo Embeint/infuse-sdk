@@ -17,6 +17,8 @@
 
 #include <ff.h>
 
+#define DISK_NAME DT_PROP(DT_PROP(DT_NODELABEL(data_logger_exfat), disk), disk_name)
+
 static uint8_t input_buffer[1024] = {0};
 static uint8_t output_buffer[1024];
 static uint8_t *memory;
@@ -55,7 +57,7 @@ ZTEST(data_logger_exfat, test_init_state)
 ZTEST(data_logger_exfat, test_readme_exists)
 {
 	const struct device *logger = DEVICE_DT_GET(DT_NODELABEL(data_logger_exfat));
-	const char *readme = "NAND:README.txt";
+	const char *readme = DISK_NAME ":README.txt";
 	FIL fp;
 
 	zassert_equal(0, data_logger_init(logger));
@@ -68,7 +70,7 @@ ZTEST(data_logger_exfat, test_readme_exists)
 ZTEST(data_logger_exfat, test_bad_label)
 {
 	const struct device *logger = DEVICE_DT_GET(DT_NODELABEL(data_logger_exfat));
-	const char *bad_label = "NAND:BADLABEL";
+	const char *bad_label = DISK_NAME ":BADLABEL";
 	struct data_logger_state state;
 
 	/* Init and write some data */
