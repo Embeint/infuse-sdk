@@ -1,0 +1,16 @@
+#
+# Copyright (c) 2024 Embeint Inc
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+# https://www.sparkfun.com/products/12761
+
+config SHIELD_SPARKFUN_MICROSD
+	def_bool $(shields_list_contains,sparkfun_microsd)
+
+if SHIELD_SPARKFUN_MICROSD && !MCUBOOT
+
+configdefault DISK_DRIVERS
+	default y
+
+endif # SHIELD_SPARKFUN_MICROSD && !MCUBOOT

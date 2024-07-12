@@ -1,0 +1,32 @@
+/*
+ * Copyright (c) 2024 Embeint Inc
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+&arduino_spi {
+	cs-gpios = <&arduino_header 14 GPIO_ACTIVE_LOW>; /* D8 */
+
+	sdhc0: sdhc@0 {
+		reg = <0>;
+		compatible = "zephyr,sdhc-spi-slot";
+		status = "okay";
+		spi-max-frequency = <32000000>;
+		mmc: mmc {
+			compatible = "zephyr,sdmmc-disk";
+			status = "okay";
+			disk-name = "SD";
+		};
+	};
+};
+
+/ {
+	data_logger_exfat: data_logger_removable: data_logger_exfat {
+		compatible = "embeint,data-logger-exfat", "embeint,data-logger";
+		disk = <&mmc>;
+
+		tdf_logger_exfat: tdf_logger_removable: tdf_logger_exfat {
+			compatible = "embeint,tdf-data-logger";
+		};
+	};
+};
