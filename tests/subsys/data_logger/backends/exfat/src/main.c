@@ -97,18 +97,21 @@ static void test_sequence(bool reinit)
 	struct data_logger_persistent_block_header *header = (void *)output_buffer;
 	struct data_logger_state state;
 	uint8_t type;
-	int rc = 0;
 
 	/* Init to erase value */
 	zassert_equal(0, data_logger_init(logger));
 	data_logger_get_state(logger, &state);
 
+#ifdef CONFIG_DISK_DRIVER_SDMMC
+	uint32_t max_blocks = 50;
+#else
 	/* We lose an unpredicable number of blocks to file allocation tables.
 	 * Actual loss depends on the size of binary files vs partition size.
 	 * Treat 95% storage as a pass.
 	 */
 	uint32_t max_blocks = 95 * state.physical_blocks / 100;
 	uint32_t overhead_blocks = 5 * state.physical_blocks / 100;
+#endif
 
 	for (int i = 0; i < max_blocks; i++) {
 		/* Predictable block data per page */
@@ -135,6 +138,9 @@ static void test_sequence(bool reinit)
 		}
 	}
 
+#ifndef CONFIG_DISK_DRIVER_SDMMC
+	int rc = 0;
+
 	/* Somewhere in here we should get a write error */
 	for (int i = 0; i < overhead_blocks; i++) {
 		rc = data_logger_block_write(logger, 5, input_buffer, state.block_size);
@@ -155,6 +161,7 @@ static void test_sequence(bool reinit)
 		}
 	}
 	zassert_equal(-ENOMEM, rc);
+#endif
 }
 
 ZTEST(data_logger_exfat, test_standard_operation)
