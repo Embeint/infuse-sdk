@@ -61,6 +61,8 @@ static int logger_flash_map_init(const struct data_logger_backend_config *backen
 	int rc;
 
 	/* Fixed block size */
+	data->physical_blocks = backend->physical_blocks;
+	data->logical_blocks = backend->logical_blocks;
 	data->block_size = backend->max_block_size;
 	data->erase_val = 0xFF;
 

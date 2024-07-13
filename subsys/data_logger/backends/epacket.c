@@ -32,6 +32,8 @@ static int logger_epacket_init(const struct data_logger_backend_config *backend)
 	struct data_logger_backend_data *data = backend->data;
 
 	/* Fixed block size */
+	data->physical_blocks = backend->physical_blocks;
+	data->logical_blocks = backend->logical_blocks;
 	data->block_size = backend->max_block_size;
 	return 0;
 }
