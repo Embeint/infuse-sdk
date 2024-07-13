@@ -39,6 +39,8 @@ struct data_logger_backend_data {
 		} exfat;
 #endif /* CONFIG_DATA_LOGGER_EXFAT */
 	};
+	uint32_t logical_blocks;
+	uint32_t physical_blocks;
 	uint16_t block_size;
 	uint8_t erase_val;
 };
