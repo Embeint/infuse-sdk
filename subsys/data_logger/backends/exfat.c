@@ -56,15 +56,15 @@ DWORD get_fattime(void)
 
 static bool filesystem_is_infuse(const struct data_logger_backend_config *backend)
 {
+	char label[34] = {0};
 	char disk_path[16];
-	char label[34];
 	FRESULT res;
 
 	snprintf(disk_path, sizeof(disk_path), "%s:", backend->disk);
 
 	res = f_getlabel(disk_path, label, NULL);
 	if (res != FR_OK || (strncmp(label, "INFUSE", 7) != 0)) {
-		LOG_ERR("NOT INFUSE FILESYSTEM! %d %s", res, label);
+		LOG_ERR("Bad filesystem label '%s'", label);
 		return false;
 	}
 	return true;
