@@ -44,7 +44,9 @@ ZTEST(data_logger_exfat, test_init_constants)
 ZTEST(data_logger_exfat, test_init_state)
 {
 	const struct device *logger = DEVICE_DT_GET(DT_NODELABEL(data_logger_exfat));
+	const char *readme = DISK_NAME ":README.txt";
 	struct data_logger_state state;
+	FIL fp;
 
 	/* Init all 0x00 */
 	zassert_equal(0, data_logger_init(logger));
@@ -52,17 +54,8 @@ ZTEST(data_logger_exfat, test_init_state)
 	zassert_equal(0, state.current_block);
 	zassert_equal(0, state.earliest_block);
 	zassert_not_equal(0, state.physical_blocks);
-}
 
-ZTEST(data_logger_exfat, test_readme_exists)
-{
-	const struct device *logger = DEVICE_DT_GET(DT_NODELABEL(data_logger_exfat));
-	const char *readme = DISK_NAME ":README.txt";
-	FIL fp;
-
-	zassert_equal(0, data_logger_init(logger));
-
-	/* File should exist */
+	/* README file should exist */
 	zassert_equal(FR_OK, f_open(&fp, readme, FA_READ));
 	zassert_equal(FR_OK, f_close(&fp));
 }
