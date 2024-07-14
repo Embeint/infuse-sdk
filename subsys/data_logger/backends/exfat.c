@@ -256,12 +256,6 @@ static int logger_exfat_init(const struct data_logger_backend_config *backend)
 	char disk_path[16];
 	FRESULT res;
 
-	/* Fixed block size */
-	data->physical_blocks = backend->physical_blocks;
-	data->logical_blocks = backend->logical_blocks;
-	data->block_size = backend->max_block_size;
-	data->erase_val = 0xFF;
-
 	data->exfat.cached_file_num = UINT32_MAX;
 	data->exfat.cached_file_lba = UINT32_MAX;
 
@@ -282,6 +276,12 @@ static int logger_exfat_init(const struct data_logger_backend_config *backend)
 		LOG_ERR("Unknown mount problem (%d)", res);
 		return -EIO;
 	}
+
+	/* Block counts as reported by the disk driver (run after mount) */
+	disk_access_ioctl(backend->disk, DISK_IOCTL_GET_SECTOR_COUNT, &data->physical_blocks);
+	data->logical_blocks = data->physical_blocks;
+	data->block_size = backend->max_block_size;
+	data->erase_val = 0xFF;
 
 #if CONFIG_DATA_LOGGER_EXFAT_LOG_LEVEL >= LOG_LEVEL_DBG
 	FILINFO fno;
