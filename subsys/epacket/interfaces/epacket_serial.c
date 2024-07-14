@@ -10,6 +10,7 @@
 #include <zephyr/logging/log.h>
 #include <zephyr/drivers/uart.h>
 #include <zephyr/sys/byteorder.h>
+#include <zephyr/pm/device_runtime.h>
 
 #include <infuse/epacket/interface.h>
 #include <infuse/epacket/packet.h>
@@ -171,6 +172,7 @@ static void epacket_serial_send(const struct device *dev, struct net_buf *buf)
 static int epacket_receive_control(const struct device *dev, bool enable)
 {
 	const struct epacket_serial_config *config = dev->config;
+	int rc;
 
 	/* USB backend is always enabled */
 	if (config->backend_usb) {
@@ -178,9 +180,14 @@ static int epacket_receive_control(const struct device *dev, bool enable)
 	}
 
 	if (enable) {
+		rc = pm_device_runtime_get(config->backend);
+		if (rc < 0) {
+			return rc;
+		}
 		uart_irq_rx_enable(config->backend);
 	} else {
 		uart_irq_rx_disable(config->backend);
+		(void)pm_device_runtime_put(config->backend);
 	}
 	return 0;
 }
