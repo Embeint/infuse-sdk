@@ -51,6 +51,7 @@ static void disconnected_handler(struct k_work *work)
 	struct k_work_delayable *delayable = k_work_delayable_from_work(work);
 	struct epacket_serial_data *data =
 		CONTAINER_OF(delayable, struct epacket_serial_data, dc_handler);
+	const struct epacket_serial_config *config = data->interface->config;
 	struct net_buf *buf;
 	int cnt = 0;
 
@@ -60,6 +61,8 @@ static void disconnected_handler(struct k_work *work)
 		if (buf) {
 			/* Notify TX result */
 			epacket_notify_tx_result(data->interface, buf, -ETIMEDOUT);
+			/* Release PM constraint */
+			pm_device_runtime_put(config->backend);
 			/* Free buffer */
 			net_buf_unref(buf);
 			cnt++;
@@ -130,6 +133,11 @@ static void interrupt_handler(const struct device *dev, void *user_data)
 			/* Free TX buffer */
 			net_buf_unref(buf);
 
+			/* Release the serial port after a delay for transmission.
+			 * 50ms is 720 bytes at 115200 bps.
+			 */
+			pm_device_runtime_put_async(dev, K_MSEC(50));
+
 			LOG_DBG("sent %d/%d", sent, available);
 		} else {
 			uart_irq_tx_disable(dev);
@@ -143,6 +151,7 @@ static void epacket_serial_send(const struct device *dev, struct net_buf *buf)
 	const struct epacket_serial_config *config = dev->config;
 	struct epacket_serial_data *data = dev->data;
 	struct epacket_serial_frame_header *header;
+	int rc;
 
 	/* Encrypt the payload */
 	if (epacket_serial_encrypt(buf) < 0) {
@@ -158,6 +167,14 @@ static void epacket_serial_send(const struct device *dev, struct net_buf *buf)
 		.sync = {EPACKET_SERIAL_SYNC_A, EPACKET_SERIAL_SYNC_B},
 		.len = buf->len - sizeof(*header),
 	};
+
+	/* Power up serial port */
+	rc = pm_device_runtime_get(config->backend);
+	if (rc < 0) {
+		epacket_notify_tx_result(data->interface, buf, -ENODEV);
+		net_buf_unref(buf);
+		return;
+	}
 
 	/* Push packet onto queue */
 	net_buf_put(&data->tx_fifo, buf);
