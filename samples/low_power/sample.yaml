@@ -11,3 +11,7 @@ common:
 tests:
   sample.low_power:
     tags: validation
+  sample.low_power.rtt:
+    tags: validation
+    required_snippets:
+      - rtt
