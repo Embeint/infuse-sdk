@@ -1,0 +1,4 @@
+name: rtt
+append:
+  EXTRA_DTC_OVERLAY_FILE: rtt.overlay
+  EXTRA_CONF_FILE: rtt.conf
