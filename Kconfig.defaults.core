@@ -24,6 +24,12 @@ configdefault RETAINED_MEM
 configdefault RETAINED_MEM_MUTEX_FORCE_DISABLE
 	default y
 
+# Power management
+configdefault PM_DEVICE
+	default y
+configdefault PM_DEVICE_RUNTIME
+	default y
+
 # Watchdog
 configdefault WATCHDOG
 	default y if !ZTEST
