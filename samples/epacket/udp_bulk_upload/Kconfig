@@ -11,7 +11,4 @@ config BULK_UPLOAD_PERIOD
 configdefault HEAP_MEM_POOL_SIZE
 	default 200000 if WIFI_NRF700X
 
-configdefault NRF_WIFI_IF_AUTO_START
-	default n
-
 source "Kconfig.zephyr"

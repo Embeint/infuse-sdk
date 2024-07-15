@@ -14,6 +14,7 @@
 #include <zephyr/net/net_if.h>
 #include <zephyr/net/net_mgmt.h>
 #include <zephyr/net/wifi_mgmt.h>
+#include <zephyr/net/conn_mgr_connectivity.h>
 
 #include <infuse/epacket/interface.h>
 #include <infuse/epacket/packet.h>
@@ -45,6 +46,10 @@ int main(void)
 	epacket_receive(epacket_serial, K_FOREVER);
 	epacket_receive(epacket_bt_adv, K_FOREVER);
 	epacket_receive(epacket_udp, K_FOREVER);
+
+	/* Turn on the interface */
+	conn_mgr_all_if_up(false);
+	conn_mgr_all_if_connect(false);
 
 	for (;;) {
 		announce.application = 0x1234;

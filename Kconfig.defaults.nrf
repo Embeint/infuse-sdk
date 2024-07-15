@@ -66,6 +66,8 @@ configdefault WPA_SUPP
 configdefault NET_CONNECTION_MANAGER_MONITOR_STACK_SIZE
 	default 4096 if NRF700X_STA_MODE
 	default 1024 if NRF_MODEM_LIB_NET_IF
+configdefault NRF_WIFI_IF_AUTO_START
+	default n
 
 # MbedTLS requirements for WiFi connectivity
 configdefault MBEDTLS_ECP_ALL_ENABLED
