@@ -13,6 +13,8 @@ if (${SB_CONFIG_BOOTLOADER_MCUBOOT})
   set(mcuboot_CONFIG_MULTITHREADING "y" CACHE INTERNAL "")
   # Support images up to 1MB in size
   set(mcuboot_CONFIG_BOOT_MAX_IMG_SECTORS 256 CACHE INTERNAL "")
+  # Notify DTS that this is a bootloader build
+  set(mcuboot_DTS_EXTRA_CPPFLAGS "-DINFUSE_IS_BOOTLOADER=1" CACHE INTERNAL "")
 endif()
 
 if(SB_CONFIG_INFUSE_INTEGRATION_NRF_NET_CORE_IMAGE_HCI_IPC)
