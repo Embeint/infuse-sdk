@@ -31,4 +31,51 @@
 			compatible = "embeint,tdf-data-logger";
 		};
 	};
+
+	data_logger_flash: data_logger_flash {
+		compatible = "embeint,data-logger-flash-map", "embeint,data-logger";
+		partition = <&data_logger_partition>;
+
+		tdf_logger_flash: tdf_logger_flash {
+			compatible = "embeint,tdf-data-logger";
+		};
+	};
 };
+
+&pwm0 {
+	zephyr,pm-device-runtime-auto;
+};
+&uart0 {
+	zephyr,pm-device-runtime-auto;
+};
+&i2c0 {
+	zephyr,pm-device-runtime-auto;
+};
+&spi1 {
+	zephyr,pm-device-runtime-auto;
+};
+&qspi {
+	zephyr,pm-device-runtime-auto;
+};
+&mx25r64 {
+	zephyr,pm-device-runtime-auto;
+	partitions {
+		compatible = "fixed-partitions";
+		#address-cells = <1>;
+		#size-cells = <1>;
+
+		data_logger_partition: partition@0 {
+			label = "data_logger";
+			reg = <0x00000000 0x800000>;
+		};
+	};
+};
+
+
+#ifdef INFUSE_IS_BOOTLOADER
+
+/* Bootloader doesn't know about external flash */
+/delete-node/ &data_logger_flash;
+/delete-node/ &data_logger_partition;
+
+#endif /* INFUSE_IS_BOOTLOADER */
