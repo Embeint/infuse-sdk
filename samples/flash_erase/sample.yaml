@@ -1,0 +1,11 @@
+sample:
+  description: Erase onboard flash
+  name: Flash Erase
+
+tests:
+  sample.flash_erase:
+    build_only: true
+    required_snippets:
+      - infuse
+    integration_platforms:
+      - nrf52840dk_nrf52840
