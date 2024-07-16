@@ -713,7 +713,7 @@ struct infuse_imu_api bmi270_imu_api = {
 		.int1_gpio = GPIO_DT_SPEC_INST_GET_BY_IDX(inst, irq_gpios, 0),                     \
 		COND_CODE_1(DT_INST_ON_BUS(inst, spi), (BMI270_CONFIG_SPI(inst)),                  \
 			    (BMI270_CONFIG_I2C(inst)))};                                           \
-	PM_DEVICE_DT_INST_DEFINE(0, bmi270_pm_control);                                            \
+	PM_DEVICE_DT_INST_DEFINE(inst, bmi270_pm_control);                                         \
 	DEVICE_DT_INST_DEFINE(inst, bmi270_init, PM_DEVICE_DT_INST_GET(inst), &bmi270_drv_##inst,  \
 			      &bmi270_config_##inst, POST_KERNEL, CONFIG_SENSOR_INIT_PRIORITY,     \
 			      &bmi270_imu_api);
