@@ -23,6 +23,7 @@
 enum {
 	INFUSE_ROOT_ECC_KEY_ID = KV_KEY_SECURE_STORAGE_RESERVED,
 	INFUSE_ROOT_ECC_PUBLIC_KEY_ID,
+	INFUSE_ROOT_ECC_SHARED_SECRET_KEY_ID,
 	INFUSE_ROOT_NETWORK_KEY_ID,
 };
 
@@ -127,19 +128,31 @@ static psa_key_id_t derive_shared_secret(psa_key_id_t root_key_id)
 	psa_key_id_t key_id;
 	size_t olen;
 
-	/* Calculate shared secret */
-	status = psa_raw_key_agreement(PSA_ALG_ECDH, root_key_id, infuse_cloud_public_key,
-				       sizeof(infuse_cloud_public_key), shared_secret,
-				       sizeof(shared_secret), &olen);
+	/* Attempt to open the key before spending time generating it */
+	status = psa_open_key(INFUSE_ROOT_ECC_SHARED_SECRET_KEY_ID, &key_id);
 	if (status != PSA_SUCCESS) {
-		return PSA_KEY_ID_NULL;
+		/* Calculate shared secret */
+		status = psa_raw_key_agreement(PSA_ALG_ECDH, root_key_id, infuse_cloud_public_key,
+					       sizeof(infuse_cloud_public_key), shared_secret,
+					       sizeof(shared_secret), &olen);
+		if (status != PSA_SUCCESS) {
+			return PSA_KEY_ID_NULL;
+		}
+		/* Override lifetime to persistent */
+		psa_set_key_lifetime(&key_attributes, PSA_KEY_LIFETIME_PERSISTENT);
+		/* Set the persistent key ID */
+		psa_set_key_id(&key_attributes, INFUSE_ROOT_ECC_SHARED_SECRET_KEY_ID);
+		/* Import device shared key into PSA */
+		status = psa_import_key(&key_attributes, shared_secret, sizeof(shared_secret),
+					&key_id);
+		/* Clear sensitive stack content */
+		mbedtls_platform_zeroize(shared_secret, sizeof(shared_secret));
+
+		if (status != PSA_SUCCESS) {
+			LOG_WRN("Failed to import %s root (%d)", "device", status);
+			return PSA_KEY_ID_NULL;
+		}
 	}
-
-	/* Import device shared key into PSA */
-	status = psa_import_key(&key_attributes, shared_secret, sizeof(shared_secret), &key_id);
-
-	/* Clear sensitive stack content */
-	mbedtls_platform_zeroize(shared_secret, sizeof(shared_secret));
 
 	/* Calculate device key identifier (CRC32 over the two public keys) */
 	cached_device_id = crc32_ieee(infuse_cloud_public_key, sizeof(infuse_cloud_public_key));
@@ -147,10 +160,6 @@ static psa_key_id_t derive_shared_secret(psa_key_id_t root_key_id)
 		crc32_ieee_update(cached_device_id, device_public_key, sizeof(device_public_key));
 	cached_device_id &= 0x00FFFFFF;
 
-	if (status != PSA_SUCCESS) {
-		LOG_WRN("Failed to import %s root (%d)", "device", status);
-		return PSA_KEY_ID_NULL;
-	}
 	return key_id;
 }
 
