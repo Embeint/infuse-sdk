@@ -60,21 +60,24 @@ static psa_key_id_t generate_root_ecc_key_pair(void)
 	psa_key_id_t key_id;
 	size_t olen;
 
-	/* ECDH, Curve25519 */
-	psa_set_key_usage_flags(&key_attributes, PSA_KEY_USAGE_DERIVE);
-	psa_set_key_type(&key_attributes, PSA_KEY_TYPE_ECC_KEY_PAIR(PSA_ECC_FAMILY_MONTGOMERY));
-	psa_set_key_algorithm(&key_attributes, PSA_ALG_ECDH);
-	psa_set_key_bits(&key_attributes, 255);
+	/* Attempt to open the key before spending time generating it */
+	status = psa_open_key(INFUSE_ROOT_ECC_KEY_ID, &key_id);
+	if (status != PSA_SUCCESS) {
+		/* ECDH, Curve25519 */
+		psa_set_key_usage_flags(&key_attributes, PSA_KEY_USAGE_DERIVE);
+		psa_set_key_type(&key_attributes,
+				 PSA_KEY_TYPE_ECC_KEY_PAIR(PSA_ECC_FAMILY_MONTGOMERY));
+		psa_set_key_algorithm(&key_attributes, PSA_ALG_ECDH);
+		psa_set_key_bits(&key_attributes, 255);
 
-	psa_set_key_lifetime(&key_attributes, PSA_KEY_LIFETIME_PERSISTENT);
-	psa_set_key_id(&key_attributes, INFUSE_ROOT_ECC_KEY_ID);
+		psa_set_key_lifetime(&key_attributes, PSA_KEY_LIFETIME_PERSISTENT);
+		psa_set_key_id(&key_attributes, INFUSE_ROOT_ECC_KEY_ID);
 
-	status = psa_generate_key(&key_attributes, &key_id);
-	if (status == PSA_ERROR_ALREADY_EXISTS) {
-		LOG_DBG("Root ECC key already exists");
-		key_id = INFUSE_ROOT_ECC_KEY_ID;
-	} else if (status != PSA_SUCCESS) {
-		key_id = PSA_KEY_ID_NULL;
+		status = psa_generate_key(&key_attributes, &key_id);
+		if (status != PSA_SUCCESS) {
+			LOG_ERR("Failed to generate root ECDH key (%d)", status);
+			key_id = PSA_KEY_ID_NULL;
+		}
 	}
 
 	/* Export public key once */
