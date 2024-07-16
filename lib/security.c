@@ -14,13 +14,15 @@
 #include <infuse/fs/secure_storage.h>
 
 #include <psa/crypto.h>
-#ifdef CONFIG_INFUSE_SECURE_STORAGE
+#if defined(CONFIG_INFUSE_SECURE_STORAGE) || defined(CONFIG_BUILD_WITH_TFM)
 #include <psa/internal_trusted_storage.h>
+#define ITS_AVAILABLE 1
 #endif
 #include <mbedtls/platform_util.h>
 
 enum {
 	INFUSE_ROOT_ECC_KEY_ID = KV_KEY_SECURE_STORAGE_RESERVED,
+	INFUSE_ROOT_ECC_PUBLIC_KEY_ID,
 	INFUSE_ROOT_NETWORK_KEY_ID,
 };
 
@@ -53,12 +55,41 @@ static psa_key_attributes_t hkdf_derive_attributes(void)
 	return key_attributes;
 }
 
+static void device_public_key_export(void)
+{
+	psa_status_t status;
+	size_t olen;
+
+#ifdef ITS_AVAILABLE
+	/* Try to load cached public key */
+	status = psa_its_get(INFUSE_ROOT_ECC_PUBLIC_KEY_ID, 0, 32, device_public_key, &olen);
+	if ((status == PSA_SUCCESS) && (olen == 32)) {
+		return;
+	}
+#endif /* ITS_AVAILABLE */
+
+	/* Export public key and save */
+	status = psa_export_public_key(INFUSE_ROOT_ECC_KEY_ID, device_public_key, 32, &olen);
+	if ((status != PSA_SUCCESS) || (olen != 32)) {
+		LOG_ERR("Public key export failed (%d %d)", status, olen);
+		memset(device_public_key, 0x00, 32);
+	}
+#ifdef ITS_AVAILABLE
+	else {
+		status = psa_its_set(INFUSE_ROOT_ECC_PUBLIC_KEY_ID, 32, device_public_key,
+				     PSA_STORAGE_FLAG_NONE);
+		if (status != PSA_SUCCESS) {
+			LOG_ERR("Failed to save public key (%d)", status);
+		}
+	}
+#endif /* ITS_AVAILABLE */
+}
+
 static psa_key_id_t generate_root_ecc_key_pair(void)
 {
 	psa_key_attributes_t key_attributes = PSA_KEY_ATTRIBUTES_INIT;
 	psa_status_t status;
 	psa_key_id_t key_id;
-	size_t olen;
 
 	/* Attempt to open the key before spending time generating it */
 	status = psa_open_key(INFUSE_ROOT_ECC_KEY_ID, &key_id);
@@ -82,11 +113,7 @@ static psa_key_id_t generate_root_ecc_key_pair(void)
 
 	/* Export public key once */
 	if (key_id == INFUSE_ROOT_ECC_KEY_ID) {
-		status = psa_export_public_key(key_id, device_public_key, 32, &olen);
-		if ((status != PSA_SUCCESS) || (olen != 32)) {
-			LOG_ERR("Public key export failed (%d %d)", status, olen);
-			memset(device_public_key, 0x00, 32);
-		}
+		device_public_key_export();
 	}
 
 	return key_id;
