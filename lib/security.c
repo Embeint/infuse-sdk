@@ -95,6 +95,11 @@ static psa_key_id_t generate_root_ecc_key_pair(void)
 	/* Attempt to open the key before spending time generating it */
 	status = psa_open_key(INFUSE_ROOT_ECC_KEY_ID, &key_id);
 	if (status != PSA_SUCCESS) {
+#ifdef ITS_AVAILABLE
+		/* Remove any existing derived keys */
+		(void)psa_its_remove(INFUSE_ROOT_ECC_PUBLIC_KEY_ID);
+		(void)psa_its_remove(INFUSE_ROOT_ECC_SHARED_SECRET_KEY_ID);
+#endif /* ITS_AVAILABLE */
 		/* ECDH, Curve25519 */
 		psa_set_key_usage_flags(&key_attributes, PSA_KEY_USAGE_DERIVE);
 		psa_set_key_type(&key_attributes,
