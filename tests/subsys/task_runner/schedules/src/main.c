@@ -133,6 +133,15 @@ ZTEST(task_runner_schedules, test_battery_static)
 	for (int i = 21; i <= 100; i++) {
 		zassert_false(task_schedule_should_terminate(&schedule, &state, 10, 100, i));
 	}
+
+	/* No battery constraints should start and not stop at 0% battery */
+	struct task_schedule schedule2 = {
+		.validity = TASK_VALID_ALWAYS,
+	};
+
+	zassert_true(task_schedule_validate(&schedule2));
+	zassert_true(task_schedule_should_start(&schedule2, &state, 10, 100, 0));
+	zassert_false(task_schedule_should_terminate(&schedule2, &state, 10, 100, 0));
 }
 
 ZTEST(task_runner_schedules, test_timeout)
