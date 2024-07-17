@@ -12,14 +12,29 @@
 #include <zephyr/drivers/flash.h>
 #include <zephyr/storage/flash_map.h>
 
-#include "backend_api.h"
-#include "flash_map.h"
+#include <infuse/data_logger/logger.h>
 
-static int logger_flash_map_write(const struct data_logger_backend_config *backend,
-				  uint32_t phy_block, enum infuse_type data_type, const void *mem,
-				  uint16_t mem_len)
+#include "common.h"
+
+#define DATA_LOGGER_FLASH_MAP_BLOCK_SIZE 512
+#define DATA_LOGGER_FLASH_MAP_MAX_WRAPS  254
+
+struct dl_flash_map_config {
+	struct data_logger_common_config common;
+	uint32_t physical_blocks;
+	uint16_t erase_size;
+	uint16_t max_block_size;
+	uint8_t flash_area_id;
+};
+struct dl_flash_map_data {
+	struct data_logger_common_data common;
+	const struct flash_area *area;
+};
+
+static int logger_flash_map_write(const struct device *dev, uint32_t phy_block,
+				  enum infuse_type data_type, const void *mem, uint16_t mem_len)
 {
-	struct data_logger_backend_data *data = backend->data;
+	struct dl_flash_map_data *data = dev->data;
 	off_t offset = DATA_LOGGER_FLASH_MAP_BLOCK_SIZE * phy_block;
 	uint8_t *ptr = (uint8_t *)mem;
 
@@ -28,56 +43,80 @@ static int logger_flash_map_write(const struct data_logger_backend_config *backe
 
 	/* Ensure writes are word aligned */
 	while (mem_len % sizeof(uint32_t)) {
-		ptr[mem_len++] = data->erase_val;
+		ptr[mem_len++] = data->common.erase_val;
 	}
 
 	return flash_area_write(data->area, offset, mem, mem_len);
 }
 
-static int logger_flash_map_read(const struct data_logger_backend_config *backend,
-				 uint32_t phy_block, uint16_t block_offset, void *mem,
-				 uint16_t mem_len)
+static int logger_flash_map_read(const struct device *dev, uint32_t phy_block,
+				 uint16_t block_offset, void *mem, uint16_t mem_len)
 {
-	struct data_logger_backend_data *data = backend->data;
+	struct dl_flash_map_data *data = dev->data;
 	off_t offset = (DATA_LOGGER_FLASH_MAP_BLOCK_SIZE * phy_block) + block_offset;
 
 	return flash_area_read(data->area, offset, mem, mem_len);
 }
 
-static int logger_flash_map_erase(const struct data_logger_backend_config *backend,
-				  uint32_t phy_block, uint32_t num)
+static int logger_flash_map_erase(const struct device *dev, uint32_t phy_block, uint32_t num)
 {
-	struct data_logger_backend_data *data = backend->data;
+	struct dl_flash_map_data *data = dev->data;
 	off_t offset = DATA_LOGGER_FLASH_MAP_BLOCK_SIZE * phy_block;
 	size_t len = DATA_LOGGER_FLASH_MAP_BLOCK_SIZE * num;
 
 	return flash_area_erase(data->area, offset, len);
 }
 
-static int logger_flash_map_init(const struct data_logger_backend_config *backend)
+/* Need to hook into this function when testing */
+IF_DISABLED(CONFIG_ZTEST, (static))
+int logger_flash_map_init(const struct device *dev)
 {
-	struct data_logger_backend_data *data = backend->data;
+	const struct dl_flash_map_config *config = dev->config;
+	struct dl_flash_map_data *data = dev->data;
 	const struct flash_parameters *params;
 	int rc;
 
-	/* Fixed block size */
-	data->physical_blocks = backend->physical_blocks;
-	data->logical_blocks = backend->logical_blocks;
-	data->block_size = backend->max_block_size;
-	data->erase_val = 0xFF;
+	/* Setup common data structure */
+	data->common.physical_blocks = config->physical_blocks;
+	data->common.logical_blocks = config->physical_blocks * DATA_LOGGER_FLASH_MAP_MAX_WRAPS;
+	data->common.block_size = config->max_block_size;
+	data->common.erase_size = config->erase_size;
+	data->common.erase_val = 0xFF;
 
 	/* Open flash area */
-	rc = flash_area_open(backend->flash_area_id, &data->area);
+	rc = flash_area_open(config->flash_area_id, &data->area);
 	if (rc == 0) {
 		params = flash_get_parameters(data->area->fa_dev);
-		data->erase_val = params->erase_value;
+		data->common.erase_val = params->erase_value;
+		flash_area_close(data->area);
 	}
-	return rc;
+
+	/* Common init function */
+	return data_logger_common_init(dev);
 }
 
-const struct data_logger_backend_api data_logger_flash_map_api = {
-	.init = logger_flash_map_init,
+const struct data_logger_api data_logger_flash_map_api = {
 	.write = logger_flash_map_write,
 	.read = logger_flash_map_read,
 	.erase = logger_flash_map_erase,
 };
+
+#define DATA_LOGGER_DEFINE(inst)                                                                   \
+	COMMON_CONFIG_PRE(inst);                                                                   \
+	static struct dl_flash_map_config config##inst = {                                         \
+		.common = COMMON_CONFIG_INIT(inst),                                                \
+		.flash_area_id = DT_FIXED_PARTITION_ID(DT_INST_PROP(inst, partition)),             \
+		.physical_blocks = (DT_REG_SIZE(DT_INST_PROP(inst, partition)) /                   \
+				    DATA_LOGGER_FLASH_MAP_BLOCK_SIZE),                             \
+		.erase_size = DT_PROP_OR(DT_GPARENT(DT_INST_PROP(inst, partition)),                \
+					 erase_block_size, 4096),                                  \
+		.max_block_size = DATA_LOGGER_FLASH_MAP_BLOCK_SIZE,                                \
+	};                                                                                         \
+	static struct dl_flash_map_data data##inst;                                                \
+	DEVICE_DT_INST_DEFINE(inst, logger_flash_map_init, NULL, &data##inst, &config##inst,       \
+			      POST_KERNEL, 80, &data_logger_flash_map_api);
+
+#define DATA_LOGGER_DEFINE_WRAPPER(inst)                                                           \
+	IF_ENABLED(DATA_LOGGER_DEPENDENCIES_MET(DT_DRV_INST(inst)), (DATA_LOGGER_DEFINE(inst)))
+
+DT_INST_FOREACH_STATUS_OKAY(DATA_LOGGER_DEFINE_WRAPPER)

@@ -16,29 +16,9 @@
 
 #include <infuse/data_logger/logger.h>
 
-#include "backends/backend_api.h"
-#include "backends/flash_map.h"
-#include "backends/epacket.h"
-#include "backends/exfat.h"
+#include "backends/common.h"
 
-#define IS_PERSISTENT_LOGGER(config) (config->backend.api->read != NULL)
-
-struct data_logger_config {
-	struct data_logger_backend_config backend;
-#ifdef CONFIG_DATA_LOGGER_RAM_BUFFER
-	uint8_t *ram_buf_data;
-	size_t ram_buf_len;
-#endif /* CONFIG_DATA_LOGGER_RAM_BUFFER */
-};
-
-struct data_logger_data {
-	struct data_logger_backend_data backend_data;
-	uint32_t current_block;
-	uint32_t earliest_block;
-#ifdef CONFIG_DATA_LOGGER_RAM_BUFFER
-	size_t ram_buf_offset;
-#endif /* CONFIG_DATA_LOGGER_RAM_BUFFER */
-};
+#define IS_PERSISTENT_LOGGER(api) (api->read != NULL)
 
 /* Block header on the ram buffer */
 struct ram_buf_header {
@@ -50,36 +30,35 @@ LOG_MODULE_REGISTER(data_logger, CONFIG_DATA_LOGGER_LOG_LEVEL);
 
 void data_logger_get_state(const struct device *dev, struct data_logger_state *state)
 {
-	const struct data_logger_config *config = dev->config;
-	struct data_logger_data *data = dev->data;
+	struct data_logger_common_data *data = dev->data;
+	const struct data_logger_api *api = dev->api;
 
-	state->logical_blocks = data->backend_data.logical_blocks;
-	state->physical_blocks = data->backend_data.physical_blocks;
+	state->logical_blocks = data->logical_blocks;
+	state->physical_blocks = data->physical_blocks;
 	state->current_block = data->current_block;
 	state->earliest_block = data->earliest_block;
-	state->block_size = data->backend_data.block_size;
-	state->block_overhead = config->backend.api->read == NULL
-					? 0
-					: sizeof(struct data_logger_persistent_block_header);
-	state->erase_unit = config->backend.erase_size;
+	state->block_size = data->block_size;
+	state->block_overhead =
+		api->read == NULL ? 0 : sizeof(struct data_logger_persistent_block_header);
+	state->erase_unit = data->erase_size;
 }
 
 static int do_block_write(const struct device *dev, enum infuse_type type, void *block,
 			  uint16_t block_len)
 {
-	const struct data_logger_config *config = dev->config;
-	struct data_logger_data *data = dev->data;
-	uint16_t erase_blocks = config->backend.erase_size / config->backend.max_block_size;
-	uint32_t phy_block = data->current_block % data->backend_data.physical_blocks;
+	struct data_logger_common_data *data = dev->data;
+	const struct data_logger_api *api = dev->api;
+	uint16_t erase_blocks = data->erase_size / data->block_size;
+	uint32_t phy_block = data->current_block % data->physical_blocks;
 	int rc;
 
 	LOG_DBG("%s writing to logical block %u (Phy block %u)", dev->name, data->current_block,
 		phy_block);
 	/* Erase next chunk if required */
-	if ((data->current_block >= data->backend_data.physical_blocks) &&
+	if ((data->current_block >= data->physical_blocks) &&
 	    ((data->current_block % erase_blocks) == 0)) {
 		LOG_DBG("%s preparing block for write", dev->name);
-		rc = config->backend.api->erase(&config->backend, phy_block, erase_blocks);
+		rc = api->erase(dev, phy_block, erase_blocks);
 		if (rc < 0) {
 			LOG_ERR("%s failed to prepare block (%u)", dev->name, rc);
 			return rc;
@@ -89,15 +68,15 @@ static int do_block_write(const struct device *dev, enum infuse_type type, void 
 	}
 
 	/* Add persistent block header if required */
-	if (IS_PERSISTENT_LOGGER(config)) {
+	if (IS_PERSISTENT_LOGGER(api)) {
 		struct data_logger_persistent_block_header *header = block;
 
 		header->block_type = type;
-		header->block_wrap = (data->current_block / data->backend_data.physical_blocks) + 1;
+		header->block_wrap = (data->current_block / data->physical_blocks) + 1;
 	}
 
 	/* Write block to backend */
-	rc = config->backend.api->write(&config->backend, phy_block, type, block, block_len);
+	rc = api->write(dev, phy_block, type, block, block_len);
 	if (rc < 0) {
 		LOG_ERR("%s failed to write to backend", dev->name);
 		return rc;
@@ -109,19 +88,19 @@ static int do_block_write(const struct device *dev, enum infuse_type type, void 
 int data_logger_block_write(const struct device *dev, enum infuse_type type, void *block,
 			    uint16_t block_len)
 {
-	struct data_logger_data *data = dev->data;
+	struct data_logger_common_data *data = dev->data;
 
 	/* Validate block length */
-	if (block_len > data->backend_data.block_size) {
+	if (block_len > data->block_size) {
 		return -EINVAL;
 	}
 	/* Check there is still space on the logger */
-	if (data->current_block >= data->backend_data.logical_blocks) {
+	if (data->current_block >= data->logical_blocks) {
 		return -ENOMEM;
 	}
 
 #ifdef CONFIG_DATA_LOGGER_RAM_BUFFER
-	const struct data_logger_config *config = dev->config;
+	const struct data_logger_common_config *config = dev->config;
 
 	if (config->ram_buf_len) {
 		uint32_t space = config->ram_buf_len - data->ram_buf_offset;
@@ -171,32 +150,30 @@ int data_logger_block_write(const struct device *dev, enum infuse_type type, voi
 int data_logger_block_read(const struct device *dev, uint32_t block_idx, uint16_t block_offset,
 			   void *block, uint16_t block_len)
 {
-	const struct data_logger_config *config = dev->config;
-	struct data_logger_data *data = dev->data;
-	uint32_t phy_block = block_idx % data->backend_data.physical_blocks;
+	struct data_logger_common_data *data = dev->data;
+	const struct data_logger_api *api = dev->api;
+	uint32_t phy_block = block_idx % data->physical_blocks;
 	uint32_t end_logical =
-		((config->backend.max_block_size * block_idx) + block_offset + block_len - 1) /
-		config->backend.max_block_size;
-	uint32_t end_phy = end_logical % data->backend_data.physical_blocks;
+		((data->block_size * block_idx) + block_offset + block_len - 1) / data->block_size;
+	uint32_t end_phy = end_logical % data->physical_blocks;
 	uint32_t second_read = 0;
 	int rc;
 
 	/* Can only read from persistent loggers */
-	if (!IS_PERSISTENT_LOGGER(config)) {
+	if (!IS_PERSISTENT_LOGGER(api)) {
 		return -ENOTSUP;
 	}
 
 	/* Data that does not exist */
 	if ((block_idx < data->earliest_block) || (end_logical >= data->current_block) ||
-	    (block_offset >= config->backend.max_block_size)) {
+	    (block_offset >= data->block_size)) {
 		return -ENOENT;
 	}
 
 	/* Read goes across the wrap boundary */
 	if (end_phy < phy_block) {
-		uint32_t bytes_to_wrap = (data->backend_data.physical_blocks - phy_block) *
-						 config->backend.max_block_size -
-					 block_offset;
+		uint32_t bytes_to_wrap =
+			(data->physical_blocks - phy_block) * data->block_size - block_offset;
 
 		LOG_DBG("%s read wraps across boundary after %d bytes", dev->name, bytes_to_wrap);
 		second_read = block_len - bytes_to_wrap;
@@ -204,7 +181,7 @@ int data_logger_block_read(const struct device *dev, uint32_t block_idx, uint16_
 	}
 
 	/* Read block from backend */
-	rc = config->backend.api->read(&config->backend, phy_block, block_offset, block, block_len);
+	rc = api->read(dev, phy_block, block_offset, block, block_len);
 	if (rc < 0) {
 		LOG_ERR("%s failed to read from backend", dev->name);
 	}
@@ -212,17 +189,17 @@ int data_logger_block_read(const struct device *dev, uint32_t block_idx, uint16_
 	if (second_read) {
 		block = (uint8_t *)block + block_len;
 		LOG_DBG("%s reading remaining %d bytes", dev->name, second_read);
-		rc = config->backend.api->read(&config->backend, 0, 0, block, second_read);
+		rc = api->read(dev, 0, 0, block, second_read);
 	}
 	return rc;
 }
 
 static int current_block_search(const struct device *dev, uint8_t counter)
 {
-	const struct data_logger_config *config = dev->config;
-	struct data_logger_data *data = dev->data;
+	struct data_logger_common_data *data = dev->data;
+	const struct data_logger_api *api = dev->api;
 	struct data_logger_persistent_block_header temp;
-	uint32_t high = data->backend_data.physical_blocks - 1;
+	uint32_t high = data->physical_blocks - 1;
 	uint32_t low = 0;
 	uint32_t mid, res = 0;
 	int rc;
@@ -230,7 +207,7 @@ static int current_block_search(const struct device *dev, uint8_t counter)
 	/* Binary search for last block where block_wrap == counter */
 	while (low <= high) {
 		mid = (low + high) / 2;
-		rc = config->backend.api->read(&config->backend, mid, 0, &temp, sizeof(temp));
+		rc = api->read(dev, mid, 0, &temp, sizeof(temp));
 		if (rc < 0) {
 			return rc;
 		}
@@ -241,7 +218,7 @@ static int current_block_search(const struct device *dev, uint8_t counter)
 			high = mid - 1;
 		}
 	}
-	data->current_block = ((counter - 1) * data->backend_data.physical_blocks) + res + 1;
+	data->current_block = ((counter - 1) * data->physical_blocks) + res + 1;
 
 	/* Logger has not yet wrapped, all data still present */
 	if (counter == 1) {
@@ -250,11 +227,11 @@ static int current_block_search(const struct device *dev, uint8_t counter)
 	}
 
 	/* Find next block with valid data */
-	__ASSERT_NO_MSG(data->current_block >= data->backend_data.physical_blocks);
-	data->earliest_block = data->current_block - data->backend_data.physical_blocks;
-	res = (data->earliest_block % data->backend_data.physical_blocks);
+	__ASSERT_NO_MSG(data->current_block >= data->physical_blocks);
+	data->earliest_block = data->current_block - data->physical_blocks;
+	res = (data->earliest_block % data->physical_blocks);
 	while (true) {
-		rc = config->backend.api->read(&config->backend, res, 0, &temp, sizeof(temp));
+		rc = api->read(dev, res, 0, &temp, sizeof(temp));
 		if (rc < 0) {
 			return rc;
 		}
@@ -262,38 +239,24 @@ static int current_block_search(const struct device *dev, uint8_t counter)
 			break;
 		}
 		data->earliest_block += 1;
-		if (++res == data->backend_data.physical_blocks) {
+		if (++res == data->physical_blocks) {
 			break;
 		}
 	}
 	return 0;
 }
 
-/* Need to hook into this function when testing */
-IF_DISABLED(CONFIG_ZTEST, (static))
-int data_logger_init(const struct device *dev)
+int data_logger_common_init(const struct device *dev)
 {
-	const struct data_logger_config *config = dev->config;
-	struct data_logger_data *data = dev->data;
+	struct data_logger_common_data *data = dev->data;
+	const struct data_logger_api *api = dev->api;
 	uint16_t erase_blocks;
 	int rc;
-
-	if (config->backend.api == NULL) {
-		LOG_ERR("%s no backend", dev->name);
-		return -ENODEV;
-	}
-
-	/* Initialise backend */
-	rc = config->backend.api->init(&config->backend);
-	if (rc < 0) {
-		LOG_ERR("%s failed to init (%d)", dev->name, rc);
-		return rc;
-	}
 
 	data->current_block = 0;
 	data->earliest_block = 0;
 
-	if (!IS_PERSISTENT_LOGGER(config)) {
+	if (!IS_PERSISTENT_LOGGER(api)) {
 		/* Wireless loggers don't need further initialisation */
 		LOG_INF("Wireless logger %s", dev->name);
 		return 0;
@@ -303,17 +266,16 @@ int data_logger_init(const struct device *dev)
 	struct data_logger_persistent_block_header first, last;
 
 	/* Read first and last physical blocks on the device */
-	rc = config->backend.api->read(&config->backend, 0, 0, &first, sizeof(first));
+	rc = api->read(dev, 0, 0, &first, sizeof(first));
 	if (rc < 0) {
 		return rc;
 	}
-	rc = config->backend.api->read(&config->backend, data->backend_data.physical_blocks - 1, 0,
-				       &last, sizeof(last));
+	rc = api->read(dev, data->physical_blocks - 1, 0, &last, sizeof(last));
 	if (rc < 0) {
 		return rc;
 	}
 
-	erase_blocks = config->backend.erase_size / config->backend.max_block_size;
+	erase_blocks = data->erase_size / data->block_size;
 	if (first.block_wrap == last.block_wrap) {
 		/* Either completely erased, or all blocks written with same wrap */
 		if ((first.block_wrap == 0x00 || first.block_wrap == 0xFF)) {
@@ -321,15 +283,13 @@ int data_logger_init(const struct device *dev)
 			data->current_block = 0;
 		} else {
 			/* All blocks written with same wrap */
-			data->current_block = first.block_wrap * data->backend_data.physical_blocks;
-			data->earliest_block =
-				data->current_block - data->backend_data.physical_blocks;
+			data->current_block = first.block_wrap * data->physical_blocks;
+			data->earliest_block = data->current_block - data->physical_blocks;
 		}
 	} else if ((first.block_wrap == 0x00 || first.block_wrap == 0xFF)) {
 		/* First chunk has been erased after a complete write */
-		data->current_block = last.block_wrap * data->backend_data.physical_blocks;
-		data->earliest_block =
-			data->current_block - data->backend_data.physical_blocks + erase_blocks;
+		data->current_block = last.block_wrap * data->physical_blocks;
+		data->earliest_block = data->current_block - data->physical_blocks + erase_blocks;
 	} else {
 		/* Search for current block */
 		rc = current_block_search(dev, first.block_wrap);
@@ -339,48 +299,13 @@ int data_logger_init(const struct device *dev)
 		}
 	}
 
-	LOG_INF("%s -> %u/%u blocks", dev->name, data->current_block,
-		data->backend_data.logical_blocks);
+	LOG_INF("%s -> %u/%u blocks", dev->name, data->current_block, data->logical_blocks);
 #ifdef CONFIG_DATA_LOGGER_RAM_BUFFER
+	const struct data_logger_common_config *config = dev->config;
+
 	if (config->ram_buf_len) {
 		LOG_INF("%s -> Extra %zu byte RAM buffer", dev->name, config->ram_buf_len);
 	}
 #endif /* CONFIG_DATA_LOGGER_RAM_BUFFER */
 	return 0;
 }
-
-#define DATA_LOGGER_FLASH_MAP(inst)                                                                \
-	IF_ENABLED(DT_NODE_HAS_COMPAT(DT_DRV_INST(inst), embeint_data_logger_flash_map),           \
-		   (DATA_LOGGER_BACKEND_CONFIG_FLASH_MAP(DT_DRV_INST(inst),                        \
-							 &data##inst.backend_data)))
-
-#define DATA_LOGGER_EPACKET(inst)                                                                  \
-	IF_ENABLED(                                                                                \
-		DT_NODE_HAS_COMPAT(DT_DRV_INST(inst), embeint_data_logger_epacket),                \
-		(DATA_LOGGER_BACKEND_CONFIG_EPACKET(DT_DRV_INST(inst), &data##inst.backend_data)))
-
-#define DATA_LOGGER_EXFAT(inst)                                                                    \
-	IF_ENABLED(                                                                                \
-		DT_NODE_HAS_COMPAT(DT_DRV_INST(inst), embeint_data_logger_exfat),                  \
-		(DATA_LOGGER_BACKEND_CONFIG_EXFAT(DT_DRV_INST(inst), &data##inst.backend_data)))
-
-#define DATA_LOGGER_BACKEND_CONFIG(inst)                                                           \
-	DATA_LOGGER_FLASH_MAP(inst) DATA_LOGGER_EPACKET(inst) DATA_LOGGER_EXFAT(inst)
-
-#define RAM_BUFFER_CONFIG(inst)                                                                    \
-	.ram_buf_data = ram_buf_##inst, .ram_buf_len = sizeof(ram_buf_##inst),
-
-#define DATA_LOGGER_DEFINE(inst)                                                                   \
-	IF_ENABLED(CONFIG_DATA_LOGGER_RAM_BUFFER,                                                  \
-		   (static uint8_t ram_buf_##inst[DT_INST_PROP(inst, extra_ram_buffer)];))         \
-	static struct data_logger_data data##inst;                                                 \
-	static struct data_logger_config config##inst = {                                          \
-		.backend = DATA_LOGGER_BACKEND_CONFIG(inst),                                       \
-		IF_ENABLED(CONFIG_DATA_LOGGER_RAM_BUFFER, (RAM_BUFFER_CONFIG(inst)))};             \
-	DEVICE_DT_INST_DEFINE(inst, data_logger_init, NULL, &data##inst, &config##inst,            \
-			      POST_KERNEL, 80, NULL);
-
-#define DATA_LOGGER_DEFINE_WRAPPER(inst)                                                           \
-	IF_ENABLED(DATA_LOGGER_DEPENDENCIES_MET(DT_DRV_INST(inst)), (DATA_LOGGER_DEFINE(inst)))
-
-DT_INST_FOREACH_STATUS_OKAY(DATA_LOGGER_DEFINE_WRAPPER)
