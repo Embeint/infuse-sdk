@@ -32,11 +32,6 @@ static const struct bt_le_ext_adv_start_param adv_start_param = {
 	.timeout = 0,
 	.num_events = 1,
 };
-
-/* While we want to scan with 100% duty cycle, the Nordic Softdevice controller
- * currently fails to transmit packets if scanning at 100%:
- *   https://devzone.nordicsemi.com/f/nordic-q-a/112568/softdevice-controller-tx-with-100-duty-cycle-scanning
- */
 static const struct bt_le_scan_param scan_param = {
 	.type = BT_LE_SCAN_TYPE_PASSIVE,
 	.options = BT_LE_SCAN_OPT_NONE,
@@ -50,28 +45,64 @@ static K_FIFO_DEFINE(tx_buf_queue);
 static struct bt_le_ext_adv *adv_set;
 static bool adv_set_active;
 
-static void bt_adv_broadcast(const struct device *dev, struct bt_le_ext_adv *adv,
-			     struct net_buf *pkt)
+static void bt_adv_broadcast(const struct device *dev, struct net_buf *pkt)
 {
+	struct bt_le_adv_param adv_param = {
+		.id = BT_ID_DEFAULT,
+		.sid = 0U,
+		.secondary_max_skip = 0U,
+		.options = BT_LE_ADV_OPT_USE_IDENTITY | BT_LE_ADV_OPT_EXT_ADV |
+			   BT_LE_ADV_OPT_CONNECTABLE,
+		.interval_min = BT_GAP_ADV_FAST_INT_MIN_1,
+		.interval_max = BT_GAP_ADV_FAST_INT_MAX_1,
+		.peer = NULL,
+	};
 	struct bt_data *ad_data;
 	size_t num_ad;
 	int rc;
 
+	/* Create the advertising set if it doesn't exist */
+	if (adv_set == NULL) {
+		rc = bt_le_ext_adv_create(&adv_param, &adv_cb, &adv_set);
+		if (rc != 0) {
+			LOG_ERR("Failed to create advertising set (%d)", rc);
+			goto end;
+		}
+	}
+
 	/* Store net buf for callback */
-	adv_set_bufs[bt_le_ext_adv_get_index(adv)] = pkt;
+	adv_set_bufs[bt_le_ext_adv_get_index(adv_set)] = pkt;
 
 	/* Serialize into AD structures */
 	ad_data = epacket_bt_adv_pkt_to_ad(pkt, &num_ad);
 
 	/* Set extended advertising data */
-	rc = bt_le_ext_adv_set_data(adv, ad_data, num_ad, NULL, 0);
+	rc = bt_le_ext_adv_set_data(adv_set, ad_data, num_ad, NULL, 0);
 	if (rc != 0) {
 		LOG_ERR("Failed to set advertising data (%d)", rc);
 		goto end;
 	}
 
+	/* Try connectable by default */
+	rc = bt_le_ext_adv_update_param(adv_set, &adv_param);
+	if (rc != 0) {
+		LOG_ERR("Failed to update params (%d)", rc);
+		goto end;
+	}
+
 	/* Start transmitting the data */
-	rc = bt_le_ext_adv_start(adv, &adv_start_param);
+	rc = bt_le_ext_adv_start(adv_set, &adv_start_param);
+	if (rc == -ENOMEM) {
+		/* No Bluetooth connections left, clear connectable flag */
+		adv_param.options ^= BT_LE_ADV_OPT_CONNECTABLE;
+		rc = bt_le_ext_adv_update_param(adv_set, &adv_param);
+		if (rc != 0) {
+			LOG_ERR("Failed to update params (%d)", rc);
+			goto end;
+		}
+		/* Try again */
+		rc = bt_le_ext_adv_start(adv_set, &adv_start_param);
+	}
 	if (rc != 0) {
 		LOG_ERR("Failed to start advertising set (%d)", rc);
 	}
@@ -80,7 +111,9 @@ static void bt_adv_broadcast(const struct device *dev, struct bt_le_ext_adv *adv
 end:
 	if (rc != 0) {
 		/* Handle failures to advertise */
-		(void)bt_le_ext_adv_delete(adv);
+		if (adv_set != NULL) {
+			(void)bt_le_ext_adv_delete(adv_set);
+		}
 		epacket_notify_tx_result(dev, pkt, rc);
 		net_buf_unref(pkt);
 		adv_set = NULL;
@@ -100,7 +133,7 @@ static void adv_set_complete(struct bt_le_ext_adv *adv, struct bt_le_ext_adv_sen
 		next = net_buf_get(&tx_buf_queue, K_NO_WAIT);
 		if (next) {
 			LOG_DBG("Chaining next buf: %p", next);
-			bt_adv_broadcast(DEVICE_DT_INST_GET(0), adv, next);
+			bt_adv_broadcast(DEVICE_DT_INST_GET(0), next);
 		} else {
 			LOG_DBG("Adv chain complete: %d", set_idx);
 			adv_set_active = false;
@@ -114,8 +147,6 @@ static void adv_set_complete(struct bt_le_ext_adv *adv, struct bt_le_ext_adv_sen
 
 static void epacket_bt_adv_send(const struct device *dev, struct net_buf *buf)
 {
-	int rc;
-
 	/* Encrypt the payload */
 	if (epacket_bt_adv_encrypt(buf) < 0) {
 		LOG_WRN("Failed to encrypt");
@@ -124,28 +155,11 @@ static void epacket_bt_adv_send(const struct device *dev, struct net_buf *buf)
 	}
 
 	if (adv_set == NULL) {
-		/* Create the advertising set */
-		struct bt_le_adv_param adv_param = {
-			.id = BT_ID_DEFAULT,
-			.sid = 0U,
-			.secondary_max_skip = 0U,
-			.options = BT_LE_ADV_OPT_USE_IDENTITY | BT_LE_ADV_OPT_EXT_ADV,
-			.interval_min = BT_GAP_ADV_FAST_INT_MIN_1,
-			.interval_max = BT_GAP_ADV_FAST_INT_MAX_1,
-			.peer = NULL,
-		};
-
-		rc = bt_le_ext_adv_create(&adv_param, &adv_cb, &adv_set);
-		if (rc != 0) {
-			LOG_ERR("Failed to create advertising set (%d)", rc);
-			epacket_notify_tx_result(dev, buf, -EIO);
-			return;
-		}
 		/* First broadcast is dropped with SoftDevice if scanning (DRGN-22705).
 		 * Workaround is to queue the first broadcast twice.
 		 */
 		buf = net_buf_ref(buf);
-		bt_adv_broadcast(dev, adv_set, buf);
+		bt_adv_broadcast(dev, buf);
 	}
 
 	K_SPINLOCK(&queue_lock) {
@@ -155,7 +169,7 @@ static void epacket_bt_adv_send(const struct device *dev, struct net_buf *buf)
 			net_buf_put(&tx_buf_queue, buf);
 		} else {
 			/* Broadcast if not active */
-			bt_adv_broadcast(dev, adv_set, buf);
+			bt_adv_broadcast(dev, buf);
 		}
 	}
 }

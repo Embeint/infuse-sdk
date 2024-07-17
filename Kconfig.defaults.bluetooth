@@ -12,6 +12,9 @@ configdefault BT_BROADCASTER
 # RX Bluetooth Advertising packets
 configdefault BT_OBSERVER
 	default y
+# Support being the target of a connection
+configdefault BT_PERIPHERAL
+	default y
 
 # While extended advertising can support 255 bytes, iOS only supports 124 bytes
 configdefault BT_CTLR_ADV_DATA_LEN_MAX
