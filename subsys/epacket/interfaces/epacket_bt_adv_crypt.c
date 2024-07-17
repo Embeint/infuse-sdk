@@ -54,7 +54,7 @@ static struct bt_data ad_structures[] = {
 
 void epacket_bt_adv_ad_init(void)
 {
-	mfg_data.company_code = sys_cpu_to_be16(EMBEINT_COMPANY_CODE);
+	mfg_data.company_code = sys_cpu_to_le16(EMBEINT_COMPANY_CODE);
 }
 
 void *epacket_bt_adv_pkt_to_ad(struct net_buf *pkt, size_t *num)
@@ -87,7 +87,7 @@ bool epacket_bt_adv_is_epacket(uint8_t adv_type, struct net_buf_simple *buf)
 		return false;
 	}
 	/* Manufacturer ID is 0xFFFF */
-	if (sys_get_be16(buf->data + 9) != EMBEINT_COMPANY_CODE) {
+	if (sys_get_le16(buf->data + 9) != EMBEINT_COMPANY_CODE) {
 		return false;
 	}
 	/* Remove Bluetooth advertising headers */
