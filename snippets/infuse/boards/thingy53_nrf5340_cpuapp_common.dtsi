@@ -96,6 +96,10 @@
 	status = "disabled";
 };
 
+&vbatt {
+	zephyr,pm-device-runtime-auto;
+};
+
 /* MCUboot secondary on external flash */
 /delete-node/ &slot0_partition;
 /delete-node/ &slot0_ns_partition;
