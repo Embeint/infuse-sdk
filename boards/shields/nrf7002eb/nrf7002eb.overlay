@@ -7,8 +7,8 @@
 
 / {
 	nordic_wlan0: nordic_wlan0 {
-			compatible = "nordic,wlan0";
-			status = "okay";
+		compatible = "nordic,wlan0";
+		status = "okay";
 	};
 
 	chosen {

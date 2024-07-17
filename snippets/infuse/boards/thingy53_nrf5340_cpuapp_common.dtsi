@@ -8,7 +8,7 @@
 	power_domain_3v3: power_domain_3v3 {
 		compatible = "power-domain-gpio";
 		enable-gpios = <&gpio0 15 GPIO_ACTIVE_LOW>;
-		zephyr,pm-device-runtime-auto;
+		/* nRF7002 driver does not handle this power domain */
 	};
 
 	power_domain_sensor: tck106ag {
