@@ -47,6 +47,8 @@ static const struct bt_le_scan_param scan_param = {
 static struct net_buf *adv_set_bufs[CONFIG_BT_EXT_ADV_MAX_ADV_SET];
 static struct k_spinlock queue_lock;
 static K_FIFO_DEFINE(tx_buf_queue);
+static struct bt_le_ext_adv *adv_set;
+static bool adv_set_active;
 
 static void bt_adv_broadcast(const struct device *dev, struct bt_le_ext_adv *adv,
 			     struct net_buf *pkt)
@@ -73,6 +75,7 @@ static void bt_adv_broadcast(const struct device *dev, struct bt_le_ext_adv *adv
 	if (rc != 0) {
 		LOG_ERR("Failed to start advertising set (%d)", rc);
 	}
+	adv_set_active = true;
 
 end:
 	if (rc != 0) {
@@ -80,6 +83,8 @@ end:
 		(void)bt_le_ext_adv_delete(adv);
 		epacket_notify_tx_result(dev, pkt, rc);
 		net_buf_unref(pkt);
+		adv_set = NULL;
+		adv_set_active = false;
 	}
 }
 
@@ -87,7 +92,6 @@ static void adv_set_complete(struct bt_le_ext_adv *adv, struct bt_le_ext_adv_sen
 {
 	uint8_t set_idx = bt_le_ext_adv_get_index(adv);
 	struct net_buf *curr, *next;
-	int rc;
 
 	curr = adv_set_bufs[set_idx];
 	adv_set_bufs[set_idx] = NULL;
@@ -98,11 +102,8 @@ static void adv_set_complete(struct bt_le_ext_adv *adv, struct bt_le_ext_adv_sen
 			LOG_DBG("Chaining next buf: %p", next);
 			bt_adv_broadcast(DEVICE_DT_INST_GET(0), adv, next);
 		} else {
-			LOG_DBG("Deleting set %d", set_idx);
-			rc = bt_le_ext_adv_delete(adv);
-			if (rc != 0) {
-				LOG_WRN("Failed to delete set %d", set_idx);
-			}
+			LOG_DBG("Adv chain complete: %d", set_idx);
+			adv_set_active = false;
 		}
 	}
 
@@ -113,16 +114,6 @@ static void adv_set_complete(struct bt_le_ext_adv *adv, struct bt_le_ext_adv_sen
 
 static void epacket_bt_adv_send(const struct device *dev, struct net_buf *buf)
 {
-	struct bt_le_adv_param adv_param = {
-		.id = BT_ID_DEFAULT,
-		.sid = 0U,
-		.secondary_max_skip = 0U,
-		.options = BT_LE_ADV_OPT_USE_IDENTITY | BT_LE_ADV_OPT_EXT_ADV,
-		.interval_min = BT_GAP_ADV_FAST_INT_MIN_1,
-		.interval_max = BT_GAP_ADV_FAST_INT_MAX_1,
-		.peer = NULL,
-	};
-	struct bt_le_ext_adv *adv;
 	int rc;
 
 	/* Encrypt the payload */
@@ -132,22 +123,35 @@ static void epacket_bt_adv_send(const struct device *dev, struct net_buf *buf)
 		return;
 	}
 
-	/* Create advertising set */
-	K_SPINLOCK(&queue_lock) {
-		rc = bt_le_ext_adv_create(&adv_param, &adv_cb, &adv);
-		if (rc == -ENOMEM) {
-			LOG_DBG("Queueing buf %p", buf);
-			net_buf_put(&tx_buf_queue, buf);
-		} else if (rc < 0) {
+	if (adv_set == NULL) {
+		/* Create the advertising set */
+		struct bt_le_adv_param adv_param = {
+			.id = BT_ID_DEFAULT,
+			.sid = 0U,
+			.secondary_max_skip = 0U,
+			.options = BT_LE_ADV_OPT_USE_IDENTITY | BT_LE_ADV_OPT_EXT_ADV,
+			.interval_min = BT_GAP_ADV_FAST_INT_MIN_1,
+			.interval_max = BT_GAP_ADV_FAST_INT_MAX_1,
+			.peer = NULL,
+		};
+
+		rc = bt_le_ext_adv_create(&adv_param, &adv_cb, &adv_set);
+		if (rc != 0) {
 			LOG_ERR("Failed to create advertising set (%d)", rc);
-			epacket_notify_tx_result(dev, buf, rc);
-			net_buf_unref(buf);
+			epacket_notify_tx_result(dev, buf, -EIO);
+			return;
 		}
 	}
 
-	if (rc == 0) {
-		/* Broadcast on the set on success */
-		bt_adv_broadcast(dev, adv, buf);
+	K_SPINLOCK(&queue_lock) {
+		if (adv_set_active) {
+			/* Queue buffer for transmission if already active */
+			LOG_DBG("Queueing buf %p", buf);
+			net_buf_put(&tx_buf_queue, buf);
+		} else {
+			/* Broadcast if not active */
+			bt_adv_broadcast(dev, adv_set, buf);
+		}
 	}
 }
 
