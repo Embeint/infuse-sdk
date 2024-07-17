@@ -2,6 +2,12 @@
 
 if BT
 
+# Cannot connect to Nordic Softdevice from iOS
+# https://devzone.nordicsemi.com/f/nordic-q-a/113141/softdevice-extended-advertising-ios-connection
+choice BT_LL_CHOICE
+	default BT_LL_SW_SPLIT
+endchoice
+
 # Extended advertising is a requirement
 configdefault BT_EXT_ADV
 	default y
