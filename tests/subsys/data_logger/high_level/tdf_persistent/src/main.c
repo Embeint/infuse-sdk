@@ -25,7 +25,7 @@ static uint8_t *flash_buffer;
 static size_t flash_buffer_size;
 
 int tdf_data_logger_init(const struct device *dev);
-int data_logger_init(const struct device *dev);
+int logger_flash_map_init(const struct device *dev);
 
 ZTEST(tdf_data_logger_flash, test_standard)
 {
@@ -133,7 +133,7 @@ void data_logger_reset(void *fixture)
 
 	/* Erase amd reinitialise loggers */
 	memset(flash_buffer, 0xFF, flash_buffer_size);
-	data_logger_init(data_logger);
+	logger_flash_map_init(data_logger);
 	tdf_data_logger_init(tdf_logger);
 }
 

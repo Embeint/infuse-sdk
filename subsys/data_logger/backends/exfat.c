@@ -14,12 +14,14 @@
 #include <zephyr/logging/log.h>
 #include <zephyr/storage/disk_access.h>
 
+#include <infuse/data_logger/logger.h>
 #include <infuse/time/civil.h>
 
 #include <ff.h>
 
-#include "backend_api.h"
-#include "exfat.h"
+#include "common.h"
+
+#define DATA_LOGGER_EXFAT_BLOCK_SIZE 512
 
 #define LBA_NO_FILE      (UINT32_MAX)
 #define LBA_NO_MEM       (UINT32_MAX - 1)
@@ -30,11 +32,20 @@ BUILD_ASSERT(CONFIG_DATA_LOGGER_EXFAT_FILE_SIZE % MIN_CLUSTER_SIZE == 0,
 	     "File size must be multiple of minimum cluster size");
 
 /** Generate filename for Infuse binary container */
-#define GEN_FILENAME(buffer, backend, index)                                                       \
-	snprintf(buffer, sizeof(buffer), "%s:infuse_%06d.bin", backend->disk, index)
+#define GEN_FILENAME(buffer, config, index)                                                        \
+	snprintf(buffer, sizeof(buffer), "%s:infuse_%06d.bin", config->disk, index)
 
-static FATFS infuse_fatfs;
-static uint8_t block_buffer[DATA_LOGGER_EXFAT_BLOCK_SIZE];
+struct dl_exfat_config {
+	struct data_logger_common_config common;
+	const char *disk;
+};
+struct dl_exfat_data {
+	struct data_logger_common_data common;
+	FATFS infuse_fatfs;
+	uint8_t block_buffer[DATA_LOGGER_EXFAT_BLOCK_SIZE];
+	uint32_t cached_file_num;
+	uint32_t cached_file_lba;
+};
 
 static const char readme_text[] = "Infuse-IoT binary data logs\n";
 
@@ -54,13 +65,14 @@ DWORD get_fattime(void)
 	       (DWORD)cal->tm_sec >> 1;
 }
 
-static bool filesystem_is_infuse(const struct data_logger_backend_config *backend)
+static bool filesystem_is_infuse(const struct device *dev)
 {
+	const struct dl_exfat_config *config = dev->config;
 	char label[34] = {0};
 	char disk_path[16];
 	FRESULT res;
 
-	snprintf(disk_path, sizeof(disk_path), "%s:", backend->disk);
+	snprintf(disk_path, sizeof(disk_path), "%s:", config->disk);
 
 	res = f_getlabel(disk_path, label, NULL);
 	if (res != FR_OK || (strncmp(label, "INFUSE", 7) != 0)) {
@@ -70,10 +82,10 @@ static bool filesystem_is_infuse(const struct data_logger_backend_config *backen
 	return true;
 }
 
-static uint32_t disk_lba_from_block(const struct data_logger_backend_config *backend,
-				    uint32_t phy_block)
+static uint32_t disk_lba_from_block(const struct device *dev, uint32_t phy_block)
 {
-	struct data_logger_backend_data *data = backend->data;
+	const struct dl_exfat_config *config = dev->config;
+	struct dl_exfat_data *data = dev->data;
 	uint32_t file_num = phy_block / BLOCKS_PER_FILE;
 	uint32_t file_offset = phy_block % BLOCKS_PER_FILE;
 	char filename[32];
@@ -81,12 +93,12 @@ static uint32_t disk_lba_from_block(const struct data_logger_backend_config *bac
 	FIL fp;
 
 	/* Have the right file offset cached */
-	if (file_num == data->exfat.cached_file_num) {
-		return data->exfat.cached_file_lba + file_offset;
+	if (file_num == data->cached_file_num) {
+		return data->cached_file_lba + file_offset;
 	}
 
 	/* Create filename string */
-	GEN_FILENAME(filename, backend, file_num);
+	GEN_FILENAME(filename, config, file_num);
 
 	/* Get file info */
 	res = f_open(&fp, filename, FA_READ);
@@ -103,16 +115,16 @@ static uint32_t disk_lba_from_block(const struct data_logger_backend_config *bac
 	/* Get physical location of the file data:
 	 *   http://elm-chan.org/fsw/ff/doc/expand.html
 	 */
-	data->exfat.cached_file_num = file_num;
-	data->exfat.cached_file_lba = fp.obj.fs->database + fp.obj.fs->csize * (fp.obj.sclust - 2);
+	data->cached_file_num = file_num;
+	data->cached_file_lba = fp.obj.fs->database + fp.obj.fs->csize * (fp.obj.sclust - 2);
 
 	(void)f_close(&fp);
-	return data->exfat.cached_file_lba + file_offset;
+	return data->cached_file_lba + file_offset;
 }
 
-static int binary_container_create(const struct data_logger_backend_config *backend,
-				   uint32_t phy_block)
+static int binary_container_create(const struct device *dev, uint32_t phy_block)
 {
+	const struct dl_exfat_config *config = dev->config;
 	uint32_t file_num = phy_block / BLOCKS_PER_FILE;
 	uint32_t fsize = CONFIG_DATA_LOGGER_EXFAT_FILE_SIZE;
 	char filename[32];
@@ -120,7 +132,7 @@ static int binary_container_create(const struct data_logger_backend_config *back
 	FIL fp;
 
 	/* Create filename string */
-	GEN_FILENAME(filename, backend, file_num);
+	GEN_FILENAME(filename, config, file_num);
 
 	LOG_INF("Creating %s", filename);
 	res = f_open(&fp, filename, FA_CREATE_NEW | FA_WRITE);
@@ -137,10 +149,11 @@ static int binary_container_create(const struct data_logger_backend_config *back
 	return res;
 }
 
-static int logger_exfat_write(const struct data_logger_backend_config *backend, uint32_t phy_block,
+static int logger_exfat_write(const struct device *dev, uint32_t phy_block,
 			      enum infuse_type data_type, const void *mem, uint16_t mem_len)
 {
-	uint32_t disk_lba = disk_lba_from_block(backend, phy_block);
+	const struct dl_exfat_config *config = dev->config;
+	uint32_t disk_lba = disk_lba_from_block(dev, phy_block);
 	int rc;
 
 	__ASSERT(mem_len == DATA_LOGGER_EXFAT_BLOCK_SIZE, "Not full block");
@@ -152,27 +165,29 @@ static int logger_exfat_write(const struct data_logger_backend_config *backend, 
 	/* File does not exist on filesystem */
 	else if (disk_lba == LBA_NO_FILE) {
 		/* Allocate the binary file on the filesystem */
-		rc = binary_container_create(backend, phy_block);
+		rc = binary_container_create(dev, phy_block);
 		if (rc < 0) {
 			return rc;
 		}
 		/* Recalculate the LBA */
-		disk_lba = disk_lba_from_block(backend, phy_block);
+		disk_lba = disk_lba_from_block(dev, phy_block);
 	}
 
 	LOG_DBG("Writing to logger block: %08X LBA: %08X", phy_block, disk_lba);
-	rc = disk_access_write(backend->disk, mem, disk_lba, 1);
+	rc = disk_access_write(config->disk, mem, disk_lba, 1);
 	if (rc == 0) {
 		/* Sync on each write for now */
-		rc = disk_access_ioctl(backend->disk, DISK_IOCTL_CTRL_SYNC, NULL);
+		rc = disk_access_ioctl(config->disk, DISK_IOCTL_CTRL_SYNC, NULL);
 	}
 	return rc;
 }
 
-static int logger_exfat_read(const struct data_logger_backend_config *backend, uint32_t phy_block,
-			     uint16_t block_offset, void *mem, uint16_t mem_len)
+static int logger_exfat_read(const struct device *dev, uint32_t phy_block, uint16_t block_offset,
+			     void *mem, uint16_t mem_len)
 {
-	uint32_t disk_lba = disk_lba_from_block(backend, phy_block);
+	const struct dl_exfat_config *config = dev->config;
+	struct dl_exfat_data *data = dev->data;
+	uint32_t disk_lba = disk_lba_from_block(dev, phy_block);
 	int rc;
 
 	if ((disk_lba == LBA_NO_FILE) || (disk_lba == LBA_NO_MEM)) {
@@ -184,14 +199,16 @@ static int logger_exfat_read(const struct data_logger_backend_config *backend, u
 	LOG_DBG("Reading from logger block: %08X LBA: %08X", phy_block, disk_lba);
 
 	/* Read complete block from file */
-	rc = disk_access_read(backend->disk, block_buffer, disk_lba, 1);
+	rc = disk_access_read(config->disk, data->block_buffer, disk_lba, 1);
 	/* Memcpy required data out */
-	memcpy(mem, block_buffer + block_offset, mem_len);
+	memcpy(mem, data->block_buffer + block_offset, mem_len);
 	return rc;
 }
 
-static int filesystem_init(const struct data_logger_backend_config *backend)
+static int filesystem_init(const struct device *dev)
 {
+	const struct dl_exfat_config *config = dev->config;
+	struct dl_exfat_data *data = dev->data;
 	const MKFS_PARM mkfs_opt = {
 		.fmt = FM_EXFAT,
 #ifdef CONFIG_DISK_DRIVER_SDMMC
@@ -201,39 +218,38 @@ static int filesystem_init(const struct data_logger_backend_config *backend)
 		.au_size = 128 * 1024,
 #endif /* CONFIG_DISK_DRIVER_SDMMC */
 	};
-	char work_mem[FF_MAX_SS];
-	char disk_path[16];
+	char path[32];
 	FRESULT res;
 	UINT bw;
 	FIL fp;
 
-	snprintf(disk_path, sizeof(disk_path), "%s:", backend->disk);
+	snprintf(path, sizeof(path), "%s:", config->disk);
 
 	/* Create the filesystem */
-	res = f_mkfs(disk_path, &mkfs_opt, work_mem, sizeof(work_mem));
+	res = f_mkfs(path, &mkfs_opt, data->block_buffer, sizeof(data->block_buffer));
 	if (res != FR_OK) {
 		LOG_ERR("f_mkfs failed: %d", res);
 		return -EIO;
 	}
 
 	/* Mount the filesystem */
-	res = f_mount(&infuse_fatfs, disk_path, 1);
+	res = f_mount(&data->infuse_fatfs, path, 1);
 	if (res != FR_OK) {
 		LOG_ERR("f_mount failed after f_mkfs: %d", res);
 		return -EIO;
 	}
 
 	/* Set label ID */
-	snprintf(work_mem, sizeof(work_mem), "%s:INFUSE", backend->disk);
-	res = f_setlabel(work_mem);
+	snprintf(path, sizeof(path), "%s:INFUSE", config->disk);
+	res = f_setlabel(path);
 	if (res != FR_OK) {
 		LOG_ERR("f_setlabel failed: %d", res);
 		return -EIO;
 	}
 
 	/* Create static README.txt file */
-	snprintf(work_mem, sizeof(work_mem), "%s:README.txt", backend->disk);
-	res = f_open(&fp, work_mem, FA_CREATE_NEW | FA_WRITE);
+	snprintf(path, sizeof(path), "%s:README.txt", config->disk);
+	res = f_open(&fp, path, FA_CREATE_NEW | FA_WRITE);
 	if (res != FR_OK) {
 		LOG_ERR("f_open failed: %d", res);
 		return -EIO;
@@ -249,39 +265,36 @@ static int filesystem_init(const struct data_logger_backend_config *backend)
 	return res;
 }
 
-static int logger_exfat_init(const struct data_logger_backend_config *backend)
+/* Need to hook into this function when testing */
+IF_DISABLED(CONFIG_ZTEST, (static))
+int logger_exfat_init(const struct device *dev)
 {
-	struct data_logger_backend_data *data = backend->data;
+	const struct dl_exfat_config *config = dev->config;
+	struct dl_exfat_data *data = dev->data;
 	bool infuse_fs = false;
 	char disk_path[16];
 	FRESULT res;
 
-	data->exfat.cached_file_num = UINT32_MAX;
-	data->exfat.cached_file_lba = UINT32_MAX;
+	data->cached_file_num = UINT32_MAX;
+	data->cached_file_lba = UINT32_MAX;
 
 	/* Initial mount attempt */
-	snprintf(disk_path, sizeof(disk_path), "%s:", backend->disk);
-	res = f_mount(&infuse_fatfs, disk_path, 1);
+	snprintf(disk_path, sizeof(disk_path), "%s:", config->disk);
+	res = f_mount(&data->infuse_fatfs, disk_path, 1);
 	LOG_DBG("First mount: %d", res);
 	if (res == FR_OK) {
-		infuse_fs = filesystem_is_infuse(backend);
+		infuse_fs = filesystem_is_infuse(dev);
 	}
 	/* Handle standard mount failures */
 	if ((res == FR_NO_FILESYSTEM) || (!infuse_fs)) {
-		LOG_INF("Initialising disk '%s'", backend->disk);
-		res = filesystem_init(backend);
+		LOG_INF("Initialising disk '%s'", config->disk);
+		res = filesystem_init(dev);
 	}
 	/* Handle errors */
 	if (res != FR_OK) {
 		LOG_ERR("Unknown mount problem (%d)", res);
 		return -EIO;
 	}
-
-	/* Block counts as reported by the disk driver (run after mount) */
-	disk_access_ioctl(backend->disk, DISK_IOCTL_GET_SECTOR_COUNT, &data->physical_blocks);
-	data->logical_blocks = data->physical_blocks;
-	data->block_size = backend->max_block_size;
-	data->erase_val = 0xFF;
 
 #if CONFIG_DATA_LOGGER_EXFAT_LOG_LEVEL >= LOG_LEVEL_DBG
 	FILINFO fno;
@@ -296,13 +309,33 @@ static int logger_exfat_init(const struct data_logger_backend_config *backend)
 	f_closedir(&dj);
 #endif
 
+	/* Setup common data structure */
+	disk_access_ioctl(config->disk, DISK_IOCTL_GET_SECTOR_COUNT, &data->common.physical_blocks);
+	data->common.logical_blocks = data->common.physical_blocks;
+	data->common.block_size = DATA_LOGGER_EXFAT_BLOCK_SIZE;
+	data->common.erase_size = DATA_LOGGER_EXFAT_BLOCK_SIZE;
+	data->common.erase_val = 0xFF;
+
 	/* Filesystem is mounted */
-	return 0;
+	return data_logger_common_init(dev);
 }
 
-const struct data_logger_backend_api data_logger_exfat_api = {
-	.init = logger_exfat_init,
+const struct data_logger_api data_logger_exfat_api = {
 	.write = logger_exfat_write,
 	.read = logger_exfat_read,
-	.erase = NULL,
 };
+
+#define DATA_LOGGER_DEFINE(inst)                                                                   \
+	COMMON_CONFIG_PRE(inst);                                                                   \
+	static struct dl_exfat_config config##inst = {                                             \
+		.common = COMMON_CONFIG_INIT(inst),                                                \
+		.disk = DT_PROP(DT_INST_PROP(inst, disk), disk_name),                              \
+	};                                                                                         \
+	static struct dl_exfat_data data##inst;                                                    \
+	DEVICE_DT_INST_DEFINE(inst, logger_exfat_init, NULL, &data##inst, &config##inst,           \
+			      POST_KERNEL, 80, &data_logger_exfat_api);
+
+#define DATA_LOGGER_DEFINE_WRAPPER(inst)                                                           \
+	IF_ENABLED(DATA_LOGGER_DEPENDENCIES_MET(DT_DRV_INST(inst)), (DATA_LOGGER_DEFINE(inst)))
+
+DT_INST_FOREACH_STATUS_OKAY(DATA_LOGGER_DEFINE_WRAPPER)

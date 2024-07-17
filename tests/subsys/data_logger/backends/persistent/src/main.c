@@ -20,7 +20,7 @@ static uint8_t output_buffer[1024];
 static uint8_t *flash_buffer;
 static size_t flash_buffer_size;
 
-int data_logger_init(const struct device *dev);
+int logger_flash_map_init(const struct device *dev);
 
 ZTEST(data_logger_flash_map, test_init_constants)
 {
@@ -44,14 +44,14 @@ ZTEST(data_logger_flash_map, test_init_erased)
 
 	/* Init all 0x00 */
 	memset(flash_buffer, 0x00, flash_buffer_size);
-	zassert_equal(0, data_logger_init(logger));
+	zassert_equal(0, logger_flash_map_init(logger));
 	data_logger_get_state(logger, &state);
 	zassert_equal(0, state.current_block);
 	zassert_equal(0, state.earliest_block);
 
 	/* Init all 0xFF */
 	memset(flash_buffer, 0xFF, flash_buffer_size);
-	zassert_equal(0, data_logger_init(logger));
+	zassert_equal(0, logger_flash_map_init(logger));
 	data_logger_get_state(logger, &state);
 	zassert_equal(0, state.current_block);
 	zassert_equal(0, state.earliest_block);
@@ -70,7 +70,7 @@ ZTEST(data_logger_flash_map, test_init_part_written)
 
 	for (int i = 1; i < flash_buffer_size / state.block_size; i++) {
 		memset(flash_buffer, 0x01, i * state.block_size);
-		zassert_equal(0, data_logger_init(logger));
+		zassert_equal(0, logger_flash_map_init(logger));
 		data_logger_get_state(logger, &state);
 		zassert_equal(i, state.current_block);
 		zassert_equal(0, state.earliest_block);
@@ -84,7 +84,7 @@ ZTEST(data_logger_flash_map, test_init_all_written)
 
 	/* Init all 0x01 */
 	memset(flash_buffer, 0x01, flash_buffer_size);
-	zassert_equal(0, data_logger_init(logger));
+	zassert_equal(0, logger_flash_map_init(logger));
 	data_logger_get_state(logger, &state);
 	zassert_equal(0x01 * state.physical_blocks, state.current_block);
 	zassert_equal(0, state.earliest_block);
@@ -92,7 +92,7 @@ ZTEST(data_logger_flash_map, test_init_all_written)
 
 	/* Init all 0x20 */
 	memset(flash_buffer, 0x20, flash_buffer_size);
-	zassert_equal(0, data_logger_init(logger));
+	zassert_equal(0, logger_flash_map_init(logger));
 	data_logger_get_state(logger, &state);
 	zassert_equal(0x20 * state.physical_blocks, state.current_block);
 	zassert_equal(0x1F * state.physical_blocks, state.earliest_block);
@@ -112,7 +112,7 @@ ZTEST(data_logger_flash_map, test_init_all_written_with_start_erase)
 	/* Init all 0x04, pre-erase next block */
 	memset(flash_buffer, 0x04, flash_buffer_size);
 	memset(flash_buffer, 0x00, state.erase_unit);
-	zassert_equal(0, data_logger_init(logger));
+	zassert_equal(0, logger_flash_map_init(logger));
 	data_logger_get_state(logger, &state);
 	zassert_equal(0x04 * state.physical_blocks, state.current_block);
 	zassert_equal(0x03 * state.physical_blocks + blocks_in_erase, state.earliest_block);
@@ -120,7 +120,7 @@ ZTEST(data_logger_flash_map, test_init_all_written_with_start_erase)
 	/* Start writing next blocks */
 	for (int i = 1; i <= blocks_in_erase; i++) {
 		memset(flash_buffer, 0x05, state.block_size * i);
-		zassert_equal(0, data_logger_init(logger));
+		zassert_equal(0, logger_flash_map_init(logger));
 		data_logger_get_state(logger, &state);
 		zassert_equal(0x04 * state.physical_blocks + i, state.current_block);
 		zassert_equal(0x03 * state.physical_blocks + blocks_in_erase, state.earliest_block);
@@ -141,7 +141,7 @@ ZTEST(data_logger_flash_map, test_init_all_written_with_end_erase)
 	/* Init all 0x04, pre-erase last block */
 	memset(flash_buffer, 0x04, flash_buffer_size);
 	memset(flash_buffer_end - state.erase_unit, 0x00, state.erase_unit);
-	zassert_equal(0, data_logger_init(logger));
+	zassert_equal(0, logger_flash_map_init(logger));
 	data_logger_get_state(logger, &state);
 	zassert_equal(0x04 * state.physical_blocks - blocks_in_erase, state.current_block);
 	zassert_equal(0x03 * state.physical_blocks, state.earliest_block);
@@ -149,7 +149,7 @@ ZTEST(data_logger_flash_map, test_init_all_written_with_end_erase)
 	/* Start writing next blocks */
 	for (int i = 1; i <= blocks_in_erase; i++) {
 		memset(flash_buffer_end - state.erase_unit, 0x04, state.block_size * i);
-		zassert_equal(0, data_logger_init(logger));
+		zassert_equal(0, logger_flash_map_init(logger));
 		data_logger_get_state(logger, &state);
 		zassert_equal(0x04 * state.physical_blocks - blocks_in_erase + i,
 			      state.current_block);
@@ -164,7 +164,7 @@ ZTEST(data_logger_flash_map, test_write_errors)
 
 	/* Init full */
 	memset(flash_buffer, 0xFE, flash_buffer_size);
-	zassert_equal(0, data_logger_init(logger));
+	zassert_equal(0, logger_flash_map_init(logger));
 	data_logger_get_state(logger, &state);
 
 	zassert_equal(-EINVAL,
@@ -180,7 +180,7 @@ ZTEST(data_logger_flash_map, test_read_errors)
 
 	/* Init part full */
 	memset(flash_buffer, 0x04, flash_buffer_size);
-	zassert_equal(0, data_logger_init(logger));
+	zassert_equal(0, logger_flash_map_init(logger));
 	data_logger_get_state(logger, &state);
 
 	/* Start of logger */
@@ -209,7 +209,7 @@ ZTEST(data_logger_flash_map, test_read_wrap)
 	/* Init half 0x02, half 0x01 */
 	memset(flash_buffer, 0x01, flash_buffer_size);
 	memset(flash_buffer, 0x02, flash_buffer_size / 2);
-	zassert_equal(0, data_logger_init(logger));
+	zassert_equal(0, logger_flash_map_init(logger));
 	data_logger_get_state(logger, &state);
 	zassert_equal(3 * state.physical_blocks / 2, state.current_block);
 	zassert_equal(state.physical_blocks / 2, state.earliest_block);
@@ -246,7 +246,7 @@ static void test_sequence(bool reinit)
 
 	/* Init to erase value */
 	memset(flash_buffer, params->erase_value, flash_buffer_size);
-	zassert_equal(0, data_logger_init(logger));
+	zassert_equal(0, logger_flash_map_init(logger));
 	data_logger_get_state(logger, &state);
 
 	for (int i = 0; i < 254 * state.physical_blocks; i++) {
@@ -268,7 +268,7 @@ static void test_sequence(bool reinit)
 
 		/* Reinit logger and validate state not lost */
 		if (reinit) {
-			zassert_equal(0, data_logger_init(logger));
+			zassert_equal(0, logger_flash_map_init(logger));
 			data_logger_get_state(logger, &state);
 			zassert_equal(i + 1, state.current_block);
 		}

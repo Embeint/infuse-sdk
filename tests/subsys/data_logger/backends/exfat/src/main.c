@@ -25,7 +25,7 @@ static uint8_t output_buffer[1024];
 static uint32_t sector_count;
 static uint32_t sector_size;
 
-int data_logger_init(const struct device *dev);
+int logger_exfat_init(const struct device *dev);
 
 ZTEST(data_logger_exfat, test_init_constants)
 {
@@ -49,7 +49,7 @@ ZTEST(data_logger_exfat, test_init_state)
 	FIL fp;
 
 	/* Init all 0x00 */
-	zassert_equal(0, data_logger_init(logger));
+	zassert_equal(0, logger_exfat_init(logger));
 	data_logger_get_state(logger, &state);
 	zassert_equal(0, state.current_block);
 	zassert_equal(0, state.earliest_block);
@@ -67,7 +67,7 @@ ZTEST(data_logger_exfat, test_bad_label)
 	struct data_logger_state state;
 
 	/* Init and write some data */
-	zassert_equal(0, data_logger_init(logger));
+	zassert_equal(0, logger_exfat_init(logger));
 	data_logger_get_state(logger, &state);
 	zassert_equal(0, data_logger_block_write(logger, 4, input_buffer, state.block_size));
 	zassert_equal(0, data_logger_block_write(logger, 4, input_buffer, state.block_size));
@@ -77,7 +77,7 @@ ZTEST(data_logger_exfat, test_bad_label)
 	/* Set a bad label on the filesystem */
 	zassert_equal(FR_OK, f_setlabel(bad_label));
 	/* Re-init the filesystem */
-	zassert_equal(0, data_logger_init(logger));
+	zassert_equal(0, logger_exfat_init(logger));
 	/* Should be in a clean state again */
 	data_logger_get_state(logger, &state);
 	zassert_equal(0, state.current_block);
@@ -92,7 +92,7 @@ static void test_sequence(bool reinit)
 	uint8_t type;
 
 	/* Init to erase value */
-	zassert_equal(0, data_logger_init(logger));
+	zassert_equal(0, logger_exfat_init(logger));
 	data_logger_get_state(logger, &state);
 
 #ifdef CONFIG_DISK_DRIVER_SDMMC
@@ -125,7 +125,7 @@ static void test_sequence(bool reinit)
 
 		/* Reinit logger and validate state not lost */
 		if (reinit) {
-			zassert_equal(0, data_logger_init(logger));
+			zassert_equal(0, logger_exfat_init(logger));
 			data_logger_get_state(logger, &state);
 			zassert_equal(i + 1, state.current_block);
 		}

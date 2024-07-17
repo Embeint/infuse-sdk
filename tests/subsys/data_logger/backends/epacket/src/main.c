@@ -17,7 +17,7 @@
 #include <infuse/data_logger/logger.h>
 #include <infuse/epacket/interface/epacket_dummy.h>
 
-int data_logger_init(const struct device *dev);
+int logger_epacket_init(const struct device *dev);
 
 ZTEST(data_logger_epacket, test_init_constants)
 {
@@ -87,7 +87,7 @@ ZTEST(data_logger_epacket, test_block_write)
 	}
 
 	/* Reinitialise */
-	data_logger_init(logger);
+	logger_epacket_init(logger);
 	data_logger_get_state(logger, &state);
 	zassert_equal(0, state.current_block);
 }
@@ -96,7 +96,7 @@ static void data_logger_setup(void *fixture)
 {
 	const struct device *logger = DEVICE_DT_GET(DT_NODELABEL(data_logger_epacket));
 
-	(void)data_logger_init(logger);
+	(void)logger_epacket_init(logger);
 }
 
 ZTEST_SUITE(data_logger_epacket, NULL, NULL, data_logger_setup, NULL, NULL);
