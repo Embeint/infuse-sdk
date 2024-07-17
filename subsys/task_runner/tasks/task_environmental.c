@@ -9,6 +9,7 @@
 #include <zephyr/logging/log.h>
 #include <zephyr/drivers/sensor.h>
 #include <zephyr/zbus/zbus.h>
+#include <zephyr/pm/device_runtime.h>
 
 #include <infuse/task_runner/task.h>
 #include <infuse/task_runner/tasks/environmental.h>
@@ -33,6 +34,13 @@ void environmental_task_fn(struct k_work *work)
 	bool has_humidity;
 	int rc;
 
+	/* Request sensor to be powered */
+	rc = pm_device_runtime_get(env);
+	if (rc < 0) {
+		LOG_ERR("Terminating due to %s", "PM failure");
+		return;
+	}
+
 	/* Trigger the sample */
 	rc = sensor_sample_fetch(env);
 	if (rc < 0) {
@@ -50,6 +58,12 @@ void environmental_task_fn(struct k_work *work)
 	rc = sensor_channel_get(env, SENSOR_CHAN_HUMIDITY, &value);
 	has_humidity = rc == 0;
 	tdf_tph.humidity = has_humidity ? sensor_value_to_centi(&value) : 0;
+
+	/* Release power requirement */
+	rc = pm_device_runtime_put(env);
+	if (rc < 0) {
+		LOG_ERR("PM put failure");
+	}
 
 	/* Log output TDFs */
 	task_schedule_tdf_log(sch, TASK_ENVIRONMENTAL_LOG_TPH, TDF_AMBIENT_TEMP_PRES_HUM,
