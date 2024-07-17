@@ -16,7 +16,7 @@
 #include "epacket_internal.h"
 
 #define INFUSE_SERVICE_UUID  0xC001
-#define EMBEINT_COMPANY_CODE 0xFFFF
+#define EMBEINT_COMPANY_CODE 0x0DE4
 #define BT_MFG_DATA_LEN      113
 
 static struct {
@@ -86,7 +86,7 @@ bool epacket_bt_adv_is_epacket(uint8_t adv_type, struct net_buf_simple *buf)
 	if (buf->data[8] != BT_DATA_MANUFACTURER_DATA) {
 		return false;
 	}
-	/* Manufacturer ID is 0xFFFF */
+	/* Manufacturer ID is EMBEINT_COMPANY_CODE */
 	if (sys_get_le16(buf->data + 9) != EMBEINT_COMPANY_CODE) {
 		return false;
 	}
