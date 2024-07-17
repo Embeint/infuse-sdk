@@ -42,7 +42,7 @@ static const struct bt_le_scan_param scan_param = {
 	.options = BT_LE_SCAN_OPT_NONE,
 	/* 32 * 0.625 = 20ms */
 	.interval = 0x0020,
-	.window = 0x001F,
+	.window = 0x0020,
 };
 static struct net_buf *adv_set_bufs[CONFIG_BT_EXT_ADV_MAX_ADV_SET];
 static struct k_spinlock queue_lock;
@@ -141,6 +141,11 @@ static void epacket_bt_adv_send(const struct device *dev, struct net_buf *buf)
 			epacket_notify_tx_result(dev, buf, -EIO);
 			return;
 		}
+		/* First broadcast is dropped with SoftDevice if scanning (DRGN-22705).
+		 * Workaround is to queue the first broadcast twice.
+		 */
+		buf = net_buf_ref(buf);
+		bt_adv_broadcast(dev, adv_set, buf);
 	}
 
 	K_SPINLOCK(&queue_lock) {
