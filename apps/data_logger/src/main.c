@@ -10,6 +10,7 @@
 #include <zephyr/logging/log.h>
 #include <zephyr/drivers/sensor.h>
 #include <zephyr/pm/device_runtime.h>
+#include <zephyr/net/conn_mgr_connectivity.h>
 
 #include <infuse/drivers/watchdog.h>
 #include <infuse/time/civil.h>
@@ -103,6 +104,11 @@ int main(void)
 {
 	/* Start the watchdog */
 	(void)infuse_watchdog_start();
+
+#ifdef CONFIG_NETWORKING
+	conn_mgr_all_if_up(false);
+	conn_mgr_all_if_connect(false);
+#endif /* CONFIG_NETWORKING */
 
 	/* Initialise task runner */
 	task_runner_init(schedules, states, ARRAY_SIZE(schedules), app_tasks, app_tasks_data,
