@@ -59,6 +59,8 @@ bool task_schedule_should_terminate(const struct task_schedule *schedule,
 	if (schedule->timeout_s) {
 		periodicity = state->runtime >= schedule->timeout_s;
 	}
-	battery = battery_soc <= schedule->battery_terminate_threshold;
+	if (schedule->battery_terminate_threshold) {
+		battery = battery_soc <= schedule->battery_terminate_threshold;
+	}
 	return periodicity || battery;
 }
