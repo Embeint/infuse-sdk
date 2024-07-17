@@ -132,8 +132,15 @@ void tdf_data_logger_flush(uint8_t logger_mask)
 int tdf_data_logger_log_array_dev(const struct device *dev, uint16_t tdf_id, uint8_t tdf_len,
 				  uint8_t tdf_num, uint64_t time, uint16_t period, void *mem)
 {
+	const struct tdf_logger_config *config = dev->config;
 	struct tdf_logger_data *data = dev->data;
 	int rc;
+
+	/* Validate logger initialised correctly */
+	if (!device_is_ready(config->logger)) {
+		LOG_WRN_ONCE("%s backend failed to initialise", dev->name);
+		return -ENODEV;
+	}
 
 	k_sem_take(&data->lock, K_FOREVER);
 relog:
