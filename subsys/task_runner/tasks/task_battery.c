@@ -9,6 +9,7 @@
 #include <zephyr/logging/log.h>
 #include <zephyr/drivers/sensor.h>
 #include <zephyr/zbus/zbus.h>
+#include <zephyr/pm/device_runtime.h>
 
 #include <infuse/task_runner/task.h>
 #include <infuse/task_runner/tasks/battery.h>
@@ -30,6 +31,13 @@ void battery_task_fn(struct k_work *work)
 	struct sensor_value value;
 	int rc;
 
+	/* Request sensor to be powered */
+	rc = pm_device_runtime_get(battery);
+	if (rc < 0) {
+		LOG_ERR("Terminating due to %s", "PM failure");
+		return;
+	}
+
 	/* Trigger the sample */
 	rc = sensor_sample_fetch(battery);
 	if (rc < 0) {
@@ -43,6 +51,12 @@ void battery_task_fn(struct k_work *work)
 	(void)sensor_channel_get(battery, SENSOR_CHAN_GAUGE_STATE_OF_CHARGE, &value);
 	tdf_battery.soc = sensor_value_to_centi(&value);
 	tdf_battery.charge_ua = 0;
+
+	/* Release power requirement */
+	rc = pm_device_runtime_put(battery);
+	if (rc < 0) {
+		LOG_ERR("PM put failure");
+	}
 
 	/* Log output TDF */
 	task_schedule_tdf_log(sch, TASK_BATTERY_LOG_COMPLETE, TDF_BATTERY_STATE,

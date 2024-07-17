@@ -7,6 +7,7 @@
  */
 
 #include <zephyr/logging/log.h>
+#include <zephyr/pm/device_runtime.h>
 
 #include <infuse/task_runner/task.h>
 #include <infuse/task_runner/tasks/imu.h>
@@ -131,6 +132,14 @@ void imu_task_fn(const struct task_schedule *schedule, struct k_poll_signal *ter
 	uint32_t buffer_count = 0;
 	int rc;
 
+	/* Request sensor to be powered */
+	rc = pm_device_runtime_get(imu);
+	if (rc < 0) {
+		k_sleep(K_SECONDS(1));
+		LOG_ERR("Terminating due to %s", "PM failure");
+		return;
+	}
+
 	/* Configure IMU */
 	rc = imu_configure(imu, &config, &config_output);
 	if (rc < 0) {
@@ -178,5 +187,12 @@ void imu_task_fn(const struct task_schedule *schedule, struct k_poll_signal *ter
 
 	/* Put IMU back into low power mode */
 	(void)imu_configure(imu, NULL, NULL);
+
+	/* Release power requirement */
+	rc = pm_device_runtime_put(imu);
+	if (rc < 0) {
+		LOG_ERR("PM put failure");
+	}
+
 	/* Terminate thread */
 }
