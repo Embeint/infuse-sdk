@@ -2,6 +2,34 @@
 
 if BT
 
+# Uncoded LE Data Packet Format:
+#
+# | Preamble | Access  |                           PDU (2 to 257 bytes)                         |   CRC   |
+# |          | Address | LL Header |       Link Layer PDU (0 to 251 bytes)           |    MIC   |         |
+# |          |         |           | L2CAP Header |      L2CAP PDU (0-247 bytes)     | Optional |         |
+# |          |         |           |              |    ATT Header    |  ATT Payload  |          |         |
+# |          |         |           |              | OpCode | Handle  |               |          |         |
+# |  1 byte  | 4 bytes |  2 bytes  |   4 bytes    | 1 byte | 2 bytes | 0 - 244 bytes | 4 bytes  | 3 bytes |
+#
+# L2CAP can be larger than 247 bytes, but will be split across multiple LL packets as a result.
+# ATT payloads can be larger than 244 bytes, but will be split across multiple LL packets as a result.
+#
+# Kconfig Symbols:
+#     CONFIG_BT_CTLR_DATA_LENGTH_MAX : Maximum payload size of the Link Layer PDU
+#     CONFIG_BT_BUF_ACL_TX_SIZE      : Maximum L2CAP PDU is limited to this value - 4
+#     CONFIG_BT_BUF_ACL_RX_SIZE      : Maximum L2CAP PDU is limited to this value - 4
+#     CONFIG_BT_L2CAP_TX_MTU         : Maximum L2CAP PDU size for transmission
+
+configdefault BT_CTLR_DATA_LENGTH_MAX
+	default 251
+configdefault BT_BUF_ACL_TX_SIZE
+	default 251
+configdefault BT_BUF_ACL_RX_SIZE
+	default 251
+configdefault BT_L2CAP_TX_MTU
+	default 246 if BT_SPI # SPI HCI can only handle 254 byte payloads (PDU - LL Header)
+	default 247
+
 # Cannot connect to Nordic Softdevice from iOS
 # https://devzone.nordicsemi.com/f/nordic-q-a/113141/softdevice-extended-advertising-ios-connection
 choice BT_LL_CHOICE
@@ -25,5 +53,19 @@ configdefault BT_PERIPHERAL
 # While extended advertising can support 255 bytes, iOS only supports 124 bytes
 configdefault BT_CTLR_ADV_DATA_LEN_MAX
 	default 124
+
+# Advertising happens on 2Mbit PHY, which is the desired PHY for connections
+# due to the increased data throughput.
+configdefault BT_PHY_UPDATE
+	default n
+
+# Connection parameters should be pro-actively negotiated, not delayed by 5
+# seconds as many connections are complete by then.
+configdefault BT_GAP_AUTO_UPDATE_CONN_PARAMS
+	default n
+
+# Generic Sensor (0x015 << 6)
+configdefault BT_DEVICE_APPEARANCE
+	default 1344
 
 endif # BT
