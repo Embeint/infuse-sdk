@@ -69,7 +69,7 @@ static void delayed_do_reboot(struct k_work *work)
 	cleanup_and_reboot();
 }
 
-void k_sys_fatal_error_handler(unsigned int reason, const z_arch_esf_t *esf)
+void k_sys_fatal_error_handler(unsigned int reason, const struct arch_esf *esf)
 {
 	uint32_t pc = 0, lr = 0;
 
