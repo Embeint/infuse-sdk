@@ -9,8 +9,8 @@ common:
     - netif
     - wifi
   integration_platforms:
-    - nrf7002dk_nrf5340_cpuapp_ns
-    - nrf7002dk_nrf5340_cpuapp
+    - nrf7002dk/nrf5340/cpuapp/ns
+    - nrf7002dk/nrf5340/cpuapp
 tests:
   sample.app.gateway_wifi:
     tags: gateway

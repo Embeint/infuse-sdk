@@ -31,7 +31,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        platform: ["native_sim", "mps2_an385"]
+        platform: ["mps2/an385", "native_sim"]
+        include:
+          - platform: 'mps2/an385'
+            normalized: 'mps2_an385'
+          - platform: 'native_sim'
+            normalized: 'native_sim'
 
     env:
       BASE_REF: ${{ github.base_ref }}
@@ -96,14 +101,14 @@ jobs:
       - name: Rename coverage files
         if: always()
         run: |
-          cp twister-out/coverage.json coverage/reports/${{ matrix.platform }}.json
+          cp twister-out/coverage.json coverage/reports/${{ matrix.normalized }}.json
 
       - name: Upload Coverage Results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: Coverage Data (Subset ${{ matrix.platform }})
-          path: coverage/reports/${{ matrix.platform }}.json
+          name: Coverage Data (Subset ${{ matrix.normalized }})
+          path: coverage/reports/${{ matrix.normalized }}.json
           retention-days: 1
 
   codecov-results:

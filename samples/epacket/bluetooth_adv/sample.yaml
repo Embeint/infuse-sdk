@@ -9,15 +9,15 @@ tests:
   sample.epacket.bluetooth_adv:
     tags: bluetooth epacket
     platform_allow:
-      - nrf52840dk_nrf52840
+      - nrf52840dk/nrf52840
     integration_platforms:
-      - nrf52840dk_nrf52840
+      - nrf52840dk/nrf52840
   sample.epacket.bluetooth_adv.sysbuild:
     tags: bluetooth epacket
     sysbuild: true
     platform_allow:
-      - nrf5340dk_nrf5340_cpuapp
-      - nrf7002dk_nrf5340_cpuapp
-      - thingy53_nrf5340_cpuapp
+      - nrf5340dk/nrf5340/cpuapp
+      - nrf7002dk/nrf5340/cpuapp
+      - thingy53/nrf5340/cpuapp
     integration_platforms:
-      - nrf5340dk_nrf5340_cpuapp
+      - nrf5340dk/nrf5340/cpuapp
