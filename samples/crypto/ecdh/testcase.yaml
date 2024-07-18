@@ -6,12 +6,12 @@ tests:
   crypto.ecdh:
     platform_allow:
       - native_sim
-      - qemu_cortex_m3
+      - mps2_an385
       - nrf52840dk_nrf52840
       - nrf5340dk_nrf5340_cpuapp
     integration_platforms:
       - native_sim
-      - qemu_cortex_m3
+      - mps2_an385
       - nrf52840dk_nrf52840
       - nrf5340dk_nrf5340_cpuapp
     harness: console
