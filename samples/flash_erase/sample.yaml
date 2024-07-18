@@ -8,4 +8,4 @@ tests:
     required_snippets:
       - infuse
     integration_platforms:
-      - nrf52840dk_nrf52840
+      - nrf52840dk/nrf52840

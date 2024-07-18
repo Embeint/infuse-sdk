@@ -8,4 +8,4 @@ tests:
     required_snippets:
       - infuse
     integration_platforms:
-      - mps2_an385
+      - mps2/an385

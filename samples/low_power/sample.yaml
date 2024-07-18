@@ -6,8 +6,8 @@ common:
   required_snippets:
     - infuse
   integration_platforms:
-    - nrf5340dk_nrf5340_cpuapp
-    - nrf5340dk_nrf5340_cpuapp_ns
+    - nrf5340dk/nrf5340/cpuapp
+    - nrf5340dk/nrf5340/cpuapp/ns
 tests:
   sample.low_power:
     tags: validation

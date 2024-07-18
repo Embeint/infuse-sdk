@@ -6,4 +6,4 @@ tests:
   epacket.common:
     integration_platforms:
       - native_sim
-      - mps2_an385
+      - mps2/an385

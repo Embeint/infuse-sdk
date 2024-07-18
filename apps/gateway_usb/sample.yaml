@@ -8,9 +8,9 @@ common:
   depends_on:
     - usb_cdc
   integration_platforms:
-    - nrf52840dk_nrf52840
-    - nrf5340dk_nrf5340_cpuapp
-    - nrf5340dk_nrf5340_cpuapp_ns
+    - nrf52840dk/nrf52840
+    - nrf5340dk/nrf5340/cpuapp
+    - nrf5340dk/nrf5340/cpuapp/ns
 tests:
   sample.app.gateway_usb:
     tags: gateway

@@ -6,7 +6,7 @@ tests:
   epacket.keys:
     platform_allow:
       - native_sim
-      - mps2_an385
+      - mps2/an385
     integration_platforms:
       - native_sim
-      - mps2_an385
+      - mps2/an385
