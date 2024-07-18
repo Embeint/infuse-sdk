@@ -128,12 +128,14 @@ static int key_setup(uint8_t key[32])
 	psa_set_key_type(&key_attributes, PSA_KEY_TYPE_ECC_KEY_PAIR(PSA_ECC_FAMILY_SECP_R1));
 	psa_set_key_bits(&key_attributes, 256);
 
+#ifdef CONFIG_PSA_WANT_ALG_ECDSA
 	/* Import ECDSA key */
 	status = psa_generate_key(&key_attributes, &ecdsa_key_id);
 	if (status != PSA_SUCCESS) {
 		LOG_ERR("Failed to generate key pair! (%d)", status);
 		return -1;
 	}
+#endif /* CONFIG_PSA_WANT_ALG_ECDSA */
 
 	return 0;
 }
@@ -309,8 +311,9 @@ int main(void)
 			}
 			sign_cycles[CMAC][i][r] = timing_cycles_get(&start_time, &end_time);
 		}
-#ifdef CONFIG_MBEDTLS_ECDSA_C
-		for (int r = 0; r < REPEATS; r++) {
+#ifdef CONFIG_PSA_WANT_ALG_ECDSA
+		/* ECDSA takes a very long time, only run once */
+		for (int r = 0; r < 1; r++) {
 			size_t hlen, slen;
 
 			start_time = timing_counter_get();
@@ -327,7 +330,10 @@ int main(void)
 			}
 			sign_cycles[ECDSA_SHA256][i][r] = timing_cycles_get(&start_time, &end_time);
 		}
-#endif /* CONFIG_MBEDTLS_ECDSA_C */
+		for (int r = 1; r < REPEATS; r++) {
+			sign_cycles[ECDSA_SHA256][i][r] = sign_cycles[ECDSA_SHA256][i][0];
+		}
+#endif /* CONFIG_PSA_WANT_ALG_ECDSA */
 	}
 
 	/* Log timing results */
@@ -375,7 +381,7 @@ int main(void)
 			LOG_INF("\t%6d |  %6llu (%7llu)", plaintext_lengths[j], sign_avg, sign_ns);
 		}
 	}
-
+	LOG_INF("Sample complete");
 	k_sleep(K_FOREVER);
 	return 0;
 }
