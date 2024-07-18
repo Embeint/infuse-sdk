@@ -17,8 +17,8 @@ config INFUSE_REBOOT
 config INFUSE_SECURITY
 	bool "Infuse-IoT security"
 	depends on MBEDTLS
-	depends on MBEDTLS_HKDF_C
-	depends on MBEDTLS_CHACHAPOLY_AEAD_ENABLED
+	depends on PSA_WANT_ALG_HKDF
+	depends on PSA_WANT_ALG_CHACHA20_POLY1305
 	select CRC
 	default y if INFUSE_SDK
 
