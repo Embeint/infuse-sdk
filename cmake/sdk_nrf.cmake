@@ -14,7 +14,7 @@ if (NOT CONFIG_BUILD_WITH_TFM)
         ${ZEPHYR_NRFXLIB_MODULE_DIR}/crypto/nrf_oberon/include/
         ${ZEPHYR_NRFXLIB_MODULE_DIR}/crypto/nrf_oberon/include/mbedtls
         # Add Oberon PSA Crypto Driver includes
-        ${ZEPHYR_SDK_NRF_MODULE_DIR}/ext/oberon/psa/core/library
+        ${ZEPHYR_OBERON_PSA_CRYPTO_MODULE_DIR}/library
     )
     # Multiple definitions of mbedtls_ecdsa_can_do from oberon...
     target_compile_definitions(mbedcrypto_common INTERFACE "-Dmbedtls_ecdsa_can_do=_mock_mbedtls_ecdsa_can_do")
