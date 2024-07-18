@@ -54,7 +54,7 @@ static void cleanup_interface(const struct device *epacket_udp)
 	struct epacket_interface_cb *cb;
 
 	if (k_event_clear(&udp_state.state, UDP_STATE_SOCKET_OPEN)) {
-		(void)close(udp_state.sock);
+		(void)zsock_close(udp_state.sock);
 		LOG_DBG("Closed %d", udp_state.sock);
 	}
 	if (k_event_clear(&udp_state.state, UDP_STATE_CLIENTS_NOTIFIED_UP)) {
@@ -151,7 +151,7 @@ static int epacket_udp_loop(void *a, void *b, void *c)
 		}
 
 		/* Create the UDP socket */
-		udp_state.sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+		udp_state.sock = zsock_socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
 		if (udp_state.sock == -1) {
 			LOG_ERR("Failed to open socket (%d)", errno);
 			goto socket_error;
