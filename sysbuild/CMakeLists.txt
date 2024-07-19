@@ -11,20 +11,21 @@ if (${SB_CONFIG_BOOTLOADER_MCUBOOT})
   # Ensure multithreading is always enabled in MCUBoot
   # External flash drivers and USB support depend on it
   set(mcuboot_CONFIG_MULTITHREADING "y" CACHE INTERNAL "")
+  set(mcuboot_CONFIG_NORDIC_QSPI_NOR "y" CACHE INTERNAL "")
   # Support images up to 1MB in size
   set(mcuboot_CONFIG_BOOT_MAX_IMG_SECTORS 256 CACHE INTERNAL "")
   # Notify DTS that this is a bootloader build
   set(mcuboot_DTS_EXTRA_CPPFLAGS "-DINFUSE_IS_BOOTLOADER=1" CACHE INTERNAL "")
 endif()
 
-if(SB_CONFIG_INFUSE_INTEGRATION_NRF_NET_CORE_IMAGE_HCI_IPC)
+if(SB_CONFIG_DOMAIN_CPUNET_BOARD)
   set(NET_APP hci_ipc)
   set(NET_APP_SRC_DIR ${ZEPHYR_BASE}/samples/bluetooth/${NET_APP})
 
   ExternalZephyrProject_Add(
     APPLICATION ${NET_APP}
     SOURCE_DIR  ${NET_APP_SRC_DIR}
-    BOARD       ${SB_CONFIG_INFUSE_INTEGRATION_NRF_NET_CORE_BOARD}
+    BOARD       ${SB_CONFIG_DOMAIN_CPUNET_BOARD}
   )
 
   set(${NET_APP}_CONF_FILE
