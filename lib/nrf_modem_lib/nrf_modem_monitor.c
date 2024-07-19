@@ -208,7 +208,7 @@ static void infuse_modem_info(enum lte_lc_func_mode mode, void *ctx)
 	modem_info_stored = true;
 }
 
-void lte_net_if_modem_fault_handler(struct nrf_modem_fault_info *fault_info)
+void lte_net_if_modem_fault_app_handler(struct nrf_modem_fault_info *fault_info)
 {
 #ifdef CONFIG_INFUSE_REBOOT
 	/* Handling any fault properly is uncertain, safest option is to trigger a reboot */
