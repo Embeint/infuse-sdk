@@ -1,6 +1,5 @@
 #include <mem.h>
 
-/delete-node/ &sram_203F0000;
 /delete-node/ &sim_flash_controller;
 
 #include "../app.overlay"
