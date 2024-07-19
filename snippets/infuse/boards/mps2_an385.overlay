@@ -24,4 +24,16 @@
 			};
 		};
 	};
+
+	/* Explicit memory region for simulated flash so its not zeroed on reboot */
+	sram_203F0000:sram@203F0000 {
+		compatible = "zephyr,memory-region", "mmio-sram";
+		reg = <0x203F0000 0x10000>;
+		zephyr,memory-region = "FlashSim";
+		status = "okay";
+	};
+
+	sim_flash_controller {
+		memory-region = <&sram_203F0000>;
+	};
 };
