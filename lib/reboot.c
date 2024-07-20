@@ -17,6 +17,7 @@
 #include <zephyr/net/conn_mgr_connectivity.h>
 #include <zephyr/logging/log_ctrl.h>
 
+#include <infuse/drivers/watchdog.h>
 #include <infuse/time/civil.h>
 #include <infuse/reboot.h>
 
@@ -84,8 +85,15 @@ void k_sys_fatal_error_handler(unsigned int reason, const z_arch_esf_t *esf)
 
 void infuse_watchdog_expired(const struct device *dev, int channel_id)
 {
+	uint32_t info1 = channel_id;
+	uint32_t info2 = UINT32_MAX;
+
+#if CONFIG_INFUSE_WATCHDOG
+	infuse_watchdog_thread_state_lookup(channel_id, &info1, &info2);
+#endif
+
 	/* Store reboot metadata */
-	reboot_state_store(INFUSE_REBOOT_WATCHDOG, (uintptr_t)dev, channel_id);
+	reboot_state_store(INFUSE_REBOOT_WATCHDOG, info1, info2);
 	/* Wait for watchdog to reboot us */
 	for (;;)
 		;
