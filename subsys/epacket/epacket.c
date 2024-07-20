@@ -250,6 +250,7 @@ static int epacket_processor(void *a, void *b, void *c)
 	struct net_buf *buf;
 	int rc;
 
+	infuse_watchdog_thread_register(wdog_channel, _current);
 	while (true) {
 		rc = k_poll(events, ARRAY_SIZE(events), loop_period);
 		infuse_watchdog_feed(wdog_channel);
