@@ -108,6 +108,40 @@ static inline int infuse_watchdog_install(k_timeout_t *feed_period)
 }
 
 /**
+ * @brief Register a watchdog channel against a thread
+ *
+ * This allows thread state to be determined by @ref infuse_watchdog_thread_state_lookup
+ * in the event that the channel expires.
+ *
+ * @param wdog_channel Watchdog channel to register
+ * @param thread Thread responsible for feeding the channel
+ */
+void infuse_watchdog_thread_register(int wdog_channel, k_tid_t thread);
+
+/**
+ * @brief Determine state of the thread responsible for watchdog channel
+ *
+ * Data format, compatible with the Infuse Reboot API.
+ *
+ * info1:
+ *     bits 16-31: Reserved for future use
+ *     bits  8-15: Common thread state bits (_THREAD_PENDING, etc)
+ *     bits  0- 7: Watchdog channel ID
+ *
+ * info2:
+ *     If thread is pending on an object (_THREAD_PENDING), address of that object
+ *     0 otherwise
+ *
+ * @param wdog_channel Watchdog channel to lookup thread state for
+ * @param info1 Thread info per above
+ * @param info2 Thread info per above
+ *
+ * @retval 0 on success
+ * @retval -EINVAL @a wdog_channel has not been associated with a thread
+ */
+int infuse_watchdog_thread_state_lookup(int wdog_channel, uint32_t *info1, uint32_t *info2);
+
+/**
  * @brief Start the Infuse watchdog
  *
  * @return value from @ref wdt_setup
@@ -144,6 +178,16 @@ static inline void infuse_watchdog_feed(int wdog_channel)
 static inline int infuse_watchdog_install(k_timeout_t *feed_period)
 {
 	return 0;
+}
+
+static inline void infuse_watchdog_thread_register(int wdog_channel, k_tid_t thread)
+{
+}
+
+static inline int infuse_watchdog_thread_state_lookup(int wdog_channel, uint32_t *info1,
+						      uint32_t *info2)
+{
+	return -EINVAL;
 }
 
 static inline int infuse_watchdog_start(void)
