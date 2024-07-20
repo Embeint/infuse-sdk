@@ -8,6 +8,24 @@
 
 #include "common_net_query.h"
 
+#if defined(CONFIG_NET_NATIVE_IPV4)
+static void ipv4_callback(struct net_if *iface, struct net_if_addr *addr, void *user_data)
+{
+	struct rpc_struct_ipv4_address *rpc_addr = user_data;
+
+	memcpy(rpc_addr, addr->address.in_addr.s4_addr, sizeof(*rpc_addr));
+}
+#endif
+
+#if defined(CONFIG_NET_NATIVE_IPV6)
+static void ipv6_callback(struct net_if *iface, struct net_if_addr *addr, void *user_data)
+{
+	struct rpc_struct_ipv6_address *rpc_addr = user_data;
+
+	memcpy(rpc_addr, addr->address.in6_addr.s6_addr, sizeof(*rpc_addr));
+}
+#endif
+
 void rpc_common_net_query(struct net_if *iface, struct rpc_struct_network_state *out)
 {
 	out->state = net_if_oper_state(iface);
@@ -23,17 +41,9 @@ void rpc_common_net_query(struct net_if *iface, struct rpc_struct_network_state 
 	}
 
 #if defined(CONFIG_NET_NATIVE_IPV4)
-	struct net_if_ipv4 *ipv4 = iface->config.ip.ipv4;
-
-	if (ipv4 != NULL) {
-		memcpy(out->ipv4.addr, ipv4->unicast[0].address.in_addr.s4_addr, 4);
-	}
+	net_if_ipv4_addr_foreach(iface, ipv4_callback, &out->ipv4.addr);
 #endif
 #if defined(CONFIG_NET_NATIVE_IPV6)
-	struct net_if_ipv6 *ipv6 = iface->config.ip.ipv6;
-
-	if (ipv6 != NULL) {
-		memcpy(out->ipv6.addr, ipv6->unicast[0].address.in6_addr.s6_addr, 16);
-	}
+	net_if_ipv6_addr_foreach(iface, ipv6_callback, &out->ipv6.addr);
 #endif
 }
