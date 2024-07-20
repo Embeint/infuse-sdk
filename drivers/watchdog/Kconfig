@@ -1,0 +1,18 @@
+# Infuse-IoT watchdog configuration
+
+config INFUSE_WATCHDOG
+	bool "Use watchdogs in core Infuse subsystems"
+	depends on "$(dt_alias_enabled,watchdog0)"
+	depends on WATCHDOG
+	help
+	  When enabled, Infuse subsystems register watchdogs against
+	  the watchdog0 devicetree alias. The watchdog must still be
+	  started with `infuse_watchdog_start` by the application.
+
+if INFUSE_WATCHDOG
+
+config INFUSE_WATCHDOG_PERIOD_MS
+	int "Watchdog period used by Infuse subsystems"
+	default 10000
+
+endif # INFUSE_WATCHDOG
