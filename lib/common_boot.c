@@ -122,7 +122,7 @@ static int infuse_common_boot(void)
 		LOG_INF("\t  Uptime: %d", reboot_state.uptime);
 		LOG_INF("\t  Thread: %s", reboot_state.thread_name);
 		LOG_INF("\t PC/WDOG: %08X", reboot_state.param_1.program_counter);
-		LOG_INF("\t      LR: %08X", reboot_state.param_2.link_register);
+		LOG_INF("\t LR/WDOG: %08X", reboot_state.param_2.link_register);
 
 		/* Restore time knowledge (Assume reboot took 0 ms) */
 		reference.local = 0;

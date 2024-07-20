@@ -70,8 +70,8 @@ ZTEST(infuse_reboot, test_reboot)
 		rc = infuse_reboot_state_query(&reboot_state);
 		zassert_equal(0, rc);
 		zassert_equal(INFUSE_REBOOT_WATCHDOG, reboot_state.reason);
-		zassert_equal(4, reboot_state.param_1.watchdog_channel);
-		zassert_equal(0, reboot_state.param_2.link_register);
+		zassert_equal(4, reboot_state.param_1.watchdog_info1);
+		zassert_equal(0, reboot_state.param_2.watchdog_info2);
 		zassert_equal(0, reboot_state.uptime);
 		zassert_equal(TIME_SOURCE_NTP, reboot_state.civil_time_source);
 		zassert_true(reboot_state.civil_time >= time_2025);

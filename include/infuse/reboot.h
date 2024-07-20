@@ -69,12 +69,14 @@ struct infuse_reboot_state {
 	union {
 		/* Program counter value at exception */
 		uint32_t program_counter;
-		/* Watchdog channel that expired */
-		uint32_t watchdog_channel;
+		/* Watchdog info1 per @ref infuse_watchdog_thread_state_lookup */
+		uint32_t watchdog_info1;
 	} param_1;
 	union {
 		/* Link register value at exception */
 		uint32_t link_register;
+		/* Watchdog info2 per @ref infuse_watchdog_thread_state_lookup */
+		uint32_t watchdog_info2;
 	} param_2;
 	/* Thread executing at reboot time */
 	char thread_name[REBOOT_STATE_THREAD_NAME_MAX];
