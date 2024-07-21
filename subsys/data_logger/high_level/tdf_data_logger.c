@@ -23,14 +23,25 @@
 
 struct tdf_logger_config {
 	const struct device *logger;
-	uint8_t *tdf_buffer;
 	uint16_t tdf_buffer_max_size;
 };
 
+/* Define TDF data struct with given buffer length */
+#define TDF_LOGGER_DATA_TYPE(type_name, len)                                                       \
+	struct type_name {                                                                         \
+		struct k_sem lock;                                                                 \
+		struct tdf_buffer_state tdf_state;                                                 \
+		uint8_t block_overhead;                                                            \
+		uint8_t tdf_buffer[len];                                                           \
+	}
+
+/* Common type */
 struct tdf_logger_data {
+	uint32_t guard_head;
 	struct k_sem lock;
 	struct tdf_buffer_state tdf_state;
 	uint8_t block_overhead;
+	uint8_t tdf_buffer[];
 };
 
 #define LOGGER_GET(node_id)                                                                        \
@@ -203,7 +214,7 @@ int tdf_data_logger_init(const struct device *dev)
 	k_sem_init(&data->lock, 1, 1);
 
 	/* Link data buffer to net buf */
-	net_buf_simple_init_with_data(&data->tdf_state.buf, config->tdf_buffer,
+	net_buf_simple_init_with_data(&data->tdf_state.buf, data->tdf_buffer,
 				      config->tdf_buffer_max_size);
 
 	/* Get required overhead for message buffers */
@@ -219,12 +230,12 @@ int tdf_data_logger_init(const struct device *dev)
 }
 
 #define TDF_DATA_LOGGER_DEFINE(inst)                                                               \
-	static struct tdf_logger_data tdf_logger_data##inst;                                       \
-	static uint8_t tdf_mem_buffer##inst[DATA_LOGGER_MAX_SIZE(DT_PARENT(DT_DRV_INST(inst)))];   \
+	TDF_LOGGER_DATA_TYPE(tdf_logger_data_t_##inst,                                             \
+			     DATA_LOGGER_MAX_SIZE(DT_PARENT(DT_DRV_INST(inst))));                  \
+	static struct tdf_logger_data_t_##inst tdf_logger_data##inst;                              \
 	const struct tdf_logger_config tdf_logger_config##inst = {                                 \
 		.logger = DEVICE_DT_GET(DT_PARENT(DT_DRV_INST(inst))),                             \
-		.tdf_buffer = tdf_mem_buffer##inst,                                                \
-		.tdf_buffer_max_size = sizeof(tdf_mem_buffer##inst),                               \
+		.tdf_buffer_max_size = sizeof(tdf_logger_data##inst.tdf_buffer),                   \
 	};                                                                                         \
 	DEVICE_DT_INST_DEFINE(inst, tdf_data_logger_init, NULL, &tdf_logger_data##inst,            \
 			      &tdf_logger_config##inst, POST_KERNEL, 81, NULL);
