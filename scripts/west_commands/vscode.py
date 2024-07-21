@@ -209,7 +209,9 @@ class vscode(WestCommand):
             default=west_topdir(),
             help="VSCode workspace folder",
         )
-        parser.add_argument("--dir", "-d", type=str, help="Application build folder")
+        parser.add_argument(
+            "--build-dir", "-d", dest="dir", type=str, help="Application build folder"
+        )
         return parser
 
     def _jlink_device(self, cache):
