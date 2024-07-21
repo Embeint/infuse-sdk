@@ -93,13 +93,18 @@ struct imu_sample_array {
 	struct imu_sample samples[];
 };
 
-/* Create static buffer of IMU samples suitable for use with @ref imu_data_read */
-#define IMU_SAMPLE_ARRAY_CREATE(name, max_samples)                                                 \
-	struct {                                                                                   \
+/* Create type that holds a given number of IMU samples */
+#define IMU_SAMPLE_ARRAY_TYPE_DEFINE(type_name, max_samples)                                       \
+	struct type_name {                                                                         \
 		struct imu_sample_array header;                                                    \
 		struct imu_sample samples[max_samples];                                            \
-	} _anon_##name;                                                                            \
-	struct imu_sample_array *name = (void *)&_anon_##name;
+	}
+
+/* Create static buffer of IMU samples suitable for use with @ref imu_data_read */
+#define IMU_SAMPLE_ARRAY_CREATE(name, max_samples)                                                 \
+	IMU_SAMPLE_ARRAY_TYPE_DEFINE(_anon_t_##name, max_samples);                                 \
+	static struct _anon_t_##name _anon_##name;                                                 \
+	static struct imu_sample_array *name = (void *)&_anon_##name
 
 struct infuse_imu_api {
 	int (*configure)(const struct device *dev, const struct imu_config *config,
