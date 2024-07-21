@@ -312,8 +312,10 @@ class vscode(WestCommand):
                 options = [str(e) for e in emulators]
                 terminal_menu = TerminalMenu(options)
                 idx = terminal_menu.show()
-                serial = str(emulators[idx].SerialNumber)
+                if idx is None:
+                    sys.exit("JLink device not chosen, exiting...")
 
+                serial = str(emulators[idx].SerialNumber)
                 launch["configurations"][0]["serialNumber"] = serial
                 launch["configurations"][1]["serialNumber"] = serial
 
