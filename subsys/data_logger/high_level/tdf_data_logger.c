@@ -21,6 +21,9 @@
 #include <infuse/data_logger/high_level/tdf.h>
 #include <infuse/epacket/interface.h>
 
+#define DATA_GUARD_HEAD 0xb4ef00fc
+#define DATA_GUARD_TAIL 0xbf696b59
+
 struct tdf_logger_config {
 	const struct device *logger;
 	uint16_t tdf_buffer_max_size;
@@ -29,10 +32,12 @@ struct tdf_logger_config {
 /* Define TDF data struct with given buffer length */
 #define TDF_LOGGER_DATA_TYPE(type_name, len)                                                       \
 	struct type_name {                                                                         \
+		uint32_t guard_head;                                                               \
 		struct k_sem lock;                                                                 \
 		struct tdf_buffer_state tdf_state;                                                 \
 		uint8_t block_overhead;                                                            \
 		uint8_t tdf_buffer[len];                                                           \
+		uint32_t guard_tail;                                                               \
 	}
 
 /* Common type */
@@ -43,6 +48,9 @@ struct tdf_logger_data {
 	uint8_t block_overhead;
 	uint8_t tdf_buffer[];
 };
+
+#define GUARD_TAIL_OFFSET(len)                                                                     \
+	ROUND_UP(offsetof(struct tdf_logger_data, tdf_buffer) + len, sizeof(uint32_t))
 
 #define LOGGER_GET(node_id)                                                                        \
 	COND_CODE_1(DT_NODE_HAS_STATUS(node_id, okay),                                             \
@@ -203,36 +211,93 @@ void tdf_data_logger_log_array(uint8_t logger_mask, uint16_t tdf_id, uint8_t tdf
 	} while (dev);
 }
 
+#ifdef CONFIG_ZTEST
+void tdf_data_logger_lock(const struct device *dev)
+{
+	struct tdf_logger_data *data = dev->data;
+
+	k_sem_take(&data->lock, K_FOREVER);
+}
+
+#endif /* CONFIG_ZTEST */
+
 IF_DISABLED(CONFIG_ZTEST, (static))
 int tdf_data_logger_init(const struct device *dev)
 {
 	const struct tdf_logger_config *config = dev->config;
 	struct tdf_logger_data *data = dev->data;
 	struct data_logger_state logger_state;
-
-	/* Init lock semaphore */
-	k_sem_init(&data->lock, 1, 1);
-
-	/* Link data buffer to net buf */
-	net_buf_simple_init_with_data(&data->tdf_state.buf, data->tdf_buffer,
-				      config->tdf_buffer_max_size);
+	uint32_t *guard_tail =
+		(uint32_t *)(((uint8_t *)data) + GUARD_TAIL_OFFSET(config->tdf_buffer_max_size));
+	bool recovered = false;
 
 	/* Get required overhead for message buffers */
 	data_logger_get_state(config->logger, &logger_state);
-	data->block_overhead = logger_state.block_overhead;
 
-	/* Reset buffer with overhead */
-	tdf_buffer_state_reset(&data->tdf_state);
-	net_buf_simple_reserve(&data->tdf_state.buf, data->block_overhead);
-	LOG_DBG("%s max size %d (overhead %d)\n", dev->name, data->tdf_state.buf.size,
+	/* Detect if we have just rebooted and there is potentially valid data on the buffers
+	 * to recover. The conditions that must pass:
+	 *
+	 * 1. Data guards match magic values
+	 * 2. Buffer config matches expected values
+	 * 3. Buffer reports more than 0 bytes contained
+	 * 4. Lock is not locked
+	 * 5. After parsing the buffer with `tdf_parse`:
+	 *    a. Buffer offset matches recovered offset
+	 *    b. Buffer timestamp matches recovered timestamp
+	 */
+	if ((data->guard_head == DATA_GUARD_HEAD) && (*guard_tail == DATA_GUARD_TAIL) &&
+	    (data->tdf_state.buf.size == config->tdf_buffer_max_size) &&
+	    (data->tdf_state.buf.__buf == data->tdf_buffer) &&
+	    (data->block_overhead == logger_state.block_overhead) &&
+	    (data->tdf_state.buf.len > 0) && (data->lock.count == 1)) {
+		LOG_DBG("Checking validity of recovered buffer %d", data->tdf_state.buf.len);
+		struct tdf_buffer_state state;
+		struct tdf_parsed parsed, last = {0};
+
+		/* Parse the complete buffer */
+		tdf_parse_start(&state, data->tdf_state.buf.data, data->tdf_state.buf.len);
+		while (tdf_parse(&state, &parsed) == 0) {
+			last = parsed;
+		}
+
+		/* Check 5a and 5b conditions */
+		if ((last.time == data->tdf_state.time) && (state.buf.len == 0)) {
+			recovered = true;
+		}
+	}
+
+	/* Uncondtionally reset lock semaphore */
+	k_sem_init(&data->lock, 1, 1);
+
+	if (!recovered) {
+		/* Set data guards as valid */
+		data->guard_head = DATA_GUARD_HEAD;
+		*guard_tail = DATA_GUARD_TAIL;
+
+		/* Set block overhead */
+		data->block_overhead = logger_state.block_overhead;
+
+		/* Link data buffer to net buf */
+		net_buf_simple_init_with_data(&data->tdf_state.buf, data->tdf_buffer,
+					      config->tdf_buffer_max_size);
+		/* Reset buffer with overhead */
+		tdf_buffer_state_reset(&data->tdf_state);
+		net_buf_simple_reserve(&data->tdf_state.buf, data->block_overhead);
+	}
+	LOG_DBG("%s max size %d (overhead %d)", dev->name, data->tdf_state.buf.size,
 		data->block_overhead);
+	if (recovered) {
+		LOG_INF("%s recovered %d bytes over reboot", dev->name, data->tdf_state.buf.len);
+	}
 	return 0;
 }
 
 #define TDF_DATA_LOGGER_DEFINE(inst)                                                               \
 	TDF_LOGGER_DATA_TYPE(tdf_logger_data_t_##inst,                                             \
 			     DATA_LOGGER_MAX_SIZE(DT_PARENT(DT_DRV_INST(inst))));                  \
-	static struct tdf_logger_data_t_##inst tdf_logger_data##inst;                              \
+	BUILD_ASSERT(offsetof(struct tdf_logger_data_t_##inst, guard_tail) ==                      \
+		     GUARD_TAIL_OFFSET(DATA_LOGGER_MAX_SIZE(DT_PARENT(DT_DRV_INST(inst)))));       \
+	static struct tdf_logger_data_t_##inst tdf_logger_data##inst __noinit;                     \
 	const struct tdf_logger_config tdf_logger_config##inst = {                                 \
 		.logger = DEVICE_DT_GET(DT_PARENT(DT_DRV_INST(inst))),                             \
 		.tdf_buffer_max_size = sizeof(tdf_logger_data##inst.tdf_buffer),                   \
