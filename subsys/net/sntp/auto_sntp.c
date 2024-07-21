@@ -17,7 +17,7 @@
 #include <infuse/fs/kv_store.h>
 #include <infuse/fs/kv_types.h>
 
-static struct civil_time_cb time_callback;
+static struct epoch_time_cb time_callback;
 static struct net_mgmt_event_callback l4_callback;
 static struct k_work_delayable sntp_worker;
 
@@ -30,7 +30,7 @@ static void l4_event_handler(struct net_mgmt_event_callback *cb, uint32_t event,
 	uint32_t sync_age;
 
 	if (event == NET_EVENT_L4_CONNECTED) {
-		sync_age = civil_time_reference_age();
+		sync_age = epoch_time_reference_age();
 		if (sync_age < CONFIG_SNTP_AUTO_RESYNC_AGE) {
 			delay = K_SECONDS(CONFIG_SNTP_AUTO_RESYNC_AGE - sync_age);
 		}
@@ -100,9 +100,9 @@ static void sntp_work(struct k_work *work)
 	/* Update reference instant */
 	struct timeutil_sync_instant sync_point = {
 		.local = k_uptime_ticks(),
-		.ref = civil_time_from_unix(sntp_time.seconds, sntp_time.fraction / 15259),
+		.ref = epoch_time_from_unix(sntp_time.seconds, sntp_time.fraction / 15259),
 	};
-	if (civil_time_set_reference(TIME_SOURCE_NTP, &sync_point) < 0) {
+	if (epoch_time_set_reference(TIME_SOURCE_NTP, &sync_point) < 0) {
 		LOG_ERR("Failed to set reference (%d)", rc);
 		goto error;
 	}
@@ -113,7 +113,7 @@ error:
 	k_work_reschedule(delayable, K_SECONDS(5));
 }
 
-static void reference_time_updated(enum civil_time_source source, struct timeutil_sync_instant old,
+static void reference_time_updated(enum epoch_time_source source, struct timeutil_sync_instant old,
 				   struct timeutil_sync_instant new, void *user_ctx)
 {
 	struct k_work_delayable *worker = user_ctx;
@@ -135,7 +135,7 @@ int sntp_auto_init(void)
 	/* Register for callbacks on time updates */
 	time_callback.reference_time_updated = reference_time_updated;
 	time_callback.user_ctx = &sntp_worker;
-	civil_time_register_callback(&time_callback);
+	epoch_time_register_callback(&time_callback);
 
 	/* Register for callbacks on network connectivity */
 	net_mgmt_init_event_callback(&l4_callback, l4_event_handler,

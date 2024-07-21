@@ -1,4 +1,4 @@
-.. _civil_time_api:
+.. _epoch_time_api:
 
 Epoch Time
 ##########
@@ -34,7 +34,7 @@ oscillators typically used for low-power time synchronisation.
 API Reference
 *************
 
-.. doxygengroup:: civil_time_apis
+.. doxygengroup:: epoch_time_apis
 
 .. _Zephyr timeutil: https://docs.zephyrproject.org/latest/kernel/timeutil.html
 .. _UTC: https://en.wikipedia.org/wiki/Coordinated_Universal_Time

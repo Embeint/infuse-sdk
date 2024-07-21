@@ -30,7 +30,7 @@ static void send_time_set_command(uint32_t request_id, uint64_t time)
 				.request_id = request_id,
 				.command_id = RPC_ID_TIME_SET,
 			},
-		.civil_time = time,
+		.epoch_time = time,
 	};
 
 	/* Push command at RPC server */
@@ -110,8 +110,8 @@ ZTEST(rpc_command_time, test_time_get_set)
 	struct rpc_time_get_response time_get;
 	uint64_t test_time = 0x123456789ABCD;
 
-	zassert_equal(TIME_SOURCE_NONE, civil_time_get_source());
-	zassert_equal(UINT32_MAX, civil_time_reference_age());
+	zassert_equal(TIME_SOURCE_NONE, epoch_time_get_source());
+	zassert_equal(UINT32_MAX, epoch_time_reference_age());
 
 	/* Send the time get RPC */
 	send_time_get_command(6);
@@ -124,8 +124,8 @@ ZTEST(rpc_command_time, test_time_get_set)
 	expect_time_set_response(9, 0);
 
 	/* Validate parameters set */
-	zassert_equal(TIME_SOURCE_RPC, civil_time_get_source());
-	zassert_equal(0, civil_time_reference_age());
+	zassert_equal(TIME_SOURCE_RPC, epoch_time_get_source());
+	zassert_equal(0, epoch_time_reference_age());
 	zassert_equal(test_time, infuse_sync_state.base.ref);
 
 	k_sleep(K_MSEC(100));
@@ -135,8 +135,8 @@ ZTEST(rpc_command_time, test_time_get_set)
 	time_get = expect_time_get_response(100, 0);
 	zassert_equal(TIME_SOURCE_RPC, time_get.time_source);
 	zassert_equal(0, time_get.sync_age);
-	zassert_true(time_get.civil_time > test_time);
-	zassert_true(time_get.civil_time <= test_time + 10000);
+	zassert_true(time_get.epoch_time > test_time);
+	zassert_true(time_get.epoch_time <= test_time + 10000);
 
 	/* Wait a bit and query again */
 	k_sleep(K_SECONDS(2));

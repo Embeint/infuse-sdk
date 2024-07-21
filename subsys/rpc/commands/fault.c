@@ -40,7 +40,7 @@ struct net_buf *rpc_command_fault(struct net_buf *request)
 		break;
 	case K_ERR_ARM_MEM_DATA_ACCESS:
 		/* NULL dereference */
-		civil_time_set_reference(TIME_SOURCE_NONE, (void *)(uintptr_t)req->zero);
+		epoch_time_set_reference(TIME_SOURCE_NONE, (void *)(uintptr_t)req->zero);
 		break;
 	case K_ERR_ARM_MEM_INSTRUCTION_ACCESS:
 		int (*bad_memory)(void) = (void *)0xFFFFAAAA;

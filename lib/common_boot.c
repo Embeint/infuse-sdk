@@ -126,8 +126,8 @@ static int infuse_common_boot(void)
 
 		/* Restore time knowledge (Assume reboot took 0 ms) */
 		reference.local = 0;
-		reference.ref = reboot_state.civil_time;
-		civil_time_set_reference(TIME_SOURCE_RECOVERED | reboot_state.civil_time_source,
+		reference.ref = reboot_state.epoch_time;
+		epoch_time_set_reference(TIME_SOURCE_RECOVERED | reboot_state.epoch_time_source,
 					 &reference);
 	} else {
 		LOG_INF("\t   Cause: Unknown");

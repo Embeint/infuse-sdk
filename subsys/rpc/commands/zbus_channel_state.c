@@ -35,7 +35,7 @@ struct net_buf *rpc_command_zbus_channel_state(struct net_buf *request)
 
 #ifdef CONFIG_ZBUS_CHANNEL_PUBLISH_STATS
 	/* Channel statistics */
-	rsp.publish_timestamp = civil_time_from_ticks(zbus_chan_publish_time(chan));
+	rsp.publish_timestamp = epoch_time_from_ticks(zbus_chan_publish_time(chan));
 	rsp.publish_count = zbus_chan_publish_count(chan);
 	rsp.publish_period_avg_ms = zbus_chan_avg_publish_period(chan);
 #endif /* CONFIG_ZBUS_CHANNEL_PUBLISH_STATS */

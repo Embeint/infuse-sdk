@@ -54,7 +54,7 @@ enum {
  * @param tdf_id TDF sensor ID
  * @param tdf_len Length of a single TDF
  * @param tdf_num Number of TDFs to add
- * @param time Civil time associated with the first TDF. 0 for no timestamp.
+ * @param time Epoch time associated with the first TDF. 0 for no timestamp.
  * @param period Time period between the TDF samples
  * @param data TDF data array
  *
@@ -72,7 +72,7 @@ int tdf_data_logger_log_array_dev(const struct device *dev, uint16_t tdf_id, uin
  * @param tdf_id TDF sensor ID
  * @param tdf_len Length of a single TDF
  * @param tdf_num Number of TDFs to add
- * @param time Civil time associated with the first TDF. 0 for no timestamp.
+ * @param time Epoch time associated with the first TDF. 0 for no timestamp.
  * @param period Time period between the TDF samples
  * @param data TDF data array
  */
@@ -85,7 +85,7 @@ void tdf_data_logger_log_array(uint8_t logger_mask, uint16_t tdf_id, uint8_t tdf
  * @param dev Data logger
  * @param tdf_id TDF sensor ID
  * @param tdf_len Length of a single TDF
- * @param time Civil time associated with the TDF. 0 for no timestamp.
+ * @param time Epoch time associated with the TDF. 0 for no timestamp.
  * @param data TDF data
  *
  * @retval 0 On success
@@ -103,7 +103,7 @@ static inline int tdf_data_logger_log_dev(const struct device *dev, uint16_t tdf
  * @param logger_mask Bitmask of loggers to write to
  * @param tdf_id TDF sensor ID
  * @param tdf_len Length of a single TDF
- * @param time Civil time associated with the TDF. 0 for no timestamp.
+ * @param time Epoch time associated with the TDF. 0 for no timestamp.
  * @param data TDF data
  */
 static inline void tdf_data_logger_log(uint8_t logger_mask, uint16_t tdf_id, uint8_t tdf_len,

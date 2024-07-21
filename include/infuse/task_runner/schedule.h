@@ -120,7 +120,7 @@ bool task_schedule_validate(const struct task_schedule *schedule);
  * @param schedule Task schedule to evaluate
  * @param state Previous state of the schedule
  * @param uptime Current system uptime in seconds
- * @param civil_time Current civil time (GPS time) in seconds
+ * @param epoch_time Current epoch time (GPS time) in seconds
  * @param battery Battery charge percent
  *
  * @retval true Task should be started
@@ -128,7 +128,7 @@ bool task_schedule_validate(const struct task_schedule *schedule);
  */
 bool task_schedule_should_start(const struct task_schedule *schedule,
 				struct task_schedule_state *state, uint32_t uptime,
-				uint32_t civil_time, uint8_t battery);
+				uint32_t epoch_time, uint8_t battery);
 
 /**
  * @brief Determine whether a task should be terminated
@@ -136,7 +136,7 @@ bool task_schedule_should_start(const struct task_schedule *schedule,
  * @param schedule Task schedule to evaluate
  * @param state Previous state of the schedule
  * @param uptime Current system uptime in seconds
- * @param civil_time Current civil time (GPS time) in seconds
+ * @param epoch_time Current epoch time (GPS time) in seconds
  * @param battery Battery charge percent
  *
  * @retval true Task should be terminated
@@ -144,7 +144,7 @@ bool task_schedule_should_start(const struct task_schedule *schedule,
  */
 bool task_schedule_should_terminate(const struct task_schedule *schedule,
 				    struct task_schedule_state *state, uint32_t uptime,
-				    uint32_t civil_time, uint8_t battery);
+				    uint32_t epoch_time, uint8_t battery);
 
 /**
  * @}

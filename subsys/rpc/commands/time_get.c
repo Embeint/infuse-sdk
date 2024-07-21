@@ -19,9 +19,9 @@ LOG_MODULE_DECLARE(rpc_server);
 struct net_buf *rpc_command_time_get(struct net_buf *request)
 {
 	struct rpc_time_get_response rsp = {
-		.time_source = civil_time_get_source(),
-		.sync_age = civil_time_reference_age(),
-		.civil_time = civil_time_now(),
+		.time_source = epoch_time_get_source(),
+		.sync_age = epoch_time_reference_age(),
+		.epoch_time = epoch_time_now(),
 	};
 
 	/* Allocate and return the response */

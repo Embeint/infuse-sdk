@@ -67,9 +67,9 @@ void environmental_task_fn(struct k_work *work)
 
 	/* Log output TDFs */
 	task_schedule_tdf_log(sch, TASK_ENVIRONMENTAL_LOG_TPH, TDF_AMBIENT_TEMP_PRES_HUM,
-			      sizeof(tdf_tph), civil_time_now(), &tdf_tph);
+			      sizeof(tdf_tph), epoch_time_now(), &tdf_tph);
 	task_schedule_tdf_log(sch, TASK_ENVIRONMENTAL_LOG_T, TDF_AMBIENT_TEMPERATURE,
-			      sizeof(tdf_temp), civil_time_now(), &tdf_temp);
+			      sizeof(tdf_temp), epoch_time_now(), &tdf_temp);
 
 	/* Publish new data reading */
 	zbus_chan_pub(ZBUS_CHAN, &tdf_tph, K_FOREVER);

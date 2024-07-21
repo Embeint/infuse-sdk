@@ -46,7 +46,7 @@ void task_runner_init(const struct task_schedule *schedules,
  * @warning MUST be called once a second
  *
  * @param uptime Current device uptime in seconds
- * @param gps_time Current civil time (GPS time) in seconds
+ * @param gps_time Current epoch time (GPS time) in seconds
  * @param battery_charge Battery charge percentage
  */
 void task_runner_iterate(uint32_t uptime, uint32_t gps_time, uint8_t battery_charge);

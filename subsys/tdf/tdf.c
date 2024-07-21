@@ -129,8 +129,8 @@ int tdf_add(struct tdf_buffer_state *state, uint16_t tdf_id, uint8_t tdf_len, ui
 	case TDF_TIMESTAMP_ABSOLUTE:
 		struct tdf_time *t = net_buf_simple_add(&state->buf, sizeof(struct tdf_time));
 
-		t->seconds = civil_time_seconds(time);
-		t->subseconds = civil_time_subseconds(time);
+		t->seconds = epoch_time_seconds(time);
+		t->subseconds = epoch_time_subseconds(time);
 		state->time = time;
 		break;
 	default:
@@ -195,7 +195,7 @@ int tdf_parse(struct tdf_buffer_state *state, struct tdf_parsed *parsed)
 	case TDF_TIMESTAMP_ABSOLUTE:
 		struct tdf_time *t = net_buf_simple_pull_mem(&state->buf, sizeof(struct tdf_time));
 
-		state->time = civil_time_from(t->seconds, t->subseconds);
+		state->time = epoch_time_from(t->seconds, t->subseconds);
 		parsed->time = state->time;
 		break;
 	case TDF_TIMESTAMP_RELATIVE:

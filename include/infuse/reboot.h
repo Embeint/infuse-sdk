@@ -56,10 +56,10 @@ struct infuse_reboot_state {
 	 * Do not modify the order.
 	 */
 
-	/* The source of civil time */
-	uint8_t civil_time_source;
-	/* The civil time at the reboot */
-	uint64_t civil_time;
+	/* The source of epoch time */
+	uint8_t epoch_time_source;
+	/* The epoch time at the reboot */
+	uint64_t epoch_time;
 	/* The device uptime at the reboot */
 	uint32_t uptime;
 	/* Reason for the reboot */

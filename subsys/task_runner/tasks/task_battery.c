@@ -60,7 +60,7 @@ void battery_task_fn(struct k_work *work)
 
 	/* Log output TDF */
 	task_schedule_tdf_log(sch, TASK_BATTERY_LOG_COMPLETE, TDF_BATTERY_STATE,
-			      sizeof(tdf_battery), civil_time_now(), &tdf_battery);
+			      sizeof(tdf_battery), epoch_time_now(), &tdf_battery);
 
 	/* Publish new data reading */
 	zbus_chan_pub(ZBUS_CHAN, &tdf_battery, K_FOREVER);

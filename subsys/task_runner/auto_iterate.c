@@ -23,7 +23,7 @@ INFUSE_ZBUS_CHAN_DECLARE(INFUSE_ZBUS_CHAN_BATTERY);
 
 static void iterate_worker(struct k_work *work)
 {
-	uint32_t gps_time = civil_time_seconds(civil_time_now());
+	uint32_t gps_time = epoch_time_seconds(epoch_time_now());
 	uint32_t next_iter = k_uptime_seconds() + 1;
 	uint8_t charge = 0; /* Default charge is 0% until measured */
 
