@@ -8,14 +8,21 @@
 
 #include <zephyr/logging/log.h>
 #include <zephyr/pm/device_runtime.h>
+#include <zephyr/zbus/zbus.h>
 
 #include <infuse/task_runner/task.h>
 #include <infuse/task_runner/tasks/imu.h>
 #include <infuse/tdf/definitions.h>
 #include <infuse/time/civil.h>
 #include <infuse/drivers/imu.h>
+#include <infuse/zbus/channels.h>
 
-IMU_SAMPLE_ARRAY_CREATE(imu_sample_buffer, CONFIG_TASK_RUNNER_TASK_IMU_MAX_FIFO);
+IMU_SAMPLE_ARRAY_TYPE_DEFINE(task_imu_sample_container, CONFIG_TASK_RUNNER_TASK_IMU_MAX_FIFO);
+
+ZBUS_CHAN_ID_DEFINE(INFUSE_ZBUS_NAME(INFUSE_ZBUS_CHAN_IMU), INFUSE_ZBUS_CHAN_IMU,
+		    struct task_imu_sample_container, NULL, NULL, ZBUS_OBSERVERS_EMPTY,
+		    ZBUS_MSG_INIT(0));
+#define ZBUS_CHAN INFUSE_ZBUS_CHAN_GET(INFUSE_ZBUS_CHAN_IMU)
 
 LOG_MODULE_REGISTER(task_imu, CONFIG_TASK_IMU_LOG_LEVEL);
 
@@ -65,42 +72,40 @@ static void imu_sample_handler(const struct task_schedule *schedule,
 			       const struct logging_state *log_state,
 			       const struct imu_sample_array *samples)
 {
-	struct imu_sample *last_acc, *last_gyr;
+	const struct imu_sample *last_acc, *last_gyr;
 	uint64_t civil_time;
 
 	/* Print last sample from each array */
-	last_acc = &imu_sample_buffer->samples[imu_sample_buffer->accelerometer.offset +
-					       imu_sample_buffer->accelerometer.num - 1];
-	last_gyr = &imu_sample_buffer->samples[imu_sample_buffer->gyroscope.offset +
-					       imu_sample_buffer->gyroscope.num - 1];
-	if (imu_sample_buffer->accelerometer.num) {
-		LOG_DBG("ACC [%3d] %6d %6d %6d", imu_sample_buffer->accelerometer.num - 1,
-			last_acc->x, last_acc->y, last_acc->z);
+	last_acc =
+		&samples->samples[samples->accelerometer.offset + samples->accelerometer.num - 1];
+	last_gyr = &samples->samples[samples->gyroscope.offset + samples->gyroscope.num - 1];
+	if (samples->accelerometer.num) {
+		LOG_DBG("ACC [%3d] %6d %6d %6d", samples->accelerometer.num - 1, last_acc->x,
+			last_acc->y, last_acc->z);
 	}
-	if (imu_sample_buffer->gyroscope.num) {
-		LOG_DBG("GYR [%3d] %6d %6d %6d", imu_sample_buffer->gyroscope.num - 1, last_gyr->x,
+	if (samples->gyroscope.num) {
+		LOG_DBG("GYR [%3d] %6d %6d %6d", samples->gyroscope.num - 1, last_gyr->x,
 			last_gyr->y, last_gyr->z);
 	}
 
 	/* Log data as TDFs */
-	if (imu_sample_buffer->accelerometer.num) {
-		civil_time =
-			civil_time_from_ticks(imu_sample_buffer->accelerometer.timestamp_ticks);
+	if (samples->accelerometer.num) {
+		civil_time = civil_time_from_ticks(samples->accelerometer.timestamp_ticks);
 
 		task_schedule_tdf_log_array(
 			schedule, TASK_IMU_LOG_ACC, log_state->acc_tdf, sizeof(struct imu_sample),
-			imu_sample_buffer->accelerometer.num, civil_time,
-			civil_period_from_ticks(imu_sample_buffer->accelerometer.period_ticks),
-			&imu_sample_buffer->samples[imu_sample_buffer->accelerometer.offset]);
+			samples->accelerometer.num, civil_time,
+			civil_period_from_ticks(samples->accelerometer.period_ticks),
+			&samples->samples[samples->accelerometer.offset]);
 	}
-	if (imu_sample_buffer->gyroscope.num) {
-		civil_time = civil_time_from_ticks(imu_sample_buffer->gyroscope.timestamp_ticks);
+	if (samples->gyroscope.num) {
+		civil_time = civil_time_from_ticks(samples->gyroscope.timestamp_ticks);
 
 		task_schedule_tdf_log_array(
 			schedule, TASK_IMU_LOG_GYR, log_state->gyr_tdf, sizeof(struct imu_sample),
-			imu_sample_buffer->gyroscope.num, civil_time,
-			civil_period_from_ticks(imu_sample_buffer->gyroscope.period_ticks),
-			&imu_sample_buffer->samples[imu_sample_buffer->gyroscope.offset]);
+			samples->gyroscope.num, civil_time,
+			civil_period_from_ticks(samples->gyroscope.period_ticks),
+			&samples->samples[samples->gyroscope.offset]);
 	}
 }
 
@@ -163,15 +168,24 @@ void imu_task_fn(const struct task_schedule *schedule, struct k_poll_signal *ter
 			break;
 		}
 
+		/* Claim the channel so we can read directly into the memory buffer */
+		zbus_chan_claim(ZBUS_CHAN, K_FOREVER);
+
 		/* Read IMU samples */
-		rc = imu_data_read(imu, imu_sample_buffer, CONFIG_TASK_RUNNER_TASK_IMU_MAX_FIFO);
+		rc = imu_data_read(imu, ZBUS_CHAN->message, CONFIG_TASK_RUNNER_TASK_IMU_MAX_FIFO);
 		if (rc < 0) {
 			LOG_ERR("Terminating due to %s", "data read failure");
+			zbus_chan_finish(ZBUS_CHAN);
 			break;
 		}
 
 		/* Handle the samples */
-		imu_sample_handler(schedule, &log_state, imu_sample_buffer);
+		imu_sample_handler(schedule, &log_state, ZBUS_CHAN->message);
+
+		/* Update metadata, finish claim, notify subscribers */
+		zbus_chan_update_publish_metadata(ZBUS_CHAN);
+		zbus_chan_finish(ZBUS_CHAN);
+		zbus_chan_notify(ZBUS_CHAN, K_FOREVER);
 
 		/* Check for termination conditions */
 		buffer_count++;
