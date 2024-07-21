@@ -9,7 +9,7 @@
 #include <zephyr/kernel.h>
 
 #include <infuse/tdf/tdf.h>
-#include <infuse/time/civil.h>
+#include <infuse/time/epoch.h>
 
 #define INT24_MAX 0x7FFFFF
 #define INT24_MIN ((-INT24_MAX) - 1)

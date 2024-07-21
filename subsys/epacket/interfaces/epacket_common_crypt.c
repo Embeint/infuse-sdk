@@ -18,7 +18,7 @@
 
 #include <infuse/identifiers.h>
 #include <infuse/security.h>
-#include <infuse/time/civil.h>
+#include <infuse/time/epoch.h>
 #include <infuse/epacket/packet.h>
 #include <infuse/epacket/keys.h>
 #include <infuse/epacket/interface/common.h>

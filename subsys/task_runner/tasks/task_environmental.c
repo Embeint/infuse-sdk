@@ -14,7 +14,7 @@
 #include <infuse/task_runner/task.h>
 #include <infuse/task_runner/tasks/environmental.h>
 #include <infuse/tdf/definitions.h>
-#include <infuse/time/civil.h>
+#include <infuse/time/epoch.h>
 #include <infuse/zbus/channels.h>
 
 LOG_MODULE_REGISTER(task_env, CONFIG_TASK_ENVIRONMENTAL_LOG_LEVEL);

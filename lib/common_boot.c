@@ -17,7 +17,7 @@
 #include <infuse/fs/kv_store.h>
 #include <infuse/fs/kv_types.h>
 #include <infuse/reboot.h>
-#include <infuse/time/civil.h>
+#include <infuse/time/epoch.h>
 #include <infuse/security.h>
 
 LOG_MODULE_REGISTER(infuse, CONFIG_INFUSE_COMMON_LOG_LEVEL);

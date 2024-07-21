@@ -13,7 +13,7 @@
 #include <infuse/task_runner/task.h>
 #include <infuse/task_runner/tasks/imu.h>
 #include <infuse/tdf/definitions.h>
-#include <infuse/time/civil.h>
+#include <infuse/time/epoch.h>
 #include <infuse/drivers/imu.h>
 #include <infuse/zbus/channels.h>
 

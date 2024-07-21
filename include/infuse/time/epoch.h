@@ -1,20 +1,20 @@
 /**
  * @file
- * @brief Infuse-IoT civil time based on the GPS epoch
+ * @brief Infuse-IoT time based on the GPS epoch
  * @copyright 2024 Embeint Inc
  * @author Jordan Yates <jordan@embeint.com>
  *
  * SPDX-License-Identifier: LicenseRef-Embeint
  *
  * @details
- * Infuse-IoT uses the GPS epoch for local civil timekeeping.
+ * Infuse-IoT uses the GPS epoch for local timekeeping.
  * For simplicity, seconds and subseconds are encoded into a single uint64_t.
  * The top 48 bits are the number of seconds elapsed since the GPS epoch (00:00:00 06/01/1980 UTC).
  * The bottom 16 bits are in units of (1/65536) seconds.
  */
 
-#ifndef INFUSE_SDK_INCLUDE_INFUSE_TIME_CIVIL_H_
-#define INFUSE_SDK_INCLUDE_INFUSE_TIME_CIVIL_H_
+#ifndef INFUSE_SDK_INCLUDE_INFUSE_TIME_EPOCH_H_
+#define INFUSE_SDK_INCLUDE_INFUSE_TIME_EPOCH_H_
 
 #include <stdint.h>
 #include <stdbool.h>
@@ -294,4 +294,4 @@ uint32_t civil_time_reference_age(void);
 }
 #endif
 
-#endif /* INFUSE_SDK_INCLUDE_INFUSE_TIME_CIVIL_H_ */
+#endif /* INFUSE_SDK_INCLUDE_INFUSE_TIME_EPOCH_H_ */

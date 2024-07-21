@@ -9,7 +9,7 @@
 #include <zephyr/sys/timeutil.h>
 #include <zephyr/logging/log.h>
 
-#include <infuse/time/civil.h>
+#include <infuse/time/epoch.h>
 
 #define JAN_01_01_2020 (1261872018ULL * INFUSE_CIVIL_TIME_TICKS_PER_SEC)
 

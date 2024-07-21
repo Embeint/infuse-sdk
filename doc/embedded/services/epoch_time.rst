@@ -1,6 +1,6 @@
 .. _civil_time_api:
 
-Civil Time
+Epoch Time
 ##########
 
 Until external knowledge is provided, the only timestamp available to an
@@ -11,7 +11,7 @@ are usually defined against a fixed `UTC`_ instant.
 
 The most well known time epoch is the `Unix time`_ epoch, which is defined as
 the number of non-leap seconds that have elapsed since
-``00:00:00 1970-01-01 UTC``. Unfortunately unix time is not monotonic or
+``00:00:00 1970-01-01 UTC``. Unfortunately unix time is not monotonic or a
 continuous time source, which means that times can both decrease in value and
 jump backwards or forward in time.
 
@@ -22,10 +22,10 @@ time epoch begins at ``00:00:00 1980-01-06 UTC``.
 Implementation Details
 **********************
 
-The Infuse-IoT civil time functionality is built upon the `Zephyr timeutil`_
+The Infuse-IoT epoch time functionality is built upon the `Zephyr timeutil`_
 library.
 
-To obtain sub-second time resolution, the civil time API encodes the current
+To obtain sub-second time resolution, the epoch time API encodes the current
 time into a ``uint64_t``. The top 48 bits are the current GPS seconds count.
 The bottom 16 bits encode the sub-second time portion at a resolution of
 ``1/65536`` seconds. This maps cleanly onto the standard 32768 Hz low-frequency

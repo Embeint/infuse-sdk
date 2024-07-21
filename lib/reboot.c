@@ -18,7 +18,7 @@
 #include <zephyr/logging/log_ctrl.h>
 
 #include <infuse/drivers/watchdog.h>
-#include <infuse/time/civil.h>
+#include <infuse/time/epoch.h>
 #include <infuse/reboot.h>
 
 static const struct device *retention = DEVICE_DT_GET(DT_CHOSEN(infuse_reboot_state));

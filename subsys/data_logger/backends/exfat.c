@@ -15,7 +15,7 @@
 #include <zephyr/storage/disk_access.h>
 
 #include <infuse/data_logger/logger.h>
-#include <infuse/time/civil.h>
+#include <infuse/time/epoch.h>
 
 #include <ff.h>
 

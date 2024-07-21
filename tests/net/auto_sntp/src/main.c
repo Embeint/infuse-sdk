@@ -12,7 +12,7 @@
 #include <zephyr/net/net_if.h>
 #include <zephyr/net/conn_mgr_monitor.h>
 
-#include <infuse/time/civil.h>
+#include <infuse/time/epoch.h>
 #include <infuse/fs/kv_store.h>
 #include <infuse/fs/kv_types.h>
 
