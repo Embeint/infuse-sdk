@@ -62,7 +62,8 @@ enum {
  * @retval -errno Error code from @a tdf_add or @a tdf_data_logger_flush on error
  */
 int tdf_data_logger_log_array_dev(const struct device *dev, uint16_t tdf_id, uint8_t tdf_len,
-				  uint8_t tdf_num, uint64_t time, uint16_t period, void *data);
+				  uint8_t tdf_num, uint64_t time, uint16_t period,
+				  const void *data);
 
 /**
  * @brief Add multiple TDFs to multiple data loggers
@@ -76,7 +77,7 @@ int tdf_data_logger_log_array_dev(const struct device *dev, uint16_t tdf_id, uin
  * @param data TDF data array
  */
 void tdf_data_logger_log_array(uint8_t logger_mask, uint16_t tdf_id, uint8_t tdf_len,
-			       uint8_t tdf_num, uint64_t time, uint16_t period, void *data);
+			       uint8_t tdf_num, uint64_t time, uint16_t period, const void *data);
 
 /**
  * @brief Add a single TDF to a data logger
@@ -91,7 +92,7 @@ void tdf_data_logger_log_array(uint8_t logger_mask, uint16_t tdf_id, uint8_t tdf
  * @retval -errno Error code from @a tdf_add or @a tdf_data_logger_flush on error
  */
 static inline int tdf_data_logger_log_dev(const struct device *dev, uint16_t tdf_id,
-					  uint8_t tdf_len, uint64_t time, void *data)
+					  uint8_t tdf_len, uint64_t time, const void *data)
 {
 	return tdf_data_logger_log_array_dev(dev, tdf_id, tdf_len, 1, time, 0, data);
 }
@@ -106,7 +107,7 @@ static inline int tdf_data_logger_log_dev(const struct device *dev, uint16_t tdf
  * @param data TDF data
  */
 static inline void tdf_data_logger_log(uint8_t logger_mask, uint16_t tdf_id, uint8_t tdf_len,
-				       uint64_t time, void *data)
+				       uint64_t time, const void *data)
 {
 	tdf_data_logger_log_array(logger_mask, tdf_id, tdf_len, 1, time, 0, data);
 }
