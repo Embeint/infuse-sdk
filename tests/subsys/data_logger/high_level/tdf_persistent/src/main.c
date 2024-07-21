@@ -55,7 +55,7 @@ ZTEST(tdf_data_logger_flash, test_multi)
 	const struct device *tdf_logger = DEVICE_DT_GET(DT_NODELABEL(tdf_logger_flash));
 	const struct device *data_logger = DEVICE_DT_GET(DT_NODELABEL(data_logger_flash));
 	struct data_logger_state state;
-	uint8_t tdf_data[192];
+	uint8_t tdf_data[192] = {0};
 	int rc;
 
 	/* 156 bytes (6 overhead, 25 * 6 data) */
@@ -81,7 +81,7 @@ ZTEST(tdf_data_logger_flash, test_multi)
 
 static void log_400(const struct device *tdf_logger)
 {
-	uint8_t tdf_data[100];
+	uint8_t tdf_data[100] = {0};
 	int rc;
 
 	for (int i = 0; i < 4; i++) {
