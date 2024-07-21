@@ -12,7 +12,7 @@
 #include <infuse/fs/kv_types.h>
 #include <infuse/reboot.h>
 #include <infuse/common_boot.h>
-#include <infuse/time/civil.h>
+#include <infuse/time/epoch.h>
 
 static void null_dereference(void)
 {

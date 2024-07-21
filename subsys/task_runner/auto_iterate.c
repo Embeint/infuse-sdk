@@ -9,7 +9,7 @@
 #include <zephyr/kernel.h>
 #include <zephyr/zbus/zbus.h>
 
-#include <infuse/time/civil.h>
+#include <infuse/time/epoch.h>
 #include <infuse/task_runner/runner.h>
 #include <infuse/tdf/definitions.h>
 #include <infuse/zbus/channels.h>

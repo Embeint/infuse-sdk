@@ -11,7 +11,7 @@
 #include <zephyr/zbus/zbus.h>
 
 #include <infuse/rpc/types.h>
-#include <infuse/time/civil.h>
+#include <infuse/time/epoch.h>
 
 #include "../server.h"
 

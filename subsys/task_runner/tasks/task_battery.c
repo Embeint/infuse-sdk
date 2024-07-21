@@ -14,7 +14,7 @@
 #include <infuse/task_runner/task.h>
 #include <infuse/task_runner/tasks/battery.h>
 #include <infuse/tdf/definitions.h>
-#include <infuse/time/civil.h>
+#include <infuse/time/epoch.h>
 #include <infuse/zbus/channels.h>
 
 LOG_MODULE_REGISTER(task_bat, CONFIG_TASK_BATTERY_LOG_LEVEL);

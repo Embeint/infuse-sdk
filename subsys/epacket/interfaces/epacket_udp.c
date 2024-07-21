@@ -16,7 +16,7 @@
 #include <zephyr/random/random.h>
 
 #include <infuse/identifiers.h>
-#include <infuse/time/civil.h>
+#include <infuse/time/epoch.h>
 #include <infuse/epacket/interface.h>
 #include <infuse/epacket/packet.h>
 #include <infuse/epacket/interface/epacket_udp.h>

@@ -12,7 +12,7 @@
 #include <zephyr/net/net_mgmt.h>
 #include <zephyr/net/conn_mgr_connectivity.h>
 
-#include <infuse/time/civil.h>
+#include <infuse/time/epoch.h>
 #include <infuse/tdf/definitions.h>
 #include <infuse/data_logger/high_level/tdf.h>
 #include <infuse/drivers/watchdog.h>

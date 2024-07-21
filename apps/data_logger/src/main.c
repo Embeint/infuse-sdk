@@ -13,7 +13,7 @@
 #include <zephyr/net/conn_mgr_connectivity.h>
 
 #include <infuse/drivers/watchdog.h>
-#include <infuse/time/civil.h>
+#include <infuse/time/epoch.h>
 #include <infuse/fs/kv_store.h>
 #include <infuse/fs/kv_types.h>
 #include <infuse/epacket/interface.h>

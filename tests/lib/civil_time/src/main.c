@@ -11,7 +11,7 @@
 #include <zephyr/ztest.h>
 #include <zephyr/kernel.h>
 
-#include <infuse/time/civil.h>
+#include <infuse/time/epoch.h>
 
 ZTEST(civil_time, test_time_source_valid)
 {

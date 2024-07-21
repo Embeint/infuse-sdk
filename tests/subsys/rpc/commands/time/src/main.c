@@ -14,7 +14,7 @@
 #include <infuse/rpc/types.h>
 #include <infuse/epacket/packet.h>
 #include <infuse/epacket/interface/epacket_dummy.h>
-#include <infuse/time/civil.h>
+#include <infuse/time/epoch.h>
 
 static void send_time_set_command(uint32_t request_id, uint64_t time)
 {

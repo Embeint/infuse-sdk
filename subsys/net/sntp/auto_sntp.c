@@ -13,7 +13,7 @@
 #include <zephyr/net/net_mgmt.h>
 #include <zephyr/net/sntp.h>
 
-#include <infuse/time/civil.h>
+#include <infuse/time/epoch.h>
 #include <infuse/fs/kv_store.h>
 #include <infuse/fs/kv_types.h>
 

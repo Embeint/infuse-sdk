@@ -14,7 +14,7 @@
 #include <zephyr/sys/byteorder.h>
 #include <zephyr/logging/log.h>
 
-#include <infuse/time/civil.h>
+#include <infuse/time/epoch.h>
 #include <infuse/epacket/packet.h>
 #include <infuse/epacket/keys.h>
 #include <infuse/epacket/interface/epacket_serial.h>

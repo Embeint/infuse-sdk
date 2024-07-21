@@ -16,7 +16,7 @@
 #include <infuse/fs/kv_types.h>
 #include <infuse/tdf/tdf.h>
 #include <infuse/tdf/definitions.h>
-#include <infuse/time/civil.h>
+#include <infuse/time/epoch.h>
 #include <infuse/zbus/channels.h>
 
 #include <infuse/task_runner/tasks/tdf_logger.h>

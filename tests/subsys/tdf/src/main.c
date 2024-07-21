@@ -13,7 +13,7 @@
 #include <zephyr/random/random.h>
 
 #include <infuse/tdf/tdf.h>
-#include <infuse/time/civil.h>
+#include <infuse/time/epoch.h>
 
 struct tdf_test_case {
 	struct tdf_parsed p;
