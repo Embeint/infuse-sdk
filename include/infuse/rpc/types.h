@@ -296,8 +296,8 @@ struct rpc_time_get_response {
 	struct infuse_rpc_rsp_header header;
 	/* Source of the time knowledge */
 	uint8_t time_source;
-	/* Current civil time on the device */
-	uint64_t civil_time;
+	/* Current epoch time on the device */
+	uint64_t epoch_time;
 	/* How old the time knowledge is (seconds) */
 	uint32_t sync_age;
 } __packed;
@@ -305,8 +305,8 @@ struct rpc_time_get_response {
 /* Set the current time of the device */
 struct rpc_time_set_request {
 	struct infuse_rpc_req_header header;
-	/* Current civil time on the device */
-	uint64_t civil_time;
+	/* Current epoch time on the device */
+	uint64_t epoch_time;
 } __packed;
 
 struct rpc_time_set_response {
@@ -369,7 +369,7 @@ struct rpc_zbus_channel_state_request {
 
 struct rpc_zbus_channel_state_response {
 	struct infuse_rpc_rsp_header header;
-	/* Civil time of last data publish */
+	/* Epoch time of last data publish */
 	uint64_t publish_timestamp;
 	/* Number of times data has been published to channel */
 	uint32_t publish_count;

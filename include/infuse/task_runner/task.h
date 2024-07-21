@@ -256,7 +256,7 @@ static inline bool task_schedule_tdf_requested(const struct task_schedule *sched
  * @param tdf_id TDF sensor ID
  * @param tdf_len Length of a single TDF
  * @param tdf_num Number of TDFs to log
- * @param time Civil time associated with the first TDF. 0 for no timestamp.
+ * @param time Epoch time associated with the first TDF. 0 for no timestamp.
  * @param period Time period between the TDF samples
  * @param data TDF data array
  */
@@ -283,7 +283,7 @@ static inline void task_schedule_tdf_log_array(const struct task_schedule *sched
  * @param tdf_id TDF sensor ID
  * @param tdf_len Length of a single TDF
  * @param tdf_num Number of TDFs to log
- * @param time Civil time associated with the first TDF. 0 for no timestamp.
+ * @param time Epoch time associated with the first TDF. 0 for no timestamp.
  * @param period Time period between the TDF samples
  * @param data TDF data array
  */

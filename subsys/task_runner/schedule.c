@@ -33,13 +33,13 @@ bool task_schedule_validate(const struct task_schedule *schedule)
 
 bool task_schedule_should_start(const struct task_schedule *schedule,
 				struct task_schedule_state *state, uint32_t uptime,
-				uint32_t civil_time, uint8_t battery_soc)
+				uint32_t epoch_time, uint8_t battery_soc)
 {
 	bool periodicity = true;
 	bool battery = true;
 
 	if (schedule->periodicity_type == TASK_PERIODICITY_FIXED) {
-		periodicity = (civil_time % schedule->periodicity.fixed.period_s) == 0;
+		periodicity = (epoch_time % schedule->periodicity.fixed.period_s) == 0;
 	}
 	if (schedule->periodicity_type == TASK_PERIODICITY_LOCKOUT) {
 		periodicity = (uptime - state->last_run) >= schedule->periodicity.lockout.lockout_s;
@@ -51,7 +51,7 @@ bool task_schedule_should_start(const struct task_schedule *schedule,
 
 bool task_schedule_should_terminate(const struct task_schedule *schedule,
 				    struct task_schedule_state *state, uint32_t uptime,
-				    uint32_t civil_time, uint8_t battery_soc)
+				    uint32_t epoch_time, uint8_t battery_soc)
 {
 	bool periodicity = false;
 	bool battery = false;

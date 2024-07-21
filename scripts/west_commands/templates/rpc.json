@@ -131,7 +131,7 @@
             "request_params": [],
             "response_params": [
                 {"name": "time_source", "type": "uint8_t", "description": "Source of the time knowledge"},
-                {"name": "civil_time", "type": "uint64_t", "description": "Current civil time on the device"},
+                {"name": "epoch_time", "type": "uint64_t", "description": "Current epoch time on the device"},
                 {"name": "sync_age", "type": "uint32_t", "description": "How old the time knowledge is (seconds)"}
             ]
         },
@@ -142,7 +142,7 @@
             "default": "y if INFUSE_SDK",
             "default_auth": "EPACKET_AUTH_DEVICE",
             "request_params": [
-                {"name": "civil_time", "type": "uint64_t", "description": "Current civil time on the device"}
+                {"name": "epoch_time", "type": "uint64_t", "description": "Current epoch time on the device"}
 
             ],
             "response_params": []
@@ -200,7 +200,7 @@
                 {"name": "channel_id", "type": "uint32_t", "description": "Channel ID to query"}
             ],
             "response_params": [
-                {"name": "publish_timestamp", "type": "uint64_t", "description": "Civil time of last data publish"},
+                {"name": "publish_timestamp", "type": "uint64_t", "description": "Epoch time of last data publish"},
                 {"name": "publish_count", "type": "uint32_t", "description": "Number of times data has been published to channel"},
                 {"name": "publish_period_avg_ms", "type": "uint32_t", "description": "Average time between publishing"},
                 {"name": "data", "type": "uint8_t", "num": 0, "description": "Channel data"}

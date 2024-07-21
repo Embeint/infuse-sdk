@@ -106,7 +106,7 @@ void task_tdf_logger_fn(struct k_work *work)
 	announce = args->tdfs & TASK_TDF_LOGGER_LOG_ANNOUNCE;
 	battery = args->tdfs & TASK_TDF_LOGGER_LOG_BATTERY;
 	ambient_env = args->tdfs & TASK_TDF_LOGGER_LOG_AMBIENT_ENV;
-	log_timestamp = (args->flags & TASK_TDF_LOGGER_FLAGS_NO_FLUSH) ? civil_time_now() : 0;
+	log_timestamp = (args->flags & TASK_TDF_LOGGER_FLAGS_NO_FLUSH) ? epoch_time_now() : 0;
 
 	LOG_INF("Ann: %d Bat: %d Env: %d", announce, battery, ambient_env);
 	if (announce) {

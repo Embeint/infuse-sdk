@@ -785,7 +785,7 @@ ZTEST(tdf, test_parse_missing_array_info)
 
 static bool test_data_init(const void *global_state)
 {
-	base_time = civil_time_from(1000000, 0);
+	base_time = epoch_time_from(1000000, 0);
 	sys_rand_get(input_buffer, sizeof(input_buffer));
 	return true;
 }

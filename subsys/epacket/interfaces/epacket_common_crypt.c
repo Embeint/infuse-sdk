@@ -30,7 +30,7 @@ LOG_MODULE_DECLARE(epacket);
 int epacket_versioned_v0_encrypt(struct net_buf *buf, uint8_t interface_key)
 {
 	struct epacket_tx_metadata *meta = net_buf_user_data(buf);
-	uint64_t civil_time = civil_time_seconds(civil_time_now());
+	uint64_t epoch_time = epoch_time_seconds(epoch_time_now());
 	uint64_t device_id = infuse_device_id();
 	struct epacket_v0_versioned_frame_format *frame;
 	uint16_t buf_len = buf->len;
@@ -57,7 +57,7 @@ int epacket_versioned_v0_encrypt(struct net_buf *buf, uint8_t interface_key)
 	}
 
 	/* Get the PSA key ID for packet */
-	psa_key_id = epacket_key_id_get(epacket_key_id, civil_time / SECONDS_PER_DAY);
+	psa_key_id = epacket_key_id_get(epacket_key_id, epoch_time / SECONDS_PER_DAY);
 	if (psa_key_id == 0) {
 		return -1;
 	}
@@ -75,7 +75,7 @@ int epacket_versioned_v0_encrypt(struct net_buf *buf, uint8_t interface_key)
 		.nonce =
 			{
 				.device_id_lower = device_id & UINT32_MAX,
-				.gps_time = civil_time,
+				.gps_time = epoch_time,
 				.sequence = sequence_num++,
 				.entropy = sys_rand32_get(),
 			},
@@ -189,7 +189,7 @@ error:
 int epacket_unversioned_v0_encrypt(struct net_buf *buf, uint8_t interface_key)
 {
 	struct epacket_tx_metadata *meta = net_buf_user_data(buf);
-	uint64_t civil_time = civil_time_seconds(civil_time_now());
+	uint64_t epoch_time = epoch_time_seconds(epoch_time_now());
 	uint64_t device_id = infuse_device_id();
 	struct epacket_v0_unversioned_frame_format *frame;
 	uint16_t buf_len = buf->len;
@@ -218,7 +218,7 @@ int epacket_unversioned_v0_encrypt(struct net_buf *buf, uint8_t interface_key)
 	}
 
 	/* Get the PSA key ID for packet */
-	psa_key_id = epacket_key_id_get(epacket_key_id, civil_time / SECONDS_PER_DAY);
+	psa_key_id = epacket_key_id_get(epacket_key_id, epoch_time / SECONDS_PER_DAY);
 	if (psa_key_id == 0) {
 		return -1;
 	}
@@ -235,7 +235,7 @@ int epacket_unversioned_v0_encrypt(struct net_buf *buf, uint8_t interface_key)
 		.nonce =
 			{
 				.device_id_lower = device_id & UINT32_MAX,
-				.gps_time = civil_time,
+				.gps_time = epoch_time,
 				.sequence = sequence_num++,
 				.entropy = sys_rand32_get(),
 			},

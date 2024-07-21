@@ -23,7 +23,7 @@ ZTEST(infuse_reboot, test_reboot)
 	uintptr_t state_addr = DT_REG_ADDR(DT_GPARENT(DT_CHOSEN(infuse_reboot_state)));
 	struct timeutil_sync_instant time_reference;
 	struct infuse_reboot_state reboot_state;
-	uint64_t time_2025 = civil_time_from_gps(2347, 259218, 0);
+	uint64_t time_2025 = epoch_time_from_gps(2347, 259218, 0);
 	k_timeout_t feed_period;
 	int wdog_channel;
 	ssize_t rc;
@@ -53,7 +53,7 @@ ZTEST(infuse_reboot, test_reboot)
 		/* Set the time reference just before the reboot */
 		time_reference.local = k_uptime_ticks();
 		time_reference.ref = time_2025;
-		civil_time_set_reference(TIME_SOURCE_NTP, &time_reference);
+		epoch_time_set_reference(TIME_SOURCE_NTP, &time_reference);
 		/* Sleep again */
 		k_sleep(K_SECONDS(1));
 		zassert_unreachable("Unexpected reboot count");
@@ -67,14 +67,14 @@ ZTEST(infuse_reboot, test_reboot)
 		/* Uptime should have been updated at point of reboot */
 		zassert_true(reboot_state.uptime >= 3);
 		/* Time reference should be valid and about half a second after the reference */
-		zassert_equal(TIME_SOURCE_NTP, reboot_state.civil_time_source);
-		zassert_within(reboot_state.civil_time,
-			       time_2025 + INFUSE_CIVIL_TIME_TICKS_PER_SEC / 2,
-			       INFUSE_CIVIL_TIME_TICKS_PER_SEC / 10);
+		zassert_equal(TIME_SOURCE_NTP, reboot_state.epoch_time_source);
+		zassert_within(reboot_state.epoch_time,
+			       time_2025 + INFUSE_EPOCH_TIME_TICKS_PER_SEC / 2,
+			       INFUSE_EPOCH_TIME_TICKS_PER_SEC / 10);
 		/* Set the time reference 2 seconds before the reboot */
 		time_reference.local = k_uptime_ticks();
 		time_reference.ref = time_2025;
-		civil_time_set_reference(TIME_SOURCE_NTP, &time_reference);
+		epoch_time_set_reference(TIME_SOURCE_NTP, &time_reference);
 		/* Reboot through watchdog timeout */
 		wdog_channel = infuse_watchdog_install(&feed_period);
 		zassert_equal(0, wdog_channel);
@@ -89,10 +89,10 @@ ZTEST(infuse_reboot, test_reboot)
 		zassert_equal(0, rc);
 		zassert_equal(INFUSE_REBOOT_WATCHDOG, reboot_state.reason);
 		/* Time reference should be valid and about 2 seconds after the reference */
-		zassert_equal(TIME_SOURCE_NTP, reboot_state.civil_time_source);
-		zassert_within(reboot_state.civil_time,
-			       time_2025 + 2 * INFUSE_CIVIL_TIME_TICKS_PER_SEC,
-			       INFUSE_CIVIL_TIME_TICKS_PER_SEC);
+		zassert_equal(TIME_SOURCE_NTP, reboot_state.epoch_time_source);
+		zassert_within(reboot_state.epoch_time,
+			       time_2025 + 2 * INFUSE_EPOCH_TIME_TICKS_PER_SEC,
+			       INFUSE_EPOCH_TIME_TICKS_PER_SEC);
 		/* Test sequence complete */
 		break;
 	default:

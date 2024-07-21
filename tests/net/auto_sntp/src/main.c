@@ -30,7 +30,7 @@ static void l4_event_handler(struct net_mgmt_event_callback *cb, uint32_t mgmt_e
 	}
 }
 
-static void reference_time_updated(enum civil_time_source source, struct timeutil_sync_instant old,
+static void reference_time_updated(enum epoch_time_source source, struct timeutil_sync_instant old,
 				   struct timeutil_sync_instant new, void *user_ctx)
 {
 	/* Our manual invalid time point */
@@ -42,9 +42,9 @@ static void reference_time_updated(enum civil_time_source source, struct timeuti
 	zassert_equal(&time_ref_updated, user_ctx, "Mismatched user context");
 
 #ifdef CONFIG_NATIVE_LIBC
-	uint64_t civil = civil_time_now();
+	uint64_t civil = epoch_time_now();
 	time_t from_libc = time(NULL);
-	time_t from_sntp = unix_time_from_civil(civil);
+	time_t from_sntp = unix_time_from_epoch(civil);
 
 	/* Ensure SNTP time roughly matches local system_time */
 	printk("Local Time: %d\n", from_libc);
@@ -58,13 +58,13 @@ static void reference_time_updated(enum civil_time_source source, struct timeuti
 ZTEST(auto_sntp, test_auto_sntp)
 {
 	struct timeutil_sync_instant reference;
-	static struct civil_time_cb time_cb;
+	static struct epoch_time_cb time_cb;
 	struct net_if *iface = net_if_get_default();
 
 	/* Register for time callbacks */
 	time_cb.reference_time_updated = reference_time_updated;
 	time_cb.user_ctx = &time_ref_updated;
-	civil_time_register_callback(&time_cb);
+	epoch_time_register_callback(&time_cb);
 
 #ifdef CONFIG_NET_NATIVE_OFFLOADED_SOCKETS
 	struct in_addr addr;
@@ -93,7 +93,7 @@ ZTEST(auto_sntp, test_auto_sntp)
 	reference.ref = 10000000;
 	zassert_equal(-EAGAIN,
 		      k_sem_take(&time_ref_updated, K_SECONDS(CONFIG_SNTP_AUTO_RESYNC_AGE - 1)));
-	zassert_equal(0, civil_time_set_reference(TIME_SOURCE_INVALID, &reference));
+	zassert_equal(0, epoch_time_set_reference(TIME_SOURCE_INVALID, &reference));
 
 	/* Ensure the time sync was delayed by the previous reference */
 	zassert_equal(-EAGAIN,
@@ -111,7 +111,7 @@ ZTEST(auto_sntp, test_auto_sntp)
 	/* Set time sync while disconnected */
 	k_sleep(K_MSEC(500));
 	reference.local = k_uptime_ticks();
-	zassert_equal(0, civil_time_set_reference(TIME_SOURCE_INVALID, &reference));
+	zassert_equal(0, epoch_time_set_reference(TIME_SOURCE_INVALID, &reference));
 	k_sleep(K_SECONDS(CONFIG_SNTP_AUTO_RESYNC_AGE - 1));
 
 	/* Reconnect by adding IP address */

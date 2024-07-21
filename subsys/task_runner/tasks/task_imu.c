@@ -73,7 +73,7 @@ static void imu_sample_handler(const struct task_schedule *schedule,
 			       const struct imu_sample_array *samples)
 {
 	const struct imu_sample *last_acc, *last_gyr;
-	uint64_t civil_time;
+	uint64_t epoch_time;
 
 	/* Print last sample from each array */
 	last_acc =
@@ -90,21 +90,21 @@ static void imu_sample_handler(const struct task_schedule *schedule,
 
 	/* Log data as TDFs */
 	if (samples->accelerometer.num) {
-		civil_time = civil_time_from_ticks(samples->accelerometer.timestamp_ticks);
+		epoch_time = epoch_time_from_ticks(samples->accelerometer.timestamp_ticks);
 
 		task_schedule_tdf_log_array(
 			schedule, TASK_IMU_LOG_ACC, log_state->acc_tdf, sizeof(struct imu_sample),
-			samples->accelerometer.num, civil_time,
-			civil_period_from_ticks(samples->accelerometer.period_ticks),
+			samples->accelerometer.num, epoch_time,
+			epoch_period_from_ticks(samples->accelerometer.period_ticks),
 			&samples->samples[samples->accelerometer.offset]);
 	}
 	if (samples->gyroscope.num) {
-		civil_time = civil_time_from_ticks(samples->gyroscope.timestamp_ticks);
+		epoch_time = epoch_time_from_ticks(samples->gyroscope.timestamp_ticks);
 
 		task_schedule_tdf_log_array(
 			schedule, TASK_IMU_LOG_GYR, log_state->gyr_tdf, sizeof(struct imu_sample),
-			samples->gyroscope.num, civil_time,
-			civil_period_from_ticks(samples->gyroscope.period_ticks),
+			samples->gyroscope.num, epoch_time,
+			epoch_period_from_ticks(samples->gyroscope.period_ticks),
 			&samples->samples[samples->gyroscope.offset]);
 	}
 }

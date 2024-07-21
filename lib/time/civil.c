@@ -11,7 +11,7 @@
 
 #include <infuse/time/epoch.h>
 
-#define JAN_01_01_2020 (1261872018ULL * INFUSE_CIVIL_TIME_TICKS_PER_SEC)
+#define JAN_01_01_2020 (1261872018ULL * INFUSE_EPOCH_TIME_TICKS_PER_SEC)
 
 static const struct timeutil_sync_config infuse_civil_config = {
 	.local_Hz = CONFIG_SYS_CLOCK_TICKS_PER_SEC,
@@ -29,25 +29,25 @@ struct timeutil_sync_state infuse_sync_state = {
 		},
 	.skew = 1.0f,
 };
-static enum civil_time_source infuse_time_source;
+static enum epoch_time_source infuse_time_source;
 static sys_slist_t cb_list;
 
-LOG_MODULE_REGISTER(civil_time, LOG_LEVEL_INF);
+LOG_MODULE_REGISTER(epoch_time, LOG_LEVEL_INF);
 
-void civil_time_register_callback(struct civil_time_cb *cb)
+void epoch_time_register_callback(struct epoch_time_cb *cb)
 {
 	sys_slist_append(&cb_list, &cb->node);
 }
 
-uint64_t ticks_from_civil_time(uint64_t civil_time)
+uint64_t ticks_from_epoch_time(uint64_t epoch_time)
 {
 	int64_t local = 0;
 
-	(void)timeutil_sync_local_from_ref(&infuse_sync_state, civil_time, &local);
+	(void)timeutil_sync_local_from_ref(&infuse_sync_state, epoch_time, &local);
 	return local;
 }
 
-uint64_t civil_time_from_ticks(uint64_t ticks)
+uint64_t epoch_time_from_ticks(uint64_t ticks)
 {
 	uint64_t civil;
 
@@ -62,27 +62,27 @@ uint64_t civil_time_from_ticks(uint64_t ticks)
 	return civil;
 }
 
-uint32_t civil_period_from_ticks(uint64_t ticks)
+uint32_t epoch_period_from_ticks(uint64_t ticks)
 {
 	return ticks * infuse_civil_config.ref_Hz / infuse_civil_config.local_Hz;
 }
 
-void civil_time_unix_calendar(uint64_t civil_time, struct tm *calendar)
+void epoch_time_unix_calendar(uint64_t epoch_time, struct tm *calendar)
 {
-	time_t unix_time = unix_time_from_civil(civil_time);
+	time_t unix_time = unix_time_from_epoch(epoch_time);
 
 	*calendar = *gmtime(&unix_time);
 }
 
-enum civil_time_source civil_time_get_source(void)
+enum epoch_time_source epoch_time_get_source(void)
 {
 	return infuse_time_source;
 }
 
-int civil_time_set_reference(enum civil_time_source source, struct timeutil_sync_instant *reference)
+int epoch_time_set_reference(enum epoch_time_source source, struct timeutil_sync_instant *reference)
 {
 	struct timeutil_sync_instant prev = infuse_sync_state.base;
-	struct civil_time_cb *cb;
+	struct epoch_time_cb *cb;
 	int rc;
 
 	/* Reference time of 0 is invalid */
@@ -99,19 +99,19 @@ int civil_time_set_reference(enum civil_time_source source, struct timeutil_sync
 				cb->reference_time_updated(source, prev, *reference, cb->user_ctx);
 			}
 		}
-#ifdef CONFIG_INFUSE_CIVIL_TIME_PRINT_ON_SYNC
-		uint64_t now = civil_time_now();
+#ifdef CONFIG_INFUSE_EPOCH_TIME_PRINT_ON_SYNC
+		uint64_t now = epoch_time_now();
 		struct tm c;
 
-		civil_time_unix_calendar(now, &c);
+		epoch_time_unix_calendar(now, &c);
 		LOG_INF("Now: %d-%02d-%02dT%02d:%02d:%02d.%03d UTC", 1900 + c.tm_year, 1 + c.tm_mon,
-			c.tm_mday, c.tm_hour, c.tm_min, c.tm_sec, civil_time_milliseconds(now));
-#endif /* CONFIG_INFUSE_CIVIL_TIME_PRINT_ON_SYNC */
+			c.tm_mday, c.tm_hour, c.tm_min, c.tm_sec, epoch_time_milliseconds(now));
+#endif /* CONFIG_INFUSE_EPOCH_TIME_PRINT_ON_SYNC */
 	}
 	return rc;
 }
 
-uint32_t civil_time_reference_age(void)
+uint32_t epoch_time_reference_age(void)
 {
 	if ((infuse_time_source & ~TIME_SOURCE_RECOVERED) == TIME_SOURCE_NONE) {
 		return UINT32_MAX;

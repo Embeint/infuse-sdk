@@ -16,15 +16,15 @@
 
 static void null_dereference(void)
 {
-	civil_time_set_reference(TIME_SOURCE_NONE, NULL);
+	epoch_time_set_reference(TIME_SOURCE_NONE, NULL);
 }
 
 ZTEST(common_boot, test_boot)
 {
 	KV_STRING_CONST(sim_uicc, "89000000000012345");
 	KV_KEY_TYPE(KV_KEY_REBOOTS) reboots;
-	uint64_t time_2020 = civil_time_from_gps(2086, 259218, 0);
-	uint64_t time_2025 = civil_time_from_gps(2347, 259218, 0);
+	uint64_t time_2020 = epoch_time_from_gps(2086, 259218, 0);
+	uint64_t time_2025 = epoch_time_from_gps(2347, 259218, 0);
 	struct timeutil_sync_instant time_reference;
 	struct infuse_reboot_state reboot_state;
 	ssize_t rc;
@@ -42,7 +42,7 @@ ZTEST(common_boot, test_boot)
 		zassert_equal(-ENOENT, rc);
 		zassert_equal(INFUSE_REBOOT_UNKNOWN, reboot_state.reason);
 		/* Should have no time source */
-		zassert_equal(TIME_SOURCE_NONE, civil_time_get_source());
+		zassert_equal(TIME_SOURCE_NONE, epoch_time_get_source());
 		/* Trigger reboot */
 		infuse_reboot(INFUSE_REBOOT_EXTERNAL_TRIGGER, 0x12, 0x34);
 		zassert_unreachable("Failed to reboot");
@@ -55,16 +55,16 @@ ZTEST(common_boot, test_boot)
 		zassert_equal(0x12, reboot_state.param_1.program_counter);
 		zassert_equal(0x34, reboot_state.param_2.link_register);
 		/* Time should have been restored */
-		zassert_equal(TIME_SOURCE_RECOVERED | TIME_SOURCE_NONE, civil_time_get_source());
-		zassert_true(civil_time_now() > time_2020);
-		zassert_true(civil_time_now() < time_2020 + civil_time_from(1, 0));
+		zassert_equal(TIME_SOURCE_RECOVERED | TIME_SOURCE_NONE, epoch_time_get_source());
+		zassert_true(epoch_time_now() > time_2020);
+		zassert_true(epoch_time_now() < time_2020 + epoch_time_from(1, 0));
 		/* Querying data again should succeed */
 		rc = infuse_common_boot_last_reboot(&reboot_state);
 		zassert_equal(0, rc);
 		/* Set a good time */
 		time_reference.local = k_uptime_ticks();
 		time_reference.ref = time_2025;
-		rc = civil_time_set_reference(TIME_SOURCE_NTP, &time_reference);
+		rc = epoch_time_set_reference(TIME_SOURCE_NTP, &time_reference);
 		zassert_equal(0, rc);
 		/* Reboot through a crash */
 		null_dereference();
@@ -75,9 +75,9 @@ ZTEST(common_boot, test_boot)
 		zassert_equal(0, rc);
 		zassert_equal((enum infuse_reboot_reason)K_ERR_CPU_EXCEPTION, reboot_state.reason);
 		/* Time should have been restored */
-		zassert_equal(TIME_SOURCE_RECOVERED | TIME_SOURCE_NTP, civil_time_get_source());
-		zassert_true(civil_time_now() > time_2025);
-		zassert_true(civil_time_now() < time_2025 + civil_time_from(1, 0));
+		zassert_equal(TIME_SOURCE_RECOVERED | TIME_SOURCE_NTP, epoch_time_get_source());
+		zassert_true(epoch_time_now() > time_2025);
+		zassert_true(epoch_time_now() < time_2025 + epoch_time_from(1, 0));
 		/* Test complete */
 		break;
 	default:

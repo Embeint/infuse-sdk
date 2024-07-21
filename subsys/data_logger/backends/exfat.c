@@ -53,7 +53,7 @@ LOG_MODULE_REGISTER(data_logger_exfat, CONFIG_DATA_LOGGER_EXFAT_LOG_LEVEL);
 
 DWORD get_fattime(void)
 {
-	time_t unix_time = unix_time_from_civil(civil_time_now());
+	time_t unix_time = unix_time_from_epoch(epoch_time_now());
 	struct tm *cal;
 
 	/* Convert to calendar time */

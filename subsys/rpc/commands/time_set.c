@@ -22,12 +22,12 @@ struct net_buf *rpc_command_time_set(struct net_buf *request)
 	struct rpc_time_set_response rsp = {0};
 	struct timeutil_sync_instant sync = {
 		.local = k_uptime_ticks(),
-		.ref = req->civil_time,
+		.ref = req->epoch_time,
 	};
 	int rc;
 
 	/* Set the time reference */
-	rc = civil_time_set_reference(TIME_SOURCE_RPC, &sync);
+	rc = epoch_time_set_reference(TIME_SOURCE_RPC, &sync);
 
 	/* Allocate and return the response */
 	return rpc_response_simple_req(request, rc, &rsp, sizeof(rsp));

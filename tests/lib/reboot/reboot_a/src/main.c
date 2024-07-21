@@ -19,7 +19,7 @@ LOG_MODULE_REGISTER(test, LOG_LEVEL_INF);
 
 static void null_dereference(void)
 {
-	civil_time_set_reference(TIME_SOURCE_NONE, NULL);
+	epoch_time_set_reference(TIME_SOURCE_NONE, NULL);
 	zassert_unreachable("Exception not triggered");
 }
 
@@ -28,7 +28,7 @@ ZTEST(infuse_reboot, test_reboot)
 	KV_KEY_TYPE(KV_KEY_REBOOTS) reboots;
 	struct timeutil_sync_instant time_reference;
 	struct infuse_reboot_state reboot_state;
-	uint64_t time_2025 = civil_time_from_gps(2347, 259218, 0);
+	uint64_t time_2025 = epoch_time_from_gps(2347, 259218, 0);
 	ssize_t rc;
 
 	/* KV store should have been initialised and populated with a reboot count */
@@ -52,15 +52,15 @@ ZTEST(infuse_reboot, test_reboot)
 		zassert_equal(0x1234, reboot_state.param_1.program_counter);
 		zassert_equal(0x5678, reboot_state.param_2.link_register);
 		zassert_equal(0, reboot_state.uptime);
-		zassert_equal(TIME_SOURCE_NONE, reboot_state.civil_time_source);
-		zassert_true(reboot_state.civil_time > 0);
+		zassert_equal(TIME_SOURCE_NONE, reboot_state.epoch_time_source);
+		zassert_true(reboot_state.epoch_time > 0);
 		/* Second call fails */
 		rc = infuse_reboot_state_query(&reboot_state);
 		zassert_equal(-ENOENT, rc);
 		/* Set a valid time */
 		time_reference.local = k_uptime_ticks();
 		time_reference.ref = time_2025;
-		civil_time_set_reference(TIME_SOURCE_NTP, &time_reference);
+		epoch_time_set_reference(TIME_SOURCE_NTP, &time_reference);
 		/* Trigger reboot */
 		infuse_reboot(INFUSE_REBOOT_WATCHDOG, 4, 0);
 		zassert_unreachable("infuse_reboot returned");
@@ -73,9 +73,9 @@ ZTEST(infuse_reboot, test_reboot)
 		zassert_equal(4, reboot_state.param_1.watchdog_info1);
 		zassert_equal(0, reboot_state.param_2.watchdog_info2);
 		zassert_equal(0, reboot_state.uptime);
-		zassert_equal(TIME_SOURCE_NTP, reboot_state.civil_time_source);
-		zassert_true(reboot_state.civil_time >= time_2025);
-		zassert_true(reboot_state.civil_time < time_2025 + civil_time_from(1, 0));
+		zassert_equal(TIME_SOURCE_NTP, reboot_state.epoch_time_source);
+		zassert_true(reboot_state.epoch_time >= time_2025);
+		zassert_true(reboot_state.epoch_time < time_2025 + epoch_time_from(1, 0));
 		/* Second call fails */
 		rc = infuse_reboot_state_query(&reboot_state);
 		zassert_equal(-ENOENT, rc);
@@ -91,18 +91,18 @@ ZTEST(infuse_reboot, test_reboot)
 		zassert_equal((enum infuse_reboot_reason)K_ERR_CPU_EXCEPTION, reboot_state.reason);
 		/* Uptime should be roughly correct */
 		zassert_within(3, reboot_state.uptime, 1);
-		/* Program counter should be somewhere in civil_time_set_reference */
+		/* Program counter should be somewhere in epoch_time_set_reference */
 		zassert_between_inclusive(reboot_state.param_1.program_counter,
-					  (uintptr_t)civil_time_set_reference,
-					  (uintptr_t)civil_time_set_reference + 64);
+					  (uintptr_t)epoch_time_set_reference,
+					  (uintptr_t)epoch_time_set_reference + 64);
 		/* Link register should be somewhere in null_dereference */
 		zassert_between_inclusive(reboot_state.param_2.link_register,
 					  (uintptr_t)null_dereference,
 					  (uintptr_t)null_dereference + 64);
 		/* No time knowledge again */
-		zassert_equal(TIME_SOURCE_NONE, reboot_state.civil_time_source);
-		zassert_true(reboot_state.civil_time > 0);
-		zassert_true(reboot_state.civil_time < time_2025);
+		zassert_equal(TIME_SOURCE_NONE, reboot_state.epoch_time_source);
+		zassert_true(reboot_state.epoch_time > 0);
+		zassert_true(reboot_state.epoch_time < time_2025);
 		/* Second call fails */
 		rc = infuse_reboot_state_query(&reboot_state);
 		zassert_equal(-ENOENT, rc);

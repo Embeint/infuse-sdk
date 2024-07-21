@@ -29,8 +29,8 @@ static void reboot_state_store(enum infuse_reboot_reason reason, uint32_t info1,
 
 	/* Populate reboot information */
 	state.reason = reason;
-	state.civil_time_source = civil_time_get_source();
-	state.civil_time = civil_time_now();
+	state.epoch_time_source = epoch_time_get_source();
+	state.epoch_time = epoch_time_now();
 	state.uptime = k_uptime_seconds();
 	state.param_1.program_counter = info1;
 	state.param_2.link_register = info2;
@@ -61,8 +61,8 @@ static void delayed_do_reboot(struct k_work *work)
 {
 	struct infuse_reboot_state state;
 	/* Update the first three state values in the retention as they depend on time */
-	state.civil_time_source = civil_time_get_source();
-	state.civil_time = civil_time_now();
+	state.epoch_time_source = epoch_time_get_source();
+	state.epoch_time = epoch_time_now();
 	state.uptime = k_uptime_seconds();
 	retention_write(retention, 0, (void *)&state, offsetof(struct infuse_reboot_state, reason));
 	/* Do the reboot */

@@ -1,5 +1,5 @@
 tests:
-  libraries.civil_time:
+  libraries.epoch_time:
     integration_platforms:
       - native_sim
       - qemu_cortex_m3
