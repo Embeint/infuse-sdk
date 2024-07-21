@@ -29,16 +29,20 @@ extern "C" {
 enum infuse_zbus_channel_id {
 	INFUSE_ZBUS_CHAN_BASE = 0x43210000,
 	/** @brief Data type: @ref tdf_battery_state */
-	INFUSE_ZBUS_CHAN_BATTERY = INFUSE_ZBUS_CHAN_BASE | 0,
+	INFUSE_ZBUS_CHAN_BATTERY = INFUSE_ZBUS_CHAN_BASE + 0,
 	/** @brief Data type: @ref tdf_ambient_temp_pres_hum */
-	INFUSE_ZBUS_CHAN_AMBIENT_ENV = INFUSE_ZBUS_CHAN_BASE | 1,
+	INFUSE_ZBUS_CHAN_AMBIENT_ENV = INFUSE_ZBUS_CHAN_BASE + 1,
+	/** @brief Data type: @ref imu_sample_array */
+	INFUSE_ZBUS_CHAN_IMU = INFUSE_ZBUS_CHAN_BASE + 2,
 };
 
 #define _INFUSE_ZBUS_CHAN_BATTERY_TYPE     struct tdf_battery_state
 #define _INFUSE_ZBUS_CHAN_AMBIENT_ENV_TYPE struct tdf_ambient_temp_pres_hum
+#define _INFUSE_ZBUS_CHAN_IMU_TYPE         struct imu_sample_array
 
 #define _INFUSE_ZBUS_CHAN_BATTERY_NAME     zbus_infuse_battery
 #define _INFUSE_ZBUS_CHAN_AMBIENT_ENV_NAME zbus_infuse_ambient_env
+#define _INFUSE_ZBUS_CHAN_IMU_NAME         zbus_infuse_imu
 
 /** @brief Get the type associated with an Infuse zbus channel */
 #define INFUSE_ZBUS_TYPE(channel) _##channel##_TYPE
