@@ -56,3 +56,5 @@ config CRYPTO_ASCON_80PQ
 	  Post-Quantum variant, increased key size of 160 bits.
 
 endif # CRYPTO_ASCON
+
+rsource "hardware_unique_key/Kconfig"

@@ -10,6 +10,7 @@
 #include <zephyr/sys/crc.h>
 
 #include <infuse/security.h>
+#include <infuse/crypto/hardware_unique_key.h>
 #include <infuse/fs/kv_types.h>
 #include <infuse/fs/secure_storage.h>
 
@@ -194,6 +195,11 @@ int infuse_security_init(void)
 	status = psa_crypto_init();
 	if (status != PSA_SUCCESS) {
 		LOG_ERR("PSA init failed! (%d)", status);
+		return -EINVAL;
+	}
+
+	/* Initialise hardware unique key */
+	if (hardware_unique_key_init() < 0) {
 		return -EINVAL;
 	}
 

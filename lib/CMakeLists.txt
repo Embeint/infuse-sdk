@@ -1,6 +1,7 @@
 # Infuse-IoT libraries compilation
 
 add_subdirectory_ifdef(CONFIG_INFUSE_SDK vendor)
+add_subdirectory_ifdef(CONFIG_INFUSE_SECURITY crypto/hardware_unique_key)
 
 zephyr_sources_ifdef(CONFIG_INFUSE_SECURITY security.c)
 
