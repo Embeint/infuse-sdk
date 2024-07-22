@@ -40,6 +40,8 @@ struct udp_state {
 	struct net_mgmt_event_callback l4_callback;
 	struct sockaddr remote;
 	struct k_event state;
+	uint32_t last_receive;
+	uint16_t ack_countdown;
 	socklen_t remote_len;
 	uint16_t remote_port;
 	int sock;
@@ -159,6 +161,9 @@ static int epacket_udp_loop(void *a, void *b, void *c)
 		k_event_post(&udp_state.state, UDP_STATE_SOCKET_OPEN);
 		LOG_DBG("Opened %d", udp_state.sock);
 
+		/* Init ACK countdown */
+		udp_state.ack_countdown = CONFIG_EPACKET_INTERFACE_UDP_ACK_COUNTDOWN;
+
 		/* Bind so we can receive downlink packets */
 		rc = zsock_bind(udp_state.sock, (struct sockaddr *)&local_addr, sizeof(local_addr));
 		if (rc < 0) {
@@ -224,6 +229,26 @@ static void epacket_udp_send(const struct device *dev, struct net_buf *buf)
 		goto end;
 	}
 
+	/* Handle ACK request */
+	if ((k_uptime_seconds() - udp_state.last_receive) >=
+	    CONFIG_EPACKET_INTERFACE_UDP_ACK_PERIOD_SEC) {
+		struct epacket_tx_metadata *meta = net_buf_user_data(buf);
+
+		/* Never receive an ACK after requesting */
+		if (udp_state.ack_countdown == 0) {
+			LOG_INF("Disconnecting due to no RX packets");
+			cleanup_interface(dev);
+			/* Force a requery of DNS */
+			(void)k_event_clear(&udp_state.state, UDP_STATE_VALID_DNS);
+			rc = -ENOTCONN;
+			goto end;
+		}
+		/* Add ACK_REQUEST flag to packet */
+		LOG_DBG("Requesting ACK on packet");
+		meta->flags |= EPACKET_FLAGS_ACK_REQUEST;
+		udp_state.ack_countdown--;
+	}
+
 	/* Encrypt the payload */
 	if (epacket_udp_encrypt(buf) < 0) {
 		LOG_WRN("Failed to encrypt");
@@ -244,6 +269,18 @@ end:
 	net_buf_unref(buf);
 }
 
+static void epacket_udp_decrypt_res(const struct device *dev, struct net_buf *buf, int decrypt_res)
+{
+	ARG_UNUSED(dev);
+	ARG_UNUSED(buf);
+
+	if (decrypt_res == 0) {
+		/* Update ACK state */
+		udp_state.last_receive = k_uptime_seconds();
+		udp_state.ack_countdown = CONFIG_EPACKET_INTERFACE_UDP_ACK_COUNTDOWN;
+	}
+}
+
 static int epacket_udp_init(const struct device *dev)
 {
 	epacket_interface_common_init(dev);
@@ -259,6 +296,7 @@ static int epacket_udp_init(const struct device *dev)
 
 static const struct epacket_interface_api udp_api = {
 	.send = epacket_udp_send,
+	.decrypt_result = epacket_udp_decrypt_res,
 };
 
 BUILD_ASSERT(sizeof(struct epacket_udp_frame) == DT_INST_PROP(0, header_size));
