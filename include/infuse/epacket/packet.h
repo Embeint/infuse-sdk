@@ -80,7 +80,9 @@ enum epacket_flags {
 	/* Bit 15: Encryption Type */
 	EPACKET_FLAGS_ENCRYPTION_DEVICE = BIT(15),
 	EPACKET_FLAGS_ENCRYPTION_NETWORK = 0,
-	/* Bits 8-14: Reserved */
+	/* Bit 14: Transmitting device requests an ACK */
+	EPACKET_FLAGS_ACK_REQUEST = BIT(14),
+	/* Bits 8-13: Reserved */
 	/* Bits 0-7: Interface specific */
 	EPACKET_FLAGS_INTERFACE_MASK = 0x00FF,
 };
