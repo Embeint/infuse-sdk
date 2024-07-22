@@ -1,0 +1,11 @@
+# Infuse IoT Hardware Unique Key configuration
+
+choice INFUSE_HUK_PROVIDER
+	prompt "Storage backend for Hardware Unique Key"
+	default INFUSE_HUK_HWID_HASH
+
+config INFUSE_HUK_HWID_HASH
+	bool "SHA-256 hash of unique hardware identifier (Least secure)"
+	depends on HWINFO
+
+endchoice
