@@ -2,7 +2,14 @@
 
 choice INFUSE_HUK_PROVIDER
 	prompt "Storage backend for Hardware Unique Key"
+	default INFUSE_HUK_NORDIC_KMU
 	default INFUSE_HUK_HWID_HASH
+
+config INFUSE_HUK_NORDIC_KMU
+	bool "Nordic Key-Management-Unit (KMU)"
+	depends on DT_HAS_NORDIC_NRF_KMU_ENABLED
+	depends on NRF_CC3XX_PLATFORM
+	depends on !BUILD_WITH_TFM
 
 config INFUSE_HUK_HWID_HASH
 	bool "SHA-256 hash of unique hardware identifier (Least secure)"
