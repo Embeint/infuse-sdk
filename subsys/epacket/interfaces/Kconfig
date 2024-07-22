@@ -34,6 +34,20 @@ config EPACKET_INTERFACE_UDP_DEFAULT_PORT
 	int "ePacket UDP default server port"
 	default 3001
 
+config EPACKET_INTERFACE_UDP_ACK_PERIOD_SEC
+	int "Request an ACK from the server after N seconds of not receiving"
+	default 3600
+	help
+	  If the device has not heard from the server for this many seconds,
+	  the `EPACKET_FLAGS_ACK_REQUEST` flag is set on packets until a packet
+	  is received.  If no response is received after a further
+	  EPACKET_INTERFACE_UDP_ACK_COUNTDOWN transmissions, the server is
+	  assumed lost and is set up again. Default period is 1 hour.
+
+config EPACKET_INTERFACE_UDP_ACK_COUNTDOWN
+	int "Number of unanswered ACKs to send before dropping server"
+	default 10
+
 module = EPACKET_UDP
 module-str = epacket_udp
 source "subsys/logging/Kconfig.template.log_config"
