@@ -145,6 +145,7 @@ static void epacket_handle_rx(struct net_buf *buf)
 {
 	struct epacket_interface_common_data *interface_data;
 	struct epacket_rx_metadata *metadata = net_buf_user_data(buf);
+	const struct epacket_interface_api *api = metadata->interface->api;
 	int rc;
 
 	interface_data = metadata->interface->data;
@@ -211,7 +212,10 @@ static void epacket_handle_rx(struct net_buf *buf)
 		rc = -1;
 	}
 	LOG_DBG("Decrypt result: %d", rc);
-
+	if (api->decrypt_result != NULL) {
+		/* Notify backend of decryption result */
+		api->decrypt_result(metadata->interface, buf, rc);
+	}
 	/* Payload handling */
 	interface_data->receive_handler(buf);
 }
