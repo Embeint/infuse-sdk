@@ -12,7 +12,9 @@
 #include <zephyr/fs/nvs.h>
 #include <zephyr/init.h>
 
+#include <infuse/security.h>
 #include <infuse/fs/kv_store.h>
+#include <infuse/crypto/hardware_unique_key.h>
 
 #include <psa/internal_trusted_storage.h>
 #include <psa/error.h>
@@ -211,32 +213,12 @@ psa_status_t psa_its_remove(psa_storage_uid_t uid)
 
 int secure_storage_init(void)
 {
-	psa_key_attributes_t key_attributes = PSA_KEY_ATTRIBUTES_INIT;
-	psa_status_t status;
-	uint8_t key[32] = {0};
-	uint8_t hw_id[8];
-	ssize_t hlen, rc;
+	psa_key_id_t huk_id = hardware_unique_key_id();
+	const char *info = "SECURE_STORAGE";
+	const char *salt = "SS_SALT";
 
-	psa_set_key_usage_flags(&key_attributes, PSA_KEY_USAGE_ENCRYPT | PSA_KEY_USAGE_DECRYPT);
-	psa_set_key_lifetime(&key_attributes, PSA_KEY_LIFETIME_VOLATILE);
-	psa_set_key_algorithm(&key_attributes, PSA_ALG_CHACHA20_POLY1305);
-	psa_set_key_type(&key_attributes, PSA_KEY_TYPE_CHACHA20);
-	psa_set_key_bits(&key_attributes, 256);
-
-	/* TODO: Replace with more secure key protocol
-	 * For now, use the SHA-256 hash of the hardware ID.
-	 * This is enough to prevent the same key being used for all devices.
-	 */
-	rc = hwinfo_get_device_id(hw_id, sizeof(hw_id));
-	if (rc > 0) {
-		status = psa_hash_compute(PSA_ALG_SHA_256, hw_id, rc, key, sizeof(key), &hlen);
-		if (status != PSA_SUCCESS) {
-			LOG_WRN("Failed to hash hardware ID");
-			/* Default key value */
-			memset(key, 0x42, sizeof(key));
-		}
-	}
-
-	status = psa_import_key(&key_attributes, key, sizeof(key), &secure_storage_key_id);
-	return status == PSA_SUCCESS ? 0 : -EINVAL;
+	/* Derive secure storage key from HUK */
+	secure_storage_key_id =
+		infuse_security_derive_chacha_key(huk_id, salt, strlen(salt), info, strlen(info));
+	return secure_storage_key_id == PSA_KEY_ID_NULL ? -EINVAL : 0;
 }
