@@ -16,6 +16,7 @@
 #include <infuse/fs/secure_storage.h>
 #include <infuse/fs/kv_store.h>
 #include <infuse/fs/kv_types.h>
+#include <infuse/crypto/hardware_unique_key.h>
 
 #include <psa/crypto.h>
 #include <psa/internal_trusted_storage.h>
@@ -96,6 +97,7 @@ static void *kv_setup(void)
 {
 	kv_store_init();
 	psa_crypto_init();
+	hardware_unique_key_init();
 	secure_storage_init();
 	return NULL;
 }
