@@ -40,6 +40,8 @@ enum infuse_type {
 	INFUSE_RPC_RSP = 6,
 	/* Infuse ePacket received by device */
 	INFUSE_RECEIVED_EPACKET = 7,
+	/* Generic ACK, payload is the sequence number of requesting packet */
+	INFUSE_ACK = 8,
 	/* Infuse key identifiers */
 	INFUSE_KEY_IDS = 127,
 	/* 128 - 255 can be freely defined by customers */
