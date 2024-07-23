@@ -19,7 +19,7 @@ config EPACKET_INTERFACE_UDP
 	bool "ePacket UDP interface"
 	depends on DT_HAS_EMBEINT_EPACKET_UDP_ENABLED
 	depends on EPACKET_CRYPTO
-	depends on DNS_RESOLVER
+	depends on INFUSE_DNS
 	depends on NET_UDP
 	depends on EVENTS
 	default y

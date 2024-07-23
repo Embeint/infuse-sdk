@@ -22,6 +22,7 @@
 #include <infuse/epacket/interface/epacket_udp.h>
 #include <infuse/fs/kv_store.h>
 #include <infuse/fs/kv_types.h>
+#include <infuse/net/dns.h>
 
 #include "epacket_internal.h"
 
@@ -88,36 +89,14 @@ static int epacket_udp_dns_query(void)
 	KV_KEY_TYPE(KV_KEY_EPACKET_UDP_PORT)
 	udp_port, udp_port_default = {CONFIG_EPACKET_INTERFACE_UDP_DEFAULT_PORT};
 	KV_KEY_TYPE_VAR(KV_KEY_EPACKET_UDP_URL, 64) udp_url;
-	struct zsock_addrinfo hints = {
-		.ai_family = AF_INET,
-		.ai_socktype = SOCK_DGRAM,
-	};
-	struct zsock_addrinfo *res = NULL;
-	struct sockaddr_in *sockaddr;
-	uint8_t *addr;
-	int rc;
 
 	/* Load configuration from KV store */
 	KV_STORE_READ_FALLBACK(KV_KEY_EPACKET_UDP_PORT, &udp_port, &udp_port_default);
 	KV_STORE_READ_FALLBACK(KV_KEY_EPACKET_UDP_URL, &udp_url, &udp_url_default);
 
 	/* Get IP address from DNS */
-	rc = zsock_getaddrinfo(udp_url.server.value, NULL, &hints, &res);
-	if (rc < 0) {
-		return rc;
-	}
-	udp_state.remote = *res->ai_addr;
-	udp_state.remote_len = res->ai_addrlen;
-	zsock_freeaddrinfo(res);
-
-	sockaddr = (struct sockaddr_in *)&udp_state.remote;
-	sockaddr->sin_family = AF_INET;
-	sockaddr->sin_port = htons(udp_port.port);
-	addr = sockaddr->sin_addr.s4_addr;
-
-	LOG_INF("%s -> %d.%d.%d.%d:%d", udp_url.server.value, addr[0], addr[1], addr[2], addr[3],
-		udp_port.port);
-	return rc;
+	return infuse_sync_dns(udp_url.server.value, udp_port.port, AF_INET, SOCK_DGRAM,
+			       &udp_state.remote, &udp_state.remote_len);
 }
 
 static int epacket_udp_loop(void *a, void *b, void *c)
