@@ -13,6 +13,7 @@
 #include <zephyr/net/net_mgmt.h>
 #include <zephyr/net/sntp.h>
 
+#include <infuse/net/dns.h>
 #include <infuse/time/epoch.h>
 #include <infuse/fs/kv_store.h>
 #include <infuse/fs/kv_types.h>
@@ -44,17 +45,12 @@ static void l4_event_handler(struct net_mgmt_event_callback *cb, uint32_t event,
 static void sntp_work(struct k_work *work)
 {
 	struct k_work_delayable *delayable = k_work_delayable_from_work(work);
-	struct zsock_addrinfo hints = {
-		.ai_family = AF_INET,
-		.ai_socktype = SOCK_DGRAM,
-	};
 	KV_STRING_CONST(ntp_default, CONFIG_SNTP_AUTO_DEFAULT_SERVER);
 	KV_KEY_TYPE_VAR(KV_KEY_NTP_SERVER_URL, 64) ntp_server;
-	struct zsock_addrinfo *res = NULL;
-	struct sockaddr_in addr = {0};
+	struct sockaddr addr;
+	socklen_t addrlen;
 	struct sntp_time sntp_time;
 	struct sntp_ctx ctx;
-	uint8_t *a;
 	int rc;
 
 	/* Pull NTP server address from KV store */
@@ -67,22 +63,13 @@ static void sntp_work(struct k_work *work)
 	}
 
 	/* Get IP address from DNS */
-	rc = zsock_getaddrinfo(ntp_server.url.value, NULL, &hints, &res);
+	rc = infuse_sync_dns(ntp_server.url.value, 123, AF_INET, SOCK_DGRAM, &addr, &addrlen);
 	if (rc < 0) {
 		LOG_ERR("DNS query failed for %s (%d)", ntp_server.url.value, rc);
 		goto error;
 	}
-	addr = *(struct sockaddr_in *)res->ai_addr;
-	zsock_freeaddrinfo(res);
 
-	addr.sin_family = AF_INET;
-	addr.sin_port = htons(123);
-
-	a = addr.sin_addr.s4_addr;
-	LOG_INF("%s -> %d.%d.%d.%d:%d", ntp_server.url.value, a[0], a[1], a[2], a[3],
-		ntohs(addr.sin_port));
-
-	rc = sntp_init(&ctx, (struct sockaddr *)&addr, sizeof(struct sockaddr_in));
+	rc = sntp_init(&ctx, &addr, addrlen);
 	if (rc < 0) {
 		LOG_ERR("Failed to init ctx (%d)", rc);
 		goto error;

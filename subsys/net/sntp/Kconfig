@@ -4,6 +4,7 @@ config SNTP_AUTO
 	bool "Automatically synchronise device time through SNTP"
 	depends on NET_CONNECTION_MANAGER
 	depends on INFUSE_CIVIL_TIME
+	depends on INFUSE_DNS
 	depends on KV_STORE
 	depends on SNTP
 	default y
