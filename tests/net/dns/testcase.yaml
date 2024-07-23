@@ -1,0 +1,27 @@
+common:
+  tags: infuse net
+  min_flash: 64
+  min_ram: 32
+tests:
+  net.dns:
+    build_only: true
+    platform_allow:
+      - nrf7002dk_nrf5340_cpuapp
+    depends_on:
+      - net
+  net.dns.native:
+    platform_allow:
+      - native_sim
+    integration_platforms:
+      - native_sim
+    extra_args:
+      - OVERLAY_CONFIG="overlay-nsos.conf"
+    harness: console
+    harness_config:
+      type: multi_line
+      ordered: true
+      regex:
+        - "google.com -> (.*):80"
+        - "not.a.real.address -> Lookup failed"
+        - "google.com -> IPv6:80"
+        - "not.a.real.address -> Lookup failed"
