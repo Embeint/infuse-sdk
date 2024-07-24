@@ -1,0 +1,20 @@
+# Infuse-IoT COAP helpers
+
+config INFUSE_COAP
+	bool "Infuse-IoT COAP helpers"
+	depends on COAP
+
+if INFUSE_COAP
+
+config INFUSE_COAP_MAX_URI_SEGMENTS
+	int "Maximum number of resource URI segments"
+	default 4
+	help
+	  Maximum number of resource URI segments the library can
+	  handle. For example "path/to/resource" has 3 segments.
+
+module = INFUSE_COAP
+module-str = infuse_coap
+source "subsys/logging/Kconfig.template.log_config"
+
+endif # INFUSE_COAP
