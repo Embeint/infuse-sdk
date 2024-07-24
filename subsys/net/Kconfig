@@ -1,5 +1,6 @@
 # Infuse-IoT networking options
 
+rsource "coap/Kconfig"
 rsource "conn_mgr/Kconfig"
 rsource "dns/Kconfig"
 rsource "sntp/Kconfig"

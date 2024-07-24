@@ -1,0 +1,55 @@
+/**
+ * @file
+ * @brief Infuse-IoT COAP download helpers
+ * @copyright 2024 Embeint Inc
+ * @author Jordan Yates <jordan@embeint.com>
+ *
+ * SPDX-License-Identifier: LicenseRef-Embeint
+ */
+
+#ifndef INFUSE_SDK_INCLUDE_INFUSE_NET_COAP_H_
+#define INFUSE_SDK_INCLUDE_INFUSE_NET_COAP_H_
+
+#include <stdint.h>
+#include <stdlib.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/**
+ * @brief Infuse COAP API
+ * @defgroup infuse_coap_apis Infuse COAP APIs
+ * @{
+ */
+
+typedef void (*infuse_coap_data_cb)(uint32_t offset, const uint8_t *data, uint16_t data_len,
+				    void *user_context);
+
+/**
+ * @brief Download a file over COAP from an existing socket
+ *
+ * @param socket Socket already connected to remote server
+ * @param resource Resource path URI, for example "path/to/resource"
+ * @param data_cb Callback run on each data chunk received
+ * @param user_context Arbitrary user context for @a data_cb
+ * @param working_mem Memory buffer for sending/receiving packets with
+ * @param working_size Size of @a working_mem in bytes
+ * @param timeout_ms Timeout waiting for each response from server
+ *
+ * @retval >=0 bytes downloaded on success
+ * @retval <0 error code on failure
+ */
+int infuse_coap_download(int socket, const char *resource, infuse_coap_data_cb data_cb,
+			 void *user_context, uint8_t *working_mem, size_t working_size,
+			 int timeout_ms);
+
+/**
+ * @}
+ */
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* INFUSE_SDK_INCLUDE_INFUSE_NET_COAP_H_ */
