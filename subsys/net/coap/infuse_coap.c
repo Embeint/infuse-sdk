@@ -104,7 +104,7 @@ int infuse_coap_download(int socket, const char *resource, infuse_coap_data_cb d
 	}
 
 	pollfds[0].fd = socket;
-	pollfds[0].events = POLLIN;
+	pollfds[0].events = ZSOCK_POLLIN;
 
 	coap_block_transfer_init(&blk_ctx, block_size, 0);
 
