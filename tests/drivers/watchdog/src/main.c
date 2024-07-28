@@ -59,7 +59,7 @@ static int dead_thread(void *arg1, void *arg2, void *arg3)
 {
 	return 0;
 }
-K_THREAD_DEFINE(dead, 1024, dead_thread, NULL, NULL, NULL, 0, 0, 0);
+K_THREAD_DEFINE(dead, 4096, dead_thread, NULL, NULL, NULL, 0, 0, 0);
 
 ZTEST(drivers_watchdog, test_dead_thread)
 {
