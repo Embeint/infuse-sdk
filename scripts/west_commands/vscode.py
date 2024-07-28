@@ -214,9 +214,9 @@ class vscode(WestCommand):
         )
         return parser
 
-    def _jlink_device(self, cache):
+    def _jlink_device(self, build_dir):
         # Get the JLink device name
-        runners_yaml = cache.get("ZEPHYR_RUNNERS_YAML")
+        runners_yaml = build_dir / "zephyr" / "runners.yaml"
         if runners_yaml is not None:
             with pathlib.Path(runners_yaml).open("r", encoding="utf-8") as f:
                 r = yaml.safe_load(f)
@@ -242,7 +242,7 @@ class vscode(WestCommand):
 
         launch["configurations"][0]["servertype"] = "jlink"
         launch["configurations"][1]["servertype"] = "jlink"
-        self._jlink_device(parent_cache)
+        self._jlink_device(build_dir)
 
     def _zephyr_build(self, build_dir, cache):
         c_cpp_properties["configurations"][0]["includePath"] = [
@@ -319,7 +319,7 @@ class vscode(WestCommand):
                 launch["configurations"][0]["serialNumber"] = serial
                 launch["configurations"][1]["serialNumber"] = serial
 
-        self._jlink_device(cache)
+        self._jlink_device(build_dir)
 
     def do_run(self, args, _):
         vscode_folder = pathlib.Path(args.workspace) / ".vscode"
