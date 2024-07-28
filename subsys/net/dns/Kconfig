@@ -3,7 +3,7 @@
 config INFUSE_DNS
 	bool "Helper to synchronise DNS queries between modules"
 	depends on NET_SOCKETS
-	depends on DNS_RESOLVER
+	depends on DNS_RESOLVER || NET_SOCKETS_OFFLOAD
 	default y
 	help
 	  The DNS library can only handle `DNS_NUM_CONCUR_QUERIES`

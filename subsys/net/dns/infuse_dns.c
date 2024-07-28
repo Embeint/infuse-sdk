@@ -13,7 +13,9 @@
 
 LOG_MODULE_REGISTER(infuse_dns, LOG_LEVEL_INF);
 
+#ifdef CONFIG_DNS_RESOLVER
 K_SEM_DEFINE(dns_ctx, CONFIG_DNS_NUM_CONCUR_QUERIES, CONFIG_DNS_NUM_CONCUR_QUERIES);
+#endif /* CONFIG_DNS_RESOLVER */
 
 int infuse_sync_dns(const char *host, uint16_t port, int family, int socktype,
 		    struct sockaddr *addr, socklen_t *addrlen)
@@ -25,14 +27,18 @@ int infuse_sync_dns(const char *host, uint16_t port, int family, int socktype,
 	struct zsock_addrinfo *res = NULL;
 	int rc;
 
+#ifdef CONFIG_DNS_RESOLVER
 	/* Take a context */
 	(void)k_sem_take(&dns_ctx, K_FOREVER);
+#endif /* CONFIG_DNS_RESOLVER */
 
 	/* Perform DNS query */
 	rc = zsock_getaddrinfo(host, NULL, &hints, &res);
 	if (rc < 0) {
 		LOG_WRN("%s -> Lookup failed", host);
+#ifdef CONFIG_DNS_RESOLVER
 		k_sem_give(&dns_ctx);
+#endif /* CONFIG_DNS_RESOLVER */
 		return rc;
 	}
 	/* Store the first result */
@@ -40,7 +46,9 @@ int infuse_sync_dns(const char *host, uint16_t port, int family, int socktype,
 	*addrlen = res->ai_addrlen;
 	/* Free the allocated memory */
 	zsock_freeaddrinfo(res);
+#ifdef CONFIG_DNS_RESOLVER
 	k_sem_give(&dns_ctx);
+#endif /* CONFIG_DNS_RESOLVER */
 
 #ifdef CONFIG_NET_IPV4
 	if (addr->sa_family == AF_INET) {
