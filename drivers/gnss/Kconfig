@@ -1,0 +1,36 @@
+# Infuse-IoT GNSS drivers
+
+config GNSS_UBX_MODEM
+	bool
+	select NET_BUF
+	help
+	  UBX protocol wrappers
+
+config GNSS_U_BLOX_M10_I2C
+	bool "U-BLOX M10 I2C GNSS Module"
+	default y
+	depends on GNSS
+	depends on DT_HAS_U_BLOX_M10_I2C_ENABLED
+	select I2C
+	select I2C_RTIO
+	select MODEM_MODULES
+	select MODEM_BACKEND_U_BLOX_I2C
+	select GNSS_UBX_MODEM
+
+if GNSS_U_BLOX_M10_I2C
+
+module = U_BLOX_M10_I2C
+module-str = u-blox M10
+source "subsys/logging/Kconfig.template.log_config"
+
+config GNSS_U_BLOX_M10_I2C_SATELLITES_COUNT
+	int "Maximum satellite count"
+	depends on GNSS_SATELLITES
+	default 24
+	help
+	  Maximum number of satellite vehicles that the driver can report from
+	  the GNSS device. This does not affect the number of devices that the
+	  device is actually tracking, just how many of those can be reported
+	  in the satellites callback.
+
+endif # GNSS_U_BLOX_M10_I2C

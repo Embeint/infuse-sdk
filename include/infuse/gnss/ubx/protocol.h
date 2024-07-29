@@ -4,10 +4,12 @@
  * @author Jordan Yates <jordan@embeint.com>
  *
  * SPDX-License-Identifier: LicenseRef-Embeint
+ *
+ * UBX protocol message definitions.
  */
 
-#ifndef INFUSE_SDK_DRIVERS_GNSS_UBX_M10_PROT_H_
-#define INFUSE_SDK_DRIVERS_GNSS_UBX_M10_PROT_H_
+#ifndef INFUSE_GNSS_UBX_PROTOCOL_H_
+#define INFUSE_GNSS_UBX_PROTOCOL_H_
 
 #include <zephyr/modem/ubx.h>
 #include <zephyr/net/buf.h>
@@ -22,7 +24,10 @@ extern "C" {
  * @{
  */
 
-enum _ubx_msg_class {
+/**
+ * @brief UBX Message Classes
+ */
+enum ubx_msg_class {
 	UBX_MSG_CLASS_ACK = 0x05,
 	UBX_MSG_CLASS_CFG = 0x06,
 	UBX_MSG_CLASS_INF = 0x04,
@@ -42,13 +47,19 @@ enum _ubx_msg_class {
  * @{
  */
 
-enum _ubx_msg_id_ack {
+enum ubx_msg_id_ack {
 	UBX_MSG_ID_ACK_NAK = 0x00,
 	UBX_MSG_ID_ACK_ACK = 0x01,
 };
 
-/** @ref UBX_MSG_ID_ACK_ACK and @ref UBX_MSG_ID_ACK_NAK */
-struct ubx_msg_id_ack {
+/** @ref UBX_MSG_ID_ACK_ACK */
+struct ubx_msg_id_ack_ack {
+	uint8_t message_class;
+	uint8_t message_id;
+} __packed;
+
+/** @ref UBX_MSG_ID_ACK_NAK */
+struct ubx_msg_id_ack_nak {
 	uint8_t message_class;
 	uint8_t message_id;
 } __packed;
@@ -57,7 +68,13 @@ struct ubx_msg_id_ack {
  * @}
  */
 
-enum _ubx_msg_id_cfg {
+/**
+ * @addtogroup UBX_MSG_CLASS_CFG
+ * @ingroup ubx_message_protocol
+ * @{
+ */
+
+enum ubx_msg_id_cfg {
 	UBX_MSG_ID_CFG_RST = 0x04,
 	UBX_MSG_ID_CFG_CFG = 0x09,
 	UBX_MSG_ID_CFG_VALSET = 0x8a,
@@ -82,16 +99,20 @@ struct ubx_msg_cfg_valset_v1 {
 	uint8_t cfg_data[];
 } __packed;
 
-#define UBX_MSG_CFG_VALSET_LAYERS_RAM   BIT(0)
-#define UBX_MSG_CFG_VALSET_LAYERS_BBR   BIT(1)
-#define UBX_MSG_CFG_VALSET_LAYERS_FLASH BIT(2)
+enum ubx_msg_cfg_valset_layers {
+	UBX_MSG_CFG_VALSET_LAYERS_RAM = BIT(0),
+	UBX_MSG_CFG_VALSET_LAYERS_BBR = BIT(1),
+	UBX_MSG_CFG_VALSET_LAYERS_FLASH = BIT(2),
+};
 
-#define UBX_MSG_CFG_VALSET_TRANSACTION_NONE    0
-#define UBX_MSG_CFG_VALSET_TRANSACTION_START   1
-#define UBX_MSG_CFG_VALSET_TRANSACTION_ONGOING 2
-#define UBX_MSG_CFG_VALSET_TRANSACTION_APPLY   3
+enum ubx_msg_cfg_valset_transaction {
+	UBX_MSG_CFG_VALSET_TRANSACTION_NONE = 0,
+	UBX_MSG_CFG_VALSET_TRANSACTION_START = 1,
+	UBX_MSG_CFG_VALSET_TRANSACTION_ONGOING = 2,
+	UBX_MSG_CFG_VALSET_TRANSACTION_APPLY = 3,
+};
 
-/** @ref UBX_MSG_ID_CFG_VALGET */
+/** Query for @ref UBX_MSG_ID_CFG_VALGET */
 struct ubx_msg_cfg_valget_query {
 	uint8_t version;
 	uint8_t layer;
@@ -107,12 +128,24 @@ struct ubx_msg_cfg_valget_response {
 	uint8_t cfg_data[];
 } __packed;
 
-#define UBX_MSG_CFG_VALGET_LAYER_RAM     0
-#define UBX_MSG_CFG_VALGET_LAYER_BBR     1
-#define UBX_MSG_CFG_VALGET_LAYER_FLASH   2
-#define UBX_MSG_CFG_VALGET_LAYER_DEFAULT 7
+enum ubx_msg_cfg_valget_layer {
+	UBX_MSG_CFG_VALGET_LAYER_RAM = 0,
+	UBX_MSG_CFG_VALGET_LAYER_BBR = 1,
+	UBX_MSG_CFG_VALGET_LAYER_FLASH = 2,
+	UBX_MSG_CFG_VALGET_LAYER_DEFAULT = 7,
+};
 
-enum _ubx_msg_id_mon {
+/**
+ * @}
+ */
+
+/**
+ * @addtogroup UBX_MSG_CLASS_MON
+ * @ingroup ubx_message_protocol
+ * @{
+ */
+
+enum ubx_msg_id_mon {
 	UBX_MSG_ID_MON_BATCH = 0x32,
 	UBX_MSG_ID_MON_COMMS = 0x36,
 	UBX_MSG_ID_MON_GNSS = 0x28,
@@ -140,20 +173,34 @@ struct ubx_msg_mon_hw3 {
 	} pins[];
 } __packed;
 
-#define UBX_MSG_ID_MON_HW3_FLAGS_RTC_CALIB   BIT(0)
-#define UBX_MSG_ID_MON_HW3_FLAGS_SAFE_BOOT   BIT(1)
-#define UBX_MSG_ID_MON_HW3_FLAGS_XTAL_ABSENT BIT(2)
+enum ubx_msg_mon_hw3_flags {
+	UBX_MSG_ID_MON_HW3_FLAGS_RTC_CALIB = BIT(0),
+	UBX_MSG_ID_MON_HW3_FLAGS_SAFE_BOOT = BIT(1),
+	UBX_MSG_ID_MON_HW3_FLAGS_XTAL_ABSENT = BIT(2),
+};
 
-#define UBX_MSG_ID_MON_HW3_PIN_MASK_PIO       BIT(0)
-#define UBX_MSG_ID_MON_HW3_PIN_MASK_BANK_MASK (0x07 << 1)
-#define UBX_MSG_ID_MON_HW3_PIN_MASK_DIR_OUT   BIT(4)
-#define UBX_MSG_ID_MON_HW3_PIN_MASK_VALUE     BIT(5)
-#define UBX_MSG_ID_MON_HW3_PIN_MASK_VIRTUAL   BIT(6)
-#define UBX_MSG_ID_MON_HW3_PIN_MASK_INT_EN    BIT(7)
-#define UBX_MSG_ID_MON_HW3_PIN_MASK_PULL_UP   BIT(8)
-#define UBX_MSG_ID_MON_HW3_PIN_MASK_PULL_DOWN BIT(9)
+enum ubx_msg_mon_hw3_pin_mask {
+	UBX_MSG_ID_MON_HW3_PIN_MASK_PIO = BIT(0),
+	UBX_MSG_ID_MON_HW3_PIN_MASK_BANK_MASK = (0x07 << 1),
+	UBX_MSG_ID_MON_HW3_PIN_MASK_DIR_OUT = BIT(4),
+	UBX_MSG_ID_MON_HW3_PIN_MASK_VALUE = BIT(5),
+	UBX_MSG_ID_MON_HW3_PIN_MASK_VIRTUAL = BIT(6),
+	UBX_MSG_ID_MON_HW3_PIN_MASK_INT_EN = BIT(7),
+	UBX_MSG_ID_MON_HW3_PIN_MASK_PULL_UP = BIT(8),
+	UBX_MSG_ID_MON_HW3_PIN_MASK_PULL_DOWN = BIT(9),
+};
 
-enum _ubx_msg_id_nav {
+/**
+ * @}
+ */
+
+/**
+ * @addtogroup UBX_MSG_CLASS_NAV
+ * @ingroup ubx_message_protocol
+ * @{
+ */
+
+enum ubx_msg_id_nav {
 	UBX_MSG_ID_NAV_AOPSTATUS = 0x60,
 	UBX_MSG_ID_NAV_CLOCK = 0x22,
 	UBX_MSG_ID_NAV_COV = 0x36,
@@ -182,6 +229,7 @@ enum _ubx_msg_id_nav {
 	UBX_MSG_ID_NAV_VELNED = 0x10,
 };
 
+/** @ref UBX_MSG_ID_NAV_PVT */
 struct ubx_msg_nav_pvt {
 	/** GPS time of week of the navigation epoch */
 	uint32_t itow;
@@ -250,71 +298,82 @@ struct ubx_msg_nav_pvt {
 	uint16_t mag_acc;
 } __packed;
 
-/** Valid UTC Date */
-#define UBX_MSG_NAV_PVT_VALID_DATE           BIT(0)
-/** Valid UTC time of day */
-#define UBX_MSG_NAV_PVT_VALID_TIME           BIT(1)
-/** UTC time of day has been fully resolved (no seconds uncertainty). Cannot be used to check if
- * time is completely solved
- */
-#define UBX_MSG_NAV_PVT_VALID_FULLY_RESOLVED BIT(2)
-/** Valid magnetic declination */
-#define UBX_MSG_NAV_PVT_VALID_MAG            BIT(3)
+enum ubx_msg_nav_pvt_valid {
+	/** Valid UTC Date */
+	UBX_MSG_NAV_PVT_VALID_DATE = BIT(0),
+	/** Valid UTC time of day */
+	UBX_MSG_NAV_PVT_VALID_TIME = BIT(1),
+	/** UTC time of day has been fully resolved (no seconds uncertainty). Cannot be used to
+	 * check if time is completely solved
+	 */
+	UBX_MSG_NAV_PVT_VALID_FULLY_RESOLVED = BIT(2),
+	/** Valid magnetic declination */
+	UBX_MSG_NAV_PVT_VALID_MAG = BIT(3),
+};
 
-#define UBX_MSG_NAV_PVT_FIX_TYPE_NO_FIX              0
-#define UBX_MSG_NAV_PVT_FIX_TYPE_DEAD_RECKONING      1
-#define UBX_MSG_NAV_PVT_FIX_TYPE_2D                  2
-#define UBX_MSG_NAV_PVT_FIX_TYPE_3D                  3
-#define UBX_MSG_NAV_PVT_FIX_TYPE_GNSS_DEAD_RECKONING 4
-#define UBX_MSG_NAV_PVT_FIX_TYPE_TIME_ONLY           5
+enum ubx_msg_nav_pvt_fix_type {
+	UBX_MSG_NAV_PVT_FIX_TYPE_NO_FIX = 0,
+	UBX_MSG_NAV_PVT_FIX_TYPE_DEAD_RECKONING = 1,
+	UBX_MSG_NAV_PVT_FIX_TYPE_2D = 2,
+	UBX_MSG_NAV_PVT_FIX_TYPE_3D = 3,
+	UBX_MSG_NAV_PVT_FIX_TYPE_GNSS_DEAD_RECKONING = 4,
+	UBX_MSG_NAV_PVT_FIX_TYPE_TIME_ONLY = 5,
+};
 
-/** Valid fix (i.e within DOP & accuracy masks) */
-#define UBX_MSG_NAV_PVT_FLAGS_GNSS_FIX_OK                   BIT(0)
-/** Differential corrections were applied */
-#define UBX_MSG_NAV_PVT_FLAGS_DIFF_SOLN                     BIT(1)
-/** Power save mode state */
-#define UBX_MSG_NAV_PVT_FLAGS_PSM_GET(flags)                (((flags) >> 2) & 0x7)
-#define UBX_MSG_NAV_PVT_FLAGS_PSM_DISABLED                  0
-#define UBX_MSG_NAV_PVT_FLAGS_PSM_ENABLED                   1
-#define UBX_MSG_NAV_PVT_FLAGS_PSM_ACQUISITION               2
-#define UBX_MSG_NAV_PVT_FLAGS_PSM_TRACKING                  3
-#define UBX_MSG_NAV_PVT_FLAGS_PSM_POWER_OPTIMIZED_TRACKING  4
-#define UBX_MSG_NAV_PVT_FLAGS_PSM_INACTIVE                  5
-/** Heading of vehicle is valid, only set if the receiver is in sensor fusion mode */
-#define UBX_MSG_NAV_PVT_FLAGS_HEAD_VEH_VALID                BIT(5)
-/** Carrier phase range solution status */
-#define UBX_MSG_NAV_PVT_FLAGS_CARR_SOLN_GET(flags)          (((flags) >> 6) & 0x3)
-#define UBX_MSG_NAV_PVT_FLAGS_CARR_SOLN_NO_SOLN             0
-#define UBX_MSG_NAV_PVT_FLAGS_CARR_SOLN_FLOATING_ABIGUITIES 1
-#define UBX_MSG_NAV_PVT_FLAGS_CARR_SOLN_FIXED_ABIGUITIES    2
+enum ubx_msg_nav_pvt_flags {
+	/** Valid fix (i.e within DOP & accuracy masks) */
+	UBX_MSG_NAV_PVT_FLAGS_GNSS_FIX_OK = BIT(0),
+	/** Differential corrections were applied */
+	UBX_MSG_NAV_PVT_FLAGS_DIFF_SOLN = BIT(1),
+	/** Power save mode state */
+	UBX_MSG_NAV_PVT_FLAGS_PSM_MASK = (0x7 << 2),
+	UBX_MSG_NAV_PVT_FLAGS_PSM_DISABLED = (0 << 2),
+	UBX_MSG_NAV_PVT_FLAGS_PSM_ENABLED = (1 << 2),
+	UBX_MSG_NAV_PVT_FLAGS_PSM_ACQUISITION = (2 << 2),
+	UBX_MSG_NAV_PVT_FLAGS_PSM_TRACKING = (3 << 2),
+	UBX_MSG_NAV_PVT_FLAGS_PSM_POWER_OPTIMIZED_TRACKING = (4 << 2),
+	UBX_MSG_NAV_PVT_FLAGS_PSM_INACTIVE = (5 << 2),
+	/** Heading of vehicle is valid, only set if the receiver is in sensor fusion mode */
+	UBX_MSG_NAV_PVT_FLAGS_HEAD_VEH_VALID = BIT(5),
+	/** Carrier phase range solution status */
+	UBX_MSG_NAV_PVT_FLAGS_CARR_SOLN_MASK = (0x3 << 6),
+	UBX_MSG_NAV_PVT_FLAGS_CARR_SOLN_NO_SOLN = (0 << 6),
+	UBX_MSG_NAV_PVT_FLAGS_CARR_SOLN_FLOATING_ABIGUITIES = (1 << 6),
+	UBX_MSG_NAV_PVT_FLAGS_CARR_SOLN_FIXED_ABIGUITIES = (2 << 6),
+};
 
-/** Information about UTC Date and Time of Day validity confirmation is available */
-#define UBX_MSG_NAV_PVT_FLAGS2_CONFIRMED_AVAI BIT(5)
-/** UTC Date validity could be confirmed */
-#define UBX_MSG_NAV_PVT_FLAGS2_CONFIRMED_DATE BIT(5)
-/** UTC Time of Day could be confirmed */
-#define UBX_MSG_NAV_PVT_FLAGS2_CONFIRMED_TIME BIT(5)
+enum ubx_msg_nav_pvt_flags2 {
+	/** Information about UTC Date and Time of Day validity confirmation is available */
+	UBX_MSG_NAV_PVT_FLAGS2_CONFIRMED_AVAI = BIT(5),
+	/** UTC Date validity could be confirmed */
+	UBX_MSG_NAV_PVT_FLAGS2_CONFIRMED_DATE = BIT(6),
+	/** UTC Time of Day could be confirmed */
+	UBX_MSG_NAV_PVT_FLAGS2_CONFIRMED_TIME = BIT(7),
+};
 
-/** Invalid lon, lat, height and hMS */
-#define UBX_MSG_NAV_PVT_FLAGS3_INVALID_LLH                BIT(0)
-/** Age of the most recently received differential correction (seconds) */
-#define UBX_MSG_NAV_PVT_FLAGS3_CORRECTION_AGE_GET(flags3) (((flags3) >> 1) & 0xF)
-#define UBX_MSG_NAV_PVT_FLAGS3_CORRECTION_AGE_NA          0
-#define UBX_MSG_NAV_PVT_FLAGS3_CORRECTION_AGE_0_1         1
-#define UBX_MSG_NAV_PVT_FLAGS3_CORRECTION_AGE_1_2         2
-#define UBX_MSG_NAV_PVT_FLAGS3_CORRECTION_AGE_2_5         3
-#define UBX_MSG_NAV_PVT_FLAGS3_CORRECTION_AGE_5_10        4
-#define UBX_MSG_NAV_PVT_FLAGS3_CORRECTION_AGE_10_15       5
-#define UBX_MSG_NAV_PVT_FLAGS3_CORRECTION_AGE_15_20       6
-#define UBX_MSG_NAV_PVT_FLAGS3_CORRECTION_AGE_20_30       7
-#define UBX_MSG_NAV_PVT_FLAGS3_CORRECTION_AGE_30_45       8
-#define UBX_MSG_NAV_PVT_FLAGS3_CORRECTION_AGE_45_60       9
-#define UBX_MSG_NAV_PVT_FLAGS3_CORRECTION_AGE_60_90       10
-#define UBX_MSG_NAV_PVT_FLAGS3_CORRECTION_AGE_90_120      11
-#define UBX_MSG_NAV_PVT_FLAGS3_CORRECTION_AGE_120_N       12
-/** Output time has been validated against an external trusted time source */
-#define UBX_MSG_NAV_PVT_FLAGS3_AUTH_TIME                  BIT(13)
+enum ubx_msg_nav_pvt_flags3 {
+	/** Invalid lon, lat, height and hMS */
+	UBX_MSG_NAV_PVT_FLAGS3_INVALID_LLH = BIT(0),
+	/** Age of the most recently received differential correction (seconds) */
+	UBX_MSG_NAV_PVT_FLAGS3_CORRECTION_AGE_MASK = (0xF << 1),
+	UBX_MSG_NAV_PVT_FLAGS3_CORRECTION_AGE_NA = (0 << 1),
+	UBX_MSG_NAV_PVT_FLAGS3_CORRECTION_AGE_0_1 = (1 << 1),
+	UBX_MSG_NAV_PVT_FLAGS3_CORRECTION_AGE_1_2 = (2 << 1),
+	UBX_MSG_NAV_PVT_FLAGS3_CORRECTION_AGE_2_5 = (3 << 1),
+	UBX_MSG_NAV_PVT_FLAGS3_CORRECTION_AGE_5_10 = (4 << 1),
+	UBX_MSG_NAV_PVT_FLAGS3_CORRECTION_AGE_10_15 = (5 << 1),
+	UBX_MSG_NAV_PVT_FLAGS3_CORRECTION_AGE_15_20 = (6 << 1),
+	UBX_MSG_NAV_PVT_FLAGS3_CORRECTION_AGE_20_30 = (7 << 1),
+	UBX_MSG_NAV_PVT_FLAGS3_CORRECTION_AGE_30_45 = (8 << 1),
+	UBX_MSG_NAV_PVT_FLAGS3_CORRECTION_AGE_45_60 = (9 << 1),
+	UBX_MSG_NAV_PVT_FLAGS3_CORRECTION_AGE_60_90 = (10 << 1),
+	UBX_MSG_NAV_PVT_FLAGS3_CORRECTION_AGE_90_120 = (11 << 1),
+	UBX_MSG_NAV_PVT_FLAGS3_CORRECTION_AGE_120_N = (12 << 1),
+	/** Output time has been validated against an external trusted time source */
+	UBX_MSG_NAV_PVT_FLAGS3_AUTH_TIME = BIT(13),
+};
 
+/** @ref UBX_MSG_ID_NAV_SAT */
 struct ubx_msg_nav_sat {
 	/** GPS time of week of the navigation epoch */
 	uint32_t itow;
@@ -338,66 +397,80 @@ struct ubx_msg_nav_sat {
 		int16_t pr_res;
 		/** Bitmask */
 		uint32_t flags;
-	} svs[];
+	} __packed svs[];
 } __packed;
 
-/** Signal quality indicator */
-#define UBX_MSG_NAV_SAT_FLAGS_QUALITY_IND_GET(flags)             ((flags) & 0x7)
-#define UBX_MSG_NAV_SAT_FLAGS_QUALITY_IND_NO_SIGNAL              0
-#define UBX_MSG_NAV_SAT_FLAGS_QUALITY_IND_SEARCHING              1
-#define UBX_MSG_NAV_SAT_FLAGS_QUALITY_IND_ACQUIRED               2
-#define UBX_MSG_NAV_SAT_FLAGS_QUALITY_IND_UNUSABLE               3
-#define UBX_MSG_NAV_SAT_FLAGS_QUALITY_IND_CODE_LOCKED            4
-#define UBX_MSG_NAV_SAT_FLAGS_QUALITY_IND_CODE_CARRIER_LOCKED1   5
-#define UBX_MSG_NAV_SAT_FLAGS_QUALITY_IND_CODE_CARRIER_LOCKED2   6
-#define UBX_MSG_NAV_SAT_FLAGS_QUALITY_IND_CODE_CARRIER_LOCKED3   7
-/** Signal in the subset specified in Signal Identifiers is currently being used for navigation */
-#define UBX_MSG_NAV_SAT_FLAGS_SV_USED                            BIT(3)
-/** Signal health flag */
-#define UBX_MSG_NAV_SAT_FLAGS_HEALTH_GET(flags)                  (((flags) >> 4) & 0x3)
-#define UBX_MSG_NAV_SAT_FLAGS_HEALTH_UNKNOWN                     0
-#define UBX_MSG_NAV_SAT_FLAGS_HEALTH_HEALTHY                     1
-#define UBX_MSG_NAV_SAT_FLAGS_HEALTH_UNHEALTHY                   2
-/** Differential correction data is available for this SV */
-#define UBX_MSG_NAV_SAT_FLAGS_DIFF_CORR                          BIT(6)
-/** Carrier smoothed pseudorange used */
-#define UBX_MSG_NAV_SAT_FLAGS_SMOOTHED                           BIT(7)
-/** Orbit source */
-#define UBX_MSG_NAV_SAT_FLAGS_ORBIT_SOURCE_GET(flags)            (((flags) >> 8) & 0x7)
-#define UBX_MSG_NAV_SAT_FLAGS_ORBIT_SOURCE_NONE                  0
-#define UBX_MSG_NAV_SAT_FLAGS_ORBIT_SOURCE_EPHEMERIS             1
-#define UBX_MSG_NAV_SAT_FLAGS_ORBIT_SOURCE_ALMANAC               2
-#define UBX_MSG_NAV_SAT_FLAGS_ORBIT_SOURCE_ASSIST_NOW_OFFLINE    3
-#define UBX_MSG_NAV_SAT_FLAGS_ORBIT_SOURCE_ASSIST_NOW_AUTONOMOUS 4
-#define UBX_MSG_NAV_SAT_FLAGS_ORBIT_SOURCE_OTHER1                5
-#define UBX_MSG_NAV_SAT_FLAGS_ORBIT_SOURCE_OTHER2                6
-#define UBX_MSG_NAV_SAT_FLAGS_ORBIT_SOURCE_OTHER3                7
-/** Ephemeris is available for this SV */
-#define UBX_MSG_NAV_SAT_FLAGS_EPH_AVAIL                          BIT(11)
-/** Almanac is available for this SV */
-#define UBX_MSG_NAV_SAT_FLAGS_ALM_AVAIL                          BIT(12)
-/** AssistNow Offline data is available for this SV */
-#define UBX_MSG_NAV_SAT_FLAGS_ANO_AVAIL                          BIT(13)
-/** AssistNow Autonomous data is available for this SV */
-#define UBX_MSG_NAV_SAT_FLAGS_AOP_AVAIL                          BIT(14)
-/** SBAS corrections have been used for this SV */
-#define UBX_MSG_NAV_SAT_FLAGS_SBAS_CORR_USED                     BIT(16)
-/** RTCM corrections have been used for this SV */
-#define UBX_MSG_NAV_SAT_FLAGS_RTCM_CORR_USED                     BIT(17)
-/** QZSS SLAS corrections have been used for this SV */
-#define UBX_MSG_NAV_SAT_FLAGS_SLAS_CORR_USED                     BIT(18)
-/** SPARTN corrections have been used for this SV */
-#define UBX_MSG_NAV_SAT_FLAGS_SPARTN_CORR_USED                   BIT(19)
-/** Pseudorange corrections have been used for this SV */
-#define UBX_MSG_NAV_SAT_FLAGS_PR_CORR_USED                       BIT(20)
-/** Carrier range corrections have been used for this SV */
-#define UBX_MSG_NAV_SAT_FLAGS_CR_CORR_USED                       BIT(21)
-/** Range rate (Doppler) corrections have been used for this SV */
-#define UBX_MSG_NAV_SAT_FLAGS_DO_CORR_USED                       BIT(22)
-/** CLAS corrections have been used for this SV */
-#define UBX_MSG_NAV_SAT_FLAGS_CLAS_CORR_USED                     BIT(23)
+enum ubx_msg_nav_sat_sv_flags {
+	/** Signal quality indicator */
+	UBX_MSG_NAV_SAT_FLAGS_QUALITY_IND_MASK = (0x7),
+	UBX_MSG_NAV_SAT_FLAGS_QUALITY_IND_NO_SIGNAL = 0,
+	UBX_MSG_NAV_SAT_FLAGS_QUALITY_IND_SEARCHING = 1,
+	UBX_MSG_NAV_SAT_FLAGS_QUALITY_IND_ACQUIRED = 2,
+	UBX_MSG_NAV_SAT_FLAGS_QUALITY_IND_UNUSABLE = 3,
+	UBX_MSG_NAV_SAT_FLAGS_QUALITY_IND_CODE_LOCKED = 4,
+	UBX_MSG_NAV_SAT_FLAGS_QUALITY_IND_CODE_CARRIER_LOCKED1 = 5,
+	UBX_MSG_NAV_SAT_FLAGS_QUALITY_IND_CODE_CARRIER_LOCKED2 = 6,
+	UBX_MSG_NAV_SAT_FLAGS_QUALITY_IND_CODE_CARRIER_LOCKED3 = 7,
+	/** Signal in the subset specified in Signal Identifiers is currently being used for
+	 * navigation
+	 */
+	UBX_MSG_NAV_SAT_FLAGS_SV_USED = BIT(3),
+	/** Signal health flag */
+	UBX_MSG_NAV_SAT_FLAGS_HEALTH_MASK = (0x3 << 4),
+	UBX_MSG_NAV_SAT_FLAGS_HEALTH_UNKNOWN = (0 << 4),
+	UBX_MSG_NAV_SAT_FLAGS_HEALTH_HEALTHY = (1 << 4),
+	UBX_MSG_NAV_SAT_FLAGS_HEALTH_UNHEALTHY = (2 << 4),
+	/** Differential correction data is available for this SV */
+	UBX_MSG_NAV_SAT_FLAGS_DIFF_CORR = BIT(6),
+	/** Carrier smoothed pseudorange used */
+	UBX_MSG_NAV_SAT_FLAGS_SMOOTHED = BIT(7),
+	/** Orbit source */
+	UBX_MSG_NAV_SAT_FLAGS_ORBIT_SOURCE_MASK = (0x7 << 8),
+	UBX_MSG_NAV_SAT_FLAGS_ORBIT_SOURCE_NONE = (0 << 8),
+	UBX_MSG_NAV_SAT_FLAGS_ORBIT_SOURCE_EPHEMERIS = (1 << 8),
+	UBX_MSG_NAV_SAT_FLAGS_ORBIT_SOURCE_ALMANAC = (2 << 8),
+	UBX_MSG_NAV_SAT_FLAGS_ORBIT_SOURCE_ASSIST_NOW_OFFLINE = (3 << 8),
+	UBX_MSG_NAV_SAT_FLAGS_ORBIT_SOURCE_ASSIST_NOW_AUTONOMOUS = (4 << 8),
+	UBX_MSG_NAV_SAT_FLAGS_ORBIT_SOURCE_OTHER1 = (5 << 8),
+	UBX_MSG_NAV_SAT_FLAGS_ORBIT_SOURCE_OTHER2 = (6 << 8),
+	UBX_MSG_NAV_SAT_FLAGS_ORBIT_SOURCE_OTHER3 = (7 << 8),
+	/** Ephemeris is available for this SV */
+	UBX_MSG_NAV_SAT_FLAGS_EPH_AVAIL = BIT(11),
+	/** Almanac is available for this SV */
+	UBX_MSG_NAV_SAT_FLAGS_ALM_AVAIL = BIT(12),
+	/** AssistNow Offline data is available for this SV */
+	UBX_MSG_NAV_SAT_FLAGS_ANO_AVAIL = BIT(13),
+	/** AssistNow Autonomous data is available for this SV */
+	UBX_MSG_NAV_SAT_FLAGS_AOP_AVAIL = BIT(14),
+	/** SBAS corrections have been used for this SV */
+	UBX_MSG_NAV_SAT_FLAGS_SBAS_CORR_USED = BIT(16),
+	/** RTCM corrections have been used for this SV */
+	UBX_MSG_NAV_SAT_FLAGS_RTCM_CORR_USED = BIT(17),
+	/** QZSS SLAS corrections have been used for this SV */
+	UBX_MSG_NAV_SAT_FLAGS_SLAS_CORR_USED = BIT(18),
+	/** SPARTN corrections have been used for this SV */
+	UBX_MSG_NAV_SAT_FLAGS_SPARTN_CORR_USED = BIT(19),
+	/** Pseudorange corrections have been used for this SV */
+	UBX_MSG_NAV_SAT_FLAGS_PR_CORR_USED = BIT(20),
+	/** Carrier range corrections have been used for this SV */
+	UBX_MSG_NAV_SAT_FLAGS_CR_CORR_USED = BIT(21),
+	/** Range rate (Doppler) corrections have been used for this SV */
+	UBX_MSG_NAV_SAT_FLAGS_DO_CORR_USED = BIT(22),
+	/** CLAS corrections have been used for this SV */
+	UBX_MSG_NAV_SAT_FLAGS_CLAS_CORR_USED = BIT(23),
+};
 
-enum _ubx_msg_id_rxm {
+/**
+ * @}
+ */
+
+/**
+ * @addtogroup UBX_MSG_CLASS_RXM
+ * @ingroup ubx_message_protocol
+ * @{
+ */
+
+enum ubx_msg_id_rxm {
 	UBX_MSG_ID_RXM_MEAS20 = 0x84,
 	UBX_MSG_ID_RXM_MEAS50 = 0x86,
 	UBX_MSG_ID_RXM_MEASC12 = 0x82,
@@ -408,6 +481,7 @@ enum _ubx_msg_id_rxm {
 	UBX_MSG_ID_RXM_SFRBX = 0x13,
 };
 
+/** @ref UBX_MSG_ID_RXM_PMREQ */
 struct ubx_msg_rxm_pmreq {
 	uint8_t version;
 	uint8_t reserved0[3];
@@ -416,20 +490,26 @@ struct ubx_msg_rxm_pmreq {
 	uint32_t wakeup_sources;
 } __packed;
 
-#define UBX_MSG_RXM_PMREQ_DURATION_FOREVER 0
+enum ubx_msg_rxm_pmreq_flags {
+	UBX_MSG_RXM_PMREQ_FLAGS_BACKUP = BIT(1),
+	UBX_MSG_RXM_PMREQ_FLAGS_FORCE = BIT(2),
+};
 
-#define UBX_MSG_RXM_PMREQ_FLAGS_BACKUP BIT(1)
-#define UBX_MSG_RXM_PMREQ_FLAGS_FORCE  BIT(2)
+enum ubx_msg_rxm_pmreq_wakeup {
+	UBX_MSG_RXM_PMREQ_WAKEUP_UARTRX = BIT(3),
+	UBX_MSG_RXM_PMREQ_WAKEUP_EXTINT0 = BIT(5),
+	UBX_MSG_RXM_PMREQ_WAKEUP_EXTINT1 = BIT(6),
+	UBX_MSG_RXM_PMREQ_WAKEUP_SPICS = BIT(7),
+};
 
-#define UBX_MSG_RXM_PMREQ_WAKEUP_UARTRX  BIT(3)
-#define UBX_MSG_RXM_PMREQ_WAKEUP_EXTINT0 BIT(5)
-#define UBX_MSG_RXM_PMREQ_WAKEUP_EXTINT1 BIT(6)
-#define UBX_MSG_RXM_PMREQ_WAKEUP_SPICS   BIT(7)
+/**
+ * @}
+ */
 
 /**
  * @brief Create a net_buf_simple large enough to hold a message
  *
- * @note Does not work for structures with variable length
+ * @warning Only works for fixed length messages
  *
  * @param name Name of net_buf_simple
  * @param msg_type UBX message structure
@@ -438,6 +518,13 @@ struct ubx_msg_rxm_pmreq {
 	NET_BUF_SIMPLE_DEFINE(name,                                                                \
 			      (sizeof(struct ubx_frame) + sizeof(msg_type) + sizeof(uint16_t)))
 
+/**
+ * @brief Prepare a net_buf_simple to be used as a UBX protocol message
+ *
+ * @param buf Buffer to prepare.
+ * @param msg_class UBX protocol message class (@ref ubx_msg_class)
+ * @param msg_id UBX protocol message ID (depends on @a msg_class)
+ */
 static inline void ubx_msg_prepare(struct net_buf_simple *buf, uint8_t msg_class, uint8_t msg_id)
 {
 	struct ubx_frame *frame;
@@ -452,6 +539,13 @@ static inline void ubx_msg_prepare(struct net_buf_simple *buf, uint8_t msg_class
 	frame->message_id = msg_id;
 }
 
+/**
+ * @brief Finalise a net_buf_simple to be used as a UBX protocol message
+ *
+ * Populates the header payload size and computes the message checksum.
+ *
+ * @param buf Buffer to finalise.
+ */
 static inline void ubx_msg_finalise(struct net_buf_simple *buf)
 {
 	uint8_t ckA = 0, ckB = 0;
@@ -483,4 +577,4 @@ static inline void ubx_msg_finalise(struct net_buf_simple *buf)
 }
 #endif
 
-#endif /* INFUSE_SDK_DRIVERS_GNSS_UBX_M10_PROT_H_ */
+#endif /* INFUSE_GNSS_UBX_PROTOCOL_H_ */
