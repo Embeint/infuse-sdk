@@ -1,0 +1,486 @@
+/**
+ * @file
+ * @copyright 2024 Embeint Inc
+ * @author Jordan Yates <jordan@embeint.com>
+ *
+ * SPDX-License-Identifier: LicenseRef-Embeint
+ */
+
+#ifndef INFUSE_SDK_DRIVERS_GNSS_UBX_M10_PROT_H_
+#define INFUSE_SDK_DRIVERS_GNSS_UBX_M10_PROT_H_
+
+#include <zephyr/modem/ubx.h>
+#include <zephyr/net/buf.h>
+#include <zephyr/toolchain.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/**
+ * @defgroup ubx_message_protocol UBX Message Protocol
+ * @{
+ */
+
+enum _ubx_msg_class {
+	UBX_MSG_CLASS_ACK = 0x05,
+	UBX_MSG_CLASS_CFG = 0x06,
+	UBX_MSG_CLASS_INF = 0x04,
+	UBX_MSG_CLASS_LOG = 0x21,
+	UBX_MSG_CLASS_MGA = 0x13,
+	UBX_MSG_CLASS_MON = 0x0a,
+	UBX_MSG_CLASS_NAV = 0x01,
+	UBX_MSG_CLASS_RXM = 0x02,
+	UBX_MSG_CLASS_SEC = 0x27,
+	UBX_MSG_CLASS_TIM = 0x0d,
+	UBX_MSG_CLASS_UPD = 0x09,
+};
+
+/**
+ * @addtogroup UBX_MSG_CLASS_ACK
+ * @ingroup ubx_message_protocol
+ * @{
+ */
+
+enum _ubx_msg_id_ack {
+	UBX_MSG_ID_ACK_NAK = 0x00,
+	UBX_MSG_ID_ACK_ACK = 0x01,
+};
+
+/** @ref UBX_MSG_ID_ACK_ACK and @ref UBX_MSG_ID_ACK_NAK */
+struct ubx_msg_id_ack {
+	uint8_t message_class;
+	uint8_t message_id;
+} __packed;
+
+/**
+ * @}
+ */
+
+enum _ubx_msg_id_cfg {
+	UBX_MSG_ID_CFG_RST = 0x04,
+	UBX_MSG_ID_CFG_CFG = 0x09,
+	UBX_MSG_ID_CFG_VALSET = 0x8a,
+	UBX_MSG_ID_CFG_VALGET = 0x8b,
+	UBX_MSG_ID_CFG_VALDEL = 0x8c,
+};
+
+/** @ref UBX_MSG_ID_CFG_VALSET */
+struct ubx_msg_cfg_valset_v0 {
+	uint8_t version;
+	uint8_t layers;
+	uint8_t reserved[2];
+	uint8_t cfg_data[];
+} __packed;
+
+/** @ref UBX_MSG_ID_CFG_VALSET */
+struct ubx_msg_cfg_valset_v1 {
+	uint8_t version;
+	uint8_t layers;
+	uint8_t transaction;
+	uint8_t reserved;
+	uint8_t cfg_data[];
+} __packed;
+
+#define UBX_MSG_CFG_VALSET_LAYERS_RAM   BIT(0)
+#define UBX_MSG_CFG_VALSET_LAYERS_BBR   BIT(1)
+#define UBX_MSG_CFG_VALSET_LAYERS_FLASH BIT(2)
+
+#define UBX_MSG_CFG_VALSET_TRANSACTION_NONE    0
+#define UBX_MSG_CFG_VALSET_TRANSACTION_START   1
+#define UBX_MSG_CFG_VALSET_TRANSACTION_ONGOING 2
+#define UBX_MSG_CFG_VALSET_TRANSACTION_APPLY   3
+
+/** @ref UBX_MSG_ID_CFG_VALGET */
+struct ubx_msg_cfg_valget_query {
+	uint8_t version;
+	uint8_t layer;
+	uint16_t position;
+	uint32_t cfg_keys[];
+} __packed;
+
+/** Response to @ref UBX_MSG_ID_CFG_VALGET */
+struct ubx_msg_cfg_valget_response {
+	uint8_t version;
+	uint8_t layer;
+	uint16_t position;
+	uint8_t cfg_data[];
+} __packed;
+
+#define UBX_MSG_CFG_VALGET_LAYER_RAM     0
+#define UBX_MSG_CFG_VALGET_LAYER_BBR     1
+#define UBX_MSG_CFG_VALGET_LAYER_FLASH   2
+#define UBX_MSG_CFG_VALGET_LAYER_DEFAULT 7
+
+enum _ubx_msg_id_mon {
+	UBX_MSG_ID_MON_BATCH = 0x32,
+	UBX_MSG_ID_MON_COMMS = 0x36,
+	UBX_MSG_ID_MON_GNSS = 0x28,
+	UBX_MSG_ID_MON_HW3 = 0x37,
+	UBX_MSG_ID_MON_PATCH = 0x27,
+	UBX_MSG_ID_MON_RF = 0x38,
+	UBX_MSG_ID_MON_RXR = 0x21,
+	UBX_MSG_ID_MON_SPAN = 0x31,
+	UBX_MSG_ID_MON_VER = 0x04,
+};
+
+/** @ref UBX_MSG_ID_MON_HW3 */
+struct ubx_msg_mon_hw3 {
+	uint8_t version;
+	uint8_t n_pins;
+	uint8_t flags;
+	char hw_version[10];
+	uint8_t reserved0[9];
+	struct {
+		uint8_t reserved1;
+		uint8_t pin_id;
+		uint16_t pin_mask;
+		uint8_t vp;
+		uint8_t reserved2;
+	} pins[];
+} __packed;
+
+#define UBX_MSG_ID_MON_HW3_FLAGS_RTC_CALIB   BIT(0)
+#define UBX_MSG_ID_MON_HW3_FLAGS_SAFE_BOOT   BIT(1)
+#define UBX_MSG_ID_MON_HW3_FLAGS_XTAL_ABSENT BIT(2)
+
+#define UBX_MSG_ID_MON_HW3_PIN_MASK_PIO       BIT(0)
+#define UBX_MSG_ID_MON_HW3_PIN_MASK_BANK_MASK (0x07 << 1)
+#define UBX_MSG_ID_MON_HW3_PIN_MASK_DIR_OUT   BIT(4)
+#define UBX_MSG_ID_MON_HW3_PIN_MASK_VALUE     BIT(5)
+#define UBX_MSG_ID_MON_HW3_PIN_MASK_VIRTUAL   BIT(6)
+#define UBX_MSG_ID_MON_HW3_PIN_MASK_INT_EN    BIT(7)
+#define UBX_MSG_ID_MON_HW3_PIN_MASK_PULL_UP   BIT(8)
+#define UBX_MSG_ID_MON_HW3_PIN_MASK_PULL_DOWN BIT(9)
+
+enum _ubx_msg_id_nav {
+	UBX_MSG_ID_NAV_AOPSTATUS = 0x60,
+	UBX_MSG_ID_NAV_CLOCK = 0x22,
+	UBX_MSG_ID_NAV_COV = 0x36,
+	UBX_MSG_ID_NAV_DOP = 0x04,
+	UBX_MSG_ID_NAV_EOE = 0x61,
+	UBX_MSG_ID_NAV_ODO = 0x09,
+	UBX_MSG_ID_NAV_ORB = 0x34,
+	UBX_MSG_ID_NAV_PL = 0x64,
+	UBX_MSG_ID_NAV_POSECEF = 0x01,
+	UBX_MSG_ID_NAV_POSLLH = 0x02,
+	UBX_MSG_ID_NAV_PVT = 0x07,
+	UBX_MSG_ID_NAV_RESETODO = 0x10,
+	UBX_MSG_ID_NAV_SAT = 0x35,
+	UBX_MSG_ID_NAV_SBAS = 0x32,
+	UBX_MSG_ID_NAV_SIG = 0x43,
+	UBX_MSG_ID_NAV_SLAS = 0x42,
+	UBX_MSG_ID_NAV_STATUS = 0x03,
+	UBX_MSG_ID_NAV_TIMEBDS = 0x24,
+	UBX_MSG_ID_NAV_TIMEGAL = 0x25,
+	UBX_MSG_ID_NAV_TIMEGLO = 0x23,
+	UBX_MSG_ID_NAV_TIMEGPS = 0x20,
+	UBX_MSG_ID_NAV_TIMELS = 0x26,
+	UBX_MSG_ID_NAV_TIMEQZSS = 0x27,
+	UBX_MSG_ID_NAV_TIMEUTC = 0x21,
+	UBX_MSG_ID_NAV_VELECEF = 0x11,
+	UBX_MSG_ID_NAV_VELNED = 0x10,
+};
+
+struct ubx_msg_nav_pvt {
+	/** GPS time of week of the navigation epoch */
+	uint32_t itow;
+	/** Year (UTC) */
+	uint16_t year;
+	/** Month, range 1..12 (UTC */
+	uint8_t month;
+	/** Day of month, range 1..31 (UTC) */
+	uint8_t day;
+	/** Hour of day, range 0..23 (UTC) */
+	uint8_t hour;
+	/** Minute of hour, range 0..59 (UTC) */
+	uint8_t min;
+	/** Seconds of minute, range 0..60 (UTC) */
+	uint8_t sec;
+	/** Validity flags */
+	uint8_t valid;
+	/** Time accuracy estimate (UTC) */
+	uint32_t t_ac;
+	/** Fraction of second, range -1e9 .. 1e9 (UTC) */
+	int32_t nano;
+	/** GNSSfix Type */
+	uint8_t fix_type;
+	/** Fix status flags */
+	uint8_t flags;
+	/** Additional flags */
+	uint8_t flags2;
+	/** Number of satellites used in Nav Solution */
+	uint8_t num_sv;
+	/** Longitude (1e-7) */
+	int32_t lon;
+	/** Latitude (1e-7) */
+	int32_t lat;
+	/** Height above ellipsoid (mm) */
+	int32_t height;
+	/** Height above mean sea level (mm) */
+	int32_t height_msl;
+	/** Horizontal accuracy estimate (mm) */
+	uint32_t h_acc;
+	/** Vertical accuracy estimate (mm) */
+	uint32_t v_acc;
+	/** NED north velocity (mm/s) */
+	int32_t vel_n;
+	/** NED east velocity (mm/s) */
+	int32_t vel_e;
+	/** NED down velocity (mm/s) */
+	int32_t vel_d;
+	/** 2D Ground Speed  (mm/s) */
+	int32_t g_speed;
+	/** 2D Heading of motion (1e-5 deg) */
+	int32_t head_mot;
+	/** Speed accuracy estimate (mm/s) */
+	uint32_t s_ac;
+	/** Heading accuracy estimate (both motion and vehicle) (1e-5 deg) */
+	uint32_t head_acc;
+	/** Position DOP (0.01) */
+	uint16_t p_dop;
+	/** Additional flags */
+	uint16_t flags3;
+	uint8_t reserved0[4];
+	/** 2D Heading of vehicle, this is only valid when headVehValid is set (1e-5 deg) */
+	int32_t head_veh;
+	/** Magnetic declination. Only supported in ADR 4.10 and later (1e-2 deg) */
+	int16_t mag_dec;
+	/** Magnetic declination accuracy. Only supported in ADR 4.10 and later (1e-2 deg) */
+	uint16_t mag_acc;
+} __packed;
+
+/** Valid UTC Date */
+#define UBX_MSG_NAV_PVT_VALID_DATE           BIT(0)
+/** Valid UTC time of day */
+#define UBX_MSG_NAV_PVT_VALID_TIME           BIT(1)
+/** UTC time of day has been fully resolved (no seconds uncertainty). Cannot be used to check if
+ * time is completely solved
+ */
+#define UBX_MSG_NAV_PVT_VALID_FULLY_RESOLVED BIT(2)
+/** Valid magnetic declination */
+#define UBX_MSG_NAV_PVT_VALID_MAG            BIT(3)
+
+#define UBX_MSG_NAV_PVT_FIX_TYPE_NO_FIX              0
+#define UBX_MSG_NAV_PVT_FIX_TYPE_DEAD_RECKONING      1
+#define UBX_MSG_NAV_PVT_FIX_TYPE_2D                  2
+#define UBX_MSG_NAV_PVT_FIX_TYPE_3D                  3
+#define UBX_MSG_NAV_PVT_FIX_TYPE_GNSS_DEAD_RECKONING 4
+#define UBX_MSG_NAV_PVT_FIX_TYPE_TIME_ONLY           5
+
+/** Valid fix (i.e within DOP & accuracy masks) */
+#define UBX_MSG_NAV_PVT_FLAGS_GNSS_FIX_OK                   BIT(0)
+/** Differential corrections were applied */
+#define UBX_MSG_NAV_PVT_FLAGS_DIFF_SOLN                     BIT(1)
+/** Power save mode state */
+#define UBX_MSG_NAV_PVT_FLAGS_PSM_GET(flags)                (((flags) >> 2) & 0x7)
+#define UBX_MSG_NAV_PVT_FLAGS_PSM_DISABLED                  0
+#define UBX_MSG_NAV_PVT_FLAGS_PSM_ENABLED                   1
+#define UBX_MSG_NAV_PVT_FLAGS_PSM_ACQUISITION               2
+#define UBX_MSG_NAV_PVT_FLAGS_PSM_TRACKING                  3
+#define UBX_MSG_NAV_PVT_FLAGS_PSM_POWER_OPTIMIZED_TRACKING  4
+#define UBX_MSG_NAV_PVT_FLAGS_PSM_INACTIVE                  5
+/** Heading of vehicle is valid, only set if the receiver is in sensor fusion mode */
+#define UBX_MSG_NAV_PVT_FLAGS_HEAD_VEH_VALID                BIT(5)
+/** Carrier phase range solution status */
+#define UBX_MSG_NAV_PVT_FLAGS_CARR_SOLN_GET(flags)          (((flags) >> 6) & 0x3)
+#define UBX_MSG_NAV_PVT_FLAGS_CARR_SOLN_NO_SOLN             0
+#define UBX_MSG_NAV_PVT_FLAGS_CARR_SOLN_FLOATING_ABIGUITIES 1
+#define UBX_MSG_NAV_PVT_FLAGS_CARR_SOLN_FIXED_ABIGUITIES    2
+
+/** Information about UTC Date and Time of Day validity confirmation is available */
+#define UBX_MSG_NAV_PVT_FLAGS2_CONFIRMED_AVAI BIT(5)
+/** UTC Date validity could be confirmed */
+#define UBX_MSG_NAV_PVT_FLAGS2_CONFIRMED_DATE BIT(5)
+/** UTC Time of Day could be confirmed */
+#define UBX_MSG_NAV_PVT_FLAGS2_CONFIRMED_TIME BIT(5)
+
+/** Invalid lon, lat, height and hMS */
+#define UBX_MSG_NAV_PVT_FLAGS3_INVALID_LLH                BIT(0)
+/** Age of the most recently received differential correction (seconds) */
+#define UBX_MSG_NAV_PVT_FLAGS3_CORRECTION_AGE_GET(flags3) (((flags3) >> 1) & 0xF)
+#define UBX_MSG_NAV_PVT_FLAGS3_CORRECTION_AGE_NA          0
+#define UBX_MSG_NAV_PVT_FLAGS3_CORRECTION_AGE_0_1         1
+#define UBX_MSG_NAV_PVT_FLAGS3_CORRECTION_AGE_1_2         2
+#define UBX_MSG_NAV_PVT_FLAGS3_CORRECTION_AGE_2_5         3
+#define UBX_MSG_NAV_PVT_FLAGS3_CORRECTION_AGE_5_10        4
+#define UBX_MSG_NAV_PVT_FLAGS3_CORRECTION_AGE_10_15       5
+#define UBX_MSG_NAV_PVT_FLAGS3_CORRECTION_AGE_15_20       6
+#define UBX_MSG_NAV_PVT_FLAGS3_CORRECTION_AGE_20_30       7
+#define UBX_MSG_NAV_PVT_FLAGS3_CORRECTION_AGE_30_45       8
+#define UBX_MSG_NAV_PVT_FLAGS3_CORRECTION_AGE_45_60       9
+#define UBX_MSG_NAV_PVT_FLAGS3_CORRECTION_AGE_60_90       10
+#define UBX_MSG_NAV_PVT_FLAGS3_CORRECTION_AGE_90_120      11
+#define UBX_MSG_NAV_PVT_FLAGS3_CORRECTION_AGE_120_N       12
+/** Output time has been validated against an external trusted time source */
+#define UBX_MSG_NAV_PVT_FLAGS3_AUTH_TIME                  BIT(13)
+
+struct ubx_msg_nav_sat {
+	/** GPS time of week of the navigation epoch */
+	uint32_t itow;
+	/** Message version (0x01 for this version) */
+	uint8_t version;
+	/** Number of satellites */
+	uint8_t num_svs;
+	uint8_t reserved0[2];
+	struct ubx_msg_nav_sat_sv {
+		/** GNSS identifier */
+		uint8_t gnss_id;
+		/** Satellite identifier */
+		uint8_t sv_id;
+		/** Carrier to noise ratio (signal strength) (dBHz) */
+		uint8_t cno;
+		/** Elevation (range: +/-90), unknown if out of range (deg) */
+		int8_t elev;
+		/** Azimuth (range 0-360), unknown if elevation is out of range (deg) */
+		int16_t azim;
+		/** Pseudorange residual */
+		int16_t pr_res;
+		/** Bitmask */
+		uint32_t flags;
+	} svs[];
+} __packed;
+
+/** Signal quality indicator */
+#define UBX_MSG_NAV_SAT_FLAGS_QUALITY_IND_GET(flags)             ((flags) & 0x7)
+#define UBX_MSG_NAV_SAT_FLAGS_QUALITY_IND_NO_SIGNAL              0
+#define UBX_MSG_NAV_SAT_FLAGS_QUALITY_IND_SEARCHING              1
+#define UBX_MSG_NAV_SAT_FLAGS_QUALITY_IND_ACQUIRED               2
+#define UBX_MSG_NAV_SAT_FLAGS_QUALITY_IND_UNUSABLE               3
+#define UBX_MSG_NAV_SAT_FLAGS_QUALITY_IND_CODE_LOCKED            4
+#define UBX_MSG_NAV_SAT_FLAGS_QUALITY_IND_CODE_CARRIER_LOCKED1   5
+#define UBX_MSG_NAV_SAT_FLAGS_QUALITY_IND_CODE_CARRIER_LOCKED2   6
+#define UBX_MSG_NAV_SAT_FLAGS_QUALITY_IND_CODE_CARRIER_LOCKED3   7
+/** Signal in the subset specified in Signal Identifiers is currently being used for navigation */
+#define UBX_MSG_NAV_SAT_FLAGS_SV_USED                            BIT(3)
+/** Signal health flag */
+#define UBX_MSG_NAV_SAT_FLAGS_HEALTH_GET(flags)                  (((flags) >> 4) & 0x3)
+#define UBX_MSG_NAV_SAT_FLAGS_HEALTH_UNKNOWN                     0
+#define UBX_MSG_NAV_SAT_FLAGS_HEALTH_HEALTHY                     1
+#define UBX_MSG_NAV_SAT_FLAGS_HEALTH_UNHEALTHY                   2
+/** Differential correction data is available for this SV */
+#define UBX_MSG_NAV_SAT_FLAGS_DIFF_CORR                          BIT(6)
+/** Carrier smoothed pseudorange used */
+#define UBX_MSG_NAV_SAT_FLAGS_SMOOTHED                           BIT(7)
+/** Orbit source */
+#define UBX_MSG_NAV_SAT_FLAGS_ORBIT_SOURCE_GET(flags)            (((flags) >> 8) & 0x7)
+#define UBX_MSG_NAV_SAT_FLAGS_ORBIT_SOURCE_NONE                  0
+#define UBX_MSG_NAV_SAT_FLAGS_ORBIT_SOURCE_EPHEMERIS             1
+#define UBX_MSG_NAV_SAT_FLAGS_ORBIT_SOURCE_ALMANAC               2
+#define UBX_MSG_NAV_SAT_FLAGS_ORBIT_SOURCE_ASSIST_NOW_OFFLINE    3
+#define UBX_MSG_NAV_SAT_FLAGS_ORBIT_SOURCE_ASSIST_NOW_AUTONOMOUS 4
+#define UBX_MSG_NAV_SAT_FLAGS_ORBIT_SOURCE_OTHER1                5
+#define UBX_MSG_NAV_SAT_FLAGS_ORBIT_SOURCE_OTHER2                6
+#define UBX_MSG_NAV_SAT_FLAGS_ORBIT_SOURCE_OTHER3                7
+/** Ephemeris is available for this SV */
+#define UBX_MSG_NAV_SAT_FLAGS_EPH_AVAIL                          BIT(11)
+/** Almanac is available for this SV */
+#define UBX_MSG_NAV_SAT_FLAGS_ALM_AVAIL                          BIT(12)
+/** AssistNow Offline data is available for this SV */
+#define UBX_MSG_NAV_SAT_FLAGS_ANO_AVAIL                          BIT(13)
+/** AssistNow Autonomous data is available for this SV */
+#define UBX_MSG_NAV_SAT_FLAGS_AOP_AVAIL                          BIT(14)
+/** SBAS corrections have been used for this SV */
+#define UBX_MSG_NAV_SAT_FLAGS_SBAS_CORR_USED                     BIT(16)
+/** RTCM corrections have been used for this SV */
+#define UBX_MSG_NAV_SAT_FLAGS_RTCM_CORR_USED                     BIT(17)
+/** QZSS SLAS corrections have been used for this SV */
+#define UBX_MSG_NAV_SAT_FLAGS_SLAS_CORR_USED                     BIT(18)
+/** SPARTN corrections have been used for this SV */
+#define UBX_MSG_NAV_SAT_FLAGS_SPARTN_CORR_USED                   BIT(19)
+/** Pseudorange corrections have been used for this SV */
+#define UBX_MSG_NAV_SAT_FLAGS_PR_CORR_USED                       BIT(20)
+/** Carrier range corrections have been used for this SV */
+#define UBX_MSG_NAV_SAT_FLAGS_CR_CORR_USED                       BIT(21)
+/** Range rate (Doppler) corrections have been used for this SV */
+#define UBX_MSG_NAV_SAT_FLAGS_DO_CORR_USED                       BIT(22)
+/** CLAS corrections have been used for this SV */
+#define UBX_MSG_NAV_SAT_FLAGS_CLAS_CORR_USED                     BIT(23)
+
+enum _ubx_msg_id_rxm {
+	UBX_MSG_ID_RXM_MEAS20 = 0x84,
+	UBX_MSG_ID_RXM_MEAS50 = 0x86,
+	UBX_MSG_ID_RXM_MEASC12 = 0x82,
+	UBX_MSG_ID_RXM_MEASD12 = 0x80,
+	UBX_MSG_ID_RXM_MEASX = 0x14,
+	UBX_MSG_ID_RXM_PMREQ = 0x41,
+	UBX_MSG_ID_RXM_RLM = 0x59,
+	UBX_MSG_ID_RXM_SFRBX = 0x13,
+};
+
+struct ubx_msg_rxm_pmreq {
+	uint8_t version;
+	uint8_t reserved0[3];
+	uint32_t duration_ms;
+	uint32_t flags;
+	uint32_t wakeup_sources;
+} __packed;
+
+#define UBX_MSG_RXM_PMREQ_DURATION_FOREVER 0
+
+#define UBX_MSG_RXM_PMREQ_FLAGS_BACKUP BIT(1)
+#define UBX_MSG_RXM_PMREQ_FLAGS_FORCE  BIT(2)
+
+#define UBX_MSG_RXM_PMREQ_WAKEUP_UARTRX  BIT(3)
+#define UBX_MSG_RXM_PMREQ_WAKEUP_EXTINT0 BIT(5)
+#define UBX_MSG_RXM_PMREQ_WAKEUP_EXTINT1 BIT(6)
+#define UBX_MSG_RXM_PMREQ_WAKEUP_SPICS   BIT(7)
+
+/**
+ * @brief Create a net_buf_simple large enough to hold a message
+ *
+ * @note Does not work for structures with variable length
+ *
+ * @param name Name of net_buf_simple
+ * @param msg_type UBX message structure
+ */
+#define UBX_MSG_BUF_DEFINE(name, msg_type)                                                         \
+	NET_BUF_SIMPLE_DEFINE(name,                                                                \
+			      (sizeof(struct ubx_frame) + sizeof(msg_type) + sizeof(uint16_t)))
+
+static inline void ubx_msg_prepare(struct net_buf_simple *buf, uint8_t msg_class, uint8_t msg_id)
+{
+	struct ubx_frame *frame;
+
+	net_buf_simple_reset(buf);
+	frame = net_buf_simple_add(buf, sizeof(*frame));
+
+	/* Start of frame header */
+	frame->preamble_sync_char_1 = UBX_PREAMBLE_SYNC_CHAR_1;
+	frame->preamble_sync_char_2 = UBX_PREAMBLE_SYNC_CHAR_2;
+	frame->message_class = msg_class;
+	frame->message_id = msg_id;
+}
+
+static inline void ubx_msg_finalise(struct net_buf_simple *buf)
+{
+	uint8_t ckA = 0, ckB = 0;
+	struct ubx_frame *frame;
+	uint16_t payload_size;
+
+	frame = (void *)buf->data;
+	__ASSERT_NO_MSG(frame->preamble_sync_char_1 == UBX_PREAMBLE_SYNC_CHAR_1);
+	__ASSERT_NO_MSG(frame->preamble_sync_char_2 == UBX_PREAMBLE_SYNC_CHAR_2);
+	payload_size = buf->len - sizeof(struct ubx_frame);
+	/* Finish frame header */
+	frame->payload_size_low = payload_size;
+	frame->payload_size_high = payload_size >> 8;
+	/* Calculate frame CRC */
+	for (unsigned int i = UBX_FRM_CHECKSUM_START_IDX; i < buf->len; i++) {
+		ckA += buf->data[i];
+		ckB += ckA;
+	}
+	/* Append frame CRC */
+	net_buf_simple_add_u8(buf, ckA);
+	net_buf_simple_add_u8(buf, ckB);
+}
+
+/**
+ * @}
+ */
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* INFUSE_SDK_DRIVERS_GNSS_UBX_M10_PROT_H_ */

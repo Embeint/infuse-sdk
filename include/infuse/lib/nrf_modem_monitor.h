@@ -48,7 +48,7 @@ void nrf_modem_monitor_network_state(struct nrf_modem_network_state *state);
  * @param rsrq Reference signal received quality
  *
  * @retval 0 on success
- * @reval -errno on error
+ * @retval -errno on error
  */
 int nrf_modem_monitor_signal_quality(int16_t *rsrp, int8_t *rsrq);
 

@@ -24,9 +24,7 @@ extern "C" {
 /**
  * @brief Battery task function
  *
- * @param schedule Schedule that triggered task
- * @param terminate Terminate request from task runner
- * @param bat_dev Battery device to use
+ * @param work Delayable work item
  */
 void battery_task_fn(struct k_work *work);
 

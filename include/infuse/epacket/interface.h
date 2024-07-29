@@ -168,7 +168,7 @@ void epacket_queue(const struct device *dev, struct net_buf *buf);
  *                K_NO_WAIT = Stop receiving immediately
  *
  * @retval -ENOTSUP if interface does not support RX control
- * @retval result return value from @ref k_work_reschedule_for_queue
+ * @retval result return value from k_work_reschedule_for_queue
  *
  */
 int epacket_receive(const struct device *dev, k_timeout_t timeout);
