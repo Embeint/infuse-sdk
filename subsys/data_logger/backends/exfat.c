@@ -127,6 +127,7 @@ static int binary_container_create(const struct device *dev, uint32_t phy_block)
 	const struct dl_exfat_config *config = dev->config;
 	uint32_t file_num = phy_block / BLOCKS_PER_FILE;
 	uint32_t fsize = CONFIG_DATA_LOGGER_EXFAT_FILE_SIZE;
+	uint32_t start_lba;
 	char filename[32];
 	FRESULT res;
 	FIL fp;
@@ -146,6 +147,12 @@ static int binary_container_create(const struct device *dev, uint32_t phy_block)
 		res = -ENOMEM;
 	}
 	(void)f_close(&fp);
+
+	/* Reset entire file to erased state */
+	if (res == FR_OK) {
+		start_lba = disk_lba_from_block(dev, phy_block);
+		res = disk_access_erase(config->disk, start_lba, BLOCKS_PER_FILE);
+	}
 	return res;
 }
 
