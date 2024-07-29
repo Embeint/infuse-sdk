@@ -1,0 +1,35 @@
+/*
+ * Copyright (c) 2024 Embeint Inc
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * Breakout connections are somewhat arbitrary as the shield
+ * must be manually wired up. The defaults chosen:
+ *
+ *        I2C: Arduino I2C
+ * Data Ready: Arduino D4 (From UART TX pin on shield)
+ *  Timepulse: Arduino D5
+ *     nRESET: Arduino D6
+ *     EXTINT: Arduino D7
+ */
+
+/{
+	aliases {
+		gnss = &sam_m10;
+	};
+};
+
+&arduino_i2c {
+	sam_m10: sam_m10@42 {
+		reg = <0x42>;
+		compatible = "u-blox,m10-i2c";
+		status = "okay";
+
+		data-ready-gpios = <&arduino_header 10 GPIO_ACTIVE_HIGH>;
+		data-ready-pio = <1>;
+		timepulse-gpios = <&arduino_header 11 GPIO_ACTIVE_HIGH>;
+		reset-gpios = <&arduino_header 12 GPIO_ACTIVE_LOW>;
+		extint-gpios = <&arduino_header 13 GPIO_ACTIVE_HIGH>;
+		zephyr,pm-device-runtime-auto;
+	};
+};
