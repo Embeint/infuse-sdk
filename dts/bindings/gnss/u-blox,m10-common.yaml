@@ -1,0 +1,31 @@
+# Copyright (c) 2024 Embeint Inc
+# SPDX-License-Identifier: Apache-2.0
+
+properties:
+  reset-gpios:
+    type: phandle-array
+    required: true
+    description: |
+      Reset GPIO.
+
+  data-ready-gpios:
+    type: phandle-array
+    required: true
+    description: |
+      Data Ready GPIO.
+
+  data-ready-pio:
+    type: int
+    required: true
+    description: |
+      PIO number of data-ready output.
+
+  extint-gpios:
+    type: phandle-array
+    description: |
+      EXTINT GPIO.
+
+  timepulse-gpios:
+    type: phandle-array
+    description: |
+      Data Ready GPIO.

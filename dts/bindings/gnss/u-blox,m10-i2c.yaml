@@ -1,0 +1,8 @@
+# Copyright (c) 2024 Embeint Inc
+# SPDX-License-Identifier: Apache-2.0
+
+description: U-BLOX M10 GNSS Module
+
+compatible: "u-blox,m10-i2c"
+
+include: [i2c-device.yaml, "u-blox,m10-common.yaml"]

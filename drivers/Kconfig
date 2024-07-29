@@ -1,4 +1,5 @@
 # Infuse-IoT driver configuration
 
+rsource "gnss/Kconfig"
 rsource "imu/Kconfig"
 rsource "watchdog/Kconfig"

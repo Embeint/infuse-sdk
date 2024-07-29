@@ -1,0 +1,6 @@
+# Infuse-IoT GNSS drivers
+
+zephyr_library()
+zephyr_library_sources_ifdef(CONFIG_GNSS_UBX_MODEM gnss_ubx_common.c)
+zephyr_library_sources_ifdef(CONFIG_GNSS_UBX_MODEM gnss_ubx_modem.c)
+zephyr_library_sources_ifdef(CONFIG_GNSS_U_BLOX_M10_I2C gnss_u_blox_m10_i2c.c)
