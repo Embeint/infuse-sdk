@@ -63,7 +63,7 @@ enum infuse_zbus_channel_id {
 /** @endcond */
 
 /**
- * @brief Like @ref ZBUS_CHAN_DECLARE for Infuse channels
+ * @brief Like ZBUS_CHAN_DECLARE for Infuse channels
  */
 #define INFUSE_ZBUS_CHAN_DECLARE(...) FOR_EACH(_INFUSE_ZBUS_CHAN_EXTERN, (;), __VA_ARGS__)
 

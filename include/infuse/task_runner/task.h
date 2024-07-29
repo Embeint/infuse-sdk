@@ -127,7 +127,7 @@ struct task_data {
  *    3. Array of task data structs for the runner
  *
  * Example Usage:
- *
+ * @code{.c}
  * #define SLEEPY_TASK(define_mem, define_config, dev_pointer)                  \
  *    IF_ENABLED(define_mem, (K_THREAD_STACK_DEFINE(sleep_stack_area, 1024)))   \
  *    IF_ENABLED(define_config,                                                 \
@@ -158,6 +158,7 @@ struct task_data {
  * TASK_RUNNER_TASKS_DEFINE(config, data,
  *   (SLEEPY_TASK, DEVICE_DT_GET(DT_NODELABEL(dev))),
  *   (WORKQ_TASK, &some_pointer));
+ * @endcode
  *
  * @param config_name Name of the created @ref task_config array
  * @param data_name Name of the created @ref task_data array
@@ -282,9 +283,7 @@ static inline void task_schedule_tdf_log_array(const struct task_schedule *sched
  * @param tdf_mask Single TDF mask that corresponds to @a tdf_id
  * @param tdf_id TDF sensor ID
  * @param tdf_len Length of a single TDF
- * @param tdf_num Number of TDFs to log
  * @param time Epoch time associated with the first TDF. 0 for no timestamp.
- * @param period Time period between the TDF samples
  * @param data TDF data array
  */
 static inline void task_schedule_tdf_log(const struct task_schedule *schedule, uint8_t tdf_mask,
