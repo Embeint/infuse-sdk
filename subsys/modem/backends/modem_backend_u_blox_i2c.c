@@ -77,13 +77,15 @@ static void bytes_pending_cb(struct rtio *r, const struct rtio_sqe *sqe, void *a
 		}
 	}
 
-	/* If in polling mode,  */
-	if (backend->flags & MODE_POLLING) {
+	/* If in polling mode, or query failed */
+	if ((backend->flags & MODE_POLLING) || failed) {
 		k_work_reschedule(&backend->pending_bytes_query, backend->poll_period);
 	}
-	LOG_DBG("Pending: %d bytes", backend->bytes_pending);
-	if (backend->bytes_pending > 0) {
-		modem_pipe_notify_receive_ready(&backend->pipe);
+	if (!failed) {
+		LOG_DBG("Pending: %d bytes", backend->bytes_pending);
+		if (backend->bytes_pending > 0) {
+			modem_pipe_notify_receive_ready(&backend->pipe);
+		}
 	}
 }
 
