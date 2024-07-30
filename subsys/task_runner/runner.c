@@ -185,7 +185,6 @@ void task_runner_iterate(uint32_t uptime, uint32_t gps_time, uint8_t battery_cha
 	bool transition;
 
 	infuse_watchdog_thread_register(wdog_channel, _current);
-	infuse_watchdog_feed(wdog_channel);
 	(void)loop_period;
 
 	/* Determine if any running tasks have terminated */

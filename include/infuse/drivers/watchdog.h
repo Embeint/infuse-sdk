@@ -113,6 +113,8 @@ static inline int infuse_watchdog_install(k_timeout_t *feed_period)
  * This allows thread state to be determined by @ref infuse_watchdog_thread_state_lookup
  * in the event that the channel expires.
  *
+ * @note Also feeds the watchdog channel
+ *
  * @param wdog_channel Watchdog channel to register
  * @param thread Thread responsible for feeding the channel
  */
