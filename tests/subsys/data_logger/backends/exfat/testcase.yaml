@@ -13,13 +13,10 @@ tests:
     depends_on: arduino_spi
     extra_args:
       - SHIELD=sparkfun_microsd
-    platform_exclude:
-      - nrf5340_audio_dk/nrf5340/cpuapp
-      - nrf9161dk/nrf9161
-      - nrf9160dk/nrf9160
-      - nrf9151dk/nrf9151
-      - nrf9161dk/nrf9161/ns
-      - nrf9160dk/nrf9160/ns
-      - nrf9151dk/nrf9151/ns
+    # Shield will fail to compile on any board with an existing SPI device
+    # on the Arduino SPI bus. Limit testing to a board we know without this
+    # problem.
+    platform_allow:
+      - nrf52840dk/nrf52840
     integration_platforms:
       - nrf52840dk/nrf52840
