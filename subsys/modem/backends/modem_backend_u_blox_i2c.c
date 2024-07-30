@@ -101,6 +101,7 @@ static void pending_bytes_poll(struct k_work *work)
 	if (k_sem_take(&backend->bus_sem, K_NO_WAIT) < 0) {
 		/* Bus in use, try again in 1 msec*/
 		k_work_reschedule(dwork, K_MSEC(1));
+		return;
 	}
 
 	wr_sqe = rtio_sqe_acquire(&i2c_rtio);
