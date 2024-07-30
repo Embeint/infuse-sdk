@@ -31,6 +31,7 @@ struct ubx_m10_i2c_config {
 	struct i2c_dt_spec i2c;
 	struct gpio_dt_spec reset_gpio;
 	struct gpio_dt_spec extint_gpio;
+	struct gpio_dt_spec timepulse_gpio;
 	struct gpio_dt_spec data_ready_gpio;
 	uint8_t data_ready_pio;
 };
@@ -42,6 +43,10 @@ struct ubx_m10_i2c_data {
 	struct modem_backend_ublox_i2c i2c_backend;
 	/* Wake time */
 	k_timeout_t min_wake_time;
+	/* Callback for data ready GPIO */
+	struct gpio_callback timepulse_cb;
+	/* Timestamp of the latest timepulse */
+	k_ticks_t latest_timepulse;
 	/* NAV-PVT message handler */
 	struct ubx_message_handler_ctx pvt_handler;
 #ifdef CONFIG_GNSS_SATELLITES
@@ -377,6 +382,32 @@ static int ubx_m10_i2c_get_supported_systems(const struct device *dev, gnss_syst
 	return 0;
 }
 
+static int ubx_m10_i2c_get_latest_timepulse(const struct device *dev, k_ticks_t *timestamp)
+{
+	const struct ubx_m10_i2c_config *cfg = dev->config;
+	struct ubx_m10_i2c_data *data = dev->data;
+
+	if (cfg->timepulse_gpio.port == NULL) {
+		/* No timepulse pin connected */
+		return -ENOTSUP;
+	}
+	if (data->latest_timepulse == 0) {
+		/* Timepulse interrupt has not occurred yet */
+		return -EAGAIN;
+	}
+	*timestamp = data->latest_timepulse;
+	return 0;
+}
+
+static void timepulse_gpio_callback(const struct device *dev, struct gpio_callback *cb,
+				    uint32_t pins)
+{
+	struct ubx_m10_i2c_data *data = CONTAINER_OF(cb, struct ubx_m10_i2c_data, timepulse_cb);
+
+	data->latest_timepulse = k_uptime_ticks();
+	LOG_DBG("");
+}
+
 /**
  * @brief Configure modem communications port
  *
@@ -482,6 +513,12 @@ static int ubx_m10_i2c_pm_control(const struct device *dev, enum pm_device_actio
 
 	switch (action) {
 	case PM_DEVICE_ACTION_SUSPEND:
+		/* Disable timepulse interrupt */
+		if (cfg->timepulse_gpio.port != NULL) {
+			data->latest_timepulse = 0;
+			(void)gpio_pin_interrupt_configure_dt(&cfg->timepulse_gpio,
+							      GPIO_INT_DISABLE);
+		}
 		/* Put into low power mode */
 		rc = ubx_m10_i2c_software_standby(dev);
 		if (rc < 0) {
@@ -494,6 +531,12 @@ static int ubx_m10_i2c_pm_control(const struct device *dev, enum pm_device_actio
 		if (rc < 0) {
 			LOG_INF("Failed to resume");
 			return rc;
+		}
+		/* Enable timepulse interrupt */
+		if (cfg->timepulse_gpio.port != NULL) {
+			data->latest_timepulse = 0;
+			(void)gpio_pin_interrupt_configure_dt(&cfg->timepulse_gpio,
+							      GPIO_INT_EDGE_TO_ACTIVE);
 		}
 		break;
 	case PM_DEVICE_ACTION_TURN_OFF:
@@ -548,6 +591,16 @@ static int ubx_m10_i2c_init(const struct device *dev)
 	pipe = modem_backend_ublox_i2c_init(&data->i2c_backend, &i2c_backend_config);
 	ubx_modem_init(&data->modem, pipe);
 
+	/* Setup timepulse pin interrupt */
+	if (cfg->timepulse_gpio.port != NULL) {
+		(void)gpio_pin_configure_dt(&cfg->timepulse_gpio, GPIO_INPUT);
+		gpio_init_callback(&data->timepulse_cb, timepulse_gpio_callback,
+				   BIT(cfg->timepulse_gpio.pin));
+		if (gpio_add_callback(cfg->timepulse_gpio.port, &data->timepulse_cb) < 0) {
+			LOG_ERR("Unable to add timepulse callback");
+		}
+	}
+
 	/* Subscribe to all NAV-PVT messages */
 	data->pvt_handler.message_class = UBX_MSG_CLASS_NAV,
 	data->pvt_handler.message_id = UBX_MSG_ID_NAV_PVT,
@@ -583,6 +636,7 @@ static const struct gnss_driver_api gnss_api = {
 	.set_enabled_systems = ubx_m10_i2c_set_enabled_systems,
 	.get_enabled_systems = ubx_m10_i2c_get_enabled_systems,
 	.get_supported_systems = ubx_m10_i2c_get_supported_systems,
+	.get_latest_timepulse = ubx_m10_i2c_get_latest_timepulse,
 };
 
 #define UBX_M10_I2C(inst)                                                                          \
@@ -590,6 +644,7 @@ static const struct gnss_driver_api gnss_api = {
 		.i2c = I2C_DT_SPEC_INST_GET(inst),                                                 \
 		.reset_gpio = GPIO_DT_SPEC_INST_GET(inst, reset_gpios),                            \
 		.extint_gpio = GPIO_DT_SPEC_INST_GET(inst, extint_gpios),                          \
+		.timepulse_gpio = GPIO_DT_SPEC_INST_GET_OR(inst, timepulse_gpios, {0}),            \
 		.data_ready_gpio = GPIO_DT_SPEC_INST_GET(inst, data_ready_gpios),                  \
 		.data_ready_pio = DT_INST_PROP(inst, data_ready_pio),                              \
 	};                                                                                         \
