@@ -7,6 +7,9 @@
  */
 
 #include <zephyr/kernel.h>
+#include <zephyr/drivers/watchdog.h>
+
+#define INFUSE_WATCHDOG_DEV DEVICE_DT_GET(DT_ALIAS(watchdog0))
 
 static k_tid_t threads[8];
 
@@ -15,6 +18,7 @@ void infuse_watchdog_thread_register(int wdog_channel, k_tid_t thread)
 	if (wdog_channel < 0) {
 		return;
 	}
+	(void)wdt_feed(INFUSE_WATCHDOG_DEV, wdog_channel);
 	if (wdog_channel >= ARRAY_SIZE(threads)) {
 		return;
 	}
