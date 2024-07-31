@@ -14,6 +14,7 @@
 #include <infuse/task_runner/tasks/battery.h>
 #include <infuse/task_runner/tasks/environmental.h>
 #include <infuse/task_runner/tasks/imu.h>
+#include <infuse/task_runner/tasks/gnss.h>
 #include <infuse/task_runner/tasks/tdf_logger.h>
 
 #endif /* INFUSE_SDK_INCLUDE_INFUSE_TASK_RUNNER_TASKS_INFUSE_TASKS_H_ */
