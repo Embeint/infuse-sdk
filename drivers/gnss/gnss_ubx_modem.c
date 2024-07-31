@@ -159,6 +159,25 @@ void ubx_modem_init(struct ubx_modem_data *modem, struct modem_pipe *pipe)
 	k_work_init(&modem->fifo_read_worker, fifo_read_runner);
 }
 
+void ubx_modem_software_standby(struct ubx_modem_data *modem)
+{
+	struct ubx_message_handler_ctx *curr, *tmp, *prev = NULL;
+
+	/** Purge any callbacks expecting a response */
+	SYS_SLIST_FOR_EACH_CONTAINER_SAFE(&modem->handlers, curr, tmp, _node) {
+		if (curr->flags) {
+			/* Notify waiter */
+			if (curr->signal) {
+				k_poll_signal_raise(curr->signal, -EIO);
+			}
+			/* Remove from list */
+			sys_slist_remove(&modem->handlers, &prev->_node, &curr->_node);
+			continue;
+		}
+		prev = curr;
+	}
+}
+
 void ubx_modem_msg_subscribe(struct ubx_modem_data *modem,
 			     struct ubx_message_handler_ctx *handler_ctx)
 {
@@ -226,6 +245,8 @@ int ubx_modem_send_sync(struct ubx_modem_data *modem, struct net_buf_simple *buf
 	/* Check and return result */
 	k_poll_signal_check(&sig, &signaled, &rc);
 	if (!signaled) {
+		/* Remove from handlers */
+		ubx_modem_msg_unsubscribe(modem, &handler_pkg);
 		return -ETIMEDOUT;
 	}
 	return rc;

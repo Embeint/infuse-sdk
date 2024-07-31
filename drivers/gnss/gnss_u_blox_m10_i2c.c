@@ -525,6 +525,8 @@ static int ubx_m10_i2c_pm_control(const struct device *dev, enum pm_device_actio
 			LOG_INF("Failed to go to standby mode");
 			return rc;
 		}
+		/* Notify modem layer */
+		ubx_modem_software_standby(&data->modem);
 		break;
 	case PM_DEVICE_ACTION_RESUME:
 		rc = ubx_m10_i2c_software_resume(dev);

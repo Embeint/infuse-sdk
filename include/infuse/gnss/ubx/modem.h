@@ -102,6 +102,13 @@ struct ubx_modem_data *ubx_modem_data_get(const struct device *dev);
 void ubx_modem_init(struct ubx_modem_data *modem, struct modem_pipe *pipe);
 
 /**
+ * @brief Notify UBX modem that hardware is in standby
+ *
+ * @param modem Modem data structure
+ */
+void ubx_modem_software_standby(struct ubx_modem_data *modem);
+
+/**
  * @brief Subscribe to messages from the UBX modem
  *
  * @param modem Modem data structure
