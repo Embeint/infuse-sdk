@@ -408,6 +408,20 @@ static void timepulse_gpio_callback(const struct device *dev, struct gpio_callba
 	LOG_DBG("");
 }
 
+static int mon_ver_handler(uint8_t message_class, uint8_t message_id, const void *payload,
+			   size_t payload_len, void *user_data)
+{
+	const struct ubx_msg_mon_ver *ver = payload;
+	uint8_t num_ext = (payload_len - sizeof(*ver)) / 30;
+
+	LOG_INF("   SW: %s", ver->sw_version);
+	LOG_DBG("   HW: %s", ver->hw_version);
+	for (int i = 0; i < num_ext; i++) {
+		LOG_DBG("EXT %d: %s", i, ver->extension[i].ext_version);
+	}
+	return 0;
+}
+
 /**
  * @brief Configure modem communications port
  *
@@ -453,7 +467,10 @@ static int ubx_m10_i2c_port_setup(const struct device *dev)
 	}
 	/* GPIO data ready should be good at this point */
 	modem_backend_ublox_i2c_use_data_ready_gpio(&data->i2c_backend);
-	return rc;
+
+	/* Display version information */
+	return ubx_modem_send_sync_poll(&data->modem, UBX_MSG_CLASS_MON, UBX_MSG_ID_MON_VER,
+					mon_ver_handler, NULL, K_MSEC(100));
 }
 
 static int ubx_m10_i2c_software_standby(const struct device *dev)
