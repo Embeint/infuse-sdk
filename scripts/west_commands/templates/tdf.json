@@ -16,6 +16,14 @@
                 {"name": "y", "type": "int16_t"},
                 {"name": "z", "type": "int16_t"}
             ]
+        },
+        "tdf_struct_gcs_location": {
+            "description": "Geographic Coordinate System location",
+            "fields": [
+                {"name": "latitude", "type": "int32_t", "description": "Latitude degrees (scale 1e7)", "display_postfix": "deg", "conversion": {"m": 0.0000001, "c": 0}},
+                {"name": "longitude", "type": "int32_t", "description": "Longitude degrees (scale 1e7)", "display_postfix": "deg", "conversion": {"m": 0.0000001, "c": 0}},
+                {"name": "height", "type": "int32_t", "description": "Height above reference ellipsoid (mm)", "display_postfix": "m", "conversion": {"m": 0.001, "c": 0}}
+            ]
         }
     },
     "definitions": {
@@ -116,6 +124,53 @@
             "description": "Gyroscope +-2000 DPS",
             "fields": [
                 {"name": "sample", "type": "struct tdf_struct_xyz_16bit", "description": "Raw sample"}
+            ]
+        },
+        "19": {
+            "name": "GCS_WGS84_LLHA",
+            "description": "Geo-location (WGS-84) + accuracy",
+            "fields": [
+                {"name": "location", "type": "struct tdf_struct_gcs_location", "description": "WGS-84 referenced location"},
+                {"name": "accuracy", "type": "int32_t", "description": "Horizontal accuracy", "display_postfix": "m", "conversion": {"m": 0.001, "c": 0}}
+            ]
+        },
+        "20": {
+            "name": "UBX_NAV_PVT",
+            "description": "u-blox GNSS NAV-PVT message",
+            "fields": [
+                {"name": "itow", "type": "uint32_t", "description": "GPS time of week of the navigation epoch"},
+                {"name": "year", "type": "uint16_t", "description": "Year (UTC)"},
+                {"name": "month", "type": "uint8_t", "description": "Month, range 1..12 (UTC)"},
+                {"name": "day", "type": "uint8_t", "description": "Day of month, range 1..31 (UTC)"},
+                {"name": "hour", "type": "uint8_t", "description": "Hour of day, range 0..23 (UTC)"},
+                {"name": "min", "type": "uint8_t", "description": "Minute of hour, range 0..59 (UTC)"},
+                {"name": "sec", "type": "uint8_t", "description": "Seconds of minute, range 0..60 (UTC)"},
+                {"name": "valid", "type": "uint8_t", "description": "Validity flags"},
+                {"name": "t_acc", "type": "uint32_t", "description": "Time accuracy estimate (UTC)", "display_postfix": "ns"},
+                {"name": "nano", "type": "int32_t", "description": "Fraction of second, range -1e9 .. 1e9 (UTC)", "display_postfix": "ns"},
+                {"name": "fix_type", "type": "uint8_t", "description": "GNSSfix Type"},
+                {"name": "flags", "type": "uint8_t", "description": "Fix status flags"},
+                {"name": "flags2", "type": "uint8_t", "description": "Additional flags"},
+                {"name": "num_sv", "type": "uint8_t", "description": "Number of satellites used in Nav Solution"},
+                {"name": "lon", "type": "int32_t", "description": "Longitude", "display_postfix": "deg", "conversion": {"m": 0.0000001, "c": 0}},
+                {"name": "lat", "type": "int32_t", "description": "Latitude", "display_postfix": "deg", "conversion": {"m": 0.0000001, "c": 0}},
+                {"name": "height", "type": "int32_t", "description": "Height above ellipsoid", "display_postfix": "m", "conversion": {"m": 0.001, "c": 0}},
+                {"name": "h_msl", "type": "int32_t", "description": "Height above mean sea level", "display_postfix": "m", "conversion": {"m": 0.001, "c": 0}},
+                {"name": "h_acc", "type": "uint32_t", "description": "Horizontal accuracy estimate", "display_postfix": "m", "conversion": {"m": 0.001, "c": 0}},
+                {"name": "v_acc", "type": "uint32_t", "description": "Vertical accuracy estimate", "display_postfix": "m", "conversion": {"m": 0.001, "c": 0}},
+                {"name": "vel_n", "type": "int32_t", "description": "NED north velocity", "display_postfix": "m/s", "conversion": {"m": 0.001, "c": 0}},
+                {"name": "vel_e", "type": "int32_t", "description": "NED east velocity", "display_postfix": "m/s", "conversion": {"m": 0.001, "c": 0}},
+                {"name": "vel_d", "type": "int32_t", "description": "NED down velocity", "display_postfix": "m/s", "conversion": {"m": 0.001, "c": 0}},
+                {"name": "g_speed", "type": "int32_t", "description": "Ground Speed (2-D)", "display_postfix": "m/s", "conversion": {"m": 0.001, "c": 0}},
+                {"name": "head_mot", "type": "int32_t", "description": "Heading of motion (2-D)", "display_postfix": "deg", "conversion": {"m": 0.00001, "c": 0}},
+                {"name": "s_acc", "type": "uint32_t", "description": "Speed accuracy estimate", "display_postfix": "m/s", "conversion": {"m": 0.001, "c": 0}},
+                {"name": "head_acc", "type": "uint32_t", "description": "Heading accuracy estimate (both motion and vehicle)", "display_postfix": "deg", "conversion": {"m": 0.00001, "c": 0}},
+                {"name": "p_dop", "type": "uint16_t", "description": "Position DOP", "conversion": {"m": 0.01, "c": 0}},
+                {"name": "flags3", "type": "uint16_t", "description": "Additional flags"},
+                {"name": "reserved0", "type": "uint8_t", "num": 4, "description": "Reserved"},
+                {"name": "head_veh", "type": "int32_t", "description": "Heading of vehicle (2-D)", "display_postfix": "deg", "conversion": {"m": 0.00001, "c": 0}},
+                {"name": "mag_dec", "type": "int16_t", "description": "Magnetic declination", "display_postfix": "deg", "conversion": {"m": 0.01, "c": 0}},
+                {"name": "mag_acc", "type": "uint16_t", "description": "Magnetic declination accuracy", "display_postfix": "deg", "conversion": {"m": 0.01, "c": 0}}
             ]
         },
         "100": {
