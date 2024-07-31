@@ -125,7 +125,7 @@
         "3": {
             "name": "time_get",
             "description": "Get the current time knowledge of the device",
-            "depends_on": "INFUSE_CIVIL_TIME",
+            "depends_on": "INFUSE_EPOCH_TIME",
             "default": "y if INFUSE_SDK",
             "default_auth": "EPACKET_AUTH_NETWORK",
             "request_params": [],
@@ -138,7 +138,7 @@
         "4": {
             "name": "time_set",
             "description": "Set the current time of the device",
-            "depends_on": "INFUSE_CIVIL_TIME",
+            "depends_on": "INFUSE_EPOCH_TIME",
             "default": "y if INFUSE_SDK",
             "default_auth": "EPACKET_AUTH_DEVICE",
             "request_params": [
