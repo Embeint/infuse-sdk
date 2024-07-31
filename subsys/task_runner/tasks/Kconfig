@@ -51,3 +51,26 @@ module-str = Environmental task
 source "subsys/logging/Kconfig.template.log_config"
 
 endif # TASK_RUNNER_TASK_ENVIRONMENTAL
+
+config TASK_RUNNER_TASK_GNSS_UBX
+	bool "u-blox GNSS task"
+	depends on GNSS_UBX_MODEM
+	depends on GNSS
+	depends on ZBUS
+
+if TASK_RUNNER_TASK_GNSS_UBX
+
+config TASK_RUNNER_GNSS_TIME_RESYNC_PERIOD_SEC
+	int "Resynchronise time from GNSS every N seconds"
+	default 3600
+	help
+	  When running continuously, the GNSS runner will resynchronise the local
+	  clock from the GNSS modem every N seconds. Limiting how often this occurs
+	  can minimise the number of time discontinuities when logging higher
+	  frequency data (e.g. IMU samples). The default value is 1 hour.
+
+module = TASK_GNSS_UBX
+module-str = UBLOX GNSS task
+source "subsys/logging/Kconfig.template.log_config"
+
+endif # TASK_RUNNER_TASK_GNSS_UBX
