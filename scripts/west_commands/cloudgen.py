@@ -91,29 +91,35 @@ class cloudgen(WestCommand):
             "int64_t": "ctypes.c_int64",
         }
 
-        for s in tdf_defs["structs"].values():
-            for p in s["fields"]:
-                p["py_type"] = ctype_mapping[p["type"]]
+        def conv_formula(f):
+            p = ""
+            if f["conversion"]["m"] != 1:
+                p += f" * {f['conversion']['m']}"
+            if f["conversion"]["c"] != 0:
+                p += f" + {f['conversion']['c']}"
+            return {"name": f["name"], "conv": p}
 
-        for s in tdf_defs["definitions"].values():
-            s["conversions"] = []
-            for f in s["fields"]:
-                if "conversion" in f:
-                    f["py_name"] = f"_{f['name']}"
-                    p = ""
-                    if f["conversion"]["m"] != 1:
-                        p += f" * {f['conversion']['m']}"
-                    if f["conversion"]["c"] != 0:
-                        p += f" + {f['conversion']['c']}"
-                    s["conversions"].append({"name": f["name"], "conv": p})
-                else:
-                    f["py_name"] = f["name"]
+        def py_type(f):
+            if "num" in f:
+                return f'{f["num"]} * {ctype_mapping[f["type"]]}'
+            else:
+                return ctype_mapping[f["type"]]
 
-                t: str = f["type"]
-                if t.startswith("struct"):
-                    f["py_type"] = f"structs.{t[7:]}"
-                else:
-                    f["py_type"] = ctype_mapping[t]
+        for x in ["structs", "definitions"]:
+            for s in tdf_defs[x].values():
+                s["conversions"] = []
+                for f in s["fields"]:
+                    if "conversion" in f:
+                        f["py_name"] = f"_{f['name']}"
+                        s["conversions"].append(conv_formula(f))
+                    else:
+                        f["py_name"] = f["name"]
+
+                    t: str = f["type"]
+                    if t.startswith("struct"):
+                        f["py_type"] = f"structs.{t[7:]}"
+                    else:
+                        f["py_type"] = py_type(f)
 
         with tdf_definitions_output.open("w", encoding="utf-8") as f:
             f.write(
