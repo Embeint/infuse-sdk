@@ -34,15 +34,19 @@ enum infuse_zbus_channel_id {
 	INFUSE_ZBUS_CHAN_AMBIENT_ENV = INFUSE_ZBUS_CHAN_BASE + 1,
 	/** @brief Data type: @ref imu_sample_array */
 	INFUSE_ZBUS_CHAN_IMU = INFUSE_ZBUS_CHAN_BASE + 2,
+	/** @brief Data type: @ref tdf_gcs_wgs84_llha */
+	INFUSE_ZBUS_CHAN_LOCATION = INFUSE_ZBUS_CHAN_BASE + 3,
 };
 
 #define _INFUSE_ZBUS_CHAN_BATTERY_TYPE     struct tdf_battery_state
 #define _INFUSE_ZBUS_CHAN_AMBIENT_ENV_TYPE struct tdf_ambient_temp_pres_hum
 #define _INFUSE_ZBUS_CHAN_IMU_TYPE         struct imu_sample_array
+#define _INFUSE_ZBUS_CHAN_LOCATION_TYPE    struct tdf_gcs_wgs84_llha
 
 #define _INFUSE_ZBUS_CHAN_BATTERY_NAME     zbus_infuse_battery
 #define _INFUSE_ZBUS_CHAN_AMBIENT_ENV_NAME zbus_infuse_ambient_env
 #define _INFUSE_ZBUS_CHAN_IMU_NAME         zbus_infuse_imu
+#define _INFUSE_ZBUS_CHAN_LOCATION_NAME    zbus_infuse_location
 
 /** @brief Get the type associated with an Infuse zbus channel */
 #define INFUSE_ZBUS_TYPE(channel) _##channel##_TYPE
