@@ -285,3 +285,22 @@ int ubx_modem_send_sync_poll(struct ubx_modem_data *modem, uint8_t message_class
 
 	return ubx_modem_send_sync(modem, &poll_req, UBX_HANDLING_RSP, handler, user_data, timeout);
 }
+
+int ubx_modem_send_async_poll(struct ubx_modem_data *modem, uint8_t message_class,
+			      uint8_t message_id, uint8_t buf[8],
+			      struct ubx_message_handler_ctx *handler_ctx)
+{
+	struct net_buf_simple poll_req;
+
+	net_buf_simple_init_with_data(&poll_req, buf, 8);
+
+	/* Poll requests are just 0 byte messages with the given class and id */
+	ubx_msg_prepare(&poll_req, message_class, message_id);
+	ubx_msg_finalise(&poll_req);
+
+	handler_ctx->flags = UBX_HANDLING_RSP;
+	handler_ctx->message_class = message_class;
+	handler_ctx->message_id = message_id;
+
+	return ubx_modem_send_async(modem, &poll_req, handler_ctx, false);
+}

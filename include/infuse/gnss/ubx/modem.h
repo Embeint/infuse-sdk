@@ -212,6 +212,26 @@ int ubx_modem_send_sync_poll(struct ubx_modem_data *modem, uint8_t message_class
 			     k_timeout_t timeout);
 
 /**
+ * @brief Request a poll response from the modem
+ *
+ * It is expected that @a handler_ctx has its @a message_cb and @a user_data
+ * fields populated before calling this function.
+ *
+ * @param modem Modem data structure
+ * @param message_class UBX message class to poll
+ * @param message_id UBX message ID to poll
+ * @param buf Static buffer of at least 8 bytes for request
+ * @param handler_ctx Handler context object
+ *
+ * @retval rc Returned code from @a handler on success
+ * @retval -ETIMEDOUT On response timeout
+ * @retval -errno Negative error code otherwise
+ */
+int ubx_modem_send_async_poll(struct ubx_modem_data *modem, uint8_t message_class,
+			      uint8_t message_id, uint8_t buf[8],
+			      struct ubx_message_handler_ctx *handler_ctx);
+
+/**
  * @}
  */
 
