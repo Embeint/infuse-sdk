@@ -39,6 +39,16 @@ struct tdf_struct_xyz_16bit {
 	int16_t z;
 } __packed;
 
+/* Geographic Coordinate System location */
+struct tdf_struct_gcs_location {
+	/* Latitude degrees (scale 1e7) */
+	int32_t latitude;
+	/* Longitude degrees (scale 1e7) */
+	int32_t longitude;
+	/* Height above reference ellipsoid (mm) */
+	int32_t height;
+} __packed;
+
 /**
  * @}
  */
@@ -143,6 +153,84 @@ struct tdf_gyr_2000dps {
 	struct tdf_struct_xyz_16bit sample;
 } __packed;
 
+/* Geo-location (WGS-84) + accuracy */
+struct tdf_gcs_wgs84_llha {
+	/* WGS-84 referenced location */
+	struct tdf_struct_gcs_location location;
+	/* Horizontal accuracy */
+	int32_t accuracy;
+} __packed;
+
+/* u-blox GNSS NAV-PVT message */
+struct tdf_ubx_nav_pvt {
+	/* GPS time of week of the navigation epoch */
+	uint32_t itow;
+	/* Year (UTC) */
+	uint16_t year;
+	/* Month, range 1..12 (UTC) */
+	uint8_t month;
+	/* Day of month, range 1..31 (UTC) */
+	uint8_t day;
+	/* Hour of day, range 0..23 (UTC) */
+	uint8_t hour;
+	/* Minute of hour, range 0..59 (UTC) */
+	uint8_t min;
+	/* Seconds of minute, range 0..60 (UTC) */
+	uint8_t sec;
+	/* Validity flags */
+	uint8_t valid;
+	/* Time accuracy estimate (UTC) */
+	uint32_t t_acc;
+	/* Fraction of second, range -1e9 .. 1e9 (UTC) */
+	int32_t nano;
+	/* GNSSfix Type */
+	uint8_t fix_type;
+	/* Fix status flags */
+	uint8_t flags;
+	/* Additional flags */
+	uint8_t flags2;
+	/* Number of satellites used in Nav Solution */
+	uint8_t num_sv;
+	/* Longitude */
+	int32_t lon;
+	/* Latitude */
+	int32_t lat;
+	/* Height above ellipsoid */
+	int32_t height;
+	/* Height above mean sea level */
+	int32_t h_msl;
+	/* Horizontal accuracy estimate */
+	uint32_t h_acc;
+	/* Vertical accuracy estimate */
+	uint32_t v_acc;
+	/* NED north velocity */
+	int32_t vel_n;
+	/* NED east velocity */
+	int32_t vel_e;
+	/* NED down velocity */
+	int32_t vel_d;
+	/* Ground Speed (2-D) */
+	int32_t g_speed;
+	/* Heading of motion (2-D) */
+	int32_t head_mot;
+	/* Speed accuracy estimate */
+	uint32_t s_acc;
+	/* Heading accuracy estimate (both motion and vehicle) */
+	uint32_t head_acc;
+	/* Position DOP */
+	uint16_t p_dop;
+	/* Additional flags */
+	uint16_t flags3;
+	/* Reserved */
+	uint8_t reserved0[4];
+	/* Heading of vehicle (2-D) */
+	int32_t head_veh;
+	/* Magnetic declination */
+	int16_t mag_dec;
+	/* Magnetic declination accuracy */
+	uint16_t mag_acc;
+} __packed;
+
 /* Example array type */
 struct tdf_array_type {
 	/* I am an array of length 4 */
@@ -164,6 +252,8 @@ enum tdf_builtin_id {
 	TDF_GYR_500DPS = 16,
 	TDF_GYR_1000DPS = 17,
 	TDF_GYR_2000DPS = 18,
+	TDF_GCS_WGS84_LLHA = 19,
+	TDF_UBX_NAV_PVT = 20,
 	TDF_ARRAY_TYPE = 100,
 	/* End of builtin TDF range */
 	TDF_BUILTIN_END = 1024,
@@ -184,6 +274,8 @@ enum tdf_builtin_size {
 	_TDF_GYR_500DPS_SIZE = sizeof(struct tdf_gyr_500dps),
 	_TDF_GYR_1000DPS_SIZE = sizeof(struct tdf_gyr_1000dps),
 	_TDF_GYR_2000DPS_SIZE = sizeof(struct tdf_gyr_2000dps),
+	_TDF_GCS_WGS84_LLHA_SIZE = sizeof(struct tdf_gcs_wgs84_llha),
+	_TDF_UBX_NAV_PVT_SIZE = sizeof(struct tdf_ubx_nav_pvt),
 	_TDF_ARRAY_TYPE_SIZE = sizeof(struct tdf_array_type),
 };
 
