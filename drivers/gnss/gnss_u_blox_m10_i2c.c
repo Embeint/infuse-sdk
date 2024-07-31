@@ -27,6 +27,8 @@
 
 #define DT_DRV_COMPAT u_blox_m10_i2c
 
+#define SYNC_MESSAGE_TIMEOUT K_MSEC(250)
+
 struct ubx_m10_i2c_config {
 	struct i2c_dt_spec i2c;
 	struct gpio_dt_spec reset_gpio;
@@ -175,7 +177,7 @@ static int ubx_m10_i2c_get_fix_rate(const struct device *dev, uint32_t *fix_inte
 	ubx_msg_finalise(&cfg_buf);
 
 	return ubx_modem_send_sync(&data->modem, &cfg_buf, UBX_HANDLING_RSP_ACK,
-				   get_fix_rate_handler, fix_interval_ms, K_MSEC(100));
+				   get_fix_rate_handler, fix_interval_ms, SYNC_MESSAGE_TIMEOUT);
 }
 
 static int ubx_m10_i2c_set_fix_rate(const struct device *dev, uint32_t fix_interval_ms)
@@ -192,7 +194,7 @@ static int ubx_m10_i2c_set_fix_rate(const struct device *dev, uint32_t fix_inter
 	UBX_CFG_VALUE_APPEND(&cfg_buf, UBX_CFG_KEY_RATE_MEAS, fix_interval_ms);
 	UBX_CFG_VALUE_APPEND(&cfg_buf, UBX_CFG_KEY_RATE_NAV, 1);
 	ubx_msg_finalise(&cfg_buf);
-	return ubx_modem_send_sync_acked(&data->modem, &cfg_buf, K_MSEC(500));
+	return ubx_modem_send_sync_acked(&data->modem, &cfg_buf, SYNC_MESSAGE_TIMEOUT);
 }
 
 static int get_navigation_mode_handler(uint8_t message_class, uint8_t message_id,
@@ -244,7 +246,7 @@ static int ubx_m10_i2c_get_navigation_mode(const struct device *dev,
 	ubx_msg_finalise(&cfg_buf);
 
 	return ubx_modem_send_sync(&data->modem, &cfg_buf, UBX_HANDLING_RSP_ACK,
-				   get_navigation_mode_handler, mode, K_MSEC(100));
+				   get_navigation_mode_handler, mode, SYNC_MESSAGE_TIMEOUT);
 }
 
 static int ubx_m10_i2c_set_navigation_mode(const struct device *dev, enum gnss_navigation_mode mode)
@@ -272,7 +274,7 @@ static int ubx_m10_i2c_set_navigation_mode(const struct device *dev, enum gnss_n
 			       UBX_MSG_CFG_VALSET_LAYERS_RAM | UBX_MSG_CFG_VALSET_LAYERS_BBR);
 	UBX_CFG_VALUE_APPEND(&cfg_buf, UBX_CFG_KEY_NAVSPG_DYNMODEL, ubx_dynmodel);
 	ubx_msg_finalise(&cfg_buf);
-	return ubx_modem_send_sync_acked(&data->modem, &cfg_buf, K_MSEC(500));
+	return ubx_modem_send_sync_acked(&data->modem, &cfg_buf, SYNC_MESSAGE_TIMEOUT);
 }
 
 static int get_enabled_systems_handler(uint8_t message_class, uint8_t message_id,
@@ -334,7 +336,7 @@ static int ubx_m10_i2c_get_enabled_systems(const struct device *dev, gnss_system
 	ubx_msg_finalise(&cfg_buf);
 
 	return ubx_modem_send_sync(&data->modem, &cfg_buf, UBX_HANDLING_RSP_ACK,
-				   get_enabled_systems_handler, systems, K_MSEC(100));
+				   get_enabled_systems_handler, systems, SYNC_MESSAGE_TIMEOUT);
 }
 
 static int ubx_m10_i2c_set_enabled_systems(const struct device *dev, gnss_systems_t s)
@@ -364,7 +366,7 @@ static int ubx_m10_i2c_set_enabled_systems(const struct device *dev, gnss_system
 	UBX_CFG_VALUE_APPEND(&cfg_buf, UBX_CFG_KEY_SIGNAL_SBAS_ENA, s & GNSS_SYSTEM_SBAS);
 	UBX_CFG_VALUE_APPEND(&cfg_buf, UBX_CFG_KEY_SIGNAL_QZSS_ENA, s & GNSS_SYSTEM_QZSS);
 	ubx_msg_finalise(&cfg_buf);
-	rc = ubx_modem_send_sync_acked(&data->modem, &cfg_buf, K_MSEC(500));
+	rc = ubx_modem_send_sync_acked(&data->modem, &cfg_buf, SYNC_MESSAGE_TIMEOUT);
 	if (rc == 0) {
 		/* Integration guide specifies a 0.5 second delay after changing GNSS config
 		 */
@@ -445,7 +447,7 @@ static int ubx_m10_i2c_port_setup(const struct device *dev)
 	UBX_CFG_VALUE_APPEND(&cfg_buf, UBX_CFG_KEY_I2COUTPROT_UBX, true);
 	UBX_CFG_VALUE_APPEND(&cfg_buf, UBX_CFG_KEY_I2COUTPROT_NMEA, false);
 	ubx_msg_finalise(&cfg_buf);
-	rc = ubx_modem_send_sync_acked(&data->modem, &cfg_buf, K_MSEC(500));
+	rc = ubx_modem_send_sync_acked(&data->modem, &cfg_buf, SYNC_MESSAGE_TIMEOUT);
 	if (rc < 0) {
 		return rc;
 	}
@@ -461,7 +463,7 @@ static int ubx_m10_i2c_port_setup(const struct device *dev)
 			     UBX_CFG_TXREADY_INTERFACE_I2C);
 	UBX_CFG_VALUE_APPEND(&cfg_buf, UBX_CFG_KEY_TXREADY_THRESHOLD, 1);
 	ubx_msg_finalise(&cfg_buf);
-	rc = ubx_modem_send_sync_acked(&data->modem, &cfg_buf, K_MSEC(500));
+	rc = ubx_modem_send_sync_acked(&data->modem, &cfg_buf, SYNC_MESSAGE_TIMEOUT);
 	if (rc < 0) {
 		return rc;
 	}
@@ -470,7 +472,7 @@ static int ubx_m10_i2c_port_setup(const struct device *dev)
 
 	/* Display version information */
 	return ubx_modem_send_sync_poll(&data->modem, UBX_MSG_CLASS_MON, UBX_MSG_ID_MON_VER,
-					mon_ver_handler, NULL, K_MSEC(100));
+					mon_ver_handler, NULL, SYNC_MESSAGE_TIMEOUT);
 }
 
 static int ubx_m10_i2c_software_standby(const struct device *dev)
@@ -519,7 +521,7 @@ static int ubx_m10_i2c_software_resume(const struct device *dev)
 	UBX_CFG_VALUE_APPEND(&cfg_buf, UBX_CFG_KEY_MSGOUT_UBX_NAV_SAT_I2C, 1);
 #endif /* CONFIG_GNSS_SATELLITES */
 	ubx_msg_finalise(&cfg_buf);
-	return ubx_modem_send_sync_acked(&data->modem, &cfg_buf, K_MSEC(25));
+	return ubx_modem_send_sync_acked(&data->modem, &cfg_buf, SYNC_MESSAGE_TIMEOUT);
 }
 
 static int ubx_m10_i2c_pm_control(const struct device *dev, enum pm_device_action action)
