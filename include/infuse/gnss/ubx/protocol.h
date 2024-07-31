@@ -57,12 +57,14 @@ struct ubx_msg_id_ack_ack {
 	uint8_t message_class;
 	uint8_t message_id;
 } __packed;
+BUILD_ASSERT(sizeof(struct ubx_msg_id_ack_ack) == 2);
 
 /** @ref UBX_MSG_ID_ACK_NAK */
 struct ubx_msg_id_ack_nak {
 	uint8_t message_class;
 	uint8_t message_id;
 } __packed;
+BUILD_ASSERT(sizeof(struct ubx_msg_id_ack_nak) == 2);
 
 /**
  * @}
@@ -89,6 +91,7 @@ struct ubx_msg_cfg_valset_v0 {
 	uint8_t reserved[2];
 	uint8_t cfg_data[];
 } __packed;
+BUILD_ASSERT(sizeof(struct ubx_msg_cfg_valset_v0) == 4);
 
 /** @ref UBX_MSG_ID_CFG_VALSET */
 struct ubx_msg_cfg_valset_v1 {
@@ -98,6 +101,7 @@ struct ubx_msg_cfg_valset_v1 {
 	uint8_t reserved;
 	uint8_t cfg_data[];
 } __packed;
+BUILD_ASSERT(sizeof(struct ubx_msg_cfg_valset_v1) == 4);
 
 enum ubx_msg_cfg_valset_layers {
 	UBX_MSG_CFG_VALSET_LAYERS_RAM = BIT(0),
@@ -119,6 +123,7 @@ struct ubx_msg_cfg_valget_query {
 	uint16_t position;
 	uint32_t cfg_keys[];
 } __packed;
+BUILD_ASSERT(sizeof(struct ubx_msg_cfg_valget_query) == 4);
 
 /** Response to @ref UBX_MSG_ID_CFG_VALGET */
 struct ubx_msg_cfg_valget_response {
@@ -127,6 +132,7 @@ struct ubx_msg_cfg_valget_response {
 	uint16_t position;
 	uint8_t cfg_data[];
 } __packed;
+BUILD_ASSERT(sizeof(struct ubx_msg_cfg_valget_response) == 4);
 
 enum ubx_msg_cfg_valget_layer {
 	UBX_MSG_CFG_VALGET_LAYER_RAM = 0,
@@ -172,6 +178,7 @@ struct ubx_msg_mon_hw3 {
 		uint8_t reserved2;
 	} pins[];
 } __packed;
+BUILD_ASSERT(sizeof(struct ubx_msg_mon_hw3) == 22);
 
 enum ubx_msg_mon_hw3_flags {
 	UBX_MSG_ID_MON_HW3_FLAGS_RTC_CALIB = BIT(0),
@@ -189,6 +196,19 @@ enum ubx_msg_mon_hw3_pin_mask {
 	UBX_MSG_ID_MON_HW3_PIN_MASK_PULL_UP = BIT(8),
 	UBX_MSG_ID_MON_HW3_PIN_MASK_PULL_DOWN = BIT(9),
 };
+
+/** @ref UBX_MSG_ID_MON_VER */
+struct ubx_msg_mon_ver {
+	/** Null-terminated software version string */
+	char sw_version[30];
+	/** Null-terminated hardware version string */
+	char hw_version[10];
+	/** Extended software information strings */
+	struct {
+		char ext_version[30];
+	} extension[];
+} __packed;
+BUILD_ASSERT(sizeof(struct ubx_msg_mon_ver) == 40);
 
 /**
  * @}
@@ -229,6 +249,27 @@ enum ubx_msg_id_nav {
 	UBX_MSG_ID_NAV_VELNED = 0x10,
 };
 
+/** @ref UBX_MSG_ID_NAV_DOP */
+struct ubx_msg_nav_dop {
+	/** GPS time of week of the navigation epoch */
+	uint32_t itow;
+	/** Geometric DOP */
+	uint16_t g_dop;
+	/** Position DOP */
+	uint16_t p_dop;
+	/** Time DOP */
+	uint16_t t_dop;
+	/** Vertical DOP */
+	uint16_t v_dop;
+	/** Horizontal DOP */
+	uint16_t h_dop;
+	/** Northing DOP */
+	uint16_t n_dop;
+	/** Easting DOP */
+	uint16_t e_dop;
+} __packed;
+BUILD_ASSERT(sizeof(struct ubx_msg_nav_dop) == 18);
+
 /** @ref UBX_MSG_ID_NAV_PVT */
 struct ubx_msg_nav_pvt {
 	/** GPS time of week of the navigation epoch */
@@ -248,7 +289,7 @@ struct ubx_msg_nav_pvt {
 	/** Validity flags */
 	uint8_t valid;
 	/** Time accuracy estimate (UTC) */
-	uint32_t t_ac;
+	uint32_t t_acc;
 	/** Fraction of second, range -1e9 .. 1e9 (UTC) */
 	int32_t nano;
 	/** GNSSfix Type */
@@ -282,7 +323,7 @@ struct ubx_msg_nav_pvt {
 	/** 2D Heading of motion (1e-5 deg) */
 	int32_t head_mot;
 	/** Speed accuracy estimate (mm/s) */
-	uint32_t s_ac;
+	uint32_t s_acc;
 	/** Heading accuracy estimate (both motion and vehicle) (1e-5 deg) */
 	uint32_t head_acc;
 	/** Position DOP (0.01) */
@@ -297,6 +338,7 @@ struct ubx_msg_nav_pvt {
 	/** Magnetic declination accuracy. Only supported in ADR 4.10 and later (1e-2 deg) */
 	uint16_t mag_acc;
 } __packed;
+BUILD_ASSERT(sizeof(struct ubx_msg_nav_pvt) == 92);
 
 enum ubx_msg_nav_pvt_valid {
 	/** Valid UTC Date */
@@ -399,6 +441,7 @@ struct ubx_msg_nav_sat {
 		uint32_t flags;
 	} __packed svs[];
 } __packed;
+BUILD_ASSERT(sizeof(struct ubx_msg_nav_sat) == 8);
 
 enum ubx_msg_nav_sat_sv_flags {
 	/** Signal quality indicator */
@@ -460,6 +503,31 @@ enum ubx_msg_nav_sat_sv_flags {
 	UBX_MSG_NAV_SAT_FLAGS_CLAS_CORR_USED = BIT(23),
 };
 
+/** @ref UBX_MSG_ID_NAV_TIMEGPS */
+struct ubx_msg_nav_timegps {
+	/** GPS time of week of the navigation epoch. */
+	uint32_t itow;
+	/** Fractional part of iTOW (range: +/-500000) */
+	int32_t ftow;
+	/** GPS week number of the navigation epoch */
+	uint16_t week;
+	/** GPS leap seconds (GPS-UTC) */
+	int8_t leap_s;
+	/** Validity Flags */
+	uint8_t valid;
+	/** Time Accuracy Estimate */
+	uint32_t t_acc;
+} __packed;
+
+enum ubx_msg_nav_timegps_valid {
+	/** Valid GPS time of week (iTOW & fTOW) */
+	UBX_MSG_NAV_TIMEGPS_VALID_TOW_VALID = BIT(0),
+	/** Valid GPS week number */
+	UBX_MSG_NAV_TIMEGPS_VALID_WEEK_VALID = BIT(1),
+	/** Valid GPS leap seconds */
+	UBX_MSG_NAV_TIMEGPS_VALID_LEAP_S_VALID = BIT(2),
+};
+
 /**
  * @}
  */
@@ -489,6 +557,7 @@ struct ubx_msg_rxm_pmreq {
 	uint32_t flags;
 	uint32_t wakeup_sources;
 } __packed;
+BUILD_ASSERT(sizeof(struct ubx_msg_rxm_pmreq) == 16);
 
 enum ubx_msg_rxm_pmreq_flags {
 	UBX_MSG_RXM_PMREQ_FLAGS_BACKUP = BIT(1),
