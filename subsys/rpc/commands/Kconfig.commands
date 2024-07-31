@@ -27,7 +27,7 @@ config INFUSE_RPC_COMMAND_FAULT_REQUIRED_AUTH
 
 config INFUSE_RPC_COMMAND_TIME_GET
 	bool "Enable RPC time_get"
-	depends on INFUSE_CIVIL_TIME
+	depends on INFUSE_EPOCH_TIME
 	default y if INFUSE_SDK
 	help
 	  Get the current time knowledge of the device
@@ -39,7 +39,7 @@ config INFUSE_RPC_COMMAND_TIME_GET_REQUIRED_AUTH
 
 config INFUSE_RPC_COMMAND_TIME_SET
 	bool "Enable RPC time_set"
-	depends on INFUSE_CIVIL_TIME
+	depends on INFUSE_EPOCH_TIME
 	default y if INFUSE_SDK
 	help
 	  Set the current time of the device

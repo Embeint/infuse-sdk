@@ -8,7 +8,7 @@ config INFUSE_REBOOT
 	bool "Infuse-IoT reboot logic"
 	depends on REBOOT
 	depends on HWINFO
-	depends on INFUSE_CIVIL_TIME
+	depends on INFUSE_EPOCH_TIME
 	depends on RETENTION
 	# Cannot use mutexes inside ISRs
 	depends on RETENTION_MUTEX_FORCE_DISABLE
@@ -30,12 +30,12 @@ config INFUSE_SECURITY_CHACHA_KEY_EXPORT
 	help
 	  DO NOT enable this in production
 
-config INFUSE_CIVIL_TIME
+config INFUSE_EPOCH_TIME
 	bool "Infuse-IoT epoch time library"
 
 config INFUSE_EPOCH_TIME_PRINT_ON_SYNC
 	bool "Print current time on time sync"
-	depends on INFUSE_CIVIL_TIME
+	depends on INFUSE_EPOCH_TIME
 	default y
 
 if INFUSE_COMMON_BOOT
