@@ -24,10 +24,11 @@ static uint8_t input_buffer[1024] = {0};
 static uint8_t output_buffer[1024];
 static uint32_t sector_count;
 static uint32_t sector_size;
+static uint64_t device_id = 0x0123456789ABCDEF;
 
 uint64_t infuse_device_id(void)
 {
-	return 0x0123456789ABCDEF;
+	return device_id;
 }
 
 int logger_exfat_init(const struct device *dev);
@@ -172,6 +173,52 @@ ZTEST(data_logger_exfat, test_standard_operation_reinit)
 {
 	/* Test with rebooting each write */
 	test_sequence(true);
+}
+
+ZTEST(data_logger_exfat, test_device_move)
+{
+	/* Test filesystem being moved between devices */
+	const struct device *logger = DEVICE_DT_GET(DT_NODELABEL(data_logger_exfat));
+	uint64_t first_id = infuse_device_id();
+	struct data_logger_state state;
+	char filename[40];
+	uint8_t type = 3;
+	FILINFO fno;
+
+	/* Init to erase value */
+	zassert_equal(0, logger_exfat_init(logger));
+	data_logger_get_state(logger, &state);
+
+	/* Write 5 blocks */
+	for (int i = 0; i < 5; i++) {
+		zassert_equal(
+			0, data_logger_block_write(logger, type, input_buffer, state.block_size));
+	}
+	data_logger_get_state(logger, &state);
+	zassert_equal(5, state.current_block);
+
+	/* Change the device ID */
+	device_id += 1;
+
+	/* Re-initialise logger */
+	zassert_equal(0, logger_exfat_init(logger));
+	data_logger_get_state(logger, &state);
+	zassert_equal(0, state.current_block);
+
+	/* Write 5 blocks */
+	for (int i = 0; i < 5; i++) {
+		zassert_equal(
+			0, data_logger_block_write(logger, type, input_buffer, state.block_size));
+	}
+	data_logger_get_state(logger, &state);
+	zassert_equal(5, state.current_block);
+
+	/* Both files should exist on filesystem */
+	snprintf(filename, sizeof(filename), "%s:infuse_%016llx_%06d.bin", DISK_NAME, first_id, 0);
+	zassert_equal(FR_OK, f_stat(filename, &fno));
+	snprintf(filename, sizeof(filename), "%s:infuse_%016llx_%06d.bin", DISK_NAME, first_id + 1,
+		 0);
+	zassert_equal(FR_OK, f_stat(filename, &fno));
 }
 
 static bool test_data_init(const void *global_state)
