@@ -65,6 +65,8 @@ configdefault TDF
 
 configdefault DATA_LOGGER
 	default y
+configdefault FILE_SYSTEM_RAW_API
+	default y
 
 configdefault INFUSE_EPOCH_TIME
 	default y
