@@ -23,6 +23,12 @@ module = U_BLOX_M10_I2C
 module-str = u-blox M10
 source "subsys/logging/Kconfig.template.log_config"
 
+config GNSS_U_BLOX_M10_NO_API_COMPAT
+	bool "Drop compatibility with the Zephyr GNSS API"
+	help
+	  If working with the UBX modem backend directly, all API compatibility
+	  except for timepulse can be disabled for ~2kB ROM savings.
+
 config GNSS_U_BLOX_M10_I2C_SATELLITES_COUNT
 	int "Maximum satellite count"
 	depends on GNSS_SATELLITES
