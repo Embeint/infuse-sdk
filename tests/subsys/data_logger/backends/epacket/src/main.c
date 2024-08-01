@@ -30,6 +30,7 @@ ZTEST(data_logger_epacket, test_init_constants)
 	zassert_equal(0, state.block_overhead);
 	zassert_equal(UINT32_MAX, state.physical_blocks);
 	zassert_equal(UINT32_MAX, state.logical_blocks);
+	zassert_false(state.requires_full_block_write);
 }
 
 ZTEST(data_logger_epacket, test_block_read)
