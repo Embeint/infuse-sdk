@@ -3,7 +3,7 @@ common:
   min_flash: 64
   min_ram: 32
 tests:
-  data_logger.tdf.persistent:
+  data_logger.tdf.flash_map:
     platform_allow:
       - mps2/an385
       - qemu_cortex_m3
