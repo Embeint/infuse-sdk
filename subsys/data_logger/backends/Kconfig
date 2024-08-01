@@ -24,12 +24,34 @@ config DATA_LOGGER_EXFAT
 	select FS_FATFS_USE_EXPAND
 	select FS_FATFS_USE_FIND
 	default y
+	help
+	  Data is stored on an exFAT filesystem in `.bin` files. Note that the
+	  exFAT filesystem is not resilient to power-loss. The backend attempts
+	  to mitigate the chances of data corruption through minimising file
+	  allocation table updates as much as possible. Updates can be tuned
+	  through DATA_LOGGER_EXFAT_STORAGE_STRATEGY and
+	  DATA_LOGGER_EXFAT_FILE_SIZE.
 
 if DATA_LOGGER_EXFAT
 
 module = DATA_LOGGER_EXFAT
 module-str = Data Logger exFAT
 source "subsys/logging/Kconfig.template.log_config"
+
+choice DATA_LOGGER_EXFAT_STORAGE_STRATEGY
+	prompt "How to store data on exFAT filesystem"
+	default DATA_LOGGER_EXFAT_MULTI_FILE
+
+config DATA_LOGGER_EXFAT_MULTI_FILE
+	bool "Split data across multiple files"
+	help
+	  Split data across files of size DATA_LOGGER_EXFAT_FILE_SIZE. The
+	  advantage of this format is that users can see at a glance how much
+	  data has been logged and over what timespan. The downside is that there
+	  are more opportunities for filesystem corruption as the FAT is updated
+	  during deployment.
+
+endchoice
 
 config DATA_LOGGER_EXFAT_FILE_SIZE
 	int "Size of individual .bin files on filesystem"

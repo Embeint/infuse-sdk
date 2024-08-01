@@ -3,12 +3,12 @@ common:
   min_flash: 64
   min_ram: 32
 tests:
-  data_logger.exfat:
+  data_logger.exfat_multi:
     platform_allow:
       - native_sim
     integration_platforms:
       - native_sim
-  data_logger.exfat.sd:
+  data_logger.exfat_multi.sd:
     build_only: true
     depends_on: arduino_spi
     extra_args:
