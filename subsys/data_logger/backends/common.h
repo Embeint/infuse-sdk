@@ -39,16 +39,23 @@ struct data_logger_common_config {
 	uint8_t *ram_buf_data;
 	size_t ram_buf_len;
 #endif /* CONFIG_DATA_LOGGER_RAM_BUFFER */
+	bool requires_full_block_write;
 };
 
 #define COMMON_CONFIG_PRE(inst)                                                                    \
 	IF_ENABLED(CONFIG_DATA_LOGGER_RAM_BUFFER,                                                  \
 		   (static uint8_t ram_buf_##inst[DT_INST_PROP(inst, extra_ram_buffer)]))
 
-#define COMMON_CONFIG_INIT(inst)                                                                   \
+#define COMMON_CONFIG_INIT(inst, full_block_write)                                                 \
 	COND_CODE_1(CONFIG_DATA_LOGGER_RAM_BUFFER,                                                 \
-		    ({.ram_buf_data = ram_buf_##inst, .ram_buf_len = sizeof(ram_buf_##inst)}),     \
-		    ({}))
+		    ({                                                                             \
+			    .ram_buf_data = ram_buf_##inst,                                        \
+			    .ram_buf_len = sizeof(ram_buf_##inst),                                 \
+			    .requires_full_block_write = full_block_write,                         \
+		    }),                                                                            \
+		    ({                                                                             \
+			    .requires_full_block_write = full_block_write,                         \
+		    }))
 
 struct data_logger_api {
 	/**

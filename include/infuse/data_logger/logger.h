@@ -40,6 +40,8 @@ struct data_logger_state {
 	uint16_t block_overhead;
 	/* Minimum erase unit of the logger in bytes */
 	uint16_t erase_unit;
+	/* Writes require the full block size to be provided */
+	bool requires_full_block_write;
 };
 
 /* Header on every block logged to persistent storage */
