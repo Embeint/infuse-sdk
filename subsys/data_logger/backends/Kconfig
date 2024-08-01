@@ -15,9 +15,14 @@ config DATA_LOGGER_FLASH_MAP
 config DATA_LOGGER_EXFAT
 	bool "Logging to exFAT filesystem"
 	depends on DT_HAS_EMBEINT_DATA_LOGGER_EXFAT_ENABLED
-	depends on FAT_FILESYSTEM_ELM
-	depends on FS_FATFS_EXFAT
-	depends on DISK_ACCESS
+	select FILE_SYSTEM
+	select DISK_ACCESS
+	select FAT_FILESYSTEM_ELM
+	select FS_FATFS_EXFAT
+	select FS_FATFS_HAS_RTC
+	select FS_FATFS_USE_LABEL
+	select FS_FATFS_USE_EXPAND
+	select FS_FATFS_USE_FIND
 	default y
 
 if DATA_LOGGER_EXFAT
