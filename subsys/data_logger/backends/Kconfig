@@ -51,6 +51,14 @@ config DATA_LOGGER_EXFAT_MULTI_FILE
 	  are more opportunities for filesystem corruption as the FAT is updated
 	  during deployment.
 
+config DATA_LOGGER_EXFAT_SINGLE_FILE
+	bool "Log all data to a single file"
+	help
+	  Log all data into a single file the size of the disk. The advantage of
+	  this format is that the filesystem partitions are not touched after the
+	  filesystem is created on first boot, making it extremely unlikely that
+	  any corruption can occur.
+
 endchoice
 
 config DATA_LOGGER_EXFAT_FILE_SIZE
