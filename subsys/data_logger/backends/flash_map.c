@@ -104,7 +104,7 @@ const struct data_logger_api data_logger_flash_map_api = {
 #define DATA_LOGGER_DEFINE(inst)                                                                   \
 	COMMON_CONFIG_PRE(inst);                                                                   \
 	static struct dl_flash_map_config config##inst = {                                         \
-		.common = COMMON_CONFIG_INIT(inst),                                                \
+		.common = COMMON_CONFIG_INIT(inst, false),                                         \
 		.flash_area_id = DT_FIXED_PARTITION_ID(DT_INST_PROP(inst, partition)),             \
 		.physical_blocks = (DT_REG_SIZE(DT_INST_PROP(inst, partition)) /                   \
 				    DATA_LOGGER_FLASH_MAP_BLOCK_SIZE),                             \

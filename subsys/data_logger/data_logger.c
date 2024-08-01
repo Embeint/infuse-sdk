@@ -30,6 +30,7 @@ LOG_MODULE_REGISTER(data_logger, CONFIG_DATA_LOGGER_LOG_LEVEL);
 
 void data_logger_get_state(const struct device *dev, struct data_logger_state *state)
 {
+	const struct data_logger_common_config *cfg = dev->config;
 	struct data_logger_common_data *data = dev->data;
 	const struct data_logger_api *api = dev->api;
 
@@ -41,6 +42,7 @@ void data_logger_get_state(const struct device *dev, struct data_logger_state *s
 	state->block_overhead =
 		api->read == NULL ? 0 : sizeof(struct data_logger_persistent_block_header);
 	state->erase_unit = data->erase_size;
+	state->requires_full_block_write = cfg->requires_full_block_write;
 }
 
 static int do_block_write(const struct device *dev, enum infuse_type type, void *block,
