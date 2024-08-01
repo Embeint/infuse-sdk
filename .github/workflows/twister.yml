@@ -16,7 +16,7 @@ jobs:
   twister-run:
     runs-on: self-hosted
     container:
-      image: ghcr.io/zephyrproject-rtos/ci:v0.26.11
+      image: ghcr.io/zephyrproject-rtos/ci:v0.26.13
       options: '--entrypoint /bin/bash'
       volumes:
         - /repo-cache/embeint:/github/cache/embeint
