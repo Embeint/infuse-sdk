@@ -25,6 +25,11 @@ static uint8_t output_buffer[1024];
 static uint32_t sector_count;
 static uint32_t sector_size;
 
+uint64_t infuse_device_id(void)
+{
+	return 0x0123456789ABCDEF;
+}
+
 int logger_exfat_init(const struct device *dev);
 
 ZTEST(data_logger_exfat, test_init_constants)
@@ -100,10 +105,10 @@ static void test_sequence(bool reinit)
 #else
 	/* We lose an unpredicable number of blocks to file allocation tables.
 	 * Actual loss depends on the size of binary files vs partition size.
-	 * Treat 95% storage as a pass.
+	 * Treat 90% storage as a pass (due to small block sizes in testing).
 	 */
-	uint32_t max_blocks = 95 * state.physical_blocks / 100;
-	uint32_t overhead_blocks = 5 * state.physical_blocks / 100;
+	uint32_t max_blocks = 90 * state.physical_blocks / 100;
+	uint32_t overhead_blocks = 10 * state.physical_blocks / 100;
 #endif
 
 	for (int i = 0; i < max_blocks; i++) {
