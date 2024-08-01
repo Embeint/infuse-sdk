@@ -16,6 +16,7 @@
 
 #include <infuse/data_logger/logger.h>
 #include <infuse/time/epoch.h>
+#include <infuse/identifiers.h>
 
 #include <ff.h>
 
@@ -32,8 +33,9 @@ BUILD_ASSERT(CONFIG_DATA_LOGGER_EXFAT_FILE_SIZE % MIN_CLUSTER_SIZE == 0,
 	     "File size must be multiple of minimum cluster size");
 
 /** Generate filename for Infuse binary container */
-#define GEN_FILENAME(buffer, config, index)                                                        \
-	snprintf(buffer, sizeof(buffer), "%s:infuse_%06d.bin", config->disk, index)
+#define GEN_FILENAME(buffer, config, infuse_id, index)                                             \
+	snprintf(buffer, sizeof(buffer), "%s:infuse_%016llx_%06d.bin", config->disk, infuse_id,    \
+		 index)
 
 struct dl_exfat_config {
 	struct data_logger_common_config common;
@@ -88,7 +90,8 @@ static uint32_t disk_lba_from_block(const struct device *dev, uint32_t phy_block
 	struct dl_exfat_data *data = dev->data;
 	uint32_t file_num = phy_block / BLOCKS_PER_FILE;
 	uint32_t file_offset = phy_block % BLOCKS_PER_FILE;
-	char filename[32];
+	uint64_t dev_id = infuse_device_id();
+	char filename[40];
 	FRESULT res;
 	FIL fp;
 
@@ -98,7 +101,7 @@ static uint32_t disk_lba_from_block(const struct device *dev, uint32_t phy_block
 	}
 
 	/* Create filename string */
-	GEN_FILENAME(filename, config, file_num);
+	GEN_FILENAME(filename, config, dev_id, file_num);
 
 	/* Get file info */
 	res = f_open(&fp, filename, FA_READ);
@@ -127,13 +130,14 @@ static int binary_container_create(const struct device *dev, uint32_t phy_block)
 	const struct dl_exfat_config *config = dev->config;
 	uint32_t file_num = phy_block / BLOCKS_PER_FILE;
 	uint32_t fsize = CONFIG_DATA_LOGGER_EXFAT_FILE_SIZE;
+	uint64_t dev_id = infuse_device_id();
 	uint32_t start_lba;
-	char filename[32];
+	char filename[40];
 	FRESULT res;
 	FIL fp;
 
 	/* Create filename string */
-	GEN_FILENAME(filename, config, file_num);
+	GEN_FILENAME(filename, config, dev_id, file_num);
 
 	LOG_INF("Creating %s", filename);
 	res = f_open(&fp, filename, FA_CREATE_NEW | FA_WRITE);
