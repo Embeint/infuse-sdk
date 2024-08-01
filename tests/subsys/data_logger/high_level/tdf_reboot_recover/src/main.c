@@ -30,6 +30,7 @@ struct logger_data {
 	uint32_t guard_head;
 	struct k_sem lock;
 	struct tdf_buffer_state tdf_state;
+	uint8_t full_block_write;
 	uint8_t block_overhead;
 	uint8_t tdf_buffer[DATA_LOGGER_MAX_SIZE(DT_NODELABEL(data_logger_epacket))];
 	uint32_t guard_tail;
@@ -44,6 +45,7 @@ int corrupt_indicies[] = {
 	offsetof(struct logger_data, tdf_state.buf.len),
 	offsetof(struct logger_data, tdf_state.buf.size),
 	offsetof(struct logger_data, tdf_state.buf.__buf),
+	offsetof(struct logger_data, full_block_write),
 	offsetof(struct logger_data, block_overhead),
 	/* Length field of first TDF */
 	offsetof(struct logger_data, tdf_buffer) + 2,
