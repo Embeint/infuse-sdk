@@ -45,6 +45,7 @@ ZTEST(data_logger_exfat, test_init_constants)
 	zassert_equal(state.physical_blocks, state.logical_blocks);
 	zassert_equal(0, sector_size % state.erase_unit);
 	zassert_equal(0, state.erase_unit % state.block_size);
+	zassert_true(state.requires_full_block_write);
 }
 
 ZTEST(data_logger_exfat, test_init_state)
