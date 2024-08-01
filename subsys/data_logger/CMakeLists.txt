@@ -6,6 +6,7 @@ zephyr_sources(data_logger.c)
 zephyr_sources_ifdef(CONFIG_DATA_LOGGER_FLASH_MAP backends/flash_map.c)
 zephyr_sources_ifdef(CONFIG_DATA_LOGGER_EPACKET backends/epacket.c)
 zephyr_sources_ifdef(CONFIG_DATA_LOGGER_EXFAT_MULTI_FILE backends/exfat_multi_file.c)
+zephyr_sources_ifdef(CONFIG_DATA_LOGGER_EXFAT_SINGLE_FILE backends/exfat_single_file.c)
 
 # High level APIs
 zephyr_sources_ifdef(CONFIG_TDF_DATA_LOGGER high_level/tdf_data_logger.c)
