@@ -35,6 +35,7 @@ struct tdf_logger_config {
 		uint32_t guard_head;                                                               \
 		struct k_sem lock;                                                                 \
 		struct tdf_buffer_state tdf_state;                                                 \
+		uint8_t full_block_write;                                                          \
 		uint8_t block_overhead;                                                            \
 		uint8_t tdf_buffer[len];                                                           \
 		uint32_t guard_tail;                                                               \
@@ -45,6 +46,7 @@ struct tdf_logger_data {
 	uint32_t guard_head;
 	struct k_sem lock;
 	struct tdf_buffer_state tdf_state;
+	uint8_t full_block_write;
 	uint8_t block_overhead;
 	uint8_t tdf_buffer[];
 };
@@ -111,6 +113,14 @@ static int flush_internal(const struct device *dev, bool locked)
 
 	/* Re-add the overhead */
 	net_buf_simple_push(&data->tdf_state.buf, data->block_overhead);
+
+	/* Pad empty bytes if required */
+	if (data->full_block_write) {
+		uint16_t append_len = data->tdf_state.buf.size - data->tdf_state.buf.len;
+		uint8_t *p = net_buf_simple_add(&data->tdf_state.buf, append_len);
+
+		memset(p, 0xFF, append_len);
+	}
 
 	/* Push data to logger */
 	rc = data_logger_block_write(config->logger, INFUSE_TDF, data->tdf_state.buf.data,
@@ -248,6 +258,7 @@ int tdf_data_logger_init(const struct device *dev)
 	if ((data->guard_head == DATA_GUARD_HEAD) && (*guard_tail == DATA_GUARD_TAIL) &&
 	    (data->tdf_state.buf.size == config->tdf_buffer_max_size) &&
 	    (data->tdf_state.buf.__buf == data->tdf_buffer) &&
+	    (data->full_block_write == logger_state.requires_full_block_write) &&
 	    (data->block_overhead == logger_state.block_overhead) &&
 	    (data->tdf_state.buf.len > 0) && (data->lock.count == 1)) {
 		LOG_DBG("Checking validity of recovered buffer %d", data->tdf_state.buf.len);
@@ -276,6 +287,7 @@ int tdf_data_logger_init(const struct device *dev)
 
 		/* Set block overhead */
 		data->block_overhead = logger_state.block_overhead;
+		data->full_block_write = logger_state.requires_full_block_write;
 
 		/* Link data buffer to net buf */
 		net_buf_simple_init_with_data(&data->tdf_state.buf, data->tdf_buffer,
