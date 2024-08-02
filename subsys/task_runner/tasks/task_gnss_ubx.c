@@ -124,7 +124,8 @@ static void log_and_publish(struct gnss_run_state *state, const struct ubx_msg_n
 				.longitude = pvt->lon,
 				.height = pvt->height,
 			},
-		.accuracy = pvt->h_acc,
+		.h_acc = pvt->h_acc,
+		.v_acc = pvt->v_acc,
 	};
 	k_ticks_t timepulse;
 	uint64_t epoch_time;
@@ -160,11 +161,11 @@ static int nav_pvt_cb(uint8_t message_class, uint8_t message_id, const void *pay
 
 	/* Periodically print fix state */
 	if (k_uptime_seconds() % 30 == 0) {
-		LOG_INF("NAV-PVT: Lat: %9d Lon: %9d Acc: %dcm pDOP: %d NumSV: %d", pvt->lat,
-			pvt->lon, pvt->h_acc / 10, pvt->p_dop / 100, pvt->num_sv);
+		LOG_INF("NAV-PVT: Lat: %9d Lon: %9d HAcc: %umm VAcc: %umm pDOP: %d NumSV: %d",
+			pvt->lat, pvt->lon, pvt->h_acc, pvt->v_acc, pvt->p_dop / 100, pvt->num_sv);
 	} else {
-		LOG_DBG("NAV-PVT: Lat: %9d Lon: %9d Acc: %dcm pDOP: %d NumSV: %d", pvt->lat,
-			pvt->lon, pvt->h_acc / 10, pvt->p_dop / 100, pvt->num_sv);
+		LOG_DBG("NAV-PVT: Lat: %9d Lon: %9d HAcc: %umm VAcc: %umm pDOP: %d NumSV: %d",
+			pvt->lat, pvt->lon, pvt->h_acc, pvt->v_acc, pvt->p_dop / 100, pvt->num_sv);
 	}
 
 	if (run_target == TASK_GNSS_FLAGS_RUN_FOREVER) {

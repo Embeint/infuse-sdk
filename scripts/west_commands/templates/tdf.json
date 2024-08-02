@@ -131,7 +131,8 @@
             "description": "Geo-location (WGS-84) + accuracy",
             "fields": [
                 {"name": "location", "type": "struct tdf_struct_gcs_location", "description": "WGS-84 referenced location"},
-                {"name": "accuracy", "type": "int32_t", "description": "Horizontal accuracy", "display_postfix": "m", "conversion": {"m": 0.001, "c": 0}}
+                {"name": "h_acc", "type": "int32_t", "description": "Horizontal accuracy", "display_postfix": "m", "conversion": {"m": 0.001, "c": 0}},
+                {"name": "v_acc", "type": "int32_t", "description": "Vertical accuracy", "display_postfix": "m", "conversion": {"m": 0.001, "c": 0}}
             ]
         },
         "20": {

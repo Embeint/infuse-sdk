@@ -158,7 +158,9 @@ struct tdf_gcs_wgs84_llha {
 	/* WGS-84 referenced location */
 	struct tdf_struct_gcs_location location;
 	/* Horizontal accuracy */
-	int32_t accuracy;
+	int32_t h_acc;
+	/* Vertical accuracy */
+	int32_t v_acc;
 } __packed;
 
 /* u-blox GNSS NAV-PVT message */
