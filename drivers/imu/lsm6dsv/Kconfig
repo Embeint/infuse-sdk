@@ -1,0 +1,27 @@
+# LSM6DSV 6 Axis IMU configuration
+
+# Copyright (c) 2024 Embeint Inc
+# SPDX-License-Identifier: Apache-2.0
+
+menuconfig INFUSE_IMU_LSM6DSV
+	bool "LSM6DSV Inertial measurement unit"
+	default y
+	depends on DT_HAS_ST_LSM6DSV16X_ENABLED
+	select I2C if $(dt_compat_on_bus,$(DT_COMPAT_ST_LSM6DSV16X),i2c)
+	select SPI if $(dt_compat_on_bus,$(DT_COMPAT_ST_LSM6DSV16X),spi)
+	help
+	  Enable driver for LSM6DSV IMU sensor
+
+if INFUSE_IMU_LSM6DSV
+
+config LSM6DSV_BUS_I2C
+	bool
+	default y
+	depends on $(dt_compat_on_bus,$(DT_COMPAT_ST_LSM6DSV16X),i2c)
+
+config LSM6DSV_BUS_SPI
+	bool
+	default y
+	depends on $(dt_compat_on_bus,$(DT_COMPAT_ST_LSM6DSV16X),spi)
+
+endif # LSM6DSV
