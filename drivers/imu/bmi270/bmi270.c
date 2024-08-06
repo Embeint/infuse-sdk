@@ -34,6 +34,7 @@ struct bmi270_data {
 	int64_t int1_prev_timestamp;
 	uint16_t acc_time_scale;
 	uint16_t gyr_time_scale;
+	uint8_t fifo_data_buffer[BMI270_FIFO_SIZE];
 };
 
 struct sensor_config {
@@ -69,8 +70,6 @@ static const uint8_t bmi270_maximum_fifo_config_file[] = {
 	0x52, 0x42, 0x3e, 0x84, 0x00, 0x40, 0x40, 0x42, 0x7e, 0x82, 0xe1, 0x7f, 0xf2, 0x7f, 0x98,
 	0x2e, 0x6a, 0xd6, 0x21, 0x30, 0x23, 0x2e, 0x61, 0xf5, 0xeb, 0x2c, 0xe1, 0x6f,
 };
-
-static uint8_t fifo_data_buffer[BMI270_FIFO_SIZE];
 
 LOG_MODULE_REGISTER(bmi270, CONFIG_SENSOR_LOG_LEVEL);
 
@@ -515,7 +514,7 @@ int bmi270_data_read(const struct device *dev, struct imu_sample_array *samples,
 	LOG_DBG("Reading %d bytes", fifo_length);
 
 	/* Read the FIFO data */
-	rc = bmi270_reg_read(dev, BMI270_REG_FIFO_DATA, fifo_data_buffer, fifo_length);
+	rc = bmi270_reg_read(dev, BMI270_REG_FIFO_DATA, data->fifo_data_buffer, fifo_length);
 	if (rc < 0) {
 		return rc;
 	}
@@ -524,9 +523,10 @@ int bmi270_data_read(const struct device *dev, struct imu_sample_array *samples,
 	data_frames = 0;
 	while (buffer_offset < fifo_length) {
 		/* Extract FIFO frame header params */
-		fh_mode = fifo_data_buffer[buffer_offset] & FIFO_HEADER_MODE_MASK;
-		fh_param = fifo_data_buffer[buffer_offset] & FIFO_HEADER_PARAM_MASK;
-		if ((data_frames > 0) && (fifo_data_buffer[buffer_offset] & FIFO_HEADER_EXT_INT1)) {
+		fh_mode = data->fifo_data_buffer[buffer_offset] & FIFO_HEADER_MODE_MASK;
+		fh_param = data->fifo_data_buffer[buffer_offset] & FIFO_HEADER_PARAM_MASK;
+		if ((data_frames > 0) &&
+		    (data->fifo_data_buffer[buffer_offset] & FIFO_HEADER_EXT_INT1)) {
 			/* Store the data frame that triggered the interrupt */
 			interrupt_frame = data_frames;
 		}
@@ -605,8 +605,8 @@ int bmi270_data_read(const struct device *dev, struct imu_sample_array *samples,
 	acc_out = 0;
 	while (buffer_offset < fifo_length) {
 		/* Extract FIFO frame header params */
-		fh_mode = fifo_data_buffer[buffer_offset] & FIFO_HEADER_MODE_MASK;
-		fh_param = fifo_data_buffer[buffer_offset] & FIFO_HEADER_PARAM_MASK;
+		fh_mode = data->fifo_data_buffer[buffer_offset] & FIFO_HEADER_MODE_MASK;
+		fh_param = data->fifo_data_buffer[buffer_offset] & FIFO_HEADER_PARAM_MASK;
 		buffer_offset += 1;
 
 		/* Control frames */
@@ -622,12 +622,12 @@ int bmi270_data_read(const struct device *dev, struct imu_sample_array *samples,
 
 		if (fh_param & FIFO_HEADER_REG_GYR) {
 			samples->samples[samples->gyroscope.offset + gyr_out++] =
-				*(struct imu_sample *)(fifo_data_buffer + buffer_offset);
+				*(struct imu_sample *)(data->fifo_data_buffer + buffer_offset);
 			buffer_offset += 6;
 		}
 		if (fh_param & FIFO_HEADER_REG_ACC) {
 			samples->samples[samples->accelerometer.offset + acc_out++] =
-				*(struct imu_sample *)(fifo_data_buffer + buffer_offset);
+				*(struct imu_sample *)(data->fifo_data_buffer + buffer_offset);
 			buffer_offset += 6;
 		}
 	}
