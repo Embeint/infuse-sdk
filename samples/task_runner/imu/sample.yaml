@@ -1,0 +1,13 @@
+sample:
+  description: IMU task runner sample
+  name: IMU task runner
+common:
+  build_only: true
+  required_snippets:
+    - infuse
+tests:
+  sample.task_runner.imu:
+    filter: dt_compat_enabled("bosch,bmi270") or dt_compat_enabled("st,lsm6dsv16x")
+    tags: app
+    integration_platforms:
+      - thingy53/nrf5340/cpuapp
