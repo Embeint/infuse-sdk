@@ -370,7 +370,7 @@ int bmi270_configure(const struct device *dev, const struct imu_config *imu_cfg,
 	const struct bmi270_config *config = dev->config;
 	struct bmi270_data *data = dev->data;
 	struct sensor_config config_regs;
-	int32_t frame_period_us;
+	uint32_t frame_period_us;
 	uint16_t fifo_watermark;
 	uint16_t samples_per_sec;
 	uint8_t reg_val;
@@ -477,10 +477,6 @@ int bmi270_configure(const struct device *dev, const struct imu_config *imu_cfg,
 	data->int1_timestamp = k_uptime_ticks();
 
 	/* Enable the INT1 GPIO */
-	if (gpio_add_callback(config->int1_gpio.port, &data->int1_cb) < 0) {
-		LOG_ERR("Could not set gpio callback");
-		return -EIO;
-	}
 	(void)gpio_pin_configure_dt(&config->int1_gpio, GPIO_INPUT);
 	(void)gpio_pin_interrupt_configure_dt(&config->int1_gpio, GPIO_INT_EDGE_TO_ACTIVE);
 	return rc ? -EIO : 0;
@@ -683,6 +679,10 @@ static int bmi270_init(const struct device *dev)
 
 	/* Initialise data structures */
 	gpio_init_callback(&data->int1_cb, bmi270_gpio_callback, BIT(config->int1_gpio.pin));
+	if (gpio_add_callback(config->int1_gpio.port, &data->int1_cb) < 0) {
+		LOG_ERR("Could not set gpio callback");
+		return -EIO;
+	}
 	k_sem_init(&data->int1_sem, 0, 1);
 
 	if (bmi270_bus_check(dev) < 0) {
