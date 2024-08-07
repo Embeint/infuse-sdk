@@ -115,11 +115,6 @@ enum {
 #define BMI270_GYR_RANGE_125DPS  0x04
 
 /* BMI270_REG_GYR_CONF */
-#define BMI270_GYR_CONF_ODR_25D32          0x01
-#define BMI270_GYR_CONF_ODR_25D16          0x02
-#define BMI270_GYR_CONF_ODR_25D8           0x03
-#define BMI270_GYR_CONF_ODR_25D4           0x04
-#define BMI270_GYR_CONF_ODR_25D2           0x05
 #define BMI270_GYR_CONF_ODR_25             0x06
 #define BMI270_GYR_CONF_ODR_50             0x07
 #define BMI270_GYR_CONF_ODR_100            0x08
