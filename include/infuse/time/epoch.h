@@ -239,6 +239,16 @@ uint64_t epoch_time_from_ticks(uint64_t ticks);
 uint32_t epoch_period_from_ticks(uint64_t ticks);
 
 /**
+ * @brief Get the epoch time period associated with an array
+ *
+ * @param array_ticks Ticks between first and last sample in array
+ * @param array_num Number of samples in array
+ *
+ * @return uint32_t Equivalent period in epoch time units
+ */
+uint32_t epoch_period_from_array_ticks(uint64_t array_ticks, uint16_t array_num);
+
+/**
  * @brief Get the current epoch time
  *
  * @retval epoch_time Complete epoch time
