@@ -25,7 +25,11 @@ static atomic_t validators_complete;
 
 #if defined(CONFIG_INFUSE_IMU_BMI270)
 #define IMU_COMPAT bosch_bmi270
+#elif defined(CONFIG_INFUSE_IMU_LSM6DSV)
+#define IMU_COMPAT st_lsm6dsv16x
+#endif
 
+#ifdef IMU_COMPAT
 static int imu_validator(void *a, void *b, void *c)
 {
 	atomic_inc(&validators_registered);
