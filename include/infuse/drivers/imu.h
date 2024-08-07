@@ -169,6 +169,28 @@ static inline int imu_data_read(const struct device *dev, struct imu_sample_arra
 }
 
 /**
+ * @brief Convert a full scale range to an expected value for 1G
+ *
+ * @param full_scale Full scale range in G's (e.g 4 for +- 4G)
+ *
+ * @return int16_t value expected for 1G
+ */
+static inline int16_t imu_accelerometer_1g(uint8_t full_scale)
+{
+	switch (full_scale) {
+	case 2:
+		return 16384;
+	case 4:
+		return 8192;
+	case 8:
+		return 4096;
+	case 16:
+		return 2048;
+	}
+	return -1;
+}
+
+/**
  * @}
  */
 
