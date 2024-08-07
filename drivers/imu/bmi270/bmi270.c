@@ -482,6 +482,7 @@ int bmi270_data_read(const struct device *dev, struct imu_sample_array *samples,
 	uint16_t gyr_out = 0, acc_out = 0;
 	int64_t first_frame_time, last_frame_time;
 	uint8_t fh_mode, fh_param;
+	int32_t int_period_ticks;
 	int32_t frame_period_ticks;
 
 	int rc;
@@ -572,11 +573,13 @@ int bmi270_data_read(const struct device *dev, struct imu_sample_array *samples,
 	}
 
 	/* Determine real frame period */
-	frame_period_ticks = (data->int1_timestamp - data->int1_prev_timestamp) / interrupt_frame;
+	int_period_ticks = data->int1_timestamp - data->int1_prev_timestamp;
+	frame_period_ticks = int_period_ticks / interrupt_frame;
 
 	/* Calculate the tick count at the first and last data frame */
 	first_frame_time = data->int1_prev_timestamp + frame_period_ticks;
-	last_frame_time = data->int1_timestamp + (extra_frames * frame_period_ticks);
+	last_frame_time =
+		data->int1_timestamp + ((extra_frames * int_period_ticks) / interrupt_frame);
 	/* We want the interrupt to represent the time of the latest read data frame */
 	data->int1_timestamp = last_frame_time;
 
@@ -590,8 +593,12 @@ int bmi270_data_read(const struct device *dev, struct imu_sample_array *samples,
 	samples->gyroscope.timestamp_ticks = first_frame_time + (gyr_out - 1) * frame_period_ticks;
 
 	/* Store real period of samples */
-	samples->accelerometer.period_ticks = data->acc_time_scale * frame_period_ticks;
-	samples->gyroscope.period_ticks = data->gyr_time_scale * frame_period_ticks;
+	samples->accelerometer.buffer_period_ticks = (samples->accelerometer.num - 1) *
+						     data->acc_time_scale * int_period_ticks /
+						     interrupt_frame;
+	samples->gyroscope.buffer_period_ticks = (samples->gyroscope.num - 1) *
+						 data->gyr_time_scale * int_period_ticks /
+						 interrupt_frame;
 
 	/* Populate output samples */
 	buffer_offset = 0;

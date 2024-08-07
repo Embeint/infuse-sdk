@@ -95,7 +95,8 @@ static void imu_sample_handler(const struct task_schedule *schedule,
 		task_schedule_tdf_log_array(
 			schedule, TASK_IMU_LOG_ACC, log_state->acc_tdf, sizeof(struct imu_sample),
 			samples->accelerometer.num, epoch_time,
-			epoch_period_from_ticks(samples->accelerometer.period_ticks),
+			epoch_period_from_array_ticks(samples->accelerometer.buffer_period_ticks,
+						      samples->accelerometer.num),
 			&samples->samples[samples->accelerometer.offset]);
 	}
 	if (samples->gyroscope.num) {
@@ -104,7 +105,8 @@ static void imu_sample_handler(const struct task_schedule *schedule,
 		task_schedule_tdf_log_array(
 			schedule, TASK_IMU_LOG_GYR, log_state->gyr_tdf, sizeof(struct imu_sample),
 			samples->gyroscope.num, epoch_time,
-			epoch_period_from_ticks(samples->gyroscope.period_ticks),
+			epoch_period_from_array_ticks(samples->gyroscope.buffer_period_ticks,
+						      samples->gyroscope.num),
 			&samples->samples[samples->gyroscope.offset]);
 	}
 }

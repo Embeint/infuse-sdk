@@ -73,8 +73,8 @@ struct imu_sample {
 struct imu_sensor_meta {
 	/* Local tick counter of first sample */
 	int64_t timestamp_ticks;
-	/* Real period between samples in ticks */
-	uint32_t period_ticks;
+	/* Real period between first and last samples in buffer */
+	uint32_t buffer_period_ticks;
 	/* Offset into sample array of sensor */
 	uint8_t offset;
 	/* Number of readings for this sensor */
