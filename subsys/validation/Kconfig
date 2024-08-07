@@ -1,0 +1,4 @@
+# Infuse-IoT validation subsystem
+
+config INFUSE_VALIDATION
+	bool "Infuse-IoT hardware and driver validation libraries"
