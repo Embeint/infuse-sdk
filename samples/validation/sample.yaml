@@ -1,0 +1,12 @@
+sample:
+  description: Hardware validation application
+  name: Hardware validation
+common:
+  build_only: true
+  required_snippets:
+    - infuse
+  integration_platforms:
+    - thingy53/nrf5340/cpuapp
+tests:
+  sample.validation:
+    tags: validation
