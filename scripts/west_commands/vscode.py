@@ -27,6 +27,7 @@ settings = {
     "files.trimTrailingWhitespace": True,
     "files.trimFinalNewlines": True,
     "files.insertFinalNewline": True,
+    "scm.showHistoryGraph": False,
     "editor.tabCompletion": "on",
     "editor.trimAutoWhitespace": True,
     "editor.formatOnSave": True,
