@@ -104,13 +104,8 @@ static int validate_sample_timing(const struct device *dev, uint8_t acc_range,
 			break;
 		}
 
-		uint32_t acc_sample_period_ticks = imu_samples->accelerometer.buffer_period_ticks /
-						   imu_samples->accelerometer.num;
-		uint32_t gyr_sample_period_ticks =
-			imu_samples->gyroscope.buffer_period_ticks / imu_samples->gyroscope.num;
-
 		/* Check timestamps across buffers */
-		if (previous_timestamp_acc) {
+		if (acc_sample_rate && previous_timestamp_acc) {
 			int64_t diff =
 				imu_samples->accelerometer.timestamp_ticks - previous_timestamp_acc;
 
@@ -122,7 +117,7 @@ static int validate_sample_timing(const struct device *dev, uint8_t acc_range,
 				break;
 			}
 		}
-		if (previous_timestamp_gyr) {
+		if (gyr_sample_rate && previous_timestamp_gyr) {
 			int64_t diff =
 				imu_samples->gyroscope.timestamp_ticks - previous_timestamp_gyr;
 
@@ -158,19 +153,45 @@ static int validate_sample_timing(const struct device *dev, uint8_t acc_range,
 		}
 
 		/* Check reported periods */
-		if ((acc_sample_period_ticks < acc_threshold_min) ||
-		    (acc_sample_period_ticks > acc_threshold_max)) {
-			VALIDATION_REPORT_ERROR("IMU", "Acc reported period (%u too far from %u)",
-						acc_sample_period_ticks, acc_expected);
-			rc = -EINVAL;
-			break;
+		if (acc_sample_rate > 0) {
+			if (imu_samples->accelerometer.num == 0) {
+				VALIDATION_REPORT_ERROR("IMU", "Acc reported no samples");
+				rc = -EINVAL;
+				break;
+			}
+
+			uint32_t acc_sample_period_ticks =
+				imu_samples->accelerometer.buffer_period_ticks /
+				imu_samples->accelerometer.num;
+
+			if ((acc_sample_period_ticks < acc_threshold_min) ||
+			    (acc_sample_period_ticks > acc_threshold_max)) {
+				VALIDATION_REPORT_ERROR("IMU",
+							"Acc reported period (%u too far from %u)",
+							acc_sample_period_ticks, acc_expected);
+				rc = -EINVAL;
+				break;
+			}
 		}
-		if ((gyr_sample_period_ticks < gyr_threshold_min) ||
-		    (gyr_sample_period_ticks > gyr_threshold_max)) {
-			VALIDATION_REPORT_ERROR("IMU", "Gyro reported period (%u too far from %u)",
-						gyr_sample_period_ticks, gyr_expected);
-			rc = -EINVAL;
-			break;
+		if (gyr_sample_rate > 0) {
+			if (imu_samples->gyroscope.num == 0) {
+				VALIDATION_REPORT_ERROR("IMU", "Gyro reported no samples");
+				rc = -EINVAL;
+				break;
+			}
+
+			uint32_t gyr_sample_period_ticks =
+				imu_samples->gyroscope.buffer_period_ticks /
+				imu_samples->gyroscope.num;
+
+			if ((gyr_sample_period_ticks < gyr_threshold_min) ||
+			    (gyr_sample_period_ticks > gyr_threshold_max)) {
+				VALIDATION_REPORT_ERROR("IMU",
+							"Gyro reported period (%u too far from %u)",
+							gyr_sample_period_ticks, gyr_expected);
+				rc = -EINVAL;
+				break;
+			}
 		}
 
 		/* Validate vector magnitude */
@@ -213,6 +234,16 @@ int infuse_validation_imu(const struct device *dev, uint8_t flags)
 	}
 
 	if (flags & VALIDATION_IMU_DRIVER) {
+		VALIDATION_REPORT_INFO("IMU", "Driver test @ (Acc 2G 50Hz) (Gyr N/A)");
+		rc = validate_sample_timing(dev, 2, 50, 0);
+		if (rc < 0) {
+			goto driver_end;
+		}
+		VALIDATION_REPORT_INFO("IMU", "Driver test @ (Acc N/A) (Gyr 50Hz)");
+		rc = validate_sample_timing(dev, 8, 0, 50);
+		if (rc < 0) {
+			goto driver_end;
+		}
 		VALIDATION_REPORT_INFO("IMU", "Driver test @ (Acc 4G 50Hz) (Gyr 25Hz)");
 		rc = validate_sample_timing(dev, 4, 50, 25);
 		if (rc < 0) {
