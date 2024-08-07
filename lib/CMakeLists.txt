@@ -1,15 +1,12 @@
 # Infuse-IoT libraries compilation
 
-add_subdirectory_ifdef(CONFIG_INFUSE_SDK vendor)
-add_subdirectory_ifdef(CONFIG_INFUSE_SECURITY crypto/hardware_unique_key)
-
 zephyr_sources_ifdef(CONFIG_INFUSE_SECURITY security.c)
-
 zephyr_sources_ifdef(CONFIG_INFUSE_REBOOT reboot.c)
-
 zephyr_sources_ifdef(CONFIG_INFUSE_COMMON_BOOT common_boot.c)
-
 zephyr_sources_ifdef(CONFIG_INFUSE_EPOCH_TIME time/epoch.c)
 
+add_subdirectory(math)
+add_subdirectory_ifdef(CONFIG_INFUSE_SDK vendor)
+add_subdirectory_ifdef(CONFIG_INFUSE_SECURITY crypto/hardware_unique_key)
 add_subdirectory_ifdef(CONFIG_CRYPTO_ASCON crypto/ascon)
 add_subdirectory_ifdef(CONFIG_INFUSE_NRF_MODEM_MONITOR nrf_modem_lib)
