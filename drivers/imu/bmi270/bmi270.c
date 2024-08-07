@@ -583,9 +583,8 @@ int bmi270_data_read(const struct device *dev, struct imu_sample_array *samples,
 	/* We want the interrupt to represent the time of the latest read data frame */
 	data->int1_timestamp = last_frame_time;
 
-	LOG_DBG("%d data frames (%d extra) %lld at %d ticks/frame (%d us)", data_frames,
-		extra_frames, data->int1_timestamp - data->int1_prev_timestamp, frame_period_ticks,
-		k_ticks_to_us_near32(frame_period_ticks));
+	LOG_DBG("%d data frames (%d extra) at %d ticks/frame (%d us)", data_frames, extra_frames,
+		frame_period_ticks, k_ticks_to_us_near32(frame_period_ticks));
 
 	/* Calculate timestamp of first sample */
 	samples->accelerometer.timestamp_ticks =
