@@ -67,6 +67,15 @@ uint32_t epoch_period_from_ticks(uint64_t ticks)
 	return ticks * infuse_civil_config.ref_Hz / infuse_civil_config.local_Hz;
 }
 
+uint32_t epoch_period_from_array_ticks(uint64_t array_ticks, uint16_t array_num)
+{
+	if (array_num < 2) {
+		return 0;
+	}
+	return (array_ticks * infuse_civil_config.ref_Hz) /
+	       (infuse_civil_config.local_Hz * (array_num - 1));
+}
+
 void epoch_time_unix_calendar(uint64_t epoch_time, struct tm *calendar)
 {
 	time_t unix_time = unix_time_from_epoch(epoch_time);
