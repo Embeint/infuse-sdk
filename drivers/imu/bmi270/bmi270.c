@@ -311,22 +311,7 @@ static struct sensor_config gyr_conf(uint16_t sample_rate, uint16_t range, bool 
 	}
 
 	/* Sample rate selection */
-	if (sample_rate == 1) {
-		ret.period_us = 32 * USEC_PER_SEC / 25;
-		ret.config = BMI270_GYR_CONF_ODR_25D32;
-	} else if (sample_rate == 2) {
-		ret.period_us = 16 * USEC_PER_SEC / 25;
-		ret.config = BMI270_GYR_CONF_ODR_25D16;
-	} else if (sample_rate < 5) {
-		ret.period_us = 8 * USEC_PER_SEC / 25;
-		ret.config = BMI270_GYR_CONF_ODR_25D8;
-	} else if (sample_rate < 9) {
-		ret.period_us = 4 * USEC_PER_SEC / 25;
-		ret.config = BMI270_GYR_CONF_ODR_25D4;
-	} else if (sample_rate < 18) {
-		ret.period_us = 2 * USEC_PER_SEC / 25;
-		ret.config = BMI270_GYR_CONF_ODR_25D2;
-	} else if (sample_rate < 34) {
+	if (sample_rate < 34) {
 		ret.period_us = USEC_PER_SEC / 25;
 		ret.config = BMI270_GYR_CONF_ODR_25;
 	} else if (sample_rate < 75) {
@@ -587,7 +572,8 @@ int bmi270_data_read(const struct device *dev, struct imu_sample_array *samples,
 	/* We want the interrupt to represent the time of the latest read data frame */
 	data->int1_timestamp = last_frame_time;
 
-	LOG_DBG("%d data frames at %d ticks/frame (%d us)", data_frames, frame_period_ticks,
+	LOG_DBG("%d data frames (%d extra) %lld at %d ticks/frame (%d us)", data_frames,
+		extra_frames, data->int1_timestamp - data->int1_prev_timestamp, frame_period_ticks,
 		k_ticks_to_us_near32(frame_period_ticks));
 
 	/* Calculate timestamp of first sample */
