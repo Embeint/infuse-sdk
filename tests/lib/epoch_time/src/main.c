@@ -189,6 +189,17 @@ ZTEST(epoch_time, test_period_conversion)
 		      epoch_period_from_ticks(CONFIG_SYS_CLOCK_TICKS_PER_SEC));
 	zassert_equal(2 * INFUSE_EPOCH_TIME_TICKS_PER_SEC,
 		      epoch_period_from_ticks(2 * CONFIG_SYS_CLOCK_TICKS_PER_SEC));
+
+	/* No arrays, time period is 0 */
+	zassert_equal(0, epoch_period_from_array_ticks(CONFIG_SYS_CLOCK_TICKS_PER_SEC, 0));
+	zassert_equal(0, epoch_period_from_array_ticks(CONFIG_SYS_CLOCK_TICKS_PER_SEC, 1));
+
+	zassert_equal(INFUSE_EPOCH_TIME_TICKS_PER_SEC,
+		      epoch_period_from_array_ticks(CONFIG_SYS_CLOCK_TICKS_PER_SEC, 2));
+	zassert_equal(INFUSE_EPOCH_TIME_TICKS_PER_SEC / 2,
+		      epoch_period_from_array_ticks(CONFIG_SYS_CLOCK_TICKS_PER_SEC, 3));
+	zassert_equal(INFUSE_EPOCH_TIME_TICKS_PER_SEC / 3,
+		      epoch_period_from_array_ticks(CONFIG_SYS_CLOCK_TICKS_PER_SEC, 4));
 }
 
 ZTEST(epoch_time, test_reference_age)
