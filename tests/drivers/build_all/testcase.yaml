@@ -1,0 +1,15 @@
+common:
+  tags:
+    - drivers
+    - sensors
+  platform_allow:
+    - native_sim
+  integration_platforms:
+    - native_sim
+  build_only: true
+tests:
+  infuse.build:
+    tags: sensors
+  infuse.build.pm:
+    extra_configs:
+      - CONFIG_PM_DEVICE=y

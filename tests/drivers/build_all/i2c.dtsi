@@ -1,0 +1,29 @@
+/*
+ * Copyright (c) 2020, Linaro Ltd.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * Application overlay for i2c devices
+ */
+
+/****************************************
+ * PLEASE KEEP REG ADDRESSES SEQUENTIAL *
+ ***************************************/
+
+test_i2c_bmi270: bmi270@0 {
+	compatible = "bosch,bmi270";
+	reg = <0x0>;
+	irq-gpios = <&test_gpio 0 0>;
+};
+
+test_i2c_ublox_sam: ublox_sam@1 {
+	reg = <0x1>;
+	compatible = "u-blox,m10-i2c";
+	status = "okay";
+
+	data-ready-gpios = <&test_gpio 0 0>;
+	data-ready-pio = <1>;
+	timepulse-gpios = <&test_gpio 1 0>;
+	reset-gpios = <&test_gpio 2 0>;
+	extint-gpios = <&test_gpio 3 0>;
+};
