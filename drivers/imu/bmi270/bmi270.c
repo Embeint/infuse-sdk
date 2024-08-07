@@ -520,6 +520,14 @@ int bmi270_data_read(const struct device *dev, struct imu_sample_array *samples,
 		/* Handle control frames */
 		if (fh_mode == FIFO_HEADER_MODE_CONTROL) {
 			if (fh_param == FIFO_HEADER_CTRL_INPUT_CONFIG) {
+				/* Reset state on config change.
+				 * Should only happen on first few samples after configure.
+				 */
+				samples->accelerometer.num = 0;
+				samples->gyroscope.num = 0;
+				samples->gyroscope.offset = 0;
+				gyr_out = 0;
+				acc_out = 0;
 				/* Ignore the frame */
 				buffer_offset += 4;
 				continue;
@@ -598,6 +606,9 @@ int bmi270_data_read(const struct device *dev, struct imu_sample_array *samples,
 		/* Control frames */
 		if (fh_mode == FIFO_HEADER_MODE_CONTROL) {
 			if (fh_param == FIFO_HEADER_CTRL_INPUT_CONFIG) {
+				/* Reset to sample 0 in-line with first loop */
+				gyr_out = 0;
+				acc_out = 0;
 				buffer_offset += 4;
 				continue;
 			} else if (fh_param == FIFO_HEADER_CTRL_SENSORTIME) {
