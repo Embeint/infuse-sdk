@@ -58,7 +58,7 @@ const struct data_logger_api data_logger_epacket_api = {
 #define DATA_LOGGER_DEFINE(inst)                                                                   \
 	COMMON_CONFIG_PRE(inst);                                                                   \
 	static struct dl_epacket_config config##inst = {                                           \
-		.common = COMMON_CONFIG_INIT(inst, false),                                         \
+		.common = COMMON_CONFIG_INIT(inst, false, true),                                   \
 		.backend = DEVICE_DT_GET(DT_INST_PROP(inst, epacket)),                             \
 		.max_block_size = EPACKET_INTERFACE_MAX_PAYLOAD(DT_INST_PROP(inst, epacket)),      \
 	};                                                                                         \

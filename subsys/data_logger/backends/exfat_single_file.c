@@ -293,7 +293,7 @@ const struct data_logger_api data_logger_exfat_api = {
 #define DATA_LOGGER_DEFINE(inst)                                                                   \
 	COMMON_CONFIG_PRE(inst);                                                                   \
 	static struct dl_exfat_config config##inst = {                                             \
-		.common = COMMON_CONFIG_INIT(inst, true),                                          \
+		.common = COMMON_CONFIG_INIT(inst, true, false),                                   \
 		.disk = DT_PROP(DT_INST_PROP(inst, disk), disk_name),                              \
 	};                                                                                         \
 	static struct dl_exfat_data data##inst;                                                    \
