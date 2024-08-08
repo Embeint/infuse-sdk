@@ -1,0 +1,44 @@
+#include <mem.h>
+
+/ {
+	data_logger_epacket: data_logger_epacket {
+		compatible = "embeint,data-logger-epacket", "embeint,data-logger";
+		epacket = <&epacket_dummy>;
+	};
+
+	epacket_dummy: epacket_dummy {
+		compatible = "embeint,epacket-dummy";
+	};
+
+	data_logger_flash: data_logger_flash {
+		compatible = "embeint,data-logger-flash-map", "embeint,data-logger";
+		partition = <&data_logger_partition>;
+	};
+
+	sim_flash: sim_flash {
+		compatible = "zephyr,sim-flash";
+
+		#address-cells = <1>;
+		#size-cells = <1>;
+		erase-value = <0xff>;
+
+		flash_sim0: flash_sim@0 {
+			compatible = "soc-nv-flash";
+			reg = <0x00000000 DT_SIZE_K(16)>;
+
+			erase-block-size = <1024>;
+			write-block-size = <4>;
+
+			partitions {
+				compatible = "fixed-partitions";
+				#address-cells = <1>;
+				#size-cells = <1>;
+
+				data_logger_partition: partition@1000 {
+					label = "data_logger";
+					reg = <0x00000000 DT_SIZE_K(16)>;
+				};
+			};
+		};
+	};
+};
