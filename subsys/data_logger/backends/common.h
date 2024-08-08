@@ -39,22 +39,27 @@ struct data_logger_common_config {
 	uint8_t *ram_buf_data;
 	size_t ram_buf_len;
 #endif /* CONFIG_DATA_LOGGER_RAM_BUFFER */
+	/* Writes must contain the complete block size */
 	bool requires_full_block_write;
+	/* Write function only queues writes, does not wait for completion */
+	bool queued_writes;
 };
 
 #define COMMON_CONFIG_PRE(inst)                                                                    \
 	IF_ENABLED(CONFIG_DATA_LOGGER_RAM_BUFFER,                                                  \
 		   (static uint8_t ram_buf_##inst[DT_INST_PROP(inst, extra_ram_buffer)]))
 
-#define COMMON_CONFIG_INIT(inst, full_block_write)                                                 \
+#define COMMON_CONFIG_INIT(inst, _full_block_write, _queued_writes)                                \
 	COND_CODE_1(CONFIG_DATA_LOGGER_RAM_BUFFER,                                                 \
 		    ({                                                                             \
 			    .ram_buf_data = ram_buf_##inst,                                        \
 			    .ram_buf_len = sizeof(ram_buf_##inst),                                 \
-			    .requires_full_block_write = full_block_write,                         \
+			    .requires_full_block_write = _full_block_write,                        \
+			    .queued_writes = _queued_writes,                                       \
 		    }),                                                                            \
 		    ({                                                                             \
-			    .requires_full_block_write = full_block_write,                         \
+			    .requires_full_block_write = _full_block_write,                        \
+			    .queued_writes = _queued_writes,                                       \
 		    }))
 
 struct data_logger_api {
