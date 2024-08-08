@@ -282,7 +282,7 @@ int logger_exfat_init(const struct device *dev)
 {
 	const struct dl_exfat_config *config = dev->config;
 	struct dl_exfat_data *data = dev->data;
-	bool infuse_fs = false;
+	bool infuse_fs = true;
 	char disk_path[16];
 	FRESULT res;
 
@@ -295,6 +295,9 @@ int logger_exfat_init(const struct device *dev)
 	LOG_DBG("First mount: %d", res);
 	if (res == FR_OK) {
 		infuse_fs = filesystem_is_infuse(dev);
+	} else if (res == FR_NOT_READY) {
+		LOG_WRN("Disk '%s' not ready", config->disk);
+		return -EIO;
 	}
 	/* Handle standard mount failures */
 	if ((res == FR_NO_FILESYSTEM) || (!infuse_fs)) {
