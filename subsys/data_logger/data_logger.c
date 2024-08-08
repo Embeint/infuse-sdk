@@ -13,18 +13,33 @@
 #include <zephyr/devicetree.h>
 #include <zephyr/logging/log.h>
 #include <zephyr/sys/byteorder.h>
+#include <zephyr/net/buf.h>
 
 #include <infuse/data_logger/logger.h>
 
 #include "backends/common.h"
 
 #define IS_PERSISTENT_LOGGER(api) (api->read != NULL)
+#define BLOCK_QUEUE_MAX_SIZE      512
 
 /* Block header on the ram buffer */
 struct ram_buf_header {
 	uint8_t block_type;
 	uint16_t block_len;
 } __packed;
+
+#ifdef CONFIG_DATA_LOGGER_OFFLOAD_WRITES
+
+struct net_buf_ctx {
+	const struct device *dev;
+	enum infuse_type type;
+};
+
+NET_BUF_POOL_DEFINE(block_queue_pool, CONFIG_DATA_LOGGER_OFFLOAD_MAX_PENDING, BLOCK_QUEUE_MAX_SIZE,
+		    sizeof(struct net_buf_ctx), NULL);
+K_FIFO_DEFINE(block_commit_fifo);
+
+#endif /* CONFIG_DATA_LOGGER_OFFLOAD_WRITES */
 
 LOG_MODULE_REGISTER(data_logger, CONFIG_DATA_LOGGER_LOG_LEVEL);
 
@@ -139,6 +154,32 @@ static int handle_block_write(const struct device *dev, enum infuse_type type, v
 	return do_block_write(dev, type, block, block_len);
 }
 
+#ifdef CONFIG_DATA_LOGGER_OFFLOAD_WRITES
+
+static int logger_commit_thread_fn(void *a, void *b, void *c)
+{
+	struct net_buf_ctx *ctx;
+	struct net_buf *buf;
+	int rc;
+
+	for (;;) {
+		buf = net_buf_get(&block_commit_fifo, K_FOREVER);
+		ctx = net_buf_user_data(buf);
+
+		rc = handle_block_write(ctx->dev, ctx->type, buf->data, buf->len);
+		if (rc < 0) {
+			LOG_ERR("Offload failed to write block on %s (%d)", ctx->dev->name, rc);
+		}
+		net_buf_unref(buf);
+	}
+	return 0;
+}
+
+K_THREAD_DEFINE(logger_commit_thread, CONFIG_DATA_LOGGER_OFFLOAD_STACK_SIZE,
+		logger_commit_thread_fn, NULL, NULL, NULL, 5, K_ESSENTIAL, 0);
+
+#endif /* CONFIG_DATA_LOGGER_OFFLOAD_WRITES */
+
 int data_logger_block_write(const struct device *dev, enum infuse_type type, void *block,
 			    uint16_t block_len)
 {
@@ -153,7 +194,33 @@ int data_logger_block_write(const struct device *dev, enum infuse_type type, voi
 		return -ENOMEM;
 	}
 
+#ifdef CONFIG_DATA_LOGGER_OFFLOAD_WRITES
+	const struct data_logger_common_config *config = dev->config;
+
+	if (config->queued_writes) {
+		/* Handle block write directly if backend handles write queuing itself.
+		 * Note that with extra RAM buffering this function may block the calling
+		 * context until most of the buffer has been sent.
+		 */
+		return handle_block_write(dev, type, block, block_len);
+	}
+	struct net_buf_ctx *ctx;
+	struct net_buf *buf;
+
+	/* Let commit thread handle block write.
+	 * This resolves potential stack overflow from logging
+	 * in different contexts to different backends.
+	 */
+	buf = net_buf_alloc(&block_queue_pool, K_FOREVER);
+	ctx = net_buf_user_data(buf);
+	ctx->dev = dev;
+	ctx->type = type;
+	net_buf_add_mem(buf, block, block_len);
+	net_buf_put(&block_commit_fifo, buf);
+	return 0;
+#else
 	return handle_block_write(dev, type, block, block_len);
+#endif /* CONFIG_DATA_LOGGER_OFFLOAD_WRITES */
 }
 
 int data_logger_block_read(const struct device *dev, uint32_t block_idx, uint16_t block_offset,
@@ -265,6 +332,17 @@ int data_logger_common_init(const struct device *dev)
 	data->current_block = 0;
 	data->earliest_block = 0;
 
+#ifdef CONFIG_DATA_LOGGER_OFFLOAD_WRITES
+	{
+		const struct data_logger_common_config *config = dev->config;
+
+		if (!config->queued_writes) {
+			__ASSERT(data->block_size <= BLOCK_QUEUE_MAX_SIZE,
+				 "Block will not fit on queue");
+		}
+	}
+#endif
+
 	if (!IS_PERSISTENT_LOGGER(api)) {
 		/* Wireless loggers don't need further initialisation */
 		LOG_INF("Wireless logger %s", dev->name);
@@ -310,10 +388,12 @@ int data_logger_common_init(const struct device *dev)
 
 	LOG_INF("%s -> %u/%u blocks", dev->name, data->current_block, data->logical_blocks);
 #ifdef CONFIG_DATA_LOGGER_RAM_BUFFER
-	const struct data_logger_common_config *config = dev->config;
+	{
+		const struct data_logger_common_config *config = dev->config;
 
-	if (config->ram_buf_len) {
-		LOG_INF("%s -> Extra %zu byte RAM buffer", dev->name, config->ram_buf_len);
+		if (config->ram_buf_len) {
+			LOG_INF("%s -> Extra %zu byte RAM buffer", dev->name, config->ram_buf_len);
+		}
 	}
 #endif /* CONFIG_DATA_LOGGER_RAM_BUFFER */
 	return 0;
