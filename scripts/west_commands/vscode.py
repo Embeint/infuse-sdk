@@ -320,7 +320,7 @@ class vscode(WestCommand):
                 launch["configurations"][0]["serialNumber"] = serial
                 launch["configurations"][1]["serialNumber"] = serial
 
-        self._jlink_device(build_dir)
+            self._jlink_device(build_dir)
 
     def do_run(self, args, _):
         vscode_folder = pathlib.Path(args.workspace) / ".vscode"
