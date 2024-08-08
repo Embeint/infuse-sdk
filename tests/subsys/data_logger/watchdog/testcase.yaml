@@ -1,0 +1,10 @@
+common:
+  tags: data_logger
+  min_flash: 64
+  min_ram: 32
+tests:
+  data_logger.watchdog:
+    platform_allow:
+      - mps2/an385
+    integration_platforms:
+      - mps2/an385
