@@ -87,22 +87,12 @@ static int do_block_write(const struct device *dev, enum infuse_type type, void 
 	return 0;
 }
 
-int data_logger_block_write(const struct device *dev, enum infuse_type type, void *block,
-			    uint16_t block_len)
+static int handle_block_write(const struct device *dev, enum infuse_type type, void *block,
+			      uint16_t block_len)
 {
-	struct data_logger_common_data *data = dev->data;
-
-	/* Validate block length */
-	if (block_len > data->block_size) {
-		return -EINVAL;
-	}
-	/* Check there is still space on the logger */
-	if (data->current_block >= data->logical_blocks) {
-		return -ENOMEM;
-	}
-
 #ifdef CONFIG_DATA_LOGGER_RAM_BUFFER
 	const struct data_logger_common_config *config = dev->config;
+	struct data_logger_common_data *data = dev->data;
 
 	if (config->ram_buf_len) {
 		uint32_t space = config->ram_buf_len - data->ram_buf_offset;
@@ -147,6 +137,23 @@ int data_logger_block_write(const struct device *dev, enum infuse_type type, voi
 
 	/* Perform the block write */
 	return do_block_write(dev, type, block, block_len);
+}
+
+int data_logger_block_write(const struct device *dev, enum infuse_type type, void *block,
+			    uint16_t block_len)
+{
+	struct data_logger_common_data *data = dev->data;
+
+	/* Validate block length */
+	if (block_len > data->block_size) {
+		return -EINVAL;
+	}
+	/* Check there is still space on the logger */
+	if (data->current_block >= data->logical_blocks) {
+		return -ENOMEM;
+	}
+
+	return handle_block_write(dev, type, block, block_len);
 }
 
 int data_logger_block_read(const struct device *dev, uint32_t block_idx, uint16_t block_offset,
