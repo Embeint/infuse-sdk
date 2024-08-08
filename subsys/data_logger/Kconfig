@@ -9,6 +9,29 @@ config DATA_LOGGER
 
 if DATA_LOGGER
 
+config DATA_LOGGER_OFFLOAD_WRITES
+	bool "Offload block writes to a dedicated thread"
+	select NET_BUF
+	default y if !ZTEST
+	help
+	  Block writes can require a significant amount of stack space, depending
+	  on the backend. This can be problematic given the wide variety of contexts
+	  that writes can be triggered from. Enabling this option offloads that stack
+	  requirement to a dedicated thread that can be appropriately sized. If enabled,
+	  the data_logger_block_write function will return immediately without waiting
+	  for the block to finish writing.
+
+config DATA_LOGGER_OFFLOAD_STACK_SIZE
+	int "Stack size for offloaded write thread"
+	depends on DATA_LOGGER_OFFLOAD_WRITES
+	default 8192 if COVERAGE_GCOV
+	default 2048
+
+config DATA_LOGGER_OFFLOAD_MAX_PENDING
+	int "Maximum number of blocks that can be queued"
+	depends on DATA_LOGGER_OFFLOAD_WRITES
+	default 2
+
 config DATA_LOGGER_RAM_BUFFER
 	bool "Enable support for buffering blocks in RAM before writing"
 	help
