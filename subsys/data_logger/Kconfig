@@ -32,6 +32,11 @@ config DATA_LOGGER_OFFLOAD_MAX_PENDING
 	depends on DATA_LOGGER_OFFLOAD_WRITES
 	default 2
 
+config DATA_LOGGER_OFFLOAD_WATCHDOG
+	bool "Install watchdog on the offloaded write thread"
+	depends on INFUSE_WATCHDOG
+	default y
+
 config DATA_LOGGER_RAM_BUFFER
 	bool "Enable support for buffering blocks in RAM before writing"
 	help
