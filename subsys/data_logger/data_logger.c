@@ -16,6 +16,7 @@
 #include <zephyr/net/buf.h>
 
 #include <infuse/data_logger/logger.h>
+#include <infuse/drivers/watchdog.h>
 
 #include "backends/common.h"
 
@@ -156,14 +157,22 @@ static int handle_block_write(const struct device *dev, enum infuse_type type, v
 
 #ifdef CONFIG_DATA_LOGGER_OFFLOAD_WRITES
 
+INFUSE_WATCHDOG_REGISTER_SYS_INIT(rpc_dl, CONFIG_DATA_LOGGER_OFFLOAD_WATCHDOG, wdog_channel,
+				  loop_period);
+
 static int logger_commit_thread_fn(void *a, void *b, void *c)
 {
 	struct net_buf_ctx *ctx;
 	struct net_buf *buf;
 	int rc;
 
+	infuse_watchdog_thread_register(wdog_channel, _current);
 	for (;;) {
-		buf = net_buf_get(&block_commit_fifo, K_FOREVER);
+		buf = net_buf_get(&block_commit_fifo, loop_period);
+		infuse_watchdog_feed(wdog_channel);
+		if (buf == NULL) {
+			continue;
+		}
 		ctx = net_buf_user_data(buf);
 
 		rc = handle_block_write(ctx->dev, ctx->type, buf->data, buf->len);
