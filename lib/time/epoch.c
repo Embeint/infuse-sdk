@@ -121,3 +121,27 @@ uint32_t epoch_time_reference_age(void)
 	}
 	return k_ticks_to_ms_floor64(k_uptime_ticks() - infuse_sync_state.base.local) / 1000;
 }
+
+int epoch_time_reference_shift(const struct timeutil_sync_instant *ref_a,
+			       const struct timeutil_sync_instant *ref_b, int64_t *epoch_shift)
+{
+	struct timeutil_sync_state state_a = {
+		.cfg = &infuse_civil_config,
+		.base = *ref_a,
+		.skew = 1.0f,
+	};
+	struct timeutil_sync_state state_b = {
+		.cfg = &infuse_civil_config,
+		.base = *ref_b,
+		.skew = 1.0f,
+	};
+	uint64_t now = k_uptime_ticks();
+	uint64_t out_a, out_b;
+
+	if ((timeutil_sync_ref_from_local(&state_a, now, &out_a) < 0) ||
+	    (timeutil_sync_ref_from_local(&state_b, now, &out_b) < 0)) {
+		return -EINVAL;
+	}
+	*epoch_shift = (int64_t)out_b - (int64_t)out_a;
+	return 0;
+}

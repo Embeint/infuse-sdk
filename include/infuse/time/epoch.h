@@ -287,6 +287,19 @@ int epoch_time_set_reference(enum epoch_time_source source,
  */
 uint32_t epoch_time_reference_age(void);
 
+/**
+ * @brief Determine the epoch time shift due to moving from @a ref_a to @a ref_b
+ *
+ * @param ref_a Original reference point
+ * @param ref_b Updated reference point
+ * @param epoch_shift Time shift from updating reference points
+ *
+ * @retval 0 On success
+ * @retval -EINVAL If either sync instant is invalid
+ */
+int epoch_time_reference_shift(const struct timeutil_sync_instant *ref_a,
+			       const struct timeutil_sync_instant *ref_b, int64_t *epoch_shift);
+
 /* Time conversion functions */
 #include "epoch_units.h"
 
