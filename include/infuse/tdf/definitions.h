@@ -99,6 +99,14 @@ struct tdf_ambient_temperature {
 	int32_t temperature;
 } __packed;
 
+/* Time synchronised to new source */
+struct tdf_time_sync {
+	/* Updated time source */
+	uint8_t source;
+	/* Time shift (microseconds) */
+	int32_t shift;
+} __packed;
+
 /* Accelerometer +-2G */
 struct tdf_acc_2g {
 	/* Raw sample */
@@ -245,6 +253,7 @@ enum tdf_builtin_id {
 	TDF_BATTERY_STATE = 2,
 	TDF_AMBIENT_TEMP_PRES_HUM = 3,
 	TDF_AMBIENT_TEMPERATURE = 4,
+	TDF_TIME_SYNC = 5,
 	TDF_ACC_2G = 10,
 	TDF_ACC_4G = 11,
 	TDF_ACC_8G = 12,
@@ -267,6 +276,7 @@ enum tdf_builtin_size {
 	_TDF_BATTERY_STATE_SIZE = sizeof(struct tdf_battery_state),
 	_TDF_AMBIENT_TEMP_PRES_HUM_SIZE = sizeof(struct tdf_ambient_temp_pres_hum),
 	_TDF_AMBIENT_TEMPERATURE_SIZE = sizeof(struct tdf_ambient_temperature),
+	_TDF_TIME_SYNC_SIZE = sizeof(struct tdf_time_sync),
 	_TDF_ACC_2G_SIZE = sizeof(struct tdf_acc_2g),
 	_TDF_ACC_4G_SIZE = sizeof(struct tdf_acc_4g),
 	_TDF_ACC_8G_SIZE = sizeof(struct tdf_acc_8g),
