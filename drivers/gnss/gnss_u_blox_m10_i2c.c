@@ -450,12 +450,26 @@ static int mon_ver_handler(uint8_t message_class, uint8_t message_id, const void
  * Configures the modem to disable the serial port and only use UBX.
  * The data ready pin is enabled with the lowest threshold possible.
  */
-static int ubx_m10_i2c_port_setup(const struct device *dev)
+static int ubx_m10_i2c_port_setup(const struct device *dev, bool hardware_reset)
 {
 	NET_BUF_SIMPLE_DEFINE(cfg_buf, 64);
 	const struct ubx_m10_i2c_config *cfg = dev->config;
 	struct ubx_m10_i2c_data *data = dev->data;
 	int rc;
+
+	if (!hardware_reset) {
+		/* Clear any holdover configuration from RAM and BBR */
+		struct ubx_msg_cfg_cfg cfg_cfg = {.clear_mask = UINT32_MAX};
+
+		ubx_msg_prepare(&cfg_buf, UBX_MSG_CLASS_CFG, UBX_MSG_ID_CFG_CFG);
+		net_buf_simple_add_mem(&cfg_buf, &cfg_cfg, sizeof(cfg_cfg));
+		ubx_msg_finalise(&cfg_buf);
+
+		rc = ubx_modem_send_sync_acked(&data->modem, &cfg_buf, SYNC_MESSAGE_TIMEOUT);
+		if (rc < 0) {
+			LOG_WRN("Failed to reset previous configuration");
+		}
+	}
 
 	/* First configuration message sets up the ports */
 	ubx_msg_prepare_valset(&cfg_buf,
@@ -556,6 +570,7 @@ static int ubx_m10_i2c_pm_control(const struct device *dev, enum pm_device_actio
 {
 	const struct ubx_m10_i2c_config *cfg = dev->config;
 	struct ubx_m10_i2c_data *data = dev->data;
+	bool hardware_reset = false;
 	int rc = 0;
 
 	switch (action) {
@@ -593,20 +608,25 @@ static int ubx_m10_i2c_pm_control(const struct device *dev, enum pm_device_actio
 		gpio_pin_configure_dt(&cfg->extint_gpio, GPIO_DISCONNECTED);
 		break;
 	case PM_DEVICE_ACTION_TURN_ON:
-		LOG_DBG("Resetting %s...", dev->name);
 		gpio_pin_configure_dt(&cfg->extint_gpio, GPIO_OUTPUT_INACTIVE);
-		gpio_pin_configure_dt(&cfg->reset_gpio, GPIO_OUTPUT_ACTIVE);
-		k_sleep(K_MSEC(2));
 		gpio_pin_configure_dt(&cfg->reset_gpio, GPIO_OUTPUT_INACTIVE);
-
-		/* Open the pipe synchronously */
+		/* Attempt to communicate without hardware reset to preserve GNSS state */
 		rc = modem_pipe_open(data->modem.pipe);
 		if (rc < 0) {
-			LOG_INF("Failed to establish comms");
+			/* Failed to open, hardware reset and try again */
+			LOG_INF("Resetting %s...", dev->name);
+			hardware_reset = true;
+			gpio_pin_configure_dt(&cfg->reset_gpio, GPIO_OUTPUT_ACTIVE);
+			k_sleep(K_MSEC(2));
+			gpio_pin_configure_dt(&cfg->reset_gpio, GPIO_OUTPUT_INACTIVE);
+			rc = modem_pipe_open(data->modem.pipe);
+		}
+		if (rc < 0) {
+			LOG_WRN("Failed to establish comms");
 			return rc;
 		}
 		/* Configure modem for I2C comms */
-		rc = ubx_m10_i2c_port_setup(dev);
+		rc = ubx_m10_i2c_port_setup(dev, hardware_reset);
 		if (rc < 0) {
 			LOG_INF("Failed to setup comms port");
 			return rc;

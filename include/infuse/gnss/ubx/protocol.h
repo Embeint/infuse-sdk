@@ -84,6 +84,15 @@ enum ubx_msg_id_cfg {
 	UBX_MSG_ID_CFG_VALDEL = 0x8c,
 };
 
+/** @ref UBX_MSG_ID_CFG_CFG */
+struct ubx_msg_cfg_cfg {
+	uint32_t clear_mask;
+	uint32_t save_mask;
+	uint32_t load_mask;
+	uint8_t device_mask[];
+} __packed;
+BUILD_ASSERT(sizeof(struct ubx_msg_cfg_cfg) == 12);
+
 /** @ref UBX_MSG_ID_CFG_VALSET */
 struct ubx_msg_cfg_valset_v0 {
 	uint8_t version;
