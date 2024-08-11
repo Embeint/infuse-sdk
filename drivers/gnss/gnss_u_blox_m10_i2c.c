@@ -28,6 +28,7 @@
 #define DT_DRV_COMPAT u_blox_m10_i2c
 
 #define SYNC_MESSAGE_TIMEOUT K_MSEC(250)
+#define MIN_TIMEPULSE_EDGES  3
 
 struct ubx_m10_i2c_config {
 	struct i2c_dt_spec i2c;
@@ -402,12 +403,13 @@ static int ubx_m10_i2c_get_latest_timepulse(const struct device *dev, k_ticks_t 
 		/* No timepulse pin connected */
 		return -ENOTSUP;
 	}
-	if (data->latest_timepulse == 0) {
-		/* Timepulse interrupt has not occurred yet */
+	if (data->latest_timepulse <= MIN_TIMEPULSE_EDGES) {
+		/* Timepulse has not occurred or is not considered stable */
 		return -EAGAIN;
 	}
 	if (tp_age > max_age) {
 		/* Timepulse has not occurred in last 1.5 seconds, no longer valid */
+		data->latest_timepulse = 0;
 		return -EAGAIN;
 	}
 	*timestamp = data->latest_timepulse;
@@ -418,9 +420,14 @@ static void timepulse_gpio_callback(const struct device *dev, struct gpio_callba
 				    uint32_t pins)
 {
 	struct ubx_m10_i2c_data *data = CONTAINER_OF(cb, struct ubx_m10_i2c_data, timepulse_cb);
+	k_ticks_t now = k_uptime_ticks();
 
-	data->latest_timepulse = k_uptime_ticks();
-	LOG_DBG("");
+	if (data->latest_timepulse < MIN_TIMEPULSE_EDGES) {
+		data->latest_timepulse += 1;
+	} else {
+		data->latest_timepulse = now;
+	}
+	LOG_DBG("%lld", data->latest_timepulse);
 }
 
 static int mon_ver_handler(uint8_t message_class, uint8_t message_id, const void *payload,
