@@ -59,6 +59,16 @@ ZTEST(data_logger_flash_map, test_init_erased)
 	zassert_not_equal(0, state.physical_blocks);
 }
 
+ZTEST(data_logger_flash_map, test_init_erased_invalid_start)
+{
+	const struct device *logger = DEVICE_DT_GET(DT_NODELABEL(data_logger_flash));
+
+	/* Init all 0x00, set the first byte to a valid wrap count */
+	memset(flash_buffer, 0x00, flash_buffer_size);
+	flash_buffer[0] = 0x04;
+	zassert_equal(-EINVAL, logger_flash_map_init(logger));
+}
+
 ZTEST(data_logger_flash_map, test_init_part_written)
 {
 	const struct device *logger = DEVICE_DT_GET(DT_NODELABEL(data_logger_flash));
