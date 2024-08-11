@@ -240,6 +240,28 @@ ZTEST(epoch_time, test_reference_age)
 	zassert_equal(2, epoch_time_reference_age());
 }
 
+ZTEST(epoch_time, test_reference_time_shift)
+{
+	struct timeutil_sync_instant bad = {.local = 0, .ref = 0};
+	struct timeutil_sync_instant original = {.local = 10 * CONFIG_SYS_CLOCK_TICKS_PER_SEC,
+						 .ref = 100 * INFUSE_EPOCH_TIME_TICKS_PER_SEC};
+	struct timeutil_sync_instant shift_forward = {.local = 10 * CONFIG_SYS_CLOCK_TICKS_PER_SEC,
+						      .ref = 101 * INFUSE_EPOCH_TIME_TICKS_PER_SEC};
+	struct timeutil_sync_instant shift_back = {.local = 10 * CONFIG_SYS_CLOCK_TICKS_PER_SEC,
+						   .ref = 99 * INFUSE_EPOCH_TIME_TICKS_PER_SEC};
+	int64_t shift;
+
+	/* Error handling */
+	zassert_equal(-EINVAL, epoch_time_reference_shift(&bad, &original, &shift));
+	zassert_equal(-EINVAL, epoch_time_reference_shift(&original, &bad, &shift));
+
+	/* Reference time shifting */
+	zassert_equal(0, epoch_time_reference_shift(&original, &shift_forward, &shift));
+	zassert_equal(INFUSE_EPOCH_TIME_TICKS_PER_SEC, shift);
+	zassert_equal(0, epoch_time_reference_shift(&original, &shift_back, &shift));
+	zassert_equal(-INFUSE_EPOCH_TIME_TICKS_PER_SEC, shift);
+}
+
 struct test_cb_context {
 	enum epoch_time_source source;
 	struct timeutil_sync_instant old;
