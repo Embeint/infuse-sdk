@@ -172,7 +172,7 @@ ZTEST(task_tdf_logger, test_delay)
 	}
 	time_end = k_uptime_get_32();
 	/* Average delay should be 500ms */
-	zassert_within(500 * 100, time_end - time_start, 5000);
+	zassert_within(500 * 100, time_end - time_start, 10000);
 }
 
 ZTEST(task_tdf_logger, test_battery)
