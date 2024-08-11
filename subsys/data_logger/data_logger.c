@@ -287,6 +287,7 @@ static int current_block_search(const struct device *dev, uint8_t counter)
 	uint32_t high = data->physical_blocks - 1;
 	uint32_t low = 0;
 	uint32_t mid, res = 0;
+	uint32_t max_search;
 	int rc;
 
 	/* Binary search for last block where block_wrap == counter */
@@ -315,20 +316,26 @@ static int current_block_search(const struct device *dev, uint8_t counter)
 	__ASSERT_NO_MSG(data->current_block >= data->physical_blocks);
 	data->earliest_block = data->current_block - data->physical_blocks;
 	res = (data->earliest_block % data->physical_blocks);
-	while (true) {
+	/* Limit the search to a small multiple of the expected erase block */
+	max_search = 2 * (data->erase_size / data->block_size);
+	while (max_search--) {
 		rc = api->read(dev, res, 0, &temp, sizeof(temp));
 		if (rc < 0) {
 			return rc;
 		}
 		if ((temp.block_wrap != 0x00) && (temp.block_wrap != 0xFF)) {
-			break;
+			return 0;
 		}
 		data->earliest_block += 1;
 		if (++res == data->physical_blocks) {
-			break;
+			return 0;
 		}
 	}
-	return 0;
+	/* This is typically seen on Nordic Development kits that ship with some
+	 * data on the first flash page but nothing else.
+	 */
+	LOG_WRN("Data search fail (Pre-existing data on flash?)");
+	return -EINVAL;
 }
 
 int data_logger_common_init(const struct device *dev)
