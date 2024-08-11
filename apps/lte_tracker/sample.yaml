@@ -7,8 +7,10 @@ common:
     - infuse
   platform_allow:
     - nrf9161dk/nrf9161/ns
+    - nrf9151dk/nrf9151/ns
   integration_platforms:
     - nrf9161dk/nrf9161/ns
+    - nrf9151dk/nrf9151/ns
 tests:
   sample.app.lte_tracker:
     tags: app
