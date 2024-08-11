@@ -468,6 +468,14 @@ static int ubx_m10_i2c_port_setup(const struct device *dev)
 	UBX_CFG_VALUE_APPEND(&cfg_buf, UBX_CFG_KEY_TXREADY_INTERFACE,
 			     UBX_CFG_TXREADY_INTERFACE_I2C);
 	UBX_CFG_VALUE_APPEND(&cfg_buf, UBX_CFG_KEY_TXREADY_THRESHOLD, 1);
+
+	/* We set the timepulse pin to use falling edges here, as the timepulse pin has a
+	 * weak pullup to VCC internally. Using the rising edge default can result in spurious
+	 * timepulse edges when the modem wakes from sleep modes:
+	 *   https://portal.u-blox.com/s/question/0D52p00008HKD90CAH/spurious-time-pulses
+	 */
+	UBX_CFG_VALUE_APPEND(&cfg_buf, UBX_CFG_KEY_TP_POL_TP1, UBX_CFG_TP_POL_TP1_FALLING_EDGE);
+
 	ubx_msg_finalise(&cfg_buf);
 	rc = ubx_modem_send_sync_acked(&data->modem, &cfg_buf, SYNC_MESSAGE_TIMEOUT);
 	if (rc < 0) {
