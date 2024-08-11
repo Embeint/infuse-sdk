@@ -296,6 +296,9 @@ int epoch_time_set_reference(enum epoch_time_source source,
  */
 uint32_t epoch_time_reference_age(void);
 
+/* Time conversion functions */
+#include "epoch_units.h"
+
 /**
  * @}
  */
