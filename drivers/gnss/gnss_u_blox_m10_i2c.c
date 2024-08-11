@@ -394,6 +394,9 @@ static int ubx_m10_i2c_get_latest_timepulse(const struct device *dev, k_ticks_t 
 {
 	const struct ubx_m10_i2c_config *cfg = dev->config;
 	struct ubx_m10_i2c_data *data = dev->data;
+	k_ticks_t now = k_uptime_ticks();
+	k_ticks_t max_age = (3 * CONFIG_SYS_CLOCK_TICKS_PER_SEC) / 2;
+	k_ticks_t tp_age = now - data->latest_timepulse;
 
 	if (cfg->timepulse_gpio.port == NULL) {
 		/* No timepulse pin connected */
@@ -401,6 +404,10 @@ static int ubx_m10_i2c_get_latest_timepulse(const struct device *dev, k_ticks_t 
 	}
 	if (data->latest_timepulse == 0) {
 		/* Timepulse interrupt has not occurred yet */
+		return -EAGAIN;
+	}
+	if (tp_age > max_age) {
+		/* Timepulse has not occurred in last 1.5 seconds, no longer valid */
 		return -EAGAIN;
 	}
 	*timestamp = data->latest_timepulse;
