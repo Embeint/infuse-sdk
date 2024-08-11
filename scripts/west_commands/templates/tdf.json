@@ -63,6 +63,14 @@
                 {"name": "temperature", "type": "int32_t", "description": "Ambient temperature (millidegrees)", "display_postfix": "deg", "conversion": {"m": 0.001, "c": 0}}
             ]
         },
+        "5": {
+            "name": "TIME_SYNC",
+            "description": "Time synchronised to new source",
+            "fields": [
+                {"name": "source", "type": "uint8_t", "description": "Updated time source"},
+                {"name": "shift", "type": "int32_t", "description": "Time shift (microseconds)", "display_postfix": "us", "conversion": {"m": 0.000001, "c": 0}}
+            ]
+        },
         "10": {
             "name": "ACC_2G",
             "description": "Accelerometer +-2G",
