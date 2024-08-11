@@ -20,6 +20,7 @@
 #include <infuse/epacket/packet.h>
 #include <infuse/data_logger/high_level/tdf.h>
 #include <infuse/tdf/definitions.h>
+#include <infuse/auto/time_sync_log.h>
 
 #include <infuse/task_runner/runner.h>
 #include <infuse/task_runner/tasks/infuse_tasks.h>
@@ -55,6 +56,9 @@ TASK_RUNNER_TASKS_DEFINE(app_tasks, app_tasks_data, (GNSS_TASK, DEVICE_DT_GET(DT
 
 int main(void)
 {
+	/* Log time sync changes */
+	auto_time_sync_log_configure(TDF_DATA_LOGGER_SERIAL);
+
 	/* Start the watchdog */
 	(void)infuse_watchdog_start();
 
