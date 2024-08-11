@@ -27,7 +27,7 @@
 
 		data-ready-gpios = <&arduino_header 10 GPIO_ACTIVE_HIGH>;
 		data-ready-pio = <1>;
-		timepulse-gpios = <&arduino_header 11 GPIO_ACTIVE_HIGH>;
+		timepulse-gpios = <&arduino_header 11 GPIO_ACTIVE_LOW>;
 		reset-gpios = <&arduino_header 12 GPIO_ACTIVE_LOW>;
 		extint-gpios = <&arduino_header 13 GPIO_ACTIVE_HIGH>;
 		zephyr,pm-device-runtime-auto;

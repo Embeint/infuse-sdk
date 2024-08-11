@@ -434,6 +434,11 @@ enum ubx_cfg_key_tp_pulse_length_def {
 	UBX_CFG_TP_PULSE_LENGTH_DEF_LENGTH = 1,
 };
 
+enum ubx_cfg_key_tp_pol_tp1 {
+	UBX_CFG_TP_POL_TP1_FALLING_EDGE = 0,
+	UBX_CFG_TP_POL_TP1_RISING_EDGE = 1,
+};
+
 enum ubx_cfg_key_tp_timegrid_tp1 {
 	UBX_CFG_TP_TIMEGRID_TP1_UTC = 0,
 	UBX_CFG_TP_TIMEGRID_TP1_GPS = 1,
