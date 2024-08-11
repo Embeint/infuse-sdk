@@ -269,6 +269,9 @@ void gnss_task_fn(const struct task_schedule *schedule, struct k_poll_signal *te
 		UBX_CFG_VALUE_APPEND(&cfg_buf, UBX_CFG_KEY_PM_OPERATEMODE,
 				     UBX_CFG_KEY_PM_OPERATEMODE_PSMCT);
 	}
+	/* Align timepulse to GPS time */
+	UBX_CFG_VALUE_APPEND(&cfg_buf, UBX_CFG_KEY_TP_TIMEGRID_TP1, UBX_CFG_TP_TIMEGRID_TP1_GPS);
+
 	ubx_msg_finalise(&cfg_buf);
 	rc = ubx_modem_send_sync_acked(run_state.modem, &cfg_buf, K_MSEC(250));
 
