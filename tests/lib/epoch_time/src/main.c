@@ -184,11 +184,11 @@ ZTEST(epoch_time, test_local_time_conversion)
 ZTEST(epoch_time, test_period_conversion)
 {
 	zassert_equal(INFUSE_EPOCH_TIME_TICKS_PER_SEC / 2,
-		      epoch_period_from_ticks(CONFIG_SYS_CLOCK_TICKS_PER_SEC / 2));
+		      k_ticks_to_epoch_near32(CONFIG_SYS_CLOCK_TICKS_PER_SEC / 2));
 	zassert_equal(INFUSE_EPOCH_TIME_TICKS_PER_SEC,
-		      epoch_period_from_ticks(CONFIG_SYS_CLOCK_TICKS_PER_SEC));
+		      k_ticks_to_epoch_near32(CONFIG_SYS_CLOCK_TICKS_PER_SEC));
 	zassert_equal(2 * INFUSE_EPOCH_TIME_TICKS_PER_SEC,
-		      epoch_period_from_ticks(2 * CONFIG_SYS_CLOCK_TICKS_PER_SEC));
+		      k_ticks_to_epoch_near32(2 * CONFIG_SYS_CLOCK_TICKS_PER_SEC));
 
 	/* No arrays, time period is 0 */
 	zassert_equal(0, epoch_period_from_array_ticks(CONFIG_SYS_CLOCK_TICKS_PER_SEC, 0));

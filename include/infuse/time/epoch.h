@@ -230,15 +230,6 @@ uint64_t ticks_from_epoch_time(uint64_t epoch_time);
 uint64_t epoch_time_from_ticks(uint64_t ticks);
 
 /**
- * @brief Get the epoch time period from a tick duration
- *
- * @param ticks Tick period
- *
- * @return uint32_t Equivalent period in epoch time units
- */
-uint32_t epoch_period_from_ticks(uint64_t ticks);
-
-/**
  * @brief Get the epoch time period associated with an array
  *
  * @param array_ticks Ticks between first and last sample in array
