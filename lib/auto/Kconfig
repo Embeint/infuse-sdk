@@ -1,0 +1,7 @@
+# Infuse-IoT automatic behaviours
+
+config INFUSE_AUTO_TIME_SYNC_LOG
+	bool "Automatically log time sync events"
+	depends on INFUSE_EPOCH_TIME
+	depends on TDF_DATA_LOGGER
+	default y

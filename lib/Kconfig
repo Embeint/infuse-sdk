@@ -44,5 +44,6 @@ module-str = infuse
 source "subsys/logging/Kconfig.template.log_config"
 endif # INFUSE_COMMON_BOOT
 
+rsource "auto/Kconfig"
 rsource "crypto/Kconfig"
 rsource "nrf_modem_lib/Kconfig"
