@@ -1,0 +1,8 @@
+# Tauro nRF9151 board configuration
+
+# Copyright (c) 2024 Embeint Inc
+# SPDX-License-Identifier: Apache-2.0
+
+config BOARD_TAURO
+	select SOC_NRF9151_LACA if BOARD_TAURO_NRF9151 || BOARD_TAURO_NRF9151_NS
+	select SOC_NRF52840_QIAA if BOARD_TAURO_NRF52840

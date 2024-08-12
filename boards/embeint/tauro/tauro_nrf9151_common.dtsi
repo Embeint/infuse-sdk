@@ -1,0 +1,204 @@
+/*
+ * Copyright (c) 2024 Embeint Inc
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+#include "tauro_nrf9151_common-pinctrl.dtsi"
+#include <zephyr/dt-bindings/battery/battery.h>
+#include <zephyr/dt-bindings/input/input-event-codes.h>
+
+/ {
+	model = "Embeint Tauro nRF9151";
+	compatible = "embeint,tauro-nrf9151";
+
+	chosen {
+		zephyr,console = &rtt0;
+		zephyr,bt-hci = &hci_spi;
+	};
+
+	rtt0: rtt_chan0 {
+		compatible = "segger,rtt-uart";
+		status = "okay";
+	};
+
+	leds {
+		compatible = "gpio-leds";
+		led0: led_0 {
+			gpios = <&gpio0 26 GPIO_ACTIVE_HIGH>;
+			label = "Red LED";
+		};
+		led1: led_1 {
+			gpios = <&gpio0 27 GPIO_ACTIVE_HIGH>;
+			label = "Green LED";
+		};
+		led2: led_2 {
+			gpios = <&gpio0 28 GPIO_ACTIVE_HIGH>;
+			label = "Blue LED";
+		};
+	};
+
+	vbatt: vbatt {
+		compatible = "voltage-divider";
+		device-chemistry = "lithium-ion-polymer";
+		ocv-capacity-table-0 = <BATTERY_OCV_CURVE_LITHIUM_ION_POLYMER_DEFAULT>;
+		io-channels = <&adc 1>;
+		output-ohms = <10000>;
+		full-ohms = <(64900 + 10000)>;
+		power-gpios = <&gpio0 12 (GPIO_ACTIVE_HIGH | GPIO_OPEN_SOURCE ) >;
+	};
+
+	bq25185: bq25185 {
+		compatible = "current-sense-amplifier";
+		io-channels = <&adc 0>;
+		sense-resistor-micro-ohms = <300000000>;
+		sense-gain-div = <300>;
+	};
+
+	aliases {
+		led0 = &led0;
+		led1 = &led1;
+		led2 = &led2;
+		battery0 = &vbatt;
+		charger0 = &bq25185;
+		gnss = &sam_m10;
+		watchdog0 = &wdt0;
+	};
+};
+
+&adc {
+	#address-cells = <1>;
+	#size-cells = <0>;
+	status = "okay";
+
+	channel@0 {
+		reg = <0>;
+		zephyr,gain = "ADC_GAIN_1_2";
+		zephyr,reference = "ADC_REF_INTERNAL";
+		zephyr,vref-mv = <600>;
+		zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
+		zephyr,resolution = <12>;
+		zephyr,input-positive = <NRF_SAADC_AIN0>;
+	};
+
+	channel@1 {
+		reg = <1>;
+		zephyr,gain = "ADC_GAIN_1";
+		zephyr,reference = "ADC_REF_INTERNAL";
+		zephyr,vref-mv = <600>;
+		zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
+		zephyr,resolution = <12>;
+		zephyr,input-positive = <NRF_SAADC_AIN1>;
+	};
+};
+
+&gpiote {
+	status = "okay";
+};
+
+&gpio0 {
+	status = "okay";
+	/* Every pin except the GNSS timepulse interrupt */
+	sense-edge-mask = <0xfffdffff>;
+};
+
+&spi0 {
+	compatible = "nordic,nrf-spim";
+	status = "okay";
+	cs-gpios = <&gpio0 29 GPIO_ACTIVE_LOW>;
+	pinctrl-0 = <&spi0_default>;
+	pinctrl-1 = <&spi0_sleep>;
+	pinctrl-names = "default", "sleep";
+
+	lsm6dsv: lsm6dsv@0 {
+		compatible = "st,lsm6dsv16x";
+		reg = <0>;
+		spi-max-frequency = <10000000>;
+		int1-gpios = <&gpio0 1 GPIO_ACTIVE_HIGH>;
+	};
+};
+
+&spi1 {
+	compatible = "nordic,nrf-spim";
+	status = "okay";
+	cs-gpios = <&gpio0 22 GPIO_ACTIVE_LOW>,
+			<&gpio0 21 (GPIO_ACTIVE_LOW | GPIO_OPEN_DRAIN)>;
+	pinctrl-0 = <&spi1_default>;
+	pinctrl-1 = <&spi1_sleep>;
+	pinctrl-names = "default", "sleep";
+
+	w25q128jv: w25q128jvpiq@0 {
+		compatible = "jedec,spi-nor";
+		status = "okay";
+		reg = <0>;
+		spi-max-frequency = <32000000>;
+		size = <134217728>;
+		has-dpd;
+		t-enter-dpd = <3000>;
+		t-exit-dpd = <20000>;
+		jedec-id = [ef 40 18];
+	};
+
+	sdhc0: sdhc@1 {
+		compatible = "zephyr,sdhc-spi-slot";
+		status = "okay";
+		reg = <1>;
+		spi-max-frequency = <32000000>;
+		pwr-gpios = <&gpio0 20 GPIO_ACTIVE_LOW>;
+		mmc: mmc {
+			compatible = "zephyr,sdmmc-disk";
+			status = "okay";
+			disk-name = "SD";
+		};
+	};
+};
+
+&i2c2 {
+	compatible = "nordic,nrf-twim";
+	status = "okay";
+	pinctrl-0 = <&i2c2_default>;
+	pinctrl-1 = <&i2c2_sleep>;
+	pinctrl-names = "default", "sleep";
+
+	bme280: bme280@76 {
+		compatible = "bosch,bme280";
+		status = "okay";
+		reg = <0x76>;
+	};
+
+	sam_m10: sam_m10@42 {
+		reg = <0x42>;
+		compatible = "u-blox,m10-i2c";
+		status = "okay";
+		timepulse-gpios = <&gpio0 17 GPIO_ACTIVE_LOW>;
+		reset-gpios = <&gpio0 15 GPIO_ACTIVE_LOW>;
+		extint-gpios = <&gpio0 11 GPIO_ACTIVE_LOW>;
+		data-ready-gpios = <&gpio0 16 GPIO_ACTIVE_HIGH>;
+		data-ready-pio = <1>;
+	};
+};
+
+&spi3 {
+	compatible = "nordic,nrf-spim";
+	status = "okay";
+	cs-gpios = <&gpio0 8 GPIO_ACTIVE_LOW>;
+	pinctrl-0 = <&spi3_default>;
+	pinctrl-1 = <&spi3_sleep>;
+	pinctrl-names = "default", "sleep";
+
+	/* Nordic nRF52840 (u-blox NINA-B302) */
+	hci_spi: bt-hci@0 {
+		compatible = "zephyr,bt-hci-spi";
+		reg = <0>;
+		spi-max-frequency = <8000000>;
+		reset-gpios = <&gpio0 4 (GPIO_ACTIVE_LOW)>;
+		irq-gpios = <&gpio0 10 GPIO_ACTIVE_HIGH>;
+		reset-assert-duration-ms = <1>;
+		/* Additional GPIO is available here:
+		 * extra-gpios = <&gpio0 9 0>;
+		 */
+	};
+};
+
+/* Include default memory partition configuration file */
+#include <common/nordic/nrf91xx_partition.dtsi>
