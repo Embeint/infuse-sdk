@@ -1,0 +1,19 @@
+identifier: tauro/nrf9151/ns
+name: Tauro-nRF9151
+type: mcu
+arch: arm
+toolchain:
+  - gnuarmemb
+  - xtools
+  - zephyr
+ram: 88
+flash: 1024
+supported:
+  - gpio
+  - i2c
+  - pwm
+  - spi
+  - watchdog
+  - counter
+  - netif:modem
+vendor: embeint

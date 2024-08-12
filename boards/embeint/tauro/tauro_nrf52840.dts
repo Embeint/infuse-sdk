@@ -1,0 +1,65 @@
+/*
+ * Copyright (c) 2024 Embeint Inc
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/dts-v1/;
+#include <nordic/nrf52840_qiaa.dtsi>
+#include "tauro_nrf52840-pinctrl.dtsi"
+
+/ {
+	model = "Embeint Tauro NRF52840";
+	compatible = "embeint,tauro-nrf52840";
+
+	chosen {
+		zephyr,sram = &sram0;
+		zephyr,flash = &flash0;
+	};
+
+	aliases {
+		watchdog0 = &wdt0;
+	};
+};
+
+&uicr {
+	gpio-as-nreset;
+};
+
+&gpiote {
+	status = "okay";
+};
+
+&gpio0 {
+	status = "okay";
+};
+
+&gpio1 {
+	status = "okay";
+};
+
+&spi0 {
+	compatible = "nordic,nrf-spis";
+	status = "okay";
+	def-char = <0x00>;
+	pinctrl-0 = <&spi0_default>;
+	pinctrl-names = "default";
+
+	bt-hci@0 {
+		compatible = "zephyr,bt-hci-spi-slave";
+		reg = <0>;
+		irq-gpios = <&gpio0 23 GPIO_ACTIVE_HIGH>;
+		/* Additional GPIO is available here:
+		 * extra-gpios = <&gpio0 22 0>;
+		 */
+	};
+};
+
+&uart1 {
+	compatible = "nordic,nrf-uarte";
+	current-speed = <115200>;
+	status = "disabled";
+	pinctrl-0 = <&uart1_default>;
+	pinctrl-1 = <&uart1_sleep>;
+	pinctrl-names = "default", "sleep";
+};
