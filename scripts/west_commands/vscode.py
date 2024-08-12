@@ -218,7 +218,7 @@ class vscode(WestCommand):
     def _jlink_device(self, build_dir):
         # Get the JLink device name
         runners_yaml = build_dir / "zephyr" / "runners.yaml"
-        if runners_yaml is not None:
+        if runners_yaml.exists():
             with pathlib.Path(runners_yaml).open("r", encoding="utf-8") as f:
                 r = yaml.safe_load(f)
                 if "jlink" in r["args"]:
@@ -243,7 +243,7 @@ class vscode(WestCommand):
 
         launch["configurations"][0]["servertype"] = "jlink"
         launch["configurations"][1]["servertype"] = "jlink"
-        self._jlink_device(build_dir)
+        self._jlink_device(build_dir.parent)
 
     def _zephyr_build(self, build_dir, cache):
         c_cpp_properties["configurations"][0]["includePath"] = [
@@ -266,7 +266,7 @@ class vscode(WestCommand):
             build_dir / "zephyr" / "zephyr.elf"
         )
 
-        if cache.get("BOARD")[-3:] == "_ns":
+        if cache.get("BOARD")[-3:] == "/ns":
             tfm_elfs = [
                 "bl2.elf",
                 "tfm_s.elf",
