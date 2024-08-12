@@ -167,6 +167,12 @@ configdefault LOG
 configdefault LOG_PRINTK
 	default y
 
+# RTT communications
+configdefault SEGGER_RTT_BUFFER_SIZE_UP
+	default 1024
+configdefault SEGGER_RTT_BUFFER_SIZE_DOWN
+	default 256
+
 # Debug options
 configdefault DEBUG_INFO
 	default y
