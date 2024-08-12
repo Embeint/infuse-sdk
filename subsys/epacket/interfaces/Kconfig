@@ -1,11 +1,26 @@
 # ePacket interfaces
 
 config EPACKET_INTERFACE_SERIAL
-	bool "ePacket serial interface"
-	depends on EPACKET_CRYPTO
+	bool
+
+choice EPACKET_INTERFACE_SERIAL_BACKEND
+	prompt "Backend for serial interface"
 	depends on DT_HAS_EMBEINT_EPACKET_SERIAL_ENABLED
+	depends on EPACKET_CRYPTO
+	default EPACKET_INTERFACE_SERIAL_BACKEND_INT
+	default EPACKET_INTERFACE_SERIAL_BACKEND_RTT
+
+config EPACKET_INTERFACE_SERIAL_BACKEND_INT
+	bool "ePacket serial interface"
 	depends on UART_INTERRUPT_DRIVEN
-	default y
+	select EPACKET_INTERFACE_SERIAL
+
+config EPACKET_INTERFACE_SERIAL_BACKEND_RTT
+	bool "ePacket serial interface over RTT"
+	depends on USE_SEGGER_RTT
+	select EPACKET_INTERFACE_SERIAL
+
+endchoice
 
 if EPACKET_INTERFACE_SERIAL
 
