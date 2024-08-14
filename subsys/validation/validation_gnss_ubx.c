@@ -1,0 +1,81 @@
+/**
+ * @file
+ * @copyright 2024 Embeint Inc
+ * @author Jordan Yates <jordan@embeint.com>
+ *
+ * SPDX-License-Identifier: LicenseRef-Embeint
+ */
+
+#include <zephyr/pm/device_runtime.h>
+#include <zephyr/sys/util.h>
+
+#include <zephyr/device.h>
+#include <infuse/validation/core.h>
+#include <infuse/validation/gnss.h>
+
+#include <infuse/modem/backend/u_blox_i2c.h>
+#include <infuse/gnss/ubx/defines.h>
+#include <infuse/gnss/ubx/cfg.h>
+#include <infuse/gnss/ubx/modem.h>
+#include <infuse/gnss/ubx/protocol.h>
+#include <infuse/gnss/ubx/zephyr.h>
+
+#define TEST                 "GNSS"
+#define SYNC_MESSAGE_TIMEOUT K_MSEC(250)
+
+static int mon_ver_handler(uint8_t message_class, uint8_t message_id, const void *payload,
+			   size_t payload_len, void *user_data)
+{
+	const struct ubx_msg_mon_ver *ver = payload;
+	uint8_t num_ext = (payload_len - sizeof(*ver)) / 30;
+
+	VALIDATION_REPORT_INFO(TEST, "   SW: %s", ver->sw_version);
+	VALIDATION_REPORT_INFO(TEST, "   HW: %s", ver->hw_version);
+	for (int i = 0; i < num_ext; i++) {
+		VALIDATION_REPORT_INFO(TEST, "EXT %d: %s", i, ver->extension[i].ext_version);
+	}
+	return 0;
+}
+
+int infuse_validation_gnss(const struct device *dev, uint8_t flags)
+{
+	struct ubx_modem_data *modem = ubx_modem_data_get(dev);
+	int rc;
+
+	VALIDATION_REPORT_INFO(TEST, "DEV=%s", dev->name);
+
+	/* Check init succeeded */
+	if (!device_is_ready(dev)) {
+		VALIDATION_REPORT_ERROR(TEST, "Device not ready");
+		rc = -ENODEV;
+		goto test_end;
+	}
+
+	/* Power up device */
+	rc = pm_device_runtime_get(dev);
+	if (rc < 0) {
+		VALIDATION_REPORT_ERROR(TEST, "pm_device_runtime_get (%d)", rc);
+		goto test_end;
+	}
+
+	/* Query and display system version information */
+	rc = ubx_modem_send_sync_poll(modem, UBX_MSG_CLASS_MON, UBX_MSG_ID_MON_VER, mon_ver_handler,
+				      NULL, SYNC_MESSAGE_TIMEOUT);
+	if (rc < 0) {
+		VALIDATION_REPORT_ERROR(TEST, "Failed to query MON-VER (%d)", rc);
+	}
+
+	/* Power down device */
+	if (pm_device_runtime_put(dev) < 0) {
+		if (rc == 0) {
+			VALIDATION_REPORT_ERROR(TEST, "pm_device_runtime_put");
+			rc = -EIO;
+		}
+	}
+test_end:
+	if (rc == 0) {
+		VALIDATION_REPORT_PASS(TEST, "DEV=%s", dev->name);
+	}
+
+	return rc;
+}

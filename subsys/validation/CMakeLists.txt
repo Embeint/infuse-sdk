@@ -2,3 +2,9 @@
 
 zephyr_library()
 zephyr_library_sources_ifdef(CONFIG_INFUSE_IMU validation_imu.c)
+zephyr_library_sources_ifdef(CONFIG_SENSOR validation_env.c)
+zephyr_library_sources_ifdef(CONFIG_SENSOR validation_pwr.c)
+zephyr_library_sources_ifdef(CONFIG_FLASH validation_flash.c)
+zephyr_library_sources_ifdef(CONFIG_DISK_DRIVER_SDMMC validation_disk.c)
+zephyr_library_sources_ifdef(CONFIG_GNSS_UBX_MODEM validation_gnss_ubx.c)
+zephyr_library_sources_ifdef(CONFIG_NRF_MODEM_LIB validation_nrf_modem.c)
