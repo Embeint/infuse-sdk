@@ -15,6 +15,7 @@
 #include <infuse/validation/imu.h>
 #include <infuse/math/common.h>
 
+#define TEST        "IMU"
 #define MAX_SAMPLES 256
 IMU_SAMPLE_ARRAY_CREATE(imu_samples, MAX_SAMPLES);
 
@@ -47,7 +48,7 @@ static int validate_sample_timing(const struct device *dev, uint8_t acc_range,
 	/* Configure IMU */
 	rc = imu_configure(dev, &config, &config_output);
 	if (rc < 0) {
-		VALIDATION_REPORT_ERROR("IMU", "Failed to configure (%d)", rc);
+		VALIDATION_REPORT_ERROR(TEST, "Failed to configure (%d)", rc);
 		return rc;
 	}
 	wait_start = k_uptime_ticks();
@@ -79,7 +80,7 @@ static int validate_sample_timing(const struct device *dev, uint8_t acc_range,
 		wait_end = k_uptime_ticks();
 		wait_us = k_ticks_to_us_near64(wait_end - wait_start);
 		if (rc < 0) {
-			VALIDATION_REPORT_ERROR("IMU", "Interrupt timeout");
+			VALIDATION_REPORT_ERROR(TEST, "Interrupt timeout");
 			rc = -EINVAL;
 			break;
 		}
@@ -99,7 +100,7 @@ static int validate_sample_timing(const struct device *dev, uint8_t acc_range,
 		/* Read IMU samples */
 		rc = imu_data_read(dev, imu_samples, MAX_SAMPLES);
 		if (rc < 0) {
-			VALIDATION_REPORT_ERROR("IMU", "Data read failed (%d)", rc);
+			VALIDATION_REPORT_ERROR(TEST, "Data read failed (%d)", rc);
 			rc = -EINVAL;
 			break;
 		}
@@ -111,7 +112,7 @@ static int validate_sample_timing(const struct device *dev, uint8_t acc_range,
 
 			if ((diff < acc_threshold_min) || (diff > acc_threshold_max)) {
 				VALIDATION_REPORT_ERROR(
-					"IMU", "Acc inter-buffer period (%lld too far from %u)",
+					TEST, "Acc inter-buffer period (%lld too far from %u)",
 					diff, acc_expected);
 				rc = -EINVAL;
 				break;
@@ -123,7 +124,7 @@ static int validate_sample_timing(const struct device *dev, uint8_t acc_range,
 
 			if ((diff < gyr_threshold_min) || (diff > gyr_threshold_max)) {
 				VALIDATION_REPORT_ERROR(
-					"IMU", "Gyro inter-buffer period (%lld too far from %u)",
+					TEST, "Gyro inter-buffer period (%lld too far from %u)",
 					diff, gyr_expected);
 				rc = -EINVAL;
 				break;
@@ -144,7 +145,7 @@ static int validate_sample_timing(const struct device *dev, uint8_t acc_range,
 		/* Compare actual interrupt period with the expected period */
 		{
 			if ((wait_us < int_threshold_min) || (wait_us > int_threshold_max)) {
-				VALIDATION_REPORT_ERROR("IMU",
+				VALIDATION_REPORT_ERROR(TEST,
 							"Interrupt period (%lld too far from %lld)",
 							wait_us, int_expected);
 				rc = -EINVAL;
@@ -155,7 +156,7 @@ static int validate_sample_timing(const struct device *dev, uint8_t acc_range,
 		/* Check reported periods */
 		if (acc_sample_rate > 0) {
 			if (imu_samples->accelerometer.num == 0) {
-				VALIDATION_REPORT_ERROR("IMU", "Acc reported no samples");
+				VALIDATION_REPORT_ERROR(TEST, "Acc reported no samples");
 				rc = -EINVAL;
 				break;
 			}
@@ -166,7 +167,7 @@ static int validate_sample_timing(const struct device *dev, uint8_t acc_range,
 
 			if ((acc_sample_period_ticks < acc_threshold_min) ||
 			    (acc_sample_period_ticks > acc_threshold_max)) {
-				VALIDATION_REPORT_ERROR("IMU",
+				VALIDATION_REPORT_ERROR(TEST,
 							"Acc reported period (%u too far from %u)",
 							acc_sample_period_ticks, acc_expected);
 				rc = -EINVAL;
@@ -175,7 +176,7 @@ static int validate_sample_timing(const struct device *dev, uint8_t acc_range,
 		}
 		if (gyr_sample_rate > 0) {
 			if (imu_samples->gyroscope.num == 0) {
-				VALIDATION_REPORT_ERROR("IMU", "Gyro reported no samples");
+				VALIDATION_REPORT_ERROR(TEST, "Gyro reported no samples");
 				rc = -EINVAL;
 				break;
 			}
@@ -186,7 +187,7 @@ static int validate_sample_timing(const struct device *dev, uint8_t acc_range,
 
 			if ((gyr_sample_period_ticks < gyr_threshold_min) ||
 			    (gyr_sample_period_ticks > gyr_threshold_max)) {
-				VALIDATION_REPORT_ERROR("IMU",
+				VALIDATION_REPORT_ERROR(TEST,
 							"Gyro reported period (%u too far from %u)",
 							gyr_sample_period_ticks, gyr_expected);
 				rc = -EINVAL;
@@ -202,7 +203,7 @@ static int validate_sample_timing(const struct device *dev, uint8_t acc_range,
 			vector_mag = math_vector_xyz_magnitude(s->x, s->y, s->z);
 			if ((vector_mag < one_g_min) || (vector_mag > one_g_max)) {
 				VALIDATION_REPORT_ERROR(
-					"IMU", "Accelerometer magnitude out of range [%d](%d)", j,
+					TEST, "Accelerometer magnitude out of range [%d](%d)", j,
 					vector_mag);
 				rc = -EINVAL;
 				goto loop_break;
@@ -214,7 +215,7 @@ loop_break:
 	/* Reset IMU */
 	rc2 = imu_configure(dev, NULL, NULL);
 	if (rc2 < 0) {
-		VALIDATION_REPORT_ERROR("IMU", "Failed to reset (%d)", rc2);
+		VALIDATION_REPORT_ERROR(TEST, "Failed to reset (%d)", rc2);
 		return rc2;
 	}
 	return rc == 0 ? rc2 : rc;
@@ -224,37 +225,37 @@ int infuse_validation_imu(const struct device *dev, uint8_t flags)
 {
 	int rc;
 
-	VALIDATION_REPORT_INFO("IMU", "DEV=%s", dev->name);
+	VALIDATION_REPORT_INFO(TEST, "DEV=%s", dev->name);
 
 	/* Power up device */
 	rc = pm_device_runtime_get(dev);
 	if (rc < 0) {
-		VALIDATION_REPORT_ERROR("IMU", "pm_device_runtime_get (%d)", rc);
+		VALIDATION_REPORT_ERROR(TEST, "pm_device_runtime_get (%d)", rc);
 		goto test_end;
 	}
 
 	if (flags & VALIDATION_IMU_DRIVER) {
-		VALIDATION_REPORT_INFO("IMU", "Driver test @ (Acc 2G 50Hz) (Gyr N/A)");
+		VALIDATION_REPORT_INFO(TEST, "Driver test @ (Acc 2G 50Hz) (Gyr N/A)");
 		rc = validate_sample_timing(dev, 2, 50, 0);
 		if (rc < 0) {
 			goto driver_end;
 		}
-		VALIDATION_REPORT_INFO("IMU", "Driver test @ (Acc N/A) (Gyr 50Hz)");
+		VALIDATION_REPORT_INFO(TEST, "Driver test @ (Acc N/A) (Gyr 50Hz)");
 		rc = validate_sample_timing(dev, 8, 0, 50);
 		if (rc < 0) {
 			goto driver_end;
 		}
-		VALIDATION_REPORT_INFO("IMU", "Driver test @ (Acc 4G 50Hz) (Gyr 25Hz)");
+		VALIDATION_REPORT_INFO(TEST, "Driver test @ (Acc 4G 50Hz) (Gyr 25Hz)");
 		rc = validate_sample_timing(dev, 4, 50, 25);
 		if (rc < 0) {
 			goto driver_end;
 		}
-		VALIDATION_REPORT_INFO("IMU", "Driver test @ (Acc 2G 25Hz) (Gyr 50Hz)");
+		VALIDATION_REPORT_INFO(TEST, "Driver test @ (Acc 2G 25Hz) (Gyr 50Hz)");
 		rc = validate_sample_timing(dev, 2, 25, 50);
 		if (rc < 0) {
 			goto driver_end;
 		}
-		VALIDATION_REPORT_INFO("IMU", "Driver test @ (Acc 8G 100Hz) (Gyr 100Hz)");
+		VALIDATION_REPORT_INFO(TEST, "Driver test @ (Acc 8G 100Hz) (Gyr 100Hz)");
 		rc = validate_sample_timing(dev, 8, 100, 100);
 		if (rc < 0) {
 			goto driver_end;
@@ -265,13 +266,13 @@ driver_end:
 	/* Power down device */
 	if (pm_device_runtime_put(dev) < 0) {
 		if (rc == 0) {
-			VALIDATION_REPORT_ERROR("IMU", "pm_device_runtime_put");
+			VALIDATION_REPORT_ERROR(TEST, "pm_device_runtime_put");
 			rc = -EIO;
 		}
 	}
 test_end:
 	if (rc == 0) {
-		VALIDATION_REPORT_PASS("IMU", "DEV=%s", dev->name);
+		VALIDATION_REPORT_PASS(TEST, "DEV=%s", dev->name);
 	}
 
 	return rc;
