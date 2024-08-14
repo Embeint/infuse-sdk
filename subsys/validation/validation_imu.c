@@ -227,6 +227,13 @@ int infuse_validation_imu(const struct device *dev, uint8_t flags)
 
 	VALIDATION_REPORT_INFO(TEST, "DEV=%s", dev->name);
 
+	/* Check init succeeded */
+	if (!device_is_ready(dev)) {
+		VALIDATION_REPORT_ERROR(TEST, "Device not ready");
+		rc = -ENODEV;
+		goto test_end;
+	}
+
 	/* Power up device */
 	rc = pm_device_runtime_get(dev);
 	if (rc < 0) {
