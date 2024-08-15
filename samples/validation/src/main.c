@@ -55,7 +55,9 @@ int main(void)
 			break;
 		}
 	}
-	VALIDATION_REPORT_INFO("SYS", "Complete");
+	(void)validators_failed;
+	VALIDATION_REPORT_INFO("SYS", "Complete with %d/%d passed", (int32_t)validators_passed,
+			       (int32_t)validators_registered);
 	k_sleep(K_FOREVER);
 	return 0;
 }
