@@ -138,7 +138,8 @@ static void fifo_read_runner(struct k_work *work)
 			frame->message_id, payload_len);
 		LOG_HEXDUMP_DBG(frame->payload_and_checksum, payload_len, "Payload");
 		if (i + sizeof(*frame) + payload_len + sizeof(uint16_t) > received) {
-			LOG_WRN("Partial frame received, dropping!");
+			LOG_WRN("Partial frame (%02x.%02x) received, dropping!",
+				frame->message_class, frame->message_id);
 			break;
 		}
 
