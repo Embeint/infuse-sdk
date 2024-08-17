@@ -16,13 +16,14 @@ config INFUSE_APPLICATION_ID
 	default 0x00
 
 rsource "Kconfig.defaults.core"
-rsource "Kconfig.defaults.bluetooth"
 rsource "Kconfig.defaults.net"
 rsource "Kconfig.defaults.nrf"
 rsource "Kconfig.defaults.sensor"
 rsource "Kconfig.defaults.log"
 
 endif # INFUSE_SDK
+
+rsource "Kconfig.defaults.bluetooth"
 
 if ZTEST
 rsource "Kconfig.defaults.ztest"
