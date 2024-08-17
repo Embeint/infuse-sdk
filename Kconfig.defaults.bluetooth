@@ -1,6 +1,11 @@
 # Infuse-IoT SDK Bluetooth defaults
 
-if BT
+config INFUSE_SDK_BLUETOOTH
+	bool "Infuse-IoT SDK Bluetooth defaults"
+	depends on BT
+	default y if INFUSE_SDK
+
+if INFUSE_SDK_BLUETOOTH
 
 # Uncoded LE Data Packet Format:
 #
@@ -68,4 +73,4 @@ configdefault BT_GAP_AUTO_UPDATE_CONN_PARAMS
 configdefault BT_DEVICE_APPEARANCE
 	default 1344
 
-endif # BT
+endif # INFUSE_SDK_BLUETOOTH
