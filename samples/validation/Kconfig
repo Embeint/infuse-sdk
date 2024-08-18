@@ -1,0 +1,9 @@
+# Larger logging buffer sizes
+
+configdefault LOG_BUFFER_SIZE
+	default 8192
+
+configdefault SEGGER_RTT_BUFFER_SIZE_UP
+	default 8192
+
+source "Kconfig.zephyr"
