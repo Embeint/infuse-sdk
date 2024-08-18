@@ -33,8 +33,6 @@ configdefault PM_DEVICE_RUNTIME
 # Watchdog
 configdefault WATCHDOG
 	default y if !ZTEST
-configdefault INFUSE_WATCHDOG
-	default y if !ZTEST
 
 # Zephyr bus
 configdefault ZBUS
