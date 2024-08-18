@@ -1,0 +1,7 @@
+name: modem_trace
+
+boards:
+  nrf9151dk/nrf9151/ns:
+    append:
+      EXTRA_DTC_OVERLAY_FILE: trace_uart1.overlay
+      EXTRA_CONF_FILE: trace_uart1.conf
