@@ -7,6 +7,7 @@ common:
     - infuse
   integration_platforms:
     - thingy53/nrf5340/cpuapp
+    - tauro/nrf9151/ns
 tests:
   sample.validation:
     tags: validation
