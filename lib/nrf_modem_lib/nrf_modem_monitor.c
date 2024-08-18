@@ -171,6 +171,10 @@ static void lte_reg_handler(const struct lte_lc_evt *const evt)
 		LOG_DBG("MODEM_SLEEP_EXIT");
 		LOG_DBG("    Type: %d", evt->modem_sleep.type);
 		break;
+	case LTE_LC_EVT_MODEM_EVENT:
+		LOG_DBG("MODEM_EVENT");
+		LOG_DBG("   Event: %d", evt->modem_evt);
+		break;
 	default:
 		LOG_DBG("LTE EVENT: %d", evt->type);
 		break;
