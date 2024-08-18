@@ -20,6 +20,10 @@
 #include <infuse/time/epoch.h>
 #include <infuse/security.h>
 
+#ifdef CONFIG_NRF_MODEM_LIB
+#include <modem/nrf_modem_lib.h>
+#endif
+
 LOG_MODULE_REGISTER(infuse, CONFIG_INFUSE_COMMON_LOG_LEVEL);
 
 static struct infuse_reboot_state reboot_state;
@@ -135,6 +139,15 @@ static int infuse_common_boot(void)
 #else
 	reboot_state.reason = INFUSE_REBOOT_UNKNOWN;
 #endif /* CONFIG_INFUSE_REBOOT */
+
+#if defined(CONFIG_NRF_MODEM_LIB) && !defined(CONFIG_NRF_MODEM_LIB_NET_IF_AUTO_START)
+	/* nRF modems are not low power until the library has been initialised */
+	LOG_DBG("Initialising nRF modem library");
+	rc = nrf_modem_lib_init();
+	if (rc < 0) {
+		LOG_ERR("Failed to initialise nRF modem library (%d)", rc);
+	}
+#endif /* defined(CONFIG_NRF_MODEM_LIB) && !defined(CONFIG_NRF_MODEM_LIB_NET_IF_AUTO_START) */
 
 	(void)rc;
 	return 0;
