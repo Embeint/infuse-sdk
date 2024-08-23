@@ -61,8 +61,10 @@
 		led2 = &led2;
 		battery0 = &vbatt;
 		charger0 = &bq25185;
-		gnss = &sam_m10;
+		imu0 = &lsm6dsv;
+		gnss0 = &sam_m10;
 		watchdog0 = &wdt0;
+		environmental0 = &bme280;
 	};
 };
 

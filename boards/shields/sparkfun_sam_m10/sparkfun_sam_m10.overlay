@@ -15,7 +15,7 @@
 
 /{
 	aliases {
-		gnss = &sam_m10;
+		gnss0 = &sam_m10;
 	};
 };
 

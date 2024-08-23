@@ -56,6 +56,12 @@
 			compatible = "embeint,tdf-data-logger";
 		};
 	};
+
+	aliases {
+		battery0 = &vbatt;
+		imu0 = &bmi270;
+		environmental0 = &bme688;
+	};
 };
 
 &i2c1 {
