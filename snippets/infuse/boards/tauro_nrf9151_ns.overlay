@@ -91,8 +91,8 @@
 		compatible = "embeint,data-logger-exfat", "embeint,data-logger";
 		disk = <&mmc>;
 
-		tdf_logger_exfat: tdf_logger_exfat {
-		compatible = "embeint,tdf-data-logger";
+		tdf_logger_exfat: tdf_logger_removable: tdf_logger_exfat {
+			compatible = "embeint,tdf-data-logger";
 		};
 	};
 };
