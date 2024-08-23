@@ -14,6 +14,7 @@
 #include <zephyr/logging/log.h>
 #include <zephyr/sys/byteorder.h>
 #include <zephyr/net/buf.h>
+#include <zephyr/pm/device_runtime.h>
 
 #include <infuse/data_logger/logger.h>
 #include <infuse/drivers/watchdog.h>
@@ -93,12 +94,22 @@ static int do_block_write(const struct device *dev, enum infuse_type type, void 
 		header->block_wrap = (data->current_block / data->physical_blocks) + 1;
 	}
 
+	/* Request backend to be powered */
+	rc = pm_device_runtime_get(dev);
+	if (rc < 0) {
+		return rc;
+	}
+
 	/* Write block to backend */
 	rc = api->write(dev, phy_block, type, block, block_len);
 	if (rc < 0) {
 		LOG_ERR("%s failed to write to backend", dev->name);
 		return rc;
 	}
+
+	/* Release device after a delay */
+	(void)pm_device_runtime_put_async(dev, K_MSEC(100));
+
 	data->current_block += 1;
 	return 0;
 }
@@ -265,6 +276,12 @@ int data_logger_block_read(const struct device *dev, uint32_t block_idx, uint16_
 		block_len -= second_read;
 	}
 
+	/* Request backend to be powered */
+	rc = pm_device_runtime_get(dev);
+	if (rc < 0) {
+		return rc;
+	}
+
 	/* Read block from backend */
 	rc = api->read(dev, phy_block, block_offset, block, block_len);
 	if (rc < 0) {
@@ -276,6 +293,10 @@ int data_logger_block_read(const struct device *dev, uint32_t block_idx, uint16_
 		LOG_DBG("%s reading remaining %d bytes", dev->name, second_read);
 		rc = api->read(dev, 0, 0, block, second_read);
 	}
+
+	/* Release device after a delay */
+	(void)pm_device_runtime_put_async(dev, K_MSEC(100));
+
 	return rc;
 }
 
