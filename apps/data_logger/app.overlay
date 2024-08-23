@@ -1,11 +1,8 @@
 #include <mem.h>
 
 / {
-	data_logger_serial {
-		extra-ram-buffer = <DT_SIZE_K(4)>;
-	};
-
-	data_logger_udp {
+	/* Batch writes to the SD card */
+	data_logger_exfat {
 		extra-ram-buffer = <DT_SIZE_K(8)>;
 	};
 };
