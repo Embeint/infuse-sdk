@@ -29,17 +29,11 @@ static atomic_t validators_passed;
 static atomic_t validators_failed;
 static atomic_t validators_complete;
 
-#if defined(CONFIG_INFUSE_IMU_BMI270)
-#define IMU_COMPAT bosch_bmi270
-#elif defined(CONFIG_INFUSE_IMU_LSM6DSV)
-#define IMU_COMPAT st_lsm6dsv16x
-#endif
-
-#ifdef IMU_COMPAT
+#if DT_NODE_EXISTS(DT_ALIAS(imu0))
 static int imu_validator(void *a, void *b, void *c)
 {
 	atomic_inc(&validators_registered);
-	if (infuse_validation_imu(DEVICE_DT_GET_ONE(IMU_COMPAT), VALIDATION_IMU_DRIVER) == 0) {
+	if (infuse_validation_imu(DEVICE_DT_GET(DT_ALIAS(imu0)), VALIDATION_IMU_DRIVER) == 0) {
 		atomic_inc(&validators_passed);
 	} else {
 		atomic_inc(&validators_failed);
@@ -50,17 +44,14 @@ static int imu_validator(void *a, void *b, void *c)
 }
 
 K_THREAD_DEFINE(imu_thread, 2048, imu_validator, NULL, NULL, NULL, 5, 0, 0);
-#endif /* IMU_COMPAT */
+#endif /* DT_NODE_EXISTS(DT_ALIAS(imu0)) */
 
-#if defined(CONFIG_BME280)
-#define ENV_COMPAT bosch_bme280
-#endif
-
-#ifdef ENV_COMPAT
+#if DT_NODE_EXISTS(DT_ALIAS(environmental0))
 static int env_validator(void *a, void *b, void *c)
 {
 	atomic_inc(&validators_registered);
-	if (infuse_validation_env(DEVICE_DT_GET_ONE(ENV_COMPAT), VALIDATION_ENV_DRIVER) == 0) {
+	if (infuse_validation_env(DEVICE_DT_GET(DT_ALIAS(environmental0)), VALIDATION_ENV_DRIVER) ==
+	    0) {
 		atomic_inc(&validators_passed);
 	} else {
 		atomic_inc(&validators_failed);
@@ -71,10 +62,9 @@ static int env_validator(void *a, void *b, void *c)
 }
 
 K_THREAD_DEFINE(env_thread, 2048, env_validator, NULL, NULL, NULL, 5, 0, 0);
-#endif /* ENV_COMPAT */
+#endif /* DT_NODE_EXISTS(DT_ALIAS(environmental0)) */
 
 #if DT_NODE_EXISTS(DT_ALIAS(battery0)) || DT_NODE_EXISTS(DT_ALIAS(charger0))
-
 static int pwr_validator(void *a, void *b, void *c)
 {
 	atomic_inc(&validators_registered);
@@ -114,17 +104,13 @@ static int flash_validator(void *a, void *b, void *c)
 }
 
 K_THREAD_DEFINE(flash_thread, 2048, flash_validator, NULL, NULL, NULL, 5, 0, 0);
-#endif /* IMU_COMPAT */
+#endif /* FLASH_COMPAT */
 
-#if defined(CONFIG_GNSS_U_BLOX_M10_I2C)
-#define GNSS_COMPAT u_blox_m10_i2c
-#endif
-
-#ifdef GNSS_COMPAT
+#if DT_NODE_EXISTS(DT_ALIAS(gnss0))
 static int gnss_validator(void *a, void *b, void *c)
 {
 	atomic_inc(&validators_registered);
-	if (infuse_validation_gnss(DEVICE_DT_GET_ONE(GNSS_COMPAT), VALIDATION_GNSS_POWER_UP) == 0) {
+	if (infuse_validation_gnss(DEVICE_DT_GET(DT_ALIAS(gnss0)), VALIDATION_GNSS_POWER_UP) == 0) {
 		atomic_inc(&validators_passed);
 	} else {
 		atomic_inc(&validators_failed);
@@ -135,10 +121,9 @@ static int gnss_validator(void *a, void *b, void *c)
 }
 
 K_THREAD_DEFINE(gnss_thread, 2048, gnss_validator, NULL, NULL, NULL, 5, 0, 0);
-#endif /* GNSS_COMPAT */
+#endif /* DT_NODE_EXISTS(DT_ALIAS(gnss0)) */
 
 #ifdef CONFIG_DISK_DRIVER_SDMMC
-
 static int disk_validator(void *a, void *b, void *c)
 {
 	const char *disk = DT_PROP(DT_COMPAT_GET_ANY_STATUS_OKAY(zephyr_sdmmc_disk), disk_name);
@@ -158,7 +143,6 @@ K_THREAD_DEFINE(disk_thread, 2048, disk_validator, NULL, NULL, NULL, 5, 0, 0);
 #endif /* CONFIG_DISK_DRIVER_SDMMC */
 
 #if CONFIG_NRF_MODEM_LIB
-
 static int nrf_modem_validator(void *a, void *b, void *c)
 {
 	atomic_inc(&validators_registered);

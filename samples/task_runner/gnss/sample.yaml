@@ -2,14 +2,19 @@ sample:
   description: GNSS task runner sample
   name: GNSS task runner
 common:
+  filter: dt_alias_exists("gnss0")
   build_only: true
   required_snippets:
     - infuse
-  platform_allow:
-    - nrf52840dk/nrf52840
-  integration_platforms:
-    - nrf52840dk/nrf52840
 tests:
   sample.task_runner.gnss:
     tags: app
+    integration_platforms:
+      - tauro/nrf9151/ns
+  sample.task_runner.gnss.sparkfun:
+    tags: app
+    platform_allow:
+      - nrf52840dk/nrf52840
+    integration_platforms:
+      - nrf52840dk/nrf52840
     extra_args: SHIELD=sparkfun_sam_m10

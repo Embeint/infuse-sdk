@@ -26,14 +26,6 @@
 
 LOG_MODULE_REGISTER(app, LOG_LEVEL_INF);
 
-#if defined(CONFIG_INFUSE_IMU_BMI270)
-#define IMU_COMPAT bosch_bmi270
-#elif defined(CONFIG_INFUSE_IMU_LSM6DSV)
-#define IMU_COMPAT st_lsm6dsv16x
-#else
-#error No compatibile IMU
-#endif
-
 static const struct task_schedule schedules[] = {
 	{
 		.task_id = TASK_ID_IMU,
@@ -64,7 +56,7 @@ static const struct task_schedule schedules[] = {
 };
 struct task_schedule_state states[ARRAY_SIZE(schedules)];
 
-TASK_RUNNER_TASKS_DEFINE(app_tasks, app_tasks_data, (IMU_TASK, DEVICE_DT_GET_ONE(IMU_COMPAT)));
+TASK_RUNNER_TASKS_DEFINE(app_tasks, app_tasks_data, (IMU_TASK, DEVICE_DT_GET(DT_ALIAS(imu0))));
 
 int main(void)
 {

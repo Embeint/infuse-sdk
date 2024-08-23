@@ -96,9 +96,9 @@ static const struct task_schedule schedules[] = {
 struct task_schedule_state states[ARRAY_SIZE(schedules)];
 
 TASK_RUNNER_TASKS_DEFINE(app_tasks, app_tasks_data, (TDF_LOGGER_TASK),
-			 (IMU_TASK, DEVICE_DT_GET(DT_NODELABEL(bmi270))),
-			 (BATTERY_TASK, DEVICE_DT_GET(DT_NODELABEL(vbatt))),
-			 (ENVIRONMENTAL_TASK, DEVICE_DT_GET(DT_NODELABEL(bme688))));
+			 (IMU_TASK, DEVICE_DT_GET(DT_ALIAS(imu0))),
+			 (BATTERY_TASK, DEVICE_DT_GET(DT_ALIAS(battery0))),
+			 (ENVIRONMENTAL_TASK, DEVICE_DT_GET(DT_ALIAS(environmental0))));
 
 int main(void)
 {
