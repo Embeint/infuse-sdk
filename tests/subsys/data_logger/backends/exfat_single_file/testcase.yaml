@@ -8,3 +8,11 @@ tests:
       - native_sim
     integration_platforms:
       - native_sim
+  data_logger.exfat_single.pm:
+    platform_allow:
+      - native_sim
+    integration_platforms:
+      - native_sim
+    extra_configs:
+      - CONFIG_PM_DEVICE=y
+      - CONFIG_PM_DEVICE_RUNTIME=y
