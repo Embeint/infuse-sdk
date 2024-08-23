@@ -13,6 +13,7 @@
 #include <zephyr/drivers/flash.h>
 #include <zephyr/drivers/flash/flash_simulator.h>
 #include <zephyr/storage/disk_access.h>
+#include <zephyr/pm/device.h>
 
 #include <infuse/data_logger/logger.h>
 
@@ -174,6 +175,35 @@ ZTEST(data_logger_exfat, test_standard_operation_reinit)
 {
 	/* Test with rebooting each write */
 	test_sequence(true);
+}
+
+ZTEST(data_logger_exfat, test_pm_behaviour)
+{
+#ifdef CONFIG_PM_DEVICE_RUNTIME
+	const struct device *logger = DEVICE_DT_GET(DT_NODELABEL(data_logger_exfat));
+	struct data_logger_state state;
+	enum pm_device_state pm_state;
+
+	/* Init to erase value */
+	zassert_equal(0, logger_exfat_init(logger));
+	data_logger_get_state(logger, &state);
+
+	/* Suspended after init */
+	zassert_equal(0, pm_device_state_get(logger, &pm_state));
+	zassert_equal(PM_DEVICE_STATE_SUSPENDED, pm_state);
+
+	/* Write block */
+	zassert_equal(0, data_logger_block_write(logger, 0x02, input_buffer, state.block_size));
+
+	/* Device should still be active for a short time after access */
+	zassert_equal(0, pm_device_state_get(logger, &pm_state));
+	zassert_equal(PM_DEVICE_STATE_SUSPENDING, pm_state);
+
+	/* Suspended after some delay */
+	k_sleep(K_MSEC(200));
+	zassert_equal(0, pm_device_state_get(logger, &pm_state));
+	zassert_equal(PM_DEVICE_STATE_SUSPENDED, pm_state);
+#endif /* CONFIG_PM_DEVICE_RUNTIME */
 }
 
 ZTEST(data_logger_exfat, test_device_move)

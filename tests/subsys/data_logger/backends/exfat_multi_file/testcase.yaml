@@ -8,6 +8,14 @@ tests:
       - native_sim
     integration_platforms:
       - native_sim
+  data_logger.exfat_multi.pm:
+    platform_allow:
+      - native_sim
+    integration_platforms:
+      - native_sim
+    extra_configs:
+      - CONFIG_PM_DEVICE=y
+      - CONFIG_PM_DEVICE_RUNTIME=y
   data_logger.exfat_multi.sd:
     build_only: true
     depends_on: arduino_spi
