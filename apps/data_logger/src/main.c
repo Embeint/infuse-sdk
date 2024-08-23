@@ -26,6 +26,18 @@
 
 LOG_MODULE_REGISTER(app, LOG_LEVEL_INF);
 
+/* Log data to SD card if available, otherwise serial and UDP comms */
+#if defined(CONFIG_DATA_LOGGER_EXFAT)
+/* External SD card is the preferred logging backend */
+#define STORAGE_LOGGER TDF_DATA_LOGGER_REMOVABLE
+#elif defined(CONFIG_NRF_MODEM_LIB)
+/* If UDP is implemented by LTE, don't use as it will chew up data quotas */
+#define STORAGE_LOGGER TDF_DATA_LOGGER_SERIAL
+#else
+/* Otherwise use serial and UDP (WiFi)*/
+#define STORAGE_LOGGER TDF_DATA_LOGGER_SERIAL | TDF_DATA_LOGGER_UDP
+#endif /* CONFIG_DATA_LOGGER_EXFAT */
+
 static const struct task_schedule schedules[] = {
 	{
 		.task_id = TASK_ID_TDF_LOGGER,
@@ -47,7 +59,7 @@ static const struct task_schedule schedules[] = {
 		.task_logging =
 			{
 				{
-					.loggers = TDF_DATA_LOGGER_SERIAL | TDF_DATA_LOGGER_UDP,
+					.loggers = STORAGE_LOGGER,
 					.tdf_mask = TASK_IMU_LOG_ACC | TASK_IMU_LOG_GYR,
 				},
 			},
@@ -74,7 +86,7 @@ static const struct task_schedule schedules[] = {
 		.task_logging =
 			{
 				{
-					.loggers = TDF_DATA_LOGGER_FLASH,
+					.loggers = STORAGE_LOGGER,
 					.tdf_mask = TASK_BATTERY_LOG_COMPLETE,
 				},
 			},
@@ -87,7 +99,7 @@ static const struct task_schedule schedules[] = {
 		.task_logging =
 			{
 				{
-					.loggers = TDF_DATA_LOGGER_FLASH,
+					.loggers = STORAGE_LOGGER,
 					.tdf_mask = TASK_ENVIRONMENTAL_LOG_TPH,
 				},
 			},
