@@ -37,9 +37,6 @@ static int validate_battery(const struct device *dev, uint8_t flags)
 	}
 
 	if (flags & VALIDATION_PWR_DRIVER) {
-		/* Give voltage time to settle */
-		k_sleep(K_MSEC(10));
-
 		/* Trigger the sample */
 		rc = sensor_sample_fetch(dev);
 		if (rc < 0) {
