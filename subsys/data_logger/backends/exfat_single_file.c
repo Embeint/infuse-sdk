@@ -13,6 +13,8 @@
 #include <zephyr/device.h>
 #include <zephyr/logging/log.h>
 #include <zephyr/storage/disk_access.h>
+#include <zephyr/pm/device.h>
+#include <zephyr/pm/device_runtime.h>
 
 #include <infuse/data_logger/logger.h>
 #include <infuse/time/epoch.h>
@@ -213,6 +215,26 @@ static int filesystem_init(const struct device *dev, const char *bin_file)
 	return res;
 }
 
+#ifdef CONFIG_PM_DEVICE
+static int exfat_single_pm_control(const struct device *dev, enum pm_device_action action)
+{
+	const struct dl_exfat_config *config = dev->config;
+	int rc = 0;
+
+	switch (action) {
+	case PM_DEVICE_ACTION_SUSPEND:
+		rc = disk_access_ioctl(config->disk, DISK_IOCTL_CTRL_DEINIT, NULL);
+		break;
+	case PM_DEVICE_ACTION_RESUME:
+		rc = disk_access_ioctl(config->disk, DISK_IOCTL_CTRL_INIT, NULL);
+		break;
+	default:
+		return -ENOTSUP;
+	}
+	return rc;
+}
+#endif /* CONFIG_PM_DEVICE */
+
 /* Need to hook into this function when testing */
 IF_DISABLED(CONFIG_ZTEST, (static))
 int logger_exfat_init(const struct device *dev)
@@ -224,6 +246,7 @@ int logger_exfat_init(const struct device *dev)
 	FRESULT res;
 	FILINFO fno;
 	FIL fp;
+	int rc;
 
 	/* Initial mount attempt */
 	snprintf(path, sizeof(path), "%s:", config->disk);
@@ -285,7 +308,20 @@ int logger_exfat_init(const struct device *dev)
 	data->common.erase_val = 0xFF;
 
 	/* Filesystem is mounted */
-	return data_logger_common_init(dev);
+	rc = data_logger_common_init(dev);
+
+	if (!IS_ENABLED(CONFIG_PM_DEVICE_RUNTIME)) {
+		/* Return without de-initialising the device */
+		return rc;
+	}
+
+	/* Allow the backing device to power off */
+	(void)disk_access_ioctl(config->disk, DISK_IOCTL_CTRL_DEINIT, NULL);
+
+	/* Always want PM enabled on this device */
+	pm_device_init_suspended(dev);
+	(void)pm_device_runtime_enable(dev);
+	return rc;
 }
 
 const struct data_logger_api data_logger_exfat_api = {
@@ -300,8 +336,9 @@ const struct data_logger_api data_logger_exfat_api = {
 		.disk = DT_PROP(DT_INST_PROP(inst, disk), disk_name),                              \
 	};                                                                                         \
 	static struct dl_exfat_data data##inst;                                                    \
-	DEVICE_DT_INST_DEFINE(inst, logger_exfat_init, NULL, &data##inst, &config##inst,           \
-			      POST_KERNEL, 80, &data_logger_exfat_api);
+	PM_DEVICE_DT_INST_DEFINE(inst, exfat_single_pm_control);                                   \
+	DEVICE_DT_INST_DEFINE(inst, logger_exfat_init, PM_DEVICE_DT_INST_GET(inst), &data##inst,   \
+			      &config##inst, POST_KERNEL, 80, &data_logger_exfat_api);
 
 #define DATA_LOGGER_DEFINE_WRAPPER(inst)                                                           \
 	IF_ENABLED(DATA_LOGGER_DEPENDENCIES_MET(DT_DRV_INST(inst)), (DATA_LOGGER_DEFINE(inst)))
