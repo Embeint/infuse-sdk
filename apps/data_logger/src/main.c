@@ -39,15 +39,28 @@ LOG_MODULE_REGISTER(app, LOG_LEVEL_INF);
 #endif /* CONFIG_DATA_LOGGER_EXFAT */
 
 static const struct task_schedule schedules[] = {
+#ifdef CONFIG_EPACKET_INTERFACE_UDP
 	{
 		.task_id = TASK_ID_TDF_LOGGER,
 		.validity = TASK_VALID_ALWAYS,
-		.periodicity_type = TASK_PERIODICITY_FIXED,
-		.periodicity.fixed.period_s = 10,
+		.periodicity_type = TASK_PERIODICITY_LOCKOUT,
+		.periodicity.lockout.lockout_s = 5 * SEC_PER_MIN,
 		.task_args.infuse.tdf_logger =
 			{
-				.loggers = TDF_DATA_LOGGER_BT_ADV | TDF_DATA_LOGGER_UDP |
-					   TDF_DATA_LOGGER_SERIAL,
+				.loggers = TDF_DATA_LOGGER_UDP,
+				.tdfs = TASK_TDF_LOGGER_LOG_ANNOUNCE | TASK_TDF_LOGGER_LOG_BATTERY |
+					TASK_TDF_LOGGER_LOG_AMBIENT_ENV,
+			},
+	},
+#endif /* CONFIG_EPACKET_INTERFACE_UDP */
+	{
+		.task_id = TASK_ID_TDF_LOGGER,
+		.validity = TASK_VALID_ALWAYS,
+		.periodicity_type = TASK_PERIODICITY_LOCKOUT,
+		.periodicity.lockout.lockout_s = 5,
+		.task_args.infuse.tdf_logger =
+			{
+				.loggers = TDF_DATA_LOGGER_BT_ADV | TDF_DATA_LOGGER_SERIAL,
 				.random_delay_ms = 1000,
 				.tdfs = TASK_TDF_LOGGER_LOG_ANNOUNCE | TASK_TDF_LOGGER_LOG_BATTERY |
 					TASK_TDF_LOGGER_LOG_AMBIENT_ENV,
