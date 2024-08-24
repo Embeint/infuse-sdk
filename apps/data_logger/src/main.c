@@ -91,6 +91,26 @@ static const struct task_schedule schedules[] = {
 				.fifo_sample_buffer = 100,
 			},
 	},
+#if DT_NODE_EXISTS(DT_ALIAS(gnss0))
+	{
+		.task_id = TASK_ID_GNSS,
+		.validity = TASK_VALID_ALWAYS,
+		.battery_start_threshold = 30,
+		.battery_terminate_threshold = 20,
+		.task_logging =
+			{
+				{
+					.loggers = STORAGE_LOGGER,
+					.tdf_mask = TASK_GNSS_LOG_UBX_NAV_PVT,
+				},
+			},
+		.task_args.infuse.gnss =
+			{
+				.flags = TASK_GNSS_FLAGS_RUN_FOREVER |
+					 TASK_GNSS_FLAGS_PERFORMANCE_MODE,
+			},
+	},
+#endif /* DT_NODE_EXISTS(DT_ALIAS(gnss0)) */
 	{
 		.task_id = TASK_ID_BATTERY,
 		.validity = TASK_VALID_ALWAYS,
@@ -122,6 +142,9 @@ struct task_schedule_state states[ARRAY_SIZE(schedules)];
 
 TASK_RUNNER_TASKS_DEFINE(app_tasks, app_tasks_data, (TDF_LOGGER_TASK),
 			 (IMU_TASK, DEVICE_DT_GET(DT_ALIAS(imu0))),
+#if DT_NODE_EXISTS(DT_ALIAS(gnss0))
+			 (GNSS_TASK, DEVICE_DT_GET(DT_ALIAS(gnss0))),
+#endif /* DT_NODE_EXISTS(DT_ALIAS(gnss0)) */
 			 (BATTERY_TASK, DEVICE_DT_GET(DT_ALIAS(battery0))),
 			 (ENVIRONMENTAL_TASK, DEVICE_DT_GET(DT_ALIAS(environmental0))));
 
