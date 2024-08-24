@@ -4,6 +4,8 @@ configdefault SENSOR
 	default y
 configdefault INFUSE_IMU
 	default y
+configdefault GNSS
+	default y
 
 # Bring SD card init forward so it occurs before data loggers
 configdefault SDHC_INIT_PRIORITY
