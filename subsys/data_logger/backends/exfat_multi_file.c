@@ -286,12 +286,10 @@ static int exfat_multi_pm_control(const struct device *dev, enum pm_device_actio
 
 	switch (action) {
 	case PM_DEVICE_ACTION_SUSPEND:
-		LOG_ERR("SUSPEND");
 		rc = disk_access_ioctl(config->disk, DISK_IOCTL_CTRL_DEINIT, NULL);
 		break;
 	case PM_DEVICE_ACTION_RESUME:
 		rc = disk_access_ioctl(config->disk, DISK_IOCTL_CTRL_INIT, NULL);
-		LOG_ERR("RESUME");
 		break;
 	default:
 		return -ENOTSUP;
