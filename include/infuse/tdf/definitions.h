@@ -77,10 +77,10 @@ struct tdf_announce {
 struct tdf_battery_state {
 	/* Battery voltage (milliVolts) */
 	uint32_t voltage_mv;
-	/* Charge current (microamps) */
-	uint16_t charge_ua;
+	/* Battery current (microamps) (Negative = discharging) */
+	int32_t current_ua;
 	/* State of charge (centipercent) */
-	uint16_t soc;
+	uint8_t soc;
 } __packed;
 
 /* Ambient temperature, pressure & humidity */

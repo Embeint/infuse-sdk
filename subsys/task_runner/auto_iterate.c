@@ -32,7 +32,7 @@ static void iterate_worker(struct k_work *work)
 
 	if (zbus_chan_publish_count(CHAN_BAT) > 0) {
 		zbus_chan_read(CHAN_BAT, &battery, K_FOREVER);
-		charge = battery.soc / 100;
+		charge = battery.soc;
 	}
 
 	/* Iterate the runner */

@@ -43,8 +43,8 @@
             "description": "General battery state",
             "fields": [
                 {"name": "voltage_mv", "type": "uint32_t", "description": "Battery voltage (milliVolts)", "display_postfix": "mV"},
-                {"name": "charge_ua", "type": "uint16_t", "description": "Charge current (microamps)", "display_postfix": "uA"},
-                {"name": "soc", "type": "uint16_t", "description": "State of charge (centipercent)", "display_postfix": "%", "conversion": {"m": 0.01, "c": 0}}
+                {"name": "current_ua", "type": "int32_t", "description": "Battery current (microamps) (Negative = discharging)", "display_postfix": "uA"},
+                {"name": "soc", "type": "uint8_t", "description": "State of charge (centipercent)", "display_postfix": "%"}
             ]
         },
         "3": {

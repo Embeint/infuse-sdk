@@ -179,7 +179,7 @@ ZTEST(task_tdf_logger, test_battery)
 {
 	const struct zbus_channel *chan_bat = INFUSE_ZBUS_CHAN_GET(INFUSE_ZBUS_CHAN_BATTERY);
 	struct k_fifo *tx_queue = epacket_dummmy_transmit_fifo_get();
-	struct tdf_battery_state battery = {.voltage_mv = 3300, .charge_ua = 100, .soc = 8000};
+	struct tdf_battery_state battery = {.voltage_mv = 3300, .current_ua = 100, .soc = 80};
 	struct tdf_parsed tdf;
 	struct net_buf *pkt;
 
