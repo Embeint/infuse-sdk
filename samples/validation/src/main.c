@@ -64,13 +64,12 @@ static int env_validator(void *a, void *b, void *c)
 K_THREAD_DEFINE(env_thread, 2048, env_validator, NULL, NULL, NULL, 5, 0, 0);
 #endif /* DT_NODE_EXISTS(DT_ALIAS(environmental0)) */
 
-#if DT_NODE_EXISTS(DT_ALIAS(battery0)) || DT_NODE_EXISTS(DT_ALIAS(charger0))
+#if DT_NODE_EXISTS(DT_ALIAS(fuel_gauge0))
 static int pwr_validator(void *a, void *b, void *c)
 {
 	atomic_inc(&validators_registered);
-	if (infuse_validation_pwr(DEVICE_DT_GET_OR_NULL(DT_ALIAS(battery0)),
-				  DEVICE_DT_GET_OR_NULL(DT_ALIAS(charger0)),
-				  VALIDATION_PWR_DRIVER) == 0) {
+	if (infuse_validation_pwr(DEVICE_DT_GET(DT_ALIAS(fuel_gauge0)), VALIDATION_PWR_DRIVER) ==
+	    0) {
 		atomic_inc(&validators_passed);
 	} else {
 		atomic_inc(&validators_failed);
@@ -82,7 +81,7 @@ static int pwr_validator(void *a, void *b, void *c)
 
 K_THREAD_DEFINE(pwr_thread, 2048, pwr_validator, NULL, NULL, NULL, 5, 0, 0);
 
-#endif /* DT_NODE_EXISTS(DT_ALIAS(battery0)) || DT_NODE_EXISTS(DT_ALIAS(charger0)) */
+#endif /* DT_NODE_EXISTS(DT_ALIAS(fuel_gauge0)) */
 
 #if defined(CONFIG_SPI_NOR)
 #define FLASH_COMPAT jedec_spi_nor
