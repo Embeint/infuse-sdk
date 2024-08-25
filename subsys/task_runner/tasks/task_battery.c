@@ -46,14 +46,13 @@ void battery_task_fn(struct k_work *work)
 	tdf_battery.voltage_mv = value.voltage / 1000;
 	rc = fuel_gauge_get_prop(fuel_gauge, FUEL_GAUGE_CURRENT, &value);
 	if (rc == 0) {
-		/* Negative values from fuel-gauge indicate discharging */
-		tdf_battery.charge_ua = MAX(0, value.current);
+		tdf_battery.current_ua = value.current;
 	} else if ((rc < 0) && (rc != -ENOTSUP)) {
 		LOG_ERR("Charge current query failed (%d)", rc);
 	}
 	rc = fuel_gauge_get_prop(fuel_gauge, FUEL_GAUGE_RELATIVE_STATE_OF_CHARGE, &value);
 	if (rc == 0) {
-		tdf_battery.soc = 100 * (uint16_t)value.relative_state_of_charge;
+		tdf_battery.soc = value.relative_state_of_charge;
 	} else if ((rc < 0) && (rc != -ENOTSUP)) {
 		LOG_ERR("SoC query failed (%d)", rc);
 	}
@@ -73,7 +72,7 @@ void battery_task_fn(struct k_work *work)
 
 	/* Print the measured values */
 	LOG_INF("Sensor: %s", fuel_gauge->name);
-	LOG_INF("\t        Voltage: %6d mV", tdf_battery.voltage_mv);
-	LOG_INF("\tState-of-charge: %6d %%", tdf_battery.soc / 100);
-	LOG_INF("\t Charge Current: %6d uA", tdf_battery.charge_ua);
+	LOG_INF("\tVoltage: %6d mV", tdf_battery.voltage_mv);
+	LOG_INF("\t    SoC: %6d %%", tdf_battery.soc);
+	LOG_INF("\tCurrent: %6d uA", tdf_battery.current_ua);
 }
