@@ -15,7 +15,7 @@
 
 #include "epacket_internal.h"
 
-#define INFUSE_SERVICE_UUID  0xC001
+#define INFUSE_SERVICE_UUID  0xFC74
 #define EMBEINT_COMPANY_CODE 0x0DE4
 #define BT_MFG_DATA_LEN      113
 
