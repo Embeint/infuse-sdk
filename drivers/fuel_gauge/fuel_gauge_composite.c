@@ -58,11 +58,13 @@ static int composite_get_prop(const struct device *dev, fuel_gauge_prop_t prop,
 	case FUEL_GAUGE_FULL_CHARGE_CAPACITY:
 		if (config->charge_capacity_microamp_hours > 0) {
 			val->full_charge_capacity = config->charge_capacity_microamp_hours;
+			rc = 0;
 		}
 		break;
 	case FUEL_GAUGE_DESIGN_CAPACITY:
 		if (config->charge_capacity_microamp_hours > 0) {
 			val->full_charge_capacity = config->charge_capacity_microamp_hours / 1000;
+			rc = 0;
 		}
 		break;
 	case FUEL_GAUGE_VOLTAGE:
