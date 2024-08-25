@@ -55,12 +55,20 @@
 		sense-gain-div = <300>;
 	};
 
+	fuel_gauge: fuel_gauge {
+		compatible = "zephyr,fuel-gauge-composite";
+		battery-voltage = <&vbatt>;
+		battery-charge-current = <&bq25185>;
+		device-chemistry = "lithium-ion-polymer";
+		ocv-capacity-table-0 = <BATTERY_OCV_CURVE_LITHIUM_ION_POLYMER_DEFAULT>;
+		charge-full-design-microamp-hours = <13400000>;
+	};
+
 	aliases {
 		led0 = &led0;
 		led1 = &led1;
 		led2 = &led2;
-		battery0 = &vbatt;
-		charger0 = &bq25185;
+		fuel-gauge0 = &fuel_gauge;
 		imu0 = &lsm6dsv;
 		gnss0 = &sam_m10;
 		watchdog0 = &wdt0;
