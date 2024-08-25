@@ -11,6 +11,7 @@
 #include <zephyr/zbus/zbus.h>
 
 #include <infuse/version.h>
+#include <infuse/data_logger/logger.h>
 #include <infuse/data_logger/high_level/tdf.h>
 #include <infuse/fs/kv_store.h>
 #include <infuse/fs/kv_types.h>
@@ -45,6 +46,24 @@ static void log_announce(uint8_t loggers, uint64_t timestamp)
 		.uptime = k_uptime_seconds(),
 		.reboots = reboots.count,
 	};
+
+#if defined(CONFIG_DATA_LOGGER_EXFAT) || defined(CONFIG_DATA_LOGGER_FLASH_MAP)
+#if defined(CONFIG_DATA_LOGGER_EXFAT)
+	const struct device *logger = DEVICE_DT_GET(DT_NODELABEL(data_logger_exfat));
+
+	announce.flags |= 0x01;
+#else
+	const struct device *logger = DEVICE_DT_GET(DT_NODELABEL(data_logger_flash));
+#endif
+	struct data_logger_state state;
+
+	if (device_is_ready(logger)) {
+		data_logger_get_state(logger, &state);
+		announce.blocks = state.current_block;
+	} else {
+		announce.blocks = UINT32_MAX;
+	}
+#endif /* defined(CONFIG_DATA_LOGGER_EXFAT) || defined(CONFIG_DATA_LOGGER_FLASH_MAP) */
 
 	tdf_data_logger_log(loggers, TDF_ANNOUNCE, sizeof(announce), timestamp, &announce);
 }

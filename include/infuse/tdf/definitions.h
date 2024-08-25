@@ -67,10 +67,14 @@ struct tdf_announce {
 	struct tdf_struct_mcuboot_img_sem_ver version;
 	/* Key-Value store reflect global CRC */
 	uint32_t kv_crc;
+	/* Logger blocks written */
+	uint32_t blocks;
 	/* Uptime in seconds */
 	uint32_t uptime;
 	/* Reboot counter */
 	uint16_t reboots;
+	/* Flags (BIT(0) == SD blocks) */
+	uint8_t flags;
 } __packed;
 
 /* General battery state */
