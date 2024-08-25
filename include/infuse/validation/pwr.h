@@ -22,7 +22,7 @@ extern "C" {
  */
 
 enum {
-	/** Validate that sensors power up */
+	/** Validate that fuel-gauge power up */
 	VALIDATION_PWR_POWER_UP = 0,
 	/** Rigorous driver behavioural tests */
 	VALIDATION_PWR_DRIVER = BIT(0),
@@ -31,15 +31,13 @@ enum {
 /**
  * @brief Validate the behaviour of a power sensors
  *
- * @param battery Device that returns SENSOR_CHAN_GAUGE_VOLTAGE
- * @param charger Device that returns SENSOR_CHAN_CURRENT
+ * @param fuel_gauge Device that implements the fuel-gauge API
  * @param flags Validation tests to run
  *
  * @retval 0 On success
  * @retval -errno On failure
  */
-int infuse_validation_pwr(const struct device *battery, const struct device *charger,
-			  uint8_t flags);
+int infuse_validation_pwr(const struct device *fuel_gauge, uint8_t flags);
 
 /**
  * @}
