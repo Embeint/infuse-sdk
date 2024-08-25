@@ -54,6 +54,7 @@ endif # TASK_RUNNER_TASK_ENVIRONMENTAL
 
 config TASK_RUNNER_TASK_GNSS_UBX
 	bool "u-blox GNSS task"
+	select INFUSE_ZBUS_CHAN_LOCATION
 	depends on GNSS_UBX_MODEM
 	depends on GNSS
 	depends on ZBUS

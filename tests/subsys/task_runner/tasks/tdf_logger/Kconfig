@@ -6,4 +6,7 @@ configdefault INFUSE_ZBUS_CHAN_BATTERY
 configdefault INFUSE_ZBUS_CHAN_AMBIENT_ENV
 	default y
 
+configdefault INFUSE_ZBUS_CHAN_LOCATION
+	default y
+
 source "Kconfig.zephyr"
