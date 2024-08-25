@@ -391,6 +391,17 @@ static int ubx_m10_i2c_get_supported_systems(const struct device *dev, gnss_syst
 
 #endif /* CONFIG_GNSS_U_BLOX_M10_API_COMPAT */
 
+static void ubx_m10_i2c_extint_wake(const struct device *dev)
+{
+	const struct ubx_m10_i2c_config *cfg = dev->config;
+
+	gpio_pin_set_dt(&cfg->extint_gpio, 1);
+	k_sleep(K_MSEC(1));
+	gpio_pin_set_dt(&cfg->extint_gpio, 0);
+	/* Modem needs some time before it is ready to respond to commands */
+	k_sleep(K_MSEC(250));
+}
+
 static int ubx_m10_i2c_get_latest_timepulse(const struct device *dev, k_ticks_t *timestamp)
 {
 	const struct ubx_m10_i2c_config *cfg = dev->config;
@@ -544,17 +555,12 @@ static int ubx_m10_i2c_software_standby(const struct device *dev)
 static int ubx_m10_i2c_software_resume(const struct device *dev)
 {
 	NET_BUF_SIMPLE_DEFINE(cfg_buf, 64);
-	const struct ubx_m10_i2c_config *cfg = dev->config;
 	struct ubx_m10_i2c_data *data = dev->data;
 
 	/* Wait until modem is ready to wake */
 	k_sleep(data->min_wake_time);
 	/* Wake by generating an edge on the EXTINT pin */
-	gpio_pin_set_dt(&cfg->extint_gpio, 1);
-	k_sleep(K_MSEC(1));
-	gpio_pin_set_dt(&cfg->extint_gpio, 0);
-	/* Modem needs some time before it is ready to respond to commands */
-	k_sleep(K_MSEC(250));
+	ubx_m10_i2c_extint_wake(dev);
 	/* Modem uses NAV-PVT to fulfill requirements of GNSS API */
 	ubx_msg_prepare_valset(&cfg_buf,
 			       UBX_MSG_CFG_VALSET_LAYERS_RAM | UBX_MSG_CFG_VALSET_LAYERS_BBR);
@@ -610,6 +616,9 @@ static int ubx_m10_i2c_pm_control(const struct device *dev, enum pm_device_actio
 	case PM_DEVICE_ACTION_TURN_ON:
 		gpio_pin_configure_dt(&cfg->extint_gpio, GPIO_OUTPUT_INACTIVE);
 		gpio_pin_configure_dt(&cfg->reset_gpio, GPIO_OUTPUT_INACTIVE);
+
+		/* Attempt to wake modem in case it is in sleep state */
+		ubx_m10_i2c_extint_wake(dev);
 		/* Attempt to communicate without hardware reset to preserve GNSS state */
 		rc = modem_pipe_open(data->modem.pipe);
 		if (rc < 0) {
