@@ -145,7 +145,7 @@ TASK_RUNNER_TASKS_DEFINE(app_tasks, app_tasks_data, (TDF_LOGGER_TASK),
 #if DT_NODE_EXISTS(DT_ALIAS(gnss0))
 			 (GNSS_TASK, DEVICE_DT_GET(DT_ALIAS(gnss0))),
 #endif /* DT_NODE_EXISTS(DT_ALIAS(gnss0)) */
-			 (BATTERY_TASK, DEVICE_DT_GET(DT_ALIAS(battery0))),
+			 (BATTERY_TASK, DEVICE_DT_GET(DT_ALIAS(fuel_gauge0))),
 			 (ENVIRONMENTAL_TASK, DEVICE_DT_GET(DT_ALIAS(environmental0))));
 
 int main(void)

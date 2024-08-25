@@ -33,7 +33,7 @@ void battery_task_fn(struct k_work *work);
  *
  * @param define_mem Define memory
  * @param define_config Define task
- * @param bat_ptr Battery device bound to task
+ * @param bat_ptr Fuel-gauge device bound to task
  */
 #define BATTERY_TASK(define_mem, define_config, bat_ptr)                                           \
 	IF_ENABLED(define_config, ({.name = "bat",                                                 \
