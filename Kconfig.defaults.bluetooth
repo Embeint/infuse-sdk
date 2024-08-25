@@ -60,9 +60,10 @@ configdefault BT_CTLR_ADV_DATA_LEN_MAX
 	default 124
 
 # Advertising happens on 2Mbit PHY, which is the desired PHY for connections
-# due to the increased data throughput.
+# due to the increased data throughput. However disabling the option to
+# switch PHY's results in iPhones having problems connecting to devices.
 configdefault BT_PHY_UPDATE
-	default n
+	default y
 
 # Connection parameters should be pro-actively negotiated, not delayed by 5
 # seconds as many connections are complete by then.
