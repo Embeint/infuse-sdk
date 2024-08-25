@@ -7,7 +7,7 @@
  */
 
 #include <zephyr/logging/log.h>
-#include <zephyr/drivers/sensor.h>
+#include <zephyr/drivers/fuel_gauge.h>
 #include <zephyr/zbus/zbus.h>
 #include <zephyr/pm/device_runtime.h>
 
@@ -26,34 +26,40 @@ void battery_task_fn(struct k_work *work)
 {
 	struct task_data *task = task_data_from_work(work);
 	const struct task_schedule *sch = task_schedule_from_data(task);
-	const struct device *battery = task->executor.workqueue.task_arg.const_arg;
-	struct tdf_battery_state tdf_battery;
-	struct sensor_value value;
+	const struct device *fuel_gauge = task->executor.workqueue.task_arg.const_arg;
+	struct tdf_battery_state tdf_battery = {0};
+	union fuel_gauge_prop_val value;
 	int rc;
 
-	/* Request sensor to be powered */
-	rc = pm_device_runtime_get(battery);
+	/* Request fuel-gauge to be active */
+	rc = pm_device_runtime_get(fuel_gauge);
 	if (rc < 0) {
 		LOG_ERR("Terminating due to %s", "PM failure");
 		return;
 	}
 
-	/* Trigger the sample */
-	rc = sensor_sample_fetch(battery);
+	rc = fuel_gauge_get_prop(fuel_gauge, FUEL_GAUGE_VOLTAGE, &value);
 	if (rc < 0) {
 		LOG_ERR("Terminating due to %s", "fetch failure");
 		return;
 	}
-
-	/* Populate the output TDF */
-	(void)sensor_channel_get(battery, SENSOR_CHAN_GAUGE_VOLTAGE, &value);
-	tdf_battery.voltage_mv = sensor_value_to_milli(&value);
-	(void)sensor_channel_get(battery, SENSOR_CHAN_GAUGE_STATE_OF_CHARGE, &value);
-	tdf_battery.soc = sensor_value_to_centi(&value);
-	tdf_battery.charge_ua = 0;
+	tdf_battery.voltage_mv = value.voltage / 1000;
+	rc = fuel_gauge_get_prop(fuel_gauge, FUEL_GAUGE_CURRENT, &value);
+	if (rc == 0) {
+		/* Negative values from fuel-gauge indicate discharging */
+		tdf_battery.charge_ua = MAX(0, value.current);
+	} else if ((rc < 0) && (rc != -ENOTSUP)) {
+		LOG_ERR("Charge current query failed (%d)", rc);
+	}
+	rc = fuel_gauge_get_prop(fuel_gauge, FUEL_GAUGE_RELATIVE_STATE_OF_CHARGE, &value);
+	if (rc == 0) {
+		tdf_battery.soc = 100 * (uint16_t)value.relative_state_of_charge;
+	} else if ((rc < 0) && (rc != -ENOTSUP)) {
+		LOG_ERR("SoC query failed (%d)", rc);
+	}
 
 	/* Release power requirement */
-	rc = pm_device_runtime_put(battery);
+	rc = pm_device_runtime_put(fuel_gauge);
 	if (rc < 0) {
 		LOG_ERR("PM put failure");
 	}
@@ -66,7 +72,7 @@ void battery_task_fn(struct k_work *work)
 	zbus_chan_pub(ZBUS_CHAN, &tdf_battery, K_FOREVER);
 
 	/* Print the measured values */
-	LOG_INF("Sensor: %s", battery->name);
+	LOG_INF("Sensor: %s", fuel_gauge->name);
 	LOG_INF("\t        Voltage: %6d mV", tdf_battery.voltage_mv);
 	LOG_INF("\tState-of-charge: %6d %%", tdf_battery.soc / 100);
 	LOG_INF("\t Charge Current: %6d uA", tdf_battery.charge_ua);
