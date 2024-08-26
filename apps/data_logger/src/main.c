@@ -12,6 +12,7 @@
 #include <zephyr/pm/device_runtime.h>
 #include <zephyr/net/conn_mgr_connectivity.h>
 
+#include <infuse/auto/time_sync_log.h>
 #include <infuse/drivers/watchdog.h>
 #include <infuse/time/epoch.h>
 #include <infuse/fs/kv_store.h>
@@ -154,6 +155,9 @@ int main(void)
 {
 	/* Start the watchdog */
 	(void)infuse_watchdog_start();
+
+	/* Configure event logging */
+	auto_time_sync_log_configure(STORAGE_LOGGER);
 
 #ifdef CONFIG_NETWORKING
 	conn_mgr_all_if_up(false);
