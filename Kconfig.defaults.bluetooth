@@ -35,10 +35,11 @@ configdefault BT_L2CAP_TX_MTU
 	default 246 if BT_SPI # SPI HCI can only handle 254 byte payloads (PDU - LL Header)
 	default 247
 
-# Cannot connect to Nordic Softdevice from iOS
+# Use the Nordic Softdeviec by default
+# Note that currently this causes problems with connecting from iOS
 # https://devzone.nordicsemi.com/f/nordic-q-a/113141/softdevice-extended-advertising-ios-connection
 choice BT_LL_CHOICE
-	default BT_LL_SW_SPLIT
+	default BT_LL_SOFTDEVICE
 endchoice
 
 # Extended advertising is a requirement
