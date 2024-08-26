@@ -6,6 +6,8 @@
  * SPDX-License-Identifier: LicenseRef-Embeint
  */
 
+#include <stdint.h>
+
 #include <zephyr/logging/log.h>
 #include <zephyr/pm/device_runtime.h>
 #include <zephyr/zbus/zbus.h>
@@ -129,6 +131,12 @@ static void log_and_publish(struct gnss_run_state *state, const struct ubx_msg_n
 	};
 	k_ticks_t timepulse;
 	uint64_t epoch_time;
+
+	/* Set known values on invalid accuracies */
+	if (pvt->h_acc >= INT32_MAX) {
+		llha.h_acc = INT32_MAX;
+		llha.v_acc = INT32_MAX;
+	}
 
 	/* Publish new data reading */
 	zbus_chan_pub(ZBUS_CHAN, &llha, K_FOREVER);
