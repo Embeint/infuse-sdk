@@ -14,3 +14,8 @@ config INFUSE_ZBUS_CHAN_LOCATION
 	bool
 	help
 	  INFUSE_ZBUS_CHAN_LOCATION producer is compiled in
+
+config INFUSE_ZBUS_CHAN_IMU
+	bool
+	help
+	  INFUSE_ZBUS_CHAN_IMU producer is compiled in
