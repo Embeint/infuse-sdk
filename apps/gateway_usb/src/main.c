@@ -17,16 +17,36 @@
 #include <infuse/tdf/definitions.h>
 #include <infuse/drivers/watchdog.h>
 
+#include <infuse/task_runner/runner.h>
+#include <infuse/task_runner/tasks/infuse_tasks.h>
+
 LOG_MODULE_REGISTER(app, LOG_LEVEL_INF);
 
 GATEWAY_HANDLER_DEFINE(serial_backhaul_handler, DEVICE_DT_GET(DT_NODELABEL(epacket_serial)));
 
+static const struct task_schedule schedules[] = {
+	{
+		.task_id = TASK_ID_TDF_LOGGER,
+		.validity = TASK_VALID_ALWAYS,
+		.periodicity_type = TASK_PERIODICITY_LOCKOUT,
+		.periodicity.lockout.lockout_s = SEC_PER_MIN,
+		.task_args.infuse.tdf_logger =
+			{
+				.loggers = TDF_DATA_LOGGER_SERIAL,
+				.random_delay_ms = 1000,
+				.tdfs = TASK_TDF_LOGGER_LOG_ANNOUNCE | TASK_TDF_LOGGER_LOG_BATTERY,
+			},
+	},
+};
+
+struct task_schedule_state states[ARRAY_SIZE(schedules)];
+
+TASK_RUNNER_TASKS_DEFINE(app_tasks, app_tasks_data, (TDF_LOGGER_TASK));
+
 int main(void)
 {
-	const struct device *tdf_logger_serial = DEVICE_DT_GET(DT_NODELABEL(tdf_logger_serial));
 	const struct device *epacket_bt_adv = DEVICE_DT_GET(DT_NODELABEL(epacket_bt_adv));
 	const struct device *epacket_serial = DEVICE_DT_GET(DT_NODELABEL(epacket_serial));
-	struct tdf_announce announce;
 
 	/* Start watchdog */
 	infuse_watchdog_start();
@@ -39,23 +59,13 @@ int main(void)
 	epacket_receive(epacket_serial, K_FOREVER);
 	epacket_receive(epacket_bt_adv, K_FOREVER);
 
-	for (;;) {
-		announce.application = 0x1234;
-		announce.reboots = 0;
-		announce.uptime = k_uptime_get() / 1000;
-		announce.version = (struct tdf_struct_mcuboot_img_sem_ver){
-			.major = 1,
-			.minor = 2,
-			.revision = 3,
-			.build_num = 4,
-		};
+	/* Initialise task runner */
+	task_runner_init(schedules, states, ARRAY_SIZE(schedules), app_tasks, app_tasks_data,
+			 ARRAY_SIZE(app_tasks));
 
-		tdf_data_logger_log_dev(tdf_logger_serial, TDF_ANNOUNCE, (sizeof(announce)), 0,
-					&announce);
-		tdf_data_logger_flush_dev(tdf_logger_serial);
+	/* Start auto iteration */
+	task_runner_start_auto_iterate();
 
-		LOG_INF("Sent uptime %d on %s", announce.uptime, tdf_logger_serial->name);
-		k_sleep(K_SECONDS(1));
-	}
-	return 0;
+	/* No more work to do in this context */
+	k_sleep(K_FOREVER);
 }
