@@ -15,6 +15,7 @@
 #include <infuse/epacket/interface/epacket_dummy.h>
 #include <infuse/data_logger/logger.h>
 #include <infuse/data_logger/high_level/tdf.h>
+#include <infuse/drivers/imu.h>
 #include <infuse/tdf/tdf.h>
 #include <infuse/zbus/channels.h>
 
@@ -31,6 +32,11 @@ struct task_schedule_state state;
 INFUSE_ZBUS_CHAN_DEFINE(INFUSE_ZBUS_CHAN_BATTERY);
 INFUSE_ZBUS_CHAN_DEFINE(INFUSE_ZBUS_CHAN_AMBIENT_ENV);
 INFUSE_ZBUS_CHAN_DEFINE(INFUSE_ZBUS_CHAN_LOCATION);
+
+IMU_SAMPLE_ARRAY_TYPE_DEFINE(imu_sample_container, 4);
+ZBUS_CHAN_ID_DEFINE(INFUSE_ZBUS_NAME(INFUSE_ZBUS_CHAN_IMU), INFUSE_ZBUS_CHAN_IMU,
+		    struct imu_sample_container, NULL, NULL, ZBUS_OBSERVERS_EMPTY,
+		    ZBUS_MSG_INIT(0));
 
 int tdf_find_in_buf(struct tdf_parsed *tdf, uint16_t tdf_id, struct net_buf *buf)
 {
@@ -67,6 +73,7 @@ ZTEST(task_tdf_logger, test_log_before_data)
 	const struct zbus_channel *chan_bat = INFUSE_ZBUS_CHAN_GET(INFUSE_ZBUS_CHAN_BATTERY);
 	const struct zbus_channel *chan_env = INFUSE_ZBUS_CHAN_GET(INFUSE_ZBUS_CHAN_AMBIENT_ENV);
 	const struct zbus_channel *chan_loc = INFUSE_ZBUS_CHAN_GET(INFUSE_ZBUS_CHAN_LOCATION);
+	const struct zbus_channel *chan_imu = INFUSE_ZBUS_CHAN_GET(INFUSE_ZBUS_CHAN_IMU);
 	struct k_fifo *tx_queue = epacket_dummmy_transmit_fifo_get();
 	struct tdf_parsed tdf;
 	struct net_buf *pkt;
@@ -77,11 +84,12 @@ ZTEST(task_tdf_logger, test_log_before_data)
 	chan_bat->data->publish_count = 0;
 	chan_env->data->publish_count = 0;
 	chan_loc->data->publish_count = 0;
+	chan_imu->data->publish_count = 0;
 
 	schedule.task_args.infuse.tdf_logger = (struct task_tdf_logger_args){
 		.loggers = TDF_DATA_LOGGER_SERIAL,
 		.tdfs = TASK_TDF_LOGGER_LOG_BATTERY | TASK_TDF_LOGGER_LOG_AMBIENT_ENV |
-			TASK_TDF_LOGGER_LOG_LOCATION,
+			TASK_TDF_LOGGER_LOG_LOCATION | TASK_TDF_LOGGER_LOG_ACCEL,
 	};
 	/* No data, no packets */
 	task_schedule(&data);
@@ -240,6 +248,64 @@ ZTEST(task_tdf_logger, test_ambient_env)
 	net_buf_unref(pkt);
 }
 
+ZTEST(task_tdf_logger, test_accelerometer)
+{
+	const struct zbus_channel *chan_imu = INFUSE_ZBUS_CHAN_GET(INFUSE_ZBUS_CHAN_IMU);
+	struct k_fifo *tx_queue = epacket_dummmy_transmit_fifo_get();
+	struct imu_sample_array *samples;
+	struct tdf_parsed tdf;
+	struct net_buf *pkt;
+
+	zassert_not_null(tx_queue);
+
+	/* Publish data with no accelerometer */
+	zassert_equal(0, zbus_chan_claim(chan_imu, K_NO_WAIT));
+	samples = chan_imu->message;
+	samples->accelerometer.num = 0;
+	samples->gyroscope.num = 1;
+	samples->magnetometer.num = 0;
+	zbus_chan_update_publish_metadata(chan_imu);
+	zassert_equal(0, zbus_chan_finish(chan_imu));
+
+	schedule.task_args.infuse.tdf_logger = (struct task_tdf_logger_args){
+		.loggers = TDF_DATA_LOGGER_SERIAL,
+		.tdfs = TASK_TDF_LOGGER_LOG_ACCEL,
+	};
+
+	/* Accelerometer data should not send as it doesn't exist */
+	task_schedule(&data);
+	pkt = net_buf_get(tx_queue, K_MSEC(100));
+	zassert_is_null(pkt);
+
+	/* Publish data with accelerometer */
+	zassert_equal(0, zbus_chan_claim(chan_imu, K_NO_WAIT));
+	samples = chan_imu->message;
+	samples->accelerometer.num = 1;
+	samples->gyroscope.num = 0;
+	samples->magnetometer.num = 0;
+	zbus_chan_update_publish_metadata(chan_imu);
+	zassert_equal(0, zbus_chan_finish(chan_imu));
+
+	/* Accelerometer data should send now */
+	task_schedule(&data);
+	pkt = net_buf_get(tx_queue, K_MSEC(100));
+	zassert_not_null(pkt);
+	net_buf_pull(pkt, sizeof(struct epacket_dummy_frame));
+	zassert_equal(0, tdf_find_in_buf(&tdf, TDF_ACC_4G, pkt));
+	zassert_equal(0, tdf.time);
+	net_buf_unref(pkt);
+
+	/* Trying to send while channel is held should fail */
+	zassert_equal(0, zbus_chan_claim(chan_imu, K_NO_WAIT));
+	task_schedule(&data);
+	pkt = net_buf_get(tx_queue, K_SECONDS(1));
+	zassert_is_null(pkt);
+	zassert_equal(0, zbus_chan_finish(chan_imu));
+	/* Task should have given up, not waited for over a second */
+	pkt = net_buf_get(tx_queue, K_SECONDS(1));
+	zassert_is_null(pkt);
+}
+
 ZTEST(task_tdf_logger, test_location)
 {
 	const struct zbus_channel *chan_loc = INFUSE_ZBUS_CHAN_GET(INFUSE_ZBUS_CHAN_LOCATION);
@@ -266,7 +332,7 @@ ZTEST(task_tdf_logger, test_location)
 		.loggers = TDF_DATA_LOGGER_SERIAL,
 		.tdfs = TASK_TDF_LOGGER_LOG_LOCATION,
 	};
-	/* Ambient environmental data should send */
+	/* Location data should send */
 	task_schedule(&data);
 	pkt = net_buf_get(tx_queue, K_MSEC(100));
 	zassert_not_null(pkt);

@@ -9,4 +9,7 @@ configdefault INFUSE_ZBUS_CHAN_AMBIENT_ENV
 configdefault INFUSE_ZBUS_CHAN_LOCATION
 	default y
 
+configdefault INFUSE_ZBUS_CHAN_IMU
+	default y
+
 source "Kconfig.zephyr"
