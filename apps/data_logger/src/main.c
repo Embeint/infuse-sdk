@@ -49,7 +49,8 @@ static const struct task_schedule schedules[] = {
 			{
 				.loggers = TDF_DATA_LOGGER_UDP,
 				.tdfs = TASK_TDF_LOGGER_LOG_ANNOUNCE | TASK_TDF_LOGGER_LOG_BATTERY |
-					TASK_TDF_LOGGER_LOG_AMBIENT_ENV,
+					TASK_TDF_LOGGER_LOG_AMBIENT_ENV |
+					TASK_TDF_LOGGER_LOG_LOCATION,
 			},
 	},
 #endif /* CONFIG_EPACKET_INTERFACE_UDP */
@@ -57,13 +58,14 @@ static const struct task_schedule schedules[] = {
 		.task_id = TASK_ID_TDF_LOGGER,
 		.validity = TASK_VALID_ALWAYS,
 		.periodicity_type = TASK_PERIODICITY_LOCKOUT,
-		.periodicity.lockout.lockout_s = 5,
+		.periodicity.lockout.lockout_s = 2,
 		.task_args.infuse.tdf_logger =
 			{
 				.loggers = TDF_DATA_LOGGER_BT_ADV | TDF_DATA_LOGGER_SERIAL,
 				.random_delay_ms = 1000,
 				.tdfs = TASK_TDF_LOGGER_LOG_ANNOUNCE | TASK_TDF_LOGGER_LOG_BATTERY |
-					TASK_TDF_LOGGER_LOG_AMBIENT_ENV,
+					TASK_TDF_LOGGER_LOG_AMBIENT_ENV |
+					TASK_TDF_LOGGER_LOG_LOCATION,
 			},
 	},
 	{
