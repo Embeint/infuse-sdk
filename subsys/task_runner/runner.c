@@ -115,7 +115,7 @@ static void task_start(uint8_t schedule_index, uint32_t uptime)
 	struct task_data *d = &tsk_states[state->task_idx];
 	k_tid_t tid;
 
-	LOG_INF("Booting task %s from schedule %d", c->name, schedule_index);
+	LOG_DBG("Booting task %s from schedule %d", c->name, schedule_index);
 
 	/* Initialise state information */
 	state->last_run = uptime;
@@ -149,7 +149,7 @@ static void task_terminate(uint8_t schedule_index)
 	const struct task_config *c = &tsk[state->task_idx];
 	struct task_data *d = &tsk_states[state->task_idx];
 
-	LOG_INF("Requesting task %s to terminate", c->name);
+	LOG_DBG("Requesting task %s to terminate", c->name);
 	/* Raise the termination signal */
 	k_poll_signal_raise(&d->terminate_signal, 0);
 	if (c->exec_type == TASK_EXECUTOR_WORKQUEUE) {
@@ -191,7 +191,7 @@ void task_runner_iterate(uint32_t uptime, uint32_t gps_time, uint8_t battery_cha
 	for (int i = 0; i < tsk_num; i++) {
 		if (tsk_states[i].running) {
 			if (task_has_terminated(i)) {
-				LOG_INF("Task %s terminated", tsk[i].name);
+				LOG_DBG("Task %s terminated", tsk[i].name);
 				tsk_states[i].running = false;
 			}
 		}
