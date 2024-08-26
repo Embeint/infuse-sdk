@@ -22,13 +22,13 @@ class structs:
         """{{ info['description'] }}"""
         _fields_ = [
 {% for field in info['fields'] %}
-	        ('{{ field['py_name'] }}', {{ field['py_type'] }}),
+            ('{{ field['py_name'] }}', {{ field['py_type'] }}),
 {% endfor %}
         ]
         _pack_ = 1
         _postfix_ = {
 {% for field in info['fields'] %}
-	        '{{ field['name'] }}': '{{ field.get("display_postfix", '') }}',
+            '{{ field['name'] }}': '{{ field.get("display_postfix", '') }}',
 {% endfor %}
         }
 {% for conv in info['conversions'] %}
@@ -51,7 +51,7 @@ class readings:
                 if isinstance(val, ctypes.LittleEndianStructure):
                     for subfield_name, subfield_val, subfield_postfix in val.iter_fields():
                         yield f'{f_name}.{subfield_name}', subfield_val, subfield_postfix
-                if isinstance(val, ctypes.Array):
+                elif isinstance(val, ctypes.Array):
                     yield f_name, list(val), self._postfix_[f_name]
                 else:
                     yield f_name, val, self._postfix_[f_name]
@@ -62,13 +62,13 @@ class readings:
         name = "{{ info['name'] }}"
         _fields_ = [
 {% for field in info['fields'] %}
-	        ('{{ field['py_name'] }}', {{ field['py_type'] }}),
+            ('{{ field['py_name'] }}', {{ field['py_type'] }}),
 {% endfor %}
         ]
         _pack_ = 1
         _postfix_ = {
 {% for field in info['fields'] %}
-	        '{{ field['name'] }}': '{{ field.get("display_postfix", '') }}',
+            '{{ field['name'] }}': '{{ field.get("display_postfix", '') }}',
 {% endfor %}
         }
 {% for conv in info['conversions'] %}
