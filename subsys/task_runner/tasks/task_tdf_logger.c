@@ -167,7 +167,7 @@ void task_tdf_logger_fn(struct k_work *work)
 	/* Random delay when first scheduled */
 	if (task->executor.workqueue.reschedule_counter == 0 && args->random_delay_ms) {
 		delay_ms = sys_rand32_get() % args->random_delay_ms;
-		LOG_INF("Delaying for %d ms", delay_ms);
+		LOG_DBG("Delaying for %d ms", delay_ms);
 		task_workqueue_reschedule(task, K_MSEC(delay_ms));
 		return;
 	}
@@ -179,8 +179,8 @@ void task_tdf_logger_fn(struct k_work *work)
 	accel = args->tdfs & TASK_TDF_LOGGER_LOG_ACCEL;
 	log_timestamp = (args->flags & TASK_TDF_LOGGER_FLAGS_NO_FLUSH) ? epoch_time_now() : 0;
 
-	LOG_INF("Ann: %d Bat: %d Env: %d Loc: %d Acc: %d", announce, battery, ambient_env, location,
-		accel);
+	LOG_INF("Log: %02X Ann: %d Bat: %d Env: %d Loc: %d Acc: %d", args->loggers, announce,
+		battery, ambient_env, location, accel);
 	if (announce) {
 		log_announce(args->loggers, log_timestamp);
 	}
