@@ -13,6 +13,7 @@
 #include <infuse/version.h>
 #include <infuse/data_logger/logger.h>
 #include <infuse/data_logger/high_level/tdf.h>
+#include <infuse/drivers/imu.h>
 #include <infuse/fs/kv_store.h>
 #include <infuse/fs/kv_types.h>
 #include <infuse/tdf/tdf.h>
@@ -23,7 +24,7 @@
 #include <infuse/task_runner/tasks/tdf_logger.h>
 
 INFUSE_ZBUS_CHAN_DECLARE(INFUSE_ZBUS_CHAN_BATTERY, INFUSE_ZBUS_CHAN_AMBIENT_ENV,
-			 INFUSE_ZBUS_CHAN_LOCATION);
+			 INFUSE_ZBUS_CHAN_LOCATION, INFUSE_ZBUS_CHAN_IMU);
 #define C_GET INFUSE_ZBUS_CHAN_GET
 
 LOG_MODULE_REGISTER(task_tdfl, CONFIG_TASK_TDF_LOGGER_LOG_LEVEL);
@@ -116,12 +117,45 @@ static void log_location(uint8_t loggers, uint64_t timestamp)
 #endif
 }
 
+static void log_accel(uint8_t loggers, uint64_t timestamp)
+{
+#ifdef CONFIG_INFUSE_ZBUS_CHAN_IMU
+	struct imu_sample_array *imu;
+	struct imu_sample *sample;
+	struct tdf_struct_xyz_16bit tdf;
+
+	if (zbus_chan_publish_count(C_GET(INFUSE_ZBUS_CHAN_IMU)) == 0) {
+		return;
+	}
+	/* Accept waiting for a short duration to get the channel data */
+	if (zbus_chan_claim(C_GET(INFUSE_ZBUS_CHAN_IMU), K_MSEC(100)) < 0) {
+		return;
+	}
+	imu = C_GET(INFUSE_ZBUS_CHAN_IMU)->message;
+	if (imu->accelerometer.num == 0) {
+		/* No accelerometer values, release and return */
+		zbus_chan_finish(C_GET(INFUSE_ZBUS_CHAN_IMU));
+		return;
+	}
+	/* Extract sample into TDF */
+	sample = &imu->samples[imu->accelerometer.offset + imu->accelerometer.num - 1];
+	tdf.x = sample->x;
+	tdf.y = sample->y;
+	tdf.z = sample->z;
+
+	/* Release channel */
+	zbus_chan_finish(C_GET(INFUSE_ZBUS_CHAN_IMU));
+	/* Add to specified loggers */
+	tdf_data_logger_log(loggers, TDF_ACC_4G, sizeof(tdf), timestamp, &tdf);
+#endif
+}
+
 void task_tdf_logger_fn(struct k_work *work)
 {
 	struct task_data *task = task_data_from_work(work);
 	const struct task_schedule *sch = task_schedule_from_data(task);
 	const struct task_tdf_logger_args *args = &sch->task_args.infuse.tdf_logger;
-	bool announce, battery, ambient_env, location;
+	bool announce, battery, ambient_env, location, accel;
 	uint64_t log_timestamp;
 	uint32_t delay_ms;
 
@@ -142,9 +176,11 @@ void task_tdf_logger_fn(struct k_work *work)
 	battery = args->tdfs & TASK_TDF_LOGGER_LOG_BATTERY;
 	ambient_env = args->tdfs & TASK_TDF_LOGGER_LOG_AMBIENT_ENV;
 	location = args->tdfs & TASK_TDF_LOGGER_LOG_LOCATION;
+	accel = args->tdfs & TASK_TDF_LOGGER_LOG_ACCEL;
 	log_timestamp = (args->flags & TASK_TDF_LOGGER_FLAGS_NO_FLUSH) ? epoch_time_now() : 0;
 
-	LOG_INF("Ann: %d Bat: %d Env: %d Loc: %d", announce, battery, ambient_env, location);
+	LOG_INF("Ann: %d Bat: %d Env: %d Loc: %d Acc: %d", announce, battery, ambient_env, location,
+		accel);
 	if (announce) {
 		log_announce(args->loggers, log_timestamp);
 	}
@@ -153,6 +189,9 @@ void task_tdf_logger_fn(struct k_work *work)
 	}
 	if (ambient_env) {
 		log_ambient_env(args->loggers, log_timestamp);
+	}
+	if (accel) {
+		log_accel(args->loggers, log_timestamp);
 	}
 	if (location) {
 		log_location(args->loggers, log_timestamp);
