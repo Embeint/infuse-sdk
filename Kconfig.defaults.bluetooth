@@ -42,6 +42,10 @@ choice BT_LL_CHOICE
 	default BT_LL_SOFTDEVICE
 endchoice
 
+# We expect our controllers to support the Zephyr vendor specific commands (read static address, etc)
+configdefault BT_HCI_VS
+	default y
+
 # Extended advertising is a requirement
 configdefault BT_EXT_ADV
 	default y
