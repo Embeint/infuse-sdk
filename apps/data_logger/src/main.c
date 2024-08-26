@@ -50,7 +50,7 @@ static const struct task_schedule schedules[] = {
 				.loggers = TDF_DATA_LOGGER_UDP,
 				.tdfs = TASK_TDF_LOGGER_LOG_ANNOUNCE | TASK_TDF_LOGGER_LOG_BATTERY |
 					TASK_TDF_LOGGER_LOG_AMBIENT_ENV |
-					TASK_TDF_LOGGER_LOG_LOCATION,
+					TASK_TDF_LOGGER_LOG_LOCATION | TASK_TDF_LOGGER_LOG_ACCEL,
 			},
 	},
 #endif /* CONFIG_EPACKET_INTERFACE_UDP */
@@ -65,7 +65,7 @@ static const struct task_schedule schedules[] = {
 				.random_delay_ms = 1000,
 				.tdfs = TASK_TDF_LOGGER_LOG_ANNOUNCE | TASK_TDF_LOGGER_LOG_BATTERY |
 					TASK_TDF_LOGGER_LOG_AMBIENT_ENV |
-					TASK_TDF_LOGGER_LOG_LOCATION,
+					TASK_TDF_LOGGER_LOG_LOCATION | TASK_TDF_LOGGER_LOG_ACCEL,
 			},
 	},
 	{
