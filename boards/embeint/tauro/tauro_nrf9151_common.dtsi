@@ -86,9 +86,10 @@
 		zephyr,gain = "ADC_GAIN_1_2";
 		zephyr,reference = "ADC_REF_INTERNAL";
 		zephyr,vref-mv = <600>;
-		zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
+		zephyr,acquisition-time = <ADC_ACQ_TIME_MAX>;
 		zephyr,resolution = <12>;
 		zephyr,input-positive = <NRF_SAADC_AIN0>;
+		zephyr,oversampling = <4>;
 	};
 
 	channel@1 {
@@ -96,9 +97,10 @@
 		zephyr,gain = "ADC_GAIN_1";
 		zephyr,reference = "ADC_REF_INTERNAL";
 		zephyr,vref-mv = <600>;
-		zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
+		zephyr,acquisition-time = <ADC_ACQ_TIME_MAX>;
 		zephyr,resolution = <12>;
 		zephyr,input-positive = <NRF_SAADC_AIN1>;
+		zephyr,oversampling = <4>;
 	};
 };
 
