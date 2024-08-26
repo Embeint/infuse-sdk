@@ -188,6 +188,7 @@ static void infuse_modem_info(enum lte_lc_func_mode mode, void *ctx)
 	KV_STRUCT_KV_STRING_VAR(64) modem_info = {0};
 	KV_KEY_TYPE(KV_KEY_LTE_MODEM_IMEI) modem_imei;
 	static bool modem_info_stored;
+	int rc;
 
 	if (modem_info_stored) {
 		return;
@@ -210,6 +211,12 @@ static void infuse_modem_info(enum lte_lc_func_mode mode, void *ctx)
 	(void)KV_STORE_WRITE(KV_KEY_LTE_MODEM_IMEI, &modem_imei);
 	/* Modem info has been stored */
 	modem_info_stored = true;
+
+	/* Set default %XDATAPRFL value */
+	rc = nrf_modem_at_printf("AT%%XDATAPRFL=%d", CONFIG_INFUSE_NRF_MODEM_DATA_PROFILE_DEFAULT);
+	if (rc < 0) {
+		LOG_ERR("AT%%XDATAPRFL=%d (%d)", CONFIG_INFUSE_NRF_MODEM_DATA_PROFILE_DEFAULT, rc);
+	}
 }
 
 void lte_net_if_modem_fault_app_handler(struct nrf_modem_fault_info *fault_info)
