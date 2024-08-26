@@ -83,7 +83,7 @@ struct tdf_battery_state {
 	uint32_t voltage_mv;
 	/* Battery current (microamps) (Negative = discharging) */
 	int32_t current_ua;
-	/* State of charge (centipercent) */
+	/* State of charge (percent) */
 	uint8_t soc;
 } __packed;
 

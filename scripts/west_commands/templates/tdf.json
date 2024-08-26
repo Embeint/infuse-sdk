@@ -46,7 +46,7 @@
             "fields": [
                 {"name": "voltage_mv", "type": "uint32_t", "description": "Battery voltage (milliVolts)", "display_postfix": "mV"},
                 {"name": "current_ua", "type": "int32_t", "description": "Battery current (microamps) (Negative = discharging)", "display_postfix": "uA"},
-                {"name": "soc", "type": "uint8_t", "description": "State of charge (centipercent)", "display_postfix": "%"}
+                {"name": "soc", "type": "uint8_t", "description": "State of charge (percent)", "display_postfix": "%"}
             ]
         },
         "3": {
