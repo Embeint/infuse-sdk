@@ -131,6 +131,24 @@ struct tdf_time_sync {
 	int32_t shift;
 } __packed;
 
+/* Information pertaining to the previous reboot */
+struct tdf_reboot_info {
+	/* Reboot reason (enum infuse_reboot_reason) */
+	uint8_t reason;
+	/* Hardware flags (hwinfo_get_reset_cause) */
+	uint32_t hardware_flags;
+	/* Reboot counter */
+	uint32_t count;
+	/* Uptime before reboot (seconds) */
+	uint32_t uptime;
+	/* Program counter/Watchdog Info/Other */
+	uint32_t param_1;
+	/* Link Register/Watchdog Info/Other */
+	uint32_t param_2;
+	/* Running thread at reboot */
+	char thread[8];
+} __packed;
+
 /* Accelerometer +-2G */
 struct tdf_acc_2g {
 	/* Raw sample */
@@ -294,6 +312,7 @@ enum tdf_builtin_id {
 	TDF_AMBIENT_TEMP_PRES_HUM = 3,
 	TDF_AMBIENT_TEMPERATURE = 4,
 	TDF_TIME_SYNC = 5,
+	TDF_REBOOT_INFO = 6,
 	TDF_ACC_2G = 10,
 	TDF_ACC_4G = 11,
 	TDF_ACC_8G = 12,
@@ -318,6 +337,7 @@ enum tdf_builtin_size {
 	_TDF_AMBIENT_TEMP_PRES_HUM_SIZE = sizeof(struct tdf_ambient_temp_pres_hum),
 	_TDF_AMBIENT_TEMPERATURE_SIZE = sizeof(struct tdf_ambient_temperature),
 	_TDF_TIME_SYNC_SIZE = sizeof(struct tdf_time_sync),
+	_TDF_REBOOT_INFO_SIZE = sizeof(struct tdf_reboot_info),
 	_TDF_ACC_2G_SIZE = sizeof(struct tdf_acc_2g),
 	_TDF_ACC_4G_SIZE = sizeof(struct tdf_acc_4g),
 	_TDF_ACC_8G_SIZE = sizeof(struct tdf_acc_8g),
