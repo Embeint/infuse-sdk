@@ -14,6 +14,8 @@
 
 #include <stdint.h>
 
+#include <zephyr/sys/util.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -23,12 +25,18 @@ extern "C" {
  * @{
  */
 
+enum {
+	/* Automatically log time sync events */
+	AUTO_TIME_SYNC_LOG_SYNCS = BIT(0),
+};
+
 /**
  * @brief Automatically log time sync events
  *
  * @param tdf_logger_mask TDF data logger mask to log events to
+ * @param flags Extra `AUTO_TIME_SYNC_LOG_` flags
  */
-void auto_time_sync_log_configure(uint8_t tdf_logger_mask);
+void auto_time_sync_log_configure(uint8_t tdf_logger_mask, uint8_t flags);
 
 /**
  * @}

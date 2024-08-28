@@ -57,7 +57,7 @@ TASK_RUNNER_TASKS_DEFINE(app_tasks, app_tasks_data, (GNSS_TASK, DEVICE_DT_GET(DT
 int main(void)
 {
 	/* Log time sync changes */
-	auto_time_sync_log_configure(TDF_DATA_LOGGER_SERIAL);
+	auto_time_sync_log_configure(TDF_DATA_LOGGER_SERIAL, AUTO_TIME_SYNC_LOG_SYNCS);
 
 	/* Start the watchdog */
 	(void)infuse_watchdog_start();
