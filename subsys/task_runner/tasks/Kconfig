@@ -5,6 +5,10 @@ config TASK_RUNNER_TASK_TDF_LOGGER
 
 if TASK_RUNNER_TASK_TDF_LOGGER
 
+config TASK_RUNNER_TASK_TDF_LOGGER_NRF_MODEM_MONITOR
+	bool
+	default y if INFUSE_NRF_MODEM_MONITOR
+
 module = TASK_TDF_LOGGER
 module-str = TDF logger task
 source "subsys/logging/Kconfig.template.log_config"

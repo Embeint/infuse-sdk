@@ -153,7 +153,7 @@ static void log_accel(uint8_t loggers, uint64_t timestamp)
 
 static void log_network_connection(uint8_t loggers, uint64_t timestamp)
 {
-#ifdef CONFIG_INFUSE_NRF_MODEM_MONITOR
+#ifdef CONFIG_TASK_RUNNER_TASK_TDF_LOGGER_NRF_MODEM_MONITOR
 	struct tdf_lte_conn_status tdf;
 	struct nrf_modem_network_state state;
 	int16_t rsrp;
