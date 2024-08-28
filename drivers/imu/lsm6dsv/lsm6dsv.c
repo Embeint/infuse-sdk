@@ -34,6 +34,8 @@ struct lsm6dsv_data {
 	int64_t int1_prev_timestamp;
 	uint16_t acc_time_scale;
 	uint16_t gyr_time_scale;
+	uint16_t gyro_range;
+	uint8_t accel_range;
 	uint8_t fifo_threshold;
 	uint8_t fifo_data_buffer[LSM6DSV_FIFO_SIZE];
 };
@@ -101,11 +103,13 @@ static int lsm6dsv_low_power_reset(const struct device *dev)
 	return rc;
 }
 
-static struct sensor_config accel_conf(uint16_t sample_rate, uint8_t range, bool low_power)
+static struct sensor_config accel_conf(uint16_t sample_rate, uint8_t range, bool low_power,
+				       uint8_t *fs_range)
 {
 	struct sensor_config ret;
 
 	/* Sensing range */
+	*fs_range = range;
 	switch (range) {
 	case 2:
 		ret.range = LSM6DSV_CTRL8_ACC_RANGE_2G;
@@ -121,6 +125,7 @@ static struct sensor_config accel_conf(uint16_t sample_rate, uint8_t range, bool
 		break;
 	default:
 		LOG_WRN("Default range 4G");
+		*fs_range = 4;
 		ret.range = LSM6DSV_CTRL8_ACC_RANGE_4G;
 	}
 
@@ -176,10 +181,12 @@ static struct sensor_config accel_conf(uint16_t sample_rate, uint8_t range, bool
 	return ret;
 }
 
-static struct sensor_config gyr_conf(uint16_t sample_rate, uint16_t range, bool low_power)
+static struct sensor_config gyr_conf(uint16_t sample_rate, uint16_t range, bool low_power,
+				     uint16_t *fs_range)
 {
 	struct sensor_config ret;
 
+	*fs_range = range;
 	switch (range) {
 	case 4000:
 		ret.range = LSM6DSV_CTRL6_GYR_RANGE_4000DPS;
@@ -201,6 +208,7 @@ static struct sensor_config gyr_conf(uint16_t sample_rate, uint16_t range, bool 
 		break;
 	default:
 		LOG_WRN("Default range 1000DPS");
+		*fs_range = 1000;
 		ret.range = LSM6DSV_CTRL6_GYR_RANGE_1000DPS;
 	}
 
@@ -298,7 +306,7 @@ int lsm6dsv_configure(const struct device *dev, const struct imu_config *imu_cfg
 	if (imu_cfg->accelerometer.sample_rate_hz) {
 		config_regs = accel_conf(imu_cfg->accelerometer.sample_rate_hz,
 					 imu_cfg->accelerometer.full_scale_range,
-					 imu_cfg->accelerometer.low_power);
+					 imu_cfg->accelerometer.low_power, &data->accel_range);
 
 		LOG_DBG("Acc period: %d us", config_regs.period_us);
 		rc |= lsm6dsv_reg_write(dev, LSM6DSV_REG_CTRL1, &config_regs.config, 1);
@@ -311,9 +319,9 @@ int lsm6dsv_configure(const struct device *dev, const struct imu_config *imu_cfg
 
 	/* Configure gyroscope */
 	if (imu_cfg->gyroscope.sample_rate_hz) {
-		config_regs =
-			gyr_conf(imu_cfg->gyroscope.sample_rate_hz,
-				 imu_cfg->gyroscope.full_scale_range, imu_cfg->gyroscope.low_power);
+		config_regs = gyr_conf(imu_cfg->gyroscope.sample_rate_hz,
+				       imu_cfg->gyroscope.full_scale_range,
+				       imu_cfg->gyroscope.low_power, &data->gyro_range);
 
 		LOG_DBG("Gyr period: %d us", config_regs.period_us);
 		rc |= lsm6dsv_reg_write(dev, LSM6DSV_REG_CTRL2, &config_regs.config, 1);
@@ -391,6 +399,9 @@ int lsm6dsv_data_read(const struct device *dev, struct imu_sample_array *samples
 	samples->accelerometer = (struct imu_sensor_meta){0};
 	samples->gyroscope = (struct imu_sensor_meta){0};
 	samples->magnetometer = (struct imu_sensor_meta){0};
+
+	samples->accelerometer.full_scale_range = data->accel_range;
+	samples->gyroscope.full_scale_range = data->gyro_range;
 
 	/* Get FIFO data length */
 	rc = lsm6dsv_reg_read(dev, LSM6DSV_REG_FIFO_STATUS1, &fifo_status, sizeof(fifo_status));

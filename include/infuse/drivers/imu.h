@@ -75,6 +75,8 @@ struct imu_sensor_meta {
 	int64_t timestamp_ticks;
 	/* Real period between first and last samples in buffer */
 	uint32_t buffer_period_ticks;
+	/* Accel = G, Gyro = DPS, Mag = ? */
+	uint16_t full_scale_range;
 	/* Offset into sample array of sensor */
 	uint8_t offset;
 	/* Number of readings for this sensor */
