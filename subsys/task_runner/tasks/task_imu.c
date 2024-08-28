@@ -13,6 +13,7 @@
 #include <infuse/task_runner/task.h>
 #include <infuse/task_runner/tasks/imu.h>
 #include <infuse/tdf/definitions.h>
+#include <infuse/tdf/util.h>
 #include <infuse/time/epoch.h>
 #include <infuse/drivers/imu.h>
 #include <infuse/zbus/channels.h>
@@ -31,42 +32,6 @@ struct logging_state {
 	uint16_t gyr_tdf;
 	uint16_t mag_tdf;
 };
-
-static void imu_log_config_init(const struct task_imu_args *args, struct logging_state *log_state)
-{
-
-	switch (args->accelerometer.range_g) {
-	case 2:
-		log_state->acc_tdf = TDF_ACC_2G;
-		break;
-	case 4:
-		log_state->acc_tdf = TDF_ACC_4G;
-		break;
-	case 8:
-		log_state->acc_tdf = TDF_ACC_8G;
-		break;
-	default:
-		log_state->acc_tdf = TDF_ACC_16G;
-		break;
-	}
-	switch (args->gyroscope.range_dps) {
-	case 125:
-		log_state->gyr_tdf = TDF_GYR_125DPS;
-		break;
-	case 250:
-		log_state->gyr_tdf = TDF_GYR_250DPS;
-		break;
-	case 500:
-		log_state->gyr_tdf = TDF_GYR_500DPS;
-		break;
-	case 1000:
-		log_state->gyr_tdf = TDF_GYR_1000DPS;
-		break;
-	default:
-		log_state->gyr_tdf = TDF_GYR_2000DPS;
-		break;
-	}
-}
 
 static void imu_sample_handler(const struct task_schedule *schedule,
 			       const struct logging_state *log_state,
@@ -159,7 +124,8 @@ void imu_task_fn(const struct task_schedule *schedule, struct k_poll_signal *ter
 		config_output.accelerometer_period_us, config_output.gyroscope_period_us,
 		config_output.expected_interrupt_period_us);
 
-	imu_log_config_init(args, &log_state);
+	log_state.acc_tdf = tdf_id_from_accelerometer_range(args->accelerometer.range_g);
+	log_state.gyr_tdf = tdf_id_from_accelerometer_range(args->gyroscope.range_dps);
 	interrupt_timeout = K_USEC(2 * config_output.expected_interrupt_period_us);
 
 	while (true) {
