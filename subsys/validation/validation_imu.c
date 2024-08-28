@@ -105,6 +105,29 @@ static int validate_sample_timing(const struct device *dev, uint8_t acc_range,
 			break;
 		}
 
+		/* Validate reported ranges */
+		if (config.accelerometer.sample_rate_hz) {
+			if (config.accelerometer.full_scale_range !=
+			    imu_samples->accelerometer.full_scale_range) {
+				VALIDATION_REPORT_ERROR(
+					TEST, "Acc range mismatch (%u != %u)",
+					config.accelerometer.full_scale_range,
+					imu_samples->accelerometer.full_scale_range);
+				rc = -EINVAL;
+				break;
+			}
+		}
+		if (config.gyroscope.sample_rate_hz) {
+			if (config.gyroscope.full_scale_range !=
+			    imu_samples->gyroscope.full_scale_range) {
+				VALIDATION_REPORT_ERROR(TEST, "Gyro range mismatch (%u != %u)",
+							config.gyroscope.full_scale_range,
+							imu_samples->gyroscope.full_scale_range);
+				rc = -EINVAL;
+				break;
+			}
+		}
+
 		/* Check timestamps across buffers */
 		if (acc_sample_rate && previous_timestamp_acc) {
 			int64_t diff =
