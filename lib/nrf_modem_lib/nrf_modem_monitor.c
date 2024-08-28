@@ -99,8 +99,8 @@ int nrf_modem_monitor_signal_quality(int16_t *rsrp, int8_t *rsrq)
 	uint8_t rsrp_idx, rsrq_idx;
 	int rc;
 
-	*rsrp = 0;
-	*rsrq = 0;
+	*rsrp = INT16_MIN;
+	*rsrq = INT8_MIN;
 
 	/* Query state from the modem */
 	rc = nrf_modem_at_scanf("AT+CESQ", "+CESQ: %*d,%*d,%*d,%*d,%" SCNu8 ",%" SCNu8, &rsrp_idx,
