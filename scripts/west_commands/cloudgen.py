@@ -89,6 +89,7 @@ class cloudgen(WestCommand):
             "int16_t": "ctypes.c_int16",
             "int32_t": "ctypes.c_int32",
             "int64_t": "ctypes.c_int64",
+            "char": "ctypes.c_char",
         }
 
         def conv_formula(f):

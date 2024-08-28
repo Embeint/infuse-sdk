@@ -89,6 +89,19 @@
                 {"name": "shift", "type": "int32_t", "description": "Time shift (microseconds)", "display_postfix": "us", "conversion": {"m": 0.000001, "c": 0}}
             ]
         },
+        "6": {
+            "name": "REBOOT_INFO",
+            "description": "Information pertaining to the previous reboot",
+            "fields": [
+                {"name": "reason", "type": "uint8_t", "description": "Reboot reason (enum infuse_reboot_reason)"},
+                {"name": "hardware_flags", "type": "uint32_t", "description": "Hardware flags (hwinfo_get_reset_cause)"},
+                {"name": "count", "type": "uint32_t", "description": "Reboot counter"},
+                {"name": "uptime", "type": "uint32_t", "description": "Uptime before reboot (seconds)"},
+                {"name": "param_1", "type": "uint32_t", "description": "Program counter/Watchdog Info/Other"},
+                {"name": "param_2", "type": "uint32_t", "description": "Link Register/Watchdog Info/Other"},
+                {"name": "thread", "type": "char", "num": 8, "description": "Running thread at reboot"}
+            ]
+        },
         "10": {
             "name": "ACC_2G",
             "description": "Accelerometer +-2G",
