@@ -16,6 +16,7 @@
 #include <infuse/data_logger/logger.h>
 #include <infuse/data_logger/high_level/tdf.h>
 #include <infuse/drivers/imu.h>
+#include <infuse/lib/nrf_modem_monitor.h>
 #include <infuse/tdf/tdf.h>
 #include <infuse/zbus/channels.h>
 
@@ -340,6 +341,58 @@ ZTEST(task_tdf_logger, test_location)
 	zassert_equal(0, tdf_find_in_buf(&tdf, TDF_GCS_WGS84_LLHA, pkt));
 	zassert_equal(0, tdf.time);
 	net_buf_unref(pkt);
+}
+
+static struct signal_quality_info {
+	int rc;
+	int16_t rsrp;
+	int8_t rsrq;
+} signal_qual;
+
+void nrf_modem_monitor_network_state(struct nrf_modem_network_state *state)
+{
+	*state = (struct nrf_modem_network_state){0};
+}
+
+int nrf_modem_monitor_signal_quality(int16_t *rsrp, int8_t *rsrq)
+{
+	*rsrp = signal_qual.rsrp;
+	*rsrq = signal_qual.rsrq;
+	return signal_qual.rc;
+}
+
+ZTEST(task_tdf_logger, test_net_conn)
+{
+	struct k_fifo *tx_queue = epacket_dummmy_transmit_fifo_get();
+	struct tdf_parsed tdf;
+	struct net_buf *pkt;
+
+	zassert_not_null(tx_queue);
+
+	schedule.task_args.infuse.tdf_logger = (struct task_tdf_logger_args){
+		.loggers = TDF_DATA_LOGGER_SERIAL,
+		.tdfs = TASK_TDF_LOGGER_LOG_NET_CONN,
+	};
+
+	struct signal_quality_info iters[] = {
+		{-EAGAIN, 0, 0},
+		{0, INT16_MIN, INT8_MIN},
+		{0, -100, 10},
+		{0, -80, -10},
+	};
+
+	for (int i = 0; i < ARRAY_SIZE(iters); i++) {
+		signal_qual = iters[i];
+
+		/* Connection status should send */
+		task_schedule(&data);
+		pkt = net_buf_get(tx_queue, K_MSEC(100));
+		zassert_not_null(pkt);
+		net_buf_pull(pkt, sizeof(struct epacket_dummy_frame));
+		zassert_equal(0, tdf_find_in_buf(&tdf, TDF_LTE_CONN_STATUS, pkt));
+		zassert_equal(0, tdf.time);
+		net_buf_unref(pkt);
+	}
 }
 
 static void logger_before(void *fixture)
