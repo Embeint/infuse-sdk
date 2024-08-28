@@ -3,3 +3,11 @@
 config TDF
 	bool "TDF subsystem"
 	depends on NET_BUF
+
+if TDF
+
+config TDF_UTIL_REBOOT_INFO_LOG
+	bool
+	default y if INFUSE_COMMON_BOOT
+
+endif
