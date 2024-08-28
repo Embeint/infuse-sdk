@@ -62,7 +62,7 @@ ZTEST(time_sync_log, test_auto_log)
 	zassert_is_null(net_buf_get(sent_queue, K_MSEC(1)));
 
 	/* Configure automatic logging */
-	auto_time_sync_log_configure(TDF_DATA_LOGGER_SERIAL);
+	auto_time_sync_log_configure(TDF_DATA_LOGGER_SERIAL, AUTO_TIME_SYNC_LOG_SYNCS);
 
 	/* Jump forward in time, should see a TDF */
 	reference.ref += INFUSE_EPOCH_TIME_TICKS_PER_SEC;

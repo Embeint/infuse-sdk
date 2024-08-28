@@ -164,7 +164,7 @@ int main(void)
 			    TDF_DATA_LOGGER_SERIAL | TDF_DATA_LOGGER_UDP);
 
 	/* Configure event logging */
-	auto_time_sync_log_configure(STORAGE_LOGGER);
+	auto_time_sync_log_configure(STORAGE_LOGGER, AUTO_TIME_SYNC_LOG_SYNCS);
 
 #ifdef CONFIG_NETWORKING
 	conn_mgr_all_if_up(false);
