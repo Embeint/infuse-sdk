@@ -784,6 +784,36 @@ ZTEST(tdf, test_parse_missing_array_info)
 	zassert_equal(-EINVAL, rc);
 }
 
+ZTEST(tdf, test_tdf_parse_find_in_buf)
+{
+	struct tdf_buffer_state state;
+	struct tdf_acc_2g acc = {{1, 2, 3}};
+	struct tdf_gyr_125dps gyr = {{-1, -2, -3}};
+	struct tdf_parsed parsed;
+
+	net_buf_simple_init_with_data(&state.buf, buf, sizeof(buf));
+	tdf_buffer_state_reset(&state);
+
+	tdf_add(&state, TDF_ACC_2G, sizeof(acc), 1, 1000, 0, &acc);
+	tdf_add(&state, TDF_GYR_125DPS, sizeof(gyr), 1, 2000, 0, &gyr);
+
+	/* TDFs that don't exist in the buffer */
+	zassert_equal(-ENOMEM,
+		      tdf_parse_find_in_buf(state.buf.data, state.buf.len, TDF_ACC_4G, &parsed));
+	zassert_equal(-ENOMEM, tdf_parse_find_in_buf(state.buf.data, state.buf.len, 1234, &parsed));
+
+	/* TDFs that do exist in the buffer */
+	zassert_equal(0, tdf_parse_find_in_buf(state.buf.data, state.buf.len, TDF_ACC_2G, &parsed));
+	zassert_equal(1000, parsed.time);
+	zassert_equal(
+		0, tdf_parse_find_in_buf(state.buf.data, state.buf.len, TDF_GYR_125DPS, &parsed));
+	zassert_equal(2000, parsed.time);
+
+	/* Test corrupt buffer */
+	net_buf_simple_add_u8(&state.buf, 0x00);
+	zassert_equal(-ENOMEM, tdf_parse_find_in_buf(state.buf.data, state.buf.len, 1234, &parsed));
+}
+
 static bool test_data_init(const void *global_state)
 {
 	base_time = epoch_time_from(1000000, 0);
