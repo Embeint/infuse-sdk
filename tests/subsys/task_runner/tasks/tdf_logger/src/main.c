@@ -249,6 +249,11 @@ ZTEST(task_tdf_logger, test_ambient_env)
 	net_buf_unref(pkt);
 }
 
+struct tdf_accel_config {
+	uint8_t range;
+	uint16_t tdf_id;
+};
+
 ZTEST(task_tdf_logger, test_accelerometer)
 {
 	const struct zbus_channel *chan_imu = INFUSE_ZBUS_CHAN_GET(INFUSE_ZBUS_CHAN_IMU);
@@ -278,23 +283,33 @@ ZTEST(task_tdf_logger, test_accelerometer)
 	pkt = net_buf_get(tx_queue, K_MSEC(100));
 	zassert_is_null(pkt);
 
-	/* Publish data with accelerometer */
-	zassert_equal(0, zbus_chan_claim(chan_imu, K_NO_WAIT));
-	samples = chan_imu->message;
-	samples->accelerometer.num = 1;
-	samples->gyroscope.num = 0;
-	samples->magnetometer.num = 0;
-	zbus_chan_update_publish_metadata(chan_imu);
-	zassert_equal(0, zbus_chan_finish(chan_imu));
+	struct tdf_accel_config configs[] = {
+		{2, TDF_ACC_2G},
+		{4, TDF_ACC_4G},
+		{8, TDF_ACC_8G},
+		{16, TDF_ACC_16G},
+	};
 
-	/* Accelerometer data should send now */
-	task_schedule(&data);
-	pkt = net_buf_get(tx_queue, K_MSEC(100));
-	zassert_not_null(pkt);
-	net_buf_pull(pkt, sizeof(struct epacket_dummy_frame));
-	zassert_equal(0, tdf_find_in_buf(&tdf, TDF_ACC_4G, pkt));
-	zassert_equal(0, tdf.time);
-	net_buf_unref(pkt);
+	for (int i = 0; i < ARRAY_SIZE(configs); i++) {
+		/* Publish data with accelerometer */
+		zassert_equal(0, zbus_chan_claim(chan_imu, K_NO_WAIT));
+		samples = chan_imu->message;
+		samples->accelerometer.num = 1;
+		samples->accelerometer.full_scale_range = configs[i].range;
+		samples->gyroscope.num = 0;
+		samples->magnetometer.num = 0;
+		zbus_chan_update_publish_metadata(chan_imu);
+		zassert_equal(0, zbus_chan_finish(chan_imu));
+
+		/* Accelerometer data should send now */
+		task_schedule(&data);
+		pkt = net_buf_get(tx_queue, K_MSEC(100));
+		zassert_not_null(pkt);
+		net_buf_pull(pkt, sizeof(struct epacket_dummy_frame));
+		zassert_equal(0, tdf_find_in_buf(&tdf, configs[i].tdf_id, pkt));
+		zassert_equal(0, tdf.time);
+		net_buf_unref(pkt);
+	}
 
 	/* Trying to send while channel is held should fail */
 	zassert_equal(0, zbus_chan_claim(chan_imu, K_NO_WAIT));

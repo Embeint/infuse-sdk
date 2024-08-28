@@ -19,6 +19,7 @@
 #include <infuse/fs/kv_types.h>
 #include <infuse/tdf/tdf.h>
 #include <infuse/tdf/definitions.h>
+#include <infuse/tdf/util.h>
 #include <infuse/time/epoch.h>
 #include <infuse/zbus/channels.h>
 
@@ -124,6 +125,7 @@ static void log_accel(uint8_t loggers, uint64_t timestamp)
 	struct imu_sample_array *imu;
 	struct imu_sample *sample;
 	struct tdf_struct_xyz_16bit tdf;
+	uint16_t tdf_id;
 
 	if (zbus_chan_publish_count(C_GET(INFUSE_ZBUS_CHAN_IMU)) == 0) {
 		return;
@@ -140,6 +142,7 @@ static void log_accel(uint8_t loggers, uint64_t timestamp)
 	}
 	/* Extract sample into TDF */
 	sample = &imu->samples[imu->accelerometer.offset + imu->accelerometer.num - 1];
+	tdf_id = tdf_id_from_accelerometer_range(imu->accelerometer.full_scale_range);
 	tdf.x = sample->x;
 	tdf.y = sample->y;
 	tdf.z = sample->z;
@@ -147,7 +150,7 @@ static void log_accel(uint8_t loggers, uint64_t timestamp)
 	/* Release channel */
 	zbus_chan_finish(C_GET(INFUSE_ZBUS_CHAN_IMU));
 	/* Add to specified loggers */
-	tdf_data_logger_log(loggers, TDF_ACC_4G, sizeof(tdf), timestamp, &tdf);
+	tdf_data_logger_log(loggers, tdf_id, sizeof(tdf), timestamp, &tdf);
 #endif
 }
 
