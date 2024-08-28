@@ -19,8 +19,10 @@
 #include <infuse/fs/kv_store.h>
 #include <infuse/fs/kv_types.h>
 #include <infuse/reboot.h>
+#include <infuse/tdf/tdf.h>
+#include <infuse/tdf/util.h>
 
-struct tdf_buffer_state {
+struct test_tdf_buffer_state {
 	/* Current buffer time */
 	uint64_t time;
 	/* Buffer information */
@@ -29,7 +31,7 @@ struct tdf_buffer_state {
 struct logger_data {
 	uint32_t guard_head;
 	struct k_sem lock;
-	struct tdf_buffer_state tdf_state;
+	struct test_tdf_buffer_state tdf_state;
 	uint8_t full_block_write;
 	uint8_t block_overhead;
 	uint8_t tdf_buffer[DATA_LOGGER_MAX_SIZE(DT_NODELABEL(data_logger_epacket))];
@@ -70,13 +72,32 @@ static void log_corrupt_and_reboot(const struct device *tdf_logger, int corrupt_
 	}
 
 	/* Reboot */
-	infuse_reboot(INFUSE_REBOOT_UNKNOWN, 0, 0);
+	infuse_reboot(INFUSE_REBOOT_RPC, 0, 0);
+}
+
+static void tdf_reboot_info_log_expect(uint8_t reason)
+{
+	struct k_fifo *sent_queue = epacket_dummmy_transmit_fifo_get();
+	struct tdf_reboot_info *info;
+	struct tdf_parsed tdf;
+	struct net_buf *buf;
+
+	tdf_reboot_info_log(TDF_DATA_LOGGER_SERIAL);
+	tdf_data_logger_flush(TDF_DATA_LOGGER_SERIAL);
+
+	buf = net_buf_get(sent_queue, K_MSEC(100));
+	zassert_not_null(buf);
+	net_buf_pull(buf, sizeof(struct epacket_dummy_frame));
+	zassert_equal(0, tdf_parse_find_in_buf(buf->data, buf->len, TDF_REBOOT_INFO, &tdf));
+	info = tdf.data;
+	zassert_equal(reason, info->reason);
+	net_buf_unref(buf);
 }
 
 ZTEST(tdf_data_logger_recovery, test_logger_recovery)
 {
 	KV_KEY_TYPE(KV_KEY_REBOOTS) reboots;
-	const struct device *tdf_logger = DEVICE_DT_GET(DT_NODELABEL(tdf_logger_epacket));
+	const struct device *tdf_logger = DEVICE_DT_GET(DT_NODELABEL(tdf_logger_serial));
 	struct k_fifo *sent_queue = epacket_dummmy_transmit_fifo_get();
 	struct net_buf *buf;
 	int rc;
@@ -92,6 +113,9 @@ ZTEST(tdf_data_logger_recovery, test_logger_recovery)
 		zassert_equal(0, tdf_data_logger_flush_dev(tdf_logger));
 		zassert_is_null(net_buf_get(sent_queue, K_MSEC(100)));
 
+		/* Check we can log the reboot */
+		tdf_reboot_info_log_expect(INFUSE_REBOOT_UNKNOWN);
+
 		/* Log TDFs and reboot */
 		log_corrupt_and_reboot(tdf_logger, -1);
 		zassert_unreachable();
@@ -102,6 +126,9 @@ ZTEST(tdf_data_logger_recovery, test_logger_recovery)
 		zassert_not_null(buf);
 		zassert_equal(sizeof(struct epacket_dummy_frame) + 22, buf->len);
 		net_buf_unref(buf);
+
+		/* Next reboot should detect the RPC reboot type */
+		tdf_reboot_info_log_expect(INFUSE_REBOOT_RPC);
 
 		void tdf_data_logger_lock(const struct device *dev);
 
