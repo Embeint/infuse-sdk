@@ -21,6 +21,7 @@
 #include <infuse/epacket/packet.h>
 #include <infuse/data_logger/high_level/tdf.h>
 #include <infuse/tdf/definitions.h>
+#include <infuse/tdf/util.h>
 
 #include <infuse/task_runner/runner.h>
 #include <infuse/task_runner/tasks/infuse_tasks.h>
@@ -157,6 +158,10 @@ int main(void)
 {
 	/* Start the watchdog */
 	(void)infuse_watchdog_start();
+
+	/* Log reboot events */
+	tdf_reboot_info_log(TDF_DATA_LOGGER_REMOVABLE | TDF_DATA_LOGGER_BT_ADV |
+			    TDF_DATA_LOGGER_SERIAL | TDF_DATA_LOGGER_UDP);
 
 	/* Configure event logging */
 	auto_time_sync_log_configure(STORAGE_LOGGER);
