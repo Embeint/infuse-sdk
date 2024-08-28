@@ -14,6 +14,7 @@
 #include <infuse/data_logger/logger.h>
 #include <infuse/data_logger/high_level/tdf.h>
 #include <infuse/drivers/imu.h>
+#include <infuse/lib/nrf_modem_monitor.h>
 #include <infuse/fs/kv_store.h>
 #include <infuse/fs/kv_types.h>
 #include <infuse/tdf/tdf.h>
@@ -150,12 +151,44 @@ static void log_accel(uint8_t loggers, uint64_t timestamp)
 #endif
 }
 
+static void log_network_connection(uint8_t loggers, uint64_t timestamp)
+{
+#ifdef CONFIG_INFUSE_NRF_MODEM_MONITOR
+	struct tdf_lte_conn_status tdf;
+	struct nrf_modem_network_state state;
+	int16_t rsrp;
+	int8_t rsrq;
+
+	/* Query LTE network state */
+	nrf_modem_monitor_network_state(&state);
+	tdf.cell.mcc = state.cell.mcc;
+	tdf.cell.mnc = state.cell.mnc;
+	tdf.cell.tac = state.cell.tac;
+	tdf.cell.eci = state.cell.id;
+	tdf.status = state.nw_reg_status;
+	tdf.tech = state.lte_mode;
+	tdf.earfcn = state.cell.earfcn;
+	tdf.rsrp = UINT8_MAX;
+	tdf.rsrq = INT8_MIN;
+	if (nrf_modem_monitor_signal_quality(&rsrp, &rsrq) == 0) {
+		if (rsrp != INT16_MIN) {
+			tdf.rsrp = 0 - rsrp;
+		}
+		if (rsrq != INT8_MIN) {
+			tdf.rsrq = rsrq;
+		}
+	}
+	/* Add to specified loggers */
+	tdf_data_logger_log(loggers, TDF_LTE_CONN_STATUS, sizeof(tdf), timestamp, &tdf);
+#endif
+}
+
 void task_tdf_logger_fn(struct k_work *work)
 {
 	struct task_data *task = task_data_from_work(work);
 	const struct task_schedule *sch = task_schedule_from_data(task);
 	const struct task_tdf_logger_args *args = &sch->task_args.infuse.tdf_logger;
-	bool announce, battery, ambient_env, location, accel;
+	bool announce, battery, ambient_env, location, accel, net;
 	uint64_t log_timestamp;
 	uint32_t delay_ms;
 
@@ -177,10 +210,11 @@ void task_tdf_logger_fn(struct k_work *work)
 	ambient_env = args->tdfs & TASK_TDF_LOGGER_LOG_AMBIENT_ENV;
 	location = args->tdfs & TASK_TDF_LOGGER_LOG_LOCATION;
 	accel = args->tdfs & TASK_TDF_LOGGER_LOG_ACCEL;
+	net = args->tdfs & TASK_TDF_LOGGER_LOG_NET_CONN;
 	log_timestamp = (args->flags & TASK_TDF_LOGGER_FLAGS_NO_FLUSH) ? epoch_time_now() : 0;
 
-	LOG_INF("Log: %02X Ann: %d Bat: %d Env: %d Loc: %d Acc: %d", args->loggers, announce,
-		battery, ambient_env, location, accel);
+	LOG_INF("Log: %02X Ann: %d Bat: %d Env: %d Loc: %d Acc: %d Net: %d", args->loggers,
+		announce, battery, ambient_env, location, accel, net);
 	if (announce) {
 		log_announce(args->loggers, log_timestamp);
 	}
@@ -195,6 +229,9 @@ void task_tdf_logger_fn(struct k_work *work)
 	}
 	if (location) {
 		log_location(args->loggers, log_timestamp);
+	}
+	if (net) {
+		log_network_connection(args->loggers, log_timestamp);
 	}
 
 	if (!(args->flags & TASK_TDF_LOGGER_FLAGS_NO_FLUSH)) {
