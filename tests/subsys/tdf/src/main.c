@@ -13,6 +13,7 @@
 #include <zephyr/random/random.h>
 
 #include <infuse/tdf/tdf.h>
+#include <infuse/tdf/util.h>
 #include <infuse/time/epoch.h>
 
 struct tdf_test_case {
@@ -791,3 +792,22 @@ static bool test_data_init(const void *global_state)
 }
 
 ZTEST_SUITE(tdf, test_data_init, NULL, NULL, NULL, NULL);
+
+ZTEST(tdf_util, test_acc_range_to_tdf)
+{
+	zassert_equal(TDF_ACC_2G, tdf_id_from_accelerometer_range(2));
+	zassert_equal(TDF_ACC_4G, tdf_id_from_accelerometer_range(4));
+	zassert_equal(TDF_ACC_8G, tdf_id_from_accelerometer_range(8));
+	zassert_equal(TDF_ACC_16G, tdf_id_from_accelerometer_range(16));
+}
+
+ZTEST(tdf_util, test_gyro_range_to_tdf)
+{
+	zassert_equal(TDF_GYR_125DPS, tdf_id_from_gyroscope_range(125));
+	zassert_equal(TDF_GYR_250DPS, tdf_id_from_gyroscope_range(250));
+	zassert_equal(TDF_GYR_500DPS, tdf_id_from_gyroscope_range(500));
+	zassert_equal(TDF_GYR_1000DPS, tdf_id_from_gyroscope_range(1000));
+	zassert_equal(TDF_GYR_2000DPS, tdf_id_from_gyroscope_range(2000));
+}
+
+ZTEST_SUITE(tdf_util, NULL, NULL, NULL, NULL, NULL);
