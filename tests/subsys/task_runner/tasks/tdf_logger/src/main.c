@@ -39,22 +39,6 @@ ZBUS_CHAN_ID_DEFINE(INFUSE_ZBUS_NAME(INFUSE_ZBUS_CHAN_IMU), INFUSE_ZBUS_CHAN_IMU
 		    struct imu_sample_container, NULL, NULL, ZBUS_OBSERVERS_EMPTY,
 		    ZBUS_MSG_INIT(0));
 
-int tdf_find_in_buf(struct tdf_parsed *tdf, uint16_t tdf_id, struct net_buf *buf)
-{
-	struct tdf_buffer_state state;
-
-	tdf_parse_start(&state, buf->data, buf->len);
-	while (true) {
-		if (tdf_parse(&state, tdf) < 0) {
-			return -ENOMEM;
-		}
-		if (tdf->tdf_id == tdf_id) {
-			return 0;
-		}
-	}
-	return -ENOMEM;
-}
-
 static void task_schedule(struct task_data *data)
 {
 	data->schedule_idx = 0;
@@ -106,10 +90,11 @@ ZTEST(task_tdf_logger, test_log_before_data)
 	pkt = net_buf_get(tx_queue, K_MSEC(100));
 	zassert_not_null(pkt);
 	net_buf_pull(pkt, sizeof(struct epacket_dummy_frame));
-	zassert_equal(0, tdf_find_in_buf(&tdf, TDF_ANNOUNCE, pkt));
+	zassert_equal(0, tdf_parse_find_in_buf(pkt->data, pkt->len, TDF_ANNOUNCE, &tdf));
 	zassert_equal(0, tdf.time);
-	zassert_equal(-ENOMEM, tdf_find_in_buf(&tdf, TDF_BATTERY_STATE, pkt));
-	zassert_equal(-ENOMEM, tdf_find_in_buf(&tdf, TDF_AMBIENT_TEMP_PRES_HUM, pkt));
+	zassert_equal(-ENOMEM, tdf_parse_find_in_buf(pkt->data, pkt->len, TDF_BATTERY_STATE, &tdf));
+	zassert_equal(-ENOMEM,
+		      tdf_parse_find_in_buf(pkt->data, pkt->len, TDF_AMBIENT_TEMP_PRES_HUM, &tdf));
 	net_buf_unref(pkt);
 }
 
@@ -136,10 +121,11 @@ ZTEST(task_tdf_logger, test_no_flush)
 	pkt = net_buf_get(tx_queue, K_MSEC(100));
 	zassert_not_null(pkt);
 	net_buf_pull(pkt, sizeof(struct epacket_dummy_frame));
-	zassert_equal(0, tdf_find_in_buf(&tdf, TDF_ANNOUNCE, pkt));
+	zassert_equal(0, tdf_parse_find_in_buf(pkt->data, pkt->len, TDF_ANNOUNCE, &tdf));
 	zassert_not_equal(0, tdf.time);
-	zassert_equal(-ENOMEM, tdf_find_in_buf(&tdf, TDF_BATTERY_STATE, pkt));
-	zassert_equal(-ENOMEM, tdf_find_in_buf(&tdf, TDF_AMBIENT_TEMP_PRES_HUM, pkt));
+	zassert_equal(-ENOMEM, tdf_parse_find_in_buf(pkt->data, pkt->len, TDF_BATTERY_STATE, &tdf));
+	zassert_equal(-ENOMEM,
+		      tdf_parse_find_in_buf(pkt->data, pkt->len, TDF_AMBIENT_TEMP_PRES_HUM, &tdf));
 	net_buf_unref(pkt);
 }
 
@@ -216,7 +202,7 @@ ZTEST(task_tdf_logger, test_battery)
 	pkt = net_buf_get(tx_queue, K_MSEC(100));
 	zassert_not_null(pkt);
 	net_buf_pull(pkt, sizeof(struct epacket_dummy_frame));
-	zassert_equal(0, tdf_find_in_buf(&tdf, TDF_BATTERY_STATE, pkt));
+	zassert_equal(0, tdf_parse_find_in_buf(pkt->data, pkt->len, TDF_BATTERY_STATE, &tdf));
 	zassert_equal(0, tdf.time);
 	net_buf_unref(pkt);
 }
@@ -244,7 +230,8 @@ ZTEST(task_tdf_logger, test_ambient_env)
 	pkt = net_buf_get(tx_queue, K_MSEC(100));
 	zassert_not_null(pkt);
 	net_buf_pull(pkt, sizeof(struct epacket_dummy_frame));
-	zassert_equal(0, tdf_find_in_buf(&tdf, TDF_AMBIENT_TEMP_PRES_HUM, pkt));
+	zassert_equal(0,
+		      tdf_parse_find_in_buf(pkt->data, pkt->len, TDF_AMBIENT_TEMP_PRES_HUM, &tdf));
 	zassert_equal(0, tdf.time);
 	net_buf_unref(pkt);
 }
@@ -306,7 +293,8 @@ ZTEST(task_tdf_logger, test_accelerometer)
 		pkt = net_buf_get(tx_queue, K_MSEC(100));
 		zassert_not_null(pkt);
 		net_buf_pull(pkt, sizeof(struct epacket_dummy_frame));
-		zassert_equal(0, tdf_find_in_buf(&tdf, configs[i].tdf_id, pkt));
+		zassert_equal(0,
+			      tdf_parse_find_in_buf(pkt->data, pkt->len, configs[i].tdf_id, &tdf));
 		zassert_equal(0, tdf.time);
 		net_buf_unref(pkt);
 	}
@@ -353,7 +341,7 @@ ZTEST(task_tdf_logger, test_location)
 	pkt = net_buf_get(tx_queue, K_MSEC(100));
 	zassert_not_null(pkt);
 	net_buf_pull(pkt, sizeof(struct epacket_dummy_frame));
-	zassert_equal(0, tdf_find_in_buf(&tdf, TDF_GCS_WGS84_LLHA, pkt));
+	zassert_equal(0, tdf_parse_find_in_buf(pkt->data, pkt->len, TDF_GCS_WGS84_LLHA, &tdf));
 	zassert_equal(0, tdf.time);
 	net_buf_unref(pkt);
 }
@@ -404,7 +392,8 @@ ZTEST(task_tdf_logger, test_net_conn)
 		pkt = net_buf_get(tx_queue, K_MSEC(100));
 		zassert_not_null(pkt);
 		net_buf_pull(pkt, sizeof(struct epacket_dummy_frame));
-		zassert_equal(0, tdf_find_in_buf(&tdf, TDF_LTE_CONN_STATUS, pkt));
+		zassert_equal(
+			0, tdf_parse_find_in_buf(pkt->data, pkt->len, TDF_LTE_CONN_STATUS, &tdf));
 		zassert_equal(0, tdf.time);
 		net_buf_unref(pkt);
 	}
