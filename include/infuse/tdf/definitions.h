@@ -49,6 +49,26 @@ struct tdf_struct_gcs_location {
 	int32_t height;
 } __packed;
 
+/* LTE cell ID (Local) */
+struct tdf_struct_lte_cell_id_local {
+	/* E-UTRAN Cell ID */
+	uint32_t eci;
+	/* Tracking Area Code */
+	uint16_t tac;
+} __packed;
+
+/* LTE cell ID (Global) */
+struct tdf_struct_lte_cell_id_global {
+	/* Mobile Country Code */
+	uint16_t mcc;
+	/* Mobile Network Code */
+	uint16_t mnc;
+	/* E-UTRAN Cell ID */
+	uint32_t eci;
+	/* Tracking Area Code */
+	uint16_t tac;
+} __packed;
+
 /**
  * @}
  */
@@ -245,6 +265,22 @@ struct tdf_ubx_nav_pvt {
 	uint16_t mag_acc;
 } __packed;
 
+/* Information on service cell and registration status */
+struct tdf_lte_conn_status {
+	/* Global LTE cell identifier */
+	struct tdf_struct_lte_cell_id_global cell;
+	/* Evolved Absolute Radio Frequency Channel (E-ARFCN) */
+	uint32_t earfcn;
+	/* Registration status (See AT+CEREG) */
+	uint8_t status;
+	/* Access Technology (7 = LTE-M, 9 = NB-IoT) */
+	uint8_t tech;
+	/* Reference signal received power (255 = Unknown) */
+	uint8_t rsrp;
+	/* Reference signal received quality (-128 = Unknown) */
+	int8_t rsrq;
+} __packed;
+
 /* Example array type */
 struct tdf_array_type {
 	/* I am an array of length 4 */
@@ -269,6 +305,7 @@ enum tdf_builtin_id {
 	TDF_GYR_2000DPS = 18,
 	TDF_GCS_WGS84_LLHA = 19,
 	TDF_UBX_NAV_PVT = 20,
+	TDF_LTE_CONN_STATUS = 21,
 	TDF_ARRAY_TYPE = 100,
 	/* End of builtin TDF range */
 	TDF_BUILTIN_END = 1024,
@@ -292,6 +329,7 @@ enum tdf_builtin_size {
 	_TDF_GYR_2000DPS_SIZE = sizeof(struct tdf_gyr_2000dps),
 	_TDF_GCS_WGS84_LLHA_SIZE = sizeof(struct tdf_gcs_wgs84_llha),
 	_TDF_UBX_NAV_PVT_SIZE = sizeof(struct tdf_ubx_nav_pvt),
+	_TDF_LTE_CONN_STATUS_SIZE = sizeof(struct tdf_lte_conn_status),
 	_TDF_ARRAY_TYPE_SIZE = sizeof(struct tdf_array_type),
 };
 
