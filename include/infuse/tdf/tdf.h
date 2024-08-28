@@ -120,6 +120,34 @@ static inline void tdf_parse_start(struct tdf_buffer_state *state, void *data, s
 int tdf_parse(struct tdf_buffer_state *state, struct tdf_parsed *parsed);
 
 /**
+ * @brief Find the first instance of a specific TDF in a memory buffer
+ *
+ * @param data Pointer to TDF memory buffer
+ * @param size Size of TDF memory buffer
+ * @param tdf_id TDF ID to search for
+ * @param parsed Storage for TDF info
+ *
+ * @retval 0 On success
+ * @retval -ENOMEM If buffer consumed without finding the TDF
+ */
+static inline int tdf_parse_find_in_buf(void *data, size_t size, uint16_t tdf_id,
+					struct tdf_parsed *parsed)
+{
+	struct tdf_buffer_state state;
+
+	tdf_parse_start(&state, data, size);
+	while (true) {
+		if (tdf_parse(&state, parsed) < 0) {
+			return -ENOMEM;
+		}
+		if (parsed->tdf_id == tdf_id) {
+			return 0;
+		}
+	}
+	return -ENOMEM;
+}
+
+/**
  * @}
  */
 
