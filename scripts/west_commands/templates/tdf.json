@@ -24,6 +24,22 @@
                 {"name": "longitude", "type": "int32_t", "description": "Longitude degrees (scale 1e7)", "display_postfix": "deg", "conversion": {"m": 0.0000001, "c": 0}},
                 {"name": "height", "type": "int32_t", "description": "Height above reference ellipsoid (mm)", "display_postfix": "m", "conversion": {"m": 0.001, "c": 0}}
             ]
+        },
+        "tdf_struct_lte_cell_id_local": {
+            "description": "LTE cell ID (Local)",
+            "fields": [
+                {"name": "eci", "type": "uint32_t", "description": "E-UTRAN Cell ID"},
+                {"name": "tac", "type": "uint16_t", "description": "Tracking Area Code"}
+            ]
+        },
+        "tdf_struct_lte_cell_id_global": {
+            "description": "LTE cell ID (Global)",
+            "fields": [
+                {"name": "mcc", "type": "uint16_t", "description": "Mobile Country Code"},
+                {"name": "mnc", "type": "uint16_t", "description": "Mobile Network Code"},
+                {"name": "eci", "type": "uint32_t", "description": "E-UTRAN Cell ID"},
+                {"name": "tac", "type": "uint16_t", "description": "Tracking Area Code"}
+            ]
         }
     },
     "definitions": {
@@ -182,6 +198,18 @@
                 {"name": "head_veh", "type": "int32_t", "description": "Heading of vehicle (2-D)", "display_postfix": "deg", "conversion": {"m": 0.00001, "c": 0}},
                 {"name": "mag_dec", "type": "int16_t", "description": "Magnetic declination", "display_postfix": "deg", "conversion": {"m": 0.01, "c": 0}},
                 {"name": "mag_acc", "type": "uint16_t", "description": "Magnetic declination accuracy", "display_postfix": "deg", "conversion": {"m": 0.01, "c": 0}}
+            ]
+        },
+        "21": {
+            "name": "LTE_CONN_STATUS",
+            "description": "Information on service cell and registration status",
+            "fields": [
+                {"name": "cell", "type": "struct tdf_struct_lte_cell_id_global", "description": "Global LTE cell identifier"},
+                {"name": "earfcn", "type": "uint32_t", "description": "Evolved Absolute Radio Frequency Channel (E-ARFCN)"},
+                {"name": "status", "type": "uint8_t", "description": "Registration status (See AT+CEREG)"},
+                {"name": "tech", "type": "uint8_t", "description": "Access Technology (7 = LTE-M, 9 = NB-IoT)"},
+                {"name": "rsrp", "type": "uint8_t", "description": "Reference signal received power (255 = Unknown)", "display_postfix": "dBm", "conversion": {"m": -1, "c": 0}},
+                {"name": "rsrq", "type": "int8_t", "description": "Reference signal received quality (-128 = Unknown)", "display_postfix": "dB"}
             ]
         },
         "100": {
