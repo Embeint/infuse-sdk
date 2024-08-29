@@ -34,6 +34,19 @@ static sys_slist_t cb_list;
 
 LOG_MODULE_REGISTER(epoch_time, LOG_LEVEL_INF);
 
+#ifdef CONFIG_ZTEST
+
+void epoch_time_reset(void)
+{
+	infuse_sync_state.base.local = 0;
+	infuse_sync_state.base.ref = JAN_01_01_2020;
+	infuse_sync_state.skew = 1.0f;
+	infuse_time_source = TIME_SOURCE_NONE;
+	sys_slist_init(&cb_list);
+}
+
+#endif /* CONFIG_ZTEST */
+
 void epoch_time_register_callback(struct epoch_time_cb *cb)
 {
 	sys_slist_append(&cb_list, &cb->node);
