@@ -163,8 +163,9 @@ int main(void)
 	tdf_reboot_info_log(TDF_DATA_LOGGER_REMOVABLE | TDF_DATA_LOGGER_BT_ADV |
 			    TDF_DATA_LOGGER_SERIAL | TDF_DATA_LOGGER_UDP);
 
-	/* Configure event logging */
-	auto_time_sync_log_configure(STORAGE_LOGGER, AUTO_TIME_SYNC_LOG_SYNCS);
+	/* Configure time event logging */
+	auto_time_sync_log_configure(STORAGE_LOGGER,
+				     AUTO_TIME_SYNC_LOG_SYNCS | AUTO_TIME_SYNC_LOG_REBOOT_ON_SYNC);
 
 #ifdef CONFIG_NETWORKING
 	conn_mgr_all_if_up(false);
