@@ -1,0 +1,6 @@
+# Override symbols for testing
+
+config TDF_UTIL_REBOOT_INFO_LOG
+	default y
+
+source "Kconfig.zephyr"
