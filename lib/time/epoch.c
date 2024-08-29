@@ -49,6 +49,11 @@ void epoch_time_reset(void)
 
 void epoch_time_register_callback(struct epoch_time_cb *cb)
 {
+	bool found;
+	/* Ensure callbacks aren't registered twice */
+	found = sys_slist_find_and_remove(&cb_list, &cb->node);
+	__ASSERT(found == false, "Callback %p added twice", cb);
+	/* Append to list */
 	sys_slist_append(&cb_list, &cb->node);
 }
 
