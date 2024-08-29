@@ -28,6 +28,11 @@ extern "C" {
 enum {
 	/* Automatically log time sync events */
 	AUTO_TIME_SYNC_LOG_SYNCS = BIT(0),
+	/* Automatically log reboot information if the application goes from no time source
+	 * knowledge to some time source knowledge. This can be used to get an accurate time of the
+	 * reboot even if the time knowledge is delayed.
+	 */
+	AUTO_TIME_SYNC_LOG_REBOOT_ON_SYNC = BIT(1),
 };
 
 /**

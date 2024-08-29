@@ -9,7 +9,9 @@
 #include <infuse/auto/time_sync_log.h>
 #include <infuse/data_logger/high_level/tdf.h>
 #include <infuse/tdf/definitions.h>
+#include <infuse/tdf/util.h>
 #include <infuse/time/epoch.h>
+#include <infuse/reboot.h>
 
 static struct auto_time_sync_state {
 	struct epoch_time_cb callback;
@@ -42,10 +44,23 @@ static void reference_time_updated(enum epoch_time_source source, struct timeuti
 		tdf_data_logger_log(log_state->logger_mask, TDF_TIME_SYNC, sizeof(tdf_sync),
 				    epoch_time_now(), &tdf_sync);
 	}
+
+	if (log_state->flags & AUTO_TIME_SYNC_LOG_REBOOT_ON_SYNC) {
+		/* Log the reboot again now we know the time */
+		tdf_reboot_info_log(log_state->logger_mask);
+		/* Don't run again */
+		log_state->flags &= ~AUTO_TIME_SYNC_LOG_REBOOT_ON_SYNC;
+	}
 }
 
 void auto_time_sync_log_configure(uint8_t tdf_logger_mask, uint8_t flags)
 {
+	/* Check if time is currently known */
+	if (epoch_time_trusted_source(epoch_time_get_source(), true)) {
+		/* Time is already known, no need to re-log reboot events */
+		flags &= ~AUTO_TIME_SYNC_LOG_REBOOT_ON_SYNC;
+	}
+
 	state.callback.reference_time_updated = reference_time_updated;
 	state.callback.user_ctx = &state;
 	state.logger_mask = tdf_logger_mask;
