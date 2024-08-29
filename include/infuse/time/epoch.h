@@ -300,6 +300,15 @@ uint32_t epoch_time_reference_age(void);
 int epoch_time_reference_shift(const struct timeutil_sync_instant *ref_a,
 			       const struct timeutil_sync_instant *ref_b, int64_t *epoch_shift);
 
+#ifdef CONFIG_ZTEST
+
+/**
+ * @brief Reset time knowledge to default
+ */
+void epoch_time_reset(void);
+
+#endif /* CONFIG_ZTEST */
+
 /* Time conversion functions */
 #include "epoch_units.h"
 
