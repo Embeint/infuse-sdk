@@ -59,7 +59,11 @@ static inline struct infuse_version application_version_get(void)
 		.major = APP_VERSION_MAJOR,
 		.minor = APP_VERSION_MINOR,
 		.revision = APP_PATCHLEVEL,
+#ifdef APP_GIT_COMMIT_HASH_SHORT
+		.build_num = APP_GIT_COMMIT_HASH_SHORT,
+#else
 		.build_num = APP_TWEAK,
+#endif
 	};
 }
 
