@@ -6,7 +6,7 @@
                 {"name": "major", "type": "uint8_t"},
                 {"name": "minor", "type": "uint8_t"},
                 {"name": "revision", "type": "uint16_t"},
-                {"name": "build_num", "type": "uint32_t"}
+                {"name": "build_num", "type": "uint32_t", "display_fmt": "hex"}
             ]
         },
         "tdf_struct_xyz_16bit": {
@@ -49,11 +49,11 @@
             "fields": [
                 {"name": "application", "type": "uint32_t", "description": "Unique application ID"},
                 {"name": "version", "type": "struct tdf_struct_mcuboot_img_sem_ver", "description": "Running application version"},
-                {"name": "kv_crc", "type": "uint32_t", "description": "Key-Value store reflect global CRC"},
+                {"name": "kv_crc", "type": "uint32_t", "description": "Key-Value store reflect global CRC", "display_fmt": "hex"},
                 {"name": "blocks", "type": "uint32_t", "description": "Logger blocks written"},
                 {"name": "uptime", "type": "uint32_t", "description": "Uptime in seconds"},
                 {"name": "reboots", "type": "uint16_t", "description": "Reboot counter"},
-                {"name": "flags", "type": "uint8_t", "description": "Flags (BIT(0) == SD blocks)"}
+                {"name": "flags", "type": "uint8_t", "description": "Flags (BIT(0) == SD blocks)", "display_fmt": "hex"}
             ]
         },
         "2": {
@@ -94,11 +94,11 @@
             "description": "Information pertaining to the previous reboot",
             "fields": [
                 {"name": "reason", "type": "uint8_t", "description": "Reboot reason (enum infuse_reboot_reason)"},
-                {"name": "hardware_flags", "type": "uint32_t", "description": "Hardware flags (hwinfo_get_reset_cause)"},
+                {"name": "hardware_flags", "type": "uint32_t", "description": "Hardware flags (hwinfo_get_reset_cause)", "display_fmt": "hex"},
                 {"name": "count", "type": "uint32_t", "description": "Reboot counter"},
                 {"name": "uptime", "type": "uint32_t", "description": "Uptime before reboot (seconds)"},
-                {"name": "param_1", "type": "uint32_t", "description": "Program counter/Watchdog Info/Other"},
-                {"name": "param_2", "type": "uint32_t", "description": "Link Register/Watchdog Info/Other"},
+                {"name": "param_1", "type": "uint32_t", "description": "Program counter/Watchdog Info/Other", "display_fmt": "hex"},
+                {"name": "param_2", "type": "uint32_t", "description": "Link Register/Watchdog Info/Other", "display_fmt": "hex"},
                 {"name": "thread", "type": "char", "num": 8, "description": "Running thread at reboot"}
             ]
         },
@@ -185,12 +185,12 @@
                 {"name": "hour", "type": "uint8_t", "description": "Hour of day, range 0..23 (UTC)"},
                 {"name": "min", "type": "uint8_t", "description": "Minute of hour, range 0..59 (UTC)"},
                 {"name": "sec", "type": "uint8_t", "description": "Seconds of minute, range 0..60 (UTC)"},
-                {"name": "valid", "type": "uint8_t", "description": "Validity flags"},
+                {"name": "valid", "type": "uint8_t", "description": "Validity flags", "display_fmt": "hex"},
                 {"name": "t_acc", "type": "uint32_t", "description": "Time accuracy estimate (UTC)", "display_postfix": "ns"},
                 {"name": "nano", "type": "int32_t", "description": "Fraction of second, range -1e9 .. 1e9 (UTC)", "display_postfix": "ns"},
-                {"name": "fix_type", "type": "uint8_t", "description": "GNSSfix Type"},
-                {"name": "flags", "type": "uint8_t", "description": "Fix status flags"},
-                {"name": "flags2", "type": "uint8_t", "description": "Additional flags"},
+                {"name": "fix_type", "type": "uint8_t", "description": "GNSS fix Type"},
+                {"name": "flags", "type": "uint8_t", "description": "Fix status flags", "display_fmt": "hex"},
+                {"name": "flags2", "type": "uint8_t", "description": "Additional flags", "display_fmt": "hex"},
                 {"name": "num_sv", "type": "uint8_t", "description": "Number of satellites used in Nav Solution"},
                 {"name": "lon", "type": "int32_t", "description": "Longitude", "display_postfix": "deg", "conversion": {"m": 0.0000001, "c": 0}},
                 {"name": "lat", "type": "int32_t", "description": "Latitude", "display_postfix": "deg", "conversion": {"m": 0.0000001, "c": 0}},
@@ -206,7 +206,7 @@
                 {"name": "s_acc", "type": "uint32_t", "description": "Speed accuracy estimate", "display_postfix": "m/s", "conversion": {"m": 0.001, "c": 0}},
                 {"name": "head_acc", "type": "uint32_t", "description": "Heading accuracy estimate (both motion and vehicle)", "display_postfix": "deg", "conversion": {"m": 0.00001, "c": 0}},
                 {"name": "p_dop", "type": "uint16_t", "description": "Position DOP", "conversion": {"m": 0.01, "c": 0}},
-                {"name": "flags3", "type": "uint16_t", "description": "Additional flags"},
+                {"name": "flags3", "type": "uint16_t", "description": "Additional flags", "display_fmt": "hex"},
                 {"name": "reserved0", "type": "uint8_t", "num": 4, "description": "Reserved"},
                 {"name": "head_veh", "type": "int32_t", "description": "Heading of vehicle (2-D)", "display_postfix": "deg", "conversion": {"m": 0.00001, "c": 0}},
                 {"name": "mag_dec", "type": "int16_t", "description": "Magnetic declination", "display_postfix": "deg", "conversion": {"m": 0.01, "c": 0}},
