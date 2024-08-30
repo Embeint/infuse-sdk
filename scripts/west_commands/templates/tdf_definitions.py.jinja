@@ -5,17 +5,18 @@
 import ctypes
 
 from collections.abc import Generator
+from typing import Callable
 
 class structs:
     class _struct_type(ctypes.LittleEndianStructure):
-        def iter_fields(self) -> Generator[str, ctypes._SimpleCData, str]:
+        def iter_fields(self) -> Generator[str, ctypes._SimpleCData, str, Callable]:
             for field in self._fields_:
                 if field[0][0] == '_':
                     f_name = field[0][1:]
                 else:
                     f_name = field[0]
                 val = getattr(self, f_name)
-                yield f_name, val, self._postfix_[f_name]
+                yield f_name, val, self._postfix_[f_name], self._display_fn_.get(f_name)
 
 {% for name, info in structs.items() %}
     class {{ name }}(_struct_type):
@@ -31,6 +32,13 @@ class structs:
             '{{ field['name'] }}': '{{ field.get("display_postfix", '') }}',
 {% endfor %}
         }
+        _display_fn_ = {
+{% for field in info['fields'] %}
+{% if field.get('display_fmt') == 'hex' %}
+            '{{ field['name'] }}': hex,
+{% endif %}
+{% endfor %}
+        }
 {% for conv in info['conversions'] %}
 
         @property
@@ -41,7 +49,7 @@ class structs:
 {% endfor %}
 class readings:
     class _reading_type(ctypes.LittleEndianStructure):
-        def iter_fields(self) -> Generator[str, ctypes._SimpleCData, str]:
+        def iter_fields(self) -> Generator[str, ctypes._SimpleCData, str, Callable]:
             for field in self._fields_:
                 if field[0][0] == '_':
                     f_name = field[0][1:]
@@ -49,12 +57,12 @@ class readings:
                     f_name = field[0]
                 val = getattr(self, f_name)
                 if isinstance(val, ctypes.LittleEndianStructure):
-                    for subfield_name, subfield_val, subfield_postfix in val.iter_fields():
-                        yield f'{f_name}.{subfield_name}', subfield_val, subfield_postfix
+                    for subfield_name, subfield_val, subfield_postfix, display_fn in val.iter_fields():
+                        yield f'{f_name}.{subfield_name}', subfield_val, subfield_postfix, display_fn
                 elif isinstance(val, ctypes.Array):
-                    yield f_name, list(val), self._postfix_[f_name]
+                    yield f_name, list(val), self._postfix_[f_name], self._display_fn_.get(f_name)
                 else:
-                    yield f_name, val, self._postfix_[f_name]
+                    yield f_name, val, self._postfix_[f_name], self._display_fn_.get(f_name)
 
 {% for tdf_id, info in definitions.items() %}
     class {{ info['name'] | lower }}(_reading_type):
@@ -69,6 +77,13 @@ class readings:
         _postfix_ = {
 {% for field in info['fields'] %}
             '{{ field['name'] }}': '{{ field.get("display_postfix", '') }}',
+{% endfor %}
+        }
+        _display_fn_ = {
+{% for field in info['fields'] %}
+{% if field.get('display_fmt') == 'hex' %}
+            '{{ field['name'] }}': hex,
+{% endif %}
 {% endfor %}
         }
 {% for conv in info['conversions'] %}

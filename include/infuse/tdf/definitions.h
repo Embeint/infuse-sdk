@@ -235,7 +235,7 @@ struct tdf_ubx_nav_pvt {
 	uint32_t t_acc;
 	/* Fraction of second, range -1e9 .. 1e9 (UTC) */
 	int32_t nano;
-	/* GNSSfix Type */
+	/* GNSS fix Type */
 	uint8_t fix_type;
 	/* Fix status flags */
 	uint8_t flags;
