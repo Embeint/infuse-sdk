@@ -15,6 +15,7 @@
 #include <infuse/fs/kv_store.h>
 #include <infuse/fs/kv_types.h>
 #include <infuse/reboot.h>
+#include <infuse/task_runner/runner.h>
 
 #include <modem/nrf_modem_lib.h>
 #include <modem/lte_lc.h>
@@ -23,14 +24,23 @@
 
 LOG_MODULE_REGISTER(modem_monitor, LOG_LEVEL_INF);
 
-static struct nrf_modem_network_state latest_state;
+static struct {
+	struct nrf_modem_network_state network_state;
+	/* `lte_reg_handler` runs from the system workqueue, and the modem AT commands wait forever
+	 * on the response. This is problematic as the low level functions rely on malloc, which
+	 * can fail. Running AT commands directly from the callback context therefore has the
+	 * potential to deadlock the system workqueue, if multiple notifications occur at the same
+	 * time. Workaround this by running the commands in a different context.
+	 */
+	struct k_work update_work;
+} monitor;
 
 void nrf_modem_monitor_network_state(struct nrf_modem_network_state *state)
 {
-	*state = latest_state;
+	*state = monitor.network_state;
 }
 
-static void network_info_update(void)
+static void network_info_update(struct k_work *work)
 {
 	static bool sim_card_queried;
 	char plmn[9] = {0};
@@ -51,12 +61,18 @@ static void network_info_update(void)
 		}
 	}
 
-	if ((latest_state.nw_reg_status != LTE_LC_NW_REG_REGISTERED_HOME) &&
-	    (latest_state.nw_reg_status != LTE_LC_NW_REG_REGISTERED_ROAMING)) {
-		/* No cell information */
-		memset(&latest_state.cell, 0x00, sizeof(latest_state.cell));
-		latest_state.edrx_cfg.edrx = -1.0f;
-		latest_state.edrx_cfg.ptw = -1.0f;
+	if ((monitor.network_state.nw_reg_status != LTE_LC_NW_REG_REGISTERED_HOME) &&
+	    (monitor.network_state.nw_reg_status != LTE_LC_NW_REG_REGISTERED_ROAMING)) {
+		/* No cell information (except for potentially Cell ID and TAC) */
+		uint32_t id = monitor.network_state.cell.id;
+		uint32_t tac = monitor.network_state.cell.tac;
+
+		memset(&monitor.network_state.cell, 0x00, sizeof(monitor.network_state.cell));
+
+		monitor.network_state.cell.id = id;
+		monitor.network_state.cell.tac = tac;
+		monitor.network_state.edrx_cfg.edrx = -1.0f;
+		monitor.network_state.edrx_cfg.ptw = -1.0f;
 		return;
 	}
 
@@ -74,8 +90,9 @@ static void network_info_update(void)
 				"%" SCNu16 "," /* <phys_cell_id> */
 				"%" SCNu16 "," /* <EARFCN> */
 				,
-				plmn, &latest_state.band, &latest_state.cell.phys_cell_id,
-				&latest_state.cell.earfcn);
+				plmn, &monitor.network_state.band,
+				&monitor.network_state.cell.phys_cell_id,
+				&monitor.network_state.cell.earfcn);
 	if (rc == 4) {
 		uint8_t sep = 0;
 		/* Parse MCC and MNC */
@@ -88,9 +105,9 @@ static void network_info_update(void)
 			plmn[7] = '\x00';
 			sep = 3;
 		}
-		latest_state.cell.mnc = atoi(&plmn[sep]);
+		monitor.network_state.cell.mnc = atoi(&plmn[sep]);
 		plmn[sep] = '\x00';
-		latest_state.cell.mcc = atoi(&plmn[1]);
+		monitor.network_state.cell.mcc = atoi(&plmn[1]);
 	}
 }
 
@@ -125,42 +142,42 @@ static void lte_reg_handler(const struct lte_lc_evt *const evt)
 	case LTE_LC_EVT_NW_REG_STATUS:
 		LOG_DBG("NW_REG_STATUS");
 		LOG_DBG("  STATUS: %d", evt->nw_reg_status);
-		latest_state.nw_reg_status = evt->nw_reg_status;
-		/* Update knowledge of network info */
-		network_info_update();
+		monitor.network_state.nw_reg_status = evt->nw_reg_status;
+		/* Request update of knowledge of network info */
+		k_work_submit_to_queue(task_runner_work_q(), &monitor.update_work);
 		break;
 	case LTE_LC_EVT_PSM_UPDATE:
 		LOG_DBG("PSM_UPDATE");
 		LOG_DBG("     TAU: %d", evt->psm_cfg.tau);
 		LOG_DBG("  ACTIVE: %d", evt->psm_cfg.active_time);
-		latest_state.psm_cfg = evt->psm_cfg;
+		monitor.network_state.psm_cfg = evt->psm_cfg;
 		break;
 	case LTE_LC_EVT_EDRX_UPDATE:
 		LOG_DBG("EDRX_UPDATE");
 		LOG_DBG("    Mode: %d", evt->edrx_cfg.mode);
 		LOG_DBG("     PTW: %d", (int)evt->edrx_cfg.ptw);
 		LOG_DBG("Interval: %d", (int)evt->edrx_cfg.edrx);
-		latest_state.edrx_cfg = evt->edrx_cfg;
+		monitor.network_state.edrx_cfg = evt->edrx_cfg;
 		break;
 	case LTE_LC_EVT_RRC_UPDATE:
 		LOG_DBG("RRC_UPDATE");
 		LOG_DBG("   State: %s", evt->rrc_mode == LTE_LC_RRC_MODE_IDLE ? "Idle" : "Active");
-		latest_state.rrc_mode = evt->rrc_mode;
+		monitor.network_state.rrc_mode = evt->rrc_mode;
 		break;
 	case LTE_LC_EVT_CELL_UPDATE:
 		LOG_DBG("CELL_UPDATE");
 		LOG_DBG("     TAC: %d", evt->cell.tac);
 		LOG_DBG("      ID: %d", evt->cell.id);
-		/* Update knowledge of network info */
-		network_info_update();
 		/* Set cell info */
-		latest_state.cell.tac = evt->cell.tac;
-		latest_state.cell.id = evt->cell.id;
+		monitor.network_state.cell.tac = evt->cell.tac;
+		monitor.network_state.cell.id = evt->cell.id;
+		/* Request update of knowledge of network info */
+		k_work_submit_to_queue(task_runner_work_q(), &monitor.update_work);
 		break;
 	case LTE_LC_EVT_LTE_MODE_UPDATE:
 		LOG_DBG("LTE_MODE_UPDATE");
 		LOG_DBG("    Mode: %d", evt->lte_mode);
-		latest_state.lte_mode = evt->lte_mode;
+		monitor.network_state.lte_mode = evt->lte_mode;
 		break;
 	case LTE_LC_EVT_MODEM_SLEEP_ENTER:
 		LOG_DBG("MODEM_SLEEP_ENTER");
@@ -233,9 +250,10 @@ void lte_net_if_modem_fault_app_handler(struct nrf_modem_fault_info *fault_info)
 
 int nrf_modem_monitor_init(void)
 {
+	k_work_init(&monitor.update_work, network_info_update);
 	/* Initial state */
-	latest_state.edrx_cfg.edrx = -1.0f;
-	latest_state.edrx_cfg.ptw = -1.0f;
+	monitor.network_state.edrx_cfg.edrx = -1.0f;
+	monitor.network_state.edrx_cfg.ptw = -1.0f;
 	/* Register handler */
 	lte_lc_register_handler(lte_reg_handler);
 	return 0;
