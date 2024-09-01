@@ -25,6 +25,11 @@ K_THREAD_STACK_DEFINE(workq_stack_area, CONFIG_TASK_RUNNER_WORKQ_STACK_SIZE);
 
 LOG_MODULE_REGISTER(task_runner, CONFIG_TASK_RUNNER_LOG_LEVEL);
 
+struct k_work_q *task_runner_work_q(void)
+{
+	return &task_runner_workq;
+}
+
 void task_runner_init(const struct task_schedule *schedules,
 		      struct task_schedule_state *schedule_states, uint8_t num_schedules,
 		      const struct task_config *tasks, struct task_data *task_states,
