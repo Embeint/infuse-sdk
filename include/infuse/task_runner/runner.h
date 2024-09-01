@@ -26,6 +26,13 @@ extern "C" {
  */
 
 /**
+ * @brief Retrieve the work queue thread used by the task runner
+ *
+ * @return Workqueue pointer
+ */
+struct k_work_q *task_runner_work_q(void);
+
+/**
  * @brief Initialise the task runner with a schedule list
  *
  * @param schedules Task schedules to evaluate
