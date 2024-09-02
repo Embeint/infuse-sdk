@@ -53,6 +53,10 @@ configdefault BT_HCI_VS
 configdefault BT_EXT_ADV
 	default y
 
+# Maximum possible output power
+configdefault BT_CTLR_TX_PWR_ANTENNA
+	default 20
+
 # TX Bluetooth advertising packets
 configdefault BT_BROADCASTER
 	default y
