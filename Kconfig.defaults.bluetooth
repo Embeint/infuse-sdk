@@ -52,6 +52,10 @@ configdefault BT_HCI_VS
 # Extended advertising is a requirement
 configdefault BT_EXT_ADV
 	default y
+configdefault BT_EXT_ADV_MAX_ADV_SET
+	default 2
+configdefault BT_MAX_CONN
+	default 2
 
 # Maximum possible output power
 configdefault BT_CTLR_TX_PWR_ANTENNA
