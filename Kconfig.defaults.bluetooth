@@ -7,6 +7,9 @@ config INFUSE_SDK_BLUETOOTH
 
 if INFUSE_SDK_BLUETOOTH
 
+configdefault BT_DEVICE_NAME
+	default "Infuse-IoT"
+
 # Uncoded LE Data Packet Format:
 #
 # | Preamble | Access  |                           PDU (2 to 257 bytes)                         |   CRC   |
