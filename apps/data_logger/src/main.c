@@ -13,6 +13,7 @@
 #include <zephyr/net/conn_mgr_connectivity.h>
 
 #include <infuse/auto/time_sync_log.h>
+#include <infuse/bluetooth/legacy_adv.h>
 #include <infuse/drivers/watchdog.h>
 #include <infuse/time/epoch.h>
 #include <infuse/fs/kv_store.h>
@@ -166,6 +167,11 @@ int main(void)
 	/* Configure time event logging */
 	auto_time_sync_log_configure(STORAGE_LOGGER,
 				     AUTO_TIME_SYNC_LOG_SYNCS | AUTO_TIME_SYNC_LOG_REBOOT_ON_SYNC);
+
+	/* Start legacy Bluetooth advertising to workaround iOS and
+	 * Nordic Softdevice connection issues.
+	 */
+	bluetooth_legacy_advertising_run();
 
 #ifdef CONFIG_NETWORKING
 	conn_mgr_all_if_up(false);
