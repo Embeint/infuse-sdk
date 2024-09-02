@@ -1,0 +1,15 @@
+# Softdevice default values
+
+configdefault BT_CTLR_SDC_PERIPHERAL_COUNT
+	default 3
+
+configdefault BT_CTLR_SDC_SCAN_BUFFER_COUNT
+	default 5
+
+configdefault BT_CTLR_SDC_TX_PACKET_COUNT
+	default 5
+
+configdefault BT_CTLR_SDC_RX_PACKET_COUNT
+	default 5
+
+source "Kconfig.zephyr"
