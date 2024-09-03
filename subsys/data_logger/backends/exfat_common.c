@@ -9,6 +9,7 @@
 #include <stdio.h>
 
 #include <zephyr/logging/log.h>
+#include <zephyr/storage/disk_access.h>
 
 #include <infuse/time/epoch.h>
 
@@ -65,11 +66,20 @@ int logger_exfat_filesystem_common_init(const struct device *dev)
 #endif /* CONFIG_DISK_DRIVER_SDMMC */
 	};
 	char path[32];
+	uint32_t blocks;
 	FRESULT res;
 	UINT bw;
 	FIL fp;
 
 	snprintf(path, sizeof(path), "%s:", config->disk);
+
+	/* Pre-erase the disk */
+	disk_access_ioctl(config->disk, DISK_IOCTL_GET_SECTOR_COUNT, &blocks);
+	res = disk_access_erase(config->disk, 0, blocks);
+	if (res != FR_OK) {
+		LOG_ERR("disk_access_erase failed: %d", res);
+		return -EIO;
+	}
 
 	/* Create the filesystem */
 	res = f_mkfs(path, &mkfs_opt, data->block_buffer, sizeof(data->block_buffer));
