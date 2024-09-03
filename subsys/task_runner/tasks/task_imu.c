@@ -125,7 +125,7 @@ void imu_task_fn(const struct task_schedule *schedule, struct k_poll_signal *ter
 		config_output.expected_interrupt_period_us);
 
 	log_state.acc_tdf = tdf_id_from_accelerometer_range(args->accelerometer.range_g);
-	log_state.gyr_tdf = tdf_id_from_accelerometer_range(args->gyroscope.range_dps);
+	log_state.gyr_tdf = tdf_id_from_gyroscope_range(args->gyroscope.range_dps);
 	interrupt_timeout = K_USEC(2 * config_output.expected_interrupt_period_us);
 
 	while (true) {
