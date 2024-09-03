@@ -38,17 +38,26 @@ DWORD get_fattime(void)
 bool logger_exfat_filesystem_is_infuse(const struct device *dev)
 {
 	const struct dl_exfat_config *config = dev->config;
-	char label[34] = {0};
-	char disk_path[16];
+	char label[7] = {0};
+	char path[32];
 	FRESULT res;
+	FIL fp;
 
-	snprintf(disk_path, sizeof(disk_path), "%s:", config->disk);
+	snprintf(path, sizeof(path), "%s:", config->disk);
 
-	res = f_getlabel(disk_path, label, NULL);
+	res = f_getlabel(path, label, NULL);
 	if (res != FR_OK || (strncmp(label, "INFUSE", 7) != 0)) {
 		LOG_ERR("Bad filesystem label '%s'", label);
 		return false;
 	}
+
+	snprintf(path, sizeof(path), "%s:DELETE_TO_RESET.txt", config->disk);
+	res = f_open(&fp, path, FA_READ);
+	if (res != FR_OK) {
+		/* File does not exist, reset */
+		return false;
+	}
+	(void)f_close(&fp);
 	return true;
 }
 
@@ -113,6 +122,15 @@ int logger_exfat_filesystem_common_init(const struct device *dev)
 	res = f_write(&fp, readme_text, sizeof(readme_text), &bw);
 	if ((res != FR_OK) || (bw != sizeof(readme_text))) {
 		LOG_ERR("f_write failed: %d (%d != %d)", res, bw, sizeof(readme_text));
+	}
+	(void)f_close(&fp);
+
+	/* Create static DELETE_TO_RESET.txt */
+	snprintf(path, sizeof(path), "%s:DELETE_TO_RESET.txt", config->disk);
+	res = f_open(&fp, path, FA_CREATE_NEW | FA_WRITE);
+	if (res != FR_OK) {
+		LOG_ERR("f_open failed: %d", res);
+		return -EIO;
 	}
 	(void)f_close(&fp);
 
