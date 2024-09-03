@@ -23,12 +23,7 @@
 #include <ff.h>
 
 #include "common.h"
-
-#define DATA_LOGGER_EXFAT_BLOCK_SIZE 512
-
-#define LBA_NO_FILE      (UINT32_MAX)
-#define LBA_NO_MEM       (UINT32_MAX - 1)
-#define MIN_CLUSTER_SIZE 4096
+#include "exfat_common.h"
 
 #define BLOCKS_PER_FILE (CONFIG_DATA_LOGGER_EXFAT_FILE_SIZE / DATA_LOGGER_EXFAT_BLOCK_SIZE)
 BUILD_ASSERT(CONFIG_DATA_LOGGER_EXFAT_FILE_SIZE % MIN_CLUSTER_SIZE == 0,
@@ -39,52 +34,7 @@ BUILD_ASSERT(CONFIG_DATA_LOGGER_EXFAT_FILE_SIZE % MIN_CLUSTER_SIZE == 0,
 	snprintf(buffer, sizeof(buffer), "%s:infuse_%016llx_%06d.bin", config->disk, infuse_id,    \
 		 index)
 
-struct dl_exfat_config {
-	struct data_logger_common_config common;
-	const char *disk;
-};
-struct dl_exfat_data {
-	struct data_logger_common_data common;
-	FATFS infuse_fatfs;
-	uint8_t block_buffer[DATA_LOGGER_EXFAT_BLOCK_SIZE];
-	uint32_t cached_file_num;
-	uint32_t cached_file_lba;
-};
-
-static const char readme_text[] = "Infuse-IoT binary data logs\n";
-
 LOG_MODULE_REGISTER(data_logger_exfat, CONFIG_DATA_LOGGER_EXFAT_LOG_LEVEL);
-
-DWORD get_fattime(void)
-{
-	time_t unix_time = unix_time_from_epoch(epoch_time_now());
-	struct tm *cal;
-
-	/* Convert to calendar time */
-	cal = localtime(&unix_time);
-
-	/* From http://elm-chan.org/fsw/ff/doc/fattime.html */
-	return (DWORD)(cal->tm_year - 80) << 25 | (DWORD)(cal->tm_mon + 1) << 21 |
-	       (DWORD)cal->tm_mday << 16 | (DWORD)cal->tm_hour << 11 | (DWORD)cal->tm_min << 5 |
-	       (DWORD)cal->tm_sec >> 1;
-}
-
-static bool filesystem_is_infuse(const struct device *dev)
-{
-	const struct dl_exfat_config *config = dev->config;
-	char label[34] = {0};
-	char disk_path[16];
-	FRESULT res;
-
-	snprintf(disk_path, sizeof(disk_path), "%s:", config->disk);
-
-	res = f_getlabel(disk_path, label, NULL);
-	if (res != FR_OK || (strncmp(label, "INFUSE", 7) != 0)) {
-		LOG_ERR("Bad filesystem label '%s'", label);
-		return false;
-	}
-	return true;
-}
 
 static uint32_t disk_lba_from_block(const struct device *dev, uint32_t phy_block)
 {
@@ -220,62 +170,8 @@ static int logger_exfat_read(const struct device *dev, uint32_t phy_block, uint1
 
 static int filesystem_init(const struct device *dev)
 {
-	const struct dl_exfat_config *config = dev->config;
-	struct dl_exfat_data *data = dev->data;
-	const MKFS_PARM mkfs_opt = {
-		.fmt = FM_EXFAT,
-#ifdef CONFIG_DISK_DRIVER_SDMMC
-		/* We know our filesystem only hosts large block files, so for
-		 * SD cards use the largest recommended cluster size (128kB).
-		 */
-		.au_size = 128 * 1024,
-#endif /* CONFIG_DISK_DRIVER_SDMMC */
-	};
-	char path[32];
-	FRESULT res;
-	UINT bw;
-	FIL fp;
-
-	snprintf(path, sizeof(path), "%s:", config->disk);
-
-	/* Create the filesystem */
-	res = f_mkfs(path, &mkfs_opt, data->block_buffer, sizeof(data->block_buffer));
-	if (res != FR_OK) {
-		LOG_ERR("f_mkfs failed: %d", res);
-		return -EIO;
-	}
-
-	/* Mount the filesystem */
-	res = f_mount(&data->infuse_fatfs, path, 1);
-	if (res != FR_OK) {
-		LOG_ERR("f_mount failed after f_mkfs: %d", res);
-		return -EIO;
-	}
-
-	/* Set label ID */
-	snprintf(path, sizeof(path), "%s:INFUSE", config->disk);
-	res = f_setlabel(path);
-	if (res != FR_OK) {
-		LOG_ERR("f_setlabel failed: %d", res);
-		return -EIO;
-	}
-
-	/* Create static README.txt file */
-	snprintf(path, sizeof(path), "%s:README.txt", config->disk);
-	res = f_open(&fp, path, FA_CREATE_NEW | FA_WRITE);
-	if (res != FR_OK) {
-		LOG_ERR("f_open failed: %d", res);
-		return -EIO;
-	}
-	res = f_write(&fp, readme_text, sizeof(readme_text), &bw);
-	if ((res != FR_OK) || (bw != sizeof(readme_text))) {
-		LOG_ERR("f_write failed: %d (%d != %d)", res, bw, sizeof(readme_text));
-	}
-	(void)f_close(&fp);
-	if (res != FR_OK) {
-		return -EIO;
-	}
-	return res;
+	/* Common filesystem init */
+	return logger_exfat_filesystem_common_init(dev);
 }
 
 #ifdef CONFIG_PM_DEVICE
@@ -317,7 +213,7 @@ int logger_exfat_init(const struct device *dev)
 	res = f_mount(&data->infuse_fatfs, disk_path, 1);
 	LOG_DBG("First mount: %d", res);
 	if (res == FR_OK) {
-		infuse_fs = filesystem_is_infuse(dev);
+		infuse_fs = logger_exfat_filesystem_is_infuse(dev);
 	} else if (res == FR_NOT_READY) {
 		LOG_WRN("Disk '%s' not ready", config->disk);
 		return -EIO;
