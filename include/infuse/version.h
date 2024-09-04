@@ -37,6 +37,17 @@ extern "C" {
 #define infuse_version mcuboot_img_sem_ver
 
 /**
+ * @brief Convert version struct to sortable integer
+ *
+ * @param v struct infuse_version pointer
+ *
+ * @retval uint32_t equivalent integer
+ */
+#define INFUSE_VERSION_INT(v)                                                                      \
+	((((uint32_t)(v)->major) << 24) | (((uint32_t)(v)->minor) << 16) |                         \
+	 ((uint32_t)(v)->revision))
+
+/**
  * @brief Get version of the currently running application
  *
  * @returns Current application version
@@ -65,6 +76,34 @@ static inline struct infuse_version application_version_get(void)
 		.build_num = APP_TWEAK,
 #endif
 	};
+}
+
+/**
+ * @brief Compare two version structures
+ *
+ * Return value follows the convention of the C library `qsort` function.
+ *
+ * @note The `build_num` field is ignored for comparison purposes.
+ *
+ * @param a First version to compare
+ * @param b Second version to compare
+ *
+ * @retval 1 @a a is an earlier version than @a b
+ * @retval -1 @a a is a later version than @a b
+ * @retval 0 if @a a and @a b are the same version
+ */
+static inline int infuse_version_compare(struct infuse_version *a, struct infuse_version *b)
+{
+	uint32_t a_int = INFUSE_VERSION_INT(a);
+	uint32_t b_int = INFUSE_VERSION_INT(b);
+
+	if (a_int < b_int) {
+		return 1;
+	}
+	if (a_int > b_int) {
+		return -1;
+	}
+	return 0;
 }
 
 /**
