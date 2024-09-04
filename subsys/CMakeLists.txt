@@ -10,4 +10,5 @@ add_subdirectory_ifdef(CONFIG_MODEM_MODULES modem/backends)
 add_subdirectory_ifdef(CONFIG_INFUSE_VALIDATION validation)
 
 add_subdirectory(fs)
+add_subdirectory(mgmt)
 add_subdirectory(net)
