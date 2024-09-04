@@ -70,10 +70,28 @@ configdefault INFUSE_EPOCH_TIME
 	default y
 
 # Application management
+if BOOTLOADER_MCUBOOT || BUILD_WITH_TFM
 configdefault STREAM_FLASH
-	default y if BOOTLOADER_MCUBOOT
+	default y
 configdefault IMG_MANAGER
-	default y if BOOTLOADER_MCUBOOT
+	default y
+
+if BT_CONN
+configdefault MCUMGR
+	default y
+configdefault MCUMGR_SMP_SUPPORT_ORIGINAL_PROTOCOL
+	default n
+configdefault MCUMGR_TRANSPORT_BT
+	default y
+configdefault MCUMGR_GRP_OS_INFUSE
+	default y
+configdefault MCUMGR_GRP_IMG
+	default y
+configdefault  ZCBOR
+	default y
+endif # BT_CONN
+endif # BOOTLOADER_MCUBOOT || BUILD_WITH_TFM
+
 
 # KV store
 configdefault FLASH
