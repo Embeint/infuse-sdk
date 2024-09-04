@@ -252,6 +252,36 @@ ZTEST(data_logger_exfat, test_device_move)
 	zassert_equal(FR_OK, f_stat(filename, &fno));
 }
 
+ZTEST(data_logger_exfat, test_reset)
+{
+	/* Test deleting "DELETE_TO_RESET.txt" */
+	const struct device *logger = DEVICE_DT_GET(DT_NODELABEL(data_logger_exfat));
+	struct data_logger_state state;
+	char filename[40];
+	uint8_t type = 3;
+
+	/* Init to erase value */
+	zassert_equal(0, logger_exfat_init(logger));
+	data_logger_get_state(logger, &state);
+
+	/* Write 5 blocks */
+	for (int i = 0; i < 5; i++) {
+		zassert_equal(
+			0, data_logger_block_write(logger, type, input_buffer, state.block_size));
+	}
+	data_logger_get_state(logger, &state);
+	zassert_equal(5, state.current_block);
+
+	/* Delete the sentinal file */
+	snprintf(filename, sizeof(filename), "%s:DELETE_TO_RESET.txt", DISK_NAME);
+	zassert_equal(FR_OK, f_unlink(filename));
+
+	/* Re-initialise logger, contents should be erased */
+	zassert_equal(0, logger_exfat_init(logger));
+	data_logger_get_state(logger, &state);
+	zassert_equal(0, state.current_block);
+}
+
 static bool test_data_init(const void *global_state)
 {
 	disk_access_ioctl(DISK_NAME, DISK_IOCTL_GET_SECTOR_COUNT, &sector_count);
