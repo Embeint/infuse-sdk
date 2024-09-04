@@ -1,7 +1,9 @@
 /* MCUboot secondary on external flash */
 /delete-node/ &slot0_partition;
+/delete-node/ &slot0_s_partition;
 /delete-node/ &slot0_ns_partition;
 /delete-node/ &slot1_partition;
+/delete-node/ &slot1_s_partition;
 /delete-node/ &slot1_ns_partition;
 
 / {
@@ -63,9 +65,13 @@
 		};
 		slot0_partition: partition@10000 {
 			label = "image-0";
+			reg = <0x00010000 0x000F0000>;
+		};
+		slot0_s_partition: subpartition@10000 {
+			label = "image-0-secure";
 			reg = <0x00010000 0x00030000>;
 		};
-		slot0_ns_partition: partition@40000 {
+		slot0_ns_partition: subpartition@40000 {
 			label = "image-0-nonsecure";
 			reg = <0x00040000 0xC0000>;
 		};
@@ -96,7 +102,11 @@
 			label = "image-1";
 			reg = <0x00000000 0x30000>;
 		};
-		slot1_ns_partition: partition@30000 {
+		slot1_s_partition: subpartition@0 {
+			label = "image-1-secure";
+			reg = <0x00000000 0x30000>;
+		};
+		slot1_ns_partition: subpartition@30000 {
 			label = "image-1-nonsecure";
 			reg = <0x00030000 0xC0000>;
 		};

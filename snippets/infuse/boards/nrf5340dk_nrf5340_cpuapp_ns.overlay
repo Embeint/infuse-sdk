@@ -14,9 +14,9 @@
 			driver = "Driver_FLASH0";
 			complete = <&flash0>;
 			img-bl2 = <&boot_partition>;
-			img-primary-secure = <&slot0_partition>;
+			img-primary-secure = <&slot0_s_partition>;
 			img-primary-nonsecure = <&slot0_ns_partition>;
-			img-secondary-secure = <&slot1_partition>;
+			img-secondary-secure = <&slot1_s_partition>;
 			img-secondary-nonsecure = <&slot1_ns_partition>;
 			partition-ps = <&tfm_ps_partition>;
 			partition-its = <&tfm_its_partition>;
