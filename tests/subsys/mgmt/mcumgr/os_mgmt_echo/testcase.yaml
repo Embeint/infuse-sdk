@@ -1,0 +1,11 @@
+#
+# Copyright (c) 2024 Embeint Inc
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+tests:
+  mgmt.mcumgr.infuse_os.echo:
+    required_snippets:
+      - infuse
+    integration_platforms:
+      - mps2/an385
