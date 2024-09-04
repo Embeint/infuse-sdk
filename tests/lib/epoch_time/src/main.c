@@ -136,10 +136,13 @@ ZTEST(epoch_time, test_internal_conversions)
 	}
 
 	zassert_equal(0, epoch_time_milliseconds(0));
+	zassert_equal(0, epoch_time_milliseconds(32));
+	zassert_equal(1, epoch_time_milliseconds(33));
 	zassert_equal(250, epoch_time_milliseconds((UINT16_MAX + 1) / 4));
 	zassert_equal(333, epoch_time_milliseconds((UINT16_MAX + 1) / 3));
 	zassert_equal(500, epoch_time_milliseconds((UINT16_MAX + 1) / 2));
-	zassert_equal(999, epoch_time_milliseconds(UINT16_MAX));
+	zassert_equal(999, epoch_time_milliseconds(UINT16_MAX - 66));
+	zassert_equal(1000, epoch_time_milliseconds(UINT16_MAX));
 	zassert_equal(0, epoch_time_milliseconds(UINT16_MAX + 1));
 }
 
