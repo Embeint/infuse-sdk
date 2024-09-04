@@ -2,8 +2,10 @@
 
 /* MCUboot secondary on external flash */
 /delete-node/ &slot0_partition;
+/delete-node/ &slot0_s_partition;
 /delete-node/ &slot0_ns_partition;
 /delete-node/ &slot1_partition;
+/delete-node/ &slot1_s_partition;
 /delete-node/ &slot1_ns_partition;
 
 / {
@@ -19,7 +21,7 @@
 			driver = "Driver_FLASH0";
 			complete = <&flash0>;
 			img-bl2 = <&boot_partition>;
-			img-primary-secure = <&slot0_partition>;
+			img-primary-secure = <&slot0_s_partition>;
 			img-primary-nonsecure = <&slot0_ns_partition>;
 			partition-ps = <&tfm_ps_partition>;
 			partition-its = <&tfm_its_partition>;
@@ -33,7 +35,7 @@
 			complete = <&w25q128jv>;
 			erase-block-size = <4096>;
 			write-block-size = <1>;
-			img-secondary-secure = <&slot1_partition>;
+			img-secondary-secure = <&slot1_s_partition>;
 			img-secondary-nonsecure = <&slot1_ns_partition>;
 		};
 	};
@@ -105,9 +107,13 @@
 		};
 		slot0_partition: partition@10000 {
 			label = "image-0";
+			reg = <0x00010000 0x000F0000>;
+		};
+		slot0_s_partition: subpartition@10000 {
+			label = "image-0-secure";
 			reg = <0x00010000 0x00030000>;
 		};
-		slot0_ns_partition: partition@40000 {
+		slot0_ns_partition: subpartition@40000 {
 			label = "image-0-nonsecure";
 			reg = <0x00040000 0xC0000>;
 		};
@@ -160,9 +166,13 @@
 
 		slot1_partition: partition@0 {
 			label = "image-1";
+			reg = <0x00000000 0xF0000>;
+		};
+		slot1_s_partition: subpartition@0 {
+			label = "image-1-secure";
 			reg = <0x00000000 0x30000>;
 		};
-		slot1_ns_partition: partition@30000 {
+		slot1_ns_partition: subpartition@30000 {
 			label = "image-1-nonsecure";
 			reg = <0x00030000 0xC0000>;
 		};
