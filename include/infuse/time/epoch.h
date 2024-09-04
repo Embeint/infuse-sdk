@@ -24,6 +24,9 @@
 #include <zephyr/toolchain.h>
 #include <zephyr/sys/timeutil.h>
 
+/* Time conversion functions */
+#include "epoch_units.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -145,7 +148,7 @@ static inline uint16_t epoch_time_subseconds(uint64_t epoch_time)
  */
 static inline uint16_t epoch_time_milliseconds(uint64_t epoch_time)
 {
-	return ((uint32_t)epoch_time_subseconds(epoch_time) * 1000) / 0x10000;
+	return k_epoch_to_ms_near32(epoch_time_subseconds(epoch_time));
 }
 
 /**
@@ -308,9 +311,6 @@ int epoch_time_reference_shift(const struct timeutil_sync_instant *ref_a,
 void epoch_time_reset(void);
 
 #endif /* CONFIG_ZTEST */
-
-/* Time conversion functions */
-#include "epoch_units.h"
 
 /**
  * @}
