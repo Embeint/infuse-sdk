@@ -9,6 +9,11 @@ configdefault GNSS
 configdefault FUEL_GAUGE
 	default y
 
+# We want to trigger samples, not run sampling permanently
+choice BME280_MODE
+	default BME280_MODE_FORCED
+endchoice
+
 # Bring SD card init forward so it occurs before data loggers
 configdefault SDHC_INIT_PRIORITY
 	default 75
