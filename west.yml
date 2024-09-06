@@ -10,7 +10,7 @@ manifest:
 
   projects:
     - name: zephyr
-      revision: 45726227ea1ce5a0bfce9f75f243b343b78389c7
+      revision: 990770d96b0f0d2da015b4a0ce244f64f0594e21
       # Limit imported repositories to reduce clone time
       import:
         name-allowlist:
