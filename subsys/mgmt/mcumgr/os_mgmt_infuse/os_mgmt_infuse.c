@@ -73,10 +73,24 @@ static int os_mgmt_reset(struct smp_streamer *ctxt)
 	return MGMT_ERR_EOK;
 }
 
+static int os_mgmt_mcumgr_params(struct smp_streamer *ctxt)
+{
+	zcbor_state_t *zse = ctxt->writer->zs;
+	bool ok;
+
+	ok = zcbor_tstr_put_lit(zse, "buf_size") &&
+	     zcbor_uint32_put(zse, CONFIG_MCUMGR_TRANSPORT_NETBUF_SIZE) &&
+	     zcbor_tstr_put_lit(zse, "buf_count") &&
+	     zcbor_uint32_put(zse, CONFIG_MCUMGR_TRANSPORT_NETBUF_COUNT);
+
+	return ok ? MGMT_ERR_EOK : MGMT_ERR_EMSGSIZE;
+}
+
 static const struct mgmt_handler os_mgmt_group_handlers[] = {
 	[OS_MGMT_ID_ECHO] = {os_mgmt_echo, os_mgmt_echo},
 	[OS_MGMT_ID_DATETIME_STR] = {os_mgmt_datetime_read, NULL},
 	[OS_MGMT_ID_RESET] = {NULL, os_mgmt_reset},
+	[OS_MGMT_ID_MCUMGR_PARAMS] = {os_mgmt_mcumgr_params, NULL},
 };
 
 static struct mgmt_group os_mgmt_group = {
