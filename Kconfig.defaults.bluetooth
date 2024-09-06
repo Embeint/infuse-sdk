@@ -80,6 +80,9 @@ configdefault BT_CTLR_ADV_DATA_LEN_MAX
 # switch PHY's results in iPhones having problems connecting to devices.
 configdefault BT_PHY_UPDATE
 	default y
+# But we don't want the PHY update to be triggered automatically by the peripheral
+configdefault BT_AUTO_PHY_UPDATE
+	default n
 
 # Connection parameters should be pro-actively negotiated, not delayed by 5
 # seconds as many connections are complete by then.
