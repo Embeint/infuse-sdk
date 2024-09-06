@@ -5,20 +5,31 @@ common:
   build_only: true
   required_snippets:
     - infuse
-  platform_allow:
-    - thingy53/nrf5340/cpuapp/ns
-    - thingy53/nrf5340/cpuapp
-  integration_platforms:
-    - thingy53/nrf5340/cpuapp/ns
-    - thingy53/nrf5340/cpuapp
 tests:
   sample.app.data_logger:
     tags: app
+    platform_allow:
+      - thingy53/nrf5340/cpuapp/ns
+      - thingy53/nrf5340/cpuapp
+      - tauro/nrf9151/ns
+    integration_platforms:
+      - thingy53/nrf5340/cpuapp/ns
+      - thingy53/nrf5340/cpuapp
+      - tauro/nrf9151/ns
   sample.app.data_logger.wifi:
     tags: app
     extra_args: SHIELD=nrf7002eb
+    platform_allow:
+      - thingy53/nrf5340/cpuapp/ns
+      - thingy53/nrf5340/cpuapp
+    integration_platforms:
+      - thingy53/nrf5340/cpuapp/ns
   sample.app.data_logger.wifi.sysbuild:
     tags: app
     sysbuild: true
     filter: not CONFIG_BUILD_WITH_TFM
     extra_args: data_logger_SHIELD=nrf7002eb
+    platform_allow:
+      - thingy53/nrf5340/cpuapp
+    integration_platforms:
+      - thingy53/nrf5340/cpuapp
