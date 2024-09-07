@@ -1,9 +1,9 @@
 / {
-	data_logger_serial: data_logger_serial {
+	data_logger_dummy: data_logger_dummy {
 		compatible = "embeint,data-logger-epacket", "embeint,data-logger";
 		epacket = <&epacket_dummy>;
 
-		tdf_logger_serial: tdf_logger_serial {
+		tdf_logger_dummy: tdf_logger_dummy {
 			compatible = "embeint,tdf-data-logger";
 		};
 	};
