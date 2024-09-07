@@ -34,7 +34,7 @@ struct logger_data {
 	struct test_tdf_buffer_state tdf_state;
 	uint8_t full_block_write;
 	uint8_t block_overhead;
-	uint8_t tdf_buffer[DATA_LOGGER_MAX_SIZE(DT_NODELABEL(data_logger_epacket))];
+	uint8_t tdf_buffer[DATA_LOGGER_MAX_SIZE(DT_NODELABEL(data_logger_dummy))];
 	uint32_t guard_tail;
 };
 
@@ -97,7 +97,7 @@ static void tdf_reboot_info_log_expect(uint8_t reason)
 ZTEST(tdf_data_logger_recovery, test_logger_recovery)
 {
 	KV_KEY_TYPE(KV_KEY_REBOOTS) reboots;
-	const struct device *tdf_logger = DEVICE_DT_GET(DT_NODELABEL(tdf_logger_serial));
+	const struct device *tdf_logger = DEVICE_DT_GET(DT_NODELABEL(tdf_logger_dummy));
 	struct k_fifo *sent_queue = epacket_dummmy_transmit_fifo_get();
 	struct net_buf *buf;
 	int rc;

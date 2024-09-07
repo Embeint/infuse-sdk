@@ -6,5 +6,8 @@ tests:
   data_logger.tdf.reboot_recover:
     required_snippets:
       - infuse
+    platform_exclude:
+      - nrf9161dk/nrf9161/ns
+      - nrf9151dk/nrf9151/ns
     integration_platforms:
       - mps2/an385
