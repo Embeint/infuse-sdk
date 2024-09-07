@@ -66,4 +66,8 @@ module = TDF_DATA_LOGGER
 module-str = TDF data logger
 source "subsys/logging/Kconfig.template.log_config"
 
+config TDF_DATA_LOGGER_SERIAL_DUMMY_BACKEND
+	bool "Route `TDF_DATA_LOGGER_SERIAL to `dt_nodelabel(tdf_logger_dummy)"
+	depends on ZTEST
+
 endif # TDF_DATA_LOGGER

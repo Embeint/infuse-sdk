@@ -64,7 +64,11 @@ struct tdf_logger_data {
 static const struct device *logger_mapping[] = {
 	[_TDF_DATA_LOGGER_FLASH_OFFSET] = LOGGER_GET(DT_NODELABEL(tdf_logger_flash)),
 	[_TDF_DATA_LOGGER_REMOVABLE_OFFSET] = LOGGER_GET(DT_NODELABEL(tdf_logger_removable)),
+#ifdef CONFIG_TDF_DATA_LOGGER_SERIAL_DUMMY_BACKEND
+	[_TDF_DATA_LOGGER_SERIAL_OFFSET] = LOGGER_GET(DT_NODELABEL(tdf_logger_dummy)),
+#else
 	[_TDF_DATA_LOGGER_SERIAL_OFFSET] = LOGGER_GET(DT_NODELABEL(tdf_logger_serial)),
+#endif /* CONFIG_TDF_DATA_LOGGER_SERIAL_DUMMY_BACKEND */
 	[_TDF_DATA_LOGGER_UDP_OFFSET] = LOGGER_GET(DT_NODELABEL(tdf_logger_udp)),
 	[_TDF_DATA_LOGGER_BT_ADV_OFFSET] = LOGGER_GET(DT_NODELABEL(tdf_logger_bt_adv)),
 };
