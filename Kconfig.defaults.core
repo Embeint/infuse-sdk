@@ -83,6 +83,11 @@ configdefault MCUMGR_SMP_SUPPORT_ORIGINAL_PROTOCOL
 	default n
 configdefault MCUMGR_TRANSPORT_BT
 	default y
+# TF-M uses `OVERWRITE-ONLY`, which requires confirming non-active images
+configdefault MCUMGR_GRP_IMG_ALLOW_CONFIRM_NON_ACTIVE_IMAGE_ANY
+	default y if BUILD_WITH_TFM
+configdefault MCUMGR_GRP_IMG_ALLOW_ERASE_PENDING
+	default y if BUILD_WITH_TFM
 configdefault MCUMGR_GRP_OS_INFUSE
 	default y
 configdefault MCUMGR_GRP_IMG
