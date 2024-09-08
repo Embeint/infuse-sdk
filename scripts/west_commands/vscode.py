@@ -233,6 +233,12 @@ class vscode(WestCommand):
         launch["configurations"][0]["executable"] = str(build_dir / "bin" / "tfm_s.elf")
         launch["configurations"][1]["executable"] = str(build_dir / "bin" / "tfm_s.elf")
 
+        bl2_elf = build_dir / "bin" / "bl2.elf"
+        if bl2_elf.exists():
+            launch["configurations"][0]["preAttachCommands"] = [
+                f"add-symbol-file {bl2_elf}"
+            ]
+
         # Get options from parent Zephyr build
         parent_cache = zcmake.CMakeCache.from_build_dir(build_dir.parent)
         c_cpp_properties["configurations"][0]["compilerPath"] = parent_cache.get(
