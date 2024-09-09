@@ -12,6 +12,7 @@
 #include <zephyr/kernel.h>
 #include <zephyr/random/random.h>
 
+#include <infuse/states.h>
 #include <infuse/task_runner/schedule.h>
 
 ZTEST(task_runner_schedules, test_validate_schedules)
@@ -204,4 +205,29 @@ ZTEST(task_runner_schedules, test_complex)
 	zassert_true(task_schedule_should_terminate(&schedule, &state, 130, 1000, 19));
 }
 
-ZTEST_SUITE(task_runner_schedules, NULL, NULL, NULL, NULL, NULL);
+ZTEST(task_runner_schedules, test_reboot_termination)
+{
+
+	struct task_schedule schedule = {
+		.validity = TASK_VALID_ALWAYS,
+	};
+	struct task_schedule_state state = {0};
+
+	zassert_true(task_schedule_validate(&schedule));
+
+	/* Normally, task should always start and never terminate */
+	zassert_true(task_schedule_should_start(&schedule, &state, 1000, 150, 100));
+	zassert_false(task_schedule_should_terminate(&schedule, &state, 1000, 100, 100));
+
+	/* Rebooting state should trigger task to terminate and not start */
+	infuse_state_set(INFUSE_STATE_REBOOTING);
+	zassert_false(task_schedule_should_start(&schedule, &state, 1000, 150, 100));
+	zassert_true(task_schedule_should_terminate(&schedule, &state, 1000, 100, 100));
+}
+
+void test_init(void *fixture)
+{
+	infuse_state_clear(INFUSE_STATE_REBOOTING);
+}
+
+ZTEST_SUITE(task_runner_schedules, NULL, NULL, test_init, NULL, NULL);

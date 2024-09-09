@@ -6,6 +6,7 @@
  * SPDX-License-Identifier: LicenseRef-Embeint
  */
 
+#include <infuse/states.h>
 #include <infuse/task_runner/schedule.h>
 
 bool task_schedule_validate(const struct task_schedule *schedule)
@@ -38,6 +39,13 @@ bool task_schedule_should_start(const struct task_schedule *schedule,
 	bool periodicity = true;
 	bool battery = true;
 
+#ifdef CONFIG_INFUSE_APPLICATION_STATES
+	/* No tasks should be started when system is about to go down */
+	if (infuse_state_get(INFUSE_STATE_REBOOTING)) {
+		return false;
+	}
+#endif
+
 	if (schedule->periodicity_type == TASK_PERIODICITY_FIXED) {
 		periodicity = (epoch_time % schedule->periodicity.fixed.period_s) == 0;
 	}
@@ -55,6 +63,13 @@ bool task_schedule_should_terminate(const struct task_schedule *schedule,
 {
 	bool periodicity = false;
 	bool battery = false;
+
+#ifdef CONFIG_INFUSE_APPLICATION_STATES
+	/* Tasks should be terminated when system is about to go down */
+	if (infuse_state_get(INFUSE_STATE_REBOOTING)) {
+		return true;
+	}
+#endif
 
 	if (schedule->timeout_s) {
 		periodicity = state->runtime >= schedule->timeout_s;
