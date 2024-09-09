@@ -83,6 +83,11 @@ configdefault MCUMGR_SMP_SUPPORT_ORIGINAL_PROTOCOL
 	default n
 configdefault MCUMGR_TRANSPORT_BT
 	default y
+configdefault MCUMGR_TRANSPORT_BT_REASSEMBLY
+	default y
+# nRF Connect for Mobile assumes at least 512 bytes payload available
+configdefault MCUMGR_TRANSPORT_NETBUF_SIZE
+	default 520
 # TF-M uses `OVERWRITE-ONLY`, which requires confirming non-active images
 configdefault MCUMGR_GRP_IMG_ALLOW_CONFIRM_NON_ACTIVE_IMAGE_ANY
 	default y if BUILD_WITH_TFM
