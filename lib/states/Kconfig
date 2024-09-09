@@ -1,0 +1,16 @@
+# Infuse-IoT application states
+
+config INFUSE_APPLICATION_STATES
+	bool "Application states"
+
+if INFUSE_APPLICATION_STATES
+
+module = INFUSE_APPLICATION_STATES
+module-str = states
+source "subsys/logging/Kconfig.template.log_config"
+
+config INFUSE_APPLICATION_STATES_MAX_TIMEOUTS
+	int "Maximum number of timeouts that can be pending at a time"
+	default 8
+
+endif
