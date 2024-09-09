@@ -37,6 +37,8 @@
 			write-block-size = <1>;
 			img-secondary-secure = <&slot1_s_partition>;
 			img-secondary-nonsecure = <&slot1_ns_partition>;
+			/* Drive pin high to disable SD card interface */
+			extra-defines = "SPI_NOR_ENABLE_PIN=20";
 		};
 	};
 
