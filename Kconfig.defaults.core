@@ -69,6 +69,9 @@ configdefault FILE_SYSTEM_RAW_API
 configdefault INFUSE_EPOCH_TIME
 	default y
 
+configdefault INFUSE_APPLICATION_STATES
+	default y
+
 # Application management
 if BOOTLOADER_MCUBOOT || BUILD_WITH_TFM
 configdefault STREAM_FLASH
