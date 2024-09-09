@@ -7,6 +7,7 @@ zephyr_sources_ifdef(CONFIG_INFUSE_EPOCH_TIME time/epoch.c)
 
 add_subdirectory(auto)
 add_subdirectory(math)
+add_subdirectory(states)
 add_subdirectory_ifdef(CONFIG_INFUSE_SDK vendor)
 add_subdirectory_ifdef(CONFIG_INFUSE_SECURITY crypto/hardware_unique_key)
 add_subdirectory_ifdef(CONFIG_CRYPTO_ASCON crypto/ascon)
