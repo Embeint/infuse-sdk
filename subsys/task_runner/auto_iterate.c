@@ -13,6 +13,7 @@
 #include <infuse/task_runner/runner.h>
 #include <infuse/tdf/definitions.h>
 #include <infuse/zbus/channels.h>
+#include <infuse/states.h>
 
 static struct k_work_delayable iterate_work;
 extern struct k_work_q task_runner_workq;
@@ -37,6 +38,10 @@ static void iterate_worker(struct k_work *work)
 
 	/* Iterate the runner */
 	task_runner_iterate(k_uptime_seconds(), gps_time, charge);
+
+#ifdef CONFIG_INFUSE_APPLICATION_STATES
+	infuse_states_tick();
+#endif
 
 	/* Schedule the next iteration */
 	k_work_schedule_for_queue(&task_runner_workq, &iterate_work,

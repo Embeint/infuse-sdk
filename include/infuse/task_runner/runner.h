@@ -62,6 +62,7 @@ void task_runner_iterate(uint32_t uptime, uint32_t gps_time, uint8_t battery_cha
  * @brief Automatically iterate the task runner
  *
  * Automatically calls @ref task_runner_iterate once a second forever.
+ * Also calls @ref infuse_states_tick if CONFIG_INFUSE_APPLICATION_STATES is enabled.
  *
  * @warning Do NOT call @ref task_runner_iterate after this function.
  */
