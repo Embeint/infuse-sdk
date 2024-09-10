@@ -15,6 +15,8 @@ configdefault NRF_OBERON
 	default y if !BUILD_WITH_TFM
 
 # LTE defaults
+configdefault AT_MONITOR_HEAP_SIZE
+	default 512
 configdefault NET_IPV6_MLD
 	default n if NRF_MODEM_LIB
 configdefault NET_IPV6_NBR_CACHE
@@ -33,6 +35,7 @@ configdefault LTE_LC_MODEM_SLEEP_PRE_WARNING_TIME_MS
 	default 500
 configdefault LTE_LC_MODEM_SLEEP_NOTIFICATIONS_THRESHOLD_MS
 	default 10240
+
 # Default PSM mode
 configdefault LTE_PSM_REQ
 	default y
