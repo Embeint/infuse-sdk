@@ -137,6 +137,12 @@ static void log_and_publish(struct gnss_run_state *state, const struct ubx_msg_n
 		llha.h_acc = INT32_MAX;
 		llha.v_acc = INT32_MAX;
 	}
+	/* Set invalid location on insufficient accuracy */
+	if (pvt->h_acc > (CONFIG_TASK_RUNNER_GNSS_MINIMUM_ACCURACY_M * 1000)) {
+		llha.location.longitude = -1810000000;
+		llha.location.latitude = -910000000;
+		llha.location.height = 0;
+	}
 
 	/* Publish new data reading */
 	zbus_chan_pub(ZBUS_CHAN, &llha, K_FOREVER);
