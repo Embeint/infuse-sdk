@@ -17,6 +17,7 @@
 #include <zephyr/net/conn_mgr_connectivity.h>
 #include <zephyr/logging/log_ctrl.h>
 
+#include <infuse/states.h>
 #include <infuse/drivers/watchdog.h>
 #include <infuse/time/epoch.h>
 #include <infuse/reboot.h>
@@ -115,6 +116,11 @@ void infuse_reboot_delayed(enum infuse_reboot_reason reason, uint32_t info1, uin
 			   k_timeout_t delay)
 {
 	static struct k_work_delayable reboot_worker;
+
+#ifdef CONFIG_INFUSE_APPLICATION_STATES
+	/* Set rebooting state */
+	infuse_state_set(INFUSE_STATE_REBOOTING);
+#endif
 
 	/* Init the worker */
 	k_work_init_delayable(&reboot_worker, delayed_do_reboot);

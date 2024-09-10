@@ -9,6 +9,7 @@
 #include <zephyr/ztest.h>
 #include <zephyr/logging/log.h>
 
+#include <infuse/states.h>
 #include <infuse/fs/kv_store.h>
 #include <infuse/fs/kv_types.h>
 #include <infuse/reboot.h>
@@ -47,10 +48,12 @@ ZTEST(infuse_reboot, test_reboot)
 		/* Querying info should fail */
 		rc = infuse_reboot_state_query(&reboot_state);
 		zassert_equal(-ENOENT, rc);
-		/* Schedule a delayed reboot */
+		zassert_false(infuse_state_get(INFUSE_STATE_REBOOTING));
+		/* Schedule a delayed reboot, check state was set */
 		infuse_reboot_delayed(INFUSE_REBOOT_EXTERNAL_TRIGGER, 1000, 2000, K_SECONDS(3));
-		zassert_equal(0, k_sleep(K_MSEC(2500)));
+		zassert_true(infuse_state_get(INFUSE_STATE_REBOOTING));
 		/* Set the time reference just before the reboot */
+		zassert_equal(0, k_sleep(K_MSEC(2500)));
 		time_reference.local = k_uptime_ticks();
 		time_reference.ref = time_2025;
 		epoch_time_set_reference(TIME_SOURCE_NTP, &time_reference);
