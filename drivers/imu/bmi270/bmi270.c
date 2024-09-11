@@ -573,6 +573,9 @@ int bmi270_data_read(const struct device *dev, struct imu_sample_array *samples,
 			buffer_offset += 6;
 		}
 	}
+	if (data_frames == 0) {
+		return -ENODATA;
+	}
 	if (interrupt_frame == 0) {
 		interrupt_frame = data_frames;
 	}
