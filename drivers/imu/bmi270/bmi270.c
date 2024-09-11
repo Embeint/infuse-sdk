@@ -200,11 +200,13 @@ static void bmi270_gpio_callback(const struct device *dev, struct gpio_callback 
 static int bmi270_low_power_reset(const struct device *dev)
 {
 	const struct bmi270_config *config = dev->config;
+	struct bmi270_data *data = dev->data;
 	uint8_t reg_val;
 	int rc;
 
 	(void)gpio_pin_interrupt_configure_dt(&config->int1_gpio, GPIO_INT_DISABLE);
 	(void)gpio_pin_configure_dt(&config->int1_gpio, GPIO_DISCONNECTED);
+	(void)k_sem_take(&data->int1_sem, K_NO_WAIT);
 
 	reg_val = 0x00;
 	rc = bmi270_reg_read(dev, BMI270_REG_PWR_CTRL, &reg_val, 1);

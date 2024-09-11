@@ -88,11 +88,13 @@ static inline int lsm6dsv_reg_write(const struct device *dev, uint8_t reg, const
 static int lsm6dsv_low_power_reset(const struct device *dev)
 {
 	const struct lsm6dsv_config *cfg = dev->config;
+	struct lsm6dsv_data *data = dev->data;
 	uint8_t reg_val;
 	int rc;
 
 	(void)gpio_pin_interrupt_configure_dt(&cfg->int1_gpio, GPIO_INT_DISABLE);
 	(void)gpio_pin_configure_dt(&cfg->int1_gpio, GPIO_DISCONNECTED);
+	(void)k_sem_take(&data->int1_sem, K_NO_WAIT);
 
 	/* Soft-reset the device */
 	reg_val = LSM6DSV_FUNC_CFG_ACCESS_SW_POR;
