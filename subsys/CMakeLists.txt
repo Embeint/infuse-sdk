@@ -2,6 +2,7 @@
 
 add_subdirectory_ifdef(CONFIG_BT bluetooth)
 add_subdirectory_ifdef(CONFIG_DATA_LOGGER data_logger)
+add_subdirectory_ifdef(CONFIG_IMG_MANAGER dfu)
 add_subdirectory_ifdef(CONFIG_EPACKET epacket)
 add_subdirectory_ifdef(CONFIG_TDF tdf)
 add_subdirectory_ifdef(CONFIG_INFUSE_RPC rpc)

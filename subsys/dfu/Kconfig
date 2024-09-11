@@ -1,0 +1,10 @@
+# Infuse-IoT DFU libraries
+
+config INFUSE_DFU_EXFAT
+	bool "Upgrade application images from an exFAT filesystem"
+	depends on MCUBOOT_IMG_MANAGER
+	depends on DATA_LOGGER_EXFAT
+	default y
+	help
+	  Enable functions to automate the process of upgrading firmware from a
+	  /dfu folder on a mounted filesystem.
