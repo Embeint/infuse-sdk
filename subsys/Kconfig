@@ -1,4 +1,5 @@
 rsource "data_logger/Kconfig"
+rsource "dfu/Kconfig"
 rsource "epacket/Kconfig"
 rsource "tdf/Kconfig"
 rsource "fs/Kconfig"

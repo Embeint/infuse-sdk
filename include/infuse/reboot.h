@@ -48,6 +48,8 @@ enum infuse_reboot_reason {
 	INFUSE_REBOOT_LTE_MODEM_FAULT,
 	/* MCUmgr request */
 	INFUSE_REBOOT_MCUMGR,
+	/* exFAT DFU triggered */
+	INFUSE_REBOOT_EXFAT_DFU,
 	/* Unknown reboot reason */
 	INFUSE_REBOOT_UNKNOWN = 255,
 };
