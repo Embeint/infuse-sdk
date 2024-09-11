@@ -13,6 +13,6 @@ properties:
   max-packet-size:
     default: 113
   header-size:
-    default: 22
+    default: 23
   footer-size:
     default: 16
