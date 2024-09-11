@@ -470,6 +470,9 @@ int lsm6dsv_data_read(const struct device *dev, struct imu_sample_array *samples
 		}
 		sample++;
 	}
+	if (data_frames == 0) {
+		return -ENODATA;
+	}
 	if (interrupt_frame == 0) {
 		interrupt_frame = data_frames;
 	}
