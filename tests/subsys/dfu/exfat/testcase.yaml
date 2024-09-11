@@ -1,0 +1,10 @@
+common:
+  tags: dfu
+  min_flash: 64
+  min_ram: 32
+tests:
+  dfu.exfat:
+    platform_allow:
+      - native_sim
+    integration_platforms:
+      - native_sim
