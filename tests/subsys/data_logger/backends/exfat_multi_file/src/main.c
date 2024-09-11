@@ -16,6 +16,7 @@
 #include <zephyr/pm/device.h>
 
 #include <infuse/data_logger/logger.h>
+#include <infuse/data_logger/backend/exfat.h>
 
 #include <ff.h>
 
@@ -280,6 +281,23 @@ ZTEST(data_logger_exfat, test_reset)
 	zassert_equal(0, logger_exfat_init(logger));
 	data_logger_get_state(logger, &state);
 	zassert_equal(0, state.current_block);
+}
+
+ZTEST(data_logger_exfat, test_filesystem_claim)
+{
+	const struct device *logger = DEVICE_DT_GET(DT_NODELABEL(data_logger_exfat));
+	uint8_t *block_buffer;
+	size_t block_size;
+
+	zassert_not_null(logger_exfat_filesystem_claim(logger, NULL, NULL, K_FOREVER));
+	zassert_is_null(logger_exfat_filesystem_claim(logger, NULL, NULL, K_SECONDS(1)));
+	logger_exfat_filesystem_release(logger);
+
+	zassert_not_null(
+		logger_exfat_filesystem_claim(logger, &block_buffer, &block_size, K_FOREVER));
+	zassert_not_null(block_buffer);
+	zassert_equal(512, block_size);
+	logger_exfat_filesystem_release(logger);
 }
 
 static bool test_data_init(const void *global_state)

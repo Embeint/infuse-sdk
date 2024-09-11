@@ -17,6 +17,7 @@
 #include <zephyr/pm/device_runtime.h>
 
 #include <infuse/data_logger/logger.h>
+#include <infuse/data_logger/backend/exfat.h>
 #include <infuse/identifiers.h>
 
 #include <ff.h>
@@ -36,12 +37,15 @@ static int logger_exfat_write(const struct device *dev, uint32_t phy_block,
 
 	__ASSERT(mem_len == DATA_LOGGER_EXFAT_BLOCK_SIZE, "Not full block");
 
+	(void)logger_exfat_filesystem_claim(dev, NULL, NULL, K_FOREVER);
+
 	LOG_DBG("Writing to logger block: %08X LBA: %08X", phy_block, disk_lba);
 	rc = disk_access_write(config->disk, mem, disk_lba, 1);
 	if (rc == 0) {
 		/* Sync on each write for now */
 		rc = disk_access_ioctl(config->disk, DISK_IOCTL_CTRL_SYNC, NULL);
 	}
+	logger_exfat_filesystem_release(dev);
 	return rc;
 }
 
@@ -147,6 +151,8 @@ int logger_exfat_init(const struct device *dev)
 	FILINFO fno;
 	FIL fp;
 	int rc;
+
+	k_sem_init(&data->filesystem_claim, 1, 1);
 
 	/* Initial mount attempt */
 	snprintf(path, sizeof(path), "%s:", config->disk);

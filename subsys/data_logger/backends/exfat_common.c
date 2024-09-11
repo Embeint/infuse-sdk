@@ -8,6 +8,7 @@
 
 #include <stdio.h>
 
+#include <zephyr/sys/__assert.h>
 #include <zephyr/logging/log.h>
 #include <zephyr/storage/disk_access.h>
 
@@ -135,4 +136,28 @@ int logger_exfat_filesystem_common_init(const struct device *dev)
 	(void)f_close(&fp);
 
 	return res == FR_OK ? 0 : -EIO;
+}
+
+const char *logger_exfat_filesystem_claim(const struct device *dev, uint8_t **buf, size_t *buf_size,
+					  k_timeout_t timeout)
+{
+	const struct dl_exfat_config *config = dev->config;
+	struct dl_exfat_data *data = dev->data;
+
+	if (k_sem_take(&data->filesystem_claim, timeout) != 0) {
+		return NULL;
+	}
+	if (buf != NULL) {
+		__ASSERT_NO_MSG(buf_size != NULL);
+		*buf = data->block_buffer;
+		*buf_size = sizeof(data->block_buffer);
+	}
+	return config->disk;
+}
+
+void logger_exfat_filesystem_release(const struct device *dev)
+{
+	struct dl_exfat_data *data = dev->data;
+
+	k_sem_give(&data->filesystem_claim);
 }

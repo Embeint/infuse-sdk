@@ -17,6 +17,7 @@
 #include <zephyr/pm/device_runtime.h>
 
 #include <infuse/data_logger/logger.h>
+#include <infuse/data_logger/backend/exfat.h>
 #include <infuse/time/epoch.h>
 #include <infuse/identifiers.h>
 
@@ -116,21 +117,25 @@ static int logger_exfat_write(const struct device *dev, uint32_t phy_block,
 			      enum infuse_type data_type, const void *mem, uint16_t mem_len)
 {
 	const struct dl_exfat_config *config = dev->config;
-	uint32_t disk_lba = disk_lba_from_block(dev, phy_block);
+	uint32_t disk_lba;
 	int rc;
 
 	__ASSERT(mem_len == DATA_LOGGER_EXFAT_BLOCK_SIZE, "Not full block");
 
+	(void)logger_exfat_filesystem_claim(dev, NULL, NULL, K_FOREVER);
+	disk_lba = disk_lba_from_block(dev, phy_block);
+
 	/* No memory left on filesystem */
 	if (disk_lba == LBA_NO_MEM) {
-		return -ENOMEM;
+		rc = -ENOMEM;
+		goto end;
 	}
 	/* File does not exist on filesystem */
 	else if (disk_lba == LBA_NO_FILE) {
 		/* Allocate the binary file on the filesystem */
 		rc = binary_container_create(dev, phy_block);
 		if (rc < 0) {
-			return rc;
+			goto end;
 		}
 		/* Recalculate the LBA */
 		disk_lba = disk_lba_from_block(dev, phy_block);
@@ -142,6 +147,8 @@ static int logger_exfat_write(const struct device *dev, uint32_t phy_block,
 		/* Sync on each write for now */
 		rc = disk_access_ioctl(config->disk, DISK_IOCTL_CTRL_SYNC, NULL);
 	}
+end:
+	logger_exfat_filesystem_release(dev);
 	return rc;
 }
 
@@ -150,10 +157,14 @@ static int logger_exfat_read(const struct device *dev, uint32_t phy_block, uint1
 {
 	const struct dl_exfat_config *config = dev->config;
 	struct dl_exfat_data *data = dev->data;
-	uint32_t disk_lba = disk_lba_from_block(dev, phy_block);
+	uint32_t disk_lba;
 	int rc;
 
+	(void)logger_exfat_filesystem_claim(dev, NULL, NULL, K_FOREVER);
+	disk_lba = disk_lba_from_block(dev, phy_block);
+
 	if ((disk_lba == LBA_NO_FILE) || (disk_lba == LBA_NO_MEM)) {
+		logger_exfat_filesystem_release(dev);
 		/* File does not exist on filesystem, set data to 0xFF and return */
 		memset(mem, 0xFF, mem_len);
 		return 0;
@@ -165,6 +176,7 @@ static int logger_exfat_read(const struct device *dev, uint32_t phy_block, uint1
 	rc = disk_access_read(config->disk, data->block_buffer, disk_lba, 1);
 	/* Memcpy required data out */
 	memcpy(mem, data->block_buffer + block_offset, mem_len);
+	logger_exfat_filesystem_release(dev);
 	return rc;
 }
 
@@ -207,6 +219,8 @@ int logger_exfat_init(const struct device *dev)
 
 	data->cached_file_num = UINT32_MAX;
 	data->cached_file_lba = UINT32_MAX;
+
+	k_sem_init(&data->filesystem_claim, 1, 1);
 
 	/* Initial mount attempt */
 	snprintf(disk_path, sizeof(disk_path), "%s:", config->disk);
