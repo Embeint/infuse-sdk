@@ -12,9 +12,11 @@
 #include <zephyr/pm/device_runtime.h>
 #include <zephyr/net/conn_mgr_connectivity.h>
 
+#include <infuse/version.h>
 #include <infuse/auto/time_sync_log.h>
 #include <infuse/bluetooth/legacy_adv.h>
 #include <infuse/drivers/watchdog.h>
+#include <infuse/dfu/exfat.h>
 #include <infuse/time/epoch.h>
 #include <infuse/fs/kv_store.h>
 #include <infuse/fs/kv_types.h>
@@ -155,10 +157,42 @@ TASK_RUNNER_TASKS_DEFINE(app_tasks, app_tasks_data, (TDF_LOGGER_TASK),
 			 (BATTERY_TASK, DEVICE_DT_GET(DT_ALIAS(fuel_gauge0))),
 			 (ENVIRONMENTAL_TASK, DEVICE_DT_GET(DT_ALIAS(environmental0))));
 
+#ifdef CONFIG_INFUSE_DFU_EXFAT
+static void dfu_progress_cb(size_t copied, size_t total)
+{
+	/* Feed all the watchdogs */
+	infuse_watchdog_feed_all();
+}
+
+static void dfu_exfat_run(void)
+{
+	const struct device *logger = DEVICE_DT_GET_ONE(embeint_data_logger_exfat);
+	uint8_t upgrade_partition = FIXED_PARTITION_ID(slot1_partition);
+	struct infuse_version upgrade_version;
+
+	if (dfu_exfat_app_upgrade_exists(logger, &upgrade_version) == 1) {
+		LOG_INF("Upgrade image to %d.%d.%d", upgrade_version.major, upgrade_version.minor,
+			upgrade_version.revision);
+		if (dfu_exfat_app_upgrade_copy(logger, upgrade_version, upgrade_partition,
+					       dfu_progress_cb) == 0) {
+			LOG_INF("New image copied");
+			if (boot_request_upgrade_multi(0, 0) == 0) {
+				LOG_INF("Rebooting into new image");
+				infuse_reboot(INFUSE_REBOOT_EXFAT_DFU, 0x00, 0x00);
+			}
+		}
+	}
+}
+#endif /* CONFIG_INFUSE_DFU_EXFAT */
+
 int main(void)
 {
 	/* Start the watchdog */
 	(void)infuse_watchdog_start();
+
+#ifdef CONFIG_INFUSE_DFU_EXFAT
+	dfu_exfat_run();
+#endif /* CONFIG_INFUSE_DFU_EXFAT */
 
 	/* Log reboot events */
 	tdf_reboot_info_log(TDF_DATA_LOGGER_REMOVABLE | TDF_DATA_LOGGER_BT_ADV |
