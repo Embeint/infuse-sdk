@@ -171,6 +171,15 @@ static inline void infuse_watchdog_feed(int wdog_channel)
 	}
 }
 
+/**
+ * @brief Feed all Infuse watchdog channels
+ *
+ * @note Should only be used in situations where the action of one thread
+ *       could impact the timing of all watchdog channels. One example of
+ *       this is erasing internal flash on nRF SoCs.
+ */
+void infuse_watchdog_feed_all(void);
+
 #else
 
 #define INFUSE_WATCHDOG_REGISTER_SYS_INIT(name, dependency, chan_name, period_name)                \
@@ -198,6 +207,10 @@ static inline int infuse_watchdog_start(void)
 }
 
 static inline void infuse_watchdog_feed(int wdog_channel)
+{
+}
+
+static inline void infuse_watchdog_feed_all(void)
 {
 }
 

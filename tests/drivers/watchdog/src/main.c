@@ -104,6 +104,10 @@ ZTEST(drivers_watchdog, test_watchdog)
 		infuse_watchdog_feed(0);
 		k_sleep(K_SECONDS(1));
 	}
+	for (int i = 0; i < 3; i++) {
+		infuse_watchdog_feed_all();
+		k_sleep(K_SECONDS(1));
+	}
 	/* Failing to call task_runner_iterate should result in a watchdog interrupt */
 	rc = k_sem_take(&watchdog_expired, K_NO_WAIT);
 	zassert_equal(-EBUSY, rc, "Watchdog expired early");

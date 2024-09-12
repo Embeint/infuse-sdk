@@ -50,3 +50,10 @@ int infuse_watchdog_thread_state_lookup(int wdog_channel, uint32_t *info1, uint3
 	}
 	return 0;
 }
+
+void infuse_watchdog_feed_all(void)
+{
+	for (int i = 0; i < 8; i++) {
+		(void)wdt_feed(INFUSE_WATCHDOG_DEV, i);
+	}
+}
