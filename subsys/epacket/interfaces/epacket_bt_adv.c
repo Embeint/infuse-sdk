@@ -24,6 +24,7 @@
 LOG_MODULE_REGISTER(epacket_bt_adv, CONFIG_EPACKET_BT_ADV_LOG_LEVEL);
 
 static void adv_set_complete(struct bt_le_ext_adv *adv, struct bt_le_ext_adv_sent_info *info);
+static void adv_set_complete_worker(struct k_work *work);
 
 static const struct bt_le_ext_adv_cb adv_cb = {
 	.sent = adv_set_complete,
@@ -40,8 +41,9 @@ static const struct bt_le_scan_param scan_param = {
 	.window = 0x0020,
 };
 static struct net_buf *adv_set_bufs[CONFIG_BT_EXT_ADV_MAX_ADV_SET];
-static struct k_spinlock queue_lock;
+static K_SEM_DEFINE(queue_lock, 1, 1);
 static K_FIFO_DEFINE(tx_buf_queue);
+static struct k_work adv_set_complete_work;
 static struct bt_le_ext_adv *adv_set;
 static bool adv_set_active;
 
@@ -121,28 +123,41 @@ end:
 	}
 }
 
-static void adv_set_complete(struct bt_le_ext_adv *adv, struct bt_le_ext_adv_sent_info *info)
+static void adv_set_complete_worker(struct k_work *work)
 {
-	uint8_t set_idx = bt_le_ext_adv_get_index(adv);
+	uint8_t set_idx = bt_le_ext_adv_get_index(adv_set);
 	struct net_buf *curr, *next;
+
+	if (k_sem_take(&queue_lock, K_NO_WAIT) != 0) {
+		/* If we can't immediately access the queue, reschedule so we aren't blocking the
+		 * workqueue.
+		 */
+		LOG_DBG("Rescheduling work");
+		k_work_submit(work);
+		return;
+	}
 
 	curr = adv_set_bufs[set_idx];
 	adv_set_bufs[set_idx] = NULL;
 
-	K_SPINLOCK(&queue_lock) {
-		next = net_buf_get(&tx_buf_queue, K_NO_WAIT);
-		if (next) {
-			LOG_DBG("Chaining next buf: %p", next);
-			bt_adv_broadcast(DEVICE_DT_INST_GET(0), next);
-		} else {
-			LOG_DBG("Adv chain complete: %d", set_idx);
-			adv_set_active = false;
-		}
+	next = net_buf_get(&tx_buf_queue, K_NO_WAIT);
+	if (next) {
+		LOG_DBG("Chaining next buf: %p", next);
+		bt_adv_broadcast(DEVICE_DT_INST_GET(0), next);
+	} else {
+		LOG_DBG("Adv chain complete: %d", set_idx);
+		adv_set_active = false;
 	}
+	k_sem_give(&queue_lock);
 
 	/* Notify TX result */
 	epacket_notify_tx_result(DEVICE_DT_INST_GET(0), curr, 0);
 	net_buf_unref(curr);
+}
+
+static void adv_set_complete(struct bt_le_ext_adv *adv, struct bt_le_ext_adv_sent_info *info)
+{
+	k_work_submit(&adv_set_complete_work);
 }
 
 static void epacket_bt_adv_send(const struct device *dev, struct net_buf *buf)
@@ -162,16 +177,16 @@ static void epacket_bt_adv_send(const struct device *dev, struct net_buf *buf)
 		bt_adv_broadcast(dev, buf);
 	}
 
-	K_SPINLOCK(&queue_lock) {
-		if (adv_set_active) {
-			/* Queue buffer for transmission if already active */
-			LOG_DBG("Queueing buf %p", buf);
-			net_buf_put(&tx_buf_queue, buf);
-		} else {
-			/* Broadcast if not active */
-			bt_adv_broadcast(dev, buf);
-		}
+	k_sem_take(&queue_lock, K_FOREVER);
+	if (adv_set_active) {
+		/* Queue buffer for transmission if already active */
+		LOG_DBG("Queueing buf %p", buf);
+		net_buf_put(&tx_buf_queue, buf);
+	} else {
+		/* Broadcast if not active */
+		bt_adv_broadcast(dev, buf);
 	}
+	k_sem_give(&queue_lock);
 }
 
 static void scan_cb(const bt_addr_le_t *addr, int8_t rssi, uint8_t adv_type,
@@ -227,6 +242,7 @@ static int epacket_bt_adv_init(const struct device *dev)
 	epacket_interface_common_init(dev);
 	epacket_bt_adv_ad_init();
 	k_fifo_init(&tx_buf_queue);
+	k_work_init(&adv_set_complete_work, adv_set_complete_worker);
 	return 0;
 }
 
