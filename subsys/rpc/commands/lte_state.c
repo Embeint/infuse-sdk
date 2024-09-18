@@ -43,7 +43,7 @@ static void nrf_modem_lte_state(struct rpc_struct_lte_state *lte)
 	lte->edrx_paging_window = state.edrx_cfg.ptw;
 
 	/* Current signal state */
-	(void)nrf_modem_monitor_signal_quality(&rsrp, &rsrq);
+	(void)nrf_modem_monitor_signal_quality(&rsrp, &rsrq, false);
 	lte->rsrp = rsrp;
 	lte->rsrq = rsrq;
 }

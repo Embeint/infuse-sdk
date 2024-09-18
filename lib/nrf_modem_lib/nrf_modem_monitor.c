@@ -32,6 +32,8 @@ LOG_MODULE_REGISTER(modem_monitor, LOG_LEVEL_INF);
 
 static struct {
 	struct nrf_modem_network_state network_state;
+	int16_t rsrp_cached;
+	int8_t rsrq_cached;
 	/* `lte_reg_handler` runs from the system workqueue, and the modem AT commands wait forever
 	 * on the response. This is problematic as the low level functions rely on malloc, which
 	 * can fail. Running AT commands directly from the callback context therefore has the
@@ -39,6 +41,7 @@ static struct {
 	 * time. Workaround this by running the commands in a different context.
 	 */
 	struct k_work update_work;
+	struct k_work signal_quality_work;
 } monitor;
 
 void nrf_modem_monitor_network_state(struct nrf_modem_network_state *state)
@@ -117,29 +120,39 @@ static void network_info_update(struct k_work *work)
 	}
 }
 
-int nrf_modem_monitor_signal_quality(int16_t *rsrp, int8_t *rsrq)
+static void signal_quality_update(struct k_work *work)
+{
+	int16_t rsrp;
+	int8_t rsrq;
+
+	(void)nrf_modem_monitor_signal_quality(&rsrp, &rsrq, false);
+}
+
+int nrf_modem_monitor_signal_quality(int16_t *rsrp, int8_t *rsrq, bool cached)
 {
 	uint8_t rsrp_idx, rsrq_idx;
 	int rc;
 
-	*rsrp = INT16_MIN;
-	*rsrq = INT8_MIN;
+	*rsrp = cached ? monitor.rsrp_cached : INT16_MIN;
+	*rsrq = cached ? monitor.rsrq_cached : INT8_MIN;
 
 	/* Query state from the modem */
 	rc = nrf_modem_at_scanf("AT+CESQ", "+CESQ: %*d,%*d,%*d,%*d,%" SCNu8 ",%" SCNu8, &rsrp_idx,
 				&rsrq_idx);
-	if (rc == 2) {
-		/* Convert from index to physical units if known */
-		if (rsrp_idx != 255) {
-			*rsrp = RSRP_IDX_TO_DBM(rsrp_idx);
-		}
-		if (rsrq_idx != 255) {
-			*rsrq = RSRQ_IDX_TO_DB(rsrq_idx);
-		}
-		return 0;
+	if (rc != 2) {
+		return -EAGAIN;
 	}
 
-	return -EAGAIN;
+	/* Convert from index to physical units if known */
+	if (rsrp_idx != 255) {
+		*rsrp = RSRP_IDX_TO_DBM(rsrp_idx);
+		monitor.rsrp_cached = *rsrp;
+	}
+	if (rsrq_idx != 255) {
+		*rsrq = RSRQ_IDX_TO_DB(rsrq_idx);
+		monitor.rsrq_cached = *rsrq;
+	}
+	return 0;
 }
 
 static void lte_reg_handler(const struct lte_lc_evt *const evt)
@@ -169,6 +182,10 @@ static void lte_reg_handler(const struct lte_lc_evt *const evt)
 		LOG_DBG("RRC_UPDATE");
 		LOG_DBG("   State: %s", evt->rrc_mode == LTE_LC_RRC_MODE_IDLE ? "Idle" : "Active");
 		monitor.network_state.rrc_mode = evt->rrc_mode;
+		if (evt->rrc_mode == LTE_LC_RRC_MODE_CONNECTED) {
+			/* Update cached knowledge of signal strength */
+			k_work_submit_to_queue(QUERY_WORKQ, &monitor.signal_quality_work);
+		}
 		break;
 	case LTE_LC_EVT_CELL_UPDATE:
 		LOG_DBG("CELL_UPDATE");
@@ -177,8 +194,13 @@ static void lte_reg_handler(const struct lte_lc_evt *const evt)
 		/* Set cell info */
 		monitor.network_state.cell.tac = evt->cell.tac;
 		monitor.network_state.cell.id = evt->cell.id;
+		/* Reset cached signal strength */
+		monitor.rsrp_cached = INT16_MIN;
+		monitor.rsrq_cached = INT8_MIN;
 		/* Request update of knowledge of network info */
 		k_work_submit_to_queue(QUERY_WORKQ, &monitor.update_work);
+		/* Update cached knowledge of signal strength */
+		k_work_submit_to_queue(QUERY_WORKQ, &monitor.signal_quality_work);
 		break;
 	case LTE_LC_EVT_LTE_MODE_UPDATE:
 		LOG_DBG("LTE_MODE_UPDATE");
@@ -257,9 +279,12 @@ void lte_net_if_modem_fault_app_handler(struct nrf_modem_fault_info *fault_info)
 int nrf_modem_monitor_init(void)
 {
 	k_work_init(&monitor.update_work, network_info_update);
+	k_work_init(&monitor.signal_quality_work, signal_quality_update);
 	/* Initial state */
 	monitor.network_state.edrx_cfg.edrx = -1.0f;
 	monitor.network_state.edrx_cfg.ptw = -1.0f;
+	monitor.rsrp_cached = INT16_MIN;
+	monitor.rsrq_cached = INT8_MIN;
 	/* Register handler */
 	lte_lc_register_handler(lte_reg_handler);
 	return 0;

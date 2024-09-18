@@ -357,7 +357,7 @@ void nrf_modem_monitor_network_state(struct nrf_modem_network_state *state)
 	*state = (struct nrf_modem_network_state){0};
 }
 
-int nrf_modem_monitor_signal_quality(int16_t *rsrp, int8_t *rsrq)
+int nrf_modem_monitor_signal_quality(int16_t *rsrp, int8_t *rsrq, bool cached)
 {
 	*rsrp = signal_qual.rsrp;
 	*rsrq = signal_qual.rsrq;
