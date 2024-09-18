@@ -63,6 +63,12 @@ configdefault LTE_PSM_REQ_RAT
 # 1 1 1 value indicates that the timer is deactivated (NOTE 2).
 configdefault LTE_PSM_REQ_RPTAU
 	default "00101100"
+# When networks don't support PSM natively, use the Nordic proprietary PSM
+# feature. Proprietary PSM can be used only in application use cases where
+# the device always initiates the data connection. Infuse-IoT satisfies this
+# requirement.
+configdefault LTE_PROPRIETARY_PSM_REQ
+	default y
 
 # WiFi defaults
 configdefault WIFI_NRF700X
