@@ -173,7 +173,7 @@ static void log_network_connection(uint8_t loggers, uint64_t timestamp)
 	tdf.earfcn = state.cell.earfcn;
 	tdf.rsrp = UINT8_MAX;
 	tdf.rsrq = INT8_MIN;
-	if (nrf_modem_monitor_signal_quality(&rsrp, &rsrq) == 0) {
+	if (nrf_modem_monitor_signal_quality(&rsrp, &rsrq, true) == 0) {
 		if (rsrp != INT16_MIN) {
 			tdf.rsrp = 0 - rsrp;
 		}

@@ -12,6 +12,8 @@
 #ifndef INFUSE_SDK_INCLUDE_INFUSE_LIB_NRF_MODEM_MONITOR_H_
 #define INFUSE_SDK_INCLUDE_INFUSE_LIB_NRF_MODEM_MONITOR_H_
 
+#include <stdbool.h>
+
 #include <modem/lte_lc.h>
 
 #ifdef __cplusplus
@@ -46,11 +48,14 @@ void nrf_modem_monitor_network_state(struct nrf_modem_network_state *state);
  *
  * @param rsrp Reference signal received power
  * @param rsrq Reference signal received quality
+ * @param cached Return cached signal quality from previous run if modem can
+ *               no longer determine the parameters. Cached values are reset
+ *               when the cell tower changes
  *
  * @retval 0 on success
  * @retval -errno on error
  */
-int nrf_modem_monitor_signal_quality(int16_t *rsrp, int8_t *rsrq);
+int nrf_modem_monitor_signal_quality(int16_t *rsrp, int8_t *rsrq, bool cached);
 
 /**
  * @}
