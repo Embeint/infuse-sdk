@@ -68,7 +68,7 @@ if TASK_RUNNER_TASK_GNSS_UBX
 
 config TASK_RUNNER_GNSS_MINIMUM_ACCURACY_M
 	int "Accuracies worse than this threshold are reported as (-181,-91)"
-	default 10000
+	default 100000
 
 config TASK_RUNNER_GNSS_TIME_RESYNC_PERIOD_SEC
 	int "Resynchronise time from GNSS every N seconds"
