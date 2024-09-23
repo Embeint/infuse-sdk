@@ -11,6 +11,7 @@
 #define INFUSE_SDK_INCLUDE_INFUSE_TASK_RUNNER_TASK_H_
 
 #include <zephyr/kernel.h>
+#include <zephyr/device.h>
 
 #include <infuse/task_runner/schedule.h>
 #include <infuse/data_logger/high_level/tdf.h>
@@ -32,6 +33,11 @@ enum {
 	TASK_EXECUTOR_WORKQUEUE,
 };
 
+enum {
+	/** task_arg union is a device pointer */
+	TASK_FLAG_ARG_IS_DEVICE = BIT(0),
+};
+
 typedef void (*task_runner_task_fn)(const struct task_schedule *schedule,
 				    struct k_poll_signal *terminate, void *arg);
 
@@ -45,8 +51,11 @@ struct task_config {
 	uint8_t task_id;
 	/** Execution context `TASK_EXECUTOR_*` */
 	uint8_t exec_type;
+	/** Task flags of type `TASK_FLAG_*` */
+	uint8_t flags;
 	/* Task specific argument */
 	union {
+		const struct device *dev;
 		const void *const_arg;
 		void *arg;
 	} task_arg;
@@ -94,6 +103,8 @@ struct task_data {
 	uint8_t schedule_idx;
 	/** Task is currently running */
 	bool running;
+	/** Skip evaluation of task */
+	bool skip;
 };
 
 /**
