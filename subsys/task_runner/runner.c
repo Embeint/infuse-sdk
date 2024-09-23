@@ -58,6 +58,14 @@ void task_runner_init(const struct task_schedule *schedules,
 	for (int i = 0; i < tsk_num; i++) {
 		tsk_states[i].running = false;
 		tsk_states[i].schedule_idx = UINT8_MAX;
+		/* Validate that device initialised properly */
+		if (tsk[i].flags & TASK_FLAG_ARG_IS_DEVICE) {
+			if (!device_is_ready(tsk[i].task_arg.dev)) {
+				LOG_WRN("Task %d device '%s' failed to initialise", i,
+					tsk[i].task_arg.dev->name);
+				tsk_states[i].skip = true;
+			}
+		}
 		/* Initialise delayable workers */
 		if (tsk[i].exec_type == TASK_EXECUTOR_WORKQUEUE) {
 			tsk_states[i].executor.workqueue.task_arg.const_arg =
@@ -213,6 +221,11 @@ void task_runner_iterate(uint32_t uptime, uint32_t gps_time, uint8_t battery_cha
 			continue;
 		}
 		struct task_data *d = &tsk_states[state->task_idx];
+
+		/* Should schedule be skipped? */
+		if (d->skip) {
+			continue;
+		}
 
 		/* Is referred task running due to a different schedule */
 		if (d->running && (d->schedule_idx != i)) {
