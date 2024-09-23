@@ -39,7 +39,8 @@ void battery_task_fn(struct k_work *work);
 	IF_ENABLED(define_config, ({.name = "bat",                                                 \
 				    .task_id = TASK_ID_BATTERY,                                    \
 				    .exec_type = TASK_EXECUTOR_WORKQUEUE,                          \
-				    .task_arg.const_arg = bat_ptr,                                 \
+				    .flags = TASK_FLAG_ARG_IS_DEVICE,                              \
+				    .task_arg.dev = bat_ptr,                                       \
 				    .executor.workqueue = {                                        \
 					    .worker_fn = battery_task_fn,                          \
 				    }}))
