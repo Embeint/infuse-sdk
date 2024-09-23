@@ -45,7 +45,8 @@ void imu_task_fn(const struct task_schedule *schedule, struct k_poll_signal *ter
 			   .name = "imu",                                                          \
 			   .task_id = TASK_ID_IMU,                                                 \
 			   .exec_type = TASK_EXECUTOR_THREAD,                                      \
-			   .task_arg.const_arg = imu_ptr,                                          \
+			   .flags = TASK_FLAG_ARG_IS_DEVICE,                                       \
+			   .task_arg.dev = imu_ptr,                                                \
 			   .executor.thread =                                                      \
 				   {                                                               \
 					   .task_fn = imu_task_fn,                                 \

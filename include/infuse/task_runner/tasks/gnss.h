@@ -45,7 +45,8 @@ void gnss_task_fn(const struct task_schedule *schedule, struct k_poll_signal *te
 			   .name = "gnss",                                                         \
 			   .task_id = TASK_ID_GNSS,                                                \
 			   .exec_type = TASK_EXECUTOR_THREAD,                                      \
-			   .task_arg.const_arg = gnss_ptr,                                         \
+			   .flags = TASK_FLAG_ARG_IS_DEVICE,                                       \
+			   .task_arg.dev = gnss_ptr,                                               \
 			   .executor.thread =                                                      \
 				   {                                                               \
 					   .task_fn = gnss_task_fn,                                \

@@ -39,7 +39,8 @@ void environmental_task_fn(struct k_work *work);
 	IF_ENABLED(define_config, ({.name = "env",                                                 \
 				    .task_id = TASK_ID_ENVIRONMENTAL,                              \
 				    .exec_type = TASK_EXECUTOR_WORKQUEUE,                          \
-				    .task_arg.const_arg = env_ptr,                                 \
+				    .flags = TASK_FLAG_ARG_IS_DEVICE,                              \
+				    .task_arg.dev = env_ptr,                                       \
 				    .executor.workqueue = {                                        \
 					    .worker_fn = environmental_task_fn,                    \
 				    }}))
