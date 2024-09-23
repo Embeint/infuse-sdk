@@ -74,6 +74,7 @@
 
 &i2c1 {
 	zephyr,pm-device-runtime-auto;
+	zephyr,no-boot-recover;
 };
 
 &spi3 {
