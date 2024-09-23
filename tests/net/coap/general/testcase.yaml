@@ -3,7 +3,7 @@ common:
   min_flash: 64
   min_ram: 32
 tests:
-  net.coap:
+  net.coap.general:
     build_only: true
     skip: true
     integration_platforms:
@@ -12,7 +12,7 @@ tests:
       - infuse
     depends_on:
       - netif
-  net.coap.native:
+  net.coap.general.native:
     platform_allow:
       - native_sim
     integration_platforms:
