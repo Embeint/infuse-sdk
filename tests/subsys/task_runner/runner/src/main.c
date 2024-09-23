@@ -177,6 +177,58 @@ ZTEST(task_runner_runner, test_init_duplicate_task_ids)
 			 ARRAY_SIZE(dup_tasks));
 }
 
+DEVICE_DEFINE(dummy_device, "dummy", NULL, NULL, NULL, NULL, POST_KERNEL, 0, NULL);
+static int example_device_run;
+
+void example_device_fn(struct k_work *work)
+{
+	example_device_run++;
+}
+
+#define DEVICE_TASK(define_mem, define_config, dev_ptr)                                            \
+	IF_ENABLED(define_config, ({.name = "dev",                                                 \
+				    .task_id = TASK_ID_WORKQ,                                      \
+				    .flags = TASK_FLAG_ARG_IS_DEVICE,                              \
+				    .task_arg.dev = dev_ptr,                                       \
+				    .exec_type = TASK_EXECUTOR_WORKQUEUE,                          \
+				    .executor.workqueue = {                                        \
+					    .worker_fn = example_device_fn,                        \
+				    }}))
+
+ZTEST(task_runner_runner, test_device_not_ready)
+{
+	struct task_schedule schedules[] = {
+		{
+			.task_id = TASK_ID_WORKQ,
+		},
+	};
+	struct task_schedule_state states[ARRAY_SIZE(schedules)];
+	const struct device *dev = &DEVICE_NAME_GET(dummy_device);
+
+	zassert_equal(0, example_device_run);
+
+	TASK_RUNNER_TASKS_DEFINE(is_ready, is_ready_data,
+				 (DEVICE_TASK, &DEVICE_NAME_GET(dummy_device)));
+
+	/* Should run without problems */
+	task_runner_init(schedules, states, ARRAY_SIZE(schedules), is_ready, is_ready_data,
+			 ARRAY_SIZE(is_ready));
+	task_runner_iterate(20, 20, 100);
+	k_sleep(K_MSEC(10));
+	zassert_equal(1, example_device_run);
+
+	/* Set initialisation result to failed */
+	dev->state->init_res = -ENODEV;
+
+	/* Warning text should be output, should not run */
+	task_runner_init(schedules, states, ARRAY_SIZE(schedules), is_ready, is_ready_data,
+			 ARRAY_SIZE(is_ready));
+
+	task_runner_iterate(21, 21, 100);
+	k_sleep(K_MSEC(10));
+	zassert_equal(1, example_device_run);
+}
+
 ZTEST(task_runner_runner, test_basic_behaviour)
 {
 	struct task_schedule schedules[] = {
