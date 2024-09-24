@@ -59,7 +59,6 @@ ZTEST(auto_sntp, test_auto_sntp)
 {
 	struct timeutil_sync_instant reference;
 	static struct epoch_time_cb time_cb;
-	struct net_if *iface = net_if_get_default();
 
 	/* Register for time callbacks */
 	time_cb.reference_time_updated = reference_time_updated;
@@ -67,6 +66,7 @@ ZTEST(auto_sntp, test_auto_sntp)
 	epoch_time_register_callback(&time_cb);
 
 #ifdef CONFIG_NET_NATIVE_OFFLOADED_SOCKETS
+	struct net_if *iface = net_if_get_default();
 	struct in_addr addr;
 
 	/* Add the IP address to trigger NET_EVENT_L4_CONNECTED */
