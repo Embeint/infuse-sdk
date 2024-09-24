@@ -5,10 +5,12 @@ common:
 tests:
   net.coap:
     build_only: true
-    platform_allow:
+    integration_platforms:
       - nrf7002dk/nrf5340/cpuapp
+    required_snippets:
+      - infuse
     depends_on:
-      - net
+      - netif
   net.coap.native:
     platform_allow:
       - native_sim
