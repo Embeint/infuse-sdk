@@ -23,7 +23,7 @@ jobs:
     env:
       TWISTER_COMMON: ' --force-color --inline-logs -v -N -M --retry-failed 3 '
       DAILY_OPTIONS: ' -M --build-only --show-footprint'
-      VENDOR_FILTER: ' --vendor nordic --vendor zephyr '
+      VENDOR_FILTER: ' --vendor nordic --vendor zephyr --vendor embeint '
       EXTRA_BOARDS: ' --platform qemu_cortex_m3 --platform qemu_cortex_m0 '
       UNIT_TESTING: ' --platform unit_testing '
       PR_OPTIONS: ' --clobber-output --integration'
