@@ -1,0 +1,20 @@
+common:
+  tags: infuse net
+  min_flash: 64
+  min_ram: 32
+tests:
+  net.coap.infuse:
+    build_only: true
+    integration_platforms:
+      - nrf7002dk/nrf5340/cpuapp
+    required_snippets:
+      - infuse
+    depends_on:
+      - netif
+  net.coap.infuse.native:
+    platform_allow:
+      - native_sim
+    integration_platforms:
+      - native_sim
+    extra_args:
+      - OVERLAY_CONFIG="overlay-nsos.conf"
