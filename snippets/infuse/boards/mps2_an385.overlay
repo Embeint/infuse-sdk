@@ -1,6 +1,7 @@
 / {
 	chosen {
 		infuse,reboot-state = &retention0;
+		infuse,kv-partition = &storage_partition;
 	};
 
 	sram@203EFF00 {

@@ -3,6 +3,7 @@
 / {
 	chosen {
 		infuse,reboot-state = &retention0;
+		infuse,kv-partition = &storage_partition;
 	};
 
 	epacket_serial: epacket_serial {
