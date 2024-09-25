@@ -2,6 +2,7 @@
 	chosen {
 		zephyr,entropy = &cryptocell;
 		infuse,reboot-state = &retention0;
+		infuse,kv-partition = &storage_partition;
 	};
 
 	/* End of application SRAM (not in shared SRAM) */
