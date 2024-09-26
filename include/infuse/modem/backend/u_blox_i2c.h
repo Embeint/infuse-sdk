@@ -8,6 +8,7 @@
 #include <zephyr/device.h>
 #include <zephyr/drivers/i2c.h>
 #include <zephyr/drivers/gpio.h>
+#include <zephyr/sys/ring_buffer.h>
 
 #include <zephyr/modem/pipe.h>
 
@@ -25,8 +26,10 @@ struct modem_backend_ublox_i2c {
 	const struct gpio_dt_spec *data_ready;
 	/* Communication pipe */
 	struct modem_pipe pipe;
-	/* Worker that polls the number of pending FIFO bytes */
-	struct k_work_delayable pending_bytes_query;
+	/* Ring buffer for holding pipe data stream */
+	struct ring_buf pipe_ring_buf;
+	/* Worker that reads the FIFO */
+	struct k_work_delayable fifo_read;
 	/* Signal to notify when FIFO read completes */
 	struct k_poll_signal read_result;
 	/* Callback for data ready GPIO */
@@ -39,6 +42,8 @@ struct modem_backend_ublox_i2c {
 	uint16_t bytes_pending;
 	/* Internal state flags */
 	uint8_t flags;
+	/* Backing memory for pipe data stream */
+	uint8_t pipe_memory[CONFIG_GNSS_U_BLOX_M10_PIPE_SIZE];
 };
 
 struct modem_backend_ublox_i2c_config {

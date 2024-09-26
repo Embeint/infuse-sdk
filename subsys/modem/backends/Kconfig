@@ -4,4 +4,5 @@ config MODEM_BACKEND_U_BLOX_I2C
 	bool "u-blox I2C modem backend"
 	select MODEM_PIPE
 	select POLL
+	select RING_BUFFER
 	depends on I2C_RTIO

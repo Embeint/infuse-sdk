@@ -23,6 +23,20 @@ module = U_BLOX_M10_I2C
 module-str = u-blox M10
 source "subsys/logging/Kconfig.template.log_config"
 
+config GNSS_U_BLOX_M10_PIPE_SIZE
+	int "UBX modem pipe size"
+	range 128 2048
+	default 512
+	help
+	  Maximum number of bytes that can be stored in the pipe buffer.
+
+config GNSS_U_BLOX_M10_MAX_MSG_SIZE
+	int "UBX modem pipe size"
+	range 128 512
+	default 256
+	help
+	  Maximum size of a UBX message that driver can handle.
+
 config GNSS_U_BLOX_M10_NO_API_COMPAT
 	bool "Drop compatibility with the Zephyr GNSS API"
 	help

@@ -14,6 +14,7 @@
 #include <zephyr/kernel.h>
 #include <zephyr/net/buf.h>
 #include <zephyr/modem/pipe.h>
+#include <zephyr/sys/ring_buffer.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -81,7 +82,9 @@ struct ubx_modem_data {
 	/* List of message handlers */
 	sys_slist_t handlers;
 	/* Data buffer to read bytes into */
-	uint8_t rx_buffer[1024];
+	uint8_t rx_buffer[CONFIG_GNSS_U_BLOX_M10_MAX_MSG_SIZE];
+	/* Bytes pending in rx_buffer */
+	uint16_t rx_buffer_pending;
 };
 
 /**
