@@ -13,6 +13,8 @@
 #include <zephyr/storage/disk_access.h>
 
 #include <infuse/time/epoch.h>
+#include <infuse/fs/kv_store.h>
+#include <infuse/fs/kv_types.h>
 
 #include <ff.h>
 
@@ -136,6 +138,24 @@ int logger_exfat_filesystem_common_init(const struct device *dev)
 	(void)f_close(&fp);
 
 	return res == FR_OK ? 0 : -EIO;
+}
+
+void logger_exfat_disk_info_store(const struct device *dev)
+{
+#ifdef CONFIG_KV_STORE_EXFAT_DISK_INFO
+	const struct dl_exfat_config *config = dev->config;
+	struct kv_exfat_disk_info disk_info;
+	uint32_t block_count, block_size;
+
+	/* Get disk info */
+	disk_access_ioctl(config->disk, DISK_IOCTL_GET_SECTOR_COUNT, &block_count);
+	disk_access_ioctl(config->disk, DISK_IOCTL_GET_SECTOR_SIZE, &block_size);
+
+	disk_info.block_count = block_count;
+	disk_info.block_size = block_size;
+
+	(void)KV_STORE_WRITE(KV_KEY_EXFAT_DISK_INFO, &disk_info);
+#endif /* CONFIG_KV_STORE_EXFAT_DISK_INFO */
 }
 
 const char *logger_exfat_filesystem_claim(const struct device *dev, uint8_t **buf, size_t *buf_size,

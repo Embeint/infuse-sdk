@@ -207,6 +207,9 @@ int logger_exfat_init(const struct device *dev)
 	f_closedir(&dj);
 #endif
 
+	/* Store disk info */
+	logger_exfat_disk_info_store(dev);
+
 	/* Setup common data structure */
 	data->common.logical_blocks = data->common.physical_blocks;
 	data->common.block_size = DATA_LOGGER_EXFAT_BLOCK_SIZE;
