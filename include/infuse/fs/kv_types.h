@@ -74,6 +74,14 @@ struct kv_bluetooth_addr {
 	struct bt_addr_le address;
 } __packed;
 
+/* exFAT disk information */
+struct kv_exfat_disk_info {
+	/* Disk block count */
+	uint32_t block_count;
+	/* Disk block size */
+	uint32_t block_size;
+} __packed;
+
 /* Fixed global location of the device */
 struct kv_fixed_location {
 	/* Location */
@@ -242,6 +250,8 @@ enum kv_builtin_id {
 	KV_KEY_REBOOTS = 0,
 	/* Bluetooth advertising address */
 	KV_KEY_BLUETOOTH_ADDR = 1,
+	/* exFAT disk information */
+	KV_KEY_EXFAT_DISK_INFO = 2,
 	/* Fixed global location of the device */
 	KV_KEY_FIXED_LOCATION = 10,
 	/* WiFi network name */
@@ -289,6 +299,7 @@ enum kv_builtin_id {
 enum kv_builtin_size {
 	_KV_KEY_REBOOTS_SIZE = sizeof(struct kv_reboots),
 	_KV_KEY_BLUETOOTH_ADDR_SIZE = sizeof(struct kv_bluetooth_addr),
+	_KV_KEY_EXFAT_DISK_INFO_SIZE = sizeof(struct kv_exfat_disk_info),
 	_KV_KEY_FIXED_LOCATION_SIZE = sizeof(struct kv_fixed_location),
 	_KV_KEY_EPACKET_UDP_PORT_SIZE = sizeof(struct kv_epacket_udp_port),
 	_KV_KEY_LTE_MODEM_IMEI_SIZE = sizeof(struct kv_lte_modem_imei),
@@ -298,6 +309,7 @@ enum kv_builtin_size {
 /* Types of builtin KV definitions */
 #define _KV_KEY_REBOOTS_TYPE struct kv_reboots
 #define _KV_KEY_BLUETOOTH_ADDR_TYPE struct kv_bluetooth_addr
+#define _KV_KEY_EXFAT_DISK_INFO_TYPE struct kv_exfat_disk_info
 #define _KV_KEY_FIXED_LOCATION_TYPE struct kv_fixed_location
 #define _KV_KEY_WIFI_SSID_TYPE struct kv_wifi_ssid
 #define _KV_KEY_WIFI_PSK_TYPE struct kv_wifi_psk
@@ -317,6 +329,7 @@ enum kv_builtin_size {
 /* Number of KV pairs that can be reflected */
 #define KV_REFLECT_NUM ( \
 	IF_ENABLED(CONFIG_KV_STORE_BLUETOOTH_ADDR, (1 +)) \
+	IF_ENABLED(CONFIG_KV_STORE_EXFAT_DISK_INFO, (1 +)) \
 	IF_ENABLED(CONFIG_KV_STORE_FIXED_LOCATION, (1 +)) \
 	IF_ENABLED(CONFIG_KV_STORE_WIFI_SSID, (1 +)) \
 	IF_ENABLED(CONFIG_KV_STORE_WIFI_PSK, (1 +)) \

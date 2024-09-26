@@ -12,6 +12,12 @@ config KV_STORE_BLUETOOTH_ADDR
 	help
 	  Bluetooth advertising address
 
+config KV_STORE_EXFAT_DISK_INFO
+	bool "Enable KV key EXFAT_DISK_INFO"
+	default y if DATA_LOGGER_EXFAT
+	help
+	  exFAT disk information
+
 config KV_STORE_FIXED_LOCATION
 	bool "Enable KV key FIXED_LOCATION"
 	help
