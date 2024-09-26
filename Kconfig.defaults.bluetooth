@@ -10,6 +10,12 @@ if INFUSE_SDK_BLUETOOTH
 configdefault BT_DEVICE_NAME
 	default "Infuse-IoT"
 
+# A dedicated workqueue for ECC crypto (that Infuse-IoT does not use by default)
+# and GATT database hash (that only runs once on boot) is overkill. Disabling this
+# workqueue saves >1kB of RAM.
+configdefault BT_LONG_WQ
+	default n
+
 # Uncoded LE Data Packet Format:
 #
 # | Preamble | Access  |                           PDU (2 to 257 bytes)                         |   CRC   |
