@@ -42,6 +42,18 @@
             ]
         },
         {
+            "name": "EXFAT_DISK_INFO",
+            "key": 2,
+            "description": "exFAT disk information",
+            "reflect": true,
+            "read_only": true,
+            "default": "y if DATA_LOGGER_EXFAT",
+            "fields": [
+                {"name": "block_count", "type": "uint32_t", "description": "Disk block count"},
+                {"name": "block_size", "type": "uint32_t", "description": "Disk block size"}
+            ]
+        },
+        {
             "name": "FIXED_LOCATION",
             "key": 10,
             "description": "Fixed global location of the device",
