@@ -112,42 +112,83 @@ static void ubx_msg_handle(struct ubx_modem_data *modem, struct ubx_frame *frame
 static void fifo_read_runner(struct k_work *work)
 {
 	struct ubx_modem_data *modem = CONTAINER_OF(work, struct ubx_modem_data, fifo_read_worker);
-
-	struct ubx_frame *frame;
+	struct ubx_frame *frame = (void *)(modem->rx_buffer);
 	uint16_t payload_len;
+	uint16_t message_len;
+	uint16_t to_read;
 	int received;
 
-	/* Read data from pipe */
-	received = modem_pipe_receive(modem->pipe, modem->rx_buffer, sizeof(modem->rx_buffer));
-	if (received <= 0) {
-		LOG_ERR("Failed to receive (%d)", received);
-		return;
-	}
+	while (true) {
+		/* Pull single bytes until sync bytes found */
+		while (modem->rx_buffer_pending < 2) {
+			if (modem_pipe_receive(modem->pipe,
+					       modem->rx_buffer + modem->rx_buffer_pending,
+					       1) <= 0) {
+				return;
+			}
 
-	/* Process received data for UBX frames (don't handle partial frames) */
-	for (int i = 0; i < received - sizeof(*frame); i++) {
-		frame = (void *)(modem->rx_buffer + i);
-		/* Skip until we find the sync characters */
-		if ((frame->preamble_sync_char_1 != UBX_PREAMBLE_SYNC_CHAR_1) ||
-		    (frame->preamble_sync_char_2 != UBX_PREAMBLE_SYNC_CHAR_2)) {
-			continue;
+			if ((modem->rx_buffer_pending) == 0 &&
+			    (frame->preamble_sync_char_1 != UBX_PREAMBLE_SYNC_CHAR_1)) {
+				continue;
+			}
+			if ((modem->rx_buffer_pending) == 1 &&
+			    (frame->preamble_sync_char_2 != UBX_PREAMBLE_SYNC_CHAR_2)) {
+				modem->rx_buffer_pending = 0;
+				continue;
+			}
+			modem->rx_buffer_pending++;
 		}
+
+		/* Pull remainder of frame header */
+		if (modem->rx_buffer_pending < sizeof(*frame)) {
+			to_read = sizeof(*frame) - modem->rx_buffer_pending;
+			received = modem_pipe_receive(
+				modem->pipe, modem->rx_buffer + modem->rx_buffer_pending, to_read);
+			if (received < 0) {
+				return;
+			}
+			modem->rx_buffer_pending += received;
+			if (received != to_read) {
+				return;
+			}
+		}
+
 		payload_len = (((uint16_t)frame->payload_size_high) << 8) | frame->payload_size_low;
+		message_len = sizeof(*frame) + payload_len + sizeof(uint16_t);
+
+		/* Validate complete message can fit */
+		if (message_len >= sizeof(modem->rx_buffer)) {
+			LOG_ERR("RX MSG: %02X:%02X too large (%d)", frame->message_class,
+				frame->message_id, message_len);
+			/* Consume any part of the message still in queue */
+			modem_pipe_receive(modem->pipe, modem->rx_buffer, sizeof(modem->rx_buffer));
+			/* Reset stored buffer and exit */
+			modem->rx_buffer_pending = 0;
+			return;
+		}
+
+		/* Attempt to pull remaining message payload */
+		to_read = message_len - modem->rx_buffer_pending;
+		received = modem_pipe_receive(modem->pipe,
+					      modem->rx_buffer + modem->rx_buffer_pending, to_read);
+		if (received < 0) {
+			return;
+		}
+		modem->rx_buffer_pending += received;
+		if (received != to_read) {
+			LOG_DBG("Waiting on %d", to_read - received);
+			return;
+		}
 
 		LOG_DBG("RX MSG: CLS=0x%02x ID=0x%02x LEN=%d", frame->message_class,
 			frame->message_id, payload_len);
 		LOG_HEXDUMP_DBG(frame->payload_and_checksum, payload_len, "Payload");
-		if (i + sizeof(*frame) + payload_len + sizeof(uint16_t) > received) {
-			LOG_WRN("Partial frame (%02x.%02x) received, dropping!",
-				frame->message_class, frame->message_id);
-			break;
-		}
 
 		/* Process frame */
 		ubx_msg_handle(modem, frame, payload_len);
 
-		/* Header, payload, checksum, -1 to account for loop incr */
-		i += sizeof(*frame) + payload_len + sizeof(uint16_t) - 1;
+		/* Complete */
+		modem->rx_buffer_pending = 0;
 	}
 }
 

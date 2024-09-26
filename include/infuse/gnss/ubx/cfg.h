@@ -520,6 +520,7 @@ static inline void ubx_msg_prepare_valset(struct net_buf_simple *buf, uint8_t la
  *
  * @param buf Buffer to prepare
  * @param layer Layer to query configuration for
+ * @param offset Start value offset for query
  */
 static inline void ubx_msg_prepare_valget(struct net_buf_simple *buf, uint8_t layer, uint8_t offset)
 {
