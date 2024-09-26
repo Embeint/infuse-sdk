@@ -15,6 +15,13 @@ module = KV_STORE
 module-str = key-value store
 source "subsys/logging/Kconfig.template.log_config"
 
+config KV_STORE_INIT_PRIORITY
+	int "Flash init priority"
+	default 55
+	help
+	  KV store initialization priority. The default value of 55 is
+	  later than the default FLASH_INIT_PRIORITY value (50).
+
 rsource "Kconfig.keys"
 
 endif # KV_STORE
