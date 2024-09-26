@@ -28,7 +28,7 @@ manifest:
           - zcbor
     - name: sdk-nrf
       path: modules/nrfconnect/sdk-nrf
-      revision: 2fa5e92ca8ab98edf25aced93500f22bac2c3bdb
+      revision: 9364f087b164c3ebfc817319735029d727e5e1b9
       import: true
 
   self:
