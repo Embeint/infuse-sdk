@@ -254,4 +254,4 @@ int kv_store_init(void)
 	return rc;
 }
 
-SYS_INIT(kv_store_init, POST_KERNEL, 80);
+SYS_INIT(kv_store_init, POST_KERNEL, CONFIG_KV_STORE_INIT_PRIORITY);
