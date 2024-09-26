@@ -16,6 +16,8 @@
 #include <zephyr/pm/device.h>
 
 #include <infuse/data_logger/logger.h>
+#include <infuse/fs/kv_store.h>
+#include <infuse/fs/kv_types.h>
 
 #include <ff.h>
 
@@ -215,6 +217,23 @@ ZTEST(data_logger_exfat, test_device_move)
 	snprintf(filename, sizeof(filename), "%s:infuse_%016llx_%06d.bin", DISK_NAME, first_id + 1,
 		 0);
 	zassert_equal(FR_NO_FILE, f_stat(filename, &fno));
+}
+
+ZTEST(data_logger_exfat, test_kv_disk_info)
+{
+	const struct device *logger = DEVICE_DT_GET(DT_NODELABEL(data_logger_exfat));
+	struct kv_exfat_disk_info disk_info;
+
+	/* Init logger */
+	zassert_equal(0, logger_exfat_init(logger));
+
+	/* Value should exist */
+	zassert_equal(sizeof(struct kv_exfat_disk_info),
+		      KV_STORE_READ(KV_KEY_EXFAT_DISK_INFO, &disk_info));
+
+	/* Values should match disk query */
+	zassert_equal(sector_count, disk_info.block_count);
+	zassert_equal(sector_size, disk_info.block_size);
 }
 
 static bool test_data_init(const void *global_state)
