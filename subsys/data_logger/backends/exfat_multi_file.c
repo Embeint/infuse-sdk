@@ -256,6 +256,9 @@ int logger_exfat_init(const struct device *dev)
 	f_closedir(&dj);
 #endif
 
+	/* Store disk info */
+	logger_exfat_disk_info_store(dev);
+
 	/* Setup common data structure */
 	disk_access_ioctl(config->disk, DISK_IOCTL_GET_SECTOR_COUNT, &data->common.physical_blocks);
 	data->common.logical_blocks = data->common.physical_blocks;

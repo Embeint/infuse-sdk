@@ -39,6 +39,8 @@ bool logger_exfat_filesystem_is_infuse(const struct device *dev);
 
 int logger_exfat_filesystem_common_init(const struct device *dev);
 
+void logger_exfat_disk_info_store(const struct device *dev);
+
 #ifdef __cplusplus
 }
 #endif
