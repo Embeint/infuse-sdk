@@ -3,7 +3,15 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  */
- #include <mem.h>
+#include <mem.h>
+
+/delete-node/ &storage_partition;
+
+/ {
+	chosen {
+		infuse,kv-partition = &storage_partition;
+	};
+};
 
 &flashcontroller0 {
 	reg = <0x00000000 DT_SIZE_K(2048 + 64)>;
@@ -16,8 +24,14 @@
 		#address-cells = <1>;
 		#size-cells = <1>;
 
-		storage: partition@0 {
-			reg = <0x00000000 DT_SIZE_K(2048 + 64)>;
+		/* Move storage partition to start so exFAT can take remaining space */
+		storage_partition: partition@0 {
+			label = "storage";
+			reg = < 0x0 0x4000 >;
+		};
+
+		storage: partition@4000 {
+			reg = <0x00004000 DT_SIZE_K(2048 + 64 - 16)>;
 		};
 	};
 };
