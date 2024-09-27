@@ -132,8 +132,7 @@ end:
 
 static void adv_set_complete_worker(struct k_work *work)
 {
-	uint8_t set_idx = bt_le_ext_adv_get_index(adv_set);
-	struct net_buf *curr, *next;
+	struct net_buf *next;
 
 	if (k_sem_take(&queue_lock, K_NO_WAIT) != 0) {
 		/* If we can't immediately access the queue, reschedule so we aren't blocking the
@@ -144,26 +143,31 @@ static void adv_set_complete_worker(struct k_work *work)
 		return;
 	}
 
-	curr = adv_set_bufs[set_idx];
-	adv_set_bufs[set_idx] = NULL;
-
 	next = net_buf_get(&tx_buf_queue, K_NO_WAIT);
 	if (next) {
 		LOG_DBG("Chaining next buf: %p", next);
 		bt_adv_broadcast(DEVICE_DT_INST_GET(0), next);
 	} else {
-		LOG_DBG("Adv chain complete: %d", set_idx);
+		LOG_DBG("Adv chain complete");
 		adv_set_active = false;
 	}
 	k_sem_give(&queue_lock);
-
-	/* Notify TX result */
-	epacket_notify_tx_result(DEVICE_DT_INST_GET(0), curr, 0);
-	net_buf_unref(curr);
 }
 
 static void adv_set_complete(struct bt_le_ext_adv *adv, struct bt_le_ext_adv_sent_info *info)
 {
+	uint8_t set_idx = bt_le_ext_adv_get_index(adv);
+	struct net_buf *curr;
+
+	/* Release the finished buffer immediately */
+	curr = adv_set_bufs[set_idx];
+	adv_set_bufs[set_idx] = NULL;
+
+	/* Notify TX result */
+	epacket_notify_tx_result(DEVICE_DT_INST_GET(0), curr, 0);
+	net_buf_unref(curr);
+
+	/* Handle chaining advertising sets in other thread context */
 	k_work_submit_to_queue(TASK_WORKQ, &adv_set_complete_work);
 }
 
