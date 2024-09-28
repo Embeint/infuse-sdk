@@ -8,6 +8,7 @@
 
 #include <stdlib.h>
 
+#include <zephyr/sys/atomic.h>
 #include <zephyr/init.h>
 #include <zephyr/logging/log.h>
 
@@ -30,6 +31,10 @@
 
 LOG_MODULE_REGISTER(modem_monitor, LOG_LEVEL_INF);
 
+enum {
+	FLAGS_MODEM_SLEEPING = 0,
+};
+
 static struct {
 	struct nrf_modem_network_state network_state;
 	int16_t rsrp_cached;
@@ -42,6 +47,7 @@ static struct {
 	 */
 	struct k_work update_work;
 	struct k_work signal_quality_work;
+	atomic_t flags;
 } monitor;
 
 void nrf_modem_monitor_network_state(struct nrf_modem_network_state *state)
@@ -136,6 +142,12 @@ int nrf_modem_monitor_signal_quality(int16_t *rsrp, int8_t *rsrq, bool cached)
 	*rsrp = cached ? monitor.rsrp_cached : INT16_MIN;
 	*rsrq = cached ? monitor.rsrq_cached : INT8_MIN;
 
+	/* If modem is sleeping, signal quality polling will fail */
+	if (atomic_test_bit(&monitor.flags, FLAGS_MODEM_SLEEPING)) {
+		LOG_DBG("Modem sleeping");
+		return 0;
+	}
+
 	/* Query state from the modem */
 	rc = nrf_modem_at_scanf("AT+CESQ", "+CESQ: %*d,%*d,%*d,%*d,%" SCNu8 ",%" SCNu8, &rsrp_idx,
 				&rsrq_idx);
@@ -211,10 +223,12 @@ static void lte_reg_handler(const struct lte_lc_evt *const evt)
 		LOG_DBG("MODEM_SLEEP_ENTER");
 		LOG_DBG("    Type: %d", evt->modem_sleep.type);
 		LOG_DBG("     Dur: %lld", evt->modem_sleep.time);
+		atomic_set_bit(&monitor.flags, FLAGS_MODEM_SLEEPING);
 		break;
 	case LTE_LC_EVT_MODEM_SLEEP_EXIT:
 		LOG_DBG("MODEM_SLEEP_EXIT");
 		LOG_DBG("    Type: %d", evt->modem_sleep.type);
+		atomic_clear_bit(&monitor.flags, FLAGS_MODEM_SLEEPING);
 		break;
 	case LTE_LC_EVT_MODEM_EVENT:
 		LOG_DBG("MODEM_EVENT");
