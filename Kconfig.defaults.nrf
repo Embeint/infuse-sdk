@@ -25,6 +25,8 @@ configdefault NRF_MODEM_LIB_NET_IF
 	default y
 configdefault NRF_MODEM_LIB_NET_IF_APPLICATION_ERROR_HANDLER
 	default y
+configdefault NRF_MODEM_LIB_SHMEM_RX_SIZE
+	default 12288
 choice NRF_MODEM_LIB_ON_FAULT
 	default NRF_MODEM_LIB_ON_FAULT_APPLICATION_SPECIFIC
 endchoice
