@@ -1,0 +1,7 @@
+/*
+ * Copyright (c) 2024 Embeint Inc
+ *
+ * SPDX-License-Identifier: LicenseRef-Embeint
+ */
+
+#include "trace_shmem.dtsi"

@@ -4,6 +4,8 @@
  * SPDX-License-Identifier: LicenseRef-Nordic-5-Clause
  */
 
+#include "trace_shmem.dtsi"
+
 /* Enable uart1 for tracing. */
 &uart1 {
 	status = "okay";
