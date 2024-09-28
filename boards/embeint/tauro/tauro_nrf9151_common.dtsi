@@ -51,7 +51,7 @@
 	bq25185: bq25185 {
 		compatible = "current-sense-amplifier";
 		io-channels = <&adc 0>;
-		sense-resistor-micro-ohms = <300000000>;
+		sense-resistor-milli-ohms = <300000>;
 		sense-gain-div = <300>;
 	};
 
