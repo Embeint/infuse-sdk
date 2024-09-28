@@ -133,7 +133,7 @@ static int epacket_udp_loop(void *a, void *b, void *c)
 
 		/* Create the UDP socket */
 		udp_state.sock = zsock_socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-		if (udp_state.sock == -1) {
+		if (udp_state.sock < 0) {
 			LOG_ERR("Failed to open socket (%d)", errno);
 			goto socket_error;
 		}
