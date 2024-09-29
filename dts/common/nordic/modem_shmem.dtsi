@@ -33,7 +33,7 @@
 			reg = <0x20010000 DT_SIZE_K(24)>;
 		};
 
-		sram0_ns_app: image_ns_app@2001c000 {
+		sram0_ns_app: image_ns_app@20016000 {
 			/* Non-Secure application memory */
 			reg = <0x20016000 DT_SIZE_K(168)>;
 		};
