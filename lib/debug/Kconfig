@@ -1,0 +1,29 @@
+# Infuse-IoT debugging options
+
+config INFUSE_WORKQUEUE_BLOCK_TEST
+	bool "Randomly block the system and task runner workqueue"
+	depends on TASK_RUNNER
+	help
+	  Randomly block the system and task runner workqueue for non-trivial
+	  durations to see whether the application recovers or whether it
+	  deadlocks.
+
+if INFUSE_WORKQUEUE_BLOCK_TEST
+
+config WORKQUEUE_BLOCK_PERIODICITY_MIN_MS
+	int "Minimium milliseconds between workqueue blocks"
+	default 2000
+
+config WORKQUEUE_BLOCK_PERIODICITY_MAX_MS
+	int "Maximum milliseconds between workqueue blocks"
+	default 3000
+
+config WORKQUEUE_BLOCK_DURATION_MIN_MS
+	int "Minimium milliseconds of workqueue blocks"
+	default 500
+
+config WORKQUEUE_BLOCK_DURATION_MAX_MS
+	int "Maximum milliseconds of workqueue blocks"
+	default 1000
+
+endif # INFUSE_WORKQUEUE_BLOCK_TEST
