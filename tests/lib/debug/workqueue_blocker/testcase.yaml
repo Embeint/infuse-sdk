@@ -1,0 +1,9 @@
+common:
+  tags: debug
+  min_flash: 64
+  min_ram: 32
+tests:
+  debug.workqueue_blocker:
+    integration_platforms:
+      - native_sim
+      - qemu_cortex_m3
