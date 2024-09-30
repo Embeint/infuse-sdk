@@ -10,3 +10,8 @@ west-commands:
       - name: cloudgen
         class: cloudgen
         help: generate files from Infuse-IoT cloud definitions
+  - file: scripts/west_commands/infuse_release.py
+    commands:
+      - name: infuse-release
+        class: infuse_release
+        help: Build application release
