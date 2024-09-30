@@ -80,6 +80,8 @@ configdefault IMG_MANAGER
 	default y
 
 if BT_CONN
+configdefault ZCBOR
+	default y
 configdefault MCUMGR
 	default y
 configdefault MCUMGR_SMP_SUPPORT_ORIGINAL_PROTOCOL
