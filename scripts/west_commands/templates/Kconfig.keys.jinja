@@ -2,7 +2,7 @@
 # scripts/west_commands/cloudgen.py
 {% for info in definitions %}
 
-config KV_STORE_{{ info['name'] }}
+config KV_STORE_KEY_{{ info['name'] }}
 	bool "Enable KV key {{ info['name'] }}"
 	{% if 'depends_on' in info %}
 	depends on {{ info['depends_on'] }}
@@ -14,9 +14,9 @@ config KV_STORE_{{ info['name'] }}
 	  {{ info['description'] }}
 {% if 'range' in info %}
 
-config KV_STORE_{{ info['name'] }}_RANGE
+config KV_STORE_KEY_{{ info['name'] }}_RANGE
 	int "Number of {{ info['name'] }} slots to enable"
-	depends on KV_STORE_{{ info['name'] }}
+	depends on KV_STORE_KEY_{{ info['name'] }}
 	range 1 {{ info['range'] }}
 	default 1
 {% endif %}

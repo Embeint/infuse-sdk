@@ -104,9 +104,9 @@ enum kv_builtin_id {
 	/* {{ info['description'] }} */
 	KV_KEY_{{ info['name'] | upper }} = {{ info['key'] }},
 {% if 'range' in info %}
-#ifdef CONFIG_KV_STORE_{{ info['name'] }}_RANGE
+#ifdef CONFIG_KV_STORE_KEY_{{ info['name'] }}_RANGE
 	/* End of currently enabled KV_KEY_{{ info['name'] | upper }} range */
-	KV_KEY_{{ info['name'] | upper }}_END = {{ info['key'] }} + CONFIG_KV_STORE_{{ info['name'] }}_RANGE - 1,
+	KV_KEY_{{ info['name'] | upper }}_END = {{ info['key'] }} + CONFIG_KV_STORE_KEY_{{ info['name'] }}_RANGE - 1,
 #endif
 	/* Maximum number of KV_KEY_{{ info['name'] | upper }} slots that can be enabled */
 	KV_KEY_{{ info['name'] | upper }}_MAX = {{ info['key'] + info['range'] - 1 }},
@@ -137,7 +137,7 @@ enum kv_builtin_size {
 #define KV_REFLECT_NUM ( \
 {% for info in definitions %}
 {% if info.get('reflect', false) %}
-	IF_ENABLED(CONFIG_KV_STORE_{{ info['name'] }}, ({{info['range_val']}} +)) \
+	IF_ENABLED(CONFIG_KV_STORE_KEY_{{ info['name'] }}, ({{info['range_val']}} +)) \
 {% endif %}
 {% endfor %}
 	0)

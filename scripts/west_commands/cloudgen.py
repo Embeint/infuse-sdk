@@ -169,7 +169,7 @@ class cloudgen(WestCommand):
                 else:
                     d["flags"] = 0
                 if "range" in d:
-                    d["range_val"] = f"CONFIG_KV_STORE_{d['name']}_RANGE"
+                    d["range_val"] = f"CONFIG_KV_STORE_KEY_{d['name']}_RANGE"
                 else:
                     d["range_val"] = 1
             f.write(kv_keys_template.render(definitions=kv_defs["definitions"]))
