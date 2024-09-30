@@ -3,8 +3,8 @@
 config CONN_MGR_WIFI_KV_STORE
 	bool "WiFi connection manager based on KV store"
 	depends on KV_STORE
-	depends on KV_STORE_WIFI_SSID
-	depends on KV_STORE_WIFI_PSK
+	depends on KV_STORE_KEY_WIFI_SSID
+	depends on KV_STORE_KEY_WIFI_PSK
 
 if CONN_MGR_WIFI_KV_STORE
 

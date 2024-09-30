@@ -95,13 +95,13 @@ static int infuse_common_boot(void)
 	memcpy(&bluetooth_addr, &bt_addr[0], sizeof(bluetooth_addr));
 	(void)KV_STORE_WRITE(KV_KEY_BLUETOOTH_ADDR, &bluetooth_addr);
 #endif /* CONFIG_BT */
-#ifdef CONFIG_KV_STORE_LTE_SIM_UICC
+#ifdef CONFIG_KV_STORE_KEY_LTE_SIM_UICC
 	KV_STRUCT_KV_STRING_VAR(24) sim_uicc;
 
 	if (KV_STORE_READ(KV_KEY_LTE_SIM_UICC, &sim_uicc) > 0) {
 		LOG_INF("\t    SIM: %s", sim_uicc.value);
 	}
-#endif /* CONFIG_KV_STORE_LTE_SIM_UICC */
+#endif /* CONFIG_KV_STORE_KEY_LTE_SIM_UICC */
 	LOG_INF("\tReboots: %d", reboot.count);
 #ifdef CONFIG_INFUSE_REBOOT
 	struct timeutil_sync_instant reference;

@@ -115,7 +115,7 @@ configdefault NVS
 	default y
 configdefault KV_STORE
 	default y
-configdefault KV_STORE_REBOOTS
+configdefault KV_STORE_KEY_REBOOTS
 	default y
 
 # Power Management

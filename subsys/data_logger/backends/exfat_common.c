@@ -142,7 +142,7 @@ int logger_exfat_filesystem_common_init(const struct device *dev)
 
 void logger_exfat_disk_info_store(const struct device *dev)
 {
-#ifdef CONFIG_KV_STORE_EXFAT_DISK_INFO
+#ifdef CONFIG_KV_STORE_KEY_EXFAT_DISK_INFO
 	const struct dl_exfat_config *config = dev->config;
 	struct kv_exfat_disk_info disk_info;
 	uint32_t block_count, block_size;
@@ -155,7 +155,7 @@ void logger_exfat_disk_info_store(const struct device *dev)
 	disk_info.block_size = block_size;
 
 	(void)KV_STORE_WRITE(KV_KEY_EXFAT_DISK_INFO, &disk_info);
-#endif /* CONFIG_KV_STORE_EXFAT_DISK_INFO */
+#endif /* CONFIG_KV_STORE_KEY_EXFAT_DISK_INFO */
 }
 
 const char *logger_exfat_filesystem_claim(const struct device *dev, uint8_t **buf, size_t *buf_size,
