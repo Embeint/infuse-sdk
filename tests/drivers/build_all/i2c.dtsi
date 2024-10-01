@@ -6,6 +6,8 @@
  * Application overlay for i2c devices
  */
 
+#include <zephyr/dt-bindings/battery/battery.h>
+
 /****************************************
  * PLEASE KEEP REG ADDRESSES SEQUENTIAL *
  ***************************************/
@@ -17,13 +19,20 @@ test_i2c_bmi270: bmi270@0 {
 };
 
 test_i2c_ublox_sam: ublox_sam@1 {
-	reg = <0x1>;
 	compatible = "u-blox,m10-i2c";
-	status = "okay";
-
+	reg = <0x1>;
 	data-ready-gpios = <&test_gpio 0 0>;
 	data-ready-pio = <1>;
 	timepulse-gpios = <&test_gpio 1 0>;
 	reset-gpios = <&test_gpio 2 0>;
 	extint-gpios = <&test_gpio 3 0>;
+};
+
+max17260: max17260@2 {
+	compatible = "maxim,max17260";
+	reg = <0x2>;
+	device-chemistry = "lithium-ion-iron-phosphate";
+	ocv-capacity-table-0 = <BATTERY_OCV_CURVE_LITHIUM_IRON_PHOSPHATE_DEFAULT>;
+	charge-full-design-microamp-hours = <1000>;
+	sense-resistor-milli-ohms = <10>;
 };
