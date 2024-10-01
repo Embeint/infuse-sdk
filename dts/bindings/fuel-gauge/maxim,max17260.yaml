@@ -1,0 +1,20 @@
+# Copyright (c) 2024 Embeint Inc
+# SPDX-License-Identifier: Apache-2.0
+
+description: Maxim MAX17260 Fuel Gauge
+
+compatible: "maxim,max17260"
+
+include: [fuel-gauge.yaml, battery.yaml, i2c-device.yaml]
+
+properties:
+  device-chemistry:
+    required: true
+
+  ocv-capacity-table-0:
+    required: true
+
+  sense-resistor-milli-ohms:
+    type: int
+    required: true
+    description: Value of the sense resistor in milli-ohms

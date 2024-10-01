@@ -9,3 +9,19 @@ config FUEL_GAUGE_COMPOSITE
 	depends on DT_HAS_ZEPHYR_FUEL_GAUGE_COMPOSITE_ENABLED
 	help
 	  Enable driver for the Zephyr composite fuel gauge device.
+
+config MAXIM_MAX17260
+	bool "Maxim MAX17260 fuel gauge"
+	default y
+	depends on DT_HAS_MAXIM_MAX17260_ENABLED
+	select I2C
+	help
+	  Enable driver for the Maxim MAX17260 fuel gauge device.
+
+if MAXIM_MAX17260
+
+module = MAX17260
+module-str = max17260
+source "subsys/logging/Kconfig.template.log_config"
+
+endif # MAXIM_MAX17260
