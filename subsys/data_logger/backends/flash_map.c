@@ -89,6 +89,8 @@ int logger_flash_map_init(const struct device *dev)
 		params = flash_get_parameters(data->area->fa_dev);
 		data->common.erase_val = params->erase_value;
 		flash_area_close(data->area);
+	} else {
+		return -ENODEV;
 	}
 
 	/* Common init function */
