@@ -638,12 +638,14 @@ static int ubx_m10_i2c_pm_control(const struct device *dev, enum pm_device_actio
 		rc = ubx_m10_i2c_port_setup(dev, hardware_reset);
 		if (rc < 0) {
 			LOG_INF("Failed to setup comms port");
+			modem_pipe_close(data->modem.pipe);
 			return rc;
 		}
 		/* Put into low power mode */
 		rc = ubx_m10_i2c_software_standby(dev);
 		if (rc < 0) {
 			LOG_INF("Failed to go to standby mode");
+			modem_pipe_close(data->modem.pipe);
 			return rc;
 		}
 		break;
