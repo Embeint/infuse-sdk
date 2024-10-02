@@ -43,7 +43,7 @@ struct modem_backend_ublox_i2c {
 	/* Internal state flags */
 	uint8_t flags;
 	/* Backing memory for pipe data stream */
-	uint8_t pipe_memory[CONFIG_GNSS_U_BLOX_M10_PIPE_SIZE];
+	uint8_t pipe_memory[CONFIG_GNSS_U_BLOX_PIPE_SIZE];
 };
 
 struct modem_backend_ublox_i2c_config {

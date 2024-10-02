@@ -50,21 +50,21 @@ struct ubx_m10_i2c_data {
 	struct gpio_callback timepulse_cb;
 	/* Timestamp of the latest timepulse */
 	k_ticks_t latest_timepulse;
-#ifdef CONFIG_GNSS_U_BLOX_M10_API_COMPAT
+#ifndef CONFIG_GNSS_U_BLOX_NO_API_COMPAT
 	/* NAV-PVT message handler */
 	struct ubx_message_handler_ctx pvt_handler;
 #ifdef CONFIG_GNSS_SATELLITES
 	/* NAV-SAT message handler */
 	struct ubx_message_handler_ctx sat_handler;
 #endif /* CONFIG_GNSS_SATELLITES */
-#endif /* CONFIG_GNSS_U_BLOX_M10_API_COMPAT */
+#endif /* CONFIG_GNSS_U_BLOX_NO_API_COMPAT */
 };
 
 BUILD_ASSERT(__alignof(struct ubx_frame) == 1);
 
-LOG_MODULE_REGISTER(ublox_m10, CONFIG_U_BLOX_M10_I2C_LOG_LEVEL);
+LOG_MODULE_DECLARE(ubx_modem);
 
-#ifdef CONFIG_GNSS_U_BLOX_M10_API_COMPAT
+#ifndef CONFIG_GNSS_U_BLOX_NO_API_COMPAT
 
 static int nav_pvt_cb(uint8_t message_class, uint8_t message_id, const void *payload,
 		      size_t payload_len, void *user_data)
@@ -111,7 +111,7 @@ static int nav_sat_cb(uint8_t message_class, uint8_t message_id, const void *pay
 	const struct device *dev = user_data;
 	const struct ubx_msg_nav_sat *sat = payload;
 	const struct ubx_msg_nav_sat_sv *sv;
-	struct gnss_satellite satellites[CONFIG_GNSS_U_BLOX_M10_I2C_SATELLITES_COUNT];
+	struct gnss_satellite satellites[CONFIG_GNSS_U_BLOX_SATELLITES_COUNT];
 	uint8_t num_report = 0;
 	uint32_t sv_quality;
 	bool tracked;
@@ -389,7 +389,7 @@ static int ubx_m10_i2c_get_supported_systems(const struct device *dev, gnss_syst
 	return 0;
 }
 
-#endif /* CONFIG_GNSS_U_BLOX_M10_API_COMPAT */
+#endif /* CONFIG_GNSS_U_BLOX_NO_API_COMPAT */
 
 static void ubx_m10_i2c_extint_wake(const struct device *dev)
 {
@@ -679,7 +679,7 @@ static int ubx_m10_i2c_init(const struct device *dev)
 		}
 	}
 
-#ifdef CONFIG_GNSS_U_BLOX_M10_API_COMPAT
+#ifndef CONFIG_GNSS_U_BLOX_NO_API_COMPAT
 	/* Subscribe to all NAV-PVT messages */
 	data->pvt_handler.message_class = UBX_MSG_CLASS_NAV,
 	data->pvt_handler.message_id = UBX_MSG_ID_NAV_PVT,
@@ -695,7 +695,7 @@ static int ubx_m10_i2c_init(const struct device *dev)
 	data->sat_handler.user_data = (void *)dev;
 	ubx_modem_msg_subscribe(&data->modem, &data->sat_handler);
 #endif /* CONFIG_GNSS_SATELLITES */
-#endif /* CONFIG_GNSS_U_BLOX_M10_API_COMPAT */
+#endif /* CONFIG_GNSS_U_BLOX_NO_API_COMPAT */
 
 	/* Run boot sequence */
 	return pm_device_driver_init(dev, ubx_m10_i2c_pm_control);
@@ -709,7 +709,7 @@ struct ubx_modem_data *ubx_modem_data_get(const struct device *dev)
 }
 
 static const struct gnss_driver_api gnss_api = {
-#ifdef CONFIG_GNSS_U_BLOX_M10_API_COMPAT
+#ifndef CONFIG_GNSS_U_BLOX_NO_API_COMPAT
 	.set_fix_rate = ubx_m10_i2c_set_fix_rate,
 	.get_fix_rate = ubx_m10_i2c_get_fix_rate,
 	.set_navigation_mode = ubx_m10_i2c_set_navigation_mode,
@@ -717,7 +717,7 @@ static const struct gnss_driver_api gnss_api = {
 	.set_enabled_systems = ubx_m10_i2c_set_enabled_systems,
 	.get_enabled_systems = ubx_m10_i2c_get_enabled_systems,
 	.get_supported_systems = ubx_m10_i2c_get_supported_systems,
-#endif /* CONFIG_GNSS_U_BLOX_M10_API_COMPAT */
+#endif /* CONFIG_GNSS_U_BLOX_NO_API_COMPAT */
 	.get_latest_timepulse = ubx_m10_i2c_get_latest_timepulse,
 };
 

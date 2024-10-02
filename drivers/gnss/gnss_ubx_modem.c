@@ -12,7 +12,7 @@
 #include <infuse/gnss/ubx/protocol.h>
 #include <infuse/gnss/ubx/modem.h>
 
-LOG_MODULE_REGISTER(ubx_modem, CONFIG_U_BLOX_M10_I2C_LOG_LEVEL);
+LOG_MODULE_REGISTER(ubx_modem, CONFIG_GNSS_UBX_MODEM_LOG_LEVEL);
 
 static void ubx_modem_pipe_callback(struct modem_pipe *pipe, enum modem_pipe_event event,
 				    void *user_data)
