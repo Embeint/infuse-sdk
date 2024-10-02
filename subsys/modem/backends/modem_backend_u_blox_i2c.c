@@ -233,11 +233,14 @@ static int modem_backend_ublox_i2c_open(void *data)
 static int modem_backend_ublox_i2c_close(void *data)
 {
 	struct modem_backend_ublox_i2c *backend = data;
+	struct k_work_sync sync;
 
 	LOG_DBG("Closing I2C modem backend");
 
 	/* Cancel any pending queries */
-	k_work_cancel_delayable(&backend->fifo_read);
+	k_work_cancel_delayable_sync(&backend->fifo_read, &sync);
+	/* Notify pipe closed */
+	modem_pipe_notify_closed(&backend->pipe);
 	return 0;
 }
 
