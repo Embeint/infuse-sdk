@@ -11,6 +11,12 @@ tests:
     tags: app
     integration_platforms:
       - tauro/nrf9151/ns
+  sample.task_runner.gnss.api_compat:
+    tags: app
+    integration_platforms:
+      - tauro/nrf9151/ns
+    extra_configs:
+      - CONFIG_GNSS_U_BLOX_NO_API_COMPAT=n
   sample.task_runner.gnss.sparkfun:
     tags: app
     platform_allow:
