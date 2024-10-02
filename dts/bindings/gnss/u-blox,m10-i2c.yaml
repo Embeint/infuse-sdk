@@ -5,4 +5,4 @@ description: U-BLOX M10 GNSS Module
 
 compatible: "u-blox,m10-i2c"
 
-include: [i2c-device.yaml, "u-blox,m10-common.yaml"]
+include: [i2c-device.yaml, "u-blox-common.yaml"]
