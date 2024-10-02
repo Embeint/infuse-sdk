@@ -472,10 +472,8 @@ static int ubx_m10_i2c_port_setup(const struct device *dev, bool hardware_reset)
 		/* Clear any holdover configuration from RAM and BBR */
 		struct ubx_msg_cfg_cfg cfg_cfg = {.clear_mask = UINT32_MAX};
 
-		ubx_msg_prepare(&cfg_buf, UBX_MSG_CLASS_CFG, UBX_MSG_ID_CFG_CFG);
-		net_buf_simple_add_mem(&cfg_buf, &cfg_cfg, sizeof(cfg_cfg));
-		ubx_msg_finalise(&cfg_buf);
-
+		ubx_msg_simple(&cfg_buf, UBX_MSG_CLASS_CFG, UBX_MSG_ID_CFG_CFG, &cfg_cfg,
+			       sizeof(cfg_cfg));
 		rc = ubx_modem_send_sync_acked(&data->modem, &cfg_buf, SYNC_MESSAGE_TIMEOUT);
 		if (rc < 0) {
 			LOG_WRN("Failed to reset previous configuration");
@@ -532,18 +530,15 @@ static int ubx_m10_i2c_software_standby(const struct device *dev)
 {
 	UBX_MSG_BUF_DEFINE(pmreq, struct ubx_msg_rxm_pmreq);
 	struct ubx_m10_i2c_data *data = dev->data;
-	struct ubx_msg_rxm_pmreq *payload;
-
-	/* Create request payload */
-	ubx_msg_prepare(&pmreq, UBX_MSG_CLASS_RXM, UBX_MSG_ID_RXM_PMREQ);
-	payload = net_buf_simple_add(&pmreq, sizeof(*payload));
-	*payload = (struct ubx_msg_rxm_pmreq){
+	struct ubx_msg_rxm_pmreq payload = {
 		.version = 0,
 		.duration_ms = 0,
 		.flags = UBX_MSG_RXM_PMREQ_FLAGS_BACKUP | UBX_MSG_RXM_PMREQ_FLAGS_FORCE,
 		.wakeup_sources = UBX_MSG_RXM_PMREQ_WAKEUP_EXTINT0,
 	};
-	ubx_msg_finalise(&pmreq);
+
+	/* Create request payload */
+	ubx_msg_simple(&pmreq, UBX_MSG_CLASS_RXM, UBX_MSG_ID_RXM_PMREQ, &payload, sizeof(payload));
 
 	/* Modem takes some time to go to sleep and respond to wakeup requests */
 	data->min_wake_time = K_TIMEOUT_ABS_MS(k_uptime_get() + 10);

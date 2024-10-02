@@ -648,6 +648,25 @@ static inline void ubx_msg_finalise(struct net_buf_simple *buf)
 }
 
 /**
+ * @brief Create a UBX message in a net_buf_simple
+ *
+ * @param buf Buffer to push message into
+ * @param msg_class UBX protocol message class (@ref ubx_msg_class)
+ * @param msg_id UBX protocol message ID (depends on @a msg_class)
+ * @param msg UBX message payload
+ * @param msg_len UBX payload length
+ */
+static inline void ubx_msg_simple(struct net_buf_simple *buf, uint8_t msg_class, uint8_t msg_id,
+				  void *msg, size_t msg_len)
+{
+	ubx_msg_prepare(buf, msg_class, msg_id);
+	if (msg_len > 0) {
+		net_buf_simple_add_mem(buf, msg, msg_len);
+	}
+	ubx_msg_finalise(buf);
+}
+
+/**
  * @}
  */
 
