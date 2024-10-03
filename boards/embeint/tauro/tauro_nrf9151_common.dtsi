@@ -70,7 +70,7 @@
 		led2 = &led2;
 		fuel-gauge0 = &fuel_gauge;
 		imu0 = &lsm6dsv;
-		gnss0 = &sam_m10;
+		gnss = &sam_m10;
 		watchdog0 = &wdt0;
 		environmental0 = &bme280;
 	};

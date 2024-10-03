@@ -105,11 +105,11 @@ static int flash_validator(void *a, void *b, void *c)
 K_THREAD_DEFINE(flash_thread, 2048, flash_validator, NULL, NULL, NULL, 5, 0, 0);
 #endif /* FLASH_COMPAT */
 
-#if DT_NODE_EXISTS(DT_ALIAS(gnss0))
+#if DT_NODE_EXISTS(DT_ALIAS(gnss))
 static int gnss_validator(void *a, void *b, void *c)
 {
 	atomic_inc(&validators_registered);
-	if (infuse_validation_gnss(DEVICE_DT_GET(DT_ALIAS(gnss0)), VALIDATION_GNSS_POWER_UP) == 0) {
+	if (infuse_validation_gnss(DEVICE_DT_GET(DT_ALIAS(gnss)), VALIDATION_GNSS_POWER_UP) == 0) {
 		atomic_inc(&validators_passed);
 	} else {
 		atomic_inc(&validators_failed);
@@ -120,7 +120,7 @@ static int gnss_validator(void *a, void *b, void *c)
 }
 
 K_THREAD_DEFINE(gnss_thread, 2048, gnss_validator, NULL, NULL, NULL, 5, 0, 0);
-#endif /* DT_NODE_EXISTS(DT_ALIAS(gnss0)) */
+#endif /* DT_NODE_EXISTS(DT_ALIAS(gnss)) */
 
 #ifdef CONFIG_DISK_DRIVER_SDMMC
 static int disk_validator(void *a, void *b, void *c)

@@ -52,7 +52,7 @@ static const struct task_schedule schedules[] = {
 };
 struct task_schedule_state states[ARRAY_SIZE(schedules)];
 
-TASK_RUNNER_TASKS_DEFINE(app_tasks, app_tasks_data, (GNSS_TASK, DEVICE_DT_GET(DT_ALIAS(gnss0))));
+TASK_RUNNER_TASKS_DEFINE(app_tasks, app_tasks_data, (GNSS_TASK, DEVICE_DT_GET(DT_ALIAS(gnss))));
 
 int main(void)
 {
