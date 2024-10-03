@@ -320,12 +320,16 @@ int ubx_modem_send_sync_poll(struct ubx_modem_data *modem, uint8_t message_class
 			     k_timeout_t timeout)
 {
 	NET_BUF_SIMPLE_DEFINE(poll_req, 16);
+	uint8_t flags;
 
 	/* Poll requests are just 0 byte messages with the given class and id */
 	ubx_msg_prepare(&poll_req, message_class, message_id);
 	ubx_msg_finalise(&poll_req);
 
-	return ubx_modem_send_sync(modem, &poll_req, UBX_HANDLING_RSP, handler, user_data, timeout);
+	/* CFG messages always generate an ACK as well */
+	flags = message_class == UBX_MSG_CLASS_CFG ? UBX_HANDLING_RSP_ACK : UBX_HANDLING_RSP;
+
+	return ubx_modem_send_sync(modem, &poll_req, flags, handler, user_data, timeout);
 }
 
 int ubx_modem_send_async_poll(struct ubx_modem_data *modem, uint8_t message_class,
