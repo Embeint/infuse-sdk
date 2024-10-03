@@ -319,8 +319,11 @@ static int ubx_m10_i2c_port_setup(const struct device *dev, bool hardware_reset)
 	int rc;
 
 	if (!hardware_reset) {
-		/* Clear any holdover configuration from RAM and BBR */
-		struct ubx_msg_cfg_cfg cfg_cfg = {.clear_mask = UINT32_MAX};
+		/* Clear any holdover configuration from BBR and FLASH */
+		struct ubx_msg_cfg_cfg cfg_cfg = {
+			.clear_mask = UINT32_MAX,
+			.device_mask = UBX_MSG_CFG_CFG_DEVICE_BBR | UBX_MSG_CFG_CFG_DEVICE_FLASH,
+		};
 
 		ubx_msg_simple(&cfg_buf, UBX_MSG_CLASS_CFG, UBX_MSG_ID_CFG_CFG, &cfg_cfg,
 			       sizeof(cfg_cfg));

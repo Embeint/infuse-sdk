@@ -89,9 +89,29 @@ struct ubx_msg_cfg_cfg {
 	uint32_t clear_mask;
 	uint32_t save_mask;
 	uint32_t load_mask;
-	uint8_t device_mask[];
+	uint8_t device_mask;
 } __packed;
-BUILD_ASSERT(sizeof(struct ubx_msg_cfg_cfg) == 12);
+BUILD_ASSERT(sizeof(struct ubx_msg_cfg_cfg) == 13);
+
+enum ubx_msg_cfg_cfg_mask {
+	UBX_MSG_CFG_CFG_MASK_IO_PORT = BIT(0),
+	UBX_MSG_CFG_CFG_MASK_MSG_CONF = BIT(1),
+	UBX_MSG_CFG_CFG_MASK_INF_MSG = BIT(2),
+	UBX_MSG_CFG_CFG_MASK_NAV_CONF = BIT(3),
+	UBX_MSG_CFG_CFG_MASK_RXM_CONF = BIT(4),
+	UBX_MSG_CFG_CFG_MASK_SEN_CONF = BIT(8),
+	UBX_MSG_CFG_CFG_MASK_RINV_CONF = BIT(9),
+	UBX_MSG_CFG_CFG_MASK_ANT_CONF = BIT(10),
+	UBX_MSG_CFG_CFG_MASK_LOG_CONF = BIT(11),
+	UBX_MSG_CFG_CFG_MASK_FTS_CONF = BIT(12),
+};
+
+enum ubx_msg_cfg_cfg_device {
+	UBX_MSG_CFG_CFG_DEVICE_BBR = BIT(0),
+	UBX_MSG_CFG_CFG_DEVICE_FLASH = BIT(1),
+	UBX_MSG_CFG_CFG_DEVICE_EEPROM = BIT(2),
+	UBX_MSG_CFG_CFG_DEVICE_SPI_FLASH = BIT(4),
+};
 
 /** @ref UBX_MSG_ID_CFG_VALSET */
 struct ubx_msg_cfg_valset_v0 {
