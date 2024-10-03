@@ -8,6 +8,16 @@ config GNSS_UBX_MODEM
 
 if GNSS_UBX_MODEM
 
+config GNSS_UBX_M10
+	bool
+	help
+	  U-blox M10 command interface (CFG-VALSET for configuration)
+
+config GNSS_UBX_M8
+	bool
+	help
+	  U-blox M8 command interface (Dedicated messages for configuration)
+
 module = GNSS_UBX_MODEM
 module-str = u-blox GNSS
 source "subsys/logging/Kconfig.template.log_config"
@@ -54,6 +64,7 @@ config GNSS_U_BLOX_M10_I2C
 	select MODEM_MODULES
 	select MODEM_BACKEND_U_BLOX_I2C
 	select GNSS_UBX_MODEM
+	select GNSS_UBX_M10
 
 config GNSS_U_BLOX_M8_SPI
 	bool "U-BLOX M8 SPI GNSS Module"
@@ -65,3 +76,4 @@ config GNSS_U_BLOX_M8_SPI
 	select MODEM_MODULES
 	select MODEM_BACKEND_U_BLOX_SPI
 	select GNSS_UBX_MODEM
+	select GNSS_UBX_M8

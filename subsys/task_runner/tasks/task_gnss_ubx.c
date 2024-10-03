@@ -45,6 +45,9 @@ struct gnss_run_state {
 /* Expecting these two struct to be equivalent for logging purposes */
 BUILD_ASSERT(sizeof(struct ubx_msg_nav_pvt) == sizeof(struct tdf_ubx_nav_pvt));
 
+BUILD_ASSERT(IS_ENABLED(CONFIG_GNSS_UBX_M8) + IS_ENABLED(CONFIG_GNSS_UBX_M10) == 1,
+	     "Expected exactly one of CONFIG_GNSS_UBX_M8 and CONFIG_GNSS_UBX_M10 to be enabled");
+
 LOG_MODULE_REGISTER(task_gnss, CONFIG_TASK_GNSS_UBX_LOG_LEVEL);
 
 static int nav_timegps_cb(uint8_t message_class, uint8_t message_id, const void *payload,
@@ -200,11 +203,6 @@ static int nav_pvt_cb(uint8_t message_class, uint8_t message_id, const void *pay
 		 * Query NAV-TIMEGPS directly to determine GPS time validity.
 		 * The response to this query will come on the next navigation solution.
 		 */
-
-		static NET_BUF_SIMPLE_DEFINE(poll_req, 16);
-		ubx_msg_prepare(&poll_req, UBX_MSG_CLASS_NAV, UBX_MSG_ID_NAV_TIMEGPS);
-		ubx_msg_finalise(&poll_req);
-
 		state->timegps.flags = UBX_HANDLING_RSP;
 		state->timegps.message_class = UBX_MSG_CLASS_NAV;
 		state->timegps.message_class = UBX_MSG_ID_NAV_TIMEGPS;
@@ -263,6 +261,7 @@ void gnss_task_fn(const struct task_schedule *schedule, struct k_poll_signal *te
 		return;
 	}
 
+#ifdef CONFIG_GNSS_UBX_M10
 	NET_BUF_SIMPLE_DEFINE(cfg_buf, 48);
 	ubx_msg_prepare_valset(&cfg_buf,
 			       UBX_MSG_CFG_VALSET_LAYERS_RAM | UBX_MSG_CFG_VALSET_LAYERS_BBR);
@@ -290,6 +289,36 @@ void gnss_task_fn(const struct task_schedule *schedule, struct k_poll_signal *te
 
 	ubx_msg_finalise(&cfg_buf);
 	rc = ubx_modem_send_sync_acked(run_state.modem, &cfg_buf, K_MSEC(250));
+	if (rc < 0) {
+		LOG_WRN("Failed to configure modem");
+	}
+#endif /* CONFIG_GNSS_UBX_M10 */
+
+#ifdef CONFIG_GNSS_UBX_M8
+	NET_BUF_SIMPLE_DEFINE(msg_buf, 48);
+	const struct ubx_msg_cfg_rate cfg_rate = {
+		.meas_rate = 1000,
+		.nav_rate = 1,
+		.time_ref = UBX_MSG_CFG_RATE_TIME_REF_GPS,
+	};
+	const struct ubx_msg_cfg_msg cfg_msg = {
+		.msg_class = UBX_MSG_CLASS_NAV,
+		.msg_id = UBX_MSG_ID_NAV_PVT,
+		.rate = 1,
+	};
+
+	ubx_msg_simple(&msg_buf, UBX_MSG_CLASS_CFG, UBX_MSG_ID_CFG_RATE, &cfg_rate,
+		       sizeof(cfg_rate));
+	rc = ubx_modem_send_sync_acked(run_state.modem, &msg_buf, K_MSEC(250));
+	if (rc < 0) {
+		LOG_WRN("Failed to configure navigation rate");
+	}
+	ubx_msg_simple(&msg_buf, UBX_MSG_CLASS_CFG, UBX_MSG_ID_CFG_MSG, &cfg_msg, sizeof(cfg_msg));
+	rc = ubx_modem_send_sync_acked(run_state.modem, &msg_buf, K_MSEC(250));
+	if (rc < 0) {
+		LOG_WRN("Failed to configure NAV-PVT rate");
+	}
+#endif /* CONFIG_GNSS_UBX_M8 */
 
 	/* Subscribe to NAV-PVT message */
 	ubx_modem_msg_subscribe(run_state.modem, &pvt_handler_ctx);
