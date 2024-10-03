@@ -34,8 +34,11 @@ extern "C" {
 /* Infuse watchdog device */
 #define INFUSE_WATCHDOG_DEV DEVICE_DT_GET(DT_ALIAS(watchdog0))
 
+#define INFUSE_WATCHDOG_FEED_EARLY_MS 100
+
 /* Maximum duration to sleep before waking up to feed watchdog */
-#define INFUSE_WATCHDOG_FEED_PERIOD K_MSEC(CONFIG_INFUSE_WATCHDOG_PERIOD_MS - 100)
+#define INFUSE_WATCHDOG_FEED_PERIOD                                                                \
+	K_MSEC(CONFIG_INFUSE_WATCHDOG_PERIOD_MS - INFUSE_WATCHDOG_FEED_EARLY_MS)
 
 /** Default timeout configuration for subsystems */
 #define INFUSE_WATCHDOG_DEFAULT_TIMEOUT_CFG                                                        \
@@ -62,6 +65,16 @@ extern "C" {
 		return 0;                                                                          \
 	}                                                                                          \
 	SYS_INIT(name##_register, POST_KERNEL, 0);
+
+/**
+ * @brief Function that is called just prior to watchdog expiry
+ *
+ * The standard implementation of this function is in lib/reboot.c
+ *
+ * @param dev Watchdog instance that is about to expire
+ * @param channel_id Channel ID that is about to expire
+ */
+void infuse_watchdog_warning(const struct device *dev, int channel_id);
 
 /**
  * @brief Function that is called on watchdog expiry

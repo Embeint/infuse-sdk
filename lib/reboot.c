@@ -84,6 +84,11 @@ void k_sys_fatal_error_handler(unsigned int reason, const struct arch_esf *esf)
 	infuse_reboot(reason, pc, lr);
 }
 
+void infuse_watchdog_warning(const struct device *dev, int channel_id)
+{
+	/* Nothing to do for now */
+}
+
 void infuse_watchdog_expired(const struct device *dev, int channel_id)
 {
 	uint32_t info1 = channel_id;
