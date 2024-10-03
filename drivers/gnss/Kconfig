@@ -54,3 +54,14 @@ config GNSS_U_BLOX_M10_I2C
 	select MODEM_MODULES
 	select MODEM_BACKEND_U_BLOX_I2C
 	select GNSS_UBX_MODEM
+
+config GNSS_U_BLOX_M8_SPI
+	bool "U-BLOX M8 SPI GNSS Module"
+	default y
+	depends on GNSS
+	depends on DT_HAS_U_BLOX_M8_SPI_ENABLED
+	select SPI
+	select SPI_ASYNC
+	select MODEM_MODULES
+	select MODEM_BACKEND_U_BLOX_SPI
+	select GNSS_UBX_MODEM

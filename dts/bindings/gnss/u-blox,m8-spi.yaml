@@ -1,0 +1,8 @@
+# Copyright (c) 2024 Embeint Inc
+# SPDX-License-Identifier: Apache-2.0
+
+description: U-BLOX M8 GNSS Module
+
+compatible: "u-blox,m8-spi"
+
+include: [spi-device.yaml, "u-blox-common.yaml"]

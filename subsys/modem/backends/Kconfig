@@ -6,3 +6,10 @@ config MODEM_BACKEND_U_BLOX_I2C
 	select POLL
 	select RING_BUFFER
 	depends on I2C_RTIO
+
+config MODEM_BACKEND_U_BLOX_SPI
+	bool "u-blox SPI modem backend"
+	select MODEM_PIPE
+	select POLL
+	select RING_BUFFER
+	depends on SPI_ASYNC
