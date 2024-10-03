@@ -77,11 +77,91 @@ BUILD_ASSERT(sizeof(struct ubx_msg_id_ack_nak) == 2);
  */
 
 enum ubx_msg_id_cfg {
+	UBX_MSG_ID_CFG_PRT = 0x00,
+	UBX_MSG_ID_CFG_MSG = 0x01,
 	UBX_MSG_ID_CFG_RST = 0x04,
+	UBX_MSG_ID_CFG_RATE = 0x08,
 	UBX_MSG_ID_CFG_CFG = 0x09,
+	UBX_MSG_ID_CFG_NAV5 = 0x24,
+	UBX_MSG_ID_CFG_GNSS = 0x3E,
 	UBX_MSG_ID_CFG_VALSET = 0x8a,
 	UBX_MSG_ID_CFG_VALGET = 0x8b,
 	UBX_MSG_ID_CFG_VALDEL = 0x8c,
+};
+
+/** @ref UBX_MSG_ID_CFG_PRT (SPI) */
+struct ubx_msg_cfg_prt_spi {
+	uint8_t port_id;
+	uint8_t reserved1;
+	uint16_t tx_ready;
+	uint32_t mode;
+	uint8_t reserved2[4];
+	uint16_t in_proto_mask;
+	uint16_t out_proto_mask;
+	uint16_t flags;
+	uint8_t reserved3[2];
+} __packed;
+BUILD_ASSERT(sizeof(struct ubx_msg_cfg_prt_spi) == 20);
+
+enum ubx_msg_cfg_prt_ports {
+	UBX_MSG_CFG_PRT_PORT_ID_I2C = 0,
+	UBX_MSG_CFG_PRT_PORT_ID_USB = 3,
+	UBX_MSG_CFG_PRT_PORT_ID_SPI = 4,
+};
+
+enum ubx_msg_cfg_prt_proto_mask {
+	UBX_MSG_CFG_PRT_PROTO_MASK_UBX = BIT(0),
+	UBX_MSG_CFG_PRT_PROTO_MASK_NMEA = BIT(1),
+	UBX_MSG_CFG_PRT_PROTO_MASK_RTCM2 = BIT(2),
+	UBX_MSG_CFG_PRT_PROTO_MASK_RTCM3 = BIT(5),
+};
+
+enum ubx_msg_cfg_prt_tx_ready {
+	UBX_MSG_CFG_PRT_TX_READY_EN = BIT(0),
+	UBX_MSG_CFG_PRT_TX_READY_POL_ACTIVE_HIGH = 0,
+	UBX_MSG_CFG_PRT_TX_READY_POL_ACTIVE_LOW = BIT(1),
+};
+
+#define UBX_MSG_CFG_PRT_TX_READY_CFG(pio, threshold) (pio << 2) | ((threshold / 8) << 7)
+
+enum ubx_msg_cfg_prt_spi_mode {
+	/* CPOL = 0, CPHA = 0 */
+	UBX_MSG_CFG_PRT_SPI_MODE_0 = (0 << 1),
+	/* CPOL = 0, CPHA = 1 */
+	UBX_MSG_CFG_PRT_SPI_MODE_1 = (1 << 1),
+	/* CPOL = 1, CPHA = 0 */
+	UBX_MSG_CFG_PRT_SPI_MODE_2 = (2 << 1),
+	/* CPOL = 1, CPHA = 1 */
+	UBX_MSG_CFG_PRT_SPI_MODE_3 = (3 << 1),
+};
+
+enum ubx_msg_cfg_prt_spi_flags {
+	UBX_MSG_CFG_PRT_SPI_EXTENDED_TIMEOUT = BIT(1),
+};
+
+/** @ref UBX_MSG_ID_CFG_MSG */
+struct ubx_msg_cfg_msg {
+	uint8_t msg_class;
+	uint8_t msg_id;
+	uint8_t rate;
+} __packed;
+BUILD_ASSERT(sizeof(struct ubx_msg_cfg_msg) == 3);
+
+/** @ref UBX_MSG_ID_CFG_RATE */
+struct ubx_msg_cfg_rate {
+	uint16_t meas_rate;
+	uint16_t nav_rate;
+	uint16_t time_ref;
+} __packed;
+BUILD_ASSERT(sizeof(struct ubx_msg_cfg_rate) == 6);
+
+enum ubx_msg_cfg_rate_time_ref {
+	UBX_MSG_CFG_RATE_TIME_REF_UTC = 0,
+	UBX_MSG_CFG_RATE_TIME_REF_GPS = 1,
+	UBX_MSG_CFG_RATE_TIME_REF_GLONASS = 2,
+	UBX_MSG_CFG_RATE_TIME_REF_BEIDOU = 3,
+	UBX_MSG_CFG_RATE_TIME_REF_GALILEO = 4,
+	UBX_MSG_CFG_RATE_TIME_REF_NAVIC = 5,
 };
 
 /** @ref UBX_MSG_ID_CFG_CFG */
@@ -112,6 +192,46 @@ enum ubx_msg_cfg_cfg_device {
 	UBX_MSG_CFG_CFG_DEVICE_EEPROM = BIT(2),
 	UBX_MSG_CFG_CFG_DEVICE_SPI_FLASH = BIT(4),
 };
+
+/** @ref UBX_MSG_ID_CFG_NAV5 */
+struct ubx_msg_cfg_nav5 {
+	uint16_t mask;
+	uint8_t dyn_model;
+	uint8_t fix_mode;
+	int32_t fixed_alt;
+	uint32_t fixed_alt_var;
+	int8_t min_elev;
+	uint8_t dr_limit;
+	uint16_t p_dop;
+	uint16_t t_dop;
+	uint16_t p_acc;
+	uint16_t t_acc;
+	uint8_t static_hold_threshold;
+	uint8_t d_gnss_timeout;
+	uint8_t cno_threshold_num_svs;
+	uint8_t cno_threshold;
+	uint8_t reserved1[2];
+	uint16_t static_hold_max_dist;
+	uint8_t utc_standard;
+	uint8_t reserved2[5];
+} __packed;
+BUILD_ASSERT(sizeof(struct ubx_msg_cfg_nav5) == 36);
+
+/** @ref UBX_MSG_ID_CFG_GNSS */
+struct ubx_msg_cfg_gnss {
+	uint8_t msg_ver;
+	uint8_t num_trk_ch_hw;
+	uint8_t num_trk_ch_use;
+	uint8_t num_cfg_blocks;
+	struct ubx_msg_cfg_gnss_cfg {
+		uint8_t gnss_id;
+		uint8_t res_trk_chan;
+		uint8_t max_trk_chan;
+		uint8_t reserved1;
+		uint32_t flags;
+	} __packed configs[];
+} __packed;
+BUILD_ASSERT(sizeof(struct ubx_msg_cfg_gnss) == 4);
 
 /** @ref UBX_MSG_ID_CFG_VALSET */
 struct ubx_msg_cfg_valset_v0 {
