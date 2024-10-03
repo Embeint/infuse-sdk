@@ -8,7 +8,6 @@
 
 #include <zephyr/ztest.h>
 #include <zephyr/random/random.h>
-#include <zephyr/logging/log.h>
 
 #include <infuse/common_boot.h>
 #include <infuse/types.h>
@@ -19,8 +18,6 @@
 #include <infuse/epacket/packet.h>
 #include <infuse/epacket/interface/epacket_dummy.h>
 #include <infuse/drivers/watchdog.h>
-
-LOG_MODULE_DECLARE(test, LOG_LEVEL_INF);
 
 static void send_fault_command(uint32_t request_id, uint8_t fault)
 {

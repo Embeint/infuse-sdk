@@ -7,7 +7,6 @@
  */
 
 #include <zephyr/ztest.h>
-#include <zephyr/logging/log.h>
 
 #include <infuse/states.h>
 #include <infuse/fs/kv_store.h>
@@ -15,8 +14,6 @@
 #include <infuse/reboot.h>
 #include <infuse/time/epoch.h>
 #include <infuse/drivers/watchdog.h>
-
-LOG_MODULE_REGISTER(test, LOG_LEVEL_INF);
 
 ZTEST(infuse_reboot, test_reboot)
 {

@@ -11,13 +11,10 @@
 #include <zephyr/ztest.h>
 #include <zephyr/kernel.h>
 #include <zephyr/random/random.h>
-#include <zephyr/logging/log.h>
 
 #include <infuse/drivers/watchdog.h>
 
 K_SEM_DEFINE(watchdog_expired, 0, 1);
-
-LOG_MODULE_DECLARE(test, LOG_LEVEL_INF);
 
 static uint32_t info1, info2;
 
