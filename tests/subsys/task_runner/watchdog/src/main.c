@@ -11,7 +11,6 @@
 #include <zephyr/ztest.h>
 #include <zephyr/kernel.h>
 #include <zephyr/random/random.h>
-#include <zephyr/logging/log.h>
 
 #include <infuse/drivers/watchdog.h>
 #include <infuse/task_runner/runner.h>
@@ -35,8 +34,6 @@ void example_workqueue_fn(struct k_work *work)
 
 TASK_RUNNER_TASKS_DEFINE(app_tasks, app_tasks_data, (WORKQUEUE_TASK));
 K_SEM_DEFINE(watchdog_expired, 0, 1);
-
-LOG_MODULE_DECLARE(test, LOG_LEVEL_INF);
 
 void infuse_watchdog_expired(const struct device *dev, int channel_id)
 {
