@@ -677,7 +677,7 @@ static inline void ubx_msg_finalise(struct net_buf_simple *buf)
  * @param msg_len UBX payload length
  */
 static inline void ubx_msg_simple(struct net_buf_simple *buf, uint8_t msg_class, uint8_t msg_id,
-				  void *msg, size_t msg_len)
+				  const void *msg, size_t msg_len)
 {
 	ubx_msg_prepare(buf, msg_class, msg_id);
 	if (msg_len > 0) {
