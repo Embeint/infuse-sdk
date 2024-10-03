@@ -2,7 +2,7 @@ sample:
   description: GNSS task runner sample
   name: GNSS task runner
 common:
-  filter: dt_alias_exists("gnss0")
+  filter: dt_alias_exists("gnss")
   build_only: true
   required_snippets:
     - infuse
