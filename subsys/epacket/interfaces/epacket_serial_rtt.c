@@ -84,8 +84,13 @@ static void epacket_serial_send(const struct device *dev, struct net_buf *buf)
 
 	/* Push packet at RTT */
 	SEGGER_RTT_Write(0, buf->data, buf->len);
-
 	net_buf_unref(buf);
+
+	/* Small delay to give debugger a chance to read out the packet.
+	 * Removing this will result in silently dropped packets when
+	 * bursts of packets are sent due to the behaviour of SEGGER_RTT_Write.
+	 */
+	k_sleep(K_MSEC(5));
 }
 
 static int epacket_receive_control(const struct device *dev, bool enable)
