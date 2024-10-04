@@ -8,6 +8,7 @@
 
 #include <zephyr/net/buf.h>
 #include <zephyr/logging/log.h>
+#include <zephyr/sys/__assert.h>
 
 #include <infuse/reboot.h>
 #include <infuse/rpc/types.h>
@@ -53,6 +54,12 @@ struct net_buf *rpc_command_fault(struct net_buf *request)
 	case K_ERR_ARM_USAGE_UNDEFINED_INSTRUCTION:
 		__asm__ volatile("udf #255; nop;");
 		break;
+#ifdef CONFIG_ASSERT
+	case K_ERR_KERNEL_OOPS:
+	case K_ERR_KERNEL_PANIC:
+		__ASSERT_NO_MSG(req->zero);
+		break;
+#endif /* CONFIG_ASSERT */
 #ifdef CONFIG_INFUSE_RPC_SERVER_WATCHDOG
 	case INFUSE_REBOOT_HW_WATCHDOG:
 		/* Blocking */
