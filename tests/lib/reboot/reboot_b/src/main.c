@@ -87,7 +87,7 @@ ZTEST(infuse_reboot, test_reboot)
 		/* Reboot information */
 		rc = infuse_reboot_state_query(&reboot_state);
 		zassert_equal(0, rc);
-		zassert_equal(INFUSE_REBOOT_WATCHDOG, reboot_state.reason);
+		zassert_equal(INFUSE_REBOOT_HW_WATCHDOG, reboot_state.reason);
 		/* Time reference should be valid and about 2 seconds after the reference */
 		zassert_equal(TIME_SOURCE_NTP, reboot_state.epoch_time_source);
 		zassert_within(reboot_state.epoch_time,

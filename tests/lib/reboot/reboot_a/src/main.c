@@ -59,14 +59,14 @@ ZTEST(infuse_reboot, test_reboot)
 		time_reference.ref = time_2025;
 		epoch_time_set_reference(TIME_SOURCE_NTP, &time_reference);
 		/* Trigger reboot */
-		infuse_reboot(INFUSE_REBOOT_WATCHDOG, 4, 0);
+		infuse_reboot(INFUSE_REBOOT_HW_WATCHDOG, 4, 0);
 		zassert_unreachable("infuse_reboot returned");
 		break;
 	case 3:
 		/* Reboot state with time information */
 		rc = infuse_reboot_state_query(&reboot_state);
 		zassert_equal(0, rc);
-		zassert_equal(INFUSE_REBOOT_WATCHDOG, reboot_state.reason);
+		zassert_equal(INFUSE_REBOOT_HW_WATCHDOG, reboot_state.reason);
 		zassert_equal(4, reboot_state.param_1.watchdog_info1);
 		zassert_equal(0, reboot_state.param_2.watchdog_info2);
 		zassert_equal(0, reboot_state.uptime);
