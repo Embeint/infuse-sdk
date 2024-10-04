@@ -1,0 +1,9 @@
+/ {
+	epacket_dummy: epacket_dummy {
+		compatible = "embeint,epacket-dummy";
+	};
+
+	chosen {
+		infuse,memfault-epacket-dump = &epacket_dummy;
+	};
+};

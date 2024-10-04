@@ -26,7 +26,8 @@
 
 LOG_MODULE_REGISTER(infuse, CONFIG_INFUSE_COMMON_LOG_LEVEL);
 
-static struct infuse_reboot_state reboot_state;
+IF_DISABLED(CONFIG_ZTEST, (static))
+struct infuse_reboot_state reboot_state;
 
 int infuse_common_boot_last_reboot(struct infuse_reboot_state *state)
 {
