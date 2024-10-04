@@ -50,6 +50,8 @@ enum infuse_reboot_reason {
 	INFUSE_REBOOT_MCUMGR,
 	/* exFAT DFU triggered */
 	INFUSE_REBOOT_EXFAT_DFU,
+	/* Software watchdog has expired */
+	INFUSE_REBOOT_SW_WATCHDOG,
 	/* Unknown reboot reason */
 	INFUSE_REBOOT_UNKNOWN = 255,
 };
