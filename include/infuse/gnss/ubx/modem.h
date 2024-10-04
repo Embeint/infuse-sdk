@@ -189,7 +189,7 @@ int ubx_modem_send_sync(struct ubx_modem_data *modem, struct net_buf_simple *buf
  * @param timeout Duration to wait for response
  *
  * @retval 0 If modem responded with UBX_MSG_ID_ACK_ACK
- * @retval -EINVAL If modem responded with UBX_MSG_ID_ACK_ACK
+ * @retval -EINVAL If modem responded with UBX_MSG_ID_ACK_NAK
  * @retval -ETIMEDOUT If modem did not respond within timeout
  * @retval -errno Negative error code otherwise
  */
