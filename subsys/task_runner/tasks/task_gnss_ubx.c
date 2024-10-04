@@ -36,8 +36,11 @@ struct gnss_run_state {
 	struct ubx_modem_data *modem;
 	const struct task_schedule *schedule;
 	struct ubx_message_handler_ctx timegps;
+	struct ubx_msg_nav_pvt latest_pvt;
 	struct ubx_msg_nav_pvt best_fix;
-	struct k_poll_signal alive;
+	struct ubx_msg_nav_timegps latest_timegps;
+	struct k_poll_signal nav_pvt_rx;
+	struct k_poll_signal nav_timegps_rx;
 	uint64_t next_time_sync;
 	uint8_t flags;
 };
@@ -58,14 +61,6 @@ static int nav_timegps_cb(uint8_t message_class, uint8_t message_id, const void 
 	uint8_t time_validity =
 		UBX_MSG_NAV_TIMEGPS_VALID_TOW_VALID | UBX_MSG_NAV_TIMEGPS_VALID_WEEK_VALID;
 	bool time_valid = (timegps->valid & time_validity) == time_validity;
-	k_ticks_t timepulse;
-	int rc;
-
-	/* Clear running flag */
-	state->flags &= ~TIME_SYNC_RUNNING;
-
-	LOG_DBG("NAV-TIMEGPS: (%d.%d) Acc: %d Valid: %02X: Leap: %d", timegps->week, timegps->itow,
-		timegps->t_acc, timegps->valid, timegps->leap_s);
 
 	/* Exit if GPS time knowledge is not valid */
 	if (!time_valid) {
@@ -76,6 +71,26 @@ static int nav_timegps_cb(uint8_t message_class, uint8_t message_id, const void 
 	if (timegps->itow <= 500) {
 		return 0;
 	}
+
+	/* Copy payload to state */
+	memcpy(&state->latest_timegps, timegps, sizeof(*timegps));
+	/* Notify task thread new NAV-TIMEGPS message is available */
+	k_poll_signal_raise(&state->nav_timegps_rx, 0);
+
+	return 0;
+}
+
+static void nav_timegps_handle(struct gnss_run_state *state, const struct task_gnss_args *args)
+{
+	const struct ubx_msg_nav_timegps *timegps = &state->latest_timegps;
+	k_ticks_t timepulse;
+	int rc;
+
+	/* Clear running flag */
+	state->flags &= ~TIME_SYNC_RUNNING;
+
+	LOG_DBG("NAV-TIMEGPS: (%d.%d) Acc: %d Valid: %02X: Leap: %d", timegps->week, timegps->itow,
+		timegps->t_acc, timegps->valid, timegps->leap_s);
 
 	/* Merge iTOW and fTOW as per Interface Description */
 	uint64_t weektime_us = (1000 * (uint64_t)timegps->itow) + (timegps->ftow / 1000);
@@ -97,13 +112,13 @@ static int nav_timegps_cb(uint8_t message_class, uint8_t message_id, const void 
 
 	/* Minimum time accuracy accepted for fine sync (ns) */
 	if (timegps->t_acc >= 1000) {
-		return 0;
+		return;
 	}
 
 	/* Fine sync requires valid timepulse */
 	rc = gnss_get_latest_timepulse(state->dev, &timepulse);
 	if (rc != 0) {
-		return 0;
+		return;
 	}
 
 	struct timeutil_sync_instant sync = {
@@ -117,7 +132,6 @@ static int nav_timegps_cb(uint8_t message_class, uint8_t message_id, const void 
 	state->flags |= TIME_SYNC_DONE;
 	state->next_time_sync =
 		k_uptime_get() + (CONFIG_TASK_RUNNER_GNSS_TIME_RESYNC_PERIOD_SEC * MSEC_PER_SEC);
-	return 0;
 }
 
 static void log_and_publish(struct gnss_run_state *state, const struct ubx_msg_nav_pvt *pvt)
@@ -168,7 +182,19 @@ static int nav_pvt_cb(uint8_t message_class, uint8_t message_id, const void *pay
 {
 	const struct ubx_msg_nav_pvt *pvt = payload;
 	struct gnss_run_state *state = user_data;
-	const struct task_gnss_args *args = &state->schedule->task_args.infuse.gnss;
+
+	/* Copy payload to state */
+	memcpy(&state->latest_pvt, pvt, sizeof(*pvt));
+	/* Notify task thread new NAV-PVT message is available */
+	k_poll_signal_raise(&state->nav_pvt_rx, 0);
+
+	return 0;
+}
+
+/* Returns true when task should terminate */
+static bool nav_pvt_handle(struct gnss_run_state *state, const struct task_gnss_args *args)
+{
+	const struct ubx_msg_nav_pvt *pvt = &state->latest_pvt;
 	uint8_t run_target = (args->flags & TASK_GNSS_FLAGS_RUN_MASK);
 	uint8_t time_validity = UBX_MSG_NAV_PVT_VALID_DATE | UBX_MSG_NAV_PVT_VALID_TIME;
 	bool valid_time = (pvt->valid & time_validity) == time_validity;
@@ -218,18 +244,16 @@ static int nav_pvt_cb(uint8_t message_class, uint8_t message_id, const void *pay
 	if ((run_target == TASK_GNSS_FLAGS_RUN_TO_TIME_SYNC) && (state->flags & TIME_SYNC_DONE)) {
 		/* Time sync done, terminate */
 		LOG_INF("Terminating due to %s", "time sync complete");
-		k_poll_signal_raise(&state->alive, 1);
+		return true;
 	} else if ((run_target == TASK_GNSS_FLAGS_RUN_TO_LOCATION_FIX) &&
 		   (state->flags & TIME_SYNC_DONE) && valid_hacc && valid_pdop) {
 		/* Location fix done, terminate */
 		LOG_INF("Terminating due to %s", "fix obtained");
-		k_poll_signal_raise(&state->alive, 1);
-	} else {
-		/* Notify task thread we are still going */
-		k_poll_signal_raise(&state->alive, 0);
+		return true;
 	}
 
-	return 0;
+	/* Continue fix */
+	return false;
 }
 
 void gnss_task_fn(const struct task_schedule *schedule, struct k_poll_signal *terminate,
@@ -251,7 +275,8 @@ void gnss_task_fn(const struct task_schedule *schedule, struct k_poll_signal *te
 	run_state.modem = ubx_modem_data_get(gnss);
 	run_state.schedule = schedule;
 	run_state.best_fix.h_acc = UINT32_MAX;
-	k_poll_signal_init(&run_state.alive);
+	k_poll_signal_init(&run_state.nav_pvt_rx);
+	k_poll_signal_init(&run_state.nav_timegps_rx);
 
 	/* Request sensor to be powered */
 	rc = pm_device_runtime_get(gnss);
@@ -327,7 +352,9 @@ void gnss_task_fn(const struct task_schedule *schedule, struct k_poll_signal *te
 	struct k_poll_event events[] = {
 		K_POLL_EVENT_INITIALIZER(K_POLL_TYPE_SIGNAL, K_POLL_MODE_NOTIFY_ONLY, terminate),
 		K_POLL_EVENT_INITIALIZER(K_POLL_TYPE_SIGNAL, K_POLL_MODE_NOTIFY_ONLY,
-					 &run_state.alive),
+					 &run_state.nav_pvt_rx),
+		K_POLL_EVENT_INITIALIZER(K_POLL_TYPE_SIGNAL, K_POLL_MODE_NOTIFY_ONLY,
+					 &run_state.nav_timegps_rx),
 	};
 	int signaled, result;
 
@@ -342,12 +369,17 @@ void gnss_task_fn(const struct task_schedule *schedule, struct k_poll_signal *te
 			LOG_INF("Terminating due to %s", "runner request");
 			break;
 		}
-		k_poll_signal_check(&run_state.alive, &signaled, &result);
+		k_poll_signal_check(&run_state.nav_pvt_rx, &signaled, &result);
 		if (signaled) {
-			k_poll_signal_reset(&run_state.alive);
-			if (result == 1) {
+			k_poll_signal_reset(&run_state.nav_pvt_rx);
+			if (nav_pvt_handle(&run_state, args)) {
 				break;
 			}
+		}
+		k_poll_signal_check(&run_state.nav_timegps_rx, &signaled, &result);
+		if (signaled) {
+			k_poll_signal_reset(&run_state.nav_timegps_rx);
+			nav_timegps_handle(&run_state, args);
 		}
 	}
 
