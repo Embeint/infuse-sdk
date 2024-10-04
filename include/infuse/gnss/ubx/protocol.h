@@ -165,13 +165,21 @@ enum ubx_msg_cfg_rate_time_ref {
 };
 
 /** @ref UBX_MSG_ID_CFG_CFG */
-struct ubx_msg_cfg_cfg {
+struct ubx_msg_cfg_cfg_m8 {
 	uint32_t clear_mask;
 	uint32_t save_mask;
 	uint32_t load_mask;
 	uint8_t device_mask;
 } __packed;
-BUILD_ASSERT(sizeof(struct ubx_msg_cfg_cfg) == 13);
+BUILD_ASSERT(sizeof(struct ubx_msg_cfg_cfg_m8) == 13);
+
+/** @ref UBX_MSG_ID_CFG_CFG */
+struct ubx_msg_cfg_cfg_m10 {
+	uint32_t clear_mask;
+	uint32_t save_mask;
+	uint32_t load_mask;
+} __packed;
+BUILD_ASSERT(sizeof(struct ubx_msg_cfg_cfg_m10) == 12);
 
 enum ubx_msg_cfg_cfg_mask {
 	UBX_MSG_CFG_CFG_MASK_IO_PORT = BIT(0),
