@@ -7,6 +7,8 @@ manifest:
   remotes:
     - name: embeint
       url-base: https://github.com/embeint
+    - name: memfault
+      url-base: https://github.com/memfault
 
   projects:
     - name: zephyr
@@ -30,6 +32,10 @@ manifest:
       path: modules/nrfconnect/sdk-nrf
       revision: 9364f087b164c3ebfc817319735029d727e5e1b9
       import: true
+    - name: memfault-firmware-sdk
+      path: modules/lib/memfault
+      revision: 1.12.0
+      remote: memfault
 
   self:
     path: infuse-sdk
