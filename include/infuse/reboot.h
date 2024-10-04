@@ -38,8 +38,8 @@ enum infuse_reboot_reason {
 	INFUSE_REBOOT_ARCH_SPECIFIC = K_ERR_ARCH_START,
 	/* Infuse reboot reasons */
 	INFUSE_REBOOT_INFUSE_START = 128,
-	/* Watchdog has expired */
-	INFUSE_REBOOT_WATCHDOG = INFUSE_REBOOT_INFUSE_START,
+	/* Hardware watchdog has expired */
+	INFUSE_REBOOT_HW_WATCHDOG = INFUSE_REBOOT_INFUSE_START,
 	/* Triggered externally (Button, etc) */
 	INFUSE_REBOOT_EXTERNAL_TRIGGER,
 	/* Remote procedure call */

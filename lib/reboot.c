@@ -99,7 +99,7 @@ void infuse_watchdog_expired(const struct device *dev, int channel_id)
 #endif
 
 	/* Store reboot metadata */
-	reboot_state_store(INFUSE_REBOOT_WATCHDOG, info1, info2);
+	reboot_state_store(INFUSE_REBOOT_HW_WATCHDOG, info1, info2);
 	/* Wait for watchdog to reboot us */
 	for (;;)
 		;

@@ -54,7 +54,7 @@ struct net_buf *rpc_command_fault(struct net_buf *request)
 		__asm__ volatile("udf #255; nop;");
 		break;
 #ifdef CONFIG_INFUSE_RPC_SERVER_WATCHDOG
-	case INFUSE_REBOOT_WATCHDOG:
+	case INFUSE_REBOOT_HW_WATCHDOG:
 		/* Blocking */
 		k_sleep(K_FOREVER);
 		break;
