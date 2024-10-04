@@ -1,0 +1,11 @@
+common:
+  arch_allow: arm
+  tags: infuse
+  min_flash: 64
+  min_ram: 32
+tests:
+  lib.memfault:
+    required_snippets:
+      - infuse
+    integration_platforms:
+      - mps2/an385
