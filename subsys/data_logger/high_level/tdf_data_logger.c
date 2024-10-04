@@ -175,6 +175,11 @@ int tdf_data_logger_log_array_dev(const struct device *dev, uint16_t tdf_id, uin
 		return -ENODEV;
 	}
 
+	/* Logging on the system workqueue can cause deadlocks and should be avoided */
+	if (k_current_get() == k_work_queue_thread_get(&k_sys_work_q)) {
+		LOG_WRN("%s logging on system workqueue", dev->name);
+	}
+
 	k_sem_take(&data->lock, K_FOREVER);
 relog:
 	rc = tdf_add(&data->tdf_state, tdf_id, tdf_len, tdf_num, time, period, mem);

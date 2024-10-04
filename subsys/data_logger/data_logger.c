@@ -214,6 +214,11 @@ int data_logger_block_write(const struct device *dev, enum infuse_type type, voi
 		return -ENOMEM;
 	}
 
+	/* Logging on the system workqueue can cause deadlocks and should be avoided */
+	if (k_current_get() == k_work_queue_thread_get(&k_sys_work_q)) {
+		LOG_WRN("%s logging on system workqueue", dev->name);
+	}
+
 #ifdef CONFIG_DATA_LOGGER_OFFLOAD_WRITES
 	const struct data_logger_common_config *config = dev->config;
 
