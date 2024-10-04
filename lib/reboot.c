@@ -22,6 +22,10 @@
 #include <infuse/time/epoch.h>
 #include <infuse/reboot.h>
 
+#if CONFIG_INFUSE_MEMFAULT
+#include <memfault/panics/assert.h>
+#endif
+
 static const struct device *retention = DEVICE_DT_GET(DT_CHOSEN(infuse_reboot_state));
 
 static void reboot_state_store(enum infuse_reboot_reason reason, uint32_t info1, uint32_t info2)
@@ -86,7 +90,14 @@ void k_sys_fatal_error_handler(unsigned int reason, const struct arch_esf *esf)
 
 void infuse_watchdog_warning(const struct device *dev, int channel_id)
 {
-	/* Nothing to do for now */
+#if CONFIG_INFUSE_MEMFAULT
+	/* Feed all the watchdog channels so the hardware watchdog does not
+	 * interrupt our fault handling.
+	 */
+	infuse_watchdog_feed_all();
+	/* Run the standard Memfault crash handling */
+	MEMFAULT_ASSERT_EXTRA_AND_REASON(channel_id, kMfltRebootReason_SoftwareWatchdog);
+#endif /* CONFIG_INFUSE_MEMFAULT */
 }
 
 void infuse_watchdog_expired(const struct device *dev, int channel_id)

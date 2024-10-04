@@ -1,0 +1,7 @@
+# Infuse-IoT Memfault configuration
+
+config INFUSE_MEMFAULT
+	bool "Infuse-IoT integration with Memfault"
+	depends on MEMFAULT
+	depends on INFUSE_COMMON_BOOT
+	default y

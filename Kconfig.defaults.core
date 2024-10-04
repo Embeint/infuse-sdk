@@ -212,3 +212,15 @@ configdefault DEBUG_THREAD_INFO
 	default y
 configdefault OUTPUT_DISASSEMBLY
 	default y if !ZTEST
+
+# Memfault options
+configdefault MEMFAULT_NRF_CONNECT_SDK
+	default n
+configdefault MEMFAULT_HTTP_ENABLE
+	default n
+configdefault MEMFAULT_METRICS
+	default n
+configdefault MEMFAULT_REBOOT_REASON_GET_CUSTOM
+	default y
+configdefault MEMFAULT_FAULT_HANDLER_RETURN
+	default y
