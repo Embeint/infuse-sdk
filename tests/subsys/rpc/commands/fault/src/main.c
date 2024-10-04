@@ -129,12 +129,21 @@ ZTEST(rpc_command_fault, test_does_fault)
 		zassert_equal(0, rc);
 		zassert_equal((enum infuse_reboot_reason)K_ERR_ARM_MEM_INSTRUCTION_ACCESS,
 			      reboot_state.reason);
+		/* ASSERT failure */
+		send_fault_command(0, K_ERR_KERNEL_PANIC);
+		k_sleep(K_MSEC(100));
+		zassert_unreachable("K_ERR_KERNEL_PANIC did not trigger exception");
+	case 7:
+		/* Validate previous reboot information */
+		rc = infuse_common_boot_last_reboot(&reboot_state);
+		zassert_equal(0, rc);
+		zassert_equal((enum infuse_reboot_reason)K_ERR_KERNEL_PANIC, reboot_state.reason);
 		/* Watchdog timeout */
 		zassert_equal(0, infuse_watchdog_start());
 		send_fault_command(0, INFUSE_REBOOT_HW_WATCHDOG);
 		k_sleep(K_MSEC(2100));
 		zassert_unreachable("Watchdog did not timeout");
-	case 7:
+	case 8:
 		/* Validate previous reboot information */
 		rc = infuse_common_boot_last_reboot(&reboot_state);
 		zassert_equal(0, rc);
