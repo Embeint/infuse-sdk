@@ -202,7 +202,7 @@ static int ubx_m8_spi_port_setup(const struct device *dev, bool hardware_reset)
 
 	if (!hardware_reset) {
 		/* Clear any holdover configuration from BBR and FLASH */
-		struct ubx_msg_cfg_cfg cfg_cfg = {
+		struct ubx_msg_cfg_cfg_m8 cfg_cfg = {
 			.clear_mask = UINT32_MAX,
 			.device_mask = UBX_MSG_CFG_CFG_DEVICE_BBR | UBX_MSG_CFG_CFG_DEVICE_FLASH,
 		};
@@ -235,7 +235,7 @@ static int ubx_m8_spi_port_setup(const struct device *dev, bool hardware_reset)
 	modem_backend_ublox_spi_use_data_ready_gpio(&data->spi_backend);
 
 	/* Backup port configuration in BBR */
-	struct ubx_msg_cfg_cfg cfg_cfg = {
+	struct ubx_msg_cfg_cfg_m8 cfg_cfg = {
 		.save_mask = UBX_MSG_CFG_CFG_MASK_IO_PORT,
 		.device_mask = UBX_MSG_CFG_CFG_DEVICE_BBR | UBX_MSG_CFG_CFG_DEVICE_FLASH,
 	};
