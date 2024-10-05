@@ -12,15 +12,22 @@
 
 #include <zephyr/net/net_mgmt.h>
 #include <zephyr/net/sntp.h>
+#include <zephyr/net/socket_service.h>
 
 #include <infuse/net/dns.h>
 #include <infuse/time/epoch.h>
 #include <infuse/fs/kv_store.h>
 #include <infuse/fs/kv_types.h>
 
+static void sntp_service_handler(struct k_work *work);
+
 static struct epoch_time_cb time_callback;
 static struct net_mgmt_event_callback l4_callback;
 static struct k_work_delayable sntp_worker;
+static struct k_work_delayable sntp_timeout;
+static struct sntp_ctx sntp_context;
+
+NET_SOCKET_SERVICE_SYNC_DEFINE_STATIC(service_auto_sntp, NULL, sntp_service_handler, 1);
 
 LOG_MODULE_REGISTER(sntp_auto, CONFIG_SNTP_AUTO_LOG_LEVEL);
 
@@ -42,6 +49,48 @@ static void l4_event_handler(struct net_mgmt_event_callback *cb, uint32_t event,
 	}
 }
 
+static void sntp_service_handler(struct k_work *work)
+{
+	struct net_socket_service_event *sev =
+		CONTAINER_OF(work, struct net_socket_service_event, work);
+	struct sntp_time s_time;
+	k_ticks_t ticks = k_uptime_ticks();
+	int rc;
+
+	/* Cancel timeout */
+	k_work_cancel_delayable(&sntp_timeout);
+
+	/* Reschedule worker */
+	k_work_reschedule(&sntp_worker, K_SECONDS(CONFIG_SNTP_AUTO_RESYNC_AGE));
+
+	/* Read the response from the socket */
+	rc = sntp_read_async(sev, &s_time);
+	sntp_close_async(&service_auto_sntp);
+	if (rc != 0) {
+		LOG_WRN("Read failure");
+		return;
+	}
+	LOG_INF("Unix time: %llu", s_time.seconds);
+
+	/* Update reference instant */
+	struct timeutil_sync_instant sync_point = {
+		.local = ticks,
+		.ref = epoch_time_from_unix(s_time.seconds, s_time.fraction / 15259),
+	};
+	if (epoch_time_set_reference(TIME_SOURCE_NTP, &sync_point) < 0) {
+		LOG_ERR("Failed to set reference (%d)", rc);
+	}
+}
+
+static void sntp_timeout_work(struct k_work *work)
+{
+	LOG_WRN("SNTP query timeout");
+	sntp_close_async(&service_auto_sntp);
+
+	/* Reschedule worker */
+	k_work_reschedule(&sntp_worker, K_SECONDS(CONFIG_SNTP_AUTO_RESYNC_AGE));
+}
+
 static void sntp_work(struct k_work *work)
 {
 	struct k_work_delayable *delayable = k_work_delayable_from_work(work);
@@ -49,8 +98,6 @@ static void sntp_work(struct k_work *work)
 	KV_KEY_TYPE_VAR(KV_KEY_NTP_SERVER_URL, 64) ntp_server;
 	struct sockaddr addr;
 	socklen_t addrlen;
-	struct sntp_time sntp_time;
-	struct sntp_ctx ctx;
 	int rc;
 
 	/* Pull NTP server address from KV store */
@@ -69,31 +116,21 @@ static void sntp_work(struct k_work *work)
 		goto error;
 	}
 
-	rc = sntp_init(&ctx, &addr, addrlen);
+	rc = sntp_init_async(&service_auto_sntp, &sntp_context, &addr, addrlen);
 	if (rc < 0) {
 		LOG_ERR("Failed to init ctx (%d)", rc);
 		goto error;
 	}
 
 	LOG_INF("Sending request...");
-	rc = sntp_query(&ctx, 4 * MSEC_PER_SEC, &sntp_time);
-	sntp_close(&ctx);
-	if (rc < 0) {
-		LOG_ERR("Request failed (%d)", rc);
-		goto error;
+	rc = sntp_send_async(&sntp_context);
+	if (rc == 0) {
+		k_work_schedule(&sntp_timeout, K_MSEC(CONFIG_SNTP_QUERY_TIMEOUT_MS));
+		return;
 	}
-	LOG_INF("Unix time: %llu", sntp_time.seconds);
 
-	/* Update reference instant */
-	struct timeutil_sync_instant sync_point = {
-		.local = k_uptime_ticks(),
-		.ref = epoch_time_from_unix(sntp_time.seconds, sntp_time.fraction / 15259),
-	};
-	if (epoch_time_set_reference(TIME_SOURCE_NTP, &sync_point) < 0) {
-		LOG_ERR("Failed to set reference (%d)", rc);
-		goto error;
-	}
-	return;
+	LOG_ERR("Failed to send request (%d)", rc);
+	sntp_close_async(&service_auto_sntp);
 
 error:
 	/* Failed to perform SNTP update, retry in 5 seconds */
@@ -118,6 +155,7 @@ static void reference_time_updated(enum epoch_time_source source, struct timeuti
 int sntp_auto_init(void)
 {
 	k_work_init_delayable(&sntp_worker, sntp_work);
+	k_work_init_delayable(&sntp_timeout, sntp_timeout_work);
 
 	/* Register for callbacks on time updates */
 	time_callback.reference_time_updated = reference_time_updated;

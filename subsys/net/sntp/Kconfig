@@ -2,6 +2,7 @@
 
 config SNTP_AUTO
 	bool "Automatically synchronise device time through SNTP"
+	select NET_SOCKETS_SERVICE
 	depends on NET_CONNECTION_MANAGER
 	depends on INFUSE_EPOCH_TIME
 	depends on INFUSE_DNS
@@ -14,6 +15,10 @@ if SNTP_AUTO
 config SNTP_AUTO_DEFAULT_SERVER
 	string "Default SNTP server"
 	default "pool.ntp.org"
+
+config SNTP_QUERY_TIMEOUT_MS
+	int "Maximum duration to wait for response from SNTP server"
+	default 4000
 
 config SNTP_AUTO_RESYNC_AGE
 	int "Resynchronise time from SNTP once time sync is this far out of date"
