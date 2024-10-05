@@ -64,8 +64,14 @@ static void reference_time_updated(enum epoch_time_source source, struct timeuti
 
 ZTEST(auto_sntp, test_auto_sntp)
 {
+	KV_STRING_CONST(sntp_valid, CONFIG_SNTP_AUTO_DEFAULT_SERVER);
+	KV_STRING_CONST(sntp_invalid, "www.google.com");
+
 	struct timeutil_sync_instant reference;
 	static struct epoch_time_cb time_cb;
+
+	/* Remove any pending URLs */
+	(void)kv_store_delete(KV_KEY_NTP_SERVER_URL);
 
 	/* Register for time callbacks */
 	time_cb.reference_time_updated = reference_time_updated;
@@ -95,6 +101,16 @@ ZTEST(auto_sntp, test_auto_sntp)
 	KV_KEY_TYPE_VAR(KV_KEY_NTP_SERVER_URL, 64) ntp_server;
 
 	zassert_true(KV_STORE_READ(KV_KEY_NTP_SERVER_URL, &ntp_server) > 0);
+
+	/* Change the SNTP server address to an invalid value, which should timeout */
+	int timeout_ms =
+		(CONFIG_SNTP_AUTO_RESYNC_AGE * MSEC_PER_SEC) + CONFIG_SNTP_QUERY_TIMEOUT_MS + 500;
+
+	zassert_true(KV_STORE_WRITE(KV_KEY_NTP_SERVER_URL, &sntp_invalid) > 0);
+	zassert_equal(-EAGAIN, k_sem_take(&time_ref_updated, K_MSEC(timeout_ms)));
+
+	/* Reset back to a valid server */
+	zassert_true(KV_STORE_WRITE(KV_KEY_NTP_SERVER_URL, &sntp_valid) > 0);
 
 	/* Wait for the next sync */
 	zassert_equal(0, k_sem_take(&time_ref_updated, K_SECONDS(CONFIG_SNTP_AUTO_RESYNC_AGE + 1)));
