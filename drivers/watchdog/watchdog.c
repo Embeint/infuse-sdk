@@ -105,7 +105,7 @@ void infuse_watchdog_thread_register(int wdog_channel, k_tid_t thread)
 	if (wdog_channel < 0) {
 		return;
 	}
-	(void)wdt_feed(INFUSE_WATCHDOG_DEV, wdog_channel);
+	infuse_watchdog_feed(wdog_channel);
 	if (wdog_channel >= MAX_CHANNELS) {
 		return;
 	}

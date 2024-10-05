@@ -16,6 +16,7 @@
 
 static uint8_t expired_channel = UINT8_MAX;
 static int64_t warning;
+K_SEM_DEFINE(watchdog_warning, 0, 1);
 K_SEM_DEFINE(watchdog_expired, 0, 1);
 
 void infuse_watchdog_warning(const struct device *dev, int channel_id)
@@ -23,6 +24,7 @@ void infuse_watchdog_warning(const struct device *dev, int channel_id)
 	zassert_equal(INFUSE_WATCHDOG_DEV, dev);
 	expired_channel = channel_id;
 	warning = k_uptime_get();
+	k_sem_give(&watchdog_warning);
 }
 
 void infuse_watchdog_expired(const struct device *dev, int channel_id)
@@ -52,13 +54,20 @@ ZTEST(drivers_watchdog, test_watchdog)
 		infuse_watchdog_feed(0);
 		k_sleep(K_SECONDS(1));
 	}
+	/* Registering should also feed */
+	for (int i = 0; i < 3; i++) {
+		infuse_watchdog_thread_register(0, _current);
+		k_sleep(K_SECONDS(1));
+	}
 
-	/* Failing to call task_runner_iterate should result in a watchdog interrupt */
-	rc = k_sem_take(&watchdog_expired, K_NO_WAIT);
-	zassert_equal(-EBUSY, rc, "Watchdog expired early");
+	/* Nothing should have expired */
+	zassert_equal(-EBUSY, k_sem_take(&watchdog_warning, K_NO_WAIT), "Warning fired early");
+	zassert_equal(-EBUSY, k_sem_take(&watchdog_expired, K_NO_WAIT), "Watchdog expired early");
 
 	/* Failing to call infuse_watchdog_feed should result in a watchdog interrupt */
-	rc = k_sem_take(&watchdog_expired, K_MSEC(CONFIG_INFUSE_WATCHDOG_PERIOD_MS + 100));
+	rc = k_sem_take(&watchdog_warning, K_MSEC(CONFIG_INFUSE_WATCHDOG_PERIOD_MS));
+	zassert_equal(0, rc, "Watchdog warning didn't fire");
+	rc = k_sem_take(&watchdog_expired, K_MSEC(CONFIG_INFUSE_WATCHDOG_SOFTWARE_WARNING_MS + 10));
 	zassert_equal(0, rc, "Watchdog did not expire");
 
 	/* Warning should have been received CONFIG_INFUSE_WATCHDOG_SOFTWARE_WARNING_MS early */
