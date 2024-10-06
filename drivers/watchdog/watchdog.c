@@ -27,7 +27,7 @@ static K_TIMER_DEFINE(watchdog_warning_timer, software_watchdog_alarm, NULL);
 static int64_t channel_expires[MAX_CHANNELS];
 static int channel_max;
 
-BUILD_ASSERT(CONFIG_INFUSE_WATCHDOG_SOFTWARE_WARNING_MS < INFUSE_WATCHDOG_FEED_EARLY_MS,
+BUILD_ASSERT(CONFIG_INFUSE_WATCHDOG_SOFTWARE_WARNING_MS < CONFIG_INFUSE_WATCHDOG_FEED_EARLY_MS,
 	     "Software alarm will fire before feed timeout");
 #endif /* CONFIG_INFUSE_WATCHDOG_SOFTWARE_WARNING */
 

@@ -13,7 +13,16 @@ if INFUSE_WATCHDOG
 
 config INFUSE_WATCHDOG_PERIOD_MS
 	int "Watchdog period used by Infuse subsystems"
-	default 10000
+	default 12000
+
+config INFUSE_WATCHDOG_FEED_EARLY_MS
+	int "Time before expiry to feed the watchdog when idle"
+	default 2000
+	help
+	  Threads that are idle most of the time need to periodically wake up to
+	  feed their assigned watchdog channel. This option controls how soon before
+	  expiry they do that. If this value is too small, the channel may expire
+	  if the CPU is busy while the thread is waiting to wake.
 
 config INFUSE_WATCHDOG_SOFTWARE_WARNING
 	bool "Enable a software alarm that provides a pre-warning before hardware expiry"
@@ -21,6 +30,6 @@ config INFUSE_WATCHDOG_SOFTWARE_WARNING
 config INFUSE_WATCHDOG_SOFTWARE_WARNING_MS
 	int "Milliseconds before hardware expiry to trigger software warning"
 	depends on INFUSE_WATCHDOG_SOFTWARE_WARNING
-	default 50
+	default 250
 
 endif # INFUSE_WATCHDOG
