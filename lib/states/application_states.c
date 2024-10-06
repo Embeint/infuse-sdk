@@ -17,10 +17,12 @@ struct timeout_state {
 	uint16_t timeout;
 };
 
-static ATOMIC_DEFINE(application_states, UINT8_MAX);
+static ATOMIC_DEFINE(application_states, INFUSE_STATES_END + 1);
 static struct timeout_state timeout_states[CONFIG_INFUSE_APPLICATION_STATES_MAX_TIMEOUTS];
 static uint32_t timeout_mask;
 static struct k_spinlock timeout_lock;
+
+BUILD_ASSERT(ARRAY_SIZE(application_states) == INFUSE_STATES_ARRAY_SIZE);
 
 LOG_MODULE_REGISTER(states, CONFIG_INFUSE_APPLICATION_STATES_LOG_LEVEL);
 
@@ -62,7 +64,14 @@ bool infuse_state_get(enum infuse_state state)
 	return atomic_test_bit(application_states, state);
 }
 
-void infuse_states_tick(void)
+void infuse_states_snapshot(atomic_t snapshot[ATOMIC_BITMAP_SIZE(INFUSE_STATES_END + 1)])
+{
+	for (int i = 0; i < INFUSE_STATES_ARRAY_SIZE; i++) {
+		snapshot[i] = atomic_get(&application_states[i]);
+	}
+}
+
+void infuse_states_tick(atomic_t snapshot[INFUSE_STATES_ARRAY_SIZE])
 {
 	K_SPINLOCK(&timeout_lock) {
 		uint32_t mask = timeout_mask;
@@ -70,11 +79,13 @@ void infuse_states_tick(void)
 		while (mask) {
 			uint8_t first_used = __builtin_ffs(mask) - 1;
 
-			if (--timeout_states[first_used].timeout == 0) {
-				atomic_clear_bit(application_states,
-						 timeout_states[first_used].state);
-				timeout_mask ^= (1 << first_used);
-				LOG_DBG("%d timed out", timeout_states[first_used].state);
+			if (atomic_test_bit(snapshot, timeout_states[first_used].state)) {
+				if (--timeout_states[first_used].timeout == 0) {
+					atomic_clear_bit(application_states,
+							 timeout_states[first_used].state);
+					timeout_mask ^= (1 << first_used);
+					LOG_DBG("%d timed out", timeout_states[first_used].state);
+				}
 			}
 			mask ^= 1 << first_used;
 		}

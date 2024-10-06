@@ -46,6 +46,8 @@ ZTEST(application_states, test_basic)
 
 ZTEST(application_states, test_state_timeout_basic)
 {
+	INFUSE_STATES_ARRAY(states);
+
 	zassert_false(infuse_state_get(INFUSE_STATE_REBOOTING));
 	zassert_false(infuse_state_get(INFUSE_STATE_TIME_KNOWN));
 	zassert_false(infuse_state_get(INFUSE_STATES_END));
@@ -57,20 +59,47 @@ ZTEST(application_states, test_state_timeout_basic)
 	/* Timeout of 1 second */
 	infuse_state_set_timeout(INFUSE_STATE_TIME_KNOWN, 1);
 	zassert_true(infuse_state_get(INFUSE_STATE_TIME_KNOWN));
-	infuse_states_tick();
+	infuse_states_snapshot(states);
+	infuse_states_tick(states);
 	zassert_false(infuse_state_get(INFUSE_STATE_TIME_KNOWN));
 
 	/* Timeout of 17 seconds */
 	infuse_state_set_timeout(INFUSE_STATE_TIME_KNOWN, 17);
 	for (int i = 0; i < 17; i++) {
 		zassert_true(infuse_state_get(INFUSE_STATE_TIME_KNOWN));
-		infuse_states_tick();
+		infuse_states_snapshot(states);
+		infuse_states_tick(states);
 	}
+	zassert_false(infuse_state_get(INFUSE_STATE_TIME_KNOWN));
+}
+
+ZTEST(application_states, test_state_timeout_snapshot)
+{
+	INFUSE_STATES_ARRAY(states) = {0};
+
+	zassert_false(infuse_state_get(INFUSE_STATE_REBOOTING));
+	zassert_false(infuse_state_get(INFUSE_STATE_TIME_KNOWN));
+	zassert_false(infuse_state_get(INFUSE_STATES_END));
+
+	/* Timeout of 1 second */
+	infuse_state_set_timeout(INFUSE_STATE_TIME_KNOWN, 1);
+
+	/* Iterate, but pretend that the state was NOT set at the time of snapshotting */
+	infuse_states_tick(states);
+
+	/* State should still be set */
+	zassert_true(infuse_state_get(INFUSE_STATE_TIME_KNOWN));
+
+	/* But after the next run with snapshotting, cleared */
+	infuse_states_snapshot(states);
+	infuse_states_tick(states);
 	zassert_false(infuse_state_get(INFUSE_STATE_TIME_KNOWN));
 }
 
 ZTEST(application_states, test_state_timeout_many)
 {
+	INFUSE_STATES_ARRAY(states);
+
 	/* Start many timeouts */
 	for (int i = 0; i < CONFIG_INFUSE_APPLICATION_STATES_MAX_TIMEOUTS; i++) {
 		infuse_state_set_timeout(20 + 2 * i, 1000 + i);
@@ -82,7 +111,8 @@ ZTEST(application_states, test_state_timeout_many)
 
 	/* First 1000 ticks all set */
 	for (int i = 0; i < 999; i++) {
-		infuse_states_tick();
+		infuse_states_snapshot(states);
+		infuse_states_tick(states);
 		for (int i = 0; i < CONFIG_INFUSE_APPLICATION_STATES_MAX_TIMEOUTS; i++) {
 			zassert_true(infuse_state_get(20 + 2 * i));
 		}
@@ -90,7 +120,8 @@ ZTEST(application_states, test_state_timeout_many)
 
 	/* Each state should timeout on the next tick */
 	for (int i = 0; i < CONFIG_INFUSE_APPLICATION_STATES_MAX_TIMEOUTS; i++) {
-		infuse_states_tick();
+		infuse_states_snapshot(states);
+		infuse_states_tick(states);
 		zassert_false(infuse_state_get(20 + 2 * i));
 	}
 
