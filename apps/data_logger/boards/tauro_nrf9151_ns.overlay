@@ -1,0 +1,12 @@
+#include <mem.h>
+
+/ {
+	chosen {
+		infuse,memfault-epacket-dump = &epacket_udp;
+	};
+
+	/* Batch writes to the SD card */
+	data_logger_exfat {
+		extra-ram-buffer = <DT_SIZE_K(8)>;
+	};
+};
