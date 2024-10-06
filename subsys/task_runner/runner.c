@@ -194,7 +194,8 @@ static bool task_has_terminated(uint8_t task_idx)
 INFUSE_WATCHDOG_REGISTER_SYS_INIT(tr_wdog, CONFIG_TASK_RUNNER_INFUSE_WATCHDOG, wdog_channel,
 				  loop_period);
 
-void task_runner_iterate(uint32_t uptime, uint32_t gps_time, uint8_t battery_charge)
+void task_runner_iterate(atomic_t *app_states, uint32_t uptime, uint32_t gps_time,
+			 uint8_t battery_charge)
 {
 	bool transition;
 
@@ -236,14 +237,14 @@ void task_runner_iterate(uint32_t uptime, uint32_t gps_time, uint8_t battery_cha
 		/* Should any should change state */
 		if (d->running) {
 			sch_states[i].runtime += 1;
-			transition = task_schedule_should_terminate(s, state, uptime, gps_time,
-								    battery_charge);
+			transition = task_schedule_should_terminate(s, state, app_states, uptime,
+								    gps_time, battery_charge);
 			if (transition) {
 				task_terminate(i);
 			}
 		} else {
-			transition = task_schedule_should_start(s, state, uptime, gps_time,
-								battery_charge);
+			transition = task_schedule_should_start(s, state, app_states, uptime,
+								gps_time, battery_charge);
 			if (transition) {
 				task_start(i, uptime);
 			}

@@ -14,6 +14,7 @@
 #include <stdbool.h>
 
 #include <zephyr/toolchain.h>
+#include <zephyr/sys/atomic.h>
 
 #include <infuse/task_runner/tasks/infuse_task_args.h>
 
@@ -119,6 +120,7 @@ bool task_schedule_validate(const struct task_schedule *schedule);
  *
  * @param schedule Task schedule to evaluate
  * @param state Previous state of the schedule
+ * @param app_states Current application states
  * @param uptime Current system uptime in seconds
  * @param epoch_time Current epoch time (GPS time) in seconds
  * @param battery Battery charge percent
@@ -127,14 +129,15 @@ bool task_schedule_validate(const struct task_schedule *schedule);
  * @retval false Task should not be started
  */
 bool task_schedule_should_start(const struct task_schedule *schedule,
-				struct task_schedule_state *state, uint32_t uptime,
-				uint32_t epoch_time, uint8_t battery);
+				struct task_schedule_state *state, atomic_t *app_states,
+				uint32_t uptime, uint32_t epoch_time, uint8_t battery);
 
 /**
  * @brief Determine whether a task should be terminated
  *
  * @param schedule Task schedule to evaluate
  * @param state Previous state of the schedule
+ * @param app_states Current application states
  * @param uptime Current system uptime in seconds
  * @param epoch_time Current epoch time (GPS time) in seconds
  * @param battery Battery charge percent
@@ -143,8 +146,8 @@ bool task_schedule_should_start(const struct task_schedule *schedule,
  * @retval false Task should not be terminated
  */
 bool task_schedule_should_terminate(const struct task_schedule *schedule,
-				    struct task_schedule_state *state, uint32_t uptime,
-				    uint32_t epoch_time, uint8_t battery);
+				    struct task_schedule_state *state, atomic_t *app_states,
+				    uint32_t uptime, uint32_t epoch_time, uint8_t battery);
 
 /**
  * @}

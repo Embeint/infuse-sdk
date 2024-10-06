@@ -12,6 +12,7 @@
 #include <zephyr/kernel.h>
 #include <zephyr/random/random.h>
 
+#include <infuse/states.h>
 #include <infuse/drivers/watchdog.h>
 #include <infuse/task_runner/runner.h>
 
@@ -42,6 +43,7 @@ void infuse_watchdog_expired(const struct device *dev, int channel_id)
 
 ZTEST(task_runner_watchdog, test_watchdog)
 {
+	INFUSE_STATES_ARRAY(app_states) = {0};
 	struct task_schedule schedules[] = {
 		{
 			.task_id = TASK_ID_WORKQ,
@@ -60,7 +62,7 @@ ZTEST(task_runner_watchdog, test_watchdog)
 
 	/* Run a few times */
 	for (int i = 0; i < 5; i++) {
-		task_runner_iterate(k_uptime_seconds(), i, 100);
+		task_runner_iterate(app_states, k_uptime_seconds(), i, 100);
 		k_sleep(K_SECONDS(1));
 	}
 	/* Ensure watchdog has not expired */
