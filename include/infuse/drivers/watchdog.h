@@ -34,11 +34,9 @@ extern "C" {
 /* Infuse watchdog device */
 #define INFUSE_WATCHDOG_DEV DEVICE_DT_GET(DT_ALIAS(watchdog0))
 
-#define INFUSE_WATCHDOG_FEED_EARLY_MS 100
-
 /* Maximum duration to sleep before waking up to feed watchdog */
 #define INFUSE_WATCHDOG_FEED_PERIOD                                                                \
-	K_MSEC(CONFIG_INFUSE_WATCHDOG_PERIOD_MS - INFUSE_WATCHDOG_FEED_EARLY_MS)
+	K_MSEC(CONFIG_INFUSE_WATCHDOG_PERIOD_MS - CONFIG_INFUSE_WATCHDOG_FEED_EARLY_MS)
 
 /** Default timeout configuration for subsystems */
 #define INFUSE_WATCHDOG_DEFAULT_TIMEOUT_CFG                                                        \
