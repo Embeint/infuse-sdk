@@ -36,11 +36,16 @@ static void iterate_worker(struct k_work *work)
 		charge = battery.soc;
 	}
 
+#ifdef CONFIG_INFUSE_APPLICATION_STATES
+	INFUSE_STATES_ARRAY(states);
+
+	infuse_states_snapshot(states);
+#endif
 	/* Iterate the runner */
 	task_runner_iterate(k_uptime_seconds(), gps_time, charge);
 
 #ifdef CONFIG_INFUSE_APPLICATION_STATES
-	infuse_states_tick();
+	infuse_states_tick(states);
 #endif
 
 	/* Schedule the next iteration */

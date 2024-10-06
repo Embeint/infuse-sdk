@@ -13,6 +13,8 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#include <zephyr/sys/atomic.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -39,6 +41,14 @@ enum infuse_state {
 	INFUSE_STATES_APP_START = 128,
 	INFUSE_STATES_END = UINT8_MAX
 };
+
+/* Required size of atomic array for Infuse-IoT application states */
+#define INFUSE_STATES_ARRAY_SIZE ATOMIC_BITMAP_SIZE(INFUSE_STATES_END + 1)
+
+/**
+ * @brief Define a variable that can hold all Infuse-IoT application states
+ */
+#define INFUSE_STATES_ARRAY(name) atomic_t name[INFUSE_STATES_ARRAY_SIZE]
 
 /**
  * @brief Set an application state
@@ -74,11 +84,25 @@ void infuse_state_clear(enum infuse_state state);
 bool infuse_state_get(enum infuse_state state);
 
 /**
+ * @brief Get a snapshot of the current application states
+ *
+ * @param snapshot Memory to store snapshot in
+ */
+void infuse_states_snapshot(atomic_t snapshot[INFUSE_STATES_ARRAY_SIZE]);
+
+/**
  * @brief Run one tick of the state timeouts.
  *
+ * The requirement to provide the snapshotted state is to prevent situations where a state is set
+ * just before this function is called, but after the consumer of the states has run. The typical
+ * concrete example of this is the task runner. This feature ensures that for a timeout of N, the
+ * state is set for N iterations of the task runner evaluation.
+ *
  * @note This function must be run once and only once per second for correct operation
+ *
+ * @param snapshot States that were present at evaluation time, from @ref infuse_states_snapshot
  */
-void infuse_states_tick(void);
+void infuse_states_tick(atomic_t snapshot[INFUSE_STATES_ARRAY_SIZE]);
 
 /**
  * @}
