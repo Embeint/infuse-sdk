@@ -43,6 +43,46 @@ enum {
 	_TASK_PERIODICITY_END,
 };
 
+/** Invert the state */
+#define TR_NOT 0x100
+
+#define _TR_STATE_BASE                    0xFF
+#define _TR_STATES_BIT_COMMON(state, idx) ((state) & TR_NOT ? BIT(idx) : 0)
+#define _TR_STATES_DEFINE_ALL(s0, s1, s2, s3)                                                      \
+	{                                                                                          \
+		.metadata = _TR_STATES_BIT_COMMON(s0, 0) | _TR_STATES_BIT_COMMON(s1, 1) |          \
+			    _TR_STATES_BIT_COMMON(s2, 2) | _TR_STATES_BIT_COMMON(s3, 3),           \
+		.states = {                                                                        \
+			(s0) & _TR_STATE_BASE,                                                     \
+			(s1) & _TR_STATE_BASE,                                                     \
+			(s2) & _TR_STATE_BASE,                                                     \
+			(s3) & _TR_STATE_BASE,                                                     \
+		}                                                                                  \
+	}
+
+#define _TR_GET_MACRO(_1, _2, _3, _4, NAME, ...) NAME
+#define _TR_STATES_1(arg1)                       _TR_STATES_DEFINE_ALL(arg1, 0, 0, 0)
+#define _TR_STATES_2(arg1, arg2)                 _TR_STATES_DEFINE_ALL(arg1, arg2, 0, 0)
+#define _TR_STATES_3(arg1, arg2, arg3)           _TR_STATES_DEFINE_ALL(arg1, arg2, arg3, 0)
+#define _TR_STATES_4(arg1, arg2, arg3, arg4)     _TR_STATES_DEFINE_ALL(arg1, arg2, arg3, arg4)
+
+/**
+ * @brief Helper for constructing a task_schedule_state_conditions struct
+ *
+ * @code{.c}
+ * struct state_control test1 = STATES_DEFINE(10);
+ * struct state_control test2 = STATES_DEFINE(10, 11, 45, 200);
+ * struct state_control test3 = STATES_DEFINE(TR_NOT | 34, 12, TR_NOT | 99);
+ * @endcode
+ *
+ * @param ... Variable number of states (up to 4) which are evaluated together.
+ *            Each state can be optionally inverted (with @ref TR_NOT), and
+ *            all states are AND'ed together for the final decision.
+ */
+#define TASK_STATES_DEFINE(...)                                                                    \
+	_TR_GET_MACRO(__VA_ARGS__, _TR_STATES_4, _TR_STATES_3, _TR_STATES_2, _TR_STATES_1)         \
+	(__VA_ARGS__)
+
 /**
  * @brief Control TDF logging output of a task
  */
@@ -52,6 +92,19 @@ struct task_schedule_tdf_logging {
 	/** TDFs to log (bitmask defined by the activity) */
 	uint8_t tdf_mask;
 } __packed;
+
+/**
+ * @brief Schedule state conditions
+ *
+ * The result of the state conditional is ANDing all states together, with possible inversion
+ * from the metadata field.
+ */
+struct task_schedule_state_conditions {
+	/* Metadata associated with states (inversion) */
+	uint8_t metadata;
+	/** Array of states to test */
+	uint8_t states[4];
+};
 
 /**
  * @brief Schedule for a given task
@@ -79,6 +132,10 @@ struct task_schedule {
 			uint32_t lockout_s;
 		} lockout;
 	} periodicity;
+	/** Task start state conditions */
+	struct task_schedule_state_conditions states_start;
+	/** Task termination state conditions */
+	struct task_schedule_state_conditions states_terminate;
 	/** Task logging configuration */
 	struct task_schedule_tdf_logging task_logging[2];
 	/** Task specific arguments  */
