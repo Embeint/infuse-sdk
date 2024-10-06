@@ -48,6 +48,7 @@ ZTEST(task_runner_schedules, test_validate_schedules)
 
 ZTEST(task_runner_schedules, test_empty_schedule)
 {
+	INFUSE_STATES_ARRAY(app_states) = {0};
 	struct task_schedule schedule = {
 		.validity = TASK_VALID_ALWAYS,
 	};
@@ -57,15 +58,17 @@ ZTEST(task_runner_schedules, test_empty_schedule)
 
 	/* Should always start and never stop */
 	for (int i = 0; i < 100; i++) {
-		zassert_true(task_schedule_should_start(&schedule, &state, 50 + i, 150 + i, 100));
-		zassert_false(
-			task_schedule_should_terminate(&schedule, &state, 30 + i, 100 + i, 100));
+		zassert_true(task_schedule_should_start(&schedule, &state, app_states, 50 + i,
+							150 + i, 100));
+		zassert_false(task_schedule_should_terminate(&schedule, &state, app_states, 30 + i,
+							     100 + i, 100));
 		state.runtime++;
 	}
 }
 
 ZTEST(task_runner_schedules, test_periodicity_fixed)
 {
+	INFUSE_STATES_ARRAY(app_states) = {0};
 	struct task_schedule schedule = {
 		.validity = TASK_VALID_ALWAYS,
 		.periodicity_type = TASK_PERIODICITY_FIXED,
@@ -75,22 +78,23 @@ ZTEST(task_runner_schedules, test_periodicity_fixed)
 
 	zassert_true(task_schedule_validate(&schedule));
 
-	zassert_true(task_schedule_should_start(&schedule, &state, 29, 100, 100));
-	zassert_false(task_schedule_should_start(&schedule, &state, 30, 101, 100));
-	zassert_false(task_schedule_should_start(&schedule, &state, 31, 102, 100));
-	zassert_false(task_schedule_should_start(&schedule, &state, 32, 103, 100));
-	zassert_false(task_schedule_should_start(&schedule, &state, 33, 104, 100));
-	zassert_false(task_schedule_should_start(&schedule, &state, 34, 105, 100));
-	zassert_false(task_schedule_should_start(&schedule, &state, 35, 106, 100));
-	zassert_false(task_schedule_should_start(&schedule, &state, 36, 107, 100));
-	zassert_false(task_schedule_should_start(&schedule, &state, 37, 108, 100));
-	zassert_false(task_schedule_should_start(&schedule, &state, 38, 109, 100));
-	zassert_true(task_schedule_should_start(&schedule, &state, 39, 110, 100));
-	zassert_false(task_schedule_should_start(&schedule, &state, 40, 111, 100));
+	zassert_true(task_schedule_should_start(&schedule, &state, app_states, 29, 100, 100));
+	zassert_false(task_schedule_should_start(&schedule, &state, app_states, 30, 101, 100));
+	zassert_false(task_schedule_should_start(&schedule, &state, app_states, 31, 102, 100));
+	zassert_false(task_schedule_should_start(&schedule, &state, app_states, 32, 103, 100));
+	zassert_false(task_schedule_should_start(&schedule, &state, app_states, 33, 104, 100));
+	zassert_false(task_schedule_should_start(&schedule, &state, app_states, 34, 105, 100));
+	zassert_false(task_schedule_should_start(&schedule, &state, app_states, 35, 106, 100));
+	zassert_false(task_schedule_should_start(&schedule, &state, app_states, 36, 107, 100));
+	zassert_false(task_schedule_should_start(&schedule, &state, app_states, 37, 108, 100));
+	zassert_false(task_schedule_should_start(&schedule, &state, app_states, 38, 109, 100));
+	zassert_true(task_schedule_should_start(&schedule, &state, app_states, 39, 110, 100));
+	zassert_false(task_schedule_should_start(&schedule, &state, app_states, 40, 111, 100));
 }
 
 ZTEST(task_runner_schedules, test_periodicity_lockout)
 {
+	INFUSE_STATES_ARRAY(app_states) = {0};
 	struct task_schedule schedule = {
 		.validity = TASK_VALID_ALWAYS,
 		.periodicity_type = TASK_PERIODICITY_LOCKOUT,
@@ -103,15 +107,16 @@ ZTEST(task_runner_schedules, test_periodicity_lockout)
 	zassert_true(task_schedule_validate(&schedule));
 
 	for (int i = 0; i < 12; i++) {
-		zassert_false(task_schedule_should_start(&schedule, &state, state.last_run + i,
-							 10000 + i, 100));
+		zassert_false(task_schedule_should_start(&schedule, &state, app_states,
+							 state.last_run + i, 10000 + i, 100));
 	}
-	zassert_true(
-		task_schedule_should_start(&schedule, &state, state.last_run + 12, 100 + 12, 100));
+	zassert_true(task_schedule_should_start(&schedule, &state, app_states, state.last_run + 12,
+						100 + 12, 100));
 }
 
 ZTEST(task_runner_schedules, test_battery_static)
 {
+	INFUSE_STATES_ARRAY(app_states) = {0};
 	struct task_schedule schedule = {
 		.validity = TASK_VALID_ALWAYS,
 		.battery_start_threshold = 50,
@@ -122,17 +127,20 @@ ZTEST(task_runner_schedules, test_battery_static)
 	zassert_true(task_schedule_validate(&schedule));
 
 	for (int i = 0; i < 50; i++) {
-		zassert_false(task_schedule_should_start(&schedule, &state, 10, 100, i));
+		zassert_false(
+			task_schedule_should_start(&schedule, &state, app_states, 10, 100, i));
 	}
 	for (int i = 50; i <= 100; i++) {
-		zassert_true(task_schedule_should_start(&schedule, &state, 10, 100, i));
+		zassert_true(task_schedule_should_start(&schedule, &state, app_states, 10, 100, i));
 	}
 
 	for (int i = 0; i <= 20; i++) {
-		zassert_true(task_schedule_should_terminate(&schedule, &state, 10, 100, i));
+		zassert_true(
+			task_schedule_should_terminate(&schedule, &state, app_states, 10, 100, i));
 	}
 	for (int i = 21; i <= 100; i++) {
-		zassert_false(task_schedule_should_terminate(&schedule, &state, 10, 100, i));
+		zassert_false(
+			task_schedule_should_terminate(&schedule, &state, app_states, 10, 100, i));
 	}
 
 	/* No battery constraints should start and not stop at 0% battery */
@@ -141,12 +149,13 @@ ZTEST(task_runner_schedules, test_battery_static)
 	};
 
 	zassert_true(task_schedule_validate(&schedule2));
-	zassert_true(task_schedule_should_start(&schedule2, &state, 10, 100, 0));
-	zassert_false(task_schedule_should_terminate(&schedule2, &state, 10, 100, 0));
+	zassert_true(task_schedule_should_start(&schedule2, &state, app_states, 10, 100, 0));
+	zassert_false(task_schedule_should_terminate(&schedule2, &state, app_states, 10, 100, 0));
 }
 
 ZTEST(task_runner_schedules, test_timeout)
 {
+	INFUSE_STATES_ARRAY(app_states) = {0};
 	struct task_schedule schedule = {
 		.validity = TASK_VALID_ALWAYS,
 		.timeout_s = 15,
@@ -158,14 +167,16 @@ ZTEST(task_runner_schedules, test_timeout)
 	zassert_true(task_schedule_validate(&schedule));
 
 	for (int i = 0; i < 15; i++) {
-		zassert_false(task_schedule_should_terminate(&schedule, &state, 30, 100, 100));
+		zassert_false(task_schedule_should_terminate(&schedule, &state, app_states, 30, 100,
+							     100));
 		state.runtime++;
 	}
-	zassert_true(task_schedule_should_terminate(&schedule, &state, 30, 100, 100));
+	zassert_true(task_schedule_should_terminate(&schedule, &state, app_states, 30, 100, 100));
 }
 
 ZTEST(task_runner_schedules, test_complex)
 {
+	INFUSE_STATES_ARRAY(app_states) = {0};
 	struct task_schedule schedule = {
 		.validity = TASK_VALID_ALWAYS,
 		.timeout_s = 10,
@@ -181,33 +192,33 @@ ZTEST(task_runner_schedules, test_complex)
 	zassert_true(task_schedule_validate(&schedule));
 
 	/* Does not start with battery below threshold */
-	zassert_false(task_schedule_should_start(&schedule, &state, 200, 1000, 47));
-	zassert_false(task_schedule_should_start(&schedule, &state, 200, 1000, 48));
-	zassert_false(task_schedule_should_start(&schedule, &state, 200, 1000, 49));
+	zassert_false(task_schedule_should_start(&schedule, &state, app_states, 200, 1000, 47));
+	zassert_false(task_schedule_should_start(&schedule, &state, app_states, 200, 1000, 48));
+	zassert_false(task_schedule_should_start(&schedule, &state, app_states, 200, 1000, 49));
 
 	/* Does not start with lockout not passed */
-	zassert_false(task_schedule_should_start(&schedule, &state, 110, 1000, 90));
-	zassert_false(task_schedule_should_start(&schedule, &state, 120, 1000, 90));
-	zassert_false(task_schedule_should_start(&schedule, &state, 129, 1000, 90));
+	zassert_false(task_schedule_should_start(&schedule, &state, app_states, 110, 1000, 90));
+	zassert_false(task_schedule_should_start(&schedule, &state, app_states, 120, 1000, 90));
+	zassert_false(task_schedule_should_start(&schedule, &state, app_states, 129, 1000, 90));
 
 	/* Starts with both valid */
-	zassert_true(task_schedule_should_start(&schedule, &state, 130, 1000, 90));
+	zassert_true(task_schedule_should_start(&schedule, &state, app_states, 130, 1000, 90));
 
 	/* Stops with only battery below threshold */
 	state.runtime = 5;
-	zassert_true(task_schedule_should_terminate(&schedule, &state, 130, 1000, 19));
+	zassert_true(task_schedule_should_terminate(&schedule, &state, app_states, 130, 1000, 19));
 
 	/* Stops with only timeout passed */
 	state.runtime = 10;
-	zassert_true(task_schedule_should_terminate(&schedule, &state, 130, 1000, 90));
+	zassert_true(task_schedule_should_terminate(&schedule, &state, app_states, 130, 1000, 90));
 
 	/* Stops with both conditions */
-	zassert_true(task_schedule_should_terminate(&schedule, &state, 130, 1000, 19));
+	zassert_true(task_schedule_should_terminate(&schedule, &state, app_states, 130, 1000, 19));
 }
 
 ZTEST(task_runner_schedules, test_reboot_termination)
 {
-
+	INFUSE_STATES_ARRAY(app_states) = {0};
 	struct task_schedule schedule = {
 		.validity = TASK_VALID_ALWAYS,
 	};
@@ -216,13 +227,14 @@ ZTEST(task_runner_schedules, test_reboot_termination)
 	zassert_true(task_schedule_validate(&schedule));
 
 	/* Normally, task should always start and never terminate */
-	zassert_true(task_schedule_should_start(&schedule, &state, 1000, 150, 100));
-	zassert_false(task_schedule_should_terminate(&schedule, &state, 1000, 100, 100));
+	zassert_true(task_schedule_should_start(&schedule, &state, app_states, 1000, 150, 100));
+	zassert_false(
+		task_schedule_should_terminate(&schedule, &state, app_states, 1000, 100, 100));
 
 	/* Rebooting state should trigger task to terminate and not start */
-	infuse_state_set(INFUSE_STATE_REBOOTING);
-	zassert_false(task_schedule_should_start(&schedule, &state, 1000, 150, 100));
-	zassert_true(task_schedule_should_terminate(&schedule, &state, 1000, 100, 100));
+	atomic_set_bit(app_states, INFUSE_STATE_REBOOTING);
+	zassert_false(task_schedule_should_start(&schedule, &state, app_states, 1000, 150, 100));
+	zassert_true(task_schedule_should_terminate(&schedule, &state, app_states, 1000, 100, 100));
 }
 
 void test_init(void *fixture)

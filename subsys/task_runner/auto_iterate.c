@@ -39,7 +39,7 @@ static void iterate_worker(struct k_work *work)
 
 	/* Iterate the runner */
 	infuse_states_snapshot(states);
-	task_runner_iterate(k_uptime_seconds(), gps_time, charge);
+	task_runner_iterate(states, k_uptime_seconds(), gps_time, charge);
 	infuse_states_tick(states);
 
 	/* Schedule the next iteration */

@@ -12,6 +12,8 @@
 
 #include <stdint.h>
 
+#include <zephyr/sys/atomic.h>
+
 #include <infuse/task_runner/schedule.h>
 #include <infuse/task_runner/task.h>
 
@@ -52,11 +54,13 @@ void task_runner_init(const struct task_schedule *schedules,
  *
  * @warning MUST be called once a second
  *
+ * @param app_states Application states
  * @param uptime Current device uptime in seconds
  * @param gps_time Current epoch time (GPS time) in seconds
  * @param battery_charge Battery charge percentage
  */
-void task_runner_iterate(uint32_t uptime, uint32_t gps_time, uint8_t battery_charge);
+void task_runner_iterate(atomic_t *app_states, uint32_t uptime, uint32_t gps_time,
+			 uint8_t battery_charge);
 
 /**
  * @brief Automatically iterate the task runner

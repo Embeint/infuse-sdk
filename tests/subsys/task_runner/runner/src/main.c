@@ -12,6 +12,7 @@
 #include <zephyr/kernel.h>
 #include <zephyr/random/random.h>
 
+#include <infuse/states.h>
 #include <infuse/task_runner/runner.h>
 
 enum task_ids {
@@ -124,6 +125,7 @@ TASK_RUNNER_TASKS_DEFINE(app_tasks, app_tasks_data, (SLEEPY_TASK, example_task_f
 
 ZTEST(task_runner_runner, test_init_invalid)
 {
+	INFUSE_STATES_ARRAY(app_states) = {0};
 	struct task_schedule schedules[] = {
 		{
 			.task_id = TASK_ID_SLEEPY + 1,
@@ -142,7 +144,7 @@ ZTEST(task_runner_runner, test_init_invalid)
 	task_runner_init(schedules, states, ARRAY_SIZE(schedules), app_tasks, app_tasks_data,
 			 ARRAY_SIZE(app_tasks));
 	for (int i = 0; i < 10; i++) {
-		task_runner_iterate(uptime++, gps_time++, 100);
+		task_runner_iterate(app_states, uptime++, gps_time++, 100);
 		k_sleep(K_MSEC(10));
 		iter++;
 	}
@@ -154,7 +156,7 @@ ZTEST(task_runner_runner, test_init_invalid)
 	task_runner_init(schedules, states, ARRAY_SIZE(schedules), app_tasks, app_tasks_data,
 			 ARRAY_SIZE(app_tasks));
 	for (int i = 0; i < 10; i++) {
-		task_runner_iterate(uptime++, gps_time++, 100);
+		task_runner_iterate(app_states, uptime++, gps_time++, 100);
 		k_sleep(K_MSEC(10));
 		iter++;
 	}
@@ -197,6 +199,7 @@ void example_device_fn(struct k_work *work)
 
 ZTEST(task_runner_runner, test_device_not_ready)
 {
+	INFUSE_STATES_ARRAY(app_states) = {0};
 	struct task_schedule schedules[] = {
 		{
 			.task_id = TASK_ID_WORKQ,
@@ -213,7 +216,7 @@ ZTEST(task_runner_runner, test_device_not_ready)
 	/* Should run without problems */
 	task_runner_init(schedules, states, ARRAY_SIZE(schedules), is_ready, is_ready_data,
 			 ARRAY_SIZE(is_ready));
-	task_runner_iterate(20, 20, 100);
+	task_runner_iterate(app_states, 20, 20, 100);
 	k_sleep(K_MSEC(10));
 	zassert_equal(1, example_device_run);
 
@@ -224,13 +227,14 @@ ZTEST(task_runner_runner, test_device_not_ready)
 	task_runner_init(schedules, states, ARRAY_SIZE(schedules), is_ready, is_ready_data,
 			 ARRAY_SIZE(is_ready));
 
-	task_runner_iterate(21, 21, 100);
+	task_runner_iterate(app_states, 21, 21, 100);
 	k_sleep(K_MSEC(10));
 	zassert_equal(1, example_device_run);
 }
 
 ZTEST(task_runner_runner, test_basic_behaviour)
 {
+	INFUSE_STATES_ARRAY(app_states) = {0};
 	struct task_schedule schedules[] = {
 		{
 			.task_id = TASK_ID_SLEEPY,
@@ -253,7 +257,7 @@ ZTEST(task_runner_runner, test_basic_behaviour)
 
 	/* Immediate termination (10 seconds with 5 second period == 2 runs) */
 	for (int i = 0; i < 10; i++) {
-		task_runner_iterate(uptime++, gps_time++, 100);
+		task_runner_iterate(app_states, uptime++, gps_time++, 100);
 		k_sleep(K_TIMEOUT_ABS_MS(iter * MSEC_PER_SEC));
 		iter++;
 	}
@@ -263,7 +267,7 @@ ZTEST(task_runner_runner, test_basic_behaviour)
 	example_task_block_timeout = K_SECONDS(3);
 	example_task_run_cnt = 0;
 	for (int i = 0; i < 10; i++) {
-		task_runner_iterate(uptime++, gps_time++, 100);
+		task_runner_iterate(app_states, uptime++, gps_time++, 100);
 		k_sleep(K_TIMEOUT_ABS_MS(iter * MSEC_PER_SEC));
 		iter++;
 	}
@@ -274,7 +278,7 @@ ZTEST(task_runner_runner, test_basic_behaviour)
 	example_task_expected_block_rc = 1;
 	example_task_run_cnt = 0;
 	for (int i = 0; i < 10; i++) {
-		task_runner_iterate(uptime++, gps_time++, 100);
+		task_runner_iterate(app_states, uptime++, gps_time++, 100);
 		k_sleep(K_TIMEOUT_ABS_MS(iter * MSEC_PER_SEC));
 		iter++;
 	}
@@ -283,6 +287,7 @@ ZTEST(task_runner_runner, test_basic_behaviour)
 
 ZTEST(task_runner_runner, test_multi_schedule)
 {
+	INFUSE_STATES_ARRAY(app_states) = {0};
 	struct task_schedule schedules[] = {
 		{
 			.task_id = TASK_ID_SLEEPY,
@@ -315,7 +320,7 @@ ZTEST(task_runner_runner, test_multi_schedule)
 	example_task_expected_block_rc = 0;
 	example_task_run_cnt = 0;
 	for (int i = 0; i < 10; i++) {
-		task_runner_iterate(uptime++, gps_time++, 100);
+		task_runner_iterate(app_states, uptime++, gps_time++, 100);
 		k_sleep(K_TIMEOUT_ABS_MS(iter * MSEC_PER_SEC));
 		iter++;
 	}
@@ -324,6 +329,7 @@ ZTEST(task_runner_runner, test_multi_schedule)
 
 ZTEST(task_runner_runner, test_workqueue_task)
 {
+	INFUSE_STATES_ARRAY(app_states) = {0};
 	struct task_schedule schedules[] = {
 		{
 			.task_id = TASK_ID_WORKQ,
@@ -346,7 +352,7 @@ ZTEST(task_runner_runner, test_workqueue_task)
 
 	/* Immediate termination (10 seconds with 5 second period == 2 runs) */
 	for (int i = 0; i < 10; i++) {
-		task_runner_iterate(uptime++, gps_time++, 100);
+		task_runner_iterate(app_states, uptime++, gps_time++, 100);
 		k_sleep(K_TIMEOUT_ABS_MS(iter * MSEC_PER_SEC));
 		iter++;
 	}
@@ -359,7 +365,7 @@ ZTEST(task_runner_runner, test_workqueue_task)
 	example_workqueue_reschedule_cnt = 10;
 	example_workqueue_run_cnt = 0;
 	for (int i = 0; i < 10; i++) {
-		task_runner_iterate(uptime++, gps_time++, 100);
+		task_runner_iterate(app_states, uptime++, gps_time++, 100);
 		k_sleep(K_TIMEOUT_ABS_MS(iter * MSEC_PER_SEC));
 		iter++;
 	}
@@ -370,7 +376,7 @@ ZTEST(task_runner_runner, test_workqueue_task)
 	example_workqueue_reschedule_cnt = INT_MAX;
 	example_workqueue_run_cnt = 0;
 	for (int i = 0; i < 10; i++) {
-		task_runner_iterate(uptime++, gps_time++, 100);
+		task_runner_iterate(app_states, uptime++, gps_time++, 100);
 		k_sleep(K_TIMEOUT_ABS_MS(iter * MSEC_PER_SEC));
 		iter++;
 	}

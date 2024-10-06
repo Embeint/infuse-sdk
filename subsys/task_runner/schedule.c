@@ -33,14 +33,14 @@ bool task_schedule_validate(const struct task_schedule *schedule)
 }
 
 bool task_schedule_should_start(const struct task_schedule *schedule,
-				struct task_schedule_state *state, uint32_t uptime,
-				uint32_t epoch_time, uint8_t battery_soc)
+				struct task_schedule_state *state, atomic_t *app_states,
+				uint32_t uptime, uint32_t epoch_time, uint8_t battery_soc)
 {
 	bool periodicity = true;
 	bool battery = true;
 
 	/* No tasks should be started when system is about to go down */
-	if (infuse_state_get(INFUSE_STATE_REBOOTING)) {
+	if (atomic_test_bit(app_states, INFUSE_STATE_REBOOTING)) {
 		return false;
 	}
 
@@ -56,14 +56,14 @@ bool task_schedule_should_start(const struct task_schedule *schedule,
 }
 
 bool task_schedule_should_terminate(const struct task_schedule *schedule,
-				    struct task_schedule_state *state, uint32_t uptime,
-				    uint32_t epoch_time, uint8_t battery_soc)
+				    struct task_schedule_state *state, atomic_t *app_states,
+				    uint32_t uptime, uint32_t epoch_time, uint8_t battery_soc)
 {
 	bool periodicity = false;
 	bool battery = false;
 
 	/* Tasks should be terminated when system is about to go down */
-	if (infuse_state_get(INFUSE_STATE_REBOOTING)) {
+	if (atomic_test_bit(app_states, INFUSE_STATE_REBOOTING)) {
 		return true;
 	}
 
