@@ -24,6 +24,7 @@ INFUSE_ZBUS_CHAN_DECLARE(INFUSE_ZBUS_CHAN_BATTERY);
 
 static void iterate_worker(struct k_work *work)
 {
+	INFUSE_STATES_ARRAY(states);
 	uint32_t gps_time = epoch_time_seconds(epoch_time_now());
 	uint32_t next_iter = k_uptime_seconds() + 1;
 	uint8_t charge = 0; /* Default charge is 0% until measured */
@@ -36,17 +37,10 @@ static void iterate_worker(struct k_work *work)
 		charge = battery.soc;
 	}
 
-#ifdef CONFIG_INFUSE_APPLICATION_STATES
-	INFUSE_STATES_ARRAY(states);
-
-	infuse_states_snapshot(states);
-#endif
 	/* Iterate the runner */
+	infuse_states_snapshot(states);
 	task_runner_iterate(k_uptime_seconds(), gps_time, charge);
-
-#ifdef CONFIG_INFUSE_APPLICATION_STATES
 	infuse_states_tick(states);
-#endif
 
 	/* Schedule the next iteration */
 	k_work_schedule_for_queue(&task_runner_workq, &iterate_work,
