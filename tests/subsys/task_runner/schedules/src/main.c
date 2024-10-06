@@ -153,6 +153,111 @@ ZTEST(task_runner_schedules, test_battery_static)
 	zassert_false(task_schedule_should_terminate(&schedule2, &state, app_states, 10, 100, 0));
 }
 
+#define TEST_ITER_STATES_START(schedule, state, app_states)                                        \
+	task_schedule_should_start(schedule, state, app_states, 10, 100, 100)
+#define TEST_ITER_STATES_TERMINATE(schedule, state, app_states)                                    \
+	task_schedule_should_terminate(schedule, state, app_states, 10, 100, 100)
+
+ZTEST(task_runner_schedules, test_app_states_basic)
+{
+	INFUSE_STATES_ARRAY(app_states) = {0};
+	struct task_schedule_state state = {0};
+	struct task_schedule schedule = {
+		.validity = TASK_VALID_ALWAYS,
+		.states_start = TASK_STATES_DEFINE(INFUSE_STATE_TIME_KNOWN),
+		.states_terminate = TASK_STATES_DEFINE(INFUSE_STATE_TIME_KNOWN),
+	};
+
+	/* State not set, neither should pass */
+	zassert_false(TEST_ITER_STATES_START(&schedule, &state, app_states));
+	zassert_false(TEST_ITER_STATES_TERMINATE(&schedule, &state, app_states));
+
+	/* State set, both should pass */
+	atomic_set_bit(app_states, INFUSE_STATE_TIME_KNOWN);
+	zassert_true(TEST_ITER_STATES_START(&schedule, &state, app_states));
+	zassert_true(TEST_ITER_STATES_TERMINATE(&schedule, &state, app_states));
+	atomic_clear_bit(app_states, INFUSE_STATE_TIME_KNOWN);
+}
+
+ZTEST(task_runner_schedules, test_app_states_inverted)
+{
+	INFUSE_STATES_ARRAY(app_states) = {0};
+	struct task_schedule_state state = {0};
+	struct task_schedule schedule = {
+		.validity = TASK_VALID_ALWAYS,
+		.states_start = TASK_STATES_DEFINE(TR_NOT | INFUSE_STATE_TIME_KNOWN),
+		.states_terminate = TASK_STATES_DEFINE(TR_NOT | INFUSE_STATE_TIME_KNOWN),
+	};
+
+	/* State not set, neither should pass */
+	zassert_true(TEST_ITER_STATES_START(&schedule, &state, app_states));
+	zassert_true(TEST_ITER_STATES_TERMINATE(&schedule, &state, app_states));
+
+	/* State set, both should pass */
+	atomic_set_bit(app_states, INFUSE_STATE_TIME_KNOWN);
+	zassert_false(TEST_ITER_STATES_START(&schedule, &state, app_states));
+	zassert_false(TEST_ITER_STATES_TERMINATE(&schedule, &state, app_states));
+	atomic_clear_bit(app_states, INFUSE_STATE_TIME_KNOWN);
+}
+
+ZTEST(task_runner_schedules, test_app_states_multiple)
+{
+	INFUSE_STATES_ARRAY(app_states) = {0};
+	struct task_schedule_state state = {0};
+	struct task_schedule schedule = {
+		.validity = TASK_VALID_ALWAYS,
+		.states_start = TASK_STATES_DEFINE(10, 20, 30, 40),
+		.states_terminate = TASK_STATES_DEFINE(10, 20, 30, 40),
+	};
+
+	/* No states set */
+	zassert_false(TEST_ITER_STATES_START(&schedule, &state, app_states));
+	zassert_false(TEST_ITER_STATES_TERMINATE(&schedule, &state, app_states));
+
+	/* Some states set */
+	atomic_set_bit(app_states, 10);
+	atomic_set_bit(app_states, 20);
+	atomic_set_bit(app_states, 40);
+
+	zassert_false(TEST_ITER_STATES_START(&schedule, &state, app_states));
+	zassert_false(TEST_ITER_STATES_TERMINATE(&schedule, &state, app_states));
+
+	/* All states set */
+	atomic_set_bit(app_states, 30);
+
+	atomic_set_bit(app_states, INFUSE_STATE_TIME_KNOWN);
+	zassert_true(TEST_ITER_STATES_START(&schedule, &state, app_states));
+	zassert_true(TEST_ITER_STATES_TERMINATE(&schedule, &state, app_states));
+}
+
+ZTEST(task_runner_schedules, test_app_states_multiple_inversions)
+{
+	INFUSE_STATES_ARRAY(app_states) = {0};
+	struct task_schedule_state state = {0};
+	struct task_schedule schedule = {
+		.validity = TASK_VALID_ALWAYS,
+		.states_start = TASK_STATES_DEFINE(10, TR_NOT | 20, 30, TR_NOT | 40),
+		.states_terminate = TASK_STATES_DEFINE(10, TR_NOT | 20, 30, TR_NOT | 40),
+	};
+
+	/* No states set */
+	zassert_false(TEST_ITER_STATES_START(&schedule, &state, app_states));
+	zassert_false(TEST_ITER_STATES_TERMINATE(&schedule, &state, app_states));
+
+	/* Two requested states */
+	atomic_set_bit(app_states, 10);
+	atomic_set_bit(app_states, 30);
+
+	zassert_true(TEST_ITER_STATES_START(&schedule, &state, app_states));
+	zassert_true(TEST_ITER_STATES_TERMINATE(&schedule, &state, app_states));
+
+	/* Not requested state */
+	atomic_set_bit(app_states, 40);
+
+	zassert_false(TEST_ITER_STATES_START(&schedule, &state, app_states));
+	zassert_false(TEST_ITER_STATES_TERMINATE(&schedule, &state, app_states));
+}
+
 ZTEST(task_runner_schedules, test_timeout)
 {
 	INFUSE_STATES_ARRAY(app_states) = {0};
@@ -182,6 +287,8 @@ ZTEST(task_runner_schedules, test_complex)
 		.timeout_s = 10,
 		.battery_start_threshold = 50,
 		.battery_terminate_threshold = 20,
+		.states_start = TASK_STATES_DEFINE(INFUSE_STATE_TIME_KNOWN),
+		.states_terminate = TASK_STATES_DEFINE(TR_NOT | INFUSE_STATE_TIME_KNOWN),
 		.periodicity_type = TASK_PERIODICITY_LOCKOUT,
 		.periodicity.lockout.lockout_s = 30,
 	};
@@ -201,8 +308,22 @@ ZTEST(task_runner_schedules, test_complex)
 	zassert_false(task_schedule_should_start(&schedule, &state, app_states, 120, 1000, 90));
 	zassert_false(task_schedule_should_start(&schedule, &state, app_states, 129, 1000, 90));
 
-	/* Starts with both valid */
+	/* Does not start with no time knowledge */
+	zassert_false(task_schedule_should_start(&schedule, &state, app_states, 130, 1000, 90));
+
+	atomic_set_bit(app_states, INFUSE_STATE_TIME_KNOWN);
+
+	/* Starts with all valid */
 	zassert_true(task_schedule_should_start(&schedule, &state, app_states, 130, 1000, 90));
+
+	/* Does not stop by default */
+	state.runtime = 2;
+	zassert_false(task_schedule_should_terminate(&schedule, &state, app_states, 130, 1000, 90));
+
+	/* Stops with only state loss */
+	atomic_clear_bit(app_states, INFUSE_STATE_TIME_KNOWN);
+	zassert_true(task_schedule_should_terminate(&schedule, &state, app_states, 130, 1000, 90));
+	atomic_set_bit(app_states, INFUSE_STATE_TIME_KNOWN);
 
 	/* Stops with only battery below threshold */
 	state.runtime = 5;
@@ -212,7 +333,8 @@ ZTEST(task_runner_schedules, test_complex)
 	state.runtime = 10;
 	zassert_true(task_schedule_should_terminate(&schedule, &state, app_states, 130, 1000, 90));
 
-	/* Stops with both conditions */
+	/* Stops with all conditions */
+	atomic_clear_bit(app_states, INFUSE_STATE_TIME_KNOWN);
 	zassert_true(task_schedule_should_terminate(&schedule, &state, app_states, 130, 1000, 19));
 }
 
