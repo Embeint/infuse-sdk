@@ -58,6 +58,7 @@ jobs:
     - name: Clone cached Infuse SDK repository
       continue-on-error: true
       run: |
+        git config --global --add safe.directory /github/cache/embeint/infuse-sdk/.git
         git clone --shared /github/cache/embeint/infuse-sdk infuse-sdk
         cd infuse-sdk
         git remote set-url origin ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}
