@@ -47,6 +47,18 @@ void epacket_dummy_set_max_packet(uint16_t packet_size)
 	max_packet_size = MIN(packet_size, EPACKET_INTERFACE_MAX_PACKET(DT_DRV_INST(0)));
 }
 
+void epacket_dummy_set_interface_state(const struct device *dev, bool state)
+{
+	struct epacket_interface_common_data *data = dev->data;
+	struct epacket_interface_cb *cb;
+
+	SYS_SLIST_FOR_EACH_CONTAINER(&data->callback_list, cb, node) {
+		if (cb->interface_state) {
+			cb->interface_state(state, max_packet_size, cb->user_ctx);
+		}
+	}
+}
+
 void epacket_dummy_receive_extra(const struct device *dev, const struct epacket_dummy_frame *header,
 				 const void *payload, size_t payload_len, const void *extra,
 				 size_t extra_len)

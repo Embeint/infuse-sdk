@@ -62,6 +62,14 @@ void epacket_dummy_set_tx_failure(int error_code);
 void epacket_dummy_set_max_packet(uint16_t packet_size);
 
 /**
+ * @brief Set the interface state and run callbacks
+ *
+ * @param dev Dummy interface
+ * @param state New interface state
+ */
+void epacket_dummy_set_interface_state(const struct device *dev, bool state);
+
+/**
  * @brief Is receiving currently scheduled on the interface
  *
  * @retval true Receiving has been enabled
