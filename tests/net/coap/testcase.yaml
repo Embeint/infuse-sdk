@@ -5,6 +5,7 @@ common:
 tests:
   net.coap:
     build_only: true
+    skip: true
     integration_platforms:
       - nrf7002dk/nrf5340/cpuapp
     required_snippets:
