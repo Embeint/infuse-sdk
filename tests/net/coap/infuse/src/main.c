@@ -155,10 +155,10 @@ ZTEST(infuse_coap, test_timeout)
 	sock = socket_setup();
 
 	/* Request a packet with a timeout that can't be met */
-	context.expected_data = "doesn't matter";
+	context.expected_data = NULL;
 	context.expected_offset = 0;
 	rc = infuse_coap_download(sock, "file/med_file", data_cb, &context, work_area,
-				  sizeof(work_area), 2);
+				  sizeof(work_area), 1);
 	zassert_equal(-ETIMEDOUT, rc);
 
 	/* Request another resource, "world" response should be discarded due to token mismatch */

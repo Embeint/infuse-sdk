@@ -8,12 +8,12 @@ configdefault INFUSE_REBOOT
 config WIFI_SSID
 	string "WiFi SSID"
 	depends on WIFI
-	default "test_ssid"
+	default "TechnoCore"
 
 config WIFI_PSK
 	string "WiFi PSK"
 	depends on WIFI
-	default "test_psk"
+	default "tachyonfatline"
 
 if !NRF_MODEM_LIB
 configdefault TLS_CREDENTIALS
