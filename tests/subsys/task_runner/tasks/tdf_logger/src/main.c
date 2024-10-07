@@ -234,6 +234,11 @@ ZTEST(task_tdf_logger, test_ambient_env)
 		      tdf_parse_find_in_buf(pkt->data, pkt->len, TDF_AMBIENT_TEMP_PRES_HUM, &tdf));
 	zassert_equal(0, tdf.time);
 	net_buf_unref(pkt);
+
+	/* Wait until data invalid, should not send */
+	k_sleep(K_SECONDS(CONFIG_TASK_TDF_LOGGER_ENVIRONMENTAL_TIMEOUT_SEC));
+	task_schedule(&data);
+	zassert_is_null(net_buf_get(tx_queue, K_MSEC(100)));
 }
 
 struct tdf_accel_config {
@@ -308,6 +313,11 @@ ZTEST(task_tdf_logger, test_accelerometer)
 	/* Task should have given up, not waited for over a second */
 	pkt = net_buf_get(tx_queue, K_SECONDS(1));
 	zassert_is_null(pkt);
+
+	/* Wait until data invalid, should not send */
+	k_sleep(K_SECONDS(CONFIG_TASK_TDF_LOGGER_IMU_TIMEOUT_SEC));
+	task_schedule(&data);
+	zassert_is_null(net_buf_get(tx_queue, K_MSEC(100)));
 }
 
 ZTEST(task_tdf_logger, test_location)
@@ -344,6 +354,11 @@ ZTEST(task_tdf_logger, test_location)
 	zassert_equal(0, tdf_parse_find_in_buf(pkt->data, pkt->len, TDF_GCS_WGS84_LLHA, &tdf));
 	zassert_equal(0, tdf.time);
 	net_buf_unref(pkt);
+
+	/* Wait until data invalid, should not send */
+	k_sleep(K_SECONDS(CONFIG_TASK_TDF_LOGGER_LOCATION_TIMEOUT_SEC));
+	task_schedule(&data);
+	zassert_is_null(net_buf_get(tx_queue, K_MSEC(100)));
 }
 
 static struct signal_quality_info {
