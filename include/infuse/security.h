@@ -17,6 +17,8 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#include <zephyr/net/tls_credentials.h>
+
 #include <psa/crypto_types.h>
 
 #ifdef __cplusplus
@@ -77,6 +79,13 @@ psa_key_id_t infuse_security_device_sign_key(void);
  * @return psa_key_id_t Network root key identifier
  */
 psa_key_id_t infuse_security_network_root_key(void);
+
+/**
+ * @brief Get security tag for use with Infuse-IoT COAP server
+ *
+ * @return sec_tag_t Security tag for use with zsock_setsockopt
+ */
+sec_tag_t infuse_security_coap_dtls_tag(void);
 
 /**
  * @brief Derive a key for use with ChaCha20-Poly1305

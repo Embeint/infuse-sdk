@@ -8,8 +8,10 @@
 
 #include <zephyr/logging/log.h>
 #include <zephyr/sys/crc.h>
+#include <zephyr/sys/byteorder.h>
 
 #include <infuse/security.h>
+#include <infuse/identifiers.h>
 #include <infuse/crypto/hardware_unique_key.h>
 #include <infuse/fs/kv_types.h>
 #include <infuse/fs/secure_storage.h>
@@ -28,6 +30,8 @@ enum {
 	INFUSE_ROOT_NETWORK_KEY_ID,
 };
 
+#define TLS_TAG_INFUSE_COAP 12
+
 static const uint8_t infuse_cloud_public_key[32] = {
 	0xca, 0x66, 0x32, 0xab, 0x03, 0x81, 0x72, 0xb6, 0xef, 0x6a, 0x05,
 	0x40, 0xd0, 0x8b, 0xc7, 0x2e, 0x9c, 0xce, 0x29, 0x36, 0x68, 0xdf,
@@ -38,6 +42,12 @@ static const uint8_t default_network_key[32] = {
 	0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15,
 	0x16, 0x17, 0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f,
 };
+
+#ifdef CONFIG_TLS_CREDENTIALS
+static uint8_t dtls_identity[8];
+static uint8_t dtls_psk[32];
+#endif /* CONFIG_TLS_CREDENTIALS */
+
 static psa_key_id_t root_ecc_key_id, device_root_key, device_sign_key, network_root_key;
 static uint32_t cached_network_id, cached_device_id;
 static uint8_t device_public_key[32];
@@ -234,6 +244,72 @@ int infuse_security_init(void)
 		return -EINVAL;
 	}
 
+#ifdef CONFIG_TLS_CREDENTIALS
+#ifdef CONFIG_INFUSE_SECURITY_TEST_CREDENTIALS
+	sys_put_le64(0xfffffffffffffffd, dtls_identity);
+
+	{
+		psa_key_attributes_t key_attributes = PSA_KEY_ATTRIBUTES_INIT;
+		static const uint8_t shared_secret[32] = {
+			0xfd, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+			0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+			0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
+
+		psa_set_key_usage_flags(&key_attributes, PSA_KEY_USAGE_DERIVE);
+		psa_set_key_lifetime(&key_attributes, PSA_KEY_LIFETIME_VOLATILE);
+		psa_set_key_algorithm(&key_attributes, PSA_ALG_HKDF(PSA_ALG_SHA_256));
+		psa_set_key_type(&key_attributes, PSA_KEY_TYPE_DERIVE);
+		psa_set_key_bits(&key_attributes, 256);
+
+		status = psa_import_key(&key_attributes, shared_secret, sizeof(shared_secret),
+					&device_root_key);
+		if (status != PSA_SUCCESS) {
+			LOG_ERR("Failed to import static shared secret (%d)", status);
+			device_root_key = PSA_KEY_ID_NULL;
+			return -EINVAL;
+		}
+	}
+#else
+	sys_put_le64(infuse_device_id(), dtls_identity);
+#endif /* CONFIG_INFUSE_SECURITY_TEST_CREDENTIALS */
+	psa_key_id_t dtls_coap_key;
+	uint16_t dtls_coap_salt = 0x7856;
+	size_t olen;
+
+	/* Derive Infuse-IoT COAP key */
+	dtls_coap_key = infuse_security_derive_chacha_key(device_root_key, &dtls_coap_salt,
+							  sizeof(dtls_coap_salt), "coap", 4, true);
+	if (dtls_coap_key == PSA_KEY_ID_NULL) {
+		LOG_ERR("COAP key derivation failed");
+		return -EINVAL;
+	}
+
+	/* Export key back into buffer for TLS credentials */
+	status = psa_export_key(dtls_coap_key, dtls_psk, sizeof(dtls_psk), &olen);
+	if ((status != PSA_SUCCESS) || (olen != 32)) {
+		LOG_ERR("COAP key export failed (%d %d)", status, olen);
+		memset(dtls_psk, 0x00, 32);
+		return -EINVAL;
+	}
+
+	/* No need to hold onto the derived key after export */
+	(void)psa_destroy_key(dtls_coap_key);
+
+	rc = tls_credential_add(TLS_TAG_INFUSE_COAP, TLS_CREDENTIAL_PSK_ID, dtls_identity,
+				sizeof(dtls_identity));
+	if (rc < 0) {
+		LOG_ERR("Failed to add DTLS identity (%d)", rc);
+		return -EINVAL;
+	}
+
+	rc = tls_credential_add(TLS_TAG_INFUSE_COAP, TLS_CREDENTIAL_PSK, dtls_psk,
+				sizeof(dtls_psk));
+	if (rc < 0) {
+		LOG_ERR("Failed to add DTLS PSK (%d)", rc);
+		return -EINVAL;
+	}
+#endif /* CONFIG_TLS_CREDENTIALS */
+
 	/* Load root network key */
 	network_root_key = network_key_load();
 	if (network_root_key == PSA_KEY_ID_NULL) {
@@ -308,3 +384,10 @@ uint32_t infuse_security_network_key_identifier(void)
 {
 	return cached_network_id;
 }
+
+#ifdef CONFIG_TLS_CREDENTIALS
+sec_tag_t infuse_security_coap_dtls_tag(void)
+{
+	return TLS_TAG_INFUSE_COAP;
+}
+#endif /* CONFIG_TLS_CREDENTIALS */
