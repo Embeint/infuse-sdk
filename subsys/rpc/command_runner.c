@@ -129,6 +129,13 @@ void rpc_command_runner(struct net_buf *request)
 		}
 		break;
 #endif /* CONFIG_INFUSE_RPC_COMMAND_LTE_STATE */
+#ifdef CONFIG_INFUSE_RPC_COMMAND_COAP_DOWNLOAD
+	case RPC_ID_COAP_DOWNLOAD:
+		if (AUTHORISED(auth, COAP_DOWNLOAD)) { /* GCOVR_EXCL_BR_LINE */
+			response = rpc_command_coap_download(request);
+		}
+		break;
+#endif /* CONFIG_INFUSE_RPC_COMMAND_COAP_DOWNLOAD */
 #ifdef CONFIG_INFUSE_RPC_COMMAND_SECURITY_STATE
 	case RPC_ID_SECURITY_STATE:
 		if (AUTHORISED(auth, SECURITY_STATE)) { /* GCOVR_EXCL_BR_LINE */

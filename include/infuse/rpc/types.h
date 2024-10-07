@@ -249,6 +249,8 @@ enum rpc_builtin_id {
 	RPC_ID_LTE_AT_CMD = 20,
 	/* Get current LTE interface state */
 	RPC_ID_LTE_STATE = 21,
+	/* Download a file from a COAP server (Infuse-IoT DTLS protected) */
+	RPC_ID_COAP_DOWNLOAD = 30,
 	/* Query current security state and validate identity */
 	RPC_ID_SECURITY_STATE = 30000,
 	/* Send multiple INFUSE_RPC_DATA packets */
@@ -429,6 +431,33 @@ struct rpc_lte_state_response {
 	struct rpc_struct_network_state common;
 	/* LTE state */
 	struct rpc_struct_lte_state lte;
+} __packed;
+
+/* Download a file from a COAP server (Infuse-IoT DTLS protected) */
+struct rpc_coap_download_request {
+	struct infuse_rpc_req_header header;
+	/* COAP server address (e.g. coap.dev.infuse-iot.com) */
+	char server_address[48];
+	/* COAP server port */
+	uint16_t server_port;
+	/* COAP block timeout (Default 1000ms) */
+	uint16_t block_timeout_ms;
+	/* File action (0 = Discard, 1 = Application DFU) */
+	uint8_t action;
+	/* Expected resource length (UINT32_MAX if unknown) */
+	uint32_t resource_len;
+	/* Expected resource CRC (UINT32_MAX if unknown) */
+	uint32_t resource_crc;
+	/* Path to file on COAP server (e.g. files/small_file) */
+	char resource[];
+} __packed;
+
+struct rpc_coap_download_response {
+	struct infuse_rpc_rsp_header header;
+	/* Length of resource downloaded */
+	uint32_t resource_len;
+	/* CRC of resource downloaded */
+	uint32_t resource_crc;
 } __packed;
 
 /* Query current security state and validate identity */
