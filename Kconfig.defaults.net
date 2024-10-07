@@ -42,6 +42,20 @@ configdefault NET_DHCPV4
 configdefault NET_SOCKETS
 	default y
 
+# Infuse-IoT COAP
+if INFUSE_COAP && !NRF_MODEM_LIB
+configdefault TLS_CREDENTIALS
+	default y
+configdefault NET_SOCKETS_SOCKOPT_TLS
+	default y
+configdefault NET_SOCKETS_ENABLE_DTLS
+	default y
+configdefault PSA_WANT_ALG_TLS12_PSK_TO_MS
+	default y
+configdefault PSA_WANT_ALG_TLS12_PRF
+	default y
+endif # INFUSE_COAP && !NRF_MODEM_LIB
+
 # Zephyr networking
 configdefault NET_CONNECTION_MANAGER
 	default y
