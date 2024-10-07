@@ -92,7 +92,8 @@ static void log_ambient_env(uint8_t loggers, uint64_t timestamp)
 #ifdef CONFIG_INFUSE_ZBUS_CHAN_AMBIENT_ENV
 	INFUSE_ZBUS_TYPE(INFUSE_ZBUS_CHAN_AMBIENT_ENV) ambient_env;
 
-	if (zbus_chan_publish_count(C_GET(INFUSE_ZBUS_CHAN_AMBIENT_ENV)) == 0) {
+	if (infuse_zbus_channel_data_age(C_GET(INFUSE_ZBUS_CHAN_AMBIENT_ENV)) >=
+	    (CONFIG_TASK_TDF_LOGGER_ENVIRONMENTAL_TIMEOUT_SEC * MSEC_PER_SEC)) {
 		return;
 	}
 	/* Get latest value */
@@ -109,7 +110,8 @@ static void log_location(uint8_t loggers, uint64_t timestamp)
 #ifdef CONFIG_INFUSE_ZBUS_CHAN_LOCATION
 	INFUSE_ZBUS_TYPE(INFUSE_ZBUS_CHAN_LOCATION) location;
 
-	if (zbus_chan_publish_count(C_GET(INFUSE_ZBUS_CHAN_LOCATION)) == 0) {
+	if (infuse_zbus_channel_data_age(C_GET(INFUSE_ZBUS_CHAN_LOCATION)) >=
+	    (CONFIG_TASK_TDF_LOGGER_LOCATION_TIMEOUT_SEC * MSEC_PER_SEC)) {
 		return;
 	}
 	/* Get latest value */
@@ -127,7 +129,8 @@ static void log_accel(uint8_t loggers, uint64_t timestamp)
 	struct tdf_struct_xyz_16bit tdf;
 	uint16_t tdf_id;
 
-	if (zbus_chan_publish_count(C_GET(INFUSE_ZBUS_CHAN_IMU)) == 0) {
+	if (infuse_zbus_channel_data_age(C_GET(INFUSE_ZBUS_CHAN_IMU)) >=
+	    (CONFIG_TASK_TDF_LOGGER_IMU_TIMEOUT_SEC * MSEC_PER_SEC)) {
 		return;
 	}
 	/* Accept waiting for a short duration to get the channel data */
