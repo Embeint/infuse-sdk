@@ -25,6 +25,11 @@ config INFUSE_RPC_COMMON_NET_QUERY
 	bool
 	default INFUSE_RPC_COMMAND_WIFI_STATE || INFUSE_RPC_COMMAND_LTE_STATE
 
+config INFUSE_RPC_COMMAND_WORKING_MEMORY
+	int "Size of working memory for command"
+	default 1088 if INFUSE_RPC_COMMAND_COAP_DOWNLOAD
+	default 16
+
 rsource "commands/Kconfig.commands"
 
 endif # INFUSE_RPC

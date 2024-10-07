@@ -23,6 +23,13 @@ static K_FIFO_DEFINE(command_fifo);
 static K_FIFO_DEFINE(data_fifo);
 static uint32_t data_packet_acks[RPC_SERVER_MAX_ACK_PERIOD];
 static uint8_t data_packet_ack_counter;
+static uint8_t command_working_mem[CONFIG_INFUSE_RPC_COMMAND_WORKING_MEMORY];
+
+uint8_t *rpc_server_command_working_mem(size_t *size)
+{
+	*size = sizeof(command_working_mem);
+	return command_working_mem;
+}
 
 void rpc_server_queue_command(struct net_buf *buf)
 {

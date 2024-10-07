@@ -77,6 +77,15 @@ struct net_buf *rpc_server_pull_data(uint32_t request_id, uint32_t expected_offs
 void rpc_server_ack_data(const struct device *interface, uint32_t request_id, uint32_t offset,
 			 uint8_t ack_period);
 
+/**
+ * @brief Retrieve working memory for an RPC command
+ *
+ * @param size Size of the working memory buffer
+ *
+ * @return uint8_t* Pointer to working memory
+ */
+uint8_t *rpc_server_command_working_mem(size_t *size);
+
 #ifdef __cplusplus
 }
 #endif
