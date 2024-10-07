@@ -30,6 +30,15 @@ config INFUSE_SECURITY_CHACHA_KEY_EXPORT
 	help
 	  DO NOT enable this in production
 
+config INFUSE_SECURITY_TEST_CREDENTIALS
+	bool "Use hardcoded test credentials for testing"
+	depends on INFUSE_SECURITY
+	depends on ZTEST
+	default y if ZTEST
+	help
+	  Use hardcoded device ID's and credentials for testing purposes. These
+	  credentials have limited access to backend services.
+
 config INFUSE_EPOCH_TIME
 	bool "Infuse-IoT epoch time library"
 
