@@ -157,6 +157,7 @@ configdefault MBEDTLS
 configdefault MBEDTLS_ENABLE_HEAP
 	default y
 configdefault MBEDTLS_HEAP_SIZE
+	default 16384 if NET_SOCKETS_ENABLE_DTLS
 	default 8192
 configdefault MBEDTLS_USER_CONFIG_ENABLE
 	default y
