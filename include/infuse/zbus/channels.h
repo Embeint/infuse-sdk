@@ -79,6 +79,22 @@ enum infuse_zbus_channel_id {
 #define INFUSE_ZBUS_CHAN_GET(channel) (&INFUSE_ZBUS_NAME(channel))
 
 /**
+ * @brief Retrieve the age of the data in the zbus channel
+ *
+ * @param chan Channel to query
+ *
+ * @retval UINT64_MAX if channel has never been published to
+ * @retval age_ms Data age in milliseconds otherwise
+ */
+static inline uint64_t infuse_zbus_channel_data_age(const struct zbus_channel *chan)
+{
+	if (zbus_chan_publish_count(chan) == 0) {
+		return UINT64_MAX;
+	}
+	return k_ticks_to_ms_floor64(k_uptime_ticks() - zbus_chan_publish_time(chan));
+}
+
+/**
  * @}
  */
 

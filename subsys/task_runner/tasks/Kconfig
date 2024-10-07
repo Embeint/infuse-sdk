@@ -13,6 +13,18 @@ module = TASK_TDF_LOGGER
 module-str = TDF logger task
 source "subsys/logging/Kconfig.template.log_config"
 
+config TASK_TDF_LOGGER_LOCATION_TIMEOUT_SEC
+	int "Location sample age must be shorter than this to log"
+	default 3600
+
+config TASK_TDF_LOGGER_IMU_TIMEOUT_SEC
+	int "IMU sample age must be shorter than this to log"
+	default 3600
+
+config TASK_TDF_LOGGER_ENVIRONMENTAL_TIMEOUT_SEC
+	int "Environmental sample age must be shorter than this to log"
+	default 3600
+
 endif # TASK_RUNNER_TASK_TDF_LOGGER
 
 config TASK_RUNNER_TASK_IMU
