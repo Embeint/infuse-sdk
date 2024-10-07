@@ -43,12 +43,18 @@ configdefault NET_SOCKETS
 	default y
 
 # Infuse-IoT COAP
+configdefault COAP
+	default y
+configdefault INFUSE_COAP
+	default y
 if INFUSE_COAP && !NRF_MODEM_LIB
 configdefault TLS_CREDENTIALS
 	default y
 configdefault NET_SOCKETS_SOCKOPT_TLS
 	default y
 configdefault NET_SOCKETS_ENABLE_DTLS
+	default y
+configdefault MBEDTLS_KEY_EXCHANGE_PSK_ENABLED
 	default y
 configdefault PSA_WANT_ALG_TLS12_PSK_TO_MS
 	default y
@@ -57,7 +63,7 @@ configdefault PSA_WANT_ALG_TLS12_PRF
 configdefault PSA_WANT_ALG_ECDSA
 	default y
 configdefault PSA_WANT_ALG_JPAKE
-	default y
+	default y if !BUILD_WITH_TFM
 endif # INFUSE_COAP && !NRF_MODEM_LIB
 
 # Zephyr networking

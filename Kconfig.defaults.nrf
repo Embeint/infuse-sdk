@@ -107,7 +107,7 @@ configdefault MBEDTLS_ECDH_C
 configdefault MBEDTLS_ECDSA_C
 	default y if NRF700X_STA_MODE
 configdefault MBEDTLS_ECJPAKE_C
-	default y if NRF700X_STA_MODE
+	default y if NRF700X_STA_MODE && !BUILD_WITH_TFM
 configdefault MBEDTLS_CIPHER_AES_ENABLED
 	default y if NRF700X_STA_MODE
 configdefault MBEDTLS_CIPHER_MODE_CTR_ENABLED
