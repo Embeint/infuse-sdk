@@ -145,6 +145,18 @@ config INFUSE_RPC_COMMAND_LTE_STATE_REQUIRED_AUTH
 	depends on INFUSE_RPC_COMMAND_LTE_STATE
 	default 2
 
+config INFUSE_RPC_COMMAND_COAP_DOWNLOAD
+	bool "Enable RPC coap_download"
+	depends on INFUSE_COAP
+	default y if INFUSE_SDK
+	help
+	  Download a file from a COAP server (Infuse-IoT DTLS protected)
+
+config INFUSE_RPC_COMMAND_COAP_DOWNLOAD_REQUIRED_AUTH
+	int "Required authorisation level to run coap_download"
+	depends on INFUSE_RPC_COMMAND_COAP_DOWNLOAD
+	default 2
+
 config INFUSE_RPC_COMMAND_SECURITY_STATE
 	bool "Enable RPC security_state"
 	default y if INFUSE_SECURITY
