@@ -19,20 +19,20 @@ extern "C" {
 #endif
 
 enum {
-	CHALLENGE_RESPONSE_PRE_SHARED_SECRET = 0,
+	CHALLENGE_RESPONSE_HARDWARE_ID = 0,
 	CHALLENGE_RESPONSE_NORDIC_IDENTITY,
 };
 
-struct security_state_response_pss {
+struct security_state_response_hw_id {
 	uint8_t challenge[16];
-	uint8_t identity_secret[16];
+	uint8_t hardware_id[16];
 	uint64_t device_id;
 } __packed;
 
-struct security_state_response_pss_encrypted {
+struct security_state_response_hw_id_encrypted {
 	uint8_t nonce[12];
 	struct {
-		struct security_state_response_pss data;
+		struct security_state_response_hw_id data;
 		uint8_t tag[16];
 	} ciphertext;
 } __packed;

@@ -9,6 +9,7 @@
 #include <zephyr/ztest.h>
 #include <zephyr/random/random.h>
 #include <zephyr/sys/byteorder.h>
+#include <zephyr/drivers/hwinfo.h>
 
 #include <infuse/common_boot.h>
 #include <infuse/types.h>
@@ -70,15 +71,17 @@ ZTEST(rpc_command_security_state, test_security_state)
 {
 	psa_key_id_t sign_key = infuse_security_device_sign_key();
 	struct rpc_security_state_response *response;
-	struct security_state_response_pss_encrypted *pss_encrypted;
-	struct security_state_response_pss pss;
+	struct security_state_response_hw_id_encrypted *hwid_encrypted;
+	struct security_state_response_hw_id hwid;
 	size_t response_len, expected;
+	uint8_t hw_id[sizeof(hwid.hardware_id)] = {0x00};
 	uint8_t challenge[16];
 	struct net_buf *rsp;
 	psa_status_t status;
 	size_t olen;
 
 	zassert_not_equal(PSA_KEY_ID_NULL, sign_key);
+	hwinfo_get_device_id(hw_id, sizeof(hw_id));
 
 	/* Get random challenge bytes */
 	sys_rand_get(challenge, sizeof(challenge));
@@ -86,28 +89,29 @@ ZTEST(rpc_command_security_state, test_security_state)
 	send_security_state_command(0x100, challenge);
 	rsp = expect_security_state_response(0x100);
 	response = (void *)rsp->data;
-	pss_encrypted = (void *)response->challenge_response;
+	hwid_encrypted = (void *)response->challenge_response;
 
 	response_len = rsp->len - sizeof(*response);
 
 	/* Validate challenge response */
-	zassert_equal(0, response->challenge_response_type);
+	zassert_equal(CHALLENGE_RESPONSE_HARDWARE_ID, response->challenge_response_type);
 	/* Nonce + Challenge + Secret + ID + Tag */
 	expected = 12 + 16 + 16 + 8 + 16;
 	zassert_equal(expected, response_len);
 
 	/* Encrypted challenge can be decrypted */
-	status = psa_aead_decrypt(sign_key, PSA_ALG_CHACHA20_POLY1305, pss_encrypted->nonce,
-				  sizeof(pss_encrypted->nonce), response->cloud_public_key, 69,
-				  (void *)&pss_encrypted->ciphertext,
-				  sizeof(pss_encrypted->ciphertext), (void *)&pss, sizeof(pss),
+	status = psa_aead_decrypt(sign_key, PSA_ALG_CHACHA20_POLY1305, hwid_encrypted->nonce,
+				  sizeof(hwid_encrypted->nonce), response->cloud_public_key, 69,
+				  (void *)&hwid_encrypted->ciphertext,
+				  sizeof(hwid_encrypted->ciphertext), (void *)&hwid, sizeof(hwid),
 				  &olen);
 	zassert_equal(PSA_SUCCESS, status);
-	zassert_equal(sizeof(pss), olen);
+	zassert_equal(sizeof(hwid), olen);
 
 	/* Challenge contents */
-	zassert_equal(infuse_device_id(), pss.device_id);
-	zassert_mem_equal(challenge, pss.challenge, sizeof(challenge));
+	zassert_equal(infuse_device_id(), hwid.device_id);
+	zassert_mem_equal(challenge, hwid.challenge, sizeof(challenge));
+	zassert_mem_equal(hw_id, hwid.hardware_id, sizeof(hwid.hardware_id));
 
 	net_buf_unref(rsp);
 }

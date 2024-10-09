@@ -9,6 +9,7 @@
 #include <zephyr/net/buf.h>
 #include <zephyr/logging/log.h>
 #include <zephyr/random/random.h>
+#include <zephyr/drivers/hwinfo.h>
 
 #include <infuse/identifiers.h>
 #include <infuse/security.h>
@@ -27,8 +28,8 @@ struct net_buf *rpc_command_security_state(struct net_buf *request)
 	struct rpc_security_state_request *req = (void *)request->data;
 	psa_key_id_t sign_key = infuse_security_device_sign_key();
 	struct rpc_security_state_response rsp_header = {0};
-	struct security_state_response_pss challenge_response;
-	struct security_state_response_pss_encrypted *rsp;
+	struct security_state_response_hw_id challenge_response;
+	struct security_state_response_hw_id_encrypted *rsp;
 	struct net_buf *rsp_buf;
 	psa_status_t status;
 	size_t ad_len, olen;
@@ -37,16 +38,17 @@ struct net_buf *rpc_command_security_state(struct net_buf *request)
 	infuse_security_cloud_public_key(rsp_header.cloud_public_key);
 	infuse_security_device_public_key(rsp_header.device_public_key);
 	rsp_header.network_id = infuse_security_network_key_identifier();
-	rsp_header.challenge_response_type = CHALLENGE_RESPONSE_PRE_SHARED_SECRET;
+	rsp_header.challenge_response_type = CHALLENGE_RESPONSE_HARDWARE_ID;
 
 	/* Allocate response */
 	rsp_buf = rpc_response_simple_req(request, 0, &rsp_header, sizeof(rsp_header));
 	rsp = net_buf_add(rsp_buf, sizeof(*rsp));
 
-	/* TODO: Populate identity_secret */
+	/* Populate hardware ID  */
 	memcpy(challenge_response.challenge, req->challenge, sizeof(req->challenge));
-	memset(challenge_response.identity_secret, 0x00,
-	       sizeof(challenge_response.identity_secret));
+	memset(challenge_response.hardware_id, 0x00, sizeof(challenge_response.hardware_id));
+	(void)hwinfo_get_device_id(challenge_response.hardware_id,
+				   sizeof(challenge_response.hardware_id));
 	challenge_response.device_id = infuse_device_id();
 
 	/* Encrypt the challenge response */

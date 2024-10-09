@@ -448,7 +448,7 @@ struct rpc_security_state_response {
 	uint32_t network_id;
 	/* Type of the challenge response */
 	uint8_t challenge_response_type;
-	/* Type of the challenge response */
+	/* Challenge response data */
 	uint8_t challenge_response[];
 } __packed;
 
