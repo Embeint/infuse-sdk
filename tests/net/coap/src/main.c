@@ -48,7 +48,7 @@ static void l4_event_handler(struct net_mgmt_event_callback *cb, uint32_t mgmt_e
 	}
 }
 
-void data_cb(uint32_t offset, const uint8_t *data, uint16_t data_len, void *context)
+int data_cb(uint32_t offset, const uint8_t *data, uint16_t data_len, void *context)
 {
 	struct cb_ctx *ctx = context;
 
@@ -58,6 +58,8 @@ void data_cb(uint32_t offset, const uint8_t *data, uint16_t data_len, void *cont
 	}
 	ctx->expected_offset += data_len;
 	ctx->cb_count += 1;
+
+	return 0;
 }
 
 static int socket_setup(void)

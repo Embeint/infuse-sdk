@@ -23,8 +23,19 @@ extern "C" {
  * @{
  */
 
-typedef void (*infuse_coap_data_cb)(uint32_t offset, const uint8_t *data, uint16_t data_len,
-				    void *user_context);
+/**
+ * @brief COAP data download callback
+ *
+ * @param offset Offset of data payload from start of data
+ * @param data Data payload
+ * @param data_len Length of payload
+ * @param user_context Arbitrary pointer from user
+ *
+ * @retval 0 Continue downloading more data
+ * @retval -errno Terminate download process
+ */
+typedef int (*infuse_coap_data_cb)(uint32_t offset, const uint8_t *data, uint16_t data_len,
+				   void *user_context);
 
 /**
  * @brief Download a file over COAP from an existing socket

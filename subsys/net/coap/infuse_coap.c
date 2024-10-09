@@ -185,10 +185,13 @@ poll_retry:
 		uint16_t payload_len;
 
 		payload = coap_packet_get_payload(&reply, &payload_len);
-		data_cb(blk_ctx.current, payload, payload_len, user_context);
 		total_received += payload_len;
-
 		LOG_INF("RX: %d PAYLOAD: %d", received, payload_len);
+
+		rc = data_cb(blk_ctx.current, payload, payload_len, user_context);
+		if (rc != 0) {
+			return rc;
+		}
 
 		/* Update expected next block */
 		rc = coap_update_from_block(&reply, &blk_ctx);
