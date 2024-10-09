@@ -18,6 +18,16 @@
 
 #include "../../../../../subsys/rpc/server.h"
 
+ZTEST(rpc_server, test_command_working_mem)
+{
+	uint8_t *mem;
+	size_t mem_size;
+
+	mem = rpc_server_command_working_mem(&mem_size);
+	zassert_not_null(mem);
+	zassert_equal(CONFIG_INFUSE_RPC_COMMAND_WORKING_MEMORY, mem_size);
+}
+
 ZTEST(rpc_server, test_drop_data)
 {
 	const struct device *epacket_dummy = DEVICE_DT_GET(DT_NODELABEL(epacket_dummy));
