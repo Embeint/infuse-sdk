@@ -246,6 +246,8 @@ int infuse_security_init(void)
 
 #ifdef CONFIG_TLS_CREDENTIALS
 #ifdef CONFIG_INFUSE_SECURITY_TEST_CREDENTIALS
+	psa_key_id_t coap_base_key;
+
 	sys_put_le64(0xfffffffffffffffd, dtls_identity);
 
 	{
@@ -262,14 +264,16 @@ int infuse_security_init(void)
 		psa_set_key_bits(&key_attributes, 256);
 
 		status = psa_import_key(&key_attributes, shared_secret, sizeof(shared_secret),
-					&device_root_key);
+					&coap_base_key);
 		if (status != PSA_SUCCESS) {
 			LOG_ERR("Failed to import static shared secret (%d)", status);
-			device_root_key = PSA_KEY_ID_NULL;
+			coap_base_key = PSA_KEY_ID_NULL;
 			return -EINVAL;
 		}
 	}
 #else
+	psa_key_id_t coap_base_key = device_root_key;
+
 	sys_put_le64(infuse_device_id(), dtls_identity);
 #endif /* CONFIG_INFUSE_SECURITY_TEST_CREDENTIALS */
 	psa_key_id_t dtls_coap_key;
@@ -277,7 +281,7 @@ int infuse_security_init(void)
 	size_t olen;
 
 	/* Derive Infuse-IoT COAP key */
-	dtls_coap_key = infuse_security_derive_chacha_key(device_root_key, &dtls_coap_salt,
+	dtls_coap_key = infuse_security_derive_chacha_key(coap_base_key, &dtls_coap_salt,
 							  sizeof(dtls_coap_salt), "coap", 4, true);
 	if (dtls_coap_key == PSA_KEY_ID_NULL) {
 		LOG_ERR("COAP key derivation failed");
