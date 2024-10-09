@@ -218,7 +218,7 @@ int secure_storage_init(void)
 	const char *salt = "SS_SALT";
 
 	/* Derive secure storage key from HUK */
-	secure_storage_key_id =
-		infuse_security_derive_chacha_key(huk_id, salt, strlen(salt), info, strlen(info));
+	secure_storage_key_id = infuse_security_derive_chacha_key(huk_id, salt, strlen(salt), info,
+								  strlen(info), false);
 	return secure_storage_key_id == PSA_KEY_ID_NULL ? -EINVAL : 0;
 }

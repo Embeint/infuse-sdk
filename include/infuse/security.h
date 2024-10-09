@@ -15,6 +15,7 @@
 #define INFUSE_SDK_INCLUDE_INFUSE_SECURITY_H_
 
 #include <stdint.h>
+#include <stdbool.h>
 
 #include <psa/crypto_types.h>
 
@@ -85,11 +86,13 @@ psa_key_id_t infuse_security_network_root_key(void);
  * @param salt_len Length of @a salt
  * @param info Optional application/usage specific array
  * @param info_len Length of @a info
+ * @param force_export Force set PSA_KEY_USAGE_EXPORT attribute on generated key
  *
  * @return psa_key_id_t Derived key identifier
  */
 psa_key_id_t infuse_security_derive_chacha_key(psa_key_id_t base_key, const void *salt,
-					       size_t salt_len, const void *info, size_t info_len);
+					       size_t salt_len, const void *info, size_t info_len,
+					       bool force_export);
 
 /**
  * @brief Get the current device key identifier
