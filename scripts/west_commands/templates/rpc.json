@@ -268,7 +268,7 @@
                 {"name": "device_public_key", "type": "uint8_t", "num": 32, "description": "Device public ECC key"},
                 {"name": "network_id", "type": "uint32_t", "description": "Current network ID"},
                 {"name": "challenge_response_type", "type": "uint8_t", "description": "Type of the challenge response"},
-                {"name": "challenge_response", "type": "uint8_t", "num": 0, "description": "Type of the challenge response"}
+                {"name": "challenge_response", "type": "uint8_t", "num": 0, "description": "Challenge response data"}
             ]
         },
         "32765": {
