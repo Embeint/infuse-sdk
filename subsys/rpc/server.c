@@ -125,6 +125,11 @@ void rpc_server_ack_data(const struct device *interface, uint32_t request_id, ui
 INFUSE_WATCHDOG_REGISTER_SYS_INIT(rpc_wdog, CONFIG_INFUSE_RPC_SERVER_WATCHDOG, wdog_channel,
 				  loop_period);
 
+void rpc_server_watchdog_feed(void)
+{
+	infuse_watchdog_feed(wdog_channel);
+}
+
 static int rpc_server(void *a, void *b, void *c)
 {
 	struct k_poll_event events[2] = {

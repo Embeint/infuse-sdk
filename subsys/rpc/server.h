@@ -78,7 +78,12 @@ void rpc_server_ack_data(const struct device *interface, uint32_t request_id, ui
 			 uint8_t ack_period);
 
 /**
- * @brief Retrieve working memory for an RPC command
+ * @brief Feed the RPC server watchdog from a RPC implementation
+ */
+void rpc_server_watchdog_feed(void);
+
+/**
+ * @brief Retrieve working memory for an RPC
  *
  * @param size Size of the working memory buffer
  *
