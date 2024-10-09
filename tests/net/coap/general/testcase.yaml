@@ -5,7 +5,6 @@ common:
 tests:
   net.coap.general:
     build_only: true
-    skip: true
     integration_platforms:
       - nrf7002dk/nrf5340/cpuapp
     required_snippets:
@@ -13,6 +12,7 @@ tests:
     depends_on:
       - netif
   net.coap.general.native:
+    build_only: true
     platform_allow:
       - native_sim
     integration_platforms:
