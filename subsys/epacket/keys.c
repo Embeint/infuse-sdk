@@ -50,8 +50,8 @@ int epacket_key_derive(enum epacket_key_type base_key, const uint8_t *info, uint
 		return -EINVAL;
 	}
 
-	*output_key_id =
-		infuse_security_derive_chacha_key(input_key, &salt, sizeof(salt), info, info_len);
+	*output_key_id = infuse_security_derive_chacha_key(input_key, &salt, sizeof(salt), info,
+							   info_len, false);
 	if (*output_key_id == PSA_KEY_ID_NULL) {
 		return -EIO;
 	}

@@ -227,8 +227,8 @@ int infuse_security_init(void)
 		return -EINVAL;
 	}
 	/* Derive */
-	device_sign_key =
-		infuse_security_derive_chacha_key(device_root_key, &salt, sizeof(salt), "sign", 4);
+	device_sign_key = infuse_security_derive_chacha_key(device_root_key, &salt, sizeof(salt),
+							    "sign", 4, false);
 	if (device_sign_key == PSA_KEY_ID_NULL) {
 		LOG_ERR("Failed to derive signing key! (%d)", status);
 		return -EINVAL;
@@ -244,16 +244,17 @@ int infuse_security_init(void)
 }
 
 psa_key_id_t infuse_security_derive_chacha_key(psa_key_id_t base_key, const void *salt,
-					       size_t salt_len, const void *info, size_t info_len)
+					       size_t salt_len, const void *info, size_t info_len,
+					       bool force_export)
 {
 	psa_key_attributes_t key_attributes = PSA_KEY_ATTRIBUTES_INIT;
 	psa_key_derivation_operation_t operation = PSA_KEY_DERIVATION_OPERATION_INIT;
 	psa_key_id_t output_key = PSA_KEY_ID_NULL;
 	psa_key_usage_t usage = PSA_KEY_USAGE_ENCRYPT | PSA_KEY_USAGE_DECRYPT;
 
-#ifdef CONFIG_INFUSE_SECURITY_CHACHA_KEY_EXPORT
-	usage |= PSA_KEY_USAGE_EXPORT;
-#endif /* CONFIG_INFUSE_SECURITY_CHACHA_KEY_EXPORT */
+	if (IS_ENABLED(CONFIG_INFUSE_SECURITY_CHACHA_KEY_EXPORT) || force_export) {
+		usage |= PSA_KEY_USAGE_EXPORT;
+	}
 	psa_set_key_usage_flags(&key_attributes, usage);
 	psa_set_key_lifetime(&key_attributes, PSA_KEY_LIFETIME_VOLATILE);
 	psa_set_key_algorithm(&key_attributes, PSA_ALG_CHACHA20_POLY1305);
