@@ -1,0 +1,13 @@
+# Copyright (c) 2024 Embeint Inc
+# SPDX-License-Identifier: Apache-2.0
+
+# Common fields for shared devices
+
+properties:
+  "#shared-dev-cells":
+    type: int
+    description: Number of items to expect in a shared device specifier
+
+shared-dev-cells:
+  - state
+  - priority
