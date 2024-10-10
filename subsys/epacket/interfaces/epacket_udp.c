@@ -199,7 +199,6 @@ K_THREAD_DEFINE(epacket_udp_thread, 2048, epacket_udp_loop, NULL, NULL, NULL, 0,
 
 static void epacket_udp_send(const struct device *dev, struct net_buf *buf)
 {
-	struct epacket_tx_metadata *meta = net_buf_user_data(buf);
 	ssize_t rc;
 
 	/* Don't do work unless the socket is open */
@@ -212,6 +211,7 @@ static void epacket_udp_send(const struct device *dev, struct net_buf *buf)
 	/* Handle ACK request */
 	if ((k_uptime_seconds() - udp_state.last_receive) >=
 	    CONFIG_EPACKET_INTERFACE_UDP_ACK_PERIOD_SEC) {
+		struct epacket_tx_metadata *meta = net_buf_user_data(buf);
 
 		/* Never receive an ACK after requesting */
 		if (udp_state.ack_countdown == 0) {
@@ -227,9 +227,6 @@ static void epacket_udp_send(const struct device *dev, struct net_buf *buf)
 		meta->flags |= EPACKET_FLAGS_ACK_REQUEST;
 		udp_state.ack_countdown--;
 	}
-
-	/* Force all UDP packets to device encrypted */
-	meta->auth = EPACKET_AUTH_DEVICE;
 
 	/* Encrypt the payload */
 	if (epacket_udp_encrypt(buf) < 0) {
