@@ -27,3 +27,10 @@ test_spi_ublox_zoe: ublox_zoe@1 {
 	reset-gpios = <&test_gpio 2 0>;
 	extint-gpios = <&test_gpio 3 0>;
 };
+
+test_spi_bma4xx: bma4xx@2 {
+	compatible = "bosch,bma4xx";
+	reg = <0x2>;
+	spi-max-frequency = <0>;
+	int1-gpios = <&test_gpio 0 0>;
+};
