@@ -6,6 +6,7 @@ config INFUSE_IMU
 
 if INFUSE_IMU
 
+rsource "bma4xx/Kconfig"
 rsource "bmi270/Kconfig"
 rsource "lsm6dsv/Kconfig"
 
