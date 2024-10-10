@@ -48,6 +48,10 @@ static int validate_sample_timing(const struct device *dev, uint8_t acc_range,
 	/* Configure IMU */
 	rc = imu_configure(dev, &config, &config_output);
 	if (rc < 0) {
+		if (rc == -ENOTSUP) {
+			VALIDATION_REPORT_INFO(TEST, "Configuration not supported");
+			return 0;
+		}
 		VALIDATION_REPORT_ERROR(TEST, "Failed to configure (%d)", rc);
 		return rc;
 	}
@@ -106,7 +110,7 @@ static int validate_sample_timing(const struct device *dev, uint8_t acc_range,
 		}
 
 		/* Validate reported ranges */
-		if (config.accelerometer.sample_rate_hz) {
+		if (acc_expected) {
 			if (config.accelerometer.full_scale_range !=
 			    imu_samples->accelerometer.full_scale_range) {
 				VALIDATION_REPORT_ERROR(
@@ -117,7 +121,7 @@ static int validate_sample_timing(const struct device *dev, uint8_t acc_range,
 				break;
 			}
 		}
-		if (config.gyroscope.sample_rate_hz) {
+		if (gyr_expected) {
 			if (config.gyroscope.full_scale_range !=
 			    imu_samples->gyroscope.full_scale_range) {
 				VALIDATION_REPORT_ERROR(TEST, "Gyro range mismatch (%u != %u)",
@@ -129,7 +133,7 @@ static int validate_sample_timing(const struct device *dev, uint8_t acc_range,
 		}
 
 		/* Check timestamps across buffers */
-		if (acc_sample_rate && previous_timestamp_acc) {
+		if (acc_expected && previous_timestamp_acc) {
 			int64_t diff =
 				imu_samples->accelerometer.timestamp_ticks - previous_timestamp_acc;
 
@@ -141,7 +145,7 @@ static int validate_sample_timing(const struct device *dev, uint8_t acc_range,
 				break;
 			}
 		}
-		if (gyr_sample_rate && previous_timestamp_gyr) {
+		if (gyr_expected && previous_timestamp_gyr) {
 			int64_t diff =
 				imu_samples->gyroscope.timestamp_ticks - previous_timestamp_gyr;
 
@@ -177,7 +181,7 @@ static int validate_sample_timing(const struct device *dev, uint8_t acc_range,
 		}
 
 		/* Check reported periods */
-		if (acc_sample_rate > 0) {
+		if (acc_expected > 0) {
 			if (imu_samples->accelerometer.num == 0) {
 				VALIDATION_REPORT_ERROR(TEST, "Acc reported no samples");
 				rc = -EINVAL;
@@ -197,7 +201,7 @@ static int validate_sample_timing(const struct device *dev, uint8_t acc_range,
 				break;
 			}
 		}
-		if (gyr_sample_rate > 0) {
+		if (gyr_expected > 0) {
 			if (imu_samples->gyroscope.num == 0) {
 				VALIDATION_REPORT_ERROR(TEST, "Gyro reported no samples");
 				rc = -EINVAL;
