@@ -25,21 +25,22 @@ static int bmi270_bus_check_spi(const union bmi270_bus *bus)
 static int bmi270_reg_read_spi(const union bmi270_bus *bus, uint8_t start, uint8_t *data,
 			       uint16_t len)
 {
-	int ret;
-	uint8_t addr;
+	uint8_t addr[2];
 	uint8_t tmp[2];
-	const struct spi_buf tx_buf = {.buf = &addr, .len = 1};
+	const struct spi_buf tx_buf = {.buf = addr, .len = 2};
 	const struct spi_buf_set tx = {.buffers = &tx_buf, .count = 1};
 	struct spi_buf rx_buf[2];
 	const struct spi_buf_set rx = {.buffers = rx_buf, .count = ARRAY_SIZE(rx_buf)};
+	int ret;
 
 	/* First byte we read should be discarded. */
-	rx_buf[0].buf = &tmp;
+	rx_buf[0].buf = tmp;
 	rx_buf[0].len = 2;
-	rx_buf[1].len = len;
 	rx_buf[1].buf = data;
+	rx_buf[1].len = len;
 
-	addr = start | 0x80;
+	addr[0] = 0x80 | start;
+	addr[1] = 0xFF;
 
 	ret = spi_transceive_dt(&bus->spi, &tx, &rx);
 	if (ret < 0) {
