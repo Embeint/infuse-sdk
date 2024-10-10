@@ -51,6 +51,7 @@ int infuse_validation_env(const struct device *dev, uint8_t flags)
 					       temp.val2 / 1000);
 		} else if (rc == -ENOTSUP) {
 			/* Unsupported channel */
+			rc = 0;
 		} else {
 			VALIDATION_REPORT_ERROR(TEST, "Temperature get failed (%d)", rc);
 		}
@@ -60,6 +61,7 @@ int infuse_validation_env(const struct device *dev, uint8_t flags)
 					       press.val2 / 1000);
 		} else if (rc == -ENOTSUP) {
 			/* Unsupported channel */
+			rc = 0;
 		} else {
 			VALIDATION_REPORT_ERROR(TEST, "Pressure get failed (%d)", rc);
 		}
@@ -69,6 +71,7 @@ int infuse_validation_env(const struct device *dev, uint8_t flags)
 					       hum.val2 / 10000);
 		} else if (rc == -ENOTSUP) {
 			/* Unsupported channel */
+			rc = 0;
 		} else {
 			VALIDATION_REPORT_ERROR(TEST, "Humidity get failed (%d)", rc);
 		}
