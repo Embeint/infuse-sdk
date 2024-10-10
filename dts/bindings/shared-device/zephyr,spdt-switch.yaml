@@ -1,0 +1,16 @@
+# Copyright (c) 2024 Embeint Inc
+# SPDX-License-Identifier: Apache-2.0
+
+description: |
+  Generic single-pole double-throw GPIO controlled switch
+
+compatible: "zephyr,spdt-switch"
+
+include: [base.yaml, shared-device.yaml]
+
+properties:
+  ctrl-gpios:
+    required: true
+    type: phandle-array
+    description: |
+      Control GPIO line.

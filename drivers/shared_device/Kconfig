@@ -1,0 +1,24 @@
+# Infuse-IoT switch driver configuration
+
+config SHARED_DEVICE
+	bool "Zephyr shared device API"
+
+if SHARED_DEVICE
+
+config ZEPHYR_SPDT_SWITCH
+	bool "Generic single-pole double-throw GPIO controlled switch"
+	depends on DT_HAS_ZEPHYR_SPDT_SWITCH_ENABLED
+	depends on GPIO
+	default y
+
+module = SHARED_DEVICE
+module-str = shared device
+source "subsys/logging/Kconfig.template.log_config"
+
+config SHARED_DEVICE_INIT_PRIORITY
+	int "Shared device init priority"
+	default 76
+	help
+	  Shared device initialization priority.
+
+endif # SHARED_DEVICE
