@@ -1,0 +1,31 @@
+# BMA4XX 3 Axis Accelerometer configuration
+
+# Copyright (c) 2024 Embeint Inc
+# SPDX-License-Identifier: Apache-2.0
+
+menuconfig INFUSE_IMU_BMA4XX
+	bool "BMA4XX Inertial measurement unit"
+	default y
+	depends on DT_HAS_BOSCH_BMA4XX_ENABLED
+	select I2C if $(dt_compat_on_bus,$(DT_COMPAT_BOSCH_BMA4XX),i2c)
+	select SPI if $(dt_compat_on_bus,$(DT_COMPAT_BOSCH_BMA4XX),spi)
+	help
+	  Enable driver for BMA4XX IMU sensor
+
+# Zephyr and Infuse driver conflict
+configdefault BMA4XX
+	default n if INFUSE_IMU_BMA4XX
+
+if INFUSE_IMU_BMA4XX
+
+config BMA4XX_BUS_I2C
+	bool
+	default y
+	depends on $(dt_compat_on_bus,$(DT_COMPAT_BOSCH_BMA4XX),i2c)
+
+config BMA4XX_BUS_SPI
+	bool
+	default y
+	depends on $(dt_compat_on_bus,$(DT_COMPAT_BOSCH_BMA4XX),spi)
+
+endif # INFUSE_IMU_BMA4XX
