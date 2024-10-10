@@ -1,0 +1,17 @@
+# Copyright (c) 2024 Embeint Inc
+# SPDX-License-Identifier: Apache-2.0
+
+description: |
+  Shared device user
+
+compatible: "shared-device-user"
+
+include: base.yaml
+
+properties:
+  rf-switch:
+    type: phandle-array
+    required: true
+    specifier-space: shared-dev
+    description: |
+      Theoretical RF switch that wants to be routed to the device
