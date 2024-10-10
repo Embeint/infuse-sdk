@@ -1,0 +1,18 @@
+common:
+  tags: drivers
+  min_flash: 64
+  min_ram: 32
+tests:
+  drivers.shared_device.spdt_switch:
+    platform_allow:
+      - native_sim
+    integration_platforms:
+      - native_sim
+  drivers.shared_device.spdt_switch.pm:
+    platform_allow:
+      - native_sim
+    integration_platforms:
+      - native_sim
+    extra_configs:
+      - CONFIG_PM_DEVICE=y
+      - CONFIG_PM_DEVICE_RUNTIME=y

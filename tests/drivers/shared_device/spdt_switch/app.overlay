@@ -1,0 +1,28 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+
+#include <zephyr/dt-bindings/gpio/gpio.h>
+
+/ {
+	power_domain_switch: power_domain_switch {
+		compatible = "power-domain-gpio";
+		enable-gpios = <&gpio0 0 GPIO_ACTIVE_HIGH>;
+		zephyr,pm-device-runtime-auto;
+	};
+
+	spdt_switch: spdt_switch {
+		compatible = "zephyr,spdt-switch";
+		ctrl-gpios = <&gpio0 1 GPIO_ACTIVE_HIGH>;
+		power-domain = <&power_domain_switch>;
+		zephyr,pm-device-runtime-auto;
+		#shared-dev-cells = <2>;
+	};
+
+	user_1: user_1 {
+		compatible = "shared-device-user";
+		rf-switch = <&spdt_switch 0 10>;
+	};
+	user_2: user_2 {
+		compatible = "shared-device-user";
+		rf-switch = <&spdt_switch 1 20>;
+	};
+};
