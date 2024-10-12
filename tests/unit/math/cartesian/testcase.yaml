@@ -1,0 +1,5 @@
+tests:
+  utilities.math.cartesian:
+    tags:
+      - util
+    type: unit
