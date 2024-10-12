@@ -6,6 +6,8 @@
  * SPDX-License-Identifier: LicenseRef-Embeint
  */
 
+#include <stdio.h>
+
 #include <zephyr/logging/log.h>
 #include <zephyr/sys/crc.h>
 #include <zephyr/sys/byteorder.h>
@@ -15,6 +17,10 @@
 #include <infuse/crypto/hardware_unique_key.h>
 #include <infuse/fs/kv_types.h>
 #include <infuse/fs/secure_storage.h>
+
+#ifdef CONFIG_MODEM_KEY_MGMT
+#include "modem/modem_key_mgmt.h"
+#endif
 
 #include <psa/crypto.h>
 #if defined(CONFIG_INFUSE_SECURE_STORAGE) || defined(CONFIG_BUILD_WITH_TFM)
@@ -42,11 +48,6 @@ static const uint8_t default_network_key[32] = {
 	0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15,
 	0x16, 0x17, 0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f,
 };
-
-#ifdef CONFIG_TLS_CREDENTIALS
-static uint8_t dtls_identity[8];
-static uint8_t dtls_psk[32];
-#endif /* CONFIG_TLS_CREDENTIALS */
 
 static psa_key_id_t root_ecc_key_id, device_root_key, device_sign_key, network_root_key;
 static uint32_t cached_network_id, cached_device_id;
@@ -111,6 +112,12 @@ static psa_key_id_t generate_root_ecc_key_pair(void)
 		(void)psa_its_remove(INFUSE_ROOT_ECC_PUBLIC_KEY_ID);
 		(void)psa_its_remove(INFUSE_ROOT_ECC_SHARED_SECRET_KEY_ID);
 #endif /* ITS_AVAILABLE */
+#ifdef CONFIG_MODEM_KEY_MGMT
+		/* COAP PSK is also a derived key */
+		(void)modem_key_mgmt_delete(TLS_TAG_INFUSE_COAP, MODEM_KEY_MGMT_CRED_TYPE_IDENTITY);
+		(void)modem_key_mgmt_delete(TLS_TAG_INFUSE_COAP, MODEM_KEY_MGMT_CRED_TYPE_PSK);
+#endif /* CONFIG_MODEM_KEY_MGMT */
+
 		/* ECDH, Curve25519 */
 		psa_set_key_usage_flags(&key_attributes, PSA_KEY_USAGE_DERIVE);
 		psa_set_key_type(&key_attributes,
@@ -179,72 +186,36 @@ static psa_key_id_t derive_shared_secret(psa_key_id_t root_key_id)
 	return key_id;
 }
 
-static psa_key_id_t network_key_load(void)
+static int coap_dtls_load(void)
 {
-	psa_key_attributes_t key_attributes = hkdf_derive_attributes();
+#if defined(CONFIG_TLS_CREDENTIALS) || defined(CONFIG_MODEM_KEY_MGMT)
+#ifdef CONFIG_TLS_CREDENTIALS
+	/* TLS credential library needs values to persist */
+	static uint8_t dtls_identity[8];
+	static uint8_t dtls_psk[32];
+#else
+	char dtls_psk_str[64 + 1];
+	uint8_t dtls_identity[8];
+	uint8_t dtls_psk[32];
+#endif /* CONFIG_TLS_CREDENTIALS */
+	uint16_t dtls_coap_salt = 0x7856;
+	psa_key_id_t dtls_coap_key;
 	psa_status_t status;
-	psa_key_id_t key_id;
-
-	/* Always default network key for now */
-	status = psa_import_key(&key_attributes, default_network_key, sizeof(default_network_key),
-				&key_id);
-	if (status != PSA_SUCCESS) {
-		LOG_WRN("Failed to import %s root (%d)", "root", status);
-		return PSA_KEY_ID_NULL;
-	}
-
-	return key_id;
-}
-
-int infuse_security_init(void)
-{
-	uint32_t salt = 0x1234;
-	psa_status_t status;
-
-	/* Initialise crypto system */
-	status = psa_crypto_init();
-	if (status != PSA_SUCCESS) {
-		LOG_ERR("PSA init failed! (%d)", status);
-		return -EINVAL;
-	}
-
-	/* Initialise hardware unique key */
-	if (hardware_unique_key_init() < 0) {
-		return -EINVAL;
-	}
-
-#ifdef CONFIG_INFUSE_SECURE_STORAGE
+	size_t olen;
 	int rc;
 
-	/* Initialise secure storage  */
-	rc = secure_storage_init();
-	if (rc < 0) {
-		LOG_ERR("Failed to init secure storage! (%d)", rc);
-		return -EINVAL;
-	}
-#endif /* CONFIG_INFUSE_SECURE_STORAGE */
+#ifdef CONFIG_MODEM_KEY_MGMT
+	bool exists;
 
-	/* Create/import device root ECC key pair */
-	root_ecc_key_id = generate_root_ecc_key_pair();
-	if (root_ecc_key_id == PSA_KEY_ID_NULL) {
-		LOG_ERR("Failed to generate root key pair! (%d)", status);
-		return -EINVAL;
+	if (modem_key_mgmt_exists(TLS_TAG_INFUSE_COAP, MODEM_KEY_MGMT_CRED_TYPE_PSK, &exists) ==
+	    0) {
+		if (exists == true) {
+			/* Key already exists in modem, exit */
+			return 0;
+		}
 	}
-	/* Regenerate root shared secret */
-	device_root_key = derive_shared_secret(root_ecc_key_id);
-	if (device_root_key == PSA_KEY_ID_NULL) {
-		LOG_ERR("Failed to derive shared secret! (%d)", status);
-		return -EINVAL;
-	}
-	/* Derive */
-	device_sign_key = infuse_security_derive_chacha_key(device_root_key, &salt, sizeof(salt),
-							    "sign", 4, false);
-	if (device_sign_key == PSA_KEY_ID_NULL) {
-		LOG_ERR("Failed to derive signing key! (%d)", status);
-		return -EINVAL;
-	}
+#endif /* CONFIG_MODEM_KEY_MGMT */
 
-#ifdef CONFIG_TLS_CREDENTIALS
 #ifdef CONFIG_INFUSE_SECURITY_TEST_CREDENTIALS
 	psa_key_id_t coap_base_key;
 
@@ -276,9 +247,6 @@ int infuse_security_init(void)
 
 	sys_put_le64(infuse_device_id(), dtls_identity);
 #endif /* CONFIG_INFUSE_SECURITY_TEST_CREDENTIALS */
-	psa_key_id_t dtls_coap_key;
-	uint16_t dtls_coap_salt = 0x7856;
-	size_t olen;
 
 	/* Derive Infuse-IoT COAP key */
 	dtls_coap_key = infuse_security_derive_chacha_key(coap_base_key, &dtls_coap_salt,
@@ -299,6 +267,7 @@ int infuse_security_init(void)
 	/* No need to hold onto the derived key after export */
 	(void)psa_destroy_key(dtls_coap_key);
 
+#ifdef CONFIG_TLS_CREDENTIALS
 	rc = tls_credential_add(TLS_TAG_INFUSE_COAP, TLS_CREDENTIAL_PSK_ID, dtls_identity,
 				sizeof(dtls_identity));
 	if (rc < 0) {
@@ -313,6 +282,103 @@ int infuse_security_init(void)
 		return -EINVAL;
 	}
 #endif /* CONFIG_TLS_CREDENTIALS */
+#ifdef CONFIG_MODEM_KEY_MGMT
+
+	for (int i = 0; i < 32; i++) {
+		sprintf(dtls_psk_str + (2 * i), "%02x", dtls_psk[i]);
+	}
+
+	LOG_HEXDUMP_WRN(dtls_identity, sizeof(dtls_identity), "IDENTITY");
+	LOG_HEXDUMP_WRN(dtls_psk, sizeof(dtls_psk), "PSK");
+	LOG_WRN("KEY: %s", dtls_psk_str);
+
+	rc = modem_key_mgmt_write(TLS_TAG_INFUSE_COAP, MODEM_KEY_MGMT_CRED_TYPE_IDENTITY,
+				  dtls_identity, sizeof(dtls_identity));
+	if (rc < 0) {
+		LOG_ERR("Failed to add DTLS identity (%d)", rc);
+		return -EINVAL;
+	}
+	rc = modem_key_mgmt_write(TLS_TAG_INFUSE_COAP, MODEM_KEY_MGMT_CRED_TYPE_PSK, dtls_psk_str,
+				  strlen(dtls_psk_str));
+	if (rc < 0) {
+		LOG_ERR("Failed to add DTLS PSK (%d)", rc);
+		return -EINVAL;
+	}
+
+#endif /* CONFIG_MODEM_KEY_MGMT */
+#endif /* defined(CONFIG_TLS_CREDENTIALS) || defined(CONFIG_MODEM_KEY_MGMT) */
+	return 0;
+}
+
+static psa_key_id_t network_key_load(void)
+{
+	psa_key_attributes_t key_attributes = hkdf_derive_attributes();
+	psa_status_t status;
+	psa_key_id_t key_id;
+
+	/* Always default network key for now */
+	status = psa_import_key(&key_attributes, default_network_key, sizeof(default_network_key),
+				&key_id);
+	if (status != PSA_SUCCESS) {
+		LOG_WRN("Failed to import %s root (%d)", "root", status);
+		return PSA_KEY_ID_NULL;
+	}
+
+	return key_id;
+}
+
+int infuse_security_init(void)
+{
+	uint32_t salt = 0x1234;
+	psa_status_t status;
+	int rc;
+
+	/* Initialise crypto system */
+	status = psa_crypto_init();
+	if (status != PSA_SUCCESS) {
+		LOG_ERR("PSA init failed! (%d)", status);
+		return -EINVAL;
+	}
+
+	/* Initialise hardware unique key */
+	if (hardware_unique_key_init() < 0) {
+		return -EINVAL;
+	}
+
+#ifdef CONFIG_INFUSE_SECURE_STORAGE
+	/* Initialise secure storage  */
+	rc = secure_storage_init();
+	if (rc < 0) {
+		LOG_ERR("Failed to init secure storage! (%d)", rc);
+		return -EINVAL;
+	}
+#endif /* CONFIG_INFUSE_SECURE_STORAGE */
+
+	/* Create/import device root ECC key pair */
+	root_ecc_key_id = generate_root_ecc_key_pair();
+	if (root_ecc_key_id == PSA_KEY_ID_NULL) {
+		LOG_ERR("Failed to generate root key pair! (%d)", status);
+		return -EINVAL;
+	}
+	/* Regenerate root shared secret */
+	device_root_key = derive_shared_secret(root_ecc_key_id);
+	if (device_root_key == PSA_KEY_ID_NULL) {
+		LOG_ERR("Failed to derive shared secret! (%d)", status);
+		return -EINVAL;
+	}
+	/* Derive signing key */
+	device_sign_key = infuse_security_derive_chacha_key(device_root_key, &salt, sizeof(salt),
+							    "sign", 4, false);
+	if (device_sign_key == PSA_KEY_ID_NULL) {
+		LOG_ERR("Failed to derive signing key! (%d)", status);
+		return -EINVAL;
+	}
+
+	/* Load COAP key */
+	rc = coap_dtls_load();
+	if (rc < 0) {
+		return rc;
+	}
 
 	/* Load root network key */
 	network_root_key = network_key_load();
@@ -389,9 +455,9 @@ uint32_t infuse_security_network_key_identifier(void)
 	return cached_network_id;
 }
 
-#ifdef CONFIG_TLS_CREDENTIALS
+#if defined(CONFIG_TLS_CREDENTIALS) || defined(CONFIG_NRF_MODEM_LIB)
 sec_tag_t infuse_security_coap_dtls_tag(void)
 {
 	return TLS_TAG_INFUSE_COAP;
 }
-#endif /* CONFIG_TLS_CREDENTIALS */
+#endif /* defined(CONFIG_TLS_CREDENTIALS) || defined(CONFIG_NRF_MODEM_LIB) */
