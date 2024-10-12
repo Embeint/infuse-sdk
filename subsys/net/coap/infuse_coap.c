@@ -71,6 +71,7 @@ int infuse_coap_download(int socket, const char *resource, infuse_coap_data_cb d
 	size_t next_block = UINT32_MAX;
 	int received, total_received = 0;
 	enum coap_block_size block_size;
+	uint8_t chunk_retries = 0;
 	uint8_t response_code;
 	uint16_t pkt_id;
 	int rc;
@@ -146,8 +147,13 @@ poll_retry:
 			return -EBADF;
 		}
 		if (!(pollfds[0].revents & ZSOCK_POLLIN)) {
-			LOG_ERR("Poll timeout");
-			return -ETIMEDOUT;
+			LOG_WRN("Poll timeout");
+			if (++chunk_retries >= CONFIG_INFUSE_COAP_MAX_TIMEOUTS) {
+				LOG_ERR("Giving up");
+				return -ETIMEDOUT;
+			}
+			/* Start from top of loop again */
+			continue;
 		}
 		received = zsock_recv(socket, working_mem, working_size, ZSOCK_MSG_DONTWAIT);
 		if (received <= 0) {
@@ -179,6 +185,9 @@ poll_retry:
 			LOG_ERR("Response code %d", rc);
 			return -rc;
 		}
+
+		/* Reset retry counter */
+		chunk_retries = 0;
 
 		/* Extract payload and run user callback */
 		const uint8_t *payload;
