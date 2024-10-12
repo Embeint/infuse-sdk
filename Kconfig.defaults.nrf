@@ -23,6 +23,8 @@ configdefault NET_IPV6_NBR_CACHE
 	default n if NRF_MODEM_LIB
 configdefault NRF_MODEM_LIB_NET_IF
 	default y
+configdefault MODEM_KEY_MGMT
+	default y if INFUSE_SECURITY
 configdefault NRF_MODEM_LIB_NET_IF_APPLICATION_ERROR_HANDLER
 	default y if INFUSE_NRF_MODEM_MONITOR
 configdefault NRF_MODEM_LIB_SHMEM_RX_SIZE
