@@ -8,5 +8,5 @@ target_include_directories(testbinary PRIVATE ${ZEPHYR_BASE}/../infuse-sdk/inclu
 target_link_libraries(testbinary PRIVATE -lm)
 target_sources(testbinary PRIVATE
   main.c
-  ${CMAKE_CURRENT_SOURCE_DIR}/../../../lib/math/common.c
+  ${CMAKE_CURRENT_SOURCE_DIR}/../../../../lib/math/common.c
 )

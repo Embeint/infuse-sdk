@@ -1,5 +1,5 @@
 tests:
-  utilities.math:
+  utilities.math.common:
     tags:
       - util
     type: unit
