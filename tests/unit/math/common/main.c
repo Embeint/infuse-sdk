@@ -40,6 +40,28 @@ ZTEST(infuse_math, test_sqrt32)
 	}
 }
 
+ZTEST(infuse_math, test_sqrt64)
+{
+	/* Exhaustive test over uint16_t input range */
+	for (uint32_t i = 0; i <= UINT16_MAX; i++) {
+		uint32_t stdlib_res = (uint32_t)sqrt((double)i);
+
+		zassert_equal(stdlib_res, math_sqrt64(i));
+	}
+
+	/* Test a range of other values */
+	uint64_t i = UINT16_MAX;
+
+	while (i < (1llu << 60)) {
+		uint32_t stdlib_res = (uint32_t)sqrt((double)i);
+
+		zassert_equal(stdlib_res, math_sqrt64(i));
+
+		/* Jump up by a bit */
+		i = (6 * i / 5) + 3333;
+	}
+}
+
 ZTEST(infuse_math, test_vector_xy_mag)
 {
 	/* Single element */
