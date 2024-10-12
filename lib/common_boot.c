@@ -46,12 +46,6 @@ static int infuse_common_boot(void)
 	uint64_t device_id = 0;
 #endif /* CONFIG_INFUSE_SDK */
 
-#ifdef CONFIG_INFUSE_SECURITY
-	if (infuse_security_init() < 0) {
-		LOG_ERR("Failed to initialise security");
-	}
-#endif /* CONFIG_INFUSE_SECURITY */
-
 #ifdef CONFIG_KV_STORE
 	KV_KEY_TYPE(KV_KEY_REBOOTS) reboot_fallback = {0};
 
@@ -149,6 +143,12 @@ static int infuse_common_boot(void)
 		LOG_ERR("Failed to initialise nRF modem library (%d)", rc);
 	}
 #endif /* defined(CONFIG_NRF_MODEM_LIB) && !defined(CONFIG_NRF_MODEM_LIB_NET_IF_AUTO_START) */
+
+#ifdef CONFIG_INFUSE_SECURITY
+	if (infuse_security_init() < 0) {
+		LOG_ERR("Failed to initialise security");
+	}
+#endif /* CONFIG_INFUSE_SECURITY */
 
 	(void)rc;
 	return 0;
