@@ -177,6 +177,7 @@ static void epacket_bt_adv_send(const struct device *dev, struct net_buf *buf)
 	if (epacket_bt_adv_encrypt(buf) < 0) {
 		LOG_WRN("Failed to encrypt");
 		epacket_notify_tx_result(dev, buf, -EIO);
+		net_buf_unref(buf);
 		return;
 	}
 
