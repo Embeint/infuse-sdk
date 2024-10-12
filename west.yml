@@ -30,7 +30,7 @@ manifest:
           - zcbor
     - name: sdk-nrf
       path: modules/nrfconnect/sdk-nrf
-      revision: 9364f087b164c3ebfc817319735029d727e5e1b9
+      revision: cca8709e56cd65561a330ed5b09def75aa4f72ba
       import: true
     - name: memfault-firmware-sdk
       path: modules/lib/memfault
