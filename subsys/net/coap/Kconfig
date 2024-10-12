@@ -13,6 +13,13 @@ config INFUSE_COAP_MAX_URI_SEGMENTS
 	  Maximum number of resource URI segments the library can
 	  handle. For example "path/to/resource" has 3 segments.
 
+config INFUSE_COAP_MAX_TIMEOUTS
+	int "Maximum number of times to attempt reading a chunk"
+	default 3
+	help
+	  When polling for a chunk times out, the library will retry the
+	  download this many times before giving up.
+
 module = INFUSE_COAP
 module-str = infuse_coap
 source "subsys/logging/Kconfig.template.log_config"
