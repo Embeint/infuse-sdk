@@ -49,6 +49,15 @@ uint8_t math_sqrt16(uint16_t x);
 uint16_t math_sqrt32(uint32_t x);
 
 /**
+ * @brief Compute square root of unsigned 64 bit number
+ *
+ * @param x Value to square root
+ *
+ * @return uint16_t Square root of number
+ */
+uint32_t math_sqrt64(uint64_t x);
+
+/**
  * @brief Compute the magnitude of an XY vector
  *
  * @param x X component of vector

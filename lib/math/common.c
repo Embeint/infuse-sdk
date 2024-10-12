@@ -40,6 +40,22 @@ uint16_t math_sqrt32(uint32_t x)
 	return root >> 1;
 }
 
+uint32_t math_sqrt64(uint64_t x)
+{
+	uint32_t rem = 0, root = 0;
+
+	for (int i = 64 / 2; i > 0; i--) {
+		root <<= 1;
+		rem = (rem << 2) | (x >> (64 - 2));
+		x <<= 2;
+		if (root < rem) {
+			rem -= root | 1;
+			root += 2;
+		}
+	}
+	return root >> 1;
+}
+
 uint16_t math_vector_xy_magnitude(int16_t x, int16_t y)
 {
 	/* Maximum absolute value of each axis is 2^15
