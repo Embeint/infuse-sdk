@@ -71,8 +71,6 @@ void battery_task_fn(struct k_work *work)
 	zbus_chan_pub(ZBUS_CHAN, &tdf_battery, K_FOREVER);
 
 	/* Print the measured values */
-	LOG_INF("Sensor: %s", fuel_gauge->name);
-	LOG_INF("\tVoltage: %6d mV", tdf_battery.voltage_mv);
-	LOG_INF("\t    SoC: %6d %%", tdf_battery.soc);
-	LOG_INF("\tCurrent: %6d uA", tdf_battery.current_ua);
+	LOG_INF("%s: %6d mV (%3d %%) %6d uA", fuel_gauge->name, tdf_battery.voltage_mv,
+		tdf_battery.soc, tdf_battery.current_ua);
 }
