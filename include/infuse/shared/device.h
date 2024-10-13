@@ -35,7 +35,7 @@ extern "C" {
  * @see SHARED_DEVICE_DT_SPEC_GET
  * @see SHARED_DEVICE_DT_SPEC_GET_OR
  */
-struct shared_device_spec_dt {
+struct shared_device_dt_spec {
 	/* Pointer to the shared device */
 	const struct device *shared;
 	/* State that is being requested */
@@ -45,7 +45,7 @@ struct shared_device_spec_dt {
 };
 
 /**
- * @brief Static initializer for a @p shared_device_spec_dt
+ * @brief Static initializer for a @p shared_device_dt_spec
  *
  *  * Example devicetree fragment:
  *
@@ -56,7 +56,7 @@ struct shared_device_spec_dt {
  *
  * Example usage:
  *
- *	const struct shared_device_spec_dt spec = GPIO_DT_SPEC_GET_BY_IDX(DT_NODELABEL(n),
+ *	const struct shared_device_dt_spec spec = GPIO_DT_SPEC_GET_BY_IDX(DT_NODELABEL(n),
  *								          rf-switch, 1);
  *	// Initializes 'spec' to:
  *	// {
@@ -73,7 +73,7 @@ struct shared_device_spec_dt {
  * @param node_id devicetree node identifier
  * @param prop lowercase-and-underscores property name
  * @param idx logical index into "prop"
- * @return static initializer for a struct shared_device_spec_dt for the property
+ * @return static initializer for a struct shared_device_dt_spec for the property
  */
 #define SHARED_DEVICE_DT_SPEC_GET_BY_IDX(node_id, prop, idx)                                       \
 	{                                                                                          \
@@ -96,7 +96,7 @@ struct shared_device_spec_dt {
  * @param prop lowercase-and-underscores property name
  * @param idx logical index into "prop"
  * @param default_value fallback value to expand to
- * @return static initializer for a struct shared_device_spec_dt for the property,
+ * @return static initializer for a struct shared_device_dt_spec for the property,
  *         or default_value if the node or property do not exist
  */
 #define SHARED_DEVICE_DT_SPEC_GET_BY_IDX_OR(node_id, prop, idx, default_value)                     \
@@ -108,7 +108,7 @@ struct shared_device_spec_dt {
  *
  * @param node_id devicetree node identifier
  * @param prop lowercase-and-underscores property name
- * @return static initializer for a struct shared_device_spec_dt for the property
+ * @return static initializer for a struct shared_device_dt_spec for the property
  * @see SHARED_DEVICE_DT_SPEC_GET_BY_IDX()
  */
 #define SHARED_DEVICE_DT_SPEC_GET(node_id, prop) SHARED_DEVICE_DT_SPEC_GET_BY_IDX(node_id, prop, 0)
@@ -120,34 +120,34 @@ struct shared_device_spec_dt {
  * @param node_id devicetree node identifier
  * @param prop lowercase-and-underscores property name
  * @param default_value fallback value to expand to
- * @return static initializer for a struct shared_device_spec_dt for the property
+ * @return static initializer for a struct shared_device_dt_spec for the property
  * @see SHARED_DEVICE_DT_SPEC_GET_BY_IDX_OR()
  */
 #define SHARED_DEVICE_DT_SPEC_GET_OR(node_id, prop, default_value)                                 \
 	SHARED_DEVICE_DT_SPEC_GET_BY_IDX_OR(node_id, prop, 0, default_value)
 
 /**
- * @brief Static initializer for a @p shared_device_spec_dt from a DT_DRV_COMPAT
+ * @brief Static initializer for a @p shared_device_dt_spec from a DT_DRV_COMPAT
  * instance's shared device property at an index.
  *
  * @param inst DT_DRV_COMPAT instance number
  * @param prop lowercase-and-underscores property name
  * @param idx logical index into "prop"
- * @return static initializer for a struct shared_device_spec_dt for the property
+ * @return static initializer for a struct shared_device_dt_spec for the property
  * @see SHARED_DEVICE_DT_SPEC_GET_BY_IDX()
  */
 #define SHARED_DEVICE_DT_SPEC_INST_GET_BY_IDX(inst, prop, idx)                                     \
 	SHARED_DEVICE_DT_SPEC_GET_BY_IDX(DT_DRV_INST(inst), prop, idx)
 
 /**
- * @brief Static initializer for a @p shared_device_spec_dt from a DT_DRV_COMPAT
+ * @brief Static initializer for a @p shared_device_dt_spec from a DT_DRV_COMPAT
  *        instance's shared device property at an index, with fallback
  *
  * @param inst DT_DRV_COMPAT instance number
  * @param prop lowercase-and-underscores property name
  * @param idx logical index into "prop"
  * @param default_value fallback value to expand to
- * @return static initializer for a struct shared_device_spec_dt for the property
+ * @return static initializer for a struct shared_device_dt_spec for the property
  * @see SHARED_DEVICE_DT_SPEC_GET_BY_IDX_OR()
  */
 #define SHARED_DEVICE_DT_SPEC_INST_GET_BY_IDX_OR(inst, prop, idx, default_value)                   \
@@ -158,7 +158,7 @@ struct shared_device_spec_dt {
  *
  * @param inst DT_DRV_COMPAT instance number
  * @param prop lowercase-and-underscores property name
- * @return static initializer for a struct shared_device_spec_dt for the property
+ * @return static initializer for a struct shared_device_dt_spec for the property
  * @see SHARED_DEVICE_DT_SPEC_INST_GET_BY_IDX()
  */
 #define SHARED_DEVICE_DT_SPEC_INST_GET(inst, prop)                                                 \
@@ -171,7 +171,7 @@ struct shared_device_spec_dt {
  * @param inst DT_DRV_COMPAT instance number
  * @param prop lowercase-and-underscores property name
  * @param default_value fallback value to expand to
- * @return static initializer for a struct shared_device_spec_dt for the property
+ * @return static initializer for a struct shared_device_dt_spec for the property
  * @see SHARED_DEVICE_DT_SPEC_INST_GET_BY_IDX_OR()
  */
 #define SHARED_DEVICE_DT_SPEC_INST_GET_OR(inst, prop, default_value)                               \
@@ -190,7 +190,7 @@ struct shared_device_api {
  * @retval true if the shared device is ready for use.
  * @retval false if the shared device is not ready for use.
  */
-static inline bool shared_device_is_ready_dt(const struct shared_device_spec_dt *spec)
+static inline bool shared_device_is_ready_dt(const struct shared_device_dt_spec *spec)
 {
 	return device_is_ready(spec->shared);
 }
@@ -218,7 +218,7 @@ static inline int shared_device_request(const struct device *dev, uint8_t state_
 }
 
 /**
- * @brief Request a shared device from a @p shared_device_spec_dt.
+ * @brief Request a shared device from a @p shared_device_dt_spec.
  *
  * This is equivalent to:
  *
@@ -228,7 +228,7 @@ static inline int shared_device_request(const struct device *dev, uint8_t state_
  *
  * @return a value from shared_device_request()
  */
-static inline int shared_device_request_dt(const struct shared_device_spec_dt *spec)
+static inline int shared_device_request_dt(const struct shared_device_dt_spec *spec)
 {
 	return shared_device_request(spec->shared, spec->priority, spec->state);
 }
@@ -250,7 +250,7 @@ static inline int shared_device_release(const struct device *dev, uint8_t state_
 }
 
 /**
- * @brief Release a shared device from a @p shared_device_spec_dt.
+ * @brief Release a shared device from a @p shared_device_dt_spec.
  *
  * This is equivalent to:
  *
@@ -260,7 +260,7 @@ static inline int shared_device_release(const struct device *dev, uint8_t state_
  *
  * @return a value from shared_device_release()
  */
-static inline int shared_device_release_dt(const struct shared_device_spec_dt *spec)
+static inline int shared_device_release_dt(const struct shared_device_dt_spec *spec)
 {
 	return shared_device_release(spec->shared, spec->priority);
 }
