@@ -191,11 +191,11 @@ ZTEST(drivers_spdt_switch, test_priority_override_unordered)
 
 ZTEST(drivers_spdt_switch, test_dt_api)
 {
-	const struct shared_device_spec_dt u1_shared =
+	const struct shared_device_dt_spec u1_shared =
 		SHARED_DEVICE_DT_SPEC_GET(DT_NODELABEL(user_1), rf_switch);
-	const struct shared_device_spec_dt u2_shared =
+	const struct shared_device_dt_spec u2_shared =
 		SHARED_DEVICE_DT_SPEC_GET(DT_NODELABEL(user_2), rf_switch);
-	const struct shared_device_spec_dt u1_none =
+	const struct shared_device_dt_spec u1_none =
 		SHARED_DEVICE_DT_SPEC_GET_OR(DT_NODELABEL(user_2), no_prop, {0});
 	gpio_flags_t flags;
 
