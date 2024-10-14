@@ -20,10 +20,10 @@ bool cartesian_line_intersection(struct cartesian_line_2d line1, struct cartesia
 				 struct cartesian_point_2d *intersection)
 {
 	/* y_1 is used as y1 is the posix bessel function */
-	int32_t x1 = line1.a.x, y_1 = line1.a.y;
-	int32_t x2 = line1.b.x, y2 = line1.b.y;
-	int32_t x3 = line2.a.x, y3 = line2.a.y;
-	int32_t x4 = line2.b.x, y4 = line2.b.y;
+	int64_t x1 = line1.a.x, y_1 = line1.a.y;
+	int64_t x2 = line1.b.x, y2 = line1.b.y;
+	int64_t x3 = line2.a.x, y3 = line2.a.y;
+	int64_t x4 = line2.b.x, y4 = line2.b.y;
 	int64_t det, t_num, u_num;
 
 	det = determinant(x1 - x2, y_1 - y2, x3 - x4, y3 - y4);
@@ -70,8 +70,8 @@ bool cartesian_point_in_circle(struct cartesian_point_2d point, struct cartesian
 	return dist_squared <= radius_squared;
 }
 
-bool cartesian_point_in_polygon(struct cartesian_point_2d point, struct cartesian_point_2d *polygon,
-				size_t vertices)
+bool cartesian_point_in_polygon(struct cartesian_point_2d point,
+				const struct cartesian_point_2d *polygon, size_t vertices)
 {
 	/* Ray from test point to "infinity" */
 	const struct cartesian_line_2d ray = {point, {INT32_MAX, point.y}};
@@ -157,7 +157,8 @@ int64_t squared_distance_to_line(struct cartesian_point_2d p, struct cartesian_p
 }
 
 uint32_t cartesian_distance_to_polygon_edge(struct cartesian_point_2d point,
-					    struct cartesian_point_2d *polygon, size_t vertices)
+					    const struct cartesian_point_2d *polygon,
+					    size_t vertices)
 {
 	if (vertices < 3) {
 		/* Invalid polygon */
