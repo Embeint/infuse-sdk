@@ -13,6 +13,7 @@
 #include <zephyr/modem/pipe.h>
 #include <zephyr/pm/device.h>
 
+#include <infuse/shared/device.h>
 #include <infuse/gnss/ubx/modem.h>
 
 #ifdef __cplusplus
@@ -20,6 +21,7 @@ extern "C" {
 #endif
 
 struct ubx_common_config {
+	struct shared_device_dt_spec ant_switch;
 	struct gpio_dt_spec reset_gpio;
 	struct gpio_dt_spec extint_gpio;
 	struct gpio_dt_spec timepulse_gpio;
@@ -54,6 +56,7 @@ struct ubx_common_pm_fn {
 
 #define UBX_COMMON_CONFIG_INST(inst)                                                               \
 	{                                                                                          \
+		.ant_switch = SHARED_DEVICE_DT_SPEC_INST_GET_OR(inst, antenna_switch, {0}),        \
 		.reset_gpio = GPIO_DT_SPEC_INST_GET(inst, reset_gpios),                            \
 		.extint_gpio = GPIO_DT_SPEC_INST_GET(inst, extint_gpios),                          \
 		.timepulse_gpio = GPIO_DT_SPEC_INST_GET_OR(inst, timepulse_gpios, {0}),            \
