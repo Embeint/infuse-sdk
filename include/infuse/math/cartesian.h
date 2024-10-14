@@ -72,8 +72,8 @@ bool cartesian_point_in_circle(struct cartesian_point_2d point, struct cartesian
  * @return true If point is inside polygon
  * @return false If point is outside of polygon
  */
-bool cartesian_point_in_polygon(struct cartesian_point_2d point, struct cartesian_point_2d *polygon,
-				size_t vertices);
+bool cartesian_point_in_polygon(struct cartesian_point_2d point,
+				const struct cartesian_point_2d *polygon, size_t vertices);
 
 /**
  * @brief Determine the minimum distance to a polygons edge
@@ -85,7 +85,8 @@ bool cartesian_point_in_polygon(struct cartesian_point_2d point, struct cartesia
  * @return uint32_t Distance to the nearest edge
  */
 uint32_t cartesian_distance_to_polygon_edge(struct cartesian_point_2d point,
-					    struct cartesian_point_2d *polygon, size_t vertices);
+					    const struct cartesian_point_2d *polygon,
+					    size_t vertices);
 
 /**
  * @}
