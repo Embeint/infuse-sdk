@@ -29,3 +29,9 @@ properties:
     type: phandle-array
     description: |
       Data Ready GPIO.
+
+  antenna-switch:
+    type: phandle-array
+    specifier-space: shared-dev
+    description: |
+      Optional switch that must be requested to connect the antenna

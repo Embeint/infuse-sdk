@@ -230,6 +230,10 @@ int ubx_common_init(const struct device *dev, struct modem_pipe *pipe,
 		}
 	}
 
+	if (cfg->ant_switch.shared && !shared_device_is_ready_dt(&cfg->ant_switch)) {
+		LOG_WRN("RF switch not ready");
+	}
+
 #ifndef CONFIG_GNSS_U_BLOX_NO_API_COMPAT
 	/* Subscribe to all NAV-PVT messages */
 	data->pvt_handler.message_class = UBX_MSG_CLASS_NAV,
@@ -269,6 +273,7 @@ int ubx_common_pm_control(const struct device *dev, enum pm_device_action action
 
 	switch (action) {
 	case PM_DEVICE_ACTION_SUSPEND:
+		shared_device_release_dt(&cfg->ant_switch);
 		/* Disable timepulse interrupt */
 		if (cfg->timepulse_gpio.port != NULL) {
 			data->latest_timepulse = 0;
@@ -296,6 +301,7 @@ int ubx_common_pm_control(const struct device *dev, enum pm_device_action action
 			(void)gpio_pin_interrupt_configure_dt(&cfg->timepulse_gpio,
 							      GPIO_INT_EDGE_TO_ACTIVE);
 		}
+		shared_device_request_dt(&cfg->ant_switch);
 		break;
 	case PM_DEVICE_ACTION_TURN_OFF:
 		gpio_pin_configure_dt(&cfg->reset_gpio, GPIO_DISCONNECTED);
