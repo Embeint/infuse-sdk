@@ -203,6 +203,15 @@ ZTEST(drivers_spdt_switch, test_dt_api)
 	zassert_not_null(u2_shared.shared);
 	zassert_is_null(u1_none.shared);
 
+	/* All is ready should pass (even the NULL device) */
+	zassert_true(shared_device_is_ready_dt(&u1_shared));
+	zassert_true(shared_device_is_ready_dt(&u2_shared));
+	zassert_true(shared_device_is_ready_dt(&u1_none));
+
+	/* All operations on NULL device should pass */
+	zassert_equal(0, shared_device_request_dt(&u1_none));
+	zassert_equal(0, shared_device_release_dt(&u1_none));
+
 	/* We expect user 2 to have priority with the active state */
 	zassert_equal(0, shared_device_request_dt(&u1_shared));
 	zassert_equal(0, shared_device_request_dt(&u2_shared));
