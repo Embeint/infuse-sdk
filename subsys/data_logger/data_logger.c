@@ -191,6 +191,9 @@ static int logger_commit_thread_fn(void *a, void *b, void *c)
 			LOG_ERR("Offload failed to write block on %s (%d)", ctx->dev->name, rc);
 		}
 		net_buf_unref(buf);
+
+		/* Feed watchdog before sleeping again */
+		infuse_watchdog_feed(wdog_channel);
 	}
 	return 0;
 }

@@ -156,8 +156,6 @@ static int rpc_server(void *a, void *b, void *c)
 			rpc_server_pull_data_reset();
 			rpc_command_runner(buf);
 			events[0].state = K_POLL_STATE_NOT_READY;
-			/* Feed watchdog in case of long running commands */
-			infuse_watchdog_feed(wdog_channel);
 		}
 
 		if (events[1].state == K_POLL_STATE_FIFO_DATA_AVAILABLE) {
@@ -171,6 +169,9 @@ static int rpc_server(void *a, void *b, void *c)
 			}
 			events[1].state = K_POLL_STATE_NOT_READY;
 		}
+
+		/* Feed watchdog before sleeping again */
+		infuse_watchdog_feed(wdog_channel);
 	}
 	return 0;
 }
