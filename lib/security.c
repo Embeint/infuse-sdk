@@ -288,10 +288,7 @@ static int coap_dtls_load(void)
 		sprintf(dtls_psk_str + (2 * i), "%02x", dtls_psk[i]);
 	}
 
-	LOG_HEXDUMP_WRN(dtls_identity, sizeof(dtls_identity), "IDENTITY");
-	LOG_HEXDUMP_WRN(dtls_psk, sizeof(dtls_psk), "PSK");
-	LOG_WRN("KEY: %s", dtls_psk_str);
-
+	/* Write key to modem */
 	rc = modem_key_mgmt_write(TLS_TAG_INFUSE_COAP, MODEM_KEY_MGMT_CRED_TYPE_IDENTITY,
 				  dtls_identity, sizeof(dtls_identity));
 	if (rc < 0) {
