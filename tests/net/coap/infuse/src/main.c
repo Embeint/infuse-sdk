@@ -100,6 +100,114 @@ static int socket_setup(void)
 	return sock;
 }
 
+ZTEST(infuse_coap, test_bad_params)
+{
+	int sock = 0, rc;
+
+	/* No data callback handler */
+	rc = infuse_coap_download(sock, "test", NULL, NULL, work_area, sizeof(work_area), 1000);
+	zassert_equal(-EINVAL, rc);
+
+	/* Path with too many components */
+	rc = infuse_coap_download(sock, "a/b/c/d/e/f/g/h/i/g", data_cb, NULL, work_area,
+				  sizeof(work_area), 1000);
+	zassert_equal(-EINVAL, rc);
+
+	/* Path that is way too long for a 128 byte work area */
+	const char *long_uri =
+		"this_path_is_way_too_long_and_should_trigger_the_append_resource_path_error "
+		"this_path_is_way_too_long_and_should_trigger_the_append_resource_path_error";
+
+	rc = infuse_coap_download(sock, long_uri, data_cb, NULL, work_area, 128, 1000);
+	zassert_equal(-EINVAL, rc);
+}
+
+ZTEST(infuse_coap, test_invalid_work_area)
+{
+	struct cb_ctx context;
+	int sock = 0, rc;
+
+	rc = infuse_coap_download(sock, "file/small_file", data_cb, &context, work_area, 32, 1000);
+	zassert_equal(-ENOMEM, rc);
+}
+
+ZTEST(infuse_coap, test_bad_socket)
+{
+	struct cb_ctx context;
+	int sock = 0, rc;
+
+	/* Download from bad socket */
+	rc = infuse_coap_download(sock, "file/small_file", data_cb, &context, work_area,
+				  sizeof(work_area), 1000);
+	zassert_equal(-EBADF, rc);
+}
+
+ZTEST(infuse_coap, test_timeout)
+{
+	struct cb_ctx context;
+	int sock;
+	int rc;
+
+	/* Wait for the interface to come up */
+	zassert_equal(0, k_sem_take(&l4_up, IF_DELAY));
+
+	/* Open socket */
+	sock = socket_setup();
+
+	/* Request a packet with a timeout that can't be met */
+	context.expected_data = "doesn't matter";
+	context.expected_offset = 0;
+	rc = infuse_coap_download(sock, "file/med_file", data_cb, &context, work_area,
+				  sizeof(work_area), 2);
+	zassert_equal(-ETIMEDOUT, rc);
+
+	/* Request another resource, "world" response should be discarded due to token mismatch */
+	context.expected_data = "hello_world\n";
+	context.expected_offset = 0;
+	rc = infuse_coap_download(sock, "file/small_file", data_cb, &context, work_area,
+				  sizeof(work_area), 1000);
+
+	/* Close socket */
+	zassert_equal(0, zsock_close(sock));
+	k_sem_give(&l4_up);
+}
+
+static int socket_to_close;
+
+void async_socket_close(struct k_work *work)
+{
+	(void)zsock_close(socket_to_close);
+}
+
+ZTEST(infuse_coap, test_socket_close)
+{
+	struct k_work_delayable work;
+	struct cb_ctx context;
+	int sock;
+	int rc;
+
+	k_work_init_delayable(&work, async_socket_close);
+
+	/* Wait for the interface to come up */
+	zassert_equal(0, k_sem_take(&l4_up, IF_DELAY));
+
+	/* Open socket */
+	sock = socket_setup();
+
+	/* Schedule socket to be closed in 10ms */
+	socket_to_close = sock;
+	k_work_reschedule(&work, K_MSEC(10));
+
+	/* Send a request with the knowledge the socket will close */
+	context.expected_data = "hello_world\n";
+	context.expected_offset = 0;
+	rc = infuse_coap_download(sock, "file/small_file", data_cb, &context, work_area,
+				  sizeof(work_area), 1000);
+	zassert_equal(-EBADF, rc);
+
+	k_sem_give(&l4_up);
+}
+
 ZTEST(infuse_coap, test_download)
 {
 	struct cb_ctx context;
