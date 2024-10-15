@@ -192,6 +192,9 @@ struct shared_device_api {
  */
 static inline bool shared_device_is_ready_dt(const struct shared_device_dt_spec *spec)
 {
+	if (spec->shared == NULL) {
+		return true;
+	}
 	return device_is_ready(spec->shared);
 }
 
@@ -230,6 +233,9 @@ static inline int shared_device_request(const struct device *dev, uint8_t state_
  */
 static inline int shared_device_request_dt(const struct shared_device_dt_spec *spec)
 {
+	if (spec->shared == NULL) {
+		return 0;
+	}
 	return shared_device_request(spec->shared, spec->priority, spec->state);
 }
 
@@ -262,6 +268,9 @@ static inline int shared_device_release(const struct device *dev, uint8_t state_
  */
 static inline int shared_device_release_dt(const struct shared_device_dt_spec *spec)
 {
+	if (spec->shared == NULL) {
+		return 0;
+	}
 	return shared_device_release(spec->shared, spec->priority);
 }
 
