@@ -274,6 +274,9 @@ static int epacket_processor(void *a, void *b, void *c)
 			epacket_handle_tx(buf);
 			events[1].state = K_POLL_STATE_NOT_READY;
 		}
+
+		/* Feed watchdog before sleeping again */
+		infuse_watchdog_feed(wdog_channel);
 	}
 	return 0;
 }
