@@ -230,7 +230,7 @@ int ubx_common_init(const struct device *dev, struct modem_pipe *pipe,
 		}
 	}
 
-	if (cfg->ant_switch.shared && !shared_device_is_ready_dt(&cfg->ant_switch)) {
+	if (!shared_device_is_ready_dt(&cfg->ant_switch)) {
 		LOG_WRN("RF switch not ready");
 	}
 
