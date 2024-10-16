@@ -90,11 +90,17 @@ configdefault ZVFS_OPEN_MAX
 	default 20 if WIFI_NRF700X
 
 # MbedTLS requirements for WiFi connectivity
-configdefault PSA_CRYPTO_ENABLE_ALL
+configdefault PSA_WANT_KEY_TYPE_AES
+	default y if NRF700X_STA_MODE
+configdefault PSA_WANT_ALG_CMAC
+	default y if NRF700X_STA_MODE
+configdefault MBEDTLS_HASH_ALL_ENABLED
 	default y if NRF700X_STA_MODE
 configdefault MBEDTLS_ECP_C
 	default y if NRF700X_STA_MODE
-configdefault MBEDTLS_ECP_ALL_ENABLED
+configdefault MBEDTLS_ECP_DP_SECP256K1_ENABLED
+	default y if NRF700X_STA_MODE
+configdefault MBEDTLS_ECP_DP_SECP256R1_ENABLED
 	default y if NRF700X_STA_MODE
 configdefault MBEDTLS_ECDH_C
 	default y if NRF700X_STA_MODE
