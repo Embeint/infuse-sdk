@@ -54,6 +54,10 @@ configdefault PSA_WANT_ALG_TLS12_PSK_TO_MS
 	default y
 configdefault PSA_WANT_ALG_TLS12_PRF
 	default y
+configdefault PSA_WANT_ALG_ECDSA
+	default y
+configdefault PSA_WANT_ALG_JPAKE
+	default y
 endif # INFUSE_COAP && !NRF_MODEM_LIB
 
 # Zephyr networking
