@@ -22,6 +22,10 @@
 #include <infuse/epacket/packet.h>
 #include <infuse/reboot.h>
 
+#ifdef CONFIG_NRF_MODEM_LIB
+#include "nrf_modem_delta_dfu.h"
+#endif /* CONFIG_NRF_MODEM_LIB */
+
 #include "../server.h"
 
 LOG_MODULE_DECLARE(rpc_server);
@@ -29,6 +33,7 @@ LOG_MODULE_DECLARE(rpc_server);
 enum download_action {
 	DOWNLOAD_DISCARD = 0,
 	DOWNLOAD_APPLICATION_DFU = 1,
+	DOWNLOAD_NRF91_MODEM_DIFF = 20,
 };
 
 struct cb_ctx {
@@ -69,6 +74,15 @@ static int data_cb(uint32_t offset, const uint8_t *data, uint16_t data_len, void
 			return rc;
 		}
 		break;
+#ifdef CONFIG_NRF_MODEM_LIB
+	case DOWNLOAD_NRF91_MODEM_DIFF:
+		rc = nrf_modem_delta_dfu_write(data, data_len);
+		if (rc != 0) {
+			LOG_ERR("Modem: Failed to write at 0x%08x (%d)", offset, rc);
+			return rc;
+		}
+		break;
+#endif /* CONFIG_NRF_MODEM_LIB */
 	}
 	return 0;
 }
@@ -91,6 +105,7 @@ struct net_buf *rpc_command_coap_download(struct net_buf *request)
 	size_t work_mem_size;
 	uint32_t crc;
 	int sock = -1;
+	int downloaded = 0;
 	int rc;
 
 	work_mem = rpc_server_command_working_mem(&work_mem_size);
@@ -120,6 +135,47 @@ struct net_buf *rpc_command_coap_download(struct net_buf *request)
 		}
 		break;
 #endif /* FIXED_PARTITION_EXISTS(slot1_partition) */
+#ifdef CONFIG_NRF_MODEM_LIB
+	case DOWNLOAD_NRF91_MODEM_DIFF: {
+		size_t offset;
+
+		/* Determine if area needs to be erased first */
+		rc = nrf_modem_delta_dfu_offset(&offset);
+		if (rc != 0) {
+			LOG_ERR("Failed to query DFU offset (%d)", rc);
+			goto error;
+		}
+		/* We don't support resuming an interrupted download.
+		 * Any value other than 0 needs to be erased
+		 */
+		if (offset != 0) {
+			/* Erase area if required */
+			rc = nrf_modem_delta_dfu_erase();
+			if (rc != 0) {
+				LOG_ERR("Failed to erase DFU area (%d)", rc);
+				goto error;
+			}
+		}
+		/* Wait for DFU system to be ready.
+		 * If for some reason the erase never finishes, the watchdog will catch us.
+		 */
+		while (offset != 0) {
+			rc = nrf_modem_delta_dfu_offset(&offset);
+			if (rc < 0) {
+				goto error;
+			}
+			k_sleep(K_MSEC(500));
+		}
+		/* Waiting for the erase may have taken a while */
+		rpc_server_watchdog_feed();
+		/* Ready modem to receive the firmware update */
+		rc = nrf_modem_delta_dfu_write_init();
+		if ((rc != 0) && (rc != -EALREADY)) {
+			LOG_ERR("Modem not ready (%d)", rc);
+			goto error;
+		}
+	} break;
+#endif /* CONFIG_NRF_MODEM_LIB */
 	default:
 		rc = -EINVAL;
 		goto error;
@@ -165,9 +221,10 @@ struct net_buf *rpc_command_coap_download(struct net_buf *request)
 	}
 
 	/* Download the resource */
-	rc = infuse_coap_download(sock, req->resource, data_cb, &context, work_mem, work_mem_size,
-				  block_timeout);
-	if (rc < 0) {
+	downloaded = infuse_coap_download(sock, req->resource, data_cb, &context, work_mem,
+					  work_mem_size, block_timeout);
+	if (downloaded < 0) {
+		rc = downloaded;
 		goto error;
 	}
 
@@ -185,16 +242,44 @@ done:
 #ifdef CONFIG_MCUBOOT_IMG_MANAGER
 	case DOWNLOAD_APPLICATION_DFU:
 		if (boot_request_upgrade_multi(0, BOOT_UPGRADE_TEST) == 0) {
+#ifdef CONFIG_INFUSE_REBOOT
 			LOG_INF("DFU download complete, rebooting");
 			infuse_reboot_delayed(INFUSE_REBOOT_RPC, 0x00, 0x00, K_SECONDS(2));
+#else
+			LOG_WRN("INFUSE_REBOOT not enabled, cannot reboot");
+#endif /* CONFIG_INFUSE_REBOOT */
 		}
 		break;
 #endif /* CONFIG_MCUBOOT_IMG_MANAGER */
+#ifdef CONFIG_NRF_MODEM_LIB
+	case DOWNLOAD_NRF91_MODEM_DIFF:
+		/* Free resources */
+		rc = nrf_modem_delta_dfu_write_done();
+		if (rc == 0) {
+			/* Schedule the update for next reboot */
+			rc = nrf_modem_delta_dfu_update();
+			if (rc == 0) {
+#ifdef CONFIG_INFUSE_REBOOT
+				/* Schedule the reboot in a few seconds time */
+				infuse_reboot_delayed(INFUSE_REBOOT_RPC, 0x00, 0x00, K_SECONDS(2));
+#else
+				LOG_WRN("INFUSE_REBOOT not enabled, cannot reboot");
+#endif /* CONFIG_INFUSE_REBOOT */
+			} else {
+				LOG_ERR("Modem DFU schedule failed (%d)", rc);
+			}
+		} else {
+			LOG_ERR("Modem DFU done failed (%d)", rc);
+			goto error;
+		}
+
+		break;
+#endif /* CONFIG_NRF_MODEM_LIB */
 	}
 
 	struct rpc_coap_download_response rsp = {
 		.resource_crc = context.crc,
-		.resource_len = rc,
+		.resource_len = downloaded,
 	};
 
 	return rpc_response_simple_req(request, 0, &rsp, sizeof(rsp));
