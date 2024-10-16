@@ -119,7 +119,7 @@ ZTEST(rpc_command_coap_download, test_download_invalid)
 
 #ifdef CONFIG_TLS_CREDENTIALS
 	sec_tag_t tag = infuse_security_coap_dtls_tag();
-	uint8_t cred[8];
+	char cred[16];
 	size_t cred_len;
 
 	/* Cache the credential */

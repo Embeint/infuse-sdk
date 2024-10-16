@@ -191,11 +191,11 @@ static int coap_dtls_load(void)
 #if defined(CONFIG_TLS_CREDENTIALS) || defined(CONFIG_MODEM_KEY_MGMT)
 #ifdef CONFIG_TLS_CREDENTIALS
 	/* TLS credential library needs values to persist */
-	static uint8_t dtls_identity[8];
+	static char dtls_identity_str[16 + 1];
 	static uint8_t dtls_psk[32];
 #else
+	char dtls_identity_str[16 + 1];
 	char dtls_psk_str[64 + 1];
-	uint8_t dtls_identity[8];
 	uint8_t dtls_psk[32];
 #endif /* CONFIG_TLS_CREDENTIALS */
 	uint16_t dtls_coap_salt = 0x7856;
@@ -205,21 +205,30 @@ static int coap_dtls_load(void)
 	int rc;
 
 #ifdef CONFIG_MODEM_KEY_MGMT
-	bool exists;
+	olen = sizeof(dtls_identity_str);
 
-	if (modem_key_mgmt_exists(TLS_TAG_INFUSE_COAP, MODEM_KEY_MGMT_CRED_TYPE_PSK, &exists) ==
-	    0) {
-		if (exists == true) {
-			/* Key already exists in modem, exit */
+	rc = modem_key_mgmt_read(TLS_TAG_INFUSE_COAP, MODEM_KEY_MGMT_CRED_TYPE_IDENTITY,
+				 dtls_identity_str, &olen);
+	if (rc == 0 && (olen == 16)) {
+		char expected[16 + 1];
+
+		/* Compare identity against what we would expect based on device ID */
+		snprintf(expected, sizeof(expected), "%016" PRIx64, infuse_device_id());
+		if (memcmp(dtls_identity_str, expected, 16) == 0) {
+			/* Key exists & identity matches */
 			return 0;
 		}
+
+		/* Reset the credentials */
+		(void)modem_key_mgmt_delete(TLS_TAG_INFUSE_COAP, MODEM_KEY_MGMT_CRED_TYPE_IDENTITY);
+		(void)modem_key_mgmt_delete(TLS_TAG_INFUSE_COAP, MODEM_KEY_MGMT_CRED_TYPE_PSK);
 	}
 #endif /* CONFIG_MODEM_KEY_MGMT */
 
 #ifdef CONFIG_INFUSE_SECURITY_TEST_CREDENTIALS
 	psa_key_id_t coap_base_key;
 
-	sys_put_le64(0xfffffffffffffffd, dtls_identity);
+	snprintf(dtls_identity_str, sizeof(dtls_identity_str), "%016" PRIx64, 0xfffffffffffffffd);
 
 	{
 		psa_key_attributes_t key_attributes = PSA_KEY_ATTRIBUTES_INIT;
@@ -245,7 +254,7 @@ static int coap_dtls_load(void)
 #else
 	psa_key_id_t coap_base_key = device_root_key;
 
-	sys_put_le64(infuse_device_id(), dtls_identity);
+	snprintf(dtls_identity_str, sizeof(dtls_identity_str), "%016" PRIx64, infuse_device_id());
 #endif /* CONFIG_INFUSE_SECURITY_TEST_CREDENTIALS */
 
 	/* Derive Infuse-IoT COAP key */
@@ -268,8 +277,8 @@ static int coap_dtls_load(void)
 	(void)psa_destroy_key(dtls_coap_key);
 
 #ifdef CONFIG_TLS_CREDENTIALS
-	rc = tls_credential_add(TLS_TAG_INFUSE_COAP, TLS_CREDENTIAL_PSK_ID, dtls_identity,
-				sizeof(dtls_identity));
+	rc = tls_credential_add(TLS_TAG_INFUSE_COAP, TLS_CREDENTIAL_PSK_ID, dtls_identity_str,
+				strlen(dtls_identity_str));
 	if (rc < 0) {
 		LOG_ERR("Failed to add DTLS identity (%d)", rc);
 		return -EINVAL;
@@ -284,13 +293,14 @@ static int coap_dtls_load(void)
 #endif /* CONFIG_TLS_CREDENTIALS */
 #ifdef CONFIG_MODEM_KEY_MGMT
 
+	/* Format 128 bit key as a hex string */
 	for (int i = 0; i < 32; i++) {
 		sprintf(dtls_psk_str + (2 * i), "%02x", dtls_psk[i]);
 	}
 
 	/* Write key to modem */
 	rc = modem_key_mgmt_write(TLS_TAG_INFUSE_COAP, MODEM_KEY_MGMT_CRED_TYPE_IDENTITY,
-				  dtls_identity, sizeof(dtls_identity));
+				  dtls_identity_str, strlen(dtls_identity_str));
 	if (rc < 0) {
 		LOG_ERR("Failed to add DTLS identity (%d)", rc);
 		return -EINVAL;
