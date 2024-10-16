@@ -46,7 +46,6 @@ struct net_buf *rpc_command_zbus_channel_state(struct net_buf *request)
 	if (chan->message_size <= net_buf_tailroom(response)) {
 		zbus_chan_read(chan, net_buf_tail(response), K_FOREVER);
 		net_buf_add(response, chan->message_size);
-		LOG_ERR("DATA LEN: %d %d", response->len, chan->message_size);
 	}
 	return response;
 }
