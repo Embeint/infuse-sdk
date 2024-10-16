@@ -3,7 +3,7 @@ common:
   min_flash: 64
   min_ram: 32
 tests:
-  net.dns:
+  net.dns.wifi:
     build_only: true
     integration_platforms:
       - nrf7002dk/nrf5340/cpuapp
@@ -11,6 +11,7 @@ tests:
       - infuse
     depends_on:
       - netif
+      - wifi
   net.dns.native:
     platform_allow:
       - native_sim

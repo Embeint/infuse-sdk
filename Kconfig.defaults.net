@@ -61,7 +61,7 @@ configdefault PSA_WANT_ALG_TLS12_PSK_TO_MS
 configdefault PSA_WANT_ALG_TLS12_PRF
 	default y
 configdefault PSA_WANT_ALG_ECDSA
-	default y
+	default y if !BUILD_WITH_TFM
 configdefault PSA_WANT_ALG_JPAKE
 	default y if !BUILD_WITH_TFM
 endif # INFUSE_COAP && !NRF_MODEM_LIB
