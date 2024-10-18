@@ -8,6 +8,8 @@ import sys
 import shutil
 import colorama
 
+from typing_extensions import Tuple
+
 from west.commands import WestCommand
 
 from git import Repo
@@ -57,13 +59,13 @@ class infuse_release(WestCommand):
         # Validate repository state
         repo = self.validate_state()
         # Expected application version
-        expected_version = self.expected_version(repo)
+        expected_int, expected_hex = self.expected_version(repo)
         # Perform release build
-        self.do_release_build(expected_version)
+        self.do_release_build(expected_int)
         # Validate build configuration
-        configs = self.validate_build(expected_version)
+        configs = self.validate_build(expected_int)
         # Export build outputs
-        self.export_build(configs, expected_version)
+        self.export_build(configs, expected_hex)
 
     def count_commits_ahead_behind(self, repo: Repo):
         # Ensure the repository is up-to-date
@@ -107,7 +109,7 @@ class infuse_release(WestCommand):
                     sys.exit(msg)
         return repo
 
-    def expected_version(self, repo: Repo) -> str:
+    def expected_version(self, repo: Repo) -> Tuple[str, str]:
         version_file = self.args.source_dir / "VERSION"
         if not version_file.exists():
             sys.exit(f"{version_file} does not exist")
@@ -117,7 +119,10 @@ class infuse_release(WestCommand):
             m = {l[0].strip(): l[1].strip() for l in contents}
 
         commit_hash = str(repo.head.commit)
-        return f"{m['VERSION_MAJOR']}.{m['VERSION_MINOR']}.{m['PATCHLEVEL']}+{int(commit_hash[:8], 16)}"
+        v_int_tweak = f"{m['VERSION_MAJOR']}.{m['VERSION_MINOR']}.{m['PATCHLEVEL']}+{int(commit_hash[:8], 16)}"
+        v_hex_tweak = f"{m['VERSION_MAJOR']}.{m['VERSION_MINOR']}.{m['PATCHLEVEL']}+{commit_hash[:8]}"
+
+        return v_int_tweak, v_hex_tweak
 
     def do_release_build(self, expected_version):
         name = self.args.source_dir.name
