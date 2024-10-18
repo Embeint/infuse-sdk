@@ -243,7 +243,7 @@ static inline int shared_device_request_dt(const struct shared_device_dt_spec *s
  * @brief Release a previous request for a given state
  *
  * @param dev Switch to release
- * @param state_priority Priority of the request provided to @ref device_request
+ * @param state_priority Priority of the request provided to @ref shared_device_request
  *
  * @retval 0 request has been released
  * @retval -EINVAL no request was previously received
