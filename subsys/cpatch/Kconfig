@@ -1,0 +1,19 @@
+# Infuse-IoT constrained binary patching libraries
+
+config INFUSE_CPATCH
+	bool "Infuse-IoT constrained binary patching"
+	depends on STREAM_FLASH
+	depends on STREAM_FLASH_ERASE || !FLASH_SIMULATOR_EXPLICIT_ERASE
+	depends on CRC
+	select INFUSE_CPATCH_VERSION_1
+
+config INFUSE_CPATCH_VERSION_1
+	bool
+
+if INFUSE_CPATCH
+
+module = CPATCH
+module-str = cpatch
+source "subsys/logging/Kconfig.template.log_config"
+
+endif
