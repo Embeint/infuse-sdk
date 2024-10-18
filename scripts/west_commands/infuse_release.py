@@ -39,8 +39,23 @@ class infuse_release(WestCommand):
             formatter_class=argparse.RawDescriptionHelpFormatter,
             description=self.description,
         )
-        parser.add_argument("-b", "--board", type=str, required=True)
-        parser.add_argument("-d", "--source-dir", type=pathlib.Path, required=True)
+        parser.add_argument(
+            "-b", "--board", type=str, required=True, help="Board to build release for"
+        )
+        parser.add_argument(
+            "-d",
+            "--source-dir",
+            type=pathlib.Path,
+            required=True,
+            help="Application to build",
+        )
+        parser.add_argument(
+            "-s",
+            "--sign",
+            type=pathlib.Path,
+            required=True,
+            help="Bootloader signing key",
+        )
         parser.add_argument(
             "--ignore-git", action="store_true", help="Ignore git check failures"
         )
@@ -54,8 +69,9 @@ class infuse_release(WestCommand):
 
     def do_run(self, args, unknown_args):
         self.args = args
+        self.tfm_build = "/ns" in self.args.board
         # TF-M builds should not use sysbuild for now
-        self.sysbuild = "/ns" not in self.args.board
+        self.sysbuild = not self.tfm_build
         # Validate repository state
         repo = self.validate_state()
         # Expected application version
@@ -131,6 +147,7 @@ class infuse_release(WestCommand):
             self.build_app_dir = self.build_dir / self.build_dir.name
         else:
             self.build_app_dir = self.build_dir
+        sign_path = f'"{str(self.args.sign.resolve().absolute())}"'
 
         build_cmd = ["west", "build"]
         build_cmd.extend(["--board", self.args.board])
@@ -141,7 +158,26 @@ class infuse_release(WestCommand):
             build_cmd.extend(["--sysbuild"])
             # TODO: automatically generate tweak for sysbuild
             build_cmd.extend(
-                ["--", f'-DCONFIG_MCUBOOT_IMGTOOL_SIGN_VERSION="{expected_version}"']
+                [
+                    "--",
+                    f'-DCONFIG_MCUBOOT_IMGTOOL_SIGN_VERSION="{expected_version}"',
+                    f"-DSB_CONFIG_BOOT_SIGNATURE_KEY_FILE={sign_path}",
+                ]
+            )
+        else:
+            build_cmd.extend(
+                [
+                    "--",
+                    # Both keys are considered valid by the TF-M BL2
+                    f"-DCONFIG_TFM_KEY_FILE_S={sign_path}",
+                    f"-DCONFIG_TFM_KEY_FILE_NS={sign_path}",
+                    # Explicitly disable TFM_DUMMY_PROVISIONING, which overrides the
+                    # desired keys in the bootloader
+                    "-DCONFIG_TFM_DUMMY_PROVISIONING=n",
+                    # Disable the debug port when entering the SECURED state, as required by
+                    # the PSA RoT device lifecycle.
+                    "-DCONFIG_TFM_LCS_SECURED_DISABLE_DEBUG_PORT=y",
+                ]
             )
 
         print("Run build: ", " ".join(build_cmd))
@@ -163,7 +199,6 @@ class infuse_release(WestCommand):
                 s = l.strip().split(" ")
                 configs[s[1]] = s[2].strip("'\"")
 
-        tfm_build = "CONFIG_BUILD_WITH_TFM" in configs
         if "CONFIG_BT_CONN" in configs:
             if "CONFIG_MCUMGR" not in configs:
                 print(colorama.Fore.YELLOW + "MCUMGR not enabled with Bluetooth")
@@ -175,7 +210,23 @@ class infuse_release(WestCommand):
                     + "MCUMGR Image Management not enabled with Bluetooth"
                 )
 
-        if tfm_build:
+        if self.tfm_build:
+            key_file_0 = configs["CONFIG_TFM_KEY_FILE_S"]
+            key_file_1 = configs["CONFIG_TFM_KEY_FILE_NS"]
+            tfm_key_path = "modules/tee/tf-m/trusted-firmware-m/bl2/ext/mcuboot"
+            if (tfm_key_path in key_file_0) or (tfm_key_path in key_file_1):
+                print(
+                    colorama.Fore.RED
+                    + "Default TF-M signing key used! Application is not secure!"
+                )
+        else:
+            key_file = configs["CONFIG_MCUBOOT_SIGNATURE_KEY_FILE"]
+            if "bootloader/mcuboot" in key_file:
+                print(
+                    colorama.Fore.RED
+                    + "Default MCUboot signing key used! Application is not secure!"
+                )
+        if self.tfm_build:
             signed_bin = self.build_app_dir / "zephyr" / "tfm_s_zephyr_ns_signed.bin"
         else:
             signed_bin = self.build_app_dir / "zephyr" / "zephyr.signed.bin"
