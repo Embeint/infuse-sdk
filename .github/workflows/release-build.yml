@@ -72,5 +72,8 @@ jobs:
 
       - name: Test application release
         run: |
-          west infuse-release -b tauro/nrf9151/ns -d infuse-sdk/apps/data_logger --skip-git
-          west infuse-release -b nrf52840dk/nrf52840 -d infuse-sdk/apps/gateway_usb --skip-git
+          imgtool keygen -t ecdsa-p256 -k root-p256.pem
+          imgtool keygen -t rsa-2048 -k root-rsa2048.pem
+
+          west infuse-release -b tauro/nrf9151/ns -d infuse-sdk/apps/data_logger -s root-p256.pem --skip-git
+          west infuse-release -b nrf52840dk/nrf52840 -d infuse-sdk/apps/gateway_usb -s root-rsa2048.pem --skip-git
