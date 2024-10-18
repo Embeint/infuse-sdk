@@ -53,7 +53,7 @@ bool cartesian_line_intersection(struct cartesian_line_2d a, struct cartesian_li
  * @brief Determine if a point in inside a circle
  *
  * @param point Point to test
- * @param centre Centre point of circle
+ * @param origin Centre point of circle
  * @param radius Radius of circle
  *
  * @return true If point is inside circle
