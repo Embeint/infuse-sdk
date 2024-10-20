@@ -10,7 +10,10 @@ import sys
 import yaml
 import pylink
 
-from simple_term_menu import TerminalMenu
+try:
+    from simple_term_menu import TerminalMenu
+except NotImplementedError:
+    pass
 
 from west.commands import WestCommand
 from west.util import west_topdir
@@ -213,6 +216,7 @@ class vscode(WestCommand):
         parser.add_argument(
             "--build-dir", "-d", dest="dir", type=str, help="Application build folder"
         )
+        parser.add_argument("--snr", type=str, help="JTAG serial number")
         return parser
 
     def _jlink_device(self, build_dir):
@@ -228,6 +232,8 @@ class vscode(WestCommand):
                             launch["configurations"][0]["device"] = device
                             launch["configurations"][1]["device"] = device
                             break
+        launch["configurations"][0]["servertype"] = "jlink"
+        launch["configurations"][1]["servertype"] = "jlink"
 
     def _tfm_build(self, build_dir, cache):
         launch["configurations"][0]["executable"] = str(build_dir / "bin" / "tfm_s.elf")
@@ -246,10 +252,6 @@ class vscode(WestCommand):
         )
         launch["configurations"][0]["gdbPath"] = parent_cache.get("CMAKE_GDB")
         launch["configurations"][1]["gdbPath"] = parent_cache.get("CMAKE_GDB")
-
-        launch["configurations"][0]["servertype"] = "jlink"
-        launch["configurations"][1]["servertype"] = "jlink"
-        self._jlink_device(build_dir.parent)
 
     def _zephyr_build(self, build_dir, cache):
         c_cpp_properties["configurations"][0]["includePath"] = [
@@ -309,24 +311,40 @@ class vscode(WestCommand):
         else:
             launch["configurations"][0]["rtos"] = "Zephyr"
             launch["configurations"][1]["rtos"] = "Zephyr"
-            launch["configurations"][0]["servertype"] = "jlink"
-            launch["configurations"][1]["servertype"] = "jlink"
 
-            jlink = pylink.JLink()
-            emulators = jlink.connected_emulators()
-            if len(emulators) > 1:
-                # Select which emulator should be used
-                options = [str(e) for e in emulators]
-                terminal_menu = TerminalMenu(options)
-                idx = terminal_menu.show()
-                if idx is None:
-                    sys.exit("JLink device not chosen, exiting...")
+    def _jlink(self, snr, build_dir, cache):
+        if cache.get("QEMU", False) or cache.get("BOARD")[:10] == "native_sim":
+            return
 
-                serial = str(emulators[idx].SerialNumber)
-                launch["configurations"][0]["serialNumber"] = serial
-                launch["configurations"][1]["serialNumber"] = serial
-
+        if snr is not None:
+            launch["configurations"][0]["serialNumber"] = snr
+            launch["configurations"][1]["serialNumber"] = snr
             self._jlink_device(build_dir)
+            return
+
+        jlink = pylink.JLink()
+        emulators = jlink.connected_emulators()
+        if len(emulators) > 1:
+            if TerminalMenu is None:
+                options = [str(e.SerialNumber) for e in emulators]
+                sys.exit(
+                    f"Multiple JTAG emulators connected ({', '.join(options)})\n"
+                    + "Specify which emulator to use with --snr"
+                )
+
+            # Select which emulator should be used
+            options = [str(e) for e in emulators]
+            terminal_menu = TerminalMenu(options)
+            idx = terminal_menu.show()
+            if idx is None:
+                sys.exit("JLink device not chosen, exiting...")
+
+            serial = str(emulators[idx].SerialNumber)
+
+            launch["configurations"][0]["serialNumber"] = serial
+            launch["configurations"][1]["serialNumber"] = serial
+
+        self._jlink_device(build_dir)
 
     def do_run(self, args, _):
         vscode_folder = pathlib.Path(args.workspace) / ".vscode"
@@ -366,6 +384,7 @@ class vscode(WestCommand):
                 self._tfm_build(build_dir, cache)
             else:
                 self._zephyr_build(build_dir, cache)
+            self._jlink(args.snr, build_dir, cache)
 
             log.inf(
                 f"Writing `c_cpp_properties.json` and `launch.json` to {vscode_folder}"
