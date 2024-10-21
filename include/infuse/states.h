@@ -54,6 +54,7 @@ enum infuse_state {
  * @brief Set an application state
  *
  * Application state will remain set until @ref infuse_state_clear is called.
+ * Any pending timeouts from @ref infuse_state_set_timeout will be cancelled.
  *
  * @param state State to set
  */
@@ -61,6 +62,10 @@ void infuse_state_set(enum infuse_state state);
 
 /**
  * @brief Set an application state that times out after a duration
+ *
+ * Calling this function multiple times will reschedule the timeout each time.
+ * If the state was previously set without a timeout via @ref infuse_state_set,
+ * a timeout will be added.
  *
  * @param state State to set
  * @param timeout Seconds that state should be set for
