@@ -199,6 +199,84 @@ ZTEST(application_states, test_state_timeout_override)
 	zassert_false(infuse_state_get(INFUSE_STATE_TIME_KNOWN));
 }
 
+struct callback_ctx {
+	enum infuse_state state_expected;
+	uint16_t timeout_expected;
+	uint32_t set_count;
+	uint32_t clear_count;
+};
+
+static void state_set(enum infuse_state state, uint16_t timeout, void *user_ctx)
+{
+	struct callback_ctx *ctx = user_ctx;
+
+	zassert_equal(ctx->state_expected, state);
+	zassert_equal(ctx->timeout_expected, timeout);
+	ctx->set_count += 1;
+}
+
+static void state_cleared(enum infuse_state state, void *user_ctx)
+{
+	struct callback_ctx *ctx = user_ctx;
+
+	zassert_equal(ctx->state_expected, state);
+	ctx->clear_count += 1;
+}
+
+ZTEST(application_states, test_callbacks)
+{
+	INFUSE_STATES_ARRAY(states);
+	struct callback_ctx ctx = {0};
+	struct infuse_state_cb empty_cb = {NULL};
+	struct infuse_state_cb some_cb = {
+		.state_set = state_set,
+		.state_cleared = state_cleared,
+		.user_ctx = &ctx,
+	};
+
+	infuse_state_register_callback(&empty_cb);
+	infuse_state_register_callback(&some_cb);
+
+	/* Basic set/clear callbacks */
+	ctx.state_expected = INFUSE_STATE_TIME_KNOWN;
+	ctx.timeout_expected = 0;
+	infuse_state_set(INFUSE_STATE_TIME_KNOWN);
+	zassert_equal(1, ctx.set_count);
+	zassert_equal(0, ctx.clear_count);
+
+	infuse_state_clear(INFUSE_STATE_TIME_KNOWN);
+	zassert_equal(1, ctx.set_count);
+	zassert_equal(1, ctx.clear_count);
+
+	ctx.timeout_expected = 5;
+	infuse_state_set_timeout(INFUSE_STATE_TIME_KNOWN, 5);
+	zassert_equal(2, ctx.set_count);
+	zassert_equal(1, ctx.clear_count);
+
+	ctx.timeout_expected = 6;
+	infuse_state_set_timeout(INFUSE_STATE_TIME_KNOWN, 6);
+	zassert_equal(3, ctx.set_count);
+	zassert_equal(1, ctx.clear_count);
+
+	for (int i = 0; i < 10; i++) {
+		infuse_states_snapshot(states);
+		infuse_states_tick(states);
+	}
+	zassert_equal(3, ctx.set_count);
+	zassert_equal(2, ctx.clear_count);
+
+	zassert_true(infuse_state_unregister_callback(&empty_cb));
+	zassert_true(infuse_state_unregister_callback(&some_cb));
+
+	zassert_false(infuse_state_unregister_callback(&empty_cb));
+	zassert_false(infuse_state_unregister_callback(&some_cb));
+
+	/* Callback doesn't run after removal */
+	infuse_state_set(INFUSE_STATE_TIME_KNOWN);
+	zassert_equal(3, ctx.set_count);
+	zassert_equal(2, ctx.clear_count);
+}
+
 void test_init(void *fixture)
 {
 	for (int i = 0; i < UINT8_MAX; i++) {
