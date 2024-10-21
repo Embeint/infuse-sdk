@@ -1,0 +1,30 @@
+/ {
+	chosen {
+		infuse,reboot-state = &retention0;
+		infuse,kv-partition = &storage_partition;
+	};
+
+	/* End of application SRAM */
+	memory@2003FF00 {
+		compatible = "zephyr,memory-region", "mmio-sram";
+		reg = <0x2003FF00 0x100>;
+		zephyr,memory-region = "RetainedMem";
+		status = "okay";
+
+		retainedmem {
+			compatible = "zephyr,retained-ram";
+			status = "okay";
+			#address-cells = <1>;
+			#size-cells = <1>;
+
+			retention0: retention@0 {
+				compatible = "zephyr,retention";
+				status = "okay";
+				reg = <0x0 0x100>;
+				prefix = [DE 03];
+			};
+		};
+	};
+};
+
+#include "modem_shmem.dtsi"

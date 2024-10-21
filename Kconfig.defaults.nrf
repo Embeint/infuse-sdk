@@ -70,9 +70,9 @@ configdefault LTE_PSM_REQ_RPTAU
 # When networks don't support PSM natively, use the Nordic proprietary PSM
 # feature. Proprietary PSM can be used only in application use cases where
 # the device always initiates the data connection. Infuse-IoT satisfies this
-# requirement.
+# requirement. Currently only supported on the nRF9120 based chips.
 configdefault LTE_PROPRIETARY_PSM_REQ
-	default y
+	default y if SOC_NRF9120
 
 # WiFi defaults
 configdefault WIFI_NRF700X
