@@ -14,6 +14,7 @@
 #include <stdbool.h>
 
 #include <zephyr/sys/atomic.h>
+#include <zephyr/sys/slist.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -49,6 +50,48 @@ enum infuse_state {
  * @brief Define a variable that can hold all Infuse-IoT application states
  */
 #define INFUSE_STATES_ARRAY(name) atomic_t name[INFUSE_STATES_ARRAY_SIZE]
+
+/** @brief Infuse-IoT application state callback structure. */
+struct infuse_state_cb {
+	/**
+	 * @brief Application state has been set.
+	 *
+	 * @param state State that has been set
+	 * @param timeout Timeout for the state (0 for indefinite)
+	 * @param user_ctx User context pointer
+	 */
+	void (*state_set)(enum infuse_state state, uint16_t timeout, void *user_ctx);
+
+	/**
+	 * @brief Application state has been cleared.
+	 *
+	 * @param state State that has been cleared
+	 * @param user_ctx User context pointer
+	 */
+	void (*state_cleared)(enum infuse_state state, void *user_ctx);
+
+	/* User provided context pointer */
+	void *user_ctx;
+
+	sys_snode_t node;
+};
+
+/**
+ * @brief Register to be notified of state update events
+ *
+ * @param cb Callback struct to register
+ */
+void infuse_state_register_callback(struct infuse_state_cb *cb);
+
+/**
+ * @brief Unregister previously registered callback structure
+ *
+ * @param cb Callback struct to unregister
+ *
+ * @retval true When callback structure unregistered
+ * @retval false When structure was not previously registered
+ */
+bool infuse_state_unregister_callback(struct infuse_state_cb *cb);
 
 /**
  * @brief Set an application state

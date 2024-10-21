@@ -9,6 +9,7 @@
 #include <zephyr/logging/log.h>
 #include <zephyr/spinlock.h>
 #include <zephyr/sys/atomic.h>
+#include <zephyr/sys/slist.h>
 
 #include <infuse/states.h>
 
@@ -21,10 +22,21 @@ static ATOMIC_DEFINE(application_states, INFUSE_STATES_END + 1);
 static struct timeout_state timeout_states[CONFIG_INFUSE_APPLICATION_STATES_MAX_TIMEOUTS];
 static uint32_t timeout_mask;
 static struct k_spinlock timeout_lock;
+static sys_slist_t cb_list = SYS_SLIST_STATIC_INIT(&cb_list);
 
 BUILD_ASSERT(ARRAY_SIZE(application_states) == INFUSE_STATES_ARRAY_SIZE);
 
 LOG_MODULE_REGISTER(states, CONFIG_INFUSE_APPLICATION_STATES_LOG_LEVEL);
+
+void infuse_state_register_callback(struct infuse_state_cb *cb)
+{
+	sys_slist_append(&cb_list, &cb->node);
+}
+
+bool infuse_state_unregister_callback(struct infuse_state_cb *cb)
+{
+	return sys_slist_find_and_remove(&cb_list, &cb->node);
+}
 
 static uint8_t find_timeout_state(enum infuse_state state)
 {
@@ -57,9 +69,17 @@ static void clear_timeout_state(enum infuse_state state)
 
 void infuse_state_set(enum infuse_state state)
 {
+	struct infuse_state_cb *cb;
+
 	K_SPINLOCK(&timeout_lock) {
 		if (atomic_test_and_set_bit(application_states, state) == true) {
 			clear_timeout_state(state);
+		}
+		/* Notify registered callbacks */
+		SYS_SLIST_FOR_EACH_CONTAINER(&cb_list, cb, node) {
+			if (cb->state_set) {
+				cb->state_set(state, 0, cb->user_ctx);
+			}
 		}
 	}
 	LOG_DBG("%d", state);
@@ -67,6 +87,8 @@ void infuse_state_set(enum infuse_state state)
 
 void infuse_state_set_timeout(enum infuse_state state, uint16_t timeout)
 {
+	struct infuse_state_cb *cb;
+
 	if (timeout == 0) {
 		return;
 	}
@@ -85,15 +107,30 @@ void infuse_state_set_timeout(enum infuse_state state, uint16_t timeout)
 			timeout_states[timeout_idx].state = state;
 		}
 		timeout_states[timeout_idx].timeout = timeout;
+		/* Notify registered callbacks */
+		SYS_SLIST_FOR_EACH_CONTAINER(&cb_list, cb, node) {
+			if (cb->state_set) {
+				cb->state_set(state, timeout, cb->user_ctx);
+			}
+		}
 	}
 	LOG_DBG("%d for %d", state, timeout);
 }
 
 void infuse_state_clear(enum infuse_state state)
 {
+	struct infuse_state_cb *cb;
+
 	K_SPINLOCK(&timeout_lock) {
 		if (atomic_test_and_clear_bit(application_states, state) == true) {
 			clear_timeout_state(state);
+
+			/* Notify registered callbacks */
+			SYS_SLIST_FOR_EACH_CONTAINER(&cb_list, cb, node) {
+				if (cb->state_cleared) {
+					cb->state_cleared(state, cb->user_ctx);
+				}
+			}
 		}
 	}
 	LOG_DBG("%d", state);
@@ -113,6 +150,8 @@ void infuse_states_snapshot(atomic_t snapshot[ATOMIC_BITMAP_SIZE(INFUSE_STATES_E
 
 void infuse_states_tick(atomic_t snapshot[INFUSE_STATES_ARRAY_SIZE])
 {
+	struct infuse_state_cb *cb;
+
 	K_SPINLOCK(&timeout_lock) {
 		uint32_t mask = timeout_mask;
 
@@ -131,6 +170,12 @@ void infuse_states_tick(atomic_t snapshot[INFUSE_STATES_ARRAY_SIZE])
 			atomic_clear_bit(application_states, state);
 			timeout_mask ^= BIT(first_used);
 			LOG_DBG("%d timed out", state);
+			/* Notify registered callbacks */
+			SYS_SLIST_FOR_EACH_CONTAINER(&cb_list, cb, node) {
+				if (cb->state_cleared) {
+					cb->state_cleared(state, cb->user_ctx);
+				}
+			}
 			timeout_states[first_used].state = 0;
 		}
 	}
