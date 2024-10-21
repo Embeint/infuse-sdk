@@ -131,6 +131,74 @@ ZTEST(application_states, test_state_timeout_many)
 	}
 }
 
+ZTEST(application_states, test_state_clear_timeout_remove)
+{
+	INFUSE_STATES_ARRAY(states);
+
+	/* Clearing a pending timeout should remove any timeout state */
+	zassert_false(infuse_state_get(INFUSE_STATE_TIME_KNOWN));
+	infuse_state_set_timeout(INFUSE_STATE_TIME_KNOWN, 5);
+	infuse_state_clear(INFUSE_STATE_TIME_KNOWN);
+	infuse_state_set(INFUSE_STATE_TIME_KNOWN);
+
+	for (int i = 0; i < 9; i++) {
+		infuse_states_snapshot(states);
+		infuse_states_tick(states);
+		zassert_true(infuse_state_get(INFUSE_STATE_TIME_KNOWN),
+			     "State cleared on iteration %d", i);
+	}
+}
+
+ZTEST(application_states, test_state_timeout_update)
+{
+	INFUSE_STATES_ARRAY(states);
+
+	/* Timeout should be updated on each call */
+	zassert_false(infuse_state_get(INFUSE_STATE_TIME_KNOWN));
+	infuse_state_set_timeout(INFUSE_STATE_TIME_KNOWN, 5);
+	infuse_state_set_timeout(INFUSE_STATE_TIME_KNOWN, 10);
+
+	for (int i = 0; i < 9; i++) {
+		infuse_states_snapshot(states);
+		infuse_states_tick(states);
+		zassert_true(infuse_state_get(INFUSE_STATE_TIME_KNOWN),
+			     "State cleared on iteration %d", i);
+	}
+
+	infuse_states_snapshot(states);
+	infuse_states_tick(states);
+	zassert_false(infuse_state_get(INFUSE_STATE_TIME_KNOWN));
+}
+
+ZTEST(application_states, test_state_timeout_override)
+{
+	INFUSE_STATES_ARRAY(states);
+
+	/* Calling infuse_state_set should override any existing timeout */
+	zassert_false(infuse_state_get(INFUSE_STATE_TIME_KNOWN));
+	infuse_state_set_timeout(INFUSE_STATE_TIME_KNOWN, 5);
+	infuse_state_set(INFUSE_STATE_TIME_KNOWN);
+
+	for (int i = 0; i < 10; i++) {
+		infuse_states_snapshot(states);
+		infuse_states_tick(states);
+		zassert_true(infuse_state_get(INFUSE_STATE_TIME_KNOWN));
+	}
+
+	/* Calling infuse_state_set_timeout should add a timeout */
+	infuse_state_set_timeout(INFUSE_STATE_TIME_KNOWN, 5);
+
+	for (int i = 0; i < 4; i++) {
+		infuse_states_snapshot(states);
+		infuse_states_tick(states);
+		zassert_true(infuse_state_get(INFUSE_STATE_TIME_KNOWN));
+	}
+
+	infuse_states_snapshot(states);
+	infuse_states_tick(states);
+	zassert_false(infuse_state_get(INFUSE_STATE_TIME_KNOWN));
+}
+
 void test_init(void *fixture)
 {
 	for (int i = 0; i < UINT8_MAX; i++) {

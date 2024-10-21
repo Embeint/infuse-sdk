@@ -26,9 +26,42 @@ BUILD_ASSERT(ARRAY_SIZE(application_states) == INFUSE_STATES_ARRAY_SIZE);
 
 LOG_MODULE_REGISTER(states, CONFIG_INFUSE_APPLICATION_STATES_LOG_LEVEL);
 
+static uint8_t find_timeout_state(enum infuse_state state)
+{
+	/* Find and remove any pending timeouts */
+	uint32_t mask = timeout_mask;
+
+	while (mask) {
+		uint8_t first_used = __builtin_ffs(mask) - 1;
+
+		if (timeout_states[first_used].state == state) {
+			return first_used;
+		}
+		mask ^= BIT(first_used);
+	}
+	return UINT8_MAX;
+}
+
+static void clear_timeout_state(enum infuse_state state)
+{
+	uint8_t timeout_idx = find_timeout_state(state);
+
+	if (timeout_idx == UINT8_MAX) {
+		return;
+	}
+	/* Clear all timeout state */
+	timeout_states[timeout_idx].state = 0;
+	timeout_states[timeout_idx].timeout = 0;
+	timeout_mask ^= BIT(timeout_idx);
+}
+
 void infuse_state_set(enum infuse_state state)
 {
-	atomic_set_bit(application_states, state);
+	K_SPINLOCK(&timeout_lock) {
+		if (atomic_test_and_set_bit(application_states, state) == true) {
+			clear_timeout_state(state);
+		}
+	}
 	LOG_DBG("%d", state);
 }
 
@@ -39,23 +72,30 @@ void infuse_state_set_timeout(enum infuse_state state, uint16_t timeout)
 	}
 
 	K_SPINLOCK(&timeout_lock) {
-		if (__builtin_popcount(timeout_mask) == ARRAY_SIZE(timeout_states)) {
-			LOG_WRN("Insufficient timeout contexts");
-			K_SPINLOCK_BREAK;
-		}
-		uint8_t first_free = __builtin_ffs(~timeout_mask) - 1;
+		uint8_t timeout_idx = find_timeout_state(state);
 
-		atomic_set_bit(application_states, state);
-		timeout_mask |= (1 << first_free);
-		timeout_states[first_free].state = state;
-		timeout_states[first_free].timeout = timeout;
+		if (timeout_idx == UINT8_MAX) {
+			if (__builtin_popcount(timeout_mask) == ARRAY_SIZE(timeout_states)) {
+				LOG_WRN("Insufficient timeout contexts");
+				K_SPINLOCK_BREAK;
+			}
+			timeout_idx = __builtin_ffs(~timeout_mask) - 1;
+			atomic_set_bit(application_states, state);
+			timeout_mask |= BIT(timeout_idx);
+			timeout_states[timeout_idx].state = state;
+		}
+		timeout_states[timeout_idx].timeout = timeout;
 	}
 	LOG_DBG("%d for %d", state, timeout);
 }
 
 void infuse_state_clear(enum infuse_state state)
 {
-	atomic_clear_bit(application_states, state);
+	K_SPINLOCK(&timeout_lock) {
+		if (atomic_test_and_clear_bit(application_states, state) == true) {
+			clear_timeout_state(state);
+		}
+	}
 	LOG_DBG("%d", state);
 }
 
@@ -78,16 +118,20 @@ void infuse_states_tick(atomic_t snapshot[INFUSE_STATES_ARRAY_SIZE])
 
 		while (mask) {
 			uint8_t first_used = __builtin_ffs(mask) - 1;
+			uint8_t state = timeout_states[first_used].state;
 
-			if (atomic_test_bit(snapshot, timeout_states[first_used].state)) {
-				if (--timeout_states[first_used].timeout == 0) {
-					atomic_clear_bit(application_states,
-							 timeout_states[first_used].state);
-					timeout_mask ^= (1 << first_used);
-					LOG_DBG("%d timed out", timeout_states[first_used].state);
-				}
+			mask ^= BIT(first_used);
+
+			if (!atomic_test_bit(snapshot, state)) {
+				continue;
 			}
-			mask ^= 1 << first_used;
+			if (--timeout_states[first_used].timeout > 0) {
+				continue;
+			}
+			atomic_clear_bit(application_states, state);
+			timeout_mask ^= BIT(first_used);
+			LOG_DBG("%d timed out", state);
+			timeout_states[first_used].state = 0;
 		}
 	}
 }
