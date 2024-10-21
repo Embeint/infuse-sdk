@@ -1,0 +1,179 @@
+#include <common/nordic/infuse_nrf9160_ns.dtsi>
+
+/* MCUboot secondary on external flash */
+/delete-node/ &slot0_partition;
+/delete-node/ &slot0_s_partition;
+/delete-node/ &slot0_ns_partition;
+/delete-node/ &slot1_partition;
+/delete-node/ &slot1_s_partition;
+/delete-node/ &slot1_ns_partition;
+
+/ {
+	chosen {
+		zephyr,bt-hci = &hci_spi;
+	};
+
+	tfm_config {
+		compatible = "arm,trusted-firmware-m";
+		sram = <&sram0>;
+		sram-secure = <&sram0_s>;
+		sram-nonsecure = <&sram0_ns>;
+		spu-flash-region-size = <0x00008000>;
+		spu-sram-region-size = <0x00002000>;
+
+		onboard_flash {
+			driver = "Driver_FLASH0";
+			complete = <&flash0>;
+			img-bl2 = <&boot_partition>;
+			img-primary-secure = <&slot0_s_partition>;
+			img-primary-nonsecure = <&slot0_ns_partition>;
+			img-secondary-secure = <&slot1_s_partition>;
+			img-secondary-nonsecure = <&slot1_ns_partition>;
+			partition-ps = <&tfm_ps_partition>;
+			partition-its = <&tfm_its_partition>;
+			partition-otp = <&tfm_otp_partition>;
+			partition-nonsecure-storage = <&storage_partition>;
+		};
+
+		spi_flash {
+			driver = "Driver_FLASH_SPI_NOR0";
+			define-prefix = "SPI_";
+			complete = <&mx25r64>;
+			erase-block-size = <4096>;
+			write-block-size = <1>;
+		};
+	};
+
+	epacket_udp: epacket_udp {
+		compatible = "embeint,epacket-udp";
+	};
+
+	data_logger_udp: data_logger_udp {
+		compatible = "embeint,data-logger-epacket", "embeint,data-logger";
+		epacket = <&epacket_udp>;
+
+		tdf_logger_udp: tdf_logger_udp {
+			compatible = "embeint,tdf-data-logger";
+		};
+	};
+
+	epacket_serial: epacket_serial {
+		compatible = "embeint,epacket-serial";
+		serial = <&uart0>;
+	};
+
+	data_logger_serial: data_logger_serial {
+		compatible = "embeint,data-logger-epacket", "embeint,data-logger";
+		epacket = <&epacket_serial>;
+
+		tdf_logger_serial: tdf_logger_serial {
+			compatible = "embeint,tdf-data-logger";
+		};
+	};
+
+	data_logger_flash: data_logger_flash {
+		compatible = "embeint,data-logger-flash-map", "embeint,data-logger";
+		partition = <&data_logger_partition>;
+
+		tdf_logger_flash: tdf_logger_flash {
+			compatible = "embeint,tdf-data-logger";
+		};
+	};
+};
+
+&flash0 {
+	partitions {
+		boot_partition: partition@0 {
+			label = "mcuboot";
+			reg = <0x00000000 0x00010000>;
+		};
+		slot0_partition: partition@10000 {
+			label = "image-0";
+			reg = <0x00010000 0x000E0000>;
+		};
+		slot0_s_partition: subpartition@10000 {
+			label = "image-0-secure";
+			reg = <0x00010000 0x00030000>;
+		};
+		slot0_ns_partition: subpartition@40000 {
+			label = "image-0-nonsecure";
+			reg = <0x00040000 0x000B0000>;
+		};
+	};
+};
+
+&uart0 {
+	zephyr,pm-device-runtime-auto;
+};
+
+&pinctrl {
+	spi2_default: spi2_default {
+		group1 {
+			psels = <NRF_PSEL(SPIM_SCK, 0, 17)>,
+				<NRF_PSEL(SPIM_MISO, 0, 19)>,
+				<NRF_PSEL(SPIM_MOSI, 0, 18)>;
+			nordic,drive-mode = <NRF_DRIVE_H0H1>;
+		};
+	};
+
+	spi2_sleep: spi2_sleep {
+		group1 {
+			psels = <NRF_PSEL(SPIM_SCK, 0, 17)>,
+				<NRF_PSEL(SPIM_MISO, 0, 19)>,
+				<NRF_PSEL(SPIM_MOSI, 0, 18)>;
+			low-power-enable;
+			bias-pull-down;
+		};
+	};
+};
+
+&spi2 {
+	compatible = "nordic,nrf-spim";
+	status = "okay";
+	cs-gpios = <&interface_to_nrf52840 3 GPIO_ACTIVE_LOW>;
+	pinctrl-0 = <&spi2_default>;
+	pinctrl-1 = <&spi2_sleep>;
+	pinctrl-names = "default", "sleep";
+	zephyr,pm-device-runtime-auto;
+
+	/* Nordic nRF52840 */
+	hci_spi: bt-hci@0 {
+		compatible = "zephyr,bt-hci-spi";
+		reg = <0>;
+		spi-max-frequency = <8000000>;
+		reset-gpios = <&interface_to_nrf52840 9 GPIO_ACTIVE_LOW>;
+		irq-gpios = <&interface_to_nrf52840 4 GPIO_ACTIVE_HIGH>;
+		reset-assert-duration-ms = <1>;
+	};
+};
+
+&spi3 {
+	zephyr,pm-device-runtime-auto;
+};
+
+&mx25r64 {
+	zephyr,pm-device-runtime-auto;
+
+	partitions {
+		compatible = "fixed-partitions";
+		#address-cells = <1>;
+		#size-cells = <1>;
+
+		slot1_partition: partition@0 {
+			label = "image-1";
+			reg = <0x00000000 0x000E0000>;
+		};
+		slot1_s_partition: subpartition@0 {
+			label = "image-1-secure";
+			reg = <0x00000000 0x00030000>;
+		};
+		slot1_ns_partition: subpartition@30000 {
+			label = "image-1-nonsecure";
+			reg = <0x00030000 0x000B0000>;
+		};
+		data_logger_partition: partition@E0000 {
+			label = "data_logger";
+			reg = <0x000E0000 0x00720000>;
+		};
+	};
+};

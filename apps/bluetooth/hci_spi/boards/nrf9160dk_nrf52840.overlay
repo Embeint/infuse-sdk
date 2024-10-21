@@ -1,0 +1,46 @@
+/*
+ * Copyright (c) 2024 Embeint Inc
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+&uicr {
+	gpio-as-nreset;
+};
+
+/* Route pins through for SPI */
+&nrf_interface_pins_0_2_routing {
+	status = "okay";
+};
+&nrf_interface_pins_3_5_routing {
+	status = "okay";
+};
+&nrf_interface_pin_9_routing {
+	status = "okay";
+};
+
+&pinctrl {
+	/* nRF9160 interface pins */
+	spi0_default: spi0_default {
+		group1 {
+			psels = <NRF_PSEL(SPIS_SCK, 0, 17)>,
+				<NRF_PSEL(SPIS_MOSI, 0, 20)>,
+				<NRF_PSEL(SPIS_MISO, 0, 15)>,
+				<NRF_PSEL(SPIS_CSN, 0, 22)>;
+		};
+	};
+};
+
+&spi0 {
+	compatible = "nordic,nrf-spis";
+	status = "okay";
+	def-char = <0x00>;
+	pinctrl-0 = <&spi0_default>;
+	pinctrl-names = "default";
+
+	bt-hci@0 {
+		compatible = "zephyr,bt-hci-spi-slave";
+		reg = <0>;
+		irq-gpios = <&interface_to_nrf9160 4 GPIO_ACTIVE_HIGH>;
+	};
+};
