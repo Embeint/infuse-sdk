@@ -54,6 +54,9 @@ endchoice
 # We expect our controllers to support the Zephyr vendor specific commands (read static address, etc)
 configdefault BT_HCI_VS
 	default y
+# We want to support our own extended VS commands
+configdefault BT_HCI_VS_EVT_USER
+	default y
 
 # Extended advertising is a requirement
 configdefault BT_EXT_ADV
