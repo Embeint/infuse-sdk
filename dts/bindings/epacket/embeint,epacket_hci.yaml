@@ -1,0 +1,18 @@
+# Copyright (c) 2024 Jordan Yates <jordan@embeint.com>
+# SPDX-License-Identifier: LicenseRef-Embeint
+
+description: ePacket HCI interface
+
+compatible: "embeint,epacket-hci"
+
+include: "epacket-base.yaml"
+
+properties:
+  depends-on:
+    default: "CONFIG_EPACKET_INTERFACE_HCI"
+  max-packet-size:
+    default: 252
+  header-size:
+    default: 5
+  footer-size:
+    default: 0

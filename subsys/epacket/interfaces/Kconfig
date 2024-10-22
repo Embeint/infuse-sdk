@@ -85,6 +85,20 @@ source "subsys/logging/Kconfig.template.log_config"
 
 endif # EPACKET_INTERFACE_BT_ADV
 
+config EPACKET_INTERFACE_HCI
+	bool "ePacket Bluetooth HCI"
+	depends on DT_HAS_EMBEINT_EPACKET_HCI_ENABLED
+	depends on BT_HCI_RAW || BT_HCI_HOST
+	default y
+
+if EPACKET_INTERFACE_HCI
+
+module = EPACKET_HCI
+module-str = epacket_hci
+source "subsys/logging/Kconfig.template.log_config"
+
+endif # EPACKET_INTERFACE_HCI
+
 config EPACKET_INTERFACE_DUMMY
 	bool "ePacket dummy interface"
 	depends on DT_HAS_EMBEINT_EPACKET_DUMMY_ENABLED
