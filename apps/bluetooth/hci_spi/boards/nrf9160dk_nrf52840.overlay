@@ -42,5 +42,8 @@
 		compatible = "zephyr,bt-hci-spi-slave";
 		reg = <0>;
 		irq-gpios = <&interface_to_nrf9160 4 GPIO_ACTIVE_HIGH>;
+		epacket_hci: epacket_hci {
+			compatible = "embeint,epacket-hci";
+		};
 	};
 };

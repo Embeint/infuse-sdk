@@ -144,6 +144,9 @@
 		reset-gpios = <&interface_to_nrf52840 9 GPIO_ACTIVE_LOW>;
 		irq-gpios = <&interface_to_nrf52840 4 GPIO_ACTIVE_HIGH>;
 		reset-assert-duration-ms = <1>;
+		epacket_hci: epacket_hci {
+			compatible = "embeint,epacket-hci";
+		};
 	};
 };
 

@@ -158,6 +158,12 @@
 	zephyr,pm-device-runtime-auto;
 };
 
+&hci_spi {
+	epacket_hci: epacket_hci {
+		compatible = "embeint,epacket-hci";
+	};
+};
+
 &w25q128jv {
 	zephyr,pm-device-runtime-auto;
 
