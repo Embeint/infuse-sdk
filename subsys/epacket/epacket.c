@@ -146,6 +146,7 @@ static void epacket_handle_rx(struct net_buf *buf)
 	struct epacket_interface_common_data *interface_data;
 	struct epacket_rx_metadata *metadata = net_buf_user_data(buf);
 	const struct epacket_interface_api *api = metadata->interface->api;
+	struct epacket_interface_cb *cb, *cbs;
 	int rc;
 
 	interface_data = metadata->interface->data;
@@ -216,6 +217,16 @@ static void epacket_handle_rx(struct net_buf *buf)
 		/* Notify backend of decryption result */
 		api->decrypt_result(metadata->interface, buf, rc);
 	}
+
+	/* Run any external interface receive callbacks
+	 * (safe as callback may trigger unregistration)
+	 */
+	SYS_SLIST_FOR_EACH_CONTAINER_SAFE(&interface_data->callback_list, cb, cbs, node) {
+		if (cb->packet_received) {
+			cb->packet_received(buf, rc == 0, cb->user_ctx);
+		}
+	}
+
 	/* Payload handling */
 	interface_data->receive_handler(buf);
 }
