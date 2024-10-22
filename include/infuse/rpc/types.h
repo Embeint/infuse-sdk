@@ -241,6 +241,8 @@ enum rpc_builtin_id {
 	RPC_ID_KV_REFLECT_CRCS = 7,
 	/* Query current state of zbus channel */
 	RPC_ID_ZBUS_CHANNEL_STATE = 8,
+	/* Query basic application versions and state */
+	RPC_ID_APPLICATION_INFO = 9,
 	/* Scan for WiFi networks */
 	RPC_ID_WIFI_SCAN = 10,
 	/* Get current WiFi interface state */
@@ -379,6 +381,31 @@ struct rpc_zbus_channel_state_response {
 	uint32_t publish_period_avg_ms;
 	/* Channel data */
 	uint8_t data[];
+} __packed;
+
+/* Query basic application versions and state */
+struct rpc_application_info_request {
+	struct infuse_rpc_req_header header;
+} __packed;
+
+struct rpc_application_info_response {
+	struct infuse_rpc_rsp_header header;
+	/* Application ID */
+	uint32_t application_id;
+	/* Application version number */
+	struct rpc_struct_mcuboot_img_sem_ver version;
+	/* Current Infuse network ID */
+	uint32_t network_id;
+	/* Application uptime */
+	uint32_t uptime;
+	/* Application reboot count */
+	uint32_t reboots;
+	/* Key-Value store reflect global CRC */
+	uint32_t kv_crc;
+	/* Data blocks logged to internal flash */
+	uint32_t data_blocks_internal;
+	/* Data blocks logged to external flash */
+	uint32_t data_blocks_external;
 } __packed;
 
 /* Scan for WiFi networks */

@@ -101,6 +101,13 @@ void rpc_command_runner(struct net_buf *request)
 		}
 		break;
 #endif /* CONFIG_INFUSE_RPC_COMMAND_ZBUS_CHANNEL_STATE */
+#ifdef CONFIG_INFUSE_RPC_COMMAND_APPLICATION_INFO
+	case RPC_ID_APPLICATION_INFO:
+		if (AUTHORISED(auth, APPLICATION_INFO)) { /* GCOVR_EXCL_BR_LINE */
+			response = rpc_command_application_info(request);
+		}
+		break;
+#endif /* CONFIG_INFUSE_RPC_COMMAND_APPLICATION_INFO */
 #ifdef CONFIG_INFUSE_RPC_COMMAND_WIFI_SCAN
 	case RPC_ID_WIFI_SCAN:
 		if (AUTHORISED(auth, WIFI_SCAN)) { /* GCOVR_EXCL_BR_LINE */

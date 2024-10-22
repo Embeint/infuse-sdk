@@ -97,6 +97,17 @@ config INFUSE_RPC_COMMAND_ZBUS_CHANNEL_STATE_REQUIRED_AUTH
 	depends on INFUSE_RPC_COMMAND_ZBUS_CHANNEL_STATE
 	default 2
 
+config INFUSE_RPC_COMMAND_APPLICATION_INFO
+	bool "Enable RPC application_info"
+	default y if INFUSE_SDK
+	help
+	  Query basic application versions and state
+
+config INFUSE_RPC_COMMAND_APPLICATION_INFO_REQUIRED_AUTH
+	int "Required authorisation level to run application_info"
+	depends on INFUSE_RPC_COMMAND_APPLICATION_INFO
+	default 1
+
 config INFUSE_RPC_COMMAND_WIFI_SCAN
 	bool "Enable RPC wifi_scan"
 	depends on WIFI

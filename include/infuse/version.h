@@ -13,8 +13,8 @@
 #include <zephyr/dfu/mcuboot.h>
 #include <zephyr/storage/flash_map.h>
 
-#if __has_include("app_version.h")
-#include "app_version.h"
+#if __has_include("zephyr/app_version.h")
+#include "zephyr/app_version.h"
 #else
 /* Fallback for applications without VERSION file */
 #define APP_VERSION_MAJOR 0
