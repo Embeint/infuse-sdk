@@ -206,6 +206,23 @@
                 {"name": "data", "type": "uint8_t", "num": 0, "description": "Channel data"}
             ]
         },
+        "9": {
+            "name": "application_info",
+            "description": "Query basic application versions and state",
+            "default": "y if INFUSE_SDK",
+            "default_auth": "EPACKET_AUTH_NETWORK",
+            "request_params": [],
+            "response_params": [
+                {"name": "application_id", "type": "uint32_t", "description": "Application ID"},
+                {"name": "version", "type": "struct rpc_struct_mcuboot_img_sem_ver", "description": "Application version number"},
+                {"name": "network_id", "type": "uint32_t", "description": "Current Infuse network ID"},
+                {"name": "uptime", "type": "uint32_t", "description": "Application uptime"},
+                {"name": "reboots", "type": "uint32_t", "description": "Application reboot count"},
+                {"name": "kv_crc", "type": "uint32_t", "description": "Key-Value store reflect global CRC"},
+                {"name": "data_blocks_internal", "type": "uint32_t", "description": "Data blocks logged to internal flash"},
+                {"name": "data_blocks_external", "type": "uint32_t", "description": "Data blocks logged to external flash"}
+            ]
+        },
         "10": {
             "name": "wifi_scan",
             "description": "Scan for WiFi networks",
