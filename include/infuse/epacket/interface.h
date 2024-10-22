@@ -76,6 +76,17 @@ struct epacket_interface_cb {
 	 */
 	void (*tx_failure)(const struct net_buf *buf, int reason, void *user_ctx);
 
+	/**
+	 * @brief A packet was received on the interface
+	 *
+	 * @note Buffer contents must not be modified or freed from this context.
+	 *
+	 * @param buf The packet that was received
+	 * @param decrypted True if packet contents have been decrypted successfully
+	 * @param user_ctx User context pointer
+	 */
+	void (*packet_received)(const struct net_buf *buf, bool decrypted, void *user_ctx);
+
 	/* User provided context pointer */
 	void *user_ctx;
 
