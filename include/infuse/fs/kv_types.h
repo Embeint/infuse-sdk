@@ -53,6 +53,14 @@ struct kv_string {
 	} __packed
 /* clang-format on */
 
+/* MCUboot semantic versioning struct */
+struct kv_mcuboot_img_sem_ver {
+	uint8_t major;
+	uint8_t minor;
+	uint16_t revision;
+	uint32_t build_num;
+} __packed;
+
 /**
  * @}
  */
@@ -80,6 +88,14 @@ struct kv_exfat_disk_info {
 	uint32_t block_count;
 	/* Disk block size */
 	uint32_t block_size;
+} __packed;
+
+/* External Bluetooth controller version */
+struct kv_bluetooth_ctlr_version {
+	/* Application ID */
+	uint32_t application;
+	/* Application version number */
+	struct kv_mcuboot_img_sem_ver version;
 } __packed;
 
 /* Fixed global location of the device */
@@ -252,6 +268,8 @@ enum kv_builtin_id {
 	KV_KEY_BLUETOOTH_ADDR = 1,
 	/* exFAT disk information */
 	KV_KEY_EXFAT_DISK_INFO = 2,
+	/* External Bluetooth controller version */
+	KV_KEY_BLUETOOTH_CTLR_VERSION = 3,
 	/* Fixed global location of the device */
 	KV_KEY_FIXED_LOCATION = 10,
 	/* WiFi network name */
@@ -300,6 +318,7 @@ enum kv_builtin_size {
 	_KV_KEY_REBOOTS_SIZE = sizeof(struct kv_reboots),
 	_KV_KEY_BLUETOOTH_ADDR_SIZE = sizeof(struct kv_bluetooth_addr),
 	_KV_KEY_EXFAT_DISK_INFO_SIZE = sizeof(struct kv_exfat_disk_info),
+	_KV_KEY_BLUETOOTH_CTLR_VERSION_SIZE = sizeof(struct kv_bluetooth_ctlr_version),
 	_KV_KEY_FIXED_LOCATION_SIZE = sizeof(struct kv_fixed_location),
 	_KV_KEY_EPACKET_UDP_PORT_SIZE = sizeof(struct kv_epacket_udp_port),
 	_KV_KEY_LTE_MODEM_IMEI_SIZE = sizeof(struct kv_lte_modem_imei),
@@ -310,6 +329,7 @@ enum kv_builtin_size {
 #define _KV_KEY_REBOOTS_TYPE struct kv_reboots
 #define _KV_KEY_BLUETOOTH_ADDR_TYPE struct kv_bluetooth_addr
 #define _KV_KEY_EXFAT_DISK_INFO_TYPE struct kv_exfat_disk_info
+#define _KV_KEY_BLUETOOTH_CTLR_VERSION_TYPE struct kv_bluetooth_ctlr_version
 #define _KV_KEY_FIXED_LOCATION_TYPE struct kv_fixed_location
 #define _KV_KEY_WIFI_SSID_TYPE struct kv_wifi_ssid
 #define _KV_KEY_WIFI_PSK_TYPE struct kv_wifi_psk
@@ -330,6 +350,7 @@ enum kv_builtin_size {
 #define KV_REFLECT_NUM ( \
 	IF_ENABLED(CONFIG_KV_STORE_KEY_BLUETOOTH_ADDR, (1 +)) \
 	IF_ENABLED(CONFIG_KV_STORE_KEY_EXFAT_DISK_INFO, (1 +)) \
+	IF_ENABLED(CONFIG_KV_STORE_KEY_BLUETOOTH_CTLR_VERSION, (1 +)) \
 	IF_ENABLED(CONFIG_KV_STORE_KEY_FIXED_LOCATION, (1 +)) \
 	IF_ENABLED(CONFIG_KV_STORE_KEY_WIFI_SSID, (1 +)) \
 	IF_ENABLED(CONFIG_KV_STORE_KEY_WIFI_PSK, (1 +)) \

@@ -18,6 +18,13 @@ config KV_STORE_KEY_EXFAT_DISK_INFO
 	help
 	  exFAT disk information
 
+config KV_STORE_KEY_BLUETOOTH_CTLR_VERSION
+	bool "Enable KV key BLUETOOTH_CTLR_VERSION"
+	depends on !BT_CTLR
+	default y if BT
+	help
+	  External Bluetooth controller version
+
 config KV_STORE_KEY_FIXED_LOCATION
 	bool "Enable KV key FIXED_LOCATION"
 	help
