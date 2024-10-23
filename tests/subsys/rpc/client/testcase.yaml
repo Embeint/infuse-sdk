@@ -1,0 +1,9 @@
+common:
+  tags: rpc
+  min_flash: 64
+  min_ram: 32
+tests:
+  rpc.client:
+    integration_platforms:
+      - native_sim
+      - mps2/an385
