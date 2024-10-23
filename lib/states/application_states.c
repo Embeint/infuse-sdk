@@ -141,7 +141,7 @@ bool infuse_state_get(enum infuse_state state)
 	return atomic_test_bit(application_states, state);
 }
 
-void infuse_states_snapshot(atomic_t snapshot[ATOMIC_BITMAP_SIZE(INFUSE_STATES_END + 1)])
+void infuse_states_snapshot(atomic_t snapshot[INFUSE_STATES_ARRAY_SIZE])
 {
 	for (int i = 0; i < INFUSE_STATES_ARRAY_SIZE; i++) {
 		snapshot[i] = atomic_get(&application_states[i]);
