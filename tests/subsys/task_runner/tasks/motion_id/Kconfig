@@ -1,0 +1,4 @@
+configdefault INFUSE_ZBUS_CHAN_IMU
+	default y
+
+source "Kconfig.zephyr"
