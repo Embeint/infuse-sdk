@@ -60,6 +60,8 @@ ZTEST(epacket_callbacks, test_interface_tx_failure)
 	interface_cb.packet_received = packet_received_cb;
 	interface_cb.user_ctx = &interface_cb;
 
+	epacket_register_callback(epacket_dummy, &interface_cb);
+
 	/* Allocate buffer */
 	tx = epacket_alloc_tx_for_interface(epacket_dummy, K_NO_WAIT);
 	zassert_not_null(tx);
@@ -127,17 +129,24 @@ ZTEST(epacket_callbacks, test_interface_tx_failure)
 	k_poll_signal_check(&rx_recv_signal, &signaled, &result);
 	zassert_equal(1, signaled);
 	zassert_equal(1, result);
+	k_poll_signal_reset(&rx_recv_signal);
+
+	/* Unregister from callback */
+	zassert_true(epacket_unregister_callback(epacket_dummy, &interface_cb));
+	zassert_false(epacket_unregister_callback(epacket_dummy, &interface_cb));
+
+	/* Callbacks should no longer run */
+	epacket_dummy_receive(epacket_dummy, &frame, payload, sizeof(payload));
+	k_sleep(K_MSEC(1));
+	k_poll_signal_check(&rx_recv_signal, &signaled, &result);
+	zassert_equal(0, signaled);
 }
 
 void *callback_setup(void)
 {
-	const struct device *epacket_dummy = DEVICE_DT_GET(DT_NODELABEL(epacket_dummy));
-
 	k_poll_signal_init(&tx_done_signal);
 	k_poll_signal_init(&tx_fail_signal);
 	k_poll_signal_init(&rx_recv_signal);
-	epacket_register_callback(epacket_dummy, &interface_cb);
-
 	return NULL;
 }
 
