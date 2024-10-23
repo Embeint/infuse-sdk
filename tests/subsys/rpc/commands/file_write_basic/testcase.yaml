@@ -1,0 +1,15 @@
+common:
+  tags: infuse
+  min_flash: 64
+  min_ram: 32
+tests:
+  rpc.commands.file_write_basic:
+    required_snippets:
+      - infuse
+    integration_platforms:
+      - mps2/an385
+  rpc.commands.file_write_basic.native:
+    platform_allow:
+      - native_sim
+    integration_platforms:
+      - native_sim
