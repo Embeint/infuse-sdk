@@ -96,3 +96,16 @@ module-str = UBLOX GNSS task
 source "subsys/logging/Kconfig.template.log_config"
 
 endif # TASK_RUNNER_TASK_GNSS_UBX
+
+config TASK_RUNNER_TASK_MOTION_ID
+	bool "Motion identification task"
+	depends on INFUSE_ZBUS_CHAN_IMU
+	depends on ZBUS
+
+if TASK_RUNNER_TASK_MOTION_ID
+
+module = TASK_MOTION_ID
+module-str = Motion ID task
+source "subsys/logging/Kconfig.template.log_config"
+
+endif # TASK_RUNNER_TASK_MOTION_ID
