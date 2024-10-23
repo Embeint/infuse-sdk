@@ -1,0 +1,13 @@
+sample:
+  description: Motion ID task runner sample
+  name: Motion ID task runner
+common:
+  filter: dt_alias_exists("imu0")
+  build_only: true
+  required_snippets:
+    - infuse
+tests:
+  sample.task_runner.motion_id:
+    tags: app
+    integration_platforms:
+      - thingy53/nrf5340/cpuapp
