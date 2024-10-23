@@ -10,6 +10,18 @@ module = INFUSE_RPC
 module-str = Infuse rpc
 source "subsys/logging/Kconfig.template.log_config"
 
+config INFUSE_RPC_CLIENT
+	bool "Support for running commands on remote devices"
+
+if INFUSE_RPC_CLIENT
+
+config INFUSE_RPC_CLIENT_MAX_IN_FLIGHT
+	int "Maximum number of RPC commands that can be pending at once"
+	range 1 255
+	default 3
+
+endif # INFUSE_RPC_CLIENT
+
 config INFUSE_RPC_SERVER_WATCHDOG
 	bool "Install watchdog on the RPC server thread"
 	depends on INFUSE_WATCHDOG
