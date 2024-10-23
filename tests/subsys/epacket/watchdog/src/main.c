@@ -24,7 +24,7 @@ void infuse_watchdog_expired(const struct device *dev, int channel_id)
 
 ZTEST(epacket_watchdog, test_watchdog)
 {
-	extern const k_tid_t epacket_processor_thread;
+	extern k_tid_t epacket_processor_thread;
 	int rc;
 
 	/* Start the watchdog */

@@ -27,9 +27,16 @@ NET_BUF_POOL_DEFINE(epacket_pool_tx, CONFIG_EPACKET_BUFFERS_TX, CONFIG_EPACKET_P
 NET_BUF_POOL_DEFINE(epacket_pool_rx, CONFIG_EPACKET_BUFFERS_RX, CONFIG_EPACKET_PACKET_SIZE_MAX,
 		    sizeof(struct epacket_rx_metadata), NULL);
 
+K_THREAD_STACK_DEFINE(epacket_stack_area, 2048);
+static struct k_thread epacket_process_thread;
+COND_CODE_0(CONFIG_ZTEST, (static), ())
+k_tid_t epacket_processor_thread;
+
 static K_FIFO_DEFINE(epacket_rx_queue);
 static K_FIFO_DEFINE(epacket_tx_queue);
 static const struct device *tx_device[CONFIG_EPACKET_BUFFERS_TX];
+static k_timeout_t loop_period = K_FOREVER;
+static int wdog_channel;
 
 LOG_MODULE_REGISTER(epacket, CONFIG_EPACKET_LOG_LEVEL);
 
@@ -251,10 +258,7 @@ static void epacket_handle_tx(struct net_buf *buf)
 	api->send(dev, buf);
 }
 
-INFUSE_WATCHDOG_REGISTER_SYS_INIT(epacket_wdog, CONFIG_EPACKET_INFUSE_WATCHDOG, wdog_channel,
-				  loop_period);
-
-static int epacket_processor(void *a, void *b, void *c)
+static void epacket_processor(void *a, void *b, void *c)
 {
 	struct k_poll_event events[2] = {
 		K_POLL_EVENT_STATIC_INITIALIZER(K_POLL_TYPE_FIFO_DATA_AVAILABLE,
@@ -289,8 +293,19 @@ static int epacket_processor(void *a, void *b, void *c)
 		/* Feed watchdog before sleeping again */
 		infuse_watchdog_feed(wdog_channel);
 	}
+}
+
+static int epacket_boot(void)
+{
+	wdog_channel = IS_ENABLED(CONFIG_EPACKET_INFUSE_WATCHDOG)
+			       ? infuse_watchdog_install(&loop_period)
+			       : -ENODEV;
+
+	epacket_processor_thread =
+		k_thread_create(&epacket_process_thread, epacket_stack_area,
+				K_THREAD_STACK_SIZEOF(epacket_stack_area), epacket_processor, NULL,
+				NULL, NULL, 0, K_ESSENTIAL, K_NO_WAIT);
 	return 0;
 }
 
-K_THREAD_DEFINE(epacket_processor_thread, 2048, epacket_processor, NULL, NULL, NULL, 0, K_ESSENTIAL,
-		0);
+SYS_INIT(epacket_boot, POST_KERNEL, 0);
