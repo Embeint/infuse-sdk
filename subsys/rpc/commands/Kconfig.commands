@@ -168,6 +168,17 @@ config INFUSE_RPC_COMMAND_COAP_DOWNLOAD_REQUIRED_AUTH
 	depends on INFUSE_RPC_COMMAND_COAP_DOWNLOAD
 	default 2
 
+config INFUSE_RPC_COMMAND_FILE_WRITE_BASIC
+	bool "Enable RPC file_write_basic"
+	default y if INFUSE_SDK
+	help
+	  Write a file to the device
+
+config INFUSE_RPC_COMMAND_FILE_WRITE_BASIC_REQUIRED_AUTH
+	int "Required authorisation level to run file_write_basic"
+	depends on INFUSE_RPC_COMMAND_FILE_WRITE_BASIC
+	default 1
+
 config INFUSE_RPC_COMMAND_SECURITY_STATE
 	bool "Enable RPC security_state"
 	default y if INFUSE_SECURITY

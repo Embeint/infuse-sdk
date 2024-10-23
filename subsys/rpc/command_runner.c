@@ -143,6 +143,13 @@ void rpc_command_runner(struct net_buf *request)
 		}
 		break;
 #endif /* CONFIG_INFUSE_RPC_COMMAND_COAP_DOWNLOAD */
+#ifdef CONFIG_INFUSE_RPC_COMMAND_FILE_WRITE_BASIC
+	case RPC_ID_FILE_WRITE_BASIC:
+		if (AUTHORISED(auth, FILE_WRITE_BASIC)) { /* GCOVR_EXCL_BR_LINE */
+			response = rpc_command_file_write_basic(request);
+		}
+		break;
+#endif /* CONFIG_INFUSE_RPC_COMMAND_FILE_WRITE_BASIC */
 #ifdef CONFIG_INFUSE_RPC_COMMAND_SECURITY_STATE
 	case RPC_ID_SECURITY_STATE:
 		if (AUTHORISED(auth, SECURITY_STATE)) { /* GCOVR_EXCL_BR_LINE */

@@ -292,6 +292,20 @@
                 {"name": "resource_crc", "type": "uint32_t", "description": "CRC of resource downloaded"}
             ]
         },
+        "40": {
+            "name": "file_write_basic",
+            "description": "Write a file to the device",
+            "default": "y if INFUSE_SDK",
+            "default_auth": "EPACKET_AUTH_NETWORK",
+            "rpc_data": true,
+            "request_params": [
+                {"name": "action", "type": "uint8_t", "description": "File action (0 = Discard, 1 = Application DFU)"}
+            ],
+            "response_params": [
+                {"name": "recv_len", "type": "uint32_t", "description": "Number of bytes received"},
+                {"name": "recv_crc", "type": "uint32_t", "description": "CRC of bytes received"}
+            ]
+        },
         "30000": {
             "name": "security_state",
             "description": "Query current security state and validate identity",
