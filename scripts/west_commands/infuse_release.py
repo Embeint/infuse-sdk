@@ -150,6 +150,7 @@ class infuse_release(WestCommand):
         sign_path = f'"{str(self.args.sign.resolve().absolute())}"'
 
         build_cmd = ["west", "build"]
+        build_cmd.extend(["-p"])
         build_cmd.extend(["--board", self.args.board])
         build_cmd.extend(["--source-dir", str(self.args.source_dir)])
         build_cmd.extend(["--build-dir", str(self.build_dir)])
