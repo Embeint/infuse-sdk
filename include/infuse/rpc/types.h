@@ -253,6 +253,8 @@ enum rpc_builtin_id {
 	RPC_ID_LTE_STATE = 21,
 	/* Download a file from a COAP server (Infuse-IoT DTLS protected) */
 	RPC_ID_COAP_DOWNLOAD = 30,
+	/* Write a file to the device */
+	RPC_ID_FILE_WRITE_BASIC = 40,
 	/* Query current security state and validate identity */
 	RPC_ID_SECURITY_STATE = 30000,
 	/* Send multiple INFUSE_RPC_DATA packets */
@@ -485,6 +487,22 @@ struct rpc_coap_download_response {
 	uint32_t resource_len;
 	/* CRC of resource downloaded */
 	uint32_t resource_crc;
+} __packed;
+
+/* Write a file to the device */
+struct rpc_file_write_basic_request {
+	struct infuse_rpc_req_header header;
+	struct infuse_rpc_req_data_header data_header;
+	/* File action (0 = Discard, 1 = Application DFU) */
+	uint8_t action;
+} __packed;
+
+struct rpc_file_write_basic_response {
+	struct infuse_rpc_rsp_header header;
+	/* Number of bytes received */
+	uint32_t recv_len;
+	/* CRC of bytes received */
+	uint32_t recv_crc;
 } __packed;
 
 /* Query current security state and validate identity */
