@@ -20,6 +20,7 @@
 #include <infuse/time/epoch.h>
 #include <infuse/security.h>
 #include <infuse/drivers/watchdog.h>
+#include <infuse/bluetooth/controller_manager.h>
 
 #ifdef CONFIG_NRF_MODEM_LIB
 #include <modem/nrf_modem_lib.h>
@@ -73,6 +74,12 @@ static int infuse_common_boot(void)
 	if (rc) {
 		LOG_ERR("Failed to enable Bluetooth (%d)", rc);
 	}
+#ifdef CONFIG_BT_CONTROLLER_MANAGER
+	rc = bt_controller_manager_init();
+	if (rc) {
+		LOG_WRN("Failed to init controller manager (%d)", rc);
+	}
+#endif /* CONFIG_BT_CONTROLLER_MANAGE*/
 #endif /* CONFIG_BT */
 
 	LOG_INF("\tVersion: %d.%d.%d+%08x", v.major, v.minor, v.revision, v.build_num);
@@ -91,6 +98,15 @@ static int infuse_common_boot(void)
 	memcpy(&bluetooth_addr, &bt_addr[0], sizeof(bluetooth_addr));
 	(void)KV_STORE_WRITE(KV_KEY_BLUETOOTH_ADDR, &bluetooth_addr);
 #endif /* CONFIG_BT */
+#ifdef CONFIG_KV_STORE_KEY_BLUETOOTH_CTLR_VERSION
+	KV_KEY_TYPE(KV_KEY_BLUETOOTH_CTLR_VERSION) bt_ctlr_ver;
+
+	if (KV_STORE_READ(KV_KEY_BLUETOOTH_CTLR_VERSION, &bt_ctlr_ver) > 0) {
+		LOG_INF("\tBT Ctlr: %d.%d.%d+%08x", bt_ctlr_ver.version.major,
+			bt_ctlr_ver.version.minor, bt_ctlr_ver.version.revision,
+			bt_ctlr_ver.version.build_num);
+	}
+#endif /* CONFIG_KV_STORE_KEY_BLUETOOTH_CTLR_VERSION */
 #ifdef CONFIG_KV_STORE_KEY_LTE_SIM_UICC
 	KV_STRUCT_KV_STRING_VAR(24) sim_uicc;
 
