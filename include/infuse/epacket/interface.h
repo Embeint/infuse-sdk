@@ -232,6 +232,23 @@ static inline void epacket_register_callback(const struct device *dev,
 }
 
 /**
+ * @brief Unregister from interface events
+ *
+ * @param dev Interface to unregister from
+ * @param cb Callback struct to unregister
+ *
+ * @retval true If structure was removed from callback list
+ * @retval false If structure was not present on list
+ */
+static inline bool epacket_unregister_callback(const struct device *dev,
+					       struct epacket_interface_cb *cb)
+{
+	struct epacket_interface_common_data *data = dev->data;
+
+	return sys_slist_find_and_remove(&data->callback_list, &cb->node);
+}
+
+/**
  * @brief Default ePacket receive handler
  *
  * Currently handles echo and RPC requests.
