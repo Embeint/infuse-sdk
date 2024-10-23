@@ -33,6 +33,13 @@ static struct key_value_slot_definition kv_slots[] = {
 		.flags = KV_FLAGS_REFLECT | KV_FLAGS_READ_ONLY,
 	},
 #endif /* CONFIG_KV_STORE_KEY_EXFAT_DISK_INFO */
+#ifdef CONFIG_KV_STORE_KEY_BLUETOOTH_CTLR_VERSION
+	{
+		.key = 3,
+		.range = 1,
+		.flags = KV_FLAGS_REFLECT,
+	},
+#endif /* CONFIG_KV_STORE_KEY_BLUETOOTH_CTLR_VERSION */
 #ifdef CONFIG_KV_STORE_KEY_FIXED_LOCATION
 	{
 		.key = 10,

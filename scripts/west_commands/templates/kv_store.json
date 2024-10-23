@@ -20,6 +20,15 @@
             "fields": [
                 {"name": "value", "type": "char", "num": 0, "description": "NULL terminated C string"}
             ]
+        },
+        "kv_mcuboot_img_sem_ver": {
+            "description": "MCUboot semantic versioning struct",
+            "fields": [
+                {"name": "major", "type": "uint8_t"},
+                {"name": "minor", "type": "uint8_t"},
+                {"name": "revision", "type": "uint16_t"},
+                {"name": "build_num", "type": "uint32_t"}
+            ]
         }
     },
     "definitions": [
@@ -51,6 +60,18 @@
             "fields": [
                 {"name": "block_count", "type": "uint32_t", "description": "Disk block count"},
                 {"name": "block_size", "type": "uint32_t", "description": "Disk block size"}
+            ]
+        },
+        {
+            "name": "BLUETOOTH_CTLR_VERSION",
+            "key": 3,
+            "description": "External Bluetooth controller version",
+            "reflect": true,
+            "depends_on": "!BT_CTLR",
+            "default": "y if BT",
+            "fields": [
+                {"name": "application", "type": "uint32_t", "description": "Application ID"},
+                {"name": "version", "type": "struct kv_mcuboot_img_sem_ver", "description": "Application version number"}
             ]
         },
         {
