@@ -124,9 +124,10 @@ int rpc_client_command_queue(struct rpc_client_ctx *ctx, enum rpc_builtin_id cmd
 	}
 	__ASSERT_NO_MSG(ctx_idx != UINT8_MAX);
 
-	/* Handle ID rollover to 0 */
+	/* Increment context ID */
+	ctx->request_id += 1;
 	if (ctx->request_id == 0) {
-		ctx->request_id++;
+		ctx->request_id += 1;
 	}
 
 	/* Allocate buffer for command */
@@ -145,7 +146,7 @@ int rpc_client_command_queue(struct rpc_client_ctx *ctx, enum rpc_builtin_id cmd
 
 	/* Command header */
 	req_header->command_id = cmd;
-	req_header->request_id = ctx->request_id++;
+	req_header->request_id = ctx->request_id;
 
 	/* Command payload */
 	net_buf_add_mem(cmd_buf, req_params, req_params_len);

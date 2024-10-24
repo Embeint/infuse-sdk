@@ -314,7 +314,7 @@ ZTEST(rpc_client, test_multi)
 	}
 
 	/* Validate request ID rollover doesn't cause problems */
-	ctx.request_id = UINT32_MAX;
+	ctx.request_id = UINT32_MAX - 1;
 	for (int i = 0; i < CONFIG_INFUSE_RPC_CLIENT_MAX_IN_FLIGHT; i++) {
 		rc = rpc_client_command_queue(&ctx, RPC_ID_ECHO, &req, sizeof(req),
 					      echo_rsp_multi_cb, NULL, K_NO_WAIT, K_SECONDS(1));
