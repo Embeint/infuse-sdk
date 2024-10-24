@@ -213,6 +213,16 @@ struct rpc_struct_wifi_scan_result {
 	char ssid[];
 } __packed;
 
+/* Actions to take upon receiving a file */
+enum rpc_enum_file_action {
+	/* Discard received file (Useful for testing) */
+	RPC_ENUM_FILE_ACTION_DISCARD = 0,
+	/* Complete application image for firmware upgrade */
+	RPC_ENUM_FILE_ACTION_APP_IMG = 1,
+	/* nRF91 LTE modem firmware upgrade diff */
+	RPC_ENUM_FILE_ACTION_NRF91_MODEM_DIFF = 20,
+};
+
 /**
  * @}
  */
@@ -471,7 +481,7 @@ struct rpc_coap_download_request {
 	uint16_t server_port;
 	/* COAP block timeout (Default 1000ms) */
 	uint16_t block_timeout_ms;
-	/* File action (0 = Discard, 1 = Application DFU) */
+	/* Action to apply to downloaded file */
 	uint8_t action;
 	/* Expected resource length (UINT32_MAX if unknown) */
 	uint32_t resource_len;
@@ -493,7 +503,7 @@ struct rpc_coap_download_response {
 struct rpc_file_write_basic_request {
 	struct infuse_rpc_req_header header;
 	struct infuse_rpc_req_data_header data_header;
-	/* File action (0 = Discard, 1 = Application DFU) */
+	/* Action to apply to written file */
 	uint8_t action;
 } __packed;
 
