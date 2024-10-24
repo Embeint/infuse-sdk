@@ -1,3 +1,12 @@
+# Firmware update values
+
+config INFUSE_APPLICATION_ID
+	hex "Unique application identifier"
+	default 0xB7000001
+
+configdefault IMG_MANAGER
+	default y
+
 # Softdevice default values
 
 configdefault BT_CTLR_SDC_PERIPHERAL_COUNT
@@ -11,9 +20,5 @@ configdefault BT_CTLR_SDC_TX_PACKET_COUNT
 
 configdefault BT_CTLR_SDC_RX_PACKET_COUNT
 	default 5
-
-config INFUSE_APPLICATION_ID
-	hex "Unique application identifier"
-	default 0xB7000001
 
 source "Kconfig.zephyr"
