@@ -21,11 +21,6 @@
 
 LOG_MODULE_DECLARE(rpc_server);
 
-enum file_action {
-	FILE_DISCARD = 0,
-	FILE_APPLICATION_DFU = 1,
-};
-
 struct net_buf *rpc_command_file_write_basic(struct net_buf *request)
 {
 	struct infuse_rpc_data *data;
@@ -63,10 +58,10 @@ struct net_buf *rpc_command_file_write_basic(struct net_buf *request)
 
 	/* Determine action */
 	switch (action) {
-	case FILE_DISCARD:
+	case RPC_ENUM_FILE_ACTION_DISCARD:
 		break;
 #if FIXED_PARTITION_EXISTS(slot1_partition)
-	case FILE_APPLICATION_DFU:
+	case RPC_ENUM_FILE_ACTION_APP_IMG:
 		rc = flash_area_open(FIXED_PARTITION_ID(slot1_partition), &fa);
 		if (rc < 0) {
 			goto error;
@@ -110,7 +105,7 @@ struct net_buf *rpc_command_file_write_basic(struct net_buf *request)
 
 		switch (action) {
 #if FIXED_PARTITION_EXISTS(slot1_partition)
-		case FILE_APPLICATION_DFU:
+		case RPC_ENUM_FILE_ACTION_APP_IMG:
 			rc = flash_area_write(fa, data_offset, data->payload, var_len);
 			if (rc < 0) {
 				LOG_ERR("DFU: Failed to write (%d)", rc);
@@ -139,7 +134,7 @@ struct net_buf *rpc_command_file_write_basic(struct net_buf *request)
 	/* Post write actions */
 	switch (action) {
 #ifdef CONFIG_MCUBOOT_IMG_MANAGER
-	case FILE_APPLICATION_DFU:
+	case RPC_ENUM_FILE_ACTION_APP_IMG:
 		if (boot_request_upgrade_multi(0, BOOT_UPGRADE_TEST) == 0) {
 #ifdef CONFIG_INFUSE_REBOOT
 			LOG_INF("DFU download complete, rebooting");

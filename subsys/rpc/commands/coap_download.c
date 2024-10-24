@@ -30,12 +30,6 @@
 
 LOG_MODULE_DECLARE(rpc_server);
 
-enum download_action {
-	DOWNLOAD_DISCARD = 0,
-	DOWNLOAD_APPLICATION_DFU = 1,
-	DOWNLOAD_NRF91_MODEM_DIFF = 20,
-};
-
 struct cb_ctx {
 	const struct flash_area *fa;
 	uint32_t expected_len;
@@ -55,7 +49,7 @@ static int data_cb(uint32_t offset, const uint8_t *data, uint16_t data_len, void
 	ctx->crc = crc32_ieee_update(ctx->crc, data, data_len);
 
 	switch (ctx->action) {
-	case DOWNLOAD_APPLICATION_DFU:
+	case RPC_ENUM_FILE_ACTION_APP_IMG:
 		/* Erase receiving area on first packet */
 		if (offset == 0) {
 			/* Round up to next 64kB */
@@ -75,7 +69,7 @@ static int data_cb(uint32_t offset, const uint8_t *data, uint16_t data_len, void
 		}
 		break;
 #ifdef CONFIG_NRF_MODEM_LIB
-	case DOWNLOAD_NRF91_MODEM_DIFF:
+	case RPC_ENUM_FILE_ACTION_NRF91_MODEM_DIFF:
 		rc = nrf_modem_delta_dfu_write(data, data_len);
 		if (rc != 0) {
 			LOG_ERR("Modem: Failed to write at 0x%08x (%d)", offset, rc);
@@ -112,10 +106,10 @@ struct net_buf *rpc_command_coap_download(struct net_buf *request)
 
 	/* Validate requested action */
 	switch (req->action) {
-	case DOWNLOAD_DISCARD:
+	case RPC_ENUM_FILE_ACTION_DISCARD:
 		break;
 #if FIXED_PARTITION_EXISTS(slot1_partition)
-	case DOWNLOAD_APPLICATION_DFU:
+	case RPC_ENUM_FILE_ACTION_APP_IMG:
 		rc = flash_area_open(FIXED_PARTITION_ID(slot1_partition), &context.fa);
 		if (rc < 0) {
 			goto error;
@@ -136,7 +130,7 @@ struct net_buf *rpc_command_coap_download(struct net_buf *request)
 		break;
 #endif /* FIXED_PARTITION_EXISTS(slot1_partition) */
 #ifdef CONFIG_NRF_MODEM_LIB
-	case DOWNLOAD_NRF91_MODEM_DIFF: {
+	case RPC_ENUM_FILE_ACTION_NRF91_MODEM_DIFF: {
 		size_t offset;
 
 		/* Determine if area needs to be erased first */
@@ -240,7 +234,7 @@ done:
 	/* Post download actions */
 	switch (req->action) {
 #ifdef CONFIG_MCUBOOT_IMG_MANAGER
-	case DOWNLOAD_APPLICATION_DFU:
+	case RPC_ENUM_FILE_ACTION_APP_IMG:
 		if (boot_request_upgrade_multi(0, BOOT_UPGRADE_TEST) == 0) {
 #ifdef CONFIG_INFUSE_REBOOT
 			LOG_INF("DFU download complete, rebooting");
@@ -252,7 +246,7 @@ done:
 		break;
 #endif /* CONFIG_MCUBOOT_IMG_MANAGER */
 #ifdef CONFIG_NRF_MODEM_LIB
-	case DOWNLOAD_NRF91_MODEM_DIFF:
+	case RPC_ENUM_FILE_ACTION_NRF91_MODEM_DIFF:
 		/* Free resources */
 		rc = nrf_modem_delta_dfu_write_done();
 		if (rc == 0) {
