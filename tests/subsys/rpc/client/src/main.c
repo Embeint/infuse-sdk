@@ -372,6 +372,7 @@ static void test_command_data_param(uint32_t size, uint8_t ack_period)
 	uint8_t buffer[128];
 	uint32_t request_id;
 	uint32_t remaining, offset;
+	uint8_t pkt_cnt;
 	int rc;
 
 	/* Need to do ePacket loopback in an alternate context for blocking API */
@@ -385,12 +386,17 @@ static void test_command_data_param(uint32_t size, uint8_t ack_period)
 	zassert_equal(0, rc);
 	request_id = rpc_client_last_request_id(&ctx);
 
-	/* Queuing a bad response ID fails */
+	/* Using a bad response ID fails */
+	zassert_equal(-EINVAL, rpc_client_ack_wait(&ctx, request_id + 1, K_FOREVER));
 	zassert_equal(-EINVAL, rpc_client_data_queue(&ctx, request_id + 1, 0, buffer, 10));
+
+	/* Wait for initial ACK */
+	zassert_equal(0, rpc_client_ack_wait(&ctx, request_id, K_SECONDS(1)));
 
 	/* Push requested data size */
 	remaining = req.data_header.size;
 	offset = 0;
+	pkt_cnt = 0;
 	while (remaining > 0) {
 		size_t to_send = MIN(remaining, sizeof(buffer));
 
@@ -417,14 +423,20 @@ static void test_command_data_param(uint32_t size, uint8_t ack_period)
 		 * as the loopback logic also needs to claim buffers from the same pool.
 		 */
 		k_sleep(K_MSEC(250));
+
+		/* Wait for ACKs */
+		if (remaining && (++pkt_cnt == req.data_header.rx_ack_period)) {
+			zassert_equal(0, rpc_client_ack_wait(&ctx, request_id, K_SECONDS(1)));
+			pkt_cnt = 0;
+		}
 	}
 
 	/* Final callback should have run */
 	zassert_equal(0, k_sem_take(&client_cb_sem, K_MSEC(1000)));
 
 	/* Queuing after command completion should return an error */
-	rc = rpc_client_data_queue(&ctx, request_id, offset, buffer, 10);
-	zassert_equal(-EINVAL, rc);
+	zassert_equal(-EINVAL, rpc_client_data_queue(&ctx, request_id, offset, buffer, 10));
+	zassert_equal(-EINVAL, rpc_client_ack_wait(&ctx, request_id, K_FOREVER));
 
 	/* Cancel loopback worker */
 	k_work_cancel_delayable(&dwork);
