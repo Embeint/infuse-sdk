@@ -50,6 +50,8 @@ uint8_t infuse_hci_cmd_vs_epacket(const infuse_hci_cmd_vs_epacket_t *p_params, u
 	meta->interface_id = EPACKET_INTERFACE_HCI;
 	meta->rssi = 0;
 
+	LOG_HEXDUMP_DBG(p_params, len, "RX");
+
 	/* Push payload into buffer */
 	net_buf_add_mem(buf, p_params, len);
 
@@ -108,6 +110,8 @@ static void epacket_hci_send(const struct device *dev, struct net_buf *buf)
 	/* ePacket payload */
 	net_buf_add_mem(evt, buf->data, buf->len);
 
+	LOG_HEXDUMP_DBG(evt->data, evt->len, "TX");
+
 	rc = bt_hci_recv(NULL, evt);
 	if (rc < 0) {
 		LOG_WRN("Failed to send (%d)", rc);
@@ -130,6 +134,8 @@ static bool infuse_hci_evt_handler(struct net_buf_simple *evt_buf)
 	if (evt->subevent != INFUSE_HCI_EVT_VS_EPACKET) {
 		return false;
 	}
+
+	LOG_HEXDUMP_DBG(evt_buf->data, evt_buf->len, "RX");
 
 	struct net_buf *buf = epacket_alloc_rx(K_FOREVER);
 	struct epacket_rx_metadata *meta;
@@ -174,6 +180,8 @@ static void epacket_hci_send(const struct device *dev, struct net_buf *buf)
 	epacket_hdr->sequence = sequence_num++;
 	/* ePacket payload */
 	net_buf_add_mem(cmd, buf->data, buf->len);
+
+	LOG_HEXDUMP_DBG(cmd->data, cmd->len, "TX");
 
 	rc = bt_hci_cmd_send(INFUSE_HCI_OPCODE_CMD_VS_EPACKET, cmd);
 	if (rc < 0) {
