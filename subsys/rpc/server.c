@@ -96,28 +96,37 @@ struct net_buf *rpc_server_pull_data(uint32_t request_id, uint32_t expected_offs
 	}
 }
 
-void rpc_server_ack_data(const struct device *interface, uint32_t request_id, uint32_t offset,
-			 uint8_t ack_period)
+static void send_ack(const struct device *interface, uint32_t request_id, uint8_t num_offsets)
 {
 	struct infuse_rpc_data_ack *data_ack;
 	struct net_buf *ack;
 
+	/* Allocate the RPC_DATA_ACK packet */
+	ack = epacket_alloc_tx_for_interface(interface, K_FOREVER);
+	data_ack = net_buf_add(ack, sizeof(*data_ack));
+	epacket_set_tx_metadata(ack, EPACKET_AUTH_NETWORK, 0, INFUSE_RPC_DATA_ACK);
+	/* Populate data */
+	data_ack->request_id = request_id;
+	net_buf_add_mem(ack, data_packet_acks, num_offsets * sizeof(uint32_t));
+	/* Send the RPC_DATA_ACK and reset */
+	epacket_queue(interface, ack);
+	rpc_server_pull_data_reset();
+}
+
+void rpc_server_ack_data_ready(const struct device *interface, uint32_t request_id)
+{
+	send_ack(interface, request_id, 0);
+}
+
+void rpc_server_ack_data(const struct device *interface, uint32_t request_id, uint32_t offset,
+			 uint8_t ack_period)
+{
 	/* Handle sending ACK responses */
 	if (ack_period && (ack_period <= ARRAY_SIZE(data_packet_acks))) {
 		/* Store that we received this ack */
 		data_packet_acks[data_packet_ack_counter] = offset;
 		if (++data_packet_ack_counter >= ack_period) {
-			/* Allocate the RPC_DATA_ACK packet */
-			ack = epacket_alloc_tx_for_interface(interface, K_FOREVER);
-			data_ack = net_buf_add(ack, sizeof(*data_ack));
-			epacket_set_tx_metadata(ack, EPACKET_AUTH_NETWORK, 0, INFUSE_RPC_DATA_ACK);
-			/* Populate data */
-			data_ack->request_id = request_id;
-			net_buf_add_mem(ack, data_packet_acks,
-					data_packet_ack_counter * sizeof(uint32_t));
-			/* Send the RPC_DATA_ACK and reset */
-			epacket_queue(interface, ack);
-			rpc_server_pull_data_reset();
+			send_ack(interface, request_id, data_packet_ack_counter);
 		}
 	}
 }

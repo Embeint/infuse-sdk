@@ -288,6 +288,7 @@ static void test_data_receiver(uint32_t total_send, uint8_t skip_after, uint8_t 
 	struct epacket_dummy_frame *tx_header, header = {0};
 	struct rpc_data_receiver_request *req;
 	struct rpc_data_receiver_response *rsp;
+	struct infuse_rpc_data_ack *data_ack;
 	struct infuse_rpc_data *data_hdr;
 	uint8_t payload[sizeof(struct infuse_rpc_data) + 64] = {0};
 	uint32_t request_id = sys_rand32_get();
@@ -299,6 +300,7 @@ static void test_data_receiver(uint32_t total_send, uint8_t skip_after, uint8_t 
 	bool had_stop = stop_after > 0;
 	uint32_t packets_acked = 0;
 	uint32_t packets_sent = 0;
+	uint8_t num_offsets;
 
 	req = (void *)payload;
 	zassert_not_null(tx_fifo);
@@ -312,6 +314,17 @@ static void test_data_receiver(uint32_t total_send, uint8_t skip_after, uint8_t 
 	req->data_header.rx_ack_period = ack_period;
 	epacket_dummy_receive(epacket_dummy, &header, payload,
 			      sizeof(struct rpc_data_receiver_request));
+
+	/* Expect an initial INFUSE_RPC_DATA_ACK to signify readiness */
+	tx = net_buf_get(tx_fifo, K_MSEC(100));
+	tx_header = (void *)tx->data;
+	data_ack = (void *)(tx->data + sizeof(*tx_header));
+	num_offsets = (tx->len - sizeof(*tx_header) - sizeof(*data_ack)) / sizeof(uint32_t);
+	zassert_equal(INFUSE_RPC_DATA_ACK, tx_header->type);
+	zassert_equal(EPACKET_AUTH_NETWORK, tx_header->auth);
+	zassert_equal(request_id, data_ack->request_id);
+	zassert_equal(0, num_offsets);
+	net_buf_unref(tx);
 
 	while (send_remaining > 0) {
 		/* Send randomised data to the server */
@@ -350,10 +363,8 @@ static void test_data_receiver(uint32_t total_send, uint8_t skip_after, uint8_t 
 				/* clang-format off */
 ack_handler:
 				/* clang-format on */
-				struct infuse_rpc_data_ack *data_ack;
-				uint8_t num_offsets =
-					(tx->len - sizeof(*tx_header) - sizeof(*data_ack)) /
-					sizeof(uint32_t);
+				num_offsets = (tx->len - sizeof(*tx_header) - sizeof(*data_ack)) /
+					      sizeof(uint32_t);
 
 				tx_header = (void *)tx->data;
 				data_ack = (void *)(tx->data + sizeof(*tx_header));

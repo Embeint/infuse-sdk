@@ -50,6 +50,9 @@ struct net_buf *rpc_command_data_receiver(struct net_buf *request)
 	}
 	LOG_DBG("Receiving %d bytes", remaining);
 
+	/* Initial ACK to signal readiness */
+	rpc_server_ack_data_ready(interface, request_id);
+
 	while (remaining > 0) {
 		data_buf = rpc_server_pull_data(request_id, expected_offset, K_MSEC(500));
 		if (data_buf == NULL) {
