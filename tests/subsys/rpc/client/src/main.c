@@ -408,7 +408,7 @@ ZTEST(rpc_client, test_sync)
 	/* Run a synchronous command that will timeout */
 	rc = rpc_client_command_sync(&ctx, RPC_ID_ECHO, &req, sizeof(req), K_NO_WAIT, K_SECONDS(1),
 				     &rsp);
-	zassert_equal(0, rc);
+	zassert_equal(-ETIMEDOUT, rc);
 	zassert_is_null(rsp);
 
 	/* Cleanup the RPC context */

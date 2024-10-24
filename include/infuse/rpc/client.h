@@ -97,6 +97,7 @@ int rpc_client_command_queue(struct rpc_client_ctx *ctx, enum rpc_builtin_id cmd
  * @param rsp Output store for response buffer
  *
  * @retval 0 On success
+ * @retval -ETIMEDOUT On response timeout
  * @retval -errno Error code from @ref rpc_client_command_queue on error
  */
 int rpc_client_command_sync(struct rpc_client_ctx *ctx, enum rpc_builtin_id cmd, void *req_params,

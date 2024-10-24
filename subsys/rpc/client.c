@@ -103,6 +103,8 @@ int rpc_client_command_queue(struct rpc_client_ctx *ctx, enum rpc_builtin_id cmd
 	uint8_t ctx_idx = UINT8_MAX;
 	struct net_buf *cmd_buf;
 
+	__ASSERT_NO_MSG(ctx->interface != NULL);
+
 	/* Invalid input parameters */
 	if (K_TIMEOUT_EQ(response_timeout, K_NO_WAIT) || (req_params == NULL) || (cb == NULL)) {
 		return -EINVAL;
@@ -193,13 +195,14 @@ int rpc_client_command_sync(struct rpc_client_ctx *ctx, enum rpc_builtin_id cmd,
 	/* Wait for response */
 	k_sem_take(&sync.done, K_FOREVER);
 	*rsp = sync.rsp;
-	return 0;
+	return sync.rsp == NULL ? -ETIMEDOUT : 0;
 }
 
 void rpc_client_cleanup(struct rpc_client_ctx *ctx)
 {
 	/* Unregister from interface */
 	epacket_unregister_callback(ctx->interface, &ctx->interface_cb);
+	ctx->interface = NULL;
 
 	/* Cleanup any pending commands */
 	for (int i = 0; i < ARRAY_SIZE(ctx->cmd_ctx); i++) {
