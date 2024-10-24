@@ -1,14 +1,20 @@
 sample:
   description: Allows Zephyr to provide Bluetooth connectivity via SPI.
   name: Bluetooth HCI SPI
+common:
+  harness: bluetooth
+  platform_allow:
+    - nrf9160dk/nrf52840
+    - tauro/nrf52840
+  integration_platforms:
+    - tauro/nrf52840
+  tags:
+    - bluetooth
+    - spi
 tests:
   sample.bluetooth.hci_spi:
-    harness: bluetooth
-    platform_allow:
-      - nrf9160dk/nrf52840
-      - tauro/nrf52840
-    integration_platforms:
-      - tauro/nrf52840
-    tags:
-      - bluetooth
-      - spi
+    sysbuild: false
+  sample.bluetooth.hci_spi.dfu:
+    sysbuild: true
+    extra_args:
+      SB_CONFIG_BOOTLOADER_MCUBOOT=y
