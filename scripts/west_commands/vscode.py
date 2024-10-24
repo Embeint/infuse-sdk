@@ -36,6 +36,13 @@ settings = {
     "editor.formatOnSave": True,
     "editor.defaultFormatter": "ms-vscode.cpptools",
     "C_Cpp.clang_format_style": "file:${workspaceFolder}/infuse-sdk/.clang-format",
+    "search.exclude": {
+        "**/*.a": True,
+        "**/*.o": True,
+        "**/*.obj": True,
+        "**/*.gcda": True,
+        "**/*.gcno": True,
+    },
     "[cmake]": {
         "editor.insertSpaces": True,
         "editor.tabSize": 2,
