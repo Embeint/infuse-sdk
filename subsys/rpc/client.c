@@ -18,40 +18,49 @@
 
 LOG_MODULE_REGISTER(rpc_client, CONFIG_INFUSE_RPC_LOG_LEVEL);
 
-static void run_callback(struct rpc_client_ctx *ctx, const struct net_buf *buf, uint16_t command_id,
-			 uint32_t request_id)
+static struct rpc_client_cmd_ctx *find_cmd_ctx(struct rpc_client_ctx *ctx, uint32_t request_id)
 {
 	for (int i = 0; i < ARRAY_SIZE(ctx->cmd_ctx); i++) {
 		struct rpc_client_cmd_ctx *c = &ctx->cmd_ctx[i];
 
-		if (request_id == c->request_id) {
-			if (command_id != c->command_id) {
-				LOG_WRN("Mismatched command ID (%d != %d)", command_id,
-					c->command_id);
-				continue;
-			}
-
-			/* Terminate the response timeout */
-			k_timer_stop(&c->timeout);
-
-			/* Cache context information */
-			rpc_client_rsp_fn fn = c->cb;
-			void *user_data = c->user_data;
-
-			/* Free the context information.
-			 * Performing this after the callback is incorrect
-			 * as the callback may lead to `rpc_client_cleanup`
-			 * before we get the chance to give the context semaphore.
-			 */
-			c->request_id = 0;
-			k_sem_give(&ctx->cmd_ctx_sem);
-
-			/* Run the callback */
-			fn(buf, user_data);
-			return;
+		if (c->request_id == request_id) {
+			return c;
 		}
 	}
-	LOG_ERR("Unknown RPC_RSP: CMD=%d ID=0x%08X", command_id, request_id);
+	return NULL;
+}
+
+static void run_callback(struct rpc_client_ctx *ctx, const struct net_buf *buf, uint16_t command_id,
+			 uint32_t request_id)
+{
+	struct rpc_client_cmd_ctx *c = find_cmd_ctx(ctx, request_id);
+
+	if (c == NULL) {
+		LOG_ERR("Unknown RPC_RSP: CMD=%d ID=0x%08X", command_id, request_id);
+		return;
+	}
+	if (command_id != c->command_id) {
+		LOG_WRN("Mismatched command ID (%d != %d)", command_id, c->command_id);
+		return;
+	}
+
+	/* Terminate the response timeout */
+	k_timer_stop(&c->timeout);
+
+	/* Cache context information */
+	rpc_client_rsp_fn fn = c->cb;
+	void *user_data = c->user_data;
+
+	/* Free the context information.
+	 * Performing this after the callback is incorrect
+	 * as the callback may lead to `rpc_client_cleanup`
+	 * before we get the chance to give the context semaphore.
+	 */
+	c->request_id = 0;
+	k_sem_give(&ctx->cmd_ctx_sem);
+
+	/* Run the callback */
+	fn(buf, user_data);
 }
 
 static void command_timeout(struct k_timer *timer)

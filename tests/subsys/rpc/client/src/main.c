@@ -168,7 +168,7 @@ ZTEST(rpc_client, test_unknown_rsp)
 	epacket_dummy_receive(epacket_dummy, &hdr, &rpc_rsp_hdr, sizeof(rpc_rsp_hdr));
 
 	/* Feed a mismatching command ID back into the handler */
-	rpc_rsp_hdr.request_id = ctx.request_id - 1;
+	rpc_rsp_hdr.request_id = ctx.request_id;
 	rpc_rsp_hdr.command_id += 1;
 
 	epacket_dummy_receive(epacket_dummy, &hdr, &rpc_rsp_hdr, sizeof(rpc_rsp_hdr));
