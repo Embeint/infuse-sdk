@@ -77,17 +77,26 @@ static void packet_received(const struct net_buf *buf, bool decrypted, void *use
 	struct epacket_rx_metadata *meta = net_buf_user_data(buf);
 	struct rpc_client_ctx *ctx = user_ctx;
 
-	if (meta->type != INFUSE_RPC_RSP) {
-		return;
-	}
 	if (!decrypted) {
 		return;
 	}
+	if (meta->type == INFUSE_RPC_DATA_ACK) {
+		struct infuse_rpc_data_ack *ack = (void *)buf->data;
+		struct rpc_client_cmd_ctx *c = find_cmd_ctx(ctx, ack->request_id);
 
-	struct infuse_rpc_rsp_header *rsp_header = (void *)buf->data;
+		if (c == NULL) {
+			LOG_WRN("DATA_ACK for unknown command %08X", ack->request_id);
+			return;
+		}
+		/* ACK received, extend timeout */
+		LOG_DBG("ACK received for %08X", ack->request_id);
+		k_timer_start(&c->timeout, c->rsp_timeout, K_FOREVER);
+	} else if (meta->type == INFUSE_RPC_RSP) {
+		struct infuse_rpc_rsp_header *rsp_header = (void *)buf->data;
 
-	LOG_DBG("Handling request %08X", rsp_header->request_id);
-	run_callback(ctx, buf, rsp_header->command_id, rsp_header->request_id);
+		LOG_DBG("Finalising request %08X", rsp_header->request_id);
+		run_callback(ctx, buf, rsp_header->command_id, rsp_header->request_id);
+	}
 }
 
 void rpc_client_init(struct rpc_client_ctx *ctx, const struct device *dev)
@@ -152,6 +161,7 @@ int rpc_client_command_queue(struct rpc_client_ctx *ctx, enum rpc_builtin_id cmd
 	ctx->cmd_ctx[ctx_idx].user_data = user_data;
 	ctx->cmd_ctx[ctx_idx].request_id = ctx->request_id;
 	ctx->cmd_ctx[ctx_idx].command_id = cmd;
+	ctx->cmd_ctx[ctx_idx].rsp_timeout = response_timeout;
 
 	/* Command header */
 	req_header->command_id = cmd;
@@ -166,6 +176,37 @@ int rpc_client_command_queue(struct rpc_client_ctx *ctx, enum rpc_builtin_id cmd
 
 	/* Start the timeout timer */
 	k_timer_start(&ctx->cmd_ctx[ctx_idx].timeout, response_timeout, K_FOREVER);
+	return 0;
+}
+
+int rpc_client_data_queue(struct rpc_client_ctx *ctx, uint32_t request_id, uint32_t offset,
+			  const void *data, size_t data_len)
+{
+	struct rpc_client_cmd_ctx *c = find_cmd_ctx(ctx, request_id);
+	struct infuse_rpc_data *header;
+	struct net_buf *data_buf;
+
+	if (c == NULL) {
+		LOG_WRN("Invalid request %08X", request_id);
+		return -EINVAL;
+	}
+
+	/* Allocate buffer for command */
+	data_buf = epacket_alloc_tx_for_interface(ctx->interface, K_FOREVER);
+	__ASSERT_NO_MSG(data_buf != NULL);
+
+	/* Data header */
+	header = net_buf_add(data_buf, sizeof(*header));
+	header->request_id = request_id;
+	header->offset = offset;
+
+	/* Data payload */
+	net_buf_add_mem(data_buf, data, data_len);
+
+	/* Send data packet */
+	epacket_set_tx_metadata(data_buf, EPACKET_AUTH_NETWORK, 0x00, INFUSE_RPC_DATA);
+	epacket_queue(ctx->interface, data_buf);
+
 	return 0;
 }
 
