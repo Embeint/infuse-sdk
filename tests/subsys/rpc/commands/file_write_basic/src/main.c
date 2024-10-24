@@ -21,13 +21,7 @@
 
 #include "../../../../../../subsys/rpc/server.h"
 
-enum file_action {
-	FILE_DISCARD = 0,
-	FILE_APPLICATION_DFU = 1,
-	FILE_INVALID_START,
-};
-
-static void test_file_write_basic(enum file_action action, uint32_t total_send, uint8_t skip_after,
+static void test_file_write_basic(uint8_t action, uint32_t total_send, uint8_t skip_after,
 				  uint8_t stop_after, uint8_t bad_id_after, uint8_t ack_period,
 				  bool too_much_data)
 {
@@ -169,7 +163,7 @@ ack_handler:
 
 	net_buf_unref(tx);
 
-	if (action != FILE_APPLICATION_DFU) {
+	if (action != RPC_ENUM_FILE_ACTION_APP_IMG) {
 		return;
 	}
 
@@ -205,7 +199,7 @@ ZTEST(rpc_command_file_write_basic, test_invalid_action)
 				.size = 100,
 				.rx_ack_period = 0,
 			},
-		.action = FILE_INVALID_START,
+		.action = 200,
 	};
 	struct rpc_file_write_basic_response *rsp;
 	struct epacket_dummy_frame *tx_header;
@@ -228,61 +222,63 @@ ZTEST(rpc_command_file_write_basic, test_invalid_action)
 ZTEST(rpc_command_file_write_basic, test_file_write_sizes)
 {
 	/* Various data sizes */
-	test_file_write_basic(FILE_DISCARD, 100, 0, 0, 0, 0, false);
-	test_file_write_basic(FILE_DISCARD, 1000, 0, 0, 0, 0, false);
-	test_file_write_basic(FILE_DISCARD, 3333, 0, 0, 0, 0, false);
+	test_file_write_basic(RPC_ENUM_FILE_ACTION_DISCARD, 100, 0, 0, 0, 0, false);
+	test_file_write_basic(RPC_ENUM_FILE_ACTION_DISCARD, 1000, 0, 0, 0, 0, false);
+	test_file_write_basic(RPC_ENUM_FILE_ACTION_DISCARD, 3333, 0, 0, 0, 0, false);
 }
 
 ZTEST(rpc_command_file_write_basic, test_file_write_dfu)
 {
 #if FIXED_PARTITION_EXISTS(slot1_partition)
-	test_file_write_basic(FILE_APPLICATION_DFU, 16000, 0, 0, 0, 0, false);
+	test_file_write_basic(RPC_ENUM_FILE_ACTION_APP_IMG, 16000, 0, 0, 0, 0, false);
 #endif /* FIXED_PARTITION_EXISTS(slot1_partition) */
 }
 
 ZTEST(rpc_command_file_write_basic, test_lost_payload)
 {
 	/* "Lost" data payload after some packets */
-	test_file_write_basic(FILE_DISCARD, 1000, 5, 0, 0, 0, false);
-	test_file_write_basic(FILE_DISCARD, 1000, 10, 0, 0, 0, false);
+	test_file_write_basic(RPC_ENUM_FILE_ACTION_DISCARD, 1000, 5, 0, 0, 0, false);
+	test_file_write_basic(RPC_ENUM_FILE_ACTION_DISCARD, 1000, 10, 0, 0, 0, false);
 }
 
 ZTEST(rpc_command_file_write_basic, test_early_hangup)
 {
 	/* Stop sending data after some packets */
-	test_file_write_basic(FILE_DISCARD, 1000, 0, 3, 0, 0, false);
-	test_file_write_basic(FILE_DISCARD, 1000, 0, 11, 0, 0, false);
+	test_file_write_basic(RPC_ENUM_FILE_ACTION_DISCARD, 1000, 0, 3, 0, 0, false);
+	test_file_write_basic(RPC_ENUM_FILE_ACTION_DISCARD, 1000, 0, 11, 0, 0, false);
 }
 
 ZTEST(rpc_command_file_write_basic, test_invalid_request_id)
 {
 	/* Bad request ID after some packets */
-	test_file_write_basic(FILE_DISCARD, 1000, 0, 0, 4, 0, false);
-	test_file_write_basic(FILE_DISCARD, 1000, 0, 0, 10, 0, false);
+	test_file_write_basic(RPC_ENUM_FILE_ACTION_DISCARD, 1000, 0, 0, 4, 0, false);
+	test_file_write_basic(RPC_ENUM_FILE_ACTION_DISCARD, 1000, 0, 0, 10, 0, false);
 }
 
 ZTEST(rpc_command_file_write_basic, test_data_ack)
 {
 	/* Generating INFUSE_DATA_ACK packets */
-	test_file_write_basic(FILE_DISCARD, 1000, 0, 0, 0, 1, false);
-	test_file_write_basic(FILE_DISCARD, 1000, 0, 0, 0, 2, false);
-	test_file_write_basic(FILE_DISCARD, 1000, 0, 0, 0, 3, false);
-	test_file_write_basic(FILE_DISCARD, 1000, 0, 0, 0, 4, false);
-	test_file_write_basic(FILE_DISCARD, 1000, 0, 0, 0, RPC_SERVER_MAX_ACK_PERIOD, false);
-	test_file_write_basic(FILE_DISCARD, 1000, 0, 0, 0, RPC_SERVER_MAX_ACK_PERIOD + 1, false);
+	test_file_write_basic(RPC_ENUM_FILE_ACTION_DISCARD, 1000, 0, 0, 0, 1, false);
+	test_file_write_basic(RPC_ENUM_FILE_ACTION_DISCARD, 1000, 0, 0, 0, 2, false);
+	test_file_write_basic(RPC_ENUM_FILE_ACTION_DISCARD, 1000, 0, 0, 0, 3, false);
+	test_file_write_basic(RPC_ENUM_FILE_ACTION_DISCARD, 1000, 0, 0, 0, 4, false);
+	test_file_write_basic(RPC_ENUM_FILE_ACTION_DISCARD, 1000, 0, 0, 0,
+			      RPC_SERVER_MAX_ACK_PERIOD, false);
+	test_file_write_basic(RPC_ENUM_FILE_ACTION_DISCARD, 1000, 0, 0, 0,
+			      RPC_SERVER_MAX_ACK_PERIOD + 1, false);
 }
 
 ZTEST(rpc_command_file_write_basic, test_everything_wrong)
 {
 	/* Everything going wrong */
-	test_file_write_basic(FILE_DISCARD, 1000, 3, 0, 7, 1, false);
-	test_file_write_basic(FILE_DISCARD, 1000, 3, 0, 7, 2, false);
+	test_file_write_basic(RPC_ENUM_FILE_ACTION_DISCARD, 1000, 3, 0, 7, 1, false);
+	test_file_write_basic(RPC_ENUM_FILE_ACTION_DISCARD, 1000, 3, 0, 7, 2, false);
 }
 
 ZTEST(rpc_command_file_write_basic, test_push_too_much_data)
 {
 	/* Send too much data */
-	test_file_write_basic(FILE_DISCARD, 1000, 0, 0, 0, 0, true);
+	test_file_write_basic(RPC_ENUM_FILE_ACTION_DISCARD, 1000, 0, 0, 0, 0, true);
 }
 
 ZTEST_SUITE(rpc_command_file_write_basic, NULL, NULL, NULL, NULL, NULL);
