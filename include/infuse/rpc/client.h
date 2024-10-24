@@ -36,6 +36,8 @@ typedef void (*rpc_client_rsp_fn)(const struct net_buf *buf, void *user_data);
 struct rpc_client_cmd_ctx {
 	/* Command timeout timer */
 	struct k_timer timeout;
+	/* @ref INFUSE_RPC_DATA_ACK semaphore */
+	struct k_sem ack;
 	/* Timeout for the response */
 	k_timeout_t rsp_timeout;
 	/* Callback to run on completion */
@@ -103,6 +105,23 @@ static inline uint32_t rpc_client_last_request_id(struct rpc_client_ctx *ctx)
 int rpc_client_command_queue(struct rpc_client_ctx *ctx, enum rpc_builtin_id cmd, void *req_params,
 			     size_t req_params_len, rpc_client_rsp_fn cb, void *user_data,
 			     k_timeout_t ctx_timeout, k_timeout_t response_timeout);
+
+/**
+ * @brief Wait for an @ref INFUSE_RPC_DATA_ACK from the remote device
+ *
+ * @note At a minimum, the client should wait for the first ACK from the remote device
+ *       before sending data via @ref rpc_client_data_queue. This gives the remote time
+ *       to configure itself for receiving data.
+ *
+ * @param ctx RPC client context
+ * @param request_id Request ID from @ref rpc_client_last_request_id
+ * @param timeout
+ *
+ * @retval 0 On success
+ * @retval -EINVAL If request ID is no longer valid
+ * @retval -EAGAIN If waiting for ACK timed out
+ */
+int rpc_client_ack_wait(struct rpc_client_ctx *ctx, uint32_t request_id, k_timeout_t timeout);
 
 /**
  * @brief Queue data associated with a previously queued command

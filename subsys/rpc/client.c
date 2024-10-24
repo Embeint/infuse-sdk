@@ -57,6 +57,7 @@ static void run_callback(struct rpc_client_ctx *ctx, const struct net_buf *buf, 
 	 * before we get the chance to give the context semaphore.
 	 */
 	c->request_id = 0;
+	k_sem_give(&c->ack);
 	k_sem_give(&ctx->cmd_ctx_sem);
 
 	/* Run the callback */
@@ -91,6 +92,7 @@ static void packet_received(const struct net_buf *buf, bool decrypted, void *use
 		/* ACK received, extend timeout */
 		LOG_DBG("ACK received for %08X", ack->request_id);
 		k_timer_start(&c->timeout, c->rsp_timeout, K_FOREVER);
+		k_sem_give(&c->ack);
 	} else if (meta->type == INFUSE_RPC_RSP) {
 		struct infuse_rpc_rsp_header *rsp_header = (void *)buf->data;
 
@@ -118,6 +120,7 @@ int rpc_client_command_queue(struct rpc_client_ctx *ctx, enum rpc_builtin_id cmd
 			     k_timeout_t ctx_timeout, k_timeout_t response_timeout)
 {
 	struct infuse_rpc_req_header *req_header = req_params;
+	struct rpc_client_cmd_ctx *c;
 	uint8_t ctx_idx = UINT8_MAX;
 	struct net_buf *cmd_buf;
 
@@ -155,13 +158,15 @@ int rpc_client_command_queue(struct rpc_client_ctx *ctx, enum rpc_builtin_id cmd
 	LOG_DBG("Command %d (request %08X, idx %d)", cmd, ctx->request_id, ctx_idx);
 
 	/* Store command context */
-	k_timer_init(&ctx->cmd_ctx[ctx_idx].timeout, command_timeout, NULL);
-	ctx->cmd_ctx[ctx_idx].timeout.user_data = ctx;
-	ctx->cmd_ctx[ctx_idx].cb = cb;
-	ctx->cmd_ctx[ctx_idx].user_data = user_data;
-	ctx->cmd_ctx[ctx_idx].request_id = ctx->request_id;
-	ctx->cmd_ctx[ctx_idx].command_id = cmd;
-	ctx->cmd_ctx[ctx_idx].rsp_timeout = response_timeout;
+	c = &ctx->cmd_ctx[ctx_idx];
+	k_timer_init(&c->timeout, command_timeout, NULL);
+	k_sem_init(&c->ack, 0, UINT32_MAX);
+	c->timeout.user_data = ctx;
+	c->cb = cb;
+	c->user_data = user_data;
+	c->request_id = ctx->request_id;
+	c->command_id = cmd;
+	c->rsp_timeout = response_timeout;
 
 	/* Command header */
 	req_header->command_id = cmd;
@@ -175,8 +180,18 @@ int rpc_client_command_queue(struct rpc_client_ctx *ctx, enum rpc_builtin_id cmd
 	epacket_queue(ctx->interface, cmd_buf);
 
 	/* Start the timeout timer */
-	k_timer_start(&ctx->cmd_ctx[ctx_idx].timeout, response_timeout, K_FOREVER);
+	k_timer_start(&c->timeout, response_timeout, K_FOREVER);
 	return 0;
+}
+
+int rpc_client_ack_wait(struct rpc_client_ctx *ctx, uint32_t request_id, k_timeout_t timeout)
+{
+	struct rpc_client_cmd_ctx *c = find_cmd_ctx(ctx, request_id);
+
+	if (c == NULL) {
+		return -EINVAL;
+	}
+	return k_sem_take(&c->ack, timeout);
 }
 
 int rpc_client_data_queue(struct rpc_client_ctx *ctx, uint32_t request_id, uint32_t offset,
