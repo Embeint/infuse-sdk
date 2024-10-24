@@ -267,9 +267,26 @@ class cloudgen(WestCommand):
                 for field in d["response_params"]:
                     array_postfix(d, field)
 
+            def enum_type_replace(field):
+                if field["type"].startswith("enum"):
+                    n = field["type"].removeprefix("enum ")
+                    field["type"] = rpc_defs["enums"][n]["type"]
+
+            # Swap enum types back to underlying type
+            for s in rpc_defs["structs"].values():
+                for field in s["fields"]:
+                    enum_type_replace(field)
+            for c in rpc_defs["commands"].values():
+                for field in c["request_params"]:
+                    enum_type_replace(field)
+                for field in c["response_params"]:
+                    enum_type_replace(field)
+
             f.write(
                 rpc_defs_template.render(
-                    structs=rpc_defs["structs"], commands=rpc_defs["commands"]
+                    structs=rpc_defs["structs"],
+                    enums=rpc_defs["enums"],
+                    commands=rpc_defs["commands"],
                 )
             )
             f.write(os.linesep)

@@ -95,6 +95,17 @@
             ]
         }
     },
+    "enums": {
+        "rpc_enum_file_action": {
+            "description": "Actions to take upon receiving a file",
+            "type": "uint8_t",
+            "values": [
+                {"name": "DISCARD", "value": 0, "description": "Discard received file (Useful for testing)"},
+                {"name": "APP_IMG", "value": 1, "description": "Complete application image for firmware upgrade"},
+                {"name": "NRF91_MODEM_DIFF", "value": 20, "description": "nRF91 LTE modem firmware upgrade diff"}
+            ]
+        }
+    },
     "commands": {
         "1": {
             "name": "reboot",
@@ -282,7 +293,7 @@
                 {"name": "server_address", "type": "char", "num": 48,  "description": "COAP server address (e.g. coap.dev.infuse-iot.com)"},
                 {"name": "server_port", "type": "uint16_t", "description": "COAP server port"},
                 {"name": "block_timeout_ms", "type": "uint16_t", "description": "COAP block timeout (Default 1000ms)"},
-                {"name": "action", "type": "uint8_t", "description": "File action (0 = Discard, 1 = Application DFU)"},
+                {"name": "action", "type": "enum rpc_enum_file_action", "description": "Action to apply to downloaded file"},
                 {"name": "resource_len", "type": "uint32_t", "description": "Expected resource length (UINT32_MAX if unknown)"},
                 {"name": "resource_crc", "type": "uint32_t", "description": "Expected resource CRC (UINT32_MAX if unknown)"},
                 {"name": "resource", "type": "char", "num": 0, "description": "Path to file on COAP server (e.g. files/small_file)"}
@@ -299,7 +310,7 @@
             "default_auth": "EPACKET_AUTH_NETWORK",
             "rpc_data": true,
             "request_params": [
-                {"name": "action", "type": "uint8_t", "description": "File action (0 = Discard, 1 = Application DFU)"}
+                {"name": "action", "type": "enum rpc_enum_file_action", "description": "Action to apply to written file"}
             ],
             "response_params": [
                 {"name": "recv_len", "type": "uint32_t", "description": "Number of bytes received"},
