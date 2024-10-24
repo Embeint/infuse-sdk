@@ -67,6 +67,14 @@ struct net_buf *rpc_server_pull_data(uint32_t request_id, uint32_t expected_offs
 				     k_timeout_t timeout);
 
 /**
+ * @brief Send initial @ref INFUSE_RPC_DATA_ACK to signify we are ready for data
+ *
+ * @param interface ePacket interface
+ * @param request_id RPC request ID
+ */
+void rpc_server_ack_data_ready(const struct device *interface, uint32_t request_id);
+
+/**
  * @brief Acknowledge received data packets
  *
  * @param interface ePacket interface
