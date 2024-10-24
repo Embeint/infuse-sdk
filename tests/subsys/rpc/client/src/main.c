@@ -344,6 +344,102 @@ static void async_processor(struct k_work *work)
 	k_work_reschedule(dwork, K_MSEC(100));
 }
 
+static void command_data_done(const struct net_buf *buf, void *user_data)
+{
+	zassert_not_null(buf);
+	zassert_is_null(user_data);
+
+	const struct rpc_data_receiver_response *rsp = (const void *)buf->data;
+
+	zassert_equal(0, rsp->header.return_code);
+	zassert_equal(RPC_ID_DATA_RECEIVER, rsp->header.command_id);
+
+	k_sem_give(&client_cb_sem);
+}
+
+static void test_command_data_param(uint32_t size, uint8_t ack_period)
+{
+	const struct device *epacket_dummy = DEVICE_DT_GET(DT_NODELABEL(epacket_dummy));
+	struct k_work_delayable dwork;
+	struct rpc_client_ctx ctx;
+	struct rpc_data_receiver_request req = {
+		.data_header =
+			{
+				.size = size,
+				.rx_ack_period = ack_period,
+			},
+	};
+	uint8_t buffer[128];
+	uint32_t request_id;
+	uint32_t remaining, offset;
+	int rc;
+
+	/* Need to do ePacket loopback in an alternate context for blocking API */
+	k_work_init_delayable(&dwork, async_processor);
+	k_work_reschedule(&dwork, K_MSEC(100));
+
+	rpc_client_init(&ctx, epacket_dummy);
+
+	rc = rpc_client_command_queue(&ctx, RPC_ID_DATA_RECEIVER, &req, sizeof(req),
+				      command_data_done, NULL, K_NO_WAIT, K_SECONDS(1));
+	zassert_equal(0, rc);
+	request_id = rpc_client_last_request_id(&ctx);
+
+	/* Queuing a bad response ID fails */
+	zassert_equal(-EINVAL, rpc_client_data_queue(&ctx, request_id + 1, 0, buffer, 10));
+
+	/* Push requested data size */
+	remaining = req.data_header.size;
+	offset = 0;
+	while (remaining > 0) {
+		size_t to_send = MIN(remaining, sizeof(buffer));
+
+		rc = rpc_client_data_queue(&ctx, request_id, offset, buffer, to_send);
+		zassert_equal(0, rc);
+
+		if (offset == 0) {
+			/* Feed in a bad ACK */
+			struct epacket_dummy_frame hdr = {
+				.type = INFUSE_RPC_DATA_ACK,
+				.auth = EPACKET_AUTH_NETWORK,
+			};
+			struct infuse_rpc_data_ack ack_hdr = {
+				.request_id = request_id + 1,
+			};
+
+			epacket_dummy_receive(epacket_dummy, &hdr, &ack_hdr, sizeof(ack_hdr));
+		}
+
+		remaining -= to_send;
+		offset += to_send;
+
+		/* Can't be greedy with rpc_client_data_queue in the test environment
+		 * as the loopback logic also needs to claim buffers from the same pool.
+		 */
+		k_sleep(K_MSEC(250));
+	}
+
+	/* Final callback should have run */
+	zassert_equal(0, k_sem_take(&client_cb_sem, K_MSEC(1000)));
+
+	/* Queuing after command completion should return an error */
+	rc = rpc_client_data_queue(&ctx, request_id, offset, buffer, 10);
+	zassert_equal(-EINVAL, rc);
+
+	/* Cancel loopback worker */
+	k_work_cancel_delayable(&dwork);
+
+	/* Cleanup the RPC context */
+	rpc_client_cleanup(&ctx);
+}
+
+ZTEST(rpc_client, test_command_data)
+{
+	test_command_data_param(1000, 1);
+	test_command_data_param(5000, 2);
+	test_command_data_param(10000, 3);
+}
+
 ZTEST(rpc_client, test_sync)
 {
 	const struct device *epacket_dummy = DEVICE_DT_GET(DT_NODELABEL(epacket_dummy));
