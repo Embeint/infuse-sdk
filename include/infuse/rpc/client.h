@@ -36,6 +36,8 @@ typedef void (*rpc_client_rsp_fn)(const struct net_buf *buf, void *user_data);
 struct rpc_client_cmd_ctx {
 	/* Command timeout timer */
 	struct k_timer timeout;
+	/* Timeout for the response */
+	k_timeout_t rsp_timeout;
 	/* Callback to run on completion */
 	rpc_client_rsp_fn cb;
 	/* Arbitrary user data for callback */
@@ -64,9 +66,26 @@ struct rpc_client_ctx {
 void rpc_client_init(struct rpc_client_ctx *ctx, const struct device *dev);
 
 /**
+ * @brief Get the request ID used by the last command
+ *
+ * @note Used in conjunction with @ref rpc_client_data_queue.
+ *
+ * @param ctx RPC client context
+ *
+ * @return uint32_t request ID
+ */
+static inline uint32_t rpc_client_last_request_id(struct rpc_client_ctx *ctx)
+{
+	return ctx->request_id;
+}
+
+/**
  * @brief Queue a command for execution on a remote device
  *
  * @note The header information in @a req_params is populated by this function.
+ *
+ * @note When used with @ref rpc_client_data_queue, receiving @ref INFUSE_RPC_DATA_ACK
+ *       messages will reset @a response_timeout.
  *
  * @param ctx RPC client context
  * @param cmd Command ID
@@ -84,6 +103,21 @@ void rpc_client_init(struct rpc_client_ctx *ctx, const struct device *dev);
 int rpc_client_command_queue(struct rpc_client_ctx *ctx, enum rpc_builtin_id cmd, void *req_params,
 			     size_t req_params_len, rpc_client_rsp_fn cb, void *user_data,
 			     k_timeout_t ctx_timeout, k_timeout_t response_timeout);
+
+/**
+ * @brief Queue data associated with a previously queued command
+ *
+ * @param ctx RPC client context
+ * @param request_id Request ID from @ref rpc_client_last_request_id
+ * @param offset Byte offset of data
+ * @param data Command data pointer
+ * @param data_len Command data length
+ *
+ * @retval 0 If data pushed to remote device
+ * @retval -EINVAL If request ID is no longer valid
+ */
+int rpc_client_data_queue(struct rpc_client_ctx *ctx, uint32_t request_id, uint32_t offset,
+			  const void *data, size_t data_len);
 
 /**
  * @brief Queue a command for execution on a remote device and wait for the response
