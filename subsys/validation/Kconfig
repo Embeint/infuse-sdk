@@ -2,3 +2,20 @@
 
 config INFUSE_VALIDATION
 	bool "Infuse-IoT hardware and driver validation libraries"
+
+config INFUSE_VALIDATION_BUTTON
+	bool "Infuse-IoT Button/GPIO validation"
+	default y
+	depends on DT_HAS_GPIO_KEYS_ENABLED
+
+if INFUSE_VALIDATION_BUTTON
+
+config INFUSE_VALIDATION_BUTTON_REQUIRE_MANUAL
+	bool "Require manual hardware validation for the button"
+	default n
+
+config INFUSE_VALIDATION_BUTTON_ACTION_TIMEOUT
+	int "Infuse-IoT Button timeout for action to occur (in seconds)"
+	default 10
+
+endif # INFUSE_VALIDATION_BUTTON
