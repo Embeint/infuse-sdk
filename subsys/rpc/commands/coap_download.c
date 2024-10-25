@@ -240,7 +240,9 @@ done:
 		if (boot_request_upgrade_multi(0, BOOT_UPGRADE_TEST) == 0) {
 #ifdef CONFIG_INFUSE_REBOOT
 			LOG_INF("DFU download complete, rebooting");
-			infuse_reboot_delayed(INFUSE_REBOOT_RPC, 0x00, 0x00, K_SECONDS(2));
+			infuse_reboot_delayed(INFUSE_REBOOT_DFU,
+					      (uintptr_t)rpc_command_coap_download,
+					      RPC_ENUM_FILE_ACTION_APP_IMG, K_SECONDS(2));
 #else
 			LOG_WRN("INFUSE_REBOOT not enabled, cannot reboot");
 #endif /* CONFIG_INFUSE_REBOOT */
@@ -257,7 +259,9 @@ done:
 			if (rc == 0) {
 #ifdef CONFIG_INFUSE_REBOOT
 				/* Schedule the reboot in a few seconds time */
-				infuse_reboot_delayed(INFUSE_REBOOT_RPC, 0x00, 0x00, K_SECONDS(2));
+				infuse_reboot_delayed(
+					INFUSE_REBOOT_DFU, (uintptr_t)rpc_command_coap_download,
+					RPC_ENUM_FILE_ACTION_NRF91_MODEM_DIFF, K_SECONDS(2));
 #else
 				LOG_WRN("INFUSE_REBOOT not enabled, cannot reboot");
 #endif /* CONFIG_INFUSE_REBOOT */
