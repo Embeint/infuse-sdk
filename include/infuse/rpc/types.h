@@ -219,6 +219,8 @@ enum rpc_enum_file_action {
 	RPC_ENUM_FILE_ACTION_DISCARD = 0,
 	/* Complete application image for firmware upgrade */
 	RPC_ENUM_FILE_ACTION_APP_IMG = 1,
+	/* Complete Bluetooth controller image for firmware upgrade */
+	RPC_ENUM_FILE_ACTION_BT_CTLR_IMG = 2,
 	/* nRF91 LTE modem firmware upgrade diff */
 	RPC_ENUM_FILE_ACTION_NRF91_MODEM_DIFF = 20,
 };

@@ -16,6 +16,7 @@
 #include <infuse/rpc/types.h>
 #include <infuse/epacket/packet.h>
 #include <infuse/reboot.h>
+#include <infuse/bluetooth/controller_manager.h>
 
 #include "../command_runner.h"
 #include "../server.h"
@@ -36,7 +37,10 @@ struct net_buf *rpc_command_file_write_basic(struct net_buf *request)
 	uint8_t action, ack_period;
 	size_t var_len;
 	uint32_t crc = 0;
+	uint32_t ctx;
 	int rc = 0;
+
+	(void)ctx;
 
 	/* Cache data from request and free the buffer.
 	 * Scoped in a block to ensure request packet is not used after free.
@@ -71,8 +75,17 @@ struct net_buf *rpc_command_file_write_basic(struct net_buf *request)
 		break;
 #endif /* FIXED_PARTITION_EXISTS(slot1_partition) */
 #endif /* CONFIG_INFUSE_DFU_HELPERS */
+#ifdef CONFIG_BT_CONTROLLER_MANAGER
+	case RPC_ENUM_FILE_ACTION_BT_CTLR_IMG:
+		/* We want to write the image to our own slot1 partition */
+		rc = bt_controller_manager_dfu_write_start(&ctx, expected);
+		break;
+#endif /* CONFIG_BT_CONTROLLER_MANAGER */
 	default:
 		rc = -EINVAL;
+	}
+	if (rc < 0) {
+		LOG_ERR("Failed to prepare for %d (%d)", action, rc);
 		goto error;
 	}
 
@@ -102,12 +115,18 @@ struct net_buf *rpc_command_file_write_basic(struct net_buf *request)
 #if FIXED_PARTITION_EXISTS(slot1_partition)
 		case RPC_ENUM_FILE_ACTION_APP_IMG:
 			rc = flash_area_write(fa, data_offset, data->payload, var_len);
-			if (rc < 0) {
-				LOG_ERR("DFU: Failed to write (%d)", rc);
-				goto error;
-			}
 			break;
 #endif /* FIXED_PARTITION_EXISTS(slot1_partition) */
+#ifdef CONFIG_BT_CONTROLLER_MANAGER
+		case RPC_ENUM_FILE_ACTION_BT_CTLR_IMG:
+			rc = bt_controller_manager_dfu_write_next(ctx, data_offset, data->payload,
+								  var_len);
+			break;
+#endif /* CONFIG_BT_CONTROLLER_MANAGER */
+		}
+		if (rc < 0) {
+			LOG_ERR("Failed to handle offset %08X (%d)", data_offset, rc);
+			goto error;
 		}
 
 		expected_offset = data_offset + var_len;
@@ -140,6 +159,17 @@ struct net_buf *rpc_command_file_write_basic(struct net_buf *request)
 		}
 		break;
 #endif /* CONFIG_MCUBOOT_IMG_MANAGER */
+#ifdef CONFIG_BT_CONTROLLER_MANAGER
+	case RPC_ENUM_FILE_ACTION_BT_CTLR_IMG:
+		/* Copy image across to controller */
+		rc = bt_controller_manager_dfu_write_finish(ctx, &received, &crc);
+		if (rc == 0) {
+			infuse_reboot_delayed(INFUSE_REBOOT_RPC, 0x00, 0x00, K_SECONDS(2));
+		} else {
+			LOG_ERR("Failed to finalise BT DFU (%d)", rc);
+		}
+		break;
+#endif /* CONFIG_BT_CONTROLLER_MANAGER */
 	}
 
 	/* Allocate and return response */
@@ -154,6 +184,11 @@ error:
 	if (fa != NULL) {
 		flash_area_close(fa);
 	}
+#ifdef CONFIG_BT_CONTROLLER_MANAGER
+	if (action == RPC_ENUM_FILE_ACTION_BT_CTLR_IMG) {
+		(void)bt_controller_manager_dfu_write_finish(ctx, &received, &crc);
+	}
+#endif /* CONFIG_BT_CONTROLLER_MANAGER */
 
 	/* Allocate and return response */
 	struct rpc_file_write_basic_response rsp_err = {
