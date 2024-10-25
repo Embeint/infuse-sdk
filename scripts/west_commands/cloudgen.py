@@ -229,6 +229,10 @@ class cloudgen(WestCommand):
         rpc_runner_template = self.env.get_template("rpc_runner.c.jinja")
         rpc_runner_output = self.infuse_root_dir / "subsys" / "rpc" / "command_runner.c"
 
+        loader = importlib.util.find_spec("infuse_iot.generated.rpc_definitions")
+        rpc_defs_py_template = self.env.get_template("rpc_definitions.py.jinja")
+        rpc_defs_py_output = pathlib.Path(loader.origin)
+
         with rpc_def_file.open("r") as f:
             rpc_defs = json.load(f)
 
@@ -266,6 +270,48 @@ class cloudgen(WestCommand):
             f.write(
                 rpc_defs_template.render(
                     structs=rpc_defs["structs"], commands=rpc_defs["commands"]
+                )
+            )
+            f.write(os.linesep)
+
+        with rpc_defs_py_output.open("w") as f:
+            ctype_mapping = {
+                "uint8_t": "ctypes.c_uint8",
+                "uint16_t": "ctypes.c_uint16",
+                "uint32_t": "ctypes.c_uint32",
+                "uint64_t": "ctypes.c_uint64",
+                "int8_t": "ctypes.c_int8",
+                "int16_t": "ctypes.c_int16",
+                "int32_t": "ctypes.c_int32",
+                "int64_t": "ctypes.c_int64",
+                "char": "ctypes.c_char",
+                "float": "ctypes.c_float",
+            }
+
+            def py_type(field):
+                if "num" in field:
+                    return f'{field["num"]} * {ctype_mapping[field["type"]]}'
+                else:
+                    return ctype_mapping[field["type"]]
+
+            for s in rpc_defs["structs"].values():
+                for field in s["fields"]:
+                    field["py_name"] = field["name"]
+
+                    t: str = field["type"]
+                    if t.startswith("struct"):
+                        field["py_type"] = f"{t[7:]}"
+                    else:
+                        field["py_type"] = py_type(field)
+            for e in rpc_defs["enums"].values():
+                for value in e["values"]:
+                    value["py_name"] = value["name"]
+
+            f.write(
+                rpc_defs_py_template.render(
+                    structs=rpc_defs["structs"],
+                    enums=rpc_defs["enums"],
+                    commands=rpc_defs["commands"],
                 )
             )
             f.write(os.linesep)
