@@ -115,6 +115,21 @@ void rpc_client_init(struct rpc_client_ctx *ctx, const struct device *dev)
 	epacket_register_callback(dev, &ctx->interface_cb);
 }
 
+int rpc_client_update_response_timeout(struct rpc_client_ctx *ctx, uint32_t request_id,
+				       k_timeout_t timeout)
+{
+	struct rpc_client_cmd_ctx *c = find_cmd_ctx(ctx, request_id);
+
+	if (c == NULL) {
+		return -EINVAL;
+	}
+	/* Update stored value */
+	c->rsp_timeout = timeout;
+	/* Restart timer with new timeout */
+	k_timer_start(&c->timeout, c->rsp_timeout, K_FOREVER);
+	return 0;
+}
+
 int rpc_client_command_queue(struct rpc_client_ctx *ctx, enum rpc_builtin_id cmd, void *req_params,
 			     size_t req_params_len, rpc_client_rsp_fn cb, void *user_data,
 			     k_timeout_t ctx_timeout, k_timeout_t response_timeout)
