@@ -132,50 +132,24 @@ struct net_buf *rpc_command_coap_download(struct net_buf *request)
 		break;
 #endif /* FIXED_PARTITION_EXISTS(slot1_partition) */
 #ifdef CONFIG_NRF_MODEM_LIB
-	case RPC_ENUM_FILE_ACTION_NRF91_MODEM_DIFF: {
-		size_t offset;
-
-		/* Determine if area needs to be erased first */
-		rc = nrf_modem_delta_dfu_offset(&offset);
-		if (rc != 0) {
-			LOG_ERR("Failed to query DFU offset (%d)", rc);
+	case RPC_ENUM_FILE_ACTION_NRF91_MODEM_DIFF:
+		rc = infuse_dfu_nrf91_modem_delta_prepare();
+		if (rc > 0) {
+			rc = -EIO;
+		}
+		if (rc < 0) {
+			LOG_ERR("Failed to prepare modem (%d)", rc);
 			goto error;
 		}
-		/* We don't support resuming an interrupted download.
-		 * Any value other than 0 needs to be erased
-		 */
-		if (offset != 0) {
-			/* Erase area if required */
-			rc = nrf_modem_delta_dfu_erase();
-			if (rc != 0) {
-				LOG_ERR("Failed to erase DFU area (%d)", rc);
-				goto error;
-			}
-		}
-		/* Wait for DFU system to be ready.
-		 * If for some reason the erase never finishes, the watchdog will catch us.
-		 */
-		while (offset != 0) {
-			rc = nrf_modem_delta_dfu_offset(&offset);
-			if (rc < 0) {
-				goto error;
-			}
-			k_sleep(K_MSEC(500));
-		}
-		/* Waiting for the erase may have taken a while */
-		rpc_server_watchdog_feed();
-		/* Ready modem to receive the firmware update */
-		rc = nrf_modem_delta_dfu_write_init();
-		if ((rc != 0) && (rc != -EALREADY)) {
-			LOG_ERR("Modem not ready (%d)", rc);
-			goto error;
-		}
-	} break;
+		break;
 #endif /* CONFIG_NRF_MODEM_LIB */
 	default:
 		rc = -EINVAL;
 		goto error;
 	}
+
+	/* Preparing may have taken a while */
+	rpc_server_watchdog_feed();
 
 	/* DNS query on provided address */
 	rc = infuse_sync_dns(req->server_address, req->server_port, AF_INET, SOCK_DGRAM, &address,
@@ -251,28 +225,22 @@ done:
 #endif /* CONFIG_MCUBOOT_IMG_MANAGER */
 #ifdef CONFIG_NRF_MODEM_LIB
 	case RPC_ENUM_FILE_ACTION_NRF91_MODEM_DIFF:
-		/* Free resources */
-		rc = nrf_modem_delta_dfu_write_done();
+		rc = infuse_dfu_nrf91_modem_delta_finish();
+		if (rc > 0) {
+			rc = -EIO;
+		}
 		if (rc == 0) {
-			/* Schedule the update for next reboot */
-			rc = nrf_modem_delta_dfu_update();
-			if (rc == 0) {
 #ifdef CONFIG_INFUSE_REBOOT
-				/* Schedule the reboot in a few seconds time */
-				infuse_reboot_delayed(
-					INFUSE_REBOOT_DFU, (uintptr_t)rpc_command_coap_download,
-					RPC_ENUM_FILE_ACTION_NRF91_MODEM_DIFF, K_SECONDS(2));
+			/* Schedule the reboot in a few seconds time */
+			infuse_reboot_delayed(INFUSE_REBOOT_DFU,
+					      (uintptr_t)rpc_command_coap_download,
+					      RPC_ENUM_FILE_ACTION_NRF91_MODEM_DIFF, K_SECONDS(2));
 #else
-				LOG_WRN("INFUSE_REBOOT not enabled, cannot reboot");
+			LOG_WRN("INFUSE_REBOOT not enabled, cannot reboot");
 #endif /* CONFIG_INFUSE_REBOOT */
-			} else {
-				LOG_ERR("Modem DFU schedule failed (%d)", rc);
-			}
 		} else {
 			LOG_ERR("Modem DFU done failed (%d)", rc);
-			goto error;
 		}
-
 		break;
 #endif /* CONFIG_NRF_MODEM_LIB */
 	}
@@ -282,7 +250,7 @@ done:
 		.resource_len = downloaded,
 	};
 
-	return rpc_response_simple_req(request, 0, &rsp, sizeof(rsp));
+	return rpc_response_simple_req(request, rc, &rsp, sizeof(rsp));
 
 error:
 	struct rpc_coap_download_response err_rsp = {

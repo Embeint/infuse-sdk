@@ -13,6 +13,10 @@
 
 #include <infuse/dfu/helpers.h>
 
+#ifdef CONFIG_NRF_MODEM_LIB
+#include "nrf_modem_delta_dfu.h"
+#endif /* CONFIG_NRF_MODEM_LIB */
+
 /* Implementation taken from zephyr_img_mgmt.c */
 int infuse_dfu_image_erase(const struct flash_area *fa, size_t image_len)
 {
@@ -64,3 +68,56 @@ int infuse_dfu_image_erase(const struct flash_area *fa, size_t image_len)
 #error Unknown image management scheme
 #endif
 }
+
+#ifdef CONFIG_NRF_MODEM_LIB
+int infuse_dfu_nrf91_modem_delta_prepare(void)
+{
+	size_t offset;
+	int rc;
+
+	/* Determine if area needs to be erased first */
+	rc = nrf_modem_delta_dfu_offset(&offset);
+	if (rc != 0) {
+		return rc;
+	}
+	/* We don't support resuming an interrupted download.
+	 * Any value other than 0 needs to be erased
+	 */
+	if (offset != 0) {
+		/* Erase area if required */
+		rc = nrf_modem_delta_dfu_erase();
+		if (rc != 0) {
+			return rc;
+		}
+	}
+	/* Wait for DFU system to be ready.
+	 * If for some reason the erase never finishes, the watchdog will catch us.
+	 */
+	while (offset != 0) {
+		rc = nrf_modem_delta_dfu_offset(&offset);
+		if ((rc != 0) && (rc != NRF_MODEM_DELTA_DFU_ERASE_PENDING)) {
+			return rc;
+		}
+		k_sleep(K_MSEC(500));
+	}
+	/* Ready modem to receive the firmware update */
+	rc = nrf_modem_delta_dfu_write_init();
+	if ((rc != 0) && (rc != -EALREADY)) {
+		return rc;
+	}
+	return 0;
+}
+
+int infuse_dfu_nrf91_modem_delta_finish(void)
+{
+	int rc;
+
+	/* Free resources */
+	rc = nrf_modem_delta_dfu_write_done();
+	if (rc == 0) {
+		/* Schedule the update for next reboot */
+		rc = nrf_modem_delta_dfu_update();
+	}
+	return rc;
+}
+#endif /* CONFIG_NRF_MODEM_LIB */
