@@ -42,7 +42,7 @@ struct infuse_rpc_req_data_header {
 	uint32_t size;
 	/* Send an @ref INFUSE_RPC_DATA_ACK response every N packets received */
 	uint8_t rx_ack_period;
-};
+} __packed;
 
 /**
  * @brief @ref INFUSE_RPC_DATA payload
