@@ -423,6 +423,8 @@ ZTEST(rpc_server, test_data_receiver_sizes)
 	test_data_receiver(100, 0, 0, 0, 0, false);
 	test_data_receiver(1000, 0, 0, 0, 0, false);
 	test_data_receiver(3333, 0, 0, 0, 0, false);
+	/* Over UINT16_MAX */
+	test_data_receiver(100000, 0, 0, 0, 0, false);
 }
 
 ZTEST(rpc_server, test_data_receiver_lost_payload)
