@@ -12,6 +12,7 @@
 #include <zephyr/storage/flash_map.h>
 #include <zephyr/dfu/mcuboot.h>
 
+#include <infuse/dfu/helpers.h>
 #include <infuse/rpc/types.h>
 #include <infuse/epacket/packet.h>
 #include <infuse/reboot.h>
@@ -60,22 +61,16 @@ struct net_buf *rpc_command_file_write_basic(struct net_buf *request)
 	switch (action) {
 	case RPC_ENUM_FILE_ACTION_DISCARD:
 		break;
+#ifdef CONFIG_INFUSE_DFU_HELPERS
 #if FIXED_PARTITION_EXISTS(slot1_partition)
 	case RPC_ENUM_FILE_ACTION_APP_IMG:
 		rc = flash_area_open(FIXED_PARTITION_ID(slot1_partition), &fa);
-		if (rc < 0) {
-			goto error;
-		}
-		/* Round up to next 64kB */
-		size_t to_erase = ROUND_UP(expected, 65536);
-		/* Erase flash area */
-		rc = flash_area_erase(fa, 0, MIN(to_erase, fa->fa_size));
-		if (rc < 0) {
-			LOG_ERR("DFU: Failed to erase (%d)", rc);
-			goto error;
+		if (rc == 0) {
+			rc = infuse_dfu_image_erase(fa, expected);
 		}
 		break;
 #endif /* FIXED_PARTITION_EXISTS(slot1_partition) */
+#endif /* CONFIG_INFUSE_DFU_HELPERS */
 	default:
 		rc = -EINVAL;
 		goto error;

@@ -14,6 +14,7 @@
 #include <zephyr/storage/flash_map.h>
 #include <zephyr/dfu/mcuboot.h>
 
+#include <infuse/dfu/helpers.h>
 #include <infuse/rpc/types.h>
 #include <infuse/fs/kv_store.h>
 #include <infuse/security.h>
@@ -42,6 +43,8 @@ static int data_cb(uint32_t offset, const uint8_t *data, uint16_t data_len, void
 	struct cb_ctx *ctx = context;
 	int rc;
 
+	ARG_UNUSED(rc);
+
 	/* Prevent RPC server watchdog channel timing out */
 	rpc_server_watchdog_feed();
 
@@ -49,13 +52,11 @@ static int data_cb(uint32_t offset, const uint8_t *data, uint16_t data_len, void
 	ctx->crc = crc32_ieee_update(ctx->crc, data, data_len);
 
 	switch (ctx->action) {
+#ifdef CONFIG_INFUSE_DFU_HELPERS
 	case RPC_ENUM_FILE_ACTION_APP_IMG:
 		/* Erase receiving area on first packet */
 		if (offset == 0) {
-			/* Round up to next 64kB */
-			size_t to_erase = ROUND_UP(ctx->expected_len, 65536);
-			/* Erase flash area on first payload */
-			rc = flash_area_erase(ctx->fa, 0, MIN(to_erase, ctx->fa->fa_size));
+			rc = infuse_dfu_image_erase(ctx->fa, ctx->expected_len);
 			if (rc < 0) {
 				LOG_ERR("DFU: Failed to erase (%d)", rc);
 				return rc;
@@ -68,6 +69,7 @@ static int data_cb(uint32_t offset, const uint8_t *data, uint16_t data_len, void
 			return rc;
 		}
 		break;
+#endif /* CONFIG_INFUSE_DFU_HELPERS */
 #ifdef CONFIG_NRF_MODEM_LIB
 	case RPC_ENUM_FILE_ACTION_NRF91_MODEM_DIFF:
 		rc = nrf_modem_delta_dfu_write(data, data_len);

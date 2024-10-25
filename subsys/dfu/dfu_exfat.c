@@ -15,6 +15,7 @@
 #include <infuse/version.h>
 #include <infuse/data_logger/backend/exfat.h>
 #include <infuse/dfu/exfat.h>
+#include <infuse/dfu/helpers.h>
 
 #include <ff.h>
 
@@ -146,7 +147,7 @@ int dfu_exfat_app_upgrade_copy(const struct device *dev, struct infuse_version u
 	}
 
 	/* Erase output area */
-	if (flash_area_erase(fa, 0, fa->fa_size) != 0) {
+	if (infuse_dfu_image_erase(fa, fno.fsize) != 0) {
 		rc = -EIO;
 		goto close_area;
 	}
