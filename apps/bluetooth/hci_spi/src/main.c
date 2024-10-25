@@ -19,6 +19,7 @@
 #include <zephyr/init.h>
 #include <zephyr/drivers/gpio.h>
 #include <zephyr/drivers/spi.h>
+#include <zephyr/dfu/mcuboot.h>
 
 #include <zephyr/net/buf.h>
 #include <zephyr/bluetooth/bluetooth.h>
@@ -170,12 +171,13 @@ static void bt_tx_thread(void *p1, void *p2, void *p3)
 		struct bt_hci_acl_hdr *acl_hdr;
 	} hci_hdr;
 	hci_hdr.cmd_hdr = (struct bt_hci_cmd_hdr *)&rxmsg[1];
+	int cnt = 0;
 	int ret;
 
 	ARG_UNUSED(p1);
 	ARG_UNUSED(p2);
 	ARG_UNUSED(p3);
-
+	ARG_UNUSED(cnt);
 	(void)memset(txmsg, 0xFF, SPI_MAX_MSG_LEN);
 
 	while (1) {
@@ -245,6 +247,13 @@ static void bt_tx_thread(void *p1, void *p2, void *p3)
 			LOG_ERR("Unable to send (ret %d)", ret);
 			net_buf_unref(buf);
 		}
+
+#ifdef CONFIG_MCUBOOT_IMG_MANAGER
+		if (cnt++ == 0) {
+			/* We've received a good packet from the BT host, mark image as confirmed */
+			boot_write_img_confirmed();
+		}
+#endif /* CONFIG_MCUBOOT_IMG_MANAGER */
 
 		/* Make sure other threads get a chance to run */
 		k_yield();
