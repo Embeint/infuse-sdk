@@ -150,6 +150,7 @@ ZTEST(memfault_integration, test_memfault_reboot_reason_get)
 	reboot_reason_test(K_ERR_ARM_USAGE_UNDEFINED_INSTRUCTION, 0, kMfltRebootReason_UsageFault);
 
 	reboot_reason_test(INFUSE_REBOOT_RPC, 0, kMfltRebootReason_UserReset);
+	reboot_reason_test(INFUSE_REBOOT_DFU, 0, kMfltRebootReason_FirmwareUpdate);
 	reboot_reason_test(INFUSE_REBOOT_MCUMGR, 0, kMfltRebootReason_FirmwareUpdate);
 	reboot_reason_test(INFUSE_REBOOT_EXTERNAL_TRIGGER, 0, kMfltRebootReason_ButtonReset);
 

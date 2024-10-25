@@ -52,6 +52,8 @@ enum infuse_reboot_reason {
 	INFUSE_REBOOT_EXFAT_DFU,
 	/* Software watchdog has expired */
 	INFUSE_REBOOT_SW_WATCHDOG,
+	/* Rebooting for device firmware update */
+	INFUSE_REBOOT_DFU,
 	/* Unknown reboot reason */
 	INFUSE_REBOOT_UNKNOWN = 255,
 };
