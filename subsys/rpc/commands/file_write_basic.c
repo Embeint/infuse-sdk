@@ -18,6 +18,10 @@
 #include <infuse/reboot.h>
 #include <infuse/bluetooth/controller_manager.h>
 
+#ifdef CONFIG_NRF_MODEM_LIB
+#include "nrf_modem_delta_dfu.h"
+#endif /* CONFIG_NRF_MODEM_LIB */
+
 #include "../command_runner.h"
 #include "../server.h"
 
@@ -81,6 +85,14 @@ struct net_buf *rpc_command_file_write_basic(struct net_buf *request)
 		rc = bt_controller_manager_dfu_write_start(&ctx, expected);
 		break;
 #endif /* CONFIG_BT_CONTROLLER_MANAGER */
+#ifdef CONFIG_NRF_MODEM_LIB
+	case RPC_ENUM_FILE_ACTION_NRF91_MODEM_DIFF:
+		rc = infuse_dfu_nrf91_modem_delta_prepare();
+		if (rc > 0) {
+			rc = -EIO;
+		}
+		break;
+#endif /* CONFIG_NRF_MODEM_LIB */
 	default:
 		rc = -EINVAL;
 	}
@@ -123,6 +135,14 @@ struct net_buf *rpc_command_file_write_basic(struct net_buf *request)
 								  var_len);
 			break;
 #endif /* CONFIG_BT_CONTROLLER_MANAGER */
+#ifdef CONFIG_NRF_MODEM_LIB
+		case RPC_ENUM_FILE_ACTION_NRF91_MODEM_DIFF:
+			rc = nrf_modem_delta_dfu_write(data->payload, var_len);
+			if (rc > 0) {
+				rc = -EIO;
+			}
+			break;
+#endif /* CONFIG_NRF_MODEM_LIB */
 		}
 		if (rc < 0) {
 			LOG_ERR("Failed to handle offset %08X (%d)", data_offset, rc);
@@ -174,6 +194,26 @@ struct net_buf *rpc_command_file_write_basic(struct net_buf *request)
 		}
 		break;
 #endif /* CONFIG_BT_CONTROLLER_MANAGER */
+#ifdef CONFIG_NRF_MODEM_LIB
+	case RPC_ENUM_FILE_ACTION_NRF91_MODEM_DIFF:
+		rc = infuse_dfu_nrf91_modem_delta_finish();
+		if (rc > 0) {
+			rc = -EIO;
+		}
+		if (rc == 0) {
+#ifdef CONFIG_INFUSE_REBOOT
+			/* Schedule the reboot in a few seconds time */
+			infuse_reboot_delayed(INFUSE_REBOOT_DFU,
+					      (uintptr_t)rpc_command_file_write_basic,
+					      RPC_ENUM_FILE_ACTION_NRF91_MODEM_DIFF, K_SECONDS(2));
+#else
+			LOG_WRN("INFUSE_REBOOT not enabled, cannot reboot");
+#endif /* CONFIG_INFUSE_REBOOT */
+		} else {
+			LOG_ERR("Modem DFU done failed (%d)", rc);
+		}
+		break;
+#endif /* CONFIG_NRF_MODEM_LIB */
 	}
 
 	/* Allocate and return response */
@@ -182,7 +222,7 @@ struct net_buf *rpc_command_file_write_basic(struct net_buf *request)
 		.recv_crc = crc,
 	};
 
-	return rpc_response_simple_if(interface, 0, &rsp_ok, sizeof(rsp_ok));
+	return rpc_response_simple_if(interface, rc, &rsp_ok, sizeof(rsp_ok));
 error:
 	/* Close flash area if open */
 	if (fa != NULL) {
