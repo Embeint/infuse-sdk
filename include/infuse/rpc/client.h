@@ -82,6 +82,21 @@ static inline uint32_t rpc_client_last_request_id(struct rpc_client_ctx *ctx)
 }
 
 /**
+ * @brief Update the response timeout of an executing command
+ *
+ * @note This restarts the response timeout with the new value.
+ *
+ * @param ctx RPC client context
+ * @param request_id Request ID from @ref rpc_client_last_request_id
+ * @param timeout New response timeout
+ *
+ * @retval 0 On success
+ * @retval -EINVAL If request ID is no longer valid
+ */
+int rpc_client_update_response_timeout(struct rpc_client_ctx *ctx, uint32_t request_id,
+				       k_timeout_t timeout);
+
+/**
  * @brief Queue a command for execution on a remote device
  *
  * @note The header information in @a req_params is populated by this function.

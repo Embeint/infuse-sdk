@@ -389,9 +389,14 @@ static void test_command_data_param(uint32_t size, uint8_t ack_period)
 	/* Using a bad response ID fails */
 	zassert_equal(-EINVAL, rpc_client_ack_wait(&ctx, request_id + 1, K_FOREVER));
 	zassert_equal(-EINVAL, rpc_client_data_queue(&ctx, request_id + 1, 0, buffer, 10));
+	zassert_equal(-EINVAL,
+		      rpc_client_update_response_timeout(&ctx, request_id + 1, K_SECONDS(5)));
 
 	/* Wait for initial ACK */
 	zassert_equal(0, rpc_client_ack_wait(&ctx, request_id, K_SECONDS(1)));
+
+	/* Drop timeout value */
+	zassert_equal(0, rpc_client_update_response_timeout(&ctx, request_id, K_MSEC(950)));
 
 	/* Push requested data size */
 	remaining = req.data_header.size;
@@ -437,6 +442,7 @@ static void test_command_data_param(uint32_t size, uint8_t ack_period)
 	/* Queuing after command completion should return an error */
 	zassert_equal(-EINVAL, rpc_client_data_queue(&ctx, request_id, offset, buffer, 10));
 	zassert_equal(-EINVAL, rpc_client_ack_wait(&ctx, request_id, K_FOREVER));
+	zassert_equal(-EINVAL, rpc_client_update_response_timeout(&ctx, request_id, K_SECONDS(2)));
 
 	/* Cancel loopback worker */
 	k_work_cancel_delayable(&dwork);
