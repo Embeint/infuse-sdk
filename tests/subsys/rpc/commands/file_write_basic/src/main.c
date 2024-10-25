@@ -225,6 +225,8 @@ ZTEST(rpc_command_file_write_basic, test_file_write_sizes)
 	test_file_write_basic(RPC_ENUM_FILE_ACTION_DISCARD, 100, 0, 0, 0, 0, false);
 	test_file_write_basic(RPC_ENUM_FILE_ACTION_DISCARD, 1000, 0, 0, 0, 0, false);
 	test_file_write_basic(RPC_ENUM_FILE_ACTION_DISCARD, 3333, 0, 0, 0, 0, false);
+	/* Over UINT16_MAX */
+	test_file_write_basic(RPC_ENUM_FILE_ACTION_DISCARD, 100000, 0, 0, 0, 0, false);
 }
 
 ZTEST(rpc_command_file_write_basic, test_file_write_dfu)

@@ -31,7 +31,7 @@ struct net_buf *rpc_command_file_write_basic(struct net_buf *request)
 	enum epacket_auth auth;
 	uint32_t data_offset;
 	uint32_t received = 0;
-	uint16_t expected_offset = 0;
+	uint32_t expected_offset = 0;
 	uint8_t action, ack_period;
 	size_t var_len;
 	uint32_t crc = 0;
