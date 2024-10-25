@@ -92,6 +92,8 @@ struct net_buf *rpc_server_pull_data(uint32_t request_id, uint32_t expected_offs
 		if (data->offset != expected_offset) {
 			LOG_WRN("Missed data %08X-%08X", expected_offset, data->offset - 1);
 		}
+		/* Server is still alive */
+		rpc_server_watchdog_feed();
 		return buf;
 	}
 }
