@@ -200,7 +200,7 @@ class infuse_release(WestCommand):
                 s = l.strip().split(" ")
                 configs[s[1]] = s[2].strip("'\"")
 
-        if "CONFIG_BT_CONN" in configs:
+        if "CONFIG_BT_CONN" in configs and "CONFIG_BT_HCI_HOST" in configs:
             if "CONFIG_MCUMGR" not in configs:
                 print(colorama.Fore.YELLOW + "MCUMGR not enabled with Bluetooth")
             if "CONFIG_MCUMGR_TRANSPORT_BT" not in configs:
@@ -209,6 +209,15 @@ class infuse_release(WestCommand):
                 print(
                     colorama.Fore.YELLOW
                     + "MCUMGR Image Management not enabled with Bluetooth"
+                )
+        if (
+            "CONFIG_INFUSE_RPC_COMMAND_FILE_WRITE_BASIC" in configs
+            or "CONFIG_INFUSE_RPC_COMMAND_COAP_DOWNLOAD" in configs
+        ):
+            if "CONFIG_INFUSE_DFU_HELPERS" not in configs:
+                print(
+                    colorama.Fore.RED
+                    + "DFU RPCs enabled but image erase helpers not enabled"
                 )
 
         if self.tfm_build:
