@@ -34,6 +34,23 @@ extern "C" {
 int infuse_dfu_image_erase(const struct flash_area *fa, size_t image_len);
 
 /**
+ * @brief Prepare the nRF91 modem for a delta image upgrade
+ *
+ * @retval 0 On success
+ * @retval -errno Error code from nrf_modem_delta_dfu_offset, nrf_modem_delta_dfu_erase or
+ * nrf_modem_delta_dfu_write_init
+ */
+int infuse_dfu_nrf91_modem_delta_prepare(void);
+
+/**
+ * @brief Finalise a nRF91 modem delta image upgrade
+ *
+ * @retval 0 On success
+ * @retval -errno Error code from nrf_modem_delta_dfu_write_done or nrf_modem_delta_dfu_update
+ */
+int infuse_dfu_nrf91_modem_delta_finish(void);
+
+/**
  * @}
  */
 
