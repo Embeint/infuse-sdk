@@ -3,5 +3,6 @@
 config BT_CONTROLLER_MANAGER
 	bool "Manage Bluetooth controller not part of main image"
 	select INFUSE_RPC_CLIENT
+	depends on BT_HCI_HOST
 	depends on EPACKET_INTERFACE_HCI
 	default y
