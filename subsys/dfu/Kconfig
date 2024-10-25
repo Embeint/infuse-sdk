@@ -1,7 +1,14 @@
 # Infuse-IoT DFU libraries
 
+config INFUSE_DFU_HELPERS
+	bool "Firmware upgrade helpers"
+	depends on FLASH_MAP
+	depends on FLASH_PAGE_LAYOUT
+	default y if MCUBOOT_IMG_MANAGER
+
 config INFUSE_DFU_EXFAT
 	bool "Upgrade application images from an exFAT filesystem"
+	depends on INFUSE_DFU_HELPERS
 	depends on MCUBOOT_IMG_MANAGER
 	depends on DATA_LOGGER_EXFAT
 	default y
