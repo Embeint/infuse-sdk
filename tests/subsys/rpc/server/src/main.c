@@ -25,7 +25,7 @@ ZTEST(rpc_server, test_command_working_mem)
 
 	mem = rpc_server_command_working_mem(&mem_size);
 	zassert_not_null(mem);
-	zassert_equal(CONFIG_INFUSE_RPC_COMMAND_WORKING_MEMORY, mem_size);
+	zassert_equal(CONFIG_INFUSE_RPC_SERVER_WORKING_MEMORY, mem_size);
 }
 
 ZTEST(rpc_server, test_drop_data)
