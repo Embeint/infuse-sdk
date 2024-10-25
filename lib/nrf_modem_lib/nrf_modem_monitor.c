@@ -240,9 +240,9 @@ static void lte_reg_handler(const struct lte_lc_evt *const evt)
 	}
 }
 
-LTE_LC_ON_CFUN(infuse_cfun_hook, infuse_modem_info, NULL);
+NRF_MODEM_LIB_ON_INIT(infuse_cfun_hook, infuse_modem_info, NULL);
 
-static void infuse_modem_info(enum lte_lc_func_mode mode, void *ctx)
+static void infuse_modem_info(int ret, void *ctx)
 {
 	KV_STRUCT_KV_STRING_VAR(64) modem_info = {0};
 	KV_KEY_TYPE(KV_KEY_LTE_MODEM_IMEI) modem_imei;
