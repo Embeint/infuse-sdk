@@ -204,6 +204,7 @@ config INFUSE_RPC_COMMAND_DATA_SENDER_REQUIRED_AUTH
 
 config INFUSE_RPC_COMMAND_DATA_RECEIVER
 	bool "Enable RPC data_receiver"
+	depends on CRC
 	default y if ZTEST
 	help
 	  Receive multiple INFUSE_RPC_DATA packets

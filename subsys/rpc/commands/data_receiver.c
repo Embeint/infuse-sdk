@@ -8,6 +8,7 @@
 
 #include <zephyr/net/buf.h>
 #include <zephyr/logging/log.h>
+#include <zephyr/sys/crc.h>
 
 #include <infuse/rpc/types.h>
 #include <infuse/epacket/packet.h>
@@ -28,6 +29,7 @@ struct net_buf *rpc_command_data_receiver(struct net_buf *request)
 	uint32_t received = 0;
 	uint32_t expected_offset = 0;
 	uint8_t ack_period;
+	uint32_t crc = 0;
 	size_t var_len;
 	int rc = 0;
 
@@ -67,6 +69,7 @@ struct net_buf *rpc_command_data_receiver(struct net_buf *request)
 			goto end;
 		}
 		data = (void *)data_buf->data;
+		crc = crc32_ieee_update(crc, data->payload, var_len);
 		data_offset = data->offset;
 		expected_offset = data_offset + var_len;
 		remaining = expected - expected_offset;
@@ -82,7 +85,8 @@ struct net_buf *rpc_command_data_receiver(struct net_buf *request)
 end:
 	/* Allocate and return response */
 	struct rpc_data_receiver_response rsp = {
-		.received = received,
+		.recv_len = received,
+		.recv_crc = crc,
 	};
 	struct net_buf *response = rpc_response_simple_if(interface, rc, &rsp, sizeof(rsp));
 

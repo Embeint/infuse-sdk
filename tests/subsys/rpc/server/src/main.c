@@ -8,6 +8,7 @@
 
 #include <zephyr/ztest.h>
 #include <zephyr/kernel.h>
+#include <zephyr/sys/crc.h>
 #include <zephyr/random/random.h>
 
 #include <infuse/types.h>
@@ -300,6 +301,7 @@ static void test_data_receiver(uint32_t total_send, uint8_t skip_after, uint8_t 
 	bool had_stop = stop_after > 0;
 	uint32_t packets_acked = 0;
 	uint32_t packets_sent = 0;
+	uint32_t sent_crc = 0;
 	uint8_t num_offsets;
 
 	req = (void *)payload;
@@ -351,6 +353,9 @@ static void test_data_receiver(uint32_t total_send, uint8_t skip_after, uint8_t 
 			epacket_dummy_receive(epacket_dummy, &header, payload,
 					      sizeof(struct infuse_rpc_data) +
 						      (too_much_data ? 64 : to_send));
+			if (data_hdr->request_id == request_id) {
+				sent_crc = crc32_ieee_update(sent_crc, data_hdr->payload, to_send);
+			}
 		}
 		send_remaining -= to_send;
 		tx_offset += to_send;
@@ -402,9 +407,10 @@ ack_handler:
 		zassert_equal(0, rsp->header.return_code);
 	}
 	if (had_skip || had_stop || too_much_data) {
-		zassert_true(total_send > rsp->received);
+		zassert_true(total_send > rsp->recv_len);
 	} else {
-		zassert_equal(total_send, rsp->received);
+		zassert_equal(total_send, rsp->recv_len);
+		zassert_equal(sent_crc, rsp->recv_crc);
 	}
 	if (ack_period) {
 		if (ack_period > RPC_SERVER_MAX_ACK_PERIOD) {

@@ -347,12 +347,14 @@
         "32766": {
             "name": "data_receiver",
             "description": "Receive multiple INFUSE_RPC_DATA packets",
+            "depends_on": "CRC",
             "default": "y if ZTEST",
             "default_auth": "EPACKET_AUTH_DEVICE",
             "rpc_data": true,
             "request_params": [],
             "response_params": [
-                {"name": "received", "type": "uint32_t", "description": "Number of bytes received"}
+                {"name": "recv_len", "type": "uint32_t", "description": "Number of bytes received"},
+                {"name": "recv_crc", "type": "uint32_t", "description": "CRC32 of bytes received"}
             ]
         },
         "32767": {
