@@ -22,6 +22,7 @@
 #include "nrf_modem_delta_dfu.h"
 #endif /* CONFIG_NRF_MODEM_LIB */
 
+#include "common_file_actions.h"
 #include "../command_runner.h"
 #include "../server.h"
 
@@ -29,22 +30,17 @@ LOG_MODULE_DECLARE(rpc_server);
 
 struct net_buf *rpc_command_file_write_basic(struct net_buf *request)
 {
+	struct rpc_common_file_actions_ctx ctx;
 	struct infuse_rpc_data *data;
 	const struct device *interface;
-	uint32_t request_id, remaining, expected;
-	const struct flash_area *fa = NULL;
+	uint32_t request_id, remaining, expected, crc;
 	struct net_buf *data_buf;
 	enum epacket_auth auth;
 	uint32_t data_offset;
-	uint32_t received = 0;
 	uint32_t expected_offset = 0;
 	uint8_t action, ack_period;
 	size_t var_len;
-	uint32_t crc = 0;
-	uint32_t ctx;
 	int rc = 0;
-
-	(void)ctx;
 
 	/* Cache data from request and free the buffer.
 	 * Scoped in a block to ensure request packet is not used after free.
@@ -59,49 +55,24 @@ struct net_buf *rpc_command_file_write_basic(struct net_buf *request)
 		auth = req_meta->auth;
 		expected = req->data_header.size;
 		remaining = req->data_header.size;
+		crc = req->file_crc;
 		ack_period = req->data_header.rx_ack_period;
 
 		rpc_command_runner_request_unref(request);
 		request = NULL;
 	}
 
-	/* Determine action */
-	switch (action) {
-	case RPC_ENUM_FILE_ACTION_DISCARD:
-		break;
-#ifdef CONFIG_INFUSE_DFU_HELPERS
-#if FIXED_PARTITION_EXISTS(slot1_partition)
-	case RPC_ENUM_FILE_ACTION_APP_IMG:
-		rc = flash_area_open(FIXED_PARTITION_ID(slot1_partition), &fa);
-		if (rc == 0) {
-			rc = infuse_dfu_image_erase(fa, expected);
-		}
-		break;
-#endif /* FIXED_PARTITION_EXISTS(slot1_partition) */
-#endif /* CONFIG_INFUSE_DFU_HELPERS */
-#ifdef CONFIG_BT_CONTROLLER_MANAGER
-	case RPC_ENUM_FILE_ACTION_BT_CTLR_IMG:
-		/* We want to write the image to our own slot1 partition */
-		rc = bt_controller_manager_dfu_write_start(&ctx, expected);
-		break;
-#endif /* CONFIG_BT_CONTROLLER_MANAGER */
-#ifdef CONFIG_NRF_MODEM_LIB
-	case RPC_ENUM_FILE_ACTION_NRF91_MODEM_DIFF:
-		rc = infuse_dfu_nrf91_modem_delta_prepare();
-		if (rc > 0) {
-			rc = -EIO;
-		}
-		break;
-#endif /* CONFIG_NRF_MODEM_LIB */
-	default:
-		rc = -EINVAL;
+	/* Start file write process */
+	rc = rpc_common_file_actions_start(&ctx, action, expected, crc);
+	if (rc == FILE_ALREADY_PRESENT) {
+		LOG_INF("File already present");
+		goto write_done;
 	}
 	if (rc < 0) {
 		LOG_ERR("Failed to prepare for %d (%d)", action, rc);
 		goto error;
 	}
-
-	LOG_DBG("Receiving %d bytes", remaining);
+	LOG_DBG("Receiving %d bytes", expected);
 
 	/* Initial ACK to signal readiness */
 	rpc_server_ack_data_ready(interface, request_id);
@@ -121,29 +92,9 @@ struct net_buf *rpc_command_file_write_basic(struct net_buf *request)
 		}
 		data = (void *)data_buf->data;
 		data_offset = data->offset;
-		crc = crc32_ieee_update(crc, data->payload, var_len);
 
-		switch (action) {
-#if FIXED_PARTITION_EXISTS(slot1_partition)
-		case RPC_ENUM_FILE_ACTION_APP_IMG:
-			rc = flash_area_write(fa, data_offset, data->payload, var_len);
-			break;
-#endif /* FIXED_PARTITION_EXISTS(slot1_partition) */
-#ifdef CONFIG_BT_CONTROLLER_MANAGER
-		case RPC_ENUM_FILE_ACTION_BT_CTLR_IMG:
-			rc = bt_controller_manager_dfu_write_next(ctx, data_offset, data->payload,
-								  var_len);
-			break;
-#endif /* CONFIG_BT_CONTROLLER_MANAGER */
-#ifdef CONFIG_NRF_MODEM_LIB
-		case RPC_ENUM_FILE_ACTION_NRF91_MODEM_DIFF:
-			rc = nrf_modem_delta_dfu_write(data->payload, var_len);
-			if (rc > 0) {
-				rc = -EIO;
-			}
-			break;
-#endif /* CONFIG_NRF_MODEM_LIB */
-		}
+		/* Write the received data */
+		rc = rpc_common_file_actions_write(&ctx, data_offset, data->payload, var_len);
 		if (rc < 0) {
 			LOG_ERR("Failed to handle offset %08X (%d)", data_offset, rc);
 			goto error;
@@ -151,7 +102,6 @@ struct net_buf *rpc_command_file_write_basic(struct net_buf *request)
 
 		expected_offset = data_offset + var_len;
 		remaining = expected - expected_offset;
-		received += var_len;
 		net_buf_unref(data_buf);
 
 		/* Handle any acknowledgements required */
@@ -160,79 +110,23 @@ struct net_buf *rpc_command_file_write_basic(struct net_buf *request)
 		}
 	}
 
-	/* Close flash area if open */
-	if (fa != NULL) {
-		flash_area_close(fa);
-	}
-
-	/* Post write actions */
-	switch (action) {
-#ifdef CONFIG_MCUBOOT_IMG_MANAGER
-	case RPC_ENUM_FILE_ACTION_APP_IMG:
-		if (boot_request_upgrade_multi(0, BOOT_UPGRADE_TEST) == 0) {
-#ifdef CONFIG_INFUSE_REBOOT
-			LOG_INF("DFU download complete, rebooting");
-			infuse_reboot_delayed(INFUSE_REBOOT_DFU,
-					      (uintptr_t)rpc_command_file_write_basic,
-					      RPC_ENUM_FILE_ACTION_APP_IMG, K_SECONDS(2));
-#else
-			LOG_WRN("INFUSE_REBOOT not enabled, cannot reboot");
-#endif /* CONFIG_INFUSE_REBOOT */
-		}
-		break;
-#endif /* CONFIG_MCUBOOT_IMG_MANAGER */
-#ifdef CONFIG_BT_CONTROLLER_MANAGER
-	case RPC_ENUM_FILE_ACTION_BT_CTLR_IMG:
-		/* Copy image across to controller */
-		rc = bt_controller_manager_dfu_write_finish(ctx, &received, &crc);
-		if (rc == 0) {
-			infuse_reboot_delayed(INFUSE_REBOOT_DFU,
-					      (uintptr_t)rpc_command_file_write_basic,
-					      RPC_ENUM_FILE_ACTION_BT_CTLR_IMG, K_SECONDS(2));
-		} else {
-			LOG_ERR("Failed to finalise BT DFU (%d)", rc);
-		}
-		break;
-#endif /* CONFIG_BT_CONTROLLER_MANAGER */
-#ifdef CONFIG_NRF_MODEM_LIB
-	case RPC_ENUM_FILE_ACTION_NRF91_MODEM_DIFF:
-		rc = infuse_dfu_nrf91_modem_delta_finish();
-		if (rc > 0) {
-			rc = -EIO;
-		}
-		if (rc == 0) {
-#ifdef CONFIG_INFUSE_REBOOT
-			/* Schedule the reboot in a few seconds time */
-			infuse_reboot_delayed(INFUSE_REBOOT_DFU,
-					      (uintptr_t)rpc_command_file_write_basic,
-					      RPC_ENUM_FILE_ACTION_NRF91_MODEM_DIFF, K_SECONDS(2));
-#else
-			LOG_WRN("INFUSE_REBOOT not enabled, cannot reboot");
-#endif /* CONFIG_INFUSE_REBOOT */
-		} else {
-			LOG_ERR("Modem DFU done failed (%d)", rc);
-		}
-		break;
-#endif /* CONFIG_NRF_MODEM_LIB */
+write_done:
+	/* Finish file write process */
+	rc = rpc_common_file_actions_finish(&ctx, RPC_ID_FILE_WRITE_BASIC);
+	if (rc < 0) {
+		LOG_ERR("Failed to finish %d (%d)", action, rc);
 	}
 
 	/* Allocate and return response */
-	struct rpc_file_write_basic_response rsp_ok = {
-		.recv_len = received,
-		.recv_crc = crc,
+	struct rpc_file_write_basic_response rsp = {
+		.recv_len = ctx.received,
+		.recv_crc = ctx.crc,
 	};
 
-	return rpc_response_simple_if(interface, rc, &rsp_ok, sizeof(rsp_ok));
+	return rpc_response_simple_if(interface, rc, &rsp, sizeof(rsp));
 error:
-	/* Close flash area if open */
-	if (fa != NULL) {
-		flash_area_close(fa);
-	}
-#ifdef CONFIG_BT_CONTROLLER_MANAGER
-	if (action == RPC_ENUM_FILE_ACTION_BT_CTLR_IMG) {
-		(void)bt_controller_manager_dfu_write_finish(ctx, &received, &crc);
-	}
-#endif /* CONFIG_BT_CONTROLLER_MANAGER */
+	/* Cleanup resources */
+	(void)rpc_common_file_actions_error_cleanup(&ctx);
 
 	/* Allocate and return response */
 	struct rpc_file_write_basic_response rsp_err = {

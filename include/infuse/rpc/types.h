@@ -507,6 +507,8 @@ struct rpc_file_write_basic_request {
 	struct infuse_rpc_req_data_header data_header;
 	/* Action to apply to written file */
 	uint8_t action;
+	/* Expected file CRC */
+	uint32_t file_crc;
 } __packed;
 
 struct rpc_file_write_basic_response {

@@ -311,7 +311,8 @@
             "default_auth": "EPACKET_AUTH_NETWORK",
             "rpc_data": true,
             "request_params": [
-                {"name": "action", "type": "enum rpc_enum_file_action", "description": "Action to apply to written file"}
+                {"name": "action", "type": "enum rpc_enum_file_action", "description": "Action to apply to written file"},
+                {"name": "file_crc", "type": "uint32_t", "description": "Expected file CRC"}
             ],
             "response_params": [
                 {"name": "recv_len", "type": "uint32_t", "description": "Number of bytes received"},
