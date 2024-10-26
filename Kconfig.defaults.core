@@ -45,8 +45,6 @@ configdefault ZBUS_CHANNEL_PUBLISH_STATS
 # ePacket API
 configdefault EPACKET
 	default y
-configdefault POLL
-	default y
 configdefault NET_BUF
 	default y
 configdefault EVENTS
