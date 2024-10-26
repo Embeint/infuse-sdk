@@ -214,29 +214,41 @@ int rpc_client_data_queue(struct rpc_client_ctx *ctx, uint32_t request_id, uint3
 {
 	struct rpc_client_cmd_ctx *c = find_cmd_ctx(ctx, request_id);
 	struct infuse_rpc_data *header;
+	const uint8_t *bytes = data;
 	struct net_buf *data_buf;
+	size_t add, tail;
 
 	if (c == NULL) {
 		LOG_WRN("Invalid request %08X", request_id);
 		return -EINVAL;
 	}
 
-	/* Allocate buffer for command */
-	data_buf = epacket_alloc_tx_for_interface(ctx->interface, K_FOREVER);
-	__ASSERT_NO_MSG(data_buf != NULL);
+	while (data_len) {
+		/* Allocate buffer for command */
+		data_buf = epacket_alloc_tx_for_interface(ctx->interface, K_FOREVER);
+		__ASSERT_NO_MSG(data_buf != NULL);
 
-	/* Data header */
-	header = net_buf_add(data_buf, sizeof(*header));
-	header->request_id = request_id;
-	header->offset = offset;
+		/* Data header */
+		header = net_buf_add(data_buf, sizeof(*header));
+		header->request_id = request_id;
+		header->offset = offset;
 
-	/* Data payload */
-	net_buf_add_mem(data_buf, data, data_len);
+		/* Limit payload to interface size */
+		tail = net_buf_tailroom(data_buf);
+		add = MIN(tail, data_len);
 
-	/* Send data packet */
-	epacket_set_tx_metadata(data_buf, EPACKET_AUTH_NETWORK, 0x00, INFUSE_RPC_DATA);
-	epacket_queue(ctx->interface, data_buf);
+		/* Data payload */
+		net_buf_add_mem(data_buf, bytes, add);
 
+		/* Send data packet */
+		epacket_set_tx_metadata(data_buf, EPACKET_AUTH_NETWORK, 0x00, INFUSE_RPC_DATA);
+		epacket_queue(ctx->interface, data_buf);
+
+		/* Update state */
+		bytes += add;
+		offset += add;
+		data_len -= add;
+	}
 	return 0;
 }
 
