@@ -1,0 +1,8 @@
+config TEST_NATIVE_MOCK
+	bool "Mock various file backends"
+	default y if BOARD_NATIVE_SIM
+
+config BT_CONTROLLER_MANAGER
+	default y if TEST_NATIVE_MOCK
+
+source "Kconfig.zephyr"
