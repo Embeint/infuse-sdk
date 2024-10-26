@@ -28,6 +28,7 @@ struct rpc_echo_rsp_10 {
 } __packed;
 
 static K_SEM_DEFINE(client_cb_sem, 0, 10);
+static uint8_t large_buffer[1024];
 
 void epacket_raw_receive_handler(struct net_buf *buf);
 
@@ -357,7 +358,7 @@ static void command_data_done(const struct net_buf *buf, void *user_data)
 	k_sem_give(&client_cb_sem);
 }
 
-static void test_command_data_param(uint32_t size, uint8_t ack_period)
+static void test_command_data_param(uint32_t size, uint8_t ack_period, bool single)
 {
 	const struct device *epacket_dummy = DEVICE_DT_GET(DT_NODELABEL(epacket_dummy));
 	struct k_work_delayable dwork;
@@ -403,9 +404,18 @@ static void test_command_data_param(uint32_t size, uint8_t ack_period)
 	offset = 0;
 	pkt_cnt = 0;
 	while (remaining > 0) {
-		size_t to_send = MIN(remaining, sizeof(buffer));
+		size_t to_send;
+		const uint8_t *p;
 
-		rc = rpc_client_data_queue(&ctx, request_id, offset, buffer, to_send);
+		if (single) {
+			to_send = size;
+			p = large_buffer;
+		} else {
+			to_send = MIN(remaining, sizeof(buffer));
+			p = buffer;
+		}
+
+		rc = rpc_client_data_queue(&ctx, request_id, offset, p, to_send);
 		zassert_equal(0, rc);
 
 		if (offset == 0) {
@@ -453,9 +463,10 @@ static void test_command_data_param(uint32_t size, uint8_t ack_period)
 
 ZTEST(rpc_client, test_command_data)
 {
-	test_command_data_param(1000, 1);
-	test_command_data_param(5000, 2);
-	test_command_data_param(10000, 3);
+	test_command_data_param(1000, 1, false);
+	test_command_data_param(5000, 2, false);
+	test_command_data_param(4000, 3, false);
+	test_command_data_param(512, 1, true);
 }
 
 ZTEST(rpc_client, test_sync)
