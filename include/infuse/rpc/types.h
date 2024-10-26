@@ -557,7 +557,9 @@ struct rpc_data_receiver_request {
 struct rpc_data_receiver_response {
 	struct infuse_rpc_rsp_header header;
 	/* Number of bytes received */
-	uint32_t received;
+	uint32_t recv_len;
+	/* CRC32 of bytes received */
+	uint32_t recv_crc;
 } __packed;
 
 /* Echo any input data in the response */

@@ -8,6 +8,7 @@
 
 #include <zephyr/ztest.h>
 #include <zephyr/kernel.h>
+#include <zephyr/sys/crc.h>
 #include <zephyr/random/random.h>
 
 #include <infuse/types.h>
@@ -345,6 +346,9 @@ static void async_processor(struct k_work *work)
 	k_work_reschedule(dwork, K_MSEC(100));
 }
 
+static uint32_t expected_len;
+static uint32_t expected_crc;
+
 static void command_data_done(const struct net_buf *buf, void *user_data)
 {
 	zassert_not_null(buf);
@@ -354,6 +358,8 @@ static void command_data_done(const struct net_buf *buf, void *user_data)
 
 	zassert_equal(0, rsp->header.return_code);
 	zassert_equal(RPC_ID_DATA_RECEIVER, rsp->header.command_id);
+	zassert_equal(expected_len, rsp->recv_len);
+	zassert_equal(expected_crc, rsp->recv_crc);
 
 	k_sem_give(&client_cb_sem);
 }
@@ -375,6 +381,9 @@ static void test_command_data_param(uint32_t size, uint8_t ack_period, bool sing
 	uint32_t remaining, offset;
 	uint8_t pkt_cnt;
 	int rc;
+
+	expected_len = size;
+	expected_crc = 0;
 
 	/* Need to do ePacket loopback in an alternate context for blocking API */
 	k_work_init_delayable(&dwork, async_processor);
@@ -415,6 +424,7 @@ static void test_command_data_param(uint32_t size, uint8_t ack_period, bool sing
 			p = buffer;
 		}
 
+		expected_crc = crc32_ieee_update(expected_crc, p, to_send);
 		rc = rpc_client_data_queue(&ctx, request_id, offset, p, to_send);
 		zassert_equal(0, rc);
 
@@ -463,6 +473,8 @@ static void test_command_data_param(uint32_t size, uint8_t ack_period, bool sing
 
 ZTEST(rpc_client, test_command_data)
 {
+	sys_rand_get(large_buffer, sizeof(large_buffer));
+
 	test_command_data_param(1000, 1, false);
 	test_command_data_param(5000, 2, false);
 	test_command_data_param(4000, 3, false);
