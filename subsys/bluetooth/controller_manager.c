@@ -117,10 +117,11 @@ int bt_controller_manager_dfu_write_next(uint32_t context, uint32_t image_offset
 int bt_controller_manager_dfu_write_finish(uint32_t context, uint32_t *len, uint32_t *crc)
 {
 	if (context != 0) {
+		k_sem_take(&write_done, K_FOREVER);
+
 		*len = write_rsp.recv_len;
 		*crc = write_rsp.recv_crc;
 
-		k_sem_take(&write_done, K_FOREVER);
 		/* Unregister from callbacks */
 		rpc_client_cleanup(&ctx);
 	}
