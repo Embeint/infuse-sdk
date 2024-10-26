@@ -155,12 +155,14 @@ struct net_buf *rpc_command_coap_download(struct net_buf *request)
 	rc = infuse_sync_dns(req->server_address, req->server_port, AF_INET, SOCK_DGRAM, &address,
 			     &address_len);
 	if (rc < 0) {
+		LOG_DBG("DNS failure (%d)", rc);
 		goto error;
 	}
 
 	/* Create socket */
 	sock = zsock_socket(address.sa_family, SOCK_DGRAM, IPPROTO_DTLS_1_2);
 	if (sock < 0) {
+		LOG_DBG("zsock_socket failure (%d)", -errno);
 		rc = -errno;
 		goto error;
 	}
@@ -168,6 +170,7 @@ struct net_buf *rpc_command_coap_download(struct net_buf *request)
 	/* Assign DTLS security tags */
 	if (zsock_setsockopt(sock, SOL_TLS, TLS_SEC_TAG_LIST, sec_tls_tags, sizeof(sec_tls_tags)) <
 	    0) {
+		LOG_DBG("zsock_setsockopt failure (%d)", -errno);
 		rc = -errno;
 		goto error;
 	}
@@ -178,6 +181,7 @@ struct net_buf *rpc_command_coap_download(struct net_buf *request)
 	/* Reduce timeout from the default 1 minute */
 	if (zsock_setsockopt(sock, SOL_TLS, TLS_DTLS_HANDSHAKE_TIMEOUT_MAX, &timeout,
 			     sizeof(timeout)) < 0) {
+		LOG_DBG("zsock_setsockopt failure (%d)", -errno);
 		rc = -errno;
 		goto error;
 	}
@@ -186,6 +190,7 @@ struct net_buf *rpc_command_coap_download(struct net_buf *request)
 	/* Complete DTLS handshake */
 	rc = zsock_connect(sock, &address, address_len);
 	if (rc != 0) {
+		LOG_DBG("zsock_connect failure (%d)", -errno);
 		rc = -errno;
 		goto error;
 	}
@@ -194,6 +199,7 @@ struct net_buf *rpc_command_coap_download(struct net_buf *request)
 	downloaded = infuse_coap_download(sock, req->resource, data_cb, &context, work_mem,
 					  work_mem_size, block_timeout);
 	if (downloaded < 0) {
+		LOG_DBG("infuse_coap_download failed (%d)", downloaded);
 		rc = downloaded;
 		goto error;
 	}
