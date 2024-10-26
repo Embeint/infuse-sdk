@@ -12,6 +12,7 @@
 #include <zephyr/random/random.h>
 #include <zephyr/storage/flash_map.h>
 #include <zephyr/net/tls_credentials.h>
+#include <zephyr/sys/crc.h>
 
 #include <infuse/security.h>
 #include <infuse/common_boot.h>
@@ -25,6 +26,47 @@ struct rpc_coap_download_request_send {
 	struct rpc_coap_download_request core;
 	char resource[128];
 } __packed;
+
+#ifdef CONFIG_TEST_NATIVE_MOCK
+static size_t bt_image_len;
+static size_t bt_image_crc;
+static uint32_t bt_fail_after;
+static bool bt_in_progress;
+static int bt_start_rc;
+static int bt_finish_rc;
+
+int bt_controller_manager_dfu_write_start(uint32_t *ctx, size_t image_len)
+{
+	bt_image_len = image_len;
+	bt_image_crc = 0;
+	if (bt_start_rc == 0) {
+		bt_in_progress = true;
+	}
+	return bt_start_rc;
+}
+
+int bt_controller_manager_dfu_write_next(uint32_t ctx, uint32_t image_offset,
+					 const void *image_chunk, size_t chunk_len)
+{
+	bt_image_crc = crc32_ieee_update(bt_image_crc, image_chunk, chunk_len);
+
+	if (bt_fail_after > 0) {
+		if (--bt_fail_after == 0) {
+			return -EIO;
+		}
+	}
+	return 0;
+}
+
+int bt_controller_manager_dfu_write_finish(uint32_t ctx, uint32_t *len, uint32_t *crc)
+{
+	*len = bt_image_len;
+	*crc = bt_image_crc;
+	bt_in_progress = false;
+	return bt_finish_rc;
+}
+
+#endif /* CONFIG_TEST_NATIVE_MOCK */
 
 static void send_download_command(uint32_t request_id, const char *server, uint16_t port,
 				  uint16_t timeout, uint8_t action, char *resource, uint32_t len,
@@ -138,6 +180,11 @@ ZTEST(rpc_command_coap_download, test_download_invalid)
 	/* Re-add the credential */
 	zassert_equal(0, tls_credential_add(tag, TLS_CREDENTIAL_PSK_ID, cred, sizeof(cred)));
 #endif /* CONFIG_TLS_CREDENTIALS */
+
+	/* Everything works after all the failures */
+	send_download_command(10, "coap.dev.infuse-iot.com", 5684, 0, RPC_ENUM_FILE_ACTION_DISCARD,
+			      "file/small_file", UINT32_MAX, UINT32_MAX);
+	expect_coap_download_response(10, 0, 12, 0xb5289bef);
 }
 
 ZTEST(rpc_command_coap_download, test_download)
@@ -173,6 +220,42 @@ ZTEST(rpc_command_coap_download, test_download)
 	send_download_command(12, "coap.dev.infuse-iot.com", 5684, 0, RPC_ENUM_FILE_ACTION_APP_IMG,
 			      "file/med_file", 10030, UINT32_MAX);
 	expect_coap_download_response(12, 0, 10030, 0x9919d24e);
+}
+
+ZTEST(rpc_command_coap_download, test_download_bt_ctlr)
+{
+#ifdef CONFIG_TEST_NATIVE_MOCK
+	send_download_command(15, "coap.dev.infuse-iot.com", 5684, 0,
+			      RPC_ENUM_FILE_ACTION_BT_CTLR_IMG, "file/med_file", 10030, UINT32_MAX);
+	expect_coap_download_response(15, 0, 10030, 0x9919d24e);
+	zassert_false(bt_in_progress);
+
+	bt_start_rc = -EIO;
+	send_download_command(20, "coap.dev.infuse-iot.com", 5684, 0,
+			      RPC_ENUM_FILE_ACTION_BT_CTLR_IMG, "file/med_file", 10030, UINT32_MAX);
+	expect_coap_download_response(20, -EIO, 0, 0);
+	zassert_false(bt_in_progress);
+	bt_start_rc = 0;
+
+	bt_fail_after = 10;
+	send_download_command(16, "coap.dev.infuse-iot.com", 5684, 0,
+			      RPC_ENUM_FILE_ACTION_BT_CTLR_IMG, "file/med_file", 10030, UINT32_MAX);
+	expect_coap_download_response(16, -EIO, 0, 0);
+	zassert_false(bt_in_progress);
+
+	bt_finish_rc = -EINVAL;
+	send_download_command(30, "coap.dev.infuse-iot.com", 5684, 0,
+			      RPC_ENUM_FILE_ACTION_BT_CTLR_IMG, "file/med_file", 10030, UINT32_MAX);
+	expect_coap_download_response(30, -EINVAL, 10030, 0x9919d24e);
+	zassert_false(bt_in_progress);
+	bt_finish_rc = 0;
+
+	send_download_command(17, "coap.dev.infuse-iot.com", 5684, 0,
+			      RPC_ENUM_FILE_ACTION_BT_CTLR_IMG, "file/med_file", 10030, UINT32_MAX);
+	expect_coap_download_response(17, 0, 10030, 0x9919d24e);
+	zassert_false(bt_in_progress);
+	zassert_false(bt_in_progress);
+#endif /* CONFIG_TEST_NATIVE_MOCK */
 }
 
 ZTEST_SUITE(rpc_command_coap_download, NULL, NULL, NULL, NULL, NULL);

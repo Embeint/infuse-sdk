@@ -12,6 +12,7 @@
 #include <zephyr/sys/crc.h>
 #include <zephyr/storage/flash_map.h>
 
+#include <infuse/bluetooth/controller_manager.h>
 #include <infuse/types.h>
 #include <infuse/rpc/types.h>
 #include <infuse/security.h>
@@ -24,9 +25,59 @@
 static uint8_t fixed_payload[8192];
 static uint32_t fixed_payload_crc;
 
-static void test_file_write_basic(uint8_t action, uint32_t total_send, uint8_t skip_after,
-				  uint8_t stop_after, uint8_t bad_id_after, uint8_t ack_period,
-				  bool too_much_data, bool expect_skip)
+struct test_out {
+	int16_t cmd_rc;
+	uint32_t cmd_crc;
+	uint32_t cmd_len;
+	uint32_t written_crc;
+};
+
+#ifdef CONFIG_TEST_NATIVE_MOCK
+
+static size_t bt_image_len;
+static size_t bt_image_crc;
+static uint32_t bt_fail_after;
+static bool bt_in_progress;
+static int bt_start_rc;
+static int bt_finish_rc;
+
+int bt_controller_manager_dfu_write_start(uint32_t *ctx, size_t image_len)
+{
+	bt_image_len = image_len;
+	bt_image_crc = 0;
+	if (bt_start_rc == 0) {
+		bt_in_progress = true;
+	}
+	return bt_start_rc;
+}
+
+int bt_controller_manager_dfu_write_next(uint32_t ctx, uint32_t image_offset,
+					 const void *image_chunk, size_t chunk_len)
+{
+	bt_image_crc = crc32_ieee_update(bt_image_crc, image_chunk, chunk_len);
+
+	if (bt_fail_after > 0) {
+		if (--bt_fail_after == 0) {
+			return -EIO;
+		}
+	}
+	return 0;
+}
+
+int bt_controller_manager_dfu_write_finish(uint32_t ctx, uint32_t *len, uint32_t *crc)
+{
+	*len = bt_image_len;
+	*crc = bt_image_crc;
+	bt_in_progress = false;
+	return bt_finish_rc;
+}
+
+#endif /* CONFIG_TEST_NATIVE_MOCK */
+
+static struct test_out test_file_write_basic(uint8_t action, uint32_t total_send,
+					     uint8_t skip_after, uint8_t stop_after,
+					     uint8_t bad_id_after, uint8_t ack_period,
+					     bool too_much_data, bool expect_skip)
 {
 	const struct device *epacket_dummy = DEVICE_DT_GET(DT_NODELABEL(epacket_dummy));
 	struct k_fifo *tx_fifo = epacket_dummmy_transmit_fifo_get();
@@ -41,8 +92,6 @@ static void test_file_write_basic(uint8_t action, uint32_t total_send, uint8_t s
 	uint32_t tx_offset = 0;
 	uint32_t to_send;
 	struct net_buf *tx;
-	bool had_skip = skip_after > 0;
-	bool had_stop = stop_after > 0;
 	uint32_t packets_acked = 0;
 	uint32_t packets_sent = 0;
 	uint32_t crc = UINT32_MAX;
@@ -79,6 +128,9 @@ static void test_file_write_basic(uint8_t action, uint32_t total_send, uint8_t s
 	tx_header = (void *)tx->data;
 	data_ack = (void *)(tx->data + sizeof(*tx_header));
 	num_offsets = (tx->len - sizeof(*tx_header) - sizeof(*data_ack)) / sizeof(uint32_t);
+	if (tx_header->type == INFUSE_RPC_RSP) {
+		goto early_rsp;
+	}
 	zassert_equal(INFUSE_RPC_DATA_ACK, tx_header->type);
 	zassert_equal(EPACKET_AUTH_NETWORK, tx_header->auth);
 	zassert_equal(request_id, data_ack->request_id);
@@ -125,26 +177,27 @@ static void test_file_write_basic(uint8_t action, uint32_t total_send, uint8_t s
 		if (stop_after && (stop_after-- == 1)) {
 			break;
 		}
-		if (ack_period) {
-			tx = net_buf_get(tx_fifo, K_NO_WAIT);
-			if (tx) {
-				/* clang-format off */
+		tx = net_buf_get(tx_fifo, K_NO_WAIT);
+		if (tx) {
+			/* clang-format off */
 ack_handler:
-				/* clang-format on */
-				num_offsets = (tx->len - sizeof(*tx_header) - sizeof(*data_ack)) /
-					      sizeof(uint32_t);
+			/* clang-format on */
+			tx_header = (void *)tx->data;
+			data_ack = (void *)(tx->data + sizeof(*tx_header));
 
-				tx_header = (void *)tx->data;
-				data_ack = (void *)(tx->data + sizeof(*tx_header));
-				zassert_equal(INFUSE_RPC_DATA_ACK, tx_header->type);
-				zassert_equal(ack_period, num_offsets);
-				packets_acked += num_offsets;
-				for (int i = 1; i < ack_period; i++) {
-					zassert_true(data_ack->offsets[i - 1] <
-						     data_ack->offsets[i]);
-				}
-				net_buf_unref(tx);
+			if (tx_header->type == INFUSE_RPC_RSP) {
+				goto early_rsp;
 			}
+			zassert_equal(INFUSE_RPC_DATA_ACK, tx_header->type);
+
+			num_offsets = (tx->len - sizeof(*tx_header) - sizeof(*data_ack)) /
+				      sizeof(uint32_t);
+			zassert_equal(ack_period, num_offsets);
+			packets_acked += num_offsets;
+			for (int i = 1; i < ack_period; i++) {
+				zassert_true(data_ack->offsets[i - 1] < data_ack->offsets[i]);
+			}
+			net_buf_unref(tx);
 		}
 		k_sleep(K_MSEC(1));
 	}
@@ -152,6 +205,7 @@ ack_handler:
 write_skip:
 	/* Wait for the final RPC_RSP */
 	tx = net_buf_get(tx_fifo, K_MSEC(1000));
+early_rsp:
 	zassert_not_null(tx);
 	tx_header = (void *)tx->data;
 	if (ack_period && tx_header->type == INFUSE_RPC_DATA_ACK) {
@@ -163,33 +217,20 @@ write_skip:
 	zassert_equal(EPACKET_AUTH_NETWORK, tx_header->auth);
 	zassert_equal(request_id, rsp->header.request_id);
 	zassert_equal(RPC_ID_FILE_WRITE_BASIC, rsp->header.command_id);
-	if (had_stop) {
-		zassert_equal(-ETIMEDOUT, rsp->header.return_code);
-	} else if (too_much_data) {
-		zassert_equal(-EINVAL, rsp->header.return_code);
-	} else {
-		zassert_equal(0, rsp->header.return_code);
-	}
-	if (had_skip || had_stop || too_much_data) {
-		zassert_true(total_send > rsp->recv_len);
-	} else {
-		zassert_equal(expect_skip ? 0 : total_send, rsp->recv_len);
-		zassert_equal(crc, rsp->recv_crc);
-	}
-	if (ack_period) {
-		if (ack_period > RPC_SERVER_MAX_ACK_PERIOD) {
-			zassert_equal(0, packets_acked);
-		} else {
-			zassert_true(packets_acked >= (packets_sent - ack_period - had_skip));
-		}
-	}
+
+	struct test_out ret = {
+		.cmd_rc = rsp->header.return_code,
+		.cmd_len = rsp->recv_len,
+		.cmd_crc = rsp->recv_crc,
+		.written_crc = crc,
+	};
 
 	net_buf_unref(tx);
+	return ret;
+}
 
-	if (action != RPC_ENUM_FILE_ACTION_APP_IMG) {
-		return;
-	}
-
+void validate_flash_area(struct test_out *ret)
+{
 #if FIXED_PARTITION_EXISTS(slot1_partition)
 	/* Validate file written matches flash contents */
 	uint8_t buffer[128];
@@ -197,9 +238,8 @@ write_skip:
 	uint32_t fa_crc;
 
 	zassert_equal(0, flash_area_open(FIXED_PARTITION_ID(slot1_partition), &fa));
-	zassert_equal(0, flash_area_crc32(fa, 0, total_send, &fa_crc, buffer, sizeof(buffer)));
-	printk("CRC32: %08X %08X %08X\n", fixed_payload_crc, crc, fa_crc);
-	zassert_equal(crc, fa_crc, "CRC sent does not equal CRC written");
+	zassert_equal(0, flash_area_crc32(fa, 0, ret->cmd_len, &fa_crc, buffer, sizeof(buffer)));
+	zassert_equal(ret->cmd_crc, fa_crc, "CRC sent does not equal CRC written");
 	flash_area_close(fa);
 #endif /* FIXED_PARTITION_EXISTS(slot1_partition) */
 }
@@ -245,69 +285,190 @@ ZTEST(rpc_command_file_write_basic, test_invalid_action)
 
 ZTEST(rpc_command_file_write_basic, test_file_write_sizes)
 {
+	struct test_out ret;
+
 	/* Various data sizes */
-	test_file_write_basic(RPC_ENUM_FILE_ACTION_DISCARD, 100, 0, 0, 0, 0, false, false);
-	test_file_write_basic(RPC_ENUM_FILE_ACTION_DISCARD, 1000, 0, 0, 0, 0, false, false);
-	test_file_write_basic(RPC_ENUM_FILE_ACTION_DISCARD, 3333, 0, 0, 0, 0, false, false);
+	ret = test_file_write_basic(RPC_ENUM_FILE_ACTION_DISCARD, 100, 0, 0, 0, 0, false, false);
+	zassert_equal(0, ret.cmd_rc);
+	zassert_equal(100, ret.cmd_len);
+	zassert_equal(ret.written_crc, ret.cmd_crc);
+	ret = test_file_write_basic(RPC_ENUM_FILE_ACTION_DISCARD, 1000, 0, 0, 0, 0, false, false);
+	zassert_equal(0, ret.cmd_rc);
+	zassert_equal(1000, ret.cmd_len);
+	zassert_equal(ret.written_crc, ret.cmd_crc);
+	ret = test_file_write_basic(RPC_ENUM_FILE_ACTION_DISCARD, 3333, 0, 0, 0, 0, false, false);
+	zassert_equal(0, ret.cmd_rc);
+	zassert_equal(3333, ret.cmd_len);
+	zassert_equal(ret.written_crc, ret.cmd_crc);
 	/* Over UINT16_MAX */
-	test_file_write_basic(RPC_ENUM_FILE_ACTION_DISCARD, 100000, 0, 0, 0, 0, false, false);
+	ret = test_file_write_basic(RPC_ENUM_FILE_ACTION_DISCARD, 100000, 0, 0, 0, 0, false, false);
+	zassert_equal(0, ret.cmd_rc);
+	zassert_equal(100000, ret.cmd_len);
+	zassert_equal(ret.written_crc, ret.cmd_crc);
 }
 
 ZTEST(rpc_command_file_write_basic, test_file_write_dfu)
 {
 #if FIXED_PARTITION_EXISTS(slot1_partition)
-	test_file_write_basic(RPC_ENUM_FILE_ACTION_APP_IMG, 16000, 0, 0, 0, 0, false, false);
+	struct test_out ret;
+
+	ret = test_file_write_basic(RPC_ENUM_FILE_ACTION_APP_IMG, 16000, 0, 0, 0, 0, false, false);
+	zassert_equal(0, ret.cmd_rc);
+	zassert_equal(16000, ret.cmd_len);
+	zassert_equal(ret.written_crc, ret.cmd_crc);
+	validate_flash_area(&ret);
 	/* Known payload twice, second should skip the write */
-	test_file_write_basic(RPC_ENUM_FILE_ACTION_APP_IMG, 0, 0, 0, 0, 0, false, false);
-	test_file_write_basic(RPC_ENUM_FILE_ACTION_APP_IMG, 0, 0, 0, 0, 0, false, true);
+	ret = test_file_write_basic(RPC_ENUM_FILE_ACTION_APP_IMG, 0, 0, 0, 0, 0, false, false);
+	zassert_equal(0, ret.cmd_rc);
+	zassert_equal(sizeof(fixed_payload), ret.cmd_len);
+	zassert_equal(fixed_payload_crc, ret.cmd_crc);
+	validate_flash_area(&ret);
+	ret = test_file_write_basic(RPC_ENUM_FILE_ACTION_APP_IMG, 0, 0, 0, 0, 0, false, true);
+	zassert_equal(0, ret.cmd_rc);
+	zassert_equal(0, ret.cmd_len);
+	zassert_equal(fixed_payload_crc, ret.cmd_crc);
+	ret.cmd_len = sizeof(fixed_payload);
+	validate_flash_area(&ret);
 #endif /* FIXED_PARTITION_EXISTS(slot1_partition) */
+}
+
+ZTEST(rpc_command_file_write_basic, test_file_write_bt_ctlr)
+{
+#ifdef CONFIG_TEST_NATIVE_MOCK
+	struct test_out ret;
+
+	ret = test_file_write_basic(RPC_ENUM_FILE_ACTION_BT_CTLR_IMG, 6000, 0, 0, 0, 0, false,
+				    false);
+	zassert_equal(0, ret.cmd_rc);
+	zassert_equal(6000, ret.cmd_len);
+	zassert_equal(ret.written_crc, ret.cmd_crc);
+	zassert_false(bt_in_progress);
+
+	bt_start_rc = -EIO;
+	ret = test_file_write_basic(RPC_ENUM_FILE_ACTION_BT_CTLR_IMG, 3000, 0, 0, 0, 0, false,
+				    false);
+	zassert_equal(-EIO, ret.cmd_rc);
+	zassert_equal(0, ret.cmd_len);
+	zassert_false(bt_in_progress);
+	bt_start_rc = 0;
+
+	bt_fail_after = 10;
+	ret = test_file_write_basic(RPC_ENUM_FILE_ACTION_BT_CTLR_IMG, 4000, 0, 0, 0, 0, false,
+				    false);
+	zassert_equal(-EIO, ret.cmd_rc);
+	zassert_false(bt_in_progress);
+
+	bt_finish_rc = -EINVAL;
+	ret = test_file_write_basic(RPC_ENUM_FILE_ACTION_BT_CTLR_IMG, 3000, 0, 0, 0, 0, false,
+				    false);
+	zassert_equal(-EINVAL, ret.cmd_rc);
+	zassert_equal(3000, ret.cmd_len);
+	zassert_equal(ret.written_crc, ret.cmd_crc);
+	zassert_false(bt_in_progress);
+	bt_finish_rc = 0;
+
+	ret = test_file_write_basic(RPC_ENUM_FILE_ACTION_BT_CTLR_IMG, 3000, 0, 0, 0, 0, false,
+				    false);
+	zassert_equal(0, ret.cmd_rc);
+	zassert_equal(3000, ret.cmd_len);
+	zassert_equal(ret.written_crc, ret.cmd_crc);
+	zassert_false(bt_in_progress);
+#endif /* CONFIG_TEST_NATIVE_MOCK */
 }
 
 ZTEST(rpc_command_file_write_basic, test_lost_payload)
 {
+	struct test_out ret;
 	/* "Lost" data payload after some packets */
-	test_file_write_basic(RPC_ENUM_FILE_ACTION_DISCARD, 1000, 5, 0, 0, 0, false, false);
-	test_file_write_basic(RPC_ENUM_FILE_ACTION_DISCARD, 1000, 10, 0, 0, 0, false, false);
+	ret = test_file_write_basic(RPC_ENUM_FILE_ACTION_DISCARD, 1000, 5, 0, 0, 0, false, false);
+	zassert_equal(0, ret.cmd_rc);
+	zassert_true(ret.cmd_len < 1000);
+	ret = test_file_write_basic(RPC_ENUM_FILE_ACTION_DISCARD, 1000, 10, 0, 0, 0, false, false);
+	zassert_equal(0, ret.cmd_rc);
+	zassert_true(ret.cmd_len < 1000);
 }
 
 ZTEST(rpc_command_file_write_basic, test_early_hangup)
 {
+	struct test_out ret;
+
 	/* Stop sending data after some packets */
-	test_file_write_basic(RPC_ENUM_FILE_ACTION_DISCARD, 1000, 0, 3, 0, 0, false, false);
-	test_file_write_basic(RPC_ENUM_FILE_ACTION_DISCARD, 1000, 0, 11, 0, 0, false, false);
+	ret = test_file_write_basic(RPC_ENUM_FILE_ACTION_DISCARD, 1000, 0, 3, 0, 0, false, false);
+	zassert_equal(-ETIMEDOUT, ret.cmd_rc);
+	zassert_true(ret.cmd_len < 1000);
+	ret = test_file_write_basic(RPC_ENUM_FILE_ACTION_DISCARD, 1000, 0, 11, 0, 0, false, false);
+	zassert_equal(-ETIMEDOUT, ret.cmd_rc);
+	zassert_true(ret.cmd_len < 1000);
 }
 
 ZTEST(rpc_command_file_write_basic, test_invalid_request_id)
 {
-	/* Bad request ID after some packets */
-	test_file_write_basic(RPC_ENUM_FILE_ACTION_DISCARD, 1000, 0, 0, 4, 0, false, false);
-	test_file_write_basic(RPC_ENUM_FILE_ACTION_DISCARD, 1000, 0, 0, 10, 0, false, false);
+	struct test_out ret;
+
+	/* Inject request ID after some packets */
+	ret = test_file_write_basic(RPC_ENUM_FILE_ACTION_DISCARD, 1000, 0, 0, 4, 0, false, false);
+	zassert_equal(0, ret.cmd_rc);
+	zassert_equal(1000, ret.cmd_len);
+	zassert_equal(ret.written_crc, ret.cmd_crc);
+	ret = test_file_write_basic(RPC_ENUM_FILE_ACTION_DISCARD, 1000, 0, 0, 10, 0, false, false);
+	zassert_equal(0, ret.cmd_rc);
+	zassert_equal(1000, ret.cmd_len);
+	zassert_equal(ret.written_crc, ret.cmd_crc);
 }
 
 ZTEST(rpc_command_file_write_basic, test_data_ack)
 {
+	struct test_out ret;
+
 	/* Generating INFUSE_DATA_ACK packets */
-	test_file_write_basic(RPC_ENUM_FILE_ACTION_DISCARD, 1000, 0, 0, 0, 1, false, false);
-	test_file_write_basic(RPC_ENUM_FILE_ACTION_DISCARD, 1000, 0, 0, 0, 2, false, false);
-	test_file_write_basic(RPC_ENUM_FILE_ACTION_DISCARD, 1000, 0, 0, 0, 3, false, false);
-	test_file_write_basic(RPC_ENUM_FILE_ACTION_DISCARD, 1000, 0, 0, 0, 4, false, false);
-	test_file_write_basic(RPC_ENUM_FILE_ACTION_DISCARD, 1000, 0, 0, 0,
-			      RPC_SERVER_MAX_ACK_PERIOD, false, false);
-	test_file_write_basic(RPC_ENUM_FILE_ACTION_DISCARD, 1000, 0, 0, 0,
-			      RPC_SERVER_MAX_ACK_PERIOD + 1, false, false);
+	ret = test_file_write_basic(RPC_ENUM_FILE_ACTION_DISCARD, 1000, 0, 0, 0, 1, false, false);
+	zassert_equal(0, ret.cmd_rc);
+	zassert_equal(1000, ret.cmd_len);
+	zassert_equal(ret.written_crc, ret.cmd_crc);
+	ret = test_file_write_basic(RPC_ENUM_FILE_ACTION_DISCARD, 1000, 0, 0, 0, 2, false, false);
+	zassert_equal(0, ret.cmd_rc);
+	zassert_equal(1000, ret.cmd_len);
+	zassert_equal(ret.written_crc, ret.cmd_crc);
+	ret = test_file_write_basic(RPC_ENUM_FILE_ACTION_DISCARD, 1000, 0, 0, 0, 3, false, false);
+	zassert_equal(0, ret.cmd_rc);
+	zassert_equal(1000, ret.cmd_len);
+	zassert_equal(ret.written_crc, ret.cmd_crc);
+	ret = test_file_write_basic(RPC_ENUM_FILE_ACTION_DISCARD, 1000, 0, 0, 0, 4, false, false);
+	zassert_equal(0, ret.cmd_rc);
+	zassert_equal(1000, ret.cmd_len);
+	zassert_equal(ret.written_crc, ret.cmd_crc);
+	ret = test_file_write_basic(RPC_ENUM_FILE_ACTION_DISCARD, 1000, 0, 0, 0,
+				    RPC_SERVER_MAX_ACK_PERIOD, false, false);
+	zassert_equal(0, ret.cmd_rc);
+	zassert_equal(1000, ret.cmd_len);
+	zassert_equal(ret.written_crc, ret.cmd_crc);
+	ret = test_file_write_basic(RPC_ENUM_FILE_ACTION_DISCARD, 1000, 0, 0, 0,
+				    RPC_SERVER_MAX_ACK_PERIOD + 1, false, false);
+	zassert_equal(0, ret.cmd_rc);
+	zassert_equal(1000, ret.cmd_len);
+	zassert_equal(ret.written_crc, ret.cmd_crc);
 }
 
 ZTEST(rpc_command_file_write_basic, test_everything_wrong)
 {
+	struct test_out ret;
+
 	/* Everything going wrong */
-	test_file_write_basic(RPC_ENUM_FILE_ACTION_DISCARD, 1000, 3, 0, 7, 1, false, false);
-	test_file_write_basic(RPC_ENUM_FILE_ACTION_DISCARD, 1000, 3, 0, 7, 2, false, false);
+	ret = test_file_write_basic(RPC_ENUM_FILE_ACTION_DISCARD, 1000, 3, 0, 7, 1, false, false);
+	zassert_equal(0, ret.cmd_rc);
+	zassert_true(ret.cmd_len < 1000);
+	ret = test_file_write_basic(RPC_ENUM_FILE_ACTION_DISCARD, 1000, 3, 0, 7, 2, false, false);
+	zassert_equal(0, ret.cmd_rc);
+	zassert_true(ret.cmd_len < 1000);
 }
 
 ZTEST(rpc_command_file_write_basic, test_push_too_much_data)
 {
+	struct test_out ret;
+
 	/* Send too much data */
-	test_file_write_basic(RPC_ENUM_FILE_ACTION_DISCARD, 1000, 0, 0, 0, 0, true, false);
+	ret = test_file_write_basic(RPC_ENUM_FILE_ACTION_DISCARD, 1000, 0, 0, 0, 0, true, false);
+	zassert_equal(-EINVAL, ret.cmd_rc);
 }
 
 void *file_write_basic_setup(void)
