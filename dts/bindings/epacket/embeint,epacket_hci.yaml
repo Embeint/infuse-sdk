@@ -11,7 +11,7 @@ properties:
   depends-on:
     default: "CONFIG_EPACKET_INTERFACE_HCI"
   max-packet-size:
-    default: 252
+    default: 251
   header-size:
     default: 5
   footer-size:
