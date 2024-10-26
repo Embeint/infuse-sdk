@@ -35,7 +35,7 @@ int infuse_sync_dns(const char *host, uint16_t port, int family, int socktype,
 	/* Perform DNS query */
 	rc = zsock_getaddrinfo(host, NULL, &hints, &res);
 	if (rc < 0) {
-		LOG_WRN("%s -> Lookup failed (%d)", host, errno);
+		LOG_WRN("%s -> Lookup failed (%d, %d)", host, rc, errno);
 #ifdef CONFIG_DNS_RESOLVER
 		k_sem_give(&dns_ctx);
 #endif /* CONFIG_DNS_RESOLVER */
