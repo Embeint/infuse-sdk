@@ -39,23 +39,23 @@ enum infuse_reboot_reason {
 	/* Infuse reboot reasons */
 	INFUSE_REBOOT_INFUSE_START = 128,
 	/* Hardware watchdog has expired */
-	INFUSE_REBOOT_HW_WATCHDOG = INFUSE_REBOOT_INFUSE_START,
+	INFUSE_REBOOT_HW_WATCHDOG = 128,
 	/* Triggered externally (Button, etc) */
-	INFUSE_REBOOT_EXTERNAL_TRIGGER,
+	INFUSE_REBOOT_EXTERNAL_TRIGGER = 129,
 	/* Remote procedure call */
-	INFUSE_REBOOT_RPC,
+	INFUSE_REBOOT_RPC = 130,
 	/* Internal LTE modem fault */
-	INFUSE_REBOOT_LTE_MODEM_FAULT,
+	INFUSE_REBOOT_LTE_MODEM_FAULT = 131,
 	/* MCUmgr request */
-	INFUSE_REBOOT_MCUMGR,
+	INFUSE_REBOOT_MCUMGR = 132,
 	/* exFAT DFU triggered */
-	INFUSE_REBOOT_EXFAT_DFU,
+	INFUSE_REBOOT_EXFAT_DFU = 133,
 	/* Software watchdog has expired */
-	INFUSE_REBOOT_SW_WATCHDOG,
+	INFUSE_REBOOT_SW_WATCHDOG = 134,
 	/* Rebooting for device firmware update */
-	INFUSE_REBOOT_DFU,
+	INFUSE_REBOOT_DFU = 135,
 	/* Rebooting due to configuration change */
-	INFUSE_REBOOT_CFG_CHANGE,
+	INFUSE_REBOOT_CFG_CHANGE = 136,
 	/* Unknown reboot reason */
 	INFUSE_REBOOT_UNKNOWN = 255,
 };
