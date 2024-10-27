@@ -45,6 +45,7 @@
             "key": 1,
             "description": "Bluetooth advertising address",
             "reflect": true,
+            "read_only": true,
             "default": "y if BT",
             "fields": [
                 {"name": "address", "type": "struct bt_addr_le", "description": "Broadcasting address"}
