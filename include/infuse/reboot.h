@@ -48,14 +48,12 @@ enum infuse_reboot_reason {
 	INFUSE_REBOOT_LTE_MODEM_FAULT = 131,
 	/* MCUmgr request */
 	INFUSE_REBOOT_MCUMGR = 132,
-	/* exFAT DFU triggered */
-	INFUSE_REBOOT_EXFAT_DFU = 133,
+	/* Rebooting due to configuration change */
+	INFUSE_REBOOT_CFG_CHANGE = 133,
 	/* Software watchdog has expired */
 	INFUSE_REBOOT_SW_WATCHDOG = 134,
 	/* Rebooting for device firmware update */
 	INFUSE_REBOOT_DFU = 135,
-	/* Rebooting due to configuration change */
-	INFUSE_REBOOT_CFG_CHANGE = 136,
 	/* Unknown reboot reason */
 	INFUSE_REBOOT_UNKNOWN = 255,
 };
