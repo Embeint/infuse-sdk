@@ -50,7 +50,7 @@ typedef void (*dfu_exfat_progress_cb_t)(size_t copied, size_t total);
  * if (dfu_exfat_app_upgrade_exists(logger, &upgrade_version) == 1) {
  *   if (dfu_exfat_app_upgrade_copy(logger, upgrade_version, upgrade_partition, NULL) == 0) {
  *     if (boot_request_upgrade_multi(0, 0) == 0) {
- *       infuse_reboot(INFUSE_REBOOT_EXFAT_DFU, 0x00, 0x00);
+ *       infuse_reboot(INFUSE_REBOOT_DFU, 0x00, 0x00);
  *     }
  *   }
  * }
