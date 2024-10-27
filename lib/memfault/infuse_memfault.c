@@ -185,6 +185,7 @@ void memfault_reboot_reason_get(sResetBootupInfo *info)
 		break;
 #endif /* CONFIG_ARM */
 	case INFUSE_REBOOT_RPC:
+	case INFUSE_REBOOT_CFG_CHANGE:
 		info->reset_reason = kMfltRebootReason_UserReset;
 		break;
 	case INFUSE_REBOOT_DFU:
