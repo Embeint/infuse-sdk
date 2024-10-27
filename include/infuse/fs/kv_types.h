@@ -228,6 +228,23 @@ struct kv_lte_sim_uicc {
 	} __packed
 /* clang-format on */
 
+/* Packet Data Protocol (PDP) default context configuration */
+struct kv_lte_pdp_config {
+	/* Protocol family (0 = IPv4, 1 = IPv6, 2 = IPv4v6, 3 = Non-IP) */
+	uint8_t family;
+	/* Access Point Name */
+	struct kv_string apn;
+} __packed;
+
+/* clang-format off */
+/* Compile time definition for known array length */
+#define _KV_KEY_LTE_PDP_CONFIG_VAR(num) \
+	struct { \
+		uint8_t family; \
+		KV_STRUCT_KV_STRING_VAR(num) apn; \
+	} __packed
+/* clang-format on */
+
 /* Array of points defining a closed polygon */
 struct kv_geofence {
 	/* Points in geofence */
@@ -292,6 +309,8 @@ enum kv_builtin_id {
 	KV_KEY_LTE_MODEM_IMEI = 43,
 	/* SIM Universal Identifier (https://www.itu.int/en/ITU-T/inr/forms/Pages/iin.aspx) */
 	KV_KEY_LTE_SIM_UICC = 44,
+	/* Packet Data Protocol (PDP) default context configuration */
+	KV_KEY_LTE_PDP_CONFIG = 45,
 	/* Array of points defining a closed polygon */
 	KV_KEY_GEOFENCE = 100,
 #ifdef CONFIG_KV_STORE_KEY_GEOFENCE_RANGE
@@ -341,6 +360,7 @@ enum kv_builtin_size {
 #define _KV_KEY_LTE_MODEM_ESN_TYPE struct kv_lte_modem_esn
 #define _KV_KEY_LTE_MODEM_IMEI_TYPE struct kv_lte_modem_imei
 #define _KV_KEY_LTE_SIM_UICC_TYPE struct kv_lte_sim_uicc
+#define _KV_KEY_LTE_PDP_CONFIG_TYPE struct kv_lte_pdp_config
 #define _KV_KEY_GEOFENCE_TYPE struct kv_geofence
 #define _KV_KEY_SECURE_STORAGE_RESERVED_TYPE struct kv_secure_storage_reserved
 /* clang-format on */
@@ -362,6 +382,7 @@ enum kv_builtin_size {
 	IF_ENABLED(CONFIG_KV_STORE_KEY_LTE_MODEM_ESN, (1 +)) \
 	IF_ENABLED(CONFIG_KV_STORE_KEY_LTE_MODEM_IMEI, (1 +)) \
 	IF_ENABLED(CONFIG_KV_STORE_KEY_LTE_SIM_UICC, (1 +)) \
+	IF_ENABLED(CONFIG_KV_STORE_KEY_LTE_PDP_CONFIG, (1 +)) \
 	IF_ENABLED(CONFIG_KV_STORE_KEY_GEOFENCE, (CONFIG_KV_STORE_KEY_GEOFENCE_RANGE +)) \
 	0)
 /* clang-format on */

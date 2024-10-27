@@ -190,6 +190,17 @@
             ]
         },
         {
+            "name": "LTE_PDP_CONFIG",
+            "key": 45,
+            "description": "Packet Data Protocol (PDP) default context configuration",
+            "reflect": true,
+            "default": "y if NRF_MODEM_LIB",
+            "fields": [
+                {"name": "family", "type": "uint8_t", "description": "Protocol family (0 = IPv4, 1 = IPv6, 2 = IPv4v6, 3 = Non-IP)"},
+                {"name": "apn", "type": "struct kv_string", "description": "Access Point Name"}
+            ]
+        },
+        {
             "name": "GEOFENCE",
             "key": 100,
             "range": 16,
