@@ -90,6 +90,12 @@ config KV_STORE_KEY_LTE_SIM_UICC
 	help
 	  SIM Universal Identifier (https://www.itu.int/en/ITU-T/inr/forms/Pages/iin.aspx)
 
+config KV_STORE_KEY_LTE_PDP_CONFIG
+	bool "Enable KV key LTE_PDP_CONFIG"
+	default y if NRF_MODEM_LIB
+	help
+	  Packet Data Protocol (PDP) default context configuration
+
 config KV_STORE_KEY_GEOFENCE
 	bool "Enable KV key GEOFENCE"
 	help
