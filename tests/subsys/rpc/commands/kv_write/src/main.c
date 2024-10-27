@@ -169,10 +169,39 @@ ZTEST(rpc_command_kv_write, test_kv_write_single)
 	net_buf_unref(rsp);
 }
 
+ZTEST(rpc_command_kv_write, test_kv_write_delete)
+{
+	KV_KEY_TYPE(KV_KEY_REBOOTS) reboots;
+	NET_BUF_SIMPLE_DEFINE(values, 128);
+	struct rpc_struct_kv_store_value *value;
+	struct rpc_kv_write_response *response;
+	struct net_buf *rsp;
+	int rc;
+
+	reboots.count = 10;
+	zassert_equal(sizeof(reboots), KV_STORE_WRITE(KV_KEY_REBOOTS, &reboots));
+
+	/* Delete a key */
+	net_buf_simple_reset(&values);
+	value = net_buf_simple_add(&values, sizeof(*value));
+	value->id = KV_KEY_REBOOTS;
+	value->len = 0;
+
+	send_kv_write_command(3, &values, 1);
+	rsp = expect_kv_write_response(3, 0, 1);
+	response = (void *)rsp->data;
+	zassert_equal(0, response->rc[0]);
+	net_buf_unref(rsp);
+
+	rc = KV_STORE_READ(KV_KEY_REBOOTS, &reboots);
+	zassert_equal(-ENOENT, rc);
+}
+
 ZTEST(rpc_command_kv_write, test_kv_write_multi)
 {
 	KV_STRING_CONST(test_string, "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
 	KV_KEY_TYPE_VAR(KV_KEY_WIFI_SSID, 64) ssid;
+	KV_KEY_TYPE(KV_KEY_FIXED_LOCATION) location = {0};
 	KV_KEY_TYPE(KV_KEY_REBOOTS) reboots;
 	NET_BUF_SIMPLE_DEFINE(values, 128);
 	struct rpc_struct_kv_store_value *value;
@@ -182,29 +211,36 @@ ZTEST(rpc_command_kv_write, test_kv_write_multi)
 
 	(void)kv_store_delete(KV_KEY_REBOOTS);
 	(void)kv_store_delete(KV_KEY_WIFI_SSID);
+	zassert_equal(sizeof(location), KV_STORE_WRITE(KV_KEY_FIXED_LOCATION, &location));
 
-	/* Write two keys that exist */
+	/* Write two keys that exist, delete a key in the middle */
 	net_buf_simple_reset(&values);
 	value = net_buf_simple_add(&values, sizeof(*value));
 	value->id = KV_KEY_REBOOTS;
 	value->len = sizeof(uint32_t);
 	net_buf_simple_add_le32(&values, 542);
 	value = net_buf_simple_add(&values, sizeof(*value));
+	value->id = KV_KEY_FIXED_LOCATION;
+	value->len = 0;
+	value = net_buf_simple_add(&values, sizeof(*value));
 	value->id = KV_KEY_WIFI_SSID;
 	value->len = sizeof(test_string);
 	net_buf_simple_add_mem(&values, &test_string, sizeof(test_string));
 
-	send_kv_write_command(1, &values, 2);
-	rsp = expect_kv_write_response(1, 0, 2);
+	send_kv_write_command(1, &values, 3);
+	rsp = expect_kv_write_response(1, 0, 3);
 	response = (void *)rsp->data;
 	zassert_equal(sizeof(uint32_t), response->rc[0]);
-	zassert_equal(sizeof(test_string), response->rc[1]);
+	zassert_equal(0, response->rc[1]);
+	zassert_equal(sizeof(test_string), response->rc[2]);
 	net_buf_unref(rsp);
 
 	/* Read back from KV store */
 	rc = KV_STORE_READ(KV_KEY_REBOOTS, &reboots);
 	zassert_equal(sizeof(uint32_t), rc);
 	zassert_equal(542, reboots.count);
+	rc = KV_STORE_READ(KV_KEY_FIXED_LOCATION, &location);
+	zassert_equal(-ENOENT, rc);
 	rc = KV_STORE_READ(KV_KEY_WIFI_SSID, &ssid);
 	zassert_equal(sizeof(test_string), rc);
 	zassert_mem_equal(&test_string, &ssid, sizeof(test_string));
