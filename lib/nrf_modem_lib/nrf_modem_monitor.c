@@ -18,6 +18,7 @@
 #include <infuse/reboot.h>
 #include <infuse/task_runner/runner.h>
 
+#include <modem/pdn.h>
 #include <modem/nrf_modem_lib.h>
 #include <modem/lte_lc.h>
 #include <modem/modem_info.h>
@@ -242,12 +243,51 @@ static void lte_reg_handler(const struct lte_lc_evt *const evt)
 
 NRF_MODEM_LIB_ON_INIT(infuse_cfun_hook, infuse_modem_info, NULL);
 
+#ifdef CONFIG_KV_STORE_KEY_LTE_PDP_CONFIG
+static struct kv_store_cb pdp_cb;
+
+static void pdp_value_changed(uint16_t key, const void *data, size_t data_len, void *user_ctx)
+{
+	if (key != KV_KEY_LTE_PDP_CONFIG) {
+		return;
+	}
+
+	/* PDP contexts can only be changed when the PDN is inactive.
+	 * The easiest way to achieve this is to reboot the application and let
+	 * infuse_modem_info configure it appropriately.
+	 */
+	LOG_INF("Rebooting to apply updated PDP configuration");
+	infuse_reboot_delayed(INFUSE_REBOOT_CFG_CHANGE, KV_KEY_LTE_PDP_CONFIG, data_len,
+			      K_SECONDS(2));
+}
+#endif /* CONFIG_KV_STORE_KEY_LTE_PDP_CONFIG */
+
 static void infuse_modem_info(int ret, void *ctx)
 {
 	KV_STRUCT_KV_STRING_VAR(64) modem_info = {0};
 	KV_KEY_TYPE(KV_KEY_LTE_MODEM_IMEI) modem_imei;
 	static bool modem_info_stored;
 	int rc;
+
+#ifdef CONFIG_KV_STORE_KEY_LTE_PDP_CONFIG
+	KV_KEY_TYPE_VAR(KV_KEY_LTE_PDP_CONFIG, 32) pdp_config;
+	/* See if any PDP configuration has been set */
+	if (kv_store_read(KV_KEY_LTE_PDP_CONFIG, &pdp_config, sizeof(pdp_config)) > 0) {
+		LOG_DBG("PDP configuration: %d %s", pdp_config.family, pdp_config.apn.value);
+		rc = pdn_ctx_configure(0, pdp_config.apn.value, pdp_config.family, NULL);
+		if (rc < 0) {
+			LOG_ERR("Failed to request PDP configuration (%d)", rc);
+			/* Remove the invalid configuration */
+			(void)kv_store_delete(KV_KEY_LTE_PDP_CONFIG);
+		}
+	}
+
+	if (pdp_cb.value_changed == NULL) {
+		/* Setup callback on first run */
+		pdp_cb.value_changed = pdp_value_changed;
+		kv_store_register_callback(&pdp_cb);
+	}
+#endif /* CONFIG_KV_STORE_KEY_LTE_PDP_CONFIG */
 
 	if (modem_info_stored) {
 		return;
