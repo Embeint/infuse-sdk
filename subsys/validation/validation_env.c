@@ -18,7 +18,8 @@
 
 int infuse_validation_env(const struct device *dev, uint8_t flags)
 {
-	struct sensor_value temp, press, hum;
+	double temp, press, hum;
+	struct sensor_value val;
 	int rc;
 
 	VALIDATION_REPORT_INFO(TEST, "DEV=%s", dev->name);
@@ -45,30 +46,30 @@ int infuse_validation_env(const struct device *dev, uint8_t flags)
 		}
 
 		/* Retrieve and display the channel readings */
-		rc = sensor_channel_get(dev, SENSOR_CHAN_AMBIENT_TEMP, &temp);
+		rc = sensor_channel_get(dev, SENSOR_CHAN_AMBIENT_TEMP, &val);
 		if (rc == 0) {
-			VALIDATION_REPORT_INFO(TEST, "%11s: %d.%03d deg", "Temperature", temp.val1,
-					       temp.val2 / 1000);
+			temp = sensor_value_to_float(&val);
+			VALIDATION_REPORT_VALUE(TEST, "TEMPERATURE", "%.03f", temp);
 		} else if (rc == -ENOTSUP) {
 			/* Unsupported channel */
 			rc = 0;
 		} else {
 			VALIDATION_REPORT_ERROR(TEST, "Temperature get failed (%d)", rc);
 		}
-		rc = sensor_channel_get(dev, SENSOR_CHAN_PRESS, &press);
+		rc = sensor_channel_get(dev, SENSOR_CHAN_PRESS, &val);
 		if (rc == 0) {
-			VALIDATION_REPORT_INFO(TEST, "%11s: %d.%03d kPa", "Pressure", press.val1,
-					       press.val2 / 1000);
+			press = sensor_value_to_float(&val);
+			VALIDATION_REPORT_VALUE(TEST, "PRESSURE", "%.03f", press);
 		} else if (rc == -ENOTSUP) {
 			/* Unsupported channel */
 			rc = 0;
 		} else {
 			VALIDATION_REPORT_ERROR(TEST, "Pressure get failed (%d)", rc);
 		}
-		rc = sensor_channel_get(dev, SENSOR_CHAN_HUMIDITY, &hum);
+		rc = sensor_channel_get(dev, SENSOR_CHAN_HUMIDITY, &val);
 		if (rc == 0) {
-			VALIDATION_REPORT_INFO(TEST, "%11s: %d.%02d%%", "Humidity", hum.val1,
-					       hum.val2 / 10000);
+			hum = sensor_value_to_float(&val);
+			VALIDATION_REPORT_VALUE(TEST, "HUMIDITY", "%.03f", hum);
 		} else if (rc == -ENOTSUP) {
 			/* Unsupported channel */
 			rc = 0;

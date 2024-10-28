@@ -32,7 +32,7 @@ extern "C" {
  */
 #define _VALIDATION_REPORT(system, result, fmt, ...)                                               \
 	printk("%06d:%s:%s:" fmt "\n", k_uptime_get_32(), system,                                  \
-	       result __VA_OPT__(,) __VA_ARGS__);
+	       result __VA_OPT__(,) __VA_ARGS__)
 /* clang-format on */
 
 /**
@@ -44,6 +44,17 @@ extern "C" {
  */
 #define VALIDATION_REPORT_INFO(system, fmt, ...)                                                   \
 	_VALIDATION_REPORT(system, "INFO", fmt, __VA_ARGS__)
+
+/**
+ * @brief Value report
+ *
+ * @param system Component being validated
+ * @param name Name of the value
+ * @param fmt Format specifier for value
+ * @param ... Value
+ */
+#define VALIDATION_REPORT_VALUE(system, name, fmt, ...)                                            \
+	printk("%06d:%s:VAL:%s:" fmt "\n", k_uptime_get_32(), system, name, __VA_ARGS__)
 
 /**
  * @brief Failure report
