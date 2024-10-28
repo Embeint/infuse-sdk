@@ -365,9 +365,7 @@ static void test_data_receiver(uint32_t total_send, uint8_t skip_after, uint8_t 
 		if (ack_period) {
 			tx = net_buf_get(tx_fifo, K_NO_WAIT);
 			if (tx) {
-				/* clang-format off */
 ack_handler:
-				/* clang-format on */
 				num_offsets = (tx->len - sizeof(*tx_header) - sizeof(*data_ack)) /
 					      sizeof(uint32_t);
 
