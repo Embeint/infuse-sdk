@@ -114,6 +114,9 @@ struct infuse_imu_api {
 	int (*data_wait)(const struct device *dev, k_timeout_t timeout);
 	int (*data_read)(const struct device *dev, struct imu_sample_array *samples,
 			 uint16_t max_samples);
+#if defined(CONFIG_INFUSE_IMU_SELF_TEST) || defined(__DOXYGEN__)
+	int (*self_test)(const struct device *dev);
+#endif /* defined(CONFIG_INFUSE_IMU_SELF_TEST) || defined(__DOXYGEN__) */
 };
 
 /**
@@ -169,6 +172,26 @@ static inline int imu_data_read(const struct device *dev, struct imu_sample_arra
 
 	return api->data_read(dev, samples, max_samples);
 }
+
+#if defined(CONFIG_INFUSE_IMU_SELF_TEST) || defined(__DOXYGEN__)
+/**
+ * @brief Run self-test functionality on the IMU
+ *
+ * @param dev IMU to run self-test on
+ *
+ * @retval 0 on success
+ * @retval -errno on error
+ */
+static inline int imu_self_test(const struct device *dev)
+{
+	const struct infuse_imu_api *api = dev->api;
+
+	if (api->self_test == NULL) {
+		return -ENOTSUP;
+	}
+	return api->self_test(dev);
+}
+#endif /* defined(CONFIG_INFUSE_IMU_SELF_TEST) || defined(__DOXYGEN__) */
 
 /**
  * @brief Convert a full scale range to an expected value for 1G

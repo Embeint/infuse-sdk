@@ -6,6 +6,9 @@ config INFUSE_IMU
 
 if INFUSE_IMU
 
+config INFUSE_IMU_SELF_TEST
+	bool "Enable self-test functionality in drivers"
+
 rsource "bma4xx/Kconfig"
 rsource "bmi270/Kconfig"
 rsource "lsm6dsv/Kconfig"
