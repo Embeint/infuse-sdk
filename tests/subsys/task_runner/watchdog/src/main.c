@@ -52,6 +52,7 @@ ZTEST(task_runner_watchdog, test_watchdog)
 		},
 	};
 	struct task_schedule_state states[ARRAY_SIZE(schedules)];
+	uint8_t tr_wdog_channel;
 	int rc;
 
 	/* Start the watchdog */
@@ -63,6 +64,12 @@ ZTEST(task_runner_watchdog, test_watchdog)
 	/* Run a few times */
 	for (int i = 0; i < 5; i++) {
 		task_runner_iterate(app_states, k_uptime_seconds(), i, 100);
+		k_sleep(K_SECONDS(1));
+	}
+	/* Manually feed the channel a few times */
+	tr_wdog_channel = task_runner_watchdog_channel();
+	for (int i = 0; i < 3; i++) {
+		infuse_watchdog_feed(tr_wdog_channel);
 		k_sleep(K_SECONDS(1));
 	}
 	/* Ensure watchdog has not expired */

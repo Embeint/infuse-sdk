@@ -73,6 +73,13 @@ void task_runner_iterate(atomic_t *app_states, uint32_t uptime, uint32_t gps_tim
 void task_runner_start_auto_iterate(void);
 
 /**
+ * @brief Get the watchdog channel associated with the task runner
+ *
+ * @return uint8_t Infuse-IoT watchdog channel
+ */
+uint8_t task_runner_watchdog_channel(void);
+
+/**
  * @}
  */
 

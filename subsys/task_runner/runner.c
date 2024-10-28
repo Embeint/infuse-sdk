@@ -251,3 +251,8 @@ void task_runner_iterate(atomic_t *app_states, uint32_t uptime, uint32_t gps_tim
 		}
 	}
 }
+
+uint8_t task_runner_watchdog_channel(void)
+{
+	return wdog_channel;
+}
