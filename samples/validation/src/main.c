@@ -34,7 +34,8 @@ static atomic_t validators_complete;
 static int imu_validator(void *a, void *b, void *c)
 {
 	atomic_inc(&validators_registered);
-	if (infuse_validation_imu(DEVICE_DT_GET(DT_ALIAS(imu0)), VALIDATION_IMU_DRIVER) == 0) {
+	if (infuse_validation_imu(DEVICE_DT_GET(DT_ALIAS(imu0)),
+				  VALIDATION_IMU_SELF_TEST | VALIDATION_IMU_DRIVER) == 0) {
 		atomic_inc(&validators_passed);
 	} else {
 		atomic_inc(&validators_failed);

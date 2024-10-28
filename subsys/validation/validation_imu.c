@@ -268,6 +268,19 @@ int infuse_validation_imu(const struct device *dev, uint8_t flags)
 		goto test_end;
 	}
 
+	if (flags & VALIDATION_IMU_SELF_TEST) {
+		VALIDATION_REPORT_INFO(TEST, "Hardware self-test starting");
+		rc = imu_self_test(dev);
+		if (rc == 0) {
+			VALIDATION_REPORT_INFO(TEST, "Hardware self-test passed");
+		} else if (rc == -ENOTSUP) {
+			VALIDATION_REPORT_INFO(TEST, "Hardware self-test not supported");
+		} else {
+			VALIDATION_REPORT_ERROR(TEST, "Hardware self-test failed (%d)", rc);
+			goto driver_end;
+		}
+	}
+
 	if (flags & VALIDATION_IMU_DRIVER) {
 		VALIDATION_REPORT_INFO(TEST, "Driver test @ (Acc 2G 50Hz) (Gyr N/A)");
 		rc = validate_sample_timing(dev, 2, 50, 0);
