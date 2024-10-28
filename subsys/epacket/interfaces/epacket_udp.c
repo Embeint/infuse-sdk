@@ -184,10 +184,7 @@ static int epacket_udp_loop(void *a, void *b, void *c)
 			epacket_raw_receive_handler(buf);
 		}
 
-		/* clang-format off */
 socket_error:
-		/* clang-format on */
-
 		/* Close socket if still open */
 		cleanup_interface(epacket_udp);
 		k_sleep(K_SECONDS(1));

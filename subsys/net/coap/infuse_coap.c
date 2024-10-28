@@ -133,9 +133,7 @@ int infuse_coap_download(int socket, const char *resource, infuse_coap_data_cb d
 			return -errno;
 		}
 
-		/* clang-format off */
 poll_retry:
-		/* clang-format on */
 		/* Wait for response */
 		rc = zsock_poll(pollfds, 1, timeout_ms);
 		if (rc < 0) {

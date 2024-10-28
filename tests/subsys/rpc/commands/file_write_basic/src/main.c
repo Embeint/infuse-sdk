@@ -179,9 +179,7 @@ static struct test_out test_file_write_basic(uint8_t action, uint32_t total_send
 		}
 		tx = net_buf_get(tx_fifo, K_NO_WAIT);
 		if (tx) {
-			/* clang-format off */
 ack_handler:
-			/* clang-format on */
 			tx_header = (void *)tx->data;
 			data_ack = (void *)(tx->data + sizeof(*tx_header));
 
