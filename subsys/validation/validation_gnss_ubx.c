@@ -37,6 +37,22 @@ static int mon_ver_handler(uint8_t message_class, uint8_t message_id, const void
 	return 0;
 }
 
+#ifdef CONFIG_GNSS_UBX_M8
+static int ubx_m8_dcdc_burn(struct ubx_modem_data *modem)
+{
+	/* ZOE-M8 Integration Guide: section 2.1.3 */
+	static const uint8_t cfg_val[] = {0x00, 0x00, 0x03, 0x1F, 0xC5, 0x90,
+					  0xE1, 0x9F, 0xFF, 0xFF, 0xFE, 0xFF};
+	NET_BUF_SIMPLE_DEFINE(buf, 32);
+
+	ubx_msg_prepare(&buf, UBX_MSG_CLASS_CFG, UBX_MSG_ID_CFG_DCDC_BURN);
+	net_buf_simple_add_mem(&buf, cfg_val, sizeof(cfg_val));
+	ubx_msg_finalise(&buf);
+
+	return ubx_modem_send_sync_acked(modem, &buf, K_SECONDS(2));
+}
+#endif /* CONFIG_GNSS_UBX_M8 */
+
 int infuse_validation_gnss(const struct device *dev, uint8_t flags)
 {
 	struct ubx_modem_data *modem = ubx_modem_data_get(dev);
@@ -64,6 +80,19 @@ int infuse_validation_gnss(const struct device *dev, uint8_t flags)
 	if (rc < 0) {
 		VALIDATION_REPORT_ERROR(TEST, "Failed to query MON-VER (%d)", rc);
 	}
+
+#ifdef CONFIG_GNSS_UBX_M8
+	if (flags & VALIDATION_GNSS_UBX_M8_DC_DC_BURN) {
+		VALIDATION_REPORT_INFO(TEST, "Permanently enabling DC-DC converter");
+		rc = ubx_m8_dcdc_burn(modem);
+		if (rc < 0) {
+			VALIDATION_REPORT_ERROR(TEST, "Failed to enable DC-DC converter (%d)", rc);
+			goto power_down;
+		}
+		VALIDATION_REPORT_INFO(TEST, "DC-DC converter permanently enabled");
+	}
+power_down:
+#endif /* CONFIG_GNSS_UBX_M8 */
 
 	/* Power down device */
 	if (pm_device_runtime_put(dev) < 0) {
