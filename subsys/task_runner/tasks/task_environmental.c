@@ -75,12 +75,6 @@ void environmental_task_fn(struct k_work *work)
 	zbus_chan_pub(ZBUS_CHAN, &tdf_tph, K_FOREVER);
 
 	/* Print the measured values */
-	LOG_INF("Sensor: %s", env->name);
-	LOG_INF("\tTemperature: %6d mDeg", tdf_tph.temperature);
-	if (has_pressure) {
-		LOG_INF("\t   Pressure: %6d Pa", tdf_tph.pressure);
-	}
-	if (has_humidity) {
-		LOG_INF("\t   Humidity: %6d %%", tdf_tph.humidity / 100);
-	}
+	LOG_INF("%s: T=%6d mDeg P=%6d Pa H=%3d %%", env->name, tdf_tph.temperature,
+		has_pressure ? tdf_tph.pressure : -1, has_humidity ? tdf_tph.humidity / 100 : -1);
 }
