@@ -12,10 +12,13 @@
 
 #include <zephyr/kernel.h>
 
+#include <infuse/tdf/definitions.h>
+
 #include <infuse/task_runner/task.h>
 #include <infuse/task_runner/schedule.h>
 
 #include <infuse/task_runner/tasks/infuse_task_ids.h>
+#include <infuse/task_runner/tasks/battery.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -27,6 +30,19 @@ extern "C" {
  * @param work Delayable work item
  */
 void battery_task_fn(struct k_work *work);
+
+/**
+ * @brief Manually run the core battery sampling logic
+ *
+ * @param dev Fuel gauge device
+ * @param args Task arguments
+ * @param tdf Battery parameters that were measured
+ *
+ * @retval 0 on success
+ * @retval -errno on failure
+ */
+int task_battery_manual_run(const struct device *dev, const struct task_battery_args *args,
+			    struct tdf_battery_state *tdf);
 
 /**
  * @brief Battery task

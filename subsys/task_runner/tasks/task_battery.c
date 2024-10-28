@@ -22,35 +22,34 @@ LOG_MODULE_REGISTER(task_bat, CONFIG_TASK_BATTERY_LOG_LEVEL);
 INFUSE_ZBUS_CHAN_DEFINE(INFUSE_ZBUS_CHAN_BATTERY);
 #define ZBUS_CHAN INFUSE_ZBUS_CHAN_GET(INFUSE_ZBUS_CHAN_BATTERY)
 
-void battery_task_fn(struct k_work *work)
+int task_battery_manual_run(const struct device *dev, const struct task_battery_args *args,
+			    struct tdf_battery_state *tdf)
 {
-	struct task_data *task = task_data_from_work(work);
-	const struct task_schedule *sch = task_schedule_from_data(task);
-	const struct device *fuel_gauge = task->executor.workqueue.task_arg.const_arg;
 	struct tdf_battery_state tdf_battery = {0};
 	union fuel_gauge_prop_val value;
 	int rc;
 
 	/* Request fuel-gauge to be active */
-	rc = pm_device_runtime_get(fuel_gauge);
+	rc = pm_device_runtime_get(dev);
 	if (rc < 0) {
 		LOG_ERR("Terminating due to %s", "PM failure");
-		return;
+		return rc;
 	}
 
-	rc = fuel_gauge_get_prop(fuel_gauge, FUEL_GAUGE_VOLTAGE, &value);
+	rc = fuel_gauge_get_prop(dev, FUEL_GAUGE_VOLTAGE, &value);
 	if (rc < 0) {
 		LOG_ERR("Terminating due to %s", "fetch failure");
-		return;
+		(void)pm_device_runtime_put(dev);
+		return rc;
 	}
 	tdf_battery.voltage_mv = value.voltage / 1000;
-	rc = fuel_gauge_get_prop(fuel_gauge, FUEL_GAUGE_CURRENT, &value);
+	rc = fuel_gauge_get_prop(dev, FUEL_GAUGE_CURRENT, &value);
 	if (rc == 0) {
 		tdf_battery.current_ua = value.current;
 	} else if ((rc < 0) && (rc != -ENOTSUP)) {
 		LOG_ERR("Charge current query failed (%d)", rc);
 	}
-	rc = fuel_gauge_get_prop(fuel_gauge, FUEL_GAUGE_RELATIVE_STATE_OF_CHARGE, &value);
+	rc = fuel_gauge_get_prop(dev, FUEL_GAUGE_RELATIVE_STATE_OF_CHARGE, &value);
 	if (rc == 0) {
 		tdf_battery.soc = value.relative_state_of_charge;
 	} else if ((rc < 0) && (rc != -ENOTSUP)) {
@@ -58,19 +57,32 @@ void battery_task_fn(struct k_work *work)
 	}
 
 	/* Release power requirement */
-	rc = pm_device_runtime_put(fuel_gauge);
+	rc = pm_device_runtime_put(dev);
 	if (rc < 0) {
 		LOG_ERR("PM put failure");
 	}
-
-	/* Log output TDF */
-	task_schedule_tdf_log(sch, TASK_BATTERY_LOG_COMPLETE, TDF_BATTERY_STATE,
-			      sizeof(tdf_battery), epoch_time_now(), &tdf_battery);
 
 	/* Publish new data reading */
 	zbus_chan_pub(ZBUS_CHAN, &tdf_battery, K_FOREVER);
 
 	/* Print the measured values */
-	LOG_INF("%s: %6d mV (%3d %%) %6d uA", fuel_gauge->name, tdf_battery.voltage_mv,
-		tdf_battery.soc, tdf_battery.current_ua);
+	LOG_INF("%s: %6d mV (%3d %%) %6d uA", dev->name, tdf_battery.voltage_mv, tdf_battery.soc,
+		tdf_battery.current_ua);
+	return 0;
+}
+
+void battery_task_fn(struct k_work *work)
+{
+	struct task_data *task = task_data_from_work(work);
+	const struct task_schedule *sch = task_schedule_from_data(task);
+	const struct device *fuel_gauge = task->executor.workqueue.task_arg.const_arg;
+	struct tdf_battery_state tdf_battery;
+	int rc;
+
+	rc = task_battery_manual_run(fuel_gauge, &sch->task_args.infuse.battery, &tdf_battery);
+	if (rc == 0) {
+		/* Log output TDF */
+		task_schedule_tdf_log(sch, TASK_BATTERY_LOG_COMPLETE, TDF_BATTERY_STATE,
+				      sizeof(tdf_battery), epoch_time_now(), &tdf_battery);
+	}
 }
