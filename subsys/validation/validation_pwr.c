@@ -37,27 +37,30 @@ int infuse_validation_pwr(const struct device *dev, uint8_t flags)
 
 	if (flags & VALIDATION_PWR_DRIVER) {
 		union fuel_gauge_prop_val val;
+		double voltage, current;
 
 		rc = fuel_gauge_get_prop(dev, FUEL_GAUGE_VOLTAGE, &val);
 		if (rc < 0) {
 			VALIDATION_REPORT_ERROR(TEST, "Voltage get failed (%d)", rc);
 			goto driver_end;
 		}
-		VALIDATION_REPORT_INFO(TEST, "%11s: %d mV", "Voltage", val.voltage / 1000);
+		voltage = (double)val.voltage / 1e6;
+		VALIDATION_REPORT_VALUE(TEST, "VOLTAGE", "%.03f", voltage);
 
 		rc = fuel_gauge_get_prop(dev, FUEL_GAUGE_RELATIVE_STATE_OF_CHARGE, &val);
 		if (rc < 0) {
 			VALIDATION_REPORT_ERROR(TEST, "SoC get failed (%d)", rc);
 			goto driver_end;
 		}
-		VALIDATION_REPORT_INFO(TEST, "%11s: %d %%", "SoC", val.relative_state_of_charge);
+		VALIDATION_REPORT_VALUE(TEST, "SOC", "%d", val.relative_state_of_charge);
 
 		rc = fuel_gauge_get_prop(dev, FUEL_GAUGE_CURRENT, &val);
 		if ((rc < 0) && (rc != -ENOTSUP)) {
 			VALIDATION_REPORT_ERROR(TEST, "Charge current get failed (%d)", rc);
 			goto driver_end;
 		}
-		VALIDATION_REPORT_INFO(TEST, "%11s: %d uA", "Current", val.current);
+		current = (double)val.current / 1e6;
+		VALIDATION_REPORT_VALUE(TEST, "CURRENT", "%.06f", current);
 		rc = 0;
 	}
 

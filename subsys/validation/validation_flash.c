@@ -91,8 +91,8 @@ int infuse_validation_flash(const struct device *dev, uint8_t flags)
 		goto test_end;
 	}
 	page_count = flash_get_page_count(dev);
-	VALIDATION_REPORT_INFO(TEST, "Page Size: %d", info.size);
-	VALIDATION_REPORT_INFO(TEST, " Page Cnt: %d", page_count);
+	VALIDATION_REPORT_VALUE(TEST, "PAGE_SIZE", "%d", info.size);
+	VALIDATION_REPORT_VALUE(TEST, "PAGE_CNT", "%d", page_count);
 
 	if (flags & VALIDATION_FLASH_DRIVER) {
 		/* Pick a random page in the back half of the flash */
