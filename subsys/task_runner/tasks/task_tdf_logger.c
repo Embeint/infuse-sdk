@@ -202,8 +202,15 @@ void task_tdf_logger_manual_run(const struct task_tdf_logger_args *args)
 	net = args->tdfs & TASK_TDF_LOGGER_LOG_NET_CONN;
 	log_timestamp = (args->flags & TASK_TDF_LOGGER_FLAGS_NO_FLUSH) ? epoch_time_now() : 0;
 
-	LOG_INF("Log: %02X Ann: %d Bat: %d Env: %d Loc: %d Acc: %d Net: %d", args->loggers,
-		announce, battery, ambient_env, location, accel, net);
+	if (args->loggers == TDF_DATA_LOGGER_BT_ADV) {
+		/* Bluetooth advertising logs very often */
+		LOG_DBG("Log: %02X Ann: %d Bat: %d Env: %d Loc: %d Acc: %d Net: %d", args->loggers,
+			announce, battery, ambient_env, location, accel, net);
+	} else {
+		LOG_INF("Log: %02X Ann: %d Bat: %d Env: %d Loc: %d Acc: %d Net: %d", args->loggers,
+			announce, battery, ambient_env, location, accel, net);
+	}
+
 	if (announce) {
 		log_announce(args->loggers, log_timestamp);
 	}
