@@ -12,6 +12,7 @@
 #include <zephyr/drivers/fuel_gauge.h>
 #include <zephyr/drivers/i2c.h>
 #include <zephyr/drivers/sensor/battery.h>
+#include <zephyr/pm/device.h>
 #include <zephyr/pm/device_runtime.h>
 #include <zephyr/kernel.h>
 
@@ -41,6 +42,13 @@ static int reg_to_ua(const struct device *dev, int16_t reg)
 
 	/* LSB = 1.5625μV/RSENSE */
 	return (25000 / 16) * (int)reg / config->sense_resistor;
+}
+
+static int reg_write(const struct device *dev, uint8_t reg, uint16_t val)
+{
+	const struct max17260_config *config = dev->config;
+
+	return i2c_burst_write_dt(&config->bus, reg, (uint8_t *)&val, sizeof(val));
 }
 
 static int reg_read(const struct device *dev, uint8_t reg, uint16_t *val)
@@ -100,28 +108,144 @@ static int max17260_get_prop(const struct device *dev, fuel_gauge_prop_t prop,
 	return rc;
 }
 
+#ifdef CONFIG_PM_DEVICE
+static int max17260_shutdown_enter(const struct device *dev)
+{
+	const struct max17260_config *config = dev->config;
+	uint16_t reg;
+	int rc;
+
+	/* Claim bus */
+	rc = pm_device_runtime_get(config->bus.bus);
+	if (rc < 0) {
+		return rc;
+	}
+	/* Move to active mode (faster shutdown response) */
+	rc = reg_write(dev, MAX17260_REG_HIB_CFG, 0x0000);
+	if (rc < 0) {
+		goto end;
+	}
+
+	/* Set shutdown timer to expire soon.
+	 * The minimum timeout is 45 seconds, so write the counter
+	 * to ~40 seconds so that it times out in ~5 seconds.
+	 * Counter LSB is 1.4 seconds.
+	 */
+	rc = reg_write(dev, MAX17260_REG_SHUTDOWN_TIMER, 0x001E);
+	if (rc < 0) {
+		goto end;
+	}
+
+	/* Get the current state of the config register */
+	rc = reg_read(dev, MAX17260_REG_CONFIG, &reg);
+	if (rc < 0) {
+		goto end;
+	}
+
+	/* Set the shutdown bit and write it back */
+	reg |= MAX17260_CONFIG_SHUTDOWN;
+	rc = reg_write(dev, MAX17260_REG_CONFIG, reg);
+end:
+	/* Release bus */
+	(void)pm_device_runtime_put(config->bus.bus);
+	return rc;
+}
+#endif /* CONFIG_PM_DEVICE */
+
+static int max17260_shutdown_exit(const struct device *dev)
+{
+	const struct max17260_config *config = dev->config;
+	uint16_t reg;
+	int rc;
+
+	/* Claim bus */
+	rc = pm_device_runtime_get(config->bus.bus);
+	if (rc < 0) {
+		return rc;
+	}
+
+	/* First thing to do is try and read the CONFIG register.
+	 * If this succeeds and the SHUTDOWN bit is set, we have not yet shutdown.
+	 */
+	rc = reg_read(dev, MAX17260_REG_CONFIG, &reg);
+	if ((rc == 0) && (reg & MAX17260_CONFIG_SHUTDOWN)) {
+		LOG_DBG("Cancelling pending shutdown");
+		/* Cancel the pending shutdown and return */
+		reg &= ~MAX17260_CONFIG_SHUTDOWN;
+		rc = reg_write(dev, MAX17260_REG_CONFIG, reg);
+		goto end;
+	}
+
+	/* Poll until the chip wakes up */
+	for (int i = 0; i < 100; i++) {
+		/* Read status register */
+		rc = reg_read(dev, MAX17260_REG_STATUS, &reg);
+		if (rc == 0) {
+			LOG_DBG("Ready after %d ms", i);
+			break;
+		}
+		k_sleep(K_MSEC(1));
+	}
+	if (rc < 0) {
+		goto end;
+	}
+
+	/* Wait until data is ready (expected duration is 350ms) */
+	for (int i = 0; i < 40; i++) {
+		/* Read FSTAT register */
+		rc = reg_read(dev, MAX17260_REG_F_STAT, &reg);
+		/* Register reads as 0 for a few iterations while initialising */
+		if ((reg == 0x0000) || (reg & MAX17260_F_STAT_DATA_NOT_READY)) {
+			k_sleep(K_MSEC(25));
+			continue;
+		}
+		LOG_DBG("Data ready after %d ms", 25 * i);
+		goto end;
+	}
+	rc = -EINVAL;
+
+end:
+	/* Release bus */
+	(void)pm_device_runtime_put(config->bus.bus);
+	return rc;
+}
+
+#ifdef CONFIG_PM_DEVICE
+static int max17260_pm_control(const struct device *dev, enum pm_device_action action)
+{
+	int rc = 0;
+
+	switch (action) {
+	case PM_DEVICE_ACTION_SUSPEND:
+		/* Shutdown mode reduces the power consumption from 5uA to 0.5uA,
+		 * but the fuel-gauge loses all internal state. It should only be
+		 * used in very specific circumstances (shipping modes, etc).
+		 */
+		rc = max17260_shutdown_enter(dev);
+		break;
+	case PM_DEVICE_ACTION_RESUME:
+		rc = max17260_shutdown_exit(dev);
+		break;
+	case PM_DEVICE_ACTION_TURN_OFF:
+	case PM_DEVICE_ACTION_TURN_ON:
+		break;
+	default:
+		return -ENOTSUP;
+	}
+	return rc;
+}
+#endif /* CONFIG_PM_DEVICE */
+
 static int max17260_init(const struct device *dev)
 {
 	const struct max17260_config *config = dev->config;
-	uint16_t status;
-	int rc;
 
 	if (!i2c_is_ready_dt(&config->bus)) {
 		return -ENODEV;
 	}
 
-	/* Read an arbitrary register to ensure device is reachable */
-	rc = pm_device_runtime_get(config->bus.bus);
-	if (rc < 0) {
-		return rc;
-	}
-	rc = reg_read(dev, MAX17260_REG_STATUS, &status);
-	if (rc < 0) {
-		goto end;
-	}
-end:
-	(void)pm_device_runtime_put(config->bus.bus);
-	return rc;
+	/* Ensure device is not in shutdown mode */
+	return max17260_shutdown_exit(dev);
 }
 
 static const struct fuel_gauge_driver_api max17260_api = {
@@ -141,7 +265,9 @@ static const struct fuel_gauge_driver_api max17260_api = {
 		.chemistry = BATTERY_CHEMISTRY_DT_GET(inst),                                       \
 		.sense_resistor = DT_INST_PROP(inst, sense_resistor_milli_ohms),                   \
 	};                                                                                         \
-	DEVICE_DT_INST_DEFINE(inst, max17260_init, NULL, NULL, &max17260_##inst##_config,          \
-			      POST_KERNEL, CONFIG_SENSOR_INIT_PRIORITY, &max17260_api);
+	PM_DEVICE_DT_INST_DEFINE(inst, max17260_pm_control);                                       \
+	DEVICE_DT_INST_DEFINE(inst, max17260_init, PM_DEVICE_DT_INST_GET(inst), NULL,              \
+			      &max17260_##inst##_config, POST_KERNEL, CONFIG_SENSOR_INIT_PRIORITY, \
+			      &max17260_api);
 
 DT_INST_FOREACH_STATUS_OKAY(MAX17260_INIT)
