@@ -14,6 +14,7 @@
 #include <infuse/task_runner/schedule.h>
 
 #include <infuse/task_runner/tasks/infuse_task_ids.h>
+#include <infuse/task_runner/tasks/tdf_logger.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -25,6 +26,13 @@ extern "C" {
  * @param work Work object
  */
 void task_tdf_logger_fn(struct k_work *work);
+
+/**
+ * @brief Manually run the core TDF logging logic
+ *
+ * @param args Arguments to use to run logging
+ */
+void task_tdf_logger_manual_run(const struct task_tdf_logger_args *args);
 
 /**
  * @brief TDF logger task
