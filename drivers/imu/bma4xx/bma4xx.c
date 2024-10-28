@@ -365,6 +365,112 @@ int bma4xx_data_read(const struct device *dev, struct imu_sample_array *samples,
 	return 0;
 }
 
+#ifdef CONFIG_INFUSE_IMU_SELF_TEST
+
+static int16_t reg_convert(uint16_t reg)
+{
+	int16_t sign_extended = reg & BIT(11) ? (0xF000 | reg) : reg;
+	/* Shift to 16bit resolution */
+	return sign_extended << 4;
+}
+
+/* Recommended self-test procedure from datasheet */
+static int bma4xx_self_test(const struct device *dev)
+{
+	uint16_t raw_positive[3], raw_negative[3];
+	int16_t acc_positive[3], acc_negative[3];
+	int16_t mg_positive[3], mg_negative[3];
+	int16_t mg_difference[3];
+	int16_t one_g;
+	int rc;
+
+	LOG_DBG("Starting self-test procedure");
+
+	/* Reset back to default state */
+	rc = bma4xx_low_power_reset(dev);
+	if (rc < 0) {
+		return rc;
+	}
+
+	/* Accelerometer enabled, OSR=3, Normal Mode */
+	rc = bma4xx_reg_write(dev, BMA4XX_REG_ACC_CONFIG0, BMA4XX_ACC_CONFIG0_POWER_MODE_NORMAL);
+	if (rc < 0) {
+		return rc;
+	}
+	k_sleep(K_USEC(1500));
+	rc = bma4xx_reg_write(dev, BMA4XX_REG_ACC_CONFIG1,
+			      BMA4XX_ACC_CONFIG1_RANGE_4G | BMA4XX_ACC_CONFIG1_ODR_100);
+	if (rc < 0) {
+		return rc;
+	}
+
+	/* Wait for > 2ms */
+	k_sleep(K_MSEC(4));
+
+	/* Enable self-test for all axes, positive excitation */
+	rc = bma4xx_reg_write(dev, BMA4XX_REG_SELF_TEST,
+			      BMA4XX_SELF_TEST_POSITIVE | BMA4XX_SELF_TEST_EN_XYZ);
+	if (rc < 0) {
+		return rc;
+	}
+
+	/* Wait for > 50ms */
+	k_sleep(K_MSEC(100));
+
+	/* Read all axis data */
+	rc = bma4xx_reg_read(dev, BMA4XX_REG_ACC_X_LSB, raw_positive, sizeof(raw_positive));
+	if (rc < 0) {
+		return rc;
+	}
+
+	/* Swap to negative excitation */
+	rc = bma4xx_reg_write(dev, BMA4XX_REG_SELF_TEST,
+			      BMA4XX_SELF_TEST_NEGATIVE | BMA4XX_SELF_TEST_EN_XYZ);
+	if (rc < 0) {
+		return rc;
+	}
+
+	/* Wait for > 50ms */
+	k_sleep(K_MSEC(100));
+
+	/* Read all axis data */
+	rc = bma4xx_reg_read(dev, BMA4XX_REG_ACC_X_LSB, raw_negative, sizeof(raw_negative));
+	if (rc < 0) {
+		return rc;
+	}
+
+	/* Self-reset back to known state */
+	rc = bma4xx_low_power_reset(dev);
+	if (rc < 0) {
+		return rc;
+	}
+
+	/* Convert raw register readings to milli-g */
+	one_g = imu_accelerometer_1g(4);
+	for (int i = 0; i < 3; i++) {
+		acc_positive[i] = reg_convert(raw_positive[i]);
+		acc_negative[i] = reg_convert(raw_negative[i]);
+
+		mg_positive[i] = (1000 * (int32_t)acc_positive[i]) / one_g;
+		mg_negative[i] = (1000 * (int32_t)acc_negative[i]) / one_g;
+
+		mg_difference[i] = mg_positive[i] - mg_negative[i];
+	}
+
+	/* Compare measured differences against specified minimums */
+	if ((mg_difference[0] < BMA4XX_SELF_TEST_MINIMUM_X) ||
+	    (mg_difference[1] < BMA4XX_SELF_TEST_MINIMUM_Y) ||
+	    (mg_difference[2] < BMA4XX_SELF_TEST_MINIMUM_Z)) {
+		LOG_ERR("Self-test failed: X:%6d Y:%6d Z:%6d", mg_difference[0], mg_difference[1],
+			mg_difference[2]);
+		return -EINVAL;
+	}
+	LOG_DBG("Difference = X:%6d Y:%6d Z:%6d", mg_difference[0], mg_difference[1],
+		mg_difference[2]);
+	return 0;
+}
+#endif /* CONFIG_INFUSE_IMU_SELF_TEST */
+
 static int bma4xx_pm_control(const struct device *dev, enum pm_device_action action)
 {
 	const struct bma4xx_config *config = dev->config;
@@ -432,6 +538,9 @@ struct infuse_imu_api bma4xx_imu_api = {
 	.configure = bma4xx_configure,
 	.data_wait = bma4xx_data_wait,
 	.data_read = bma4xx_data_read,
+#ifdef CONFIG_INFUSE_IMU_SELF_TEST
+	.self_test = bma4xx_self_test,
+#endif
 };
 
 /* Initializes a struct bma4xx_config for an instance on a SPI bus. */
