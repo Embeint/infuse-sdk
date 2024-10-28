@@ -24,6 +24,10 @@ extern "C" {
 enum {
 	/** Validate that GNSS powers up */
 	VALIDATION_GNSS_POWER_UP = 0,
+#ifdef CONFIG_GNSS_UBX_M8
+	/** Burn the DC-DC converter fuse (this is a irreversible operation) */
+	VALIDATION_GNSS_UBX_M8_DC_DC_BURN = BIT(7),
+#endif /* CONFIG_GNSS_UBX_M8 */
 };
 
 /**
