@@ -27,8 +27,10 @@ extern "C" {
 enum {
 	/** Validate that sensor powers up */
 	VALIDATION_IMU_POWER_UP = 0,
+	/** Hardware self-test */
+	VALIDATION_IMU_SELF_TEST = BIT(0),
 	/** Rigorous driver behavioural tests */
-	VALIDATION_IMU_DRIVER = BIT(0),
+	VALIDATION_IMU_DRIVER = BIT(1),
 };
 
 /**
