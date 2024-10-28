@@ -189,27 +189,10 @@ static void log_network_connection(uint8_t loggers, uint64_t timestamp)
 #endif
 }
 
-void task_tdf_logger_fn(struct k_work *work)
+void task_tdf_logger_manual_run(const struct task_tdf_logger_args *args)
 {
-	struct task_data *task = task_data_from_work(work);
-	const struct task_schedule *sch = task_schedule_from_data(task);
-	const struct task_tdf_logger_args *args = &sch->task_args.infuse.tdf_logger;
 	bool announce, battery, ambient_env, location, accel, net;
 	uint64_t log_timestamp;
-	uint32_t delay_ms;
-
-	if (task_runner_task_block(&task->terminate_signal, K_NO_WAIT) == 1) {
-		/* Early wake by runner to terminate */
-		return;
-	}
-
-	/* Random delay when first scheduled */
-	if (task->executor.workqueue.reschedule_counter == 0 && args->random_delay_ms) {
-		delay_ms = sys_rand32_get() % args->random_delay_ms;
-		LOG_DBG("Delaying for %d ms", delay_ms);
-		task_workqueue_reschedule(task, K_MSEC(delay_ms));
-		return;
-	}
 
 	announce = args->tdfs & TASK_TDF_LOGGER_LOG_ANNOUNCE;
 	battery = args->tdfs & TASK_TDF_LOGGER_LOG_BATTERY;
@@ -244,4 +227,28 @@ void task_tdf_logger_fn(struct k_work *work)
 		/* Flush the logger to transmit */
 		tdf_data_logger_flush(args->loggers);
 	}
+}
+
+void task_tdf_logger_fn(struct k_work *work)
+{
+	struct task_data *task = task_data_from_work(work);
+	const struct task_schedule *sch = task_schedule_from_data(task);
+	const struct task_tdf_logger_args *args = &sch->task_args.infuse.tdf_logger;
+	uint32_t delay_ms;
+
+	if (task_runner_task_block(&task->terminate_signal, K_NO_WAIT) == 1) {
+		/* Early wake by runner to terminate */
+		return;
+	}
+
+	/* Random delay when first scheduled */
+	if (task->executor.workqueue.reschedule_counter == 0 && args->random_delay_ms) {
+		delay_ms = sys_rand32_get() % args->random_delay_ms;
+		LOG_DBG("Delaying for %d ms", delay_ms);
+		task_workqueue_reschedule(task, K_MSEC(delay_ms));
+		return;
+	}
+
+	/* Run the logging function */
+	task_tdf_logger_manual_run(args);
 }
