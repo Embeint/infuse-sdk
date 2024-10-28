@@ -17,6 +17,7 @@
 #include <infuse/validation/disk.h>
 #include <infuse/validation/env.h>
 #include <infuse/validation/imu.h>
+#include <infuse/validation/leds.h>
 #include <infuse/validation/pwr.h>
 #include <infuse/validation/flash.h>
 #include <infuse/validation/gnss.h>
@@ -179,7 +180,31 @@ static int button_validator(void *a, void *b, void *c)
 }
 
 K_THREAD_DEFINE(button_thread, 512, button_validator, NULL, NULL, NULL, 5, 0, 0);
-#endif /* INFUSE_VALIDATION_BUTTON_REQUIRE_MANUAL */
+#endif /* CONFIG_INFUSE_VALIDATION_BUTTON_REQUIRE_MANUAL */
+
+#ifdef CONFIG_INFUSE_VALIDATION_LEDS
+#define GET_GPIO_SPEC(gpio_spec) GPIO_DT_SPEC_GET(gpio_spec, gpios)
+static int leds_validator(void *a, void *b, void *c)
+{
+	/* clang-format off */
+	const struct gpio_dt_spec leds[] = {
+		DT_FOREACH_CHILD_SEP(DT_PATH(leds), GET_GPIO_SPEC, (,))};
+	/* clang-format on */
+
+	atomic_inc(&validators_registered);
+
+	if (infuse_validation_leds(leds, ARRAY_SIZE(leds), VALIDATION_LEDS_OBSERVE_ONLY) == 0) {
+		atomic_inc(&validators_passed);
+	} else {
+		atomic_inc(&validators_failed);
+	}
+	atomic_inc(&validators_complete);
+	k_sem_give(&task_complete);
+	return 0;
+}
+
+K_THREAD_DEFINE(button_thread, 512, leds_validator, NULL, NULL, NULL, 5, 0, 0);
+#endif /* CONFIG_INFUSE_VALIDATION_LED */
 
 int main(void)
 {
