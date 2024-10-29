@@ -217,7 +217,7 @@ static int ubx_m8_spi_port_setup(const struct device *dev, bool hardware_reset)
 
 	struct ubx_msg_cfg_prt_spi cfg_prt = {
 		.port_id = UBX_MSG_CFG_PRT_PORT_ID_SPI,
-		.tx_ready = UBX_MSG_CFG_PRT_TX_READY_EN | UBX_MSG_CFG_PRT_TX_READY_POL_ACTIVE_HIGH |
+		.tx_ready = UBX_MSG_CFG_PRT_TX_READY_EN | UBX_MSG_CFG_PRT_TX_READY_POL_ACTIVE_LOW |
 			    UBX_MSG_CFG_PRT_TX_READY_CFG(cfg->common.data_ready_pio, 8),
 		.mode = UBX_MSG_CFG_PRT_SPI_MODE_0,
 		.in_proto_mask = UBX_MSG_CFG_PRT_PROTO_MASK_UBX,

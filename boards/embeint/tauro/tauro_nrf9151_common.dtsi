@@ -185,7 +185,7 @@
 		timepulse-gpios = <&gpio0 17 GPIO_ACTIVE_LOW>;
 		reset-gpios = <&gpio0 15 GPIO_ACTIVE_LOW>;
 		extint-gpios = <&gpio0 11 GPIO_ACTIVE_LOW>;
-		data-ready-gpios = <&gpio0 16 GPIO_ACTIVE_HIGH>;
+		data-ready-gpios = <&gpio0 16 GPIO_ACTIVE_LOW>;
 		data-ready-pio = <1>;
 	};
 };
