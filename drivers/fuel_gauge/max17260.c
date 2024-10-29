@@ -18,6 +18,8 @@
 
 #include <zephyr/logging/log.h>
 
+#include <infuse/drivers/fuel_gauge_custom_prop.h>
+
 #include "max17260.h"
 
 struct max17260_config {
@@ -56,6 +58,58 @@ static int reg_read(const struct device *dev, uint8_t reg, uint16_t *val)
 	const struct max17260_config *config = dev->config;
 
 	return i2c_burst_read_dt(&config->bus, reg, (uint8_t *)val, sizeof(*val));
+}
+
+static int max17260_change_hibernation_mode(const struct device *dev, bool enable)
+{
+	const struct max17260_config *config = dev->config;
+	int rc = 0;
+	uint16_t reg;
+
+	/* Claim bus */
+	rc = pm_device_runtime_get(config->bus.bus);
+	if (rc < 0) {
+		LOG_ERR("pm_device_runtime_get failed (%s)", config->bus.bus->name);
+		return rc;
+	}
+
+	/* Get current config */
+	rc = reg_read(dev, MAX17260_REG_HIB_CFG, &reg);
+	if (rc < 0) {
+		LOG_ERR("Failed to check hibernation configuration");
+		goto end;
+	}
+
+	if (!!(reg & MAX17260_HIB_CFG_EN_HIB) == enable) {
+		/* Configuration already set, return */
+		goto end;
+	}
+
+	rc = reg_write(dev, MAX17260_REG_HIB_CFG, enable ? MAX17260_HIB_CFG_DEFAULT : 0x0000);
+	if (rc < 0) {
+		LOG_ERR("Failed to write to Hibernation cfg register");
+		goto end;
+	}
+
+	if (!enable) {
+		/* Wake up fuel gauge. Requires ~50ms and ~100ms after each of the following
+		 * commands (determined experimentally) to actually work.
+		 */
+		rc = reg_write(dev, MAX17260_REG_CMD, MAX17260_CMD_SOFT_WAKEUP);
+		if (rc < 0) {
+			LOG_ERR("Failed to write Command (wakeup)");
+			goto end;
+		}
+
+		rc = reg_write(dev, MAX17260_REG_CMD, MAX17260_CMD_CLEAR);
+		if (rc < 0) {
+			LOG_ERR("Failed to write Command (command clear)");
+			goto end;
+		}
+	}
+end:
+	(void)pm_device_runtime_put(config->bus.bus);
+	return rc;
 }
 
 static int max17260_get_prop(const struct device *dev, fuel_gauge_prop_t prop,
@@ -105,6 +159,21 @@ static int max17260_get_prop(const struct device *dev, fuel_gauge_prop_t prop,
 		break;
 	}
 	(void)pm_device_runtime_put(config->bus.bus);
+	return rc;
+}
+
+static int max17260_set_prop(const struct device *dev, fuel_gauge_prop_t prop,
+			     union fuel_gauge_prop_val val)
+{
+	int rc;
+
+	switch (prop) {
+	case FUEL_GAUGE_HIBERNATION_EN:
+		rc = max17260_change_hibernation_mode(dev, !!val.sbs_mode);
+		break;
+	default:
+		rc = -ENOSYS;
+	}
 	return rc;
 }
 
@@ -250,7 +319,7 @@ static int max17260_init(const struct device *dev)
 
 static const struct fuel_gauge_driver_api max17260_api = {
 	.get_property = max17260_get_prop,
-	.set_property = NULL,
+	.set_property = max17260_set_prop,
 	.get_buffer_property = NULL,
 	.battery_cutoff = NULL,
 };
