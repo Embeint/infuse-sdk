@@ -401,13 +401,17 @@ static int ubx_m10_i2c_software_standby(const struct device *dev)
 
 static int ubx_m10_i2c_software_resume(const struct device *dev)
 {
-	NET_BUF_SIMPLE_DEFINE(cfg_buf, 64);
 	struct ubx_m10_i2c_data *data = dev->data;
+	int rc = 0;
 
 	/* Wait until modem is ready to wake */
 	k_sleep(data->common.min_wake_time);
 	/* Wake by generating an edge on the EXTINT pin */
 	ubx_common_extint_wake(dev);
+
+#ifndef CONFIG_GNSS_U_BLOX_NO_API_COMPAT
+	NET_BUF_SIMPLE_DEFINE(cfg_buf, 64);
+
 	/* Modem uses NAV-PVT to fulfill requirements of GNSS API */
 	ubx_msg_prepare_valset(&cfg_buf,
 			       UBX_MSG_CFG_VALSET_LAYERS_RAM | UBX_MSG_CFG_VALSET_LAYERS_BBR);
@@ -416,7 +420,13 @@ static int ubx_m10_i2c_software_resume(const struct device *dev)
 	UBX_CFG_VALUE_APPEND(&cfg_buf, UBX_CFG_KEY_MSGOUT_UBX_NAV_SAT_I2C, 1);
 #endif /* CONFIG_GNSS_SATELLITES */
 	ubx_msg_finalise(&cfg_buf);
-	return ubx_modem_send_sync_acked(&data->common.modem, &cfg_buf, SYNC_MESSAGE_TIMEOUT);
+	rc = ubx_modem_send_sync_acked(&data->common.modem, &cfg_buf, SYNC_MESSAGE_TIMEOUT);
+	if (rc < 0) {
+		LOG_ERR("Failed to configure NAV-PVT rate (%d)", rc);
+		return rc;
+	}
+#endif /* CONFIG_GNSS_U_BLOX_NO_API_COMPAT */
+	return rc;
 }
 
 static int ubx_m10_i2c_pm_control(const struct device *dev, enum pm_device_action action)
