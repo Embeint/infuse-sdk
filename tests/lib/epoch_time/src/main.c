@@ -12,6 +12,7 @@
 #include <zephyr/kernel.h>
 
 #include <infuse/time/epoch.h>
+#include <infuse/states.h>
 
 ZTEST(epoch_time, test_time_source_valid)
 {
@@ -371,4 +372,27 @@ ZTEST(epoch_time, test_get_failure)
 					      2 * CONFIG_SYS_CLOCK_TICKS_PER_SEC)));
 }
 
-ZTEST_SUITE(epoch_time, NULL, NULL, NULL, NULL, NULL);
+ZTEST(epoch_time, test_application_states)
+{
+	struct timeutil_sync_instant original = {
+		.local = 10 * CONFIG_SYS_CLOCK_TICKS_PER_SEC,
+		.ref = 100 * INFUSE_EPOCH_TIME_TICKS_PER_SEC,
+	};
+
+	infuse_state_clear(INFUSE_STATE_TIME_KNOWN);
+
+	/* State not set with untrusted time */
+	zassert_equal(0, epoch_time_set_reference(TIME_SOURCE_INVALID, &original));
+	zassert_false(infuse_state_get(INFUSE_STATE_TIME_KNOWN));
+
+	/* State set with trusted time */
+	zassert_equal(0, epoch_time_set_reference(TIME_SOURCE_GNSS, &original));
+	zassert_true(infuse_state_get(INFUSE_STATE_TIME_KNOWN));
+}
+
+void epoch_time_before(void *ctx)
+{
+	epoch_time_reset();
+}
+
+ZTEST_SUITE(epoch_time, NULL, NULL, epoch_time_before, NULL, NULL);
