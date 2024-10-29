@@ -10,6 +10,7 @@
 #include <zephyr/logging/log.h>
 
 #include <infuse/time/epoch.h>
+#include <infuse/states.h>
 
 #define JAN_01_01_2020 (1261872018ULL * INFUSE_EPOCH_TIME_TICKS_PER_SEC)
 
@@ -114,6 +115,14 @@ int epoch_time_set_reference(enum epoch_time_source source, struct timeutil_sync
 	rc = timeutil_sync_state_set_skew(&infuse_sync_state, 1.0f, reference);
 	if (rc == 0) {
 		infuse_time_source = source;
+
+#ifdef CONFIG_INFUSE_APPLICATION_STATES
+		if (epoch_time_trusted_source(source, true)) {
+			/* Time is known from a trusted source */
+			infuse_state_set(INFUSE_STATE_TIME_KNOWN);
+		}
+#endif /* CONFIG_INFUSE_APPLICATION_STATES */
+
 		/* Notify interested parties of reference instant change */
 		SYS_SLIST_FOR_EACH_CONTAINER(&cb_list, cb, node) {
 			if (cb->reference_time_updated) {
