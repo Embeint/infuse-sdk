@@ -93,8 +93,7 @@ int infuse_validation_button(const struct gpio_dt_spec *button, uint8_t flags)
 	if (rc < 0) {
 		VALIDATION_REPORT_ERROR(TEST,
 					"Button events (0x%x) did not occur within timeout (%ds)",
-					(button_cfg.event_required & button_cfg.events_observed) ^
-						button_cfg.events_observed,
+					button_cfg.event_required ^ button_cfg.events_observed,
 					CONFIG_INFUSE_VALIDATION_BUTTON_ACTION_TIMEOUT);
 	}
 
