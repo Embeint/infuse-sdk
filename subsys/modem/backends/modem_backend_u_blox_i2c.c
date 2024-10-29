@@ -47,22 +47,15 @@ static void fifo_bytes_read_cb(struct rtio *r, const struct rtio_sqe *sqe, void 
 	struct rtio_cqe *wr_cqe, *rd_cqe;
 	int rc = 0;
 
-	/* Dump received data */
-	LOG_HEXDUMP_DBG(backend->pipe_ring_buf.buffer + backend->pipe_ring_buf.put_tail,
-			backend->bytes_pending, "RX");
-
-	/* Finish buffer put */
-	ring_buf_put_finish(&backend->pipe_ring_buf, backend->bytes_pending);
-
-	/* Release bus */
-	k_sem_give(&backend->bus_sem);
-
 	/* Consume completion events */
 	wr_cqe = rtio_cqe_consume(r);
 	rd_cqe = rtio_cqe_consume(r);
 
 	__ASSERT_NO_MSG(wr_cqe != NULL);
 	__ASSERT_NO_MSG(rd_cqe != NULL);
+
+	/* Dump received data */
+	LOG_HEXDUMP_DBG(rd_cqe->userdata, backend->bytes_pending, "RX");
 
 	if (wr_cqe->result < 0) {
 		rc = wr_cqe->result;
@@ -71,6 +64,12 @@ static void fifo_bytes_read_cb(struct rtio *r, const struct rtio_sqe *sqe, void 
 	}
 	rtio_cqe_release(r, wr_cqe);
 	rtio_cqe_release(r, rd_cqe);
+
+	/* Finish buffer put */
+	ring_buf_put_finish(&backend->pipe_ring_buf, backend->bytes_pending);
+
+	/* Release bus */
+	k_sem_give(&backend->bus_sem);
 
 	/* Notify consumers that data exists to read */
 	modem_pipe_notify_receive_ready(&backend->pipe);
@@ -159,6 +158,7 @@ static void fifo_bytes_pending_cb(struct rtio *r, const struct rtio_sqe *sqe, vo
 	wr_sqe->flags |= RTIO_SQE_TRANSACTION;
 	rd_sqe->flags |= RTIO_SQE_CHAINED;
 	cb_sqe->flags |= RTIO_SQE_NO_RESPONSE;
+	rd_sqe->userdata = output_buf;
 
 	rd_sqe->iodev_flags |= RTIO_IODEV_I2C_STOP | RTIO_IODEV_I2C_RESTART;
 
