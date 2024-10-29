@@ -252,6 +252,7 @@ static void pdp_value_changed(uint16_t key, const void *data, size_t data_len, v
 		return;
 	}
 
+#ifdef CONFIG_INFUSE_REBOOT
 	/* PDP contexts can only be changed when the PDN is inactive.
 	 * The easiest way to achieve this is to reboot the application and let
 	 * infuse_modem_info configure it appropriately.
@@ -259,6 +260,9 @@ static void pdp_value_changed(uint16_t key, const void *data, size_t data_len, v
 	LOG_INF("Rebooting to apply updated PDP configuration");
 	infuse_reboot_delayed(INFUSE_REBOOT_CFG_CHANGE, KV_KEY_LTE_PDP_CONFIG, data_len,
 			      K_SECONDS(2));
+#else
+	LOG_ERR("PDP configuration change, no reboot support!");
+#endif /* CONFIG_INFUSE_REBOOT */
 }
 #endif /* CONFIG_KV_STORE_KEY_LTE_PDP_CONFIG */
 
