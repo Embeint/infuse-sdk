@@ -54,7 +54,7 @@ extern "C" {
  * @param ... Value
  */
 #define VALIDATION_REPORT_VALUE(system, name, fmt, ...)                                            \
-	printk("%06d:%s:VAL:%s:" fmt "\n", k_uptime_get_32(), system, name, __VA_ARGS__)
+	printk("%06d:%s:VAL:" name ":" fmt "\n", k_uptime_get_32(), system, __VA_ARGS__)
 
 /**
  * @brief Failure report
