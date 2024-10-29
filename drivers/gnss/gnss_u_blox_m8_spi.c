@@ -234,9 +234,22 @@ static int ubx_m8_spi_port_setup(const struct device *dev, bool hardware_reset)
 	/* GPIO data ready should be good at this point */
 	modem_backend_ublox_spi_use_data_ready_gpio(&data->spi_backend);
 
+	/* Enable MON-RXR notifications */
+	struct ubx_msg_cfg_msg cfg_rxr = {
+		.msg_class = UBX_MSG_CLASS_MON,
+		.msg_id = UBX_MSG_ID_MON_RXR,
+		.rate = 1,
+	};
+
+	ubx_msg_simple(&cfg_buf, UBX_MSG_CLASS_CFG, UBX_MSG_ID_CFG_MSG, &cfg_rxr, sizeof(cfg_rxr));
+	rc = ubx_modem_send_sync_acked(&data->common.modem, &cfg_buf, SYNC_MESSAGE_TIMEOUT);
+	if (rc < 0) {
+		return rc;
+	}
+
 	/* Backup port configuration in BBR */
 	struct ubx_msg_cfg_cfg_m8 cfg_cfg = {
-		.save_mask = UBX_MSG_CFG_CFG_MASK_IO_PORT,
+		.save_mask = UBX_MSG_CFG_CFG_MASK_IO_PORT | UBX_MSG_CFG_CFG_MASK_MSG_CONF,
 		.device_mask = UBX_MSG_CFG_CFG_DEVICE_BBR | UBX_MSG_CFG_CFG_DEVICE_FLASH,
 	};
 
@@ -261,26 +274,72 @@ static int ubx_m8_spi_software_standby(const struct device *dev)
 		.flags = UBX_MSG_RXM_PMREQ_FLAGS_BACKUP | UBX_MSG_RXM_PMREQ_FLAGS_FORCE,
 		.wakeup_sources = UBX_MSG_RXM_PMREQ_WAKEUP_EXTINT0,
 	};
+	struct k_poll_event mon_rxr_events[] = {
+		K_POLL_EVENT_INITIALIZER(K_POLL_TYPE_SIGNAL, K_POLL_MODE_NOTIFY_ONLY,
+					 &data->common.mon_rxr_signal),
+	};
+	unsigned int signaled;
+	int result, rc;
+
+	/* Reset previous events */
+	k_poll_signal_reset(&data->common.mon_rxr_signal);
 
 	/* Create request payload */
 	ubx_msg_simple(&pmreq, UBX_MSG_CLASS_RXM, UBX_MSG_ID_RXM_PMREQ, &payload, sizeof(payload));
 
-	/* Modem takes some time to go to sleep and respond to wakeup requests */
-	data->common.min_wake_time = K_TIMEOUT_ABS_MS(k_uptime_get() + 10);
+	/* We don't expect a response to the this command */
+	rc = ubx_modem_send_async(&data->common.modem, &pmreq, NULL, false);
+	if (rc < 0) {
+		return rc;
+	}
 
-	/* We don't expect a response, need to wait for TX to finish */
-	return ubx_modem_send_async(&data->common.modem, &pmreq, NULL, true);
+	/* Wait for the expected MON-RXR message */
+	rc = k_poll(mon_rxr_events, ARRAY_SIZE(mon_rxr_events), SYNC_MESSAGE_TIMEOUT);
+	if (rc < 0) {
+		LOG_DBG("MON-RXR timeout");
+		return rc;
+	}
+	k_poll_signal_check(&data->common.mon_rxr_signal, &signaled, &result);
+	if (result & UBX_MSG_MON_RXR_AWAKE) {
+		LOG_WRN("MON-RXR reported %s", "awake");
+		return -EINVAL;
+	}
+
+	/* Modem takes some time to go to sleep and respond to wakeup requests */
+	data->common.min_wake_time = K_TIMEOUT_ABS_MS(k_uptime_get() + 100);
+	return 0;
 }
 
 static int ubx_m8_spi_software_resume(const struct device *dev)
 {
 	struct ubx_m8_spi_data *data = dev->data;
+	struct k_poll_event mon_rxr_events[] = {
+		K_POLL_EVENT_INITIALIZER(K_POLL_TYPE_SIGNAL, K_POLL_MODE_NOTIFY_ONLY,
+					 &data->common.mon_rxr_signal),
+	};
+	unsigned int signaled;
+	int result, rc;
+
+	/* Reset previous events */
+	k_poll_signal_reset(&data->common.mon_rxr_signal);
 
 	/* Wait until modem is ready to wake */
 	k_sleep(data->common.min_wake_time);
 
 	/* Wake by generating an edge on the EXTINT pin */
 	ubx_common_extint_wake(dev);
+
+	/* Wait for the expected MON-RXR message */
+	rc = k_poll(mon_rxr_events, ARRAY_SIZE(mon_rxr_events), SYNC_MESSAGE_TIMEOUT);
+	if (rc < 0) {
+		LOG_DBG("MON-RXR timeout");
+		return rc;
+	}
+	k_poll_signal_check(&data->common.mon_rxr_signal, &signaled, &result);
+	if (!(result & UBX_MSG_MON_RXR_AWAKE)) {
+		LOG_WRN("MON-RXR reported %s", "asleep");
+		return -EINVAL;
+	}
 
 #ifndef CONFIG_GNSS_U_BLOX_NO_API_COMPAT
 	NET_BUF_SIMPLE_DEFINE(msg_buf, 32);
@@ -289,7 +348,6 @@ static int ubx_m8_spi_software_resume(const struct device *dev)
 		.msg_id = UBX_MSG_ID_NAV_PVT,
 		.rate = 1,
 	};
-	int rc;
 
 	/* Enabled NAV-PVT to fulfill requirements of GNSS API */
 	ubx_msg_simple(&msg_buf, UBX_MSG_CLASS_CFG, UBX_MSG_ID_CFG_MSG, &nav_pvt, sizeof(nav_pvt));
