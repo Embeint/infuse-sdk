@@ -365,6 +365,9 @@ static int ubx_m10_i2c_port_setup(const struct device *dev, bool hardware_reset)
 	 */
 	UBX_CFG_VALUE_APPEND(&cfg_buf, UBX_CFG_KEY_TP_POL_TP1, UBX_CFG_TP_POL_TP1_FALLING_EDGE);
 
+	/* Enable MON-RXR message */
+	UBX_CFG_VALUE_APPEND(&cfg_buf, UBX_CFG_KEY_MSGOUT_UBX_MON_RXR_I2C, 1);
+
 	ubx_msg_finalise(&cfg_buf);
 	rc = ubx_modem_send_sync_acked(&data->common.modem, &cfg_buf, SYNC_MESSAGE_TIMEOUT);
 	if (rc < 0) {
@@ -388,15 +391,41 @@ static int ubx_m10_i2c_software_standby(const struct device *dev)
 		.flags = UBX_MSG_RXM_PMREQ_FLAGS_BACKUP | UBX_MSG_RXM_PMREQ_FLAGS_FORCE,
 		.wakeup_sources = UBX_MSG_RXM_PMREQ_WAKEUP_EXTINT0,
 	};
+	struct k_poll_event mon_rxr_events[] = {
+		K_POLL_EVENT_INITIALIZER(K_POLL_TYPE_SIGNAL, K_POLL_MODE_NOTIFY_ONLY,
+					 &data->common.mon_rxr_signal),
+	};
+	unsigned int signaled;
+	int result, rc;
+
+	/* Reset previous events */
+	k_poll_signal_reset(&data->common.mon_rxr_signal);
 
 	/* Create request payload */
 	ubx_msg_simple(&pmreq, UBX_MSG_CLASS_RXM, UBX_MSG_ID_RXM_PMREQ, &payload, sizeof(payload));
 
-	/* Modem takes some time to go to sleep and respond to wakeup requests */
-	data->common.min_wake_time = K_TIMEOUT_ABS_MS(k_uptime_get() + 10);
+	/* We don't expect a response to this command */
+	rc = ubx_modem_send_async(&data->common.modem, &pmreq, NULL, false);
+	if (rc < 0) {
+		LOG_WRN("SEND FAILED?");
+		return rc;
+	}
 
-	/* We don't expect a response, need to wait for TX to finish */
-	return ubx_modem_send_async(&data->common.modem, &pmreq, NULL, true);
+	/* Wait for the expected MON-RXR message */
+	rc = k_poll(mon_rxr_events, ARRAY_SIZE(mon_rxr_events), SYNC_MESSAGE_TIMEOUT);
+	if (rc < 0) {
+		LOG_WRN("MON-RXR timeout");
+		return rc;
+	}
+	k_poll_signal_check(&data->common.mon_rxr_signal, &signaled, &result);
+	if (result & UBX_MSG_MON_RXR_AWAKE) {
+		LOG_WRN("MON-RXR reported %s", "awake");
+		return -EINVAL;
+	}
+
+	/* Modem takes some time to go to sleep and respond to wakeup requests */
+	data->common.min_wake_time = K_TIMEOUT_ABS_MS(k_uptime_get() + 100);
+	return 0;
 }
 
 static int ubx_m10_i2c_software_resume(const struct device *dev)
@@ -406,8 +435,13 @@ static int ubx_m10_i2c_software_resume(const struct device *dev)
 
 	/* Wait until modem is ready to wake */
 	k_sleep(data->common.min_wake_time);
+
 	/* Wake by generating an edge on the EXTINT pin */
 	ubx_common_extint_wake(dev);
+
+	/* Ublox-M10 apparently does not output MON-RXR on wake, despite the M10 interface
+	 * description saying it does.
+	 */
 
 #ifndef CONFIG_GNSS_U_BLOX_NO_API_COMPAT
 	NET_BUF_SIMPLE_DEFINE(cfg_buf, 64);

@@ -34,6 +34,10 @@ struct ubx_common_data {
 	struct ubx_modem_data modem;
 	/* Callback for data ready GPIO */
 	struct gpio_callback timepulse_cb;
+	/* Handler for receiver changing states */
+	struct ubx_message_handler_ctx mon_rxr_handler;
+	/* Signal for MON-RXR handler */
+	struct k_poll_signal mon_rxr_signal;
 	/* Timestamp of the latest timepulse */
 	k_ticks_t latest_timepulse;
 	/* Wake time */

@@ -314,6 +314,7 @@ enum ubx_msg_id_mon {
 	UBX_MSG_ID_MON_COMMS = 0x36,
 	UBX_MSG_ID_MON_GNSS = 0x28,
 	UBX_MSG_ID_MON_HW3 = 0x37,
+	UBX_MSG_ID_MON_HW = 0x09,
 	UBX_MSG_ID_MON_PATCH = 0x27,
 	UBX_MSG_ID_MON_RF = 0x38,
 	UBX_MSG_ID_MON_RXR = 0x21,
@@ -353,6 +354,38 @@ enum ubx_msg_mon_hw3_pin_mask {
 	UBX_MSG_MON_HW3_PIN_MASK_INT_EN = BIT(7),
 	UBX_MSG_MON_HW3_PIN_MASK_PULL_UP = BIT(8),
 	UBX_MSG_MON_HW3_PIN_MASK_PULL_DOWN = BIT(9),
+};
+
+/** @ref UBX_MSG_ID_MON_HW */
+struct ubx_msg_mon_hw {
+	uint32_t pin_sel;
+	uint32_t pin_bank;
+	uint32_t pin_dir;
+	uint32_t pin_val;
+	uint16_t noise_per_ms;
+	uint16_t adc_cnt;
+	uint8_t ant_state;
+	uint8_t ant_power;
+	uint8_t flags;
+	uint8_t reserved1;
+	uint32_t used_mask;
+	uint8_t vp[17];
+	uint8_t cw_supression;
+	uint8_t reserved2[2];
+	uint32_t pin_irq;
+	uint32_t pull_high;
+	uint32_t pull_low;
+} __packed;
+BUILD_ASSERT(sizeof(struct ubx_msg_mon_hw) == 60);
+
+/** @ref UBX_MSG_ID_MON_RXR */
+struct ubx_msg_mon_rxr {
+	uint8_t flags;
+} __packed;
+BUILD_ASSERT(sizeof(struct ubx_msg_mon_rxr) == 1);
+
+enum ubx_msg_mon_rxr_flags {
+	UBX_MSG_MON_RXR_AWAKE = BIT(0),
 };
 
 /** @ref UBX_MSG_ID_MON_VER */
