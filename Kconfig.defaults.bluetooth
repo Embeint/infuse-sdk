@@ -102,4 +102,8 @@ configdefault BT_GAP_AUTO_UPDATE_CONN_PARAMS
 configdefault BT_DEVICE_APPEARANCE
 	default 1344
 
+# Querying the RSSI of connections can be useful
+configdefault BT_CTLR_CONN_RSSI
+	default y
+
 endif # INFUSE_SDK_BLUETOOTH
