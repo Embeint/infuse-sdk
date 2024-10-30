@@ -6,3 +6,18 @@ config BT_CONTROLLER_MANAGER
 	depends on BT_HCI_HOST
 	depends on EPACKET_INTERFACE_HCI
 	default y
+
+config BT_CONN_AUTO_RSSI
+	bool "Periodically query the RSSI of active Bluetooth connections"
+	depends on BT_PERIPHERAL || BT_CENTRAL
+	depends on BT_CTLR_CONN_RSSI || !BT_CTLR
+	depends on TASK_RUNNER
+	default y
+
+if BT_CONN_AUTO_RSSI
+
+config BT_CONN_AUTO_RSSI_INTERVAL_MS
+	int "RSSI query interval in milliseconds"
+	default 1000
+
+endif # BT_CONN_AUTO_RSSI
