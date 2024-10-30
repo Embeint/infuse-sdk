@@ -73,7 +73,6 @@ config EPACKET_INTERFACE_BT_ADV
 	bool "ePacket Bluetooth advertising interface"
 	depends on DT_HAS_EMBEINT_EPACKET_BT_ADV_ENABLED
 	depends on EPACKET_CRYPTO
-	depends on BT
 	depends on BT_BROADCASTER
 	default y
 
@@ -84,6 +83,25 @@ module-str = epacket_bt_adv
 source "subsys/logging/Kconfig.template.log_config"
 
 endif # EPACKET_INTERFACE_BT_ADV
+
+config EPACKET_INTERFACE_BT_GATT
+	bool
+
+config EPACKET_INTERFACE_BT_PERIPHERAL
+	bool "ePacket Bluetooth GATT peripheral interface"
+	depends on DT_HAS_EMBEINT_EPACKET_BT_PERIPHERAL_ENABLED
+	depends on EPACKET_CRYPTO
+	depends on BT_PERIPHERAL
+	select EPACKET_INTERFACE_BT_GATT
+	default y
+
+if EPACKET_INTERFACE_BT_PERIPHERAL
+
+module = EPACKET_BT_PERIPHERAL
+module-str = epacket_bt_peripheral
+source "subsys/logging/Kconfig.template.log_config"
+
+endif # EPACKET_INTERFACE_BT_PERIPHERAL
 
 config EPACKET_INTERFACE_HCI
 	bool "ePacket Bluetooth HCI"

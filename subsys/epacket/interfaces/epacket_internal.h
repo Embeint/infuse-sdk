@@ -130,6 +130,26 @@ int epacket_bt_adv_encrypt(struct net_buf *buf);
 int epacket_bt_adv_decrypt(struct net_buf *buf);
 
 /**
+ * @brief Encrypt Bluetooth GATT packet for transmission
+ *
+ * @param buf Packet to encrypt
+ *
+ * @retval 0 on success
+ * @retval -1 on failure
+ */
+int epacket_bt_gatt_encrypt(struct net_buf *buf);
+
+/**
+ * @brief Decrypt received Bluetooth GATT packet
+ *
+ * @param buf Packet to decrypt
+ *
+ * @retval 0 on success
+ * @retval -1 on failure
+ */
+int epacket_bt_gatt_decrypt(struct net_buf *buf);
+
+/**
  * @brief Encrypt UDP packet for transmission
  *
  * @param buf Packet to encrypt
