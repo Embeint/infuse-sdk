@@ -71,6 +71,8 @@ static const struct device *logger_mapping[] = {
 #endif /* CONFIG_TDF_DATA_LOGGER_SERIAL_DUMMY_BACKEND */
 	[_TDF_DATA_LOGGER_UDP_OFFSET] = LOGGER_GET(DT_NODELABEL(tdf_logger_udp)),
 	[_TDF_DATA_LOGGER_BT_ADV_OFFSET] = LOGGER_GET(DT_NODELABEL(tdf_logger_bt_adv)),
+	[_TDF_DATA_LOGGER_BT_PERIPHERAL_OFFSET] =
+		LOGGER_GET(DT_NODELABEL(tdf_logger_bt_peripheral)),
 };
 
 LOG_MODULE_REGISTER(tdf_logger, CONFIG_TDF_DATA_LOGGER_LOG_LEVEL);
