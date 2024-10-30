@@ -19,6 +19,7 @@ LOG_MODULE_REGISTER(modem_ublox_spi, LOG_LEVEL_INF);
 enum {
 	MODE_BOOTING = BIT(0),
 	MODE_POLLING = BIT(1),
+	MODE_CLOSED = BIT(2),
 };
 
 void fifo_read_cb(const struct device *dev, int result, void *data)
@@ -87,6 +88,10 @@ static void fifo_read_trigger(struct k_work *work)
 	};
 	int rc;
 
+	if (backend->flags & MODE_CLOSED) {
+		return;
+	}
+
 	if (k_sem_take(&backend->bus_sem, K_NO_WAIT) < 0) {
 		k_work_reschedule(&backend->fifo_read, K_MSEC(10));
 		return;
@@ -125,6 +130,7 @@ static int modem_backend_ublox_spi_close(void *data)
 	LOG_DBG("Closing SPI modem backend");
 
 	/* Cancel any pending queries */
+	backend->flags = MODE_CLOSED;
 	k_work_cancel_delayable_sync(&backend->fifo_read, &sync);
 	/* Notify pipe closed */
 	modem_pipe_notify_closed(&backend->pipe);
@@ -207,6 +213,7 @@ struct modem_pipe *modem_backend_ublox_spi_init(struct modem_backend_ublox_spi *
 	backend->spi = config->spi;
 	backend->data_ready = config->data_ready;
 	backend->poll_period = config->poll_period;
+	backend->flags = MODE_CLOSED;
 	k_poll_signal_init(&backend->read_result);
 	k_poll_signal_init(&backend->read_result);
 	k_work_init_delayable(&backend->fifo_read, fifo_read_trigger);

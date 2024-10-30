@@ -20,6 +20,7 @@ RTIO_DEFINE(i2c_rtio, 4, 4);
 enum {
 	MODE_BOOTING = BIT(0),
 	MODE_POLLING = BIT(1),
+	MODE_CLOSED = BIT(2),
 };
 
 static void write_cb(struct rtio *r, const struct rtio_sqe *sqe, void *arg)
@@ -182,6 +183,10 @@ static void fifo_read_start(struct k_work *work)
 	const uint8_t len_addr = 0xFD;
 	int rc;
 
+	if (backend->flags & MODE_CLOSED) {
+		return;
+	}
+
 	if (k_sem_take(&backend->bus_sem, K_NO_WAIT) < 0) {
 		/* Bus in use, try again in 1 msec */
 		k_work_reschedule(dwork, K_MSEC(1));
@@ -238,6 +243,7 @@ static int modem_backend_ublox_i2c_close(void *data)
 	LOG_DBG("Closing I2C modem backend");
 
 	/* Cancel any pending queries */
+	backend->flags = MODE_CLOSED;
 	k_work_cancel_delayable_sync(&backend->fifo_read, &sync);
 	/* Notify pipe closed */
 	modem_pipe_notify_closed(&backend->pipe);
@@ -308,6 +314,7 @@ struct modem_pipe *modem_backend_ublox_i2c_init(struct modem_backend_ublox_i2c *
 	backend->i2c = config->i2c;
 	backend->data_ready = config->data_ready;
 	backend->poll_period = config->poll_period;
+	backend->flags = MODE_CLOSED;
 	i2c_iodev.data = (void *)config->i2c;
 	k_poll_signal_init(&backend->read_result);
 	k_poll_signal_init(&backend->read_result);
