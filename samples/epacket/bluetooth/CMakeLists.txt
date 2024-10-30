@@ -8,7 +8,7 @@ if(NOT infuse IN_LIST SNIPPET)
 endif()
 
 find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
-project(low_power)
+project(epacket_bluetooth)
 
 target_sources(app PRIVATE
   src/main.c

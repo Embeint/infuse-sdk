@@ -1,18 +1,18 @@
 sample:
-  description: ePacket Bluetooth advertising sample
-  name: Bluetooth advertising
+  description: ePacket Bluetooth sample
+  name: Bluetooth advertising and GATT
 common:
   build_only: true
   required_snippets:
     - infuse
 tests:
-  sample.epacket.bluetooth_adv:
+  sample.epacket.bluetooth:
     tags: bluetooth epacket
     platform_allow:
       - nrf52840dk/nrf52840
     integration_platforms:
       - nrf52840dk/nrf52840
-  sample.epacket.bluetooth_adv.sysbuild:
+  sample.epacket.bluetooth.sysbuild:
     tags: bluetooth epacket
     sysbuild: true
     platform_allow:
