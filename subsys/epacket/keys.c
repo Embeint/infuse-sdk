@@ -28,6 +28,7 @@ static const char *const key_info[] = {
 	[EPACKET_KEY_INTERFACE_SERIAL] = "serial",
 	[EPACKET_KEY_INTERFACE_UDP] = "udp",
 	[EPACKET_KEY_INTERFACE_BT_ADV] = "bt_adv",
+	[EPACKET_KEY_INTERFACE_BT_GATT] = "bt_gatt",
 };
 BUILD_ASSERT(ARRAY_SIZE(key_info) == EPACKET_KEY_INTERFACE_NUM, "");
 

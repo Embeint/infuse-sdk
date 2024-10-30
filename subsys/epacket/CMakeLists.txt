@@ -10,6 +10,8 @@ zephyr_library_sources_ifdef(CONFIG_EPACKET_CRYPTO
 
 zephyr_library_sources_ifdef(CONFIG_EPACKET_INTERFACE_BT_ADV interfaces/epacket_bt_adv.c)
 zephyr_library_sources_ifdef(CONFIG_EPACKET_INTERFACE_BT_ADV interfaces/epacket_bt_adv_crypt.c)
+zephyr_library_sources_ifdef(CONFIG_EPACKET_INTERFACE_BT_PERIPHERAL interfaces/epacket_bt_peripheral.c)
+zephyr_library_sources_ifdef(CONFIG_EPACKET_INTERFACE_BT_GATT interfaces/epacket_bt_gatt_crypt.c)
 zephyr_library_sources_ifdef(CONFIG_EPACKET_INTERFACE_UDP interfaces/epacket_udp.c)
 zephyr_library_sources_ifdef(CONFIG_EPACKET_INTERFACE_UDP interfaces/epacket_udp_crypt.c)
 zephyr_library_sources_ifdef(CONFIG_EPACKET_INTERFACE_SERIAL interfaces/epacket_serial_crypt.c)
@@ -20,6 +22,7 @@ zephyr_library_sources_ifdef(CONFIG_EPACKET_INTERFACE_DUMMY interfaces/epacket_d
 
 if(CONFIG_EPACKET_INTERFACE_ZTEST_PACKETS)
   zephyr_library_sources(interfaces/epacket_bt_adv_crypt.c)
+  zephyr_library_sources(interfaces/epacket_bt_gatt_crypt.c)
   zephyr_library_sources(interfaces/epacket_udp_crypt.c)
   zephyr_library_sources(interfaces/epacket_serial_crypt.c)
 endif()
