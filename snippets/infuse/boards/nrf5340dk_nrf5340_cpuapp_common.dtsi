@@ -26,6 +26,19 @@
 		};
 	};
 
+	epacket_bt_peripheral: epacket_bt_peripheral {
+		compatible = "embeint,epacket-bt-peripheral";
+	};
+
+	data_logger_bt_peripheral: data_logger_bt_peripheral {
+		compatible = "embeint,data-logger-epacket", "embeint,data-logger";
+		epacket = <&epacket_bt_peripheral>;
+
+		tdf_logger_bt_peripheral: tdf_logger_bt_peripheral {
+			compatible = "embeint,tdf-data-logger";
+		};
+	};
+
 	data_logger_flash: data_logger_flash {
 		compatible = "embeint,data-logger-flash-map", "embeint,data-logger";
 		partition = <&data_logger_partition>;
