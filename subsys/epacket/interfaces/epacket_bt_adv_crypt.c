@@ -15,7 +15,6 @@
 
 #include "epacket_internal.h"
 
-#define INFUSE_SERVICE_UUID  0xFC74
 #define EMBEINT_COMPANY_CODE 0x0DE4
 #define BT_MFG_DATA_LEN      113
 
@@ -43,7 +42,7 @@ static struct bt_data ad_structures[] = {
 	 * UUID to be present:
 	 *   https://developer.apple.com/documentation/corebluetooth/cbcentralmanager/scanforperipherals(withservices:options:)
 	 */
-	BT_DATA_BYTES(BT_DATA_UUID16_SOME, BT_UUID_16_ENCODE(INFUSE_SERVICE_UUID)),
+	BT_DATA_BYTES(BT_DATA_UUID16_SOME, BT_UUID_16_ENCODE(INFUSE_BT_SERVICE_UUID_VAL)),
 	/* Manufacturer specific data.
 	 * First 2 bytes are the Company Identifier Code from:
 	 *   https://www.bluetooth.com/specifications/assigned-numbers/

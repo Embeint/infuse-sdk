@@ -16,6 +16,9 @@
 extern "C" {
 #endif
 
+/* Infuse-IoT official Bluetooth SIG 16bit service UUID */
+#define INFUSE_BT_SERVICE_UUID_VAL 0xFC74
+
 /**
  * @brief Common initialisation for all interfaces
  *
