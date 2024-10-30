@@ -324,6 +324,7 @@ int ubx_common_pm_control(const struct device *dev, enum pm_device_action action
 		shared_device_request_dt(&cfg->ant_switch);
 		break;
 	case PM_DEVICE_ACTION_TURN_OFF:
+		(void)modem_pipe_close(data->modem.pipe);
 		gpio_pin_configure_dt(&cfg->reset_gpio, GPIO_DISCONNECTED);
 		gpio_pin_configure_dt(&cfg->extint_gpio, GPIO_DISCONNECTED);
 		break;
