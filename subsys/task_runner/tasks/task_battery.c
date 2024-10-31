@@ -23,9 +23,8 @@ INFUSE_ZBUS_CHAN_DEFINE(INFUSE_ZBUS_CHAN_BATTERY);
 #define ZBUS_CHAN INFUSE_ZBUS_CHAN_GET(INFUSE_ZBUS_CHAN_BATTERY)
 
 int task_battery_manual_run(const struct device *dev, const struct task_battery_args *args,
-			    struct tdf_battery_state *tdf)
+			    struct tdf_battery_state *tdf_battery)
 {
-	struct tdf_battery_state tdf_battery = {0};
 	union fuel_gauge_prop_val value;
 	int rc;
 
@@ -42,16 +41,16 @@ int task_battery_manual_run(const struct device *dev, const struct task_battery_
 		(void)pm_device_runtime_put(dev);
 		return rc;
 	}
-	tdf_battery.voltage_mv = value.voltage / 1000;
+	tdf_battery->voltage_mv = value.voltage / 1000;
 	rc = fuel_gauge_get_prop(dev, FUEL_GAUGE_CURRENT, &value);
 	if (rc == 0) {
-		tdf_battery.current_ua = value.current;
+		tdf_battery->current_ua = value.current;
 	} else if ((rc < 0) && (rc != -ENOTSUP)) {
 		LOG_ERR("Charge current query failed (%d)", rc);
 	}
 	rc = fuel_gauge_get_prop(dev, FUEL_GAUGE_RELATIVE_STATE_OF_CHARGE, &value);
 	if (rc == 0) {
-		tdf_battery.soc = value.relative_state_of_charge;
+		tdf_battery->soc = value.relative_state_of_charge;
 	} else if ((rc < 0) && (rc != -ENOTSUP)) {
 		LOG_ERR("SoC query failed (%d)", rc);
 	}
@@ -66,8 +65,8 @@ int task_battery_manual_run(const struct device *dev, const struct task_battery_
 	zbus_chan_pub(ZBUS_CHAN, &tdf_battery, K_FOREVER);
 
 	/* Print the measured values */
-	LOG_INF("%s: %6d mV (%3d %%) %6d uA", dev->name, tdf_battery.voltage_mv, tdf_battery.soc,
-		tdf_battery.current_ua);
+	LOG_INF("%s: %6d mV (%3d %%) %6d uA", dev->name, tdf_battery->voltage_mv, tdf_battery->soc,
+		tdf_battery->current_ua);
 	return 0;
 }
 
