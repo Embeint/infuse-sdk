@@ -19,6 +19,7 @@
 #include <mbedtls/poly1305.h>
 
 #include <infuse/crypto/ascon.h>
+#include <infuse/crypto/xoodyak.h>
 
 LOG_MODULE_REGISTER(app, LOG_LEVEL_INF);
 
@@ -36,6 +37,7 @@ enum algorithms {
 	ASCON_128A = 0,
 	ASCON_128,
 	ASCON_80PQ,
+	XOODYAK,
 	CHACHA20_POLY1305,
 	NUM_ALGORITHMS,
 };
@@ -44,6 +46,7 @@ const char *algorithm_names[] = {
 	[ASCON_128] = "ascon-128",
 	[ASCON_128A] = "ascon-128a",
 	[ASCON_80PQ] = "ascon-80pq",
+	[XOODYAK] = "xoodyak",
 	[CHACHA20_POLY1305] = "chacha20-poly1305",
 };
 
@@ -231,6 +234,26 @@ int main(void)
 				timing_cycles_get(&start_time, &end_time);
 		}
 #endif /* CONFIG_CRYPTO_ASCON_80PQ */
+#ifdef CONFIG_CRYPTO_XOODYAK
+		for (int r = 0; r < REPEATS; r++) {
+			unsigned long long clen;
+			unsigned long long mlen;
+
+			start_time = timing_counter_get();
+			xoodyak_aead_encrypt(ciphertext, &clen, plaintext, plaintext_lengths[i],
+					     associated_data, 4, tag, nonce, key);
+			end_time = timing_counter_get();
+
+			encrypt_cycles[XOODYAK][i][r] = timing_cycles_get(&start_time, &end_time);
+
+			start_time = timing_counter_get();
+			rc = xoodyak_aead_decrypt(decrypted, &mlen, tag, ciphertext, clen,
+						  associated_data, 4, nonce, key);
+			end_time = timing_counter_get();
+
+			decrypt_cycles[XOODYAK][i][r] = timing_cycles_get(&start_time, &end_time);
+		}
+#endif /* CONFIG_CRYPTO_XOODYAK */
 		for (int r = 0; r < REPEATS; r++) {
 			size_t clen, mlen;
 
