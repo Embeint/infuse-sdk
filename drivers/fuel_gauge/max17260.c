@@ -22,6 +22,8 @@
 
 #include "max17260.h"
 
+#define MAX17260_HIB_CFG_DEFAULT 0x870C
+
 struct max17260_config {
 	struct i2c_dt_spec bus;
 	int32_t ocv_lookup_table[BATTERY_OCV_TABLE_LEN];
@@ -242,6 +244,11 @@ static int max17260_shutdown_exit(const struct device *dev)
 		/* Cancel the pending shutdown and return */
 		reg &= ~MAX17260_CONFIG_SHUTDOWN;
 		rc = reg_write(dev, MAX17260_REG_CONFIG, reg);
+
+		/* Aborting shutdown does not restore hibernation config. Override to default */
+		if (rc == 0) {
+			rc = reg_write(dev, MAX17260_REG_HIB_CFG, MAX17260_HIB_CFG_DEFAULT);
+		}
 		goto end;
 	}
 
