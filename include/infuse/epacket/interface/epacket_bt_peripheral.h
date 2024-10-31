@@ -15,6 +15,7 @@
 #include <zephyr/toolchain.h>
 
 #include <infuse/epacket/interface/common.h>
+#include <infuse/epacket/interface/epacket_bt.h>
 
 #ifdef __cplusplus
 extern "C" {
