@@ -57,4 +57,19 @@ config CRYPTO_ASCON_80PQ
 
 endif # CRYPTO_ASCON
 
+config CRYPTO_XOODYAK
+	bool "Xoodyak lightweight cryptographic algorithms"
+	help
+	  Xoodyak is a family of lightweight cryptographic algorithms.
+	  More information can be found here: https://keccak.team/keccak.html
+
+if CRYPTO_XOODYAK
+
+config CRYPTO_XOODYAK_OPTIMIZED_ARM
+	bool
+	depends on ARMV7_M_ARMV8_M_MAINLINE || CONFIG_ARMV6_M_ARMV8_M_BASELINE
+	default y
+
+endif
+
 rsource "hardware_unique_key/Kconfig"

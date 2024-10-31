@@ -1,0 +1,21 @@
+# Infuse-IoT xoodyak compilation
+
+zephyr_library_named(crypto_xoodyak)
+
+zephyr_library_include_directories(Xoodoo)
+zephyr_library_include_directories(Xoodyak)
+zephyr_library_sources(Xoodyak/Xoodyak.c)
+if(CONFIG_CRYPTO_XOODYAK_OPTIMIZED_ARM)
+  zephyr_library_include_directories(Xoodoo/ARM)
+  if(CONFIG_ARMV6_M_ARMV8_M_BASELINE)
+    zephyr_library_sources(Xoodoo/ARM/Xoodoo-uf-armv6m-le-gcc.s)
+    zephyr_library_sources(Xoodoo/ARM/Xoodyak-uf-armv6m-le-gcc.s)
+  elseif(CONFIG_ARMV7_M_ARMV8_M_MAINLINE)
+    zephyr_library_sources(Xoodoo/ARM/Xoodoo-uf-armv7m-le-gcc.s)
+    zephyr_library_sources(Xoodoo/ARM/Xoodyak-uf-armv7m-le-gcc.s)
+  endif()
+else()
+  zephyr_library_include_directories(Xoodoo/plain)
+  zephyr_library_sources(Xoodoo/plain/Xoodoo-optimized.c)
+  zephyr_library_sources(Xoodoo/plain/Xoodyak-full-blocks.c)
+endif()

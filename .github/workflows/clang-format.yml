@@ -16,4 +16,4 @@ jobs:
       with:
         # Default version shipped with `ms-vscode.cpptools`
         clang-format-version: '18'
-        exclude-regex: (lib/crypto/ascon)
+        exclude-regex: (lib/crypto/ascon)|(lib/crypto/XKCP)
