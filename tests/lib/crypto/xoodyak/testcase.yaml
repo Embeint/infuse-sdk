@@ -1,0 +1,13 @@
+common:
+  tags: crypto
+  min_flash: 64
+  min_ram: 32
+tests:
+  libraries.xoodyak.default:
+    filter: not CONFIG_ARM
+    integration_platforms:
+      - native_sim
+  libraries.xoodyak.armv7m:
+    arch_allow: arm
+    integration_platforms:
+      - mps2/an385
