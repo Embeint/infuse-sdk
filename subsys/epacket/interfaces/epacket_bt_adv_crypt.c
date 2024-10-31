@@ -12,6 +12,7 @@
 #include <zephyr/sys/byteorder.h>
 
 #include <infuse/epacket/keys.h>
+#include <infuse/epacket/interface/epacket_bt.h>
 
 #include "epacket_internal.h"
 

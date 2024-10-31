@@ -28,16 +28,6 @@
 
 #define PACKET_OVERHEAD (DT_INST_PROP(0, header_size) + DT_INST_PROP(0, footer_size))
 
-#define INFUSE_SERVICE_UUID BT_UUID_DECLARE_16(INFUSE_BT_SERVICE_UUID_VAL)
-#define INFUSE_SERVICE_UUID_COMMANDS                                                               \
-	BT_UUID_DECLARE_128(BT_UUID_128_ENCODE(0xDC0B71B7, INFUSE_BT_SERVICE_UUID_VAL,             \
-					       INFUSE_BT_SERVICE_UUID_VAL, 0xAA01,                 \
-					       0x8ABA434A893D))
-#define INFUSE_SERVICE_UUID_DATA                                                                   \
-	BT_UUID_DECLARE_128(BT_UUID_128_ENCODE(0xDC0B71B7, INFUSE_BT_SERVICE_UUID_VAL,             \
-					       INFUSE_BT_SERVICE_UUID_VAL, 0xAA02,                 \
-					       0x8ABA434A893D))
-
 static void ccc_cfg_changed_command(const struct bt_gatt_attr *attr, uint16_t value);
 static void ccc_cfg_changed_data(const struct bt_gatt_attr *attr, uint16_t value);
 static ssize_t write_both(struct bt_conn *conn, const struct bt_gatt_attr *attr, const void *buf,
