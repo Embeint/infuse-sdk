@@ -6,21 +6,25 @@ import ctypes
 import enum
 
 {% for name, info in structs.items() %}
+
 class {{ name }}(ctypes.LittleEndianStructure):
     """{{ info['description'] }}"""
+
     _fields_ = [
 {% for field in info['fields'] %}
-        ('{{ field['py_name'] }}', {{ field['py_type'] }}),
+        ("{{ field['py_name'] }}", {{ field['py_type'] }}),
 {% endfor %}
     ]
     _pack_ = 1
 
 {% endfor %}
 {% for name, info in enums.items() %}
+
 class {{ name }}(enum.IntEnum):
     """{{ info['description'] }}"""
+
 {% for value in info['values'] %}
-    {{ value['py_name'] }} = {{ value['value'] }},
+    {{ value['py_name'] }} = {{ value['value'] }}
 {% endfor %}
 
-{% endfor %}
+{% endfor -%}

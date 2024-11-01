@@ -331,7 +331,6 @@ class cloudgen(WestCommand):
                     commands=rpc_defs["commands"],
                 )
             )
-            f.write(os.linesep)
 
         self.clang_format(rpc_defs_output)
         self.clang_format(rpc_commands_output)

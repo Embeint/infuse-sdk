@@ -7,6 +7,7 @@ import ctypes
 from collections.abc import Generator
 from typing import Callable
 
+
 class structs:
     class _struct_type(ctypes.LittleEndianStructure):
         def iter_fields(self) -> Generator[str, ctypes._SimpleCData, str, Callable]:
@@ -21,21 +22,22 @@ class structs:
 {% for name, info in structs.items() %}
     class {{ name }}(_struct_type):
         """{{ info['description'] }}"""
+
         _fields_ = [
 {% for field in info['fields'] %}
-            ('{{ field['py_name'] }}', {{ field['py_type'] }}),
+            ("{{ field['py_name'] }}", {{ field['py_type'] }}),
 {% endfor %}
         ]
         _pack_ = 1
         _postfix_ = {
 {% for field in info['fields'] %}
-            '{{ field['name'] }}': '{{ field.get("display_postfix", '') }}',
+            "{{ field['name'] }}": "{{ field.get("display_postfix", '') }}",
 {% endfor %}
         }
         _display_fn_ = {
 {% for field in info['fields'] %}
 {% if field.get('display_fmt') == 'hex' %}
-            '{{ field['name'] }}': hex,
+            "{{ field['name'] }}": hex,
 {% endif %}
 {% endfor %}
         }
@@ -67,22 +69,23 @@ class readings:
 {% for tdf_id, info in definitions.items() %}
     class {{ info['name'] | lower }}(_reading_type):
         """{{ info['description'] }}"""
+
         name = "{{ info['name'] }}"
         _fields_ = [
 {% for field in info['fields'] %}
-            ('{{ field['py_name'] }}', {{ field['py_type'] }}),
+            ("{{ field['py_name'] }}", {{ field['py_type'] }}),
 {% endfor %}
         ]
         _pack_ = 1
         _postfix_ = {
 {% for field in info['fields'] %}
-            '{{ field['name'] }}': '{{ field.get("display_postfix", '') }}',
+            "{{ field['name'] }}": "{{ field.get("display_postfix", '') }}",
 {% endfor %}
         }
         _display_fn_ = {
 {% for field in info['fields'] %}
 {% if field.get('display_fmt') == 'hex' %}
-            '{{ field['name'] }}': hex,
+            "{{ field['name'] }}": hex,
 {% endif %}
 {% endfor %}
         }
