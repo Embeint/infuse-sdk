@@ -179,6 +179,30 @@ config INFUSE_RPC_COMMAND_FILE_WRITE_BASIC_REQUIRED_AUTH
 	depends on INFUSE_RPC_COMMAND_FILE_WRITE_BASIC
 	default 1
 
+config INFUSE_RPC_COMMAND_BT_CONNECT_INFUSE
+	bool "Enable RPC bt_connect_infuse"
+	depends on BT_GATT_CLIENT
+	default y if INFUSE_SDK
+	help
+	  Connect to an Infuse-IoT Bluetooth device
+
+config INFUSE_RPC_COMMAND_BT_CONNECT_INFUSE_REQUIRED_AUTH
+	int "Required authorisation level to run bt_connect_infuse"
+	depends on INFUSE_RPC_COMMAND_BT_CONNECT_INFUSE
+	default 2
+
+config INFUSE_RPC_COMMAND_BT_DISCONNECT
+	bool "Enable RPC bt_disconnect"
+	depends on BT_GATT_CLIENT
+	default y if INFUSE_SDK
+	help
+	  Disconnect from a Bluetooth device
+
+config INFUSE_RPC_COMMAND_BT_DISCONNECT_REQUIRED_AUTH
+	int "Required authorisation level to run bt_disconnect"
+	depends on INFUSE_RPC_COMMAND_BT_DISCONNECT
+	default 2
+
 config INFUSE_RPC_COMMAND_SECURITY_STATE
 	bool "Enable RPC security_state"
 	default y if INFUSE_SECURITY
