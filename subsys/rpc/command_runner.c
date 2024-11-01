@@ -155,6 +155,20 @@ void rpc_command_runner(struct net_buf *request)
 		}
 		break;
 #endif /* CONFIG_INFUSE_RPC_COMMAND_FILE_WRITE_BASIC */
+#ifdef CONFIG_INFUSE_RPC_COMMAND_BT_CONNECT_INFUSE
+	case RPC_ID_BT_CONNECT_INFUSE:
+		if (AUTHORISED(auth, BT_CONNECT_INFUSE)) { /* GCOVR_EXCL_BR_LINE */
+			response = rpc_command_bt_connect_infuse(request);
+		}
+		break;
+#endif /* CONFIG_INFUSE_RPC_COMMAND_BT_CONNECT_INFUSE */
+#ifdef CONFIG_INFUSE_RPC_COMMAND_BT_DISCONNECT
+	case RPC_ID_BT_DISCONNECT:
+		if (AUTHORISED(auth, BT_DISCONNECT)) { /* GCOVR_EXCL_BR_LINE */
+			response = rpc_command_bt_disconnect(request);
+		}
+		break;
+#endif /* CONFIG_INFUSE_RPC_COMMAND_BT_DISCONNECT */
 #ifdef CONFIG_INFUSE_RPC_COMMAND_SECURITY_STATE
 	case RPC_ID_SECURITY_STATE:
 		if (AUTHORISED(auth, SECURITY_STATE)) { /* GCOVR_EXCL_BR_LINE */

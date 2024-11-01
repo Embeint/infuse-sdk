@@ -111,6 +111,12 @@ struct rpc_struct_kv_store_crc {
 	int32_t crc;
 } __packed;
 
+/* Bluetooth LE address */
+struct rpc_struct_bt_addr_le {
+	uint8_t type;
+	uint8_t val[6];
+} __packed;
+
 /* IPv4 address */
 struct rpc_struct_ipv4_address {
 	uint8_t addr[4];
@@ -213,6 +219,14 @@ struct rpc_struct_wifi_scan_result {
 	char ssid[];
 } __packed;
 
+/* Bluetooth LE address type */
+enum rpc_enum_bt_le_addr_type {
+	/* Public address */
+	RPC_ENUM_BT_LE_ADDR_TYPE_PUBLIC = 0,
+	/* Static random address */
+	RPC_ENUM_BT_LE_ADDR_TYPE_RANDOM = 1,
+};
+
 /* Actions to take upon receiving a file */
 enum rpc_enum_file_action {
 	/* Discard received file (Useful for testing) */
@@ -223,6 +237,14 @@ enum rpc_enum_file_action {
 	RPC_ENUM_FILE_ACTION_BT_CTLR_IMG = 2,
 	/* nRF91 LTE modem firmware upgrade diff */
 	RPC_ENUM_FILE_ACTION_NRF91_MODEM_DIFF = 20,
+};
+
+/* Infuse-IoT Bluetooth characteristics (Bitmask) */
+enum rpc_enum_infuse_bt_characteristic {
+	/* Command characteristic */
+	RPC_ENUM_INFUSE_BT_CHARACTERISTIC_COMMAND = 1,
+	/* Data characteristic */
+	RPC_ENUM_INFUSE_BT_CHARACTERISTIC_DATA = 2,
 };
 
 /**
@@ -267,6 +289,10 @@ enum rpc_builtin_id {
 	RPC_ID_COAP_DOWNLOAD = 30,
 	/* Write a file to the device */
 	RPC_ID_FILE_WRITE_BASIC = 40,
+	/* Connect to an Infuse-IoT Bluetooth device */
+	RPC_ID_BT_CONNECT_INFUSE = 50,
+	/* Disconnect from a Bluetooth device */
+	RPC_ID_BT_DISCONNECT = 51,
 	/* Query current security state and validate identity */
 	RPC_ID_SECURITY_STATE = 30000,
 	/* Send multiple INFUSE_RPC_DATA packets */
@@ -517,6 +543,40 @@ struct rpc_file_write_basic_response {
 	uint32_t recv_len;
 	/* CRC of bytes received */
 	uint32_t recv_crc;
+} __packed;
+
+/* Connect to an Infuse-IoT Bluetooth device */
+struct rpc_bt_connect_infuse_request {
+	struct infuse_rpc_req_header header;
+	/* Bluetooth LE device to connect to */
+	struct rpc_struct_bt_addr_le peer;
+	/* Connection timeout in milliseconds */
+	uint16_t conn_timeout_ms;
+	/* Chacteristics to subscribe to */
+	uint8_t subscribe;
+	/* Automatically terminate connection if no data traffic (0 = No timeout) */
+	uint16_t inactivity_timeout_ms;
+} __packed;
+
+struct rpc_bt_connect_infuse_response {
+	struct infuse_rpc_rsp_header header;
+	/* Cloud public ECC key */
+	uint8_t cloud_public_key[32];
+	/* Device public ECC key */
+	uint8_t device_public_key[32];
+	/* Current network ID */
+	uint32_t network_id;
+} __packed;
+
+/* Disconnect from a Bluetooth device */
+struct rpc_bt_disconnect_request {
+	struct infuse_rpc_req_header header;
+	/* Bluetooth LE device to disconnect from */
+	struct rpc_struct_bt_addr_le peer;
+} __packed;
+
+struct rpc_bt_disconnect_response {
+	struct infuse_rpc_rsp_header header;
 } __packed;
 
 /* Query current security state and validate identity */

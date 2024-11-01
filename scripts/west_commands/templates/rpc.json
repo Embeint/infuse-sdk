@@ -24,6 +24,13 @@
                 {"name": "crc", "type": "int32_t"}
             ]
         },
+        "rpc_struct_bt_addr_le": {
+            "description": "Bluetooth LE address",
+            "fields": [
+                {"name": "type", "type": "enum rpc_enum_bt_le_addr_type"},
+                {"name": "val", "type": "uint8_t", "num": 6}
+            ]
+        },
         "rpc_struct_ipv4_address": {
             "description": "IPv4 address",
             "fields": [
@@ -96,6 +103,14 @@
         }
     },
     "enums": {
+        "rpc_enum_bt_le_addr_type": {
+            "description": "Bluetooth LE address type",
+            "type": "uint8_t",
+            "values": [
+                {"name": "PUBLIC", "value": 0, "description": "Public address"},
+                {"name": "RANDOM", "value": 1, "description": "Static random address"}
+            ]
+        },
         "rpc_enum_file_action": {
             "description": "Actions to take upon receiving a file",
             "type": "uint8_t",
@@ -104,6 +119,14 @@
                 {"name": "APP_IMG", "value": 1, "description": "Complete application image for firmware upgrade"},
                 {"name": "BT_CTLR_IMG", "value": 2, "description": "Complete Bluetooth controller image for firmware upgrade"},
                 {"name": "NRF91_MODEM_DIFF", "value": 20, "description": "nRF91 LTE modem firmware upgrade diff"}
+            ]
+        },
+        "rpc_enum_infuse_bt_characteristic": {
+            "description": "Infuse-IoT Bluetooth characteristics (Bitmask)",
+            "type": "uint8_t",
+            "values": [
+                {"name": "COMMAND", "value": 1, "description": "Command characteristic"},
+                {"name": "DATA", "value": 2, "description": "Data characteristic"}
             ]
         }
     },
@@ -317,6 +340,36 @@
             "response_params": [
                 {"name": "recv_len", "type": "uint32_t", "description": "Number of bytes received"},
                 {"name": "recv_crc", "type": "uint32_t", "description": "CRC of bytes received"}
+            ]
+        },
+        "50": {
+            "name": "bt_connect_infuse",
+            "description": "Connect to an Infuse-IoT Bluetooth device",
+            "depends_on": "BT_GATT_CLIENT",
+            "default": "y if INFUSE_SDK",
+            "default_auth": "EPACKET_AUTH_DEVICE",
+            "request_params": [
+                {"name": "peer", "type": "struct rpc_struct_bt_addr_le", "description": "Bluetooth LE device to connect to"},
+                {"name": "conn_timeout_ms", "type": "uint16_t", "description": "Connection timeout in milliseconds"},
+                {"name": "subscribe", "type": "enum rpc_enum_infuse_bt_characteristic", "description": "Chacteristics to subscribe to"},
+                {"name": "inactivity_timeout_ms", "type": "uint16_t", "description": "Automatically terminate connection if no data traffic (0 = No timeout)"}
+            ],
+            "response_params": [
+                {"name": "cloud_public_key", "type": "uint8_t", "num": 32, "description": "Cloud public ECC key"},
+                {"name": "device_public_key", "type": "uint8_t", "num": 32, "description": "Device public ECC key"},
+                {"name": "network_id", "type": "uint32_t", "description": "Current network ID"}
+            ]
+        },
+        "51": {
+            "name": "bt_disconnect",
+            "description": "Disconnect from a Bluetooth device",
+            "depends_on": "BT_GATT_CLIENT",
+            "default": "y if INFUSE_SDK",
+            "default_auth": "EPACKET_AUTH_DEVICE",
+            "request_params": [
+                {"name": "peer", "type": "struct rpc_struct_bt_addr_le", "description": "Bluetooth LE device to disconnect from"}
+            ],
+            "response_params": [
             ]
         },
         "30000": {
