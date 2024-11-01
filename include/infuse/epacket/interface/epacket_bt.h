@@ -27,14 +27,14 @@ extern "C" {
 #define INFUSE_BT_SERVICE_UUID_VAL 0xFC74
 
 #define INFUSE_SERVICE_UUID BT_UUID_DECLARE_16(INFUSE_BT_SERVICE_UUID_VAL)
-#define INFUSE_SERVICE_UUID_COMMANDS                                                               \
-	BT_UUID_DECLARE_128(BT_UUID_128_ENCODE(0xDC0B71B7, INFUSE_BT_SERVICE_UUID_VAL,             \
-					       INFUSE_BT_SERVICE_UUID_VAL, 0xAA01,                 \
-					       0x8ABA434A893D))
-#define INFUSE_SERVICE_UUID_DATA                                                                   \
-	BT_UUID_DECLARE_128(BT_UUID_128_ENCODE(0xDC0B71B7, INFUSE_BT_SERVICE_UUID_VAL,             \
-					       INFUSE_BT_SERVICE_UUID_VAL, 0xAA02,                 \
-					       0x8ABA434A893D))
+#define INFUSE_SERVICE_UUID_COMMAND_VAL                                                            \
+	BT_UUID_128_ENCODE(0xDC0B71B7, INFUSE_BT_SERVICE_UUID_VAL, INFUSE_BT_SERVICE_UUID_VAL,     \
+			   0xAA01, 0x8ABA434A893D)
+#define INFUSE_SERVICE_UUID_COMMAND BT_UUID_DECLARE_128(INFUSE_SERVICE_UUID_COMMAND_VAL)
+#define INFUSE_SERVICE_UUID_DATA_VAL                                                               \
+	BT_UUID_128_ENCODE(0xDC0B71B7, INFUSE_BT_SERVICE_UUID_VAL, INFUSE_BT_SERVICE_UUID_VAL,     \
+			   0xAA02, 0x8ABA434A893D)
+#define INFUSE_SERVICE_UUID_DATA BT_UUID_DECLARE_128(INFUSE_SERVICE_UUID_DATA_VAL)
 
 /**
  * @brief Response to read requests on both the Command and Data characteristics
