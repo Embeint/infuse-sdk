@@ -84,6 +84,14 @@ configdefault BT_PERIPHERAL
 configdefault BT_CTLR_ADV_DATA_LEN_MAX
 	default 124
 
+# GATT central options
+configdefault BT_GATT_CLIENT
+	default y if BT_CENTRAL
+configdefault BT_SCAN_AND_INITIATE_IN_PARALLEL
+	default y
+configdefault BT_CTLR_SDC_ALLOW_PARALLEL_SCANNING_AND_INITIATING
+	default y
+
 # Advertising happens on 2Mbit PHY, which is the desired PHY for connections
 # due to the increased data throughput. However disabling the option to
 # switch PHY's results in iPhones having problems connecting to devices.
