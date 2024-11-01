@@ -11,6 +11,7 @@
 
 #include <zephyr/toolchain.h>
 #include <zephyr/net/buf.h>
+#include <zephyr/logging/log.h>
 
 #include <infuse/epacket/interface.h>
 #include <infuse/epacket/packet.h>
@@ -22,6 +23,8 @@
 #define AUTHORISED(auth, name) (auth >= CONFIG_INFUSE_RPC_COMMAND_ ## name ## _REQUIRED_AUTH)
 
 static bool command_freed;
+
+LOG_MODULE_DECLARE(rpc_server);
 
 void rpc_command_runner_request_unref(struct net_buf *request)
 {
@@ -43,6 +46,8 @@ void rpc_command_runner(struct net_buf *request)
 
 	/* Reset command freed state */
 	command_freed = false;
+
+	LOG_DBG("Handling RPC: %d Auth: %d", command_id, auth);
 
 	switch (command_id) {
 {% for command in commands.values() %}
