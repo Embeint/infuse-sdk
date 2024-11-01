@@ -11,6 +11,7 @@
 #define INFUSE_SDK_INCLUDE_INFUSE_EPACKET_INTERFACE_EPACKET_BT_H_
 
 #include <zephyr/bluetooth/uuid.h>
+#include <zephyr/toolchain.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -34,6 +35,20 @@ extern "C" {
 	BT_UUID_DECLARE_128(BT_UUID_128_ENCODE(0xDC0B71B7, INFUSE_BT_SERVICE_UUID_VAL,             \
 					       INFUSE_BT_SERVICE_UUID_VAL, 0xAA02,                 \
 					       0x8ABA434A893D))
+
+/**
+ * @brief Response to read requests on both the Command and Data characteristics
+ *
+ * Contains public security credentials for communicating with device.
+ */
+struct epacket_read_response {
+	/* Cloud public ECC key */
+	uint8_t cloud_public_key[32];
+	/* Device public ECC key */
+	uint8_t device_public_key[32];
+	/* Current network ID */
+	uint32_t network_id;
+} __packed;
 
 /**
  * @}
