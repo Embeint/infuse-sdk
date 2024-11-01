@@ -19,6 +19,7 @@
 #include <infuse/epacket/interface.h>
 #include <infuse/epacket/packet.h>
 #include <infuse/epacket/interface/epacket_bt_peripheral.h>
+#include <infuse/security.h>
 #include <infuse/task_runner/runner.h>
 #include <infuse/time/epoch.h>
 
@@ -30,6 +31,8 @@
 
 static void ccc_cfg_changed_command(const struct bt_gatt_attr *attr, uint16_t value);
 static void ccc_cfg_changed_data(const struct bt_gatt_attr *attr, uint16_t value);
+static ssize_t read_both(struct bt_conn *conn, const struct bt_gatt_attr *attr, void *buf,
+			 uint16_t len, uint16_t offset);
 static ssize_t write_both(struct bt_conn *conn, const struct bt_gatt_attr *attr, const void *buf,
 			  uint16_t len, uint16_t offset, uint8_t flags);
 
@@ -42,15 +45,16 @@ struct epacket_bt_peripheral_data {
 };
 
 /* Infuse-IoT Service Declaration */
-BT_GATT_SERVICE_DEFINE(infuse_svc, BT_GATT_PRIMARY_SERVICE(INFUSE_SERVICE_UUID),
-		       BT_GATT_CHARACTERISTIC(INFUSE_SERVICE_UUID_COMMANDS,
-					      BT_GATT_CHRC_NOTIFY | BT_GATT_CHRC_WRITE,
-					      BT_GATT_PERM_WRITE, NULL, write_both, NULL),
-		       BT_GATT_CCC(ccc_cfg_changed_command, BT_GATT_PERM_READ | BT_GATT_PERM_WRITE),
-		       BT_GATT_CHARACTERISTIC(INFUSE_SERVICE_UUID_DATA,
-					      BT_GATT_CHRC_NOTIFY | BT_GATT_CHRC_WRITE,
-					      BT_GATT_PERM_WRITE, NULL, write_both, NULL),
-		       BT_GATT_CCC(ccc_cfg_changed_data, BT_GATT_PERM_READ | BT_GATT_PERM_WRITE));
+BT_GATT_SERVICE_DEFINE(
+	infuse_svc, BT_GATT_PRIMARY_SERVICE(INFUSE_SERVICE_UUID),
+	BT_GATT_CHARACTERISTIC(INFUSE_SERVICE_UUID_COMMANDS,
+			       BT_GATT_CHRC_READ | BT_GATT_CHRC_WRITE | BT_GATT_CHRC_NOTIFY,
+			       BT_GATT_PERM_READ | BT_GATT_PERM_WRITE, read_both, write_both, NULL),
+	BT_GATT_CCC(ccc_cfg_changed_command, BT_GATT_PERM_READ | BT_GATT_PERM_WRITE),
+	BT_GATT_CHARACTERISTIC(INFUSE_SERVICE_UUID_DATA,
+			       BT_GATT_CHRC_READ | BT_GATT_CHRC_WRITE | BT_GATT_CHRC_NOTIFY,
+			       BT_GATT_PERM_READ | BT_GATT_PERM_WRITE, read_both, write_both, NULL),
+	BT_GATT_CCC(ccc_cfg_changed_data, BT_GATT_PERM_READ | BT_GATT_PERM_WRITE));
 
 #define CHRC_COMMAND 2
 #define CHRC_DATA    5
@@ -144,6 +148,27 @@ static void ccc_cfg_changed_data(const struct bt_gatt_attr *attr, uint16_t value
 	data->data_subscribed = !!value;
 	LOG_DBG("Data: %s", data->data_subscribed ? "subscribed" : "unsubscribed");
 	update_interface_state(data->data_subscribed);
+}
+
+static ssize_t read_both(struct bt_conn *conn, const struct bt_gatt_attr *attr, void *buf,
+			 uint16_t len, uint16_t offset)
+{
+	struct epacket_read_response response;
+
+	if (offset > sizeof(response)) {
+		return BT_GATT_ERR(BT_ATT_ERR_INVALID_OFFSET);
+	}
+	len = MIN(len, sizeof(response) - offset);
+
+	/* Populate values */
+	infuse_security_cloud_public_key(response.cloud_public_key);
+	infuse_security_device_public_key(response.device_public_key);
+	response.network_id = infuse_security_network_key_identifier();
+
+	/* Copy into output buffer */
+	memcpy(buf, ((uint8_t *)&response) + offset, len);
+
+	return len;
 }
 
 static ssize_t write_both(struct bt_conn *conn, const struct bt_gatt_attr *attr, const void *buf,
