@@ -5,6 +5,10 @@ boards:
     append:
       EXTRA_DTC_OVERLAY_FILE: boards/mps2_an385.overlay
       EXTRA_CONF_FILE: infuse_snippet.conf
+  nrf52_bsim/native:
+    append:
+      EXTRA_DTC_OVERLAY_FILE: boards/nrf52_bsim.overlay
+      EXTRA_CONF_FILE: infuse_snippet.conf
   nrf52840dk/nrf52840:
     append:
       EXTRA_DTC_OVERLAY_FILE: boards/nrf52840dk_nrf52840.overlay
