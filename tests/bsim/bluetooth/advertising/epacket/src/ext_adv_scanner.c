@@ -1,0 +1,85 @@
+/**
+ * Copyright (c) 2024 Embeint Inc
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+#include <zephyr/kernel.h>
+#include <zephyr/logging/log.h>
+#include <zephyr/sys/atomic.h>
+
+#include "common.h"
+
+#include "bs_types.h"
+#include "bs_tracing.h"
+#include "time_machine.h"
+#include "bstests.h"
+
+#include <infuse/epacket/interface.h>
+#include <infuse/epacket/packet.h>
+
+extern enum bst_result_t bst_result;
+static atomic_t received_packets;
+
+LOG_MODULE_REGISTER(app, LOG_LEVEL_INF);
+
+static void epacket_bt_adv_receive_handler(struct net_buf *buf)
+{
+	struct epacket_rx_metadata *meta = net_buf_user_data(buf);
+
+	LOG_INF("RX Type: %02X Flags: %04X Auth: %d Len: %d RSSI: %ddBm", meta->type, meta->flags,
+		meta->auth, buf->len, meta->rssi);
+	atomic_inc(&received_packets);
+
+	net_buf_unref(buf);
+}
+
+static void main_ext_adv_scanner(void)
+{
+	const struct device *epacket_bt_adv = DEVICE_DT_GET(DT_NODELABEL(epacket_bt_adv));
+	int rc;
+
+	epacket_set_receive_handler(epacket_bt_adv, epacket_bt_adv_receive_handler);
+	rc = epacket_receive(epacket_bt_adv, K_FOREVER);
+	if (rc < 0) {
+		FAIL("Failed to start ePacket receive (%d)\n", rc);
+		return;
+	}
+
+	LOG_INF("Waiting for packets");
+	k_sleep(K_SECONDS(6));
+
+	rc = epacket_receive(epacket_bt_adv, K_NO_WAIT);
+	if (rc < 0) {
+		FAIL("Failed to stop ePacket receive (%d)\n", rc);
+		return;
+	}
+
+	if (atomic_get(&received_packets) < 10) {
+		FAIL("Failed to receive expected packets\n");
+	} else {
+		PASS("Received %d packets from advertiser\n", atomic_get(&received_packets));
+	}
+}
+
+static const struct bst_test_instance ext_adv_scanner[] = {
+	{.test_id = "ext_adv_scanner",
+	 .test_descr = "Basic extended advertising scanning test. "
+		       "Will just scan an extended advertiser.",
+	 .test_pre_init_f = test_init,
+	 .test_tick_f = test_tick,
+	 .test_main_f = main_ext_adv_scanner},
+	BSTEST_END_MARKER};
+
+struct bst_test_list *test_ext_adv_scanner(struct bst_test_list *tests)
+{
+	return bst_add_tests(tests, ext_adv_scanner);
+}
+
+bst_test_install_t test_installers[] = {test_ext_adv_scanner, NULL};
+
+int main(void)
+{
+	bst_main();
+	return 0;
+}
