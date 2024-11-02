@@ -12,7 +12,7 @@ manifest:
 
   projects:
     - name: zephyr
-      revision: 92469c601d500ec47817b982cd760494782b139b
+      revision: 49140202d1fbb9d4a4b555e0350efe601a19ed20
       # Limit imported repositories to reduce clone time
       import:
         name-allowlist:
@@ -30,7 +30,7 @@ manifest:
           - zcbor
     - name: sdk-nrf
       path: modules/nrfconnect/sdk-nrf
-      revision: cca8709e56cd65561a330ed5b09def75aa4f72ba
+      revision: 563aa8f03456aeb1583487b4c1969c8a99b594ec
       import: true
     - name: memfault-firmware-sdk
       path: modules/lib/memfault
