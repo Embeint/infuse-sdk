@@ -1,5 +1,6 @@
 # Build folders
 build
+bsim_out
 doc/_build
 
 # Python files
