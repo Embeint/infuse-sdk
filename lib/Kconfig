@@ -14,31 +14,6 @@ config INFUSE_REBOOT
 	depends on RETENTION_MUTEX_FORCE_DISABLE
 	depends on RETAINED_MEM_MUTEX_FORCE_DISABLE
 
-config INFUSE_SECURITY
-	bool "Infuse-IoT security"
-	depends on MBEDTLS
-	depends on PSA_WANT_ALG_HKDF
-	depends on PSA_WANT_ALG_CHACHA20_POLY1305
-	select CRC
-	default y if INFUSE_SDK
-
-config INFUSE_SECURITY_CHACHA_KEY_EXPORT
-	bool "Enable exporting ChaCha20-Poly1305 symmetric keys"
-	depends on INFUSE_SECURITY
-	depends on ZTEST
-	default y if ZTEST
-	help
-	  DO NOT enable this in production
-
-config INFUSE_SECURITY_TEST_CREDENTIALS
-	bool "Use hardcoded test credentials for testing"
-	depends on INFUSE_SECURITY
-	depends on ZTEST
-	default y if ZTEST
-	help
-	  Use hardcoded device ID's and credentials for testing purposes. These
-	  credentials have limited access to backend services.
-
 config INFUSE_EPOCH_TIME
 	bool "Infuse-IoT epoch time library"
 
@@ -65,4 +40,5 @@ rsource "debug/Kconfig"
 rsource "math/Kconfig"
 rsource "memfault/Kconfig"
 rsource "nrf_modem_lib/Kconfig"
+rsource "security/Kconfig"
 rsource "states/Kconfig"

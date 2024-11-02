@@ -71,5 +71,3 @@ config CRYPTO_XOODYAK_OPTIMIZED_ARM
 	default y
 
 endif
-
-rsource "hardware_unique_key/Kconfig"
