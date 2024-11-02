@@ -40,3 +40,4 @@ manifest:
   self:
     path: infuse-sdk
     west-commands: scripts/west-commands.yml
+    import: submanifests
