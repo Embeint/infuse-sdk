@@ -18,6 +18,8 @@
 #include <infuse/fs/kv_types.h>
 #include <infuse/fs/secure_storage.h>
 
+#include <infuse/network_key.h>
+
 #ifdef CONFIG_MODEM_KEY_MGMT
 #include "modem/modem_key_mgmt.h"
 #endif
@@ -42,11 +44,6 @@ static const uint8_t infuse_cloud_public_key[32] = {
 	0xca, 0x66, 0x32, 0xab, 0x03, 0x81, 0x72, 0xb6, 0xef, 0x6a, 0x05,
 	0x40, 0xd0, 0x8b, 0xc7, 0x2e, 0x9c, 0xce, 0x29, 0x36, 0x68, 0xdf,
 	0xa8, 0x7c, 0xd5, 0x1d, 0x64, 0x74, 0x1c, 0x53, 0xe0, 0x0a,
-};
-static const uint8_t default_network_key[32] = {
-	0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a,
-	0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15,
-	0x16, 0x17, 0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f,
 };
 
 static psa_key_id_t root_ecc_key_id, device_root_key, device_sign_key, network_root_key;
@@ -323,8 +320,8 @@ static psa_key_id_t network_key_load(void)
 	psa_status_t status;
 	psa_key_id_t key_id;
 
-	/* Always default network key for now */
-	status = psa_import_key(&key_attributes, default_network_key, sizeof(default_network_key),
+	cached_network_id = INFUSE_NETWORK_KEY_ID;
+	status = psa_import_key(&key_attributes, infuse_network_key, sizeof(infuse_network_key),
 				&key_id);
 	if (status != PSA_SUCCESS) {
 		LOG_WRN("Failed to import %s root (%d)", "root", status);

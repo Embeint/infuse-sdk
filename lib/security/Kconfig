@@ -10,6 +10,10 @@ config INFUSE_SECURITY
 
 if INFUSE_SECURITY
 
+config INFUSE_SECURITY_DEFAULT_NETWORK
+	string "Path to yaml file containing default network parameters"
+	default "default_network.yaml"
+
 config INFUSE_SECURITY_CHACHA_KEY_EXPORT
 	bool "Enable exporting ChaCha20-Poly1305 symmetric keys"
 	depends on ZTEST
