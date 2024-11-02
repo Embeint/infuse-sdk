@@ -210,6 +210,13 @@ class infuse_release(WestCommand):
                     colorama.Fore.YELLOW
                     + "MCUMGR Image Management not enabled with Bluetooth"
                 )
+        if "CONFIG_INFUSE_SECURITY" in configs:
+            network_key = configs["CONFIG_INFUSE_SECURITY_DEFAULT_NETWORK"]
+            if network_key == "default_network.yaml":
+                print(
+                    colorama.Fore.YELLOW
+                    + "Default Infuse-IoT network key used! Communications are not secure!"
+                )
         if (
             "CONFIG_INFUSE_RPC_COMMAND_FILE_WRITE_BASIC" in configs
             or "CONFIG_INFUSE_RPC_COMMAND_COAP_DOWNLOAD" in configs
