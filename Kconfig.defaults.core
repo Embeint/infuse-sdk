@@ -211,7 +211,7 @@ configdefault DEBUG_INFO
 configdefault DEBUG_THREAD_INFO
 	default y
 configdefault OUTPUT_DISASSEMBLY
-	default y if !ZTEST
+	default y if !ZTEST && !SOC_SERIES_BSIM_NRFXX
 
 # Memfault options
 configdefault MEMFAULT_NRF_CONNECT_SDK
