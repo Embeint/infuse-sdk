@@ -21,7 +21,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  codecov:
+  twister:
     runs-on: self-hosted
     container:
       image: ghcr.io/zephyrproject-rtos/ci:v0.26.13
@@ -114,9 +114,117 @@ jobs:
           path: coverage/reports/${{ matrix.normalized }}.json
           retention-days: 1
 
+  babblesim:
+    runs-on: self-hosted
+    container:
+      image: ghcr.io/zephyrproject-rtos/ci:v0.26.13
+      options: '--entrypoint /bin/bash'
+      volumes:
+        - /repo-cache/embeint:/github/cache/embeint
+    env:
+      BASE_REF: ${{ github.base_ref }}
+      ZEPHYR_TOOLCHAIN_VARIANT: zephyr
+      BSIM_OUT_PATH: /github/cache/embeint/tools/bsim
+      BSIM_COMPONENTS_PATH: /github/cache/embeint/tools/bsim/components/
+
+    steps:
+      - name: Workspace cleanup
+        run: |
+          rm -rf ./{*,.*}
+          rm -rf infuse-sdk
+
+      - name: Clone cached Embeint SDK repository
+        continue-on-error: true
+        run: |
+          git config --global --add safe.directory '*'
+          git clone --shared /github/cache/embeint/infuse-sdk infuse-sdk
+          cd infuse-sdk
+          git remote set-url origin ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          path: infuse-sdk
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Environment Setup
+        working-directory: infuse-sdk
+        run: |
+          if [ "${{github.event_name}}" = "pull_request" ]; then
+            git config --global user.email "ci@embeint.com"
+            git config --global user.name "Embeint CI"
+            rm -fr ".git/rebase-apply"
+            git rebase origin/${BASE_REF}
+            git log  --pretty=oneline | head -n 10
+          fi
+
+          west init -l . || true
+          west config --global update.narrow true
+          west config manifest.group-filter -- +babblesim
+          west update --path-cache /github/cache/embeint 2>&1 1> west.update.log || west update --path-cache /github/cache/embeint 2>&1 1> west.update.log || ( rm -rf ../modules ../bootloader ../tools && west update --path-cache /github/cache/embeint)
+          west forall -c 'git reset --hard HEAD'
+
+          pip3 install gcovr==6.0
+
+          echo "ZEPHYR_SDK_INSTALL_DIR=/opt/toolchains/zephyr-sdk-$( cat SDK_VERSION )" >> $GITHUB_ENV
+
+      - name: nRF Hardware Models patch
+        working-directory: modules/bsim_hw_models/nrf_hw_models
+        run: |
+          # Apply temporary patch until latest upstream can be used
+          git apply ../../../infuse-sdk/tests/bsim/nrf_hw_models.patch
+
+      - name: BabbleSim build
+        run: |
+          cd ${BSIM_OUT_PATH}
+          make everything -j 8
+
+      - name: Check Environment
+        run: |
+          cmake --version
+          gcc --version
+          ls -la /opt/toolchains
+          ls -la
+          echo "github.ref: ${{ github.ref }}"
+          echo "github.base_ref: ${{ github.base_ref }}"
+          echo "github.ref_name: ${{ github.ref_name }}"
+
+      - name: Run Bluetooth Tests with BabbleSim
+        run: |
+          export ZEPHYR_BASE=${PWD}/zephyr
+          export INFUSE_BASE=${PWD}/infuse-sdk
+          export WORK_DIR=${PWD}/bsim_out
+          $INFUSE_BASE/tests/bsim/ci.bt.sh
+
+      - name: Generate coverage report
+        run: |
+          export INFUSE_BASE=${PWD}/infuse-sdk
+          export WORK_DIR=${PWD}/bsim_out
+
+          mkdir -p coverage/reports
+          gcovr -r $INFUSE_BASE \
+            --gcov-ignore-parse-errors=negative_hits.warn_once_per_file \
+            --gcov-executable gcov -e tests/* -e .*generated.* -e .*/tests/.* -e .*/samples/.* \
+            --exclude-branches-by-pattern "(^\s*LOG_(?:HEXDUMP_)?(?:DBG|INF|WRN|ERR)\(.*)|(^\s*__ASSERT(?:_EVAL|_NO_MSG|_POST_ACTION)?\(.*)" \
+            --merge-mode-functions=separate --json \
+            -o coverage/reports/nrf52_bsim.json \
+            $WORK_DIR
+
+      - name: Upload Coverage Results
+        uses: actions/upload-artifact@v4
+        with:
+          name: Coverage Data (BabbleSim)
+          path: coverage/reports/nrf52_bsim.json
+          if-no-files-found: ignore
+          retention-days: 1
+
   codecov-results:
     name: "Publish Coverage Results"
-    needs: codecov
+    needs:
+      - twister
+      - babblesim
     runs-on: ubuntu-22.04
     # the codecov job might be skipped, we don't need to run this job then
     if: success() || failure()
