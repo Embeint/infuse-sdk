@@ -83,6 +83,8 @@ configdefault BT_PERIPHERAL
 # While extended advertising can support 255 bytes, iOS only supports 124 bytes
 configdefault BT_CTLR_ADV_DATA_LEN_MAX
 	default 124
+configdefault BT_CTLR_SCAN_DATA_LEN_MAX
+	default 124
 
 # GATT central options
 configdefault BT_GATT_CLIENT
