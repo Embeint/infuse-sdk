@@ -17,3 +17,5 @@ mapping:
   network_key:
     type: str
     required: false
+  disable_logging:
+    type: bool
