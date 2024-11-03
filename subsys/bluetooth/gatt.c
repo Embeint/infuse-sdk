@@ -315,7 +315,11 @@ static void connected(struct bt_conn *conn, uint8_t err)
 
 	ARG_UNUSED(s);
 
-	LOG_INF("Connected to %s (error 0x%02X)", bt_addr_le_str(dst), err);
+	if (err == BT_HCI_ERR_SUCCESS) {
+		LOG_INF("Connected to %s", bt_addr_le_str(dst));
+	} else {
+		LOG_WRN("Connection to %s failed (error 0x%02X)", bt_addr_le_str(dst), err);
+	}
 	if (err) {
 #ifdef CONFIG_BT_GATT_CLIENT
 		if (s->params) {
