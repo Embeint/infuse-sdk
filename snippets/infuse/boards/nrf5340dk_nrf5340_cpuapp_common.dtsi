@@ -1,3 +1,5 @@
+#include "infuse_bluetooth.dtsi"
+
 / {
 	epacket_serial: epacket_serial {
 		compatible = "embeint,epacket-serial";
@@ -9,32 +11,6 @@
 		epacket = <&epacket_serial>;
 
 		tdf_logger_serial: tdf_logger_serial {
-			compatible = "embeint,tdf-data-logger";
-		};
-	};
-
-	epacket_bt_adv: epacket_bt_adv {
-		compatible = "embeint,epacket-bt-adv";
-	};
-
-	data_logger_bt_adv: data_logger_bt_adv {
-		compatible = "embeint,data-logger-epacket", "embeint,data-logger";
-		epacket = <&epacket_bt_adv>;
-
-		tdf_logger_bt_adv: tdf_logger_bt_adv {
-			compatible = "embeint,tdf-data-logger";
-		};
-	};
-
-	epacket_bt_peripheral: epacket_bt_peripheral {
-		compatible = "embeint,epacket-bt-peripheral";
-	};
-
-	data_logger_bt_peripheral: data_logger_bt_peripheral {
-		compatible = "embeint,data-logger-epacket", "embeint,data-logger";
-		epacket = <&epacket_bt_peripheral>;
-
-		tdf_logger_bt_peripheral: tdf_logger_bt_peripheral {
 			compatible = "embeint,tdf-data-logger";
 		};
 	};

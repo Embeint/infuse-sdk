@@ -1,31 +1,7 @@
+#include "infuse_bluetooth.dtsi"
+
 / {
 	chosen {
 		infuse,kv-partition = &storage_partition;
-	};
-
-	epacket_bt_adv: epacket_bt_adv {
-		compatible = "embeint,epacket-bt-adv";
-	};
-
-	data_logger_bt_adv: data_logger_bt_adv {
-		compatible = "embeint,data-logger-epacket", "embeint,data-logger";
-		epacket = <&epacket_bt_adv>;
-
-		tdf_logger_bt_adv: tdf_logger_bt_adv {
-			compatible = "embeint,tdf-data-logger";
-		};
-	};
-
-	epacket_bt_peripheral: epacket_bt_peripheral {
-		compatible = "embeint,epacket-bt-peripheral";
-	};
-
-	data_logger_bt_peripheral: data_logger_bt_peripheral {
-		compatible = "embeint,data-logger-epacket", "embeint,data-logger";
-		epacket = <&epacket_bt_peripheral>;
-
-		tdf_logger_bt_peripheral: tdf_logger_bt_peripheral {
-			compatible = "embeint,tdf-data-logger";
-		};
 	};
 };

@@ -1,4 +1,5 @@
 #include <common/nordic/infuse_nrf9161_ns.dtsi>
+#include "infuse_bluetooth.dtsi"
 
 / {
 	tfm_config {
