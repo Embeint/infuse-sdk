@@ -1,17 +1,20 @@
 #!/usr/bin/env bash
-# Copyright 2018 Oticon A/S
+# Copyright 2024 Embeint Inc
 # SPDX-License-Identifier: Apache-2.0
 
-# Compile all the applications needed by the Bluetooth bsim tests
+# Compile all the applications needed by the bsim tests in these subfolders
 
-#set -x #uncomment this line for debugging
+# set -x #uncomment this line for debugging
 set -ue
 
 : "${ZEPHYR_BASE:?ZEPHYR_BASE must be set to point to the zephyr root directory}"
 : "${INFUSE_BASE:?INFUSE_BASE must be set to point to the Infuse-IoT root directory}"
 
-source ${ZEPHYR_BASE}/tests/bsim/sh_common.source
+source ${ZEPHYR_BASE}/tests/bsim/compile.source
 
-run_in_background ${INFUSE_BASE}/tests/bsim/bluetooth/advertising/compile.sh
+APP=tests/bsim/bluetooth/epacket
+
+app_root=$INFUSE_BASE app=$APP conf_file=prj_device.conf snippet=infuse compile
+app_root=$INFUSE_BASE app=$APP conf_file=prj_gateway.conf snippet=infuse compile
 
 wait_for_background_jobs

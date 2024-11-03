@@ -4,7 +4,7 @@
 cmake_minimum_required(VERSION 3.20.0)
 
 find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
-project(bsim_test_epacket_bt_adv)
+project(bsim_test_bluetooth_epacket)
 
 target_sources(app PRIVATE
     src/common.c
@@ -12,11 +12,11 @@ target_sources(app PRIVATE
 
 if(CONFIG_BT_CENTRAL)
     target_sources(app PRIVATE
-        src/ext_adv_scanner.c
+        src/gateway.c
     )
 else()
     target_sources(app PRIVATE
-        src/ext_adv_advertiser.c
+        src/device.c
     )
 endif()
 
