@@ -103,6 +103,22 @@ source "subsys/logging/Kconfig.template.log_config"
 
 endif # EPACKET_INTERFACE_BT_PERIPHERAL
 
+config EPACKET_INTERFACE_BT_CENTRAL
+	bool "ePacket Bluetooth GATT central interface"
+	depends on DT_HAS_EMBEINT_EPACKET_BT_CENTRAL_ENABLED
+	depends on EPACKET_CRYPTO
+	depends on BT_CENTRAL
+	select EPACKET_INTERFACE_BT_GATT
+	default y
+
+if EPACKET_INTERFACE_BT_CENTRAL
+
+module = EPACKET_BT_CENTRAL
+module-str = epacket_bt_central
+source "subsys/logging/Kconfig.template.log_config"
+
+endif # EPACKET_INTERFACE_BT_CENTRAL
+
 config EPACKET_INTERFACE_HCI
 	bool "ePacket Bluetooth HCI"
 	depends on DT_HAS_EMBEINT_EPACKET_HCI_ENABLED

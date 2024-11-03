@@ -345,7 +345,7 @@
         "50": {
             "name": "bt_connect_infuse",
             "description": "Connect to an Infuse-IoT Bluetooth device",
-            "depends_on": "BT_GATT_CLIENT",
+            "depends_on": "EPACKET_INTERFACE_BT_CENTRAL",
             "default": "y if INFUSE_SDK",
             "default_auth": "EPACKET_AUTH_DEVICE",
             "request_params": [
