@@ -24,4 +24,8 @@
 			compatible = "embeint,tdf-data-logger";
 		};
 	};
+
+	epacket_bt_central: epacket_bt_central {
+		compatible = "embeint,epacket-bt-central";
+	};
 };
