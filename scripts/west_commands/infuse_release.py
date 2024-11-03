@@ -213,6 +213,8 @@ class infuse_release(WestCommand):
             build_cmd.extend(
                 [f'-DCONFIG_INFUSE_SECURITY_DEFAULT_NETWORK="{self.network_key}"']
             )
+        if self.release.get("disable_logging", False):
+            build_cmd.extend(["-DCONFIG_LOG=n"])
 
         print("Run build: ", " ".join(build_cmd))
         subprocess.run(build_cmd, check=True)
