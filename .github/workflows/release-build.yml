@@ -76,4 +76,4 @@ jobs:
           west infuse-release -r infuse-sdk/samples/releases/gateway_usb-nrf52840dk.yaml --skip-git
 
           rm -rf data_logger-tauro*
-          rm -rf gateway_usb-nrf52840dk*
+          rm -rf release-sample-gateway*

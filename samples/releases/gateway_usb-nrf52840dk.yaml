@@ -1,5 +1,6 @@
 # Example nRF52 release
 application_folder: ../../apps/gateway_usb
+output_prefix: release-sample-gateway
 board: nrf52840dk/nrf52840
 signing_key: ../../../bootloader/mcuboot/root-rsa-2048.pem
 network_key: ../../lib/security/default_network.yaml

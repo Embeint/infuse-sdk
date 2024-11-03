@@ -8,6 +8,8 @@ mapping:
   application_folder:
     type: str
     required: true
+  output_prefix:
+    type: str
   board:
     type: str
     required: true

@@ -318,7 +318,10 @@ class infuse_release(WestCommand):
         board_normalised = self.release["board"].replace("/", "_")
         app_name = self.application.name
 
-        output_dir = pathlib.Path(f"{app_name}-{board_normalised}-{version}")
+        if prefix := self.release.get("output_prefix", False):
+            output_dir = pathlib.Path(f"{prefix}-{version}")
+        else:
+            output_dir = pathlib.Path(f"{app_name}-{board_normalised}-{version}")
         output_dir.mkdir(parents=True, exist_ok=True)
 
         # Copy relevant files to output directory
