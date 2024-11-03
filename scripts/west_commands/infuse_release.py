@@ -91,6 +91,13 @@ class infuse_release(WestCommand):
         self.signing_key = self._absolute_path(
             self.args.release.parent, self.release["signing_key"]
         )
+        if "network_key" in self.release:
+            self.network_key = self._absolute_path(
+                self.args.release.parent, self.release["network_key"]
+            )
+        else:
+            self.network_key = None
+
         self.tfm_build = "/ns" in self.release["board"]
         # TF-M builds should not use sysbuild for now
         self.sysbuild = not self.tfm_build
@@ -202,6 +209,10 @@ class infuse_release(WestCommand):
                     "-DCONFIG_TFM_LCS_SECURED_DISABLE_DEBUG_PORT=y",
                 ]
             )
+        if self.network_key is not None:
+            build_cmd.extend(
+                [f'-DCONFIG_INFUSE_SECURITY_DEFAULT_NETWORK="{self.network_key}"']
+            )
 
         print("Run build: ", " ".join(build_cmd))
         subprocess.run(build_cmd, check=True)
@@ -234,7 +245,7 @@ class infuse_release(WestCommand):
                 )
         if "CONFIG_INFUSE_SECURITY" in configs:
             network_key = configs["CONFIG_INFUSE_SECURITY_DEFAULT_NETWORK"]
-            if network_key == "default_network.yaml":
+            if network_key.endswith("default_network.yaml"):
                 print(
                     colorama.Fore.YELLOW
                     + "Default Infuse-IoT network key used! Communications are not secure!"
@@ -367,5 +378,11 @@ class infuse_release(WestCommand):
                 if k.startswith("CONFIG_KV_STORE_KEY_") and not k.endswith("_RANGE")
             ],
         }
+
+        if self.network_key is not None:
+            with self.network_key.open("r", encoding="utf-8") as f:
+                network = yaml.safe_load(f)
+                manifest["application"]["network_id"] = network["id"]
+
         with (output_dir / "manifest.yml").open("w") as f:
             yaml.dump(manifest, f)
