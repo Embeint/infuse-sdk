@@ -12,9 +12,11 @@ set -ue
 
 source ${ZEPHYR_BASE}/tests/bsim/compile.source
 
-APP=tests/bsim/bluetooth/epacket
+APP_EPACKET=tests/bsim/bluetooth/epacket
+APP_GATT=tests/bsim/bluetooth/gatt
 
-app_root=$INFUSE_BASE app=$APP conf_file=prj_device.conf snippet=infuse compile
-app_root=$INFUSE_BASE app=$APP conf_file=prj_gateway.conf snippet=infuse compile
+app_root=$INFUSE_BASE app=$APP_EPACKET conf_file=prj_device.conf snippet=infuse compile
+app_root=$INFUSE_BASE app=$APP_EPACKET conf_file=prj_gateway.conf snippet=infuse compile
+app_root=$INFUSE_BASE app=$APP_GATT snippet=infuse compile
 
 wait_for_background_jobs

@@ -19,12 +19,38 @@
 #include <infuse/tdf/definitions.h>
 
 extern enum bst_result_t bst_result;
+static int connection_notifications;
+static int disconnection_notifications;
 
 LOG_MODULE_REGISTER(app, LOG_LEVEL_INF);
 
+static void peripheral_interface_state(bool connected, uint16_t current_max_payload, void *user_ctx)
+{
+	if (connected) {
+		connection_notifications += 1;
+	} else {
+		disconnection_notifications += 1;
+	}
+	LOG_INF("Peripheral: %s (Payload %d)", connected ? "Connected" : "Disconnected",
+		current_max_payload);
+}
+
 static void main_epacket_bt_basic_broadcast(void)
 {
+	const struct device *epacket_bt_periph = DEVICE_DT_GET(DT_NODELABEL(epacket_bt_peripheral));
 	struct tdf_announce announce = {0};
+	struct epacket_interface_cb interface_cb = {
+		.interface_state = peripheral_interface_state,
+	};
+	uint16_t packet_size;
+
+	epacket_register_callback(epacket_bt_periph, &interface_cb);
+
+	packet_size = epacket_interface_max_packet_size(epacket_bt_periph);
+	if (packet_size != 0) {
+		FAIL("Unexpected packet size\n");
+		return;
+	}
 
 	LOG_INF("Starting send");
 
@@ -46,6 +72,11 @@ static void main_epacket_bt_basic_broadcast(void)
 		tdf_data_logger_flush(TDF_DATA_LOGGER_BT_ADV | TDF_DATA_LOGGER_BT_PERIPHERAL);
 	}
 	k_sleep(K_MSEC(500));
+
+	if (connection_notifications != disconnection_notifications) {
+		FAIL("Unbalanced notifications\n");
+		return;
+	}
 
 	PASS("Advertising device complete\n");
 }
