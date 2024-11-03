@@ -1,0 +1,4 @@
+# Example nRF52 release
+application_folder: ../../apps/gateway_usb
+board: nrf52840dk/nrf52840
+signing_key: ../../../bootloader/mcuboot/root-rsa-2048.pem

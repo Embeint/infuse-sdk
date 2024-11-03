@@ -1,0 +1,16 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# Copyright (c) 2024, Embeint Inc
+
+type: map
+required: true
+mapping:
+  application_folder:
+    type: str
+    required: true
+  board:
+    type: str
+    required: true
+  signing_key:
+    type: str
+    required: true

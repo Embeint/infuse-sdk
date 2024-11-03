@@ -7,19 +7,26 @@ import subprocess
 import sys
 import shutil
 import colorama
+import yaml
+import pykwalify.core
 
 from typing_extensions import Tuple
 
 from west.commands import WestCommand
 
 from git import Repo
-from yaml import safe_load, dump
 
 import zcmake
 
 EXPORT_DESCRIPTION = """\
 This command generates an application release.
 """
+
+RELEASE_SCHEMA_PATH = str(
+    pathlib.Path(__file__).parent.parent / "schemas" / "release-schema.yml"
+)
+with open(RELEASE_SCHEMA_PATH, "r", encoding="utf-8") as f:
+    release_schema = yaml.safe_load(f)
 
 
 class infuse_release(WestCommand):
@@ -40,21 +47,11 @@ class infuse_release(WestCommand):
             description=self.description,
         )
         parser.add_argument(
-            "-b", "--board", type=str, required=True, help="Board to build release for"
-        )
-        parser.add_argument(
-            "-d",
-            "--source-dir",
+            "-r",
+            "--release",
             type=pathlib.Path,
             required=True,
-            help="Application to build",
-        )
-        parser.add_argument(
-            "-s",
-            "--sign",
-            type=pathlib.Path,
-            required=True,
-            help="Bootloader signing key",
+            help="Release configuration file",
         )
         parser.add_argument(
             "--ignore-git", action="store_true", help="Ignore git check failures"
@@ -67,9 +64,34 @@ class infuse_release(WestCommand):
 
         return parser
 
+    def _absolute_path(self, relative_root: pathlib.Path, path: str) -> pathlib.Path:
+        p = pathlib.Path(path)
+        if p.is_absolute():
+            return p
+        return (relative_root / p).resolve().absolute()
+
     def do_run(self, args, unknown_args):
         self.args = args
-        self.tfm_build = "/ns" in self.args.board
+
+        with self.args.release.open("r", encoding="utf-8") as f:
+            self.release = yaml.safe_load(f)
+
+        try:
+            pykwalify.core.Core(
+                source_data=self.release, schema_data=release_schema
+            ).validate()
+        except pykwalify.errors.SchemaError as e:
+            sys.exit(
+                f"ERROR: Malformed section in file: {self.args.release.as_posix()}\n{e}"
+            )
+
+        self.application = self._absolute_path(
+            self.args.release.parent, self.release["application_folder"]
+        )
+        self.signing_key = self._absolute_path(
+            self.args.release.parent, self.release["signing_key"]
+        )
+        self.tfm_build = "/ns" in self.release["board"]
         # TF-M builds should not use sysbuild for now
         self.sysbuild = not self.tfm_build
         # Validate repository state
@@ -107,7 +129,7 @@ class infuse_release(WestCommand):
         return ahead, behind
 
     def validate_state(self) -> Repo:
-        repo = Repo(self.args.source_dir, search_parent_directories=True)
+        repo = Repo(self.application, search_parent_directories=True)
 
         if not self.args.skip_git:
             ahead, behind = self.count_commits_ahead_behind(repo)
@@ -126,7 +148,7 @@ class infuse_release(WestCommand):
         return repo
 
     def expected_version(self, repo: Repo) -> Tuple[str, str]:
-        version_file = self.args.source_dir / "VERSION"
+        version_file = self.application / "VERSION"
         if not version_file.exists():
             sys.exit(f"{version_file} does not exist")
 
@@ -141,18 +163,18 @@ class infuse_release(WestCommand):
         return v_int_tweak, v_hex_tweak
 
     def do_release_build(self, expected_version):
-        name = self.args.source_dir.name
-        self.build_dir = pathlib.Path(f"build/release/{self.args.board}/{name}")
+        name = self.application.name
+        self.build_dir = pathlib.Path(f"build/release/{self.release['board']}/{name}")
         if self.sysbuild:
             self.build_app_dir = self.build_dir / self.build_dir.name
         else:
             self.build_app_dir = self.build_dir
-        sign_path = f'"{str(self.args.sign.resolve().absolute())}"'
+        signing_key_config = f'"{str(self.signing_key)}"'
 
         build_cmd = ["west", "build"]
         build_cmd.extend(["-p"])
-        build_cmd.extend(["--board", self.args.board])
-        build_cmd.extend(["--source-dir", str(self.args.source_dir)])
+        build_cmd.extend(["--board", self.release["board"]])
+        build_cmd.extend(["--source-dir", str(self.application)])
         build_cmd.extend(["--build-dir", str(self.build_dir)])
 
         if self.sysbuild:
@@ -162,7 +184,7 @@ class infuse_release(WestCommand):
                 [
                     "--",
                     f'-DCONFIG_MCUBOOT_IMGTOOL_SIGN_VERSION="{expected_version}"',
-                    f"-DSB_CONFIG_BOOT_SIGNATURE_KEY_FILE={sign_path}",
+                    f"-DSB_CONFIG_BOOT_SIGNATURE_KEY_FILE={signing_key_config}",
                 ]
             )
         else:
@@ -170,8 +192,8 @@ class infuse_release(WestCommand):
                 [
                     "--",
                     # Both keys are considered valid by the TF-M BL2
-                    f"-DCONFIG_TFM_KEY_FILE_S={sign_path}",
-                    f"-DCONFIG_TFM_KEY_FILE_NS={sign_path}",
+                    f"-DCONFIG_TFM_KEY_FILE_S={signing_key_config}",
+                    f"-DCONFIG_TFM_KEY_FILE_NS={signing_key_config}",
                     # Explicitly disable TFM_DUMMY_PROVISIONING, which overrides the
                     # desired keys in the bootloader
                     "-DCONFIG_TFM_DUMMY_PROVISIONING=n",
@@ -269,7 +291,7 @@ class infuse_release(WestCommand):
         ]
         subprocess.run(imgtool_cmd, check=True, capture_output=True)
         with imgtool_output.open("r") as f:
-            imgtool_yaml = safe_load(f)
+            imgtool_yaml = yaml.safe_load(f)
 
         # Check the version we expected against the version imgtool decodes
         if expected_version != imgtool_yaml["header"]["version"]:
@@ -280,8 +302,8 @@ class infuse_release(WestCommand):
         return configs
 
     def export_build(self, build_configs: dict, version: str):
-        board_normalised = self.args.board.replace("/", "_")
-        app_name = self.args.source_dir.name
+        board_normalised = self.release["board"].replace("/", "_")
+        app_name = self.application.name
 
         output_dir = pathlib.Path(f"{app_name}-{board_normalised}-{version}")
         output_dir.mkdir(parents=True, exist_ok=True)
@@ -346,4 +368,4 @@ class infuse_release(WestCommand):
             ],
         }
         with (output_dir / "manifest.yml").open("w") as f:
-            dump(manifest, f)
+            yaml.dump(manifest, f)
