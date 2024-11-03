@@ -181,7 +181,7 @@ config INFUSE_RPC_COMMAND_FILE_WRITE_BASIC_REQUIRED_AUTH
 
 config INFUSE_RPC_COMMAND_BT_CONNECT_INFUSE
 	bool "Enable RPC bt_connect_infuse"
-	depends on BT_GATT_CLIENT
+	depends on EPACKET_INTERFACE_BT_CENTRAL
 	default y if INFUSE_SDK
 	help
 	  Connect to an Infuse-IoT Bluetooth device

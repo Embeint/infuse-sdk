@@ -60,7 +60,7 @@ BT_GATT_SERVICE_DEFINE(
 #define CHRC_DATA    5
 #define CCC_DATA     6
 
-LOG_MODULE_REGISTER(epacket_bt_peripheral, LOG_LEVEL_DBG);
+LOG_MODULE_REGISTER(epacket_bt_peripheral, CONFIG_EPACKET_BT_PERIPHERAL_LOG_LEVEL);
 
 static void conn_mtu_query(struct bt_conn *conn, void *user_data)
 {
