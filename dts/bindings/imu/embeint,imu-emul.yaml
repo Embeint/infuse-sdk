@@ -1,0 +1,9 @@
+# Copyright (c) 2024 Embeint Inc
+# SPDX-License-Identifier: LicenseRef-Embeint
+
+description: |
+  Emulated IMU driver
+
+compatible: "embeint,imu-emul"
+
+include: sensor-device.yaml
