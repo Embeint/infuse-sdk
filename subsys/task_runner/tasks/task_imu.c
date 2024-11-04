@@ -104,6 +104,8 @@ void imu_task_fn(const struct task_schedule *schedule, struct k_poll_signal *ter
 	uint32_t buffer_count = 0;
 	int rc;
 
+	LOG_DBG("Starting");
+
 	/* Request sensor to be powered */
 	rc = pm_device_runtime_get(imu);
 	if (rc < 0) {
@@ -177,4 +179,5 @@ void imu_task_fn(const struct task_schedule *schedule, struct k_poll_signal *ter
 	}
 
 	/* Terminate thread */
+	LOG_DBG("Terminating");
 }
