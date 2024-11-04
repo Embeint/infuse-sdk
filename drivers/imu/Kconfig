@@ -11,6 +11,7 @@ config INFUSE_IMU_SELF_TEST
 
 rsource "bma4xx/Kconfig"
 rsource "bmi270/Kconfig"
+rsource "emul/Kconfig"
 rsource "lsm6dsv/Kconfig"
 
 endif # INFUSE_IMU

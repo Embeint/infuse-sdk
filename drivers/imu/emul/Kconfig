@@ -1,0 +1,6 @@
+# Emulated IMU driver
+
+config INFUSE_IMU_EMUL
+	bool "Emulated IMU driver"
+	depends on DT_HAS_EMBEINT_IMU_EMUL_ENABLED
+	default y
