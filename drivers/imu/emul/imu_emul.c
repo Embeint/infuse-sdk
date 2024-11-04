@@ -15,6 +15,7 @@
 #include <zephyr/random/random.h>
 
 #include <infuse/drivers/imu.h>
+#include <infuse/drivers/imu/emul.h>
 
 struct emul_config {
 };
@@ -26,7 +27,20 @@ struct emul_data {
 	uint8_t full_scale_range;
 	uint32_t sample_period_us;
 	uint16_t num_samples;
+	float acc_axis_scales[3];
+	uint16_t acc_noise;
 };
+
+void imu_emul_accelerometer_data_configure(const struct device *dev, float x_ratio, float y_ratio,
+					   float z_ratio, uint16_t axis_noise)
+{
+	struct emul_data *data = dev->data;
+
+	data->acc_axis_scales[0] = x_ratio;
+	data->acc_axis_scales[1] = y_ratio;
+	data->acc_axis_scales[2] = z_ratio;
+	data->acc_noise = axis_noise;
+}
 
 static void timer_fired(struct k_timer *timer)
 {
@@ -79,6 +93,14 @@ int emul_data_wait(const struct device *dev, k_timeout_t timeout)
 	return k_sem_take(&data->new_data, timeout);
 }
 
+static int16_t random_noise(uint16_t range)
+{
+	if (range == 0) {
+		return 0;
+	}
+	return (int16_t)(sys_rand16_get() % (2 * range)) - range;
+}
+
 int emul_data_read(const struct device *dev, struct imu_sample_array *samples, uint16_t max_samples)
 {
 	struct emul_data *data = dev->data;
@@ -93,9 +115,12 @@ int emul_data_read(const struct device *dev, struct imu_sample_array *samples, u
 	samples->accelerometer.buffer_period_ticks = buffer_period;
 
 	for (int i = 0; i < num; i++) {
-		samples->samples[i].x = 0;
-		samples->samples[i].y = 0;
-		samples->samples[i].z = one_g;
+		samples->samples[i].x =
+			data->acc_axis_scales[0] * one_g + random_noise(data->acc_noise);
+		samples->samples[i].y =
+			data->acc_axis_scales[1] * one_g + random_noise(data->acc_noise);
+		samples->samples[i].z =
+			data->acc_axis_scales[2] * one_g + random_noise(data->acc_noise);
 	}
 	return 0;
 }
@@ -111,6 +136,11 @@ static int emul_init(const struct device *dev)
 
 	k_sem_init(&data->new_data, 0, 1);
 	k_timer_init(&data->data_timer, timer_fired, NULL);
+
+	data->acc_axis_scales[0] = 0.0f;
+	data->acc_axis_scales[1] = 0.0f;
+	data->acc_axis_scales[2] = 1.0f;
+	data->acc_noise = 0;
 
 	return pm_device_driver_init(dev, emul_pm_control);
 }
