@@ -10,12 +10,13 @@
 #include <zephyr/pm/device_runtime.h>
 #include <zephyr/zbus/zbus.h>
 
+#include <infuse/drivers/imu.h>
+#include <infuse/math/common.h>
 #include <infuse/task_runner/task.h>
 #include <infuse/task_runner/tasks/imu.h>
 #include <infuse/tdf/definitions.h>
 #include <infuse/tdf/util.h>
 #include <infuse/time/epoch.h>
-#include <infuse/drivers/imu.h>
 #include <infuse/zbus/channels.h>
 
 IMU_SAMPLE_ARRAY_TYPE_DEFINE(task_imu_sample_container, CONFIG_TASK_RUNNER_TASK_IMU_MAX_FIFO);
@@ -24,6 +25,18 @@ ZBUS_CHAN_ID_DEFINE(INFUSE_ZBUS_NAME(INFUSE_ZBUS_CHAN_IMU), INFUSE_ZBUS_CHAN_IMU
 		    struct task_imu_sample_container, NULL, NULL, ZBUS_OBSERVERS_EMPTY,
 		    ZBUS_MSG_INIT(0));
 #define ZBUS_CHAN INFUSE_ZBUS_CHAN_GET(INFUSE_ZBUS_CHAN_IMU)
+
+#ifdef CONFIG_TASK_RUNNER_TASK_IMU_ACC_MAGNITUDE_BROADCAST
+
+IMU_MAG_ARRAY_TYPE_DEFINE(task_imu_acc_mag_container,
+			  CONFIG_TASK_RUNNER_TASK_IMU_ACC_MAGNITUDE_BROADCAST_MAX);
+
+ZBUS_CHAN_ID_DEFINE(INFUSE_ZBUS_NAME(INFUSE_ZBUS_CHAN_IMU_ACC_MAG), INFUSE_ZBUS_CHAN_IMU_ACC_MAG,
+		    struct task_imu_acc_mag_container, NULL, NULL, ZBUS_OBSERVERS_EMPTY,
+		    ZBUS_MSG_INIT(0));
+#define ZBUS_CHAN_MAG INFUSE_ZBUS_CHAN_GET(INFUSE_ZBUS_CHAN_IMU_ACC_MAG)
+
+#endif /* CONFIG_TASK_RUNNER_TASK_IMU_ACC_MAGNITUDE_BROADCAST */
 
 LOG_MODULE_REGISTER(task_imu, CONFIG_TASK_IMU_LOG_LEVEL);
 
@@ -39,6 +52,31 @@ static void imu_sample_handler(const struct task_schedule *schedule,
 {
 	const struct imu_sample *last_acc, *last_gyr;
 	uint64_t epoch_time;
+
+#ifdef CONFIG_TASK_RUNNER_TASK_IMU_ACC_MAGNITUDE_BROADCAST
+	struct task_imu_acc_mag_container *mags;
+	const struct imu_sample *s = &samples->samples[samples->accelerometer.offset];
+	uint16_t num = MIN(samples->accelerometer.num, ARRAY_SIZE(mags->magnitudes));
+
+	/* Claim the channel so we can process directly into the memory buffer */
+	zbus_chan_claim(ZBUS_CHAN_MAG, K_FOREVER);
+	mags = ZBUS_CHAN_MAG->message;
+
+	mags->meta = samples->accelerometer;
+	mags->meta.offset = 0;
+	mags->meta.num = num;
+
+	/* Calculate magnitudes */
+	for (int i = 0; i < num; i++) {
+		mags->magnitudes[i] = math_vector_xyz_magnitude(s->x, s->y, s->z);
+		s++;
+	}
+
+	/* Update metadata, finish claim, notify subscribers */
+	zbus_chan_update_publish_metadata(ZBUS_CHAN_MAG);
+	zbus_chan_finish(ZBUS_CHAN_MAG);
+	zbus_chan_notify(ZBUS_CHAN_MAG, K_FOREVER);
+#endif /* CONFIG_TASK_RUNNER_TASK_IMU_ACC_MAGNITUDE_BROADCAST */
 
 	/* Print last sample from each array */
 	last_acc =

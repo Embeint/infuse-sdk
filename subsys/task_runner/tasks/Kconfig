@@ -37,12 +37,13 @@ config TASK_RUNNER_TASK_IMU_MAX_FIFO
 	int "Maximum number of samples that can be read"
 	default 256
 
-config TASK_RUNNER_TASK_IMU_MAGNITUDE_BROADCAST
+config TASK_RUNNER_TASK_IMU_ACC_MAGNITUDE_BROADCAST
 	bool "Broadcast accelerometer magnitudes on a zbus channel"
+	select INFUSE_ZBUS_CHAN_IMU_ACC_MAG
 
-config TASK_RUNNER_TASK_IMU_MAGNITUDE_BROADCAST_MAX
+config TASK_RUNNER_TASK_IMU_ACC_MAGNITUDE_BROADCAST_MAX
 	int "Maximum number of magnitudes that can be broadcast"
-	depends on TASK_RUNNER_TASK_IMU_MAGNITUDE_BROADCAST
+	depends on TASK_RUNNER_TASK_IMU_ACC_MAGNITUDE_BROADCAST
 	default TASK_RUNNER_TASK_IMU_MAX_FIFO
 
 module = TASK_IMU
