@@ -12,6 +12,7 @@
 
 #include <zephyr/kernel.h>
 
+#include <infuse/drivers/imu.h>
 #include <infuse/task_runner/task.h>
 #include <infuse/task_runner/schedule.h>
 
@@ -20,6 +21,21 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/* Accelerometer magnitude broadcast structure */
+struct imu_magnitude_array {
+	/* Metadata for magnitude samples */
+	struct imu_sensor_meta meta;
+	/* Linear array of all magnitudes */
+	uint32_t magnitudes[];
+};
+
+/* Create type that holds a given number of IMU magnitude samples */
+#define IMU_MAG_ARRAY_TYPE_DEFINE(type_name, max_samples)                                          \
+	struct type_name {                                                                         \
+		struct imu_sensor_meta meta;                                                       \
+		uint32_t magnitudes[max_samples];                                                  \
+	}
 
 /**
  * @brief IMU task function
