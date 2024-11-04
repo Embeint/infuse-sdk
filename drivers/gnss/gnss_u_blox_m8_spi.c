@@ -288,7 +288,7 @@ static int ubx_m8_spi_software_standby(const struct device *dev)
 	ubx_msg_simple(&pmreq, UBX_MSG_CLASS_RXM, UBX_MSG_ID_RXM_PMREQ, &payload, sizeof(payload));
 
 	/* We don't expect a response to the this command */
-	rc = ubx_modem_send_async(&data->common.modem, &pmreq, NULL, false);
+	rc = ubx_modem_send_async(&data->common.modem, &pmreq, NULL, true);
 	if (rc < 0) {
 		return rc;
 	}
