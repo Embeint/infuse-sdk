@@ -225,6 +225,13 @@
                 {"name": "rsrq", "type": "int8_t", "description": "Reference signal received quality (-128 = Unknown)", "display_postfix": "dB"}
             ]
         },
+        "22": {
+            "name": "GLOBALSTAR_PKT",
+            "description": "9 byte payload transmitted over the Globalstar Simplex network",
+            "fields": [
+                {"name": "payload", "type": "uint8_t", "num": 9, "description": "User data payload"}
+            ]
+        },
         "100": {
             "name": "ARRAY_TYPE",
             "description": "Example array type",
