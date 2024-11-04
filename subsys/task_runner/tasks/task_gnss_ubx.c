@@ -278,6 +278,8 @@ void gnss_task_fn(const struct task_schedule *schedule, struct k_poll_signal *te
 	k_poll_signal_init(&run_state.nav_pvt_rx);
 	k_poll_signal_init(&run_state.nav_timegps_rx);
 
+	LOG_DBG("Starting");
+
 	/* Request sensor to be powered */
 	rc = pm_device_runtime_get(gnss);
 	if (rc < 0) {
@@ -402,4 +404,5 @@ void gnss_task_fn(const struct task_schedule *schedule, struct k_poll_signal *te
 	}
 
 	/* Terminate thread */
+	LOG_DBG("Terminating");
 }
