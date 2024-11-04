@@ -196,6 +196,7 @@ jobs:
           export ZEPHYR_BASE=${PWD}/zephyr
           export INFUSE_BASE=${PWD}/infuse-sdk
           export WORK_DIR=${PWD}/bsim_out
+          rm -rf $WORK_DIR
           $INFUSE_BASE/tests/bsim/ci.bt.sh
 
       - name: Generate coverage report
