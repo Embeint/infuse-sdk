@@ -1,0 +1,5 @@
+tests:
+  utilities.math.statistics:
+    tags:
+      - util
+    type: unit

@@ -1,8 +1,7 @@
 /*
- * Copyright (c) 2015 Wind River Systems, Inc.
- * Copyright (c) 2018 Intel Corporation
+ * Copyright (c) 2024 Embeint Inc
  *
- * SPDX-License-Identifier: Apache-2.0
+ * SPDX-License-Identifier: LicenseRef-Embeint
  */
 
 #include <math.h>
