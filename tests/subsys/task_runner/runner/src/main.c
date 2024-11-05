@@ -31,8 +31,8 @@ struct sleepy_args {
 	int should_be_two;
 };
 
-void example_task_fn(const struct task_schedule *schedule, struct k_poll_signal *terminate,
-		     void *arg)
+static void example_task_fn(const struct task_schedule *schedule, struct k_poll_signal *terminate,
+			    void *arg)
 {
 	const struct sleepy_args *args = arg;
 	int rc;
@@ -76,7 +76,7 @@ static int example_workqueue_reschedule_cnt;
 static uint8_t example_workqueue_expected_arg;
 static int example_workqueue_run_cnt;
 
-void example_workqueue_fn(struct k_work *work)
+static void example_workqueue_fn(struct k_work *work)
 {
 	struct task_data *task = task_data_from_work(work);
 	const struct task_schedule *sch = task_schedule_from_data(task);
@@ -182,7 +182,7 @@ ZTEST(task_runner_runner, test_init_duplicate_task_ids)
 DEVICE_DEFINE(dummy_device, "dummy", NULL, NULL, NULL, NULL, POST_KERNEL, 0, NULL);
 static int example_device_run;
 
-void example_device_fn(struct k_work *work)
+static void example_device_fn(struct k_work *work)
 {
 	example_device_run++;
 }
@@ -430,6 +430,64 @@ ZTEST(task_runner_runner, test_workqueue_task)
 		iter++;
 	}
 	zassert_equal(2, example_workqueue_run_cnt);
+}
+
+static void long_block_fn(struct k_work *work)
+{
+	struct task_data *task = task_data_from_work(work);
+
+	if (task_runner_task_block(&task->terminate_signal, K_NO_WAIT) == 1) {
+		return;
+	}
+
+	/* Do some long work */
+	k_sleep(K_SECONDS(2));
+
+	/* Attempt to run again in 5 seconds */
+	task_workqueue_reschedule(task, K_SECONDS(5));
+}
+
+#define LONG_BLOCK_TASK(define_mem, define_config, ...)                                            \
+	IF_ENABLED(define_config, ({.name = "long_block",                                          \
+				    .task_id = TASK_ID_WORKQ,                                      \
+				    .exec_type = TASK_EXECUTOR_WORKQUEUE,                          \
+				    .executor.workqueue = {                                        \
+					    .worker_fn = long_block_fn,                            \
+				    }}))
+
+ZTEST(task_runner_runner, test_workqueue_reschedule_override)
+{
+	INFUSE_STATES_ARRAY(app_states) = {0};
+	struct task_schedule schedules[] = {
+		{
+			.task_id = TASK_ID_WORKQ,
+			.validity = TASK_VALID_ALWAYS,
+			.timeout_s = 1,
+		},
+	};
+	struct task_schedule_state states[ARRAY_SIZE(schedules)];
+	uint32_t gps_time = 7000;
+	uint32_t uptime = 0;
+
+	TASK_RUNNER_TASKS_DEFINE(long_block, long_block_data, (LONG_BLOCK_TASK));
+
+	task_runner_init(schedules, states, ARRAY_SIZE(schedules), long_block, long_block_data,
+			 ARRAY_SIZE(long_block));
+
+	/* Iterate runner to boot the task */
+	task_runner_iterate(app_states, uptime++, gps_time++, 100);
+	k_sleep(K_SECONDS(1));
+	/* Iterate again, which should trigger the timeout after the task has checked the signal but
+	 * before it runs task_workqueue_reschedule.
+	 */
+	task_runner_iterate(app_states, uptime++, gps_time++, 100);
+	/* Sleep should have expired */
+	k_sleep(K_SECONDS(2));
+
+	/* Validate that work is idle.
+	 * This will only pass if `task_workqueue_reschedule` overrides the requested delay.
+	 */
+	zassert_equal(0, k_work_delayable_busy_get(&long_block_data->executor.workqueue.work));
 }
 
 ZTEST(task_runner_runner, test_get_workqueue)
