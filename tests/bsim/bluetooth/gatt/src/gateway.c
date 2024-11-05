@@ -212,13 +212,12 @@ static void main_connect_no_discovery(void)
 			return;
 		}
 		k_sleep(K_MSEC(100));
-		rc = bt_conn_disconnect(conn, BT_HCI_ERR_REMOTE_USER_TERM_CONN);
+		rc = bt_conn_disconnect_sync(conn);
 		if (rc < 0) {
 			FAIL("Failed to disconnect from peer\n");
 			return;
 		}
 		bt_conn_unref(conn);
-		k_sleep(K_MSEC(250));
 	}
 
 	PASS("Connect without discovery passed\n\n");
@@ -319,13 +318,12 @@ static void main_connect_discover_name(void)
 		}
 
 		/* Disconnect from peer */
-		rc = bt_conn_disconnect(conn, BT_HCI_ERR_REMOTE_USER_TERM_CONN);
+		rc = bt_conn_disconnect_sync(conn);
 		if (rc < 0) {
 			FAIL("Failed to disconnect from peer\n");
 			return;
 		}
 		bt_conn_unref(conn);
-		k_sleep(K_MSEC(250));
 	}
 
 	PASS("Connect discover name passed\n\n");
@@ -397,13 +395,12 @@ static void main_connect_discover_nonexistant(void)
 		}
 
 		/* Disconnect from peer */
-		rc = bt_conn_disconnect(conn, BT_HCI_ERR_REMOTE_USER_TERM_CONN);
+		rc = bt_conn_disconnect_sync(conn);
 		if (rc < 0) {
 			FAIL("Failed to disconnect from peer\n");
 			return;
 		}
 		bt_conn_unref(conn);
-		k_sleep(K_MSEC(250));
 	}
 
 	PASS("Connect discover nonexistant passed\n\n");
@@ -464,7 +461,7 @@ static void main_connect_terminator(void)
 			return;
 		}
 		if (conn_rc == 0) {
-			bt_conn_disconnect(conn, BT_HCI_ERR_REMOTE_USER_TERM_CONN);
+			bt_conn_disconnect_sync(conn);
 		}
 		bt_conn_unref(conn);
 		k_sleep(K_MSEC(250));

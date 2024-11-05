@@ -141,13 +141,12 @@ static void main_gateway_connect(void)
 			return;
 		}
 		/* Terminate the connection */
-		rc = bt_conn_disconnect(conn, BT_HCI_ERR_REMOTE_USER_TERM_CONN);
+		rc = bt_conn_disconnect_sync(conn);
 		if (rc < 0) {
 			FAIL("Failed to disconnect from peer\n");
 			return;
 		}
 		bt_conn_unref(conn);
-		k_sleep(K_MSEC(250));
 	}
 
 	k_sleep(K_SECONDS(1));
@@ -187,13 +186,12 @@ static void main_gateway_connect_then_scan(void)
 	}
 
 	/* Terminate the connection */
-	rc = bt_conn_disconnect(conn, BT_HCI_ERR_REMOTE_USER_TERM_CONN);
+	rc = bt_conn_disconnect_sync(conn);
 	if (rc < 0) {
 		FAIL("Failed to disconnect from peer");
 		return;
 	}
 	bt_conn_unref(conn);
-	k_sleep(K_MSEC(250));
 
 	/* Missed the initial burst due to the connection */
 	if (atomic_get(&received_packets) < 4) {
