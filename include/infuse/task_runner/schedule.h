@@ -32,6 +32,8 @@ enum {
 	TASK_VALID_ALWAYS = 0,
 	TASK_VALID_ACTIVE = 1,
 	TASK_VALID_INACTIVE = 2,
+	/* Entry and exit conditions never checked, task is rebooted if it terminates */
+	TASK_VALID_PERMANENTLY_RUNS = 3,
 	_TASK_VALID_END,
 };
 
