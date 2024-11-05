@@ -48,6 +48,8 @@ int bt_controller_manager_dfu_write_start(uint32_t *ctx, size_t image_len)
 int bt_controller_manager_dfu_write_next(uint32_t ctx, uint32_t image_offset,
 					 const void *image_chunk, size_t chunk_len)
 {
+	zassert_equal(0, image_offset % sizeof(uint32_t));
+
 	bt_image_crc = crc32_ieee_update(bt_image_crc, image_chunk, chunk_len);
 
 	if (bt_fail_after > 0) {

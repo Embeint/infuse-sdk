@@ -385,6 +385,9 @@ static void test_command_data_param(uint32_t size, uint8_t ack_period, bool sing
 	expected_len = size;
 	expected_crc = 0;
 
+	/* Limit backend to a weird payload size to exercise word-alignment logic */
+	epacket_dummy_set_max_packet(117);
+
 	/* Need to do ePacket loopback in an alternate context for blocking API */
 	k_work_init_delayable(&dwork, async_processor);
 	k_work_reschedule(&dwork, K_MSEC(100));
@@ -407,6 +410,11 @@ static void test_command_data_param(uint32_t size, uint8_t ack_period, bool sing
 
 	/* Drop timeout value */
 	zassert_equal(0, rpc_client_update_response_timeout(&ctx, request_id, K_MSEC(950)));
+
+	/* Expect non word-aligned offsets to fail */
+	for (int i = 1; i < sizeof(uint32_t); i++) {
+		zassert_equal(-EINVAL, rpc_client_data_queue(&ctx, request_id, i, buffer, 16));
+	}
 
 	/* Push requested data size */
 	remaining = req.data_header.size;
@@ -566,6 +574,8 @@ void test_cleanup(void *fixture)
 			break;
 		}
 	}
+
+	epacket_dummy_set_max_packet(EPACKET_INTERFACE_MAX_PACKET(DT_NODELABEL(epacket_dummy)));
 }
 
 ZTEST_SUITE(rpc_client, NULL, NULL, NULL, test_cleanup, NULL);
