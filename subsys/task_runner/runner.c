@@ -234,6 +234,15 @@ void task_runner_iterate(atomic_t *app_states, uint32_t uptime, uint32_t gps_tim
 			continue;
 		}
 
+		/* Start/restart permanently running tasks */
+		if (s->validity == TASK_VALID_PERMANENTLY_RUNS) {
+			if (!d->running) {
+				task_start(i, uptime);
+			}
+			sch_states[i].runtime += 1;
+			continue;
+		}
+
 		/* Should any should change state */
 		if (d->running) {
 			sch_states[i].runtime += 1;
