@@ -8,6 +8,7 @@
 
 #include <zephyr/logging/log.h>
 #include <zephyr/random/random.h>
+#include <zephyr/sys/__assert.h>
 
 #include <infuse/rpc/client.h>
 #include <infuse/rpc/types.h>
@@ -216,14 +217,22 @@ int rpc_client_data_queue(struct rpc_client_ctx *ctx, uint32_t request_id, uint3
 	struct infuse_rpc_data *header;
 	const uint8_t *bytes = data;
 	struct net_buf *data_buf;
-	size_t add, tail;
+	size_t add, tail, extra;
 
 	if (c == NULL) {
 		LOG_WRN("Invalid request %08X", request_id);
 		return -EINVAL;
 	}
 
+	/* Offsets must be word aligned */
+	if (offset % sizeof(uint32_t) != 0) {
+		return -EINVAL;
+	}
+
 	while (data_len) {
+		/* Offsets must be word aligned */
+		__ASSERT_NO_MSG((offset % sizeof(uint32_t)) == 0);
+
 		/* Allocate buffer for command */
 		data_buf = epacket_alloc_tx_for_interface(ctx->interface, K_FOREVER);
 		__ASSERT_NO_MSG(data_buf != NULL);
@@ -235,6 +244,11 @@ int rpc_client_data_queue(struct rpc_client_ctx *ctx, uint32_t request_id, uint3
 
 		/* Limit payload to interface size */
 		tail = net_buf_tailroom(data_buf);
+		/* Chunks should be word aligned */
+		extra = tail % sizeof(uint32_t);
+		if (extra) {
+			tail -= extra;
+		}
 		add = MIN(tail, data_len);
 
 		/* Data payload */
