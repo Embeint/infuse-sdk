@@ -1,0 +1,10 @@
+common:
+  tags: imu
+  min_flash: 64
+  min_ram: 32
+tests:
+  task_runner.tasks.alg_stationary.windowed:
+    required_snippets:
+      - infuse
+    integration_platforms:
+      - mps2/an385
