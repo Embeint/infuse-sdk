@@ -305,22 +305,36 @@ class vscode(WestCommand):
             launch["configurations"][1]["servertype"] = "qemu"
             launch["configurations"][1]["serverpath"] = cache.get("QEMU")
             launch["configurations"][1]["runToEntryPoint"] = False
-        elif cache.get("BOARD")[:10] == "native_sim":
+        elif cache.get("BOARD")[:10] in ["native_sim", "nrf52_bsim"]:
             # Native Sim GDB does not support `west debugserver`
             launch["configurations"].pop(0)
 
+            launch["configurations"][0].pop("gdbPath")
+            launch["configurations"][0].pop("executable")
             launch["configurations"][0]["name"] = "Native Launch"
             launch["configurations"][0]["type"] = "cppdbg"
             launch["configurations"][0]["program"] = str(
                 build_dir / "zephyr" / "zephyr.exe"
             )
             launch["configurations"][0]["cwd"] = str(build_dir)
+
+            if cache.get("BOARD")[:10] == "nrf52_bsim":
+                # Template likely arguments
+                launch["configurations"][0]["args"] = [
+                    "-s=sim_id",
+                    "-d=0",
+                    "-RealEncryption=0",
+                    "-testid=test_id",
+                ]
         else:
             launch["configurations"][0]["rtos"] = "Zephyr"
             launch["configurations"][1]["rtos"] = "Zephyr"
 
     def _jlink(self, snr, build_dir, cache):
-        if cache.get("QEMU", False) or cache.get("BOARD")[:10] == "native_sim":
+        if cache.get("QEMU", False) or cache.get("BOARD")[:10] in [
+            "native_sim",
+            "nrf52_bsim",
+        ]:
             return
 
         if snr is not None:
