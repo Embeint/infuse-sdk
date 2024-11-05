@@ -11,6 +11,7 @@
 #define INFUSE_SDK_INCLUDE_INFUSE_TASK_RUNNER_TASKS_INFUSE_TASKS_H_
 
 /* Simple list of infuse tasks to simplify application includes */
+#include <infuse/task_runner/tasks/alg_stationary_windowed.h>
 #include <infuse/task_runner/tasks/battery.h>
 #include <infuse/task_runner/tasks/environmental.h>
 #include <infuse/task_runner/tasks/imu.h>
