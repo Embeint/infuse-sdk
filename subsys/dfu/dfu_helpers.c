@@ -18,7 +18,7 @@
 #endif /* CONFIG_NRF_MODEM_LIB */
 
 /* Implementation taken from zephyr_img_mgmt.c */
-int infuse_dfu_image_erase(const struct flash_area *fa, size_t image_len)
+int infuse_dfu_image_erase(const struct flash_area *fa, size_t image_len, bool mcuboot_trailer)
 {
 	const struct device *dev = flash_area_get_device(fa);
 	off_t page_offset = fa->fa_off + image_len - 1;
@@ -42,6 +42,10 @@ int infuse_dfu_image_erase(const struct flash_area *fa, size_t image_len)
 	rc = flash_area_flatten(fa, 0, erase_size);
 	if (rc < 0) {
 		return rc;
+	}
+
+	if (!mcuboot_trailer) {
+		return 0;
 	}
 
 #if defined(CONFIG_MCUBOOT_IMG_MANAGER)
