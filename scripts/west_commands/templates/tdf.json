@@ -232,6 +232,14 @@
                 {"name": "payload", "type": "uint8_t", "num": 9, "description": "User data payload"}
             ]
         },
+        "23": {
+            "name": "ACC_MAGNITUDE_VARIANCE",
+            "description": "Accelerometer magnitude variance over a window",
+            "fields": [
+                {"name": "count", "type": "uint32_t", "description": "Number of samples in window"},
+                {"name": "variance", "type": "uint32_t", "description": "Magnitude variance in milli-g"}
+            ]
+        },
         "100": {
             "name": "ARRAY_TYPE",
             "description": "Example array type",
