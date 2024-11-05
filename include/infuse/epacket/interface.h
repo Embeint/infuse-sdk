@@ -191,7 +191,7 @@ int epacket_receive(const struct device *dev, k_timeout_t timeout);
  *
  * @param dev Interface to query
  *
- * @retval size Maximum packet size (ignoring headers and footers)
+ * @retval size Maximum packet size (header + payload + footer)
  */
 static inline uint16_t epacket_interface_max_packet_size(const struct device *dev)
 {
