@@ -33,6 +33,11 @@ config TASK_RUNNER_TASK_IMU
 
 if TASK_RUNNER_TASK_IMU
 
+config TASK_RUNNER_TASK_IMU_STACK_SIZE
+	int "Stack size of the task thread"
+	default 4096 if COVERAGE
+	default 2048
+
 config TASK_RUNNER_TASK_IMU_MAX_FIFO
 	int "Maximum number of samples that can be read"
 	default 256
