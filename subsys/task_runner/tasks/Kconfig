@@ -110,3 +110,16 @@ module-str = UBLOX GNSS task
 source "subsys/logging/Kconfig.template.log_config"
 
 endif # TASK_RUNNER_TASK_GNSS_UBX
+
+config TASK_RUNNER_TASK_ALG_STATIONARY_WINDOWED
+	bool "Stationary device detection task"
+	depends on INFUSE_APPLICATION_STATES
+	depends on INFUSE_ZBUS_CHAN_IMU_ACC_MAG
+
+if TASK_RUNNER_TASK_ALG_STATIONARY_WINDOWED
+
+module = TASK_ALG_STATIONARY
+module-str = ALG STATIONARY
+source "subsys/logging/Kconfig.template.log_config"
+
+endif # TASK_RUNNER_TASK_ALG_STATIONARY_WINDOWED

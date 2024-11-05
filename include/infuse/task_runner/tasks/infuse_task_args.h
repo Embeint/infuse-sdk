@@ -10,6 +10,7 @@
 #ifndef INFUSE_SDK_INCLUDE_INFUSE_TASK_RUNNER_TASKS_INFUSE_TASK_ARGS_H_
 #define INFUSE_SDK_INCLUDE_INFUSE_TASK_RUNNER_TASKS_INFUSE_TASK_ARGS_H_
 
+#include <infuse/task_runner/tasks/alg_stationary_windowed_args.h>
 #include <infuse/task_runner/tasks/battery_args.h>
 #include <infuse/task_runner/tasks/environmental_args.h>
 #include <infuse/task_runner/tasks/gnss_args.h>
@@ -27,6 +28,7 @@ extern "C" {
  */
 
 union infuse_task_arguments {
+	struct task_alg_stationary_windowed_args alg_stationary_windowed;
 	struct task_tdf_logger_args tdf_logger;
 	struct task_imu_args imu;
 	struct task_battery_args battery;

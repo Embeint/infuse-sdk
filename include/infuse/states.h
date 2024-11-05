@@ -38,6 +38,8 @@ enum infuse_state {
 	INFUSE_STATE_APPLICATION_ACTIVE = 2,
 	/* Application has a valid time source */
 	INFUSE_STATE_TIME_KNOWN = 3,
+	/* Device is stationary (not moving) */
+	INFUSE_STATE_DEVICE_STATIONARY = 4,
 	/* Start of application-specific state range */
 	INFUSE_STATES_APP_START = 128,
 	INFUSE_STATES_END = UINT8_MAX
