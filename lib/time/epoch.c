@@ -7,6 +7,7 @@
  */
 
 #include <zephyr/sys/timeutil.h>
+#include <zephyr/sys/__assert.h>
 #include <zephyr/logging/log.h>
 
 #include <infuse/time/epoch.h>
@@ -112,32 +113,32 @@ int epoch_time_set_reference(enum epoch_time_source source, struct timeutil_sync
 		return -EINVAL;
 	}
 
+	/* Function only fails if `skew` is <= 0.0f */
 	rc = timeutil_sync_state_set_skew(&infuse_sync_state, 1.0f, reference);
-	if (rc == 0) {
-		infuse_time_source = source;
+	__ASSERT_NO_MSG(rc == 0);
+	infuse_time_source = source;
 
 #ifdef CONFIG_INFUSE_APPLICATION_STATES
-		if (epoch_time_trusted_source(source, true)) {
-			/* Time is known from a trusted source */
-			infuse_state_set(INFUSE_STATE_TIME_KNOWN);
-		}
+	if (epoch_time_trusted_source(source, true)) {
+		/* Time is known from a trusted source */
+		infuse_state_set(INFUSE_STATE_TIME_KNOWN);
+	}
 #endif /* CONFIG_INFUSE_APPLICATION_STATES */
 
-		/* Notify interested parties of reference instant change */
-		SYS_SLIST_FOR_EACH_CONTAINER(&cb_list, cb, node) {
-			if (cb->reference_time_updated) {
-				cb->reference_time_updated(source, prev, *reference, cb->user_ctx);
-			}
+	/* Notify interested parties of reference instant change */
+	SYS_SLIST_FOR_EACH_CONTAINER(&cb_list, cb, node) {
+		if (cb->reference_time_updated) {
+			cb->reference_time_updated(source, prev, *reference, cb->user_ctx);
 		}
-#ifdef CONFIG_INFUSE_EPOCH_TIME_PRINT_ON_SYNC
-		uint64_t now = epoch_time_now();
-		struct tm c;
-
-		epoch_time_unix_calendar(now, &c);
-		LOG_INF("Now: %d-%02d-%02dT%02d:%02d:%02d.%03d UTC", 1900 + c.tm_year, 1 + c.tm_mon,
-			c.tm_mday, c.tm_hour, c.tm_min, c.tm_sec, epoch_time_milliseconds(now));
-#endif /* CONFIG_INFUSE_EPOCH_TIME_PRINT_ON_SYNC */
 	}
+#ifdef CONFIG_INFUSE_EPOCH_TIME_PRINT_ON_SYNC
+	uint64_t now = epoch_time_now();
+	struct tm c;
+
+	epoch_time_unix_calendar(now, &c);
+	LOG_INF("Now: %d-%02d-%02dT%02d:%02d:%02d.%03d UTC", 1900 + c.tm_year, 1 + c.tm_mon,
+		c.tm_mday, c.tm_hour, c.tm_min, c.tm_sec, epoch_time_milliseconds(now));
+#endif /* CONFIG_INFUSE_EPOCH_TIME_PRINT_ON_SYNC */
 	return rc;
 }
 
