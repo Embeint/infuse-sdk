@@ -16,6 +16,7 @@
 #include <infuse/data_logger/logger.h>
 #include <infuse/data_logger/high_level/tdf.h>
 #include <infuse/drivers/imu.h>
+#include <infuse/drivers/imu/emul.h>
 #include <infuse/tdf/tdf.h>
 #include <infuse/zbus/channels.h>
 
@@ -23,8 +24,9 @@
 #include <infuse/task_runner/runner.h>
 #include <infuse/task_runner/tasks/imu.h>
 
-IMU_TASK(1, 0, DEVICE_DT_GET_ONE(embeint_imu_emul));
-struct task_config config = IMU_TASK(0, 1, DEVICE_DT_GET_ONE(embeint_imu_emul));
+#define DEV DEVICE_DT_GET_ONE(embeint_imu_emul)
+IMU_TASK(1, 0, DEV);
+struct task_config config = IMU_TASK(0, 1, DEV);
 struct task_data data;
 struct task_schedule schedule = {.task_id = TASK_ID_IMU};
 struct task_schedule_state state;
@@ -33,10 +35,11 @@ static K_SEM_DEFINE(imu_published, 0, 1);
 
 void imu_new_data_cb(const struct zbus_channel *chan);
 
-INFUSE_ZBUS_CHAN_DECLARE(INFUSE_ZBUS_CHAN_IMU);
+INFUSE_ZBUS_CHAN_DECLARE(INFUSE_ZBUS_CHAN_IMU, INFUSE_ZBUS_CHAN_IMU_ACC_MAG);
 ZBUS_LISTENER_DEFINE(imu_listener, imu_new_data_cb);
 ZBUS_CHAN_ADD_OBS(INFUSE_ZBUS_NAME(INFUSE_ZBUS_CHAN_IMU), imu_listener, 5);
-#define ZBUS_CHAN INFUSE_ZBUS_CHAN_GET(INFUSE_ZBUS_CHAN_IMU)
+#define ZBUS_CHAN     INFUSE_ZBUS_CHAN_GET(INFUSE_ZBUS_CHAN_IMU)
+#define ZBUS_MAG_CHAN INFUSE_ZBUS_CHAN_GET(INFUSE_ZBUS_CHAN_IMU_ACC_MAG)
 
 void imu_new_data_cb(const struct zbus_channel *chan)
 {
@@ -114,7 +117,9 @@ static void test_imu(uint8_t range, uint16_t rate, uint16_t num_samples, uint8_t
 		     bool log)
 {
 	struct k_fifo *tx_queue = epacket_dummmy_transmit_fifo_get();
+	const struct imu_magnitude_array *magnitudes;
 	const struct imu_sample_array *samples;
+	uint16_t one_g;
 	k_tid_t thread;
 
 	schedule.task_args.infuse.imu = (struct task_imu_args){
@@ -140,7 +145,7 @@ static void test_imu(uint8_t range, uint16_t rate, uint16_t num_samples, uint8_t
 		/* Wait for emulated data */
 		zassert_equal(0, k_sem_take(&imu_published, K_SECONDS(1)));
 
-		/* Check published data */
+		/* Check published IMU data */
 		zassert_equal(0, zbus_chan_claim(ZBUS_CHAN, K_MSEC(1)));
 		samples = ZBUS_CHAN->message;
 		zassert_equal(range, samples->accelerometer.full_scale_range);
@@ -149,6 +154,18 @@ static void test_imu(uint8_t range, uint16_t rate, uint16_t num_samples, uint8_t
 		zassert_equal(0, samples->magnetometer.num);
 		zassert_equal(0, samples->accelerometer.offset);
 		zbus_chan_finish(ZBUS_CHAN);
+
+		/* Check published accelerometer magnitude data */
+		zassert_equal(0, zbus_chan_claim(ZBUS_MAG_CHAN, K_MSEC(1)));
+		magnitudes = ZBUS_MAG_CHAN->message;
+		one_g = imu_accelerometer_1g(range);
+		zassert_equal(range, magnitudes->meta.full_scale_range);
+		zassert_equal(num_samples, magnitudes->meta.num);
+		/* Within 5% (variance is due to the injected noise) */
+		for (int i = 0; i < magnitudes->meta.num; i++) {
+			zassert_within(magnitudes->magnitudes[i], one_g, one_g / 20);
+		}
+		zbus_chan_finish(ZBUS_MAG_CHAN);
 
 		/* No data being pushed */
 		tdf_data_logger_flush(TDF_DATA_LOGGER_SERIAL);
@@ -165,15 +182,21 @@ static void test_imu(uint8_t range, uint16_t rate, uint16_t num_samples, uint8_t
 
 ZTEST(task_imu, test_no_log)
 {
+	imu_emul_accelerometer_data_configure(DEV, 1.0f, 0.0f, 0.0f, 0);
 	test_imu(4, 50, 25, 5, false);
+	imu_emul_accelerometer_data_configure(DEV, 0.0f, 1.0f, 0.0f, 10);
 	test_imu(2, 25, 20, 5, false);
+	imu_emul_accelerometer_data_configure(DEV, 0.0f, 0.0f, 1.0f, 100);
 	test_imu(8, 30, 15, 5, false);
 }
 
 ZTEST(task_imu, test_log)
 {
+	imu_emul_accelerometer_data_configure(DEV, 1.0f, 0.0f, 0.0f, 0);
 	test_imu(4, 50, 25, 5, true);
+	imu_emul_accelerometer_data_configure(DEV, 0.707f, 0.707f, 0.0f, 15);
 	test_imu(2, 25, 20, 5, true);
+	imu_emul_accelerometer_data_configure(DEV, 0.0f, 0.707f, -0.707f, 33);
 	test_imu(8, 30, 15, 5, true);
 }
 
