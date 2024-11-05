@@ -3,4 +3,7 @@
 config INFUSE_LEGACY_ADV
 	bool "Start legacy advertiser"
 
+config CONN_TERMINATOR
+	bool "Terminate connections after creation"
+
 source "Kconfig.zephyr"
