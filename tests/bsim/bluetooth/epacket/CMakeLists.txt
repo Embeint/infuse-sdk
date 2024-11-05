@@ -10,7 +10,11 @@ target_sources(app PRIVATE
     src/common.c
 )
 
-if(CONFIG_BT_CENTRAL)
+if(CONFIG_INFUSE_LEGACY_ADV)
+    target_sources(app PRIVATE
+        src/legacy_adv.c
+    )
+elseif(CONFIG_BT_CENTRAL)
     target_sources(app PRIVATE
         src/gateway.c
     )

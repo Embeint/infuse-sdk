@@ -1,0 +1,6 @@
+# Test options
+
+config INFUSE_LEGACY_ADV
+	bool "Start legacy advertiser"
+
+source "Kconfig.zephyr"

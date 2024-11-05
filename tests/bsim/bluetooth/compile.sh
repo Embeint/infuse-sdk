@@ -15,6 +15,7 @@ source ${ZEPHYR_BASE}/tests/bsim/compile.source
 APP_EPACKET=tests/bsim/bluetooth/epacket
 APP_GATT=tests/bsim/bluetooth/gatt
 
+app_root=$INFUSE_BASE app=$APP_EPACKET conf_file=prj_legacy_adv.conf snippet=infuse compile
 app_root=$INFUSE_BASE app=$APP_EPACKET conf_file=prj_device.conf snippet=infuse compile
 app_root=$INFUSE_BASE app=$APP_EPACKET conf_file=prj_gateway.conf snippet=infuse compile
 app_root=$INFUSE_BASE app=$APP_GATT snippet=infuse compile
