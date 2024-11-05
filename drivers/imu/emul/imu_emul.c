@@ -84,7 +84,7 @@ int emul_data_read(const struct device *dev, struct imu_sample_array *samples, u
 	struct emul_data *data = dev->data;
 	int16_t one_g = imu_accelerometer_1g(data->full_scale_range);
 	uint16_t num = MIN(data->num_samples, max_samples);
-	uint32_t buffer_period = ((num - 1) * data->sample_period_us);
+	uint32_t buffer_period = k_us_to_ticks_near32((num - 1) * data->sample_period_us);
 
 	samples->accelerometer.timestamp_ticks = data->timer_expiry - buffer_period;
 	samples->accelerometer.num = num;
