@@ -409,6 +409,70 @@ static void main_connect_discover_nonexistant(void)
 	PASS("Connect discover nonexistant passed\n\n");
 }
 
+static void main_connect_terminator(void)
+{
+	const struct bt_uuid_16 device_name_uuid = BT_UUID_INIT_16(BT_UUID_GAP_DEVICE_NAME_VAL);
+	struct k_poll_signal sig;
+	struct bt_gatt_remote_char characteristics[1] = {0};
+	struct bt_conn_auto_setup_params conn_params = {
+		.conn_params = BT_LE_CONN_PARAM_INIT(0x10, 0x15, 0, 400),
+		.create_timeout_ms = 2000,
+		.conn_setup_cb = conn_setup_cb,
+		.conn_terminated_cb = NULL,
+		.discovery =
+			{
+				.characteristics = characteristics,
+				.num_characteristics = ARRAY_SIZE(characteristics),
+			},
+		.user_data = &sig,
+	};
+	struct k_poll_event events[] = {
+		K_POLL_EVENT_INITIALIZER(K_POLL_TYPE_SIGNAL, K_POLL_MODE_NOTIFY_ONLY, &sig),
+	};
+	unsigned int signaled;
+	struct bt_conn *conn;
+	bt_addr_le_t addr;
+	int conn_rc;
+	int rc;
+
+	common_init();
+	k_poll_signal_init(&sig);
+	if (observe_peer(&addr) < 0) {
+		FAIL("Failed to observe peer\n");
+		return;
+	}
+
+	characteristics[0].uuid = (struct bt_uuid *)&device_name_uuid;
+
+	/* Loop until the connection succeeds */
+	do {
+		k_poll_signal_reset(&sig);
+		events[0].state = K_POLL_STATE_NOT_READY;
+
+		/* Initiate connection */
+		rc = bt_conn_le_auto_setup(&addr, &conn, &conn_params);
+		if (rc < 0) {
+			FAIL("Failed to initiate connection\n");
+			return;
+		}
+
+		/* Wait for connection process to complete */
+		rc = k_poll(events, ARRAY_SIZE(events), K_SECONDS(3));
+		k_poll_signal_check(&sig, &signaled, &conn_rc);
+		if (signaled != 1) {
+			FAIL("Result not signaled\n");
+			return;
+		}
+		if (conn_rc == 0) {
+			bt_conn_disconnect(conn, BT_HCI_ERR_REMOTE_USER_TERM_CONN);
+		}
+		bt_conn_unref(conn);
+		k_sleep(K_MSEC(250));
+	} while (conn_rc != 0);
+
+	PASS("Connect terminator passed\n\n");
+}
+
 static const struct bst_test_instance gatt_gateway[] = {
 	{
 		.test_id = "gatt_connect_nonexistant",
@@ -444,6 +508,13 @@ static const struct bst_test_instance gatt_gateway[] = {
 		.test_pre_init_f = test_init,
 		.test_tick_f = test_tick,
 		.test_main_f = main_connect_discover_nonexistant,
+	},
+	{
+		.test_id = "gatt_connect_terminator",
+		.test_descr = "Connect to device that keeps disconnecting",
+		.test_pre_init_f = test_init,
+		.test_tick_f = test_tick,
+		.test_main_f = main_connect_terminator,
 	},
 	BSTEST_END_MARKER};
 

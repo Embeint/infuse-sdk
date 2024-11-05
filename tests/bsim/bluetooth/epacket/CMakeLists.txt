@@ -14,6 +14,10 @@ if(CONFIG_INFUSE_LEGACY_ADV)
     target_sources(app PRIVATE
         src/legacy_adv.c
     )
+elseif(CONFIG_CONN_TERMINATOR)
+    target_sources(app PRIVATE
+        src/terminator.c
+    )
 elseif(CONFIG_BT_CENTRAL)
     target_sources(app PRIVATE
         src/gateway.c
