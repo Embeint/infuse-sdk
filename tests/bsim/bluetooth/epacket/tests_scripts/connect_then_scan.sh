@@ -4,7 +4,7 @@
 
 source ${ZEPHYR_BASE}/tests/bsim/sh_common.source
 
-simulation_id="gateway_connect_then_scan"
+simulation_id="epacket_connect_then_scan"
 verbosity_level=2
 
 cd ${BSIM_OUT_PATH}/bin
