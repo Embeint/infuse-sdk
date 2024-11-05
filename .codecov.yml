@@ -23,3 +23,8 @@ parsers:
 comment:
   behavior: default
   require_changes: no
+
+ignore:
+  # These libraries are external imports and should not count towards coverage stats
+  - "lib/crypto/ascon"
+  - "lib/crypto/XKCP"
