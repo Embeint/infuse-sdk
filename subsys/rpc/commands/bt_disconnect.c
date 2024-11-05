@@ -12,6 +12,7 @@
 #include <zephyr/logging/log.h>
 #include <zephyr/net/net_if.h>
 
+#include <infuse/bluetooth/gatt.h>
 #include <infuse/rpc/types.h>
 
 #include "../server.h"
@@ -35,8 +36,8 @@ struct net_buf *rpc_command_bt_disconnect(struct net_buf *request)
 		goto end;
 	}
 
-	/* Request the disconnection */
-	rc = bt_conn_disconnect(conn, BT_HCI_ERR_REMOTE_USER_TERM_CONN);
+	/* Disconnect from the remote */
+	rc = bt_conn_disconnect_sync(conn);
 
 	/* Unreference the connection object claimed in bt_conn_lookup_addr_le */
 	bt_conn_unref(conn);
