@@ -336,11 +336,8 @@ static void connected(struct bt_conn *conn, uint8_t err)
 	/* Only handle connections initiated through bt_conn_le_auto_setup */
 	if (s->params != NULL) {
 		rc = bt_conn_get_info(conn, &info);
-		if (rc < 0) {
-			LOG_ERR("Failed to get connection info");
-			connection_error(conn, rc);
-			return;
-		}
+		/* This can only possibly fail if the connection type is not BT_CONN_TYPE_LE */
+		__ASSERT_NO_MSG(rc == 0);
 		if (info.role == BT_CONN_ROLE_CENTRAL) {
 			central_conn_setup(conn);
 		}
