@@ -12,6 +12,7 @@
 #include <zephyr/bluetooth/hci.h>
 #include <zephyr/logging/log.h>
 #include <zephyr/sys/byteorder.h>
+#include <zephyr/sys/slist.h>
 
 #include <infuse/bluetooth/gatt.h>
 #include <infuse/task_runner/runner.h>
@@ -25,6 +26,13 @@ static struct bt_gatt_state {
 	struct bt_conn_auto_setup_params *params;
 #endif /* CONFIG_BT_GATT_CLIENT */
 } state[CONFIG_BT_MAX_CONN];
+
+struct bt_disconnect_node {
+	sys_snode_t node;
+	struct bt_conn *conn;
+	struct k_sem sem;
+};
+static sys_slist_t disconnect_list;
 
 LOG_MODULE_REGISTER(infuse_gatt, LOG_LEVEL_INF);
 
@@ -372,6 +380,38 @@ static void disconnected(struct bt_conn *conn, uint8_t reason)
 #endif /* CONFIG_BT_GATT_CLIENT */
 
 	LOG_INF("Disconnected from %s (reason 0x%02X)", bt_addr_le_str(dst), reason);
+
+	struct bt_disconnect_node *node, *nodes;
+
+	SYS_SLIST_FOR_EACH_CONTAINER_SAFE(&disconnect_list, node, nodes, node) {
+		if (conn == node->conn) {
+			k_sem_give(&node->sem);
+		}
+	}
+}
+
+int bt_conn_disconnect_sync(struct bt_conn *conn)
+{
+	struct bt_disconnect_node node = {
+		.conn = conn,
+	};
+	int rc;
+
+	/* Initialise node for list */
+	k_sem_init(&node.sem, 0, 1);
+	sys_slist_append(&disconnect_list, &node.node);
+
+	/* Trigger the disconnection */
+	rc = bt_conn_disconnect(conn, BT_HCI_ERR_REMOTE_USER_TERM_CONN);
+	if (rc < 0) {
+		goto end;
+	}
+
+	/* Wait for the connection to terminate */
+	rc = k_sem_take(&node.sem, K_SECONDS(5));
+end:
+	sys_slist_find_and_remove(&disconnect_list, &node.node);
+	return rc;
 }
 
 #ifdef CONFIG_BT_CONN_AUTO_RSSI

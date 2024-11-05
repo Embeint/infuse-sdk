@@ -85,6 +85,16 @@ int bt_conn_le_auto_setup(const bt_addr_le_t *addr, struct bt_conn **conn,
 			  struct bt_conn_auto_setup_params *params);
 
 /**
+ * @brief Trigger a disconnection and wait for it to complete
+ *
+ * @param conn Connection object to disconnect
+ *
+ * @retval 0 on success
+ * @retval -errno Error code @a bt_conn_disconnect
+ */
+int bt_conn_disconnect_sync(struct bt_conn *conn);
+
+/**
  * @brief Get last measured RSSI on a connection
  *
  * @param conn Bluetooth connection to query
