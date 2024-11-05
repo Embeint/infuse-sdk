@@ -285,6 +285,55 @@ ZTEST(task_runner_runner, test_basic_behaviour)
 	zassert_equal(2, example_task_run_cnt);
 }
 
+ZTEST(task_runner_runner, test_permanent)
+{
+	INFUSE_STATES_ARRAY(app_states) = {0};
+	struct task_schedule schedules[] = {
+		{
+			.task_id = TASK_ID_SLEEPY,
+			.validity = TASK_VALID_PERMANENTLY_RUNS,
+			/* Scheduling arguments will be ignored */
+			.periodicity_type = TASK_PERIODICITY_FIXED,
+			.periodicity.fixed.period_s = 5,
+			.timeout_s = 4,
+			/* */
+			.task_args.raw = {0xA5},
+		},
+	};
+	struct task_schedule_state states[ARRAY_SIZE(schedules)];
+	uint32_t gps_time = 7000;
+	uint32_t uptime = 0;
+	uint32_t iter = k_uptime_seconds() + 1;
+
+	example_task_block_timeout = K_FOREVER;
+	example_task_expected_block_rc = 1;
+	example_task_expected_arg = schedules[0].task_args.raw[0];
+
+	task_runner_init(schedules, states, ARRAY_SIZE(schedules), app_tasks, app_tasks_data,
+			 ARRAY_SIZE(app_tasks));
+
+	/* Scheduling arguments ignore, always running */
+	for (int i = 0; i < 30; i++) {
+		task_runner_iterate(app_states, uptime++, gps_time++, 100);
+		k_sleep(K_TIMEOUT_ABS_MS(iter * MSEC_PER_SEC));
+		iter++;
+	}
+	zassert_equal(1, example_task_run_cnt);
+
+	/* Manually kill the task */
+	k_poll_signal_raise(&app_tasks_data[0].terminate_signal, 0);
+	k_sleep(K_MSEC(10));
+
+	/* Should be immediately restarted */
+	task_runner_iterate(app_states, uptime++, gps_time++, 100);
+	k_sleep(K_MSEC(10));
+	zassert_equal(2, example_task_run_cnt);
+
+	/* Terminate again to cleanup the test */
+	k_poll_signal_raise(&app_tasks_data[0].terminate_signal, 0);
+	k_sleep(K_MSEC(10));
+}
+
 ZTEST(task_runner_runner, test_multi_schedule)
 {
 	INFUSE_STATES_ARRAY(app_states) = {0};
