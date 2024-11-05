@@ -115,6 +115,14 @@ const struct task_schedule *task_schedule_from_data(struct task_data *data)
 
 void task_workqueue_reschedule(struct task_data *task, k_timeout_t delay)
 {
+	unsigned int signaled;
+	int rc;
+
+	/* Override delay if task requested to terminate */
+	k_poll_signal_check(&task->terminate_signal, &signaled, &rc);
+	if (signaled == 1) {
+		delay = K_NO_WAIT;
+	}
 	/* Increment reschedule count */
 	task->executor.workqueue.reschedule_counter += 1;
 	/* Reschedule on queue */
