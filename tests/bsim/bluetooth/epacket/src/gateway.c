@@ -103,7 +103,7 @@ static void main_gateway_connect(void)
 {
 	const struct bt_le_conn_param params = BT_LE_CONN_PARAM_INIT(0x10, 0x15, 0, 400);
 	struct epacket_read_response security_info;
-	struct bt_conn *conn;
+	struct bt_conn *conn, *conn2;
 	bt_addr_le_t addr;
 	int8_t rssi;
 	int rc;
@@ -118,10 +118,20 @@ static void main_gateway_connect(void)
 		/* Initiate connection */
 		rc = epacket_bt_gatt_connect(&addr, &params, 3000, &conn, &security_info, i % 2,
 					     i % 2);
-		if (rc < 0) {
+		if (rc != 0) {
 			FAIL("Failed to connect to peer\n");
 			return;
 		}
+
+		/* Same connection again should pass with RC == 1 */
+		rc = epacket_bt_gatt_connect(&addr, &params, 3000, &conn2, &security_info, i % 2,
+					     i % 2);
+		if (rc != 1) {
+			FAIL("Failed to detect existing connection");
+			return;
+		}
+		bt_conn_unref(conn2);
+
 		/* Wait a little while */
 		k_sleep(K_MSEC(200));
 		/* Check the connection rssi */
