@@ -75,7 +75,7 @@ int rpc_common_file_actions_start(struct rpc_common_file_actions_ctx *ctx,
 				}
 			}
 			/* Erase space for image */
-			rc = infuse_dfu_image_erase(fa, length);
+			rc = infuse_dfu_image_erase(fa, length, true);
 			/* Close flash area */
 			(void)flash_area_close(fa);
 		}

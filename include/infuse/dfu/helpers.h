@@ -11,6 +11,7 @@
 #define INFUSE_SDK_INCLUDE_INFUSE_DFU_HELPERS_H_
 
 #include <stdlib.h>
+#include <stdbool.h>
 
 #include <zephyr/storage/flash_map.h>
 
@@ -27,11 +28,13 @@ extern "C" {
  * @brief Erase a flash area to be ready for a new image
  *
  * @param fa Flash area to erase (must be already opened)
+ * @param image_len Length of image
+ * @param mcuboot_trailer Erase space for MCUBoot trailer
  *
  * @retval 0 On success
  * @retval -errno Error code from @ref flash_area_erase on failure
  */
-int infuse_dfu_image_erase(const struct flash_area *fa, size_t image_len);
+int infuse_dfu_image_erase(const struct flash_area *fa, size_t image_len, bool mcuboot_trailer);
 
 /**
  * @brief Prepare the nRF91 modem for a delta image upgrade
