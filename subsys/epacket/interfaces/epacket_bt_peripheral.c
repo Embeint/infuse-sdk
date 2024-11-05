@@ -270,7 +270,10 @@ static uint16_t epacket_bt_peripheral_max_packet(const struct device *dev)
 {
 	struct epacket_bt_peripheral_data *data = dev->data;
 
-	return data->last_notification;
+	if (data->last_notification == 0) {
+		return 0;
+	}
+	return PACKET_OVERHEAD + data->last_notification;
 }
 
 static int epacket_bt_peripheral_init(const struct device *dev)
