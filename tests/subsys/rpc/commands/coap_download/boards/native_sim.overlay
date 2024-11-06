@@ -7,3 +7,12 @@
 		compatible = "embeint,epacket-dummy";
 	};
 };
+
+&flash0 {
+	partitions {
+		file_partition: partition@100000 {
+			label = "file";
+			reg = < 0x100000 0x4000 >;
+		};
+	};
+};
