@@ -39,12 +39,10 @@ LOG_MODULE_DECLARE(rpc_server);
 int rpc_common_file_actions_start(struct rpc_common_file_actions_ctx *ctx,
 				  enum rpc_enum_file_action action, uint32_t length, uint32_t crc)
 {
-	const struct flash_area *fa;
 	uint32_t current_crc;
 	int rc = 0;
 
 	ARG_UNUSED(current_crc);
-	ARG_UNUSED(fa);
 
 	ctx->action = action;
 	ctx->received = 0;
@@ -56,18 +54,11 @@ int rpc_common_file_actions_start(struct rpc_common_file_actions_ctx *ctx,
 #ifdef CONFIG_INFUSE_DFU_HELPERS
 #if FIXED_PARTITION_EXISTS(slot1_partition)
 	case RPC_ENUM_FILE_ACTION_APP_IMG:
-		/* Setup flash streamer */
-		rc = stream_flash_init(&ctx->stream, FIXED_PARTITION_DEVICE(slot1_partition),
-				       working_mem, sizeof(working_mem),
-				       FIXED_PARTITION_OFFSET(slot1_partition),
-				       FIXED_PARTITION_SIZE(slot1_partition), NULL);
-		/* Should only fail on invalid parameters */
-		__ASSERT_NO_MSG(rc == 0);
 		/* Check if file contents already match */
-		rc = flash_area_open(FIXED_PARTITION_ID(slot1_partition), &fa);
+		rc = flash_area_open(FIXED_PARTITION_ID(slot1_partition), &ctx->fa);
 		if (rc == 0) {
 			if (crc != UINT32_MAX) {
-				rc = flash_area_crc32(fa, 0, length, &current_crc, working_mem,
+				rc = flash_area_crc32(ctx->fa, 0, length, &current_crc, working_mem,
 						      sizeof(working_mem));
 				if (current_crc == crc) {
 					ctx->crc = crc;
@@ -75,9 +66,11 @@ int rpc_common_file_actions_start(struct rpc_common_file_actions_ctx *ctx,
 				}
 			}
 			/* Erase space for image */
-			rc = infuse_dfu_image_erase(fa, length, true);
-			/* Close flash area */
-			(void)flash_area_close(fa);
+			rc = infuse_dfu_image_erase(ctx->fa, length, true);
+			if (rc != 0) {
+				/* Close flash area */
+				(void)flash_area_close(ctx->fa);
+			}
 		}
 		break;
 #endif /* FIXED_PARTITION_EXISTS(slot1_partition) */
@@ -113,7 +106,7 @@ int rpc_common_file_actions_write(struct rpc_common_file_actions_ctx *ctx, uint3
 #ifdef CONFIG_INFUSE_DFU_HELPERS
 #if FIXED_PARTITION_EXISTS(slot1_partition)
 	case RPC_ENUM_FILE_ACTION_APP_IMG:
-		rc = stream_flash_buffered_write(&ctx->stream, data, data_len, false);
+		rc = flash_area_write(ctx->fa, offset, data, data_len);
 		break;
 #endif /* FIXED_PARTITION_EXISTS(slot1_partition) */
 #endif /* CONFIG_INFUSE_DFU_HELPERS */
@@ -148,17 +141,15 @@ int rpc_common_file_actions_finish(struct rpc_common_file_actions_ctx *ctx, uint
 #ifdef CONFIG_INFUSE_DFU_HELPERS
 #if FIXED_PARTITION_EXISTS(slot1_partition)
 	case RPC_ENUM_FILE_ACTION_APP_IMG:
-		/* Flush operations */
-		rc = stream_flash_buffered_write(&ctx->stream, NULL, 0, true);
-		if (rc == 0) {
+		/* Close the flash area */
+		flash_area_close(ctx->fa);
 #ifdef CONFIG_MCUBOOT_IMG_MANAGER
-			if (boot_request_upgrade_multi(0, BOOT_UPGRADE_TEST) == 0) {
-				reboot = true;
-			}
-#else
-			LOG_WRN("Cannot request application upgrade");
-#endif /* CONFIG_MCUBOOT_IMG_MANAGER */
+		if (boot_request_upgrade_multi(0, BOOT_UPGRADE_TEST) == 0) {
+			reboot = true;
 		}
+#else
+		LOG_WRN("Cannot request application upgrade");
+#endif /* CONFIG_MCUBOOT_IMG_MANAGER */
 		break;
 #endif /* FIXED_PARTITION_EXISTS(slot1_partition) */
 #endif /* CONFIG_INFUSE_DFU_HELPERS */
@@ -205,6 +196,14 @@ int rpc_common_file_actions_error_cleanup(struct rpc_common_file_actions_ctx *ct
 	int rc = 0;
 
 	switch (ctx->action) {
+#ifdef CONFIG_INFUSE_DFU_HELPERS
+#if FIXED_PARTITION_EXISTS(slot1_partition)
+	case RPC_ENUM_FILE_ACTION_APP_IMG:
+		/* Close the flash area */
+		flash_area_close(ctx->fa);
+		break;
+#endif /* FIXED_PARTITION_EXISTS(slot1_partition) */
+#endif /* CONFIG_INFUSE_DFU_HELPERS */
 #ifdef CONFIG_BT_CONTROLLER_MANAGER
 	case RPC_ENUM_FILE_ACTION_BT_CTLR_IMG:
 		/* Finalise the write */

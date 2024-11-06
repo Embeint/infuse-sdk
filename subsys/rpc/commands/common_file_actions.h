@@ -9,13 +9,13 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
-#include <zephyr/storage/stream_flash.h>
+#include <zephyr/storage/flash_map.h>
 
 #include <infuse/rpc/types.h>
 
 struct rpc_common_file_actions_ctx {
 	union {
-		struct stream_flash_ctx stream;
+		const struct flash_area *fa;
 		uint32_t client_ctx;
 	};
 	enum rpc_enum_file_action action;
