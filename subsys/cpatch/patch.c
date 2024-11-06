@@ -6,27 +6,11 @@
  * SPDX-License-Identifier: LicenseRef-Embeint
  */
 
-#include <zephyr/toolchain.h>
 #include <zephyr/sys/byteorder.h>
 #include <zephyr/sys/crc.h>
 #include <zephyr/logging/log.h>
 
 #include <infuse/cpatch/patch.h>
-
-struct array_validation {
-	uint32_t length;
-	uint32_t crc;
-} __packed;
-
-struct patch_header {
-	uint32_t magic_value;
-	uint8_t version_major;
-	uint8_t version_minor;
-	struct array_validation input_file;
-	struct array_validation output_file;
-	struct array_validation patch_file;
-	uint32_t header_crc;
-} __packed;
 
 enum patch_opcode {
 	COPY_LEN_U4 = 0 << 4,
@@ -62,7 +46,6 @@ struct patch_state {
 	uint8_t buffer[64];
 };
 
-#define CPATCH_MAGIC_NUMBER  0xBA854092
 #define CPATCH_MAJOR_VERSION 1
 
 static uint32_t progress_crc;
@@ -73,7 +56,7 @@ static int binary_patch_read(struct patch_state *state, uint8_t *ptr, size_t len
 {
 	int rc;
 
-	rc = flash_area_read(state->patch, sizeof(struct patch_header) + state->patch_offset, ptr,
+	rc = flash_area_read(state->patch, sizeof(struct cpatch_header) + state->patch_offset, ptr,
 			     len);
 
 	state->patch_offset += len;
@@ -274,7 +257,7 @@ int cpatch_patch_file(const struct flash_area *input, const struct flash_area *p
 		      struct stream_flash_ctx *output)
 {
 	struct patch_state state = {0};
-	struct patch_header header;
+	struct cpatch_header header;
 	uint32_t crc;
 	int rc;
 
@@ -307,7 +290,7 @@ int cpatch_patch_file(const struct flash_area *input, const struct flash_area *p
 	}
 
 	/* Validate patch data */
-	rc = flash_area_crc32(patch, sizeof(struct patch_header), header.patch_file.length, &crc,
+	rc = flash_area_crc32(patch, sizeof(struct cpatch_header), header.patch_file.length, &crc,
 			      state.buffer, sizeof(state.buffer));
 	if (rc < 0) {
 		return rc;
