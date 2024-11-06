@@ -361,6 +361,7 @@ class infuse_release(WestCommand):
         else:
             output_dir = pathlib.Path(f"{app_name}-{board_normalised}-{version}")
         output_dir.mkdir(parents=True, exist_ok=True)
+        merged_hex = f"{output_dir.name}.hex"
 
         with (output_dir / "build_log.txt").open("w") as f:
             f.write(self.build_log)
@@ -370,16 +371,44 @@ class infuse_release(WestCommand):
             with domains_file.open("r", encoding="utf-8") as f:
                 domains_info = yaml.safe_load(f)
 
-            # Export each domain
+            # Export each domain, and build list of hex files to merge
+            merge_files = []
             for domain in domains_info["domains"]:
+                d = pathlib.Path(domain["build_dir"])
+                signed = d / "zephyr" / "zephyr.signed.hex"
+                unsigned = d / "zephyr" / "zephyr.hex"
+                if signed.exists():
+                    merge_files.append(signed)
+                else:
+                    merge_files.append(unsigned)
+
                 self.export_folder(
                     output_dir / domain["name"], self.build_dir / domain["name"]
                 )
 
             self.export_file(output_dir, self.build_dir, "domains.yaml")
             self.export_file(output_dir, self.build_dir, "CMakeCache.txt")
+
+            # Merge hex files into the output directory
+            cache = zcmake.CMakeCache.from_build_dir(self.build_dir)
+            zephyr_base = cache["ZEPHYR_BASE"]
+            merge_cmd = [
+                "python3",
+                zephyr_base + "/scripts/build/mergehex.py",
+                "-o",
+                str(output_dir / merged_hex),
+            ]
+            merge_cmd += [str(f) for f in merge_files]
+            subprocess.run(merge_cmd, check=True)
+            primary_dir = app_name
         else:
             self.export_folder(output_dir / app_name, self.build_dir)
+            # Copy TF-M complete file to root
+            shutil.copy(
+                output_dir / app_name / "zephyr" / "tfm_merged.hex",
+                output_dir / merged_hex,
+            )
+            primary_dir = "zephyr"
 
         # Create manifest file
         manifest = {
@@ -388,6 +417,10 @@ class infuse_release(WestCommand):
                 "version": version,
                 "board": build_configs["CONFIG_BOARD_TARGET"],
                 "soc": build_configs["CONFIG_SOC"],
+                "sysbuild": self.sysbuild,
+                "TF-M": self.tfm_build,
+                "hex": merged_hex,
+                "primary": primary_dir,
             },
             "features": {
                 "bluetooth": "CONFIG_BT" in build_configs,
@@ -415,5 +448,5 @@ class infuse_release(WestCommand):
                 network = yaml.safe_load(f)
                 manifest["application"]["network_id"] = network["id"]
 
-        with (output_dir / "manifest.yml").open("w") as f:
+        with (output_dir / "manifest.yaml").open("w") as f:
             yaml.dump(manifest, f)
