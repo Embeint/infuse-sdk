@@ -312,9 +312,16 @@ ZTEST(rpc_command_file_write_basic, test_file_write_dfu)
 #if FIXED_PARTITION_EXISTS(slot1_partition)
 	struct test_out ret;
 
+	/* Size aligned data payload */
 	ret = test_file_write_basic(RPC_ENUM_FILE_ACTION_APP_IMG, 16000, 0, 0, 0, 0, false, false);
 	zassert_equal(0, ret.cmd_rc);
 	zassert_equal(16000, ret.cmd_len);
+	zassert_equal(ret.written_crc, ret.cmd_crc);
+	validate_flash_area(&ret);
+	/* Data payload with odd length */
+	ret = test_file_write_basic(RPC_ENUM_FILE_ACTION_APP_IMG, 16001, 0, 0, 0, 0, false, false);
+	zassert_equal(0, ret.cmd_rc);
+	zassert_equal(16001, ret.cmd_len);
 	zassert_equal(ret.written_crc, ret.cmd_crc);
 	validate_flash_area(&ret);
 	/* Known payload twice, second should skip the write */

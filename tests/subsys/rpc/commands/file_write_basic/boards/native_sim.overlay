@@ -1,0 +1,6 @@
+&flash0 {
+	/* Emulate hardware that only supports word aligned writes */
+	write-block-size = < 0x4 >;
+};
+
+#include "../app.overlay"
