@@ -3,7 +3,6 @@
 config INFUSE_CPATCH
 	bool "Infuse-IoT constrained binary patching"
 	depends on STREAM_FLASH
-	depends on STREAM_FLASH_ERASE || !FLASH_SIMULATOR_EXPLICIT_ERASE
 	depends on CRC
 	select INFUSE_CPATCH_VERSION_1
 
