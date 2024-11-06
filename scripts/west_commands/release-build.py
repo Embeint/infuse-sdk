@@ -29,12 +29,12 @@ with open(RELEASE_SCHEMA_PATH, "r", encoding="utf-8") as f:
     release_schema = yaml.safe_load(f)
 
 
-class infuse_release(WestCommand):
+class release_build(WestCommand):
     def __init__(self):
         super().__init__(
-            "infuse-release",
+            "release-build",
             # Keep this in sync with the string in west-commands.yml.
-            "Build application release",
+            "Build an Infuse-IoT application release",
             EXPORT_DESCRIPTION,
             accepts_unknown_args=False,
         )
@@ -61,7 +61,6 @@ class infuse_release(WestCommand):
             action="store_true",
             help="Do not run remote git operations",
         )
-
         return parser
 
     def _absolute_path(self, relative_root: pathlib.Path, path: str) -> pathlib.Path:
@@ -70,7 +69,7 @@ class infuse_release(WestCommand):
             return p
         return (relative_root / p).resolve().absolute()
 
-    def do_run(self, args, unknown_args):
+    def do_run(self, args, _unknown_args):
         self.args = args
 
         with self.args.release.open("r", encoding="utf-8") as f:
@@ -328,6 +327,7 @@ class infuse_release(WestCommand):
             "zephyr/domains.yaml",
             "zephyr/runners.yaml",
             "zephyr/zephyr.bin",
+            "zephyr/zephyr.signed.bin",
             "zephyr/zephyr.dts",
             "zephyr/zephyr.elf",
             "zephyr/zephyr.hex",

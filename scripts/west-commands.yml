@@ -10,8 +10,18 @@ west-commands:
       - name: cloudgen
         class: cloudgen
         help: generate files from Infuse-IoT cloud definitions
-  - file: scripts/west_commands/infuse_release.py
+  - file: scripts/west_commands/release-build.py
     commands:
-      - name: infuse-release
-        class: infuse_release
-        help: Build application release
+      - name: release-build
+        class: release_build
+        help: Build an Infuse-IoT application release
+  - file: scripts/west_commands/release-flash.py
+    commands:
+      - name: release-flash
+        class: release_flash
+        help: Flash an Infuse-IoT application release
+  - file: scripts/west_commands/release-diff.py
+    commands:
+      - name: release-diff
+        class: release_diff
+        help: Generate a binary diff between two releases
