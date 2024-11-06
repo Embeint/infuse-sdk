@@ -55,9 +55,27 @@ struct cpatch_header {
 	struct cpatch_array_validation output_file;
 	/* Patch data validation */
 	struct cpatch_array_validation patch_file;
-	/* CRC32-IEEE of the preceeding data in the header */
+	/* CRC32-IEEE of the preceding data in the header */
 	uint32_t header_crc;
 } __packed;
+
+/**
+ * @brief Validate patch file and input data region
+ *
+ * Ensures that the patch file is internally consistent, and that it can
+ * be applied to the flash area @a input. Returns the patch header so that
+ * the caller can prepare the output region before starting the application
+ * process.
+ *
+ * @param input Input file flash area
+ * @param patch Patch file flash area
+ *
+ * @retval 0 on success
+ * @retval -EINVAL on patch file or input data validation errors
+ * @retval -errno other error from @a flash_area_crc32
+ */
+int cpatch_patch_start(const struct flash_area *input, const struct flash_area *patch,
+		       struct cpatch_header *header);
 
 /**
  * @brief Create an output file by applying a patch file to an input file
@@ -73,8 +91,8 @@ struct cpatch_header {
  * @retval -EINVAL on input or output validation errors
  * @retval -errno other negative error on flash read or write failures
  */
-int cpatch_patch_file(const struct flash_area *input, const struct flash_area *patch,
-		      struct stream_flash_ctx *output);
+int cpatch_patch_apply(const struct flash_area *input, const struct flash_area *patch,
+		       struct stream_flash_ctx *output, struct cpatch_header *header);
 
 /**
  * @}
