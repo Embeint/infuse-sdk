@@ -80,7 +80,6 @@ struct net_buf *rpc_command_file_write_basic(struct net_buf *request)
 	while (remaining > 0) {
 		data_buf = rpc_server_pull_data(request_id, expected_offset, K_MSEC(500));
 		if (data_buf == NULL) {
-			LOG_WRN("Timeout waiting for offset %08X", expected_offset);
 			rc = -ETIMEDOUT;
 			goto error;
 		}

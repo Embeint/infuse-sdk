@@ -80,7 +80,8 @@ struct net_buf *rpc_server_pull_data(uint32_t request_id, uint32_t expected_offs
 	while (true) {
 		buf = net_buf_get(&data_fifo, timeout);
 		if (buf == NULL) {
-			return buf;
+			LOG_WRN("Timeout waiting for offset %08X", expected_offset);
+			return NULL;
 		}
 		data = (void *)buf->data;
 		if (data->request_id != request_id) {
