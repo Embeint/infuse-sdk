@@ -15,8 +15,11 @@
 #ifndef INFUSE_SDK_INCLUDE_INFUSE_PATCH_BINARY_H_
 #define INFUSE_SDK_INCLUDE_INFUSE_PATCH_BINARY_H_
 
+#include <stdint.h>
+
 #include <zephyr/storage/flash_map.h>
 #include <zephyr/storage/stream_flash.h>
+#include <zephyr/toolchain.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -27,6 +30,34 @@ extern "C" {
  * @defgroup cpatch_patch_apis cpatch patching APIs
  * @{
  */
+
+/* Magic number that signifies a CPatch file */
+#define CPATCH_MAGIC_NUMBER 0xBA854092
+
+/* Expected values for various memory regions */
+struct cpatch_array_validation {
+	/* Length of the memory region in bytes */
+	uint32_t length;
+	/* CRC32-IEEE of the memory region */
+	uint32_t crc;
+} __packed;
+
+struct cpatch_header {
+	/* Expected to match @ref CPATCH_MAGIC_NUMBER */
+	uint32_t magic_value;
+	/* Major version number of CPatch algorithm this file was generated for */
+	uint8_t version_major;
+	/* Minor version number of CPatch algorithm this file was generated for */
+	uint8_t version_minor;
+	/* Input file validation */
+	struct cpatch_array_validation input_file;
+	/* Output file validation */
+	struct cpatch_array_validation output_file;
+	/* Patch data validation */
+	struct cpatch_array_validation patch_file;
+	/* CRC32-IEEE of the preceeding data in the header */
+	uint32_t header_crc;
+} __packed;
 
 /**
  * @brief Create an output file by applying a patch file to an input file
