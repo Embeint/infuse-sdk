@@ -282,7 +282,8 @@ ZTEST(rpc_server, test_data_sender)
 }
 
 static void test_data_receiver(uint32_t total_send, uint8_t skip_after, uint8_t stop_after,
-			       uint8_t bad_id_after, uint8_t ack_period, bool too_much_data)
+			       uint8_t bad_id_after, uint8_t ack_period, bool too_much_data,
+			       bool unaligned_data)
 {
 	const struct device *epacket_dummy = DEVICE_DT_GET(DT_NODELABEL(epacket_dummy));
 	struct k_fifo *tx_fifo = epacket_dummmy_transmit_fifo_get();
@@ -337,6 +338,9 @@ static void test_data_receiver(uint32_t total_send, uint8_t skip_after, uint8_t 
 		data_hdr->request_id = request_id;
 		data_hdr->offset = tx_offset;
 		to_send = MIN(send_remaining, 64);
+		if (unaligned_data) {
+			to_send -= 1;
+		}
 
 		/* Send a random packet with an invalid ID */
 		if (bad_id_after && (bad_id_after-- == 1)) {
@@ -360,6 +364,9 @@ static void test_data_receiver(uint32_t total_send, uint8_t skip_after, uint8_t 
 		send_remaining -= to_send;
 		tx_offset += to_send;
 		if (stop_after && (stop_after-- == 1)) {
+			break;
+		}
+		if (unaligned_data && (data_hdr->offset != 0x00)) {
 			break;
 		}
 		if (ack_period) {
@@ -399,12 +406,12 @@ ack_handler:
 	zassert_equal(RPC_ID_DATA_RECEIVER, rsp->header.command_id);
 	if (had_stop) {
 		zassert_equal(-ETIMEDOUT, rsp->header.return_code);
-	} else if (too_much_data) {
+	} else if (too_much_data || unaligned_data) {
 		zassert_equal(-EINVAL, rsp->header.return_code);
 	} else {
 		zassert_equal(0, rsp->header.return_code);
 	}
-	if (had_skip || had_stop || too_much_data) {
+	if (had_skip || had_stop || too_much_data || unaligned_data) {
 		zassert_true(total_send > rsp->recv_len);
 	} else {
 		zassert_equal(total_send, rsp->recv_len);
@@ -424,56 +431,62 @@ ack_handler:
 ZTEST(rpc_server, test_data_receiver_sizes)
 {
 	/* Various data sizes */
-	test_data_receiver(100, 0, 0, 0, 0, false);
-	test_data_receiver(1000, 0, 0, 0, 0, false);
-	test_data_receiver(3333, 0, 0, 0, 0, false);
+	test_data_receiver(100, 0, 0, 0, 0, false, false);
+	test_data_receiver(1000, 0, 0, 0, 0, false, false);
+	test_data_receiver(3333, 0, 0, 0, 0, false, false);
 	/* Over UINT16_MAX */
-	test_data_receiver(100000, 0, 0, 0, 0, false);
+	test_data_receiver(100000, 0, 0, 0, 0, false, false);
 }
 
 ZTEST(rpc_server, test_data_receiver_lost_payload)
 {
 	/* "Lost" data payload after some packets */
-	test_data_receiver(1000, 5, 0, 0, 0, false);
-	test_data_receiver(1000, 10, 0, 0, 0, false);
+	test_data_receiver(1000, 5, 0, 0, 0, false, false);
+	test_data_receiver(1000, 10, 0, 0, 0, false, false);
 }
 
 ZTEST(rpc_server, test_data_receiver_early_hangup)
 {
 	/* Stop sending data after some packets */
-	test_data_receiver(1000, 0, 3, 0, 0, false);
-	test_data_receiver(1000, 0, 11, 0, 0, false);
+	test_data_receiver(1000, 0, 3, 0, 0, false, false);
+	test_data_receiver(1000, 0, 11, 0, 0, false, false);
 }
 
 ZTEST(rpc_server, test_data_receiver_invalid_request_id)
 {
 	/* Bad request ID after some packets */
-	test_data_receiver(1000, 0, 0, 4, 0, false);
-	test_data_receiver(1000, 0, 0, 10, 0, false);
+	test_data_receiver(1000, 0, 0, 4, 0, false, false);
+	test_data_receiver(1000, 0, 0, 10, 0, false, false);
 }
 
 ZTEST(rpc_server, test_data_receiver_data_ack)
 {
 	/* Generating INFUSE_DATA_ACK packets */
-	test_data_receiver(1000, 0, 0, 0, 1, false);
-	test_data_receiver(1000, 0, 0, 0, 2, false);
-	test_data_receiver(1000, 0, 0, 0, 3, false);
-	test_data_receiver(1000, 0, 0, 0, 4, false);
-	test_data_receiver(1000, 0, 0, 0, RPC_SERVER_MAX_ACK_PERIOD, false);
-	test_data_receiver(1000, 0, 0, 0, RPC_SERVER_MAX_ACK_PERIOD + 1, false);
+	test_data_receiver(1000, 0, 0, 0, 1, false, false);
+	test_data_receiver(1000, 0, 0, 0, 2, false, false);
+	test_data_receiver(1000, 0, 0, 0, 3, false, false);
+	test_data_receiver(1000, 0, 0, 0, 4, false, false);
+	test_data_receiver(1000, 0, 0, 0, RPC_SERVER_MAX_ACK_PERIOD, false, false);
+	test_data_receiver(1000, 0, 0, 0, RPC_SERVER_MAX_ACK_PERIOD + 1, false, false);
 }
 
 ZTEST(rpc_server, test_data_receiver_everything_wrong)
 {
 	/* Everything going wrong */
-	test_data_receiver(1000, 3, 0, 7, 1, false);
-	test_data_receiver(1000, 3, 0, 7, 2, false);
+	test_data_receiver(1000, 3, 0, 7, 1, false, false);
+	test_data_receiver(1000, 3, 0, 7, 2, false, false);
 }
 
 ZTEST(rpc_server, test_data_receiver_push_too_much_data)
 {
 	/* Send too much data */
-	test_data_receiver(1000, 0, 0, 0, 0, true);
+	test_data_receiver(1000, 0, 0, 0, 0, true, false);
+}
+
+ZTEST(rpc_server, test_data_receiver_push_unaligned_data)
+{
+	/* Send unaligned data */
+	test_data_receiver(1000, 0, 0, 0, 0, false, true);
 }
 
 ZTEST(rpc_server, test_data_ack_fn)
