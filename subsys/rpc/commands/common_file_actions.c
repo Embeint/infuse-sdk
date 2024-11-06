@@ -23,30 +23,27 @@
 #include "common_file_actions.h"
 #include "../server.h"
 
-#ifdef CONFIG_INFUSE_DFU_HELPERS
-#if FIXED_PARTITION_EXISTS(slot1_partition)
-/* Can't use rpc_server_command_working_mem as these functions are used by
- * `coap_download` which already uses that buffer. A smaller buffer here
- * is used for memory efficiency reasons, and only incurs a small overhead
- * on the writing process.
- */
-static uint8_t working_mem[128];
-#endif /* FIXED_PARTITION_EXISTS(slot1_partition) */
-#endif /* CONFIG_INFUSE_DFU_HELPERS */
-
 LOG_MODULE_DECLARE(rpc_server);
 
 int rpc_common_file_actions_start(struct rpc_common_file_actions_ctx *ctx,
 				  enum rpc_enum_file_action action, uint32_t length, uint32_t crc)
 {
 	uint32_t current_crc;
+	size_t mem_size;
+	uint8_t *mem;
 	int rc = 0;
-
-	ARG_UNUSED(current_crc);
 
 	ctx->action = action;
 	ctx->received = 0;
 	ctx->crc = 0;
+
+	/* Safe to use this buffer here at the same time as the calling RPC,
+	 * as no data has yet been received
+	 */
+	mem = rpc_server_command_working_mem(&mem_size);
+
+	ARG_UNUSED(current_crc);
+	ARG_UNUSED(mem);
 
 	switch (ctx->action) {
 	case RPC_ENUM_FILE_ACTION_DISCARD:
@@ -58,8 +55,8 @@ int rpc_common_file_actions_start(struct rpc_common_file_actions_ctx *ctx,
 		rc = flash_area_open(FIXED_PARTITION_ID(slot1_partition), &ctx->fa);
 		if (rc == 0) {
 			if (crc != UINT32_MAX) {
-				rc = flash_area_crc32(ctx->fa, 0, length, &current_crc, working_mem,
-						      sizeof(working_mem));
+				rc = flash_area_crc32(ctx->fa, 0, length, &current_crc, mem,
+						      mem_size);
 				if (current_crc == crc) {
 					ctx->crc = crc;
 					return FILE_ALREADY_PRESENT;
