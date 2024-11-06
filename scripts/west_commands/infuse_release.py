@@ -217,7 +217,8 @@ class infuse_release(WestCommand):
             build_cmd.extend(["-DCONFIG_LOG=n"])
 
         print("Run build: ", " ".join(build_cmd))
-        subprocess.run(build_cmd, check=True)
+        proc = subprocess.run(build_cmd, check=True, capture_output=True)
+        self.build_log = proc.stdout.decode("utf-8")
 
     def validate_build(self, expected_version: str) -> dict:
         cache = zcmake.CMakeCache.from_build_dir(self.build_app_dir)
@@ -314,21 +315,17 @@ class infuse_release(WestCommand):
 
         return configs
 
-    def export_build(self, build_configs: dict, version: str):
-        board_normalised = self.release["board"].replace("/", "_")
-        app_name = self.application.name
+    def export_file(self, dst, src, file):
+        shutil.copy(src / file, dst / file)
 
-        if prefix := self.release.get("output_prefix", False):
-            output_dir = pathlib.Path(f"{prefix}-{version}")
-        else:
-            output_dir = pathlib.Path(f"{app_name}-{board_normalised}-{version}")
-        output_dir.mkdir(parents=True, exist_ok=True)
-
+    def export_folder(self, dst, src):
         # Copy relevant files to output directory
         files = [
             "compile_commands.json",
+            "CMakeCache.txt",
             "imgtool.yaml",
             "zephyr/.config",
+            "zephyr/domains.yaml",
             "zephyr/runners.yaml",
             "zephyr/zephyr.bin",
             "zephyr/zephyr.dts",
@@ -345,8 +342,8 @@ class infuse_release(WestCommand):
         ]
 
         for file in files:
-            in_loc = self.build_app_dir / file
-            out_loc = output_dir / file
+            in_loc = src / file
+            out_loc = dst / file
 
             if not in_loc.exists():
                 continue
@@ -354,6 +351,35 @@ class infuse_release(WestCommand):
                 out_loc.parent.mkdir(parents=True)
 
             shutil.copy(in_loc, out_loc)
+
+    def export_build(self, build_configs: dict, version: str):
+        board_normalised = self.release["board"].replace("/", "_")
+        app_name = self.application.name
+
+        if prefix := self.release.get("output_prefix", False):
+            output_dir = pathlib.Path(f"{prefix}-{version}")
+        else:
+            output_dir = pathlib.Path(f"{app_name}-{board_normalised}-{version}")
+        output_dir.mkdir(parents=True, exist_ok=True)
+
+        with (output_dir / "build_log.txt").open("w") as f:
+            f.write(self.build_log)
+
+        if self.sysbuild:
+            domains_file = self.build_dir / "domains.yaml"
+            with domains_file.open("r", encoding="utf-8") as f:
+                domains_info = yaml.safe_load(f)
+
+            # Export each domain
+            for domain in domains_info["domains"]:
+                self.export_folder(
+                    output_dir / domain["name"], self.build_dir / domain["name"]
+                )
+
+            self.export_file(output_dir, self.build_dir, "domains.yaml")
+            self.export_file(output_dir, self.build_dir, "CMakeCache.txt")
+        else:
+            self.export_folder(output_dir / app_name, self.build_dir)
 
         # Create manifest file
         manifest = {
