@@ -39,9 +39,13 @@
 		#address-cells = <1>;
 		#size-cells = <1>;
 
-		data_logger_partition: partition@0 {
+		file_partition: partition@0 {
+			label = "files";
+			reg = <0x00000000 0x00080000>;
+		};
+		data_logger_partition: partition@80000 {
 			label = "data_logger";
-			reg = <0x00000000 0x800000>;
+			reg = <0x00080000 0x00780000>;
 		};
 	};
 };
