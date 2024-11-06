@@ -7,6 +7,7 @@
  */
 
 #include <zephyr/kernel.h>
+#include <zephyr/drivers/flash.h>
 #include <zephyr/storage/flash_map.h>
 #include <zephyr/logging/log.h>
 #include <zephyr/sys/crc.h>
@@ -91,6 +92,45 @@ int rpc_common_file_actions_start(struct rpc_common_file_actions_ctx *ctx,
 	return rc;
 }
 
+#ifdef CONFIG_INFUSE_DFU_HELPERS
+#if FIXED_PARTITION_EXISTS(slot1_partition)
+
+static int flash_aligned_write(const struct flash_area *fa, uint32_t offset, const void *data,
+			       size_t data_len)
+{
+	const struct flash_parameters *params;
+	size_t unaligned, aligned = data_len;
+	uint8_t trailing[16];
+	int rc = 0;
+
+	/* Get backing flash parameters */
+	params = flash_get_parameters(fa->fa_dev);
+
+	__ASSERT(params->write_block_size <= sizeof(trailing),
+		 "Required write alignment too large");
+
+	/* Split write into a aligned and unaliged portion */
+	unaligned = data_len % params->write_block_size;
+	if (unaligned) {
+		aligned -= unaligned;
+		memset(trailing, params->erase_value, params->write_block_size);
+		memcpy(trailing, (uint8_t *)data + aligned, unaligned);
+	}
+
+	/* Aligned write first */
+	if (aligned) {
+		rc = flash_area_write(fa, offset, data, data_len);
+	}
+	/* Trailing unaligned write second */
+	if (unaligned && (rc == 0)) {
+		rc = flash_area_write(fa, offset + aligned, trailing, params->write_block_size);
+	}
+	return rc;
+}
+
+#endif /* FIXED_PARTITION_EXISTS(slot1_partition) */
+#endif /* CONFIG_INFUSE_DFU_HELPERS */
+
 int rpc_common_file_actions_write(struct rpc_common_file_actions_ctx *ctx, uint32_t offset,
 				  const void *data, size_t data_len)
 {
@@ -103,7 +143,7 @@ int rpc_common_file_actions_write(struct rpc_common_file_actions_ctx *ctx, uint3
 #ifdef CONFIG_INFUSE_DFU_HELPERS
 #if FIXED_PARTITION_EXISTS(slot1_partition)
 	case RPC_ENUM_FILE_ACTION_APP_IMG:
-		rc = flash_area_write(ctx->fa, offset, data, data_len);
+		rc = flash_aligned_write(ctx->fa, offset, data, data_len);
 		break;
 #endif /* FIXED_PARTITION_EXISTS(slot1_partition) */
 #endif /* CONFIG_INFUSE_DFU_HELPERS */
