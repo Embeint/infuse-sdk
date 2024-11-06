@@ -56,9 +56,8 @@ struct net_buf *rpc_command_data_receiver(struct net_buf *request)
 	rpc_server_ack_data_ready(interface, request_id);
 
 	while (remaining > 0) {
-		data_buf = rpc_server_pull_data(request_id, expected_offset, K_MSEC(500));
+		data_buf = rpc_server_pull_data(request_id, expected_offset, &rc, K_MSEC(500));
 		if (data_buf == NULL) {
-			rc = -ETIMEDOUT;
 			goto end;
 		}
 		var_len = RPC_DATA_VAR_LEN(data_buf);

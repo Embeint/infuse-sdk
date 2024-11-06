@@ -58,12 +58,13 @@ struct net_buf *rpc_response_simple_req(struct net_buf *request, int16_t rc, voi
  *
  * @param request_id RPC request ID
  * @param expected_offset Expected data offset
+ * @param err Error code when function returned NULL
  * @param timeout Duration to wait for packet
  *
  * @retval buf @ref INFUSE_RPC_DATA packet on success
- * @retval NULL on timeout
+ * @retval NULL on error
  */
-struct net_buf *rpc_server_pull_data(uint32_t request_id, uint32_t expected_offset,
+struct net_buf *rpc_server_pull_data(uint32_t request_id, uint32_t expected_offset, int *err,
 				     k_timeout_t timeout);
 
 /**
