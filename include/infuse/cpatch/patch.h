@@ -31,6 +31,9 @@ extern "C" {
 /**
  * @brief Create an output file by applying a patch file to an input file
  *
+ * @note If `STREAM_FLASH_ERASE` is not enabled, the output flash area must be
+ *       manually erased prior to calling this function.
+ *
  * @param input Input file flash area
  * @param patch Patch file flash area
  * @param output Output stream flash context
