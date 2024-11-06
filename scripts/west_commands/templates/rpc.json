@@ -118,6 +118,7 @@
                 {"name": "DISCARD", "value": 0, "description": "Discard received file (Useful for testing)"},
                 {"name": "APP_IMG", "value": 1, "description": "Complete application image for firmware upgrade"},
                 {"name": "BT_CTLR_IMG", "value": 2, "description": "Complete Bluetooth controller image for firmware upgrade"},
+                {"name": "APP_CPATCH", "value": 11, "description": "CPatch application image upgrade (binary diff)"},
                 {"name": "NRF91_MODEM_DIFF", "value": 20, "description": "nRF91 LTE modem firmware upgrade diff"}
             ]
         },

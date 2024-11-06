@@ -14,6 +14,7 @@
 #include <zephyr/dfu/mcuboot.h>
 
 #include <infuse/bluetooth/controller_manager.h>
+#include <infuse/cpatch/patch.h>
 #include <infuse/dfu/helpers.h>
 #include <infuse/reboot.h>
 
@@ -27,56 +28,77 @@
 #ifdef CONFIG_INFUSE_DFU_HELPERS
 #if FIXED_PARTITION_EXISTS(slot1_partition)
 #define SUPPORT_APP_IMG 1
+#ifdef CONFIG_INFUSE_CPATCH
+#if FIXED_PARTITION_EXISTS(file_partition)
+#define SUPPORT_APP_CPATCH 1
+#endif /* FIXED_PARTITION_EXISTS(file_partition) */
+#endif /* CONFIG_INFUSE_CPATCH*/
 #endif /* FIXED_PARTITION_EXISTS(slot1_partition) */
 #endif /* CONFIG_INFUSE_DFU_HELPERS */
 
 LOG_MODULE_DECLARE(rpc_server);
 
-int rpc_common_file_actions_start(struct rpc_common_file_actions_ctx *ctx,
-				  enum rpc_enum_file_action action, uint32_t length, uint32_t crc)
+#if defined(SUPPORT_APP_IMG) || defined(SUPPORT_APP_CPATCH)
+
+static int flash_area_check_and_erase(struct rpc_common_file_actions_ctx *ctx, uint8_t partition_id,
+				      uint32_t length, uint32_t crc)
 {
 	uint32_t current_crc;
 	size_t mem_size;
 	uint8_t *mem;
+	int rc;
+
+	/* Safe to use this buffer here at the same time as the calling RPC,
+	 * as no data has yet been received.
+	 */
+	mem = rpc_server_command_working_mem(&mem_size);
+
+	/* Check if file contents already match */
+	rc = flash_area_open(partition_id, &ctx->fa);
+	if (rc == 0) {
+		if (crc != UINT32_MAX) {
+			rc = flash_area_crc32(ctx->fa, 0, length, &current_crc, mem, mem_size);
+			if (current_crc == crc) {
+				ctx->crc = crc;
+				return FILE_ALREADY_PRESENT;
+			}
+		}
+		/* Erase space for image */
+		rc = infuse_dfu_image_erase(ctx->fa, length, true);
+		if (rc != 0) {
+			/* Close flash area */
+			(void)flash_area_close(ctx->fa);
+		}
+	}
+	return rc;
+}
+
+#endif /* defined(SUPPORT_APP_IMG) || defined(SUPPORT_APP_CPATCH) */
+
+int rpc_common_file_actions_start(struct rpc_common_file_actions_ctx *ctx,
+				  enum rpc_enum_file_action action, uint32_t length, uint32_t crc)
+{
 	int rc = 0;
 
 	ctx->action = action;
 	ctx->received = 0;
 	ctx->crc = 0;
 
-	/* Safe to use this buffer here at the same time as the calling RPC,
-	 * as no data has yet been received
-	 */
-	mem = rpc_server_command_working_mem(&mem_size);
-
-	ARG_UNUSED(current_crc);
-	ARG_UNUSED(mem);
-
 	switch (ctx->action) {
 	case RPC_ENUM_FILE_ACTION_DISCARD:
 		break;
 #ifdef SUPPORT_APP_IMG
 	case RPC_ENUM_FILE_ACTION_APP_IMG:
-		/* Check if file contents already match */
-		rc = flash_area_open(FIXED_PARTITION_ID(slot1_partition), &ctx->fa);
-		if (rc == 0) {
-			if (crc != UINT32_MAX) {
-				rc = flash_area_crc32(ctx->fa, 0, length, &current_crc, mem,
-						      mem_size);
-				if (current_crc == crc) {
-					ctx->crc = crc;
-					return FILE_ALREADY_PRESENT;
-				}
-			}
-			/* Erase space for image */
-			rc = infuse_dfu_image_erase(ctx->fa, length, true);
-			if (rc != 0) {
-				/* Close flash area */
-				(void)flash_area_close(ctx->fa);
-			}
-		}
+		rc = flash_area_check_and_erase(ctx, FIXED_PARTITION_ID(slot1_partition), length,
+						crc);
 		break;
 #endif /* SUPPORT_APP_IMG */
+#ifdef SUPPORT_APP_CPATCH
+	case RPC_ENUM_FILE_ACTION_APP_CPATCH:
+		rc = flash_area_check_and_erase(ctx, FIXED_PARTITION_ID(file_partition), length,
+						crc);
+		break;
+#endif /* SUPPORT_APP_CPATCH*/
 #ifdef CONFIG_BT_CONTROLLER_MANAGER
 	case RPC_ENUM_FILE_ACTION_BT_CTLR_IMG:
 		rc = bt_controller_manager_dfu_write_start(&ctx->client_ctx, length);
@@ -96,7 +118,7 @@ int rpc_common_file_actions_start(struct rpc_common_file_actions_ctx *ctx,
 	return rc;
 }
 
-#ifdef SUPPORT_APP_IMG
+#if defined(SUPPORT_APP_IMG) || defined(SUPPORT_APP_CPATCH)
 
 static int flash_aligned_write(const struct flash_area *fa, uint32_t offset, const void *data,
 			       size_t data_len)
@@ -131,7 +153,7 @@ static int flash_aligned_write(const struct flash_area *fa, uint32_t offset, con
 	return rc;
 }
 
-#endif /* SUPPORT_APP_IMG */
+#endif /* defined(SUPPORT_APP_IMG) || defined(SUPPORT_APP_CPATCH) */
 
 int rpc_common_file_actions_write(struct rpc_common_file_actions_ctx *ctx, uint32_t offset,
 				  const void *data, size_t data_len)
@@ -143,6 +165,10 @@ int rpc_common_file_actions_write(struct rpc_common_file_actions_ctx *ctx, uint3
 
 	switch (ctx->action) {
 #ifdef SUPPORT_APP_IMG
+#ifdef SUPPORT_APP_CPATCH
+	case RPC_ENUM_FILE_ACTION_APP_CPATCH:
+		__fallthrough;
+#endif /* SUPPORT_APP_CPATCH */
 	case RPC_ENUM_FILE_ACTION_APP_IMG:
 		rc = flash_aligned_write(ctx->fa, offset, data, data_len);
 		break;
@@ -166,6 +192,65 @@ int rpc_common_file_actions_write(struct rpc_common_file_actions_ctx *ctx, uint3
 	return rc;
 }
 
+#ifdef SUPPORT_APP_CPATCH
+
+int stream_flash_watchdog(uint8_t *buf, size_t len, size_t offset)
+{
+	rpc_server_watchdog_feed();
+	return 0;
+}
+
+static int finish_cpatch(struct rpc_common_file_actions_ctx *ctx)
+{
+	const struct flash_area *fa_original;
+	struct stream_flash_ctx stream_ctx;
+	struct cpatch_header header;
+	size_t mem_size;
+	uint8_t *mem;
+	int rc;
+
+	flash_area_open(FIXED_PARTITION_ID(slot0_partition), &fa_original);
+
+	/* Start patch process */
+	rc = cpatch_patch_start(fa_original, ctx->fa, &header);
+	if (rc < 0) {
+		goto cleanup;
+	}
+
+#if !defined(CONFIG_STREAM_FLASH_ERASE)
+	const struct flash_area *fa_output;
+
+	/* Erase space for image */
+	flash_area_open(FIXED_PARTITION_ID(slot1_partition), &fa_output);
+	rc = infuse_dfu_image_erase(fa_output, header.output_file.length, true);
+	flash_area_close(fa_output);
+	if (rc < 0) {
+		goto cleanup;
+	}
+	rpc_server_watchdog_feed();
+#endif /* !defined(CONFIG_STREAM_FLASH_ERASE) */
+
+	/* Safe to use this buffer here at the same time as the calling RPC,
+	 * as all data has been written.
+	 */
+	mem = rpc_server_command_working_mem(&mem_size);
+	rc = stream_flash_init(&stream_ctx, FIXED_PARTITION_DEVICE(slot1_partition), mem, mem_size,
+			       FIXED_PARTITION_OFFSET(slot1_partition), header.output_file.length,
+			       stream_flash_watchdog);
+	__ASSERT_NO_MSG(rc == 0);
+
+	/* Apply the patch */
+	rc = cpatch_patch_apply(fa_original, ctx->fa, &stream_ctx, &header);
+
+cleanup:
+	/* Cleanup files */
+	flash_area_close(fa_original);
+
+	return rc;
+}
+
+#endif /* SUPPORT_APP_CPATCH */
+
 int rpc_common_file_actions_finish(struct rpc_common_file_actions_ctx *ctx, uint16_t rpc_id)
 {
 	bool reboot = false;
@@ -176,6 +261,16 @@ int rpc_common_file_actions_finish(struct rpc_common_file_actions_ctx *ctx, uint
 	/* Post write actions */
 	switch (ctx->action) {
 #ifdef SUPPORT_APP_IMG
+#ifdef SUPPORT_APP_CPATCH
+	case RPC_ENUM_FILE_ACTION_APP_CPATCH:
+		/* Run the patch apply process */
+		rc = finish_cpatch(ctx);
+		if (rc < 0) {
+			flash_area_close(ctx->fa);
+			return rc;
+		}
+		__fallthrough;
+#endif /* SUPPORT_APP_CPATCH */
 	case RPC_ENUM_FILE_ACTION_APP_IMG:
 		/* Close the flash area */
 		flash_area_close(ctx->fa);
@@ -232,6 +327,10 @@ int rpc_common_file_actions_error_cleanup(struct rpc_common_file_actions_ctx *ct
 
 	switch (ctx->action) {
 #ifdef SUPPORT_APP_IMG
+#ifdef SUPPORT_APP_CPATCH
+	case RPC_ENUM_FILE_ACTION_APP_CPATCH:
+		__fallthrough;
+#endif /* SUPPORT_APP_CPATCH */
 	case RPC_ENUM_FILE_ACTION_APP_IMG:
 		/* Close the flash area */
 		flash_area_close(ctx->fa);
