@@ -24,6 +24,12 @@
 #include "common_file_actions.h"
 #include "../server.h"
 
+#ifdef CONFIG_INFUSE_DFU_HELPERS
+#if FIXED_PARTITION_EXISTS(slot1_partition)
+#define SUPPORT_APP_IMG 1
+#endif /* FIXED_PARTITION_EXISTS(slot1_partition) */
+#endif /* CONFIG_INFUSE_DFU_HELPERS */
+
 LOG_MODULE_DECLARE(rpc_server);
 
 int rpc_common_file_actions_start(struct rpc_common_file_actions_ctx *ctx,
@@ -49,8 +55,7 @@ int rpc_common_file_actions_start(struct rpc_common_file_actions_ctx *ctx,
 	switch (ctx->action) {
 	case RPC_ENUM_FILE_ACTION_DISCARD:
 		break;
-#ifdef CONFIG_INFUSE_DFU_HELPERS
-#if FIXED_PARTITION_EXISTS(slot1_partition)
+#ifdef SUPPORT_APP_IMG
 	case RPC_ENUM_FILE_ACTION_APP_IMG:
 		/* Check if file contents already match */
 		rc = flash_area_open(FIXED_PARTITION_ID(slot1_partition), &ctx->fa);
@@ -71,8 +76,7 @@ int rpc_common_file_actions_start(struct rpc_common_file_actions_ctx *ctx,
 			}
 		}
 		break;
-#endif /* FIXED_PARTITION_EXISTS(slot1_partition) */
-#endif /* CONFIG_INFUSE_DFU_HELPERS */
+#endif /* SUPPORT_APP_IMG */
 #ifdef CONFIG_BT_CONTROLLER_MANAGER
 	case RPC_ENUM_FILE_ACTION_BT_CTLR_IMG:
 		rc = bt_controller_manager_dfu_write_start(&ctx->client_ctx, length);
@@ -92,8 +96,7 @@ int rpc_common_file_actions_start(struct rpc_common_file_actions_ctx *ctx,
 	return rc;
 }
 
-#ifdef CONFIG_INFUSE_DFU_HELPERS
-#if FIXED_PARTITION_EXISTS(slot1_partition)
+#ifdef SUPPORT_APP_IMG
 
 static int flash_aligned_write(const struct flash_area *fa, uint32_t offset, const void *data,
 			       size_t data_len)
@@ -128,8 +131,7 @@ static int flash_aligned_write(const struct flash_area *fa, uint32_t offset, con
 	return rc;
 }
 
-#endif /* FIXED_PARTITION_EXISTS(slot1_partition) */
-#endif /* CONFIG_INFUSE_DFU_HELPERS */
+#endif /* SUPPORT_APP_IMG */
 
 int rpc_common_file_actions_write(struct rpc_common_file_actions_ctx *ctx, uint32_t offset,
 				  const void *data, size_t data_len)
@@ -140,13 +142,11 @@ int rpc_common_file_actions_write(struct rpc_common_file_actions_ctx *ctx, uint3
 	ctx->received += data_len;
 
 	switch (ctx->action) {
-#ifdef CONFIG_INFUSE_DFU_HELPERS
-#if FIXED_PARTITION_EXISTS(slot1_partition)
+#ifdef SUPPORT_APP_IMG
 	case RPC_ENUM_FILE_ACTION_APP_IMG:
 		rc = flash_aligned_write(ctx->fa, offset, data, data_len);
 		break;
-#endif /* FIXED_PARTITION_EXISTS(slot1_partition) */
-#endif /* CONFIG_INFUSE_DFU_HELPERS */
+#endif /* SUPPORT_APP_IMG */
 #ifdef CONFIG_BT_CONTROLLER_MANAGER
 	case RPC_ENUM_FILE_ACTION_BT_CTLR_IMG:
 		rc = bt_controller_manager_dfu_write_next(ctx->client_ctx, offset, data, data_len);
@@ -175,8 +175,7 @@ int rpc_common_file_actions_finish(struct rpc_common_file_actions_ctx *ctx, uint
 
 	/* Post write actions */
 	switch (ctx->action) {
-#ifdef CONFIG_INFUSE_DFU_HELPERS
-#if FIXED_PARTITION_EXISTS(slot1_partition)
+#ifdef SUPPORT_APP_IMG
 	case RPC_ENUM_FILE_ACTION_APP_IMG:
 		/* Close the flash area */
 		flash_area_close(ctx->fa);
@@ -188,8 +187,7 @@ int rpc_common_file_actions_finish(struct rpc_common_file_actions_ctx *ctx, uint
 		LOG_WRN("Cannot request application upgrade");
 #endif /* CONFIG_MCUBOOT_IMG_MANAGER */
 		break;
-#endif /* FIXED_PARTITION_EXISTS(slot1_partition) */
-#endif /* CONFIG_INFUSE_DFU_HELPERS */
+#endif /* SUPPORT_APP_IMG */
 #ifdef CONFIG_BT_CONTROLLER_MANAGER
 	case RPC_ENUM_FILE_ACTION_BT_CTLR_IMG:
 		/* Finalise the write */
@@ -233,14 +231,12 @@ int rpc_common_file_actions_error_cleanup(struct rpc_common_file_actions_ctx *ct
 	int rc = 0;
 
 	switch (ctx->action) {
-#ifdef CONFIG_INFUSE_DFU_HELPERS
-#if FIXED_PARTITION_EXISTS(slot1_partition)
+#ifdef SUPPORT_APP_IMG
 	case RPC_ENUM_FILE_ACTION_APP_IMG:
 		/* Close the flash area */
 		flash_area_close(ctx->fa);
 		break;
-#endif /* FIXED_PARTITION_EXISTS(slot1_partition) */
-#endif /* CONFIG_INFUSE_DFU_HELPERS */
+#endif /* SUPPORT_APP_IMG */
 #ifdef CONFIG_BT_CONTROLLER_MANAGER
 	case RPC_ENUM_FILE_ACTION_BT_CTLR_IMG:
 		/* Finalise the write */
