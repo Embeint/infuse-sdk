@@ -127,6 +127,7 @@ static int test_binary_patch(bool small_output)
 {
 	const struct flash_area *fa_original, *fa_patch;
 	struct stream_flash_ctx output_ctx;
+	struct cpatch_header header;
 	size_t output_size;
 	int rc;
 
@@ -141,8 +142,13 @@ static int test_binary_patch(bool small_output)
 	zassert_equal(0, rc);
 
 	/* Run patch */
-	rc = cpatch_patch_file(fa_original, fa_patch, &output_ctx);
+	rc = cpatch_patch_start(fa_original, fa_patch, &header);
+	if (rc < 0) {
+		goto cleanup;
+	}
+	rc = cpatch_patch_apply(fa_original, fa_patch, &output_ctx, &header);
 
+cleanup:
 	/* Cleanup files */
 	flash_area_close(fa_original);
 	flash_area_close(fa_patch);

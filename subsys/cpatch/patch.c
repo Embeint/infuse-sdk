@@ -253,58 +253,71 @@ static int opcode_run(const struct flash_area *input, struct stream_flash_ctx *o
 	return rc;
 }
 
-int cpatch_patch_file(const struct flash_area *input, const struct flash_area *patch,
-		      struct stream_flash_ctx *output)
+int cpatch_patch_start(const struct flash_area *input, const struct flash_area *patch,
+		       struct cpatch_header *header)
 {
-	struct patch_state state = {0};
-	struct cpatch_header header;
+	uint8_t buffer[64];
 	uint32_t crc;
 	int rc;
 
 	/* Read header to start with */
-	rc = flash_area_read(patch, 0, &header, sizeof(header));
+	rc = flash_area_read(patch, 0, header, sizeof(*header));
 	if (rc < 0) {
 		return rc;
 	}
 
 	/* Validate header */
-	if (header.magic_value != CPATCH_MAGIC_NUMBER) {
+	if (header->magic_value != CPATCH_MAGIC_NUMBER) {
+		LOG_DBG("Header magic number failure (%08X != %08X)", header->magic_value,
+			CPATCH_MAGIC_NUMBER);
 		return -EINVAL;
 	}
-	if (header.version_major != CPATCH_MAJOR_VERSION) {
+	if (header->version_major != CPATCH_MAJOR_VERSION) {
+		LOG_DBG("Header major version failure (%d != %d)", header->version_major,
+			CPATCH_MAJOR_VERSION);
 		return -EINVAL;
 	}
-	crc = crc32_ieee((void *)&header, sizeof(header) - sizeof(uint32_t));
-	if (crc != header.header_crc) {
+	crc = crc32_ieee((void *)header, sizeof(*header) - sizeof(uint32_t));
+	if (crc != header->header_crc) {
+		LOG_DBG("Header CRC failure (%08X != %08X)", crc, header->header_crc);
 		return -EINVAL;
 	}
 
 	/* Validate input file */
-	rc = flash_area_crc32(input, 0, header.input_file.length, &crc, state.buffer,
-			      sizeof(state.buffer));
+	rc = flash_area_crc32(input, 0, header->input_file.length, &crc, buffer, sizeof(buffer));
 	if (rc < 0) {
 		return rc;
 	}
-	if (crc != header.input_file.crc) {
+	if (crc != header->input_file.crc) {
+		LOG_DBG("Input CRC failure (%08X != %08X)", crc, header->input_file.crc);
 		return -EINVAL;
 	}
 
 	/* Validate patch data */
-	rc = flash_area_crc32(patch, sizeof(struct cpatch_header), header.patch_file.length, &crc,
-			      state.buffer, sizeof(state.buffer));
+	rc = flash_area_crc32(patch, sizeof(struct cpatch_header), header->patch_file.length, &crc,
+			      buffer, sizeof(buffer));
 	if (rc < 0) {
 		return rc;
 	}
-	if (crc != header.patch_file.crc) {
+	if (crc != header->patch_file.crc) {
+		LOG_DBG("Patch CRC failure (%08X != %08X)", crc, header->patch_file.crc);
 		return -EINVAL;
 	}
+	return 0;
+}
+
+int cpatch_patch_apply(const struct flash_area *input, const struct flash_area *patch,
+		       struct stream_flash_ctx *output, struct cpatch_header *header)
+{
+	struct patch_state state = {0};
+	int rc;
 
 	output->callback = crc_update;
 	progress_crc = 0x00;
 
 	/* Loop over patch file */
 	state.patch = patch;
-	while (state.patch_offset < header.patch_file.length) {
+	while (state.patch_offset < header->patch_file.length) {
 		/* Fetch next opcode */
 		rc = opcode_fetch(&state);
 		if (rc < 0) {
@@ -324,8 +337,8 @@ int cpatch_patch_file(const struct flash_area *input, const struct flash_area *p
 	}
 
 	/* Validate output */
-	if (stream_flash_bytes_written(output) != header.output_file.length ||
-	    (progress_crc != header.output_file.crc)) {
+	if (stream_flash_bytes_written(output) != header->output_file.length ||
+	    (progress_crc != header->output_file.crc)) {
 		return -EINVAL;
 	}
 
