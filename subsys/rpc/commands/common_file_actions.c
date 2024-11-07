@@ -194,10 +194,9 @@ int rpc_common_file_actions_write(struct rpc_common_file_actions_ctx *ctx, uint3
 
 #ifdef SUPPORT_APP_CPATCH
 
-int stream_flash_watchdog(uint8_t *buf, size_t len, size_t offset)
+static void cpatch_watchdog(uint32_t progress_offset)
 {
 	rpc_server_watchdog_feed();
-	return 0;
 }
 
 static int finish_cpatch(struct rpc_common_file_actions_ctx *ctx)
@@ -237,12 +236,12 @@ static int finish_cpatch(struct rpc_common_file_actions_ctx *ctx)
 	mem = rpc_server_command_working_mem(&mem_size);
 	rc = stream_flash_init(&stream_ctx, FIXED_PARTITION_DEVICE(slot1_partition), mem, mem_size,
 			       FIXED_PARTITION_OFFSET(slot1_partition), header.output_file.length,
-			       stream_flash_watchdog);
+			       NULL);
 	__ASSERT_NO_MSG(rc == 0);
 
 	/* Apply the patch */
 	LOG_INF("Applying %d byte patch file", header.patch_file.length);
-	rc = cpatch_patch_apply(fa_original, ctx->fa, &stream_ctx, &header);
+	rc = cpatch_patch_apply(fa_original, ctx->fa, &stream_ctx, &header, cpatch_watchdog);
 
 cleanup:
 	/* Cleanup files */
