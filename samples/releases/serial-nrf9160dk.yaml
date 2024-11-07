@@ -1,0 +1,6 @@
+# Demo nRF91 release
+application_folder: ./serial
+output_prefix: release-sample-serial-nrf91
+board: nrf9160dk/nrf9160/ns
+signing_key: ../../../modules/tee/tf-m/trusted-firmware-m/bl2/ext/mcuboot/root-EC-P256.pem
+network_key: ../../lib/security/default_network.yaml
