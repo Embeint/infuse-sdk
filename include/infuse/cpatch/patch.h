@@ -60,6 +60,16 @@ struct cpatch_header {
 } __packed;
 
 /**
+ * @brief Patching output progress callback
+ *
+ * @note The frequency and offsets of the callback progress depend
+ *       on the patch file contents.
+ *
+ * @param output_offset Current patching progress
+ */
+typedef void (*cpatch_progress_cb_t)(size_t output_offset);
+
+/**
  * @brief Validate patch file and input data region
  *
  * Ensures that the patch file is internally consistent, and that it can
@@ -88,13 +98,15 @@ int cpatch_patch_start(const struct flash_area *input, const struct flash_area *
  * @param patch Patch file flash area
  * @param output Output stream flash context
  * @param header Patch header read by @ref cpatch_patch_start
+ * @param progress_cb Optional progress callback
  *
  * @retval 0 on success
  * @retval -EINVAL on input or output validation errors
  * @retval -errno other negative error on flash read or write failures
  */
 int cpatch_patch_apply(const struct flash_area *input, const struct flash_area *patch,
-		       struct stream_flash_ctx *output, struct cpatch_header *header);
+		       struct stream_flash_ctx *output, struct cpatch_header *header,
+		       cpatch_progress_cb_t progress_cb);
 
 /**
  * @}
