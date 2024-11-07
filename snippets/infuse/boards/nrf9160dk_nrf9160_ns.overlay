@@ -174,9 +174,13 @@
 			label = "image-1-nonsecure";
 			reg = <0x00030000 0x000B0000>;
 		};
-		data_logger_partition: partition@E0000 {
+		file_partition: partition@E0000 {
+			label = "files";
+			reg = <0x000E0000 0x00080000>;
+		};
+		data_logger_partition: partition@160000 {
 			label = "data_logger";
-			reg = <0x000E0000 0x00720000>;
+			reg = <0x00160000 0x006A0000>;
 		};
 	};
 };
