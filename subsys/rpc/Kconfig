@@ -45,6 +45,7 @@ config INFUSE_RPC_COMMON_FILE_ACTIONS
 config INFUSE_RPC_SERVER_WORKING_MEMORY
 	int "Size of working memory for command"
 	default 1088 if INFUSE_RPC_COMMAND_COAP_DOWNLOAD
+	default 512 if INFUSE_RPC_COMMAND_FILE_WRITE_BASIC
 	default 16
 
 rsource "commands/Kconfig.commands"
