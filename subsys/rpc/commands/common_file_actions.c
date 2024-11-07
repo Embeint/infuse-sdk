@@ -220,6 +220,7 @@ static int finish_cpatch(struct rpc_common_file_actions_ctx *ctx)
 #if !defined(CONFIG_STREAM_FLASH_ERASE)
 	const struct flash_area *fa_output;
 
+	LOG_INF("Erasing %d bytes of secondary partition", header.output_file.length);
 	/* Erase space for image */
 	flash_area_open(FIXED_PARTITION_ID(slot1_partition), &fa_output);
 	rc = infuse_dfu_image_erase(fa_output, header.output_file.length, true);
@@ -240,6 +241,7 @@ static int finish_cpatch(struct rpc_common_file_actions_ctx *ctx)
 	__ASSERT_NO_MSG(rc == 0);
 
 	/* Apply the patch */
+	LOG_INF("Applying %d byte patch file", header.patch_file.length);
 	rc = cpatch_patch_apply(fa_original, ctx->fa, &stream_ctx, &header);
 
 cleanup:
