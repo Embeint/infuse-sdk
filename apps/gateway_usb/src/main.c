@@ -59,6 +59,9 @@ int main(void)
 	epacket_receive(epacket_serial, K_FOREVER);
 	epacket_receive(epacket_bt_adv, K_FOREVER);
 
+	/* Send key identifiers on boot */
+	epacket_send_key_ids(epacket_serial, K_FOREVER);
+
 	/* Initialise task runner */
 	task_runner_init(schedules, states, ARRAY_SIZE(schedules), app_tasks, app_tasks_data,
 			 ARRAY_SIZE(app_tasks));
