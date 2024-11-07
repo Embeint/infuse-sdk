@@ -123,13 +123,22 @@ static void test_output_validate(const char *output)
 	zassert_equal(0, fclose(f_new));
 }
 
-static int test_binary_patch(bool small_output)
+static int progress_cb_cnt;
+
+static void cpatch_progress_cb(uint32_t progress_offset)
+{
+	progress_cb_cnt += 1;
+}
+
+static int test_binary_patch(bool small_output, bool callback)
 {
 	const struct flash_area *fa_original, *fa_patch;
 	struct stream_flash_ctx output_ctx;
 	struct cpatch_header header;
 	size_t output_size;
 	int rc;
+
+	progress_cb_cnt = 0;
 
 	/* Write input files to a flash area */
 	zassert_equal(0, flash_area_open(FIXED_PARTITION_ID(ORIG_PARTITION), &fa_original));
@@ -146,7 +155,12 @@ static int test_binary_patch(bool small_output)
 	if (rc < 0) {
 		goto cleanup;
 	}
-	rc = cpatch_patch_apply(fa_original, fa_patch, &output_ctx, &header, NULL);
+	rc = cpatch_patch_apply(fa_original, fa_patch, &output_ctx, &header,
+				callback ? cpatch_progress_cb : NULL);
+
+	if (rc == 0 && callback) {
+		zassert_true(progress_cb_cnt > 0);
+	}
 
 cleanup:
 	/* Cleanup files */
@@ -159,45 +173,45 @@ cleanup:
 ZTEST(cpatch, test_hello_world_to_hello_world)
 {
 	test_file_setup(STRINGIFY(BIN_HELLO_WORLD), STRINGIFY(PATCH_HELLO_TO_HELLO));
-	zassert_equal(0, test_binary_patch(false));
+	zassert_equal(0, test_binary_patch(false, false));
 	test_output_validate(STRINGIFY(BIN_HELLO_WORLD));
 }
 
 ZTEST(cpatch, test_hello_world_validation)
 {
 	test_file_setup(STRINGIFY(BIN_HELLO_WORLD), STRINGIFY(PATCH_HELLO_VALIDATION));
-	zassert_equal(0, test_binary_patch(false));
+	zassert_equal(0, test_binary_patch(false, false));
 	test_output_validate(STRINGIFY(BIN_HELLO_WORLD));
 }
 
 ZTEST(cpatch, test_hello_world_invalid)
 {
 	test_file_setup(STRINGIFY(BIN_HELLO_WORLD), STRINGIFY(PATCH_HELLO_BAD_LEN));
-	zassert_equal(-EINVAL, test_binary_patch(false));
+	zassert_equal(-EINVAL, test_binary_patch(false, false));
 	test_file_setup(STRINGIFY(BIN_HELLO_WORLD), STRINGIFY(PATCH_HELLO_BAD_CRC));
-	zassert_equal(-EINVAL, test_binary_patch(false));
+	zassert_equal(-EINVAL, test_binary_patch(false, false));
 }
 
 ZTEST(cpatch, test_hello_world_to_philosophers)
 {
 	test_file_setup(STRINGIFY(BIN_HELLO_WORLD), STRINGIFY(PATCH_HELLO_TO_PHILO));
-	zassert_equal(0, test_binary_patch(false));
+	zassert_equal(0, test_binary_patch(false, true));
 	test_output_validate(STRINGIFY(BIN_PHILOSOPHERS));
 }
 
 ZTEST(cpatch, test_philosophers_to_hello_world)
 {
 	test_file_setup(STRINGIFY(BIN_PHILOSOPHERS), STRINGIFY(PATCH_PHILO_TO_HELLO));
-	zassert_equal(0, test_binary_patch(false));
+	zassert_equal(0, test_binary_patch(false, true));
 	test_output_validate(STRINGIFY(BIN_HELLO_WORLD));
 }
 
 ZTEST(cpatch, test_output_overrun)
 {
 	test_file_setup(STRINGIFY(BIN_PHILOSOPHERS), STRINGIFY(PATCH_PHILO_TO_HELLO));
-	zassert_not_equal(0, test_binary_patch(true));
+	zassert_not_equal(0, test_binary_patch(true, false));
 	test_file_setup(STRINGIFY(BIN_HELLO_WORLD), STRINGIFY(PATCH_HELLO_TO_HELLO));
-	zassert_not_equal(0, test_binary_patch(true));
+	zassert_not_equal(0, test_binary_patch(true, false));
 }
 
 ZTEST(cpatch, test_data_corruption)
@@ -206,21 +220,21 @@ ZTEST(cpatch, test_data_corruption)
 	for (int i = 0; i < 32; i++) {
 		test_file_setup(STRINGIFY(BIN_HELLO_WORLD), STRINGIFY(PATCH_HELLO_TO_PHILO));
 		flash_area_corrupt(FIXED_PARTITION_ID(PATCH_PARTITION), i);
-		zassert_equal(-EINVAL, test_binary_patch(false));
+		zassert_equal(-EINVAL, test_binary_patch(false, false));
 	}
 
 	/* Corrupt various parts of the patch file */
 	for (int i = 0; i < 32; i++) {
 		test_file_setup(STRINGIFY(BIN_HELLO_WORLD), STRINGIFY(PATCH_HELLO_TO_PHILO));
 		flash_area_corrupt(FIXED_PARTITION_ID(PATCH_PARTITION), 32 + (3 * i));
-		zassert_equal(-EINVAL, test_binary_patch(false));
+		zassert_equal(-EINVAL, test_binary_patch(false, false));
 	}
 
 	/* Corrupt various parts of the original file */
 	for (int i = 0; i < 32; i++) {
 		test_file_setup(STRINGIFY(BIN_HELLO_WORLD), STRINGIFY(PATCH_HELLO_TO_PHILO));
 		flash_area_corrupt(FIXED_PARTITION_ID(ORIG_PARTITION), (5 * i));
-		zassert_equal(-EINVAL, test_binary_patch(false));
+		zassert_equal(-EINVAL, test_binary_patch(false, false));
 	}
 }
 
