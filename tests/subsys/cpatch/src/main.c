@@ -146,7 +146,7 @@ static int test_binary_patch(bool small_output)
 	if (rc < 0) {
 		goto cleanup;
 	}
-	rc = cpatch_patch_apply(fa_original, fa_patch, &output_ctx, &header);
+	rc = cpatch_patch_apply(fa_original, fa_patch, &output_ctx, &header, NULL);
 
 cleanup:
 	/* Cleanup files */

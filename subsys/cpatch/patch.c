@@ -12,6 +12,9 @@
 
 #include <infuse/cpatch/patch.h>
 
+/* Updates on every 4kB chunk */
+#define CALLBACK_CHUNK_MASK 0xFFFFF000
+
 enum patch_opcode {
 	COPY_LEN_U4 = 0 << 4,
 	COPY_LEN_U12 = 1 << 4,
@@ -307,9 +310,11 @@ int cpatch_patch_start(const struct flash_area *input, const struct flash_area *
 }
 
 int cpatch_patch_apply(const struct flash_area *input, const struct flash_area *patch,
-		       struct stream_flash_ctx *output, struct cpatch_header *header)
+		       struct stream_flash_ctx *output, struct cpatch_header *header,
+		       cpatch_progress_cb_t progress_cb)
 {
 	struct patch_state state = {0};
+	uint32_t this_callback, last_callback = 0;
 	int rc;
 
 	output->callback = crc_update;
@@ -327,6 +332,12 @@ int cpatch_patch_apply(const struct flash_area *input, const struct flash_area *
 		rc = opcode_run(input, output, &state);
 		if (rc < 0) {
 			return rc;
+		}
+		/* Run progress callback if we've passed a chunk boundary */
+		this_callback = stream_flash_bytes_written(output) & CALLBACK_CHUNK_MASK;
+		if (progress_cb && (this_callback != last_callback)) {
+			last_callback = this_callback;
+			progress_cb(last_callback);
 		}
 	}
 
