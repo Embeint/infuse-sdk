@@ -69,6 +69,7 @@ struct cpatch_header {
  *
  * @param input Input file flash area
  * @param patch Patch file flash area
+ * @param header Output storage for the patch header
  *
  * @retval 0 on success
  * @retval -EINVAL on patch file or input data validation errors
@@ -86,6 +87,7 @@ int cpatch_patch_start(const struct flash_area *input, const struct flash_area *
  * @param input Input file flash area
  * @param patch Patch file flash area
  * @param output Output stream flash context
+ * @param header Patch header read by @ref cpatch_patch_start
  *
  * @retval 0 on success
  * @retval -EINVAL on input or output validation errors
