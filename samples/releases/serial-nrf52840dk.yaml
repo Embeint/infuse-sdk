@@ -1,0 +1,6 @@
+# Demo nRF91 release
+application_folder: ./serial
+output_prefix: release-sample-serial-nrf52
+board: nrf52840dk/nrf52840
+signing_key: ../../../bootloader/mcuboot/root-rsa-2048.pem
+network_key: ../../lib/security/default_network.yaml

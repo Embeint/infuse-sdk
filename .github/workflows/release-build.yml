@@ -74,6 +74,8 @@ jobs:
         run: |
           west release-build -r infuse-sdk/samples/releases/data_logger-tauro.yaml --skip-git
           west release-build -r infuse-sdk/samples/releases/gateway_usb-nrf52840dk.yaml --skip-git
+          west release-build -r infuse-sdk/samples/releases/serial-nrf52840dk.yaml --skip-git
+          west release-build -r infuse-sdk/samples/releases/serial-nrf9160dk.yaml --skip-git
 
           rm -rf data_logger-tauro*
           rm -rf release-sample-gateway*

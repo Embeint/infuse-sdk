@@ -1,0 +1,18 @@
+sample:
+  description: Serial communications demo
+  name: serial
+common:
+  build_only: true
+  filter: dt_compat_enabled("embeint,epacket-serial")
+  required_snippets:
+    - infuse
+  integration_platforms:
+    - nrf52840dk/nrf52840
+    - nrf9160dk/nrf9160/ns
+tests:
+  sample.releases.serial:
+    tags: gateway
+  sample.releases.serial.sysbuild:
+    tags: gateway
+    sysbuild: true
+    filter: not CONFIG_BUILD_WITH_TFM
