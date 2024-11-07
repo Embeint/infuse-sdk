@@ -76,6 +76,8 @@ configdefault STREAM_FLASH
 	default y
 configdefault IMG_MANAGER
 	default y
+configdefault INFUSE_CPATCH
+	default y
 
 if BT_CONN
 configdefault ZCBOR
