@@ -187,6 +187,17 @@ void epacket_queue(const struct device *dev, struct net_buf *buf);
 int epacket_receive(const struct device *dev, k_timeout_t timeout);
 
 /**
+ * @brief Send a @ref INFUSE_KEY_IDS packet on an interface
+ *
+ * @param dev Interface to send packet on
+ * @param timeout Duration to wait for message buffer
+ *
+ * @retval 0 If packet was queued
+ * @retval -EAGAIN If packet buffer claim timed out
+ */
+int epacket_send_key_ids(const struct device *dev, k_timeout_t timeout);
+
+/**
  * @brief Get current maximum packet size
  *
  * @param dev Interface to query

@@ -84,6 +84,21 @@ struct net_buf *epacket_alloc_rx(k_timeout_t timeout)
 	return buf;
 }
 
+#ifdef CONFIG_INFUSE_SECURITY
+int epacket_send_key_ids(const struct device *dev, k_timeout_t timeout)
+{
+	struct net_buf *rsp = epacket_alloc_tx_for_interface(dev, timeout);
+
+	if (rsp) {
+		/* Infuse ID and network key ID in header, device key ID in payload */
+		epacket_set_tx_metadata(rsp, EPACKET_AUTH_NETWORK, 0, INFUSE_KEY_IDS);
+		net_buf_add_le24(rsp, infuse_security_device_key_identifier());
+		epacket_queue(dev, rsp);
+	}
+	return rsp == NULL ? -EAGAIN : 0;
+}
+#endif /* CONFIG_INFUSE_SECURITY */
+
 void epacket_queue(const struct device *dev, struct net_buf *buf)
 {
 	/* Store transmit device */
@@ -177,15 +192,7 @@ static void epacket_handle_rx(struct net_buf *buf)
 		}
 		prev_key_request = uptime;
 
-		struct net_buf *rsp =
-			epacket_alloc_tx_for_interface(metadata->interface, K_NO_WAIT);
-
-		if (rsp) {
-			/* Infuse ID and network key ID in header, device key ID in payload */
-			epacket_set_tx_metadata(rsp, EPACKET_AUTH_NETWORK, 0, INFUSE_KEY_IDS);
-			net_buf_add_le24(rsp, infuse_security_device_key_identifier());
-			epacket_queue(metadata->interface, rsp);
-		} else {
+		if (epacket_send_key_ids(metadata->interface, K_NO_WAIT) != 0) {
 			LOG_WRN("Unable to respond to key ID request");
 		}
 		net_buf_unref(buf);
