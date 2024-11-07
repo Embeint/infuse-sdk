@@ -1,5 +1,6 @@
 # Infuse-IoT libraries compilation
 
+zephyr_sources(version.c)
 zephyr_sources_ifdef(CONFIG_INFUSE_REBOOT reboot.c)
 zephyr_sources_ifdef(CONFIG_INFUSE_COMMON_BOOT common_boot.c)
 zephyr_sources_ifdef(CONFIG_INFUSE_EPOCH_TIME time/epoch.c)
