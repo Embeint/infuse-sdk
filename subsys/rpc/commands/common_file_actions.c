@@ -144,7 +144,7 @@ static int flash_aligned_write(const struct flash_area *fa, uint32_t offset, con
 
 	/* Aligned write first */
 	if (aligned) {
-		rc = flash_area_write(fa, offset, data, data_len);
+		rc = flash_area_write(fa, offset, data, aligned);
 	}
 	/* Trailing unaligned write second */
 	if (unaligned && (rc == 0)) {
