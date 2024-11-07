@@ -19,15 +19,15 @@ extern "C" {
 #endif
 
 enum {
-	TASK_ALG_STATIONARY_WINDOWED_LOG_WINDOW_VARIANCE = BIT(0),
+	TASK_ALG_STATIONARY_WINDOWED_LOG_WINDOW_STD_DEV = BIT(0),
 };
 
 /** @brief Algorithm stationary windowed task arguments */
 struct task_alg_stationary_windowed_args {
 	/** Duration of window to examine */
 	uint32_t window_seconds;
-	/* Variance threshold in milli-g, above this value the device is moving */
-	uint16_t variance_threshold_mg;
+	/* Standard deviation threshold in micro-g, above this value the device is moving */
+	uint32_t std_dev_threshold_ug;
 } __packed;
 
 #ifdef __cplusplus

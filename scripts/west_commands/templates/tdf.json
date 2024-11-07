@@ -233,11 +233,11 @@
             ]
         },
         "23": {
-            "name": "ACC_MAGNITUDE_VARIANCE",
-            "description": "Accelerometer magnitude variance over a window",
+            "name": "ACC_MAGNITUDE_STD_DEV",
+            "description": "Accelerometer magnitude standard deviation over a window",
             "fields": [
                 {"name": "count", "type": "uint32_t", "description": "Number of samples in window"},
-                {"name": "variance", "type": "uint32_t", "description": "Magnitude variance in milli-g"}
+                {"name": "std_dev", "type": "uint32_t", "description": "Standard deviation in micro-g"}
             ]
         },
         "100": {

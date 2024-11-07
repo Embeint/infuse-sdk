@@ -305,12 +305,12 @@ struct tdf_globalstar_pkt {
 	uint8_t payload[9];
 } __packed;
 
-/* Accelerometer magnitude variance over a window */
-struct tdf_acc_magnitude_variance {
+/* Accelerometer magnitude standard deviation over a window */
+struct tdf_acc_magnitude_std_dev {
 	/* Number of samples in window */
 	uint32_t count;
-	/* Magnitude variance in milli-g */
-	uint32_t variance;
+	/* Standard deviation in micro-g */
+	uint32_t std_dev;
 } __packed;
 
 /* Example array type */
@@ -340,7 +340,7 @@ enum tdf_builtin_id {
 	TDF_UBX_NAV_PVT = 20,
 	TDF_LTE_CONN_STATUS = 21,
 	TDF_GLOBALSTAR_PKT = 22,
-	TDF_ACC_MAGNITUDE_VARIANCE = 23,
+	TDF_ACC_MAGNITUDE_STD_DEV = 23,
 	TDF_ARRAY_TYPE = 100,
 	/* End of builtin TDF range */
 	TDF_BUILTIN_END = 1024,
@@ -367,7 +367,7 @@ enum tdf_builtin_size {
 	_TDF_UBX_NAV_PVT_SIZE = sizeof(struct tdf_ubx_nav_pvt),
 	_TDF_LTE_CONN_STATUS_SIZE = sizeof(struct tdf_lte_conn_status),
 	_TDF_GLOBALSTAR_PKT_SIZE = sizeof(struct tdf_globalstar_pkt),
-	_TDF_ACC_MAGNITUDE_VARIANCE_SIZE = sizeof(struct tdf_acc_magnitude_variance),
+	_TDF_ACC_MAGNITUDE_STD_DEV_SIZE = sizeof(struct tdf_acc_magnitude_std_dev),
 	_TDF_ARRAY_TYPE_SIZE = sizeof(struct tdf_array_type),
 };
 

@@ -65,7 +65,7 @@ static void expect_logging(uint8_t count)
 {
 	struct k_fifo *tx_queue = epacket_dummmy_transmit_fifo_get();
 	struct net_buf *pkt = net_buf_get(tx_queue, K_MSEC(10));
-	struct tdf_acc_magnitude_variance *var;
+	struct tdf_acc_magnitude_std_dev *var;
 	struct tdf_buffer_state state;
 	struct tdf_parsed tdf;
 	uint8_t found = 0;
@@ -78,9 +78,9 @@ static void expect_logging(uint8_t count)
 		if (tdf_parse(&state, &tdf) < 0) {
 			break;
 		}
-		zassert_equal(TDF_ACC_MAGNITUDE_VARIANCE, tdf.tdf_id, "Unexpected TDF ID");
+		zassert_equal(TDF_ACC_MAGNITUDE_STD_DEV, tdf.tdf_id, "Unexpected TDF ID");
 		var = tdf.data;
-		printk("Count: %d Variance: %d\n", var->count, var->variance);
+		printk("Count: %d StdDev: %d\n", var->count, var->std_dev);
 		found += 1;
 	}
 	net_buf_unref(pkt);
@@ -103,13 +103,13 @@ ZTEST(alg_stationary, test_send)
 	schedule[1].task_args.infuse.alg_stationary_windowed =
 		(struct task_alg_stationary_windowed_args){
 			.window_seconds = 120,
-			.variance_threshold_mg = 40,
+			.std_dev_threshold_ug = 40000,
 		};
 	schedule[1].task_logging[0].loggers = TDF_DATA_LOGGER_SERIAL;
-	schedule[1].task_logging[0].tdf_mask = TASK_ALG_STATIONARY_WINDOWED_LOG_WINDOW_VARIANCE;
+	schedule[1].task_logging[0].tdf_mask = TASK_ALG_STATIONARY_WINDOWED_LOG_WINDOW_STD_DEV;
 
 	/* Start with lots of movement */
-	imu_emul_accelerometer_data_configure(DEV, 0.0f, 0.0f, 1.0f, 100);
+	imu_emul_accelerometer_data_configure(DEV, 0.0f, 0.0f, 1.0f, 800);
 
 	/* Boot the algorithm thread */
 	(void)task_schedule(1);
@@ -124,7 +124,7 @@ ZTEST(alg_stationary, test_send)
 	}
 
 	/* Reduce the movement, let the window update */
-	imu_emul_accelerometer_data_configure(DEV, 0.0f, 0.0f, 1.0f, 20);
+	imu_emul_accelerometer_data_configure(DEV, 0.0f, 0.0f, 1.0f, 100);
 	k_sleep(K_MINUTES(4));
 
 	/* Stationary state should be set */

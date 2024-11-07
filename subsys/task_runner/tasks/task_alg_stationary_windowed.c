@@ -13,6 +13,7 @@
 #include <zephyr/zbus/zbus.h>
 
 #include <infuse/states.h>
+#include <infuse/math/common.h>
 #include <infuse/math/statistics.h>
 #include <infuse/task_runner/runner.h>
 #include <infuse/task_runner/tasks/imu.h>
@@ -49,11 +50,12 @@ void task_alg_stationary_windowed_fn(struct k_work *work)
 	const struct task_alg_stationary_windowed_args *args =
 		&sch->task_args.infuse.alg_stationary_windowed;
 	const struct imu_magnitude_array *magnitudes;
-	struct tdf_acc_magnitude_variance variance;
+	struct tdf_acc_magnitude_std_dev tdf;
 	uint32_t buffer_period, sample_period, sample_rate, expected_samples;
 	uint32_t uptime = k_uptime_seconds();
+	uint64_t variance;
+	uint64_t std_dev;
 	uint8_t range, num;
-	uint16_t one_g;
 	bool stationary;
 
 	if (task_runner_task_block(&task->terminate_signal, K_NO_WAIT) == 1) {
@@ -84,8 +86,10 @@ void task_alg_stationary_windowed_fn(struct k_work *work)
 
 	/* Provide periodic updates on the state */
 	if (uptime >= state.print_end) {
-		LOG_INF("Running raw variance: %d",
-			(uint32_t)statistics_variance_rough(&state.stats));
+		variance = (uint64_t)statistics_variance_rough(&state.stats);
+		std_dev = math_sqrt32(variance);
+		chan_data.data.std_dev = (1000000 * std_dev) / imu_accelerometer_1g(range);
+		LOG_INF("Running std-dev: %d uG", chan_data.data.std_dev);
 		state.print_end = uptime + SEC_PER_MIN;
 	}
 
@@ -95,16 +99,21 @@ void task_alg_stationary_windowed_fn(struct k_work *work)
 		return;
 	}
 
-	/* Calculate variance in milli-G */
-	one_g = imu_accelerometer_1g(range);
-	variance.variance = 1000 * (uint64_t)statistics_variance(&state.stats) / one_g;
-	variance.count = state.stats.n;
-	stationary = variance.variance <= args->variance_threshold_mg;
+	/* Raw variance */
+	variance = (uint64_t)statistics_variance(&state.stats);
+	/* Raw standard deviation */
+	std_dev = math_sqrt64(variance);
+
+	/* Standard deviation is in the same units as the input data,
+	 * so we can convert to micro-g's through the usual equation.
+	 */
+	tdf.std_dev = (1000000 * std_dev) / imu_accelerometer_1g(range);
+	tdf.count = state.stats.n;
+	stationary = tdf.std_dev <= args->std_dev_threshold_ug;
 
 	/* Log output TDF */
-	task_schedule_tdf_log(sch, TASK_ALG_STATIONARY_WINDOWED_LOG_WINDOW_VARIANCE,
-			      TDF_ACC_MAGNITUDE_VARIANCE, sizeof(variance), epoch_time_now(),
-			      &variance);
+	task_schedule_tdf_log(sch, TASK_ALG_STATIONARY_WINDOWED_LOG_WINDOW_STD_DEV,
+			      TDF_ACC_MAGNITUDE_STD_DEV, sizeof(tdf), epoch_time_now(), &tdf);
 
 	/* Validate number of samples (90 - 110% of expected) */
 	sample_period = buffer_period / (num - 1);
@@ -115,8 +124,8 @@ void task_alg_stationary_windowed_fn(struct k_work *work)
 		goto reset;
 	}
 
-	LOG_INF("Decision: %s (%u <= %u)", stationary ? "stationary" : "moving", variance.variance,
-		args->variance_threshold_mg);
+	LOG_INF("Stationary: %s (%u <= %u)", stationary ? "yes" : "no", tdf.std_dev,
+		args->std_dev_threshold_ug);
 	if (stationary) {
 		/* Set state until next decision point.
 		 * The timeout is included so that even if the IMU stops producing data, the
