@@ -189,8 +189,7 @@ static int validate_sample_timing(const struct device *dev, uint8_t acc_range,
 			}
 
 			uint32_t acc_sample_period_ticks =
-				imu_samples->accelerometer.buffer_period_ticks /
-				imu_samples->accelerometer.num;
+				imu_sample_period(&imu_samples->accelerometer);
 
 			if ((acc_sample_period_ticks < acc_threshold_min) ||
 			    (acc_sample_period_ticks > acc_threshold_max)) {
@@ -209,8 +208,7 @@ static int validate_sample_timing(const struct device *dev, uint8_t acc_range,
 			}
 
 			uint32_t gyr_sample_period_ticks =
-				imu_samples->gyroscope.buffer_period_ticks /
-				imu_samples->gyroscope.num;
+				imu_sample_period(&imu_samples->gyroscope);
 
 			if ((gyr_sample_period_ticks < gyr_threshold_min) ||
 			    (gyr_sample_period_ticks > gyr_threshold_max)) {
