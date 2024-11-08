@@ -12,6 +12,8 @@
 #include <zephyr/logging/log.h>
 #include <zephyr/sys/atomic.h>
 
+#include <infuse/security.h>
+#include <infuse/validation/bluetooth.h>
 #include <infuse/validation/button.h>
 #include <infuse/validation/core.h>
 #include <infuse/validation/disk.h>
@@ -205,6 +207,36 @@ static int leds_validator(void *a, void *b, void *c)
 
 K_THREAD_DEFINE(button_thread, 512, leds_validator, NULL, NULL, NULL, 5, 0, 0);
 #endif /* CONFIG_INFUSE_VALIDATION_LED */
+
+#if DT_NODE_EXISTS(DT_COMPAT_GET_ANY_STATUS_OKAY(embeint_epacket_bt_adv))
+static int bt_validator(void *a, void *b, void *c)
+{
+	atomic_inc(&validators_registered);
+	if (infuse_validation_bluetooth(VALIDATION_BLUETOOTH_ADV_TX) == 0) {
+		atomic_inc(&validators_passed);
+	} else {
+		atomic_inc(&validators_failed);
+	}
+	atomic_inc(&validators_complete);
+	k_sem_give(&task_complete);
+	return 0;
+}
+
+K_THREAD_DEFINE(bt_thread, 2048, bt_validator, NULL, NULL, NULL, 5, 0, 0);
+#endif /* DT_NODE_EXISTS(DT_COMPAT_GET_ANY_STATUS_OKAY(embeint_epacket_bt_adv)) */
+
+static int validation_init(void)
+{
+	int rc;
+
+	rc = infuse_security_init();
+	if (rc < 0) {
+		VALIDATION_REPORT_ERROR("SYS", "Security init failed");
+	}
+	return 0;
+}
+
+SYS_INIT(validation_init, APPLICATION, 99);
 
 int main(void)
 {
