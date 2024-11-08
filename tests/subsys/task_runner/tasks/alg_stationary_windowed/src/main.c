@@ -29,8 +29,8 @@ struct task_data data[2];
 struct task_schedule schedule[2] = {{.task_id = TASK_ID_IMU}, {.task_id = TASK_ID_ALG_STATIONARY}};
 struct task_schedule_state state[2];
 
-INFUSE_ZBUS_CHAN_DECLARE(INFUSE_ZBUS_CHAN_IMU_ACC_MAG);
-#define ZBUS_CHAN INFUSE_ZBUS_CHAN_GET(INFUSE_ZBUS_CHAN_IMU_ACC_MAG)
+INFUSE_ZBUS_CHAN_DECLARE(INFUSE_ZBUS_CHAN_MOVEMENT_STD_DEV);
+#define ZBUS_CHAN INFUSE_ZBUS_CHAN_GET(INFUSE_ZBUS_CHAN_MOVEMENT_STD_DEV)
 
 static k_tid_t task_schedule(uint8_t index)
 {
@@ -169,6 +169,15 @@ ZTEST(alg_stationary, test_send)
 	/* Flush the pending TDF's */
 	tdf_data_logger_flush(TDF_DATA_LOGGER_SERIAL);
 	expect_logging(9);
+
+	/* Validate the last published data */
+	struct infuse_zbus_chan_movement_std_dev *out = ZBUS_CHAN->message;
+
+	zassert_equal(9, zbus_chan_publish_count(ZBUS_CHAN));
+	zassert_within(7000, out->data.std_dev, 200);
+	zassert_equal(1200, out->data.count);
+	zassert_equal(1200, out->expected_samples);
+	zassert_equal(40000, out->movement_threshold);
 }
 
 static void test_before(void *fixture)

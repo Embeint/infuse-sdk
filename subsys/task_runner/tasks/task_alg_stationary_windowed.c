@@ -26,7 +26,10 @@ static void new_mag_data(const struct zbus_channel *chan);
 INFUSE_ZBUS_CHAN_DECLARE(INFUSE_ZBUS_CHAN_IMU_ACC_MAG);
 ZBUS_LISTENER_DEFINE_WITH_ENABLE(mag_listener, new_mag_data, false);
 ZBUS_CHAN_ADD_OBS(INFUSE_ZBUS_NAME(INFUSE_ZBUS_CHAN_IMU_ACC_MAG), mag_listener, 5);
-#define ZBUS_CHAN INFUSE_ZBUS_CHAN_GET(INFUSE_ZBUS_CHAN_IMU_ACC_MAG)
+#define ZBUS_CHAN_IN INFUSE_ZBUS_CHAN_GET(INFUSE_ZBUS_CHAN_IMU_ACC_MAG)
+
+INFUSE_ZBUS_CHAN_DEFINE(INFUSE_ZBUS_CHAN_MOVEMENT_STD_DEV);
+#define ZBUS_CHAN_OUT INFUSE_ZBUS_CHAN_GET(INFUSE_ZBUS_CHAN_MOVEMENT_STD_DEV)
 
 static struct stationary_state {
 	struct task_data *task;
@@ -50,8 +53,8 @@ void task_alg_stationary_windowed_fn(struct k_work *work)
 	const struct task_alg_stationary_windowed_args *args =
 		&sch->task_args.infuse.alg_stationary_windowed;
 	const struct imu_magnitude_array *magnitudes;
-	struct tdf_acc_magnitude_std_dev tdf;
-	uint32_t buffer_period, sample_period, sample_rate, expected_samples;
+	struct infuse_zbus_chan_movement_std_dev chan_data;
+	uint32_t buffer_period, sample_period, sample_rate;
 	uint32_t uptime = k_uptime_seconds();
 	uint64_t variance;
 	uint64_t std_dev;
@@ -74,15 +77,15 @@ void task_alg_stationary_windowed_fn(struct k_work *work)
 	}
 
 	/* Process received magnitudes */
-	zbus_chan_claim(ZBUS_CHAN, K_FOREVER);
-	magnitudes = ZBUS_CHAN->message;
+	zbus_chan_claim(ZBUS_CHAN_IN, K_FOREVER);
+	magnitudes = ZBUS_CHAN_IN->message;
 	range = magnitudes->meta.full_scale_range;
 	buffer_period = magnitudes->meta.buffer_period_ticks;
 	num = magnitudes->meta.num;
 	for (uint8_t i = 0; i < num; i++) {
 		statistics_update(&state.stats, MIN(magnitudes->magnitudes[i], INT32_MAX));
 	}
-	zbus_chan_finish(ZBUS_CHAN);
+	zbus_chan_finish(ZBUS_CHAN_IN);
 
 	/* Provide periodic updates on the state */
 	if (uptime >= state.print_end) {
@@ -99,6 +102,11 @@ void task_alg_stationary_windowed_fn(struct k_work *work)
 		return;
 	}
 
+	sample_period = buffer_period / (num - 1);
+	sample_rate = 1000000 / k_ticks_to_us_near32(sample_period);
+	chan_data.expected_samples = args->window_seconds * sample_rate;
+	chan_data.movement_threshold = args->std_dev_threshold_ug;
+
 	/* Raw variance */
 	variance = (uint64_t)statistics_variance(&state.stats);
 	/* Raw standard deviation */
@@ -107,24 +115,26 @@ void task_alg_stationary_windowed_fn(struct k_work *work)
 	/* Standard deviation is in the same units as the input data,
 	 * so we can convert to micro-g's through the usual equation.
 	 */
-	tdf.std_dev = (1000000 * std_dev) / imu_accelerometer_1g(range);
-	tdf.count = state.stats.n;
-	stationary = tdf.std_dev <= args->std_dev_threshold_ug;
+	chan_data.data.std_dev = (1000000 * std_dev) / imu_accelerometer_1g(range);
+	chan_data.data.count = state.stats.n;
+	stationary = chan_data.data.std_dev <= args->std_dev_threshold_ug;
+
+	/* Publish new data reading */
+	zbus_chan_pub(ZBUS_CHAN_OUT, &chan_data.data, K_FOREVER);
 
 	/* Log output TDF */
 	task_schedule_tdf_log(sch, TASK_ALG_STATIONARY_WINDOWED_LOG_WINDOW_STD_DEV,
-			      TDF_ACC_MAGNITUDE_STD_DEV, sizeof(tdf), epoch_time_now(), &tdf);
+			      TDF_ACC_MAGNITUDE_STD_DEV, sizeof(chan_data.data), epoch_time_now(),
+			      &chan_data.data);
 
 	/* Validate number of samples (90 - 110% of expected) */
-	sample_period = buffer_period / (num - 1);
-	sample_rate = 1000000 / k_ticks_to_us_near32(sample_period);
-	expected_samples = args->window_seconds * sample_rate;
-	if (!IN_RANGE(state.stats.n, 9 * expected_samples / 10, 11 * expected_samples / 10)) {
+	if (!IN_RANGE(state.stats.n, 9 * chan_data.expected_samples / 10,
+		      11 * chan_data.expected_samples / 10)) {
 		LOG_WRN("Unexpected sample count, skipping decision");
 		goto reset;
 	}
 
-	LOG_INF("Stationary: %s (%u <= %u)", stationary ? "yes" : "no", tdf.std_dev,
+	LOG_INF("Stationary: %s (%u <= %u)", stationary ? "yes" : "no", chan_data.data.std_dev,
 		args->std_dev_threshold_ug);
 	if (stationary) {
 		/* Set state until next decision point.
