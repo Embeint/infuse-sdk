@@ -14,25 +14,34 @@
 #include <infuse/validation/core.h>
 #include <infuse/validation/pwr.h>
 
-#define TEST "PWR"
-
 int infuse_validation_pwr(const struct device *dev, uint8_t flags)
 {
+	const char *test = "N/A";
 	union fuel_gauge_prop_val val;
 	int rc = 0;
 
-	VALIDATION_REPORT_INFO(TEST, "BATTERY=%s", dev->name);
+	if (POPCOUNT(flags) > 1) {
+		test = "PWR";
+	} else if (flags & VALIDATION_PWR_BATTERY_VOLTAGE) {
+		test = "BAT_V";
+	} else if (flags & VALIDATION_PWR_BATTERY_SOC) {
+		test = "BAT_%";
+	} else if (flags & VALIDATION_PWR_BATTERY_CURRENT) {
+		test = "BAT_A";
+	}
+
+	VALIDATION_REPORT_INFO(test, "BATTERY=%s", dev->name);
 
 	/* Check init succeeded */
 	if (!device_is_ready(dev)) {
-		VALIDATION_REPORT_ERROR(TEST, "Device not ready");
+		VALIDATION_REPORT_ERROR(test, "Device not ready");
 		return -ENODEV;
 	}
 
 	/* Power up device */
 	rc = pm_device_runtime_get(dev);
 	if (rc < 0) {
-		VALIDATION_REPORT_ERROR(TEST, "pm_device_runtime_get (%d)", rc);
+		VALIDATION_REPORT_ERROR(test, "pm_device_runtime_get (%d)", rc);
 		return rc;
 	}
 
@@ -41,42 +50,42 @@ int infuse_validation_pwr(const struct device *dev, uint8_t flags)
 
 		rc = fuel_gauge_get_prop(dev, FUEL_GAUGE_VOLTAGE, &val);
 		if (rc < 0) {
-			VALIDATION_REPORT_ERROR(TEST, "Voltage get failed (%d)", rc);
+			VALIDATION_REPORT_ERROR(test, "Voltage get failed (%d)", rc);
 			goto driver_end;
 		}
 		voltage = (double)val.voltage / 1e6;
-		VALIDATION_REPORT_VALUE(TEST, "VOLTAGE", "%.03f", voltage);
+		VALIDATION_REPORT_VALUE(test, "VOLTAGE", "%.03f", voltage);
 	}
 	if (flags & VALIDATION_PWR_BATTERY_SOC) {
 		rc = fuel_gauge_get_prop(dev, FUEL_GAUGE_RELATIVE_STATE_OF_CHARGE, &val);
 		if (rc < 0) {
-			VALIDATION_REPORT_ERROR(TEST, "SoC get failed (%d)", rc);
+			VALIDATION_REPORT_ERROR(test, "SoC get failed (%d)", rc);
 			goto driver_end;
 		}
-		VALIDATION_REPORT_VALUE(TEST, "SOC", "%d", val.relative_state_of_charge);
+		VALIDATION_REPORT_VALUE(test, "SOC", "%d", val.relative_state_of_charge);
 	}
 	if (flags & VALIDATION_PWR_BATTERY_CURRENT) {
 		double current;
 
 		rc = fuel_gauge_get_prop(dev, FUEL_GAUGE_CURRENT, &val);
 		if ((rc < 0) && (rc != -ENOTSUP)) {
-			VALIDATION_REPORT_ERROR(TEST, "Charge current get failed (%d)", rc);
+			VALIDATION_REPORT_ERROR(test, "Charge current get failed (%d)", rc);
 			goto driver_end;
 		}
 		current = (double)val.current / 1e6;
-		VALIDATION_REPORT_VALUE(TEST, "CURRENT", "%.06f", current);
+		VALIDATION_REPORT_VALUE(test, "CURRENT", "%.06f", current);
 	}
 
 driver_end:
 	/* Power down device */
 	if (pm_device_runtime_put(dev) < 0) {
 		if (rc == 0) {
-			VALIDATION_REPORT_ERROR(TEST, "pm_device_runtime_put");
+			VALIDATION_REPORT_ERROR(test, "pm_device_runtime_put");
 			rc = -EIO;
 		}
 	}
 	if (rc == 0) {
-		VALIDATION_REPORT_PASS(TEST, "PASSED");
+		VALIDATION_REPORT_PASS(test, "PASSED");
 	}
 	return rc;
 }
