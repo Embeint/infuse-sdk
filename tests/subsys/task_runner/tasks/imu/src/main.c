@@ -200,6 +200,46 @@ ZTEST(task_imu, test_log)
 	test_imu(8, 30, 15, 5, true);
 }
 
+ZTEST(task_imu, test_imu_timestamp)
+{
+	/* Sample period of 100 ticks */
+	struct imu_sensor_meta meta1 = {
+		.timestamp_ticks = 10000,
+		.buffer_period_ticks = 900,
+		.num = 10,
+	};
+
+	zassert_equal(100, imu_sample_period(&meta1));
+	zassert_equal(CONFIG_SYS_CLOCK_TICKS_PER_SEC / 100, imu_sample_rate(&meta1));
+	for (int i = 0; i < 10; i++) {
+		zassert_equal(10000 + (i * 100), imu_sample_timestamp(&meta1, i));
+	}
+
+	/* Sample period of 33 ticks */
+	struct imu_sensor_meta meta2 = {
+		.timestamp_ticks = 10000,
+		.buffer_period_ticks = 297,
+		.num = 10,
+	};
+
+	zassert_equal(33, imu_sample_period(&meta2));
+	zassert_equal(CONFIG_SYS_CLOCK_TICKS_PER_SEC / 33, imu_sample_rate(&meta2));
+	for (int i = 0; i < 10; i++) {
+		zassert_equal(10000 + (i * 33), imu_sample_timestamp(&meta2, i));
+	}
+
+	/* Single sample */
+	struct imu_sensor_meta meta_single = {
+		.timestamp_ticks = 567,
+		.buffer_period_ticks = 100,
+		.num = 1,
+	};
+
+	zassert_equal(0, imu_sample_period(&meta_single));
+	zassert_equal(0, imu_sample_rate(&meta_single));
+	zassert_equal(567, imu_sample_timestamp(&meta_single, 0));
+}
+
 static void logger_before(void *fixture)
 {
 	k_sem_reset(&imu_published);
