@@ -24,8 +24,12 @@ extern "C" {
 enum {
 	/** Validate that fuel-gauge power up */
 	VALIDATION_PWR_POWER_UP = 0,
-	/** Rigorous driver behavioural tests */
-	VALIDATION_PWR_DRIVER = BIT(0),
+	/** Check reported battery voltage */
+	VALIDATION_PWR_BATTERY_VOLTAGE = BIT(0),
+	/** Check reported battery charge percentage */
+	VALIDATION_PWR_BATTERY_SOC = BIT(1),
+	/** Check reported battery current */
+	VALIDATION_PWR_BATTERY_CURRENT = BIT(2),
 };
 
 /**
