@@ -216,6 +216,52 @@ static inline int16_t imu_accelerometer_1g(uint8_t full_scale)
 }
 
 /**
+ * @brief Get the local ticks between samples in a buffer
+ *
+ * @param meta Metadata for the relevant channel in a buffer
+ *
+ * @return uint32_t Ticks between samples in the buffer
+ */
+static inline uint32_t imu_sample_period(struct imu_sensor_meta *meta)
+{
+	if (meta->num < 2) {
+		return 0;
+	}
+	return meta->buffer_period_ticks / (meta->num - 1);
+}
+
+/**
+ * @brief Get the approximate sample rate of a buffer
+ *
+ * @param meta Metadata for the relevant channel in a buffer
+ *
+ * @return uint16_t Approximate sample rate in Hertz
+ */
+static inline uint16_t imu_sample_rate(struct imu_sensor_meta *meta)
+{
+	if (meta->num < 2) {
+		return 0;
+	}
+	return 1000000 / k_ticks_to_us_near32(imu_sample_period(meta));
+}
+
+/**
+ * @brief Get the local tick counter of a given sample in a buffer
+ *
+ * @param meta Metadata for the relevant channel in a buffer
+ * @param sample Sample index to get timestamp for
+ *
+ * @return k_ticks_t Timestamp for sample N in the buffer
+ */
+static inline k_ticks_t imu_sample_timestamp(struct imu_sensor_meta *meta, uint8_t sample)
+{
+	if (meta->num < 2) {
+		return meta->timestamp_ticks;
+	}
+	return meta->timestamp_ticks + (sample * meta->buffer_period_ticks / (meta->num - 1));
+}
+
+/**
  * @}
  */
 
