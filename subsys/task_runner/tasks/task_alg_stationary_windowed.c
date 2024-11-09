@@ -54,11 +54,10 @@ void task_alg_stationary_windowed_fn(struct k_work *work)
 		&sch->task_args.infuse.alg_stationary_windowed;
 	const struct imu_magnitude_array *magnitudes;
 	struct infuse_zbus_chan_movement_std_dev chan_data;
-	uint32_t buffer_period, sample_period, sample_rate;
 	uint32_t uptime = k_uptime_seconds();
+	struct imu_sensor_meta meta;
 	uint64_t variance;
 	uint64_t std_dev;
-	uint8_t range, num;
 	bool stationary;
 
 	if (task_runner_task_block(&task->terminate_signal, K_NO_WAIT) == 1) {
@@ -79,10 +78,8 @@ void task_alg_stationary_windowed_fn(struct k_work *work)
 	/* Process received magnitudes */
 	zbus_chan_claim(ZBUS_CHAN_IN, K_FOREVER);
 	magnitudes = ZBUS_CHAN_IN->message;
-	range = magnitudes->meta.full_scale_range;
-	buffer_period = magnitudes->meta.buffer_period_ticks;
-	num = magnitudes->meta.num;
-	for (uint8_t i = 0; i < num; i++) {
+	meta = magnitudes->meta;
+	for (uint8_t i = 0; i < meta.num; i++) {
 		statistics_update(&state.stats, MIN(magnitudes->magnitudes[i], INT32_MAX));
 	}
 	zbus_chan_finish(ZBUS_CHAN_IN);
@@ -91,7 +88,8 @@ void task_alg_stationary_windowed_fn(struct k_work *work)
 	if (uptime >= state.print_end) {
 		variance = (uint64_t)statistics_variance_rough(&state.stats);
 		std_dev = math_sqrt32(variance);
-		chan_data.data.std_dev = (1000000 * std_dev) / imu_accelerometer_1g(range);
+		chan_data.data.std_dev =
+			(1000000 * std_dev) / imu_accelerometer_1g(meta.full_scale_range);
 		LOG_INF("Running std-dev: %d uG", chan_data.data.std_dev);
 		state.print_end = uptime + SEC_PER_MIN;
 	}
@@ -102,9 +100,7 @@ void task_alg_stationary_windowed_fn(struct k_work *work)
 		return;
 	}
 
-	sample_period = buffer_period / (num - 1);
-	sample_rate = 1000000 / k_ticks_to_us_near32(sample_period);
-	chan_data.expected_samples = args->window_seconds * sample_rate;
+	chan_data.expected_samples = args->window_seconds * imu_sample_rate(&meta);
 	chan_data.movement_threshold = args->std_dev_threshold_ug;
 
 	/* Raw variance */
@@ -115,7 +111,7 @@ void task_alg_stationary_windowed_fn(struct k_work *work)
 	/* Standard deviation is in the same units as the input data,
 	 * so we can convert to micro-g's through the usual equation.
 	 */
-	chan_data.data.std_dev = (1000000 * std_dev) / imu_accelerometer_1g(range);
+	chan_data.data.std_dev = (1000000 * std_dev) / imu_accelerometer_1g(meta.full_scale_range);
 	chan_data.data.count = state.stats.n;
 	stationary = chan_data.data.std_dev <= args->std_dev_threshold_ug;
 
