@@ -78,9 +78,9 @@ struct imu_sensor_meta {
 	/* Accel = G, Gyro = DPS, Mag = ? */
 	uint16_t full_scale_range;
 	/* Offset into sample array of sensor */
-	uint8_t offset;
+	uint16_t offset;
 	/* Number of readings for this sensor */
-	uint8_t num;
+	uint16_t num;
 };
 
 /* FIFO read structure */
