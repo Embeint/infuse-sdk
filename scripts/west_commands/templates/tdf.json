@@ -170,8 +170,8 @@
             "description": "Geo-location (WGS-84) + accuracy",
             "fields": [
                 {"name": "location", "type": "struct tdf_struct_gcs_location", "description": "WGS-84 referenced location"},
-                {"name": "h_acc", "type": "int32_t", "description": "Horizontal accuracy", "display_postfix": "m", "conversion": {"m": 0.001, "c": 0}},
-                {"name": "v_acc", "type": "int32_t", "description": "Vertical accuracy", "display_postfix": "m", "conversion": {"m": 0.001, "c": 0}}
+                {"name": "h_acc", "type": "int32_t", "description": "Horizontal accuracy (mm)", "display_postfix": "m", "conversion": {"m": 0.001, "c": 0}},
+                {"name": "v_acc", "type": "int32_t", "description": "Vertical accuracy (mm)", "display_postfix": "m", "conversion": {"m": 0.001, "c": 0}}
             ]
         },
         "20": {
@@ -238,6 +238,13 @@
             "fields": [
                 {"name": "count", "type": "uint32_t", "description": "Number of samples in window"},
                 {"name": "std_dev", "type": "uint32_t", "description": "Standard deviation in micro-g"}
+            ]
+        },
+        "24": {
+            "name": "ACTIVITY_METRIC",
+            "description": "Generic activity metric",
+            "fields": [
+                {"name": "value", "type": "uint32_t", "description": "Activity metric value"}
             ]
         },
         "100": {

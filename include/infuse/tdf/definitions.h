@@ -207,9 +207,9 @@ struct tdf_gyr_2000dps {
 struct tdf_gcs_wgs84_llha {
 	/* WGS-84 referenced location */
 	struct tdf_struct_gcs_location location;
-	/* Horizontal accuracy */
+	/* Horizontal accuracy (mm) */
 	int32_t h_acc;
-	/* Vertical accuracy */
+	/* Vertical accuracy (mm) */
 	int32_t v_acc;
 } __packed;
 
@@ -313,6 +313,12 @@ struct tdf_acc_magnitude_std_dev {
 	uint32_t std_dev;
 } __packed;
 
+/* Generic activity metric */
+struct tdf_activity_metric {
+	/* Activity metric value */
+	uint32_t value;
+} __packed;
+
 /* Example array type */
 struct tdf_array_type {
 	/* I am an array of length 4 */
@@ -341,6 +347,7 @@ enum tdf_builtin_id {
 	TDF_LTE_CONN_STATUS = 21,
 	TDF_GLOBALSTAR_PKT = 22,
 	TDF_ACC_MAGNITUDE_STD_DEV = 23,
+	TDF_ACTIVITY_METRIC = 24,
 	TDF_ARRAY_TYPE = 100,
 	/* End of builtin TDF range */
 	TDF_BUILTIN_END = 1024,
@@ -368,6 +375,7 @@ enum tdf_builtin_size {
 	_TDF_LTE_CONN_STATUS_SIZE = sizeof(struct tdf_lte_conn_status),
 	_TDF_GLOBALSTAR_PKT_SIZE = sizeof(struct tdf_globalstar_pkt),
 	_TDF_ACC_MAGNITUDE_STD_DEV_SIZE = sizeof(struct tdf_acc_magnitude_std_dev),
+	_TDF_ACTIVITY_METRIC_SIZE = sizeof(struct tdf_activity_metric),
 	_TDF_ARRAY_TYPE_SIZE = sizeof(struct tdf_array_type),
 };
 
