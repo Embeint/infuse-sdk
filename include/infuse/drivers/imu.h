@@ -222,7 +222,7 @@ static inline int16_t imu_accelerometer_1g(uint8_t full_scale)
  *
  * @return uint32_t Ticks between samples in the buffer
  */
-static inline uint32_t imu_sample_period(struct imu_sensor_meta *meta)
+static inline uint32_t imu_sample_period(const struct imu_sensor_meta *meta)
 {
 	if (meta->num < 2) {
 		return 0;
@@ -237,7 +237,7 @@ static inline uint32_t imu_sample_period(struct imu_sensor_meta *meta)
  *
  * @return uint16_t Approximate sample rate in Hertz
  */
-static inline uint16_t imu_sample_rate(struct imu_sensor_meta *meta)
+static inline uint16_t imu_sample_rate(const struct imu_sensor_meta *meta)
 {
 	if (meta->num < 2) {
 		return 0;
@@ -253,7 +253,7 @@ static inline uint16_t imu_sample_rate(struct imu_sensor_meta *meta)
  *
  * @return k_ticks_t Timestamp for sample N in the buffer
  */
-static inline k_ticks_t imu_sample_timestamp(struct imu_sensor_meta *meta, uint8_t sample)
+static inline k_ticks_t imu_sample_timestamp(const struct imu_sensor_meta *meta, uint8_t sample)
 {
 	if (meta->num < 2) {
 		return meta->timestamp_ticks;
