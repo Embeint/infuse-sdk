@@ -12,3 +12,5 @@ module-str = Algorithm Runner
 source "subsys/logging/Kconfig.template.log_config"
 
 endif # ALGORITHM_RUNNER
+
+rsource "algorithms/Kconfig"
