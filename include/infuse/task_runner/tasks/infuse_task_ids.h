@@ -26,7 +26,6 @@ enum infuse_task_ids {
 	TASK_ID_BATTERY = 2,
 	TASK_ID_ENVIRONMENTAL = 3,
 	TASK_ID_GNSS = 4,
-	TASK_ID_ALG_STATIONARY = 5,
 };
 
 /**

@@ -1,0 +1,14 @@
+# Builtin Infuse-IoT algorithms
+
+config ALGORITHM_RUNNER_ALG_STATIONARY_WINDOWED
+	bool "Stationary device detection algorithm"
+	depends on INFUSE_APPLICATION_STATES
+	depends on INFUSE_ZBUS_CHAN_IMU_ACC_MAG
+
+if ALGORITHM_RUNNER_ALG_STATIONARY_WINDOWED
+
+module = ALG_STATIONARY_WINDOWED
+module-str = ALG STATIONARY
+source "subsys/logging/Kconfig.template.log_config"
+
+endif # ALGORITHM_RUNNER_ALG_STATIONARY_WINDOWED

@@ -3,7 +3,7 @@ common:
   min_flash: 64
   min_ram: 32
 tests:
-  task_runner.tasks.alg_stationary.windowed:
+  algorithm_runner.algorithms.stationary_windowed:
     required_snippets:
       - infuse
     integration_platforms:

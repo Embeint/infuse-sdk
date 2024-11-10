@@ -21,16 +21,21 @@
 #include <infuse/task_runner/runner.h>
 #include <infuse/task_runner/tasks/infuse_tasks.h>
 
+#include <infuse/algorithm_runner/runner.h>
+#include <infuse/algorithm_runner/algorithms/stationary_windowed.h>
+
 #define DEV DEVICE_DT_GET_ONE(embeint_imu_emul)
 IMU_TASK(1, 0, DEV);
-ALG_STATIONARY_WINDOWED_TASK(1, 0);
-struct task_config config[2] = {IMU_TASK(0, 1, DEV), ALG_STATIONARY_WINDOWED_TASK(0, 1)};
-struct task_data data[2];
-struct task_schedule schedule[2] = {{.task_id = TASK_ID_IMU}, {.task_id = TASK_ID_ALG_STATIONARY}};
-struct task_schedule_state state[2];
+struct task_config config[1] = {IMU_TASK(0, 1, DEV)};
+struct task_data data[1];
+struct task_schedule schedule[1] = {{.task_id = TASK_ID_IMU}};
+struct task_schedule_state state[1];
 
 INFUSE_ZBUS_CHAN_DECLARE(INFUSE_ZBUS_CHAN_MOVEMENT_STD_DEV);
 #define ZBUS_CHAN INFUSE_ZBUS_CHAN_GET(INFUSE_ZBUS_CHAN_MOVEMENT_STD_DEV)
+
+ALGORITHM_STATIONARY_WINDOWED_DEFINE(test_alg, TDF_DATA_LOGGER_SERIAL,
+				     ALGORITHM_STATIONARY_WINDOWED_LOG_WINDOW_STD_DEV, 120, 40000);
 
 static k_tid_t task_schedule(uint8_t index)
 {
@@ -100,19 +105,13 @@ ZTEST(alg_stationary, test_send)
 			},
 		.fifo_sample_buffer = 50,
 	};
-	schedule[1].task_args.infuse.alg_stationary_windowed =
-		(struct task_alg_stationary_windowed_args){
-			.window_seconds = 120,
-			.std_dev_threshold_ug = 40000,
-		};
-	schedule[1].task_logging[0].loggers = TDF_DATA_LOGGER_SERIAL;
-	schedule[1].task_logging[0].tdf_mask = TASK_ALG_STATIONARY_WINDOWED_LOG_WINDOW_STD_DEV;
+
+	/* Initialise algorithm runner */
+	algorithm_runner_init();
+	algorithm_runner_register(&test_alg);
 
 	/* Start with lots of movement */
 	imu_emul_accelerometer_data_configure(DEV, 0.0f, 0.0f, 1.0f, 800);
-
-	/* Boot the algorithm thread */
-	(void)task_schedule(1);
 
 	/* Boot the IMU data generator */
 	imu_thread = task_schedule(0);
@@ -162,10 +161,6 @@ ZTEST(alg_stationary, test_send)
 	}
 	zassert_false(infuse_state_get(INFUSE_STATE_DEVICE_STATIONARY));
 
-	/* Terminate the algorithm */
-	task_terminate(1);
-	k_sleep(K_MSEC(10));
-
 	/* Flush the pending TDF's */
 	tdf_data_logger_flush(TDF_DATA_LOGGER_SERIAL);
 	expect_logging(9);
@@ -183,7 +178,7 @@ ZTEST(alg_stationary, test_send)
 static void test_before(void *fixture)
 {
 	/* Setup links between task config and data */
-	task_runner_init(schedule, state, 2, config, data, 2);
+	task_runner_init(schedule, state, 1, config, data, 1);
 }
 
 ZTEST_SUITE(alg_stationary, NULL, NULL, test_before, NULL, NULL);
