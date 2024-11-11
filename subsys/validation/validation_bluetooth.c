@@ -50,10 +50,12 @@ int infuse_validation_bluetooth(uint8_t flags)
 			VALIDATION_REPORT_ERROR(TEST, "Advertising TX timeout");
 			goto test_end;
 		}
+
+		rc = send_rc;
 		if (send_rc == 0) {
 			VALIDATION_REPORT_INFO(TEST, "Advertising TX succeeded");
 		} else {
-			VALIDATION_REPORT_ERROR(TEST, "Advertising TX failed");
+			VALIDATION_REPORT_ERROR(TEST, "Advertising TX failed (%d)", send_rc);
 		}
 	}
 
