@@ -12,6 +12,7 @@
 #include <zephyr/kernel.h>
 
 #include <infuse/time/epoch.h>
+#include <infuse/time/timezone.h>
 #include <infuse/states.h>
 
 ZTEST(epoch_time, test_time_source_valid)
@@ -396,3 +397,36 @@ void epoch_time_before(void *ctx)
 }
 
 ZTEST_SUITE(epoch_time, NULL, NULL, epoch_time_before, NULL, NULL);
+
+ZTEST(timezone, test_approx_utctimezone)
+{
+	/* Greenwich */
+	zassert_equal(0, utc_timezone_location_approximate(0));
+	/* Limits of +0 */
+	zassert_equal(0, utc_timezone_location_approximate(74999999));
+	zassert_equal(0, utc_timezone_location_approximate(-74999999));
+	/* Limits of +-1 */
+	zassert_equal(1, utc_timezone_location_approximate(75000000));
+	zassert_equal(1, utc_timezone_location_approximate(224999999));
+	zassert_equal(-1, utc_timezone_location_approximate(-75000000));
+	zassert_equal(-1, utc_timezone_location_approximate(-224999999));
+	/* Start of +-2 */
+	zassert_equal(2, utc_timezone_location_approximate(225000000));
+	zassert_equal(-2, utc_timezone_location_approximate(-225000000));
+	/* +-12 */
+	zassert_equal(12, utc_timezone_location_approximate(1800000000));
+	zassert_equal(-12, utc_timezone_location_approximate(-1800000000));
+
+	/* Sydney */
+	zassert_equal(10, utc_timezone_location_approximate(1512000000));
+	/* New Delhi */
+	zassert_equal(5, utc_timezone_location_approximate(772000000));
+	/* Dakar */
+	zassert_equal(-1, utc_timezone_location_approximate(-174000000));
+	/* Rio de Janiro */
+	zassert_equal(-3, utc_timezone_location_approximate(-432000000));
+	/* Los Angeles */
+	zassert_equal(-8, utc_timezone_location_approximate(-1183000000));
+}
+
+ZTEST_SUITE(timezone, NULL, NULL, NULL, NULL, NULL);
