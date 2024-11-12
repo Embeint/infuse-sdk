@@ -1,0 +1,33 @@
+# Copyright (c) 2024 Embeint Inc
+# SPDX-License-Identifier: LicenseRef-Embeint
+
+description: |
+  Battery charger control based on temperature
+
+compatible: "embeint,gpio-charger-control"
+
+properties:
+  control-gpios:
+    type: phandle-array
+    required: true
+    description: |
+      Control line to enable/disable the battery charger
+
+  temperature-min:
+    type: int
+    required: true
+    description: |
+      Minimum temperature to allow charging at, in degrees kelvin
+
+  temperature-max:
+    type: int
+    required: true
+    description: |
+      Maximum temperature to allow charging at, in degrees kelvin
+
+  control-hysteresis:
+    type: int
+    required: true
+    description: |
+      Temperature must fall this far within the allowed temperature range
+      after being disabled before being re-enabled.
