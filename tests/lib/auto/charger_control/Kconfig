@@ -1,0 +1,6 @@
+# Override symbols for testing
+
+config INFUSE_ZBUS_CHAN_AMBIENT_ENV
+	default y
+
+source "Kconfig.zephyr"
