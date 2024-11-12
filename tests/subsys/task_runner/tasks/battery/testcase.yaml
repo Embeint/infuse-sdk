@@ -1,0 +1,10 @@
+common:
+  tags: battery
+  min_flash: 64
+  min_ram: 32
+tests:
+  task_runner.tasks.battery:
+    required_snippets:
+      - infuse
+    integration_platforms:
+      - mps2/an385
