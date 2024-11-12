@@ -247,6 +247,30 @@
                 {"name": "value", "type": "uint32_t", "description": "Activity metric value"}
             ]
         },
+        "25": {
+            "name": "ALGORITHM_OUTPUT",
+            "description": "Generic activity metric",
+            "fields": [
+                {"name": "algorithm_id", "type": "uint32_t", "description": "Algorithm identifier"},
+                {"name": "algorithm_version", "type": "uint16_t", "description": "Algorithm version number"},
+                {"name": "output", "type": "uint8_t", "num": 0, "description": "Arbitrary algorithm output"}
+            ]
+        },
+        "26": {
+            "name": "RUNTIME_ERROR",
+            "description": "Runtime error logging",
+            "fields": [
+                {"name": "error_id", "type": "uint32_t", "description": "Unique error identifier"},
+                {"name": "error_ctx", "type": "uint32_t", "description": "Additional context about the error"}
+            ]
+        },
+        "27": {
+            "name": "CHARGER_EN_CONTROL",
+            "description": "Battery charging enable state",
+            "fields": [
+                {"name": "enabled", "type": "uint8_t", "description": "Charger is enabled"}
+            ]
+        },
         "100": {
             "name": "ARRAY_TYPE",
             "description": "Example array type",
