@@ -62,7 +62,7 @@ int task_battery_manual_run(const struct device *dev, const struct task_battery_
 	}
 
 	/* Publish new data reading */
-	zbus_chan_pub(ZBUS_CHAN, &tdf_battery, K_FOREVER);
+	zbus_chan_pub(ZBUS_CHAN, tdf_battery, K_FOREVER);
 
 	/* Print the measured values */
 	LOG_INF("%s: %6d mV (%3d %%) %6d uA", dev->name, tdf_battery->voltage_mv, tdf_battery->soc,
@@ -75,7 +75,7 @@ void battery_task_fn(struct k_work *work)
 	struct task_data *task = task_data_from_work(work);
 	const struct task_schedule *sch = task_schedule_from_data(task);
 	const struct device *fuel_gauge = task->executor.workqueue.task_arg.const_arg;
-	struct tdf_battery_state tdf_battery;
+	struct tdf_battery_state tdf_battery = {0};
 	int rc;
 
 	rc = task_battery_manual_run(fuel_gauge, &sch->task_args.infuse.battery, &tdf_battery);
