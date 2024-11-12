@@ -8,6 +8,7 @@
 
 #include <zephyr/init.h>
 #include <zephyr/bluetooth/bluetooth.h>
+#include <zephyr/bluetooth/controller.h>
 #include <zephyr/logging/log.h>
 #include <zephyr/usb/usb_device.h>
 #include <zephyr/drivers/hwinfo.h>
@@ -25,6 +26,8 @@
 #ifdef CONFIG_NRF_MODEM_LIB
 #include <modem/nrf_modem_lib.h>
 #endif
+
+int infuse_board_public_bt_addr(bt_addr_le_t *addr);
 
 LOG_MODULE_REGISTER(infuse, CONFIG_INFUSE_COMMON_LOG_LEVEL);
 
@@ -69,6 +72,13 @@ static int infuse_common_boot(void)
 	}
 #endif /* CONFIG_USB_DEVICE_INITIALIZE_AT_BOOT */
 #endif /* CONFIG_USB_DEVICE_STACK */
+#ifdef CONFIG_INFUSE_BOARD_HAS_PUBLIC_BT_ADDRESS
+	bt_addr_le_t public_addr;
+
+	if (infuse_board_public_bt_addr(&public_addr) == 0) {
+		bt_ctlr_set_public_addr(public_addr.a.val);
+	}
+#endif /* CONFIG_INFUSE_BOARD_HAS_PUBLIC_BT_ADDRESS */
 #ifdef CONFIG_BT
 	rc = bt_enable(NULL);
 	if (rc) {
