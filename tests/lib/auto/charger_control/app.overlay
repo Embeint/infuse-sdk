@@ -1,0 +1,22 @@
+/ {
+	data_logger_epacket: data_logger_epacket {
+		compatible = "embeint,data-logger-epacket", "embeint,data-logger";
+		epacket = <&epacket_dummy>;
+
+		tdf_logger_dummy: tdf_logger_dummy {
+			compatible = "embeint,tdf-data-logger";
+		};
+	};
+
+	epacket_dummy: epacket_dummy {
+		compatible = "embeint,epacket-dummy";
+	};
+
+	charger_control: charge_control {
+		compatible = "embeint,gpio-charger-control";
+		control-gpios = <&gpio0 1 (GPIO_ACTIVE_HIGH)>;
+		temperature-max = <(273 + 75)>;
+		temperature-min = <(273 - 15)>;
+		control-hysteresis = <5>;
+	};
+};
