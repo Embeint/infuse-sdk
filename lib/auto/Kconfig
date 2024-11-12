@@ -5,3 +5,18 @@ config INFUSE_AUTO_TIME_SYNC_LOG
 	depends on INFUSE_EPOCH_TIME
 	depends on TDF_DATA_LOGGER
 	default y
+
+config INFUSE_AUTO_CHARGER_TEMPERATURE_CONTROL
+	bool "Automatically control charging state based on temperature"
+	depends on DT_HAS_EMBEINT_GPIO_CHARGER_CONTROL_ENABLED
+	depends on INFUSE_ZBUS_CHAN_AMBIENT_ENV
+	depends on TDF_DATA_LOGGER
+	default y
+
+if INFUSE_AUTO_CHARGER_TEMPERATURE_CONTROL
+
+module = CHARGER_CONTROL
+module-str = charger control
+source "subsys/logging/Kconfig.template.log_config"
+
+endif # INFUSE_AUTO_CHARGER_TEMPERATURE_CONTROL
