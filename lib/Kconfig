@@ -29,9 +29,18 @@ config INFUSE_CUSTOM_IDENTIFIERS
 	  custom storage locations and layouts.
 
 if INFUSE_COMMON_BOOT
+
+config INFUSE_BOARD_HAS_PUBLIC_BT_ADDRESS
+	bool "Board has a public Bluetooth MAC address that should be used"
+	depends on BT_CTLR
+	help
+	  Use a board provided public Bluetooth MAC address instead of the random static
+	  address. The board must implement `infuse_board_public_bt_addr`.
+
 module = INFUSE_COMMON
 module-str = infuse
 source "subsys/logging/Kconfig.template.log_config"
+
 endif # INFUSE_COMMON_BOOT
 
 rsource "auto/Kconfig"
