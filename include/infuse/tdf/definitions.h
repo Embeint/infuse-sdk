@@ -319,6 +319,30 @@ struct tdf_activity_metric {
 	uint32_t value;
 } __packed;
 
+/* Generic activity metric */
+struct tdf_algorithm_output {
+	/* Algorithm identifier */
+	uint32_t algorithm_id;
+	/* Algorithm version number */
+	uint16_t algorithm_version;
+	/* Arbitrary algorithm output */
+	uint8_t output[0];
+} __packed;
+
+/* Runtime error logging */
+struct tdf_runtime_error {
+	/* Unique error identifier */
+	uint32_t error_id;
+	/* Additional context about the error */
+	uint32_t error_ctx;
+} __packed;
+
+/* Battery charging enable state */
+struct tdf_charger_en_control {
+	/* Charger is enabled */
+	uint8_t enabled;
+} __packed;
+
 /* Example array type */
 struct tdf_array_type {
 	/* I am an array of length 4 */
@@ -348,6 +372,9 @@ enum tdf_builtin_id {
 	TDF_GLOBALSTAR_PKT = 22,
 	TDF_ACC_MAGNITUDE_STD_DEV = 23,
 	TDF_ACTIVITY_METRIC = 24,
+	TDF_ALGORITHM_OUTPUT = 25,
+	TDF_RUNTIME_ERROR = 26,
+	TDF_CHARGER_EN_CONTROL = 27,
 	TDF_ARRAY_TYPE = 100,
 	/* End of builtin TDF range */
 	TDF_BUILTIN_END = 1024,
@@ -376,6 +403,9 @@ enum tdf_builtin_size {
 	_TDF_GLOBALSTAR_PKT_SIZE = sizeof(struct tdf_globalstar_pkt),
 	_TDF_ACC_MAGNITUDE_STD_DEV_SIZE = sizeof(struct tdf_acc_magnitude_std_dev),
 	_TDF_ACTIVITY_METRIC_SIZE = sizeof(struct tdf_activity_metric),
+	_TDF_ALGORITHM_OUTPUT_SIZE = sizeof(struct tdf_algorithm_output),
+	_TDF_RUNTIME_ERROR_SIZE = sizeof(struct tdf_runtime_error),
+	_TDF_CHARGER_EN_CONTROL_SIZE = sizeof(struct tdf_charger_en_control),
 	_TDF_ARRAY_TYPE_SIZE = sizeof(struct tdf_array_type),
 };
 
