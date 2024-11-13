@@ -220,6 +220,7 @@ int tdf_data_logger_log_array_dev(const struct device *dev, uint16_t tdf_id, uin
 
 	/* Logging to disconnect backend is not possible */
 	if (data->tdf_state.buf.size == 0) {
+		LOG_DBG("%s currently disconnected", dev->name);
 		return -ENOTCONN;
 	}
 
