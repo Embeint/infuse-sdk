@@ -280,4 +280,28 @@ ZTEST(rpc_command_kv_read, test_too_large)
 	zassert_equal(0, kv_store_delete(KV_KEY_WIFI_SSID));
 }
 
-ZTEST_SUITE(rpc_command_kv_read, NULL, NULL, NULL, NULL, NULL);
+ZTEST(rpc_command_kv_read, test_no_payload)
+{
+	struct rpc_kv_read_response *response;
+	struct net_buf *rsp;
+	uint16_t key;
+
+	/* Read a single key that exists, but no space for response */
+	key = KV_KEY_REBOOTS;
+	send_kv_read_command(0x1238, &key, 1, 1);
+	epacket_dummy_set_max_packet(sizeof(struct epacket_dummy_frame) +
+				     sizeof(struct infuse_rpc_rsp_header) + 1);
+
+	rsp = expect_kv_read_response(0x1238, 0);
+	response = (void *)rsp->data;
+	/* No key values, just the header */
+	zassert_equal(sizeof(struct rpc_kv_read_response), rsp->len);
+	net_buf_unref(rsp);
+}
+
+static void test_before(void *data)
+{
+	epacket_dummy_set_max_packet(CONFIG_EPACKET_PACKET_SIZE_MAX);
+}
+
+ZTEST_SUITE(rpc_command_kv_read, NULL, NULL, test_before, NULL, NULL);
