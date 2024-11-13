@@ -46,6 +46,12 @@ ZTEST(drivers_watchdog, test_watchdog)
 	/* Register watchdog against this thread */
 	infuse_watchdog_thread_register(0, _current);
 
+	/* Feed watchdog early, no adverse affects */
+	infuse_watchdog_feed(0);
+	zassert_equal(-EAGAIN,
+		      k_sem_take(&watchdog_warning, K_MSEC(CONFIG_INFUSE_WATCHDOG_PERIOD_MS)));
+	zassert_equal(-EBUSY, k_sem_take(&watchdog_expired, K_NO_WAIT));
+
 	/* Start watchdog */
 	zassert_equal(0, infuse_watchdog_start());
 
