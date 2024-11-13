@@ -41,7 +41,7 @@ static int logger_epacket_write(const struct device *dev, uint32_t phy_block,
 	return 0;
 }
 
-static void epacket_interface_state(bool connected, uint16_t current_max_payload, void *user_ctx)
+static void epacket_interface_state(uint16_t current_max_payload, void *user_ctx)
 {
 	const struct device *dev = user_ctx;
 

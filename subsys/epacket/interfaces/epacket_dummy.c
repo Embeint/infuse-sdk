@@ -52,12 +52,11 @@ void epacket_dummy_set_interface_state(const struct device *dev, bool state)
 	const struct epacket_interface_common_config *config = dev->config;
 	struct epacket_interface_common_data *data = dev->data;
 	struct epacket_interface_cb *cb;
+	uint16_t size = max_packet_size - config->header_size - config->footer_size;
 
 	SYS_SLIST_FOR_EACH_CONTAINER(&data->callback_list, cb, node) {
 		if (cb->interface_state) {
-			cb->interface_state(
-				state, max_packet_size - config->header_size - config->footer_size,
-				cb->user_ctx);
+			cb->interface_state(state ? size : 0, cb->user_ctx);
 		}
 	}
 }

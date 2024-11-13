@@ -66,11 +66,10 @@ struct epacket_interface_cb {
 	/**
 	 * @brief The interface connection state has changed.
 	 *
-	 * @param connected True when the interface is connected
-	 * @param current_max_payload Current maximum payload size
+	 * @param current_max_payload Current maximum payload size (0 == disconnected)
 	 * @param user_ctx User context pointer
 	 */
-	void (*interface_state)(bool connected, uint16_t current_max_payload, void *user_ctx);
+	void (*interface_state)(uint16_t current_max_payload, void *user_ctx);
 
 	/**
 	 * @brief A packet failed to transmit on the interface

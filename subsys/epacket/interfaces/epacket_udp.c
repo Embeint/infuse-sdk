@@ -64,7 +64,7 @@ static void cleanup_interface(const struct device *epacket_udp)
 		/* Interface is now disconnected */
 		SYS_SLIST_FOR_EACH_CONTAINER(&data->callback_list, cb, node) {
 			if (cb->interface_state) {
-				cb->interface_state(false, STATIC_MAX_PAYLOAD, cb->user_ctx);
+				cb->interface_state(0, cb->user_ctx);
 			}
 		}
 	}
@@ -154,7 +154,7 @@ static int epacket_udp_loop(void *a, void *b, void *c)
 		/* Interface is now connected */
 		SYS_SLIST_FOR_EACH_CONTAINER(&data->callback_list, cb, node) {
 			if (cb->interface_state) {
-				cb->interface_state(true, STATIC_MAX_PAYLOAD, cb->user_ctx);
+				cb->interface_state(STATIC_MAX_PAYLOAD, cb->user_ctx);
 			}
 		}
 		k_event_post(&udp_state.state, UDP_STATE_CLIENTS_NOTIFIED_UP);

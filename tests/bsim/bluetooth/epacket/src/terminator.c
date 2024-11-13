@@ -50,10 +50,10 @@ static void terminator_fn(struct k_work *work)
 	LOG_INF("Disconnect result: %d", rc);
 }
 
-static void peripheral_interface_state(bool connected, uint16_t current_max_payload, void *user_ctx)
+static void peripheral_interface_state(uint16_t current_max_payload, void *user_ctx)
 {
-	LOG_INF("Peripheral: %s (Payload %d)", connected ? "Connected" : "Disconnected",
-		current_max_payload);
+	LOG_INF("Peripheral: %s (Payload %d)",
+		current_max_payload > 0 ? "Connected" : "Disconnected", current_max_payload);
 }
 
 static void main_epacket_conn_refuser(void)

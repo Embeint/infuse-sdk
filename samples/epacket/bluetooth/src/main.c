@@ -25,15 +25,15 @@
 
 LOG_MODULE_REGISTER(app, LOG_LEVEL_INF);
 
-static void bt_periph_interface_state(bool connected, uint16_t max_payload, void *user);
+static void bt_periph_interface_state(uint16_t max_payload, void *user);
 
 struct epacket_interface_cb bt_periph_interface_cb = {
 	.interface_state = bt_periph_interface_state,
 };
 
-static void bt_periph_interface_state(bool connected, uint16_t max_payload, void *user)
+static void bt_periph_interface_state(uint16_t max_payload, void *user)
 {
-	LOG_INF("BT PERIPH: %s %d", connected ? "Connected" : "Disconnected", max_payload);
+	LOG_INF("BT PERIPH: %d", max_payload);
 }
 
 int main(void)
