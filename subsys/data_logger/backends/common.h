@@ -11,6 +11,7 @@
 
 #include <stdint.h>
 
+#include <zephyr/sys/slist.h>
 #include <zephyr/toolchain.h>
 
 #include <infuse/types.h>
@@ -19,8 +20,24 @@
 extern "C" {
 #endif
 
+struct data_logger_cb {
+	/**
+	 * @brief Data logger has changed the maximum block size
+	 *
+	 * @param dev Data logger that changed
+	 * @param block_size New maximum block size
+	 * @param user_data User context from callback structure
+	 */
+	void (*block_size_update)(const struct device *dev, uint16_t block_size, void *user_data);
+	/* Arbitrary user data pointer */
+	void *user_data;
+	/* Private list iteration field */
+	sys_snode_t node;
+};
+
 /** Must be first member of data struct */
 struct data_logger_common_data {
+	sys_slist_t callbacks;
 	uint32_t logical_blocks;
 	uint32_t physical_blocks;
 	uint32_t current_block;
@@ -117,6 +134,25 @@ struct data_logger_api {
  * @retval -errno error code from API read on error
  */
 int data_logger_common_init(const struct device *dev);
+
+/**
+ * @brief Register for event callbacks from the data logger
+ *
+ * @param dev Data logger instance
+ * @param cb Callback structure
+ */
+void data_logger_common_register_cb(const struct device *dev, struct data_logger_cb *cb);
+
+/**
+ * @brief Handle the block size of a logger changing at runtime.
+ *
+ * This is only expected to occur for networked backends, which can connect
+ * with different MTU's at runtime.
+ *
+ * @param dev Data logger instance
+ * @param block_size Updated block size
+ */
+void data_logger_common_block_size_changed(const struct device *dev, uint16_t block_size);
 
 #ifdef __cplusplus
 }

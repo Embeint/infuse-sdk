@@ -374,6 +374,8 @@ int data_logger_common_init(const struct device *dev)
 	uint16_t erase_blocks;
 	int rc;
 
+	sys_slist_init(&data->callbacks);
+
 	data->current_block = 0;
 	data->earliest_block = 0;
 
@@ -442,4 +444,26 @@ int data_logger_common_init(const struct device *dev)
 	}
 #endif /* CONFIG_DATA_LOGGER_RAM_BUFFER */
 	return 0;
+}
+
+void data_logger_common_register_cb(const struct device *dev, struct data_logger_cb *cb)
+{
+	struct data_logger_common_data *data = dev->data;
+
+	sys_slist_append(&data->callbacks, &cb->node);
+}
+
+void data_logger_common_block_size_changed(const struct device *dev, uint16_t block_size)
+{
+	struct data_logger_common_data *data = dev->data;
+	struct data_logger_cb *cb;
+
+	/* Update internal state */
+	data->block_size = block_size;
+	/* Notify subscribers */
+	SYS_SLIST_FOR_EACH_CONTAINER(&data->callbacks, cb, node) {
+		if (cb->block_size_update) {
+			cb->block_size_update(dev, block_size, cb->user_data);
+		}
+	}
 }
