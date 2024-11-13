@@ -153,8 +153,11 @@ int infuse_watchdog_thread_state_lookup(int wdog_channel, uint32_t *info1, uint3
 
 void infuse_watchdog_feed_all(void)
 {
-	for (int i = 0; i < 8; i++) {
+	for (int i = 0; i < MAX_CHANNELS; i++) {
 		(void)wdt_feed(INFUSE_WATCHDOG_DEV, i);
+#ifdef CONFIG_INFUSE_WATCHDOG_SOFTWARE_WARNING
+		infuse_watchdog_software_feed(i);
+#endif /* CONFIG_INFUSE_WATCHDOG_SOFTWARE_WARNING */
 	}
 }
 

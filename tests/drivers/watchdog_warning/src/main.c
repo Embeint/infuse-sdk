@@ -65,6 +65,11 @@ ZTEST(drivers_watchdog, test_watchdog)
 		infuse_watchdog_thread_register(0, _current);
 		k_sleep(K_SECONDS(1));
 	}
+	/* infuse_watchdog_feed_all should also feed */
+	for (int i = 0; i < 3; i++) {
+		infuse_watchdog_feed_all();
+		k_sleep(K_SECONDS(1));
+	}
 
 	/* Nothing should have expired */
 	zassert_equal(-EBUSY, k_sem_take(&watchdog_warning, K_NO_WAIT), "Warning fired early");
