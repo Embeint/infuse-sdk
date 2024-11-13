@@ -26,6 +26,7 @@ static void software_watchdog_alarm(struct k_timer *timer);
 static K_TIMER_DEFINE(watchdog_warning_timer, software_watchdog_alarm, NULL);
 static int64_t channel_expires[MAX_CHANNELS];
 static int channel_max;
+static int8_t wdog_running;
 
 BUILD_ASSERT(CONFIG_INFUSE_WATCHDOG_SOFTWARE_WARNING_MS < CONFIG_INFUSE_WATCHDOG_FEED_EARLY_MS,
 	     "Software alarm will fire before feed timeout");
@@ -65,6 +66,7 @@ int infuse_watchdog_start(void)
 		channel_expires[i] = ms_now + SOFTWARE_WARNING_MS;
 	}
 	k_timer_start(&watchdog_warning_timer, K_TIMEOUT_ABS_MS(channel_expires[0]), K_FOREVER);
+	wdog_running = true;
 	LOG_DBG("Software timer starting (expiry @ %lld ms)", channel_expires[0]);
 #endif /* CONFIG_INFUSE_WATCHDOG_SOFTWARE_WARNING */
 
@@ -74,6 +76,28 @@ int infuse_watchdog_start(void)
 	}
 	return rc;
 }
+
+#ifdef CONFIG_INFUSE_WATCHDOG_SOFTWARE_WARNING
+static void infuse_watchdog_software_feed(int wdog_channel)
+{
+	/* Update software warning */
+	int64_t ms_expire = INT64_MAX;
+
+	if (!wdog_running) {
+		return;
+	}
+
+	/* Update expiry for this channel */
+	channel_expires[wdog_channel] = k_uptime_get() + SOFTWARE_WARNING_MS;
+	/* Get new global expiry */
+	for (int i = 0; i <= channel_max; i++) {
+		ms_expire = MIN(ms_expire, channel_expires[i]);
+	}
+	/* Set new timeout */
+	k_timer_start(&watchdog_warning_timer, K_TIMEOUT_ABS_MS(ms_expire), K_FOREVER);
+	LOG_DBG("Software timer now expires @ %lldms)", ms_expire);
+}
+#endif /* CONFIG_INFUSE_WATCHDOG_SOFTWARE_WARNING */
 
 void infuse_watchdog_feed(int wdog_channel)
 {
@@ -85,18 +109,7 @@ void infuse_watchdog_feed(int wdog_channel)
 	(void)wdt_feed(INFUSE_WATCHDOG_DEV, wdog_channel);
 
 #ifdef CONFIG_INFUSE_WATCHDOG_SOFTWARE_WARNING
-	/* Update software warning */
-	int64_t ms_expire = INT64_MAX;
-
-	/* Update expiry for this channel */
-	channel_expires[wdog_channel] = k_uptime_get() + SOFTWARE_WARNING_MS;
-	/* Get new global expiry */
-	for (int i = 0; i <= channel_max; i++) {
-		ms_expire = MIN(ms_expire, channel_expires[i]);
-	}
-	/* Set new timeout */
-	k_timer_start(&watchdog_warning_timer, K_TIMEOUT_ABS_MS(ms_expire), K_FOREVER);
-	LOG_DBG("Software timer now expires @ %lldms)", ms_expire);
+	infuse_watchdog_software_feed(wdog_channel);
 #endif /* CONFIG_INFUSE_WATCHDOG_SOFTWARE_WARNING */
 }
 
