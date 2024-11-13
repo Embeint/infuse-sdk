@@ -25,15 +25,15 @@ static int disconnection_notifications;
 
 LOG_MODULE_REGISTER(app, LOG_LEVEL_INF);
 
-static void peripheral_interface_state(bool connected, uint16_t current_max_payload, void *user_ctx)
+static void peripheral_interface_state(uint16_t current_max_payload, void *user_ctx)
 {
-	if (connected) {
+	if (current_max_payload > 0) {
 		connection_notifications += 1;
 	} else {
 		disconnection_notifications += 1;
 	}
-	LOG_INF("Peripheral: %s (Payload %d)", connected ? "Connected" : "Disconnected",
-		current_max_payload);
+	LOG_INF("Peripheral: %s (Payload %d)",
+		current_max_payload > 0 ? "Connected" : "Disconnected", current_max_payload);
 }
 
 static void main_epacket_bt_legacy_broadcast(void)

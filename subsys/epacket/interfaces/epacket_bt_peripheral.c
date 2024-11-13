@@ -112,7 +112,7 @@ static void update_interface_state(bool connected)
 		/* Interface is now disconnected */
 		SYS_SLIST_FOR_EACH_CONTAINER(&data->common_data.callback_list, cb, node) {
 			if (cb->interface_state) {
-				cb->interface_state(false, 0, cb->user_ctx);
+				cb->interface_state(0, cb->user_ctx);
 			}
 		}
 		data->last_notification = 0;
@@ -129,7 +129,7 @@ static void update_interface_state(bool connected)
 	/* Interface is now connected */
 	SYS_SLIST_FOR_EACH_CONTAINER(&data->common_data.callback_list, cb, node) {
 		if (cb->interface_state) {
-			cb->interface_state(true, max_payload, cb->user_ctx);
+			cb->interface_state(max_payload, cb->user_ctx);
 		}
 	}
 	data->last_notification = max_payload;

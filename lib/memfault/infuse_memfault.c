@@ -33,16 +33,16 @@ static char software_version[17];
 #if DT_NODE_EXISTS(DT_CHOSEN(infuse_memfault_epacket_dump))
 #define DUMP_INTERFACE DEVICE_DT_GET(DT_CHOSEN(infuse_memfault_epacket_dump))
 
-static void interface_state_cb(bool connected, uint16_t current_max_payload, void *user_ctx);
+static void interface_state_cb(uint16_t current_max_payload, void *user_ctx);
 
 static struct epacket_interface_cb epacket_cb = {
 	.interface_state = interface_state_cb,
 };
 static struct k_work_delayable epacket_dump_work;
 
-static void interface_state_cb(bool connected, uint16_t current_max_payload, void *user_ctx)
+static void interface_state_cb(uint16_t current_max_payload, void *user_ctx)
 {
-	if (connected) {
+	if (current_max_payload > 0) {
 		k_work_schedule(&epacket_dump_work, K_NO_WAIT);
 	}
 }

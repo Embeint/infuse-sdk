@@ -26,9 +26,9 @@ static K_SEM_DEFINE(tx_complete, 0, 1);
 
 LOG_MODULE_REGISTER(app, LOG_LEVEL_INF);
 
-static void udp_interface_state(bool connected, uint16_t current_max_payload, void *user_ctx)
+static void udp_interface_state(uint16_t current_max_payload, void *user_ctx)
 {
-	if (connected) {
+	if (current_max_payload > 0) {
 		k_sem_give(&epacket_udp_ready);
 	}
 }
