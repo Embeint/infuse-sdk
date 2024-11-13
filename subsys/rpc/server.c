@@ -45,9 +45,12 @@ struct net_buf *rpc_response_simple_if(const struct device *interface, int16_t r
 				       size_t len)
 {
 	struct net_buf *response_buf = epacket_alloc_tx_for_interface(interface, K_FOREVER);
-	struct infuse_rpc_rsp_header *header = net_buf_add_mem(response_buf, response, len);
+	struct infuse_rpc_rsp_header *header;
 
-	header->return_code = rc;
+	if (net_buf_tailroom(response_buf) >= len) {
+		header = net_buf_add_mem(response_buf, response, len);
+		header->return_code = rc;
+	}
 	return response_buf;
 }
 
