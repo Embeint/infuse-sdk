@@ -58,8 +58,12 @@ struct net_buf *rpc_command_kv_write(struct net_buf *request)
 				rc = kv_store_write(v->id, v->data, v->len);
 			}
 		}
-		/* Push response onto the buffer */
-		net_buf_add_le16(response, rc);
+		/* Push response onto the buffer.
+		 * If the backend has gone down, we still want to action writes.
+		 */
+		if (net_buf_tailroom(response) >= sizeof(int16_t)) {
+			net_buf_add_le16(response, rc);
+		}
 
 		consumed = sizeof(struct rpc_struct_kv_store_value) + v->len;
 		offset += consumed;
