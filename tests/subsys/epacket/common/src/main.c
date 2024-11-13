@@ -54,6 +54,23 @@ ZTEST(epacket_common, test_alloc_failure)
 	}
 }
 
+ZTEST(epacket_common, test_alloc_not_connected)
+{
+	const struct device *epacket_dummy = DEVICE_DT_GET(DT_NODELABEL(epacket_dummy));
+	struct net_buf *tx_buf;
+
+	/* Simulate interface not connected */
+	epacket_dummy_set_max_packet(0);
+
+	/* Packet is allocated */
+	tx_buf = epacket_alloc_tx_for_interface(epacket_dummy, K_FOREVER);
+	zassert_not_null(tx_buf);
+	/* No payload space */
+	zassert_equal(0, net_buf_tailroom(tx_buf));
+	/* Free buffer */
+	net_buf_unref(tx_buf);
+}
+
 ZTEST(epacket_common, test_receive)
 {
 	const struct device *epacket_dummy = DEVICE_DT_GET(DT_NODELABEL(epacket_dummy));
@@ -225,4 +242,9 @@ static bool security_init(const void *global_state)
 	return true;
 }
 
-ZTEST_SUITE(epacket_common, security_init, NULL, NULL, NULL, NULL);
+static void test_before(void *data)
+{
+	epacket_dummy_set_max_packet(CONFIG_EPACKET_PACKET_SIZE_MAX);
+}
+
+ZTEST_SUITE(epacket_common, security_init, NULL, test_before, NULL, NULL);
