@@ -21,6 +21,8 @@
 #include <infuse/data_logger/high_level/tdf.h>
 #include <infuse/epacket/interface.h>
 
+#include "../backends/common.h"
+
 #define DATA_GUARD_HEAD 0xb4ef00fc
 #define DATA_GUARD_TAIL 0xbf696b59
 
@@ -35,6 +37,7 @@ struct tdf_logger_config {
 		uint32_t guard_head;                                                               \
 		struct k_sem lock;                                                                 \
 		struct tdf_buffer_state tdf_state;                                                 \
+		struct data_logger_cb logger_cb;                                                   \
 		uint8_t full_block_write;                                                          \
 		uint8_t block_overhead;                                                            \
 		uint8_t tdf_buffer[len];                                                           \
@@ -46,6 +49,7 @@ struct tdf_logger_data {
 	uint32_t guard_head;
 	struct k_sem lock;
 	struct tdf_buffer_state tdf_state;
+	struct data_logger_cb logger_cb;
 	uint8_t full_block_write;
 	uint8_t block_overhead;
 	uint8_t tdf_buffer[];
@@ -214,6 +218,11 @@ int tdf_data_logger_log_array_dev(const struct device *dev, uint16_t tdf_id, uin
 		return -ENODEV;
 	}
 
+	/* Logging to disconnect backend is not possible */
+	if (data->tdf_state.buf.size == 0) {
+		return -ENOTCONN;
+	}
+
 	/* Logging on the system workqueue can cause deadlocks and should be avoided */
 	if (k_current_get() == k_work_queue_thread_get(&k_sys_work_q)) {
 		LOG_WRN("%s logging on system workqueue", dev->name);
@@ -250,6 +259,45 @@ void tdf_data_logger_lock(const struct device *dev)
 
 #endif /* CONFIG_ZTEST */
 
+static void tdf_block_size_update(const struct device *logger, uint16_t block_size, void *user_data)
+{
+	const struct device *dev = user_data;
+	const struct tdf_logger_config *config = dev->config;
+	struct tdf_logger_data *data = dev->data;
+	uint16_t limited = MIN(block_size, config->tdf_buffer_max_size);
+
+	k_sem_take(&data->lock, K_FOREVER);
+	LOG_DBG("%s: from %d to %d bytes", dev->name, data->tdf_state.buf.size, limited);
+	if (block_size == 0) {
+		/* Backend disconnected, can't do anything apart from drop the data */
+		if (data->tdf_state.buf.len) {
+			LOG_WRN("%s: Dropping %d bytes of logged data", dev->name,
+				data->tdf_state.buf.len);
+			data->tdf_state.buf.len = 0;
+		}
+	} else if (data->tdf_state.buf.len <= limited) {
+		/* Updated buffer size is larger than pending data, no problems */
+	} else {
+		/* More data pending than the current buffer size */
+		struct tdf_buffer_state state;
+		struct tdf_parsed tdf;
+
+		/* Snapshot the buffer state */
+		tdf_parse_start(&state, data->tdf_state.buf.data, data->tdf_state.buf.len);
+		/* Reset the loggers knowledge of pending data */
+		data->tdf_state.buf.size = limited;
+		tdf_buffer_state_reset(&data->tdf_state);
+		net_buf_simple_reserve(&data->tdf_state.buf, data->block_overhead);
+		/* Re-log pending TDF's into the same buffer, which will flush as appropriate */
+		while (tdf_parse(&state, &tdf) == 0) {
+			(void)log_locked(dev, tdf.tdf_id, tdf.tdf_len, tdf.tdf_num, tdf.time,
+					 tdf.period, tdf.data);
+		}
+	}
+	data->tdf_state.buf.size = limited;
+	k_sem_give(&data->lock);
+}
+
 IF_DISABLED(CONFIG_ZTEST, (static))
 int tdf_data_logger_init(const struct device *dev)
 {
@@ -262,6 +310,11 @@ int tdf_data_logger_init(const struct device *dev)
 
 	/* Get required overhead for message buffers */
 	data_logger_get_state(config->logger, &logger_state);
+
+	/* Register for callbacks */
+	data->logger_cb.block_size_update = tdf_block_size_update;
+	data->logger_cb.user_data = (void *)dev;
+	data_logger_common_register_cb(config->logger, &data->logger_cb);
 
 	/* Detect if we have just rebooted and there is potentially valid data on the buffers
 	 * to recover. The conditions that must pass:

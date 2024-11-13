@@ -28,10 +28,18 @@ struct test_tdf_buffer_state {
 	/* Buffer information */
 	struct net_buf_simple buf;
 };
+
+struct test_data_logger_cb {
+	void (*block_size_update)(const struct device *dev, uint16_t block_size, void *user_data);
+	void *user_data;
+	sys_snode_t node;
+};
+
 struct logger_data {
 	uint32_t guard_head;
 	struct k_sem lock;
 	struct test_tdf_buffer_state tdf_state;
+	struct test_data_logger_cb logger_cb;
 	uint8_t full_block_write;
 	uint8_t block_overhead;
 	uint8_t tdf_buffer[DATA_LOGGER_MAX_SIZE(DT_NODELABEL(data_logger_dummy))];
