@@ -160,6 +160,7 @@ static inline struct net_buf *epacket_alloc_tx_for_interface(const struct device
 {
 	const struct epacket_interface_common_config *config = dev->config;
 	struct net_buf *buf = epacket_alloc_tx(timeout);
+	uint16_t size;
 
 	if (buf == NULL) {
 		return NULL;
@@ -167,9 +168,14 @@ static inline struct net_buf *epacket_alloc_tx_for_interface(const struct device
 	/* Reserve space for header */
 	net_buf_reserve(buf, config->header_size);
 	/* Limit size based on interface */
-	buf->size = epacket_interface_max_packet_size(dev);
-	/* Hacky reservation for footer, automatically reversed by epacket_queue */
-	buf->size -= config->footer_size;
+	size = epacket_interface_max_packet_size(dev);
+	if (size > (config->header_size + config->footer_size)) {
+		/* Hacky reservation for footer, automatically reversed by epacket_queue */
+		buf->size = size - config->footer_size;
+	} else {
+		/* 0 payload size */
+		buf->size = config->header_size;
+	}
 	return buf;
 }
 
