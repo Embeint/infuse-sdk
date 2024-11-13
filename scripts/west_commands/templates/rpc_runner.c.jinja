@@ -71,6 +71,11 @@ void rpc_command_runner(struct net_buf *request)
 	if (response == NULL) {
 		/* No command run, alloc the response packet */
 		response = epacket_alloc_tx_for_interface(interface, K_FOREVER);
+		if (net_buf_tailroom(response) == 0) {
+			/* Response channel closed */
+			net_buf_unref(response);
+			return;
+		}
 		rsp_header = net_buf_add(response, sizeof(*rsp_header));
 		rsp_header->return_code = rc;
 	} else {
