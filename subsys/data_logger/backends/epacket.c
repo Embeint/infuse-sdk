@@ -30,6 +30,10 @@ static int logger_epacket_write(const struct device *dev, uint32_t phy_block,
 	const struct dl_epacket_config *config = dev->config;
 	struct net_buf *buf = epacket_alloc_tx_for_interface(config->backend, K_FOREVER);
 
+	if (net_buf_tailroom(buf) < mem_len) {
+		net_buf_unref(buf);
+		return -ENOSPC;
+	}
 	epacket_set_tx_metadata(buf, EPACKET_AUTH_NETWORK, 0x00, data_type);
 	net_buf_add_mem(buf, mem, mem_len);
 	epacket_queue(config->backend, buf);
