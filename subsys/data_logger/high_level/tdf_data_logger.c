@@ -164,6 +164,43 @@ void tdf_data_logger_flush(uint8_t logger_mask)
 	} while (dev);
 }
 
+static int log_locked(const struct device *dev, uint16_t tdf_id, uint8_t tdf_len, uint8_t tdf_num,
+		      uint64_t time, uint16_t period, const void *mem)
+{
+	struct tdf_logger_data *data = dev->data;
+	int rc;
+
+relog:
+	rc = tdf_add(&data->tdf_state, tdf_id, tdf_len, tdf_num, time, period, mem);
+	if (rc == -ENOMEM) {
+		LOG_DBG("%s no space, flush and retry", dev->name);
+		rc = flush_internal(dev, true);
+		if (rc < 0) {
+			return rc;
+		}
+		goto relog;
+	} else if (rc < 0) {
+		LOG_WRN("%s failed to add (%d)", dev->name, rc);
+		return rc;
+	} else if (rc != tdf_num) {
+		/* Only some TDFs added */
+		LOG_DBG("%s logged %d/%d", dev->name, rc, tdf_num);
+		mem = (uint8_t *)mem + ((uint16_t)tdf_len * rc);
+		time += (period * rc);
+		tdf_num -= rc;
+		goto relog;
+	}
+	LOG_DBG("%s current offset (%d/%d)", dev->name, data->tdf_state.buf.len,
+		data->tdf_state.buf.size);
+
+	/* Auto flush if no space left for more TDFs (3 byte header + 1 byte data) */
+	if (net_buf_simple_tailroom(&data->tdf_state.buf) < 4) {
+		LOG_DBG("%s auto flush", dev->name);
+		rc = flush_internal(dev, true);
+	}
+	return rc;
+}
+
 int tdf_data_logger_log_array_dev(const struct device *dev, uint16_t tdf_id, uint8_t tdf_len,
 				  uint8_t tdf_num, uint64_t time, uint16_t period, const void *mem)
 {
@@ -183,36 +220,7 @@ int tdf_data_logger_log_array_dev(const struct device *dev, uint16_t tdf_id, uin
 	}
 
 	k_sem_take(&data->lock, K_FOREVER);
-relog:
-	rc = tdf_add(&data->tdf_state, tdf_id, tdf_len, tdf_num, time, period, mem);
-	if (rc == -ENOMEM) {
-		LOG_DBG("%s no space, flush and retry", dev->name);
-		rc = flush_internal(dev, true);
-		if (rc < 0) {
-			goto unlock;
-		}
-		goto relog;
-	} else if (rc < 0) {
-		LOG_WRN("%s failed to add (%d)", dev->name, rc);
-		goto unlock;
-	} else if (rc != tdf_num) {
-		/* Only some TDFs added */
-		LOG_DBG("%s logged %d/%d", dev->name, rc, tdf_num);
-		mem = (uint8_t *)mem + ((uint16_t)tdf_len * rc);
-		time += (period * rc);
-		tdf_num -= rc;
-		goto relog;
-	}
-	LOG_DBG("%s current offset (%d/%d)", dev->name, data->tdf_state.buf.len,
-		data->tdf_state.buf.size);
-
-	/* Auto flush if no space left for more TDFs (3 byte header + 1 byte data) */
-	if (net_buf_simple_tailroom(&data->tdf_state.buf) < 4) {
-		LOG_DBG("%s auto flush", dev->name);
-		rc = flush_internal(dev, true);
-	}
-
-unlock:
+	rc = log_locked(dev, tdf_id, tdf_len, tdf_num, time, period, mem);
 	k_sem_give(&data->lock);
 	return rc < 0 ? rc : 0;
 }
