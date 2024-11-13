@@ -257,6 +257,13 @@ static void epacket_udp_decrypt_res(const struct device *dev, struct net_buf *bu
 	}
 }
 
+static uint16_t epacket_udp_max_packet(const struct device *dev)
+{
+	return k_event_test(&udp_state.state, UDP_STATE_SOCKET_OPEN)
+		       ? EPACKET_INTERFACE_MAX_PACKET(DT_DRV_INST(0))
+		       : 0;
+}
+
 static int epacket_udp_init(const struct device *dev)
 {
 	epacket_interface_common_init(dev);
@@ -273,6 +280,7 @@ static int epacket_udp_init(const struct device *dev)
 static const struct epacket_interface_api udp_api = {
 	.send = epacket_udp_send,
 	.decrypt_result = epacket_udp_decrypt_res,
+	.max_packet_size = epacket_udp_max_packet,
 };
 
 BUILD_ASSERT(sizeof(struct epacket_udp_frame) == DT_INST_PROP(0, header_size));
