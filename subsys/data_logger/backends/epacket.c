@@ -10,6 +10,7 @@
 
 #include <zephyr/device.h>
 
+#include <infuse/epacket/interface.h>
 #include <infuse/epacket/packet.h>
 #include <infuse/data_logger/logger.h>
 
@@ -18,7 +19,7 @@
 struct dl_epacket_config {
 	struct data_logger_common_config common;
 	const struct device *backend;
-	uint16_t max_block_size;
+	uint16_t interface_overhead;
 };
 struct dl_epacket_data {
 	struct data_logger_common_data common;
@@ -58,7 +59,8 @@ int logger_epacket_init(const struct device *dev)
 	/* Setup common data structure */
 	data->common.physical_blocks = UINT32_MAX;
 	data->common.logical_blocks = UINT32_MAX;
-	data->common.block_size = config->max_block_size;
+	data->common.block_size =
+		epacket_interface_max_packet_size(config->backend) - config->interface_overhead;
 
 	/* Register for callbacks on state changes */
 	data->interface_cb.interface_state = epacket_interface_state;
@@ -77,7 +79,8 @@ const struct data_logger_api data_logger_epacket_api = {
 	static struct dl_epacket_config config##inst = {                                           \
 		.common = COMMON_CONFIG_INIT(inst, false, true),                                   \
 		.backend = DEVICE_DT_GET(DT_INST_PROP(inst, epacket)),                             \
-		.max_block_size = EPACKET_INTERFACE_MAX_PAYLOAD(DT_INST_PROP(inst, epacket)),      \
+		.interface_overhead =                                                              \
+			EPACKET_INTERFACE_PACKET_OVERHEAD(DT_INST_PROP(inst, epacket)),            \
 	};                                                                                         \
 	static struct dl_epacket_data data##inst;                                                  \
 	DEVICE_DT_INST_DEFINE(inst, logger_epacket_init, NULL, &data##inst, &config##inst,         \
