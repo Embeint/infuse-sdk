@@ -55,12 +55,16 @@ int logger_epacket_init(const struct device *dev)
 {
 	const struct dl_epacket_config *config = dev->config;
 	struct dl_epacket_data *data = dev->data;
+	uint16_t packet_size = epacket_interface_max_packet_size(config->backend);
 
 	/* Setup common data structure */
 	data->common.physical_blocks = UINT32_MAX;
 	data->common.logical_blocks = UINT32_MAX;
-	data->common.block_size =
-		epacket_interface_max_packet_size(config->backend) - config->interface_overhead;
+	if (packet_size > config->interface_overhead) {
+		data->common.block_size = packet_size - config->interface_overhead;
+	} else {
+		data->common.block_size = 0;
+	}
 
 	/* Register for callbacks on state changes */
 	data->interface_cb.interface_state = epacket_interface_state;

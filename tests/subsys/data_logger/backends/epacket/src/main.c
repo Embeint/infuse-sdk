@@ -33,6 +33,23 @@ ZTEST(data_logger_epacket, test_init_constants)
 	zassert_false(state.requires_full_block_write);
 }
 
+ZTEST(data_logger_epacket, test_init_disconnected)
+{
+	const struct device *logger = DEVICE_DT_GET(DT_NODELABEL(data_logger_epacket));
+	struct data_logger_state state;
+
+	epacket_dummy_set_max_packet(0);
+	zassert_equal(0, logger_epacket_init(logger));
+
+	data_logger_get_state(logger, &state);
+	zassert_equal(0, state.block_size);
+	zassert_equal(0, state.erase_unit);
+	zassert_equal(0, state.block_overhead);
+	zassert_equal(UINT32_MAX, state.physical_blocks);
+	zassert_equal(UINT32_MAX, state.logical_blocks);
+	zassert_false(state.requires_full_block_write);
+}
+
 ZTEST(data_logger_epacket, test_block_read)
 {
 	const struct device *logger = DEVICE_DT_GET(DT_NODELABEL(data_logger_epacket));
@@ -97,6 +114,7 @@ static void data_logger_setup(void *fixture)
 {
 	const struct device *logger = DEVICE_DT_GET(DT_NODELABEL(data_logger_epacket));
 
+	epacket_dummy_set_max_packet(CONFIG_EPACKET_PACKET_SIZE_MAX);
 	(void)logger_epacket_init(logger);
 }
 
