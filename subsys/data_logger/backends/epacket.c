@@ -22,6 +22,7 @@ struct dl_epacket_config {
 };
 struct dl_epacket_data {
 	struct data_logger_common_data common;
+	struct epacket_interface_cb interface_cb;
 };
 
 static int logger_epacket_write(const struct device *dev, uint32_t phy_block,
@@ -40,6 +41,13 @@ static int logger_epacket_write(const struct device *dev, uint32_t phy_block,
 	return 0;
 }
 
+static void epacket_interface_state(bool connected, uint16_t current_max_payload, void *user_ctx)
+{
+	const struct device *dev = user_ctx;
+
+	data_logger_common_block_size_changed(dev, current_max_payload);
+}
+
 /* Need to hook into this function when testing */
 IF_DISABLED(CONFIG_ZTEST, (static))
 int logger_epacket_init(const struct device *dev)
@@ -51,6 +59,11 @@ int logger_epacket_init(const struct device *dev)
 	data->common.physical_blocks = UINT32_MAX;
 	data->common.logical_blocks = UINT32_MAX;
 	data->common.block_size = config->max_block_size;
+
+	/* Register for callbacks on state changes */
+	data->interface_cb.interface_state = epacket_interface_state;
+	data->interface_cb.user_ctx = (void *)dev;
+	epacket_register_callback(config->backend, &data->interface_cb);
 
 	return data_logger_common_init(dev);
 }
