@@ -68,9 +68,10 @@ int xoodyak_aead_encrypt(unsigned char *c, unsigned long long *clen, const unsig
 {
 	Xoodyak_Instance instance;
 
-	Xoodyak_Initialize(&instance, k, CRYPTO_KEYBYTES, NULL, 0, NULL, 0);
-	Xoodyak_Absorb(&instance, npub, CRYPTO_NPUBBYTES);
-	Xoodyak_Absorb(&instance, ad, (size_t)adlen);
+	Xoodyak_Initialize(&instance, k, CRYPTO_KEYBYTES, npub, CRYPTO_NPUBBYTES, NULL, 0);
+	if (adlen > 0) {
+		Xoodyak_Absorb(&instance, ad, (size_t)adlen);
+	}
 	Xoodyak_Encrypt(&instance, m, c, (size_t)mlen);
 	Xoodyak_Squeeze(&instance, tag, TAGLEN);
 	*clen = mlen;
@@ -88,9 +89,10 @@ int xoodyak_aead_decrypt(unsigned char *m, unsigned long long *mlen, unsigned ch
 
 	*mlen = 0;
 	mlen_ = clen;
-	Xoodyak_Initialize(&instance, k, CRYPTO_KEYBYTES, NULL, 0, NULL, 0);
-	Xoodyak_Absorb(&instance, npub, CRYPTO_NPUBBYTES);
-	Xoodyak_Absorb(&instance, ad, (size_t)adlen);
+	Xoodyak_Initialize(&instance, k, CRYPTO_KEYBYTES, npub, CRYPTO_NPUBBYTES, NULL, 0);
+	if (adlen > 0) {
+		Xoodyak_Absorb(&instance, ad, (size_t)adlen);
+	}
 	Xoodyak_Decrypt(&instance, c, m, (size_t)mlen_);
 	Xoodyak_Squeeze(&instance, tag_out, TAGLEN);
 	if (memcmp(tag_out, tag, TAGLEN) != 0) {
