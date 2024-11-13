@@ -234,6 +234,30 @@ ZTEST(rpc_server, test_echo_response)
 		net_buf_unref(tx);
 	}
 	zassert_is_null(net_buf_get(tx_fifo, K_MSEC(100)));
+
+	/* Echo with smaller response payload */
+	header.type = INFUSE_RPC_CMD;
+	header.auth = EPACKET_AUTH_DEVICE;
+	req_header->command_id = RPC_ID_ECHO;
+	req_header->request_id = request_id;
+	epacket_dummy_receive(epacket_dummy, &header, payload,
+			      sizeof(struct rpc_echo_request) + 32);
+	epacket_dummy_set_max_packet(24);
+
+	tx = net_buf_get(tx_fifo, K_MSEC(100));
+	zassert_not_null(tx);
+	tx_header = (void *)tx->data;
+	rsp = (void *)(tx->data + sizeof(*tx_header));
+	zassert_equal(INFUSE_RPC_RSP, tx_header->type);
+	zassert_equal(EPACKET_AUTH_DEVICE, tx_header->auth);
+	zassert_equal(request_id, rsp->header.request_id);
+	zassert_equal(RPC_ID_ECHO, rsp->header.command_id);
+	zassert_equal(0, rsp->header.return_code);
+	/* Smaller response than the TX send due to the interface size change */
+	zassert_equal(24, tx->len);
+	net_buf_unref(tx);
+
+	zassert_is_null(net_buf_get(tx_fifo, K_MSEC(100)));
 }
 
 static void test_data_sender(uint32_t to_send)
@@ -550,4 +574,9 @@ ZTEST(rpc_server, test_data_ack_fn)
 	}
 }
 
-ZTEST_SUITE(rpc_server, NULL, NULL, NULL, NULL, NULL);
+static void test_before(void *data)
+{
+	epacket_dummy_set_max_packet(CONFIG_EPACKET_PACKET_SIZE_MAX);
+}
+
+ZTEST_SUITE(rpc_server, NULL, NULL, test_before, NULL, NULL);

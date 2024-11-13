@@ -24,6 +24,6 @@ struct net_buf *rpc_command_echo(struct net_buf *request)
 
 	LOG_DBG("Echoing %d bytes", var_len);
 	response = rpc_response_simple_req(request, 0, &rsp, sizeof(rsp));
-	net_buf_add_mem(response, req->array, var_len);
+	net_buf_add_mem(response, req->array, MIN(net_buf_tailroom(response), var_len));
 	return response;
 }
