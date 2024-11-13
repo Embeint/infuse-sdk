@@ -363,7 +363,7 @@ int tdf_data_logger_init(const struct device *dev)
 
 		/* Link data buffer to net buf */
 		net_buf_simple_init_with_data(&data->tdf_state.buf, data->tdf_buffer,
-					      config->tdf_buffer_max_size);
+					      logger_state.block_size);
 		/* Reset buffer with overhead */
 		tdf_buffer_state_reset(&data->tdf_state);
 		net_buf_simple_reserve(&data->tdf_state.buf, data->block_overhead);
