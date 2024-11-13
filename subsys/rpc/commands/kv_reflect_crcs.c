@@ -40,6 +40,10 @@ struct net_buf *rpc_command_kv_reflect_crcs(struct net_buf *request)
 		}
 		/* Iterate over every key in slot */
 		for (int j = 0; j < defs[i].range; j++) {
+			/* Ensure space space exists for more CRCs */
+			if (net_buf_tailroom(response) < sizeof(rp->crcs[0])) {
+				goto loop_terminate;
+			}
 			/* Skip first N keys */
 			if (idx < req->offset) {
 				rp->remaining--;
@@ -54,10 +58,6 @@ struct net_buf *rpc_command_kv_reflect_crcs(struct net_buf *request)
 			idx++;
 
 			net_buf_add(response, sizeof(rp->crcs[0]));
-			if (net_buf_tailroom(response) < sizeof(rp->crcs[0])) {
-				/* No space left for more CRCs */
-				goto loop_terminate;
-			}
 		}
 	}
 loop_terminate:
