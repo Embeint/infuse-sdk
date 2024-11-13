@@ -107,6 +107,32 @@ ZTEST(rpc_server, test_invalid)
 	zassert_is_null(net_buf_get(tx_fifo, K_MSEC(100)));
 }
 
+ZTEST(rpc_server, test_invalid_channel_closed)
+{
+	const struct device *epacket_dummy = DEVICE_DT_GET(DT_NODELABEL(epacket_dummy));
+	struct k_fifo *tx_fifo = epacket_dummmy_transmit_fifo_get();
+	struct epacket_dummy_frame header = {0};
+	struct infuse_rpc_req_header *req_header;
+	uint8_t payload[16] = {0};
+
+	req_header = (void *)payload;
+	zassert_not_null(tx_fifo);
+
+	/* Loop many times to ensure no buffers are dropped */
+	for (int i = 0; i < 16; i++) {
+		/* Send a command */
+		header.type = INFUSE_RPC_CMD;
+		header.auth = EPACKET_AUTH_NETWORK;
+		req_header->command_id = RPC_BUILTIN_END;
+		req_header->request_id = 0x12345678 + i;
+		epacket_dummy_receive(epacket_dummy, &header, payload, 16);
+		epacket_dummy_set_max_packet(0);
+
+		/* Should be no response since the channel is reporting closed */
+		zassert_is_null(net_buf_get(tx_fifo, K_MSEC(100)));
+	}
+}
+
 ZTEST(rpc_server, test_auth_level)
 {
 	const struct device *epacket_dummy = DEVICE_DT_GET(DT_NODELABEL(epacket_dummy));
