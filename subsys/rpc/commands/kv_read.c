@@ -36,6 +36,10 @@ struct net_buf *rpc_command_kv_read(struct net_buf *request)
 	response = rpc_response_simple_req(request, 0, &rsp, sizeof(rsp));
 	/* Loop over all structures */
 	for (int i = 0; i < req->num; i++) {
+		/* Exit if no more space for data */
+		if (net_buf_tailroom(response) < sizeof(*val_hdr)) {
+			break;
+		}
 		/* Allocate the value header */
 		val_hdr = net_buf_add(response, sizeof(*val_hdr));
 		val_hdr->id = net_buf_pull_le16(request);
@@ -56,11 +60,6 @@ struct net_buf *rpc_command_kv_read(struct net_buf *request)
 			if (val_hdr->len > 0) {
 				net_buf_add(response, val_hdr->len);
 			}
-		}
-
-		/* Exit if no more space for data */
-		if (net_buf_tailroom(response) < sizeof(*val_hdr)) {
-			break;
 		}
 	}
 	return response;
