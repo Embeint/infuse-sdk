@@ -6,6 +6,10 @@
 
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
+#include <zephyr/sys/byteorder.h>
+#include <zephyr/bluetooth/addr.h>
+#include <zephyr/bluetooth/bluetooth.h>
+#include <zephyr/random/random.h>
 
 #include "common.h"
 
@@ -23,6 +27,21 @@ static int connection_notifications;
 static int disconnection_notifications;
 
 LOG_MODULE_REGISTER(app, LOG_LEVEL_INF);
+
+#ifdef CONFIG_INFUSE_BOARD_HAS_PUBLIC_BT_ADDRESS
+
+int infuse_board_public_bt_addr(bt_addr_le_t *addr)
+{
+	uint32_t nordic_oui = 0xF4CE36;
+
+	/* Generate a random Nordic MAC address for testing */
+	addr->type = BT_ADDR_LE_PUBLIC;
+	sys_put_le24(nordic_oui, addr->a.val + 3);
+	sys_put_le24(sys_rand32_get(), addr->a.val + 0);
+	return 0;
+}
+
+#endif /* CONFIG_INFUSE_BOARD_HAS_PUBLIC_BT_ADDRESS */
 
 static void peripheral_interface_state(uint16_t current_max_payload, void *user_ctx)
 {
@@ -43,6 +62,19 @@ static void main_epacket_bt_basic_broadcast(void)
 		.interface_state = peripheral_interface_state,
 	};
 	uint16_t packet_size;
+
+#ifdef CONFIG_INFUSE_BOARD_HAS_PUBLIC_BT_ADDRESS
+	bt_addr_le_t bt_addr[CONFIG_BT_ID_MAX];
+	size_t bt_addr_cnt = ARRAY_SIZE(bt_addr);
+
+	bt_id_get(bt_addr, &bt_addr_cnt);
+
+	/* Ensure public address was set correctly */
+	if (bt_addr->type != BT_ADDR_LE_PUBLIC) {
+		FAIL("Public Bluetooth address not set\n");
+		return;
+	}
+#endif /* CONFIG_INFUSE_BOARD_HAS_PUBLIC_BT_ADDRESS */
 
 	epacket_register_callback(epacket_bt_periph, &interface_cb);
 
