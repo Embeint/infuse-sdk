@@ -271,6 +271,15 @@
                 {"name": "enabled", "type": "uint8_t", "description": "Charger is enabled"}
             ]
         },
+        "28": {
+            "name": "GNSS_FIX_INFO",
+            "description": "Metadata about a GNSS location fix",
+            "fields": [
+                {"name": "time_fix", "type": "uint16_t", "description": "Duration it took for accurate time knowledge (seconds)"},
+                {"name": "location_fix", "type": "uint16_t", "description": "Duration it took for desired location knowledge (seconds)"},
+                {"name": "num_sv", "type": "uint8_t", "description": "Number of satellite vehicles used in location fix"}
+            ]
+        },
         "100": {
             "name": "ARRAY_TYPE",
             "description": "Example array type",
