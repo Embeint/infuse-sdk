@@ -42,15 +42,27 @@ struct task_gnss_args {
 	/**
 	 * Horizontal accuracy (meters)
 	 * In @a TASK_GNSS_FLAGS_LOW_POWER_MODE, sets desired accuracy.
-	 * In @a TASK_GNSS_FLAGS_RUN_TO_FIX, sets accuracy to terminate at.
+	 * In @a TASK_GNSS_FLAGS_RUN_TO_LOCATION_FIX, sets accuracy to terminate at.
 	 */
 	uint16_t accuracy_m;
 	/**
 	 * Horizontal diluation of precision (0.1)
 	 * In @a TASK_GNSS_FLAGS_LOW_POWER_MODE, sets desired PDOP.
-	 * In @a TASK_GNSS_FLAGS_RUN_TO_FIX, sets PDOP to terminate at.
+	 * In @a TASK_GNSS_FLAGS_RUN_TO_LOCATION_FIX, sets PDOP to terminate at.
 	 */
 	uint16_t position_dop;
+	/** @a TASK_GNSS_FLAGS_RUN_TO_LOCATION_FIX specific arguments */
+	struct {
+		/** Terminate fix if this duration passes without any location information */
+		uint8_t any_fix_timeout;
+		/** Terminate fix if the accuracy plateaus */
+		struct {
+			/** Location accuracy must improve by at least this many meters */
+			uint8_t min_accuracy_improvement;
+			/** Timeout for accuracy to improve by @a min_accuracy_improvement */
+			uint8_t timeout;
+		} fix_plateau;
+	} run_to_fix;
 } __packed;
 
 #ifdef __cplusplus
