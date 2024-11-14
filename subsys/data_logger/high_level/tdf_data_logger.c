@@ -135,7 +135,9 @@ static int flush_internal(const struct device *dev, bool locked)
 	/* Push data to logger */
 	rc = data_logger_block_write(config->logger, INFUSE_TDF, data->tdf_state.buf.data,
 				     data->tdf_state.buf.len);
-	if (rc < 0) {
+	if (rc == -ENOTCONN) {
+		LOG_DBG("%s failed to write block (%d)", dev->name, rc);
+	} else if (rc < 0) {
 		LOG_ERR("%s failed to write block (%d)", dev->name, rc);
 	}
 

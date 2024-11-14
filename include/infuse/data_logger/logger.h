@@ -98,6 +98,7 @@ void data_logger_get_state(const struct device *dev, struct data_logger_state *s
  * @param block_len Total block data length (Including overhead bytes)
  *
  * @retval 0 on success
+ * @retval -ENOTCONN data logger is currently disconnected
  * @retval -EINVAL invalid block length
  * @retval -ENOMEM data logger is full
  * @retval -errno on error

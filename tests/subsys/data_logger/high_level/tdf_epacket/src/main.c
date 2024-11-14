@@ -296,7 +296,7 @@ ZTEST(tdf_data_logger, test_backend_disconnect)
 
 	epacket_dummy_set_interface_state(dummy, false);
 	rc = tdf_data_logger_flush_dev(logger);
-	zassert_equal(-EINVAL, rc);
+	zassert_equal(-ENOTCONN, rc);
 	epacket_dummy_set_interface_state(dummy, true);
 
 	/* Data is lost here */
