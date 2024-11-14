@@ -343,6 +343,16 @@ struct tdf_charger_en_control {
 	uint8_t enabled;
 } __packed;
 
+/* Metadata about a GNSS location fix */
+struct tdf_gnss_fix_info {
+	/* Duration it took for accurate time knowledge (seconds) */
+	uint16_t time_fix;
+	/* Duration it took for desired location knowledge (seconds) */
+	uint16_t location_fix;
+	/* Number of satellite vehicles used in location fix */
+	uint8_t num_sv;
+} __packed;
+
 /* Example array type */
 struct tdf_array_type {
 	/* I am an array of length 4 */
@@ -375,6 +385,7 @@ enum tdf_builtin_id {
 	TDF_ALGORITHM_OUTPUT = 25,
 	TDF_RUNTIME_ERROR = 26,
 	TDF_CHARGER_EN_CONTROL = 27,
+	TDF_GNSS_FIX_INFO = 28,
 	TDF_ARRAY_TYPE = 100,
 	/* End of builtin TDF range */
 	TDF_BUILTIN_END = 1024,
@@ -406,6 +417,7 @@ enum tdf_builtin_size {
 	_TDF_ALGORITHM_OUTPUT_SIZE = sizeof(struct tdf_algorithm_output),
 	_TDF_RUNTIME_ERROR_SIZE = sizeof(struct tdf_runtime_error),
 	_TDF_CHARGER_EN_CONTROL_SIZE = sizeof(struct tdf_charger_en_control),
+	_TDF_GNSS_FIX_INFO_SIZE = sizeof(struct tdf_gnss_fix_info),
 	_TDF_ARRAY_TYPE_SIZE = sizeof(struct tdf_array_type),
 };
 
