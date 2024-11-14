@@ -210,7 +210,7 @@ int data_logger_block_write(const struct device *dev, enum infuse_type type, voi
 
 	/* Validate block length */
 	if (block_len > data->block_size) {
-		return -EINVAL;
+		return data->block_size == 0 ? -ENOTCONN : -EINVAL;
 	}
 	/* Check there is still space on the logger */
 	if (data->current_block >= data->logical_blocks) {
