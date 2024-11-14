@@ -329,7 +329,7 @@ int tdf_data_logger_init(const struct device *dev)
 	 *    b. Buffer timestamp matches recovered timestamp
 	 */
 	if ((data->guard_head == DATA_GUARD_HEAD) && (*guard_tail == DATA_GUARD_TAIL) &&
-	    (data->tdf_state.buf.size == config->tdf_buffer_max_size) &&
+	    (data->tdf_state.buf.size <= config->tdf_buffer_max_size) &&
 	    (data->tdf_state.buf.__buf == data->tdf_buffer) &&
 	    (data->full_block_write == logger_state.requires_full_block_write) &&
 	    (data->block_overhead == logger_state.block_overhead) &&
@@ -369,7 +369,7 @@ int tdf_data_logger_init(const struct device *dev)
 		tdf_buffer_state_reset(&data->tdf_state);
 		net_buf_simple_reserve(&data->tdf_state.buf, data->block_overhead);
 	}
-	LOG_DBG("%s max size %d (overhead %d)", dev->name, data->tdf_state.buf.size,
+	LOG_DBG("%s max size %d (overhead %d)", dev->name, config->tdf_buffer_max_size,
 		data->block_overhead);
 	if (recovered) {
 		LOG_INF("%s recovered %d bytes over reboot", dev->name, data->tdf_state.buf.len);
