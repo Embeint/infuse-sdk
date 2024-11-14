@@ -270,14 +270,11 @@ static void tdf_block_size_update(const struct device *logger, uint16_t block_si
 	k_sem_take(&data->lock, K_FOREVER);
 	LOG_DBG("%s: from %d to %d bytes", dev->name, data->tdf_state.buf.size, limited);
 	if (block_size == 0) {
-		/* Backend disconnected, can't do anything apart from drop the data */
-		if (data->tdf_state.buf.len) {
-			LOG_WRN("%s: Dropping %d bytes of logged data", dev->name,
-				data->tdf_state.buf.len);
-			data->tdf_state.buf.len = 0;
-		}
+		/* Backend disconnected, revert to using all RAM for buffering */
+		data->tdf_state.buf.size = config->tdf_buffer_max_size;
 	} else if (data->tdf_state.buf.len <= limited) {
 		/* Updated buffer size is larger than pending data, no problems */
+		data->tdf_state.buf.size = limited;
 	} else {
 		/* More data pending than the current buffer size */
 		struct tdf_buffer_state state;
@@ -295,7 +292,6 @@ static void tdf_block_size_update(const struct device *logger, uint16_t block_si
 					 tdf.period, tdf.data);
 		}
 	}
-	data->tdf_state.buf.size = limited;
 	k_sem_give(&data->lock);
 }
 
@@ -308,6 +304,7 @@ int tdf_data_logger_init(const struct device *dev)
 	uint32_t *guard_tail =
 		(uint32_t *)(((uint8_t *)data) + GUARD_TAIL_OFFSET(config->tdf_buffer_max_size));
 	bool recovered = false;
+	uint16_t size;
 
 	/* Get required overhead for message buffers */
 	data_logger_get_state(config->logger, &logger_state);
@@ -362,9 +359,14 @@ int tdf_data_logger_init(const struct device *dev)
 		data->block_overhead = logger_state.block_overhead;
 		data->full_block_write = logger_state.requires_full_block_write;
 
+		/* If the backend is currently disconnected, allow buffering in RAM using
+		 * all the available storage until the backend is connected.
+		 */
+		size = logger_state.block_size == 0 ? config->tdf_buffer_max_size
+						    : logger_state.block_size;
+
 		/* Link data buffer to net buf */
-		net_buf_simple_init_with_data(&data->tdf_state.buf, data->tdf_buffer,
-					      logger_state.block_size);
+		net_buf_simple_init_with_data(&data->tdf_state.buf, data->tdf_buffer, size);
 		/* Reset buffer with overhead */
 		tdf_buffer_state_reset(&data->tdf_state);
 		net_buf_simple_reserve(&data->tdf_state.buf, data->block_overhead);
@@ -373,6 +375,10 @@ int tdf_data_logger_init(const struct device *dev)
 		data->block_overhead);
 	if (recovered) {
 		LOG_INF("%s recovered %d bytes over reboot", dev->name, data->tdf_state.buf.len);
+		if (logger_state.block_size == 0) {
+			/* Backend currently disconnected, revert to maximum size */
+			data->tdf_state.buf.size = config->tdf_buffer_max_size;
+		}
 	}
 	return 0;
 }
