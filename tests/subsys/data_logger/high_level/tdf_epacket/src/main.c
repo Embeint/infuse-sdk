@@ -22,6 +22,10 @@ enum {
 	TDF_RANDOM = 37,
 };
 
+void epacket_interface_common_init(const struct device *dev);
+int logger_epacket_init(const struct device *dev);
+int tdf_data_logger_init(const struct device *dev);
+
 ZTEST(tdf_data_logger, test_log_error)
 {
 	const struct device *logger = DEVICE_DT_GET(DT_NODELABEL(tdf_logger_epacket));
@@ -268,18 +272,36 @@ ZTEST(tdf_data_logger, test_backend_disconnect)
 	epacket_dummy_set_interface_state(dummy, false);
 	zassert_is_null(net_buf_get(sent_queue, K_MSEC(1)));
 
-	/* Attempt to log, should error */
-	rc = tdf_data_logger_log_dev(logger, TDF_RANDOM, 30, 0, tdf_data);
-	zassert_equal(-ENOTCONN, rc);
+	/* Log again, should be fine */
+	rc = tdf_data_logger_log_dev(logger, TDF_RANDOM, 10, 0, tdf_data);
+	zassert_equal(0, rc);
 
-	/* Reconnect backend, nothing should be sent (previous data discarded) */
+	/* Reconnect backend, data should have been preserved */
 	epacket_dummy_set_interface_state(dummy, true);
 	tdf_data_logger_flush_dev(logger);
-	zassert_is_null(net_buf_get(sent_queue, K_MSEC(1)));
+	buf = net_buf_get(sent_queue, K_MSEC(1));
+	zassert_not_null(buf);
+	zassert_true(buf->len > (sizeof(struct epacket_dummy_frame) + 40));
+	net_buf_unref(buf);
 
 	/* Cycle with nothing pending */
 	epacket_dummy_set_interface_state(dummy, false);
 	epacket_dummy_set_interface_state(dummy, true);
+	zassert_is_null(net_buf_get(sent_queue, K_MSEC(1)));
+
+	/* Log and try to flush while disconnected */
+	rc = tdf_data_logger_log_dev(logger, TDF_RANDOM, 30, 0, tdf_data);
+	zassert_equal(0, rc);
+	zassert_is_null(net_buf_get(sent_queue, K_MSEC(1)));
+
+	epacket_dummy_set_interface_state(dummy, false);
+	rc = tdf_data_logger_flush_dev(logger);
+	zassert_equal(-EINVAL, rc);
+	epacket_dummy_set_interface_state(dummy, true);
+
+	/* Data is lost here */
+	rc = tdf_data_logger_flush_dev(logger);
+	zassert_equal(0, rc);
 	zassert_is_null(net_buf_get(sent_queue, K_MSEC(1)));
 
 	/* Works as per usual here */
@@ -288,6 +310,47 @@ ZTEST(tdf_data_logger, test_backend_disconnect)
 	tdf_data_logger_flush_dev(logger);
 	buf = net_buf_get(sent_queue, K_MSEC(1));
 	zassert_not_null(buf);
+	net_buf_unref(buf);
+}
+
+ZTEST(tdf_data_logger, test_backend_disconnect_after_reboot)
+{
+	const struct device *dummy = DEVICE_DT_GET(DT_NODELABEL(epacket_dummy));
+	const struct device *data_logger = DEVICE_DT_GET(DT_NODELABEL(data_logger_epacket));
+	const struct device *logger = DEVICE_DT_GET(DT_NODELABEL(tdf_logger_epacket));
+	struct k_fifo *sent_queue = epacket_dummmy_transmit_fifo_get();
+	uint8_t tdf_data[128];
+	struct net_buf *buf;
+	int rc;
+
+	/* Log 32 bytes */
+	rc = tdf_data_logger_log_dev(logger, TDF_RANDOM, 30, 0, tdf_data);
+	zassert_equal(0, rc);
+	zassert_is_null(net_buf_get(sent_queue, K_MSEC(1)));
+
+	/* Pretend that backend boots in disconnected state */
+	epacket_dummy_set_max_packet(0);
+	epacket_interface_common_init(dummy);
+	logger_epacket_init(data_logger);
+	tdf_data_logger_init(logger);
+
+	/* Even though we are disconnected, we should be able to continue filling the recovered
+	 * buffer.
+	 */
+	rc = tdf_data_logger_log_dev(logger, TDF_RANDOM, 10, 0, tdf_data);
+	zassert_equal(0, rc);
+	zassert_is_null(net_buf_get(sent_queue, K_MSEC(1)));
+
+	/* Reconnect backend */
+	epacket_dummy_set_max_packet(CONFIG_EPACKET_PACKET_SIZE_MAX);
+	epacket_dummy_set_interface_state(dummy, true);
+
+	/* Flushing the logger should have all the data */
+	rc = tdf_data_logger_flush_dev(logger);
+	zassert_equal(0, rc);
+	buf = net_buf_get(sent_queue, K_MSEC(1));
+	zassert_not_null(buf);
+	zassert_true(buf->len > (sizeof(struct epacket_dummy_frame) + 40));
 	net_buf_unref(buf);
 }
 
