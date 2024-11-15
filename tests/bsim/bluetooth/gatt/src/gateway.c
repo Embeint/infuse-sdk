@@ -230,6 +230,7 @@ static void main_connect_discover_name(void)
 	};
 	struct bt_conn_auto_discovery discovery = {
 		.characteristics = characteristics,
+		.cache = NULL,
 		.remote_info = remote_info,
 		.num_characteristics = ARRAY_SIZE(characteristics),
 	};
@@ -337,6 +338,7 @@ static void main_connect_discover_nonexistant(void)
 	};
 	struct bt_conn_auto_discovery discovery = {
 		.characteristics = characteristics,
+		.cache = NULL,
 		.remote_info = remote_info,
 		.num_characteristics = 1,
 	};
@@ -398,11 +400,19 @@ static void main_connect_discover_nonexistant(void)
 	PASS("Connect discover nonexistant passed\n\n");
 }
 
+static const struct bt_uuid_128 command_uuid = BT_UUID_INIT_128(INFUSE_SERVICE_UUID_COMMAND_VAL);
+static const struct bt_uuid_128 data_uuid = BT_UUID_INIT_128(INFUSE_SERVICE_UUID_DATA_VAL);
+static const struct bt_uuid_128 logging_uuid = BT_UUID_INIT_128(INFUSE_SERVICE_UUID_LOGGING_VAL);
+static const struct bt_uuid *infuse_iot_characteristics[] = {
+	(const void *)&command_uuid,
+	(const void *)&data_uuid,
+	(const void *)&logging_uuid,
+};
+
 static void main_connect_terminator(void)
 {
-	const struct bt_uuid_16 device_name_uuid = BT_UUID_INIT_16(BT_UUID_GAP_DEVICE_NAME_VAL);
 	struct k_poll_signal sig;
-	struct bt_gatt_remote_char remote_info[1] = {0};
+	struct bt_gatt_remote_char remote_info[3] = {0};
 	struct bt_conn_auto_setup_params conn_params = {
 		.conn_params = BT_LE_CONN_PARAM_INIT(0x10, 0x15, 0, 400),
 		.create_timeout_ms = 2000,
@@ -410,13 +420,11 @@ static void main_connect_terminator(void)
 		.conn_terminated_cb = NULL,
 		.user_data = &sig,
 	};
-	const struct bt_uuid *characteristics[] = {
-		(const void *)&device_name_uuid,
-	};
 	struct bt_conn_auto_discovery discovery = {
-		.characteristics = characteristics,
+		.characteristics = infuse_iot_characteristics,
+		.cache = NULL,
 		.remote_info = remote_info,
-		.num_characteristics = 1,
+		.num_characteristics = 3,
 	};
 	struct k_poll_event events[] = {
 		K_POLL_EVENT_INITIALIZER(K_POLL_TYPE_SIGNAL, K_POLL_MODE_NOTIFY_ONLY, &sig),
@@ -454,6 +462,11 @@ static void main_connect_terminator(void)
 			return;
 		}
 		if (conn_rc == 0) {
+			if ((remote_info[0].value_handle == 0) ||
+			    (remote_info[1].value_handle == 0)) {
+				FAIL("Characteristic discovery failed\n");
+				return;
+			}
 			bt_conn_disconnect_sync(conn);
 		}
 		bt_conn_unref(conn);

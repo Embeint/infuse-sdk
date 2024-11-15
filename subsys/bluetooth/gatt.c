@@ -87,22 +87,13 @@ static void connection_error(struct bt_conn *conn, int err)
 	s->params = NULL;
 }
 
-static void discovery_error(struct bt_conn *conn, int err)
-{
-	struct bt_gatt_state *s = &state[bt_conn_index(conn)];
-
-	/* Clear cache */
-	memset(s->discovery->db_hash, 0x00, sizeof(s->discovery->db_hash));
-	connection_error(conn, err);
-}
-
 static void descriptor_discovery(struct bt_conn *conn);
 
 static uint8_t ccc_discover_cb(struct bt_conn *conn, const struct bt_gatt_attr *attr,
 			       struct bt_gatt_discover_params *params, int err)
 {
 	if (err != 0) {
-		discovery_error(conn, err);
+		connection_error(conn, err);
 		return BT_GATT_ITER_STOP;
 	}
 	if (!attr) {
@@ -135,6 +126,7 @@ static void descriptor_discovery(struct bt_conn *conn)
 	static struct bt_gatt_discover_params descriptor_params;
 	struct bt_gatt_state *s = &state[bt_conn_index(conn)];
 	struct bt_gatt_remote_char *remote_char;
+	bool any_found = false;
 	int rc;
 
 	/* Find characteristic without CCC yet found */
@@ -164,7 +156,7 @@ static void descriptor_discovery(struct bt_conn *conn)
 		/* Start discovery procedure */
 		rc = bt_gatt_discover(conn, &descriptor_params);
 		if (rc < 0) {
-			discovery_error(conn, rc);
+			connection_error(conn, rc);
 		}
 		return;
 	}
@@ -172,9 +164,25 @@ static void descriptor_discovery(struct bt_conn *conn)
 	LOG_INF("Characteristic discovery complete");
 	for (int i = 0; i < s->discovery->num_characteristics; i++) {
 		remote_char = &s->discovery->remote_info[i];
+		if (remote_char->attr_start_handle) {
+			any_found = true;
+		}
 		LOG_INF("\t%d: Range (%5d - %5d) Value %d CCC %d", i,
 			remote_char->attr_start_handle, remote_char->attr_end_handle,
 			remote_char->value_handle, remote_char->ccc_handle);
+	}
+
+	/* Overwrite the cache if we found any of the requested characteristics */
+	if (any_found && s->discovery->cache) {
+		K_SPINLOCK(&s->discovery->cache->lock) {
+			/* Copy the DB hash */
+			memcpy(s->discovery->cache->db_hash, s->discovery->db_hash_pending,
+			       sizeof(s->discovery->db_hash_pending));
+			/* Copy the characteristics */
+			memcpy(s->discovery->cache->remote_info, s->discovery->remote_info,
+			       s->discovery->num_characteristics *
+				       sizeof(struct bt_gatt_remote_char));
+		}
 	}
 
 	/* Connection has been setup and discovered */
@@ -185,7 +193,7 @@ static uint8_t char_discover_cb(struct bt_conn *conn, const struct bt_gatt_attr 
 				struct bt_gatt_discover_params *params, int err)
 {
 	if (err != 0) {
-		discovery_error(conn, err);
+		connection_error(conn, err);
 		return BT_GATT_ITER_STOP;
 	}
 	if (!attr) {
@@ -262,7 +270,7 @@ static void characteristic_discovery(struct bt_conn *conn)
 	/* Start discovery procedure */
 	rc = bt_gatt_discover(conn, &characteristic_params);
 	if (rc) {
-		discovery_error(conn, rc);
+		connection_error(conn, rc);
 	}
 }
 
@@ -270,20 +278,30 @@ uint8_t gatt_db_hash_cb(struct bt_conn *conn, uint8_t err, struct bt_gatt_read_p
 			const void *data, uint16_t length)
 {
 	struct bt_gatt_state *s = &state[bt_conn_index(conn)];
+	bool done = false;
 
-	if ((err) || (length != sizeof(s->discovery->db_hash))) {
+	if ((err) || (length != sizeof(s->discovery->cache->db_hash))) {
 		LOG_WRN("Failed to read DB hash (%d)", err);
-		memset(s->discovery->db_hash, 0x00, sizeof(s->discovery->db_hash));
 	} else {
-		/* If DB hash matches cached value, we can skip discovery */
-		if (memcmp(s->discovery->db_hash, data, length) == 0) {
-			LOG_INF("Characteristic handles from %s", "cache");
+		K_SPINLOCK(&s->discovery->cache->lock) {
+			/* If DB hash matches cached value, we can skip discovery */
+			if (memcmp(s->discovery->cache->db_hash, data, length) == 0) {
+				LOG_INF("Characteristic handles from %s", "cache");
+				/* Copy from cache into parameters */
+				memcpy(s->discovery->remote_info, s->discovery->cache->remote_info,
+				       s->discovery->num_characteristics *
+					       sizeof(struct bt_gatt_remote_char));
+				done = true;
+			}
+		}
+		if (done) {
 			connection_done(conn);
 			return BT_GATT_ITER_STOP;
 		}
+
 		LOG_INF("Characteristic handles from %s", "discovery");
-		/* Copy DB hash into conn params */
-		memcpy(s->discovery->db_hash, data, length);
+		/* Cache the database hash while performing discovery */
+		memcpy(s->discovery->db_hash_pending, data, length);
 	}
 
 	/* Start characteristic discovery */
@@ -303,9 +321,15 @@ static void mtu_exchange_cb(struct bt_conn *conn, uint8_t err,
 
 	LOG_DBG("MTU exchange %s (%u)", err == 0U ? "successful" : "failed", bt_gatt_get_mtu(conn));
 
-	if (s->discovery == NULL) {
-		/* No characteristic discovery to do, done */
+	if (s->discovery == NULL || s->discovery->num_characteristics == 0) {
+		/* No characteristic discovery to do, connection complete */
 		connection_done(conn);
+		return;
+	}
+
+	if (s->discovery->cache == NULL) {
+		/* No cache, skip to discovery */
+		characteristic_discovery(conn);
 		return;
 	}
 
