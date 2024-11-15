@@ -1,0 +1,10 @@
+common:
+  tags: gnss
+  min_flash: 64
+  min_ram: 32
+tests:
+  task_runner.tasks.gnss.ubx_m8:
+    required_snippets:
+      - infuse
+    integration_platforms:
+      - mps2/an385
