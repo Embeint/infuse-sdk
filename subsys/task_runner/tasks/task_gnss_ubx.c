@@ -45,6 +45,7 @@ struct gnss_run_state {
 	struct k_poll_signal nav_timegps_rx;
 	uint64_t next_time_sync;
 	uint32_t task_start;
+	uint32_t time_acquired;
 	uint32_t plateau_accuracy;
 	uint8_t plateau_timeout;
 	uint8_t flags;
@@ -137,9 +138,10 @@ static void nav_timegps_handle(struct gnss_run_state *state, const struct task_g
 	state->flags |= TIME_SYNC_DONE;
 	state->next_time_sync =
 		k_uptime_get() + (CONFIG_TASK_RUNNER_GNSS_TIME_RESYNC_PERIOD_SEC * MSEC_PER_SEC);
+	state->time_acquired = k_uptime_seconds();
 }
 
-static void log_and_publish(struct gnss_run_state *state, const struct ubx_msg_nav_pvt *pvt)
+static uint64_t log_and_publish(struct gnss_run_state *state, const struct ubx_msg_nav_pvt *pvt)
 {
 	struct tdf_gcs_wgs84_llha llha = {
 		.location =
@@ -180,6 +182,8 @@ static void log_and_publish(struct gnss_run_state *state, const struct ubx_msg_n
 			      sizeof(struct tdf_gcs_wgs84_llha), epoch_time, &llha);
 	task_schedule_tdf_log(state->schedule, TASK_GNSS_LOG_UBX_NAV_PVT, TDF_UBX_NAV_PVT,
 			      sizeof(struct tdf_ubx_nav_pvt), epoch_time, pvt);
+
+	return epoch_time;
 }
 
 static int nav_pvt_cb(uint8_t message_class, uint8_t message_id, const void *payload,
@@ -306,6 +310,7 @@ void gnss_task_fn(const struct task_schedule *schedule, struct k_poll_signal *te
 	run_state.best_fix.h_acc = UINT32_MAX;
 	run_state.plateau_accuracy = UINT32_MAX;
 	run_state.task_start = k_uptime_seconds();
+	run_state.time_acquired = 0;
 	k_poll_signal_init(&run_state.nav_pvt_rx);
 	k_poll_signal_init(&run_state.nav_timegps_rx);
 
@@ -419,10 +424,22 @@ void gnss_task_fn(const struct task_schedule *schedule, struct k_poll_signal *te
 	/* Log at end of run for a location fix */
 	if (run_target == TASK_GNSS_FLAGS_RUN_TO_LOCATION_FIX) {
 		struct ubx_msg_nav_pvt *best = &run_state.best_fix;
+		struct tdf_gnss_fix_info fix_info = {
+			.time_fix = run_state.time_acquired
+					    ? (run_state.time_acquired - run_state.task_start)
+					    : UINT16_MAX,
+			.location_fix = k_uptime_seconds() - run_state.task_start,
+			.num_sv = run_state.best_fix.num_sv,
+		};
+		uint32_t epoch_time;
 
 		LOG_INF("Final Location: Lat %9d Lon %9d Height %dm Acc %dcm", best->lat, best->lon,
 			best->height / 1000, best->h_acc / 10);
-		log_and_publish(&run_state, &run_state.best_fix);
+		epoch_time = log_and_publish(&run_state, &run_state.best_fix);
+
+		/* */
+		task_schedule_tdf_log(schedule, TASK_GNSS_LOG_FIX_INFO, TDF_GNSS_FIX_INFO,
+				      sizeof(struct tdf_gnss_fix_info), epoch_time, &fix_info);
 	}
 
 	/* Cleanup message subscription */
