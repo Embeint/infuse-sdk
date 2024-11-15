@@ -119,7 +119,7 @@ static uint8_t ccc_discover_cb(struct bt_conn *conn, const struct bt_gatt_attr *
 
 	/* Assign CCC handle to appropriate characteristic */
 	for (int i = 0; i < s->discovery->num_characteristics; i++) {
-		remote_char = &s->discovery->characteristics[i];
+		remote_char = &s->discovery->remote_info[i];
 
 		if (IN_RANGE(attr->handle, remote_char->attr_start_handle,
 			     remote_char->attr_end_handle)) {
@@ -139,7 +139,7 @@ static void descriptor_discovery(struct bt_conn *conn)
 
 	/* Find characteristic without CCC yet found */
 	for (int i = 0; i < s->discovery->num_characteristics; i++) {
-		remote_char = &s->discovery->characteristics[i];
+		remote_char = &s->discovery->remote_info[i];
 
 		if (remote_char->attr_start_handle == 0x0000) {
 			/* Characteristic was not found */
@@ -171,7 +171,7 @@ static void descriptor_discovery(struct bt_conn *conn)
 
 	LOG_INF("Characteristic discovery complete");
 	for (int i = 0; i < s->discovery->num_characteristics; i++) {
-		remote_char = &s->discovery->characteristics[i];
+		remote_char = &s->discovery->remote_info[i];
 		LOG_INF("\t%d: Range (%5d - %5d) Value %d CCC %d", i,
 			remote_char->attr_start_handle, remote_char->attr_end_handle,
 			remote_char->value_handle, remote_char->ccc_handle);
@@ -197,13 +197,15 @@ static uint8_t char_discover_cb(struct bt_conn *conn, const struct bt_gatt_attr 
 	struct bt_gatt_chrc *chrc = (struct bt_gatt_chrc *)attr->user_data;
 	struct bt_gatt_state *s = &state[bt_conn_index(conn)];
 	struct bt_gatt_remote_char *remote_char;
+	const struct bt_uuid *uuid;
 
 	LOG_DBG("ATTR Handle %d Value Handle %d Properties %02X", attr->handle, chrc->value_handle,
 		chrc->properties);
 
 	/* Determine if this characteristic is one we are looking for */
 	for (int i = 0; i < s->discovery->num_characteristics; i++) {
-		remote_char = &s->discovery->characteristics[i];
+		uuid = s->discovery->characteristics[i];
+		remote_char = &s->discovery->remote_info[i];
 
 		if (remote_char->attr_start_handle != 0x0000) {
 			/* Update the previous characteristic end handle if appropriate */
@@ -213,7 +215,7 @@ static uint8_t char_discover_cb(struct bt_conn *conn, const struct bt_gatt_attr 
 			/* Already found */
 			continue;
 		}
-		if (bt_uuid_cmp(remote_char->uuid, chrc->uuid) == 0) {
+		if (bt_uuid_cmp(uuid, chrc->uuid) == 0) {
 			remote_char->properties = chrc->properties;
 			remote_char->attr_start_handle = attr->handle;
 			remote_char->value_handle = chrc->value_handle;
@@ -223,7 +225,7 @@ static uint8_t char_discover_cb(struct bt_conn *conn, const struct bt_gatt_attr 
 
 	/* Are we still looking for any characteristics? */
 	for (int i = 0; i < s->discovery->num_characteristics; i++) {
-		remote_char = &s->discovery->characteristics[i];
+		remote_char = &s->discovery->remote_info[i];
 		if ((remote_char->attr_start_handle == 0x0000) ||
 		    (remote_char->attr_end_handle == BT_ATT_LAST_ATTRIBUTE_HANDLE)) {
 			/* Still looking for information */
@@ -244,10 +246,10 @@ static void characteristic_discovery(struct bt_conn *conn)
 
 	/* Reset cached handles */
 	for (int i = 0; i < s->discovery->num_characteristics; i++) {
-		s->discovery->characteristics[i].attr_start_handle = 0x0000;
-		s->discovery->characteristics[i].attr_end_handle = BT_ATT_LAST_ATTRIBUTE_HANDLE;
-		s->discovery->characteristics[i].value_handle = 0x0000;
-		s->discovery->characteristics[i].ccc_handle = 0x0000;
+		s->discovery->remote_info[i].attr_start_handle = 0x0000;
+		s->discovery->remote_info[i].attr_end_handle = BT_ATT_LAST_ATTRIBUTE_HANDLE;
+		s->discovery->remote_info[i].value_handle = 0x0000;
+		s->discovery->remote_info[i].ccc_handle = 0x0000;
 	}
 
 	/* Set up the discovery parameters for characteristics */
