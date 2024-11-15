@@ -27,13 +27,10 @@ extern "C" {
 /**
  * @brief Remote GATT Characteristic information
  *
- * Instances of this class should only initialise the `uuid` field.
- * Other fields are discovered on the first connection, and re-used as long
+ * Fields are discovered on the first connection, and re-used as long
  * as the GATT DB hash of the remote device remains constant.
  */
 struct bt_gatt_remote_char {
-	/* UUID to discover (Caller provided) */
-	const struct bt_uuid *uuid;
 	/* Start handle for the characteristic */
 	uint16_t attr_start_handle;
 	/* End handle for the characteristic */
@@ -66,8 +63,10 @@ struct bt_conn_auto_setup_params {
  * @brief Characteristics to discover on the connection
  */
 struct bt_conn_auto_discovery {
+	/* List of UUIDs to discover */
+	const struct bt_uuid **characteristics;
 	/* Pointer to list of characteristics to discover */
-	struct bt_gatt_remote_char *characteristics;
+	struct bt_gatt_remote_char *remote_info;
 	/* Number of characteristics to discover */
 	uint8_t num_characteristics;
 	/* Cached GATT database hash value */

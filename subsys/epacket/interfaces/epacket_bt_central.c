@@ -16,7 +16,12 @@
 static const struct bt_uuid_128 command_uuid = BT_UUID_INIT_128(INFUSE_SERVICE_UUID_COMMAND_VAL);
 static const struct bt_uuid_128 data_uuid = BT_UUID_INIT_128(INFUSE_SERVICE_UUID_DATA_VAL);
 static const struct bt_uuid_128 logging_uuid = BT_UUID_INIT_128(INFUSE_SERVICE_UUID_LOGGING_VAL);
-static struct bt_gatt_remote_char infuse_iot_characteristics[3];
+static const struct bt_uuid *infuse_iot_characteristics[] = {
+	(const void *)&command_uuid,
+	(const void *)&data_uuid,
+	(const void *)&logging_uuid,
+};
+static struct bt_gatt_remote_char infuse_iot_remote_info[ARRAY_SIZE(infuse_iot_characteristics)];
 static struct bt_conn_auto_setup_params infuse_params;
 static struct bt_conn_auto_discovery infuse_discovery;
 static struct bt_gatt_subscribe_params command_sub_params;
@@ -138,15 +143,12 @@ int epacket_bt_gatt_connect(const bt_addr_le_t *peer, const struct bt_le_conn_pa
 		goto done;
 	}
 
-	infuse_iot_characteristics[0].uuid = (struct bt_uuid *)&command_uuid;
-	infuse_iot_characteristics[1].uuid = (struct bt_uuid *)&data_uuid;
-	infuse_iot_characteristics[2].uuid = (struct bt_uuid *)&logging_uuid;
-
 	/* Smallest connection interval for maximum data throughput */
 	infuse_params.conn_params =
 		(struct bt_le_conn_param)BT_LE_CONN_PARAM_INIT(0x10, 0x15, 0, 400);
 	infuse_params.create_timeout_ms = timeout_ms;
 	infuse_discovery.characteristics = infuse_iot_characteristics;
+	infuse_discovery.remote_info = infuse_iot_remote_info;
 	infuse_discovery.num_characteristics = ARRAY_SIZE(infuse_iot_characteristics);
 	infuse_params.conn_setup_cb = conn_setup_cb;
 	infuse_params.conn_terminated_cb = conn_terminated_cb;
@@ -180,7 +182,7 @@ conn_created:
 			{
 				.func = security_read_result,
 				.handle_count = 1,
-				.single.handle = infuse_iot_characteristics[0].value_handle,
+				.single.handle = infuse_iot_remote_info[0].value_handle,
 				.single.offset = 0,
 			},
 		.rsp = security,
@@ -203,15 +205,15 @@ conn_created:
 	}
 
 	/* Setup requested subscriptions */
-	rc = characteristic_subscribe(conn, &infuse_iot_characteristics[0], &command_sub_params,
+	rc = characteristic_subscribe(conn, &infuse_iot_remote_info[0], &command_sub_params,
 				      subscribe_commands);
 	if (rc == 0) {
-		rc = characteristic_subscribe(conn, &infuse_iot_characteristics[1],
-					      &data_sub_params, subscribe_data);
+		rc = characteristic_subscribe(conn, &infuse_iot_remote_info[1], &data_sub_params,
+					      subscribe_data);
 	}
-	if (rc == 0 && (infuse_iot_characteristics[2].ccc_handle != 0)) {
-		rc = characteristic_subscribe(conn, &infuse_iot_characteristics[2],
-					      &logging_sub_params, subscribe_logging);
+	if (rc == 0 && (infuse_iot_remote_info[2].ccc_handle != 0)) {
+		rc = characteristic_subscribe(conn, &infuse_iot_remote_info[2], &logging_sub_params,
+					      subscribe_logging);
 	}
 
 cleanup:

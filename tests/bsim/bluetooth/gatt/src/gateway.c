@@ -217,7 +217,7 @@ static void main_connect_discover_name(void)
 {
 	const struct bt_uuid_16 device_name_uuid = BT_UUID_INIT_16(BT_UUID_GAP_DEVICE_NAME_VAL);
 	struct k_poll_signal sig;
-	struct bt_gatt_remote_char characteristics[1] = {0};
+	struct bt_gatt_remote_char remote_info[1] = {0};
 	struct bt_conn_auto_setup_params conn_params = {
 		.conn_params = BT_LE_CONN_PARAM_INIT(0x10, 0x15, 0, 400),
 		.create_timeout_ms = 2000,
@@ -225,8 +225,12 @@ static void main_connect_discover_name(void)
 		.conn_terminated_cb = NULL,
 		.user_data = &sig,
 	};
+	const struct bt_uuid *characteristics[] = {
+		(const void *)&device_name_uuid,
+	};
 	struct bt_conn_auto_discovery discovery = {
 		.characteristics = characteristics,
+		.remote_info = remote_info,
 		.num_characteristics = ARRAY_SIZE(characteristics),
 	};
 	struct k_poll_event events[] = {
@@ -244,8 +248,6 @@ static void main_connect_discover_name(void)
 		FAIL("Failed to observe peer\n");
 		return;
 	}
-
-	characteristics[0].uuid = (struct bt_uuid *)&device_name_uuid;
 
 	for (int i = 0; i < 3; i++) {
 		k_poll_signal_reset(&sig);
@@ -271,8 +273,8 @@ static void main_connect_discover_name(void)
 		}
 
 		/* Sanity check discovered values */
-		if ((characteristics[0].value_handle == 0x0000) ||
-		    (characteristics[0].ccc_handle != 0x0000)) {
+		if ((remote_info[0].value_handle == 0x0000) ||
+		    (remote_info[0].ccc_handle != 0x0000)) {
 			FAIL("Unexpected characteristic discovery\n");
 			return;
 		}
@@ -283,7 +285,7 @@ static void main_connect_discover_name(void)
 			.handle_count = 1,
 			.single =
 				{
-					.handle = characteristics[0].value_handle,
+					.handle = remote_info[0].value_handle,
 					.offset = 0,
 				},
 		};
@@ -322,7 +324,7 @@ static void main_connect_discover_nonexistant(void)
 {
 	const struct bt_uuid_16 timezone_uuid = BT_UUID_INIT_16(BT_UUID_GATT_TZ_VAL);
 	struct k_poll_signal sig;
-	struct bt_gatt_remote_char characteristics[1] = {0};
+	struct bt_gatt_remote_char remote_info[1] = {0};
 	struct bt_conn_auto_setup_params conn_params = {
 		.conn_params = BT_LE_CONN_PARAM_INIT(0x10, 0x15, 0, 400),
 		.create_timeout_ms = 2000,
@@ -330,9 +332,13 @@ static void main_connect_discover_nonexistant(void)
 		.conn_terminated_cb = NULL,
 		.user_data = &sig,
 	};
+	const struct bt_uuid *characteristics[] = {
+		(const void *)&timezone_uuid,
+	};
 	struct bt_conn_auto_discovery discovery = {
 		.characteristics = characteristics,
-		.num_characteristics = ARRAY_SIZE(characteristics),
+		.remote_info = remote_info,
+		.num_characteristics = 1,
 	};
 	struct k_poll_event events[] = {
 		K_POLL_EVENT_INITIALIZER(K_POLL_TYPE_SIGNAL, K_POLL_MODE_NOTIFY_ONLY, &sig),
@@ -349,8 +355,6 @@ static void main_connect_discover_nonexistant(void)
 		FAIL("Failed to observe peer\n");
 		return;
 	}
-
-	characteristics[0].uuid = (struct bt_uuid *)&timezone_uuid;
 
 	for (int i = 0; i < 3; i++) {
 		k_poll_signal_reset(&sig);
@@ -376,8 +380,8 @@ static void main_connect_discover_nonexistant(void)
 		}
 
 		/* Sanity check discovered values */
-		if ((characteristics[0].value_handle != 0x0000) ||
-		    (characteristics[0].ccc_handle != 0x0000)) {
+		if ((remote_info[0].value_handle != 0x0000) ||
+		    (remote_info[0].ccc_handle != 0x0000)) {
 			FAIL("Unexpected characteristic discovery\n");
 			return;
 		}
@@ -398,7 +402,7 @@ static void main_connect_terminator(void)
 {
 	const struct bt_uuid_16 device_name_uuid = BT_UUID_INIT_16(BT_UUID_GAP_DEVICE_NAME_VAL);
 	struct k_poll_signal sig;
-	struct bt_gatt_remote_char characteristics[1] = {0};
+	struct bt_gatt_remote_char remote_info[1] = {0};
 	struct bt_conn_auto_setup_params conn_params = {
 		.conn_params = BT_LE_CONN_PARAM_INIT(0x10, 0x15, 0, 400),
 		.create_timeout_ms = 2000,
@@ -406,9 +410,13 @@ static void main_connect_terminator(void)
 		.conn_terminated_cb = NULL,
 		.user_data = &sig,
 	};
+	const struct bt_uuid *characteristics[] = {
+		(const void *)&device_name_uuid,
+	};
 	struct bt_conn_auto_discovery discovery = {
 		.characteristics = characteristics,
-		.num_characteristics = ARRAY_SIZE(characteristics),
+		.remote_info = remote_info,
+		.num_characteristics = 1,
 	};
 	struct k_poll_event events[] = {
 		K_POLL_EVENT_INITIALIZER(K_POLL_TYPE_SIGNAL, K_POLL_MODE_NOTIFY_ONLY, &sig),
@@ -425,8 +433,6 @@ static void main_connect_terminator(void)
 		FAIL("Failed to observe peer\n");
 		return;
 	}
-
-	characteristics[0].uuid = (struct bt_uuid *)&device_name_uuid;
 
 	/* Loop until the connection succeeds */
 	do {
