@@ -60,17 +60,31 @@ struct bt_conn_auto_setup_params {
 };
 
 /**
+ * @brief Database cache to speed up repeat connections
+ */
+struct bt_conn_auto_database_cache {
+	/* Cached GATT database hash value */
+	uint8_t db_hash[16];
+	/* Pointer to list of cached remote characteristics */
+	struct bt_gatt_remote_char *remote_info;
+	/* Access spinlock */
+	struct k_spinlock lock;
+};
+
+/**
  * @brief Characteristics to discover on the connection
  */
 struct bt_conn_auto_discovery {
 	/* List of UUIDs to discover */
 	const struct bt_uuid **characteristics;
+	/* Cached characteristics from previous connections */
+	struct bt_conn_auto_database_cache *cache;
 	/* Pointer to list of characteristics to discover */
 	struct bt_gatt_remote_char *remote_info;
+	/* Pending database hash */
+	uint8_t db_hash_pending[16];
 	/* Number of characteristics to discover */
 	uint8_t num_characteristics;
-	/* Cached GATT database hash value */
-	uint8_t db_hash[16];
 };
 
 /**
