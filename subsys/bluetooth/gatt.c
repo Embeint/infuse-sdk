@@ -23,7 +23,8 @@ static struct bt_gatt_state {
 	int8_t rssi;
 #endif /* CONFIG_BT_CONN_AUTO_RSSI */
 #ifdef CONFIG_BT_GATT_CLIENT
-	struct bt_conn_auto_setup_params *params;
+	const struct bt_conn_auto_setup_params *params;
+	struct bt_conn_auto_discovery *discovery;
 #endif /* CONFIG_BT_GATT_CLIENT */
 } state[CONFIG_BT_MAX_CONN];
 
@@ -46,7 +47,8 @@ static struct bt_gatt_exchange_params mtu_exchange_params;
 static struct bt_gatt_read_params db_read_params;
 
 int bt_conn_le_auto_setup(const bt_addr_le_t *addr, struct bt_conn **conn,
-			  struct bt_conn_auto_setup_params *params)
+			  const struct bt_conn_auto_setup_params *params,
+			  struct bt_conn_auto_discovery *discovery)
 {
 	const struct bt_conn_le_create_param create_param = {
 		.interval = BT_GAP_SCAN_FAST_INTERVAL,
@@ -59,6 +61,7 @@ int bt_conn_le_auto_setup(const bt_addr_le_t *addr, struct bt_conn **conn,
 	rc = bt_conn_le_create(addr, &create_param, &params->conn_params, conn);
 	if (rc == 0) {
 		state[bt_conn_index(*conn)].params = params;
+		state[bt_conn_index(*conn)].discovery = discovery;
 	}
 	return rc;
 }
@@ -89,7 +92,7 @@ static void discovery_error(struct bt_conn *conn, int err)
 	struct bt_gatt_state *s = &state[bt_conn_index(conn)];
 
 	/* Clear cache */
-	memset(s->params->discovery.db_hash, 0x00, sizeof(s->params->discovery.db_hash));
+	memset(s->discovery->db_hash, 0x00, sizeof(s->discovery->db_hash));
 	connection_error(conn, err);
 }
 
@@ -115,8 +118,8 @@ static uint8_t ccc_discover_cb(struct bt_conn *conn, const struct bt_gatt_attr *
 	LOG_DBG("Discovered CCC handle: %u Flags %04X", attr->handle, ccc->flags);
 
 	/* Assign CCC handle to appropriate characteristic */
-	for (int i = 0; i < s->params->discovery.num_characteristics; i++) {
-		remote_char = &s->params->discovery.characteristics[i];
+	for (int i = 0; i < s->discovery->num_characteristics; i++) {
+		remote_char = &s->discovery->characteristics[i];
 
 		if (IN_RANGE(attr->handle, remote_char->attr_start_handle,
 			     remote_char->attr_end_handle)) {
@@ -135,8 +138,8 @@ static void descriptor_discovery(struct bt_conn *conn)
 	int rc;
 
 	/* Find characteristic without CCC yet found */
-	for (int i = 0; i < s->params->discovery.num_characteristics; i++) {
-		remote_char = &s->params->discovery.characteristics[i];
+	for (int i = 0; i < s->discovery->num_characteristics; i++) {
+		remote_char = &s->discovery->characteristics[i];
 
 		if (remote_char->attr_start_handle == 0x0000) {
 			/* Characteristic was not found */
@@ -167,8 +170,8 @@ static void descriptor_discovery(struct bt_conn *conn)
 	}
 
 	LOG_INF("Characteristic discovery complete");
-	for (int i = 0; i < s->params->discovery.num_characteristics; i++) {
-		remote_char = &s->params->discovery.characteristics[i];
+	for (int i = 0; i < s->discovery->num_characteristics; i++) {
+		remote_char = &s->discovery->characteristics[i];
 		LOG_INF("\t%d: Range (%5d - %5d) Value %d CCC %d", i,
 			remote_char->attr_start_handle, remote_char->attr_end_handle,
 			remote_char->value_handle, remote_char->ccc_handle);
@@ -199,8 +202,8 @@ static uint8_t char_discover_cb(struct bt_conn *conn, const struct bt_gatt_attr 
 		chrc->properties);
 
 	/* Determine if this characteristic is one we are looking for */
-	for (int i = 0; i < s->params->discovery.num_characteristics; i++) {
-		remote_char = &s->params->discovery.characteristics[i];
+	for (int i = 0; i < s->discovery->num_characteristics; i++) {
+		remote_char = &s->discovery->characteristics[i];
 
 		if (remote_char->attr_start_handle != 0x0000) {
 			/* Update the previous characteristic end handle if appropriate */
@@ -219,8 +222,8 @@ static uint8_t char_discover_cb(struct bt_conn *conn, const struct bt_gatt_attr 
 	}
 
 	/* Are we still looking for any characteristics? */
-	for (int i = 0; i < s->params->discovery.num_characteristics; i++) {
-		remote_char = &s->params->discovery.characteristics[i];
+	for (int i = 0; i < s->discovery->num_characteristics; i++) {
+		remote_char = &s->discovery->characteristics[i];
 		if ((remote_char->attr_start_handle == 0x0000) ||
 		    (remote_char->attr_end_handle == BT_ATT_LAST_ATTRIBUTE_HANDLE)) {
 			/* Still looking for information */
@@ -240,12 +243,11 @@ static void characteristic_discovery(struct bt_conn *conn)
 	int rc;
 
 	/* Reset cached handles */
-	for (int i = 0; i < s->params->discovery.num_characteristics; i++) {
-		s->params->discovery.characteristics[i].attr_start_handle = 0x0000;
-		s->params->discovery.characteristics[i].attr_end_handle =
-			BT_ATT_LAST_ATTRIBUTE_HANDLE;
-		s->params->discovery.characteristics[i].value_handle = 0x0000;
-		s->params->discovery.characteristics[i].ccc_handle = 0x0000;
+	for (int i = 0; i < s->discovery->num_characteristics; i++) {
+		s->discovery->characteristics[i].attr_start_handle = 0x0000;
+		s->discovery->characteristics[i].attr_end_handle = BT_ATT_LAST_ATTRIBUTE_HANDLE;
+		s->discovery->characteristics[i].value_handle = 0x0000;
+		s->discovery->characteristics[i].ccc_handle = 0x0000;
 	}
 
 	/* Set up the discovery parameters for characteristics */
@@ -267,19 +269,19 @@ uint8_t gatt_db_hash_cb(struct bt_conn *conn, uint8_t err, struct bt_gatt_read_p
 {
 	struct bt_gatt_state *s = &state[bt_conn_index(conn)];
 
-	if ((err) || (length != sizeof(s->params->discovery.db_hash))) {
+	if ((err) || (length != sizeof(s->discovery->db_hash))) {
 		LOG_WRN("Failed to read DB hash (%d)", err);
-		memset(s->params->discovery.db_hash, 0x00, sizeof(s->params->discovery.db_hash));
+		memset(s->discovery->db_hash, 0x00, sizeof(s->discovery->db_hash));
 	} else {
 		/* If DB hash matches cached value, we can skip discovery */
-		if (memcmp(s->params->discovery.db_hash, data, length) == 0) {
+		if (memcmp(s->discovery->db_hash, data, length) == 0) {
 			LOG_INF("Characteristic handles from %s", "cache");
 			connection_done(conn);
 			return BT_GATT_ITER_STOP;
 		}
 		LOG_INF("Characteristic handles from %s", "discovery");
 		/* Copy DB hash into conn params */
-		memcpy(s->params->discovery.db_hash, data, length);
+		memcpy(s->discovery->db_hash, data, length);
 	}
 
 	/* Start characteristic discovery */
@@ -290,12 +292,20 @@ uint8_t gatt_db_hash_cb(struct bt_conn *conn, uint8_t err, struct bt_gatt_read_p
 static void mtu_exchange_cb(struct bt_conn *conn, uint8_t err,
 			    struct bt_gatt_exchange_params *params)
 {
+	struct bt_gatt_state *s = &state[bt_conn_index(conn)];
+
 	if (err) {
 		connection_error(conn, err);
 		return;
 	}
 
 	LOG_DBG("MTU exchange %s (%u)", err == 0U ? "successful" : "failed", bt_gatt_get_mtu(conn));
+
+	if (s->discovery == NULL) {
+		/* No characteristic discovery to do, done */
+		connection_done(conn);
+		return;
+	}
 
 	/* Read the remote database hash by UUID */
 	db_read_params.func = gatt_db_hash_cb;

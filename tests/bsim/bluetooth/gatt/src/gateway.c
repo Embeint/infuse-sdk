@@ -102,11 +102,6 @@ static void main_connect_nonexistant(void)
 		.create_timeout_ms = 2000,
 		.conn_setup_cb = conn_setup_cb,
 		.conn_terminated_cb = NULL,
-		.discovery =
-			{
-				.characteristics = NULL,
-				.num_characteristics = 0,
-			},
 		.user_data = &sig,
 	};
 	struct k_poll_event events[] = {
@@ -130,7 +125,7 @@ static void main_connect_nonexistant(void)
 		events[0].state = K_POLL_STATE_NOT_READY;
 
 		/* Initiate connection */
-		rc = bt_conn_le_auto_setup(&addr, &conn, &conn_params);
+		rc = bt_conn_le_auto_setup(&addr, &conn, &conn_params, NULL);
 		if (rc < 0) {
 			FAIL("Failed to initiate connection\n");
 			return;
@@ -166,11 +161,6 @@ static void main_connect_no_discovery(void)
 		.create_timeout_ms = 2000,
 		.conn_setup_cb = conn_setup_cb,
 		.conn_terminated_cb = NULL,
-		.discovery =
-			{
-				.characteristics = NULL,
-				.num_characteristics = 0,
-			},
 		.user_data = &sig,
 	};
 	struct k_poll_event events[] = {
@@ -194,7 +184,7 @@ static void main_connect_no_discovery(void)
 		events[0].state = K_POLL_STATE_NOT_READY;
 
 		/* Initiate connection */
-		rc = bt_conn_le_auto_setup(&addr, &conn, &conn_params);
+		rc = bt_conn_le_auto_setup(&addr, &conn, &conn_params, NULL);
 		if (rc < 0) {
 			FAIL("Failed to initiate connection\n");
 			return;
@@ -233,12 +223,11 @@ static void main_connect_discover_name(void)
 		.create_timeout_ms = 2000,
 		.conn_setup_cb = conn_setup_cb,
 		.conn_terminated_cb = NULL,
-		.discovery =
-			{
-				.characteristics = characteristics,
-				.num_characteristics = ARRAY_SIZE(characteristics),
-			},
 		.user_data = &sig,
+	};
+	struct bt_conn_auto_discovery discovery = {
+		.characteristics = characteristics,
+		.num_characteristics = ARRAY_SIZE(characteristics),
 	};
 	struct k_poll_event events[] = {
 		K_POLL_EVENT_INITIALIZER(K_POLL_TYPE_SIGNAL, K_POLL_MODE_NOTIFY_ONLY, &sig),
@@ -263,7 +252,7 @@ static void main_connect_discover_name(void)
 		events[0].state = K_POLL_STATE_NOT_READY;
 
 		/* Initiate connection */
-		rc = bt_conn_le_auto_setup(&addr, &conn, &conn_params);
+		rc = bt_conn_le_auto_setup(&addr, &conn, &conn_params, &discovery);
 		if (rc < 0) {
 			FAIL("Failed to initiate connection\n");
 			return;
@@ -339,12 +328,11 @@ static void main_connect_discover_nonexistant(void)
 		.create_timeout_ms = 2000,
 		.conn_setup_cb = conn_setup_cb,
 		.conn_terminated_cb = NULL,
-		.discovery =
-			{
-				.characteristics = characteristics,
-				.num_characteristics = ARRAY_SIZE(characteristics),
-			},
 		.user_data = &sig,
+	};
+	struct bt_conn_auto_discovery discovery = {
+		.characteristics = characteristics,
+		.num_characteristics = ARRAY_SIZE(characteristics),
 	};
 	struct k_poll_event events[] = {
 		K_POLL_EVENT_INITIALIZER(K_POLL_TYPE_SIGNAL, K_POLL_MODE_NOTIFY_ONLY, &sig),
@@ -369,7 +357,7 @@ static void main_connect_discover_nonexistant(void)
 		events[0].state = K_POLL_STATE_NOT_READY;
 
 		/* Initiate connection */
-		rc = bt_conn_le_auto_setup(&addr, &conn, &conn_params);
+		rc = bt_conn_le_auto_setup(&addr, &conn, &conn_params, &discovery);
 		if (rc < 0) {
 			FAIL("Failed to initiate connection\n");
 			return;
@@ -416,12 +404,11 @@ static void main_connect_terminator(void)
 		.create_timeout_ms = 2000,
 		.conn_setup_cb = conn_setup_cb,
 		.conn_terminated_cb = NULL,
-		.discovery =
-			{
-				.characteristics = characteristics,
-				.num_characteristics = ARRAY_SIZE(characteristics),
-			},
 		.user_data = &sig,
+	};
+	struct bt_conn_auto_discovery discovery = {
+		.characteristics = characteristics,
+		.num_characteristics = ARRAY_SIZE(characteristics),
 	};
 	struct k_poll_event events[] = {
 		K_POLL_EVENT_INITIALIZER(K_POLL_TYPE_SIGNAL, K_POLL_MODE_NOTIFY_ONLY, &sig),
@@ -447,7 +434,7 @@ static void main_connect_terminator(void)
 		events[0].state = K_POLL_STATE_NOT_READY;
 
 		/* Initiate connection */
-		rc = bt_conn_le_auto_setup(&addr, &conn, &conn_params);
+		rc = bt_conn_le_auto_setup(&addr, &conn, &conn_params, &discovery);
 		if (rc < 0) {
 			FAIL("Failed to initiate connection\n");
 			return;

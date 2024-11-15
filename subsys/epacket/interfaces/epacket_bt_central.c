@@ -18,6 +18,7 @@ static const struct bt_uuid_128 data_uuid = BT_UUID_INIT_128(INFUSE_SERVICE_UUID
 static const struct bt_uuid_128 logging_uuid = BT_UUID_INIT_128(INFUSE_SERVICE_UUID_LOGGING_VAL);
 static struct bt_gatt_remote_char infuse_iot_characteristics[3];
 static struct bt_conn_auto_setup_params infuse_params;
+static struct bt_conn_auto_discovery infuse_discovery;
 static struct bt_gatt_subscribe_params command_sub_params;
 static struct bt_gatt_subscribe_params data_sub_params;
 static struct bt_gatt_subscribe_params logging_sub_params;
@@ -145,8 +146,8 @@ int epacket_bt_gatt_connect(const bt_addr_le_t *peer, const struct bt_le_conn_pa
 	infuse_params.conn_params =
 		(struct bt_le_conn_param)BT_LE_CONN_PARAM_INIT(0x10, 0x15, 0, 400);
 	infuse_params.create_timeout_ms = timeout_ms;
-	infuse_params.discovery.characteristics = infuse_iot_characteristics;
-	infuse_params.discovery.num_characteristics = ARRAY_SIZE(infuse_iot_characteristics);
+	infuse_discovery.characteristics = infuse_iot_characteristics;
+	infuse_discovery.num_characteristics = ARRAY_SIZE(infuse_iot_characteristics);
 	infuse_params.conn_setup_cb = conn_setup_cb;
 	infuse_params.conn_terminated_cb = conn_terminated_cb;
 	infuse_params.user_data = &sig;
@@ -154,7 +155,7 @@ int epacket_bt_gatt_connect(const bt_addr_le_t *peer, const struct bt_le_conn_pa
 	/* Request the connection */
 	conn = NULL;
 	LOG_INF("Creating connection (timeout %d ms)", timeout_ms);
-	rc = bt_conn_le_auto_setup(peer, &conn, &infuse_params);
+	rc = bt_conn_le_auto_setup(peer, &conn, &infuse_params, &infuse_discovery);
 	if (rc < 0) {
 		goto cleanup;
 	}
