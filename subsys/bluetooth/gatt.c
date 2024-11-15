@@ -96,8 +96,12 @@ static void discovery_error(struct bt_conn *conn, int err)
 static void descriptor_discovery(struct bt_conn *conn);
 
 static uint8_t ccc_discover_cb(struct bt_conn *conn, const struct bt_gatt_attr *attr,
-			       struct bt_gatt_discover_params *params)
+			       struct bt_gatt_discover_params *params, int err)
 {
+	if (err != 0) {
+		discovery_error(conn, err);
+		return BT_GATT_ITER_STOP;
+	}
 	if (!attr) {
 		/* Continue discovery */
 		descriptor_discovery(conn);
@@ -175,8 +179,12 @@ static void descriptor_discovery(struct bt_conn *conn)
 }
 
 static uint8_t char_discover_cb(struct bt_conn *conn, const struct bt_gatt_attr *attr,
-				struct bt_gatt_discover_params *params)
+				struct bt_gatt_discover_params *params, int err)
 {
+	if (err != 0) {
+		discovery_error(conn, err);
+		return BT_GATT_ITER_STOP;
+	}
 	if (!attr) {
 		descriptor_discovery(conn);
 		return BT_GATT_ITER_STOP;
