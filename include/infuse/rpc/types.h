@@ -247,6 +247,8 @@ enum rpc_enum_infuse_bt_characteristic {
 	RPC_ENUM_INFUSE_BT_CHARACTERISTIC_COMMAND = 1,
 	/* Data characteristic */
 	RPC_ENUM_INFUSE_BT_CHARACTERISTIC_DATA = 2,
+	/* Serial log characteristic */
+	RPC_ENUM_INFUSE_BT_CHARACTERISTIC_LOGGING = 4,
 };
 
 /**

@@ -119,7 +119,7 @@ static void main_gateway_connect(void)
 	for (int i = 0; i < 5; i++) {
 		/* Initiate connection */
 		rc = epacket_bt_gatt_connect(&addr, &params, 3000, &conn, &security_info, i % 2,
-					     i % 2);
+					     i % 2, i % 2);
 		if (rc != 0) {
 			FAIL("Failed to connect to peer\n");
 			return;
@@ -127,7 +127,7 @@ static void main_gateway_connect(void)
 
 		/* Same connection again should pass with RC == 1 */
 		rc = epacket_bt_gatt_connect(&addr, &params, 3000, &conn2, &security_info, i % 2,
-					     i % 2);
+					     i % 2, i % 2);
 		if (rc != 1) {
 			FAIL("Failed to detect existing connection");
 			return;
@@ -172,7 +172,8 @@ static void main_gateway_connect_then_scan(void)
 	}
 
 	/* Initiate connection */
-	rc = epacket_bt_gatt_connect(&addr, &params, 3000, &conn, &security_info, false, false);
+	rc = epacket_bt_gatt_connect(&addr, &params, 3000, &conn, &security_info, false, false,
+				     false);
 	if (rc < 0) {
 		FAIL("Failed to connect to peer");
 		return;

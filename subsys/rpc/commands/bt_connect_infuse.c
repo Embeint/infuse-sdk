@@ -34,7 +34,8 @@ struct net_buf *rpc_command_bt_connect_infuse(struct net_buf *request)
 	/* Run the connection process */
 	rc = epacket_bt_gatt_connect(&peer, &params, req->conn_timeout_ms, &conn, &security_info,
 				     req->subscribe & RPC_ENUM_INFUSE_BT_CHARACTERISTIC_COMMAND,
-				     req->subscribe & RPC_ENUM_INFUSE_BT_CHARACTERISTIC_DATA);
+				     req->subscribe & RPC_ENUM_INFUSE_BT_CHARACTERISTIC_DATA,
+				     req->subscribe & RPC_ENUM_INFUSE_BT_CHARACTERISTIC_LOGGING);
 	if (rc >= 0) {
 		/* Copy results */
 		memcpy(rsp.cloud_public_key, security_info.cloud_public_key,
