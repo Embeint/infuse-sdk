@@ -20,8 +20,9 @@ extern "C" {
 
 enum {
 	TASK_GNSS_LOG_LLHA = BIT(0),
+	TASK_GNSS_LOG_FIX_INFO = BIT(1),
 	/* UBX modems only */
-	TASK_GNSS_LOG_UBX_NAV_PVT = BIT(1),
+	TASK_GNSS_LOG_UBX_NAV_PVT = BIT(7),
 };
 
 enum {
