@@ -1,0 +1,15 @@
+# Infuse-IoT logging backends
+
+config LOG_BACKEND_EPACKET_BT
+	bool "Use the ePacket Bluetooth peripheral as a logging backend"
+	depends on EPACKET_INTERFACE_BT_PERIPHERAL
+	depends on LOG
+	default y
+
+if LOG_BACKEND_EPACKET_BT
+
+backend = EPACKET_BT
+backend-str = epacket_bt
+source "subsys/logging/Kconfig.template.log_format_config"
+
+endif # LOG_BACKEND_EPACKET_BT

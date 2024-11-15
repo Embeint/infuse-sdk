@@ -29,6 +29,8 @@
 
 #define PACKET_OVERHEAD (DT_INST_PROP(0, header_size) + DT_INST_PROP(0, footer_size))
 
+void epacket_bt_peripheral_logging_ccc_cfg_update(const struct bt_gatt_attr *attr, uint16_t value);
+
 static void ccc_cfg_changed_command(const struct bt_gatt_attr *attr, uint16_t value);
 static void ccc_cfg_changed_data(const struct bt_gatt_attr *attr, uint16_t value);
 static ssize_t read_both(struct bt_conn *conn, const struct bt_gatt_attr *attr, void *buf,
@@ -54,11 +56,19 @@ BT_GATT_SERVICE_DEFINE(
 	BT_GATT_CHARACTERISTIC(INFUSE_SERVICE_UUID_DATA,
 			       BT_GATT_CHRC_READ | BT_GATT_CHRC_WRITE | BT_GATT_CHRC_NOTIFY,
 			       BT_GATT_PERM_READ | BT_GATT_PERM_WRITE, read_both, write_both, NULL),
-	BT_GATT_CCC(ccc_cfg_changed_data, BT_GATT_PERM_READ | BT_GATT_PERM_WRITE));
+	BT_GATT_CCC(ccc_cfg_changed_data, BT_GATT_PERM_READ | BT_GATT_PERM_WRITE),
+#ifdef CONFIG_LOG_BACKEND_EPACKET_BT
+	BT_GATT_CHARACTERISTIC(INFUSE_SERVICE_UUID_LOGGING, BT_GATT_CHRC_NOTIFY, BT_GATT_PERM_READ,
+			       NULL, NULL, NULL),
+	BT_GATT_CCC(epacket_bt_peripheral_logging_ccc_cfg_update,
+		    BT_GATT_PERM_READ | BT_GATT_PERM_WRITE),
+#endif /* CONFIG_LOG_BACKEND_EPACKET_BT */
+);
 
 #define CHRC_COMMAND 2
 #define CHRC_DATA    5
 #define CCC_DATA     6
+#define CHRC_LOGGING 8
 
 LOG_MODULE_REGISTER(epacket_bt_peripheral, CONFIG_EPACKET_BT_PERIPHERAL_LOG_LEVEL);
 
@@ -252,6 +262,11 @@ static void epacket_bt_peripheral_send(const struct device *dev, struct net_buf 
 	case INFUSE_RPC_RSP:
 		attr = &infuse_svc.attrs[CHRC_COMMAND];
 		break;
+#ifdef CONFIG_LOG_BACKEND_EPACKET_BT
+	case INFUSE_SERIAL_LOG:
+		attr = &infuse_svc.attrs[CHRC_LOGGING];
+		break;
+#endif /* CONFIG_LOG_BACKEND_EPACKET_BT */
 	default:
 		attr = &infuse_svc.attrs[CHRC_DATA];
 	}
@@ -289,6 +304,10 @@ static int epacket_bt_peripheral_init(const struct device *dev)
 		 "Characteristic order changed");
 	__ASSERT(infuse_svc.attrs[CHRC_DATA].uuid->type == BT_UUID_TYPE_128,
 		 "Characteristic order changed");
+#ifdef CONFIG_LOG_BACKEND_EPACKET_BT
+	__ASSERT(infuse_svc.attrs[CHRC_LOGGING].uuid->type == BT_UUID_TYPE_128,
+		 "Characteristic order changed");
+#endif /* CONFIG_LOG_BACKEND_EPACKET_BT */
 
 	epacket_interface_common_init(dev);
 	return 0;
