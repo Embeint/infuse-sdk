@@ -58,17 +58,20 @@ struct bt_conn_auto_setup_params {
 	void (*conn_setup_cb)(struct bt_conn *conn, int err, void *user_data);
 	/* Run when connection has terminated, if @a conn_setup_cb has previously run */
 	void (*conn_terminated_cb)(struct bt_conn *conn, int reason, void *user_data);
-	/* Characteristic discovery parameters */
-	struct {
-		/* Pointer to list of characteristics to discover */
-		struct bt_gatt_remote_char *characteristics;
-		/* Number of characteristics to discover */
-		uint8_t num_characteristics;
-		/* Cached GATT database hash value */
-		uint8_t db_hash[16];
-	} discovery;
 	/* User data provided to callbacks */
 	void *user_data;
+};
+
+/**
+ * @brief Characteristics to discover on the connection
+ */
+struct bt_conn_auto_discovery {
+	/* Pointer to list of characteristics to discover */
+	struct bt_gatt_remote_char *characteristics;
+	/* Number of characteristics to discover */
+	uint8_t num_characteristics;
+	/* Cached GATT database hash value */
+	uint8_t db_hash[16];
 };
 
 /**
@@ -76,13 +79,15 @@ struct bt_conn_auto_setup_params {
  *
  * @param addr Remote device to connect to
  * @param conn Pointer to connection object allocated by @a bt_conn_le_create
- * @param params Connection and characteristic discovery configuration
+ * @param params Connection configuration
+ * @param discovery Characteristic discovery configuration
  *
  * @retval 0 Connection initiated (Result supplied through @a conn_setup_cb)
  * @retval -errno Error code from @a bt_conn_le_create
  */
 int bt_conn_le_auto_setup(const bt_addr_le_t *addr, struct bt_conn **conn,
-			  struct bt_conn_auto_setup_params *params);
+			  const struct bt_conn_auto_setup_params *params,
+			  struct bt_conn_auto_discovery *discovery);
 
 /**
  * @brief Trigger a disconnection and wait for it to complete
