@@ -6,6 +6,11 @@ config GNSS_UBX_MODEM
 	help
 	  UBX protocol wrappers
 
+config GNSS_UBX_MODEM_EMUL
+	bool
+	help
+	  Emulated device
+
 if GNSS_UBX_MODEM
 
 config GNSS_UBX_M10
@@ -76,4 +81,13 @@ config GNSS_U_BLOX_M8_SPI
 	select MODEM_MODULES
 	select MODEM_BACKEND_U_BLOX_SPI
 	select GNSS_UBX_MODEM
+	select GNSS_UBX_M8
+
+config GNSS_U_BLOX_M8_EMUL
+	bool "Emulated U-BLOX M8 GNSS Module"
+	default y
+	depends on GNSS
+	depends on DT_HAS_U_BLOX_M8_EMUL_ENABLED
+	select GNSS_UBX_MODEM
+	select GNSS_UBX_MODEM_EMUL
 	select GNSS_UBX_M8
