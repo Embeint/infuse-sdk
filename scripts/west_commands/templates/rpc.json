@@ -127,7 +127,8 @@
             "type": "uint8_t",
             "values": [
                 {"name": "COMMAND", "value": 1, "description": "Command characteristic"},
-                {"name": "DATA", "value": 2, "description": "Data characteristic"}
+                {"name": "DATA", "value": 2, "description": "Data characteristic"},
+                {"name": "LOGGING", "value": 4, "description": "Serial log characteristic"}
             ]
         }
     },

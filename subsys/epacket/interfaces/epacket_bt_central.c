@@ -15,10 +15,12 @@
 
 static const struct bt_uuid_128 command_uuid = BT_UUID_INIT_128(INFUSE_SERVICE_UUID_COMMAND_VAL);
 static const struct bt_uuid_128 data_uuid = BT_UUID_INIT_128(INFUSE_SERVICE_UUID_DATA_VAL);
-static struct bt_gatt_remote_char infuse_iot_characteristics[2];
+static const struct bt_uuid_128 logging_uuid = BT_UUID_INIT_128(INFUSE_SERVICE_UUID_LOGGING_VAL);
+static struct bt_gatt_remote_char infuse_iot_characteristics[3];
 static struct bt_conn_auto_setup_params infuse_params;
 static struct bt_gatt_subscribe_params command_sub_params;
 static struct bt_gatt_subscribe_params data_sub_params;
+static struct bt_gatt_subscribe_params logging_sub_params;
 static K_SEM_DEFINE(infuse_conn_available, 1, 1);
 static K_SEM_DEFINE(infuse_conn_done, 0, 1);
 
@@ -107,7 +109,7 @@ static int characteristic_subscribe(struct bt_conn *conn,
 int epacket_bt_gatt_connect(const bt_addr_le_t *peer, const struct bt_le_conn_param *conn_params,
 			    uint32_t timeout_ms, struct bt_conn **conn_out,
 			    struct epacket_read_response *security, bool subscribe_commands,
-			    bool subscribe_data)
+			    bool subscribe_data, bool subscribe_logging)
 {
 	struct k_poll_signal sig;
 	struct bt_conn *conn;
@@ -137,6 +139,7 @@ int epacket_bt_gatt_connect(const bt_addr_le_t *peer, const struct bt_le_conn_pa
 
 	infuse_iot_characteristics[0].uuid = (struct bt_uuid *)&command_uuid;
 	infuse_iot_characteristics[1].uuid = (struct bt_uuid *)&data_uuid;
+	infuse_iot_characteristics[2].uuid = (struct bt_uuid *)&logging_uuid;
 
 	/* Smallest connection interval for maximum data throughput */
 	infuse_params.conn_params =
@@ -204,6 +207,10 @@ conn_created:
 	if (rc == 0) {
 		rc = characteristic_subscribe(conn, &infuse_iot_characteristics[1],
 					      &data_sub_params, subscribe_data);
+	}
+	if (rc == 0 && (infuse_iot_characteristics[2].ccc_handle != 0)) {
+		rc = characteristic_subscribe(conn, &infuse_iot_characteristics[2],
+					      &logging_sub_params, subscribe_logging);
 	}
 
 cleanup:

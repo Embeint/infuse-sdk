@@ -45,6 +45,7 @@ extern "C" {
  * @param security Output security parameters of the peer device on success
  * @param subscribe_commands Subscribe to the command characteristic
  * @param subscribe_data Subscribe to the data characteristic
+ * @param subscribe_logging Subscribe to the logging characteristic
  *
  * @retval 0 on success, *conn is valid
  * @retval 1 if connection already existed, *conn is valid
@@ -53,7 +54,7 @@ extern "C" {
 int epacket_bt_gatt_connect(const bt_addr_le_t *peer, const struct bt_le_conn_param *conn_params,
 			    uint32_t timeout_ms, struct bt_conn **conn,
 			    struct epacket_read_response *security, bool subscribe_commands,
-			    bool subscribe_data);
+			    bool subscribe_data, bool subscribe_logging);
 
 /**
  * @}
