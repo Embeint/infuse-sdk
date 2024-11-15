@@ -264,7 +264,7 @@ static bool nav_pvt_handle(struct gnss_run_state *state, const struct task_gnss_
 		 */
 		state->timegps.flags = UBX_HANDLING_RSP;
 		state->timegps.message_class = UBX_MSG_CLASS_NAV;
-		state->timegps.message_class = UBX_MSG_ID_NAV_TIMEGPS;
+		state->timegps.message_id = UBX_MSG_ID_NAV_TIMEGPS;
 		state->timegps.message_cb = nav_timegps_cb;
 		state->timegps.user_data = state;
 
@@ -437,7 +437,7 @@ void gnss_task_fn(const struct task_schedule *schedule, struct k_poll_signal *te
 			best->height / 1000, best->h_acc / 10);
 		epoch_time = log_and_publish(&run_state, &run_state.best_fix);
 
-		/* */
+		/* Log fix information */
 		task_schedule_tdf_log(schedule, TASK_GNSS_LOG_FIX_INFO, TDF_GNSS_FIX_INFO,
 				      sizeof(struct tdf_gnss_fix_info), epoch_time, &fix_info);
 	}
