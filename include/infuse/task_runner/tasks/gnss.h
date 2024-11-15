@@ -39,7 +39,9 @@ void gnss_task_fn(const struct task_schedule *schedule, struct k_poll_signal *te
  * @param gnss_ptr GNSS device bound to task
  */
 #define GNSS_TASK(define_mem, define_config, gnss_ptr)                                             \
-	IF_ENABLED(define_mem, (K_THREAD_STACK_DEFINE(gnss_stack_area, 2048)))                     \
+	IF_ENABLED(define_mem,                                                                     \
+		   (K_THREAD_STACK_DEFINE(gnss_stack_area,                                         \
+					  CONFIG_TASK_RUNNER_TASK_GNSS_UBX_STACK_SIZE)))           \
 	IF_ENABLED(define_config,                                                                  \
 		   ({                                                                              \
 			   .name = "gnss",                                                         \
