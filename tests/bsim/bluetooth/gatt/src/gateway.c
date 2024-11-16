@@ -7,6 +7,7 @@
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
 #include <zephyr/sys/atomic.h>
+#include <zephyr/bluetooth/conn.h>
 #include <zephyr/bluetooth/gatt.h>
 
 #include "common.h"
@@ -97,13 +98,17 @@ static void conn_setup_cb(struct bt_conn *conn, int err, void *user_data)
 static void main_connect_nonexistant(void)
 {
 	struct k_poll_signal sig;
-	struct bt_conn_auto_setup_params conn_params = {
-		.conn_params = BT_LE_CONN_PARAM_INIT(0x10, 0x15, 0, 400),
-		.create_timeout_ms = 2000,
+	struct bt_conn_auto_setup_cb callbacks = {
 		.conn_setup_cb = conn_setup_cb,
 		.conn_terminated_cb = NULL,
 		.user_data = &sig,
 	};
+	const struct bt_conn_le_create_param create_param = {
+		.interval = BT_GAP_SCAN_FAST_INTERVAL,
+		.window = BT_GAP_SCAN_FAST_INTERVAL,
+		.timeout = 2000 / 10,
+	};
+	const struct bt_le_conn_param conn_params = BT_LE_CONN_PARAM_INIT(0x10, 0x15, 0, 400);
 	struct k_poll_event events[] = {
 		K_POLL_EVENT_INITIALIZER(K_POLL_TYPE_SIGNAL, K_POLL_MODE_NOTIFY_ONLY, &sig),
 	};
@@ -125,11 +130,12 @@ static void main_connect_nonexistant(void)
 		events[0].state = K_POLL_STATE_NOT_READY;
 
 		/* Initiate connection */
-		rc = bt_conn_le_auto_setup(&addr, &conn, &conn_params, NULL);
+		rc = bt_conn_le_create(&addr, &create_param, &conn_params, &conn);
 		if (rc < 0) {
 			FAIL("Failed to initiate connection\n");
 			return;
 		}
+		bt_conn_le_auto_setup(conn, NULL, &callbacks);
 
 		/* Wait for connection process to complete */
 		rc = k_poll(events, ARRAY_SIZE(events), K_SECONDS(3));
@@ -156,13 +162,17 @@ static void main_connect_nonexistant(void)
 static void main_connect_no_discovery(void)
 {
 	struct k_poll_signal sig;
-	struct bt_conn_auto_setup_params conn_params = {
-		.conn_params = BT_LE_CONN_PARAM_INIT(0x10, 0x15, 0, 400),
-		.create_timeout_ms = 2000,
+	struct bt_conn_auto_setup_cb callbacks = {
 		.conn_setup_cb = conn_setup_cb,
 		.conn_terminated_cb = NULL,
 		.user_data = &sig,
 	};
+	const struct bt_conn_le_create_param create_param = {
+		.interval = BT_GAP_SCAN_FAST_INTERVAL,
+		.window = BT_GAP_SCAN_FAST_INTERVAL,
+		.timeout = 2000 / 10,
+	};
+	const struct bt_le_conn_param conn_params = BT_LE_CONN_PARAM_INIT(0x10, 0x15, 0, 400);
 	struct k_poll_event events[] = {
 		K_POLL_EVENT_INITIALIZER(K_POLL_TYPE_SIGNAL, K_POLL_MODE_NOTIFY_ONLY, &sig),
 	};
@@ -184,11 +194,12 @@ static void main_connect_no_discovery(void)
 		events[0].state = K_POLL_STATE_NOT_READY;
 
 		/* Initiate connection */
-		rc = bt_conn_le_auto_setup(&addr, &conn, &conn_params, NULL);
+		rc = bt_conn_le_create(&addr, &create_param, &conn_params, &conn);
 		if (rc < 0) {
 			FAIL("Failed to initiate connection\n");
 			return;
 		}
+		bt_conn_le_auto_setup(conn, NULL, &callbacks);
 
 		/* Wait for connection process to complete */
 		rc = k_poll(events, ARRAY_SIZE(events), K_SECONDS(3));
@@ -218,13 +229,17 @@ static void main_connect_discover_name(void)
 	const struct bt_uuid_16 device_name_uuid = BT_UUID_INIT_16(BT_UUID_GAP_DEVICE_NAME_VAL);
 	struct k_poll_signal sig;
 	struct bt_gatt_remote_char remote_info[1] = {0};
-	struct bt_conn_auto_setup_params conn_params = {
-		.conn_params = BT_LE_CONN_PARAM_INIT(0x10, 0x15, 0, 400),
-		.create_timeout_ms = 2000,
+	struct bt_conn_auto_setup_cb callbacks = {
 		.conn_setup_cb = conn_setup_cb,
 		.conn_terminated_cb = NULL,
 		.user_data = &sig,
 	};
+	const struct bt_conn_le_create_param create_param = {
+		.interval = BT_GAP_SCAN_FAST_INTERVAL,
+		.window = BT_GAP_SCAN_FAST_INTERVAL,
+		.timeout = 2000 / 10,
+	};
+	const struct bt_le_conn_param conn_params = BT_LE_CONN_PARAM_INIT(0x10, 0x15, 0, 400);
 	const struct bt_uuid *characteristics[] = {
 		(const void *)&device_name_uuid,
 	};
@@ -255,11 +270,12 @@ static void main_connect_discover_name(void)
 		events[0].state = K_POLL_STATE_NOT_READY;
 
 		/* Initiate connection */
-		rc = bt_conn_le_auto_setup(&addr, &conn, &conn_params, &discovery);
+		rc = bt_conn_le_create(&addr, &create_param, &conn_params, &conn);
 		if (rc < 0) {
 			FAIL("Failed to initiate connection\n");
 			return;
 		}
+		bt_conn_le_auto_setup(conn, &discovery, &callbacks);
 
 		/* Wait for connection process to complete */
 		rc = k_poll(events, ARRAY_SIZE(events), K_SECONDS(3));
@@ -326,13 +342,17 @@ static void main_connect_discover_nonexistant(void)
 	const struct bt_uuid_16 timezone_uuid = BT_UUID_INIT_16(BT_UUID_GATT_TZ_VAL);
 	struct k_poll_signal sig;
 	struct bt_gatt_remote_char remote_info[1] = {0};
-	struct bt_conn_auto_setup_params conn_params = {
-		.conn_params = BT_LE_CONN_PARAM_INIT(0x10, 0x15, 0, 400),
-		.create_timeout_ms = 2000,
+	struct bt_conn_auto_setup_cb callbacks = {
 		.conn_setup_cb = conn_setup_cb,
 		.conn_terminated_cb = NULL,
 		.user_data = &sig,
 	};
+	const struct bt_conn_le_create_param create_param = {
+		.interval = BT_GAP_SCAN_FAST_INTERVAL,
+		.window = BT_GAP_SCAN_FAST_INTERVAL,
+		.timeout = 2000 / 10,
+	};
+	const struct bt_le_conn_param conn_params = BT_LE_CONN_PARAM_INIT(0x10, 0x15, 0, 400);
 	const struct bt_uuid *characteristics[] = {
 		(const void *)&timezone_uuid,
 	};
@@ -363,11 +383,12 @@ static void main_connect_discover_nonexistant(void)
 		events[0].state = K_POLL_STATE_NOT_READY;
 
 		/* Initiate connection */
-		rc = bt_conn_le_auto_setup(&addr, &conn, &conn_params, &discovery);
+		rc = bt_conn_le_create(&addr, &create_param, &conn_params, &conn);
 		if (rc < 0) {
 			FAIL("Failed to initiate connection\n");
 			return;
 		}
+		bt_conn_le_auto_setup(conn, &discovery, &callbacks);
 
 		/* Wait for connection process to complete */
 		rc = k_poll(events, ARRAY_SIZE(events), K_SECONDS(3));
@@ -413,13 +434,17 @@ static void main_connect_terminator(void)
 {
 	struct k_poll_signal sig;
 	struct bt_gatt_remote_char remote_info[3] = {0};
-	struct bt_conn_auto_setup_params conn_params = {
-		.conn_params = BT_LE_CONN_PARAM_INIT(0x10, 0x15, 0, 400),
-		.create_timeout_ms = 2000,
+	struct bt_conn_auto_setup_cb callbacks = {
 		.conn_setup_cb = conn_setup_cb,
 		.conn_terminated_cb = NULL,
 		.user_data = &sig,
 	};
+	const struct bt_conn_le_create_param create_param = {
+		.interval = BT_GAP_SCAN_FAST_INTERVAL,
+		.window = BT_GAP_SCAN_FAST_INTERVAL,
+		.timeout = 2000 / 10,
+	};
+	const struct bt_le_conn_param conn_params = BT_LE_CONN_PARAM_INIT(0x10, 0x15, 0, 400);
 	struct bt_conn_auto_discovery discovery = {
 		.characteristics = infuse_iot_characteristics,
 		.cache = NULL,
@@ -448,11 +473,12 @@ static void main_connect_terminator(void)
 		events[0].state = K_POLL_STATE_NOT_READY;
 
 		/* Initiate connection */
-		rc = bt_conn_le_auto_setup(&addr, &conn, &conn_params, &discovery);
+		rc = bt_conn_le_create(&addr, &create_param, &conn_params, &conn);
 		if (rc < 0) {
 			FAIL("Failed to initiate connection\n");
 			return;
 		}
+		bt_conn_le_auto_setup(conn, &discovery, &callbacks);
 
 		/* Wait for connection process to complete */
 		rc = k_poll(events, ARRAY_SIZE(events), K_SECONDS(3));

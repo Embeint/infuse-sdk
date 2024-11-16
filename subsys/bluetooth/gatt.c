@@ -23,7 +23,7 @@ static struct bt_gatt_state {
 	int8_t rssi;
 #endif /* CONFIG_BT_CONN_AUTO_RSSI */
 #ifdef CONFIG_BT_GATT_CLIENT
-	const struct bt_conn_auto_setup_params *params;
+	const struct bt_conn_auto_setup_cb *cb;
 	struct bt_conn_auto_discovery *discovery;
 #endif /* CONFIG_BT_GATT_CLIENT */
 } state[CONFIG_BT_MAX_CONN];
@@ -46,24 +46,13 @@ static const struct bt_uuid_16 db_hash_uuid = BT_UUID_INIT_16(BT_UUID_GATT_DB_HA
 static struct bt_gatt_exchange_params mtu_exchange_params;
 static struct bt_gatt_read_params db_read_params;
 
-int bt_conn_le_auto_setup(const bt_addr_le_t *addr, struct bt_conn **conn,
-			  const struct bt_conn_auto_setup_params *params,
-			  struct bt_conn_auto_discovery *discovery)
+void bt_conn_le_auto_setup(struct bt_conn *conn, struct bt_conn_auto_discovery *discovery,
+			   const struct bt_conn_auto_setup_cb *callbacks)
 {
-	const struct bt_conn_le_create_param create_param = {
-		.interval = BT_GAP_SCAN_FAST_INTERVAL,
-		.window = BT_GAP_SCAN_FAST_INTERVAL,
-		/* 10ms units */
-		.timeout = params->create_timeout_ms / 10,
-	};
-	int rc;
+	struct bt_gatt_state *s = &state[bt_conn_index(conn)];
 
-	rc = bt_conn_le_create(addr, &create_param, &params->conn_params, conn);
-	if (rc == 0) {
-		state[bt_conn_index(*conn)].params = params;
-		state[bt_conn_index(*conn)].discovery = discovery;
-	}
-	return rc;
+	s->discovery = discovery;
+	s->cb = callbacks;
 }
 
 static void connection_done(struct bt_conn *conn)
@@ -71,7 +60,7 @@ static void connection_done(struct bt_conn *conn)
 	struct bt_gatt_state *s = &state[bt_conn_index(conn)];
 
 	/* Run user callback */
-	s->params->conn_setup_cb(conn, 0, s->params->user_data);
+	s->cb->conn_setup_cb(conn, 0, s->cb->user_data);
 }
 
 static void connection_error(struct bt_conn *conn, int err)
@@ -81,10 +70,10 @@ static void connection_error(struct bt_conn *conn, int err)
 	LOG_ERR("Connection setup failed (%d)", err);
 
 	/* Run user callback */
-	s->params->conn_setup_cb(conn, err, s->params->user_data);
+	s->cb->conn_setup_cb(conn, err, s->cb->user_data);
 
 	/* Clear state */
-	s->params = NULL;
+	s->cb = NULL;
 }
 
 static void descriptor_discovery(struct bt_conn *conn);
@@ -374,7 +363,7 @@ static void connected(struct bt_conn *conn, uint8_t err)
 	}
 	if (err) {
 #ifdef CONFIG_BT_GATT_CLIENT
-		if (s->params) {
+		if (s->cb) {
 			connection_error(conn, err);
 		}
 #endif /* CONFIG_BT_GATT_CLIENT */
@@ -386,7 +375,7 @@ static void connected(struct bt_conn *conn, uint8_t err)
 	int rc;
 
 	/* Only handle connections initiated through bt_conn_le_auto_setup */
-	if (s->params != NULL) {
+	if (s->cb != NULL) {
 		rc = bt_conn_get_info(conn, &info);
 		/* This can only possibly fail if the connection type is not BT_CONN_TYPE_LE */
 		__ASSERT_NO_MSG(rc == 0);
@@ -415,11 +404,11 @@ static void disconnected(struct bt_conn *conn, uint8_t reason)
 	s->rssi = 0;
 #endif /* CONFIG_BT_CONN_AUTO_RSSI */
 #ifdef CONFIG_BT_GATT_CLIENT
-	if (s->params) {
-		if (s->params->conn_terminated_cb) {
-			s->params->conn_terminated_cb(conn, reason, s->params->user_data);
+	if (s->cb) {
+		if (s->cb->conn_terminated_cb) {
+			s->cb->conn_terminated_cb(conn, reason, s->cb->user_data);
 		}
-		s->params = NULL;
+		s->cb = NULL;
 	}
 #endif /* CONFIG_BT_GATT_CLIENT */
 
@@ -532,7 +521,8 @@ static int infuse_bluetooth_gatt(void)
 		state[i].rssi = 0;
 #endif /* CONFIG_BT_CONN_AUTO_RSSI */
 #ifdef CONFIG_BT_GATT_CLIENT
-		state[i].params = NULL;
+		state[i].discovery = NULL;
+		state[i].cb = NULL;
 #endif /* CONFIG_BT_GATT_CLIENT */
 	}
 
