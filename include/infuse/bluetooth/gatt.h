@@ -46,11 +46,7 @@ struct bt_gatt_remote_char {
 /**
  * @brief Parameters for automatically setup connection
  */
-struct bt_conn_auto_setup_params {
-	/* Desired Bluetooth connection parameters */
-	struct bt_le_conn_param conn_params;
-	/* Duration to attempt to create connection for */
-	uint32_t create_timeout_ms;
+struct bt_conn_auto_setup_cb {
 	/* Run when connection has been successfully setup or failed */
 	void (*conn_setup_cb)(struct bt_conn *conn, int err, void *user_data);
 	/* Run when connection has terminated, if @a conn_setup_cb has previously run */
@@ -100,19 +96,17 @@ struct bt_conn_auto_discovery {
 };
 
 /**
- * @brief Create a connection with automatic MTU update and characteristic discovery
+ * @brief Setup a connection with automatic MTU exchange and characteristic discovery
  *
- * @param addr Remote device to connect to
- * @param conn Pointer to connection object allocated by @a bt_conn_le_create
- * @param params Connection configuration
+ * This should be called immediately following @a bt_conn_le_create to ensure
+ * that the context is setup correctly by the time the connection establishes.
+ *
+ * @param conn Connection object allocated by @a bt_conn_le_create
  * @param discovery Characteristic discovery configuration
- *
- * @retval 0 Connection initiated (Result supplied through @a conn_setup_cb)
- * @retval -errno Error code from @a bt_conn_le_create
+ * @param callbacks Callbacks to call on connection/disconnection
  */
-int bt_conn_le_auto_setup(const bt_addr_le_t *addr, struct bt_conn **conn,
-			  const struct bt_conn_auto_setup_params *params,
-			  struct bt_conn_auto_discovery *discovery);
+void bt_conn_le_auto_setup(struct bt_conn *conn, struct bt_conn_auto_discovery *discovery,
+			   const struct bt_conn_auto_setup_cb *callbacks);
 
 /**
  * @brief Trigger a disconnection and wait for it to complete
