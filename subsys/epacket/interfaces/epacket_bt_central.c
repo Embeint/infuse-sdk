@@ -39,9 +39,7 @@ struct infuse_connection_state {
 	struct bt_conn_auto_discovery discovery;
 	struct bt_gatt_subscribe_params subs[CHAR_NUM];
 	struct k_poll_signal sig;
-} infuse_conn;
-static K_SEM_DEFINE(infuse_conn_available, 1, 1);
-static K_SEM_DEFINE(infuse_conn_done, 0, 1);
+} infuse_conn[CONFIG_BT_MAX_CONN];
 
 struct bt_gatt_read_params_user {
 	struct bt_gatt_read_params params;
@@ -58,10 +56,10 @@ LOG_MODULE_REGISTER(epacket_bt_central, CONFIG_EPACKET_BT_CENTRAL_LOG_LEVEL);
 
 static void conn_setup_cb(struct bt_conn *conn, int err, void *user_data)
 {
-	struct k_poll_signal *sig = &infuse_conn.sig;
+	uint8_t idx = bt_conn_index(conn);
 
 	/* Notify command handler */
-	k_poll_signal_raise(sig, -err);
+	k_poll_signal_raise(&infuse_conn[idx].sig, -err);
 }
 
 static uint8_t security_read_result(struct bt_conn *conn, uint8_t err,
@@ -85,8 +83,6 @@ static uint8_t security_read_result(struct bt_conn *conn, uint8_t err,
 
 static void conn_terminated_cb(struct bt_conn *conn, int reason, void *user_data)
 {
-	LOG_DBG("Infuse-IoT connection available");
-	k_sem_give(&infuse_conn_available);
 }
 
 static uint8_t char_recv_func(struct bt_conn *conn, struct bt_gatt_subscribe_params *params,
@@ -140,9 +136,11 @@ int epacket_bt_gatt_connect(const bt_addr_le_t *peer, const struct bt_le_conn_pa
 		.window = BT_GAP_SCAN_FAST_INTERVAL,
 		.timeout = timeout_ms / 10,
 	};
+	struct infuse_connection_state *s;
 	unsigned int signaled;
 	bool already = false;
 	struct bt_conn *conn;
+	uint8_t idx;
 	int conn_rc;
 	int rc;
 
@@ -151,22 +149,11 @@ int epacket_bt_gatt_connect(const bt_addr_le_t *peer, const struct bt_le_conn_pa
 	/* Determine if connection already exists */
 	conn = bt_conn_lookup_addr_le(BT_ID_DEFAULT, peer);
 	if (conn != NULL) {
+		idx = bt_conn_index(conn);
+		s = &infuse_conn[idx];
 		already = true;
 		goto conn_created;
 	}
-
-	/* One valid connection at a time */
-	if (k_sem_take(&infuse_conn_available, K_NO_WAIT) == -EBUSY) {
-		rc = -ENOMEM;
-		goto done;
-	}
-
-	k_poll_signal_init(&infuse_conn.sig);
-
-	infuse_conn.discovery.characteristics = infuse_iot_characteristics;
-	infuse_conn.discovery.cache = &infuse_iot_remote_cache;
-	infuse_conn.discovery.remote_info = infuse_conn.remote_info;
-	infuse_conn.discovery.num_characteristics = CHAR_NUM;
 
 	/* Create the connection */
 	conn = NULL;
@@ -175,17 +162,25 @@ int epacket_bt_gatt_connect(const bt_addr_le_t *peer, const struct bt_le_conn_pa
 	if (rc < 0) {
 		return rc;
 	}
+	idx = bt_conn_index(conn);
+	s = &infuse_conn[idx];
+
+	k_poll_signal_init(&s->sig);
+	s->discovery.characteristics = infuse_iot_characteristics;
+	s->discovery.cache = &infuse_iot_remote_cache;
+	s->discovery.remote_info = s->remote_info;
+	s->discovery.num_characteristics = CHAR_NUM;
+
 	/* Register for the connection to be automatically setup */
-	bt_conn_le_auto_setup(conn, &infuse_conn.discovery, &callbacks);
+	bt_conn_le_auto_setup(conn, &s->discovery, &callbacks);
 
 	/* Wait for connection process to complete */
 	struct k_poll_event events[] = {
-		K_POLL_EVENT_INITIALIZER(K_POLL_TYPE_SIGNAL, K_POLL_MODE_NOTIFY_ONLY,
-					 &infuse_conn.sig),
+		K_POLL_EVENT_INITIALIZER(K_POLL_TYPE_SIGNAL, K_POLL_MODE_NOTIFY_ONLY, &s->sig),
 	};
 
 	k_poll(events, ARRAY_SIZE(events), K_FOREVER);
-	k_poll_signal_check(&infuse_conn.sig, &signaled, &conn_rc);
+	k_poll_signal_check(&s->sig, &signaled, &conn_rc);
 	if (!signaled) {
 		LOG_ERR("Conn signal never raised?");
 		rc = -ETIMEDOUT;
@@ -203,14 +198,14 @@ conn_created:
 			{
 				.func = security_read_result,
 				.handle_count = 1,
-				.single.handle = infuse_conn.remote_info[CHAR_COMMAND].value_handle,
+				.single.handle = s->remote_info[CHAR_COMMAND].value_handle,
 				.single.offset = 0,
 			},
 		.rsp = security,
-		.sig = &infuse_conn.sig,
+		.sig = &s->sig,
 	};
 
-	k_poll_signal_reset(&infuse_conn.sig);
+	k_poll_signal_reset(&s->sig);
 	events[0].state = K_POLL_STATE_NOT_READY;
 
 	/* Read the data handle to get the security parameters */
@@ -219,22 +214,22 @@ conn_created:
 		goto cleanup;
 	}
 	k_poll(events, ARRAY_SIZE(events), K_MSEC(500));
-	k_poll_signal_check(&infuse_conn.sig, &signaled, &rc);
+	k_poll_signal_check(&s->sig, &signaled, &rc);
 	if (!signaled || (rc != 0)) {
 		rc = -EIO;
 		goto cleanup;
 	}
 
 	/* Setup requested subscriptions */
-	rc = characteristic_subscribe(conn, &infuse_conn.remote_info[CHAR_COMMAND],
-				      &infuse_conn.subs[CHAR_COMMAND], subscribe_commands);
+	rc = characteristic_subscribe(conn, &s->remote_info[CHAR_COMMAND], &s->subs[CHAR_COMMAND],
+				      subscribe_commands);
 	if (rc == 0) {
-		rc = characteristic_subscribe(conn, &infuse_conn.remote_info[CHAR_DATA],
-					      &infuse_conn.subs[CHAR_DATA], subscribe_data);
+		rc = characteristic_subscribe(conn, &s->remote_info[CHAR_DATA], &s->subs[CHAR_DATA],
+					      subscribe_data);
 	}
-	if (rc == 0 && (infuse_conn.remote_info[CHAR_LOGGING].ccc_handle != 0)) {
-		rc = characteristic_subscribe(conn, &infuse_conn.remote_info[CHAR_LOGGING],
-					      &infuse_conn.subs[CHAR_LOGGING], subscribe_logging);
+	if (rc == 0 && (s->remote_info[CHAR_LOGGING].ccc_handle != 0)) {
+		rc = characteristic_subscribe(conn, &s->remote_info[CHAR_LOGGING],
+					      &s->subs[CHAR_LOGGING], subscribe_logging);
 	}
 
 cleanup:
@@ -246,9 +241,7 @@ cleanup:
 			(void)bt_conn_disconnect(conn, BT_HCI_ERR_REMOTE_USER_TERM_CONN);
 			bt_conn_unref(conn);
 		}
-		k_sem_give(&infuse_conn_available);
 	}
-done:
 	if ((rc == 0) && already) {
 		rc = 1;
 	}
