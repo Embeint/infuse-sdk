@@ -24,12 +24,14 @@ static const struct bt_uuid *infuse_iot_characteristics[] = {
 static struct bt_gatt_remote_char
 	infuse_iot_remote_cache_chars[ARRAY_SIZE(infuse_iot_characteristics)];
 static struct bt_conn_auto_database_cache infuse_iot_remote_cache;
-static struct bt_gatt_remote_char infuse_iot_remote_info[ARRAY_SIZE(infuse_iot_characteristics)];
-static struct bt_conn_auto_setup_params infuse_params;
-static struct bt_conn_auto_discovery infuse_discovery;
-static struct bt_gatt_subscribe_params command_sub_params;
-static struct bt_gatt_subscribe_params data_sub_params;
-static struct bt_gatt_subscribe_params logging_sub_params;
+struct infuse_connection_state {
+	struct bt_gatt_remote_char remote_info[ARRAY_SIZE(infuse_iot_characteristics)];
+	struct bt_conn_auto_setup_params params;
+	struct bt_conn_auto_discovery discovery;
+	struct bt_gatt_subscribe_params command_sub;
+	struct bt_gatt_subscribe_params data_sub;
+	struct bt_gatt_subscribe_params logging_sub;
+} infuse_conn;
 static K_SEM_DEFINE(infuse_conn_available, 1, 1);
 static K_SEM_DEFINE(infuse_conn_done, 0, 1);
 
@@ -148,21 +150,21 @@ int epacket_bt_gatt_connect(const bt_addr_le_t *peer, const struct bt_le_conn_pa
 
 	/* Smallest connection interval for maximum data throughput */
 	infuse_iot_remote_cache.remote_info = infuse_iot_remote_cache_chars;
-	infuse_params.conn_params =
+	infuse_conn.params.conn_params =
 		(struct bt_le_conn_param)BT_LE_CONN_PARAM_INIT(0x10, 0x15, 0, 400);
-	infuse_params.create_timeout_ms = timeout_ms;
-	infuse_discovery.characteristics = infuse_iot_characteristics;
-	infuse_discovery.cache = &infuse_iot_remote_cache;
-	infuse_discovery.remote_info = infuse_iot_remote_info;
-	infuse_discovery.num_characteristics = ARRAY_SIZE(infuse_iot_characteristics);
-	infuse_params.conn_setup_cb = conn_setup_cb;
-	infuse_params.conn_terminated_cb = conn_terminated_cb;
-	infuse_params.user_data = &sig;
+	infuse_conn.params.create_timeout_ms = timeout_ms;
+	infuse_conn.discovery.characteristics = infuse_iot_characteristics;
+	infuse_conn.discovery.cache = &infuse_iot_remote_cache;
+	infuse_conn.discovery.remote_info = infuse_conn.remote_info;
+	infuse_conn.discovery.num_characteristics = ARRAY_SIZE(infuse_iot_characteristics);
+	infuse_conn.params.conn_setup_cb = conn_setup_cb;
+	infuse_conn.params.conn_terminated_cb = conn_terminated_cb;
+	infuse_conn.params.user_data = &sig;
 
 	/* Request the connection */
 	conn = NULL;
 	LOG_INF("Creating connection (timeout %d ms)", timeout_ms);
-	rc = bt_conn_le_auto_setup(peer, &conn, &infuse_params, &infuse_discovery);
+	rc = bt_conn_le_auto_setup(peer, &conn, &infuse_conn.params, &infuse_conn.discovery);
 	if (rc < 0) {
 		goto cleanup;
 	}
@@ -187,7 +189,7 @@ conn_created:
 			{
 				.func = security_read_result,
 				.handle_count = 1,
-				.single.handle = infuse_iot_remote_info[0].value_handle,
+				.single.handle = infuse_conn.remote_info[0].value_handle,
 				.single.offset = 0,
 			},
 		.rsp = security,
@@ -210,15 +212,15 @@ conn_created:
 	}
 
 	/* Setup requested subscriptions */
-	rc = characteristic_subscribe(conn, &infuse_iot_remote_info[0], &command_sub_params,
+	rc = characteristic_subscribe(conn, &infuse_conn.remote_info[0], &infuse_conn.command_sub,
 				      subscribe_commands);
 	if (rc == 0) {
-		rc = characteristic_subscribe(conn, &infuse_iot_remote_info[1], &data_sub_params,
-					      subscribe_data);
+		rc = characteristic_subscribe(conn, &infuse_conn.remote_info[1],
+					      &infuse_conn.data_sub, subscribe_data);
 	}
-	if (rc == 0 && (infuse_iot_remote_info[2].ccc_handle != 0)) {
-		rc = characteristic_subscribe(conn, &infuse_iot_remote_info[2], &logging_sub_params,
-					      subscribe_logging);
+	if (rc == 0 && (infuse_conn.remote_info[2].ccc_handle != 0)) {
+		rc = characteristic_subscribe(conn, &infuse_conn.remote_info[2],
+					      &infuse_conn.logging_sub, subscribe_logging);
 	}
 
 cleanup:
