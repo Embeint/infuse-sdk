@@ -21,9 +21,9 @@ static const struct bt_uuid *infuse_iot_characteristics[] = {
 	(const void *)&data_uuid,
 	(const void *)&logging_uuid,
 };
-static struct bt_gatt_remote_char
-	infuse_iot_remote_cache_chars[ARRAY_SIZE(infuse_iot_characteristics)];
-static struct bt_conn_auto_database_cache infuse_iot_remote_cache;
+
+BT_CONN_AUTO_CACHE(infuse_iot_remote_cache, ARRAY_SIZE(infuse_iot_characteristics));
+
 struct infuse_connection_state {
 	struct bt_gatt_remote_char remote_info[ARRAY_SIZE(infuse_iot_characteristics)];
 	struct bt_conn_auto_setup_params params;
@@ -149,7 +149,6 @@ int epacket_bt_gatt_connect(const bt_addr_le_t *peer, const struct bt_le_conn_pa
 	}
 
 	/* Smallest connection interval for maximum data throughput */
-	infuse_iot_remote_cache.remote_info = infuse_iot_remote_cache_chars;
 	infuse_conn.params.conn_params =
 		(struct bt_le_conn_param)BT_LE_CONN_PARAM_INIT(0x10, 0x15, 0, 400);
 	infuse_conn.params.create_timeout_ms = timeout_ms;
