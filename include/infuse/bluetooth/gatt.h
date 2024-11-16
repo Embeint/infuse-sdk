@@ -72,6 +72,18 @@ struct bt_conn_auto_database_cache {
 };
 
 /**
+ * @brief Create a cache variable that holds a given number of characteristics
+ *
+ * @param name Name of the created variable
+ * @param num_characteristics Number of characteristics cache can hold
+ */
+#define BT_CONN_AUTO_CACHE(name, num_characteristics)                                              \
+	static struct bt_gatt_remote_char name##_storage[num_characteristics];                     \
+	static struct bt_conn_auto_database_cache name = {                                         \
+		.remote_info = name##_storage,                                                     \
+	}
+
+/**
  * @brief Characteristics to discover on the connection
  */
 struct bt_conn_auto_discovery {
