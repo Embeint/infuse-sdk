@@ -78,20 +78,30 @@ static void main_gateway_scan(void)
 	}
 }
 
-static int observe_peer(bt_addr_le_t *addr)
+static int observe_peers(bt_addr_le_t *addr, uint8_t num)
 {
 	const struct device *epacket_bt_adv = DEVICE_DT_GET(DT_NODELABEL(epacket_bt_adv));
+	uint8_t observed = 0;
 
 	epacket_set_receive_handler(epacket_bt_adv, epacket_bt_adv_receive_handler);
 	if (epacket_receive(epacket_bt_adv, K_FOREVER) < 0) {
 		return -1;
 	}
 
-	/* Wait for packet so we know the peer address */
-	if (k_sem_take(&epacket_adv_received, K_SECONDS(3)) < 0) {
-		return -1;
+	while (observed < num) {
+retry:
+		/* Wait for packet so we know the peer address */
+		if (k_sem_take(&epacket_adv_received, K_SECONDS(3)) < 0) {
+			return -1;
+		}
+		/* Check if we already found this device */
+		for (int i = 0; i < observed; i++) {
+			if (bt_addr_le_cmp(&addr[i], &adv_device) == 0) {
+				goto retry;
+			}
+		}
+		addr[observed++] = adv_device;
 	}
-	*addr = adv_device;
 
 	/* Zephyr Bluetooth controller doesn't support simultaneous scan + conn */
 	if (epacket_receive(epacket_bt_adv, K_NO_WAIT) < 0) {
@@ -111,7 +121,7 @@ static void main_gateway_connect(void)
 	int rc;
 
 	common_init();
-	if (observe_peer(&addr) < 0) {
+	if (observe_peers(&addr, 1) < 0) {
 		FAIL("Failed to observe peer\n");
 		return;
 	}
@@ -156,6 +166,57 @@ static void main_gateway_connect(void)
 	PASS("Gateway connect passed\n");
 }
 
+static void main_gateway_connect_multi(void)
+{
+	const struct bt_le_conn_param params = BT_LE_CONN_PARAM_INIT(0x10, 0x15, 0, 400);
+	struct epacket_read_response security_info;
+	struct bt_conn *conn1, *conn2;
+	bt_addr_le_t addr[2];
+	int rc;
+
+	common_init();
+	if (observe_peers(addr, 2) < 0) {
+		FAIL("Failed to observe peers\n");
+		return;
+	}
+
+	for (int i = 0; i < 3; i++) {
+		/* Connect to first device */
+		rc = epacket_bt_gatt_connect(&addr[0], &params, 3000, &conn1, &security_info, false,
+					     false, false);
+		if (rc != 0) {
+			FAIL("Failed to connect to first peer\n");
+			return;
+		}
+
+		/* Connect to the second device */
+		rc = epacket_bt_gatt_connect(&addr[1], &params, 3000, &conn2, &security_info, false,
+					     false, false);
+		if (rc != 0) {
+			FAIL("Failed to connect to second peer %d\n", rc);
+			return;
+		}
+
+		k_sleep(K_SECONDS(1));
+
+		/* Terminate the connections */
+		rc = bt_conn_disconnect_sync(conn1);
+		if (rc != 0) {
+			FAIL("Failed to disconnect from first peer\n");
+			return;
+		}
+		bt_conn_unref(conn1);
+		rc = bt_conn_disconnect_sync(conn2);
+		if (rc != 0) {
+			FAIL("Failed to disconnect from second peer\n");
+			return;
+		}
+		bt_conn_unref(conn2);
+	}
+
+	PASS("Received packets from advertiser\n");
+}
+
 static void main_gateway_connect_then_scan(void)
 {
 	const struct device *epacket_bt_adv = DEVICE_DT_GET(DT_NODELABEL(epacket_bt_adv));
@@ -166,7 +227,7 @@ static void main_gateway_connect_then_scan(void)
 	int rc;
 
 	common_init();
-	if (observe_peer(&addr) < 0) {
+	if (observe_peers(&addr, 1) < 0) {
 		FAIL("Failed to observe peer");
 		return;
 	}
@@ -257,7 +318,7 @@ static void main_gateway_rpcs(void)
 	bt_addr_le_t addr;
 
 	common_init();
-	if (observe_peer(&addr) < 0) {
+	if (observe_peers(&addr, 1) < 0) {
 		FAIL("Failed to observe peer");
 		return;
 	}
@@ -359,6 +420,13 @@ static const struct bst_test_instance epacket_gateway[] = {
 		.test_pre_init_f = test_init,
 		.test_tick_f = test_tick,
 		.test_main_f = main_gateway_connect,
+	},
+	{
+		.test_id = "epacket_bt_gateway_connect_multi",
+		.test_descr = "Connect to multiple peer devices",
+		.test_pre_init_f = test_init,
+		.test_tick_f = test_tick,
+		.test_main_f = main_gateway_connect_multi,
 	},
 	{
 		.test_id = "epacket_bt_gateway_connect_then_scan",
