@@ -16,8 +16,9 @@ mapping:
   signing_key:
     type: str
     required: true
+  snippets:
+    type: str
   network_key:
     type: str
-    required: false
   disable_logging:
     type: bool
