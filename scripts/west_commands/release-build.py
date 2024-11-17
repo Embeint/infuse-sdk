@@ -414,8 +414,18 @@ class release_build(WestCommand):
             )
             primary_dir = "zephyr"
 
+        repo = Repo(self.args.release, search_parent_directories=True)
+        remotes = [r.url for r in repo.remotes]
+
         # Create manifest file
         manifest = {
+            "configuration": {
+                "file": str(self.args.release.resolve().absolute()),
+                "repo": {
+                    "remotes": remotes,
+                    "commit": repo.commit().binsha.hex(),
+                },
+            },
             "application": {
                 "id": int(build_configs["CONFIG_INFUSE_APPLICATION_ID"], 0),
                 "version": version,
