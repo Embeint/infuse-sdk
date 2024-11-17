@@ -14,7 +14,7 @@ from typing_extensions import Tuple
 
 from west.commands import WestCommand
 
-from git import Repo
+from git import Repo, exc
 
 import zcmake
 
@@ -122,7 +122,14 @@ class release_build(WestCommand):
 
         # Get the commit objects for local and remote branches
         local_commit = repo.commit(active_branch)
-        remote_commit = repo.commit(f"origin/{active_branch.name}")
+        try:
+            remote_commit = repo.commit(f"origin/{active_branch.name}")
+        except exc.BadName as e:
+            if self.args.ignore_git:
+                print(str(e))
+                return 0, 0
+            else:
+                sys.exit(str(e))
 
         # Calculate the ahead and behind counts
         ahead = len(
