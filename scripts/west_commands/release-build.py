@@ -326,6 +326,8 @@ class release_build(WestCommand):
         return configs
 
     def export_file(self, dst, src, file):
+        if not dst.exists():
+            dst.mkdir(parents=True)
         shutil.copy(src / file, dst / file)
 
     def export_folder(self, dst, src):
@@ -399,6 +401,9 @@ class release_build(WestCommand):
 
             self.export_file(output_dir, self.build_dir, "domains.yaml")
             self.export_file(output_dir, self.build_dir, "CMakeCache.txt")
+            self.export_file(
+                output_dir / "_sysbuild", self.build_dir / "_sysbuild", "autoconf.h"
+            )
 
             # Merge hex files into the output directory
             cache = zcmake.CMakeCache.from_build_dir(self.build_dir)
