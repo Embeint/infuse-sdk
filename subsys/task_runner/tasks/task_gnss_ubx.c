@@ -57,7 +57,7 @@ BUILD_ASSERT(sizeof(struct ubx_msg_nav_pvt) == sizeof(struct tdf_ubx_nav_pvt));
 BUILD_ASSERT(IS_ENABLED(CONFIG_GNSS_UBX_M8) + IS_ENABLED(CONFIG_GNSS_UBX_M10) == 1,
 	     "Expected exactly one of CONFIG_GNSS_UBX_M8 and CONFIG_GNSS_UBX_M10 to be enabled");
 
-LOG_MODULE_REGISTER(task_gnss, LOG_LEVEL_DBG);
+LOG_MODULE_REGISTER(task_gnss, CONFIG_TASK_GNSS_UBX_LOG_LEVEL);
 
 static int nav_timegps_cb(uint8_t message_class, uint8_t message_id, const void *payload,
 			  size_t payload_len, void *user_data)
