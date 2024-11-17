@@ -39,6 +39,14 @@ config INFUSE_COMMON_BOOT_AUTO_IMG_CONFIRM
 	  Automatically confirm a MCUboot image if the `infuse_common_boot` function passes
 	  without any critical subsystems failing to initialise.
 
+config INFUSE_COMMON_BOOT_DEBUG_PORT_DISABLE
+	bool "Automatically disable the debug port"
+	depends on SOC_SERIES_NRF52X
+	help
+	  Disable the debug access port to the device. Failing to disable the DAP on deployed
+	  devices is a critical security risk as it allows adversaries to read arbitrary memory
+	  at runtime with simple tooling.
+
 config INFUSE_BOARD_HAS_PUBLIC_BT_ADDRESS
 	bool "Board has a public Bluetooth MAC address that should be used"
 	depends on BT_CTLR
