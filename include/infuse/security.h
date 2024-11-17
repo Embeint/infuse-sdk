@@ -40,6 +40,11 @@ extern "C" {
 int infuse_security_init(void);
 
 /**
+ * @brief Disable the Debug-Access-Port
+ */
+void infuse_security_disable_dap(void);
+
+/**
  * @brief Retrieve current cloud public key
  *
  * @param public_key Storage for public key

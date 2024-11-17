@@ -195,6 +195,10 @@ static int infuse_common_boot(void)
 	}
 #endif /* CONFIG_INFUSE_COMMON_BOOT_AUTO_IMG_CONFIRM */
 
+#ifdef CONFIG_INFUSE_COMMON_BOOT_DEBUG_PORT_DISABLE
+	infuse_security_disable_dap();
+#endif /* CONFIG_INFUSE_COMMON_BOOT_DEBUG_PORT_DISABLE */
+
 	(void)critical_failed;
 	(void)rc;
 	return 0;
