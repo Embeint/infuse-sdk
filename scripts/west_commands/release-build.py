@@ -182,6 +182,10 @@ class release_build(WestCommand):
         build_cmd.extend(["--board", self.release["board"]])
         build_cmd.extend(["--source-dir", str(self.application)])
         build_cmd.extend(["--build-dir", str(self.build_dir)])
+        if snippets := self.release.get("snippets"):
+            snippets_list = snippets.split(";")
+            for snippet in snippets_list:
+                build_cmd.extend(["-S", snippet])
 
         if self.sysbuild:
             build_cmd.extend(["--sysbuild"])
