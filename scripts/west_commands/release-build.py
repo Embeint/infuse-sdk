@@ -228,7 +228,9 @@ class release_build(WestCommand):
             build_cmd.extend(["-DCONFIG_LOG=n"])
 
         print("Run build: ", " ".join(build_cmd))
-        proc = subprocess.run(build_cmd, check=True, capture_output=True)
+        proc = subprocess.run(build_cmd, capture_output=True)
+        if proc.returncode != 0:
+            sys.exit(proc.stdout.decode("utf-8"))
         self.build_log = proc.stdout.decode("utf-8")
 
     def validate_build(self, expected_version: str) -> dict:

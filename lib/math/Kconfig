@@ -1,6 +1,14 @@
 # Infuse-IoT math libraries
 
+config INFUSE_MATH
+	bool "Infuse-IoT math libraries"
+	default y if INFUSE_SDK
+
+if INFUSE_MATH
+
 config INFUSE_MATH_GEODESY
 	bool "Geodesic functions"
 	select CMSIS_DSP
 	select CMSIS_DSP_FASTMATH
+
+endif # INFUSE_MATH
