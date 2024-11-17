@@ -30,6 +30,15 @@ config INFUSE_CUSTOM_IDENTIFIERS
 
 if INFUSE_COMMON_BOOT
 
+config INFUSE_COMMON_BOOT_AUTO_IMG_CONFIRM
+	bool "Automatically confirm a MCUboot image if common boot passes"
+	depends on MCUBOOT_IMG_MANAGER
+	depends on !BUILD_WITH_TFM
+	default y
+	help
+	  Automatically confirm a MCUboot image if the `infuse_common_boot` function passes
+	  without any critical subsystems failing to initialise.
+
 config INFUSE_BOARD_HAS_PUBLIC_BT_ADDRESS
 	bool "Board has a public Bluetooth MAC address that should be used"
 	depends on BT_CTLR

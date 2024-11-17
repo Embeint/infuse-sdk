@@ -44,6 +44,7 @@ static int infuse_common_boot(void)
 {
 	KV_KEY_TYPE(KV_KEY_REBOOTS) reboot = {0};
 	struct infuse_version v = application_version_get();
+	bool critical_failed = false;
 	int rc;
 #ifdef CONFIG_INFUSE_SDK
 	uint64_t device_id = infuse_device_id();
@@ -69,6 +70,7 @@ static int infuse_common_boot(void)
 	rc = usb_enable(NULL);
 	if (rc != 0) {
 		LOG_ERR("USB enable error (%d)", rc);
+		critical_failed = true;
 	}
 #endif /* CONFIG_USB_DEVICE_INITIALIZE_AT_BOOT */
 #endif /* CONFIG_USB_DEVICE_STACK */
@@ -83,6 +85,7 @@ static int infuse_common_boot(void)
 	rc = bt_enable(NULL);
 	if (rc) {
 		LOG_ERR("Failed to enable Bluetooth (%d)", rc);
+		critical_failed = true;
 	}
 #ifdef CONFIG_BT_CONTROLLER_MANAGER
 	rc = bt_controller_manager_init();
@@ -174,15 +177,25 @@ static int infuse_common_boot(void)
 	rc = nrf_modem_lib_init();
 	if (rc < 0) {
 		LOG_ERR("Failed to initialise nRF modem library (%d)", rc);
+		critical_failed = true;
 	}
 #endif /* defined(CONFIG_NRF_MODEM_LIB) && !defined(CONFIG_NRF_MODEM_LIB_NET_IF_AUTO_START) */
 
 #ifdef CONFIG_INFUSE_SECURITY
 	if (infuse_security_init() < 0) {
 		LOG_ERR("Failed to initialise security");
+		critical_failed = true;
 	}
 #endif /* CONFIG_INFUSE_SECURITY */
 
+#ifdef CONFIG_INFUSE_COMMON_BOOT_AUTO_IMG_CONFIRM
+	if (critical_failed == false) {
+		/* All major systems passed */
+		boot_write_img_confirmed();
+	}
+#endif /* CONFIG_INFUSE_COMMON_BOOT_AUTO_IMG_CONFIRM */
+
+	(void)critical_failed;
 	(void)rc;
 	return 0;
 }
