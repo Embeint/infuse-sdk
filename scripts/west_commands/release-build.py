@@ -240,6 +240,9 @@ class release_build(WestCommand):
             / "zephyr"
             / "autoconf.h"
         )
+        warnings = []
+        errors = []
+
         with autoconf.open("r") as f:
             configs = {}
             for l in f.readlines():
@@ -248,51 +251,48 @@ class release_build(WestCommand):
 
         if "CONFIG_BT_CONN" in configs and "CONFIG_BT_HCI_HOST" in configs:
             if "CONFIG_MCUMGR" not in configs:
-                print(colorama.Fore.YELLOW + "MCUMGR not enabled with Bluetooth")
+                warnings.append("MCUMGR not enabled with Bluetooth")
             if "CONFIG_MCUMGR_TRANSPORT_BT" not in configs:
-                print(colorama.Fore.YELLOW + "MCUMGR BT not enabled with Bluetooth")
+                warnings.append("MCUMGR BT not enabled with Bluetooth")
             if "CONFIG_MCUMGR_GRP_IMG" not in configs:
-                print(
-                    colorama.Fore.YELLOW
-                    + "MCUMGR Image Management not enabled with Bluetooth"
-                )
+                warnings.append("MCUMGR Image Management not enabled with Bluetooth")
         if "CONFIG_INFUSE_SECURITY" in configs:
             network_key = configs["CONFIG_INFUSE_SECURITY_DEFAULT_NETWORK"]
             if network_key.endswith("default_network.yaml"):
-                print(
-                    colorama.Fore.YELLOW
-                    + "Default Infuse-IoT network key used! Communications are not secure!"
+                warnings.append(
+                    "Default Infuse-IoT network key used! Communications are not secure!"
                 )
         if (
             "CONFIG_INFUSE_RPC_COMMAND_FILE_WRITE_BASIC" in configs
             or "CONFIG_INFUSE_RPC_COMMAND_COAP_DOWNLOAD" in configs
         ):
             if "CONFIG_INFUSE_DFU_HELPERS" not in configs:
-                print(
-                    colorama.Fore.RED
-                    + "DFU RPCs enabled but image erase helpers not enabled"
-                )
+                errors.append("DFU RPCs enabled but image erase helpers not enabled")
 
         if self.tfm_build:
             key_file_0 = configs["CONFIG_TFM_KEY_FILE_S"]
             key_file_1 = configs["CONFIG_TFM_KEY_FILE_NS"]
             tfm_key_path = "modules/tee/tf-m/trusted-firmware-m/bl2/ext/mcuboot"
             if (tfm_key_path in key_file_0) or (tfm_key_path in key_file_1):
-                print(
-                    colorama.Fore.RED
-                    + "Default TF-M signing key used! Application is not secure!"
+                errors.append(
+                    "Default TF-M signing key used! Application is not secure!"
                 )
         else:
             key_file = configs["CONFIG_MCUBOOT_SIGNATURE_KEY_FILE"]
             if "bootloader/mcuboot" in key_file:
-                print(
-                    colorama.Fore.RED
-                    + "Default MCUboot signing key used! Application is not secure!"
+                errors.append(
+                    "Default MCUboot signing key used! Application is not secure!"
                 )
         if self.tfm_build:
             signed_bin = self.build_app_dir / "zephyr" / "tfm_s_zephyr_ns_signed.bin"
         else:
             signed_bin = self.build_app_dir / "zephyr" / "zephyr.signed.bin"
+
+        # Output validation warnings
+        for warn in warnings:
+            print(colorama.Fore.YELLOW + warn + colorama.Fore.RESET)
+        for err in errors:
+            print(colorama.Fore.RED + err + colorama.Fore.RESET)
 
         # TODO: replace with cache['IMGTOOL'] once PyPi version updated
         imgtool_path = (
