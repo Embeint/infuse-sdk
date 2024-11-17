@@ -23,7 +23,6 @@
 
 struct nrf_uicr_structure {
 	uint64_t infuse_device_id;
-	uint8_t infuse_identifier_secret[16];
 };
 
 uint64_t infuse_device_id(void)
