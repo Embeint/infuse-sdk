@@ -7,6 +7,9 @@ config INFUSE_APPLICATION_ID
 configdefault IMG_MANAGER
 	default y
 
+configdefault INFUSE_CPATCH
+	default y if BOOTLOADER_MCUBOOT
+
 # Softdevice default values
 
 configdefault BT_CTLR_SDC_PERIPHERAL_COUNT
