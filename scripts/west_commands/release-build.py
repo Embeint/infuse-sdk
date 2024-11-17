@@ -202,6 +202,7 @@ class release_build(WestCommand):
                     "--",
                     f'-DCONFIG_MCUBOOT_IMGTOOL_SIGN_VERSION="{expected_version}"',
                     f"-DSB_CONFIG_BOOT_SIGNATURE_KEY_FILE={signing_key_config}",
+                    "-DCONFIG_INFUSE_COMMON_BOOT_DEBUG_PORT_DISABLE=y",
                 ]
             )
         else:
@@ -278,6 +279,8 @@ class release_build(WestCommand):
                     "Default TF-M signing key used! Application is not secure!"
                 )
         else:
+            if "CONFIG_INFUSE_COMMON_BOOT_DEBUG_PORT_DISABLE" not in configs:
+                warnings.append("Debug port is not disabled by application")
             key_file = configs["CONFIG_MCUBOOT_SIGNATURE_KEY_FILE"]
             if "bootloader/mcuboot" in key_file:
                 errors.append(
