@@ -100,6 +100,23 @@ class cloudgen(WestCommand):
                 p += f" + {f['conversion']['c']}"
             return {"name": f["name"], "conv": p}
 
+        def display_format(f):
+            d = f.get("display")
+            fmt = '"{}"'
+            if d is None:
+                return {"name": f["name"], "fmt": fmt, "postfix": '""'}
+            digits = d.get("digits")
+            if d.get("fmt") == "hex":
+                if digits:
+                    fmt = '"0x{{:0{}x}}"'.format(digits)
+                else:
+                    fmt = '"0x{:x}"'
+            if d.get("fmt") == "float":
+                if digits:
+                    fmt = '"{{:.{}f}}"'.format(digits)
+            p = d.get("postfix", "")
+            return {"name": f["name"], "fmt": fmt, "postfix": f'"{p}"'}
+
         def py_type(f):
             if "num" in f:
                 return f'{f["num"]} * {ctype_mapping[f["type"]]}'
@@ -109,12 +126,14 @@ class cloudgen(WestCommand):
         for x in ["structs", "definitions"]:
             for s in tdf_defs[x].values():
                 s["conversions"] = []
+                s["displays"] = []
                 for f in s["fields"]:
                     if "conversion" in f:
                         f["py_name"] = f"_{f['name']}"
                         s["conversions"].append(conv_formula(f))
                     else:
                         f["py_name"] = f["name"]
+                    s["displays"].append(display_format(f))
 
                     t: str = f["type"]
                     if t.startswith("struct"):
