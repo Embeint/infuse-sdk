@@ -235,6 +235,44 @@ ZTEST(task_tdf_logger, test_ambient_env)
 	zassert_equal(0, tdf.time);
 	net_buf_unref(pkt);
 
+	/* Humidity no pressure */
+	ambient.pressure = 0;
+	ambient.humidity = 50 * 100;
+	zbus_chan_pub(chan_env, &ambient, K_FOREVER);
+	task_schedule(&data);
+	pkt = net_buf_get(tx_queue, K_MSEC(100));
+	zassert_not_null(pkt);
+	net_buf_pull(pkt, sizeof(struct epacket_dummy_frame));
+	zassert_equal(0,
+		      tdf_parse_find_in_buf(pkt->data, pkt->len, TDF_AMBIENT_TEMP_PRES_HUM, &tdf));
+	zassert_equal(0, tdf.time);
+	net_buf_unref(pkt);
+
+	/* Pressure no humidity */
+	ambient.pressure = 101000;
+	ambient.humidity = 0;
+	zbus_chan_pub(chan_env, &ambient, K_FOREVER);
+	task_schedule(&data);
+	pkt = net_buf_get(tx_queue, K_MSEC(100));
+	zassert_not_null(pkt);
+	net_buf_pull(pkt, sizeof(struct epacket_dummy_frame));
+	zassert_equal(0,
+		      tdf_parse_find_in_buf(pkt->data, pkt->len, TDF_AMBIENT_TEMP_PRES_HUM, &tdf));
+	zassert_equal(0, tdf.time);
+	net_buf_unref(pkt);
+
+	/* No pressure no humidity */
+	ambient.pressure = 0;
+	ambient.humidity = 0;
+	zbus_chan_pub(chan_env, &ambient, K_FOREVER);
+	task_schedule(&data);
+	pkt = net_buf_get(tx_queue, K_MSEC(100));
+	zassert_not_null(pkt);
+	net_buf_pull(pkt, sizeof(struct epacket_dummy_frame));
+	zassert_equal(0, tdf_parse_find_in_buf(pkt->data, pkt->len, TDF_AMBIENT_TEMPERATURE, &tdf));
+	zassert_equal(0, tdf.time);
+	net_buf_unref(pkt);
+
 	/* Wait until data invalid, should not send */
 	k_sleep(K_SECONDS(CONFIG_TASK_TDF_LOGGER_ENVIRONMENTAL_TIMEOUT_SEC));
 	task_schedule(&data);
