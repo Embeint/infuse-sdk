@@ -429,7 +429,7 @@ class release_build(WestCommand):
                 output_dir / app_name / "zephyr" / "tfm_merged.hex",
                 output_dir / merged_hex,
             )
-            primary_dir = "zephyr"
+            primary_dir = app_name
 
         repo = Repo(self.args.release, search_parent_directories=True)
         remotes = [r.url for r in repo.remotes]
