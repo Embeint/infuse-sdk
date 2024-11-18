@@ -6,7 +6,7 @@
                 {"name": "major", "type": "uint8_t"},
                 {"name": "minor", "type": "uint8_t"},
                 {"name": "revision", "type": "uint16_t"},
-                {"name": "build_num", "type": "uint32_t", "display_fmt": "hex"}
+                {"name": "build_num", "type": "uint32_t", "display": {"fmt": "hex", "digits": 8}}
             ]
         },
         "tdf_struct_xyz_16bit": {
@@ -20,9 +20,9 @@
         "tdf_struct_gcs_location": {
             "description": "Geographic Coordinate System location",
             "fields": [
-                {"name": "latitude", "type": "int32_t", "description": "Latitude degrees (scale 1e7)", "display_postfix": "deg", "conversion": {"m": 0.0000001, "c": 0}},
-                {"name": "longitude", "type": "int32_t", "description": "Longitude degrees (scale 1e7)", "display_postfix": "deg", "conversion": {"m": 0.0000001, "c": 0}},
-                {"name": "height", "type": "int32_t", "description": "Height above reference ellipsoid (mm)", "display_postfix": "m", "conversion": {"m": 0.001, "c": 0}}
+                {"name": "latitude", "type": "int32_t", "description": "Latitude degrees (scale 1e7)", "display": {"fmt": "float", "digits": 5, "postfix": "deg"}, "conversion": {"m": 0.0000001, "c": 0}},
+                {"name": "longitude", "type": "int32_t", "description": "Longitude degrees (scale 1e7)", "display": {"fmt": "float", "digits": 5, "postfix": "deg"}, "conversion": {"m": 0.0000001, "c": 0}},
+                {"name": "height", "type": "int32_t", "description": "Height above reference ellipsoid (mm)", "display": {"fmt": "float", "digits": 3, "postfix": "m"}, "conversion": {"m": 0.001, "c": 0}}
             ]
         },
         "tdf_struct_lte_cell_id_local": {
@@ -47,38 +47,38 @@
             "name": "ANNOUNCE",
             "description": "Common announcement packet",
             "fields": [
-                {"name": "application", "type": "uint32_t", "description": "Unique application ID"},
+                {"name": "application", "type": "uint32_t", "description": "Unique application ID", "display": {"fmt": "hex", "digits": 8}},
                 {"name": "version", "type": "struct tdf_struct_mcuboot_img_sem_ver", "description": "Running application version"},
-                {"name": "kv_crc", "type": "uint32_t", "description": "Key-Value store reflect global CRC", "display_fmt": "hex"},
+                {"name": "kv_crc", "type": "uint32_t", "description": "Key-Value store reflect global CRC", "display": {"fmt": "hex", "digits": 8}},
                 {"name": "blocks", "type": "uint32_t", "description": "Logger blocks written"},
                 {"name": "uptime", "type": "uint32_t", "description": "Uptime in seconds"},
                 {"name": "reboots", "type": "uint16_t", "description": "Reboot counter"},
-                {"name": "flags", "type": "uint8_t", "description": "Flags (BIT(0) == SD blocks)", "display_fmt": "hex"}
+                {"name": "flags", "type": "uint8_t", "description": "Flags (BIT(0) == SD blocks)", "display": {"fmt": "hex", "digits": 2}}
             ]
         },
         "2": {
             "name": "BATTERY_STATE",
             "description": "General battery state",
             "fields": [
-                {"name": "voltage_mv", "type": "uint32_t", "description": "Battery voltage (milliVolts)", "display_postfix": "mV"},
-                {"name": "current_ua", "type": "int32_t", "description": "Battery current (microamps) (Negative = discharging)", "display_postfix": "uA"},
-                {"name": "soc", "type": "uint8_t", "description": "State of charge (percent)", "display_postfix": "%"}
+                {"name": "voltage_mv", "type": "uint32_t", "description": "Battery voltage (milliVolts)", "display": {"postfix": "mV"}},
+                {"name": "current_ua", "type": "int32_t", "description": "Battery current (microamps) (Negative = discharging)", "display": {"postfix": "uA"}},
+                {"name": "soc", "type": "uint8_t", "description": "State of charge (percent)", "display": {"postfix": "%"}}
             ]
         },
         "3": {
             "name": "AMBIENT_TEMP_PRES_HUM",
             "description": "Ambient temperature, pressure & humidity",
             "fields": [
-                {"name": "temperature", "type": "int32_t", "description": "Ambient temperature (millidegrees)", "display_postfix": "deg", "conversion": {"m": 0.001, "c": 0}},
-                {"name": "pressure", "type": "uint32_t", "description": "Atmospheric pressure (pascals)", "display_postfix": "kPa", "conversion": {"m": 0.001, "c": 0} },
-                {"name": "humidity", "type": "uint16_t", "description": "Relative humidity (centipercent)", "display_postfix": "%", "conversion": {"m": 0.01, "c": 0}}
+                {"name": "temperature", "type": "int32_t", "description": "Ambient temperature (millidegrees)", "display": {"fmt": "float", "digits": 3, "postfix": "deg"}, "conversion": {"m": 0.001, "c": 0}},
+                {"name": "pressure", "type": "uint32_t", "description": "Atmospheric pressure (pascals)", "display": {"fmt": "float", "digits": 3, "postfix": "kPA"}, "conversion": {"m": 0.001, "c": 0} },
+                {"name": "humidity", "type": "uint16_t", "description": "Relative humidity (centipercent)", "display": {"fmt": "float", "digits": 2, "postfix": "%"}, "conversion": {"m": 0.01, "c": 0}}
             ]
         },
         "4": {
             "name": "AMBIENT_TEMPERATURE",
             "description": "Ambient temperature",
             "fields": [
-                {"name": "temperature", "type": "int32_t", "description": "Ambient temperature (millidegrees)", "display_postfix": "deg", "conversion": {"m": 0.001, "c": 0}}
+                {"name": "temperature", "type": "int32_t", "description": "Ambient temperature (millidegrees)", "display": {"fmt": "float", "digits": 3, "postfix": "deg"}, "conversion": {"m": 0.001, "c": 0}}
             ]
         },
         "5": {
@@ -86,7 +86,7 @@
             "description": "Time synchronised to new source",
             "fields": [
                 {"name": "source", "type": "uint8_t", "description": "Updated time source"},
-                {"name": "shift", "type": "int32_t", "description": "Time shift (microseconds)", "display_postfix": "us", "conversion": {"m": 0.000001, "c": 0}}
+                {"name": "shift", "type": "int32_t", "description": "Time shift (microseconds)", "display": {"postfix": "us"}, "conversion": {"m": 0.000001, "c": 0}}
             ]
         },
         "6": {
@@ -94,11 +94,11 @@
             "description": "Information pertaining to the previous reboot",
             "fields": [
                 {"name": "reason", "type": "uint8_t", "description": "Reboot reason (enum infuse_reboot_reason)"},
-                {"name": "hardware_flags", "type": "uint32_t", "description": "Hardware flags (hwinfo_get_reset_cause)", "display_fmt": "hex"},
+                {"name": "hardware_flags", "type": "uint32_t", "description": "Hardware flags (hwinfo_get_reset_cause)", "display": {"fmt": "hex", "digits": 8}},
                 {"name": "count", "type": "uint32_t", "description": "Reboot counter"},
                 {"name": "uptime", "type": "uint32_t", "description": "Uptime before reboot (seconds)"},
-                {"name": "param_1", "type": "uint32_t", "description": "Program counter/Watchdog Info/Other", "display_fmt": "hex"},
-                {"name": "param_2", "type": "uint32_t", "description": "Link Register/Watchdog Info/Other", "display_fmt": "hex"},
+                {"name": "param_1", "type": "uint32_t", "description": "Program counter/Watchdog Info/Other", "display": {"fmt": "hex", "digits": 8}},
+                {"name": "param_2", "type": "uint32_t", "description": "Link Register/Watchdog Info/Other", "display": {"fmt": "hex", "digits": 8}},
                 {"name": "thread", "type": "char", "num": 8, "description": "Running thread at reboot"}
             ]
         },
@@ -170,8 +170,8 @@
             "description": "Geo-location (WGS-84) + accuracy",
             "fields": [
                 {"name": "location", "type": "struct tdf_struct_gcs_location", "description": "WGS-84 referenced location"},
-                {"name": "h_acc", "type": "int32_t", "description": "Horizontal accuracy (mm)", "display_postfix": "m", "conversion": {"m": 0.001, "c": 0}},
-                {"name": "v_acc", "type": "int32_t", "description": "Vertical accuracy (mm)", "display_postfix": "m", "conversion": {"m": 0.001, "c": 0}}
+                {"name": "h_acc", "type": "int32_t", "description": "Horizontal accuracy (mm)", "display": {"fmt": "float", "digits": 3, "postfix": "m"}, "conversion": {"m": 0.001, "c": 0}},
+                {"name": "v_acc", "type": "int32_t", "description": "Vertical accuracy (mm)", "display": {"fmt": "float", "digits": 3, "postfix": "m"}, "conversion": {"m": 0.001, "c": 0}}
             ]
         },
         "20": {
@@ -186,31 +186,31 @@
                 {"name": "min", "type": "uint8_t", "description": "Minute of hour, range 0..59 (UTC)"},
                 {"name": "sec", "type": "uint8_t", "description": "Seconds of minute, range 0..60 (UTC)"},
                 {"name": "valid", "type": "uint8_t", "description": "Validity flags", "display_fmt": "hex"},
-                {"name": "t_acc", "type": "uint32_t", "description": "Time accuracy estimate (UTC)", "display_postfix": "ns"},
-                {"name": "nano", "type": "int32_t", "description": "Fraction of second, range -1e9 .. 1e9 (UTC)", "display_postfix": "ns"},
+                {"name": "t_acc", "type": "uint32_t", "description": "Time accuracy estimate (UTC)", "display": {"postfix": "ns"}},
+                {"name": "nano", "type": "int32_t", "description": "Fraction of second, range -1e9 .. 1e9 (UTC)", "display": {"postfix": "ns"}},
                 {"name": "fix_type", "type": "uint8_t", "description": "GNSS fix Type"},
                 {"name": "flags", "type": "uint8_t", "description": "Fix status flags", "display_fmt": "hex"},
                 {"name": "flags2", "type": "uint8_t", "description": "Additional flags", "display_fmt": "hex"},
                 {"name": "num_sv", "type": "uint8_t", "description": "Number of satellites used in Nav Solution"},
-                {"name": "lon", "type": "int32_t", "description": "Longitude", "display_postfix": "deg", "conversion": {"m": 0.0000001, "c": 0}},
-                {"name": "lat", "type": "int32_t", "description": "Latitude", "display_postfix": "deg", "conversion": {"m": 0.0000001, "c": 0}},
-                {"name": "height", "type": "int32_t", "description": "Height above ellipsoid", "display_postfix": "m", "conversion": {"m": 0.001, "c": 0}},
-                {"name": "h_msl", "type": "int32_t", "description": "Height above mean sea level", "display_postfix": "m", "conversion": {"m": 0.001, "c": 0}},
-                {"name": "h_acc", "type": "uint32_t", "description": "Horizontal accuracy estimate", "display_postfix": "m", "conversion": {"m": 0.001, "c": 0}},
-                {"name": "v_acc", "type": "uint32_t", "description": "Vertical accuracy estimate", "display_postfix": "m", "conversion": {"m": 0.001, "c": 0}},
-                {"name": "vel_n", "type": "int32_t", "description": "NED north velocity", "display_postfix": "m/s", "conversion": {"m": 0.001, "c": 0}},
-                {"name": "vel_e", "type": "int32_t", "description": "NED east velocity", "display_postfix": "m/s", "conversion": {"m": 0.001, "c": 0}},
-                {"name": "vel_d", "type": "int32_t", "description": "NED down velocity", "display_postfix": "m/s", "conversion": {"m": 0.001, "c": 0}},
-                {"name": "g_speed", "type": "int32_t", "description": "Ground Speed (2-D)", "display_postfix": "m/s", "conversion": {"m": 0.001, "c": 0}},
-                {"name": "head_mot", "type": "int32_t", "description": "Heading of motion (2-D)", "display_postfix": "deg", "conversion": {"m": 0.00001, "c": 0}},
-                {"name": "s_acc", "type": "uint32_t", "description": "Speed accuracy estimate", "display_postfix": "m/s", "conversion": {"m": 0.001, "c": 0}},
-                {"name": "head_acc", "type": "uint32_t", "description": "Heading accuracy estimate (both motion and vehicle)", "display_postfix": "deg", "conversion": {"m": 0.00001, "c": 0}},
+                {"name": "lon", "type": "int32_t", "description": "Longitude", "display": {"postfix": "deg"}, "conversion": {"m": 0.0000001, "c": 0}},
+                {"name": "lat", "type": "int32_t", "description": "Latitude", "display": {"postfix": "deg"}, "conversion": {"m": 0.0000001, "c": 0}},
+                {"name": "height", "type": "int32_t", "description": "Height above ellipsoid", "display": {"postfix": "m"}, "conversion": {"m": 0.001, "c": 0}},
+                {"name": "h_msl", "type": "int32_t", "description": "Height above mean sea level", "display": {"postfix": "m"}, "conversion": {"m": 0.001, "c": 0}},
+                {"name": "h_acc", "type": "uint32_t", "description": "Horizontal accuracy estimate", "display": {"postfix": "m"}, "conversion": {"m": 0.001, "c": 0}},
+                {"name": "v_acc", "type": "uint32_t", "description": "Vertical accuracy estimate", "display": {"postfix": "m"}, "conversion": {"m": 0.001, "c": 0}},
+                {"name": "vel_n", "type": "int32_t", "description": "NED north velocity", "display": {"postfix": "m/s"}, "conversion": {"m": 0.001, "c": 0}},
+                {"name": "vel_e", "type": "int32_t", "description": "NED east velocity", "display": {"postfix": "m/s"}, "conversion": {"m": 0.001, "c": 0}},
+                {"name": "vel_d", "type": "int32_t", "description": "NED down velocity", "display": {"postfix": "m/s"}, "conversion": {"m": 0.001, "c": 0}},
+                {"name": "g_speed", "type": "int32_t", "description": "Ground Speed (2-D)", "display": {"postfix": "m/s"}, "conversion": {"m": 0.001, "c": 0}},
+                {"name": "head_mot", "type": "int32_t", "description": "Heading of motion (2-D)", "display": {"postfix": "deg"}, "conversion": {"m": 0.00001, "c": 0}},
+                {"name": "s_acc", "type": "uint32_t", "description": "Speed accuracy estimate", "display": {"postfix": "m/s"}, "conversion": {"m": 0.001, "c": 0}},
+                {"name": "head_acc", "type": "uint32_t", "description": "Heading accuracy estimate (both motion and vehicle)", "display": {"postfix": "deg"}, "conversion": {"m": 0.00001, "c": 0}},
                 {"name": "p_dop", "type": "uint16_t", "description": "Position DOP", "conversion": {"m": 0.01, "c": 0}},
                 {"name": "flags3", "type": "uint16_t", "description": "Additional flags", "display_fmt": "hex"},
                 {"name": "reserved0", "type": "uint8_t", "num": 4, "description": "Reserved"},
-                {"name": "head_veh", "type": "int32_t", "description": "Heading of vehicle (2-D)", "display_postfix": "deg", "conversion": {"m": 0.00001, "c": 0}},
-                {"name": "mag_dec", "type": "int16_t", "description": "Magnetic declination", "display_postfix": "deg", "conversion": {"m": 0.01, "c": 0}},
-                {"name": "mag_acc", "type": "uint16_t", "description": "Magnetic declination accuracy", "display_postfix": "deg", "conversion": {"m": 0.01, "c": 0}}
+                {"name": "head_veh", "type": "int32_t", "description": "Heading of vehicle (2-D)", "display": {"postfix": "deg"}, "conversion": {"m": 0.00001, "c": 0}},
+                {"name": "mag_dec", "type": "int16_t", "description": "Magnetic declination", "display": {"postfix": "deg"}, "conversion": {"m": 0.01, "c": 0}},
+                {"name": "mag_acc", "type": "uint16_t", "description": "Magnetic declination accuracy", "display": {"postfix": "deg"}, "conversion": {"m": 0.01, "c": 0}}
             ]
         },
         "21": {
@@ -221,8 +221,8 @@
                 {"name": "earfcn", "type": "uint32_t", "description": "Evolved Absolute Radio Frequency Channel (E-ARFCN)"},
                 {"name": "status", "type": "uint8_t", "description": "Registration status (See AT+CEREG)"},
                 {"name": "tech", "type": "uint8_t", "description": "Access Technology (7 = LTE-M, 9 = NB-IoT)"},
-                {"name": "rsrp", "type": "uint8_t", "description": "Reference signal received power (255 = Unknown)", "display_postfix": "dBm", "conversion": {"m": -1, "c": 0}},
-                {"name": "rsrq", "type": "int8_t", "description": "Reference signal received quality (-128 = Unknown)", "display_postfix": "dB"}
+                {"name": "rsrp", "type": "uint8_t", "description": "Reference signal received power (255 = Unknown)", "display": {"postfix": "dBm"}, "conversion": {"m": -1, "c": 0}},
+                {"name": "rsrq", "type": "int8_t", "description": "Reference signal received quality (-128 = Unknown)", "display": {"postfix": "dB"}}
             ]
         },
         "22": {
