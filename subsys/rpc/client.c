@@ -102,9 +102,11 @@ static void packet_received(const struct net_buf *buf, bool decrypted, void *use
 	}
 }
 
-void rpc_client_init(struct rpc_client_ctx *ctx, const struct device *dev)
+void rpc_client_init(struct rpc_client_ctx *ctx, const struct device *dev,
+		     union epacket_interface_address address)
 {
 	ctx->interface = dev;
+	ctx->address = address;
 	ctx->interface_cb.interface_state = NULL;
 	ctx->interface_cb.tx_failure = NULL;
 	ctx->interface_cb.packet_received = packet_received;
@@ -192,8 +194,7 @@ int rpc_client_command_queue(struct rpc_client_ctx *ctx, enum rpc_builtin_id cmd
 	net_buf_add_mem(cmd_buf, req_params, req_params_len);
 
 	/* Send command */
-	epacket_set_tx_metadata(cmd_buf, EPACKET_AUTH_NETWORK, 0x00, INFUSE_RPC_CMD,
-				EPACKET_ADDR_ALL);
+	epacket_set_tx_metadata(cmd_buf, EPACKET_AUTH_NETWORK, 0x00, INFUSE_RPC_CMD, ctx->address);
 	epacket_queue(ctx->interface, cmd_buf);
 
 	/* Start the timeout timer */
@@ -257,7 +258,7 @@ int rpc_client_data_queue(struct rpc_client_ctx *ctx, uint32_t request_id, uint3
 
 		/* Send data packet */
 		epacket_set_tx_metadata(data_buf, EPACKET_AUTH_NETWORK, 0x00, INFUSE_RPC_DATA,
-					EPACKET_ADDR_ALL);
+					ctx->address);
 		epacket_queue(ctx->interface, data_buf);
 
 		/* Update state */

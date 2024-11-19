@@ -75,7 +75,7 @@ ZTEST(rpc_client, test_invalid)
 	const struct device *epacket_dummy = DEVICE_DT_GET(DT_NODELABEL(epacket_dummy));
 	struct rpc_client_ctx ctx;
 
-	rpc_client_init(&ctx, epacket_dummy);
+	rpc_client_init(&ctx, epacket_dummy, EPACKET_ADDR_ALL);
 
 	struct rpc_echo_req_10 req = {.payload = {10, 9, 8, 7, 6, 5, 4, 3, 2, 1}};
 
@@ -116,7 +116,7 @@ ZTEST(rpc_client, test_single)
 	struct rpc_client_ctx ctx;
 	int rc;
 
-	rpc_client_init(&ctx, epacket_dummy);
+	rpc_client_init(&ctx, epacket_dummy, EPACKET_ADDR_ALL);
 
 	struct rpc_echo_req_10 req = {.payload = {10, 9, 8, 7, 6, 5, 4, 3, 2, 1}};
 
@@ -146,7 +146,7 @@ ZTEST(rpc_client, test_unknown_rsp)
 	struct rpc_client_ctx ctx;
 	int rc;
 
-	rpc_client_init(&ctx, epacket_dummy);
+	rpc_client_init(&ctx, epacket_dummy, EPACKET_ADDR_ALL);
 
 	struct rpc_echo_req_10 req = {.payload = {10, 9, 8, 7, 6, 5, 4, 3, 2, 1}};
 
@@ -209,7 +209,7 @@ ZTEST(rpc_client, test_rsp_timeout)
 
 	zassert_not_null(sent_queue);
 
-	rpc_client_init(&ctx, epacket_dummy);
+	rpc_client_init(&ctx, epacket_dummy, EPACKET_ADDR_ALL);
 
 	struct rpc_echo_req_10 req = {.payload = {10, 9, 8, 7, 6, 5, 4, 3, 2, 1}};
 
@@ -241,7 +241,7 @@ ZTEST(rpc_client, test_rsp_early_cleanup)
 
 	zassert_not_null(sent_queue);
 
-	rpc_client_init(&ctx, epacket_dummy);
+	rpc_client_init(&ctx, epacket_dummy, EPACKET_ADDR_ALL);
 
 	struct rpc_echo_req_10 req = {.payload = {10, 9, 8, 7, 6, 5, 4, 3, 2, 1}};
 
@@ -289,7 +289,7 @@ ZTEST(rpc_client, test_multi)
 
 	struct rpc_echo_req_10 req = {.payload = {50, 9, 8, 7, 6, 5, 4, 3, 2, 1}};
 
-	rpc_client_init(&ctx, epacket_dummy);
+	rpc_client_init(&ctx, epacket_dummy, EPACKET_ADDR_ALL);
 
 	/* Push multiple commands */
 	for (int i = 0; i < CONFIG_INFUSE_RPC_CLIENT_MAX_IN_FLIGHT; i++) {
@@ -392,7 +392,7 @@ static void test_command_data_param(uint32_t size, uint8_t ack_period, bool sing
 	k_work_init_delayable(&dwork, async_processor);
 	k_work_reschedule(&dwork, K_MSEC(100));
 
-	rpc_client_init(&ctx, epacket_dummy);
+	rpc_client_init(&ctx, epacket_dummy, EPACKET_ADDR_ALL);
 
 	rc = rpc_client_command_queue(&ctx, RPC_ID_DATA_RECEIVER, &req, sizeof(req),
 				      command_data_done, NULL, K_NO_WAIT, K_SECONDS(1));
@@ -504,7 +504,7 @@ ZTEST(rpc_client, test_sync)
 	k_work_init_delayable(&dwork, async_processor);
 	k_work_reschedule(&dwork, K_MSEC(100));
 
-	rpc_client_init(&ctx, epacket_dummy);
+	rpc_client_init(&ctx, epacket_dummy, EPACKET_ADDR_ALL);
 
 	/* Run a bunch of synchronous commands */
 	for (int i = 0; i < 10; i++) {

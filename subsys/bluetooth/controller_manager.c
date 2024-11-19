@@ -31,7 +31,7 @@ int bt_controller_manager_init(void)
 	struct net_buf *buf;
 	int rc;
 
-	rpc_client_init(&ctx, DEVICE_DT_GET(DT_INST(0, embeint_epacket_hci)));
+	rpc_client_init(&ctx, DEVICE_DT_GET(DT_INST(0, embeint_epacket_hci)), EPACKET_ADDR_ALL);
 
 	rc = rpc_client_command_sync(&ctx, RPC_ID_APPLICATION_INFO, &req, sizeof(req), K_NO_WAIT,
 				     K_MSEC(200), &buf);
@@ -82,7 +82,7 @@ int bt_controller_manager_dfu_write_start(uint32_t *context, size_t image_len)
 	};
 	int rc;
 
-	rpc_client_init(&ctx, DEVICE_DT_GET(DT_INST(0, embeint_epacket_hci)));
+	rpc_client_init(&ctx, DEVICE_DT_GET(DT_INST(0, embeint_epacket_hci)), EPACKET_ADDR_ALL);
 
 	LOG_INF("Starting DFU process");
 	rc = rpc_client_command_queue(&ctx, RPC_ID_FILE_WRITE_BASIC, &write_req, sizeof(write_req),
