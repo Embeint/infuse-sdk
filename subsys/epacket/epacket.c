@@ -223,6 +223,11 @@ static void epacket_handle_rx(struct net_buf *buf)
 		rc = epacket_bt_gatt_decrypt(buf);
 		break;
 #endif /* CONFIG_EPACKET_INTERFACE_BT_PERIPHERAL */
+#ifdef CONFIG_EPACKET_INTERFACE_BT_CENTRAL
+	case EPACKET_INTERFACE_BT_CENTRAL:
+		rc = epacket_bt_gatt_decrypt(buf);
+		break;
+#endif /* CONFIG_EPACKET_INTERFACE_BT_CENTRAL */
 #ifdef CONFIG_EPACKET_INTERFACE_HCI
 	case EPACKET_INTERFACE_HCI:
 		rc = epacket_hci_decrypt(buf);
