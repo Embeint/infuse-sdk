@@ -223,7 +223,7 @@ void rpc_command_runner(struct net_buf *request)
 	rsp_header->command_id = command_id;
 
 	/* Metadata and core response info */
-	epacket_set_tx_metadata(response, auth, 0x00, INFUSE_RPC_RSP);
+	epacket_set_tx_metadata(response, auth, 0x00, INFUSE_RPC_RSP, EPACKET_ADDR_ALL);
 
 	/* Push response back over incoming interface */
 	epacket_queue(interface, response);

@@ -50,7 +50,7 @@ struct net_buf *rpc_command_data_sender(struct net_buf *request)
 	while (remaining > 0) {
 		/* Allocate the data packet */
 		data_buf = epacket_alloc_tx_for_interface(interface, K_FOREVER);
-		epacket_set_tx_metadata(data_buf, auth, 0x00, INFUSE_RPC_DATA);
+		epacket_set_tx_metadata(data_buf, auth, 0x00, INFUSE_RPC_DATA, EPACKET_ADDR_ALL);
 
 		/* Allocate header and calculate packets on first iteration */
 		data = net_buf_add(data_buf, sizeof(*data));

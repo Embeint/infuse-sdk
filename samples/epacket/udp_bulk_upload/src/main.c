@@ -66,7 +66,8 @@ int main(void)
 		t_start = k_uptime_get();
 		while (bytes_sent < CONFIG_BULK_UPLOAD_BYTES) {
 			buf = epacket_alloc_tx_for_interface(udp, K_FOREVER);
-			epacket_set_tx_metadata(buf, EPACKET_AUTH_DEVICE, 0x00, 0xFF);
+			epacket_set_tx_metadata(buf, EPACKET_AUTH_DEVICE, 0x00, 0xFF,
+						EPACKET_ADDR_ALL);
 
 			/* Add "payload" and update counters */
 			tailroom = net_buf_tailroom(buf);

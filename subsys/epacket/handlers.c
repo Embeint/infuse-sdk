@@ -34,7 +34,8 @@ void epacket_default_receive_handler(struct net_buf *buf)
 		if (echo == NULL) {
 			LOG_WRN("Failed to allocate echo response");
 		} else {
-			epacket_set_tx_metadata(echo, meta->auth, 0, INFUSE_ECHO_RSP);
+			epacket_set_tx_metadata(echo, meta->auth, 0, INFUSE_ECHO_RSP,
+						EPACKET_ADDR_ALL);
 			net_buf_add_mem(echo, buf->data, buf->len);
 			epacket_queue(meta->interface, echo);
 		}
@@ -68,7 +69,7 @@ void epacket_gateway_receive_handler(const struct device *backhaul, struct net_b
 		if (epacket_received_packet_append(forward, buf) == 0) {
 			/* Add metadata */
 			epacket_set_tx_metadata(forward, EPACKET_AUTH_DEVICE, 0x00,
-						INFUSE_RECEIVED_EPACKET);
+						INFUSE_RECEIVED_EPACKET, EPACKET_ADDR_ALL);
 			/* Queue for transmission on backhaul */
 			epacket_queue(backhaul, forward);
 		} else {

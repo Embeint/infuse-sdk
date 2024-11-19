@@ -192,7 +192,8 @@ int rpc_client_command_queue(struct rpc_client_ctx *ctx, enum rpc_builtin_id cmd
 	net_buf_add_mem(cmd_buf, req_params, req_params_len);
 
 	/* Send command */
-	epacket_set_tx_metadata(cmd_buf, EPACKET_AUTH_NETWORK, 0x00, INFUSE_RPC_CMD);
+	epacket_set_tx_metadata(cmd_buf, EPACKET_AUTH_NETWORK, 0x00, INFUSE_RPC_CMD,
+				EPACKET_ADDR_ALL);
 	epacket_queue(ctx->interface, cmd_buf);
 
 	/* Start the timeout timer */
@@ -255,7 +256,8 @@ int rpc_client_data_queue(struct rpc_client_ctx *ctx, uint32_t request_id, uint3
 		net_buf_add_mem(data_buf, bytes, add);
 
 		/* Send data packet */
-		epacket_set_tx_metadata(data_buf, EPACKET_AUTH_NETWORK, 0x00, INFUSE_RPC_DATA);
+		epacket_set_tx_metadata(data_buf, EPACKET_AUTH_NETWORK, 0x00, INFUSE_RPC_DATA,
+					EPACKET_ADDR_ALL);
 		epacket_queue(ctx->interface, data_buf);
 
 		/* Update state */

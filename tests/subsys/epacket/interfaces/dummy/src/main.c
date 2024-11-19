@@ -44,7 +44,7 @@ ZTEST(epacket_dummy, test_send_queue)
 	/* Allocate buffer */
 	tx = epacket_alloc_tx_for_interface(epacket_dummy, K_NO_WAIT);
 	zassert_not_null(tx);
-	epacket_set_tx_metadata(tx, EPACKET_AUTH_DEVICE, 0x1234, 0x20);
+	epacket_set_tx_metadata(tx, EPACKET_AUTH_DEVICE, 0x1234, 0x20, EPACKET_ADDR_ALL);
 	net_buf_add_mem(tx, payload, sizeof(payload));
 
 	/* Send buffer on interface */
