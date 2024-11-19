@@ -39,12 +39,24 @@ enum epacket_auth {
 	EPACKET_AUTH_DEVICE,
 } __packed;
 
+/* Interface specific addresses */
+union epacket_interface_address {
+	/* Bluetooth LE address */
+	bt_addr_le_t bluetooth;
+};
+
 /* Metadata for packets that will be transmitted */
 struct epacket_tx_metadata {
+	/* Callback run when TX completes */
 	void (*tx_done)(const struct device *dev, struct net_buf *pkt, int result);
+	/* Authentication level of packet */
 	enum epacket_auth auth;
+	/* Packet type */
 	enum infuse_type type;
+	/* Flags to apply to packet */
 	uint16_t flags;
+	/* Interface specific address */
+	union epacket_interface_address interface_address;
 };
 
 /* Metadata for packets that have been received */
@@ -66,9 +78,7 @@ struct epacket_rx_metadata {
 	/* Numerical ID for interface */
 	enum epacket_interface_id interface_id;
 	/* Interface specific address */
-	union {
-		bt_addr_le_t bluetooth;
-	} interface_address;
+	union epacket_interface_address interface_address;
 	/* RSSI of packet (0 = 0dBm, 20 = 20dBm, etc) */
 	int16_t rssi;
 	/* Sequence number of packet */
