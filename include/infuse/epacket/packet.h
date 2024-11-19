@@ -45,6 +45,12 @@ union epacket_interface_address {
 	bt_addr_le_t bluetooth;
 };
 
+/* Empty interface address */
+#define EPACKET_ADDR_ALL                                                                           \
+	(union epacket_interface_address)                                                          \
+	{                                                                                          \
+	}
+
 /* Metadata for packets that will be transmitted */
 struct epacket_tx_metadata {
 	/* Callback run when TX completes */
@@ -196,9 +202,11 @@ static inline struct net_buf *epacket_alloc_tx_for_interface(const struct device
  * @param auth Authentication level to use for packet
  * @param flags Desired packet flags
  * @param type Packet type
+ * @param dest Destination address
  */
 static inline void epacket_set_tx_metadata(struct net_buf *buf, enum epacket_auth auth,
-					   uint16_t flags, enum infuse_type type)
+					   uint16_t flags, enum infuse_type type,
+					   union epacket_interface_address dest)
 {
 	struct epacket_tx_metadata *meta = net_buf_user_data(buf);
 
@@ -206,6 +214,7 @@ static inline void epacket_set_tx_metadata(struct net_buf *buf, enum epacket_aut
 	meta->flags = flags;
 	meta->type = type;
 	meta->tx_done = NULL;
+	meta->interface_address = dest;
 }
 
 /**

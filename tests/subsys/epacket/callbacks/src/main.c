@@ -65,7 +65,7 @@ ZTEST(epacket_callbacks, test_interface_tx_failure)
 	/* Allocate buffer */
 	tx = epacket_alloc_tx_for_interface(epacket_dummy, K_NO_WAIT);
 	zassert_not_null(tx);
-	epacket_set_tx_metadata(tx, EPACKET_AUTH_DEVICE, 0x1234, 0x20);
+	epacket_set_tx_metadata(tx, EPACKET_AUTH_DEVICE, 0x1234, 0x20, EPACKET_ADDR_ALL);
 	epacket_set_tx_callback(tx, tx_done);
 	net_buf_add_mem(tx, payload, sizeof(payload));
 
@@ -91,7 +91,7 @@ ZTEST(epacket_callbacks, test_interface_tx_failure)
 	/* Allocate buffer */
 	tx = epacket_alloc_tx_for_interface(epacket_dummy, K_NO_WAIT);
 	zassert_not_null(tx);
-	epacket_set_tx_metadata(tx, EPACKET_AUTH_DEVICE, 0x1234, 0x20);
+	epacket_set_tx_metadata(tx, EPACKET_AUTH_DEVICE, 0x1234, 0x20, EPACKET_ADDR_ALL);
 	epacket_set_tx_callback(tx, tx_done);
 	net_buf_add_mem(tx, payload, sizeof(payload));
 

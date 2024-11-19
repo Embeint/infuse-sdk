@@ -43,7 +43,7 @@ ZTEST(epacket_udp, test_metadata)
 		tx = epacket_alloc_tx(K_NO_WAIT);
 		zassert_not_null(tx);
 		net_buf_reserve(tx, sizeof(struct epacket_udp_frame));
-		epacket_set_tx_metadata(tx, iter_auth, i, 0x10 + i);
+		epacket_set_tx_metadata(tx, iter_auth, i, 0x10 + i, EPACKET_ADDR_ALL);
 		p = net_buf_add(tx, 60);
 		sys_rand_get(p, 60);
 
@@ -114,7 +114,7 @@ static void test_encrypt_decrypt_auth(enum epacket_auth auth)
 	orig_buf = epacket_alloc_tx(K_NO_WAIT);
 	zassert_not_null(orig_buf);
 	net_buf_reserve(orig_buf, sizeof(struct epacket_udp_frame));
-	epacket_set_tx_metadata(orig_buf, auth, 0, 0x10);
+	epacket_set_tx_metadata(orig_buf, auth, 0, 0x10, EPACKET_ADDR_ALL);
 	p = net_buf_add(orig_buf, 60);
 	sys_rand_get(p, 60);
 

@@ -53,7 +53,8 @@ static int line_out(uint8_t *data, size_t length, void *output_ctx)
 		return length;
 	}
 
-	epacket_set_tx_metadata(buf, EPACKET_AUTH_DEVICE, 0x00, INFUSE_SERIAL_LOG);
+	epacket_set_tx_metadata(buf, EPACKET_AUTH_DEVICE, 0x00, INFUSE_SERIAL_LOG,
+				EPACKET_ADDR_ALL);
 	net_buf_add_mem(buf, data, MIN(length, net_buf_tailroom(buf)));
 	epacket_queue(dev, buf);
 	return length;

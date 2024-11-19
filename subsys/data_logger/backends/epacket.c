@@ -36,7 +36,7 @@ static int logger_epacket_write(const struct device *dev, uint32_t phy_block,
 		net_buf_unref(buf);
 		return -ENOSPC;
 	}
-	epacket_set_tx_metadata(buf, EPACKET_AUTH_NETWORK, 0x00, data_type);
+	epacket_set_tx_metadata(buf, EPACKET_AUTH_NETWORK, 0x00, data_type, EPACKET_ADDR_ALL);
 	net_buf_add_mem(buf, mem, mem_len);
 	epacket_queue(config->backend, buf);
 	return 0;

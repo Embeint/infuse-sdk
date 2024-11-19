@@ -247,7 +247,8 @@ bool infuse_memfault_dump_chunks_epacket(const struct device *dev)
 		if ((net_buf_tailroom(tx) < (sizeof(*header) + MEMFAULT_PACKETIZER_MIN_BUF_LEN)) ||
 		    (buf_len == 0)) {
 			/* Set packet metadata and queue for transmission */
-			epacket_set_tx_metadata(tx, EPACKET_AUTH_DEVICE, 0, INFUSE_MEMFAULT_CHUNK);
+			epacket_set_tx_metadata(tx, EPACKET_AUTH_DEVICE, 0, INFUSE_MEMFAULT_CHUNK,
+						EPACKET_ADDR_ALL);
 			epacket_queue(dev, tx);
 
 			/* Need another packet allocated */
@@ -258,7 +259,8 @@ bool infuse_memfault_dump_chunks_epacket(const struct device *dev)
 	/* If there is a pending packet, send it */
 	if (tx) {
 		/* Set packet metadata and queue for transmission */
-		epacket_set_tx_metadata(tx, EPACKET_AUTH_DEVICE, 0, INFUSE_MEMFAULT_CHUNK);
+		epacket_set_tx_metadata(tx, EPACKET_AUTH_DEVICE, 0, INFUSE_MEMFAULT_CHUNK,
+					EPACKET_ADDR_ALL);
 		epacket_queue(dev, tx);
 	}
 

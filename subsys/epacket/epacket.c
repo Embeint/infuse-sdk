@@ -91,7 +91,8 @@ int epacket_send_key_ids(const struct device *dev, k_timeout_t timeout)
 
 	if (rsp) {
 		/* Infuse ID and network key ID in header, device key ID in payload */
-		epacket_set_tx_metadata(rsp, EPACKET_AUTH_NETWORK, 0, INFUSE_KEY_IDS);
+		epacket_set_tx_metadata(rsp, EPACKET_AUTH_NETWORK, 0, INFUSE_KEY_IDS,
+					EPACKET_ADDR_ALL);
 		net_buf_add_le24(rsp, infuse_security_device_key_identifier());
 		epacket_queue(dev, rsp);
 	}

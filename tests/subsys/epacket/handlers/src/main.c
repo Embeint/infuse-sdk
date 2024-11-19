@@ -223,7 +223,7 @@ static struct net_buf *create_received_tdf_packet(uint8_t payload_len, bool encr
 	buf_tx = epacket_alloc_tx(K_NO_WAIT);
 	zassert_not_null(buf_tx);
 	net_buf_reserve(buf_tx, sizeof(struct epacket_bt_adv_frame));
-	epacket_set_tx_metadata(buf_tx, EPACKET_AUTH_DEVICE, 0, INFUSE_TDF);
+	epacket_set_tx_metadata(buf_tx, EPACKET_AUTH_DEVICE, 0, INFUSE_TDF, EPACKET_ADDR_ALL);
 	p = net_buf_add(buf_tx, 60);
 	sys_rand_get(p, 60);
 
