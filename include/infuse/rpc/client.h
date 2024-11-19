@@ -13,6 +13,7 @@
 #include <zephyr/net/buf.h>
 
 #include <infuse/epacket/interface.h>
+#include <infuse/epacket/packet.h>
 #include <infuse/rpc/types.h>
 
 #ifdef __cplusplus
@@ -53,6 +54,7 @@ struct rpc_client_cmd_ctx {
 /* RPC client context */
 struct rpc_client_ctx {
 	const struct device *interface;
+	union epacket_interface_address address;
 	struct epacket_interface_cb interface_cb;
 	struct rpc_client_cmd_ctx cmd_ctx[CONFIG_INFUSE_RPC_CLIENT_MAX_IN_FLIGHT];
 	struct k_sem cmd_ctx_sem;
@@ -64,8 +66,10 @@ struct rpc_client_ctx {
  *
  * @param ctx RPC client context
  * @param dev ePacket interface to send commands on
+ * @param address Interface address to communicate with
  */
-void rpc_client_init(struct rpc_client_ctx *ctx, const struct device *dev);
+void rpc_client_init(struct rpc_client_ctx *ctx, const struct device *dev,
+		     union epacket_interface_address address);
 
 /**
  * @brief Get the request ID used by the last command
