@@ -9,9 +9,18 @@
 #include <zephyr/logging/log.h>
 
 #include <zephyr/bluetooth/gatt.h>
+
 #include <infuse/bluetooth/gatt.h>
+#include <infuse/epacket/interface.h>
+#include <infuse/epacket/packet.h>
 #include <infuse/epacket/interface/epacket_bt.h>
 #include <infuse/epacket/interface/epacket_bt_central.h>
+
+#include "epacket_internal.h"
+
+#define DT_DRV_COMPAT embeint_epacket_bt_central
+
+#define PACKET_OVERHEAD (DT_INST_PROP(0, header_size) + DT_INST_PROP(0, footer_size))
 
 static void conn_setup_cb(struct bt_conn *conn, int err, void *user_data);
 static void conn_terminated_cb(struct bt_conn *conn, int reason, void *user_data);
@@ -52,6 +61,10 @@ static const struct bt_conn_auto_setup_cb callbacks = {
 	.conn_terminated_cb = conn_terminated_cb,
 };
 
+struct epacket_bt_central_data {
+	struct epacket_interface_common_data common_data;
+};
+
 LOG_MODULE_REGISTER(epacket_bt_central, CONFIG_EPACKET_BT_CENTRAL_LOG_LEVEL);
 
 static void conn_setup_cb(struct bt_conn *conn, int err, void *user_data)
@@ -88,11 +101,44 @@ static void conn_terminated_cb(struct bt_conn *conn, int reason, void *user_data
 static uint8_t char_recv_func(struct bt_conn *conn, struct bt_gatt_subscribe_params *params,
 			      const void *data, uint16_t length)
 {
+	struct epacket_rx_metadata *meta;
+	struct net_buf *rx_buffer;
+
 	if (data == NULL) {
 		/* Unsubscribed */
 		return BT_GATT_ITER_CONTINUE;
 	}
+
 	LOG_INF("Received %d bytes", length);
+	rx_buffer = epacket_alloc_rx(K_MSEC(10));
+	if (rx_buffer == NULL) {
+		LOG_WRN("Buffer claim timeout");
+		return BT_GATT_ITER_CONTINUE;
+	}
+	if (length > net_buf_tailroom(rx_buffer)) {
+		LOG_WRN("Insufficient space (%d > %d)", length, net_buf_tailroom(rx_buffer));
+		net_buf_unref(rx_buffer);
+		return BT_GATT_ITER_CONTINUE;
+	}
+
+	/* Copy payload across */
+	net_buf_add_mem(rx_buffer, data, length);
+
+	/* Save metadata */
+	meta = net_buf_user_data(rx_buffer);
+	meta->interface = DEVICE_DT_INST_GET(0);
+	meta->interface_id = EPACKET_INTERFACE_BT_CENTRAL;
+	meta->interface_address.bluetooth = *bt_conn_get_dst(conn);
+
+#ifdef CONFIG_BT_CONN_AUTO_RSSI
+	meta->rssi = bt_conn_rssi(conn);
+#else
+	meta->rssi = 0;
+#endif /* CONFIG_BT_CONN_AUTO_RSSI */
+
+	/* Hand off to ePacket core */
+	epacket_raw_receive_handler(rx_buffer);
+
 	return BT_GATT_ITER_CONTINUE;
 }
 
@@ -247,3 +293,80 @@ cleanup:
 	}
 	return rc;
 }
+
+static void epacket_bt_central_send(const struct device *dev, struct net_buf *buf)
+{
+	struct epacket_tx_metadata *meta = net_buf_user_data(buf);
+	struct infuse_connection_state *s;
+	struct bt_conn *conn = NULL;
+	uint8_t conn_idx;
+	uint16_t handle;
+	int rc;
+
+	/* Find the destination remote device */
+	conn = bt_conn_lookup_addr_le(BT_ID_DEFAULT, &meta->interface_address.bluetooth);
+	if (conn == NULL) {
+		LOG_DBG("Connection lookup failed");
+		rc = -ENOTCONN;
+		goto cleanup;
+	}
+
+	/* Encrypt the payload */
+	if (epacket_bt_gatt_encrypt(buf) < 0) {
+		LOG_WRN("Failed to encrypt");
+		rc = -EIO;
+		goto cleanup;
+	}
+
+	/* Get connection state */
+	conn_idx = bt_conn_index(conn);
+	s = &infuse_conn[conn_idx];
+
+	/* Get appropriate characteristic handle and validate */
+	switch (meta->type) {
+	case INFUSE_RPC_CMD:
+	case INFUSE_RPC_DATA:
+		handle = s->remote_info[CHAR_COMMAND].value_handle;
+		break;
+	default:
+		handle = s->remote_info[CHAR_DATA].value_handle;
+		break;
+	}
+	if (handle == 0x0000) {
+		/* Required characteristic not found on remote */
+		rc = -ENOTSUP;
+		goto cleanup;
+	}
+
+	/* Write the data to the peer */
+	LOG_DBG("Writing %d bytes to handle %d on conn %p", buf->len, handle, (void *)conn);
+	rc = bt_gatt_write_without_response(conn, handle, buf->data, buf->len, false);
+
+cleanup:
+	epacket_notify_tx_result(dev, buf, rc);
+	net_buf_unref(buf);
+	if (conn != NULL) {
+		/* Cleanup resources */
+		bt_conn_unref(conn);
+	}
+}
+
+static int epacket_bt_central_init(const struct device *dev)
+{
+	epacket_interface_common_init(dev);
+	return 0;
+}
+
+static const struct epacket_interface_api bt_gatt_api = {
+	.send = epacket_bt_central_send,
+};
+
+BUILD_ASSERT(244 == DT_INST_PROP(0, max_packet_size));
+static struct epacket_bt_central_data epacket_bt_central_data_inst;
+static const struct epacket_interface_common_config epacket_bt_central_config = {
+	.max_packet_size = EPACKET_INTERFACE_MAX_PACKET(DT_DRV_INST(0)),
+	.header_size = DT_INST_PROP(0, header_size),
+	.footer_size = DT_INST_PROP(0, footer_size),
+};
+DEVICE_DT_DEFINE(DT_DRV_INST(0), epacket_bt_central_init, NULL, &epacket_bt_central_data_inst,
+		 &epacket_bt_central_config, POST_KERNEL, 0, &bt_gatt_api);
