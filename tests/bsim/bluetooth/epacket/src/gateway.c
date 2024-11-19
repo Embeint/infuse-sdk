@@ -406,6 +406,86 @@ static void main_gateway_rpcs(void)
 	PASS("RPC connecter passed\n");
 }
 
+static K_FIFO_DEFINE(central_fifo);
+
+void central_handler(struct net_buf *buf)
+{
+	net_buf_put(&central_fifo, buf);
+}
+
+static void main_gateway_connect_recv(void)
+{
+	const struct bt_le_conn_param params = BT_LE_CONN_PARAM_INIT(0x10, 0x15, 0, 400);
+	const struct device *epacket_central = DEVICE_DT_GET(DT_NODELABEL(epacket_bt_central));
+	struct epacket_read_response security_info;
+	struct epacket_rx_metadata *meta;
+	struct bt_conn *conn;
+	struct net_buf *buf;
+	bt_addr_le_t addr;
+	bool data_sub;
+	int rc;
+
+	common_init();
+	epacket_set_receive_handler(epacket_central, central_handler);
+
+	if (observe_peers(&addr, 1) < 0) {
+		FAIL("Failed to observe peer\n");
+		return;
+	}
+
+	for (int i = 0; i < 4; i++) {
+		data_sub = i % 2;
+
+		/* Connect to peer device */
+		rc = epacket_bt_gatt_connect(&addr, &params, 3000, &conn, &security_info, false,
+					     data_sub, false);
+		if (rc != 0) {
+			FAIL("Failed to connect to peer\n");
+			return;
+		}
+
+		if (data_sub) {
+			/* Wait for a payload */
+			buf = k_fifo_get(&central_fifo, K_SECONDS(2));
+			if (buf == NULL) {
+				FAIL("No packet received\n");
+				return;
+			}
+
+			/* Validate metadata */
+			meta = net_buf_user_data(buf);
+			LOG_INF("Received %d bytes %d packet", buf->len, meta->type);
+			if (meta->auth != EPACKET_AUTH_NETWORK) {
+				FAIL("Unexpected authorisation (%d != %d)\n", meta->auth,
+				     EPACKET_AUTH_NETWORK);
+				return;
+			}
+			if (meta->type != INFUSE_TDF) {
+				FAIL("Unexpected packet type (%d != %d)\n", meta->type, INFUSE_TDF);
+				return;
+			}
+			net_buf_unref(buf);
+		} else {
+			/* Wait for a payload */
+			buf = k_fifo_get(&central_fifo, K_MSEC(1500));
+			if (buf != NULL) {
+				FAIL("Unexpected packet received\n");
+				return;
+			}
+		}
+
+		/* Terminate the connections */
+		rc = bt_conn_disconnect_sync(conn);
+		if (rc != 0) {
+			FAIL("Failed to disconnect from peer\n");
+			return;
+		}
+		bt_conn_unref(conn);
+	}
+
+	PASS("Received TDF data from connected peer\n");
+}
+
 static const struct bst_test_instance epacket_gateway[] = {
 	{
 		.test_id = "epacket_bt_gateway_scan",
@@ -441,6 +521,13 @@ static const struct bst_test_instance epacket_gateway[] = {
 		.test_pre_init_f = test_init,
 		.test_tick_f = test_tick,
 		.test_main_f = main_gateway_rpcs,
+	},
+	{
+		.test_id = "epacket_bt_gateway_connect_recv",
+		.test_descr = "Connect to peer device and recv payloads",
+		.test_pre_init_f = test_init,
+		.test_tick_f = test_tick,
+		.test_main_f = main_gateway_connect_recv,
 	},
 	BSTEST_END_MARKER};
 
