@@ -21,6 +21,7 @@
 #include <infuse/epacket/packet.h>
 #include <infuse/bluetooth/gatt.h>
 #include <infuse/rpc/types.h>
+#include <infuse/rpc/client.h>
 
 extern enum bst_result_t bst_result;
 static K_SEM_DEFINE(epacket_adv_received, 0, 1);
@@ -486,6 +487,68 @@ static void main_gateway_connect_recv(void)
 	PASS("Received TDF data from connected peer\n");
 }
 
+static void main_gateway_remote_rpc(void)
+{
+	const struct bt_le_conn_param params = BT_LE_CONN_PARAM_INIT(0x10, 0x15, 0, 400);
+	const struct device *epacket_central = DEVICE_DT_GET(DT_NODELABEL(epacket_bt_central));
+	struct epacket_read_response security_info;
+	union epacket_interface_address address;
+	struct bt_conn *conn;
+	struct net_buf *buf;
+	bt_addr_le_t addr;
+	int rc;
+
+	struct rpc_application_info_request req;
+	struct rpc_application_info_response *rsp;
+	struct rpc_client_ctx ctx;
+
+	common_init();
+
+	if (observe_peers(&addr, 1) < 0) {
+		FAIL("Failed to observe peer\n");
+		return;
+	}
+	address.bluetooth = addr;
+	rpc_client_init(&ctx, epacket_central, address);
+
+	for (int i = 0; i < 4; i++) {
+		/* Connect to peer device */
+		rc = epacket_bt_gatt_connect(&addr, &params, 3000, &conn, &security_info, true,
+					     false, false);
+		if (rc != 0) {
+			FAIL("Failed to connect to peer\n");
+			return;
+		}
+
+		/* Run a command on the peer device */
+		rc = rpc_client_command_sync(&ctx, RPC_ID_APPLICATION_INFO, &req, sizeof(req),
+					     K_NO_WAIT, K_MSEC(200), &buf);
+		if (rc < 0) {
+			FAIL("Failed to query version (%d)", rc);
+			return;
+		}
+		rsp = (void *)buf->data;
+		LOG_INF("Application: %08X", rsp->application_id);
+		LOG_INF("    Version: %d.%d.%d+%08x", rsp->version.major, rsp->version.minor,
+			rsp->version.revision, rsp->version.build_num);
+		LOG_INF("     Uptime: %d", rsp->uptime);
+		net_buf_unref(buf);
+
+		/* Terminate the connections */
+		rc = bt_conn_disconnect_sync(conn);
+		if (rc != 0) {
+			FAIL("Failed to disconnect from peer\n");
+			return;
+		}
+		bt_conn_unref(conn);
+	}
+
+	/* Unregister from callbacks */
+	rpc_client_cleanup(&ctx);
+
+	PASS("Ran commands on peer\n");
+}
+
 static const struct bst_test_instance epacket_gateway[] = {
 	{
 		.test_id = "epacket_bt_gateway_scan",
@@ -528,6 +591,13 @@ static const struct bst_test_instance epacket_gateway[] = {
 		.test_pre_init_f = test_init,
 		.test_tick_f = test_tick,
 		.test_main_f = main_gateway_connect_recv,
+	},
+	{
+		.test_id = "epacket_bt_gateway_remote_rpc",
+		.test_descr = "Connect to peer device and run RPC",
+		.test_pre_init_f = test_init,
+		.test_tick_f = test_tick,
+		.test_main_f = main_gateway_remote_rpc,
 	},
 	BSTEST_END_MARKER};
 
