@@ -43,6 +43,7 @@ struct epacket_bt_peripheral_data {
 	struct bt_gatt_cb gatt_cb;
 	const struct device *interface;
 	uint16_t last_notification;
+	bool cmd_subscribed;
 	bool data_subscribed;
 };
 
@@ -68,6 +69,7 @@ BT_GATT_SERVICE_DEFINE(
 );
 
 #define CHRC_COMMAND 2
+#define CCC_COMMAND  3
 #define CHRC_DATA    5
 #define CCC_DATA     6
 #define CHRC_LOGGING 8
@@ -78,6 +80,7 @@ static void conn_mtu_query(struct bt_conn *conn, void *user_data)
 {
 	struct bt_conn_info info;
 	uint16_t *smallest_mtu = user_data;
+	uint16_t conn_cmd_ccc = 0;
 	uint16_t conn_data_ccc = 0;
 	int rc;
 
@@ -86,10 +89,12 @@ static void conn_mtu_query(struct bt_conn *conn, void *user_data)
 	if ((rc != 0) || (info.state != BT_CONN_STATE_CONNECTED)) {
 		return;
 	}
-	/* Only care about connections subscribed to the data characteristic */
-	rc = bt_gatt_attr_read_ccc(conn, &infuse_svc.attrs[CCC_DATA], &conn_data_ccc,
-				   sizeof(conn_data_ccc), 0);
-	if (!conn_data_ccc) {
+	/* Only care about connections subscribed to either characteristic */
+	(void)bt_gatt_attr_read_ccc(conn, &infuse_svc.attrs[CCC_DATA], &conn_data_ccc,
+				    sizeof(conn_data_ccc), 0);
+	(void)bt_gatt_attr_read_ccc(conn, &infuse_svc.attrs[CCC_COMMAND], &conn_cmd_ccc,
+				    sizeof(conn_cmd_ccc), 0);
+	if (!conn_cmd_ccc && !conn_data_ccc) {
 		return;
 	}
 
@@ -149,7 +154,12 @@ static void update_interface_state(bool connected)
 
 static void ccc_cfg_changed_command(const struct bt_gatt_attr *attr, uint16_t value)
 {
+	const struct device *epacket_bt_peripheral = DEVICE_DT_GET(DT_DRV_INST(0));
+	struct epacket_bt_peripheral_data *data = epacket_bt_peripheral->data;
+
+	data->cmd_subscribed = !!value;
 	LOG_DBG("Command: %s", value ? "subscribed" : "unsubscribed");
+	update_interface_state(data->cmd_subscribed);
 }
 
 static void ccc_cfg_changed_data(const struct bt_gatt_attr *attr, uint16_t value)
@@ -297,6 +307,7 @@ static int epacket_bt_peripheral_init(const struct device *dev)
 {
 	struct epacket_bt_peripheral_data *data = dev->data;
 
+	data->cmd_subscribed = false;
 	data->data_subscribed = false;
 	data->last_notification = 0;
 	data->gatt_cb.att_mtu_updated = att_mtu_updated;
