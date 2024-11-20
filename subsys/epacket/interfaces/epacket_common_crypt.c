@@ -43,6 +43,11 @@ int epacket_versioned_v0_encrypt(struct net_buf *buf, uint8_t interface_key)
 
 	static uint16_t sequence_num;
 
+	/* Packet was already encrypted by third-party */
+	if (meta->auth == EPACKET_AUTH_REMOTE_ENCRYPTED) {
+		return 0;
+	}
+
 	/* Validate space for frame header */
 	__ASSERT_NO_MSG(net_buf_headroom(buf) >= sizeof(struct epacket_v0_versioned_frame_format));
 
@@ -201,6 +206,11 @@ int epacket_unversioned_v0_encrypt(struct net_buf *buf, uint8_t interface_key)
 	size_t out_len;
 
 	static uint16_t sequence_num;
+
+	/* Packet was already encrypted by third-party */
+	if (meta->auth == EPACKET_AUTH_REMOTE_ENCRYPTED) {
+		return 0;
+	}
 
 	/* Validate space for frame header */
 	__ASSERT_NO_MSG(net_buf_headroom(buf) >=
