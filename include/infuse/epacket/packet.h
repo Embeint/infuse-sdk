@@ -34,9 +34,12 @@ extern "C" {
  */
 
 enum epacket_auth {
-	EPACKET_AUTH_FAILURE,
-	EPACKET_AUTH_NETWORK,
-	EPACKET_AUTH_DEVICE,
+	/* Packet failed to decrypt */
+	EPACKET_AUTH_FAILURE = 0,
+	/* Packet is encrypted for remote device */
+	EPACKET_AUTH_REMOTE_ENCRYPTED = 0,
+	EPACKET_AUTH_NETWORK = 1,
+	EPACKET_AUTH_DEVICE = 2,
 } __packed;
 
 /* Interface specific addresses */
