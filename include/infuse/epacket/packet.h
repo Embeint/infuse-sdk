@@ -116,6 +116,13 @@ struct epacket_key_ids_data {
 	uint8_t device_key_id[3];
 };
 
+/** Format of BLE address in @ref INFUSE_RECEIVED_EPACKET */
+struct epacket_interface_address_bt_le {
+	uint8_t type;
+	uint8_t addr[6];
+} __packed;
+BUILD_ASSERT(sizeof(struct epacket_interface_address_bt_le) == 7);
+
 /** Common header for @ref INFUSE_RECEIVED_EPACKET */
 struct epacket_received_common_header {
 	/*    Bit 16: 1 when packet is still encrypted
