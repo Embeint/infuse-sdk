@@ -116,7 +116,7 @@ struct epacket_key_ids_data {
 	uint8_t device_key_id[3];
 };
 
-/** Format of BLE address in @ref INFUSE_RECEIVED_EPACKET */
+/** Format of BLE address in @ref INFUSE_RECEIVED_EPACKET and @ref INFUSE_EPACKET_FORWARD */
 struct epacket_interface_address_bt_le {
 	uint8_t type;
 	uint8_t addr[6];
@@ -150,6 +150,16 @@ struct epacket_received_decrypted_header {
 	uint16_t sequence;
 	/* ID associated with the key */
 	uint8_t key_id[3];
+} __packed;
+
+/** Common header for @ref INFUSE_EPACKET_FORWARD */
+struct epacket_forward_header {
+	/* Total length of this header + payload */
+	uint16_t length;
+	/* Value from `EPACKET_INTERFACE_*` */
+	uint8_t interface;
+	/* Destination interface address + packet bytes */
+	uint8_t destination_payload[];
 } __packed;
 
 /**
