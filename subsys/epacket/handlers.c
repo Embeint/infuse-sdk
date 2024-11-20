@@ -89,7 +89,7 @@ int epacket_received_packet_append(struct net_buf *storage_buf, struct net_buf *
 	struct epacket_rx_metadata *rx_meta = net_buf_user_data(received_buf);
 	struct epacket_received_common_header common;
 	struct epacket_received_decrypted_header decrypted;
-	uint8_t interface_addr[7];
+	struct epacket_interface_address_bt_le addr_encoded;
 	uint8_t addr_len = 0;
 
 	/* Determine total length */
@@ -99,9 +99,10 @@ int epacket_received_packet_append(struct net_buf *storage_buf, struct net_buf *
 	}
 	switch (rx_meta->interface_id) {
 	case EPACKET_INTERFACE_BT_ADV:
-		interface_addr[0] = rx_meta->interface_address.bluetooth.type;
-		memcpy(interface_addr + 1, rx_meta->interface_address.bluetooth.a.val, 6);
-		addr_len = 7;
+	case EPACKET_INTERFACE_BT_CENTRAL:
+		addr_encoded.type = rx_meta->interface_address.bluetooth.type;
+		memcpy(addr_encoded.addr, rx_meta->interface_address.bluetooth.a.val, 6);
+		addr_len = sizeof(addr_encoded);
 		break;
 	default:
 		break;
@@ -118,7 +119,7 @@ int epacket_received_packet_append(struct net_buf *storage_buf, struct net_buf *
 	common.interface = rx_meta->interface_id;
 	common.rssi = -MIN(0, rx_meta->rssi);
 	net_buf_add_mem(storage_buf, &common, sizeof(common));
-	net_buf_add_mem(storage_buf, interface_addr, addr_len);
+	net_buf_add_mem(storage_buf, &addr_encoded, addr_len);
 
 	if (rx_meta->auth != EPACKET_AUTH_FAILURE) {
 		/* Decrypted data header */
