@@ -55,12 +55,68 @@ done:
 	net_buf_unref(buf);
 }
 
+static void epacket_forward(struct net_buf *buf)
+{
+	struct epacket_forward_header *hdr =
+		net_buf_pull_mem(buf, sizeof(struct epacket_forward_header));
+	const struct device *forward_interface;
+	struct epacket_interface_address_bt_le *dest_encoded;
+	union epacket_interface_address dest;
+	uint16_t forward_payload, forward_max_size;
+	struct net_buf *tx;
+
+	switch (hdr->interface) {
+#ifdef CONFIG_EPACKET_INTERFACE_BT_CENTRAL
+	case EPACKET_INTERFACE_BT_CENTRAL:
+		forward_interface = DEVICE_DT_GET_ONE(embeint_epacket_bt_central);
+		break;
+#endif /* CONFIG_EPACKET_INTERFACE_BT_CENTRAL */
+	default:
+		LOG_WRN("Unknown interface ID: %d", hdr->interface);
+		goto cleanup;
+	}
+
+	/* Only Bluetooth addresses are currently handled */
+	dest_encoded = net_buf_pull_mem(buf, sizeof(*dest_encoded));
+	dest.bluetooth.type = dest_encoded->type;
+	memcpy(dest.bluetooth.a.val, dest_encoded->addr, 6);
+
+	/* Validate that forwarding interface can support required packet size */
+	forward_max_size = epacket_interface_max_packet_size(forward_interface);
+	forward_payload = hdr->length - sizeof(*hdr) - 7;
+	if (forward_max_size < forward_payload) {
+		LOG_WRN("Insufficient packet size (%d < %d)", forward_max_size, forward_payload);
+		goto cleanup;
+	}
+
+	/* Allocate buffer for forwarded message */
+	tx = epacket_alloc_tx(K_MSEC(10));
+	if (tx == NULL) {
+		LOG_WRN("Unable to allocate buffer");
+		goto cleanup;
+	}
+
+	epacket_set_tx_metadata(tx, EPACKET_AUTH_REMOTE_ENCRYPTED, 0, 0, dest);
+	net_buf_add_mem(tx, buf->data, forward_payload);
+
+	epacket_queue(forward_interface, tx);
+
+cleanup:
+	net_buf_unref(buf);
+}
+
 void epacket_gateway_receive_handler(const struct device *backhaul, struct net_buf *buf)
 {
 	struct epacket_rx_metadata *meta = net_buf_user_data(buf);
 
-	/* Forward Bluetooth advertising packets */
-	if (meta->interface_id == EPACKET_INTERFACE_BT_ADV) {
+	if (meta->interface == backhaul && (meta->type == INFUSE_EPACKET_FORWARD)) {
+		epacket_forward(buf);
+		return;
+	}
+
+	/* Forward incoming Bluetooth packets */
+	if ((meta->interface_id == EPACKET_INTERFACE_BT_ADV) ||
+	    (meta->interface_id == EPACKET_INTERFACE_BT_CENTRAL)) {
 		LOG_DBG("Received on %s: Auth=%d Type=%d Seq=%d Len=%d", meta->interface->name,
 			meta->auth, meta->type, meta->sequence, buf->len);
 

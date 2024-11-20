@@ -42,6 +42,8 @@ enum infuse_type {
 	INFUSE_RECEIVED_EPACKET = 7,
 	/* Generic ACK, payload is the sequence number of requesting packet */
 	INFUSE_ACK = 8,
+	/* Data to forward to other devices */
+	INFUSE_EPACKET_FORWARD = 9,
 	/* Serial logging packet */
 	INFUSE_SERIAL_LOG = 10,
 	/* Memfault data chunk */
