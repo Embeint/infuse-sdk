@@ -167,6 +167,30 @@ ZTEST(epacket_udp, test_encrypt_decrypt)
 	test_encrypt_decrypt_auth(EPACKET_AUTH_NETWORK);
 }
 
+ZTEST(epacket_udp, test_pre_encrypted)
+{
+	struct net_buf *orig_buf, *encr_buf;
+	uint8_t *p;
+
+	/* Create original buffer */
+	orig_buf = epacket_alloc_tx(K_NO_WAIT);
+	zassert_not_null(orig_buf);
+	epacket_set_tx_metadata(orig_buf, EPACKET_AUTH_REMOTE_ENCRYPTED, 0, 0x10, EPACKET_ADDR_ALL);
+	p = net_buf_add(orig_buf, 60);
+	sys_rand_get(p, 60);
+
+	/* Clone original buffer */
+	encr_buf = net_buf_clone(orig_buf, K_NO_WAIT);
+
+	/* Attempting to encrypt should not change contents */
+	zassert_equal(0, epacket_udp_encrypt(encr_buf));
+	zassert_equal(orig_buf->len, encr_buf->len);
+	zassert_mem_equal(orig_buf->data, encr_buf->data, orig_buf->len);
+
+	net_buf_unref(orig_buf);
+	net_buf_unref(encr_buf);
+}
+
 static bool security_init(const void *global_state)
 {
 	infuse_security_init();
