@@ -6,5 +6,7 @@ tests:
   task_runner.tasks.gnss.ubx_m8:
     required_snippets:
       - infuse
+    platform_allow:
+      - mps2/an385
     integration_platforms:
       - mps2/an385
