@@ -358,6 +358,7 @@ class release_build(WestCommand):
             "zephyr/tfm_s_zephyr_ns_signed.bin",
             "zephyr/tfm_s_zephyr_ns_signed.hex",
             "zephyr/include/generated/zephyr/autoconf.h",
+            "zephyr/include/generated/zephyr/devicetree_generated.h",
         ]
 
         for file in files:
