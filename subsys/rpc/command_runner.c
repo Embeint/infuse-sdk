@@ -134,6 +134,20 @@ void rpc_command_runner(struct net_buf *request)
 		}
 		break;
 #endif /* CONFIG_INFUSE_RPC_COMMAND_LAST_REBOOT */
+#ifdef CONFIG_INFUSE_RPC_COMMAND_DATA_LOGGER_STATE
+	case RPC_ID_DATA_LOGGER_STATE:
+		if (AUTHORISED(auth, DATA_LOGGER_STATE)) { /* GCOVR_EXCL_BR_LINE */
+			response = rpc_command_data_logger_state(request);
+		}
+		break;
+#endif /* CONFIG_INFUSE_RPC_COMMAND_DATA_LOGGER_STATE */
+#ifdef CONFIG_INFUSE_RPC_COMMAND_DATA_LOGGER_READ
+	case RPC_ID_DATA_LOGGER_READ:
+		if (AUTHORISED(auth, DATA_LOGGER_READ)) { /* GCOVR_EXCL_BR_LINE */
+			response = rpc_command_data_logger_read(request);
+		}
+		break;
+#endif /* CONFIG_INFUSE_RPC_COMMAND_DATA_LOGGER_READ */
 #ifdef CONFIG_INFUSE_RPC_COMMAND_LTE_AT_CMD
 	case RPC_ID_LTE_AT_CMD:
 		if (AUTHORISED(auth, LTE_AT_CMD)) { /* GCOVR_EXCL_BR_LINE */
