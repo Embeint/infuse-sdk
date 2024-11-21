@@ -325,10 +325,15 @@ class cloudgen(WestCommand):
             }
 
             def py_type(field):
-                if "num" in field:
-                    return f'{field["num"]} * {ctype_mapping[field["type"]]}'
+                t: str = field["type"]
+                if t.startswith("struct"):
+                    base = t[7:]
                 else:
-                    return ctype_mapping[field["type"]]
+                    base = ctype_mapping[field["type"]]
+                if "num" in field:
+                    return f'{field["num"]} * {base}'
+                else:
+                    return base
 
             for s in rpc_defs["structs"].values():
                 for field in s["fields"]:
@@ -336,12 +341,16 @@ class cloudgen(WestCommand):
 
                     t: str = field["type"]
                     if t.startswith("struct"):
-                        field["py_type"] = f"{t[7:]}"
+                        field["py_type"] = t[7:]
                     else:
                         field["py_type"] = py_type(field)
             for e in rpc_defs["enums"].values():
                 for value in e["values"]:
                     value["py_name"] = value["name"]
+            for c in rpc_defs["commands"].values():
+                for sub in ["request_params", "response_params"]:
+                    for field in c[sub]:
+                        field["py_type"] = py_type(field)
 
             f.write(
                 rpc_defs_py_template.render(

@@ -28,3 +28,29 @@ class {{ name }}(enum.IntEnum):
 {% endfor %}
 
 {% endfor -%}
+{% for command_id, info in commands.items() %}
+
+class {{ info['name'] }}:
+    """{{ info['description'] }}"""
+
+    HELP = "{{ info['description'] }}"
+    DESCRIPTION = "{{ info['description'] }}"
+    COMMAND_ID = {{ command_id }}
+
+    class request(ctypes.LittleEndianStructure):
+        _fields_ = [
+{% for field in info['request_params'] %}
+            ("{{ field['name'] }}", {{ field['py_type'] }}),
+{% endfor %}
+        ]
+        _pack_ = 1
+
+    class response(ctypes.LittleEndianStructure):
+        _fields_ = [
+{% for field in info['response_params'] %}
+            ("{{ field['name'] }}", {{ field['py_type'] }}),
+{% endfor %}
+        ]
+        _pack_ = 1
+
+{% endfor -%}
