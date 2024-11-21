@@ -23,6 +23,8 @@
 #include <infuse/rpc/types.h>
 #include <infuse/rpc/client.h>
 
+int epacket_bt_gatt_encrypt(struct net_buf *buf);
+
 extern enum bst_result_t bst_result;
 static K_SEM_DEFINE(epacket_adv_received, 0, 1);
 static bt_addr_le_t adv_device;
@@ -287,6 +289,7 @@ static struct net_buf *expect_response(uint32_t request_id, uint16_t command_id,
 {
 	struct k_fifo *response_queue = epacket_dummmy_transmit_fifo_get();
 	struct infuse_rpc_rsp_header *response;
+	struct epacket_dummy_frame *frame;
 	struct net_buf *rsp;
 
 	/* Response was sent */
@@ -295,7 +298,11 @@ static struct net_buf *expect_response(uint32_t request_id, uint16_t command_id,
 		LOG_ERR("No response");
 		return NULL;
 	}
-	net_buf_pull_mem(rsp, sizeof(struct epacket_dummy_frame));
+	frame = net_buf_pull_mem(rsp, sizeof(struct epacket_dummy_frame));
+	if (frame->type != INFUSE_RPC_RSP) {
+		LOG_ERR("Unexpected response type (%d != %d)", INFUSE_RPC_RSP, frame->type);
+		return NULL;
+	}
 	response = (void *)rsp->data;
 
 	/* Parameters match what we expect */
@@ -487,12 +494,12 @@ static void main_gateway_connect_recv(void)
 	PASS("Received TDF data from connected peer\n");
 }
 
-static void main_gateway_remote_rpc(void)
+static void main_gateway_remote_rpc_client(void)
 {
 	const struct bt_le_conn_param params = BT_LE_CONN_PARAM_INIT(0x10, 0x15, 0, 400);
 	const struct device *epacket_central = DEVICE_DT_GET(DT_NODELABEL(epacket_bt_central));
 	struct epacket_read_response security_info;
-	union epacket_interface_address address;
+	union epacket_interface_address address, wrong;
 	struct bt_conn *conn;
 	struct net_buf *buf;
 	bt_addr_le_t addr;
@@ -518,6 +525,20 @@ static void main_gateway_remote_rpc(void)
 		if (rc != 0) {
 			FAIL("Failed to connect to peer\n");
 			return;
+		}
+
+		/* Send to incorrect device */
+		wrong.bluetooth = addr;
+		wrong.bluetooth.a.val[0] += 1;
+		for (int i = 0; i < 5; i++) {
+			buf = epacket_alloc_tx_for_interface(epacket_central, K_MSEC(1));
+			if (buf == NULL) {
+				FAIL("Failed to allocate buffer");
+				return;
+			}
+			epacket_set_tx_metadata(buf, EPACKET_AUTH_NETWORK, 0, INFUSE_KEY_IDS,
+						wrong);
+			epacket_queue(epacket_central, buf);
 		}
 
 		/* Run a command on the peer device */
@@ -547,6 +568,169 @@ static void main_gateway_remote_rpc(void)
 	rpc_client_cleanup(&ctx);
 
 	PASS("Ran commands on peer\n");
+}
+
+static void dummy_gateway_handler(struct net_buf *buf)
+{
+	const struct device *epacket_dummy = DEVICE_DT_GET(DT_NODELABEL(epacket_dummy));
+
+	epacket_gateway_receive_handler(epacket_dummy, buf);
+}
+
+static void main_gateway_remote_rpc_forward(void)
+{
+	const struct device *epacket_dummy = DEVICE_DT_GET(DT_NODELABEL(epacket_dummy));
+	const struct device *epacket_central = DEVICE_DT_GET(DT_NODELABEL(epacket_bt_central));
+	struct k_fifo *response_queue = epacket_dummmy_transmit_fifo_get();
+	struct rpc_bt_connect_infuse_response *connect_rsp;
+	union epacket_interface_address address;
+	struct net_buf *buf;
+	bt_addr_le_t addr;
+	int rc;
+
+	common_init();
+	if (observe_peers(&addr, 1) < 0) {
+		FAIL("Failed to observe peer");
+		return;
+	}
+
+	struct rpc_bt_connect_infuse_request connect = {
+		.peer =
+			{
+				.type = addr.type,
+				.val =
+					{
+						addr.a.val[0],
+						addr.a.val[1],
+						addr.a.val[2],
+						addr.a.val[3],
+						addr.a.val[4],
+						addr.a.val[5],
+					},
+			},
+		.conn_timeout_ms = 3000,
+		.subscribe = RPC_ENUM_INFUSE_BT_CHARACTERISTIC_COMMAND,
+		.inactivity_timeout_ms = 0,
+	};
+	struct rpc_bt_disconnect_request disconnect = {
+		.peer = connect.peer,
+	};
+
+	struct rpc_application_info_request info_request;
+	struct rpc_application_info_response *info_rsp;
+
+	epacket_set_receive_handler(epacket_dummy, dummy_gateway_handler);
+	epacket_set_receive_handler(epacket_central, dummy_gateway_handler);
+
+	for (int i = 0; i < 3; i++) {
+		/* Connect to the remote device */
+		send_rpc(1, RPC_ID_BT_CONNECT_INFUSE, &connect, sizeof(connect));
+		buf = expect_response(1, RPC_ID_BT_CONNECT_INFUSE, 0);
+		if (buf == NULL) {
+			FAIL("Failed to connect via RPC");
+			return;
+		}
+		connect_rsp = (void *)buf->data;
+		net_buf_unref(buf);
+
+		/* Create and encrypt the GATT RPC */
+		address.bluetooth = addr;
+		info_request.header.command_id = RPC_ID_APPLICATION_INFO;
+		info_request.header.request_id = 0x12345678;
+		buf = epacket_alloc_tx_for_interface(epacket_central, K_FOREVER);
+		epacket_set_tx_metadata(buf, EPACKET_AUTH_NETWORK, 0, INFUSE_RPC_CMD,
+					EPACKET_ADDR_ALL);
+		net_buf_add_mem(buf, &info_request, sizeof(info_request));
+		rc = epacket_bt_gatt_encrypt(buf);
+		if (rc < 0) {
+			FAIL("Failed to encrypt GATT RPC");
+			return;
+		}
+
+		/* Construct ePacket forwarding packet */
+		struct epacket_dummy_frame dummy_header = {
+			.type = INFUSE_EPACKET_FORWARD,
+			.auth = EPACKET_AUTH_DEVICE,
+		};
+		struct forwarding_bt {
+			struct epacket_forward_header forward_header;
+			uint8_t bt_addr[7];
+		} __packed hdr;
+
+		hdr.forward_header.interface = EPACKET_INTERFACE_BT_CENTRAL;
+		hdr.forward_header.length = sizeof(hdr) + buf->len;
+		hdr.bt_addr[0] = addr.type;
+		memcpy(hdr.bt_addr + 1, addr.a.val, 6);
+
+		/* Push packet at dummy interface */
+		epacket_dummy_receive_extra(epacket_dummy, &dummy_header, &hdr, sizeof(hdr),
+					    buf->data, buf->len);
+		net_buf_unref(buf);
+
+		/* Expect response to appear on the epacket output */
+		buf = net_buf_get(response_queue, K_SECONDS(1));
+		if (buf == NULL) {
+			FAIL("Failed to receive response");
+			return;
+		}
+
+		struct epacket_dummy_frame *frame;
+		struct epacket_received_common_header *common_header;
+		struct epacket_received_decrypted_header *decr_header;
+
+		frame = net_buf_pull_mem(buf, sizeof(struct epacket_dummy_frame));
+		if (frame->type != INFUSE_RECEIVED_EPACKET) {
+			FAIL("Unexpected packet type");
+			return;
+		}
+		common_header =
+			net_buf_pull_mem(buf, sizeof(struct epacket_received_common_header));
+		if (common_header->interface != EPACKET_INTERFACE_BT_CENTRAL) {
+			FAIL("Unexpected interface");
+			return;
+		}
+		net_buf_pull_mem(buf, sizeof(struct epacket_interface_address_bt_le));
+		decr_header =
+			net_buf_pull_mem(buf, sizeof(struct epacket_received_decrypted_header));
+		if (decr_header->type != INFUSE_RPC_RSP) {
+			FAIL("Unexpected packet type");
+			return;
+		}
+
+		info_rsp = (void *)buf->data;
+		if (info_rsp->header.request_id != info_request.header.request_id) {
+			FAIL("Unexpected request ID");
+			return;
+		}
+		if (info_rsp->header.command_id != info_request.header.command_id) {
+			FAIL("Unexpected command ID");
+			return;
+		}
+		if (info_rsp->header.return_code != 0) {
+			FAIL("Unexpected return code");
+			return;
+		}
+		/* This only works because both devices have the same timebase due to the
+		 * simulation
+		 */
+		if (info_rsp->uptime != k_uptime_seconds()) {
+			FAIL("Unexpected uptime");
+			return;
+		}
+		LOG_HEXDUMP_INF(buf->data, buf->len, "RPC Response");
+		net_buf_unref(buf);
+
+		/* Disconnect from the remote device */
+		send_rpc(2, RPC_ID_BT_DISCONNECT, &disconnect, sizeof(disconnect));
+		buf = expect_response(2, RPC_ID_BT_DISCONNECT, 0);
+		if (buf == NULL) {
+			FAIL("Unexpected disconnection result");
+			return;
+		}
+		net_buf_unref(buf);
+	}
+
+	PASS("RPC forwarder passed\n");
 }
 
 static const struct bst_test_instance epacket_gateway[] = {
@@ -597,7 +781,14 @@ static const struct bst_test_instance epacket_gateway[] = {
 		.test_descr = "Connect to peer device and run RPC",
 		.test_pre_init_f = test_init,
 		.test_tick_f = test_tick,
-		.test_main_f = main_gateway_remote_rpc,
+		.test_main_f = main_gateway_remote_rpc_client,
+	},
+	{
+		.test_id = "epacket_bt_gateway_remote_rpc_forward",
+		.test_descr = "Connect to peer device and run RPC forwarded from serial",
+		.test_pre_init_f = test_init,
+		.test_tick_f = test_tick,
+		.test_main_f = main_gateway_remote_rpc_forward,
 	},
 	BSTEST_END_MARKER};
 
