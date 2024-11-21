@@ -285,6 +285,8 @@ enum rpc_builtin_id {
 	RPC_ID_WIFI_SCAN = 10,
 	/* Get current WiFi interface state */
 	RPC_ID_WIFI_STATE = 11,
+	/* Retrieve information pertaining to the previous reboot */
+	RPC_ID_LAST_REBOOT = 12,
 	/* Run AT command against LTE modem */
 	RPC_ID_LTE_AT_CMD = 20,
 	/* Get current LTE interface state */
@@ -476,6 +478,31 @@ struct rpc_wifi_state_response {
 	struct rpc_struct_network_state common;
 	/* WiFi state */
 	struct rpc_struct_wifi_state wifi;
+} __packed;
+
+/* Retrieve information pertaining to the previous reboot */
+struct rpc_last_reboot_request {
+	struct infuse_rpc_req_header header;
+} __packed;
+
+struct rpc_last_reboot_response {
+	struct infuse_rpc_rsp_header header;
+	/* Reboot reason (enum infuse_reboot_reason) */
+	uint8_t reason;
+	/* Time source at reboot */
+	uint8_t epoch_time_source;
+	/* Epoch time at reboot */
+	uint64_t epoch_time;
+	/* Hardware flags (hwinfo_get_reset_cause) */
+	uint32_t hardware_flags;
+	/* Uptime before reboot (seconds) */
+	uint32_t uptime;
+	/* Program counter/Watchdog Info/Other */
+	uint32_t param_1;
+	/* Link Register/Watchdog Info/Other */
+	uint32_t param_2;
+	/* Running thread at reboot */
+	char thread[8];
 } __packed;
 
 /* Run AT command against LTE modem */
