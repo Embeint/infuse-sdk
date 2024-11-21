@@ -232,6 +232,7 @@ class release_build(WestCommand):
         if proc.returncode != 0:
             sys.exit(proc.stdout.decode("utf-8"))
         self.build_log = proc.stdout.decode("utf-8")
+        self.build_err = proc.stderr.decode("utf-8")
 
     def validate_build(self, expected_version: str) -> dict:
         cache = zcmake.CMakeCache.from_build_dir(self.build_app_dir)
@@ -383,6 +384,8 @@ class release_build(WestCommand):
 
         with (output_dir / "build_log.txt").open("w") as f:
             f.write(self.build_log)
+        with (output_dir / "build_err.txt").open("w") as f:
+            f.write(self.build_err)
 
         if self.sysbuild:
             domains_file = self.build_dir / "domains.yaml"
