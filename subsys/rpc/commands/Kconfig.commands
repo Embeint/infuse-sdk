@@ -144,6 +144,30 @@ config INFUSE_RPC_COMMAND_LAST_REBOOT_REQUIRED_AUTH
 	depends on INFUSE_RPC_COMMAND_LAST_REBOOT
 	default 2
 
+config INFUSE_RPC_COMMAND_DATA_LOGGER_STATE
+	bool "Enable RPC data_logger_state"
+	depends on DATA_LOGGER
+	default y if INFUSE_SDK
+	help
+	  Get state of a data logger
+
+config INFUSE_RPC_COMMAND_DATA_LOGGER_STATE_REQUIRED_AUTH
+	int "Required authorisation level to run data_logger_state"
+	depends on INFUSE_RPC_COMMAND_DATA_LOGGER_STATE
+	default 2
+
+config INFUSE_RPC_COMMAND_DATA_LOGGER_READ
+	bool "Enable RPC data_logger_read"
+	depends on DATA_LOGGER
+	default y if INFUSE_SDK
+	help
+	  Read data from data logger
+
+config INFUSE_RPC_COMMAND_DATA_LOGGER_READ_REQUIRED_AUTH
+	int "Required authorisation level to run data_logger_read"
+	depends on INFUSE_RPC_COMMAND_DATA_LOGGER_READ
+	default 2
+
 config INFUSE_RPC_COMMAND_LTE_AT_CMD
 	bool "Enable RPC lte_at_cmd"
 	depends on NRF_MODEM_LIB

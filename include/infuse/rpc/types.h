@@ -251,6 +251,14 @@ enum rpc_enum_infuse_bt_characteristic {
 	RPC_ENUM_INFUSE_BT_CHARACTERISTIC_LOGGING = 4,
 };
 
+/* Data Logger identifier */
+enum rpc_enum_data_logger {
+	/* Onboard flash logger */
+	RPC_ENUM_DATA_LOGGER_FLASH_ONBOARD = 1,
+	/* Removable flash logger (SD) */
+	RPC_ENUM_DATA_LOGGER_FLASH_REMOVABLE = 2,
+};
+
 /**
  * @}
  */
@@ -287,6 +295,10 @@ enum rpc_builtin_id {
 	RPC_ID_WIFI_STATE = 11,
 	/* Retrieve information pertaining to the previous reboot */
 	RPC_ID_LAST_REBOOT = 12,
+	/* Get state of a data logger */
+	RPC_ID_DATA_LOGGER_STATE = 13,
+	/* Read data from data logger */
+	RPC_ID_DATA_LOGGER_READ = 14,
 	/* Run AT command against LTE modem */
 	RPC_ID_LTE_AT_CMD = 20,
 	/* Get current LTE interface state */
@@ -503,6 +515,51 @@ struct rpc_last_reboot_response {
 	uint32_t param_2;
 	/* Running thread at reboot */
 	char thread[8];
+} __packed;
+
+/* Get state of a data logger */
+struct rpc_data_logger_state_request {
+	struct infuse_rpc_req_header header;
+	/* Data logger to read from */
+	uint8_t logger;
+} __packed;
+
+struct rpc_data_logger_state_response {
+	struct infuse_rpc_rsp_header header;
+	/* Number of logical blocks on the logger */
+	uint32_t logical_blocks;
+	/* Number of physical blocks on the logger */
+	uint32_t physical_blocks;
+	/* Number of logical blocks that have been written */
+	uint32_t current_block;
+	/* Earliest logical block that still exists on the logger */
+	uint32_t earliest_block;
+	/* Size of a single block in bytes */
+	uint16_t block_size;
+	/* Number of bytes at the start of the block that should not contain data */
+	uint16_t block_overhead;
+	/* Minimum erase unit of the logger in bytes */
+	uint16_t erase_unit;
+} __packed;
+
+/* Read data from data logger */
+struct rpc_data_logger_read_request {
+	struct infuse_rpc_req_header header;
+	struct infuse_rpc_req_data_header data_header;
+	/* Data logger to read from */
+	uint8_t logger;
+	/* Block to start read from */
+	uint32_t start_block;
+	/* Last block to read from */
+	uint32_t last_block;
+} __packed;
+
+struct rpc_data_logger_read_response {
+	struct infuse_rpc_rsp_header header;
+	/* Number of bytes sent */
+	uint32_t sent_len;
+	/* CRC32 of bytes sent */
+	uint32_t sent_crc;
 } __packed;
 
 /* Run AT command against LTE modem */

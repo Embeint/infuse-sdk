@@ -130,6 +130,14 @@
                 {"name": "DATA", "value": 2, "description": "Data characteristic"},
                 {"name": "LOGGING", "value": 4, "description": "Serial log characteristic"}
             ]
+        },
+        "rpc_enum_data_logger": {
+            "description": "Data Logger identifier",
+            "type": "uint8_t",
+            "values": [
+                {"name": "FLASH_ONBOARD", "value": 1, "description": "Onboard flash logger"},
+                {"name": "FLASH_REMOVABLE", "value": 2, "description": "Removable flash logger (SD)"}
+            ]
         }
     },
     "commands": {
@@ -300,6 +308,42 @@
                 {"name": "param_1", "type": "uint32_t", "description": "Program counter/Watchdog Info/Other", "display_fmt": "hex"},
                 {"name": "param_2", "type": "uint32_t", "description": "Link Register/Watchdog Info/Other", "display_fmt": "hex"},
                 {"name": "thread", "type": "char", "num": 8, "description": "Running thread at reboot"}
+            ]
+        },
+        "13": {
+            "name": "data_logger_state",
+            "description": "Get state of a data logger",
+            "depends_on": "DATA_LOGGER",
+            "default": "y if INFUSE_SDK",
+            "default_auth": "EPACKET_AUTH_DEVICE",
+            "request_params": [
+                {"name": "logger", "type": "enum rpc_enum_data_logger", "description": "Data logger to read from"}
+            ],
+            "response_params": [
+                {"name": "logical_blocks", "type": "uint32_t", "description": "Number of logical blocks on the logger"},
+                {"name": "physical_blocks", "type": "uint32_t", "description": "Number of physical blocks on the logger"},
+                {"name": "current_block", "type": "uint32_t", "description": "Number of logical blocks that have been written"},
+                {"name": "earliest_block", "type": "uint32_t", "description": "Earliest logical block that still exists on the logger"},
+                {"name": "block_size", "type": "uint16_t", "description": "Size of a single block in bytes"},
+                {"name": "block_overhead", "type": "uint16_t", "description": "Number of bytes at the start of the block that should not contain data"},
+                {"name": "erase_unit", "type": "uint16_t", "description": "Minimum erase unit of the logger in bytes"}
+            ]
+        },
+        "14": {
+            "name": "data_logger_read",
+            "description": "Read data from data logger",
+            "depends_on": "DATA_LOGGER",
+            "default": "y if INFUSE_SDK",
+            "default_auth": "EPACKET_AUTH_DEVICE",
+            "rpc_data": true,
+            "request_params": [
+                {"name": "logger", "type": "enum rpc_enum_data_logger", "description": "Data logger to read from"},
+                {"name": "start_block", "type": "uint32_t", "description": "Block to start read from"},
+                {"name": "last_block", "type": "uint32_t", "description": "Last block to read from"}
+            ],
+            "response_params": [
+                {"name": "sent_len", "type": "uint32_t", "description": "Number of bytes sent"},
+                {"name": "sent_crc", "type": "uint32_t", "description": "CRC32 of bytes sent"}
             ]
         },
         "20": {
