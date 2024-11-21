@@ -132,6 +132,18 @@ config INFUSE_RPC_COMMAND_WIFI_STATE_REQUIRED_AUTH
 	depends on INFUSE_RPC_COMMAND_WIFI_STATE
 	default 2
 
+config INFUSE_RPC_COMMAND_LAST_REBOOT
+	bool "Enable RPC last_reboot"
+	depends on INFUSE_COMMON_BOOT
+	default y if INFUSE_SDK
+	help
+	  Retrieve information pertaining to the previous reboot
+
+config INFUSE_RPC_COMMAND_LAST_REBOOT_REQUIRED_AUTH
+	int "Required authorisation level to run last_reboot"
+	depends on INFUSE_RPC_COMMAND_LAST_REBOOT
+	default 2
+
 config INFUSE_RPC_COMMAND_LTE_AT_CMD
 	bool "Enable RPC lte_at_cmd"
 	depends on NRF_MODEM_LIB

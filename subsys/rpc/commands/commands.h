@@ -116,6 +116,15 @@ struct net_buf *rpc_command_wifi_scan(struct net_buf *request);
 struct net_buf *rpc_command_wifi_state(struct net_buf *request);
 
 /**
+ * @brief Run last_reboot RPC
+ *
+ * @param request @ref INFUSE_RPC_REQ packet to respond to
+ *
+ * @return struct net_buf* @ref INFUSE_RPC_RSP packet buffer
+ */
+struct net_buf *rpc_command_last_reboot(struct net_buf *request);
+
+/**
  * @brief Run lte_at_cmd RPC
  *
  * @param request @ref INFUSE_RPC_REQ packet to respond to
