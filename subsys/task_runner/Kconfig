@@ -21,7 +21,7 @@ config TASK_RUNNER_AUTO_ITERATE
 config TASK_RUNNER_WORKQ_STACK_SIZE
 	int "Stack size of the Task Runner workqueue"
 	default 8192 if COVERAGE
-	default 1024
+	default 2048
 
 rsource "tasks/Kconfig"
 
