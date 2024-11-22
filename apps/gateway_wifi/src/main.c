@@ -30,6 +30,7 @@ int main(void)
 {
 	const struct device *tdf_logger_udp = DEVICE_DT_GET(DT_NODELABEL(tdf_logger_udp));
 	const struct device *epacket_bt_adv = DEVICE_DT_GET(DT_NODELABEL(epacket_bt_adv));
+	const struct device *epacket_bt_central = DEVICE_DT_GET(DT_NODELABEL(epacket_bt_central));
 	const struct device *epacket_serial = DEVICE_DT_GET(DT_NODELABEL(epacket_serial));
 	const struct device *epacket_udp = DEVICE_DT_GET(DT_NODELABEL(epacket_udp));
 	struct tdf_announce announce;
@@ -40,9 +41,10 @@ int main(void)
 	/* Gateway receive handlers */
 	epacket_set_receive_handler(epacket_serial, udp_backhaul_handler);
 	epacket_set_receive_handler(epacket_bt_adv, udp_backhaul_handler);
+	epacket_set_receive_handler(epacket_bt_central, udp_backhaul_handler);
 	epacket_set_receive_handler(epacket_udp, udp_backhaul_handler);
 
-	/* Always listening on Bluetooth, serial and UDP */
+	/* Always listening on Bluetooth advertising, serial and UDP */
 	epacket_receive(epacket_serial, K_FOREVER);
 	epacket_receive(epacket_bt_adv, K_FOREVER);
 	epacket_receive(epacket_udp, K_FOREVER);
