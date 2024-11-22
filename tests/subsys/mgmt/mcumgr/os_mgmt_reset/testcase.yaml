@@ -5,6 +5,7 @@
 #
 tests:
   mgmt.mcumgr.infuse_os.reboot:
+    filter: dt_chosen_enabled("infuse,reboot-state")
     required_snippets:
       - infuse
     integration_platforms:
