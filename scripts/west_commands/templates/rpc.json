@@ -419,6 +419,7 @@
                 {"name": "inactivity_timeout_ms", "type": "uint16_t", "description": "Automatically terminate connection if no data traffic (0 = No timeout)"}
             ],
             "response_params": [
+                {"name": "peer", "type": "struct rpc_struct_bt_addr_le", "description": "Bluetooth device connected to"},
                 {"name": "cloud_public_key", "type": "uint8_t", "num": 32, "description": "Cloud public ECC key"},
                 {"name": "device_public_key", "type": "uint8_t", "num": 32, "description": "Device public ECC key"},
                 {"name": "network_id", "type": "uint32_t", "description": "Current network ID"}

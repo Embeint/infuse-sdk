@@ -648,6 +648,8 @@ struct rpc_bt_connect_infuse_request {
 
 struct rpc_bt_connect_infuse_response {
 	struct infuse_rpc_rsp_header header;
+	/* Bluetooth device connected to */
+	struct rpc_struct_bt_addr_le peer;
 	/* Cloud public ECC key */
 	uint8_t cloud_public_key[32];
 	/* Device public ECC key */

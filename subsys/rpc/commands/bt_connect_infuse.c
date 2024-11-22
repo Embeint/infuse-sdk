@@ -20,7 +20,9 @@ LOG_MODULE_DECLARE(rpc_server);
 struct net_buf *rpc_command_bt_connect_infuse(struct net_buf *request)
 {
 	struct rpc_bt_connect_infuse_request *req = (void *)request->data;
-	struct rpc_bt_connect_infuse_response rsp = {0};
+	struct rpc_bt_connect_infuse_response rsp = {
+		.peer = req->peer,
+	};
 	const bt_addr_le_t peer = bt_addr_infuse_to_zephyr(&req->peer);
 	const struct bt_le_conn_param params = BT_LE_CONN_PARAM_INIT(0x10, 0x15, 0, 400);
 	struct epacket_read_response security_info;
