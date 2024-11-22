@@ -4,6 +4,7 @@ common:
   min_ram: 32
 tests:
   data_logger.tdf.reboot_recover:
+    filter: dt_chosen_enabled("infuse,reboot-state")
     required_snippets:
       - infuse
     platform_exclude:

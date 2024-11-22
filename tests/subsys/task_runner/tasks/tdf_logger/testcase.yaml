@@ -2,6 +2,7 @@ common:
   tags: data_logger tdf
   min_flash: 64
   min_ram: 32
+  filter: dt_chosen_enabled("infuse,kv-partition")
 tests:
   task_runner.tasks.tdf_logger:
     required_snippets:

@@ -3,6 +3,7 @@ common:
   tags: infuse
   min_flash: 64
   min_ram: 32
+  filter: dt_chosen_enabled("infuse,reboot-state")
 tests:
   lib.memfault:
     required_snippets:
