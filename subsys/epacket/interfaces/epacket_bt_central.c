@@ -109,7 +109,7 @@ static uint8_t char_recv_func(struct bt_conn *conn, struct bt_gatt_subscribe_par
 		return BT_GATT_ITER_CONTINUE;
 	}
 
-	LOG_INF("Received %d bytes", length);
+	LOG_DBG("Received %d bytes", length);
 	rx_buffer = epacket_alloc_rx(K_MSEC(10));
 	if (rx_buffer == NULL) {
 		LOG_WRN("Buffer claim timeout");
