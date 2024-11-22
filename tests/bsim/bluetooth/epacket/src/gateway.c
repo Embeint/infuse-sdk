@@ -200,7 +200,7 @@ static void main_gateway_connect_multi(void)
 			return;
 		}
 
-		k_sleep(K_SECONDS(1));
+		k_sleep(K_MSEC(500));
 
 		/* Terminate the connections */
 		rc = bt_conn_disconnect_sync(conn1);
