@@ -31,8 +31,6 @@
 
 void epacket_bt_peripheral_logging_ccc_cfg_update(const struct bt_gatt_attr *attr, uint16_t value);
 
-static void ccc_cfg_changed_command(const struct bt_gatt_attr *attr, uint16_t value);
-static void ccc_cfg_changed_data(const struct bt_gatt_attr *attr, uint16_t value);
 static ssize_t read_both(struct bt_conn *conn, const struct bt_gatt_attr *attr, void *buf,
 			 uint16_t len, uint16_t offset);
 static ssize_t write_both(struct bt_conn *conn, const struct bt_gatt_attr *attr, const void *buf,
@@ -40,6 +38,7 @@ static ssize_t write_both(struct bt_conn *conn, const struct bt_gatt_attr *attr,
 
 struct epacket_bt_peripheral_data {
 	struct epacket_interface_common_data common_data;
+	struct bt_conn_cb conn_cb;
 	struct bt_gatt_cb gatt_cb;
 	const struct device *interface;
 	uint16_t last_notification;
@@ -54,12 +53,12 @@ BT_GATT_SERVICE_DEFINE(
 			       BT_GATT_CHRC_READ | BT_GATT_CHRC_WRITE |
 				       BT_GATT_CHRC_WRITE_WITHOUT_RESP | BT_GATT_CHRC_NOTIFY,
 			       BT_GATT_PERM_READ | BT_GATT_PERM_WRITE, read_both, write_both, NULL),
-	BT_GATT_CCC(ccc_cfg_changed_command, BT_GATT_PERM_READ | BT_GATT_PERM_WRITE),
+	BT_GATT_CCC(NULL, BT_GATT_PERM_READ | BT_GATT_PERM_WRITE),
 	BT_GATT_CHARACTERISTIC(INFUSE_SERVICE_UUID_DATA,
 			       BT_GATT_CHRC_READ | BT_GATT_CHRC_WRITE |
 				       BT_GATT_CHRC_WRITE_WITHOUT_RESP | BT_GATT_CHRC_NOTIFY,
 			       BT_GATT_PERM_READ | BT_GATT_PERM_WRITE, read_both, write_both, NULL),
-	BT_GATT_CCC(ccc_cfg_changed_data, BT_GATT_PERM_READ | BT_GATT_PERM_WRITE),
+	BT_GATT_CCC(NULL, BT_GATT_PERM_READ | BT_GATT_PERM_WRITE),
 #ifdef CONFIG_LOG_BACKEND_EPACKET_BT
 	BT_GATT_CHARACTERISTIC(INFUSE_SERVICE_UUID_LOGGING, BT_GATT_CHRC_NOTIFY, BT_GATT_PERM_READ,
 			       NULL, NULL, NULL),
@@ -78,10 +77,8 @@ LOG_MODULE_REGISTER(epacket_bt_peripheral, CONFIG_EPACKET_BT_PERIPHERAL_LOG_LEVE
 
 static void conn_mtu_query(struct bt_conn *conn, void *user_data)
 {
-	struct bt_conn_info info;
 	uint16_t *smallest_mtu = user_data;
-	uint16_t conn_cmd_ccc = 0;
-	uint16_t conn_data_ccc = 0;
+	struct bt_conn_info info;
 	int rc;
 
 	/* Only care about connected objects */
@@ -89,20 +86,12 @@ static void conn_mtu_query(struct bt_conn *conn, void *user_data)
 	if ((rc != 0) || (info.state != BT_CONN_STATE_CONNECTED)) {
 		return;
 	}
-	/* Only care about connections subscribed to either characteristic */
-	(void)bt_gatt_attr_read_ccc(conn, &infuse_svc.attrs[CCC_DATA], &conn_data_ccc,
-				    sizeof(conn_data_ccc), 0);
-	(void)bt_gatt_attr_read_ccc(conn, &infuse_svc.attrs[CCC_COMMAND], &conn_cmd_ccc,
-				    sizeof(conn_cmd_ccc), 0);
-	if (!conn_cmd_ccc && !conn_data_ccc) {
-		return;
-	}
 
 	/* Update state */
 	*smallest_mtu = MIN(*smallest_mtu, bt_gatt_get_mtu(conn));
 }
 
-static void update_interface_state(bool connected)
+static void update_interface_state(void)
 {
 	const struct device *epacket_bt_peripheral = DEVICE_DT_GET(DT_DRV_INST(0));
 	struct epacket_bt_peripheral_data *data = epacket_bt_peripheral->data;
@@ -110,22 +99,19 @@ static void update_interface_state(bool connected)
 	uint16_t smallest_mtu = UINT16_MAX;
 	uint16_t max_payload;
 
-	if (connected) {
-		/* Find the smallest MTU.
-		 *
-		 */
-		bt_conn_foreach(BT_CONN_TYPE_LE, conn_mtu_query, &smallest_mtu);
-		if (smallest_mtu <= PACKET_OVERHEAD) {
-			/* Payload too small, treat as disconnected */
-			connected = false;
-		}
+	/* Find the smallest MTU */
+	bt_conn_foreach(BT_CONN_TYPE_LE, conn_mtu_query, &smallest_mtu);
+	if ((smallest_mtu <= PACKET_OVERHEAD) || (smallest_mtu == UINT16_MAX)) {
+		/* Payload too small, treat as disconnected */
+		smallest_mtu = 0;
 	}
 
-	if (!connected) {
+	if (smallest_mtu == 0) {
 		if (data->last_notification == 0) {
 			/* Don't notify disconnected again */
 			return;
 		}
+		LOG_DBG("All disconnected");
 		/* Interface is now disconnected */
 		SYS_SLIST_FOR_EACH_CONTAINER(&data->common_data.callback_list, cb, node) {
 			if (cb->interface_state) {
@@ -143,6 +129,7 @@ static void update_interface_state(bool connected)
 		return;
 	}
 
+	LOG_DBG("Maximum payload: %d", max_payload);
 	/* Interface is now connected */
 	SYS_SLIST_FOR_EACH_CONTAINER(&data->common_data.callback_list, cb, node) {
 		if (cb->interface_state) {
@@ -150,26 +137,6 @@ static void update_interface_state(bool connected)
 		}
 	}
 	data->last_notification = max_payload;
-}
-
-static void ccc_cfg_changed_command(const struct bt_gatt_attr *attr, uint16_t value)
-{
-	const struct device *epacket_bt_peripheral = DEVICE_DT_GET(DT_DRV_INST(0));
-	struct epacket_bt_peripheral_data *data = epacket_bt_peripheral->data;
-
-	data->cmd_subscribed = !!value;
-	LOG_DBG("Command: %s", value ? "subscribed" : "unsubscribed");
-	update_interface_state(data->cmd_subscribed);
-}
-
-static void ccc_cfg_changed_data(const struct bt_gatt_attr *attr, uint16_t value)
-{
-	const struct device *epacket_bt_peripheral = DEVICE_DT_GET(DT_DRV_INST(0));
-	struct epacket_bt_peripheral_data *data = epacket_bt_peripheral->data;
-
-	data->data_subscribed = !!value;
-	LOG_DBG("Data: %s", data->data_subscribed ? "subscribed" : "unsubscribed");
-	update_interface_state(data->data_subscribed);
 }
 
 static ssize_t read_both(struct bt_conn *conn, const struct bt_gatt_attr *attr, void *buf,
@@ -240,13 +207,14 @@ static ssize_t write_both(struct bt_conn *conn, const struct bt_gatt_attr *attr,
 
 static void att_mtu_updated(struct bt_conn *conn, uint16_t tx, uint16_t rx)
 {
-	const struct device *epacket_bt_peripheral = DEVICE_DT_GET(DT_DRV_INST(0));
-	struct epacket_bt_peripheral_data *data = epacket_bt_peripheral->data;
+	/* Handle MTU change */
+	update_interface_state();
+}
 
-	if (data->data_subscribed) {
-		/* Check if minimum MTU has changed */
-		update_interface_state(true);
-	}
+static void disconnected(struct bt_conn *conn, uint8_t reason)
+{
+	/* Handle MTU change */
+	update_interface_state();
 }
 
 static void epacket_bt_peripheral_send(const struct device *dev, struct net_buf *buf)
@@ -311,7 +279,9 @@ static int epacket_bt_peripheral_init(const struct device *dev)
 	data->data_subscribed = false;
 	data->last_notification = 0;
 	data->gatt_cb.att_mtu_updated = att_mtu_updated;
+	data->conn_cb.disconnected = disconnected;
 	bt_gatt_cb_register(&data->gatt_cb);
+	bt_conn_cb_register(&data->conn_cb);
 
 	__ASSERT(infuse_svc.attrs[CHRC_COMMAND].uuid->type == BT_UUID_TYPE_128,
 		 "Characteristic order changed");
