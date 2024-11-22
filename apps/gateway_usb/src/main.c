@@ -46,6 +46,7 @@ TASK_RUNNER_TASKS_DEFINE(app_tasks, app_tasks_data, (TDF_LOGGER_TASK));
 int main(void)
 {
 	const struct device *epacket_bt_adv = DEVICE_DT_GET(DT_NODELABEL(epacket_bt_adv));
+	const struct device *epacket_bt_central = DEVICE_DT_GET(DT_NODELABEL(epacket_bt_central));
 	const struct device *epacket_serial = DEVICE_DT_GET(DT_NODELABEL(epacket_serial));
 
 	/* Start watchdog */
@@ -54,8 +55,9 @@ int main(void)
 	/* Gateway receive handlers */
 	epacket_set_receive_handler(epacket_serial, serial_backhaul_handler);
 	epacket_set_receive_handler(epacket_bt_adv, serial_backhaul_handler);
+	epacket_set_receive_handler(epacket_bt_central, serial_backhaul_handler);
 
-	/* Always listening on Bluetooth and serial */
+	/* Always listening on Bluetooth advertising and serial */
 	epacket_receive(epacket_serial, K_FOREVER);
 	epacket_receive(epacket_bt_adv, K_FOREVER);
 
