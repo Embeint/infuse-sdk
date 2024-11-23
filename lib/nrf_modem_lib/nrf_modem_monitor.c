@@ -34,6 +34,7 @@ LOG_MODULE_REGISTER(modem_monitor, LOG_LEVEL_INF);
 
 enum {
 	FLAGS_MODEM_SLEEPING = 0,
+	FLAGS_CELL_CONNECTED = 1,
 };
 
 static struct {
@@ -137,15 +138,17 @@ static void signal_quality_update(struct k_work *work)
 
 int nrf_modem_monitor_signal_quality(int16_t *rsrp, int8_t *rsrq, bool cached)
 {
+	bool sleeping = atomic_test_bit(&monitor.flags, FLAGS_MODEM_SLEEPING);
+	bool connected = atomic_test_bit(&monitor.flags, FLAGS_CELL_CONNECTED);
 	uint8_t rsrp_idx, rsrq_idx;
 	int rc;
 
 	*rsrp = cached ? monitor.rsrp_cached : INT16_MIN;
 	*rsrq = cached ? monitor.rsrq_cached : INT8_MIN;
 
-	/* If modem is sleeping, signal quality polling will fail */
-	if (atomic_test_bit(&monitor.flags, FLAGS_MODEM_SLEEPING)) {
-		LOG_DBG("Modem sleeping");
+	/* If modem is sleeping or not connected to a cell, signal quality polling will fail */
+	if (sleeping || !connected) {
+		LOG_DBG("Sleeping: %d Connected: %d", sleeping, connected);
 		return 0;
 	}
 
@@ -210,6 +213,9 @@ static void lte_reg_handler(const struct lte_lc_evt *const evt)
 		/* Reset cached signal strength */
 		monitor.rsrp_cached = INT16_MIN;
 		monitor.rsrq_cached = INT8_MIN;
+		/* Set cell connected flag */
+		atomic_set_bit_to(&monitor.flags, FLAGS_CELL_CONNECTED,
+				  evt->cell.id <= LTE_LC_CELL_EUTRAN_ID_MAX);
 		/* Request update of knowledge of network info */
 		k_work_submit_to_queue(QUERY_WORKQ, &monitor.update_work);
 		/* Update cached knowledge of signal strength */
