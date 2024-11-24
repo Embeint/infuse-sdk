@@ -10,6 +10,7 @@
 
 #include <zephyr/ztest.h>
 #include <zephyr/kernel.h>
+#include <zephyr/drivers/gnss.h>
 
 #include <infuse/time/epoch.h>
 #include <infuse/epacket/packet.h>
@@ -30,6 +31,8 @@ struct task_config config = GNSS_TASK(0, 1, DEV);
 struct task_data data;
 struct task_schedule schedule = {.task_id = TASK_ID_GNSS};
 struct task_schedule_state state;
+const gnss_systems_t default_constellations =
+	GNSS_SYSTEM_GPS | GNSS_SYSTEM_QZSS | GNSS_SYSTEM_SBAS | GNSS_SYSTEM_GLONASS;
 
 static K_SEM_DEFINE(location_published, 0, 1);
 
@@ -204,6 +207,7 @@ ZTEST(task_gnss_ubx, test_time_fix)
 
 ZTEST(task_gnss_ubx, test_location_fix)
 {
+	gnss_systems_t enabled;
 	k_tid_t thread;
 	uint32_t start;
 
@@ -224,6 +228,40 @@ ZTEST(task_gnss_ubx, test_location_fix)
 	run_location_fix(thread, -270000000, 1530000000, 70 * M, 100 * M, 5 * M, 20 * M, 5 * M, 16);
 	expected_location_fix(thread, start, 55);
 	expected_no_logging();
+
+	/* Expect default constellations */
+	gnss_get_enabled_systems(DEV, &enabled);
+	zassert_equal(default_constellations, enabled);
+}
+
+ZTEST(task_gnss_ubx, test_location_fix_constellations)
+{
+	gnss_systems_t enabled;
+	k_tid_t thread;
+	uint32_t start;
+
+	schedule.timeout_s = 0;
+	schedule.task_logging[0].loggers = TDF_DATA_LOGGER_SERIAL;
+	schedule.task_logging[0].tdf_mask = 0;
+	schedule.task_args.infuse.gnss = (struct task_gnss_args){
+		.constellations = GNSS_SYSTEM_GPS | GNSS_SYSTEM_QZSS,
+		.flags = TASK_GNSS_FLAGS_RUN_TO_LOCATION_FIX,
+		.accuracy_m = 5,
+		.position_dop = 100,
+	};
+
+	/* Schedule a location fix that completes in <1 minute */
+	start = k_uptime_seconds();
+	thread = task_schedule(&data);
+
+	/* Run the location fix with a quick plateau */
+	run_location_fix(thread, -270000000, 1530000000, 70 * M, 100 * M, 5 * M, 20 * M, 5 * M, 16);
+	expected_location_fix(thread, start, 55);
+	expected_no_logging();
+
+	/* Expect requested constellations */
+	gnss_get_enabled_systems(DEV, &enabled);
+	zassert_equal(GNSS_SYSTEM_GPS | GNSS_SYSTEM_QZSS, enabled);
 }
 
 static void task_terminator(struct k_work *work)
@@ -374,6 +412,7 @@ static void logger_before(void *fixture)
 {
 	epoch_time_reset();
 	k_sem_reset(&location_published);
+	gnss_set_enabled_systems(DEV, default_constellations);
 	/* Setup links between task config and data */
 	task_runner_init(&schedule, &state, 1, &config, &data, 1);
 }
