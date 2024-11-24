@@ -121,6 +121,90 @@ static int ubx_m8_spi_get_navigation_mode(const struct device *dev, enum gnss_na
 
 #ifdef GNSS_UBX_CONSTELLATION_CONFIG
 
+static int cfg_gnss_copy(uint8_t message_class, uint8_t message_id, const void *payload,
+			 size_t payload_len, void *user_data)
+{
+	struct net_buf_simple *buf = user_data;
+
+	/* Copy message to user buffer */
+	net_buf_simple_add_mem(buf, payload, payload_len);
+	return 0;
+}
+
+static int ubx_m8_spi_set_enabled_systems(const struct device *dev, gnss_systems_t s)
+{
+	NET_BUF_SIMPLE_DEFINE(cfg_gnss, 96);
+	struct ubx_m8_spi_data *data = dev->data;
+	struct ubx_msg_cfg_gnss *gnss;
+	const gnss_systems_t major =
+		GNSS_SYSTEM_GPS | GNSS_SYSTEM_BEIDOU | GNSS_SYSTEM_GALILEO | GNSS_SYSTEM_GLONASS;
+	int rc;
+
+	if (s & GNSS_SYSTEM_GALILEO) {
+		/* Configuring the M8 for Galileo comes with a host of other configuration
+		 * requirements and commands.
+		 */
+		LOG_WRN("Galileo not supported");
+		s ^= GNSS_SYSTEM_GALILEO;
+	}
+	if ((s & GNSS_SYSTEM_GPS) & !(s & GNSS_SYSTEM_QZSS)) {
+		LOG_WRN("QZSS and GPS should be enabled together");
+	}
+	/* At least one major constellation must be enabled */
+	if (!(s & major)) {
+		return -EINVAL;
+	}
+
+	/* Reserve header space */
+	ubx_msg_prepare(&cfg_gnss, UBX_MSG_CLASS_CFG, UBX_MSG_ID_CFG_GNSS);
+	gnss = (void *)net_buf_simple_tail(&cfg_gnss);
+
+	/* Get the current system configuration */
+	rc = ubx_modem_send_sync_poll(&data->common.modem, UBX_MSG_CLASS_CFG, UBX_MSG_ID_CFG_GNSS,
+				      cfg_gnss_copy, &cfg_gnss, SYNC_MESSAGE_TIMEOUT);
+	if (rc < 0) {
+		return rc;
+	}
+
+	/* Set flags */
+	for (int i = 0; i < gnss->num_cfg_blocks; i++) {
+		uint8_t gnss_id = gnss->configs[i].gnss_id;
+		uint32_t channels = gnss->configs[i].flags & ~UBX_MSG_CFG_GNSS_FLAGS_ENABLED;
+		bool enabled = false;
+
+		switch (gnss_id) {
+		case UBX_GNSS_ID_GPS:
+			enabled = s & GNSS_SYSTEM_GPS;
+			break;
+		case UBX_GNSS_ID_SBAS:
+			enabled = s & GNSS_SYSTEM_SBAS;
+			break;
+		case UBX_GNSS_ID_GALILEO:
+			enabled = s & GNSS_SYSTEM_GALILEO;
+			break;
+		case UBX_GNSS_ID_BEIDOU:
+			enabled = s & GNSS_SYSTEM_BEIDOU;
+			break;
+		case UBX_GNSS_ID_QZSS:
+			enabled = s & GNSS_SYSTEM_QZSS;
+			break;
+		case UBX_GNSS_ID_GLONASS:
+			enabled = s & GNSS_SYSTEM_GLONASS;
+			break;
+		case UBX_GNSS_ID_NAVIC:
+			enabled = s & GNSS_SYSTEM_IRNSS;
+			break;
+		}
+
+		/* Set enabled bit to desired state */
+		gnss->configs[i].flags = channels | (enabled ? UBX_MSG_CFG_GNSS_FLAGS_ENABLED : 0);
+	}
+	ubx_msg_finalise(&cfg_gnss);
+
+	/* Update GNSS configuration */
+	return ubx_modem_send_sync_acked(&data->common.modem, &cfg_gnss, K_SECONDS(1));
+}
+
 static int get_gnss_handler(uint8_t message_class, uint8_t message_id, const void *payload,
 			    size_t payload_len, void *user_data)
 {
@@ -129,10 +213,10 @@ static int get_gnss_handler(uint8_t message_class, uint8_t message_id, const voi
 
 	for (int i = 0; i < gnss->num_cfg_blocks; i++) {
 		uint8_t gnss_id = gnss->configs[i].gnss_id;
-		uint8_t channels = gnss->configs[i].flags;
+		uint32_t channels = gnss->configs[i].flags;
 
-		/* Skip if no channels enabled */
-		if (channels == 0) {
+		/* Skip if enable bit not set */
+		if (!(channels & UBX_MSG_CFG_GNSS_FLAGS_ENABLED)) {
 			continue;
 		}
 
@@ -415,6 +499,7 @@ static const struct gnss_driver_api gnss_api = {
 	.get_navigation_mode = ubx_m8_spi_get_navigation_mode,
 #endif /* CONFIG_GNSS_U_BLOX_NO_API_COMPAT */
 #ifdef GNSS_UBX_CONSTELLATION_CONFIG
+	.set_enabled_systems = ubx_m8_spi_set_enabled_systems,
 	.get_enabled_systems = ubx_m8_spi_get_enabled_systems,
 	.get_supported_systems = ubx_m8_spi_get_supported_systems,
 #endif /* GNSS_UBX_CONSTELLATION_CONFIG */

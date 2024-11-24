@@ -45,7 +45,7 @@ struct modem_backend_ublox_spi {
 	/* Backing memory for pipe data stream */
 	uint8_t pipe_memory[CONFIG_GNSS_U_BLOX_PIPE_SIZE];
 	/* Temporary RX buffer */
-	uint8_t spi_rx[64];
+	uint8_t spi_rx[70];
 };
 
 struct modem_backend_ublox_spi_config {
