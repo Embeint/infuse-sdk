@@ -149,7 +149,7 @@ static const struct task_schedule schedules[] = {
 };
 struct task_schedule_state states[ARRAY_SIZE(schedules)];
 
-TASK_RUNNER_TASKS_DEFINE(app_tasks, app_tasks_data, (TDF_LOGGER_TASK),
+TASK_RUNNER_TASKS_DEFINE(app_tasks, app_tasks_data, (TDF_LOGGER_TASK, NULL),
 			 (IMU_TASK, DEVICE_DT_GET(DT_ALIAS(imu0))),
 #if DT_NODE_EXISTS(DT_ALIAS(gnss))
 			 (GNSS_TASK, DEVICE_DT_GET(DT_ALIAS(gnss))),
