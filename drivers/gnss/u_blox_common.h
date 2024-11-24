@@ -20,6 +20,11 @@
 extern "C" {
 #endif
 
+#if !defined(CONFIG_GNSS_U_BLOX_NO_API_COMPAT) ||                                                  \
+	defined(CONFIG_GNSS_U_BLOX_CONSTELLATION_API_COMPAT)
+#define GNSS_UBX_CONSTELLATION_CONFIG 1
+#endif
+
 struct ubx_common_config {
 	struct shared_device_dt_spec ant_switch;
 	struct gpio_dt_spec reset_gpio;

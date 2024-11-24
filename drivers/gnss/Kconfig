@@ -47,6 +47,10 @@ config GNSS_U_BLOX_NO_API_COMPAT
 	  If working with the UBX modem backend directly, all API compatibility
 	  except for timepulse can be disabled for ~2kB ROM savings.
 
+config GNSS_U_BLOX_CONSTELLATION_API_COMPAT
+	bool "Retain compatibility with the Zephyr GNSS constellation functions"
+	depends on GNSS_U_BLOX_NO_API_COMPAT
+
 config GNSS_U_BLOX_SATELLITES_COUNT
 	int "Maximum satellite count"
 	depends on GNSS_SATELLITES
