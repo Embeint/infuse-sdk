@@ -182,6 +182,10 @@ static int ubx_m10_i2c_set_navigation_mode(const struct device *dev, enum gnss_n
 	return ubx_modem_send_sync_acked(&data->common.modem, &cfg_buf, SYNC_MESSAGE_TIMEOUT);
 }
 
+#endif /* CONFIG_GNSS_U_BLOX_NO_API_COMPAT */
+
+#ifdef GNSS_UBX_CONSTELLATION_CONFIG
+
 static int get_enabled_systems_handler(uint8_t message_class, uint8_t message_id,
 				       const void *payload, size_t payload_len, void *user_data)
 {
@@ -289,7 +293,7 @@ static int ubx_m10_i2c_get_supported_systems(const struct device *dev, gnss_syst
 	return 0;
 }
 
-#endif /* CONFIG_GNSS_U_BLOX_NO_API_COMPAT */
+#endif /* GNSS_UBX_CONSTELLATION_CONFIG */
 
 static int mon_ver_handler(uint8_t message_class, uint8_t message_id, const void *payload,
 			   size_t payload_len, void *user_data)
@@ -498,10 +502,12 @@ static const struct gnss_driver_api gnss_api = {
 	.get_fix_rate = ubx_m10_i2c_get_fix_rate,
 	.set_navigation_mode = ubx_m10_i2c_set_navigation_mode,
 	.get_navigation_mode = ubx_m10_i2c_get_navigation_mode,
+#endif /* CONFIG_GNSS_U_BLOX_NO_API_COMPAT */
+#ifdef GNSS_UBX_CONSTELLATION_CONFIG
 	.set_enabled_systems = ubx_m10_i2c_set_enabled_systems,
 	.get_enabled_systems = ubx_m10_i2c_get_enabled_systems,
 	.get_supported_systems = ubx_m10_i2c_get_supported_systems,
-#endif /* CONFIG_GNSS_U_BLOX_NO_API_COMPAT */
+#endif /* GNSS_UBX_CONSTELLATION_CONFIG */
 	.get_latest_timepulse = ubx_common_get_latest_timepulse,
 };
 
