@@ -12,6 +12,8 @@ configdefault FUEL_GAUGE
 # We want to use UBX messages directly
 configdefault GNSS_U_BLOX_NO_API_COMPAT
 	default y
+configdefault GNSS_U_BLOX_CONSTELLATION_API_COMPAT
+	default y
 
 # We want to trigger samples, not run sampling permanently
 choice BME280_MODE
