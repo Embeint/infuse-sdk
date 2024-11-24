@@ -29,6 +29,7 @@ struct emul_data {
 	struct k_sem new_data;
 	k_ticks_t timer_expiry;
 	k_ticks_t latest_timepulse;
+	gnss_systems_t systems;
 	uint32_t fix_period;
 	bool nav_pvt_enabled;
 	bool nav_timegps_polled;
@@ -237,6 +238,31 @@ int ubx_modem_send_async_poll(struct ubx_modem_data *modem, uint8_t message_clas
 	return 0;
 }
 
+static int emul_set_enabled_systems(const struct device *dev, gnss_systems_t systems)
+{
+	struct emul_data *data = dev->data;
+
+	data->systems = systems;
+	return 0;
+}
+
+static int emul_get_enabled_systems(const struct device *dev, gnss_systems_t *systems)
+{
+	struct emul_data *data = dev->data;
+
+	*systems = data->systems;
+	return 0;
+}
+
+static int emul_get_supported_systems(const struct device *dev, gnss_systems_t *systems)
+{
+	ARG_UNUSED(dev);
+
+	*systems = (GNSS_SYSTEM_GPS | GNSS_SYSTEM_GLONASS | GNSS_SYSTEM_GALILEO |
+		    GNSS_SYSTEM_BEIDOU | GNSS_SYSTEM_SBAS | GNSS_SYSTEM_QZSS);
+	return 0;
+}
+
 static int emul_get_latest_timepulse(const struct device *dev, k_ticks_t *timestamp)
 {
 	struct emul_data *data = dev->data;
@@ -268,6 +294,11 @@ static int emul_pm_control(const struct device *dev, enum pm_device_action actio
 	case PM_DEVICE_ACTION_SUSPEND:
 		k_timer_stop(&data->navigation_timer);
 		break;
+	case PM_DEVICE_ACTION_TURN_ON:
+		/* Default constellations */
+		data->systems =
+			GNSS_SYSTEM_GPS | GNSS_SYSTEM_GALILEO | GNSS_SYSTEM_QZSS | GNSS_SYSTEM_SBAS;
+		break;
 	default:
 		break;
 	}
@@ -287,6 +318,9 @@ static int emul_init(const struct device *dev)
 }
 
 const struct gnss_driver_api emul_gnss_api = {
+	.set_enabled_systems = emul_set_enabled_systems,
+	.get_enabled_systems = emul_get_enabled_systems,
+	.get_supported_systems = emul_get_supported_systems,
 	.get_latest_timepulse = emul_get_latest_timepulse,
 };
 
