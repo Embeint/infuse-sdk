@@ -251,7 +251,7 @@
             "name": "ALGORITHM_OUTPUT",
             "description": "Generic activity metric",
             "fields": [
-                {"name": "algorithm_id", "type": "uint32_t", "description": "Algorithm identifier"},
+                {"name": "algorithm_id", "type": "uint32_t", "description": "Algorithm identifier", "display": {"fmt": "hex", "digits": 8}},
                 {"name": "algorithm_version", "type": "uint16_t", "description": "Algorithm version number"},
                 {"name": "output", "type": "uint8_t", "num": 0, "description": "Arbitrary algorithm output"}
             ]

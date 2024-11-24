@@ -72,6 +72,20 @@ class cloudgen(WestCommand):
         with tdf_def_file.open("r") as f:
             tdf_defs = json.load(f)
 
+        # Simplify template logic for array postfix
+        def array_postfix(d, field):
+            field["array"] = ""
+            if "num" in field:
+                if field["num"] == 0:
+                    field["array"] = "[]"
+                    d["flexible"] = True
+                else:
+                    field["array"] = f"[{field['num']}]"
+
+        for d in tdf_defs["definitions"].values():
+            for field in d["fields"]:
+                array_postfix(d, field)
+
         with tdf_output.open("w") as f:
             f.write(
                 tdf_template.render(
