@@ -24,8 +24,10 @@
 #include <infuse/task_runner/runner.h>
 #include <infuse/task_runner/tasks/tdf_logger.h>
 
-TDF_LOGGER_TASK(1, 0);
-struct task_config config = TDF_LOGGER_TASK(0, 1);
+static void custom_tdf_logger(uint8_t tdf_loggers, uint64_t timestamp);
+
+TDF_LOGGER_TASK(1, 0, custom_tdf_logger);
+struct task_config config = TDF_LOGGER_TASK(0, 1, custom_tdf_logger);
 struct task_data data;
 struct task_schedule schedule = {.task_id = TASK_ID_TDF_LOGGER};
 struct task_schedule_state state;
@@ -450,6 +452,36 @@ ZTEST(task_tdf_logger, test_net_conn)
 		zassert_equal(0, tdf.time);
 		net_buf_unref(pkt);
 	}
+}
+
+static void custom_tdf_logger(uint8_t tdf_loggers, uint64_t timestamp)
+{
+	struct tdf_acc_16g tdf = {.sample = {.x = 2, .y = 3, .z = 4}};
+
+	tdf_data_logger_log(tdf_loggers, TDF_ACC_16G, sizeof(tdf), timestamp, &tdf);
+}
+
+ZTEST(task_tdf_logger, test_custom)
+{
+	struct k_fifo *tx_queue = epacket_dummmy_transmit_fifo_get();
+	struct tdf_parsed tdf;
+	struct net_buf *pkt;
+
+	zassert_not_null(tx_queue);
+
+	schedule.task_args.infuse.tdf_logger = (struct task_tdf_logger_args){
+		.loggers = TDF_DATA_LOGGER_SERIAL,
+		.tdfs = TASK_TDF_LOGGER_LOG_CUSTOM,
+	};
+
+	/* Connection status should send */
+	task_schedule(&data);
+	pkt = net_buf_get(tx_queue, K_MSEC(100));
+	zassert_not_null(pkt);
+	net_buf_pull(pkt, sizeof(struct epacket_dummy_frame));
+	zassert_equal(0, tdf_parse_find_in_buf(pkt->data, pkt->len, TDF_ACC_16G, &tdf));
+	zassert_equal(0, tdf.time);
+	net_buf_unref(pkt);
 }
 
 static void logger_before(void *fixture)
