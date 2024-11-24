@@ -326,7 +326,7 @@ struct tdf_algorithm_output {
 	/* Algorithm version number */
 	uint16_t algorithm_version;
 	/* Arbitrary algorithm output */
-	uint8_t output[0];
+	uint8_t output[];
 } __packed;
 
 /* Runtime error logging */

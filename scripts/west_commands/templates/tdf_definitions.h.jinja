@@ -53,7 +53,7 @@ struct tdf_{{ info['name'] | lower }} {
 	{% if 'description' in field %}
 	/* {{ field['description'] }} */
 	{% endif %}
-	{{ field['type'] }} {{ field['name'] }}{% if 'num' in field %}[{{ field['num'] }}]{% endif %};
+	{{ field['type'] }} {{ field['name'] }}{{ field["array"] }};
 {% endfor %}
 } __packed;
 
