@@ -165,6 +165,24 @@ enum ubx_msg_cfg_rate_time_ref {
 	UBX_MSG_CFG_RATE_TIME_REF_NAVIC = 5,
 };
 
+/** @ref UBX_MSG_ID_CFG_RST */
+struct ubx_msg_cfg_rst {
+	uint16_t nav_bbr_mask;
+	uint8_t reset_mode;
+	uint8_t reserved1;
+} __packed;
+BUILD_ASSERT(sizeof(struct ubx_msg_cfg_rst) == 4);
+
+enum ubx_msg_cfg_rst_bbr_mask {
+	UBX_MSG_CFG_RST_BBR_HOT_START = 0x0000,
+	UBX_MSG_CFG_RST_BBR_WARM_START = 0x0001,
+	UBX_MSG_CFG_RST_BBR_COLD_START = 0xFFFF,
+};
+
+enum ubx_msg_cfg_rst_mode {
+	UBX_MSG_CFG_RST_MODE_HARDWARE = 0x0000,
+};
+
 /** @ref UBX_MSG_ID_CFG_CFG */
 struct ubx_msg_cfg_cfg_m8 {
 	uint32_t clear_mask;
@@ -241,6 +259,10 @@ struct ubx_msg_cfg_gnss {
 	} __packed configs[];
 } __packed;
 BUILD_ASSERT(sizeof(struct ubx_msg_cfg_gnss) == 4);
+
+enum ubx_msg_cfg_gnss_flags {
+	UBX_MSG_CFG_GNSS_FLAGS_ENABLED = BIT(0),
+};
 
 /** @ref UBX_MSG_ID_CFG_VALSET */
 struct ubx_msg_cfg_valset_v0 {
