@@ -11,6 +11,7 @@
 #include <zephyr/drivers/sensor.h>
 #include <zephyr/pm/device_runtime.h>
 #include <zephyr/net/conn_mgr_connectivity.h>
+#include <zephyr/drivers/gnss.h>
 
 #include <infuse/drivers/watchdog.h>
 #include <infuse/time/epoch.h>
@@ -43,6 +44,8 @@ static const struct task_schedule schedules[] = {
 			},
 		.task_args.infuse.gnss =
 			{
+				.constellations =
+					GNSS_SYSTEM_GPS | GNSS_SYSTEM_QZSS | GNSS_SYSTEM_SBAS,
 				.flags = TASK_GNSS_FLAGS_PERFORMANCE_MODE |
 					 TASK_GNSS_FLAGS_RUN_FOREVER,
 				.accuracy_m = 5,

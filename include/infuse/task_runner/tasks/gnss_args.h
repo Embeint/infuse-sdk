@@ -38,6 +38,8 @@ enum {
 
 /** @brief GNSS task arguments */
 struct task_gnss_args {
+	/** Constellations `GNSS_SYSTEM_*` (0 == receiver default) */
+	uint8_t constellations;
 	/** Operational flags */
 	uint8_t flags;
 	/**
