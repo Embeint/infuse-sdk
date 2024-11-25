@@ -112,6 +112,11 @@ jobs:
           export ZEPHYR_BASE=${PWD}/zephyr
           $ZEPHYR_BASE/scripts/twister -i --force-color -N -v --filter runnable -p ${{ matrix.platform }} --coverage -T infuse-sdk/tests --coverage-tool gcovr -xCONFIG_TEST_EXTRA_STACK_SIZE=4096 -e nano --coverage-basedir infuse-sdk
 
+      - name: Print ccache stats
+        if: always()
+        run: |
+          ccache -s -vv
+
       - name: Rename coverage files
         if: always()
         run: |
@@ -220,6 +225,11 @@ jobs:
           export WORK_DIR=${PWD}/bsim_out
           rm -rf $WORK_DIR
           $INFUSE_BASE/tests/bsim/ci.bt.sh
+
+      - name: Print ccache stats
+        if: always()
+        run: |
+          ccache -s -vv
 
       - name: Generate coverage report
         run: |

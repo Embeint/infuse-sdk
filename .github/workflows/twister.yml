@@ -121,3 +121,8 @@ jobs:
           export ZEPHYR_BASE=${PWD}/zephyr
           echo 'twister ${TWISTER_COMMON} ${VENDOR_FILTER} ${DAILY_OPTIONS} -T infuse-sdk'
           $ZEPHYR_BASE/scripts/twister ${TWISTER_COMMON} ${VENDOR_FILTER} ${DAILY_OPTIONS} --all -T infuse-sdk
+
+      - name: Print ccache stats
+        if: always()
+        run: |
+          ccache -s -vv
