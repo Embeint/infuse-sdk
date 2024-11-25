@@ -13,3 +13,34 @@ config MODEM_BACKEND_U_BLOX_SPI
 	select POLL
 	select RING_BUFFER
 	depends on SPI_ASYNC
+
+if MODEM_BACKEND_U_BLOX_SPI
+
+choice MODEM_BACKEND_U_BLOX_SPI_PM_MODE
+	prompt "Mode of operation for SPI bus PM state"
+	default MODEM_BACKEND_U_BLOX_SPI_PM_MODE_ALWAYS
+	help
+	  u-blox modems have internal pull-up resistors on IO pins. These resistors
+	  also appear to be disabled in software backup mode, but the lines must
+	  be held high to prevent transient current consumption. However, enabling
+	  pull-up resistors on the SPI bus pins in sleep mode is undesirable when the
+	  modem is powered down.
+
+config MODEM_BACKEND_U_BLOX_SPI_PM_MODE_ALWAYS
+	bool "SPI bus in active state while modem is powered"
+	help
+	  When this option is enabled, the SPI bus is kept in PM_STATE_ACTIVE while
+	  the modem is powered. The bus is released when the modem goes to PM_STATE_OFF.
+	  In this mode, pull-ups can be enabled in the "default" pinctl state, with
+	  pull-downs enabled in the "sleep" pinctl state.
+
+config MODEM_BACKEND_U_BLOX_SPI_PM_MODE_BURST
+	bool "SPI bus in active state while comms are running"
+	help
+	  When this option is enabled, the SPI bus is only kept in PM_STATE_ACTIVE while
+	  communications with the modem are running. This may be required if multiple
+	  devices are on the same SPI bus.
+
+endchoice # MODEM_BACKEND_U_BLOX_SPI_PM_MODE
+
+endif # MODEM_BACKEND_U_BLOX_SPI
