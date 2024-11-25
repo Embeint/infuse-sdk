@@ -210,7 +210,9 @@ static bool nav_pvt_handle(struct gnss_run_state *state, const struct task_gnss_
 	bool valid_hacc = (pvt->h_acc <= (1000 * (uint32_t)args->accuracy_m));
 	bool valid_pdop = (pvt->p_dop <= (10 * (uint32_t)args->position_dop));
 	bool not_running = !(state->flags & TIME_SYNC_RUNNING);
+	bool plateau_valid;
 	uint32_t runtime = k_uptime_seconds() - state->task_start;
+	const struct task_gnss_plateau_args *p_args;
 
 	/* Periodically print fix state */
 	if (k_uptime_seconds() % 30 == 0) {
@@ -237,15 +239,26 @@ static bool nav_pvt_handle(struct gnss_run_state *state, const struct task_gnss_
 			LOG_INF("Terminating due to %s", "any fix timeout");
 			return true;
 		}
+
+		p_args = &args->run_to_fix.fix_plateau;
+
+		/* Plateau check should be performed if:
+		 *    1. Timeout is enabled
+		 *    2. Accuracy reaches some hardcoded minimum threshold
+		 *    3. Tighter minimum accuracy not requested, or reached
+		 */
+		plateau_valid = p_args->timeout && (pvt->h_acc < (10 * KM)) &&
+				((p_args->min_accuracy_m == 0) ||
+				 (pvt->h_acc <= (1000 * (uint32_t)p_args->min_accuracy_m)));
+
 		/* Terminate if fix accuracy has plateaued */
-		if (args->run_to_fix.fix_plateau.timeout && (pvt->h_acc < (10 * KM))) {
-			int32_t req_acc =
-				state->plateau_accuracy -
-				(1000 * args->run_to_fix.fix_plateau.min_accuracy_improvement);
+		if (plateau_valid) {
+			int32_t req_acc = state->plateau_accuracy -
+					  (1000 * p_args->min_accuracy_improvement_m);
 
 			if (pvt->h_acc <= req_acc) {
 				state->plateau_accuracy = pvt->h_acc;
-				state->plateau_timeout = args->run_to_fix.fix_plateau.timeout;
+				state->plateau_timeout = p_args->timeout;
 			} else {
 				state->plateau_timeout--;
 			}

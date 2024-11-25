@@ -317,7 +317,7 @@ ZTEST(task_gnss_ubx, test_location_fix_plateau)
 				.any_fix_timeout = SEC_PER_MIN,
 				.fix_plateau =
 					{
-						.min_accuracy_improvement = 1,
+						.min_accuracy_improvement_m = 1,
 						.timeout = 5,
 					},
 			},
@@ -353,7 +353,7 @@ ZTEST(task_gnss_ubx, test_location_fix_plateau_timeout)
 				.any_fix_timeout = SEC_PER_MIN,
 				.fix_plateau =
 					{
-						.min_accuracy_improvement = 1,
+						.min_accuracy_improvement_m = 1,
 						.timeout = 5,
 					},
 			},
@@ -389,7 +389,7 @@ ZTEST(task_gnss_ubx, test_location_fix_no_location_timeout)
 				.any_fix_timeout = 15,
 				.fix_plateau =
 					{
-						.min_accuracy_improvement = 1,
+						.min_accuracy_improvement_m = 1,
 						.timeout = 5,
 					},
 			},
