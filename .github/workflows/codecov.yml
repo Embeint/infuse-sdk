@@ -190,12 +190,6 @@ jobs:
 
           echo "ZEPHYR_SDK_INSTALL_DIR=/opt/toolchains/zephyr-sdk-$( cat SDK_VERSION )" >> $GITHUB_ENV
 
-      - name: nRF Hardware Models patch
-        working-directory: modules/bsim_hw_models/nrf_hw_models
-        run: |
-          # Apply temporary patch until latest upstream can be used
-          git apply ../../../infuse-sdk/tests/bsim/nrf_hw_models.patch
-
       - name: BabbleSim build
         run: |
           cd ${BSIM_OUT_PATH}

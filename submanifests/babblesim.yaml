@@ -14,7 +14,7 @@ manifest:
         - babblesim
     - name: nrf_hw_models
       remote: zephyrproject
-      revision: 6c389b9b5fa0a079cd4502e69d375da4c0c289b7
+      revision: cf2cc5b2576618aebffbb503835bd22ac703272f
       path: modules/bsim_hw_models/nrf_hw_models
       groups:
         - babblesim
