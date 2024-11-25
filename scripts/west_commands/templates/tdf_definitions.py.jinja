@@ -4,6 +4,8 @@
 
 import ctypes
 
+from typing import Dict
+
 from infuse_iot.generated.tdf_base import TdfStructBase, TdfReadingBase
 
 
@@ -66,7 +68,7 @@ class readings:
 {% endfor %}
 
 {% endfor %}
-id_type_mapping = {
+id_type_mapping: Dict[int, TdfReadingBase] = {
 {% for tdf_id, info in definitions.items() %}
     {{ tdf_id }}: readings.{{ info['name'] | lower }},
 {% endfor %}
