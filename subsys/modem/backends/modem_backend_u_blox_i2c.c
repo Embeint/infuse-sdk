@@ -242,6 +242,9 @@ static int modem_backend_ublox_i2c_close(void *data)
 
 	LOG_DBG("Closing I2C modem backend");
 
+	/* Disable data ready interrupt */
+	(void)gpio_pin_interrupt_configure_dt(backend->data_ready, GPIO_INT_DISABLE);
+	(void)gpio_pin_configure_dt(backend->data_ready, GPIO_DISCONNECTED);
 	/* Cancel any pending queries */
 	backend->flags = MODE_CLOSED;
 	k_work_cancel_delayable_sync(&backend->fifo_read, &sync);
