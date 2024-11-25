@@ -245,7 +245,7 @@ int ubx_common_init(const struct device *dev, struct modem_pipe *pipe,
 		(void)gpio_pin_configure_dt(&cfg->timepulse_gpio, GPIO_INPUT);
 		gpio_init_callback(&data->timepulse_cb, timepulse_gpio_callback,
 				   BIT(cfg->timepulse_gpio.pin));
-		if (gpio_add_callback(cfg->timepulse_gpio.port, &data->timepulse_cb) < 0) {
+		if (gpio_add_callback_dt(&cfg->timepulse_gpio, &data->timepulse_cb) < 0) {
 			LOG_ERR("Unable to add timepulse callback");
 		}
 	}
