@@ -65,6 +65,13 @@ static inline int bma4xx_bus_init(const struct device *dev)
 	return cfg->bus_io->init(&cfg->bus);
 }
 
+static inline int bma4xx_bus_pm(const struct device *dev, bool power_up)
+{
+	const struct bma4xx_config *cfg = dev->config;
+
+	return cfg->bus_io->pm(&cfg->bus, power_up);
+}
+
 static inline int bma4xx_reg_read(const struct device *dev, uint8_t reg, void *data,
 				  uint16_t length)
 {
@@ -191,24 +198,31 @@ int bma4xx_configure(const struct device *dev, const struct imu_config *imu_cfg,
 	uint16_t fifo_watermark;
 	int rc;
 
-	/* Reset back to default state */
-	rc = bma4xx_low_power_reset(dev);
+	/* Power up comms bus */
+	rc = bma4xx_bus_pm(dev, true);
 	if (rc < 0) {
 		return rc;
 	}
+
+	/* Reset back to default state */
+	rc = bma4xx_low_power_reset(dev);
+	if (rc < 0) {
+		goto cleanup;
+	}
 	/* No more work to do */
 	if (imu_cfg == NULL) {
-		return 0;
+		goto cleanup;
 	}
 	if (imu_cfg->accelerometer.sample_rate_hz == 0) {
 		if (imu_cfg->gyroscope.sample_rate_hz || imu_cfg->magnetometer.sample_rate_hz) {
 			/* Only gyro or mag requested */
-			return -ENOTSUP;
+			rc = -ENOTSUP;
 		}
-		return 0;
+		goto cleanup;
 	}
 	if (imu_cfg->fifo_sample_buffer == 0) {
-		return -EINVAL;
+		rc = -EINVAL;
+		goto cleanup;
 	}
 	output->gyroscope_period_us = 0;
 	output->magnetometer_period_us = 0;
@@ -252,7 +266,13 @@ int bma4xx_configure(const struct device *dev, const struct imu_config *imu_cfg,
 	/* Enable the INT1 GPIO */
 	(void)gpio_pin_configure_dt(&config->int1_gpio, GPIO_INPUT);
 	(void)gpio_pin_interrupt_configure_dt(&config->int1_gpio, GPIO_INT_EDGE_TO_ACTIVE);
-	return rc ? -EIO : 0;
+	if (rc) {
+		rc = -EIO;
+	}
+
+cleanup:
+	(void)bma4xx_bus_pm(dev, false);
+	return rc;
 }
 
 int bma4xx_data_wait(const struct device *dev, k_timeout_t timeout)
@@ -285,17 +305,23 @@ int bma4xx_data_read(const struct device *dev, struct imu_sample_array *samples,
 	samples->gyroscope = (struct imu_sensor_meta){0};
 	samples->magnetometer = (struct imu_sensor_meta){0};
 
+	/* Power up comms bus */
+	rc = bma4xx_bus_pm(dev, true);
+	if (rc < 0) {
+		return rc;
+	}
+
 	/* Get FIFO data length */
 	rc = bma4xx_reg_read(dev, BMA4XX_REG_FIFO_LENGTH0, &fifo_length, 2);
 	if (rc < 0) {
-		return rc;
+		goto cleanup;
 	}
 	LOG_DBG("Reading %d bytes", fifo_length);
 
 	/* Read the FIFO data */
 	rc = bma4xx_reg_read(dev, BMA4XX_REG_FIFO_DATA, data->fifo_data_buffer, fifo_length);
 	if (rc < 0) {
-		return rc;
+		goto cleanup;
 	}
 
 	/* Scan through to populate data and count frames */
@@ -329,7 +355,8 @@ int bma4xx_data_read(const struct device *dev, struct imu_sample_array *samples,
 		buffer_offset += 6;
 	}
 	if (acc_samples == 0) {
-		return -ENODATA;
+		rc = -ENODATA;
+		goto cleanup;
 	}
 	if (interrupt_frame == 0) {
 		interrupt_frame = acc_samples;
@@ -339,7 +366,8 @@ int bma4xx_data_read(const struct device *dev, struct imu_sample_array *samples,
 	/* Validate there is enough space for samples */
 	if (acc_samples > max_samples) {
 		LOG_WRN("%d > %d", acc_samples, max_samples);
-		return -ENOMEM;
+		rc = -ENOMEM;
+		goto cleanup;
 	}
 
 	/* Determine real frame period */
@@ -362,7 +390,10 @@ int bma4xx_data_read(const struct device *dev, struct imu_sample_array *samples,
 	samples->accelerometer.timestamp_ticks = first_frame_time;
 	samples->accelerometer.buffer_period_ticks =
 		(acc_samples - 1) * int_period_ticks / interrupt_frame;
-	return 0;
+
+cleanup:
+	(void)bma4xx_bus_pm(dev, false);
+	return rc;
 }
 
 #ifdef CONFIG_INFUSE_IMU_SELF_TEST
@@ -386,22 +417,28 @@ static int bma4xx_self_test(const struct device *dev)
 
 	LOG_DBG("Starting self-test procedure");
 
+	/* Power up comms bus */
+	rc = bma4xx_bus_pm(dev, true);
+	if (rc < 0) {
+		return rc;
+	}
+
 	/* Reset back to default state */
 	rc = bma4xx_low_power_reset(dev);
 	if (rc < 0) {
-		return rc;
+		goto cleanup;
 	}
 
 	/* Accelerometer enabled, OSR=3, Normal Mode */
 	rc = bma4xx_reg_write(dev, BMA4XX_REG_ACC_CONFIG0, BMA4XX_ACC_CONFIG0_POWER_MODE_NORMAL);
 	if (rc < 0) {
-		return rc;
+		goto cleanup;
 	}
 	k_sleep(K_USEC(1500));
 	rc = bma4xx_reg_write(dev, BMA4XX_REG_ACC_CONFIG1,
 			      BMA4XX_ACC_CONFIG1_RANGE_4G | BMA4XX_ACC_CONFIG1_ODR_100);
 	if (rc < 0) {
-		return rc;
+		goto cleanup;
 	}
 
 	/* Wait for > 2ms */
@@ -411,7 +448,7 @@ static int bma4xx_self_test(const struct device *dev)
 	rc = bma4xx_reg_write(dev, BMA4XX_REG_SELF_TEST,
 			      BMA4XX_SELF_TEST_POSITIVE | BMA4XX_SELF_TEST_EN_XYZ);
 	if (rc < 0) {
-		return rc;
+		goto cleanup;
 	}
 
 	/* Wait for > 50ms */
@@ -420,14 +457,14 @@ static int bma4xx_self_test(const struct device *dev)
 	/* Read all axis data */
 	rc = bma4xx_reg_read(dev, BMA4XX_REG_ACC_X_LSB, raw_positive, sizeof(raw_positive));
 	if (rc < 0) {
-		return rc;
+		goto cleanup;
 	}
 
 	/* Swap to negative excitation */
 	rc = bma4xx_reg_write(dev, BMA4XX_REG_SELF_TEST,
 			      BMA4XX_SELF_TEST_NEGATIVE | BMA4XX_SELF_TEST_EN_XYZ);
 	if (rc < 0) {
-		return rc;
+		goto cleanup;
 	}
 
 	/* Wait for > 50ms */
@@ -436,13 +473,13 @@ static int bma4xx_self_test(const struct device *dev)
 	/* Read all axis data */
 	rc = bma4xx_reg_read(dev, BMA4XX_REG_ACC_X_LSB, raw_negative, sizeof(raw_negative));
 	if (rc < 0) {
-		return rc;
+		goto cleanup;
 	}
 
 	/* Self-reset back to known state */
 	rc = bma4xx_low_power_reset(dev);
 	if (rc < 0) {
-		return rc;
+		goto cleanup;
 	}
 
 	/* Convert raw register readings to milli-g */
@@ -463,17 +500,22 @@ static int bma4xx_self_test(const struct device *dev)
 	    (mg_difference[2] < BMA4XX_SELF_TEST_MINIMUM_Z)) {
 		LOG_ERR("Self-test failed: X:%6d Y:%6d Z:%6d", mg_difference[0], mg_difference[1],
 			mg_difference[2]);
-		return -EINVAL;
+		rc = -EINVAL;
+		goto cleanup;
 	}
 	LOG_DBG("Difference = X:%6d Y:%6d Z:%6d", mg_difference[0], mg_difference[1],
 		mg_difference[2]);
-	return 0;
+
+cleanup:
+	(void)bma4xx_bus_pm(dev, false);
+	return rc;
 }
 #endif /* CONFIG_INFUSE_IMU_SELF_TEST */
 
 static int bma4xx_pm_control(const struct device *dev, enum pm_device_action action)
 {
 	const struct bma4xx_config *config = dev->config;
+	bool bus_power = false;
 	uint8_t chip_id;
 	int rc = 0;
 
@@ -489,18 +531,27 @@ static int bma4xx_pm_control(const struct device *dev, enum pm_device_action act
 		/* Chip ready after this duration */
 		k_sleep(K_USEC(BMA4XX_POR_DELAY));
 
+		/* Power up the bus */
+		rc = bma4xx_bus_pm(dev, true);
+		if (rc < 0) {
+			LOG_DBG("Cannot power up bus");
+			break;
+		}
+		bus_power = true;
+
 		/* Initialise the bus */
 		rc = bma4xx_bus_init(dev);
 		if (rc < 0) {
 			LOG_DBG("Cannot communicate with IMU");
-			return rc;
+			break;
 		}
 
 		/* Check communications with the device */
 		rc = bma4xx_reg_read(dev, BMA4XX_REG_CHIP_ID, &chip_id, 1);
 		if ((rc < 0) || (chip_id != BMA4XX_CHIP_ID)) {
 			LOG_ERR("Invalid chip ID %02X", chip_id);
-			return -EIO;
+			rc = -EIO;
+			break;
 		}
 
 		/* Perform init sequence */
@@ -508,6 +559,11 @@ static int bma4xx_pm_control(const struct device *dev, enum pm_device_action act
 		break;
 	default:
 		return -ENOTSUP;
+	}
+
+	if (bus_power) {
+		/* Power down the bus */
+		(void)bma4xx_bus_pm(dev, false);
 	}
 
 	return rc;
