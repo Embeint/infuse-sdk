@@ -8,6 +8,7 @@
 
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
+#include <zephyr/pm/device_runtime.h>
 
 #include "bma4xx.h"
 
@@ -16,6 +17,15 @@ LOG_MODULE_DECLARE(bma4xx);
 static int bma4xx_bus_check_spi(const union bma4xx_bus *bus)
 {
 	return spi_is_ready_dt(&bus->spi) ? 0 : -ENODEV;
+}
+
+static int bma4xx_bus_pm_spi(const union bma4xx_bus *bus, bool power_up)
+{
+	if (power_up) {
+		return pm_device_runtime_get(bus->spi.bus);
+	} else {
+		return pm_device_runtime_put(bus->spi.bus);
+	}
 }
 
 static int bma4xx_reg_read_spi(const union bma4xx_bus *bus, uint8_t reg, uint8_t *data,
@@ -71,6 +81,7 @@ static int bma4xx_bus_init_spi(const union bma4xx_bus *bus)
 
 const struct bma4xx_bus_io bma4xx_bus_io_spi = {
 	.check = bma4xx_bus_check_spi,
+	.pm = bma4xx_bus_pm_spi,
 	.read = bma4xx_reg_read_spi,
 	.write = bma4xx_reg_write_spi,
 	.init = bma4xx_bus_init_spi,

@@ -200,12 +200,14 @@ union bma4xx_bus {
 
 typedef int (*bma4xx_bus_check_fn)(const union bma4xx_bus *bus);
 typedef int (*bma4xx_bus_init_fn)(const union bma4xx_bus *bus);
+typedef int (*bma4xx_bus_pm_fn)(const union bma4xx_bus *bus, bool power_up);
 typedef int (*bma4xx_reg_read_fn)(const union bma4xx_bus *bus, uint8_t addr, uint8_t *data,
 				  uint16_t len);
 typedef int (*bma4xx_reg_write_fn)(const union bma4xx_bus *bus, uint8_t addr, uint8_t data);
 
 struct bma4xx_bus_io {
 	bma4xx_bus_check_fn check;
+	bma4xx_bus_pm_fn pm;
 	bma4xx_reg_read_fn read;
 	bma4xx_reg_write_fn write;
 	bma4xx_bus_init_fn init;
