@@ -372,6 +372,48 @@ ZTEST(task_gnss_ubx, test_location_fix_plateau_timeout)
 	zassert_equal(TIME_SOURCE_GNSS, epoch_time_get_source());
 }
 
+ZTEST(task_gnss_ubx, test_location_fix_plateau_min_accuracy)
+{
+	struct k_work_delayable terminator;
+	k_tid_t thread;
+	uint32_t start;
+
+	schedule.timeout_s = 0;
+	schedule.task_logging[0].loggers = TDF_DATA_LOGGER_SERIAL;
+	schedule.task_logging[0].tdf_mask = TASK_GNSS_LOG_LLHA;
+	schedule.task_args.infuse.gnss = (struct task_gnss_args){
+		.flags = TASK_GNSS_FLAGS_RUN_TO_LOCATION_FIX,
+		.accuracy_m = 5,
+		.position_dop = 100,
+		.run_to_fix =
+			{
+				.any_fix_timeout = SEC_PER_MIN,
+				.fix_plateau =
+					{
+						.min_accuracy_m = 20,
+						.min_accuracy_improvement_m = 1,
+						.timeout = 5,
+					},
+			},
+	};
+
+	k_work_init_delayable(&terminator, task_terminator);
+
+	/* Schedule a location fix that completes in <1 minute */
+	start = k_uptime_seconds();
+	thread = task_schedule(&data);
+
+	k_work_reschedule(&terminator, K_SECONDS(120));
+
+	/* Run the location fix with a plateau before the minimum accuracy is reached */
+	run_location_fix(thread, 230000000, -1500000000, 70 * M, 25 * M, 10, 20 * M, 5 * M, 16);
+	expected_location_fix(thread, start, 120);
+	expected_logging(230000000, -1500000000, 70 * M, 24160, 50 * M);
+
+	/* Time should be valid */
+	zassert_equal(TIME_SOURCE_GNSS, epoch_time_get_source());
+}
+
 ZTEST(task_gnss_ubx, test_location_fix_no_location_timeout)
 {
 	k_tid_t thread;
@@ -410,11 +452,23 @@ ZTEST(task_gnss_ubx, test_location_fix_no_location_timeout)
 
 static void logger_before(void *fixture)
 {
+	struct k_fifo *tx_queue = epacket_dummmy_transmit_fifo_get();
+	struct net_buf *buf;
+
 	epoch_time_reset();
 	k_sem_reset(&location_published);
 	gnss_set_enabled_systems(DEV, default_constellations);
 	/* Setup links between task config and data */
 	task_runner_init(&schedule, &state, 1, &config, &data, 1);
+
+	tdf_data_logger_flush(TDF_DATA_LOGGER_SERIAL);
+	while (1) {
+		buf = net_buf_get(tx_queue, K_MSEC(10));
+		if (buf == NULL) {
+			break;
+		}
+		net_buf_unref(buf);
+	}
 }
 
 ZTEST_SUITE(task_gnss_ubx, NULL, NULL, logger_before, NULL, NULL);
