@@ -67,12 +67,14 @@ static void clear_timeout_state(enum infuse_state state)
 	timeout_mask ^= BIT(timeout_idx);
 }
 
-void infuse_state_set(enum infuse_state state)
+bool infuse_state_set(enum infuse_state state)
 {
 	struct infuse_state_cb *cb;
+	bool already_set;
 
 	K_SPINLOCK(&timeout_lock) {
-		if (atomic_test_and_set_bit(application_states, state) == true) {
+		already_set = atomic_test_and_set_bit(application_states, state);
+		if (already_set == true) {
 			clear_timeout_state(state);
 		}
 		/* Notify registered callbacks */
@@ -83,14 +85,16 @@ void infuse_state_set(enum infuse_state state)
 		}
 	}
 	LOG_DBG("%d", state);
+	return already_set;
 }
 
-void infuse_state_set_timeout(enum infuse_state state, uint16_t timeout)
+bool infuse_state_set_timeout(enum infuse_state state, uint16_t timeout)
 {
 	struct infuse_state_cb *cb;
+	bool already_set = false;
 
 	if (timeout == 0) {
-		return;
+		return false;
 	}
 
 	K_SPINLOCK(&timeout_lock) {
@@ -102,9 +106,11 @@ void infuse_state_set_timeout(enum infuse_state state, uint16_t timeout)
 				K_SPINLOCK_BREAK;
 			}
 			timeout_idx = __builtin_ffs(~timeout_mask) - 1;
-			atomic_set_bit(application_states, state);
+			already_set = atomic_test_and_set_bit(application_states, state);
 			timeout_mask |= BIT(timeout_idx);
 			timeout_states[timeout_idx].state = state;
+		} else {
+			already_set = true;
 		}
 		timeout_states[timeout_idx].timeout = timeout;
 		/* Notify registered callbacks */
@@ -115,14 +121,17 @@ void infuse_state_set_timeout(enum infuse_state state, uint16_t timeout)
 		}
 	}
 	LOG_DBG("%d for %d", state, timeout);
+	return already_set;
 }
 
-void infuse_state_clear(enum infuse_state state)
+bool infuse_state_clear(enum infuse_state state)
 {
 	struct infuse_state_cb *cb;
+	bool was_set;
 
 	K_SPINLOCK(&timeout_lock) {
-		if (atomic_test_and_clear_bit(application_states, state) == true) {
+		was_set = atomic_test_and_clear_bit(application_states, state);
+		if (was_set == true) {
 			clear_timeout_state(state);
 
 			/* Notify registered callbacks */
@@ -134,6 +143,7 @@ void infuse_state_clear(enum infuse_state state)
 		}
 	}
 	LOG_DBG("%d", state);
+	return was_set;
 }
 
 bool infuse_state_get(enum infuse_state state)
