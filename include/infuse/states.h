@@ -102,8 +102,10 @@ bool infuse_state_unregister_callback(struct infuse_state_cb *cb);
  * Any pending timeouts from @ref infuse_state_set_timeout will be cancelled.
  *
  * @param state State to set
+ *
+ * @return true if the state was already set, false if it wasn't.
  */
-void infuse_state_set(enum infuse_state state);
+bool infuse_state_set(enum infuse_state state);
 
 /**
  * @brief Set an application state that times out after a duration
@@ -114,15 +116,19 @@ void infuse_state_set(enum infuse_state state);
  *
  * @param state State to set
  * @param timeout Seconds that state should be set for
+ *
+ * @return true if the state was already set, false if it wasn't.
  */
-void infuse_state_set_timeout(enum infuse_state state, uint16_t timeout);
+bool infuse_state_set_timeout(enum infuse_state state, uint16_t timeout);
 
 /**
  * @brief Clear an application state
  *
  * @param state State to clear
+ *
+ * @return false if the bit was already cleared, true if it wasn't.
  */
-void infuse_state_clear(enum infuse_state state);
+bool infuse_state_clear(enum infuse_state state);
 
 /**
  * @brief Get an application state
