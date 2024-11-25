@@ -20,7 +20,11 @@ jobs:
       options: '--entrypoint /bin/bash'
       volumes:
         - /repo-cache/embeint:/github/cache/embeint
+        - /repo-cache/ccache:/github/ccache
     env:
+      CCACHE_DIR: /github/ccache
+      # `--specs` is ignored because ccache is unable to resolve the toolchain specs file path.
+      CCACHE_IGNOREOPTIONS: '--specs=*'
       TWISTER_COMMON: ' --force-color --inline-logs -v -N -M --retry-failed 3 '
       DAILY_OPTIONS: ' -M --build-only --show-footprint'
       VENDOR_FILTER: ' --vendor nordic --vendor zephyr --vendor embeint '
@@ -79,6 +83,13 @@ jobs:
           echo "github.ref: ${{ github.ref }}"
           echo "github.base_ref: ${{ github.base_ref }}"
           echo "github.ref_name: ${{ github.ref_name }}"
+
+      - name: Set up ccache
+        run: |
+          mkdir -p ${CCACHE_DIR}
+          ccache -M 10G
+          ccache -p
+          ccache -z -s -vv
 
       - if: github.event_name == 'pull_request'
         name: Run Unit Tests with Twister (Pull Request)

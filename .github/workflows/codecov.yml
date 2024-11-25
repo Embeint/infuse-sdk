@@ -28,6 +28,7 @@ jobs:
       options: '--entrypoint /bin/bash'
       volumes:
         - /repo-cache/embeint:/github/cache/embeint
+        - /repo-cache/ccache:/github/ccache
     strategy:
       fail-fast: false
       matrix:
@@ -41,6 +42,9 @@ jobs:
             normalized: 'unit_testing'
 
     env:
+      CCACHE_DIR: /github/ccache
+      # `--specs` is ignored because ccache is unable to resolve the toolchain specs file path.
+      CCACHE_IGNOREOPTIONS: '--specs=*'
       BASE_REF: ${{ github.base_ref }}
       ZEPHYR_TOOLCHAIN_VARIANT: zephyr
     steps:
@@ -93,6 +97,13 @@ jobs:
           echo "github.base_ref: ${{ github.base_ref }}"
           echo "github.ref_name: ${{ github.ref_name }}"
 
+      - name: Set up ccache
+        run: |
+          mkdir -p ${CCACHE_DIR}
+          ccache -M 10G
+          ccache -p
+          ccache -z -s -vv
+
       - name: Run Tests with Coverage Information
         continue-on-error: true
         run: |
@@ -121,7 +132,11 @@ jobs:
       options: '--entrypoint /bin/bash'
       volumes:
         - /repo-cache/embeint:/github/cache/embeint
+        - /repo-cache/ccache:/github/ccache
     env:
+      CCACHE_DIR: /github/ccache
+      # `--specs` is ignored because ccache is unable to resolve the toolchain specs file path.
+      CCACHE_IGNOREOPTIONS: '--specs=*'
       BASE_REF: ${{ github.base_ref }}
       ZEPHYR_TOOLCHAIN_VARIANT: zephyr
       BSIM_OUT_PATH: /github/cache/embeint/tools/bsim
@@ -190,6 +205,13 @@ jobs:
           echo "github.ref: ${{ github.ref }}"
           echo "github.base_ref: ${{ github.base_ref }}"
           echo "github.ref_name: ${{ github.ref_name }}"
+
+      - name: Set up ccache
+        run: |
+          mkdir -p ${CCACHE_DIR}
+          ccache -M 10G
+          ccache -p
+          ccache -z -s -vv
 
       - name: Run Bluetooth Tests with BabbleSim
         run: |
