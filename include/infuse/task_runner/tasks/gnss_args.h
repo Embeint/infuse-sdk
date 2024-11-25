@@ -59,9 +59,11 @@ struct task_gnss_args {
 		/** Terminate fix if this duration passes without any location information */
 		uint8_t any_fix_timeout;
 		/** Terminate fix if the accuracy plateaus */
-		struct {
+		struct task_gnss_plateau_args {
+			/** Plateau detection only enabled once accuracy reaches this level */
+			uint8_t min_accuracy_m;
 			/** Location accuracy must improve by at least this many meters */
-			uint8_t min_accuracy_improvement;
+			uint8_t min_accuracy_improvement_m;
 			/** Timeout for accuracy to improve by @a min_accuracy_improvement */
 			uint8_t timeout;
 		} fix_plateau;
