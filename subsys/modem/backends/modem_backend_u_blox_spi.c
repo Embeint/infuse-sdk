@@ -53,8 +53,10 @@ void fifo_read_cb(const struct device *dev, int result, void *data)
 		LOG_HEXDUMP_DBG(backend->spi_rx, sizeof(backend->spi_rx), "RX");
 	}
 
+#ifdef CONFIG_MODEM_BACKEND_U_BLOX_SPI_PM_MODE_BURST
 	/* Release bus */
 	pm_device_runtime_put_async(backend->spi->bus, K_MSEC(10));
+#endif
 
 	/* Release bus semaphore */
 	k_sem_give(&backend->bus_sem);
@@ -97,14 +99,18 @@ static void fifo_read_trigger(struct k_work *work)
 		return;
 	}
 
+#ifdef CONFIG_MODEM_BACKEND_U_BLOX_SPI_PM_MODE_BURST
 	/* Power up SPI */
 	pm_device_runtime_get(backend->spi->bus);
+#endif
 
 	rc = spi_transceive_cb(backend->spi->bus, &backend->spi->config, NULL, &rxbs, fifo_read_cb,
 			       backend);
 	if (rc < 0) {
 		LOG_ERR("FIFO read trigger failed");
+#ifdef CONFIG_MODEM_BACKEND_U_BLOX_SPI_PM_MODE_BURST
 		pm_device_runtime_put(backend->spi->bus);
+#endif
 		k_sem_give(&backend->bus_sem);
 		k_work_reschedule(&backend->fifo_read, K_MSEC(10));
 	}
@@ -114,8 +120,11 @@ static int modem_backend_ublox_spi_open(void *data)
 {
 	struct modem_backend_ublox_spi *backend = data;
 
-	LOG_DBG("Opening SPI modem backend");
+	LOG_WRN("Opening SPI modem backend");
 
+#ifdef CONFIG_MODEM_BACKEND_U_BLOX_SPI_PM_MODE_ALWAYS
+	pm_device_runtime_get(backend->spi->bus);
+#endif
 	/* Schedule the boot poll loop */
 	backend->flags = MODE_BOOTING | MODE_POLLING;
 	k_work_reschedule(&backend->fifo_read, K_NO_WAIT);
@@ -127,7 +136,7 @@ static int modem_backend_ublox_spi_close(void *data)
 	struct modem_backend_ublox_spi *backend = data;
 	struct k_work_sync sync;
 
-	LOG_DBG("Closing SPI modem backend");
+	LOG_WRN("Closing SPI modem backend");
 
 	/* Disable data ready interrupt */
 	(void)gpio_pin_interrupt_configure_dt(backend->data_ready, GPIO_INT_DISABLE);
@@ -135,6 +144,11 @@ static int modem_backend_ublox_spi_close(void *data)
 	/* Cancel any pending queries */
 	backend->flags = MODE_CLOSED;
 	k_work_cancel_delayable_sync(&backend->fifo_read, &sync);
+
+#ifdef CONFIG_MODEM_BACKEND_U_BLOX_SPI_PM_MODE_ALWAYS
+	pm_device_runtime_put(backend->spi->bus);
+#endif
+
 	/* Notify pipe closed */
 	modem_pipe_notify_closed(&backend->pipe);
 	return 0;
@@ -171,8 +185,10 @@ static int modem_backend_ublox_spi_transmit(void *data, const uint8_t *buf, size
 		return -EAGAIN;
 	}
 
+#ifdef CONFIG_MODEM_BACKEND_U_BLOX_SPI_PM_MODE_BURST
 	/* Power up SPI */
 	pm_device_runtime_get(backend->spi->bus);
+#endif
 
 	LOG_HEXDUMP_DBG(buf, size, "TX");
 
