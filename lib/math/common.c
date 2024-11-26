@@ -6,6 +6,8 @@
  * SPDX-License-Identifier: LicenseRef-Embeint
  */
 
+#include <zephyr/sys/util.h>
+
 #include <infuse/math/common.h>
 
 uint8_t math_sqrt16(uint16_t x)
@@ -83,4 +85,26 @@ uint16_t math_vector_xyz_magnitude(int16_t x, int16_t y, int16_t z)
 	uint32_t sq_magnitude = x2 + y2 + z2;
 
 	return math_sqrt32(sq_magnitude);
+}
+
+uint32_t math_bitmask_get_next_bits(uint32_t bitmask, uint8_t start_idx, uint8_t *next_idx,
+				    uint8_t num_bits)
+{
+	uint32_t out = 0;
+	uint32_t test;
+	uint8_t idx = start_idx;
+
+	/* Can't return more bits than exist */
+	num_bits = MIN(num_bits, __builtin_popcount(bitmask));
+
+	while (num_bits) {
+		test = (1 << idx);
+		if (test & bitmask) {
+			out |= test;
+			num_bits--;
+		}
+		idx = (idx + 1) % 32;
+	}
+	*next_idx = idx;
+	return out;
 }
