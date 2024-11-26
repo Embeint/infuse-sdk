@@ -17,6 +17,7 @@
 #include <infuse/lib/nrf_modem_monitor.h>
 #include <infuse/fs/kv_store.h>
 #include <infuse/fs/kv_types.h>
+#include <infuse/math/common.h>
 #include <infuse/tdf/tdf.h>
 #include <infuse/tdf/definitions.h>
 #include <infuse/tdf/util.h>
@@ -247,8 +248,10 @@ void task_tdf_logger_fn(struct k_work *work)
 	struct task_data *task = task_data_from_work(work);
 	const struct task_schedule *sch = task_schedule_from_data(task);
 	const struct task_tdf_logger_args *args = &sch->task_args.infuse.tdf_logger;
+	uint8_t *persistent = task_schedule_persistent_storage(task);
 	uint64_t log_timestamp;
 	uint32_t delay_ms;
+	uint16_t tdfs;
 
 	if (task_runner_task_block(&task->terminate_signal, K_NO_WAIT) == 1) {
 		/* Early wake by runner to terminate */
@@ -264,9 +267,15 @@ void task_tdf_logger_fn(struct k_work *work)
 	}
 
 	log_timestamp = (args->flags & TASK_TDF_LOGGER_FLAGS_NO_FLUSH) ? epoch_time_now() : 0;
+	tdfs = args->tdfs;
+
+	/* Handle iteration (persistent storage used as state storage) */
+	if (args->per_run != 0) {
+		tdfs = math_bitmask_get_next_bits(tdfs, persistent[0], persistent, args->per_run);
+	}
 
 	/* Run the logging function */
-	task_tdf_logger_manual_run(args->loggers, log_timestamp, args->tdfs,
+	task_tdf_logger_manual_run(args->loggers, log_timestamp, tdfs,
 				   task->executor.workqueue.task_arg.const_arg);
 
 	if (!(args->flags & TASK_TDF_LOGGER_FLAGS_NO_FLUSH)) {
