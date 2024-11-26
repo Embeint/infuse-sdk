@@ -484,6 +484,101 @@ ZTEST(task_tdf_logger, test_custom)
 	net_buf_unref(pkt);
 }
 
+static void setup_multi(void)
+{
+	const struct zbus_channel *chan_bat = INFUSE_ZBUS_CHAN_GET(INFUSE_ZBUS_CHAN_BATTERY);
+	const struct zbus_channel *chan_env = INFUSE_ZBUS_CHAN_GET(INFUSE_ZBUS_CHAN_AMBIENT_ENV);
+	const struct zbus_channel *chan_loc = INFUSE_ZBUS_CHAN_GET(INFUSE_ZBUS_CHAN_LOCATION);
+
+	struct tdf_battery_state battery = {.voltage_mv = 3300, .current_ua = 100, .soc = 80};
+	struct tdf_ambient_temp_pres_hum ambient = {
+		.temperature = 23000, .pressure = 101000, .humidity = 5000};
+	struct tdf_gcs_wgs84_llha location = {
+		.location =
+			{
+				.latitude = 100,
+				.longitude = -200,
+				.height = 33,
+			},
+		.h_acc = 22,
+		.v_acc = 11,
+	};
+
+	/* Publish data */
+	zbus_chan_pub(chan_bat, &battery, K_FOREVER);
+	zbus_chan_pub(chan_env, &ambient, K_FOREVER);
+	zbus_chan_pub(chan_loc, &location, K_FOREVER);
+}
+
+ZTEST(task_tdf_logger, test_multi)
+{
+	struct k_fifo *tx_queue = epacket_dummmy_transmit_fifo_get();
+	struct tdf_parsed tdf;
+	struct net_buf *pkt;
+
+	zassert_not_null(tx_queue);
+
+	setup_multi();
+
+	/* Should log all 4 each run */
+	schedule.task_args.infuse.tdf_logger = (struct task_tdf_logger_args){
+		.loggers = TDF_DATA_LOGGER_SERIAL,
+		.tdfs = TASK_TDF_LOGGER_LOG_BATTERY | TASK_TDF_LOGGER_LOG_AMBIENT_ENV |
+			TASK_TDF_LOGGER_LOG_LOCATION | TASK_TDF_LOGGER_LOG_NET_CONN,
+	};
+
+	task_schedule(&data);
+	pkt = net_buf_get(tx_queue, K_MSEC(100));
+	zassert_not_null(pkt);
+	net_buf_pull(pkt, sizeof(struct epacket_dummy_frame));
+	zassert_equal(0, tdf_parse_find_in_buf(pkt->data, pkt->len, TDF_BATTERY_STATE, &tdf));
+	zassert_equal(0,
+		      tdf_parse_find_in_buf(pkt->data, pkt->len, TDF_AMBIENT_TEMP_PRES_HUM, &tdf));
+	zassert_equal(0, tdf_parse_find_in_buf(pkt->data, pkt->len, TDF_GCS_WGS84_LLHA, &tdf));
+	zassert_equal(0, tdf_parse_find_in_buf(pkt->data, pkt->len, TDF_LTE_CONN_STATUS, &tdf));
+	net_buf_unref(pkt);
+}
+
+ZTEST(task_tdf_logger, test_multi_iteration)
+{
+	struct k_fifo *tx_queue = epacket_dummmy_transmit_fifo_get();
+	struct tdf_parsed tdf;
+	struct net_buf *pkt;
+
+	zassert_not_null(tx_queue);
+
+	setup_multi();
+
+	/* Should log 3 of 4 each run */
+	schedule.task_args.infuse.tdf_logger = (struct task_tdf_logger_args){
+		.loggers = TDF_DATA_LOGGER_SERIAL,
+		.tdfs = TASK_TDF_LOGGER_LOG_BATTERY | TASK_TDF_LOGGER_LOG_AMBIENT_ENV |
+			TASK_TDF_LOGGER_LOG_LOCATION | TASK_TDF_LOGGER_LOG_NET_CONN,
+		.per_run = 3,
+	};
+
+	/* Different TDF left out on each iteration */
+	for (int i = 0; i < 16; i++) {
+		uint8_t iter = i % 4;
+
+		task_schedule(&data);
+		pkt = net_buf_get(tx_queue, K_MSEC(100));
+		zassert_not_null(pkt);
+		net_buf_pull(pkt, sizeof(struct epacket_dummy_frame));
+		zassert_equal(iter == 3 ? -ENOMEM : 0,
+			      tdf_parse_find_in_buf(pkt->data, pkt->len, TDF_BATTERY_STATE, &tdf));
+		zassert_equal(iter == 2 ? -ENOMEM : 0,
+			      tdf_parse_find_in_buf(pkt->data, pkt->len, TDF_AMBIENT_TEMP_PRES_HUM,
+						    &tdf));
+		zassert_equal(iter == 1 ? -ENOMEM : 0,
+			      tdf_parse_find_in_buf(pkt->data, pkt->len, TDF_GCS_WGS84_LLHA, &tdf));
+		zassert_equal(
+			iter == 0 ? -ENOMEM : 0,
+			tdf_parse_find_in_buf(pkt->data, pkt->len, TDF_LTE_CONN_STATUS, &tdf));
+		net_buf_unref(pkt);
+	}
+}
+
 static void logger_before(void *fixture)
 {
 	const struct zbus_channel *chan_bat = INFUSE_ZBUS_CHAN_GET(INFUSE_ZBUS_CHAN_BATTERY);
