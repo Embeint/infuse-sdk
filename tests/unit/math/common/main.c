@@ -104,4 +104,47 @@ ZTEST(infuse_math, test_vector_xyz_mag)
 	zassert_equal(37947, math_vector_xyz_magnitude(28969, -24428, -2019));
 }
 
+ZTEST(infuse_math, test_bitmask_get_next)
+{
+	uint8_t next_idx;
+
+	/* Request more bits than exist*/
+	next_idx = 0;
+	zassert_equal(0x0FF0, math_bitmask_get_next_bits(0x0FF0, next_idx, &next_idx, 12));
+	zassert_equal(0x0FF0, math_bitmask_get_next_bits(0x0FF0, next_idx, &next_idx, 12));
+	zassert_equal(0x0FF0, math_bitmask_get_next_bits(0x0FF0, next_idx, &next_idx, 12));
+
+	/* Request no bits */
+	next_idx = 0;
+	zassert_equal(0x0000, math_bitmask_get_next_bits(0x0FF0, next_idx, &next_idx, 0));
+	zassert_equal(0x0000, math_bitmask_get_next_bits(0x0FF0, next_idx, &next_idx, 0));
+	zassert_equal(0x0000, math_bitmask_get_next_bits(0x0FF0, next_idx, &next_idx, 0));
+
+	/* Basic iteration */
+	next_idx = 0;
+	zassert_equal(0x000F, math_bitmask_get_next_bits(0xFFFF, next_idx, &next_idx, 4));
+	zassert_equal(0x00F0, math_bitmask_get_next_bits(0xFFFF, next_idx, &next_idx, 4));
+	zassert_equal(0x0F00, math_bitmask_get_next_bits(0xFFFF, next_idx, &next_idx, 4));
+	zassert_equal(0xF000, math_bitmask_get_next_bits(0xFFFF, next_idx, &next_idx, 4));
+	zassert_equal(0x000F, math_bitmask_get_next_bits(0xFFFF, next_idx, &next_idx, 4));
+
+	/* Missing bits */
+	next_idx = 0;
+	zassert_equal(0x000A, math_bitmask_get_next_bits(0xAAAA, next_idx, &next_idx, 2));
+	zassert_equal(0x00A0, math_bitmask_get_next_bits(0xAAAA, next_idx, &next_idx, 2));
+	zassert_equal(0x0A00, math_bitmask_get_next_bits(0xAAAA, next_idx, &next_idx, 2));
+	zassert_equal(0xA000, math_bitmask_get_next_bits(0xAAAA, next_idx, &next_idx, 2));
+	zassert_equal(0x000A, math_bitmask_get_next_bits(0xAAAA, next_idx, &next_idx, 2));
+
+	/* Odd pattern and iteration */
+	next_idx = 0;
+	zassert_equal(0x00000002, math_bitmask_get_next_bits(0x7000438A, next_idx, &next_idx, 1));
+	zassert_equal(0x00000008, math_bitmask_get_next_bits(0x7000438A, next_idx, &next_idx, 1));
+	zassert_equal(0x00000080, math_bitmask_get_next_bits(0x7000438A, next_idx, &next_idx, 1));
+	zassert_equal(0x00000300, math_bitmask_get_next_bits(0x7000438A, next_idx, &next_idx, 2));
+	zassert_equal(0x10004000, math_bitmask_get_next_bits(0x7000438A, next_idx, &next_idx, 2));
+	zassert_equal(0x60000002, math_bitmask_get_next_bits(0x7000438A, next_idx, &next_idx, 3));
+	zassert_equal(0x00000008, math_bitmask_get_next_bits(0x7000438A, next_idx, &next_idx, 1));
+}
+
 ZTEST_SUITE(infuse_math, NULL, NULL, NULL, NULL, NULL);
