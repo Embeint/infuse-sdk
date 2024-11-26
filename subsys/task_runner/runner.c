@@ -113,6 +113,11 @@ const struct task_schedule *task_schedule_from_data(struct task_data *data)
 	return &sch[data->schedule_idx];
 }
 
+uint8_t *task_schedule_persistent_storage(struct task_data *data)
+{
+	return sch_states[data->schedule_idx].runtime_state;
+}
+
 void task_workqueue_reschedule(struct task_data *task, k_timeout_t delay)
 {
 	unsigned int signaled;

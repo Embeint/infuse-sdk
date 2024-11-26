@@ -159,6 +159,10 @@ struct task_schedule_state {
 	uint32_t runtime;
 	/** Index into task array that corresponds with schedule @a task_id */
 	uint8_t task_idx;
+#ifdef CONFIG_TASK_RUNNER_PER_SCHEDULE_STORAGE
+	/** Per schedule runtime state available for tasks to utilise */
+	uint8_t runtime_state[CONFIG_TASK_RUNNER_PER_SCHEDULE_STORAGE];
+#endif /* CONFIG_TASK_RUNNER_PER_SCHEDULE_STORAGE */
 };
 
 /**

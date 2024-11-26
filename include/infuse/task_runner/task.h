@@ -211,6 +211,15 @@ static inline struct task_data *task_data_from_work(struct k_work *work)
 const struct task_schedule *task_schedule_from_data(struct task_data *data);
 
 /**
+ * @brief Retrieve per-schedule persistent memory
+ *
+ * @param data Task data struct
+ *
+ * @return uint8_t* Pointer to persistent memory of size CONFIG_TASK_RUNNER_PER_SCHEDULE_STORAGE
+ */
+uint8_t *task_schedule_persistent_storage(struct task_data *data);
+
+/**
  * @brief Reschedule the task to run again after a delay
  *
  * @param task Task data structure
