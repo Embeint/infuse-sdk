@@ -490,6 +490,61 @@ ZTEST(task_runner_runner, test_workqueue_reschedule_override)
 	zassert_equal(0, k_work_delayable_busy_get(&long_block_data->executor.workqueue.work));
 }
 
+static void workqueue_persistent(struct k_work *work)
+{
+	struct task_data *task = task_data_from_work(work);
+	uint8_t *persistent = task_schedule_persistent_storage(task);
+
+	/* Increment persistent storage */
+	persistent[0] += 1;
+}
+
+#define WORKQUEUE_PERSISTENT_TASK(define_mem, define_config, ...)                                  \
+	IF_ENABLED(define_config, ({.name = "workq",                                               \
+				    .task_id = TASK_ID_WORKQ,                                      \
+				    .exec_type = TASK_EXECUTOR_WORKQUEUE,                          \
+				    .executor.workqueue = {                                        \
+					    .worker_fn = workqueue_persistent,                     \
+				    }}))
+
+ZTEST(task_runner_runner, test_workqueue_persistent_mem)
+{
+	INFUSE_STATES_ARRAY(app_states) = {0};
+	struct task_schedule schedules[] = {
+		{
+			.task_id = TASK_ID_WORKQ,
+			.validity = TASK_VALID_ALWAYS,
+			.periodicity_type = TASK_PERIODICITY_LOCKOUT,
+			.periodicity.lockout.lockout_s = 5,
+		},
+		{
+			.task_id = TASK_ID_WORKQ,
+			.validity = TASK_VALID_ALWAYS,
+			.periodicity_type = TASK_PERIODICITY_LOCKOUT,
+			.periodicity.lockout.lockout_s = 3,
+		},
+	};
+	struct task_schedule_state states[ARRAY_SIZE(schedules)] = {0};
+	uint32_t gps_time = 7000;
+	uint32_t uptime = 0;
+
+	TASK_RUNNER_TASKS_DEFINE(peristent_mem, peristent_mem_data, (WORKQUEUE_PERSISTENT_TASK));
+
+	task_runner_init(schedules, states, ARRAY_SIZE(schedules), peristent_mem,
+			 peristent_mem_data, ARRAY_SIZE(peristent_mem));
+
+	/* Loop 30 times */
+	for (int i = 0; i < 30; i++) {
+		/* Iterate runner to boot the task */
+		task_runner_iterate(app_states, uptime++, gps_time++, 100);
+		k_sleep(K_SECONDS(1));
+	}
+
+	/* Persistent memory should be different per schedule state */
+	zassert_equal(29 / 5, states[0].runtime_state[0]);
+	zassert_equal(29 / 3, states[1].runtime_state[0]);
+}
+
 ZTEST(task_runner_runner, test_get_workqueue)
 {
 	zassert_not_null(task_runner_work_q());
