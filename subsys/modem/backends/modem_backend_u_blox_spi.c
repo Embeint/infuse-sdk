@@ -120,7 +120,7 @@ static int modem_backend_ublox_spi_open(void *data)
 {
 	struct modem_backend_ublox_spi *backend = data;
 
-	LOG_WRN("Opening SPI modem backend");
+	LOG_DBG("Opening SPI modem backend");
 
 #ifdef CONFIG_MODEM_BACKEND_U_BLOX_SPI_PM_MODE_ALWAYS
 	pm_device_runtime_get(backend->spi->bus);
@@ -136,7 +136,7 @@ static int modem_backend_ublox_spi_close(void *data)
 	struct modem_backend_ublox_spi *backend = data;
 	struct k_work_sync sync;
 
-	LOG_WRN("Closing SPI modem backend");
+	LOG_DBG("Closing SPI modem backend");
 
 	/* Disable data ready interrupt */
 	(void)gpio_pin_interrupt_configure_dt(backend->data_ready, GPIO_INT_DISABLE);
