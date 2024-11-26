@@ -79,6 +79,19 @@ uint16_t math_vector_xy_magnitude(int16_t x, int16_t y);
 uint16_t math_vector_xyz_magnitude(int16_t x, int16_t y, int16_t z);
 
 /**
+ * @brief Get the next N bits of a bitmask, with rollover
+ *
+ * @param bitmask Bitmask to iterate over
+ * @param start_idx Index of first bit to check
+ * @param next_idx Index of first bit to check on next iteration
+ * @param num_bits Number of bits to return
+ *
+ * @return uint32_t N bits from @a bitmask
+ */
+uint32_t math_bitmask_get_next_bits(uint32_t bitmask, uint8_t start_idx, uint8_t *next_idx,
+				    uint8_t num_bits);
+
+/**
  * @}
  */
 
