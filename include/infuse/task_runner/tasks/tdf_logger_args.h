@@ -43,6 +43,8 @@ struct task_tdf_logger_args {
 	uint16_t tdfs;
 	/* Operation flags */
 	uint8_t flags;
+	/* Only log this many TDFs per run */
+	uint8_t per_run;
 } __packed;
 
 #ifdef __cplusplus
