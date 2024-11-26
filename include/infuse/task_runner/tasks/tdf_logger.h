@@ -38,10 +38,12 @@ void task_tdf_logger_fn(struct k_work *work);
 /**
  * @brief Manually run the core TDF logging logic
  *
- * @param args Arguments to use to run logging
+ * @param tdf_loggers TDF loggers to log to
+ * @param timestamp Time to use for logging
+ * @param tdfs TDFs to log (`TASK_TDF_LOGGER_LOG_*`)
  * @param custom_logger Custom logging function for @ref TASK_TDF_LOGGER_LOG_CUSTOM
  */
-void task_tdf_logger_manual_run(const struct task_tdf_logger_args *args,
+void task_tdf_logger_manual_run(uint8_t tdf_loggers, uint64_t timestamp, uint16_t tdfs,
 				tdf_logger_custom_log_t custom_logger);
 
 /**

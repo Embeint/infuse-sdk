@@ -196,57 +196,48 @@ static void log_network_connection(uint8_t loggers, uint64_t timestamp)
 #endif
 }
 
-void task_tdf_logger_manual_run(const struct task_tdf_logger_args *args,
+void task_tdf_logger_manual_run(uint8_t tdf_loggers, uint64_t timestamp, uint16_t tdfs,
 				tdf_logger_custom_log_t custom_logger)
 {
 	bool announce, battery, ambient_env, location, accel, net, custom;
-	uint64_t log_timestamp;
 
-	announce = args->tdfs & TASK_TDF_LOGGER_LOG_ANNOUNCE;
-	battery = args->tdfs & TASK_TDF_LOGGER_LOG_BATTERY;
-	ambient_env = args->tdfs & TASK_TDF_LOGGER_LOG_AMBIENT_ENV;
-	location = args->tdfs & TASK_TDF_LOGGER_LOG_LOCATION;
-	accel = args->tdfs & TASK_TDF_LOGGER_LOG_ACCEL;
-	net = args->tdfs & TASK_TDF_LOGGER_LOG_NET_CONN;
-	custom = args->tdfs & TASK_TDF_LOGGER_LOG_CUSTOM;
-	log_timestamp = (args->flags & TASK_TDF_LOGGER_FLAGS_NO_FLUSH) ? epoch_time_now() : 0;
+	announce = tdfs & TASK_TDF_LOGGER_LOG_ANNOUNCE;
+	battery = tdfs & TASK_TDF_LOGGER_LOG_BATTERY;
+	ambient_env = tdfs & TASK_TDF_LOGGER_LOG_AMBIENT_ENV;
+	location = tdfs & TASK_TDF_LOGGER_LOG_LOCATION;
+	accel = tdfs & TASK_TDF_LOGGER_LOG_ACCEL;
+	net = tdfs & TASK_TDF_LOGGER_LOG_NET_CONN;
+	custom = tdfs & TASK_TDF_LOGGER_LOG_CUSTOM;
 
-	if (args->loggers == TDF_DATA_LOGGER_BT_ADV) {
+	if (tdf_loggers == TDF_DATA_LOGGER_BT_ADV) {
 		/* Bluetooth advertising logs very often */
 		LOG_DBG("Log: %02X Ann: %d Bat: %d Env: %d Loc: %d Acc: %d Net: %d Cus: %d",
-			args->loggers, announce, battery, ambient_env, location, accel, net,
-			custom);
+			tdf_loggers, announce, battery, ambient_env, location, accel, net, custom);
 	} else {
 		LOG_INF("Log: %02X Ann: %d Bat: %d Env: %d Loc: %d Acc: %d Net: %d Cus: %d",
-			args->loggers, announce, battery, ambient_env, location, accel, net,
-			custom);
+			tdf_loggers, announce, battery, ambient_env, location, accel, net, custom);
 	}
 
 	if (announce) {
-		log_announce(args->loggers, log_timestamp);
+		log_announce(tdf_loggers, timestamp);
 	}
 	if (battery) {
-		log_battery(args->loggers, log_timestamp);
+		log_battery(tdf_loggers, timestamp);
 	}
 	if (ambient_env) {
-		log_ambient_env(args->loggers, log_timestamp);
+		log_ambient_env(tdf_loggers, timestamp);
 	}
 	if (accel) {
-		log_accel(args->loggers, log_timestamp);
+		log_accel(tdf_loggers, timestamp);
 	}
 	if (location) {
-		log_location(args->loggers, log_timestamp);
+		log_location(tdf_loggers, timestamp);
 	}
 	if (net) {
-		log_network_connection(args->loggers, log_timestamp);
+		log_network_connection(tdf_loggers, timestamp);
 	}
 	if (custom && (custom_logger != NULL)) {
-		custom_logger(args->loggers, log_timestamp);
-	}
-
-	if (!(args->flags & TASK_TDF_LOGGER_FLAGS_NO_FLUSH)) {
-		/* Flush the logger to transmit */
-		tdf_data_logger_flush(args->loggers);
+		custom_logger(tdf_loggers, timestamp);
 	}
 }
 
@@ -256,6 +247,7 @@ void task_tdf_logger_fn(struct k_work *work)
 	struct task_data *task = task_data_from_work(work);
 	const struct task_schedule *sch = task_schedule_from_data(task);
 	const struct task_tdf_logger_args *args = &sch->task_args.infuse.tdf_logger;
+	uint64_t log_timestamp;
 	uint32_t delay_ms;
 
 	if (task_runner_task_block(&task->terminate_signal, K_NO_WAIT) == 1) {
@@ -271,6 +263,14 @@ void task_tdf_logger_fn(struct k_work *work)
 		return;
 	}
 
+	log_timestamp = (args->flags & TASK_TDF_LOGGER_FLAGS_NO_FLUSH) ? epoch_time_now() : 0;
+
 	/* Run the logging function */
-	task_tdf_logger_manual_run(args, task->executor.workqueue.task_arg.const_arg);
+	task_tdf_logger_manual_run(args->loggers, log_timestamp, args->tdfs,
+				   task->executor.workqueue.task_arg.const_arg);
+
+	if (!(args->flags & TASK_TDF_LOGGER_FLAGS_NO_FLUSH)) {
+		/* Flush the logger to transmit */
+		tdf_data_logger_flush(args->loggers);
+	}
 }
