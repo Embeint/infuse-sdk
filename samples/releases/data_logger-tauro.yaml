@@ -2,3 +2,4 @@
 application_folder: ../../apps/data_logger
 board: tauro/nrf9151/ns
 signing_key: ../../../modules/tee/tf-m/trusted-firmware-m/bl2/ext/mcuboot/root-EC-P256.pem
+version_override: 2.1.156
