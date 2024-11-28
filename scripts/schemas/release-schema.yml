@@ -22,3 +22,5 @@ mapping:
     type: str
   disable_logging:
     type: bool
+  version_override:
+    type: str

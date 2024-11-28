@@ -9,6 +9,7 @@ import shutil
 import colorama
 import yaml
 import pykwalify.core
+import re
 
 from typing_extensions import Tuple
 
@@ -90,12 +91,18 @@ class release_build(WestCommand):
         self.signing_key = self._absolute_path(
             self.args.release.parent, self.release["signing_key"]
         )
-        if "network_key" in self.release:
-            self.network_key = self._absolute_path(
-                self.args.release.parent, self.release["network_key"]
-            )
+        if key := self.release.get("network_key", None):
+            self.network_key = self._absolute_path(self.args.release.parent, key)
         else:
             self.network_key = None
+
+        if override := self.release.get("version_override", None):
+            r = r"^\d+\.\d+\.\d+$"
+            if not re.match(r, override):
+                sys.exit(f"Invalid version format: {override}")
+            self.version = override
+        else:
+            self.version = None
 
         self.tfm_build = "/ns" in self.release["board"]
         # TF-M builds should not use sysbuild for now
@@ -170,9 +177,13 @@ class release_build(WestCommand):
             m = {l[0].strip(): l[1].strip() for l in contents}
 
         commit_hash = str(repo.head.commit)
-        v_int_tweak = f"{m['VERSION_MAJOR']}.{m['VERSION_MINOR']}.{m['PATCHLEVEL']}+{int(commit_hash[:8], 16)}"
-        v_hex_tweak = f"{m['VERSION_MAJOR']}.{m['VERSION_MINOR']}.{m['PATCHLEVEL']}+{commit_hash[:8]}"
+        if self.version is None:
+            prefix = f"{m['VERSION_MAJOR']}.{m['VERSION_MINOR']}.{m['PATCHLEVEL']}"
+        else:
+            prefix = self.version
 
+        v_int_tweak = f"{prefix}+{int(commit_hash[:8], 16)}"
+        v_hex_tweak = f"{prefix}+{commit_hash[:8]}"
         return v_int_tweak, v_hex_tweak
 
     def do_release_build(self, expected_version):
@@ -220,6 +231,9 @@ class release_build(WestCommand):
                     "-DCONFIG_TFM_LCS_SECURED_DISABLE_DEBUG_PORT=y",
                 ]
             )
+            if self.version is not None:
+                build_cmd.extend([f'-DCONFIG_TFM_IMAGE_VERSION_S="{self.version}+0"'])
+
         if self.network_key is not None:
             build_cmd.extend(
                 [f'-DCONFIG_INFUSE_SECURITY_DEFAULT_NETWORK="{self.network_key}"']
