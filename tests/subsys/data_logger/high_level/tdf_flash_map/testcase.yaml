@@ -6,6 +6,11 @@ tests:
   data_logger.tdf.flash_map:
     platform_allow:
       - mps2/an385
-      - qemu_cortex_m3
     integration_platforms:
-      - qemu_cortex_m3
+      - mps2/an385
+  data_logger.tdf.flash_map.remote:
+    extra_args: DTC_OVERLAY_FILE="./app.overlay;./tdf_remote.overlay"
+    platform_allow:
+      - mps2/an385
+    integration_platforms:
+      - mps2/an385

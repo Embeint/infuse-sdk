@@ -1,0 +1,7 @@
+/* Validate normal API in the presence of `tdf-remote` */
+&data_logger_dummy {
+	tdf_logger_remote: tdf_logger_remote {
+		compatible = "embeint,tdf-data-logger";
+		tdf-remote;
+	};
+};

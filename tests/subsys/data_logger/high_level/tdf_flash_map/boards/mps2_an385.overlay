@@ -1,5 +1,0 @@
-#include <mem.h>
-
-/delete-node/ &sim_flash_controller;
-
-#include "../app.overlay"
