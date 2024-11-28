@@ -244,7 +244,6 @@ void task_tdf_logger_manual_run(uint8_t tdf_loggers, uint64_t timestamp, uint16_
 
 void task_tdf_logger_fn(struct k_work *work)
 {
-	struct task_config;
 	struct task_data *task = task_data_from_work(work);
 	const struct task_schedule *sch = task_schedule_from_data(task);
 	const struct task_tdf_logger_args *args = &sch->task_args.infuse.tdf_logger;
