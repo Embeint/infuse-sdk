@@ -22,6 +22,10 @@
 #include <infuse/tdf/tdf.h>
 #include <infuse/tdf/util.h>
 
+#if DT_ANY_INST_HAS_BOOL_STATUS_OKAY(tdf_remote)
+#define TDF_REMOTE_SUPPORT 1
+#endif
+
 struct test_tdf_buffer_state {
 	/* Current buffer time */
 	uint64_t time;
@@ -40,6 +44,9 @@ struct logger_data {
 	struct k_sem lock;
 	struct test_tdf_buffer_state tdf_state;
 	struct test_data_logger_cb logger_cb;
+#ifdef TDF_REMOTE_SUPPORT
+	uint64_t remote_id;
+#endif
 	uint8_t full_block_write;
 	uint8_t block_overhead;
 	uint8_t tdf_buffer[DATA_LOGGER_MAX_SIZE(DT_NODELABEL(data_logger_dummy))];

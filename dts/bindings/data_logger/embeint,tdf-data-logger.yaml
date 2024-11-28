@@ -7,3 +7,11 @@ description: |
 compatible: "embeint,tdf-data-logger"
 
 include: base.yaml
+
+properties:
+  tdf-remote:
+    type: boolean
+    description: |
+      TDF logger is for logging TDFs from remote devices. This swaps the
+      block type from INFUSE_TDF to INFUSE_TDF_REMOTE and reserves a 64bit
+      header on each block for the remote device ID.

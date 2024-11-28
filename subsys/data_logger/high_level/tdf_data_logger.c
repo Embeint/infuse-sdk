@@ -26,6 +26,10 @@
 #define DATA_GUARD_HEAD 0xb4ef00fc
 #define DATA_GUARD_TAIL 0xbf696b59
 
+#if DT_ANY_INST_HAS_BOOL_STATUS_OKAY(tdf_remote)
+#define TDF_REMOTE_SUPPORT 1
+#endif
+
 struct tdf_logger_config {
 	const struct device *logger;
 	uint16_t tdf_buffer_max_size;
@@ -39,6 +43,7 @@ struct tdf_logger_config {
 		struct k_sem lock;                                                                 \
 		struct tdf_buffer_state tdf_state;                                                 \
 		struct data_logger_cb logger_cb;                                                   \
+		IF_ENABLED(TDF_REMOTE_SUPPORT, (uint64_t remote_id;))                              \
 		uint8_t full_block_write;                                                          \
 		uint8_t block_overhead;                                                            \
 		uint8_t tdf_buffer[len];                                                           \
@@ -51,6 +56,9 @@ struct tdf_logger_data {
 	struct k_sem lock;
 	struct tdf_buffer_state tdf_state;
 	struct data_logger_cb logger_cb;
+#ifdef TDF_REMOTE_SUPPORT
+	uint64_t remote_id;
+#endif
 	uint8_t full_block_write;
 	uint8_t block_overhead;
 	uint8_t tdf_buffer[];
@@ -117,6 +125,16 @@ static int flush_internal(const struct device *dev, bool locked)
 		return 0;
 	}
 
+#ifdef TDF_REMOTE_SUPPORT
+	if ((config->block_type == INFUSE_TDF_REMOTE) &&
+	    (data->tdf_state.buf.len == sizeof(uint64_t))) {
+		/* No data to log, but we need to update the remote ID */
+		net_buf_simple_remove_le64(&data->tdf_state.buf);
+		net_buf_simple_add_le64(&data->tdf_state.buf, data->remote_id);
+		return 0;
+	}
+#endif /* TDF_REMOTE_SUPPORT */
+
 	if (!locked) {
 		/* Lock access */
 		k_sem_take(&data->lock, K_FOREVER);
@@ -145,6 +163,11 @@ static int flush_internal(const struct device *dev, bool locked)
 	/* Reset buffer and reserve overhead */
 	tdf_buffer_state_reset(&data->tdf_state);
 	net_buf_simple_reserve(&data->tdf_state.buf, data->block_overhead);
+#ifdef TDF_REMOTE_SUPPORT
+	if (config->block_type == INFUSE_TDF_REMOTE) {
+		net_buf_simple_add_le64(&data->tdf_state.buf, data->remote_id);
+	}
+#endif /* TDF_REMOTE_SUPPORT */
 
 	if (!locked) {
 		/* Unlock access */
@@ -170,6 +193,31 @@ void tdf_data_logger_flush(uint8_t logger_mask)
 		}
 	} while (dev);
 }
+
+#ifdef TDF_REMOTE_SUPPORT
+int tdf_data_logger_remote_id_set(const struct device *dev, uint64_t remote_id)
+{
+	const struct tdf_logger_config *config = dev->config;
+	struct tdf_logger_data *data = dev->data;
+	int rc;
+
+	if (config->block_type != INFUSE_TDF_REMOTE) {
+		return -EINVAL;
+	}
+
+	if (data->remote_id == remote_id) {
+		/* ID hasn't changed, don't flush */
+		return 0;
+	}
+
+	k_sem_take(&data->lock, K_FOREVER);
+	/* Update remote before flushing so next block is setup with correct value */
+	data->remote_id = remote_id;
+	rc = flush_internal(dev, true);
+	k_sem_give(&data->lock);
+	return rc;
+}
+#endif /* TDF_REMOTE_SUPPORT */
 
 static int log_locked(const struct device *dev, uint16_t tdf_id, uint8_t tdf_len, uint8_t tdf_num,
 		      uint64_t time, uint16_t period, const void *mem)
@@ -289,6 +337,11 @@ static void tdf_block_size_update(const struct device *logger, uint16_t block_si
 		data->tdf_state.buf.size = limited;
 		tdf_buffer_state_reset(&data->tdf_state);
 		net_buf_simple_reserve(&data->tdf_state.buf, data->block_overhead);
+#ifdef TDF_REMOTE_SUPPORT
+		if (config->block_type == INFUSE_TDF_REMOTE) {
+			net_buf_simple_add_le64(&data->tdf_state.buf, data->remote_id);
+		}
+#endif /* TDF_REMOTE_SUPPORT */
 		/* Re-log pending TDF's into the same buffer, which will flush as appropriate */
 		while (tdf_parse(&state, &tdf) == 0) {
 			(void)log_locked(dev, tdf.tdf_id, tdf.tdf_len, tdf.tdf_num, tdf.time,
@@ -373,6 +426,11 @@ int tdf_data_logger_init(const struct device *dev)
 		/* Reset buffer with overhead */
 		tdf_buffer_state_reset(&data->tdf_state);
 		net_buf_simple_reserve(&data->tdf_state.buf, data->block_overhead);
+#ifdef TDF_REMOTE_SUPPORT
+		if (config->block_type == INFUSE_TDF_REMOTE) {
+			net_buf_simple_add_le64(&data->tdf_state.buf, data->remote_id);
+		}
+#endif /* TDF_REMOTE_SUPPORT */
 	}
 	LOG_DBG("%s max size %d (overhead %d)", dev->name, config->tdf_buffer_max_size,
 		data->block_overhead);
@@ -395,7 +453,8 @@ int tdf_data_logger_init(const struct device *dev)
 	const struct tdf_logger_config tdf_logger_config##inst = {                                 \
 		.logger = DEVICE_DT_GET(DT_PARENT(DT_DRV_INST(inst))),                             \
 		.tdf_buffer_max_size = sizeof(tdf_logger_data##inst.tdf_buffer),                   \
-		.block_type = INFUSE_TDF,                                                          \
+		.block_type = COND_CODE_1(DT_INST_PROP(inst, tdf_remote), (INFUSE_TDF_REMOTE),     \
+					  (INFUSE_TDF)),                                           \
 	};                                                                                         \
 	DEVICE_DT_INST_DEFINE(inst, tdf_data_logger_init, NULL, &tdf_logger_data##inst,            \
 			      &tdf_logger_config##inst, POST_KERNEL, 81, NULL);

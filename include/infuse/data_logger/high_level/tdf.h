@@ -137,6 +137,20 @@ int tdf_data_logger_flush_dev(const struct device *dev);
 void tdf_data_logger_flush(uint8_t logger_mask);
 
 /**
+ * @brief Set the remote ID associated with the logger
+ *
+ * If the logger was previously logging a different remote ID, any pending data
+ * will be flushed.
+ *
+ * @param dev TDF logger to update
+ * @param remote_id ID of the remote device
+ *
+ * @retval 0 on success
+ * @retval -EINVAL Logger is not a remote TDF logger
+ */
+int tdf_data_logger_remote_id_set(const struct device *dev, uint64_t remote_id);
+
+/**
  * @}
  */
 
