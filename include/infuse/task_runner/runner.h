@@ -13,6 +13,7 @@
 #include <stdint.h>
 
 #include <zephyr/sys/atomic.h>
+#include <zephyr/kernel.h>
 
 #include <infuse/task_runner/schedule.h>
 #include <infuse/task_runner/task.h>
@@ -69,8 +70,10 @@ void task_runner_iterate(atomic_t *app_states, uint32_t uptime, uint32_t gps_tim
  * Also calls @ref infuse_states_tick if CONFIG_INFUSE_APPLICATION_STATES is enabled.
  *
  * @warning Do NOT call @ref task_runner_iterate after this function.
+ *
+ * @retval Work item that performs the iteration
  */
-void task_runner_start_auto_iterate(void);
+struct k_work_delayable *task_runner_start_auto_iterate(void);
 
 /**
  * @brief Get the watchdog channel associated with the task runner
