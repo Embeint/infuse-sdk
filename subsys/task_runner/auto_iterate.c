@@ -47,9 +47,10 @@ static void iterate_worker(struct k_work *work)
 				  K_TIMEOUT_ABS_MS(next_iter * MSEC_PER_SEC));
 }
 
-void task_runner_start_auto_iterate(void)
+struct k_work_delayable *task_runner_start_auto_iterate(void)
 {
 	/* Initialise auto iterate worker and start */
 	k_work_init_delayable(&iterate_work, iterate_worker);
 	k_work_schedule_for_queue(&task_runner_workq, &iterate_work, K_NO_WAIT);
+	return &iterate_work;
 }
