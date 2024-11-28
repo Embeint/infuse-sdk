@@ -29,6 +29,7 @@
 struct tdf_logger_config {
 	const struct device *logger;
 	uint16_t tdf_buffer_max_size;
+	uint8_t block_type;
 };
 
 /* Define TDF data struct with given buffer length */
@@ -133,7 +134,7 @@ static int flush_internal(const struct device *dev, bool locked)
 	}
 
 	/* Push data to logger */
-	rc = data_logger_block_write(config->logger, INFUSE_TDF, data->tdf_state.buf.data,
+	rc = data_logger_block_write(config->logger, config->block_type, data->tdf_state.buf.data,
 				     data->tdf_state.buf.len);
 	if (rc == -ENOTCONN) {
 		LOG_DBG("%s failed to write block (%d)", dev->name, rc);
@@ -394,6 +395,7 @@ int tdf_data_logger_init(const struct device *dev)
 	const struct tdf_logger_config tdf_logger_config##inst = {                                 \
 		.logger = DEVICE_DT_GET(DT_PARENT(DT_DRV_INST(inst))),                             \
 		.tdf_buffer_max_size = sizeof(tdf_logger_data##inst.tdf_buffer),                   \
+		.block_type = INFUSE_TDF,                                                          \
 	};                                                                                         \
 	DEVICE_DT_INST_DEFINE(inst, tdf_data_logger_init, NULL, &tdf_logger_data##inst,            \
 			      &tdf_logger_config##inst, POST_KERNEL, 81, NULL);
