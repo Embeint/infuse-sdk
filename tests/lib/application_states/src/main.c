@@ -46,6 +46,12 @@ ZTEST(application_states, test_basic)
 	zassert_false(infuse_state_get(INFUSE_STATE_REBOOTING));
 	zassert_false(infuse_state_get(INFUSE_STATE_TIME_KNOWN));
 	zassert_false(infuse_state_get(INFUSE_STATES_END));
+
+	zassert_false(infuse_state_set_to(INFUSE_STATE_TIME_KNOWN, false));
+	zassert_false(infuse_state_set_to(INFUSE_STATE_TIME_KNOWN, true));
+	zassert_true(infuse_state_set_to(INFUSE_STATE_TIME_KNOWN, true));
+	zassert_true(infuse_state_set_to(INFUSE_STATE_TIME_KNOWN, false));
+	zassert_false(infuse_state_set_to(INFUSE_STATE_TIME_KNOWN, false));
 }
 
 ZTEST(application_states, test_state_timeout_basic)
