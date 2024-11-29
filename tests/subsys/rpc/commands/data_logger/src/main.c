@@ -104,6 +104,7 @@ ZTEST(rpc_command_data_logger, test_data_logger_state)
 	const struct device *flash_logger = DEVICE_DT_GET(DT_NODELABEL(data_logger_flash));
 	struct rpc_data_logger_state_response *response;
 	struct net_buf *rsp;
+	uint64_t logged = 0;
 	uint32_t earliest;
 	int rc;
 
@@ -119,20 +120,29 @@ ZTEST(rpc_command_data_logger, test_data_logger_state)
 	rsp = expect_rpc_response(10, RPC_ID_DATA_LOGGER_STATE, 0);
 	response = (void *)rsp->data;
 	zassert_equal(512, response->block_size);
+	zassert_equal(0, response->bytes_logged);
+	zassert_equal(0, response->boot_block);
 	zassert_equal(0, response->earliest_block);
 	zassert_equal(0, response->current_block);
 	net_buf_unref(rsp);
+
+	/* Give uptime a chance to be not 0 */
+	k_sleep(K_MSEC(1500));
 
 	for (int i = 0; i < 32; i++) {
 		sys_rand_get(data_block, sizeof(data_block));
 		rc = data_logger_block_write(flash_logger, INFUSE_TDF, data_block,
 					     sizeof(data_block));
 		zassert_equal(0, rc);
+		logged += sizeof(data_block);
 
 		send_data_logger_state_command(10, RPC_ENUM_DATA_LOGGER_FLASH_ONBOARD);
 		rsp = expect_rpc_response(10, RPC_ID_DATA_LOGGER_STATE, 0);
 		response = (void *)rsp->data;
+		zassert_equal(0, response->boot_block);
+		zassert_equal(logged, response->bytes_logged);
 		zassert_equal(i + 1, response->current_block);
+		zassert_equal(k_uptime_seconds(), response->uptime);
 		earliest = response->earliest_block;
 		net_buf_unref(rsp);
 	}

@@ -526,10 +526,14 @@ struct rpc_data_logger_state_request {
 
 struct rpc_data_logger_state_response {
 	struct infuse_rpc_rsp_header header;
+	/* Number of bytes logged since boot */
+	uint64_t bytes_logged;
 	/* Number of logical blocks on the logger */
 	uint32_t logical_blocks;
 	/* Number of physical blocks on the logger */
 	uint32_t physical_blocks;
+	/* Number of logical blocks present at boot */
+	uint32_t boot_block;
 	/* Number of logical blocks that have been written */
 	uint32_t current_block;
 	/* Earliest logical block that still exists on the logger */
@@ -540,6 +544,8 @@ struct rpc_data_logger_state_response {
 	uint16_t block_overhead;
 	/* Minimum erase unit of the logger in bytes */
 	uint16_t erase_unit;
+	/* Current application uptime */
+	uint32_t uptime;
 } __packed;
 
 /* Read data from data logger */
