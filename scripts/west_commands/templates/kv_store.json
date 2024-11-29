@@ -202,6 +202,15 @@
             ]
         },
         {
+            "name": "BLUETOOOTH_PEER",
+            "key": 50,
+            "description": "Bluetooth peer device",
+            "reflect": true,
+            "fields": [
+                {"name": "address", "type": "struct bt_addr_le", "description": "Peer device Bluetooth address"}
+            ]
+        },
+        {
             "name": "GEOFENCE",
             "key": 100,
             "range": 16,

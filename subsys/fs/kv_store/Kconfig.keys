@@ -96,6 +96,11 @@ config KV_STORE_KEY_LTE_PDP_CONFIG
 	help
 	  Packet Data Protocol (PDP) default context configuration
 
+config KV_STORE_KEY_BLUETOOOTH_PEER
+	bool "Enable KV key BLUETOOOTH_PEER"
+	help
+	  Bluetooth peer device
+
 config KV_STORE_KEY_GEOFENCE
 	bool "Enable KV key GEOFENCE"
 	help
