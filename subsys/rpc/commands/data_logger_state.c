@@ -45,13 +45,16 @@ struct net_buf *rpc_command_data_logger_state(struct net_buf *request)
 
 	/* Query logger state */
 	data_logger_get_state(logger, &state);
+	rsp.bytes_logged = state.bytes_logged;
 	rsp.logical_blocks = state.logical_blocks;
 	rsp.physical_blocks = state.physical_blocks;
+	rsp.boot_block = state.boot_block;
 	rsp.current_block = state.current_block;
 	rsp.earliest_block = state.earliest_block;
 	rsp.block_size = state.block_size;
 	rsp.block_overhead = state.block_overhead;
 	rsp.erase_unit = state.erase_unit;
+	rsp.uptime = k_uptime_seconds();
 
 end:
 	return rpc_response_simple_req(request, rc, &rsp, sizeof(rsp));
