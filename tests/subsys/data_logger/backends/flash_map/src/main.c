@@ -30,6 +30,7 @@ ZTEST(data_logger_flash_map, test_init_constants)
 	data_logger_get_state(logger, &state);
 	zassert_not_equal(0, state.block_size);
 	zassert_not_equal(0, state.erase_unit);
+	zassert_equal(0, state.bytes_logged);
 	zassert_equal(sizeof(struct data_logger_persistent_block_header), state.block_overhead);
 	zassert_equal(flash_buffer_size / state.block_size, state.physical_blocks);
 	zassert_equal(254 * state.physical_blocks, state.logical_blocks);
@@ -47,6 +48,8 @@ ZTEST(data_logger_flash_map, test_init_erased)
 	memset(flash_buffer, 0x00, flash_buffer_size);
 	zassert_equal(0, logger_flash_map_init(logger));
 	data_logger_get_state(logger, &state);
+	zassert_equal(0, state.bytes_logged);
+	zassert_equal(0, state.boot_block);
 	zassert_equal(0, state.current_block);
 	zassert_equal(0, state.earliest_block);
 
@@ -54,6 +57,8 @@ ZTEST(data_logger_flash_map, test_init_erased)
 	memset(flash_buffer, 0xFF, flash_buffer_size);
 	zassert_equal(0, logger_flash_map_init(logger));
 	data_logger_get_state(logger, &state);
+	zassert_equal(0, state.bytes_logged);
+	zassert_equal(0, state.boot_block);
 	zassert_equal(0, state.current_block);
 	zassert_equal(0, state.earliest_block);
 	zassert_not_equal(0, state.physical_blocks);
@@ -83,6 +88,8 @@ ZTEST(data_logger_flash_map, test_init_part_written)
 		memset(flash_buffer, 0x01, i * state.block_size);
 		zassert_equal(0, logger_flash_map_init(logger));
 		data_logger_get_state(logger, &state);
+		zassert_equal(0, state.bytes_logged);
+		zassert_equal(i, state.boot_block);
 		zassert_equal(i, state.current_block);
 		zassert_equal(0, state.earliest_block);
 	}
@@ -259,6 +266,7 @@ static void test_sequence(bool reinit)
 	memset(flash_buffer, params->erase_value, flash_buffer_size);
 	zassert_equal(0, logger_flash_map_init(logger));
 	data_logger_get_state(logger, &state);
+	zassert_equal(0, state.boot_block);
 
 	for (int i = 0; i < 254 * state.physical_blocks; i++) {
 		/* Predicatable block data per page */
@@ -281,6 +289,7 @@ static void test_sequence(bool reinit)
 		if (reinit) {
 			zassert_equal(0, logger_flash_map_init(logger));
 			data_logger_get_state(logger, &state);
+			zassert_equal(i + 1, state.boot_block);
 			zassert_equal(i + 1, state.current_block);
 		}
 	}

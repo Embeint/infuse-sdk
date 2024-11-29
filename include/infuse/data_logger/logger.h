@@ -26,10 +26,14 @@ extern "C" {
  */
 
 struct data_logger_state {
+	/* Bytes logged since reboot */
+	uint64_t bytes_logged;
 	/* Number of logical blocks on the logger */
 	uint32_t logical_blocks;
 	/* Number of physical blocks on the logger */
 	uint32_t physical_blocks;
+	/* Number of blocks present at boot */
+	uint32_t boot_block;
 	/* Number of logical blocks that have been written */
 	uint32_t current_block;
 	/* Earliest logical block that still exists on the logger */

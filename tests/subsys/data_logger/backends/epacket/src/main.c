@@ -28,6 +28,7 @@ ZTEST(data_logger_epacket, test_init_constants)
 	zassert_not_equal(0, state.block_size);
 	zassert_equal(0, state.erase_unit);
 	zassert_equal(0, state.block_overhead);
+	zassert_equal(0, state.boot_block);
 	zassert_equal(UINT32_MAX, state.physical_blocks);
 	zassert_equal(UINT32_MAX, state.logical_blocks);
 	zassert_false(state.requires_full_block_write);
@@ -45,6 +46,7 @@ ZTEST(data_logger_epacket, test_init_disconnected)
 	zassert_equal(0, state.block_size);
 	zassert_equal(0, state.erase_unit);
 	zassert_equal(0, state.block_overhead);
+	zassert_equal(0, state.boot_block);
 	zassert_equal(UINT32_MAX, state.physical_blocks);
 	zassert_equal(UINT32_MAX, state.logical_blocks);
 	zassert_false(state.requires_full_block_write);
@@ -81,12 +83,14 @@ ZTEST(data_logger_epacket, test_block_write)
 	struct k_fifo *sent_queue = epacket_dummmy_transmit_fifo_get();
 	struct net_buf *sent;
 	uint8_t payload[EPACKET_INTERFACE_MAX_PAYLOAD(DT_NODELABEL(epacket_dummy))];
+	uint64_t written = 0;
 	int rc;
 
 	for (int i = 0; i < 100; i++) {
 		/* Write random block */
 		rc = data_logger_block_write(logger, i, payload, sizeof(payload));
 		zassert_equal(0, rc);
+		written += sizeof(payload);
 
 		/* Validate packet was sent */
 		sent = net_buf_get(sent_queue, K_MSEC(1));
@@ -101,7 +105,9 @@ ZTEST(data_logger_epacket, test_block_write)
 		zassert_is_null(net_buf_get(sent_queue, K_NO_WAIT));
 
 		data_logger_get_state(logger, &state);
+		zassert_equal(written, state.bytes_logged);
 		zassert_equal(i + 1, state.current_block);
+		zassert_equal(0, state.boot_block);
 	}
 
 	/* Reinitialise */

@@ -38,8 +38,10 @@ struct data_logger_cb {
 /** Must be first member of data struct */
 struct data_logger_common_data {
 	sys_slist_t callbacks;
+	uint64_t bytes_logged;
 	uint32_t logical_blocks;
 	uint32_t physical_blocks;
+	uint32_t boot_block;
 	uint32_t current_block;
 	uint32_t earliest_block;
 	uint16_t block_size;
