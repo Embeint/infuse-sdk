@@ -202,7 +202,7 @@
             ]
         },
         {
-            "name": "BLUETOOOTH_PEER",
+            "name": "BLUETOOTH_PEER",
             "key": 50,
             "description": "Bluetooth peer device",
             "reflect": true,
