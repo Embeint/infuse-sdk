@@ -131,6 +131,23 @@ bool infuse_state_set_timeout(enum infuse_state state, uint16_t timeout);
 bool infuse_state_clear(enum infuse_state state);
 
 /**
+ * @brief Set an application state to a specific value
+ *
+ * @param state State to set
+ * @param val Value to set to
+ *
+ * @return true if the state was previously set, false if it wasn't.
+ */
+static inline bool infuse_state_set_to(enum infuse_state state, bool val)
+{
+	if (val) {
+		return infuse_state_set(state);
+	} else {
+		return infuse_state_clear(state);
+	}
+}
+
+/**
  * @brief Get an application state
  *
  * @param state State to query
