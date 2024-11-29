@@ -92,6 +92,16 @@ uint32_t kv_store_reflect_crc(void);
 bool kv_store_key_enabled(uint16_t key);
 
 /**
+ * @brief Check whether a given key exists in the store
+ *
+ * @param key Key to check
+ *
+ * @return true Key value exists in the store
+ * @return false Key value does not exist
+ */
+bool kv_store_key_exists(uint16_t key);
+
+/**
  * @brief Check whether a given keys data is valid to return externally
  *
  * @param key Key to check
