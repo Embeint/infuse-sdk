@@ -85,6 +85,11 @@ bool kv_store_key_enabled(uint16_t key)
 	return kv_store_key_metadata(key, NULL, NULL);
 }
 
+bool kv_store_key_exists(uint16_t key)
+{
+	return nvs_read(&fs, key, NULL, 0) > 0;
+}
+
 int kv_store_external_write_only(uint16_t key)
 {
 	uint8_t flags;
