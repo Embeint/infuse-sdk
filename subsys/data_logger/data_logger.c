@@ -51,8 +51,10 @@ void data_logger_get_state(const struct device *dev, struct data_logger_state *s
 	struct data_logger_common_data *data = dev->data;
 	const struct data_logger_api *api = dev->api;
 
+	state->bytes_logged = data->bytes_logged;
 	state->logical_blocks = data->logical_blocks;
 	state->physical_blocks = data->physical_blocks;
+	state->boot_block = data->boot_block;
 	state->current_block = data->current_block;
 	state->earliest_block = data->earliest_block;
 	state->block_size = data->block_size;
@@ -110,6 +112,7 @@ static int do_block_write(const struct device *dev, enum infuse_type type, void 
 	/* Release device after a delay */
 	(void)pm_device_runtime_put_async(dev, K_MSEC(100));
 
+	data->bytes_logged += block_len;
 	data->current_block += 1;
 	return 0;
 }
@@ -376,6 +379,8 @@ int data_logger_common_init(const struct device *dev)
 
 	sys_slist_init(&data->callbacks);
 
+	data->bytes_logged = 0;
+	data->boot_block = 0;
 	data->current_block = 0;
 	data->earliest_block = 0;
 
@@ -433,6 +438,7 @@ int data_logger_common_init(const struct device *dev)
 		}
 	}
 
+	data->boot_block = data->current_block;
 	LOG_INF("%s -> %u/%u blocks", dev->name, data->current_block, data->logical_blocks);
 #ifdef CONFIG_DATA_LOGGER_RAM_BUFFER
 	{
