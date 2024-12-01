@@ -9,6 +9,7 @@
 #include <zephyr/kernel.h>
 #include <zephyr/zbus/zbus.h>
 
+#include <infuse/work_q.h>
 #include <infuse/time/epoch.h>
 #include <infuse/task_runner/runner.h>
 #include <infuse/tdf/definitions.h>
@@ -16,7 +17,6 @@
 #include <infuse/states.h>
 
 static struct k_work_delayable iterate_work;
-extern struct k_work_q task_runner_workq;
 
 INFUSE_ZBUS_CHAN_DECLARE(INFUSE_ZBUS_CHAN_BATTERY);
 
@@ -43,14 +43,13 @@ static void iterate_worker(struct k_work *work)
 	infuse_states_tick(states);
 
 	/* Schedule the next iteration */
-	k_work_schedule_for_queue(&task_runner_workq, &iterate_work,
-				  K_TIMEOUT_ABS_MS(next_iter * MSEC_PER_SEC));
+	infuse_work_schedule(&iterate_work, K_TIMEOUT_ABS_MS(next_iter * MSEC_PER_SEC));
 }
 
 struct k_work_delayable *task_runner_start_auto_iterate(void)
 {
 	/* Initialise auto iterate worker and start */
 	k_work_init_delayable(&iterate_work, iterate_worker);
-	k_work_schedule_for_queue(&task_runner_workq, &iterate_work, K_NO_WAIT);
+	infuse_work_schedule(&iterate_work, K_NO_WAIT);
 	return &iterate_work;
 }

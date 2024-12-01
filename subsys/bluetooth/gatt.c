@@ -14,6 +14,7 @@
 #include <zephyr/sys/byteorder.h>
 #include <zephyr/sys/slist.h>
 
+#include <infuse/work_q.h>
 #include <infuse/bluetooth/gatt.h>
 #include <infuse/task_runner/runner.h>
 
@@ -387,8 +388,7 @@ static void connected(struct bt_conn *conn, uint8_t err)
 
 #ifdef CONFIG_BT_CONN_AUTO_RSSI
 	/* Small delay to give controller a chance to finish setup */
-	k_work_reschedule_for_queue(task_runner_work_q(), &state[bt_conn_index(conn)].rssi_query,
-				    K_MSEC(10));
+	infuse_work_reschedule(&state[bt_conn_index(conn)].rssi_query, K_MSEC(10));
 #endif /* CONFIG_BT_CONN_AUTO_RSSI */
 }
 
@@ -495,8 +495,7 @@ static void rssi_query_worker(struct k_work *work)
 
 reschedule:
 	bt_conn_unref(conn);
-	k_work_reschedule_for_queue(task_runner_work_q(), dwork,
-				    K_MSEC(CONFIG_BT_CONN_AUTO_RSSI_INTERVAL_MS));
+	infuse_work_reschedule(dwork, K_MSEC(CONFIG_BT_CONN_AUTO_RSSI_INTERVAL_MS));
 }
 
 int8_t bt_conn_rssi(struct bt_conn *conn)

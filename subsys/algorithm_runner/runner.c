@@ -11,6 +11,7 @@
 #include <zephyr/logging/log.h>
 #include <zephyr/zbus/zbus.h>
 
+#include <infuse/work_q.h>
 #include <infuse/algorithm_runner/runner.h>
 #include <infuse/task_runner/runner.h>
 
@@ -38,7 +39,7 @@ static void new_zbus_data(const struct zbus_channel *chan)
 
 	/* Only queue the executor if the data was relevant for an algorithm */
 	if (run) {
-		k_work_submit_to_queue(task_runner_work_q(), &runner);
+		infuse_work_submit(&runner);
 	}
 }
 

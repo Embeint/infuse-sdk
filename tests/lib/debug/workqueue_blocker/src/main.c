@@ -12,7 +12,7 @@
 #include <zephyr/kernel.h>
 #include <zephyr/random/random.h>
 
-#include <infuse/task_runner/runner.h>
+#include <infuse/work_q.h>
 
 static struct k_sem work_execute;
 
@@ -31,7 +31,7 @@ static void expect_workq_delay(struct k_work_q *queue)
 	k_work_init(&workqueue_tester, work_fn);
 	k_sem_init(&work_execute, 0, 1);
 
-	zassert_not_null(task_runner_work_q());
+	zassert_not_null(queue);
 
 	while (k_uptime_get() < (start + 10000)) {
 		t_queued = k_uptime_get();
@@ -57,7 +57,7 @@ ZTEST(workqueue_blocker, test_sysworkq)
 
 ZTEST(workqueue_blocker, test_tr_workq)
 {
-	expect_workq_delay(task_runner_work_q());
+	expect_workq_delay(&infuse_iot_work_q);
 }
 
 ZTEST_SUITE(workqueue_blocker, NULL, NULL, NULL, NULL, NULL);

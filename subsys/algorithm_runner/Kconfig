@@ -2,7 +2,6 @@
 
 config ALGORITHM_RUNNER
 	bool "Infuse-IoT algorithm runner"
-	depends on TASK_RUNNER
 	depends on ZBUS_CHANNEL_ID
 
 if ALGORITHM_RUNNER

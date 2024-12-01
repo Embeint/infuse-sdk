@@ -9,6 +9,7 @@
 #include <zephyr/logging/log.h>
 #include <zephyr/sys/__assert.h>
 
+#include <infuse/work_q.h>
 #include <infuse/drivers/watchdog.h>
 #include <infuse/task_runner/runner.h>
 
@@ -131,7 +132,7 @@ void task_workqueue_reschedule(struct task_data *task, k_timeout_t delay)
 	/* Increment reschedule count */
 	task->executor.workqueue.reschedule_counter += 1;
 	/* Reschedule on queue */
-	k_work_reschedule_for_queue(&task_runner_workq, &task->executor.workqueue.work, delay);
+	infuse_work_reschedule(&task->executor.workqueue.work, delay);
 }
 
 static void task_start(uint8_t schedule_index, uint32_t uptime)
@@ -165,8 +166,7 @@ static void task_start(uint8_t schedule_index, uint32_t uptime)
 		/* Reset the reschedule counter */
 		d->executor.workqueue.reschedule_counter = 0;
 		/* Schedule the work on our work queue */
-		k_work_schedule_for_queue(&task_runner_workq, &d->executor.workqueue.work,
-					  K_NO_WAIT);
+		infuse_work_schedule(&d->executor.workqueue.work, K_NO_WAIT);
 	}
 }
 
@@ -181,8 +181,7 @@ static void task_terminate(uint8_t schedule_index)
 	k_poll_signal_raise(&d->terminate_signal, 0);
 	if (c->exec_type == TASK_EXECUTOR_WORKQUEUE) {
 		/* Reschedule immediately to terminate */
-		k_work_reschedule_for_queue(&task_runner_workq, &d->executor.workqueue.work,
-					    K_NO_WAIT);
+		infuse_work_reschedule(&d->executor.workqueue.work, K_NO_WAIT);
 	}
 }
 

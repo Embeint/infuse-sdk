@@ -12,6 +12,7 @@
 #include <zephyr/init.h>
 #include <zephyr/logging/log.h>
 
+#include <infuse/work_q.h>
 #include <infuse/lib/nrf_modem_monitor.h>
 #include <infuse/fs/kv_store.h>
 #include <infuse/fs/kv_types.h>
@@ -23,12 +24,6 @@
 #include <modem/lte_lc.h>
 #include <modem/modem_info.h>
 #include <nrf_modem_at.h>
-
-#ifdef CONFIG_TASK_RUNNER
-#define QUERY_WORKQ task_runner_work_q()
-#else
-#define QUERY_WORKQ &k_sys_work_q
-#endif
 
 LOG_MODULE_REGISTER(modem_monitor, LOG_LEVEL_INF);
 
@@ -179,7 +174,7 @@ static void lte_reg_handler(const struct lte_lc_evt *const evt)
 		LOG_DBG("  STATUS: %d", evt->nw_reg_status);
 		monitor.network_state.nw_reg_status = evt->nw_reg_status;
 		/* Request update of knowledge of network info */
-		k_work_submit_to_queue(QUERY_WORKQ, &monitor.update_work);
+		infuse_work_submit(&monitor.update_work);
 		break;
 	case LTE_LC_EVT_PSM_UPDATE:
 		LOG_DBG("PSM_UPDATE");
@@ -200,7 +195,7 @@ static void lte_reg_handler(const struct lte_lc_evt *const evt)
 		monitor.network_state.rrc_mode = evt->rrc_mode;
 		if (evt->rrc_mode == LTE_LC_RRC_MODE_CONNECTED) {
 			/* Update cached knowledge of signal strength */
-			k_work_submit_to_queue(QUERY_WORKQ, &monitor.signal_quality_work);
+			infuse_work_submit(&monitor.signal_quality_work);
 		}
 		break;
 	case LTE_LC_EVT_CELL_UPDATE:
@@ -217,9 +212,9 @@ static void lte_reg_handler(const struct lte_lc_evt *const evt)
 		atomic_set_bit_to(&monitor.flags, FLAGS_CELL_CONNECTED,
 				  evt->cell.id <= LTE_LC_CELL_EUTRAN_ID_MAX);
 		/* Request update of knowledge of network info */
-		k_work_submit_to_queue(QUERY_WORKQ, &monitor.update_work);
+		infuse_work_submit(&monitor.update_work);
 		/* Update cached knowledge of signal strength */
-		k_work_submit_to_queue(QUERY_WORKQ, &monitor.signal_quality_work);
+		infuse_work_submit(&monitor.signal_quality_work);
 		break;
 	case LTE_LC_EVT_LTE_MODE_UPDATE:
 		LOG_DBG("LTE_MODE_UPDATE");
