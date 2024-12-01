@@ -128,6 +128,17 @@ int bt_conn_disconnect_sync(struct bt_conn *conn);
 int8_t bt_conn_rssi(struct bt_conn *conn);
 
 /**
+ * @brief Start logging the RSSI of the connection
+ *
+ * This state only persists until the connection is lost.
+ * This function must therefore be called each time the connection is established.
+ *
+ * @param conn Bluetooth connection to log
+ * @param tdf_loggers TDF loggers to log RSSI to
+ */
+void bt_conn_rssi_log(struct bt_conn *conn, uint8_t tdf_loggers);
+
+/**
  * @}
  */
 

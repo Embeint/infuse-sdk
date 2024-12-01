@@ -16,11 +16,15 @@
 
 #include <infuse/work_q.h>
 #include <infuse/bluetooth/gatt.h>
+#include <infuse/time/epoch.h>
 #include <infuse/task_runner/runner.h>
+#include <infuse/data_logger/high_level/tdf.h>
+#include <infuse/tdf/definitions.h>
 
 static struct bt_gatt_state {
 #ifdef CONFIG_BT_CONN_AUTO_RSSI
 	struct k_work_delayable rssi_query;
+	uint8_t rssi_log;
 	int8_t rssi;
 #endif /* CONFIG_BT_CONN_AUTO_RSSI */
 #ifdef CONFIG_BT_GATT_CLIENT
@@ -402,6 +406,7 @@ static void disconnected(struct bt_conn *conn, uint8_t reason)
 #ifdef CONFIG_BT_CONN_AUTO_RSSI
 	k_work_cancel_delayable(&s->rssi_query);
 	s->rssi = 0;
+	s->rssi_log = 0;
 #endif /* CONFIG_BT_CONN_AUTO_RSSI */
 #ifdef CONFIG_BT_GATT_CLIENT
 	if (s->cb) {
@@ -491,6 +496,20 @@ static void rssi_query_worker(struct k_work *work)
 		LOG_DBG("%d RSSI: %d dBm", conn_idx, rp->rssi);
 		conn_state->rssi = rp->rssi;
 		net_buf_unref(rsp);
+
+#ifdef CONFIG_TDF_DATA_LOGGER
+		if (conn_state->rssi_log) {
+			const bt_addr_le_t *dst = bt_conn_get_dst(conn);
+			struct tdf_bluetooth_rssi tdf;
+
+			tdf.address.type = dst->type;
+			memcpy(tdf.address.val, dst->a.val, 6);
+			tdf.rssi = rp->rssi;
+
+			tdf_data_logger_log(conn_state->rssi_log, TDF_BLUETOOTH_RSSI, sizeof(tdf),
+					    epoch_time_now(), &tdf);
+		}
+#endif /* CONFIG_TDF_DATA_LOGGER */
 	}
 
 reschedule:
@@ -503,6 +522,14 @@ int8_t bt_conn_rssi(struct bt_conn *conn)
 	return state[bt_conn_index(conn)].rssi;
 }
 
+#ifdef CONFIG_TDF_DATA_LOGGER
+
+void bt_conn_rssi_log(struct bt_conn *conn, uint8_t tdf_loggers)
+{
+	state[bt_conn_index(conn)].rssi_log = tdf_loggers;
+}
+
+#endif /* CONFIG_TDF_DATA_LOGGER */
 #endif /* CONFIG_BT_CONN_AUTO_RSSI */
 
 static struct bt_conn_cb conn_cb = {
@@ -517,6 +544,7 @@ static int infuse_bluetooth_gatt(void)
 	for (int i = 0; i < CONFIG_BT_MAX_CONN; i++) {
 #ifdef CONFIG_BT_CONN_AUTO_RSSI
 		k_work_init_delayable(&state[i].rssi_query, rssi_query_worker);
+		state[i].rssi_log = 0;
 		state[i].rssi = 0;
 #endif /* CONFIG_BT_CONN_AUTO_RSSI */
 #ifdef CONFIG_BT_GATT_CLIENT
