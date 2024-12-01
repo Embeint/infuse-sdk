@@ -205,6 +205,10 @@ static void run_logger_read(uint16_t epacket_size, uint32_t start, uint32_t end)
 	uint32_t expected_offset = 0;
 	uint32_t crc = 0;
 
+	uint32_t start_offset = 512 * start;
+	uint32_t num = 512 * (end - start + 1);
+	uint32_t flash_crc = crc32_ieee(flash_buffer + start_offset, num);
+
 	epacket_dummy_set_max_packet(epacket_size);
 
 	send_data_logger_read_command(request_id, RPC_ENUM_DATA_LOGGER_FLASH_ONBOARD, start, end);
@@ -222,6 +226,7 @@ static void run_logger_read(uint16_t epacket_size, uint32_t start, uint32_t end)
 			zassert_equal(RPC_ID_DATA_LOGGER_READ, rsp->header.command_id);
 			zassert_equal(0, rsp->header.return_code);
 			zassert_equal(crc, rsp->sent_crc);
+			zassert_equal(flash_crc, rsp->sent_crc);
 			zassert_equal(bytes_received, rsp->sent_len);
 		} else if (tx_header->type == INFUSE_RPC_DATA) {
 			data = net_buf_pull_mem(tx, sizeof(*data));
