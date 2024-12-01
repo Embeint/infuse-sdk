@@ -87,6 +87,7 @@ struct net_buf *rpc_command_data_logger_read(struct net_buf *request)
 		}
 		block_remaining = state.block_size;
 		block_offset = 0;
+		block_num += 1;
 
 		/* Push all block data into messages */
 		while (block_remaining) {
