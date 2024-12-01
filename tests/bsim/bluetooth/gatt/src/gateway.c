@@ -17,10 +17,14 @@
 #include "time_machine.h"
 #include "bstests.h"
 
+#include <infuse/data_logger/high_level/tdf.h>
 #include <infuse/epacket/interface.h>
 #include <infuse/epacket/interface/epacket_bt_central.h>
+#include <infuse/epacket/interface/epacket_dummy.h>
 #include <infuse/epacket/packet.h>
 #include <infuse/bluetooth/gatt.h>
+#include <infuse/tdf/definitions.h>
+#include <infuse/tdf/tdf.h>
 
 extern enum bst_result_t bst_result;
 static K_SEM_DEFINE(epacket_adv_received, 0, 1);
@@ -421,6 +425,119 @@ static void main_connect_discover_nonexistant(void)
 	PASS("Connect discover nonexistant passed\n\n");
 }
 
+static void main_connect_rssi(void)
+{
+	struct k_fifo *fifo = epacket_dummmy_transmit_fifo_get();
+	struct k_poll_signal sig;
+	struct bt_conn_auto_setup_cb callbacks = {
+		.conn_setup_cb = conn_setup_cb,
+		.conn_terminated_cb = NULL,
+		.user_data = &sig,
+	};
+	const struct bt_conn_le_create_param create_param = {
+		.interval = BT_GAP_SCAN_FAST_INTERVAL,
+		.window = BT_GAP_SCAN_FAST_INTERVAL,
+		.timeout = 2000 / 10,
+	};
+	const struct bt_le_conn_param conn_params = BT_LE_CONN_PARAM_INIT(0x10, 0x15, 0, 400);
+	struct k_poll_event events[] = {
+		K_POLL_EVENT_INITIALIZER(K_POLL_TYPE_SIGNAL, K_POLL_MODE_NOTIFY_ONLY, &sig),
+	};
+	unsigned int signaled;
+	struct bt_conn *conn;
+	struct net_buf *buf;
+	bt_addr_le_t addr;
+	struct tdf_bluetooth_rssi *bt_rssi;
+	struct tdf_parsed tdf;
+	int conn_rc;
+	int rc;
+
+	if (fifo == NULL) {
+		FAIL("No FIFO\n");
+		return;
+	}
+
+	common_init();
+	k_poll_signal_init(&sig);
+	if (observe_peer(&addr) < 0) {
+		FAIL("Failed to observe peer\n");
+		return;
+	}
+
+	/* Initiate connection */
+	rc = bt_conn_le_create(&addr, &create_param, &conn_params, &conn);
+	if (rc < 0) {
+		FAIL("Failed to initiate connection\n");
+		return;
+	}
+	bt_conn_le_auto_setup(conn, NULL, &callbacks);
+
+	/* Wait for connection process to complete */
+	rc = k_poll(events, ARRAY_SIZE(events), K_SECONDS(3));
+	k_poll_signal_check(&sig, &signaled, &conn_rc);
+	if ((rc != 0) || (signaled == 0)) {
+		FAIL("Signal not raised on connection\n");
+		return;
+	}
+	if (conn_rc != 0) {
+		FAIL("Unexpected connection result\n");
+		return;
+	}
+
+	/* -59 dBm is the default PHY RSSI */
+	if (bt_conn_rssi(conn) != -59) {
+		FAIL("Unexpected RSSI\n");
+		return;
+	}
+
+	/* No logging by default */
+	k_sleep(K_SECONDS(2));
+	tdf_data_logger_flush(TDF_DATA_LOGGER_SERIAL);
+	buf = k_fifo_get(fifo, K_MSEC(10));
+	if (buf != NULL) {
+		FAIL("Unexpected packet\n");
+		return;
+	}
+
+	/* Request RSSI logging */
+	bt_conn_rssi_log(conn, TDF_DATA_LOGGER_SERIAL);
+	for (int i = 0; i < 3; i++) {
+		/* Wait for next log interval */
+		k_sleep(K_MSEC(CONFIG_BT_CONN_AUTO_RSSI_INTERVAL_MS + 10));
+		/* Flush logger and confirm information logged */
+		tdf_data_logger_flush(TDF_DATA_LOGGER_SERIAL);
+		buf = k_fifo_get(fifo, K_MSEC(10));
+		if (buf == NULL) {
+			FAIL("Expected TDF to be logged\n");
+			return;
+		}
+		net_buf_pull(buf, sizeof(struct epacket_dummy_frame));
+
+		/* Validate logged TDF */
+		if (tdf_parse_find_in_buf(buf->data, buf->len, TDF_BLUETOOTH_RSSI, &tdf) != 0) {
+			FAIL("Did not find TDF\n");
+			return;
+		}
+		bt_rssi = tdf.data;
+		if ((tdf.time == 0) || (tdf.tdf_num != 1) || (bt_rssi->address.type != addr.type) ||
+		    (memcmp(bt_rssi->address.val, addr.a.val, 6) != 0) || (bt_rssi->rssi != -59)) {
+			FAIL("Unexpected TDF data\n");
+			return;
+		}
+		net_buf_unref(buf);
+	}
+
+	/* Disconnect from peer */
+	rc = bt_conn_disconnect_sync(conn);
+	if (rc < 0) {
+		FAIL("Failed to disconnect from peer\n");
+		return;
+	}
+	bt_conn_unref(conn);
+
+	PASS("Connect RSSI passed\n\n");
+}
+
 static const struct bt_uuid_128 command_uuid = BT_UUID_INIT_128(INFUSE_SERVICE_UUID_COMMAND_VAL);
 static const struct bt_uuid_128 data_uuid = BT_UUID_INIT_128(INFUSE_SERVICE_UUID_DATA_VAL);
 static const struct bt_uuid_128 logging_uuid = BT_UUID_INIT_128(INFUSE_SERVICE_UUID_LOGGING_VAL);
@@ -537,6 +654,13 @@ static const struct bst_test_instance gatt_gateway[] = {
 		.test_pre_init_f = test_init,
 		.test_tick_f = test_tick,
 		.test_main_f = main_connect_discover_nonexistant,
+	},
+	{
+		.test_id = "gatt_connect_rssi",
+		.test_descr = "Monitor connection RSSI",
+		.test_pre_init_f = test_init,
+		.test_tick_f = test_tick,
+		.test_main_f = main_connect_rssi,
 	},
 	{
 		.test_id = "gatt_connect_terminator",
