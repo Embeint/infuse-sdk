@@ -11,6 +11,7 @@
 
 #include <zephyr/bluetooth/bluetooth.h>
 
+#include <infuse/work_q.h>
 #include <infuse/epacket/interface.h>
 #include <infuse/epacket/packet.h>
 #include <infuse/epacket/interface/epacket_bt_adv.h>
@@ -21,12 +22,6 @@
 #include "epacket_internal.h"
 
 #define DT_DRV_COMPAT embeint_epacket_bt_adv
-
-#ifdef CONFIG_TASK_RUNNER
-#define TASK_WORKQ task_runner_work_q()
-#else
-#define TASK_WORKQ &k_sys_work_q
-#endif
 
 LOG_MODULE_REGISTER(epacket_bt_adv, CONFIG_EPACKET_BT_ADV_LOG_LEVEL);
 
@@ -139,7 +134,7 @@ static void adv_set_complete_worker(struct k_work *work)
 		 * workqueue.
 		 */
 		LOG_DBG("Rescheduling work");
-		k_work_submit_to_queue(TASK_WORKQ, work);
+		infuse_work_submit(work);
 		return;
 	}
 
@@ -168,7 +163,7 @@ static void adv_set_complete(struct bt_le_ext_adv *adv, struct bt_le_ext_adv_sen
 	net_buf_unref(curr);
 
 	/* Handle chaining advertising sets in other thread context */
-	k_work_submit_to_queue(TASK_WORKQ, &adv_set_complete_work);
+	infuse_work_submit(&adv_set_complete_work);
 }
 
 static void epacket_bt_adv_send(const struct device *dev, struct net_buf *buf)

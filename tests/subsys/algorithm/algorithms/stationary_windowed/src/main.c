@@ -9,6 +9,7 @@
 #include <zephyr/ztest.h>
 #include <zephyr/zbus/zbus.h>
 
+#include <infuse/work_q.h>
 #include <infuse/drivers/imu.h>
 #include <infuse/drivers/imu/emul.h>
 #include <infuse/epacket/packet.h>
@@ -44,8 +45,7 @@ static k_tid_t task_schedule(uint8_t index)
 	k_poll_signal_init(&data[index].terminate_signal);
 
 	if (config[index].exec_type == TASK_EXECUTOR_WORKQUEUE) {
-		k_work_schedule_for_queue(task_runner_work_q(),
-					  &data[index].executor.workqueue.work, K_NO_WAIT);
+		infuse_work_schedule(&data[index].executor.workqueue.work, K_NO_WAIT);
 		return NULL;
 	} else {
 		return k_thread_create(&data[index].executor.thread,
@@ -61,8 +61,7 @@ static void task_terminate(uint8_t index)
 {
 	k_poll_signal_raise(&data[index].terminate_signal, 0);
 	if (config[index].exec_type == TASK_EXECUTOR_WORKQUEUE) {
-		k_work_reschedule_for_queue(task_runner_work_q(),
-					    &data[index].executor.workqueue.work, K_NO_WAIT);
+		infuse_work_reschedule(&data[index].executor.workqueue.work, K_NO_WAIT);
 	}
 }
 

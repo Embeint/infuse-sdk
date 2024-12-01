@@ -11,7 +11,6 @@ config BT_CONN_AUTO_RSSI
 	bool "Periodically query the RSSI of active Bluetooth connections"
 	depends on BT_PERIPHERAL || BT_CENTRAL
 	depends on BT_CTLR_CONN_RSSI || !BT_CTLR
-	depends on TASK_RUNNER
 	default y
 
 if BT_CONN_AUTO_RSSI

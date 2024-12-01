@@ -1,10 +1,9 @@
 # Infuse-IoT debugging options
 
 config INFUSE_WORKQUEUE_BLOCK_TEST
-	bool "Randomly block the system and task runner workqueue"
-	depends on TASK_RUNNER
+	bool "Randomly block the system and Infuse-IoT workqueue"
 	help
-	  Randomly block the system and task runner workqueue for non-trivial
+	  Randomly block the system and Infuse-IoT workqueue for non-trivial
 	  durations to see whether the application recovers or whether it
 	  deadlocks.
 

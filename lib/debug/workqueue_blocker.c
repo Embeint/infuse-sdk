@@ -11,7 +11,7 @@
 #include <zephyr/random/random.h>
 #include <zephyr/logging/log.h>
 
-#include <infuse/task_runner/runner.h>
+#include <infuse/work_q.h>
 
 static struct k_work_delayable sys_workq_blocker;
 static struct k_work_delayable tr_workq_blocker;
@@ -39,7 +39,7 @@ static void blocker(struct k_work *work)
 	if (delayable == &sys_workq_blocker) {
 		k_work_reschedule(&sys_workq_blocker, K_MSEC(delay));
 	} else {
-		k_work_reschedule_for_queue(task_runner_work_q(), &tr_workq_blocker, K_MSEC(delay));
+		infuse_work_reschedule(&tr_workq_blocker, K_MSEC(delay));
 	}
 }
 
@@ -53,7 +53,7 @@ static int workqueue_blocker_init(void)
 
 	/* Initial delay */
 	k_work_reschedule(&sys_workq_blocker, K_MSEC(delay));
-	k_work_reschedule_for_queue(task_runner_work_q(), &tr_workq_blocker, K_MSEC(delay));
+	infuse_work_reschedule(&tr_workq_blocker, K_MSEC(delay));
 	return 0;
 }
 
