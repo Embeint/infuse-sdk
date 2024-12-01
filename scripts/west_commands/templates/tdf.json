@@ -40,6 +40,13 @@
                 {"name": "eci", "type": "uint32_t", "description": "E-UTRAN Cell ID"},
                 {"name": "tac", "type": "uint16_t", "description": "Tracking Area Code"}
             ]
+        },
+        "tdf_struct_bt_addr_le": {
+            "description": "Bluetooth address type (bt_addr_le_t)",
+            "fields": [
+                {"name": "type", "type": "uint8_t", "description": "Address type (0 == Public, 1 == Random)"},
+                {"name": "val", "type": "uint8_t", "num": 6, "display": {"fmt": "hex", "digits": 12}, "description": "Address bytes"}
+            ]
         }
     },
     "definitions": {
@@ -278,6 +285,30 @@
                 {"name": "time_fix", "type": "uint16_t", "description": "Duration it took for accurate time knowledge (seconds)"},
                 {"name": "location_fix", "type": "uint16_t", "description": "Duration it took for desired location knowledge (seconds)"},
                 {"name": "num_sv", "type": "uint8_t", "description": "Number of satellite vehicles used in location fix"}
+            ]
+        },
+        "29": {
+            "name": "BLUETOOTH_CONNECTION",
+            "description": "Bluetooth connection state change",
+            "fields": [
+                {"name": "address", "type": "struct tdf_struct_bt_addr_le", "description": "Address of remote device"},
+                {"name": "connected", "type": "uint8_t", "description": "Connected (1) or Disconnected (0)"}
+            ]
+        },
+        "30": {
+            "name": "BLUETOOTH_RSSI",
+            "description": "Received signal strength of Bluetooth device",
+            "fields": [
+                {"name": "address", "type": "struct tdf_struct_bt_addr_le", "description": "Address of remote device"},
+                {"name": "rssi", "type": "int8_t", "display": {"postfix": "dBm"}, "description": "Bluetooth RSSI"}
+            ]
+        },
+        "31": {
+            "name": "BLUETOOTH_DATA_THROUGHPUT",
+            "description": "Data throughput of Bluetooth link",
+            "fields": [
+                {"name": "address", "type": "struct tdf_struct_bt_addr_le", "description": "Address of remote device"},
+                {"name": "throughput", "type": "int32_t", "display": {"postfix": "B/sec"}, "description": "Data throughput (-1 == disconnected)"}
             ]
         },
         "100": {
