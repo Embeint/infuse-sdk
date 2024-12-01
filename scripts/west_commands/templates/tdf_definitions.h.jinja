@@ -31,7 +31,7 @@ struct {{ name }} {
 	{% if 'description' in field %}
 	/* {{ field['description'] }} */
 	{% endif %}
-	{{ field['type'] }} {{ field['name'] }};
+	{{ field['type'] }} {{ field['name'] }}{{ field["array"] }};
 {% endfor %}
 } __packed;
 

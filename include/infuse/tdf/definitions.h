@@ -69,6 +69,14 @@ struct tdf_struct_lte_cell_id_global {
 	uint16_t tac;
 } __packed;
 
+/* Bluetooth address type (bt_addr_le_t) */
+struct tdf_struct_bt_addr_le {
+	/* Address type (0 == Public, 1 == Random) */
+	uint8_t type;
+	/* Address bytes */
+	uint8_t val[6];
+} __packed;
+
 /**
  * @}
  */
@@ -353,6 +361,30 @@ struct tdf_gnss_fix_info {
 	uint8_t num_sv;
 } __packed;
 
+/* Bluetooth connection state change */
+struct tdf_bluetooth_connection {
+	/* Address of remote device */
+	struct tdf_struct_bt_addr_le address;
+	/* Connected (1) or Disconnected (0) */
+	uint8_t connected;
+} __packed;
+
+/* Received signal strength of Bluetooth device */
+struct tdf_bluetooth_rssi {
+	/* Address of remote device */
+	struct tdf_struct_bt_addr_le address;
+	/* Bluetooth RSSI */
+	int8_t rssi;
+} __packed;
+
+/* Data throughput of Bluetooth link */
+struct tdf_bluetooth_data_throughput {
+	/* Address of remote device */
+	struct tdf_struct_bt_addr_le address;
+	/* Data throughput (-1 == disconnected) */
+	int32_t throughput;
+} __packed;
+
 /* Example array type */
 struct tdf_array_type {
 	/* I am an array of length 4 */
@@ -386,6 +418,9 @@ enum tdf_builtin_id {
 	TDF_RUNTIME_ERROR = 26,
 	TDF_CHARGER_EN_CONTROL = 27,
 	TDF_GNSS_FIX_INFO = 28,
+	TDF_BLUETOOTH_CONNECTION = 29,
+	TDF_BLUETOOTH_RSSI = 30,
+	TDF_BLUETOOTH_DATA_THROUGHPUT = 31,
 	TDF_ARRAY_TYPE = 100,
 	/* End of builtin TDF range */
 	TDF_BUILTIN_END = 1024,
@@ -418,6 +453,9 @@ enum tdf_builtin_size {
 	_TDF_RUNTIME_ERROR_SIZE = sizeof(struct tdf_runtime_error),
 	_TDF_CHARGER_EN_CONTROL_SIZE = sizeof(struct tdf_charger_en_control),
 	_TDF_GNSS_FIX_INFO_SIZE = sizeof(struct tdf_gnss_fix_info),
+	_TDF_BLUETOOTH_CONNECTION_SIZE = sizeof(struct tdf_bluetooth_connection),
+	_TDF_BLUETOOTH_RSSI_SIZE = sizeof(struct tdf_bluetooth_rssi),
+	_TDF_BLUETOOTH_DATA_THROUGHPUT_SIZE = sizeof(struct tdf_bluetooth_data_throughput),
 	_TDF_ARRAY_TYPE_SIZE = sizeof(struct tdf_array_type),
 };
 

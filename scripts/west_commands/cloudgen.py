@@ -82,6 +82,9 @@ class cloudgen(WestCommand):
                 else:
                     field["array"] = f"[{field['num']}]"
 
+        for d in tdf_defs["structs"].values():
+            for field in d["fields"]:
+                array_postfix(d, field)
         for d in tdf_defs["definitions"].values():
             for field in d["fields"]:
                 array_postfix(d, field)
