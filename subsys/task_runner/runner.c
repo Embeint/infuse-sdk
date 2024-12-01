@@ -20,29 +20,7 @@ static const struct task_config *tsk;
 static struct task_data *tsk_states;
 static uint8_t tsk_num;
 
-struct k_work_q task_runner_workq;
-
-K_THREAD_STACK_DEFINE(workq_stack_area, CONFIG_TASK_RUNNER_WORKQ_STACK_SIZE);
-
 LOG_MODULE_REGISTER(task_runner, CONFIG_TASK_RUNNER_LOG_LEVEL);
-
-struct k_work_q *task_runner_work_q(void)
-{
-	return &task_runner_workq;
-}
-
-static int task_runner_workqueue_init(void)
-{
-	/* Boot the task runner workqueue */
-	k_work_queue_init(&task_runner_workq);
-	k_work_queue_start(&task_runner_workq, workq_stack_area,
-			   K_THREAD_STACK_SIZEOF(workq_stack_area),
-			   CONFIG_SYSTEM_WORKQUEUE_PRIORITY, NULL);
-	k_thread_name_set(k_work_queue_thread_get(&task_runner_workq), "task_workq");
-	return 0;
-}
-
-SYS_INIT(task_runner_workqueue_init, POST_KERNEL, 0);
 
 void task_runner_init(const struct task_schedule *schedules,
 		      struct task_schedule_state *schedule_states, uint8_t num_schedules,

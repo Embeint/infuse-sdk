@@ -545,11 +545,6 @@ ZTEST(task_runner_runner, test_workqueue_persistent_mem)
 	zassert_equal(29 / 3, states[1].runtime_state[0]);
 }
 
-ZTEST(task_runner_runner, test_get_workqueue)
-{
-	zassert_not_null(task_runner_work_q());
-}
-
 static void runner_before(void *fixture)
 {
 	example_task_block_timeout = K_NO_WAIT;
