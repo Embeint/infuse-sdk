@@ -370,6 +370,7 @@ static void test_data_receiver(uint32_t total_send, uint8_t skip_after, uint8_t 
 
 	/* Expect an initial INFUSE_RPC_DATA_ACK to signify readiness */
 	tx = net_buf_get(tx_fifo, K_MSEC(100));
+	zassert_not_null(tx);
 	tx_header = (void *)tx->data;
 	data_ack = (void *)(tx->data + sizeof(*tx_header));
 	num_offsets = (tx->len - sizeof(*tx_header) - sizeof(*data_ack)) / sizeof(uint32_t);
@@ -476,6 +477,8 @@ ack_handler:
 	}
 
 	net_buf_unref(tx);
+	/* Delay because RPC_ID_DATA_RECEIVER returns the response 100ms before returning */
+	k_sleep(K_MSEC(150));
 }
 
 ZTEST(rpc_server, test_data_receiver_sizes)
