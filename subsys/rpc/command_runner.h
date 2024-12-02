@@ -9,8 +9,11 @@
 #ifndef INFUSE_SDK_SUBSYS_RPC_COMMAND_RUNNER_H_
 #define INFUSE_SDK_SUBSYS_RPC_COMMAND_RUNNER_H_
 
+#include <zephyr/device.h>
 #include <zephyr/kernel.h>
 #include <zephyr/net/buf.h>
+
+#include <infuse/epacket/packet.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -34,6 +37,23 @@ void rpc_command_runner(struct net_buf *request);
  * @param request Request message to free
  */
 void rpc_command_runner_request_unref(struct net_buf *request);
+
+/**
+ * @brief Send the response buffer before returning from the RPC implementation
+ *
+ * Send the response buffer before the RPC implementation returns. This allows
+ * RPCs with long post-processing steps to signal the result early, allowing the
+ * command initiator to move onto future work while this device finishes up.
+ *
+ * @note If used, the RPC implementation must return NULL.
+ *
+ * @param interface Interface to send response on
+ * @param auth Authentication level of response
+ * @param response Response message to send
+ */
+void rpc_command_runner_early_response(const struct device *interface, enum epacket_auth auth,
+				       uint32_t request_id, uint16_t command_id,
+				       struct net_buf *response);
 
 #ifdef __cplusplus
 }
