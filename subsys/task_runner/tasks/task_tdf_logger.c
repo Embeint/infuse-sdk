@@ -104,8 +104,8 @@ static void log_ambient_env(uint8_t loggers, uint64_t timestamp)
 	if ((ambient_env.pressure == 0) && (ambient_env.humidity == 0)) {
 		struct tdf_ambient_temperature temp = {.temperature = ambient_env.temperature};
 
-		tdf_data_logger_log(loggers, TDF_AMBIENT_TEMPERATURE, sizeof(ambient_env),
-				    timestamp, &temp);
+		tdf_data_logger_log(loggers, TDF_AMBIENT_TEMPERATURE, sizeof(temp), timestamp,
+				    &temp);
 	} else {
 		tdf_data_logger_log(loggers, TDF_AMBIENT_TEMP_PRES_HUM, sizeof(ambient_env),
 				    timestamp, &ambient_env);
