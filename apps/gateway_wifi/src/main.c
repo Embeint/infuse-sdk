@@ -16,6 +16,7 @@
 #include <zephyr/net/wifi_mgmt.h>
 #include <zephyr/net/conn_mgr_connectivity.h>
 
+#include <infuse/auto/bluetooth_conn_log.h>
 #include <infuse/epacket/interface.h>
 #include <infuse/epacket/packet.h>
 #include <infuse/data_logger/high_level/tdf.h>
@@ -34,6 +35,9 @@ int main(void)
 	const struct device *epacket_serial = DEVICE_DT_GET(DT_NODELABEL(epacket_serial));
 	const struct device *epacket_udp = DEVICE_DT_GET(DT_NODELABEL(epacket_udp));
 	struct tdf_announce announce;
+
+	/* Log Bluetooth connection events */
+	auto_bluetooth_conn_log_configure(TDF_DATA_LOGGER_SERIAL, AUTO_BT_CONN_LOG_EVENTS_FLUSH);
 
 	/* Start watchdog */
 	infuse_watchdog_start();
