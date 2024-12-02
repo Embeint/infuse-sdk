@@ -11,6 +11,7 @@
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
 
+#include <infuse/auto/bluetooth_conn_log.h>
 #include <infuse/epacket/interface.h>
 #include <infuse/epacket/packet.h>
 #include <infuse/data_logger/high_level/tdf.h>
@@ -48,6 +49,9 @@ int main(void)
 	const struct device *epacket_bt_adv = DEVICE_DT_GET(DT_NODELABEL(epacket_bt_adv));
 	const struct device *epacket_bt_central = DEVICE_DT_GET(DT_NODELABEL(epacket_bt_central));
 	const struct device *epacket_serial = DEVICE_DT_GET(DT_NODELABEL(epacket_serial));
+
+	/* Log Bluetooth connection events */
+	auto_bluetooth_conn_log_configure(TDF_DATA_LOGGER_SERIAL, AUTO_BT_CONN_LOG_EVENTS_FLUSH);
 
 	/* Start watchdog */
 	infuse_watchdog_start();
