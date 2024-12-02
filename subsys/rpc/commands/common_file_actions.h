@@ -31,6 +31,9 @@ int rpc_common_file_actions_start(struct rpc_common_file_actions_ctx *ctx,
 int rpc_common_file_actions_write(struct rpc_common_file_actions_ctx *ctx, uint32_t offset,
 				  const void *data, size_t data_len);
 
-int rpc_common_file_actions_finish(struct rpc_common_file_actions_ctx *ctx, uint16_t rpc_id);
+int rpc_common_file_actions_finish(struct rpc_common_file_actions_ctx *ctx, uint16_t rpc_id,
+				   bool defer_long);
+
+int rpc_common_file_actions_deferred(struct rpc_common_file_actions_ctx *ctx, uint16_t rpc_id);
 
 int rpc_common_file_actions_error_cleanup(struct rpc_common_file_actions_ctx *ctx);
