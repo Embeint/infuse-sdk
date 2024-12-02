@@ -461,7 +461,7 @@ void gnss_task_fn(const struct task_schedule *schedule, struct k_poll_signal *te
 			.location_fix = k_uptime_seconds() - run_state.task_start,
 			.num_sv = run_state.best_fix.num_sv,
 		};
-		uint32_t epoch_time;
+		uint64_t epoch_time;
 
 		LOG_INF("Final Location: Lat %9d Lon %9d Height %dm Acc %dcm", best->lat, best->lon,
 			best->height / 1000, best->h_acc / 10);
