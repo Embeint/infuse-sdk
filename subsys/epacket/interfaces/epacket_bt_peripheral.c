@@ -27,7 +27,9 @@
 
 #define DT_DRV_COMPAT embeint_epacket_bt_peripheral
 
+#define ATT_HEADER_SIZE 3
 #define PACKET_OVERHEAD (DT_INST_PROP(0, header_size) + DT_INST_PROP(0, footer_size))
+#define TOTAL_OVERHEAD  (ATT_HEADER_SIZE + PACKET_OVERHEAD)
 
 void epacket_bt_peripheral_logging_ccc_cfg_update(const struct bt_gatt_attr *attr, uint16_t value);
 
@@ -101,7 +103,7 @@ static void update_interface_state(void)
 
 	/* Find the smallest MTU */
 	bt_conn_foreach(BT_CONN_TYPE_LE, conn_mtu_query, &smallest_mtu);
-	if ((smallest_mtu <= PACKET_OVERHEAD) || (smallest_mtu == UINT16_MAX)) {
+	if ((smallest_mtu <= TOTAL_OVERHEAD) || (smallest_mtu == UINT16_MAX)) {
 		/* Payload too small, treat as disconnected */
 		smallest_mtu = 0;
 	}
@@ -123,7 +125,7 @@ static void update_interface_state(void)
 	}
 
 	/* Subtract overheads */
-	max_payload = smallest_mtu - PACKET_OVERHEAD;
+	max_payload = smallest_mtu - TOTAL_OVERHEAD;
 	/* Ignore if value hasn't changed */
 	if (data->last_notification == max_payload) {
 		return;
