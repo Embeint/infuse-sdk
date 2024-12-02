@@ -199,6 +199,22 @@ static void cpatch_watchdog(uint32_t progress_offset)
 	rpc_server_watchdog_feed();
 }
 
+static int validate_cpatch(struct rpc_common_file_actions_ctx *ctx)
+{
+	const struct flash_area *fa_original;
+	struct cpatch_header header;
+	int rc;
+
+	flash_area_open(FIXED_PARTITION_ID(slot0_partition), &fa_original);
+
+	/* Start patch process */
+	rc = cpatch_patch_start(fa_original, ctx->fa, &header);
+	/* Cleanup files */
+	flash_area_close(fa_original);
+
+	return rc;
+}
+
 static int finish_cpatch(struct rpc_common_file_actions_ctx *ctx)
 {
 	const struct flash_area *fa_original;
@@ -252,7 +268,8 @@ cleanup:
 
 #endif /* SUPPORT_APP_CPATCH */
 
-int rpc_common_file_actions_finish(struct rpc_common_file_actions_ctx *ctx, uint16_t rpc_id)
+int rpc_common_file_actions_finish(struct rpc_common_file_actions_ctx *ctx, uint16_t rpc_id,
+				   bool defer_long)
 {
 	bool reboot = false;
 	int rc = 0;
@@ -264,6 +281,12 @@ int rpc_common_file_actions_finish(struct rpc_common_file_actions_ctx *ctx, uint
 #ifdef SUPPORT_APP_IMG
 #ifdef SUPPORT_APP_CPATCH
 	case RPC_ENUM_FILE_ACTION_APP_CPATCH:
+		if (defer_long) {
+			/* Patching takes a long time, validate the patch data
+			 * but return before applying
+			 */
+			return validate_cpatch(ctx);
+		}
 		/* Run the patch apply process */
 		rc = finish_cpatch(ctx);
 		if (rc < 0) {
@@ -320,6 +343,20 @@ int rpc_common_file_actions_finish(struct rpc_common_file_actions_ctx *ctx, uint
 	}
 
 	return rc;
+}
+
+int rpc_common_file_actions_deferred(struct rpc_common_file_actions_ctx *ctx, uint16_t rpc_id)
+{
+	/* Deferred write actions */
+	switch (ctx->action) {
+#ifdef SUPPORT_APP_CPATCH
+	case RPC_ENUM_FILE_ACTION_APP_CPATCH:
+		/* Run the normal finish logic */
+		return rpc_common_file_actions_finish(ctx, rpc_id, false);
+#endif /* SUPPORT_APP_CPATCH */
+	default:
+		return 0;
+	}
 }
 
 int rpc_common_file_actions_error_cleanup(struct rpc_common_file_actions_ctx *ctx)

@@ -109,8 +109,8 @@ struct net_buf *rpc_command_file_write_basic(struct net_buf *request)
 	}
 
 write_done:
-	/* Finish file write process */
-	rc = rpc_common_file_actions_finish(&ctx, RPC_ID_FILE_WRITE_BASIC);
+	/* Finish file write process, deferring long operations */
+	rc = rpc_common_file_actions_finish(&ctx, RPC_ID_FILE_WRITE_BASIC, true);
 	if (rc < 0) {
 		LOG_ERR("Failed to finish %d (%d)", action, rc);
 	}
@@ -120,8 +120,16 @@ write_done:
 		.recv_len = ctx.received,
 		.recv_crc = ctx.crc,
 	};
+	struct net_buf *response = rpc_response_simple_if(interface, rc, &rsp, sizeof(rsp));
 
-	return rpc_response_simple_if(interface, rc, &rsp, sizeof(rsp));
+	rpc_command_runner_early_response(interface, auth, request_id, RPC_ID_FILE_WRITE_BASIC,
+					  response);
+
+	if (rc == 0) {
+		/* Perform deferred long operations */
+		(void)rpc_common_file_actions_deferred(&ctx, RPC_ID_FILE_WRITE_BASIC);
+	}
+	return NULL;
 error:
 	/* Cleanup resources */
 	(void)rpc_common_file_actions_error_cleanup(&ctx);

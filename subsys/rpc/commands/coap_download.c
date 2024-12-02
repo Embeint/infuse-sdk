@@ -136,7 +136,7 @@ struct net_buf *rpc_command_coap_download(struct net_buf *request)
 
 download_done:
 	/* Finish file write process */
-	rc = rpc_common_file_actions_finish(&ctx, RPC_ID_COAP_DOWNLOAD);
+	rc = rpc_common_file_actions_finish(&ctx, RPC_ID_COAP_DOWNLOAD, false);
 	if (rc < 0) {
 		LOG_ERR("Failed to finish %d (%d)", req->action, rc);
 	}
