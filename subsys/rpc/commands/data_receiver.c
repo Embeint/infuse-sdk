@@ -81,12 +81,15 @@ struct net_buf *rpc_command_data_receiver(struct net_buf *request)
 	}
 
 end:
-	/* Allocate and return response */
+	/* Allocate and return response (simulate early response) */
 	struct rpc_data_receiver_response rsp = {
 		.recv_len = received,
 		.recv_crc = crc,
 	};
 	struct net_buf *response = rpc_response_simple_if(interface, rc, &rsp, sizeof(rsp));
 
-	return response;
+	rpc_command_runner_early_response(interface, auth, request_id, RPC_ID_DATA_RECEIVER,
+					  response);
+	k_sleep(K_MSEC(100));
+	return NULL;
 }
