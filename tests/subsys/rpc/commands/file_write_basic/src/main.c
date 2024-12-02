@@ -19,6 +19,7 @@
 #include <infuse/fs/kv_store.h>
 #include <infuse/epacket/packet.h>
 #include <infuse/epacket/interface/epacket_dummy.h>
+#include <infuse/cpatch/patch.h>
 
 #include "../../../../../../subsys/rpc/server.h"
 
@@ -343,6 +344,107 @@ ZTEST(rpc_command_file_write_basic, test_file_write_dfu)
 	ret.cmd_len = sizeof(fixed_payload);
 	validate_flash_area(&ret);
 #endif /* FIXED_PARTITION_EXISTS(slot1_partition) */
+}
+
+static void flash_area_copy(uint8_t partition_dst, uint8_t partition_src, uint32_t len,
+			    bool source_erase)
+{
+	const struct flash_area *fa_dst, *fa_src;
+	uint8_t buffer[128];
+	uint32_t off = 0;
+
+	zassert_equal(0, flash_area_open(partition_dst, &fa_dst));
+	zassert_equal(0, flash_area_open(partition_src, &fa_src));
+
+	zassert_equal(0, flash_area_erase(fa_dst, 0, fa_dst->fa_size));
+
+	while (off < len) {
+		zassert_equal(0, flash_area_read(fa_src, off, buffer, sizeof(buffer)));
+		zassert_equal(0, flash_area_write(fa_dst, off, buffer, sizeof(buffer)));
+		off += sizeof(buffer);
+	}
+
+	if (source_erase) {
+		zassert_equal(0, flash_area_erase(fa_src, 0, fa_src->fa_size));
+	}
+
+	flash_area_close(fa_dst);
+	flash_area_close(fa_src);
+}
+
+struct patch_file {
+	struct cpatch_header header;
+	uint8_t patch[5];
+} __packed hardcoded_patch;
+
+ZTEST(rpc_command_file_write_basic, test_file_write_dfu_cpatch)
+{
+	(void)flash_area_copy;
+
+#if FIXED_PARTITION_EXISTS(file_partition)
+	struct test_out ret;
+
+	/* Write an arbitrary image of known size to partition1 */
+	ret = test_file_write_basic(RPC_ENUM_FILE_ACTION_APP_IMG, 17023, 0, 0, 0, 0, false, false,
+				    NULL);
+	zassert_equal(0, ret.cmd_rc);
+	zassert_equal(17023, ret.cmd_len);
+	zassert_equal(ret.written_crc, ret.cmd_crc);
+	validate_flash_area(&ret);
+
+	/* Copy the base image into partition0 and erase partition1 */
+	flash_area_copy(FIXED_PARTITION_ID(slot0_partition), FIXED_PARTITION_ID(slot1_partition),
+			17023, true);
+
+	/* Construct patch file that just regenerates the original file */
+	hardcoded_patch.patch[0] = 48; /* COPY_LEN_U32 */
+	sys_put_le32(17023, hardcoded_patch.patch + 1);
+
+	hardcoded_patch.header.magic_value = CPATCH_MAGIC_NUMBER;
+	hardcoded_patch.header.version_major = 1;
+	hardcoded_patch.header.version_minor = 0;
+	hardcoded_patch.header.input_file.length = 17023;
+	hardcoded_patch.header.input_file.crc = ret.written_crc;
+	hardcoded_patch.header.output_file.length = 17023;
+	hardcoded_patch.header.output_file.crc = ret.written_crc;
+	hardcoded_patch.header.patch_file.length = 5;
+	hardcoded_patch.header.patch_file.crc = crc32_ieee(hardcoded_patch.patch, 5);
+	hardcoded_patch.header.header_crc =
+		crc32_ieee((const void *)&hardcoded_patch.header,
+			   sizeof(hardcoded_patch.header) - sizeof(uint32_t));
+
+	/* Write the patch file */
+	ret = test_file_write_basic(RPC_ENUM_FILE_ACTION_APP_CPATCH, sizeof(hardcoded_patch), 0, 0,
+				    0, 0, false, false, (void *)&hardcoded_patch);
+	zassert_equal(0, ret.cmd_rc);
+	zassert_equal(sizeof(hardcoded_patch), ret.cmd_len);
+	zassert_equal(ret.written_crc, ret.cmd_crc);
+
+	/* Give command a chance to finish writing the patch */
+	k_sleep(K_MSEC(100));
+
+	/* Validate partition1 now matches partition0 */
+	uint8_t buffer[128];
+	const struct flash_area *fa;
+	uint32_t fa_crc;
+
+	zassert_equal(0, flash_area_open(FIXED_PARTITION_ID(slot1_partition), &fa));
+	zassert_equal(0, flash_area_crc32(fa, 0, hardcoded_patch.header.output_file.length, &fa_crc,
+					  buffer, sizeof(buffer)));
+	zassert_equal(hardcoded_patch.header.output_file.crc, fa_crc,
+		      "CRC constructed does not equal original CRC");
+	flash_area_close(fa);
+
+	/* Corrupt the file sent */
+	hardcoded_patch.patch[3] += 1;
+
+	/* Write the patch file, validate failure */
+	ret = test_file_write_basic(RPC_ENUM_FILE_ACTION_APP_CPATCH, sizeof(hardcoded_patch), 0, 0,
+				    0, 0, false, false, (void *)&hardcoded_patch);
+	zassert_equal(-EINVAL, ret.cmd_rc);
+	zassert_equal(sizeof(hardcoded_patch), ret.cmd_len);
+
+#endif /* FIXED_PARTITION_EXISTS(file_partition) */
 }
 
 ZTEST(rpc_command_file_write_basic, test_file_write_bt_ctlr)
