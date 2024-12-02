@@ -125,6 +125,7 @@ ZTEST(task_tdf_logger, test_no_flush)
 	net_buf_pull(pkt, sizeof(struct epacket_dummy_frame));
 	zassert_equal(0, tdf_parse_find_in_buf(pkt->data, pkt->len, TDF_ANNOUNCE, &tdf));
 	zassert_not_equal(0, tdf.time);
+	zassert_equal(sizeof(struct tdf_announce), tdf.tdf_len);
 	zassert_equal(-ENOMEM, tdf_parse_find_in_buf(pkt->data, pkt->len, TDF_BATTERY_STATE, &tdf));
 	zassert_equal(-ENOMEM,
 		      tdf_parse_find_in_buf(pkt->data, pkt->len, TDF_AMBIENT_TEMP_PRES_HUM, &tdf));
@@ -206,6 +207,7 @@ ZTEST(task_tdf_logger, test_battery)
 	net_buf_pull(pkt, sizeof(struct epacket_dummy_frame));
 	zassert_equal(0, tdf_parse_find_in_buf(pkt->data, pkt->len, TDF_BATTERY_STATE, &tdf));
 	zassert_equal(0, tdf.time);
+	zassert_equal(sizeof(struct tdf_battery_state), tdf.tdf_len);
 	net_buf_unref(pkt);
 }
 
@@ -235,6 +237,7 @@ ZTEST(task_tdf_logger, test_ambient_env)
 	zassert_equal(0,
 		      tdf_parse_find_in_buf(pkt->data, pkt->len, TDF_AMBIENT_TEMP_PRES_HUM, &tdf));
 	zassert_equal(0, tdf.time);
+	zassert_equal(sizeof(struct tdf_ambient_temp_pres_hum), tdf.tdf_len);
 	net_buf_unref(pkt);
 
 	/* Humidity no pressure */
@@ -248,6 +251,7 @@ ZTEST(task_tdf_logger, test_ambient_env)
 	zassert_equal(0,
 		      tdf_parse_find_in_buf(pkt->data, pkt->len, TDF_AMBIENT_TEMP_PRES_HUM, &tdf));
 	zassert_equal(0, tdf.time);
+	zassert_equal(sizeof(struct tdf_ambient_temp_pres_hum), tdf.tdf_len);
 	net_buf_unref(pkt);
 
 	/* Pressure no humidity */
@@ -261,6 +265,7 @@ ZTEST(task_tdf_logger, test_ambient_env)
 	zassert_equal(0,
 		      tdf_parse_find_in_buf(pkt->data, pkt->len, TDF_AMBIENT_TEMP_PRES_HUM, &tdf));
 	zassert_equal(0, tdf.time);
+	zassert_equal(sizeof(struct tdf_ambient_temp_pres_hum), tdf.tdf_len);
 	net_buf_unref(pkt);
 
 	/* No pressure no humidity */
@@ -273,6 +278,7 @@ ZTEST(task_tdf_logger, test_ambient_env)
 	net_buf_pull(pkt, sizeof(struct epacket_dummy_frame));
 	zassert_equal(0, tdf_parse_find_in_buf(pkt->data, pkt->len, TDF_AMBIENT_TEMPERATURE, &tdf));
 	zassert_equal(0, tdf.time);
+	zassert_equal(sizeof(struct tdf_ambient_temperature), tdf.tdf_len);
 	net_buf_unref(pkt);
 
 	/* Wait until data invalid, should not send */
@@ -341,6 +347,7 @@ ZTEST(task_tdf_logger, test_accelerometer)
 		zassert_equal(0,
 			      tdf_parse_find_in_buf(pkt->data, pkt->len, configs[i].tdf_id, &tdf));
 		zassert_equal(0, tdf.time);
+		zassert_equal(sizeof(struct tdf_acc_2g), tdf.tdf_len);
 		net_buf_unref(pkt);
 	}
 
@@ -393,6 +400,7 @@ ZTEST(task_tdf_logger, test_location)
 	net_buf_pull(pkt, sizeof(struct epacket_dummy_frame));
 	zassert_equal(0, tdf_parse_find_in_buf(pkt->data, pkt->len, TDF_GCS_WGS84_LLHA, &tdf));
 	zassert_equal(0, tdf.time);
+	zassert_equal(sizeof(struct tdf_gcs_wgs84_llha), tdf.tdf_len);
 	net_buf_unref(pkt);
 
 	/* Wait until data invalid, should not send */
@@ -450,6 +458,7 @@ ZTEST(task_tdf_logger, test_net_conn)
 		zassert_equal(
 			0, tdf_parse_find_in_buf(pkt->data, pkt->len, TDF_LTE_CONN_STATUS, &tdf));
 		zassert_equal(0, tdf.time);
+		zassert_equal(sizeof(struct tdf_lte_conn_status), tdf.tdf_len);
 		net_buf_unref(pkt);
 	}
 }
@@ -481,6 +490,7 @@ ZTEST(task_tdf_logger, test_custom)
 	net_buf_pull(pkt, sizeof(struct epacket_dummy_frame));
 	zassert_equal(0, tdf_parse_find_in_buf(pkt->data, pkt->len, TDF_ACC_16G, &tdf));
 	zassert_equal(0, tdf.time);
+	zassert_equal(sizeof(struct tdf_acc_16g), tdf.tdf_len);
 	net_buf_unref(pkt);
 }
 
