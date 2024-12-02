@@ -15,6 +15,8 @@
 #include <stdint.h>
 #include <string.h>
 
+#include <zephyr/bluetooth/addr.h>
+
 #include <infuse/data_logger/high_level/tdf.h>
 #include <infuse/tdf/definitions.h>
 #include <infuse/reboot.h>
@@ -99,6 +101,19 @@ static inline void tdf_reboot_info_from_state(struct infuse_reboot_state *state,
 	info->param_1 = state->param_1.program_counter;
 	info->param_2 = state->param_2.link_register;
 	strncpy(info->thread, state->thread_name, sizeof(info->thread));
+}
+
+/**
+ * @brief Populate the TDF Bluetooth address from a Bluetooth stack structure
+ *
+ * @param addr Bluetooth stack address
+ * @param tdf TDF address structure
+ */
+static inline void tdf_bt_addr_le_from_stack(const bt_addr_le_t *addr,
+					     struct tdf_struct_bt_addr_le *tdf)
+{
+	tdf->type = addr->type;
+	memcpy(tdf->val, addr->a.val, 6);
 }
 
 /**

@@ -840,4 +840,19 @@ ZTEST(tdf_util, test_gyro_range_to_tdf)
 	zassert_equal(TDF_GYR_2000DPS, tdf_id_from_gyroscope_range(2000));
 }
 
+ZTEST(tdf_util, test_bt_addr_conv)
+{
+	const bt_addr_le_t addr_pub = {.type = BT_ADDR_LE_PUBLIC, .a = {{0, 1, 2, 3, 4, 5}}};
+	const bt_addr_le_t addr_rnd = {.type = BT_ADDR_LE_RANDOM, .a = {{4, 5, 6, 7, 8, 9}}};
+	struct tdf_struct_bt_addr_le tdf_addr;
+
+	tdf_bt_addr_le_from_stack(&addr_pub, &tdf_addr);
+	zassert_equal(BT_ADDR_LE_PUBLIC, tdf_addr.type);
+	zassert_mem_equal(tdf_addr.val, addr_pub.a.val, 6);
+
+	tdf_bt_addr_le_from_stack(&addr_rnd, &tdf_addr);
+	zassert_equal(BT_ADDR_LE_RANDOM, tdf_addr.type);
+	zassert_mem_equal(tdf_addr.val, addr_pub.a.val, 6);
+}
+
 ZTEST_SUITE(tdf_util, NULL, NULL, NULL, NULL, NULL);

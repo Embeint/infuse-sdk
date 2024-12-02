@@ -20,6 +20,7 @@
 #include <infuse/task_runner/runner.h>
 #include <infuse/data_logger/high_level/tdf.h>
 #include <infuse/tdf/definitions.h>
+#include <infuse/tdf/util.h>
 
 static struct bt_gatt_state {
 #ifdef CONFIG_BT_CONN_AUTO_RSSI
@@ -502,8 +503,7 @@ static void rssi_query_worker(struct k_work *work)
 			const bt_addr_le_t *dst = bt_conn_get_dst(conn);
 			struct tdf_bluetooth_rssi tdf;
 
-			tdf.address.type = dst->type;
-			memcpy(tdf.address.val, dst->a.val, 6);
+			tdf_bt_addr_le_from_stack(dst, &tdf.address);
 			tdf.rssi = rp->rssi;
 
 			tdf_data_logger_log(conn_state->rssi_log, TDF_BLUETOOTH_RSSI, sizeof(tdf),
