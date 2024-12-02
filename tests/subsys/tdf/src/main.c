@@ -852,7 +852,7 @@ ZTEST(tdf_util, test_bt_addr_conv)
 
 	tdf_bt_addr_le_from_stack(&addr_rnd, &tdf_addr);
 	zassert_equal(BT_ADDR_LE_RANDOM, tdf_addr.type);
-	zassert_mem_equal(tdf_addr.val, addr_pub.a.val, 6);
+	zassert_mem_equal(tdf_addr.val, addr_rnd.a.val, 6);
 }
 
 ZTEST_SUITE(tdf_util, NULL, NULL, NULL, NULL, NULL);

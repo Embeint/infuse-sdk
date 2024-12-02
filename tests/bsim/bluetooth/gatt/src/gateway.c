@@ -17,6 +17,7 @@
 #include "time_machine.h"
 #include "bstests.h"
 
+#include <infuse/auto/bluetooth_conn_log.h>
 #include <infuse/data_logger/high_level/tdf.h>
 #include <infuse/epacket/interface.h>
 #include <infuse/epacket/interface/epacket_bt_central.h>
@@ -43,6 +44,69 @@ static void common_init(void)
 	k_sem_reset(&epacket_adv_received);
 	k_sem_reset(&char_read_received);
 	received_packets = 0;
+}
+
+static int expect_no_serial_tdf(void)
+{
+	struct k_fifo *fifo = epacket_dummmy_transmit_fifo_get();
+	struct net_buf *buf;
+
+	/* Flush logger and confirm no information logged */
+	tdf_data_logger_flush(TDF_DATA_LOGGER_SERIAL);
+	buf = k_fifo_get(fifo, K_MSEC(10));
+	if (buf) {
+		net_buf_unref(buf);
+		return -1;
+	}
+	return 0;
+}
+
+static struct net_buf *expect_serial_tdf(struct tdf_parsed *tdf, uint16_t tdf_id, bool auto_flush)
+{
+	struct k_fifo *fifo = epacket_dummmy_transmit_fifo_get();
+	struct net_buf *buf;
+
+	if (!auto_flush) {
+		tdf_data_logger_flush(TDF_DATA_LOGGER_SERIAL);
+	}
+	buf = k_fifo_get(fifo, K_MSEC(10));
+	if (buf == NULL) {
+		return NULL;
+	}
+	net_buf_pull(buf, sizeof(struct epacket_dummy_frame));
+
+	/* Validate logged TDF */
+	if (tdf_parse_find_in_buf(buf->data, buf->len, tdf_id, tdf) != 0) {
+		net_buf_unref(buf);
+		return NULL;
+	}
+
+	return buf;
+}
+
+static int expect_bt_conn_tdf(uint8_t state, bool auto_flush)
+{
+	struct tdf_bluetooth_connection *bt_conn;
+	struct net_buf *buf;
+	struct tdf_parsed tdf;
+
+	k_sleep(K_MSEC(10));
+	buf = expect_serial_tdf(&tdf, TDF_BLUETOOTH_CONNECTION, auto_flush);
+	if (buf == NULL) {
+		return -1;
+	}
+	bt_conn = tdf.data;
+	if ((tdf.tdf_num != 1) || (bt_conn->connected != state)) {
+		return -1;
+	}
+	if (auto_flush && (tdf.time != 0)) {
+		return -1;
+	}
+	if (!auto_flush && (tdf.time == 0)) {
+		return -1;
+	}
+	net_buf_unref(buf);
+	return 0;
 }
 
 static void epacket_bt_adv_receive_handler(struct net_buf *buf)
@@ -129,6 +193,8 @@ static void main_connect_nonexistant(void)
 	}
 	addr.a.val[0]++;
 
+	auto_bluetooth_conn_log_configure(TDF_DATA_LOGGER_SERIAL, 0);
+
 	for (int i = 0; i < 3; i++) {
 		k_poll_signal_reset(&sig);
 		events[0].state = K_POLL_STATE_NOT_READY;
@@ -158,6 +224,8 @@ static void main_connect_nonexistant(void)
 		}
 		bt_conn_unref(conn);
 		k_sleep(K_MSEC(200));
+
+		expect_no_serial_tdf();
 	}
 
 	PASS("Gateway connection timeout passed\n\n");
@@ -193,6 +261,8 @@ static void main_connect_no_discovery(void)
 		return;
 	}
 
+	auto_bluetooth_conn_log_configure(TDF_DATA_LOGGER_SERIAL, 0);
+
 	for (int i = 0; i < 3; i++) {
 		k_poll_signal_reset(&sig);
 		events[0].state = K_POLL_STATE_NOT_READY;
@@ -216,6 +286,11 @@ static void main_connect_no_discovery(void)
 			FAIL("Unexpected connection result\n");
 			return;
 		}
+		if (expect_bt_conn_tdf(1, false) != 0) {
+			FAIL("Failed to get expected TDF\n");
+			return;
+		}
+
 		k_sleep(K_MSEC(100));
 		rc = bt_conn_disconnect_sync(conn);
 		if (rc < 0) {
@@ -223,6 +298,11 @@ static void main_connect_no_discovery(void)
 			return;
 		}
 		bt_conn_unref(conn);
+
+		if (expect_bt_conn_tdf(0, false) != 0) {
+			FAIL("Failed to get expected TDF\n");
+			return;
+		}
 	}
 
 	PASS("Connect without discovery passed\n\n");
@@ -269,6 +349,8 @@ static void main_connect_discover_name(void)
 		return;
 	}
 
+	auto_bluetooth_conn_log_configure(TDF_DATA_LOGGER_SERIAL, AUTO_BT_CONN_LOG_EVENTS_FLUSH);
+
 	for (int i = 0; i < 3; i++) {
 		k_poll_signal_reset(&sig);
 		events[0].state = K_POLL_STATE_NOT_READY;
@@ -290,6 +372,11 @@ static void main_connect_discover_name(void)
 		}
 		if (conn_rc != 0) {
 			FAIL("Unexpected connection result\n");
+			return;
+		}
+
+		if (expect_bt_conn_tdf(1, true) != 0) {
+			FAIL("Failed to get expected TDF\n");
 			return;
 		}
 
@@ -336,6 +423,11 @@ static void main_connect_discover_name(void)
 			return;
 		}
 		bt_conn_unref(conn);
+
+		if (expect_bt_conn_tdf(0, true) != 0) {
+			FAIL("Failed to get expected TDF\n");
+			return;
+		}
 	}
 
 	PASS("Connect discover name passed\n\n");
@@ -427,7 +519,6 @@ static void main_connect_discover_nonexistant(void)
 
 static void main_connect_rssi(void)
 {
-	struct k_fifo *fifo = epacket_dummmy_transmit_fifo_get();
 	struct k_poll_signal sig;
 	struct bt_conn_auto_setup_cb callbacks = {
 		.conn_setup_cb = conn_setup_cb,
@@ -451,11 +542,6 @@ static void main_connect_rssi(void)
 	struct tdf_parsed tdf;
 	int conn_rc;
 	int rc;
-
-	if (fifo == NULL) {
-		FAIL("No FIFO\n");
-		return;
-	}
 
 	common_init();
 	k_poll_signal_init(&sig);
@@ -492,9 +578,7 @@ static void main_connect_rssi(void)
 
 	/* No logging by default */
 	k_sleep(K_SECONDS(2));
-	tdf_data_logger_flush(TDF_DATA_LOGGER_SERIAL);
-	buf = k_fifo_get(fifo, K_MSEC(10));
-	if (buf != NULL) {
+	if (expect_no_serial_tdf() != 0) {
 		FAIL("Unexpected packet\n");
 		return;
 	}
@@ -504,18 +588,10 @@ static void main_connect_rssi(void)
 	for (int i = 0; i < 3; i++) {
 		/* Wait for next log interval */
 		k_sleep(K_MSEC(CONFIG_BT_CONN_AUTO_RSSI_INTERVAL_MS + 10));
-		/* Flush logger and confirm information logged */
-		tdf_data_logger_flush(TDF_DATA_LOGGER_SERIAL);
-		buf = k_fifo_get(fifo, K_MSEC(10));
-		if (buf == NULL) {
-			FAIL("Expected TDF to be logged\n");
-			return;
-		}
-		net_buf_pull(buf, sizeof(struct epacket_dummy_frame));
 
-		/* Validate logged TDF */
-		if (tdf_parse_find_in_buf(buf->data, buf->len, TDF_BLUETOOTH_RSSI, &tdf) != 0) {
-			FAIL("Did not find TDF\n");
+		buf = expect_serial_tdf(&tdf, TDF_BLUETOOTH_RSSI, false);
+		if (buf == NULL) {
+			FAIL("Unexpected TDF data\n");
 			return;
 		}
 		bt_rssi = tdf.data;
