@@ -9,6 +9,15 @@
 #include <infuse/states.h>
 #include <infuse/task_runner/schedule.h>
 
+#ifdef CONFIG_TASK_RUNNER_CUSTOM_TASK_DEFINITIONS
+
+/* Validation of custom arguments */
+BUILD_ASSERT(sizeof(union custom_task_arguments) <= 16, "Custom arguments too large");
+BUILD_ASSERT(__alignof(union custom_task_arguments) == 1,
+	     "Custom arguments require unsupported alignment");
+
+#endif /* CONFIG_TASK_RUNNER_CUSTOM_TASK_DEFINITIONS */
+
 static bool task_schedule_states_eval(const struct task_schedule_state_conditions *states,
 				      atomic_t *app_states, bool fallthrough)
 {
