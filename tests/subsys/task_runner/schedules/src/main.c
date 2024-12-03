@@ -359,6 +359,15 @@ ZTEST(task_runner_schedules, test_reboot_termination)
 	zassert_true(task_schedule_should_terminate(&schedule, &state, app_states, 1000, 100, 100));
 }
 
+ZTEST(task_runner_schedules, test_custom_args_included)
+{
+	struct task_schedule schedule;
+
+	/* If custom arguments aren't included this won't compile */
+	schedule.task_args.custom.custom1.arg1 = 0;
+	schedule.task_args.custom.custom2.arg2 = INT32_MIN;
+}
+
 void test_init(void *fixture)
 {
 	infuse_state_clear(INFUSE_STATE_REBOOTING);
