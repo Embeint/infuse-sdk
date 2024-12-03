@@ -7,6 +7,16 @@ config TASK_RUNNER
 
 if TASK_RUNNER
 
+config TASK_RUNNER_CUSTOM_TASK_DEFINITIONS
+	bool "Enable custom task definitions in `struct task_schedule`"
+
+config TASK_RUNNER_CUSTOM_TASK_DEFINITIONS_PATH
+	string "Path to custom task definition header"
+	depends on TASK_RUNNER_CUSTOM_TASK_DEFINITIONS
+	help
+	  Path to a `.h` file that defines a type `union custom_task_arguments`
+	  compatible with `union infuse_task_arguments`.
+
 config TASK_RUNNER_INFUSE_WATCHDOG
 	bool "Install watchdog on the Task Runner iteration function"
 	depends on INFUSE_WATCHDOG
