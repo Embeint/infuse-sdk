@@ -45,7 +45,7 @@
             "description": "Bluetooth address type (bt_addr_le_t)",
             "fields": [
                 {"name": "type", "type": "uint8_t", "description": "Address type (0 == Public, 1 == Random)"},
-                {"name": "val", "type": "uint8_t", "num": 6, "display": {"fmt": "hex", "digits": 12}, "description": "Address bytes"}
+                {"name": "val", "type": "uint8_t", "num": 6, "display": {"fmt": "hex", "digits": 12}, "conversion": {"int": "little"}, "description": "Address bytes"}
             ]
         }
     },

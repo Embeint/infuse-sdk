@@ -110,12 +110,18 @@ class cloudgen(WestCommand):
         }
 
         def conv_formula(f):
-            p = ""
-            if f["conversion"]["m"] != 1:
-                p += f" * {f['conversion']['m']}"
-            if f["conversion"]["c"] != 0:
-                p += f" + {f['conversion']['c']}"
-            return {"name": f["name"], "conv": p}
+            conv = f"self._{f['name']}"
+            i = f["conversion"].get("int", None)
+            m = f["conversion"].get("m", 1)
+            c = f["conversion"].get("c", 0)
+
+            if i is not None:
+                conv = f"int.from_bytes({conv}, byteorder='{i}')"
+            if m != 1:
+                conv += f" * {m}"
+            if c != 0:
+                conv += f" + {c}"
+            return {"name": f["name"], "conv": conv}
 
         def display_format(f):
             d = f.get("display")

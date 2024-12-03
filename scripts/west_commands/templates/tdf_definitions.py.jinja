@@ -32,7 +32,7 @@ class structs:
 
         @property
         def {{ conv['name'] }}(self):
-            return self._{{ conv['name'] }}{{ conv['conv']}}
+            return {{ conv['conv']}}
 {% endfor %}
 
 {% endfor %}
@@ -63,7 +63,7 @@ class readings:
 
         @property
         def {{ conv['name'] }}(self):
-            return self._{{ conv['name'] }}{{ conv['conv']}}
+            return {{ conv['conv']}}
 {% endfor %}
 
 {% endfor %}
