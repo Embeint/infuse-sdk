@@ -106,6 +106,7 @@ static int epacket_udp_loop(void *a, void *b, void *c)
 	struct sockaddr_in local_addr = {0};
 	struct epacket_rx_metadata *meta;
 	struct epacket_interface_cb *cb;
+	struct zsock_pollfd pollfds[1];
 	struct sockaddr from;
 	socklen_t from_len;
 	struct net_buf *buf;
@@ -159,10 +160,19 @@ static int epacket_udp_loop(void *a, void *b, void *c)
 		}
 		k_event_post(&udp_state.state, UDP_STATE_CLIENTS_NOTIFIED_UP);
 
+		pollfds[0].fd = udp_state.sock;
+		pollfds[0].events = ZSOCK_POLLIN;
+
 		while (true) {
+			/* Wait for data to arrive */
+			rc = zsock_poll(pollfds, 1, SYS_FOREVER_MS);
+			if (pollfds[0].revents & (ZSOCK_POLLHUP | ZSOCK_POLLNVAL)) {
+				LOG_ERR("Socket closed");
+				goto socket_error;
+			}
+
+			/* Allocate buffer and receive data */
 			buf = epacket_alloc_rx(K_FOREVER);
-			meta = net_buf_user_data(buf);
-			/* Receive data into local buffer */
 			received = zsock_recvfrom(udp_state.sock, buf->data, buf->size, 0, &from,
 						  &from_len);
 			if (received < 0) {
@@ -176,6 +186,7 @@ static int epacket_udp_loop(void *a, void *b, void *c)
 			LOG_DBG("Received %d bytes from %d.%d.%d.%d:%d", received, addr[0], addr[1],
 				addr[2], addr[3], ntohs(port));
 
+			meta = net_buf_user_data(buf);
 			meta->interface = epacket_udp;
 			meta->interface_id = EPACKET_INTERFACE_UDP;
 			meta->rssi = 0;
