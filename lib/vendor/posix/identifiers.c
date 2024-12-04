@@ -11,5 +11,9 @@
 uint64_t vendor_infuse_device_id(void)
 {
 	/* Hardcoded ID */
-	return 0x1000000ULL;
+#ifdef CONFIG_INFUSE_SECURITY_TEST_CREDENTIALS
+	return 0xFFFFFFFFFFFFFFFDULL;
+#else
+	return 0x0000000001000000ULL;
+#endif /* CONFIG_INFUSE_SECURITY_TEST_CREDENTIALS */
 }
