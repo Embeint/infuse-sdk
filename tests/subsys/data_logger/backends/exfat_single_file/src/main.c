@@ -29,7 +29,7 @@ static uint32_t sector_count;
 static uint32_t sector_size;
 static uint64_t device_id = 0x0123456789ABCDEF;
 
-uint64_t infuse_device_id(void)
+uint64_t vendor_infuse_device_id(void)
 {
 	return device_id;
 }

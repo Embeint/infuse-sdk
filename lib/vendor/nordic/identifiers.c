@@ -25,7 +25,7 @@ struct nrf_uicr_structure {
 	uint64_t infuse_device_id;
 };
 
-uint64_t infuse_device_id(void)
+uint64_t vendor_infuse_device_id(void)
 {
 #ifdef CONFIG_BUILD_WITH_TFM
 	static struct nrf_uicr_structure readout;

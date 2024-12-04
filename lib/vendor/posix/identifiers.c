@@ -8,7 +8,7 @@
 
 #include <stdint.h>
 
-uint64_t infuse_device_id(void)
+uint64_t vendor_infuse_device_id(void)
 {
 	/* Hardcoded ID */
 	return 0x1000000ULL;
