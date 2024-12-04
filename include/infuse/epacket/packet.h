@@ -54,10 +54,19 @@ union epacket_interface_address {
 	{                                                                                          \
 	}
 
+/**
+ * @brief Callback run when packet is transmitted
+ *
+ * @param dev Interface packet was sent on
+ * @param pkt Packet that was sent
+ * @param result Result of sending the packet
+ */
+typedef void (*epacket_tx_done_cb)(const struct device *dev, struct net_buf *pkt, int result);
+
 /* Metadata for packets that will be transmitted */
 struct epacket_tx_metadata {
 	/* Callback run when TX completes */
-	void (*tx_done)(const struct device *dev, struct net_buf *pkt, int result);
+	epacket_tx_done_cb tx_done;
 	/* Authentication level of packet */
 	enum epacket_auth auth;
 	/* Packet type */
@@ -243,9 +252,7 @@ static inline void epacket_set_tx_metadata(struct net_buf *buf, enum epacket_aut
  * @param buf ePacket TX buffer
  * @param tx_done Callback to run on transmission
  */
-static inline void epacket_set_tx_callback(struct net_buf *buf,
-					   void (*tx_done)(const struct device *dev,
-							   struct net_buf *pkt, int result))
+static inline void epacket_set_tx_callback(struct net_buf *buf, epacket_tx_done_cb tx_done)
 {
 	struct epacket_tx_metadata *meta = net_buf_user_data(buf);
 
