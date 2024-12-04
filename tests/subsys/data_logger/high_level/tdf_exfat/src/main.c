@@ -21,7 +21,7 @@ enum {
 	TDF_RANDOM = 37,
 };
 
-uint64_t infuse_device_id(void)
+uint64_t vendor_infuse_device_id(void)
 {
 	return 0x0123456789ABCDEF;
 }

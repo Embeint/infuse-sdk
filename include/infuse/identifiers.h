@@ -22,12 +22,24 @@ extern "C" {
  * @{
  */
 
+/** @cond INTERNAL_HIDDEN */
+/**
+ * @brief Expected vendor implementation of ID
+ *
+ * @return uint64_t local device ID
+ */
+uint64_t vendor_infuse_device_id(void);
+/** @endcond */
+
 /**
  * @brief Get local device ID
  *
  * @return uint64_t local device ID
  */
-uint64_t infuse_device_id(void);
+static inline uint64_t infuse_device_id(void)
+{
+	return vendor_infuse_device_id();
+}
 
 /**
  * @}
