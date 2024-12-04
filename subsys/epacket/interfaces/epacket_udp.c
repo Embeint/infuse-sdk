@@ -275,6 +275,17 @@ static uint16_t epacket_udp_max_packet(const struct device *dev)
 		       : 0;
 }
 
+#ifdef CONFIG_ZTEST
+
+void epacket_udp_dns_reset(void)
+{
+	k_event_clear(&udp_state.state, UDP_STATE_VALID_DNS);
+	udp_state.last_receive = k_uptime_seconds();
+	udp_state.ack_countdown = CONFIG_EPACKET_INTERFACE_UDP_ACK_COUNTDOWN;
+}
+
+#endif /* CONFIG_ZTEST */
+
 static int epacket_udp_init(const struct device *dev)
 {
 	epacket_interface_common_init(dev);

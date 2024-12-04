@@ -28,6 +28,15 @@ extern "C" {
 
 #define epacket_udp_frame epacket_v0_unversioned_frame_format
 
+#ifdef CONFIG_ZTEST
+
+/**
+ * @brief Reset DNS knowledge for testing purposes
+ */
+void epacket_udp_dns_reset(void);
+
+#endif /* CONFIG_ZTEST */
+
 /**
  * @}
  */
