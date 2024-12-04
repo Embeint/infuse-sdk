@@ -1,0 +1,7 @@
+/ {
+	chosen {
+		infuse,kv-partition = &storage_partition;
+	};
+};
+
+#include "../app.overlay"

@@ -1,0 +1,12 @@
+common:
+  tags: net epacket
+  min_flash: 64
+  min_ram: 32
+tests:
+  epacket.interface.udp:
+    platform_allow:
+      - native_sim
+    integration_platforms:
+      - native_sim
+    extra_args:
+      - OVERLAY_CONFIG="overlay-nsos.conf"
