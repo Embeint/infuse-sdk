@@ -143,11 +143,21 @@ static psa_key_id_t generate_root_ecc_key_pair(void)
 static psa_key_id_t derive_shared_secret(psa_key_id_t root_key_id)
 {
 	psa_key_attributes_t key_attributes = hkdf_derive_attributes();
-	uint8_t shared_secret[32];
+	uint8_t __maybe_unused shared_secret[32];
+	size_t __maybe_unused olen;
 	psa_status_t status;
 	psa_key_id_t key_id;
-	size_t olen;
 
+#ifdef CONFIG_INFUSE_SECURITY_TEST_CREDENTIALS
+	static const uint8_t test_shared_secret[32] = {
+		0xfd, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+		0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+		0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+	};
+
+	status = psa_import_key(&key_attributes, test_shared_secret, sizeof(test_shared_secret),
+				&key_id);
+#else
 	/* Attempt to open the key before spending time generating it */
 	status = psa_open_key(INFUSE_ROOT_ECC_SHARED_SECRET_KEY_ID, &key_id);
 	if (status != PSA_SUCCESS) {
@@ -167,11 +177,11 @@ static psa_key_id_t derive_shared_secret(psa_key_id_t root_key_id)
 					&key_id);
 		/* Clear sensitive stack content */
 		mbedtls_platform_zeroize(shared_secret, sizeof(shared_secret));
-
-		if (status != PSA_SUCCESS) {
-			LOG_WRN("Failed to import %s root (%d)", "device", status);
-			return PSA_KEY_ID_NULL;
-		}
+	}
+#endif /* CONFIG_INFUSE_SECURITY_TEST_CREDENTIALS */
+	if (status != PSA_SUCCESS) {
+		LOG_WRN("Failed to import %s root (%d)", "device", status);
+		return PSA_KEY_ID_NULL;
 	}
 
 	/* Calculate device key identifier (CRC32 over the two public keys) */
@@ -222,40 +232,11 @@ static int coap_dtls_load(void)
 	}
 #endif /* CONFIG_MODEM_KEY_MGMT */
 
-#ifdef CONFIG_INFUSE_SECURITY_TEST_CREDENTIALS
-	psa_key_id_t coap_base_key;
-
-	snprintf(dtls_identity_str, sizeof(dtls_identity_str), "%016" PRIx64, 0xfffffffffffffffd);
-
-	{
-		psa_key_attributes_t key_attributes = PSA_KEY_ATTRIBUTES_INIT;
-		static const uint8_t shared_secret[32] = {
-			0xfd, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-			0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-			0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
-
-		psa_set_key_usage_flags(&key_attributes, PSA_KEY_USAGE_DERIVE);
-		psa_set_key_lifetime(&key_attributes, PSA_KEY_LIFETIME_VOLATILE);
-		psa_set_key_algorithm(&key_attributes, PSA_ALG_HKDF(PSA_ALG_SHA_256));
-		psa_set_key_type(&key_attributes, PSA_KEY_TYPE_DERIVE);
-		psa_set_key_bits(&key_attributes, 256);
-
-		status = psa_import_key(&key_attributes, shared_secret, sizeof(shared_secret),
-					&coap_base_key);
-		if (status != PSA_SUCCESS) {
-			LOG_ERR("Failed to import static shared secret (%d)", status);
-			coap_base_key = PSA_KEY_ID_NULL;
-			return -EINVAL;
-		}
-	}
-#else
-	psa_key_id_t coap_base_key = device_root_key;
-
+	/* Initialise identity from Infuse ID */
 	snprintf(dtls_identity_str, sizeof(dtls_identity_str), "%016" PRIx64, infuse_device_id());
-#endif /* CONFIG_INFUSE_SECURITY_TEST_CREDENTIALS */
 
 	/* Derive Infuse-IoT COAP key */
-	dtls_coap_key = infuse_security_derive_chacha_key(coap_base_key, &dtls_coap_salt,
+	dtls_coap_key = infuse_security_derive_chacha_key(device_root_key, &dtls_coap_salt,
 							  sizeof(dtls_coap_salt), "coap", 4, true);
 	if (dtls_coap_key == PSA_KEY_ID_NULL) {
 		LOG_ERR("COAP key derivation failed");

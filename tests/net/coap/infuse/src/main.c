@@ -44,6 +44,11 @@ struct cb_ctx {
 	uint32_t cb_count;
 };
 
+uint64_t infuse_device_id(void)
+{
+	return 0xFFFFFFFFFFFFFFFDULL;
+}
+
 static void l4_event_handler(struct net_mgmt_event_callback *cb, uint32_t mgmt_event,
 			     struct net_if *iface)
 {
