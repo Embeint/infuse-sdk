@@ -16,6 +16,7 @@
 #include <zephyr/random/random.h>
 
 #include <infuse/identifiers.h>
+#include <infuse/reboot.h>
 #include <infuse/time/epoch.h>
 #include <infuse/epacket/interface.h>
 #include <infuse/epacket/packet.h>
@@ -38,6 +39,10 @@ enum {
 };
 
 struct udp_state {
+#ifdef CONFIG_EPACKET_INTERFACE_UDP_DOWNLINK_WATCHDOG
+	struct k_work_delayable downlink_watchdog;
+	struct net_mgmt_event_callback iface_admin_cb;
+#endif
 	struct net_mgmt_event_callback l4_callback;
 	struct sockaddr remote;
 	struct k_event state;
@@ -50,6 +55,36 @@ struct udp_state {
 static struct udp_state udp_state;
 
 LOG_MODULE_REGISTER(epacket_udp, CONFIG_EPACKET_UDP_LOG_LEVEL);
+
+#ifdef CONFIG_EPACKET_INTERFACE_UDP_DOWNLINK_WATCHDOG
+
+static void udp_downlink_watchdog_expiry(struct k_work *work)
+{
+	LOG_WRN("Downlink watchdog expired");
+	/* Watchdog expired, reboot */
+	infuse_reboot(INFUSE_REBOOT_SW_WATCHDOG, (uintptr_t)udp_downlink_watchdog_expiry,
+		      CONFIG_EPACKET_INTERFACE_UDP_DOWNLINK_WATCHDOG_TIMEOUT);
+}
+
+static void if_admin_event_handler(struct net_mgmt_event_callback *cb, uint32_t event,
+				   struct net_if *iface)
+{
+	struct udp_state *state = CONTAINER_OF(cb, struct udp_state, iface_admin_cb);
+
+	if (event == NET_EVENT_IF_ADMIN_UP) {
+		/* Application wants the interface connected, start the watchdog */
+		LOG_INF("Downlink watchdog started (%d sec)",
+			CONFIG_EPACKET_INTERFACE_UDP_DOWNLINK_WATCHDOG_TIMEOUT);
+		k_work_schedule(&state->downlink_watchdog,
+				K_SECONDS(CONFIG_EPACKET_INTERFACE_UDP_DOWNLINK_WATCHDOG_TIMEOUT));
+	} else if (event == NET_EVENT_IF_ADMIN_DOWN) {
+		/* Application no longer wants the interface connected, cancel the watchdog */
+		LOG_INF("Downlink watchdog cancelled");
+		k_work_cancel_delayable(&state->downlink_watchdog);
+	}
+}
+
+#endif /* CONFIG_EPACKET_INTERFACE_UDP_DOWNLINK_WATCHDOG */
 
 static void cleanup_interface(const struct device *epacket_udp)
 {
@@ -265,6 +300,12 @@ static void epacket_udp_decrypt_res(const struct device *dev, struct net_buf *bu
 		/* Update ACK state */
 		udp_state.last_receive = k_uptime_seconds();
 		udp_state.ack_countdown = CONFIG_EPACKET_INTERFACE_UDP_ACK_COUNTDOWN;
+#ifdef CONFIG_EPACKET_INTERFACE_UDP_DOWNLINK_WATCHDOG
+		/* Feed the downlink watchdog */
+		k_work_reschedule(
+			&udp_state.downlink_watchdog,
+			K_SECONDS(CONFIG_EPACKET_INTERFACE_UDP_DOWNLINK_WATCHDOG_TIMEOUT));
+#endif /* CONFIG_EPACKET_INTERFACE_UDP_DOWNLINK_WATCHDOG */
 	}
 }
 
@@ -290,6 +331,15 @@ static int epacket_udp_init(const struct device *dev)
 {
 	epacket_interface_common_init(dev);
 	k_event_init(&udp_state.state);
+
+#ifdef CONFIG_EPACKET_INTERFACE_UDP_DOWNLINK_WATCHDOG
+	k_work_init_delayable(&udp_state.downlink_watchdog, udp_downlink_watchdog_expiry);
+
+	/* Register for callbacks on interface admin (application requested) state change */
+	net_mgmt_init_event_callback(&udp_state.iface_admin_cb, if_admin_event_handler,
+				     NET_EVENT_IF_ADMIN_UP | NET_EVENT_IF_ADMIN_DOWN);
+	net_mgmt_add_event_callback(&udp_state.iface_admin_cb);
+#endif /* CONFIG_EPACKET_INTERFACE_UDP_DOWNLINK_WATCHDOG */
 
 	/* Register for callbacks on network connectivity */
 	net_mgmt_init_event_callback(&udp_state.l4_callback, l4_event_handler,

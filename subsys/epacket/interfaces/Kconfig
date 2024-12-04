@@ -63,6 +63,23 @@ config EPACKET_INTERFACE_UDP_ACK_COUNTDOWN
 	int "Number of unanswered ACKs to send before dropping server"
 	default 10
 
+config EPACKET_INTERFACE_UDP_DOWNLINK_WATCHDOG
+	bool "Software watchdog for receiving data from cloud UDP server"
+	depends on INFUSE_REBOOT
+	default y
+	help
+	  Enable a software watchdog that is fed each time a valid downlink packet
+	  is received from the cloud UDP server. The intent of this watchdog is to
+	  protect against networking hardware/drivers from entering a permanently
+	  bad state that prevents UDP communications.
+
+config EPACKET_INTERFACE_UDP_DOWNLINK_WATCHDOG_TIMEOUT
+	int "Timeout duration for the cloud UDP server software watchdog"
+	depends on EPACKET_INTERFACE_UDP_DOWNLINK_WATCHDOG
+	default 259200
+	help
+	  Watchdog period in seconds. Default value is 3 days (3 * 86400)
+
 module = EPACKET_UDP
 module-str = epacket_udp
 source "subsys/logging/Kconfig.template.log_config"
