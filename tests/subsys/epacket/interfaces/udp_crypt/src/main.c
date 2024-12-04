@@ -20,7 +20,7 @@
 
 #include "../subsys/epacket/interfaces/epacket_internal.h"
 
-ZTEST(epacket_udp, test_metadata)
+ZTEST(epacket_udp_crypt, test_metadata)
 {
 	struct epacket_rx_metadata *meta;
 	enum epacket_auth iter_auth;
@@ -79,7 +79,7 @@ ZTEST(epacket_udp, test_metadata)
 	net_buf_unref(rx);
 }
 
-ZTEST(epacket_udp, test_decrypt_error)
+ZTEST(epacket_udp_crypt, test_decrypt_error)
 {
 	struct epacket_rx_metadata *meta;
 	struct net_buf *rx;
@@ -157,13 +157,13 @@ static void test_encrypt_decrypt_auth(enum epacket_auth auth)
 	net_buf_unref(rx);
 }
 
-ZTEST(epacket_udp, test_encrypt_decrypt)
+ZTEST(epacket_udp_crypt, test_encrypt_decrypt)
 {
 	test_encrypt_decrypt_auth(EPACKET_AUTH_DEVICE);
 	test_encrypt_decrypt_auth(EPACKET_AUTH_NETWORK);
 }
 
-ZTEST(epacket_udp, test_pre_encrypted)
+ZTEST(epacket_udp_crypt, test_pre_encrypted)
 {
 	struct net_buf *orig_buf, *encr_buf;
 	uint8_t *p;
@@ -193,4 +193,4 @@ static bool security_init(const void *global_state)
 	return true;
 }
 
-ZTEST_SUITE(epacket_udp, security_init, NULL, NULL, NULL, NULL);
+ZTEST_SUITE(epacket_udp_crypt, security_init, NULL, NULL, NULL, NULL);
