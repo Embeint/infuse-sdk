@@ -109,8 +109,13 @@ struct net_buf *rpc_command_file_write_basic(struct net_buf *request)
 	}
 
 write_done:
+	/* Controller only builds should not defer as we don't want the host to
+	 * take any action (rebooting us) until the patching is actually complete.
+	 */
+	bool defer = IS_ENABLED(CONFIG_BT_CTLR_ONLY) ? false : true;
+
 	/* Finish file write process, deferring long operations */
-	rc = rpc_common_file_actions_finish(&ctx, RPC_ID_FILE_WRITE_BASIC, true);
+	rc = rpc_common_file_actions_finish(&ctx, RPC_ID_FILE_WRITE_BASIC, defer);
 	if (rc < 0) {
 		LOG_ERR("Failed to finish %d (%d)", action, rc);
 	}
