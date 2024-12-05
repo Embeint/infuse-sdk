@@ -204,7 +204,7 @@
 		reg = <0>;
 		spi-max-frequency = <8000000>;
 		reset-gpios = <&gpio0 4 (GPIO_ACTIVE_LOW)>;
-		irq-gpios = <&gpio0 10 GPIO_ACTIVE_HIGH>;
+		irq-gpios = <&gpio0 10 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>;
 		reset-assert-duration-ms = <1>;
 		/* Additional GPIO is available here:
 		 * extra-gpios = <&gpio0 9 0>;
