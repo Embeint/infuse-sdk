@@ -38,7 +38,11 @@ uint64_t vendor_infuse_device_id(void);
  */
 static inline uint64_t infuse_device_id(void)
 {
+#ifdef CONFIG_INFUSE_TEST_ID
+	return 0xFFFFFFFFFFFFFFFDULL;
+#else
 	return vendor_infuse_device_id();
+#endif /* CONFIG_INFUSE_TEST_ID */
 }
 
 /**

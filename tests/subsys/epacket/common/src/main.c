@@ -20,11 +20,6 @@
 
 #include "../subsys/epacket/interfaces/epacket_internal.h"
 
-uint64_t vendor_infuse_device_id(void)
-{
-	return 0x0123456789ABCDEF;
-}
-
 ZTEST(epacket_common, test_alloc_failure)
 {
 	const struct device *epacket_dummy = DEVICE_DT_GET(DT_NODELABEL(epacket_dummy));

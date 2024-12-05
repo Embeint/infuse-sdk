@@ -12,6 +12,7 @@
 #include <zephyr/kernel.h>
 #include <zephyr/random/random.h>
 
+#include <infuse/identifiers.h>
 #include <infuse/security.h>
 #include <infuse/epacket/keys.h>
 #include <infuse/epacket/packet.h>
@@ -20,11 +21,6 @@
 #include "../subsys/epacket/interfaces/epacket_internal.h"
 
 static K_FIFO_DEFINE(packet_queue);
-
-uint64_t vendor_infuse_device_id(void)
-{
-	return 0x0123456789ABCDEF;
-}
 
 void receive_handler(struct net_buf *buf)
 {

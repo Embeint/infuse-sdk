@@ -12,17 +12,13 @@
 #include <zephyr/kernel.h>
 #include <zephyr/random/random.h>
 
+#include <infuse/identifiers.h>
 #include <infuse/security.h>
 #include <infuse/epacket/keys.h>
 #include <infuse/epacket/packet.h>
 #include <infuse/epacket/interface/epacket_udp.h>
 
 #include "../subsys/epacket/interfaces/epacket_internal.h"
-
-uint64_t vendor_infuse_device_id(void)
-{
-	return 0x0123456789ABCDEF;
-}
 
 ZTEST(epacket_udp, test_metadata)
 {

@@ -21,11 +21,6 @@ enum {
 	TDF_RANDOM = 37,
 };
 
-uint64_t vendor_infuse_device_id(void)
-{
-	return 0x0123456789ABCDEF;
-}
-
 ZTEST(tdf_data_logger_exfat, test_block_padding)
 {
 	const struct device *tdf_logger = DEVICE_DT_GET(DT_NODELABEL(tdf_logger_exfat));
