@@ -90,6 +90,10 @@ struct infuse_reboot_state {
 	char thread_name[REBOOT_STATE_THREAD_NAME_MAX];
 } __packed;
 
+/** @cond INTERNAL_HIDDEN */
+#define _NORETURN COND_CODE_1(CONFIG_INFUSE_REBOOT_RETURN, (), (FUNC_NORETURN))
+/** @endcond */
+
 /**
  * @brief Trigger a system reboot
  *
@@ -97,7 +101,7 @@ struct infuse_reboot_state {
  * @param info1 Program counter at exception or watchdog channel that expired
  * @param info2 Link register at exception
  */
-FUNC_NORETURN void infuse_reboot(enum infuse_reboot_reason reason, uint32_t info1, uint32_t info2);
+_NORETURN void infuse_reboot(enum infuse_reboot_reason reason, uint32_t info1, uint32_t info2);
 
 /**
  * @brief Trigger a system reboot in the future
