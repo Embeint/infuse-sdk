@@ -287,6 +287,10 @@ class release_build(WestCommand):
             if "CONFIG_INFUSE_DFU_HELPERS" not in configs:
                 errors.append("DFU RPCs enabled but image erase helpers not enabled")
 
+        if "CONFIG_EPACKET_INTERFACE_UDP" in configs:
+            if "CONFIG_EPACKET_INTERFACE_UDP_DOWNLINK_WATCHDOG" not in configs:
+                warnings.append("UDP interface enabled without downlink watchdog")
+
         if self.tfm_build:
             key_file_0 = configs["CONFIG_TFM_KEY_FILE_S"]
             key_file_1 = configs["CONFIG_TFM_KEY_FILE_NS"]
