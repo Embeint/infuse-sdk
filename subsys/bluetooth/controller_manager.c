@@ -117,6 +117,9 @@ int bt_controller_manager_file_write_next(uint32_t context, uint32_t image_offse
 int bt_controller_manager_file_write_finish(uint32_t context, uint32_t *len, uint32_t *crc)
 {
 	if (context != 0) {
+		/* Completion may take many seconds (patching) */
+		(void)rpc_client_update_response_timeout(&ctx, context, K_SECONDS(20));
+
 		k_sem_take(&write_done, K_FOREVER);
 
 		*len = write_rsp.recv_len;
