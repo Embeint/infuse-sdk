@@ -35,7 +35,7 @@ static bool bt_in_progress;
 static int bt_start_rc;
 static int bt_finish_rc;
 
-int bt_controller_manager_file_write_start(uint32_t *ctx, size_t image_len)
+int bt_controller_manager_file_write_start(uint32_t *ctx, uint8_t action, size_t image_len)
 {
 	bt_image_len = image_len;
 	bt_image_crc = 0;

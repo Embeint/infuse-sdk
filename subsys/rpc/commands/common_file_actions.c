@@ -101,7 +101,8 @@ int rpc_common_file_actions_start(struct rpc_common_file_actions_ctx *ctx,
 #endif /* SUPPORT_APP_CPATCH*/
 #ifdef CONFIG_BT_CONTROLLER_MANAGER
 	case RPC_ENUM_FILE_ACTION_BT_CTLR_IMG:
-		rc = bt_controller_manager_file_write_start(&ctx->client_ctx, length);
+		rc = bt_controller_manager_file_write_start(&ctx->client_ctx,
+							    RPC_ENUM_FILE_ACTION_APP_IMG, length);
 		break;
 #endif /* CONFIG_BT_CONTROLLER_MANAGER */
 #ifdef CONFIG_NRF_MODEM_LIB

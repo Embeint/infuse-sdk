@@ -34,12 +34,13 @@ int bt_controller_manager_init(void);
  * @brief Start Bluetooth controller file write
  *
  * @param ctx Context value that must be provided to future calls
+ * @param action Type of file being written
  * @param image_len Length of the file
  *
  * @retval 0 On success
  * @retval -errno On error
  */
-int bt_controller_manager_file_write_start(uint32_t *ctx, size_t image_len);
+int bt_controller_manager_file_write_start(uint32_t *ctx, uint8_t action, size_t image_len);
 
 /**
  * @brief Write the next chunk of the file to the Bluetooth controller
