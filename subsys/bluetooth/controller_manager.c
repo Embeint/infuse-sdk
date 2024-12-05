@@ -70,7 +70,7 @@ static void write_file_done(const struct net_buf *buf, void *user_data)
 	k_sem_give(&write_done);
 }
 
-int bt_controller_manager_file_write_start(uint32_t *context, size_t image_len)
+int bt_controller_manager_file_write_start(uint32_t *context, uint8_t action, size_t image_len)
 {
 	struct rpc_file_write_basic_request write_req = {
 		.data_header =
@@ -78,7 +78,7 @@ int bt_controller_manager_file_write_start(uint32_t *context, size_t image_len)
 				.size = image_len,
 				.rx_ack_period = 4,
 			},
-		.action = RPC_ENUM_FILE_ACTION_APP_IMG,
+		.action = action,
 	};
 	int rc;
 
