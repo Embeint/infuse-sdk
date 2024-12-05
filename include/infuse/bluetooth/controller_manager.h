@@ -31,20 +31,20 @@ extern "C" {
 int bt_controller_manager_init(void);
 
 /**
- * @brief Start Bluetooth controller device firmware update
+ * @brief Start Bluetooth controller file write
  *
  * @param ctx Context value that must be provided to future calls
- * @param image_len Length of the new image file
+ * @param image_len Length of the file
  *
  * @retval 0 On success
  * @retval -errno On error
  */
-int bt_controller_manager_dfu_write_start(uint32_t *ctx, size_t image_len);
+int bt_controller_manager_file_write_start(uint32_t *ctx, size_t image_len);
 
 /**
- * @brief Write the next chunk of the DFU image to the Bluetooth controller
+ * @brief Write the next chunk of the file to the Bluetooth controller
  *
- * @param ctx Context value from @ref bt_controller_manager_dfu_write_start
+ * @param ctx Context value from @ref bt_controller_manager_file_write_start
  * @param image_offset Byte offset of this chunk
  * @param image_chunk Pointer to the chunk
  * @param chunk_len Length of the chunk
@@ -52,20 +52,20 @@ int bt_controller_manager_dfu_write_start(uint32_t *ctx, size_t image_len);
  * @retval 0 On success
  * @retval -errno On error
  */
-int bt_controller_manager_dfu_write_next(uint32_t ctx, uint32_t image_offset,
-					 const void *image_chunk, size_t chunk_len);
+int bt_controller_manager_file_write_next(uint32_t ctx, uint32_t image_offset,
+					  const void *image_chunk, size_t chunk_len);
 
 /**
- * @brief Finish the Bluetooth controller device firmware update
+ * @brief Finish the Bluetooth controller file write
  *
- * @param ctx Context value from @ref bt_controller_manager_dfu_write_start
+ * @param ctx Context value from @ref bt_controller_manager_file_write_start
  * @param len Output length of data received by the controller
  * @param crc Output CRC of data received by the controller
  *
  * @retval 0 On success
  * @retval -errno On error
  */
-int bt_controller_manager_dfu_write_finish(uint32_t ctx, uint32_t *len, uint32_t *crc);
+int bt_controller_manager_file_write_finish(uint32_t ctx, uint32_t *len, uint32_t *crc);
 
 /**
  * @}
