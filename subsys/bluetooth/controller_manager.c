@@ -56,10 +56,10 @@ int bt_controller_manager_init(void)
 	return 0;
 }
 
-static void write_image_done(const struct net_buf *buf, void *user_data)
+static void write_file_done(const struct net_buf *buf, void *user_data)
 {
 	if (buf == NULL) {
-		LOG_WRN("DFU process timed out");
+		LOG_WRN("Write timed out");
 		write_rsp.header.return_code = -ETIMEDOUT;
 	} else {
 		const struct rpc_file_write_basic_response *rsp = (const void *)buf->data;
@@ -70,7 +70,7 @@ static void write_image_done(const struct net_buf *buf, void *user_data)
 	k_sem_give(&write_done);
 }
 
-int bt_controller_manager_dfu_write_start(uint32_t *context, size_t image_len)
+int bt_controller_manager_file_write_start(uint32_t *context, size_t image_len)
 {
 	struct rpc_file_write_basic_request write_req = {
 		.data_header =
@@ -84,9 +84,9 @@ int bt_controller_manager_dfu_write_start(uint32_t *context, size_t image_len)
 
 	rpc_client_init(&ctx, DEVICE_DT_GET(DT_INST(0, embeint_epacket_hci)), EPACKET_ADDR_ALL);
 
-	LOG_INF("Starting DFU process");
+	LOG_INF("Starting write process");
 	rc = rpc_client_command_queue(&ctx, RPC_ID_FILE_WRITE_BASIC, &write_req, sizeof(write_req),
-				      write_image_done, NULL, K_NO_WAIT, K_SECONDS(10));
+				      write_file_done, NULL, K_NO_WAIT, K_SECONDS(10));
 	*context = rpc_client_last_request_id(&ctx);
 	if (rc < 0) {
 		goto end;
@@ -94,7 +94,7 @@ int bt_controller_manager_dfu_write_start(uint32_t *context, size_t image_len)
 
 	/* Wait for initial ACK */
 	rc = rpc_client_ack_wait(&ctx, *context, K_SECONDS(10));
-	LOG_DBG("DFU erase complete");
+	LOG_DBG("Write prepare complete");
 	/* Writes should have a much tighter timeout */
 	(void)rpc_client_update_response_timeout(&ctx, *context, K_SECONDS(1));
 end:
@@ -106,15 +106,15 @@ end:
 	return rc;
 }
 
-int bt_controller_manager_dfu_write_next(uint32_t context, uint32_t image_offset,
-					 const void *image_chunk, size_t chunk_len)
+int bt_controller_manager_file_write_next(uint32_t context, uint32_t image_offset,
+					  const void *image_chunk, size_t chunk_len)
 {
 	/* Push data to controller */
 	LOG_DBG("Writing offset %08X", image_offset);
 	return rpc_client_data_queue(&ctx, context, image_offset, image_chunk, chunk_len);
 }
 
-int bt_controller_manager_dfu_write_finish(uint32_t context, uint32_t *len, uint32_t *crc)
+int bt_controller_manager_file_write_finish(uint32_t context, uint32_t *len, uint32_t *crc)
 {
 	if (context != 0) {
 		k_sem_take(&write_done, K_FOREVER);
@@ -125,6 +125,6 @@ int bt_controller_manager_dfu_write_finish(uint32_t context, uint32_t *len, uint
 		/* Unregister from callbacks */
 		rpc_client_cleanup(&ctx);
 	}
-	LOG_INF("DFU process finished");
+	LOG_INF("File write finished");
 	return write_rsp.header.return_code;
 }

@@ -42,7 +42,7 @@ static bool bt_in_progress;
 static int bt_start_rc;
 static int bt_finish_rc;
 
-int bt_controller_manager_dfu_write_start(uint32_t *ctx, size_t image_len)
+int bt_controller_manager_file_write_start(uint32_t *ctx, size_t image_len)
 {
 	bt_image_len = image_len;
 	bt_image_crc = 0;
@@ -52,8 +52,8 @@ int bt_controller_manager_dfu_write_start(uint32_t *ctx, size_t image_len)
 	return bt_start_rc;
 }
 
-int bt_controller_manager_dfu_write_next(uint32_t ctx, uint32_t image_offset,
-					 const void *image_chunk, size_t chunk_len)
+int bt_controller_manager_file_write_next(uint32_t ctx, uint32_t image_offset,
+					  const void *image_chunk, size_t chunk_len)
 {
 	zassert_equal(0, image_offset % sizeof(uint32_t));
 
@@ -67,7 +67,7 @@ int bt_controller_manager_dfu_write_next(uint32_t ctx, uint32_t image_offset,
 	return 0;
 }
 
-int bt_controller_manager_dfu_write_finish(uint32_t ctx, uint32_t *len, uint32_t *crc)
+int bt_controller_manager_file_write_finish(uint32_t ctx, uint32_t *len, uint32_t *crc)
 {
 	*len = bt_image_len;
 	*crc = bt_image_crc;
