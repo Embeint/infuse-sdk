@@ -104,6 +104,10 @@ int rpc_common_file_actions_start(struct rpc_common_file_actions_ctx *ctx,
 		rc = bt_controller_manager_file_write_start(&ctx->client_ctx,
 							    RPC_ENUM_FILE_ACTION_APP_IMG, length);
 		break;
+	case RPC_ENUM_FILE_ACTION_BT_CTLR_CPATCH:
+		rc = bt_controller_manager_file_write_start(
+			&ctx->client_ctx, RPC_ENUM_FILE_ACTION_APP_CPATCH, length);
+		break;
 #endif /* CONFIG_BT_CONTROLLER_MANAGER */
 #ifdef CONFIG_NRF_MODEM_LIB
 	case RPC_ENUM_FILE_ACTION_NRF91_MODEM_DIFF:
@@ -176,6 +180,7 @@ int rpc_common_file_actions_write(struct rpc_common_file_actions_ctx *ctx, uint3
 #endif /* SUPPORT_APP_IMG */
 #ifdef CONFIG_BT_CONTROLLER_MANAGER
 	case RPC_ENUM_FILE_ACTION_BT_CTLR_IMG:
+	case RPC_ENUM_FILE_ACTION_BT_CTLR_CPATCH:
 		rc = bt_controller_manager_file_write_next(ctx->client_ctx, offset, data, data_len);
 		break;
 #endif /* CONFIG_BT_CONTROLLER_MANAGER */
@@ -310,6 +315,7 @@ int rpc_common_file_actions_finish(struct rpc_common_file_actions_ctx *ctx, uint
 #endif /* SUPPORT_APP_IMG */
 #ifdef CONFIG_BT_CONTROLLER_MANAGER
 	case RPC_ENUM_FILE_ACTION_BT_CTLR_IMG:
+	case RPC_ENUM_FILE_ACTION_BT_CTLR_CPATCH:
 		/* Finalise the write */
 		rc = bt_controller_manager_file_write_finish(ctx->client_ctx, &ctx->received,
 							     &ctx->crc);
@@ -377,6 +383,7 @@ int rpc_common_file_actions_error_cleanup(struct rpc_common_file_actions_ctx *ct
 #endif /* SUPPORT_APP_IMG */
 #ifdef CONFIG_BT_CONTROLLER_MANAGER
 	case RPC_ENUM_FILE_ACTION_BT_CTLR_IMG:
+	case RPC_ENUM_FILE_ACTION_BT_CTLR_CPATCH:
 		/* Finalise the write */
 		rc = bt_controller_manager_file_write_finish(ctx->client_ctx, &ctx->received,
 							     &ctx->crc);
