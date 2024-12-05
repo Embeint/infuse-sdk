@@ -15,6 +15,7 @@
 #include <zephyr/storage/disk_access.h>
 #include <zephyr/pm/device.h>
 
+#include <infuse/identifiers.h>
 #include <infuse/data_logger/logger.h>
 #include <infuse/data_logger/backend/exfat.h>
 

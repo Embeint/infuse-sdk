@@ -22,11 +22,6 @@
 
 static K_FIFO_DEFINE(handler_fifo);
 
-uint64_t vendor_infuse_device_id(void)
-{
-	return 0x0123456789ABCDEF;
-}
-
 static void custom_handler(struct net_buf *packet)
 {
 	net_buf_put(&handler_fifo, packet);

@@ -1,5 +1,10 @@
 # Test defaults for Infuse-IoT libraries
 
+config INFUSE_TEST_ID
+	bool "Use hardcode test ID (0xFFFFFFFFFFFFFFFD)"
+	default y if INFUSE_SECURITY_TEST_CREDENTIALS || !INFUSE_SDK
+	depends on ZTEST
+
 if INFUSE_SECURITY
 
 configdefault MAIN_STACK_SIZE

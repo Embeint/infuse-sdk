@@ -14,17 +14,13 @@
 #include <zephyr/bluetooth/bluetooth.h>
 #include <zephyr/bluetooth/uuid.h>
 
+#include <infuse/identifiers.h>
 #include <infuse/security.h>
 #include <infuse/epacket/keys.h>
 #include <infuse/epacket/packet.h>
 #include <infuse/epacket/interface/epacket_bt_adv.h>
 
 #include "../subsys/epacket/interfaces/epacket_internal.h"
-
-uint64_t vendor_infuse_device_id(void)
-{
-	return 0x0123456789ABCDEF;
-}
 
 ZTEST(epacket_bt_adv, test_metadata)
 {
