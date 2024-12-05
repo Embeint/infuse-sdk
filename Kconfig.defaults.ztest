@@ -5,6 +5,10 @@ config INFUSE_TEST_ID
 	default y if INFUSE_SECURITY_TEST_CREDENTIALS || !INFUSE_SDK
 	depends on ZTEST
 
+config INFUSE_REBOOT_RETURN
+	bool "Disable FUNC_NOTRETURN on `infuse_reboot`"
+	depends on ZTEST
+
 if INFUSE_SECURITY
 
 configdefault MAIN_STACK_SIZE
