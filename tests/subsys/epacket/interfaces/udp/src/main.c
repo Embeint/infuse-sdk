@@ -16,6 +16,7 @@
 #include <zephyr/net/socket.h>
 #include <zephyr/random/random.h>
 
+#include <infuse/reboot.h>
 #include <infuse/security.h>
 #include <infuse/epacket/keys.h>
 #include <infuse/epacket/packet.h>
@@ -38,6 +39,14 @@ K_SEM_DEFINE(if_state_change, 0, 1);
 static int if_max_payload;
 K_SEM_DEFINE(if_tx_failure, 0, 1);
 static int if_tx_failure_reason;
+K_SEM_DEFINE(downlink_watchdog_expired, 0, 1);
+static enum infuse_reboot_reason reboot_reason;
+
+void infuse_reboot(enum infuse_reboot_reason reason, uint32_t info1, uint32_t info2)
+{
+	reboot_reason = reason;
+	k_sem_give(&downlink_watchdog_expired);
+}
 
 static void rx_fifo_pusher(struct net_buf *buf)
 {
@@ -102,13 +111,16 @@ static void test_acked_packet(void)
 
 ZTEST(epacket_udp, test_udp_send_before_conn)
 {
-	for (int i = 0; i < 10; i++) {
+	for (int i = 0; i < CONFIG_EPACKET_INTERFACE_UDP_DOWNLINK_WATCHDOG_TIMEOUT + 2; i++) {
 		tdf_send(0, epacket_tx_done);
 		zassert_equal(0, k_sem_take(&tx_done_sem, K_MSEC(100)));
 		zassert_equal(-ENOTCONN, tx_done_result);
 		zassert_equal(0, k_sem_take(&if_tx_failure, K_MSEC(100)));
 		zassert_equal(-ENOTCONN, if_tx_failure_reason);
 	}
+
+	/* Watchdog should not have expired since application never requested connectivity */
+	zassert_equal(-EBUSY, k_sem_take(&downlink_watchdog_expired, K_NO_WAIT));
 }
 
 ZTEST(epacket_udp, test_udp_auto_ack)
@@ -176,6 +188,12 @@ ZTEST(epacket_udp, test_udp_ack)
 	/* Expect no more packets */
 	rx = net_buf_get(&udp_rx_fifo, K_MSEC(1000));
 	zassert_is_null(rx);
+
+	uint32_t wdog_initial = CONFIG_EPACKET_INTERFACE_UDP_DOWNLINK_WATCHDOG_TIMEOUT - 2;
+
+	/* Does not expire until period after last ack */
+	zassert_equal(-EAGAIN, k_sem_take(&downlink_watchdog_expired, K_SECONDS(wdog_initial)));
+	zassert_equal(0, k_sem_take(&downlink_watchdog_expired, K_SECONDS(2)));
 
 	/* Turn off the interface */
 	conn_mgr_all_if_down(false);
@@ -262,6 +280,7 @@ static void test_init(void *state)
 	k_sem_take(&tx_done_sem, K_NO_WAIT);
 	k_sem_take(&if_state_change, K_NO_WAIT);
 	k_sem_take(&if_tx_failure, K_NO_WAIT);
+	k_sem_take(&downlink_watchdog_expired, K_NO_WAIT);
 
 	epacket_set_receive_handler(IF_UDP, rx_fifo_pusher);
 }
