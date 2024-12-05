@@ -1,0 +1,7 @@
+# Test implements the reboot API
+
+config EPACKET_INTERFACE_UDP_DOWNLINK_WATCHDOG
+	bool
+	default y
+
+source "Kconfig.zephyr"
