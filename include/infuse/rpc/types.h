@@ -558,7 +558,7 @@ struct rpc_data_logger_read_request {
 	uint8_t logger;
 	/* Block to start read from */
 	uint32_t start_block;
-	/* Last block to read from */
+	/* Last block to read from (UINT32_MAX == read to current block) */
 	uint32_t last_block;
 } __packed;
 
