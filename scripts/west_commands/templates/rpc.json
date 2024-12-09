@@ -304,10 +304,10 @@
                 {"name": "reason", "type": "uint8_t", "description": "Reboot reason (enum infuse_reboot_reason)"},
                 {"name": "epoch_time_source", "type": "uint8_t", "description": "Time source at reboot"},
                 {"name": "epoch_time", "type": "uint64_t", "description": "Epoch time at reboot"},
-                {"name": "hardware_flags", "type": "uint32_t", "description": "Hardware flags (hwinfo_get_reset_cause)", "display_fmt": "hex"},
+                {"name": "hardware_flags", "type": "uint32_t", "description": "Hardware flags (hwinfo_get_reset_cause)"},
                 {"name": "uptime", "type": "uint32_t", "description": "Uptime before reboot (seconds)"},
-                {"name": "param_1", "type": "uint32_t", "description": "Program counter/Watchdog Info/Other", "display_fmt": "hex"},
-                {"name": "param_2", "type": "uint32_t", "description": "Link Register/Watchdog Info/Other", "display_fmt": "hex"},
+                {"name": "param_1", "type": "uint32_t", "description": "Program counter/Watchdog Info/Other"},
+                {"name": "param_2", "type": "uint32_t", "description": "Link Register/Watchdog Info/Other"},
                 {"name": "thread", "type": "char", "num": 8, "description": "Running thread at reboot"}
             ]
         },
