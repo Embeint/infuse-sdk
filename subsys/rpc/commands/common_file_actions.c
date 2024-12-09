@@ -63,6 +63,10 @@ static int flash_area_check_and_erase(struct rpc_common_file_actions_ctx *ctx, u
 				return FILE_ALREADY_PRESENT;
 			}
 		}
+		/* Limit erase size to flash area size */
+		if (length == UINT32_MAX) {
+			length = ctx->fa->fa_size;
+		}
 		/* Erase space for image */
 		rc = infuse_dfu_image_erase(ctx->fa, length, true);
 		if (rc != 0) {
