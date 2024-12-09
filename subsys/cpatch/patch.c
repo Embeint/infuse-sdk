@@ -271,18 +271,18 @@ int cpatch_patch_start(const struct flash_area *input, const struct flash_area *
 
 	/* Validate header */
 	if (header->magic_value != CPATCH_MAGIC_NUMBER) {
-		LOG_DBG("Header magic number failure (%08X != %08X)", header->magic_value,
+		LOG_WRN("Header magic number failure (%08X != %08X)", header->magic_value,
 			CPATCH_MAGIC_NUMBER);
 		return -EINVAL;
 	}
 	if (header->version_major != CPATCH_MAJOR_VERSION) {
-		LOG_DBG("Header major version failure (%d != %d)", header->version_major,
+		LOG_WRN("Header major version failure (%d != %d)", header->version_major,
 			CPATCH_MAJOR_VERSION);
 		return -EINVAL;
 	}
 	crc = crc32_ieee((void *)header, sizeof(*header) - sizeof(uint32_t));
 	if (crc != header->header_crc) {
-		LOG_DBG("Header CRC failure (%08X != %08X)", crc, header->header_crc);
+		LOG_WRN("Header CRC failure (%08X != %08X)", crc, header->header_crc);
 		return -EINVAL;
 	}
 
@@ -292,7 +292,7 @@ int cpatch_patch_start(const struct flash_area *input, const struct flash_area *
 		return rc;
 	}
 	if (crc != header->input_file.crc) {
-		LOG_DBG("Input CRC failure (%08X != %08X)", crc, header->input_file.crc);
+		LOG_WRN("Input CRC (%08X != %08X)", crc, header->input_file.crc);
 		return -EINVAL;
 	}
 
@@ -303,7 +303,7 @@ int cpatch_patch_start(const struct flash_area *input, const struct flash_area *
 		return rc;
 	}
 	if (crc != header->patch_file.crc) {
-		LOG_DBG("Patch CRC failure (%08X != %08X)", crc, header->patch_file.crc);
+		LOG_WRN("Patch CRC (%08X != %08X)", crc, header->patch_file.crc);
 		return -EINVAL;
 	}
 	return 0;
@@ -350,6 +350,9 @@ int cpatch_patch_apply(const struct flash_area *input, const struct flash_area *
 	/* Validate output */
 	if (stream_flash_bytes_written(output) != header->output_file.length ||
 	    (progress_crc != header->output_file.crc)) {
+		LOG_WRN("Output failure (%d != %d) || (%08X != %08X)",
+			stream_flash_bytes_written(output), header->output_file.length,
+			progress_crc, header->output_file.crc);
 		return -EINVAL;
 	}
 
