@@ -205,8 +205,9 @@ static void run_logger_read(uint16_t epacket_size, uint32_t start, uint32_t end)
 	uint32_t expected_offset = 0;
 	uint32_t crc = 0;
 
+	uint32_t actual_end = (end == UINT32_MAX) ? 7 : end;
 	uint32_t start_offset = 512 * start;
-	uint32_t num = 512 * (end - start + 1);
+	uint32_t num = 512 * (actual_end - start + 1);
 	uint32_t flash_crc = crc32_ieee(flash_buffer + start_offset, num);
 
 	epacket_dummy_set_max_packet(epacket_size);
@@ -262,6 +263,7 @@ ZTEST(rpc_command_data_logger, test_data_logger_read)
 	run_logger_read(64, 0, 4);
 	run_logger_read(63, 0, 6);
 	run_logger_read(61, 2, 4);
+	run_logger_read(62, 2, UINT32_MAX);
 }
 
 void data_logger_reset(void *fixture)

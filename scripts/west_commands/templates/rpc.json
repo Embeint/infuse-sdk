@@ -343,7 +343,7 @@
             "request_params": [
                 {"name": "logger", "type": "enum rpc_enum_data_logger", "description": "Data logger to read from"},
                 {"name": "start_block", "type": "uint32_t", "description": "Block to start read from"},
-                {"name": "last_block", "type": "uint32_t", "description": "Last block to read from"}
+                {"name": "last_block", "type": "uint32_t", "description": "Last block to read from (UINT32_MAX == read to current block)"}
             ],
             "response_params": [
                 {"name": "sent_len", "type": "uint32_t", "description": "Number of bytes sent"},

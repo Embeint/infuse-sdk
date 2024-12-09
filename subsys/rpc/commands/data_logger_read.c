@@ -59,6 +59,11 @@ struct net_buf *rpc_command_data_logger_read(struct net_buf *request)
 		goto end;
 	}
 
+	/* If last block is unbounded, limit it to the data currently present */
+	if (req->last_block == UINT32_MAX) {
+		req->last_block = state.current_block - 1;
+	}
+
 	/* Ensure requested data is in range */
 	if ((req->start_block < state.earliest_block) || (req->last_block >= state.current_block) ||
 	    (req->last_block < req->start_block)) {
