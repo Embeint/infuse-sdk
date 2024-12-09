@@ -133,7 +133,7 @@
 &spi1 {
 	compatible = "nordic,nrf-spim";
 	status = "okay";
-	cs-gpios = <&gpio0 22 GPIO_ACTIVE_LOW>,
+	cs-gpios = <&gpio0 22 (GPIO_ACTIVE_LOW | GPIO_OPEN_DRAIN)>,
 			<&gpio0 21 (GPIO_ACTIVE_LOW | GPIO_OPEN_DRAIN)>;
 	pinctrl-0 = <&spi1_default>;
 	pinctrl-1 = <&spi1_sleep>;
