@@ -21,8 +21,8 @@
 int infuse_dfu_image_erase(const struct flash_area *fa, size_t image_len, bool mcuboot_trailer)
 {
 	const struct device *dev = flash_area_get_device(fa);
-	off_t page_offset = fa->fa_off + image_len - 1;
 	struct flash_pages_info page;
+	off_t page_offset;
 	size_t erase_size;
 	size_t off;
 	int rc;
@@ -30,6 +30,12 @@ int infuse_dfu_image_erase(const struct flash_area *fa, size_t image_len, bool m
 	if (dev == NULL) {
 		return -ENODEV;
 	}
+
+	/* Validate length fits within flash area */
+	if (image_len > fa->fa_size) {
+		return -EINVAL;
+	}
+	page_offset = fa->fa_off + image_len - 1;
 
 	/* align requested erase size to the erase-block-size */
 	rc = flash_get_page_info_by_offs(dev, page_offset, &page);
