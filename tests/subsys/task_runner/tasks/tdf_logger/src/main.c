@@ -183,6 +183,39 @@ ZTEST(task_tdf_logger, test_delay)
 	zassert_within(500 * 100, time_end - time_start, 10000);
 }
 
+ZTEST(task_tdf_logger, test_reschedule)
+{
+	struct k_fifo *tx_queue = epacket_dummmy_transmit_fifo_get();
+	struct net_buf *pkt;
+	uint32_t start, now, last;
+	int cnt = 0;
+
+	schedule.task_args.infuse.tdf_logger = (struct task_tdf_logger_args){
+		.loggers = TDF_DATA_LOGGER_SERIAL,
+		.tdfs = TASK_TDF_LOGGER_LOG_ANNOUNCE,
+		.logging_period_ms = 500,
+		.random_delay_ms = 1000,
+	};
+
+	task_schedule(&data);
+	start = k_uptime_get_32();
+	last = start;
+	while (cnt++ < 100) {
+		pkt = net_buf_get(tx_queue, K_MSEC(1501));
+		now = k_uptime_get_32();
+		zassert_not_null(pkt);
+		net_buf_unref(pkt);
+		if (cnt > 1) {
+			zassert_true(now - last >= 500);
+		}
+		last = now;
+	}
+	task_terminate(&data);
+
+	/* 100 seconds, +- 10% */
+	zassert_within(100 * MSEC_PER_SEC, last - start, 10 * MSEC_PER_SEC);
+}
+
 ZTEST(task_tdf_logger, test_battery)
 {
 	const struct zbus_channel *chan_bat = INFUSE_ZBUS_CHAN_GET(INFUSE_ZBUS_CHAN_BATTERY);
