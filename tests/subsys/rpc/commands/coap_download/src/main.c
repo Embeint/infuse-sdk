@@ -208,6 +208,11 @@ ZTEST(rpc_command_coap_download, test_download)
 			      "file/med_file", UINT32_MAX, UINT32_MAX);
 	expect_coap_download_response(10, 0, 10030, 0x9919d24e);
 
+	/* Small DFU download of unknown length and size */
+	send_download_command(20, "coap.dev.infuse-iot.com", 5684, 0, RPC_ENUM_FILE_ACTION_APP_IMG,
+			      "file/small_file", UINT32_MAX, UINT32_MAX);
+	expect_coap_download_response(20, 0, 12, 0xb5289bef);
+
 	/* Download file contents for DFU */
 	send_download_command(10, "coap.dev.infuse-iot.com", 5684, 0, RPC_ENUM_FILE_ACTION_APP_IMG,
 			      "file/med_file", 10030, 0x9919d24e);
@@ -222,6 +227,11 @@ ZTEST(rpc_command_coap_download, test_download)
 	send_download_command(12, "coap.dev.infuse-iot.com", 5684, 0, RPC_ENUM_FILE_ACTION_APP_IMG,
 			      "file/med_file", 10030, UINT32_MAX);
 	expect_coap_download_response(12, 0, 10030, 0x9919d24e);
+
+	/* DFU requested too large */
+	send_download_command(20, "coap.dev.infuse-iot.com", 5684, 0, RPC_ENUM_FILE_ACTION_APP_IMG,
+			      "file/small_file", UINT32_MAX / 2, UINT32_MAX);
+	expect_coap_download_response(20, -EINVAL, 0, 0);
 }
 
 ZTEST(rpc_command_coap_download, test_download_bt_ctlr)
