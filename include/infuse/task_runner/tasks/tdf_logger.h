@@ -47,6 +47,18 @@ void task_tdf_logger_manual_run(uint8_t tdf_loggers, uint64_t timestamp, uint16_
 				tdf_logger_custom_log_t custom_logger);
 
 /**
+ * @brief Common define for applications to re-use when multiple task instances are desired
+ */
+#define _TDF_LOGGER_TASK_INSTANCE(_name, _task_id, define_mem, define_config, custom_logger)       \
+	IF_ENABLED(define_config, ({.name = _name,                                                 \
+				    .task_id = _task_id,                                           \
+				    .exec_type = TASK_EXECUTOR_WORKQUEUE,                          \
+				    .task_arg.const_arg = custom_logger,                           \
+				    .executor.workqueue = {                                        \
+					    .worker_fn = task_tdf_logger_fn,                       \
+				    }}))
+
+/**
  * @brief TDF logger task
  *
  * @param define_mem Define memory (None required)
@@ -55,13 +67,8 @@ void task_tdf_logger_manual_run(uint8_t tdf_loggers, uint64_t timestamp, uint16_
  * @param ... Compile-time argument unused
  */
 #define TDF_LOGGER_TASK(define_mem, define_config, custom_logger)                                  \
-	IF_ENABLED(define_config, ({.name = "tdfl",                                                \
-				    .task_id = TASK_ID_TDF_LOGGER,                                 \
-				    .exec_type = TASK_EXECUTOR_WORKQUEUE,                          \
-				    .task_arg.const_arg = custom_logger,                           \
-				    .executor.workqueue = {                                        \
-					    .worker_fn = task_tdf_logger_fn,                       \
-				    }}))
+	_TDF_LOGGER_TASK_INSTANCE("tdfl", TASK_ID_TDF_LOGGER, define_mem, define_config,           \
+				  custom_logger)
 
 #ifdef __cplusplus
 }
