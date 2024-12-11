@@ -33,10 +33,16 @@ enum {
 	TASK_TDF_LOGGER_FLAGS_NO_FLUSH = BIT(0),
 };
 
-/** @brief TDF logger task arguments */
+/** @brief TDF logger task arguments
+ *
+ * When @a logging_period_ms is set, the reschedule period is equal to
+ * @a logging_period_ms plus the random delay from @a random_delay_ms
+ */
 struct task_tdf_logger_args {
 	/** Mask of `TDF_DATA_LOGGER_*` to log to */
 	uint8_t loggers;
+	/* Reschedule next log in this many milliseconds */
+	uint16_t logging_period_ms;
 	/* Randomise delay before logging */
 	uint16_t random_delay_ms;
 	/* TDFs to log */

@@ -281,4 +281,11 @@ void task_tdf_logger_fn(struct k_work *work)
 		/* Flush the logger to transmit */
 		tdf_data_logger_flush(args->loggers);
 	}
+
+	/* Reschedule next log */
+	if (args->logging_period_ms) {
+		delay_ms = args->logging_period_ms + (sys_rand32_get() % args->random_delay_ms);
+		LOG_DBG("Rescheduling for %d ms", delay_ms);
+		task_workqueue_reschedule(task, K_MSEC(delay_ms));
+	}
 }
