@@ -252,31 +252,32 @@ static int max17260_shutdown_exit(const struct device *dev)
 		goto end;
 	}
 
-	/* Poll until the chip wakes up */
-	for (int i = 0; i < 100; i++) {
-		/* Read status register */
-		rc = reg_read(dev, MAX17260_REG_STATUS, &reg);
-		if (rc == 0) {
-			LOG_DBG("Ready after %d ms", i);
-			break;
-		}
-		k_sleep(K_MSEC(1));
-	}
-	if (rc < 0) {
-		goto end;
-	}
+	/* Experimentally, the fuel gauge takes about 400ms total before data is ready.
+	 * It starts responding to I2C transactions after ~5ms.
+	 * However the responses to those transactions can be invalid for up to 50ms.
+	 * Simply waiting 200ms before checking registers skips all the complexity, giving a
+	 * more robust implementation in less code.
+	 */
+	k_timepoint_t end = sys_timepoint_calc(K_MSEC(1000));
 
-	/* Wait until data is ready (expected duration is 350ms) */
-	for (int i = 0; i < 40; i++) {
+	LOG_DBG("Waiting for data ready");
+	k_sleep(K_MSEC(200));
+
+	while (1) {
 		/* Read FSTAT register */
 		rc = reg_read(dev, MAX17260_REG_F_STAT, &reg);
-		/* Register reads as 0 for a few iterations while initialising */
-		if ((reg == 0x0000) || (reg & MAX17260_F_STAT_DATA_NOT_READY)) {
-			k_sleep(K_MSEC(25));
-			continue;
+		if (rc < 0) {
+			goto end;
 		}
-		LOG_DBG("Data ready after %d ms", 25 * i);
-		goto end;
+
+		if (!(reg & MAX17260_F_STAT_DATA_NOT_READY)) {
+			LOG_DBG("Data ready");
+			goto end;
+		}
+		if (sys_timepoint_expired(end)) {
+			break;
+		}
+		k_sleep(K_MSEC(25));
 	}
 	rc = -EINVAL;
 
