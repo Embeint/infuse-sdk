@@ -24,7 +24,7 @@ extern "C" {
  * @{
  */
 
-/* MCUboot semantic versioning struct */
+/** MCUboot semantic versioning struct */
 struct tdf_struct_mcuboot_img_sem_ver {
 	uint8_t major;
 	uint8_t minor;
@@ -32,14 +32,14 @@ struct tdf_struct_mcuboot_img_sem_ver {
 	uint32_t build_num;
 } __packed;
 
-/* Generic 3-axis sensor reading */
+/** Generic 3-axis sensor reading */
 struct tdf_struct_xyz_16bit {
 	int16_t x;
 	int16_t y;
 	int16_t z;
 } __packed;
 
-/* Geographic Coordinate System location */
+/** Geographic Coordinate System location */
 struct tdf_struct_gcs_location {
 	/* Latitude degrees (scale 1e7) */
 	int32_t latitude;
@@ -49,7 +49,7 @@ struct tdf_struct_gcs_location {
 	int32_t height;
 } __packed;
 
-/* LTE cell ID (Local) */
+/** LTE cell ID (Local) */
 struct tdf_struct_lte_cell_id_local {
 	/* E-UTRAN Cell ID */
 	uint32_t eci;
@@ -57,7 +57,7 @@ struct tdf_struct_lte_cell_id_local {
 	uint16_t tac;
 } __packed;
 
-/* LTE cell ID (Global) */
+/** LTE cell ID (Global) */
 struct tdf_struct_lte_cell_id_global {
 	/* Mobile Country Code */
 	uint16_t mcc;
@@ -69,7 +69,7 @@ struct tdf_struct_lte_cell_id_global {
 	uint16_t tac;
 } __packed;
 
-/* Bluetooth address type (bt_addr_le_t) */
+/** Bluetooth address type (bt_addr_le_t) */
 struct tdf_struct_bt_addr_le {
 	/* Address type (0 == Public, 1 == Random) */
 	uint8_t type;
@@ -87,7 +87,7 @@ struct tdf_struct_bt_addr_le {
  * @{
  */
 
-/* Common announcement packet */
+/** Common announcement packet */
 struct tdf_announce {
 	/* Unique application ID */
 	uint32_t application;
@@ -105,7 +105,7 @@ struct tdf_announce {
 	uint8_t flags;
 } __packed;
 
-/* General battery state */
+/** General battery state */
 struct tdf_battery_state {
 	/* Battery voltage (milliVolts) */
 	uint32_t voltage_mv;
@@ -115,7 +115,7 @@ struct tdf_battery_state {
 	uint8_t soc;
 } __packed;
 
-/* Ambient temperature, pressure & humidity */
+/** Ambient temperature, pressure & humidity */
 struct tdf_ambient_temp_pres_hum {
 	/* Ambient temperature (millidegrees) */
 	int32_t temperature;
@@ -125,13 +125,13 @@ struct tdf_ambient_temp_pres_hum {
 	uint16_t humidity;
 } __packed;
 
-/* Ambient temperature */
+/** Ambient temperature */
 struct tdf_ambient_temperature {
 	/* Ambient temperature (millidegrees) */
 	int32_t temperature;
 } __packed;
 
-/* Time synchronised to new source */
+/** Time synchronised to new source */
 struct tdf_time_sync {
 	/* Updated time source */
 	uint8_t source;
@@ -139,7 +139,7 @@ struct tdf_time_sync {
 	int32_t shift;
 } __packed;
 
-/* Information pertaining to the previous reboot */
+/** Information pertaining to the previous reboot */
 struct tdf_reboot_info {
 	/* Reboot reason (enum infuse_reboot_reason) */
 	uint8_t reason;
@@ -157,61 +157,61 @@ struct tdf_reboot_info {
 	char thread[8];
 } __packed;
 
-/* Accelerometer +-2G */
+/** Accelerometer +-2G */
 struct tdf_acc_2g {
 	/* Raw sample */
 	struct tdf_struct_xyz_16bit sample;
 } __packed;
 
-/* Accelerometer +-4G */
+/** Accelerometer +-4G */
 struct tdf_acc_4g {
 	/* Raw sample */
 	struct tdf_struct_xyz_16bit sample;
 } __packed;
 
-/* Accelerometer +-8G */
+/** Accelerometer +-8G */
 struct tdf_acc_8g {
 	/* Raw sample */
 	struct tdf_struct_xyz_16bit sample;
 } __packed;
 
-/* Accelerometer +-16G */
+/** Accelerometer +-16G */
 struct tdf_acc_16g {
 	/* Raw sample */
 	struct tdf_struct_xyz_16bit sample;
 } __packed;
 
-/* Gyroscope +-125 DPS */
+/** Gyroscope +-125 DPS */
 struct tdf_gyr_125dps {
 	/* Raw sample */
 	struct tdf_struct_xyz_16bit sample;
 } __packed;
 
-/* Gyroscope +-250 DPS */
+/** Gyroscope +-250 DPS */
 struct tdf_gyr_250dps {
 	/* Raw sample */
 	struct tdf_struct_xyz_16bit sample;
 } __packed;
 
-/* Gyroscope +-500 DPS */
+/** Gyroscope +-500 DPS */
 struct tdf_gyr_500dps {
 	/* Raw sample */
 	struct tdf_struct_xyz_16bit sample;
 } __packed;
 
-/* Gyroscope +-1000 DPS */
+/** Gyroscope +-1000 DPS */
 struct tdf_gyr_1000dps {
 	/* Raw sample */
 	struct tdf_struct_xyz_16bit sample;
 } __packed;
 
-/* Gyroscope +-2000 DPS */
+/** Gyroscope +-2000 DPS */
 struct tdf_gyr_2000dps {
 	/* Raw sample */
 	struct tdf_struct_xyz_16bit sample;
 } __packed;
 
-/* Geo-location (WGS-84) + accuracy */
+/** Geo-location (WGS-84) + accuracy */
 struct tdf_gcs_wgs84_llha {
 	/* WGS-84 referenced location */
 	struct tdf_struct_gcs_location location;
@@ -221,7 +221,7 @@ struct tdf_gcs_wgs84_llha {
 	int32_t v_acc;
 } __packed;
 
-/* u-blox GNSS NAV-PVT message */
+/** u-blox GNSS NAV-PVT message */
 struct tdf_ubx_nav_pvt {
 	/* GPS time of week of the navigation epoch */
 	uint32_t itow;
@@ -291,7 +291,7 @@ struct tdf_ubx_nav_pvt {
 	uint16_t mag_acc;
 } __packed;
 
-/* Information on service cell and registration status */
+/** Information on service cell and registration status */
 struct tdf_lte_conn_status {
 	/* Global LTE cell identifier */
 	struct tdf_struct_lte_cell_id_global cell;
@@ -307,13 +307,13 @@ struct tdf_lte_conn_status {
 	int8_t rsrq;
 } __packed;
 
-/* 9 byte payload transmitted over the Globalstar Simplex network */
+/** 9 byte payload transmitted over the Globalstar Simplex network */
 struct tdf_globalstar_pkt {
 	/* User data payload */
 	uint8_t payload[9];
 } __packed;
 
-/* Accelerometer magnitude standard deviation over a window */
+/** Accelerometer magnitude standard deviation over a window */
 struct tdf_acc_magnitude_std_dev {
 	/* Number of samples in window */
 	uint32_t count;
@@ -321,13 +321,13 @@ struct tdf_acc_magnitude_std_dev {
 	uint32_t std_dev;
 } __packed;
 
-/* Generic activity metric */
+/** Generic activity metric */
 struct tdf_activity_metric {
 	/* Activity metric value */
 	uint32_t value;
 } __packed;
 
-/* Instantaneous algorithm output */
+/** Instantaneous algorithm output */
 struct tdf_algorithm_output {
 	/* Algorithm identifier */
 	uint32_t algorithm_id;
@@ -337,7 +337,7 @@ struct tdf_algorithm_output {
 	uint8_t output[];
 } __packed;
 
-/* Runtime error logging */
+/** Runtime error logging */
 struct tdf_runtime_error {
 	/* Unique error identifier */
 	uint32_t error_id;
@@ -345,13 +345,13 @@ struct tdf_runtime_error {
 	uint32_t error_ctx;
 } __packed;
 
-/* Battery charging enable state */
+/** Battery charging enable state */
 struct tdf_charger_en_control {
 	/* Charger is enabled */
 	uint8_t enabled;
 } __packed;
 
-/* Metadata about a GNSS location fix */
+/** Metadata about a GNSS location fix */
 struct tdf_gnss_fix_info {
 	/* Duration it took for accurate time knowledge (seconds) */
 	uint16_t time_fix;
@@ -361,7 +361,7 @@ struct tdf_gnss_fix_info {
 	uint8_t num_sv;
 } __packed;
 
-/* Bluetooth connection state change */
+/** Bluetooth connection state change */
 struct tdf_bluetooth_connection {
 	/* Address of remote device */
 	struct tdf_struct_bt_addr_le address;
@@ -369,7 +369,7 @@ struct tdf_bluetooth_connection {
 	uint8_t connected;
 } __packed;
 
-/* Received signal strength of Bluetooth device */
+/** Received signal strength of Bluetooth device */
 struct tdf_bluetooth_rssi {
 	/* Address of remote device */
 	struct tdf_struct_bt_addr_le address;
@@ -377,7 +377,7 @@ struct tdf_bluetooth_rssi {
 	int8_t rssi;
 } __packed;
 
-/* Data throughput of Bluetooth link */
+/** Data throughput of Bluetooth link */
 struct tdf_bluetooth_data_throughput {
 	/* Address of remote device */
 	struct tdf_struct_bt_addr_le address;
@@ -385,7 +385,7 @@ struct tdf_bluetooth_data_throughput {
 	int32_t throughput;
 } __packed;
 
-/* Algorithm output class histogram over a time window */
+/** Algorithm output class histogram over a time window */
 struct tdf_algorithm_class_histogram {
 	/* Algorithm identifier */
 	uint32_t algorithm_id;
@@ -395,7 +395,7 @@ struct tdf_algorithm_class_histogram {
 	uint8_t classes[];
 } __packed;
 
-/* Algorithm output class time series vector */
+/** Algorithm output class time series vector */
 struct tdf_algorithm_class_time_series {
 	/* Algorithm identifier */
 	uint32_t algorithm_id;
@@ -405,13 +405,13 @@ struct tdf_algorithm_class_time_series {
 	uint8_t values[];
 } __packed;
 
-/* Example array type */
+/** Example array type */
 struct tdf_array_type {
 	/* I am an array of length 4 */
 	uint8_t array[4];
 } __packed;
 
-/* Infuse-IoT builtin TDF definitions */
+/** Infuse-IoT builtin TDF definitions */
 enum tdf_builtin_id {
 	TDF_ANNOUNCE = 1,
 	TDF_BATTERY_STATE = 2,
@@ -448,7 +448,7 @@ enum tdf_builtin_id {
 	TDF_BUILTIN_END = 1024,
 };
 
-/* Size of builtin TDF definitions */
+/** Size of builtin TDF definitions */
 enum tdf_builtin_size {
 	_TDF_ANNOUNCE_SIZE = sizeof(struct tdf_announce),
 	_TDF_BATTERY_STATE_SIZE = sizeof(struct tdf_battery_state),

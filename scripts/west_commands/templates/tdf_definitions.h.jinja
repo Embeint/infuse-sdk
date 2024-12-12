@@ -25,7 +25,7 @@ extern "C" {
  */
 
 {% for name, info in structs.items() %}
-/* {{ info['description'] }} */
+/** {{ info['description'] }} */
 struct {{ name }} {
 {% for field in info['fields'] %}
 	{% if 'description' in field %}
@@ -47,7 +47,7 @@ struct {{ name }} {
  */
 
 {% for id, info in definitions.items() %}
-/* {{ info['description'] }} */
+/** {{ info['description'] }} */
 struct tdf_{{ info['name'] | lower }} {
 {% for field in info['fields'] %}
 	{% if 'description' in field %}
@@ -58,7 +58,7 @@ struct tdf_{{ info['name'] | lower }} {
 } __packed;
 
 {% endfor %}
-/* Infuse-IoT builtin TDF definitions */
+/** Infuse-IoT builtin TDF definitions */
 enum tdf_builtin_id {
 {% for id, info in definitions.items() %}
 	TDF_{{ info['name'] | upper }} = {{ id }},
@@ -67,7 +67,7 @@ enum tdf_builtin_id {
 	TDF_BUILTIN_END = 1024,
 };
 
-/* Size of builtin TDF definitions */
+/** Size of builtin TDF definitions */
 enum tdf_builtin_size {
 {% for id, info in definitions.items() %}
 	_TDF_{{ info['name'] | upper }}_SIZE = sizeof(struct tdf_{{ info['name'] | lower }}),
