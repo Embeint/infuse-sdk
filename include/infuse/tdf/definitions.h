@@ -337,6 +337,14 @@ struct tdf_algorithm_output {
 	uint8_t output[];
 } __packed;
 
+/** Define a variant of @ref tdf_algorithm_output with a constant length */
+#define TDF_ALGORITHM_OUTPUT_VAR(_name, _count)                                                    \
+	struct _name {                                                                             \
+		uint32_t algorithm_id;                                                             \
+		uint16_t algorithm_version;                                                        \
+		uint8_t output[_count];                                                            \
+	} __packed;
+
 /** Runtime error logging */
 struct tdf_runtime_error {
 	/* Unique error identifier */
@@ -395,6 +403,14 @@ struct tdf_algorithm_class_histogram {
 	uint8_t classes[];
 } __packed;
 
+/** Define a variant of @ref tdf_algorithm_class_histogram with a constant length */
+#define TDF_ALGORITHM_CLASS_HISTOGRAM_VAR(_name, _count)                                           \
+	struct _name {                                                                             \
+		uint32_t algorithm_id;                                                             \
+		uint16_t algorithm_version;                                                        \
+		uint8_t classes[_count];                                                           \
+	} __packed;
+
 /** Algorithm output class time series vector */
 struct tdf_algorithm_class_time_series {
 	/* Algorithm identifier */
@@ -404,6 +420,14 @@ struct tdf_algorithm_class_time_series {
 	/* Output classes */
 	uint8_t values[];
 } __packed;
+
+/** Define a variant of @ref tdf_algorithm_class_time_series with a constant length */
+#define TDF_ALGORITHM_CLASS_TIME_SERIES_VAR(_name, _count)                                         \
+	struct _name {                                                                             \
+		uint32_t algorithm_id;                                                             \
+		uint16_t algorithm_version;                                                        \
+		uint8_t values[_count];                                                            \
+	} __packed;
 
 /** Example array type */
 struct tdf_array_type {

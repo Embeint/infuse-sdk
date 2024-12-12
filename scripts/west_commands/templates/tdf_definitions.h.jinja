@@ -57,6 +57,20 @@ struct tdf_{{ info['name'] | lower }} {
 {% endfor %}
 } __packed;
 
+{% if 'flexible' in info %}
+/** Define a variant of @ref tdf_{{ info['name'] | lower }} with a constant length */
+#define TDF_{{ info['name'] }}_VAR(_name, _count) \
+	struct _name { \
+{% for field in info['fields'] %}
+{% if field.get('num', None) == 0 %}
+		{{ field['type'] }} {{ field['name'] }}[_count]; \
+{% else %}
+		{{ field['type'] }} {{ field['name'] }}{{ field["array"] }}; \
+{% endif %}
+{% endfor %}
+	} __packed;
+{% endif %}
+
 {% endfor %}
 /** Infuse-IoT builtin TDF definitions */
 enum tdf_builtin_id {
