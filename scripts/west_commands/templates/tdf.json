@@ -256,7 +256,7 @@
         },
         "25": {
             "name": "ALGORITHM_OUTPUT",
-            "description": "Generic activity metric",
+            "description": "Instantaneous algorithm output",
             "fields": [
                 {"name": "algorithm_id", "type": "uint32_t", "description": "Algorithm identifier", "display": {"fmt": "hex", "digits": 8}},
                 {"name": "algorithm_version", "type": "uint16_t", "description": "Algorithm version number"},
@@ -309,6 +309,24 @@
             "fields": [
                 {"name": "address", "type": "struct tdf_struct_bt_addr_le", "description": "Address of remote device"},
                 {"name": "throughput", "type": "int32_t", "display": {"postfix": "B/sec"}, "description": "Data throughput (-1 == disconnected)"}
+            ]
+        },
+        "32": {
+            "name": "ALGORITHM_CLASS_HISTOGRAM",
+            "description": "Algorithm output class histogram over a time window",
+            "fields": [
+                {"name": "algorithm_id", "type": "uint32_t", "description": "Algorithm identifier", "display": {"fmt": "hex", "digits": 8}},
+                {"name": "algorithm_version", "type": "uint16_t", "description": "Algorithm version number"},
+                {"name": "classes", "type": "uint8_t", "num": 0, "description": "Count per output class"}
+            ]
+        },
+        "33": {
+            "name": "ALGORITHM_CLASS_TIME_SERIES",
+            "description": "Algorithm output class time series vector",
+            "fields": [
+                {"name": "algorithm_id", "type": "uint32_t", "description": "Algorithm identifier", "display": {"fmt": "hex", "digits": 8}},
+                {"name": "algorithm_version", "type": "uint16_t", "description": "Algorithm version number"},
+                {"name": "values", "type": "uint8_t", "num": 0, "description": "Output classes"}
             ]
         },
         "100": {

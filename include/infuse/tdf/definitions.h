@@ -327,7 +327,7 @@ struct tdf_activity_metric {
 	uint32_t value;
 } __packed;
 
-/* Generic activity metric */
+/* Instantaneous algorithm output */
 struct tdf_algorithm_output {
 	/* Algorithm identifier */
 	uint32_t algorithm_id;
@@ -385,6 +385,26 @@ struct tdf_bluetooth_data_throughput {
 	int32_t throughput;
 } __packed;
 
+/* Algorithm output class histogram over a time window */
+struct tdf_algorithm_class_histogram {
+	/* Algorithm identifier */
+	uint32_t algorithm_id;
+	/* Algorithm version number */
+	uint16_t algorithm_version;
+	/* Count per output class */
+	uint8_t classes[];
+} __packed;
+
+/* Algorithm output class time series vector */
+struct tdf_algorithm_class_time_series {
+	/* Algorithm identifier */
+	uint32_t algorithm_id;
+	/* Algorithm version number */
+	uint16_t algorithm_version;
+	/* Output classes */
+	uint8_t values[];
+} __packed;
+
 /* Example array type */
 struct tdf_array_type {
 	/* I am an array of length 4 */
@@ -421,6 +441,8 @@ enum tdf_builtin_id {
 	TDF_BLUETOOTH_CONNECTION = 29,
 	TDF_BLUETOOTH_RSSI = 30,
 	TDF_BLUETOOTH_DATA_THROUGHPUT = 31,
+	TDF_ALGORITHM_CLASS_HISTOGRAM = 32,
+	TDF_ALGORITHM_CLASS_TIME_SERIES = 33,
 	TDF_ARRAY_TYPE = 100,
 	/* End of builtin TDF range */
 	TDF_BUILTIN_END = 1024,
@@ -456,6 +478,8 @@ enum tdf_builtin_size {
 	_TDF_BLUETOOTH_CONNECTION_SIZE = sizeof(struct tdf_bluetooth_connection),
 	_TDF_BLUETOOTH_RSSI_SIZE = sizeof(struct tdf_bluetooth_rssi),
 	_TDF_BLUETOOTH_DATA_THROUGHPUT_SIZE = sizeof(struct tdf_bluetooth_data_throughput),
+	_TDF_ALGORITHM_CLASS_HISTOGRAM_SIZE = sizeof(struct tdf_algorithm_class_histogram),
+	_TDF_ALGORITHM_CLASS_TIME_SERIES_SIZE = sizeof(struct tdf_algorithm_class_time_series),
 	_TDF_ARRAY_TYPE_SIZE = sizeof(struct tdf_array_type),
 };
 
