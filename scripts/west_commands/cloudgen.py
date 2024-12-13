@@ -58,6 +58,39 @@ class cloudgen(WestCommand):
         ]
         subprocess.run(args)
 
+    def _py_type(self, field, struct_prefix: bool):
+        ctype_mapping = {
+            "uint8_t": "ctypes.c_uint8",
+            "uint16_t": "ctypes.c_uint16",
+            "uint32_t": "ctypes.c_uint32",
+            "uint64_t": "ctypes.c_uint64",
+            "int8_t": "ctypes.c_int8",
+            "int16_t": "ctypes.c_int16",
+            "int32_t": "ctypes.c_int32",
+            "int64_t": "ctypes.c_int64",
+            "char": "ctypes.c_char",
+            "float": "ctypes.c_float",
+        }
+
+        t: str = field["type"]
+        if t.startswith("struct"):
+            base = f"structs.{t[7:]}" if struct_prefix else t[7:]
+        else:
+            base = ctype_mapping[field["type"]]
+        if "num" in field:
+            return f'{field["num"]} * {base}'
+        else:
+            return base
+
+    def _array_postfix(self, d, field):
+        field["array"] = ""
+        if "num" in field:
+            if field["num"] == 0:
+                field["array"] = "[]"
+                d["flexible"] = True
+            else:
+                field["array"] = f"[{field['num']}]"
+
     def tdfgen(self):
         tdf_def_file = self.template_dir / "tdf.json"
         tdf_template = self.env.get_template("tdf_definitions.h.jinja")
@@ -72,22 +105,12 @@ class cloudgen(WestCommand):
         with tdf_def_file.open("r") as f:
             tdf_defs = json.load(f)
 
-        # Simplify template logic for array postfix
-        def array_postfix(d, field):
-            field["array"] = ""
-            if "num" in field:
-                if field["num"] == 0:
-                    field["array"] = "[]"
-                    d["flexible"] = True
-                else:
-                    field["array"] = f"[{field['num']}]"
-
         for d in tdf_defs["structs"].values():
             for field in d["fields"]:
-                array_postfix(d, field)
+                self._array_postfix(d, field)
         for d in tdf_defs["definitions"].values():
             for field in d["fields"]:
-                array_postfix(d, field)
+                self._array_postfix(d, field)
 
         with tdf_output.open("w") as f:
             f.write(
@@ -96,18 +119,6 @@ class cloudgen(WestCommand):
                 )
             )
             f.write(os.linesep)
-
-        ctype_mapping = {
-            "uint8_t": "ctypes.c_uint8",
-            "uint16_t": "ctypes.c_uint16",
-            "uint32_t": "ctypes.c_uint32",
-            "uint64_t": "ctypes.c_uint64",
-            "int8_t": "ctypes.c_int8",
-            "int16_t": "ctypes.c_int16",
-            "int32_t": "ctypes.c_int32",
-            "int64_t": "ctypes.c_int64",
-            "char": "ctypes.c_char",
-        }
 
         def conv_formula(f):
             conv = f"self._{f['name']}"
@@ -140,12 +151,6 @@ class cloudgen(WestCommand):
             p = d.get("postfix", "")
             return {"name": f["name"], "fmt": fmt, "postfix": f'"{p}"'}
 
-        def py_type(f):
-            if "num" in f:
-                return f'{f["num"]} * {ctype_mapping[f["type"]]}'
-            else:
-                return ctype_mapping[f["type"]]
-
         for x in ["structs", "definitions"]:
             for s in tdf_defs[x].values():
                 s["conversions"] = []
@@ -157,12 +162,7 @@ class cloudgen(WestCommand):
                     else:
                         f["py_name"] = f["name"]
                     s["displays"].append(display_format(f))
-
-                    t: str = f["type"]
-                    if t.startswith("struct"):
-                        f["py_type"] = f"structs.{t[7:]}"
-                    else:
-                        f["py_type"] = py_type(f)
+                    f["py_type"] = self._py_type(f, True)
 
         with tdf_definitions_output.open("w", encoding="utf-8") as f:
             f.write(
@@ -190,6 +190,10 @@ class cloudgen(WestCommand):
         kv_keys_output = (
             self.infuse_root_dir / "subsys" / "fs" / "kv_store" / "kv_keys.c"
         )
+
+        loader = importlib.util.find_spec("infuse_iot.generated.kv_definitions")
+        kv_py_template = self.env.get_template("kv_definitions.py.jinja")
+        kv_py_output = pathlib.Path(loader.origin)
 
         with kv_def_file.open("r") as f:
             kv_defs = json.load(f)
@@ -249,6 +253,19 @@ class cloudgen(WestCommand):
             )
             f.write(os.linesep)
 
+        for x in ["structs", "definitions"]:
+            for s in kv_defs[x].values():
+                for f in s["fields"]:
+                    f["py_type"] = self._py_type(f, True)
+
+        with kv_py_output.open("w", encoding="utf-8") as f:
+            f.write(
+                kv_py_template.render(
+                    structs=kv_defs["structs"], definitions=kv_defs["definitions"]
+                )
+            )
+            f.write(os.linesep)
+
         self.clang_format(kv_defs_output)
         self.clang_format(kv_keys_output)
 
@@ -291,24 +308,14 @@ class cloudgen(WestCommand):
             f.write(os.linesep)
 
         with rpc_defs_output.open("w") as f:
-            # Simplify template logic for array postfix
-            def array_postfix(d, field):
-                field["array"] = ""
-                if "num" in field:
-                    if field["num"] == 0:
-                        field["array"] = "[]"
-                        d["flexible"] = True
-                    else:
-                        field["array"] = f"[{field['num']}]"
-
             for d in rpc_defs["structs"].values():
                 for field in d["fields"]:
-                    array_postfix(d, field)
+                    self._array_postfix(d, field)
             for d in rpc_defs["commands"].values():
                 for field in d["request_params"]:
-                    array_postfix(d, field)
+                    self._array_postfix(d, field)
                 for field in d["response_params"]:
-                    array_postfix(d, field)
+                    self._array_postfix(d, field)
 
             def enum_type_replace(field):
                 if field["type"].startswith("enum"):
@@ -335,46 +342,17 @@ class cloudgen(WestCommand):
             f.write(os.linesep)
 
         with rpc_defs_py_output.open("w") as f:
-            ctype_mapping = {
-                "uint8_t": "ctypes.c_uint8",
-                "uint16_t": "ctypes.c_uint16",
-                "uint32_t": "ctypes.c_uint32",
-                "uint64_t": "ctypes.c_uint64",
-                "int8_t": "ctypes.c_int8",
-                "int16_t": "ctypes.c_int16",
-                "int32_t": "ctypes.c_int32",
-                "int64_t": "ctypes.c_int64",
-                "char": "ctypes.c_char",
-                "float": "ctypes.c_float",
-            }
-
-            def py_type(field):
-                t: str = field["type"]
-                if t.startswith("struct"):
-                    base = t[7:]
-                else:
-                    base = ctype_mapping[field["type"]]
-                if "num" in field:
-                    return f'{field["num"]} * {base}'
-                else:
-                    return base
-
             for s in rpc_defs["structs"].values():
                 for field in s["fields"]:
                     field["py_name"] = field["name"]
-
-                    t: str = field["type"]
-                    if t.startswith("struct"):
-                        field["py_type"] = t[7:]
-                    else:
-                        field["py_type"] = py_type(field)
+                    field["py_type"] = self._py_type(field, False)
             for e in rpc_defs["enums"].values():
                 for value in e["values"]:
                     value["py_name"] = value["name"]
             for c in rpc_defs["commands"].values():
                 for sub in ["request_params", "response_params"]:
                     for field in c[sub]:
-                        field["py_type"] = py_type(field)
+                        field["py_type"] = self._py_type(field, False)
 
             f.write(
                 rpc_defs_py_template.render(
