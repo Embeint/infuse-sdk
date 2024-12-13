@@ -12,10 +12,10 @@
 #include "kv_internal.h"
 
 static struct key_value_slot_definition kv_slots[] = {
-{% for info in definitions %}
+{% for base_id, info in definitions.items() %}
 #ifdef CONFIG_KV_STORE_KEY_{{ info['name'] }}
 	{
-		.key = {{ info['key'] }},
+		.key = {{ base_id }},
 		.range = {{ info['range_val'] }},
 		.flags = {{ info['flags'] }},
 	},

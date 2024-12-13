@@ -71,7 +71,7 @@ struct kv_mcuboot_img_sem_ver {
  * @{
  */
 
-/* Nunmber of times device has rebooted */
+/* Number of times device has rebooted */
 struct kv_reboots {
 	uint32_t count;
 } __packed;
@@ -285,7 +285,7 @@ struct kv_secure_storage_reserved {
 
 /* Infuse-IoT builtin KV definitions */
 enum kv_builtin_id {
-	/* Nunmber of times device has rebooted */
+	/* Number of times device has rebooted */
 	KV_KEY_REBOOTS = 0,
 	/* Bluetooth advertising address */
 	KV_KEY_BLUETOOTH_ADDR = 1,

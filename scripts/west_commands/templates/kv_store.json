@@ -31,18 +31,16 @@
             ]
         }
     },
-    "definitions": [
-        {
+    "definitions": {
+        "0": {
             "name": "REBOOTS",
-            "key": 0,
-            "description": "Nunmber of times device has rebooted",
+            "description": "Number of times device has rebooted",
             "fields": [
                 {"name": "count", "type": "uint32_t"}
             ]
         },
-        {
+        "1": {
             "name": "BLUETOOTH_ADDR",
-            "key": 1,
             "description": "Bluetooth advertising address",
             "reflect": true,
             "read_only": true,
@@ -51,9 +49,8 @@
                 {"name": "address", "type": "struct bt_addr_le", "description": "Broadcasting address"}
             ]
         },
-        {
+        "2": {
             "name": "EXFAT_DISK_INFO",
-            "key": 2,
             "description": "exFAT disk information",
             "reflect": true,
             "read_only": true,
@@ -63,9 +60,8 @@
                 {"name": "block_size", "type": "uint32_t", "description": "Disk block size"}
             ]
         },
-        {
+        "3": {
             "name": "BLUETOOTH_CTLR_VERSION",
-            "key": 3,
             "description": "External Bluetooth controller version",
             "reflect": true,
             "depends_on": "!BT_CTLR",
@@ -75,18 +71,16 @@
                 {"name": "version", "type": "struct kv_mcuboot_img_sem_ver", "description": "Application version number"}
             ]
         },
-        {
+        "10": {
             "name": "FIXED_LOCATION",
-            "key": 10,
             "description": "Fixed global location of the device",
             "reflect": true,
             "fields": [
                 {"name": "location", "type": "struct gcs_location", "description": "Location"}
             ]
         },
-        {
+        "20": {
             "name": "WIFI_SSID",
-            "key": 20,
             "description": "WiFi network name",
             "reflect": true,
             "default": "y if WIFI",
@@ -94,9 +88,8 @@
                 {"name": "ssid", "type": "struct kv_string", "description": "WiFi network name"}
             ]
         },
-        {
+        "21": {
             "name": "WIFI_PSK",
-            "key": 21,
             "description": "WiFi network password",
             "reflect": true,
             "write_only": true,
@@ -105,9 +98,8 @@
                 {"name": "psk", "type": "struct kv_string", "description": "WiFi pre-shared-key"}
             ]
         },
-        {
+        "30": {
             "name": "NTP_SERVER_URL",
-            "key": 30,
             "description": "URL of the NTP server to use for time synchronisation",
             "reflect": true,
             "default": "y if SNTP",
@@ -115,9 +107,8 @@
                 {"name": "url", "type": "struct kv_string", "description": "NTP server URL"}
             ]
         },
-        {
+        "31": {
             "name": "EPACKET_UDP_URL",
-            "key": 31,
             "description": "ePacket UDP server hostname",
             "reflect": true,
             "default": "y if EPACKET_INTERFACE_UDP",
@@ -125,9 +116,8 @@
                 {"name": "server", "type": "struct kv_string", "description": "UDP server hostname"}
             ]
         },
-        {
+        "32": {
             "name": "EPACKET_UDP_PORT",
-            "key": 32,
             "description": "ePacket UDP server port",
             "reflect": true,
             "default": "y if EPACKET_INTERFACE_UDP",
@@ -135,9 +125,8 @@
                 {"name": "port", "type": "uint32_t", "description": "UDP server port"}
             ]
         },
-        {
+        "40": {
             "name": "LTE_MODEM_MODEL",
-            "key": 40,
             "description": "Modem model as returned by AT+CGMM",
             "reflect": true,
             "read_only": true,
@@ -146,9 +135,8 @@
                 {"name": "model", "type": "struct kv_string", "description": "Modem model"}
             ]
         },
-        {
+        "41": {
             "name": "LTE_MODEM_FIRMWARE_REVISION",
-            "key": 41,
             "description": "Modem firmware revision as returned by AT+CGMR",
             "reflect": true,
             "read_only": true,
@@ -157,9 +145,8 @@
                 {"name": "revision", "type": "struct kv_string", "description": "Firmware revision"}
             ]
         },
-        {
+        "42": {
             "name": "LTE_MODEM_ESN",
-            "key": 42,
             "description": "'Electronic Serial Number' as returned by AT+CGSN=0",
             "reflect": true,
             "read_only": true,
@@ -168,9 +155,8 @@
                 {"name": "esn", "type": "struct kv_string", "description": "ESN or IMEI if not available"}
             ]
         },
-        {
+        "43": {
             "name": "LTE_MODEM_IMEI",
-            "key": 43,
             "description": "'International Modem Equiment Identifier' as returned by AT+CGSN=1",
             "reflect": true,
             "read_only": true,
@@ -179,9 +165,8 @@
                 {"name": "imei", "type": "uint64_t", "description": "15 digit IMEI"}
             ]
         },
-        {
+        "44": {
             "name": "LTE_SIM_UICC",
-            "key": 44,
             "description": "SIM Universal Identifier (https://www.itu.int/en/ITU-T/inr/forms/Pages/iin.aspx)",
             "reflect": true,
             "read_only": true,
@@ -190,9 +175,8 @@
                 {"name": "uicc", "type": "struct kv_string", "description": "Variable length UICC string"}
             ]
         },
-        {
+        "45": {
             "name": "LTE_PDP_CONFIG",
-            "key": 45,
             "description": "Packet Data Protocol (PDP) default context configuration",
             "reflect": true,
             "default": "y if NRF_MODEM_LIB",
@@ -201,18 +185,16 @@
                 {"name": "apn", "type": "struct kv_string", "description": "Access Point Name"}
             ]
         },
-        {
+        "50": {
             "name": "BLUETOOTH_PEER",
-            "key": 50,
             "description": "Bluetooth peer device",
             "reflect": true,
             "fields": [
                 {"name": "address", "type": "struct bt_addr_le", "description": "Peer device Bluetooth address"}
             ]
         },
-        {
+        "100": {
             "name": "GEOFENCE",
-            "key": 100,
             "range": 16,
             "description": "Array of points defining a closed polygon",
             "reflect": true,
@@ -220,9 +202,8 @@
                 {"name": "points", "type": "struct gcs_location", "num": 0, "description": "Points in geofence"}
             ]
         },
-        {
+        "30000": {
             "name": "SECURE_STORAGE_RESERVED",
-            "key": 30000,
             "range": 10,
             "description": "Keys reserved for secure storage (do not enable)",
             "depends_on": "!INFUSE_SDK",
@@ -230,5 +211,5 @@
                 {"name": "data", "type": "uint8_t", "num": 0, "description": "Opaque data"}
             ]
         }
-    ]
+    }
 }

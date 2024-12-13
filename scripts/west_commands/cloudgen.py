@@ -193,12 +193,13 @@ class cloudgen(WestCommand):
 
         with kv_def_file.open("r") as f:
             kv_defs = json.load(f)
+        kv_defs["definitions"] = {int(k): v for k, v in kv_defs["definitions"].items()}
 
         with kv_kconfig_output.open("w") as f:
             f.write(kv_kconfig_template.render(definitions=kv_defs["definitions"]))
 
         with kv_keys_output.open("w") as f:
-            for d in kv_defs["definitions"]:
+            for d in kv_defs["definitions"].values():
                 flags = []
                 if d.get("reflect", False):
                     flags.append("KV_FLAGS_REFLECT")
@@ -231,7 +232,7 @@ class cloudgen(WestCommand):
             for d in kv_defs["structs"].values():
                 for field in d["fields"]:
                     array_postfix(d, field)
-            for d in kv_defs["definitions"]:
+            for d in kv_defs["definitions"].values():
                 for field in d["fields"]:
                     array_postfix(d, field)
                     # If contained struct is flexible, so is this struct

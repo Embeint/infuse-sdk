@@ -64,7 +64,7 @@ struct {{ name }} {
  * @{
  */
 
-{% for info in definitions %}
+{% for info in definitions.values() %}
 /* {{ info['description'] }} */
 struct kv_{{ info['name'] | lower }} {
 {% for field in info['fields'] %}
@@ -100,16 +100,16 @@ struct kv_{{ info['name'] | lower }} {
 {% endfor %}
 /* Infuse-IoT builtin KV definitions */
 enum kv_builtin_id {
-{% for info in definitions %}
+{% for key, info in definitions.items() %}
 	/* {{ info['description'] }} */
-	KV_KEY_{{ info['name'] | upper }} = {{ info['key'] }},
+	KV_KEY_{{ info['name'] | upper }} = {{ key }},
 {% if 'range' in info %}
 #ifdef CONFIG_KV_STORE_KEY_{{ info['name'] }}_RANGE
 	/* End of currently enabled KV_KEY_{{ info['name'] | upper }} range */
-	KV_KEY_{{ info['name'] | upper }}_END = {{ info['key'] }} + CONFIG_KV_STORE_KEY_{{ info['name'] }}_RANGE - 1,
+	KV_KEY_{{ info['name'] | upper }}_END = {{ key }} + CONFIG_KV_STORE_KEY_{{ info['name'] }}_RANGE - 1,
 #endif
 	/* Maximum number of KV_KEY_{{ info['name'] | upper }} slots that can be enabled */
-	KV_KEY_{{ info['name'] | upper }}_MAX = {{ info['key'] + info['range'] - 1 }},
+	KV_KEY_{{ info['name'] | upper }}_MAX = {{ key + info['range'] - 1 }},
 {% endif %}
 {% endfor %}
 	/* End of builtin KV range */
@@ -118,7 +118,7 @@ enum kv_builtin_id {
 
 /* Size of builtin KV definitions */
 enum kv_builtin_size {
-{% for info in definitions %}
+{% for info in definitions.values() %}
 {% if not info['flexible'] %}
 	_KV_KEY_{{ info['name'] | upper }}_SIZE = sizeof(struct kv_{{ info['name'] | lower }}),
 {% endif %}
@@ -127,7 +127,7 @@ enum kv_builtin_size {
 
 /* clang-format off */
 /* Types of builtin KV definitions */
-{% for info in definitions %}
+{% for info in definitions.values() %}
 #define _KV_KEY_{{ info['name'] | upper }}_TYPE struct kv_{{ info['name'] | lower }}
 {% endfor %}
 /* clang-format on */
@@ -135,7 +135,7 @@ enum kv_builtin_size {
 /* clang-format off */
 /* Number of KV pairs that can be reflected */
 #define KV_REFLECT_NUM ( \
-{% for info in definitions %}
+{% for info in definitions.values() %}
 {% if info.get('reflect', false) %}
 	IF_ENABLED(CONFIG_KV_STORE_KEY_{{ info['name'] }}, ({{info['range_val']}} +)) \
 {% endif %}
