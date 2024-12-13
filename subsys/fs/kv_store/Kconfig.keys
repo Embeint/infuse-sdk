@@ -4,7 +4,7 @@
 config KV_STORE_KEY_REBOOTS
 	bool "Enable KV key REBOOTS"
 	help
-	  Nunmber of times device has rebooted
+	  Number of times device has rebooted
 
 config KV_STORE_KEY_BLUETOOTH_ADDR
 	bool "Enable KV key BLUETOOTH_ADDR"
