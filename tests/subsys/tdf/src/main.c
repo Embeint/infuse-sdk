@@ -23,6 +23,7 @@ struct tdf_test_case {
 };
 
 static uint8_t buf[32];
+uint8_t large_buf[512];
 static uint8_t input_buffer[128] = {0};
 static uint64_t base_time;
 
@@ -76,6 +77,9 @@ static void run_test_case(struct tdf_test_case *tdfs, size_t num_tdfs)
 				zassert_equal(0, parsed.period);
 			}
 			zassert_equal(t->expected_rc, parsed.tdf_num);
+			zassert_equal(t->expected_rc > 1 ? TDF_DATA_TYPE_TIME_ARRAY
+							 : TDF_DATA_TYPE_SINGLE,
+				      parsed.data_type);
 			zassert_mem_equal(input_buffer, parsed.data, parsed.tdf_len);
 #if __DEBUG__
 			printk("TDF %d:\n", i);
@@ -684,6 +688,23 @@ ZTEST(tdf, test_parse_invalid_ids)
 	zassert_equal(-EINVAL, rc);
 }
 
+ZTEST(tdf, test_parse_invalid_array_type)
+{
+	struct tdf_buffer_state parser;
+	struct tdf_parsed parsed;
+	int rc;
+
+	net_buf_simple_init_with_data(&parser.buf, buf, sizeof(buf));
+
+	/* Invalid TDF array types (0x3000) */
+	tdf_buffer_state_reset(&parser);
+	net_buf_simple_add_le16(&parser.buf, 0x3000 | 1234);
+	net_buf_simple_add_u8(&parser.buf, 0x01);
+	net_buf_simple_add_u8(&parser.buf, 0xFF);
+	rc = tdf_parse(&parser, &parsed);
+	zassert_equal(-EINVAL, rc);
+}
+
 ZTEST(tdf, test_parse_relative_without_absolute)
 {
 	struct tdf_buffer_state parser;
@@ -900,3 +921,201 @@ ZTEST(tdf_util, test_bt_addr_conv)
 }
 
 ZTEST_SUITE(tdf_util, NULL, NULL, NULL, NULL, NULL);
+
+bool tdf_acc_2g_diff_handle(const void *current, const void *next, int8_t *out)
+{
+	const struct tdf_acc_2g *c = current;
+	const struct tdf_acc_2g *n = next;
+	int32_t sample_x = n->sample.x - c->sample.x;
+	int32_t sample_y = n->sample.y - c->sample.y;
+	int32_t sample_z = n->sample.z - c->sample.z;
+
+	if (!IN_RANGE(sample_x, INT8_MIN, INT8_MAX) || !IN_RANGE(sample_y, INT8_MIN, INT8_MAX) ||
+	    !IN_RANGE(sample_z, INT8_MIN, INT8_MAX)) {
+		return false;
+	}
+	if (out != NULL) {
+		out[0] = sample_x;
+		out[1] = sample_y;
+		out[2] = sample_z;
+	}
+	return true;
+}
+
+static void validate_diff_data(struct tdf_buffer_state *state, uint8_t expected_type,
+			       uint8_t expected_num, uint8_t expected_diff[3])
+{
+	struct tdf_buffer_state parser;
+	struct tdf_parsed parsed;
+	uint8_t *data;
+	int rc;
+
+	tdf_parse_start(&parser, state->buf.data, state->buf.len);
+
+	rc = tdf_parse(&parser, &parsed);
+	zassert_equal(0, rc);
+	zassert_equal(TDF_ACC_2G, parsed.tdf_id);
+	zassert_equal(sizeof(struct tdf_acc_2g), parsed.tdf_len);
+	zassert_equal(expected_type, parsed.data_type);
+	if (parsed.data_type == TDF_DATA_TYPE_DIFF_ARRAY) {
+		zassert_equal(expected_num, parsed.diff_num);
+		data = parsed.data;
+		data += sizeof(struct tdf_acc_2g);
+		for (int i = 0; i < parsed.diff_num / 3; i++) {
+			zassert_mem_equal(data, expected_diff, 3);
+			data += 3;
+		}
+	} else {
+		zassert_equal(expected_num, parsed.tdf_num);
+	}
+	/* No more data in buffer */
+	zassert_equal(0, parser.buf.len);
+	rc = tdf_parse(&parser, &parsed);
+	zassert_equal(-ENOMEM, rc);
+}
+
+ZTEST(tdf_diff, test_basic)
+{
+	struct tdf_buffer_state state;
+	struct tdf_acc_2g tdf_array[8] = {0};
+	uint8_t diff_1[3] = {10, 1, -1};
+	uint8_t diff_2[3] = {10, 0, 0};
+	int handled;
+
+	for (int i = 0; i < 4; i++) {
+		tdf_array[i].sample.x = 10 * i;
+		tdf_array[i].sample.y = i;
+		tdf_array[i].sample.z = -i;
+	}
+	for (int i = 4; i < 8; i++) {
+		tdf_array[i].sample.x = 30000 + (10 * i);
+	}
+
+	/* Diff encoding requested with only a single TDF */
+	net_buf_simple_init_with_data(&state.buf, buf, sizeof(buf));
+	tdf_buffer_state_reset(&state);
+
+	handled = tdf_add_diff(&state, TDF_ACC_2G, sizeof(struct tdf_acc_2g), 1, 0, 10, tdf_array,
+			       3, tdf_acc_2g_diff_handle);
+	zassert_equal(1, handled);
+	validate_diff_data(&state, TDF_DATA_TYPE_SINGLE, 1, NULL);
+
+	/* Should only populate the first 4 TDFs */
+	net_buf_simple_init_with_data(&state.buf, buf, sizeof(buf));
+	tdf_buffer_state_reset(&state);
+
+	handled = tdf_add_diff(&state, TDF_ACC_2G, sizeof(struct tdf_acc_2g), ARRAY_SIZE(tdf_array),
+			       0, 10, tdf_array, 3, tdf_acc_2g_diff_handle);
+	zassert_equal(4, handled);
+	validate_diff_data(&state, TDF_DATA_TYPE_DIFF_ARRAY, 3 * 3, diff_1);
+
+	/* Should only populate TDFs 1-4 */
+	net_buf_simple_init_with_data(&state.buf, buf, sizeof(buf));
+	tdf_buffer_state_reset(&state);
+
+	handled = tdf_add_diff(&state, TDF_ACC_2G, sizeof(struct tdf_acc_2g),
+			       ARRAY_SIZE(tdf_array) - 1, 0, 10, tdf_array + 1, 3,
+			       tdf_acc_2g_diff_handle);
+	zassert_equal(3, handled);
+	validate_diff_data(&state, TDF_DATA_TYPE_DIFF_ARRAY, 2 * 3, diff_1);
+
+	/* Should populate TDFs 3-4 as a TIME_ARRAY */
+	net_buf_simple_init_with_data(&state.buf, buf, sizeof(buf));
+	tdf_buffer_state_reset(&state);
+
+	handled = tdf_add_diff(&state, TDF_ACC_2G, sizeof(struct tdf_acc_2g),
+			       ARRAY_SIZE(tdf_array) - 2, 0, 10, tdf_array + 2, 3,
+			       tdf_diff_encode_acc_2g);
+	zassert_equal(2, handled);
+	validate_diff_data(&state, TDF_DATA_TYPE_TIME_ARRAY, 2, NULL);
+
+	/* Should only populate TDFs 4 */
+	net_buf_simple_init_with_data(&state.buf, buf, sizeof(buf));
+	tdf_buffer_state_reset(&state);
+
+	handled = tdf_add_diff(&state, TDF_ACC_2G, sizeof(struct tdf_acc_2g),
+			       ARRAY_SIZE(tdf_array) - 3, 0, 10, tdf_array + 3, 3,
+			       tdf_acc_2g_diff_handle);
+	zassert_equal(1, handled);
+	validate_diff_data(&state, TDF_DATA_TYPE_SINGLE, 1, NULL);
+
+	/* Should handle all remaining TDFs */
+	net_buf_simple_init_with_data(&state.buf, buf, sizeof(buf));
+	tdf_buffer_state_reset(&state);
+
+	handled = tdf_add_diff(&state, TDF_ACC_2G, sizeof(struct tdf_acc_2g),
+			       ARRAY_SIZE(tdf_array) - 4, 0, 10, tdf_array + 4, 3,
+			       tdf_acc_2g_diff_handle);
+	zassert_equal(4, handled);
+	validate_diff_data(&state, TDF_DATA_TYPE_DIFF_ARRAY, 3 * 3, diff_2);
+}
+
+ZTEST(tdf_diff, test_no_valid_diffs)
+{
+	struct tdf_buffer_state state;
+	struct tdf_acc_2g tdf_array[8] = {0};
+	int handled;
+
+	for (int i = 0; i < ARRAY_SIZE(tdf_array); i++) {
+		tdf_array[i].sample.x = -i;
+		tdf_array[i].sample.y = i;
+		tdf_array[i].sample.z = 1000 * (i % 2);
+	}
+
+	/* Diff encoding requested with only a single TDF */
+	net_buf_simple_init_with_data(&state.buf, large_buf, sizeof(large_buf));
+	tdf_buffer_state_reset(&state);
+
+	handled = tdf_add_diff(&state, TDF_ACC_2G, sizeof(struct tdf_acc_2g), ARRAY_SIZE(tdf_array),
+			       0, 10, tdf_array, 3, tdf_diff_encode_acc_2g);
+	zassert_equal(ARRAY_SIZE(tdf_array), handled);
+	validate_diff_data(&state, TDF_DATA_TYPE_TIME_ARRAY, ARRAY_SIZE(tdf_array), NULL);
+
+	/* Last 2 values have a valid diff, no change to output  */
+	tdf_array[ARRAY_SIZE(tdf_array) - 1].sample.z = -2000;
+	tdf_array[ARRAY_SIZE(tdf_array) - 2].sample.z = -2000;
+
+	tdf_buffer_state_reset(&state);
+	handled = tdf_add_diff(&state, TDF_ACC_2G, sizeof(struct tdf_acc_2g), ARRAY_SIZE(tdf_array),
+			       0, 10, tdf_array, 3, tdf_diff_encode_acc_2g);
+	zassert_equal(ARRAY_SIZE(tdf_array), handled);
+	validate_diff_data(&state, TDF_DATA_TYPE_TIME_ARRAY, ARRAY_SIZE(tdf_array), NULL);
+
+	/* Last 3 values have valid diffs, excluded from time array */
+	tdf_array[ARRAY_SIZE(tdf_array) - 3].sample.z = -2000;
+
+	tdf_buffer_state_reset(&state);
+
+	handled = tdf_add_diff(&state, TDF_ACC_2G, sizeof(struct tdf_acc_2g), ARRAY_SIZE(tdf_array),
+			       0, 10, tdf_array, 3, tdf_diff_encode_acc_2g);
+	zassert_equal(ARRAY_SIZE(tdf_array) - 3, handled);
+	validate_diff_data(&state, TDF_DATA_TYPE_TIME_ARRAY, ARRAY_SIZE(tdf_array) - 3, NULL);
+}
+
+ZTEST(tdf_diff, test_overflow)
+{
+	struct tdf_buffer_state state;
+	struct tdf_acc_2g tdf_array[128] = {0};
+	uint8_t diff_1[3] = {0, 0, 0};
+	int handled;
+
+	/* Logging more diffs than can fit in the buffer */
+	net_buf_simple_init_with_data(&state.buf, buf, sizeof(buf));
+	tdf_buffer_state_reset(&state);
+
+	handled = tdf_add_diff(&state, TDF_ACC_2G, sizeof(struct tdf_acc_2g), 16, 0, 10, tdf_array,
+			       3, tdf_acc_2g_diff_handle);
+	zassert_equal(7, handled);
+	validate_diff_data(&state, TDF_DATA_TYPE_DIFF_ARRAY, 6 * 3, diff_1);
+
+	/* Logging more diffs than can fit in the UINT8_T limit */
+	net_buf_simple_init_with_data(&state.buf, large_buf, sizeof(large_buf));
+	tdf_buffer_state_reset(&state);
+
+	handled = tdf_add_diff(&state, TDF_ACC_2G, sizeof(struct tdf_acc_2g), ARRAY_SIZE(tdf_array),
+			       0, 10, tdf_array, 3, tdf_acc_2g_diff_handle);
+	zassert_equal(85, handled);
+	validate_diff_data(&state, TDF_DATA_TYPE_DIFF_ARRAY, 84 * 3, diff_1);
+}
+
+ZTEST_SUITE(tdf_diff, NULL, NULL, NULL, NULL, NULL);
