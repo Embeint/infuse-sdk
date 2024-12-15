@@ -63,6 +63,7 @@ enum tdf_flags {
 	/* Masks */
 	TDF_FLAGS_MASK = 0xF000,
 	TDF_TIMESTAMP_MASK = 0xC000,
+	TDF_ARRAY_MASK = 0x3000,
 	TDF_ID_MASK = 0x0FFF,
 };
 

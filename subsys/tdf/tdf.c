@@ -241,7 +241,8 @@ int tdf_parse(struct tdf_buffer_state *state, struct tdf_parsed *parsed)
 		parsed->time = 0;
 		break;
 	}
-	if (flags & TDF_ARRAY_TIME) {
+	switch (flags & TDF_ARRAY_MASK) {
+	case TDF_ARRAY_TIME:
 		if (state->buf.len <= sizeof(struct tdf_time_array_header)) {
 			return -EINVAL;
 		}
@@ -255,6 +256,11 @@ int tdf_parse(struct tdf_buffer_state *state, struct tdf_parsed *parsed)
 		} else {
 			parsed->period = t->period;
 		}
+		break;
+	case TDF_ARRAY_NONE:
+		break;
+	default:
+		return -EINVAL;
 	}
 	data_len = (uint16_t)parsed->tdf_len * parsed->tdf_num;
 	if (state->buf.len < data_len) {
