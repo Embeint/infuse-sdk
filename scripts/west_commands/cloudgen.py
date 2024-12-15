@@ -93,10 +93,12 @@ class cloudgen(WestCommand):
 
     def tdfgen(self):
         tdf_def_file = self.template_dir / "tdf.json"
-        tdf_template = self.env.get_template("tdf_definitions.h.jinja")
-        tdf_output = (
+        tdf_defs_template = self.env.get_template("tdf_definitions.h.jinja")
+        tdf_diffs_template = self.env.get_template("tdf_diffs.c.jinja")
+        tdf_defs_output = (
             self.infuse_root_dir / "include" / "infuse" / "tdf" / "definitions.h"
         )
+        tdf_diffs_output = self.infuse_root_dir / "subsys" / "tdf" / "diffs.c"
 
         loader = importlib.util.find_spec("infuse_iot.generated.tdf_definitions")
         tdf_definitions_template = self.env.get_template("tdf_definitions.py.jinja")
@@ -105,16 +107,38 @@ class cloudgen(WestCommand):
         with tdf_def_file.open("r") as f:
             tdf_defs = json.load(f)
 
+        def flat_field_gen(existing, field, prefix=""):
+            if "num" in field:
+                for idx in range(field["num"]):
+                    flat_fields.append(f"{prefix}{field['name']}[{idx}]")
+            else:
+                flat_fields.append(f"{prefix}{field['name']}")
+
         for d in tdf_defs["structs"].values():
             for field in d["fields"]:
                 self._array_postfix(d, field)
         for d in tdf_defs["definitions"].values():
+            flat_fields = []
             for field in d["fields"]:
                 self._array_postfix(d, field)
+                if field["type"].startswith("struct"):
+                    s = tdf_defs["structs"][field["type"][7:]]
+                    for struct_field in s["fields"]:
+                        flat_field_gen(flat_fields, struct_field, f"{field['name']}.")
+                else:
+                    flat_field_gen(flat_fields, field)
+            d["flat_fields"] = flat_fields
 
-        with tdf_output.open("w") as f:
+        with tdf_defs_output.open("w") as f:
             f.write(
-                tdf_template.render(
+                tdf_defs_template.render(
+                    structs=tdf_defs["structs"], definitions=tdf_defs["definitions"]
+                )
+            )
+            f.write(os.linesep)
+        with tdf_diffs_output.open("w") as f:
+            f.write(
+                tdf_diffs_template.render(
                     structs=tdf_defs["structs"], definitions=tdf_defs["definitions"]
                 )
             )
@@ -172,7 +196,8 @@ class cloudgen(WestCommand):
             )
             f.write(os.linesep)
 
-        self.clang_format(tdf_output)
+        self.clang_format(tdf_defs_output)
+        self.clang_format(tdf_diffs_output)
 
     def kvgen(self):
         kv_def_file = self.template_dir / "kv_store.json"

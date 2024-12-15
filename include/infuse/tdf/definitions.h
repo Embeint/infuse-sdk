@@ -546,6 +546,45 @@ enum tdf_builtin_size {
  * @}
  */
 
+/**
+ * @brief Builtin TDF diff encoders
+ * @defgroup builtin_tdf_diff_encoders TDF Structure Diff Encoders
+ * @{
+ */
+
+bool tdf_diff_encode_announce(const void *current, const void *next, int8_t *out);
+bool tdf_diff_encode_battery_state(const void *current, const void *next, int8_t *out);
+bool tdf_diff_encode_ambient_temp_pres_hum(const void *current, const void *next, int8_t *out);
+bool tdf_diff_encode_ambient_temperature(const void *current, const void *next, int8_t *out);
+bool tdf_diff_encode_time_sync(const void *current, const void *next, int8_t *out);
+bool tdf_diff_encode_reboot_info(const void *current, const void *next, int8_t *out);
+bool tdf_diff_encode_acc_2g(const void *current, const void *next, int8_t *out);
+bool tdf_diff_encode_acc_4g(const void *current, const void *next, int8_t *out);
+bool tdf_diff_encode_acc_8g(const void *current, const void *next, int8_t *out);
+bool tdf_diff_encode_acc_16g(const void *current, const void *next, int8_t *out);
+bool tdf_diff_encode_gyr_125dps(const void *current, const void *next, int8_t *out);
+bool tdf_diff_encode_gyr_250dps(const void *current, const void *next, int8_t *out);
+bool tdf_diff_encode_gyr_500dps(const void *current, const void *next, int8_t *out);
+bool tdf_diff_encode_gyr_1000dps(const void *current, const void *next, int8_t *out);
+bool tdf_diff_encode_gyr_2000dps(const void *current, const void *next, int8_t *out);
+bool tdf_diff_encode_gcs_wgs84_llha(const void *current, const void *next, int8_t *out);
+bool tdf_diff_encode_ubx_nav_pvt(const void *current, const void *next, int8_t *out);
+bool tdf_diff_encode_lte_conn_status(const void *current, const void *next, int8_t *out);
+bool tdf_diff_encode_globalstar_pkt(const void *current, const void *next, int8_t *out);
+bool tdf_diff_encode_acc_magnitude_std_dev(const void *current, const void *next, int8_t *out);
+bool tdf_diff_encode_activity_metric(const void *current, const void *next, int8_t *out);
+bool tdf_diff_encode_runtime_error(const void *current, const void *next, int8_t *out);
+bool tdf_diff_encode_charger_en_control(const void *current, const void *next, int8_t *out);
+bool tdf_diff_encode_gnss_fix_info(const void *current, const void *next, int8_t *out);
+bool tdf_diff_encode_bluetooth_connection(const void *current, const void *next, int8_t *out);
+bool tdf_diff_encode_bluetooth_rssi(const void *current, const void *next, int8_t *out);
+bool tdf_diff_encode_bluetooth_data_throughput(const void *current, const void *next, int8_t *out);
+bool tdf_diff_encode_array_type(const void *current, const void *next, int8_t *out);
+
+/**
+ * @}
+ */
+
 #ifdef __cplusplus
 }
 #endif

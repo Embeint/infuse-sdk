@@ -97,6 +97,22 @@ enum tdf_builtin_size {
  * @}
  */
 
+/**
+ * @brief Builtin TDF diff encoders
+ * @defgroup builtin_tdf_diff_encoders TDF Structure Diff Encoders
+ * @{
+ */
+
+{% for id, info in definitions.items() %}
+{% if 'flexible' not in info %}
+bool tdf_diff_encode_{{ info['name'] | lower }}(const void *current, const void *next, int8_t *out);
+{% endif %}
+{% endfor %}
+
+/**
+ * @}
+ */
+
 #ifdef __cplusplus
 }
 #endif
