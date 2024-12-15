@@ -36,6 +36,12 @@ struct tdf_buffer_state {
 	struct net_buf_simple buf;
 };
 
+enum tdf_data_type {
+	TDF_DATA_TYPE_SINGLE,
+	TDF_DATA_TYPE_TIME_ARRAY,
+	TDF_DATA_TYPE_DIFF_ARRAY,
+} __packed;
+
 struct tdf_parsed {
 	/* TDF time (0 for none) */
 	uint64_t time;
@@ -43,8 +49,14 @@ struct tdf_parsed {
 	uint16_t tdf_id;
 	/* Length of single TDF */
 	uint8_t tdf_len;
-	/* Number of TDFs */
-	uint8_t tdf_num;
+	/* Data format */
+	enum tdf_data_type data_type;
+	union {
+		/* Number of TDFs */
+		uint8_t tdf_num;
+		/* Number of diff bytes */
+		uint8_t diff_num;
+	};
 	/* Time period between TDFs */
 	uint32_t period;
 	/* TDF data */
@@ -60,12 +72,29 @@ enum tdf_flags {
 	/* Special flags */
 	TDF_ARRAY_NONE = 0x0000,
 	TDF_ARRAY_TIME = 0x1000,
+	TDF_ARRAY_DIFF = 0x2000,
 	/* Masks */
 	TDF_FLAGS_MASK = 0xF000,
 	TDF_TIMESTAMP_MASK = 0xC000,
 	TDF_ARRAY_MASK = 0x3000,
 	TDF_ID_MASK = 0x0FFF,
 };
+
+/**
+ * @brief Handle diff encoding for the specific TDF
+ *
+ * Determine if a diff between the current and next TDF values can be constructed,
+ * populating the @a out pointer with the diff if provided. Assumes that @a out is
+ * appropriately sized for the number of TDF fields.
+ *
+ * @param current Pointer to the current TDF value
+ * @param next Pointer to the next TDF value
+ * @param out Pointer to the diff output buffer, populated with diffs if not NULL
+ *
+ * @retval true if diff between current and next can be or was generated
+ * @retval false if diff between current and next is too large
+ */
+typedef bool (*tdf_diff_encode_t)(const void *current, const void *next, int8_t *out);
 
 /**
  * @brief Reset a tdf_buffer_state struct
@@ -77,6 +106,27 @@ static inline void tdf_buffer_state_reset(struct tdf_buffer_state *state)
 	net_buf_simple_reset(&state->buf);
 	state->time = 0;
 }
+
+/**
+ * @brief Add TDFs to memory buffer with diff encoding
+ *
+ * @param state Pointer to current buffer state
+ * @param tdf_id TDF sensor ID
+ * @param tdf_len Length of a single TDF
+ * @param tdf_num Number of TDFs to try to add
+ * @param time Epoch time associated with the first TDF. 0 for no timestamp.
+ * @param period Epoch time between tdfs when @a tdf_num > 0.
+ * @param data TDF data
+ * @param num_fields Number of unique fields in the TDF (including nested structs)
+ * @param diff_encode TDF diff encoding function for @a tdf_id
+ *
+ * @retval >0 Number of TDFs successfully added to buffer
+ * @retval -ENOSPC TDF too large to ever fit on buffer
+ * @return -ENOMEM Insufficient space to add any TDFs to buffer
+ */
+int tdf_add_diff(struct tdf_buffer_state *state, uint16_t tdf_id, uint8_t tdf_len, uint8_t tdf_num,
+		 uint64_t time, uint32_t period, const void *data, uint8_t num_fields,
+		 tdf_diff_encode_t diff_encode);
 
 /**
  * @brief Add TDFs to memory buffer
@@ -93,8 +143,11 @@ static inline void tdf_buffer_state_reset(struct tdf_buffer_state *state)
  * @retval -ENOSPC TDF too large to ever fit on buffer
  * @return -ENOMEM Insufficient space to add any TDFs to buffer
  */
-int tdf_add(struct tdf_buffer_state *state, uint16_t tdf_id, uint8_t tdf_len, uint8_t tdf_num,
-	    uint64_t time, uint32_t period, const void *data);
+static inline int tdf_add(struct tdf_buffer_state *state, uint16_t tdf_id, uint8_t tdf_len,
+			  uint8_t tdf_num, uint64_t time, uint32_t period, const void *data)
+{
+	return tdf_add_diff(state, tdf_id, tdf_len, tdf_num, time, period, data, 0, NULL);
+}
 
 /**
  * @brief Initialise TDF parsing state
