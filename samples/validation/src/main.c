@@ -25,6 +25,10 @@
 #include <infuse/validation/gnss.h>
 #include <infuse/validation/nrf_modem.h>
 
+#ifdef CONFIG_NRF_MODEM_LIB
+#include <modem/nrf_modem_lib.h>
+#endif
+
 LOG_MODULE_REGISTER(app, LOG_LEVEL_INF);
 
 static K_SEM_DEFINE(task_complete, 0, INT_MAX);
@@ -229,6 +233,15 @@ K_THREAD_DEFINE(bt_thread, 2048, bt_validator, NULL, NULL, NULL, 5, 0, 0);
 static int validation_init(void)
 {
 	int rc;
+
+#if defined(CONFIG_NRF_MODEM_LIB) && !defined(CONFIG_NRF_MODEM_LIB_NET_IF_AUTO_START)
+	/* Some crypto functionality depends on the modem being initialised */
+	VALIDATION_REPORT_INFO("SYS", "Initialising nRF modem library");
+	rc = nrf_modem_lib_init();
+	if (rc < 0) {
+		VALIDATION_REPORT_ERROR("SYS", "Failed to initialise nRF modem library (%d)", rc);
+	}
+#endif /* defined(CONFIG_NRF_MODEM_LIB) && !defined(CONFIG_NRF_MODEM_LIB_NET_IF_AUTO_START) */
 
 	rc = infuse_security_init();
 	if (rc < 0) {
