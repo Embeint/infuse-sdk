@@ -85,12 +85,6 @@ int infuse_validation_nrf_modem(uint8_t flags)
 
 	VALIDATION_REPORT_INFO(TEST, "Starting");
 
-	rc = nrf_modem_lib_init();
-	if (rc != 0) {
-		VALIDATION_REPORT_ERROR(TEST, "Failed to initialise modem (%d)", rc);
-		goto test_end;
-	}
-
 	rc = infuse_modem_info();
 	if (rc < 0) {
 		goto test_end;
