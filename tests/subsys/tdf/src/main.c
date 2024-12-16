@@ -413,6 +413,49 @@ ZTEST(tdf, test_add_multiple)
 	run_test_case(tests, ARRAY_SIZE(tests));
 }
 
+ZTEST(tdf, test_add_multiple_long_period)
+{
+	/* Multiple TDFs */
+	struct tdf_test_case tests[] = {
+		{
+			.p =
+				{
+					.time = 0,
+					.tdf_id = 100,
+					.tdf_num = 2,
+					.tdf_len = 4,
+					.period = 131072,
+				},
+			.expected_size = 14,
+			.expected_rc = 2,
+		},
+		{
+			.p =
+				{
+					.time = 0,
+					.tdf_id = 100,
+					.tdf_num = 2,
+					.tdf_len = 4,
+					.period = 131072,
+				},
+			.expected_size = 14,
+			.expected_rc = 2,
+		},
+		{
+			.p =
+				{
+					.time = 0,
+					.tdf_id = 104,
+					.tdf_num = 1,
+					.tdf_len = 4,
+				},
+			.expected_size = 0,
+			.expected_rc = -ENOMEM,
+		},
+	};
+	run_test_case(tests, ARRAY_SIZE(tests));
+}
+
 ZTEST(tdf, test_multiple_too_many)
 {
 	/* More TDFs than fit on the buffer */
@@ -555,6 +598,7 @@ ZTEST(tdf, test_invalid_params)
 	zassert_equal(-EINVAL, tdf_add(&state, UINT16_MAX, 10, 1, 0, 0, input_buffer));
 	zassert_equal(-EINVAL, tdf_add(&state, 100, 0, 1, 0, 0, input_buffer));
 	zassert_equal(-EINVAL, tdf_add(&state, 100, 10, 0, 0, 0, input_buffer));
+	zassert_equal(-EINVAL, tdf_add(&state, 100, 10, 2, 0, UINT32_MAX, input_buffer));
 }
 
 ZTEST(tdf, test_invalid_sizes)

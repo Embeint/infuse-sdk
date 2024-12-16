@@ -46,7 +46,7 @@ struct tdf_parsed {
 	/* Number of TDFs */
 	uint8_t tdf_num;
 	/* Time period between TDFs */
-	uint16_t period;
+	uint32_t period;
 	/* TDF data */
 	void *data;
 };
@@ -92,7 +92,7 @@ static inline void tdf_buffer_state_reset(struct tdf_buffer_state *state)
  * @return -ENOMEM Insufficient space to add any TDFs to buffer
  */
 int tdf_add(struct tdf_buffer_state *state, uint16_t tdf_id, uint8_t tdf_len, uint8_t tdf_num,
-	    uint64_t time, uint16_t period, const void *data);
+	    uint64_t time, uint32_t period, const void *data);
 
 /**
  * @brief Initialise TDF parsing state

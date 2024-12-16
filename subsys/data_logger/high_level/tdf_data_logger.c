@@ -220,7 +220,7 @@ int tdf_data_logger_remote_id_set(const struct device *dev, uint64_t remote_id)
 #endif /* TDF_REMOTE_SUPPORT */
 
 static int log_locked(const struct device *dev, uint16_t tdf_id, uint8_t tdf_len, uint8_t tdf_num,
-		      uint64_t time, uint16_t period, const void *mem)
+		      uint64_t time, uint32_t period, const void *mem)
 {
 	struct tdf_logger_data *data = dev->data;
 	int rc;
@@ -257,7 +257,7 @@ relog:
 }
 
 int tdf_data_logger_log_array_dev(const struct device *dev, uint16_t tdf_id, uint8_t tdf_len,
-				  uint8_t tdf_num, uint64_t time, uint16_t period, const void *mem)
+				  uint8_t tdf_num, uint64_t time, uint32_t period, const void *mem)
 {
 	const struct tdf_logger_config *config = dev->config;
 	struct tdf_logger_data *data = dev->data;
@@ -287,7 +287,7 @@ int tdf_data_logger_log_array_dev(const struct device *dev, uint16_t tdf_id, uin
 }
 
 void tdf_data_logger_log_array(uint8_t logger_mask, uint16_t tdf_id, uint8_t tdf_len,
-			       uint8_t tdf_num, uint64_t time, uint16_t period, const void *data)
+			       uint8_t tdf_num, uint64_t time, uint32_t period, const void *data)
 {
 	const struct device *dev;
 

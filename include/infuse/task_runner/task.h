@@ -283,7 +283,7 @@ static inline bool task_schedule_tdf_requested(const struct task_schedule *sched
  */
 static inline void task_schedule_tdf_log_array(const struct task_schedule *schedule,
 					       uint8_t tdf_mask, uint16_t tdf_id, uint8_t tdf_len,
-					       uint8_t tdf_num, uint64_t time, uint16_t period,
+					       uint8_t tdf_num, uint64_t time, uint32_t period,
 					       const void *data)
 {
 	if (schedule->task_logging[0].tdf_mask & tdf_mask) {

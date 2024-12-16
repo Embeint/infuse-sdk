@@ -66,7 +66,7 @@ enum {
  * @retval -errno Error code from @a tdf_add or @a tdf_data_logger_flush on error
  */
 int tdf_data_logger_log_array_dev(const struct device *dev, uint16_t tdf_id, uint8_t tdf_len,
-				  uint8_t tdf_num, uint64_t time, uint16_t period,
+				  uint8_t tdf_num, uint64_t time, uint32_t period,
 				  const void *data);
 
 /**
@@ -81,7 +81,7 @@ int tdf_data_logger_log_array_dev(const struct device *dev, uint16_t tdf_id, uin
  * @param data TDF data array
  */
 void tdf_data_logger_log_array(uint8_t logger_mask, uint16_t tdf_id, uint8_t tdf_len,
-			       uint8_t tdf_num, uint64_t time, uint16_t period, const void *data);
+			       uint8_t tdf_num, uint64_t time, uint32_t period, const void *data);
 
 /**
  * @brief Add a single TDF to a data logger
