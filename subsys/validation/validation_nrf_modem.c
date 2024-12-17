@@ -54,6 +54,7 @@ static int infuse_modem_info(void)
 static int infuse_sim_card(void)
 {
 	char response[64];
+	int rc = 0;
 
 	/* Power up SIM card */
 	if (nrf_modem_at_cmd(response, sizeof(response), "AT+CFUN=41") != 0) {
@@ -64,10 +65,12 @@ static int infuse_sim_card(void)
 
 	if (nrf_modem_at_scanf("AT+CIMI", "%64s\n", response) != 1) {
 		VALIDATION_REPORT_ERROR(TEST, "Failed to read IMSI");
+		rc = -EIO;
 	}
 	VALIDATION_REPORT_INFO(TEST, "%16s: %s", "IMSI", response);
 	if (nrf_modem_at_scanf("AT%XICCID", "%%XICCID: %64s\n", response) != 1) {
 		VALIDATION_REPORT_ERROR(TEST, "Failed to read ICCID");
+		rc = -EIO;
 	}
 	VALIDATION_REPORT_INFO(TEST, "%16s: %s", "ICCID", response);
 
@@ -76,7 +79,7 @@ static int infuse_sim_card(void)
 		VALIDATION_REPORT_ERROR(TEST, "Failed to deactivate UICC");
 		return -EIO;
 	}
-	return 0;
+	return rc;
 }
 
 int infuse_validation_nrf_modem(uint8_t flags)
