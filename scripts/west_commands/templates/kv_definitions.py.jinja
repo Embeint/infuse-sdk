@@ -45,3 +45,10 @@ class slots:
         _pack_ = 1
 
 {% endfor %}
+    ID_MAPPING = {
+{% for base_id, info in definitions.items() %}
+{% for idx in range(info.get('range', 1)) %}
+        {{ base_id + idx }}: {{ info['name'] | lower }},
+{% endfor %}
+{% endfor %}
+    }
