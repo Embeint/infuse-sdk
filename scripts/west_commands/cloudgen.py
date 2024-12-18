@@ -229,6 +229,7 @@ class cloudgen(WestCommand):
                 if "num" in field:
                     if field["num"] == 0:
                         field["array"] = "[]"
+                        field["flexible"] = True
                         d["flexible"] = True
                     else:
                         field["array"] = f"[{field['num']}]"
@@ -243,7 +244,7 @@ class cloudgen(WestCommand):
                     if field["type"].startswith("struct "):
                         s = field["type"].removeprefix("struct ")
                         if kv_defs["structs"][s].get("flexible", False):
-                            field["flexible"] = s
+                            field["flexible_type"] = s
                             d["flexible"] = True
 
             f.write(

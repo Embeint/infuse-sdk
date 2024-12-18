@@ -90,8 +90,8 @@ struct kv_{{ info['name'] | lower }} {
 #define _KV_KEY_{{ info['name'] | upper }}_VAR(num) \
 	struct { \
 	{% for field in info['fields'] %}
-	{% if field['flexible'] %}
-		KV_STRUCT_{{ field['flexible'] | upper }}_VAR(num) {{ field['name'] }}; \
+	{% if field['flexible_type'] %}
+		KV_STRUCT_{{ field['flexible_type'] | upper }}_VAR(num) {{ field['name'] }}; \
 	{% elif field['num'] == 0 %}
 	{% if info['fields']|length == 1 %}
 		uint8_t {{ field['name'] }}_num; \
