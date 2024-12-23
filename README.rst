@@ -17,35 +17,71 @@
      <img src="https://codecov.io/gh/Embeint/infuse-sdk/branch/main/graph/badge.svg?token=YR697LEP1F"/>
    </a>
 
-The Infuse-IoT SDK is a platform designed to make it simple to create ultra
-low-power Internet-of-Thing (IoT) devices.
+Infuse-IoT is a platform designed to make is simple to create ultra
+low-power Internet-of-Things (IoT) solutions. It is a collection of embedded
+software, cloud APIs, desktop tools and mobile libraries that enables rapid
+development, iteration and management.
 
-Supported Hardware
-******************
+Application Features
+********************
 
-The Infuse-IoT SDK currently supports `Nordic Semiconductor`_ System-on-Chips.
-For a complete list of supported boards, see :ref:`snippet-infuse`.
+  * Secure communication interface abstractions
+  * Flexible high-level task scheduling
+  * Size optimised time-series data logging
+  * Cloud mirrored device configuration
+  * Remote procedure call server + client
+  * Binary diff application image upgrades
+  * Post-deployment algorithm loading/updates (Coming soon)
 
-Resources
-*********
+Architecture
+************
 
-Here's a quick summary of resources to help you find your way around:
+Embedded Software
+=================
 
-Getting Started
----------------
+The Infuse-IoT embedded stack is built on top of the `Zephyr Project`_, a
+next-generation real-time operating system managed by the `Linux Foundation`_.
 
-  | 📖 `Zephyr Documentation`_
+Cloud APIs
+==========
 
-Issue Tracking and Security
----------------------------
+Device provisioning and management runs through a rich `REST API`, while real-time
+device data is provided through dedicated `MQTT`_ queues.
 
-  | 🐛 `GitHub Issues`_
+Desktop Tools
+=============
 
-Additional Resources
---------------------
-  | 🌐 `Zephyr Project Website`_
+The Infuse-IoT `Python Tools`_ provide CLI interaction with the Cloud REST API,
+observation of local devices via Bluetooth and a flexible set of libraries to
+write custom scripts for local and cloud device interaction.
+
+Mobile Components
+=================
+
+Coming soon!
+
+Supported System-On-Chips
+*************************
+
+The Infuse-IoT SDK currently supports the following SoC series:
+
+  * Nordic Semiconductor `nRF52`_
+  * Nordic Semiconductor `nRF53`_
+  * Nordic Semiconductor `nRF91`_
+  * Nordic Semiconductor `nRF54L`_ (Coming Soon)
+  * ST Microelectronics `STM32WBx5`_ (Coming Soon)
+
+For a complete list of supported boards, see `builtin supported platforms`_.
 
 .. _Nordic Semiconductor: https://www.nordicsemi.com/
-.. _Zephyr Documentation: https://docs.zephyrproject.org
-.. _GitHub Issues: https://github.com/embeint/infuse-sdk/issues
-.. _Zephyr Project Website: https://www.zephyrproject.org
+.. _MQTT: https://mqtt.org
+.. _Zephyr Project: https://zephyrproject.org
+.. _Linux Foundation: https://www.linuxfoundation.org
+.. _REST API: https://api.infuse-iot.com/docs
+.. _Python Tools: https://github.com/Embeint/python-tools
+.. _nRF52: https://docs.nordicsemi.com/category/nrf-52-series
+.. _nRF53: https://docs.nordicsemi.com/category/nrf-53-series
+.. _nRF54L: https://docs.nordicsemi.com/category/nrf-54L-series
+.. _nRF91: https://docs.nordicsemi.com/category/nrf-91-series
+.. _STM32WBx5: https://www.st.com/en/microcontrollers-microprocessors/stm32wbx5.html
+.. _builtin supported platforms: https://docs.dev.infuse-iot.com/latest/snippets/infuse/README.html
