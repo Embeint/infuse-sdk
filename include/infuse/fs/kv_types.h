@@ -66,7 +66,7 @@ struct kv_mcuboot_img_sem_ver {
  */
 
 /**
- * @brief Builtin KV Structure Definitions
+ * @brief Built-in KV Structure Definitions
  * @defgroup builtin_kv_definitions KV Structure Definitions
  * @{
  */

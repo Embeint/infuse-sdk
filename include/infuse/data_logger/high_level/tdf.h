@@ -27,27 +27,38 @@ extern "C" {
  * @{
  */
 
+/** @cond INTERNAL_HIDDEN */
+
 enum {
+	/** DT_NODELABEL(tdf_logger_flash) */
 	_TDF_DATA_LOGGER_FLASH_OFFSET = 0,
+	/** DT_NODELABEL(tdf_logger_removable) */
 	_TDF_DATA_LOGGER_REMOVABLE_OFFSET = 1,
+	/** DT_NODELABEL(tdf_logger_serial) */
 	_TDF_DATA_LOGGER_SERIAL_OFFSET = 2,
+	/** DT_NODELABEL(tdf_logger_udp) */
 	_TDF_DATA_LOGGER_UDP_OFFSET = 3,
+	/** DT_NODELABEL(tdf_logger_bt_adv) */
 	_TDF_DATA_LOGGER_BT_ADV_OFFSET = 4,
+	/** DT_NODELABEL(tdf_logger_bt_peripheral) */
 	_TDF_DATA_LOGGER_BT_PERIPHERAL_OFFSET = 5,
 };
 
-enum {
-	/* DT_NODELABEL(tdf_logger_flash) */
+/** @endcond */
+
+/** TDF data logger backends */
+enum tdf_data_logger_mask {
+	/** Permanent flash storage device */
 	TDF_DATA_LOGGER_FLASH = BIT(_TDF_DATA_LOGGER_FLASH_OFFSET),
-	/* DT_NODELABEL(tdf_logger_removable) */
+	/** Removable flash storage device */
 	TDF_DATA_LOGGER_REMOVABLE = BIT(_TDF_DATA_LOGGER_REMOVABLE_OFFSET),
-	/* DT_NODELABEL(tdf_logger_serial) */
+	/** Serial communications interface */
 	TDF_DATA_LOGGER_SERIAL = BIT(_TDF_DATA_LOGGER_SERIAL_OFFSET),
-	/* DT_NODELABEL(tdf_logger_udp) */
+	/** UDP communications interface */
 	TDF_DATA_LOGGER_UDP = BIT(_TDF_DATA_LOGGER_UDP_OFFSET),
-	/* DT_NODELABEL(tdf_logger_bt_adv) */
+	/** Bluetooth advertising communications interface */
 	TDF_DATA_LOGGER_BT_ADV = BIT(_TDF_DATA_LOGGER_BT_ADV_OFFSET),
-	/* DT_NODELABEL(tdf_logger_bt_peripheral) */
+	/** Bluetooth GATT peripheral communications interface */
 	TDF_DATA_LOGGER_BT_PERIPHERAL = BIT(_TDF_DATA_LOGGER_BT_PERIPHERAL_OFFSET),
 };
 
@@ -72,7 +83,7 @@ int tdf_data_logger_log_array_dev(const struct device *dev, uint16_t tdf_id, uin
 /**
  * @brief Add multiple TDFs to multiple data loggers
  *
- * @param logger_mask Bitmask of loggers to write to
+ * @param logger_mask Bitmask of loggers to write to (@ref tdf_data_logger_mask)
  * @param tdf_id TDF sensor ID
  * @param tdf_len Length of a single TDF
  * @param tdf_num Number of TDFs to add
@@ -104,7 +115,7 @@ static inline int tdf_data_logger_log_dev(const struct device *dev, uint16_t tdf
 /**
  * @brief Add a single TDF to multiple data loggers
  *
- * @param logger_mask Bitmask of loggers to write to
+ * @param logger_mask Bitmask of loggers to write to (@ref tdf_data_logger_mask)
  * @param tdf_id TDF sensor ID
  * @param tdf_len Length of a single TDF
  * @param time Epoch time associated with the TDF. 0 for no timestamp.
@@ -129,10 +140,7 @@ int tdf_data_logger_flush_dev(const struct device *dev);
 /**
  * @brief Flush any pending TDFs to multiple backends
  *
- * @param logger_mask Bitmask of loggers to flush
- *
- * @retval 0 On success (Or no data to flush)
- * @retval -errno Error code from @a tdf_data_logger_flush_dev
+ * @param logger_mask Bitmask of loggers to flush (@ref tdf_data_logger_mask)
  */
 void tdf_data_logger_flush(uint8_t logger_mask);
 

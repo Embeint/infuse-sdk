@@ -749,7 +749,7 @@ ZTEST(tdf, test_parse_missing_payload)
 	zassert_equal(-EINVAL, rc);
 
 	tdf_buffer_state_reset(&parser);
-	net_buf_simple_add_le16(&parser.buf, TDF_TIME_ARRAY | 1234);
+	net_buf_simple_add_le16(&parser.buf, TDF_ARRAY_TIME | 1234);
 	net_buf_simple_add_u8(&parser.buf, 0x03);
 	net_buf_simple_add_u8(&parser.buf, 0x02);
 	net_buf_simple_add_le16(&parser.buf, 0x1234);
@@ -813,14 +813,14 @@ ZTEST(tdf, test_parse_missing_array_info)
 	net_buf_simple_init_with_data(&parser.buf, buf, sizeof(buf));
 
 	tdf_buffer_state_reset(&parser);
-	net_buf_simple_add_le16(&parser.buf, TDF_TIME_ARRAY | 1234);
+	net_buf_simple_add_le16(&parser.buf, TDF_ARRAY_TIME | 1234);
 	net_buf_simple_add_u8(&parser.buf, 0x03);
 	net_buf_simple_add_u8(&parser.buf, 0x12);
 	rc = tdf_parse(&parser, &parsed);
 	zassert_equal(-EINVAL, rc);
 
 	tdf_buffer_state_reset(&parser);
-	net_buf_simple_add_le16(&parser.buf, TDF_TIME_ARRAY | 1234);
+	net_buf_simple_add_le16(&parser.buf, TDF_ARRAY_TIME | 1234);
 	net_buf_simple_add_u8(&parser.buf, 0x03);
 	net_buf_simple_add_u8(&parser.buf, 0x12);
 	net_buf_simple_add_u8(&parser.buf, 0x34);

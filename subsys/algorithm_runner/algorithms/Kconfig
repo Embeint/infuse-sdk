@@ -1,4 +1,4 @@
-# Builtin Infuse-IoT algorithms
+# Built-in Infuse-IoT algorithms
 
 config ALGORITHM_RUNNER_ALG_STATIONARY_WINDOWED
 	bool "Stationary device detection algorithm"

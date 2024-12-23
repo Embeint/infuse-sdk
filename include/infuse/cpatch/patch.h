@@ -31,10 +31,10 @@ extern "C" {
  * @{
  */
 
-/* Magic number that signifies a CPatch file */
+/** Magic number that signifies a CPatch file */
 #define CPATCH_MAGIC_NUMBER 0xBA854092
 
-/* Expected values for various memory regions */
+/** Expected values for various memory regions */
 struct cpatch_array_validation {
 	/* Length of the memory region in bytes */
 	uint32_t length;
@@ -42,6 +42,7 @@ struct cpatch_array_validation {
 	uint32_t crc;
 } __packed;
 
+/** CPatch file header */
 struct cpatch_header {
 	/* Expected to match @ref CPATCH_MAGIC_NUMBER */
 	uint32_t magic_value;

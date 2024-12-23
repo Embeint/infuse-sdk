@@ -24,8 +24,8 @@ extern "C" {
 #endif
 
 /**
- * @brief TDF API
- * @defgroup tdf_apis TDF APIs
+ * @brief Tagged Data Format API
+ * @defgroup tdf_apis Tagged Data Format APIs
  * @{
  */
 
@@ -58,7 +58,8 @@ enum tdf_flags {
 	TDF_TIMESTAMP_RELATIVE = 0x8000,
 	TDF_TIMESTAMP_EXTENDED_RELATIVE = 0xC000,
 	/* Special flags */
-	TDF_TIME_ARRAY = 0x1000,
+	TDF_ARRAY_NONE = 0x0000,
+	TDF_ARRAY_TIME = 0x1000,
 	/* Masks */
 	TDF_FLAGS_MASK = 0xF000,
 	TDF_TIMESTAMP_MASK = 0xC000,

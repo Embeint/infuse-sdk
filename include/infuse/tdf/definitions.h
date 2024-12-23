@@ -41,39 +41,39 @@ struct tdf_struct_xyz_16bit {
 
 /** Geographic Coordinate System location */
 struct tdf_struct_gcs_location {
-	/* Latitude degrees (scale 1e7) */
+	/** Latitude degrees (scale 1e7) */
 	int32_t latitude;
-	/* Longitude degrees (scale 1e7) */
+	/** Longitude degrees (scale 1e7) */
 	int32_t longitude;
-	/* Height above reference ellipsoid (mm) */
+	/** Height above reference ellipsoid (mm) */
 	int32_t height;
 } __packed;
 
 /** LTE cell ID (Local) */
 struct tdf_struct_lte_cell_id_local {
-	/* E-UTRAN Cell ID */
+	/** E-UTRAN Cell ID */
 	uint32_t eci;
-	/* Tracking Area Code */
+	/** Tracking Area Code */
 	uint16_t tac;
 } __packed;
 
 /** LTE cell ID (Global) */
 struct tdf_struct_lte_cell_id_global {
-	/* Mobile Country Code */
+	/** Mobile Country Code */
 	uint16_t mcc;
-	/* Mobile Network Code */
+	/** Mobile Network Code */
 	uint16_t mnc;
-	/* E-UTRAN Cell ID */
+	/** E-UTRAN Cell ID */
 	uint32_t eci;
-	/* Tracking Area Code */
+	/** Tracking Area Code */
 	uint16_t tac;
 } __packed;
 
 /** Bluetooth address type (bt_addr_le_t) */
 struct tdf_struct_bt_addr_le {
-	/* Address type (0 == Public, 1 == Random) */
+	/** Address type (0 == Public, 1 == Random) */
 	uint8_t type;
-	/* Address bytes */
+	/** Address bytes */
 	uint8_t val[6];
 } __packed;
 
@@ -82,258 +82,258 @@ struct tdf_struct_bt_addr_le {
  */
 
 /**
- * @brief Builtin TDF Structure Definitions
+ * @brief Built-in TDF Structure Definitions
  * @defgroup builtin_tdf_definitions TDF Structure Definitions
  * @{
  */
 
 /** Common announcement packet */
 struct tdf_announce {
-	/* Unique application ID */
+	/** Unique application ID */
 	uint32_t application;
-	/* Running application version */
+	/** Running application version */
 	struct tdf_struct_mcuboot_img_sem_ver version;
-	/* Key-Value store reflect global CRC */
+	/** Key-Value store reflect global CRC */
 	uint32_t kv_crc;
-	/* Logger blocks written */
+	/** Logger blocks written */
 	uint32_t blocks;
-	/* Uptime in seconds */
+	/** Uptime in seconds */
 	uint32_t uptime;
-	/* Reboot counter */
+	/** Reboot counter */
 	uint16_t reboots;
-	/* Flags (BIT(0) == SD blocks) */
+	/** Flags (BIT(0) == SD blocks) */
 	uint8_t flags;
 } __packed;
 
 /** General battery state */
 struct tdf_battery_state {
-	/* Battery voltage (milliVolts) */
+	/** Battery voltage (milliVolts) */
 	uint32_t voltage_mv;
-	/* Battery current (microamps) (Negative = discharging) */
+	/** Battery current (microamps) (Negative = discharging) */
 	int32_t current_ua;
-	/* State of charge (percent) */
+	/** State of charge (percent) */
 	uint8_t soc;
 } __packed;
 
 /** Ambient temperature, pressure & humidity */
 struct tdf_ambient_temp_pres_hum {
-	/* Ambient temperature (millidegrees) */
+	/** Ambient temperature (millidegrees) */
 	int32_t temperature;
-	/* Atmospheric pressure (pascals) */
+	/** Atmospheric pressure (pascals) */
 	uint32_t pressure;
-	/* Relative humidity (centipercent) */
+	/** Relative humidity (centipercent) */
 	uint16_t humidity;
 } __packed;
 
 /** Ambient temperature */
 struct tdf_ambient_temperature {
-	/* Ambient temperature (millidegrees) */
+	/** Ambient temperature (millidegrees) */
 	int32_t temperature;
 } __packed;
 
 /** Time synchronised to new source */
 struct tdf_time_sync {
-	/* Updated time source */
+	/** Updated time source */
 	uint8_t source;
-	/* Time shift (microseconds) */
+	/** Time shift (microseconds) */
 	int32_t shift;
 } __packed;
 
 /** Information pertaining to the previous reboot */
 struct tdf_reboot_info {
-	/* Reboot reason (enum infuse_reboot_reason) */
+	/** Reboot reason (enum infuse_reboot_reason) */
 	uint8_t reason;
-	/* Hardware flags (hwinfo_get_reset_cause) */
+	/** Hardware flags (hwinfo_get_reset_cause) */
 	uint32_t hardware_flags;
-	/* Reboot counter */
+	/** Reboot counter */
 	uint32_t count;
-	/* Uptime before reboot (seconds) */
+	/** Uptime before reboot (seconds) */
 	uint32_t uptime;
-	/* Program counter/Watchdog Info/Other */
+	/** Program counter/Watchdog Info/Other */
 	uint32_t param_1;
-	/* Link Register/Watchdog Info/Other */
+	/** Link Register/Watchdog Info/Other */
 	uint32_t param_2;
-	/* Running thread at reboot */
+	/** Running thread at reboot */
 	char thread[8];
 } __packed;
 
 /** Accelerometer +-2G */
 struct tdf_acc_2g {
-	/* Raw sample */
+	/** Raw sample */
 	struct tdf_struct_xyz_16bit sample;
 } __packed;
 
 /** Accelerometer +-4G */
 struct tdf_acc_4g {
-	/* Raw sample */
+	/** Raw sample */
 	struct tdf_struct_xyz_16bit sample;
 } __packed;
 
 /** Accelerometer +-8G */
 struct tdf_acc_8g {
-	/* Raw sample */
+	/** Raw sample */
 	struct tdf_struct_xyz_16bit sample;
 } __packed;
 
 /** Accelerometer +-16G */
 struct tdf_acc_16g {
-	/* Raw sample */
+	/** Raw sample */
 	struct tdf_struct_xyz_16bit sample;
 } __packed;
 
 /** Gyroscope +-125 DPS */
 struct tdf_gyr_125dps {
-	/* Raw sample */
+	/** Raw sample */
 	struct tdf_struct_xyz_16bit sample;
 } __packed;
 
 /** Gyroscope +-250 DPS */
 struct tdf_gyr_250dps {
-	/* Raw sample */
+	/** Raw sample */
 	struct tdf_struct_xyz_16bit sample;
 } __packed;
 
 /** Gyroscope +-500 DPS */
 struct tdf_gyr_500dps {
-	/* Raw sample */
+	/** Raw sample */
 	struct tdf_struct_xyz_16bit sample;
 } __packed;
 
 /** Gyroscope +-1000 DPS */
 struct tdf_gyr_1000dps {
-	/* Raw sample */
+	/** Raw sample */
 	struct tdf_struct_xyz_16bit sample;
 } __packed;
 
 /** Gyroscope +-2000 DPS */
 struct tdf_gyr_2000dps {
-	/* Raw sample */
+	/** Raw sample */
 	struct tdf_struct_xyz_16bit sample;
 } __packed;
 
 /** Geo-location (WGS-84) + accuracy */
 struct tdf_gcs_wgs84_llha {
-	/* WGS-84 referenced location */
+	/** WGS-84 referenced location */
 	struct tdf_struct_gcs_location location;
-	/* Horizontal accuracy (mm) */
+	/** Horizontal accuracy (mm) */
 	int32_t h_acc;
-	/* Vertical accuracy (mm) */
+	/** Vertical accuracy (mm) */
 	int32_t v_acc;
 } __packed;
 
 /** u-blox GNSS NAV-PVT message */
 struct tdf_ubx_nav_pvt {
-	/* GPS time of week of the navigation epoch */
+	/** GPS time of week of the navigation epoch */
 	uint32_t itow;
-	/* Year (UTC) */
+	/** Year (UTC) */
 	uint16_t year;
-	/* Month, range 1..12 (UTC) */
+	/** Month, range 1..12 (UTC) */
 	uint8_t month;
-	/* Day of month, range 1..31 (UTC) */
+	/** Day of month, range 1..31 (UTC) */
 	uint8_t day;
-	/* Hour of day, range 0..23 (UTC) */
+	/** Hour of day, range 0..23 (UTC) */
 	uint8_t hour;
-	/* Minute of hour, range 0..59 (UTC) */
+	/** Minute of hour, range 0..59 (UTC) */
 	uint8_t min;
-	/* Seconds of minute, range 0..60 (UTC) */
+	/** Seconds of minute, range 0..60 (UTC) */
 	uint8_t sec;
-	/* Validity flags */
+	/** Validity flags */
 	uint8_t valid;
-	/* Time accuracy estimate (UTC) */
+	/** Time accuracy estimate (UTC) */
 	uint32_t t_acc;
-	/* Fraction of second, range -1e9 .. 1e9 (UTC) */
+	/** Fraction of second, range -1e9 .. 1e9 (UTC) */
 	int32_t nano;
-	/* GNSS fix Type */
+	/** GNSS fix Type */
 	uint8_t fix_type;
-	/* Fix status flags */
+	/** Fix status flags */
 	uint8_t flags;
-	/* Additional flags */
+	/** Additional flags */
 	uint8_t flags2;
-	/* Number of satellites used in Nav Solution */
+	/** Number of satellites used in Nav Solution */
 	uint8_t num_sv;
-	/* Longitude */
+	/** Longitude */
 	int32_t lon;
-	/* Latitude */
+	/** Latitude */
 	int32_t lat;
-	/* Height above ellipsoid */
+	/** Height above ellipsoid */
 	int32_t height;
-	/* Height above mean sea level */
+	/** Height above mean sea level */
 	int32_t h_msl;
-	/* Horizontal accuracy estimate */
+	/** Horizontal accuracy estimate */
 	uint32_t h_acc;
-	/* Vertical accuracy estimate */
+	/** Vertical accuracy estimate */
 	uint32_t v_acc;
-	/* NED north velocity */
+	/** NED north velocity */
 	int32_t vel_n;
-	/* NED east velocity */
+	/** NED east velocity */
 	int32_t vel_e;
-	/* NED down velocity */
+	/** NED down velocity */
 	int32_t vel_d;
-	/* Ground Speed (2-D) */
+	/** Ground Speed (2-D) */
 	int32_t g_speed;
-	/* Heading of motion (2-D) */
+	/** Heading of motion (2-D) */
 	int32_t head_mot;
-	/* Speed accuracy estimate */
+	/** Speed accuracy estimate */
 	uint32_t s_acc;
-	/* Heading accuracy estimate (both motion and vehicle) */
+	/** Heading accuracy estimate (both motion and vehicle) */
 	uint32_t head_acc;
-	/* Position DOP */
+	/** Position DOP */
 	uint16_t p_dop;
-	/* Additional flags */
+	/** Additional flags */
 	uint16_t flags3;
-	/* Reserved */
+	/** Reserved */
 	uint8_t reserved0[4];
-	/* Heading of vehicle (2-D) */
+	/** Heading of vehicle (2-D) */
 	int32_t head_veh;
-	/* Magnetic declination */
+	/** Magnetic declination */
 	int16_t mag_dec;
-	/* Magnetic declination accuracy */
+	/** Magnetic declination accuracy */
 	uint16_t mag_acc;
 } __packed;
 
 /** Information on service cell and registration status */
 struct tdf_lte_conn_status {
-	/* Global LTE cell identifier */
+	/** Global LTE cell identifier */
 	struct tdf_struct_lte_cell_id_global cell;
-	/* Evolved Absolute Radio Frequency Channel (E-ARFCN) */
+	/** Evolved Absolute Radio Frequency Channel (E-ARFCN) */
 	uint32_t earfcn;
-	/* Registration status (See AT+CEREG) */
+	/** Registration status (See AT+CEREG) */
 	uint8_t status;
-	/* Access Technology (7 = LTE-M, 9 = NB-IoT) */
+	/** Access Technology (7 = LTE-M, 9 = NB-IoT) */
 	uint8_t tech;
-	/* Reference signal received power (255 = Unknown) */
+	/** Reference signal received power (255 = Unknown) */
 	uint8_t rsrp;
-	/* Reference signal received quality (-128 = Unknown) */
+	/** Reference signal received quality (-128 = Unknown) */
 	int8_t rsrq;
 } __packed;
 
 /** 9 byte payload transmitted over the Globalstar Simplex network */
 struct tdf_globalstar_pkt {
-	/* User data payload */
+	/** User data payload */
 	uint8_t payload[9];
 } __packed;
 
 /** Accelerometer magnitude standard deviation over a window */
 struct tdf_acc_magnitude_std_dev {
-	/* Number of samples in window */
+	/** Number of samples in window */
 	uint32_t count;
-	/* Standard deviation in micro-g */
+	/** Standard deviation in micro-g */
 	uint32_t std_dev;
 } __packed;
 
 /** Generic activity metric */
 struct tdf_activity_metric {
-	/* Activity metric value */
+	/** Activity metric value */
 	uint32_t value;
 } __packed;
 
 /** Instantaneous algorithm output */
 struct tdf_algorithm_output {
-	/* Algorithm identifier */
+	/** Algorithm identifier */
 	uint32_t algorithm_id;
-	/* Algorithm version number */
+	/** Algorithm version number */
 	uint16_t algorithm_version;
-	/* Arbitrary algorithm output */
+	/** Arbitrary algorithm output */
 	uint8_t output[];
 } __packed;
 
@@ -347,59 +347,59 @@ struct tdf_algorithm_output {
 
 /** Runtime error logging */
 struct tdf_runtime_error {
-	/* Unique error identifier */
+	/** Unique error identifier */
 	uint32_t error_id;
-	/* Additional context about the error */
+	/** Additional context about the error */
 	uint32_t error_ctx;
 } __packed;
 
 /** Battery charging enable state */
 struct tdf_charger_en_control {
-	/* Charger is enabled */
+	/** Charger is enabled */
 	uint8_t enabled;
 } __packed;
 
 /** Metadata about a GNSS location fix */
 struct tdf_gnss_fix_info {
-	/* Duration it took for accurate time knowledge (seconds) */
+	/** Duration it took for accurate time knowledge (seconds) */
 	uint16_t time_fix;
-	/* Duration it took for desired location knowledge (seconds) */
+	/** Duration it took for desired location knowledge (seconds) */
 	uint16_t location_fix;
-	/* Number of satellite vehicles used in location fix */
+	/** Number of satellite vehicles used in location fix */
 	uint8_t num_sv;
 } __packed;
 
 /** Bluetooth connection state change */
 struct tdf_bluetooth_connection {
-	/* Address of remote device */
+	/** Address of remote device */
 	struct tdf_struct_bt_addr_le address;
-	/* Connected (1) or Disconnected (0) */
+	/** Connected (1) or Disconnected (0) */
 	uint8_t connected;
 } __packed;
 
 /** Received signal strength of Bluetooth device */
 struct tdf_bluetooth_rssi {
-	/* Address of remote device */
+	/** Address of remote device */
 	struct tdf_struct_bt_addr_le address;
-	/* Bluetooth RSSI */
+	/** Bluetooth RSSI */
 	int8_t rssi;
 } __packed;
 
 /** Data throughput of Bluetooth link */
 struct tdf_bluetooth_data_throughput {
-	/* Address of remote device */
+	/** Address of remote device */
 	struct tdf_struct_bt_addr_le address;
-	/* Data throughput (-1 == disconnected) */
+	/** Data throughput (-1 == disconnected) */
 	int32_t throughput;
 } __packed;
 
 /** Algorithm output class histogram over a time window */
 struct tdf_algorithm_class_histogram {
-	/* Algorithm identifier */
+	/** Algorithm identifier */
 	uint32_t algorithm_id;
-	/* Algorithm version number */
+	/** Algorithm version number */
 	uint16_t algorithm_version;
-	/* Count per output class */
+	/** Count per output class */
 	uint8_t classes[];
 } __packed;
 
@@ -413,11 +413,11 @@ struct tdf_algorithm_class_histogram {
 
 /** Algorithm output class time series vector */
 struct tdf_algorithm_class_time_series {
-	/* Algorithm identifier */
+	/** Algorithm identifier */
 	uint32_t algorithm_id;
-	/* Algorithm version number */
+	/** Algorithm version number */
 	uint16_t algorithm_version;
-	/* Output classes */
+	/** Output classes */
 	uint8_t values[];
 } __packed;
 
@@ -431,46 +431,79 @@ struct tdf_algorithm_class_time_series {
 
 /** Example array type */
 struct tdf_array_type {
-	/* I am an array of length 4 */
+	/** I am an array of length 4 */
 	uint8_t array[4];
 } __packed;
 
 /** Infuse-IoT builtin TDF definitions */
 enum tdf_builtin_id {
+	/** Common announcement packet */
 	TDF_ANNOUNCE = 1,
+	/** General battery state */
 	TDF_BATTERY_STATE = 2,
+	/** Ambient temperature, pressure & humidity */
 	TDF_AMBIENT_TEMP_PRES_HUM = 3,
+	/** Ambient temperature */
 	TDF_AMBIENT_TEMPERATURE = 4,
+	/** Time synchronised to new source */
 	TDF_TIME_SYNC = 5,
+	/** Information pertaining to the previous reboot */
 	TDF_REBOOT_INFO = 6,
+	/** Accelerometer +-2G */
 	TDF_ACC_2G = 10,
+	/** Accelerometer +-4G */
 	TDF_ACC_4G = 11,
+	/** Accelerometer +-8G */
 	TDF_ACC_8G = 12,
+	/** Accelerometer +-16G */
 	TDF_ACC_16G = 13,
+	/** Gyroscope +-125 DPS */
 	TDF_GYR_125DPS = 14,
+	/** Gyroscope +-250 DPS */
 	TDF_GYR_250DPS = 15,
+	/** Gyroscope +-500 DPS */
 	TDF_GYR_500DPS = 16,
+	/** Gyroscope +-1000 DPS */
 	TDF_GYR_1000DPS = 17,
+	/** Gyroscope +-2000 DPS */
 	TDF_GYR_2000DPS = 18,
+	/** Geo-location (WGS-84) + accuracy */
 	TDF_GCS_WGS84_LLHA = 19,
+	/** u-blox GNSS NAV-PVT message */
 	TDF_UBX_NAV_PVT = 20,
+	/** Information on service cell and registration status */
 	TDF_LTE_CONN_STATUS = 21,
+	/** 9 byte payload transmitted over the Globalstar Simplex network */
 	TDF_GLOBALSTAR_PKT = 22,
+	/** Accelerometer magnitude standard deviation over a window */
 	TDF_ACC_MAGNITUDE_STD_DEV = 23,
+	/** Generic activity metric */
 	TDF_ACTIVITY_METRIC = 24,
+	/** Instantaneous algorithm output */
 	TDF_ALGORITHM_OUTPUT = 25,
+	/** Runtime error logging */
 	TDF_RUNTIME_ERROR = 26,
+	/** Battery charging enable state */
 	TDF_CHARGER_EN_CONTROL = 27,
+	/** Metadata about a GNSS location fix */
 	TDF_GNSS_FIX_INFO = 28,
+	/** Bluetooth connection state change */
 	TDF_BLUETOOTH_CONNECTION = 29,
+	/** Received signal strength of Bluetooth device */
 	TDF_BLUETOOTH_RSSI = 30,
+	/** Data throughput of Bluetooth link */
 	TDF_BLUETOOTH_DATA_THROUGHPUT = 31,
+	/** Algorithm output class histogram over a time window */
 	TDF_ALGORITHM_CLASS_HISTOGRAM = 32,
+	/** Algorithm output class time series vector */
 	TDF_ALGORITHM_CLASS_TIME_SERIES = 33,
+	/** Example array type */
 	TDF_ARRAY_TYPE = 100,
-	/* End of builtin TDF range */
+	/** End of builtin TDF range */
 	TDF_BUILTIN_END = 1024,
 };
+
+/** @cond INTERNAL_HIDDEN */
 
 /** Size of builtin TDF definitions */
 enum tdf_builtin_size {
@@ -506,6 +539,8 @@ enum tdf_builtin_size {
 	_TDF_ALGORITHM_CLASS_TIME_SERIES_SIZE = sizeof(struct tdf_algorithm_class_time_series),
 	_TDF_ARRAY_TYPE_SIZE = sizeof(struct tdf_array_type),
 };
+
+/** @endcond */
 
 /**
  * @}

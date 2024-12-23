@@ -28,9 +28,9 @@ extern "C" {
  * @brief Header for @ref INFUSE_RPC_CMD packet
  */
 struct infuse_rpc_req_header {
-	/* Unique request ID */
+	/** Unique request ID */
 	uint32_t request_id;
-	/* Command to run */
+	/** Command to run */
 	uint16_t command_id;
 } __packed;
 
@@ -38,9 +38,9 @@ struct infuse_rpc_req_header {
  * @brief Secondary header for RPCs expecting @ref INFUSE_RPC_DATA
  */
 struct infuse_rpc_req_data_header {
-	/* Amount of data expected to be transferred */
+	/** Amount of data expected to be transferred */
 	uint32_t size;
-	/* Send an @ref INFUSE_RPC_DATA_ACK response every N packets received */
+	/** Send an @ref INFUSE_RPC_DATA_ACK response every N packets received */
 	uint8_t rx_ack_period;
 } __packed;
 
@@ -48,11 +48,11 @@ struct infuse_rpc_req_data_header {
  * @brief @ref INFUSE_RPC_DATA payload
  */
 struct infuse_rpc_data {
-	/* Request ID matching original @ref infuse_rpc_req_header */
+	/** Request ID matching original @ref infuse_rpc_req_header */
 	uint32_t request_id;
-	/* Byte offset of data in this payload */
+	/** Byte offset of data in this payload */
 	uint32_t offset;
-	/* Data payload */
+	/** Data payload */
 	uint8_t payload[];
 } __packed;
 
@@ -60,9 +60,9 @@ struct infuse_rpc_data {
  * @brief @ref INFUSE_RPC_DATA_ACK packet
  */
 struct infuse_rpc_data_ack {
-	/* Request ID matching original @ref infuse_rpc_req_header */
+	/** Request ID matching original @ref infuse_rpc_req_header */
 	uint32_t request_id;
-	/* Byte offsets received */
+	/** Byte offsets received */
 	uint32_t offsets[];
 } __packed;
 
@@ -70,11 +70,11 @@ struct infuse_rpc_data_ack {
  * @brief Header for @ref INFUSE_RPC_RSP packet
  */
 struct infuse_rpc_rsp_header {
-	/* Request ID matching original @ref infuse_rpc_req_header */
+	/** Request ID matching original @ref infuse_rpc_req_header */
 	uint32_t request_id;
-	/* Command that was run */
+	/** Command that was run */
 	uint16_t command_id;
-	/* Result of the RPC */
+	/** Result of the RPC */
 	int16_t return_code;
 } __packed;
 
@@ -90,7 +90,7 @@ struct infuse_rpc_rsp_header {
  * @{
  */
 
-/* MCUboot semantic versioning struct */
+/** MCUboot semantic versioning struct */
 struct rpc_struct_mcuboot_img_sem_ver {
 	uint8_t major;
 	uint8_t minor;
@@ -98,166 +98,166 @@ struct rpc_struct_mcuboot_img_sem_ver {
 	uint32_t build_num;
 } __packed;
 
-/* KV store data value */
+/** KV store data value */
 struct rpc_struct_kv_store_value {
 	uint16_t id;
 	int16_t len;
 	uint8_t data[];
 } __packed;
 
-/* KV store data CRC */
+/** KV store data CRC */
 struct rpc_struct_kv_store_crc {
 	uint16_t id;
 	int32_t crc;
 } __packed;
 
-/* Bluetooth LE address */
+/** Bluetooth LE address */
 struct rpc_struct_bt_addr_le {
 	uint8_t type;
 	uint8_t val[6];
 } __packed;
 
-/* IPv4 address */
+/** IPv4 address */
 struct rpc_struct_ipv4_address {
 	uint8_t addr[4];
 } __packed;
 
-/* IPv6 address */
+/** IPv6 address */
 struct rpc_struct_ipv6_address {
 	uint8_t addr[16];
 } __packed;
 
-/* Common network state */
+/** Common network state */
 struct rpc_struct_network_state {
-	/* Operational state */
+	/** Operational state */
 	uint8_t state;
-	/* Interface flags */
+	/** Interface flags */
 	uint32_t if_flags;
-	/* L2 flags */
+	/** L2 flags */
 	uint16_t l2_flags;
-	/* Maximum transmission unit */
+	/** Maximum transmission unit */
 	uint16_t mtu;
-	/* Self IPv4 address */
+	/** Self IPv4 address */
 	struct rpc_struct_ipv4_address ipv4;
-	/* Self IPv6 address */
+	/** Self IPv6 address */
 	struct rpc_struct_ipv6_address ipv6;
 } __packed;
 
-/* WiFi interface status */
+/** WiFi interface status */
 struct rpc_struct_wifi_state {
-	/* Operational state */
+	/** Operational state */
 	uint8_t state;
-	/* Service Set Identifier (Network Name) */
+	/** Service Set Identifier (Network Name) */
 	char ssid[32];
-	/* Basic Service Set Identifier (MAC address) */
+	/** Basic Service Set Identifier (MAC address) */
 	char bssid[6];
-	/* Frequency band */
+	/** Frequency band */
 	uint8_t band;
-	/* Channel index */
+	/** Channel index */
 	uint8_t channel;
-	/* https://w1.fi/wpa_supplicant/devel/defs_8h.html#a4aeb27c1e4abd046df3064ea9756f0bc */
+	/** https://w1.fi/wpa_supplicant/devel/defs_8h.html#a4aeb27c1e4abd046df3064ea9756f0bc */
 	uint8_t iface_mode;
-	/* WiFi link operating mode (https://en.wikipedia.org/wiki/Wi-Fi#Versions_and_generations) */
+	/** WiFi link operating mode (https://en.wikipedia.org/wiki/Wi-Fi#Versions_and_generations) */
 	uint8_t link_mode;
-	/* IEEE 802.11 security type */
+	/** IEEE 802.11 security type */
 	uint8_t security;
-	/* Received signal strength (dBm) */
+	/** Received signal strength (dBm) */
 	int8_t rssi;
-	/* Beacon interval (ms) */
+	/** Beacon interval (ms) */
 	uint16_t beacon_interval;
-	/* Target Wake Time capable? */
+	/** Target Wake Time capable? */
 	uint8_t twt_capable;
 } __packed;
 
-/* LTE interface status */
+/** LTE interface status */
 struct rpc_struct_lte_state {
-	/* Network registration state */
+	/** Network registration state */
 	uint8_t registration_state;
-	/* 0 = None, 7 = LTE-M, 9 = NB-IoT */
+	/** 0 = None, 7 = LTE-M, 9 = NB-IoT */
 	uint8_t access_technology;
-	/* Mobile Country Code */
+	/** Mobile Country Code */
 	uint16_t mcc;
-	/* Mobile Network Code */
+	/** Mobile Network Code */
 	uint16_t mnc;
-	/* E-UTRAN cell ID */
+	/** E-UTRAN cell ID */
 	uint32_t cell_id;
-	/* Tracking area code */
+	/** Tracking area code */
 	uint32_t tac;
-	/* Tracking area update period */
+	/** Tracking area update period */
 	uint32_t tau;
-	/* Tracking area code (3GPP TS 36.101) */
+	/** Tracking area code (3GPP TS 36.101) */
 	uint16_t earfcn;
-	/* LTE Band (3GPP 36.101) */
+	/** LTE Band (3GPP 36.101) */
 	uint8_t band;
-	/* Seconds between RRC idle and PSM */
+	/** Seconds between RRC idle and PSM */
 	uint16_t psm_active_time;
-	/* Period between eDRX paging windows */
+	/** Period between eDRX paging windows */
 	float edrx_interval;
-	/* Duration of eDRX paging window */
+	/** Duration of eDRX paging window */
 	float edrx_paging_window;
-	/* Reference signal received power (dBm) */
+	/** Reference signal received power (dBm) */
 	int16_t rsrp;
-	/* Reference signal received quality (dB) */
+	/** Reference signal received quality (dB) */
 	int8_t rsrq;
 } __packed;
 
-/* WiFi interface status */
+/** WiFi interface status */
 struct rpc_struct_wifi_scan_result {
-	/* Frequency band */
+	/** Frequency band */
 	uint8_t band;
-	/* Channel index */
+	/** Channel index */
 	uint8_t channel;
-	/* IEEE 802.11 security type */
+	/** IEEE 802.11 security type */
 	uint8_t security;
-	/* Received signal strength (dBm) */
+	/** Received signal strength (dBm) */
 	int8_t rssi;
-	/* Basic Service Set Identifier (MAC address) */
+	/** Basic Service Set Identifier (MAC address) */
 	char bssid[6];
-	/* SSID length */
+	/** SSID length */
 	uint8_t ssid_len;
-	/* Service Set Identifier (Network Name) */
+	/** Service Set Identifier (Network Name) */
 	char ssid[];
 } __packed;
 
-/* Bluetooth LE address type */
+/** Bluetooth LE address type */
 enum rpc_enum_bt_le_addr_type {
-	/* Public address */
+	/** Public address */
 	RPC_ENUM_BT_LE_ADDR_TYPE_PUBLIC = 0,
-	/* Static random address */
+	/** Static random address */
 	RPC_ENUM_BT_LE_ADDR_TYPE_RANDOM = 1,
 };
 
-/* Actions to take upon receiving a file */
+/** Actions to take upon receiving a file */
 enum rpc_enum_file_action {
-	/* Discard received file (Useful for testing) */
+	/** Discard received file (Useful for testing) */
 	RPC_ENUM_FILE_ACTION_DISCARD = 0,
-	/* Complete application image for firmware upgrade */
+	/** Complete application image for firmware upgrade */
 	RPC_ENUM_FILE_ACTION_APP_IMG = 1,
-	/* Complete Bluetooth controller image for firmware upgrade */
+	/** Complete Bluetooth controller image for firmware upgrade */
 	RPC_ENUM_FILE_ACTION_BT_CTLR_IMG = 2,
-	/* CPatch application image upgrade (binary diff) */
+	/** CPatch application image upgrade (binary diff) */
 	RPC_ENUM_FILE_ACTION_APP_CPATCH = 11,
-	/* CPatch Bluetooth controller image upgrade (binary diff) */
+	/** CPatch Bluetooth controller image upgrade (binary diff) */
 	RPC_ENUM_FILE_ACTION_BT_CTLR_CPATCH = 12,
-	/* nRF91 LTE modem firmware upgrade diff */
+	/** nRF91 LTE modem firmware upgrade diff */
 	RPC_ENUM_FILE_ACTION_NRF91_MODEM_DIFF = 20,
 };
 
-/* Infuse-IoT Bluetooth characteristics (Bitmask) */
+/** Infuse-IoT Bluetooth characteristics (Bitmask) */
 enum rpc_enum_infuse_bt_characteristic {
-	/* Command characteristic */
+	/** Command characteristic */
 	RPC_ENUM_INFUSE_BT_CHARACTERISTIC_COMMAND = 1,
-	/* Data characteristic */
+	/** Data characteristic */
 	RPC_ENUM_INFUSE_BT_CHARACTERISTIC_DATA = 2,
-	/* Serial log characteristic */
+	/** Serial log characteristic */
 	RPC_ENUM_INFUSE_BT_CHARACTERISTIC_LOGGING = 4,
 };
 
-/* Data Logger identifier */
+/** Data Logger identifier */
 enum rpc_enum_data_logger {
-	/* Onboard flash logger */
+	/** Onboard flash logger */
 	RPC_ENUM_DATA_LOGGER_FLASH_ONBOARD = 1,
-	/* Removable flash logger (SD) */
+	/** Removable flash logger (SD) */
 	RPC_ENUM_DATA_LOGGER_FLASH_REMOVABLE = 2,
 };
 
@@ -266,84 +266,84 @@ enum rpc_enum_data_logger {
  */
 
 /**
- * @brief Builtin RPC definitions
- * @defgroup builtin_rpc_definitions Builtin RPC definitions
+ * @brief Built-in RPC definitions
+ * @defgroup builtin_rpc_definitions Built-in RPC definitions
  * @{
  */
 
-/* Infuse-IoT builtin RPC commands */
+/** Infuse-IoT builtin RPC commands */
 enum rpc_builtin_id {
-	/* Reboot the device after a delay */
+	/** Reboot the device after a delay */
 	RPC_ID_REBOOT = 1,
-	/* Immediately trigger an exception on the device */
+	/** Immediately trigger an exception on the device */
 	RPC_ID_FAULT = 2,
-	/* Get the current time knowledge of the device */
+	/** Get the current time knowledge of the device */
 	RPC_ID_TIME_GET = 3,
-	/* Set the current time of the device */
+	/** Set the current time of the device */
 	RPC_ID_TIME_SET = 4,
-	/* Write values to the KV store */
+	/** Write values to the KV store */
 	RPC_ID_KV_WRITE = 5,
-	/* Read values from the KV store */
+	/** Read values from the KV store */
 	RPC_ID_KV_READ = 6,
-	/* Read KV store CRC's */
+	/** Read KV store CRC's */
 	RPC_ID_KV_REFLECT_CRCS = 7,
-	/* Query current state of zbus channel */
+	/** Query current state of zbus channel */
 	RPC_ID_ZBUS_CHANNEL_STATE = 8,
-	/* Query basic application versions and state */
+	/** Query basic application versions and state */
 	RPC_ID_APPLICATION_INFO = 9,
-	/* Scan for WiFi networks */
+	/** Scan for WiFi networks */
 	RPC_ID_WIFI_SCAN = 10,
-	/* Get current WiFi interface state */
+	/** Get current WiFi interface state */
 	RPC_ID_WIFI_STATE = 11,
-	/* Retrieve information pertaining to the previous reboot */
+	/** Retrieve information pertaining to the previous reboot */
 	RPC_ID_LAST_REBOOT = 12,
-	/* Get state of a data logger */
+	/** Get state of a data logger */
 	RPC_ID_DATA_LOGGER_STATE = 13,
-	/* Read data from data logger */
+	/** Read data from data logger */
 	RPC_ID_DATA_LOGGER_READ = 14,
-	/* Run AT command against LTE modem */
+	/** Run AT command against LTE modem */
 	RPC_ID_LTE_AT_CMD = 20,
-	/* Get current LTE interface state */
+	/** Get current LTE interface state */
 	RPC_ID_LTE_STATE = 21,
-	/* Download a file from a COAP server (Infuse-IoT DTLS protected) */
+	/** Download a file from a COAP server (Infuse-IoT DTLS protected) */
 	RPC_ID_COAP_DOWNLOAD = 30,
-	/* Write a file to the device */
+	/** Write a file to the device */
 	RPC_ID_FILE_WRITE_BASIC = 40,
-	/* Connect to an Infuse-IoT Bluetooth device */
+	/** Connect to an Infuse-IoT Bluetooth device */
 	RPC_ID_BT_CONNECT_INFUSE = 50,
-	/* Disconnect from a Bluetooth device */
+	/** Disconnect from a Bluetooth device */
 	RPC_ID_BT_DISCONNECT = 51,
-	/* Query current security state and validate identity */
+	/** Query current security state and validate identity */
 	RPC_ID_SECURITY_STATE = 30000,
-	/* Send multiple INFUSE_RPC_DATA packets */
+	/** Send multiple INFUSE_RPC_DATA packets */
 	RPC_ID_DATA_SENDER = 32765,
-	/* Receive multiple INFUSE_RPC_DATA packets */
+	/** Receive multiple INFUSE_RPC_DATA packets */
 	RPC_ID_DATA_RECEIVER = 32766,
-	/* Echo any input data in the response */
+	/** Echo any input data in the response */
 	RPC_ID_ECHO = 32767,
-	/* End of builtin RPC range */
+	/** End of builtin RPC range */
 	RPC_BUILTIN_END = 32768,
 };
 
-/* Reboot the device after a delay */
+/** Reboot the device after a delay */
 struct rpc_reboot_request {
 	struct infuse_rpc_req_header header;
-	/* Requested delay (0 == default) */
+	/** Requested delay (0 == default) */
 	uint32_t delay_ms;
 } __packed;
 
 struct rpc_reboot_response {
 	struct infuse_rpc_rsp_header header;
-	/* Duration until reboot */
+	/** Duration until reboot */
 	uint32_t delay_ms;
 } __packed;
 
-/* Immediately trigger an exception on the device */
+/** Immediately trigger an exception on the device */
 struct rpc_fault_request {
 	struct infuse_rpc_req_header header;
-	/* K_ERR_* fault type to trigger */
+	/** K_ERR_* fault type to trigger */
 	uint8_t fault;
-	/* Zero that the compiler doesn't know about */
+	/** Zero that the compiler doesn't know about */
 	uint32_t zero;
 } __packed;
 
@@ -351,25 +351,25 @@ struct rpc_fault_response {
 	struct infuse_rpc_rsp_header header;
 } __packed;
 
-/* Get the current time knowledge of the device */
+/** Get the current time knowledge of the device */
 struct rpc_time_get_request {
 	struct infuse_rpc_req_header header;
 } __packed;
 
 struct rpc_time_get_response {
 	struct infuse_rpc_rsp_header header;
-	/* Source of the time knowledge */
+	/** Source of the time knowledge */
 	uint8_t time_source;
-	/* Current epoch time on the device */
+	/** Current epoch time on the device */
 	uint64_t epoch_time;
-	/* How old the time knowledge is (seconds) */
+	/** How old the time knowledge is (seconds) */
 	uint32_t sync_age;
 } __packed;
 
-/* Set the current time of the device */
+/** Set the current time of the device */
 struct rpc_time_set_request {
 	struct infuse_rpc_req_header header;
-	/* Current epoch time on the device */
+	/** Current epoch time on the device */
 	uint64_t epoch_time;
 } __packed;
 
@@ -377,299 +377,299 @@ struct rpc_time_set_response {
 	struct infuse_rpc_rsp_header header;
 } __packed;
 
-/* Write values to the KV store */
+/** Write values to the KV store */
 struct rpc_kv_write_request {
 	struct infuse_rpc_req_header header;
-	/* Number of values in buffer */
+	/** Number of values in buffer */
 	uint8_t num;
-	/* Array of KV values */
+	/** Array of KV values */
 	struct rpc_struct_kv_store_value values[];
 } __packed;
 
 struct rpc_kv_write_response {
 	struct infuse_rpc_rsp_header header;
-	/* Result of writes */
+	/** Result of writes */
 	int16_t rc[];
 } __packed;
 
-/* Read values from the KV store */
+/** Read values from the KV store */
 struct rpc_kv_read_request {
 	struct infuse_rpc_req_header header;
-	/* Number of values to read */
+	/** Number of values to read */
 	uint8_t num;
-	/* Array of KV keys */
+	/** Array of KV keys */
 	uint16_t keys[];
 } __packed;
 
 struct rpc_kv_read_response {
 	struct infuse_rpc_rsp_header header;
-	/* Array of KV values */
+	/** Array of KV values */
 	struct rpc_struct_kv_store_value values[];
 } __packed;
 
-/* Read KV store CRC's */
+/** Read KV store CRC's */
 struct rpc_kv_reflect_crcs_request {
 	struct infuse_rpc_req_header header;
-	/* Number of CRCs to skip in response */
+	/** Number of CRCs to skip in response */
 	uint16_t offset;
 } __packed;
 
 struct rpc_kv_reflect_crcs_response {
 	struct infuse_rpc_rsp_header header;
-	/* Number of CRCs in crcs array */
+	/** Number of CRCs in crcs array */
 	uint16_t num;
-	/* Number of CRCs that did not fit in this response */
+	/** Number of CRCs that did not fit in this response */
 	uint16_t remaining;
-	/* Array of KV CRCs */
+	/** Array of KV CRCs */
 	struct rpc_struct_kv_store_crc crcs[];
 } __packed;
 
-/* Query current state of zbus channel */
+/** Query current state of zbus channel */
 struct rpc_zbus_channel_state_request {
 	struct infuse_rpc_req_header header;
-	/* Channel ID to query */
+	/** Channel ID to query */
 	uint32_t channel_id;
 } __packed;
 
 struct rpc_zbus_channel_state_response {
 	struct infuse_rpc_rsp_header header;
-	/* Epoch time of last data publish */
+	/** Epoch time of last data publish */
 	uint64_t publish_timestamp;
-	/* Number of times data has been published to channel */
+	/** Number of times data has been published to channel */
 	uint32_t publish_count;
-	/* Average time between publishing */
+	/** Average time between publishing */
 	uint32_t publish_period_avg_ms;
-	/* Channel data */
+	/** Channel data */
 	uint8_t data[];
 } __packed;
 
-/* Query basic application versions and state */
+/** Query basic application versions and state */
 struct rpc_application_info_request {
 	struct infuse_rpc_req_header header;
 } __packed;
 
 struct rpc_application_info_response {
 	struct infuse_rpc_rsp_header header;
-	/* Application ID */
+	/** Application ID */
 	uint32_t application_id;
-	/* Application version number */
+	/** Application version number */
 	struct rpc_struct_mcuboot_img_sem_ver version;
-	/* Current Infuse network ID */
+	/** Current Infuse network ID */
 	uint32_t network_id;
-	/* Application uptime */
+	/** Application uptime */
 	uint32_t uptime;
-	/* Application reboot count */
+	/** Application reboot count */
 	uint32_t reboots;
-	/* Key-Value store reflect global CRC */
+	/** Key-Value store reflect global CRC */
 	uint32_t kv_crc;
-	/* Data blocks logged to internal flash */
+	/** Data blocks logged to internal flash */
 	uint32_t data_blocks_internal;
-	/* Data blocks logged to external flash */
+	/** Data blocks logged to external flash */
 	uint32_t data_blocks_external;
 } __packed;
 
-/* Scan for WiFi networks */
+/** Scan for WiFi networks */
 struct rpc_wifi_scan_request {
 	struct infuse_rpc_req_header header;
 } __packed;
 
 struct rpc_wifi_scan_response {
 	struct infuse_rpc_rsp_header header;
-	/* Number of scanned networks */
+	/** Number of scanned networks */
 	uint8_t network_count;
-	/* Array of scanned networks */
+	/** Array of scanned networks */
 	struct rpc_struct_wifi_scan_result networks[];
 } __packed;
 
-/* Get current WiFi interface state */
+/** Get current WiFi interface state */
 struct rpc_wifi_state_request {
 	struct infuse_rpc_req_header header;
 } __packed;
 
 struct rpc_wifi_state_response {
 	struct infuse_rpc_rsp_header header;
-	/* Common network state */
+	/** Common network state */
 	struct rpc_struct_network_state common;
-	/* WiFi state */
+	/** WiFi state */
 	struct rpc_struct_wifi_state wifi;
 } __packed;
 
-/* Retrieve information pertaining to the previous reboot */
+/** Retrieve information pertaining to the previous reboot */
 struct rpc_last_reboot_request {
 	struct infuse_rpc_req_header header;
 } __packed;
 
 struct rpc_last_reboot_response {
 	struct infuse_rpc_rsp_header header;
-	/* Reboot reason (enum infuse_reboot_reason) */
+	/** Reboot reason (enum infuse_reboot_reason) */
 	uint8_t reason;
-	/* Time source at reboot */
+	/** Time source at reboot */
 	uint8_t epoch_time_source;
-	/* Epoch time at reboot */
+	/** Epoch time at reboot */
 	uint64_t epoch_time;
-	/* Hardware flags (hwinfo_get_reset_cause) */
+	/** Hardware flags (hwinfo_get_reset_cause) */
 	uint32_t hardware_flags;
-	/* Uptime before reboot (seconds) */
+	/** Uptime before reboot (seconds) */
 	uint32_t uptime;
-	/* Program counter/Watchdog Info/Other */
+	/** Program counter/Watchdog Info/Other */
 	uint32_t param_1;
-	/* Link Register/Watchdog Info/Other */
+	/** Link Register/Watchdog Info/Other */
 	uint32_t param_2;
-	/* Running thread at reboot */
+	/** Running thread at reboot */
 	char thread[8];
 } __packed;
 
-/* Get state of a data logger */
+/** Get state of a data logger */
 struct rpc_data_logger_state_request {
 	struct infuse_rpc_req_header header;
-	/* Data logger to read from */
+	/** Data logger to read from */
 	uint8_t logger;
 } __packed;
 
 struct rpc_data_logger_state_response {
 	struct infuse_rpc_rsp_header header;
-	/* Number of bytes logged since boot */
+	/** Number of bytes logged since boot */
 	uint64_t bytes_logged;
-	/* Number of logical blocks on the logger */
+	/** Number of logical blocks on the logger */
 	uint32_t logical_blocks;
-	/* Number of physical blocks on the logger */
+	/** Number of physical blocks on the logger */
 	uint32_t physical_blocks;
-	/* Number of logical blocks present at boot */
+	/** Number of logical blocks present at boot */
 	uint32_t boot_block;
-	/* Number of logical blocks that have been written */
+	/** Number of logical blocks that have been written */
 	uint32_t current_block;
-	/* Earliest logical block that still exists on the logger */
+	/** Earliest logical block that still exists on the logger */
 	uint32_t earliest_block;
-	/* Size of a single block in bytes */
+	/** Size of a single block in bytes */
 	uint16_t block_size;
-	/* Number of bytes at the start of the block that should not contain data */
+	/** Number of bytes at the start of the block that should not contain data */
 	uint16_t block_overhead;
-	/* Minimum erase unit of the logger in bytes */
+	/** Minimum erase unit of the logger in bytes */
 	uint16_t erase_unit;
-	/* Current application uptime */
+	/** Current application uptime */
 	uint32_t uptime;
 } __packed;
 
-/* Read data from data logger */
+/** Read data from data logger */
 struct rpc_data_logger_read_request {
 	struct infuse_rpc_req_header header;
 	struct infuse_rpc_req_data_header data_header;
-	/* Data logger to read from */
+	/** Data logger to read from */
 	uint8_t logger;
-	/* Block to start read from */
+	/** Block to start read from */
 	uint32_t start_block;
-	/* Last block to read from (UINT32_MAX == read to current block) */
+	/** Last block to read from (UINT32_MAX == read to current block) */
 	uint32_t last_block;
 } __packed;
 
 struct rpc_data_logger_read_response {
 	struct infuse_rpc_rsp_header header;
-	/* Number of bytes sent */
+	/** Number of bytes sent */
 	uint32_t sent_len;
-	/* CRC32 of bytes sent */
+	/** CRC32 of bytes sent */
 	uint32_t sent_crc;
 } __packed;
 
-/* Run AT command against LTE modem */
+/** Run AT command against LTE modem */
 struct rpc_lte_at_cmd_request {
 	struct infuse_rpc_req_header header;
-	/* AT command string */
+	/** AT command string */
 	char cmd[];
 } __packed;
 
 struct rpc_lte_at_cmd_response {
 	struct infuse_rpc_rsp_header header;
-	/* AT command response */
+	/** AT command response */
 	char rsp[];
 } __packed;
 
-/* Get current LTE interface state */
+/** Get current LTE interface state */
 struct rpc_lte_state_request {
 	struct infuse_rpc_req_header header;
 } __packed;
 
 struct rpc_lte_state_response {
 	struct infuse_rpc_rsp_header header;
-	/* Common network state */
+	/** Common network state */
 	struct rpc_struct_network_state common;
-	/* LTE state */
+	/** LTE state */
 	struct rpc_struct_lte_state lte;
 } __packed;
 
-/* Download a file from a COAP server (Infuse-IoT DTLS protected) */
+/** Download a file from a COAP server (Infuse-IoT DTLS protected) */
 struct rpc_coap_download_request {
 	struct infuse_rpc_req_header header;
-	/* COAP server address (e.g. coap.dev.infuse-iot.com) */
+	/** COAP server address (e.g. coap.dev.infuse-iot.com) */
 	char server_address[48];
-	/* COAP server port */
+	/** COAP server port */
 	uint16_t server_port;
-	/* COAP block timeout (Default 1000ms) */
+	/** COAP block timeout (Default 1000ms) */
 	uint16_t block_timeout_ms;
-	/* Action to apply to downloaded file */
+	/** Action to apply to downloaded file */
 	uint8_t action;
-	/* Expected resource length (UINT32_MAX if unknown) */
+	/** Expected resource length (UINT32_MAX if unknown) */
 	uint32_t resource_len;
-	/* Expected resource CRC (UINT32_MAX if unknown) */
+	/** Expected resource CRC (UINT32_MAX if unknown) */
 	uint32_t resource_crc;
-	/* Path to file on COAP server (e.g. files/small_file) */
+	/** Path to file on COAP server (e.g. files/small_file) */
 	char resource[];
 } __packed;
 
 struct rpc_coap_download_response {
 	struct infuse_rpc_rsp_header header;
-	/* Length of resource downloaded */
+	/** Length of resource downloaded */
 	uint32_t resource_len;
-	/* CRC of resource downloaded */
+	/** CRC of resource downloaded */
 	uint32_t resource_crc;
 } __packed;
 
-/* Write a file to the device */
+/** Write a file to the device */
 struct rpc_file_write_basic_request {
 	struct infuse_rpc_req_header header;
 	struct infuse_rpc_req_data_header data_header;
-	/* Action to apply to written file */
+	/** Action to apply to written file */
 	uint8_t action;
-	/* Expected file CRC */
+	/** Expected file CRC */
 	uint32_t file_crc;
 } __packed;
 
 struct rpc_file_write_basic_response {
 	struct infuse_rpc_rsp_header header;
-	/* Number of bytes received */
+	/** Number of bytes received */
 	uint32_t recv_len;
-	/* CRC of bytes received */
+	/** CRC of bytes received */
 	uint32_t recv_crc;
 } __packed;
 
-/* Connect to an Infuse-IoT Bluetooth device */
+/** Connect to an Infuse-IoT Bluetooth device */
 struct rpc_bt_connect_infuse_request {
 	struct infuse_rpc_req_header header;
-	/* Bluetooth LE device to connect to */
+	/** Bluetooth LE device to connect to */
 	struct rpc_struct_bt_addr_le peer;
-	/* Connection timeout in milliseconds */
+	/** Connection timeout in milliseconds */
 	uint16_t conn_timeout_ms;
-	/* Chacteristics to subscribe to */
+	/** Chacteristics to subscribe to */
 	uint8_t subscribe;
-	/* Automatically terminate connection if no data traffic (0 = No timeout) */
+	/** Automatically terminate connection if no data traffic (0 = No timeout) */
 	uint16_t inactivity_timeout_ms;
 } __packed;
 
 struct rpc_bt_connect_infuse_response {
 	struct infuse_rpc_rsp_header header;
-	/* Bluetooth device connected to */
+	/** Bluetooth device connected to */
 	struct rpc_struct_bt_addr_le peer;
-	/* Cloud public ECC key */
+	/** Cloud public ECC key */
 	uint8_t cloud_public_key[32];
-	/* Device public ECC key */
+	/** Device public ECC key */
 	uint8_t device_public_key[32];
-	/* Current network ID */
+	/** Current network ID */
 	uint32_t network_id;
 } __packed;
 
-/* Disconnect from a Bluetooth device */
+/** Disconnect from a Bluetooth device */
 struct rpc_bt_disconnect_request {
 	struct infuse_rpc_req_header header;
-	/* Bluetooth LE device to disconnect from */
+	/** Bluetooth LE device to disconnect from */
 	struct rpc_struct_bt_addr_le peer;
 } __packed;
 
@@ -677,28 +677,28 @@ struct rpc_bt_disconnect_response {
 	struct infuse_rpc_rsp_header header;
 } __packed;
 
-/* Query current security state and validate identity */
+/** Query current security state and validate identity */
 struct rpc_security_state_request {
 	struct infuse_rpc_req_header header;
-	/* Random challenge data */
+	/** Random challenge data */
 	uint8_t challenge[16];
 } __packed;
 
 struct rpc_security_state_response {
 	struct infuse_rpc_rsp_header header;
-	/* Cloud public ECC key */
+	/** Cloud public ECC key */
 	uint8_t cloud_public_key[32];
-	/* Device public ECC key */
+	/** Device public ECC key */
 	uint8_t device_public_key[32];
-	/* Current network ID */
+	/** Current network ID */
 	uint32_t network_id;
-	/* Type of the challenge response */
+	/** Type of the challenge response */
 	uint8_t challenge_response_type;
-	/* Challenge response data */
+	/** Challenge response data */
 	uint8_t challenge_response[];
 } __packed;
 
-/* Send multiple INFUSE_RPC_DATA packets */
+/** Send multiple INFUSE_RPC_DATA packets */
 struct rpc_data_sender_request {
 	struct infuse_rpc_req_header header;
 	struct infuse_rpc_req_data_header data_header;
@@ -708,7 +708,7 @@ struct rpc_data_sender_response {
 	struct infuse_rpc_rsp_header header;
 } __packed;
 
-/* Receive multiple INFUSE_RPC_DATA packets */
+/** Receive multiple INFUSE_RPC_DATA packets */
 struct rpc_data_receiver_request {
 	struct infuse_rpc_req_header header;
 	struct infuse_rpc_req_data_header data_header;
@@ -716,22 +716,22 @@ struct rpc_data_receiver_request {
 
 struct rpc_data_receiver_response {
 	struct infuse_rpc_rsp_header header;
-	/* Number of bytes received */
+	/** Number of bytes received */
 	uint32_t recv_len;
-	/* CRC32 of bytes received */
+	/** CRC32 of bytes received */
 	uint32_t recv_crc;
 } __packed;
 
-/* Echo any input data in the response */
+/** Echo any input data in the response */
 struct rpc_echo_request {
 	struct infuse_rpc_req_header header;
-	/* Binary data */
+	/** Binary data */
 	uint8_t array[];
 } __packed;
 
 struct rpc_echo_response {
 	struct infuse_rpc_rsp_header header;
-	/* Binary data */
+	/** Binary data */
 	uint8_t array[];
 } __packed;
 
@@ -745,4 +745,4 @@ struct rpc_echo_response {
 }
 #endif
 
-#endif /* INFUSE_SDK_INCLUDE_INFUSE_RPC_TYPES_H_ */
+#endif /** INFUSE_SDK_INCLUDE_INFUSE_RPC_TYPES_H_ */

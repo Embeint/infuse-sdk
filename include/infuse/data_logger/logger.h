@@ -88,8 +88,6 @@ struct data_logger_persistent_block_header {
  *
  * @param dev Data logger to query
  * @param state State storage
- *
- * @retval 0 on success
  */
 void data_logger_get_state(const struct device *dev, struct data_logger_state *state);
 
