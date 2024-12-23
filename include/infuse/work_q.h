@@ -33,8 +33,6 @@ extern struct k_work_q infuse_iot_work_q;
 
 /** @brief Submit a work item to the Infuse-IoT queue.
  *
- * @funcprops \isr_ok
- *
  * @param work pointer to the work item.
  *
  * @return as with k_work_submit_to_queue().

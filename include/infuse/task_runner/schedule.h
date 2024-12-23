@@ -32,7 +32,7 @@ extern "C" {
  * @{
  */
 
-enum {
+enum task_runner_valid_type {
 	TASK_VALID_ALWAYS = 0,
 	TASK_VALID_ACTIVE = 1,
 	TASK_VALID_INACTIVE = 2,
@@ -41,7 +41,7 @@ enum {
 	_TASK_VALID_END,
 };
 
-enum {
+enum task_runner_periodicity_type {
 	/** Task can only run on N second boundaries */
 	TASK_PERIODICITY_FIXED = 1,
 	/** Task can only run N seconds after previous run started */
@@ -76,9 +76,9 @@ enum {
  * @brief Helper for constructing a task_schedule_state_conditions struct
  *
  * @code{.c}
- * struct state_control test1 = STATES_DEFINE(10);
- * struct state_control test2 = STATES_DEFINE(10, 11, 45, 200);
- * struct state_control test3 = STATES_DEFINE(TR_NOT | 34, 12, TR_NOT | 99);
+ * struct state_control test1 = TASK_STATES_DEFINE(10);
+ * struct state_control test2 = TASK_STATES_DEFINE(10, 11, 45, 200);
+ * struct state_control test3 = TASK_STATES_DEFINE(TR_NOT | 34, 12, TR_NOT | 99);
  * @endcode
  *
  * @param ... Variable number of states (up to 4) which are evaluated together.
@@ -130,11 +130,11 @@ struct task_schedule {
 	/** Task will terminate when battery falls to this level */
 	uint8_t battery_terminate_threshold;
 	/** Periodicity parameters */
-	union {
-		struct {
+	union periodicity_args {
+		struct periodicity_periodic {
 			uint32_t period_s;
 		} fixed;
-		struct {
+		struct periodicity_lockout {
 			uint32_t lockout_s;
 		} lockout;
 	} periodicity;
@@ -145,7 +145,7 @@ struct task_schedule {
 	/** Task logging configuration */
 	struct task_schedule_tdf_logging task_logging[2];
 	/** Task specific arguments  */
-	union {
+	union task_args {
 		uint8_t raw[16];
 		union infuse_task_arguments infuse;
 #ifdef CONFIG_TASK_RUNNER_CUSTOM_TASK_DEFINITIONS

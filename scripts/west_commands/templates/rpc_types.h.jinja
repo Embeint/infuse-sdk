@@ -28,9 +28,9 @@ extern "C" {
  * @brief Header for @ref INFUSE_RPC_CMD packet
  */
 struct infuse_rpc_req_header {
-	/* Unique request ID */
+	/** Unique request ID */
 	uint32_t request_id;
-	/* Command to run */
+	/** Command to run */
 	uint16_t command_id;
 } __packed;
 
@@ -38,9 +38,9 @@ struct infuse_rpc_req_header {
  * @brief Secondary header for RPCs expecting @ref INFUSE_RPC_DATA
  */
 struct infuse_rpc_req_data_header {
-	/* Amount of data expected to be transferred */
+	/** Amount of data expected to be transferred */
 	uint32_t size;
-	/* Send an @ref INFUSE_RPC_DATA_ACK response every N packets received */
+	/** Send an @ref INFUSE_RPC_DATA_ACK response every N packets received */
 	uint8_t rx_ack_period;
 } __packed;
 
@@ -48,11 +48,11 @@ struct infuse_rpc_req_data_header {
  * @brief @ref INFUSE_RPC_DATA payload
  */
 struct infuse_rpc_data {
-	/* Request ID matching original @ref infuse_rpc_req_header */
+	/** Request ID matching original @ref infuse_rpc_req_header */
 	uint32_t request_id;
-	/* Byte offset of data in this payload */
+	/** Byte offset of data in this payload */
 	uint32_t offset;
-	/* Data payload */
+	/** Data payload */
 	uint8_t payload[];
 } __packed;
 
@@ -60,9 +60,9 @@ struct infuse_rpc_data {
  * @brief @ref INFUSE_RPC_DATA_ACK packet
  */
 struct infuse_rpc_data_ack {
-	/* Request ID matching original @ref infuse_rpc_req_header */
+	/** Request ID matching original @ref infuse_rpc_req_header */
 	uint32_t request_id;
-	/* Byte offsets received */
+	/** Byte offsets received */
 	uint32_t offsets[];
 } __packed;
 
@@ -70,11 +70,11 @@ struct infuse_rpc_data_ack {
  * @brief Header for @ref INFUSE_RPC_RSP packet
  */
 struct infuse_rpc_rsp_header {
-	/* Request ID matching original @ref infuse_rpc_req_header */
+	/** Request ID matching original @ref infuse_rpc_req_header */
 	uint32_t request_id;
-	/* Command that was run */
+	/** Command that was run */
 	uint16_t command_id;
-	/* Result of the RPC */
+	/** Result of the RPC */
 	int16_t return_code;
 } __packed;
 
@@ -91,11 +91,11 @@ struct infuse_rpc_rsp_header {
  */
 
 {% for name, info in structs.items() %}
-/* {{ info['description'] }} */
+/** {{ info['description'] }} */
 struct {{ name }} {
 {% for field in info['fields'] %}
 {% if 'description' in field %}
-	/* {{ field['description'] }} */
+	/** {{ field['description'] }} */
 {% endif %}
 	{{ field['type'] }} {{ field['name'] }}{{ field['array'] }};
 {% endfor %}
@@ -103,11 +103,11 @@ struct {{ name }} {
 
 {% endfor %}
 {% for name, info in enums.items() %}
-/* {{ info['description'] }} */
+/** {{ info['description'] }} */
 enum {{ name }} {
 {% for value in info['values'] %}
 {% if 'description' in value %}
-	/* {{ value['description'] }} */
+	/** {{ value['description'] }} */
 {% endif %}
 	{{ name | upper }}_{{ value['name'] }} = {{ value['value'] }},
 {% endfor %}
@@ -119,23 +119,23 @@ enum {{ name }} {
  */
 
 /**
- * @brief Builtin RPC definitions
- * @defgroup builtin_rpc_definitions Builtin RPC definitions
+ * @brief Built-in RPC definitions
+ * @defgroup builtin_rpc_definitions Built-in RPC definitions
  * @{
  */
 
-/* Infuse-IoT builtin RPC commands */
+/** Infuse-IoT builtin RPC commands */
 enum rpc_builtin_id {
 {% for id, info in commands.items() %}
-	/* {{ info['description' ]}} */
+	/** {{ info['description' ]}} */
 	RPC_ID_{{ info['name'] | upper }} = {{ id }},
 {% endfor %}
-	/* End of builtin RPC range */
+	/** End of builtin RPC range */
 	RPC_BUILTIN_END = 32768,
 };
 
 {% for id, info in commands.items() %}
-/* {{ info['description'] }} */
+/** {{ info['description'] }} */
 struct rpc_{{ info['name'] }}_request {
 	struct infuse_rpc_req_header header;
 {% if 'rpc_data' in info %}
@@ -143,7 +143,7 @@ struct rpc_{{ info['name'] }}_request {
 {% endif %}
 {% for field in info['request_params'] %}
 	{% if 'description' in field %}
-	/* {{ field['description'] }} */
+	/** {{ field['description'] }} */
 	{% endif %}
 	{{ field['type'] }} {{ field['name'] }}{{ field['array'] }};
 {% endfor %}
@@ -153,7 +153,7 @@ struct rpc_{{ info['name'] }}_response {
 	struct infuse_rpc_rsp_header header;
 {% for field in info['response_params'] %}
 	{% if 'description' in field %}
-	/* {{ field['description'] }} */
+	/** {{ field['description'] }} */
 	{% endif %}
 	{{ field['type'] }} {{ field['name'] }}{{ field['array'] }};
 {% endfor %}
@@ -170,4 +170,4 @@ struct rpc_{{ info['name'] }}_response {
 }
 #endif
 
-#endif /* INFUSE_SDK_INCLUDE_INFUSE_RPC_TYPES_H_ */
+#endif /** INFUSE_SDK_INCLUDE_INFUSE_RPC_TYPES_H_ */

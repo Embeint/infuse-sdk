@@ -22,7 +22,7 @@ extern "C" {
  * @{
  */
 
-/* Core Infuse Data Types */
+/** Core Infuse Data Types */
 enum infuse_type {
 	/* Request device to echo data */
 	INFUSE_ECHO_REQ = 0,

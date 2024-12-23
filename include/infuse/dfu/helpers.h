@@ -32,7 +32,7 @@ extern "C" {
  * @param mcuboot_trailer Erase space for MCUBoot trailer
  *
  * @retval 0 On success
- * @retval -errno Error code from @ref flash_area_erase on failure
+ * @retval -errno Error code from @a flash_area_erase on failure
  */
 int infuse_dfu_image_erase(const struct flash_area *fa, size_t image_len, bool mcuboot_trailer);
 

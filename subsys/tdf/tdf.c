@@ -22,21 +22,21 @@ struct tdf_header {
 struct tdf_time_array_header {
 	uint8_t num;
 	/**
-	 * When the TDF_TIME_ARRAY_PERIOD_SCALED bit is set, the
-	 * TDF_TIME_ARRAY_PERIOD_VAL_MASK value is scaled by
-	 * TDF_TIME_ARRAY_SCALE_FACTOR
+	 * When the TDF_ARRAY_TIME_PERIOD_SCALED bit is set, the
+	 * TDF_ARRAY_TIME_PERIOD_VAL_MASK value is scaled by
+	 * TDF_ARRAY_TIME_SCALE_FACTOR
 	 */
 	uint16_t period;
 } __packed;
 
 /* Bit that signifies the value is scaled by a multiplier */
-#define TDF_TIME_ARRAY_PERIOD_SCALED   0x8000
+#define TDF_ARRAY_TIME_PERIOD_SCALED   0x8000
 /* Mask of the period value */
-#define TDF_TIME_ARRAY_PERIOD_VAL_MASK 0x7FFF
+#define TDF_ARRAY_TIME_PERIOD_VAL_MASK 0x7FFF
 /* Gives a time resolution of 125 ms (8192 / 65536) */
-#define TDF_TIME_ARRAY_SCALE_FACTOR    8192
+#define TDF_ARRAY_TIME_SCALE_FACTOR    8192
 
-#define TDF_TIME_ARRAY_PERIOD_MAX (TDF_TIME_ARRAY_PERIOD_VAL_MASK * TDF_TIME_ARRAY_SCALE_FACTOR)
+#define TDF_ARRAY_TIME_PERIOD_MAX (TDF_ARRAY_TIME_PERIOD_VAL_MASK * TDF_ARRAY_TIME_SCALE_FACTOR)
 
 struct tdf_time {
 	uint32_t seconds;
@@ -67,7 +67,7 @@ int tdf_add(struct tdf_buffer_state *state, uint16_t tdf_id, uint8_t tdf_len, ui
 
 	/* Invalid TDF ID or period */
 	if ((tdf_id == 0) || (tdf_id >= 4095) || (tdf_len == 0) || (tdf_num == 0) ||
-	    (period > TDF_TIME_ARRAY_PERIOD_MAX)) {
+	    (period > TDF_ARRAY_TIME_PERIOD_MAX)) {
 		return -EINVAL;
 	}
 	/* TDF can never fit on the buffer */
@@ -155,12 +155,12 @@ int tdf_add(struct tdf_buffer_state *state, uint16_t tdf_id, uint8_t tdf_len, ui
 		struct tdf_time_array_header *t =
 			net_buf_simple_add(&state->buf, sizeof(struct tdf_time_array_header));
 
-		header->id_flags |= TDF_TIME_ARRAY;
+		header->id_flags |= TDF_ARRAY_TIME;
 		t->num = tdf_num;
 
-		if (period > TDF_TIME_ARRAY_PERIOD_VAL_MASK) {
-			t->period = TDF_TIME_ARRAY_PERIOD_SCALED |
-				    (period / TDF_TIME_ARRAY_SCALE_FACTOR);
+		if (period > TDF_ARRAY_TIME_PERIOD_VAL_MASK) {
+			t->period = TDF_ARRAY_TIME_PERIOD_SCALED |
+				    (period / TDF_ARRAY_TIME_SCALE_FACTOR);
 		} else {
 			t->period = period;
 		}
@@ -241,7 +241,7 @@ int tdf_parse(struct tdf_buffer_state *state, struct tdf_parsed *parsed)
 		parsed->time = 0;
 		break;
 	}
-	if (flags & TDF_TIME_ARRAY) {
+	if (flags & TDF_ARRAY_TIME) {
 		if (state->buf.len <= sizeof(struct tdf_time_array_header)) {
 			return -EINVAL;
 		}
@@ -249,9 +249,9 @@ int tdf_parse(struct tdf_buffer_state *state, struct tdf_parsed *parsed)
 			net_buf_simple_pull_mem(&state->buf, sizeof(struct tdf_time_array_header));
 
 		parsed->tdf_num = t->num;
-		if (t->period & TDF_TIME_ARRAY_PERIOD_SCALED) {
-			parsed->period = TDF_TIME_ARRAY_SCALE_FACTOR *
-					 (t->period & TDF_TIME_ARRAY_PERIOD_VAL_MASK);
+		if (t->period & TDF_ARRAY_TIME_PERIOD_SCALED) {
+			parsed->period = TDF_ARRAY_TIME_SCALE_FACTOR *
+					 (t->period & TDF_ARRAY_TIME_PERIOD_VAL_MASK);
 		} else {
 			parsed->period = t->period;
 		}
