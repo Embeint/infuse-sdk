@@ -1,7 +1,7 @@
 .. _board_tauro:
 
-Tauro
-#####
+Embeint Tauro
+#############
 
 Overview
 ********
