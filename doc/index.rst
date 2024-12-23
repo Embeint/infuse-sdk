@@ -74,6 +74,9 @@ connectivity down into the application.
    :caption: Cloud
 
    cloud/index.rst
+   cloud/rest.rst
+   cloud/mqtt.rst
+   cloud/coap.rst
 
 .. toctree::
    :maxdepth: 1

@@ -1,4 +1,4 @@
-.. platform-security-model:
+.. _platform-security-model:
 
 Security Model
 ##############
