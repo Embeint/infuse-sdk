@@ -9,11 +9,19 @@ file(TO_CMAKE_PATH "${CMAKE_CURRENT_LIST_DIR}/../" INFUSE_BASE)
 
 find_package(Zephyr REQUIRED HINTS ${ZEPHYR_BASE} .. COMPONENTS doc)
 
+set(ZBINDINGS ${ZEPHYR_BASE}/dts/bindings)
+
 message(STATUS "Zephyr base: ${ZEPHYR_BASE}")
 message(STATUS "Infuse base: ${INFUSE_BASE}")
 
 #-------------------------------------------------------------------------------
 # Options
+
+list(APPEND ZEPHYR_ROOT_BINDINGS "${ZBINDINGS}/battery/battery.yaml")
+list(APPEND ZEPHYR_ROOT_BINDINGS "${ZBINDINGS}/spi/spi-device.yaml")
+list(APPEND ZEPHYR_ROOT_BINDINGS "${ZBINDINGS}/i2c/i2c-device.yaml")
+list(APPEND ZEPHYR_ROOT_BINDINGS "${ZBINDINGS}/fuel-gauge/fuel-gauge.yaml")
+list(APPEND ZEPHYR_ROOT_BINDINGS "${ZBINDINGS}/sensor/sensor-device.yaml")
 
 set(SPHINXOPTS "-j auto -W --keep-going -T" CACHE STRING "Default Sphinx Options")
 set(SPHINXOPTS_EXTRA "" CACHE STRING "Extra Sphinx Options (added to defaults)")
@@ -21,7 +29,8 @@ set(LATEXMKOPTS "-halt-on-error -no-shell-escape" CACHE STRING "Default latexmk 
 set(DT_TURBO_MODE OFF CACHE BOOL "Enable DT turbo mode")
 set(DOC_TAG "development" CACHE STRING "Documentation tag")
 set(DTS_ROOTS "${INFUSE_BASE}" CACHE STRING "DT bindings root folders")
-set(DTS_EXTRA "${ZEPHYR_BASE}/dts/bindings/base" CACHE STRING "DT bindings extra folders")
+set(DTS_EXTRA "${ZBINDINGS}/base" CACHE STRING "DT bindings extra folders")
+set(DTS_EXTRA_FILE "${ZEPHYR_ROOT_BINDINGS}" CACHE STRING "DT bindings extra files")
 
 separate_arguments(SPHINXOPTS)
 separate_arguments(SPHINXOPTS_EXTRA)
@@ -116,6 +125,9 @@ foreach(root ${DTS_ROOTS})
 endforeach()
 foreach(folder ${DTS_EXTRA})
 list(APPEND DTS_ARGS --dts-folder ${folder})
+endforeach()
+foreach(file ${DTS_EXTRA_FILE})
+list(APPEND DTS_ARGS --dts-file ${file})
 endforeach()
 
 if(DT_TURBO_MODE)
