@@ -64,7 +64,7 @@ connectivity down into the application.
    :hidden:
    :caption: Platform
 
-   platform/index.rst
+   platform/design_goals.rst
    platform/security_model.rst
    platform/provisioning.rst
 
