@@ -12,6 +12,15 @@ Snippets
 
    /snippets/**/*
 
+In-tree Boards
+**************
+
+.. toctree::
+   :maxdepth: 1
+   :glob:
+
+   /boards/**/*
+
 Devicetree
 **********
 
