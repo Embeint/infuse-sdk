@@ -8,8 +8,9 @@ Snippets
 
 .. toctree::
    :maxdepth: 1
+   :glob:
 
-   /snippets/index.rst
+   /snippets/**/*
 
 Devicetree
 **********
