@@ -1,7 +1,7 @@
 .. _platform-design-goals:
 
-Design Goals
-############
+Platform Design Goals
+#####################
 
 The Infuse-IoT platform is designed in alignment with the following goals.
 
