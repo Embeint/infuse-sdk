@@ -84,5 +84,5 @@ connectivity down into the application.
    :caption: Embedded
 
    embedded/index.rst
-   embedded/services.rst
+   embedded/features.rst
    embedded/hardware.rst

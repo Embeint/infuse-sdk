@@ -15,10 +15,15 @@ subscribing to events with :c:func:`kv_store_register_callback`.
 Value Reflection
 ****************
 
-Value synchronisation between embedded devices and the cloud.
+Value reflection is the mechanism through which the Infuse cloud service
+can detect automatically when a key value has changed on the device.
 
-.. note::
-  Coming soon!
+By compressing relevant KV store values into a single global CRC, the
+Infuse cloud service can automatically detect when a key value has changed
+on the device, triggering a re-synchronisation.
+
+The current CRC value can be accessed through :c:func:`kv_store_reflect_crc`,
+and is present in the standard :c:struct:`tdf_announce` structure.
 
 API Reference
 *************
