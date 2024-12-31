@@ -46,6 +46,11 @@ class release_diff(WestCommand):
             type=pathlib.Path,
             help="Updated release folder",
         )
+        parser.add_argument(
+            "--tool-compare",
+            action="store_true",
+            help="Compare diff efficiency between tools",
+        )
         return parser
 
     def do_run(self, args, _unknown_args):
@@ -97,3 +102,39 @@ class release_diff(WestCommand):
         patch_file = release_dir / f"{ver_orig}.bin"
         with patch_file.open("wb") as f:
             f.write(patch)
+
+        if args.tool_compare:
+            import os
+            import shutil
+            import subprocess
+            import tempfile
+
+            output_len = os.stat(output).st_size
+            print("")
+            print("Tool Comparison:")
+            with tempfile.TemporaryDirectory() as tmp:
+                print(f"\t  CPatch: {len(patch)} {100*len(patch)/output_len:.2f}%")
+                if shutil.which("jdiff") is not None:
+                    diff_file = f"{tmp}/jdiff.patch"
+                    subprocess.run(
+                        ["jdiff", str(input), str(output), diff_file],
+                        check=False,
+                    )
+                    jdiff_size = os.stat(diff_file).st_size
+                    print(f"\tJojoDiff: {jdiff_size} {100*jdiff_size/output_len:.2f}%")
+                if shutil.which("bsdiff4") is not None:
+                    diff_file = f"{tmp}/bsdiff4.patch"
+                    subprocess.run(
+                        ["bsdiff4", str(input), str(output), diff_file],
+                        check=True,
+                    )
+                    bs_size = os.stat(diff_file).st_size
+                    print(f"\t bsdiff4: {bs_size} {100*bs_size/output_len:.2f}%")
+                if shutil.which("xdelta") is not None:
+                    diff_file = f"{tmp}/xdelta.patch"
+                    subprocess.run(
+                        ["xdelta", "delta", str(input), str(output), diff_file],
+                        check=False,
+                    )
+                    x_size = os.stat(diff_file).st_size
+                    print(f"\t  xdelta: {x_size} {100*x_size/output_len:.2f}%")
