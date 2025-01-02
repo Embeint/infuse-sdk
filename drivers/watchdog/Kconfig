@@ -27,6 +27,7 @@ config INFUSE_WATCHDOG_FEED_EARLY_MS
 config INFUSE_WATCHDOG_SOFTWARE_WARNING
 	bool "Enable a software alarm that provides a pre-warning before hardware expiry"
 	default y if SOC_FAMILY_NORDIC_NRF && INFUSE_MEMFAULT
+	default y if HAS_WDT_NO_CALLBACKS
 
 config INFUSE_WATCHDOG_SOFTWARE_WARNING_MS
 	int "Milliseconds before hardware expiry to trigger software warning"
