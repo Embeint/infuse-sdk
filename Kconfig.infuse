@@ -18,6 +18,7 @@ config INFUSE_APPLICATION_ID
 rsource "Kconfig.defaults.core"
 rsource "Kconfig.defaults.net"
 rsource "Kconfig.defaults.nrf"
+rsource "Kconfig.defaults.stm32"
 rsource "Kconfig.defaults.sensor"
 rsource "Kconfig.defaults.log"
 
