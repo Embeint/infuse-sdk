@@ -25,8 +25,14 @@ static void software_watchdog_alarm(struct k_timer *timer);
 
 static K_TIMER_DEFINE(watchdog_warning_timer, software_watchdog_alarm, NULL);
 static int64_t channel_expires[MAX_CHANNELS];
-static int channel_max;
+static int channel_max = -1;
 static int8_t wdog_running;
+
+#ifdef CONFIG_INFUSE_WATCHDOG_SW_MULTICHANNEL
+static uint32_t sw_channels_mask;
+static uint32_t sw_channels_fed;
+static int global_channel;
+#endif
 
 BUILD_ASSERT(CONFIG_INFUSE_WATCHDOG_SOFTWARE_WARNING_MS < CONFIG_INFUSE_WATCHDOG_FEED_EARLY_MS,
 	     "Software alarm will fire before feed timeout");
@@ -34,11 +40,38 @@ BUILD_ASSERT(CONFIG_INFUSE_WATCHDOG_SOFTWARE_WARNING_MS < CONFIG_INFUSE_WATCHDOG
 
 LOG_MODULE_REGISTER(wdog, LOG_LEVEL_INF);
 
+#ifdef CONFIG_ZTEST
+
+void infuse_watchdog_test_reset(void)
+{
+#ifdef CONFIG_INFUSE_WATCHDOG_SOFTWARE_WARNING
+	k_timer_stop(&watchdog_warning_timer);
+	memset(channel_expires, 0x00, sizeof(channel_expires));
+	channel_max = -1;
+	wdog_running = false;
+#ifdef CONFIG_INFUSE_WATCHDOG_SW_MULTICHANNEL
+#endif /* CONFIG_INFUSE_WATCHDOG_SW_MULTICHANNEL */
+#endif /* CONFIG_INFUSE_WATCHDOG_SOFTWARE_WARNING */
+}
+
+#endif /* CONFIG_ZTEST */
+
 int infuse_watchdog_install(k_timeout_t *feed_period)
 {
-	const struct wdt_timeout_cfg timeout_cfg = INFUSE_WATCHDOG_DEFAULT_TIMEOUT_CFG;
-	int wdog_channel = wdt_install_timeout(INFUSE_WATCHDOG_DEV, &timeout_cfg);
+	int wdog_channel;
 
+#ifdef CONFIG_INFUSE_WATCHDOG_SW_MULTICHANNEL
+	if (channel_max == (MAX_CHANNELS - 1)) {
+		LOG_ERR("Insufficient wdog channels");
+		wdog_channel = -ENOMEM;
+	} else {
+		wdog_channel = channel_max + 1;
+		sw_channels_mask |= 1 << wdog_channel;
+	}
+#else
+	const struct wdt_timeout_cfg timeout_cfg = INFUSE_WATCHDOG_DEFAULT_TIMEOUT_CFG;
+
+	wdog_channel = wdt_install_timeout(INFUSE_WATCHDOG_DEV, &timeout_cfg);
 	if (wdog_channel < 0) {
 		if (wdog_channel == -EBUSY) {
 			LOG_ERR("Attempted to allocate wdog channel after wdog started");
@@ -49,6 +82,8 @@ int infuse_watchdog_install(k_timeout_t *feed_period)
 	} else {
 		*feed_period = INFUSE_WATCHDOG_FEED_PERIOD;
 	}
+#endif /* CONFIG_INFUSE_WATCHDOG_SW_MULTICHANNEL */
+
 #ifdef CONFIG_INFUSE_WATCHDOG_SOFTWARE_WARNING
 	channel_max = MAX(channel_max, wdog_channel);
 #endif /* CONFIG_INFUSE_WATCHDOG_SOFTWARE_WARNING */
@@ -58,6 +93,16 @@ int infuse_watchdog_install(k_timeout_t *feed_period)
 int infuse_watchdog_start(void)
 {
 	int rc;
+
+#ifdef CONFIG_INFUSE_WATCHDOG_SW_MULTICHANNEL
+	const struct wdt_timeout_cfg timeout_cfg = INFUSE_WATCHDOG_DEFAULT_TIMEOUT_CFG;
+
+	global_channel = wdt_install_timeout(INFUSE_WATCHDOG_DEV, &timeout_cfg);
+	if (global_channel < 0) {
+		LOG_ERR("Watchdog failed to configure global channel (%d)", global_channel);
+		return global_channel;
+	}
+#endif /* CONFIG_INFUSE_WATCHDOG_SW_MULTICHANNEL */
 
 #ifdef CONFIG_INFUSE_WATCHDOG_SOFTWARE_WARNING
 	int64_t ms_now = k_uptime_get();
@@ -87,6 +132,16 @@ static void infuse_watchdog_software_feed(int wdog_channel)
 		return;
 	}
 
+#ifdef CONFIG_INFUSE_WATCHDOG_SW_MULTICHANNEL
+	/* Feed the hardware watchdog when all software channels have been fed */
+	sw_channels_fed |= (1 << wdog_channel);
+	LOG_DBG("Fed channels: %02X %02X", sw_channels_fed, sw_channels_mask);
+	if (sw_channels_fed == sw_channels_mask) {
+		(void)wdt_feed(INFUSE_WATCHDOG_DEV, global_channel);
+		sw_channels_fed = 0;
+	}
+#endif /* CONFIG_INFUSE_WATCHDOG_SOFTWARE_WARNING */
+
 	/* Update expiry for this channel */
 	channel_expires[wdog_channel] = k_uptime_get() + SOFTWARE_WARNING_MS;
 	/* Get new global expiry */
@@ -105,8 +160,10 @@ void infuse_watchdog_feed(int wdog_channel)
 		return;
 	}
 
+#ifndef CONFIG_INFUSE_WATCHDOG_SW_MULTICHANNEL
 	/* Feed the watchdog */
 	(void)wdt_feed(INFUSE_WATCHDOG_DEV, wdog_channel);
+#endif /* CONFIG_INFUSE_WATCHDOG_SW_MULTICHANNEL */
 
 #ifdef CONFIG_INFUSE_WATCHDOG_SOFTWARE_WARNING
 	infuse_watchdog_software_feed(wdog_channel);
