@@ -21,6 +21,9 @@ config INFUSE_WATCHDOG_SW_MULTICHANNEL
 
 config INFUSE_WATCHDOG_PERIOD_MS
 	int "Watchdog period used by Infuse subsystems"
+	range 2000 26214 if IWDG_STM32
+	range 2000 120000
+	default 20000 if IWDG_STM32
 	default 35000
 
 config INFUSE_WATCHDOG_FEED_EARLY_MS
