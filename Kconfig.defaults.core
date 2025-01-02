@@ -123,6 +123,10 @@ configdefault KV_STORE
 configdefault KV_STORE_KEY_REBOOTS
 	default y
 
+# Watchdog
+configdefault WDT_DISABLE_AT_BOOT
+	default y
+
 # Power Management
 configdefault POWER_DOMAIN
 	default y
