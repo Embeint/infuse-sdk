@@ -46,7 +46,7 @@ config INFUSE_COMMON_BOOT_AUTO_IMG_CONFIRM
 
 config INFUSE_COMMON_BOOT_DEBUG_PORT_DISABLE
 	bool "Automatically disable the debug port"
-	depends on SOC_SERIES_NRF52X
+	depends on SOC_SERIES_NRF52X || SOC_SERIES_STM32F4X || SOC_SERIES_STM32L4X || SOC_SERIES_STM32G4X
 	help
 	  Disable the debug access port to the device. Failing to disable the DAP on deployed
 	  devices is a critical security risk as it allows adversaries to read arbitrary memory
