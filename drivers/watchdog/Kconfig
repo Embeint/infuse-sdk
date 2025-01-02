@@ -11,6 +11,14 @@ config INFUSE_WATCHDOG
 
 if INFUSE_WATCHDOG
 
+config INFUSE_WATCHDOG_SW_MULTICHANNEL
+	bool "Emulate multiple watchdog channels in software"
+	depends on INFUSE_WATCHDOG_SOFTWARE_WARNING
+	default y if IWDG_STM32
+	help
+	  Multiple channels are emulated by feeding the hardware watchdog
+	  once all software channels have been fed at least once.
+
 config INFUSE_WATCHDOG_PERIOD_MS
 	int "Watchdog period used by Infuse subsystems"
 	default 35000
