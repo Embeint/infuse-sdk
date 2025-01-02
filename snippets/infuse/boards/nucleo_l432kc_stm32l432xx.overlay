@@ -1,0 +1,107 @@
+/ {
+	chosen {
+		infuse,reboot-state = &retention0;
+		infuse,kv-partition = &storage_partition;
+#ifdef INFUSE_IS_BOOTLOADER
+		zephyr,code-partition = &boot_partition;
+#else
+		zephyr,code-partition = &slot0_partition;
+#endif /* INFUSE_IS_BOOTLOADER */
+	};
+
+	aliases {
+		watchdog0 = &iwdg;
+	};
+
+	epacket_serial: epacket_serial {
+		compatible = "embeint,epacket-serial";
+		serial = <&usart2>;
+	};
+
+	data_logger_serial: data_logger_serial {
+		compatible = "embeint,data-logger-epacket", "embeint,data-logger";
+		epacket = <&epacket_serial>;
+
+		tdf_logger_serial: tdf_logger_serial {
+			compatible = "embeint,tdf-data-logger";
+		};
+	};
+
+	/* End of application SRAM */
+	memory@2000FF00 {
+		compatible = "zephyr,memory-region", "mmio-sram";
+		reg = <0x2000FF00 0x100>;
+		zephyr,memory-region = "RetainedMem";
+		status = "okay";
+
+		retainedmem {
+			compatible = "zephyr,retained-ram";
+			status = "okay";
+			#address-cells = <1>;
+			#size-cells = <1>;
+
+			retention0: retention@0 {
+				compatible = "zephyr,retention";
+				status = "okay";
+				reg = <0x0 0x100>;
+				prefix = [DE 03];
+			};
+		};
+	};
+};
+
+/* MCUBoot support */
+&flash0 {
+	partitions {
+		compatible = "fixed-partitions";
+		#address-cells = <1>;
+		#size-cells = <1>;
+
+		boot_partition: partition@0 {
+			label = "mcuboot";
+			reg = <0x00000000 0x0000A000>;
+		};
+		slot0_partition: partition@a000 {
+			label = "image-0";
+			reg = <0x0000A000 0x00018000>;
+		};
+		slot1_partition: partition@22000 {
+			label = "image-1";
+			reg = <0x00022000 0x00018000>;
+		};
+		file_partition: partition@3a000 {
+			label = "files";
+			reg = <0x0003A000 0x00002000>;
+		};
+	};
+};
+
+/* DMA for SERIAL_ASYNC_API:
+ *   <dma_node channel_id request_id mode>
+ * channel_id is the ID from DMAx request mapping (CSELR)
+ * request_id is the ID from DMAx requests for each channel (CxS)
+ */
+&usart2 {
+	dmas = <&dma1 7 2 (STM32_DMA_PERIPH_TX | STM32_DMA_PRIORITY_HIGH)>,
+		<&dma1 6 2 (STM32_DMA_PERIPH_RX | STM32_DMA_PRIORITY_HIGH)>;
+	dma-names = "tx", "rx";
+	zephyr,pm-device-runtime-auto;
+};
+
+&dma1 {
+	status = "okay";
+};
+
+/* Enable RNG */
+&rng {
+	status = "okay";
+};
+
+&clk_hsi48 {
+	status = "okay";
+};
+
+/* Watchdog */
+&iwdg {
+	status = "okay";
+};
