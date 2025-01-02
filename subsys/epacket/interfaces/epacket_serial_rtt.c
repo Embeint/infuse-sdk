@@ -22,11 +22,6 @@
 
 #define POLL_PERIOD_MS 500
 
-struct serial_header {
-	uint8_t sync[2];
-	uint16_t len;
-} __packed;
-
 struct epacket_serial_config {
 	struct epacket_interface_common_config common;
 	const struct device *backend;
@@ -64,13 +59,12 @@ static void poll_worker(struct k_work *work)
 
 static void epacket_serial_send(const struct device *dev, struct net_buf *buf)
 {
-	struct epacket_serial_data *data = dev->data;
 	struct epacket_serial_frame_header *header;
 
 	/* Encrypt the payload */
 	if (epacket_serial_encrypt(buf) < 0) {
 		LOG_WRN("Failed to encrypt");
-		epacket_notify_tx_result(data->interface, buf, -EIO);
+		epacket_notify_tx_result(dev, buf, -EIO);
 		net_buf_unref(buf);
 		return;
 	}
@@ -91,6 +85,7 @@ static void epacket_serial_send(const struct device *dev, struct net_buf *buf)
 	 * bursts of packets are sent due to the behaviour of SEGGER_RTT_Write.
 	 */
 	k_sleep(K_MSEC(5));
+	epacket_notify_tx_result(dev, buf, 0);
 }
 
 static int epacket_receive_control(const struct device *dev, bool enable)

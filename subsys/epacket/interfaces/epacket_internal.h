@@ -16,6 +16,11 @@
 extern "C" {
 #endif
 
+struct serial_header {
+	uint8_t sync[2];
+	uint16_t len;
+} __packed;
+
 /**
  * @brief Common initialisation for all interfaces
  *

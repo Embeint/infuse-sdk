@@ -20,11 +20,6 @@
 
 #define DT_DRV_COMPAT embeint_epacket_serial
 
-struct serial_header {
-	uint8_t sync[2];
-	uint16_t len;
-} __packed;
-
 struct epacket_serial_config {
 	struct epacket_interface_common_config common;
 	const struct device *backend;
@@ -156,7 +151,7 @@ static void epacket_serial_send(const struct device *dev, struct net_buf *buf)
 	/* Encrypt the payload */
 	if (epacket_serial_encrypt(buf) < 0) {
 		LOG_WRN("Failed to encrypt");
-		epacket_notify_tx_result(data->interface, buf, -EIO);
+		epacket_notify_tx_result(dev, buf, -EIO);
 		net_buf_unref(buf);
 		return;
 	}
@@ -171,7 +166,7 @@ static void epacket_serial_send(const struct device *dev, struct net_buf *buf)
 	/* Power up serial port */
 	rc = pm_device_runtime_get(config->backend);
 	if (rc < 0) {
-		epacket_notify_tx_result(data->interface, buf, -ENODEV);
+		epacket_notify_tx_result(dev, buf, -ENODEV);
 		net_buf_unref(buf);
 		return;
 	}
