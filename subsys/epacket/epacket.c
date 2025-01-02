@@ -292,6 +292,7 @@ static void epacket_processor(void *a, void *b, void *c)
 	struct net_buf *buf;
 	int rc;
 
+	k_thread_name_set(NULL, "epacket_proc");
 	infuse_watchdog_thread_register(wdog_channel, _current);
 	while (true) {
 		rc = k_poll(events, ARRAY_SIZE(events), loop_period);
