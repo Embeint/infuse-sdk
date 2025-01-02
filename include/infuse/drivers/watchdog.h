@@ -38,6 +38,10 @@ extern "C" {
 #define INFUSE_WATCHDOG_FEED_PERIOD                                                                \
 	K_MSEC(CONFIG_INFUSE_WATCHDOG_PERIOD_MS - CONFIG_INFUSE_WATCHDOG_FEED_EARLY_MS)
 
+/* Watchdog expiry callback, if supported */
+#define INFUSE_WATCHDOG_CB                                                                         \
+	COND_CODE_1(CONFIG_HAS_WDT_NO_CALLBACKS, (NULL), (infuse_watchdog_expired))
+
 /** Default timeout configuration for subsystems */
 #define INFUSE_WATCHDOG_DEFAULT_TIMEOUT_CFG                                                        \
 	(struct wdt_timeout_cfg)                                                                   \
@@ -47,7 +51,7 @@ extern "C" {
 				.min = 0,                                                          \
 				.max = CONFIG_INFUSE_WATCHDOG_PERIOD_MS,                           \
 			},                                                                         \
-		.flags = WDT_FLAG_RESET_SOC, .callback = infuse_watchdog_expired,                  \
+		.flags = WDT_FLAG_RESET_SOC, .callback = INFUSE_WATCHDOG_CB,                       \
 	}
 
 #if defined(CONFIG_INFUSE_WATCHDOG) || defined(__doxygen__)
