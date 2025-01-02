@@ -1,0 +1,10 @@
+common:
+  tags: drivers
+  min_flash: 64
+  min_ram: 32
+tests:
+  drivers.watchdog.sw_multichannel:
+    platform_allow:
+      - mps2/an385
+    integration_platforms:
+      - mps2/an385
