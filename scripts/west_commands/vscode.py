@@ -226,22 +226,6 @@ class vscode(WestCommand):
         parser.add_argument("--snr", type=str, help="JTAG serial number")
         return parser
 
-    def _jlink_device(self, build_dir):
-        # Get the JLink device name
-        runners_yaml = build_dir / "zephyr" / "runners.yaml"
-        if runners_yaml.exists():
-            with pathlib.Path(runners_yaml).open("r", encoding="utf-8") as f:
-                r = yaml.safe_load(f)
-                if "jlink" in r["args"]:
-                    for arg in r["args"]["jlink"]:
-                        if arg.startswith("--device="):
-                            device = arg.removeprefix("--device=")
-                            launch["configurations"][0]["device"] = device
-                            launch["configurations"][1]["device"] = device
-                            break
-        launch["configurations"][0]["servertype"] = "jlink"
-        launch["configurations"][1]["servertype"] = "jlink"
-
     def _tfm_build(self, build_dir, cache):
         launch["configurations"][0]["executable"] = str(build_dir / "bin" / "tfm_s.elf")
         launch["configurations"][1]["executable"] = str(build_dir / "bin" / "tfm_s.elf")
@@ -294,53 +278,65 @@ class vscode(WestCommand):
                 f"add-symbol-file {str(path)}" for path in tfm_exists
             ]
 
-        if cache.get("QEMU", False):
-            launch["configurations"][0]["name"] = "QEMU Attach"
-            launch["configurations"][0]["servertype"] = "external"
-            launch["configurations"][0]["gdbTarget"] = "localhost:1234"
-            launch["configurations"][0]["serverpath"] = cache.get("QEMU")
-            launch["configurations"][0]["runToEntryPoint"] = False
+    def _qemu(self, _build_dir, cache):
+        assert cache.get("QEMU", False)
 
-            launch["configurations"][1]["name"] = "QEMU Launch"
-            launch["configurations"][1]["servertype"] = "qemu"
-            launch["configurations"][1]["serverpath"] = cache.get("QEMU")
-            launch["configurations"][1]["runToEntryPoint"] = False
-        elif cache.get("BOARD")[:10] in ["native_sim", "nrf52_bsim"]:
-            # Native Sim GDB does not support `west debugserver`
-            launch["configurations"].pop(0)
+        launch["configurations"][0]["name"] = "QEMU Attach"
+        launch["configurations"][0]["servertype"] = "external"
+        launch["configurations"][0]["gdbTarget"] = "localhost:1234"
+        launch["configurations"][0]["serverpath"] = cache.get("QEMU")
+        launch["configurations"][0]["runToEntryPoint"] = False
 
-            launch["configurations"][0].pop("gdbPath")
-            launch["configurations"][0].pop("executable")
-            launch["configurations"][0]["name"] = "Native Launch"
-            launch["configurations"][0]["type"] = "cppdbg"
-            launch["configurations"][0]["program"] = str(
-                build_dir / "zephyr" / "zephyr.exe"
-            )
-            launch["configurations"][0]["cwd"] = str(build_dir)
+        launch["configurations"][1]["name"] = "QEMU Launch"
+        launch["configurations"][1]["servertype"] = "qemu"
+        launch["configurations"][1]["serverpath"] = cache.get("QEMU")
+        launch["configurations"][1]["runToEntryPoint"] = False
 
-            if cache.get("BOARD")[:10] == "nrf52_bsim":
-                # Template likely arguments
-                launch["configurations"][0]["args"] = [
-                    "-s=sim_id",
-                    "-d=0",
-                    "-RealEncryption=0",
-                    "-testid=test_id",
-                ]
-        else:
-            launch["configurations"][0]["rtos"] = "Zephyr"
-            launch["configurations"][1]["rtos"] = "Zephyr"
-
-    def _jlink(self, snr, build_dir, cache):
-        if cache.get("QEMU", False) or cache.get("BOARD")[:10] in [
+    def _native(self, build_dir, cache):
+        assert cache.get("BOARD")[:10] in [
             "native_sim",
             "nrf52_bsim",
-        ]:
-            return
+        ]
 
+        # Native Sim GDB does not support `west debugserver`
+        launch["configurations"].pop(0)
+
+        launch["configurations"][0].pop("gdbPath")
+        launch["configurations"][0].pop("executable")
+        launch["configurations"][0]["name"] = "Native Launch"
+        launch["configurations"][0]["type"] = "cppdbg"
+        launch["configurations"][0]["program"] = str(
+            build_dir / "zephyr" / "zephyr.exe"
+        )
+        launch["configurations"][0]["cwd"] = str(build_dir)
+
+        if cache.get("BOARD")[:10] == "nrf52_bsim":
+            # Template likely arguments
+            launch["configurations"][0]["args"] = [
+                "-s=sim_id",
+                "-d=0",
+                "-RealEncryption=0",
+                "-testid=test_id",
+            ]
+
+    def _jlink_device(self, runners_yaml):
+        # Get the JLink device name
+        for arg in runners_yaml["args"]["jlink"]:
+            if arg.startswith("--device="):
+                device = arg.removeprefix("--device=")
+                launch["configurations"][0]["device"] = device
+                launch["configurations"][1]["device"] = device
+                break
+        launch["configurations"][0]["servertype"] = "jlink"
+        launch["configurations"][1]["servertype"] = "jlink"
+        launch["configurations"][0]["rtos"] = "Zephyr"
+        launch["configurations"][1]["rtos"] = "Zephyr"
+
+    def _jlink(self, snr, build_dir, cache, runners_yaml):
         if snr is not None:
             launch["configurations"][0]["serialNumber"] = snr
             launch["configurations"][1]["serialNumber"] = snr
-            self._jlink_device(build_dir)
+            self._jlink_device(runners_yaml)
             return
 
         jlink = pylink.JLink()
@@ -365,7 +361,24 @@ class vscode(WestCommand):
             launch["configurations"][0]["serialNumber"] = serial
             launch["configurations"][1]["serialNumber"] = serial
 
-        self._jlink_device(build_dir)
+        self._jlink_device(runners_yaml)
+
+    def _openocd(self, build_dir, cache, runners_yaml):
+        board_dir = cache["BOARD_DIR"]
+        cfg_path = f"{board_dir}/support/openocd.cfg"
+
+        launch["configurations"][0]["servertype"] = "openocd"
+        launch["configurations"][1]["servertype"] = "openocd"
+        launch["configurations"][0]["configFiles"] = [cfg_path]
+        launch["configurations"][1]["configFiles"] = [cfg_path]
+        launch["configurations"][0]["rtos"] = "Zephyr"
+        launch["configurations"][1]["rtos"] = "Zephyr"
+
+    def _physical_hardware(self, build_dir, cache):
+        if build_dir.parts[-1] == "tfm":
+            self._tfm_build(build_dir, cache)
+        else:
+            self._zephyr_build(build_dir, cache)
 
     def do_run(self, args, _):
         vscode_folder = pathlib.Path(args.workspace) / ".vscode"
@@ -391,21 +404,36 @@ class vscode(WestCommand):
 
             if not (build_dir / "CMakeCache.txt").exists():
                 log.err(
-                    f"{args.build_dir} does not appear to be a valid cmake build directory"
+                    f"{build_dir} does not appear to be a valid cmake build directory"
+                )
+                sys.exit(1)
+            if (build_dir / "_sysbuild").exists():
+                log.err(
+                    f"{build_dir} is a sysbuild directory, not an application directory"
                 )
                 sys.exit(1)
 
             cache = zcmake.CMakeCache.from_build_dir(build_dir)
+            runners_yaml = None
+            runners_yaml_path = build_dir / "zephyr" / "runners.yaml"
+            if runners_yaml_path.exists():
+                with pathlib.Path(runners_yaml_path).open("r", encoding="utf-8") as f:
+                    runners_yaml = yaml.safe_load(f)
 
             c_cpp_properties["configurations"][0]["compileCommands"] = str(
                 build_dir / "compile_commands.json"
             )
 
-            if build_dir.parts[-1] == "tfm":
-                self._tfm_build(build_dir, cache)
-            else:
-                self._zephyr_build(build_dir, cache)
-            self._jlink(args.snr, build_dir, cache)
+            if runners_yaml is None:
+                self._qemu(build_dir, cache)
+            elif runners_yaml["debug-runner"] == "native":
+                self._native(build_dir, cache)
+            elif runners_yaml["debug-runner"] == "jlink":
+                self._physical_hardware(build_dir, cache)
+                self._jlink(args.snr, build_dir, cache, runners_yaml)
+            elif runners_yaml["debug-runner"] == "openocd":
+                self._physical_hardware(build_dir, cache)
+                self._openocd(build_dir, cache, runners_yaml)
 
             log.inf(
                 f"Writing `c_cpp_properties.json` and `launch.json` to {vscode_folder}"
