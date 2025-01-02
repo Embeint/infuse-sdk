@@ -93,6 +93,9 @@ ZTEST(drivers_watchdog, test_watchdog)
 	/* Start watchdog */
 	zassert_equal(0, infuse_watchdog_start());
 
+	/* Second start should fail */
+	zassert_equal(-EBUSY, infuse_watchdog_start());
+
 	/* Try to allocate channel afterwards */
 	channel = infuse_watchdog_install(&feed_period);
 	zassert_equal(-EBUSY, channel);
