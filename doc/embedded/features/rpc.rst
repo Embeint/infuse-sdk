@@ -19,7 +19,7 @@ RPC Client
 
 The RPC client library enables running commands on remote devices. This is currently
 limited to devices that share the same root network key and commands that only require
-:c:ref:`EPACKET_AUTH_NETWORK` level authentication.
+:c:enumerator:`EPACKET_AUTH_NETWORK` level authentication.
 
 Command Configuration
 *********************
