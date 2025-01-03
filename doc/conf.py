@@ -181,9 +181,10 @@ html_context = {
     "versions": (("latest", "/"),),
     "display_gh_links": True,
     "reference_links": {
-        "API": f"{reference_prefix}/doxygen/html/index.html",
-        "Kconfig Options": f"{reference_prefix}/kconfig.html",
-        "Devicetree Bindings": f"{reference_prefix}/build/dts/api/bindings.html",
+        "Cloud API": "https://api.infuse-iot.com/docs",
+        "Embedded Doxygen": f"{reference_prefix}/doxygen/html/index.html",
+        "Embedded Kconfig": f"{reference_prefix}/kconfig.html",
+        "Embedded Devicetree": f"{reference_prefix}/build/dts/api/bindings.html",
     },
     # Set google_searchengine_id to your Search Engine ID to replace built-in search
     # engine with Google's Programmable Search Engine.
