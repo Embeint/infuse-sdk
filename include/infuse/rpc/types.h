@@ -745,4 +745,4 @@ struct rpc_echo_response {
 }
 #endif
 
-#endif /** INFUSE_SDK_INCLUDE_INFUSE_RPC_TYPES_H_ */
+#endif /* INFUSE_SDK_INCLUDE_INFUSE_RPC_TYPES_H_ */

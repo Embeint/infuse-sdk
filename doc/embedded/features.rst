@@ -17,6 +17,7 @@ any application.
   * :ref:`rpc_api`: Server & client
   * :ref:`app_states_api`: Global boolean states
   * :ref:`cpatch_api`: Binary diff application image upgrades
+  * :ref:`reboot_api`: System reboot state integration
   * :ref:`watchdog_api`: Watchdog integration wrapper
   * :ref:`infuse_workqueue`: Non time-critical workqueue
   * :ref:`zbus_api`: Common `zbus`_ channel definitions
