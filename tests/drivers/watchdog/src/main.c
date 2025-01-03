@@ -76,12 +76,14 @@ ZTEST(drivers_watchdog, test_dead_thread)
 
 ZTEST(drivers_watchdog, test_watchdog)
 {
-	k_timeout_t feed_period;
+	k_timeout_t feed_period = K_NO_WAIT;
 	int channel, rc;
 
 	/* QEMU watchdog only has one timeout channel */
 	channel = infuse_watchdog_install(&feed_period);
 	zassert_equal(0, channel);
+	zassert_false(K_TIMEOUT_EQ(K_NO_WAIT, feed_period));
+	zassert_false(K_TIMEOUT_EQ(K_FOREVER, feed_period));
 	channel = infuse_watchdog_install(&feed_period);
 	zassert_equal(-ENOMEM, channel);
 	channel = infuse_watchdog_install(&feed_period);

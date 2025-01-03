@@ -64,9 +64,11 @@ int infuse_watchdog_install(k_timeout_t *feed_period)
 	if (channel_max == (MAX_CHANNELS - 1)) {
 		LOG_ERR("Insufficient wdog channels");
 		wdog_channel = -ENOMEM;
+		*feed_period = K_FOREVER;
 	} else {
 		wdog_channel = channel_max + 1;
 		sw_channels_mask |= 1 << wdog_channel;
+		*feed_period = INFUSE_WATCHDOG_FEED_PERIOD;
 	}
 #else
 	const struct wdt_timeout_cfg timeout_cfg = INFUSE_WATCHDOG_DEFAULT_TIMEOUT_CFG;

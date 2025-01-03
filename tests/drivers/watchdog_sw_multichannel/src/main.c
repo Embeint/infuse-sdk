@@ -56,8 +56,11 @@ ZTEST(drivers_watchdog, test_watchdog)
 
 	/* Multiple emulated channels */
 	for (int i = 0; i < 4; i++) {
+		feed_period = K_NO_WAIT;
 		channels[i] = infuse_watchdog_install(&feed_period);
 		zassert_true(channels[i] >= 0);
+		zassert_false(K_TIMEOUT_EQ(K_NO_WAIT, feed_period));
+		zassert_false(K_TIMEOUT_EQ(K_FOREVER, feed_period));
 
 		/* Register watchdog against this thread */
 		infuse_watchdog_thread_register(channels[i], _current);
