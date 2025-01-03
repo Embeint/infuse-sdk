@@ -30,63 +30,63 @@ extern "C" {
 
 #define REBOOT_STATE_THREAD_NAME_MAX 8
 
-/* Enumeration of reboot reasons */
+/** Enumeration of reboot reasons */
 enum infuse_reboot_reason {
-	/* Common Zephyr exception codes */
+	/** Common Zephyr exception codes */
 	INFUSE_REBOOT_ZEPHYR_BASE = K_ERR_CPU_EXCEPTION,
-	/* Architecture specific exception codes */
+	/** Architecture specific exception codes */
 	INFUSE_REBOOT_ARCH_SPECIFIC = K_ERR_ARCH_START,
-	/* Infuse reboot reasons */
+	/** Infuse reboot reasons */
 	INFUSE_REBOOT_INFUSE_START = 128,
-	/* Hardware watchdog has expired */
+	/** Hardware watchdog has expired */
 	INFUSE_REBOOT_HW_WATCHDOG = 128,
-	/* Triggered externally (Button, etc) */
+	/** Triggered externally (Button, etc) */
 	INFUSE_REBOOT_EXTERNAL_TRIGGER = 129,
-	/* Remote procedure call */
+	/** Remote procedure call */
 	INFUSE_REBOOT_RPC = 130,
-	/* Internal LTE modem fault */
+	/** Internal LTE modem fault */
 	INFUSE_REBOOT_LTE_MODEM_FAULT = 131,
-	/* MCUmgr request */
+	/** MCUmgr request */
 	INFUSE_REBOOT_MCUMGR = 132,
-	/* Rebooting due to configuration change */
+	/** Rebooting due to configuration change */
 	INFUSE_REBOOT_CFG_CHANGE = 133,
-	/* Software watchdog has expired */
+	/** Software watchdog has expired */
 	INFUSE_REBOOT_SW_WATCHDOG = 134,
-	/* Rebooting for device firmware update */
+	/** Rebooting for device firmware update */
 	INFUSE_REBOOT_DFU = 135,
-	/* Unknown reboot reason */
+	/** Unknown reboot reason */
 	INFUSE_REBOOT_UNKNOWN = 255,
 };
 
-/* Reboot state information */
+/** Reboot state information */
 struct infuse_reboot_state {
-	/* First 3 parameters are updated a second time on delayed reboots.
+	/** First 3 parameters are updated a second time on delayed reboots.
 	 * Do not modify the order.
 	 */
 
-	/* The source of epoch time */
+	/** The source of epoch time */
 	uint8_t epoch_time_source;
-	/* The epoch time at the reboot */
+	/** The epoch time at the reboot */
 	uint64_t epoch_time;
-	/* The device uptime at the reboot */
+	/** The device uptime at the reboot */
 	uint32_t uptime;
-	/* Reason for the reboot */
+	/** Reason for the reboot */
 	enum infuse_reboot_reason reason;
-	/* Hardware reboot reason flags */
+	/** Hardware reboot reason flags */
 	uint32_t hardware_reason;
 	union {
-		/* Program counter value at exception */
+		/** Program counter value at exception */
 		uint32_t program_counter;
-		/* Watchdog info1 per @ref infuse_watchdog_thread_state_lookup */
+		/** Watchdog info1 per @ref infuse_watchdog_thread_state_lookup */
 		uint32_t watchdog_info1;
 	} param_1;
 	union {
-		/* Link register value at exception */
+		/** Link register value at exception */
 		uint32_t link_register;
-		/* Watchdog info2 per @ref infuse_watchdog_thread_state_lookup */
+		/** Watchdog info2 per @ref infuse_watchdog_thread_state_lookup */
 		uint32_t watchdog_info2;
 	} param_2;
-	/* Thread executing at reboot time */
+	/** Thread executing at reboot time */
 	char thread_name[REBOOT_STATE_THREAD_NAME_MAX];
 } __packed;
 

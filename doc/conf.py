@@ -225,6 +225,7 @@ cpp_id_attributes = [
     "__weak",
     "__attribute_const__",
     "__DEPRECATED_MACRO",
+    "_NORETURN",
     "FUNC_NORETURN",
     "__subsystem",
     "ALWAYS_INLINE",
