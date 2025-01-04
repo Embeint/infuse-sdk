@@ -11,9 +11,12 @@ if (${SB_CONFIG_BOOTLOADER_MCUBOOT})
   # Ensure multithreading is always enabled in MCUBoot
   # External flash drivers and USB support depend on it
   set(mcuboot_CONFIG_MULTITHREADING "y" CACHE INTERNAL "")
-  set(mcuboot_CONFIG_NORDIC_QSPI_NOR "y" CACHE INTERNAL "")
-  # Support images up to 1MB in size
-  set(mcuboot_CONFIG_BOOT_MAX_IMG_SECTORS 256 CACHE INTERNAL "")
+  if (${SB_CONFIG_SOC_FAMILY_NORDIC_NRF})
+    # External QSPI support
+    set(mcuboot_CONFIG_NORDIC_QSPI_NOR "y" CACHE INTERNAL "")
+    # Support images up to 1MB in size
+    set(mcuboot_CONFIG_BOOT_MAX_IMG_SECTORS 256 CACHE INTERNAL "")
+  endif()
   # Notify DTS that this is a bootloader build
   set(mcuboot_DTS_EXTRA_CPPFLAGS "-DINFUSE_IS_BOOTLOADER=1" CACHE INTERNAL "")
 endif()
