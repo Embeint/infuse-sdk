@@ -1,7 +1,7 @@
-# Demo nRF52 release
+# Demo STM32L4 release
 application_folder: ./serial
-output_prefix: release-sample-serial-nrf52
-board: nrf52840dk/nrf52840
+output_prefix: release-sample-serial-nucleo-l432kc
+board: nucleo_l432kc/stm32l432xx
 signing_key: ../../../bootloader/mcuboot/root-rsa-2048.pem
 network_key: ../../lib/security/default_network.yaml
-version_override: 1.3.7
+disable_logging: true
