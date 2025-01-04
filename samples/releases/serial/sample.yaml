@@ -9,6 +9,10 @@ common:
   integration_platforms:
     - nrf52840dk/nrf52840
     - nrf9160dk/nrf9160/ns
+    # Temporarily disable this due to a mismatch between snippet platform name
+    # discovery, twister name validations and board.yaml naming. Should be
+    # resolved on Zephyr 4.0.
+    # - nucleo_l432kc/stm32l432xx
 tests:
   sample.releases.serial:
     tags: gateway
