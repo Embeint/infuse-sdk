@@ -17,6 +17,8 @@
 #include <zephyr/device.h>
 #include <zephyr/sys/util.h>
 
+#include <infuse/tdf/tdf.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -126,6 +128,47 @@ static inline void tdf_data_logger_log(uint8_t logger_mask, uint16_t tdf_id, uin
 {
 	tdf_data_logger_log_array(logger_mask, tdf_id, tdf_len, 1, time, 0, data);
 }
+
+/**
+ * @brief Type safe wrapper around @ref tdf_data_logger_log
+ *
+ * Adds compile-time validation that the passed pointer matches the type associated
+ * with @a tdf_id.
+ *
+ * @note Only works for TDF types without trailing variable length arrays
+ *
+ * @param logger_mask Bitmask of loggers to write to (@ref tdf_data_logger_mask)
+ * @param tdf_id TDF sensor ID
+ * @param tdf_time Epoch time associated with the TDF. 0 for no timestamp.
+ * @param data TDF data
+ */
+#define TDF_DATA_LOGGER_LOG(logger_mask, tdf_id, tdf_time, data)                                   \
+	tdf_data_logger_log(logger_mask, tdf_id, sizeof(TDF_TYPE(tdf_id)), tdf_time, data);        \
+	do {                                                                                       \
+		__maybe_unused const TDF_TYPE(tdf_id) *_data = data;                               \
+	} while (0)
+
+/**
+ * @brief Type safe wrapper around @ref tdf_data_logger_log_array
+ *
+ * Adds compile-time validation that the passed pointer matches the type associated
+ * with @a tdf_id.
+ *
+ * @note Only works for TDF types without trailing variable length arrays
+ *
+ * @param logger_mask Bitmask of loggers to write to (@ref tdf_data_logger_mask)
+ * @param tdf_id TDF sensor ID
+ * @param tdf_num Number of TDFs to add
+ * @param tdf_time Epoch time associated with the TDF. 0 for no timestamp.
+ * @param period Time period between the TDF samples
+ * @param data TDF data
+ */
+#define TDF_DATA_LOGGER_LOG_ARRAY(logger_mask, tdf_id, tdf_num, tdf_time, period, data)            \
+	tdf_data_logger_log_array(logger_mask, tdf_id, sizeof(TDF_TYPE(tdf_id)), tdf_num,          \
+				  tdf_time, period, data);                                         \
+	do {                                                                                       \
+		__maybe_unused const TDF_TYPE(tdf_id) *_data = data;                               \
+	} while (0)
 
 /**
  * @brief Flush any pending TDFs to backend

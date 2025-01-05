@@ -67,6 +67,40 @@ enum tdf_flags {
 };
 
 /**
+ * @brief Get type associated with a given TDF ID
+ *
+ * @param tdf_id TDF sensor ID
+ *
+ * @retval Associated tdf struct type
+ */
+#define TDF_TYPE(tdf_id) _##tdf_id##_TYPE
+
+/**
+ * @brief Type safe wrapper around @ref tdf_add
+ *
+ * Adds compile-time validation that the passed pointer matches the type associated
+ * with @a tdf_id.
+ *
+ * @note Only works for TDF types without trailing variable length arrays
+ *
+ * @param state Pointer to current buffer state
+ * @param tdf_id TDF sensor ID
+ * @param tdf_num Number of TDFs to try to add
+ * @param base_time Epoch time associated with the first TDF. 0 for no timestamp.
+ * @param period Epoch time between tdfs when @a tdf_num > 0.
+ * @param data TDF data
+ *
+ * @retval >0 Number of TDFs successfully added to buffer
+ * @retval -ENOSPC TDF too large to ever fit on buffer
+ * @return -ENOMEM Insufficient space to add any TDFs to buffer
+ */
+#define TDF_ADD(state, tdf_id, tdf_num, base_time, period, data)                                   \
+	tdf_add(state, tdf_id, sizeof(TDF_TYPE(tdf_id)), tdf_num, base_time, period, data);        \
+	do {                                                                                       \
+		__maybe_unused const TDF_TYPE(tdf_id) *_data = data;                               \
+	} while (0)
+
+/**
  * @brief Reset a tdf_buffer_state struct
  *
  * @param state struct to reset

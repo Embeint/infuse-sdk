@@ -314,6 +314,50 @@ static inline void task_schedule_tdf_log(const struct task_schedule *schedule, u
 }
 
 /**
+ * @brief Type safe wrapper around @ref task_schedule_tdf_log_array
+ *
+ * Adds compile-time validation that the passed pointer matches the type associated
+ * with @a tdf_id.
+ *
+ * @note Only works for TDF types without trailing variable length arrays
+ *
+ * @param schedule Task schedule
+ * @param tdf_mask Single TDF mask that corresponds to @a tdf_id
+ * @param tdf_id TDF sensor ID
+ * @param tdf_num Number of TDFs to log
+ * @param tdf_time Epoch time associated with the first TDF. 0 for no timestamp.
+ * @param period Time period between the TDF samples
+ * @param data TDF data array
+ */
+#define TASK_SCHEDULE_TDF_LOG_ARRAY(schedule, tdf_mask, tdf_id, tdf_num, tdf_time, period, data)   \
+	task_schedule_tdf_log_array(schedule, tdf_mask, tdf_id, sizeof(TDF_TYPE(tdf_id)), tdf_num, \
+				    tdf_time, period, data);                                       \
+	do {                                                                                       \
+		__maybe_unused const TDF_TYPE(tdf_id) *_data = data;                               \
+	} while (0)
+
+/**
+ * @brief Type safe wrapper around @ref task_schedule_tdf_log
+ *
+ * Adds compile-time validation that the passed pointer matches the type associated
+ * with @a tdf_id.
+ *
+ * @note Only works for TDF types without trailing variable length arrays
+ *
+ * @param schedule Task schedule
+ * @param tdf_mask Single TDF mask that corresponds to @a tdf_id
+ * @param tdf_id TDF sensor ID
+ * @param tdf_time Epoch time associated with the first TDF. 0 for no timestamp.
+ * @param data TDF data array
+ */
+#define TASK_SCHEDULE_TDF_LOG(schedule, tdf_mask, tdf_id, tdf_time, data)                          \
+	task_schedule_tdf_log(schedule, tdf_mask, tdf_id, sizeof(TDF_TYPE(tdf_id)), tdf_time,      \
+			      data);                                                               \
+	do {                                                                                       \
+		__maybe_unused const TDF_TYPE(tdf_id) *_data = data;                               \
+	} while (0)
+
+/**
  * @}
  */
 
