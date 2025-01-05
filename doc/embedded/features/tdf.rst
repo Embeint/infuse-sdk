@@ -87,6 +87,11 @@ predictable timestamps.
    * - :c:enumerator:`TDF_ARRAY_TIME`
      - Array of TDF readings evenly spaced in time
 
+No Array
+--------
+
+No array is a single TDF reading with no additional headers.
+
 Time Array
 ----------
 
@@ -96,18 +101,13 @@ after the timestamp structure.
 .. code-block:: c
 
    struct tdf_time_array_header {
-	   uint8_t num;
-	   uint16_t period;
+      uint8_t num;
+      uint16_t period;
    } __packed;
 
 The ``num`` field specifies how many copies of the TDF reading exist in the payload, while ``period``
 specifies the time between readings. The timestamp of each reading in the array is calculated using
 the following formula: ``timestamp[N] = timestamp_base + (N * period)``.
-
-.. warning::
-
-   It is important that the timestamp provided to TDF logging functions in array mode is the timestamp
-   of the *FIRST* reading, not the *LAST* reading.
 
 Size
 ====
@@ -122,12 +122,26 @@ No Array
 When the array type is :c:enumerator:`TDF_ARRAY_NONE`, the field is simply the size of the trailing
 reading data.
 
+.. list-table::
+
+   * - Payload Size
+     - ``size``
+   * - Number TDFs
+     - ``1``
+
 Time Array
 ----------
 
 When the array type is :c:enumerator:`TDF_ARRAY_TIME`, the field is the size of a single reading
 in the array. To obtain the complete payload size it must be multiplied with the ``num`` field in
 the time array header.
+
+.. list-table::
+
+   * - Payload Size
+     - ``size * time_header.num``
+   * - Number TDFs
+     - ``time_header.num``
 
 Reading Data
 ============
@@ -139,6 +153,91 @@ packed array. The currently defined ID to data structure mappings can be found a
    :maxdepth: 1
 
    tdf/definitions.rst
+
+Logging Examples
+****************
+
+When possible, the type safe logging macros should be preferred, as they validate that the
+type of the passed data pointer matches the type associated with the TDF ID.
+
+.. note::
+
+   The type safe macros are not possible to use for TDFs with a trailing variable length array,
+   since instantiations of the type with a defined length are by definition a different type.
+
+Single TDF
+==========
+
+Logging a single TDF at an arbitrary point in time.
+
+.. code-block:: c
+   :caption: Low-Level API
+
+   static uint8_t buffer[32];
+   struct tdf_buffer_state state;
+   struct tdf_acc_4g reading = {
+      .sample = {0, -1000, 2000},
+   };
+
+   net_buf_simple_init_with_data(&state.buf, buffer, sizeof(buffer));
+   tdf_buffer_state_reset(&state);
+
+   /* TDF_ADD is preferred */
+   TDF_ADD(&state, TDF_ACC_4G, 1, epoch_time_now(), 0, &reading);
+   tdf_add(&state, TDF_ACC_4G, sizeof(reading), 1, epoch_time_now(), 0, &reading);
+
+.. code-block:: c
+   :caption: :ref:`tdf_data_logger_api` API
+
+   struct tdf_acc_4g reading = {
+      .sample = {0, -1000, 2000},
+   };
+
+   /* TDF_DATA_LOGGER_LOG is preferred */
+   TDF_DATA_LOGGER_LOG(TDF_DATA_LOGGER_BT_ADV, TDF_ACC_4G, epoch_time_now(), &reading);
+   tdf_data_logger_log(TDF_DATA_LOGGER_BT_ADV, TDF_ACC_4G, sizeof(reading), epoch_time_now(), &reading);
+
+Time Array
+==========
+
+Logging an array of TDFs, evenly spaced in time.
+
+.. warning::
+
+   It is important that the timestamp provided to TDF logging functions in array mode is the timestamp
+   of the *FIRST* reading, not the *LAST* reading.
+
+.. code-block:: c
+   :caption: Low-Level API
+
+   static uint8_t buffer[256];
+   struct tdf_buffer_state state;
+   struct tdf_acc_4g readings[] = {...};
+   uint32_t reading_period = INFUSE_EPOCH_TIME_TICKS_PER_SEC / 100;
+   uint64_t base_time = epoch_time_now() - ((ARRAY_SIZE(readings) - 1) * reading_period);
+
+   net_buf_simple_init_with_data(&state.buf, buffer, sizeof(buffer));
+   tdf_buffer_state_reset(&state);
+
+   /* TDF_ADD is preferred */
+   TDF_ADD(&state, TDF_ACC_4G, ARRAY_SIZE(readings), base_time,
+           reading_period, readings);
+   tdf_add(&state, TDF_ACC_4G, sizeof(readings[0]), ARRAY_SIZE(readings),
+           base_time, reading_period, readings);
+
+.. code-block:: c
+   :caption: :ref:`tdf_data_logger_api` API
+
+   struct tdf_acc_4g readings[] = {...};
+   uint32_t reading_period = INFUSE_EPOCH_TIME_TICKS_PER_SEC / 100;
+   uint64_t base_time = epoch_time_now() - ((ARRAY_SIZE(readings) - 1) * reading_period);
+
+   /* TDF_DATA_LOGGER_LOG_ARRAY is preferred */
+   TDF_DATA_LOGGER_LOG_ARRAY(TDF_DATA_LOGGER_BT_ADV, TDF_ACC_4G, ARRAY_SIZE(readings),
+                             base_time, reading_period, readings);
+   tdf_data_logger_log_array(TDF_DATA_LOGGER_BT_ADV, TDF_ACC_4G, sizeof(readings[0]), ARRAY_SIZE(readings),
+                             base_time, reading_period, readings);
+
 
 Embedded Parsing
 ****************
