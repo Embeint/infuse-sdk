@@ -505,6 +505,38 @@ enum tdf_builtin_id {
 
 /** @cond INTERNAL_HIDDEN */
 
+#define _TDF_ANNOUNCE_TYPE                    struct tdf_announce
+#define _TDF_BATTERY_STATE_TYPE               struct tdf_battery_state
+#define _TDF_AMBIENT_TEMP_PRES_HUM_TYPE       struct tdf_ambient_temp_pres_hum
+#define _TDF_AMBIENT_TEMPERATURE_TYPE         struct tdf_ambient_temperature
+#define _TDF_TIME_SYNC_TYPE                   struct tdf_time_sync
+#define _TDF_REBOOT_INFO_TYPE                 struct tdf_reboot_info
+#define _TDF_ACC_2G_TYPE                      struct tdf_acc_2g
+#define _TDF_ACC_4G_TYPE                      struct tdf_acc_4g
+#define _TDF_ACC_8G_TYPE                      struct tdf_acc_8g
+#define _TDF_ACC_16G_TYPE                     struct tdf_acc_16g
+#define _TDF_GYR_125DPS_TYPE                  struct tdf_gyr_125dps
+#define _TDF_GYR_250DPS_TYPE                  struct tdf_gyr_250dps
+#define _TDF_GYR_500DPS_TYPE                  struct tdf_gyr_500dps
+#define _TDF_GYR_1000DPS_TYPE                 struct tdf_gyr_1000dps
+#define _TDF_GYR_2000DPS_TYPE                 struct tdf_gyr_2000dps
+#define _TDF_GCS_WGS84_LLHA_TYPE              struct tdf_gcs_wgs84_llha
+#define _TDF_UBX_NAV_PVT_TYPE                 struct tdf_ubx_nav_pvt
+#define _TDF_LTE_CONN_STATUS_TYPE             struct tdf_lte_conn_status
+#define _TDF_GLOBALSTAR_PKT_TYPE              struct tdf_globalstar_pkt
+#define _TDF_ACC_MAGNITUDE_STD_DEV_TYPE       struct tdf_acc_magnitude_std_dev
+#define _TDF_ACTIVITY_METRIC_TYPE             struct tdf_activity_metric
+#define _TDF_ALGORITHM_OUTPUT_TYPE            struct tdf_algorithm_output
+#define _TDF_RUNTIME_ERROR_TYPE               struct tdf_runtime_error
+#define _TDF_CHARGER_EN_CONTROL_TYPE          struct tdf_charger_en_control
+#define _TDF_GNSS_FIX_INFO_TYPE               struct tdf_gnss_fix_info
+#define _TDF_BLUETOOTH_CONNECTION_TYPE        struct tdf_bluetooth_connection
+#define _TDF_BLUETOOTH_RSSI_TYPE              struct tdf_bluetooth_rssi
+#define _TDF_BLUETOOTH_DATA_THROUGHPUT_TYPE   struct tdf_bluetooth_data_throughput
+#define _TDF_ALGORITHM_CLASS_HISTOGRAM_TYPE   struct tdf_algorithm_class_histogram
+#define _TDF_ALGORITHM_CLASS_TIME_SERIES_TYPE struct tdf_algorithm_class_time_series
+#define _TDF_ARRAY_TYPE_TYPE                  struct tdf_array_type
+
 /** Size of builtin TDF definitions */
 enum tdf_builtin_size {
 	_TDF_ANNOUNCE_SIZE = sizeof(struct tdf_announce),
