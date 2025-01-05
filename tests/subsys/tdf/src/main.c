@@ -831,15 +831,18 @@ ZTEST(tdf, test_parse_missing_array_info)
 ZTEST(tdf, test_tdf_parse_find_in_buf)
 {
 	struct tdf_buffer_state state;
-	struct tdf_acc_2g acc = {{1, 2, 3}};
-	struct tdf_gyr_125dps gyr = {{-1, -2, -3}};
+	TDF_TYPE(TDF_ACC_2G) acc = {{1, 2, 3}};
+	TDF_TYPE(TDF_GYR_125DPS) gyr = {{-1, -2, -3}};
 	struct tdf_parsed parsed;
+	int rc;
 
 	net_buf_simple_init_with_data(&state.buf, buf, sizeof(buf));
 	tdf_buffer_state_reset(&state);
 
-	tdf_add(&state, TDF_ACC_2G, sizeof(acc), 1, 1000, 0, &acc);
-	tdf_add(&state, TDF_GYR_125DPS, sizeof(gyr), 1, 2000, 0, &gyr);
+	rc = TDF_ADD(&state, TDF_ACC_2G, 1, 1000, 0, &acc);
+	zassert_equal(1, rc);
+	rc = TDF_ADD(&state, TDF_GYR_125DPS, 1, 2000, 0, &gyr);
+	zassert_equal(1, rc);
 
 	/* TDFs that don't exist in the buffer */
 	zassert_equal(-ENOMEM,

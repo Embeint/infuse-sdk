@@ -15,6 +15,7 @@
 #include <infuse/epacket/interface/epacket_dummy.h>
 #include <infuse/data_logger/logger.h>
 #include <infuse/data_logger/high_level/tdf.h>
+#include <infuse/tdf/definitions.h>
 
 #include <infuse/task_runner/task.h>
 
@@ -104,6 +105,34 @@ ZTEST(task_runner_logging, test_tdf_logging)
 	/* TASK_LOG_TDF_3 is requested */
 	task_schedule_tdf_log(&schedule2, TASK_LOG_TDF_3, TDF_RANDOM, sizeof(tdf_data), 0,
 			      &tdf_data);
+	tdf_data_logger_flush(TDF_DATA_LOGGER_SERIAL);
+	tx = net_buf_get(tx_fifo, K_MSEC(100));
+	zassert_not_null(tx);
+	net_buf_unref(tx);
+}
+
+ZTEST(task_runner_logging, test_tdf_type_safe)
+{
+	TDF_TYPE(TDF_ACC_2G) readings[2] = {{{1, 2, 3}}, {{-4, -5, -6}}};
+	struct k_fifo *tx_fifo = epacket_dummmy_transmit_fifo_get();
+	struct net_buf *tx;
+
+	/* TDF is on first slot */
+	struct task_schedule schedule1 = {
+		.task_logging = {
+			{
+				.loggers = TDF_DATA_LOGGER_SERIAL,
+				.tdf_mask = TASK_LOG_TDF_1 | TASK_LOG_TDF_4,
+			},
+		}};
+
+	TASK_SCHEDULE_TDF_LOG(&schedule1, TASK_LOG_TDF_1, TDF_ACC_2G, 0, readings);
+	tdf_data_logger_flush(TDF_DATA_LOGGER_SERIAL);
+	tx = net_buf_get(tx_fifo, K_MSEC(100));
+	zassert_not_null(tx);
+	net_buf_unref(tx);
+
+	TASK_SCHEDULE_TDF_LOG_ARRAY(&schedule1, TASK_LOG_TDF_1, TDF_ACC_2G, 2, 0, 10, readings);
 	tdf_data_logger_flush(TDF_DATA_LOGGER_SERIAL);
 	tx = net_buf_get(tx_fifo, K_MSEC(100));
 	zassert_not_null(tx);
