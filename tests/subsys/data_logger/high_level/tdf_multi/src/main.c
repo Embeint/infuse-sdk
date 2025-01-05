@@ -14,6 +14,7 @@
 #include <infuse/epacket/packet.h>
 #include <infuse/data_logger/logger.h>
 #include <infuse/data_logger/high_level/tdf.h>
+#include <infuse/tdf/definitions.h>
 
 enum {
 	TDF_RANDOM = 37,
@@ -65,6 +66,18 @@ ZTEST(tdf_data_logger_multi, test_standard)
 	validate_loggers(expected_flash, expected_epacket);
 
 	/* Flush both */
+	tdf_data_logger_flush(TDF_DATA_LOGGER_FLASH | TDF_DATA_LOGGER_UDP);
+	validate_loggers(++expected_flash, ++expected_epacket);
+
+	/* Test the type safe macros */
+	TDF_TYPE(TDF_ACC_2G) acc = {{1, 2, 3}};
+	TDF_TYPE(TDF_GYR_125DPS) gyr[2] = {{{-1, -2, -3}}, {{4, 5, 6}}};
+
+	TDF_DATA_LOGGER_LOG(TDF_DATA_LOGGER_FLASH | TDF_DATA_LOGGER_UDP, TDF_ACC_2G, 0, &acc);
+	TDF_DATA_LOGGER_LOG_ARRAY(TDF_DATA_LOGGER_FLASH | TDF_DATA_LOGGER_UDP, TDF_GYR_125DPS, 2, 0,
+				  10, gyr);
+
+	/* Flush both devices */
 	tdf_data_logger_flush(TDF_DATA_LOGGER_FLASH | TDF_DATA_LOGGER_UDP);
 	validate_loggers(++expected_flash, ++expected_epacket);
 }
