@@ -143,6 +143,7 @@ static void nav_timegps_handle(struct gnss_run_state *state, const struct task_g
 
 static uint64_t log_and_publish(struct gnss_run_state *state, const struct ubx_msg_nav_pvt *pvt)
 {
+	const struct tdf_ubx_nav_pvt *tdf_pvt = (const void *)pvt;
 	struct tdf_gcs_wgs84_llha llha = {
 		.location =
 			{
@@ -178,10 +179,10 @@ static uint64_t log_and_publish(struct gnss_run_state *state, const struct ubx_m
 		epoch_time = epoch_time_now();
 	}
 	/* Log output */
-	task_schedule_tdf_log(state->schedule, TASK_GNSS_LOG_LLHA, TDF_GCS_WGS84_LLHA,
-			      sizeof(struct tdf_gcs_wgs84_llha), epoch_time, &llha);
-	task_schedule_tdf_log(state->schedule, TASK_GNSS_LOG_UBX_NAV_PVT, TDF_UBX_NAV_PVT,
-			      sizeof(struct tdf_ubx_nav_pvt), epoch_time, pvt);
+	TASK_SCHEDULE_TDF_LOG(state->schedule, TASK_GNSS_LOG_LLHA, TDF_GCS_WGS84_LLHA, epoch_time,
+			      &llha);
+	TASK_SCHEDULE_TDF_LOG(state->schedule, TASK_GNSS_LOG_UBX_NAV_PVT, TDF_UBX_NAV_PVT,
+			      epoch_time, tdf_pvt);
 
 	return epoch_time;
 }
@@ -468,8 +469,8 @@ void gnss_task_fn(const struct task_schedule *schedule, struct k_poll_signal *te
 		epoch_time = log_and_publish(&run_state, &run_state.best_fix);
 
 		/* Log fix information */
-		task_schedule_tdf_log(schedule, TASK_GNSS_LOG_FIX_INFO, TDF_GNSS_FIX_INFO,
-				      sizeof(struct tdf_gnss_fix_info), epoch_time, &fix_info);
+		TASK_SCHEDULE_TDF_LOG(schedule, TASK_GNSS_LOG_FIX_INFO, TDF_GNSS_FIX_INFO,
+				      epoch_time, &fix_info);
 	}
 
 	/* Cleanup message subscription */

@@ -48,7 +48,7 @@ static void main_epacket_bt_legacy_broadcast(void)
 
 	LOG_INF("Single ePacket to simplify peer discovery");
 	k_sleep(K_MSEC(100));
-	tdf_data_logger_log(TDF_DATA_LOGGER_BT_ADV, TDF_ANNOUNCE, (sizeof(announce)), 0, &announce);
+	TDF_DATA_LOGGER_LOG(TDF_DATA_LOGGER_BT_ADV, TDF_ANNOUNCE, 0, &announce);
 	tdf_data_logger_flush(TDF_DATA_LOGGER_BT_ADV);
 
 	LOG_INF("Starting legacy advertiser");
@@ -61,8 +61,7 @@ static void main_epacket_bt_legacy_broadcast(void)
 	/* Only push ePackets over GATT after that */
 	for (int i = 0; i < 9; i++) {
 		announce.uptime = k_uptime_seconds();
-		tdf_data_logger_log(TDF_DATA_LOGGER_BT_PERIPHERAL, TDF_ANNOUNCE, (sizeof(announce)),
-				    0, &announce);
+		TDF_DATA_LOGGER_LOG(TDF_DATA_LOGGER_BT_PERIPHERAL, TDF_ANNOUNCE, 0, &announce);
 		tdf_data_logger_flush(TDF_DATA_LOGGER_BT_ADV);
 		k_sleep(K_SECONDS(1));
 	}

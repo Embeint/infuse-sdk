@@ -70,7 +70,7 @@ static void log_announce(uint8_t loggers, uint64_t timestamp)
 	}
 #endif /* defined(CONFIG_DATA_LOGGER_EXFAT) || defined(CONFIG_DATA_LOGGER_FLASH_MAP) */
 
-	tdf_data_logger_log(loggers, TDF_ANNOUNCE, sizeof(announce), timestamp, &announce);
+	TDF_DATA_LOGGER_LOG(loggers, TDF_ANNOUNCE, timestamp, &announce);
 }
 
 static void log_battery(uint8_t loggers, uint64_t timestamp)
@@ -84,7 +84,7 @@ static void log_battery(uint8_t loggers, uint64_t timestamp)
 	/* Get latest value */
 	zbus_chan_read(C_GET(INFUSE_ZBUS_CHAN_BATTERY), &battery, K_FOREVER);
 	/* Add to specified loggers */
-	tdf_data_logger_log(loggers, TDF_BATTERY_STATE, sizeof(battery), timestamp, &battery);
+	TDF_DATA_LOGGER_LOG(loggers, TDF_BATTERY_STATE, timestamp, &battery);
 #endif
 }
 
@@ -104,11 +104,9 @@ static void log_ambient_env(uint8_t loggers, uint64_t timestamp)
 	if ((ambient_env.pressure == 0) && (ambient_env.humidity == 0)) {
 		struct tdf_ambient_temperature temp = {.temperature = ambient_env.temperature};
 
-		tdf_data_logger_log(loggers, TDF_AMBIENT_TEMPERATURE, sizeof(temp), timestamp,
-				    &temp);
+		TDF_DATA_LOGGER_LOG(loggers, TDF_AMBIENT_TEMPERATURE, timestamp, &temp);
 	} else {
-		tdf_data_logger_log(loggers, TDF_AMBIENT_TEMP_PRES_HUM, sizeof(ambient_env),
-				    timestamp, &ambient_env);
+		TDF_DATA_LOGGER_LOG(loggers, TDF_AMBIENT_TEMP_PRES_HUM, timestamp, &ambient_env);
 	}
 #endif
 }
@@ -125,7 +123,7 @@ static void log_location(uint8_t loggers, uint64_t timestamp)
 	/* Get latest value */
 	zbus_chan_read(C_GET(INFUSE_ZBUS_CHAN_LOCATION), &location, K_FOREVER);
 	/* Add to specified loggers */
-	tdf_data_logger_log(loggers, TDF_GCS_WGS84_LLHA, sizeof(location), timestamp, &location);
+	TDF_DATA_LOGGER_LOG(loggers, TDF_GCS_WGS84_LLHA, timestamp, &location);
 #endif
 }
 
@@ -193,7 +191,7 @@ static void log_network_connection(uint8_t loggers, uint64_t timestamp)
 		}
 	}
 	/* Add to specified loggers */
-	tdf_data_logger_log(loggers, TDF_LTE_CONN_STATUS, sizeof(tdf), timestamp, &tdf);
+	TDF_DATA_LOGGER_LOG(loggers, TDF_LTE_CONN_STATUS, timestamp, &tdf);
 #endif
 }
 

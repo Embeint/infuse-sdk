@@ -81,7 +81,7 @@ void battery_task_fn(struct k_work *work)
 	rc = task_battery_manual_run(fuel_gauge, &sch->task_args.infuse.battery, &tdf_battery);
 	if (rc == 0) {
 		/* Log output TDF */
-		task_schedule_tdf_log(sch, TASK_BATTERY_LOG_COMPLETE, TDF_BATTERY_STATE,
-				      sizeof(tdf_battery), epoch_time_now(), &tdf_battery);
+		TASK_SCHEDULE_TDF_LOG(sch, TASK_BATTERY_LOG_COMPLETE, TDF_BATTERY_STATE,
+				      epoch_time_now(), &tdf_battery);
 	}
 }

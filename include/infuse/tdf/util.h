@@ -134,7 +134,7 @@ static inline void tdf_reboot_info_log(uint8_t logger_mask)
 	infuse_common_boot_last_reboot(&reboot_state);
 	tdf_reboot_info_from_state(&reboot_state, &reboot_info);
 	/* Push TDF at logger */
-	tdf_data_logger_log(logger_mask, TDF_REBOOT_INFO, sizeof(reboot_info), t, &reboot_info);
+	TDF_DATA_LOGGER_LOG(logger_mask, TDF_REBOOT_INFO, t, &reboot_info);
 #endif /* CONFIG_TDF_UTIL_REBOOT_INFO_LOG */
 }
 
