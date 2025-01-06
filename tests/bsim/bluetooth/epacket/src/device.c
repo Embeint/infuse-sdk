@@ -89,8 +89,8 @@ static void main_epacket_bt_basic_broadcast(void)
 	/* Burst send some packets */
 	for (int i = 0; i < 5; i++) {
 		k_sleep(K_USEC(sys_rand32_get() % 10000));
-		tdf_data_logger_log(TDF_DATA_LOGGER_BT_ADV | TDF_DATA_LOGGER_BT_PERIPHERAL,
-				    TDF_ANNOUNCE, (sizeof(announce)), 0, &announce);
+		TDF_DATA_LOGGER_LOG(TDF_DATA_LOGGER_BT_ADV | TDF_DATA_LOGGER_BT_PERIPHERAL,
+				    TDF_ANNOUNCE, 0, &announce);
 		tdf_data_logger_flush(TDF_DATA_LOGGER_BT_ADV | TDF_DATA_LOGGER_BT_PERIPHERAL);
 	}
 	k_sleep(K_MSEC(500));
@@ -101,8 +101,8 @@ static void main_epacket_bt_basic_broadcast(void)
 		k_sleep(K_USEC(sys_rand32_get() % 1000));
 		LOG_INF("TX %d", i);
 		announce.uptime = k_uptime_seconds();
-		tdf_data_logger_log(TDF_DATA_LOGGER_BT_ADV | TDF_DATA_LOGGER_BT_PERIPHERAL,
-				    TDF_ANNOUNCE, (sizeof(announce)), 0, &announce);
+		TDF_DATA_LOGGER_LOG(TDF_DATA_LOGGER_BT_ADV | TDF_DATA_LOGGER_BT_PERIPHERAL,
+				    TDF_ANNOUNCE, 0, &announce);
 		tdf_data_logger_flush(TDF_DATA_LOGGER_BT_ADV | TDF_DATA_LOGGER_BT_PERIPHERAL);
 	}
 	k_sleep(K_MSEC(500));

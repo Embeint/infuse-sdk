@@ -506,7 +506,7 @@ static void rssi_query_worker(struct k_work *work)
 			tdf_bt_addr_le_from_stack(dst, &tdf.address);
 			tdf.rssi = rp->rssi;
 
-			tdf_data_logger_log(conn_state->rssi_log, TDF_BLUETOOTH_RSSI, sizeof(tdf),
+			TDF_DATA_LOGGER_LOG(conn_state->rssi_log, TDF_BLUETOOTH_RSSI,
 					    epoch_time_now(), &tdf);
 		}
 #endif /* CONFIG_TDF_DATA_LOGGER */

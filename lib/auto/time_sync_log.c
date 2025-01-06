@@ -41,8 +41,8 @@ static void reference_time_updated(enum epoch_time_source source, struct timeuti
 		/* Log to requested loggers */
 		struct tdf_time_sync tdf_sync = {.source = source, .shift = diff_us};
 
-		tdf_data_logger_log(log_state->logger_mask, TDF_TIME_SYNC, sizeof(tdf_sync),
-				    epoch_time_now(), &tdf_sync);
+		TDF_DATA_LOGGER_LOG(log_state->logger_mask, TDF_TIME_SYNC, epoch_time_now(),
+				    &tdf_sync);
 	}
 
 	if (log_state->flags & AUTO_TIME_SYNC_LOG_REBOOT_ON_SYNC) {

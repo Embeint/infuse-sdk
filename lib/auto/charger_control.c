@@ -85,8 +85,8 @@ static void new_env_data(const struct zbus_channel *chan)
 
 	/* Log control change as a TDF */
 	control.enabled = charger_control_data.enabled ? 1 : 0;
-	tdf_data_logger_log(charger_control_data.loggers, TDF_CHARGER_EN_CONTROL, sizeof(control),
-			    epoch_time_now(), &control);
+	TDF_DATA_LOGGER_LOG(charger_control_data.loggers, TDF_CHARGER_EN_CONTROL, epoch_time_now(),
+			    &control);
 }
 
 void auto_charger_control_log_configure(uint8_t tdf_logger_mask)

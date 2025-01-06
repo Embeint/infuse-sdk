@@ -500,7 +500,7 @@ static void custom_tdf_logger(uint8_t tdf_loggers, uint64_t timestamp)
 {
 	struct tdf_acc_16g tdf = {.sample = {.x = 2, .y = 3, .z = 4}};
 
-	tdf_data_logger_log(tdf_loggers, TDF_ACC_16G, sizeof(tdf), timestamp, &tdf);
+	TDF_DATA_LOGGER_LOG(tdf_loggers, TDF_ACC_16G, timestamp, &tdf);
 }
 
 ZTEST(task_tdf_logger, test_custom)

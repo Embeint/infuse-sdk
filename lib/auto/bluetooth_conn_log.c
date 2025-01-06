@@ -25,8 +25,7 @@ static void log_do(struct k_work *work)
 	/* Log with time if not flushing */
 	uint64_t epoch_time = log_flags & AUTO_BT_CONN_LOG_EVENTS_FLUSH ? 0 : epoch_time_now();
 
-	tdf_data_logger_log(loggers, TDF_BLUETOOTH_CONNECTION, sizeof(tdf_bt_conn), epoch_time,
-			    &tdf_bt_conn);
+	TDF_DATA_LOGGER_LOG(loggers, TDF_BLUETOOTH_CONNECTION, epoch_time, &tdf_bt_conn);
 	if (log_flags & AUTO_BT_CONN_LOG_EVENTS_FLUSH) {
 		tdf_data_logger_flush(loggers);
 	}

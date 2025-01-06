@@ -62,8 +62,8 @@ int main(void)
 	for (;;) {
 		announce.uptime = k_uptime_get() / 1000;
 
-		tdf_data_logger_log(TDF_DATA_LOGGER_BT_ADV | TDF_DATA_LOGGER_BT_PERIPHERAL,
-				    TDF_ANNOUNCE, (sizeof(announce)), 0, &announce);
+		TDF_DATA_LOGGER_LOG(TDF_DATA_LOGGER_BT_ADV | TDF_DATA_LOGGER_BT_PERIPHERAL,
+				    TDF_ANNOUNCE, 0, &announce);
 		tdf_data_logger_flush(TDF_DATA_LOGGER_BT_ADV | TDF_DATA_LOGGER_BT_PERIPHERAL);
 		LOG_INF("Sent announce %d on Advertising and GATT", announce.uptime);
 
