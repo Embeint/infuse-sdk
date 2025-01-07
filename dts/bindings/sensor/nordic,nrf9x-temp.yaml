@@ -1,0 +1,7 @@
+# Copyright (c) 2025 Embeint Inc
+# SPDX-License-Identifier: LicenseRef-Embeint
+
+description: |
+  Internal SoC temperature sensor via nRF modem library
+
+compatible: "nordic,nrf9x-temp"
