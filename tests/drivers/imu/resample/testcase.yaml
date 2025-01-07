@@ -1,0 +1,6 @@
+tests:
+  lib.imu.resample:
+    integration_platforms:
+      - native_sim
+      - qemu_cortex_m3
+    tags: infuse
