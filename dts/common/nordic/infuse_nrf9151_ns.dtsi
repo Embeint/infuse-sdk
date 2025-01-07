@@ -4,6 +4,14 @@
 		infuse,kv-partition = &storage_partition;
 	};
 
+	aliases {
+		die-temp0 = &nrf9x_temp;
+	};
+
+	nrf9x_temp: nrf9x_temp {
+		compatible = "nordic,nrf9x-temp";
+	};
+
 	/* End of application SRAM */
 	memory@2003FF00 {
 		compatible = "zephyr,memory-region", "mmio-sram";
