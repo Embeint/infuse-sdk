@@ -1,0 +1,93 @@
+name: Test west extension commands
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/west.yml'
+      - 'scripts/west-commands.yml'
+      - 'scripts/west_commands/*'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  infuse-release-run:
+    runs-on: self-hosted
+    container:
+      image: ghcr.io/zephyrproject-rtos/ci:v0.26.13
+      options: '--entrypoint /bin/bash'
+      volumes:
+        - /repo-cache/embeint:/github/cache/embeint
+    env:
+      BASE_REF: ${{ github.base_ref }}
+      ZEPHYR_TOOLCHAIN_VARIANT: zephyr
+    steps:
+      - name: Workspace cleanup
+        run: |
+          rm -rf ./{*,.*}
+          rm -rf infuse-sdk
+
+      - name: Clone cached Embeint SDK repository
+        continue-on-error: true
+        run: |
+          git config --global --add safe.directory /github/cache/embeint/infuse-sdk/.git
+          git clone --shared /github/cache/embeint/infuse-sdk infuse-sdk
+          cd infuse-sdk
+          git remote set-url origin ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          path: infuse-sdk
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Environment Setup
+        working-directory: infuse-sdk
+        run: |
+          if [ "${{github.event_name}}" = "pull_request" ]; then
+            git config --global user.email "ci@embeint.com"
+            git config --global user.name "Embeint CI"
+            rm -fr ".git/rebase-apply"
+            git rebase origin/${BASE_REF}
+            git log  --pretty=oneline | head -n 10
+          fi
+
+          west init -l . || true
+          west config --global update.narrow true
+          west update --path-cache /github/cache/embeint 2>&1 1> west.update.log || west update --path-cache /github/cache/embeint 2>&1 1> west.update.log || ( rm -rf ../modules ../bootloader ../tools && west update --path-cache /github/cache/embeint)
+          west forall -c 'git reset --hard HEAD'
+
+          pip install -r scripts/requirements.txt
+
+          echo "ZEPHYR_SDK_INSTALL_DIR=/opt/toolchains/zephyr-sdk-$( cat SDK_VERSION )" >> $GITHUB_ENV
+
+      - name: Check Environment
+        run: |
+          cmake --version
+          gcc --version
+          ls -la /opt/toolchains
+          ls -la
+          echo "github.ref: ${{ github.ref }}"
+          echo "github.base_ref: ${{ github.base_ref }}"
+          echo "github.ref_name: ${{ github.ref_name }}"
+
+      - name: Test `vscode`
+        run: |
+          # Standard workspace setup
+          west vscode
+
+          # launch.json generation for various board/app types
+          west build -p -b native_sim zephyr/samples/hello_world
+          west vscode -d build
+          west build -p -b qemu_cortex_m3 zephyr/samples/hello_world
+          west vscode -d build
+          west build -p -b nrf52840dk/nrf52840 zephyr/samples/hello_world
+          west vscode -d build
+          west build -p -b nrf9151dk/nrf9151/ns zephyr/samples/hello_world
+          west vscode -d build
+          west vscode -d build/tfm
