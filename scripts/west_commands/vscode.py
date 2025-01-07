@@ -301,7 +301,6 @@ class vscode(WestCommand):
         # Native Sim GDB does not support `west debugserver`
         launch["configurations"].pop(0)
 
-        launch["configurations"][0].pop("gdbPath")
         launch["configurations"][0].pop("executable")
         launch["configurations"][0]["name"] = "Native Launch"
         launch["configurations"][0]["type"] = "cppdbg"
@@ -333,35 +332,38 @@ class vscode(WestCommand):
         launch["configurations"][1]["rtos"] = "Zephyr"
 
     def _jlink(self, snr, build_dir, cache, runners_yaml):
+        self._jlink_device(runners_yaml)
         if snr is not None:
             launch["configurations"][0]["serialNumber"] = snr
             launch["configurations"][1]["serialNumber"] = snr
-            self._jlink_device(runners_yaml)
             return
 
-        jlink = pylink.JLink()
+        try:
+            jlink = pylink.JLink()
+        except TypeError:
+            print("JLink DLL not found, skipping serial number check")
+            return
         emulators = jlink.connected_emulators()
-        if len(emulators) > 1:
-            if TerminalMenu is None:
-                options = [str(e.SerialNumber) for e in emulators]
-                sys.exit(
-                    f"Multiple JTAG emulators connected ({', '.join(options)})\n"
-                    + "Specify which emulator to use with --snr"
-                )
+        if len(emulators) <= 1:
+            return
+        if TerminalMenu is None:
+            options = [str(e.SerialNumber) for e in emulators]
+            sys.exit(
+                f"Multiple JTAG emulators connected ({', '.join(options)})\n"
+                + "Specify which emulator to use with --snr"
+            )
 
-            # Select which emulator should be used
-            options = [str(e) for e in emulators]
-            terminal_menu = TerminalMenu(options)
-            idx = terminal_menu.show()
-            if idx is None:
-                sys.exit("JLink device not chosen, exiting...")
+        # Select which emulator should be used
+        options = [str(e) for e in emulators]
+        terminal_menu = TerminalMenu(options)
+        idx = terminal_menu.show()
+        if idx is None:
+            sys.exit("JLink device not chosen, exiting...")
 
-            serial = str(emulators[idx].SerialNumber)
+        serial = str(emulators[idx].SerialNumber)
 
-            launch["configurations"][0]["serialNumber"] = serial
-            launch["configurations"][1]["serialNumber"] = serial
-
-        self._jlink_device(runners_yaml)
+        launch["configurations"][0]["serialNumber"] = serial
+        launch["configurations"][1]["serialNumber"] = serial
 
     def _openocd(self, build_dir, cache, runners_yaml):
         board_dir = cache["BOARD_DIR"]
@@ -415,7 +417,10 @@ class vscode(WestCommand):
 
             cache = zcmake.CMakeCache.from_build_dir(build_dir)
             runners_yaml = None
-            runners_yaml_path = build_dir / "zephyr" / "runners.yaml"
+            if build_dir.parts[-1] == "tfm":
+                runners_yaml_path = build_dir / ".." / "zephyr" / "runners.yaml"
+            else:
+                runners_yaml_path = build_dir / "zephyr" / "runners.yaml"
             if runners_yaml_path.exists():
                 with pathlib.Path(runners_yaml_path).open("r", encoding="utf-8") as f:
                     runners_yaml = yaml.safe_load(f)
