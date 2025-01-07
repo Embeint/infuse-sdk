@@ -261,6 +261,48 @@ static inline k_ticks_t imu_sample_timestamp(const struct imu_sensor_meta *meta,
 	return meta->timestamp_ticks + (sample * meta->buffer_period_ticks / (meta->num - 1));
 }
 
+/** State for @ref imu_linear_downsample_scaled */
+struct imu_linear_downsample_scaled_state {
+	/** Private */
+	struct imu_sample last_sample;
+	/** Buffer storage for X axis output */
+	float *output_x;
+	/** Buffer storage for Y axis output */
+	float *output_y;
+	/** Buffer storage for Z axis output */
+	float *output_z;
+	/** Size of the axis output arrays */
+	uint16_t output_size;
+	/** Current number of samples written to output */
+	uint16_t output_offset;
+	/** Output is scaled as (integer_val/scale) */
+	int16_t scale;
+	/** Multiplier applied to input frequency */
+	uint8_t freq_mult;
+	/** Divider applied to (input_frequency * freq_mult) */
+	uint8_t freq_div;
+	/** Private */
+	uint8_t subsample_idx;
+};
+
+/**
+ * @brief Downsample IMU samples to a new frequency using linear interpolation
+ *
+ * Function returns as soon as state.output_offset == state.output_size.
+ * Function should be called again with remaining samples once output buffer has
+ * been processed and state.output_offset reset to 0.
+ *
+ * output_frequency = input_frequency * freq_mult / freq_div
+ *
+ * @param state State structure
+ * @param input Input IMU sample buffer
+ * @param num_input Number of samples in @a input
+ *
+ * @retval number of input samples consumed
+ */
+int imu_linear_downsample_scaled(struct imu_linear_downsample_scaled_state *state,
+				 const struct imu_sample *input, uint16_t num_input);
+
 /**
  * @}
  */

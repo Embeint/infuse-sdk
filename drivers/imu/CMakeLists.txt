@@ -1,5 +1,7 @@
 # Infuse-IoT IMU drivers
 
+zephyr_sources_ifdef(CONFIG_INFUSE_IMU_RESAMPLE resample.c)
+
 add_subdirectory_ifdef(CONFIG_INFUSE_IMU_BMA4XX bma4xx)
 add_subdirectory_ifdef(CONFIG_INFUSE_IMU_BMI270 bmi270)
 add_subdirectory_ifdef(CONFIG_INFUSE_IMU_EMUL emul)
