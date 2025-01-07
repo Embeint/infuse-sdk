@@ -125,6 +125,22 @@ struct data_logger_api {
 	 * @retval -errno otherwise
 	 */
 	int (*erase)(const struct device *dev, uint32_t phy_block, uint32_t num);
+
+	/**
+	 * @brief Search range hint for initialisation
+	 *
+	 * Optional method to inform upper layer about the block range at which the
+	 * last block can be found. This can be used to optimize the search process
+	 * for loggers with high overheads on arbitrary reads.
+	 *
+	 * @param dev Logger device
+	 * @param hint_start First block that might be the last block with valid data
+	 * @param hint_end Last block that might be the last block with valid data
+	 *
+	 * @retval 0 on success
+	 * @retval -errno otherwise
+	 */
+	int (*search_hint)(const struct device *dev, uint32_t *hint_start, uint32_t *hint_end);
 };
 
 /**

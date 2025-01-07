@@ -9,6 +9,8 @@
 #define DT_DRV_COMPAT embeint_data_logger_exfat
 
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include <zephyr/device.h>
 #include <zephyr/logging/log.h>
@@ -206,6 +208,38 @@ static int exfat_multi_pm_control(const struct device *dev, enum pm_device_actio
 }
 #endif /* CONFIG_PM_DEVICE */
 
+static int logger_exfat_range_hint(const struct device *dev, uint32_t *block_start,
+				   uint32_t *block_end)
+{
+	const struct dl_exfat_config *config = dev->config;
+	int last_file_idx = 0;
+	char filename[40];
+	char dir[20];
+	FILINFO fno;
+	FRESULT fr;
+	DIR dj;
+
+	snprintf(dir, sizeof(dir), "%s:", config->disk);
+	snprintf(filename, sizeof(filename), "infuse_%016llx_??????.bin", infuse_device_id());
+
+	fr = f_findfirst(&dj, &fno, dir, filename);
+	while (fr == FR_OK && fno.fname[0]) {
+		size_t fname_len = strlen(fno.fname);
+		char *fname_idx_ptr = fno.fname + fname_len - 10;
+		int fname_idx = atoi(fname_idx_ptr);
+
+		last_file_idx = MAX(last_file_idx, fname_idx);
+		/* Next item */
+		fr = f_findnext(&dj, &fno);
+	}
+	f_closedir(&dj);
+
+	*block_start = last_file_idx * BLOCKS_PER_FILE;
+	*block_end = (1 + last_file_idx) * BLOCKS_PER_FILE - 1;
+	LOG_DBG("Search range hint: %d-%d", *block_start, *block_end);
+	return 0;
+}
+
 /* Need to hook into this function when testing */
 IF_DISABLED(CONFIG_ZTEST, (static))
 int logger_exfat_init(const struct device *dev)
@@ -286,6 +320,7 @@ int logger_exfat_init(const struct device *dev)
 const struct data_logger_api data_logger_exfat_api = {
 	.write = logger_exfat_write,
 	.read = logger_exfat_read,
+	.search_hint = logger_exfat_range_hint,
 };
 
 #define DATA_LOGGER_DEFINE(inst)                                                                   \
