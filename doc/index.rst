@@ -67,6 +67,7 @@ connectivity down into the application.
    platform/design_goals.rst
    platform/security_model.rst
    platform/provisioning.rst
+   platform/integrations.rst
 
 .. toctree::
    :maxdepth: 1

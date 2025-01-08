@@ -46,5 +46,5 @@ The standard STM32 IWDG peripheral only supports a single hardware channel.
 :kconfig:option:`CONFIG_INFUSE_WATCHDOG_SW_MULTICHANNEL` must be enabled for
 proper operation of Infuse-IoT subsystems.
 
-.. _ST Microelectronics:: https://www.st.com
+.. _ST Microelectronics: https://www.st.com
 .. _STM32CubeProgrammer: https://www.st.com/en/development-tools/stm32cubeprog.html
