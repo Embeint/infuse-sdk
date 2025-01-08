@@ -83,6 +83,8 @@ static void network_info_update(struct k_work *work)
 
 		monitor.network_state.cell.id = id;
 		monitor.network_state.cell.tac = tac;
+		monitor.network_state.psm_cfg.tau = -1;
+		monitor.network_state.psm_cfg.active_time = -1;
 		monitor.network_state.edrx_cfg.edrx = -1.0f;
 		monitor.network_state.edrx_cfg.ptw = -1.0f;
 		return;
@@ -352,6 +354,8 @@ int nrf_modem_monitor_init(void)
 	k_work_init(&monitor.update_work, network_info_update);
 	k_work_init(&monitor.signal_quality_work, signal_quality_update);
 	/* Initial state */
+	monitor.network_state.psm_cfg.tau = -1;
+	monitor.network_state.psm_cfg.active_time = -1;
 	monitor.network_state.edrx_cfg.edrx = -1.0f;
 	monitor.network_state.edrx_cfg.ptw = -1.0f;
 	monitor.rsrp_cached = INT16_MIN;
