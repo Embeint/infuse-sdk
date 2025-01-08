@@ -25,6 +25,10 @@
 #include <infuse/fs/kv_types.h>
 #include <infuse/net/dns.h>
 
+#ifdef CONFIG_MEMFAULT_INFUSE_METRICS_SYNC_SUCCESS_EPACKET_UDP
+#include <memfault/metrics/connectivity.h>
+#endif
+
 #include "epacket_internal.h"
 
 #define DT_DRV_COMPAT embeint_epacket_udp
@@ -221,6 +225,10 @@ static int epacket_udp_loop(void *a, void *b, void *c)
 			LOG_DBG("Received %d bytes from %d.%d.%d.%d:%d", received, addr[0], addr[1],
 				addr[2], addr[3], ntohs(port));
 
+#ifdef CONFIG_MEMFAULT_INFUSE_METRICS_SYNC_SUCCESS_EPACKET_UDP
+			memfault_metrics_connectivity_record_sync_success();
+#endif
+
 			meta = net_buf_user_data(buf);
 			meta->interface = epacket_udp;
 			meta->interface_id = EPACKET_INTERFACE_UDP;
@@ -262,6 +270,10 @@ static void epacket_udp_send(const struct device *dev, struct net_buf *buf)
 			cleanup_interface(dev);
 			/* Force a requery of DNS */
 			(void)k_event_clear(&udp_state.state, UDP_STATE_VALID_DNS);
+#ifdef CONFIG_MEMFAULT_INFUSE_METRICS_SYNC_SUCCESS_EPACKET_UDP
+			/* Notify Memfault backend of sync failure */
+			memfault_metrics_connectivity_record_sync_failure();
+#endif
 			rc = -ENOTCONN;
 			goto end;
 		}
