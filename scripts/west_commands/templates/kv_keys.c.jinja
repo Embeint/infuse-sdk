@@ -9,13 +9,15 @@
 
 #include <zephyr/toolchain.h>
 
+#include <infuse/fs/kv_types.h>
+
 #include "kv_internal.h"
 
 static struct key_value_slot_definition kv_slots[] = {
 {% for base_id, info in definitions.items() %}
 #ifdef CONFIG_KV_STORE_KEY_{{ info['name'] }}
 	{
-		.key = {{ base_id }},
+		.key = KV_KEY_{{ info['name'] }},
 		.range = {{ info['range_val'] }},
 		.flags = {{ info['flags'] }},
 	},

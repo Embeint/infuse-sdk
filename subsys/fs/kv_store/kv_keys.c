@@ -9,138 +9,140 @@
 
 #include <zephyr/toolchain.h>
 
+#include <infuse/fs/kv_types.h>
+
 #include "kv_internal.h"
 
 static struct key_value_slot_definition kv_slots[] = {
 #ifdef CONFIG_KV_STORE_KEY_REBOOTS
 	{
-		.key = 0,
+		.key = KV_KEY_REBOOTS,
 		.range = 1,
 		.flags = 0,
 	},
 #endif /* CONFIG_KV_STORE_KEY_REBOOTS */
 #ifdef CONFIG_KV_STORE_KEY_BLUETOOTH_ADDR
 	{
-		.key = 1,
+		.key = KV_KEY_BLUETOOTH_ADDR,
 		.range = 1,
 		.flags = KV_FLAGS_REFLECT | KV_FLAGS_READ_ONLY,
 	},
 #endif /* CONFIG_KV_STORE_KEY_BLUETOOTH_ADDR */
 #ifdef CONFIG_KV_STORE_KEY_EXFAT_DISK_INFO
 	{
-		.key = 2,
+		.key = KV_KEY_EXFAT_DISK_INFO,
 		.range = 1,
 		.flags = KV_FLAGS_REFLECT | KV_FLAGS_READ_ONLY,
 	},
 #endif /* CONFIG_KV_STORE_KEY_EXFAT_DISK_INFO */
 #ifdef CONFIG_KV_STORE_KEY_BLUETOOTH_CTLR_VERSION
 	{
-		.key = 3,
+		.key = KV_KEY_BLUETOOTH_CTLR_VERSION,
 		.range = 1,
 		.flags = KV_FLAGS_REFLECT,
 	},
 #endif /* CONFIG_KV_STORE_KEY_BLUETOOTH_CTLR_VERSION */
 #ifdef CONFIG_KV_STORE_KEY_FIXED_LOCATION
 	{
-		.key = 10,
+		.key = KV_KEY_FIXED_LOCATION,
 		.range = 1,
 		.flags = KV_FLAGS_REFLECT,
 	},
 #endif /* CONFIG_KV_STORE_KEY_FIXED_LOCATION */
 #ifdef CONFIG_KV_STORE_KEY_WIFI_SSID
 	{
-		.key = 20,
+		.key = KV_KEY_WIFI_SSID,
 		.range = 1,
 		.flags = KV_FLAGS_REFLECT,
 	},
 #endif /* CONFIG_KV_STORE_KEY_WIFI_SSID */
 #ifdef CONFIG_KV_STORE_KEY_WIFI_PSK
 	{
-		.key = 21,
+		.key = KV_KEY_WIFI_PSK,
 		.range = 1,
 		.flags = KV_FLAGS_REFLECT | KV_FLAGS_WRITE_ONLY,
 	},
 #endif /* CONFIG_KV_STORE_KEY_WIFI_PSK */
 #ifdef CONFIG_KV_STORE_KEY_NTP_SERVER_URL
 	{
-		.key = 30,
+		.key = KV_KEY_NTP_SERVER_URL,
 		.range = 1,
 		.flags = KV_FLAGS_REFLECT,
 	},
 #endif /* CONFIG_KV_STORE_KEY_NTP_SERVER_URL */
 #ifdef CONFIG_KV_STORE_KEY_EPACKET_UDP_URL
 	{
-		.key = 31,
+		.key = KV_KEY_EPACKET_UDP_URL,
 		.range = 1,
 		.flags = KV_FLAGS_REFLECT,
 	},
 #endif /* CONFIG_KV_STORE_KEY_EPACKET_UDP_URL */
 #ifdef CONFIG_KV_STORE_KEY_EPACKET_UDP_PORT
 	{
-		.key = 32,
+		.key = KV_KEY_EPACKET_UDP_PORT,
 		.range = 1,
 		.flags = KV_FLAGS_REFLECT,
 	},
 #endif /* CONFIG_KV_STORE_KEY_EPACKET_UDP_PORT */
 #ifdef CONFIG_KV_STORE_KEY_LTE_MODEM_MODEL
 	{
-		.key = 40,
+		.key = KV_KEY_LTE_MODEM_MODEL,
 		.range = 1,
 		.flags = KV_FLAGS_REFLECT | KV_FLAGS_READ_ONLY,
 	},
 #endif /* CONFIG_KV_STORE_KEY_LTE_MODEM_MODEL */
 #ifdef CONFIG_KV_STORE_KEY_LTE_MODEM_FIRMWARE_REVISION
 	{
-		.key = 41,
+		.key = KV_KEY_LTE_MODEM_FIRMWARE_REVISION,
 		.range = 1,
 		.flags = KV_FLAGS_REFLECT | KV_FLAGS_READ_ONLY,
 	},
 #endif /* CONFIG_KV_STORE_KEY_LTE_MODEM_FIRMWARE_REVISION */
 #ifdef CONFIG_KV_STORE_KEY_LTE_MODEM_ESN
 	{
-		.key = 42,
+		.key = KV_KEY_LTE_MODEM_ESN,
 		.range = 1,
 		.flags = KV_FLAGS_REFLECT | KV_FLAGS_READ_ONLY,
 	},
 #endif /* CONFIG_KV_STORE_KEY_LTE_MODEM_ESN */
 #ifdef CONFIG_KV_STORE_KEY_LTE_MODEM_IMEI
 	{
-		.key = 43,
+		.key = KV_KEY_LTE_MODEM_IMEI,
 		.range = 1,
 		.flags = KV_FLAGS_REFLECT | KV_FLAGS_READ_ONLY,
 	},
 #endif /* CONFIG_KV_STORE_KEY_LTE_MODEM_IMEI */
 #ifdef CONFIG_KV_STORE_KEY_LTE_SIM_UICC
 	{
-		.key = 44,
+		.key = KV_KEY_LTE_SIM_UICC,
 		.range = 1,
 		.flags = KV_FLAGS_REFLECT | KV_FLAGS_READ_ONLY,
 	},
 #endif /* CONFIG_KV_STORE_KEY_LTE_SIM_UICC */
 #ifdef CONFIG_KV_STORE_KEY_LTE_PDP_CONFIG
 	{
-		.key = 45,
+		.key = KV_KEY_LTE_PDP_CONFIG,
 		.range = 1,
 		.flags = KV_FLAGS_REFLECT,
 	},
 #endif /* CONFIG_KV_STORE_KEY_LTE_PDP_CONFIG */
 #ifdef CONFIG_KV_STORE_KEY_BLUETOOTH_PEER
 	{
-		.key = 50,
+		.key = KV_KEY_BLUETOOTH_PEER,
 		.range = 1,
 		.flags = KV_FLAGS_REFLECT,
 	},
 #endif /* CONFIG_KV_STORE_KEY_BLUETOOTH_PEER */
 #ifdef CONFIG_KV_STORE_KEY_GEOFENCE
 	{
-		.key = 100,
+		.key = KV_KEY_GEOFENCE,
 		.range = CONFIG_KV_STORE_KEY_GEOFENCE_RANGE,
 		.flags = KV_FLAGS_REFLECT,
 	},
 #endif /* CONFIG_KV_STORE_KEY_GEOFENCE */
 #ifdef CONFIG_KV_STORE_KEY_SECURE_STORAGE_RESERVED
 	{
-		.key = 30000,
+		.key = KV_KEY_SECURE_STORAGE_RESERVED,
 		.range = CONFIG_KV_STORE_KEY_SECURE_STORAGE_RESERVED_RANGE,
 		.flags = 0,
 	},
