@@ -140,6 +140,12 @@ enum kv_builtin_size {
 {% endfor %}
 /* clang-format on */
 
+#ifdef CONFIG_KV_STORE_USER_KEYS
+#include "infuse_kv_user_types.h"
+#else
+#define KV_USER_REFLECT_NUM 0
+#endif
+
 /* clang-format off */
 /** Number of KV pairs that can be reflected */
 #define KV_REFLECT_NUM ( \
@@ -148,6 +154,7 @@ enum kv_builtin_size {
 	IF_ENABLED(CONFIG_KV_STORE_KEY_{{ info['name'] }}, ({{info['range_val']}} +)) \
 {% endif %}
 {% endfor %}
+	KV_USER_REFLECT_NUM + \
 	0)
 /* clang-format on */
 

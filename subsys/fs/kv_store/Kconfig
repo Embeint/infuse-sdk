@@ -24,4 +24,11 @@ config KV_STORE_INIT_PRIORITY
 
 rsource "Kconfig.keys"
 
+config KV_STORE_USER_KEYS
+	bool "Enable user-defined KV store slots"
+	help
+	  Relies on the following two files existing in the `include` path:
+		infuse_kv_user_types.h
+	    infuse_kv_user_keys.c
+
 endif # KV_STORE

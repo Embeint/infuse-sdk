@@ -375,6 +375,12 @@ enum kv_builtin_size {
 #define _KV_KEY_SECURE_STORAGE_RESERVED_TYPE struct kv_secure_storage_reserved
 /* clang-format on */
 
+#ifdef CONFIG_KV_STORE_USER_KEYS
+#include "infuse_kv_user_types.h"
+#else
+#define KV_USER_REFLECT_NUM 0
+#endif
+
 /* clang-format off */
 /** Number of KV pairs that can be reflected */
 #define KV_REFLECT_NUM ( \
@@ -395,6 +401,7 @@ enum kv_builtin_size {
 	IF_ENABLED(CONFIG_KV_STORE_KEY_LTE_PDP_CONFIG, (1 +)) \
 	IF_ENABLED(CONFIG_KV_STORE_KEY_BLUETOOTH_PEER, (1 +)) \
 	IF_ENABLED(CONFIG_KV_STORE_KEY_GEOFENCE, (CONFIG_KV_STORE_KEY_GEOFENCE_RANGE +)) \
+	KV_USER_REFLECT_NUM + \
 	0)
 /* clang-format on */
 

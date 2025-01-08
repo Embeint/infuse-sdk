@@ -147,6 +147,11 @@ static struct key_value_slot_definition kv_slots[] = {
 		.flags = 0,
 	},
 #endif /* CONFIG_KV_STORE_KEY_SECURE_STORAGE_RESERVED */
+#ifdef CONFIG_KV_STORE_USER_KEYS
+#define KV_STORE_USER_KEYS_ARRAY_DEFINE
+#include "infuse_kv_user_keys.c"
+#undef KV_STORE_USER_KEYS_ARRAY_DEFINE
+#endif
 };
 
 /* Detect changes in struct size as this array exists in every application */
