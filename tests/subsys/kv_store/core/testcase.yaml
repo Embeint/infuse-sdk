@@ -1,7 +1,7 @@
 common:
   tags: nvs
 tests:
-  fs.kv_store:
+  fs.kv_store.core:
     platform_allow:
       - native_sim
       - qemu_cortex_m0
