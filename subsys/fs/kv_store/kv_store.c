@@ -12,6 +12,7 @@
 #include <zephyr/fs/nvs.h>
 
 #include <infuse/fs/kv_store.h>
+#include <infuse/fs/kv_types.h>
 
 #include "kv_internal.h"
 

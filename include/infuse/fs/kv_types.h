@@ -25,27 +25,27 @@ extern "C" {
  * @{
  */
 
-/* Geographic Co-ordinate System location */
+/** Geographic Co-ordinate System location */
 struct gcs_location {
 	int32_t latitude;
 	int32_t longitude;
 	int32_t height;
 } __packed;
 
-/* Bluetooth address type (bt_addr_le_t) */
+/** Bluetooth address type (bt_addr_le_t) */
 struct bt_addr_le {
 	uint8_t type;
 	uint8_t val[6];
 } __packed;
 
-/* String type */
+/** String type */
 struct kv_string {
 	uint8_t value_num;
 	char value[];
 } __packed;
 
 /* clang-format off */
-/* Compile time definition for known array length */
+/** Compile time definition for known array length */
 #define KV_STRUCT_KV_STRING_VAR(num) \
 	struct { \
 		uint8_t value_num; \
@@ -53,7 +53,7 @@ struct kv_string {
 	} __packed
 /* clang-format on */
 
-/* MCUboot semantic versioning struct */
+/** MCUboot semantic versioning struct */
 struct kv_mcuboot_img_sem_ver {
 	uint8_t major;
 	uint8_t minor;
@@ -71,173 +71,173 @@ struct kv_mcuboot_img_sem_ver {
  * @{
  */
 
-/* Number of times device has rebooted */
+/** Number of times device has rebooted */
 struct kv_reboots {
 	uint32_t count;
 } __packed;
 
-/* Bluetooth advertising address */
+/** Bluetooth advertising address */
 struct kv_bluetooth_addr {
-	/* Broadcasting address */
+	/** Broadcasting address */
 	struct bt_addr_le address;
 } __packed;
 
-/* exFAT disk information */
+/** exFAT disk information */
 struct kv_exfat_disk_info {
-	/* Disk block count */
+	/** Disk block count */
 	uint32_t block_count;
-	/* Disk block size */
+	/** Disk block size */
 	uint32_t block_size;
 } __packed;
 
-/* External Bluetooth controller version */
+/** External Bluetooth controller version */
 struct kv_bluetooth_ctlr_version {
-	/* Application ID */
+	/** Application ID */
 	uint32_t application;
-	/* Application version number */
+	/** Application version number */
 	struct kv_mcuboot_img_sem_ver version;
 } __packed;
 
-/* Fixed global location of the device */
+/** Fixed global location of the device */
 struct kv_fixed_location {
-	/* Location */
+	/** Location */
 	struct gcs_location location;
 } __packed;
 
-/* WiFi network name */
+/** WiFi network name */
 struct kv_wifi_ssid {
-	/* WiFi network name */
+	/** WiFi network name */
 	struct kv_string ssid;
 } __packed;
 
 /* clang-format off */
-/* Compile time definition for known array length */
+/** Compile time definition for known array length */
 #define _KV_KEY_WIFI_SSID_VAR(num) \
 	struct { \
 		KV_STRUCT_KV_STRING_VAR(num) ssid; \
 	} __packed
 /* clang-format on */
 
-/* WiFi network password */
+/** WiFi network password */
 struct kv_wifi_psk {
-	/* WiFi pre-shared-key */
+	/** WiFi pre-shared-key */
 	struct kv_string psk;
 } __packed;
 
 /* clang-format off */
-/* Compile time definition for known array length */
+/** Compile time definition for known array length */
 #define _KV_KEY_WIFI_PSK_VAR(num) \
 	struct { \
 		KV_STRUCT_KV_STRING_VAR(num) psk; \
 	} __packed
 /* clang-format on */
 
-/* URL of the NTP server to use for time synchronisation */
+/** URL of the NTP server to use for time synchronisation */
 struct kv_ntp_server_url {
-	/* NTP server URL */
+	/** NTP server URL */
 	struct kv_string url;
 } __packed;
 
 /* clang-format off */
-/* Compile time definition for known array length */
+/** Compile time definition for known array length */
 #define _KV_KEY_NTP_SERVER_URL_VAR(num) \
 	struct { \
 		KV_STRUCT_KV_STRING_VAR(num) url; \
 	} __packed
 /* clang-format on */
 
-/* ePacket UDP server hostname */
+/** ePacket UDP server hostname */
 struct kv_epacket_udp_url {
-	/* UDP server hostname */
+	/** UDP server hostname */
 	struct kv_string server;
 } __packed;
 
 /* clang-format off */
-/* Compile time definition for known array length */
+/** Compile time definition for known array length */
 #define _KV_KEY_EPACKET_UDP_URL_VAR(num) \
 	struct { \
 		KV_STRUCT_KV_STRING_VAR(num) server; \
 	} __packed
 /* clang-format on */
 
-/* ePacket UDP server port */
+/** ePacket UDP server port */
 struct kv_epacket_udp_port {
-	/* UDP server port */
+	/** UDP server port */
 	uint32_t port;
 } __packed;
 
-/* Modem model as returned by AT+CGMM */
+/** Modem model as returned by AT+CGMM */
 struct kv_lte_modem_model {
-	/* Modem model */
+	/** Modem model */
 	struct kv_string model;
 } __packed;
 
 /* clang-format off */
-/* Compile time definition for known array length */
+/** Compile time definition for known array length */
 #define _KV_KEY_LTE_MODEM_MODEL_VAR(num) \
 	struct { \
 		KV_STRUCT_KV_STRING_VAR(num) model; \
 	} __packed
 /* clang-format on */
 
-/* Modem firmware revision as returned by AT+CGMR */
+/** Modem firmware revision as returned by AT+CGMR */
 struct kv_lte_modem_firmware_revision {
-	/* Firmware revision */
+	/** Firmware revision */
 	struct kv_string revision;
 } __packed;
 
 /* clang-format off */
-/* Compile time definition for known array length */
+/** Compile time definition for known array length */
 #define _KV_KEY_LTE_MODEM_FIRMWARE_REVISION_VAR(num) \
 	struct { \
 		KV_STRUCT_KV_STRING_VAR(num) revision; \
 	} __packed
 /* clang-format on */
 
-/* 'Electronic Serial Number' as returned by AT+CGSN=0 */
+/** 'Electronic Serial Number' as returned by AT+CGSN=0 */
 struct kv_lte_modem_esn {
-	/* ESN or IMEI if not available */
+	/** ESN or IMEI if not available */
 	struct kv_string esn;
 } __packed;
 
 /* clang-format off */
-/* Compile time definition for known array length */
+/** Compile time definition for known array length */
 #define _KV_KEY_LTE_MODEM_ESN_VAR(num) \
 	struct { \
 		KV_STRUCT_KV_STRING_VAR(num) esn; \
 	} __packed
 /* clang-format on */
 
-/* 'International Modem Equiment Identifier' as returned by AT+CGSN=1 */
+/** 'International Modem Equiment Identifier' as returned by AT+CGSN=1 */
 struct kv_lte_modem_imei {
-	/* 15 digit IMEI */
+	/** 15 digit IMEI */
 	uint64_t imei;
 } __packed;
 
-/* SIM Universal Identifier (https://www.itu.int/en/ITU-T/inr/forms/Pages/iin.aspx) */
+/** SIM Universal Identifier (https://www.itu.int/en/ITU-T/inr/forms/Pages/iin.aspx) */
 struct kv_lte_sim_uicc {
-	/* Variable length UICC string */
+	/** Variable length UICC string */
 	struct kv_string uicc;
 } __packed;
 
 /* clang-format off */
-/* Compile time definition for known array length */
+/** Compile time definition for known array length */
 #define _KV_KEY_LTE_SIM_UICC_VAR(num) \
 	struct { \
 		KV_STRUCT_KV_STRING_VAR(num) uicc; \
 	} __packed
 /* clang-format on */
 
-/* Packet Data Protocol (PDP) default context configuration */
+/** Packet Data Protocol (PDP) default context configuration */
 struct kv_lte_pdp_config {
-	/* Protocol family (0 = IPv4, 1 = IPv6, 2 = IPv4v6, 3 = Non-IP) */
+	/** Protocol family (0 = IPv4, 1 = IPv6, 2 = IPv4v6, 3 = Non-IP) */
 	uint8_t family;
-	/* Access Point Name */
+	/** Access Point Name */
 	struct kv_string apn;
 } __packed;
 
 /* clang-format off */
-/* Compile time definition for known array length */
+/** Compile time definition for known array length */
 #define _KV_KEY_LTE_PDP_CONFIG_VAR(num) \
 	struct { \
 		uint8_t family; \
@@ -245,21 +245,21 @@ struct kv_lte_pdp_config {
 	} __packed
 /* clang-format on */
 
-/* Bluetooth peer device */
+/** Bluetooth peer device */
 struct kv_bluetooth_peer {
-	/* Peer device Bluetooth address */
+	/** Peer device Bluetooth address */
 	struct bt_addr_le address;
 } __packed;
 
-/* Array of points defining a closed polygon */
+/** Array of points defining a closed polygon */
 struct kv_geofence {
-	/* Points in geofence */
+	/** Points in geofence */
 	uint8_t points_num;
 	struct gcs_location points[];
 } __packed;
 
 /* clang-format off */
-/* Compile time definition for known array length */
+/** Compile time definition for known array length */
 #define _KV_KEY_GEOFENCE_VAR(num) \
 	struct { \
 		uint8_t points_num; \
@@ -267,15 +267,15 @@ struct kv_geofence {
 	} __packed
 /* clang-format on */
 
-/* Keys reserved for secure storage (do not enable) */
+/** Keys reserved for secure storage (do not enable) */
 struct kv_secure_storage_reserved {
-	/* Opaque data */
+	/** Opaque data */
 	uint8_t data_num;
 	uint8_t data[];
 } __packed;
 
 /* clang-format off */
-/* Compile time definition for known array length */
+/** Compile time definition for known array length */
 #define _KV_KEY_SECURE_STORAGE_RESERVED_VAR(num) \
 	struct { \
 		uint8_t data_num; \
@@ -285,62 +285,62 @@ struct kv_secure_storage_reserved {
 
 /* Infuse-IoT builtin KV definitions */
 enum kv_builtin_id {
-	/* Number of times device has rebooted */
+	/** Number of times device has rebooted */
 	KV_KEY_REBOOTS = 0,
-	/* Bluetooth advertising address */
+	/** Bluetooth advertising address */
 	KV_KEY_BLUETOOTH_ADDR = 1,
-	/* exFAT disk information */
+	/** exFAT disk information */
 	KV_KEY_EXFAT_DISK_INFO = 2,
-	/* External Bluetooth controller version */
+	/** External Bluetooth controller version */
 	KV_KEY_BLUETOOTH_CTLR_VERSION = 3,
-	/* Fixed global location of the device */
+	/** Fixed global location of the device */
 	KV_KEY_FIXED_LOCATION = 10,
-	/* WiFi network name */
+	/** WiFi network name */
 	KV_KEY_WIFI_SSID = 20,
-	/* WiFi network password */
+	/** WiFi network password */
 	KV_KEY_WIFI_PSK = 21,
-	/* URL of the NTP server to use for time synchronisation */
+	/** URL of the NTP server to use for time synchronisation */
 	KV_KEY_NTP_SERVER_URL = 30,
-	/* ePacket UDP server hostname */
+	/** ePacket UDP server hostname */
 	KV_KEY_EPACKET_UDP_URL = 31,
-	/* ePacket UDP server port */
+	/** ePacket UDP server port */
 	KV_KEY_EPACKET_UDP_PORT = 32,
-	/* Modem model as returned by AT+CGMM */
+	/** Modem model as returned by AT+CGMM */
 	KV_KEY_LTE_MODEM_MODEL = 40,
-	/* Modem firmware revision as returned by AT+CGMR */
+	/** Modem firmware revision as returned by AT+CGMR */
 	KV_KEY_LTE_MODEM_FIRMWARE_REVISION = 41,
-	/* 'Electronic Serial Number' as returned by AT+CGSN=0 */
+	/** 'Electronic Serial Number' as returned by AT+CGSN=0 */
 	KV_KEY_LTE_MODEM_ESN = 42,
-	/* 'International Modem Equiment Identifier' as returned by AT+CGSN=1 */
+	/** 'International Modem Equiment Identifier' as returned by AT+CGSN=1 */
 	KV_KEY_LTE_MODEM_IMEI = 43,
-	/* SIM Universal Identifier (https://www.itu.int/en/ITU-T/inr/forms/Pages/iin.aspx) */
+	/** SIM Universal Identifier (https://www.itu.int/en/ITU-T/inr/forms/Pages/iin.aspx) */
 	KV_KEY_LTE_SIM_UICC = 44,
-	/* Packet Data Protocol (PDP) default context configuration */
+	/** Packet Data Protocol (PDP) default context configuration */
 	KV_KEY_LTE_PDP_CONFIG = 45,
-	/* Bluetooth peer device */
+	/** Bluetooth peer device */
 	KV_KEY_BLUETOOTH_PEER = 50,
-	/* Array of points defining a closed polygon */
+	/** Array of points defining a closed polygon */
 	KV_KEY_GEOFENCE = 100,
 #ifdef CONFIG_KV_STORE_KEY_GEOFENCE_RANGE
-	/* End of currently enabled KV_KEY_GEOFENCE range */
+	/** End of currently enabled KV_KEY_GEOFENCE range */
 	KV_KEY_GEOFENCE_END = 100 + CONFIG_KV_STORE_KEY_GEOFENCE_RANGE - 1,
 #endif
-	/* Maximum number of KV_KEY_GEOFENCE slots that can be enabled */
+	/** Maximum number of KV_KEY_GEOFENCE slots that can be enabled */
 	KV_KEY_GEOFENCE_MAX = 115,
-	/* Keys reserved for secure storage (do not enable) */
+	/** Keys reserved for secure storage (do not enable) */
 	KV_KEY_SECURE_STORAGE_RESERVED = 30000,
 #ifdef CONFIG_KV_STORE_KEY_SECURE_STORAGE_RESERVED_RANGE
-	/* End of currently enabled KV_KEY_SECURE_STORAGE_RESERVED range */
+	/** End of currently enabled KV_KEY_SECURE_STORAGE_RESERVED range */
 	KV_KEY_SECURE_STORAGE_RESERVED_END =
 		30000 + CONFIG_KV_STORE_KEY_SECURE_STORAGE_RESERVED_RANGE - 1,
 #endif
-	/* Maximum number of KV_KEY_SECURE_STORAGE_RESERVED slots that can be enabled */
+	/** Maximum number of KV_KEY_SECURE_STORAGE_RESERVED slots that can be enabled */
 	KV_KEY_SECURE_STORAGE_RESERVED_MAX = 30009,
-	/* End of builtin KV range */
-	KV_KEY_BUILTIN_END = 1024,
+	/** End of builtin KV range */
+	KV_KEY_BUILTIN_END = 4096,
 };
 
-/* Size of builtin KV definitions */
+/** Size of builtin KV definitions */
 enum kv_builtin_size {
 	_KV_KEY_REBOOTS_SIZE = sizeof(struct kv_reboots),
 	_KV_KEY_BLUETOOTH_ADDR_SIZE = sizeof(struct kv_bluetooth_addr),
@@ -376,7 +376,7 @@ enum kv_builtin_size {
 /* clang-format on */
 
 /* clang-format off */
-/* Number of KV pairs that can be reflected */
+/** Number of KV pairs that can be reflected */
 #define KV_REFLECT_NUM ( \
 	IF_ENABLED(CONFIG_KV_STORE_KEY_BLUETOOTH_ADDR, (1 +)) \
 	IF_ENABLED(CONFIG_KV_STORE_KEY_EXFAT_DISK_INFO, (1 +)) \
@@ -398,16 +398,36 @@ enum kv_builtin_size {
 	0)
 /* clang-format on */
 
-/* Convert key ID to key type */
+/** Convert key ID to key type */
 #define KV_KEY_TYPE(key) _##key##_TYPE
 
 #define _KV_KEY_TYPE_VAR_EXEC(macro, num) macro(num)
 
-/* Convert key ID to key type */
+/** Convert key ID to key type */
 #define KV_KEY_TYPE_VAR(key, num) _KV_KEY_TYPE_VAR_EXEC(_##key##_VAR, num)
 
-/* Helper for generating compile time constant `struct kv_string` */
+/** Helper for generating compile time constant `struct kv_string` */
 #define KV_STRING_CONST(name, val) KV_STRUCT_KV_STRING_VAR(sizeof(val)) name = {sizeof(val), val};
+
+/** Flags that can be applied to a slot */
+enum kv_slot_flags {
+	/** KV reflection enabled for the slot */
+	KV_FLAGS_REFLECT = BIT(0),
+	/** Value can not be read by external actors */
+	KV_FLAGS_WRITE_ONLY = BIT(1),
+	/** Value can not be written by external actors */
+	KV_FLAGS_READ_ONLY = BIT(2),
+};
+
+/** Key value slot description */
+struct key_value_slot_definition {
+	/** Base key ID for slot */
+	uint16_t key;
+	/** Number of IDs used by the slot */
+	uint8_t range;
+	/** Bitmask of @ref kv_slot_flags for slot */
+	uint8_t flags;
+};
 
 /**
  * @}

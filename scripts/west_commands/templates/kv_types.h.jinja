@@ -26,7 +26,7 @@ extern "C" {
  */
 
 {% for name, info in structs.items() %}
-/* {{ info['description'] }} */
+/** {{ info['description'] }} */
 struct {{ name }} {
 {% for field in info['fields'] %}
 {% if field['num'] == 0 %}
@@ -40,7 +40,7 @@ struct {{ name }} {
 
 {% if info['flexible']%}
 /* clang-format off */
-/* Compile time definition for known array length */
+/** Compile time definition for known array length */
 #define KV_STRUCT_{{ name | upper }}_VAR(num) \
 	struct { \
 	{% for field in info['fields'] %}
@@ -69,11 +69,11 @@ struct {{ name }} {
  */
 
 {% for info in definitions.values() %}
-/* {{ info['description'] }} */
+/** {{ info['description'] }} */
 struct kv_{{ info['name'] | lower }} {
 {% for field in info['fields'] %}
 	{% if 'description' in field %}
-	/* {{ field['description'] }} */
+	/** {{ field['description'] }} */
 	{% endif %}
 	{% if field['num'] == 0 %}
 	{% if info['fields']|length == 1 %}
@@ -86,7 +86,7 @@ struct kv_{{ info['name'] | lower }} {
 
 {% if info['flexible']%}
 /* clang-format off */
-/* Compile time definition for known array length */
+/** Compile time definition for known array length */
 #define _KV_KEY_{{ info['name'] | upper }}_VAR(num) \
 	struct { \
 	{% for field in info['fields'] %}
@@ -109,22 +109,22 @@ struct kv_{{ info['name'] | lower }} {
 /* Infuse-IoT builtin KV definitions */
 enum kv_builtin_id {
 {% for key, info in definitions.items() %}
-	/* {{ info['description'] }} */
+	/** {{ info['description'] }} */
 	KV_KEY_{{ info['name'] | upper }} = {{ key }},
 {% if 'range' in info %}
 #ifdef CONFIG_KV_STORE_KEY_{{ info['name'] }}_RANGE
-	/* End of currently enabled KV_KEY_{{ info['name'] | upper }} range */
+	/** End of currently enabled KV_KEY_{{ info['name'] | upper }} range */
 	KV_KEY_{{ info['name'] | upper }}_END = {{ key }} + CONFIG_KV_STORE_KEY_{{ info['name'] }}_RANGE - 1,
 #endif
-	/* Maximum number of KV_KEY_{{ info['name'] | upper }} slots that can be enabled */
+	/** Maximum number of KV_KEY_{{ info['name'] | upper }} slots that can be enabled */
 	KV_KEY_{{ info['name'] | upper }}_MAX = {{ key + info['range'] - 1 }},
 {% endif %}
 {% endfor %}
-	/* End of builtin KV range */
-	KV_KEY_BUILTIN_END = 1024,
+	/** End of builtin KV range */
+	KV_KEY_BUILTIN_END = 4096,
 };
 
-/* Size of builtin KV definitions */
+/** Size of builtin KV definitions */
 enum kv_builtin_size {
 {% for info in definitions.values() %}
 {% if not info['flexible'] %}
@@ -141,7 +141,7 @@ enum kv_builtin_size {
 /* clang-format on */
 
 /* clang-format off */
-/* Number of KV pairs that can be reflected */
+/** Number of KV pairs that can be reflected */
 #define KV_REFLECT_NUM ( \
 {% for info in definitions.values() %}
 {% if info.get('reflect', false) %}
@@ -151,16 +151,36 @@ enum kv_builtin_size {
 	0)
 /* clang-format on */
 
-/* Convert key ID to key type */
+/** Convert key ID to key type */
 #define KV_KEY_TYPE(key) _##key##_TYPE
 
 #define _KV_KEY_TYPE_VAR_EXEC(macro, num) macro(num)
 
-/* Convert key ID to key type */
+/** Convert key ID to key type */
 #define KV_KEY_TYPE_VAR(key, num) _KV_KEY_TYPE_VAR_EXEC(_##key##_VAR, num)
 
-/* Helper for generating compile time constant `struct kv_string` */
+/** Helper for generating compile time constant `struct kv_string` */
 #define KV_STRING_CONST(name, val) KV_STRUCT_KV_STRING_VAR(sizeof(val)) name = {sizeof(val), val};
+
+/** Flags that can be applied to a slot */
+enum kv_slot_flags {
+	/** KV reflection enabled for the slot */
+	KV_FLAGS_REFLECT = BIT(0),
+	/** Value can not be read by external actors */
+	KV_FLAGS_WRITE_ONLY = BIT(1),
+	/** Value can not be written by external actors */
+	KV_FLAGS_READ_ONLY = BIT(2),
+};
+
+/** Key value slot description */
+struct key_value_slot_definition {
+	/** Base key ID for slot */
+	uint16_t key;
+	/** Number of IDs used by the slot */
+	uint8_t range;
+	/** Bitmask of @ref kv_slot_flags for slot */
+	uint8_t flags;
+};
 
 /**
  * @}
