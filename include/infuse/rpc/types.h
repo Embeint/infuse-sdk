@@ -184,13 +184,13 @@ struct rpc_struct_lte_state {
 	/** Tracking area code */
 	uint32_t tac;
 	/** Tracking area update period */
-	uint32_t tau;
+	int32_t tau;
 	/** Tracking area code (3GPP TS 36.101) */
 	uint16_t earfcn;
 	/** LTE Band (3GPP 36.101) */
 	uint8_t band;
 	/** Seconds between RRC idle and PSM */
-	uint16_t psm_active_time;
+	int16_t psm_active_time;
 	/** Period between eDRX paging windows */
 	float edrx_interval;
 	/** Duration of eDRX paging window */
