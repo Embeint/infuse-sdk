@@ -195,6 +195,12 @@ void memfault_reboot_reason_get(sResetBootupInfo *info)
 	case INFUSE_REBOOT_EXTERNAL_TRIGGER:
 		info->reset_reason = kMfltRebootReason_ButtonReset;
 		break;
+	case INFUSE_REBOOT_HW_WATCHDOG:
+		info->reset_reason = kMfltRebootReason_HardwareWatchdog;
+		break;
+	case INFUSE_REBOOT_SW_WATCHDOG:
+		info->reset_reason = kMfltRebootReason_SoftwareWatchdog;
+		break;
 	default:
 		info->reset_reason = zephyr_to_memfault_reboot_reason(state.hardware_reason);
 	}
