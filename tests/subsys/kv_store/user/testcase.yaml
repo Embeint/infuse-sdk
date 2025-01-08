@@ -1,0 +1,8 @@
+common:
+  tags: nvs
+tests:
+  fs.kv_store.user_keys:
+    platform_allow:
+      - native_sim
+    integration_platforms:
+      - native_sim
