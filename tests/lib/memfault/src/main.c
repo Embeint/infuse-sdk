@@ -241,6 +241,23 @@ ZTEST(memfault_integration, test_epacket_dump)
 		rc = infuse_common_boot_last_reboot(&reboot_state);
 		zassert_equal(0, rc);
 		zassert_equal((enum infuse_reboot_reason)K_ERR_STACK_CHK_FAIL, reboot_state.reason);
+		/* Trigger annother reboot */
+		send_fault_command(0, K_ERR_STACK_CHK_FAIL);
+		k_sleep(K_MSEC(100));
+		zassert_unreachable("K_ERR_STACK_CHK_FAIL did not trigger exception");
+		break;
+	case 4:
+		/* Try dump with no payload */
+		epacket_dummy_set_max_packet(0);
+		rc = infuse_memfault_queue_dump_all(K_NO_WAIT);
+		zassert_equal(-ENOTCONN, rc);
+		/* Reset payload size */
+		epacket_dummy_set_max_packet(CONFIG_EPACKET_PACKET_SIZE_MAX);
+		/* Dump all messages */
+		rc = infuse_memfault_queue_dump_all(K_NO_WAIT);
+		zassert_equal(0, rc);
+		/* Validate chunks are dumped (Fault should have resulted in more data) */
+		expect_memfault_chunks(false, 1000, 10000);
 		break;
 	default:
 		zassert_unreachable("Unexpected reboot count");
