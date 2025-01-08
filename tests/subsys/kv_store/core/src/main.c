@@ -15,7 +15,7 @@
 #include <infuse/fs/kv_store.h>
 #include <infuse/fs/kv_types.h>
 
-#include "../../../../subsys/fs/kv_store/kv_internal.h"
+#include "../../../../../subsys/fs/kv_store/kv_internal.h"
 
 #define NVS_PARTITION        storage_partition
 #define NVS_PARTITION_DEVICE FIXED_PARTITION_DEVICE(NVS_PARTITION)
