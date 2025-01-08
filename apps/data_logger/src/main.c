@@ -22,6 +22,7 @@
 #include <infuse/fs/kv_types.h>
 #include <infuse/epacket/interface.h>
 #include <infuse/epacket/packet.h>
+#include <infuse/lib/memfault.h>
 #include <infuse/data_logger/high_level/tdf.h>
 #include <infuse/tdf/definitions.h>
 #include <infuse/tdf/util.h>
@@ -30,6 +31,8 @@
 #include <infuse/task_runner/tasks/infuse_tasks.h>
 
 LOG_MODULE_REGISTER(app, LOG_LEVEL_INF);
+
+static void custom_tdf_logger(uint8_t tdf_loggers, uint64_t timestamp);
 
 /* Log data to SD card if available, otherwise serial and UDP comms */
 #if defined(CONFIG_DATA_LOGGER_EXFAT)
@@ -56,7 +59,7 @@ static const struct task_schedule schedules[] = {
 				.tdfs = TASK_TDF_LOGGER_LOG_ANNOUNCE | TASK_TDF_LOGGER_LOG_BATTERY |
 					TASK_TDF_LOGGER_LOG_AMBIENT_ENV |
 					TASK_TDF_LOGGER_LOG_LOCATION | TASK_TDF_LOGGER_LOG_ACCEL |
-					TASK_TDF_LOGGER_LOG_NET_CONN,
+					TASK_TDF_LOGGER_LOG_NET_CONN | TASK_TDF_LOGGER_LOG_CUSTOM,
 			},
 	},
 #endif /* CONFIG_EPACKET_INTERFACE_UDP */
@@ -149,13 +152,23 @@ static const struct task_schedule schedules[] = {
 };
 struct task_schedule_state states[ARRAY_SIZE(schedules)];
 
-TASK_RUNNER_TASKS_DEFINE(app_tasks, app_tasks_data, (TDF_LOGGER_TASK, NULL),
+TASK_RUNNER_TASKS_DEFINE(app_tasks, app_tasks_data, (TDF_LOGGER_TASK, custom_tdf_logger),
 			 (IMU_TASK, DEVICE_DT_GET(DT_ALIAS(imu0))),
 #if DT_NODE_EXISTS(DT_ALIAS(gnss))
 			 (GNSS_TASK, DEVICE_DT_GET(DT_ALIAS(gnss))),
 #endif /* DT_NODE_EXISTS(DT_ALIAS(gnss)) */
 			 (BATTERY_TASK, DEVICE_DT_GET(DT_ALIAS(fuel_gauge0))),
 			 (ENVIRONMENTAL_TASK, DEVICE_DT_GET(DT_ALIAS(environmental0))));
+
+static void custom_tdf_logger(uint8_t tdf_loggers, uint64_t timestamp)
+{
+#if defined(CONFIG_INFUSE_MEMFAULT) && DT_NODE_EXISTS(DT_CHOSEN(infuse_memfault_epacket_dump))
+	if (tdf_loggers & TDF_DATA_LOGGER_UDP) {
+		/* Dump any pending Memfault chunks after the UDP TDF send */
+		(void)infuse_memfault_queue_dump_all(K_MSEC(50));
+	}
+#endif
+}
 
 #ifdef CONFIG_INFUSE_DFU_EXFAT
 static void dfu_progress_cb(size_t copied, size_t total)
