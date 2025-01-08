@@ -5,3 +5,63 @@ config INFUSE_MEMFAULT
 	depends on MEMFAULT
 	depends on INFUSE_COMMON_BOOT
 	default y
+
+if INFUSE_MEMFAULT
+
+config MEMFAULT_INFUSE_CONFIG
+	bool "Use Infuse-IoT configuration files"
+	depends on MEMFAULT_METRICS
+	default y
+
+if MEMFAULT_INFUSE_CONFIG
+
+config MEMFAULT_METRICS_HEARTBEAT_INTERVAL_SECS
+	int "Period of the Memfault metrics collection"
+	default 3600
+
+config MEMFAULT_INFUSE_METRICS_BATTERY
+	bool "Battery metrics from Infuse-IoT zbus channel"
+	depends on INFUSE_ZBUS_CHAN_BATTERY
+	default y
+
+config MEMFAULT_INFUSE_NRF_MODEM
+	bool
+	help
+	  nRF91x modem related metrics collection
+
+config MEMFAULT_INFUSE_METRICS_NRF_MODEM
+	bool "nRF91x modem metrics"
+	depends on LTE_LINK_CONTROL
+	depends on INFUSE_NRF_MODEM_MONITOR
+	select MEMFAULT_INFUSE_NRF_MODEM
+	default y
+
+choice MEMFAULT_INFUSE_METRICS_CONNECTIVITY
+	prompt "Select the platform implementation for capturing connected time metric"
+	default MEMFAULT_INFUSE_METRICS_CONNECTIVITY_NRF_MODEM if LTE_LINK_CONTROL
+
+config MEMFAULT_INFUSE_METRICS_CONNECTIVITY_NRF_MODEM
+	bool "Capture connected time metric on nRF91x platforms"
+	depends on LTE_LINK_CONTROL
+	select MEMFAULT_INFUSE_NRF_MODEM
+	select MEMFAULT_PLATFORM_METRICS_CONNECTIVITY_BOOT
+
+endchoice # MEMFAULT_INFUSE_METRICS_CONNECTIVITY
+
+choice MEMFAULT_INFUSE_METRICS_SYNC_SUCCESS
+	prompt "Select the platform implementation for capturing sync success metric"
+	depends on MEMFAULT_METRICS_SYNC_SUCCESS
+	default MEMFAULT_INFUSE_METRICS_SYNC_SUCCESS_EPACKET_UDP if EPACKET_INTERFACE_UDP
+
+config MEMFAULT_INFUSE_METRICS_SYNC_SUCCESS_EPACKET_UDP
+	bool "ePacket UDP sync success metric"
+	depends on EPACKET_INTERFACE_UDP
+	help
+	  Sync success is defined as receiving a packet from the cloud services.
+	  Sync failure is defined as dropping the connection due to no packets.
+
+endchoice # MEMFAULT_INFUSE_METRICS_SYNC_SUCCESS
+
+endif # MEMFAULT_INFUSE_CONFIG
+
+endif # INFUSE_MEMFAULT
