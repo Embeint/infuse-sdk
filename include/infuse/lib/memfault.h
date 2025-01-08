@@ -48,6 +48,18 @@ struct memfault_chunk_header {
 bool infuse_memfault_dump_chunks_epacket(const struct device *dev);
 
 /**
+ * @brief Dump all chunks to the default ePacket interface
+ *
+ * @note The chosen interface is defined by the infuse,memfault-epacket-dump chosen node
+ *
+ * @param delay Delay before starting dump process
+ *
+ * @retval 0 When chunk dump has been queued successfully
+ * @retval -ENOTCONN if interface is not connected
+ */
+int infuse_memfault_queue_dump_all(k_timeout_t delay);
+
+/**
  * @}
  */
 

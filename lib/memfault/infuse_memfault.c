@@ -55,6 +55,15 @@ static void epacket_dump_fn(struct k_work *work)
 	}
 }
 
+int infuse_memfault_queue_dump_all(k_timeout_t delay)
+{
+	if (epacket_interface_max_packet_size(DUMP_INTERFACE) == 0) {
+		return -ENOTCONN;
+	}
+	k_work_schedule(&epacket_dump_work, delay);
+	return 0;
+}
+
 #endif /* DT_NODE_EXISTS(DT_CHOSEN(infuse_memfault_epacket_dump)) */
 
 int infuse_memfault_platform_init(void)
