@@ -23,6 +23,11 @@ static struct key_value_slot_definition kv_slots[] = {
 	},
 #endif /* CONFIG_KV_STORE_KEY_{{ info['name'] }} */
 {% endfor %}
+#ifdef CONFIG_KV_STORE_USER_KEYS
+#define KV_STORE_USER_KEYS_ARRAY_DEFINE
+#include "infuse_kv_user_keys.c"
+#undef KV_STORE_USER_KEYS_ARRAY_DEFINE
+#endif
 };
 
 /* Detect changes in struct size as this array exists in every application */
