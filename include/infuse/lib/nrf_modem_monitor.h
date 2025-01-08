@@ -58,6 +58,17 @@ void nrf_modem_monitor_network_state(struct nrf_modem_network_state *state);
 int nrf_modem_monitor_signal_quality(int16_t *rsrp, int8_t *rsrq, bool cached);
 
 /**
+ * @brief Get current connectivity statistics
+ *
+ * @param tx_kbytes Storage for number of kilobytes transmitted.
+ * @param rx_kbytes Storage for number of kilobytes received.
+ *
+ * @retval 0 on success
+ * @retval -errno on error
+ */
+int nrf_modem_monitor_connectivity_stats(int *tx_kbytes, int *rx_kbytes);
+
+/**
  * @}
  */
 

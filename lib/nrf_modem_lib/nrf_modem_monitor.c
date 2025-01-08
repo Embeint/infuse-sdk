@@ -166,6 +166,15 @@ int nrf_modem_monitor_signal_quality(int16_t *rsrp, int8_t *rsrq, bool cached)
 	return 0;
 }
 
+int nrf_modem_monitor_connectivity_stats(int *tx_kbytes, int *rx_kbytes)
+{
+	int rc;
+
+	rc = nrf_modem_at_scanf("AT%XCONNSTAT?", "%%XCONNSTAT: %*d,%*d,%d,%d,%*d,%*d", tx_kbytes,
+				rx_kbytes);
+	return rc == 2 ? 0 : -EIO;
+}
+
 static void lte_reg_handler(const struct lte_lc_evt *const evt)
 {
 	switch (evt->type) {
@@ -273,6 +282,9 @@ static void infuse_modem_info(int ret, void *ctx)
 	KV_KEY_TYPE(KV_KEY_LTE_MODEM_IMEI) modem_imei;
 	static bool modem_info_stored;
 	int rc;
+
+	/* Enable connectivity stats */
+	nrf_modem_at_printf("%s", "AT%XCONNSTAT=1");
 
 #ifdef CONFIG_KV_STORE_KEY_LTE_PDP_CONFIG
 	KV_KEY_TYPE_VAR(KV_KEY_LTE_PDP_CONFIG, 32) pdp_config;
