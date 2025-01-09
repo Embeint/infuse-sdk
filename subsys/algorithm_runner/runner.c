@@ -22,6 +22,7 @@ ZBUS_GLOBAL_ADD_OBS(runner_listener, 5);
 
 static struct k_work runner;
 static sys_slist_t algorithms;
+static K_SEM_DEFINE(list_lock, 1, 1);
 
 LOG_MODULE_REGISTER(algorithm, CONFIG_ALGORITHM_RUNNER_LOG_LEVEL);
 
@@ -47,6 +48,7 @@ static void exec_fn(struct k_work *work)
 {
 	struct algorithm_runner_algorithm *alg, *algs;
 
+	k_sem_take(&list_lock, K_FOREVER);
 	SYS_SLIST_FOR_EACH_CONTAINER_SAFE(&algorithms, alg, algs, _node) {
 		/* Only run algorithms that have new data */
 		if (alg->_changed == NULL) {
@@ -61,6 +63,7 @@ static void exec_fn(struct k_work *work)
 		/* Clear new data flag */
 		alg->_changed = NULL;
 	}
+	k_sem_give(&list_lock);
 }
 
 void algorithm_runner_init(void)
@@ -77,7 +80,21 @@ void algorithm_runner_register(struct algorithm_runner_algorithm *algorithm)
 	algorithm->impl(NULL, algorithm->config, algorithm->runtime_state);
 
 	/* Add to list of algorithms to be run */
+	k_sem_take(&list_lock, K_FOREVER);
 	sys_slist_append(&algorithms, &algorithm->_node);
+	k_sem_give(&list_lock);
+}
+
+bool algorithm_runner_unregister(struct algorithm_runner_algorithm *algorithm)
+{
+	bool res;
+
+	/* Remove from list of algorithms to be run */
+	k_sem_take(&list_lock, K_FOREVER);
+	res = sys_slist_find_and_remove(&algorithms, &algorithm->_node);
+	k_sem_give(&list_lock);
+
+	return res;
 }
 
 void algorithm_runner_tdf_log(const struct algorithm_runner_common_config *config, uint8_t tdf_mask,

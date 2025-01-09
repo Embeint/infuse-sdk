@@ -82,6 +82,10 @@ ZTEST(algorithm_runner, test_running)
 	struct tdf_gcs_wgs84_llha location = {0};
 
 	algorithm_runner_init();
+
+	zassert_false(algorithm_runner_unregister(&alg1));
+	zassert_false(algorithm_runner_unregister(&alg2));
+	zassert_false(algorithm_runner_unregister(&alg3));
 	algorithm_runner_register(&alg1);
 	algorithm_runner_register(&alg2);
 	algorithm_runner_register(&alg3);
@@ -129,6 +133,30 @@ ZTEST(algorithm_runner, test_running)
 		zassert_equal(i, alg2_state.run_cnt);
 		zassert_equal(2, alg3_state.run_cnt);
 	}
+
+	/* Unregister alg2, battery should no longer result in alg2 running  */
+	zassert_true(algorithm_runner_unregister(&alg2));
+	zbus_chan_pub(INFUSE_ZBUS_CHAN_GET(INFUSE_ZBUS_CHAN_BATTERY), &battery, K_FOREVER);
+	k_sleep(K_MSEC(10));
+
+	zassert_equal(10, alg1_state.run_cnt);
+	zassert_equal(9, alg2_state.run_cnt);
+
+	/* Unregister remaining algorithms, no more iteration */
+	zassert_true(algorithm_runner_unregister(&alg1));
+	zassert_true(algorithm_runner_unregister(&alg3));
+
+	zbus_chan_pub(INFUSE_ZBUS_CHAN_GET(INFUSE_ZBUS_CHAN_BATTERY), &battery, K_FOREVER);
+	zbus_chan_pub(INFUSE_ZBUS_CHAN_GET(INFUSE_ZBUS_CHAN_AMBIENT_ENV), &ambient_env, K_FOREVER);
+	k_sleep(K_MSEC(10));
+
+	zassert_equal(10, alg1_state.run_cnt);
+	zassert_equal(9, alg2_state.run_cnt);
+	zassert_equal(2, alg3_state.run_cnt);
+
+	zassert_false(algorithm_runner_unregister(&alg1));
+	zassert_false(algorithm_runner_unregister(&alg2));
+	zassert_false(algorithm_runner_unregister(&alg3));
 }
 
 ZTEST(algorithm_runner, test_logging)
