@@ -6,14 +6,17 @@ import pathlib
 import subprocess
 import sys
 import shutil
-import colorama
-import yaml
-import pykwalify.core
+import os
 import re
+
+import colorama
+import pykwalify.core
+import yaml
 
 from typing_extensions import Tuple
 
 from west.commands import WestCommand
+from west.manifest import Project, ManifestProject
 
 from git import Repo, exc
 
@@ -107,9 +110,10 @@ class release_build(WestCommand):
         self.tfm_build = "/ns" in self.release["board"]
         # TF-M builds should not use sysbuild for now
         self.sysbuild = not self.tfm_build
-        # Validate repository state
-        repo = self.validate_state()
+        # Validate state of all manifest repositories
+        self.validate_manifest_repos_state()
         # Expected application version
+        repo = Repo(self.application, search_parent_directories=True)
         expected_int, expected_hex = self.expected_version(repo)
         # Perform release build
         self.do_release_build(expected_int)
@@ -148,24 +152,46 @@ class release_build(WestCommand):
 
         return ahead, behind
 
-    def validate_state(self) -> Repo:
-        repo = Repo(self.application, search_parent_directories=True)
+    def validate_manifest_repos_state(self) -> None:
+        if self.args.skip_git:
+            return
 
-        if not self.args.skip_git:
-            ahead, behind = self.count_commits_ahead_behind(repo)
-            if ahead != 0:
-                msg = f"Local repository contains {ahead} commits not present on origin"
-                if self.args.ignore_git:
-                    print(msg)
-                else:
-                    sys.exit(msg)
-            if behind != 0:
-                msg = f"Local repository is missing {behind} commits present on origin"
-                if self.args.ignore_git:
-                    print(msg)
-                else:
-                    sys.exit(msg)
-        return repo
+        print(f"Validating state of {len(self.manifest.projects)} repositories...")
+        error_msg = []
+
+        project: Project
+        for project in self.manifest.projects:
+            absolute_repo_path = os.path.join(self.manifest.topdir, project.path)
+            repo = Repo(absolute_repo_path)
+
+            if isinstance(project, ManifestProject):
+                ahead, behind = self.count_commits_ahead_behind(repo)
+                if ahead != 0:
+                    error_msg.append(
+                        f"Manifest project '{project.path}' contains {ahead} commits not present on origin"
+                    )
+                if behind != 0:
+                    error_msg.append(
+                        f"Manifest project '{project.path}' is missing {behind} commits present on origin"
+                    )
+            else:
+                # Ensure revision specified in manifest matches currently checked out commit
+                manifest_commit = repo.commit(project.revision)
+                on_disk_commit = repo.commit()
+                if manifest_commit != on_disk_commit:
+                    error_msg.append(
+                        f"Repository '{project.path}' commit mismatch ({manifest_commit.hexsha()[:8]} !=  {on_disk_commit.hexsha()[:8]})"
+                    )
+            # Ensure there is no uncommitted content on disk
+            if repo.is_dirty(untracked_files=True):
+                error_msg.append(f"Repository '{project.path}' has uncommitted changes")
+
+        if len(error_msg) > 0:
+            msg = os.linesep.join(error_msg)
+            if self.args.ignore_git:
+                print(msg)
+            else:
+                sys.exit(msg)
 
     def expected_version(self, repo: Repo) -> Tuple[str, str]:
         version_file = self.application / "VERSION"
