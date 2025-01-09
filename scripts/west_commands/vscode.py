@@ -64,15 +64,14 @@ settings = {
         "editor.indentSize": "tabSize",
     },
     "[jinja]": {"editor.formatOnSave": False},
-    "[python]": {"editor.defaultFormatter": "ms-python.black-formatter"},
+    "[python]": {"editor.defaultFormatter": "charliermarsh.ruff"},
 }
 
 recommended_extensions = {
     "recommendations": [
         "ms-vscode.cpptools",
         "ms-vscode.cmake-tools",
-        "ms-python.black-formatter",
-        "ms-python.pylint",
+        "charliermarsh.ruff",
         "marus25.cortex-debug",
         "nordic-semiconductor.nrf-devicetree",
         "nordic-semiconductor.nrf-kconfig",
@@ -169,11 +168,11 @@ extern "C" {
 c_cpp_properties = {
     "configurations": [
         {
-            "name": "ECS",
+            "name": "Infuse-IoT",
             "configurationProvider": "ms-vscode.cmake-tools",
             "compilerPath": "",
             "compileCommands": "",
-            "includePath": "",
+            "includePath": [],
         }
     ],
     "version": 4,
