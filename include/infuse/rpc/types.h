@@ -108,7 +108,7 @@ struct rpc_struct_kv_store_value {
 /** KV store data CRC */
 struct rpc_struct_kv_store_crc {
 	uint16_t id;
-	int32_t crc;
+	uint32_t crc;
 } __packed;
 
 /** Bluetooth LE address */

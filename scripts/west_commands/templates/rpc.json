@@ -21,7 +21,7 @@
             "description": "KV store data CRC",
             "fields": [
                 {"name": "id", "type": "uint16_t"},
-                {"name": "crc", "type": "int32_t"}
+                {"name": "crc", "type": "uint32_t"}
             ]
         },
         "rpc_struct_bt_addr_le": {
