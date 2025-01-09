@@ -75,6 +75,16 @@ void algorithm_runner_init(void);
 void algorithm_runner_register(struct algorithm_runner_algorithm *algorithm);
 
 /**
+ * @brief Unregister an algorithm from the runner
+ *
+ * @param algorithm Algorithm to unregister
+ *
+ * @retval true Algorithm was found and unregistered
+ * @retval false Algorithm was not registered with the runner
+ */
+bool algorithm_runner_unregister(struct algorithm_runner_algorithm *algorithm);
+
+/**
  * @brief Log a single TDF as requested by algorithm configuration
  *
  * @param config Common algorithm configuration
