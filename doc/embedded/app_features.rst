@@ -1,4 +1,4 @@
-.. _infuse-embedded-features:
+.. _infuse-embedded-app-features:
 
 Application Features
 ####################
@@ -28,6 +28,6 @@ any application.
    :hidden:
    :glob:
 
-   features/*
+   app_features/*
 
 .. _zbus: https://docs.zephyrproject.org/latest/services/zbus/index.html
