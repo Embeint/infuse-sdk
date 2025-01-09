@@ -86,4 +86,5 @@ connectivity down into the application.
 
    embedded/index.rst
    embedded/app_features.rst
+   embedded/tool_features.rst
    embedded/hardware.rst
