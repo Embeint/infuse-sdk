@@ -16,6 +16,7 @@
 #include <infuse/epacket/interface.h>
 #include <infuse/epacket/packet.h>
 #include <infuse/rpc/types.h>
+#include <infuse/rpc/server.h>
 
 #include "commands/commands.h"
 
@@ -239,7 +240,16 @@ void rpc_command_runner(struct net_buf *request)
 		break;
 #endif /* CONFIG_INFUSE_RPC_COMMAND_ECHO */
 	default:
+#ifdef CONFIG_INFUSE_RPC_SERVER_USER_COMMANDS
+		if (command_id > RPC_BUILTIN_END) {
+			rc = infuse_rpc_server_user_command_runner(command_id, auth, request,
+								   &response);
+		} else {
+			rc = -ENOTSUP;
+		}
+#else
 		rc = -ENOTSUP;
+#endif /* CONFIG_INFUSE_RPC_SERVER_USER_COMMANDS */
 	};
 
 	/* Free the request */
