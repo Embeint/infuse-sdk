@@ -32,7 +32,7 @@ to be executed, for example :kconfig:option:`CONFIG_INFUSE_RPC_COMMAND_APPLICATI
 Built-in Commands
 *****************
 
-.. doxygenenum:: rpc_builtin_id
+For a list of available commands, see :c:enum:`rpc_builtin_id`.
 
 User-defined Commands
 *********************
