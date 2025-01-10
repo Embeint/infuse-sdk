@@ -41,7 +41,7 @@ struct net_buf *rpc_response_simple_if(const struct device *interface, int16_t r
 /**
  * @brief Create an @ref INFUSE_RPC_RSP packet buffer from a request
  *
- * @param request @ref INFUSE_RPC_REQ packet to respond to
+ * @param request @ref INFUSE_RPC_CMD packet to respond to
  * @param rc Return code of the RPC
  * @param response RPC response struct
  * @param len Size of RPC response struct
@@ -52,7 +52,7 @@ struct net_buf *rpc_response_simple_req(struct net_buf *request, int16_t rc, voi
 					size_t len);
 
 /**
- * @brief Get the size of the variable component of the @ref INFUSE_RPC_REQ packet
+ * @brief Get the size of the variable component of the @ref INFUSE_RPC_CMD packet
  */
 #define RPC_REQUEST_VAR_LEN(request, type) (request->len - sizeof(type))
 
