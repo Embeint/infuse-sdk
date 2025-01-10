@@ -14,14 +14,14 @@
 
 #include <infuse/bluetooth/controller_manager.h>
 #include <infuse/types.h>
+#include <infuse/rpc/commands.h>
+#include <infuse/rpc/server.h>
 #include <infuse/rpc/types.h>
 #include <infuse/security.h>
 #include <infuse/fs/kv_store.h>
 #include <infuse/epacket/packet.h>
 #include <infuse/epacket/interface/epacket_dummy.h>
 #include <infuse/cpatch/patch.h>
-
-#include "../../../../../../subsys/rpc/server.h"
 
 static uint8_t fixed_payload[8192];
 static uint32_t fixed_payload_crc;

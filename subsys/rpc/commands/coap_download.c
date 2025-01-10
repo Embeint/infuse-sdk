@@ -15,6 +15,7 @@
 #include <zephyr/dfu/mcuboot.h>
 
 #include <infuse/dfu/helpers.h>
+#include <infuse/rpc/commands.h>
 #include <infuse/rpc/types.h>
 #include <infuse/fs/kv_store.h>
 #include <infuse/security.h>
@@ -28,7 +29,6 @@
 #endif /* CONFIG_NRF_MODEM_LIB */
 
 #include "common_file_actions.h"
-#include "../server.h"
 
 LOG_MODULE_DECLARE(rpc_server);
 

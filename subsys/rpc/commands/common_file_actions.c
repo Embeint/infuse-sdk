@@ -17,13 +17,13 @@
 #include <infuse/cpatch/patch.h>
 #include <infuse/dfu/helpers.h>
 #include <infuse/reboot.h>
+#include <infuse/rpc/commands.h>
 
 #ifdef CONFIG_NRF_MODEM_LIB
 #include "nrf_modem_delta_dfu.h"
 #endif /* CONFIG_NRF_MODEM_LIB */
 
 #include "common_file_actions.h"
-#include "../server.h"
 
 #ifdef CONFIG_INFUSE_DFU_HELPERS
 #if FIXED_PARTITION_EXISTS(slot1_partition)

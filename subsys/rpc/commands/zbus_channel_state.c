@@ -10,10 +10,9 @@
 #include <zephyr/logging/log.h>
 #include <zephyr/zbus/zbus.h>
 
+#include <infuse/rpc/commands.h>
 #include <infuse/rpc/types.h>
 #include <infuse/time/epoch.h>
-
-#include "../server.h"
 
 LOG_MODULE_DECLARE(rpc_server);
 

@@ -13,9 +13,9 @@
 #include <zephyr/net/net_if.h>
 
 #include <infuse/bluetooth/gatt.h>
+#include <infuse/rpc/commands.h>
 #include <infuse/rpc/types.h>
 
-#include "../server.h"
 #include "common_bt.h"
 
 LOG_MODULE_DECLARE(rpc_server);

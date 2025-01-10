@@ -11,10 +11,9 @@
 #include <zephyr/sys/__assert.h>
 
 #include <infuse/reboot.h>
+#include <infuse/rpc/commands.h>
 #include <infuse/rpc/types.h>
 #include <infuse/time/epoch.h>
-
-#include "../server.h"
 
 LOG_MODULE_DECLARE(rpc_server);
 

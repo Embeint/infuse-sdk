@@ -8,10 +8,9 @@
 
 #include <zephyr/net/buf.h>
 
+#include <infuse/rpc/commands.h>
 #include <infuse/rpc/types.h>
 #include <infuse/data_logger/logger.h>
-
-#include "../server.h"
 
 struct net_buf *rpc_command_data_logger_state(struct net_buf *request)
 {

@@ -10,11 +10,10 @@
 #include <zephyr/logging/log.h>
 #include <zephyr/net/net_if.h>
 
+#include <infuse/rpc/commands.h>
 #include <infuse/rpc/types.h>
 
 #include <nrf_modem_at.h>
-
-#include "../server.h"
 
 LOG_MODULE_DECLARE(rpc_server);
 

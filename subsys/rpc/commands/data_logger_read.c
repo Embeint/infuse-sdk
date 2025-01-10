@@ -11,10 +11,10 @@
 
 #include <infuse/data_logger/logger.h>
 #include <infuse/epacket/packet.h>
+#include <infuse/rpc/commands.h>
 #include <infuse/rpc/types.h>
 
 #include "../command_runner.h"
-#include "../server.h"
 
 struct net_buf *rpc_command_data_logger_read(struct net_buf *request)
 {

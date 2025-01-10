@@ -9,9 +9,8 @@
 #include <zephyr/net/buf.h>
 #include <zephyr/logging/log.h>
 
+#include <infuse/rpc/commands.h>
 #include <infuse/rpc/types.h>
-
-#include "../server.h"
 
 LOG_MODULE_DECLARE(rpc_server);
 

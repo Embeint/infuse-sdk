@@ -9,11 +9,11 @@
 #include <zephyr/net/buf.h>
 #include <zephyr/logging/log.h>
 
+#include <infuse/rpc/commands.h>
 #include <infuse/rpc/types.h>
 #include <infuse/fs/kv_store.h>
 #include <infuse/fs/kv_types.h>
 
-#include "../server.h"
 #include "../../fs/kv_store/kv_internal.h"
 
 LOG_MODULE_DECLARE(rpc_server);

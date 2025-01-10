@@ -1,13 +1,17 @@
 /**
  * @file
- * @copyright 2024 Embeint Inc
+ * @brief RPC command implementation functions
+ * @copyright 2025 Embeint Inc
  * @author Jordan Yates <jordan@embeint.com>
  *
  * SPDX-License-Identifier: LicenseRef-Embeint
+ *
+ * @details
+ * Functions to call from RPC command implementations only.
  */
 
-#ifndef INFUSE_SDK_SUBSYS_RPC_SERVER_H_
-#define INFUSE_SDK_SUBSYS_RPC_SERVER_H_
+#ifndef INFUSE_SDK_INCLUDE_INFUSE_RPC_COMMANDS_H_
+#define INFUSE_SDK_INCLUDE_INFUSE_RPC_COMMANDS_H_
 
 #include <zephyr/net/buf.h>
 
@@ -15,7 +19,11 @@
 extern "C" {
 #endif
 
-#define RPC_SERVER_MAX_ACK_PERIOD 8
+/**
+ * @brief RPC command implementation API
+ * @defgroup rpc_commands_apis commands RPC command implementation API
+ * @{
+ */
 
 /**
  * @brief Create an @ref INFUSE_RPC_RSP packet buffer for an interface
@@ -100,8 +108,12 @@ void rpc_server_watchdog_feed(void);
  */
 uint8_t *rpc_server_command_working_mem(size_t *size);
 
+/**
+ * @}
+ */
+
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* INFUSE_SDK_SUBSYS_RPC_SERVER_H_ */
+#endif /* INFUSE_SDK_INCLUDE_INFUSE_RPC_COMMANDS_H_ */

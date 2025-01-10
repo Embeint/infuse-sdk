@@ -15,9 +15,9 @@
 #include <infuse/epacket/interface.h>
 #include <infuse/epacket/packet.h>
 #include <infuse/epacket/interface/epacket_dummy.h>
+#include <infuse/rpc/commands.h>
+#include <infuse/rpc/server.h>
 #include <infuse/rpc/types.h>
-
-#include "../../../../../subsys/rpc/server.h"
 
 ZTEST(rpc_server, test_command_working_mem)
 {

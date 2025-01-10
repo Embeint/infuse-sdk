@@ -13,6 +13,7 @@
 #include <zephyr/dfu/mcuboot.h>
 
 #include <infuse/dfu/helpers.h>
+#include <infuse/rpc/commands.h>
 #include <infuse/rpc/types.h>
 #include <infuse/epacket/packet.h>
 #include <infuse/reboot.h>
@@ -24,7 +25,6 @@
 
 #include "common_file_actions.h"
 #include "../command_runner.h"
-#include "../server.h"
 
 LOG_MODULE_DECLARE(rpc_server);
 
