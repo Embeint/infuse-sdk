@@ -32,7 +32,15 @@ to be executed, for example :kconfig:option:`CONFIG_INFUSE_RPC_COMMAND_APPLICATI
 Built-in Commands
 *****************
 
-.. doxygengroup:: builtin_rpc_definitions
+.. doxygenenum:: rpc_builtin_id
+
+User-defined Commands
+*********************
+
+Infuse-IoT also allows custom user-defined commands to be integrated with the framework with
+:kconfig:option:`CONFIG_INFUSE_RPC_SERVER_USER_COMMANDS`. When enabled, an implementation of
+:c:func:`infuse_rpc_server_user_command_runner` must be provided in the application. An example
+implementation of this feature can be found in ``infuse-sdk/tests/subsys/rpc/commands/user_commands``.
 
 API Reference
 *************
@@ -40,4 +48,6 @@ API Reference
 .. doxygengroup:: rpc_packet_headers
 .. doxygengroup:: rpc_struct_definitions
 .. doxygengroup:: rpc_server_apis
+.. doxygengroup:: rpc_commands_apis
 .. doxygengroup:: rpc_client_apis
+.. doxygengroup:: builtin_rpc_definitions
