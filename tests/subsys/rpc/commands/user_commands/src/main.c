@@ -27,11 +27,12 @@ enum {
 struct rpc_user_command_request {
 	struct infuse_rpc_req_header header;
 	uint32_t parameter;
-};
+} __packed;
+
 struct rpc_user_command_response {
 	struct infuse_rpc_rsp_header header;
 	uint32_t response;
-};
+} __packed;
 
 struct net_buf *rpc_user_command_impl(struct net_buf *request)
 {
