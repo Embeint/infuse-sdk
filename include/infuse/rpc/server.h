@@ -12,6 +12,8 @@
 
 #include <zephyr/net/buf.h>
 
+#include <infuse/epacket/packet.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -38,6 +40,21 @@ void rpc_server_queue_command(struct net_buf *buf);
  * @param buf @ref INFUSE_RPC_DATA ePacket buffer
  */
 void rpc_server_queue_data(struct net_buf *buf);
+
+/**
+ * @brief Command handling for user-defined RPCs
+ *
+ * @param command_id RPC command identifier
+ * @param auth Authentication level of @a request
+ * @param request RPC request packet
+ * @param response Storage for RPC response pointer (NULL when called)
+ *
+ * @retval 0 Command exists and was successfully run
+ * @retval -EACCES Authentication level was not sufficient to run command
+ * @retval -ENOTSUP Command implementation does not exist
+ */
+int infuse_rpc_server_user_command_runner(uint16_t command_id, enum epacket_auth auth,
+					  struct net_buf *request, struct net_buf **response);
 
 /**
  * @}
