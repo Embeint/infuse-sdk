@@ -10,6 +10,7 @@
 #include <zephyr/logging/log.h>
 #include <zephyr/net/net_if.h>
 
+#include <infuse/rpc/commands.h>
 #include <infuse/rpc/types.h>
 #include <infuse/version.h>
 #include <infuse/fs/kv_store.h>
@@ -19,8 +20,6 @@
 #ifdef CONFIG_INFUSE_SECURITY
 #include <infuse/security.h>
 #endif
-
-#include "../server.h"
 
 struct net_buf *rpc_command_application_info(struct net_buf *request)
 {

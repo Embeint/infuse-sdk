@@ -13,13 +13,12 @@
 
 #include <infuse/identifiers.h>
 #include <infuse/security.h>
-#include <infuse/rpc/types.h>
+#include <infuse/rpc/commands.h>
 #include <infuse/rpc/commands/security_state.h>
+#include <infuse/rpc/types.h>
 
 #include <psa/crypto.h>
 #include <mbedtls/platform_util.h>
-
-#include "../server.h"
 
 LOG_MODULE_DECLARE(rpc_server);
 

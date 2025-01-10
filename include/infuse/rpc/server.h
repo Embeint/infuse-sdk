@@ -22,6 +22,9 @@ extern "C" {
  * @{
  */
 
+/** Maximum ACK period supported by the RPC server */
+#define RPC_SERVER_MAX_ACK_PERIOD 8
+
 /**
  * @brief Push command ePacket to RPC server
  *

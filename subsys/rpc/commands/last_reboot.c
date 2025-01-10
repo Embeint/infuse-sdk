@@ -10,10 +10,9 @@
 #include <zephyr/logging/log.h>
 #include <zephyr/net/net_if.h>
 
+#include <infuse/rpc/commands.h>
 #include <infuse/rpc/types.h>
 #include <infuse/common_boot.h>
-
-#include "../server.h"
 
 struct net_buf *rpc_command_last_reboot(struct net_buf *request)
 {

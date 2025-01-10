@@ -10,9 +10,9 @@
 #include <zephyr/logging/log.h>
 
 #include <infuse/epacket/interface/epacket_bt_central.h>
+#include <infuse/rpc/commands.h>
 #include <infuse/rpc/types.h>
 
-#include "../server.h"
 #include "common_bt.h"
 
 LOG_MODULE_DECLARE(rpc_server);

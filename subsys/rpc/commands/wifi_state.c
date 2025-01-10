@@ -11,9 +11,9 @@
 #include <zephyr/net/net_if.h>
 #include <zephyr/net/wifi_mgmt.h>
 
+#include <infuse/rpc/commands.h>
 #include <infuse/rpc/types.h>
 
-#include "../server.h"
 #include "common_net_query.h"
 
 LOG_MODULE_DECLARE(rpc_server);
