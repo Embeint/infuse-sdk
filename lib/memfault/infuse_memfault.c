@@ -12,6 +12,7 @@
 #include <zephyr/init.h>
 #include <zephyr/drivers/hwinfo.h>
 #include <zephyr/fatal_types.h>
+#include <zephyr/sys/crc.h>
 #include <zephyr/sys/__assert.h>
 
 #include <infuse/version.h>
@@ -65,6 +66,15 @@ int infuse_memfault_queue_dump_all(k_timeout_t delay)
 }
 
 #endif /* DT_NODE_EXISTS(DT_CHOSEN(infuse_memfault_epacket_dump)) */
+
+#ifndef CONFIG_MEMFAULT_CRC16_BUILTIN
+
+uint16_t memfault_crc16_compute(uint16_t crc_initial_value, const void *data, size_t data_len_bytes)
+{
+	return crc16_itu_t(crc_initial_value, data, data_len_bytes);
+}
+
+#endif
 
 int infuse_memfault_platform_init(void)
 {

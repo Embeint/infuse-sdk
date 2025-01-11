@@ -237,6 +237,5 @@ configdefault MEMFAULT_REBOOT_REASON_GET_CUSTOM
 	default y
 configdefault MEMFAULT_FAULT_HANDLER_RETURN
 	default y
-# Temporary workaround for incorrect defaults on symbol
-configdefault MEMFAULT_METRICS_CPU_TEMP
-	default n if !"$(dt_alias_enabled,die-temp0)"
+configdefault MEMFAULT_CRC16_BUILTIN
+	default n

@@ -30,10 +30,6 @@ config MEMFAULT_INFUSE_SECURE_FAULT_KNOWLEDGE
 
 if MEMFAULT_INFUSE_CONFIG
 
-config MEMFAULT_METRICS_HEARTBEAT_INTERVAL_SECS
-	int "Period of the Memfault metrics collection"
-	default 3600
-
 config MEMFAULT_INFUSE_METRICS_BATTERY
 	bool "Battery metrics from Infuse-IoT zbus channel"
 	depends on INFUSE_ZBUS_CHAN_BATTERY

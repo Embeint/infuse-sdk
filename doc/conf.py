@@ -266,6 +266,17 @@ gh_link_exclude = [
 
 kconfig_generate_db = True
 kconfig_ext_paths = [INFUSE_BASE, ZEPHYR_BASE]
+os.environ["ZEPHYR_MEMFAULT_FIRMWARE_SDK_KCONFIG"] = str(
+    (
+        Path(__file__).parents[2]
+        / "modules"
+        / "lib"
+        / "memfault"
+        / "ports"
+        / "zephyr"
+        / "Kconfig.3_7_0"
+    ).resolve()
+)
 
 # -- Options for zephyr.external_content ----------------------------------
 
