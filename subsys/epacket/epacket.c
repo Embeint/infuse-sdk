@@ -38,6 +38,10 @@ static const struct device *tx_device[CONFIG_EPACKET_BUFFERS_TX];
 static k_timeout_t loop_period = K_FOREVER;
 static int wdog_channel;
 
+#ifdef CONFIG_EPACKET_INTERFACE_BT_ADV
+static struct k_poll_signal bt_adv_signal_send_next;
+#endif /* CONFIG_EPACKET_INTERFACE_BT_ADV */
+
 LOG_MODULE_REGISTER(epacket, CONFIG_EPACKET_LOG_LEVEL);
 
 static void epacket_receive_timeout(struct k_work *work)
@@ -281,16 +285,31 @@ static void epacket_handle_tx(struct net_buf *buf)
 	api->send(dev, buf);
 }
 
+#ifdef CONFIG_EPACKET_INTERFACE_BT_ADV
+void epacket_bt_adv_send_next_trigger(void)
+{
+	k_poll_signal_raise(&bt_adv_signal_send_next, 0);
+}
+#endif
+
 static void epacket_processor(void *a, void *b, void *c)
 {
-	struct k_poll_event events[2] = {
+	struct k_poll_event events[] = {
 		K_POLL_EVENT_STATIC_INITIALIZER(K_POLL_TYPE_FIFO_DATA_AVAILABLE,
 						K_POLL_MODE_NOTIFY_ONLY, &epacket_rx_queue, 0),
 		K_POLL_EVENT_STATIC_INITIALIZER(K_POLL_TYPE_FIFO_DATA_AVAILABLE,
 						K_POLL_MODE_NOTIFY_ONLY, &epacket_tx_queue, 0),
+#ifdef CONFIG_EPACKET_INTERFACE_BT_ADV
+		K_POLL_EVENT_STATIC_INITIALIZER(K_POLL_TYPE_SIGNAL, K_POLL_MODE_NOTIFY_ONLY,
+						&bt_adv_signal_send_next, 0),
+#endif
 	};
 	struct net_buf *buf;
 	int rc;
+
+#ifdef CONFIG_EPACKET_INTERFACE_BT_ADV
+	k_poll_signal_init(&bt_adv_signal_send_next);
+#endif
 
 	k_thread_name_set(NULL, "epacket_proc");
 	infuse_watchdog_thread_register(wdog_channel, _current);
@@ -313,6 +332,14 @@ static void epacket_processor(void *a, void *b, void *c)
 			epacket_handle_tx(buf);
 			events[1].state = K_POLL_STATE_NOT_READY;
 		}
+
+#ifdef CONFIG_EPACKET_INTERFACE_BT_ADV
+		if (events[2].state == K_POLL_STATE_SIGNALED) {
+			k_poll_signal_reset(&bt_adv_signal_send_next);
+			epacket_bt_adv_send_next();
+			events[2].state = K_POLL_STATE_NOT_READY;
+		}
+#endif
 
 		/* Feed watchdog before sleeping again */
 		infuse_watchdog_feed(wdog_channel);

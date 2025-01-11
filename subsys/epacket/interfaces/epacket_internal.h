@@ -132,6 +132,16 @@ int epacket_bt_adv_encrypt(struct net_buf *buf);
 int epacket_bt_adv_decrypt(struct net_buf *buf);
 
 /**
+ * @brief Notify core thread that next packet can be sent
+ */
+void epacket_bt_adv_send_next_trigger(void);
+
+/**
+ * @brief Send the next Bluetooth advertising packet from the queue
+ */
+void epacket_bt_adv_send_next(void);
+
+/**
  * @brief Encrypt Bluetooth GATT packet for transmission
  *
  * @param buf Packet to encrypt
