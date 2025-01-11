@@ -10,6 +10,7 @@
 
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
+#include <zephyr/drivers/gpio.h>
 
 #include <infuse/auto/bluetooth_conn_log.h>
 #include <infuse/epacket/interface.h>
@@ -75,6 +76,19 @@ int main(void)
 	/* Start auto iteration */
 	task_runner_start_auto_iterate();
 
+#if DT_NODE_EXISTS(DT_ALIAS(led0))
+	const struct gpio_dt_spec led = GPIO_DT_SPEC_GET(DT_ALIAS(led0), gpios);
+
+	/* Blink LED once a second as proof of life */
+	gpio_pin_configure_dt(&led, GPIO_OUTPUT_INACTIVE);
+	while (1) {
+		gpio_pin_set_dt(&led, 1);
+		k_sleep(K_MSEC(10));
+		gpio_pin_set_dt(&led, 0);
+		k_sleep(K_MSEC(990));
+	}
+#else
 	/* No more work to do in this context */
 	k_sleep(K_FOREVER);
+#endif
 }
