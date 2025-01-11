@@ -80,6 +80,7 @@ jobs:
         run: |
           # Standard workspace setup
           west vscode
+          west vscode --search-exclude
 
           # launch.json generation for various board/app types
           west build -p -b native_sim zephyr/samples/hello_world

@@ -220,6 +220,11 @@ class vscode(WestCommand):
             help="VSCode workspace folder",
         )
         parser.add_argument(
+            "--search-exclude",
+            action="store_true",
+            help="Exclude common build folders from search paths",
+        )
+        parser.add_argument(
             "--build-dir", "-d", dest="dir", type=str, help="Application build folder"
         )
         parser.add_argument("--snr", type=str, help="JTAG serial number")
@@ -393,6 +398,17 @@ class vscode(WestCommand):
             settings["python.defaultInterpreterPath"] = shutil.which("python3")
             file_snippets["new_file_c"]["body"] = c_source_header().splitlines()
             file_snippets["new_file_h"]["body"] = c_header_header().splitlines()
+
+            # Exclude common build paths to cleanup search results
+            if args.search_exclude:
+                # Documentation build output folder
+                settings["search.exclude"]["**/_build/*"] = True
+                # Babblesim build output folder
+                settings["search.exclude"]["**/bsim_out/*"] = True
+                # Twister run output directories
+                settings["search.exclude"]["twister-out*"] = True
+                # Default output prefix for `west release-build`
+                settings["search.exclude"]["release-*"] = True
 
             with (vscode_folder / "settings.json").open("w") as f:
                 json.dump(settings, f, indent=4)
