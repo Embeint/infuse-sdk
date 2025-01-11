@@ -38,6 +38,7 @@ static void ubx_msg_handle(struct ubx_modem_data *modem, struct ubx_frame *frame
 	bool notify;
 	int rc;
 
+	k_sem_take(&modem->handlers_sem, K_FOREVER);
 	if (frame->message_class == UBX_MSG_CLASS_ACK) {
 		/* ACK-ACK and ACK-NAK have the same payload structures */
 		const struct ubx_msg_id_ack_ack *ack = (const void *)frame->payload_and_checksum;
@@ -66,12 +67,12 @@ static void ubx_msg_handle(struct ubx_modem_data *modem, struct ubx_frame *frame
 				if (curr->signal) {
 					k_poll_signal_raise(curr->signal, rc);
 				}
-				return;
+				goto exit;
 			}
 			prev = curr;
 		}
 		LOG_WRN("Unhandled ACK for %02x:%02x", ack->message_class, ack->message_id);
-		return;
+		goto exit;
 	}
 
 	/* Iterate over all pending message callbacks */
@@ -107,6 +108,9 @@ static void ubx_msg_handle(struct ubx_modem_data *modem, struct ubx_frame *frame
 		}
 		prev = curr;
 	}
+exit:
+	k_sem_give(&modem->handlers_sem);
+	return;
 }
 
 static void fifo_read_runner(struct k_work *work)
@@ -196,6 +200,7 @@ void ubx_modem_init(struct ubx_modem_data *modem, struct modem_pipe *pipe)
 {
 	modem->pipe = pipe;
 	sys_slist_init(&modem->handlers);
+	k_sem_init(&modem->handlers_sem, 1, 1);
 	modem_pipe_attach(modem->pipe, ubx_modem_pipe_callback, modem);
 	k_poll_signal_init(&modem->tx_done);
 	k_work_init(&modem->fifo_read_worker, fifo_read_runner);
@@ -206,6 +211,7 @@ void ubx_modem_software_standby(struct ubx_modem_data *modem)
 	struct ubx_message_handler_ctx *curr, *tmp, *prev = NULL;
 
 	/** Purge any callbacks expecting a response */
+	k_sem_take(&modem->handlers_sem, K_FOREVER);
 	SYS_SLIST_FOR_EACH_CONTAINER_SAFE(&modem->handlers, curr, tmp, _node) {
 		if (curr->flags) {
 			/* Notify waiter */
@@ -218,18 +224,23 @@ void ubx_modem_software_standby(struct ubx_modem_data *modem)
 		}
 		prev = curr;
 	}
+	k_sem_give(&modem->handlers_sem);
 }
 
 void ubx_modem_msg_subscribe(struct ubx_modem_data *modem,
 			     struct ubx_message_handler_ctx *handler_ctx)
 {
+	k_sem_take(&modem->handlers_sem, K_FOREVER);
 	sys_slist_append(&modem->handlers, &handler_ctx->_node);
+	k_sem_give(&modem->handlers_sem);
 }
 
 void ubx_modem_msg_unsubscribe(struct ubx_modem_data *modem,
 			       struct ubx_message_handler_ctx *handler_ctx)
 {
+	k_sem_take(&modem->handlers_sem, K_FOREVER);
 	sys_slist_find_and_remove(&modem->handlers, &handler_ctx->_node);
+	k_sem_give(&modem->handlers_sem);
 }
 
 int ubx_modem_send_async(struct ubx_modem_data *modem, struct net_buf_simple *buf,
@@ -246,7 +257,9 @@ int ubx_modem_send_async(struct ubx_modem_data *modem, struct net_buf_simple *bu
 		k_poll_signal_reset(&modem->tx_done);
 	} else {
 		/* Push handler onto queue */
+		k_sem_take(&modem->handlers_sem, K_FOREVER);
 		sys_slist_append(&modem->handlers, &handler_ctx->_node);
+		k_sem_give(&modem->handlers_sem);
 	}
 	/* Transmit message */
 	rc = modem_pipe_transmit(modem->pipe, buf->data, buf->len);

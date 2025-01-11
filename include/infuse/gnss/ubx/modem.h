@@ -81,6 +81,8 @@ struct ubx_modem_data {
 	struct k_poll_signal tx_done;
 	/* List of message handlers */
 	sys_slist_t handlers;
+	/* Thread protection for handlers list */
+	struct k_sem handlers_sem;
 	/* Data buffer to read bytes into */
 	uint8_t rx_buffer[CONFIG_GNSS_U_BLOX_MAX_MSG_SIZE];
 	/* Bytes pending in rx_buffer */
