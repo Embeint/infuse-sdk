@@ -21,10 +21,13 @@
 #include <infuse/epacket/interface.h>
 #include <infuse/data_logger/high_level/tdf.h>
 #include <infuse/tdf/definitions.h>
+#include <infuse/work_q.h>
 
 extern enum bst_result_t bst_result;
 static int connection_notifications;
 static int disconnection_notifications;
+
+static K_SEM_DEFINE(load_complete, 0, 1);
 
 LOG_MODULE_REGISTER(app, LOG_LEVEL_INF);
 
@@ -115,13 +118,54 @@ static void main_epacket_bt_basic_broadcast(void)
 	PASS("Advertising device complete\n");
 }
 
+static void epacket_adv_load(struct k_work *work)
+{
+	const int iterations = 10 * CONFIG_EPACKET_BUFFERS_TX;
+	struct tdf_announce announce = {0};
+
+	LOG_INF("Loaded send from %p", work);
+
+	for (int i = 0; i < iterations; i++) {
+		LOG_INF("Loaded send %2d/%2d", i + 1, iterations);
+		TDF_DATA_LOGGER_LOG(TDF_DATA_LOGGER_BT_ADV, TDF_ANNOUNCE, 0, &announce);
+		tdf_data_logger_flush(TDF_DATA_LOGGER_BT_ADV);
+	}
+	k_sem_give(&load_complete);
+}
+
+static void main_epacket_bt_adv_loaded(void)
+{
+	struct k_work from_infuse;
+
+	/* Heavy load from main application thread */
+	epacket_adv_load(NULL);
+	k_sem_take(&load_complete, K_FOREVER);
+
+	/* Heavy load from the Infuse-IoT workqueue */
+	k_work_init(&from_infuse, epacket_adv_load);
+	infuse_work_submit(&from_infuse);
+	k_sem_take(&load_complete, K_FOREVER);
+
+	PASS("Loaded send complete\n");
+}
+
 static const struct bst_test_instance ext_adv_advertiser[] = {
-	{.test_id = "epacket_bt_device",
-	 .test_descr = "Basic Infuse-IoT Bluetooth device",
-	 .test_pre_init_f = test_init,
-	 .test_tick_f = test_tick,
-	 .test_main_f = main_epacket_bt_basic_broadcast},
-	BSTEST_END_MARKER};
+	{
+		.test_id = "epacket_bt_device",
+		.test_descr = "Basic Infuse-IoT Bluetooth device",
+		.test_pre_init_f = test_init,
+		.test_tick_f = test_tick,
+		.test_main_f = main_epacket_bt_basic_broadcast,
+	},
+	{
+		.test_id = "epacket_bt_adv_load",
+		.test_descr = "Load the Bluetooth stack with large amounts of traffic",
+		.test_pre_init_f = test_init,
+		.test_tick_f = test_tick,
+		.test_main_f = main_epacket_bt_adv_loaded,
+	},
+	BSTEST_END_MARKER,
+};
 
 struct bst_test_list *test_ext_adv_advertiser(struct bst_test_list *tests)
 {
