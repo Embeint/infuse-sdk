@@ -163,14 +163,6 @@ static void epacket_bt_adv_send(const struct device *dev, struct net_buf *buf)
 		return;
 	}
 
-	if (adv_set == NULL) {
-		/* First broadcast is dropped with SoftDevice if scanning (DRGN-22705).
-		 * Workaround is to queue the first broadcast twice.
-		 */
-		buf = net_buf_ref(buf);
-		bt_adv_broadcast(dev, buf);
-	}
-
 	if (adv_set_active) {
 		/* Queue buffer for transmission if already active */
 		LOG_DBG("Queueing buf %p", buf);
