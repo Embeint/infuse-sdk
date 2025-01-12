@@ -262,7 +262,7 @@ int ubx_common_pm_control(const struct device *dev, enum pm_device_action action
 		shared_device_request_dt(&cfg->ant_switch);
 		break;
 	case PM_DEVICE_ACTION_TURN_OFF:
-		(void)modem_pipe_close(data->modem.pipe);
+		(void)modem_pipe_close(data->modem.pipe, K_SECONDS(2));
 		gpio_pin_configure_dt(&cfg->reset_gpio, GPIO_DISCONNECTED);
 		gpio_pin_configure_dt(&cfg->extint_gpio, GPIO_DISCONNECTED);
 		break;
@@ -273,7 +273,7 @@ int ubx_common_pm_control(const struct device *dev, enum pm_device_action action
 		/* Attempt to wake modem in case it is in sleep state */
 		ubx_common_extint_wake(dev);
 		/* Attempt to communicate without hardware reset to preserve GNSS state */
-		rc = modem_pipe_open(data->modem.pipe);
+		rc = modem_pipe_open(data->modem.pipe, K_SECONDS(2));
 		if (rc < 0) {
 			/* Failed to open, hardware reset and try again */
 			LOG_INF("Resetting %s...", dev->name);
@@ -281,7 +281,7 @@ int ubx_common_pm_control(const struct device *dev, enum pm_device_action action
 			gpio_pin_configure_dt(&cfg->reset_gpio, GPIO_OUTPUT_ACTIVE);
 			k_sleep(K_MSEC(2));
 			gpio_pin_configure_dt(&cfg->reset_gpio, GPIO_OUTPUT_INACTIVE);
-			rc = modem_pipe_open(data->modem.pipe);
+			rc = modem_pipe_open(data->modem.pipe, K_SECONDS(2));
 		}
 		if (rc < 0) {
 			LOG_WRN("Failed to establish comms");
@@ -291,14 +291,14 @@ int ubx_common_pm_control(const struct device *dev, enum pm_device_action action
 		rc = cfg->pm_funcs.port_setup(dev, hardware_reset);
 		if (rc < 0) {
 			LOG_INF("Failed to setup comms port");
-			modem_pipe_close(data->modem.pipe);
+			modem_pipe_close(data->modem.pipe, K_SECONDS(2));
 			return rc;
 		}
 		/* Put into low power mode */
 		rc = cfg->pm_funcs.software_standby(dev);
 		if (rc < 0) {
 			LOG_INF("Failed to go to standby mode");
-			modem_pipe_close(data->modem.pipe);
+			modem_pipe_close(data->modem.pipe, K_SECONDS(2));
 			return rc;
 		}
 		break;
