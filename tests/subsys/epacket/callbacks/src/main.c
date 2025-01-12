@@ -54,7 +54,7 @@ ZTEST(epacket_callbacks, test_interface_tx_failure)
 	int signaled, result;
 
 	zassert_not_null(sent_queue);
-	zassert_is_null(net_buf_get(sent_queue, K_NO_WAIT));
+	zassert_is_null(k_fifo_get(sent_queue, K_NO_WAIT));
 
 	interface_cb.tx_failure = tx_failed_cb;
 	interface_cb.packet_received = packet_received_cb;
@@ -73,7 +73,7 @@ ZTEST(epacket_callbacks, test_interface_tx_failure)
 	epacket_queue(epacket_dummy, tx);
 
 	/* Validate it was sent properly */
-	sent = net_buf_get(sent_queue, K_MSEC(1));
+	sent = k_fifo_get(sent_queue, K_MSEC(1));
 	zassert_not_null(sent);
 	net_buf_unref(sent);
 	/* No interface failure callback */
@@ -99,7 +99,7 @@ ZTEST(epacket_callbacks, test_interface_tx_failure)
 	epacket_queue(epacket_dummy, tx);
 
 	/* Validate it wasn't sent properly, callback received */
-	zassert_is_null(net_buf_get(sent_queue, K_MSEC(1)));
+	zassert_is_null(k_fifo_get(sent_queue, K_MSEC(1)));
 	/* Interface failure callback */
 	k_poll_signal_check(&tx_fail_signal, &signaled, &result);
 	zassert_equal(1, signaled);

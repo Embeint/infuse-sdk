@@ -68,7 +68,7 @@ static struct net_buf *expect_ext1_response(uint32_t request_id)
 	zassert_not_null(response_queue);
 
 	/* Response was sent */
-	rsp = net_buf_get(response_queue, K_MSEC(100));
+	rsp = k_fifo_get(response_queue, K_MSEC(100));
 	zassert_not_null(rsp);
 	net_buf_pull_mem(rsp, sizeof(struct epacket_dummy_frame));
 	response = (void *)rsp->data;
@@ -105,7 +105,7 @@ ZTEST(definitions_extend, test_ext_tdf)
 	tdf_data_logger_log(TDF_DATA_LOGGER_SERIAL, TDF_EXT1, sizeof(ext1), 0, &ext1);
 	tdf_data_logger_log(TDF_DATA_LOGGER_SERIAL, TDF_EXT2, sizeof(ext2), 0, &ext2);
 	tdf_data_logger_flush(TDF_DATA_LOGGER_SERIAL);
-	tx = net_buf_get(tx_fifo, K_MSEC(100));
+	tx = k_fifo_get(tx_fifo, K_MSEC(100));
 	zassert_not_null(tx);
 	net_buf_pull(tx, sizeof(struct epacket_dummy_frame));
 	zassert_equal(0, tdf_parse_find_in_buf(tx->data, tx->len, TDF_EXT1, &tdf));

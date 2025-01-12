@@ -93,7 +93,7 @@ ZTEST(data_logger_epacket, test_block_write)
 		written += sizeof(payload);
 
 		/* Validate packet was sent */
-		sent = net_buf_get(sent_queue, K_MSEC(1));
+		sent = k_fifo_get(sent_queue, K_MSEC(1));
 		zassert_not_null(sent);
 		zassert_equal(sizeof(payload) + sizeof(struct epacket_dummy_frame), sent->len);
 		frame = (void *)sent->data;
@@ -102,7 +102,7 @@ ZTEST(data_logger_epacket, test_block_write)
 		zassert_equal(EPACKET_AUTH_NETWORK, frame->auth);
 		zassert_mem_equal(payload, frame->payload, sizeof(payload));
 		net_buf_unref(sent);
-		zassert_is_null(net_buf_get(sent_queue, K_NO_WAIT));
+		zassert_is_null(k_fifo_get(sent_queue, K_NO_WAIT));
 
 		data_logger_get_state(logger, &state);
 		zassert_equal(written, state.bytes_logged);

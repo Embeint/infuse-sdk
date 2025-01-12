@@ -170,7 +170,7 @@ ZTEST(infuse_nrf_modem_monitor, test_integration)
 	struct net_buf *tx;
 
 	zassert_not_null(tx_fifo);
-	tx = net_buf_get(tx_fifo, K_MSEC(100));
+	tx = k_fifo_get(tx_fifo, K_MSEC(100));
 	zassert_is_null(tx);
 
 	/* Enable conn status logging */
@@ -236,7 +236,7 @@ ZTEST(infuse_nrf_modem_monitor, test_integration)
 #ifdef CONFIG_INFUSE_NRF_MODEM_MONITOR_CONN_STATE_LOG
 	k_sleep(K_MSEC(10));
 	tdf_data_logger_flush(TDF_DATA_LOGGER_SERIAL);
-	tx = net_buf_get(tx_fifo, K_MSEC(100));
+	tx = k_fifo_get(tx_fifo, K_MSEC(100));
 	zassert_not_null(tx);
 	net_buf_pull(tx, sizeof(struct epacket_dummy_frame));
 	zassert_equal(0, tdf_parse_find_in_buf(tx->data, tx->len, TDF_LTE_CONN_STATUS, &tdf));
@@ -282,7 +282,7 @@ ZTEST(infuse_nrf_modem_monitor, test_integration)
 #ifdef CONFIG_INFUSE_NRF_MODEM_MONITOR_CONN_STATE_LOG
 	k_sleep(K_MSEC(10));
 	tdf_data_logger_flush(TDF_DATA_LOGGER_SERIAL);
-	tx = net_buf_get(tx_fifo, K_MSEC(100));
+	tx = k_fifo_get(tx_fifo, K_MSEC(100));
 	zassert_not_null(tx);
 	net_buf_pull(tx, sizeof(struct epacket_dummy_frame));
 	zassert_equal(0, tdf_parse_find_in_buf(tx->data, tx->len, TDF_LTE_CONN_STATUS, &tdf));
@@ -313,7 +313,7 @@ ZTEST(infuse_nrf_modem_monitor, test_integration)
 
 #ifdef CONFIG_INFUSE_NRF_MODEM_MONITOR_CONN_STATE_LOG
 	tdf_data_logger_flush(TDF_DATA_LOGGER_SERIAL);
-	tx = net_buf_get(tx_fifo, K_MSEC(100));
+	tx = k_fifo_get(tx_fifo, K_MSEC(100));
 	zassert_not_null(tx);
 	net_buf_pull(tx, sizeof(struct epacket_dummy_frame));
 	zassert_equal(0, tdf_parse_find_in_buf(tx->data, tx->len, TDF_LTE_CONN_STATUS, &tdf));
@@ -400,7 +400,7 @@ ZTEST(infuse_nrf_modem_monitor, test_integration)
 #ifdef CONFIG_INFUSE_NRF_MODEM_MONITOR_CONN_STATE_LOG
 	/* No other logging after disabling */
 	tdf_data_logger_flush(TDF_DATA_LOGGER_SERIAL);
-	tx = net_buf_get(tx_fifo, K_MSEC(100));
+	tx = k_fifo_get(tx_fifo, K_MSEC(100));
 	zassert_is_null(tx);
 #endif /* CONFIG_INFUSE_NRF_MODEM_MONITOR_CONN_STATE_LOG */
 

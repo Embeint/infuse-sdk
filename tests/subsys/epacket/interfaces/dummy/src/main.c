@@ -26,7 +26,7 @@ ZTEST(epacket_dummy, test_bad_payloads)
 	zassert_not_null(tx_fifo);
 
 	epacket_dummy_receive(epacket_dummy, NULL, &bad_magic_byte, sizeof(bad_magic_byte));
-	zassert_is_null(net_buf_get(tx_fifo, K_MSEC(100)));
+	zassert_is_null(k_fifo_get(tx_fifo, K_MSEC(100)));
 }
 
 ZTEST(epacket_dummy, test_send_queue)
@@ -39,7 +39,7 @@ ZTEST(epacket_dummy, test_send_queue)
 	int rc;
 
 	zassert_not_null(sent_queue);
-	zassert_is_null(net_buf_get(sent_queue, K_NO_WAIT));
+	zassert_is_null(k_fifo_get(sent_queue, K_NO_WAIT));
 
 	/* Allocate buffer */
 	tx = epacket_alloc_tx_for_interface(epacket_dummy, K_NO_WAIT);
@@ -51,7 +51,7 @@ ZTEST(epacket_dummy, test_send_queue)
 	epacket_queue(epacket_dummy, tx);
 
 	/* Validate we can pick it up again */
-	sent = net_buf_get(sent_queue, K_MSEC(1));
+	sent = k_fifo_get(sent_queue, K_MSEC(1));
 	zassert_not_null(sent);
 	zassert_equal(sent->len, sizeof(struct epacket_dummy_frame) + sizeof(payload));
 
@@ -71,7 +71,7 @@ ZTEST(epacket_dummy, test_send_queue)
 	zassert_equal(0, rx_meta->sequence);
 	net_buf_unref(rx);
 
-	zassert_is_null(net_buf_get(sent_queue, K_NO_WAIT));
+	zassert_is_null(k_fifo_get(sent_queue, K_NO_WAIT));
 }
 
 ZTEST(epacket_dummy, test_packet_size)

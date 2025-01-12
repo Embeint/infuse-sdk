@@ -126,7 +126,7 @@ void epacket_bt_adv_send_next(void)
 {
 	struct net_buf *next;
 
-	next = net_buf_get(&tx_buf_queue, K_NO_WAIT);
+	next = k_fifo_get(&tx_buf_queue, K_NO_WAIT);
 	if (next) {
 		LOG_DBG("Chaining next buf: %p", next);
 		bt_adv_broadcast(DEVICE_DT_INST_GET(0), next);
@@ -166,7 +166,7 @@ static void epacket_bt_adv_send(const struct device *dev, struct net_buf *buf)
 	if (adv_set_active) {
 		/* Queue buffer for transmission if already active */
 		LOG_DBG("Queueing buf %p", buf);
-		net_buf_put(&tx_buf_queue, buf);
+		k_fifo_put(&tx_buf_queue, buf);
 	} else {
 		/* Broadcast if not active */
 		bt_adv_broadcast(dev, buf);

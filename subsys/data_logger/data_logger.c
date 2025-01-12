@@ -182,7 +182,7 @@ static int logger_commit_thread_fn(void *a, void *b, void *c)
 
 	infuse_watchdog_thread_register(wdog_channel, _current);
 	for (;;) {
-		buf = net_buf_get(&block_commit_fifo, loop_period);
+		buf = k_fifo_get(&block_commit_fifo, loop_period);
 		infuse_watchdog_feed(wdog_channel);
 		if (buf == NULL) {
 			continue;
@@ -247,7 +247,7 @@ int data_logger_block_write(const struct device *dev, enum infuse_type type, voi
 	ctx->dev = dev;
 	ctx->type = type;
 	net_buf_add_mem(buf, block, block_len);
-	net_buf_put(&block_commit_fifo, buf);
+	k_fifo_put(&block_commit_fifo, buf);
 	return 0;
 #else
 	return handle_block_write(dev, type, block, block_len);

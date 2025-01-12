@@ -60,7 +60,7 @@ static struct net_buf *expect_gravity_reference_update_response(uint32_t request
 	zassert_not_null(response_queue);
 
 	/* Response was sent */
-	rsp = net_buf_get(response_queue, K_SECONDS(15));
+	rsp = k_fifo_get(response_queue, K_SECONDS(15));
 	zassert_not_null(rsp);
 	net_buf_pull_mem(rsp, sizeof(struct epacket_dummy_frame));
 	response = (void *)rsp->data;

@@ -293,7 +293,7 @@ static struct net_buf *expect_response(uint32_t request_id, uint16_t command_id,
 	struct net_buf *rsp;
 
 	/* Response was sent */
-	rsp = net_buf_get(response_queue, K_SECONDS(10));
+	rsp = k_fifo_get(response_queue, K_SECONDS(10));
 	if (rsp == NULL) {
 		LOG_ERR("No response");
 		return NULL;
@@ -418,7 +418,7 @@ static K_FIFO_DEFINE(central_fifo);
 
 void central_handler(struct net_buf *buf)
 {
-	net_buf_put(&central_fifo, buf);
+	k_fifo_put(&central_fifo, buf);
 }
 
 static void main_gateway_connect_recv(void)
@@ -668,7 +668,7 @@ static void main_gateway_remote_rpc_forward(void)
 		net_buf_unref(buf);
 
 		/* Expect response to appear on the epacket output */
-		buf = net_buf_get(response_queue, K_SECONDS(1));
+		buf = k_fifo_get(response_queue, K_SECONDS(1));
 		if (buf == NULL) {
 			FAIL("Failed to receive response");
 			return;

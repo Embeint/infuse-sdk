@@ -50,7 +50,7 @@ void infuse_reboot(enum infuse_reboot_reason reason, uint32_t info1, uint32_t in
 
 static void rx_fifo_pusher(struct net_buf *buf)
 {
-	net_buf_put(&udp_rx_fifo, buf);
+	k_fifo_put(&udp_rx_fifo, buf);
 }
 
 void udp_interface_state(uint16_t current_max_payload, void *user_ctx)
@@ -102,7 +102,7 @@ static void test_acked_packet(void)
 	tdf_send(EPACKET_FLAGS_ACK_REQUEST, NULL);
 
 	/* Expect an ACK response */
-	rx = net_buf_get(&udp_rx_fifo, K_MSEC(1000));
+	rx = k_fifo_get(&udp_rx_fifo, K_MSEC(1000));
 	zassert_not_null(rx);
 	rx_meta = net_buf_user_data(rx);
 	zassert_equal(INFUSE_ACK, rx_meta->type);
@@ -139,7 +139,7 @@ ZTEST(epacket_udp, test_udp_auto_ack)
 	}
 
 	/* Expected an ACK packet to be generated, which should have resulted in a response */
-	rx = net_buf_get(&udp_rx_fifo, K_MSEC(100));
+	rx = k_fifo_get(&udp_rx_fifo, K_MSEC(100));
 	zassert_not_null(rx);
 	rx_meta = net_buf_user_data(rx);
 	zassert_equal(INFUSE_ACK, rx_meta->type);
@@ -176,7 +176,7 @@ ZTEST(epacket_udp, test_udp_ack)
 		zassert_equal(-EAGAIN, k_sem_take(&if_tx_failure, K_MSEC(10)));
 
 		/* Expect an ACK response */
-		rx = net_buf_get(&udp_rx_fifo, K_MSEC(1000));
+		rx = k_fifo_get(&udp_rx_fifo, K_MSEC(1000));
 		zassert_not_null(rx);
 		rx_meta = net_buf_user_data(rx);
 		zassert_equal(INFUSE_ACK, rx_meta->type);
@@ -186,7 +186,7 @@ ZTEST(epacket_udp, test_udp_ack)
 	}
 
 	/* Expect no more packets */
-	rx = net_buf_get(&udp_rx_fifo, K_MSEC(1000));
+	rx = k_fifo_get(&udp_rx_fifo, K_MSEC(1000));
 	zassert_is_null(rx);
 
 	uint32_t wdog_initial = CONFIG_EPACKET_INTERFACE_UDP_DOWNLINK_WATCHDOG_TIMEOUT - 2;
@@ -229,7 +229,7 @@ ZTEST(epacket_udp, test_udp_reconnect)
 	}
 
 	/* No packets expected */
-	rx = net_buf_get(&udp_rx_fifo, K_MSEC(100));
+	rx = k_fifo_get(&udp_rx_fifo, K_MSEC(100));
 	zassert_is_null(rx);
 
 	/* We expect the interface to have gone UP -> DOWN -> UP */
@@ -295,7 +295,7 @@ static void test_after(void *fixture)
 	epacket_udp_dns_reset();
 
 	do {
-		rx = net_buf_get(&udp_rx_fifo, K_MSEC(100));
+		rx = k_fifo_get(&udp_rx_fifo, K_MSEC(100));
 		if (rx) {
 			net_buf_unref(rx);
 		}

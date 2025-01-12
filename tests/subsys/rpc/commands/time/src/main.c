@@ -46,7 +46,7 @@ static void expect_time_set_response(uint32_t request_id, int16_t rc)
 	zassert_not_null(response_queue);
 
 	/* Response was sent */
-	rsp = net_buf_get(response_queue, K_MSEC(100));
+	rsp = k_fifo_get(response_queue, K_MSEC(100));
 	zassert_not_null(rsp);
 	response = (void *)(rsp->data + sizeof(struct epacket_dummy_frame));
 
@@ -87,7 +87,7 @@ static struct rpc_time_get_response expect_time_get_response(uint32_t request_id
 	zassert_not_null(response_queue);
 
 	/* Response was sent */
-	rsp = net_buf_get(response_queue, K_MSEC(100));
+	rsp = k_fifo_get(response_queue, K_MSEC(100));
 	zassert_not_null(rsp);
 	response = (void *)(rsp->data + sizeof(struct epacket_dummy_frame));
 

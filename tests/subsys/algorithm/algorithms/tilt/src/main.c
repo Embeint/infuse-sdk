@@ -69,7 +69,7 @@ static void task_terminate(uint8_t index)
 static float expect_logging(uint8_t count)
 {
 	struct k_fifo *tx_queue = epacket_dummmy_transmit_fifo_get();
-	struct net_buf *pkt = net_buf_get(tx_queue, K_MSEC(10));
+	struct net_buf *pkt = k_fifo_get(tx_queue, K_MSEC(10));
 	struct tdf_device_tilt *var;
 	struct tdf_buffer_state state;
 	struct tdf_parsed tdf;

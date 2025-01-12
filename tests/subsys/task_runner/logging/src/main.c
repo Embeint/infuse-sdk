@@ -84,14 +84,14 @@ ZTEST(task_runner_logging, test_tdf_logging)
 	task_schedule_tdf_log(&schedule1, TASK_LOG_TDF_0, TDF_RANDOM, sizeof(tdf_data), 0,
 			      &tdf_data);
 	tdf_data_logger_flush(TDF_DATA_LOGGER_SERIAL);
-	tx = net_buf_get(tx_fifo, K_MSEC(100));
+	tx = k_fifo_get(tx_fifo, K_MSEC(100));
 	zassert_is_null(tx);
 
 	/* TASK_LOG_TDF_1 is requested */
 	task_schedule_tdf_log(&schedule1, TASK_LOG_TDF_1, TDF_RANDOM, sizeof(tdf_data), 0,
 			      &tdf_data);
 	tdf_data_logger_flush(TDF_DATA_LOGGER_SERIAL);
-	tx = net_buf_get(tx_fifo, K_MSEC(100));
+	tx = k_fifo_get(tx_fifo, K_MSEC(100));
 	zassert_not_null(tx);
 	net_buf_unref(tx);
 
@@ -99,14 +99,14 @@ ZTEST(task_runner_logging, test_tdf_logging)
 	task_schedule_tdf_log(&schedule2, TASK_LOG_TDF_2, TDF_RANDOM, sizeof(tdf_data), 0,
 			      &tdf_data);
 	tdf_data_logger_flush(TDF_DATA_LOGGER_SERIAL);
-	tx = net_buf_get(tx_fifo, K_MSEC(100));
+	tx = k_fifo_get(tx_fifo, K_MSEC(100));
 	zassert_is_null(tx);
 
 	/* TASK_LOG_TDF_3 is requested */
 	task_schedule_tdf_log(&schedule2, TASK_LOG_TDF_3, TDF_RANDOM, sizeof(tdf_data), 0,
 			      &tdf_data);
 	tdf_data_logger_flush(TDF_DATA_LOGGER_SERIAL);
-	tx = net_buf_get(tx_fifo, K_MSEC(100));
+	tx = k_fifo_get(tx_fifo, K_MSEC(100));
 	zassert_not_null(tx);
 	net_buf_unref(tx);
 }
@@ -128,13 +128,13 @@ ZTEST(task_runner_logging, test_tdf_type_safe)
 
 	TASK_SCHEDULE_TDF_LOG(&schedule1, TASK_LOG_TDF_1, TDF_ACC_2G, 0, readings);
 	tdf_data_logger_flush(TDF_DATA_LOGGER_SERIAL);
-	tx = net_buf_get(tx_fifo, K_MSEC(100));
+	tx = k_fifo_get(tx_fifo, K_MSEC(100));
 	zassert_not_null(tx);
 	net_buf_unref(tx);
 
 	TASK_SCHEDULE_TDF_LOG_ARRAY(&schedule1, TASK_LOG_TDF_1, TDF_ACC_2G, 2, 0, 10, readings);
 	tdf_data_logger_flush(TDF_DATA_LOGGER_SERIAL);
-	tx = net_buf_get(tx_fifo, K_MSEC(100));
+	tx = k_fifo_get(tx_fifo, K_MSEC(100));
 	zassert_not_null(tx);
 	net_buf_unref(tx);
 }

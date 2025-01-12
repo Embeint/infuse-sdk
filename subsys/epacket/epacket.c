@@ -111,7 +111,7 @@ void epacket_queue(const struct device *dev, struct net_buf *buf)
 	tx_device[net_buf_id(buf)] = dev;
 
 	/* Push packet at processing queue */
-	net_buf_put(&epacket_tx_queue, buf);
+	k_fifo_put(&epacket_tx_queue, buf);
 }
 
 int epacket_receive(const struct device *dev, k_timeout_t timeout)
@@ -145,7 +145,7 @@ int epacket_receive(const struct device *dev, k_timeout_t timeout)
 void epacket_raw_receive_handler(struct net_buf *buf)
 {
 	/* Push packet at processing queue */
-	net_buf_put(&epacket_rx_queue, buf);
+	k_fifo_put(&epacket_rx_queue, buf);
 }
 
 void epacket_notify_tx_result(const struct device *dev, struct net_buf *buf, int result)
@@ -323,13 +323,13 @@ static void epacket_processor(void *a, void *b, void *c)
 		}
 
 		if (events[0].state == K_POLL_STATE_FIFO_DATA_AVAILABLE) {
-			buf = net_buf_get(events[0].fifo, K_NO_WAIT);
+			buf = k_fifo_get(events[0].fifo, K_NO_WAIT);
 			epacket_handle_rx(buf);
 			events[0].state = K_POLL_STATE_NOT_READY;
 		}
 
 		if (events[1].state == K_POLL_STATE_FIFO_DATA_AVAILABLE) {
-			buf = net_buf_get(events[1].fifo, K_NO_WAIT);
+			buf = k_fifo_get(events[1].fifo, K_NO_WAIT);
 			epacket_handle_tx(buf);
 			events[1].state = K_POLL_STATE_NOT_READY;
 		}

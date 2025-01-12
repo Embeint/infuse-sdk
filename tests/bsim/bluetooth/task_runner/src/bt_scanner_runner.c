@@ -89,7 +89,7 @@ static void main_bt_scanner_timeout(void)
 
 	/* Flush all logged data and get the packet */
 	tdf_data_logger_flush(TDF_DATA_LOGGER_UDP);
-	buf = net_buf_get(sent_queue, K_MSEC(10));
+	buf = k_fifo_get(sent_queue, K_MSEC(10));
 	if (buf == NULL) {
 		FAIL("No TDFs logged\n");
 		return;
@@ -129,7 +129,7 @@ static void main_bt_scanner_self_duration(void)
 
 	/* Flush all logged data and get the packet */
 	tdf_data_logger_flush(TDF_DATA_LOGGER_UDP);
-	buf = net_buf_get(sent_queue, K_MSEC(10));
+	buf = k_fifo_get(sent_queue, K_MSEC(10));
 	if (buf == NULL) {
 		FAIL("No TDFs logged\n");
 		return;
@@ -170,7 +170,7 @@ static void main_bt_scanner_scan_4(void)
 
 	/* Flush all logged data and get the packet */
 	tdf_data_logger_flush(TDF_DATA_LOGGER_UDP);
-	buf = net_buf_get(sent_queue, K_MSEC(10));
+	buf = k_fifo_get(sent_queue, K_MSEC(10));
 	if (buf == NULL) {
 		FAIL("No TDFs logged\n");
 		return;
@@ -211,7 +211,7 @@ static void main_bt_scanner_filter_duplicates(void)
 
 	/* Flush all logged data and get the packet */
 	tdf_data_logger_flush(TDF_DATA_LOGGER_UDP);
-	buf = net_buf_get(sent_queue, K_MSEC(10));
+	buf = k_fifo_get(sent_queue, K_MSEC(10));
 	if (buf == NULL) {
 		FAIL("No TDFs logged\n");
 		return;
@@ -251,7 +251,7 @@ static void main_bt_scanner_defer_logging(void)
 
 	/* Flush all logged data and get the packet */
 	tdf_data_logger_flush(TDF_DATA_LOGGER_UDP);
-	buf = net_buf_get(sent_queue, K_MSEC(10));
+	buf = k_fifo_get(sent_queue, K_MSEC(10));
 	if (buf == NULL) {
 		FAIL("No TDFs logged\n");
 		return;
@@ -294,7 +294,7 @@ static void main_bt_scanner_defer_filter(void)
 
 	/* Flush all logged data and get the packet */
 	tdf_data_logger_flush(TDF_DATA_LOGGER_UDP);
-	buf = net_buf_get(sent_queue, K_MSEC(10));
+	buf = k_fifo_get(sent_queue, K_MSEC(10));
 	if (buf == NULL) {
 		FAIL("No TDFs logged\n");
 		return;
@@ -338,7 +338,7 @@ static void main_bt_scanner_defer_filter_limit(void)
 
 	/* Flush all logged data and get the packet */
 	tdf_data_logger_flush(TDF_DATA_LOGGER_UDP);
-	buf = net_buf_get(sent_queue, K_MSEC(10));
+	buf = k_fifo_get(sent_queue, K_MSEC(10));
 	if (buf == NULL) {
 		FAIL("No TDFs logged\n");
 		return;
@@ -378,7 +378,7 @@ static void main_bt_scanner_defer_no_logs(void)
 
 	/* Flush all logged data and get the packet */
 	tdf_data_logger_flush(TDF_DATA_LOGGER_UDP);
-	buf = net_buf_get(sent_queue, K_MSEC(10));
+	buf = k_fifo_get(sent_queue, K_MSEC(10));
 	if (buf != NULL) {
 		FAIL("Unexpected TDFs\n");
 	} else {
@@ -401,7 +401,7 @@ static void main_bt_scanner_encrypted_log(void)
 
 	/* Flush all logged data and get the packet */
 	tdf_data_logger_flush(TDF_DATA_LOGGER_UDP);
-	buf = net_buf_get(sent_queue, K_MSEC(10));
+	buf = k_fifo_get(sent_queue, K_MSEC(10));
 	if (buf == NULL) {
 		FAIL("No TDFs logged\n");
 		return;
@@ -438,7 +438,7 @@ static void main_bt_scanner_encrypted_skip(void)
 
 	/* Flush all logged data and get the packet */
 	tdf_data_logger_flush(TDF_DATA_LOGGER_UDP);
-	buf = net_buf_get(sent_queue, K_MSEC(10));
+	buf = k_fifo_get(sent_queue, K_MSEC(10));
 	if (buf != NULL) {
 		FAIL("Unexpected TDFs\n");
 	} else {

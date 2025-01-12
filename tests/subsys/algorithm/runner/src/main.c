@@ -180,20 +180,20 @@ ZTEST(algorithm_runner, test_logging)
 	/* Not requested */
 	algorithm_runner_tdf_log(&config1, BIT(0), TDF_ACC_4G, sizeof(data), 0, &data);
 	tdf_data_logger_flush(TDF_DATA_LOGGER_SERIAL);
-	tx = net_buf_get(tx_fifo, K_MSEC(100));
+	tx = k_fifo_get(tx_fifo, K_MSEC(100));
 	zassert_is_null(tx);
 
 	/* Requested */
 	algorithm_runner_tdf_log(&config1, BIT(1), TDF_ACC_4G, sizeof(data), 0, &data);
 	tdf_data_logger_flush(TDF_DATA_LOGGER_SERIAL);
-	tx = net_buf_get(tx_fifo, K_MSEC(100));
+	tx = k_fifo_get(tx_fifo, K_MSEC(100));
 	zassert_not_null(tx);
 	net_buf_unref(tx);
 
 	/* Not requested */
 	algorithm_runner_tdf_log(&config1, BIT(2), TDF_ACC_4G, sizeof(data), 0, &data);
 	tdf_data_logger_flush(TDF_DATA_LOGGER_SERIAL);
-	tx = net_buf_get(tx_fifo, K_MSEC(100));
+	tx = k_fifo_get(tx_fifo, K_MSEC(100));
 	zassert_is_null(tx);
 }
 

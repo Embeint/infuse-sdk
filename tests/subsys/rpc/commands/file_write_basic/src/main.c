@@ -125,7 +125,7 @@ static struct test_out test_file_write_basic(uint8_t action, uint32_t total_send
 	}
 
 	/* Expect an initial INFUSE_RPC_DATA_ACK to signify readiness */
-	tx = net_buf_get(tx_fifo, K_MSEC(100));
+	tx = k_fifo_get(tx_fifo, K_MSEC(100));
 	tx_header = (void *)tx->data;
 	data_ack = (void *)(tx->data + sizeof(*tx_header));
 	num_offsets = (tx->len - sizeof(*tx_header) - sizeof(*data_ack)) / sizeof(uint32_t);
@@ -178,7 +178,7 @@ static struct test_out test_file_write_basic(uint8_t action, uint32_t total_send
 		if (stop_after && (stop_after-- == 1)) {
 			break;
 		}
-		tx = net_buf_get(tx_fifo, K_NO_WAIT);
+		tx = k_fifo_get(tx_fifo, K_NO_WAIT);
 		if (tx) {
 ack_handler:
 			tx_header = (void *)tx->data;
@@ -203,7 +203,7 @@ ack_handler:
 
 write_skip:
 	/* Wait for the final RPC_RSP */
-	tx = net_buf_get(tx_fifo, K_MSEC(1000));
+	tx = k_fifo_get(tx_fifo, K_MSEC(1000));
 early_rsp:
 	zassert_not_null(tx);
 	tx_header = (void *)tx->data;
@@ -271,7 +271,7 @@ ZTEST(rpc_command_file_write_basic, test_invalid_action)
 	epacket_dummy_receive(epacket_dummy, &hdr, &req, sizeof(req));
 
 	/* Wait for the invalid response */
-	tx = net_buf_get(tx_fifo, K_MSEC(1000));
+	tx = k_fifo_get(tx_fifo, K_MSEC(1000));
 	zassert_not_null(tx);
 	tx_header = (void *)tx->data;
 	rsp = (void *)(tx->data + sizeof(*tx_header));

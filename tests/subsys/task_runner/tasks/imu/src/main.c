@@ -88,7 +88,7 @@ ZTEST(task_imu, test_invalid_config)
 static void expect_logging(uint8_t range)
 {
 	struct k_fifo *tx_queue = epacket_dummmy_transmit_fifo_get();
-	struct net_buf *pkt = net_buf_get(tx_queue, K_MSEC(10));
+	struct net_buf *pkt = k_fifo_get(tx_queue, K_MSEC(10));
 	struct tdf_parsed tdf;
 	uint16_t expected_tdf;
 
@@ -170,7 +170,7 @@ static void test_imu(uint8_t range, uint16_t rate, uint16_t num_samples, uint8_t
 		/* No data being pushed */
 		tdf_data_logger_flush(TDF_DATA_LOGGER_SERIAL);
 		if (log == 0) {
-			zassert_is_null(net_buf_get(tx_queue, K_MSEC(1)));
+			zassert_is_null(k_fifo_get(tx_queue, K_MSEC(1)));
 		} else {
 			expect_logging(range);
 		}

@@ -33,12 +33,12 @@ uint8_t *rpc_server_command_working_mem(size_t *size)
 
 void rpc_server_queue_command(struct net_buf *buf)
 {
-	net_buf_put(&command_fifo, buf);
+	k_fifo_put(&command_fifo, buf);
 }
 
 void rpc_server_queue_data(struct net_buf *buf)
 {
-	net_buf_put(&data_fifo, buf);
+	k_fifo_put(&data_fifo, buf);
 }
 
 struct net_buf *rpc_response_simple_if(const struct device *interface, int16_t rc, void *response,
@@ -82,7 +82,7 @@ struct net_buf *rpc_server_pull_data(uint32_t request_id, uint32_t expected_offs
 
 	/* Loop until we get an INFUSE_RPC_DATA packet for the current command */
 	while (true) {
-		buf = net_buf_get(&data_fifo, timeout);
+		buf = k_fifo_get(&data_fifo, timeout);
 		if (buf == NULL) {
 			LOG_WRN("Timeout waiting for offset %08X", expected_offset);
 			*err = -ETIMEDOUT;
@@ -180,14 +180,14 @@ static int rpc_server(void *a, void *b, void *c)
 		}
 
 		if (events[0].state == K_POLL_STATE_FIFO_DATA_AVAILABLE) {
-			buf = net_buf_get(events[0].fifo, K_NO_WAIT);
+			buf = k_fifo_get(events[0].fifo, K_NO_WAIT);
 			rpc_server_pull_data_reset();
 			rpc_command_runner(buf);
 			events[0].state = K_POLL_STATE_NOT_READY;
 		}
 
 		if (events[1].state == K_POLL_STATE_FIFO_DATA_AVAILABLE) {
-			buf = net_buf_get(events[1].fifo, K_NO_WAIT);
+			buf = k_fifo_get(events[1].fifo, K_NO_WAIT);
 			/* Can return NULL if data packet was queued before runner started */
 			if (buf) {
 				data = (void *)buf->data;
