@@ -165,7 +165,7 @@ static void run_location_fix(k_tid_t thread, int32_t latitude, int32_t longitude
 
 static void expected_location_fix(k_tid_t thread, uint32_t start, uint32_t duration)
 {
-	uint32_t end = k_ticks_to_sec_near32(zbus_chan_publish_time(ZBUS_CHAN));
+	uint32_t end = k_ticks_to_sec_near32(zbus_chan_pub_stats_last_time(ZBUS_CHAN));
 
 	/* Final location should be pushed */
 	zassert_equal(0, k_sem_take(&location_published, K_SECONDS(2)));

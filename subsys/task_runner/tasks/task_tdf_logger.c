@@ -78,7 +78,7 @@ static void log_battery(uint8_t loggers, uint64_t timestamp)
 #ifdef CONFIG_INFUSE_ZBUS_CHAN_BATTERY
 	INFUSE_ZBUS_TYPE(INFUSE_ZBUS_CHAN_BATTERY) battery;
 
-	if (zbus_chan_publish_count(C_GET(INFUSE_ZBUS_CHAN_BATTERY)) == 0) {
+	if (zbus_chan_pub_stats_count(C_GET(INFUSE_ZBUS_CHAN_BATTERY)) == 0) {
 		return;
 	}
 	/* Get latest value */

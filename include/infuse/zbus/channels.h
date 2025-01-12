@@ -125,10 +125,10 @@ enum infuse_zbus_channel_id {
 static inline uint64_t infuse_zbus_channel_data_age(const struct zbus_channel *chan)
 {
 #ifdef CONFIG_ZBUS_CHANNEL_PUBLISH_STATS
-	if (zbus_chan_publish_count(chan) == 0) {
+	if (zbus_chan_pub_stats_count(chan) == 0) {
 		return UINT64_MAX;
 	}
-	return k_ticks_to_ms_floor64(k_uptime_ticks() - zbus_chan_publish_time(chan));
+	return k_ticks_to_ms_floor64(k_uptime_ticks() - zbus_chan_pub_stats_last_time(chan));
 #else
 	return UINT64_MAX;
 #endif /* CONFIG_ZBUS_CHANNEL_PUBLISH_STATS */

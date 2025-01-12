@@ -141,7 +141,7 @@ ZTEST(alg_stationary, test_send)
 	last = expect_logging(10);
 	zassert_within(1.000f, last, 0.001f);
 	zassert_within(1.000f, out->cosine, 0.001f);
-	zassert_equal(10, zbus_chan_publish_count(ZBUS_CHAN));
+	zassert_equal(10, zbus_chan_pub_stats_count(ZBUS_CHAN));
 
 	/* 45 degree tilt */
 	imu_emul_accelerometer_data_configure(DEV, 0.0f, -0.707f, -0.707f, 0);
@@ -150,7 +150,7 @@ ZTEST(alg_stationary, test_send)
 	last = expect_logging(10);
 	zassert_within(0.707f, last, 0.001f);
 	zassert_within(0.707f, out->cosine, 0.001f);
-	zassert_equal(20, zbus_chan_publish_count(ZBUS_CHAN));
+	zassert_equal(20, zbus_chan_pub_stats_count(ZBUS_CHAN));
 
 	/* 90 degree tilt */
 	imu_emul_accelerometer_data_configure(DEV, -1.0f, 0.0f, 0.0f, 0);
@@ -159,7 +159,7 @@ ZTEST(alg_stationary, test_send)
 	last = expect_logging(10);
 	zassert_within(0.000f, last, 0.001f);
 	zassert_within(0.000f, out->cosine, 0.001f);
-	zassert_equal(30, zbus_chan_publish_count(ZBUS_CHAN));
+	zassert_equal(30, zbus_chan_pub_stats_count(ZBUS_CHAN));
 
 	/* 135 degree tilt */
 	imu_emul_accelerometer_data_configure(DEV, -0.707f, 0.0f, 0.707f, 0);
@@ -168,7 +168,7 @@ ZTEST(alg_stationary, test_send)
 	last = expect_logging(10);
 	zassert_within(-0.707f, last, 0.001f);
 	zassert_within(-0.707f, out->cosine, 0.001f);
-	zassert_equal(40, zbus_chan_publish_count(ZBUS_CHAN));
+	zassert_equal(40, zbus_chan_pub_stats_count(ZBUS_CHAN));
 
 	/* 180 degree tilt */
 	imu_emul_accelerometer_data_configure(DEV, 0.0f, 0.0f, 1.0f, 0);
@@ -177,7 +177,7 @@ ZTEST(alg_stationary, test_send)
 	last = expect_logging(10);
 	zassert_within(-1.000f, last, 0.001f);
 	zassert_within(-1.000f, out->cosine, 0.001f);
-	zassert_equal(50, zbus_chan_publish_count(ZBUS_CHAN));
+	zassert_equal(50, zbus_chan_pub_stats_count(ZBUS_CHAN));
 
 	/* Update the reference vector */
 	gravity.x = 0;
@@ -191,7 +191,7 @@ ZTEST(alg_stationary, test_send)
 	last = expect_logging(10);
 	zassert_within(0.000f, last, 0.001f);
 	zassert_within(0.000f, out->cosine, 0.001f);
-	zassert_equal(60, zbus_chan_publish_count(ZBUS_CHAN));
+	zassert_equal(60, zbus_chan_pub_stats_count(ZBUS_CHAN));
 
 	/* Delete the reference vector */
 	zassert_equal(0, kv_store_delete(KV_KEY_GRAVITY_REFERENCE));
@@ -201,7 +201,7 @@ ZTEST(alg_stationary, test_send)
 	tdf_data_logger_flush(TDF_DATA_LOGGER_SERIAL);
 	last = expect_logging(0);
 	zassert_within(0.000f, out->cosine, 0.001f);
-	zassert_equal(60, zbus_chan_publish_count(ZBUS_CHAN));
+	zassert_equal(60, zbus_chan_pub_stats_count(ZBUS_CHAN));
 
 	/* Reference vector restored */
 	gravity.x = 1000;
@@ -216,7 +216,7 @@ ZTEST(alg_stationary, test_send)
 	last = expect_logging(10);
 	zassert_within(0.296f, last, 0.001f);
 	zassert_within(0.296f, out->cosine, 0.001f);
-	zassert_equal(70, zbus_chan_publish_count(ZBUS_CHAN));
+	zassert_equal(70, zbus_chan_pub_stats_count(ZBUS_CHAN));
 
 	/* Device is moving (magnitude is outside 10% of 1G)
 	 * No more data published, channel data stays the same
@@ -226,7 +226,7 @@ ZTEST(alg_stationary, test_send)
 	tdf_data_logger_flush(TDF_DATA_LOGGER_SERIAL);
 	last = expect_logging(0);
 	zassert_within(0.296f, out->cosine, 0.001f);
-	zassert_equal(70, zbus_chan_publish_count(ZBUS_CHAN));
+	zassert_equal(70, zbus_chan_pub_stats_count(ZBUS_CHAN));
 
 	/* Stationary again */
 	imu_emul_accelerometer_data_configure(DEV, 0.0f, 0.1f, 1.0f, 0);
@@ -234,7 +234,7 @@ ZTEST(alg_stationary, test_send)
 	tdf_data_logger_flush(TDF_DATA_LOGGER_SERIAL);
 	last = expect_logging(10);
 	zassert_within(-0.070f, out->cosine, 0.001f);
-	zassert_equal(80, zbus_chan_publish_count(ZBUS_CHAN));
+	zassert_equal(80, zbus_chan_pub_stats_count(ZBUS_CHAN));
 
 	/* Terminate the IMU producer */
 	task_terminate(0);

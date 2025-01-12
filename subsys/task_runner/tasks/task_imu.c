@@ -73,7 +73,7 @@ static void imu_sample_handler(const struct task_schedule *schedule,
 	}
 
 	/* Update metadata, finish claim, notify subscribers */
-	zbus_chan_update_publish_metadata(ZBUS_CHAN_MAG);
+	zbus_chan_pub_stats_update(ZBUS_CHAN_MAG);
 	zbus_chan_finish(ZBUS_CHAN_MAG);
 	zbus_chan_notify(ZBUS_CHAN_MAG, K_FOREVER);
 #endif /* CONFIG_TASK_RUNNER_TASK_IMU_ACC_MAGNITUDE_BROADCAST */
@@ -191,7 +191,7 @@ void imu_task_fn(const struct task_schedule *schedule, struct k_poll_signal *ter
 		imu_sample_handler(schedule, &log_state, ZBUS_CHAN->message);
 
 		/* Update metadata, finish claim, notify subscribers */
-		zbus_chan_update_publish_metadata(ZBUS_CHAN);
+		zbus_chan_pub_stats_update(ZBUS_CHAN);
 		zbus_chan_finish(ZBUS_CHAN);
 		zbus_chan_notify(ZBUS_CHAN, K_FOREVER);
 

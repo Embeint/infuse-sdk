@@ -341,7 +341,7 @@ ZTEST(task_tdf_logger, test_accelerometer)
 	samples->accelerometer.num = 0;
 	samples->gyroscope.num = 1;
 	samples->magnetometer.num = 0;
-	zbus_chan_update_publish_metadata(chan_imu);
+	zbus_chan_pub_stats_update(chan_imu);
 	zassert_equal(0, zbus_chan_finish(chan_imu));
 
 	schedule.task_args.infuse.tdf_logger = (struct task_tdf_logger_args){
@@ -369,7 +369,7 @@ ZTEST(task_tdf_logger, test_accelerometer)
 		samples->accelerometer.full_scale_range = configs[i].range;
 		samples->gyroscope.num = 0;
 		samples->magnetometer.num = 0;
-		zbus_chan_update_publish_metadata(chan_imu);
+		zbus_chan_pub_stats_update(chan_imu);
 		zassert_equal(0, zbus_chan_finish(chan_imu));
 
 		/* Accelerometer data should send now */
