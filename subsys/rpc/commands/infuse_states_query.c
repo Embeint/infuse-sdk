@@ -8,7 +8,7 @@
 
 #include <string.h>
 
-#include <zephyr/net/buf.h>
+#include <zephyr/net_buf.h>
 
 #include <infuse/rpc/commands.h>
 #include <infuse/rpc/types.h>

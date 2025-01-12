@@ -12,7 +12,7 @@
 #include <zephyr/logging/log.h>
 #include <zephyr/device.h>
 #include <zephyr/drivers/uart.h>
-#include <zephyr/net/buf.h>
+#include <zephyr/net_buf.h>
 #include <zephyr/pm/device_runtime.h>
 
 #include <infuse/gnss/ubx/modem.h>

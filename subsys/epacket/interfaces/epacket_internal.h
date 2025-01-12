@@ -10,7 +10,7 @@
 #ifndef INFUSE_SDK_SUBSYS_EPACKET_INTERFACES_EPACKET_INTERNAL_H_
 #define INFUSE_SDK_SUBSYS_EPACKET_INTERFACES_EPACKET_INTERNAL_H_
 
-#include <zephyr/net/buf.h>
+#include <zephyr/net_buf.h>
 
 #ifdef __cplusplus
 extern "C" {

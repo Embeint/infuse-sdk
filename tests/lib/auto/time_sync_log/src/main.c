@@ -11,7 +11,7 @@
 
 #include <zephyr/ztest.h>
 #include <zephyr/kernel.h>
-#include <zephyr/net/buf.h>
+#include <zephyr/net_buf.h>
 
 #include <infuse/auto/time_sync_log.h>
 #include <infuse/data_logger/high_level/tdf.h>

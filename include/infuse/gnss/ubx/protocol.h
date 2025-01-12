@@ -12,7 +12,7 @@
 #define INFUSE_GNSS_UBX_PROTOCOL_H_
 
 #include <zephyr/modem/ubx.h>
-#include <zephyr/net/buf.h>
+#include <zephyr/net_buf.h>
 #include <zephyr/toolchain.h>
 
 #ifdef __cplusplus

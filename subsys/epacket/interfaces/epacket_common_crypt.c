@@ -10,7 +10,7 @@
 #include <stdint.h>
 
 #include <zephyr/random/random.h>
-#include <zephyr/net/buf.h>
+#include <zephyr/net_buf.h>
 #include <zephyr/sys/byteorder.h>
 #include <zephyr/logging/log.h>
 

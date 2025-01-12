@@ -7,7 +7,7 @@
  */
 
 #include <zephyr/kernel.h>
-#include <zephyr/net/buf.h>
+#include <zephyr/net_buf.h>
 #include <zephyr/logging/log.h>
 
 #include <infuse/rpc/commands.h>

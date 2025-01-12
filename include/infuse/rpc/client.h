@@ -10,7 +10,7 @@
 #ifndef INFUSE_SDK_INCLUDE_INFUSE_RPC_CLIENT_H_
 #define INFUSE_SDK_INCLUDE_INFUSE_RPC_CLIENT_H_
 
-#include <zephyr/net/buf.h>
+#include <zephyr/net_buf.h>
 
 #include <infuse/epacket/interface.h>
 #include <infuse/epacket/packet.h>

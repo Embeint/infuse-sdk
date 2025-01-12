@@ -8,7 +8,7 @@
 
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
-#include <zephyr/net/buf.h>
+#include <zephyr/net_buf.h>
 
 #include <infuse/drivers/watchdog.h>
 #include <infuse/epacket/packet.h>
