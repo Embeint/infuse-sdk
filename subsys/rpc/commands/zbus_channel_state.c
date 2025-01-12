@@ -27,16 +27,16 @@ struct net_buf *rpc_command_zbus_channel_state(struct net_buf *request)
 		/* Bad channel ID */
 		return rpc_response_simple_req(request, -EBADF, &rsp, sizeof(rsp));
 	}
-	if (zbus_chan_publish_count(chan) == 0) {
+	if (zbus_chan_pub_stats_count(chan) == 0) {
 		/* No data published yet */
 		return rpc_response_simple_req(request, -EAGAIN, &rsp, sizeof(rsp));
 	}
 
 #ifdef CONFIG_ZBUS_CHANNEL_PUBLISH_STATS
 	/* Channel statistics */
-	rsp.publish_timestamp = epoch_time_from_ticks(zbus_chan_publish_time(chan));
-	rsp.publish_count = zbus_chan_publish_count(chan);
-	rsp.publish_period_avg_ms = zbus_chan_avg_publish_period(chan);
+	rsp.publish_timestamp = epoch_time_from_ticks(zbus_chan_pub_stats_last_time(chan));
+	rsp.publish_count = zbus_chan_pub_stats_count(chan);
+	rsp.publish_period_avg_ms = zbus_chan_pub_stats_avg_period(chan);
 #endif /* CONFIG_ZBUS_CHANNEL_PUBLISH_STATS */
 
 	response = rpc_response_simple_req(request, 0, &rsp, sizeof(rsp));

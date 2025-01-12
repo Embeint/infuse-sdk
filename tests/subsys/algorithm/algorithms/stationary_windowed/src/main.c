@@ -167,7 +167,7 @@ ZTEST(alg_stationary, test_send)
 	/* Validate the last published data */
 	struct infuse_zbus_chan_movement_std_dev *out = ZBUS_CHAN->message;
 
-	zassert_equal(9, zbus_chan_publish_count(ZBUS_CHAN));
+	zassert_equal(9, zbus_chan_pub_stats_count(ZBUS_CHAN));
 	zassert_within(7000, out->data.std_dev, 250);
 	zassert_equal(1200, out->data.count);
 	zassert_equal(1200, out->expected_samples);

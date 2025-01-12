@@ -93,7 +93,7 @@ static void test_battery(uint32_t battery_uv, int32_t current_ua, bool log)
 	emul_fuel_gauge_set_battery_charging(EMUL_DEV, battery_uv, current_ua);
 
 	/* Clear state */
-	pub_count = zbus_chan_publish_count(ZBUS_CHAN);
+	pub_count = zbus_chan_pub_stats_count(ZBUS_CHAN);
 	(void)k_sem_take(&bat_published, K_NO_WAIT);
 
 	/* Schedule task */
@@ -103,7 +103,7 @@ static void test_battery(uint32_t battery_uv, int32_t current_ua, bool log)
 
 	/* Task should be complete */
 	zassert_equal(0, k_work_delayable_busy_get(&data.executor.workqueue.work));
-	zassert_equal(pub_count + 1, zbus_chan_publish_count(ZBUS_CHAN));
+	zassert_equal(pub_count + 1, zbus_chan_pub_stats_count(ZBUS_CHAN));
 	zbus_chan_read(ZBUS_CHAN, &battery_reading, K_FOREVER);
 	zassert_equal(battery_uv / 1000, battery_reading.voltage_mv);
 	zassert_equal(current_ua, battery_reading.current_ua);
@@ -165,7 +165,7 @@ ZTEST(task_bat, test_periodic)
 	task_runner_init(&schedule, &state, 1, &config, &data, 1);
 
 	/* Get initial count */
-	base_count = zbus_chan_publish_count(ZBUS_CHAN);
+	base_count = zbus_chan_pub_stats_count(ZBUS_CHAN);
 
 	/* Iterate for 7 seconds */
 	for (int i = 0; i < 8; i++) {
@@ -177,7 +177,7 @@ ZTEST(task_bat, test_periodic)
 	zassert_equal(0, k_work_delayable_busy_get(&data.executor.workqueue.work));
 
 	/* Expect 6 publishes over the time period (1 at start, 5 rescheduled before timeout) */
-	pub_count = zbus_chan_publish_count(ZBUS_CHAN);
+	pub_count = zbus_chan_pub_stats_count(ZBUS_CHAN);
 	zassert_equal(base_count + 6, pub_count);
 }
 

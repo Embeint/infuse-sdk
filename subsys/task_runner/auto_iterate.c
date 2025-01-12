@@ -34,7 +34,7 @@ static void iterate_worker(struct k_work *work)
 	/* Get battery charge from zbus */
 	INFUSE_ZBUS_TYPE(INFUSE_ZBUS_CHAN_BATTERY) battery;
 
-	if (zbus_chan_publish_count(CHAN_BAT) > 0) {
+	if (zbus_chan_pub_stats_count(CHAN_BAT) > 0) {
 		zbus_chan_read(CHAN_BAT, &battery, K_FOREVER);
 		charge = battery.soc;
 	}
