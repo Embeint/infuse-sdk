@@ -1,5 +1,0 @@
-# Some drivers depend on HAS_I2C_RTIO
-config HAS_I2C_RTIO
-	default y
-
-source "Kconfig.zephyr"

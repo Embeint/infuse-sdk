@@ -6,7 +6,7 @@ configdefault NRF_CC3XX_PLATFORM
 	default y
 
 # Use CC3XX platform
-choice MBEDTLS_PSA_CRYPTO_RND_SOURCE
+choice MBEDTLS_PSA_CRYPTO_RNG_SOURCE
 	default MBEDTLS_PSA_CRYPTO_EXTERNAL_RNG if NRF_CC3XX_PLATFORM
 endchoice
 
@@ -76,19 +76,19 @@ configdefault LTE_PROPRIETARY_PSM_REQ
 	default y if SOC_NRF9120
 
 # WiFi defaults
-configdefault WIFI_NRF700X
+configdefault WIFI_NRF70
 	default y if WIFI
 configdefault NET_L2_ETHERNET
-	default y if WIFI_NRF700X
+	default y if WIFI_NRF70
 configdefault WPA_SUPP
-	default y if WIFI_NRF700X && (WIFI_USAGE_MODE_STA || WIFI_USAGE_MODE_STA_AP)
+	default y if WIFI_NRF70 && (WIFI_USAGE_MODE_STA || WIFI_USAGE_MODE_STA_AP)
 configdefault NET_CONNECTION_MANAGER_MONITOR_STACK_SIZE
 	default 4096 if NRF700X_STA_MODE
 	default 1024 if NRF_MODEM_LIB_NET_IF
 configdefault NRF_WIFI_IF_AUTO_START
 	default n
 configdefault ZVFS_OPEN_MAX
-	default 20 if WIFI_NRF700X
+	default 20 if WIFI_NRF70
 
 choice NRF700X_OPER_MODES
 	default NRF700X_SCAN_ONLY if WIFI_USAGE_MODE_SCAN_ONLY
