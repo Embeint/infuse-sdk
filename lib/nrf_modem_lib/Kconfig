@@ -5,6 +5,9 @@ config INFUSE_NRF_MODEM_MONITOR
 	depends on NRF_MODEM_LIB
 	depends on LTE_LINK_CONTROL
 	depends on KV_STORE
+	select LTE_LC_EDRX_MODULE
+	select LTE_LC_PSM_MODULE
+	select LTE_LC_MODEM_SLEEP_MODULE
 	default y
 
 if INFUSE_NRF_MODEM_MONITOR
@@ -104,6 +107,13 @@ config INFUSE_NRF_MODEM_LIB_SIM
 if INFUSE_NRF_MODEM_LIB_SIM
 
 config LTE_LINK_CONTROL
+	default y
+
+config LTE_LC_EDRX_MODULE
+	default y
+config LTE_LC_PSM_MODULE
+	default y
+config LTE_LC_MODEM_SLEEP_MODULE
 	default y
 
 config INFUSE_NRF_MODEM_MONITOR
