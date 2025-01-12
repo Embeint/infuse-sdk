@@ -19,7 +19,7 @@
 #include <infuse/fs/kv_store.h>
 #include <infuse/fs/kv_types.h>
 
-static void sntp_service_handler(struct k_work *work);
+static void sntp_service_handler(struct net_socket_service_event *sev);
 
 static struct epoch_time_cb time_callback;
 static struct net_mgmt_event_callback l4_callback;
@@ -27,7 +27,7 @@ static struct k_work_delayable sntp_worker;
 static struct k_work_delayable sntp_timeout;
 static struct sntp_ctx sntp_context;
 
-NET_SOCKET_SERVICE_SYNC_DEFINE_STATIC(service_auto_sntp, NULL, sntp_service_handler, 1);
+NET_SOCKET_SERVICE_SYNC_DEFINE_STATIC(service_auto_sntp, sntp_service_handler, 1);
 
 LOG_MODULE_REGISTER(sntp_auto, CONFIG_SNTP_AUTO_LOG_LEVEL);
 
@@ -49,10 +49,8 @@ static void l4_event_handler(struct net_mgmt_event_callback *cb, uint32_t event,
 	}
 }
 
-static void sntp_service_handler(struct k_work *work)
+static void sntp_service_handler(struct net_socket_service_event *sev)
 {
-	struct net_socket_service_event *sev =
-		CONTAINER_OF(work, struct net_socket_service_event, work);
 	struct sntp_time s_time;
 	k_ticks_t ticks = k_uptime_ticks();
 	int rc;
