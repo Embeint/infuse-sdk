@@ -20,7 +20,7 @@ BUILD_ASSERT(CONFIG_BT_INFUSE_LEGACY_ADV_INTERVAL_MIN < CONFIG_BT_INFUSE_LEGACY_
 #define INTERVAL_MAX (CONFIG_BT_INFUSE_LEGACY_ADV_INTERVAL_MAX / 0.625f)
 
 static void legacy_connected(struct bt_le_ext_adv *adv, struct bt_le_ext_adv_connected_info *info);
-static void legacy_recycled(const void *conn);
+static void legacy_disconnected(struct bt_conn *conn, uint8_t reason);
 
 #define BT_LE_ADV_CONN_SLOW BT_LE_ADV_PARAM(BT_LE_ADV_OPT_CONN, INTERVAL_MIN, INTERVAL_MAX, NULL)
 
@@ -31,7 +31,7 @@ static const struct bt_le_ext_adv_cb adv_cb = {
 	.connected = legacy_connected,
 };
 BT_CONN_CB_DEFINE(conn_cb) = {
-	.recycled = legacy_recycled,
+	.disconnected = legacy_disconnected,
 };
 static struct k_work_delayable start_advertising;
 static struct bt_le_ext_adv *adv_set;
@@ -43,16 +43,17 @@ static void legacy_connected(struct bt_le_ext_adv *adv, struct bt_le_ext_adv_con
 {
 	/* Store connection associated with legacy advertising set */
 	legacy_conn = info->conn;
+	bt_conn_ref(legacy_conn);
 }
 
-static void legacy_recycled(const void *conn)
+static void legacy_disconnected(struct bt_conn *conn, uint8_t reason)
 {
 	if (conn != legacy_conn) {
 		return;
 	}
 	legacy_conn = NULL;
 	/* Schedule work to restart advertising */
-	k_work_reschedule(&start_advertising, K_NO_WAIT);
+	k_work_reschedule(&start_advertising, K_MSEC(10));
 }
 
 static void start_advertising_work(struct k_work *work)
