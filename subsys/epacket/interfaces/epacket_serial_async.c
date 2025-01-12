@@ -56,7 +56,7 @@ static void uart_callback(const struct device *dev, struct uart_event *evt, void
 		 */
 		pm_device_runtime_put_async(dev, K_MSEC(50));
 		/* Handle any queued buffers */
-		buf = net_buf_get(&data->tx_queue, K_NO_WAIT);
+		buf = k_fifo_get(&data->tx_queue, K_NO_WAIT);
 		if (buf != NULL) {
 			rc = uart_tx(dev, buf->data, buf->len, 0);
 			if (rc != 0) {
@@ -122,7 +122,7 @@ static void epacket_serial_send(const struct device *dev, struct net_buf *buf)
 	rc = uart_tx(config->backend, buf->data, buf->len, SYS_FOREVER_US);
 	if (rc == -EBUSY) {
 		LOG_DBG("Queuing buffer");
-		net_buf_put(&data->tx_queue, buf);
+		k_fifo_put(&data->tx_queue, buf);
 		return;
 	} else if (rc != 0) {
 		LOG_ERR("Failed to queue buffer (%d)", rc);

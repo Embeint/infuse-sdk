@@ -103,7 +103,7 @@ static void epacket_dummy_send(const struct device *dev, struct net_buf *buf)
 
 	epacket_notify_tx_result(dev, buf, error_code);
 	if (error_code == 0) {
-		net_buf_put(&epacket_dummy_fifo, buf);
+		k_fifo_put(&epacket_dummy_fifo, buf);
 	} else {
 		net_buf_unref(buf);
 	}

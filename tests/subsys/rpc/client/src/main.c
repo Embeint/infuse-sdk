@@ -45,7 +45,7 @@ static void epacket_loopback(bool require_packet)
 	zassert_not_null(sent_queue);
 
 	/* Get any packet that was sent */
-	sent = net_buf_get(sent_queue, timeout);
+	sent = k_fifo_get(sent_queue, timeout);
 	if (require_packet) {
 		zassert_not_null(sent);
 	}
@@ -221,7 +221,7 @@ ZTEST(rpc_client, test_rsp_timeout)
 	k_sleep(K_MSEC(1100));
 
 	/* Discard the sent packet */
-	sent = net_buf_get(sent_queue, K_MSEC(1));
+	sent = k_fifo_get(sent_queue, K_MSEC(1));
 	zassert_not_null(sent);
 	net_buf_unref(sent);
 
@@ -567,7 +567,7 @@ void test_cleanup(void *fixture)
 
 	/* Purge any pending commands */
 	while (true) {
-		sent = net_buf_get(sent_queue, K_NO_WAIT);
+		sent = k_fifo_get(sent_queue, K_NO_WAIT);
 		if (sent) {
 			net_buf_unref(sent);
 		} else {

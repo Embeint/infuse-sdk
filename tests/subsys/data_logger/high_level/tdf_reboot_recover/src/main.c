@@ -101,7 +101,7 @@ static void tdf_reboot_info_log_expect(uint8_t reason)
 	tdf_reboot_info_log(TDF_DATA_LOGGER_SERIAL);
 	tdf_data_logger_flush(TDF_DATA_LOGGER_SERIAL);
 
-	buf = net_buf_get(sent_queue, K_MSEC(100));
+	buf = k_fifo_get(sent_queue, K_MSEC(100));
 	zassert_not_null(buf);
 	net_buf_pull(buf, sizeof(struct epacket_dummy_frame));
 	zassert_equal(0, tdf_parse_find_in_buf(buf->data, buf->len, TDF_REBOOT_INFO, &tdf));
@@ -131,7 +131,7 @@ ZTEST(tdf_data_logger_recovery, test_logger_recovery)
 	if (reboots.count == 1) {
 		/* First boot, should be no data recovered */
 		zassert_equal(0, tdf_data_logger_flush_dev(tdf_logger));
-		zassert_is_null(net_buf_get(sent_queue, K_MSEC(100)));
+		zassert_is_null(k_fifo_get(sent_queue, K_MSEC(100)));
 
 		/* Check we can log the reboot */
 		tdf_reboot_info_log_expect(INFUSE_REBOOT_UNKNOWN);
@@ -142,7 +142,7 @@ ZTEST(tdf_data_logger_recovery, test_logger_recovery)
 	} else if (reboots.count == 2) {
 		/* If we flush now, we should get the 2 TDFs we logged on the previous boot */
 		zassert_equal(0, tdf_data_logger_flush_dev(tdf_logger));
-		buf = net_buf_get(sent_queue, K_MSEC(100));
+		buf = k_fifo_get(sent_queue, K_MSEC(100));
 		zassert_not_null(buf);
 		zassert_equal(sizeof(struct epacket_dummy_frame) + 22, buf->len);
 		net_buf_unref(buf);
@@ -159,7 +159,7 @@ ZTEST(tdf_data_logger_recovery, test_logger_recovery)
 	} else if (reboots.count == 3) {
 		/* If lock was taken over reboot data should be purged */
 		zassert_equal(0, tdf_data_logger_flush_dev(tdf_logger));
-		zassert_is_null(net_buf_get(sent_queue, K_MSEC(100)));
+		zassert_is_null(k_fifo_get(sent_queue, K_MSEC(100)));
 
 		/* Corrupt header guard */
 		log_corrupt_and_reboot(tdf_logger, 0);
@@ -167,7 +167,7 @@ ZTEST(tdf_data_logger_recovery, test_logger_recovery)
 	} else if (reboots.count < (ARRAY_SIZE(corrupt_indicies) + 3)) {
 		/* Corrupted data should be detected and purged */
 		zassert_equal(0, tdf_data_logger_flush_dev(tdf_logger));
-		zassert_is_null(net_buf_get(sent_queue, K_MSEC(100)));
+		zassert_is_null(k_fifo_get(sent_queue, K_MSEC(100)));
 
 		log_corrupt_and_reboot(tdf_logger, corrupt_indicies[reboots.count - 4]);
 		zassert_unreachable();
@@ -175,7 +175,7 @@ ZTEST(tdf_data_logger_recovery, test_logger_recovery)
 #ifdef TDF_REMOTE_SUPPORT
 	else if (reboots.count == (ARRAY_SIZE(corrupt_indicies) + 3)) {
 		zassert_equal(0, tdf_data_logger_flush_dev(tdf_logger));
-		zassert_is_null(net_buf_get(sent_queue, K_MSEC(100)));
+		zassert_is_null(k_fifo_get(sent_queue, K_MSEC(100)));
 
 		tdf_data_logger_remote_id_set(tdf_remote_logger, 0x12345678);
 
@@ -185,7 +185,7 @@ ZTEST(tdf_data_logger_recovery, test_logger_recovery)
 	} else if (reboots.count == (ARRAY_SIZE(corrupt_indicies) + 4)) {
 		/* If we flush now, we should get the 2 TDFs we logged on the previous boot */
 		zassert_equal(0, tdf_data_logger_flush_dev(tdf_remote_logger));
-		buf = net_buf_get(sent_queue, K_MSEC(100));
+		buf = k_fifo_get(sent_queue, K_MSEC(100));
 		zassert_not_null(buf);
 		zassert_equal(sizeof(struct epacket_dummy_frame) + 22 + sizeof(uint64_t), buf->len);
 		net_buf_unref(buf);
@@ -197,7 +197,7 @@ ZTEST(tdf_data_logger_recovery, test_logger_recovery)
 	} else if (reboots.count < (2 * ARRAY_SIZE(corrupt_indicies))) {
 		/* Corrupted data should be detected and purged */
 		zassert_equal(0, tdf_data_logger_flush_dev(tdf_remote_logger));
-		zassert_is_null(net_buf_get(sent_queue, K_MSEC(100)));
+		zassert_is_null(k_fifo_get(sent_queue, K_MSEC(100)));
 
 		tdf_data_logger_remote_id_set(tdf_remote_logger, 0x12345678);
 		log_corrupt_and_reboot(

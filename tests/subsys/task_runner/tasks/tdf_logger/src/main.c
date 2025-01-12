@@ -80,7 +80,7 @@ ZTEST(task_tdf_logger, test_log_before_data)
 	};
 	/* No data, no packets */
 	task_schedule(&data);
-	pkt = net_buf_get(tx_queue, K_MSEC(100));
+	pkt = k_fifo_get(tx_queue, K_MSEC(100));
 	zassert_is_null(pkt);
 
 	schedule.task_args.infuse.tdf_logger = (struct task_tdf_logger_args){
@@ -89,7 +89,7 @@ ZTEST(task_tdf_logger, test_log_before_data)
 	};
 	/* Announce will send */
 	task_schedule(&data);
-	pkt = net_buf_get(tx_queue, K_MSEC(100));
+	pkt = k_fifo_get(tx_queue, K_MSEC(100));
 	zassert_not_null(pkt);
 	net_buf_pull(pkt, sizeof(struct epacket_dummy_frame));
 	zassert_equal(0, tdf_parse_find_in_buf(pkt->data, pkt->len, TDF_ANNOUNCE, &tdf));
@@ -115,12 +115,12 @@ ZTEST(task_tdf_logger, test_no_flush)
 	};
 	/* No data should be sent yet */
 	task_schedule(&data);
-	pkt = net_buf_get(tx_queue, K_MSEC(100));
+	pkt = k_fifo_get(tx_queue, K_MSEC(100));
 	zassert_is_null(pkt);
 
 	/* Manually flush the logger */
 	tdf_data_logger_flush(TDF_DATA_LOGGER_SERIAL);
-	pkt = net_buf_get(tx_queue, K_MSEC(100));
+	pkt = k_fifo_get(tx_queue, K_MSEC(100));
 	zassert_not_null(pkt);
 	net_buf_pull(pkt, sizeof(struct epacket_dummy_frame));
 	zassert_equal(0, tdf_parse_find_in_buf(pkt->data, pkt->len, TDF_ANNOUNCE, &tdf));
@@ -153,7 +153,7 @@ ZTEST(task_tdf_logger, test_terminate)
 	/* Task should be terminated */
 	zassert_equal(0, k_work_delayable_busy_get(&data.executor.workqueue.work));
 	/* Should be no data sent */
-	zassert_is_null(net_buf_get(tx_queue, K_MSEC(500)));
+	zassert_is_null(k_fifo_get(tx_queue, K_MSEC(500)));
 }
 
 ZTEST(task_tdf_logger, test_delay)
@@ -168,13 +168,13 @@ ZTEST(task_tdf_logger, test_delay)
 		.random_delay_ms = 1000,
 	};
 
-	zassert_is_null(net_buf_get(tx_queue, K_MSEC(500)));
+	zassert_is_null(k_fifo_get(tx_queue, K_MSEC(500)));
 
 	/* Run 100 times */
 	time_start = k_uptime_get_32();
 	for (int i = 0; i < 100; i++) {
 		task_schedule(&data);
-		pkt = net_buf_get(tx_queue, K_MSEC(1500));
+		pkt = k_fifo_get(tx_queue, K_MSEC(1500));
 		zassert_not_null(pkt);
 		net_buf_unref(pkt);
 	}
@@ -201,7 +201,7 @@ ZTEST(task_tdf_logger, test_reschedule)
 	start = k_uptime_get_32();
 	last = start;
 	while (cnt++ < 100) {
-		pkt = net_buf_get(tx_queue, K_MSEC(1501));
+		pkt = k_fifo_get(tx_queue, K_MSEC(1501));
 		now = k_uptime_get_32();
 		zassert_not_null(pkt);
 		net_buf_unref(pkt);
@@ -235,7 +235,7 @@ ZTEST(task_tdf_logger, test_battery)
 	};
 	/* Battery data should send */
 	task_schedule(&data);
-	pkt = net_buf_get(tx_queue, K_MSEC(100));
+	pkt = k_fifo_get(tx_queue, K_MSEC(100));
 	zassert_not_null(pkt);
 	net_buf_pull(pkt, sizeof(struct epacket_dummy_frame));
 	zassert_equal(0, tdf_parse_find_in_buf(pkt->data, pkt->len, TDF_BATTERY_STATE, &tdf));
@@ -264,7 +264,7 @@ ZTEST(task_tdf_logger, test_ambient_env)
 	};
 	/* Ambient environmental data should send */
 	task_schedule(&data);
-	pkt = net_buf_get(tx_queue, K_MSEC(100));
+	pkt = k_fifo_get(tx_queue, K_MSEC(100));
 	zassert_not_null(pkt);
 	net_buf_pull(pkt, sizeof(struct epacket_dummy_frame));
 	zassert_equal(0,
@@ -278,7 +278,7 @@ ZTEST(task_tdf_logger, test_ambient_env)
 	ambient.humidity = 50 * 100;
 	zbus_chan_pub(chan_env, &ambient, K_FOREVER);
 	task_schedule(&data);
-	pkt = net_buf_get(tx_queue, K_MSEC(100));
+	pkt = k_fifo_get(tx_queue, K_MSEC(100));
 	zassert_not_null(pkt);
 	net_buf_pull(pkt, sizeof(struct epacket_dummy_frame));
 	zassert_equal(0,
@@ -292,7 +292,7 @@ ZTEST(task_tdf_logger, test_ambient_env)
 	ambient.humidity = 0;
 	zbus_chan_pub(chan_env, &ambient, K_FOREVER);
 	task_schedule(&data);
-	pkt = net_buf_get(tx_queue, K_MSEC(100));
+	pkt = k_fifo_get(tx_queue, K_MSEC(100));
 	zassert_not_null(pkt);
 	net_buf_pull(pkt, sizeof(struct epacket_dummy_frame));
 	zassert_equal(0,
@@ -306,7 +306,7 @@ ZTEST(task_tdf_logger, test_ambient_env)
 	ambient.humidity = 0;
 	zbus_chan_pub(chan_env, &ambient, K_FOREVER);
 	task_schedule(&data);
-	pkt = net_buf_get(tx_queue, K_MSEC(100));
+	pkt = k_fifo_get(tx_queue, K_MSEC(100));
 	zassert_not_null(pkt);
 	net_buf_pull(pkt, sizeof(struct epacket_dummy_frame));
 	zassert_equal(0, tdf_parse_find_in_buf(pkt->data, pkt->len, TDF_AMBIENT_TEMPERATURE, &tdf));
@@ -317,7 +317,7 @@ ZTEST(task_tdf_logger, test_ambient_env)
 	/* Wait until data invalid, should not send */
 	k_sleep(K_SECONDS(CONFIG_TASK_TDF_LOGGER_ENVIRONMENTAL_TIMEOUT_SEC));
 	task_schedule(&data);
-	zassert_is_null(net_buf_get(tx_queue, K_MSEC(100)));
+	zassert_is_null(k_fifo_get(tx_queue, K_MSEC(100)));
 }
 
 struct tdf_accel_config {
@@ -351,7 +351,7 @@ ZTEST(task_tdf_logger, test_accelerometer)
 
 	/* Accelerometer data should not send as it doesn't exist */
 	task_schedule(&data);
-	pkt = net_buf_get(tx_queue, K_MSEC(100));
+	pkt = k_fifo_get(tx_queue, K_MSEC(100));
 	zassert_is_null(pkt);
 
 	struct tdf_accel_config configs[] = {
@@ -374,7 +374,7 @@ ZTEST(task_tdf_logger, test_accelerometer)
 
 		/* Accelerometer data should send now */
 		task_schedule(&data);
-		pkt = net_buf_get(tx_queue, K_MSEC(100));
+		pkt = k_fifo_get(tx_queue, K_MSEC(100));
 		zassert_not_null(pkt);
 		net_buf_pull(pkt, sizeof(struct epacket_dummy_frame));
 		zassert_equal(0,
@@ -387,17 +387,17 @@ ZTEST(task_tdf_logger, test_accelerometer)
 	/* Trying to send while channel is held should fail */
 	zassert_equal(0, zbus_chan_claim(chan_imu, K_NO_WAIT));
 	task_schedule(&data);
-	pkt = net_buf_get(tx_queue, K_SECONDS(1));
+	pkt = k_fifo_get(tx_queue, K_SECONDS(1));
 	zassert_is_null(pkt);
 	zassert_equal(0, zbus_chan_finish(chan_imu));
 	/* Task should have given up, not waited for over a second */
-	pkt = net_buf_get(tx_queue, K_SECONDS(1));
+	pkt = k_fifo_get(tx_queue, K_SECONDS(1));
 	zassert_is_null(pkt);
 
 	/* Wait until data invalid, should not send */
 	k_sleep(K_SECONDS(CONFIG_TASK_TDF_LOGGER_IMU_TIMEOUT_SEC));
 	task_schedule(&data);
-	zassert_is_null(net_buf_get(tx_queue, K_MSEC(100)));
+	zassert_is_null(k_fifo_get(tx_queue, K_MSEC(100)));
 }
 
 ZTEST(task_tdf_logger, test_location)
@@ -428,7 +428,7 @@ ZTEST(task_tdf_logger, test_location)
 	};
 	/* Location data should send */
 	task_schedule(&data);
-	pkt = net_buf_get(tx_queue, K_MSEC(100));
+	pkt = k_fifo_get(tx_queue, K_MSEC(100));
 	zassert_not_null(pkt);
 	net_buf_pull(pkt, sizeof(struct epacket_dummy_frame));
 	zassert_equal(0, tdf_parse_find_in_buf(pkt->data, pkt->len, TDF_GCS_WGS84_LLHA, &tdf));
@@ -439,7 +439,7 @@ ZTEST(task_tdf_logger, test_location)
 	/* Wait until data invalid, should not send */
 	k_sleep(K_SECONDS(CONFIG_TASK_TDF_LOGGER_LOCATION_TIMEOUT_SEC));
 	task_schedule(&data);
-	zassert_is_null(net_buf_get(tx_queue, K_MSEC(100)));
+	zassert_is_null(k_fifo_get(tx_queue, K_MSEC(100)));
 }
 
 static struct signal_quality_info {
@@ -485,7 +485,7 @@ ZTEST(task_tdf_logger, test_net_conn)
 
 		/* Connection status should send */
 		task_schedule(&data);
-		pkt = net_buf_get(tx_queue, K_MSEC(100));
+		pkt = k_fifo_get(tx_queue, K_MSEC(100));
 		zassert_not_null(pkt);
 		net_buf_pull(pkt, sizeof(struct epacket_dummy_frame));
 		zassert_equal(
@@ -518,7 +518,7 @@ ZTEST(task_tdf_logger, test_custom)
 
 	/* Connection status should send */
 	task_schedule(&data);
-	pkt = net_buf_get(tx_queue, K_MSEC(100));
+	pkt = k_fifo_get(tx_queue, K_MSEC(100));
 	zassert_not_null(pkt);
 	net_buf_pull(pkt, sizeof(struct epacket_dummy_frame));
 	zassert_equal(0, tdf_parse_find_in_buf(pkt->data, pkt->len, TDF_ACC_16G, &tdf));
@@ -571,7 +571,7 @@ ZTEST(task_tdf_logger, test_multi)
 	};
 
 	task_schedule(&data);
-	pkt = net_buf_get(tx_queue, K_MSEC(100));
+	pkt = k_fifo_get(tx_queue, K_MSEC(100));
 	zassert_not_null(pkt);
 	net_buf_pull(pkt, sizeof(struct epacket_dummy_frame));
 	zassert_equal(0, tdf_parse_find_in_buf(pkt->data, pkt->len, TDF_BATTERY_STATE, &tdf));
@@ -605,7 +605,7 @@ ZTEST(task_tdf_logger, test_multi_iteration)
 		uint8_t iter = i % 4;
 
 		task_schedule(&data);
-		pkt = net_buf_get(tx_queue, K_MSEC(100));
+		pkt = k_fifo_get(tx_queue, K_MSEC(100));
 		zassert_not_null(pkt);
 		net_buf_pull(pkt, sizeof(struct epacket_dummy_frame));
 		zassert_equal(iter == 3 ? -ENOMEM : 0,

@@ -69,7 +69,7 @@ ZTEST(rpc_server, test_auth_failure)
 	epacket_dummy_receive(epacket_dummy, &header, payload, 16);
 
 	/* No response */
-	zassert_is_null(net_buf_get(tx_fifo, K_MSEC(100)));
+	zassert_is_null(k_fifo_get(tx_fifo, K_MSEC(100)));
 }
 
 ZTEST(rpc_server, test_invalid)
@@ -92,7 +92,7 @@ ZTEST(rpc_server, test_invalid)
 	req_header->request_id = 0x12345678;
 	epacket_dummy_receive(epacket_dummy, &header, payload, 16);
 
-	tx = net_buf_get(tx_fifo, K_MSEC(100));
+	tx = k_fifo_get(tx_fifo, K_MSEC(100));
 	zassert_not_null(tx);
 	tx_header = (void *)tx->data;
 	rsp_header = (void *)(tx->data + sizeof(*tx_header));
@@ -104,7 +104,7 @@ ZTEST(rpc_server, test_invalid)
 	zassert_equal(sizeof(*tx_header) + sizeof(*rsp_header), tx->len);
 	net_buf_unref(tx);
 
-	zassert_is_null(net_buf_get(tx_fifo, K_MSEC(100)));
+	zassert_is_null(k_fifo_get(tx_fifo, K_MSEC(100)));
 }
 
 ZTEST(rpc_server, test_invalid_channel_closed)
@@ -129,7 +129,7 @@ ZTEST(rpc_server, test_invalid_channel_closed)
 		epacket_dummy_set_max_packet(0);
 
 		/* Should be no response since the channel is reporting closed */
-		zassert_is_null(net_buf_get(tx_fifo, K_MSEC(100)));
+		zassert_is_null(k_fifo_get(tx_fifo, K_MSEC(100)));
 	}
 }
 
@@ -155,7 +155,7 @@ ZTEST(rpc_server, test_auth_level)
 	header.auth = EPACKET_AUTH_DEVICE;
 	epacket_dummy_receive(epacket_dummy, &header, payload,
 			      sizeof(struct rpc_echo_request) + sizeof(payload));
-	tx = net_buf_get(tx_fifo, K_MSEC(100));
+	tx = k_fifo_get(tx_fifo, K_MSEC(100));
 	zassert_not_null(tx);
 	tx_header = (void *)tx->data;
 	rsp = (void *)(tx->data + sizeof(*tx_header));
@@ -169,7 +169,7 @@ ZTEST(rpc_server, test_auth_level)
 	header.auth = EPACKET_AUTH_NETWORK;
 	epacket_dummy_receive(epacket_dummy, &header, payload,
 			      sizeof(struct rpc_echo_request) + sizeof(payload));
-	tx = net_buf_get(tx_fifo, K_MSEC(100));
+	tx = k_fifo_get(tx_fifo, K_MSEC(100));
 	zassert_not_null(tx);
 	tx_header = (void *)tx->data;
 	rsp = (void *)(tx->data + sizeof(*tx_header));
@@ -183,7 +183,7 @@ ZTEST(rpc_server, test_auth_level)
 	header.auth = EPACKET_AUTH_NETWORK;
 	epacket_dummy_receive(epacket_dummy, &header, payload,
 			      sizeof(struct rpc_echo_request) + sizeof(payload));
-	tx = net_buf_get(tx_fifo, K_MSEC(100));
+	tx = k_fifo_get(tx_fifo, K_MSEC(100));
 	zassert_not_null(tx);
 	tx_header = (void *)tx->data;
 	rsp = (void *)(tx->data + sizeof(*tx_header));
@@ -220,7 +220,7 @@ ZTEST(rpc_server, test_echo_response)
 		epacket_dummy_receive(epacket_dummy, &header, payload,
 				      sizeof(struct rpc_echo_request) + lens[i]);
 
-		tx = net_buf_get(tx_fifo, K_MSEC(100));
+		tx = k_fifo_get(tx_fifo, K_MSEC(100));
 		zassert_not_null(tx);
 		tx_header = (void *)tx->data;
 		rsp = (void *)(tx->data + sizeof(*tx_header));
@@ -233,7 +233,7 @@ ZTEST(rpc_server, test_echo_response)
 
 		net_buf_unref(tx);
 	}
-	zassert_is_null(net_buf_get(tx_fifo, K_MSEC(100)));
+	zassert_is_null(k_fifo_get(tx_fifo, K_MSEC(100)));
 
 	/* Echo with smaller response payload */
 	header.type = INFUSE_RPC_CMD;
@@ -244,7 +244,7 @@ ZTEST(rpc_server, test_echo_response)
 			      sizeof(struct rpc_echo_request) + 32);
 	epacket_dummy_set_max_packet(24);
 
-	tx = net_buf_get(tx_fifo, K_MSEC(100));
+	tx = k_fifo_get(tx_fifo, K_MSEC(100));
 	zassert_not_null(tx);
 	tx_header = (void *)tx->data;
 	rsp = (void *)(tx->data + sizeof(*tx_header));
@@ -257,7 +257,7 @@ ZTEST(rpc_server, test_echo_response)
 	zassert_equal(24, tx->len);
 	net_buf_unref(tx);
 
-	zassert_is_null(net_buf_get(tx_fifo, K_MSEC(100)));
+	zassert_is_null(k_fifo_get(tx_fifo, K_MSEC(100)));
 }
 
 static void test_data_sender(uint32_t to_send, int dc_after)
@@ -294,7 +294,7 @@ static void test_data_sender(uint32_t to_send, int dc_after)
 			      sizeof(struct rpc_data_sender_request));
 
 	while (receiving) {
-		tx = net_buf_get(tx_fifo, K_MSEC(100));
+		tx = k_fifo_get(tx_fifo, K_MSEC(100));
 		zassert_not_null(tx);
 		tx_header = (void *)tx->data;
 		zassert_equal(EPACKET_AUTH_DEVICE, tx_header->auth);
@@ -322,12 +322,12 @@ static void test_data_sender(uint32_t to_send, int dc_after)
 		if (++packets_received == dc_after) {
 			epacket_dummy_set_max_packet(0);
 			epacket_dummy_set_interface_state(epacket_dummy, false);
-			tx = net_buf_get(tx_fifo, K_MSEC(500));
+			tx = k_fifo_get(tx_fifo, K_MSEC(500));
 			zassert_is_null(tx);
 			break;
 		}
 	}
-	zassert_is_null(net_buf_get(tx_fifo, K_MSEC(1)));
+	zassert_is_null(k_fifo_get(tx_fifo, K_MSEC(1)));
 	if (dc_after == 0) {
 		zassert_equal(to_send, bytes_received);
 	}
@@ -392,7 +392,7 @@ static void test_data_receiver(uint32_t total_send, uint8_t skip_after, uint8_t 
 			      sizeof(struct rpc_data_receiver_request));
 
 	/* Expect an initial INFUSE_RPC_DATA_ACK to signify readiness */
-	tx = net_buf_get(tx_fifo, K_MSEC(100));
+	tx = k_fifo_get(tx_fifo, K_MSEC(100));
 	zassert_not_null(tx);
 	tx_header = (void *)tx->data;
 	data_ack = (void *)(tx->data + sizeof(*tx_header));
@@ -444,7 +444,7 @@ static void test_data_receiver(uint32_t total_send, uint8_t skip_after, uint8_t 
 			break;
 		}
 		if (ack_period) {
-			tx = net_buf_get(tx_fifo, K_NO_WAIT);
+			tx = k_fifo_get(tx_fifo, K_NO_WAIT);
 			if (tx) {
 ack_handler:
 				num_offsets = (tx->len - sizeof(*tx_header) - sizeof(*data_ack)) /
@@ -466,7 +466,7 @@ ack_handler:
 	}
 
 	/* Wait for the final RPC_RSP */
-	tx = net_buf_get(tx_fifo, K_MSEC(1000));
+	tx = k_fifo_get(tx_fifo, K_MSEC(1000));
 	zassert_not_null(tx);
 	tx_header = (void *)tx->data;
 	if (ack_period && tx_header->type == INFUSE_RPC_DATA_ACK) {
@@ -581,7 +581,7 @@ ZTEST(rpc_server, test_data_ack_fn)
 		for (int j = 0; j <= i; j++) {
 			rpc_server_ack_data(epacket_dummy, 0x1234, offsets[j], i + 1);
 		}
-		tx = net_buf_get(tx_fifo, K_MSEC(1));
+		tx = k_fifo_get(tx_fifo, K_MSEC(1));
 		zassert_not_null(tx);
 		tx_header = (void *)tx->data;
 		data_ack = (void *)(tx->data + sizeof(*tx_header));
@@ -596,7 +596,7 @@ ZTEST(rpc_server, test_data_ack_fn)
 		}
 		net_buf_unref(tx);
 
-		zassert_is_null(net_buf_get(tx_fifo, K_MSEC(1)));
+		zassert_is_null(k_fifo_get(tx_fifo, K_MSEC(1)));
 	}
 }
 

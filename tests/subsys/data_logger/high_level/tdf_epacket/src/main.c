@@ -50,14 +50,14 @@ ZTEST(tdf_data_logger, test_standard)
 		rc = tdf_data_logger_log_dev(logger, TDF_RANDOM, 4, 0, tdf_data);
 		zassert_equal(0, rc);
 	}
-	zassert_is_null(net_buf_get(sent_queue, K_MSEC(1)));
+	zassert_is_null(k_fifo_get(sent_queue, K_MSEC(1)));
 
 	/* Flush logger */
 	rc = tdf_data_logger_flush_dev(logger);
 	zassert_equal(0, rc);
 
 	/* Validate payload sent */
-	buf = net_buf_get(sent_queue, K_MSEC(1));
+	buf = k_fifo_get(sent_queue, K_MSEC(1));
 	zassert_not_null(buf);
 	zassert_equal(sizeof(struct epacket_dummy_frame) + 56, buf->len);
 	net_buf_unref(buf);
@@ -74,14 +74,14 @@ ZTEST(tdf_data_logger, test_multi)
 	/* 54 bytes (6 overhead, 12 * 4 data) */
 	rc = tdf_data_logger_log_array_dev(logger, TDF_RANDOM, 4, 12, 0, 0, tdf_data);
 	zassert_equal(0, rc);
-	zassert_is_null(net_buf_get(sent_queue, K_MSEC(1)));
+	zassert_is_null(k_fifo_get(sent_queue, K_MSEC(1)));
 
 	/* Flush logger */
 	rc = tdf_data_logger_flush_dev(logger);
 	zassert_equal(0, rc);
 
 	/* Validate payload sent */
-	buf = net_buf_get(sent_queue, K_MSEC(1));
+	buf = k_fifo_get(sent_queue, K_MSEC(1));
 	zassert_not_null(buf);
 	zassert_equal(sizeof(struct epacket_dummy_frame) + 54, buf->len);
 	net_buf_unref(buf);
@@ -89,23 +89,23 @@ ZTEST(tdf_data_logger, test_multi)
 	/* 42 bytes (6 overhead, 9 * 4 data) */
 	rc = tdf_data_logger_log_array_dev(logger, TDF_RANDOM, 4, 9, 0, 0, tdf_data);
 	zassert_equal(0, rc);
-	zassert_is_null(net_buf_get(sent_queue, K_MSEC(1)));
+	zassert_is_null(k_fifo_get(sent_queue, K_MSEC(1)));
 
 	/* 42 bytes (6 overhead, 9 * 4 data) */
 	rc = tdf_data_logger_log_array_dev(logger, TDF_RANDOM, 4, 9, 0, 0, tdf_data);
 	zassert_equal(0, rc);
 
 	/* First packet should have had the first call and 4 TDFs from the second */
-	buf = net_buf_get(sent_queue, K_MSEC(1));
+	buf = k_fifo_get(sent_queue, K_MSEC(1));
 	zassert_not_null(buf);
-	zassert_is_null(net_buf_get(sent_queue, K_MSEC(1)));
+	zassert_is_null(k_fifo_get(sent_queue, K_MSEC(1)));
 	zassert_equal(sizeof(struct epacket_dummy_frame) + 64, buf->len);
 	net_buf_unref(buf);
 
 	/* Second packet should have the remaining 5 TDFs */
 	rc = tdf_data_logger_flush_dev(logger);
 	zassert_equal(0, rc);
-	buf = net_buf_get(sent_queue, K_MSEC(1));
+	buf = k_fifo_get(sent_queue, K_MSEC(1));
 	zassert_not_null(buf);
 	zassert_equal(sizeof(struct epacket_dummy_frame) + 26, buf->len);
 	net_buf_unref(buf);
@@ -120,23 +120,23 @@ ZTEST(tdf_data_logger, test_auto_flush)
 	int rc;
 
 	/* No data to start with */
-	zassert_is_null(net_buf_get(sent_queue, K_MSEC(1)));
+	zassert_is_null(k_fifo_get(sent_queue, K_MSEC(1)));
 
 	/* 57 bytes should not flush */
 	rc = tdf_data_logger_log_dev(logger, TDF_RANDOM, 57, 0, tdf_data);
 	zassert_equal(0, rc);
-	zassert_is_null(net_buf_get(sent_queue, K_MSEC(1)));
+	zassert_is_null(k_fifo_get(sent_queue, K_MSEC(1)));
 
 	/* TDF of 2 bytes should flush */
 	rc = tdf_data_logger_log_dev(logger, TDF_RANDOM, 2, 0, tdf_data);
 	zassert_equal(0, rc);
-	buf = net_buf_get(sent_queue, K_MSEC(1));
+	buf = k_fifo_get(sent_queue, K_MSEC(1));
 	zassert_not_null(buf);
 	net_buf_unref(buf);
 
 	/* Flush pending data */
 	tdf_data_logger_flush_dev(logger);
-	buf = net_buf_get(sent_queue, K_MSEC(1));
+	buf = k_fifo_get(sent_queue, K_MSEC(1));
 	zassert_not_null(buf);
 	net_buf_unref(buf);
 
@@ -144,7 +144,7 @@ ZTEST(tdf_data_logger, test_auto_flush)
 	for (int i = 58; i <= 61; i++) {
 		rc = tdf_data_logger_log_dev(logger, TDF_RANDOM, i, 0, tdf_data);
 		zassert_equal(0, rc);
-		buf = net_buf_get(sent_queue, K_MSEC(1));
+		buf = k_fifo_get(sent_queue, K_MSEC(1));
 		zassert_not_null(buf);
 		net_buf_unref(buf);
 	}
@@ -162,30 +162,30 @@ ZTEST(tdf_data_logger, test_size_change_decrease)
 	/* Log 32 bytes */
 	rc = tdf_data_logger_log_dev(logger, TDF_RANDOM, 29, 0, tdf_data);
 	zassert_equal(0, rc);
-	zassert_is_null(net_buf_get(sent_queue, K_MSEC(1)));
+	zassert_is_null(k_fifo_get(sent_queue, K_MSEC(1)));
 
 	/* Reducing the backend to 40 payload should not trigger any flush */
 	epacket_dummy_set_max_packet(CONFIG_EPACKET_PACKET_SIZE_MAX - 24);
 	epacket_dummy_set_interface_state(dummy, true);
-	zassert_is_null(net_buf_get(sent_queue, K_MSEC(1)));
+	zassert_is_null(k_fifo_get(sent_queue, K_MSEC(1)));
 
 	/* But logging the next 8 bytes should flush */
 	rc = tdf_data_logger_log_dev(logger, TDF_RANDOM, 5, 0, tdf_data);
 	zassert_equal(0, rc);
-	buf = net_buf_get(sent_queue, K_MSEC(1));
+	buf = k_fifo_get(sent_queue, K_MSEC(1));
 	zassert_not_null(buf);
 	net_buf_unref(buf);
 
 	/* Revert to full size */
 	epacket_dummy_set_max_packet(CONFIG_EPACKET_PACKET_SIZE_MAX);
 	epacket_dummy_set_interface_state(dummy, true);
-	zassert_is_null(net_buf_get(sent_queue, K_MSEC(1)));
+	zassert_is_null(k_fifo_get(sent_queue, K_MSEC(1)));
 
 	/* Log 8 4 byte TDFs (56 bytes total) */
 	for (int i = 0; i < 8; i++) {
 		rc = tdf_data_logger_log_dev(logger, TDF_RANDOM, 4, 0, tdf_data + i);
 		zassert_equal(0, rc);
-		zassert_is_null(net_buf_get(sent_queue, K_MSEC(1)));
+		zassert_is_null(k_fifo_get(sent_queue, K_MSEC(1)));
 	}
 
 	/* Reduce backend to 24 bytes payload */
@@ -199,7 +199,7 @@ ZTEST(tdf_data_logger, test_size_change_decrease)
 	int cnt = 0;
 
 	for (int i = 0; i < 3; i++) {
-		buf = net_buf_get(sent_queue, K_MSEC(1));
+		buf = k_fifo_get(sent_queue, K_MSEC(1));
 		zassert_not_null(buf);
 		net_buf_pull(buf, sizeof(struct epacket_dummy_frame));
 
@@ -215,7 +215,7 @@ ZTEST(tdf_data_logger, test_size_change_decrease)
 		net_buf_unref(buf);
 	}
 	zassert_equal(8, cnt);
-	zassert_is_null(net_buf_get(sent_queue, K_MSEC(1)));
+	zassert_is_null(k_fifo_get(sent_queue, K_MSEC(1)));
 }
 
 ZTEST(tdf_data_logger, test_diff_size_change_decrease)
@@ -234,18 +234,18 @@ ZTEST(tdf_data_logger, test_diff_size_change_decrease)
 						ARRAY_SIZE(tdf_data), TDF_DIFF_16_8, 10000, 100,
 						tdf_data);
 	zassert_equal(0, rc);
-	zassert_is_null(net_buf_get(sent_queue, K_MSEC(1)));
+	zassert_is_null(k_fifo_get(sent_queue, K_MSEC(1)));
 
 	/* Reducing the backend to 40 payload should not trigger any flush */
 	epacket_dummy_set_max_packet(CONFIG_EPACKET_PACKET_SIZE_MAX - 28);
 	epacket_dummy_set_interface_state(dummy, true);
-	zassert_is_null(net_buf_get(sent_queue, K_MSEC(1)));
+	zassert_is_null(k_fifo_get(sent_queue, K_MSEC(1)));
 
 	/* Reducing the backend to 30 bytes will result in reparsing and flush */
 	epacket_dummy_set_max_packet(CONFIG_EPACKET_PACKET_SIZE_MAX - 38);
 	epacket_dummy_set_interface_state(dummy, true);
 
-	buf = net_buf_get(sent_queue, K_MSEC(1));
+	buf = k_fifo_get(sent_queue, K_MSEC(1));
 	zassert_not_null(buf);
 	net_buf_pull(buf, sizeof(struct epacket_dummy_frame));
 
@@ -273,7 +273,7 @@ ZTEST(tdf_data_logger, test_diff_size_change_decrease)
 	net_buf_unref(buf);
 
 	/* No more pending data */
-	buf = net_buf_get(sent_queue, K_MSEC(1));
+	buf = k_fifo_get(sent_queue, K_MSEC(1));
 	zassert_is_null(buf);
 }
 
@@ -293,22 +293,22 @@ ZTEST(tdf_data_logger, test_size_change_increase)
 	/* Log 32 bytes */
 	rc = tdf_data_logger_log_dev(logger, TDF_RANDOM, 30, 0, tdf_data);
 	zassert_equal(0, rc);
-	zassert_is_null(net_buf_get(sent_queue, K_MSEC(1)));
+	zassert_is_null(k_fifo_get(sent_queue, K_MSEC(1)));
 
 	/* Increase backend to full  */
 	epacket_dummy_set_max_packet(CONFIG_EPACKET_PACKET_SIZE_MAX);
 	epacket_dummy_set_interface_state(dummy, true);
-	zassert_is_null(net_buf_get(sent_queue, K_MSEC(1)));
+	zassert_is_null(k_fifo_get(sent_queue, K_MSEC(1)));
 
 	/* Logging the next 8 bytes should not flush since backend is now larger */
 	rc = tdf_data_logger_log_dev(logger, TDF_RANDOM, 6, 0, tdf_data);
 	zassert_equal(0, rc);
-	zassert_is_null(net_buf_get(sent_queue, K_MSEC(1)));
+	zassert_is_null(k_fifo_get(sent_queue, K_MSEC(1)));
 
 	/* Logging to 64 byte payload will flush */
 	rc = tdf_data_logger_log_dev(logger, TDF_RANDOM, 22, 0, tdf_data);
 	zassert_equal(0, rc);
-	buf = net_buf_get(sent_queue, K_MSEC(1));
+	buf = k_fifo_get(sent_queue, K_MSEC(1));
 	zassert_not_null(buf);
 	net_buf_unref(buf);
 }
@@ -325,11 +325,11 @@ ZTEST(tdf_data_logger, test_backend_disconnect)
 	/* Log 32 bytes */
 	rc = tdf_data_logger_log_dev(logger, TDF_RANDOM, 30, 0, tdf_data);
 	zassert_equal(0, rc);
-	zassert_is_null(net_buf_get(sent_queue, K_MSEC(1)));
+	zassert_is_null(k_fifo_get(sent_queue, K_MSEC(1)));
 
 	/* Disconnect backend, nothing should be sent  */
 	epacket_dummy_set_interface_state(dummy, false);
-	zassert_is_null(net_buf_get(sent_queue, K_MSEC(1)));
+	zassert_is_null(k_fifo_get(sent_queue, K_MSEC(1)));
 
 	/* Log again, should be fine */
 	rc = tdf_data_logger_log_dev(logger, TDF_RANDOM, 10, 0, tdf_data);
@@ -338,7 +338,7 @@ ZTEST(tdf_data_logger, test_backend_disconnect)
 	/* Reconnect backend, data should have been preserved */
 	epacket_dummy_set_interface_state(dummy, true);
 	tdf_data_logger_flush_dev(logger);
-	buf = net_buf_get(sent_queue, K_MSEC(1));
+	buf = k_fifo_get(sent_queue, K_MSEC(1));
 	zassert_not_null(buf);
 	zassert_true(buf->len > (sizeof(struct epacket_dummy_frame) + 40));
 	net_buf_unref(buf);
@@ -346,12 +346,12 @@ ZTEST(tdf_data_logger, test_backend_disconnect)
 	/* Cycle with nothing pending */
 	epacket_dummy_set_interface_state(dummy, false);
 	epacket_dummy_set_interface_state(dummy, true);
-	zassert_is_null(net_buf_get(sent_queue, K_MSEC(1)));
+	zassert_is_null(k_fifo_get(sent_queue, K_MSEC(1)));
 
 	/* Log and try to flush while disconnected */
 	rc = tdf_data_logger_log_dev(logger, TDF_RANDOM, 30, 0, tdf_data);
 	zassert_equal(0, rc);
-	zassert_is_null(net_buf_get(sent_queue, K_MSEC(1)));
+	zassert_is_null(k_fifo_get(sent_queue, K_MSEC(1)));
 
 	epacket_dummy_set_interface_state(dummy, false);
 	rc = tdf_data_logger_flush_dev(logger);
@@ -361,13 +361,13 @@ ZTEST(tdf_data_logger, test_backend_disconnect)
 	/* Data is lost here */
 	rc = tdf_data_logger_flush_dev(logger);
 	zassert_equal(0, rc);
-	zassert_is_null(net_buf_get(sent_queue, K_MSEC(1)));
+	zassert_is_null(k_fifo_get(sent_queue, K_MSEC(1)));
 
 	/* Works as per usual here */
 	rc = tdf_data_logger_log_dev(logger, TDF_RANDOM, 30, 0, tdf_data);
 	zassert_equal(0, rc);
 	tdf_data_logger_flush_dev(logger);
-	buf = net_buf_get(sent_queue, K_MSEC(1));
+	buf = k_fifo_get(sent_queue, K_MSEC(1));
 	zassert_not_null(buf);
 	net_buf_unref(buf);
 }
@@ -385,7 +385,7 @@ ZTEST(tdf_data_logger, test_backend_disconnect_after_reboot)
 	/* Log 32 bytes */
 	rc = tdf_data_logger_log_dev(logger, TDF_RANDOM, 30, 0, tdf_data);
 	zassert_equal(0, rc);
-	zassert_is_null(net_buf_get(sent_queue, K_MSEC(1)));
+	zassert_is_null(k_fifo_get(sent_queue, K_MSEC(1)));
 
 	/* Pretend that backend boots in disconnected state */
 	epacket_dummy_set_max_packet(0);
@@ -398,7 +398,7 @@ ZTEST(tdf_data_logger, test_backend_disconnect_after_reboot)
 	 */
 	rc = tdf_data_logger_log_dev(logger, TDF_RANDOM, 10, 0, tdf_data);
 	zassert_equal(0, rc);
-	zassert_is_null(net_buf_get(sent_queue, K_MSEC(1)));
+	zassert_is_null(k_fifo_get(sent_queue, K_MSEC(1)));
 
 	/* Reconnect backend */
 	epacket_dummy_set_max_packet(CONFIG_EPACKET_PACKET_SIZE_MAX);
@@ -407,7 +407,7 @@ ZTEST(tdf_data_logger, test_backend_disconnect_after_reboot)
 	/* Flushing the logger should have all the data */
 	rc = tdf_data_logger_flush_dev(logger);
 	zassert_equal(0, rc);
-	buf = net_buf_get(sent_queue, K_MSEC(1));
+	buf = k_fifo_get(sent_queue, K_MSEC(1));
 	zassert_not_null(buf);
 	zassert_true(buf->len > (sizeof(struct epacket_dummy_frame) + 40));
 	net_buf_unref(buf);
@@ -423,7 +423,7 @@ void data_logger_reset(void *fixture)
 	epacket_dummy_set_max_packet(CONFIG_EPACKET_PACKET_SIZE_MAX);
 	epacket_dummy_set_interface_state(dummy, true);
 	tdf_data_logger_flush_dev(logger);
-	buf = net_buf_get(sent_queue, K_MSEC(1));
+	buf = k_fifo_get(sent_queue, K_MSEC(1));
 	if (buf != NULL) {
 		net_buf_unref(buf);
 	}

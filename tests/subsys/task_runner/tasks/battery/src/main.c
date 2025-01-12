@@ -65,7 +65,7 @@ static void expect_logging(uint32_t battery_uv, int32_t current_ua, uint8_t soc)
 	struct net_buf *pkt;
 
 	tdf_data_logger_flush(TDF_DATA_LOGGER_SERIAL);
-	pkt = net_buf_get(tx_queue, K_MSEC(10));
+	pkt = k_fifo_get(tx_queue, K_MSEC(10));
 	zassert_not_null(pkt);
 
 	net_buf_pull(pkt, sizeof(struct epacket_dummy_frame));

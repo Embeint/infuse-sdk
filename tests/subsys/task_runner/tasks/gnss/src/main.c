@@ -187,7 +187,7 @@ static void expected_no_logging(void)
 	struct k_fifo *tx_queue = epacket_dummmy_transmit_fifo_get();
 
 	tdf_data_logger_flush(TDF_DATA_LOGGER_SERIAL);
-	zassert_is_null(net_buf_get(tx_queue, K_MSEC(10)));
+	zassert_is_null(k_fifo_get(tx_queue, K_MSEC(10)));
 }
 
 static void expected_logging(int32_t latitude, int32_t longitude, int32_t height, uint32_t h_acc,
@@ -199,7 +199,7 @@ static void expected_logging(int32_t latitude, int32_t longitude, int32_t height
 	struct net_buf *pkt;
 
 	tdf_data_logger_flush(TDF_DATA_LOGGER_SERIAL);
-	pkt = net_buf_get(tx_queue, K_MSEC(10));
+	pkt = k_fifo_get(tx_queue, K_MSEC(10));
 	zassert_not_null(pkt);
 	net_buf_pull(pkt, sizeof(struct epacket_dummy_frame));
 
@@ -551,7 +551,7 @@ static void logger_before(void *fixture)
 
 	tdf_data_logger_flush(TDF_DATA_LOGGER_SERIAL);
 	while (1) {
-		buf = net_buf_get(tx_queue, K_MSEC(10));
+		buf = k_fifo_get(tx_queue, K_MSEC(10));
 		if (buf == NULL) {
 			break;
 		}

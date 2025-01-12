@@ -67,7 +67,7 @@ static void run_logger_read(uint16_t epacket_size, uint8_t *memory, uint32_t num
 	send_mem_read_command(request_id, memory, num_bytes);
 
 	while (receiving) {
-		tx = net_buf_get(tx_fifo, K_MSEC(100));
+		tx = k_fifo_get(tx_fifo, K_MSEC(100));
 		zassert_not_null(tx);
 		tx_header = net_buf_pull_mem(tx, sizeof(*tx_header));
 		zassert_equal(EPACKET_AUTH_DEVICE, tx_header->auth);
@@ -99,7 +99,7 @@ static void run_logger_read(uint16_t epacket_size, uint8_t *memory, uint32_t num
 		if (++packets_received == dc_after) {
 			epacket_dummy_set_max_packet(0);
 			epacket_dummy_set_interface_state(epacket_dummy, false);
-			tx = net_buf_get(tx_fifo, K_MSEC(500));
+			tx = k_fifo_get(tx_fifo, K_MSEC(500));
 			zassert_is_null(tx);
 			break;
 		}

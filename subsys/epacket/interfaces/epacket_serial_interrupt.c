@@ -55,7 +55,7 @@ static void disconnected_handler(struct k_work *work)
 
 	do {
 		/* Drop any pending messages */
-		buf = net_buf_get(&data->tx_fifo, K_NO_WAIT);
+		buf = k_fifo_get(&data->tx_fifo, K_NO_WAIT);
 		if (buf) {
 			/* Notify TX result */
 			epacket_notify_tx_result(data->interface, buf, -ETIMEDOUT);
@@ -104,7 +104,7 @@ static void interrupt_handler(const struct device *dev, void *user_data)
 
 			if (data->pending == NULL) {
 				/* Pull next buffer to send */
-				data->pending = net_buf_get(&data->tx_fifo, K_NO_WAIT);
+				data->pending = k_fifo_get(&data->tx_fifo, K_NO_WAIT);
 				if (data->pending == NULL) {
 					uart_irq_tx_disable(dev);
 					irq_unlock(key);
@@ -126,7 +126,7 @@ static void interrupt_handler(const struct device *dev, void *user_data)
 			int sent, required;
 
 			/* Only need to push if we have a packet */
-			buf = net_buf_get(&data->tx_fifo, K_NO_WAIT);
+			buf = k_fifo_get(&data->tx_fifo, K_NO_WAIT);
 			if (buf == NULL) {
 				uart_irq_tx_disable(dev);
 				irq_unlock(key);
@@ -136,7 +136,7 @@ static void interrupt_handler(const struct device *dev, void *user_data)
 			required = buf->len;
 			if (available < required) {
 				LOG_WRN("Insufficient buffer space");
-				net_buf_put(&data->tx_fifo, buf);
+				k_fifo_put(&data->tx_fifo, buf);
 				uart_irq_tx_disable(dev);
 				irq_unlock(key);
 				/* Reschedule the buffer flusher */
@@ -200,7 +200,7 @@ static void epacket_serial_send(const struct device *dev, struct net_buf *buf)
 	}
 
 	/* Push packet onto queue */
-	net_buf_put(&data->tx_fifo, buf);
+	k_fifo_put(&data->tx_fifo, buf);
 
 	/* Driver has 100ms to queue the packet or it will be dropped */
 	k_work_reschedule(&data->dc_handler, K_MSEC(100));

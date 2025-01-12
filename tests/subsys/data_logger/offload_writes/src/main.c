@@ -77,7 +77,7 @@ ZTEST(data_logger_write_offload, test_queued_default)
 	zassert_equal(1, state.current_block);
 
 	/* Validate packet was sent */
-	sent = net_buf_get(sent_queue, K_MSEC(1));
+	sent = k_fifo_get(sent_queue, K_MSEC(1));
 	zassert_not_null(sent);
 	net_buf_unref(sent);
 }

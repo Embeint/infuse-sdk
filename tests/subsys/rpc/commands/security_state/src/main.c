@@ -54,7 +54,7 @@ static struct net_buf *expect_security_state_response(uint32_t request_id)
 	zassert_not_null(response_queue);
 
 	/* Response was sent */
-	rsp = net_buf_get(response_queue, K_SECONDS(10));
+	rsp = k_fifo_get(response_queue, K_SECONDS(10));
 	zassert_not_null(rsp);
 	net_buf_pull_mem(rsp, sizeof(struct epacket_dummy_frame));
 	response = (void *)rsp->data;

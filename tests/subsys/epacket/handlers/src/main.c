@@ -24,7 +24,7 @@ static K_FIFO_DEFINE(handler_fifo);
 
 static void custom_handler(struct net_buf *packet)
 {
-	net_buf_put(&handler_fifo, packet);
+	k_fifo_put(&handler_fifo, packet);
 }
 
 ZTEST(epacket_handlers, test_custom_handler)
@@ -41,14 +41,14 @@ ZTEST(epacket_handlers, test_custom_handler)
 
 	/* Receive without a custom handler */
 	epacket_dummy_receive(epacket_dummy, &header, payload, sizeof(payload));
-	zassert_is_null(net_buf_get(&handler_fifo, K_MSEC(100)));
+	zassert_is_null(k_fifo_get(&handler_fifo, K_MSEC(100)));
 
 	/* Set the custom handler */
 	epacket_set_receive_handler(epacket_dummy, custom_handler);
 
 	/* Receive again with custom handler */
 	epacket_dummy_receive(epacket_dummy, &header, payload, sizeof(payload));
-	rx = net_buf_get(&handler_fifo, K_MSEC(100));
+	rx = k_fifo_get(&handler_fifo, K_MSEC(100));
 	zassert_not_null(rx);
 	meta = net_buf_user_data(rx);
 
@@ -70,7 +70,7 @@ ZTEST(epacket_handlers, test_key_ids)
 	epacket_dummy_receive(epacket_dummy, NULL, &magic_byte, sizeof(magic_byte));
 
 	/* Standard key ID request */
-	rx = net_buf_get(tx_fifo, K_MSEC(100));
+	rx = k_fifo_get(tx_fifo, K_MSEC(100));
 	zassert_not_null(rx);
 	rx_header = (void *)rx->data;
 	rx_data = (void *)(rx->data + sizeof(struct epacket_dummy_frame));
@@ -84,13 +84,13 @@ ZTEST(epacket_handlers, test_key_ids)
 
 	/* Second request immediately should fail */
 	epacket_dummy_receive(epacket_dummy, NULL, &magic_byte, sizeof(magic_byte));
-	rx = net_buf_get(tx_fifo, K_MSEC(100));
+	rx = k_fifo_get(tx_fifo, K_MSEC(100));
 	zassert_is_null(rx);
 
 	/* Request after a second should work */
 	k_sleep(K_SECONDS(1));
 	epacket_dummy_receive(epacket_dummy, NULL, &magic_byte, sizeof(magic_byte));
-	rx = net_buf_get(tx_fifo, K_MSEC(100));
+	rx = k_fifo_get(tx_fifo, K_MSEC(100));
 	zassert_not_null(rx);
 	net_buf_unref(rx);
 
@@ -100,19 +100,19 @@ ZTEST(epacket_handlers, test_key_ids)
 		tx_bufs[i] = epacket_alloc_tx(K_FOREVER);
 	}
 	epacket_dummy_receive(epacket_dummy, NULL, &magic_byte, sizeof(magic_byte));
-	rx = net_buf_get(tx_fifo, K_MSEC(100));
+	rx = k_fifo_get(tx_fifo, K_MSEC(100));
 	zassert_is_null(rx);
 	for (int i = 0; i < ARRAY_SIZE(tx_bufs); i++) {
 		net_buf_unref(tx_bufs[i]);
 	}
 	/* Ensure processing thread didn't spend this time waiting for a buffer */
-	rx = net_buf_get(tx_fifo, K_MSEC(100));
+	rx = k_fifo_get(tx_fifo, K_MSEC(100));
 	zassert_is_null(rx);
 
 	/* Bad magic byte generates no response */
 	magic_byte = 0x02;
 	epacket_dummy_receive(epacket_dummy, NULL, &magic_byte, sizeof(magic_byte));
-	rx = net_buf_get(tx_fifo, K_MSEC(100));
+	rx = k_fifo_get(tx_fifo, K_MSEC(100));
 	zassert_is_null(rx);
 }
 
@@ -131,7 +131,7 @@ ZTEST(epacket_handlers, test_echo_response)
 	header.auth = EPACKET_AUTH_DEVICE;
 	epacket_dummy_receive(epacket_dummy, &header, payload, 16);
 
-	rx = net_buf_get(tx_fifo, K_MSEC(100));
+	rx = k_fifo_get(tx_fifo, K_MSEC(100));
 	zassert_not_null(rx);
 	rx_header = (void *)rx->data;
 	zassert_equal(INFUSE_ECHO_RSP, rx_header->type);
@@ -144,7 +144,7 @@ ZTEST(epacket_handlers, test_echo_response)
 	header.auth = EPACKET_AUTH_NETWORK;
 	epacket_dummy_receive(epacket_dummy, &header, payload, 64);
 
-	rx = net_buf_get(tx_fifo, K_MSEC(100));
+	rx = k_fifo_get(tx_fifo, K_MSEC(100));
 	zassert_not_null(rx);
 	rx_header = (void *)rx->data;
 	zassert_equal(INFUSE_ECHO_RSP, rx_header->type);
@@ -157,7 +157,7 @@ ZTEST(epacket_handlers, test_echo_response)
 	header.auth = EPACKET_AUTH_FAILURE;
 	epacket_dummy_receive(epacket_dummy, &header, payload, 16);
 
-	zassert_is_null(net_buf_get(tx_fifo, K_MSEC(100)));
+	zassert_is_null(k_fifo_get(tx_fifo, K_MSEC(100)));
 }
 
 ZTEST(epacket_handlers, test_echo_no_block)
@@ -179,11 +179,11 @@ ZTEST(epacket_handlers, test_echo_no_block)
 	}
 	k_sleep(K_MSEC(1));
 	for (int i = 0; i < CONFIG_EPACKET_BUFFERS_TX; i++) {
-		tx = net_buf_get(tx_fifo, K_MSEC(100));
+		tx = k_fifo_get(tx_fifo, K_MSEC(100));
 		zassert_not_null(tx);
 		net_buf_unref(tx);
 	}
-	zassert_is_null(net_buf_get(tx_fifo, K_MSEC(100)));
+	zassert_is_null(k_fifo_get(tx_fifo, K_MSEC(100)));
 }
 
 GATEWAY_HANDLER_DEFINE(dummy_backhaul_handler, DEVICE_DT_GET(DT_NODELABEL(epacket_dummy)));
@@ -203,7 +203,7 @@ ZTEST(epacket_handlers, test_gateway_fallthrough)
 	header.type = INFUSE_TDF;
 	header.auth = EPACKET_AUTH_DEVICE;
 	epacket_dummy_receive(epacket_dummy, &header, payload, sizeof(payload));
-	zassert_is_null(net_buf_get(tx_fifo, K_MSEC(100)));
+	zassert_is_null(k_fifo_get(tx_fifo, K_MSEC(100)));
 }
 
 static struct net_buf *create_received_tdf_packet(uint8_t payload_len, bool encrypt)
@@ -260,7 +260,7 @@ ZTEST(epacket_handlers, test_gateway_forward)
 	/* Expect packet to be forwarded out over epacket_dummy */
 	epacket_gateway_receive_handler(epacket_dummy, buf_rx);
 
-	buf_tx = net_buf_get(tx_fifo, K_MSEC(100));
+	buf_tx = k_fifo_get(tx_fifo, K_MSEC(100));
 	zassert_not_null(buf_tx);
 	tx_header = (void *)buf_tx->data;
 	zassert_equal(INFUSE_RECEIVED_EPACKET, tx_header->type);
@@ -274,7 +274,7 @@ ZTEST(epacket_handlers, test_gateway_forward)
 		buf_rx = create_received_tdf_packet(60, true);
 
 		epacket_gateway_receive_handler(epacket_dummy, buf_rx);
-		zassert_is_null(net_buf_get(tx_fifo, K_MSEC(100)));
+		zassert_is_null(k_fifo_get(tx_fifo, K_MSEC(100)));
 	}
 }
 

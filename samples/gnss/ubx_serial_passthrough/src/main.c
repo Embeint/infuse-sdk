@@ -57,7 +57,7 @@ static void uart_callback(const struct device *dev, struct uart_event *evt, void
 			return;
 		}
 		net_buf_add_mem(buf, evt->data.rx.buf + evt->data.rx.offset, evt->data.rx.len);
-		net_buf_put(&to_ubx_fifo, buf);
+		k_fifo_put(&to_ubx_fifo, buf);
 		break;
 	case UART_RX_BUF_RELEASED:
 		break;
@@ -136,7 +136,7 @@ int main(void)
 	state.forwarding = true;
 
 	for (;;) {
-		buf = net_buf_get(&to_ubx_fifo, K_FOREVER);
+		buf = k_fifo_get(&to_ubx_fifo, K_FOREVER);
 
 		rc = ubx_modem_send_async(state.modem, &buf->b, NULL, true);
 		frame = (void *)buf->b.data;

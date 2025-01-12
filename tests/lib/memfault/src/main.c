@@ -71,7 +71,7 @@ static void expect_memfault_chunks(bool self_dump, size_t min_data, size_t max_d
 		/* Pull responses */
 		while (true) {
 			/* Response was sent */
-			rsp = net_buf_get(response_queue, K_MSEC(1000));
+			rsp = k_fifo_get(response_queue, K_MSEC(1000));
 			if (rsp == NULL) {
 				break;
 			}
@@ -106,7 +106,7 @@ static void expect_memfault_chunks(bool self_dump, size_t min_data, size_t max_d
 
 	/* Additional calls return true, no pending data */
 	zassert_true(infuse_memfault_dump_chunks_epacket(epacket_dummy));
-	zassert_is_null(net_buf_get(response_queue, K_MSEC(1000)));
+	zassert_is_null(k_fifo_get(response_queue, K_MSEC(1000)));
 }
 
 static void reboot_reason_test(uint8_t zephyr_reason, uint32_t hw_flags,

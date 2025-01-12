@@ -37,7 +37,7 @@ static void expect_sync(struct k_fifo *sent_queue, uint8_t source, int32_t shift
 	struct tdf_time_sync *sync;
 	struct net_buf *buf;
 
-	buf = net_buf_get(sent_queue, K_MSEC(1));
+	buf = k_fifo_get(sent_queue, K_MSEC(1));
 	zassert_not_null(buf);
 	frame = (void *)buf->data;
 	zassert_equal(INFUSE_TDF, frame->type);
@@ -62,7 +62,7 @@ static void expect_reboot(struct k_fifo *sent_queue, bool expect)
 	struct tdf_parsed parsed;
 	struct net_buf *buf;
 
-	buf = net_buf_get(sent_queue, K_MSEC(1));
+	buf = k_fifo_get(sent_queue, K_MSEC(1));
 	if (expect) {
 		zassert_not_null(buf);
 		frame = (void *)buf->data;
@@ -94,7 +94,7 @@ ZTEST(time_sync_log, test_auto_log)
 	/* Nothing should happen when reference set before configure */
 	zassert_equal(0, epoch_time_set_reference(TIME_SOURCE_GNSS, &reference));
 	tdf_data_logger_flush(TDF_DATA_LOGGER_SERIAL);
-	zassert_is_null(net_buf_get(sent_queue, K_MSEC(1)));
+	zassert_is_null(k_fifo_get(sent_queue, K_MSEC(1)));
 
 	/* Configure automatic logging */
 	auto_time_sync_log_configure(TDF_DATA_LOGGER_SERIAL, AUTO_TIME_SYNC_LOG_SYNCS);
