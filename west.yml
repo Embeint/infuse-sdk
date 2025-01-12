@@ -26,12 +26,13 @@ manifest:
           - mbedtls
           - open-amp
           - segger
+          - nrf_wifi
           - tinycrypt
           - trusted-firmware-m
           - zcbor
     - name: sdk-nrf
       path: modules/nrfconnect/sdk-nrf
-      revision: 563aa8f03456aeb1583487b4c1969c8a99b594ec
+      revision: main
       import: true
     - name: memfault-firmware-sdk
       path: modules/lib/memfault
