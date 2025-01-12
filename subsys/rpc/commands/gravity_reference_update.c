@@ -6,7 +6,7 @@
  * SPDX-License-Identifier: LicenseRef-Embeint
  */
 
-#include <zephyr/net/buf.h>
+#include <zephyr/net_buf.h>
 #include <zephyr/logging/log.h>
 
 #include <zephyr/zbus/zbus.h>

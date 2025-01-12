@@ -11,7 +11,7 @@
 #ifndef INFUSE_GNSS_UBX_DEFINES_H_
 #define INFUSE_GNSS_UBX_DEFINES_H_
 
-#include <zephyr/net/buf.h>
+#include <zephyr/net_buf.h>
 #include <zephyr/sys/byteorder.h>
 
 #include <infuse/gnss/ubx/protocol.h>

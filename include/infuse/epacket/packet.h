@@ -17,7 +17,7 @@
 
 #include <zephyr/device.h>
 #include <zephyr/toolchain.h>
-#include <zephyr/net/buf.h>
+#include <zephyr/net_buf.h>
 #include <zephyr/bluetooth/bluetooth.h>
 
 #include <infuse/types.h>

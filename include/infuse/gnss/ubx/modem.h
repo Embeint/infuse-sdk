@@ -12,7 +12,7 @@
 #include <stdint.h>
 
 #include <zephyr/kernel.h>
-#include <zephyr/net/buf.h>
+#include <zephyr/net_buf.h>
 #include <zephyr/modem/pipe.h>
 #include <zephyr/sys/ring_buffer.h>
 

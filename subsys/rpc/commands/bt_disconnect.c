@@ -8,7 +8,7 @@
 
 #include <zephyr/bluetooth/conn.h>
 #include <zephyr/bluetooth/hci_types.h>
-#include <zephyr/net/buf.h>
+#include <zephyr/net_buf.h>
 #include <zephyr/logging/log.h>
 #include <zephyr/net/net_if.h>
 

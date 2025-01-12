@@ -14,7 +14,7 @@
 #define INFUSE_SDK_INCLUDE_INFUSE_EPACKET_INTERFACE_H_
 
 #include <zephyr/device.h>
-#include <zephyr/net/buf.h>
+#include <zephyr/net_buf.h>
 
 #ifdef __cplusplus
 extern "C" {

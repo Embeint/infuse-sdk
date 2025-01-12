@@ -10,7 +10,7 @@
 #ifndef INFUSE_SDK_INCLUDE_GENERATED_RPC_COMMANDS_H_
 #define INFUSE_SDK_INCLUDE_GENERATED_RPC_COMMANDS_H_
 
-#include <zephyr/net/buf.h>
+#include <zephyr/net_buf.h>
 
 #ifdef __cplusplus
 extern "C" {

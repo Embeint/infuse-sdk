@@ -7,7 +7,7 @@
  */
 
 #include <zephyr/random/random.h>
-#include <zephyr/net/buf.h>
+#include <zephyr/net_buf.h>
 #include <zephyr/logging/log.h>
 
 #include <infuse/epacket/packet.h>
