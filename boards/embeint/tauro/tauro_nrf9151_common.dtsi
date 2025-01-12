@@ -40,8 +40,6 @@
 
 	vbatt: vbatt {
 		compatible = "voltage-divider";
-		device-chemistry = "lithium-ion-polymer";
-		ocv-capacity-table-0 = <BATTERY_OCV_CURVE_LITHIUM_ION_POLYMER_DEFAULT>;
 		io-channels = <&adc 1>;
 		output-ohms = <10000>;
 		full-ohms = <(64900 + 10000)>;
@@ -62,7 +60,7 @@
 	fuel_gauge: fuel_gauge {
 		compatible = "zephyr,fuel-gauge-composite";
 		battery-voltage = <&vbatt>;
-		battery-charge-current = <&bq25185>;
+		battery-current = <&bq25185>;
 		device-chemistry = "lithium-ion-polymer";
 		ocv-capacity-table-0 = <BATTERY_OCV_CURVE_LITHIUM_ION_POLYMER_DEFAULT>;
 		charge-full-design-microamp-hours = <13400000>;
