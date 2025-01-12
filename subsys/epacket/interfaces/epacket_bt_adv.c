@@ -52,8 +52,7 @@ static void bt_adv_broadcast(const struct device *dev, struct net_buf *pkt)
 		.id = BT_ID_DEFAULT,
 		.sid = 0U,
 		.secondary_max_skip = 0U,
-		.options = BT_LE_ADV_OPT_USE_IDENTITY | BT_LE_ADV_OPT_EXT_ADV |
-			   BT_LE_ADV_OPT_CONNECTABLE,
+		.options = BT_LE_ADV_OPT_USE_IDENTITY | BT_LE_ADV_OPT_EXT_ADV | BT_LE_ADV_OPT_CONN,
 		.interval_min = BT_GAP_ADV_FAST_INT_MIN_1,
 		.interval_max = BT_GAP_ADV_FAST_INT_MAX_1,
 		.peer = NULL,
@@ -95,7 +94,7 @@ static void bt_adv_broadcast(const struct device *dev, struct net_buf *pkt)
 	rc = bt_le_ext_adv_start(adv_set, &adv_start_param);
 	if (rc == -ENOMEM) {
 		/* No Bluetooth connections left, clear connectable flag */
-		adv_param.options ^= BT_LE_ADV_OPT_CONNECTABLE;
+		adv_param.options ^= BT_LE_ADV_OPT_CONN;
 		rc = bt_le_ext_adv_update_param(adv_set, &adv_param);
 		if (rc != 0) {
 			LOG_ERR("Failed to update params (%d)", rc);
