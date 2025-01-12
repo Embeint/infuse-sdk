@@ -3,13 +3,6 @@
 # Copyright (c) 2024 Embeint Inc
 # SPDX-License-Identifier: Apache-2.0
 
-config FUEL_GAUGE_COMPOSITE
-	bool "Zephyr composite fuel gauge"
-	default y
-	depends on DT_HAS_ZEPHYR_FUEL_GAUGE_COMPOSITE_ENABLED
-	help
-	  Enable driver for the Zephyr composite fuel gauge device.
-
 config MAXIM_MAX17260
 	bool "Maxim MAX17260 fuel gauge"
 	default y
