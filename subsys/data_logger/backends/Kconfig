@@ -15,14 +15,12 @@ config DATA_LOGGER_FLASH_MAP
 config DATA_LOGGER_EXFAT
 	bool "Logging to exFAT filesystem"
 	depends on DT_HAS_EMBEINT_DATA_LOGGER_EXFAT_ENABLED
-	select FILE_SYSTEM
+	select FILE_SYSTEM_LIB_LINK
 	select DISK_ACCESS
 	select FAT_FILESYSTEM_ELM
 	select FS_FATFS_EXFAT
 	select FS_FATFS_HAS_RTC
-	select FS_FATFS_USE_LABEL
-	select FS_FATFS_USE_EXPAND
-	select FS_FATFS_USE_FIND
+	select FS_FATFS_EXTRA_NATIVE_API
 	default y
 	help
 	  Data is stored on an exFAT filesystem in `.bin` files. Note that the

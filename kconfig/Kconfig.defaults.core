@@ -66,8 +66,6 @@ configdefault TDF
 
 configdefault DATA_LOGGER
 	default y
-configdefault FILE_SYSTEM_RAW_API
-	default y
 
 configdefault INFUSE_EPOCH_TIME
 	default y
@@ -176,12 +174,12 @@ configdefault MBEDTLS_USER_CONFIG_FILE
 configdefault MBEDTLS_PSA_CRYPTO_C
 	default y
 
-choice MBEDTLS_PSA_CRYPTO_RND_SOURCE
+choice MBEDTLS_PSA_CRYPTO_RNG_SOURCE
 	default MBEDTLS_PSA_CRYPTO_EXTERNAL_RNG if NRF_CC3XX_PLATFORM
 endchoice
-configdefault MBEDTLS_ENTROPY_ENABLED
+configdefault MBEDTLS_ENTROPY_C
 	default y
-configdefault MBEDTLS_ZEPHYR_ENTROPY
+configdefault MBEDTLS_ENTROPY_POLL_ZEPHYR
 	default y if !NRF_CC3XX_PLATFORM
 # Key derivation
 configdefault PSA_WANT_ALG_HKDF

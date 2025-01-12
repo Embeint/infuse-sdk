@@ -2,6 +2,6 @@
 
 # nRF700x overflows flash with asserts enabled
 configdefault ASSERT
-	default y if !WIFI_NRF700X
+	default y if !WIFI_NRF70
 
 source "Kconfig.zephyr"
