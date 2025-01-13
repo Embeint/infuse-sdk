@@ -102,6 +102,10 @@ static void expect_memfault_chunks(bool self_dump, size_t min_data, size_t max_d
 
 	zassert_between_inclusive(received, min_data, max_data,
 				  "Unexpected amount of Memfault chunks");
+
+	/* Additional calls return true, no pending data */
+	zassert_true(infuse_memfault_dump_chunks_epacket(epacket_dummy));
+	zassert_is_null(net_buf_get(response_queue, K_MSEC(1000)));
 }
 
 static void reboot_reason_test(uint8_t zephyr_reason, uint32_t hw_flags,
