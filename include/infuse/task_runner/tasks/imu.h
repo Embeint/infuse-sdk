@@ -55,8 +55,9 @@ void imu_task_fn(const struct task_schedule *schedule, struct k_poll_signal *ter
  * @param imu_ptr IMU device bound to task
  */
 #define IMU_TASK(define_mem, define_config, imu_ptr)                                               \
-	IF_ENABLED(define_mem, (K_THREAD_STACK_DEFINE(imu_stack_area,                              \
-						      CONFIG_TASK_RUNNER_TASK_IMU_STACK_SIZE)))    \
+	IF_ENABLED(define_mem,                                                                     \
+		   (K_THREAD_STACK_DEFINE(imu_stack_area, CONFIG_TASK_RUNNER_TASK_IMU_STACK_SIZE); \
+		    struct k_thread imu_thread_obj))                                               \
 	IF_ENABLED(define_config,                                                                  \
 		   ({                                                                              \
 			   .name = "imu",                                                          \
@@ -66,6 +67,7 @@ void imu_task_fn(const struct task_schedule *schedule, struct k_poll_signal *ter
 			   .task_arg.dev = imu_ptr,                                                \
 			   .executor.thread =                                                      \
 				   {                                                               \
+					   .thread = &imu_thread_obj,                              \
 					   .task_fn = imu_task_fn,                                 \
 					   .stack = imu_stack_area,                                \
 					   .stack_size = K_THREAD_STACK_SIZEOF(imu_stack_area),    \

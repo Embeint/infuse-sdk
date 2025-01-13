@@ -56,6 +56,7 @@ static void example_task_fn(const struct task_schedule *schedule, struct k_poll_
 
 #define SLEEPY_TASK(define_mem, define_config, arg1, arg2)                                         \
 	IF_ENABLED(define_mem, (K_THREAD_STACK_DEFINE(sleep_stack_area, 2048);                     \
+				struct k_thread sleep_thread_obj;                                  \
 				const struct sleepy_args sleepy_args_inst = {arg1, arg2}))         \
 	IF_ENABLED(define_config,                                                                  \
 		   ({                                                                              \
@@ -65,6 +66,7 @@ static void example_task_fn(const struct task_schedule *schedule, struct k_poll_
 			   .task_arg.const_arg = &sleepy_args_inst,                                \
 			   .executor.thread =                                                      \
 				   {                                                               \
+					   .thread = &sleep_thread_obj,                            \
 					   .task_fn = example_task_fn,                             \
 					   .stack = sleep_stack_area,                              \
 					   .stack_size = K_THREAD_STACK_SIZEOF(sleep_stack_area),  \

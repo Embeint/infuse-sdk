@@ -51,6 +51,11 @@ void task_runner_init(const struct task_schedule *schedules,
 				tsk[i].task_arg.const_arg;
 			k_work_init_delayable(&tsk_states[i].executor.workqueue.work,
 					      tsk[i].executor.workqueue.worker_fn);
+		} else {
+			__ASSERT_NO_MSG(tsk[i].executor.thread.thread != NULL);
+			__ASSERT_NO_MSG(tsk[i].executor.thread.task_fn != NULL);
+			__ASSERT_NO_MSG(tsk[i].executor.thread.stack != NULL);
+			__ASSERT_NO_MSG(tsk[i].executor.thread.stack_size > 128);
 		}
 		/* Check for duplicate task definitions */
 		for (int j = 0; j < i; j++) {
@@ -133,7 +138,7 @@ static void task_start(uint8_t schedule_index, uint32_t uptime)
 
 	if (c->exec_type == TASK_EXECUTOR_THREAD) {
 		/* Boot the thread */
-		tid = k_thread_create(&d->executor.thread, c->executor.thread.stack,
+		tid = k_thread_create(c->executor.thread.thread, c->executor.thread.stack,
 				      c->executor.thread.stack_size,
 				      (k_thread_entry_t)c->executor.thread.task_fn, (void *)s,
 				      &d->terminate_signal, c->task_arg.arg, 5, 0, K_NO_WAIT);
@@ -169,7 +174,7 @@ static bool task_has_terminated(uint8_t task_idx)
 	struct task_data *d = &tsk_states[task_idx];
 
 	if (c->exec_type == TASK_EXECUTOR_THREAD) {
-		if (k_thread_join(&d->executor.thread, K_NO_WAIT) == 0) {
+		if (k_thread_join(c->executor.thread.thread, K_NO_WAIT) == 0) {
 			return true;
 		}
 	} else {

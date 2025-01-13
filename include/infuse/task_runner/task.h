@@ -61,6 +61,8 @@ struct task_config {
 	} task_arg;
 	union {
 		struct {
+			/** Thread state storage */
+			struct k_thread *thread;
 			/** Thread function */
 			task_runner_task_fn task_fn;
 			/** Pointer to stack memory for thread */
@@ -82,8 +84,6 @@ struct task_config {
  */
 struct task_data {
 	union {
-		/** Thread state storage */
-		struct k_thread thread;
 		/** Workqueue state storage */
 		struct {
 			/* Workqueue item */
@@ -140,7 +140,9 @@ struct task_data {
  * Example Usage:
  * @code{.c}
  * #define SLEEPY_TASK(define_mem, define_config, dev_pointer)                  \
- *    IF_ENABLED(define_mem, (K_THREAD_STACK_DEFINE(sleep_stack_area, 1024)))   \
+ *    IF_ENABLED(define_mem,                                                    \
+ *               (K_THREAD_STACK_DEFINE(sleep_stack_area, 1024);                \
+ *                struct k_thread sleep_thread_obj))                            \
  *    IF_ENABLED(define_config,                                                 \
  *        ({                                                                    \
  *            .name = "sleepy",                                                 \
@@ -148,6 +150,7 @@ struct task_data {
  *            .task_args.const_arg = dev_pointer,                               \
  *            .exec_type = TASK_EXECUTOR_THREAD,                                \
  *            .executor.thread = {                                              \
+ *                .thread = &sleep_thread_obj,                                  \
  *                .task_fn = example_task_fn,                                   \
  *                .thread_stack = sleep_stack_area,                             \
  *                .thread_stack_size = K_THREAD_STACK_SIZEOF(sleep_stack_area), \

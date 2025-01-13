@@ -48,7 +48,7 @@ static k_tid_t task_schedule(uint8_t index)
 		infuse_work_schedule(&data[index].executor.workqueue.work, K_NO_WAIT);
 		return NULL;
 	} else {
-		return k_thread_create(&data[index].executor.thread,
+		return k_thread_create(config[index].executor.thread.thread,
 				       config[index].executor.thread.stack,
 				       config[index].executor.thread.stack_size,
 				       (k_thread_entry_t)config[index].executor.thread.task_fn,
