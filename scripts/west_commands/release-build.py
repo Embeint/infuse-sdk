@@ -162,6 +162,13 @@ class release_build(WestCommand):
         project: Project
         for project in self.manifest.projects:
             absolute_repo_path = os.path.join(self.manifest.topdir, project.path)
+
+            if not os.path.exists(absolute_repo_path):
+                # Repo is part of the manifest, but not cloned (probably due to manifest groups).
+                # This is not necessarily a problem, but let the user know.
+                print(f"'{project.path}' does not exist (groups: {project.groups})")
+                continue
+
             repo = Repo(absolute_repo_path)
 
             if isinstance(project, ManifestProject):
