@@ -13,6 +13,10 @@ config GNSS_UBX_MODEM_EMUL
 
 if GNSS_UBX_MODEM
 
+config GNSS_UBX_MODEM_MAX_CALLBACKS
+	int "Maximum number of handler callbacks that can be run in response to a UBX message"
+	default 8
+
 config GNSS_UBX_M10
 	bool
 	help

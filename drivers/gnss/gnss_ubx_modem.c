@@ -35,15 +35,16 @@ static void ubx_msg_handle(struct ubx_modem_data *modem, struct ubx_frame *frame
 			   uint16_t payload_len)
 {
 	struct ubx_message_handler_ctx *curr, *tmp, *prev = NULL;
+	struct ubx_message_handler_ctx *to_run[CONFIG_GNSS_UBX_MODEM_MAX_CALLBACKS] = {0};
+	int num_to_run, rc;
 	bool notify;
-	int rc;
 
-	k_sem_take(&modem->handlers_sem, K_FOREVER);
 	if (frame->message_class == UBX_MSG_CLASS_ACK) {
 		/* ACK-ACK and ACK-NAK have the same payload structures */
 		const struct ubx_msg_id_ack_ack *ack = (const void *)frame->payload_and_checksum;
 
 		/* Iterate over all one shot handlers */
+		k_sem_take(&modem->handlers_sem, K_FOREVER);
 		SYS_SLIST_FOR_EACH_CONTAINER_SAFE(&modem->handlers, curr, tmp, _node) {
 			/* Only consider handlers expecting an ACK */
 			if (!(curr->flags & (UBX_HANDLING_ACK | UBX_HANDLING_RSP_ACK))) {
@@ -53,30 +54,38 @@ static void ubx_msg_handle(struct ubx_modem_data *modem, struct ubx_frame *frame
 			/* Check message that was acked against handler */
 			if ((ack->message_class == curr->message_class) &&
 			    (ack->message_id == curr->message_id)) {
-				/* If UBX_HANDLING_RSP_ACK, handler was for the main response */
-				ubx_message_handler_t cb = curr->flags & UBX_HANDLING_RSP_ACK
-								   ? ubx_modem_ack_handler
-								   : curr->message_cb;
-
 				/* Remove from handler list */
 				sys_slist_remove(&modem->handlers, &prev->_node, &curr->_node);
-				/* Run callback */
-				rc = cb(frame->message_class, frame->message_id,
-					frame->payload_and_checksum, payload_len, curr->user_data);
-				/* Raise signal if provided */
-				if (curr->signal) {
-					k_poll_signal_raise(curr->signal, rc);
-				}
-				goto exit;
+				/* Store the one-shot handler that should be run */
+				to_run[0] = curr;
+				break;
 			}
 			prev = curr;
 		}
-		LOG_WRN("Unhandled ACK for %02x:%02x", ack->message_class, ack->message_id);
-		goto exit;
+		k_sem_give(&modem->handlers_sem);
+
+		if (to_run[0]) {
+			/* If UBX_HANDLING_RSP_ACK, handler was for the main response */
+			ubx_message_handler_t cb = curr->flags & UBX_HANDLING_RSP_ACK
+							   ? ubx_modem_ack_handler
+							   : curr->message_cb;
+			/* Run callback */
+			rc = cb(frame->message_class, frame->message_id,
+				frame->payload_and_checksum, payload_len, curr->user_data);
+			/* Raise signal if provided */
+			if (curr->signal) {
+				k_poll_signal_raise(curr->signal, rc);
+			}
+		} else {
+			LOG_WRN("Unhandled ACK for %02x:%02x", ack->message_class, ack->message_id);
+		}
+		return;
 	}
 
 	/* Iterate over all pending message callbacks */
 	prev = NULL;
+	num_to_run = 0;
+	k_sem_take(&modem->handlers_sem, K_FOREVER);
 	SYS_SLIST_FOR_EACH_CONTAINER_SAFE(&modem->handlers, curr, tmp, _node) {
 		/* Notify if:
 		 *   Handler class == UBX_MSG_CLASS_WILDCARD
@@ -97,20 +106,28 @@ static void ubx_msg_handle(struct ubx_modem_data *modem, struct ubx_frame *frame
 			if (curr->flags & UBX_HANDLING_RSP) {
 				sys_slist_remove(&modem->handlers, &prev->_node, &curr->_node);
 			}
-			/* Run callback */
-			rc = curr->message_cb(frame->message_class, frame->message_id,
-					      frame->payload_and_checksum, payload_len,
-					      curr->user_data);
-			/* Raise signal if provided and no ACK/NAK is expected */
-			if (curr->signal && (curr->flags & UBX_HANDLING_RSP)) {
-				k_poll_signal_raise(curr->signal, rc);
+			/* Cache the contexts to run outside of the list lock */
+			if (num_to_run < ARRAY_SIZE(to_run)) {
+				to_run[num_to_run++] = curr;
+			} else {
+				LOG_ERR("Too many handlers!");
 			}
 		}
 		prev = curr;
 	}
-exit:
 	k_sem_give(&modem->handlers_sem);
-	return;
+
+	/* Run the saved contexts */
+	for (int i = 0; i < num_to_run; i++) {
+		/* Run callback */
+		rc = to_run[i]->message_cb(frame->message_class, frame->message_id,
+					   frame->payload_and_checksum, payload_len,
+					   to_run[i]->user_data);
+		/* Raise signal if provided and no ACK/NAK is expected */
+		if (to_run[i]->signal && (to_run[i]->flags & UBX_HANDLING_RSP)) {
+			k_poll_signal_raise(to_run[i]->signal, rc);
+		}
+	}
 }
 
 static void fifo_read_runner(struct k_work *work)
