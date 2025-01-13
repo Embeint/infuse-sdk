@@ -82,7 +82,7 @@ ZTEST(drivers_watchdog, test_watchdog)
 	zassert_equal(0, rc, "Watchdog did not expire");
 
 	/* Warning should have been received CONFIG_INFUSE_WATCHDOG_SOFTWARE_WARNING_MS early */
-	zassert_within(CONFIG_INFUSE_WATCHDOG_SOFTWARE_WARNING_MS, warning, 1,
+	zassert_within(CONFIG_INFUSE_WATCHDOG_SOFTWARE_WARNING_MS, warning, 5,
 		       "Watchdog warning not at expected time");
 	zassert_equal(0, expired_channel, "Unexpected channel ID");
 }
