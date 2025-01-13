@@ -225,6 +225,11 @@ bool infuse_memfault_dump_chunks_epacket(const struct device *dev)
 	bool data_available;
 	size_t buf_len;
 
+	/* No data to dump */
+	if (!memfault_packetizer_data_available()) {
+		return true;
+	}
+
 	while (true) {
 		if (tx == NULL) {
 			tx = epacket_alloc_tx_for_interface(dev, K_NO_WAIT);
