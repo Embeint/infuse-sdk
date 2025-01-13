@@ -41,7 +41,8 @@ void gnss_task_fn(const struct task_schedule *schedule, struct k_poll_signal *te
 #define GNSS_TASK(define_mem, define_config, gnss_ptr)                                             \
 	IF_ENABLED(define_mem,                                                                     \
 		   (K_THREAD_STACK_DEFINE(gnss_stack_area,                                         \
-					  CONFIG_TASK_RUNNER_TASK_GNSS_UBX_STACK_SIZE)))           \
+					  CONFIG_TASK_RUNNER_TASK_GNSS_UBX_STACK_SIZE);            \
+		    struct k_thread gnss_thread_obj))                                              \
 	IF_ENABLED(define_config,                                                                  \
 		   ({                                                                              \
 			   .name = "gnss",                                                         \
@@ -51,6 +52,7 @@ void gnss_task_fn(const struct task_schedule *schedule, struct k_poll_signal *te
 			   .task_arg.dev = gnss_ptr,                                               \
 			   .executor.thread =                                                      \
 				   {                                                               \
+					   .thread = &gnss_thread_obj,                             \
 					   .task_fn = gnss_task_fn,                                \
 					   .stack = gnss_stack_area,                               \
 					   .stack_size = K_THREAD_STACK_SIZEOF(gnss_stack_area),   \

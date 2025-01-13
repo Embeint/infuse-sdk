@@ -57,7 +57,7 @@ static k_tid_t task_schedule(struct task_data *data)
 	data->executor.workqueue.reschedule_counter = 0;
 	k_poll_signal_init(&data->terminate_signal);
 
-	return k_thread_create(&data->executor.thread, config.executor.thread.stack,
+	return k_thread_create(config.executor.thread.thread, config.executor.thread.stack,
 			       config.executor.thread.stack_size,
 			       (k_thread_entry_t)config.executor.thread.task_fn, (void *)&schedule,
 			       &data->terminate_signal, config.task_arg.arg, 5, 0, K_NO_WAIT);
