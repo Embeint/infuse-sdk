@@ -231,6 +231,8 @@ configdefault MEMFAULT_FS_BYTES_FREE_METRIC
 	default n
 configdefault MEMFAULT_METRICS
 	default n
+configdefault MEMFAULT_HEAP_STATS
+	default n
 configdefault MEMFAULT_REBOOT_REASON_GET_CUSTOM
 	default y
 configdefault MEMFAULT_FAULT_HANDLER_RETURN
