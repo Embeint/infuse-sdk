@@ -83,7 +83,6 @@ static void ubx_msg_handle(struct ubx_modem_data *modem, struct ubx_frame *frame
 	}
 
 	/* Iterate over all pending message callbacks */
-	prev = NULL;
 	num_to_run = 0;
 	k_sem_take(&modem->handlers_sem, K_FOREVER);
 	SYS_SLIST_FOR_EACH_CONTAINER_SAFE(&modem->handlers, curr, tmp, _node) {
@@ -104,7 +103,7 @@ static void ubx_msg_handle(struct ubx_modem_data *modem, struct ubx_frame *frame
 		if (notify) {
 			/* Remove from handler list if a single response */
 			if (curr->flags & UBX_HANDLING_RSP) {
-				sys_slist_remove(&modem->handlers, &prev->_node, &curr->_node);
+				sys_slist_find_and_remove(&modem->handlers, &curr->_node);
 			}
 			/* Cache the contexts to run outside of the list lock */
 			if (num_to_run < ARRAY_SIZE(to_run)) {
@@ -113,7 +112,6 @@ static void ubx_msg_handle(struct ubx_modem_data *modem, struct ubx_frame *frame
 				LOG_ERR("Too many handlers!");
 			}
 		}
-		prev = curr;
 	}
 	k_sem_give(&modem->handlers_sem);
 
