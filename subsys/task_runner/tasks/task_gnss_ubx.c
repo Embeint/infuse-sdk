@@ -473,6 +473,9 @@ void gnss_task_fn(const struct task_schedule *schedule, struct k_poll_signal *te
 				      epoch_time, &fix_info);
 	}
 
+	/* NAV-TIMEGPS message could have been requested and not yet received */
+	ubx_modem_msg_unsubscribe(run_state.modem, &run_state.timegps);
+
 	/* Cleanup message subscription */
 	ubx_modem_msg_unsubscribe(run_state.modem, &pvt_handler_ctx);
 
