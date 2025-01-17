@@ -68,7 +68,7 @@ class readings:
 
 {% endfor %}
 
-id_type_mapping: dict[int, TdfReadingBase] = {
+id_type_mapping: dict[int, type[TdfReadingBase]] = {
 {% for tdf_id, info in definitions.items() %}
     {{ tdf_id }}: readings.{{ info['name'] | lower }},
 {% endfor %}
