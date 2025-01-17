@@ -37,6 +37,17 @@ struct nrf_modem_network_state {
 };
 
 /**
+ * @brief Query whether it is currently safe to send AT commands
+ *
+ * The nRF modem can be unresponsive to AT commands while a PDN connectivity request
+ * is ongoing. Non-critical AT commands should be skipped in this state.
+ *
+ * @retval true AT command interface can be used
+ * @retval false AT command interface should not be used
+ */
+bool nrf_modem_monitor_is_at_safe(void);
+
+/**
  * @brief Get current network state
  *
  * @param state Network state

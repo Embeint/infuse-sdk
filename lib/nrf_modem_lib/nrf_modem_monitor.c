@@ -11,6 +11,7 @@
 #include <zephyr/sys/atomic.h>
 #include <zephyr/init.h>
 #include <zephyr/logging/log.h>
+#include <zephyr/sys/__assert.h>
 
 #include <infuse/work_q.h>
 #include <infuse/lib/nrf_modem_monitor.h>
@@ -19,6 +20,7 @@
 #include <infuse/reboot.h>
 #include <infuse/task_runner/runner.h>
 
+#include <modem/at_monitor.h>
 #include <modem/pdn.h>
 #include <modem/nrf_modem_lib.h>
 #include <modem/lte_lc.h>
@@ -30,6 +32,10 @@ LOG_MODULE_REGISTER(modem_monitor, LOG_LEVEL_INF);
 enum {
 	FLAGS_MODEM_SLEEPING = 0,
 	FLAGS_CELL_CONNECTED = 1,
+	/* The nRF modem can be unresponsive to AT commands while a PDN connectivity request
+	 * is ongoing. As such we want to skip non-critical AT commands in this state.
+	 */
+	FLAGS_PDN_CONN_IN_PROGRESS = 2,
 };
 
 static struct {
@@ -46,6 +52,11 @@ static struct {
 	struct k_work signal_quality_work;
 	atomic_t flags;
 } monitor;
+
+bool nrf_modem_monitor_is_at_safe(void)
+{
+	return !atomic_test_bit(&monitor.flags, FLAGS_PDN_CONN_IN_PROGRESS);
+}
 
 void nrf_modem_monitor_network_state(struct nrf_modem_network_state *state)
 {
@@ -285,8 +296,13 @@ static void infuse_modem_info(int ret, void *ctx)
 	static bool modem_info_stored;
 	int rc;
 
+	/* Enable notifications of BIP events */
+	rc = nrf_modem_at_printf("%s", "AT%USATEV=1");
+	__ASSERT_NO_MSG(rc == 0);
+
 	/* Enable connectivity stats */
-	nrf_modem_at_printf("%s", "AT%XCONNSTAT=1");
+	rc = nrf_modem_at_printf("%s", "AT%XCONNSTAT=1");
+	__ASSERT_NO_MSG(rc == 0);
 
 #ifdef CONFIG_KV_STORE_KEY_LTE_PDP_CONFIG
 	KV_KEY_TYPE_VAR(KV_KEY_LTE_PDP_CONFIG, 32) pdp_config;
@@ -335,6 +351,20 @@ static void infuse_modem_info(int ret, void *ctx)
 	if (rc < 0) {
 		LOG_ERR("AT%%XDATAPRFL=%d (%d)", CONFIG_INFUSE_NRF_MODEM_DATA_PROFILE_DEFAULT, rc);
 	}
+}
+
+/* AT monitor for USAT notifications */
+AT_MONITOR(usat_notification, "%USATEV: BIP", usat_mon);
+
+static void usat_mon(const char *notif)
+{
+	if (strstr(notif, "Connecting") != NULL) {
+		atomic_set_bit(&monitor.flags, FLAGS_PDN_CONN_IN_PROGRESS);
+	} else {
+		atomic_clear_bit(&monitor.flags, FLAGS_PDN_CONN_IN_PROGRESS);
+	}
+	/* Output the BIP notification, minus the newline */
+	LOG_INF("%.*s", strlen(notif) - 1, notif);
 }
 
 void lte_net_if_modem_fault_app_handler(struct nrf_modem_fault_info *fault_info)
