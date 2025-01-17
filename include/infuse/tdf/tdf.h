@@ -30,39 +30,72 @@ extern "C" {
  */
 
 struct tdf_buffer_state {
-	/* Current buffer time */
+	/** Current buffer time */
 	uint64_t time;
-	/* Buffer information */
+	/** Buffer information */
 	struct net_buf_simple buf;
 };
 
+enum tdf_data_type {
+	TDF_DATA_TYPE_SINGLE,
+	TDF_DATA_TYPE_TIME_ARRAY,
+	TDF_DATA_TYPE_DIFF_ARRAY,
+} __packed;
+
+enum tdf_diff_type {
+	TDF_DIFF_NONE = 0,
+	/** 16 bit data, 8 bit diffs */
+	TDF_DIFF_16_8 = 1,
+	/** 32 bit data, 8 bit diffs */
+	TDF_DIFF_32_8 = 2,
+	/** 32 bit data, 16 bit diffs */
+	TDF_DIFF_32_16 = 3,
+	/** Start of invalid values */
+	TDF_DIFF_INVALID,
+	/** Data is already in [base, diff...] form */
+	TDF_DIFF_PRECOMPUTED = 0x80,
+};
+
 struct tdf_parsed {
-	/* TDF time (0 for none) */
+	/** TDF time (0 for none) */
 	uint64_t time;
-	/* TDF ID */
+	/** TDF ID */
 	uint16_t tdf_id;
-	/* Length of single TDF */
+	/** Length of single TDF */
 	uint8_t tdf_len;
-	/* Number of TDFs */
-	uint8_t tdf_num;
-	/* Time period between TDFs */
+	/** Data format */
+	enum tdf_data_type data_type;
+	union {
+		/** Number of TDFs */
+		uint8_t tdf_num;
+		struct {
+			/** Number of diff */
+			enum tdf_diff_type type;
+			/** Number of diffs */
+			uint8_t num;
+
+		} diff_info;
+	};
+	/** Time period between TDFs */
 	uint32_t period;
-	/* TDF data */
+	/** TDF data */
 	void *data;
 };
 
 enum tdf_flags {
-	/* Timestamp flags */
+	/** Timestamp flags */
 	TDF_TIMESTAMP_NONE = 0x0000,
 	TDF_TIMESTAMP_ABSOLUTE = 0x4000,
 	TDF_TIMESTAMP_RELATIVE = 0x8000,
 	TDF_TIMESTAMP_EXTENDED_RELATIVE = 0xC000,
-	/* Special flags */
+	/** Special flags */
 	TDF_ARRAY_NONE = 0x0000,
 	TDF_ARRAY_TIME = 0x1000,
-	/* Masks */
+	TDF_ARRAY_DIFF = 0x2000,
+	/** Masks */
 	TDF_FLAGS_MASK = 0xF000,
 	TDF_TIMESTAMP_MASK = 0xC000,
+	TDF_ARRAY_MASK = 0x3000,
 	TDF_ID_MASK = 0x0FFF,
 };
 
@@ -91,8 +124,9 @@ enum tdf_flags {
  * @param data TDF data
  *
  * @retval >0 Number of TDFs successfully added to buffer
+ * @retval -EINVAL Invalid arguments
  * @retval -ENOSPC TDF too large to ever fit on buffer
- * @return -ENOMEM Insufficient space to add any TDFs to buffer
+ * @retval -ENOMEM Insufficient space to add any TDFs to buffer
  */
 #define TDF_ADD(state, tdf_id, tdf_num, base_time, period, data)                                   \
 	tdf_add(state, tdf_id, sizeof(TDF_TYPE(tdf_id)), tdf_num, base_time, period, data);        \
@@ -112,6 +146,26 @@ static inline void tdf_buffer_state_reset(struct tdf_buffer_state *state)
 }
 
 /**
+ * @brief Add TDFs to memory buffer with diff encoding
+ *
+ * @param state Pointer to current buffer state
+ * @param tdf_id TDF sensor ID
+ * @param tdf_len Length of a single TDF
+ * @param tdf_num Number of TDFs to try to add
+ * @param time Epoch time associated with the first TDF. 0 for no timestamp.
+ * @param period Epoch time between tdfs when @a tdf_num > 0.
+ * @param data TDF data
+ * @param diff_type TDF diff type
+ *
+ * @retval >0 Number of TDFs successfully added to buffer
+ * @retval -EINVAL Invalid arguments
+ * @retval -ENOSPC TDF too large to ever fit on buffer
+ * @retval -ENOMEM Insufficient space to add any TDFs to buffer
+ */
+int tdf_add_diff(struct tdf_buffer_state *state, uint16_t tdf_id, uint8_t tdf_len, uint8_t tdf_num,
+		 uint64_t time, uint32_t period, const void *data, enum tdf_diff_type diff_type);
+
+/**
  * @brief Add TDFs to memory buffer
  *
  * @param state Pointer to current buffer state
@@ -123,11 +177,15 @@ static inline void tdf_buffer_state_reset(struct tdf_buffer_state *state)
  * @param data TDF data
  *
  * @retval >0 Number of TDFs successfully added to buffer
+ * @retval -EINVAL Invalid arguments
  * @retval -ENOSPC TDF too large to ever fit on buffer
- * @return -ENOMEM Insufficient space to add any TDFs to buffer
+ * @retval -ENOMEM Insufficient space to add any TDFs to buffer
  */
-int tdf_add(struct tdf_buffer_state *state, uint16_t tdf_id, uint8_t tdf_len, uint8_t tdf_num,
-	    uint64_t time, uint32_t period, const void *data);
+static inline int tdf_add(struct tdf_buffer_state *state, uint16_t tdf_id, uint8_t tdf_len,
+			  uint8_t tdf_num, uint64_t time, uint32_t period, const void *data)
+{
+	return tdf_add_diff(state, tdf_id, tdf_len, tdf_num, time, period, data, TDF_DIFF_NONE);
+}
 
 /**
  * @brief Initialise TDF parsing state
@@ -181,6 +239,18 @@ static inline int tdf_parse_find_in_buf(void *data, size_t size, uint16_t tdf_id
 	}
 	return -ENOMEM;
 }
+
+/**
+ * @brief Reconstruct the original TDF from a parsed @ref TDF_ARRAY_DIFF
+ *
+ * @param parsed Parsed TDF from @ref tdf_parse
+ * @param output Output location to construct TDF into
+ * @param idx Index of the TDF to reconstruct (0 == base, 1 == apply diff[0], etc)
+ *
+ * @retval 0 On success
+ * @retval -EINVAL On invalid argument
+ */
+int tdf_parse_diff_reconstruct(const struct tdf_parsed *parsed, void *output, uint8_t idx);
 
 /**
  * @}

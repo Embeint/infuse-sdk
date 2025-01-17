@@ -6,10 +6,14 @@
  * SPDX-License-Identifier: LicenseRef-Embeint
  */
 
+#include <string.h>
+
 #include <zephyr/kernel.h>
 
 #include <infuse/tdf/tdf.h>
 #include <infuse/time/epoch.h>
+
+#include "diffs.h"
 
 #define INT24_MAX 0x7FFFFF
 #define INT24_MIN ((-INT24_MAX) - 1)
@@ -20,7 +24,10 @@ struct tdf_header {
 } __packed;
 
 struct tdf_time_array_header {
-	uint8_t num;
+	union {
+		uint8_t num;
+		uint8_t diff_info;
+	};
 	/**
 	 * When the TDF_ARRAY_TIME_PERIOD_SCALED bit is set, the
 	 * TDF_ARRAY_TIME_PERIOD_VAL_MASK value is scaled by
@@ -28,6 +35,8 @@ struct tdf_time_array_header {
 	 */
 	uint16_t period;
 } __packed;
+
+#define TDF_MAXIMUM_DIFFS 64
 
 /* Bit that signifies the value is scaled by a multiplier */
 #define TDF_ARRAY_TIME_PERIOD_SCALED   0x8000
@@ -43,6 +52,34 @@ struct tdf_time {
 	uint16_t subseconds;
 } __packed;
 
+static tdf_diff_check_t tdf_diff_check_functions[] = {
+	[TDF_DIFF_16_8] = tdf_diff_check_16_8,
+	[TDF_DIFF_32_8] = tdf_diff_check_32_8,
+	[TDF_DIFF_32_16] = tdf_diff_check_32_16,
+
+};
+static tdf_diff_encode_t tdf_diff_encode_functions[] = {
+	[TDF_DIFF_16_8] = tdf_diff_encode_16_8,
+	[TDF_DIFF_32_8] = tdf_diff_encode_32_8,
+	[TDF_DIFF_32_16] = tdf_diff_encode_32_16,
+};
+static tdf_diff_apply_t tdf_diff_apply_functions[] = {
+	[TDF_DIFF_16_8] = tdf_diff_apply_16_8,
+	[TDF_DIFF_32_8] = tdf_diff_apply_32_8,
+	[TDF_DIFF_32_16] = tdf_diff_apply_32_16,
+};
+static uint8_t tdf_diff_divisor[] = {
+	[TDF_DIFF_16_8] = sizeof(uint16_t),
+	[TDF_DIFF_32_8] = sizeof(uint32_t),
+	[TDF_DIFF_32_16] = sizeof(uint32_t),
+
+};
+static uint8_t tdf_diff_size[] = {
+	[TDF_DIFF_16_8] = sizeof(int8_t),
+	[TDF_DIFF_32_8] = sizeof(int8_t),
+	[TDF_DIFF_32_16] = sizeof(int16_t),
+};
+
 static uint32_t sign_extend_24_bits(uint32_t x)
 {
 	const int bits = 24;
@@ -51,9 +88,58 @@ static uint32_t sign_extend_24_bits(uint32_t x)
 	return (x ^ m) - m;
 }
 
-int tdf_add(struct tdf_buffer_state *state, uint16_t tdf_id, uint8_t tdf_len, uint8_t tdf_num,
-	    uint64_t time, uint32_t period, const void *data)
+static int tdf_num_valid_diffs(enum tdf_diff_type diff_type, uint8_t tdf_len, uint8_t tdf_num,
+			       const void *data)
 {
+	tdf_diff_check_t check_fn = tdf_diff_check_functions[diff_type];
+	const uint8_t *p0 = (const uint8_t *)data;
+	const uint8_t *p1 = p0 + tdf_len;
+	int i;
+
+	__ASSERT_NO_MSG(tdf_num > 2);
+
+	/* Find the first valid diff */
+	for (i = 0; i < (tdf_num - 2); i++) {
+		if (check_fn(tdf_len, p0, p1)) {
+			/* First diff valid, check the second */
+			p0 += tdf_len;
+			p1 += tdf_len;
+			if (check_fn(tdf_len, p0, p1)) {
+				/* Second diff valid */
+				p0 += tdf_len;
+				p1 += tdf_len;
+				break;
+			}
+			i += 1;
+		}
+		p0 += tdf_len;
+		p1 += tdf_len;
+	}
+	/* If the first valid diff is at 0, find how many diffs exist */
+	if (i == 0) {
+		/* A single array can only have so many diffs */
+		tdf_num = MIN(tdf_num, TDF_MAXIMUM_DIFFS);
+		/* Scan until we find an invalid diff */
+		for (i = 2; i < (tdf_num - 1); i++) {
+			if (!check_fn(tdf_len, p0, p1)) {
+				break;
+			}
+			p0 += tdf_len;
+			p1 += tdf_len;
+		}
+		return i;
+	} else if (i == (tdf_num - 2)) {
+		/* No valid diffs found */
+		return -(i + 2);
+	}
+	/* Return the number of elements until the valid diff */
+	return -i;
+}
+
+int tdf_add_diff(struct tdf_buffer_state *state, uint16_t tdf_id, uint8_t tdf_len, uint8_t tdf_num,
+		 uint64_t time, uint32_t period, const void *data, enum tdf_diff_type diff_type)
+{
+	struct tdf_time_array_header *array_header_ptr = NULL;
 	uint16_t buffer_remaining = net_buf_simple_tailroom(&state->buf);
 	uint16_t max_space = state->buf.size - (state->buf.data - state->buf.__buf);
 	uint16_t min_size =
@@ -64,10 +150,15 @@ int tdf_add(struct tdf_buffer_state *state, uint16_t tdf_id, uint8_t tdf_len, ui
 	uint16_t timestamp_header = 0;
 	int64_t timestamp_delta = 0;
 	uint16_t tdf_header = TDF_TIMESTAMP_NONE;
+	uint8_t per_tdf_fields = 0;
+	uint8_t per_tdf_diff_size = 1;
+	bool diff_precomputed = !!(diff_type & TDF_DIFF_PRECOMPUTED);
+
+	diff_type &= ~TDF_DIFF_PRECOMPUTED;
 
 	/* Invalid TDF ID or period */
 	if ((tdf_id == 0) || (tdf_id >= 4095) || (tdf_len == 0) || (tdf_num == 0) ||
-	    (period > TDF_ARRAY_TIME_PERIOD_MAX)) {
+	    (period > TDF_ARRAY_TIME_PERIOD_MAX) || (diff_type >= TDF_DIFF_INVALID)) {
 		return -EINVAL;
 	}
 	/* TDF can never fit on the buffer */
@@ -95,6 +186,25 @@ int tdf_add(struct tdf_buffer_state *state, uint16_t tdf_id, uint8_t tdf_len, ui
 			tdf_header = TDF_TIMESTAMP_ABSOLUTE;
 		}
 	}
+	if (diff_type && tdf_num > 2) {
+		if (!diff_precomputed) {
+			/* Require that at least 2 valid diffs in a row exist to log as
+			 * TDF_ARRAY_DIFF. Otherwise, log up to that point as a normal
+			 * TDF_ARRAY_TIME
+			 */
+			int diffs = tdf_num_valid_diffs(diff_type, tdf_len, tdf_num, data);
+
+			if (diffs < 0) {
+				/* No diff encoding */
+				diff_type = TDF_DIFF_NONE;
+				tdf_num = -diffs;
+			} else {
+				tdf_num = 1 + diffs;
+			}
+		}
+	} else {
+		diff_type = TDF_DIFF_NONE;
+	}
 	if (tdf_num > 1) {
 		array_header = sizeof(struct tdf_time_array_header);
 	}
@@ -105,12 +215,25 @@ int tdf_add(struct tdf_buffer_state *state, uint16_t tdf_id, uint8_t tdf_len, ui
 	}
 
 	/* Can complete payload fit? */
-	total_data = (uint16_t)tdf_len * tdf_num;
+	if (diff_type == TDF_DIFF_NONE) {
+		total_data = (uint16_t)tdf_len * tdf_num;
+	} else {
+		per_tdf_fields = tdf_len / tdf_diff_divisor[diff_type];
+		per_tdf_diff_size = per_tdf_fields * tdf_diff_size[diff_type];
+		total_data = (uint16_t)tdf_len + ((tdf_num - 1) * per_tdf_diff_size);
+	}
+
 	payload_space = buffer_remaining - total_header;
 
 	if (payload_space < total_data) {
 		/* Evaluate how many TDF payloads can fit */
-		uint8_t can_fit = payload_space / tdf_len;
+		uint8_t can_fit = 0;
+
+		if (diff_type == TDF_DIFF_NONE) {
+			can_fit = payload_space / tdf_len;
+		} else if (payload_space >= tdf_len) {
+			can_fit = 1 + ((payload_space - tdf_len) / per_tdf_diff_size);
+		}
 
 		/* Header may contain bytes we don't need */
 		if ((can_fit == 0) && (tdf_num > 1)) {
@@ -122,7 +245,11 @@ int tdf_add(struct tdf_buffer_state *state, uint16_t tdf_id, uint8_t tdf_len, ui
 			return -ENOMEM;
 		}
 		tdf_num = can_fit;
-		total_data = (uint16_t)tdf_len * tdf_num;
+		if (diff_type == TDF_DIFF_NONE) {
+			total_data = (uint16_t)tdf_len * tdf_num;
+		} else {
+			total_data = (uint16_t)tdf_len + ((tdf_num - 1) * per_tdf_diff_size);
+		}
 	}
 
 	/* Log data */
@@ -152,22 +279,47 @@ int tdf_add(struct tdf_buffer_state *state, uint16_t tdf_id, uint8_t tdf_len, ui
 	}
 	/* Add array header */
 	if (tdf_num > 1) {
-		struct tdf_time_array_header *t =
+		array_header_ptr =
 			net_buf_simple_add(&state->buf, sizeof(struct tdf_time_array_header));
 
-		header->id_flags |= TDF_ARRAY_TIME;
-		t->num = tdf_num;
-
+		header->id_flags |= diff_type ? TDF_ARRAY_DIFF : TDF_ARRAY_TIME;
+		array_header_ptr->num = tdf_num;
 		if (period > TDF_ARRAY_TIME_PERIOD_VAL_MASK) {
-			t->period = TDF_ARRAY_TIME_PERIOD_SCALED |
-				    (period / TDF_ARRAY_TIME_SCALE_FACTOR);
+			array_header_ptr->period = TDF_ARRAY_TIME_PERIOD_SCALED |
+						   (period / TDF_ARRAY_TIME_SCALE_FACTOR);
 		} else {
-			t->period = period;
+			array_header_ptr->period = period;
 		}
 	}
 
-	/* Add TDF data */
-	net_buf_simple_add_mem(&state->buf, data, total_data);
+	if (diff_type && tdf_num > 1) {
+		int total_diff_size = (tdf_num - 1) * per_tdf_diff_size;
+
+		if (diff_precomputed) {
+			/* Add the base TDF */
+			net_buf_simple_add_mem(&state->buf, data, tdf_len + total_diff_size);
+		} else {
+			tdf_diff_encode_t encode_fn = tdf_diff_encode_functions[diff_type];
+			const uint8_t *current = data;
+			const uint8_t *next = current + tdf_len;
+			void *diff_ptr;
+
+			/* Add the base TDF */
+			net_buf_simple_add_mem(&state->buf, data, tdf_len);
+
+			/* Add all the diff data.
+			 * Note that we have already limited the size to 32 and
+			 * validated that the diffs are valid.
+			 */
+			diff_ptr = net_buf_simple_add(&state->buf, total_diff_size);
+
+			encode_fn((tdf_num - 1) * per_tdf_fields, current, next, diff_ptr);
+		}
+		array_header_ptr->diff_info = (diff_type << 6) | (tdf_num - 1);
+	} else {
+		/* Add TDF data */
+		net_buf_simple_add_mem(&state->buf, data, total_data);
+	}
 
 	return tdf_num;
 }
@@ -179,7 +331,10 @@ int tdf_parse(struct tdf_buffer_state *state, struct tdf_parsed *parsed)
 	}
 
 	struct tdf_header *header = net_buf_simple_pull_mem(&state->buf, sizeof(struct tdf_header));
-	uint16_t flags = header->id_flags & TDF_FLAGS_MASK;
+	uint16_t time_flags = header->id_flags & TDF_TIMESTAMP_MASK;
+	uint16_t array_flags = header->id_flags & TDF_ARRAY_MASK;
+	struct tdf_time_array_header *t_hdr;
+	uint8_t diff_bytes_per_tdf;
 	uint16_t data_len;
 	int32_t time_diff;
 
@@ -194,7 +349,7 @@ int tdf_parse(struct tdf_buffer_state *state, struct tdf_parsed *parsed)
 	}
 
 	/* Validate header length */
-	switch (flags & TDF_TIMESTAMP_MASK) {
+	switch (time_flags) {
 	case TDF_TIMESTAMP_ABSOLUTE:
 		data_len = sizeof(struct tdf_time);
 		break;
@@ -211,7 +366,7 @@ int tdf_parse(struct tdf_buffer_state *state, struct tdf_parsed *parsed)
 		return -EINVAL;
 	}
 
-	switch (flags & TDF_TIMESTAMP_MASK) {
+	switch (time_flags) {
 	case TDF_TIMESTAMP_ABSOLUTE:
 		struct tdf_time *t = net_buf_simple_pull_mem(&state->buf, sizeof(struct tdf_time));
 
@@ -241,25 +396,68 @@ int tdf_parse(struct tdf_buffer_state *state, struct tdf_parsed *parsed)
 		parsed->time = 0;
 		break;
 	}
-	if (flags & TDF_ARRAY_TIME) {
+	if (array_flags) {
 		if (state->buf.len <= sizeof(struct tdf_time_array_header)) {
 			return -EINVAL;
 		}
-		struct tdf_time_array_header *t =
-			net_buf_simple_pull_mem(&state->buf, sizeof(struct tdf_time_array_header));
+		t_hdr = net_buf_simple_pull_mem(&state->buf, sizeof(struct tdf_time_array_header));
 
-		parsed->tdf_num = t->num;
-		if (t->period & TDF_ARRAY_TIME_PERIOD_SCALED) {
-			parsed->period = TDF_ARRAY_TIME_SCALE_FACTOR *
-					 (t->period & TDF_ARRAY_TIME_PERIOD_VAL_MASK);
+		if (array_flags == TDF_ARRAY_DIFF) {
+			parsed->data_type = TDF_DATA_TYPE_DIFF_ARRAY;
+			parsed->diff_info.type = t_hdr->diff_info >> 6;
+			parsed->diff_info.num = t_hdr->diff_info & 0x3F;
+			diff_bytes_per_tdf =
+				(header->size / tdf_diff_divisor[parsed->diff_info.type]) *
+				tdf_diff_size[parsed->diff_info.type];
+			data_len = (uint16_t)parsed->tdf_len +
+				   (parsed->diff_info.num * diff_bytes_per_tdf);
+		} else if (array_flags == TDF_ARRAY_TIME) {
+			parsed->data_type = TDF_DATA_TYPE_TIME_ARRAY;
+			parsed->tdf_num = t_hdr->num;
+			data_len = (uint16_t)parsed->tdf_len * parsed->tdf_num;
 		} else {
-			parsed->period = t->period;
+			return -EINVAL;
 		}
+
+		if (t_hdr->period & TDF_ARRAY_TIME_PERIOD_SCALED) {
+			parsed->period = TDF_ARRAY_TIME_SCALE_FACTOR *
+					 (t_hdr->period & TDF_ARRAY_TIME_PERIOD_VAL_MASK);
+		} else {
+			parsed->period = t_hdr->period;
+		}
+	} else {
+		parsed->data_type = TDF_DATA_TYPE_SINGLE;
+		data_len = (uint16_t)parsed->tdf_len;
 	}
-	data_len = (uint16_t)parsed->tdf_len * parsed->tdf_num;
 	if (state->buf.len < data_len) {
 		return -EINVAL;
 	}
 	parsed->data = net_buf_simple_pull_mem(&state->buf, data_len);
+	return 0;
+}
+
+int tdf_parse_diff_reconstruct(const struct tdf_parsed *parsed, void *output, uint8_t idx)
+{
+	tdf_diff_apply_t apply_fn;
+	uint8_t *diff_ptr = (uint8_t *)parsed->data + parsed->tdf_len;
+	uint8_t per_tdf_fields, per_tdf_diff_size;
+
+	if ((parsed->data_type != TDF_DATA_TYPE_DIFF_ARRAY) || (idx > parsed->diff_info.num)) {
+		return -EINVAL;
+	}
+	__ASSERT_NO_MSG(parsed->diff_info.type != TDF_DIFF_NONE);
+
+	apply_fn = tdf_diff_apply_functions[parsed->diff_info.type];
+	per_tdf_fields = parsed->tdf_len / tdf_diff_divisor[parsed->diff_info.type];
+	per_tdf_diff_size = per_tdf_fields * tdf_diff_size[parsed->diff_info.type];
+
+	/* Setup base output */
+	memcpy(output, parsed->data, parsed->tdf_len);
+
+	/* Sequentially apply diffs */
+	for (int i = 0; i < idx; i++) {
+		apply_fn(parsed->tdf_len, output, output, diff_ptr);
+		diff_ptr += per_tdf_diff_size;
+	}
 	return 0;
 }
