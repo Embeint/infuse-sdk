@@ -86,6 +86,8 @@ predictable timestamps.
      - Single TDF reading
    * - :c:enumerator:`TDF_ARRAY_TIME`
      - Array of TDF readings evenly spaced in time
+   * - :c:enumerator:`TDF_ARRAY_DIFF`
+     - Array of TDF readings evenly spaced in time and closely spaced in values
 
 No Array
 --------
@@ -108,6 +110,94 @@ after the timestamp structure.
 The ``num`` field specifies how many copies of the TDF reading exist in the payload, while ``period``
 specifies the time between readings. The timestamp of each reading in the array is calculated using
 the following formula: ``timestamp[N] = timestamp_base + (N * period)``.
+
+Diff Array
+----------
+
+The :c:enumerator:`TDF_ARRAY_DIFF` is an extension of :c:enumerator:`TDF_ARRAY_TIME`, which relies
+on struct fields being close in value to each other and implicit knowledge about the structure layout
+to achieve additional compression. Consider the following arbitarary TDF definition:
+
+.. code-block:: c
+
+   struct tdf_example {
+      /** Ambient temperature (millidegrees) */
+      int32_t temperature;
+      /** Atmospheric pressure (pascals) */
+      uint32_t pressure;
+   } __packed;
+
+When samples are taken at short intervals, the values of each field are unlikely to change by a large
+amount. Instead of saving each reading as a complete 8 byte struct, it could instead be stored as
+one base reading, and then a repeating array of differences on each field. For example:
+
+.. code-block:: c
+
+   struct tdf_example_diff_array {
+      /** Base reading */
+      struct tdf_example base;
+      /** Difference from the previous reading */
+      struct {
+         int8_t diff_temperature;
+         int8_t diff_pressure;
+      } diffs[];
+   } __packed;
+
+As long as the differences on each field fall within `int8_t` from the previous value, this can lead to
+large packing efficiencies (75% in this example). The original values can be reconstructed as follows:
+
+.. code-block:: c
+
+   struct tdf_example reading[0] = array.base;
+   struct tdf_example reading[N+1] = {
+      .temperature = reading[N].temperature + array.diffs[N].diff_temperature,
+      .pressure = reading[N].pressure + array.diffs[N].diff_pressure,
+   };
+
+To limit the complexity of encoding and reconstruction, there are 3 supported variants of diff
+encoding.
+
+.. list-table::
+
+   * - Enum
+     - Input Type
+     - Diff Type
+   * - :c:enumerator:`TDF_DIFF_16_8`
+     - ``uint16_t`` / ``int16_t``
+     - ``int8_t``
+   * - :c:enumerator:`TDF_DIFF_32_8`
+     - ``uint32_t`` / ``int32_t``
+     - ``int8_t``
+   * - :c:enumerator:`TDF_DIFF_32_16`
+     - ``uint32_t`` / ``int32_t``
+     - ``int16_t``
+
+The input data type defines how the encoder views the TDF struct, for example with
+:c:enumerator:`TDF_DIFF_32_8` the encoder will interpret the input as ``uint32_t`` chunks.
+The diff type defines the maximum value difference between input chunks that can be
+encoded as a valid diff.
+
+Generally, the input data type will be self-evident from the TDF type being encoded. ``struct tdf_example``
+from above for example should use either :c:enumerator:`TDF_DIFF_32_8` or :c:enumerator:`TDF_DIFF_32_16`.
+The choice comes down to the expected differences between subsequent values. A larger diff type can
+handle larger differences without falling back to :c:enumerator:`TDF_ARRAY_TIME`, but consumes more size
+in the output buffer.
+
+When a reading is of this type, an additional 3 byte header is present after the timestamp structure.
+
+.. code-block:: c
+
+   struct tdf_diff_array_header {
+      uint8_t mode_num;
+      uint16_t period;
+   } __packed;
+
+In contrast to the :c:enumerator:`TDF_ARRAY_TIME` header, the ``mode_num`` field encodes both the number
+of diffs present and the mode of the diff encoding.
+
+.. note::
+
+   Encoding data in the :c:enumerator:`TDF_ARRAY_DIFF` format requires :kconfig:option:`CONFIG_TDF_DIFF`.
 
 Size
 ====
@@ -142,6 +232,25 @@ the time array header.
      - ``size * time_header.num``
    * - Number TDFs
      - ``time_header.num``
+
+Diff Array
+----------
+
+When the array type is :c:enumerator:`TDF_ARRAY_DIFF`, the field is the size of the base reading
+in the array. To obtain the complete payload size it must be combined with the information in
+the time array header.
+
+.. list-table::
+
+   * - Payload Size
+     - ``size + time_header.num * (size / diff_type_size)``
+   * - Number TDFs
+     - ``1 + time_header.num``
+
+.. note::
+
+   ``diff_type_size`` is the size of an individual diff value. i.e. ``1`` if the diff value is 8 bit
+   and ``2`` is the diff value is 16 bit.
 
 Reading Data
 ============
