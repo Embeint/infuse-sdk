@@ -6,6 +6,9 @@ config TDF
 
 if TDF
 
+config TDF_DIFF
+	bool "TDF diff encoding support"
+
 config TDF_UTIL_REBOOT_INFO_LOG
 	bool
 	default y if INFUSE_COMMON_BOOT
