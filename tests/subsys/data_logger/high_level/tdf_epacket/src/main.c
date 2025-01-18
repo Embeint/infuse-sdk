@@ -218,6 +218,65 @@ ZTEST(tdf_data_logger, test_size_change_decrease)
 	zassert_is_null(net_buf_get(sent_queue, K_MSEC(1)));
 }
 
+ZTEST(tdf_data_logger, test_diff_size_change_decrease)
+{
+	const struct device *dummy = DEVICE_DT_GET(DT_NODELABEL(epacket_dummy));
+	const struct device *logger = DEVICE_DT_GET(DT_NODELABEL(tdf_logger_epacket));
+	struct k_fifo *sent_queue = epacket_dummmy_transmit_fifo_get();
+	uint16_t tdf_data[16] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
+	struct net_buf *buf;
+	int rc;
+
+	epacket_dummy_set_max_packet(CONFIG_EPACKET_PACKET_SIZE_MAX);
+
+	/* Log diff array, data size == (2 + 15) */
+	rc = tdf_data_logger_log_array_diff_dev(logger, TDF_RANDOM, sizeof(uint16_t),
+						ARRAY_SIZE(tdf_data), TDF_DIFF_16_8, 10000, 100,
+						tdf_data);
+	zassert_equal(0, rc);
+	zassert_is_null(net_buf_get(sent_queue, K_MSEC(1)));
+
+	/* Reducing the backend to 40 payload should not trigger any flush */
+	epacket_dummy_set_max_packet(CONFIG_EPACKET_PACKET_SIZE_MAX - 28);
+	epacket_dummy_set_interface_state(dummy, true);
+	zassert_is_null(net_buf_get(sent_queue, K_MSEC(1)));
+
+	/* Reducing the backend to 30 bytes will result in reparsing and flush */
+	epacket_dummy_set_max_packet(CONFIG_EPACKET_PACKET_SIZE_MAX - 38);
+	epacket_dummy_set_interface_state(dummy, true);
+
+	buf = net_buf_get(sent_queue, K_MSEC(1));
+	zassert_not_null(buf);
+	net_buf_pull(buf, sizeof(struct epacket_dummy_frame));
+
+	struct tdf_buffer_state state;
+	struct tdf_parsed parsed;
+	uint16_t reconstructed;
+
+	tdf_parse_start(&state, buf->data, buf->len);
+	rc = tdf_parse(&state, &parsed);
+	zassert_equal(0, rc);
+	zassert_equal(TDF_RANDOM, parsed.tdf_id);
+	zassert_equal(10000, parsed.time);
+	zassert_equal(100, parsed.period);
+	zassert_equal(2, parsed.tdf_len);
+	zassert_equal(TDF_DATA_TYPE_DIFF_ARRAY, parsed.data_type);
+	zassert_equal(TDF_DIFF_16_8, parsed.diff_info.type);
+	/* There was not space for all the diffs */
+	zassert_equal(12, parsed.diff_info.num);
+
+	for (int i = 0; i < (1 + parsed.diff_info.num); i++) {
+		rc = tdf_parse_diff_reconstruct(&parsed, &reconstructed, i);
+		zassert_equal(0, rc);
+		zassert_equal(i + 1, reconstructed);
+	}
+	net_buf_unref(buf);
+
+	/* No more pending data */
+	buf = net_buf_get(sent_queue, K_MSEC(1));
+	zassert_is_null(buf);
+}
+
 ZTEST(tdf_data_logger, test_size_change_increase)
 {
 	const struct device *dummy = DEVICE_DT_GET(DT_NODELABEL(epacket_dummy));
