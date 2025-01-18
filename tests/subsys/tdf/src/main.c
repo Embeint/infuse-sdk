@@ -1280,6 +1280,26 @@ ZTEST(tdf_diff, test_overflow)
 			   sizeof(diff_1));
 }
 
+ZTEST(tdf_diff, test_invalid_tdfs)
+{
+	struct tdf_example_16 tdf_array[128] = {0};
+	struct tdf_buffer_state state;
+	int rc;
+
+	net_buf_simple_init_with_data(&state.buf, buf, sizeof(buf));
+	tdf_buffer_state_reset(&state);
+
+	rc = tdf_add_diff(&state, TDF_EXAMPLE_16, 1, 16, 0, 10, tdf_array, TDF_DIFF_16_8);
+	zassert_equal(-EINVAL, rc);
+
+	for (int i = 0; i < 3; i++) {
+		rc = tdf_add_diff(&state, TDF_EXAMPLE_32, i, 16, 0, 10, tdf_array, TDF_DIFF_32_8);
+		zassert_equal(-EINVAL, rc);
+		rc = tdf_add_diff(&state, TDF_EXAMPLE_32, i, 16, 0, 10, tdf_array, TDF_DIFF_32_16);
+		zassert_equal(-EINVAL, rc);
+	}
+}
+
 #else
 
 ZTEST(tdf_diff, test_disabled)

@@ -198,6 +198,10 @@ int tdf_add_diff(struct tdf_buffer_state *state, uint16_t tdf_id, uint8_t tdf_le
 		}
 	}
 #ifdef CONFIG_TDF_DIFF
+	if (diff_type && (tdf_len % tdf_diff_divisor[diff_type] != 0)) {
+		/* TDF length not a multiple of the diff */
+		return -EINVAL;
+	}
 	if (diff_type && tdf_num > 2) {
 		if (!diff_precomputed) {
 			/* Require that at least 2 valid diffs in a row exist to log as
