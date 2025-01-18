@@ -23,8 +23,6 @@ struct tdf_test_case {
 };
 
 static uint8_t buf[32];
-static uint8_t large_buf[512];
-static uint8_t large_buf2[512];
 static uint8_t input_buffer[128] = {0};
 static uint64_t base_time;
 
@@ -960,6 +958,11 @@ struct tdf_example_32 {
 	int32_t y;
 } __packed;
 
+#ifdef CONFIG_TDF_DIFF
+
+static uint8_t large_buf[512];
+static uint8_t large_buf2[512];
+
 static void validate_diff_data(struct tdf_buffer_state *state, uint8_t expected_type,
 			       uint8_t expected_num, uint16_t tdf_id, const void *expected_tdfs,
 			       const void *expected_diffs, size_t diff_size)
@@ -1276,5 +1279,40 @@ ZTEST(tdf_diff, test_overflow)
 	validate_diff_data(&state, TDF_DATA_TYPE_DIFF_ARRAY, 63, TDF_EXAMPLE_16, tdf_array, diff_1,
 			   sizeof(diff_1));
 }
+
+#else
+
+ZTEST(tdf_diff, test_disabled)
+{
+	struct tdf_buffer_state state;
+	struct tdf_example_16 tdf_array[4] = {0};
+	struct tdf_buffer_state parser;
+	struct tdf_parsed parsed;
+	int rc;
+
+	/* Logging diff request without diff support */
+	net_buf_simple_init_with_data(&state.buf, buf, sizeof(buf));
+	tdf_buffer_state_reset(&state);
+
+	/* Data should still be logged as a standard TIME_ARRAY */
+	rc = tdf_add_diff(&state, TDF_EXAMPLE_16, sizeof(struct tdf_example_16),
+			  ARRAY_SIZE(tdf_array), 0, 10, tdf_array, TDF_DIFF_16_8);
+	zassert_equal(ARRAY_SIZE(tdf_array), rc);
+
+	tdf_parse_start(&parser, state.buf.data, state.buf.len);
+	rc = tdf_parse(&parser, &parsed);
+	zassert_equal(0, rc);
+	zassert_equal(TDF_EXAMPLE_16, parsed.tdf_id);
+	zassert_equal(sizeof(struct tdf_example_16), parsed.tdf_len);
+	zassert_equal(TDF_DATA_TYPE_TIME_ARRAY, parsed.data_type);
+	zassert_equal(ARRAY_SIZE(tdf_array), parsed.tdf_num);
+
+	/* No more data in buffer */
+	zassert_equal(0, parser.buf.len);
+	rc = tdf_parse(&parser, &parsed);
+	zassert_equal(-ENOMEM, rc);
+}
+
+#endif /* CONFIG_TDF_DIFF */
 
 ZTEST_SUITE(tdf_diff, NULL, NULL, NULL, NULL, NULL);

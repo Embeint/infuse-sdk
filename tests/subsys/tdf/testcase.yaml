@@ -7,3 +7,9 @@ tests:
     integration_platforms:
       - native_sim
       - qemu_cortex_m3
+  tdf.gen.diff:
+    integration_platforms:
+      - native_sim
+      - qemu_cortex_m3
+    extra_configs:
+      - CONFIG_TDF_DIFF=y

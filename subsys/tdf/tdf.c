@@ -52,22 +52,6 @@ struct tdf_time {
 	uint16_t subseconds;
 } __packed;
 
-static tdf_diff_check_t tdf_diff_check_functions[] = {
-	[TDF_DIFF_16_8] = tdf_diff_check_16_8,
-	[TDF_DIFF_32_8] = tdf_diff_check_32_8,
-	[TDF_DIFF_32_16] = tdf_diff_check_32_16,
-
-};
-static tdf_diff_encode_t tdf_diff_encode_functions[] = {
-	[TDF_DIFF_16_8] = tdf_diff_encode_16_8,
-	[TDF_DIFF_32_8] = tdf_diff_encode_32_8,
-	[TDF_DIFF_32_16] = tdf_diff_encode_32_16,
-};
-static tdf_diff_apply_t tdf_diff_apply_functions[] = {
-	[TDF_DIFF_16_8] = tdf_diff_apply_16_8,
-	[TDF_DIFF_32_8] = tdf_diff_apply_32_8,
-	[TDF_DIFF_32_16] = tdf_diff_apply_32_16,
-};
 static uint8_t tdf_diff_divisor[] = {
 	[TDF_DIFF_16_8] = sizeof(uint16_t),
 	[TDF_DIFF_32_8] = sizeof(uint32_t),
@@ -87,6 +71,25 @@ static uint32_t sign_extend_24_bits(uint32_t x)
 
 	return (x ^ m) - m;
 }
+
+#ifdef CONFIG_TDF_DIFF
+
+static tdf_diff_check_t tdf_diff_check_functions[] = {
+	[TDF_DIFF_16_8] = tdf_diff_check_16_8,
+	[TDF_DIFF_32_8] = tdf_diff_check_32_8,
+	[TDF_DIFF_32_16] = tdf_diff_check_32_16,
+
+};
+static tdf_diff_encode_t tdf_diff_encode_functions[] = {
+	[TDF_DIFF_16_8] = tdf_diff_encode_16_8,
+	[TDF_DIFF_32_8] = tdf_diff_encode_32_8,
+	[TDF_DIFF_32_16] = tdf_diff_encode_32_16,
+};
+static tdf_diff_apply_t tdf_diff_apply_functions[] = {
+	[TDF_DIFF_16_8] = tdf_diff_apply_16_8,
+	[TDF_DIFF_32_8] = tdf_diff_apply_32_8,
+	[TDF_DIFF_32_16] = tdf_diff_apply_32_16,
+};
 
 static int tdf_num_valid_diffs(enum tdf_diff_type diff_type, uint8_t tdf_len, uint8_t tdf_num,
 			       const void *data)
@@ -136,6 +139,8 @@ static int tdf_num_valid_diffs(enum tdf_diff_type diff_type, uint8_t tdf_len, ui
 	return -i;
 }
 
+#endif /* CONFIG_TDF_DIFF */
+
 int tdf_add_diff(struct tdf_buffer_state *state, uint16_t tdf_id, uint8_t tdf_len, uint8_t tdf_num,
 		 uint64_t time, uint32_t period, const void *data, enum tdf_diff_type diff_type)
 {
@@ -150,11 +155,17 @@ int tdf_add_diff(struct tdf_buffer_state *state, uint16_t tdf_id, uint8_t tdf_le
 	uint16_t timestamp_header = 0;
 	int64_t timestamp_delta = 0;
 	uint16_t tdf_header = TDF_TIMESTAMP_NONE;
+
+#ifdef CONFIG_TDF_DIFF
 	uint8_t per_tdf_fields = 0;
 	uint8_t per_tdf_diff_size = 1;
 	bool diff_precomputed = !!(diff_type & TDF_DIFF_PRECOMPUTED);
 
 	diff_type &= ~TDF_DIFF_PRECOMPUTED;
+#else
+	/* Override requested diff */
+	diff_type = TDF_DIFF_NONE;
+#endif /* CONFIG_TDF_DIFF */
 
 	/* Invalid TDF ID or period */
 	if ((tdf_id == 0) || (tdf_id >= 4095) || (tdf_len == 0) || (tdf_num == 0) ||
@@ -186,6 +197,7 @@ int tdf_add_diff(struct tdf_buffer_state *state, uint16_t tdf_id, uint8_t tdf_le
 			tdf_header = TDF_TIMESTAMP_ABSOLUTE;
 		}
 	}
+#ifdef CONFIG_TDF_DIFF
 	if (diff_type && tdf_num > 2) {
 		if (!diff_precomputed) {
 			/* Require that at least 2 valid diffs in a row exist to log as
@@ -205,6 +217,7 @@ int tdf_add_diff(struct tdf_buffer_state *state, uint16_t tdf_id, uint8_t tdf_le
 	} else {
 		diff_type = TDF_DIFF_NONE;
 	}
+#endif /* CONFIG_TDF_DIFF */
 	if (tdf_num > 1) {
 		array_header = sizeof(struct tdf_time_array_header);
 	}
@@ -217,11 +230,14 @@ int tdf_add_diff(struct tdf_buffer_state *state, uint16_t tdf_id, uint8_t tdf_le
 	/* Can complete payload fit? */
 	if (diff_type == TDF_DIFF_NONE) {
 		total_data = (uint16_t)tdf_len * tdf_num;
-	} else {
+	}
+#ifdef CONFIG_TDF_DIFF
+	else {
 		per_tdf_fields = tdf_len / tdf_diff_divisor[diff_type];
 		per_tdf_diff_size = per_tdf_fields * tdf_diff_size[diff_type];
 		total_data = (uint16_t)tdf_len + ((tdf_num - 1) * per_tdf_diff_size);
 	}
+#endif /* CONFIG_TDF_DIFF */
 
 	payload_space = buffer_remaining - total_header;
 
@@ -231,9 +247,12 @@ int tdf_add_diff(struct tdf_buffer_state *state, uint16_t tdf_id, uint8_t tdf_le
 
 		if (diff_type == TDF_DIFF_NONE) {
 			can_fit = payload_space / tdf_len;
-		} else if (payload_space >= tdf_len) {
+		}
+#ifdef CONFIG_TDF_DIFF
+		else if (payload_space >= tdf_len) {
 			can_fit = 1 + ((payload_space - tdf_len) / per_tdf_diff_size);
 		}
+#endif /* CONFIG_TDF_DIFF */
 
 		/* Header may contain bytes we don't need */
 		if ((can_fit == 0) && (tdf_num > 1)) {
@@ -247,9 +266,12 @@ int tdf_add_diff(struct tdf_buffer_state *state, uint16_t tdf_id, uint8_t tdf_le
 		tdf_num = can_fit;
 		if (diff_type == TDF_DIFF_NONE) {
 			total_data = (uint16_t)tdf_len * tdf_num;
-		} else {
+		}
+#ifdef CONFIG_TDF_DIFF
+		else {
 			total_data = (uint16_t)tdf_len + ((tdf_num - 1) * per_tdf_diff_size);
 		}
+#endif /* CONFIG_TDF_DIFF */
 	}
 
 	/* Log data */
@@ -292,6 +314,7 @@ int tdf_add_diff(struct tdf_buffer_state *state, uint16_t tdf_id, uint8_t tdf_le
 		}
 	}
 
+#ifdef CONFIG_TDF_DIFF
 	if (diff_type && tdf_num > 1) {
 		int total_diff_size = (tdf_num - 1) * per_tdf_diff_size;
 
@@ -317,9 +340,12 @@ int tdf_add_diff(struct tdf_buffer_state *state, uint16_t tdf_id, uint8_t tdf_le
 		}
 		array_header_ptr->diff_info = (diff_type << 6) | (tdf_num - 1);
 	} else {
+#endif /* CONFIG_TDF_DIFF */
 		/* Add TDF data */
 		net_buf_simple_add_mem(&state->buf, data, total_data);
+#ifdef CONFIG_TDF_DIFF
 	}
+#endif /* CONFIG_TDF_DIFF */
 
 	return tdf_num;
 }
@@ -436,6 +462,8 @@ int tdf_parse(struct tdf_buffer_state *state, struct tdf_parsed *parsed)
 	return 0;
 }
 
+#ifdef CONFIG_TDF_DIFF
+
 int tdf_parse_diff_reconstruct(const struct tdf_parsed *parsed, void *output, uint8_t idx)
 {
 	tdf_diff_apply_t apply_fn;
@@ -461,3 +489,5 @@ int tdf_parse_diff_reconstruct(const struct tdf_parsed *parsed, void *output, ui
 	}
 	return 0;
 }
+
+#endif /* CONFIG_TDF_DIFF */
