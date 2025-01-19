@@ -18,23 +18,9 @@ jobs:
         path: infuse-sdk
         fetch-depth: 0
 
-    - name: cache-pip
-      uses: actions/cache@v4
-      with:
-        path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-${{ hashFiles('.github/workflows/compliance.yml') }}
-
-    - name: Install python dependencies
-      run: |
-        pip3 install setuptools
-        pip3 install wheel
-        pip3 install python-magic lxml junitparser gitlint pylint pykwalify yamllint
-        pip3 install west
-
-    - name: west setup
+    - name: Rebase onto the target branch
       working-directory: infuse-sdk
       env:
-        GITHUB_TOKEN: ${{ github.token }}
         BASE_REF: ${{ github.base_ref }}
       run: |
         git config --global user.email "ci@embeint.com"
@@ -43,11 +29,48 @@ jobs:
         # Ensure there's no merge commits in the PR
         [[ "$(git rev-list --merges --count origin/${BASE_REF}..)" == "0" ]] || \
         (echo "::error ::Merge commits not allowed, rebase instead";false)
+        rm -fr ".git/rebase-apply"
+        rm -fr ".git/rebase-merge"
         git rebase origin/${BASE_REF}
+        git clean -f -d
         # debug
         git log  --pretty=oneline | head -n 10
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: 3.11
+
+    - name: cache-pip
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('.github/workflows/compliance.yml') }}
+
+    - name: Install python dependencies
+      run: |
+        pip install west
+
+    - name: west setup
+      working-directory: infuse-sdk
+      run: |
         west init -l . || true
-        GIT_SSH_COMMAND="ssh -v"; west update -o=--depth=1 -n 2>&1 1> west.update.log || west update -o=--depth=1 -n 2>&1 1> west.update2.log
+        west config manifest.group-filter -- +ci,-optional
+        west update -o=--depth=1 -n 2>&1 1> west.update.log || west update -o=--depth=1 -n 2>&1 1> west.update2.log
+
+    - name: Install python dependencies
+      working-directory: infuse-sdk
+      run: |
+        export ZEPHYR_BASE=$PWD/../zephyr
+        pip install -r $ZEPHYR_BASE/scripts/requirements-compliance.txt
+
+    - name: Check for PR description
+      if: ${{ github.event.pull_request.body == '' }}
+      continue-on-error: true
+      id: pr_description
+      run: |
+        echo "Pull request description cannot be empty."
+        exit 1
 
     - name: Run Compliance Tests
       working-directory: infuse-sdk
@@ -60,6 +83,8 @@ jobs:
         # debug
         ls -la
         git log  --pretty=oneline | head -n 10
+        # Increase rename limit to allow for large PRs
+        git config diff.renameLimit 10000
         $ZEPHYR_BASE/scripts/ci/check_compliance.py --annotate -e Kconfig -e KconfigBasic -c origin/${BASE_REF}..
 
     - name: check-warns
@@ -70,19 +95,32 @@ jobs:
           exit 1;
         fi
 
+        warns=("ClangFormat")
         files=($($ZEPHYR_BASE/scripts/ci/check_compliance.py -l))
         for file in "${files[@]}"; do
           f="${file}.txt"
           if [[ -s $f ]]; then
-            errors=$(cat $f)
-            errors="${errors//'%'/'%25'}"
-            errors="${errors//$'\n'/'%0A'}"
-            errors="${errors//$'\r'/'%0D'}"
-            echo "::error file=${f}::$errors"
-            exit=1
+            results=$(cat $f)
+            results="${results//'%'/'%25'}"
+            results="${results//$'\n'/'%0A'}"
+            results="${results//$'\r'/'%0D'}"
+
+            if [[ "${warns[@]}" =~ "${file}" ]]; then
+              echo "::warning file=${f}::$results"
+            else
+              echo "::error file=${f}::$results"
+              exit=1
+            fi
           fi
         done
 
         if [ "${exit}" == "1" ]; then
+          echo "Compliance error, check for error messages in the \"Run Compliance Tests\" step"
+          echo "You can run this step locally with the ./scripts/ci/check_compliance.py script."
+          exit 1;
+        fi
+
+        if [ "${{ steps.pr_description.outcome }}" == "failure" ]; then
+          echo "PR description cannot be empty"
           exit 1;
         fi

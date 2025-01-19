@@ -24,7 +24,7 @@ jobs:
   twister:
     runs-on: self-hosted
     container:
-      image: ghcr.io/zephyrproject-rtos/ci:v0.26.13
+      image: ghcr.io/zephyrproject-rtos/ci-repo-cache:v0.27.4.20241026
       options: '--entrypoint /bin/bash'
       volumes:
         - /repo-cache/embeint:/github/cache/embeint
@@ -44,10 +44,18 @@ jobs:
     env:
       CCACHE_DIR: /github/ccache
       # `--specs` is ignored because ccache is unable to resolve the toolchain specs file path.
-      CCACHE_IGNOREOPTIONS: '--specs=*'
+      CCACHE_IGNOREOPTIONS: '-specs=* --specs=*'
       BASE_REF: ${{ github.base_ref }}
       ZEPHYR_TOOLCHAIN_VARIANT: zephyr
     steps:
+      - name: Apply container owner mismatch workaround
+        run: |
+          # FIXME: The owner UID of the GITHUB_WORKSPACE directory may not
+          #        match the container user UID because of the way GitHub
+          #        Actions runner is implemented. Remove this workaround when
+          #        GitHub comes up with a fundamental fix for this problem.
+          git config --global --add safe.directory ${GITHUB_WORKSPACE}
+
       - name: Workspace cleanup
         run: |
           rm -rf ./{*,.*}
@@ -56,7 +64,7 @@ jobs:
       - name: Clone cached Embeint SDK repository
         continue-on-error: true
         run: |
-          git config --global --add safe.directory /github/cache/embeint/infuse-sdk/.git
+          git config --global --add safe.directory '*'
           git clone --shared /github/cache/embeint/infuse-sdk infuse-sdk
           cd infuse-sdk
           git remote set-url origin ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}
@@ -108,7 +116,7 @@ jobs:
         continue-on-error: true
         run: |
           mkdir -p coverage/reports
-          pip3 install gcovr==6.0
+          pip install gcovr==6.0
           export ZEPHYR_BASE=${PWD}/zephyr
           $ZEPHYR_BASE/scripts/twister -i --force-color -N -v --filter runnable -p ${{ matrix.platform }} --coverage -T infuse-sdk/tests --coverage-tool gcovr -xCONFIG_TEST_EXTRA_STACK_SIZE=4096 -e nano --coverage-basedir infuse-sdk
 
@@ -120,7 +128,7 @@ jobs:
       - name: Rename coverage files
         if: always()
         run: |
-          cp twister-out/coverage.json coverage/reports/${{ matrix.normalized }}.json
+          mv twister-out/coverage.json coverage/reports/${{ matrix.normalized }}.json
 
       - name: Upload Coverage Results
         if: always()
@@ -133,7 +141,7 @@ jobs:
   babblesim:
     runs-on: self-hosted
     container:
-      image: ghcr.io/zephyrproject-rtos/ci:v0.26.13
+      image: ghcr.io/zephyrproject-rtos/ci-repo-cache:v0.27.4.20241026
       options: '--entrypoint /bin/bash'
       volumes:
         - /repo-cache/embeint:/github/cache/embeint
@@ -141,7 +149,7 @@ jobs:
     env:
       CCACHE_DIR: /github/ccache
       # `--specs` is ignored because ccache is unable to resolve the toolchain specs file path.
-      CCACHE_IGNOREOPTIONS: '--specs=*'
+      CCACHE_IGNOREOPTIONS: '-specs=* --specs=*'
       BASE_REF: ${{ github.base_ref }}
       ZEPHYR_TOOLCHAIN_VARIANT: zephyr
       BSIM_OUT_PATH: /github/cache/embeint/tools/bsim
@@ -186,7 +194,7 @@ jobs:
           west update --path-cache /github/cache/embeint 2>&1 1> west.update.log || west update --path-cache /github/cache/embeint 2>&1 1> west.update.log || ( rm -rf ../modules ../bootloader ../tools && west update --path-cache /github/cache/embeint)
           west forall -c 'git reset --hard HEAD'
 
-          pip3 install gcovr==6.0
+          pip install gcovr==6.0
 
           echo "ZEPHYR_SDK_INSTALL_DIR=/opt/toolchains/zephyr-sdk-$( cat SDK_VERSION )" >> $GITHUB_ENV
 
@@ -302,7 +310,7 @@ jobs:
       - name: Merge coverage files
         run: |
           cd ./coverage/reports
-          pip3 install gcovr==6.0
+          pip install gcovr==6.0
           gcovr ${{ steps.get-coverage-files.outputs.mergefiles }} --merge-mode-functions=separate --json merged.json
           gcovr ${{ steps.get-coverage-files.outputs.mergefiles }} --merge-mode-functions=separate --cobertura merged.xml
           ls -la .
@@ -319,7 +327,7 @@ jobs:
 
       - name: Upload coverage to Codecov
         if: always()
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./coverage/reports/merged.xml

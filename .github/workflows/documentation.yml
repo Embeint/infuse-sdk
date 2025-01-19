@@ -31,7 +31,7 @@ jobs:
     name: "Documentation Build (HTML)"
     runs-on: self-hosted
     container:
-      image: ghcr.io/zephyrproject-rtos/ci:v0.26.13
+      image: ghcr.io/zephyrproject-rtos/ci-repo-cache:v0.27.4.20241026
       options: '--entrypoint /bin/bash'
       volumes:
       - /repo-cache/embeint:/github/cache/embeint
@@ -41,7 +41,7 @@ jobs:
         # The latest CMake available directly with apt is 3.18, but we need >=3.20
         # so we fetch that through pip.
         CMAKE_VERSION: 3.20.5
-        DOXYGEN_VERSION: 1.9.6
+        DOXYGEN_VERSION: 1.12.0
         BASE_REF: ${{ github.base_ref }}
         ZEPHYR_TOOLCHAIN_VARIANT: zephyr
     timeout-minutes: 10
@@ -108,11 +108,11 @@ jobs:
     - name: install-pip
       working-directory: infuse-sdk
       run: |
-        sudo pip3 install -U setuptools wheel pip
-        pip3 install -r doc/requirements.txt
-        pip3 install west==${WEST_VERSION}
-        pip3 install cmake==${CMAKE_VERSION}
-        pip3 install coverxygen
+        sudo pip install -U setuptools wheel pip
+        pip install -r doc/requirements.txt
+        pip install west==${WEST_VERSION}
+        pip install cmake==${CMAKE_VERSION}
+        pip install coverxygen
 
     - name: build-docs
       working-directory: infuse-sdk

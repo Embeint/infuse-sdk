@@ -17,7 +17,7 @@ jobs:
   infuse-release-run:
     runs-on: self-hosted
     container:
-      image: ghcr.io/zephyrproject-rtos/ci:v0.26.13
+      image: ghcr.io/zephyrproject-rtos/ci-repo-cache:v0.27.4.20241026
       options: '--entrypoint /bin/bash'
       volumes:
         - /repo-cache/embeint:/github/cache/embeint
