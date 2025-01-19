@@ -4,7 +4,6 @@ tests:
   fs.secure_storage:
     platform_allow:
       - native_sim
-      - qemu_cortex_m0
       - mps2/an385
     integration_platforms:
       - native_sim
