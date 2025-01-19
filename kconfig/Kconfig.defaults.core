@@ -213,6 +213,10 @@ configdefault SEGGER_RTT_BUFFER_SIZE_UP
 	default 1024
 configdefault SEGGER_RTT_BUFFER_SIZE_DOWN
 	default 256
+choice SEGGER_RTT_SECTION
+	# Custom section causes obtuse linker errors on nRF91
+	default SEGGER_RTT_SECTION_NONE
+endchoice
 
 # Size optimisations
 configdefault UART_USE_RUNTIME_CONFIGURE
