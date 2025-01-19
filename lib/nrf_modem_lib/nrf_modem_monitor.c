@@ -61,7 +61,7 @@ static void network_info_update(struct k_work *work)
 	if (!sim_card_queried) {
 		KV_STRUCT_KV_STRING_VAR(24) sim_uicc;
 
-		rc = nrf_modem_at_scanf("AT%XICCID", "%%XICCID: %24s", &sim_uicc.value);
+		rc = nrf_modem_at_scanf("AT%XICCID", "%%XICCID: %24s", sim_uicc.value);
 		if (rc == 1) {
 			sim_uicc.value_num = strlen(sim_uicc.value) + 1;
 			if (kv_store_write(KV_KEY_LTE_SIM_UICC, &sim_uicc, 1 + sim_uicc.value_num) >
@@ -99,10 +99,10 @@ static void network_info_update(struct k_work *work)
 				"%9[^,],"      /* <plmn> */
 				"%*[^,],"      /* <tac>: ignored */
 				"%*d,"         /* <AcT>: ignored */
-				"%" SCNu8 ","  /* <band> */
+				"%" SCNu16 "," /* <band> */
 				"%*[^,],"      /* <cell_id>: ignored */
 				"%" SCNu16 "," /* <phys_cell_id> */
-				"%" SCNu16 "," /* <EARFCN> */
+				"%" SCNu32 "," /* <EARFCN> */
 				,
 				plmn, &monitor.network_state.band,
 				&monitor.network_state.cell.phys_cell_id,
@@ -312,16 +312,16 @@ static void infuse_modem_info(int ret, void *ctx)
 		return;
 	}
 	/* Model identifier */
-	nrf_modem_at_scanf("AT+CGMM", "%64s\n", &modem_info.value);
+	nrf_modem_at_scanf("AT+CGMM", "%64s\n", modem_info.value);
 	modem_info.value_num = strlen(modem_info.value) + 1;
 	(void)kv_store_write(KV_KEY_LTE_MODEM_MODEL, &modem_info, 1 + modem_info.value_num);
 	/* Modem firmware revision */
-	nrf_modem_at_scanf("AT+CGMR", "%64s\n", &modem_info.value);
+	nrf_modem_at_scanf("AT+CGMR", "%64s\n", modem_info.value);
 	modem_info.value_num = strlen(modem_info.value) + 1;
 	(void)kv_store_write(KV_KEY_LTE_MODEM_FIRMWARE_REVISION, &modem_info,
 			     1 + modem_info.value_num);
 	/* Modem ESN */
-	nrf_modem_at_scanf("AT+CGSN=0", "%64s\n", &modem_info.value);
+	nrf_modem_at_scanf("AT+CGSN=0", "%64s\n", modem_info.value);
 	modem_info.value_num = strlen(modem_info.value) + 1;
 	(void)kv_store_write(KV_KEY_LTE_MODEM_ESN, &modem_info, 1 + modem_info.value_num);
 	/* Modem IMEI */
