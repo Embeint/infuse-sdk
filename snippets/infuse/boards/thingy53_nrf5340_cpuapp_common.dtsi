@@ -8,12 +8,14 @@
 / {
 	power_domain_3v3: power_domain_3v3 {
 		compatible = "power-domain-gpio";
+		#power-domain-cells = <0>;
 		enable-gpios = <&gpio0 15 GPIO_ACTIVE_LOW>;
 		/* nRF7002 driver does not handle this power domain */
 	};
 
 	power_domain_sensor: tck106ag {
 		compatible = "power-domain-gpio";
+		#power-domain-cells = <0>;
 		enable-gpios = <&gpio0 31 GPIO_ACTIVE_HIGH>;
 		/* BMI270 CS pin needs to go low with the power domain */
 		raw-follower-gpios = <&gpio1 4 GPIO_ACTIVE_HIGH>;
@@ -74,24 +76,24 @@
 };
 
 &bme688 {
-	power-domain = <&power_domain_sensor>;
+	power-domains = <&power_domain_sensor>;
 	zephyr,pm-device-runtime-auto;
 };
 
 &bh1749 {
-	power-domain = <&power_domain_sensor>;
+	power-domains = <&power_domain_sensor>;
 	zephyr,pm-device-runtime-auto;
 };
 
 &bmi270 {
 	status = "okay";
 	irq-gpios = <&gpio0 23 GPIO_ACTIVE_HIGH>;
-	power-domain = <&power_domain_sensor>;
+	power-domains = <&power_domain_sensor>;
 	zephyr,pm-device-runtime-auto;
 };
 
 &bmm150 {
-	power-domain = <&power_domain_sensor>;
+	power-domains = <&power_domain_sensor>;
 	zephyr,pm-device-runtime-auto;
 };
 

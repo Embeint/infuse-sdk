@@ -5,6 +5,7 @@
 / {
 	power_domain_switch: power_domain_switch {
 		compatible = "power-domain-gpio";
+		#power-domain-cells = <0>;
 		enable-gpios = <&gpio0 0 GPIO_ACTIVE_HIGH>;
 		zephyr,pm-device-runtime-auto;
 	};
@@ -12,7 +13,7 @@
 	spdt_switch: spdt_switch {
 		compatible = "zephyr,spdt-switch";
 		ctrl-gpios = <&gpio0 1 GPIO_ACTIVE_HIGH>;
-		power-domain = <&power_domain_switch>;
+		power-domains = <&power_domain_switch>;
 		zephyr,pm-device-runtime-auto;
 		#shared-dev-cells = <2>;
 	};
