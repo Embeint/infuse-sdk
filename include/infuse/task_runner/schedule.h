@@ -46,6 +46,8 @@ enum task_runner_periodicity_type {
 	TASK_PERIODICITY_FIXED = 1,
 	/** Task can only run N seconds after previous run started */
 	TASK_PERIODICITY_LOCKOUT = 2,
+	/** Task can only run N seconds after another schedule terminates */
+	TASK_PERIODICITY_AFTER = 3,
 	_TASK_PERIODICITY_END,
 };
 
@@ -137,6 +139,10 @@ struct task_schedule {
 		struct periodicity_lockout {
 			uint32_t lockout_s;
 		} lockout;
+		struct periodicity_after {
+			uint8_t schedule_idx;
+			uint16_t duration_s;
+		} after;
 	} periodicity;
 	/** Task start state conditions */
 	struct task_schedule_state_conditions states_start;
@@ -160,6 +166,8 @@ struct task_schedule {
  * One state struct exists per @ref task_schedule
  */
 struct task_schedule_state {
+	/* Linked schedule for @ref TASK_PERIODICITY_AFTER */
+	struct task_schedule_state *linked;
 	/** System uptime that started the last run of this schedule */
 	uint32_t last_run;
 	/** Duration of current run */
