@@ -24,13 +24,36 @@ LOG_MODULE_REGISTER(app, LOG_LEVEL_INF);
 
 static const struct task_schedule schedules[] = {
 	{
-		.task_id = TASK_ID_TDF_LOGGER,
+		.task_id = TASK_ID_NETWORK_SCAN,
 		.validity = TASK_VALID_ALWAYS,
 		.periodicity_type = TASK_PERIODICITY_LOCKOUT,
-		.periodicity.lockout.lockout_s = 1 * SEC_PER_MIN,
+		.periodicity.lockout.lockout_s = 5 * SEC_PER_MIN,
+		.task_args.infuse.network_scan =
+			{
+				.flags = TASK_NETWORK_SCAN_FLAGS_LTE_CELLS,
+				.lte =
+					{
+						.desired_cells = 4,
+					},
+			},
+		.task_logging =
+			{
+				{
+					.loggers = TDF_DATA_LOGGER_SERIAL | TDF_DATA_LOGGER_UDP,
+					.tdf_mask = TASK_NETWORK_SCAN_LOG_LTE_CELLS,
+				},
+			},
+	},
+	{
+		.task_id = TASK_ID_TDF_LOGGER,
+		.validity = TASK_VALID_ALWAYS,
+		/* Push UDP packet after network scan completes */
+		.periodicity_type = TASK_PERIODICITY_AFTER,
+		.periodicity.after.schedule_idx = 0,
+		.periodicity.after.duration_s = 0,
 		.task_args.infuse.tdf_logger =
 			{
-				.loggers = TDF_DATA_LOGGER_UDP,
+				.loggers = TDF_DATA_LOGGER_SERIAL | TDF_DATA_LOGGER_UDP,
 				.tdfs = TASK_TDF_LOGGER_LOG_ANNOUNCE | TASK_TDF_LOGGER_LOG_BATTERY |
 					TASK_TDF_LOGGER_LOG_NET_CONN,
 			},
@@ -48,11 +71,18 @@ static const struct task_schedule schedules[] = {
 					TASK_TDF_LOGGER_LOG_NET_CONN,
 			},
 	},
+	{
+		.task_id = TASK_ID_BATTERY,
+		.validity = TASK_VALID_ALWAYS,
+		.periodicity_type = TASK_PERIODICITY_FIXED,
+		.periodicity.fixed.period_s = 10,
+	},
 };
 struct task_schedule_state states[ARRAY_SIZE(schedules)];
 
 TASK_RUNNER_TASKS_DEFINE(app_tasks, app_tasks_data, (TDF_LOGGER_TASK, NULL),
-			 (BATTERY_TASK, DEVICE_DT_GET(DT_ALIAS(fuel_gauge0))));
+			 (BATTERY_TASK, DEVICE_DT_GET(DT_ALIAS(fuel_gauge0))),
+			 (NETWORK_SCAN_TASK, NULL));
 
 int main(void)
 {
