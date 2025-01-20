@@ -237,6 +237,31 @@ ZTEST(task_runner_schedules, test_app_states_basic)
 	atomic_clear_bit(app_states, INFUSE_STATE_TIME_KNOWN);
 }
 
+ZTEST(task_runner_schedules, test_app_states_timeout)
+{
+	INFUSE_STATES_ARRAY(app_states) = {0};
+	struct task_schedule schedule = {
+		.validity = TASK_VALID_ALWAYS,
+		.states_start_timeout_2x_s = 10,
+		.states_start = TASK_STATES_DEFINE(INFUSE_STATE_TIME_KNOWN),
+	};
+	struct task_schedule_state state = {
+		.last_run = 100,
+	};
+	int uptime = 100;
+
+	/* Up until T=119, state check should be failing */
+	for (; uptime < 120; uptime++) {
+		zassert_false(task_schedule_should_start(&schedule, &state, app_states, uptime,
+							 10000 + uptime, 100));
+	}
+	/* After that, state check always passes */
+	for (; uptime < (2 * UINT16_MAX); uptime++) {
+		zassert_true(task_schedule_should_start(&schedule, &state, app_states, uptime,
+							10000 + uptime, 100));
+	}
+}
+
 ZTEST(task_runner_schedules, test_app_states_inverted)
 {
 	INFUSE_STATES_ARRAY(app_states) = {0};
