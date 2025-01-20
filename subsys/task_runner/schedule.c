@@ -76,6 +76,7 @@ bool task_schedule_should_start(const struct task_schedule *schedule,
 				struct task_schedule_state *state, atomic_t *app_states,
 				uint32_t uptime, uint32_t epoch_time, uint8_t battery_soc)
 {
+	uint32_t since_last_run = uptime - state->last_run;
 	bool periodicity = true;
 	bool battery = true;
 	bool states;
@@ -88,7 +89,7 @@ bool task_schedule_should_start(const struct task_schedule *schedule,
 	if (schedule->periodicity_type == TASK_PERIODICITY_FIXED) {
 		periodicity = (epoch_time % schedule->periodicity.fixed.period_s) == 0;
 	} else if (schedule->periodicity_type == TASK_PERIODICITY_LOCKOUT) {
-		periodicity = (uptime - state->last_run) >= schedule->periodicity.lockout.lockout_s;
+		periodicity = since_last_run >= schedule->periodicity.lockout.lockout_s;
 	} else if (schedule->periodicity_type == TASK_PERIODICITY_AFTER) {
 		periodicity = state->linked && state->linked->last_terminate &&
 			      ((state->linked->last_terminate +
@@ -96,7 +97,9 @@ bool task_schedule_should_start(const struct task_schedule *schedule,
 	}
 
 	battery = battery_soc >= schedule->battery_start_threshold;
-	states = task_schedule_states_eval(&schedule->states_start, app_states, true);
+	states = (schedule->states_start_timeout_2x_s &&
+		  (since_last_run >= (2 * schedule->states_start_timeout_2x_s))) ||
+		 task_schedule_states_eval(&schedule->states_start, app_states, true);
 
 	return periodicity && battery && states;
 }
