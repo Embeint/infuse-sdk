@@ -41,6 +41,16 @@
                 {"name": "tac", "type": "uint16_t", "description": "Tracking Area Code"}
             ]
         },
+        "tdf_struct_lte_cell_neighbour": {
+            "description": "LTE cell ID (Global)",
+            "fields": [
+                {"name": "earfcn", "type": "uint32_t", "description": "Evolved Absolute Radio Frequency Channel (E-ARFCN)"},
+                {"name": "pci", "type": "uint16_t", "description": "Physical Cell Identity"},
+                {"name": "time_diff", "type": "uint16_t", "description": "Time after the serving cell was observed that the neighbor cell was observed", "display": {"postfix": "s"}, "conversion": {"m": 0.001, "c": 0}},
+                {"name": "rsrp", "type": "uint8_t", "description": "Reference signal received power (255 = Unknown)", "display": {"postfix": "dBm"}, "conversion": {"m": -1, "c": 0}},
+                {"name": "rsrq", "type": "int8_t", "description": "Reference signal received quality (-128 = Unknown)", "display": {"postfix": "dB"}}
+            ]
+        },
         "tdf_struct_bt_addr_le": {
             "description": "Bluetooth address type (bt_addr_le_t)",
             "fields": [
@@ -327,6 +337,17 @@
                 {"name": "algorithm_id", "type": "uint32_t", "description": "Algorithm identifier", "display": {"fmt": "hex", "digits": 8}},
                 {"name": "algorithm_version", "type": "uint16_t", "description": "Algorithm version number"},
                 {"name": "values", "type": "uint8_t", "num": 0, "description": "Output classes"}
+            ]
+        },
+        "34": {
+            "name": "LTE_TAC_CELLS",
+            "description": "Information on cells in a tracking area",
+            "fields": [
+                {"name": "cell", "type": "struct tdf_struct_lte_cell_id_global", "description": "Global LTE cell identifier"},
+                {"name": "earfcn", "type": "uint32_t", "description": "Evolved Absolute Radio Frequency Channel (E-ARFCN)"},
+                {"name": "rsrp", "type": "uint8_t", "description": "Reference signal received power (255 = Unknown)", "display": {"postfix": "dBm"}, "conversion": {"m": -1, "c": 0}},
+                {"name": "rsrq", "type": "int8_t", "description": "Reference signal received quality (-128 = Unknown)", "display": {"postfix": "dB"}},
+                {"name": "neighbours", "type": "struct tdf_struct_lte_cell_neighbour", "num": 0, "description": "Neighbouring cell measurements"}
             ]
         },
         "100": {
