@@ -181,6 +181,39 @@ ZTEST(task_runner_runner, test_init_duplicate_task_ids)
 			 ARRAY_SIZE(dup_tasks));
 }
 
+ZTEST(task_runner_runner, test_schedule_linking)
+{
+	struct task_schedule schedules[] = {
+		{
+			.task_id = TASK_ID_NO_ARG,
+			.periodicity_type = TASK_PERIODICITY_AFTER,
+			.periodicity.after =
+				{
+					.schedule_idx = 1,
+					.duration_s = 10,
+				},
+		},
+		{
+			.task_id = TASK_ID_NO_ARG,
+			.periodicity_type = TASK_PERIODICITY_AFTER,
+			.periodicity.after =
+				{
+					.schedule_idx = 2,
+					.duration_s = 10,
+				},
+		},
+	};
+	struct task_schedule_state states[ARRAY_SIZE(schedules)];
+
+	TASK_RUNNER_TASKS_DEFINE(oob, oob_data, (NO_ARG_TASK));
+
+	/* Warning text should be output */
+	task_runner_init(schedules, states, ARRAY_SIZE(schedules), oob, oob_data, ARRAY_SIZE(oob));
+
+	zassert_not_null(states[0].linked);
+	zassert_is_null(states[1].linked);
+}
+
 DEVICE_DEFINE(dummy_device, "dummy", NULL, NULL, NULL, NULL, POST_KERNEL, 0, NULL);
 static int example_device_run;
 
@@ -287,6 +320,62 @@ ZTEST(task_runner_runner, test_basic_behaviour)
 	zassert_equal(2, example_task_run_cnt);
 }
 
+ZTEST(task_runner_runner, test_after)
+{
+	INFUSE_STATES_ARRAY(app_states) = {0};
+	struct task_schedule schedules[] = {
+		{
+			.task_id = TASK_ID_SLEEPY,
+			.validity = TASK_VALID_ALWAYS,
+			.periodicity_type = TASK_PERIODICITY_AFTER,
+			.periodicity.after.schedule_idx = 1,
+			.periodicity.after.duration_s = 2,
+			.task_args.raw = {0xA5},
+		},
+		{
+			.task_id = TASK_ID_SLEEPY,
+			.validity = TASK_VALID_ALWAYS,
+			.periodicity_type = TASK_PERIODICITY_FIXED,
+			.periodicity.fixed.period_s = 10,
+			.task_args.raw = {0xA5},
+		},
+	};
+	struct task_schedule_state states[ARRAY_SIZE(schedules)];
+	uint32_t gps_time = 7000;
+	uint32_t uptime = 0;
+	uint32_t iter = k_uptime_seconds() + 1;
+
+	example_task_expected_arg = schedules[0].task_args.raw[0];
+	example_task_block_timeout = K_MSEC(1800);
+
+	task_runner_init(schedules, states, ARRAY_SIZE(schedules), app_tasks, app_tasks_data,
+			 ARRAY_SIZE(app_tasks));
+
+	/* Starts at T = 0, terminates at T = 1.8  */
+	for (int i = 0; i < 2; i++) {
+		task_runner_iterate(app_states, uptime++, gps_time++, 100);
+		k_sleep(K_TIMEOUT_ABS_MS(iter * MSEC_PER_SEC));
+		zassert_equal(1, example_task_run_cnt);
+		iter++;
+	}
+
+	/* T= 2 & 3, no running */
+	for (int i = 0; i < 2; i++) {
+		task_runner_iterate(app_states, uptime++, gps_time++, 100);
+		k_sleep(K_TIMEOUT_ABS_MS(iter * MSEC_PER_SEC));
+		zassert_equal(1, example_task_run_cnt);
+		iter++;
+	}
+
+	/* Starts again at T = 4 (2 seconds after termination) */
+	for (int i = 0; i < 2; i++) {
+		task_runner_iterate(app_states, uptime++, gps_time++, 100);
+		k_sleep(K_TIMEOUT_ABS_MS(iter * MSEC_PER_SEC));
+		zassert_equal(2, example_task_run_cnt);
+		iter++;
+	}
+}
+
 ZTEST(task_runner_runner, test_permanent)
 {
 	INFUSE_STATES_ARRAY(app_states) = {0};
@@ -298,7 +387,6 @@ ZTEST(task_runner_runner, test_permanent)
 			.periodicity_type = TASK_PERIODICITY_FIXED,
 			.periodicity.fixed.period_s = 5,
 			.timeout_s = 4,
-			/* */
 			.task_args.raw = {0xA5},
 		},
 	};
