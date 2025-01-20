@@ -17,13 +17,45 @@
 #include <infuse/data_logger/high_level/tdf.h>
 #include <infuse/drivers/watchdog.h>
 
+#include <infuse/task_runner/runner.h>
+#include <infuse/task_runner/tasks/infuse_tasks.h>
+
 LOG_MODULE_REGISTER(app, LOG_LEVEL_INF);
+
+static const struct task_schedule schedules[] = {
+	{
+		.task_id = TASK_ID_TDF_LOGGER,
+		.validity = TASK_VALID_ALWAYS,
+		.periodicity_type = TASK_PERIODICITY_LOCKOUT,
+		.periodicity.lockout.lockout_s = 1 * SEC_PER_MIN,
+		.task_args.infuse.tdf_logger =
+			{
+				.loggers = TDF_DATA_LOGGER_UDP,
+				.tdfs = TASK_TDF_LOGGER_LOG_ANNOUNCE | TASK_TDF_LOGGER_LOG_BATTERY |
+					TASK_TDF_LOGGER_LOG_NET_CONN,
+			},
+	},
+	{
+		.task_id = TASK_ID_TDF_LOGGER,
+		.validity = TASK_VALID_ALWAYS,
+		.periodicity_type = TASK_PERIODICITY_LOCKOUT,
+		.periodicity.lockout.lockout_s = 2,
+		.task_args.infuse.tdf_logger =
+			{
+				.loggers = TDF_DATA_LOGGER_SERIAL,
+				.random_delay_ms = 1000,
+				.tdfs = TASK_TDF_LOGGER_LOG_ANNOUNCE | TASK_TDF_LOGGER_LOG_BATTERY |
+					TASK_TDF_LOGGER_LOG_NET_CONN,
+			},
+	},
+};
+struct task_schedule_state states[ARRAY_SIZE(schedules)];
+
+TASK_RUNNER_TASKS_DEFINE(app_tasks, app_tasks_data, (TDF_LOGGER_TASK, NULL),
+			 (BATTERY_TASK, DEVICE_DT_GET(DT_ALIAS(fuel_gauge0))));
 
 int main(void)
 {
-	const struct device *tdf_logger_udp = DEVICE_DT_GET(DT_NODELABEL(tdf_logger_udp));
-	struct tdf_announce announce;
-
 	/* Start watchdog */
 	infuse_watchdog_start();
 
@@ -33,22 +65,13 @@ int main(void)
 	conn_mgr_all_if_up(false);
 	conn_mgr_all_if_connect(false);
 
-	while (true) {
-		k_sleep(K_SECONDS(60));
+	/* Initialise task runner */
+	task_runner_init(schedules, states, ARRAY_SIZE(schedules), app_tasks, app_tasks_data,
+			 ARRAY_SIZE(app_tasks));
 
-		/* Push announce packet once a minute over UDP */
-		announce.application = 0x1234;
-		announce.reboots = 0;
-		announce.uptime = k_uptime_get() / 1000;
-		announce.version = (struct tdf_struct_mcuboot_img_sem_ver){
-			.major = 1,
-			.minor = 2,
-			.revision = 3,
-			.build_num = 4,
-		};
+	/* Start auto iteration */
+	task_runner_start_auto_iterate();
 
-		tdf_data_logger_log_dev(tdf_logger_udp, TDF_ANNOUNCE, (sizeof(announce)), 0,
-					&announce);
-		tdf_data_logger_flush_dev(tdf_logger_udp);
-	}
+	/* No more work to do in this context */
+	k_sleep(K_FOREVER);
 }
