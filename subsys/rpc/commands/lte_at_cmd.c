@@ -12,6 +12,7 @@
 
 #include <infuse/rpc/commands.h>
 #include <infuse/rpc/types.h>
+#include <infuse/lib/nrf_modem_monitor.h>
 
 #include <nrf_modem_at.h>
 
@@ -28,6 +29,9 @@ struct net_buf *rpc_command_lte_at_cmd(struct net_buf *request)
 	/* Request must be NULL terminated */
 	if (request->data[request->len - 1] != 0x00) {
 		return rpc_response_simple_req(request, -EINVAL, &rsp, sizeof(rsp));
+	}
+	if (!nrf_modem_monitor_is_at_safe()) {
+		return rpc_response_simple_req(request, -EAGAIN, &rsp, sizeof(rsp));
 	}
 
 	/* Allocate response object */
