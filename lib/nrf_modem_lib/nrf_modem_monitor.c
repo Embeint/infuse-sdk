@@ -148,6 +148,7 @@ int nrf_modem_monitor_signal_quality(int16_t *rsrp, int8_t *rsrq, bool cached)
 {
 	bool sleeping = atomic_test_bit(&monitor.flags, FLAGS_MODEM_SLEEPING);
 	bool connected = atomic_test_bit(&monitor.flags, FLAGS_CELL_CONNECTED);
+	bool pdn_in_progress = atomic_test_bit(&monitor.flags, FLAGS_PDN_CONN_IN_PROGRESS);
 	uint8_t rsrp_idx, rsrq_idx;
 	int rc;
 
@@ -155,8 +156,8 @@ int nrf_modem_monitor_signal_quality(int16_t *rsrp, int8_t *rsrq, bool cached)
 	*rsrq = cached ? monitor.rsrq_cached : INT8_MIN;
 
 	/* If modem is sleeping or not connected to a cell, signal quality polling will fail */
-	if (sleeping || !connected) {
-		LOG_DBG("Sleeping: %d Connected: %d", sleeping, connected);
+	if (sleeping || !connected || pdn_in_progress) {
+		LOG_DBG("Sleeping: %d Connected: %d PDN: %d", sleeping, connected, pdn_in_progress);
 		return 0;
 	}
 
@@ -183,6 +184,9 @@ int nrf_modem_monitor_connectivity_stats(int *tx_kbytes, int *rx_kbytes)
 {
 	int rc;
 
+	if (atomic_test_bit(&monitor.flags, FLAGS_PDN_CONN_IN_PROGRESS)) {
+		return -EAGAIN;
+	}
 	rc = nrf_modem_at_scanf("AT%XCONNSTAT?", "%%XCONNSTAT: %*d,%*d,%d,%d,%*d,%*d", tx_kbytes,
 				rx_kbytes);
 	return rc == 2 ? 0 : -EIO;
