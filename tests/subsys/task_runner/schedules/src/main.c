@@ -114,6 +114,64 @@ ZTEST(task_runner_schedules, test_periodicity_lockout)
 						100 + 12, 100));
 }
 
+ZTEST(task_runner_schedules, test_periodicity_after)
+{
+	INFUSE_STATES_ARRAY(app_states) = {0};
+	struct task_schedule schedule = {
+		.validity = TASK_VALID_ALWAYS,
+		.periodicity_type = TASK_PERIODICITY_AFTER,
+	};
+	struct task_schedule_state linked = {0};
+	struct task_schedule_state state = {
+		.linked = &linked,
+	};
+
+	zassert_true(task_schedule_validate(&schedule));
+
+	/* Some small delay after termination */
+	schedule.periodicity.after.duration_s = 10;
+	linked.last_terminate = 20;
+	for (int i = 0; i < 30; i++) {
+		zassert_false(task_schedule_should_start(&schedule, &state, app_states, i,
+							 10000 + i, 100));
+	}
+	zassert_true(
+		task_schedule_should_start(&schedule, &state, app_states, 30, 10000 + 30, 100));
+	for (int i = 31; i < 60; i++) {
+		zassert_false(task_schedule_should_start(&schedule, &state, app_states, i,
+							 10000 + i, 100));
+	}
+
+	/* Immediately after termination  */
+	schedule.periodicity.after.duration_s = 0;
+	linked.last_terminate = 100;
+	for (int i = 0; i < 100; i++) {
+		zassert_false(task_schedule_should_start(&schedule, &state, app_states, i,
+							 10000 + i, 100));
+	}
+	zassert_true(
+		task_schedule_should_start(&schedule, &state, app_states, 100, 10000 + 30, 100));
+	for (int i = 101; i < 120; i++) {
+		zassert_false(task_schedule_should_start(&schedule, &state, app_states, i,
+							 10000 + i, 100));
+	}
+
+	/* Linked schedule not yet run */
+	schedule.periodicity.after.duration_s = 10;
+	linked.last_terminate = 0;
+	for (int i = 0; i < 20; i++) {
+		zassert_false(task_schedule_should_start(&schedule, &state, app_states, i,
+							 10000 + i, 100));
+	}
+
+	/* No linked schedule */
+	state.linked = NULL;
+	for (int i = 0; i < 20; i++) {
+		zassert_false(task_schedule_should_start(&schedule, &state, app_states, i,
+							 10000 + i, 100));
+	}
+}
+
 ZTEST(task_runner_schedules, test_battery_static)
 {
 	INFUSE_STATES_ARRAY(app_states) = {0};
