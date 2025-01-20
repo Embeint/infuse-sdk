@@ -164,6 +164,8 @@ struct task_schedule_state {
 	uint32_t last_run;
 	/** Duration of current run */
 	uint32_t runtime;
+	/** System uptime at termination of last run of this schedule */
+	uint32_t last_terminate;
 	/** Index into task array that corresponds with schedule @a task_id */
 	uint8_t task_idx;
 #ifdef CONFIG_TASK_RUNNER_PER_SCHEDULE_STORAGE
