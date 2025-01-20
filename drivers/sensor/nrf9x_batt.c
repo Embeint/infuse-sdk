@@ -10,6 +10,8 @@
 #include <zephyr/drivers/sensor.h>
 #include <zephyr/sys/__assert.h>
 
+#include <infuse/lib/nrf_modem_monitor.h>
+
 #include <nrf_modem_at.h>
 
 #define DT_DRV_COMPAT nordic_nrf9x_batt
@@ -25,6 +27,11 @@ static int nrf9x_batt_sample_fetch(const struct device *dev, enum sensor_channel
 
 	__ASSERT_NO_MSG(chan == SENSOR_CHAN_ALL || chan == SENSOR_CHAN_VOLTAGE);
 
+#ifdef CONFIG_INFUSE_NRF_MODEM_MONITOR
+	if (!nrf_modem_monitor_is_at_safe()) {
+		return -EAGAIN;
+	}
+#endif
 	rc = nrf_modem_at_scanf("AT%XVBAT", "%%XVBAT: %d", &data->voltage_mv);
 	return rc == 1 ? 0 : -EIO;
 }
