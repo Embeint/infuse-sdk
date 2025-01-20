@@ -1,3 +1,4 @@
+#include <zephyr/dt-bindings/battery/battery.h>
 #include <common/nordic/infuse_nrf9160_ns.dtsi>
 
 /* MCUboot secondary on external flash */
@@ -11,6 +12,10 @@
 / {
 	chosen {
 		zephyr,bt-hci = &hci_spi;
+	};
+
+	aliases {
+		fuel-gauge0 = &fuel_gauge;
 	};
 
 	tfm_config {
@@ -42,6 +47,18 @@
 			img-secondary-secure = <&slot1_s_partition>;
 			img-secondary-nonsecure = <&slot1_ns_partition>;
 		};
+	};
+
+	nrf9x_batt: nrf9x_batt {
+		compatible = "nordic,nrf9x-batt";
+	};
+
+	fuel_gauge: fuel_gauge {
+		compatible = "zephyr,fuel-gauge-composite";
+		battery-voltage = <&nrf9x_batt>;
+		device-chemistry = "lithium-ion-polymer";
+		ocv-capacity-table-0 = <BATTERY_OCV_CURVE_LITHIUM_ION_POLYMER_DEFAULT>;
+		charge-full-design-microamp-hours = <1000000>;
 	};
 
 	epacket_udp: epacket_udp {
