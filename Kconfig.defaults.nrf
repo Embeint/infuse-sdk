@@ -16,6 +16,7 @@ configdefault NRF_OBERON
 
 # LTE defaults
 configdefault AT_MONITOR_HEAP_SIZE
+	default 1024 if TASK_RUNNER_TASK_NETWORK_SCAN
 	default 512
 configdefault NET_IPV6_MLD
 	default n if NRF_MODEM_LIB
