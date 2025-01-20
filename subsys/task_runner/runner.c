@@ -88,6 +88,7 @@ void task_runner_init(const struct task_schedule *schedules,
 		}
 		/* Clear scheduling state */
 		sch_states[i].last_run = 0;
+		sch_states[i].last_terminate = 0;
 		sch_states[i].runtime = 0;
 	}
 }
@@ -201,7 +202,8 @@ void task_runner_iterate(atomic_t *app_states, uint32_t uptime, uint32_t gps_tim
 	for (int i = 0; i < tsk_num; i++) {
 		if (tsk_states[i].running) {
 			if (task_has_terminated(i)) {
-				LOG_DBG("Task %s terminated", tsk[i].name);
+				LOG_DBG("Task %s terminated @ %d", tsk[i].name, uptime);
+				sch_states[tsk_states[i].schedule_idx].last_terminate = uptime;
 				tsk_states[i].running = false;
 			}
 		}
