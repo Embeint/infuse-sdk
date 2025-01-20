@@ -87,10 +87,14 @@ bool task_schedule_should_start(const struct task_schedule *schedule,
 
 	if (schedule->periodicity_type == TASK_PERIODICITY_FIXED) {
 		periodicity = (epoch_time % schedule->periodicity.fixed.period_s) == 0;
-	}
-	if (schedule->periodicity_type == TASK_PERIODICITY_LOCKOUT) {
+	} else if (schedule->periodicity_type == TASK_PERIODICITY_LOCKOUT) {
 		periodicity = (uptime - state->last_run) >= schedule->periodicity.lockout.lockout_s;
+	} else if (schedule->periodicity_type == TASK_PERIODICITY_AFTER) {
+		periodicity = state->linked && state->linked->last_terminate &&
+			      ((state->linked->last_terminate +
+				schedule->periodicity.after.duration_s) == uptime);
 	}
+
 	battery = battery_soc >= schedule->battery_start_threshold;
 	states = task_schedule_states_eval(&schedule->states_start, app_states, true);
 

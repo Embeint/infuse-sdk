@@ -69,6 +69,7 @@ void task_runner_init(const struct task_schedule *schedules,
 	for (int i = 0; i < sch_num; i++) {
 		/* Mark schedule as invalid */
 		sch_states[i].task_idx = UINT8_MAX;
+		sch_states[i].linked = NULL;
 		/* Schedule is valid */
 		if (!task_schedule_validate(&sch[i])) {
 			LOG_WRN("Schedule %d (Task ID %d) is invalid!", i, sch[i].task_id);
@@ -85,6 +86,16 @@ void task_runner_init(const struct task_schedule *schedules,
 			LOG_WRN("Schedule %d refers to Task ID %d which does not exist", i,
 				sch[i].task_id);
 			continue;
+		}
+		/* Link schedules together */
+		if (sch[i].periodicity_type == TASK_PERIODICITY_AFTER) {
+			if (sch[i].periodicity.after.schedule_idx >= num_schedules) {
+				LOG_WRN("Schedule %d refers to index %d which does not exist", i,
+					sch[i].periodicity.after.schedule_idx);
+			} else {
+				sch_states[i].linked =
+					&sch_states[sch[i].periodicity.after.schedule_idx];
+			}
 		}
 		/* Clear scheduling state */
 		sch_states[i].last_run = 0;

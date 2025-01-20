@@ -30,6 +30,7 @@ The current set of potential scheduling conditions are:
 
     * Run on N second multiples (:c:enumerator:`TASK_PERIODICITY_FIXED`)
     * Run at most every N seconds (:c:enumerator:`TASK_PERIODICITY_LOCKOUT`)
+    * Run N seconds after another schedule finishes (:c:enumerator:`TASK_PERIODICITY_AFTER`)
 
   * Task runtime timeout
   * Application states
