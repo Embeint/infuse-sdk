@@ -1,7 +1,12 @@
+#include <zephyr/dt-bindings/battery/battery.h>
 #include <common/nordic/infuse_nrf9161_ns.dtsi>
 #include "infuse_bluetooth.dtsi"
 
 / {
+	aliases {
+		fuel-gauge0 = &fuel_gauge;
+	};
+
 	tfm_config {
 		compatible = "arm,trusted-firmware-m";
 		sram = <&sram0>;
@@ -31,6 +36,18 @@
 			erase-block-size = <4096>;
 			write-block-size = <1>;
 		};
+	};
+
+	nrf9x_batt: nrf9x_batt {
+		compatible = "nordic,nrf9x-batt";
+	};
+
+	fuel_gauge: fuel_gauge {
+		compatible = "zephyr,fuel-gauge-composite";
+		battery-voltage = <&nrf9x_batt>;
+		device-chemistry = "lithium-ion-polymer";
+		ocv-capacity-table-0 = <BATTERY_OCV_CURVE_LITHIUM_ION_POLYMER_DEFAULT>;
+		charge-full-design-microamp-hours = <1000000>;
 	};
 
 	epacket_udp: epacket_udp {
