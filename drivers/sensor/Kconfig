@@ -6,3 +6,10 @@ config NRF9X_TEMP
 	depends on NRF_MODEM_LIB
 	depends on SENSOR
 	default y
+
+config NRF9X_BATT
+	bool "nRF91x battery voltage measurement"
+	depends on DT_HAS_NORDIC_NRF9X_BATT_ENABLED
+	depends on NRF_MODEM_LIB
+	depends on SENSOR
+	default y
