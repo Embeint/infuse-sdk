@@ -144,6 +144,8 @@ struct task_schedule {
 			uint16_t duration_s;
 		} after;
 	} periodicity;
+	/** @a states_start will evaluate as true 2x this many seconds after last run started */
+	uint16_t states_start_timeout_2x_s;
 	/** Task start state conditions */
 	struct task_schedule_state_conditions states_start;
 	/** Task termination state conditions */
