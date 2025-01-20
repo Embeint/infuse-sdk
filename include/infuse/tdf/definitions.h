@@ -69,6 +69,20 @@ struct tdf_struct_lte_cell_id_global {
 	uint16_t tac;
 } __packed;
 
+/** LTE cell ID (Global) */
+struct tdf_struct_lte_cell_neighbour {
+	/** Evolved Absolute Radio Frequency Channel (E-ARFCN) */
+	uint32_t earfcn;
+	/** Physical Cell Identity */
+	uint16_t pci;
+	/** Time after the serving cell was observed that the neighbor cell was observed */
+	uint16_t time_diff;
+	/** Reference signal received power (255 = Unknown) */
+	uint8_t rsrp;
+	/** Reference signal received quality (-128 = Unknown) */
+	int8_t rsrq;
+} __packed;
+
 /** Bluetooth address type (bt_addr_le_t) */
 struct tdf_struct_bt_addr_le {
 	/** Address type (0 == Public, 1 == Random) */
@@ -429,6 +443,30 @@ struct tdf_algorithm_class_time_series {
 		uint8_t values[_count];                                                            \
 	} __packed;
 
+/** Information on cells in a tracking area */
+struct tdf_lte_tac_cells {
+	/** Global LTE cell identifier */
+	struct tdf_struct_lte_cell_id_global cell;
+	/** Evolved Absolute Radio Frequency Channel (E-ARFCN) */
+	uint32_t earfcn;
+	/** Reference signal received power (255 = Unknown) */
+	uint8_t rsrp;
+	/** Reference signal received quality (-128 = Unknown) */
+	int8_t rsrq;
+	/** Neighbouring cell measurements */
+	struct tdf_struct_lte_cell_neighbour neighbours[];
+} __packed;
+
+/** Define a variant of @ref tdf_lte_tac_cells with a constant length */
+#define TDF_LTE_TAC_CELLS_VAR(_name, _count)                                                       \
+	struct _name {                                                                             \
+		struct tdf_struct_lte_cell_id_global cell;                                         \
+		uint32_t earfcn;                                                                   \
+		uint8_t rsrp;                                                                      \
+		int8_t rsrq;                                                                       \
+		struct tdf_struct_lte_cell_neighbour neighbours[_count];                           \
+	} __packed;
+
 /** Example array type */
 struct tdf_array_type {
 	/** I am an array of length 4 */
@@ -497,6 +535,8 @@ enum tdf_builtin_id {
 	TDF_ALGORITHM_CLASS_HISTOGRAM = 32,
 	/** Algorithm output class time series vector */
 	TDF_ALGORITHM_CLASS_TIME_SERIES = 33,
+	/** Information on cells in a tracking area */
+	TDF_LTE_TAC_CELLS = 34,
 	/** Example array type */
 	TDF_ARRAY_TYPE = 100,
 	/** End of builtin TDF range */
@@ -535,6 +575,7 @@ enum tdf_builtin_id {
 #define _TDF_BLUETOOTH_DATA_THROUGHPUT_TYPE   struct tdf_bluetooth_data_throughput
 #define _TDF_ALGORITHM_CLASS_HISTOGRAM_TYPE   struct tdf_algorithm_class_histogram
 #define _TDF_ALGORITHM_CLASS_TIME_SERIES_TYPE struct tdf_algorithm_class_time_series
+#define _TDF_LTE_TAC_CELLS_TYPE               struct tdf_lte_tac_cells
 #define _TDF_ARRAY_TYPE_TYPE                  struct tdf_array_type
 
 /** Size of builtin TDF definitions */
@@ -569,6 +610,7 @@ enum tdf_builtin_size {
 	_TDF_BLUETOOTH_DATA_THROUGHPUT_SIZE = sizeof(struct tdf_bluetooth_data_throughput),
 	_TDF_ALGORITHM_CLASS_HISTOGRAM_SIZE = sizeof(struct tdf_algorithm_class_histogram),
 	_TDF_ALGORITHM_CLASS_TIME_SERIES_SIZE = sizeof(struct tdf_algorithm_class_time_series),
+	_TDF_LTE_TAC_CELLS_SIZE = sizeof(struct tdf_lte_tac_cells),
 	_TDF_ARRAY_TYPE_SIZE = sizeof(struct tdf_array_type),
 };
 
