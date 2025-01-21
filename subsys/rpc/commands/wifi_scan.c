@@ -69,21 +69,39 @@ struct net_buf *rpc_command_wifi_scan(struct net_buf *request)
 {
 	struct wifi_scan_context context = {0};
 	struct rpc_wifi_scan_response rsp = {0};
-	struct net_if *iface = net_if_get_default();
 	struct wifi_scan_params params = {0};
+	bool manual_up = false;
+	struct net_if *iface;
 	int rc;
 
-	/* Free command as we don't need it and this command takes a while */
-	rpc_command_runner_request_unref(request);
+	/* Wi-Fi drivers are added as ETHERNET */
+	iface = net_if_get_first_by_type(&NET_L2_GET_NAME(ETHERNET));
+	if (iface == NULL) {
+		return rpc_response_simple_req(request, -ENODEV, &rsp, sizeof(rsp));
+	}
+
+	/* Request interface to come up if it is not already */
+	if (!net_if_is_admin_up(iface)) {
+		rc = net_if_up(iface);
+		if (rc != 0) {
+			LOG_ERR("Failed to bring up %s (%d)", iface->if_dev->dev->name, rc);
+			return rpc_response_simple_req(request, -ENODEV, &rsp, sizeof(rsp));
+		}
+		manual_up = true;
+	}
 
 	/* Allocate response object */
 	context.response = rpc_response_simple_req(request, 0, &rsp, sizeof(rsp));
+
+	/* Free command as we don't need it and this command takes a while */
+	rpc_command_runner_request_unref(request);
 
 	k_sem_init(&context.done, 0, 1);
 	net_mgmt_init_event_callback(&context.cb, scan_event_handler,
 				     NET_EVENT_WIFI_SCAN_RESULT | NET_EVENT_WIFI_SCAN_DONE);
 	net_mgmt_add_event_callback(&context.cb);
 
+	LOG_INF("Requesting network scan");
 	rc = net_mgmt(NET_REQUEST_WIFI_SCAN, iface, &params, sizeof(struct wifi_scan_params));
 	if (rc != 0) {
 		goto done;
@@ -98,6 +116,10 @@ struct net_buf *rpc_command_wifi_scan(struct net_buf *request)
 done:
 	/* Remove callback handler */
 	net_mgmt_del_event_callback(&context.cb);
+	/* Put interface down if we brought it up */
+	if (manual_up) {
+		(void)net_if_down(iface);
+	}
 	/* Return the response */
 	return context.response;
 }
