@@ -1,5 +1,6 @@
 #include <zephyr/dt-bindings/battery/battery.h>
 #include <common/nordic/infuse_nrf9160_ns.dtsi>
+#include "infuse_bluetooth.dtsi"
 
 /* MCUboot secondary on external flash */
 /delete-node/ &slot0_partition;
