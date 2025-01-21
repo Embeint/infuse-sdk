@@ -222,6 +222,33 @@
                 {"name": "points", "type": "struct gcs_location", "num": 0, "description": "Points in geofence"}
             ]
         },
+        "1000": {
+            "name": "TASK_SCHEDULES_DEFAULT_ID",
+            "description": "Unique identifier for default schedule set",
+            "reflect": true,
+            "default": "y if TASK_RUNNER",
+            "fields": [
+                {"name": "set_id", "type": "uint32_t", "description": "If this value changes, existing schedules are overwritten"}
+            ]
+        },
+        "1001": {
+            "name": "TASK_SCHEDULES",
+            "range": 32,
+            "range_default": 16,
+            "description": "Task runner task schedule definition (@ref task_schedule)",
+            "reflect": true,
+            "default": "y if TASK_RUNNER",
+            "fields": [
+                {"name": "task_id", "type": "uint8_t", "description": "Task ID referenced by schedule"},
+                {"name": "validity", "type": "uint8_t", "description": "TASK_VALID_* value"},
+                {"name": "periodicity_type", "type": "uint8_t", "description": "TASK_PERIODICITY_* value"},
+                {"name": "timeout_s", "type": "uint32_t", "description": "Duration after which task is requested to terminate"},
+                {"name": "battery_start_threshold", "type": "uint8_t", "description": "Task can start when battery is at least this charged"},
+                {"name": "battery_terminate_threshold", "type": "uint8_t", "description": "Task will terminate when battery falls to this level"},
+                {"name": "periodicity", "type": "uint32_t", "description": "Periodicity values"},
+                {"name": "_remainder", "type": "uint8_t", "num": 0, "description": "Remainder of schedule struct"}
+            ]
+        },
         "30000": {
             "name": "SECURE_STORAGE_RESERVED",
             "range": 10,

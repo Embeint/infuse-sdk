@@ -151,11 +151,11 @@ enum kv_builtin_size {
 #define KV_REFLECT_NUM ( \
 {% for info in definitions.values() %}
 {% if info.get('reflect', false) %}
-	IF_ENABLED(CONFIG_KV_STORE_KEY_{{ info['name'] }}, ({{info['range_val']}} +)) \
+	IF_ENABLED(CONFIG_KV_STORE_KEY_{{ info['name'] }}, \
+		   ({{info['range_val']}} +)) \
 {% endif %}
 {% endfor %}
-	KV_USER_REFLECT_NUM + \
-	0)
+	KV_USER_REFLECT_NUM + 0)
 /* clang-format on */
 
 /** Convert key ID to key type */

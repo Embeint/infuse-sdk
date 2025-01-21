@@ -123,6 +123,24 @@ config KV_STORE_KEY_GEOFENCE_RANGE
 	range 1 16
 	default 1
 
+config KV_STORE_KEY_TASK_SCHEDULES_DEFAULT_ID
+	bool "Enable KV key TASK_SCHEDULES_DEFAULT_ID"
+	default y if TASK_RUNNER
+	help
+	  Unique identifier for default schedule set
+
+config KV_STORE_KEY_TASK_SCHEDULES
+	bool "Enable KV key TASK_SCHEDULES"
+	default y if TASK_RUNNER
+	help
+	  Task runner task schedule definition (@ref task_schedule)
+
+config KV_STORE_KEY_TASK_SCHEDULES_RANGE
+	int "Number of TASK_SCHEDULES slots to enable"
+	depends on KV_STORE_KEY_TASK_SCHEDULES
+	range 1 32
+	default 16
+
 config KV_STORE_KEY_SECURE_STORAGE_RESERVED
 	bool "Enable KV key SECURE_STORAGE_RESERVED"
 	depends on !INFUSE_SDK
