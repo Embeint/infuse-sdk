@@ -2,6 +2,14 @@
 #include <common/nordic/infuse_nrf9161_ns.dtsi>
 #include "infuse_bluetooth.dtsi"
 
+/* MCUboot secondary on external flash */
+/delete-node/ &slot0_partition;
+/delete-node/ &slot0_s_partition;
+/delete-node/ &slot0_ns_partition;
+/delete-node/ &slot1_partition;
+/delete-node/ &slot1_s_partition;
+/delete-node/ &slot1_ns_partition;
+
 / {
 	aliases {
 		fuel-gauge0 = &fuel_gauge;
@@ -21,8 +29,6 @@
 			img-bl2 = <&boot_partition>;
 			img-primary-secure = <&slot0_s_partition>;
 			img-primary-nonsecure = <&slot0_ns_partition>;
-			img-secondary-secure = <&slot1_s_partition>;
-			img-secondary-nonsecure = <&slot1_ns_partition>;
 			partition-ps = <&tfm_ps_partition>;
 			partition-its = <&tfm_its_partition>;
 			partition-otp = <&tfm_otp_partition>;
@@ -35,6 +41,8 @@
 			complete = <&gd25wb256>;
 			erase-block-size = <4096>;
 			write-block-size = <1>;
+			img-secondary-secure = <&slot1_s_partition>;
+			img-secondary-nonsecure = <&slot1_ns_partition>;
 		};
 	};
 
@@ -95,6 +103,27 @@
 	zephyr,pm-device-runtime-auto;
 };
 
+&flash0 {
+	partitions {
+		boot_partition: partition@0 {
+			label = "mcuboot";
+			reg = <0x00000000 0x00010000>;
+		};
+		slot0_partition: partition@10000 {
+			label = "image-0";
+			reg = <0x00010000 0x000E0000>;
+		};
+		slot0_s_partition: subpartition@10000 {
+			label = "image-0-secure";
+			reg = <0x00010000 0x00030000>;
+		};
+		slot0_ns_partition: subpartition@40000 {
+			label = "image-0-nonsecure";
+			reg = <0x00040000 0x000B0000>;
+		};
+	};
+};
+
 &gd25wb256 {
 	zephyr,pm-device-runtime-auto;
 
@@ -103,13 +132,25 @@
 		#address-cells = <1>;
 		#size-cells = <1>;
 
-		file_partition: partition@0 {
-			label = "files";
-			reg = <0x00000000 0x00080000>;
+		slot1_partition: partition@0 {
+			label = "image-1";
+			reg = <0x00000000 0x000E0000>;
 		};
-		data_logger_partition: partition@80000 {
+		slot1_s_partition: subpartition@0 {
+			label = "image-1-secure";
+			reg = <0x00000000 0x00030000>;
+		};
+		slot1_ns_partition: subpartition@30000 {
+			label = "image-1-nonsecure";
+			reg = <0x00030000 0x000B0000>;
+		};
+		file_partition: partition@E0000 {
+			label = "files";
+			reg = <0x000E0000 0x00080000>;
+		};
+		data_logger_partition: partition@160000 {
 			label = "data_logger";
-			reg = <0x00080000 0x1f80000>;
+			reg = <0x00160000 0x1ea0000>;
 		};
 	};
 };
