@@ -285,6 +285,47 @@ struct kv_geofence {
 	} __packed
 /* clang-format on */
 
+/** Unique identifier for default schedule set */
+struct kv_task_schedules_default_id {
+	/** If this value changes, existing schedules are overwritten */
+	uint32_t set_id;
+} __packed;
+
+/** Task runner task schedule definition (@ref task_schedule) */
+struct kv_task_schedules {
+	/** Task ID referenced by schedule */
+	uint8_t task_id;
+	/** TASK_VALID_* value */
+	uint8_t validity;
+	/** TASK_PERIODICITY_* value */
+	uint8_t periodicity_type;
+	/** Duration after which task is requested to terminate */
+	uint32_t timeout_s;
+	/** Task can start when battery is at least this charged */
+	uint8_t battery_start_threshold;
+	/** Task will terminate when battery falls to this level */
+	uint8_t battery_terminate_threshold;
+	/** Periodicity values */
+	uint32_t periodicity;
+	/** Remainder of schedule struct */
+	uint8_t _remainder[];
+} __packed;
+
+/* clang-format off */
+/** Compile time definition for known array length */
+#define _KV_KEY_TASK_SCHEDULES_VAR(num) \
+	struct { \
+		uint8_t task_id; \
+		uint8_t validity; \
+		uint8_t periodicity_type; \
+		uint32_t timeout_s; \
+		uint8_t battery_start_threshold; \
+		uint8_t battery_terminate_threshold; \
+		uint32_t periodicity; \
+		uint8_t _remainder[num]; \
+	} __packed
+/* clang-format on */
+
 /** Keys reserved for secure storage (do not enable) */
 struct kv_secure_storage_reserved {
 	/** Opaque data */
@@ -349,6 +390,16 @@ enum kv_builtin_id {
 #endif
 	/** Maximum number of KV_KEY_GEOFENCE slots that can be enabled */
 	KV_KEY_GEOFENCE_MAX = 115,
+	/** Unique identifier for default schedule set */
+	KV_KEY_TASK_SCHEDULES_DEFAULT_ID = 1000,
+	/** Task runner task schedule definition (@ref task_schedule) */
+	KV_KEY_TASK_SCHEDULES = 1001,
+#ifdef CONFIG_KV_STORE_KEY_TASK_SCHEDULES_RANGE
+	/** End of currently enabled KV_KEY_TASK_SCHEDULES range */
+	KV_KEY_TASK_SCHEDULES_END = 1001 + CONFIG_KV_STORE_KEY_TASK_SCHEDULES_RANGE - 1,
+#endif
+	/** Maximum number of KV_KEY_TASK_SCHEDULES slots that can be enabled */
+	KV_KEY_TASK_SCHEDULES_MAX = 1032,
 	/** Keys reserved for secure storage (do not enable) */
 	KV_KEY_SECURE_STORAGE_RESERVED = 30000,
 #ifdef CONFIG_KV_STORE_KEY_SECURE_STORAGE_RESERVED_RANGE
@@ -374,6 +425,7 @@ enum kv_builtin_size {
 	_KV_KEY_LTE_NETWORKING_MODES_SIZE = sizeof(struct kv_lte_networking_modes),
 	_KV_KEY_BLUETOOTH_PEER_SIZE = sizeof(struct kv_bluetooth_peer),
 	_KV_KEY_GRAVITY_REFERENCE_SIZE = sizeof(struct kv_gravity_reference),
+	_KV_KEY_TASK_SCHEDULES_DEFAULT_ID_SIZE = sizeof(struct kv_task_schedules_default_id),
 };
 
 /* clang-format off */
@@ -398,6 +450,8 @@ enum kv_builtin_size {
 #define _KV_KEY_BLUETOOTH_PEER_TYPE struct kv_bluetooth_peer
 #define _KV_KEY_GRAVITY_REFERENCE_TYPE struct kv_gravity_reference
 #define _KV_KEY_GEOFENCE_TYPE struct kv_geofence
+#define _KV_KEY_TASK_SCHEDULES_DEFAULT_ID_TYPE struct kv_task_schedules_default_id
+#define _KV_KEY_TASK_SCHEDULES_TYPE struct kv_task_schedules
 #define _KV_KEY_SECURE_STORAGE_RESERVED_TYPE struct kv_secure_storage_reserved
 /* clang-format on */
 
@@ -410,27 +464,49 @@ enum kv_builtin_size {
 /* clang-format off */
 /** Number of KV pairs that can be reflected */
 #define KV_REFLECT_NUM ( \
-	IF_ENABLED(CONFIG_KV_STORE_KEY_BLUETOOTH_ADDR, (1 +)) \
-	IF_ENABLED(CONFIG_KV_STORE_KEY_EXFAT_DISK_INFO, (1 +)) \
-	IF_ENABLED(CONFIG_KV_STORE_KEY_BLUETOOTH_CTLR_VERSION, (1 +)) \
-	IF_ENABLED(CONFIG_KV_STORE_KEY_FIXED_LOCATION, (1 +)) \
-	IF_ENABLED(CONFIG_KV_STORE_KEY_WIFI_SSID, (1 +)) \
-	IF_ENABLED(CONFIG_KV_STORE_KEY_WIFI_PSK, (1 +)) \
-	IF_ENABLED(CONFIG_KV_STORE_KEY_NTP_SERVER_URL, (1 +)) \
-	IF_ENABLED(CONFIG_KV_STORE_KEY_EPACKET_UDP_URL, (1 +)) \
-	IF_ENABLED(CONFIG_KV_STORE_KEY_EPACKET_UDP_PORT, (1 +)) \
-	IF_ENABLED(CONFIG_KV_STORE_KEY_LTE_MODEM_MODEL, (1 +)) \
-	IF_ENABLED(CONFIG_KV_STORE_KEY_LTE_MODEM_FIRMWARE_REVISION, (1 +)) \
-	IF_ENABLED(CONFIG_KV_STORE_KEY_LTE_MODEM_ESN, (1 +)) \
-	IF_ENABLED(CONFIG_KV_STORE_KEY_LTE_MODEM_IMEI, (1 +)) \
-	IF_ENABLED(CONFIG_KV_STORE_KEY_LTE_SIM_UICC, (1 +)) \
-	IF_ENABLED(CONFIG_KV_STORE_KEY_LTE_PDP_CONFIG, (1 +)) \
-	IF_ENABLED(CONFIG_KV_STORE_KEY_LTE_NETWORKING_MODES, (1 +)) \
-	IF_ENABLED(CONFIG_KV_STORE_KEY_BLUETOOTH_PEER, (1 +)) \
-	IF_ENABLED(CONFIG_KV_STORE_KEY_GRAVITY_REFERENCE, (1 +)) \
-	IF_ENABLED(CONFIG_KV_STORE_KEY_GEOFENCE, (CONFIG_KV_STORE_KEY_GEOFENCE_RANGE +)) \
-	KV_USER_REFLECT_NUM + \
-	0)
+	IF_ENABLED(CONFIG_KV_STORE_KEY_BLUETOOTH_ADDR, \
+		   (1 +)) \
+	IF_ENABLED(CONFIG_KV_STORE_KEY_EXFAT_DISK_INFO, \
+		   (1 +)) \
+	IF_ENABLED(CONFIG_KV_STORE_KEY_BLUETOOTH_CTLR_VERSION, \
+		   (1 +)) \
+	IF_ENABLED(CONFIG_KV_STORE_KEY_FIXED_LOCATION, \
+		   (1 +)) \
+	IF_ENABLED(CONFIG_KV_STORE_KEY_WIFI_SSID, \
+		   (1 +)) \
+	IF_ENABLED(CONFIG_KV_STORE_KEY_WIFI_PSK, \
+		   (1 +)) \
+	IF_ENABLED(CONFIG_KV_STORE_KEY_NTP_SERVER_URL, \
+		   (1 +)) \
+	IF_ENABLED(CONFIG_KV_STORE_KEY_EPACKET_UDP_URL, \
+		   (1 +)) \
+	IF_ENABLED(CONFIG_KV_STORE_KEY_EPACKET_UDP_PORT, \
+		   (1 +)) \
+	IF_ENABLED(CONFIG_KV_STORE_KEY_LTE_MODEM_MODEL, \
+		   (1 +)) \
+	IF_ENABLED(CONFIG_KV_STORE_KEY_LTE_MODEM_FIRMWARE_REVISION, \
+		   (1 +)) \
+	IF_ENABLED(CONFIG_KV_STORE_KEY_LTE_MODEM_ESN, \
+		   (1 +)) \
+	IF_ENABLED(CONFIG_KV_STORE_KEY_LTE_MODEM_IMEI, \
+		   (1 +)) \
+	IF_ENABLED(CONFIG_KV_STORE_KEY_LTE_SIM_UICC, \
+		   (1 +)) \
+	IF_ENABLED(CONFIG_KV_STORE_KEY_LTE_PDP_CONFIG, \
+		   (1 +)) \
+	IF_ENABLED(CONFIG_KV_STORE_KEY_LTE_NETWORKING_MODES, \
+		   (1 +)) \
+	IF_ENABLED(CONFIG_KV_STORE_KEY_BLUETOOTH_PEER, \
+		   (1 +)) \
+	IF_ENABLED(CONFIG_KV_STORE_KEY_GRAVITY_REFERENCE, \
+		   (1 +)) \
+	IF_ENABLED(CONFIG_KV_STORE_KEY_GEOFENCE, \
+		   (CONFIG_KV_STORE_KEY_GEOFENCE_RANGE +)) \
+	IF_ENABLED(CONFIG_KV_STORE_KEY_TASK_SCHEDULES_DEFAULT_ID, \
+		   (1 +)) \
+	IF_ENABLED(CONFIG_KV_STORE_KEY_TASK_SCHEDULES, \
+		   (CONFIG_KV_STORE_KEY_TASK_SCHEDULES_RANGE +)) \
+	KV_USER_REFLECT_NUM + 0)
 /* clang-format on */
 
 /** Convert key ID to key type */
