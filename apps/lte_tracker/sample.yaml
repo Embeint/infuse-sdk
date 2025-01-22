@@ -5,14 +5,27 @@ common:
   build_only: true
   required_snippets:
     - infuse
-  platform_allow:
-    - nrf9161dk/nrf9161/ns
-    - nrf9151dk/nrf9151/ns
-    - tauro/nrf9151/ns
-  integration_platforms:
-    - nrf9161dk/nrf9161/ns
-    - nrf9151dk/nrf9151/ns
-    - tauro/nrf9151/ns
 tests:
   sample.app.lte_tracker:
+    platform_allow:
+      - nrf9160dk/nrf9160/ns
+      - nrf9161dk/nrf9161/ns
+      - nrf9151dk/nrf9151/ns
+      - tauro/nrf9151/ns
+    integration_platforms:
+      - nrf9161dk/nrf9161/ns
+      - nrf9151dk/nrf9151/ns
+      - tauro/nrf9151/ns
     tags: app
+  sample.app.lte_tracker.wifi_scanner:
+    platform_allow:
+      - nrf9160dk/nrf9160/ns
+      - nrf9161dk/nrf9161/ns
+      - nrf9151dk/nrf9151/ns
+    integration_platforms:
+      - nrf9161dk/nrf9161/ns
+      - nrf9151dk/nrf9151/ns
+    tags: app
+    extra_args:
+      - EXTRA_CONF_FILE=wifi_scanning.conf
+      - SHIELD=nrf7002ek

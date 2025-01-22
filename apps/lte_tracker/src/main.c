@@ -30,17 +30,35 @@ static const struct task_schedule schedules[] = {
 		.periodicity.lockout.lockout_s = 5 * SEC_PER_MIN,
 		.task_args.infuse.network_scan =
 			{
+#ifdef CONFIG_WIFI
+				.flags = TASK_NETWORK_SCAN_FLAGS_LTE_CELLS |
+					 TASK_NETWORK_SCAN_FLAGS_WIFI_CELLS |
+					 TASK_NETWORK_SCAN_FLAGS_SKIP_LTE_IF_WIFI_GOOD,
+				.wifi =
+					{
+						.flags =
+							TASK_NETWORK_SCAN_WIFI_FLAGS_SCAN_PROGRESSIVE,
+						.desired_aps = 4,
+						.max_aps = 8,
+					},
+				.lte =
+					{
+						.desired_cells = 4,
+					},
+#else
 				.flags = TASK_NETWORK_SCAN_FLAGS_LTE_CELLS,
 				.lte =
 					{
 						.desired_cells = 4,
 					},
+#endif
 			},
 		.task_logging =
 			{
 				{
 					.loggers = TDF_DATA_LOGGER_SERIAL | TDF_DATA_LOGGER_UDP,
-					.tdf_mask = TASK_NETWORK_SCAN_LOG_LTE_CELLS,
+					.tdf_mask = TASK_NETWORK_SCAN_LOG_WIFI_AP |
+						    TASK_NETWORK_SCAN_LOG_LTE_CELLS,
 				},
 			},
 	},
