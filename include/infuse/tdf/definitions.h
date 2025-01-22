@@ -91,6 +91,12 @@ struct tdf_struct_bt_addr_le {
 	uint8_t val[6];
 } __packed;
 
+/** IEEE EUI-48 address */
+struct tdf_struct_eui48 {
+	/** Address bytes */
+	uint8_t val[6];
+} __packed;
+
 /**
  * @}
  */
@@ -467,6 +473,16 @@ struct tdf_lte_tac_cells {
 		struct tdf_struct_lte_cell_neighbour neighbours[_count];                           \
 	} __packed;
 
+/** Wi-Fi access point information */
+struct tdf_wifi_ap_info {
+	/** Access Point BSSID */
+	struct tdf_struct_eui48 bssid;
+	/** Wi-Fi channel number */
+	uint8_t channel;
+	/** Received signal strength (dBm) */
+	int8_t rsrp;
+} __packed;
+
 /** Example array type */
 struct tdf_array_type {
 	/** I am an array of length 4 */
@@ -537,6 +553,8 @@ enum tdf_builtin_id {
 	TDF_ALGORITHM_CLASS_TIME_SERIES = 33,
 	/** Information on cells in a tracking area */
 	TDF_LTE_TAC_CELLS = 34,
+	/** Wi-Fi access point information */
+	TDF_WIFI_AP_INFO = 35,
 	/** Example array type */
 	TDF_ARRAY_TYPE = 100,
 	/** End of builtin TDF range */
@@ -576,6 +594,7 @@ enum tdf_builtin_id {
 #define _TDF_ALGORITHM_CLASS_HISTOGRAM_TYPE   struct tdf_algorithm_class_histogram
 #define _TDF_ALGORITHM_CLASS_TIME_SERIES_TYPE struct tdf_algorithm_class_time_series
 #define _TDF_LTE_TAC_CELLS_TYPE               struct tdf_lte_tac_cells
+#define _TDF_WIFI_AP_INFO_TYPE                struct tdf_wifi_ap_info
 #define _TDF_ARRAY_TYPE_TYPE                  struct tdf_array_type
 
 /** Size of builtin TDF definitions */
@@ -611,6 +630,7 @@ enum tdf_builtin_size {
 	_TDF_ALGORITHM_CLASS_HISTOGRAM_SIZE = sizeof(struct tdf_algorithm_class_histogram),
 	_TDF_ALGORITHM_CLASS_TIME_SERIES_SIZE = sizeof(struct tdf_algorithm_class_time_series),
 	_TDF_LTE_TAC_CELLS_SIZE = sizeof(struct tdf_lte_tac_cells),
+	_TDF_WIFI_AP_INFO_SIZE = sizeof(struct tdf_wifi_ap_info),
 	_TDF_ARRAY_TYPE_SIZE = sizeof(struct tdf_array_type),
 };
 

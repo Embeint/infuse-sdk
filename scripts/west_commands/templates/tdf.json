@@ -57,6 +57,12 @@
                 {"name": "type", "type": "uint8_t", "description": "Address type (0 == Public, 1 == Random)"},
                 {"name": "val", "type": "uint8_t", "num": 6, "display": {"fmt": "hex", "digits": 12}, "conversion": {"int": "little"}, "description": "Address bytes"}
             ]
+        },
+        "tdf_struct_eui48": {
+            "description": "IEEE EUI-48 address",
+            "fields": [
+                {"name": "val", "type": "uint8_t", "num": 6, "display": {"fmt": "hex", "digits": 12}, "conversion": {"int": "little"}, "description": "Address bytes"}
+            ]
         }
     },
     "definitions": {
@@ -348,6 +354,15 @@
                 {"name": "rsrp", "type": "uint8_t", "description": "Reference signal received power (255 = Unknown)", "display": {"postfix": "dBm"}, "conversion": {"m": -1, "c": 0}},
                 {"name": "rsrq", "type": "int8_t", "description": "Reference signal received quality (-128 = Unknown)", "display": {"postfix": "dB"}},
                 {"name": "neighbours", "type": "struct tdf_struct_lte_cell_neighbour", "num": 0, "description": "Neighbouring cell measurements"}
+            ]
+        },
+        "35" : {
+            "name": "WIFI_AP_INFO",
+            "description": "Wi-Fi access point information",
+            "fields": [
+                {"name": "bssid", "type": "struct tdf_struct_eui48", "description": "Access Point BSSID"},
+                {"name": "channel", "type": "uint8_t", "description": "Wi-Fi channel number"},
+                {"name": "rsrp", "type": "int8_t", "description": "Received signal strength (dBm)"}
             ]
         },
         "100": {
