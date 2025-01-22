@@ -81,7 +81,7 @@ configdefault WIFI_NRF700X
 configdefault NET_L2_ETHERNET
 	default y if WIFI_NRF700X
 configdefault WPA_SUPP
-	default y if WIFI_NRF700X
+	default y if WIFI_NRF700X && (WIFI_USAGE_MODE_STA || WIFI_USAGE_MODE_STA_AP)
 configdefault NET_CONNECTION_MANAGER_MONITOR_STACK_SIZE
 	default 4096 if NRF700X_STA_MODE
 	default 1024 if NRF_MODEM_LIB_NET_IF
@@ -89,6 +89,32 @@ configdefault NRF_WIFI_IF_AUTO_START
 	default n
 configdefault ZVFS_OPEN_MAX
 	default 20 if WIFI_NRF700X
+
+choice NRF700X_OPER_MODES
+	default NRF700X_SCAN_ONLY if WIFI_USAGE_MODE_SCAN_ONLY
+endchoice
+
+# Lower resource requirements in scan only mode
+if NRF700X_SCAN_ONLY
+configdefault HEAP_MEM_POOL_SIZE
+	default 30000
+configdefault NET_BUF_RX_COUNT
+	default 1
+configdefault NET_BUF_TX_COUNT
+	default 1
+configdefault NET_PKT_RX_COUNT
+	default 1
+configdefault NET_PKT_TX_COUNT
+	default 1
+configdefault NET_TC_TX_COUNT
+	default 1
+configdefault NET_MAX_CONTEXTS
+	default 1
+configdefault NET_TX_STACK_SIZE
+	default 1024
+configdefault NET_RX_STACK_SIZE
+	default 1024
+endif # NRF700X_SCAN_ONLY
 
 # MbedTLS requirements for WiFi connectivity
 configdefault PSA_WANT_KEY_TYPE_AES
