@@ -118,12 +118,33 @@ endif # TASK_RUNNER_TASK_GNSS_UBX
 
 config TASK_RUNNER_TASK_NETWORK_SCAN
 	bool "LTE Cell scanning task"
-	depends on LTE_LINK_CONTROL
+	depends on LTE_LINK_CONTROL || WIFI
 
 if TASK_RUNNER_TASK_NETWORK_SCAN
 
 module = TASK_NETWORK_SCAN
 module-str = NETWORK_SCAN task
 source "subsys/logging/Kconfig.template.log_config"
+
+config TASK_RUNNER_TASK_NETWORK_SCAN_LTE_MAX_NEIGHBOURS
+	int "Maximum number of neighbour cells that can be recorded"
+	depends on LTE_LINK_CONTROL
+	range 1 16
+	default 8
+
+config TASK_RUNNER_TASK_NETWORK_SCAN_LTE_MAX_GCI
+	int "Maximum number of global cells that can be recorded"
+	depends on LTE_LINK_CONTROL
+	range 1 15
+	default 8
+
+config TASK_RUNNER_TASK_NETWORK_SCAN_WIFI_MAX_APS
+	int "Maximum number of Wi-Fi APs that can be recorded"
+	depends on WIFI
+	range 1 32
+	default 8
+
+configdefault WIFI_MGMT_SCAN_CHAN_MAX_MANUAL
+	default 8
 
 endif # TASK_RUNNER_TASK_NETWORK_SCAN
