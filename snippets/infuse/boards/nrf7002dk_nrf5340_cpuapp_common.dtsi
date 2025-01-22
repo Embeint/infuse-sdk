@@ -1,4 +1,4 @@
-#include "infuse_bluetooth.dtsi"
+#include <common/infuse_bluetooth.dtsi>
 
 /* MCUboot secondary on external flash */
 /delete-node/ &slot0_partition;

@@ -1,5 +1,5 @@
 #include <common/nordic/infuse_nrf52840.dtsi>
-#include "infuse_bluetooth.dtsi"
+#include <common/infuse_bluetooth.dtsi>
 
 / {
 	chosen {
