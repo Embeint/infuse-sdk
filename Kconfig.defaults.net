@@ -2,6 +2,26 @@
 
 if NETWORKING
 
+if WIFI
+choice WIFI_USAGE_MODE
+	prompt "Desired application usage of the Wi-Fi driver"
+	default WIFI_USAGE_MODE_STA
+
+config WIFI_USAGE_MODE_STA
+	bool "Wi-Fi interface acts as a Station"
+
+config WIFI_USAGE_MODE_AP
+	bool "Wi-Fi interface acts as an Access Point"
+
+config WIFI_USAGE_MODE_STA_AP
+	bool "Wi-Fi interface acts as an Access Point and Station"
+
+config WIFI_USAGE_MODE_SCAN_ONLY
+	bool "Wi-Fi interface used for SSID scanning only"
+
+endchoice # WIFI_USAGE_MODE
+endif # WIFI
+
 # Core Protocols
 configdefault NET_UDP
 	default y
@@ -70,8 +90,8 @@ endif # INFUSE_COAP && !NRF_MODEM_LIB
 configdefault NET_CONNECTION_MANAGER
 	default y
 configdefault NET_CONNECTION_MANAGER_CONNECTIVITY_WIFI_MGMT
-	default y if WIFI
+	default y if (WIFI_USAGE_MODE_STA || WIFI_USAGE_MODE_STA_AP)
 configdefault CONN_MGR_WIFI_KV_STORE
-	default y if WIFI
+	default y if (WIFI_USAGE_MODE_STA || WIFI_USAGE_MODE_STA_AP)
 
 endif # NETWORKING
