@@ -1,5 +1,5 @@
 #include <zephyr/dt-bindings/gpio/gpio.h>
-#include "infuse_bluetooth.dtsi"
+#include <common/infuse_bluetooth.dtsi>
 
 /* Dynamic power domains, not regulators that are always on */
 /delete-node/ &regulator_3v3;

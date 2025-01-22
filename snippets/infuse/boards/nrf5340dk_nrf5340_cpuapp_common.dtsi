@@ -1,4 +1,4 @@
-#include "infuse_bluetooth.dtsi"
+#include <common/infuse_bluetooth.dtsi>
 
 / {
 	epacket_serial: epacket_serial {
