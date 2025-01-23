@@ -10,6 +10,11 @@ west-commands:
       - name: cloudgen
         class: cloudgen
         help: generate files from Infuse-IoT cloud definitions
+  - file: scripts/west_commands/network-keygen.py
+    commands:
+      - name: network-keygen
+        class: network_keygen
+        help: generate a Infuse Network Key YAML file
   - file: scripts/west_commands/release-build.py
     commands:
       - name: release-build
