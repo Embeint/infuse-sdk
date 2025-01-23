@@ -132,7 +132,7 @@ the API.
   * Environmental sensor sampling
   * GNSS location retrieval
   * IMU controller (3 or 6 axis)
-  * LTE Cell scanning
+  * Wi-Fi Access Point & LTE Cell scanning
   * :ref:`tdf_api` logger
 
 API Reference
