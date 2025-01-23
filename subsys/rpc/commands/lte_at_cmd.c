@@ -30,10 +30,11 @@ struct net_buf *rpc_command_lte_at_cmd(struct net_buf *request)
 	if (request->data[request->len - 1] != 0x00) {
 		return rpc_response_simple_req(request, -EINVAL, &rsp, sizeof(rsp));
 	}
+#ifdef CONFIG_INFUSE_NRF_MODEM_MONITOR
 	if (!nrf_modem_monitor_is_at_safe()) {
 		return rpc_response_simple_req(request, -EAGAIN, &rsp, sizeof(rsp));
 	}
-
+#endif
 	/* Allocate response object */
 	rsp_buf = rpc_response_simple_req(request, 0, &rsp, sizeof(rsp));
 
