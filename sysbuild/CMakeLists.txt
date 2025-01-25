@@ -34,7 +34,11 @@ if(SB_CONFIG_BT_HCI_IPC_BOARD_TARGET_CPUCLUSTER)
 
   set(${NET_APP}_CONF_FILE
     ${CMAKE_CURRENT_SOURCE_DIR}/${NET_APP}/infuse.conf
-    CACHE INTERNAL ""
+    CACHE INTERNAL "Infuse-IoT HCI IPC configuration file"
+  )
+  set(${NET_APP}_DTC_OVERLAY_FILE
+      ${CMAKE_CURRENT_SOURCE_DIR}/${NET_APP}/infuse.overlay
+    CACHE INTERNAL "Infuse-IoT HCI IPC devicetree overlay"
   )
   if(${SB_CONFIG_BOOTLOADER_MCUBOOT})
     sysbuild_add_dependencies(FLASH mcuboot ${NET_APP})
