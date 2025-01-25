@@ -1,4 +1,8 @@
 / {
+	aliases {
+		gnss = &gnss_m8_emul;
+	};
+
 	gnss_m8_emul: gnss_m8_emul {
 		compatible = "u-blox,m8-emul";
 		zephyr,pm-device-runtime-auto;

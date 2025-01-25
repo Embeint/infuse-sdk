@@ -3,11 +3,11 @@
 configdefault SENSOR
 	default y
 configdefault INFUSE_IMU
-	default y
+	default y if "$(dt_alias_enabled,imu0)"
 configdefault GNSS
-	default y
+	default y if "$(dt_alias_enabled,gnss)"
 configdefault FUEL_GAUGE
-	default y
+	default y if "$(dt_alias_enabled,fuel-gauge0)"
 
 # We want to use UBX messages directly
 configdefault GNSS_U_BLOX_NO_API_COMPAT

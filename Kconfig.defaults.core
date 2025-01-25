@@ -129,7 +129,7 @@ configdefault WDT_DISABLE_AT_BOOT
 
 # Power Management
 configdefault POWER_DOMAIN
-	default y
+	default y if "$(dt_has_compat,power-domain-gpio)"
 
 # Random numbers
 configdefault ENTROPY_GENERATOR
