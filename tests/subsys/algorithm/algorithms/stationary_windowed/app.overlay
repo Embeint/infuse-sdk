@@ -1,4 +1,8 @@
 / {
+	aliases {
+		imu0 = &imu_emul;
+	};
+
 	imu_emul: imu_emul {
 		compatible = "embeint,imu-emul";
 	};
