@@ -14,6 +14,7 @@
 #include <infuse/epacket/packet.h>
 #include <infuse/epacket/interface.h>
 #include <infuse/epacket/interface/epacket_serial.h>
+#include <infuse/work_q.h>
 
 #ifdef CONFIG_INFUSE_SECURITY
 #include <infuse/security.h>
@@ -138,7 +139,7 @@ int epacket_receive(const struct device *dev, k_timeout_t timeout)
 	}
 
 	/* Schedule the receive termination work */
-	return k_work_reschedule(&data->receive_timeout, timeout);
+	return infuse_work_reschedule(&data->receive_timeout, timeout);
 }
 
 void epacket_raw_receive_handler(struct net_buf *buf)
