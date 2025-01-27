@@ -212,13 +212,14 @@ jobs:
           ccache -p
           ccache -z -s -vv
 
-      - name: Run Bluetooth Tests with BabbleSim
+      - name: Run tests with BabbleSim
         run: |
           export ZEPHYR_BASE=${PWD}/zephyr
           export INFUSE_BASE=${PWD}/infuse-sdk
           export WORK_DIR=${PWD}/bsim_out
           rm -rf $WORK_DIR
           $INFUSE_BASE/tests/bsim/ci.bt.sh
+          $INFUSE_BASE/tests/bsim/ci.serial.sh
 
       - name: Print ccache stats
         if: always()

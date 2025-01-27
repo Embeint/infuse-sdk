@@ -7,6 +7,7 @@ export INFUSE_BASE=`pwd`/infuse-sdk
 export WORK_DIR=`pwd`/bsim_out
 # Run BabbleSim tests
 $INFUSE_BASE/tests/bsim/ci.bt.sh
+$INFUSE_BASE/tests/bsim/ci.serial.sh
 
 # Disable branch coverage on LOG_ and __ASSERT macros
 BRANCH_LOG="(^\s*LOG_(?:HEXDUMP_)?(?:DBG|INF|WRN|ERR)\(.*)"
