@@ -4,4 +4,22 @@
 	chosen {
 		infuse,kv-partition = &storage_partition;
 	};
+
+	epacket_serial: epacket_serial {
+		compatible = "embeint,epacket-serial";
+		serial = <&uart0>;
+	};
+
+	data_logger_serial: data_logger_serial {
+		compatible = "embeint,data-logger-epacket", "embeint,data-logger";
+		epacket = <&epacket_serial>;
+
+		tdf_logger_serial: tdf_logger_serial {
+			compatible = "embeint,tdf-data-logger";
+		};
+	};
+};
+
+&uart0 {
+	zephyr,pm-device-runtime-auto;
 };
