@@ -99,10 +99,9 @@ static void epacket_serial_send(const struct device *dev, struct net_buf *buf)
 
 	/* Encrypt the payload */
 	if (epacket_serial_encrypt(buf) < 0) {
-		LOG_WRN("Failed to encrypt");
-		epacket_notify_tx_result(dev, buf, -EIO);
-		net_buf_unref(buf);
-		return;
+		LOG_DBG("Failed to encrypt");
+		rc = -EIO;
+		goto error;
 	}
 
 	/* Push frame header on */
@@ -115,9 +114,8 @@ static void epacket_serial_send(const struct device *dev, struct net_buf *buf)
 	/* Ensure serial port is powered up */
 	rc = pm_device_runtime_get(config->backend);
 	if (rc < 0) {
-		epacket_notify_tx_result(dev, buf, -ENODEV);
-		net_buf_unref(buf);
-		return;
+		rc = -ENODEV;
+		goto error;
 	}
 
 	/* Queue packet for transmission */
@@ -128,12 +126,14 @@ static void epacket_serial_send(const struct device *dev, struct net_buf *buf)
 		return;
 	} else if (rc != 0) {
 		LOG_ERR("Failed to queue buffer (%d)", rc);
-		epacket_notify_tx_result(dev, buf, rc);
-		net_buf_unref(buf);
 		pm_device_runtime_put(dev);
-		return;
+		goto error;
 	}
 	data->pending_tx = buf;
+	return;
+error:
+	epacket_notify_tx_result(dev, buf, rc);
+	net_buf_unref(buf);
 }
 
 static int epacket_receive_control(const struct device *dev, bool enable)
