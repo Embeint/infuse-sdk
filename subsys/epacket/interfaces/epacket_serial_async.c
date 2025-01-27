@@ -142,12 +142,18 @@ static int epacket_receive_control(const struct device *dev, bool enable)
 	struct epacket_serial_data *data = dev->data;
 	int rc;
 
+	/* STM32 driver flushes the DMA when the line IDLE interrupt fires if timeout == 0,
+	 * which is ideal. Otherwise 1 byte at 115200 baud is 8 uS, 500 uS should be a good
+	 * timeout value.
+	 */
+	int32_t rx_timeout = IS_ENABLED(CONFIG_UART_STM32) ? 0 : 500;
+
 	LOG_DBG("%d", enable);
 	if (enable) {
 		rc = pm_device_runtime_get(config->backend);
 		if (rc == 0) {
 			rc = uart_rx_enable(config->backend, data->async_rx_buffer[0],
-					    sizeof(data->async_rx_buffer[0]), 0);
+					    sizeof(data->async_rx_buffer[0]), rx_timeout);
 			data->async_rx_buffer_idx = 1;
 		}
 	} else {
