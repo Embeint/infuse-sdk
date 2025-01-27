@@ -70,6 +70,12 @@ jobs:
           echo "github.base_ref: ${{ github.base_ref }}"
           echo "github.ref_name: ${{ github.ref_name }}"
 
+      - name: Generate network key
+        run: |
+          # This generates a random network key for CI purposes
+          # For real applications, this key MUST be generated once and re-used on each build
+          python3 infuse-sdk/scripts/network_key_gen.py --id 0x123456 sample_network.yaml
+
       - name: Test application release
         run: |
           west release-build -r infuse-sdk/samples/releases/data_logger-tauro.yaml --skip-git
