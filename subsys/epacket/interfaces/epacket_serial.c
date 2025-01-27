@@ -134,8 +134,6 @@ static void interrupt_handler(const struct device *dev, void *user_data)
 			pm_device_runtime_put_async(dev, K_MSEC(50));
 
 			LOG_DBG("sent %d/%d", sent, available);
-		} else {
-			uart_irq_tx_disable(dev);
 		}
 		irq_unlock(key);
 	}
