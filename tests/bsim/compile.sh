@@ -13,5 +13,6 @@ set -ue
 source ${ZEPHYR_BASE}/tests/bsim/sh_common.source
 
 run_in_background ${INFUSE_BASE}/tests/bsim/bluetooth/compile.sh
+run_in_background ${INFUSE_BASE}/tests/bsim/serial/compile.sh
 
 wait_for_background_jobs
