@@ -307,6 +307,10 @@ static void infuse_modem_info(int ret, void *ctx)
 	static bool modem_info_stored;
 	int rc;
 
+	/* Ensure modem commands don't block forever */
+	rc = nrf_modem_at_sem_timeout_set(CONFIG_INFUSE_NRF_MODEM_MONITOR_AT_TIMEOUT_MS);
+	__ASSERT_NO_MSG(rc == 0);
+
 	/* Enable notifications of BIP events */
 	rc = nrf_modem_at_printf("%s", "AT%USATEV=1");
 	__ASSERT_NO_MSG(rc == 0);
