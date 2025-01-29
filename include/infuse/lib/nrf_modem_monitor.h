@@ -42,6 +42,9 @@ struct nrf_modem_network_state {
  * The nRF modem can be unresponsive to AT commands while a PDN connectivity request
  * is ongoing. Non-critical AT commands should be skipped in this state.
  *
+ * This command will always return true on nRF9160 devices due to legacy modem firmware
+ * limitations (No ability to monitor PDN status).
+ *
  * @retval true AT command interface can be used
  * @retval false AT command interface should not be used
  */

@@ -55,7 +55,11 @@ static struct {
 
 bool nrf_modem_monitor_is_at_safe(void)
 {
+#ifdef CONFIG_SOC_NRF9160
+	return true;
+#else
 	return !atomic_test_bit(&monitor.flags, FLAGS_PDN_CONN_IN_PROGRESS);
+#endif /* CONFIG_SOC_NRF9160 */
 }
 
 void nrf_modem_monitor_network_state(struct nrf_modem_network_state *state)
@@ -311,9 +315,11 @@ static void infuse_modem_info(int ret, void *ctx)
 	rc = nrf_modem_at_sem_timeout_set(CONFIG_INFUSE_NRF_MODEM_MONITOR_AT_TIMEOUT_MS);
 	__ASSERT_NO_MSG(rc == 0);
 
+#ifndef CONFIG_SOC_NRF9160
 	/* Enable notifications of BIP events */
 	rc = nrf_modem_at_printf("%s", "AT%USATEV=1");
 	__ASSERT_NO_MSG(rc == 0);
+#endif /* !CONFIG_SOC_NRF9160 */
 
 	/* Enable connectivity stats */
 	rc = nrf_modem_at_printf("%s", "AT%XCONNSTAT=1");
@@ -368,6 +374,8 @@ static void infuse_modem_info(int ret, void *ctx)
 	}
 }
 
+#ifndef CONFIG_SOC_NRF9160
+
 /* AT monitor for USAT notifications */
 AT_MONITOR(usat_notification, "%USATEV: BIP", usat_mon);
 
@@ -381,6 +389,8 @@ static void usat_mon(const char *notif)
 	/* Output the BIP notification, minus the newline */
 	LOG_INF("%.*s", strlen(notif) - 1, notif);
 }
+
+#endif /* !CONFIG_SOC_NRF9160 */
 
 void lte_net_if_modem_fault_app_handler(struct nrf_modem_fault_info *fault_info)
 {
