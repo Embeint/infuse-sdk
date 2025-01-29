@@ -133,6 +133,13 @@ static struct key_value_slot_definition kv_slots[] = {
 		.flags = KV_FLAGS_REFLECT,
 	},
 #endif /* CONFIG_KV_STORE_KEY_BLUETOOTH_PEER */
+#ifdef CONFIG_KV_STORE_KEY_GRAVITY_REFERENCE
+	{
+		.key = KV_KEY_GRAVITY_REFERENCE,
+		.range = 1,
+		.flags = KV_FLAGS_REFLECT,
+	},
+#endif /* CONFIG_KV_STORE_KEY_GRAVITY_REFERENCE */
 #ifdef CONFIG_KV_STORE_KEY_GEOFENCE
 	{
 		.key = KV_KEY_GEOFENCE,
