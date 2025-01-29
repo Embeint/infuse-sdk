@@ -79,6 +79,41 @@ uint16_t math_vector_xy_magnitude(int16_t x, int16_t y);
 uint16_t math_vector_xyz_magnitude(int16_t x, int16_t y, int16_t z);
 
 /**
+ * @brief Compute the dot product of two XYZ vectors
+ *
+ * The maximum value of the output is 1.5 * (2 ** 31), when all inputs are INT16_MIN.
+ *
+ * @param ax A vector, X component
+ * @param ay A vector, Y component
+ * @param az A vector, Z component
+ * @param bx B vector, X component
+ * @param by B vector, Y component
+ * @param bz B vector, Z component
+ *
+ * @return int64_t Dot product of the two vectors
+ */
+int64_t math_vector_xyz_dot_product(int16_t ax, int16_t ay, int16_t az, int16_t bx, int16_t by,
+				    int16_t bz);
+
+/**
+ * @brief Compute the dot product of two XYZ vectors
+ *
+ * A faster variant of @ref math_vector_xyz_dot_product that assumes the dot product fits
+ * in an int32_t, which will be true for most, but not all, inputs.
+ *
+ * @param ax A vector, X component
+ * @param ay A vector, Y component
+ * @param az A vector, Z component
+ * @param bx B vector, X component
+ * @param by B vector, Y component
+ * @param bz B vector, Z component
+ *
+ * @return int32_t Dot product of the two vectors
+ */
+int32_t math_vector_xyz_dot_product_fast(int16_t ax, int16_t ay, int16_t az, int16_t bx, int16_t by,
+					 int16_t bz);
+
+/**
  * @brief Get the next N bits of a bitmask, with rollover
  *
  * @param bitmask Bitmask to iterate over

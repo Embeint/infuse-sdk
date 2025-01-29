@@ -87,6 +87,32 @@ uint16_t math_vector_xyz_magnitude(int16_t x, int16_t y, int16_t z)
 	return math_sqrt32(sq_magnitude);
 }
 
+int64_t math_vector_xyz_dot_product(int16_t ax, int16_t ay, int16_t az, int16_t bx, int16_t by,
+				    int16_t bz)
+{
+	/* Maximum absolute value of each axis is 2^15
+	 * Each axis squared is (2^15 * 2^15) == 2^30
+	 * The sum of each axis squared is (3 * 2^30) == (1.5 * 2^31) > 2^31
+	 * Therefore if all the vectors are maxed, we would overflow an int31_t
+	 */
+	int64_t dx = ax * bx;
+	int64_t dy = ay * by;
+	int64_t dz = az * bz;
+
+	return dx + dy + dz;
+}
+
+int32_t math_vector_xyz_dot_product_fast(int16_t ax, int16_t ay, int16_t az, int16_t bx, int16_t by,
+					 int16_t bz)
+{
+	/* Assume the potential overflow in math_vector_xyz_dot_product doesn't happen */
+	int32_t dx = ax * bx;
+	int32_t dy = ay * by;
+	int32_t dz = az * bz;
+
+	return dx + dy + dz;
+}
+
 uint32_t math_bitmask_get_next_bits(uint32_t bitmask, uint8_t start_idx, uint8_t *next_idx,
 				    uint8_t num_bits)
 {
