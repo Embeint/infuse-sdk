@@ -251,6 +251,16 @@ struct kv_bluetooth_peer {
 	struct bt_addr_le address;
 } __packed;
 
+/** Reference gravity vector for tilt calculations */
+struct kv_gravity_reference {
+	/** X axis component of gravity vector */
+	int16_t x;
+	/** Y axis component of gravity vector */
+	int16_t y;
+	/** Z axis component of gravity vector */
+	int16_t z;
+} __packed;
+
 /** Array of points defining a closed polygon */
 struct kv_geofence {
 	/** Points in geofence */
@@ -319,6 +329,8 @@ enum kv_builtin_id {
 	KV_KEY_LTE_PDP_CONFIG = 45,
 	/** Bluetooth peer device */
 	KV_KEY_BLUETOOTH_PEER = 50,
+	/** Reference gravity vector for tilt calculations */
+	KV_KEY_GRAVITY_REFERENCE = 60,
 	/** Array of points defining a closed polygon */
 	KV_KEY_GEOFENCE = 100,
 #ifdef CONFIG_KV_STORE_KEY_GEOFENCE_RANGE
@@ -350,6 +362,7 @@ enum kv_builtin_size {
 	_KV_KEY_EPACKET_UDP_PORT_SIZE = sizeof(struct kv_epacket_udp_port),
 	_KV_KEY_LTE_MODEM_IMEI_SIZE = sizeof(struct kv_lte_modem_imei),
 	_KV_KEY_BLUETOOTH_PEER_SIZE = sizeof(struct kv_bluetooth_peer),
+	_KV_KEY_GRAVITY_REFERENCE_SIZE = sizeof(struct kv_gravity_reference),
 };
 
 /* clang-format off */
@@ -371,6 +384,7 @@ enum kv_builtin_size {
 #define _KV_KEY_LTE_SIM_UICC_TYPE struct kv_lte_sim_uicc
 #define _KV_KEY_LTE_PDP_CONFIG_TYPE struct kv_lte_pdp_config
 #define _KV_KEY_BLUETOOTH_PEER_TYPE struct kv_bluetooth_peer
+#define _KV_KEY_GRAVITY_REFERENCE_TYPE struct kv_gravity_reference
 #define _KV_KEY_GEOFENCE_TYPE struct kv_geofence
 #define _KV_KEY_SECURE_STORAGE_RESERVED_TYPE struct kv_secure_storage_reserved
 /* clang-format on */
@@ -400,6 +414,7 @@ enum kv_builtin_size {
 	IF_ENABLED(CONFIG_KV_STORE_KEY_LTE_SIM_UICC, (1 +)) \
 	IF_ENABLED(CONFIG_KV_STORE_KEY_LTE_PDP_CONFIG, (1 +)) \
 	IF_ENABLED(CONFIG_KV_STORE_KEY_BLUETOOTH_PEER, (1 +)) \
+	IF_ENABLED(CONFIG_KV_STORE_KEY_GRAVITY_REFERENCE, (1 +)) \
 	IF_ENABLED(CONFIG_KV_STORE_KEY_GEOFENCE, (CONFIG_KV_STORE_KEY_GEOFENCE_RANGE +)) \
 	KV_USER_REFLECT_NUM + \
 	0)

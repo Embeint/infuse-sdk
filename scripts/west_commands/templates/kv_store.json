@@ -193,6 +193,16 @@
                 {"name": "address", "type": "struct bt_addr_le", "description": "Peer device Bluetooth address"}
             ]
         },
+        "60": {
+            "name": "GRAVITY_REFERENCE",
+            "description": "Reference gravity vector for tilt calculations",
+            "reflect": true,
+            "fields": [
+                {"name": "x", "type": "int16_t", "description": "X axis component of gravity vector"},
+                {"name": "y", "type": "int16_t", "description": "Y axis component of gravity vector"},
+                {"name": "z", "type": "int16_t", "description": "Z axis component of gravity vector"}
+            ]
+        },
         "100": {
             "name": "GEOFENCE",
             "range": 16,

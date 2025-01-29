@@ -101,6 +101,11 @@ config KV_STORE_KEY_BLUETOOTH_PEER
 	help
 	  Bluetooth peer device
 
+config KV_STORE_KEY_GRAVITY_REFERENCE
+	bool "Enable KV key GRAVITY_REFERENCE"
+	help
+	  Reference gravity vector for tilt calculations
+
 config KV_STORE_KEY_GEOFENCE
 	bool "Enable KV key GEOFENCE"
 	help
