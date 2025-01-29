@@ -11,6 +11,7 @@
 #define INFUSE_SDK_INCLUDE_INFUSE_TASK_RUNNER_TASKS_IMU_H_
 
 #include <zephyr/kernel.h>
+#include <math.h>
 
 #include <infuse/drivers/imu.h>
 #include <infuse/task_runner/task.h>
@@ -30,12 +31,50 @@ struct imu_magnitude_array {
 	uint32_t magnitudes[];
 };
 
+/* Accelerometer tilt broadcast structure */
+struct imu_tilt_array {
+	/* Metadata for magnitude samples */
+	struct imu_sensor_meta meta;
+	/* Average tilt across the n samples */
+	int32_t cos_tilt_avg;
+	/* Linear array of all tilts */
+	int32_t cos_tilts[];
+};
+
 /* Create type that holds a given number of IMU magnitude samples */
 #define IMU_MAG_ARRAY_TYPE_DEFINE(type_name, max_samples)                                          \
 	struct type_name {                                                                         \
 		struct imu_sensor_meta meta;                                                       \
 		uint32_t magnitudes[max_samples];                                                  \
 	}
+
+/* Create type that holds a given number of IMU magnitude samples */
+#define IMU_TILT_ARRAY_TYPE_DEFINE(type_name, max_samples)                                         \
+	struct type_name {                                                                         \
+		struct imu_sensor_meta meta;                                                       \
+		int32_t tilts[max_samples];                                                        \
+		int32_t tilt_avg;                                                                  \
+	}
+
+/**
+ * @brief Converts an angle in radians to a scaled integer cosine tilt value.
+ *
+ * Uses `arm_cos_f32()` to compute the cosine and scales it by `TILT_SCALE_FACTOR`.
+ *
+ * @param radians Angle in radians.
+ * @return Scaled cosine tilt value.
+ */
+int32_t imu_radians_to_cos_tilt(float32_t radians);
+
+/**
+ * @brief Converts a scaled cosine tilt value back to radians.
+ *
+ * Computes the arccosine (`acos()`) after normalizing by `TILT_SCALE_FACTOR`.
+ *
+ * @param cos_tilt Scaled cosine tilt value.
+ * @return Angle in radians.
+ */
+float32_t imu_cos_tilt_to_radians(int32_t cos_tilt);
 
 /**
  * @brief IMU task function

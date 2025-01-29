@@ -12,12 +12,18 @@
 
 #include <infuse/drivers/imu.h>
 #include <infuse/math/common.h>
+#include <infuse/math/mean.h>
 #include <infuse/task_runner/task.h>
 #include <infuse/task_runner/tasks/imu.h>
 #include <infuse/tdf/definitions.h>
 #include <infuse/tdf/util.h>
 #include <infuse/time/epoch.h>
 #include <infuse/zbus/channels.h>
+
+#include <infuse/fs/kv_store.h>
+#include <infuse/fs/kv_types.h>
+
+#include "arm_math.h"
 
 IMU_SAMPLE_ARRAY_TYPE_DEFINE(task_imu_sample_container, CONFIG_TASK_RUNNER_TASK_IMU_MAX_FIFO);
 
@@ -38,6 +44,23 @@ ZBUS_CHAN_ID_DEFINE(INFUSE_ZBUS_NAME(INFUSE_ZBUS_CHAN_IMU_ACC_MAG), INFUSE_ZBUS_
 
 #endif /* CONFIG_TASK_RUNNER_TASK_IMU_ACC_MAGNITUDE_BROADCAST */
 
+#define TILT_SCALE_FACTOR 1000000000
+#ifdef CONFIG_TASK_RUNNER_TASK_IMU_ACC_TILT_BROADCAST
+
+static struct kv_store_cb gravity_cb;
+static _KV_KEY_GRAVITY_REFERENCE_TYPE gravity_reference;
+static struct iir_filter_single_pole_s32 tilt_filter;
+
+IMU_MAG_ARRAY_TYPE_DEFINE(task_imu_acc_tilt_container,
+			  CONFIG_TASK_RUNNER_TASK_IMU_ACC_TILT_BROADCAST_MAX);
+
+ZBUS_CHAN_ID_DEFINE(INFUSE_ZBUS_NAME(INFUSE_ZBUS_CHAN_IMU_ACC_TILT), INFUSE_ZBUS_CHAN_IMU_ACC_TIL,
+		    struct task_imu_acc_tilt_container, NULL, NULL, ZBUS_OBSERVERS_EMPTY,
+		    ZBUS_MSG_INIT(0));
+#define ZBUS_CHAN_MAG INFUSE_ZBUS_CHAN_GET(INFUSE_ZBUS_CHAN_IMU_ACC_TILT)
+
+#endif /* CONFIG_TASK_RUNNER_TASK_IMU_ACC_TILT_BROADCAST */
+
 LOG_MODULE_REGISTER(task_imu, CONFIG_TASK_IMU_LOG_LEVEL);
 
 struct logging_state {
@@ -46,12 +69,60 @@ struct logging_state {
 	uint16_t mag_tdf;
 };
 
+int32_t imu_radians_to_cos_tilt(float32_t radians)
+{
+	return arm_cos_f32(radians) * TILT_SCALE_FACTOR;
+}
+
+float32_t imu_cos_tilt_to_radians(int32_t cos_tilt)
+{
+	return acos(cos_tilt / (double)TILT_SCALE_FACTOR);
+}
+
 static void imu_sample_handler(const struct task_schedule *schedule,
 			       const struct logging_state *log_state,
 			       const struct imu_sample_array *samples)
 {
 	const struct imu_sample *last_acc, *last_gyr;
 	uint64_t epoch_time;
+
+#ifdef CONFIG_TASK_RUNNER_TASK_IMU_ACC_TILT_BROADCAST
+	struct mean_state stats = {0};
+	struct task_imu_acc_tilt_container *tilts;
+	const struct imu_sample *s = &samples->samples[samples->accelerometer.offset];
+	uint16_t num = MIN(samples->accelerometer.num, ARRAY_SIZE(tilts->tilts));
+
+	/* Claim the channel so we can process directly into the memory buffer */
+	zbus_chan_claim(ZBUS_CHAN_TILT, K_FOREVER);
+	tilts = ZBUS_CHAN_TILT->message;
+
+	tilts->meta = samples->accelerometer;
+	tilts->meta.offset = 0;
+	tilts->meta.num = num;
+
+	/* Calculate magnitudes */
+	for (int i = 0; i < num; i++) {
+		/* cos_tilt is between [-1, 1], a high scale is desirable to not lose prevision */
+		int32_t cos_tilt =
+			(TILT_SCALE_FACTOR *
+			 math_vector_xyz_dot_product_fast(gravity_reference.x, gravity_reference.y,
+							  gravity_reference.z, s->x, s->y, s->z)) /
+			(math_vector_xyz_magnitude(gravity_reference.x, gravity_reference.y,
+						   gravity_reference.z) *
+			 math_vector_xyz_magnitude(s->x, s->y, s->z));
+
+		cos_tilt = iir_filter_single_pole_s32_step(cos_tilt);
+		mags->cos_tilts[i] = cos_tilt;
+		mean_update(&stats, cos_tilt);
+		s++;
+	}
+	tilts->cos_tilt_avg = mean_calculate(&stats);
+
+	/* Update metadata, finish claim, notify subscribers */
+	zbus_chan_update_publish_metadata(ZBUS_CHAN_TILT);
+	zbus_chan_finish(ZBUS_CHAN_TILT);
+	zbus_chan_notify(ZBUS_CHAN_TILT, K_FOREVER);
+#endif /* CONFIG_TASK_RUNNER_TASK_IMU_ACC_TILT_BROADCAST */
 
 #ifdef CONFIG_TASK_RUNNER_TASK_IMU_ACC_MAGNITUDE_BROADCAST
 	struct task_imu_acc_mag_container *mags;
@@ -114,6 +185,17 @@ static void imu_sample_handler(const struct task_schedule *schedule,
 	}
 }
 
+#ifdef CONFIG_TASK_RUNNER_TASK_IMU_ACC_TILT_BROADCAST
+/* Callback function for KV store updates */
+static void gravity_reference_changed(uint16_t key, const void *data, size_t len, void *user_ctx)
+{
+	if (key != KV_KEY_GRAVITY_REFERENCE) {
+		return;
+	}
+	memcpy(&gravity_reference, data, _KV_KEY_GRAVITY_REFERENCE_SIZE);
+}
+#endif /* CONFIG_TASK_RUNNER_TASK_IMU_ACC_TILT_BROADCAST */
+
 void imu_task_fn(const struct task_schedule *schedule, struct k_poll_signal *terminate,
 		 void *imu_dev)
 {
@@ -167,6 +249,12 @@ void imu_task_fn(const struct task_schedule *schedule, struct k_poll_signal *ter
 	log_state.acc_tdf = tdf_id_from_accelerometer_range(args->accelerometer.range_g);
 	log_state.gyr_tdf = tdf_id_from_gyroscope_range(args->gyroscope.range_dps);
 	interrupt_timeout = K_USEC(2 * config_output.expected_interrupt_period_us);
+
+#ifdef CONFIG_TASK_RUNNER_TASK_IMU_ACC_TILT_BROADCAST
+	gravity_cb.value_changed = gravity_reference_changed;
+	kv_store_register_callback(&gravity_cb);
+	iir_filter_single_pole_s32_init(&tilt_filter, iir_filter_alpha_init(0.1f), 0);
+#endif /* CONFIG_TASK_RUNNER_TASK_IMU_ACC_TILT_BROADCAST */
 
 	while (true) {
 		/* Wait for the next IMU interrupt */

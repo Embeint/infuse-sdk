@@ -51,6 +51,16 @@ config TASK_RUNNER_TASK_IMU_ACC_MAGNITUDE_BROADCAST_MAX
 	depends on TASK_RUNNER_TASK_IMU_ACC_MAGNITUDE_BROADCAST
 	default TASK_RUNNER_TASK_IMU_MAX_FIFO
 
+config TASK_RUNNER_TASK_IMU_ACC_TILT_BROADCAST
+	bool "Broadcast accelerometer tilts on a zbus channel"
+	depends on CONFIG_KV_STORE_KEY_GRAVITY_REFERENCE
+	select INFUSE_ZBUS_CHAN_IMU_ACC_MAG
+
+config TASK_RUNNER_TASK_IMU_ACC_TILT_BROADCAST_MAX
+	int "Maximum number of tilts that can be broadcast"
+	depends on TASK_RUNNER_TASK_IMU_ACC_TILT_BROADCAST
+	default TASK_RUNNER_TASK_IMU_MAX_FIFO
+
 module = TASK_IMU
 module-str = IMU task
 source "subsys/logging/Kconfig.template.log_config"

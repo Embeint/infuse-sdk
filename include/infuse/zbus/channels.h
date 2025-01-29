@@ -46,16 +46,19 @@ enum infuse_zbus_channel_id {
 	INFUSE_ZBUS_CHAN_IMU = INFUSE_ZBUS_CHAN_BASE + 2,
 	/** @brief Data type: @ref imu_magnitude_array */
 	INFUSE_ZBUS_CHAN_IMU_ACC_MAG = INFUSE_ZBUS_CHAN_BASE + 3,
+	/** @brief Data type: @ref imu_tilt_array */
+	INFUSE_ZBUS_CHAN_IMU_ACC_TILT = INFUSE_ZBUS_CHAN_BASE + 4,
 	/** @brief Data type: @ref tdf_gcs_wgs84_llha */
-	INFUSE_ZBUS_CHAN_LOCATION = INFUSE_ZBUS_CHAN_BASE + 4,
+	INFUSE_ZBUS_CHAN_LOCATION = INFUSE_ZBUS_CHAN_BASE + 5,
 	/** @brief Data type: @ref infuse_zbus_chan_movement_std_dev */
-	INFUSE_ZBUS_CHAN_MOVEMENT_STD_DEV = INFUSE_ZBUS_CHAN_BASE + 5,
+	INFUSE_ZBUS_CHAN_MOVEMENT_STD_DEV = INFUSE_ZBUS_CHAN_BASE + 6,
 };
 
 #define _INFUSE_ZBUS_CHAN_BATTERY_TYPE          struct tdf_battery_state
 #define _INFUSE_ZBUS_CHAN_AMBIENT_ENV_TYPE      struct tdf_ambient_temp_pres_hum
 #define _INFUSE_ZBUS_CHAN_IMU_TYPE              struct imu_sample_array
 #define _INFUSE_ZBUS_CHAN_IMU_ACC_MAG_TYPE      struct imu_magnitude_array
+#define _INFUSE_ZBUS_CHAN_IMU_ACC_TILT_TYPE     struct imu_tilt_array
 #define _INFUSE_ZBUS_CHAN_LOCATION_TYPE         struct tdf_gcs_wgs84_llha
 #define _INFUSE_ZBUS_CHAN_MOVEMENT_STD_DEV_TYPE struct infuse_zbus_chan_movement_std_dev
 
@@ -63,6 +66,7 @@ enum infuse_zbus_channel_id {
 #define _INFUSE_ZBUS_CHAN_AMBIENT_ENV_NAME      zbus_infuse_ambient_env
 #define _INFUSE_ZBUS_CHAN_IMU_NAME              zbus_infuse_imu
 #define _INFUSE_ZBUS_CHAN_IMU_ACC_MAG_NAME      zbus_infuse_imu_acc_mag
+#define _INFUSE_ZBUS_CHAN_IMU_ACC_TILT_NAME     zbus_infuse_imu_acc_tilt
 #define _INFUSE_ZBUS_CHAN_LOCATION_NAME         zbus_infuse_location
 #define _INFUSE_ZBUS_CHAN_MOVEMENT_STD_DEV_NAME zbus_infuse_move_std_dev
 
