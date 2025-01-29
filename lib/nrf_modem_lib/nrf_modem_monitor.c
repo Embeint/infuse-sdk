@@ -48,7 +48,7 @@ static struct {
 	 * potential to deadlock the system workqueue, if multiple notifications occur at the same
 	 * time. Workaround this by running the commands in a different context.
 	 */
-	struct k_work update_work;
+	struct k_work_delayable update_work;
 	struct k_work signal_quality_work;
 	atomic_t flags;
 } monitor;
@@ -65,9 +65,16 @@ void nrf_modem_monitor_network_state(struct nrf_modem_network_state *state)
 
 static void network_info_update(struct k_work *work)
 {
+	struct k_work_delayable *dwork = k_work_delayable_from_work(work);
 	static bool sim_card_queried;
 	char plmn[9] = {0};
 	int rc;
+
+	/* This work is not time critical, run it later if the PDN connection is in progress */
+	if (atomic_test_bit(&monitor.flags, FLAGS_PDN_CONN_IN_PROGRESS)) {
+		infuse_work_reschedule(dwork, K_SECONDS(1));
+		return;
+	}
 
 	if (!sim_card_queried) {
 		KV_STRUCT_KV_STRING_VAR(24) sim_uicc;
@@ -200,7 +207,7 @@ static void lte_reg_handler(const struct lte_lc_evt *const evt)
 		LOG_DBG("  STATUS: %d", evt->nw_reg_status);
 		monitor.network_state.nw_reg_status = evt->nw_reg_status;
 		/* Request update of knowledge of network info */
-		infuse_work_submit(&monitor.update_work);
+		infuse_work_reschedule(&monitor.update_work, K_NO_WAIT);
 		break;
 	case LTE_LC_EVT_PSM_UPDATE:
 		LOG_DBG("PSM_UPDATE");
@@ -238,7 +245,7 @@ static void lte_reg_handler(const struct lte_lc_evt *const evt)
 		atomic_set_bit_to(&monitor.flags, FLAGS_CELL_CONNECTED,
 				  evt->cell.id <= LTE_LC_CELL_EUTRAN_ID_MAX);
 		/* Request update of knowledge of network info */
-		infuse_work_submit(&monitor.update_work);
+		infuse_work_reschedule(&monitor.update_work, K_NO_WAIT);
 		/* Update cached knowledge of signal strength */
 		infuse_work_submit(&monitor.signal_quality_work);
 		break;
@@ -385,7 +392,7 @@ void lte_net_if_modem_fault_app_handler(struct nrf_modem_fault_info *fault_info)
 
 int nrf_modem_monitor_init(void)
 {
-	k_work_init(&monitor.update_work, network_info_update);
+	k_work_init_delayable(&monitor.update_work, network_info_update);
 	k_work_init(&monitor.signal_quality_work, signal_quality_update);
 	/* Initial state */
 	monitor.network_state.psm_cfg.tau = -1;
