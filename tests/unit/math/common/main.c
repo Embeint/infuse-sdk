@@ -104,6 +104,43 @@ ZTEST(infuse_math, test_vector_xyz_mag)
 	zassert_equal(37947, math_vector_xyz_magnitude(28969, -24428, -2019));
 }
 
+ZTEST(infuse_math, test_vector_xyz_dot_product)
+{
+	zassert_equal(1, math_vector_xyz_dot_product(1, 0, 0, 1, 0, 0));
+	zassert_equal(1, math_vector_xyz_dot_product(0, 1, 0, 0, 1, 0));
+	zassert_equal(1, math_vector_xyz_dot_product(0, 0, 1, 0, 0, 1));
+	zassert_equal(3, math_vector_xyz_dot_product(1, 1, 1, 1, 1, 1));
+	zassert_equal(-3, math_vector_xyz_dot_product(-1, -1, -1, 1, 1, 1));
+	zassert_equal(3, math_vector_xyz_dot_product(1, 3, -5, 4, -2, -1));
+	zassert_equal(35, math_vector_xyz_dot_product(1, 3, -5, 1, 3, -5));
+	zassert_equal(-33000000, math_vector_xyz_dot_product(1000, 3000, -5000, 1000, -3000, 5000));
+
+	zassert_equal(3221225472, math_vector_xyz_dot_product(INT16_MIN, INT16_MIN, INT16_MIN,
+							      INT16_MIN, INT16_MIN, INT16_MIN));
+	zassert_equal(-3221127168, math_vector_xyz_dot_product(INT16_MIN, INT16_MIN, INT16_MIN,
+							       INT16_MAX, INT16_MAX, INT16_MAX));
+	zassert_equal(3221028867, math_vector_xyz_dot_product(INT16_MAX, INT16_MAX, INT16_MAX,
+							      INT16_MAX, INT16_MAX, INT16_MAX));
+}
+
+ZTEST(infuse_math, test_vector_xyz_dot_product_fast)
+{
+	zassert_equal(1, math_vector_xyz_dot_product_fast(1, 0, 0, 1, 0, 0));
+	zassert_equal(1, math_vector_xyz_dot_product_fast(0, 1, 0, 0, 1, 0));
+	zassert_equal(1, math_vector_xyz_dot_product_fast(0, 0, 1, 0, 0, 1));
+	zassert_equal(3, math_vector_xyz_dot_product_fast(1, 1, 1, 1, 1, 1));
+	zassert_equal(-3, math_vector_xyz_dot_product_fast(-1, -1, -1, 1, 1, 1));
+	zassert_equal(3, math_vector_xyz_dot_product_fast(1, 3, -5, 4, -2, -1));
+	zassert_equal(35, math_vector_xyz_dot_product_fast(1, 3, -5, 1, 3, -5));
+	zassert_equal(-33000000,
+		      math_vector_xyz_dot_product_fast(1000, 3000, -5000, 1000, -3000, 5000));
+
+	/* Overflow gives incorrect answer */
+	zassert_true(3221028867 > math_vector_xyz_dot_product_fast(INT16_MAX, INT16_MAX, INT16_MAX,
+								   INT16_MAX, INT16_MAX,
+								   INT16_MAX));
+}
+
 ZTEST(infuse_math, test_bitmask_get_next)
 {
 	uint8_t next_idx;
