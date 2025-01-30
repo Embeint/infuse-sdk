@@ -7,8 +7,8 @@
  * SPDX-License-Identifier: LicenseRef-Embeint
  */
 
-#ifndef INFUSE_SDK_SUBSYS_RPC_COMMANDS_COMMANDS_H_
-#define INFUSE_SDK_SUBSYS_RPC_COMMANDS_COMMANDS_H_
+#ifndef {{ root }}_SUBSYS_RPC_COMMANDS_COMMANDS_H_
+#define {{ root }}_SUBSYS_RPC_COMMANDS_COMMANDS_H_
 
 #include <zephyr/net/buf.h>
 
@@ -31,4 +31,4 @@ struct net_buf *rpc_command_{{ command['name'] }}(struct net_buf *request);
 }
 #endif
 
-#endif /* INFUSE_SDK_SUBSYS_RPC_COMMANDS_COMMANDS_H_ */
+#endif /* {{ root }}_SUBSYS_RPC_COMMANDS_COMMANDS_H_ */

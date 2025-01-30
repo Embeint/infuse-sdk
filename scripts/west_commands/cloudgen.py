@@ -34,13 +34,41 @@ class cloudgen(WestCommand):
             formatter_class=argparse.RawDescriptionHelpFormatter,
             description=self.description,
         )
+        parser.add_argument(
+            "--root",
+            type=pathlib.Path,
+            default=None,
+            help="Root directory for cloud generation (default: script root)",
+        )
+        parser.add_argument(
+            "--project",
+            type=str,
+            default=None,
+            help="Project name for cloud generation (default: infuse)",
+        )
         return parser
 
     def do_run(self, args, unknown_args):
-        self.template_dir = pathlib.Path(__file__).parent / "templates"
-        self.infuse_root_dir = pathlib.Path(__file__).parent.parent.parent
+        if args.root is not None and args.project is None:
+            print("Error: --project must be specified if --root is provided")
+            exit(1)
+        self.is_infuse = args.root is None
+        self.root_dir = (
+            args.root.resolve()
+            if args.root
+            else pathlib.Path(__file__).parent.parent.parent
+        )
+
+        self.template_dir = (
+            args.root.resolve() / "scripts" / "templates"
+            if args.root
+            else pathlib.Path(__file__).parent / "templates"
+        )
+        self.root_name = self.root_dir.name.replace("-", "_").upper()
+        self.project = args.project if args.project else "infuse"
+
         self.env = Environment(
-            loader=FileSystemLoader(self.template_dir),
+            loader=FileSystemLoader(pathlib.Path(__file__).parent / "templates"),
             autoescape=select_autoescape(),
             trim_blocks=True,
             lstrip_blocks=True,
@@ -53,7 +81,7 @@ class cloudgen(WestCommand):
         args = [
             "clang-format",
             "-i",
-            f'--style=file:{self.infuse_root_dir/".clang-format"}',
+            f"--style=file:{pathlib.Path(__file__).parent.parent.parent / '.clang-format'}",
             str(file),
         ]
         subprocess.run(args)
@@ -78,7 +106,7 @@ class cloudgen(WestCommand):
         else:
             base = ctype_mapping[field["type"]]
         if "num" in field:
-            return f'{field["num"]} * {base}'
+            return f"{field['num']} * {base}"
         else:
             return base
 
@@ -94,9 +122,10 @@ class cloudgen(WestCommand):
     def tdfgen(self):
         tdf_def_file = self.template_dir / "tdf.json"
         tdf_template = self.env.get_template("tdf_definitions.h.jinja")
-        tdf_output = (
-            self.infuse_root_dir / "include" / "infuse" / "tdf" / "definitions.h"
-        )
+        tdf_output = self.root_dir / "include" / self.project / "tdf" / "definitions.h"
+
+        if not tdf_def_file.exists():
+            return  # Exit early if file doesn't exist
 
         loader = importlib.util.find_spec("infuse_iot.generated.tdf_definitions")
         tdf_definitions_template = self.env.get_template("tdf_definitions.py.jinja")
@@ -112,10 +141,17 @@ class cloudgen(WestCommand):
             for field in d["fields"]:
                 self._array_postfix(d, field)
 
+        # Ensure the parent directories and file exist
+        tdf_output.parent.mkdir(parents=True, exist_ok=True)
+        tdf_output.touch(exist_ok=True)
         with tdf_output.open("w") as f:
             f.write(
                 tdf_template.render(
-                    structs=tdf_defs["structs"], definitions=tdf_defs["definitions"]
+                    is_infuse=self.is_infuse,
+                    root=self.root_name,
+                    project=self.project.replace("-", "_").upper(),
+                    structs=tdf_defs["structs"],
+                    definitions=tdf_defs["definitions"],
                 )
             )
             f.write(os.linesep)
@@ -167,7 +203,8 @@ class cloudgen(WestCommand):
         with tdf_definitions_output.open("w", encoding="utf-8") as f:
             f.write(
                 tdf_definitions_template.render(
-                    structs=tdf_defs["structs"], definitions=tdf_defs["definitions"]
+                    structs=tdf_defs["structs"],
+                    definitions=tdf_defs["definitions"],
                 )
             )
             f.write(os.linesep)
@@ -177,19 +214,18 @@ class cloudgen(WestCommand):
     def kvgen(self):
         kv_def_file = self.template_dir / "kv_store.json"
         kv_defs_template = self.env.get_template("kv_types.h.jinja")
-        kv_defs_output = (
-            self.infuse_root_dir / "include" / "infuse" / "fs" / "kv_types.h"
-        )
+        kv_defs_output = self.root_dir / "include" / self.project / "fs" / "kv_types.h"
+
+        if not kv_def_file.exists():
+            return  # Exit early if file doesn't exist
 
         kv_kconfig_template = self.env.get_template("Kconfig.keys.jinja")
         kv_kconfig_output = (
-            self.infuse_root_dir / "subsys" / "fs" / "kv_store" / "Kconfig.keys"
+            self.root_dir / "subsys" / "fs" / "kv_store" / "Kconfig.keys"
         )
 
         kv_keys_template = self.env.get_template("kv_keys.c.jinja")
-        kv_keys_output = (
-            self.infuse_root_dir / "subsys" / "fs" / "kv_store" / "kv_keys.c"
-        )
+        kv_keys_output = self.root_dir / "subsys" / "fs" / "kv_store" / "kv_keys.c"
 
         loader = importlib.util.find_spec("infuse_iot.generated.kv_definitions")
         kv_py_template = self.env.get_template("kv_definitions.py.jinja")
@@ -199,6 +235,9 @@ class cloudgen(WestCommand):
             kv_defs = json.load(f)
         kv_defs["definitions"] = {int(k): v for k, v in kv_defs["definitions"].items()}
 
+        # Ensure the parent directories and file exist
+        kv_kconfig_output.parent.mkdir(parents=True, exist_ok=True)
+        kv_kconfig_output.touch(exist_ok=True)
         with kv_kconfig_output.open("w") as f:
             f.write(kv_kconfig_template.render(definitions=kv_defs["definitions"]))
 
@@ -222,6 +261,9 @@ class cloudgen(WestCommand):
             f.write(kv_keys_template.render(definitions=kv_defs["definitions"]))
             f.write(os.linesep)
 
+        # Ensure the parent directories and file exist
+        kv_defs_output.parent.mkdir(parents=True, exist_ok=True)
+        kv_defs_output.touch(exist_ok=True)
         with kv_defs_output.open("w") as f:
             # Simplify template logic for array postfix
             def array_postfix(d, field):
@@ -249,7 +291,11 @@ class cloudgen(WestCommand):
 
             f.write(
                 kv_defs_template.render(
-                    structs=kv_defs["structs"], definitions=kv_defs["definitions"]
+                    is_infuse=self.is_infuse,
+                    root=self.root_name,
+                    project=self.project.replace("-", "_").upper(),
+                    structs=kv_defs["structs"],
+                    definitions=kv_defs["definitions"],
                 )
             )
             f.write(os.linesep)
@@ -262,7 +308,8 @@ class cloudgen(WestCommand):
         with kv_py_output.open("w", encoding="utf-8") as f:
             f.write(
                 kv_py_template.render(
-                    structs=kv_defs["structs"], definitions=kv_defs["definitions"]
+                    structs=kv_defs["structs"],
+                    definitions=kv_defs["definitions"],
                 )
             )
             f.write(os.linesep)
@@ -273,22 +320,23 @@ class cloudgen(WestCommand):
     def rpcgen(self):
         rpc_def_file = self.template_dir / "rpc.json"
         rpc_defs_template = self.env.get_template("rpc_types.h.jinja")
-        rpc_defs_output = (
-            self.infuse_root_dir / "include" / "infuse" / "rpc" / "types.h"
-        )
+        rpc_defs_output = self.root_dir / "include" / self.project / "rpc" / "types.h"
+
+        if not rpc_def_file.exists():
+            return  # Exit early if file doesn't exist
 
         rpc_kconfig_template = self.env.get_template("Kconfig.commands.jinja")
         rpc_kconfig_output = (
-            self.infuse_root_dir / "subsys" / "rpc" / "commands" / "Kconfig.commands"
+            self.root_dir / "subsys" / "rpc" / "commands" / "Kconfig.commands"
         )
 
         rpc_commands_template = self.env.get_template("rpc_commands.h.jinja")
         rpc_commands_output = (
-            self.infuse_root_dir / "subsys" / "rpc" / "commands" / "commands.h"
+            self.root_dir / "subsys" / "rpc" / "commands" / "commands.h"
         )
 
         rpc_runner_template = self.env.get_template("rpc_runner.c.jinja")
-        rpc_runner_output = self.infuse_root_dir / "subsys" / "rpc" / "command_runner.c"
+        rpc_runner_output = self.root_dir / "subsys" / "rpc" / "command_runner.c"
 
         loader = importlib.util.find_spec("infuse_iot.generated.rpc_definitions")
         rpc_defs_py_template = self.env.get_template("rpc_definitions.py.jinja")
@@ -297,17 +345,28 @@ class cloudgen(WestCommand):
         with rpc_def_file.open("r") as f:
             rpc_defs = json.load(f)
 
+        # Ensure the parent directories and file exist
+        rpc_kconfig_output.parent.mkdir(parents=True, exist_ok=True)
+        rpc_kconfig_output.touch(exist_ok=True)
         with rpc_kconfig_output.open("w") as f:
             f.write(rpc_kconfig_template.render(commands=rpc_defs["commands"]))
 
         with rpc_commands_output.open("w") as f:
-            f.write(rpc_commands_template.render(commands=rpc_defs["commands"]))
+            f.write(
+                rpc_commands_template.render(
+                    root=self.root_name,
+                    commands=rpc_defs["commands"],
+                )
+            )
             f.write(os.linesep)
 
         with rpc_runner_output.open("w") as f:
             f.write(rpc_runner_template.render(commands=rpc_defs["commands"]))
             f.write(os.linesep)
 
+        # Ensure the parent directories and file exist
+        rpc_defs_output.parent.mkdir(parents=True, exist_ok=True)
+        rpc_defs_output.touch(exist_ok=True)
         with rpc_defs_output.open("w") as f:
             for d in rpc_defs["structs"].values():
                 for field in d["fields"]:
@@ -335,6 +394,9 @@ class cloudgen(WestCommand):
 
             f.write(
                 rpc_defs_template.render(
+                    is_infuse=self.is_infuse,
+                    root=self.root_name,
+                    project=self.project.replace("-", "_").upper(),
                     structs=rpc_defs["structs"],
                     enums=rpc_defs["enums"],
                     commands=rpc_defs["commands"],
