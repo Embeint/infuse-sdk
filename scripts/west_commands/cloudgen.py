@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-# Copyright (c) 2024 Embeint Inc
+# Copyright (c) 2025 Embeint Inc
 
 import argparse
 import pathlib
@@ -34,18 +34,37 @@ class cloudgen(WestCommand):
             formatter_class=argparse.RawDescriptionHelpFormatter,
             description=self.description,
         )
+        parser.add_argument(
+            "--root",
+            type=pathlib.Path,
+            default=None,
+            help="Root directory for cloud generation (default: script root)",
+        )
         return parser
 
     def do_run(self, args, unknown_args):
         self.template_dir = pathlib.Path(__file__).parent / "templates"
+        self.is_infuse = args.root is None
         self.infuse_root_dir = pathlib.Path(__file__).parent.parent.parent
+
+        self.root_dir = args.root.resolve() if args.root else self.infuse_root_dir
+        self.root_name = self.root_dir.name.replace("-", "_").upper()
+
+        self.template_dir = (
+            args.root.resolve() / "scripts" / "templates"
+            if args.root
+            else pathlib.Path(__file__).parent / "templates"
+        )
+
         self.env = Environment(
-            loader=FileSystemLoader(self.template_dir),
+            loader=FileSystemLoader(pathlib.Path(__file__).parent / "templates"),
             autoescape=select_autoescape(),
             trim_blocks=True,
             lstrip_blocks=True,
         )
         self.tdfgen()
+        if not self.is_infuse:
+            exit(0)
         self.kvgen()
         self.rpcgen()
 
@@ -53,7 +72,7 @@ class cloudgen(WestCommand):
         args = [
             "clang-format",
             "-i",
-            f'--style=file:{self.infuse_root_dir/".clang-format"}',
+            f"--style=file:{self.infuse_root_dir / '.clang-format'}",
             str(file),
         ]
         subprocess.run(args)
@@ -78,7 +97,7 @@ class cloudgen(WestCommand):
         else:
             base = ctype_mapping[field["type"]]
         if "num" in field:
-            return f'{field["num"]} * {base}'
+            return f"{field['num']} * {base}"
         else:
             return base
 
@@ -94,9 +113,11 @@ class cloudgen(WestCommand):
     def tdfgen(self):
         tdf_def_file = self.template_dir / "tdf.json"
         tdf_template = self.env.get_template("tdf_definitions.h.jinja")
-        tdf_output = (
-            self.infuse_root_dir / "include" / "infuse" / "tdf" / "definitions.h"
-        )
+        tdf_output = self.root_dir / "include" / "infuse" / "tdf" / "definitions.h"
+
+        if not tdf_def_file.exists():
+            print(f"Error: The file '{tdf_def_file}' does not exist.")
+            return  # Exit early if file doesn't exist
 
         loader = importlib.util.find_spec("infuse_iot.generated.tdf_definitions")
         tdf_definitions_template = self.env.get_template("tdf_definitions.py.jinja")
@@ -112,10 +133,16 @@ class cloudgen(WestCommand):
             for field in d["fields"]:
                 self._array_postfix(d, field)
 
+        # Ensure the parent directories and file exist
+        tdf_output.parent.mkdir(parents=True, exist_ok=True)
+        tdf_output.touch(exist_ok=True)
         with tdf_output.open("w") as f:
             f.write(
                 tdf_template.render(
-                    structs=tdf_defs["structs"], definitions=tdf_defs["definitions"]
+                    is_infuse=self.is_infuse,
+                    root=self.root_name,
+                    structs=tdf_defs["structs"],
+                    definitions=tdf_defs["definitions"],
                 )
             )
             f.write(os.linesep)
