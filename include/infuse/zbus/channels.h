@@ -28,12 +28,18 @@ extern "C" {
 
 /** Data type for @ref INFUSE_ZBUS_CHAN_MOVEMENT_STD_DEV */
 struct infuse_zbus_chan_movement_std_dev {
-	/* Accelerometer standard deviation */
+	/** Accelerometer standard deviation */
 	struct tdf_acc_magnitude_std_dev data;
-	/* Expected number of samples for the window */
+	/** Expected number of samples for the window */
 	uint32_t expected_samples;
-	/* Configured threshold for movement detection (micro-g) */
+	/** Configured threshold for movement detection (micro-g) */
 	uint32_t movement_threshold;
+};
+
+/** Data type for @ref INFUSE_ZBUS_CHAN_TILT */
+struct infuse_zbus_chan_tilt {
+	/** Cosine of the tilt angle */
+	float cosine;
 };
 
 enum infuse_zbus_channel_id {
@@ -50,6 +56,8 @@ enum infuse_zbus_channel_id {
 	INFUSE_ZBUS_CHAN_LOCATION = INFUSE_ZBUS_CHAN_BASE + 4,
 	/** @brief Data type: @ref infuse_zbus_chan_movement_std_dev */
 	INFUSE_ZBUS_CHAN_MOVEMENT_STD_DEV = INFUSE_ZBUS_CHAN_BASE + 5,
+	/** @brief Data type: @ref infuse_zbus_chan_tilt */
+	INFUSE_ZBUS_CHAN_TILT = INFUSE_ZBUS_CHAN_BASE + 6,
 };
 
 #define _INFUSE_ZBUS_CHAN_BATTERY_TYPE          struct tdf_battery_state
@@ -58,6 +66,7 @@ enum infuse_zbus_channel_id {
 #define _INFUSE_ZBUS_CHAN_IMU_ACC_MAG_TYPE      struct imu_magnitude_array
 #define _INFUSE_ZBUS_CHAN_LOCATION_TYPE         struct tdf_gcs_wgs84_llha
 #define _INFUSE_ZBUS_CHAN_MOVEMENT_STD_DEV_TYPE struct infuse_zbus_chan_movement_std_dev
+#define _INFUSE_ZBUS_CHAN_TILT_TYPE             struct infuse_zbus_chan_tilt
 
 #define _INFUSE_ZBUS_CHAN_BATTERY_NAME          zbus_infuse_battery
 #define _INFUSE_ZBUS_CHAN_AMBIENT_ENV_NAME      zbus_infuse_ambient_env
@@ -65,6 +74,7 @@ enum infuse_zbus_channel_id {
 #define _INFUSE_ZBUS_CHAN_IMU_ACC_MAG_NAME      zbus_infuse_imu_acc_mag
 #define _INFUSE_ZBUS_CHAN_LOCATION_NAME         zbus_infuse_location
 #define _INFUSE_ZBUS_CHAN_MOVEMENT_STD_DEV_NAME zbus_infuse_move_std_dev
+#define _INFUSE_ZBUS_CHAN_TILT_NAME             zbus_infuse_tilt
 
 /** @brief Get the type associated with an Infuse zbus channel */
 #define INFUSE_ZBUS_TYPE(channel) _##channel##_TYPE
