@@ -158,4 +158,64 @@ ZTEST(filters, test_iir_filter_single_pole_s32)
 	zassert_equal(INT32_MIN, out);
 }
 
+ZTEST(filters, test_iir_filter_single_pole_f32)
+{
+	struct iir_filter_single_pole_f32 f;
+	float out;
+
+	/* Unit decay (1 - e^-1 ~= 0.63212), ~36.7% of original value after 1 step */
+	iir_filter_single_pole_f32_init(&f, 0.63212f, 10000.0f);
+	out = iir_filter_single_pole_f32_step(&f, 0);
+	zassert_within(3678.0f, out, 1.0f);
+
+	/* Half unit decay (1 - e^-0.5 ~= 0.39347), ~36.7% of original value after 2 steps */
+	iir_filter_single_pole_f32_init(&f, 0.39347f, 10000.0f);
+	out = iir_filter_single_pole_f32_step(&f, 0.0f);
+	zassert_within(6065.0f, out, 1.0f);
+	out = iir_filter_single_pole_f32_step(&f, 0.0f);
+	zassert_within(3678.0f, out, 1.0f);
+
+	/* After many steps decays to 0 */
+	for (int i = 0; i < 100; i++) {
+		out = iir_filter_single_pole_f32_step(&f, 0);
+	}
+	zassert_within(0.0f, out, 0.1f);
+
+	/* Unit decay (1 - e^-1 ~= 0.63212), step response */
+	iir_filter_single_pole_f32_init(&f, 0.63212f, 0.0f);
+	out = iir_filter_single_pole_f32_step(&f, 10000.0f);
+	zassert_within(6321.0f, out, 1.0f);
+	out = iir_filter_single_pole_f32_step(&f, 10000.0f);
+	zassert_within(8647.0f, out, 1.0f);
+
+	/* After many steps very close to the input */
+	for (int i = 0; i < 25; i++) {
+		out = iir_filter_single_pole_f32_step(&f, 10000.0f);
+	}
+	zassert_within(10000.0f, out, 0.001f);
+
+	/* Unit decay (1 - e^-1 ~= 0.63212), step response negative */
+	iir_filter_single_pole_f32_init(&f, 0.63212f, 0.0f);
+	out = iir_filter_single_pole_f32_step(&f, -10000.0f);
+	zassert_within(-6321.0f, out, 1.0f);
+	out = iir_filter_single_pole_f32_step(&f, -10000.0f);
+	zassert_within(-8647.0f, out, 1.0f);
+
+	/* After many steps very close to the input */
+	for (int i = 0; i < 25; i++) {
+		out = iir_filter_single_pole_f32_step(&f, -10000.0f);
+	}
+	zassert_within(-10000, out, 0.001f);
+
+	/* Another step increase */
+	out = iir_filter_single_pole_f32_step(&f, -20000.0f);
+	zassert_within(-16321.0f, out, 1.0f);
+	out = iir_filter_single_pole_f32_step(&f, -20000.0f);
+	zassert_within(-18647.0f, out, 1.0f);
+	for (int i = 0; i < 25; i++) {
+		out = iir_filter_single_pole_f32_step(&f, -20000.0f);
+	}
+	zassert_within(-20000.0f, out, 0.001f);
+}
+
 ZTEST_SUITE(filters, NULL, NULL, NULL, NULL, NULL);
