@@ -58,6 +58,21 @@ uint32_t math_sqrt64(uint64_t x)
 	return root >> 1;
 }
 
+float math_inverse_sqrt32(float x)
+{
+	/* This is a variant of the infamous Quake fast inverse square root algorithm.
+	 * The accuracy has been improved by tweaking the original constants:
+	 *   https://web.archive.org/web/20180709021629/http://rrrola.wz.cz/inv_sqrt.html
+	 */
+	union {
+		float f;
+		uint32_t u;
+	} y = {x};
+
+	y.u = 0x5F1FFFF9ul - (y.u >> 1);
+	return 0.703952253f * y.f * (2.38924456f - x * y.f * y.f);
+}
+
 uint32_t math_vector_xy_sq_magnitude(int16_t x, int16_t y)
 {
 	/* Maximum absolute value of each axis is 2^15

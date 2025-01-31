@@ -58,6 +58,15 @@ uint16_t math_sqrt32(uint32_t x);
 uint32_t math_sqrt64(uint64_t x);
 
 /**
+ * @brief Fast inverse square root
+ *
+ * @param x Value to compute inverse square root of
+ *
+ * @return float Inverse square root (1 / sqrt(x))
+ */
+float math_inverse_sqrt32(float x);
+
+/**
  * @brief Compute the squared magnitude of an XY vector
  *
  * @param x X component of vector
