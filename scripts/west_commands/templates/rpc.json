@@ -100,6 +100,14 @@
                 {"name": "ssid_len", "type": "uint8_t", "description": "SSID length"},
                 {"name": "ssid", "type": "char", "num": 0, "description": "Service Set Identifier (Network Name)"}
             ]
+        },
+        "rpc_struct_xyz_s16": {
+            "description": "Signed 16 bit XYZ vector",
+            "fields": [
+                {"name": "x", "type": "int16_t", "description": "X axis"},
+                {"name": "y", "type": "int16_t", "description": "Y axis"},
+                {"name": "z", "type": "int16_t", "description": "Z axis"}
+            ]
         }
     },
     "enums": {
@@ -439,6 +447,22 @@
                 {"name": "peer", "type": "struct rpc_struct_bt_addr_le", "description": "Bluetooth LE device to disconnect from"}
             ],
             "response_params": [
+            ]
+        },
+        "60": {
+            "name": "gravity_reference_update",
+            "description": "Store the current accelerometer vector as the gravity reference",
+            "depends_on": "INFUSE_ZBUS_CHAN_IMU && KV_STORE_KEY_GRAVITY_REFERENCE && ZBUS_RUNTIME_OBSERVERS",
+            "default": "y",
+            "default_auth": "EPACKET_AUTH_DEVICE",
+            "request_params": [
+                {"name": "max_variance", "type": "uint16_t", "description": "Maximum axis variance to accept (0 == infinite)"}
+            ],
+            "response_params": [
+                {"name": "reference", "type": "struct rpc_struct_xyz_s16", "description": "Updated reference vector"},
+                {"name": "variance", "type": "struct rpc_struct_xyz_s16", "description": "Variance of measurements used for reference"},
+                {"name": "num_samples", "type": "uint16_t", "description": "Number of samples used in the averaging"},
+                {"name": "sample_period_us", "type": "uint32_t", "description": "Period between samples"}
             ]
         },
         "30000": {

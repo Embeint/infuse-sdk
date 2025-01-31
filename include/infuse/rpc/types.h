@@ -219,6 +219,16 @@ struct rpc_struct_wifi_scan_result {
 	char ssid[];
 } __packed;
 
+/** Signed 16 bit XYZ vector */
+struct rpc_struct_xyz_s16 {
+	/** X axis */
+	int16_t x;
+	/** Y axis */
+	int16_t y;
+	/** Z axis */
+	int16_t z;
+} __packed;
+
 /** Bluetooth LE address type */
 enum rpc_enum_bt_le_addr_type {
 	/** Public address */
@@ -313,6 +323,8 @@ enum rpc_builtin_id {
 	RPC_ID_BT_CONNECT_INFUSE = 50,
 	/** Disconnect from a Bluetooth device */
 	RPC_ID_BT_DISCONNECT = 51,
+	/** Store the current accelerometer vector as the gravity reference */
+	RPC_ID_GRAVITY_REFERENCE_UPDATE = 60,
 	/** Query current security state and validate identity */
 	RPC_ID_SECURITY_STATE = 30000,
 	/** Send multiple INFUSE_RPC_DATA packets */
@@ -675,6 +687,25 @@ struct rpc_bt_disconnect_request {
 
 struct rpc_bt_disconnect_response {
 	struct infuse_rpc_rsp_header header;
+} __packed;
+
+/** Store the current accelerometer vector as the gravity reference */
+struct rpc_gravity_reference_update_request {
+	struct infuse_rpc_req_header header;
+	/** Maximum axis variance to accept (0 == infinite) */
+	uint16_t max_variance;
+} __packed;
+
+struct rpc_gravity_reference_update_response {
+	struct infuse_rpc_rsp_header header;
+	/** Updated reference vector */
+	struct rpc_struct_xyz_s16 reference;
+	/** Variance of measurements used for reference */
+	struct rpc_struct_xyz_s16 variance;
+	/** Number of samples used in the averaging */
+	uint16_t num_samples;
+	/** Period between samples */
+	uint32_t sample_period_us;
 } __packed;
 
 /** Query current security state and validate identity */
