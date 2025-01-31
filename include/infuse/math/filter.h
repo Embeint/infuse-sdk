@@ -142,6 +142,48 @@ static inline int32_t iir_filter_single_pole_s32_step(struct iir_filter_single_p
 }
 
 /**
+ * @brief Floating point IIR single-pole filter
+ */
+struct iir_filter_single_pole_f32 {
+	float y_prev;
+	float alpha;
+	float inv_alpha;
+};
+
+/**
+ * @brief Initialise the float IIR single-pole filter
+ *
+ * @param filter Filter state
+ * @param alpha Filter time constant
+ * @param initial Initial value for filter output
+ */
+static inline void iir_filter_single_pole_f32_init(struct iir_filter_single_pole_f32 *filter,
+						   float alpha, float initial)
+{
+	__ASSERT_NO_MSG((alpha > 0.0f) && (alpha < 1.0f));
+	filter->y_prev = initial;
+	filter->alpha = alpha;
+	filter->inv_alpha = 1.0f - alpha;
+}
+
+/**
+ * @brief Run the filter for one step
+ *
+ * @param filter Filter state
+ * @param x Filter input value
+ *
+ * @return float Output value of the filter
+ */
+static inline float iir_filter_single_pole_f32_step(struct iir_filter_single_pole_f32 *filter,
+						    float x)
+{
+	float y = (filter->alpha * x) + (filter->inv_alpha * filter->y_prev);
+
+	filter->y_prev = y;
+	return y;
+}
+
+/**
  * @}
  */
 
