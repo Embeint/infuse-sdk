@@ -483,6 +483,12 @@ struct tdf_wifi_ap_info {
 	int8_t rsrp;
 } __packed;
 
+/** Tilt angle of the device */
+struct tdf_device_tilt {
+	/** Cosine of the tilt angle */
+	float cosine;
+} __packed;
+
 /** Example array type */
 struct tdf_array_type {
 	/** I am an array of length 4 */
@@ -555,6 +561,8 @@ enum tdf_builtin_id {
 	TDF_LTE_TAC_CELLS = 34,
 	/** Wi-Fi access point information */
 	TDF_WIFI_AP_INFO = 35,
+	/** Tilt angle of the device */
+	TDF_DEVICE_TILT = 36,
 	/** Example array type */
 	TDF_ARRAY_TYPE = 100,
 	/** End of builtin TDF range */
@@ -595,6 +603,7 @@ enum tdf_builtin_id {
 #define _TDF_ALGORITHM_CLASS_TIME_SERIES_TYPE struct tdf_algorithm_class_time_series
 #define _TDF_LTE_TAC_CELLS_TYPE               struct tdf_lte_tac_cells
 #define _TDF_WIFI_AP_INFO_TYPE                struct tdf_wifi_ap_info
+#define _TDF_DEVICE_TILT_TYPE                 struct tdf_device_tilt
 #define _TDF_ARRAY_TYPE_TYPE                  struct tdf_array_type
 
 /** Size of builtin TDF definitions */
@@ -631,6 +640,7 @@ enum tdf_builtin_size {
 	_TDF_ALGORITHM_CLASS_TIME_SERIES_SIZE = sizeof(struct tdf_algorithm_class_time_series),
 	_TDF_LTE_TAC_CELLS_SIZE = sizeof(struct tdf_lte_tac_cells),
 	_TDF_WIFI_AP_INFO_SIZE = sizeof(struct tdf_wifi_ap_info),
+	_TDF_DEVICE_TILT_SIZE = sizeof(struct tdf_device_tilt),
 	_TDF_ARRAY_TYPE_SIZE = sizeof(struct tdf_array_type),
 };
 

@@ -365,6 +365,13 @@
                 {"name": "rsrp", "type": "int8_t", "description": "Received signal strength (dBm)"}
             ]
         },
+        "36" : {
+            "name": "DEVICE_TILT",
+            "description": "Tilt angle of the device",
+            "fields": [
+                {"name": "cosine", "type": "float", "description": "Cosine of the tilt angle", "display": {"fmt": "float", "digits": 6}}
+            ]
+        },
         "100": {
             "name": "ARRAY_TYPE",
             "description": "Example array type",
