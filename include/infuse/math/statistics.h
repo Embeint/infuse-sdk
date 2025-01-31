@@ -41,6 +41,11 @@ struct statistics_state {
 	uint32_t n;
 };
 
+/**
+ * @brief Reset statistics object
+ *
+ * @param state Statistics state object to reset
+ */
 static inline void statistics_reset(struct statistics_state *state)
 {
 	memset(state, 0x00, sizeof(*state));
