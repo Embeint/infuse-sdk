@@ -1,0 +1,8 @@
+# Enable the IMU channel symbol
+
+config INFUSE_ZBUS_CHAN_IMU_EN
+	bool
+	default y
+	select INFUSE_ZBUS_CHAN_IMU
+
+source "Kconfig.zephyr"
