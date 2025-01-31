@@ -41,6 +41,16 @@ struct statistics_state {
 	uint32_t n;
 };
 
+/**
+ * @brief Initializer for @ref statistics_state.
+ */
+#define INFUSE_STATISTICS_INIT() {0}
+
+/**
+ * @brief Resets the statistics state.
+ *
+ * @param state Pointer to the `statistics_state` structure to reset.
+ */
 static inline void statistics_reset(struct statistics_state *state)
 {
 	memset(state, 0x00, sizeof(*state));
