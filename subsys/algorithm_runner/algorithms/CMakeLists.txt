@@ -1,3 +1,4 @@
 # Built-in Infuse-IoT algorithms
 
 zephyr_sources_ifdef(CONFIG_ALGORITHM_RUNNER_ALG_STATIONARY_WINDOWED alg_stationary_windowed.c)
+zephyr_sources_ifdef(CONFIG_ALGORITHM_RUNNER_ALG_TILT alg_tilt.c)
