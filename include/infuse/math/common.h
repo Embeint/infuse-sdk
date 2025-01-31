@@ -58,6 +58,16 @@ uint16_t math_sqrt32(uint32_t x);
 uint32_t math_sqrt64(uint64_t x);
 
 /**
+ * @brief Compute the squared magnitude of an XY vector
+ *
+ * @param x X component of vector
+ * @param y Y component of vector
+ *
+ * @return uint16_t Squared magnitude of vector (x*x + y*y)
+ */
+uint32_t math_vector_xy_sq_magnitude(int16_t x, int16_t y);
+
+/**
  * @brief Compute the magnitude of an XY vector
  *
  * @param x X component of vector
@@ -66,6 +76,17 @@ uint32_t math_sqrt64(uint64_t x);
  * @return uint16_t Magnitude of vector sqrt(x*x + y*y)
  */
 uint16_t math_vector_xy_magnitude(int16_t x, int16_t y);
+
+/**
+ * @brief Compute the squared magnitude of an XYZ vector
+ *
+ * @param x X component of vector
+ * @param y Y component of vector
+ * @param z Z component of vector
+ *
+ * @return uint16_t Squared magnitude of vector (x*x + y*y + z*z)
+ */
+uint32_t math_vector_xyz_sq_magnitude(int16_t x, int16_t y, int16_t z);
 
 /**
  * @brief Compute the magnitude of an XYZ vector

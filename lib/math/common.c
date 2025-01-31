@@ -58,7 +58,7 @@ uint32_t math_sqrt64(uint64_t x)
 	return root >> 1;
 }
 
-uint16_t math_vector_xy_magnitude(int16_t x, int16_t y)
+uint32_t math_vector_xy_sq_magnitude(int16_t x, int16_t y)
 {
 	/* Maximum absolute value of each axis is 2^15
 	 * Each axis squared is (2^15 * 2^15) == 2^30
@@ -67,12 +67,16 @@ uint16_t math_vector_xy_magnitude(int16_t x, int16_t y)
 	 */
 	uint32_t x2 = ((int32_t)x * (int32_t)x);
 	uint32_t y2 = ((int32_t)y * (int32_t)y);
-	uint32_t sq_magnitude = x2 + y2;
 
-	return math_sqrt32(sq_magnitude);
+	return x2 + y2;
 }
 
-uint16_t math_vector_xyz_magnitude(int16_t x, int16_t y, int16_t z)
+uint16_t math_vector_xy_magnitude(int16_t x, int16_t y)
+{
+	return math_sqrt32(math_vector_xy_sq_magnitude(x, y));
+}
+
+uint32_t math_vector_xyz_sq_magnitude(int16_t x, int16_t y, int16_t z)
 {
 	/* Maximum absolute value of each axis is 2^15
 	 * Each axis squared is (2^15 * 2^15) == 2^30
@@ -82,9 +86,13 @@ uint16_t math_vector_xyz_magnitude(int16_t x, int16_t y, int16_t z)
 	uint32_t x2 = ((int32_t)x * (int32_t)x);
 	uint32_t y2 = ((int32_t)y * (int32_t)y);
 	uint32_t z2 = ((int32_t)z * (int32_t)z);
-	uint32_t sq_magnitude = x2 + y2 + z2;
 
-	return math_sqrt32(sq_magnitude);
+	return x2 + y2 + z2;
+}
+
+uint16_t math_vector_xyz_magnitude(int16_t x, int16_t y, int16_t z)
+{
+	return math_sqrt32(math_vector_xyz_sq_magnitude(x, y, z));
 }
 
 int64_t math_vector_xyz_dot_product(int16_t ax, int16_t ay, int16_t az, int16_t bx, int16_t by,
