@@ -29,3 +29,8 @@ config INFUSE_ZBUS_CHAN_MOVEMENT_STD_DEV
 	bool
 	help
 	  INFUSE_ZBUS_CHAN_MOVEMENT_STD_DEV producer is compiled in
+
+config INFUSE_ZBUS_CHAN_TILT
+	bool
+	help
+	  INFUSE_ZBUS_CHAN_TILT producer is compiled in
