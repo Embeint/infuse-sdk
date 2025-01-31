@@ -211,6 +211,13 @@ void rpc_command_runner(struct net_buf *request)
 		}
 		break;
 #endif /* CONFIG_INFUSE_RPC_COMMAND_BT_DISCONNECT */
+#ifdef CONFIG_INFUSE_RPC_COMMAND_GRAVITY_REFERENCE_UPDATE
+	case RPC_ID_GRAVITY_REFERENCE_UPDATE:
+		if (AUTHORISED(auth, GRAVITY_REFERENCE_UPDATE)) { /* GCOVR_EXCL_BR_LINE */
+			response = rpc_command_gravity_reference_update(request);
+		}
+		break;
+#endif /* CONFIG_INFUSE_RPC_COMMAND_GRAVITY_REFERENCE_UPDATE */
 #ifdef CONFIG_INFUSE_RPC_COMMAND_SECURITY_STATE
 	case RPC_ID_SECURITY_STATE:
 		if (AUTHORISED(auth, SECURITY_STATE)) { /* GCOVR_EXCL_BR_LINE */
