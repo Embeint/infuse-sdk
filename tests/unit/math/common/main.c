@@ -39,6 +39,16 @@ ZTEST(infuse_math, test_sqrt32)
 	}
 }
 
+ZTEST(infuse_math, test_inv_sqrt32)
+{
+	/* Test a good chunk of values */
+	for (float i = 1.0f; i < 1000000.0f; i += 0.25f) {
+		float stdlib_res = 1 / sqrtf(i);
+
+		zassert_within(stdlib_res, math_inverse_sqrt32(i), 0.001f);
+	}
+}
+
 ZTEST(infuse_math, test_sqrt64)
 {
 	/* Exhaustive test over uint16_t input range */
