@@ -10,11 +10,6 @@ config INFUSE_ZBUS_CHAN_AMBIENT_ENV
 	help
 	  INFUSE_ZBUS_CHAN_AMBIENT_ENV producer is compiled in
 
-config INFUSE_ZBUS_CHAN_LOCATION
-	bool
-	help
-	  INFUSE_ZBUS_CHAN_LOCATION producer is compiled in
-
 config INFUSE_ZBUS_CHAN_IMU
 	bool
 	help
@@ -24,3 +19,13 @@ config INFUSE_ZBUS_CHAN_IMU_ACC_MAG
 	bool
 	help
 	  INFUSE_ZBUS_CHAN_IMU_ACC_MAG producer is compiled in
+
+config INFUSE_ZBUS_CHAN_LOCATION
+	bool
+	help
+	  INFUSE_ZBUS_CHAN_LOCATION producer is compiled in
+
+config INFUSE_ZBUS_CHAN_MOVEMENT_STD_DEV
+	bool
+	help
+	  INFUSE_ZBUS_CHAN_MOVEMENT_STD_DEV producer is compiled in
