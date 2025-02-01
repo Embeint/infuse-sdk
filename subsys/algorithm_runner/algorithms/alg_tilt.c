@@ -54,7 +54,7 @@ void algorithm_tilt_fn(const struct zbus_channel *chan, const void *config, void
 	/* No reference, nothing to compute a reference against */
 	if (!d->reference_valid) {
 		LOG_DBG("No reference vector");
-		return;
+		goto early_exit;
 	}
 
 	int16_t one_g = imu_accelerometer_1g(samples->accelerometer.full_scale_range);
@@ -75,7 +75,7 @@ void algorithm_tilt_fn(const struct zbus_channel *chan, const void *config, void
 		if ((sample_mag_sq < limit_lower_sq) || (sample_mag_sq > limit_upper_sq)) {
 			/* Device is not stationary, cannot determine tilt from accelerometer */
 			LOG_DBG("Cannot determine tilt");
-			return;
+			goto early_exit;
 		}
 
 		/* Compute cos(theta) using the identity:
@@ -112,6 +112,9 @@ void algorithm_tilt_fn(const struct zbus_channel *chan, const void *config, void
 	LOG_DBG("Processed %d samples in %d us", samples->accelerometer.num,
 		k_ticks_to_us_near32(process_end - process_start));
 
+	/* Finished with zbus channel, release before logging */
+	zbus_chan_finish(chan);
+
 	/* Publish the latest angle */
 	chan_data.cosine = d->filter.y_prev;
 	zbus_chan_pub(ZBUS_CHAN, &chan_data, K_FOREVER);
@@ -120,4 +123,8 @@ void algorithm_tilt_fn(const struct zbus_channel *chan, const void *config, void
 	algorithm_runner_tdf_log(&c->common, ALGORITHM_TILT_LOG_ANGLE, TDF_DEVICE_TILT,
 				 sizeof(chan_data), epoch_time_from_ticks(last_acc),
 				 &chan_data.cosine);
+	return;
+early_exit:
+	zbus_chan_finish(chan);
+	return;
 }
