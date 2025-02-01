@@ -121,11 +121,15 @@ static void memfault_metrics_nrf_modem_collect_data(void)
 {
 	struct nrf_modem_network_state network;
 	int tx_kbytes, rx_kbytes;
+	int16_t rsrp;
+	int8_t rsrq;
 
 	nrf_modem_monitor_network_state(&network);
 
 	MEMFAULT_METRIC_SET_UNSIGNED(ncs_lte_mode, network.lte_mode);
 	MEMFAULT_METRIC_SET_UNSIGNED(ncs_lte_band, network.band);
+	MEMFAULT_METRIC_SET_UNSIGNED(ncs_lte_cell_id, network.cell.id);
+	MEMFAULT_METRIC_SET_UNSIGNED(ncs_lte_tracking_area_code, network.cell.tac);
 	if (network.psm_cfg.active_time != -1) {
 		MEMFAULT_METRIC_SET_SIGNED(ncs_lte_psm_tau_seconds, network.psm_cfg.tau);
 		MEMFAULT_METRIC_SET_SIGNED(ncs_lte_psm_active_time_seconds,
@@ -138,6 +142,10 @@ static void memfault_metrics_nrf_modem_collect_data(void)
 					     (int)(1000 * network.edrx_cfg.ptw));
 	}
 
+	if (nrf_modem_monitor_signal_quality(&rsrp, &rsrq, true) == 0) {
+		MEMFAULT_METRIC_SET_SIGNED(ncs_lte_rsrp_dbm, rsrp);
+		MEMFAULT_METRIC_SET_SIGNED(ncs_lte_rsrq_db, rsrq);
+	}
 	if (nrf_modem_monitor_connectivity_stats(&tx_kbytes, &rx_kbytes) == 0) {
 		MEMFAULT_METRIC_SET_UNSIGNED(ncs_lte_tx_kilobytes, tx_kbytes);
 		MEMFAULT_METRIC_SET_UNSIGNED(ncs_lte_rx_kilobytes, rx_kbytes);
