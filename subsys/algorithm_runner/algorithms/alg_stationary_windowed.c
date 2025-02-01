@@ -29,9 +29,11 @@ void algorithm_stationary_windowed_fn(const struct zbus_channel *chan, const voi
 	struct infuse_zbus_chan_movement_std_dev chan_data;
 	const struct imu_magnitude_array *magnitudes;
 	uint32_t uptime = k_uptime_seconds();
+	uint16_t sample_rate;
 	uint64_t variance;
 	uint64_t std_dev;
 	bool stationary;
+	int16_t one_g;
 
 	if (chan == NULL) {
 		goto reset;
@@ -39,16 +41,21 @@ void algorithm_stationary_windowed_fn(const struct zbus_channel *chan, const voi
 
 	/* Process received magnitudes */
 	magnitudes = zbus_chan_const_msg(chan);
+	one_g = imu_accelerometer_1g(magnitudes->meta.full_scale_range);
+	sample_rate = imu_sample_rate(&magnitudes->meta);
 	for (uint8_t i = 0; i < magnitudes->meta.num; i++) {
 		statistics_update(&d->stats, MIN(magnitudes->magnitudes[i], INT32_MAX));
 	}
+
+	/* Finished with zbus channel, release before taking further action */
+	zbus_chan_finish(chan);
 
 	/* Still waiting on window to finish */
 	if (uptime < d->window_end) {
 		return;
 	}
 
-	chan_data.expected_samples = c->window_seconds * imu_sample_rate(&magnitudes->meta);
+	chan_data.expected_samples = c->window_seconds * sample_rate;
 	chan_data.movement_threshold = c->std_dev_threshold_ug;
 
 	/* Raw variance */
@@ -59,8 +66,7 @@ void algorithm_stationary_windowed_fn(const struct zbus_channel *chan, const voi
 	/* Standard deviation is in the same units as the input data,
 	 * so we can convert to micro-g's through the usual equation.
 	 */
-	chan_data.data.std_dev =
-		(1000000 * std_dev) / imu_accelerometer_1g(magnitudes->meta.full_scale_range);
+	chan_data.data.std_dev = (1000000 * std_dev) / one_g;
 	chan_data.data.count = d->stats.n;
 	stationary = chan_data.data.std_dev <= c->std_dev_threshold_ug;
 

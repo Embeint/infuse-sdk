@@ -59,7 +59,6 @@ static void exec_fn(struct k_work *work)
 		/* Run algorithm with the channel claimed */
 		zbus_chan_claim(alg->_changed, K_FOREVER);
 		alg->impl(alg->_changed, alg->config, alg->runtime_state);
-		zbus_chan_finish(alg->_changed);
 		/* Clear new data flag */
 		alg->_changed = NULL;
 	}

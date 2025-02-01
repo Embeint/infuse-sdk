@@ -57,6 +57,9 @@ static void algorithm_impl(const struct zbus_channel *chan, const void *config, 
 	zassert_not_null(config);
 	zassert_not_null(data);
 	zassert_equal(d->expected_chan, chan);
+	if (chan) {
+		zbus_chan_finish(chan);
+	}
 	d->run_cnt += 1;
 }
 

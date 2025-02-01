@@ -42,6 +42,19 @@ struct algorithm_runner_common_config {
 	} logging;
 } __packed;
 
+/**
+ * @brief Algorithm implementation
+ *
+ * @warning The algorithm implementation ***MUST*** release the channel reference via @a
+ * zbus_chan_finish before exiting. This should be done as soon as processing of the channel data
+ * has completed.
+ *
+ * @param chan Channel pointer corresponding to @a zbus_channel in
+ * @ref algorithm_runner_common_config. Value is NULL on the very first call to initialise data
+ * structures.
+ * @param config Pointer to the constant algorithm configuration
+ * @param data Pointer to the mutable algorithm state
+ */
 typedef void (*algorithm_run_fn)(const struct zbus_channel *chan, const void *config, void *data);
 
 struct algorithm_runner_algorithm {
