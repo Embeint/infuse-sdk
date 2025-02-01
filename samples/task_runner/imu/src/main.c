@@ -24,6 +24,9 @@
 #include <infuse/task_runner/runner.h>
 #include <infuse/task_runner/tasks/infuse_tasks.h>
 
+#include <infuse/algorithm_runner/runner.h>
+#include <infuse/algorithm_runner/algorithms/tilt.h>
+
 LOG_MODULE_REGISTER(app, LOG_LEVEL_INF);
 
 static const struct task_schedule schedules[] = {
@@ -58,8 +61,12 @@ struct task_schedule_state states[ARRAY_SIZE(schedules)];
 
 TASK_RUNNER_TASKS_DEFINE(app_tasks, app_tasks_data, (IMU_TASK, DEVICE_DT_GET(DT_ALIAS(imu0))));
 
+ALGORITHM_TILT_DEFINE(alg_tilt, TDF_DATA_LOGGER_SERIAL, ALGORITHM_TILT_LOG_ANGLE, 0.025f, 5);
+
 int main(void)
 {
+	KV_KEY_TYPE(KV_KEY_GRAVITY_REFERENCE) gravity_default = {0, 0, -8192};
+
 	/* Start the watchdog */
 	(void)infuse_watchdog_start();
 
@@ -67,6 +74,15 @@ int main(void)
 	conn_mgr_all_if_up(false);
 	conn_mgr_all_if_connect(false);
 #endif /* CONFIG_NETWORKING */
+
+	/* Set a default gravity reference for the sample (-z axis) */
+	if (!kv_store_key_exists(KV_KEY_GRAVITY_REFERENCE)) {
+		(void)KV_STORE_WRITE(KV_KEY_GRAVITY_REFERENCE, &gravity_default);
+	}
+
+	/* Start the algorithm runner */
+	algorithm_runner_init();
+	algorithm_runner_register(&alg_tilt);
 
 	/* Initialise task runner */
 	task_runner_init(schedules, states, ARRAY_SIZE(schedules), app_tasks, app_tasks_data,
