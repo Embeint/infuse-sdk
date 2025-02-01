@@ -6,6 +6,7 @@
  * SPDX-License-Identifier: LicenseRef-Embeint
  */
 
+#include <zephyr/net/net_mgmt.h>
 #include <zephyr/zbus/zbus.h>
 
 #include <infuse/zbus/channels.h>
@@ -162,3 +163,31 @@ void memfault_metrics_heartbeat_collect_data(void)
 	memfault_metrics_nrf_modem_collect_data();
 #endif /* CONFIG_MEMFAULT_INFUSE_METRICS_NRF_MODEM */
 }
+
+#ifdef CONFIG_MEMFAULT_INFUSE_METRICS_CONNECTIVITY_L4
+
+static void l4_event_handler(struct net_mgmt_event_callback *cb, uint32_t event,
+			     struct net_if *iface)
+{
+	if (event == NET_EVENT_L4_CONNECTED) {
+		MEMFAULT_METRIC_TIMER_START(l4_connected_time_ms);
+	} else if (event == NET_EVENT_L4_DISCONNECTED) {
+		MEMFAULT_METRIC_TIMER_STOP(l4_connected_time_ms);
+	}
+}
+
+static int infuse_metrics_init(void)
+{
+	static struct net_mgmt_event_callback l4_callback;
+
+	/* Register for callbacks on network connectivity */
+	net_mgmt_init_event_callback(&l4_callback, l4_event_handler,
+				     NET_EVENT_L4_CONNECTED | NET_EVENT_L4_DISCONNECTED);
+	net_mgmt_add_event_callback(&l4_callback);
+
+	return 0;
+}
+
+SYS_INIT(infuse_metrics_init, APPLICATION, 0);
+
+#endif /* CONFIG_MEMFAULT_INFUSE_METRICS_CONNECTIVITY_L4 */

@@ -24,6 +24,11 @@ config MEMFAULT_INFUSE_METRICS_BATTERY
 	depends on INFUSE_ZBUS_CHAN_BATTERY
 	default y
 
+config MEMFAULT_INFUSE_METRICS_CONNECTIVITY_L4
+	bool "Track the L4 network connected time"
+	depends on NET_MGMT_EVENT
+	default y
+
 config MEMFAULT_INFUSE_NRF_MODEM
 	bool
 	help
