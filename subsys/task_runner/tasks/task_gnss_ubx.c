@@ -26,6 +26,8 @@
 INFUSE_ZBUS_CHAN_DEFINE(INFUSE_ZBUS_CHAN_LOCATION);
 #define ZBUS_CHAN INFUSE_ZBUS_CHAN_GET(INFUSE_ZBUS_CHAN_LOCATION)
 
+#define TIME_VALID_FLAGS                                                                           \
+	(UBX_MSG_NAV_TIMEGPS_VALID_TOW_VALID | UBX_MSG_NAV_TIMEGPS_VALID_WEEK_VALID)
 #define KM (1000 * 1000)
 
 enum {
@@ -64,19 +66,6 @@ static int nav_timegps_cb(uint8_t message_class, uint8_t message_id, const void 
 {
 	const struct ubx_msg_nav_timegps *timegps = payload;
 	struct gnss_run_state *state = user_data;
-	uint8_t time_validity =
-		UBX_MSG_NAV_TIMEGPS_VALID_TOW_VALID | UBX_MSG_NAV_TIMEGPS_VALID_WEEK_VALID;
-	bool time_valid = (timegps->valid & time_validity) == time_validity;
-
-	/* Exit if GPS time knowledge is not valid */
-	if (!time_valid) {
-		return 0;
-	}
-
-	/* Ensure math below is well behaved */
-	if (timegps->itow <= 500) {
-		return 0;
-	}
 
 	/* Copy payload to state */
 	memcpy(&state->latest_timegps, timegps, sizeof(*timegps));
@@ -89,6 +78,7 @@ static int nav_timegps_cb(uint8_t message_class, uint8_t message_id, const void 
 static void nav_timegps_handle(struct gnss_run_state *state, const struct task_gnss_args *args)
 {
 	const struct ubx_msg_nav_timegps *timegps = &state->latest_timegps;
+	bool time_valid = (timegps->valid & TIME_VALID_FLAGS) == TIME_VALID_FLAGS;
 	k_ticks_t timepulse;
 	int rc;
 
@@ -97,6 +87,16 @@ static void nav_timegps_handle(struct gnss_run_state *state, const struct task_g
 
 	LOG_DBG("NAV-TIMEGPS: (%d.%d) Acc: %d Valid: %02X: Leap: %d", timegps->week, timegps->itow,
 		timegps->t_acc, timegps->valid, timegps->leap_s);
+
+	/* Exit if GPS time knowledge is not valid */
+	if (!time_valid) {
+		return;
+	}
+
+	/* Ensure math below is well behaved (ftow can be negative) */
+	if (timegps->itow <= 500) {
+		return;
+	}
 
 	/* Merge iTOW and fTOW as per Interface Description */
 	uint64_t weektime_us = (1000 * (uint64_t)timegps->itow) + (timegps->ftow / 1000);
