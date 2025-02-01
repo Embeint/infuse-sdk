@@ -25,6 +25,13 @@
 #include <infuse/fs/kv_types.h>
 #include <infuse/net/dns.h>
 
+#ifdef CONFIG_MEMFAULT_INFUSE_METRICS_EPACKET_UDP
+#include <memfault/metrics/metrics.h>
+#else
+#define MEMFAULT_METRIC_ADD(x, val)
+#define MEMFAULT_METRIC_TIMER_START(x)
+#define MEMFAULT_METRIC_TIMER_STOP(x)
+#endif
 #ifdef CONFIG_MEMFAULT_INFUSE_METRICS_SYNC_SUCCESS_EPACKET_UDP
 #include <memfault/metrics/connectivity.h>
 #endif
@@ -163,8 +170,10 @@ static int epacket_udp_loop(void *a, void *b, void *c)
 
 		/* Get IP address of UDP server */
 		if (!k_event_test(&udp_state.state, UDP_STATE_VALID_DNS)) {
+			MEMFAULT_METRIC_ADD(epacket_udp_dns_query, 1);
 			rc = epacket_udp_dns_query();
 			if (rc < 0) {
+				MEMFAULT_METRIC_ADD(epacket_udp_dns_failure, 1);
 				LOG_ERR("DNS lookup failed (%d)", rc);
 				goto socket_error;
 			}
@@ -174,6 +183,7 @@ static int epacket_udp_loop(void *a, void *b, void *c)
 		/* Create the UDP socket */
 		udp_state.sock = zsock_socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
 		if (udp_state.sock < 0) {
+			MEMFAULT_METRIC_ADD(epacket_udp_sock_setup_error, 1);
 			LOG_ERR("Failed to open socket (%d)", errno);
 			goto socket_error;
 		}
@@ -186,10 +196,12 @@ static int epacket_udp_loop(void *a, void *b, void *c)
 		/* Bind so we can receive downlink packets */
 		rc = zsock_bind(udp_state.sock, (struct sockaddr *)&local_addr, sizeof(local_addr));
 		if (rc < 0) {
+			MEMFAULT_METRIC_ADD(epacket_udp_sock_setup_error, 1);
 			LOG_ERR("Failed to bind socket (%d)", errno);
 			goto socket_error;
 		}
 		LOG_INF("Waiting for UDP packets on port %d", ntohs(local_addr.sin_port));
+		MEMFAULT_METRIC_TIMER_START(epacket_udp_connected);
 
 		/* Interface is now connected */
 		SYS_SLIST_FOR_EACH_CONTAINER(&data->callback_list, cb, node) {
@@ -207,7 +219,7 @@ static int epacket_udp_loop(void *a, void *b, void *c)
 			rc = zsock_poll(pollfds, 1, SYS_FOREVER_MS);
 			if (pollfds[0].revents & (ZSOCK_POLLHUP | ZSOCK_POLLNVAL)) {
 				LOG_ERR("Socket closed");
-				goto socket_error;
+				break;
 			}
 
 			/* Allocate buffer and receive data */
@@ -217,7 +229,7 @@ static int epacket_udp_loop(void *a, void *b, void *c)
 			if (received < 0) {
 				LOG_ERR("Failed to receive (%d)", errno);
 				net_buf_unref(buf);
-				goto socket_error;
+				break;
 			}
 			net_buf_add(buf, received);
 			addr = ((struct sockaddr_in *)&from)->sin_addr.s4_addr;
@@ -237,7 +249,7 @@ static int epacket_udp_loop(void *a, void *b, void *c)
 			/* Hand off to core ePacket functions */
 			epacket_raw_receive_handler(buf);
 		}
-
+		MEMFAULT_METRIC_TIMER_STOP(epacket_udp_connected);
 socket_error:
 		/* Close socket if still open */
 		cleanup_interface(epacket_udp);

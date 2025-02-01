@@ -29,6 +29,11 @@ config MEMFAULT_INFUSE_METRICS_CONNECTIVITY_L4
 	depends on NET_MGMT_EVENT
 	default y
 
+config MEMFAULT_INFUSE_METRICS_EPACKET_UDP
+	bool "Networking metrics from the ePacket UDP interface"
+	depends on EPACKET_INTERFACE_UDP
+	default y
+
 config MEMFAULT_INFUSE_NRF_MODEM
 	bool
 	help

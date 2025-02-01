@@ -28,3 +28,12 @@ MEMFAULT_METRICS_KEY_DEFINE(ncs_lte_rx_kilobytes, kMemfaultMetricType_Unsigned)
 MEMFAULT_METRICS_KEY_DEFINE(l4_connected_time_ms, kMemfaultMetricType_Timer)
 
 #endif /* CONFIG_MEMFAULT_INFUSE_METRICS_CONNECTIVITY_L4 */
+
+#ifdef CONFIG_MEMFAULT_INFUSE_METRICS_EPACKET_UDP
+
+MEMFAULT_METRICS_KEY_DEFINE(epacket_udp_dns_query, kMemfaultMetricType_Unsigned)
+MEMFAULT_METRICS_KEY_DEFINE(epacket_udp_dns_failure, kMemfaultMetricType_Unsigned)
+MEMFAULT_METRICS_KEY_DEFINE(epacket_udp_sock_setup_error, kMemfaultMetricType_Unsigned)
+MEMFAULT_METRICS_KEY_DEFINE(epacket_udp_connected, kMemfaultMetricType_Timer)
+
+#endif /* CONFIG_MEMFAULT_INFUSE_METRICS_EPACKET_UDP */
