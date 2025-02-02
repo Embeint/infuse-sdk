@@ -99,3 +99,8 @@ config GNSS_U_BLOX_M8_EMUL
 	select GNSS_UBX_MODEM
 	select GNSS_UBX_MODEM_EMUL
 	select GNSS_UBX_M8
+
+config GNSS_NRF9X
+	bool "Nordic nRF9x GNSS modem"
+	default y
+	depends on DT_HAS_NORDIC_NRF9X_GNSS_ENABLED
