@@ -34,3 +34,10 @@ test_spi_bma4xx: bma4xx@2 {
 	spi-max-frequency = <0>;
 	int1-gpios = <&test_gpio 0 0>;
 };
+
+test_spi_lis2dw12: lis2dw12@3 {
+	compatible = "st,lis2dw12";
+	reg = <0x3>;
+	spi-max-frequency = <0>;
+	irq-gpios = <&test_gpio 0 0>;
+};
