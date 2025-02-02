@@ -35,15 +35,16 @@ static int validate_sample_timing(const struct device *dev, uint8_t acc_range,
 				.sample_rate_hz = gyr_sample_rate,
 				.low_power = false,
 			},
-		.fifo_sample_buffer = (acc_sample_rate + gyr_sample_rate) / 2,
+		.fifo_sample_buffer = (acc_sample_rate + gyr_sample_rate) / 4,
 	};
 	struct imu_config_output config_output;
 	int64_t wait_start, wait_end, wait_us;
 	k_timeout_t interrupt_timeout;
 	int64_t previous_timestamp_acc = 0, previous_timestamp_gyr = 0;
 	uint32_t read_delay_ms;
+	bool prev_samples_dropped = false;
 	uint16_t vector_mag;
-	int rc, rc2;
+	int imu_rc, rc, rc2;
 
 	/* Configure IMU */
 	rc = imu_configure(dev, &config, &config_output);
@@ -102,8 +103,8 @@ static int validate_sample_timing(const struct device *dev, uint8_t acc_range,
 		wait_start = k_uptime_ticks();
 
 		/* Read IMU samples */
-		rc = imu_data_read(dev, imu_samples, MAX_SAMPLES);
-		if (rc < 0) {
+		imu_rc = imu_data_read(dev, imu_samples, MAX_SAMPLES);
+		if (imu_rc < 0) {
 			VALIDATION_REPORT_ERROR(TEST, "Data read failed (%d)", rc);
 			rc = -EINVAL;
 			break;
@@ -133,7 +134,7 @@ static int validate_sample_timing(const struct device *dev, uint8_t acc_range,
 		}
 
 		/* Check timestamps across buffers */
-		if (acc_expected && previous_timestamp_acc) {
+		if (acc_expected && previous_timestamp_acc && !prev_samples_dropped) {
 			int64_t diff =
 				imu_samples->accelerometer.timestamp_ticks - previous_timestamp_acc;
 
@@ -145,7 +146,7 @@ static int validate_sample_timing(const struct device *dev, uint8_t acc_range,
 				break;
 			}
 		}
-		if (gyr_expected && previous_timestamp_gyr) {
+		if (gyr_expected && previous_timestamp_gyr && !prev_samples_dropped) {
 			int64_t diff =
 				imu_samples->gyroscope.timestamp_ticks - previous_timestamp_gyr;
 
@@ -163,6 +164,9 @@ static int validate_sample_timing(const struct device *dev, uint8_t acc_range,
 					 imu_samples->accelerometer.buffer_period_ticks;
 		previous_timestamp_gyr = imu_samples->gyroscope.timestamp_ticks +
 					 imu_samples->gyroscope.buffer_period_ticks;
+
+		/* Store whether we lost IMU samples on this iteration */
+		prev_samples_dropped = imu_rc == 1;
 
 		/* First buffer after boot usually contains startup transients as filters start */
 		if (i == 0) {
