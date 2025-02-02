@@ -4,7 +4,7 @@ configdefault NETWORKING
     default y if !MCUBOOT
 
 configdefault NRF_MODEM_LIB
-    default y if NETWORKING
+    default y if NETWORKING || GNSS
 
 configdefault LTE_LINK_CONTROL
     default y if NETWORKING

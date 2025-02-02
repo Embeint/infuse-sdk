@@ -12,6 +12,7 @@
 / {
 	aliases {
 		fuel-gauge0 = &fuel_gauge;
+		gnss = &nrf9x_gnss;
 	};
 
 	tfm_config {
@@ -92,6 +93,10 @@
 			compatible = "embeint,tdf-data-logger";
 		};
 	};
+};
+
+&nrf9x_gnss {
+	status = "okay";
 };
 
 &uart0 {

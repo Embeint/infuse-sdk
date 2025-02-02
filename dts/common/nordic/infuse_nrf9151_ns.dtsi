@@ -12,6 +12,11 @@
 		compatible = "nordic,nrf9x-temp";
 	};
 
+	nrf9x_gnss: nrf9x_gnss {
+		compatible = "nordic,nrf9x-gnss";
+		status = "disabled";
+	};
+
 	/* End of application SRAM */
 	memory@2003FF00 {
 		compatible = "zephyr,memory-region", "mmio-sram";
