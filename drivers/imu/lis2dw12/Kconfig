@@ -1,0 +1,31 @@
+# LIS2DW12 3 Axis Accelerometer configuration
+
+# Copyright (c) 2025 Embeint Inc
+# SPDX-License-Identifier: Apache-2.0
+
+menuconfig INFUSE_IMU_LIS2DW12
+	bool "LIS2DW12 Inertial measurement unit"
+	default y
+	depends on DT_HAS_ST_LIS2DW12_ENABLED
+	select I2C if $(dt_compat_on_bus,$(DT_COMPAT_ST_LIS2DW12),i2c)
+	select SPI if $(dt_compat_on_bus,$(DT_COMPAT_ST_LIS2DW12),spi)
+	help
+	  Enable driver for LIS2DW12 IMU sensor
+
+# Zephyr and Infuse driver conflict
+configdefault LIS2DW12
+	default n if INFUSE_IMU_BMA4XX
+
+if INFUSE_IMU_LIS2DW12
+
+config LIS2DW12_BUS_I2C
+	bool
+	default y
+	depends on $(dt_compat_on_bus,$(DT_COMPAT_ST_LIS2DW12),i2c)
+
+config LIS2DW12_BUS_SPI
+	bool
+	default y
+	depends on $(dt_compat_on_bus,$(DT_COMPAT_ST_LIS2DW12),spi)
+
+endif # LIS2DW12
