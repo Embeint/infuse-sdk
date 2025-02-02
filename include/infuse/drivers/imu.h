@@ -26,40 +26,40 @@ extern "C" {
  * @{
  */
 
-/* IMU configuration struct */
+/** IMU configuration struct */
 struct imu_config {
 	struct {
-		/* Sample rate in Hertz */
+		/** Sample rate in Hertz */
 		uint16_t sample_rate_hz;
-		/* Full scale range in G */
+		/** Full scale range in G */
 		uint8_t full_scale_range;
-		/* True for low power mode, false for performance */
+		/** True for low power mode, false for performance */
 		bool low_power;
 	} accelerometer;
 	struct {
-		/* Sample rate in Hertz */
+		/** Sample rate in Hertz */
 		uint16_t sample_rate_hz;
-		/* Full scale range in deg/s */
+		/** Full scale range in deg/s */
 		uint16_t full_scale_range;
-		/* True for low power mode, false for performance */
+		/** True for low power mode, false for performance */
 		bool low_power;
 	} gyroscope;
 	struct {
 		uint16_t sample_rate_hz;
 	} magnetometer;
-	/* Number of sample to buffer in FIFO before raising interrupt */
+	/** Requested number of samples to buffer in FIFO before raising interrupt */
 	uint16_t fifo_sample_buffer;
 };
 
-/* Configured IMU value */
+/** Configured IMU value */
 struct imu_config_output {
-	/* Expected period between accelerometer samples */
+	/** Expected period between accelerometer samples */
 	uint32_t accelerometer_period_us;
-	/* Expected period between gyroscope samples */
+	/** Expected period between gyroscope samples */
 	uint32_t gyroscope_period_us;
-	/* Expected period between magnetometer samples */
+	/** Expected period between magnetometer samples */
 	uint32_t magnetometer_period_us;
-	/* Expected period FIFO interrupts */
+	/** Expected period FIFO interrupts */
 	uint32_t expected_interrupt_period_us;
 };
 
@@ -69,40 +69,40 @@ struct imu_sample {
 	int16_t z;
 } __packed;
 
-/* Metadata for each sub-sensor in a FIFO buffer */
+/** Metadata for each sub-sensor in a FIFO buffer */
 struct imu_sensor_meta {
-	/* Local tick counter of first sample */
+	/** Local tick counter of first sample */
 	int64_t timestamp_ticks;
-	/* Real period between first and last samples in buffer */
+	/** Real period between first and last samples in buffer */
 	uint32_t buffer_period_ticks;
-	/* Accel = G, Gyro = DPS, Mag = ? */
+	/** Accel = G, Gyro = DPS, Mag = ? */
 	uint16_t full_scale_range;
-	/* Offset into sample array of sensor */
+	/** Offset into sample array of sensor */
 	uint16_t offset;
-	/* Number of readings for this sensor */
+	/** Number of readings for this sensor */
 	uint16_t num;
 };
 
-/* FIFO read structure */
+/** FIFO read structure */
 struct imu_sample_array {
-	/* Metadata for accelerometer samples */
+	/** Metadata for accelerometer samples */
 	struct imu_sensor_meta accelerometer;
-	/* Metadata for gyroscope samples */
+	/** Metadata for gyroscope samples */
 	struct imu_sensor_meta gyroscope;
-	/* Metadata for magnetometer samples */
+	/** Metadata for magnetometer samples */
 	struct imu_sensor_meta magnetometer;
-	/* Linear array of all samples */
+	/** Linear array of all samples */
 	struct imu_sample samples[];
 };
 
-/* Create type that holds a given number of IMU samples */
+/** Create type that holds a given number of IMU samples */
 #define IMU_SAMPLE_ARRAY_TYPE_DEFINE(type_name, max_samples)                                       \
 	struct type_name {                                                                         \
 		struct imu_sample_array header;                                                    \
 		struct imu_sample samples[max_samples];                                            \
 	}
 
-/* Create static buffer of IMU samples suitable for use with @ref imu_data_read */
+/** Create static buffer of IMU samples suitable for use with @ref imu_data_read */
 #define IMU_SAMPLE_ARRAY_CREATE(name, max_samples)                                                 \
 	IMU_SAMPLE_ARRAY_TYPE_DEFINE(_anon_t_##name, max_samples);                                 \
 	static struct _anon_t_##name _anon_##name;                                                 \
@@ -162,6 +162,7 @@ static inline int imu_data_wait(const struct device *dev, k_timeout_t timeout)
  * @param max_samples Maximum number of samples to populate
  *
  * @retval 0 on success
+ * @retval 1 on success, but FIFO frames have been lost
  * @retval -ENOMEM more than @a max_samples samples buffered
  * @retval -errno on error
  */
