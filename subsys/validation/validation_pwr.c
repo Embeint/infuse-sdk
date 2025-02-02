@@ -72,8 +72,10 @@ int infuse_validation_pwr(const struct device *dev, uint8_t flags)
 			VALIDATION_REPORT_ERROR(test, "Charge current get failed (%d)", rc);
 			goto driver_end;
 		}
-		current = (double)val.current / 1e6;
-		VALIDATION_REPORT_VALUE(test, "CURRENT", "%.06f", current);
+		if (rc != -ENOTSUP) {
+			current = (double)val.current / 1e6;
+			VALIDATION_REPORT_VALUE(test, "CURRENT", "%.06f", current);
+		}
 	}
 
 driver_end:
