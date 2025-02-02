@@ -83,16 +83,24 @@ source "subsys/logging/Kconfig.template.log_config"
 
 endif # TASK_RUNNER_TASK_ENVIRONMENTAL
 
+config TASK_RUNNER_TASK_GNSS
+	bool "GNSS location task"
+	depends on ZBUS
+
+if TASK_RUNNER_TASK_GNSS
+
+choice TASK_RUNNER_TASK_GNSS_BACKEND
+	prompt "Hardware backend for GNSS task"
+
 config TASK_RUNNER_TASK_GNSS_UBX
 	bool "u-blox GNSS task"
 	select INFUSE_ZBUS_CHAN_LOCATION
 	depends on GNSS_UBX_MODEM
 	depends on GNSS
-	depends on ZBUS
 
-if TASK_RUNNER_TASK_GNSS_UBX
+endchoice
 
-config TASK_RUNNER_TASK_GNSS_UBX_STACK_SIZE
+config TASK_RUNNER_TASK_GNSS_STACK_SIZE
 	int "Stack size of the task thread"
 	default 4096 if COVERAGE
 	default 2048
@@ -110,11 +118,11 @@ config TASK_RUNNER_GNSS_TIME_RESYNC_PERIOD_SEC
 	  can minimise the number of time discontinuities when logging higher
 	  frequency data (e.g. IMU samples). The default value is 1 hour.
 
-module = TASK_GNSS_UBX
-module-str = UBLOX GNSS task
+module = TASK_GNSS
+module-str = GNSS task
 source "subsys/logging/Kconfig.template.log_config"
 
-endif # TASK_RUNNER_TASK_GNSS_UBX
+endif # TASK_RUNNER_TASK_GNSS
 
 config TASK_RUNNER_TASK_NETWORK_SCAN
 	bool "LTE Cell scanning task"
