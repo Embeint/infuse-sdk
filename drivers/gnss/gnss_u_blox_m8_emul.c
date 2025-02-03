@@ -120,9 +120,9 @@ struct ubx_modem_data *ubx_modem_data_get(const struct device *dev)
 	return (struct ubx_modem_data *)dev;
 }
 
-void ubx_gnss_nav_pvt_configure(const struct device *dev, int32_t latitude, int32_t longitude,
-				int32_t height, uint32_t h_acc, uint32_t v_acc, uint32_t t_acc,
-				uint16_t p_dop, uint8_t num_sv)
+void emul_gnss_pvt_configure(const struct device *dev, int32_t latitude, int32_t longitude,
+			     int32_t height, uint32_t h_acc, uint32_t v_acc, uint32_t t_acc,
+			     uint16_t p_dop, uint8_t num_sv)
 {
 	struct emul_data *data = dev->data;
 
@@ -287,8 +287,8 @@ static int emul_pm_control(const struct device *dev, enum pm_device_action actio
 	switch (action) {
 	case PM_DEVICE_ACTION_RESUME:
 		/* Reset state on resume */
-		ubx_gnss_nav_pvt_configure(dev, 0, 0, 0, UINT32_MAX, UINT32_MAX, UINT32_MAX,
-					   UINT16_MAX, 0);
+		emul_gnss_pvt_configure(dev, 0, 0, 0, UINT32_MAX, UINT32_MAX, UINT32_MAX,
+					UINT16_MAX, 0);
 		navigation_reschedule(data);
 		break;
 	case PM_DEVICE_ACTION_SUSPEND:

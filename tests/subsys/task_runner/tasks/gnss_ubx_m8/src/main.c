@@ -17,7 +17,7 @@
 #include <infuse/epacket/interface/epacket_dummy.h>
 #include <infuse/data_logger/logger.h>
 #include <infuse/data_logger/high_level/tdf.h>
-#include <infuse/drivers/gnss/ubx_emul.h>
+#include <infuse/drivers/gnss/gnss_emul.h>
 #include <infuse/tdf/tdf.h>
 #include <infuse/zbus/channels.h>
 
@@ -80,27 +80,27 @@ static void run_location_fix(k_tid_t thread, int32_t latitude, int32_t longitude
 	}
 
 	/* Initially has some time knowledge */
-	ubx_gnss_nav_pvt_configure(DEV, 0, 0, UINT32_MAX, UINT32_MAX, UINT32_MAX,
-				   100 * NSEC_PER_MSEC, UINT16_MAX, 0);
+	emul_gnss_pvt_configure(DEV, 0, 0, UINT32_MAX, UINT32_MAX, UINT32_MAX, 100 * NSEC_PER_MSEC,
+				UINT16_MAX, 0);
 	if (k_thread_join(thread, K_SECONDS(1)) == 0) {
 		return;
 	}
-	ubx_gnss_nav_pvt_configure(DEV, 0, 0, UINT32_MAX, UINT32_MAX, UINT32_MAX, 1 * NSEC_PER_MSEC,
-				   UINT16_MAX, 0);
+	emul_gnss_pvt_configure(DEV, 0, 0, UINT32_MAX, UINT32_MAX, UINT32_MAX, 1 * NSEC_PER_MSEC,
+				UINT16_MAX, 0);
 	if (k_thread_join(thread, K_SECONDS(4)) == 0) {
 		return;
 	}
 	/* Poor initial fix, 100ms time accuracy */
-	ubx_gnss_nav_pvt_configure(DEV, latitude, longitude, height, 15 * KM, 500 * M,
-				   100 * NSEC_PER_MSEC, 1000, 3);
+	emul_gnss_pvt_configure(DEV, latitude, longitude, height, 15 * KM, 500 * M,
+				100 * NSEC_PER_MSEC, 1000, 3);
 	if (k_thread_join(thread, K_SECONDS(5)) == 0) {
 		return;
 	}
 	/* Quickly improve from 200m to plateau value */
 	accuracy = 100 * M;
 	while (accuracy >= plateau_start) {
-		ubx_gnss_nav_pvt_configure(DEV, latitude, longitude, height, accuracy, 100 * M,
-					   10 * NSEC_PER_MSEC, 500, 3);
+		emul_gnss_pvt_configure(DEV, latitude, longitude, height, accuracy, 100 * M,
+					10 * NSEC_PER_MSEC, 500, 3);
 		if (k_thread_join(thread, K_SECONDS(1)) == 0) {
 			return;
 		}
@@ -110,8 +110,8 @@ static void run_location_fix(k_tid_t thread, int32_t latitude, int32_t longitude
 	/* Plateau the improvmement, 50ns time accuracy */
 	accuracy = plateau_start;
 	while (accuracy > plateau_end) {
-		ubx_gnss_nav_pvt_configure(DEV, latitude, longitude, height, accuracy, 50 * M, 50,
-					   150, 8);
+		emul_gnss_pvt_configure(DEV, latitude, longitude, height, accuracy, 50 * M, 50, 150,
+					8);
 		if (k_thread_join(thread, K_SECONDS(1)) == 0) {
 			return;
 		}
@@ -121,8 +121,8 @@ static void run_location_fix(k_tid_t thread, int32_t latitude, int32_t longitude
 	/* Improve the accuracy until we hit final accuracy */
 	while (accuracy > final_accuracy) {
 		accuracy -= 2 * M;
-		ubx_gnss_nav_pvt_configure(DEV, latitude, longitude, height, accuracy, 10 * M, 50,
-					   50, final_num_sv);
+		emul_gnss_pvt_configure(DEV, latitude, longitude, height, accuracy, 10 * M, 50, 50,
+					final_num_sv);
 		if (k_thread_join(thread, K_SECONDS(1)) == 0) {
 			return;
 		}
