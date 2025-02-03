@@ -279,7 +279,7 @@ static void lte_reg_handler(const struct lte_lc_evt *const evt)
 	}
 }
 
-NRF_MODEM_LIB_ON_INIT(infuse_cfun_hook, infuse_modem_info, NULL);
+NRF_MODEM_LIB_ON_INIT(infuse_cfun_hook, infuse_modem_init, NULL);
 
 #ifdef CONFIG_KV_STORE_KEY_LTE_PDP_CONFIG
 static struct kv_store_cb pdp_cb;
@@ -293,7 +293,7 @@ static void pdp_value_changed(uint16_t key, const void *data, size_t data_len, v
 #ifdef CONFIG_INFUSE_REBOOT
 	/* PDP contexts can only be changed when the PDN is inactive.
 	 * The easiest way to achieve this is to reboot the application and let
-	 * infuse_modem_info configure it appropriately.
+	 * infuse_modem_init configure it appropriately.
 	 */
 	LOG_INF("Rebooting to apply updated PDP configuration");
 	infuse_reboot_delayed(INFUSE_REBOOT_CFG_CHANGE, KV_KEY_LTE_PDP_CONFIG, data_len,
@@ -304,7 +304,7 @@ static void pdp_value_changed(uint16_t key, const void *data, size_t data_len, v
 }
 #endif /* CONFIG_KV_STORE_KEY_LTE_PDP_CONFIG */
 
-static void infuse_modem_info(int ret, void *ctx)
+static void infuse_modem_init(int ret, void *ctx)
 {
 	KV_STRUCT_KV_STRING_VAR(64) modem_info = {0};
 	KV_KEY_TYPE(KV_KEY_LTE_MODEM_IMEI) modem_imei;
@@ -314,6 +314,21 @@ static void infuse_modem_info(int ret, void *ctx)
 	/* Ensure modem commands don't block forever */
 	rc = nrf_modem_at_sem_timeout_set(CONFIG_INFUSE_NRF_MODEM_MONITOR_AT_TIMEOUT_MS);
 	__ASSERT_NO_MSG(rc == 0);
+
+#ifdef CONFIG_INFUSE_NRF_MODEM_COEX0_CONTROL
+	/* Send requested configuration */
+	rc = nrf_modem_at_printf("%s", CONFIG_INFUSE_NRF_MODEM_COEX0);
+#else
+	/* Clear any previous configuration */
+	rc = nrf_modem_at_printf("%s", "AT\%XCOEX0");
+#endif /* CONFIG_INFUSE_NRF_MODEM_COEX0_CONTROL */
+	__ASSERT_NO_MSG(rc == 0);
+
+#ifdef CONFIG_INFUSE_NRF_MODEM_MAGPIO_CONTROL
+	/* Send requested configuration */
+	rc = nrf_modem_at_printf("%s", CONFIG_INFUSE_NRF_MODEM_MAGPIO);
+	__ASSERT_NO_MSG(rc == 0);
+#endif /* CONFIG_INFUSE_NRF_MODEM_MAGPIO_CONTROL */
 
 #ifndef CONFIG_SOC_NRF9160
 	/* Enable notifications of BIP events */
