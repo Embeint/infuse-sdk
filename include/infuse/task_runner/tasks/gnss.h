@@ -21,6 +21,8 @@
 extern "C" {
 #endif
 
+#ifdef CONFIG_TASK_RUNNER_TASK_GNSS_THREAD
+
 /**
  * @brief GNSS task function
  *
@@ -57,6 +59,36 @@ void gnss_task_fn(const struct task_schedule *schedule, struct k_poll_signal *te
 					   .stack_size = K_THREAD_STACK_SIZEOF(gnss_stack_area),   \
 				   },                                                              \
 		   }))
+
+#endif /* CONFIG_TASK_RUNNER_TASK_GNSS_THREAD */
+
+#ifdef CONFIG_TASK_RUNNER_TASK_GNSS_WORKQUEUE
+
+/**
+ * @brief GNSS runner function
+ *
+ * @param work Work object
+ */
+void gnss_task_fn(struct k_work *work);
+
+/**
+ * @brief GNSS task
+ *
+ * @param define_mem Define memory
+ * @param define_config Define task
+ * @param gnss_ptr GNSS device bound to task
+ */
+#define GNSS_TASK(define_mem, define_config, gnss_ptr)                                             \
+	IF_ENABLED(define_config, ({.name = "gnss",                                                \
+				    .task_id = TASK_ID_GNSS,                                       \
+				    .exec_type = TASK_EXECUTOR_WORKQUEUE,                          \
+				    .flags = TASK_FLAG_ARG_IS_DEVICE,                              \
+				    .task_arg.dev = gnss_ptr,                                      \
+				    .executor.workqueue = {                                        \
+					    .worker_fn = gnss_task_fn,                             \
+				    }}))
+
+#endif /* CONFIG_TASK_RUNNER_TASK_GNSS_WORKQUEUE */
 
 #ifdef __cplusplus
 }
