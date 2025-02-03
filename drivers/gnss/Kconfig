@@ -104,3 +104,8 @@ config GNSS_NRF9X
 	bool "Nordic nRF9x GNSS modem"
 	default y
 	depends on DT_HAS_NORDIC_NRF9X_GNSS_ENABLED
+
+config GNSS_NRF9X_EMUL
+	bool "Emulated Nordic nRF9x GNSS modem"
+	default y
+	depends on DT_HAS_NORDIC_NRF9X_GNSS_EMUL_ENABLED

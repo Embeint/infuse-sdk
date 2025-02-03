@@ -1,0 +1,6 @@
+# Copyright (c) 2025 Embeint Inc
+# SPDX-License-Identifier: Apache-2.0
+
+description: Emulated nRF9x GNSS interface
+
+compatible: "nordic,nrf9x-gnss-emul"
