@@ -35,7 +35,7 @@ void network_scan_task_fn(struct k_work *work);
  *
  * @param define_mem Define memory
  * @param define_config Define task
- * @param bat_ptr Fuel-gauge device bound to task
+ * @param _unused No argument required
  */
 #define NETWORK_SCAN_TASK(define_mem, define_config, _unused)                                      \
 	IF_ENABLED(define_config, ({.name = "nsc",                                                 \
