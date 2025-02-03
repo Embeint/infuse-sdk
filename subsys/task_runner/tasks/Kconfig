@@ -89,19 +89,33 @@ config TASK_RUNNER_TASK_GNSS
 
 if TASK_RUNNER_TASK_GNSS
 
+config TASK_RUNNER_TASK_GNSS_THREAD
+	bool
+
+config TASK_RUNNER_TASK_GNSS_WORKQUEUE
+	bool
+
 choice TASK_RUNNER_TASK_GNSS_BACKEND
 	prompt "Hardware backend for GNSS task"
 
 config TASK_RUNNER_TASK_GNSS_UBX
 	bool "u-blox GNSS task"
+	select TASK_RUNNER_TASK_GNSS_THREAD
 	select INFUSE_ZBUS_CHAN_LOCATION
 	depends on GNSS_UBX_MODEM
 	depends on GNSS
+
+config TASK_RUNNER_TASK_GNSS_NRF9X
+	bool "nRF9x GNSS task"
+	select TASK_RUNNER_TASK_GNSS_WORKQUEUE
+	select INFUSE_ZBUS_CHAN_LOCATION
+	depends on (GNSS_NRF9X && LTE_LINK_CONTROL) || GNSS_NRF9X_EMUL
 
 endchoice
 
 config TASK_RUNNER_TASK_GNSS_STACK_SIZE
 	int "Stack size of the task thread"
+	depends on TASK_RUNNER_TASK_GNSS_THREAD
 	default 4096 if COVERAGE
 	default 2048
 
