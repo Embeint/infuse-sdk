@@ -489,6 +489,58 @@ struct tdf_device_tilt {
 	float cosine;
 } __packed;
 
+/** nRF9x GNSS PVT data frame */
+struct tdf_nrf9x_gnss_pvt {
+	/** Latitude */
+	int32_t lat;
+	/** Longitude */
+	int32_t lon;
+	/** Height above ellipsoid */
+	int32_t height;
+	/** Horizontal accuracy estimate */
+	uint32_t h_acc;
+	/** Vertical accuracy estimate */
+	uint32_t v_acc;
+	/** Horizontal Speed (2-D) */
+	int32_t h_speed;
+	/** Horizonal speed accuracy estimate */
+	uint32_t h_speed_acc;
+	/** Horizontal Speed (2-D) */
+	int32_t v_speed;
+	/** Horizonal speed accuracy estimate */
+	uint32_t v_speed_acc;
+	/** Heading of motion (2-D) */
+	int32_t head_mot;
+	/** Heading accuracy estimate (both motion and vehicle) */
+	uint32_t head_acc;
+	/** Year (UTC) */
+	uint16_t year;
+	/** Month, range 1..12 (UTC) */
+	uint8_t month;
+	/** Day of month, range 1..31 (UTC) */
+	uint8_t day;
+	/** Hour of day, range 0..23 (UTC) */
+	uint8_t hour;
+	/** Minute of hour, range 0..59 (UTC) */
+	uint8_t min;
+	/** Seconds of minute, range 0..60 (UTC) */
+	uint8_t sec;
+	/** Milliseconds, range 0..999 (UTC) */
+	uint16_t ms;
+	/** Position DOP */
+	uint16_t p_dop;
+	/** Horizontal position DOP */
+	uint16_t h_dop;
+	/** Vertical position DOP */
+	uint16_t v_dop;
+	/** Time DOP */
+	uint16_t t_dop;
+	/** Fix status flags */
+	uint8_t flags;
+	/** Number of satellites used in Nav Solution */
+	uint8_t num_sv;
+} __packed;
+
 /** Example array type */
 struct tdf_array_type {
 	/** I am an array of length 4 */
@@ -563,6 +615,8 @@ enum tdf_builtin_id {
 	TDF_WIFI_AP_INFO = 35,
 	/** Tilt angle of the device */
 	TDF_DEVICE_TILT = 36,
+	/** nRF9x GNSS PVT data frame */
+	TDF_NRF9X_GNSS_PVT = 37,
 	/** Example array type */
 	TDF_ARRAY_TYPE = 100,
 	/** End of builtin TDF range */
@@ -604,6 +658,7 @@ enum tdf_builtin_id {
 #define _TDF_LTE_TAC_CELLS_TYPE               struct tdf_lte_tac_cells
 #define _TDF_WIFI_AP_INFO_TYPE                struct tdf_wifi_ap_info
 #define _TDF_DEVICE_TILT_TYPE                 struct tdf_device_tilt
+#define _TDF_NRF9X_GNSS_PVT_TYPE              struct tdf_nrf9x_gnss_pvt
 #define _TDF_ARRAY_TYPE_TYPE                  struct tdf_array_type
 
 /** Size of builtin TDF definitions */
@@ -641,6 +696,7 @@ enum tdf_builtin_size {
 	_TDF_LTE_TAC_CELLS_SIZE = sizeof(struct tdf_lte_tac_cells),
 	_TDF_WIFI_AP_INFO_SIZE = sizeof(struct tdf_wifi_ap_info),
 	_TDF_DEVICE_TILT_SIZE = sizeof(struct tdf_device_tilt),
+	_TDF_NRF9X_GNSS_PVT_SIZE = sizeof(struct tdf_nrf9x_gnss_pvt),
 	_TDF_ARRAY_TYPE_SIZE = sizeof(struct tdf_array_type),
 };
 
