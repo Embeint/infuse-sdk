@@ -27,4 +27,31 @@ config INFUSE_NRF_MODEM_DATA_PROFILE_DEFAULT
 	  devices should use levels 2, 1, or 0. 2 is the default value used
 	  by the modem.
 
+config INFUSE_NRF_MODEM_COEX0_CONTROL
+	bool "Drive COEX0 high when GNSS is running"
+	help
+	  If enabled, sends command defined by INFUSE_NRF_MODEM_COEX0 to the
+	  modem on boot. This can be used to enable LNA's or other RF circuitry
+	  while the GNSS is running.
+
+config INFUSE_NRF_MODEM_COEX0
+	string "AT%XCOEX0 command"
+	depends on INFUSE_NRF_MODEM_COEX0_CONTROL
+	default "AT\%XCOEX0=1,1,1565,1586"
+	help
+	  Defines the AT%XCOEX0 command to be sent to the modem.
+
+config INFUSE_NRF_MODEM_MAGPIO_CONTROL
+	bool "Configure MAGPIO output"
+	help
+	  If enabled, sends command defined by INFUSE_NRF_MODEM_COEX0 to the
+	  modem on boot. This can be used to configure RF switches based on
+	  the current RF frequency.
+
+config INFUSE_NRF_MODEM_MAGPIO
+	string "AT%XMAGPIO command"
+	depends on INFUSE_NRF_MODEM_MAGPIO_CONTROL
+	help
+	  Defines the AT%XMAGPIO command to be sent to the modem.
+
 endif
