@@ -1,13 +1,4 @@
 / {
-	aliases {
-		gnss = &gnss_m8_emul;
-	};
-
-	gnss_m8_emul: gnss_m8_emul {
-		compatible = "u-blox,m8-emul";
-		zephyr,pm-device-runtime-auto;
-	};
-
 	data_logger_dummy: data_logger_dummy {
 		compatible = "embeint,data-logger-epacket", "embeint,data-logger";
 		epacket = <&epacket_dummy>;

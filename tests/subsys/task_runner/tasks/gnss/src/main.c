@@ -25,14 +25,12 @@
 #include <infuse/task_runner/runner.h>
 #include <infuse/task_runner/tasks/gnss.h>
 
-#define DEV DEVICE_DT_GET_ONE(u_blox_m8_emul)
+#define DEV DEVICE_DT_GET(DT_ALIAS(gnss))
 GNSS_TASK(1, 0, DEV);
 struct task_config config = GNSS_TASK(0, 1, DEV);
 struct task_data data;
 struct task_schedule schedule = {.task_id = TASK_ID_GNSS};
 struct task_schedule_state state;
-const gnss_systems_t default_constellations =
-	GNSS_SYSTEM_GPS | GNSS_SYSTEM_QZSS | GNSS_SYSTEM_SBAS | GNSS_SYSTEM_GLONASS;
 
 static K_SEM_DEFINE(location_published, 0, 1);
 
@@ -54,13 +52,29 @@ void location_new_data_cb(const struct zbus_channel *chan)
 static k_tid_t task_schedule(struct task_data *data)
 {
 	data->schedule_idx = 0;
-	data->executor.workqueue.reschedule_counter = 0;
 	k_poll_signal_init(&data->terminate_signal);
 
-	return k_thread_create(config.executor.thread.thread, config.executor.thread.stack,
-			       config.executor.thread.stack_size,
-			       (k_thread_entry_t)config.executor.thread.task_fn, (void *)&schedule,
-			       &data->terminate_signal, config.task_arg.arg, 5, 0, K_NO_WAIT);
+	if (config.exec_type == TASK_EXECUTOR_THREAD) {
+		return k_thread_create(config.executor.thread.thread, config.executor.thread.stack,
+				       config.executor.thread.stack_size,
+				       (k_thread_entry_t)config.executor.thread.task_fn,
+				       (void *)&schedule, &data->terminate_signal,
+				       config.task_arg.arg, 5, 0, K_NO_WAIT);
+	} else {
+		data->executor.workqueue.reschedule_counter = 0;
+		k_work_reschedule(&data->executor.workqueue.work, K_NO_WAIT);
+		return NULL;
+	}
+}
+
+static bool task_wait(k_tid_t thread, k_timeout_t timeout)
+{
+	if (thread) {
+		/* Wait 20 seconds to simulate cold boot */
+		return k_thread_join(thread, timeout) == 0;
+	}
+	k_sleep(timeout);
+	return !k_work_delayable_is_pending(&data.executor.workqueue.work);
 }
 
 static void task_terminate(struct task_data *data)
@@ -75,25 +89,25 @@ static void run_location_fix(k_tid_t thread, int32_t latitude, int32_t longitude
 	uint32_t accuracy;
 
 	/* Wait 20 seconds to simulate cold boot */
-	if (k_thread_join(thread, K_SECONDS(20)) == 0) {
+	if (task_wait(thread, K_SECONDS(20))) {
 		return;
 	}
 
 	/* Initially has some time knowledge */
 	emul_gnss_pvt_configure(DEV, 0, 0, UINT32_MAX, UINT32_MAX, UINT32_MAX, 100 * NSEC_PER_MSEC,
 				UINT16_MAX, 0);
-	if (k_thread_join(thread, K_SECONDS(1)) == 0) {
+	if (task_wait(thread, K_SECONDS(1))) {
 		return;
 	}
 	emul_gnss_pvt_configure(DEV, 0, 0, UINT32_MAX, UINT32_MAX, UINT32_MAX, 1 * NSEC_PER_MSEC,
 				UINT16_MAX, 0);
-	if (k_thread_join(thread, K_SECONDS(4)) == 0) {
+	if (task_wait(thread, K_SECONDS(4))) {
 		return;
 	}
 	/* Poor initial fix, 100ms time accuracy */
 	emul_gnss_pvt_configure(DEV, latitude, longitude, height, 15 * KM, 500 * M,
 				100 * NSEC_PER_MSEC, 1000, 3);
-	if (k_thread_join(thread, K_SECONDS(5)) == 0) {
+	if (task_wait(thread, K_SECONDS(5))) {
 		return;
 	}
 	/* Quickly improve from 200m to plateau value */
@@ -101,7 +115,7 @@ static void run_location_fix(k_tid_t thread, int32_t latitude, int32_t longitude
 	while (accuracy >= plateau_start) {
 		emul_gnss_pvt_configure(DEV, latitude, longitude, height, accuracy, 100 * M,
 					10 * NSEC_PER_MSEC, 500, 3);
-		if (k_thread_join(thread, K_SECONDS(1)) == 0) {
+		if (task_wait(thread, K_SECONDS(1))) {
 			return;
 		}
 		accuracy -= 20 * M;
@@ -112,7 +126,7 @@ static void run_location_fix(k_tid_t thread, int32_t latitude, int32_t longitude
 	while (accuracy > plateau_end) {
 		emul_gnss_pvt_configure(DEV, latitude, longitude, height, accuracy, 50 * M, 50, 150,
 					8);
-		if (k_thread_join(thread, K_SECONDS(1)) == 0) {
+		if (task_wait(thread, K_SECONDS(1))) {
 			return;
 		}
 		accuracy -= plateau_slope;
@@ -123,7 +137,7 @@ static void run_location_fix(k_tid_t thread, int32_t latitude, int32_t longitude
 		accuracy -= 2 * M;
 		emul_gnss_pvt_configure(DEV, latitude, longitude, height, accuracy, 10 * M, 50, 50,
 					final_num_sv);
-		if (k_thread_join(thread, K_SECONDS(1)) == 0) {
+		if (task_wait(thread, K_SECONDS(1))) {
 			return;
 		}
 	}
@@ -135,8 +149,13 @@ static void expected_location_fix(k_tid_t thread, uint32_t start, uint32_t durat
 
 	/* Final location should be pushed */
 	zassert_equal(0, k_sem_take(&location_published, K_SECONDS(2)));
-	/* Thread should have terminated */
-	zassert_equal(0, k_thread_join(thread, K_NO_WAIT));
+	if (thread) {
+		/* Thread should have terminated */
+		zassert_equal(0, k_thread_join(thread, K_NO_WAIT));
+	} else {
+		/* Work should have terminated */
+		zassert_false(k_work_delayable_is_pending(&data.executor.workqueue.work));
+	}
 
 	/* Expected duration of the fix */
 	zassert_within(duration, end - start, 2);
@@ -151,7 +170,7 @@ static void expected_no_logging(void)
 }
 
 static void expected_logging(int32_t latitude, int32_t longitude, int32_t height, uint32_t h_acc,
-			     uint32_t v_acc)
+			     uint32_t v_acc, uint32_t h_acc_threshold)
 {
 	struct k_fifo *tx_queue = epacket_dummmy_transmit_fifo_get();
 	struct tdf_gcs_wgs84_llha *gcs;
@@ -169,7 +188,7 @@ static void expected_logging(int32_t latitude, int32_t longitude, int32_t height
 	zassert_equal(latitude, gcs->location.latitude);
 	zassert_equal(longitude, gcs->location.longitude);
 	zassert_equal(height, gcs->location.height);
-	zassert_equal(h_acc, gcs->h_acc);
+	zassert_within(h_acc, gcs->h_acc, h_acc_threshold);
 	zassert_equal(v_acc, gcs->v_acc);
 
 	net_buf_unref(pkt);
@@ -199,17 +218,23 @@ ZTEST(task_gnss_ubx, test_time_fix)
 
 	/* No location should be published */
 	zassert_equal(-EAGAIN, k_sem_take(&location_published, K_SECONDS(2)));
-	/* Thread should have terminated */
-	zassert_equal(0, k_thread_join(thread, K_NO_WAIT));
+	if (thread) {
+		/* Thread should have terminated */
+		zassert_equal(0, k_thread_join(thread, K_NO_WAIT));
+	} else {
+		/* Work should have terminated */
+		zassert_false(k_work_delayable_is_pending(&data.executor.workqueue.work));
+	}
 	/* Time should now be valid */
 	zassert_equal(TIME_SOURCE_GNSS, epoch_time_get_source());
 }
 
 ZTEST(task_gnss_ubx, test_location_fix)
 {
-	gnss_systems_t enabled;
+	gnss_systems_t sys_default, sys_enabled;
 	k_tid_t thread;
 	uint32_t start;
+	int rc;
 
 	schedule.timeout_s = 0;
 	schedule.task_logging[0].loggers = TDF_DATA_LOGGER_SERIAL;
@@ -219,6 +244,9 @@ ZTEST(task_gnss_ubx, test_location_fix)
 		.accuracy_m = 5,
 		.position_dop = 100,
 	};
+
+	rc = gnss_get_enabled_systems(DEV, &sys_default);
+	zassert_equal(0, rc);
 
 	/* Schedule a location fix that completes in <1 minute */
 	start = k_uptime_seconds();
@@ -230,15 +258,17 @@ ZTEST(task_gnss_ubx, test_location_fix)
 	expected_no_logging();
 
 	/* Expect default constellations */
-	gnss_get_enabled_systems(DEV, &enabled);
-	zassert_equal(default_constellations, enabled);
+	rc = gnss_get_enabled_systems(DEV, &sys_enabled);
+	zassert_equal(0, rc);
+	zassert_equal(sys_default, sys_enabled);
 }
 
 ZTEST(task_gnss_ubx, test_location_fix_constellations)
 {
-	gnss_systems_t enabled;
+	gnss_systems_t sys_enabled;
 	k_tid_t thread;
 	uint32_t start;
+	int rc;
 
 	schedule.timeout_s = 0;
 	schedule.task_logging[0].loggers = TDF_DATA_LOGGER_SERIAL;
@@ -260,8 +290,9 @@ ZTEST(task_gnss_ubx, test_location_fix_constellations)
 	expected_no_logging();
 
 	/* Expect requested constellations */
-	gnss_get_enabled_systems(DEV, &enabled);
-	zassert_equal(GNSS_SYSTEM_GPS | GNSS_SYSTEM_QZSS, enabled);
+	rc = gnss_get_enabled_systems(DEV, &sys_enabled);
+	zassert_equal(0, rc);
+	zassert_equal(GNSS_SYSTEM_GPS | GNSS_SYSTEM_QZSS, sys_enabled);
 }
 
 static void task_terminator(struct k_work *work)
@@ -294,7 +325,7 @@ ZTEST(task_gnss_ubx, test_location_fix_runner_terminate)
 	k_work_reschedule(&terminator, K_MSEC(44500));
 	run_location_fix(thread, -270000000, 1530000000, 70 * M, 100 * M, 5 * M, 20 * M, 5 * M, 16);
 	expected_location_fix(thread, start, 46);
-	expected_logging(-270000000, 1530000000, 70 * M, 40 * M, 50 * M);
+	expected_logging(-270000000, 1530000000, 70 * M, 40 * M, 50 * M, 1 * M);
 
 	/* Time should be valid despite the early exit */
 	zassert_equal(TIME_SOURCE_GNSS, epoch_time_get_source());
@@ -330,7 +361,7 @@ ZTEST(task_gnss_ubx, test_location_fix_plateau)
 	/* Run the location fix with a quick plateau that does not trigger */
 	run_location_fix(thread, 550000000, -270000000, 70 * M, 100 * M, 5 * M, 20 * M, 5 * M, 16);
 	expected_location_fix(thread, start, 55);
-	expected_logging(550000000, -270000000, 70 * M, 4 * M, 10 * M);
+	expected_logging(550000000, -270000000, 70 * M, 4 * M, 10 * M, 1 * M);
 
 	/* Time should be valid */
 	zassert_equal(TIME_SOURCE_GNSS, epoch_time_get_source());
@@ -366,7 +397,7 @@ ZTEST(task_gnss_ubx, test_location_fix_plateau_timeout)
 	/* Run the location fix with a slow plateau that should trigger timeout */
 	run_location_fix(thread, 230000000, -1500000000, 70 * M, 25 * M, 10, 20 * M, 5 * M, 16);
 	expected_location_fix(thread, start, 41);
-	expected_logging(230000000, -1500000000, 70 * M, 24950, 50 * M);
+	expected_logging(230000000, -1500000000, 70 * M, 24950, 50 * M, 1 * M);
 
 	/* Time should be valid */
 	zassert_equal(TIME_SOURCE_GNSS, epoch_time_get_source());
@@ -408,7 +439,7 @@ ZTEST(task_gnss_ubx, test_location_fix_plateau_min_accuracy)
 	/* Run the location fix with a plateau before the minimum accuracy is reached */
 	run_location_fix(thread, 230000000, -1500000000, 70 * M, 25 * M, 10, 20 * M, 5 * M, 16);
 	expected_location_fix(thread, start, 120);
-	expected_logging(230000000, -1500000000, 70 * M, 24160, 50 * M);
+	expected_logging(230000000, -1500000000, 70 * M, 24160, 50 * M, 1 * M);
 
 	/* Time should be valid */
 	zassert_equal(TIME_SOURCE_GNSS, epoch_time_get_source());
@@ -444,7 +475,7 @@ ZTEST(task_gnss_ubx, test_location_fix_no_location_timeout)
 	/* Should time out before any location is known */
 	run_location_fix(thread, 230000000, -1500000000, 70 * M, 25 * M, 10, 20 * M, 5 * M, 16);
 	expected_location_fix(thread, start, 15);
-	expected_logging(-910000000, -1810000000, 0, INT32_MAX, INT32_MAX);
+	expected_logging(-910000000, -1810000000, 0, INT32_MAX, INT32_MAX, 0);
 
 	/* No time source as a result of this run */
 	zassert_equal(TIME_SOURCE_NONE, epoch_time_get_source());
@@ -457,7 +488,6 @@ static void logger_before(void *fixture)
 
 	epoch_time_reset();
 	k_sem_reset(&location_published);
-	gnss_set_enabled_systems(DEV, default_constellations);
 	/* Setup links between task config and data */
 	task_runner_init(&schedule, &state, 1, &config, &data, 1);
 
@@ -469,6 +499,16 @@ static void logger_before(void *fixture)
 		}
 		net_buf_unref(buf);
 	}
+
+#ifdef CONFIG_GNSS_NRF9X_EMUL
+	/* nRF modem reports all fields as 0 on boot */
+	emul_gnss_pvt_configure(DEV, 0, 0, 0, 0, 0, 0, 0, 0);
+#endif /* CONFIG_GNSS_NRF9X_EMUL */
+#ifdef GNSS_UBX_MODEM_EMUL
+	/* UBX modem reports all fields as 1 on boot */
+	emul_gnss_pvt_configure(DEV, 0, 0, UINT32_MAX, UINT32_MAX, UINT32_MAX, UINT32_MAX,
+				UINT16_MAX, 0)
+#endif /* GNSS_UBX_MODEM_EMUL */
 }
 
 ZTEST_SUITE(task_gnss_ubx, NULL, NULL, logger_before, NULL, NULL);

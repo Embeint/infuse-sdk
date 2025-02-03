@@ -1,0 +1,11 @@
+#include "app.overlay"
+
+/ {
+	aliases {
+		gnss = &gnss_nrf9x;
+	};
+
+	gnss_nrf9x: gnss_nrf9x {
+		compatible = "nordic,nrf9x-gnss-emul";
+	};
+};
