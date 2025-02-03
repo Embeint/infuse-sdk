@@ -1,14 +1,14 @@
 /**
  * @file
- * @brief Emulated u-blox GNSS driver control
+ * @brief Emulated GNSS driver control
  * @copyright 2024 Embeint Inc
  * @author Jordan Yates <jordan@embeint.com>
  *
  * SPDX-License-Identifier: LicenseRef-Embeint
  */
 
-#ifndef INFUSE_SDK_INCLUDE_INFUSE_DRIVERS_GNSS_UBX_EMUL_H_
-#define INFUSE_SDK_INCLUDE_INFUSE_DRIVERS_GNSS_UBX_EMUL_H_
+#ifndef INFUSE_SDK_INCLUDE_INFUSE_DRIVERS_GNSS_GNSS_EMUL_H_
+#define INFUSE_SDK_INCLUDE_INFUSE_DRIVERS_GNSS_GNSS_EMUL_H_
 
 #include <stdint.h>
 
@@ -17,13 +17,13 @@ extern "C" {
 #endif
 
 /**
- * @brief ubx_emul API
- * @defgroup ubx_emul_apis emulated u-blox GNSS APIs
+ * @brief gnss_emul API
+ * @defgroup gnss_emul_apis emulated GNSS APIs
  * @{
  */
 
 /**
- * @brief Configure the currently output NAV-PVT message
+ * @brief Configure the currently output PVT message
  *
  * @param dev Emulated GNSS device
  * @param latitude Latitude (scaled by 1e7)
@@ -35,9 +35,9 @@ extern "C" {
  * @param p_dop Position dilution of precision
  * @param num_sv Number of satellite vehicles
  */
-void ubx_gnss_nav_pvt_configure(const struct device *dev, int32_t latitude, int32_t longitude,
-				int32_t height, uint32_t h_acc, uint32_t v_acc, uint32_t t_acc,
-				uint16_t p_dop, uint8_t num_sv);
+void emul_gnss_pvt_configure(const struct device *dev, int32_t latitude, int32_t longitude,
+			     int32_t height, uint32_t h_acc, uint32_t v_acc, uint32_t t_acc,
+			     uint16_t p_dop, uint8_t num_sv);
 
 /**
  * @}
@@ -47,4 +47,4 @@ void ubx_gnss_nav_pvt_configure(const struct device *dev, int32_t latitude, int3
 }
 #endif
 
-#endif /* INFUSE_SDK_INCLUDE_INFUSE_DRIVERS_GNSS_UBX_EMUL_H_ */
+#endif /* INFUSE_SDK_INCLUDE_INFUSE_DRIVERS_GNSS_GNSS_EMUL_H_ */
