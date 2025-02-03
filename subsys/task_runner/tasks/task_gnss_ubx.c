@@ -23,12 +23,13 @@
 #include <infuse/gnss/ubx/cfg.h>
 #include <infuse/gnss/ubx/protocol.h>
 
+#include "gnss_common.h"
+
 INFUSE_ZBUS_CHAN_DEFINE(INFUSE_ZBUS_CHAN_LOCATION);
 #define ZBUS_CHAN INFUSE_ZBUS_CHAN_GET(INFUSE_ZBUS_CHAN_LOCATION)
 
 #define TIME_VALID_FLAGS                                                                           \
 	(UBX_MSG_NAV_TIMEGPS_VALID_TOW_VALID | UBX_MSG_NAV_TIMEGPS_VALID_WEEK_VALID)
-#define KM (1000 * 1000)
 
 enum {
 	TIME_SYNC_RUNNING = BIT(0),
@@ -45,11 +46,10 @@ struct gnss_run_state {
 	struct ubx_msg_nav_timegps latest_timegps;
 	struct k_poll_signal nav_pvt_rx;
 	struct k_poll_signal nav_timegps_rx;
+	struct gnss_fix_timeout_state timeout_state;
 	uint64_t next_time_sync;
 	uint32_t task_start;
 	uint32_t time_acquired;
-	uint32_t plateau_accuracy;
-	uint8_t plateau_timeout;
 	uint8_t flags;
 };
 
@@ -211,9 +211,7 @@ static bool nav_pvt_handle(struct gnss_run_state *state, const struct task_gnss_
 	bool valid_hacc = (pvt->h_acc <= (1000 * (uint32_t)args->accuracy_m));
 	bool valid_pdop = (pvt->p_dop <= (10 * (uint32_t)args->position_dop));
 	bool not_running = !(state->flags & TIME_SYNC_RUNNING);
-	bool plateau_valid;
 	uint32_t runtime = k_uptime_seconds() - state->task_start;
-	const struct task_gnss_plateau_args *p_args;
 
 	/* Periodically print fix state */
 	if (k_uptime_seconds() % 30 == 0) {
@@ -234,39 +232,9 @@ static bool nav_pvt_handle(struct gnss_run_state *state, const struct task_gnss_
 		if (pvt->h_acc <= state->best_fix.h_acc) {
 			memcpy(&state->best_fix, pvt, sizeof(*pvt));
 		}
-		/* Terminate if fix hasn't reached 10km accuracy by the initial timeout */
-		if (args->run_to_fix.any_fix_timeout && (pvt->h_acc > (10 * KM)) &&
-		    (runtime >= args->run_to_fix.any_fix_timeout)) {
-			LOG_INF("Terminating due to %s", "any fix timeout");
+		/* Check if the fix has timed out */
+		if (gnss_run_to_fix_timeout(args, &state->timeout_state, pvt->h_acc, runtime)) {
 			return true;
-		}
-
-		p_args = &args->run_to_fix.fix_plateau;
-
-		/* Plateau check should be performed if:
-		 *    1. Timeout is enabled
-		 *    2. Accuracy reaches some hardcoded minimum threshold
-		 *    3. Tighter minimum accuracy not requested, or reached
-		 */
-		plateau_valid = p_args->timeout && (pvt->h_acc < (10 * KM)) &&
-				((p_args->min_accuracy_m == 0) ||
-				 (pvt->h_acc <= (1000 * (uint32_t)p_args->min_accuracy_m)));
-
-		/* Terminate if fix accuracy has plateaued */
-		if (plateau_valid) {
-			int32_t req_acc = state->plateau_accuracy -
-					  (1000 * p_args->min_accuracy_improvement_m);
-
-			if (pvt->h_acc <= req_acc) {
-				state->plateau_accuracy = pvt->h_acc;
-				state->plateau_timeout = p_args->timeout;
-			} else {
-				state->plateau_timeout--;
-			}
-			if (state->plateau_timeout == 0) {
-				LOG_INF("Terminating due to %s", "accuracy plateau");
-				return true;
-			}
 		}
 	}
 
@@ -323,9 +291,9 @@ void gnss_task_fn(const struct task_schedule *schedule, struct k_poll_signal *te
 	run_state.modem = ubx_modem_data_get(gnss);
 	run_state.schedule = schedule;
 	run_state.best_fix.h_acc = UINT32_MAX;
-	run_state.plateau_accuracy = UINT32_MAX;
 	run_state.task_start = k_uptime_seconds();
 	run_state.time_acquired = 0;
+	gnss_timeout_reset(&run_state.timeout_state);
 	k_poll_signal_init(&run_state.nav_pvt_rx);
 	k_poll_signal_init(&run_state.nav_timegps_rx);
 
