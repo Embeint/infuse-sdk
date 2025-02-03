@@ -113,7 +113,7 @@ static const struct task_schedule schedules[] = {
 			{
 				{
 					.loggers = STORAGE_LOGGER,
-					.tdf_mask = TASK_GNSS_LOG_UBX_NAV_PVT,
+					.tdf_mask = TASK_GNSS_LOG_PVT,
 				},
 			},
 		.task_args.infuse.gnss =

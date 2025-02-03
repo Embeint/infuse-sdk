@@ -181,8 +181,8 @@ static uint64_t log_and_publish(struct gnss_run_state *state, const struct ubx_m
 	/* Log output */
 	TASK_SCHEDULE_TDF_LOG(state->schedule, TASK_GNSS_LOG_LLHA, TDF_GCS_WGS84_LLHA, epoch_time,
 			      &llha);
-	TASK_SCHEDULE_TDF_LOG(state->schedule, TASK_GNSS_LOG_UBX_NAV_PVT, TDF_UBX_NAV_PVT,
-			      epoch_time, tdf_pvt);
+	TASK_SCHEDULE_TDF_LOG(state->schedule, TASK_GNSS_LOG_PVT, TDF_UBX_NAV_PVT, epoch_time,
+			      tdf_pvt);
 
 	return epoch_time;
 }
