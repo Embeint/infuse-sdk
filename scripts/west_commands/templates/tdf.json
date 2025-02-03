@@ -372,6 +372,36 @@
                 {"name": "cosine", "type": "float", "description": "Cosine of the tilt angle", "display": {"fmt": "float", "digits": 6}}
             ]
         },
+        "37": {
+            "name": "NRF9X_GNSS_PVT",
+            "description": "nRF9x GNSS PVT data frame",
+            "fields": [
+                {"name": "lat", "type": "int32_t", "description": "Latitude", "display": {"postfix": "deg"}, "conversion": {"m": 0.0000001, "c": 0}},
+                {"name": "lon", "type": "int32_t", "description": "Longitude", "display": {"postfix": "deg"}, "conversion": {"m": 0.0000001, "c": 0}},
+                {"name": "height", "type": "int32_t", "description": "Height above ellipsoid", "display": {"postfix": "m"}, "conversion": {"m": 0.001, "c": 0}},
+                {"name": "h_acc", "type": "uint32_t", "description": "Horizontal accuracy estimate", "display": {"postfix": "m"}, "conversion": {"m": 0.001, "c": 0}},
+                {"name": "v_acc", "type": "uint32_t", "description": "Vertical accuracy estimate", "display": {"postfix": "m"}, "conversion": {"m": 0.001, "c": 0}},
+                {"name": "h_speed", "type": "int32_t", "description": "Horizontal Speed (2-D)", "display": {"postfix": "m/s"}, "conversion": {"m": 0.001, "c": 0}},
+                {"name": "h_speed_acc", "type": "uint32_t", "description": "Horizonal speed accuracy estimate", "display": {"postfix": "m/s"}, "conversion": {"m": 0.001, "c": 0}},
+                {"name": "v_speed", "type": "int32_t", "description": "Horizontal Speed (2-D)", "display": {"postfix": "m/s"}, "conversion": {"m": 0.001, "c": 0}},
+                {"name": "v_speed_acc", "type": "uint32_t", "description": "Horizonal speed accuracy estimate", "display": {"postfix": "m/s"}, "conversion": {"m": 0.001, "c": 0}},
+                {"name": "head_mot", "type": "int32_t", "description": "Heading of motion (2-D)", "display": {"postfix": "deg"}, "conversion": {"m": 0.00001, "c": 0}},
+                {"name": "head_acc", "type": "uint32_t", "description": "Heading accuracy estimate (both motion and vehicle)", "display": {"postfix": "deg"}, "conversion": {"m": 0.00001, "c": 0}},
+                {"name": "year", "type": "uint16_t", "description": "Year (UTC)"},
+                {"name": "month", "type": "uint8_t", "description": "Month, range 1..12 (UTC)"},
+                {"name": "day", "type": "uint8_t", "description": "Day of month, range 1..31 (UTC)"},
+                {"name": "hour", "type": "uint8_t", "description": "Hour of day, range 0..23 (UTC)"},
+                {"name": "min", "type": "uint8_t", "description": "Minute of hour, range 0..59 (UTC)"},
+                {"name": "sec", "type": "uint8_t", "description": "Seconds of minute, range 0..60 (UTC)"},
+                {"name": "ms", "type": "uint16_t", "description": "Milliseconds, range 0..999 (UTC)"},
+                {"name": "p_dop", "type": "uint16_t", "description": "Position DOP", "conversion": {"m": 0.01, "c": 0}},
+                {"name": "h_dop", "type": "uint16_t", "description": "Horizontal position DOP", "conversion": {"m": 0.01, "c": 0}},
+                {"name": "v_dop", "type": "uint16_t", "description": "Vertical position DOP", "conversion": {"m": 0.01, "c": 0}},
+                {"name": "t_dop", "type": "uint16_t", "description": "Time DOP", "conversion": {"m": 0.01, "c": 0}},
+                {"name": "flags", "type": "uint8_t", "description": "Fix status flags", "display": {"fmt": "hex", "digits": 2}},
+                {"name": "num_sv", "type": "uint8_t", "description": "Number of satellites used in Nav Solution"}
+            ]
+        },
         "100": {
             "name": "ARRAY_TYPE",
             "description": "Example array type",
