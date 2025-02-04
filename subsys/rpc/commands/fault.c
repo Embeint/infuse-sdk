@@ -15,6 +15,8 @@
 #include <infuse/rpc/types.h>
 #include <infuse/time/epoch.h>
 
+#define SECURE_RAM DT_PROP(DT_COMPAT_GET_ANY_STATUS_OKAY(arm_trusted_firmware_m), sram_secure)
+
 LOG_MODULE_DECLARE(rpc_server);
 
 static uint32_t __noinline stack_overflow(uint32_t depth)
@@ -31,6 +33,7 @@ struct net_buf *rpc_command_fault(struct net_buf *request)
 {
 	struct rpc_fault_request *req = (void *)request->data;
 	struct rpc_fault_response rsp = {0};
+	uint8_t *ptr __maybe_unused;
 	int rc = -EINVAL;
 
 	LOG_INF("%s fault code %d", __func__, req->fault);
@@ -53,6 +56,13 @@ struct net_buf *rpc_command_fault(struct net_buf *request)
 	case K_ERR_ARM_USAGE_UNDEFINED_INSTRUCTION:
 		__asm__ volatile("udf #255; nop;");
 		break;
+#ifdef CONFIG_BUILD_WITH_TFM
+	case K_ERR_ARM_SECURE_GENERIC:
+		/* Try and return secure memory */
+		ptr = (void *)DT_REG_ADDR(SECURE_RAM);
+		rc = ptr[33];
+		break;
+#endif /* CONFIG_BUILD_WITH_TFM */
 #ifdef CONFIG_ASSERT
 	case K_ERR_KERNEL_OOPS:
 	case K_ERR_KERNEL_PANIC:
