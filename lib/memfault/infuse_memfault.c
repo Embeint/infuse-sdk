@@ -88,7 +88,7 @@ void memfault_platform_get_device_info(sMemfaultDeviceInfo *info)
 {
 	*info = (sMemfaultDeviceInfo){
 		.device_serial = infuse_id_str,
-		.software_type = "app",
+		.software_type = CONFIG_MEMFAULT_INFUSE_SOFTWARE_TYPE,
 		.software_version = software_version,
 		.hardware_version = CONFIG_BOARD_TARGET,
 	};
