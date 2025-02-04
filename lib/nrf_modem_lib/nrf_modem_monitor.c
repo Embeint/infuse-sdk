@@ -130,20 +130,16 @@ static void network_info_update(struct k_work *work)
 				&monitor.network_state.cell.phys_cell_id,
 				&monitor.network_state.cell.earfcn);
 	if (rc == 4) {
-		uint8_t sep = 0;
-		/* Parse MCC and MNC */
-		if (plmn[7] == '\x00') {
-			/* 3 character MCC, 2 character MNC */
-			plmn[6] = '\x00';
-			sep = 4;
-		} else if (plmn[8] == '\x00') {
-			/* 3 character MCC, 3 character MNC */
-			plmn[7] = '\x00';
-			sep = 3;
-		}
-		monitor.network_state.cell.mnc = atoi(&plmn[sep]);
-		plmn[sep] = '\x00';
-		monitor.network_state.cell.mcc = atoi(&plmn[1]);
+		/* Parse MCC and MNC. The PLMN string is a 5 or 6 digit number surrounded by quotes.
+		 * The first 3 numeric characters are the MCC (Mobile Country Code).
+		 * The next 2 or 3 numeric characters are the MNC (Mobile Network Code).
+		 * atoi() ignores trailing non-numeric characters.
+		 * Read the trailing MNC first (always starts at offset 4).
+		 * Then set the first MNC digit to \x00 so we can read the MCC.
+		 */
+		monitor.network_state.cell.mnc = atoi(plmn + 4);
+		plmn[4] = '\x00';
+		monitor.network_state.cell.mcc = atoi(plmn + 1);
 	}
 }
 
