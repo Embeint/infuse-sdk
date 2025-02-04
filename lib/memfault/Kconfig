@@ -8,6 +8,10 @@ config INFUSE_MEMFAULT
 
 if INFUSE_MEMFAULT
 
+config MEMFAULT_INFUSE_SOFTWARE_TYPE
+	string "Software type to report to Memfault"
+	default INFUSE_APPLICATION_NAME
+
 config MEMFAULT_INFUSE_CONFIG
 	bool "Use Infuse-IoT configuration files"
 	depends on MEMFAULT_METRICS
