@@ -514,6 +514,7 @@ class release_build(WestCommand):
                 "wifi": "CONFIG_WIFI" in build_configs,
                 "lte": "CONFIG_NRF_MODEM_LIB" in build_configs,
                 "mcumgr": "CONFIG_MCUMGR" in build_configs,
+                "memfault": "CONFIG_MEMFAULT" in build_configs,
                 "watchdog": "CONFIG_INFUSE_WATCHDOG" in build_configs,
             },
             "commands": [
