@@ -271,6 +271,7 @@ class release_build(WestCommand):
             build_cmd.extend(
                 [f'-DCONFIG_INFUSE_SECURITY_DEFAULT_NETWORK="{self.network_key}"']
             )
+        build_cmd.extend([f'-DCONFIG_INFUSE_APPLICATION_NAME="{name}"'])
         if self.release.get("disable_logging", False):
             build_cmd.extend(["-DCONFIG_LOG=n"])
 

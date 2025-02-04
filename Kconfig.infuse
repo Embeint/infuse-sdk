@@ -15,6 +15,12 @@ config INFUSE_APPLICATION_ID
 	hex "Unique application identifier"
 	default 0x00
 
+config INFUSE_APPLICATION_NAME
+	string "Application name"
+	default "dev"
+	help
+	  Typically set by the `release-build` scripts.
+
 rsource "Kconfig.defaults.core"
 rsource "Kconfig.defaults.net"
 rsource "Kconfig.defaults.nrf"
