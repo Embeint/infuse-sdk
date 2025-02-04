@@ -330,14 +330,16 @@ class vscode(WestCommand):
                 "-testid=test_id",
             ]
 
-    def _jlink_device(self, runners_yaml):
-        # Get the JLink device name
+    def _jlink_device_name(self, runners_yaml):
         for arg in runners_yaml["args"]["jlink"]:
             if arg.startswith("--device="):
-                device = arg.removeprefix("--device=")
-                launch["configurations"][0]["device"] = device
-                launch["configurations"][1]["device"] = device
-                break
+                return arg.removeprefix("--device=")
+        return None
+
+    def _jlink_device(self, runners_yaml):
+        if device := self._jlink_device_name(runners_yaml):
+            launch["configurations"][0]["device"] = device
+            launch["configurations"][1]["device"] = device
         launch["configurations"][0]["servertype"] = "jlink"
         launch["configurations"][1]["servertype"] = "jlink"
         launch["configurations"][0]["rtos"] = "Zephyr"
@@ -377,16 +379,46 @@ class vscode(WestCommand):
         launch["configurations"][0]["serialNumber"] = serial
         launch["configurations"][1]["serialNumber"] = serial
 
-    def _openocd(self, build_dir, cache, runners_yaml):
+    def _openocd_svd_search(self, vscode_folder: pathlib.Path, device: str):
+        try:
+            from pyocd.target.pack import pack_target
+        except ImportError:
+            return None
+
+        # Find the first pack that matches the start of the device name
+        # This probably won't match the actual SoC part number, but should refer back to the same SVD file.
+        for pack in pack_target.ManagedPacks.get_installed_targets():
+            if pack.part_number.lower().startswith(device):
+                break
+        else:
+            return None
+        svd_folder = vscode_folder / "svd"
+        svd_folder.mkdir(exist_ok=True)
+        svd_output = svd_folder / f"{device}.svd"
+        with svd_output.open("wb") as f:
+            f.write(pack.svd.read(-1))
+
+        return str(svd_output)
+
+    def _openocd(self, build_dir, cache, runners_yaml, vscode_folder):
         board_dir = cache["BOARD_DIR"]
         cfg_path = f"{board_dir}/support/openocd.cfg"
 
         launch["configurations"][0]["servertype"] = "openocd"
         launch["configurations"][1]["servertype"] = "openocd"
+        launch["configurations"][0]["serverpath"] = cache.get("OPENOCD")
+        launch["configurations"][1]["serverpath"] = cache.get("OPENOCD")
+
         launch["configurations"][0]["configFiles"] = [cfg_path]
         launch["configurations"][1]["configFiles"] = [cfg_path]
         launch["configurations"][0]["rtos"] = "Zephyr"
         launch["configurations"][1]["rtos"] = "Zephyr"
+
+        if device := self._jlink_device_name(runners_yaml):
+            svd_path = self._openocd_svd_search(vscode_folder, device.lower())
+            if svd_path is not None:
+                launch["configurations"][0]["svdFile"] = svd_path
+                launch["configurations"][1]["svdFile"] = svd_path
 
     def _physical_hardware(self, build_dir, cache):
         if build_dir.parts[-1] == "tfm":
@@ -461,7 +493,7 @@ class vscode(WestCommand):
                 self._jlink(args.snr, build_dir, cache, runners_yaml)
             elif runners_yaml["debug-runner"] == "openocd":
                 self._physical_hardware(build_dir, cache)
-                self._openocd(build_dir, cache, runners_yaml)
+                self._openocd(build_dir, cache, runners_yaml, vscode_folder)
 
             log.inf(
                 f"Writing `c_cpp_properties.json` and `launch.json` to {vscode_folder}"
