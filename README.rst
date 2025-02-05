@@ -31,6 +31,7 @@ Application Features
   * Cloud mirrored device configuration
   * Remote procedure call server + client
   * Binary diff application image upgrades
+  * Extended `Trusted Firmware-M`_ support
   * Post-deployment algorithm loading/updates (Coming soon)
 
 Architecture
@@ -87,3 +88,4 @@ For a complete list of supported boards, see `builtin supported platforms`_.
 .. _STM32L4x: https://www.st.com/en/microcontrollers-microprocessors/stm32l4-series.html
 .. _STM32WBx5: https://www.st.com/en/microcontrollers-microprocessors/stm32wbx5.html
 .. _builtin supported platforms: https://docs.dev.infuse-iot.com/latest/snippets/infuse/README.html
+.. _Trusted Firmware-M: https://www.trustedfirmware.org/projects/tf-m/
