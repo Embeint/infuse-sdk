@@ -40,6 +40,96 @@ int infuse_common_boot_last_reboot(struct infuse_reboot_state *state)
 	return state->reason == INFUSE_REBOOT_UNKNOWN ? -ENOENT : 0;
 }
 
+#ifdef CONFIG_TFM_PLATFORM_FAULT_INFO_QUERY
+
+#ifdef CONFIG_CPU_CORTEX_M33
+/* Secure Fault Status Register Definitions copied from core_cm33.h.
+ * The file itself cannot be used due to overzealous #ifdef usage.
+ * Fixed by: https://github.com/ARM-software/CMSIS_6/pull/218
+ */
+#define SAU_SFSR_LSERR_Pos 7U                          /*!< SAU SFSR: LSERR Position */
+#define SAU_SFSR_LSERR_Msk (1UL << SAU_SFSR_LSERR_Pos) /*!< SAU SFSR: LSERR Mask */
+
+#define SAU_SFSR_SFARVALID_Pos 6U                              /*!< SAU SFSR: SFARVALID Position */
+#define SAU_SFSR_SFARVALID_Msk (1UL << SAU_SFSR_SFARVALID_Pos) /*!< SAU SFSR: SFARVALID Mask */
+
+#define SAU_SFSR_LSPERR_Pos 5U                           /*!< SAU SFSR: LSPERR Position */
+#define SAU_SFSR_LSPERR_Msk (1UL << SAU_SFSR_LSPERR_Pos) /*!< SAU SFSR: LSPERR Mask */
+
+#define SAU_SFSR_INVTRAN_Pos 4U                            /*!< SAU SFSR: INVTRAN Position */
+#define SAU_SFSR_INVTRAN_Msk (1UL << SAU_SFSR_INVTRAN_Pos) /*!< SAU SFSR: INVTRAN Mask */
+
+#define SAU_SFSR_AUVIOL_Pos 3U                           /*!< SAU SFSR: AUVIOL Position */
+#define SAU_SFSR_AUVIOL_Msk (1UL << SAU_SFSR_AUVIOL_Pos) /*!< SAU SFSR: AUVIOL Mask */
+
+#define SAU_SFSR_INVER_Pos 2U                          /*!< SAU SFSR: INVER Position */
+#define SAU_SFSR_INVER_Msk (1UL << SAU_SFSR_INVER_Pos) /*!< SAU SFSR: INVER Mask */
+
+#define SAU_SFSR_INVIS_Pos 1U                          /*!< SAU SFSR: INVIS Position */
+#define SAU_SFSR_INVIS_Msk (1UL << SAU_SFSR_INVIS_Pos) /*!< SAU SFSR: INVIS Mask */
+
+#define SAU_SFSR_INVEP_Pos 0U                              /*!< SAU SFSR: INVEP Position */
+#define SAU_SFSR_INVEP_Msk (1UL /*<< SAU_SFSR_INVEP_Pos*/) /*!< SAU SFSR: INVEP Mask */
+
+#else
+#error "Unsupported CPU"
+#endif /* CONFIG_CPU_CORTEX_M33 */
+
+#include <tfm_ioctl_api.h>
+
+/* Ensure that the two fault frames match */
+BUILD_ASSERT(sizeof(((struct arch_esf *)(NULL))->basic) ==
+	     sizeof(((struct fault_exception_info_t *)(NULL))->EXC_FRAME_COPY));
+
+#define ARCH_ESF_PC_IDX (offsetof(struct arch_esf, basic.pc) / sizeof(uint32_t))
+#define ARCH_ESF_LR_IDX (offsetof(struct arch_esf, basic.lr) / sizeof(uint32_t))
+
+static int secure_fault_info_read(void)
+{
+	uint8_t reason = K_ERR_ARM_SECURE_GENERIC;
+	struct fault_exception_info_t secure_fault;
+	enum tfm_platform_err_t err;
+	char frame_ptr_str[9];
+	uint32_t result = 0;
+
+	err = tfm_platform_fault_info_read(&secure_fault, &result);
+	if ((err != TFM_PLATFORM_ERR_SUCCESS) || (result != sizeof(secure_fault))) {
+		/* No secure fault dump */
+		return -ENODATA;
+	}
+
+	if ((secure_fault.SFSR & SAU_SFSR_INVEP_Msk) != 0) {
+		reason = K_ERR_ARM_SECURE_ENTRY_POINT;
+	} else if ((secure_fault.SFSR & SAU_SFSR_INVIS_Msk) != 0) {
+		reason = K_ERR_ARM_SECURE_INTEGRITY_SIGNATURE;
+	} else if ((secure_fault.SFSR & SAU_SFSR_INVER_Msk) != 0) {
+		reason = K_ERR_ARM_SECURE_EXCEPTION_RETURN;
+	} else if ((secure_fault.SFSR & SAU_SFSR_AUVIOL_Msk) != 0) {
+		reason = K_ERR_ARM_SECURE_ATTRIBUTION_UNIT;
+	} else if ((secure_fault.SFSR & SAU_SFSR_INVTRAN_Msk) != 0) {
+		reason = K_ERR_ARM_SECURE_TRANSITION;
+	} else if ((secure_fault.SFSR & SAU_SFSR_LSPERR_Msk) != 0) {
+		reason = K_ERR_ARM_SECURE_LAZY_STATE_PRESERVATION;
+	} else if ((secure_fault.SFSR & SAU_SFSR_LSERR_Msk) != 0) {
+		reason = K_ERR_ARM_SECURE_LAZY_STATE_ERROR;
+	}
+	LOG_DBG("SecureFault");
+
+	reboot_state.reason = reason;
+	reboot_state.epoch_time_source = TIME_SOURCE_INVALID;
+	reboot_state.param_1.program_counter = secure_fault.EXC_FRAME_COPY[ARCH_ESF_PC_IDX];
+	reboot_state.param_2.link_register = secure_fault.EXC_FRAME_COPY[ARCH_ESF_LR_IDX];
+	/* We can't extract the thread name, but we can output the frame pointer as a string.
+	 * This should point back to the stack of the offending thread.
+	 */
+	snprintf(frame_ptr_str, sizeof(frame_ptr_str), "%08lx", (uintptr_t)secure_fault.EXC_FRAME);
+	memcpy(reboot_state.thread_name, frame_ptr_str, sizeof(reboot_state.thread_name));
+
+	return 0;
+}
+
+#endif /* CONFIG_TFM_PLATFORM_FAULT_INFO_QUERY */
+
 static int infuse_common_boot(void)
 {
 	KV_KEY_TYPE(KV_KEY_REBOOTS) reboot = {0};
@@ -140,6 +230,9 @@ static int infuse_common_boot(void)
 		(void)hwinfo_clear_reset_cause();
 		reboot_state.hardware_reason = reset_cause;
 		reboot_state.reason = INFUSE_REBOOT_UNKNOWN;
+#ifdef CONFIG_TFM_PLATFORM_FAULT_INFO_QUERY
+		rc = secure_fault_info_read();
+#endif /* CONFIG_TFM_PLATFORM_FAULT_INFO_QUERY */
 	}
 
 	/* Print the reboot information/causes */
@@ -153,11 +246,13 @@ static int infuse_common_boot(void)
 		LOG_INF("\t PC/WDOG: %08X", reboot_state.param_1.program_counter);
 		LOG_INF("\t LR/WDOG: %08X", reboot_state.param_2.link_register);
 
-		/* Restore time knowledge (Assume reboot took 0 ms) */
-		reference.local = 0;
-		reference.ref = reboot_state.epoch_time;
-		epoch_time_set_reference(TIME_SOURCE_RECOVERED | reboot_state.epoch_time_source,
-					 &reference);
+		if (reboot_state.epoch_time_source != TIME_SOURCE_INVALID) {
+			/* Restore time knowledge (Assume reboot took 0 ms) */
+			reference.local = 0;
+			reference.ref = reboot_state.epoch_time;
+			epoch_time_set_reference(
+				TIME_SOURCE_RECOVERED | reboot_state.epoch_time_source, &reference);
+		}
 	} else {
 		LOG_INF("\t   Cause: Unknown");
 	}
