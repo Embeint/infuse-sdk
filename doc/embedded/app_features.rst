@@ -16,6 +16,7 @@ any application.
   * :ref:`epoch_time_api`: Civil time synchronisation
   * :ref:`rpc_api`: Server & client
   * :ref:`app_states_api`: Global boolean states
+  * :ref:`trusted_firmware_m`: Extended functionality
   * :ref:`cpatch_api`: Binary diff application image upgrades
   * :ref:`reboot_api`: System reboot state integration
   * :ref:`watchdog_api`: Watchdog integration wrapper
