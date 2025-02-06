@@ -17,6 +17,17 @@ config MEMFAULT_INFUSE_CONFIG
 	depends on MEMFAULT_METRICS
 	default y
 
+config MEMFAULT_INFUSE_SECURE_FAULT_KNOWLEDGE
+	bool "Inject knowledge about secure faults to Memfault on boot"
+	depends on ARM
+	depends on !SIMPLIFIED_EXCEPTION_CODES
+	default y if TFM_PLATFORM_FAULT_INFO_QUERY
+	help
+	  Memfault has no way of detecting secure faults by itself.
+	  When enabled, use Infuse-IoT's fault handling knowledge to
+	  provide the fault information to Memfault if the reboot was
+	  caused by a secure fault.
+
 if MEMFAULT_INFUSE_CONFIG
 
 config MEMFAULT_METRICS_HEARTBEAT_INTERVAL_SECS

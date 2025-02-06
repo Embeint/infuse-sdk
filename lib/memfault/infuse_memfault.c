@@ -104,6 +104,43 @@ bool memfault_platform_time_get_current(sMemfaultCurrentTime *current_time)
 	return true;
 }
 
+#ifdef CONFIG_MEMFAULT_INFUSE_SECURE_FAULT_KNOWLEDGE
+
+#include "../core/src/memfault_reboot_tracking_private.h"
+
+#define MEMFAULT_REBOOT_INFO_MAGIC   0x21544252
+#define MEMFAULT_REBOOT_INFO_VERSION 2
+
+BUILD_ASSERT(CONFIG_MEMFAULT_INIT_PRIORITY > CONFIG_INFUSE_COMMON_BOOT_INIT_PRIORITY,
+	     "Memfault init must run after common_boot");
+
+void memfault_reboot_tracking_load(sMemfaultRebootTrackingStorage *dst)
+{
+	sMfltRebootInfo *reboot_info = (sMfltRebootInfo *)dst;
+	struct infuse_reboot_state infuse_reboot;
+
+	if (infuse_common_boot_last_reboot(&infuse_reboot) != 0) {
+		/* No reboot knowledge, therefore no secure fault knowledge */
+		return;
+	}
+	if (!IN_RANGE(infuse_reboot.reason, (uint8_t)K_ERR_ARM_SECURE_GENERIC,
+		      (uint8_t)K_ERR_ARM_SECURE_LAZY_STATE_ERROR)) {
+		/* Not a secure fault, Memfault should already know about it */
+		return;
+	}
+
+	/* Provide Memfault the information we know about the secure fault */
+	*reboot_info = (sMfltRebootInfo){
+		.magic = MEMFAULT_REBOOT_INFO_MAGIC,
+		.version = MEMFAULT_REBOOT_INFO_VERSION,
+		.last_reboot_reason = kMfltRebootReason_SecurityViolation,
+		.pc = infuse_reboot.param_1.program_counter,
+		.lr = infuse_reboot.param_2.link_register,
+	};
+}
+
+#endif /* CONFIG_MEMFAULT_INFUSE_SECURE_FAULT_KNOWLEDGE */
+
 /* Copied from memfault/ports/zephyr/common/memfault_platform_core.c
  * Usage complies with Memfault license as this is only every used for integration with Memfault
  * services.
