@@ -299,4 +299,4 @@ static int infuse_common_boot(void)
 	return 0;
 }
 
-SYS_INIT(infuse_common_boot, APPLICATION, 10);
+SYS_INIT(infuse_common_boot, APPLICATION, CONFIG_INFUSE_COMMON_BOOT_INIT_PRIORITY);

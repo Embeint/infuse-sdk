@@ -35,6 +35,10 @@ config INFUSE_CUSTOM_IDENTIFIERS
 
 if INFUSE_COMMON_BOOT
 
+config INFUSE_COMMON_BOOT_INIT_PRIORITY
+	int "Initialisation priority of the common boot handling"
+	default 10
+
 config INFUSE_COMMON_BOOT_AUTO_IMG_CONFIRM
 	bool "Automatically confirm a MCUboot image if common boot passes"
 	depends on MCUBOOT_IMG_MANAGER
