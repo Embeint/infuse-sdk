@@ -21,6 +21,7 @@
 #include <infuse/epacket/interface/epacket_dummy.h>
 
 #include <infuse/lib/memfault.h>
+#include <infuse/reboot.h>
 
 #include "memfault/core/platform/system_time.h"
 #include "memfault/core/reboot_tracking.h"
@@ -220,6 +221,7 @@ ZTEST(memfault_integration, test_epacket_dump)
 	KV_KEY_TYPE(KV_KEY_REBOOTS) reboots;
 	const struct device *epacket_dummy = DEVICE_DT_GET(DT_NODELABEL(epacket_dummy));
 	struct infuse_reboot_state reboot_state;
+	sMfltRebootReason reason;
 	ssize_t rc;
 
 	/* KV store should have been initialised and populated with a reboot count */
@@ -265,6 +267,25 @@ ZTEST(memfault_integration, test_epacket_dump)
 		zassert_unreachable("K_ERR_STACK_CHK_FAIL did not trigger exception");
 		break;
 	case 4:
+		/* Run the interface state callback */
+		epacket_dummy_set_interface_state(epacket_dummy, true);
+		/* Validate chunks are dumped (Fault should have resulted in more data) */
+		expect_memfault_chunks(false, 1000, 10000);
+		/* Run the interface state callback */
+		epacket_dummy_set_interface_state(epacket_dummy, false);
+		/* Validate previous reboot information */
+		rc = infuse_common_boot_last_reboot(&reboot_state);
+		zassert_equal(0, rc);
+		zassert_equal((enum infuse_reboot_reason)K_ERR_STACK_CHK_FAIL, reboot_state.reason);
+		/* Trigger a reboot that should result in secure fault info being provided */
+		infuse_reboot(K_ERR_ARM_SECURE_GENERIC, 0x1234, 0x5678);
+		zassert_unreachable("infuse_reboot did not result in reboot ");
+		break;
+	case 5:
+		/* Memfault should know about the secure fault due to our injection */
+		rc = memfault_reboot_tracking_get_reboot_reason(&reason);
+		zassert_equal(0, rc);
+		zassert_equal(kMfltRebootReason_SecurityViolation, reason.reboot_reg_reason);
 		/* Try dump with no payload */
 		epacket_dummy_set_max_packet(0);
 		rc = infuse_memfault_queue_dump_all(K_NO_WAIT);
@@ -274,8 +295,8 @@ ZTEST(memfault_integration, test_epacket_dump)
 		/* Dump all messages */
 		rc = infuse_memfault_queue_dump_all(K_NO_WAIT);
 		zassert_equal(0, rc);
-		/* Validate chunks are dumped (Fault should have resulted in more data) */
-		expect_memfault_chunks(false, 1000, 10000);
+		/* Validate chunks are dumped (Reboot info should be small) */
+		expect_memfault_chunks(false, 10, 100);
 		break;
 	default:
 		zassert_unreachable("Unexpected reboot count");
