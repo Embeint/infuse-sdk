@@ -192,6 +192,16 @@ void memfault_reboot_reason_get(sResetBootupInfo *info)
 	case K_ERR_ARM_USAGE_UNDEFINED_INSTRUCTION:
 		info->reset_reason = kMfltRebootReason_UsageFault;
 		break;
+	case K_ERR_ARM_SECURE_GENERIC:
+	case K_ERR_ARM_SECURE_ENTRY_POINT:
+	case K_ERR_ARM_SECURE_INTEGRITY_SIGNATURE:
+	case K_ERR_ARM_SECURE_EXCEPTION_RETURN:
+	case K_ERR_ARM_SECURE_ATTRIBUTION_UNIT:
+	case K_ERR_ARM_SECURE_TRANSITION:
+	case K_ERR_ARM_SECURE_LAZY_STATE_PRESERVATION:
+	case K_ERR_ARM_SECURE_LAZY_STATE_ERROR:
+		info->reset_reason = kMfltRebootReason_SecurityViolation;
+		break;
 #endif /* CONFIG_ARM */
 	case INFUSE_REBOOT_RPC:
 	case INFUSE_REBOOT_CFG_CHANGE:

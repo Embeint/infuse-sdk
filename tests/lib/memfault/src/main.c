@@ -153,6 +153,20 @@ ZTEST(memfault_integration, test_memfault_reboot_reason_get)
 	reboot_reason_test(K_ERR_ARM_USAGE_ILLEGAL_EPSR, 0, kMfltRebootReason_UsageFault);
 	reboot_reason_test(K_ERR_ARM_USAGE_UNDEFINED_INSTRUCTION, 0, kMfltRebootReason_UsageFault);
 
+	reboot_reason_test(K_ERR_ARM_SECURE_GENERIC, 0, kMfltRebootReason_SecurityViolation);
+	reboot_reason_test(K_ERR_ARM_SECURE_ENTRY_POINT, 0, kMfltRebootReason_SecurityViolation);
+	reboot_reason_test(K_ERR_ARM_SECURE_INTEGRITY_SIGNATURE, 0,
+			   kMfltRebootReason_SecurityViolation);
+	reboot_reason_test(K_ERR_ARM_SECURE_EXCEPTION_RETURN, 0,
+			   kMfltRebootReason_SecurityViolation);
+	reboot_reason_test(K_ERR_ARM_SECURE_ATTRIBUTION_UNIT, 0,
+			   kMfltRebootReason_SecurityViolation);
+	reboot_reason_test(K_ERR_ARM_SECURE_TRANSITION, 0, kMfltRebootReason_SecurityViolation);
+	reboot_reason_test(K_ERR_ARM_SECURE_LAZY_STATE_PRESERVATION, 0,
+			   kMfltRebootReason_SecurityViolation);
+	reboot_reason_test(K_ERR_ARM_SECURE_LAZY_STATE_ERROR, 0,
+			   kMfltRebootReason_SecurityViolation);
+
 	reboot_reason_test(INFUSE_REBOOT_RPC, 0, kMfltRebootReason_UserReset);
 	reboot_reason_test(INFUSE_REBOOT_CFG_CHANGE, 0, kMfltRebootReason_UserReset);
 	reboot_reason_test(INFUSE_REBOOT_DFU, 0, kMfltRebootReason_FirmwareUpdate);
