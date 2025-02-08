@@ -40,7 +40,7 @@ int infuse_common_boot_last_reboot(struct infuse_reboot_state *state)
 	return state->reason == INFUSE_REBOOT_UNKNOWN ? -ENOENT : 0;
 }
 
-#ifdef CONFIG_TFM_PLATFORM_FAULT_INFO_QUERY
+#if defined(CONFIG_TFM_PLATFORM_FAULT_INFO_QUERY) && defined(CONFIG_INFUSE_REBOOT)
 
 #ifdef CONFIG_CPU_CORTEX_M33
 /* Secure Fault Status Register Definitions copied from core_cm33.h.
@@ -128,7 +128,7 @@ static int secure_fault_info_read(void)
 	return 0;
 }
 
-#endif /* CONFIG_TFM_PLATFORM_FAULT_INFO_QUERY */
+#endif /* defined(CONFIG_TFM_PLATFORM_FAULT_INFO_QUERY) && defined(CONFIG_INFUSE_REBOOT) */
 
 static int infuse_common_boot(void)
 {
