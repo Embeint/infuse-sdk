@@ -29,6 +29,16 @@
 
 LOG_MODULE_REGISTER(modem_monitor, LOG_LEVEL_INF);
 
+#define LTE_LC_SYSTEM_MODE_DEFAULT 0xff
+#define LTE_MODE_DEFAULT                                                                           \
+	(IS_ENABLED(CONFIG_LTE_NETWORK_MODE_LTE_M)             ? LTE_LC_SYSTEM_MODE_LTEM           \
+	 : IS_ENABLED(CONFIG_LTE_NETWORK_MODE_NBIOT)           ? LTE_LC_SYSTEM_MODE_NBIOT          \
+	 : IS_ENABLED(CONFIG_LTE_NETWORK_MODE_LTE_M_GPS)       ? LTE_LC_SYSTEM_MODE_LTEM_GPS       \
+	 : IS_ENABLED(CONFIG_LTE_NETWORK_MODE_NBIOT_GPS)       ? LTE_LC_SYSTEM_MODE_NBIOT_GPS      \
+	 : IS_ENABLED(CONFIG_LTE_NETWORK_MODE_LTE_M_NBIOT)     ? LTE_LC_SYSTEM_MODE_LTEM_NBIOT     \
+	 : IS_ENABLED(CONFIG_LTE_NETWORK_MODE_LTE_M_NBIOT_GPS) ? LTE_LC_SYSTEM_MODE_LTEM_NBIOT_GPS \
+							       : LTE_LC_SYSTEM_MODE_DEFAULT)
+
 enum {
 	FLAGS_MODEM_SLEEPING = 0,
 	FLAGS_CELL_CONNECTED = 1,
@@ -277,28 +287,30 @@ static void lte_reg_handler(const struct lte_lc_evt *const evt)
 
 NRF_MODEM_LIB_ON_INIT(infuse_cfun_hook, infuse_modem_init, NULL);
 
-#ifdef CONFIG_KV_STORE_KEY_LTE_PDP_CONFIG
-static struct kv_store_cb pdp_cb;
+static struct kv_store_cb lte_kv_cb;
 
-static void pdp_value_changed(uint16_t key, const void *data, size_t data_len, void *user_ctx)
+static void lte_kv_value_changed(uint16_t key, const void *data, size_t data_len, void *user_ctx)
 {
-	if (key != KV_KEY_LTE_PDP_CONFIG) {
+	if (key == KV_KEY_LTE_PDP_CONFIG) {
+		LOG_INF("Rebooting to apply updated %s configuration", "PDP");
+	} else if (key == KV_KEY_LTE_NETWORKING_MODES) {
+		LOG_INF("Rebooting to apply updated %s configuration", "LTE mode");
+	} else {
 		return;
 	}
 
 #ifdef CONFIG_INFUSE_REBOOT
 	/* PDP contexts can only be changed when the PDN is inactive.
+	 * Networking modes can only be changed while LTE is disabled.
 	 * The easiest way to achieve this is to reboot the application and let
 	 * infuse_modem_init configure it appropriately.
 	 */
-	LOG_INF("Rebooting to apply updated PDP configuration");
 	infuse_reboot_delayed(INFUSE_REBOOT_CFG_CHANGE, KV_KEY_LTE_PDP_CONFIG, data_len,
 			      K_SECONDS(2));
 #else
-	LOG_ERR("PDP configuration change, no reboot support!");
+	LOG_WRN("No reboot support!");
 #endif /* CONFIG_INFUSE_REBOOT */
 }
-#endif /* CONFIG_KV_STORE_KEY_LTE_PDP_CONFIG */
 
 static void infuse_modem_init(int ret, void *ctx)
 {
@@ -371,12 +383,33 @@ static void infuse_modem_init(int ret, void *ctx)
 		}
 	}
 
-	if (pdp_cb.value_changed == NULL) {
-		/* Setup callback on first run */
-		pdp_cb.value_changed = pdp_value_changed;
-		kv_store_register_callback(&pdp_cb);
-	}
 #endif /* CONFIG_KV_STORE_KEY_LTE_PDP_CONFIG */
+
+#ifdef CONFIG_KV_STORE_KEY_LTE_NETWORKING_MODES
+	const KV_KEY_TYPE(KV_KEY_LTE_NETWORKING_MODES) modes_default = {
+		.modes = LTE_MODE_DEFAULT,
+		.prefer = CONFIG_LTE_MODE_PREFERENCE_VALUE,
+	};
+	KV_KEY_TYPE(KV_KEY_LTE_NETWORKING_MODES) modes;
+
+	/* Read the requested LTE networking modes and set */
+	rc = KV_STORE_READ_FALLBACK(KV_KEY_LTE_NETWORKING_MODES, &modes, &modes_default);
+	if (rc == sizeof(modes)) {
+		rc = lte_lc_system_mode_set(modes.modes, modes.prefer);
+		if (rc != 0) {
+			LOG_WRN("Failed to set configurated LTE modes (%d, %d)", modes.modes,
+				modes.prefer);
+		}
+	} else {
+		LOG_WRN("Failed to read LTE modes, will use default");
+	}
+#endif /* CONFIG_KV_STORE_KEY_LTE_NETWORKING_MODES */
+
+	if (lte_kv_cb.value_changed == NULL) {
+		/* Setup callback on first run */
+		lte_kv_cb.value_changed = lte_kv_value_changed;
+		kv_store_register_callback(&lte_kv_cb);
+	}
 
 	if (modem_info_stored) {
 		return;
