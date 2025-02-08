@@ -338,8 +338,30 @@ static void infuse_modem_init(int ret, void *ctx)
 
 #ifdef CONFIG_KV_STORE_KEY_LTE_PDP_CONFIG
 	KV_KEY_TYPE_VAR(KV_KEY_LTE_PDP_CONFIG, 32) pdp_config;
-	/* See if any PDP configuration has been set */
-	if (kv_store_read(KV_KEY_LTE_PDP_CONFIG, &pdp_config, sizeof(pdp_config)) > 0) {
+
+#ifdef CONFIG_INFUSE_NRF_MODEM_MONITOR_DEFAULT_PDP_APN_SET
+	const KV_KEY_TYPE_VAR(
+		KV_KEY_LTE_PDP_CONFIG,
+		sizeof(CONFIG_INFUSE_NRF_MODEM_MONITOR_DEFAULT_PDP_APN)) pdp_default = {
+		.apn =
+			{
+				.value_num =
+					strlen(CONFIG_INFUSE_NRF_MODEM_MONITOR_DEFAULT_PDP_APN),
+				.value = CONFIG_INFUSE_NRF_MODEM_MONITOR_DEFAULT_PDP_APN,
+			},
+		.family = PDN_FAM_IPV4,
+	};
+
+	/* Read the configured value, falling back to the default */
+	rc = kv_store_read_fallback(KV_KEY_LTE_PDP_CONFIG, &pdp_config, sizeof(pdp_config),
+				    &pdp_default, sizeof(pdp_default));
+#else
+	/* Read the configured value */
+	rc = kv_store_read(KV_KEY_LTE_PDP_CONFIG, &pdp_config, sizeof(pdp_config));
+#endif /* CONFIG_INFUSE_NRF_MODEM_MONITOR_DEFAULT_PDP_APN_SET */
+
+	/* If a PDP configuration has been set */
+	if ((rc > 0) && (strlen(pdp_config.apn.value) > 0)) {
 		LOG_DBG("PDP configuration: %d %s", pdp_config.family, pdp_config.apn.value);
 		rc = pdn_ctx_configure(0, pdp_config.apn.value, pdp_config.family, NULL);
 		if (rc < 0) {
