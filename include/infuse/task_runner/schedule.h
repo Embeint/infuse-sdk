@@ -162,14 +162,38 @@ struct task_schedule {
 	} task_args;
 } __packed;
 
+/** Events that can trigger callbacks */
+enum task_schedule_event {
+	/** Task associated with the schedule has been started */
+	TASK_SCHEDULE_STARTED = 0,
+	/** Task associated with the schedule has been requested to terminate */
+	TASK_SCHEDULE_TERMINATE_REQUEST = 1,
+	/** Task associated with the schedule has stopped */
+	TASK_SCHEDULE_STOPPED = 2,
+};
+
+/**
+ * @brief Callback notifying that an event has occurred on a schedule
+ *
+ * @note Callback can only be assigned to the @ref task_schedule_state AFTER the
+ *       call to @ref task_runner_init.
+ *
+ * @param schedule Schedule with the event
+ * @param event Event that occurred
+ */
+typedef void (*task_schedule_event_cb_t)(const struct task_schedule *schedule,
+					 enum task_schedule_event event);
+
 /**
  * @brief State for a given task schedule
  *
  * One state struct exists per @ref task_schedule
  */
 struct task_schedule_state {
-	/* Linked schedule for @ref TASK_PERIODICITY_AFTER */
+	/** Linked schedule for @ref TASK_PERIODICITY_AFTER */
 	struct task_schedule_state *linked;
+	/** Optional callback to be notified of schedule events */
+	task_schedule_event_cb_t event_cb;
 	/** System uptime that started the last run of this schedule */
 	uint32_t last_run;
 	/** Duration of current run */
