@@ -185,6 +185,16 @@
                 {"name": "apn", "type": "struct kv_string", "description": "Access Point Name"}
             ]
         },
+        "46": {
+            "name": "LTE_NETWORKING_MODES",
+            "description": "Enabled LTE networking modes and preferences",
+            "reflect": true,
+            "default": "y if NRF_MODEM_LIB",
+            "fields": [
+                {"name": "modes", "type": "uint8_t", "description": "Enabled modes as per `enum lte_lc_system_mode`"},
+                {"name": "prefer", "type": "uint8_t", "description": "Preference as per `enum lte_lc_system_mode_preference`"}
+            ]
+        },
         "50": {
             "name": "BLUETOOTH_PEER",
             "description": "Bluetooth peer device",

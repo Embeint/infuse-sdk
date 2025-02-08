@@ -126,6 +126,13 @@ static struct key_value_slot_definition kv_slots[] = {
 		.flags = KV_FLAGS_REFLECT,
 	},
 #endif /* CONFIG_KV_STORE_KEY_LTE_PDP_CONFIG */
+#ifdef CONFIG_KV_STORE_KEY_LTE_NETWORKING_MODES
+	{
+		.key = KV_KEY_LTE_NETWORKING_MODES,
+		.range = 1,
+		.flags = KV_FLAGS_REFLECT,
+	},
+#endif /* CONFIG_KV_STORE_KEY_LTE_NETWORKING_MODES */
 #ifdef CONFIG_KV_STORE_KEY_BLUETOOTH_PEER
 	{
 		.key = KV_KEY_BLUETOOTH_PEER,
