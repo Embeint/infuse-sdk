@@ -267,6 +267,19 @@ ZTEST(task_runner_runner, test_device_not_ready)
 	zassert_equal(1, example_device_run);
 }
 
+static enum task_schedule_event events_recv[8];
+static const struct task_schedule *expected_schedule;
+static enum task_schedule_event expected_event;
+static int callback_count;
+
+static void basic_schedule_callback(const struct task_schedule *schedule,
+				    enum task_schedule_event event)
+{
+	zassert_true(callback_count < ARRAY_SIZE(events_recv));
+	zassert_equal(expected_schedule, schedule);
+	events_recv[callback_count++] = event;
+}
+
 ZTEST(task_runner_runner, test_basic_behaviour)
 {
 	INFUSE_STATES_ARRAY(app_states) = {0};
@@ -276,19 +289,22 @@ ZTEST(task_runner_runner, test_basic_behaviour)
 			.validity = TASK_VALID_ALWAYS,
 			.periodicity_type = TASK_PERIODICITY_FIXED,
 			.periodicity.fixed.period_s = 5,
-			.timeout_s = 4,
+			.timeout_s = 3,
 			.task_args.raw = {0xA5},
 		},
 	};
-	struct task_schedule_state states[ARRAY_SIZE(schedules)];
+	struct task_schedule_state states[ARRAY_SIZE(schedules)] = {0};
 	uint32_t gps_time = 7000;
 	uint32_t uptime = 0;
 	uint32_t iter = k_uptime_seconds() + 1;
 
 	example_task_expected_arg = schedules[0].task_args.raw[0];
+	expected_schedule = &schedules[0];
+	expected_event = TASK_SCHEDULE_STARTED;
 
 	task_runner_init(schedules, states, ARRAY_SIZE(schedules), app_tasks, app_tasks_data,
 			 ARRAY_SIZE(app_tasks));
+	states[0].event_cb = basic_schedule_callback;
 
 	/* Immediate termination (10 seconds with 5 second period == 2 runs) */
 	for (int i = 0; i < 10; i++) {
@@ -297,27 +313,46 @@ ZTEST(task_runner_runner, test_basic_behaviour)
 		iter++;
 	}
 	zassert_equal(2, example_task_run_cnt);
+	zassert_equal(4, callback_count);
+	zassert_equal(TASK_SCHEDULE_STARTED, events_recv[0]);
+	zassert_equal(TASK_SCHEDULE_STOPPED, events_recv[1]);
+	zassert_equal(TASK_SCHEDULE_STARTED, events_recv[2]);
+	zassert_equal(TASK_SCHEDULE_STOPPED, events_recv[3]);
 
 	/* "run" for a few seconds before terminating */
-	example_task_block_timeout = K_SECONDS(3);
+	example_task_block_timeout = K_SECONDS(2);
 	example_task_run_cnt = 0;
+	callback_count = 0;
 	for (int i = 0; i < 10; i++) {
 		task_runner_iterate(app_states, uptime++, gps_time++, 100);
 		k_sleep(K_TIMEOUT_ABS_MS(iter * MSEC_PER_SEC));
 		iter++;
 	}
 	zassert_equal(2, example_task_run_cnt);
+	zassert_equal(4, callback_count);
+	zassert_equal(TASK_SCHEDULE_STARTED, events_recv[0]);
+	zassert_equal(TASK_SCHEDULE_STOPPED, events_recv[1]);
+	zassert_equal(TASK_SCHEDULE_STARTED, events_recv[2]);
+	zassert_equal(TASK_SCHEDULE_STOPPED, events_recv[3]);
 
 	/* Block until runner requests termination */
 	example_task_block_timeout = K_FOREVER;
 	example_task_expected_block_rc = 1;
 	example_task_run_cnt = 0;
+	callback_count = 0;
 	for (int i = 0; i < 10; i++) {
 		task_runner_iterate(app_states, uptime++, gps_time++, 100);
 		k_sleep(K_TIMEOUT_ABS_MS(iter * MSEC_PER_SEC));
 		iter++;
 	}
 	zassert_equal(2, example_task_run_cnt);
+	zassert_equal(6, callback_count);
+	zassert_equal(TASK_SCHEDULE_STARTED, events_recv[0]);
+	zassert_equal(TASK_SCHEDULE_TERMINATE_REQUEST, events_recv[1]);
+	zassert_equal(TASK_SCHEDULE_STOPPED, events_recv[2]);
+	zassert_equal(TASK_SCHEDULE_STARTED, events_recv[3]);
+	zassert_equal(TASK_SCHEDULE_TERMINATE_REQUEST, events_recv[4]);
+	zassert_equal(TASK_SCHEDULE_STOPPED, events_recv[5]);
 }
 
 ZTEST(task_runner_runner, test_after)
