@@ -245,6 +245,14 @@ struct kv_lte_pdp_config {
 	} __packed
 /* clang-format on */
 
+/** Enabled LTE networking modes and preferences */
+struct kv_lte_networking_modes {
+	/** Enabled modes as per `enum lte_lc_system_mode` */
+	uint8_t modes;
+	/** Preference as per `enum lte_lc_system_mode_preference` */
+	uint8_t prefer;
+} __packed;
+
 /** Bluetooth peer device */
 struct kv_bluetooth_peer {
 	/** Peer device Bluetooth address */
@@ -327,6 +335,8 @@ enum kv_builtin_id {
 	KV_KEY_LTE_SIM_UICC = 44,
 	/** Packet Data Protocol (PDP) default context configuration */
 	KV_KEY_LTE_PDP_CONFIG = 45,
+	/** Enabled LTE networking modes and preferences */
+	KV_KEY_LTE_NETWORKING_MODES = 46,
 	/** Bluetooth peer device */
 	KV_KEY_BLUETOOTH_PEER = 50,
 	/** Reference gravity vector for tilt calculations */
@@ -361,6 +371,7 @@ enum kv_builtin_size {
 	_KV_KEY_FIXED_LOCATION_SIZE = sizeof(struct kv_fixed_location),
 	_KV_KEY_EPACKET_UDP_PORT_SIZE = sizeof(struct kv_epacket_udp_port),
 	_KV_KEY_LTE_MODEM_IMEI_SIZE = sizeof(struct kv_lte_modem_imei),
+	_KV_KEY_LTE_NETWORKING_MODES_SIZE = sizeof(struct kv_lte_networking_modes),
 	_KV_KEY_BLUETOOTH_PEER_SIZE = sizeof(struct kv_bluetooth_peer),
 	_KV_KEY_GRAVITY_REFERENCE_SIZE = sizeof(struct kv_gravity_reference),
 };
@@ -383,6 +394,7 @@ enum kv_builtin_size {
 #define _KV_KEY_LTE_MODEM_IMEI_TYPE struct kv_lte_modem_imei
 #define _KV_KEY_LTE_SIM_UICC_TYPE struct kv_lte_sim_uicc
 #define _KV_KEY_LTE_PDP_CONFIG_TYPE struct kv_lte_pdp_config
+#define _KV_KEY_LTE_NETWORKING_MODES_TYPE struct kv_lte_networking_modes
 #define _KV_KEY_BLUETOOTH_PEER_TYPE struct kv_bluetooth_peer
 #define _KV_KEY_GRAVITY_REFERENCE_TYPE struct kv_gravity_reference
 #define _KV_KEY_GEOFENCE_TYPE struct kv_geofence
@@ -413,6 +425,7 @@ enum kv_builtin_size {
 	IF_ENABLED(CONFIG_KV_STORE_KEY_LTE_MODEM_IMEI, (1 +)) \
 	IF_ENABLED(CONFIG_KV_STORE_KEY_LTE_SIM_UICC, (1 +)) \
 	IF_ENABLED(CONFIG_KV_STORE_KEY_LTE_PDP_CONFIG, (1 +)) \
+	IF_ENABLED(CONFIG_KV_STORE_KEY_LTE_NETWORKING_MODES, (1 +)) \
 	IF_ENABLED(CONFIG_KV_STORE_KEY_BLUETOOTH_PEER, (1 +)) \
 	IF_ENABLED(CONFIG_KV_STORE_KEY_GRAVITY_REFERENCE, (1 +)) \
 	IF_ENABLED(CONFIG_KV_STORE_KEY_GEOFENCE, (CONFIG_KV_STORE_KEY_GEOFENCE_RANGE +)) \

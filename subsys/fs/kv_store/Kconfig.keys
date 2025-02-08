@@ -96,6 +96,12 @@ config KV_STORE_KEY_LTE_PDP_CONFIG
 	help
 	  Packet Data Protocol (PDP) default context configuration
 
+config KV_STORE_KEY_LTE_NETWORKING_MODES
+	bool "Enable KV key LTE_NETWORKING_MODES"
+	default y if NRF_MODEM_LIB
+	help
+	  Enabled LTE networking modes and preferences
+
 config KV_STORE_KEY_BLUETOOTH_PEER
 	bool "Enable KV key BLUETOOTH_PEER"
 	help
