@@ -111,6 +111,11 @@ a second. This task can be offloaded from the application by calling
 :c:func:`task_runner_start_auto_iterate`, which will automatically call
 the former function from the :ref:`infuse_workqueue` context.
 
+The application is able to receive notifications of when a schedule is started,
+requested to terminate, or stopped, by assigning a :c:type:`task_schedule_event_cb_t`
+to the appropriate :c:struct:`task_schedule_state` ``event_cb`` field **AFTER** the
+task runner is initialised with :c:func:`task_runner_init`.
+
 Task Implementations
 ********************
 

@@ -70,6 +70,8 @@ void task_runner_init(const struct task_schedule *schedules,
 		/* Mark schedule as invalid */
 		sch_states[i].task_idx = UINT8_MAX;
 		sch_states[i].linked = NULL;
+		/* Mark event callback as NULL */
+		sch_states[i].event_cb = NULL;
 		/* Schedule is valid */
 		if (!task_schedule_validate(&sch[i])) {
 			LOG_WRN("Schedule %d (Task ID %d) is invalid!", i, sch[i].task_id);
@@ -163,10 +165,14 @@ static void task_start(uint8_t schedule_index, uint32_t uptime)
 		/* Schedule the work on our work queue */
 		infuse_work_schedule(&d->executor.workqueue.work, K_NO_WAIT);
 	}
+	if (state->event_cb) {
+		state->event_cb(s, TASK_SCHEDULE_STARTED);
+	}
 }
 
 static void task_terminate(uint8_t schedule_index)
 {
+	const struct task_schedule *s = &sch[schedule_index];
 	struct task_schedule_state *state = &sch_states[schedule_index];
 	const struct task_config *c = &tsk[state->task_idx];
 	struct task_data *d = &tsk_states[state->task_idx];
@@ -178,24 +184,32 @@ static void task_terminate(uint8_t schedule_index)
 		/* Reschedule immediately to terminate */
 		infuse_work_reschedule(&d->executor.workqueue.work, K_NO_WAIT);
 	}
+	if (state->event_cb) {
+		state->event_cb(s, TASK_SCHEDULE_TERMINATE_REQUEST);
+	}
 }
 
 static bool task_has_terminated(uint8_t task_idx)
 {
 	const struct task_config *c = &tsk[task_idx];
 	struct task_data *d = &tsk_states[task_idx];
+	const struct task_schedule *s = &sch[d->schedule_idx];
+	struct task_schedule_state *state = &sch_states[d->schedule_idx];
 
 	if (c->exec_type == TASK_EXECUTOR_THREAD) {
-		if (k_thread_join(c->executor.thread.thread, K_NO_WAIT) == 0) {
-			return true;
+		if (k_thread_join(c->executor.thread.thread, K_NO_WAIT) != 0) {
+			return false;
 		}
 	} else {
 		__ASSERT_NO_MSG(c->exec_type == TASK_EXECUTOR_WORKQUEUE);
-		if (k_work_busy_get(&d->executor.workqueue.work.work) == 0) {
-			return true;
+		if (k_work_busy_get(&d->executor.workqueue.work.work) != 0) {
+			return false;
 		}
 	}
-	return false;
+	if (state->event_cb) {
+		state->event_cb(s, TASK_SCHEDULE_STOPPED);
+	}
+	return true;
 }
 
 INFUSE_WATCHDOG_REGISTER_SYS_INIT(tr_wdog, CONFIG_TASK_RUNNER_INFUSE_WATCHDOG, wdog_channel,
