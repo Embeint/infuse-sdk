@@ -11,6 +11,8 @@
 #include <zephyr/sys/atomic.h>
 #include <zephyr/init.h>
 #include <zephyr/logging/log.h>
+#include <zephyr/net/net_if.h>
+#include <zephyr/net/net_mgmt.h>
 #include <zephyr/sys/__assert.h>
 
 #include <infuse/work_q.h>
@@ -28,6 +30,8 @@
 #include <nrf_modem_at.h>
 
 LOG_MODULE_REGISTER(modem_monitor, LOG_LEVEL_INF);
+
+#define CONNECTIVITY_TIMEOUT K_SECONDS(CONFIG_INFUSE_NRF_MODEM_MONITOR_CONNECTIVITY_TIMEOUT_SEC)
 
 #define LTE_LC_SYSTEM_MODE_DEFAULT 0xff
 #define LTE_MODE_DEFAULT                                                                           \
@@ -50,8 +54,6 @@ enum {
 
 static struct {
 	struct nrf_modem_network_state network_state;
-	int16_t rsrp_cached;
-	int8_t rsrq_cached;
 	/* `lte_reg_handler` runs from the system workqueue, and the modem AT commands wait forever
 	 * on the response. This is problematic as the low level functions rely on malloc, which
 	 * can fail. Running AT commands directly from the callback context therefore has the
@@ -60,7 +62,12 @@ static struct {
 	 */
 	struct k_work_delayable update_work;
 	struct k_work signal_quality_work;
+	struct net_mgmt_event_callback mgmt_iface_cb;
+	struct k_work_delayable connectivity_timeout;
+	struct net_if *lte_net_if;
 	atomic_t flags;
+	int16_t rsrp_cached;
+	int8_t rsrq_cached;
 } monitor;
 
 bool nrf_modem_monitor_is_at_safe(void)
@@ -216,6 +223,13 @@ static void lte_reg_handler(const struct lte_lc_evt *const evt)
 		LOG_DBG("NW_REG_STATUS");
 		LOG_DBG("  STATUS: %d", evt->nw_reg_status);
 		monitor.network_state.nw_reg_status = evt->nw_reg_status;
+		/* Handle the connectivity watchdog */
+		if ((evt->nw_reg_status == LTE_LC_NW_REG_REGISTERED_HOME) ||
+		    (evt->nw_reg_status == LTE_LC_NW_REG_REGISTERED_ROAMING)) {
+			k_work_schedule(&monitor.connectivity_timeout, CONNECTIVITY_TIMEOUT);
+		} else {
+			k_work_cancel_delayable(&monitor.connectivity_timeout);
+		}
 		/* Request update of knowledge of network info */
 		infuse_work_reschedule(&monitor.update_work, K_NO_WAIT);
 		break;
@@ -470,6 +484,29 @@ void lte_net_if_modem_fault_app_handler(struct nrf_modem_fault_info *fault_info)
 #endif /* CONFIG_INFUSE_REBOOT */
 }
 
+static void connectivity_timeout(struct k_work *work)
+{
+	/* Interface has failed to gain IP connectivity, the safest option is to reboot */
+#ifdef CONFIG_INFUSE_REBOOT
+	LOG_ERR("Networking connectivity failed, rebooting in 2 seconds...");
+	infuse_reboot_delayed(INFUSE_REBOOT_SW_WATCHDOG, (uintptr_t)connectivity_timeout,
+			      CONFIG_INFUSE_NRF_MODEM_MONITOR_CONNECTIVITY_TIMEOUT_SEC,
+			      K_SECONDS(2));
+#else
+	LOG_ERR("Networking connectivity failed, no reboot support!");
+#endif /* CONFIG_INFUSE_REBOOT */
+}
+
+static void iface_up_handler(struct net_mgmt_event_callback *cb, uint32_t mgmt_event,
+			     struct net_if *iface)
+{
+	if (iface != monitor.lte_net_if) {
+		return;
+	}
+	/* Interface is UP, cancel the timeout */
+	k_work_cancel_delayable(&monitor.connectivity_timeout);
+}
+
 int nrf_modem_monitor_init(void)
 {
 	k_work_init_delayable(&monitor.update_work, network_info_update);
@@ -481,6 +518,12 @@ int nrf_modem_monitor_init(void)
 	monitor.network_state.edrx_cfg.ptw = -1.0f;
 	monitor.rsrp_cached = INT16_MIN;
 	monitor.rsrq_cached = INT8_MIN;
+	/* Network connectivity timeout handler */
+	monitor.lte_net_if = net_if_get_first_by_type(&(NET_L2_GET_NAME(OFFLOADED_NETDEV)));
+	__ASSERT_NO_MSG(monitor.lte_net_if != NULL);
+	k_work_init_delayable(&monitor.connectivity_timeout, connectivity_timeout);
+	net_mgmt_init_event_callback(&monitor.mgmt_iface_cb, iface_up_handler, NET_EVENT_IF_UP);
+	net_mgmt_add_event_callback(&monitor.mgmt_iface_cb);
 	/* Register handler */
 	lte_lc_register_handler(lte_reg_handler);
 	return 0;
