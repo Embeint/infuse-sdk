@@ -9,6 +9,10 @@ config INFUSE_NRF_MODEM_MONITOR
 
 if INFUSE_NRF_MODEM_MONITOR
 
+module = INFUSE_NRF_MODEM_MONITOR
+module-str = modem_mon
+source "subsys/logging/Kconfig.template.log_config"
+
 config INFUSE_NRF_MODEM_MONITOR_CONNECTIVITY_TIMEOUT_SEC
 	int "Timeout for receiving L4 connectivity after registering on the network"
 	default 120
