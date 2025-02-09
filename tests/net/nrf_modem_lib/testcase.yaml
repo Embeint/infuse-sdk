@@ -1,0 +1,10 @@
+common:
+  tags: infuse net
+  min_flash: 64
+  min_ram: 32
+tests:
+  net.nrf_modem_lib:
+    platform_allow:
+      - native_sim
+    integration_platforms:
+      - native_sim
