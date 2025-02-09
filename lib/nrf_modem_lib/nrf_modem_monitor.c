@@ -50,6 +50,7 @@ enum {
 	 * is ongoing. As such we want to skip non-critical AT commands in this state.
 	 */
 	FLAGS_PDN_CONN_IN_PROGRESS = 2,
+	FLAGS_IP_CONN_EXPECTED = 3,
 };
 
 static struct {
@@ -226,8 +227,10 @@ static void lte_reg_handler(const struct lte_lc_evt *const evt)
 		/* Handle the connectivity watchdog */
 		if ((evt->nw_reg_status == LTE_LC_NW_REG_REGISTERED_HOME) ||
 		    (evt->nw_reg_status == LTE_LC_NW_REG_REGISTERED_ROAMING)) {
-			k_work_schedule(&monitor.connectivity_timeout, CONNECTIVITY_TIMEOUT);
+			atomic_set_bit(&monitor.flags, FLAGS_IP_CONN_EXPECTED);
+			k_work_reschedule(&monitor.connectivity_timeout, CONNECTIVITY_TIMEOUT);
 		} else {
+			atomic_clear_bit(&monitor.flags, FLAGS_IP_CONN_EXPECTED);
 			k_work_cancel_delayable(&monitor.connectivity_timeout);
 		}
 		/* Request update of knowledge of network info */
@@ -486,6 +489,11 @@ void lte_net_if_modem_fault_app_handler(struct nrf_modem_fault_info *fault_info)
 
 static void connectivity_timeout(struct k_work *work)
 {
+	if (!atomic_test_bit(&monitor.flags, FLAGS_IP_CONN_EXPECTED)) {
+		/* Network registration was lost before interface state callback occurred */
+		return;
+	}
+
 	/* Interface has failed to gain IP connectivity, the safest option is to reboot */
 #ifdef CONFIG_INFUSE_REBOOT
 	LOG_ERR("Networking connectivity failed, rebooting in 2 seconds...");
@@ -497,14 +505,19 @@ static void connectivity_timeout(struct k_work *work)
 #endif /* CONFIG_INFUSE_REBOOT */
 }
 
-static void iface_up_handler(struct net_mgmt_event_callback *cb, uint32_t mgmt_event,
-			     struct net_if *iface)
+static void iface_state_handler(struct net_mgmt_event_callback *cb, uint32_t mgmt_event,
+				struct net_if *iface)
 {
 	if (iface != monitor.lte_net_if) {
 		return;
 	}
-	/* Interface is UP, cancel the timeout */
-	k_work_cancel_delayable(&monitor.connectivity_timeout);
+	if (mgmt_event == NET_EVENT_IF_UP) {
+		/* Interface is UP, cancel the timeout */
+		k_work_cancel_delayable(&monitor.connectivity_timeout);
+	} else if (mgmt_event == NET_EVENT_IF_DOWN) {
+		/* Interface is DOWN, restart the timeout */
+		k_work_reschedule(&monitor.connectivity_timeout, CONNECTIVITY_TIMEOUT);
+	}
 }
 
 int nrf_modem_monitor_init(void)
@@ -522,7 +535,8 @@ int nrf_modem_monitor_init(void)
 	monitor.lte_net_if = net_if_get_first_by_type(&(NET_L2_GET_NAME(OFFLOADED_NETDEV)));
 	__ASSERT_NO_MSG(monitor.lte_net_if != NULL);
 	k_work_init_delayable(&monitor.connectivity_timeout, connectivity_timeout);
-	net_mgmt_init_event_callback(&monitor.mgmt_iface_cb, iface_up_handler, NET_EVENT_IF_UP);
+	net_mgmt_init_event_callback(&monitor.mgmt_iface_cb, iface_state_handler,
+				     NET_EVENT_IF_UP | NET_EVENT_IF_DOWN);
 	net_mgmt_add_event_callback(&monitor.mgmt_iface_cb);
 	/* Register handler */
 	lte_lc_register_handler(lte_reg_handler);
