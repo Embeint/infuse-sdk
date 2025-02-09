@@ -28,6 +28,11 @@ class structs:
         vla_field = ("{{ info['fields'][-1]['name'] }}", {{ info['fields'][-1]['py_type'] }})
 {% endif %}
         _pack_ = 1
+{% if name == "kv_string" %}
+
+        def __str__(self) -> str:
+            return bytes(self.value).decode('utf-8')
+{% endif %}
 
 {% endfor %}
 
@@ -41,11 +46,9 @@ class slots:
         RANGE = {{ info.get('range', 1) }}
         _fields_ = [
 {% for field in info['fields'] %}
-{% if 'flexible' in info %}
-{% if info['num'] == 0 %}
-{% if info['fields']|length == 1 %}
+{% if 'flexible' in info and (loop.index == (info['fields']|length)) %}
+{% if info['fields']|length == 1 and not field['py_type'].startswith('structs.') %}
             ("{{ field['name'] }}_num", ctypes.c_uint8),
-{% endif %}
 {% endif %}
 {% else %}
             ("{{ field['name'] }}", {{ field['py_type'] }}),
