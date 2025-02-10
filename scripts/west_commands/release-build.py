@@ -297,8 +297,8 @@ class release_build(WestCommand):
 
         with autoconf.open("r") as f:
             configs = {}
-            for l in f.readlines():
-                s = l.strip().split(" ")
+            for line in f.readlines():
+                s = line.strip().split(" ")
                 configs[s[1]] = s[2].strip("'\"")
 
         if "CONFIG_BT_CONN" in configs and "CONFIG_BT_HCI_HOST" in configs:
