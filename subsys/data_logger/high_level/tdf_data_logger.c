@@ -14,6 +14,7 @@
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
 #include <zephyr/net/buf.h>
+#include <zephyr/sys/byteorder.h>
 
 #include <infuse/types.h>
 #include <infuse/tdf/tdf.h>
@@ -380,7 +381,8 @@ static bool tdf_data_logger_valid_data_on_buffer(const struct device *dev,
 	 * 2. Buffer config matches expected values
 	 * 3. Buffer reports more than 0 bytes contained
 	 * 4. Lock is not locked
-	 * 5. After parsing the buffer with `tdf_parse`:
+	 * 5. Remote ID matches and populated (if enabled)
+	 * 6. After parsing the buffer with `tdf_parse`:
 	 *    a. Buffer offset matches recovered offset
 	 *    b. Buffer timestamp matches recovered timestamp
 	 */
@@ -410,13 +412,32 @@ static bool tdf_data_logger_valid_data_on_buffer(const struct device *dev,
 	if (data->lock.count != 1) {
 		return false;
 	}
+#ifdef TDF_REMOTE_SUPPORT
+	/* Check 5 */
+	if (config->block_type == INFUSE_TDF_REMOTE) {
+		if (data->tdf_state.buf.len <= sizeof(data->remote_id)) {
+			return false;
+		}
+		if (sys_get_le64(data->tdf_state.buf.data) != data->remote_id) {
+			return false;
+		}
+	}
+#endif /* TDF_REMOTE_SUPPORT */
 
 	LOG_DBG("Checking validity of recovered buffer %d", data->tdf_state.buf.len);
 	struct tdf_buffer_state state;
 	struct tdf_parsed parsed, last = {0};
+	uint8_t offset = 0;
+
+#ifdef TDF_REMOTE_SUPPORT
+	if (config->block_type == INFUSE_TDF_REMOTE) {
+		offset = sizeof(data->remote_id);
+	}
+#endif /* TDF_REMOTE_SUPPORT */
 
 	/* Parse the complete buffer */
-	tdf_parse_start(&state, data->tdf_state.buf.data, data->tdf_state.buf.len);
+	tdf_parse_start(&state, data->tdf_state.buf.data + offset,
+			data->tdf_state.buf.len - offset);
 	while (tdf_parse(&state, &parsed) == 0) {
 		last = parsed;
 	}
