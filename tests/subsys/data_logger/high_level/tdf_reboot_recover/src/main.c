@@ -118,6 +118,10 @@ ZTEST(tdf_data_logger_recovery, test_logger_recovery)
 	struct net_buf *buf;
 	int rc;
 
+#ifdef TDF_REMOTE_SUPPORT
+	const struct device *tdf_remote_logger = DEVICE_DT_GET(DT_NODELABEL(tdf_logger_remote));
+#endif
+
 	zassert_not_null(sent_queue);
 
 	/* KV store should have been initialised and populated with a reboot count */
@@ -168,6 +172,40 @@ ZTEST(tdf_data_logger_recovery, test_logger_recovery)
 		log_corrupt_and_reboot(tdf_logger, corrupt_indicies[reboots.count - 4]);
 		zassert_unreachable();
 	}
+#ifdef TDF_REMOTE_SUPPORT
+	else if (reboots.count == (ARRAY_SIZE(corrupt_indicies) + 3)) {
+		zassert_equal(0, tdf_data_logger_flush_dev(tdf_logger));
+		zassert_is_null(net_buf_get(sent_queue, K_MSEC(100)));
+
+		tdf_data_logger_remote_id_set(tdf_remote_logger, 0x12345678);
+
+		/* Log TDFs and reboot */
+		log_corrupt_and_reboot(tdf_remote_logger, -1);
+		zassert_unreachable();
+	} else if (reboots.count == (ARRAY_SIZE(corrupt_indicies) + 4)) {
+		/* If we flush now, we should get the 2 TDFs we logged on the previous boot */
+		zassert_equal(0, tdf_data_logger_flush_dev(tdf_remote_logger));
+		buf = net_buf_get(sent_queue, K_MSEC(100));
+		zassert_not_null(buf);
+		zassert_equal(sizeof(struct epacket_dummy_frame) + 22 + sizeof(uint64_t), buf->len);
+		net_buf_unref(buf);
+
+		/* Log TDFs and reboot, corrupting the remote ID */
+		tdf_data_logger_remote_id_set(tdf_remote_logger, 0x12345678);
+		log_corrupt_and_reboot(tdf_remote_logger, offsetof(struct logger_data, remote_id));
+		zassert_unreachable();
+	} else if (reboots.count < (2 * ARRAY_SIZE(corrupt_indicies))) {
+		/* Corrupted data should be detected and purged */
+		zassert_equal(0, tdf_data_logger_flush_dev(tdf_remote_logger));
+		zassert_is_null(net_buf_get(sent_queue, K_MSEC(100)));
+
+		tdf_data_logger_remote_id_set(tdf_remote_logger, 0x12345678);
+		log_corrupt_and_reboot(
+			tdf_remote_logger,
+			corrupt_indicies[reboots.count - ARRAY_SIZE(corrupt_indicies) - 4]);
+		zassert_unreachable();
+	}
+#endif /* TDF_REMOTE_SUPPORT */
 }
 
 ZTEST_SUITE(tdf_data_logger_recovery, NULL, NULL, NULL, NULL, NULL);
