@@ -436,6 +436,10 @@ int tdf_parse(struct tdf_buffer_state *state, struct tdf_parsed *parsed)
 			parsed->data_type = TDF_DATA_TYPE_DIFF_ARRAY;
 			parsed->diff_info.type = t_hdr->diff_info >> 6;
 			parsed->diff_info.num = t_hdr->diff_info & 0x3F;
+			if (parsed->diff_info.type == TDF_DIFF_NONE) {
+				/* Corrupt buffer */
+				return -EINVAL;
+			}
 			diff_bytes_per_tdf =
 				(header->size / tdf_diff_divisor[parsed->diff_info.type]) *
 				tdf_diff_size[parsed->diff_info.type];
