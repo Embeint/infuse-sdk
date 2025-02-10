@@ -899,6 +899,23 @@ ZTEST(tdf, test_tdf_parse_find_in_buf)
 	zassert_equal(-ENOMEM, tdf_parse_find_in_buf(state.buf.data, state.buf.len, 1234, &parsed));
 }
 
+ZTEST(tdf, test_parse_fuzz)
+{
+	struct tdf_buffer_state parser;
+	struct tdf_parsed parsed;
+	uint8_t random_buffer[16];
+	int rc;
+
+	/* Parse random data many time, ensure no faults */
+	for (int i = 0; i < 100000; i++) {
+		sys_rand_get(random_buffer, sizeof(random_buffer));
+		tdf_parse_start(&parser, random_buffer, sizeof(random_buffer));
+		do {
+			rc = tdf_parse(&parser, &parsed);
+		} while (rc == 0);
+	}
+}
+
 static bool test_data_init(const void *global_state)
 {
 	base_time = epoch_time_from(1000000, 0);
