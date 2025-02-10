@@ -470,6 +470,11 @@ static void rssi_query_worker(struct k_work *work)
 	uint16_t handle;
 	int rc;
 
+	if (conn == NULL) {
+		/* Work was not cancelled in time */
+		LOG_DBG("Invalid connection");
+		return;
+	}
 	rc = bt_hci_get_conn_handle(conn, &handle);
 	if (rc < 0) {
 		/* Expected to happen if running on a connection that has terminated.
