@@ -365,6 +365,69 @@ static void tdf_block_size_update(const struct device *logger, uint16_t block_si
 	k_sem_give(&data->lock);
 }
 
+static bool tdf_data_logger_valid_data_on_buffer(const struct device *dev,
+						 struct data_logger_state *logger_state)
+{
+	const struct tdf_logger_config *config = dev->config;
+	struct tdf_logger_data *data = dev->data;
+	uint32_t *guard_tail =
+		(uint32_t *)(((uint8_t *)data) + GUARD_TAIL_OFFSET(config->tdf_buffer_max_size));
+
+	/* Detect if we have just rebooted and there is potentially valid data on the buffers
+	 * to recover. The conditions that must pass:
+	 *
+	 * 1. Data guards match magic values
+	 * 2. Buffer config matches expected values
+	 * 3. Buffer reports more than 0 bytes contained
+	 * 4. Lock is not locked
+	 * 5. After parsing the buffer with `tdf_parse`:
+	 *    a. Buffer offset matches recovered offset
+	 *    b. Buffer timestamp matches recovered timestamp
+	 */
+
+	/* Check 1 */
+	if ((data->guard_head != DATA_GUARD_HEAD) || (*guard_tail != DATA_GUARD_TAIL)) {
+		return false;
+	}
+	/* Checks 2 */
+	if (data->tdf_state.buf.size > config->tdf_buffer_max_size) {
+		return false;
+	}
+	if (data->tdf_state.buf.__buf != data->tdf_buffer) {
+		return false;
+	}
+	if (data->full_block_write != logger_state->requires_full_block_write) {
+		return false;
+	}
+	if (data->block_overhead != logger_state->block_overhead) {
+		return false;
+	}
+	/* Check 3 */
+	if (data->tdf_state.buf.len == 0) {
+		return false;
+	}
+	/* Check 4 */
+	if (data->lock.count != 1) {
+		return false;
+	}
+
+	LOG_DBG("Checking validity of recovered buffer %d", data->tdf_state.buf.len);
+	struct tdf_buffer_state state;
+	struct tdf_parsed parsed, last = {0};
+
+	/* Parse the complete buffer */
+	tdf_parse_start(&state, data->tdf_state.buf.data, data->tdf_state.buf.len);
+	while (tdf_parse(&state, &parsed) == 0) {
+		last = parsed;
+	}
+
+	/* Check 5a and 5b conditions */
+	if ((last.time == data->tdf_state.time) && (state.buf.len == 0)) {
+		return true;
+	}
+	return false;
+}
+
 IF_DISABLED(CONFIG_ZTEST, (static))
 int tdf_data_logger_init(const struct device *dev)
 {
@@ -384,38 +447,8 @@ int tdf_data_logger_init(const struct device *dev)
 	data->logger_cb.user_data = (void *)dev;
 	data_logger_common_register_cb(config->logger, &data->logger_cb);
 
-	/* Detect if we have just rebooted and there is potentially valid data on the buffers
-	 * to recover. The conditions that must pass:
-	 *
-	 * 1. Data guards match magic values
-	 * 2. Buffer config matches expected values
-	 * 3. Buffer reports more than 0 bytes contained
-	 * 4. Lock is not locked
-	 * 5. After parsing the buffer with `tdf_parse`:
-	 *    a. Buffer offset matches recovered offset
-	 *    b. Buffer timestamp matches recovered timestamp
-	 */
-	if ((data->guard_head == DATA_GUARD_HEAD) && (*guard_tail == DATA_GUARD_TAIL) &&
-	    (data->tdf_state.buf.size <= config->tdf_buffer_max_size) &&
-	    (data->tdf_state.buf.__buf == data->tdf_buffer) &&
-	    (data->full_block_write == logger_state.requires_full_block_write) &&
-	    (data->block_overhead == logger_state.block_overhead) &&
-	    (data->tdf_state.buf.len > 0) && (data->lock.count == 1)) {
-		LOG_DBG("Checking validity of recovered buffer %d", data->tdf_state.buf.len);
-		struct tdf_buffer_state state;
-		struct tdf_parsed parsed, last = {0};
-
-		/* Parse the complete buffer */
-		tdf_parse_start(&state, data->tdf_state.buf.data, data->tdf_state.buf.len);
-		while (tdf_parse(&state, &parsed) == 0) {
-			last = parsed;
-		}
-
-		/* Check 5a and 5b conditions */
-		if ((last.time == data->tdf_state.time) && (state.buf.len == 0)) {
-			recovered = true;
-		}
-	}
+	/* Check if there is valid data sitting in RAM */
+	recovered = tdf_data_logger_valid_data_on_buffer(dev, &logger_state);
 
 	/* Uncondtionally reset lock semaphore */
 	k_sem_init(&data->lock, 1, 1);
