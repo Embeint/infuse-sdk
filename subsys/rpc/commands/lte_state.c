@@ -50,8 +50,8 @@ static void nrf_modem_lte_state(struct rpc_struct_lte_state *lte)
 
 struct net_buf *rpc_command_lte_state(struct net_buf *request)
 {
+	struct net_if *iface = net_if_get_first_by_type(&(NET_L2_GET_NAME(OFFLOADED_NETDEV)));
 	struct rpc_lte_state_response rsp = {0};
-	struct net_if *iface = net_if_get_default();
 
 	if (iface == NULL) {
 		return rpc_response_simple_req(request, -EINVAL, &rsp, sizeof(rsp));
