@@ -93,5 +93,8 @@ configdefault NET_CONNECTION_MANAGER_CONNECTIVITY_WIFI_MGMT
 	default y if (WIFI_USAGE_MODE_STA || WIFI_USAGE_MODE_STA_AP)
 configdefault CONN_MGR_WIFI_KV_STORE
 	default y if (WIFI_USAGE_MODE_STA || WIFI_USAGE_MODE_STA_AP)
+# Connection manager requires an IP address slot per interface it is trying to track
+configdefault NET_IF_MAX_IPV4_COUNT
+	default 2 if NRF_MODEM_LIB_NET_IF && WIFI
 
 endif # NETWORKING
