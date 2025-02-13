@@ -11,4 +11,7 @@ config INFUSE_MATH_GEODESY
 	select CMSIS_DSP
 	select CMSIS_DSP_FASTMATH
 
+config INFUSE_MATH_HAMMING
+	bool "Hamming 8-4 error correcting codes"
+
 endif # INFUSE_MATH
