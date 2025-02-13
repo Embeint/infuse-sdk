@@ -1,0 +1,5 @@
+tests:
+  utilities.math.hamming:
+    tags:
+      - util
+    type: unit
