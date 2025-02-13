@@ -308,6 +308,7 @@ class vscode(WestCommand):
         assert cache.get("BOARD")[:10] in [
             "native_sim",
             "nrf52_bsim",
+            "unit_testi",
         ]
 
         # Native Sim GDB does not support `west debugserver`
@@ -485,7 +486,10 @@ class vscode(WestCommand):
             )
 
             if runners_yaml is None:
-                self._qemu(build_dir, cache)
+                if cache["BOARD"] == "unit_testing":
+                    self._native(build_dir, cache)
+                else:
+                    self._qemu(build_dir, cache)
             elif runners_yaml["debug-runner"] == "native":
                 self._native(build_dir, cache)
             elif runners_yaml["debug-runner"] == "jlink":
