@@ -93,6 +93,43 @@ Arguments for custom task implementations can be inserted into
 :c:struct:`task_schedule` with the
 :kconfig:option:`CONFIG_TASK_RUNNER_CUSTOM_TASK_DEFINITIONS` option.
 
+Updating Task Schedules
+***********************
+
+Task schedules can be updated at runtime without a full firmware update through the
+usage of the :ref:`kv_store_api` and :c:func:`task_runner_schedules_load`. The schedule
+load function takes the default set of task schedules contained in the ``schedules``
+variable and updates any definitions that have a different value in the KV store.
+
+The contents of the stored schedules can be reset by incrementing the ``schedules_id``
+parameter. This must be used if the default schedules are changing in a way that
+could be incompatible with previous definitions. One example of this is if a new
+schedule is inserted in the middle of the default schedule list.
+
+.. note::
+
+  It is currently required to reboot a device once a task schedule has been updated
+  for it to take effect.
+
+Disabling schedule updates
+==========================
+
+If there is a particular task schedule that must never be updated for correct
+operation of a device, that can be controlled by adding the :c:enum:`TASK_LOCKED`
+flag to the :c:member:`task_schedule.validity` field of the schedule like below:
+
+.. code-block:: c
+
+   struct schedules schedule_list[] = {
+     {
+      .task_id = TASK_ID_IMU,
+      .validity = TASK_LOCKED | TASK_VALID_ALWAYS,
+     },
+    };
+
+This flag will prevent :c:func:`task_runner_schedules_load` from modifying the
+provided schedule, regardless of the value saved in the KV store.
+
 Task Schedule vs Task Implementation
 ************************************
 
