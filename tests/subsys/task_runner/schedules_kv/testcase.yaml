@@ -1,0 +1,12 @@
+common:
+  tags: task_runner
+  min_flash: 64
+  min_ram: 32
+tests:
+  task_runner.schedules.kv:
+    platform_allow:
+      - native_sim
+      - mps2/an385
+    integration_platforms:
+      - native_sim
+      - mps2/an385
