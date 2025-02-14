@@ -33,12 +33,18 @@ extern "C" {
  */
 
 enum task_runner_valid_type {
+	/** Do not update definition from KV store */
+	TASK_LOCKED = 0x80,
+	/** Task is always valid */
 	TASK_VALID_ALWAYS = 1,
+	/** Task is only valid when @ref INFUSE_STATE_APPLICATION_ACTIVE is set */
 	TASK_VALID_ACTIVE = 2,
+	/** Task is only valid when @ref INFUSE_STATE_APPLICATION_ACTIVE is not set */
 	TASK_VALID_INACTIVE = 3,
-	/* Entry and exit conditions never checked, task is rebooted if it terminates */
+	/** Entry and exit conditions never checked, task is rebooted if it terminates */
 	TASK_VALID_PERMANENTLY_RUNS = 4,
 	_TASK_VALID_END,
+	_TASK_VALID_MASK = 0x7F,
 };
 
 enum task_runner_periodicity_type {

@@ -155,6 +155,10 @@ void task_runner_schedules_load(uint16_t schedules_id, struct task_schedule *sch
 			if (i > CONFIG_KV_STORE_KEY_TASK_SCHEDULES_RANGE) {
 				break;
 			}
+			if (schedules[i].validity & TASK_LOCKED) {
+				/* Don't allow schedule to be updated */
+				continue;
+			}
 			rc = kv_store_read(KV_KEY_TASK_SCHEDULES + i, &schedules[i],
 					   sizeof(struct task_schedule));
 			if (rc != sizeof(struct task_schedule)) {
@@ -317,7 +321,7 @@ void task_runner_iterate(atomic_t *app_states, uint32_t uptime, uint32_t gps_tim
 		}
 
 		/* Start/restart permanently running tasks */
-		if (s->validity == TASK_VALID_PERMANENTLY_RUNS) {
+		if ((s->validity & _TASK_VALID_MASK) == TASK_VALID_PERMANENTLY_RUNS) {
 			if (!d->running) {
 				task_start(i, uptime);
 			}
