@@ -73,6 +73,26 @@ ZTEST(task_runner_schedules, test_empty_schedule)
 	}
 }
 
+ZTEST(task_runner_schedules, test_locked_schedule)
+{
+	INFUSE_STATES_ARRAY(app_states) = {0};
+	struct task_schedule schedule = {
+		.validity = TASK_LOCKED | TASK_VALID_ALWAYS,
+	};
+	struct task_schedule_state state = {0};
+
+	zassert_true(task_schedule_validate(&schedule));
+
+	/* Should always start and never stop */
+	for (int i = 0; i < 100; i++) {
+		zassert_true(task_schedule_should_start(&schedule, &state, app_states, 50 + i,
+							150 + i, 100));
+		zassert_false(task_schedule_should_terminate(&schedule, &state, app_states, 30 + i,
+							     100 + i, 100));
+		state.runtime++;
+	}
+}
+
 ZTEST(task_runner_schedules, test_periodicity_fixed)
 {
 	INFUSE_STATES_ARRAY(app_states) = {0};
