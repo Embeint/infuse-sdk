@@ -93,6 +93,68 @@ ZTEST(task_runner_schedules, test_locked_schedule)
 	}
 }
 
+ZTEST(task_runner_schedules, test_active_schedule)
+{
+	INFUSE_STATES_ARRAY(app_states) = {0};
+	struct task_schedule schedule = {
+		.validity = TASK_VALID_ACTIVE,
+	};
+	struct task_schedule_state state = {0};
+
+	zassert_true(task_schedule_validate(&schedule));
+
+	/* While active, should always start and never stop */
+	atomic_set_bit(app_states, INFUSE_STATE_APPLICATION_ACTIVE);
+	for (int i = 0; i < 100; i++) {
+		zassert_true(task_schedule_should_start(&schedule, &state, app_states, 50 + i,
+							150 + i, 100));
+		zassert_false(task_schedule_should_terminate(&schedule, &state, app_states, 30 + i,
+							     100 + i, 100));
+		state.runtime++;
+	}
+
+	/* While inactive, should never start and always stop */
+	atomic_clear_bit(app_states, INFUSE_STATE_APPLICATION_ACTIVE);
+	for (int i = 0; i < 100; i++) {
+		zassert_false(task_schedule_should_start(&schedule, &state, app_states, 50 + i,
+							 150 + i, 100));
+		zassert_true(task_schedule_should_terminate(&schedule, &state, app_states, 30 + i,
+							    100 + i, 100));
+		state.runtime++;
+	}
+}
+
+ZTEST(task_runner_schedules, test_inactive_schedule)
+{
+	INFUSE_STATES_ARRAY(app_states) = {0};
+	struct task_schedule schedule = {
+		.validity = TASK_VALID_INACTIVE,
+	};
+	struct task_schedule_state state = {0};
+
+	zassert_true(task_schedule_validate(&schedule));
+
+	/* While active, should never start and always stop */
+	atomic_set_bit(app_states, INFUSE_STATE_APPLICATION_ACTIVE);
+	for (int i = 0; i < 100; i++) {
+		zassert_false(task_schedule_should_start(&schedule, &state, app_states, 50 + i,
+							 150 + i, 100));
+		zassert_true(task_schedule_should_terminate(&schedule, &state, app_states, 30 + i,
+							    100 + i, 100));
+		state.runtime++;
+	}
+
+	/* While inactive, should always start and never stop */
+	atomic_clear_bit(app_states, INFUSE_STATE_APPLICATION_ACTIVE);
+	for (int i = 0; i < 100; i++) {
+		zassert_true(task_schedule_should_start(&schedule, &state, app_states, 50 + i,
+							150 + i, 100));
+		zassert_false(task_schedule_should_terminate(&schedule, &state, app_states, 30 + i,
+							     100 + i, 100));
+		state.runtime++;
+	}
+}
+
 ZTEST(task_runner_schedules, test_periodicity_fixed)
 {
 	INFUSE_STATES_ARRAY(app_states) = {0};
