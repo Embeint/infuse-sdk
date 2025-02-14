@@ -76,6 +76,14 @@ ZTEST(task_runner_schedules_kv, test_schedules_kv_basic)
 	task_runner_schedules_load(11, &readback, 1);
 	zassert_equal(20, readback.periodicity.fixed.period_s);
 	zassert_mem_equal(&schedule, &readback, sizeof(readback));
+
+	/* Locked schedules are not overwritten from KV store */
+	schedule.validity |= TASK_LOCKED;
+	schedule.periodicity.fixed.period_s = 9;
+
+	task_runner_schedules_load(11, &schedule, 1);
+	zassert_equal(TASK_LOCKED | TASK_VALID_ALWAYS, schedule.validity);
+	zassert_equal(9, schedule.periodicity.fixed.period_s);
 }
 
 ZTEST(task_runner_schedules_kv, test_schedules_kv_load_many)
