@@ -51,10 +51,12 @@ static bool task_schedule_states_eval(const struct task_schedule_state_condition
 
 bool task_schedule_validate(const struct task_schedule *schedule)
 {
-	if (schedule->validity == 0) {
+	uint8_t validity_masked = schedule->validity & _TASK_VALID_MASK;
+
+	if (validity_masked == 0) {
 		return false;
 	}
-	if (schedule->validity >= _TASK_VALID_END) {
+	if (validity_masked >= _TASK_VALID_END) {
 		return false;
 	}
 	if (schedule->periodicity_type >= _TASK_PERIODICITY_END) {
