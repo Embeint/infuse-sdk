@@ -51,6 +51,9 @@ static bool task_schedule_states_eval(const struct task_schedule_state_condition
 
 bool task_schedule_validate(const struct task_schedule *schedule)
 {
+	if (schedule->validity == 0) {
+		return false;
+	}
 	if (schedule->validity >= _TASK_VALID_END) {
 		return false;
 	}
