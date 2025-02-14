@@ -230,6 +230,15 @@ class vscode(WestCommand):
         parser.add_argument("--snr", type=str, help="JTAG serial number")
         return parser
 
+    def cpp_properties(self, build_dir, cache, include_path=True):
+        c_cpp_properties["configurations"][0]["compilerPath"] = cache.get(
+            "CMAKE_C_COMPILER"
+        )
+        if include_path:
+            c_cpp_properties["configurations"][0]["includePath"] = [
+                str(build_dir / "zephyr" / "include" / "generated")
+            ]
+
     def _tfm_build(self, build_dir, cache):
         launch["configurations"][0]["executable"] = str(build_dir / "bin" / "tfm_s.elf")
         launch["configurations"][1]["executable"] = str(build_dir / "bin" / "tfm_s.elf")
@@ -242,19 +251,12 @@ class vscode(WestCommand):
 
         # Get options from parent Zephyr build
         parent_cache = zcmake.CMakeCache.from_build_dir(build_dir.parent)
-        c_cpp_properties["configurations"][0]["compilerPath"] = parent_cache.get(
-            "CMAKE_C_COMPILER"
-        )
+        self.cpp_properties(build_dir, parent_cache, False)
         launch["configurations"][0]["gdbPath"] = parent_cache.get("CMAKE_GDB")
         launch["configurations"][1]["gdbPath"] = parent_cache.get("CMAKE_GDB")
 
     def _zephyr_build(self, build_dir, cache):
-        c_cpp_properties["configurations"][0]["includePath"] = [
-            str(build_dir / "zephyr" / "include" / "generated")
-        ]
-        c_cpp_properties["configurations"][0]["compilerPath"] = cache.get(
-            "CMAKE_C_COMPILER"
-        )
+        self.cpp_properties(build_dir, cache)
 
         launch["configurations"][0]["gdbPath"] = cache.get("CMAKE_GDB")
         launch["configurations"][1]["gdbPath"] = cache.get("CMAKE_GDB")
@@ -285,6 +287,8 @@ class vscode(WestCommand):
     def _qemu(self, build_dir, cache):
         assert cache.get("QEMU", False)
 
+        self.cpp_properties(build_dir, cache)
+
         launch["configurations"][0]["name"] = "QEMU Attach"
         launch["configurations"][0]["servertype"] = "external"
         launch["configurations"][0]["gdbTarget"] = "localhost:1234"
@@ -310,6 +314,8 @@ class vscode(WestCommand):
             "nrf52_bsim",
             "unit_testi",
         ]
+
+        self.cpp_properties(build_dir, cache)
 
         # Native Sim GDB does not support `west debugserver`
         launch["configurations"].pop(0)
