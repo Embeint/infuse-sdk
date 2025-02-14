@@ -134,10 +134,10 @@ Task Schedule vs Task Implementation
 ************************************
 
 A task schedule is a description of when a task implementation should be run.
-A task schedule is linked to the implementation through the ``.task_id`` field
-of a :c:struct:`task_schedule`. A single application can have multiple schedules
-referring to the same task implementation, although only a single schedule per
-task implementation can be running at a given time.
+A task schedule is linked to the implementation through the :c:member:`task_schedule.task_id`
+field. A single application can have multiple schedules referring to the same
+task implementation, although only a single schedule per task implementation can
+be running at a given time.
 
 Schedule Evaluation
 *******************
@@ -150,7 +150,7 @@ the former function from the :ref:`infuse_workqueue` context.
 
 The application is able to receive notifications of when a schedule is started,
 requested to terminate, or stopped, by assigning a :c:type:`task_schedule_event_cb_t`
-to the appropriate :c:struct:`task_schedule_state` ``event_cb`` field **AFTER** the
+to the appropriate :c:member:`task_schedule_state.event_cb` field **AFTER** the
 task runner is initialised with :c:func:`task_runner_init`.
 
 Schedule Event notifications
