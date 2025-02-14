@@ -13,6 +13,9 @@
 #include <infuse/drivers/watchdog.h>
 #include <infuse/task_runner/runner.h>
 
+#include <infuse/fs/kv_store.h>
+#include <infuse/fs/kv_types.h>
+
 static const struct task_schedule *sch;
 static struct task_schedule_state *sch_states;
 static uint8_t sch_num;
@@ -105,6 +108,63 @@ void task_runner_init(const struct task_schedule *schedules,
 		sch_states[i].runtime = 0;
 	}
 }
+
+#ifdef CONFIG_KV_STORE
+void task_runner_schedules_load(uint16_t schedules_id, struct task_schedule *schedules,
+				uint8_t num_schedules)
+{
+	struct kv_task_schedules_default_id default_id;
+	uint32_t expected_default_id;
+	int rc;
+
+	if (num_schedules > CONFIG_KV_STORE_KEY_TASK_SCHEDULES_RANGE) {
+		LOG_WRN("More schedules provided than KV slots enabled (%d > %d)", num_schedules,
+			CONFIG_KV_STORE_KEY_TASK_SCHEDULES_RANGE);
+	}
+
+	/* Encode the schedule size into the upper 16 bits of the ID to ensure that if the
+	 * task schedule size changes, existing KV values are invalidated.
+	 */
+	expected_default_id = (sizeof(struct task_schedule) << 16) | ((uint32_t)schedules_id);
+
+	rc = kv_store_read(KV_KEY_TASK_SCHEDULES_DEFAULT_ID, &default_id, sizeof(default_id));
+	if ((rc != sizeof(default_id)) || (default_id.set_id != expected_default_id)) {
+		/* Override KV store with provided schedules */
+		for (int i = 0; i < num_schedules; i++) {
+			/* Only write schedules that are valid */
+			if (!task_schedule_validate(&schedules[i])) {
+				continue;
+			}
+			if (i > CONFIG_KV_STORE_KEY_TASK_SCHEDULES_RANGE) {
+				break;
+			}
+			(void)kv_store_write(KV_KEY_TASK_SCHEDULES + i, &schedules[i],
+					     sizeof(struct task_schedule));
+		}
+		/* Clear out any left over schedules */
+		for (int i = num_schedules; i < CONFIG_KV_STORE_KEY_TASK_SCHEDULES_RANGE; i++) {
+			(void)kv_store_delete(KV_KEY_TASK_SCHEDULES + i);
+		}
+		/* Store the updated schedule ID */
+		default_id.set_id = expected_default_id;
+		(void)kv_store_write(KV_KEY_TASK_SCHEDULES_DEFAULT_ID, &default_id,
+				     sizeof(default_id));
+	} else {
+		/* Read out values from KV store */
+		for (int i = 0; i < num_schedules; i++) {
+			if (i > CONFIG_KV_STORE_KEY_TASK_SCHEDULES_RANGE) {
+				break;
+			}
+			rc = kv_store_read(KV_KEY_TASK_SCHEDULES + i, &schedules[i],
+					   sizeof(struct task_schedule));
+			if (rc != sizeof(struct task_schedule)) {
+				/* Invalid task schedule */
+				memset(&schedules[i], 0x00, sizeof(struct task_schedule));
+			}
+		}
+	}
+}
+#endif /* CONFIG_KV_STORE */
 
 const struct task_schedule *task_schedule_from_data(struct task_data *data)
 {

@@ -44,6 +44,30 @@ void task_runner_init(const struct task_schedule *schedules,
 		      uint8_t num_tasks);
 
 /**
+ * @brief Load updated schedule definitions from the KV store
+ *
+ * Each task schedule slot has two potential sources:
+ *   1. The default value compiled into the application
+ *   2. An updated value written to the KV store via RPC at runtime
+ *
+ * To determine whether values in the KV store should be overwritten by the provided
+ * default schedules, @a schedules_id is used to identify the schedule set.alignas
+ *
+ * If the value of @a schedules_id matches the value currently stored in the KV store, the
+ * provided schedules are overwritten by the values in the KV store. If the value does not
+ * match or is missing, the provided schedules overwrite the values in the KV store.
+ *
+ * @note Default schedules are written to the KV store to enable the cloud to sync schedule
+ *       information through the KV reflect functionality.
+ *
+ * @param schedules_id Identifier for the default task schedules
+ * @param schedules Default task schedules, updated from KV upon return
+ * @param num_schedules Number of available task schedules in array
+ */
+void task_runner_schedules_load(uint16_t schedules_id, struct task_schedule *schedules,
+				uint8_t num_schedules);
+
+/**
  * @brief Iterate the task runner
  *
  * @warning MUST be called once a second
