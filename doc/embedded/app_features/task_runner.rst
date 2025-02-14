@@ -125,7 +125,7 @@ flag to the :c:member:`task_schedule.validity` field of the schedule like below:
       .task_id = TASK_ID_IMU,
       .validity = TASK_LOCKED | TASK_VALID_ALWAYS,
      },
-    };
+   };
 
 This flag will prevent :c:func:`task_runner_schedules_load` from modifying the
 provided schedule, regardless of the value saved in the KV store.
@@ -152,6 +152,41 @@ The application is able to receive notifications of when a schedule is started,
 requested to terminate, or stopped, by assigning a :c:type:`task_schedule_event_cb_t`
 to the appropriate :c:struct:`task_schedule_state` ``event_cb`` field **AFTER** the
 task runner is initialised with :c:func:`task_runner_init`.
+
+Schedule Event notifications
+****************************
+
+If required, applications can register to be notified of scheduling events for
+a given schedule. The available events are defined in :c:enum:`task_schedule_event`.
+To register for callbacks on these events, populate :c:member:`task_schedule_state.event_cb`
+on the same index as the schedule of interest, after the call to :c:func:`task_runner_init`.
+For example to subscribe to scheduling callbacks for the battery task:
+
+.. code-block:: c
+
+   struct schedules schedules[] = {
+     {
+      .task_id = TASK_ID_IMU,
+      .validity = TASK_VALID_ALWAYS,
+     },
+     {
+      .task_id = TASK_ID_BATTERY,
+      .validity = TASK_VALID_ALWAYS,
+     },
+   };
+   struct task_schedule_state states[ARRAY_SIZE(schedules)];
+
+   void my_callback(const struct task_schedule *schedule, enum task_schedule_event event)
+   {
+      ...
+   }
+
+   int main(void)
+   {
+      task_runner_schedules_load(0, schedules, ARRAY_SIZE(schedules));
+      task_runner_init(schedules, states, ARRAY_SIZE(schedules), ...);
+      states[1].event_cb = my_callback;
+   }
 
 Task Implementations
 ********************
