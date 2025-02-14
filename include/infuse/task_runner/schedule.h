@@ -33,11 +33,11 @@ extern "C" {
  */
 
 enum task_runner_valid_type {
-	TASK_VALID_ALWAYS = 0,
-	TASK_VALID_ACTIVE = 1,
-	TASK_VALID_INACTIVE = 2,
+	TASK_VALID_ALWAYS = 1,
+	TASK_VALID_ACTIVE = 2,
+	TASK_VALID_INACTIVE = 3,
 	/* Entry and exit conditions never checked, task is rebooted if it terminates */
-	TASK_VALID_PERMANENTLY_RUNS = 3,
+	TASK_VALID_PERMANENTLY_RUNS = 4,
 	_TASK_VALID_END,
 };
 

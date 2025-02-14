@@ -186,6 +186,7 @@ ZTEST(task_runner_runner, test_schedule_linking)
 	struct task_schedule schedules[] = {
 		{
 			.task_id = TASK_ID_NO_ARG,
+			.validity = TASK_VALID_ALWAYS,
 			.periodicity_type = TASK_PERIODICITY_AFTER,
 			.periodicity.after =
 				{
@@ -195,6 +196,7 @@ ZTEST(task_runner_runner, test_schedule_linking)
 		},
 		{
 			.task_id = TASK_ID_NO_ARG,
+			.validity = TASK_VALID_ALWAYS,
 			.periodicity_type = TASK_PERIODICITY_AFTER,
 			.periodicity.after =
 				{
@@ -238,6 +240,7 @@ ZTEST(task_runner_runner, test_device_not_ready)
 	struct task_schedule schedules[] = {
 		{
 			.task_id = TASK_ID_WORKQ,
+			.validity = TASK_VALID_ALWAYS,
 		},
 	};
 	struct task_schedule_state states[ARRAY_SIZE(schedules)];

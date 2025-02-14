@@ -17,24 +17,30 @@
 
 ZTEST(task_runner_schedules, test_validate_schedules)
 {
-	struct task_schedule invalid1 = {
+	struct task_schedule invalid1 = {0};
+	struct task_schedule invalid2 = {
 		.validity = _TASK_VALID_END,
 	};
-	struct task_schedule invalid2 = {
+	struct task_schedule invalid3 = {
+		.validity = TASK_VALID_ALWAYS,
 		.periodicity_type = _TASK_PERIODICITY_END,
 	};
-	struct task_schedule invalid3 = {
+	struct task_schedule invalid4 = {
+		.validity = TASK_VALID_ALWAYS,
 		.periodicity_type = TASK_PERIODICITY_FIXED,
 		.periodicity.fixed.period_s = 0,
 	};
-	struct task_schedule invalid4 = {
+	struct task_schedule invalid5 = {
+		.validity = TASK_VALID_ALWAYS,
 		.periodicity_type = TASK_PERIODICITY_LOCKOUT,
 		.periodicity.lockout.lockout_s = 0,
 	};
-	struct task_schedule invalid5 = {
+	struct task_schedule invalid6 = {
+		.validity = TASK_VALID_ALWAYS,
 		.battery_start_threshold = 101,
 	};
-	struct task_schedule invalid6 = {
+	struct task_schedule invalid7 = {
+		.validity = TASK_VALID_ALWAYS,
 		.battery_terminate_threshold = 101,
 	};
 
@@ -44,6 +50,7 @@ ZTEST(task_runner_schedules, test_validate_schedules)
 	zassert_false(task_schedule_validate(&invalid4));
 	zassert_false(task_schedule_validate(&invalid5));
 	zassert_false(task_schedule_validate(&invalid6));
+	zassert_false(task_schedule_validate(&invalid7));
 }
 
 ZTEST(task_runner_schedules, test_empty_schedule)
