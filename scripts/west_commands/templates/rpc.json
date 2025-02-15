@@ -358,6 +358,20 @@
                 {"name": "sent_crc", "type": "uint32_t", "description": "CRC32 of bytes sent"}
             ]
         },
+        "15": {
+            "name": "mem_read",
+            "description": "Read arbitrary memory (NO ADDRESS VALIDATION PERFORMED)",
+            "default": "y if INFUSE_SDK",
+            "default_auth": "EPACKET_AUTH_DEVICE",
+            "rpc_data": true,
+            "request_params": [
+                {"name": "address", "type": "uint32_t", "description": "Start address"}
+            ],
+            "response_params": [
+                {"name": "sent_len", "type": "uint32_t", "description": "Number of bytes sent"},
+                {"name": "sent_crc", "type": "uint32_t", "description": "CRC32 of bytes sent"}
+            ]
+        },
         "20": {
             "name": "lte_at_cmd",
             "description": "Run AT command against LTE modem",
