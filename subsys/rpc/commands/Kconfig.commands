@@ -168,6 +168,17 @@ config INFUSE_RPC_COMMAND_DATA_LOGGER_READ_REQUIRED_AUTH
 	depends on INFUSE_RPC_COMMAND_DATA_LOGGER_READ
 	default 2
 
+config INFUSE_RPC_COMMAND_MEM_READ
+	bool "Enable RPC mem_read"
+	default y if INFUSE_SDK
+	help
+	  Read arbitrary memory (NO ADDRESS VALIDATION PERFORMED)
+
+config INFUSE_RPC_COMMAND_MEM_READ_REQUIRED_AUTH
+	int "Required authorisation level to run mem_read"
+	depends on INFUSE_RPC_COMMAND_MEM_READ
+	default 2
+
 config INFUSE_RPC_COMMAND_LTE_AT_CMD
 	bool "Enable RPC lte_at_cmd"
 	depends on NRF_MODEM_LIB

@@ -311,6 +311,8 @@ enum rpc_builtin_id {
 	RPC_ID_DATA_LOGGER_STATE = 13,
 	/** Read data from data logger */
 	RPC_ID_DATA_LOGGER_READ = 14,
+	/** Read arbitrary memory (NO ADDRESS VALIDATION PERFORMED) */
+	RPC_ID_MEM_READ = 15,
 	/** Run AT command against LTE modem */
 	RPC_ID_LTE_AT_CMD = 20,
 	/** Get current LTE interface state */
@@ -575,6 +577,22 @@ struct rpc_data_logger_read_request {
 } __packed;
 
 struct rpc_data_logger_read_response {
+	struct infuse_rpc_rsp_header header;
+	/** Number of bytes sent */
+	uint32_t sent_len;
+	/** CRC32 of bytes sent */
+	uint32_t sent_crc;
+} __packed;
+
+/** Read arbitrary memory (NO ADDRESS VALIDATION PERFORMED) */
+struct rpc_mem_read_request {
+	struct infuse_rpc_req_header header;
+	struct infuse_rpc_req_data_header data_header;
+	/** Start address */
+	uint32_t address;
+} __packed;
+
+struct rpc_mem_read_response {
 	struct infuse_rpc_rsp_header header;
 	/** Number of bytes sent */
 	uint32_t sent_len;
