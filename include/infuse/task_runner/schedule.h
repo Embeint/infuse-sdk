@@ -43,8 +43,10 @@ enum task_runner_valid_type {
 	TASK_VALID_INACTIVE = 3,
 	/** Entry and exit conditions never checked, task is rebooted if it terminates */
 	TASK_VALID_PERMANENTLY_RUNS = 4,
+	/** @cond INTERNAL_HIDDEN */
 	_TASK_VALID_END,
 	_TASK_VALID_MASK = 0x7F,
+	/** @endcond */
 };
 
 enum task_runner_periodicity_type {
@@ -54,11 +56,15 @@ enum task_runner_periodicity_type {
 	TASK_PERIODICITY_LOCKOUT = 2,
 	/** Task can only run N seconds after another schedule terminates */
 	TASK_PERIODICITY_AFTER = 3,
+	/** @cond INTERNAL_HIDDEN */
 	_TASK_PERIODICITY_END,
+	/** @endcond */
 };
 
 /** Invert the state */
 #define TR_NOT 0x100
+
+/** @cond INTERNAL_HIDDEN */
 
 #define _TR_STATE_BASE                    0xFF
 #define _TR_STATES_BIT_COMMON(state, idx) ((state) & TR_NOT ? BIT(idx) : 0)
@@ -79,6 +85,8 @@ enum task_runner_periodicity_type {
 #define _TR_STATES_2(arg1, arg2)                 _TR_STATES_DEFINE_ALL(arg1, arg2, 0, 0)
 #define _TR_STATES_3(arg1, arg2, arg3)           _TR_STATES_DEFINE_ALL(arg1, arg2, arg3, 0)
 #define _TR_STATES_4(arg1, arg2, arg3, arg4)     _TR_STATES_DEFINE_ALL(arg1, arg2, arg3, arg4)
+
+/** @endcond */
 
 /**
  * @brief Helper for constructing a task_schedule_state_conditions struct
