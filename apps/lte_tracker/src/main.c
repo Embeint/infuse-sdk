@@ -22,7 +22,7 @@
 
 LOG_MODULE_REGISTER(app, LOG_LEVEL_INF);
 
-static struct task_schedule schedules[] = {
+static const struct task_schedule schedules[] = {
 	{
 		.task_id = TASK_ID_NETWORK_SCAN,
 		.validity = TASK_VALID_ALWAYS,
@@ -114,7 +114,6 @@ int main(void)
 	conn_mgr_all_if_connect(false);
 
 	/* Initialise task runner */
-	task_runner_schedules_load(0, schedules, ARRAY_SIZE(schedules));
 	task_runner_init(schedules, states, ARRAY_SIZE(schedules), app_tasks, app_tasks_data,
 			 ARRAY_SIZE(app_tasks));
 

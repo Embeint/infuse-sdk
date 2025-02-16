@@ -12,6 +12,7 @@
 #include <zephyr/kernel.h>
 #include <zephyr/random/random.h>
 
+#include <infuse/fs/kv_store.h>
 #include <infuse/states.h>
 #include <infuse/task_runner/runner.h>
 
@@ -279,7 +280,10 @@ static void basic_schedule_callback(const struct task_schedule *schedule,
 				    enum task_schedule_event event)
 {
 	zassert_true(callback_count < ARRAY_SIZE(events_recv));
+#ifndef CONFIG_KV_STORE_KEY_TASK_SCHEDULES
+	/* Schedules are copied when KV store is enabled */
 	zassert_equal(expected_schedule, schedule);
+#endif
 	events_recv[callback_count++] = event;
 }
 
@@ -388,6 +392,10 @@ ZTEST(task_runner_runner, test_after)
 
 	task_runner_init(schedules, states, ARRAY_SIZE(schedules), app_tasks, app_tasks_data,
 			 ARRAY_SIZE(app_tasks));
+
+	/* Start on a clean second boundary */
+	k_sleep(K_TIMEOUT_ABS_MS(iter * MSEC_PER_SEC));
+	iter++;
 
 	/* Starts at T = 0, terminates at T = 1.8  */
 	for (int i = 0; i < 2; i++) {
@@ -680,6 +688,9 @@ static void runner_before(void *fixture)
 	example_task_expected_arg = 0;
 	example_task_run_cnt = 0;
 	example_workqueue_run_cnt = 0;
+#ifdef CONFIG_KV_STORE
+	kv_store_reset();
+#endif
 }
 
 ZTEST_SUITE(task_runner_runner, NULL, NULL, runner_before, NULL, NULL);

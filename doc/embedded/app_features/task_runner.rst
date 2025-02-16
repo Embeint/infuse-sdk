@@ -97,12 +97,14 @@ Updating Task Schedules
 ***********************
 
 Task schedules can be updated at runtime without a full firmware update through the
-usage of the :ref:`kv_store_api` and :c:func:`task_runner_schedules_load`. The schedule
-load function takes the default set of task schedules contained in the ``schedules``
-variable and updates any definitions that have a different value in the KV store.
+usage of the :ref:`kv_store_api`. When :kconfig:option:`CONFIG_KV_STORE_KEY_TASK_SCHEDULES`
+is enabled, the schedules provided to :c:func:`task_runner_init` are treated as the
+default schedules distributed with the application.
 
-The contents of the stored schedules can be reset by incrementing the ``schedules_id``
-parameter. This must be used if the default schedules are changing in a way that
+Any writes to the underlying task schedule KV slots will replace the default
+schedule until a new set of default schedules are distributed. A new set of defaults
+are signified by incrementing the :kconfig:option:`CONFIG_TASK_RUNNER_DEFAULT_SCHEDULES_ID`
+option. This must be used if the default schedules are changing in a way that
 could be incompatible with previous definitions. One example of this is if a new
 schedule is inserted in the middle of the default schedule list.
 

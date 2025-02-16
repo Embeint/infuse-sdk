@@ -7,6 +7,11 @@ config TASK_RUNNER
 
 if TASK_RUNNER
 
+config TASK_RUNNER_DEFAULT_SCHEDULES_ID
+	int "Increment in order to reset saved schedules to default values"
+	default 0
+	depends on KV_STORE
+
 config TASK_RUNNER_CUSTOM_TASK_DEFINITIONS
 	bool "Enable custom task definitions in `struct task_schedule`"
 

@@ -17,7 +17,13 @@
 #include <infuse/fs/kv_store.h>
 #include <infuse/fs/kv_types.h>
 
-#define SCHEDULE_ID_BASE (sizeof(struct task_schedule) << 16)
+/* Declare the internal function */
+int task_runner_schedules_load(
+	uint16_t schedules_id, const struct task_schedule *default_schedules,
+	uint8_t num_default_schedules,
+	struct task_schedule out_schedules[CONFIG_KV_STORE_KEY_TASK_SCHEDULES_RANGE]);
+
+struct task_schedule out_schedules[CONFIG_KV_STORE_KEY_TASK_SCHEDULES_RANGE] = {0};
 
 ZTEST(task_runner_schedules_kv, test_schedules_kv_invalid_not_written)
 {
@@ -29,12 +35,14 @@ ZTEST(task_runner_schedules_kv, test_schedules_kv_invalid_not_written)
 			.periodicity.fixed.period_s = 10,
 		},
 	};
+	int num_eval;
 
 	zassert_false(kv_store_key_exists(KV_KEY_TASK_SCHEDULES_DEFAULT_ID));
 	zassert_false(kv_store_key_exists(KV_KEY_TASK_SCHEDULES + 0));
 	zassert_false(kv_store_key_exists(KV_KEY_TASK_SCHEDULES + 1));
 
-	task_runner_schedules_load(10, schedules, ARRAY_SIZE(schedules));
+	num_eval = task_runner_schedules_load(10, schedules, ARRAY_SIZE(schedules), out_schedules);
+	zassert_equal(2, num_eval);
 
 	zassert_true(kv_store_key_exists(KV_KEY_TASK_SCHEDULES_DEFAULT_ID));
 	zassert_false(kv_store_key_exists(KV_KEY_TASK_SCHEDULES + 0));
@@ -43,102 +51,104 @@ ZTEST(task_runner_schedules_kv, test_schedules_kv_invalid_not_written)
 
 ZTEST(task_runner_schedules_kv, test_schedules_kv_basic)
 {
-	struct task_schedule readback = {0};
 	struct task_schedule schedule = {
 		.validity = TASK_VALID_ALWAYS,
 		.periodicity_type = TASK_PERIODICITY_FIXED,
 		.periodicity.fixed.period_s = 10,
 	};
+	int num_eval;
 
 	zassert_false(kv_store_key_exists(KV_KEY_TASK_SCHEDULES_DEFAULT_ID));
 	zassert_false(kv_store_key_exists(KV_KEY_TASK_SCHEDULES + 0));
 
 	/* Schedule written to KV store after load */
-	task_runner_schedules_load(10, &schedule, 1);
+	num_eval = task_runner_schedules_load(10, &schedule, 1, out_schedules);
+	zassert_equal(1, num_eval);
 	zassert_true(kv_store_key_exists(KV_KEY_TASK_SCHEDULES_DEFAULT_ID));
 	zassert_true(kv_store_key_exists(KV_KEY_TASK_SCHEDULES + 0));
 
 	/* Updated values without changing the schedule ID are reverted */
 	schedule.periodicity.fixed.period_s = 15;
-	task_runner_schedules_load(10, &schedule, 1);
-	zassert_equal(10, schedule.periodicity.fixed.period_s);
+	num_eval = task_runner_schedules_load(10, &schedule, 1, out_schedules);
+	zassert_equal(1, num_eval);
+	zassert_equal(10, out_schedules[0].periodicity.fixed.period_s);
 
 	/* Updated values with a changed schedule ID are preserved */
 	schedule.periodicity.fixed.period_s = 15;
-	task_runner_schedules_load(11, &schedule, 1);
-	zassert_equal(15, schedule.periodicity.fixed.period_s);
+	num_eval = task_runner_schedules_load(11, &schedule, 1, out_schedules);
+	zassert_equal(1, num_eval);
+	zassert_equal(15, out_schedules[0].periodicity.fixed.period_s);
 
 	/* Writing a value directly is preserved */
 	schedule.periodicity.fixed.period_s = 20;
-	zassert_equal(sizeof(schedule),
-		      kv_store_write(KV_KEY_TASK_SCHEDULES + 0, &schedule, sizeof(schedule)));
+	zassert_equal(
+		sizeof(struct task_schedule),
+		kv_store_write(KV_KEY_TASK_SCHEDULES + 0, &schedule, sizeof(struct task_schedule)));
 
-	task_runner_schedules_load(11, &readback, 1);
-	zassert_equal(20, readback.periodicity.fixed.period_s);
-	zassert_mem_equal(&schedule, &readback, sizeof(readback));
+	num_eval = task_runner_schedules_load(11, &schedule, 1, out_schedules);
+	zassert_equal(1, num_eval);
+	zassert_equal(20, out_schedules[0].periodicity.fixed.period_s);
+	zassert_mem_equal(&schedule, &out_schedules[0], sizeof(struct task_schedule));
 
 	/* Locked schedules are not overwritten from KV store */
 	schedule.validity |= TASK_LOCKED;
 	schedule.periodicity.fixed.period_s = 9;
 
-	task_runner_schedules_load(11, &schedule, 1);
+	num_eval = task_runner_schedules_load(11, &schedule, 1, out_schedules);
+	zassert_equal(1, num_eval);
 	zassert_equal(TASK_LOCKED | TASK_VALID_ALWAYS, schedule.validity);
-	zassert_equal(9, schedule.periodicity.fixed.period_s);
+	zassert_equal(9, out_schedules[0].periodicity.fixed.period_s);
 }
 
 ZTEST(task_runner_schedules_kv, test_schedules_kv_load_many)
 {
-	struct task_schedule schedule = {
-		.validity = TASK_VALID_ACTIVE,
-		.periodicity_type = TASK_PERIODICITY_LOCKOUT,
-		.periodicity.lockout.lockout_s = 60,
-	};
+	struct task_schedule schedules[5] = {0};
 	struct task_schedule schedule_null = {0};
-	struct kv_task_schedules_default_id default_id = {SCHEDULE_ID_BASE | 10};
+	int num_eval;
+
+	for (int i = 0; i < ARRAY_SIZE(schedules); i++) {
+		schedules[i].validity = TASK_VALID_ACTIVE;
+		schedules[i].periodicity_type = TASK_PERIODICITY_LOCKOUT;
+		schedules[i].periodicity.lockout.lockout_s = 3 + i;
+	}
 
 	/* Write 5 schedules to the KV store */
-	zassert_equal(sizeof(default_id), kv_store_write(KV_KEY_TASK_SCHEDULES_DEFAULT_ID,
-							 &default_id, sizeof(default_id)));
-	for (int i = 0; i < 5; i++) {
-		zassert_equal(sizeof(schedule), kv_store_write(KV_KEY_TASK_SCHEDULES + i, &schedule,
-							       sizeof(schedule)));
+	num_eval = task_runner_schedules_load(10, schedules, ARRAY_SIZE(schedules), out_schedules);
+	zassert_equal(5, num_eval);
+
+	for (int i = 0; i < ARRAY_SIZE(schedules); i++) {
+		zassert_mem_equal(&schedules[i], &out_schedules[i], sizeof(struct task_schedule));
 	}
-
-	struct task_schedule schedules[CONFIG_KV_STORE_KEY_TASK_SCHEDULES_RANGE] = {0};
-
-	task_runner_schedules_load(10, schedules, CONFIG_KV_STORE_KEY_TASK_SCHEDULES_RANGE);
-
-	for (int i = 0; i < 5; i++) {
-		zassert_mem_equal(&schedule, &schedules[i], sizeof(schedule));
-	}
-	for (int i = 5; i < CONFIG_KV_STORE_KEY_TASK_SCHEDULES_RANGE; i++) {
-		zassert_mem_equal(&schedule_null, &schedules[i], sizeof(schedule_null));
+	for (int i = ARRAY_SIZE(schedules); i < CONFIG_KV_STORE_KEY_TASK_SCHEDULES_RANGE; i++) {
+		zassert_mem_equal(&schedule_null, &out_schedules[i], sizeof(struct task_schedule));
 	}
 
 	/* New schedule ID with fewer schedules should clear later values */
-	task_runner_schedules_load(11, schedules, 3);
+	num_eval = task_runner_schedules_load(11, schedules, 3, out_schedules);
+	zassert_equal(3, num_eval);
 	for (int i = 0; i < 3; i++) {
-		zassert_mem_equal(&schedule, &schedules[i], sizeof(schedule));
+		zassert_mem_equal(&schedules[i], &out_schedules[i], sizeof(struct task_schedule));
 		zassert_true(kv_store_key_exists(KV_KEY_TASK_SCHEDULES + i));
 	}
 	for (int i = 3; i < CONFIG_KV_STORE_KEY_TASK_SCHEDULES_RANGE; i++) {
 		zassert_false(kv_store_key_exists(KV_KEY_TASK_SCHEDULES + i));
 	}
 
-	task_runner_schedules_load(11, schedules, CONFIG_KV_STORE_KEY_TASK_SCHEDULES_RANGE);
+	/* Providing more values now doesn't change anything without an ID change */
+	num_eval = task_runner_schedules_load(11, schedules, ARRAY_SIZE(schedules), out_schedules);
+	zassert_equal(3, num_eval);
 	for (int i = 0; i < 3; i++) {
-		zassert_mem_equal(&schedule, &schedules[i], sizeof(schedule));
+		zassert_mem_equal(&schedules[i], &out_schedules[i], sizeof(struct task_schedule));
 	}
 	for (int i = 3; i < CONFIG_KV_STORE_KEY_TASK_SCHEDULES_RANGE; i++) {
-		zassert_mem_equal(&schedule_null, &schedules[i], sizeof(schedule_null));
+		zassert_mem_equal(&schedule_null, &out_schedules[i], sizeof(struct task_schedule));
 	}
 }
 
 ZTEST(task_runner_schedules_kv, test_schedules_kv_load_too_many)
 {
 	struct task_schedule schedules[2 * CONFIG_KV_STORE_KEY_TASK_SCHEDULES_RANGE] = {0};
-	struct task_schedule readback[2 * CONFIG_KV_STORE_KEY_TASK_SCHEDULES_RANGE] = {0};
-	struct task_schedule schedule_null = {0};
+	int num_eval;
 
 	for (int i = 0; i < ARRAY_SIZE(schedules); i++) {
 		schedules[i].validity = TASK_VALID_ACTIVE;
@@ -147,7 +157,8 @@ ZTEST(task_runner_schedules_kv, test_schedules_kv_load_too_many)
 	}
 
 	/* Load with more default schedules than KV slots */
-	task_runner_schedules_load(5, schedules, ARRAY_SIZE(schedules));
+	num_eval = task_runner_schedules_load(5, schedules, ARRAY_SIZE(schedules), out_schedules);
+	zassert_equal(CONFIG_KV_STORE_KEY_TASK_SCHEDULES_RANGE, num_eval);
 
 	/* Values should not be written past the end of enabled keys */
 	for (int i = 0; i < CONFIG_KV_STORE_KEY_TASK_SCHEDULES_RANGE; i++) {
@@ -156,49 +167,49 @@ ZTEST(task_runner_schedules_kv, test_schedules_kv_load_too_many)
 	for (int i = CONFIG_KV_STORE_KEY_TASK_SCHEDULES_RANGE; i < ARRAY_SIZE(schedules); i++) {
 		zassert_false(kv_store_key_exists(KV_KEY_TASK_SCHEDULES + i));
 	}
-
-	/* Load with more default schedules than KV slots */
-	task_runner_schedules_load(5, readback, ARRAY_SIZE(readback));
-
-	for (int i = 0; i < CONFIG_KV_STORE_KEY_TASK_SCHEDULES_RANGE; i++) {
-		zassert_mem_equal(&schedules[i], &readback[i], sizeof(schedules[0]));
-	}
-	for (int i = CONFIG_KV_STORE_KEY_TASK_SCHEDULES_RANGE; i < ARRAY_SIZE(readback); i++) {
-		zassert_mem_equal(&schedule_null, &readback[i], sizeof(schedule_null));
-	}
 }
 
 ZTEST(task_runner_schedules_kv, test_schedules_kv_load_corrupt)
 {
 	struct task_schedule schedules[5] = {0};
-	struct task_schedule readback[5] = {0};
 	struct task_schedule schedule_null = {0};
+	int num_eval;
 
 	/* Write 5 schedules to the KV store */
 	for (int i = 0; i < 5; i++) {
 		schedules[i].validity = TASK_VALID_ACTIVE;
 		schedules[i].periodicity_type = TASK_PERIODICITY_LOCKOUT;
-		schedules[i].periodicity.lockout.lockout_s = 50;
+		schedules[i].periodicity.lockout.lockout_s = 50 - i;
 	}
-	task_runner_schedules_load(20, schedules, ARRAY_SIZE(schedules));
+	num_eval = task_runner_schedules_load(20, schedules, ARRAY_SIZE(schedules), out_schedules);
+	zassert_equal(ARRAY_SIZE(schedules), num_eval);
 
 	/* Intentionally corrupt stored schedule 3 */
 	zassert_equal(10, kv_store_write(KV_KEY_TASK_SCHEDULES + 2, &schedules[2], 10));
 
 	/* Load schedules again */
-	task_runner_schedules_load(20, readback, ARRAY_SIZE(readback));
+	num_eval = task_runner_schedules_load(20, schedules, ARRAY_SIZE(schedules), out_schedules);
+	zassert_equal(ARRAY_SIZE(schedules), num_eval);
 	for (int i = 0; i < ARRAY_SIZE(schedules); i++) {
 		if (i == 2) {
 			/* Schedule 3 should be zeroed out */
-			zassert_mem_equal(&schedule_null, &readback[i], sizeof(schedule_null));
+			zassert_mem_equal(&schedule_null, &out_schedules[i],
+					  sizeof(struct task_schedule));
 		} else {
-			zassert_mem_equal(&schedules[i], &readback[i], sizeof(schedules[0]));
+			zassert_mem_equal(&schedules[i], &out_schedules[i],
+					  sizeof(struct task_schedule));
 		}
 	}
+
+	/* Intentionally corrupt last schedule */
+	zassert_equal(10, kv_store_write(KV_KEY_TASK_SCHEDULES + 4, &schedules[4], 10));
+	num_eval = task_runner_schedules_load(20, schedules, ARRAY_SIZE(schedules), out_schedules);
+	zassert_equal(ARRAY_SIZE(schedules) - 1, num_eval);
 }
 
 void test_init(void *fixture)
 {
+	memset(out_schedules, 0x00, sizeof(out_schedules));
 	kv_store_reset();
 }
 
