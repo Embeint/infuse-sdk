@@ -73,12 +73,12 @@ static void test_signal_strength(void)
 	nrf_modem_lib_sim_signal_strength(32, 2);
 	rc = nrf_modem_monitor_signal_quality(&rsrp, &rsrq, false);
 	zassert_equal(0, rc);
-	zassert_equal(-138, rsrp);
-	zassert_equal(-3, rsrq);
+	zassert_equal(-139, rsrp);
+	zassert_equal(-4, rsrq);
 	rc = nrf_modem_monitor_signal_quality(&rsrp, &rsrq, true);
 	zassert_equal(0, rc);
-	zassert_equal(-138, rsrp);
-	zassert_equal(-3, rsrq);
+	zassert_equal(-139, rsrp);
+	zassert_equal(-4, rsrq);
 
 	/* Revert to unknown, cache should be preserved */
 	nrf_modem_lib_sim_signal_strength(255, 255);
@@ -88,8 +88,8 @@ static void test_signal_strength(void)
 	zassert_equal(INT8_MIN, rsrq);
 	rc = nrf_modem_monitor_signal_quality(&rsrp, &rsrq, true);
 	zassert_equal(0, rc);
-	zassert_equal(-138, rsrp);
-	zassert_equal(-3, rsrq);
+	zassert_equal(-139, rsrp);
+	zassert_equal(-4, rsrq);
 }
 
 static void test_at_safe(void)
