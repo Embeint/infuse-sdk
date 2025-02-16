@@ -190,6 +190,10 @@ static psa_key_id_t derive_shared_secret(psa_key_id_t root_key_id)
 		crc32_ieee_update(cached_device_id, device_public_key, sizeof(device_public_key));
 	cached_device_id &= 0x00FFFFFF;
 
+#ifdef CONFIG_INFUSE_SECURITY_TEST_CREDENTIALS
+	/* This is the device ID the cloud server expects for test_shared_secret */
+	cached_device_id = 0x2F33D3;
+#endif
 	return key_id;
 }
 
