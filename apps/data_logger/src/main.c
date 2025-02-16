@@ -46,7 +46,7 @@ static void custom_tdf_logger(uint8_t tdf_loggers, uint64_t timestamp);
 #define STORAGE_LOGGER TDF_DATA_LOGGER_SERIAL | TDF_DATA_LOGGER_UDP
 #endif /* CONFIG_DATA_LOGGER_EXFAT */
 
-static struct task_schedule schedules[] = {
+static const struct task_schedule schedules[] = {
 #ifdef CONFIG_EPACKET_INTERFACE_UDP
 	{
 		.task_id = TASK_ID_TDF_LOGGER,
@@ -226,7 +226,6 @@ int main(void)
 #endif /* CONFIG_NETWORKING */
 
 	/* Initialise task runner */
-	task_runner_schedules_load(0, schedules, ARRAY_SIZE(schedules));
 	task_runner_init(schedules, states, ARRAY_SIZE(schedules), app_tasks, app_tasks_data,
 			 ARRAY_SIZE(app_tasks));
 

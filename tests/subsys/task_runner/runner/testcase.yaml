@@ -7,3 +7,10 @@ tests:
     integration_platforms:
       - native_sim
       - qemu_cortex_m3
+  task_runner.runner.kv:
+    required_snippets:
+      - infuse
+    extra_configs:
+      - CONFIG_INFUSE_SDK=y
+    integration_platforms:
+      - mps2/an385
