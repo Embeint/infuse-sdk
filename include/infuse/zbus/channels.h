@@ -95,8 +95,8 @@ enum infuse_zbus_channel_id {
  * @param channel Infuse channel identifier (@ref infuse_zbus_channel_id)
  */
 #define INFUSE_ZBUS_CHAN_DEFINE(channel)                                                           \
-	ZBUS_CHAN_ID_DEFINE(INFUSE_ZBUS_NAME(channel), channel, INFUSE_ZBUS_TYPE(channel), NULL,   \
-			    NULL, ZBUS_OBSERVERS_EMPTY, ZBUS_MSG_INIT(0));
+	ZBUS_CHAN_DEFINE_WITH_ID(INFUSE_ZBUS_NAME(channel), channel, INFUSE_ZBUS_TYPE(channel),    \
+				 NULL, NULL, ZBUS_OBSERVERS_EMPTY, ZBUS_MSG_INIT(0));
 
 /** @cond INTERNAL_HIDDEN */
 #define _INFUSE_ZBUS_CHAN_EXTERN(channel) _ZBUS_CHAN_EXTERN(INFUSE_ZBUS_NAME(channel))
