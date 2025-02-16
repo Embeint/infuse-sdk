@@ -12,8 +12,6 @@
 
 ZTEST(distance_to_polygon_2d, test_distance)
 {
-	uint32_t distance;
-
 	/* Weird polygon */
 	struct cartesian_point_2d weird[] = {{0, 0}, {10, 0}, {10, 10}, {10, 10}, {0, 10}};
 	struct cartesian_point_2d middle = {5, 5};
