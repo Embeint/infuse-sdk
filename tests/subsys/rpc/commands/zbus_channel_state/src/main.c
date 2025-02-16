@@ -23,8 +23,8 @@ struct large {
 
 INFUSE_ZBUS_CHAN_DEFINE(INFUSE_ZBUS_CHAN_BATTERY);
 INFUSE_ZBUS_CHAN_DEFINE(INFUSE_ZBUS_CHAN_AMBIENT_ENV);
-ZBUS_CHAN_ID_DEFINE(large_channel, 100, struct large, NULL, NULL, ZBUS_OBSERVERS_EMPTY,
-		    ZBUS_MSG_INIT(0));
+ZBUS_CHAN_DEFINE_WITH_ID(large_channel, 100, struct large, NULL, NULL, ZBUS_OBSERVERS_EMPTY,
+			 ZBUS_MSG_INIT(0));
 
 static void send_zbus_channel_state_command(uint32_t request_id, uint32_t channel_id)
 {
