@@ -13,5 +13,6 @@ tests:
     tags: validation
   sample.low_power.rtt:
     tags: validation
+    filter: CONFIG_HAS_SEGGER_RTT
     required_snippets:
       - rtt
