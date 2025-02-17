@@ -227,14 +227,16 @@ static int validate_cpatch(struct rpc_common_file_actions_ctx *ctx)
 
 static int finish_cpatch(struct rpc_common_file_actions_ctx *ctx)
 {
-	const struct flash_area *fa_original;
+	const struct flash_area *fa_original, *fa_output;
 	struct stream_flash_ctx stream_ctx;
+	const struct flash_parameters *params;
 	struct cpatch_header header;
-	size_t mem_size;
+	size_t mem_size, out_len;
 	uint8_t *mem;
 	int rc;
 
 	flash_area_open(FIXED_PARTITION_ID(slot0_partition), &fa_original);
+	flash_area_open(FIXED_PARTITION_ID(slot1_partition), &fa_output);
 
 	/* Start patch process */
 	rc = cpatch_patch_start(fa_original, ctx->fa, &header);
@@ -243,26 +245,30 @@ static int finish_cpatch(struct rpc_common_file_actions_ctx *ctx)
 	}
 
 #if !defined(CONFIG_STREAM_FLASH_ERASE)
-	const struct flash_area *fa_output;
 
 	LOG_INF("Erasing %d bytes of secondary partition", header.output_file.length);
 	/* Erase space for image */
-	flash_area_open(FIXED_PARTITION_ID(slot1_partition), &fa_output);
 	rc = infuse_dfu_image_erase(fa_output, header.output_file.length, true);
-	flash_area_close(fa_output);
 	if (rc < 0) {
 		goto cleanup;
 	}
 	rpc_server_watchdog_feed();
 #endif /* !defined(CONFIG_STREAM_FLASH_ERASE) */
 
+	params = flash_get_parameters(fa_output->fa_dev);
+	out_len = header.output_file.length;
+	/* Stream flash requires output size to be aligned to the write size */
+	if (header.output_file.length % params->write_block_size) {
+		out_len += params->write_block_size -
+			   (header.output_file.length % params->write_block_size);
+	}
+
 	/* Safe to use this buffer here at the same time as the calling RPC,
 	 * as all data has been written.
 	 */
 	mem = rpc_server_command_working_mem(&mem_size);
 	rc = stream_flash_init(&stream_ctx, FIXED_PARTITION_DEVICE(slot1_partition), mem, mem_size,
-			       FIXED_PARTITION_OFFSET(slot1_partition), header.output_file.length,
-			       NULL);
+			       FIXED_PARTITION_OFFSET(slot1_partition), out_len, NULL);
 	__ASSERT_NO_MSG(rc == 0);
 
 	/* Apply the patch */
@@ -271,6 +277,7 @@ static int finish_cpatch(struct rpc_common_file_actions_ctx *ctx)
 
 cleanup:
 	/* Cleanup files */
+	flash_area_close(fa_output);
 	flash_area_close(fa_original);
 
 	return rc;
