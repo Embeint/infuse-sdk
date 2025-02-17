@@ -1,11 +1,11 @@
 # Infuse-IoT sysbuild integration
 
-if (NOT ${SB_CONFIG_INFUSE_INTEGRATION})
+if(NOT ${SB_CONFIG_INFUSE_INTEGRATION})
   # Not Infuse sysbuild, exit
   return()
 endif()
 
-if (${SB_CONFIG_BOOTLOADER_MCUBOOT})
+if(${SB_CONFIG_BOOTLOADER_MCUBOOT})
   # Infuse snippet should be applied to MCUBoot application
   set(mcuboot_SNIPPET "infuse" CACHE INTERNAL "")
   # Ensure multithreading is always enabled in MCUBoot
@@ -35,5 +35,7 @@ if(SB_CONFIG_DOMAIN_CPUNET_BOARD)
     ${CMAKE_CURRENT_SOURCE_DIR}/${NET_APP}/infuse.conf
     CACHE INTERNAL ""
   )
-  sysbuild_add_dependencies(FLASH mcuboot ${NET_APP})
+  if(${SB_CONFIG_BOOTLOADER_MCUBOOT})
+    sysbuild_add_dependencies(FLASH mcuboot ${NET_APP})
+  endif()
 endif()
