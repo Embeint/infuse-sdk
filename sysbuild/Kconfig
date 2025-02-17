@@ -1,9 +1,16 @@
 # Infuse-IoT sysbuild integration
 
+BOARD_QUALIFIERS_LAST_THREE := $(substring,$(BOARD_QUALIFIERS),-3)
+
 config INFUSE_INTEGRATION
 	bool "Sysbuild compilation according to Infuse-IoT"
 
+config INFUSE_INTEGRATION_IS_NS
+	bool
+	default "$(BOARD_QUALIFIERS_LAST_THREE)" = "/ns"
+
 choice BOOTLOADER
+	default BOOTLOADER_NONE if INFUSE_INTEGRATION_IS_NS
 	default BOOTLOADER_MCUBOOT if INFUSE_INTEGRATION
 endchoice
 
