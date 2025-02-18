@@ -1,0 +1,10 @@
+common:
+  tags: task_runner
+  min_flash: 64
+  min_ram: 32
+tests:
+  task_runner.runner_kv:
+    required_snippets:
+      - infuse
+    integration_platforms:
+      - mps2/an385
