@@ -16,8 +16,17 @@
 #include <infuse/fs/kv_store.h>
 #include <infuse/fs/kv_types.h>
 
+enum task_runner_flags {
+	FLAGS_TRIGGER_SCHEDULE_RELOAD = 0,
+	FLAGS_TASKS_TERMINATING = 1,
+	FLAGS_TASKS_RELOADING = 2,
+};
+
 #ifdef CONFIG_KV_STORE_KEY_TASK_SCHEDULES
 struct task_schedule sch[CONFIG_KV_STORE_KEY_TASK_SCHEDULES_RANGE];
+const struct task_schedule *default_sch;
+static uint8_t default_num;
+static atomic_t runner_flags;
 #else
 const struct task_schedule *sch;
 #endif
@@ -30,6 +39,32 @@ static uint8_t tsk_num;
 LOG_MODULE_REGISTER(task_runner, CONFIG_TASK_RUNNER_LOG_LEVEL);
 
 #ifdef CONFIG_KV_STORE_KEY_TASK_SCHEDULES
+
+static struct kv_store_cb schedule_cb;
+
+static void kv_value_changed(uint16_t key, const void *data, size_t data_len, void *user_ctx)
+{
+	if ((key < KV_KEY_TASK_SCHEDULES_DEFAULT_ID) ||
+	    (key >= (KV_KEY_TASK_SCHEDULES + CONFIG_KV_STORE_KEY_TASK_SCHEDULES_RANGE))) {
+		/* Not a task runner key */
+		return;
+	}
+
+	if (atomic_test_bit(&runner_flags, FLAGS_TASKS_RELOADING)) {
+		/* Callback was triggered by the schedule loader */
+		return;
+	}
+
+	/* Trigger a schedule reload on next run */
+	atomic_set_bit(&runner_flags, FLAGS_TRIGGER_SCHEDULE_RELOAD);
+
+	if (key == KV_KEY_TASK_SCHEDULES_DEFAULT_ID) {
+		/* Default schedule reload has been triggered */
+		LOG_INF("Resetting all schedules to defaults");
+		return;
+	}
+	LOG_DBG("Schedule %d changed", key - KV_KEY_TASK_SCHEDULES);
+}
 
 /**
  * @brief Load updated schedule definitions from the KV store
@@ -73,6 +108,8 @@ int task_runner_schedules_load(
 	 * task schedule size changes, existing KV values are invalidated.
 	 */
 	expected_default_id = (sizeof(struct task_schedule) << 16) | ((uint32_t)schedules_id);
+
+	atomic_set_bit(&runner_flags, FLAGS_TASKS_RELOADING);
 
 	rc = kv_store_read(KV_KEY_TASK_SCHEDULES_DEFAULT_ID, &default_id, sizeof(default_id));
 	if ((rc != sizeof(default_id)) || (default_id.set_id != expected_default_id)) {
@@ -123,28 +160,14 @@ int task_runner_schedules_load(
 			}
 		}
 	}
+	atomic_clear_bit(&runner_flags, FLAGS_TASKS_RELOADING);
+
 	return num_eval;
 }
 #endif /* CONFIG_KV_STORE_KEY_TASK_SCHEDULES */
 
-void task_runner_init(const struct task_schedule *schedules,
-		      struct task_schedule_state *schedule_states, uint8_t num_schedules,
-		      const struct task_config *tasks, struct task_data *task_states,
-		      uint8_t num_tasks)
+static void init_tasks(void)
 {
-	sch_states = schedule_states;
-	tsk = tasks;
-	tsk_states = task_states;
-	tsk_num = num_tasks;
-
-#ifdef CONFIG_KV_STORE_KEY_TASK_SCHEDULES
-	sch_num = task_runner_schedules_load(CONFIG_TASK_RUNNER_DEFAULT_SCHEDULES_ID, schedules,
-					     num_schedules, sch);
-#else
-	sch = schedules;
-	sch_num = num_schedules;
-#endif /* CONFIG_KV_STORE_KEY_TASK_SCHEDULES */
-
 	for (int i = 0; i < tsk_num; i++) {
 		tsk_states[i].running = false;
 		tsk_states[i].schedule_idx = UINT8_MAX;
@@ -176,13 +199,18 @@ void task_runner_init(const struct task_schedule *schedules,
 			}
 		}
 	}
+}
 
+static void init_schedules(uint8_t num_schedules, bool event_cb_reset)
+{
 	for (int i = 0; i < sch_num; i++) {
 		/* Mark schedule as invalid */
 		sch_states[i].task_idx = UINT8_MAX;
 		sch_states[i].linked = NULL;
-		/* Mark event callback as NULL */
-		sch_states[i].event_cb = NULL;
+		if (event_cb_reset) {
+			/* Mark event callback as NULL */
+			sch_states[i].event_cb = NULL;
+		}
 		/* Schedule is valid */
 		if (!task_schedule_validate(&sch[i])) {
 			LOG_WRN("Schedule %d (Task ID %d) is invalid!", i, sch[i].task_id);
@@ -215,6 +243,39 @@ void task_runner_init(const struct task_schedule *schedules,
 		sch_states[i].last_terminate = 0;
 		sch_states[i].runtime = 0;
 	}
+}
+
+void task_runner_init(const struct task_schedule *schedules,
+		      struct task_schedule_state *schedule_states, uint8_t num_schedules,
+		      const struct task_config *tasks, struct task_data *task_states,
+		      uint8_t num_tasks)
+{
+	sch_states = schedule_states;
+	tsk = tasks;
+	tsk_states = task_states;
+	tsk_num = num_tasks;
+
+#ifdef CONFIG_KV_STORE_KEY_TASK_SCHEDULES
+	/* Save the default schedules */
+	default_sch = schedules;
+	default_num = num_schedules;
+
+	/* Update default schedules from KV store */
+	sch_num = task_runner_schedules_load(CONFIG_TASK_RUNNER_DEFAULT_SCHEDULES_ID, schedules,
+					     num_schedules, sch);
+	/* Register for notifications on KV store changes */
+	if (schedule_cb.value_changed == NULL) {
+		schedule_cb.value_changed = kv_value_changed;
+		kv_store_register_callback(&schedule_cb);
+	}
+#else
+	sch = schedules;
+	sch_num = num_schedules;
+#endif /* CONFIG_KV_STORE_KEY_TASK_SCHEDULES */
+
+	/* Initialise the tasks and schedules */
+	init_tasks();
+	init_schedules(num_schedules, true);
 }
 
 const struct task_schedule *task_schedule_from_data(struct task_data *data)
@@ -344,6 +405,38 @@ void task_runner_iterate(atomic_t *app_states, uint32_t uptime, uint32_t gps_tim
 			}
 		}
 	}
+
+#ifdef CONFIG_KV_STORE_KEY_TASK_SCHEDULES
+	if (atomic_test_and_clear_bit(&runner_flags, FLAGS_TRIGGER_SCHEDULE_RELOAD)) {
+		/* Schedules have changed in KV store, terminate all running schedules */
+		LOG_WRN("Schedules updated, terminating tasks");
+		for (int i = 0; i < sch_num; i++) {
+			struct task_schedule_state *state = &sch_states[i];
+			struct task_data *d = &tsk_states[state->task_idx];
+
+			if ((i == d->schedule_idx) && d->running) {
+				task_terminate(i);
+			}
+		}
+		atomic_set_bit(&runner_flags, FLAGS_TASKS_TERMINATING);
+	}
+	if (atomic_test_bit(&runner_flags, FLAGS_TASKS_TERMINATING)) {
+		/* Wait until all tasks have terminated */
+		for (int i = 0; i < tsk_num; i++) {
+			if (tsk_states[i].running) {
+				LOG_DBG("Task %d still running", i);
+				return;
+			}
+		}
+		/* Reload schedules from KV store */
+		LOG_INF("All tasks terminated, reloading");
+		atomic_clear_bit(&runner_flags, FLAGS_TASKS_TERMINATING);
+
+		sch_num = task_runner_schedules_load(CONFIG_TASK_RUNNER_DEFAULT_SCHEDULES_ID,
+						     default_sch, default_num, sch);
+		init_schedules(default_num, false);
+	}
+#endif /* CONFIG_KV_STORE_KEY_TASK_SCHEDULES */
 
 	/* Loop over all schedules */
 	for (int i = 0; i < sch_num; i++) {

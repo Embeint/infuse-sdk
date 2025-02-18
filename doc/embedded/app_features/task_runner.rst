@@ -108,10 +108,9 @@ option. This must be used if the default schedules are changing in a way that
 could be incompatible with previous definitions. One example of this is if a new
 schedule is inserted in the middle of the default schedule list.
 
-.. note::
-
-  It is currently required to reboot a device once a task schedule has been updated
-  for it to take effect.
+When a new schedule is written to :c:enumerator:`KV_KEY_TASK_SCHEDULES` or a default schedule
+reset is triggered by a write to :c:enumerator:`KV_KEY_TASK_SCHEDULES_DEFAULT_ID`, all currently
+running tasks are terminated and all schedules are reloaded and revalidated.
 
 Disabling schedule updates
 ==========================
