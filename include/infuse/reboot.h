@@ -117,12 +117,16 @@ void infuse_reboot_delayed(enum infuse_reboot_reason reason, uint32_t info1, uin
 /**
  * @brief Query the reason for the previous reboot
  *
+ * If this function returns 0, state->hardware_reason contains the reboot
+ * reason and the hardware register values are cleared.
+ *
  * @warning Will only return valid state on the first call.
  *
  * @param state State storage area
  *
  * @retval 0 On successful state query
  * @retval -ENOENT No stored state exists
+ * @retval -errno Other error from @a retention_read
  */
 int infuse_reboot_state_query(struct infuse_reboot_state *state);
 

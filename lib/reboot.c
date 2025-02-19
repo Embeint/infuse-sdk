@@ -172,6 +172,9 @@ int infuse_reboot_state_query(struct infuse_reboot_state *state)
 	state->hardware_reason = hardware_cause;
 	(void)hwinfo_clear_reset_cause();
 
-	/* Clear the state */
-	return retention_clear(retention);
+	/* Clear the state.
+	 * Ignore errors since hardware registers have already been cleared at this point.
+	 */
+	(void)retention_clear(retention);
+	return 0;
 }
