@@ -158,6 +158,9 @@ static void network_info_update(struct k_work *work)
 		monitor.network_state.cell.mnc = atoi(plmn + 4);
 		plmn[4] = '\x00';
 		monitor.network_state.cell.mcc = atoi(plmn + 1);
+	} else {
+		/* Try again shortly */
+		infuse_work_reschedule(dwork, K_SECONDS(1));
 	}
 }
 
