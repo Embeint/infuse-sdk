@@ -1,5 +1,6 @@
 # Infuse-IoT automatic behaviours
 
+zephyr_sources_ifdef(CONFIG_INFUSE_AUTO_BATTERY_CHARGE_ACCUMULATOR charge_accumulator.c)
 zephyr_sources_ifdef(CONFIG_INFUSE_AUTO_BLUETOOTH_CONN_LOG bluetooth_conn_log.c)
 zephyr_sources_ifdef(CONFIG_INFUSE_AUTO_CHARGER_TEMPERATURE_CONTROL charger_control.c)
 zephyr_sources_ifdef(CONFIG_INFUSE_AUTO_TIME_SYNC_LOG time_sync_log.c)
