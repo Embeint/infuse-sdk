@@ -26,3 +26,8 @@ module-str = charger control
 source "subsys/logging/Kconfig.template.log_config"
 
 endif # INFUSE_AUTO_CHARGER_TEMPERATURE_CONTROL
+
+config INFUSE_AUTO_BATTERY_CHARGE_ACCUMULATOR
+	bool "Automatically accumulate battery charge over time"
+	depends on ZBUS_CHANNEL_PUBLISH_STATS
+	depends on INFUSE_ZBUS_CHAN_BATTERY

@@ -1,6 +1,6 @@
 /**
  * @file
- * @brief Automatically control battery charging based on temperatue
+ * @brief Automatically control battery charging based on temperature
  * @copyright 2024 Embeint Inc
  * @author Jordan Yates <jordan@embeint.com>
  *
