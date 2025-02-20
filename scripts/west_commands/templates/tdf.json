@@ -402,6 +402,13 @@
                 {"name": "num_sv", "type": "uint8_t", "description": "Number of satellites used in Nav Solution"}
             ]
         },
+        "38" : {
+            "name": "BATTERY_CHARGE_ACCUMULATED",
+            "description": "Battery charge accumulated over time (+ve entering battery, -ve exiting battery)",
+            "fields": [
+                {"name": "charge", "type": "int32_t", "description": "Accumulated charge (microamp-seconds)", "display": {"postfix": "uAs"}}
+            ]
+        },
         "100": {
             "name": "ARRAY_TYPE",
             "description": "Example array type",

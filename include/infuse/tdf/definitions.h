@@ -541,6 +541,12 @@ struct tdf_nrf9x_gnss_pvt {
 	uint8_t num_sv;
 } __packed;
 
+/** Battery charge accumulated over time (+ve entering battery, -ve exiting battery) */
+struct tdf_battery_charge_accumulated {
+	/** Accumulated charge (microamp-seconds) */
+	int32_t charge;
+} __packed;
+
 /** Example array type */
 struct tdf_array_type {
 	/** I am an array of length 4 */
@@ -617,6 +623,8 @@ enum tdf_builtin_id {
 	TDF_DEVICE_TILT = 36,
 	/** nRF9x GNSS PVT data frame */
 	TDF_NRF9X_GNSS_PVT = 37,
+	/** Battery charge accumulated over time (+ve entering battery, -ve exiting battery) */
+	TDF_BATTERY_CHARGE_ACCUMULATED = 38,
 	/** Example array type */
 	TDF_ARRAY_TYPE = 100,
 	/** End of builtin TDF range */
@@ -659,6 +667,7 @@ enum tdf_builtin_id {
 #define _TDF_WIFI_AP_INFO_TYPE                struct tdf_wifi_ap_info
 #define _TDF_DEVICE_TILT_TYPE                 struct tdf_device_tilt
 #define _TDF_NRF9X_GNSS_PVT_TYPE              struct tdf_nrf9x_gnss_pvt
+#define _TDF_BATTERY_CHARGE_ACCUMULATED_TYPE  struct tdf_battery_charge_accumulated
 #define _TDF_ARRAY_TYPE_TYPE                  struct tdf_array_type
 
 /** Size of builtin TDF definitions */
@@ -697,6 +706,7 @@ enum tdf_builtin_size {
 	_TDF_WIFI_AP_INFO_SIZE = sizeof(struct tdf_wifi_ap_info),
 	_TDF_DEVICE_TILT_SIZE = sizeof(struct tdf_device_tilt),
 	_TDF_NRF9X_GNSS_PVT_SIZE = sizeof(struct tdf_nrf9x_gnss_pvt),
+	_TDF_BATTERY_CHARGE_ACCUMULATED_SIZE = sizeof(struct tdf_battery_charge_accumulated),
 	_TDF_ARRAY_TYPE_SIZE = sizeof(struct tdf_array_type),
 };
 
