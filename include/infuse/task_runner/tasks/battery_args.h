@@ -25,6 +25,8 @@ enum {
 
 /** @brief Battery task arguments */
 struct task_battery_args {
+	/* Period between measurements (0 for single shot mode) */
+	uint16_t repeat_interval_ms;
 } __packed;
 
 #ifdef __cplusplus

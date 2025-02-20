@@ -74,14 +74,26 @@ void battery_task_fn(struct k_work *work)
 {
 	struct task_data *task = task_data_from_work(work);
 	const struct task_schedule *sch = task_schedule_from_data(task);
+	const struct task_battery_args *args = &sch->task_args.infuse.battery;
 	const struct device *fuel_gauge = task->executor.workqueue.task_arg.const_arg;
 	struct tdf_battery_state tdf_battery = {0};
 	int rc;
+
+	if (task_runner_task_block(&task->terminate_signal, K_NO_WAIT) == 1) {
+		/* Early wake by runner to terminate */
+		LOG_DBG("Terminated by runner");
+		return;
+	}
 
 	rc = task_battery_manual_run(fuel_gauge, &sch->task_args.infuse.battery, &tdf_battery);
 	if (rc == 0) {
 		/* Log output TDF */
 		TASK_SCHEDULE_TDF_LOG(sch, TASK_BATTERY_LOG_COMPLETE, TDF_BATTERY_STATE,
 				      epoch_time_now(), &tdf_battery);
+	}
+
+	if (args->repeat_interval_ms) {
+		LOG_DBG("Rescheduling for %d ms", args->repeat_interval_ms);
+		task_workqueue_reschedule(task, K_MSEC(args->repeat_interval_ms));
 	}
 }
