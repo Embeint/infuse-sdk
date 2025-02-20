@@ -19,6 +19,7 @@
 #include <infuse/data_logger/high_level/tdf.h>
 #include <infuse/drivers/imu.h>
 #include <infuse/drivers/imu/emul.h>
+#include <infuse/states.h>
 #include <infuse/tdf/tdf.h>
 #include <infuse/zbus/channels.h>
 
@@ -31,7 +32,7 @@
 BATTERY_TASK(1, 0, DEV);
 struct task_config config = BATTERY_TASK(0, 1, DEV);
 struct task_data data;
-struct task_schedule schedule = {.task_id = TASK_ID_BATTERY};
+struct task_schedule schedule;
 struct task_schedule_state state;
 
 static K_SEM_DEFINE(bat_published, 0, 1);
@@ -83,8 +84,6 @@ static void test_battery(uint32_t battery_uv, int32_t current_ua, bool log)
 	INFUSE_ZBUS_TYPE(INFUSE_ZBUS_CHAN_BATTERY) battery_reading;
 	uint32_t pub_count;
 
-	schedule.task_logging[0].tdf_mask = 0;
-	schedule.task_logging[0].loggers = 0;
 	if (log) {
 		schedule.task_logging[0].tdf_mask = TASK_BATTERY_LOG_COMPLETE;
 		schedule.task_logging[0].loggers = TDF_DATA_LOGGER_SERIAL;
@@ -117,21 +116,74 @@ static void test_battery(uint32_t battery_uv, int32_t current_ua, bool log)
 
 ZTEST(task_bat, test_no_log)
 {
+	schedule = (struct task_schedule){
+		.task_id = TASK_ID_BATTERY,
+		.validity = TASK_VALID_ALWAYS,
+	};
+
+	/* Setup links between task config and data */
+	task_runner_init(&schedule, &state, 1, &config, &data, 1);
+
 	test_battery(3700000, 10000, false);
 	test_battery(3501000, -15000, false);
 }
 
 ZTEST(task_bat, test_log)
 {
+	schedule = (struct task_schedule){
+		.task_id = TASK_ID_BATTERY,
+		.validity = TASK_VALID_ALWAYS,
+	};
+
+	/* Setup links between task config and data */
+	task_runner_init(&schedule, &state, 1, &config, &data, 1);
+
 	test_battery(3700000, 10000, true);
 	test_battery(3501000, -15000, true);
+}
+
+ZTEST(task_bat, test_periodic)
+{
+	INFUSE_STATES_ARRAY(app_states) = {0};
+	uint32_t gps_time = 7000;
+	uint32_t uptime = 0;
+	uint32_t base_count, pub_count;
+
+	schedule = (struct task_schedule){
+		.task_id = TASK_ID_BATTERY,
+		.validity = TASK_VALID_ALWAYS,
+		.periodicity_type = TASK_PERIODICITY_FIXED,
+		.periodicity.fixed.period_s = 10,
+		.timeout_s = 5,
+		.task_args.infuse.battery =
+			{
+				.repeat_interval_ms = 990,
+			},
+	};
+
+	/* Setup links between task config and data */
+	task_runner_init(&schedule, &state, 1, &config, &data, 1);
+
+	/* Get initial count */
+	base_count = zbus_chan_publish_count(ZBUS_CHAN);
+
+	/* Iterate for 7 seconds */
+	for (int i = 0; i < 8; i++) {
+		task_runner_iterate(app_states, uptime++, gps_time++, 100);
+		k_sleep(K_SECONDS(1));
+	}
+
+	/* Task should no longer be running (terminated by runner on timeout) */
+	zassert_equal(0, k_work_delayable_busy_get(&data.executor.workqueue.work));
+
+	/* Expect 6 publishes over the time period (1 at start, 5 rescheduled before timeout) */
+	pub_count = zbus_chan_publish_count(ZBUS_CHAN);
+	zassert_equal(base_count + 6, pub_count);
 }
 
 static void logger_before(void *fixture)
 {
 	k_sem_reset(&bat_published);
-	/* Setup links between task config and data */
-	task_runner_init(&schedule, &state, 1, &config, &data, 1);
 }
 
 ZTEST_SUITE(task_bat, NULL, NULL, logger_before, NULL, NULL);
