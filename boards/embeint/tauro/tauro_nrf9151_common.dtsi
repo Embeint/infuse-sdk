@@ -53,6 +53,10 @@
 		io-channels = <&adc 0>;
 		sense-resistor-milli-ohms = <300000>;
 		sense-gain-div = <300>;
+		/* Each unit is ~150uA */
+		noise-threshold = <4>;
+		/* Supports the range from 150mA to 1A */
+		gain-extended-range = "ADC_GAIN_1_2";
 	};
 
 	fuel_gauge: fuel_gauge {
@@ -83,7 +87,8 @@
 
 	channel@0 {
 		reg = <0>;
-		zephyr,gain = "ADC_GAIN_1_2";
+		/* Supports up to 150mA charging before capping out */
+		zephyr,gain = "ADC_GAIN_4";
 		zephyr,reference = "ADC_REF_INTERNAL";
 		zephyr,vref-mv = <600>;
 		zephyr,acquisition-time = <ADC_ACQ_TIME_MAX>;
