@@ -294,6 +294,11 @@ bool infuse_memfault_dump_chunks_epacket(const struct device *dev)
 				/* Still work to do, but no buffers remaining */
 				return false;
 			}
+			if (net_buf_tailroom(tx) == 0) {
+				/* Interface has gone down, free the buffer and report complete */
+				net_buf_unref(tx);
+				return true;
+			}
 		}
 
 		/* Push header */
