@@ -228,6 +228,8 @@ ZTEST(memfault_integration, test_epacket_dump)
 	rc = KV_STORE_READ(KV_KEY_REBOOTS, &reboots);
 	zassert_equal(sizeof(reboots), rc);
 
+	printk("Reboot: %d\n", reboots.count);
+
 	switch (reboots.count) {
 	case 1:
 		/* Validate chunks are dumped (Cold boot should be small) */
@@ -277,11 +279,47 @@ ZTEST(memfault_integration, test_epacket_dump)
 		rc = infuse_common_boot_last_reboot(&reboot_state);
 		zassert_equal(0, rc);
 		zassert_equal((enum infuse_reboot_reason)K_ERR_STACK_CHK_FAIL, reboot_state.reason);
+		/* Trigger annother reboot */
+		send_fault_command(0, K_ERR_STACK_CHK_FAIL);
+		k_sleep(K_MSEC(100));
+		zassert_unreachable("K_ERR_STACK_CHK_FAIL did not trigger exception");
+		break;
+	case 5:
+		/* Run the interface state callback */
+		epacket_dummy_set_interface_state(epacket_dummy, true);
+
+		/* Start dumping all messages */
+		rc = infuse_memfault_queue_dump_all(K_NO_WAIT);
+		zassert_equal(0, rc);
+
+		/* Simulate the interface going down after the initial size check */
+		epacket_dummy_set_max_packet(0);
+		epacket_dummy_set_interface_state(epacket_dummy, false);
+
+		/* Wait a little while, then bring it back up */
+		k_sleep(K_SECONDS(1));
+		epacket_dummy_set_max_packet(CONFIG_EPACKET_PACKET_SIZE_MAX);
+		epacket_dummy_set_interface_state(epacket_dummy, true);
+
+		/* Start dumping all messages again */
+		rc = infuse_memfault_queue_dump_all(K_NO_WAIT);
+		zassert_equal(0, rc);
+
+		/* Validate chunks are dumped (Fault should have resulted in more data) */
+		expect_memfault_chunks(false, 1000, 10000);
+
+		/* Run the interface state callback */
+		epacket_dummy_set_interface_state(epacket_dummy, false);
+		/* Validate previous reboot information */
+		rc = infuse_common_boot_last_reboot(&reboot_state);
+		zassert_equal(0, rc);
+		zassert_equal((enum infuse_reboot_reason)K_ERR_STACK_CHK_FAIL, reboot_state.reason);
+
 		/* Trigger a reboot that should result in secure fault info being provided */
 		infuse_reboot(K_ERR_ARM_SECURE_GENERIC, 0x1234, 0x5678);
 		zassert_unreachable("infuse_reboot did not result in reboot ");
 		break;
-	case 5:
+	case 6:
 		/* Memfault should know about the secure fault due to our injection */
 		rc = memfault_reboot_tracking_get_reboot_reason(&reason);
 		zassert_equal(0, rc);
