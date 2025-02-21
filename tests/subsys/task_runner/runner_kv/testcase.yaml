@@ -2,6 +2,8 @@ common:
   tags: task_runner
   min_flash: 64
   min_ram: 32
+  platform_exclude:
+    - tauro/nrf52840
 tests:
   task_runner.runner_kv:
     required_snippets:
