@@ -2,8 +2,6 @@ common:
   tags: infuse
   min_flash: 64
   min_ram: 32
-  platform_exclude:
-    - tauro/nrf52840
 tests:
   lib.common_boot:
     required_snippets:
