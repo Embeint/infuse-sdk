@@ -1,0 +1,6 @@
+name: infuse-bt-ctlr
+
+boards:
+  tauro/nrf52840:
+    append:
+      EXTRA_DTC_OVERLAY_FILE: boards/tauro_nrf52840.overlay
