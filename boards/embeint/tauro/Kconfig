@@ -5,9 +5,4 @@
 
 if BOARD_TAURO_NRF52840
 
-config BOARD_ENABLE_DCDC
-	bool "DCDC mode"
-	select SOC_DCDC_NRF52X
-	default y
-
 endif # BOARD_TAURO_NRF52840
