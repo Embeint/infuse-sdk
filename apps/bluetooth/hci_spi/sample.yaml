@@ -16,3 +16,11 @@ tests:
     sysbuild: false
   sample.bluetooth.hci_spi.sysbuild:
     sysbuild: true
+  sample.bluetooth.hci_spi.infuse:
+    required_snippets:
+      - infuse-bt-ctlr
+    sysbuild: false
+  sample.bluetooth.hci_spi.sysbuild.infuse:
+    required_snippets:
+      - infuse-bt-ctlr
+    sysbuild: true
