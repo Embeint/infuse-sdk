@@ -39,7 +39,4 @@ endif
 
 if BOARD_TAURO_NRF52840
 
-config BT_CTLR
-	default BT
-
 endif # BOARD_TAURO_NRF52840
