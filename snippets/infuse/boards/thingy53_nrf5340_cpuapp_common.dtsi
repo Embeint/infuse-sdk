@@ -5,6 +5,12 @@
 /delete-node/ &regulator_3v3;
 /delete-node/ &sensor_pwr_ctrl;
 
+&zephyr_udc0 {
+	cdc_acm_uart: cdc_acm_uart {
+		compatible = "zephyr,cdc-acm-uart";
+	};
+};
+
 / {
 	power_domain_3v3: power_domain_3v3 {
 		compatible = "power-domain-gpio";
