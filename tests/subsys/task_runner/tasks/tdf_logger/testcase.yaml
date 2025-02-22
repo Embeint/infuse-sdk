@@ -2,8 +2,6 @@ common:
   tags: data_logger tdf
   min_flash: 64
   min_ram: 32
-  platform_exclude:
-    - tauro/nrf52840
 tests:
   task_runner.tasks.tdf_logger:
     required_snippets:

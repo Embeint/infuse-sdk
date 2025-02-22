@@ -2,8 +2,6 @@ common:
   tags: imu
   min_flash: 64
   min_ram: 32
-  platform_exclude:
-    - tauro/nrf52840
 tests:
   algorithm_runner.algorithms.tilt:
     required_snippets:
