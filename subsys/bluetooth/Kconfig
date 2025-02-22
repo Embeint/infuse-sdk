@@ -2,7 +2,7 @@
 
 config BT_CTLR_ONLY
 	bool
-	default y if BT_CTLR && !BT_HCI_HOST
+	default y if HAS_BT_CTLR && !BT_HCI_HOST
 	help
 	  Helper symbol to detect controller only applications
 
@@ -16,7 +16,7 @@ config BT_CONTROLLER_MANAGER
 config BT_CONN_AUTO_RSSI
 	bool "Periodically query the RSSI of active Bluetooth connections"
 	depends on BT_PERIPHERAL || BT_CENTRAL
-	depends on BT_CTLR_CONN_RSSI || !BT_CTLR
+	depends on BT_CTLR_CONN_RSSI || !HAS_BT_CTLR
 	default y
 
 if BT_CONN_AUTO_RSSI
