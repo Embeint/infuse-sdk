@@ -1,12 +1,16 @@
 # Infuse-IoT SDK secure storage
 
+choice MBEDTLS_PSA_ITS_BACKEND
+
 config INFUSE_SECURE_STORAGE
-	bool "Secure storage API implementing PSA ITS"
-	depends on MBEDTLS_PSA_CRYPTO_C
+	bool "Infuse-IoT KV store based secure storage"
 	depends on !BUILD_WITH_TFM
 	depends on KV_STORE
-	depends on HWINFO
-	default y
+	select MBEDTLS
+	select MBEDTLS_PSA_CRYPTO_C
+	select HWINFO
+
+endchoice
 
 if INFUSE_SECURE_STORAGE
 
