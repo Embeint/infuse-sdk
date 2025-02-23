@@ -29,6 +29,13 @@ config INFUSE_SECURITY_TEST_CREDENTIALS
 	  Use hardcoded device ID's and credentials for testing purposes. These
 	  credentials have limited access to backend services.
 
+config INFUSE_SECURITY_SKIP_INIT
+	bool "Don't initialise the module"
+	depends on ZTEST
+	help
+	  Only use this when tests both don't require any crypto support AND the
+	  extra boot time from initialising the keys is problematic for repeatability.
+
 endif # INFUSE_SECURITY
 
 rsource "hardware_unique_key/Kconfig"
