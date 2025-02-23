@@ -322,6 +322,10 @@ int infuse_security_init(void)
 	psa_status_t status;
 	int rc;
 
+	if (IS_ENABLED(CONFIG_INFUSE_SECURITY_SKIP_INIT)) {
+		return 0;
+	}
+
 	/* Initialise crypto system */
 	status = psa_crypto_init();
 	if (status != PSA_SUCCESS) {
