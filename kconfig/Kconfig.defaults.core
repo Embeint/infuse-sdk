@@ -192,8 +192,6 @@ configdefault PSA_WANT_KEY_TYPE_ECC_PUBLIC_KEY
 	default y
 configdefault PSA_WANT_KEY_TYPE_ECC_KEY_PAIR_GENERATE
 	default y
-configdefault INFUSE_SECURE_STORAGE
-	default y
 # chacha20-poly1305 AEAD
 configdefault PSA_WANT_KEY_TYPE_CHACHA20
 	default y
