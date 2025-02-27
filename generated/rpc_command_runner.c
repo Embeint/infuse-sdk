@@ -17,8 +17,7 @@
 #include <infuse/epacket/packet.h>
 #include <infuse/rpc/types.h>
 #include <infuse/rpc/server.h>
-
-#include "commands/commands.h"
+#include <infuse/rpc/commands_impl.h>
 
 /* Authorised to run command */
 #define AUTHORISED(auth, name) (auth >= CONFIG_INFUSE_RPC_COMMAND_##name##_REQUIRED_AUTH)

@@ -22,6 +22,4 @@ config KV_STORE_INIT_PRIORITY
 	  KV store initialization priority. The default value of 55 is
 	  later than the default FLASH_INIT_PRIORITY value (50).
 
-rsource "Kconfig.keys"
-
 endif # KV_STORE

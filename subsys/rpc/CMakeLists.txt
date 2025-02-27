@@ -4,5 +4,5 @@ zephyr_library_named(infuse_rpc)
 
 zephyr_library_sources_ifdef(CONFIG_INFUSE_RPC_CLIENT client.c)
 zephyr_library_sources(server.c)
-zephyr_library_sources(command_runner.c)
+zephyr_library_sources_ifndef(CONFIG_INFUSE_DEFS_GENERATED_DOWNSTREAM ${INFUSE_DIR}/generated/rpc_command_runner.c)
 add_subdirectory(commands)
