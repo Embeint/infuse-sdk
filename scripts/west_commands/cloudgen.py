@@ -37,6 +37,7 @@ class cloudgen(WestCommand):
         return parser
 
     def do_run(self, args, unknown_args):
+        self.definition_dir = pathlib.Path(__file__).parent / "cloud_definitions"
         self.template_dir = pathlib.Path(__file__).parent / "templates"
         self.infuse_root_dir = pathlib.Path(__file__).parent.parent.parent
         self.env = Environment(
@@ -53,7 +54,7 @@ class cloudgen(WestCommand):
         args = [
             "clang-format",
             "-i",
-            f'--style=file:{self.infuse_root_dir/".clang-format"}',
+            f"--style=file:{self.infuse_root_dir / '.clang-format'}",
             str(file),
         ]
         subprocess.run(args)
@@ -78,7 +79,7 @@ class cloudgen(WestCommand):
         else:
             base = ctype_mapping[field["type"]]
         if "num" in field:
-            return f'{field["num"]} * {base}'
+            return f"{field['num']} * {base}"
         else:
             return base
 
@@ -92,7 +93,7 @@ class cloudgen(WestCommand):
                 field["array"] = f"[{field['num']}]"
 
     def tdfgen(self):
-        tdf_def_file = self.template_dir / "tdf.json"
+        tdf_def_file = self.definition_dir / "tdf.json"
         tdf_template = self.env.get_template("tdf_definitions.h.jinja")
         tdf_output = (
             self.infuse_root_dir / "include" / "infuse" / "tdf" / "definitions.h"
@@ -175,7 +176,7 @@ class cloudgen(WestCommand):
         self.clang_format(tdf_output)
 
     def kvgen(self):
-        kv_def_file = self.template_dir / "kv_store.json"
+        kv_def_file = self.definition_dir / "kv_store.json"
         kv_defs_template = self.env.get_template("kv_types.h.jinja")
         kv_defs_output = (
             self.infuse_root_dir / "include" / "infuse" / "fs" / "kv_types.h"
@@ -271,7 +272,7 @@ class cloudgen(WestCommand):
         self.clang_format(kv_keys_output)
 
     def rpcgen(self):
-        rpc_def_file = self.template_dir / "rpc.json"
+        rpc_def_file = self.definition_dir / "rpc.json"
         rpc_defs_template = self.env.get_template("rpc_types.h.jinja")
         rpc_defs_output = (
             self.infuse_root_dir / "include" / "infuse" / "rpc" / "types.h"
