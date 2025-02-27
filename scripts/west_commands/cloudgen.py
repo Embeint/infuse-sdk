@@ -34,9 +34,18 @@ class cloudgen(WestCommand):
             formatter_class=argparse.RawDescriptionHelpFormatter,
             description=self.description,
         )
+        parser.add_argument(
+            "--output",
+            "-o",
+            type=str,
+            required=True,
+            help="Output module for the generated files",
+        )
         return parser
 
     def do_run(self, args, unknown_args):
+        self.output_base = pathlib.Path(args.output)
+        self.generate_base = self.output_base / "generated"
         self.definition_dir = pathlib.Path(__file__).parent / "cloud_definitions"
         self.template_dir = pathlib.Path(__file__).parent / "templates"
         self.infuse_root_dir = pathlib.Path(__file__).parent.parent.parent
@@ -46,6 +55,7 @@ class cloudgen(WestCommand):
             trim_blocks=True,
             lstrip_blocks=True,
         )
+
         self.tdfgen()
         self.kvgen()
         self.rpcgen()
@@ -95,9 +105,8 @@ class cloudgen(WestCommand):
     def tdfgen(self):
         tdf_def_file = self.definition_dir / "tdf.json"
         tdf_template = self.env.get_template("tdf_definitions.h.jinja")
-        tdf_output = (
-            self.infuse_root_dir / "include" / "infuse" / "tdf" / "definitions.h"
-        )
+        tdf_output = self.generate_base / "include" / "infuse" / "tdf" / "definitions.h"
+        tdf_output.parent.mkdir(parents=True, exist_ok=True)
 
         loader = importlib.util.find_spec("infuse_iot.generated.tdf_definitions")
         tdf_definitions_template = self.env.get_template("tdf_definitions.py.jinja")
@@ -178,14 +187,11 @@ class cloudgen(WestCommand):
     def kvgen(self):
         kv_def_file = self.definition_dir / "kv_store.json"
         kv_defs_template = self.env.get_template("kv_types.h.jinja")
-        kv_defs_output = (
-            self.infuse_root_dir / "include" / "infuse" / "fs" / "kv_types.h"
-        )
+        kv_defs_output = self.generate_base / "include" / "infuse" / "fs" / "kv_types.h"
+        kv_defs_output.parent.mkdir(parents=True, exist_ok=True)
 
         kv_kconfig_template = self.env.get_template("Kconfig.keys.jinja")
-        kv_kconfig_output = (
-            self.infuse_root_dir / "subsys" / "fs" / "kv_store" / "Kconfig.keys"
-        )
+        kv_kconfig_output = self.generate_base / "Kconfig.kv_keys"
 
         loader = importlib.util.find_spec("infuse_iot.generated.kv_definitions")
         kv_py_template = self.env.get_template("kv_definitions.py.jinja")
@@ -264,22 +270,19 @@ class cloudgen(WestCommand):
     def rpcgen(self):
         rpc_def_file = self.definition_dir / "rpc.json"
         rpc_defs_template = self.env.get_template("rpc_types.h.jinja")
-        rpc_defs_output = (
-            self.infuse_root_dir / "include" / "infuse" / "rpc" / "types.h"
-        )
+        rpc_defs_output = self.generate_base / "include" / "infuse" / "rpc" / "types.h"
+        rpc_defs_output.parent.mkdir(parents=True, exist_ok=True)
 
         rpc_kconfig_template = self.env.get_template("Kconfig.commands.jinja")
-        rpc_kconfig_output = (
-            self.infuse_root_dir / "subsys" / "rpc" / "commands" / "Kconfig.commands"
-        )
+        rpc_kconfig_output = self.generate_base / "Kconfig.rpc_commands"
 
         rpc_commands_template = self.env.get_template("rpc_commands.h.jinja")
         rpc_commands_output = (
-            self.infuse_root_dir / "subsys" / "rpc" / "commands" / "commands.h"
+            self.generate_base / "include" / "infuse" / "rpc" / "commands_impl.h"
         )
 
         rpc_runner_template = self.env.get_template("rpc_runner.c.jinja")
-        rpc_runner_output = self.infuse_root_dir / "subsys" / "rpc" / "command_runner.c"
+        rpc_runner_output = self.generate_base / "rpc_command_runner.c"
 
         loader = importlib.util.find_spec("infuse_iot.generated.rpc_definitions")
         rpc_defs_py_template = self.env.get_template("rpc_definitions.py.jinja")

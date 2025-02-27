@@ -3,6 +3,9 @@
 set(INFUSE_DIR ${CMAKE_CURRENT_LIST_DIR} CACHE PATH "Infuse-IoT SDK root directory")
 
 zephyr_include_directories(include)
+if (NOT CONFIG_INFUSE_DEFS_GENERATED_DOWNSTREAM)
+  zephyr_include_directories(generated/include)
+endif()
 
 add_subdirectory(drivers)
 add_subdirectory(lib)

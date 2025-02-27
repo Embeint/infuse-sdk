@@ -8,6 +8,14 @@ rsource "lib/Kconfig"
 rsource "subsys/Kconfig"
 rsource "snippets/infuse/Kconfig"
 
+config INFUSE_DEFS_GENERATED_DOWNSTREAM
+	bool "TDF, RPC and KV store definitions are provided by downstream"
+
+if !INFUSE_DEFS_GENERATED_DOWNSTREAM
+rsource "generated/Kconfig.kv_keys"
+rsource "generated/Kconfig.rpc_commands"
+endif # !INFUSE_DEFS_GENERATED_DOWNSTREAM
+
 # Infuse-IoT SDK defaults
 if INFUSE_SDK
 

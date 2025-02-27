@@ -7,8 +7,8 @@
  * SPDX-License-Identifier: LicenseRef-Embeint
  */
 
-#ifndef INFUSE_SDK_INCLUDE_INFUSE_RPC_TYPES_H_
-#define INFUSE_SDK_INCLUDE_INFUSE_RPC_TYPES_H_
+#ifndef INFUSE_SDK_INCLUDE_GENERATED_RPC_TYPES_H_
+#define INFUSE_SDK_INCLUDE_GENERATED_RPC_TYPES_H_
 
 #include <stdint.h>
 
@@ -794,4 +794,4 @@ struct rpc_echo_response {
 }
 #endif
 
-#endif /* INFUSE_SDK_INCLUDE_INFUSE_RPC_TYPES_H_ */
+#endif /* INFUSE_SDK_INCLUDE_GENERATED_RPC_TYPES_H_ */
