@@ -11,12 +11,11 @@
 #include <zephyr/logging/log.h>
 
 #include <infuse/rpc/commands.h>
+#include <infuse/rpc/command_runner.h>
 #include <infuse/rpc/types.h>
 #include <infuse/rpc/server.h>
 #include <infuse/epacket/packet.h>
 #include <infuse/drivers/watchdog.h>
-
-#include "command_runner.h"
 
 LOG_MODULE_REGISTER(rpc_server, CONFIG_INFUSE_RPC_LOG_LEVEL);
 

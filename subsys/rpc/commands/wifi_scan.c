@@ -12,9 +12,8 @@
 #include <zephyr/net/wifi_mgmt.h>
 
 #include <infuse/rpc/commands.h>
+#include <infuse/rpc/command_runner.h>
 #include <infuse/rpc/types.h>
-
-#include "../command_runner.h"
 
 LOG_MODULE_DECLARE(rpc_server);
 
