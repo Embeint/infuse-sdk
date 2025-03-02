@@ -41,9 +41,13 @@ class cloudgen(WestCommand):
             required=True,
             help="Output module for the generated files",
         )
+        parser.add_argument(
+            "--defs", "-d", type=str, help="Folder containing extentsion definitions"
+        )
         return parser
 
     def do_run(self, args, unknown_args):
+        self.extra_defs_base = args.defs
         self.output_base = pathlib.Path(args.output)
         self.generate_base = self.output_base / "generated"
         self.definition_dir = pathlib.Path(__file__).parent / "cloud_definitions"
@@ -114,6 +118,20 @@ class cloudgen(WestCommand):
 
         with tdf_def_file.open("r") as f:
             tdf_defs = json.load(f)
+        if self.extra_defs_base:
+            tdf_def_file_ext = pathlib.Path(self.extra_defs_base) / "tdf.json"
+            if tdf_def_file_ext.exists():
+                with tdf_def_file_ext.open("r") as f:
+                    tdf_defs_ext = json.load(f)
+                    # Ensure IDs sit in extension range
+                    for tdf_id in tdf_defs_ext["definitions"]:
+                        assert int(tdf_id) > 1024
+                    # Ensure no struct name collisions
+                    for struct_name in tdf_defs_ext["structs"]:
+                        assert struct_name not in tdf_defs["structs"]
+                # Merge extensions into base definitions
+                tdf_defs["structs"].update(tdf_defs_ext["structs"])
+                tdf_defs["definitions"].update(tdf_defs_ext["definitions"])
 
         for d in tdf_defs["structs"].values():
             for field in d["fields"]:
@@ -199,6 +217,21 @@ class cloudgen(WestCommand):
 
         with kv_def_file.open("r") as f:
             kv_defs = json.load(f)
+        if self.extra_defs_base:
+            kv_def_file_ext = pathlib.Path(self.extra_defs_base) / "kv_store.json"
+            if kv_def_file_ext.exists():
+                with kv_def_file_ext.open("r") as f:
+                    kv_defs_ext = json.load(f)
+                    # Ensure IDs sit in extension range
+                    for kv_id in kv_defs_ext["definitions"]:
+                        assert int(kv_id) > 32768
+                    # Ensure no struct name collisions
+                    for struct_name in kv_defs_ext["structs"]:
+                        assert struct_name not in kv_defs["structs"]
+                # Merge extensions into base definitions
+                kv_defs["structs"].update(kv_defs_ext["structs"])
+                kv_defs["definitions"].update(kv_defs_ext["definitions"])
+
         kv_defs["definitions"] = {int(k): v for k, v in kv_defs["definitions"].items()}
         for d in kv_defs["definitions"].values():
             flags = []
@@ -290,6 +323,20 @@ class cloudgen(WestCommand):
 
         with rpc_def_file.open("r") as f:
             rpc_defs = json.load(f)
+        if self.extra_defs_base:
+            rpc_def_file_ext = pathlib.Path(self.extra_defs_base) / "rpc.json"
+            if rpc_def_file_ext.exists():
+                with rpc_def_file_ext.open("r") as f:
+                    rpc_defs_ext = json.load(f)
+                    # Ensure IDs sit in extension range
+                    for rpc_id in rpc_defs_ext["commands"]:
+                        assert int(rpc_id) > 32768
+                    # Ensure no struct name collisions
+                    for struct_name in rpc_defs_ext["structs"]:
+                        assert struct_name not in rpc_defs["structs"]
+                # Merge extensions into base definitions
+                rpc_defs["structs"].update(rpc_defs_ext["structs"])
+                rpc_defs["commands"].update(rpc_defs_ext["commands"])
 
         with rpc_kconfig_output.open("w") as f:
             f.write(rpc_kconfig_template.render(commands=rpc_defs["commands"]))
