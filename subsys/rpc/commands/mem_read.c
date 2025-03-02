@@ -12,9 +12,8 @@
 #include <infuse/data_logger/logger.h>
 #include <infuse/epacket/packet.h>
 #include <infuse/rpc/commands.h>
+#include <infuse/rpc/command_runner.h>
 #include <infuse/rpc/types.h>
-
-#include "../command_runner.h"
 
 /* Arbitrary memory reads MUST require device authentication */
 BUILD_ASSERT(CONFIG_INFUSE_RPC_COMMAND_MEM_READ_REQUIRED_AUTH == 2);
