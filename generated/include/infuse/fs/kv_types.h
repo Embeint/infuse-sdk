@@ -410,7 +410,7 @@ enum kv_builtin_id {
 	/** Maximum number of KV_KEY_SECURE_STORAGE_RESERVED slots that can be enabled */
 	KV_KEY_SECURE_STORAGE_RESERVED_MAX = 30009,
 	/** End of builtin KV range */
-	KV_KEY_BUILTIN_END = 4096,
+	KV_KEY_BUILTIN_END = 32768,
 };
 
 /** Size of builtin KV definitions */
