@@ -1,5 +1,0 @@
-/ {
-	chosen {
-		infuse,kv-partition = &storage_partition;
-	};
-};
