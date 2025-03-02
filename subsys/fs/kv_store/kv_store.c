@@ -6,13 +6,15 @@
  * SPDX-License-Identifier: LicenseRef-Embeint
  */
 
+#define _KV_SLOTS_ARRAY_DEFINE kv_store_slots_internal
+#include <infuse/fs/kv_types.h>
+
 #include <zephyr/drivers/flash.h>
 #include <zephyr/storage/flash_map.h>
 #include <zephyr/logging/log.h>
 #include <zephyr/fs/nvs.h>
 
 #include <infuse/fs/kv_store.h>
-#include <infuse/fs/kv_types.h>
 
 #include "kv_internal.h"
 
@@ -25,7 +27,15 @@ static sys_slist_t cb_list;
 #define NVS_PARTITION_OFFSET DT_REG_ADDR(NVS_PARTITION)
 #define NVS_PARTITION_SIZE   DT_REG_SIZE(NVS_PARTITION)
 
+BUILD_ASSERT(sizeof(struct key_value_slot_definition) == 4);
+
 LOG_MODULE_REGISTER(kv_store, CONFIG_KV_STORE_LOG_LEVEL);
+
+struct key_value_slot_definition *kv_internal_slot_definitions(size_t *num)
+{
+	*num = ARRAY_SIZE(_KV_SLOTS_ARRAY_DEFINE);
+	return _KV_SLOTS_ARRAY_DEFINE;
+}
 
 void *kv_store_fs(void)
 {

@@ -187,11 +187,6 @@ class cloudgen(WestCommand):
             self.infuse_root_dir / "subsys" / "fs" / "kv_store" / "Kconfig.keys"
         )
 
-        kv_keys_template = self.env.get_template("kv_keys.c.jinja")
-        kv_keys_output = (
-            self.infuse_root_dir / "subsys" / "fs" / "kv_store" / "kv_keys.c"
-        )
-
         loader = importlib.util.find_spec("infuse_iot.generated.kv_definitions")
         kv_py_template = self.env.get_template("kv_definitions.py.jinja")
         kv_py_output = pathlib.Path(loader.origin)
@@ -199,29 +194,25 @@ class cloudgen(WestCommand):
         with kv_def_file.open("r") as f:
             kv_defs = json.load(f)
         kv_defs["definitions"] = {int(k): v for k, v in kv_defs["definitions"].items()}
+        for d in kv_defs["definitions"].values():
+            flags = []
+            if d.get("reflect", False):
+                flags.append("KV_FLAGS_REFLECT")
+            if d.get("write_only", False):
+                flags.append("KV_FLAGS_WRITE_ONLY")
+            if d.get("read_only", False):
+                flags.append("KV_FLAGS_READ_ONLY")
+            if len(flags) > 0:
+                d["flags"] = " | ".join(flags)
+            else:
+                d["flags"] = 0
+            if "range" in d:
+                d["range_val"] = f"CONFIG_KV_STORE_KEY_{d['name']}_RANGE"
+            else:
+                d["range_val"] = 1
 
         with kv_kconfig_output.open("w") as f:
             f.write(kv_kconfig_template.render(definitions=kv_defs["definitions"]))
-
-        with kv_keys_output.open("w") as f:
-            for d in kv_defs["definitions"].values():
-                flags = []
-                if d.get("reflect", False):
-                    flags.append("KV_FLAGS_REFLECT")
-                if d.get("write_only", False):
-                    flags.append("KV_FLAGS_WRITE_ONLY")
-                if d.get("read_only", False):
-                    flags.append("KV_FLAGS_READ_ONLY")
-                if len(flags) > 0:
-                    d["flags"] = " | ".join(flags)
-                else:
-                    d["flags"] = 0
-                if "range" in d:
-                    d["range_val"] = f"CONFIG_KV_STORE_KEY_{d['name']}_RANGE"
-                else:
-                    d["range_val"] = 1
-            f.write(kv_keys_template.render(definitions=kv_defs["definitions"]))
-            f.write(os.linesep)
 
         with kv_defs_output.open("w") as f:
             # Simplify template logic for array postfix
@@ -269,7 +260,6 @@ class cloudgen(WestCommand):
             f.write(os.linesep)
 
         self.clang_format(kv_defs_output)
-        self.clang_format(kv_keys_output)
 
     def rpcgen(self):
         rpc_def_file = self.definition_dir / "rpc.json"

@@ -455,12 +455,6 @@ enum kv_builtin_size {
 #define _KV_KEY_SECURE_STORAGE_RESERVED_TYPE struct kv_secure_storage_reserved
 /* clang-format on */
 
-#ifdef CONFIG_KV_STORE_USER_KEYS
-#include "infuse_kv_user_types.h"
-#else
-#define KV_USER_REFLECT_NUM 0
-#endif
-
 /* clang-format off */
 /** Number of KV pairs that can be reflected */
 #define KV_REFLECT_NUM ( \
@@ -506,7 +500,7 @@ enum kv_builtin_size {
 		   (1 +)) \
 	IF_ENABLED(CONFIG_KV_STORE_KEY_TASK_SCHEDULES, \
 		   (CONFIG_KV_STORE_KEY_TASK_SCHEDULES_RANGE +)) \
-	KV_USER_REFLECT_NUM + 0)
+	0)
 /* clang-format on */
 
 /** Convert key ID to key type */
@@ -539,6 +533,172 @@ struct key_value_slot_definition {
 	/** Bitmask of @ref kv_slot_flags for slot */
 	uint8_t flags;
 };
+
+#ifdef _KV_SLOTS_ARRAY_DEFINE
+static struct key_value_slot_definition _KV_SLOTS_ARRAY_DEFINE[] = {
+#ifdef CONFIG_KV_STORE_KEY_REBOOTS
+	{
+		.key = KV_KEY_REBOOTS,
+		.range = 1,
+		.flags = 0,
+	},
+#endif /* CONFIG_KV_STORE_KEY_REBOOTS */
+#ifdef CONFIG_KV_STORE_KEY_BLUETOOTH_ADDR
+	{
+		.key = KV_KEY_BLUETOOTH_ADDR,
+		.range = 1,
+		.flags = KV_FLAGS_REFLECT | KV_FLAGS_READ_ONLY,
+	},
+#endif /* CONFIG_KV_STORE_KEY_BLUETOOTH_ADDR */
+#ifdef CONFIG_KV_STORE_KEY_EXFAT_DISK_INFO
+	{
+		.key = KV_KEY_EXFAT_DISK_INFO,
+		.range = 1,
+		.flags = KV_FLAGS_REFLECT | KV_FLAGS_READ_ONLY,
+	},
+#endif /* CONFIG_KV_STORE_KEY_EXFAT_DISK_INFO */
+#ifdef CONFIG_KV_STORE_KEY_BLUETOOTH_CTLR_VERSION
+	{
+		.key = KV_KEY_BLUETOOTH_CTLR_VERSION,
+		.range = 1,
+		.flags = KV_FLAGS_REFLECT,
+	},
+#endif /* CONFIG_KV_STORE_KEY_BLUETOOTH_CTLR_VERSION */
+#ifdef CONFIG_KV_STORE_KEY_FIXED_LOCATION
+	{
+		.key = KV_KEY_FIXED_LOCATION,
+		.range = 1,
+		.flags = KV_FLAGS_REFLECT,
+	},
+#endif /* CONFIG_KV_STORE_KEY_FIXED_LOCATION */
+#ifdef CONFIG_KV_STORE_KEY_WIFI_SSID
+	{
+		.key = KV_KEY_WIFI_SSID,
+		.range = 1,
+		.flags = KV_FLAGS_REFLECT,
+	},
+#endif /* CONFIG_KV_STORE_KEY_WIFI_SSID */
+#ifdef CONFIG_KV_STORE_KEY_WIFI_PSK
+	{
+		.key = KV_KEY_WIFI_PSK,
+		.range = 1,
+		.flags = KV_FLAGS_REFLECT | KV_FLAGS_WRITE_ONLY,
+	},
+#endif /* CONFIG_KV_STORE_KEY_WIFI_PSK */
+#ifdef CONFIG_KV_STORE_KEY_NTP_SERVER_URL
+	{
+		.key = KV_KEY_NTP_SERVER_URL,
+		.range = 1,
+		.flags = KV_FLAGS_REFLECT,
+	},
+#endif /* CONFIG_KV_STORE_KEY_NTP_SERVER_URL */
+#ifdef CONFIG_KV_STORE_KEY_EPACKET_UDP_URL
+	{
+		.key = KV_KEY_EPACKET_UDP_URL,
+		.range = 1,
+		.flags = KV_FLAGS_REFLECT,
+	},
+#endif /* CONFIG_KV_STORE_KEY_EPACKET_UDP_URL */
+#ifdef CONFIG_KV_STORE_KEY_EPACKET_UDP_PORT
+	{
+		.key = KV_KEY_EPACKET_UDP_PORT,
+		.range = 1,
+		.flags = KV_FLAGS_REFLECT,
+	},
+#endif /* CONFIG_KV_STORE_KEY_EPACKET_UDP_PORT */
+#ifdef CONFIG_KV_STORE_KEY_LTE_MODEM_MODEL
+	{
+		.key = KV_KEY_LTE_MODEM_MODEL,
+		.range = 1,
+		.flags = KV_FLAGS_REFLECT | KV_FLAGS_READ_ONLY,
+	},
+#endif /* CONFIG_KV_STORE_KEY_LTE_MODEM_MODEL */
+#ifdef CONFIG_KV_STORE_KEY_LTE_MODEM_FIRMWARE_REVISION
+	{
+		.key = KV_KEY_LTE_MODEM_FIRMWARE_REVISION,
+		.range = 1,
+		.flags = KV_FLAGS_REFLECT | KV_FLAGS_READ_ONLY,
+	},
+#endif /* CONFIG_KV_STORE_KEY_LTE_MODEM_FIRMWARE_REVISION */
+#ifdef CONFIG_KV_STORE_KEY_LTE_MODEM_ESN
+	{
+		.key = KV_KEY_LTE_MODEM_ESN,
+		.range = 1,
+		.flags = KV_FLAGS_REFLECT | KV_FLAGS_READ_ONLY,
+	},
+#endif /* CONFIG_KV_STORE_KEY_LTE_MODEM_ESN */
+#ifdef CONFIG_KV_STORE_KEY_LTE_MODEM_IMEI
+	{
+		.key = KV_KEY_LTE_MODEM_IMEI,
+		.range = 1,
+		.flags = KV_FLAGS_REFLECT | KV_FLAGS_READ_ONLY,
+	},
+#endif /* CONFIG_KV_STORE_KEY_LTE_MODEM_IMEI */
+#ifdef CONFIG_KV_STORE_KEY_LTE_SIM_UICC
+	{
+		.key = KV_KEY_LTE_SIM_UICC,
+		.range = 1,
+		.flags = KV_FLAGS_REFLECT | KV_FLAGS_READ_ONLY,
+	},
+#endif /* CONFIG_KV_STORE_KEY_LTE_SIM_UICC */
+#ifdef CONFIG_KV_STORE_KEY_LTE_PDP_CONFIG
+	{
+		.key = KV_KEY_LTE_PDP_CONFIG,
+		.range = 1,
+		.flags = KV_FLAGS_REFLECT,
+	},
+#endif /* CONFIG_KV_STORE_KEY_LTE_PDP_CONFIG */
+#ifdef CONFIG_KV_STORE_KEY_LTE_NETWORKING_MODES
+	{
+		.key = KV_KEY_LTE_NETWORKING_MODES,
+		.range = 1,
+		.flags = KV_FLAGS_REFLECT,
+	},
+#endif /* CONFIG_KV_STORE_KEY_LTE_NETWORKING_MODES */
+#ifdef CONFIG_KV_STORE_KEY_BLUETOOTH_PEER
+	{
+		.key = KV_KEY_BLUETOOTH_PEER,
+		.range = 1,
+		.flags = KV_FLAGS_REFLECT,
+	},
+#endif /* CONFIG_KV_STORE_KEY_BLUETOOTH_PEER */
+#ifdef CONFIG_KV_STORE_KEY_GRAVITY_REFERENCE
+	{
+		.key = KV_KEY_GRAVITY_REFERENCE,
+		.range = 1,
+		.flags = KV_FLAGS_REFLECT,
+	},
+#endif /* CONFIG_KV_STORE_KEY_GRAVITY_REFERENCE */
+#ifdef CONFIG_KV_STORE_KEY_GEOFENCE
+	{
+		.key = KV_KEY_GEOFENCE,
+		.range = CONFIG_KV_STORE_KEY_GEOFENCE_RANGE,
+		.flags = KV_FLAGS_REFLECT,
+	},
+#endif /* CONFIG_KV_STORE_KEY_GEOFENCE */
+#ifdef CONFIG_KV_STORE_KEY_TASK_SCHEDULES_DEFAULT_ID
+	{
+		.key = KV_KEY_TASK_SCHEDULES_DEFAULT_ID,
+		.range = 1,
+		.flags = KV_FLAGS_REFLECT,
+	},
+#endif /* CONFIG_KV_STORE_KEY_TASK_SCHEDULES_DEFAULT_ID */
+#ifdef CONFIG_KV_STORE_KEY_TASK_SCHEDULES
+	{
+		.key = KV_KEY_TASK_SCHEDULES,
+		.range = CONFIG_KV_STORE_KEY_TASK_SCHEDULES_RANGE,
+		.flags = KV_FLAGS_REFLECT,
+	},
+#endif /* CONFIG_KV_STORE_KEY_TASK_SCHEDULES */
+#ifdef CONFIG_KV_STORE_KEY_SECURE_STORAGE_RESERVED
+	{
+		.key = KV_KEY_SECURE_STORAGE_RESERVED,
+		.range = CONFIG_KV_STORE_KEY_SECURE_STORAGE_RESERVED_RANGE,
+		.flags = 0,
+	},
+#endif /* CONFIG_KV_STORE_KEY_SECURE_STORAGE_RESERVED */
+};
+#endif /* _KV_SLOTS_ARRAY_DEFINE */
 
 /**
  * @}

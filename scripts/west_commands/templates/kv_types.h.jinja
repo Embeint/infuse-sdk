@@ -140,12 +140,6 @@ enum kv_builtin_size {
 {% endfor %}
 /* clang-format on */
 
-#ifdef CONFIG_KV_STORE_USER_KEYS
-#include "infuse_kv_user_types.h"
-#else
-#define KV_USER_REFLECT_NUM 0
-#endif
-
 /* clang-format off */
 /** Number of KV pairs that can be reflected */
 #define KV_REFLECT_NUM ( \
@@ -155,7 +149,7 @@ enum kv_builtin_size {
 		   ({{info['range_val']}} +)) \
 {% endif %}
 {% endfor %}
-	KV_USER_REFLECT_NUM + 0)
+	0)
 /* clang-format on */
 
 /** Convert key ID to key type */
@@ -188,6 +182,20 @@ struct key_value_slot_definition {
 	/** Bitmask of @ref kv_slot_flags for slot */
 	uint8_t flags;
 };
+
+#ifdef _KV_SLOTS_ARRAY_DEFINE
+static struct key_value_slot_definition _KV_SLOTS_ARRAY_DEFINE[] = {
+{% for base_id, info in definitions.items() %}
+#ifdef CONFIG_KV_STORE_KEY_{{ info['name'] }}
+	{
+		.key = KV_KEY_{{ info['name'] }},
+		.range = {{ info['range_val'] }},
+		.flags = {{ info['flags'] }},
+	},
+#endif /* CONFIG_KV_STORE_KEY_{{ info['name'] }} */
+{% endfor %}
+};
+#endif /* _KV_SLOTS_ARRAY_DEFINE */
 
 /**
  * @}
