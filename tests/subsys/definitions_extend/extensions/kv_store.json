@@ -1,0 +1,38 @@
+{
+    "structs": {
+        "kv_struct_demo": {
+            "description": "Demo struct",
+            "fields": [
+                {"name": "x", "type": "int8_t"},
+                {"name": "y", "type": "int8_t"},
+                {"name": "z", "type": "int8_t"}
+            ]
+        }
+    },
+    "definitions": {
+        "32769": {
+            "name": "EXT1",
+            "description": "Extension KV slot 1",
+            "reflect": true,
+            "fields": [
+                {"name": "a", "type": "uint32_t"}
+            ]
+        },
+        "32770": {
+            "name": "EXT2",
+            "range": 2,
+            "read_only": true,
+            "description": "Extension KV slot 2",
+            "fields": [
+                {"name": "a", "type": "struct kv_struct_demo"}
+            ]
+        },
+        "32772": {
+            "name": "EXT3",
+            "description": "Extension KV slot 3",
+            "fields": [
+                {"name": "a", "type": "uint64_t"}
+            ]
+        }
+    }
+}

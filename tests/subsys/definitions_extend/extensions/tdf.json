@@ -1,0 +1,30 @@
+{
+    "structs": {
+        "tdf_struct_demo": {
+            "description": "Demo struct",
+            "fields": [
+                {"name": "x", "type": "int8_t"},
+                {"name": "y", "type": "int8_t"},
+                {"name": "z", "type": "int8_t"}
+            ]
+        }
+    },
+    "definitions": {
+        "1025": {
+            "name": "EXT1",
+            "description": "Extension TDF 1",
+            "fields": [
+                {"name": "a", "type": "struct tdf_struct_demo", "description": "Demo 1"},
+                {"name": "b", "type": "struct tdf_struct_demo", "description": "Demo 2"}
+            ]
+        },
+        "1026": {
+            "name": "EXT2",
+            "description": "Extension TDF 2",
+            "fields": [
+                {"name": "a", "type": "uint16_t", "display": {"fmt": "float", "digits": 3}, "description": "Mean value"},
+                {"name": "b", "type": "uint16_t", "description": "Sample count"}
+            ]
+        }
+    }
+}

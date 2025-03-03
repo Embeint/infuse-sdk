@@ -1,0 +1,9 @@
+# Application Kconfig settings
+
+# Include our updated definitions since CONFIG_INFUSE_DEFS_GENERATED_DOWNSTREAM=y
+# Normally this would be done by the root downstream Kconfig file
+rsource "generated/Kconfig.kv_keys"
+rsource "generated/Kconfig.rpc_commands"
+
+# Source base Zephyr kconfig tree
+source "Kconfig.zephyr"
