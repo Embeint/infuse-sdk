@@ -31,7 +31,7 @@ void rpc_command_runner(struct net_buf *request);
  *
  * Free the request buffer inside the RPC implementation instead of
  * relying on the server to free the buffer after the command returns.
- * This is useful for long running commands with @ref INFUSE_IOT_DATA
+ * This is useful for long running commands with @ref INFUSE_RPC_DATA
  * packets.
  *
  * @param request Request message to free
@@ -49,6 +49,8 @@ void rpc_command_runner_request_unref(struct net_buf *request);
  *
  * @param interface Interface to send response on
  * @param auth Authentication level of response
+ * @param request_id Request ID associated with the response
+ * @param command_id Command ID associated with the response
  * @param response Response message to send
  */
 void rpc_command_runner_early_response(const struct device *interface, enum epacket_auth auth,
