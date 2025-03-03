@@ -38,9 +38,8 @@ User-defined Commands
 *********************
 
 Infuse-IoT also allows custom user-defined commands to be integrated with the framework with
-:kconfig:option:`CONFIG_INFUSE_RPC_SERVER_USER_COMMANDS`. When enabled, an implementation of
-:c:func:`infuse_rpc_server_user_command_runner` must be provided in the application. An example
-implementation of this feature can be found in ``infuse-sdk/tests/subsys/rpc/commands/user_commands``.
+:kconfig:option:`CONFIG_INFUSE_DEFS_GENERATED_DOWNSTREAM`. See :ref:`embedded_user_definitions`
+for more details.
 
 API Reference
 *************

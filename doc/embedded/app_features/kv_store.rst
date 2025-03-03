@@ -28,17 +28,9 @@ and is present in the standard :c:struct:`tdf_announce` structure.
 User-defined Slots
 ******************
 
-In addition to the builtin slot definitions, Infuse-IoT supports user defined slots through
-:kconfig:option:`CONFIG_KV_STORE_USER_KEYS`. When enabled, the Key-Value store expects two
-files, ``infuse_kv_user_types.h`` and ``infuse_kv_user_keys.c`` to be available on the include
-path.
-
-For the expected formats of these files, refer to ``infuse-sdk/tests/subsys/kv_store/user/config``.
-
-.. warning::
-
-    Once a key-value slot is defined and deployed, it is critical that it is not changed
-    in future updates.
+Infuse-IoT also allows custom user-defined TDFs to be integrated with the framework with
+:kconfig:option:`CONFIG_INFUSE_DEFS_GENERATED_DOWNSTREAM`. See :ref:`embedded_user_definitions`
+for more details.
 
 API Reference
 *************

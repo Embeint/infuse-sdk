@@ -367,6 +367,13 @@ If required, embedded devices can parse a TDF block through the :c:func:`tdf_par
       LOG_INF("ID: %d Timestamp: %lld Num: %d Data: %p", parsed.tdf_id, parsed.time, parsed.tdf_num, parsed.data);
    }
 
+User-defined Types
+******************
+
+Infuse-IoT also allows custom user-defined TDFs to be integrated with the framework with
+:kconfig:option:`CONFIG_INFUSE_DEFS_GENERATED_DOWNSTREAM`. See :ref:`embedded_user_definitions`
+for more details.
+
 API Reference
 *************
 
