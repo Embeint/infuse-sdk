@@ -21,6 +21,10 @@
 #include <infuse/fs/kv_types.h>
 #include <infuse/reboot.h>
 #include <infuse/task_runner/runner.h>
+#include <infuse/time/epoch.h>
+#include <infuse/data_logger/high_level/tdf.h>
+#include <infuse/tdf/definitions.h>
+#include <infuse/tdf/util.h>
 
 #include <modem/at_monitor.h>
 #include <modem/pdn.h>
@@ -69,6 +73,9 @@ static struct {
 	atomic_t flags;
 	int16_t rsrp_cached;
 	int8_t rsrq_cached;
+#ifdef CONFIG_INFUSE_NRF_MODEM_MONITOR_CONN_STATE_LOG
+	uint8_t network_state_loggers;
+#endif /* CONFIG_INFUSE_NRF_MODEM_MONITOR_CONN_STATE_LOG */
 } monitor;
 
 bool nrf_modem_monitor_is_at_safe(void)
@@ -79,6 +86,13 @@ bool nrf_modem_monitor_is_at_safe(void)
 	return !atomic_test_bit(&monitor.flags, FLAGS_PDN_CONN_IN_PROGRESS);
 #endif /* CONFIG_SOC_NRF9160 */
 }
+
+#ifdef CONFIG_INFUSE_NRF_MODEM_MONITOR_CONN_STATE_LOG
+void nrf_modem_monitor_network_state_log(uint8_t tdf_logger_mask)
+{
+	monitor.network_state_loggers = tdf_logger_mask;
+}
+#endif /* CONFIG_INFUSE_NRF_MODEM_MONITOR_CONN_STATE_LOG */
 
 void nrf_modem_monitor_network_state(struct nrf_modem_network_state *state)
 {
@@ -127,7 +141,7 @@ static void network_info_update(struct k_work *work)
 		monitor.network_state.psm_cfg.active_time = -1;
 		monitor.network_state.edrx_cfg.edrx = -1.0f;
 		monitor.network_state.edrx_cfg.ptw = -1.0f;
-		return;
+		goto state_logging;
 	}
 
 	/* Query state from the modem */
@@ -161,7 +175,25 @@ static void network_info_update(struct k_work *work)
 	} else {
 		/* Try again shortly */
 		infuse_work_reschedule(dwork, K_SECONDS(1));
+		return;
 	}
+
+state_logging:
+#ifdef CONFIG_INFUSE_NRF_MODEM_MONITOR_CONN_STATE_LOG
+	if (monitor.network_state_loggers) {
+		struct tdf_lte_conn_status tdf;
+		int16_t rsrp;
+		int8_t rsrq;
+
+		/* Query signal strengths (other state already queried above) */
+		(void)nrf_modem_monitor_signal_quality(&rsrp, &rsrq, true);
+		/* Convert to TDF */
+		tdf_lte_conn_status_from_monitor(&monitor.network_state, &tdf, rsrp, rsrq);
+		/* Add to specified loggers */
+		TDF_DATA_LOGGER_LOG(monitor.network_state_loggers, TDF_LTE_CONN_STATUS,
+				    epoch_time_now(), &tdf);
+	}
+#endif /* CONFIG_INFUSE_NRF_MODEM_MONITOR_CONN_STATE_LOG */
 }
 
 static void signal_quality_update(struct k_work *work)

@@ -13,6 +13,15 @@ module = INFUSE_NRF_MODEM_MONITOR
 module-str = modem_mon
 source "subsys/logging/Kconfig.template.log_config"
 
+config INFUSE_NRF_MODEM_MONITOR_CONN_STATE_LOG
+	bool "Automatic logging of LTE connection state"
+	depends on INFUSE_EPOCH_TIME
+	depends on TDF_DATA_LOGGER
+	help
+	  Automatically log TDF_LTE_CONN_STATUS TDFs in response to registration
+	  state and cell tower changes. Output loggers must be configured with
+	  `nrf_modem_monitor_network_state_log`.
+
 config INFUSE_NRF_MODEM_MONITOR_CONNECTIVITY_TIMEOUT_SEC
 	int "Timeout for receiving L4 connectivity after registering on the network"
 	default 120
