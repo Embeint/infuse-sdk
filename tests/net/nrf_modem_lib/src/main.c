@@ -19,6 +19,10 @@
 #include <infuse/reboot.h>
 #include <infuse/lib/nrf_modem_monitor.h>
 #include <infuse/lib/nrf_modem_lib_sim.h>
+#include <infuse/tdf/tdf.h>
+#include <infuse/tdf/definitions.h>
+#include <infuse/data_logger/high_level/tdf.h>
+#include <infuse/epacket/interface/epacket_dummy.h>
 
 #include <nrf_modem.h>
 #include <modem/nrf_modem_lib.h>
@@ -159,6 +163,20 @@ ZTEST(infuse_nrf_modem_monitor, test_integration)
 	const char *default_apn;
 	int rc;
 
+#ifdef CONFIG_INFUSE_NRF_MODEM_MONITOR_CONN_STATE_LOG
+	struct tdf_lte_conn_status *lte_conn_status;
+	struct k_fifo *tx_fifo = epacket_dummmy_transmit_fifo_get();
+	struct tdf_parsed tdf;
+	struct net_buf *tx;
+
+	zassert_not_null(tx_fifo);
+	tx = net_buf_get(tx_fifo, K_MSEC(100));
+	zassert_is_null(tx);
+
+	/* Enable conn status logging */
+	nrf_modem_monitor_network_state_log(TDF_DATA_LOGGER_SERIAL);
+#endif
+
 	zassert_false(kv_store_key_exists(KV_KEY_LTE_MODEM_MODEL));
 	zassert_false(kv_store_key_exists(KV_KEY_LTE_MODEM_FIRMWARE_REVISION));
 	zassert_false(kv_store_key_exists(KV_KEY_LTE_MODEM_ESN));
@@ -215,6 +233,20 @@ ZTEST(infuse_nrf_modem_monitor, test_integration)
 	zassert_equal(0x702A, net_state.cell.tac);
 	zassert_equal(0x08C3BD0C, net_state.cell.id);
 
+#ifdef CONFIG_INFUSE_NRF_MODEM_MONITOR_CONN_STATE_LOG
+	k_sleep(K_MSEC(10));
+	tdf_data_logger_flush(TDF_DATA_LOGGER_SERIAL);
+	tx = net_buf_get(tx_fifo, K_MSEC(100));
+	zassert_not_null(tx);
+	net_buf_pull(tx, sizeof(struct epacket_dummy_frame));
+	zassert_equal(0, tdf_parse_find_in_buf(tx->data, tx->len, TDF_LTE_CONN_STATUS, &tdf));
+	lte_conn_status = tdf.data;
+	zassert_equal(0x702A, lte_conn_status->cell.tac);
+	zassert_equal(0x08C3BD0C, lte_conn_status->cell.eci);
+	zassert_equal(2, lte_conn_status->status);
+	net_buf_unref(tx);
+#endif
+
 	test_signal_strength();
 	test_at_safe();
 	test_connectivity_stats();
@@ -247,6 +279,21 @@ ZTEST(infuse_nrf_modem_monitor, test_integration)
 	zassert_equal(-1.0f, net_state.edrx_cfg.edrx);
 	zassert_equal(-1.0f, net_state.edrx_cfg.ptw);
 
+#ifdef CONFIG_INFUSE_NRF_MODEM_MONITOR_CONN_STATE_LOG
+	k_sleep(K_MSEC(10));
+	tdf_data_logger_flush(TDF_DATA_LOGGER_SERIAL);
+	tx = net_buf_get(tx_fifo, K_MSEC(100));
+	zassert_not_null(tx);
+	net_buf_pull(tx, sizeof(struct epacket_dummy_frame));
+	zassert_equal(0, tdf_parse_find_in_buf(tx->data, tx->len, TDF_LTE_CONN_STATUS, &tdf));
+	lte_conn_status = tdf.data;
+	zassert_equal(0x702A, lte_conn_status->cell.tac);
+	zassert_equal(0x08C3BD0C, lte_conn_status->cell.eci);
+	zassert_equal(5, lte_conn_status->status);
+
+	net_buf_unref(tx);
+#endif
+
 	/* eDRX configuration */
 	nrf_modem_lib_sim_send_at("+CEDRXP: 4,\"0001\",\"0001\",\"0001\"\r\n");
 	k_sleep(K_SECONDS(1));
@@ -263,6 +310,22 @@ ZTEST(infuse_nrf_modem_monitor, test_integration)
 	/* Revert to searching */
 	nrf_modem_lib_sim_send_at("+CEREG: 2,\"702A\",\"08C3BD0C\",7\r\n");
 	k_sleep(K_SECONDS(1));
+
+#ifdef CONFIG_INFUSE_NRF_MODEM_MONITOR_CONN_STATE_LOG
+	tdf_data_logger_flush(TDF_DATA_LOGGER_SERIAL);
+	tx = net_buf_get(tx_fifo, K_MSEC(100));
+	zassert_not_null(tx);
+	net_buf_pull(tx, sizeof(struct epacket_dummy_frame));
+	zassert_equal(0, tdf_parse_find_in_buf(tx->data, tx->len, TDF_LTE_CONN_STATUS, &tdf));
+	lte_conn_status = tdf.data;
+	zassert_equal(0x702A, lte_conn_status->cell.tac);
+	zassert_equal(0x08C3BD0C, lte_conn_status->cell.eci);
+	zassert_equal(2, lte_conn_status->status);
+	net_buf_unref(tx);
+
+	/* Disable conn status logging */
+	nrf_modem_monitor_network_state_log(0);
+#endif
 
 	/* Back on the network, gain network connectivity this time */
 	nrf_modem_lib_sim_send_at(
@@ -333,6 +396,13 @@ ZTEST(infuse_nrf_modem_monitor, test_integration)
 	rc = k_sem_take(&reboot_request,
 			K_SECONDS(CONFIG_INFUSE_NRF_MODEM_MONITOR_CONNECTIVITY_TIMEOUT_SEC + 1));
 	zassert_equal(-EAGAIN, rc);
+
+#ifdef CONFIG_INFUSE_NRF_MODEM_MONITOR_CONN_STATE_LOG
+	/* No other logging after disabling */
+	tdf_data_logger_flush(TDF_DATA_LOGGER_SERIAL);
+	tx = net_buf_get(tx_fifo, K_MSEC(100));
+	zassert_is_null(tx);
+#endif /* CONFIG_INFUSE_NRF_MODEM_MONITOR_CONN_STATE_LOG */
 
 	/* Changing APN configuration should request a reboot */
 	memcpy(pdp_config.apn.value, "upd", 3);
