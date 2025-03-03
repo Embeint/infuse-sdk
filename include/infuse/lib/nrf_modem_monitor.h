@@ -58,6 +58,15 @@ bool nrf_modem_monitor_is_at_safe(void);
 void nrf_modem_monitor_network_state(struct nrf_modem_network_state *state);
 
 /**
+ * @brief Configure the modem monitor to automatically log network state changes
+ *
+ * Logs @ref TDF_LTE_CONN_STATUS on registration status and cell changes.
+ *
+ * @param tdf_logger_mask TDF data logger mask to log state changes to
+ */
+void nrf_modem_monitor_network_state_log(uint8_t tdf_logger_mask);
+
+/**
  * @brief Get current signal quality
  *
  * @param rsrp Reference signal received power
