@@ -33,13 +33,6 @@ config INFUSE_RPC_SERVER_STACK_SIZE
 	default 4096 if NETWORKING
 	default 2048
 
-config INFUSE_RPC_SERVER_USER_COMMANDS
-	bool "Enable user-defined remote procedure call commands"
-	help
-	  Enable applications and downstream users to extend the RPC server
-	  implementation to support user-defined commands. The application
-	  must include an implementation of `infuse_rpc_server_user_command_runner`.
-
 config INFUSE_RPC_COMMON_NET_QUERY
 	bool
 	default INFUSE_RPC_COMMAND_WIFI_STATE || INFUSE_RPC_COMMAND_LTE_STATE

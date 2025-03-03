@@ -80,15 +80,7 @@ void rpc_command_runner(struct net_buf *request)
 #endif /* CONFIG_INFUSE_RPC_COMMAND_{{ command['name'] | upper }} */
 {% endfor %}
 	default:
-#ifdef CONFIG_INFUSE_RPC_SERVER_USER_COMMANDS
-		if (command_id > RPC_BUILTIN_END) {
-			rc = infuse_rpc_server_user_command_runner(command_id, auth, request, &response);
-		} else {
-			rc = -ENOTSUP;
-		}
-#else
 		rc = -ENOTSUP;
-#endif /* CONFIG_INFUSE_RPC_SERVER_USER_COMMANDS */
 	};
 
 	/* Free the request */
