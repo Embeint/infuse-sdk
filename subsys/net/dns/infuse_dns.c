@@ -9,6 +9,8 @@
 #include <zephyr/net/socket.h>
 #include <zephyr/logging/log.h>
 
+#include <infuse/lib/nrf_modem_monitor.h>
+
 #include <infuse/net/dns.h>
 
 LOG_MODULE_REGISTER(infuse_dns, LOG_LEVEL_INF);
@@ -26,6 +28,13 @@ int infuse_sync_dns(const char *host, uint16_t port, int family, int socktype,
 	};
 	struct zsock_addrinfo *res = NULL;
 	int rc;
+
+#ifdef CONFIG_INFUSE_NRF_MODEM_MONITOR
+	if (!nrf_modem_monitor_is_at_safe()) {
+		/* Modem may be in a temporarily unresponsive state */
+		return -EAGAIN;
+	}
+#endif /* CONFIG_INFUSE_NRF_MODEM_MONITOR */
 
 #ifdef CONFIG_DNS_RESOLVER
 	/* Take a context */
