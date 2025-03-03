@@ -173,23 +173,9 @@ static void log_network_connection(uint8_t loggers, uint64_t timestamp)
 
 	/* Query LTE network state */
 	nrf_modem_monitor_network_state(&state);
-	tdf.cell.mcc = state.cell.mcc;
-	tdf.cell.mnc = state.cell.mnc;
-	tdf.cell.tac = state.cell.tac;
-	tdf.cell.eci = state.cell.id;
-	tdf.status = state.nw_reg_status;
-	tdf.tech = state.lte_mode;
-	tdf.earfcn = state.cell.earfcn;
-	tdf.rsrp = UINT8_MAX;
-	tdf.rsrq = INT8_MIN;
-	if (nrf_modem_monitor_signal_quality(&rsrp, &rsrq, true) == 0) {
-		if (rsrp != INT16_MIN) {
-			tdf.rsrp = 0 - rsrp;
-		}
-		if (rsrq != INT8_MIN) {
-			tdf.rsrq = rsrq;
-		}
-	}
+	(void)nrf_modem_monitor_signal_quality(&rsrp, &rsrq, true);
+	/* Convert to TDF */
+	tdf_lte_conn_status_from_monitor(&state, &tdf, rsrp, rsrq);
 	/* Add to specified loggers */
 	TDF_DATA_LOGGER_LOG(loggers, TDF_LTE_CONN_STATUS, timestamp, &tdf);
 #endif

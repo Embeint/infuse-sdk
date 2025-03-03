@@ -24,6 +24,7 @@
 #include <infuse/time/epoch.h>
 #include <infuse/fs/kv_store.h>
 #include <infuse/fs/kv_types.h>
+#include <infuse/lib/nrf_modem_monitor.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -114,6 +115,32 @@ static inline void tdf_bt_addr_le_from_stack(const bt_addr_le_t *addr,
 {
 	tdf->type = addr->type;
 	memcpy(tdf->val, addr->a.val, 6);
+}
+
+/**
+ * @brief Populate the LTE connection status TDF from modem monitor information
+ *
+ * @param network_state Modem monitor network state
+ * @param tdf TDF state structure
+ * @param rsrp Reference signal received power (dBm) (INT16_MIN if unknown)
+ * @param rsrq Reference signal received quality (dB) (INT8_MIN if unknown)
+ */
+static inline void tdf_lte_conn_status_from_monitor(struct nrf_modem_network_state *network_state,
+						    struct tdf_lte_conn_status *tdf, int16_t rsrp,
+						    int8_t rsrq)
+{
+	tdf->cell.mcc = network_state->cell.mcc;
+	tdf->cell.mnc = network_state->cell.mnc;
+	tdf->cell.tac = network_state->cell.tac;
+	tdf->cell.eci = network_state->cell.id;
+	tdf->status = network_state->nw_reg_status;
+	tdf->tech = network_state->lte_mode;
+	tdf->earfcn = network_state->cell.earfcn;
+	tdf->rsrq = rsrq;
+	tdf->rsrp = UINT8_MAX;
+	if (rsrp != INT16_MIN) {
+		tdf->rsrp = 0 - rsrp;
+	}
 }
 
 /**
