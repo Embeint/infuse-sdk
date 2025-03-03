@@ -9,7 +9,7 @@ config INFUSE_REBOOT_RETURN
 	bool "Disable FUNC_NOTRETURN on `infuse_reboot`"
 	depends on ZTEST
 
-if INFUSE_SECURITY
+if INFUSE_SECURITY || MBEDTLS
 
 configdefault MAIN_STACK_SIZE
 	default 2048
@@ -18,7 +18,7 @@ configdefault ZTEST_STACK_SIZE
 configdefault MBEDTLS_ENTROPY_POLL_ZEPHYR
 	default y if !NRF_CC3XX_PLATFORM
 
-endif # INFUSE_SECURITY
+endif # INFUSE_SECURITY || MBEDTLS
 
 configdefault MCUMGR_TRANSPORT_WORKQUEUE_STACK_SIZE
 	default 8192 if COVERAGE_GCOV
