@@ -1,0 +1,26 @@
+{
+    "structs": {
+        "rpc_struct_demo": {
+            "description": "Demo struct",
+            "fields": [
+                {"name": "x", "type": "int8_t"},
+                {"name": "y", "type": "int8_t"},
+                {"name": "z", "type": "int8_t"}
+            ]
+        }
+    },
+    "commands": {
+        "32769": {
+            "name": "ext1",
+            "description": "Extension RPC 1",
+            "default": "y if INFUSE_SDK",
+            "default_auth": "EPACKET_AUTH_DEVICE",
+            "request_params": [
+                {"name": "arg1", "type": "struct rpc_struct_demo", "description": "Arg 1"}
+            ],
+            "response_params": [
+                {"name": "rsp1", "type": "uint32_t", "description": "Response 1"}
+            ]
+        }
+    }
+}
