@@ -16,4 +16,6 @@ tests:
     tags: net epacket
     platform_allow:
       - thingy53/nrf5340/cpuapp
-    extra_args: SHIELD=nrf7002eb
+    extra_args:
+      - SHIELD=nrf7002eb
+      - EXTRA_DTC_OVERLAY_FILE=epacket_udp.overlay
