@@ -20,6 +20,7 @@ manifest:
           - cmsis-dsp
           - hal_nordic
           - hal_stm32
+          - hostap
           - libmetal
           - fatfs
           - mcuboot

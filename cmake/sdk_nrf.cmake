@@ -10,6 +10,8 @@ if (NOT CONFIG_BUILD_WITH_TFM)
     )
     target_include_directories(mbedcrypto_common
       INTERFACE
+        # Oberon interface requires common headers
+        ${ZEPHYR_MBEDTLS_MODULE_DIR}/library
         # Add nrf_oberon includes
         ${ZEPHYR_NRFXLIB_MODULE_DIR}/crypto/nrf_oberon/include/
         ${ZEPHYR_NRFXLIB_MODULE_DIR}/crypto/nrf_oberon/include/mbedtls
