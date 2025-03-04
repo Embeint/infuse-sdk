@@ -98,3 +98,12 @@ configdefault NET_IF_MAX_IPV4_COUNT
 	default 2 if NRF_MODEM_LIB_NET_IF && WIFI
 
 endif # NETWORKING
+
+if SHIELD_NRF7002EB || SHIELD_NRF7002EK
+
+configdefault NETWORKING
+	default y if !MCUBOOT
+configdefault WIFI
+	default y if !MCUBOOT
+
+endif # SHIELD_NRF7002EB || SHIELD_NRF7002EK
