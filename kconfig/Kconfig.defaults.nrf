@@ -80,8 +80,10 @@ configdefault WIFI_NRF70
 	default y if WIFI
 configdefault NET_L2_ETHERNET
 	default y if WIFI_NRF70
-configdefault WPA_SUPP
-	default y if WIFI_NRF70 && (WIFI_USAGE_MODE_STA || WIFI_USAGE_MODE_STA_AP)
+configdefault SYSTEM_WORKQUEUE_STACK_SIZE
+	default 8192 if WIFI_NRF70 && !NRF70_SCAN_ONLY
+configdefault HEAP_MEM_POOL_ADD_SIZE_NRF70
+	def_int 100000 if !NRF70_SCAN_ONLY
 configdefault NET_CONNECTION_MANAGER_MONITOR_STACK_SIZE
 	default 4096 if NRF700X_STA_MODE
 	default 1024 if NRF_MODEM_LIB_NET_IF
@@ -90,12 +92,12 @@ configdefault NRF_WIFI_IF_AUTO_START
 configdefault ZVFS_OPEN_MAX
 	default 20 if WIFI_NRF70
 
-choice NRF700X_OPER_MODES
-	default NRF700X_SCAN_ONLY if WIFI_USAGE_MODE_SCAN_ONLY
+choice NRF70_OPER_MODES
+	default NRF70_SCAN_ONLY if WIFI_USAGE_MODE_SCAN_ONLY
 endchoice
 
 # Lower resource requirements in scan only mode
-if NRF700X_SCAN_ONLY
+if NRF70_SCAN_ONLY
 configdefault HEAP_MEM_POOL_SIZE
 	default 30000
 configdefault NET_BUF_RX_COUNT
@@ -114,33 +116,33 @@ configdefault NET_TX_STACK_SIZE
 	default 1024
 configdefault NET_RX_STACK_SIZE
 	default 1024
-endif # NRF700X_SCAN_ONLY
+endif # NRF70_SCAN_ONLY
 
 # MbedTLS requirements for WiFi connectivity
 configdefault PSA_WANT_KEY_TYPE_AES
-	default y if NRF700X_STA_MODE
+	default y if NRF70_STA_MODE
 configdefault PSA_WANT_ALG_CMAC
-	default y if NRF700X_STA_MODE
+	default y if NRF70_STA_MODE
 configdefault PSA_WANT_ALG_ECDH
-	default y if NRF700X_STA_MODE
+	default y if NRF70_STA_MODE
 configdefault PSA_WANT_ALG_ECDSA
-	default y if NRF700X_STA_MODE
+	default y if NRF70_STA_MODE
 configdefault MBEDTLS_HASH_ALL_ENABLED
-	default y if NRF700X_STA_MODE
+	default y if NRF70_STA_MODE
 configdefault MBEDTLS_ECP_C
-	default y if NRF700X_STA_MODE
+	default y if NRF70_STA_MODE
 configdefault MBEDTLS_ECP_DP_SECP256R1_ENABLED
-	default y if NRF700X_STA_MODE
+	default y if NRF70_STA_MODE
 configdefault MBEDTLS_ECDH_C
-	default y if NRF700X_STA_MODE
+	default y if NRF70_STA_MODE
 configdefault MBEDTLS_ECDSA_C
-	default y if NRF700X_STA_MODE
+	default y if NRF70_STA_MODE
 configdefault MBEDTLS_ECJPAKE_C
-	default y if NRF700X_STA_MODE && !BUILD_WITH_TFM
+	default y if NRF70_STA_MODE && !BUILD_WITH_TFM
 configdefault MBEDTLS_CIPHER_AES_ENABLED
-	default y if NRF700X_STA_MODE
+	default y if NRF70_STA_MODE
 configdefault MBEDTLS_CIPHER_MODE_CTR_ENABLED
-	default y if NRF700X_STA_MODE
+	default y if NRF70_STA_MODE
 
 # Option removed in Zephyr v3.7 but still present in NCS v2.7
 config MBEDTLS_MAC_CMAC_ENABLED
