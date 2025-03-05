@@ -84,10 +84,17 @@ BUILD_ASSERT(sizeof(((struct arch_esf *)(NULL))->basic) ==
 #define ARCH_ESF_PC_IDX (offsetof(struct arch_esf, basic.pc) / sizeof(uint32_t))
 #define ARCH_ESF_LR_IDX (offsetof(struct arch_esf, basic.lr) / sizeof(uint32_t))
 
+static struct fault_exception_info_t secure_fault;
+
+int infuse_common_boot_secure_fault_info(struct fault_exception_info_t *fault_info)
+{
+	memcpy(fault_info, &secure_fault, sizeof(struct fault_exception_info_t));
+	return secure_fault.VECTACTIVE == 0 ? -ENOENT : 0;
+}
+
 static int secure_fault_info_read(void)
 {
 	uint8_t reason = K_ERR_ARM_SECURE_GENERIC;
-	struct fault_exception_info_t secure_fault;
 	enum tfm_platform_err_t err;
 	char frame_ptr_str[9];
 	uint32_t result = 0;
@@ -95,6 +102,7 @@ static int secure_fault_info_read(void)
 	err = tfm_platform_fault_info_read(&secure_fault, &result);
 	if ((err != TFM_PLATFORM_ERR_SUCCESS) || (result != sizeof(secure_fault))) {
 		/* No secure fault dump */
+		secure_fault.VECTACTIVE = 0;
 		return -ENODATA;
 	}
 

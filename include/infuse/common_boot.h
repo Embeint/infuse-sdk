@@ -12,6 +12,10 @@
 #ifndef INFUSE_SDK_INCLUDE_INFUSE_COMMON_BOOT_H_
 #define INFUSE_SDK_INCLUDE_INFUSE_COMMON_BOOT_H_
 
+#ifdef CONFIG_TFM_PLATFORM_FAULT_INFO_QUERY
+#include <tfm_ioctl_api.h>
+#endif
+
 #include <infuse/reboot.h>
 
 #ifdef __cplusplus
@@ -39,6 +43,20 @@ extern "C" {
  * @retval -ENOENT No reboot information exists
  */
 int infuse_common_boot_last_reboot(struct infuse_reboot_state *state);
+
+#ifdef CONFIG_TFM_PLATFORM_FAULT_INFO_QUERY
+
+/**
+ * @brief Query the secure fault information for the latest reboot
+ *
+ * @param fault_info Output location for secure fault information
+ *
+ * @retval 0 On successful fault info query
+ * @retval -ENOENT If the previous reboot was not a secure fault
+ */
+int infuse_common_boot_secure_fault_info(struct fault_exception_info_t *fault_info);
+
+#endif /* CONFIG_TFM_PLATFORM_FAULT_INFO_QUERY */
 
 /**
  * @}
