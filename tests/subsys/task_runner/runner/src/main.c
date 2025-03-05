@@ -155,7 +155,7 @@ ZTEST(task_runner_runner, test_init_invalid)
 
 	/* Schedule is invalid */
 	schedules[0].task_id = TASK_ID_SLEEPY;
-	schedules[0].battery_start_threshold = 110;
+	schedules[0].battery_start.lower = 110;
 	task_runner_init(schedules, states, ARRAY_SIZE(schedules), app_tasks, app_tasks_data,
 			 ARRAY_SIZE(app_tasks));
 	for (int i = 0; i < 10; i++) {
