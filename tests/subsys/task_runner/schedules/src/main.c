@@ -37,11 +37,29 @@ ZTEST(task_runner_schedules, test_validate_schedules)
 	};
 	struct task_schedule invalid6 = {
 		.validity = TASK_VALID_ALWAYS,
-		.battery_start_threshold = 101,
+		.battery_start.lower = 101,
 	};
 	struct task_schedule invalid7 = {
 		.validity = TASK_VALID_ALWAYS,
-		.battery_terminate_threshold = 101,
+		.battery_start.upper = 101,
+	};
+	struct task_schedule invalid8 = {
+		.validity = TASK_VALID_ALWAYS,
+		.battery_terminate.lower = 101,
+	};
+	struct task_schedule invalid9 = {
+		.validity = TASK_VALID_ALWAYS,
+		.battery_terminate.upper = 101,
+	};
+	struct task_schedule invalid10 = {
+		.validity = TASK_VALID_ALWAYS,
+		.battery_start.lower = 70,
+		.battery_start.upper = 60,
+	};
+	struct task_schedule invalid11 = {
+		.validity = TASK_VALID_ALWAYS,
+		.battery_terminate.lower = 70,
+		.battery_terminate.upper = 60,
 	};
 
 	zassert_false(task_schedule_validate(&invalid1));
@@ -51,6 +69,10 @@ ZTEST(task_runner_schedules, test_validate_schedules)
 	zassert_false(task_schedule_validate(&invalid5));
 	zassert_false(task_schedule_validate(&invalid6));
 	zassert_false(task_schedule_validate(&invalid7));
+	zassert_false(task_schedule_validate(&invalid8));
+	zassert_false(task_schedule_validate(&invalid9));
+	zassert_false(task_schedule_validate(&invalid10));
+	zassert_false(task_schedule_validate(&invalid11));
 }
 
 ZTEST(task_runner_schedules, test_empty_schedule)
@@ -266,8 +288,8 @@ ZTEST(task_runner_schedules, test_battery_static)
 	INFUSE_STATES_ARRAY(app_states) = {0};
 	struct task_schedule schedule = {
 		.validity = TASK_VALID_ALWAYS,
-		.battery_start_threshold = 50,
-		.battery_terminate_threshold = 20,
+		.battery_start.lower = 50,
+		.battery_terminate.lower = 20,
 	};
 	struct task_schedule_state state = {0};
 
@@ -290,14 +312,69 @@ ZTEST(task_runner_schedules, test_battery_static)
 			task_schedule_should_terminate(&schedule, &state, app_states, 10, 100, i));
 	}
 
-	/* No battery constraints should start and not stop at 0% battery */
-	struct task_schedule schedule2 = {
-		.validity = TASK_VALID_ALWAYS,
-	};
+	/* Add upper start threshold */
+	schedule.battery_start.upper = 60;
+	zassert_true(task_schedule_validate(&schedule));
+	for (int i = 0; i < 50; i++) {
+		zassert_false(
+			task_schedule_should_start(&schedule, &state, app_states, 10, 100, i));
+	}
+	for (int i = 50; i <= 60; i++) {
+		zassert_true(task_schedule_should_start(&schedule, &state, app_states, 10, 100, i));
+	}
+	for (int i = 61; i <= 100; i++) {
+		zassert_false(
+			task_schedule_should_start(&schedule, &state, app_states, 10, 100, i));
+	}
 
-	zassert_true(task_schedule_validate(&schedule2));
-	zassert_true(task_schedule_should_start(&schedule2, &state, app_states, 10, 100, 0));
-	zassert_false(task_schedule_should_terminate(&schedule2, &state, app_states, 10, 100, 0));
+	/* Remove lower start threshold */
+	schedule.battery_start.lower = 0;
+	zassert_true(task_schedule_validate(&schedule));
+	for (int i = 0; i <= 60; i++) {
+		zassert_true(task_schedule_should_start(&schedule, &state, app_states, 10, 100, i));
+	}
+	for (int i = 61; i <= 100; i++) {
+		zassert_false(
+			task_schedule_should_start(&schedule, &state, app_states, 10, 100, i));
+	}
+
+	/* Add upper terminate threshold */
+	schedule.battery_terminate.upper = 60;
+	zassert_true(task_schedule_validate(&schedule));
+	for (int i = 0; i <= 20; i++) {
+		zassert_true(
+			task_schedule_should_terminate(&schedule, &state, app_states, 10, 100, i));
+	}
+	for (int i = 21; i <= 59; i++) {
+		zassert_false(
+			task_schedule_should_terminate(&schedule, &state, app_states, 10, 100, i));
+	}
+	for (int i = 60; i <= 100; i++) {
+		zassert_true(
+			task_schedule_should_terminate(&schedule, &state, app_states, 10, 100, i));
+	}
+
+	/* Remove lower terminate threshold */
+	schedule.battery_terminate.lower = 0;
+	zassert_true(task_schedule_validate(&schedule));
+	for (int i = 0; i <= 59; i++) {
+		zassert_false(
+			task_schedule_should_terminate(&schedule, &state, app_states, 10, 100, i));
+	}
+	for (int i = 60; i <= 100; i++) {
+		zassert_true(
+			task_schedule_should_terminate(&schedule, &state, app_states, 10, 100, i));
+	}
+
+	/* No battery constraints should start and not stop at 0% battery */
+	schedule.battery_start.lower = 0;
+	schedule.battery_start.upper = 0;
+	schedule.battery_terminate.lower = 0;
+	schedule.battery_terminate.upper = 0;
+
+	zassert_true(task_schedule_validate(&schedule));
+	zassert_true(task_schedule_should_start(&schedule, &state, app_states, 10, 100, 0));
+	zassert_false(task_schedule_should_terminate(&schedule, &state, app_states, 10, 100, 0));
 }
 
 #define TEST_ITER_STATES_START(schedule, state, app_states)                                        \
@@ -457,8 +534,8 @@ ZTEST(task_runner_schedules, test_complex)
 	struct task_schedule schedule = {
 		.validity = TASK_VALID_ALWAYS,
 		.timeout_s = 10,
-		.battery_start_threshold = 50,
-		.battery_terminate_threshold = 20,
+		.battery_start.lower = 50,
+		.battery_terminate.lower = 20,
 		.states_start = TASK_STATES_DEFINE(INFUSE_STATE_TIME_KNOWN),
 		.states_terminate = TASK_STATES_DEFINE(TR_NOT | INFUSE_STATE_TIME_KNOWN),
 		.periodicity_type = TASK_PERIODICITY_LOCKOUT,
