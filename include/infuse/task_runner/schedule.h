@@ -141,10 +141,20 @@ struct task_schedule {
 	uint8_t periodicity_type;
 	/** Duration after which task is requested to terminate */
 	uint32_t timeout_s;
-	/** Task can start when battery is at least this charged */
-	uint8_t battery_start_threshold;
-	/** Task will terminate when battery falls to this level */
-	uint8_t battery_terminate_threshold;
+	/** Battery charge thresholds to start the task */
+	struct battery_start_thresholds {
+		/** Start task if >= this charge */
+		uint8_t lower;
+		/** Start task if <= this charge */
+		uint8_t upper;
+	} battery_start;
+	/** Battery charge thresholds to terminate the task */
+	struct battery_terminate_thresholds {
+		/** Terminate task if <= this charge */
+		uint8_t lower;
+		/** Terminate task if >= this charge */
+		uint8_t upper;
+	} battery_terminate;
 	/** Periodicity parameters */
 	union periodicity_args {
 		struct periodicity_periodic {
