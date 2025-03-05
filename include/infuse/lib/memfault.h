@@ -56,6 +56,7 @@ bool infuse_memfault_dump_chunks_epacket(const struct device *dev);
  *
  * @retval 0 When chunk dump has been queued successfully
  * @retval -ENOTCONN if interface is not connected
+ * @retval -ENODATA if no chunks are pending
  */
 int infuse_memfault_queue_dump_all(k_timeout_t delay);
 

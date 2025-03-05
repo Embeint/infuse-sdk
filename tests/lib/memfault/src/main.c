@@ -308,6 +308,10 @@ ZTEST(memfault_integration, test_epacket_dump)
 		/* Validate chunks are dumped (Fault should have resulted in more data) */
 		expect_memfault_chunks(false, 1000, 10000);
 
+		/* No more data to dump */
+		rc = infuse_memfault_queue_dump_all(K_NO_WAIT);
+		zassert_equal(-ENODATA, rc);
+
 		/* Run the interface state callback */
 		epacket_dummy_set_interface_state(epacket_dummy, false);
 		/* Validate previous reboot information */
