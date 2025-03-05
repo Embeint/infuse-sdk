@@ -61,6 +61,12 @@ struct kv_mcuboot_img_sem_ver {
 	uint32_t build_num;
 } __packed;
 
+/** Generic range structure */
+struct kv_range_u8 {
+	uint8_t lower;
+	uint8_t upper;
+} __packed;
+
 /**
  * @}
  */
@@ -301,10 +307,10 @@ struct kv_task_schedules {
 	uint8_t periodicity_type;
 	/** Duration after which task is requested to terminate */
 	uint32_t timeout_s;
-	/** Task can start when battery is at least this charged */
-	uint8_t battery_start_threshold;
-	/** Task will terminate when battery falls to this level */
-	uint8_t battery_terminate_threshold;
+	/** Battery charge thresholds to start the task */
+	struct kv_range_u8 battery_start;
+	/** Battery charge thresholds to terminate the task */
+	struct kv_range_u8 battery_terminate;
 	/** Periodicity values */
 	uint32_t periodicity;
 	/** Remainder of schedule struct */
@@ -319,8 +325,8 @@ struct kv_task_schedules {
 		uint8_t validity; \
 		uint8_t periodicity_type; \
 		uint32_t timeout_s; \
-		uint8_t battery_start_threshold; \
-		uint8_t battery_terminate_threshold; \
+		struct kv_range_u8 battery_start; \
+		struct kv_range_u8 battery_terminate; \
 		uint32_t periodicity; \
 		uint8_t _remainder[num]; \
 	} __packed

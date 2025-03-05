@@ -70,8 +70,17 @@ bool task_schedule_validate(const struct task_schedule *schedule)
 	    (schedule->periodicity.lockout.lockout_s == 0)) {
 		return false;
 	}
-	if ((schedule->battery_start_threshold > 100) ||
-	    (schedule->battery_terminate_threshold > 100)) {
+	if ((schedule->battery_start.lower > 100) || (schedule->battery_start.upper > 100) ||
+	    (schedule->battery_terminate.lower > 100) ||
+	    (schedule->battery_terminate.upper > 100)) {
+		return false;
+	}
+	if (schedule->battery_start.lower && schedule->battery_start.upper &&
+	    (schedule->battery_start.upper <= schedule->battery_start.lower)) {
+		return false;
+	}
+	if (schedule->battery_terminate.lower && schedule->battery_terminate.upper &&
+	    (schedule->battery_terminate.upper <= schedule->battery_terminate.lower)) {
 		return false;
 	}
 	return true;
@@ -85,7 +94,8 @@ bool task_schedule_should_start(const struct task_schedule *schedule,
 	uint32_t since_last_run = uptime - state->last_run;
 	bool is_active = atomic_test_bit(app_states, INFUSE_STATE_APPLICATION_ACTIVE);
 	bool periodicity = true;
-	bool battery = true;
+	bool battery_lower;
+	bool battery_upper;
 	bool states;
 
 	/* No tasks should be started when system is about to go down */
@@ -111,12 +121,15 @@ bool task_schedule_should_start(const struct task_schedule *schedule,
 				schedule->periodicity.after.duration_s) == uptime);
 	}
 
-	battery = battery_soc >= schedule->battery_start_threshold;
+	battery_lower = (schedule->battery_start.lower == 0) ||
+			(battery_soc >= schedule->battery_start.lower);
+	battery_upper = (schedule->battery_start.upper == 0) ||
+			(battery_soc <= schedule->battery_start.upper);
 	states = (schedule->states_start_timeout_2x_s &&
 		  (since_last_run >= (2 * schedule->states_start_timeout_2x_s))) ||
 		 task_schedule_states_eval(&schedule->states_start, app_states, true);
 
-	return periodicity && battery && states;
+	return periodicity && battery_lower && battery_upper && states;
 }
 
 bool task_schedule_should_terminate(const struct task_schedule *schedule,
@@ -126,7 +139,8 @@ bool task_schedule_should_terminate(const struct task_schedule *schedule,
 	uint8_t validity_masked = schedule->validity & _TASK_VALID_MASK;
 	bool is_active = atomic_test_bit(app_states, INFUSE_STATE_APPLICATION_ACTIVE);
 	bool periodicity = false;
-	bool battery = false;
+	bool battery_lower;
+	bool battery_upper;
 	bool states;
 
 	/* Tasks should be terminated when system is about to go down */
@@ -145,10 +159,11 @@ bool task_schedule_should_terminate(const struct task_schedule *schedule,
 	if (schedule->timeout_s) {
 		periodicity = state->runtime >= schedule->timeout_s;
 	}
-	if (schedule->battery_terminate_threshold) {
-		battery = battery_soc <= schedule->battery_terminate_threshold;
-	}
+	battery_lower = (schedule->battery_terminate.lower != 0) &&
+			(battery_soc <= schedule->battery_terminate.lower);
+	battery_upper = (schedule->battery_terminate.upper != 0) &&
+			(battery_soc >= schedule->battery_terminate.upper);
 	states = task_schedule_states_eval(&schedule->states_terminate, app_states, false);
 
-	return periodicity || battery || states;
+	return periodicity || battery_lower || battery_upper || states;
 }
