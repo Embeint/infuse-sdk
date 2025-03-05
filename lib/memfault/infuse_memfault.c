@@ -62,6 +62,9 @@ int infuse_memfault_queue_dump_all(k_timeout_t delay)
 	if (epacket_interface_max_packet_size(DUMP_INTERFACE) == 0) {
 		return -ENOTCONN;
 	}
+	if (!memfault_packetizer_data_available()) {
+		return -ENODATA;
+	}
 	k_work_schedule(&epacket_dump_work, delay);
 	return 0;
 }
