@@ -27,6 +27,7 @@
 #include "memfault/core/platform/system_time.h"
 #include "memfault/core/data_packetizer.h"
 #include "memfault/core/reboot_tracking.h"
+#include "memfault/core/trace_event.h"
 
 static char infuse_id_str[17];
 static char software_version[17];
@@ -118,6 +119,37 @@ bool memfault_platform_time_get_current(sMemfaultCurrentTime *current_time)
 
 #include "../core/src/memfault_reboot_tracking_private.h"
 
+#ifndef CONFIG_TFM_PLATFORM_FAULT_INFO_QUERY
+BUILD_ASSERT(IS_ENABLED(CONFIG_ZTEST));
+
+struct fault_exception_info_t {
+	uint32_t VECTACTIVE;           /* Active exception number. */
+	uint32_t EXC_RETURN;           /* EXC_RETURN value in LR. */
+	uint32_t MSP;                  /* (Secure) MSP. */
+	uint32_t PSP;                  /* (Secure) PSP. */
+	uint32_t *EXC_FRAME;           /* Exception frame on stack. */
+	uint32_t EXC_FRAME_COPY[8];    /* Copy of the basic exception frame. */
+	uint32_t CALLEE_SAVED_COPY[8]; /* Copy of the callee saved registers. */
+	uint32_t xPSR;                 /* Program Status Registers. */
+	uint32_t CFSR;                 /* Configurable Fault Status Register. */
+	uint32_t HFSR;                 /* Hard Fault Status Register. */
+	uint32_t BFAR;                 /* Bus Fault address register. */
+	uint32_t BFARVALID;            /* Whether BFAR contains a valid address. */
+	uint32_t MMFAR;                /* MemManage Fault address register. */
+	uint32_t MMARVALID;            /* Whether MMFAR contains a valid address. */
+	uint32_t SFSR;                 /* SecureFault Status Register. */
+	uint32_t SFAR;                 /* SecureFault Address Register. */
+	uint32_t SFARVALID;            /* Whether SFAR contains a valid address. */
+} __packed;
+
+int infuse_common_boot_secure_fault_info(struct fault_exception_info_t *fault_info)
+{
+	memset(fault_info, 0x00, sizeof(*fault_info));
+	return 0;
+}
+
+#endif /* !CONFIG_TFM_PLATFORM_FAULT_INFO_QUERY */
+
 #define MEMFAULT_REBOOT_INFO_MAGIC   0x21544252
 #define MEMFAULT_REBOOT_INFO_VERSION 2
 
@@ -128,6 +160,7 @@ void memfault_reboot_tracking_load(sMemfaultRebootTrackingStorage *dst)
 {
 	sMfltRebootInfo *reboot_info = (sMfltRebootInfo *)dst;
 	struct infuse_reboot_state infuse_reboot;
+	struct fault_exception_info_t fault_info;
 
 	if (infuse_common_boot_last_reboot(&infuse_reboot) != 0) {
 		/* No reboot knowledge, therefore no secure fault knowledge */
@@ -147,12 +180,21 @@ void memfault_reboot_tracking_load(sMemfaultRebootTrackingStorage *dst)
 		.pc = infuse_reboot.param_1.program_counter,
 		.lr = infuse_reboot.param_2.link_register,
 	};
+
+	/* Pull the complete fault frame */
+	infuse_common_boot_secure_fault_info(&fault_info);
+	/* Push additional fault information as a trace event */
+	memfault_trace_event_with_log_capture(
+		MEMFAULT_TRACE_REASON(secure_fault), (void *)infuse_reboot.param_1.program_counter,
+		(void *)infuse_reboot.param_2.link_register,
+		"EXC %08x xPSR %08x SFSR %08x SFAR %08x (%d)", (uint32_t)fault_info.EXC_FRAME,
+		fault_info.xPSR, fault_info.SFSR, fault_info.SFAR, !!fault_info.SFARVALID);
 }
 
 #endif /* CONFIG_MEMFAULT_INFUSE_SECURE_FAULT_KNOWLEDGE */
 
 /* Copied from memfault/ports/zephyr/common/memfault_platform_core.c
- * Usage complies with Memfault license as this is only every used for integration with Memfault
+ * Usage complies with Memfault license as this is only ever used for integration with Memfault
  * services.
  * Copyright (c) Memfault, Inc.
  */
