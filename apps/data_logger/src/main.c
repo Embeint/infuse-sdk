@@ -107,8 +107,8 @@ static const struct task_schedule schedules[] = {
 	{
 		.task_id = TASK_ID_GNSS,
 		.validity = TASK_VALID_ALWAYS,
-		.battery_start_threshold = 30,
-		.battery_terminate_threshold = 20,
+		.battery_start.lower = 30,
+		.battery_terminate.lower = 20,
 		.task_logging =
 			{
 				{
