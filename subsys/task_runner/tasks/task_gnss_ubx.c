@@ -307,6 +307,22 @@ void gnss_task_fn(const struct task_schedule *schedule, struct k_poll_signal *te
 		return;
 	}
 
+	/* Constellation configuration if requested */
+	if (args->constellations) {
+		rc = gnss_set_enabled_systems(gnss, args->constellations);
+		if (rc != 0) {
+			LOG_WRN("Failed to configure constellations %02X (%d)",
+				args->constellations, rc);
+		}
+	}
+	/* Output supported and enabled constellations */
+	if (gnss_get_supported_systems(gnss, &constellations) == 0) {
+		LOG_INF("Constellations: %02X (%s)", constellations, "supported");
+	}
+	if (gnss_get_enabled_systems(gnss, &constellations) == 0) {
+		LOG_INF("Constellations: %02X (%s)", constellations, "enabled");
+	}
+
 #ifdef CONFIG_GNSS_UBX_M10
 	NET_BUF_SIMPLE_DEFINE(cfg_buf, 48);
 	ubx_msg_prepare_valset(&cfg_buf,
@@ -365,22 +381,6 @@ void gnss_task_fn(const struct task_schedule *schedule, struct k_poll_signal *te
 		LOG_WRN("Failed to configure NAV-PVT rate");
 	}
 #endif /* CONFIG_GNSS_UBX_M8 */
-
-	/* Constellation configuration if requested */
-	if (args->constellations) {
-		rc = gnss_set_enabled_systems(gnss, args->constellations);
-		if (rc != 0) {
-			LOG_WRN("Failed to configure constellations %02X (%d)",
-				args->constellations, rc);
-		}
-	}
-	/* Output supported and enabled constellations */
-	if (gnss_get_supported_systems(gnss, &constellations) == 0) {
-		LOG_INF("Constellations: %02X (%s)", constellations, "supported");
-	}
-	if (gnss_get_enabled_systems(gnss, &constellations) == 0) {
-		LOG_INF("Constellations: %02X (%s)", constellations, "enabled");
-	}
 
 	/* Subscribe to NAV-PVT message */
 	ubx_modem_msg_subscribe(run_state.modem, &pvt_handler_ctx);
