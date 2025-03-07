@@ -1,0 +1,14 @@
+/ {
+	epacket_dummy: epacket_dummy {
+		compatible = "embeint,epacket-dummy";
+	};
+
+	data_logger_udp: data_logger_udp {
+		compatible = "embeint,data-logger-epacket", "embeint,data-logger";
+		epacket = <&epacket_dummy>;
+
+		tdf_logger_udp: tdf_logger_udp {
+			compatible = "embeint,tdf-data-logger";
+		};
+	};
+};
