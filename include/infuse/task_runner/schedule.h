@@ -129,6 +129,13 @@ struct task_schedule_state_conditions {
 };
 
 /**
+ * Normally the lockout period must elapse after boot before the periodicity check passes.
+ * Apply to task_schedule.periodicity.lockout.lockout_s for the periodicity check to always
+ * pass before the schedule runs for the first time.
+ */
+#define TASK_RUNNER_LOCKOUT_IGNORE_FIRST BIT(31)
+
+/**
  * @brief Schedule for a given task
  *
  * Multiple schedules can exist for a single task.

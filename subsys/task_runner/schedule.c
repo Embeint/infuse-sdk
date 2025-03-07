@@ -9,6 +9,8 @@
 #include <infuse/states.h>
 #include <infuse/task_runner/schedule.h>
 
+#define TASK_RUNNER_LOCKOUT_VALUE_MASK ~TASK_RUNNER_LOCKOUT_IGNORE_FIRST
+
 #ifdef CONFIG_TASK_RUNNER_CUSTOM_TASK_DEFINITIONS
 
 /* Validation of custom arguments */
@@ -92,6 +94,7 @@ bool task_schedule_should_start(const struct task_schedule *schedule,
 {
 	uint8_t validity_masked = schedule->validity & _TASK_VALID_MASK;
 	uint32_t since_last_run = uptime - state->last_run;
+	uint32_t lockout_val;
 	bool is_active = atomic_test_bit(app_states, INFUSE_STATE_APPLICATION_ACTIVE);
 	bool periodicity = true;
 	bool battery_lower;
@@ -114,7 +117,16 @@ bool task_schedule_should_start(const struct task_schedule *schedule,
 	if (schedule->periodicity_type == TASK_PERIODICITY_FIXED) {
 		periodicity = (epoch_time % schedule->periodicity.fixed.period_s) == 0;
 	} else if (schedule->periodicity_type == TASK_PERIODICITY_LOCKOUT) {
-		periodicity = since_last_run >= schedule->periodicity.lockout.lockout_s;
+		lockout_val =
+			schedule->periodicity.lockout.lockout_s & TASK_RUNNER_LOCKOUT_VALUE_MASK;
+		periodicity = since_last_run >= lockout_val;
+		/* Valid if TASK_RUNNER_LOCKOUT_IGNORE_FIRST set, schedule has not yet run, and
+		 * uptime is not 0 (we need state->last_run to end up a non-zero value)
+		 */
+		if (schedule->periodicity.lockout.lockout_s & TASK_RUNNER_LOCKOUT_IGNORE_FIRST &&
+		    (state->last_run == 0) && uptime) {
+			periodicity = true;
+		}
 	} else if (schedule->periodicity_type == TASK_PERIODICITY_AFTER) {
 		periodicity = state->linked && state->linked->last_terminate &&
 			      ((state->linked->last_terminate +
