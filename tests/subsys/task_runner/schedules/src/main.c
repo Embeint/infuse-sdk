@@ -225,6 +225,39 @@ ZTEST(task_runner_schedules, test_periodicity_lockout)
 						100 + 12, 100));
 }
 
+ZTEST(task_runner_schedules, test_periodicity_lockout_ignore_boot)
+{
+	INFUSE_STATES_ARRAY(app_states) = {0};
+	struct task_schedule schedule = {
+		.validity = TASK_VALID_ALWAYS,
+		.periodicity_type = TASK_PERIODICITY_LOCKOUT,
+		.periodicity.lockout.lockout_s = TASK_RUNNER_LOCKOUT_IGNORE_FIRST | 100,
+	};
+	struct task_schedule_state state = {
+		.last_run = 0,
+	};
+
+	zassert_true(task_schedule_validate(&schedule));
+
+	/* Doesn't run at uptime 0 */
+	zassert_false(task_schedule_should_start(&schedule, &state, app_states, state.last_run + 0,
+						 10000 + 0, 100));
+	/* Periodicity check always passes before first run */
+	for (int i = 1; i < 150; i++) {
+		zassert_true(task_schedule_should_start(&schedule, &state, app_states,
+							state.last_run + i, 10000 + i, 100));
+	}
+
+	/* After running once, behaves as per normal */
+	state.last_run = 10;
+	for (int i = 0; i < 100; i++) {
+		zassert_false(task_schedule_should_start(&schedule, &state, app_states,
+							 state.last_run + i, 10000 + i, 100));
+	}
+	zassert_true(task_schedule_should_start(&schedule, &state, app_states, state.last_run + 100,
+						100 + 100, 100));
+}
+
 ZTEST(task_runner_schedules, test_periodicity_after)
 {
 	INFUSE_STATES_ARRAY(app_states) = {0};
