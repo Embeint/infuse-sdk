@@ -27,6 +27,9 @@ config GNSS_UBX_M8
 	help
 	  U-blox M8 command interface (Dedicated messages for configuration)
 
+config GNSS_UBX_RAW_FRAME_HANDLER
+	bool "Application raw UBX frame handling"
+
 module = GNSS_UBX_MODEM
 module-str = u-blox GNSS
 source "subsys/logging/Kconfig.template.log_config"

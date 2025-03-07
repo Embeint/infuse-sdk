@@ -39,6 +39,14 @@ static void ubx_msg_handle(struct ubx_modem_data *modem, struct ubx_frame *frame
 	int num_to_run, rc;
 	bool notify;
 
+#ifdef CONFIG_GNSS_UBX_RAW_FRAME_HANDLER
+	{
+		uint16_t total_len = sizeof(*frame) + payload_len + sizeof(uint16_t);
+
+		ubx_modem_raw_frame_handler(frame, total_len);
+	}
+#endif /* CONFIG_GNSS_UBX_RAW_FRAME_HANDLER*/
+
 	if (frame->message_class == UBX_MSG_CLASS_ACK) {
 		/* ACK-ACK and ACK-NAK have the same payload structures */
 		const struct ubx_msg_id_ack_ack *ack = (const void *)frame->payload_and_checksum;
@@ -77,7 +85,10 @@ static void ubx_msg_handle(struct ubx_modem_data *modem, struct ubx_frame *frame
 				k_poll_signal_raise(curr->signal, rc);
 			}
 		} else {
-			LOG_WRN("Unhandled ACK for %02x:%02x", ack->message_class, ack->message_id);
+			if (!IS_ENABLED(CONFIG_GNSS_UBX_RAW_FRAME_HANDLER)) {
+				LOG_WRN("Unhandled ACK for %02x:%02x", ack->message_class,
+					ack->message_id);
+			}
 		}
 		return;
 	}
