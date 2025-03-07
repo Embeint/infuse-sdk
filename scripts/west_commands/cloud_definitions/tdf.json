@@ -409,6 +409,14 @@
                 {"name": "charge", "type": "int32_t", "description": "Accumulated charge (microamp-seconds)", "display": {"postfix": "uAs"}}
             ]
         },
+        "39": {
+            "name": "INFUSE_BLUETOOTH_RSSI",
+            "description": "Received signal strength of Infuse-IoT Bluetooth device",
+            "fields": [
+                {"name": "infuse_id", "type": "uint64_t", "description": "Infuse-IoT ID of remote device"},
+                {"name": "rssi", "type": "int8_t", "display": {"postfix": "dBm"}, "description": "Bluetooth RSSI"}
+            ]
+        },
         "100": {
             "name": "ARRAY_TYPE",
             "description": "Example array type",
