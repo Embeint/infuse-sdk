@@ -27,6 +27,7 @@ enum infuse_task_ids {
 	TASK_ID_ENVIRONMENTAL = 3,
 	TASK_ID_GNSS = 4,
 	TASK_ID_NETWORK_SCAN = 5,
+	TASK_ID_BT_SCANNER = 6,
 };
 
 /**

@@ -211,6 +211,7 @@ the API.
   * GNSS location retrieval
   * IMU controller (3 or 6 axis)
   * Wi-Fi Access Point & LTE Cell scanning
+  * Nearby Bluetooth device scanner
   * :ref:`tdf_api` logger
 
 API Reference
