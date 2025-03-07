@@ -28,7 +28,7 @@ config MEMFAULT_INFUSE_SECURE_FAULT_KNOWLEDGE
 	  provide the fault information to Memfault if the reboot was
 	  caused by a secure fault.
 
-if MEMFAULT_INFUSE_CONFIG
+if MEMFAULT_INFUSE_CONFIG && MEMFAULT_METRICS
 
 config MEMFAULT_INFUSE_METRICS_BATTERY
 	bool "Battery metrics from Infuse-IoT zbus channel"
@@ -83,6 +83,6 @@ config MEMFAULT_INFUSE_METRICS_SYNC_SUCCESS_EPACKET_UDP
 
 endchoice # MEMFAULT_INFUSE_METRICS_SYNC_SUCCESS
 
-endif # MEMFAULT_INFUSE_CONFIG
+endif # MEMFAULT_INFUSE_CONFIG && MEMFAULT_METRICS
 
 endif # INFUSE_MEMFAULT
