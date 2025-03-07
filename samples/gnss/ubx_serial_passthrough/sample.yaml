@@ -1,0 +1,12 @@
+sample:
+  description: Serial passthrough of raw UBX frames for u-center integration
+  name: UBX Serial Passthrough
+tests:
+  sample.gnss.ubx_serial_passthrough:
+    build_only: true
+    required_snippets:
+      - infuse
+    platform_allow:
+      - tauro/nrf9151/ns
+    integration_platforms:
+      - tauro/nrf9151/ns
