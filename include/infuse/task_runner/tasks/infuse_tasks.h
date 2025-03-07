@@ -12,6 +12,7 @@
 
 /* Simple list of infuse tasks to simplify application includes */
 #include <infuse/task_runner/tasks/battery.h>
+#include <infuse/task_runner/tasks/bt_scanner.h>
 #include <infuse/task_runner/tasks/environmental.h>
 #include <infuse/task_runner/tasks/imu.h>
 #include <infuse/task_runner/tasks/gnss.h>

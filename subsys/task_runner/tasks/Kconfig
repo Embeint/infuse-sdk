@@ -70,6 +70,26 @@ source "subsys/logging/Kconfig.template.log_config"
 
 endif # TASK_RUNNER_TASK_BATTERY
 
+config TASK_RUNNER_TASK_BT_SCANNER
+	bool "Bluetooth scanner task"
+	depends on EPACKET_INTERFACE_BT_ADV
+
+if TASK_RUNNER_TASK_BT_SCANNER
+
+module = TASK_BT_SCANNER
+module-str = BT scanner task
+source "subsys/logging/Kconfig.template.log_config"
+
+config TASK_RUNNER_TASK_BT_SCANNER_MAX_DEVICES
+	int "Maximum number of devices tracked by the task"
+	default 16
+	help
+	  TASK_BT_SCANNER_FLAGS_FILTER_DUPLICATES and TASK_BT_SCANNER_FLAGS_DEFER_LOGGING
+	  require tracking of observed devices by the task. This option limits the size
+	  of the tracking when those flags are enabled.
+
+endif # TASK_RUNNER_TASK_BT_SCANNER
+
 config TASK_RUNNER_TASK_ENVIRONMENTAL
 	bool "Environmental sensing task"
 	select INFUSE_ZBUS_CHAN_AMBIENT_ENV
