@@ -151,6 +151,7 @@ typedef void (*epacket_receive_handler)(struct net_buf *packet);
 struct epacket_interface_common_data {
 	epacket_receive_handler receive_handler;
 	struct k_work_delayable receive_timeout;
+	struct k_spinlock callback_lock;
 	sys_slist_t callback_list;
 	const struct device *dev;
 };
@@ -244,7 +245,9 @@ static inline void epacket_register_callback(const struct device *dev,
 {
 	struct epacket_interface_common_data *data = dev->data;
 
-	sys_slist_append(&data->callback_list, &cb->node);
+	K_SPINLOCK(&data->callback_lock) {
+		sys_slist_append(&data->callback_list, &cb->node);
+	}
 }
 
 /**
@@ -260,8 +263,13 @@ static inline bool epacket_unregister_callback(const struct device *dev,
 					       struct epacket_interface_cb *cb)
 {
 	struct epacket_interface_common_data *data = dev->data;
+	bool ret;
 
-	return sys_slist_find_and_remove(&data->callback_list, &cb->node);
+	K_SPINLOCK(&data->callback_lock) {
+		ret = sys_slist_find_and_remove(&data->callback_list, &cb->node);
+	}
+
+	return ret;
 }
 
 /**
