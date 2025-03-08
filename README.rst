@@ -43,14 +43,14 @@ Embedded Software
 The Infuse-IoT embedded stack is built on top of the `Zephyr Project`_, a
 next-generation real-time operating system managed by the `Linux Foundation`_.
 
-Cloud APIs
-==========
+Cloud Services
+==============
 
-Device provisioning and management runs through a rich `REST API`, while real-time
+Device provisioning and management runs through a rich `REST API`_, while real-time
 device data is provided through dedicated `MQTT`_ queues.
 
-Desktop Tools
-=============
+Rich Tooling
+============
 
 The Infuse-IoT `Python Tools`_ provide CLI interaction with the Cloud REST API,
 observation of local devices via Bluetooth and a flexible set of libraries to

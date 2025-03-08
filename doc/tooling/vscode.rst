@@ -1,4 +1,4 @@
-.. _embedded_vscode_integration:
+.. _tooling_vscode_integration:
 
 VSCode Integration
 ##################
