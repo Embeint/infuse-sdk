@@ -1,10 +1,4 @@
-.. _serial_demo:
-
-Serial Device Demo
-##################
-
-Overview
-********
+# Serial Device Demo
 
 A demonstration application that is permanently available for serial
 communications, enabling testing of release processes.
