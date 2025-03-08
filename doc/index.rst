@@ -14,6 +14,9 @@ Infuse-IoT SDK Documentation
 
    **Welcome to the Infuse-IoT SDK's development documentation** (version |version|)
 
+Platform
+********
+
 Infuse-IoT is a platform designed to make is simple to create ultra
 low-power Internet-of-Things (IoT) solutions. It is a collection of embedded
 software, cloud APIs, desktop tools and mobile libraries that enables rapid
@@ -45,6 +48,16 @@ development, iteration and management.
       </li>
    </ul>
 
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+   :caption: Platform
+
+   platform/design_goals.rst
+   platform/security_model.rst
+   platform/provisioning.rst
+   platform/integrations.rst
+
 Embedded Software
 *****************
 
@@ -61,11 +74,30 @@ next-generation real-time operating system managed by the `Linux Foundation`_.
   * Runtime reconfiguration
   * Dynamic algorithm support (Coming soon)
 
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+   :caption: Embedded
+
+   embedded/index.rst
+   embedded/app_features.rst
+   embedded/hardware.rst
+
 Cloud Services
 **************
 
 Device provisioning and management runs through a rich `REST API`_, while real-time
 device data is provided through dedicated `MQTT`_ queues.
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+   :caption: Cloud
+
+   cloud/index.rst
+   cloud/rest.rst
+   cloud/mqtt.rst
+   cloud/coap.rst
 
 Rich Tooling
 ************
@@ -73,6 +105,16 @@ Rich Tooling
 The Infuse-IoT `Python Tools`_ provide CLI interaction with the Cloud REST API,
 observation of local devices via Bluetooth and a flexible set of libraries to
 write custom scripts for local and cloud device interaction.
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+   :caption: Tooling
+
+   tooling/index.rst
+   tooling/release_framework.rst
+   tooling/user_definitions.rst
+   tooling/vscode.rst
 
 Mobile Components
 *****************
@@ -92,45 +134,6 @@ The Infuse-IoT SDK currently supports the following SoC series:
   * ST Microelectronics `STM32WBx5`_ (Coming Soon)
 
 For a complete list of supported boards, see :ref:`snippet-infuse`.
-
-.. toctree::
-   :maxdepth: 1
-   :hidden:
-   :caption: Platform
-
-   platform/design_goals.rst
-   platform/security_model.rst
-   platform/provisioning.rst
-   platform/integrations.rst
-
-.. toctree::
-   :maxdepth: 1
-   :hidden:
-   :caption: Embedded
-
-   embedded/index.rst
-   embedded/app_features.rst
-   embedded/hardware.rst
-
-.. toctree::
-   :maxdepth: 1
-   :hidden:
-   :caption: Cloud
-
-   cloud/index.rst
-   cloud/rest.rst
-   cloud/mqtt.rst
-   cloud/coap.rst
-
-.. toctree::
-   :maxdepth: 1
-   :hidden:
-   :caption: Tooling
-
-   tooling/index.rst
-   tooling/release_framework.rst
-   tooling/user_definitions.rst
-   tooling/vscode.rst
 
 .. _MQTT: https://mqtt.org
 .. _Zephyr Project: https://zephyrproject.org
