@@ -155,7 +155,7 @@ set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${GEN_DEVICETREE_
 
 add_doc_target(
   html
-  COMMAND ${CMAKE_COMMAND} -E env ${SPHINX_ENV}
+  COMMAND ${CMAKE_COMMAND} -E env ${SPHINX_ENV} OUTPUT_DIR=${DOCS_HTML_DIR}
   ${SPHINXBUILD}
     -b html
     -c ${DOCS_CFG_DIR}
@@ -183,7 +183,7 @@ add_dependencies(html devicetree)
 
 add_doc_target(
   html-live
-  COMMAND ${CMAKE_COMMAND} -E env ${SPHINX_ENV}
+  COMMAND ${CMAKE_COMMAND} -E env ${SPHINX_ENV} OUTPUT_DIR=${DOCS_HTML_DIR}
   ${SPHINXAUTOBUILD}
     --watch ${DOCS_README}
     --watch ${DOCS_CFG_DIR}
@@ -215,7 +215,7 @@ add_dependencies(html-live devicetree)
 
 add_doc_target(
   linkcheck
-  COMMAND ${CMAKE_COMMAND} -E env ${SPHINX_ENV}
+  COMMAND ${CMAKE_COMMAND} -E env ${SPHINX_ENV} OUTPUT_DIR=${DOCS_LINKCHECK_DIR}
   ${SPHINXBUILD}
     -b linkcheck
     -c ${DOCS_CFG_DIR}

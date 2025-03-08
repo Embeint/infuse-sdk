@@ -8,7 +8,7 @@ import re
 
 INFUSE_BASE = (Path(__file__).parents[1]).resolve()
 ZEPHYR_BASE = (Path(__file__).parents[2] / "zephyr").resolve()
-ZEPHYR_BUILD = Path(os.environ.get("DOCS_HTML_DIR")).resolve()
+ZEPHYR_BUILD = Path(os.environ.get("OUTPUT_DIR")).resolve()
 
 # Add the '_extensions' directory to sys.path, to enable finding Sphinx
 # extensions within.
