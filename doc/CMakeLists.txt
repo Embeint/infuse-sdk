@@ -47,6 +47,12 @@ if(NOT SPHINXBUILD)
 endif()
 find_program(SPHINXAUTOBUILD sphinx-autobuild)
 
+find_package(LATEX COMPONENTS PDFLATEX)
+find_program(LATEXMK latexmk)
+if(NOT LATEX_PDFLATEX_FOUND OR NOT LATEXMK)
+  message(WARNING "LaTeX components not found. PDF build will not be available.")
+endif()
+
 #-------------------------------------------------------------------------------
 # Environment & Paths
 
@@ -209,6 +215,58 @@ set_target_properties(
 )
 
 add_dependencies(html-live devicetree)
+
+#-------------------------------------------------------------------------------
+# pdf
+
+add_doc_target(
+  latex
+  COMMAND ${CMAKE_COMMAND} -E env ${SPHINX_ENV} OUTPUT_DIR=${DOCS_LATEX_DIR}
+  ${SPHINXBUILD}
+    -b latex
+    -c ${DOCS_CFG_DIR}
+    -d ${DOCS_DOCTREE_DIR}
+    -w ${DOCS_BUILD_DIR}/latex.log
+    -t ${DOC_TAG}
+    -t convertimages
+    ${SPHINXOPTS}
+    ${SPHINXOPTS_EXTRA}
+    ${DOCS_SRC_DIR}
+    ${DOCS_LATEX_DIR}
+  USES_TERMINAL
+  COMMENT "Running Sphinx LaTeX build..."
+)
+
+set_target_properties(
+  latex latex-nodeps
+  PROPERTIES
+    ADDITIONAL_CLEAN_FILES "${DOCS_SRC_DIR};${DOCS_LATEX_DIR};${DOCS_DOCTREE_DIR}"
+)
+
+add_dependencies(latex devicetree)
+
+if(LATEX_PDFLATEX_FOUND AND LATEXMK)
+  if(WIN32)
+    set(PDF_BUILD_COMMAND "make.bat")
+  else()
+    find_program(MAKE make)
+    if(NOT MAKE)
+      message(FATAL_ERROR "The 'make' command was not found")
+    endif()
+    set(PDF_BUILD_COMMAND ${MAKE})
+  endif()
+
+  add_custom_target(
+    pdf
+    COMMAND ${CMAKE_COMMAND} -E env LATEXMKOPTS="${LATEXMKOPTS}"
+    ${PDF_BUILD_COMMAND}
+    WORKING_DIRECTORY ${DOCS_LATEX_DIR}
+    COMMENT "Building PDF file..."
+    USES_TERMINAL
+  )
+
+  add_dependencies(pdf latex)
+endif()
 
 #-------------------------------------------------------------------------------
 # linkcheck
