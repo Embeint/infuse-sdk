@@ -1,4 +1,4 @@
-.. _embedded_release_framework:
+.. _tooling_release_framework:
 
 Application Release Framework
 #############################

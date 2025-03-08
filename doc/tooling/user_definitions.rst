@@ -1,4 +1,4 @@
-.. _embedded_user_definitions:
+.. _tooling_user_definitions:
 
 Extending Infuse-IoT Definitions
 ################################

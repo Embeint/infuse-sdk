@@ -29,7 +29,7 @@ User-defined Slots
 ******************
 
 Infuse-IoT also allows custom user-defined TDFs to be integrated with the framework with
-:kconfig:option:`CONFIG_INFUSE_DEFS_GENERATED_DOWNSTREAM`. See :ref:`embedded_user_definitions`
+:kconfig:option:`CONFIG_INFUSE_DEFS_GENERATED_DOWNSTREAM`. See :ref:`tooling_user_definitions`
 for more details.
 
 API Reference
