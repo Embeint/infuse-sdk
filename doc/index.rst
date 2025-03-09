@@ -113,6 +113,7 @@ write custom scripts for local and cloud device interaction.
 
    tooling/index.rst
    tooling/release_framework.rst
+   tooling/python_tools.rst
    tooling/user_definitions.rst
    tooling/vscode.rst
 

@@ -30,7 +30,7 @@ Provisioning a device enables the Infuse-IoT cloud services to route received
 data to the correct customer MQTT streams and enables the tracking and updates
 of device metadata.
 
-Hardware provisioning is performed using the ``infuse provision`` command.
+Hardware provisioning is performed using the ``infuse provision`` command, see :ref:`python_provision`.
 
 Associated Metadata
 ===================
