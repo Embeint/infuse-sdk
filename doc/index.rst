@@ -117,6 +117,19 @@ write custom scripts for local and cloud device interaction.
    tooling/user_definitions.rst
    tooling/vscode.rst
 
+Getting Started Guides and Tutorials
+************************************
+
+Getting started guides to get setup with the Infuse-IoT platform and tutorials using Infuse-IoT.
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+   :caption: Guides and Tutorials
+
+   getting_started/index.rst
+   getting_started/embedded/index.rst
+
 Mobile Components
 *****************
 
