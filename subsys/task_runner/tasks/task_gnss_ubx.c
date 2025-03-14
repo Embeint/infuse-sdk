@@ -323,6 +323,13 @@ void gnss_task_fn(const struct task_schedule *schedule, struct k_poll_signal *te
 		LOG_INF("Constellations: %02X (%s)", constellations, "enabled");
 	}
 
+	if (args->flags & TASK_GNSS_FLAGS_PERFORMANCE_MODE) {
+		LOG_INF("Mode: Performance");
+	} else {
+		LOG_INF("Mode: Low Power (Accuracy %d m, PDOP %d)", args->accuracy_m,
+			args->position_dop / 10);
+	}
+
 #ifdef CONFIG_GNSS_UBX_M10
 	NET_BUF_SIMPLE_DEFINE(cfg_buf, 48);
 	ubx_msg_prepare_valset(&cfg_buf,
