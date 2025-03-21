@@ -175,6 +175,20 @@ void rpc_command_runner(struct net_buf *request)
 		}
 		break;
 #endif /* CONFIG_INFUSE_RPC_COMMAND_MEM_READ */
+#ifdef CONFIG_INFUSE_RPC_COMMAND_INFUSE_STATES_QUERY
+	case RPC_ID_INFUSE_STATES_QUERY:
+		if (AUTHORISED(auth, INFUSE_STATES_QUERY)) { /* GCOVR_EXCL_BR_LINE */
+			response = rpc_command_infuse_states_query(request);
+		}
+		break;
+#endif /* CONFIG_INFUSE_RPC_COMMAND_INFUSE_STATES_QUERY */
+#ifdef CONFIG_INFUSE_RPC_COMMAND_INFUSE_STATES_UPDATE
+	case RPC_ID_INFUSE_STATES_UPDATE:
+		if (AUTHORISED(auth, INFUSE_STATES_UPDATE)) { /* GCOVR_EXCL_BR_LINE */
+			response = rpc_command_infuse_states_update(request);
+		}
+		break;
+#endif /* CONFIG_INFUSE_RPC_COMMAND_INFUSE_STATES_UPDATE */
 #ifdef CONFIG_INFUSE_RPC_COMMAND_LTE_AT_CMD
 	case RPC_ID_LTE_AT_CMD:
 		if (AUTHORISED(auth, LTE_AT_CMD)) { /* GCOVR_EXCL_BR_LINE */
