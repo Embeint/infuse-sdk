@@ -108,6 +108,13 @@
                 {"name": "y", "type": "int16_t", "description": "Y axis"},
                 {"name": "z", "type": "int16_t", "description": "Z axis"}
             ]
+        },
+        "rpc_struct_infuse_state": {
+            "description": "Single Infuse-IoT application state",
+            "fields": [
+                {"name": "state", "type": "uint8_t", "description": "State"},
+                {"name": "timeout", "type": "uint16_t", "description": "Duration state is set for"}
+            ]
         }
     },
     "enums": {
@@ -371,6 +378,32 @@
                 {"name": "sent_len", "type": "uint32_t", "description": "Number of bytes sent"},
                 {"name": "sent_crc", "type": "uint32_t", "description": "CRC32 of bytes sent"}
             ]
+        },
+        "16": {
+            "name": "infuse_states_query",
+            "description": "Read current Infuse-IoT application states",
+            "depends_on": "INFUSE_APPLICATION_STATES",
+            "default": "y if INFUSE_SDK",
+            "default_auth": "EPACKET_AUTH_DEVICE",
+            "request_params": [
+                {"name": "offset", "type": "uint8_t", "description": "Ignore first N states before populating the output"}
+            ],
+            "response_params": [
+                {"name": "remaining", "type": "uint8_t", "description": "Additional states that were not queried"},
+                {"name": "states", "type": "struct rpc_struct_infuse_state", "num": 0, "description": "Currently set states (Timeout 0 == permanent)"}
+            ]
+        },
+        "17": {
+            "name": "infuse_states_update",
+            "description": "Update Infuse-IoT application states",
+            "depends_on": "INFUSE_APPLICATION_STATES",
+            "default": "y if INFUSE_SDK",
+            "default_auth": "EPACKET_AUTH_DEVICE",
+            "request_params": [
+                {"name": "num", "type": "uint8_t", "description": "Number of states to update"},
+                {"name": "states", "type": "struct rpc_struct_infuse_state", "num": 0, "description": "States to update (Timeout 0 == permanent, UINT16_MAX == clear)"}
+            ],
+            "response_params": []
         },
         "20": {
             "name": "lte_at_cmd",

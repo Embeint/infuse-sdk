@@ -229,6 +229,14 @@ struct rpc_struct_xyz_s16 {
 	int16_t z;
 } __packed;
 
+/** Single Infuse-IoT application state */
+struct rpc_struct_infuse_state {
+	/** State */
+	uint8_t state;
+	/** Duration state is set for */
+	uint16_t timeout;
+} __packed;
+
 /** Bluetooth LE address type */
 enum rpc_enum_bt_le_addr_type {
 	/** Public address */
@@ -313,6 +321,10 @@ enum rpc_builtin_id {
 	RPC_ID_DATA_LOGGER_READ = 14,
 	/** Read arbitrary memory (NO ADDRESS VALIDATION PERFORMED) */
 	RPC_ID_MEM_READ = 15,
+	/** Read current Infuse-IoT application states */
+	RPC_ID_INFUSE_STATES_QUERY = 16,
+	/** Update Infuse-IoT application states */
+	RPC_ID_INFUSE_STATES_UPDATE = 17,
 	/** Run AT command against LTE modem */
 	RPC_ID_LTE_AT_CMD = 20,
 	/** Get current LTE interface state */
@@ -598,6 +610,34 @@ struct rpc_mem_read_response {
 	uint32_t sent_len;
 	/** CRC32 of bytes sent */
 	uint32_t sent_crc;
+} __packed;
+
+/** Read current Infuse-IoT application states */
+struct rpc_infuse_states_query_request {
+	struct infuse_rpc_req_header header;
+	/** Ignore first N states before populating the output */
+	uint8_t offset;
+} __packed;
+
+struct rpc_infuse_states_query_response {
+	struct infuse_rpc_rsp_header header;
+	/** Additional states that were not queried */
+	uint8_t remaining;
+	/** Currently set states (Timeout 0 == permanent) */
+	struct rpc_struct_infuse_state states[];
+} __packed;
+
+/** Update Infuse-IoT application states */
+struct rpc_infuse_states_update_request {
+	struct infuse_rpc_req_header header;
+	/** Number of states to update */
+	uint8_t num;
+	/** States to update (Timeout 0 == permanent, UINT16_MAX == clear) */
+	struct rpc_struct_infuse_state states[];
+} __packed;
+
+struct rpc_infuse_states_update_response {
+	struct infuse_rpc_rsp_header header;
 } __packed;
 
 /** Run AT command against LTE modem */

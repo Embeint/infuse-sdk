@@ -179,6 +179,30 @@ config INFUSE_RPC_COMMAND_MEM_READ_REQUIRED_AUTH
 	depends on INFUSE_RPC_COMMAND_MEM_READ
 	default 2
 
+config INFUSE_RPC_COMMAND_INFUSE_STATES_QUERY
+	bool "Enable RPC infuse_states_query"
+	depends on INFUSE_APPLICATION_STATES
+	default y if INFUSE_SDK
+	help
+	  Read current Infuse-IoT application states
+
+config INFUSE_RPC_COMMAND_INFUSE_STATES_QUERY_REQUIRED_AUTH
+	int "Required authorisation level to run infuse_states_query"
+	depends on INFUSE_RPC_COMMAND_INFUSE_STATES_QUERY
+	default 2
+
+config INFUSE_RPC_COMMAND_INFUSE_STATES_UPDATE
+	bool "Enable RPC infuse_states_update"
+	depends on INFUSE_APPLICATION_STATES
+	default y if INFUSE_SDK
+	help
+	  Update Infuse-IoT application states
+
+config INFUSE_RPC_COMMAND_INFUSE_STATES_UPDATE_REQUIRED_AUTH
+	int "Required authorisation level to run infuse_states_update"
+	depends on INFUSE_RPC_COMMAND_INFUSE_STATES_UPDATE
+	default 2
+
 config INFUSE_RPC_COMMAND_LTE_AT_CMD
 	bool "Enable RPC lte_at_cmd"
 	depends on NRF_MODEM_LIB
