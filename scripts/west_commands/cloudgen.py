@@ -4,7 +4,6 @@
 import argparse
 import pathlib
 import json
-import os
 import importlib
 import subprocess
 
@@ -56,6 +55,7 @@ class cloudgen(WestCommand):
         self.env = Environment(
             loader=FileSystemLoader(self.template_dir),
             autoescape=select_autoescape(),
+            keep_trailing_newline=True,
             trim_blocks=True,
             lstrip_blocks=True,
         )
@@ -146,7 +146,6 @@ class cloudgen(WestCommand):
                     structs=tdf_defs["structs"], definitions=tdf_defs["definitions"]
                 )
             )
-            f.write(os.linesep)
 
         def conv_formula(f):
             conv = f"self._{f['name']}"
@@ -198,7 +197,6 @@ class cloudgen(WestCommand):
                     structs=tdf_defs["structs"], definitions=tdf_defs["definitions"]
                 )
             )
-            f.write(os.linesep)
 
         self.clang_format(tdf_output)
 
@@ -283,7 +281,6 @@ class cloudgen(WestCommand):
                     structs=kv_defs["structs"], definitions=kv_defs["definitions"]
                 )
             )
-            f.write(os.linesep)
 
         for x in ["structs", "definitions"]:
             for s in kv_defs[x].values():
@@ -296,7 +293,6 @@ class cloudgen(WestCommand):
                     structs=kv_defs["structs"], definitions=kv_defs["definitions"]
                 )
             )
-            f.write(os.linesep)
 
         self.clang_format(kv_defs_output)
 
@@ -343,11 +339,9 @@ class cloudgen(WestCommand):
 
         with rpc_commands_output.open("w") as f:
             f.write(rpc_commands_template.render(commands=rpc_defs["commands"]))
-            f.write(os.linesep)
 
         with rpc_runner_output.open("w") as f:
             f.write(rpc_runner_template.render(commands=rpc_defs["commands"]))
-            f.write(os.linesep)
 
         with rpc_defs_output.open("w") as f:
             for d in rpc_defs["structs"].values():
@@ -381,7 +375,6 @@ class cloudgen(WestCommand):
                     commands=rpc_defs["commands"],
                 )
             )
-            f.write(os.linesep)
 
         with rpc_defs_py_output.open("w") as f:
             for s in rpc_defs["structs"].values():
