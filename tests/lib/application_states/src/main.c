@@ -18,9 +18,11 @@ ZTEST(application_states, test_basic)
 	zassert_false(infuse_state_get(INFUSE_STATE_REBOOTING));
 	zassert_false(infuse_state_get(INFUSE_STATE_TIME_KNOWN));
 	zassert_false(infuse_state_get(INFUSE_STATES_END));
+	zassert_equal(-EINVAL, infuse_state_get_timeout(INFUSE_STATE_REBOOTING));
 
 	zassert_false(infuse_state_set(INFUSE_STATE_REBOOTING));
 	zassert_true(infuse_state_set(INFUSE_STATE_REBOOTING));
+	zassert_equal(0, infuse_state_get_timeout(INFUSE_STATE_REBOOTING));
 
 	zassert_true(infuse_state_get(INFUSE_STATE_REBOOTING));
 	zassert_false(infuse_state_get(INFUSE_STATE_TIME_KNOWN));
@@ -61,26 +63,34 @@ ZTEST(application_states, test_state_timeout_basic)
 	zassert_false(infuse_state_get(INFUSE_STATE_REBOOTING));
 	zassert_false(infuse_state_get(INFUSE_STATE_TIME_KNOWN));
 	zassert_false(infuse_state_get(INFUSE_STATES_END));
+	zassert_equal(-EINVAL, infuse_state_get_timeout(INFUSE_STATE_REBOOTING));
+	zassert_equal(-EINVAL, infuse_state_get_timeout(INFUSE_STATE_TIME_KNOWN));
+	zassert_equal(-EINVAL, infuse_state_get_timeout(INFUSE_STATES_END));
 
 	/* No timeout, no state */
 	zassert_false(infuse_state_set_timeout(INFUSE_STATE_TIME_KNOWN, 0));
 	zassert_false(infuse_state_get(INFUSE_STATE_TIME_KNOWN));
+	zassert_equal(-EINVAL, infuse_state_get_timeout(INFUSE_STATE_TIME_KNOWN));
 
 	/* Timeout of 1 second */
 	zassert_false(infuse_state_set_timeout(INFUSE_STATE_TIME_KNOWN, 1));
 	zassert_true(infuse_state_get(INFUSE_STATE_TIME_KNOWN));
+	zassert_equal(1, infuse_state_get_timeout(INFUSE_STATE_TIME_KNOWN));
 	infuse_states_snapshot(states);
 	infuse_states_tick(states);
 	zassert_false(infuse_state_get(INFUSE_STATE_TIME_KNOWN));
+	zassert_equal(-EINVAL, infuse_state_get_timeout(INFUSE_STATE_TIME_KNOWN));
 
 	/* Timeout of 17 seconds */
 	zassert_false(infuse_state_set_timeout(INFUSE_STATE_TIME_KNOWN, 17));
 	for (int i = 0; i < 17; i++) {
 		zassert_true(infuse_state_get(INFUSE_STATE_TIME_KNOWN));
+		zassert_equal(17 - i, infuse_state_get_timeout(INFUSE_STATE_TIME_KNOWN));
 		infuse_states_snapshot(states);
 		infuse_states_tick(states);
 	}
 	zassert_false(infuse_state_get(INFUSE_STATE_TIME_KNOWN));
+	zassert_equal(-EINVAL, infuse_state_get_timeout(INFUSE_STATE_TIME_KNOWN));
 }
 
 ZTEST(application_states, test_state_timeout_snapshot)
