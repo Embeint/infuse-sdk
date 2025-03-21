@@ -122,6 +122,17 @@ bool infuse_state_set(enum infuse_state state);
 bool infuse_state_set_timeout(enum infuse_state state, uint16_t timeout);
 
 /**
+ * @brief Get the timeout associated with a state
+ *
+ * @param state State to query timeout of
+ *
+ * @retval -EINVAL is state is not set
+ * @retval 0 if state is set but has no timeout
+ * @retval timeout seconds until the state is cleared otherwise
+ */
+int infuse_state_get_timeout(enum infuse_state state);
+
+/**
  * @brief Clear an application state
  *
  * @param state State to clear

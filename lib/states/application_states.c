@@ -124,6 +124,27 @@ bool infuse_state_set_timeout(enum infuse_state state, uint16_t timeout)
 	return already_set;
 }
 
+int infuse_state_get_timeout(enum infuse_state state)
+{
+	uint8_t timeout_idx;
+	int rc;
+
+	K_SPINLOCK(&timeout_lock) {
+		if (atomic_test_bit(application_states, state)) {
+			timeout_idx = find_timeout_state(state);
+			if (timeout_idx == UINT8_MAX) {
+				/* No timeout */
+				rc = 0;
+			} else {
+				rc = timeout_states[timeout_idx].timeout;
+			}
+		} else {
+			rc = -EINVAL;
+		}
+	}
+	return rc;
+}
+
 bool infuse_state_clear(enum infuse_state state)
 {
 	struct infuse_state_cb *cb;
