@@ -6,16 +6,23 @@
 import ctypes
 import enum
 
+from infuse_iot.util.ctypes import VLACompatLittleEndianStruct
+
 {% for name, info in structs.items() %}
 
-class {{ name }}(ctypes.LittleEndianStructure):
+class {{ name }}(VLACompatLittleEndianStruct):
     """{{ info['description'] }}"""
 
     _fields_ = [
 {% for field in info['fields'] %}
+{% if field['num'] != 0 %}
         ("{{ field['py_name'] }}", {{ field['py_type'] }}),
+{% endif %}
 {% endfor %}
     ]
+{% if 'flexible' in info %}
+    vla_field = ("{{ info['fields'][-1]['name'] }}", {{ info['fields'][-1]['py_type'] }})
+{% endif %}
     _pack_ = 1
 
 {% endfor %}
@@ -38,20 +45,30 @@ class {{ info['name'] }}:
     DESCRIPTION = "{{ info['description'] }}"
     COMMAND_ID = {{ command_id }}
 
-    class request(ctypes.LittleEndianStructure):
+    class request(VLACompatLittleEndianStruct):
         _fields_ = [
 {% for field in info['request_params'] %}
+{% if field['num'] != 0 %}
             ("{{ field['name'] }}", {{ field['py_type'] }}),
+{% endif %}
 {% endfor %}
         ]
+{% if info['request_params']|length and info['request_params'][-1].get('num') == 0 %}
+        vla_field = ("{{ info['request_params'][-1]['name'] }}", {{ info['request_params'][-1]['py_type'] }})
+{% endif %}
         _pack_ = 1
 
-    class response(ctypes.LittleEndianStructure):
+    class response(VLACompatLittleEndianStruct):
         _fields_ = [
 {% for field in info['response_params'] %}
+{% if field['num'] != 0 %}
             ("{{ field['name'] }}", {{ field['py_type'] }}),
+{% endif %}
 {% endfor %}
         ]
+{% if info['response_params']|length and info['response_params'][-1].get('num') == 0 %}
+        vla_field = ("{{ info['response_params'][-1]['name'] }}", {{ info['response_params'][-1]['py_type'] }})
+{% endif %}
         _pack_ = 1
 
 {% endfor -%}
