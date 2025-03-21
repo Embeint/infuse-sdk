@@ -417,6 +417,27 @@
                 {"name": "rssi", "type": "int8_t", "display": {"postfix": "dBm"}, "description": "Bluetooth RSSI"}
             ]
         },
+        "40": {
+            "name": "ADC_RAW_8",
+            "description": "Generic 8bit raw ADC reading",
+            "fields": [
+                {"name": "val", "type": "int8_t", "description": "Raw ADC reading"}
+            ]
+        },
+        "41": {
+            "name": "ADC_RAW_16",
+            "description": "Generic 16bit raw ADC reading",
+            "fields": [
+                {"name": "val", "type": "int16_t", "description": "Raw ADC reading"}
+            ]
+        },
+        "42": {
+            "name": "ADC_RAW_32",
+            "description": "Generic 32bit raw ADC reading",
+            "fields": [
+                {"name": "val", "type": "int32_t", "description": "Raw ADC reading"}
+            ]
+        },
         "100": {
             "name": "ARRAY_TYPE",
             "description": "Example array type",

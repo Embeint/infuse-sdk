@@ -555,6 +555,24 @@ struct tdf_infuse_bluetooth_rssi {
 	int8_t rssi;
 } __packed;
 
+/** Generic 8bit raw ADC reading */
+struct tdf_adc_raw_8 {
+	/** Raw ADC reading */
+	int8_t val;
+} __packed;
+
+/** Generic 16bit raw ADC reading */
+struct tdf_adc_raw_16 {
+	/** Raw ADC reading */
+	int16_t val;
+} __packed;
+
+/** Generic 32bit raw ADC reading */
+struct tdf_adc_raw_32 {
+	/** Raw ADC reading */
+	int32_t val;
+} __packed;
+
 /** Example array type */
 struct tdf_array_type {
 	/** I am an array of length 4 */
@@ -635,6 +653,12 @@ enum tdf_builtin_id {
 	TDF_BATTERY_CHARGE_ACCUMULATED = 38,
 	/** Received signal strength of Infuse-IoT Bluetooth device */
 	TDF_INFUSE_BLUETOOTH_RSSI = 39,
+	/** Generic 8bit raw ADC reading */
+	TDF_ADC_RAW_8 = 40,
+	/** Generic 16bit raw ADC reading */
+	TDF_ADC_RAW_16 = 41,
+	/** Generic 32bit raw ADC reading */
+	TDF_ADC_RAW_32 = 42,
 	/** Example array type */
 	TDF_ARRAY_TYPE = 100,
 	/** End of builtin TDF range */
@@ -679,6 +703,9 @@ enum tdf_builtin_id {
 #define _TDF_NRF9X_GNSS_PVT_TYPE              struct tdf_nrf9x_gnss_pvt
 #define _TDF_BATTERY_CHARGE_ACCUMULATED_TYPE  struct tdf_battery_charge_accumulated
 #define _TDF_INFUSE_BLUETOOTH_RSSI_TYPE       struct tdf_infuse_bluetooth_rssi
+#define _TDF_ADC_RAW_8_TYPE                   struct tdf_adc_raw_8
+#define _TDF_ADC_RAW_16_TYPE                  struct tdf_adc_raw_16
+#define _TDF_ADC_RAW_32_TYPE                  struct tdf_adc_raw_32
 #define _TDF_ARRAY_TYPE_TYPE                  struct tdf_array_type
 
 /** Size of builtin TDF definitions */
@@ -719,6 +746,9 @@ enum tdf_builtin_size {
 	_TDF_NRF9X_GNSS_PVT_SIZE = sizeof(struct tdf_nrf9x_gnss_pvt),
 	_TDF_BATTERY_CHARGE_ACCUMULATED_SIZE = sizeof(struct tdf_battery_charge_accumulated),
 	_TDF_INFUSE_BLUETOOTH_RSSI_SIZE = sizeof(struct tdf_infuse_bluetooth_rssi),
+	_TDF_ADC_RAW_8_SIZE = sizeof(struct tdf_adc_raw_8),
+	_TDF_ADC_RAW_16_SIZE = sizeof(struct tdf_adc_raw_16),
+	_TDF_ADC_RAW_32_SIZE = sizeof(struct tdf_adc_raw_32),
 	_TDF_ARRAY_TYPE_SIZE = sizeof(struct tdf_array_type),
 };
 
