@@ -84,6 +84,9 @@ struct net_buf *rpc_command_data_logger_read(struct net_buf *request)
 	req_meta = NULL;
 
 	while (blocks_remaining--) {
+		/* Feed watchdog as this can be a long running process if the block count is high */
+		rpc_server_watchdog_feed();
+
 		/* Read the complete block */
 		rc = data_logger_block_read(logger, block_num, 0, work_mem, state.block_size);
 		if (rc < 0) {
