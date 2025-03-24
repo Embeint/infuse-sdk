@@ -216,6 +216,10 @@ configdefault SEGGER_RTT_BUFFER_SIZE_UP
 configdefault SEGGER_RTT_BUFFER_SIZE_DOWN
 	default 256
 
+# Size optimisations
+configdefault UART_USE_RUNTIME_CONFIGURE
+	default n
+
 # Debug options
 configdefault DEBUG_INFO
 	default y
