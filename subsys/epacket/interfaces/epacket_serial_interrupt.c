@@ -31,6 +31,9 @@ struct epacket_serial_data {
 	struct k_work_delayable dc_handler;
 	struct k_fifo tx_fifo;
 	const struct device *interface;
+#ifdef CONFIG_EPACKET_INTERFACE_SERIAL_BACKEND_INT_SINGLE_BYTE_SEND
+	struct net_buf *pending;
+#endif /* CONFIG_EPACKET_INTERFACE_SERIAL_BACKEND_INT_SINGLE_BYTE_SEND */
 };
 
 LOG_MODULE_REGISTER(epacket_serial, CONFIG_EPACKET_SERIAL_LOG_LEVEL);
@@ -70,8 +73,7 @@ static void interrupt_handler(const struct device *dev, void *user_data)
 {
 	const struct device *epacket_dev = user_data;
 	struct epacket_serial_data *data = epacket_dev->data;
-	struct net_buf *buf;
-	int sent, required, available;
+	int available;
 
 	while (uart_irq_update(dev) && uart_irq_is_pending(dev)) {
 		if (uart_irq_rx_ready(dev)) {
@@ -96,6 +98,33 @@ static void interrupt_handler(const struct device *dev, void *user_data)
 		if (available > 0) {
 			/* Cancel the buffer flusher */
 			k_work_cancel_delayable(&data->dc_handler);
+
+#ifdef CONFIG_EPACKET_INTERFACE_SERIAL_BACKEND_INT_SINGLE_BYTE_SEND
+			uint8_t next_byte;
+
+			if (data->pending == NULL) {
+				/* Pull next buffer to send */
+				data->pending = net_buf_get(&data->tx_fifo, K_NO_WAIT);
+				if (data->pending == NULL) {
+					uart_irq_tx_disable(dev);
+					irq_unlock(key);
+					return;
+				}
+			}
+			/* Push next byte onto FIFO */
+			next_byte = net_buf_pull_u8(data->pending);
+			uart_fifo_fill(dev, &next_byte, 1);
+
+			if (data->pending->len == 0) {
+				pm_device_runtime_put_async(dev, K_MSEC(50));
+				epacket_notify_tx_result(data->interface, data->pending, 0);
+				net_buf_unref(data->pending);
+				data->pending = NULL;
+			}
+#else
+			struct net_buf *buf;
+			int sent, required;
+
 			/* Only need to push if we have a packet */
 			buf = net_buf_get(&data->tx_fifo, K_NO_WAIT);
 			if (buf == NULL) {
@@ -134,6 +163,7 @@ static void interrupt_handler(const struct device *dev, void *user_data)
 			pm_device_runtime_put_async(dev, K_MSEC(50));
 
 			LOG_DBG("sent %d/%d", sent, available);
+#endif /* CONFIG_EPACKET_INTERFACE_SERIAL_BACKEND_INT_SINGLE_BYTE_SEND */
 		}
 		irq_unlock(key);
 	}
