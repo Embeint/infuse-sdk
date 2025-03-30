@@ -13,12 +13,12 @@ choice EPACKET_INTERFACE_SERIAL_BACKEND
 	default EPACKET_INTERFACE_SERIAL_BACKEND_INT
 
 config EPACKET_INTERFACE_SERIAL_BACKEND_INT
-	bool "ePacket serial interface"
+	bool "ePacket serial interface using the interrupt driven API"
 	depends on UART_INTERRUPT_DRIVEN
 	select EPACKET_INTERFACE_SERIAL
 
 config EPACKET_INTERFACE_SERIAL_BACKEND_ASYNC
-	bool "ePacket serial interface"
+	bool "ePacket serial interface using the asynchronous API"
 	depends on UART_ASYNC_API
 	select EPACKET_INTERFACE_SERIAL
 
@@ -36,6 +36,18 @@ module-str = epacket_serial
 source "subsys/logging/Kconfig.template.log_config"
 
 endif # EPACKET_INTERFACE_SERIAL
+
+config EPACKET_INTERFACE_SERIAL_BACKEND_INT_SINGLE_BYTE_SEND
+	bool "Send serial ePacket frames one byte at a time"
+	depends on EPACKET_INTERFACE_SERIAL_BACKEND_INT
+	default y if UART_CMSDK_APB
+	help
+	  By default, serial ePacket frames can only be sent when the entire
+	  frame can be transmitted at once, in order to prevent packet corruption
+	  due to interleaved bytes. Enabling this option allows sending frames one
+	  byte at a time, at the cost of introducing potential packet corruption.
+	  By default this is only enabled for the emulated UART backend, as it
+	  can send N bytes in a single IRQ loop due to its instantaneous send.
 
 config EPACKET_INTERFACE_UDP
 	bool "ePacket UDP interface"
