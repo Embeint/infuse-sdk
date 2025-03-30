@@ -12,11 +12,13 @@ set -ue
 
 source ${ZEPHYR_BASE}/tests/bsim/compile.source
 
-APP_EPACKET=tests/bsim/serial/epacket
+APP=tests/bsim/serial/epacket
 
-app_root=$INFUSE_BASE app=$APP_EPACKET conf_file=prj_device.conf snippet=infuse compile
-app_root=$INFUSE_BASE app=$APP_EPACKET conf_file=prj_device_pm.conf snippet=infuse compile
-app_root=$INFUSE_BASE app=$APP_EPACKET conf_file=prj_device_async.conf snippet=infuse compile
-app_root=$INFUSE_BASE app=$APP_EPACKET conf_file=prj_device_async_pm.conf snippet=infuse compile
+app_root=$INFUSE_BASE app=$APP conf_file=prj_device.conf snippet=infuse compile
+app_root=$INFUSE_BASE app=$APP conf_file=prj_device_pm.conf snippet=infuse compile
+app_root=$INFUSE_BASE app=$APP conf_file=prj_device_int_single.conf snippet=infuse compile
+app_root=$INFUSE_BASE app=$APP conf_file=prj_device_int_single_pm.conf snippet=infuse compile
+app_root=$INFUSE_BASE app=$APP conf_file=prj_device_async.conf snippet=infuse compile
+app_root=$INFUSE_BASE app=$APP conf_file=prj_device_async_pm.conf snippet=infuse compile
 
 wait_for_background_jobs
