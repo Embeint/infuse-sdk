@@ -19,6 +19,7 @@ LOG_MODULE_DECLARE(rpc_server);
 
 struct net_buf *rpc_command_data_sender(struct net_buf *request)
 {
+	struct rpc_data_sender_response rsp = {0};
 	const struct device *interface;
 	struct infuse_rpc_data *data;
 	enum epacket_auth auth;
@@ -49,6 +50,11 @@ struct net_buf *rpc_command_data_sender(struct net_buf *request)
 	while (remaining > 0) {
 		/* Allocate the data packet */
 		data_buf = epacket_alloc_tx_for_interface(interface, K_FOREVER);
+		if (net_buf_tailroom(data_buf) == 0) {
+			/* Backend connection has been lost */
+			net_buf_unref(data_buf);
+			break;
+		}
 		epacket_set_tx_metadata(data_buf, auth, 0x00, INFUSE_RPC_DATA, EPACKET_ADDR_ALL);
 
 		/* Allocate header and calculate packets on first iteration */
@@ -70,8 +76,5 @@ struct net_buf *rpc_command_data_sender(struct net_buf *request)
 	}
 
 	/* Allocate and return response */
-	struct rpc_data_sender_response rsp;
-	struct net_buf *response = rpc_response_simple_if(interface, 0, &rsp, sizeof(rsp));
-
-	return response;
+	return rpc_response_simple_if(interface, 0, &rsp, sizeof(rsp));
 }
