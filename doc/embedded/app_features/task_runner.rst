@@ -175,7 +175,7 @@ For example to subscribe to scheduling callbacks for the battery task:
       .validity = TASK_VALID_ALWAYS,
      },
    };
-   struct task_schedule_state states[ARRAY_SIZE(schedules)];
+   TASK_SCHEDULE_STATES_DEFINE(states, schedules);
 
    void my_callback(const struct task_schedule *schedule, enum task_schedule_event event)
    {

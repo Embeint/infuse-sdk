@@ -51,9 +51,10 @@ ZTEST(task_runner_watchdog, test_watchdog)
 			.periodicity.fixed.period_s = 10,
 		},
 	};
-	struct task_schedule_state states[ARRAY_SIZE(schedules)];
 	uint8_t tr_wdog_channel;
 	int rc;
+
+	TASK_SCHEDULE_STATES_DEFINE(states, schedules);
 
 	/* Start the watchdog */
 	zassert_equal(0, infuse_watchdog_start());
