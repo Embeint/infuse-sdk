@@ -239,6 +239,24 @@ struct task_schedule_state {
 #endif /* CONFIG_TASK_RUNNER_PER_SCHEDULE_STORAGE */
 };
 
+/** @cond INTERNAL_HIDDEN */
+#define _TASK_SCHEDULE_MAX_SCHEDULES(schedules)                                                    \
+	COND_CODE_1(CONFIG_KV_STORE_KEY_TASK_SCHEDULES,                                            \
+		    (CONFIG_KV_STORE_KEY_TASK_SCHEDULES_RANGE), (ARRAY_SIZE(schedules)))
+/** @endcond */
+
+/**
+ * @brief Instantiate schedule state array
+ *
+ * If loading schedules from the KV store is enabled, the array is sized to the maximum number
+ * of schedules possible. Otherwise, it is sized to the number of default schedules.
+ *
+ * @param name Name of the schedule state array
+ * @param schedules Array of default schedules
+ */
+#define TASK_SCHEDULE_STATES_DEFINE(name, schedules)                                               \
+	static struct task_schedule_state name[_TASK_SCHEDULE_MAX_SCHEDULES(schedules)]
+
 /**
  * @brief Basic validity checking on task schedules
  *
