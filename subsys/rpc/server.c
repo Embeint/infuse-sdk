@@ -117,6 +117,10 @@ static void send_ack(const struct device *interface, uint32_t request_id, uint8_
 
 	/* Allocate the RPC_DATA_ACK packet */
 	ack = epacket_alloc_tx_for_interface(interface, K_FOREVER);
+	if (net_buf_tailroom(ack) == 0) {
+		net_buf_unref(ack);
+		return;
+	}
 	data_ack = net_buf_add(ack, sizeof(*data_ack));
 	epacket_set_tx_metadata(ack, EPACKET_AUTH_NETWORK, 0, INFUSE_RPC_DATA_ACK,
 				EPACKET_ADDR_ALL);

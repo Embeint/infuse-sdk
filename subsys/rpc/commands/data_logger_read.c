@@ -101,6 +101,14 @@ struct net_buf *rpc_command_data_logger_read(struct net_buf *request)
 			if (data_buf == NULL) {
 				/* Allocate new data message */
 				data_buf = epacket_alloc_tx_for_interface(interface, K_FOREVER);
+				if (net_buf_tailroom(data_buf) == 0) {
+					/* Backend connection has been lost */
+					net_buf_unref(data_buf);
+					data_buf = NULL;
+					blocks_remaining = 0;
+					break;
+				}
+
 				epacket_set_tx_metadata(data_buf, auth, 0x00, INFUSE_RPC_DATA,
 							addr);
 
