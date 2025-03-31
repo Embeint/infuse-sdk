@@ -34,3 +34,13 @@ config INFUSE_ZBUS_CHAN_TILT
 	bool
 	help
 	  INFUSE_ZBUS_CHAN_TILT producer is compiled in
+
+config INFUSE_ZBUS_CHAN_UBX_NAV_PVT
+	bool
+	help
+	  INFUSE_ZBUS_CHAN_UBX_NAV_PVT producer is compiled in
+
+config INFUSE_ZBUS_CHAN_NRF9X_NAV_PVT
+	bool
+	help
+	  INFUSE_ZBUS_CHAN_NRF9X_NAV_PVT producer is compiled in
