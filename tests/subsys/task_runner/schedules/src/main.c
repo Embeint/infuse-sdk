@@ -15,6 +15,26 @@
 #include <infuse/states.h>
 #include <infuse/task_runner/schedule.h>
 
+ZTEST(task_runner_schedules, test_schedules_states_define)
+{
+	struct task_schedule schedules1[2];
+	struct task_schedule schedules2[15];
+	struct task_schedule schedules3[63];
+
+	TASK_SCHEDULE_STATES_DEFINE(test_states1, schedules1);
+	TASK_SCHEDULE_STATES_DEFINE(test_states2, schedules2);
+	TASK_SCHEDULE_STATES_DEFINE(test_states3, schedules3);
+
+	(void)schedules1;
+	(void)schedules2;
+	(void)schedules3;
+
+	/* Sized to the default schedule array */
+	zassert_equal(ARRAY_SIZE(schedules1), ARRAY_SIZE(test_states1));
+	zassert_equal(ARRAY_SIZE(schedules2), ARRAY_SIZE(test_states2));
+	zassert_equal(ARRAY_SIZE(schedules3), ARRAY_SIZE(test_states3));
+}
+
 ZTEST(task_runner_schedules, test_validate_schedules)
 {
 	struct task_schedule invalid1 = {0};
