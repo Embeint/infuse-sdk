@@ -22,7 +22,9 @@
 #include "gnss_common.h"
 
 INFUSE_ZBUS_CHAN_DEFINE(INFUSE_ZBUS_CHAN_LOCATION);
-#define ZBUS_CHAN INFUSE_ZBUS_CHAN_GET(INFUSE_ZBUS_CHAN_LOCATION)
+INFUSE_ZBUS_CHAN_DEFINE(INFUSE_ZBUS_CHAN_NRF9X_NAV_PVT);
+#define ZBUS_CHAN     INFUSE_ZBUS_CHAN_GET(INFUSE_ZBUS_CHAN_LOCATION)
+#define ZBUS_CHAN_PVT INFUSE_ZBUS_CHAN_GET(INFUSE_ZBUS_CHAN_NRF9X_NAV_PVT)
 
 enum {
 	TIME_SYNC_DONE = BIT(0),
@@ -131,6 +133,7 @@ static uint64_t log_and_publish(struct gnss_run_state *state, const struct tdf_n
 
 	/* Publish new data reading */
 	zbus_chan_pub(ZBUS_CHAN, &llha, K_FOREVER);
+	zbus_chan_pub(ZBUS_CHAN_PVT, pvt, K_FOREVER);
 
 	/* Timestamp based on interrupt */
 	epoch_time = epoch_time_from_ticks(state->interrupt_time);
