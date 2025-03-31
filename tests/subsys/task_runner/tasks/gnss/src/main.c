@@ -33,13 +33,28 @@ struct task_schedule schedule = {.task_id = TASK_ID_GNSS};
 struct task_schedule_state state;
 
 static K_SEM_DEFINE(location_published, 0, 1);
+static K_SEM_DEFINE(nav_pvt_published, 0, 1);
 
 void location_new_data_cb(const struct zbus_channel *chan);
+void nav_pvt_new_data_cb(const struct zbus_channel *chan);
 
-INFUSE_ZBUS_CHAN_DECLARE(INFUSE_ZBUS_CHAN_LOCATION);
+#if defined(CONFIG_TASK_RUNNER_TASK_GNSS_UBX)
+#define NAV_PVT_CHANNEL INFUSE_ZBUS_CHAN_UBX_NAV_PVT
+#define NAV_PVT_NAME    INFUSE_ZBUS_NAME(INFUSE_ZBUS_CHAN_UBX_NAV_PVT)
+#elif defined(CONFIG_TASK_RUNNER_TASK_GNSS_NRF9X)
+#define NAV_PVT_CHANNEL INFUSE_ZBUS_CHAN_NRF9X_NAV_PVT
+#define NAV_PVT_NAME    INFUSE_ZBUS_NAME(INFUSE_ZBUS_CHAN_NRF9X_NAV_PVT)
+#else
+#error Unknown GNSS task
+#endif
+
+INFUSE_ZBUS_CHAN_DECLARE(INFUSE_ZBUS_CHAN_LOCATION, NAV_PVT_CHANNEL);
 ZBUS_LISTENER_DEFINE(location_listener, location_new_data_cb);
+ZBUS_LISTENER_DEFINE(nav_pvt_listener, nav_pvt_new_data_cb);
 ZBUS_CHAN_ADD_OBS(INFUSE_ZBUS_NAME(INFUSE_ZBUS_CHAN_LOCATION), location_listener, 5);
-#define ZBUS_CHAN INFUSE_ZBUS_CHAN_GET(INFUSE_ZBUS_CHAN_LOCATION)
+ZBUS_CHAN_ADD_OBS(NAV_PVT_NAME, nav_pvt_listener, 5);
+#define ZBUS_CHAN     INFUSE_ZBUS_CHAN_GET(INFUSE_ZBUS_CHAN_LOCATION)
+#define ZBUS_CHAN_PVT INFUSE_ZBUS_CHAN_GET(NAV_PVT_CHANNEL)
 
 #define M  1000
 #define KM (1000 * M)
@@ -47,6 +62,11 @@ ZBUS_CHAN_ADD_OBS(INFUSE_ZBUS_NAME(INFUSE_ZBUS_CHAN_LOCATION), location_listener
 void location_new_data_cb(const struct zbus_channel *chan)
 {
 	k_sem_give(&location_published);
+}
+
+void nav_pvt_new_data_cb(const struct zbus_channel *chan)
+{
+	k_sem_give(&nav_pvt_published);
 }
 
 static k_tid_t task_schedule(struct task_data *data)
@@ -149,6 +169,7 @@ static void expected_location_fix(k_tid_t thread, uint32_t start, uint32_t durat
 
 	/* Final location should be pushed */
 	zassert_equal(0, k_sem_take(&location_published, K_SECONDS(2)));
+	zassert_equal(0, k_sem_take(&nav_pvt_published, K_MSEC(1)));
 	if (thread) {
 		/* Thread should have terminated */
 		zassert_equal(0, k_thread_join(thread, K_NO_WAIT));
@@ -218,6 +239,7 @@ ZTEST(task_gnss_ubx, test_time_fix)
 
 	/* No location should be published */
 	zassert_equal(-EAGAIN, k_sem_take(&location_published, K_SECONDS(2)));
+	zassert_equal(-EAGAIN, k_sem_take(&nav_pvt_published, K_MSEC(1)));
 	if (thread) {
 		/* Thread should have terminated */
 		zassert_equal(0, k_thread_join(thread, K_NO_WAIT));
@@ -488,6 +510,7 @@ static void logger_before(void *fixture)
 
 	epoch_time_reset();
 	k_sem_reset(&location_published);
+	k_sem_reset(&nav_pvt_published);
 	/* Setup links between task config and data */
 	task_runner_init(&schedule, &state, 1, &config, &data, 1);
 
