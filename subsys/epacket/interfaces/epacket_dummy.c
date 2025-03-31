@@ -91,13 +91,18 @@ static void epacket_dummy_send(const struct device *dev, struct net_buf *buf)
 {
 	struct epacket_dummy_frame *header = net_buf_push(buf, sizeof(struct epacket_dummy_frame));
 	struct epacket_tx_metadata *meta = net_buf_user_data(buf);
+	int error_code = send_error_code;
+
+	if (max_packet_size == 0) {
+		error_code = -ENOTCONN;
+	}
 
 	header->type = meta->type;
 	header->auth = meta->auth;
 	header->flags = meta->flags;
 
-	epacket_notify_tx_result(dev, buf, send_error_code);
-	if (send_error_code == 0) {
+	epacket_notify_tx_result(dev, buf, error_code);
+	if (error_code == 0) {
 		net_buf_put(&epacket_dummy_fifo, buf);
 	} else {
 		net_buf_unref(buf);
