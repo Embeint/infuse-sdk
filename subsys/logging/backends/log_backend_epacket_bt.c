@@ -52,6 +52,10 @@ static int line_out(uint8_t *data, size_t length, void *output_ctx)
 	if (buf == NULL) {
 		return length;
 	}
+	if (net_buf_tailroom(buf) == 0) {
+		net_buf_unref(buf);
+		return length;
+	}
 
 	epacket_set_tx_metadata(buf, EPACKET_AUTH_DEVICE, 0x00, INFUSE_SERIAL_LOG,
 				EPACKET_ADDR_ALL);
