@@ -26,7 +26,9 @@
 #include "gnss_common.h"
 
 INFUSE_ZBUS_CHAN_DEFINE(INFUSE_ZBUS_CHAN_LOCATION);
-#define ZBUS_CHAN INFUSE_ZBUS_CHAN_GET(INFUSE_ZBUS_CHAN_LOCATION)
+INFUSE_ZBUS_CHAN_DEFINE(INFUSE_ZBUS_CHAN_UBX_NAV_PVT);
+#define ZBUS_CHAN     INFUSE_ZBUS_CHAN_GET(INFUSE_ZBUS_CHAN_LOCATION)
+#define ZBUS_CHAN_PVT INFUSE_ZBUS_CHAN_GET(INFUSE_ZBUS_CHAN_UBX_NAV_PVT)
 
 #define TIME_VALID_FLAGS                                                                           \
 	(UBX_MSG_NAV_TIMEGPS_VALID_TOW_VALID | UBX_MSG_NAV_TIMEGPS_VALID_WEEK_VALID)
@@ -171,6 +173,7 @@ static uint64_t log_and_publish(struct gnss_run_state *state, const struct ubx_m
 
 	/* Publish new data reading */
 	zbus_chan_pub(ZBUS_CHAN, &llha, K_FOREVER);
+	zbus_chan_pub(ZBUS_CHAN_PVT, tdf_pvt, K_FOREVER);
 
 	/* Timestamp from timepulse if available */
 	if (gnss_get_latest_timepulse(state->dev, &timepulse) == 0) {
