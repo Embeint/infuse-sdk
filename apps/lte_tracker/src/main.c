@@ -96,8 +96,8 @@ static const struct task_schedule schedules[] = {
 		.periodicity.fixed.period_s = 10,
 	},
 };
-struct task_schedule_state states[ARRAY_SIZE(schedules)];
 
+TASK_SCHEDULE_STATES_DEFINE(states, schedules);
 TASK_RUNNER_TASKS_DEFINE(app_tasks, app_tasks_data, (TDF_LOGGER_TASK, NULL),
 			 (BATTERY_TASK, DEVICE_DT_GET(DT_ALIAS(fuel_gauge0))),
 			 (NETWORK_SCAN_TASK, NULL));

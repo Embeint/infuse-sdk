@@ -57,8 +57,8 @@ static const struct task_schedule schedules[] = {
 			},
 	},
 };
-struct task_schedule_state states[ARRAY_SIZE(schedules)];
 
+TASK_SCHEDULE_STATES_DEFINE(states, schedules);
 TASK_RUNNER_TASKS_DEFINE(app_tasks, app_tasks_data, (IMU_TASK, DEVICE_DT_GET(DT_ALIAS(imu0))));
 
 ALGORITHM_TILT_DEFINE(alg_tilt, TDF_DATA_LOGGER_SERIAL, ALGORITHM_TILT_LOG_ANGLE, 0.025f, 5);

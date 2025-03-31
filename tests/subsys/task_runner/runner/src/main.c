@@ -138,10 +138,11 @@ ZTEST(task_runner_runner, test_init_invalid)
 			.timeout_s = 4,
 		},
 	};
-	struct task_schedule_state states[ARRAY_SIZE(schedules)];
 	uint32_t gps_time = 7000;
 	uint32_t uptime = 0;
 	uint32_t iter = k_uptime_seconds() + 1;
+
+	TASK_SCHEDULE_STATES_DEFINE(states, schedules) = {0};
 
 	/* Schedule refers to task that does not exist */
 	task_runner_init(schedules, states, ARRAY_SIZE(schedules), app_tasks, app_tasks_data,
@@ -173,8 +174,8 @@ ZTEST(task_runner_runner, test_init_duplicate_task_ids)
 			.task_id = TASK_ID_NO_ARG,
 		},
 	};
-	struct task_schedule_state states[ARRAY_SIZE(schedules)];
 
+	TASK_SCHEDULE_STATES_DEFINE(states, schedules) = {0};
 	TASK_RUNNER_TASKS_DEFINE(dup_tasks, dup_tasks_data, (NO_ARG_TASK), (NO_ARG_TASK));
 
 	/* Warning text should be output */
@@ -206,8 +207,8 @@ ZTEST(task_runner_runner, test_schedule_linking)
 				},
 		},
 	};
-	struct task_schedule_state states[ARRAY_SIZE(schedules)];
 
+	TASK_SCHEDULE_STATES_DEFINE(states, schedules) = {0};
 	TASK_RUNNER_TASKS_DEFINE(oob, oob_data, (NO_ARG_TASK));
 
 	/* Warning text should be output */
@@ -244,11 +245,11 @@ ZTEST(task_runner_runner, test_device_not_ready)
 			.validity = TASK_VALID_ALWAYS,
 		},
 	};
-	struct task_schedule_state states[ARRAY_SIZE(schedules)];
 	const struct device *dev = &DEVICE_NAME_GET(dummy_device);
 
 	zassert_equal(0, example_device_run);
 
+	TASK_SCHEDULE_STATES_DEFINE(states, schedules) = {0};
 	TASK_RUNNER_TASKS_DEFINE(is_ready, is_ready_data,
 				 (DEVICE_TASK, &DEVICE_NAME_GET(dummy_device)));
 
@@ -300,10 +301,11 @@ ZTEST(task_runner_runner, test_basic_behaviour)
 			.task_args.raw = {0xA5},
 		},
 	};
-	struct task_schedule_state states[ARRAY_SIZE(schedules)] = {0};
 	uint32_t gps_time = 7000;
 	uint32_t uptime = 0;
 	uint32_t iter = k_uptime_seconds() + 1;
+
+	TASK_SCHEDULE_STATES_DEFINE(states, schedules) = {0};
 
 	example_task_expected_arg = schedules[0].task_args.raw[0];
 	expected_schedule = &schedules[0];
@@ -382,10 +384,11 @@ ZTEST(task_runner_runner, test_after)
 			.task_args.raw = {0xA5},
 		},
 	};
-	struct task_schedule_state states[ARRAY_SIZE(schedules)];
 	uint32_t gps_time = 7000;
 	uint32_t uptime = 0;
 	uint32_t iter = k_uptime_seconds() + 1;
+
+	TASK_SCHEDULE_STATES_DEFINE(states, schedules) = {0};
 
 	example_task_expected_arg = schedules[0].task_args.raw[0];
 	example_task_block_timeout = K_MSEC(1800);
@@ -436,10 +439,11 @@ ZTEST(task_runner_runner, test_permanent)
 			.task_args.raw = {0xA5},
 		},
 	};
-	struct task_schedule_state states[ARRAY_SIZE(schedules)];
 	uint32_t gps_time = 7000;
 	uint32_t uptime = 0;
 	uint32_t iter = k_uptime_seconds() + 1;
+
+	TASK_SCHEDULE_STATES_DEFINE(states, schedules) = {0};
 
 	example_task_block_timeout = K_FOREVER;
 	example_task_expected_block_rc = 1;
@@ -490,10 +494,11 @@ ZTEST(task_runner_runner, test_multi_schedule)
 			.timeout_s = 1,
 		},
 	};
-	struct task_schedule_state states[ARRAY_SIZE(schedules)];
 	uint32_t gps_time = 7000;
 	uint32_t uptime = 0;
 	uint32_t iter = k_uptime_seconds() + 1;
+
+	TASK_SCHEDULE_STATES_DEFINE(states, schedules) = {0};
 
 	task_runner_init(schedules, states, ARRAY_SIZE(schedules), app_tasks, app_tasks_data,
 			 ARRAY_SIZE(app_tasks));
@@ -525,10 +530,11 @@ ZTEST(task_runner_runner, test_workqueue_task)
 			.task_args.raw = {0xB2},
 		},
 	};
-	struct task_schedule_state states[ARRAY_SIZE(schedules)];
 	uint32_t gps_time = 7000;
 	uint32_t uptime = 0;
 	uint32_t iter = k_uptime_seconds() + 1;
+
+	TASK_SCHEDULE_STATES_DEFINE(states, schedules) = {0};
 
 	example_workqueue_expected_arg = schedules[0].task_args.raw[0];
 
@@ -601,10 +607,10 @@ ZTEST(task_runner_runner, test_workqueue_reschedule_override)
 			.timeout_s = 1,
 		},
 	};
-	struct task_schedule_state states[ARRAY_SIZE(schedules)];
 	uint32_t gps_time = 7000;
 	uint32_t uptime = 0;
 
+	TASK_SCHEDULE_STATES_DEFINE(states, schedules) = {0};
 	TASK_RUNNER_TASKS_DEFINE(long_block, long_block_data, (LONG_BLOCK_TASK));
 
 	task_runner_init(schedules, states, ARRAY_SIZE(schedules), long_block, long_block_data,
@@ -660,10 +666,10 @@ ZTEST(task_runner_runner, test_workqueue_persistent_mem)
 			.periodicity.lockout.lockout_s = 3,
 		},
 	};
-	struct task_schedule_state states[ARRAY_SIZE(schedules)] = {0};
 	uint32_t gps_time = 7000;
 	uint32_t uptime = 0;
 
+	TASK_SCHEDULE_STATES_DEFINE(states, schedules) = {0};
 	TASK_RUNNER_TASKS_DEFINE(peristent_mem, peristent_mem_data, (WORKQUEUE_PERSISTENT_TASK));
 
 	task_runner_init(schedules, states, ARRAY_SIZE(schedules), peristent_mem,
