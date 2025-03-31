@@ -25,6 +25,26 @@ int task_runner_schedules_load(
 
 struct task_schedule out_schedules[CONFIG_KV_STORE_KEY_TASK_SCHEDULES_RANGE] = {0};
 
+ZTEST(task_runner_schedules_kv, test_schedules_kv_states_define)
+{
+	struct task_schedule schedules1[2];
+	struct task_schedule schedules2[15];
+	struct task_schedule schedules3[63];
+
+	TASK_SCHEDULE_STATES_DEFINE(test_states1, schedules1);
+	TASK_SCHEDULE_STATES_DEFINE(test_states2, schedules2);
+	TASK_SCHEDULE_STATES_DEFINE(test_states3, schedules3);
+
+	(void)schedules1;
+	(void)schedules2;
+	(void)schedules3;
+
+	/* Always created with CONFIG_KV_STORE_KEY_TASK_SCHEDULES_RANGE entries */
+	zassert_equal(CONFIG_KV_STORE_KEY_TASK_SCHEDULES_RANGE, ARRAY_SIZE(test_states1));
+	zassert_equal(CONFIG_KV_STORE_KEY_TASK_SCHEDULES_RANGE, ARRAY_SIZE(test_states2));
+	zassert_equal(CONFIG_KV_STORE_KEY_TASK_SCHEDULES_RANGE, ARRAY_SIZE(test_states3));
+}
+
 ZTEST(task_runner_schedules_kv, test_schedules_kv_invalid_not_written)
 {
 	struct task_schedule schedules[2] = {
