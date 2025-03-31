@@ -260,7 +260,7 @@ ZTEST(rpc_server, test_echo_response)
 	zassert_is_null(net_buf_get(tx_fifo, K_MSEC(100)));
 }
 
-static void test_data_sender(uint32_t to_send)
+static void test_data_sender(uint32_t to_send, int dc_after)
 {
 	const struct device *epacket_dummy = DEVICE_DT_GET(DT_NODELABEL(epacket_dummy));
 	struct k_fifo *tx_fifo = epacket_dummmy_transmit_fifo_get();
@@ -274,6 +274,10 @@ static void test_data_sender(uint32_t to_send)
 	uint32_t received, bytes_received = 0;
 	uint32_t request_id = sys_rand32_get();
 	uint32_t expected_offset = 0;
+	int packets_received = 0;
+
+	epacket_dummy_set_max_packet(CONFIG_EPACKET_PACKET_SIZE_MAX);
+	epacket_dummy_set_interface_state(epacket_dummy, true);
 
 	req = (void *)payload;
 	zassert_not_null(tx_fifo);
@@ -314,21 +318,40 @@ static void test_data_sender(uint32_t to_send)
 		}
 
 		net_buf_unref(tx);
+
+		if (++packets_received == dc_after) {
+			epacket_dummy_set_max_packet(0);
+			epacket_dummy_set_interface_state(epacket_dummy, false);
+			tx = net_buf_get(tx_fifo, K_MSEC(500));
+			zassert_is_null(tx);
+			break;
+		}
 	}
 	zassert_is_null(net_buf_get(tx_fifo, K_MSEC(1)));
-	zassert_equal(to_send, bytes_received);
+	if (dc_after == 0) {
+		zassert_equal(to_send, bytes_received);
+	}
 }
 
 ZTEST(rpc_server, test_data_sender)
 {
 	/* Various small payload sizes */
 	for (int i = 0; i < CONFIG_EPACKET_PACKET_SIZE_MAX + 10; i++) {
-		test_data_sender(i);
+		test_data_sender(i, 0);
 	}
 	/* Several larger dumps */
-	test_data_sender(1000);
-	test_data_sender(5555);
-	test_data_sender(33333);
+	test_data_sender(1000, 0);
+	test_data_sender(5555, 0);
+	test_data_sender(33333, 0);
+}
+
+ZTEST(rpc_server, test_data_sender_disconnect)
+{
+	for (int i = 0; i < 4; i++) {
+		test_data_sender(1000, 2);
+		test_data_sender(5555, 4);
+		test_data_sender(33333, 4);
+	}
 }
 
 static void test_data_receiver(uint32_t total_send, uint8_t skip_after, uint8_t stop_after,
@@ -579,7 +602,10 @@ ZTEST(rpc_server, test_data_ack_fn)
 
 static void test_before(void *data)
 {
+	const struct device *epacket_dummy = DEVICE_DT_GET(DT_NODELABEL(epacket_dummy));
+
 	epacket_dummy_set_max_packet(CONFIG_EPACKET_PACKET_SIZE_MAX);
+	epacket_dummy_set_interface_state(epacket_dummy, true);
 }
 
 ZTEST_SUITE(rpc_server, NULL, NULL, test_before, NULL, NULL);

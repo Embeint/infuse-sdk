@@ -192,8 +192,9 @@ ZTEST(rpc_command_data_logger, test_data_logger_read_invalid)
 	net_buf_unref(rsp);
 }
 
-static void run_logger_read(uint16_t epacket_size, uint32_t start, uint32_t end)
+static void run_logger_read(uint16_t epacket_size, uint32_t start, uint32_t end, int dc_after)
 {
+	const struct device *epacket_dummy = DEVICE_DT_GET(DT_NODELABEL(epacket_dummy));
 	struct k_fifo *tx_fifo = epacket_dummmy_transmit_fifo_get();
 	struct rpc_data_logger_read_response *rsp;
 	struct epacket_dummy_frame *tx_header;
@@ -204,6 +205,7 @@ static void run_logger_read(uint16_t epacket_size, uint32_t start, uint32_t end)
 	uint32_t bytes_received = 0;
 	uint32_t expected_offset = 0;
 	uint32_t crc = 0;
+	int packets_received = 0;
 
 	uint32_t actual_end = (end == UINT32_MAX) ? 7 : end;
 	uint32_t start_offset = 512 * start;
@@ -211,6 +213,7 @@ static void run_logger_read(uint16_t epacket_size, uint32_t start, uint32_t end)
 	uint32_t flash_crc = crc32_ieee(flash_buffer + start_offset, num);
 
 	epacket_dummy_set_max_packet(epacket_size);
+	epacket_dummy_set_interface_state(epacket_dummy, true);
 
 	send_data_logger_read_command(request_id, RPC_ENUM_DATA_LOGGER_FLASH_ONBOARD, start, end);
 
@@ -242,13 +245,20 @@ static void run_logger_read(uint16_t epacket_size, uint32_t start, uint32_t end)
 		}
 
 		net_buf_unref(tx);
+
+		if (++packets_received == dc_after) {
+			epacket_dummy_set_max_packet(0);
+			epacket_dummy_set_interface_state(epacket_dummy, false);
+			tx = net_buf_get(tx_fifo, K_MSEC(500));
+			zassert_is_null(tx);
+			break;
+		}
 	}
 }
 
 ZTEST(rpc_command_data_logger, test_data_logger_read)
 {
 	const struct device *flash_logger = DEVICE_DT_GET(DT_NODELABEL(data_logger_flash));
-
 	int rc;
 
 	/* Write 8 blocks */
@@ -260,17 +270,38 @@ ZTEST(rpc_command_data_logger, test_data_logger_read)
 	}
 
 	/* Run various data logger reads */
-	run_logger_read(64, 0, 4);
-	run_logger_read(63, 0, 6);
-	run_logger_read(61, 2, 4);
-	run_logger_read(62, 2, UINT32_MAX);
+	run_logger_read(64, 0, 4, 0);
+	run_logger_read(63, 0, 6, 0);
+	run_logger_read(61, 2, 4, 0);
+	run_logger_read(62, 2, UINT32_MAX, 0);
+}
+
+ZTEST(rpc_command_data_logger, test_data_logger_read_disconnect)
+{
+	const struct device *flash_logger = DEVICE_DT_GET(DT_NODELABEL(data_logger_flash));
+	int rc;
+
+	/* Write 8 blocks */
+	for (int i = 0; i < 8; i++) {
+		sys_rand_get(data_block, sizeof(data_block));
+		rc = data_logger_block_write(flash_logger, INFUSE_TDF, data_block,
+					     sizeof(data_block));
+		zassert_equal(0, rc);
+	}
+
+	/* Attempt to read but disconnects */
+	for (int i = 0; i < 4; i++) {
+		run_logger_read(64, 0, 7, 3);
+	}
 }
 
 void data_logger_reset(void *fixture)
 {
+	const struct device *epacket_dummy = DEVICE_DT_GET(DT_NODELABEL(epacket_dummy));
 	const struct device *data_logger = DEVICE_DT_GET(DT_NODELABEL(data_logger_flash));
 
 	epacket_dummy_set_max_packet(CONFIG_EPACKET_PACKET_SIZE_MAX);
+	epacket_dummy_set_interface_state(epacket_dummy, true);
 
 	/* Erase amd reinitialise loggers */
 	memset(flash_buffer, 0xFF, flash_buffer_size);

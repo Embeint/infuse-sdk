@@ -44,8 +44,10 @@ static void send_mem_read_command(uint32_t request_id, void *memory, uint32_t nu
 	epacket_dummy_receive(epacket_dummy, &header, &params, sizeof(params));
 }
 
-static void run_logger_read(uint16_t epacket_size, uint8_t *memory, uint32_t num_bytes)
+static void run_logger_read(uint16_t epacket_size, uint8_t *memory, uint32_t num_bytes,
+			    int dc_after)
 {
+	const struct device *epacket_dummy = DEVICE_DT_GET(DT_NODELABEL(epacket_dummy));
 	struct k_fifo *tx_fifo = epacket_dummmy_transmit_fifo_get();
 	struct rpc_data_logger_read_response *rsp;
 	struct epacket_dummy_frame *tx_header;
@@ -56,10 +58,11 @@ static void run_logger_read(uint16_t epacket_size, uint8_t *memory, uint32_t num
 	uint32_t bytes_received = 0;
 	uint32_t expected_offset = 0;
 	uint32_t crc = 0;
-
+	int packets_received = 0;
 	uint32_t memory_crc = crc32_ieee(memory, num_bytes);
 
 	epacket_dummy_set_max_packet(epacket_size);
+	epacket_dummy_set_interface_state(epacket_dummy, true);
 
 	send_mem_read_command(request_id, memory, num_bytes);
 
@@ -92,6 +95,14 @@ static void run_logger_read(uint16_t epacket_size, uint8_t *memory, uint32_t num
 		}
 
 		net_buf_unref(tx);
+
+		if (++packets_received == dc_after) {
+			epacket_dummy_set_max_packet(0);
+			epacket_dummy_set_interface_state(epacket_dummy, false);
+			tx = net_buf_get(tx_fifo, K_MSEC(500));
+			zassert_is_null(tx);
+			break;
+		}
 	}
 }
 
@@ -109,10 +120,22 @@ ZTEST(rpc_command_mem_read, test_mem_read)
 	sys_rand_get(ram_buffer, sizeof(ram_buffer));
 
 	/* Run various memory reads */
-	run_logger_read(64, (void *)&small_read, sizeof(small_read));
-	run_logger_read(62, (void *)&small_read, 3);
-	run_logger_read(63, (void *)ram_buffer, sizeof(ram_buffer));
-	run_logger_read(61, (void *)flash_buffer, sizeof(flash_buffer));
+	run_logger_read(64, (void *)&small_read, sizeof(small_read), 0);
+	run_logger_read(62, (void *)&small_read, 3, 0);
+	run_logger_read(63, (void *)ram_buffer, sizeof(ram_buffer), 0);
+	run_logger_read(61, (void *)flash_buffer, sizeof(flash_buffer), 0);
+}
+
+ZTEST(rpc_command_mem_read, test_mem_read_disconnect)
+{
+	uint8_t ram_buffer[256];
+
+	sys_rand_get(ram_buffer, sizeof(ram_buffer));
+
+	/* Attempt to read but disconnects */
+	for (int i = 0; i < 4; i++) {
+		run_logger_read(61, (void *)ram_buffer, sizeof(ram_buffer), 3);
+	}
 }
 
 ZTEST_SUITE(rpc_command_mem_read, NULL, NULL, NULL, NULL, NULL);
