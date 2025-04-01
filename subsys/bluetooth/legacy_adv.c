@@ -13,12 +13,17 @@
 
 #include <infuse/bluetooth/legacy_adv.h>
 
+BUILD_ASSERT(CONFIG_BT_INFUSE_LEGACY_ADV_INTERVAL_MIN < CONFIG_BT_INFUSE_LEGACY_ADV_INTERVAL_MAX);
+
+/* Bluetooth stack intervals are in 0.625 ms units */
+#define INTERVAL_MIN (CONFIG_BT_INFUSE_LEGACY_ADV_INTERVAL_MIN / 0.625f)
+#define INTERVAL_MAX (CONFIG_BT_INFUSE_LEGACY_ADV_INTERVAL_MAX / 0.625f)
+
 static void legacy_connected(struct bt_le_ext_adv *adv, struct bt_le_ext_adv_connected_info *info);
 static void legacy_recycled(const void *conn);
 
 #define BT_LE_ADV_CONN_SLOW                                                                        \
-	BT_LE_ADV_PARAM(BT_LE_ADV_OPT_CONNECTABLE, BT_GAP_ADV_SLOW_INT_MIN,                        \
-			BT_GAP_ADV_SLOW_INT_MAX, NULL)
+	BT_LE_ADV_PARAM(BT_LE_ADV_OPT_CONNECTABLE, INTERVAL_MIN, INTERVAL_MAX, NULL)
 
 static const struct bt_data ad[] = {
 	BT_DATA(BT_DATA_NAME_COMPLETE, CONFIG_BT_DEVICE_NAME, sizeof(CONFIG_BT_DEVICE_NAME) - 1),
