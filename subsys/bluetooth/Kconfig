@@ -26,3 +26,25 @@ config BT_CONN_AUTO_RSSI_INTERVAL_MS
 	default 1000
 
 endif # BT_CONN_AUTO_RSSI
+
+if BT_HCI_HOST
+
+config BT_INFUSE_LEGACY_ADV_INTERVAL_MIN
+	int "Minimum interval for the Infuse-IoT legacy advertising set"
+	range 30 10000
+	default 1000
+	help
+	  Minimum advertising interval for the legacy Bluetooth advertising set
+	  started by bluetooth_legacy_advertising_run. Valid range is from 30 ms
+	  to 10'000 ms
+
+config BT_INFUSE_LEGACY_ADV_INTERVAL_MAX
+	int "Maximum interval for the Infuse-IoT legacy advertising set"
+	range 60 10240
+	default 1200
+	help
+	  Maximum advertising interval for the legacy Bluetooth advertising set
+	  started by bluetooth_legacy_advertising_run. Valid range is from 10 ms
+	  to 10'240 ms
+
+endif # BT_HCI_HOST
