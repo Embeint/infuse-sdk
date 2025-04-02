@@ -1,0 +1,5 @@
+config TEST_DURATION_HOURS
+	int "Duration to run test for"
+	default 2
+
+source "Kconfig.zephyr"

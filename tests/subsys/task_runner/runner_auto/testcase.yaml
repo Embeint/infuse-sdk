@@ -1,0 +1,20 @@
+common:
+  tags: task_runner
+  min_flash: 64
+  min_ram: 32
+tests:
+  task_runner.runner_auto_iterate:
+    integration_platforms:
+      - native_sim
+    platform_allow:
+      - native_sim
+  task_runner.runner_auto_iterate.long:
+    integration_platforms:
+      - native_sim
+    platform_allow:
+      - native_sim
+    extra_configs:
+      # 60 day runtime, handles the 49.7 day millisecond uint32_t rollover
+      - CONFIG_TEST_DURATION_HOURS=1440
+    timeout: 600
+    slow: true
