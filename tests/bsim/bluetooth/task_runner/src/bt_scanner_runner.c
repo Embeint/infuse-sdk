@@ -57,15 +57,16 @@ static void task_run(void)
 			 ARRAY_SIZE(app_tasks));
 
 	for (int i = 0; i < 9; i++) {
-		uint32_t next_iter = k_uptime_seconds() + 1;
+		int64_t uptime_ticks = k_uptime_ticks();
+		uint32_t uptime_sec = k_ticks_to_sec_floor32(uptime_ticks);
 		uint32_t gps_time = epoch_time_seconds(epoch_time_now());
 
 		/* Iterate the runner */
 		infuse_states_snapshot(infuse_states);
-		task_runner_iterate(infuse_states, k_uptime_seconds(), gps_time, 100);
+		task_runner_iterate(infuse_states, uptime_sec, gps_time, 100);
 		infuse_states_tick(infuse_states);
 
-		k_sleep(K_TIMEOUT_ABS_MS(next_iter * MSEC_PER_SEC));
+		k_sleep(K_TIMEOUT_ABS_SEC(uptime_sec + 1));
 	}
 
 	/* Expect task to be stopped */

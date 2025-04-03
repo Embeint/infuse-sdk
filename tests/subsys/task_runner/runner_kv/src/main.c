@@ -149,7 +149,7 @@ ZTEST(task_runner_runner_kv, test_basic_behaviour)
 	/* Task should have started and still be running (60 second block period) */
 	for (int i = 0; i < 30; i++) {
 		task_runner_iterate(app_states, uptime++, gps_time++, 100);
-		k_sleep(K_TIMEOUT_ABS_MS(iter * MSEC_PER_SEC));
+		k_sleep(K_TIMEOUT_ABS_SEC(iter));
 		iter++;
 	}
 	zassert_equal(1, example_task_run_cnt);
@@ -168,14 +168,14 @@ ZTEST(task_runner_runner_kv, test_basic_behaviour)
 
 	/* Next iteration should send out a terminate request */
 	task_runner_iterate(app_states, uptime++, gps_time++, 100);
-	k_sleep(K_TIMEOUT_ABS_MS(iter * MSEC_PER_SEC));
+	k_sleep(K_TIMEOUT_ABS_SEC(iter));
 	iter++;
 	zassert_equal(1, callback_count);
 	zassert_equal(TASK_SCHEDULE_TERMINATE_REQUEST, events_recv[0]);
 
 	/* Iteration after that should see the terminated task and restart it with new args */
 	task_runner_iterate(app_states, uptime++, gps_time++, 100);
-	k_sleep(K_TIMEOUT_ABS_MS(iter * MSEC_PER_SEC));
+	k_sleep(K_TIMEOUT_ABS_SEC(iter));
 	iter++;
 
 	zassert_equal(2, example_task_run_cnt);
@@ -187,14 +187,14 @@ ZTEST(task_runner_runner_kv, test_basic_behaviour)
 	/* Task should now timeout after 5 seconds */
 	for (int i = 0; i < 5; i++) {
 		task_runner_iterate(app_states, uptime++, gps_time++, 100);
-		k_sleep(K_TIMEOUT_ABS_MS(iter * MSEC_PER_SEC));
+		k_sleep(K_TIMEOUT_ABS_SEC(iter));
 		iter++;
 	}
 	zassert_equal(2, example_task_run_cnt);
 
 	/* Boots again on next run */
 	task_runner_iterate(app_states, uptime++, gps_time++, 100);
-	k_sleep(K_TIMEOUT_ABS_MS(iter * MSEC_PER_SEC));
+	k_sleep(K_TIMEOUT_ABS_SEC(iter));
 	iter++;
 	zassert_equal(3, example_task_run_cnt);
 
@@ -211,14 +211,14 @@ ZTEST(task_runner_runner_kv, test_basic_behaviour)
 
 	/* Next iteration sends out the terminations */
 	task_runner_iterate(app_states, uptime++, gps_time++, 100);
-	k_sleep(K_TIMEOUT_ABS_MS(iter * MSEC_PER_SEC));
+	k_sleep(K_TIMEOUT_ABS_SEC(iter));
 	iter++;
 	zassert_equal(1, callback_count);
 	zassert_equal(TASK_SCHEDULE_TERMINATE_REQUEST, events_recv[0]);
 
 	/* Next iteration reloads schedules and restarts */
 	task_runner_iterate(app_states, uptime++, gps_time++, 100);
-	k_sleep(K_TIMEOUT_ABS_MS(iter * MSEC_PER_SEC));
+	k_sleep(K_TIMEOUT_ABS_SEC(iter));
 	iter++;
 
 	zassert_equal(3, callback_count);
@@ -228,7 +228,7 @@ ZTEST(task_runner_runner_kv, test_basic_behaviour)
 
 	for (int i = 0; i < 30; i++) {
 		task_runner_iterate(app_states, uptime++, gps_time++, 100);
-		k_sleep(K_TIMEOUT_ABS_MS(iter * MSEC_PER_SEC));
+		k_sleep(K_TIMEOUT_ABS_SEC(iter));
 		zassert_equal(1, example_task_run_cnt);
 		iter++;
 	}
@@ -241,7 +241,7 @@ ZTEST(task_runner_runner_kv, test_basic_behaviour)
 
 	for (int i = 0; i < 20; i++) {
 		task_runner_iterate(app_states, uptime++, gps_time++, 100);
-		k_sleep(K_TIMEOUT_ABS_MS(iter * MSEC_PER_SEC));
+		k_sleep(K_TIMEOUT_ABS_SEC(iter));
 		zassert_equal(1, example_task_run_cnt);
 		iter++;
 	}
