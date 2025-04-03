@@ -35,7 +35,7 @@ ZTEST(charge_accumulator, test_accumulator)
 	for (int i = 0; i < 5; i++) {
 		rc = zbus_chan_pub(ZBUS_CHAN, &bat, K_NO_WAIT);
 		zassert_equal(0, rc);
-		k_sleep(K_TIMEOUT_ABS_MS(1000 * iter));
+		k_sleep(K_TIMEOUT_ABS_SEC(iter));
 		iter++;
 	}
 
@@ -48,7 +48,7 @@ ZTEST(charge_accumulator, test_accumulator)
 	for (int i = 0; i < 5; i++) {
 		rc = zbus_chan_pub(ZBUS_CHAN, &bat, K_NO_WAIT);
 		zassert_equal(0, rc);
-		k_sleep(K_TIMEOUT_ABS_MS(1000 * iter));
+		k_sleep(K_TIMEOUT_ABS_SEC(iter));
 		iter++;
 	}
 	charge = auto_charge_accumulator_query(NULL);
@@ -59,7 +59,7 @@ ZTEST(charge_accumulator, test_accumulator)
 		bat.current_ua = i < 10 ? 10000 : -20000;
 		rc = zbus_chan_pub(ZBUS_CHAN, &bat, K_NO_WAIT);
 		zassert_equal(0, rc);
-		k_sleep(K_TIMEOUT_ABS_MS(1000 * iter));
+		k_sleep(K_TIMEOUT_ABS_SEC(iter));
 		iter++;
 	}
 	charge = auto_charge_accumulator_query(&num);
@@ -70,7 +70,7 @@ ZTEST(charge_accumulator, test_accumulator)
 	bat.current_ua = 15000;
 	rc = zbus_chan_pub(ZBUS_CHAN, &bat, K_NO_WAIT);
 	zassert_equal(0, rc);
-	k_sleep(K_TIMEOUT_ABS_MS(1000 * iter));
+	k_sleep(K_TIMEOUT_ABS_SEC(iter));
 	iter += 30;
 	rc = zbus_chan_pub(ZBUS_CHAN, &bat, K_NO_WAIT);
 	zassert_equal(0, rc);
