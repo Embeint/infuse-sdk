@@ -53,6 +53,9 @@ int main(void)
 	epacket_receive(epacket_bt_adv, K_FOREVER);
 	epacket_receive(epacket_udp, K_FOREVER);
 
+	/* Send key identifiers on boot */
+	epacket_send_key_ids(epacket_serial, K_FOREVER);
+
 	/* Turn on the interface */
 	conn_mgr_all_if_up(false);
 	conn_mgr_all_if_connect(false);
