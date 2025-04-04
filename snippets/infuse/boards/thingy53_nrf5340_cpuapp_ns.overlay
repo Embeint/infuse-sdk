@@ -1,10 +1,12 @@
 #include <common/nordic/infuse_nrf5340_cpuapp_ns.dtsi>
 #include "thingy53_nrf5340_cpuapp_common.dtsi"
 
-/* Allocate more memory to non-secure application  */
+/* Allocate more memory to non-secure application */
 /delete-node/ &sram0_s;
 /delete-node/ &sram0_ns;
 /delete-node/ &sram0_ns_app;
+
+
 
 / {
 	tfm_config {
