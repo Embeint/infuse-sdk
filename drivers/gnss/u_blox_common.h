@@ -25,7 +25,14 @@ extern "C" {
 #define GNSS_UBX_CONSTELLATION_CONFIG 1
 #endif
 
+struct ubx_common_pm_fn {
+	int (*software_standby)(const struct device *dev);
+	int (*software_resume)(const struct device *dev);
+	int (*port_setup)(const struct device *dev, bool hardware_reset);
+};
+
 struct ubx_common_config {
+	struct ubx_common_pm_fn pm_funcs;
 	struct shared_device_dt_spec ant_switch;
 	struct gpio_dt_spec reset_gpio;
 	struct gpio_dt_spec extint_gpio;
@@ -57,14 +64,14 @@ struct ubx_common_data {
 #endif /* CONFIG_GNSS_U_BLOX_NO_API_COMPAT */
 };
 
-struct ubx_common_pm_fn {
-	int (*software_standby)(const struct device *dev);
-	int (*software_resume)(const struct device *dev);
-	int (*port_setup)(const struct device *dev, bool hardware_reset);
-};
-
-#define UBX_COMMON_CONFIG_INST(inst)                                                               \
+#define UBX_COMMON_CONFIG_INST(inst, standby_fn, resume_fn, setup_fn)                              \
 	{                                                                                          \
+		.pm_funcs =                                                                        \
+			{                                                                          \
+				.software_standby = standby_fn,                                    \
+				.software_resume = resume_fn,                                      \
+				.port_setup = setup_fn,                                            \
+			},                                                                         \
 		.ant_switch = SHARED_DEVICE_DT_SPEC_INST_GET_OR(inst, antenna_switch, {0}),        \
 		.reset_gpio = GPIO_DT_SPEC_INST_GET(inst, reset_gpios),                            \
 		.extint_gpio = GPIO_DT_SPEC_INST_GET(inst, extint_gpios),                          \
@@ -73,15 +80,13 @@ struct ubx_common_pm_fn {
 		.data_ready_pio = DT_INST_PROP(inst, data_ready_pio),                              \
 	}
 
-int ubx_common_init(const struct device *dev, struct modem_pipe *pipe,
-		    pm_device_action_cb_t action_cb);
+int ubx_common_init(const struct device *dev, struct modem_pipe *pipe);
 
 void ubx_common_extint_wake(const struct device *dev);
 
 int ubx_common_get_latest_timepulse(const struct device *dev, k_ticks_t *timestamp);
 
-int ubx_common_pm_control(const struct device *dev, enum pm_device_action action,
-			  const struct ubx_common_pm_fn *pm_fn);
+int ubx_common_pm_control(const struct device *dev, enum pm_device_action action);
 
 #ifdef __cplusplus
 }

@@ -222,8 +222,7 @@ static int mon_rxr_handler(uint8_t message_class, uint8_t message_id, const void
 	return k_poll_signal_raise(sig, mon_rxr->flags);
 }
 
-int ubx_common_pm_control(const struct device *dev, enum pm_device_action action,
-			  const struct ubx_common_pm_fn *pm_fn)
+int ubx_common_pm_control(const struct device *dev, enum pm_device_action action)
 {
 	const struct ubx_common_config *cfg = dev->config;
 	struct ubx_common_data *data = dev->data;
@@ -240,7 +239,7 @@ int ubx_common_pm_control(const struct device *dev, enum pm_device_action action
 							      GPIO_INT_DISABLE);
 		}
 		/* Put into low power mode */
-		rc = pm_fn->software_standby(dev);
+		rc = cfg->pm_funcs.software_standby(dev);
 		if (rc < 0) {
 			LOG_INF("Failed to go to standby mode");
 			return rc;
@@ -249,7 +248,7 @@ int ubx_common_pm_control(const struct device *dev, enum pm_device_action action
 		ubx_modem_software_standby(&data->modem);
 		break;
 	case PM_DEVICE_ACTION_RESUME:
-		rc = pm_fn->software_resume(dev);
+		rc = cfg->pm_funcs.software_resume(dev);
 		if (rc < 0) {
 			LOG_INF("Failed to resume");
 			return rc;
@@ -289,14 +288,14 @@ int ubx_common_pm_control(const struct device *dev, enum pm_device_action action
 			return rc;
 		}
 		/* Configure modem for comms */
-		rc = pm_fn->port_setup(dev, hardware_reset);
+		rc = cfg->pm_funcs.port_setup(dev, hardware_reset);
 		if (rc < 0) {
 			LOG_INF("Failed to setup comms port");
 			modem_pipe_close(data->modem.pipe);
 			return rc;
 		}
 		/* Put into low power mode */
-		rc = pm_fn->software_standby(dev);
+		rc = cfg->pm_funcs.software_standby(dev);
 		if (rc < 0) {
 			LOG_INF("Failed to go to standby mode");
 			modem_pipe_close(data->modem.pipe);
@@ -310,8 +309,7 @@ int ubx_common_pm_control(const struct device *dev, enum pm_device_action action
 	return 0;
 }
 
-int ubx_common_init(const struct device *dev, struct modem_pipe *pipe,
-		    pm_device_action_cb_t action_cb)
+int ubx_common_init(const struct device *dev, struct modem_pipe *pipe)
 {
 	const struct ubx_common_config *cfg = dev->config;
 	struct ubx_common_data *data = dev->data;
@@ -361,7 +359,7 @@ int ubx_common_init(const struct device *dev, struct modem_pipe *pipe,
 #endif /* CONFIG_GNSS_U_BLOX_NO_API_COMPAT */
 
 	/* Run boot sequence */
-	return pm_device_driver_init(dev, action_cb);
+	return pm_device_driver_init(dev, ubx_common_pm_control);
 }
 
 struct ubx_modem_data *ubx_modem_data_get(const struct device *dev)
