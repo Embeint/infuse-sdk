@@ -9,6 +9,7 @@
 #include <stdint.h>
 
 #include <zephyr/logging/log.h>
+#include <zephyr/pm/device.h>
 #include <zephyr/pm/device_runtime.h>
 #include <zephyr/zbus/zbus.h>
 #include <zephyr/drivers/gnss.h>
@@ -304,6 +305,15 @@ void gnss_task_fn(const struct task_schedule *schedule, struct k_poll_signal *te
 
 	/* Request sensor to be powered */
 	rc = pm_device_runtime_get(gnss);
+	if ((rc < 0) && pm_device_is_powered(gnss)) {
+		/* Device is in software shutdown mode, try to recover communications */
+		LOG_WRN("Failed to request PM, resetting comms");
+		rc = ubx_modem_comms_reset(gnss);
+		if (rc == 0) {
+			/* Communications recovered, try PM again */
+			rc = pm_device_runtime_get(gnss);
+		}
+	}
 	if (rc < 0) {
 		k_sleep(K_SECONDS(1));
 		LOG_ERR("Terminating due to %s", "PM failure");
