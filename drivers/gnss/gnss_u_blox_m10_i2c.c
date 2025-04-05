@@ -434,6 +434,7 @@ static int ubx_m10_i2c_software_standby(const struct device *dev)
 
 static int ubx_m10_i2c_software_resume(const struct device *dev)
 {
+	NET_BUF_SIMPLE_DEFINE(cfg_buf, 64);
 	struct ubx_m10_i2c_data *data = dev->data;
 	int rc = 0;
 
@@ -446,9 +447,16 @@ static int ubx_m10_i2c_software_resume(const struct device *dev)
 	/* Ublox-M10 apparently does not output MON-RXR on wake, despite the M10 interface
 	 * description saying it does.
 	 */
+#ifdef CONFIG_GNSS_U_BLOX_NO_API_COMPAT
+	/* Validate we woke properly by running an arbitrary command with no effect */
+	struct ubx_msg_cfg_cfg_m10 cfg_cfg = {0};
 
-#ifndef CONFIG_GNSS_U_BLOX_NO_API_COMPAT
-	NET_BUF_SIMPLE_DEFINE(cfg_buf, 64);
+	ubx_msg_simple(&cfg_buf, UBX_MSG_CLASS_CFG, UBX_MSG_ID_CFG_CFG, &cfg_cfg, sizeof(cfg_cfg));
+	rc = ubx_modem_send_sync_acked(&data->common.modem, &cfg_buf, SYNC_MESSAGE_TIMEOUT);
+	if (rc < 0) {
+		LOG_ERR("Failed to validate comms (%d)", rc);
+	}
+#else
 
 	/* Modem uses NAV-PVT to fulfill requirements of GNSS API */
 	ubx_msg_prepare_valset(&cfg_buf,
@@ -461,7 +469,6 @@ static int ubx_m10_i2c_software_resume(const struct device *dev)
 	rc = ubx_modem_send_sync_acked(&data->common.modem, &cfg_buf, SYNC_MESSAGE_TIMEOUT);
 	if (rc < 0) {
 		LOG_ERR("Failed to configure NAV-PVT rate (%d)", rc);
-		return rc;
 	}
 #endif /* CONFIG_GNSS_U_BLOX_NO_API_COMPAT */
 	return rc;
