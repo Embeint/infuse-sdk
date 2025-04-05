@@ -463,17 +463,6 @@ static int ubx_m8_spi_software_resume(const struct device *dev)
 	return 0;
 }
 
-static int ubx_m8_spi_pm_control(const struct device *dev, enum pm_device_action action)
-{
-	const struct ubx_common_pm_fn pm_fn = {
-		.port_setup = ubx_m8_spi_port_setup,
-		.software_resume = ubx_m8_spi_software_resume,
-		.software_standby = ubx_m8_spi_software_standby,
-	};
-
-	return ubx_common_pm_control(dev, action, &pm_fn);
-}
-
 static int ubx_m8_spi_init(const struct device *dev)
 {
 	const struct ubx_m8_spi_config *cfg = dev->config;
@@ -489,7 +478,7 @@ static int ubx_m8_spi_init(const struct device *dev)
 	pipe = modem_backend_ublox_spi_init(&data->spi_backend, &spi_backend_config);
 
 	/* Run common initialisation logic*/
-	return ubx_common_init(dev, pipe, ubx_m8_spi_pm_control);
+	return ubx_common_init(dev, pipe);
 }
 
 static const struct gnss_driver_api gnss_api = {
@@ -508,11 +497,13 @@ static const struct gnss_driver_api gnss_api = {
 
 #define UBX_M8_SPI(inst)                                                                           \
 	static const struct ubx_m8_spi_config ubx_m8_cfg_##inst = {                                \
-		.common = UBX_COMMON_CONFIG_INST(inst),                                            \
+		.common =                                                                          \
+			UBX_COMMON_CONFIG_INST(inst, ubx_m8_spi_software_standby,                  \
+					       ubx_m8_spi_software_resume, ubx_m8_spi_port_setup), \
 		.spi = SPI_DT_SPEC_INST_GET(inst, SPI_WORD_SET(8) | SPI_TRANSFER_MSB, 0),          \
 	};                                                                                         \
 	static struct ubx_m8_spi_data ubx_m8_data_##inst;                                          \
-	PM_DEVICE_DT_INST_DEFINE(inst, ubx_m8_spi_pm_control);                                     \
+	PM_DEVICE_DT_INST_DEFINE(inst, ubx_common_pm_control);                                     \
 	I2C_DEVICE_DT_INST_DEFINE(inst, ubx_m8_spi_init, PM_DEVICE_DT_INST_GET(inst),              \
 				  &ubx_m8_data_##inst, &ubx_m8_cfg_##inst, POST_KERNEL,            \
 				  CONFIG_GNSS_INIT_PRIORITY, &gnss_api);

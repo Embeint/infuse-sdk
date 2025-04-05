@@ -474,17 +474,6 @@ static int ubx_m10_i2c_software_resume(const struct device *dev)
 	return rc;
 }
 
-static int ubx_m10_i2c_pm_control(const struct device *dev, enum pm_device_action action)
-{
-	const struct ubx_common_pm_fn pm_fn = {
-		.port_setup = ubx_m10_i2c_port_setup,
-		.software_resume = ubx_m10_i2c_software_resume,
-		.software_standby = ubx_m10_i2c_software_standby,
-	};
-
-	return ubx_common_pm_control(dev, action, &pm_fn);
-}
-
 static int ubx_m10_i2c_init(const struct device *dev)
 {
 	const struct ubx_m10_i2c_config *cfg = dev->config;
@@ -500,7 +489,7 @@ static int ubx_m10_i2c_init(const struct device *dev)
 	pipe = modem_backend_ublox_i2c_init(&data->i2c_backend, &i2c_backend_config);
 
 	/* Run common initialisation logic*/
-	return ubx_common_init(dev, pipe, ubx_m10_i2c_pm_control);
+	return ubx_common_init(dev, pipe);
 }
 
 static const struct gnss_driver_api gnss_api = {
@@ -520,11 +509,13 @@ static const struct gnss_driver_api gnss_api = {
 
 #define UBX_M10_I2C(inst)                                                                          \
 	static const struct ubx_m10_i2c_config ubx_m10_cfg_##inst = {                              \
-		.common = UBX_COMMON_CONFIG_INST(inst),                                            \
+		.common = UBX_COMMON_CONFIG_INST(inst, ubx_m10_i2c_software_standby,               \
+						 ubx_m10_i2c_software_resume,                      \
+						 ubx_m10_i2c_port_setup),                          \
 		.i2c = I2C_DT_SPEC_INST_GET(inst),                                                 \
 	};                                                                                         \
 	static struct ubx_m10_i2c_data ubx_m10_data_##inst;                                        \
-	PM_DEVICE_DT_INST_DEFINE(inst, ubx_m10_i2c_pm_control);                                    \
+	PM_DEVICE_DT_INST_DEFINE(inst, ubx_common_pm_control);                                     \
 	I2C_DEVICE_DT_INST_DEFINE(inst, ubx_m10_i2c_init, PM_DEVICE_DT_INST_GET(inst),             \
 				  &ubx_m10_data_##inst, &ubx_m10_cfg_##inst, POST_KERNEL,          \
 				  CONFIG_GNSS_INIT_PRIORITY, &gnss_api);
