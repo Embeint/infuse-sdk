@@ -222,67 +222,6 @@ static int mon_rxr_handler(uint8_t message_class, uint8_t message_id, const void
 	return k_poll_signal_raise(sig, mon_rxr->flags);
 }
 
-int ubx_common_init(const struct device *dev, struct modem_pipe *pipe,
-		    pm_device_action_cb_t action_cb)
-{
-	const struct ubx_common_config *cfg = dev->config;
-	struct ubx_common_data *data = dev->data;
-
-	ubx_modem_init(&data->modem, pipe);
-
-	/* Permanently handle MON-RXR messages */
-	data->mon_rxr_handler = (struct ubx_message_handler_ctx){
-		.message_class = UBX_MSG_CLASS_MON,
-		.message_id = UBX_MSG_ID_MON_RXR,
-		.message_cb = mon_rxr_handler,
-		.user_data = &data->mon_rxr_signal,
-	};
-	k_poll_signal_init(&data->mon_rxr_signal);
-	ubx_modem_msg_subscribe(&data->modem, &data->mon_rxr_handler);
-
-	/* Setup timepulse pin interrupt */
-	if (cfg->timepulse_gpio.port != NULL) {
-		(void)gpio_pin_configure_dt(&cfg->timepulse_gpio, GPIO_INPUT);
-		gpio_init_callback(&data->timepulse_cb, timepulse_gpio_callback,
-				   BIT(cfg->timepulse_gpio.pin));
-		if (gpio_add_callback_dt(&cfg->timepulse_gpio, &data->timepulse_cb) < 0) {
-			LOG_ERR("Unable to add timepulse callback");
-		}
-	}
-
-	if (!shared_device_is_ready_dt(&cfg->ant_switch)) {
-		LOG_WRN("RF switch not ready");
-	}
-
-#ifndef CONFIG_GNSS_U_BLOX_NO_API_COMPAT
-	/* Subscribe to all NAV-PVT messages */
-	data->pvt_handler.message_class = UBX_MSG_CLASS_NAV,
-	data->pvt_handler.message_id = UBX_MSG_ID_NAV_PVT,
-	data->pvt_handler.message_cb = nav_pvt_cb;
-	data->pvt_handler.user_data = (void *)dev;
-	ubx_modem_msg_subscribe(&data->modem, &data->pvt_handler);
-
-#ifdef CONFIG_GNSS_SATELLITES
-	/* Subscribe to all NAV-SAT messages */
-	data->sat_handler.message_class = UBX_MSG_CLASS_NAV,
-	data->sat_handler.message_id = UBX_MSG_ID_NAV_SAT,
-	data->sat_handler.message_cb = nav_sat_cb;
-	data->sat_handler.user_data = (void *)dev;
-	ubx_modem_msg_subscribe(&data->modem, &data->sat_handler);
-#endif /* CONFIG_GNSS_SATELLITES */
-#endif /* CONFIG_GNSS_U_BLOX_NO_API_COMPAT */
-
-	/* Run boot sequence */
-	return pm_device_driver_init(dev, action_cb);
-}
-
-struct ubx_modem_data *ubx_modem_data_get(const struct device *dev)
-{
-	struct ubx_common_data *data = dev->data;
-
-	return &data->modem;
-}
-
 int ubx_common_pm_control(const struct device *dev, enum pm_device_action action,
 			  const struct ubx_common_pm_fn *pm_fn)
 {
@@ -369,4 +308,65 @@ int ubx_common_pm_control(const struct device *dev, enum pm_device_action action
 	}
 
 	return 0;
+}
+
+int ubx_common_init(const struct device *dev, struct modem_pipe *pipe,
+		    pm_device_action_cb_t action_cb)
+{
+	const struct ubx_common_config *cfg = dev->config;
+	struct ubx_common_data *data = dev->data;
+
+	ubx_modem_init(&data->modem, pipe);
+
+	/* Permanently handle MON-RXR messages */
+	data->mon_rxr_handler = (struct ubx_message_handler_ctx){
+		.message_class = UBX_MSG_CLASS_MON,
+		.message_id = UBX_MSG_ID_MON_RXR,
+		.message_cb = mon_rxr_handler,
+		.user_data = &data->mon_rxr_signal,
+	};
+	k_poll_signal_init(&data->mon_rxr_signal);
+	ubx_modem_msg_subscribe(&data->modem, &data->mon_rxr_handler);
+
+	/* Setup timepulse pin interrupt */
+	if (cfg->timepulse_gpio.port != NULL) {
+		(void)gpio_pin_configure_dt(&cfg->timepulse_gpio, GPIO_INPUT);
+		gpio_init_callback(&data->timepulse_cb, timepulse_gpio_callback,
+				   BIT(cfg->timepulse_gpio.pin));
+		if (gpio_add_callback_dt(&cfg->timepulse_gpio, &data->timepulse_cb) < 0) {
+			LOG_ERR("Unable to add timepulse callback");
+		}
+	}
+
+	if (!shared_device_is_ready_dt(&cfg->ant_switch)) {
+		LOG_WRN("RF switch not ready");
+	}
+
+#ifndef CONFIG_GNSS_U_BLOX_NO_API_COMPAT
+	/* Subscribe to all NAV-PVT messages */
+	data->pvt_handler.message_class = UBX_MSG_CLASS_NAV,
+	data->pvt_handler.message_id = UBX_MSG_ID_NAV_PVT,
+	data->pvt_handler.message_cb = nav_pvt_cb;
+	data->pvt_handler.user_data = (void *)dev;
+	ubx_modem_msg_subscribe(&data->modem, &data->pvt_handler);
+
+#ifdef CONFIG_GNSS_SATELLITES
+	/* Subscribe to all NAV-SAT messages */
+	data->sat_handler.message_class = UBX_MSG_CLASS_NAV,
+	data->sat_handler.message_id = UBX_MSG_ID_NAV_SAT,
+	data->sat_handler.message_cb = nav_sat_cb;
+	data->sat_handler.user_data = (void *)dev;
+	ubx_modem_msg_subscribe(&data->modem, &data->sat_handler);
+#endif /* CONFIG_GNSS_SATELLITES */
+#endif /* CONFIG_GNSS_U_BLOX_NO_API_COMPAT */
+
+	/* Run boot sequence */
+	return pm_device_driver_init(dev, action_cb);
+}
+
+struct ubx_modem_data *ubx_modem_data_get(const struct device *dev)
+{
+	struct ubx_common_data *data = dev->data;
+
+	return &data->modem;
 }
