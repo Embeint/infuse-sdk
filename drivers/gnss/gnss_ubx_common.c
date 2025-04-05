@@ -362,6 +362,22 @@ int ubx_common_init(const struct device *dev, struct modem_pipe *pipe)
 	return pm_device_driver_init(dev, ubx_common_pm_control);
 }
 
+int ubx_modem_comms_reset(const struct device *dev)
+{
+	enum pm_device_state current_state;
+
+	(void)pm_device_state_get(dev, &current_state);
+	if (current_state != PM_DEVICE_STATE_SUSPENDED) {
+		return -EAGAIN;
+	}
+	/* Unitialise resources */
+	(void)ubx_common_pm_control(dev, PM_DEVICE_ACTION_TURN_OFF);
+	/* Wait a short duration */
+	k_sleep(K_MSEC(100));
+	/* Attempt to re-establish communications */
+	return ubx_common_pm_control(dev, PM_DEVICE_ACTION_TURN_ON);
+}
+
 struct ubx_modem_data *ubx_modem_data_get(const struct device *dev)
 {
 	struct ubx_common_data *data = dev->data;

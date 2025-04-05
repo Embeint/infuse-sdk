@@ -306,6 +306,11 @@ static int emul_pm_control(const struct device *dev, enum pm_device_action actio
 	return 0;
 }
 
+int ubx_modem_comms_reset(const struct device *dev)
+{
+	return 0;
+}
+
 static int emul_init(const struct device *dev)
 {
 	struct emul_data *data = dev->data;
