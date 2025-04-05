@@ -12,6 +12,8 @@
 
 #include <stdint.h>
 
+#include <zephyr/device.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -21,6 +23,15 @@ extern "C" {
  * @defgroup gnss_emul_apis emulated GNSS APIs
  * @{
  */
+
+/**
+ * @brief Get pointers to emulated GNSS device state
+ *
+ * @param dev Emulated GNSS device
+ * @param pm_rc Value that is returned on next PM call
+ * @param comms_reset_cnt Number of times @ref ubx_modem_comms_reset has been called
+ */
+void emul_gnss_ubx_dev_ptrs(const struct device *dev, int **pm_rc, int **comms_reset_cnt);
 
 /**
  * @brief Configure the currently output PVT message
