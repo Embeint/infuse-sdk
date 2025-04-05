@@ -29,7 +29,7 @@
 GNSS_TASK(1, 0, DEV);
 struct task_config config = GNSS_TASK(0, 1, DEV);
 struct task_data data;
-struct task_schedule schedule = {.task_id = TASK_ID_GNSS};
+struct task_schedule schedule = {.validity = TASK_VALID_ALWAYS, .task_id = TASK_ID_GNSS};
 struct task_schedule_state state;
 
 static K_SEM_DEFINE(location_published, 0, 1);
@@ -503,6 +503,41 @@ ZTEST(task_gnss_ubx, test_location_fix_no_location_timeout)
 	zassert_equal(TIME_SOURCE_NONE, epoch_time_get_source());
 }
 
+ZTEST(task_gnss_ubx, test_pm_failure)
+{
+#ifdef CONFIG_GNSS_UBX_MODEM_EMUL
+	int *pm_rc, *comms_reset_cnt;
+	k_tid_t thread;
+	uint32_t start;
+
+	schedule.timeout_s = 0;
+	schedule.task_logging[0].loggers = TDF_DATA_LOGGER_SERIAL;
+	schedule.task_logging[0].tdf_mask = 0;
+	schedule.task_args.infuse.gnss = (struct task_gnss_args){
+		.flags = TASK_GNSS_FLAGS_RUN_TO_LOCATION_FIX,
+		.accuracy_m = 5,
+		.position_dop = 100,
+	};
+
+	/* Next call to PM returns an error, comms reset should be run */
+	emul_gnss_ubx_dev_ptrs(DEV, &pm_rc, &comms_reset_cnt);
+	zassert_equal(0, *comms_reset_cnt);
+	*pm_rc = -EIO;
+
+	/* Schedule a location fix that completes in <1 minute */
+	start = k_uptime_seconds();
+	thread = task_schedule(&data);
+
+	/* Run the location fix with a quick plateau */
+	run_location_fix(thread, -270000000, 1530000000, 70 * M, 100 * M, 5 * M, 20 * M, 5 * M, 16);
+	expected_location_fix(thread, start, 55);
+	expected_no_logging();
+
+	/* Comms reset should have been called due to PM failure */
+	zassert_equal(1, *comms_reset_cnt);
+#endif /* CONFIG_GNSS_UBX_MODEM_EMUL */
+}
+
 static void logger_before(void *fixture)
 {
 	struct k_fifo *tx_queue = epacket_dummmy_transmit_fifo_get();
@@ -527,11 +562,11 @@ static void logger_before(void *fixture)
 	/* nRF modem reports all fields as 0 on boot */
 	emul_gnss_pvt_configure(DEV, 0, 0, 0, 0, 0, 0, 0, 0);
 #endif /* CONFIG_GNSS_NRF9X_EMUL */
-#ifdef GNSS_UBX_MODEM_EMUL
+#ifdef CONFIG_GNSS_UBX_MODEM_EMUL
 	/* UBX modem reports all fields as 1 on boot */
 	emul_gnss_pvt_configure(DEV, 0, 0, UINT32_MAX, UINT32_MAX, UINT32_MAX, UINT32_MAX,
-				UINT16_MAX, 0)
-#endif /* GNSS_UBX_MODEM_EMUL */
+				UINT16_MAX, 0);
+#endif /* CONFIG_GNSS_UBX_MODEM_EMUL */
 }
 
 ZTEST_SUITE(task_gnss_ubx, NULL, NULL, logger_before, NULL, NULL);

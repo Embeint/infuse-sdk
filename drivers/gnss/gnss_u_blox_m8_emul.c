@@ -33,6 +33,8 @@ struct emul_data {
 	uint32_t fix_period;
 	bool nav_pvt_enabled;
 	bool nav_timegps_polled;
+	int reset_cnt;
+	int pm_rc;
 	sys_slist_t handlers;
 };
 
@@ -138,6 +140,14 @@ void emul_gnss_pvt_configure(const struct device *dev, int32_t latitude, int32_t
 	data->current_pvt.valid = t_acc < (2 * NSEC_PER_MSEC)
 					  ? UBX_MSG_NAV_PVT_VALID_DATE | UBX_MSG_NAV_PVT_VALID_TIME
 					  : 0;
+}
+
+void emul_gnss_ubx_dev_ptrs(const struct device *dev, int **pm_rc, int **comms_reset_cnt)
+{
+	struct emul_data *data = dev->data;
+
+	*pm_rc = &data->pm_rc;
+	*comms_reset_cnt = &data->reset_cnt;
 }
 
 void ubx_modem_msg_subscribe(struct ubx_modem_data *modem,
@@ -283,6 +293,7 @@ static int emul_get_latest_timepulse(const struct device *dev, k_ticks_t *timest
 static int emul_pm_control(const struct device *dev, enum pm_device_action action)
 {
 	struct emul_data *data = dev->data;
+	int rc = data->pm_rc;
 
 	switch (action) {
 	case PM_DEVICE_ACTION_RESUME:
@@ -299,15 +310,21 @@ static int emul_pm_control(const struct device *dev, enum pm_device_action actio
 		data->systems =
 			GNSS_SYSTEM_GPS | GNSS_SYSTEM_GALILEO | GNSS_SYSTEM_QZSS | GNSS_SYSTEM_SBAS;
 		break;
-	default:
+	case PM_DEVICE_ACTION_TURN_OFF:
 		break;
+	default:
+		return -ENOTSUP;
 	}
 
-	return 0;
+	data->pm_rc = 0;
+	return rc;
 }
 
 int ubx_modem_comms_reset(const struct device *dev)
 {
+	struct emul_data *data = dev->data;
+
+	data->reset_cnt += 1;
 	return 0;
 }
 
