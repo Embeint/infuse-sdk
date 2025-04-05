@@ -107,6 +107,18 @@ struct ubx_modem_data *ubx_modem_data_get(const struct device *dev);
 void ubx_modem_init(struct ubx_modem_data *modem, struct modem_pipe *pipe);
 
 /**
+ * @brief Reset communications with the UBX modem
+ *
+ * Depends on the modem being in `PM_DEVICE_STATE_SUSPENDED`.
+ *
+ * @param dev Modem device to reset communications for
+ *
+ * @retval 0 On success
+ * @retval -errno Negative error code otherwise
+ */
+int ubx_modem_comms_reset(const struct device *dev);
+
+/**
  * @brief Notify UBX modem that hardware is in standby
  *
  * @param modem Modem data structure
