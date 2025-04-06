@@ -1,0 +1,6 @@
+if BOARD_NRF52_BSIM
+
+configdefault SERIAL
+    default y
+
+endif # BOARD_NRF52_BSIM
