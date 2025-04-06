@@ -6,6 +6,7 @@ config SNIPPET_INFUSE
 if SNIPPET_INFUSE
 
 rsource "boards/mps2_an385.defconfig"
+rsource "boards/nrf52_bsim.defconfig"
 rsource "boards/nrf7002dk.defconfig"
 rsource "boards/nrf9151dk.defconfig"
 rsource "boards/nrf9160dk.defconfig"
