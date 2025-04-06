@@ -5,8 +5,10 @@
 #
 tests:
   mgmt.mcumgr.infuse_os.reboot:
+    expect_reboot: true
     platform_exclude:
-      - tauro/nrf52840
+      - native_sim
+      - nrf52_bsim
     required_snippets:
       - infuse
     integration_platforms:

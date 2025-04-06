@@ -4,6 +4,10 @@ common:
   min_ram: 32
 tests:
   rpc.commands.last_reboot:
+    expect_reboot: true
+    platform_exclude:
+      - native_sim
+      - nrf52_bsim
     required_snippets:
       - infuse
     integration_platforms:
