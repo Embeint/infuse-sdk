@@ -34,7 +34,7 @@ LOG_MODULE_REGISTER(app, LOG_LEVEL_INF);
 
 static void bt_conn_connected(struct bt_conn *conn, uint8_t err)
 {
-	int terminate_delay = (connection_count * 30) + 10;
+	int terminate_delay = (connection_count * 50) + 10;
 
 	g_conn = conn;
 	LOG_INF("Terminating connection %d in %d ms", connection_count, terminate_delay);

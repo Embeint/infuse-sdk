@@ -664,6 +664,7 @@ static void main_connect_terminator(void)
 	do {
 		k_poll_signal_reset(&sig);
 		events[0].state = K_POLL_STATE_NOT_READY;
+		conn = NULL;
 
 		/* Initiate connection */
 		rc = bt_conn_le_create(&addr, &create_param, &conn_params, &conn);
