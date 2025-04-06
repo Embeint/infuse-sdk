@@ -29,6 +29,7 @@ manifest:
           - nrf_wifi
           - tinycrypt
           - trusted-firmware-m
+          - picolibc
           - zcbor
     - name: sdk-nrf
       path: modules/nrfconnect/sdk-nrf
