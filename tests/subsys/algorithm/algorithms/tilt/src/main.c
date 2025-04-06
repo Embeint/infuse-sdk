@@ -104,6 +104,7 @@ ZTEST(alg_stationary, test_send)
 {
 	KV_KEY_TYPE(KV_KEY_GRAVITY_REFERENCE) gravity;
 	struct infuse_zbus_chan_tilt *out = ZBUS_CHAN->message;
+	int64_t timeout_base;
 	k_tid_t imu_thread;
 	float last;
 
@@ -131,10 +132,11 @@ ZTEST(alg_stationary, test_send)
 
 	/* Boot the IMU data generator */
 	imu_thread = task_schedule(0);
+	timeout_base = k_uptime_get();
 
 	/* 0 degree tilt */
 	imu_emul_accelerometer_data_configure(DEV, 0.0f, 0.0f, -1.0f, 0);
-	k_sleep(K_MSEC(10010));
+	k_sleep(K_TIMEOUT_ABS_MS(timeout_base + 10100));
 	tdf_data_logger_flush(TDF_DATA_LOGGER_SERIAL);
 	last = expect_logging(10);
 	zassert_within(1.000f, last, 0.001f);
@@ -143,7 +145,7 @@ ZTEST(alg_stationary, test_send)
 
 	/* 45 degree tilt */
 	imu_emul_accelerometer_data_configure(DEV, 0.0f, -0.707f, -0.707f, 0);
-	k_sleep(K_MSEC(10010));
+	k_sleep(K_TIMEOUT_ABS_MS(timeout_base + 20100));
 	tdf_data_logger_flush(TDF_DATA_LOGGER_SERIAL);
 	last = expect_logging(10);
 	zassert_within(0.707f, last, 0.001f);
@@ -152,7 +154,7 @@ ZTEST(alg_stationary, test_send)
 
 	/* 90 degree tilt */
 	imu_emul_accelerometer_data_configure(DEV, -1.0f, 0.0f, 0.0f, 0);
-	k_sleep(K_MSEC(10010));
+	k_sleep(K_TIMEOUT_ABS_MS(timeout_base + 30100));
 	tdf_data_logger_flush(TDF_DATA_LOGGER_SERIAL);
 	last = expect_logging(10);
 	zassert_within(0.000f, last, 0.001f);
@@ -161,7 +163,7 @@ ZTEST(alg_stationary, test_send)
 
 	/* 135 degree tilt */
 	imu_emul_accelerometer_data_configure(DEV, -0.707f, 0.0f, 0.707f, 0);
-	k_sleep(K_MSEC(10010));
+	k_sleep(K_TIMEOUT_ABS_MS(timeout_base + 40100));
 	tdf_data_logger_flush(TDF_DATA_LOGGER_SERIAL);
 	last = expect_logging(10);
 	zassert_within(-0.707f, last, 0.001f);
@@ -170,7 +172,7 @@ ZTEST(alg_stationary, test_send)
 
 	/* 180 degree tilt */
 	imu_emul_accelerometer_data_configure(DEV, 0.0f, 0.0f, 1.0f, 0);
-	k_sleep(K_MSEC(10010));
+	k_sleep(K_TIMEOUT_ABS_MS(timeout_base + 50100));
 	tdf_data_logger_flush(TDF_DATA_LOGGER_SERIAL);
 	last = expect_logging(10);
 	zassert_within(-1.000f, last, 0.001f);
@@ -184,7 +186,7 @@ ZTEST(alg_stationary, test_send)
 	zassert_equal(sizeof(gravity), KV_STORE_WRITE(KV_KEY_GRAVITY_REFERENCE, &gravity));
 
 	/* Angle should now be 90 degrees */
-	k_sleep(K_MSEC(10010));
+	k_sleep(K_TIMEOUT_ABS_MS(timeout_base + 60100));
 	tdf_data_logger_flush(TDF_DATA_LOGGER_SERIAL);
 	last = expect_logging(10);
 	zassert_within(0.000f, last, 0.001f);
@@ -195,7 +197,7 @@ ZTEST(alg_stationary, test_send)
 	zassert_equal(0, kv_store_delete(KV_KEY_GRAVITY_REFERENCE));
 
 	/* No more data logged */
-	k_sleep(K_MSEC(10010));
+	k_sleep(K_TIMEOUT_ABS_MS(timeout_base + 70100));
 	tdf_data_logger_flush(TDF_DATA_LOGGER_SERIAL);
 	last = expect_logging(0);
 	zassert_within(0.000f, out->cosine, 0.001f);
@@ -209,7 +211,7 @@ ZTEST(alg_stationary, test_send)
 
 	/* Some angle */
 	imu_emul_accelerometer_data_configure(DEV, 0.3f, -0.1f, 0.9f, 0);
-	k_sleep(K_MSEC(10010));
+	k_sleep(K_TIMEOUT_ABS_MS(timeout_base + 80100));
 	tdf_data_logger_flush(TDF_DATA_LOGGER_SERIAL);
 	last = expect_logging(10);
 	zassert_within(0.296f, last, 0.001f);
@@ -220,7 +222,7 @@ ZTEST(alg_stationary, test_send)
 	 * No more data published, channel data stays the same
 	 */
 	imu_emul_accelerometer_data_configure(DEV, 0.0f, 0.0f, 0.89f, 0);
-	k_sleep(K_MSEC(10010));
+	k_sleep(K_TIMEOUT_ABS_MS(timeout_base + 90100));
 	tdf_data_logger_flush(TDF_DATA_LOGGER_SERIAL);
 	last = expect_logging(0);
 	zassert_within(0.296f, out->cosine, 0.001f);
@@ -228,7 +230,7 @@ ZTEST(alg_stationary, test_send)
 
 	/* Stationary again */
 	imu_emul_accelerometer_data_configure(DEV, 0.0f, 0.1f, 1.0f, 0);
-	k_sleep(K_MSEC(10010));
+	k_sleep(K_TIMEOUT_ABS_MS(timeout_base + 100100));
 	tdf_data_logger_flush(TDF_DATA_LOGGER_SERIAL);
 	last = expect_logging(10);
 	zassert_within(-0.070f, out->cosine, 0.001f);
