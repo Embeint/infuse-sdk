@@ -5,6 +5,8 @@ common:
   build_only: true
   required_snippets:
     - infuse
+  depends_on:
+    - ble
   integration_platforms:
     - thingy53/nrf5340/cpuapp
     - tauro/nrf9151/ns
