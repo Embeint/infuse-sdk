@@ -6,6 +6,8 @@ common:
   filter: dt_compat_enabled("embeint,epacket-serial")
   required_snippets:
     - infuse
+  depends_on:
+    - watchdog
   integration_platforms:
     - nrf52840dk/nrf52840
     - nrf9160dk/nrf9160/ns
