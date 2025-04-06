@@ -51,6 +51,7 @@ static void legacy_disconnected(struct bt_conn *conn, uint8_t reason)
 	if (conn != legacy_conn) {
 		return;
 	}
+	bt_conn_unref(conn);
 	legacy_conn = NULL;
 	/* Schedule work to restart advertising */
 	k_work_reschedule(&start_advertising, K_MSEC(10));
