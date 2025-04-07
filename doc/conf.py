@@ -1,10 +1,11 @@
 # Zephyr documentation build configuration file.
 # Reference: https://www.sphinx-doc.org/en/master/usage/configuration.html
 
-import sys
 import os
-from pathlib import Path
 import re
+import sys
+import textwrap
+from pathlib import Path
 
 INFUSE_BASE = (Path(__file__).parents[1]).resolve()
 ZEPHYR_BASE = (Path(__file__).parents[2] / "zephyr").resolve()
@@ -35,7 +36,7 @@ except ImportError:
 # -- Project --------------------------------------------------------------
 
 project = "Infuse-IoT SDK"
-copyright = "2024 Embeint Inc"
+copyright = "2025 Embeint Inc"
 author = "Embeint Inc"
 
 # parse version from 'VERSION' file
@@ -70,7 +71,6 @@ with open(ZEPHYR_BASE / "SDK_VERSION") as f:
 # -- General configuration ------------------------------------------------
 
 extensions = [
-    "breathe",
     "sphinx_rtd_theme",
     "sphinx.ext.todo",
     "sphinx.ext.extlinks",
@@ -84,8 +84,10 @@ extensions = [
     "zephyr.dtcompatible-role",
     "zephyr.link-roles",
     "sphinx_tabs.tabs",
-    "zephyr.warnings_filter",
+    "sphinx_sitemap",
     "zephyr.doxyrunner",
+    "zephyr.doxybridge",
+    "zephyr.doxytooltip",
     "zephyr.gh_utils",
     "zephyr.manifest_projects_table",
     "notfound.extension",
@@ -93,11 +95,16 @@ extensions = [
     "sphinx_togglebutton",
     "zephyr.external_content",
     "zephyr.domain",
+    "zephyr.api_overview",
 ]
 
-# Only use SVG converter when it is really needed, e.g. LaTeX.
-if tags.has("svgconvert"):  # pylint: disable=undefined-variable
+# Only use image conversion when it is really needed, e.g. LaTeX build.
+# Ensure "sphinxcontrib.rsvgconverter" is added before "sphinx.ext.imgconverter"
+# as it's better at converting SVG with extended features (like the ones from
+# draw.io) to PDF format).
+if tags.has("convertimages"):  # pylint: disable=undefined-variable  # noqa: F821
     extensions.append("sphinxcontrib.rsvgconverter")
+    extensions.append("sphinx.ext.imgconverter")
 
 templates_path = ["_templates"]
 
@@ -144,18 +151,27 @@ rst_epilog = f"""
 .. |sdk-version-ltrim| unicode:: {sdk_version}
    :ltrim:
 .. _Zephyr SDK bundle: https://github.com/zephyrproject-rtos/sdk-ng/releases/tag/v{sdk_version}
-.. |sdk-url-linux| replace:: `{SDK_URL_BASE}/v{sdk_version}/zephyr-sdk-{sdk_version}_linux-x86_64.tar.xz`
-.. |sdk-url-linux-sha| replace:: `{SDK_URL_BASE}/v{sdk_version}/sha256.sum`
-.. |sdk-url-macos| replace:: `{SDK_URL_BASE}/v{sdk_version}/zephyr-sdk-{sdk_version}_macos-x86_64.tar.xz`
-.. |sdk-url-macos-sha| replace:: `{SDK_URL_BASE}/v{sdk_version}/sha256.sum`
-.. |sdk-url-windows| replace:: `{SDK_URL_BASE}/v{sdk_version}/zephyr-sdk-{sdk_version}_windows-x86_64.7z`
+.. |sdk-url-linux| replace::
+   `{SDK_URL_BASE}/v{sdk_version}/zephyr-sdk-{sdk_version}_linux-x86_64.tar.xz`
+.. |sdk-url-linux-sha| replace::
+   `{SDK_URL_BASE}/v{sdk_version}/sha256.sum`
+.. |sdk-url-macos| replace::
+   `{SDK_URL_BASE}/v{sdk_version}/zephyr-sdk-{sdk_version}_macos-x86_64.tar.xz`
+.. |sdk-url-macos-sha| replace::
+   `{SDK_URL_BASE}/v{sdk_version}/sha256.sum`
+.. |sdk-url-windows| replace::
+   `{SDK_URL_BASE}/v{sdk_version}/zephyr-sdk-{sdk_version}_windows-x86_64.7z`
 """
 
 # -- Options for HTML output ----------------------------------------------
 
 html_theme = "sphinx_rtd_theme"
-html_theme_options = {"logo_only": True, "prev_next_buttons_location": None}
-html_baseurl = "https://docs.zephyrproject.org/latest/"
+html_theme_options = {
+    "logo_only": True,
+    "prev_next_buttons_location": None,
+    "navigation_depth": 5,
+}
+html_baseurl = "https://docs.dev.infuse-iot.com/latest/"
 html_title = "Infuse-IoT SDK Documentation"
 html_logo = str(INFUSE_BASE / "doc" / "_static" / "images" / "infuse-dark.svg")
 html_favicon = str(INFUSE_BASE / "doc" / "_static" / "images" / "favicon.png")
@@ -168,9 +184,9 @@ html_show_sphinx = False
 html_search_scorer = str(ZEPHYR_BASE / "doc" / "_static" / "js" / "scorer.js")
 html_additional_pages = {"gsearch": "gsearch.html"}
 
-is_release = tags.has("release")  # pylint: disable=undefined-variable
+is_release = tags.has("release")  # pylint: disable=undefined-variable  # noqa: F821
 reference_prefix = ""
-if tags.has("publish"):  # pylint: disable=undefined-variable
+if tags.has("publish"):  # pylint: disable=undefined-variable  # noqa: F821
     reference_prefix = f"/{version}" if is_release else "/latest"
 docs_title = "Docs / {}".format(version if is_release else "Latest")
 html_context = {
@@ -192,50 +208,62 @@ html_context = {
     # "google_searchengine_id": "746031aa0d56d4912",
 }
 
+# -- Options for LaTeX output ---------------------------------------------
+
+latex_elements = {
+    "papersize": "a4paper",
+    "maketitle": (ZEPHYR_BASE / "doc" / "_static" / "latex" / "title.tex").read_text(),
+    "preamble": (
+        ZEPHYR_BASE / "doc" / "_static" / "latex" / "preamble.tex"
+    ).read_text(),
+    "makeindex": r"\usepackage[columns=1]{idxlayout}\makeindex",
+    "fontpkg": textwrap.dedent(r"""
+                                    \usepackage{noto}
+                                    \usepackage{inconsolata-nerd-font}
+                                    \usepackage[T1]{fontenc}
+                                """),
+    "sphinxsetup": ",".join(
+        (
+            # NOTE: colors match those found in light.css stylesheet
+            "verbatimwithframe=false",
+            "VerbatimColor={HTML}{f0f2f4}",
+            "InnerLinkColor={HTML}{2980b9}",
+            "warningBgColor={HTML}{e9a499}",
+            "warningborder=0pt",
+            r"HeaderFamily=\rmfamily\bfseries",
+        )
+    ),
+}
+latex_logo = str(ZEPHYR_BASE / "doc" / "_static" / "images" / "logo-latex.pdf")
+latex_documents = [
+    ("index-tex", "zephyr.tex", "Zephyr Project Documentation", author, "manual"),
+]
+latex_engine = "xelatex"
+
 # -- Options for zephyr.doxyrunner plugin ---------------------------------
 
 doxyrunner_doxygen = os.environ.get("DOXYGEN_EXECUTABLE", "doxygen")
-doxyrunner_doxyfile = INFUSE_BASE / "doc" / "infuse.doxyfile.in"
-doxyrunner_outdir = ZEPHYR_BUILD / "doxygen"
-doxyrunner_fmt = True
-doxyrunner_fmt_vars = {
-    "ZEPHYR_BASE": str(ZEPHYR_BASE),
-    "INFUSE_BASE": str(INFUSE_BASE),
-    "ZEPHYR_VERSION": version,
+doxyrunner_projects = {
+    "infuse": {
+        "doxyfile": INFUSE_BASE / "doc" / "infuse.doxyfile.in",
+        "outdir": ZEPHYR_BUILD / "doxygen",
+        "fmt": True,
+        "fmt_vars": {
+            "INFUSE_BASE": str(INFUSE_BASE),
+            "ZEPHYR_BASE": str(ZEPHYR_BASE),
+            "ZEPHYR_VERSION": version,
+        },
+        "outdir_var": "DOXY_OUT",
+    },
 }
-doxyrunner_outdir_var = "DOXY_OUT"
 
-# -- Options for Breathe plugin -------------------------------------------
+# -- Options for zephyr.doxybridge plugin ---------------------------------
 
-breathe_projects = {"Zephyr": str(doxyrunner_outdir / "xml")}
-breathe_default_project = "Zephyr"
-breathe_domain_by_extension = {
-    "h": "c",
-    "c": "c",
-}
-breathe_show_enumvalue_initializer = True
-breathe_default_members = ("members",)
+doxybridge_projects = {"zephyr": doxyrunner_projects["infuse"]["outdir"]}
 
-cpp_id_attributes = [
-    "__syscall",
-    "__syscall_always_inline",
-    "__deprecated",
-    "__may_alias",
-    "__used",
-    "__unused",
-    "__weak",
-    "__attribute_const__",
-    "__DEPRECATED_MACRO",
-    "_NORETURN",
-    "FUNC_NORETURN",
-    "__subsystem",
-    "ALWAYS_INLINE",
-]
-c_id_attributes = cpp_id_attributes
+# -- Options for html_redirect plugin -------------------------------------
 
-# -- Options for zephyr.warnings_filter -----------------------------------
-
-warnings_filter_config = str(ZEPHYR_BASE / "doc" / "known-warnings.txt")
+html_redirect_pages = []
 
 # -- Options for zephyr.link-roles ----------------------------------------
 
@@ -249,7 +277,7 @@ notfound_urls_prefix = f"/{version}/" if is_release else "/latest/"
 # -- Options for zephyr.gh_utils ------------------------------------------
 
 gh_link_version = f"v{version}" if is_release else "main"
-gh_link_base_url = f"https://github.com/Embeint/infuse-sdk"
+gh_link_base_url = "https://github.com/Embeint/infuse-sdk"
 gh_link_prefixes = {
     "samples/.*": "",
     "boards/.*": "",
@@ -266,6 +294,8 @@ gh_link_exclude = [
 
 kconfig_generate_db = True
 kconfig_ext_paths = [INFUSE_BASE, ZEPHYR_BASE]
+kconfig_gh_link_base_url = "https://github.com/Embeint/infuse-sdk"
+kconfig_zephyr_version = f"v{version}" if is_release else "main"
 os.environ["ZEPHYR_MEMFAULT_FIRMWARE_SDK_KCONFIG"] = str(
     (
         Path(__file__).parents[2]
@@ -300,6 +330,7 @@ external_content_keep = [
 # -- Options for zephyr.domain --------------------------------------------
 
 zephyr_breathe_insert_related_samples = True
+zephyr_generate_hw_features = False
 
 # -- Options for sphinx.ext.graphviz --------------------------------------
 
@@ -312,12 +343,19 @@ graphviz_dot_args = [
     "-Ncolor=gray60",
     "-Nfontcolor=gray25",
     "-Ecolor=gray60",
+    "-Gfontname=system-ui,-apple-system,Segoe UI,Roboto,Helvetica Neue,Arial,Noto Sans,sans-serif",
+    "-Nfontname=system-ui,-apple-system,Segoe UI,Roboto,Helvetica Neue,Arial,Noto Sans,sans-serif",
+    "-Efontname=SFMono-Regular,Menlo,Monaco,Consolas,Liberation Mono,Courier New,Courier,monospace",
 ]
 
 # -- Options for sphinx_copybutton ----------------------------------------
 
 copybutton_prompt_text = r"\$ |uart:~\$ "
 copybutton_prompt_is_regexp = True
+
+# -- Options for sphinx-sitemap ----------------------------------------
+
+sitemap_url_scheme = "{link}"
 
 # -- Linkcheck options ----------------------------------------------------
 
@@ -334,9 +372,13 @@ linkcheck_timeout = 30
 linkcheck_workers = 10
 linkcheck_anchors = False
 
+# -- Options for zephyr.api_overview --------------------------------------
+
+api_overview_doxygen_out_dir = str(doxyrunner_projects["infuse"]["outdir"])
+api_overview_base_url = "https://github.com/Embeint/infuse-sdk"
+
 
 def setup(app):
     # theme customizations
     app.add_css_file("css/custom.css")
     app.add_js_file("js/custom.js")
-    app.add_js_file("js/dark-mode-toggle.min.mjs", type="module")
