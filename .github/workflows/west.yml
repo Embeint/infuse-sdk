@@ -14,7 +14,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  infuse-release-run:
+  west-extensions:
     runs-on: self-hosted
     container:
       image: ghcr.io/zephyrproject-rtos/ci-repo-cache:v0.27.4.20241026
