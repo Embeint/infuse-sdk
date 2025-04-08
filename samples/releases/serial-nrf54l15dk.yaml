@@ -1,0 +1,6 @@
+# Demo nRF54L15 release
+application_folder: ./serial
+output_prefix: release-sample-serial-nrf54l15
+board: nrf54l15dk/nrf54l15/cpuapp
+signing_key: ../../../bootloader/mcuboot/root-rsa-2048.pem
+network_key: ../../lib/security/default_network.yaml
