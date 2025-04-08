@@ -11,7 +11,20 @@
 #include <zephyr/random/random.h>
 #include <zephyr/drivers/flash.h>
 #include <zephyr/storage/flash_map.h>
+
+#if defined(CONFIG_KV_STORE_NVS)
+#define ID_PRE 0
 #include <zephyr/fs/nvs.h>
+#define WRITE nvs_write
+#define READ  nvs_read
+#elif defined(CONFIG_KV_STORE_ZMS)
+#define ID_PRE (CONFIG_KV_STORE_ZMS_ID_PREFIX << 16)
+#include <zephyr/fs/zms.h>
+#define WRITE zms_write
+#define READ  zms_read
+#else
+#error Unknown KV store backend
+#endif
 
 #include <infuse/fs/secure_storage.h>
 #include <infuse/fs/kv_store.h>
@@ -238,7 +251,7 @@ ZTEST(secure_storage_its, test_write_once)
 ZTEST(secure_storage_its, test_corrupt_length)
 {
 	psa_storage_uid_t key = KV_KEY_SECURE_STORAGE_RESERVED;
-	struct nvs_fs *fs = kv_store_fs();
+	void *fs = kv_store_fs();
 	struct corrupted_length {
 		struct psa_storage_info_t info;
 		uint8_t nonce[12];
@@ -252,7 +265,7 @@ ZTEST(secure_storage_its, test_corrupt_length)
 	corrupt.info.size = 4;
 
 	/* Write data with invalid size information */
-	zassert_equal(sizeof(corrupt), nvs_write(fs, key, &corrupt, sizeof(corrupt)));
+	zassert_equal(sizeof(corrupt), WRITE(fs, ID_PRE | key, &corrupt, sizeof(corrupt)));
 
 	/* Get functions can detect */
 	zassert_equal(PSA_ERROR_DATA_CORRUPT, psa_its_get_info(key, &info));
@@ -260,7 +273,7 @@ ZTEST(secure_storage_its, test_corrupt_length)
 		      psa_its_get(key, 0, sizeof(corrupt), &corrupt, &dlen));
 
 	/* Write data with invalid length */
-	zassert_equal(13, nvs_write(fs, key, &corrupt, 13));
+	zassert_equal(13, WRITE(fs, ID_PRE | key, &corrupt, 13));
 
 	/* Get functions can detect */
 	zassert_equal(PSA_ERROR_DATA_CORRUPT, psa_its_get_info(key, &info));
@@ -271,7 +284,7 @@ ZTEST(secure_storage_its, test_corrupt_length)
 ZTEST(secure_storage_its, test_malicious_corruption)
 {
 	psa_storage_uid_t key = KV_KEY_SECURE_STORAGE_RESERVED;
-	struct nvs_fs *fs = kv_store_fs();
+	void *fs = kv_store_fs();
 	uint8_t data_in[16];
 	uint8_t data_out[64];
 	size_t dlen;
@@ -285,11 +298,11 @@ ZTEST(secure_storage_its, test_malicious_corruption)
 	zassert_equal(PSA_SUCCESS, psa_its_set(key, sizeof(data_in), data_in, 0x00));
 
 	/* Read raw data out of filesystem */
-	rc = nvs_read(fs, key, data_out, sizeof(data_out));
+	rc = READ(fs, ID_PRE | key, data_out, sizeof(data_out));
 	/* Corrupt a byte */
 	data_out[8] += 1;
 	/* Write corrupted data back to filesystem */
-	zassert_equal(rc, nvs_write(fs, key, data_out, rc));
+	zassert_equal(rc, WRITE(fs, ID_PRE | key, data_out, rc));
 
 	/* Data corruption should be detected */
 	zassert_equal(PSA_ERROR_DATA_CORRUPT,

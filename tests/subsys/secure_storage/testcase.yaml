@@ -1,10 +1,17 @@
 common:
   tags: nvs psa
+  platform_allow:
+    - native_sim
+    - mps2/an385
+  integration_platforms:
+    - native_sim
+    - mps2/an385
 tests:
-  fs.secure_storage:
-    platform_allow:
-      - native_sim
-      - mps2/an385
-    integration_platforms:
-      - native_sim
-      - mps2/an385
+  fs.secure_storage.nvs:
+    extra_configs:
+      - CONFIG_NVS=y
+      - CONFIG_ZMS=n
+  fs.secure_storage.zms:
+    extra_configs:
+      - CONFIG_NVS=n
+      - CONFIG_ZMS=y
