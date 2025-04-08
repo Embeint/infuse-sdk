@@ -34,7 +34,7 @@ void kv_reflect_init(void)
 {
 #if KV_REFLECT_NUM > 0
 	struct key_value_slot_definition *defs;
-	struct nvs_fs *fs = kv_store_fs();
+	void *fs = kv_store_fs();
 	uint8_t read_buffer[256];
 	uint16_t key, idx = 0;
 	size_t num;

@@ -1,6 +1,7 @@
 # Infuse-IoT key-value store compilation
 
 zephyr_sources(
-  kv_store.c
+  kv_store_common.c
   kv_reflect.c
 )
+zephyr_sources_ifdef(CONFIG_KV_STORE_NVS kv_store_nvs.c)
