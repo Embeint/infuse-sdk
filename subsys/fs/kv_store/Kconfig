@@ -5,7 +5,7 @@ DT_CHOSEN_KV_PARTITION := infuse,kv-partition
 
 config KV_STORE
 	bool "Infuse-IoT key-value storage"
-	depends on NVS
+	depends on NVS || ZMS
 	depends on FLASH_MAP
 	depends on $(dt_chosen_enabled,$(DT_CHOSEN_KV_PARTITION))
 
@@ -17,6 +17,12 @@ choice KV_STORE_BACKEND
 config KV_STORE_NVS
 	bool "KV store through the NVS API"
 	depends on NVS
+
+config KV_STORE_ZMS
+	bool "KV store through the ZMS API"
+	depends on ZMS
+	# Required for duplicate data detection
+	select ZMS_NO_DOUBLE_WRITE
 
 endchoice
 
@@ -30,5 +36,16 @@ config KV_STORE_INIT_PRIORITY
 	help
 	  KV store initialization priority. The default value of 55 is
 	  later than the default FLASH_INIT_PRIORITY value (50).
+
+config KV_STORE_ZMS_ID_PREFIX
+	hex "Prefix to apply to 16bit KV store IDs"
+	depends on KV_STORE_ZMS
+	range 0x0000 0xFFFF
+	default 0xEBEB
+	help
+	  For compatibility with the NVS API, the KV store only uses 16 bit
+	  IDs. Since ZMS supports 32 bit IDs, this option allows shifting the
+	  address space of the KV store within ZMS in order to allow co-existence
+	  with other users of the same instance, if required.
 
 endif # KV_STORE

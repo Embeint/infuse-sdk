@@ -8,7 +8,6 @@
 
 #include <stdint.h>
 
-#include <zephyr/fs/nvs.h>
 #include <zephyr/logging/log.h>
 #include <zephyr/sys/crc.h>
 #include <zephyr/sys/__assert.h>
@@ -52,7 +51,11 @@ void kv_reflect_init(void)
 			__ASSERT_NO_MSG(idx < ARRAY_SIZE(value_crc_slots));
 			value_crc_slots[idx] = 0x00;
 			/* Read contents */
+#if defined(CONFIG_KV_STORE_NVS)
 			rc = nvs_read(fs, key, read_buffer, sizeof(read_buffer));
+#elif defined(CONFIG_KV_STORE_ZMS)
+			rc = zms_read(fs, ID_PRE | key, read_buffer, sizeof(read_buffer));
+#endif
 			if (rc == -ENOENT) {
 				/* No data, CRC = 0*/
 			} else if (rc < 0) {

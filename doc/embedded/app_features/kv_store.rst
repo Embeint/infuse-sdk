@@ -3,8 +3,10 @@
 Key-Value Store
 ###############
 
-The Infuse-IoT platform implements a type layer over the top of the
-`Zephyr NVS`_ filesystem.
+The Infuse-IoT platform implements a type layer over the top of either the
+`Zephyr NVS`_ or `Zephyr ZMS`_ filesystems. Which filesystem is used by
+default depends on the SoC non-volatile storage technology, for more details
+see the ZMS documentation.
 
 Callbacks
 *********
@@ -38,3 +40,4 @@ API Reference
 .. doxygengroup:: kv_store_apis
 
 .. _Zephyr NVS: https://docs.zephyrproject.org/latest/services/storage/nvs/nvs.html
+.. _Zephyr ZMS: https://docs.zephyrproject.org/latest/services/storage/zms/zms.html
