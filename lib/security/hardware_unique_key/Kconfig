@@ -4,6 +4,7 @@ choice INFUSE_HUK_PROVIDER
 	prompt "Storage backend for Hardware Unique Key"
 	default INFUSE_HUK_TFM
 	default INFUSE_HUK_NORDIC_KMU_CC3XX
+	default INFUSE_HUK_NORDIC_KMU_CRACEN
 	default INFUSE_HUK_HWID_HASH
 
 config INFUSE_HUK_TFM
@@ -15,6 +16,13 @@ config INFUSE_HUK_NORDIC_KMU_CC3XX
 	depends on DT_HAS_NORDIC_NRF_KMU_ENABLED
 	depends on NRF_CC3XX_PLATFORM
 	depends on !BUILD_WITH_TFM
+
+config INFUSE_HUK_NORDIC_KMU_CRACEN
+	bool "Nordic Key-Management-Unit (KMU) w/ CRACEN"
+	depends on SOC_SERIES_NRF54LX
+	depends on CRACEN_LIB_KMU
+	depends on !BUILD_WITH_TFM
+	select SOC_NRF54LX_KMU_PUSH_AREA
 
 config INFUSE_HUK_HWID_HASH
 	bool "SHA-256 hash of unique hardware identifier (Least secure)"
