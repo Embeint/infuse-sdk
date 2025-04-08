@@ -1,11 +1,18 @@
 common:
   tags: nvs
+  platform_allow:
+    - native_sim
+    - qemu_cortex_m0
+    - mps2/an385
+  integration_platforms:
+    - native_sim
+    - mps2/an385
 tests:
-  fs.kv_store.core:
-    platform_allow:
-      - native_sim
-      - qemu_cortex_m0
-      - mps2/an385
-    integration_platforms:
-      - native_sim
-      - mps2/an385
+  fs.kv_store.core.nvs:
+    extra_configs:
+      - CONFIG_NVS=y
+      - CONFIG_ZMS=n
+  fs.kv_store.core.zms:
+    extra_configs:
+      - CONFIG_NVS=n
+      - CONFIG_ZMS=y

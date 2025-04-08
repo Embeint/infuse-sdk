@@ -17,10 +17,10 @@
 
 #include "../../../../../subsys/fs/kv_store/kv_internal.h"
 
-#define NVS_PARTITION        storage_partition
-#define NVS_PARTITION_DEVICE FIXED_PARTITION_DEVICE(NVS_PARTITION)
-#define NVS_PARTITION_OFFSET FIXED_PARTITION_OFFSET(NVS_PARTITION)
-#define NVS_PARTITION_SIZE   FIXED_PARTITION_SIZE(NVS_PARTITION)
+#define PARTITION        storage_partition
+#define PARTITION_DEVICE FIXED_PARTITION_DEVICE(PARTITION)
+#define PARTITION_OFFSET FIXED_PARTITION_OFFSET(PARTITION)
+#define PARTITION_SIZE   FIXED_PARTITION_SIZE(PARTITION)
 
 int kv_store_init(void);
 
@@ -31,13 +31,12 @@ ZTEST(kv_store, test_fs_get)
 
 ZTEST(kv_store, test_init_failure)
 {
-	const struct device *dev = NVS_PARTITION_DEVICE;
+	const struct device *dev = PARTITION_DEVICE;
 	uint8_t zeroes[64] = {0x00};
 
 	/* Write all the flash to 0 */
-	for (int i = 0; i < NVS_PARTITION_SIZE; i += sizeof(zeroes)) {
-		zassert_equal(0,
-			      flash_write(dev, NVS_PARTITION_OFFSET + i, zeroes, sizeof(zeroes)));
+	for (int i = 0; i < PARTITION_SIZE; i += sizeof(zeroes)) {
+		zassert_equal(0, flash_write(dev, PARTITION_OFFSET + i, zeroes, sizeof(zeroes)));
 	}
 
 	/* Ensure init still succeeds */
