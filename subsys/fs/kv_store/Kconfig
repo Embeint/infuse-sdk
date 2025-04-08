@@ -11,6 +11,15 @@ config KV_STORE
 
 if KV_STORE
 
+choice KV_STORE_BACKEND
+	prompt "Storage backend for the KV store API"
+
+config KV_STORE_NVS
+	bool "KV store through the NVS API"
+	depends on NVS
+
+endchoice
+
 module = KV_STORE
 module-str = key-value store
 source "subsys/logging/Kconfig.template.log_config"
