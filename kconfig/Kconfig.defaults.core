@@ -117,7 +117,9 @@ configdefault FLASH
 configdefault FLASH_MAP
 	default y
 configdefault NVS
-	default y
+	default y if !(SOC_FLASH_NRF_RRAM || SOC_FLASH_NRF_MRAM)
+configdefault ZMS
+	default y if (SOC_FLASH_NRF_RRAM || SOC_FLASH_NRF_MRAM)
 configdefault KV_STORE
 	default y
 configdefault KV_STORE_KEY_REBOOTS
