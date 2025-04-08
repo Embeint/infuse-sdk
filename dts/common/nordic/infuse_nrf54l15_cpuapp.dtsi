@@ -1,0 +1,43 @@
+/ {
+	chosen {
+		zephyr,bt-hci = &bt_hci_sdc;
+		watchdog0 = &wdt31;
+	};
+
+
+	/* End of application SRAM (not in shared SRAM) */
+	memory@2002EF00 {
+		compatible = "zephyr,memory-region", "mmio-sram";
+		reg = <0x2002EF00 0x100>;
+		zephyr,memory-region = "RetainedMem";
+		status = "okay";
+
+		retainedmem {
+			compatible = "zephyr,retained-ram";
+			status = "okay";
+			#address-cells = <1>;
+			#size-cells = <1>;
+
+			retention0: retention@0 {
+				compatible = "zephyr,retention";
+				status = "okay";
+				reg = <0x0 0x100>;
+				prefix = [DE 03];
+			};
+		};
+	};
+};
+
+&radio {
+	bt_hci_sdc: bt_hci_sdc {
+		compatible = "nordic,bt-hci-sdc";
+		status = "okay";
+	};
+	bt_hci_controller {
+		status = "disabled";
+	};
+};
+
+&wdt31 {
+	status = "okay";
+};

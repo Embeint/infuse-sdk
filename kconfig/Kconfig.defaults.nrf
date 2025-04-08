@@ -151,5 +151,8 @@ config MBEDTLS_MAC_CMAC_ENABLED
 # UART0 is the standard serial port on Nordic boards
 configdefault UART_0_NRF_TX_BUFFER_SIZE
 	default 1024 if EPACKET_INTERFACE_SERIAL
+# UART20 is the standard serial port on Nordic nRF54L boards
+configdefault UART_20_NRF_TX_BUFFER_SIZE
+	default 1024 if EPACKET_INTERFACE_SERIAL
 
 endif # SOC_FAMILY_NORDIC_NRF
