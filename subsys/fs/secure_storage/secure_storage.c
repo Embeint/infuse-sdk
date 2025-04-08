@@ -9,8 +9,21 @@
 #include <zephyr/logging/log.h>
 #include <zephyr/random/random.h>
 #include <zephyr/drivers/hwinfo.h>
-#include <zephyr/fs/nvs.h>
 #include <zephyr/init.h>
+
+#if defined(CONFIG_KV_STORE_NVS)
+#include <zephyr/fs/nvs.h>
+#define ID_PRE 0
+#define READ   nvs_read
+#define WRITE  nvs_write
+#define DELETE nvs_delete
+#elif defined(CONFIG_KV_STORE_ZMS)
+#include <zephyr/fs/zms.h>
+#define ID_PRE (CONFIG_KV_STORE_ZMS_ID_PREFIX << 16)
+#define READ   zms_read
+#define WRITE  zms_write
+#define DELETE zms_delete
+#endif
 
 #include <infuse/security.h>
 #include <infuse/fs/kv_store.h>
@@ -37,7 +50,7 @@ LOG_MODULE_REGISTER(secure_storage, LOG_LEVEL_INF);
 psa_status_t psa_its_set(psa_storage_uid_t uid, uint32_t data_length, const void *p_data,
 			 psa_storage_create_flags_t create_flags)
 {
-	struct nvs_fs *fs = kv_store_fs();
+	void *fs = kv_store_fs();
 	struct secure_storage_format data;
 	struct psa_storage_info_t info;
 	psa_status_t status;
@@ -55,7 +68,7 @@ psa_status_t psa_its_set(psa_storage_uid_t uid, uint32_t data_length, const void
 	}
 
 	/* Check WRITE_ONCE flag */
-	rc = nvs_read(fs, uid, &info, sizeof(info));
+	rc = READ(fs, ID_PRE | uid, &info, sizeof(info));
 	if ((rc > 0) && (info.flags & PSA_STORAGE_FLAG_WRITE_ONCE)) {
 		LOG_ERR("Writing to WRITE_ONCE ID");
 		return PSA_ERROR_NOT_PERMITTED;
@@ -76,7 +89,7 @@ psa_status_t psa_its_set(psa_storage_uid_t uid, uint32_t data_length, const void
 
 	/* Write data to NVS */
 	total_len = sizeof(data.info) + sizeof(data.nonce) + out_len;
-	rc = nvs_write(fs, uid, &data, total_len);
+	rc = WRITE(fs, ID_PRE | uid, &data, total_len);
 
 	/* Cleanup stack variables */
 	mbedtls_platform_zeroize(&data, sizeof(data));
@@ -89,7 +102,7 @@ psa_status_t psa_its_get(psa_storage_uid_t uid, uint32_t data_offset, uint32_t d
 			 void *p_data, size_t *p_data_length)
 {
 	uint8_t decrypt_buf[CONFIG_INFUSE_SECURE_STORAGE_MAX_SIZE];
-	struct nvs_fs *fs = kv_store_fs();
+	void *fs = kv_store_fs();
 	struct secure_storage_format data;
 	psa_status_t status = PSA_SUCCESS;
 	size_t data_len, out_len;
@@ -107,7 +120,7 @@ psa_status_t psa_its_get(psa_storage_uid_t uid, uint32_t data_offset, uint32_t d
 	}
 
 	/* Read data from NVS */
-	rc = nvs_read(fs, uid, &data, sizeof(data));
+	rc = READ(fs, ID_PRE | uid, &data, sizeof(data));
 	if (rc == -ENOENT) {
 		status = PSA_ERROR_DOES_NOT_EXIST;
 		goto cleanup;
@@ -160,8 +173,8 @@ cleanup:
 
 psa_status_t psa_its_get_info(psa_storage_uid_t uid, struct psa_storage_info_t *p_info)
 {
-	struct nvs_fs *fs = kv_store_fs();
-	ssize_t rc;
+	void *fs = kv_store_fs();
+	ssize_t expected, rc;
 
 	LOG_DBG("UID: %lld", uid);
 	if ((uid < PSA_KEY_ID_INFUSE_MIN) || (uid > PSA_KEY_ID_INFUSE_MAX)) {
@@ -169,22 +182,30 @@ psa_status_t psa_its_get_info(psa_storage_uid_t uid, struct psa_storage_info_t *
 	}
 
 	/* Read off header info */
-	rc = nvs_read(fs, uid, p_info, sizeof(*p_info));
+	rc = READ(fs, ID_PRE | uid, p_info, sizeof(*p_info));
 	if (rc == -ENOENT) {
 		return PSA_ERROR_DOES_NOT_EXIST;
 	} else if (rc < 0) {
 		return PSA_ERROR_HARDWARE_FAILURE;
 	}
-	if (rc != (sizeof(*p_info) + CHACHA_NONCE_SIZE + p_info->size + CHACHA_TAG_SIZE)) {
+	expected = (sizeof(*p_info) + CHACHA_NONCE_SIZE + p_info->size + CHACHA_TAG_SIZE);
+#ifdef CONFIG_KV_STORE_ZMS
+	/* ZMS has different return value semantics for reading less than the complete value */
+	if ((rc != sizeof(*p_info)) || (expected != zms_get_data_length(fs, ID_PRE | uid))) {
 		return PSA_ERROR_DATA_CORRUPT;
 	}
+#else
+	if (rc != expected) {
+		return PSA_ERROR_DATA_CORRUPT;
+	}
+#endif /* CONFIG_KV_STORE_ZMS */
 	return PSA_SUCCESS;
 }
 
 psa_status_t psa_its_remove(psa_storage_uid_t uid)
 {
 	struct psa_storage_info_t info;
-	struct nvs_fs *fs = kv_store_fs();
+	void *fs = kv_store_fs();
 	ssize_t rc;
 
 	LOG_DBG("UID: %lld", uid);
@@ -193,7 +214,7 @@ psa_status_t psa_its_remove(psa_storage_uid_t uid)
 	}
 
 	/* Read off header info */
-	rc = nvs_read(fs, uid, &info, sizeof(info));
+	rc = READ(fs, ID_PRE | uid, &info, sizeof(info));
 	if (rc == -ENOENT) {
 		return PSA_ERROR_DOES_NOT_EXIST;
 	} else if (rc < 0) {
@@ -207,7 +228,7 @@ psa_status_t psa_its_remove(psa_storage_uid_t uid)
 	}
 
 	/* Erase value */
-	rc = nvs_delete(fs, uid);
+	rc = DELETE(fs, ID_PRE | uid);
 	return rc == 0 ? PSA_SUCCESS : PSA_ERROR_HARDWARE_FAILURE;
 }
 
