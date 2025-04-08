@@ -34,7 +34,7 @@ second_release=$(ls -1d release-sample-* | tail -n 1)
 
 # Generate the patch file to go from the first to the second
 echo "Generating patch file for upgrade"
-west release-diff $first_release $second_release
+west release-diff -i $first_release -o $second_release
 
 # Flash the first release to the board and wait for boot
 echo "Flashing original application release"
