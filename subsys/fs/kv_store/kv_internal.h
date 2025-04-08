@@ -18,6 +18,16 @@
 extern "C" {
 #endif
 
+#if defined(CONFIG_KV_STORE_NVS)
+#define ID_PRE 0
+#include <zephyr/fs/nvs.h>
+#elif defined(CONFIG_KV_STORE_ZMS)
+#define ID_PRE (CONFIG_KV_STORE_ZMS_ID_PREFIX << 16)
+#include <zephyr/fs/zms.h>
+#else
+#error Unknown KV store backend
+#endif
+
 /**
  * @brief Retrieve slot definitions
  *
