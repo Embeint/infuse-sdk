@@ -69,7 +69,7 @@ The Infuse-IoT SDK currently supports the following SoC series:
   * Nordic Semiconductor `nRF52`_
   * Nordic Semiconductor `nRF53`_
   * Nordic Semiconductor `nRF91`_
-  * Nordic Semiconductor `nRF54L`_ (Coming Soon)
+  * Nordic Semiconductor `nRF54L`_
   * ST Microelectronics `STM32L4x`_
   * ST Microelectronics `STM32WBx5`_ (Coming Soon)
 
