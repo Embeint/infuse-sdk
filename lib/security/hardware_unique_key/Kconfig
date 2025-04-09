@@ -21,6 +21,7 @@ config INFUSE_HUK_NORDIC_KMU_CRACEN
 	bool "Nordic Key-Management-Unit (KMU) w/ CRACEN"
 	depends on SOC_SERIES_NRF54LX
 	depends on CRACEN_LIB_KMU
+	depends on !RISCV_CORE_NORDIC_VPR
 	depends on !BUILD_WITH_TFM
 	select SOC_NRF54LX_KMU_PUSH_AREA
 
