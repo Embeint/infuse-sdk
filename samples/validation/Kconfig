@@ -1,3 +1,25 @@
+# Subsystem enabling
+
+DT_CHOSEN_Z_BT_HCI := zephyr,bt-hci
+DT_COMPAT_Z_SDMMC := zephyr,sdmmc-disk
+
+configdefault BT
+	default y if $(dt_chosen_enabled,$(DT_CHOSEN_Z_BT_HCI))
+configdefault DISK_ACCESS
+	default y if $(dt_compat_enabled,$(DT_COMPAT_Z_SDMMC))
+configdefault GNSS
+	default y if $(dt_alias_enabled,gnss)
+configdefault FUEL_GAUGE
+	default y if "$(dt_alias_enabled,fuel-gauge0)"
+configdefault INFUSE_VALIDATION_LEDS
+	default y if $(dt_alias_enabled,led0)
+
+# Floating point
+configdefault FPU
+	default y if CPU_HAS_FPU
+configdefault CBPRINTF_FP_SUPPORT
+	default y
+
 # Larger logging buffer sizes
 
 configdefault LOG_BUFFER_SIZE
