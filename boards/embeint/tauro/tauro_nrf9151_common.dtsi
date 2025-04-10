@@ -59,8 +59,8 @@
 
 	fuel_gauge: fuel_gauge {
 		compatible = "zephyr,fuel-gauge-composite";
-		battery-voltage = <&vbatt>;
-		battery-current = <&bq25185>;
+		source-primary = <&vbatt>;
+		source-secondary = <&bq25185>;
 		device-chemistry = "lithium-ion-polymer";
 		ocv-capacity-table-0 = <BATTERY_OCV_CURVE_LITHIUM_ION_POLYMER_DEFAULT>;
 		charge-full-design-microamp-hours = <13400000>;
