@@ -79,6 +79,19 @@ int infuse_validation_pwr(const struct device *dev, uint8_t flags)
 			VALIDATION_REPORT_VALUE(test, "CURRENT", "%.06f", current);
 		}
 	}
+	if (flags & VALIDATION_PWR_BATTERY_TEMPERATURE) {
+		double temperature;
+
+		rc = fuel_gauge_get_prop(dev, FUEL_GAUGE_TEMPERATURE, &val);
+		if ((rc < 0) && (rc != -ENOTSUP)) {
+			VALIDATION_REPORT_ERROR(test, "Temperature get failed (%d)", rc);
+			goto driver_end;
+		}
+		if (rc != -ENOTSUP) {
+			temperature = (double)val.temperature / 10.0;
+			VALIDATION_REPORT_VALUE(test, "TEMPERATURE", "%.01f", temperature - 273.0);
+		}
+	}
 
 driver_end:
 	/* Power down device */

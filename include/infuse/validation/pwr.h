@@ -30,6 +30,8 @@ enum {
 	VALIDATION_PWR_BATTERY_SOC = BIT(1),
 	/** Check reported battery current */
 	VALIDATION_PWR_BATTERY_CURRENT = BIT(2),
+	/** Check reported battery temperature */
+	VALIDATION_PWR_BATTERY_TEMPERATURE = BIT(3),
 };
 
 /**
