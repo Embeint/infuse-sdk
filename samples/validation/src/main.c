@@ -78,8 +78,9 @@ static int pwr_validator(void *a, void *b, void *c)
 {
 	atomic_inc(&validators_registered);
 	if (infuse_validation_pwr(DEVICE_DT_GET(DT_ALIAS(fuel_gauge0)),
-				  VALIDATION_PWR_BATTERY_VOLTAGE |
-					  VALIDATION_PWR_BATTERY_CURRENT) == 0) {
+				  VALIDATION_PWR_BATTERY_VOLTAGE | VALIDATION_PWR_BATTERY_CURRENT |
+					  VALIDATION_PWR_BATTERY_SOC |
+					  VALIDATION_PWR_BATTERY_TEMPERATURE) == 0) {
 		atomic_inc(&validators_passed);
 	} else {
 		atomic_inc(&validators_failed);
