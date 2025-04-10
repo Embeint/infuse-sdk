@@ -28,7 +28,7 @@ NET_BUF_POOL_DEFINE(epacket_pool_tx, CONFIG_EPACKET_BUFFERS_TX, CONFIG_EPACKET_P
 NET_BUF_POOL_DEFINE(epacket_pool_rx, CONFIG_EPACKET_BUFFERS_RX, CONFIG_EPACKET_PACKET_SIZE_MAX,
 		    sizeof(struct epacket_rx_metadata), NULL);
 
-K_THREAD_STACK_DEFINE(epacket_stack_area, 2048);
+K_THREAD_STACK_DEFINE(epacket_stack_area, CONFIG_EPACKET_PROCESS_THREAD_STACK_SIZE);
 static struct k_thread epacket_process_thread;
 COND_CODE_0(CONFIG_ZTEST, (static), ())
 k_tid_t epacket_processor_thread;
