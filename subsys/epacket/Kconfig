@@ -16,6 +16,10 @@ module = EPACKET
 module-str = epacket
 source "subsys/logging/Kconfig.template.log_config"
 
+config EPACKET_PROCESS_THREAD_STACK_SIZE
+	int "Size of the stack for the thread that processes ePacket frames"
+	default 2048
+
 config EPACKET_INFUSE_WATCHDOG
 	bool "Install watchdog on the ePacket processing thread"
 	depends on INFUSE_WATCHDOG
