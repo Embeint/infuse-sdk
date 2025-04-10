@@ -58,11 +58,13 @@ int infuse_validation_pwr(const struct device *dev, uint8_t flags)
 	}
 	if (flags & VALIDATION_PWR_BATTERY_SOC) {
 		rc = fuel_gauge_get_prop(dev, FUEL_GAUGE_RELATIVE_STATE_OF_CHARGE, &val);
-		if (rc < 0) {
+		if ((rc < 0) && (rc != -ENOTSUP)) {
 			VALIDATION_REPORT_ERROR(test, "SoC get failed (%d)", rc);
 			goto driver_end;
 		}
-		VALIDATION_REPORT_VALUE(test, "SOC", "%d", val.relative_state_of_charge);
+		if (rc != -ENOTSUP) {
+			VALIDATION_REPORT_VALUE(test, "SOC", "%d", val.relative_state_of_charge);
+		}
 	}
 	if (flags & VALIDATION_PWR_BATTERY_CURRENT) {
 		double current;
