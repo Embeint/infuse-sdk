@@ -5,7 +5,7 @@
 	};
 
 	/* End of application SRAM (not in shared SRAM) */
-	memory@2006FF00 {
+	retained_mem_region: memory@2006FF00 {
 		compatible = "zephyr,memory-region", "mmio-sram";
 		reg = <0x2006FF00 0x100>;
 		zephyr,memory-region = "RetainedMem";

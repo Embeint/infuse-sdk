@@ -4,7 +4,7 @@
 		infuse,kv-partition = &storage_partition;
 	};
 
-	sram@203EFF00 {
+	retained_mem_region: sram@203EFF00 {
 		compatible = "zephyr,memory-region", "mmio-sram";
 		reg = <0x203EFF00 0x100>;
 		zephyr,memory-region = "RetainedMem";
