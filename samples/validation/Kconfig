@@ -1,10 +1,15 @@
 # Subsystem enabling
 
 DT_CHOSEN_Z_BT_HCI := zephyr,bt-hci
+DT_CHOSEN_Z_WIFI := zephyr,wifi
 DT_COMPAT_Z_SDMMC := zephyr,sdmmc-disk
 
 configdefault BT
 	default y if $(dt_chosen_enabled,$(DT_CHOSEN_Z_BT_HCI))
+configdefault NETWORKING
+	default y if $(dt_chosen_enabled,$(DT_CHOSEN_Z_WIFI))
+configdefault WIFI
+	default y if $(dt_chosen_enabled,$(DT_CHOSEN_Z_WIFI))
 configdefault DISK_ACCESS
 	default y if $(dt_compat_enabled,$(DT_COMPAT_Z_SDMMC))
 configdefault GNSS
@@ -23,10 +28,23 @@ configdefault CBPRINTF_FP_SUPPORT
 # Larger logging buffer sizes
 
 configdefault LOG_BUFFER_SIZE
+	default 4096 if NRF_WIFI_LOW_RAM
 	default 16384
 
 configdefault SEGGER_RTT_BUFFER_SIZE_UP
+	default 4096 if NRF_WIFI_LOW_RAM
 	default 16384
+
+# Networking options
+
+configdefault NET_CONNECTION_MANAGER_CONNECTIVITY_WIFI_MGMT
+	default n
+configdefault CONN_MGR_WIFI_KV_STORE
+	default n
+configdefault SNTP_AUTO
+	default n
+
+# Driver configuration
 
 configdefault INFUSE_IMU_SELF_TEST
 	default y
