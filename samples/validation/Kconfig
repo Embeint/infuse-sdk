@@ -20,10 +20,18 @@ configdefault INFUSE_VALIDATION_LEDS
 	default y if $(dt_alias_enabled,led0)
 
 # Floating point
+
 configdefault FPU
 	default y if CPU_HAS_FPU
 configdefault CBPRINTF_FP_SUPPORT
 	default y
+
+# System heap usage
+
+configdefault SYS_HEAP_RUNTIME_STATS
+	default y
+configdefault SYS_HEAP_ARRAY_SIZE
+	default 4
 
 # Larger logging buffer sizes
 
