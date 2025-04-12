@@ -24,9 +24,9 @@ static struct k_work_delayable conn_create;
 static struct k_work_delayable conn_timeout;
 static struct net_if *wifi_if;
 
-LOG_MODULE_REGISTER(wifi_mgmt, CONFIG_CONN_MGR_WIFI_KV_STORE_LOG_LEVEL);
+LOG_MODULE_REGISTER(wifi_mgmt, LOG_LEVEL_DBG);
 
-#ifdef CONFIG_WPA_SUPP
+#ifdef CONFIG_WIFI_NM_WPA_SUPPLICANT
 
 #include <supp_events.h>
 
@@ -37,11 +37,11 @@ static void wpa_supp_event_handler(struct net_mgmt_event_callback *cb, uint32_t 
 				   struct net_if *iface)
 {
 	switch (mgmt_event) {
-	case NET_EVENT_WPA_SUPP_READY:
+	case NET_EVENT_SUPPLICANT_READY:
 		LOG_DBG("WPA_SUPP_READY");
 		wpa_ready = true;
 		break;
-	case NET_EVENT_WPA_SUPP_NOT_READY:
+	case NET_EVENT_SUPPLICANT_NOT_READY:
 		LOG_DBG("WPA_SUPP_NOT_READY");
 		wpa_ready = false;
 		break;
@@ -49,7 +49,7 @@ static void wpa_supp_event_handler(struct net_mgmt_event_callback *cb, uint32_t 
 		break;
 	}
 }
-#endif /* CONFIG_WPA_SUPP */
+#endif /* CONFIG_WIFI_NM_WPA_SUPPLICANT */
 
 static void conn_create_worker(struct k_work *work)
 {
@@ -57,7 +57,7 @@ static void conn_create_worker(struct k_work *work)
 	KV_KEY_TYPE_VAR(KV_KEY_WIFI_PSK, WIFI_PSK_MAX_LEN) wifi_psk;
 	struct wifi_connect_req_params params = {0};
 
-#ifdef CONFIG_WPA_SUPP
+#ifdef CONFIG_WIFI_NM_WPA_SUPPLICANT
 	if (!wpa_ready) {
 		struct k_work_delayable *delayable = k_work_delayable_from_work(work);
 
@@ -66,7 +66,7 @@ static void conn_create_worker(struct k_work *work)
 		LOG_DBG("Delaying for WPA supplicant");
 		return;
 	}
-#endif /* CONFIG_WPA_SUPP */
+#endif /* CONFIG_WIFI_NM_WPA_SUPPLICANT */
 
 	/* Load connection parameters */
 	params.band = WIFI_FREQ_BAND_UNKNOWN;
@@ -150,22 +150,22 @@ static void wifi_mgmt_event_handler(struct net_mgmt_event_callback *cb, uint32_t
 		LOG_INF("Connection lost (%d)%s", status->disconn_reason,
 			persistent ? ", retrying" : "");
 		if (persistent) {
-#ifdef CONFIG_WPA_SUPP
+#ifdef CONFIG_WIFI_NM_WPA_SUPPLICANT
 			/* WPA SUPP automatically attempts to reconnect */
 #else
 			/* Schedule reconnection attempt */
 			k_work_schedule(&conn_create, K_SECONDS(1));
-#endif /* CONFIG_WPA_SUPP */
+#endif /* CONFIG_WIFI_NM_WPA_SUPPLICANT */
 			/* Schedule the timeout if set */
 			timeout = conn_mgr_if_get_timeout(wifi_if);
 			if (timeout > CONN_MGR_IF_NO_TIMEOUT) {
 				k_work_schedule(&conn_timeout, K_SECONDS(timeout));
 			}
 		} else {
-#ifdef CONFIG_WPA_SUPP
+#ifdef CONFIG_WIFI_NM_WPA_SUPPLICANT
 			/* Stop reconnection attempts */
 			(void)net_mgmt(NET_REQUEST_WIFI_DISCONNECT, wifi_if, NULL, 0);
-#endif /* CONFIG_WPA_SUPP */
+#endif /* CONFIG_WIFI_NM_WPA_SUPPLICANT */
 		}
 		break;
 	}
@@ -222,11 +222,11 @@ static void wifi_mgmt_init(struct conn_mgr_conn_binding *const binding)
 	k_work_init_delayable(&conn_timeout, conn_timeout_worker);
 	k_work_init_delayable(&conn_config_changed, conn_config_changed_worker);
 
-#ifdef CONFIG_WPA_SUPP
+#ifdef CONFIG_WIFI_NM_WPA_SUPPLICANT
 	net_mgmt_init_event_callback(&wpa_supp_cb, wpa_supp_event_handler,
-				     NET_EVENT_WPA_SUPP_READY | NET_EVENT_WPA_SUPP_NOT_READY);
+				     NET_EVENT_SUPPLICANT_READY | NET_EVENT_SUPPLICANT_NOT_READY);
 	net_mgmt_add_event_callback(&wpa_supp_cb);
-#endif /* CONFIG_WPA_SUPP */
+#endif /* CONFIG_WIFI_NM_WPA_SUPPLICANT */
 
 	/* Optional binding flags */
 	conn_mgr_binding_set_flag(binding, CONN_MGR_IF_PERSISTENT,
