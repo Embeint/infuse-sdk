@@ -24,6 +24,7 @@
 #include <infuse/validation/flash.h>
 #include <infuse/validation/gnss.h>
 #include <infuse/validation/nrf_modem.h>
+#include <infuse/validation/wifi.h>
 
 #ifdef CONFIG_NRF_MODEM_LIB
 #include <modem/nrf_modem_lib.h>
@@ -169,6 +170,38 @@ static int nrf_modem_validator(void *a, void *b, void *c)
 
 K_THREAD_DEFINE(nrf_modem_thread, 2048, nrf_modem_validator, NULL, NULL, NULL, 5, 0, 0);
 #endif /* CONFIG_NRF_MODEM_LIB */
+
+#ifdef CONFIG_WIFI
+
+static int wifi_validator(void *a, void *b, void *c)
+{
+	struct net_if *iface;
+
+	atomic_inc(&validators_registered);
+
+	/* Wi-Fi drivers are added as ETHERNET */
+	iface = net_if_get_first_by_type(&NET_L2_GET_NAME(ETHERNET));
+	if (iface == NULL) {
+		VALIDATION_REPORT_ERROR("SYS", "Failed to retrieve WiFi interface");
+		atomic_inc(&validators_failed);
+		goto end;
+	}
+
+	if (infuse_validation_wifi(iface, VALIDATION_WIFI_POWER_UP | VALIDATION_WIFI_SSID_SCAN |
+						  VALIDATION_WIFI_CONNECT |
+						  VALIDATION_WIFI_SNTP_QUERY) == 0) {
+		atomic_inc(&validators_passed);
+	} else {
+		atomic_inc(&validators_failed);
+	}
+end:
+	atomic_inc(&validators_complete);
+	k_sem_give(&task_complete);
+	return 0;
+}
+
+K_THREAD_DEFINE(wifi_thread, 6144, wifi_validator, NULL, NULL, NULL, 5, 0, 0);
+#endif /* CONFIG_WIFI */
 
 #ifdef CONFIG_INFUSE_VALIDATION_BUTTON_REQUIRE_MANUAL
 static int button_validator(void *a, void *b, void *c)
