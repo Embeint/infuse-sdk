@@ -75,30 +75,13 @@ configdefault LTE_PSM_REQ_RPTAU
 configdefault LTE_PROPRIETARY_PSM_REQ
 	default y if SOC_NRF9120
 
-# WiFi defaults
-configdefault WIFI_NRF70
-	default y if WIFI
-configdefault NET_L2_ETHERNET
-	default y if WIFI_NRF70
-configdefault SYSTEM_WORKQUEUE_STACK_SIZE
-	default 8192 if WIFI_NRF70 && !NRF70_SCAN_ONLY
-configdefault HEAP_MEM_POOL_ADD_SIZE_NRF70
-	def_int 100000 if !NRF70_SCAN_ONLY
-configdefault NET_CONNECTION_MANAGER_MONITOR_STACK_SIZE
-	default 4096 if NRF700X_STA_MODE
-	default 1024 if NRF_MODEM_LIB_NET_IF
-configdefault NRF_WIFI_IF_AUTO_START
-	default n
-configdefault ZVFS_OPEN_MAX
-	default 20 if WIFI_NRF70
-
-choice NRF70_OPER_MODES
-	default NRF70_SCAN_ONLY if WIFI_USAGE_MODE_SCAN_ONLY
-endchoice
+config NRF_WIFI_LOW_RAM
+	bool "nRF Wi-Fi low RAM defaults"
+	default y if SRAM_SIZE <= 256
 
 # Lower resource requirements in scan only mode
 if NRF70_SCAN_ONLY
-configdefault HEAP_MEM_POOL_SIZE
+configdefault HEAP_MEM_POOL_ADD_SIZE_NRF70
 	default 30000
 configdefault NET_BUF_RX_COUNT
 	default 1
@@ -117,6 +100,56 @@ configdefault NET_TX_STACK_SIZE
 configdefault NET_RX_STACK_SIZE
 	default 1024
 endif # NRF70_SCAN_ONLY
+
+# Limit nRF memory usage to the bare minimum
+if NRF_WIFI_LOW_RAM
+configdefault NRF_WIFI_IFACE_MTU
+	default 576 if !IPV6 # Minimum IPv4 compatible MTU
+	default 1280         # Minimum IPv6 compatible MTU
+configdefault NRF70_TX_MAX_DATA_SIZE
+	# Interface MTU + nRF header sizes
+	default 644 if !IPV6
+	default 1348
+configdefault NRF70_RX_MAX_DATA_SIZE
+	# Interface MTU + nRF header sizes
+	default 644 if !IPV6
+	default 1348
+configdefault NRF70_RX_NUM_BUFS
+	default 6
+configdefault NRF70_MAX_TX_TOKENS
+	default 6
+configdefault NRF70_MAX_TX_AGGREGATION
+	default 3
+configdefault HEAP_MEM_POOL_ADD_SIZE_NRF70
+	# Control plane is estimated to use 20 kB
+	# IPV4 Data plane is (6 + 6) * 644 ~= 8kB
+	# IPV6 Data plane is (6 + 6) * 1348 ~= 16kB
+	def_int 28672 if !IPV6
+	def_int 36864
+endif # NRF_WIFI_LOW_RAM
+
+# WiFi defaults
+configdefault WIFI_NRF70
+	default y if WIFI
+configdefault NET_L2_ETHERNET
+	default y if WIFI_NRF70
+configdefault SYSTEM_WORKQUEUE_STACK_SIZE
+	default 6144 if WIFI_NRF70 && !NRF70_SCAN_ONLY
+configdefault HEAP_MEM_POOL_ADD_SIZE_NRF70
+	def_int 100000 if !NRF70_SCAN_ONLY
+configdefault NET_CONNECTION_MANAGER_MONITOR_STACK_SIZE
+	default 4096 if NRF700X_STA_MODE
+	default 1024 if NRF_MODEM_LIB_NET_IF
+configdefault NRF_WIFI_IF_AUTO_START
+	default n
+configdefault ZVFS_OPEN_MAX
+	default 20 if WIFI_NRF70
+choice NET_SOCKETPAIR_ALLOCATION_STRATEGY
+	default NET_SOCKETPAIR_STATIC
+endchoice
+choice NRF70_OPER_MODES
+	default NRF70_SCAN_ONLY if WIFI_USAGE_MODE_SCAN_ONLY
+endchoice
 
 # MbedTLS requirements for WiFi connectivity
 configdefault PSA_WANT_KEY_TYPE_AES
