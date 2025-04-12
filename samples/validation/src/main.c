@@ -11,6 +11,7 @@
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
 #include <zephyr/sys/atomic.h>
+#include <zephyr/sys/sys_heap.h>
 
 #include <infuse/security.h>
 #include <infuse/validation/bluetooth.h>
@@ -295,6 +296,26 @@ int main(void)
 			break;
 		}
 	}
+
+#ifdef CONFIG_SYS_HEAP_RUNTIME_STATS
+	struct sys_memory_stats heap_stats;
+	struct sys_heap **heaps;
+	int num_heaps;
+	int rc;
+
+	num_heaps = sys_heap_array_get(&heaps);
+	for (int i = 0; i < num_heaps; i++) {
+		rc = sys_heap_runtime_stats_get(heaps[i], &heap_stats);
+		if ((rc != 0) || (heaps[i]->init_bytes == 0)) {
+			continue;
+		}
+		VALIDATION_REPORT_INFO("SYS", "Heap %p= Current %6d Max %6d Size %6d", heaps[i],
+				       heap_stats.allocated_bytes, heap_stats.max_allocated_bytes,
+				       heaps[i]->init_bytes);
+	}
+
+#endif /* CONFIG_SYS_HEAP_RUNTIME_STATS */
+
 	(void)validators_failed;
 	VALIDATION_REPORT_INFO("SYS", "Complete with %d/%d passed", (int32_t)validators_passed,
 			       (int32_t)validators_registered);
