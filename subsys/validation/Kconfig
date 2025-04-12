@@ -3,6 +3,8 @@
 config INFUSE_VALIDATION
 	bool "Infuse-IoT hardware and driver validation libraries"
 
+if INFUSE_VALIDATION
+
 config INFUSE_VALIDATION_BUTTON
 	bool "Infuse-IoT Button/GPIO validation"
 	default y
@@ -32,3 +34,22 @@ config INFUSE_VALIDATION_LEDS_ACTION_DURATION
 	default 500
 
 endif # INFUSE_VALIDATION_LEDS
+
+if WIFI
+
+config INFUSE_VALIDATE_WIFI_SSID
+	string "Network SSID to connect to"
+	default "example"
+
+config INFUSE_VALIDATE_WIFI_PSK
+	string "Network pre-shared-key to connect with"
+	default "password"
+
+config INFUSE_VALIDATION_SNTP_SERVER
+	string "SNTP server address"
+	default "pool.ntp.org"
+
+endif # WIFI
+
+
+endif # INFUSE_VALIDATION
