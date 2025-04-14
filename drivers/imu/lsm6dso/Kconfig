@@ -1,0 +1,31 @@
+# LSM6DSO 6 Axis IMU configuration
+
+# Copyright (c) 2024 Embeint Inc
+# SPDX-License-Identifier: Apache-2.0
+
+menuconfig INFUSE_IMU_LSM6DSO
+	bool "LSM6DSO Inertial measurement unit"
+	default y
+	depends on DT_HAS_ST_LSM6DSO_ENABLED
+	select I2C if $(dt_compat_on_bus,$(DT_COMPAT_ST_LSM6DSO),i2c)
+	select SPI if $(dt_compat_on_bus,$(DT_COMPAT_ST_LSM6DSO),spi)
+	help
+	  Enable driver for LSM6DSO IMU sensor
+
+# Zephyr and Infuse driver conflict
+configdefault LSM6DSO
+	default n if INFUSE_IMU_LSM6DSO
+
+if INFUSE_IMU_LSM6DSO
+
+config LSM6DSO_BUS_I2C
+	bool
+	default y
+	depends on $(dt_compat_on_bus,$(DT_COMPAT_ST_LSM6DSO),i2c)
+
+config LSM6DSO_BUS_SPI
+	bool
+	default y
+	depends on $(dt_compat_on_bus,$(DT_COMPAT_ST_LSM6DSO),spi)
+
+endif # LSM6DSO
