@@ -21,6 +21,8 @@
 
 #include "bmi270.h"
 
+#define FIFO_BYTES MIN(BMI270_FIFO_SIZE, (7 * CONFIG_INFUSE_IMU_MAX_FIFO_SAMPLES))
+
 struct bmi270_config {
 	union bmi270_bus bus;
 	const struct bmi270_bus_io *bus_io;
@@ -36,7 +38,7 @@ struct bmi270_data {
 	uint16_t gyr_time_scale;
 	uint16_t gyro_range;
 	uint8_t accel_range;
-	uint8_t fifo_data_buffer[BMI270_FIFO_SIZE];
+	uint8_t fifo_data_buffer[FIFO_BYTES];
 };
 
 struct sensor_config {
@@ -448,7 +450,7 @@ int bmi270_configure(const struct device *dev, const struct imu_config *imu_cfg,
 	fifo_watermark +=
 		(MAX(data->acc_time_scale, data->gyr_time_scale) * imu_cfg->fifo_sample_buffer) /
 		(data->acc_time_scale + data->gyr_time_scale);
-	fifo_watermark = MIN(fifo_watermark, BMI270_FIFO_SIZE - 16);
+	fifo_watermark = MIN(fifo_watermark, FIFO_BYTES - 16);
 	LOG_DBG("FIFO watermark %d bytes", fifo_watermark);
 
 	/* Approximate interrupt period */

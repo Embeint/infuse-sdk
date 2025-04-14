@@ -6,6 +6,13 @@ config INFUSE_IMU
 
 if INFUSE_IMU
 
+config INFUSE_IMU_MAX_FIFO_SAMPLES
+	int "Maximum number of samples pending in a FIFO that can be handled"
+	default 128
+	help
+	  Save RAM by notifying drivers and application logic of the maximum number
+	  of IMU samples they need to be able to handle in a single chunk.
+
 config INFUSE_IMU_RESAMPLE
 	bool "IMU resampling functions"
 
