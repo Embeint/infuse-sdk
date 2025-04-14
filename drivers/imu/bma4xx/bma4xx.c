@@ -21,6 +21,8 @@
 
 #include "bma4xx.h"
 
+#define FIFO_BYTES MIN(BMA4XX_FIFO_LEN, (7 * CONFIG_INFUSE_IMU_MAX_FIFO_SAMPLES))
+
 struct bma4xx_config {
 	union bma4xx_bus bus;
 	const struct bma4xx_bus_io *bus_io;
@@ -34,7 +36,7 @@ struct bma4xx_data {
 	int64_t int1_prev_timestamp;
 	uint8_t accel_range;
 	uint16_t fifo_threshold;
-	uint8_t fifo_data_buffer[BMA4XX_FIFO_LEN];
+	uint8_t fifo_data_buffer[FIFO_BYTES];
 };
 
 struct fifo_frame_data {
@@ -248,7 +250,7 @@ int bma4xx_configure(const struct device *dev, const struct imu_config *imu_cfg,
 	/* FIFO configuration */
 	rc |= bma4xx_reg_write(dev, BMA4XX_REG_FIFO_CONFIG0,
 			       BMA4XX_FIFO_CONFIG0_EN_XYZ | BMA4XX_FIFO_CONFIG0_DATA_12BIT);
-	fifo_watermark = MIN(7 * imu_cfg->fifo_sample_buffer, BMA4XX_FIFO_LEN);
+	fifo_watermark = MIN(7 * imu_cfg->fifo_sample_buffer, FIFO_BYTES);
 	rc |= bma4xx_reg_write(dev, BMA4XX_REG_FIFO_CONFIG1, (fifo_watermark >> 0) & 0xFF);
 	rc |= bma4xx_reg_write(dev, BMA4XX_REG_FIFO_CONFIG2, (fifo_watermark >> 8) & 0xFF);
 	data->fifo_threshold = fifo_watermark;

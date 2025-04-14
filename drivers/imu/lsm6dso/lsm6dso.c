@@ -19,6 +19,8 @@
 
 #include "lsm6dso.h"
 
+#define FIFO_BYTES MIN(LSM6DSO_FIFO_SIZE, (7 * CONFIG_INFUSE_IMU_MAX_FIFO_SAMPLES))
+
 struct lsm6dso_config {
 	union lsm6dso_bus bus;
 	const struct lsm6dso_bus_io *bus_io;
@@ -35,7 +37,7 @@ struct lsm6dso_data {
 	uint16_t gyro_range;
 	uint8_t accel_range;
 	uint16_t fifo_threshold;
-	uint8_t fifo_data_buffer[LSM6DSO_FIFO_SIZE];
+	uint8_t fifo_data_buffer[FIFO_BYTES];
 };
 
 struct fifo_frame {
@@ -350,8 +352,7 @@ int lsm6dso_configure(const struct device *dev, const struct imu_config *imu_cfg
 	data->acc_time_scale = output->accelerometer_period_us / frame_period_us;
 	data->gyr_time_scale = output->gyroscope_period_us / frame_period_us;
 
-	/* FIFO is 3kB, 7 bytes per tag gives a maximum 438 samples */
-	data->fifo_threshold = MIN(imu_cfg->fifo_sample_buffer, 438);
+	data->fifo_threshold = MIN(imu_cfg->fifo_sample_buffer, (FIFO_BYTES / 7));
 
 	/* Calculate the expected interrupt period for N samples */
 	if (output->accelerometer_period_us && output->gyroscope_period_us) {

@@ -21,6 +21,8 @@
 
 #include "lsm6dsv.h"
 
+#define FIFO_BYTES MIN(LSM6DSV_FIFO_SIZE, (7 * CONFIG_INFUSE_IMU_MAX_FIFO_SAMPLES))
+
 struct lsm6dsv_config {
 	union lsm6dsv_bus bus;
 	const struct lsm6dsv_bus_io *bus_io;
@@ -37,7 +39,7 @@ struct lsm6dsv_data {
 	uint16_t gyro_range;
 	uint8_t accel_range;
 	uint8_t fifo_threshold;
-	uint8_t fifo_data_buffer[LSM6DSV_FIFO_SIZE];
+	uint8_t fifo_data_buffer[FIFO_BYTES];
 };
 
 struct fifo_frame {
@@ -338,7 +340,7 @@ int lsm6dsv_configure(const struct device *dev, const struct imu_config *imu_cfg
 	data->gyr_time_scale = output->gyroscope_period_us / frame_period_us;
 
 	/* Watermark threshold limited to 8 bits */
-	data->fifo_threshold = MIN(imu_cfg->fifo_sample_buffer, UINT8_MAX);
+	data->fifo_threshold = MIN(imu_cfg->fifo_sample_buffer, (FIFO_BYTES / 7));
 
 	/* Calculate the expected interrupt period for N samples */
 	if (output->accelerometer_period_us && output->gyroscope_period_us) {
