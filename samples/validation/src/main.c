@@ -245,7 +245,7 @@ static int leds_validator(void *a, void *b, void *c)
 	return 0;
 }
 
-K_THREAD_DEFINE(button_thread, 512, leds_validator, NULL, NULL, NULL, 5, 0, 0);
+K_THREAD_DEFINE(leds_thread, 1024, leds_validator, NULL, NULL, NULL, 5, 0, 0);
 #endif /* CONFIG_INFUSE_VALIDATION_LED */
 
 #if DT_NODE_EXISTS(DT_COMPAT_GET_ANY_STATUS_OKAY(embeint_epacket_bt_adv))
