@@ -36,3 +36,9 @@ max17260: max17260@2 {
 	charge-full-design-microamp-hours = <1000>;
 	sense-resistor-milli-ohms = <10>;
 };
+
+test_i2c_lsm6dso: lsm6dso@3 {
+	compatible = "st,lsm6dso";
+	reg = <0x3>;
+	irq-gpios = <&test_gpio 0 0>;
+};
