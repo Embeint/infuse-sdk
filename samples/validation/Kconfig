@@ -22,6 +22,8 @@ configdefault INFUSE_VALIDATION_LEDS
 # Floating point
 
 configdefault FPU
+	# nRF70 Wi-Fi libraries are currently hardcoded to software FP
+	default n if WIFI_NRF70
 	default y if CPU_HAS_FPU
 configdefault CBPRINTF_FP_SUPPORT
 	default y
