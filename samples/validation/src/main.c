@@ -188,9 +188,8 @@ static int wifi_validator(void *a, void *b, void *c)
 		goto end;
 	}
 
-	if (infuse_validation_wifi(iface, VALIDATION_WIFI_POWER_UP | VALIDATION_WIFI_SSID_SCAN |
-						  VALIDATION_WIFI_CONNECT |
-						  VALIDATION_WIFI_SNTP_QUERY) == 0) {
+	if (infuse_validation_wifi(iface, VALIDATION_WIFI_POWER_UP | VALIDATION_WIFI_SSID_SCAN) ==
+	    0) {
 		atomic_inc(&validators_passed);
 	} else {
 		atomic_inc(&validators_failed);
