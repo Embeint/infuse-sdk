@@ -20,6 +20,12 @@ config WIFI_USAGE_MODE_SCAN_ONLY
 	bool "Wi-Fi interface used for SSID scanning only"
 
 endchoice # WIFI_USAGE_MODE
+
+# Reduce the default priority to prevent blocking other threads
+# during crypto operations
+configdefault WIFI_NM_WPA_SUPPLICANT_PRIO
+	default 6
+
 endif # WIFI
 
 # Core Protocols
