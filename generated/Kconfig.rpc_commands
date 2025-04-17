@@ -239,6 +239,18 @@ config INFUSE_RPC_COMMAND_COAP_DOWNLOAD_REQUIRED_AUTH
 	depends on INFUSE_RPC_COMMAND_COAP_DOWNLOAD
 	default 2
 
+config INFUSE_RPC_COMMAND_ZPERF_UPLOAD
+	bool "Enable RPC zperf_upload"
+	depends on NET_ZPERF
+	default y if INFUSE_SDK
+	help
+	  Network upload bandwidth testing using zperf/iperf
+
+config INFUSE_RPC_COMMAND_ZPERF_UPLOAD_REQUIRED_AUTH
+	int "Required authorisation level to run zperf_upload"
+	depends on INFUSE_RPC_COMMAND_ZPERF_UPLOAD
+	default 2
+
 config INFUSE_RPC_COMMAND_FILE_WRITE_BASIC
 	bool "Enable RPC file_write_basic"
 	default y if INFUSE_SDK
