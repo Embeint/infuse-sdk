@@ -237,6 +237,18 @@ struct rpc_struct_infuse_state {
 	uint16_t timeout;
 } __packed;
 
+/** `struct sockaddr_in` or `struct sockaddr_in6` compatible address */
+struct rpc_struct_sockaddr {
+	/** AF_INET / AF_INET6 */
+	uint8_t sin_family;
+	/** Port number (Network byte order) */
+	uint16_t sin_port;
+	/** IPv4/IPv6 address */
+	uint8_t sin_addr[16];
+	/** Interfaces for a scope (IPv6 only) */
+	uint8_t scope_id;
+} __packed;
+
 /** Bluetooth LE address type */
 enum rpc_enum_bt_le_addr_type {
 	/** Public address */
@@ -331,6 +343,8 @@ enum rpc_builtin_id {
 	RPC_ID_LTE_STATE = 21,
 	/** Download a file from a COAP server (Infuse-IoT DTLS protected) */
 	RPC_ID_COAP_DOWNLOAD = 30,
+	/** Network upload bandwidth testing using zperf/iperf */
+	RPC_ID_ZPERF_UPLOAD = 31,
 	/** Write a file to the device */
 	RPC_ID_FILE_WRITE_BASIC = 40,
 	/** Connect to an Infuse-IoT Bluetooth device */
@@ -691,6 +705,45 @@ struct rpc_coap_download_response {
 	uint32_t resource_len;
 	/** CRC of resource downloaded */
 	uint32_t resource_crc;
+} __packed;
+
+/** Network upload bandwidth testing using zperf/iperf */
+struct rpc_zperf_upload_request {
+	struct infuse_rpc_req_header header;
+	/** Peer socket address */
+	struct rpc_struct_sockaddr peer_address;
+	/** SOCK_STREAM/SOCK_DGRAM */
+	uint8_t sock_type;
+	/** Test duration in milliseconds */
+	uint32_t duration_ms;
+	/** Desired rate in kbps (0 for uncapped) */
+	uint32_t rate_kbps;
+	/** Packet size in bytes */
+	uint16_t packet_size;
+} __packed;
+
+struct rpc_zperf_upload_response {
+	struct infuse_rpc_rsp_header header;
+	/** Number of packets sent */
+	uint32_t nb_packets_sent;
+	/** Number of packets received */
+	uint32_t nb_packets_rcvd;
+	/** Number of packets lost */
+	uint32_t nb_packets_lost;
+	/** Number of packets out of order */
+	uint32_t nb_packets_outorder;
+	/** Total length of the transferred data */
+	uint64_t total_len;
+	/** Total time of the transfer in microseconds */
+	uint64_t time_in_us;
+	/** Jitter in microseconds */
+	uint32_t jitter_in_us;
+	/** Client connection time in microsecond */
+	uint64_t client_time_in_us;
+	/** Packet size */
+	uint32_t packet_size;
+	/** Number of packet errors */
+	uint32_t nb_packets_errors;
 } __packed;
 
 /** Write a file to the device */

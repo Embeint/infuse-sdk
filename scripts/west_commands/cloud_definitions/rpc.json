@@ -115,6 +115,15 @@
                 {"name": "state", "type": "uint8_t", "description": "State"},
                 {"name": "timeout", "type": "uint16_t", "description": "Duration state is set for"}
             ]
+        },
+        "rpc_struct_sockaddr": {
+            "description": "`struct sockaddr_in` or `struct sockaddr_in6` compatible address",
+            "fields": [
+                {"name": "sin_family", "type": "uint8_t", "description": "AF_INET / AF_INET6"},
+                {"name": "sin_port", "type": "uint16_t", "description": "Port number (Network byte order)"},
+                {"name": "sin_addr", "type": "uint8_t", "num": 16, "description": "IPv4/IPv6 address"},
+                {"name": "scope_id", "type": "uint8_t", "description": "Interfaces for a scope (IPv6 only)"}
+            ]
         }
     },
     "enums": {
@@ -437,7 +446,7 @@
             "default": "y if INFUSE_SDK",
             "default_auth": "EPACKET_AUTH_DEVICE",
             "request_params": [
-                {"name": "server_address", "type": "char", "num": 48,  "description": "COAP server address (e.g. coap.dev.infuse-iot.com)"},
+                {"name": "server_address", "type": "char", "num": 48, "description": "COAP server address (e.g. coap.dev.infuse-iot.com)"},
                 {"name": "server_port", "type": "uint16_t", "description": "COAP server port"},
                 {"name": "block_timeout_ms", "type": "uint16_t", "description": "COAP block timeout (Default 1000ms)"},
                 {"name": "action", "type": "enum rpc_enum_file_action", "description": "Action to apply to downloaded file"},
@@ -448,6 +457,32 @@
             "response_params": [
                 {"name": "resource_len", "type": "uint32_t", "description": "Length of resource downloaded"},
                 {"name": "resource_crc", "type": "uint32_t", "description": "CRC of resource downloaded"}
+            ]
+        },
+        "31": {
+            "name": "zperf_upload",
+            "description": "Network upload bandwidth testing using zperf/iperf",
+            "depends_on": "NET_ZPERF",
+            "default": "y if INFUSE_SDK",
+            "default_auth": "EPACKET_AUTH_DEVICE",
+            "request_params": [
+                {"name": "peer_address", "type": "struct rpc_struct_sockaddr", "description": "Peer socket address"},
+                {"name": "sock_type", "type": "uint8_t", "description": "SOCK_STREAM/SOCK_DGRAM"},
+                {"name": "duration_ms", "type": "uint32_t", "description": "Test duration in milliseconds"},
+                {"name": "rate_kbps", "type": "uint32_t", "description": "Desired rate in kbps (0 for uncapped)"},
+                {"name": "packet_size", "type": "uint16_t", "description": "Packet size in bytes"}
+            ],
+            "response_params": [
+                {"name": "nb_packets_sent", "type": "uint32_t", "description": "Number of packets sent"},
+                {"name": "nb_packets_rcvd", "type": "uint32_t", "description": "Number of packets received"},
+                {"name": "nb_packets_lost", "type": "uint32_t", "description": "Number of packets lost"},
+                {"name": "nb_packets_outorder", "type": "uint32_t", "description": "Number of packets out of order"},
+                {"name": "total_len", "type": "uint64_t", "description": "Total length of the transferred data"},
+                {"name": "time_in_us", "type": "uint64_t", "description": "Total time of the transfer in microseconds"},
+                {"name": "jitter_in_us", "type": "uint32_t", "description": "Jitter in microseconds"},
+                {"name": "client_time_in_us", "type": "uint64_t", "description": "Client connection time in microsecond"},
+                {"name": "packet_size", "type": "uint32_t", "description": "Packet size"},
+                {"name": "nb_packets_errors", "type": "uint32_t", "description": "Number of packet errors"}
             ]
         },
         "40": {
