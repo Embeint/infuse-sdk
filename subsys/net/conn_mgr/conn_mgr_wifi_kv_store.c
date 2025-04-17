@@ -24,7 +24,7 @@ static struct k_work_delayable conn_create;
 static struct k_work_delayable conn_timeout;
 static struct net_if *wifi_if;
 
-LOG_MODULE_REGISTER(wifi_mgmt, LOG_LEVEL_DBG);
+LOG_MODULE_REGISTER(wifi_mgmt, LOG_LEVEL_INF);
 
 #ifdef CONFIG_WIFI_NM_WPA_SUPPLICANT
 
