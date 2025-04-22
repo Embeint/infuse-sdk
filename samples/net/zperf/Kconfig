@@ -1,0 +1,5 @@
+# Disable low power QSPI, gives a few Mbps extra throughput
+configdefault NRF70_QSPI_LOW_POWER
+	default n
+
+source "Kconfig.zephyr"
