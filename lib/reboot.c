@@ -39,7 +39,12 @@ static void reboot_state_store(enum infuse_reboot_reason reason, uint32_t info1,
 	state.uptime = k_uptime_seconds();
 	state.param_1.program_counter = info1;
 	state.param_2.link_register = info2;
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wstringop-truncation"
+	/* String truncation is expected and ok */
 	strncpy(state.thread_name, _current->name, sizeof(state.thread_name));
+#pragma GCC diagnostic pop
 
 	/* Store reboot information */
 	retention_write(retention, 0, (void *)&state, sizeof(state));
