@@ -3,9 +3,6 @@ if BOARD_NRF7002DK_NRF5340_CPUAPP
 configdefault NETWORKING
     default y if !MCUBOOT
 
-configdefault WIFI
-    default y if !MCUBOOT
-
 # External flash layout needs to match internal
 configdefault SPI_NOR_FLASH_LAYOUT_PAGE_SIZE
     default 4096 if MCUBOOT
