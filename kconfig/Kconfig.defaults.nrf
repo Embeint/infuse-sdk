@@ -132,8 +132,6 @@ configdefault HEAP_MEM_POOL_ADD_SIZE_NRF70
 endif # NRF_WIFI_LOW_RAM
 
 # WiFi defaults
-configdefault WIFI_NRF70
-	default y if WIFI
 configdefault NET_L2_ETHERNET
 	default y if WIFI_NRF70
 configdefault SYSTEM_WORKQUEUE_STACK_SIZE
