@@ -180,10 +180,6 @@ configdefault MBEDTLS_CIPHER_AES_ENABLED
 configdefault MBEDTLS_CIPHER_MODE_CTR_ENABLED
 	default y if NRF70_STA_MODE
 
-# Option removed in Zephyr v3.7 but still present in NCS v2.7
-config MBEDTLS_MAC_CMAC_ENABLED
-	bool
-
 # UART0 is the standard serial port on Nordic boards
 configdefault UART_0_NRF_TX_BUFFER_SIZE
 	default 1024 if EPACKET_INTERFACE_SERIAL
