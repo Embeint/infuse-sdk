@@ -114,6 +114,9 @@ configdefault NRF70_RX_MAX_DATA_SIZE
 	# Interface MTU + nRF header sizes
 	default 644 if !IPV6
 	default 1348
+configdefault NRF70_MAX_TX_PENDING_QLEN
+	# Disable the limit so packets aren't dropped
+	default 32768
 configdefault NRF70_RX_NUM_BUFS
 	default 6
 configdefault NRF70_MAX_TX_TOKENS
