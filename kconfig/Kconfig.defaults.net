@@ -1,6 +1,11 @@
 # Infuse-IoT SDK networking defaults
 
+DT_CHOSEN_Z_WIFI := zephyr,wifi
+
 if NETWORKING
+
+configdefault WIFI
+	default y if $(dt_chosen_enabled,$(DT_CHOSEN_Z_WIFI))
 
 if WIFI
 choice WIFI_USAGE_MODE
@@ -108,8 +113,6 @@ endif # NETWORKING
 if SHIELD_NRF7002EB || SHIELD_NRF7002EK
 
 configdefault NETWORKING
-	default y if !MCUBOOT
-configdefault WIFI
 	default y if !MCUBOOT
 
 endif # SHIELD_NRF7002EB || SHIELD_NRF7002EK
