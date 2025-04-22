@@ -33,6 +33,10 @@ config INFUSE_RPC_SERVER_STACK_SIZE
 	default 4096 if NETWORKING
 	default 2048
 
+config INFUSE_RPC_SERVER_THREAD_PRIORITY
+	int "Thread priority for the server thread"
+	default 10
+
 config INFUSE_RPC_COMMON_NET_QUERY
 	bool
 	default INFUSE_RPC_COMMAND_WIFI_STATE || INFUSE_RPC_COMMAND_LTE_STATE
