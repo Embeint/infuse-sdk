@@ -37,7 +37,11 @@ struct net_buf *rpc_command_wifi_state(struct net_buf *request)
 		      sizeof(struct wifi_iface_status));
 	if (rc == 0) {
 		rsp.wifi.state = status.state;
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wstringop-truncation"
+		/* String truncation is fine, we don't need the trailing NULL */
 		strncpy(rsp.wifi.ssid, status.ssid, sizeof(rsp.wifi.ssid));
+#pragma GCC diagnostic pop
 		memcpy(rsp.wifi.bssid, status.bssid, sizeof(rsp.wifi.bssid));
 		rsp.wifi.band = status.band;
 		rsp.wifi.channel = status.channel;
