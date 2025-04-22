@@ -205,4 +205,4 @@ static int rpc_server(void *a, void *b, void *c)
 }
 
 K_THREAD_DEFINE(rpc_server_thread, CONFIG_INFUSE_RPC_SERVER_STACK_SIZE, rpc_server, NULL, NULL,
-		NULL, 0, K_ESSENTIAL, 0);
+		NULL, CONFIG_INFUSE_RPC_SERVER_THREAD_PRIORITY, K_ESSENTIAL, 0);
