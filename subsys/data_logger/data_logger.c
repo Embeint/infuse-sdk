@@ -146,8 +146,11 @@ static int handle_block_write(const struct device *dev, enum infuse_type type, v
 			/* No space in RAM buffer, no data logged, write per usual */
 		} else {
 			/* No space, data previously logged. Flush all pending data */
+			int64_t flush_end, flush_start = k_uptime_get();
+			int32_t flush_duration;
 			struct ram_buf_header *hdr;
 			uint32_t offset = 0;
+			uint32_t flushed = 0;
 
 			while (offset < data->ram_buf_offset) {
 				/* Push the next block */
@@ -156,11 +159,16 @@ static int handle_block_write(const struct device *dev, enum infuse_type type, v
 				rc = do_block_write(dev, hdr->block_type,
 						    config->ram_buf_data + offset, hdr->block_len);
 				offset += hdr->block_len;
+				flushed += 1;
 
 				LOG_DBG("Flushed %d byte %02X block (%d)", hdr->block_len,
 					hdr->block_type, rc);
 			}
+			flush_end = k_uptime_get();
 			data->ram_buf_offset = 0;
+			flush_duration = flush_end - flush_start;
+			LOG_INF("%s -> Flushed %d blocks in %d ms", dev->name, flushed,
+				flush_duration);
 		}
 	}
 #endif /* CONFIG_DATA_LOGGER_RAM_BUFFER */
