@@ -23,8 +23,6 @@ LOG_MODULE_REGISTER(app, LOG_LEVEL_INF);
 
 int main(void)
 {
-	const struct device *epacket_serial = DEVICE_DT_GET(DT_NODELABEL(epacket_serial));
-
 #ifdef CONFIG_SOC_NRF5340_CPUAPP
 	int err;
 
@@ -36,11 +34,15 @@ int main(void)
 	}
 #endif /* CONFIG_SOC_NRF5340_CPUAPP */
 
-	/* Always listening on Bluetooth and serial */
+#if DT_NODE_HAS_STATUS_OKAY(DT_NODELABEL(epacket_serial))
+	const struct device *epacket_serial = DEVICE_DT_GET(DT_NODELABEL(epacket_serial));
+
+	/* Always listening on serial */
 	epacket_receive(epacket_serial, K_FOREVER);
 
 	/* Send key identifiers on boot */
 	epacket_send_key_ids(epacket_serial, K_FOREVER);
+#endif
 
 	/* Always want network connectivity */
 	conn_mgr_all_if_up(false);
