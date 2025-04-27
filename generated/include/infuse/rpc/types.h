@@ -291,6 +291,20 @@ enum rpc_enum_data_logger {
 	RPC_ENUM_DATA_LOGGER_FLASH_REMOVABLE = 2,
 };
 
+/** Source for zperf data upload */
+enum rpc_enum_zperf_data_source {
+	/** Constant payload ('i') */
+	RPC_ENUM_ZPERF_DATA_SOURCE_CONSTANT = 0,
+	/** Random payload contents */
+	RPC_ENUM_ZPERF_DATA_SOURCE_RANDOM = 1,
+	/** Read data from onboard flash logger */
+	RPC_ENUM_ZPERF_DATA_SOURCE_FLASH_ONBOARD = 2,
+	/** Read data from removable flash logger (SD) */
+	RPC_ENUM_ZPERF_DATA_SOURCE_FLASH_REMOVABLE = 3,
+	/** Flag (0x80) to specify payload should be encrypted */
+	RPC_ENUM_ZPERF_DATA_SOURCE_ENCRYPT = 128,
+};
+
 /**
  * @}
  */
@@ -714,6 +728,8 @@ struct rpc_zperf_upload_request {
 	struct rpc_struct_sockaddr peer_address;
 	/** SOCK_STREAM/SOCK_DGRAM */
 	uint8_t sock_type;
+	/** Source of data to upload */
+	uint8_t data_source;
 	/** Test duration in milliseconds */
 	uint32_t duration_ms;
 	/** Desired rate in kbps (0 for uncapped) */

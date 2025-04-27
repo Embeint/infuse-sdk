@@ -163,6 +163,17 @@
                 {"name": "FLASH_ONBOARD", "value": 1, "description": "Onboard flash logger"},
                 {"name": "FLASH_REMOVABLE", "value": 2, "description": "Removable flash logger (SD)"}
             ]
+        },
+        "rpc_enum_zperf_data_source": {
+            "description": "Source for zperf data upload",
+            "type": "uint8_t",
+            "values": [
+                {"name": "CONSTANT", "value": 0, "description": "Constant payload ('i')"},
+                {"name": "RANDOM", "value": 1, "description": "Random payload contents"},
+                {"name": "FLASH_ONBOARD", "value": 2, "description": "Read data from onboard flash logger"},
+                {"name": "FLASH_REMOVABLE", "value": 3, "description": "Read data from removable flash logger (SD)"},
+                {"name": "ENCRYPT", "value": 128, "description": "Flag (0x80) to specify payload should be encrypted"}
+            ]
         }
     },
     "commands": {
@@ -468,6 +479,7 @@
             "request_params": [
                 {"name": "peer_address", "type": "struct rpc_struct_sockaddr", "description": "Peer socket address"},
                 {"name": "sock_type", "type": "uint8_t", "description": "SOCK_STREAM/SOCK_DGRAM"},
+                {"name": "data_source", "type": "enum rpc_enum_zperf_data_source", "description": "Source of data to upload"},
                 {"name": "duration_ms", "type": "uint32_t", "description": "Test duration in milliseconds"},
                 {"name": "rate_kbps", "type": "uint32_t", "description": "Desired rate in kbps (0 for uncapped)"},
                 {"name": "packet_size", "type": "uint16_t", "description": "Packet size in bytes"}
