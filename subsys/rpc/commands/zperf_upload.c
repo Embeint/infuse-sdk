@@ -11,6 +11,7 @@
 #include <zephyr/net/net_if.h>
 #include <zephyr/net/zperf.h>
 
+#include <infuse/time/epoch.h>
 #include <infuse/rpc/commands.h>
 #include <infuse/rpc/types.h>
 
@@ -22,6 +23,7 @@ struct net_buf *rpc_command_zperf_upload(struct net_buf *request)
 	struct rpc_zperf_upload_response rsp = {0};
 	struct zperf_upload_params params = {0};
 	struct zperf_results results = {0};
+	uint64_t epoch_time;
 	int rc;
 
 	/* Peer address construction */
@@ -45,6 +47,9 @@ struct net_buf *rpc_command_zperf_upload(struct net_buf *request)
 	}
 
 	/* Upload request parameters */
+	epoch_time = epoch_time_now();
+	params.unix_offset_us = (uint64_t)unix_time_from_epoch(epoch_time) * USEC_PER_SEC;
+	params.unix_offset_us += epoch_time_milliseconds(epoch_time) * USEC_PER_MSEC;
 	params.duration_ms = req->duration_ms;
 	params.packet_size = req->packet_size;
 	params.rate_kbps = req->rate_kbps ? req->rate_kbps : UINT32_MAX;
