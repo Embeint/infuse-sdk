@@ -3,6 +3,7 @@ configdefault NRF70_QSPI_LOW_POWER
 	default n
 
 # Ensure we can test 1024 byte packets with nRF70
+if NRF_WIFI_LOW_RAM
 configdefault NRF_WIFI_IFACE_MTU
 	default 1280
 configdefault NRF70_TX_MAX_DATA_SIZE
@@ -11,5 +12,6 @@ configdefault NRF70_RX_MAX_DATA_SIZE
 	default 1348
 configdefault HEAP_MEM_POOL_ADD_SIZE_NRF70
 	def_int 60000
+endif
 
 source "Kconfig.zephyr"
