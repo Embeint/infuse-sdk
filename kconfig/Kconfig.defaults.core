@@ -182,7 +182,7 @@ endchoice
 configdefault MBEDTLS_ENTROPY_C
 	default y
 configdefault MBEDTLS_ENTROPY_POLL_ZEPHYR
-	default y if !NRF_CC3XX_PLATFORM
+	default n if NRF_CC3XX_PLATFORM
 # Key derivation
 configdefault PSA_WANT_ALG_HKDF
 	default y
