@@ -1,0 +1,7 @@
+# Infuse-IoT SDK 802.15.4 defaults
+
+# nrfxlib defaults the choice to the proprietary library,
+# which doesn't support the babblesim boards.
+choice NRF_802154_SOURCE
+	default NRF_802154_SOURCE_HAL_NORDIC if SOC_SERIES_BSIM_NRFXX
+endchoice

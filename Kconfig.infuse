@@ -38,6 +38,7 @@ rsource "kconfig/Kconfig.defaults.log"
 
 endif # INFUSE_SDK
 
+rsource "kconfig/Kconfig.defaults.802154"
 rsource "kconfig/Kconfig.defaults.bluetooth"
 
 if ZTEST
