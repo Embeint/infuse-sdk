@@ -137,10 +137,13 @@ configdefault POWER_DOMAIN
 configdefault ENTROPY_GENERATOR
 	default y
 choice RNG_GENERATOR_CHOICE
-	# PSA API adds significant overhead for standard random numbers.
-	# Cryptographically secure random numbers directly from PSA
+	# The following entropy drivers have a significant processing overhead.
+	# Use the XOSHIRO pseudo-random-generator for non cryptographically secure
+	# number generation.
+	# Cryptographically secure random numbers directly from the entropy device
 	# can still be obtained with sys_csrand_get.
 	default XOSHIRO_RANDOM_GENERATOR if ENTROPY_PSA_CRYPTO_RNG
+	default XOSHIRO_RANDOM_GENERATOR if ENTROPY_CC3XX
 endchoice
 
 # Trusted-Firmware M
