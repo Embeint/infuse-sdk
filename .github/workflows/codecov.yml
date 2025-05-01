@@ -227,6 +227,7 @@ jobs:
           export WORK_DIR=${PWD}/bsim_out
           rm -rf $WORK_DIR
           $INFUSE_BASE/tests/bsim/ci.bt.sh
+          $INFUSE_BASE/tests/bsim/ci.802154.sh
           $INFUSE_BASE/tests/bsim/ci.serial.sh
 
       - name: Print ccache stats
