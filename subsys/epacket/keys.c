@@ -77,9 +77,17 @@ psa_key_id_t epacket_key_id_get(uint8_t key_type, uint32_t key_identifier, uint3
 	if (key_type & EPACKET_KEY_DEVICE) {
 		base = EPACKET_KEY_DEVICE;
 		storage = device_keys;
+		if (key_identifier != infuse_security_device_key_identifier()) {
+			/* Can only decode our own key */
+			return PSA_KEY_ID_NULL;
+		}
 	} else {
 		base = EPACKET_KEY_NETWORK;
 		storage = network_keys;
+		if (key_identifier != infuse_security_network_key_identifier()) {
+			/* Can currently only decode the default network */
+			return PSA_KEY_ID_NULL;
+		}
 	}
 	interface = key_type & EPACKET_KEY_INTERFACE_MASK;
 
@@ -101,7 +109,7 @@ psa_key_id_t epacket_key_id_get(uint8_t key_type, uint32_t key_identifier, uint3
 			storage[interface].rotation = key_rotation;
 		} else {
 			LOG_ERR("Key derivation failed (%d)", rc);
-			return 0;
+			return PSA_KEY_ID_NULL;
 		}
 	}
 	return storage[interface].id;
