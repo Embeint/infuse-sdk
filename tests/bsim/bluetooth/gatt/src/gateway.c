@@ -37,6 +37,15 @@ static uint8_t char_read_data[128];
 static uint8_t char_read_result;
 static size_t char_read_len;
 
+static const struct bt_uuid_128 command_uuid = BT_UUID_INIT_128(INFUSE_SERVICE_UUID_COMMAND_VAL);
+static const struct bt_uuid_128 data_uuid = BT_UUID_INIT_128(INFUSE_SERVICE_UUID_DATA_VAL);
+static const struct bt_uuid_128 logging_uuid = BT_UUID_INIT_128(INFUSE_SERVICE_UUID_LOGGING_VAL);
+static const struct bt_uuid *infuse_iot_characteristics[] = {
+	(const void *)&command_uuid,
+	(const void *)&data_uuid,
+	(const void *)&logging_uuid,
+};
+
 LOG_MODULE_REGISTER(app, LOG_LEVEL_INF);
 
 static void common_init(void)
@@ -521,6 +530,190 @@ static void main_connect_discover_nonexistant(void)
 	PASS("Connect discover nonexistant passed\n\n");
 }
 
+static void main_connect_discover_does_doesnt(void)
+{
+	const struct bt_uuid_16 timezone_uuid = BT_UUID_INIT_16(BT_UUID_GATT_TZ_VAL);
+	struct k_poll_signal sig;
+	struct bt_gatt_remote_char remote_info[2] = {0};
+	struct bt_conn_auto_setup_cb callbacks = {
+		.conn_setup_cb = conn_setup_cb,
+		.conn_terminated_cb = NULL,
+		.user_data = &sig,
+	};
+	const struct bt_conn_le_create_param create_param = {
+		.interval = BT_GAP_SCAN_FAST_INTERVAL,
+		.window = BT_GAP_SCAN_FAST_INTERVAL,
+		.timeout = 2000 / 10,
+	};
+	const struct bt_le_conn_param conn_params = BT_LE_CONN_PARAM_INIT(0x10, 0x15, 0, 400);
+	/* Exists then doesn't exist */
+	const struct bt_uuid *characteristics[] = {
+		(const void *)&data_uuid,
+		(const void *)&timezone_uuid,
+	};
+	struct bt_conn_auto_discovery discovery = {
+		.characteristics = characteristics,
+		.cache = NULL,
+		.remote_info = remote_info,
+		.num_characteristics = 2,
+	};
+	struct k_poll_event events[] = {
+		K_POLL_EVENT_INITIALIZER(K_POLL_TYPE_SIGNAL, K_POLL_MODE_NOTIFY_ONLY, &sig),
+	};
+	unsigned int signaled;
+	struct bt_conn *conn = NULL;
+	bt_addr_le_t addr;
+	int conn_rc;
+	int rc;
+
+	common_init();
+	k_poll_signal_init(&sig);
+	if (observe_peer(&addr) < 0) {
+		FAIL("Failed to observe peer\n");
+		return;
+	}
+
+	for (int i = 0; i < 3; i++) {
+		k_poll_signal_reset(&sig);
+		events[0].state = K_POLL_STATE_NOT_READY;
+
+		/* Initiate connection */
+		rc = bt_conn_le_create(&addr, &create_param, &conn_params, &conn);
+		if (rc < 0) {
+			FAIL("Failed to initiate connection\n");
+			return;
+		}
+		bt_conn_le_auto_setup(conn, &discovery, &callbacks);
+
+		/* Wait for connection process to complete */
+		rc = k_poll(events, ARRAY_SIZE(events), K_SECONDS(3));
+		k_poll_signal_check(&sig, &signaled, &conn_rc);
+		if ((rc != 0) || (signaled == 0)) {
+			FAIL("Signal not raised on connection\n");
+			return;
+		}
+		if (conn_rc != 0) {
+			FAIL("Unexpected connection result\n");
+			return;
+		}
+
+		/* First characteristic should have been found, second not */
+		if ((remote_info[0].value_handle == 0x0000) ||
+		    (remote_info[0].ccc_handle == 0x0000)) {
+			FAIL("Expected characteristic not discovered\n");
+			return;
+		}
+		if ((remote_info[1].value_handle != 0x0000) ||
+		    (remote_info[1].ccc_handle != 0x0000)) {
+			FAIL("Unexpected characteristic discovered\n");
+			return;
+		}
+
+		/* Disconnect from peer */
+		rc = bt_conn_disconnect_sync(conn);
+		if (rc < 0) {
+			FAIL("Failed to disconnect from peer\n");
+			return;
+		}
+		bt_conn_unref(conn);
+		conn = NULL;
+	}
+
+	PASS("Connect discover mix 1 passed\n\n");
+}
+
+static void main_connect_discover_doesnt_does(void)
+{
+	const struct bt_uuid_16 timezone_uuid = BT_UUID_INIT_16(BT_UUID_GATT_TZ_VAL);
+	struct k_poll_signal sig;
+	struct bt_gatt_remote_char remote_info[2] = {0};
+	struct bt_conn_auto_setup_cb callbacks = {
+		.conn_setup_cb = conn_setup_cb,
+		.conn_terminated_cb = NULL,
+		.user_data = &sig,
+	};
+	const struct bt_conn_le_create_param create_param = {
+		.interval = BT_GAP_SCAN_FAST_INTERVAL,
+		.window = BT_GAP_SCAN_FAST_INTERVAL,
+		.timeout = 2000 / 10,
+	};
+	const struct bt_le_conn_param conn_params = BT_LE_CONN_PARAM_INIT(0x10, 0x15, 0, 400);
+	/* Doesn't exist then exists */
+	const struct bt_uuid *characteristics[] = {
+		(const void *)&timezone_uuid,
+		(const void *)&data_uuid,
+	};
+	struct bt_conn_auto_discovery discovery = {
+		.characteristics = characteristics,
+		.cache = NULL,
+		.remote_info = remote_info,
+		.num_characteristics = 2,
+	};
+	struct k_poll_event events[] = {
+		K_POLL_EVENT_INITIALIZER(K_POLL_TYPE_SIGNAL, K_POLL_MODE_NOTIFY_ONLY, &sig),
+	};
+	unsigned int signaled;
+	struct bt_conn *conn = NULL;
+	bt_addr_le_t addr;
+	int conn_rc;
+	int rc;
+
+	common_init();
+	k_poll_signal_init(&sig);
+	if (observe_peer(&addr) < 0) {
+		FAIL("Failed to observe peer\n");
+		return;
+	}
+
+	for (int i = 0; i < 3; i++) {
+		k_poll_signal_reset(&sig);
+		events[0].state = K_POLL_STATE_NOT_READY;
+
+		/* Initiate connection */
+		rc = bt_conn_le_create(&addr, &create_param, &conn_params, &conn);
+		if (rc < 0) {
+			FAIL("Failed to initiate connection\n");
+			return;
+		}
+		bt_conn_le_auto_setup(conn, &discovery, &callbacks);
+
+		/* Wait for connection process to complete */
+		rc = k_poll(events, ARRAY_SIZE(events), K_SECONDS(3));
+		k_poll_signal_check(&sig, &signaled, &conn_rc);
+		if ((rc != 0) || (signaled == 0)) {
+			FAIL("Signal not raised on connection\n");
+			return;
+		}
+		if (conn_rc != 0) {
+			FAIL("Unexpected connection result\n");
+			return;
+		}
+
+		/* First characteristic should not be found, second noshould */
+		if ((remote_info[0].value_handle != 0x0000) ||
+		    (remote_info[0].ccc_handle != 0x0000)) {
+			FAIL("Unexpected characteristic discovered\n");
+			return;
+		}
+		if ((remote_info[1].value_handle == 0x0000) ||
+		    (remote_info[1].ccc_handle == 0x0000)) {
+			FAIL("Expected characteristic not discovered\n");
+			return;
+		}
+
+		/* Disconnect from peer */
+		rc = bt_conn_disconnect_sync(conn);
+		if (rc < 0) {
+			FAIL("Failed to disconnect from peer\n");
+			return;
+		}
+		bt_conn_unref(conn);
+		conn = NULL;
+	}
+
+	PASS("Connect discover mix 2 passed\n\n");
+}
+
 static void main_connect_rssi(void)
 {
 	struct k_poll_signal sig;
@@ -617,15 +810,6 @@ static void main_connect_rssi(void)
 
 	PASS("Connect RSSI passed\n\n");
 }
-
-static const struct bt_uuid_128 command_uuid = BT_UUID_INIT_128(INFUSE_SERVICE_UUID_COMMAND_VAL);
-static const struct bt_uuid_128 data_uuid = BT_UUID_INIT_128(INFUSE_SERVICE_UUID_DATA_VAL);
-static const struct bt_uuid_128 logging_uuid = BT_UUID_INIT_128(INFUSE_SERVICE_UUID_LOGGING_VAL);
-static const struct bt_uuid *infuse_iot_characteristics[] = {
-	(const void *)&command_uuid,
-	(const void *)&data_uuid,
-	(const void *)&logging_uuid,
-};
 
 static void main_connect_terminator(void)
 {
@@ -736,6 +920,20 @@ static const struct bst_test_instance gatt_gateway[] = {
 		.test_pre_init_f = test_init,
 		.test_tick_f = test_tick,
 		.test_main_f = main_connect_discover_nonexistant,
+	},
+	{
+		.test_id = "gatt_connect_discover_does_doesnt",
+		.test_descr = "Connect and discover a characteristics that does and doesn't exist",
+		.test_pre_init_f = test_init,
+		.test_tick_f = test_tick,
+		.test_main_f = main_connect_discover_does_doesnt,
+	},
+	{
+		.test_id = "gatt_connect_discover_doesnt_does",
+		.test_descr = "Connect and discover a characteristics that doesn't and does exist",
+		.test_pre_init_f = test_init,
+		.test_tick_f = test_tick,
+		.test_main_f = main_connect_discover_doesnt_does,
 	},
 	{
 		.test_id = "gatt_connect_rssi",
