@@ -15,6 +15,7 @@
 
 #include <zephyr/toolchain.h>
 #include <zephyr/bluetooth/conn.h>
+#include <zephyr/bluetooth/gatt.h>
 
 #include <infuse/epacket/interface/common.h>
 #include <infuse/epacket/interface/epacket_bt.h>
@@ -55,6 +56,26 @@ int epacket_bt_gatt_connect(const bt_addr_le_t *peer, const struct bt_le_conn_pa
 			    uint32_t timeout_ms, struct bt_conn **conn,
 			    struct epacket_read_response *security, bool subscribe_commands,
 			    bool subscribe_data, bool subscribe_logging);
+
+/**
+ * @brief Infuse-IoT Bluetooth GATT characteristic notification handle function
+ *
+ * Public API function so that connections setup through a function other than
+ * @ref epacket_bt_gatt_connect can hook the connection up as an ePacket data source
+ * dynamically.
+ *
+ * @param conn Connection object. May be NULL, indicating that the peer is
+ *             being unpaired
+ * @param params Subscription parameters.
+ * @param data Attribute value data. If NULL then subscription was removed.
+ * @param length Attribute value length.
+ *
+ * @return BT_GATT_ITER_CONTINUE to continue receiving value notifications.
+ *         BT_GATT_ITER_STOP to unsubscribe from value notifications.
+ */
+uint8_t epacket_bt_gatt_notify_recv_func(struct bt_conn *conn,
+					 struct bt_gatt_subscribe_params *params, const void *data,
+					 uint16_t length);
 
 /**
  * @}
