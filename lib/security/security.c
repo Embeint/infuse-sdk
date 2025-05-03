@@ -52,7 +52,7 @@ static uint8_t device_public_key[32];
 
 LOG_MODULE_REGISTER(security, LOG_LEVEL_INF);
 
-static psa_key_attributes_t hkdf_derive_attributes(void)
+psa_key_attributes_t infuse_security_hkdf_attributes(void)
 {
 	psa_key_attributes_t key_attributes = PSA_KEY_ATTRIBUTES_INIT;
 
@@ -142,7 +142,7 @@ static psa_key_id_t generate_root_ecc_key_pair(void)
 
 static psa_key_id_t derive_shared_secret(psa_key_id_t root_key_id)
 {
-	psa_key_attributes_t key_attributes = hkdf_derive_attributes();
+	psa_key_attributes_t key_attributes = infuse_security_hkdf_attributes();
 	uint8_t __maybe_unused shared_secret[32];
 	size_t __maybe_unused olen;
 	psa_status_t status;
@@ -301,7 +301,7 @@ static int coap_dtls_load(void)
 
 static psa_key_id_t network_key_load(void)
 {
-	psa_key_attributes_t key_attributes = hkdf_derive_attributes();
+	psa_key_attributes_t key_attributes = infuse_security_hkdf_attributes();
 	psa_status_t status;
 	psa_key_id_t key_id;
 

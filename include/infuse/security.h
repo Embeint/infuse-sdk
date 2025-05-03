@@ -45,6 +45,14 @@ int infuse_security_init(void);
 void infuse_security_disable_dap(void);
 
 /**
+ * @brief Retrieve the key attributes required for creating a key compatible with
+ * @ref infuse_security_derive_chacha_key
+ *
+ * @return psa_key_attributes_t Key attributes
+ */
+psa_key_attributes_t infuse_security_hkdf_attributes(void);
+
+/**
  * @brief Retrieve current cloud public key
  *
  * @param public_key Storage for public key
