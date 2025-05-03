@@ -16,6 +16,14 @@ module = EPACKET
 module-str = epacket
 source "subsys/logging/Kconfig.template.log_config"
 
+config EPACKET_KEYS_EXTENSION_NETWORKS
+	int "Number of alternate network keys that can be loaded for decoding"
+	default 0
+	help
+	  This option controls how many alternate base network keys can be added
+	  into the key module with epacket_key_network_add for decoding. May
+	  require increasing MBEDTLS_PSA_KEY_SLOT_COUNT.
+
 config EPACKET_PROCESS_THREAD_STACK_SIZE
 	int "Size of the stack for the thread that processes ePacket frames"
 	default 2048
