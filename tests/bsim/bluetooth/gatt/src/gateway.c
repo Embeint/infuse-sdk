@@ -181,7 +181,7 @@ static void main_connect_nonexistant(void)
 		K_POLL_EVENT_INITIALIZER(K_POLL_TYPE_SIGNAL, K_POLL_MODE_NOTIFY_ONLY, &sig),
 	};
 	unsigned int signaled;
-	struct bt_conn *conn;
+	struct bt_conn *conn = NULL;
 	bt_addr_le_t addr;
 	int rc;
 
@@ -223,6 +223,7 @@ static void main_connect_nonexistant(void)
 			return;
 		}
 		bt_conn_unref(conn);
+		conn = NULL;
 		k_sleep(K_MSEC(200));
 
 		expect_no_serial_tdf();
@@ -249,7 +250,7 @@ static void main_connect_no_discovery(void)
 		K_POLL_EVENT_INITIALIZER(K_POLL_TYPE_SIGNAL, K_POLL_MODE_NOTIFY_ONLY, &sig),
 	};
 	unsigned int signaled;
-	struct bt_conn *conn;
+	struct bt_conn *conn = NULL;
 	bt_addr_le_t addr;
 	int conn_rc;
 	int rc;
@@ -298,6 +299,7 @@ static void main_connect_no_discovery(void)
 			return;
 		}
 		bt_conn_unref(conn);
+		conn = NULL;
 
 		if (expect_bt_conn_tdf(0, false) != 0) {
 			FAIL("Failed to get expected TDF\n");
@@ -337,7 +339,7 @@ static void main_connect_discover_name(void)
 		K_POLL_EVENT_INITIALIZER(K_POLL_TYPE_SIGNAL, K_POLL_MODE_NOTIFY_ONLY, &sig),
 	};
 	unsigned int signaled;
-	struct bt_conn *conn;
+	struct bt_conn *conn = NULL;
 	bt_addr_le_t addr;
 	int conn_rc;
 	int rc;
@@ -423,6 +425,7 @@ static void main_connect_discover_name(void)
 			return;
 		}
 		bt_conn_unref(conn);
+		conn = NULL;
 
 		if (expect_bt_conn_tdf(0, true) != 0) {
 			FAIL("Failed to get expected TDF\n");
@@ -462,7 +465,7 @@ static void main_connect_discover_nonexistant(void)
 		K_POLL_EVENT_INITIALIZER(K_POLL_TYPE_SIGNAL, K_POLL_MODE_NOTIFY_ONLY, &sig),
 	};
 	unsigned int signaled;
-	struct bt_conn *conn;
+	struct bt_conn *conn = NULL;
 	bt_addr_le_t addr;
 	int conn_rc;
 	int rc;
@@ -512,6 +515,7 @@ static void main_connect_discover_nonexistant(void)
 			return;
 		}
 		bt_conn_unref(conn);
+		conn = NULL;
 	}
 
 	PASS("Connect discover nonexistant passed\n\n");
@@ -535,7 +539,7 @@ static void main_connect_rssi(void)
 		K_POLL_EVENT_INITIALIZER(K_POLL_TYPE_SIGNAL, K_POLL_MODE_NOTIFY_ONLY, &sig),
 	};
 	unsigned int signaled;
-	struct bt_conn *conn;
+	struct bt_conn *conn = NULL;
 	struct net_buf *buf;
 	bt_addr_le_t addr;
 	struct tdf_bluetooth_rssi *bt_rssi;
@@ -648,7 +652,7 @@ static void main_connect_terminator(void)
 		K_POLL_EVENT_INITIALIZER(K_POLL_TYPE_SIGNAL, K_POLL_MODE_NOTIFY_ONLY, &sig),
 	};
 	unsigned int signaled;
-	struct bt_conn *conn;
+	struct bt_conn *conn = NULL;
 	bt_addr_le_t addr;
 	int conn_rc;
 	int rc;
@@ -690,6 +694,7 @@ static void main_connect_terminator(void)
 			bt_conn_disconnect_sync(conn);
 		}
 		bt_conn_unref(conn);
+		conn = NULL;
 		k_sleep(K_MSEC(250));
 	} while (conn_rc != 0);
 
