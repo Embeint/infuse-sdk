@@ -46,7 +46,7 @@ enum epacket_key_interface {
  * Derived key lifetime is `PSA_KEY_LIFETIME_VOLATILE`.
  * Derived key is only valid for `PSA_ALG_CHACHA20_POLY1305`.
  *
- * @param base_key Derive from network key or device key
+ * @param base_key PSA key to use as the base for derivation
  * @param info Optional application/usage specific array
  * @param info_len Length of @a info
  * @param salt Key derivation randomisation
@@ -56,8 +56,8 @@ enum epacket_key_interface {
  * @retval -EINVAL on invalid @a base_key
  * @retval -EIO on error
  */
-int epacket_key_derive(enum epacket_key_type base_key, const uint8_t *info, uint8_t info_len,
-		       uint32_t salt, psa_key_id_t *output_key_id);
+int epacket_key_derive(psa_key_id_t base_key, const uint8_t *info, uint8_t info_len, uint32_t salt,
+		       psa_key_id_t *output_key_id);
 
 /**
  * @brief Get PSA key ID from ePacket key ID

@@ -63,12 +63,7 @@ ZTEST(epacket_keys, test_invalid_key)
 	const char *info = "test";
 	psa_key_id_t id;
 
-	for (int i = 0; i < UINT8_MAX; i++) {
-		if ((i == EPACKET_KEY_DEVICE) || (i == EPACKET_KEY_NETWORK)) {
-			continue;
-		}
-		zassert_equal(-EINVAL, epacket_key_derive(i, info, strlen(info), 1, &id));
-	}
+	zassert_equal(-EINVAL, epacket_key_derive(PSA_KEY_ID_NULL, info, strlen(info), 1, &id));
 }
 
 ZTEST(epacket_keys, test_key_derive)
@@ -86,8 +81,10 @@ ZTEST(epacket_keys, test_key_derive)
 	rotation = 1;
 
 	/* Same inputs give same key */
-	rc1 = epacket_key_derive(EPACKET_KEY_DEVICE, info, strlen(info), rotation, &id_1);
-	rc2 = epacket_key_derive(EPACKET_KEY_DEVICE, info, strlen(info), rotation, &id_2);
+	rc1 = epacket_key_derive(infuse_security_device_root_key(), info, strlen(info), rotation,
+				 &id_1);
+	rc2 = epacket_key_derive(infuse_security_device_root_key(), info, strlen(info), rotation,
+				 &id_2);
 
 	zassert_equal(0, rc1, "Derivation failed");
 	zassert_equal(0, rc2, "Derivation failed");
@@ -98,8 +95,10 @@ ZTEST(epacket_keys, test_key_derive)
 	zassert_equal(0, bit_difference(key_1, key_2, KEY_SIZE), "Derivation not deterministic");
 
 	/* Base change gives different keys */
-	rc1 = epacket_key_derive(EPACKET_KEY_DEVICE, info, strlen(info), rotation, &id_1);
-	rc2 = epacket_key_derive(EPACKET_KEY_NETWORK, info, strlen(info), rotation, &id_2);
+	rc1 = epacket_key_derive(infuse_security_device_root_key(), info, strlen(info), rotation,
+				 &id_1);
+	rc2 = epacket_key_derive(infuse_security_network_root_key(), info, strlen(info), rotation,
+				 &id_2);
 
 	zassert_equal(0, rc1, "Derivation failed");
 	zassert_equal(0, rc2, "Derivation failed");
@@ -111,9 +110,10 @@ ZTEST(epacket_keys, test_key_derive)
 
 	/* Rotation gives different keys */
 	for (int i = 1; i < 100; i++) {
-		rc1 = epacket_key_derive(EPACKET_KEY_DEVICE, info, strlen(info), rotation, &id_1);
-		rc2 = epacket_key_derive(EPACKET_KEY_DEVICE, info, strlen(info), rotation + i,
-					 &id_2);
+		rc1 = epacket_key_derive(infuse_security_device_root_key(), info, strlen(info),
+					 rotation, &id_1);
+		rc2 = epacket_key_derive(infuse_security_device_root_key(), info, strlen(info),
+					 rotation + i, &id_2);
 
 		zassert_equal(0, rc1, "Derivation failed");
 		zassert_equal(0, rc2, "Derivation failed");
@@ -125,8 +125,10 @@ ZTEST(epacket_keys, test_key_derive)
 	}
 
 	/* Info change gives different keys */
-	rc1 = epacket_key_derive(EPACKET_KEY_DEVICE, info, strlen(info), rotation, &id_1);
-	rc2 = epacket_key_derive(EPACKET_KEY_DEVICE, info2, strlen(info2), rotation, &id_2);
+	rc1 = epacket_key_derive(infuse_security_device_root_key(), info, strlen(info), rotation,
+				 &id_1);
+	rc2 = epacket_key_derive(infuse_security_device_root_key(), info2, strlen(info2), rotation,
+				 &id_2);
 
 	zassert_equal(0, rc1, "Derivation failed");
 	zassert_equal(0, rc2, "Derivation failed");
@@ -136,8 +138,10 @@ ZTEST(epacket_keys, test_key_derive)
 	zassert_equal(0, epacket_key_delete(id_2), "Delete failed");
 	zassert_true(keys_different(key_1, key_2), "Keys too similar");
 
-	rc1 = epacket_key_derive(EPACKET_KEY_DEVICE, info, strlen(info), rotation, &id_1);
-	rc2 = epacket_key_derive(EPACKET_KEY_DEVICE, info3, strlen(info3), rotation, &id_2);
+	rc1 = epacket_key_derive(infuse_security_device_root_key(), info, strlen(info), rotation,
+				 &id_1);
+	rc2 = epacket_key_derive(infuse_security_device_root_key(), info3, strlen(info3), rotation,
+				 &id_2);
 
 	zassert_equal(0, rc1, "Derivation failed");
 	zassert_equal(0, rc2, "Derivation failed");
