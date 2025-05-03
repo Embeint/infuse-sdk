@@ -172,6 +172,14 @@ ZTEST(epacket_keys, test_key_id_get)
 	id_2 = epacket_key_id_get(EPACKET_KEY_DEVICE | EPACKET_KEY_INTERFACE_UDP,
 				  infuse_security_device_key_identifier(), 1);
 	zassert_not_equal(id_1, id_2, "");
+
+	/* Keys not matching the default ID's should fails */
+	id_1 = epacket_key_id_get(EPACKET_KEY_DEVICE | EPACKET_KEY_INTERFACE_SERIAL,
+				  infuse_security_device_key_identifier() + 1, 1);
+	zassert_equal(PSA_KEY_ID_NULL, id_1);
+	id_1 = epacket_key_id_get(EPACKET_KEY_NETWORK | EPACKET_KEY_INTERFACE_SERIAL,
+				  infuse_security_network_key_identifier() + 1, 1);
+	zassert_equal(PSA_KEY_ID_NULL, id_1);
 }
 
 static bool security_init(const void *global_state)

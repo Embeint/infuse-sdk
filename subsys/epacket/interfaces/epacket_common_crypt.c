@@ -64,7 +64,7 @@ int epacket_versioned_v0_encrypt(struct net_buf *buf, uint8_t interface_key)
 	/* Get the PSA key ID for packet */
 	psa_key_id =
 		epacket_key_id_get(epacket_key_id, key_identifier, epoch_time / SECONDS_PER_DAY);
-	if (psa_key_id == 0) {
+	if (psa_key_id == PSA_KEY_ID_NULL) {
 		return -1;
 	}
 
@@ -144,23 +144,16 @@ int epacket_versioned_v0_decrypt(struct net_buf *buf, uint8_t interface_key)
 		if (meta->packet_device_id != infuse_device_id()) {
 			goto error;
 		}
-		if (meta->key_identifier != infuse_security_device_key_identifier()) {
-			goto error;
-		}
 		epacket_key_id = EPACKET_KEY_DEVICE | interface_key;
 	} else {
 		meta->auth = EPACKET_AUTH_NETWORK;
-		/* Validate the network IDs match */
-		if (meta->key_identifier != infuse_security_network_key_identifier()) {
-			goto error;
-		}
 		epacket_key_id = EPACKET_KEY_NETWORK | interface_key;
 	}
 
 	/* Get the PSA key ID for packet */
 	psa_key_id = epacket_key_id_get(epacket_key_id, meta->key_identifier,
 					frame.nonce.gps_time / SECONDS_PER_DAY);
-	if (psa_key_id == 0) {
+	if (psa_key_id == PSA_KEY_ID_NULL) {
 		goto error;
 	}
 
@@ -232,7 +225,7 @@ int epacket_unversioned_v0_encrypt(struct net_buf *buf, uint8_t interface_key)
 	/* Get the PSA key ID for packet */
 	psa_key_id =
 		epacket_key_id_get(epacket_key_id, key_identifier, epoch_time / SECONDS_PER_DAY);
-	if (psa_key_id == 0) {
+	if (psa_key_id == PSA_KEY_ID_NULL) {
 		return -1;
 	}
 
@@ -307,23 +300,16 @@ int epacket_unversioned_v0_decrypt(struct net_buf *buf, uint8_t interface_key)
 		if (meta->packet_device_id != infuse_device_id()) {
 			goto error;
 		}
-		if (meta->key_identifier != infuse_security_device_key_identifier()) {
-			goto error;
-		}
 		epacket_key_id = EPACKET_KEY_DEVICE | interface_key;
 	} else {
 		meta->auth = EPACKET_AUTH_NETWORK;
-		/* Validate the network IDs match */
-		if (meta->key_identifier != infuse_security_network_key_identifier()) {
-			goto error;
-		}
 		epacket_key_id = EPACKET_KEY_NETWORK | interface_key;
 	}
 
 	/* Get the PSA key ID for packet */
 	psa_key_id = epacket_key_id_get(epacket_key_id, meta->key_identifier,
 					frame.nonce.gps_time / SECONDS_PER_DAY);
-	if (psa_key_id == 0) {
+	if (psa_key_id == PSA_KEY_ID_NULL) {
 		goto error;
 	}
 
