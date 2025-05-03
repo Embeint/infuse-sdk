@@ -34,24 +34,13 @@ BUILD_ASSERT(ARRAY_SIZE(key_info) == EPACKET_KEY_INTERFACE_NUM, "");
 
 LOG_MODULE_REGISTER(epacket_keys, CONFIG_EPACKET_LOG_LEVEL);
 
-int epacket_key_derive(enum epacket_key_type base_key, const uint8_t *info, uint8_t info_len,
-		       uint32_t salt, psa_key_id_t *output_key_id)
+int epacket_key_derive(psa_key_id_t base_key, const uint8_t *info, uint8_t info_len, uint32_t salt,
+		       psa_key_id_t *output_key_id)
 {
-	psa_key_id_t input_key;
-
-	/* Select base key */
-	switch (base_key) {
-	case EPACKET_KEY_NETWORK:
-		input_key = infuse_security_network_root_key();
-		break;
-	case EPACKET_KEY_DEVICE:
-		input_key = infuse_security_device_root_key();
-		break;
-	default:
+	if (base_key == PSA_KEY_ID_NULL) {
 		return -EINVAL;
 	}
-
-	*output_key_id = infuse_security_derive_chacha_key(input_key, &salt, sizeof(salt), info,
+	*output_key_id = infuse_security_derive_chacha_key(base_key, &salt, sizeof(salt), info,
 							   info_len, false);
 	if (*output_key_id == PSA_KEY_ID_NULL) {
 		return -EIO;
@@ -66,23 +55,23 @@ int epacket_key_delete(psa_key_id_t key_id)
 
 psa_key_id_t epacket_key_id_get(uint8_t key_type, uint32_t key_identifier, uint32_t key_rotation)
 {
-	enum epacket_key_type base;
 	enum epacket_key_interface interface;
 	struct key_storage *storage;
+	psa_key_id_t base;
 	const char *info;
 	int64_t ticks;
 	int rc;
 
 	/* Extract key info */
 	if (key_type & EPACKET_KEY_DEVICE) {
-		base = EPACKET_KEY_DEVICE;
+		base = infuse_security_device_root_key();
 		storage = device_keys;
 		if (key_identifier != infuse_security_device_key_identifier()) {
 			/* Can only decode our own key */
 			return PSA_KEY_ID_NULL;
 		}
 	} else {
-		base = EPACKET_KEY_NETWORK;
+		base = infuse_security_network_root_key();
 		storage = network_keys;
 		if (key_identifier != infuse_security_network_key_identifier()) {
 			/* Can currently only decode the default network */
