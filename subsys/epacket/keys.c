@@ -64,7 +64,7 @@ int epacket_key_delete(psa_key_id_t key_id)
 	return psa_destroy_key(key_id) == PSA_SUCCESS ? 0 : -EINVAL;
 }
 
-psa_key_id_t epacket_key_id_get(uint8_t key_id, uint32_t key_rotation)
+psa_key_id_t epacket_key_id_get(uint8_t key_type, uint32_t key_identifier, uint32_t key_rotation)
 {
 	enum epacket_key_type base;
 	enum epacket_key_interface interface;
@@ -74,14 +74,14 @@ psa_key_id_t epacket_key_id_get(uint8_t key_id, uint32_t key_rotation)
 	int rc;
 
 	/* Extract key info */
-	if (key_id & EPACKET_KEY_DEVICE) {
+	if (key_type & EPACKET_KEY_DEVICE) {
 		base = EPACKET_KEY_DEVICE;
 		storage = device_keys;
 	} else {
 		base = EPACKET_KEY_NETWORK;
 		storage = network_keys;
 	}
-	interface = key_id & EPACKET_KEY_INTERFACE_MASK;
+	interface = key_type & EPACKET_KEY_INTERFACE_MASK;
 
 	/* Handle key rotation */
 	if (storage[interface].rotation != key_rotation) {
@@ -90,7 +90,7 @@ psa_key_id_t epacket_key_id_get(uint8_t key_id, uint32_t key_rotation)
 		if (storage[interface].id) {
 			epacket_key_delete(storage[interface].id);
 		}
-		LOG_INF("Regenerating derived key %02X (%s) for rotation %d", key_id, info,
+		LOG_INF("Regenerating derived key %02X (%s) for rotation %d", key_type, info,
 			key_rotation);
 		ticks = k_uptime_ticks();
 		rc = epacket_key_derive(base, info, strlen(info), key_rotation,

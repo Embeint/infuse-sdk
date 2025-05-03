@@ -153,19 +153,24 @@ ZTEST(epacket_keys, test_key_id_get)
 	psa_key_id_t id_1, id_2;
 
 	/* We expect rotations of the same interface key to have the same ID */
-	id_1 = epacket_key_id_get(EPACKET_KEY_DEVICE | EPACKET_KEY_INTERFACE_SERIAL, 1);
-	id_2 = epacket_key_id_get(EPACKET_KEY_DEVICE | EPACKET_KEY_INTERFACE_SERIAL, 1);
+	id_1 = epacket_key_id_get(EPACKET_KEY_DEVICE | EPACKET_KEY_INTERFACE_SERIAL,
+				  infuse_security_device_key_identifier(), 1);
+	id_2 = epacket_key_id_get(EPACKET_KEY_DEVICE | EPACKET_KEY_INTERFACE_SERIAL,
+				  infuse_security_device_key_identifier(), 1);
 	zassert_equal(id_1, id_2, "");
 
-	id_2 = epacket_key_id_get(EPACKET_KEY_DEVICE | EPACKET_KEY_INTERFACE_SERIAL, 2);
+	id_2 = epacket_key_id_get(EPACKET_KEY_DEVICE | EPACKET_KEY_INTERFACE_SERIAL,
+				  infuse_security_device_key_identifier(), 2);
 	zassert_equal(id_1, id_2, "");
 
 	/* Device and network keys should have different IDs*/
-	id_2 = epacket_key_id_get(EPACKET_KEY_NETWORK | EPACKET_KEY_INTERFACE_SERIAL, 1);
+	id_2 = epacket_key_id_get(EPACKET_KEY_NETWORK | EPACKET_KEY_INTERFACE_SERIAL,
+				  infuse_security_network_key_identifier(), 1);
 	zassert_not_equal(id_1, id_2, "");
 
 	/* Different interface keys should have different IDs */
-	id_2 = epacket_key_id_get(EPACKET_KEY_DEVICE | EPACKET_KEY_INTERFACE_UDP, 1);
+	id_2 = epacket_key_id_get(EPACKET_KEY_DEVICE | EPACKET_KEY_INTERFACE_UDP,
+				  infuse_security_device_key_identifier(), 1);
 	zassert_not_equal(id_1, id_2, "");
 }
 

@@ -20,6 +20,7 @@
 #include <infuse/rpc/commands.h>
 #include <infuse/rpc/command_runner.h>
 #include <infuse/rpc/types.h>
+#include <infuse/security.h>
 
 LOG_MODULE_DECLARE(rpc_server);
 
@@ -107,6 +108,7 @@ static int zperf_upload_data_loader(void *user_ctx, uint64_t offset, uint8_t *da
 
 		/* Use the default UDP network key for encryption */
 		psa_key_id = epacket_key_id_get(EPACKET_KEY_NETWORK | EPACKET_KEY_INTERFACE_UDP,
+						infuse_security_network_key_identifier(),
 						epoch_seconds / SECONDS_PER_DAY);
 
 		/* Ensure we don't reuse a nonce by randomising the first 12 bytes */

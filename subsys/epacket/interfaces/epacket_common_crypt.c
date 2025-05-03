@@ -62,7 +62,8 @@ int epacket_versioned_v0_encrypt(struct net_buf *buf, uint8_t interface_key)
 	}
 
 	/* Get the PSA key ID for packet */
-	psa_key_id = epacket_key_id_get(epacket_key_id, epoch_time / SECONDS_PER_DAY);
+	psa_key_id =
+		epacket_key_id_get(epacket_key_id, key_identifier, epoch_time / SECONDS_PER_DAY);
 	if (psa_key_id == 0) {
 		return -1;
 	}
@@ -157,7 +158,8 @@ int epacket_versioned_v0_decrypt(struct net_buf *buf, uint8_t interface_key)
 	}
 
 	/* Get the PSA key ID for packet */
-	psa_key_id = epacket_key_id_get(epacket_key_id, frame.nonce.gps_time / SECONDS_PER_DAY);
+	psa_key_id = epacket_key_id_get(epacket_key_id, meta->key_identifier,
+					frame.nonce.gps_time / SECONDS_PER_DAY);
 	if (psa_key_id == 0) {
 		goto error;
 	}
@@ -228,7 +230,8 @@ int epacket_unversioned_v0_encrypt(struct net_buf *buf, uint8_t interface_key)
 	}
 
 	/* Get the PSA key ID for packet */
-	psa_key_id = epacket_key_id_get(epacket_key_id, epoch_time / SECONDS_PER_DAY);
+	psa_key_id =
+		epacket_key_id_get(epacket_key_id, key_identifier, epoch_time / SECONDS_PER_DAY);
 	if (psa_key_id == 0) {
 		return -1;
 	}
@@ -318,7 +321,8 @@ int epacket_unversioned_v0_decrypt(struct net_buf *buf, uint8_t interface_key)
 	}
 
 	/* Get the PSA key ID for packet */
-	psa_key_id = epacket_key_id_get(epacket_key_id, frame.nonce.gps_time / SECONDS_PER_DAY);
+	psa_key_id = epacket_key_id_get(epacket_key_id, meta->key_identifier,
+					frame.nonce.gps_time / SECONDS_PER_DAY);
 	if (psa_key_id == 0) {
 		goto error;
 	}

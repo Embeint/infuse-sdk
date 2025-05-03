@@ -62,12 +62,14 @@ int epacket_key_derive(enum epacket_key_type base_key, const uint8_t *info, uint
 /**
  * @brief Get PSA key ID from ePacket key ID
  *
- * @param key_id ePacket key ID
+ * @param key_type ePacket key type (Combination of @ref epacket_key_type and @ref
+ * epacket_key_interface)
+ * @param key_identifier 3 byte key identifier
  * @param key_rotation Rotation index of ePacket key
  *
  * @return psa_key_id_t PSA key ID to use for operations, 0 on error
  */
-psa_key_id_t epacket_key_id_get(uint8_t key_id, uint32_t key_rotation);
+psa_key_id_t epacket_key_id_get(uint8_t key_type, uint32_t key_identifier, uint32_t key_rotation);
 
 /**
  * @brief Delete a PSA key ID
