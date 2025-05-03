@@ -106,7 +106,10 @@ static uint8_t ccc_discover_cb(struct bt_conn *conn, const struct bt_gatt_attr *
 	/* Assign CCC handle to appropriate characteristic */
 	for (int i = 0; i < s->discovery->num_characteristics; i++) {
 		remote_char = &s->discovery->remote_info[i];
-
+		if (remote_char->attr_start_handle == 0) {
+			/* Characteristic was not found on remote */
+			continue;
+		}
 		if (IN_RANGE(attr->handle, remote_char->attr_start_handle,
 			     remote_char->attr_end_handle)) {
 			remote_char->ccc_handle = attr->handle;
