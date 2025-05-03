@@ -98,8 +98,9 @@ static void conn_terminated_cb(struct bt_conn *conn, int reason, void *user_data
 {
 }
 
-static uint8_t char_recv_func(struct bt_conn *conn, struct bt_gatt_subscribe_params *params,
-			      const void *data, uint16_t length)
+uint8_t epacket_bt_gatt_notify_recv_func(struct bt_conn *conn,
+					 struct bt_gatt_subscribe_params *params, const void *data,
+					 uint16_t length)
 {
 	struct epacket_rx_metadata *meta;
 	struct net_buf *rx_buffer;
@@ -156,7 +157,7 @@ static int characteristic_subscribe(struct bt_conn *conn,
 	params->ccc_handle = characteristic->ccc_handle;
 	params->value = subscribe ? BT_GATT_CCC_NOTIFY : 0;
 	params->subscribe = NULL;
-	params->notify = char_recv_func;
+	params->notify = epacket_bt_gatt_notify_recv_func;
 
 	if (subscribe) {
 		rc = bt_gatt_subscribe(conn, params);
