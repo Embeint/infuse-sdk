@@ -118,7 +118,7 @@ static void main_gateway_connect(void)
 {
 	const struct bt_le_conn_param params = BT_LE_CONN_PARAM_INIT(0x10, 0x15, 0, 400);
 	struct epacket_read_response security_info;
-	struct bt_conn *conn, *conn2;
+	struct bt_conn *conn = NULL, *conn2 = NULL;
 	bt_addr_le_t addr;
 	int8_t rssi;
 	int rc;
@@ -146,6 +146,7 @@ static void main_gateway_connect(void)
 			return;
 		}
 		bt_conn_unref(conn2);
+		conn2 = NULL;
 
 		/* Wait a little while */
 		k_sleep(K_MSEC(200));
@@ -162,6 +163,7 @@ static void main_gateway_connect(void)
 			return;
 		}
 		bt_conn_unref(conn);
+		conn = NULL;
 	}
 
 	k_sleep(K_SECONDS(1));
@@ -173,7 +175,7 @@ static void main_gateway_connect_multi(void)
 {
 	const struct bt_le_conn_param params = BT_LE_CONN_PARAM_INIT(0x10, 0x15, 0, 400);
 	struct epacket_read_response security_info;
-	struct bt_conn *conn1, *conn2;
+	struct bt_conn *conn1 = NULL, *conn2 = NULL;
 	bt_addr_le_t addr[2];
 	int rc;
 
@@ -209,12 +211,14 @@ static void main_gateway_connect_multi(void)
 			return;
 		}
 		bt_conn_unref(conn1);
+		conn1 = NULL;
 		rc = bt_conn_disconnect_sync(conn2);
 		if (rc != 0) {
 			FAIL("Failed to disconnect from second peer\n");
 			return;
 		}
 		bt_conn_unref(conn2);
+		conn2 = NULL;
 	}
 
 	PASS("Received packets from advertiser\n");
@@ -225,7 +229,7 @@ static void main_gateway_connect_then_scan(void)
 	const struct device *epacket_bt_adv = DEVICE_DT_GET(DT_NODELABEL(epacket_bt_adv));
 	const struct bt_le_conn_param params = BT_LE_CONN_PARAM_INIT(0x10, 0x15, 0, 400);
 	struct epacket_read_response security_info;
-	struct bt_conn *conn;
+	struct bt_conn *conn = NULL;
 	bt_addr_le_t addr;
 	int rc;
 
@@ -427,7 +431,7 @@ static void main_gateway_connect_recv(void)
 	const struct device *epacket_central = DEVICE_DT_GET(DT_NODELABEL(epacket_bt_central));
 	struct epacket_read_response security_info;
 	struct epacket_rx_metadata *meta;
-	struct bt_conn *conn;
+	struct bt_conn *conn = NULL;
 	struct net_buf *buf;
 	bt_addr_le_t addr;
 	bool data_sub;
@@ -489,6 +493,7 @@ static void main_gateway_connect_recv(void)
 			return;
 		}
 		bt_conn_unref(conn);
+		conn = NULL;
 	}
 
 	PASS("Received TDF data from connected peer\n");
@@ -500,7 +505,7 @@ static void main_gateway_remote_rpc_client(void)
 	const struct device *epacket_central = DEVICE_DT_GET(DT_NODELABEL(epacket_bt_central));
 	struct epacket_read_response security_info;
 	union epacket_interface_address address, wrong;
-	struct bt_conn *conn;
+	struct bt_conn *conn = NULL;
 	struct net_buf *buf;
 	bt_addr_le_t addr;
 	int rc;
@@ -562,6 +567,7 @@ static void main_gateway_remote_rpc_client(void)
 			return;
 		}
 		bt_conn_unref(conn);
+		conn = NULL;
 	}
 
 	/* Unregister from callbacks */
