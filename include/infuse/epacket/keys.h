@@ -96,6 +96,19 @@ int epacket_key_export(psa_key_id_t key_id, uint8_t key[32]);
 #endif /* CONFIG_INFUSE_SECURITY_CHACHA_KEY_EXPORT */
 
 /**
+ * @brief Add another network to the key module
+ *
+ * @param key_id PSA key ID for the network root key
+ * @param network_id Network ID associated with the PSA key
+ *
+ * @retval 0 On success
+ * @retval -EINVAL Invalid parameters
+ * @retval -EALREADY Network is already added
+ * @retval -ENOMEM No more extension networks can be added
+ */
+int epacket_key_extension_network_add(psa_key_id_t key_id, uint32_t network_id);
+
+/**
  * @}
  */
 

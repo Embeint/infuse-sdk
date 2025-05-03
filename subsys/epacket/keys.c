@@ -32,6 +32,17 @@ static const char *const key_info[] = {
 };
 BUILD_ASSERT(ARRAY_SIZE(key_info) == EPACKET_KEY_INTERFACE_NUM, "");
 
+#if CONFIG_EPACKET_KEYS_EXTENSION_NETWORKS > 0
+struct extension_network {
+	uint32_t network_id;
+	psa_key_id_t base_key;
+};
+
+static struct extension_network extension_bases[CONFIG_EPACKET_KEYS_EXTENSION_NETWORKS];
+static struct key_storage extension_keys[CONFIG_EPACKET_KEYS_EXTENSION_NETWORKS]
+					[EPACKET_KEY_INTERFACE_NUM];
+#endif /* CONFIG_EPACKET_KEYS_EXTENSION_NETWORKS > 0 */
+
 LOG_MODULE_REGISTER(epacket_keys, CONFIG_EPACKET_LOG_LEVEL);
 
 int epacket_key_derive(psa_key_id_t base_key, const uint8_t *info, uint8_t info_len, uint32_t salt,
@@ -57,7 +68,7 @@ psa_key_id_t epacket_key_id_get(uint8_t key_type, uint32_t key_identifier, uint3
 {
 	enum epacket_key_interface interface;
 	struct key_storage *storage;
-	psa_key_id_t base;
+	psa_key_id_t base = PSA_KEY_ID_NULL;
 	const char *info;
 	int64_t ticks;
 	int rc;
@@ -71,11 +82,25 @@ psa_key_id_t epacket_key_id_get(uint8_t key_type, uint32_t key_identifier, uint3
 			return PSA_KEY_ID_NULL;
 		}
 	} else {
-		base = infuse_security_network_root_key();
-		storage = network_keys;
-		if (key_identifier != infuse_security_network_key_identifier()) {
-			/* Can currently only decode the default network */
-			return PSA_KEY_ID_NULL;
+		if (key_identifier == infuse_security_network_key_identifier()) {
+			base = infuse_security_network_root_key();
+			storage = network_keys;
+		} else {
+#if CONFIG_EPACKET_KEYS_EXTENSION_NETWORKS > 0
+			/* Is this an extension network? */
+			for (int i = 0; i < CONFIG_EPACKET_KEYS_EXTENSION_NETWORKS; i++) {
+				if (extension_bases[i].network_id == key_identifier) {
+					base = extension_bases[i].base_key;
+					storage = extension_keys[i];
+					break;
+				}
+			}
+
+#endif /* CONFIG_EPACKET_KEYS_EXTENSION_NETWORKS */
+			if (base == PSA_KEY_ID_NULL) {
+				/* Network ID not known */
+				return PSA_KEY_ID_NULL;
+			}
 		}
 	}
 	interface = key_type & EPACKET_KEY_INTERFACE_MASK;
@@ -119,3 +144,31 @@ int epacket_key_export(psa_key_id_t key_id, uint8_t key[32])
 }
 
 #endif /* CONFIG_INFUSE_SECURITY_CHACHA_KEY_EXPORT */
+
+#if CONFIG_EPACKET_KEYS_EXTENSION_NETWORKS > 0
+
+int epacket_key_extension_network_add(psa_key_id_t key_id, uint32_t network_id)
+{
+	if (key_id == PSA_KEY_ID_NULL) {
+		return -EINVAL;
+	}
+	for (int i = 0; i < CONFIG_EPACKET_KEYS_EXTENSION_NETWORKS; i++) {
+		if (extension_bases[i].base_key == key_id) {
+			return -EALREADY;
+		}
+	}
+	/* Find a free slot */
+	for (int i = 0; i < CONFIG_EPACKET_KEYS_EXTENSION_NETWORKS; i++) {
+		if (extension_bases[i].base_key == PSA_KEY_ID_NULL) {
+			/* Free slot found */
+			extension_bases[i].base_key = key_id;
+			extension_bases[i].network_id = network_id;
+			memset(extension_keys[i], 0x00, sizeof(extension_keys[i]));
+			return 0;
+		}
+	}
+	/* No free slots */
+	return -ENOMEM;
+}
+
+#endif /* CONFIG_EPACKET_KEYS_EXTENSION_NETWORKS > 0 */

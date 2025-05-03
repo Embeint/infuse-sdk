@@ -186,6 +186,53 @@ ZTEST(epacket_keys, test_key_id_get)
 	zassert_equal(PSA_KEY_ID_NULL, id_1);
 }
 
+ZTEST(epacket_keys, test_extension_networks)
+{
+	psa_key_attributes_t key_attributes = infuse_security_hkdf_attributes();
+	uint8_t key_value[32];
+	psa_key_id_t key_ids[CONFIG_EPACKET_KEYS_EXTENSION_NETWORKS + 1];
+	psa_key_id_t out_key, prev_key = PSA_KEY_ID_NULL;
+	psa_status_t status;
+	int rc;
+
+	zassert_equal(-EINVAL, epacket_key_extension_network_add(PSA_KEY_ID_NULL, 0));
+
+	/* Create the base keys */
+	for (int i = 0; i < ARRAY_SIZE(key_ids); i++) {
+		sys_rand_get(key_value, sizeof(key_value));
+		status = psa_import_key(&key_attributes, key_value, sizeof(key_value), &key_ids[i]);
+		zassert_equal(PSA_SUCCESS, status);
+		zassert_not_equal(PSA_KEY_ID_NULL, key_ids[i]);
+	}
+
+	/* Add the networks to the key manager */
+	for (int i = 0; i < CONFIG_EPACKET_KEYS_EXTENSION_NETWORKS; i++) {
+		rc = epacket_key_extension_network_add(key_ids[i], 1000 + i);
+		zassert_equal(0, rc);
+		rc = epacket_key_extension_network_add(key_ids[i], 1000 + i);
+		zassert_equal(-EALREADY, rc);
+	}
+	/* Adding one more than there is space for */
+	rc = epacket_key_extension_network_add(key_ids[ARRAY_SIZE(key_ids) - 1], 999);
+	zassert_equal(-ENOMEM, rc);
+
+	/* Ensure they can be retrieved and are not the same as previous keys */
+	for (int i = 0; i < CONFIG_EPACKET_KEYS_EXTENSION_NETWORKS; i++) {
+		for (int j = 0; j < EPACKET_KEY_INTERFACE_NUM; j++) {
+			out_key = epacket_key_id_get(EPACKET_KEY_NETWORK | j, 1000 + i, 123456);
+			zassert_not_equal(PSA_KEY_ID_NULL, out_key);
+			zassert_true(out_key > prev_key);
+			prev_key = out_key;
+		}
+	}
+	/* Retrieving same key returns same key */
+	prev_key = epacket_key_id_get(EPACKET_KEY_NETWORK | EPACKET_KEY_INTERFACE_SERIAL, 1000,
+				      123456);
+	out_key = epacket_key_id_get(EPACKET_KEY_NETWORK | EPACKET_KEY_INTERFACE_SERIAL, 1000,
+				     123456);
+	zassert_equal(prev_key, out_key);
+}
+
 static bool security_init(const void *global_state)
 {
 	infuse_security_init();
