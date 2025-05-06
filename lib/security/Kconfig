@@ -14,6 +14,13 @@ config INFUSE_SECURITY_DEFAULT_NETWORK
 	string "Path to yaml file containing default network parameters"
 	default "default_network.yaml"
 
+config INFUSE_SECURITY_SECONDARY_NETWORK_ENABLE
+	bool "Generate parameters for a secondary network"
+
+config INFUSE_SECURITY_SECONDARY_NETWORK
+	string "Path to yaml file containing secondary network parameters"
+	depends on INFUSE_SECURITY_SECONDARY_NETWORK_ENABLE
+
 config INFUSE_SECURITY_CHACHA_KEY_EXPORT
 	bool "Enable exporting ChaCha20-Poly1305 symmetric keys"
 	depends on ZTEST

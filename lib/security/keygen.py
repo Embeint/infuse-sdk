@@ -30,6 +30,9 @@ if __name__ == "__main__":
         allow_abbrev=False,
     )
     parser.add_argument("--key", type=str, required=True, help="Path to key yaml file")
+    parser.add_argument(
+        "--name", type=str, required=True, help="Name prefix for variables and defines"
+    )
     args = parser.parse_args()
 
     with open(args.key, "r", encoding="utf-8") as f:
@@ -44,9 +47,9 @@ if __name__ == "__main__":
     network_key_val = key_info["key"]
 
     print(HEADER.format(args.key))
-    print(f"#define INFUSE_NETWORK_KEY_ID 0x{network_key_id:06X}")
+    print(f"#define {args.name.upper()}_NETWORK_KEY_ID 0x{network_key_id:06X}")
     print("")
-    print("static const uint8_t infuse_network_key[] = {")
+    print(f"static const uint8_t {args.name.lower()}_network_key[] = {{")
     for n in range(0, len(network_key_val), 8):
         print(
             "\t{},".format(

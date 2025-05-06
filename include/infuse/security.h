@@ -94,6 +94,17 @@ psa_key_id_t infuse_security_device_sign_key(void);
 psa_key_id_t infuse_security_network_root_key(void);
 
 /**
+ * @brief Get secondary network root key identifier
+ *
+ * Depends on CONFIG_INFUSE_SECURITY_SECONDARY_NETWORK_ENABLE.
+ *
+ * @note This key is only valid for key derivation options through HKDF
+ *
+ * @return psa_key_id_t Network root key identifier
+ */
+psa_key_id_t infuse_security_secondary_network_root_key(void);
+
+/**
  * @brief Get security tag for use with Infuse-IoT COAP server
  *
  * @return sec_tag_t Security tag for use with zsock_setsockopt
@@ -132,6 +143,15 @@ uint32_t infuse_security_device_key_identifier(void);
  * @return uint32_t 24 bit network key identifier
  */
 uint32_t infuse_security_network_key_identifier(void);
+
+/**
+ * @brief Get the secondary network key identifier
+ *
+ * Depends on CONFIG_INFUSE_SECURITY_SECONDARY_NETWORK_ENABLE.
+ *
+ * @return uint32_t 24 bit network key identifier
+ */
+uint32_t infuse_security_secondary_network_key_identifier(void);
 
 /**
  * @}
