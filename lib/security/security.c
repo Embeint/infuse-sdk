@@ -50,6 +50,15 @@ static psa_key_id_t root_ecc_key_id, device_root_key, device_sign_key, network_r
 static uint32_t cached_network_id, cached_device_id;
 static uint8_t device_public_key[32];
 
+#ifdef CONFIG_INFUSE_SECURITY_SECONDARY_NETWORK_ENABLE
+
+#include <infuse/network_key_secondary.h>
+
+static psa_key_id_t secondary_network_root_key;
+static uint32_t secondary_cached_network_id;
+
+#endif /* CONFIG_INFUSE_SECURITY_SECONDARY_NETWORK_ENABLE */
+
 LOG_MODULE_REGISTER(security, LOG_LEVEL_INF);
 
 psa_key_attributes_t infuse_security_hkdf_attributes(void)
@@ -299,15 +308,13 @@ static int coap_dtls_load(void)
 	return 0;
 }
 
-static psa_key_id_t network_key_load(void)
+static psa_key_id_t explicit_key_load(const uint8_t *key, uint8_t key_len)
 {
 	psa_key_attributes_t key_attributes = infuse_security_hkdf_attributes();
 	psa_status_t status;
 	psa_key_id_t key_id;
 
-	cached_network_id = INFUSE_NETWORK_KEY_ID;
-	status = psa_import_key(&key_attributes, infuse_network_key, sizeof(infuse_network_key),
-				&key_id);
+	status = psa_import_key(&key_attributes, key, key_len, &key_id);
 	if (status != PSA_SUCCESS) {
 		LOG_WRN("Failed to import %s root (%d)", "root", status);
 		return PSA_KEY_ID_NULL;
@@ -374,11 +381,24 @@ int infuse_security_init(void)
 	}
 
 	/* Load root network key */
-	network_root_key = network_key_load();
+	cached_network_id = INFUSE_NETWORK_KEY_ID;
+	network_root_key = explicit_key_load(infuse_network_key, sizeof(infuse_network_key));
 	if (network_root_key == PSA_KEY_ID_NULL) {
-		LOG_ERR("Failed to load network root! (%d)", status);
+		LOG_ERR("Failed to load network root!");
 		return -EINVAL;
 	}
+
+#ifdef CONFIG_INFUSE_SECURITY_SECONDARY_NETWORK_ENABLE
+	/* Load secondary network key */
+	secondary_cached_network_id = SECONDARY_NETWORK_KEY_ID;
+	secondary_network_root_key =
+		explicit_key_load(secondary_network_key, sizeof(secondary_network_key));
+	if (secondary_network_root_key == PSA_KEY_ID_NULL) {
+		LOG_ERR("Failed to load secondary network root!");
+		return -EINVAL;
+	}
+#endif /* CONFIG_INFUSE_SECURITY_SECONDARY_NETWORK_ENABLE */
+
 	return 0;
 }
 
@@ -447,6 +467,20 @@ uint32_t infuse_security_network_key_identifier(void)
 {
 	return cached_network_id;
 }
+
+#ifdef CONFIG_INFUSE_SECURITY_SECONDARY_NETWORK_ENABLE
+
+psa_key_id_t infuse_security_secondary_network_root_key(void)
+{
+	return secondary_network_root_key;
+}
+
+uint32_t infuse_security_secondary_network_key_identifier(void)
+{
+	return secondary_cached_network_id;
+}
+
+#endif /* CONFIG_INFUSE_SECURITY_SECONDARY_NETWORK_ENABLE */
 
 #if defined(CONFIG_TLS_CREDENTIALS) || defined(CONFIG_NRF_MODEM_LIB)
 sec_tag_t infuse_security_coap_dtls_tag(void)
