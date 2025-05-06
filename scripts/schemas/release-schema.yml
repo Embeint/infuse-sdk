@@ -20,6 +20,8 @@ mapping:
     type: str
   network_key:
     type: str
+  network_key_secondary:
+    type: str
   disable_logging:
     type: bool
   version_override:

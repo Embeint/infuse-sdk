@@ -76,6 +76,7 @@ jobs:
           # This generates a random network key for CI purposes
           # For real applications, this key MUST be generated once and re-used on each build
           python3 infuse-sdk/scripts/network_key_gen.py --id 0x123456 sample_network.yaml
+          python3 infuse-sdk/scripts/network_key_gen.py --id 0x234567 second_network.yaml
 
       - name: Test application release
         run: |

@@ -98,6 +98,12 @@ class release_build(WestCommand):
             self.network_key = self._absolute_path(self.args.release.parent, key)
         else:
             self.network_key = None
+        if key := self.release.get("network_key_secondary", None):
+            self.network_key_secondary = self._absolute_path(
+                self.args.release.parent, key
+            )
+        else:
+            self.network_key_secondary = None
 
         if override := self.release.get("version_override", None):
             r = r"^\d+\.\d+\.\d+$"
@@ -206,8 +212,8 @@ class release_build(WestCommand):
             sys.exit(f"{version_file} does not exist")
 
         with version_file.open("r") as f:
-            contents = [l.split("=") for l in f.readlines()]
-            m = {l[0].strip(): l[1].strip() for l in contents}
+            contents = [line.split("=") for line in f.readlines()]
+            m = {line[0].strip(): line[1].strip() for line in contents}
 
         commit_hash = str(repo.head.commit)
         if self.version is None:
@@ -270,6 +276,13 @@ class release_build(WestCommand):
         if self.network_key is not None:
             build_cmd.extend(
                 [f'-DCONFIG_INFUSE_SECURITY_DEFAULT_NETWORK="{self.network_key}"']
+            )
+        if self.network_key_secondary is not None:
+            build_cmd.extend(
+                [
+                    "-DCONFIG_INFUSE_SECURITY_SECONDARY_NETWORK_ENABLE=y",
+                    f'-DCONFIG_INFUSE_SECURITY_SECONDARY_NETWORK="{self.network_key_secondary}"',
+                ]
             )
         build_cmd.extend([f'-DCONFIG_INFUSE_APPLICATION_NAME="{name}"'])
         if self.release.get("disable_logging", False):
