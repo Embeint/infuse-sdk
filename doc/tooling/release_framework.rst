@@ -54,6 +54,9 @@ The ``.yaml`` file that configures the release has the following fields:
    * - ``network_key`` (Optional)
      - Relative path string
      - Default network key configuration file
+   * - ``network_key_secondary`` (Optional)
+     - Relative path string
+     - Secondary network key configuration file
    * - ``disable_logging`` (Optional)
      - Boolean
      - Relative path to the default network key configuration file
