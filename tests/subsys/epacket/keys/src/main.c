@@ -58,6 +58,12 @@ ZTEST(epacket_keys, test_bit_difference)
 	zassert_equal(16, bit_difference(&a, &b, sizeof(a)), "");
 }
 
+ZTEST(epacket_keys, test_network_ids)
+{
+	zassert_equal(0x000000, infuse_security_network_key_identifier());
+	zassert_equal(0xFFFFFF, infuse_security_secondary_network_key_identifier());
+}
+
 ZTEST(epacket_keys, test_invalid_key)
 {
 	const char *info = "test";
@@ -161,21 +167,30 @@ ZTEST(epacket_keys, test_key_id_get)
 				  infuse_security_device_key_identifier(), 1);
 	id_2 = epacket_key_id_get(EPACKET_KEY_DEVICE | EPACKET_KEY_INTERFACE_SERIAL,
 				  infuse_security_device_key_identifier(), 1);
-	zassert_equal(id_1, id_2, "");
+	zassert_equal(id_1, id_2);
 
 	id_2 = epacket_key_id_get(EPACKET_KEY_DEVICE | EPACKET_KEY_INTERFACE_SERIAL,
 				  infuse_security_device_key_identifier(), 2);
-	zassert_equal(id_1, id_2, "");
+	zassert_equal(id_1, id_2);
 
 	/* Device and network keys should have different IDs*/
 	id_2 = epacket_key_id_get(EPACKET_KEY_NETWORK | EPACKET_KEY_INTERFACE_SERIAL,
 				  infuse_security_network_key_identifier(), 1);
-	zassert_not_equal(id_1, id_2, "");
+	zassert_not_equal(id_1, id_2);
 
 	/* Different interface keys should have different IDs */
 	id_2 = epacket_key_id_get(EPACKET_KEY_DEVICE | EPACKET_KEY_INTERFACE_UDP,
 				  infuse_security_device_key_identifier(), 1);
-	zassert_not_equal(id_1, id_2, "");
+	zassert_not_equal(id_1, id_2);
+
+	/* Priamry and secondary networks should results in different keys */
+	id_1 = epacket_key_id_get(EPACKET_KEY_NETWORK | EPACKET_KEY_INTERFACE_SERIAL,
+				  infuse_security_network_key_identifier(), 1);
+	id_2 = epacket_key_id_get(EPACKET_KEY_NETWORK | EPACKET_KEY_INTERFACE_SERIAL,
+				  infuse_security_secondary_network_key_identifier(), 1);
+	zassert_not_equal(PSA_KEY_ID_NULL, id_1);
+	zassert_not_equal(PSA_KEY_ID_NULL, id_2);
+	zassert_not_equal(id_1, id_2);
 
 	/* Keys not matching the default ID's should fails */
 	id_1 = epacket_key_id_get(EPACKET_KEY_DEVICE | EPACKET_KEY_INTERFACE_SERIAL,

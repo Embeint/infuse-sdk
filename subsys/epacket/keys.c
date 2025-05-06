@@ -32,6 +32,10 @@ static const char *const key_info[] = {
 };
 BUILD_ASSERT(ARRAY_SIZE(key_info) == EPACKET_KEY_INTERFACE_NUM, "");
 
+#ifdef CONFIG_INFUSE_SECURITY_SECONDARY_NETWORK_ENABLE
+static struct key_storage secondary_network_keys[EPACKET_KEY_INTERFACE_NUM];
+#endif /* CONFIG_INFUSE_SECURITY_SECONDARY_NETWORK_ENABLE */
+
 #if CONFIG_EPACKET_KEYS_EXTENSION_NETWORKS > 0
 struct extension_network {
 	uint32_t network_id;
@@ -85,7 +89,14 @@ psa_key_id_t epacket_key_id_get(uint8_t key_type, uint32_t key_identifier, uint3
 		if (key_identifier == infuse_security_network_key_identifier()) {
 			base = infuse_security_network_root_key();
 			storage = network_keys;
-		} else {
+		}
+#ifdef CONFIG_INFUSE_SECURITY_SECONDARY_NETWORK_ENABLE
+		else if (key_identifier == infuse_security_secondary_network_key_identifier()) {
+			base = infuse_security_secondary_network_root_key();
+			storage = secondary_network_keys;
+		}
+#endif /* CONFIG_INFUSE_SECURITY_SECONDARY_NETWORK_ENABLE */
+		else {
 #if CONFIG_EPACKET_KEYS_EXTENSION_NETWORKS > 0
 			/* Is this an extension network? */
 			for (int i = 0; i < CONFIG_EPACKET_KEYS_EXTENSION_NETWORKS; i++) {
