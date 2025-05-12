@@ -22,6 +22,7 @@ static struct net_mgmt_event_callback wifi_mgmt_cb;
 static struct k_work_delayable conn_config_changed;
 static struct k_work_delayable conn_create;
 static struct k_work_delayable conn_timeout;
+static struct k_work conn_terminate;
 static struct net_if *wifi_if;
 
 LOG_MODULE_REGISTER(wifi_mgmt, LOG_LEVEL_INF);
@@ -182,12 +183,23 @@ static int wifi_mgmt_connect(struct conn_mgr_conn_binding *const binding)
 	if (timeout > CONN_MGR_IF_NO_TIMEOUT) {
 		k_work_schedule(&conn_timeout, K_SECONDS(timeout));
 	}
+	/* Return immediately, function is required to be non-blocking */
 	return 0;
+}
+
+static void conn_terminate_worker(struct k_work *work)
+{
+	(void)net_mgmt(NET_REQUEST_WIFI_DISCONNECT, wifi_if, NULL, 0);
 }
 
 static int wifi_mgmt_disconnect(struct conn_mgr_conn_binding *const binding)
 {
-	return net_mgmt(NET_REQUEST_WIFI_DISCONNECT, binding->iface, NULL, 0);
+	/* Cancel any pending connection work */
+	k_work_cancel_delayable(&conn_create);
+	/* Disconnect from the system workqueue */
+	k_work_submit(&conn_terminate);
+	/* Return immediately, function is required to be non-blocking */
+	return 0;
 }
 
 static void kv_value_changed(uint16_t key, const void *data, size_t data_len, void *user_ctx)
@@ -221,6 +233,7 @@ static void wifi_mgmt_init(struct conn_mgr_conn_binding *const binding)
 	k_work_init_delayable(&conn_create, conn_create_worker);
 	k_work_init_delayable(&conn_timeout, conn_timeout_worker);
 	k_work_init_delayable(&conn_config_changed, conn_config_changed_worker);
+	k_work_init(&conn_terminate, conn_terminate_worker);
 
 #ifdef CONFIG_WIFI_NM_WPA_SUPPLICANT
 	net_mgmt_init_event_callback(&wpa_supp_cb, wpa_supp_event_handler,
