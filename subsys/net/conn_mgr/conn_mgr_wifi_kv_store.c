@@ -24,6 +24,7 @@ static struct k_work_delayable conn_create;
 static struct k_work_delayable conn_timeout;
 static struct k_work conn_terminate;
 static struct net_if *wifi_if;
+static bool connection_requested;
 
 LOG_MODULE_REGISTER(wifi_mgmt, LOG_LEVEL_INF);
 
@@ -110,6 +111,11 @@ static void conn_config_changed_worker(struct k_work *work)
 		return;
 	}
 
+	/* If a connection is not currently requested, nothing to do */
+	if (!connection_requested) {
+		return;
+	}
+
 	/* Configuration changed, trigger a disconnect */
 	(void)net_mgmt(NET_REQUEST_WIFI_DISCONNECT, wifi_if, NULL, 0);
 	/* Reschedule connection */
@@ -148,6 +154,11 @@ static void wifi_mgmt_event_handler(struct net_mgmt_event_callback *cb, uint32_t
 		}
 		break;
 	case NET_EVENT_WIFI_DISCONNECT_RESULT:
+		if (!connection_requested) {
+			/* Disconnected as a result of user request */
+			LOG_INF("Connection released");
+			return;
+		}
 		LOG_INF("Connection lost (%d)%s", status->disconn_reason,
 			persistent ? ", retrying" : "");
 		if (persistent) {
@@ -176,6 +187,8 @@ static int wifi_mgmt_connect(struct conn_mgr_conn_binding *const binding)
 {
 	int timeout;
 
+	/* Connection is now requested */
+	connection_requested = true;
 	/* Schedule the connection */
 	k_work_schedule(&conn_create, K_NO_WAIT);
 	/* Schedule the timeout if set */
@@ -194,6 +207,8 @@ static void conn_terminate_worker(struct k_work *work)
 
 static int wifi_mgmt_disconnect(struct conn_mgr_conn_binding *const binding)
 {
+	/* Connection no longer requested */
+	connection_requested = false;
 	/* Cancel any pending connection work */
 	k_work_cancel_delayable(&conn_create);
 	/* Disconnect from the system workqueue */
