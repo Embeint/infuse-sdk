@@ -203,6 +203,18 @@ config INFUSE_RPC_COMMAND_INFUSE_STATES_UPDATE_REQUIRED_AUTH
 	depends on INFUSE_RPC_COMMAND_INFUSE_STATES_UPDATE
 	default 2
 
+config INFUSE_RPC_COMMAND_DATA_LOGGER_ERASE
+	bool "Enable RPC data_logger_erase"
+	depends on DATA_LOGGER
+	default y if INFUSE_SDK
+	help
+	  Erase all data from a data logger
+
+config INFUSE_RPC_COMMAND_DATA_LOGGER_ERASE_REQUIRED_AUTH
+	int "Required authorisation level to run data_logger_erase"
+	depends on INFUSE_RPC_COMMAND_DATA_LOGGER_ERASE
+	default 2
+
 config INFUSE_RPC_COMMAND_LTE_AT_CMD
 	bool "Enable RPC lte_at_cmd"
 	depends on NRF_MODEM_LIB

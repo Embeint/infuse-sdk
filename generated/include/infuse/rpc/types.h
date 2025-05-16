@@ -351,6 +351,8 @@ enum rpc_builtin_id {
 	RPC_ID_INFUSE_STATES_QUERY = 16,
 	/** Update Infuse-IoT application states */
 	RPC_ID_INFUSE_STATES_UPDATE = 17,
+	/** Erase all data from a data logger */
+	RPC_ID_DATA_LOGGER_ERASE = 18,
 	/** Run AT command against LTE modem */
 	RPC_ID_LTE_AT_CMD = 20,
 	/** Get current LTE interface state */
@@ -665,6 +667,19 @@ struct rpc_infuse_states_update_request {
 } __packed;
 
 struct rpc_infuse_states_update_response {
+	struct infuse_rpc_rsp_header header;
+} __packed;
+
+/** Erase all data from a data logger */
+struct rpc_data_logger_erase_request {
+	struct infuse_rpc_req_header header;
+	/** Data logger to erase */
+	uint8_t logger;
+	/** Erase entire logger space, even empty blocks */
+	uint8_t erase_empty;
+} __packed;
+
+struct rpc_data_logger_erase_response {
 	struct infuse_rpc_rsp_header header;
 } __packed;
 
