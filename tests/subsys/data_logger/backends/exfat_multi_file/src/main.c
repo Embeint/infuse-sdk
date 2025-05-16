@@ -254,6 +254,67 @@ ZTEST(data_logger_exfat, test_device_move)
 	zassert_equal(FR_OK, f_stat(filename, &fno));
 }
 
+static int erase_progress_calls;
+
+static void erase_progress(uint32_t blocks_erased)
+{
+	erase_progress_calls += 1;
+}
+
+static void test_erase_blocks(uint32_t logged_blocks)
+{
+	const struct device *logger = DEVICE_DT_GET(DT_NODELABEL(data_logger_exfat));
+	uint32_t expected_files;
+	struct data_logger_state state;
+	uint8_t type = 3;
+	int rc;
+
+	erase_progress_calls = 0;
+
+	/* Init to erase value */
+	zassert_equal(0, logger_exfat_init(logger));
+	data_logger_get_state(logger, &state);
+
+	/* Write requested blocks */
+	for (int i = 0; i < logged_blocks; i++) {
+		zassert_equal(
+			0, data_logger_block_write(logger, type, input_buffer, state.block_size));
+	}
+	expected_files = ROUND_UP(logged_blocks * 512, CONFIG_DATA_LOGGER_EXFAT_FILE_SIZE) /
+			 CONFIG_DATA_LOGGER_EXFAT_FILE_SIZE;
+
+	/* Erase the logger */
+	rc = data_logger_erase(logger, true, erase_progress);
+	zassert_equal(0, rc);
+
+	/* Expected number of callbacks */
+	zassert_equal(expected_files, erase_progress_calls);
+
+	/* Blocks should be reset, not the bytes logged count */
+	data_logger_get_state(logger, &state);
+	zassert_equal(0, state.boot_block);
+	zassert_equal(0, state.current_block);
+	zassert_equal(logged_blocks * 512, state.bytes_logged);
+
+	/* Re-initialise the logger, no data should exist */
+	zassert_equal(0, logger_exfat_init(logger));
+	data_logger_get_state(logger, &state);
+	zassert_equal(0, state.boot_block);
+	zassert_equal(0, state.current_block);
+}
+
+ZTEST(data_logger_exfat, test_erase)
+{
+	/* Test erasing all data */
+	const struct device *logger = DEVICE_DT_GET(DT_NODELABEL(data_logger_exfat));
+	struct data_logger_state state;
+
+	data_logger_get_state(logger, &state);
+
+	test_erase_blocks(5);
+	test_erase_blocks(state.physical_blocks / 2);
+}
+
 ZTEST(data_logger_exfat, test_reset)
 {
 	/* Test deleting "DELETE_TO_RESET.txt" */
