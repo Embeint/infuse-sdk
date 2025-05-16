@@ -425,6 +425,19 @@
             ],
             "response_params": []
         },
+        "18": {
+            "name": "data_logger_erase",
+            "description": "Erase all data from a data logger",
+            "depends_on": "DATA_LOGGER",
+            "default": "y if INFUSE_SDK",
+            "default_auth": "EPACKET_AUTH_DEVICE",
+            "request_params": [
+                {"name": "logger", "type": "enum rpc_enum_data_logger", "description": "Data logger to erase"},
+                {"name": "erase_empty", "type": "uint8_t", "description": "Erase entire logger space, even empty blocks"}
+            ],
+            "response_params": [
+            ]
+        },
         "20": {
             "name": "lte_at_cmd",
             "description": "Run AT command against LTE modem",

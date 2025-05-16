@@ -170,6 +170,15 @@ struct net_buf *rpc_command_infuse_states_query(struct net_buf *request);
 struct net_buf *rpc_command_infuse_states_update(struct net_buf *request);
 
 /**
+ * @brief Run data_logger_erase RPC
+ *
+ * @param request @ref INFUSE_RPC_CMD packet to respond to
+ *
+ * @return struct net_buf* @ref INFUSE_RPC_RSP packet buffer
+ */
+struct net_buf *rpc_command_data_logger_erase(struct net_buf *request);
+
+/**
  * @brief Run lte_at_cmd RPC
  *
  * @param request @ref INFUSE_RPC_CMD packet to respond to

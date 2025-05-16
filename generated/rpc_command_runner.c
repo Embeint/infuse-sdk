@@ -189,6 +189,13 @@ void rpc_command_runner(struct net_buf *request)
 		}
 		break;
 #endif /* CONFIG_INFUSE_RPC_COMMAND_INFUSE_STATES_UPDATE */
+#ifdef CONFIG_INFUSE_RPC_COMMAND_DATA_LOGGER_ERASE
+	case RPC_ID_DATA_LOGGER_ERASE:
+		if (AUTHORISED(auth, DATA_LOGGER_ERASE)) { /* GCOVR_EXCL_BR_LINE */
+			response = rpc_command_data_logger_erase(request);
+		}
+		break;
+#endif /* CONFIG_INFUSE_RPC_COMMAND_DATA_LOGGER_ERASE */
 #ifdef CONFIG_INFUSE_RPC_COMMAND_LTE_AT_CMD
 	case RPC_ID_LTE_AT_CMD:
 		if (AUTHORISED(auth, LTE_AT_CMD)) { /* GCOVR_EXCL_BR_LINE */
