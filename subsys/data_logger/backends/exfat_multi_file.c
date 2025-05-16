@@ -188,6 +188,71 @@ static int filesystem_init(const struct device *dev)
 	return logger_exfat_filesystem_common_init(dev);
 }
 
+static int logger_exfat_reset(const struct device *dev, uint32_t block_hint,
+			      void (*erase_progress)(uint32_t blocks_erased))
+{
+	const struct dl_exfat_config *config = dev->config;
+	struct dl_exfat_data *data = dev->data;
+	const char *infuse_prefix = "infuse_";
+	uint32_t blocks_erased = 0;
+	char filename[40];
+	FILINFO fno;
+	FRESULT fr;
+	DIR dir;
+	int rc = 0;
+
+	(void)logger_exfat_filesystem_claim(dev, NULL, NULL, K_FOREVER);
+
+	snprintf(filename, sizeof(filename), "%s:", config->disk);
+
+	/* Open the directory */
+	fr = f_opendir(&dir, filename);
+	if (fr != FR_OK) {
+		rc = -EIO;
+		goto release;
+	}
+	/* Iterate over each file in the directory */
+	while (1) {
+		fr = f_readdir(&dir, &fno);
+		if (fr != FR_OK || fno.fname[0] == 0) {
+			/* Error or end of directory */
+			break;
+		}
+
+		if (fno.fattrib & AM_DIR) {
+			/* Directory, not file */
+			continue;
+		}
+
+		if (strncmp(infuse_prefix, fno.fname, strlen(infuse_prefix)) != 0) {
+			/* Not an Infuse binary data file */
+			continue;
+		}
+
+		/* Unlink the file. This doesn't erase any data, but file creation handles
+		 * ensuring the file is in the right state once it is created again.
+		 */
+		LOG_DBG("Unlinking %s", fno.fname);
+		fr = f_unlink(fno.fname);
+		__ASSERT_NO_MSG(fr == FR_OK);
+
+		/* Run user callback */
+		blocks_erased += BLOCKS_PER_FILE;
+		erase_progress(blocks_erased);
+	}
+
+	f_closedir(&dir);
+
+release:
+	logger_exfat_filesystem_release(dev);
+
+	/* Reset cached values */
+	data->cached_file_num = UINT32_MAX;
+	data->cached_file_lba = UINT32_MAX;
+
+	return rc;
+}
+
 #ifdef CONFIG_PM_DEVICE
 static int exfat_multi_pm_control(const struct device *dev, enum pm_device_action action)
 {
@@ -320,6 +385,7 @@ int logger_exfat_init(const struct device *dev)
 const struct data_logger_api data_logger_exfat_api = {
 	.write = logger_exfat_write,
 	.read = logger_exfat_read,
+	.reset = logger_exfat_reset,
 	.search_hint = logger_exfat_range_hint,
 };
 
