@@ -362,6 +362,54 @@ ZTEST(data_logger_flash_map, test_erase)
 	test_erase_blocks(3 * state.physical_blocks / 2);
 }
 
+ZTEST(data_logger_flash_map, test_erase_exclusion)
+{
+	/* Test read/write while erasing */
+	const struct device *logger = DEVICE_DT_GET(DT_NODELABEL(data_logger_flash));
+	struct data_logger_state state;
+
+	data_logger_get_state(logger, &state);
+	zassert_equal(0, state.current_block);
+
+	/* Write some blocks to start */
+	for (int i = 0; i < 3; i++) {
+		zassert_equal(0,
+			      data_logger_block_write(logger, 1, input_buffer, state.block_size));
+	}
+	/* Nothing actually written */
+	data_logger_get_state(logger, &state);
+	zassert_equal(3, state.current_block);
+
+	data_logger_set_erase_state(logger, true);
+
+	/* Try to write some blocks */
+	zassert_equal(0, data_logger_block_write(logger, 1, input_buffer, state.block_size));
+	zassert_equal(0, data_logger_block_write(logger, 1, input_buffer, state.block_size));
+	zassert_equal(0, data_logger_block_write(logger, 1, input_buffer, state.block_size));
+
+	/* Extra blocks not actually written */
+	data_logger_get_state(logger, &state);
+	zassert_equal(3, state.current_block);
+
+	/* Reading returns errors */
+	zassert_equal(-EBUSY,
+		      data_logger_block_read(logger, 0, 0, output_buffer, state.block_size));
+	zassert_equal(-EBUSY,
+		      data_logger_block_read(logger, 1, 0, output_buffer, state.block_size));
+
+	/* Clear the erasing state*/
+	data_logger_set_erase_state(logger, false);
+
+	/* Reading works again */
+	zassert_equal(0, data_logger_block_read(logger, 0, 0, output_buffer, state.block_size));
+	zassert_equal(0, data_logger_block_read(logger, 1, 0, output_buffer, state.block_size));
+
+	/* So does writing (not actually reset because we simulated the flag) */
+	zassert_equal(0, data_logger_block_write(logger, 1, input_buffer, state.block_size));
+	data_logger_get_state(logger, &state);
+	zassert_equal(4, state.current_block);
+}
+
 static bool test_data_init(const void *global_state)
 {
 	flash_buffer = flash_simulator_get_memory(DEVICE_DT_GET(DT_NODELABEL(sim_flash)),

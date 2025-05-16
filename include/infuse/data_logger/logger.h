@@ -146,6 +146,18 @@ int data_logger_block_read(const struct device *dev, uint32_t block_idx, uint16_
 int data_logger_erase(const struct device *dev, bool erase_all,
 		      void (*erase_progress)(uint32_t blocks_erased));
 
+#ifdef CONFIG_ZTEST
+
+/**
+ * @brief Function to set internal state for testing purposes
+ *
+ * @param dev Data logger to set
+ * @param enabled True to enable state, false to clear
+ */
+void data_logger_set_erase_state(const struct device *dev, bool enabled);
+
+#endif /* CONFIG_ZTEST */
+
 /**
  * @}
  */

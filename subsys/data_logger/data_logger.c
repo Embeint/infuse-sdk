@@ -536,3 +536,18 @@ void data_logger_common_block_size_changed(const struct device *dev, uint16_t bl
 		}
 	}
 }
+
+#ifdef CONFIG_ZTEST
+
+void data_logger_set_erase_state(const struct device *dev, bool enabled)
+{
+	struct data_logger_common_data *data = dev->data;
+
+	if (enabled) {
+		data->flags |= DATA_LOGGER_FLAGS_ERASING;
+	} else {
+		data->flags &= ~DATA_LOGGER_FLAGS_ERASING;
+	}
+}
+
+#endif /* CONFIG_ZTEST */
