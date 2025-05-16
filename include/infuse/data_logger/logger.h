@@ -124,10 +124,27 @@ int data_logger_block_write(const struct device *dev, enum infuse_type type, voi
  * @retval 0 on success
  * @retval -ENOTSUP reading not supported by logger
  * @retval -ENOENT requested data that does not exist
+ * @retval -EBUSY data logger is being erased
  * @retval -errno on error
  */
 int data_logger_block_read(const struct device *dev, uint32_t block_idx, uint16_t block_offset,
 			   void *block, uint16_t block_len);
+
+/**
+ * @brief Completely erase a data logger
+ *
+ * Attempting to write to a logger while the erase is ongoing will silently fail with return code 0.
+ *
+ * @param dev Data logger to erase
+ * @param erase_all Run erase function on ALL blocks, not just those with data
+ * @param erase_progress Callback periodically run with the erase progress
+ *
+ * @retval 0 on success
+ * @retval -ENOTSUP erasing not supported by logger
+ * @retval -errno on error
+ */
+int data_logger_erase(const struct device *dev, bool erase_all,
+		      void (*erase_progress)(uint32_t blocks_erased));
 
 /**
  * @}

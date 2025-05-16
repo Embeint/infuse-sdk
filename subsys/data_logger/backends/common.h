@@ -35,6 +35,11 @@ struct data_logger_cb {
 	sys_snode_t node;
 };
 
+enum {
+	/** Data logger is currently being erased */
+	DATA_LOGGER_FLAGS_ERASING = BIT(0),
+};
+
 /** Must be first member of data struct */
 struct data_logger_common_data {
 	sys_slist_t callbacks;
@@ -47,6 +52,7 @@ struct data_logger_common_data {
 	uint16_t block_size;
 	uint16_t erase_size;
 	uint8_t erase_val;
+	uint8_t flags;
 #ifdef CONFIG_DATA_LOGGER_RAM_BUFFER
 	size_t ram_buf_offset;
 #endif /* CONFIG_DATA_LOGGER_RAM_BUFFER */
@@ -115,7 +121,7 @@ struct data_logger_api {
 		    uint16_t data_len);
 
 	/**
-	 * @brief Erase all data from the logger
+	 * @brief Erase data from the logger
 	 *
 	 * @param dev Logger device
 	 * @param phy_block Physical block index to start erase at
@@ -125,6 +131,19 @@ struct data_logger_api {
 	 * @retval -errno otherwise
 	 */
 	int (*erase)(const struct device *dev, uint32_t phy_block, uint32_t num);
+
+	/**
+	 * @brief Reset logger back to empty state
+	 *
+	 * @param dev Logger device
+	 * @param block_hint Hint of how many blocks of data are currently logged
+	 * @param erase_progress Callback to periodically run with erase progress
+	 *
+	 * @retval 0 on success
+	 * @retval -errno otherwise
+	 */
+	int (*reset)(const struct device *dev, uint32_t block_hint,
+		     void (*erase_progress)(uint32_t blocks_erased));
 
 	/**
 	 * @brief Search range hint for initialisation
