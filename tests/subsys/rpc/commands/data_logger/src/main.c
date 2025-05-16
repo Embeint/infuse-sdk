@@ -76,6 +76,28 @@ static void send_data_logger_read_command(uint32_t request_id, uint8_t logger, u
 	epacket_dummy_receive(epacket_dummy, &header, &params, sizeof(params));
 }
 
+static void send_data_logger_erase_command(uint32_t request_id, uint8_t logger, bool erase_empty)
+{
+	const struct device *epacket_dummy = DEVICE_DT_GET(DT_NODELABEL(epacket_dummy));
+	struct epacket_dummy_frame header = {
+		.type = INFUSE_RPC_CMD,
+		.auth = EPACKET_AUTH_DEVICE,
+		.flags = 0x0000,
+	};
+	struct rpc_data_logger_erase_request params = {
+		.header =
+			{
+				.request_id = request_id,
+				.command_id = RPC_ID_DATA_LOGGER_ERASE,
+			},
+		.logger = logger,
+		.erase_empty = erase_empty,
+	};
+
+	/* Push command at RPC server */
+	epacket_dummy_receive(epacket_dummy, &header, &params, sizeof(params));
+}
+
 static struct net_buf *expect_rpc_response(uint32_t request_id, uint16_t command_id, int rc)
 {
 	struct k_fifo *response_queue = epacket_dummmy_transmit_fifo_get();
@@ -307,6 +329,72 @@ ZTEST(rpc_command_data_logger, test_data_logger_read_disconnect)
 	for (int i = 0; i < 4; i++) {
 		run_logger_read(64, 0, 7, 3);
 	}
+}
+
+ZTEST(rpc_command_data_logger, test_data_logger_erase_invalid)
+{
+	const struct device *flash_logger = DEVICE_DT_GET(DT_NODELABEL(data_logger_flash));
+	struct net_buf *rsp;
+
+	send_data_logger_erase_command(0x1234, UINT8_MAX, false);
+	rsp = expect_rpc_response(0x1234, RPC_ID_DATA_LOGGER_ERASE, -ENODEV);
+	net_buf_unref(rsp);
+
+	/* Pretend logger failed to initialise */
+	flash_logger->state->init_res += 1;
+	/* Try to erase */
+	send_data_logger_erase_command(0x1234, RPC_ENUM_DATA_LOGGER_FLASH_ONBOARD, false);
+	rsp = expect_rpc_response(0x1234, RPC_ID_DATA_LOGGER_ERASE, -EBADF);
+	net_buf_unref(rsp);
+	/* Restore init result */
+	flash_logger->state->init_res -= 1;
+}
+
+ZTEST(rpc_command_data_logger, test_data_logger_erase)
+{
+	const struct device *flash_logger = DEVICE_DT_GET(DT_NODELABEL(data_logger_flash));
+	struct data_logger_state state;
+	struct net_buf *rsp;
+	int rc;
+
+	/* Write 8 blocks */
+	for (int i = 0; i < 8; i++) {
+		sys_rand_get(data_block, sizeof(data_block));
+		rc = data_logger_block_write(flash_logger, INFUSE_TDF, data_block,
+					     sizeof(data_block));
+		zassert_equal(0, rc);
+	}
+
+	/* Initial state */
+	data_logger_get_state(flash_logger, &state);
+	zassert_equal(0, state.boot_block);
+	zassert_equal(8, state.current_block);
+	zassert_equal(8 * 512, state.bytes_logged);
+
+	/* Erase request */
+	send_data_logger_erase_command(0x1235, RPC_ENUM_DATA_LOGGER_FLASH_ONBOARD, true);
+	rsp = expect_rpc_response(0x1235, RPC_ID_DATA_LOGGER_ERASE, 0);
+	net_buf_unref(rsp);
+
+	/* Block statistics are reset, bytes logged are not.
+	 * This allows logging statistics to continue working despite the reset.
+	 */
+	data_logger_get_state(flash_logger, &state);
+	zassert_equal(0, state.boot_block);
+	zassert_equal(0, state.current_block);
+	zassert_equal(8 * 512, state.bytes_logged);
+
+	/* Write some more blocks */
+	for (int i = 0; i < 5; i++) {
+		sys_rand_get(data_block, sizeof(data_block));
+		rc = data_logger_block_write(flash_logger, INFUSE_TDF, data_block,
+					     sizeof(data_block));
+		zassert_equal(0, rc);
+	}
+	data_logger_get_state(flash_logger, &state);
+	zassert_equal(0, state.boot_block);
+	zassert_equal(5, state.current_block);
+	zassert_equal(13 * 512, state.bytes_logged);
 }
 
 void data_logger_reset(void *fixture)
