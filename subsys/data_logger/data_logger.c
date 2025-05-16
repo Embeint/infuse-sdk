@@ -227,6 +227,10 @@ int data_logger_block_write(const struct device *dev, enum infuse_type type, voi
 	if (data->current_block >= data->logical_blocks) {
 		return -ENOMEM;
 	}
+	/* Check if logger is currently erasing */
+	if (data->flags & DATA_LOGGER_FLAGS_ERASING) {
+		return 0;
+	}
 
 	/* Logging on the system workqueue can cause deadlocks and should be avoided */
 	if (k_current_get() == k_work_queue_thread_get(&k_sys_work_q)) {
@@ -279,6 +283,11 @@ int data_logger_block_read(const struct device *dev, uint32_t block_idx, uint16_
 		return -ENOTSUP;
 	}
 
+	/* Check if logger is currently erasing */
+	if (data->flags & DATA_LOGGER_FLAGS_ERASING) {
+		return -EBUSY;
+	}
+
 	/* Data that does not exist */
 	if ((block_idx < data->earliest_block) || (end_logical >= data->current_block) ||
 	    (block_offset >= data->block_size)) {
@@ -317,6 +326,43 @@ int data_logger_block_read(const struct device *dev, uint32_t block_idx, uint16_
 	(void)pm_device_runtime_put_async(dev, K_MSEC(100));
 
 	return rc;
+}
+
+int data_logger_erase(const struct device *dev, bool erase_all,
+		      void (*erase_progress)(uint32_t blocks_erased))
+{
+	struct data_logger_common_data *data = dev->data;
+	const struct data_logger_api *api = dev->api;
+	uint32_t block_hint;
+	int rc;
+
+	/* Can only erase persistent loggers */
+	if (!IS_PERSISTENT_LOGGER(api) || (api->reset == NULL)) {
+		return -ENOTSUP;
+	}
+
+	if (erase_all) {
+		block_hint = data->physical_blocks;
+	} else {
+		block_hint = MIN(data->current_block, data->physical_blocks);
+	}
+
+	/* Set erasing flag */
+	data->flags |= DATA_LOGGER_FLAGS_ERASING;
+
+	/* Erase the underlying logger */
+	rc = api->reset(dev, block_hint, erase_progress);
+
+	/* Reset block counters only on successful erase */
+	if (rc == 0) {
+		data->current_block = 0;
+		data->earliest_block = 0;
+		data->boot_block = 0;
+	}
+
+	/* Clear erasing flag */
+	data->flags &= ~DATA_LOGGER_FLAGS_ERASING;
+	return 0;
 }
 
 static int current_block_search(const struct device *dev, uint8_t counter)
@@ -399,6 +445,7 @@ int data_logger_common_init(const struct device *dev)
 	data->boot_block = 0;
 	data->current_block = 0;
 	data->earliest_block = 0;
+	data->flags = 0;
 
 #ifdef CONFIG_DATA_LOGGER_OFFLOAD_WRITES
 	{
