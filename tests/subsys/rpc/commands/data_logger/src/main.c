@@ -115,6 +115,13 @@ ZTEST(rpc_command_data_logger, test_data_logger_state)
 	rsp = expect_rpc_response(10, RPC_ID_DATA_LOGGER_STATE, -ENODEV);
 	net_buf_unref(rsp);
 
+	/* Data logger that failed to init */
+	flash_logger->state->init_res += 1;
+	send_data_logger_state_command(11, RPC_ENUM_DATA_LOGGER_FLASH_ONBOARD);
+	rsp = expect_rpc_response(11, RPC_ID_DATA_LOGGER_STATE, -EBADF);
+	net_buf_unref(rsp);
+	flash_logger->state->init_res -= 1;
+
 	/* Data logger that exists */
 	send_data_logger_state_command(10, RPC_ENUM_DATA_LOGGER_FLASH_ONBOARD);
 	rsp = expect_rpc_response(10, RPC_ID_DATA_LOGGER_STATE, 0);
@@ -167,6 +174,13 @@ ZTEST(rpc_command_data_logger, test_data_logger_read_invalid)
 	send_data_logger_read_command(15, RPC_ENUM_DATA_LOGGER_FLASH_REMOVABLE, 0, 10);
 	rsp = expect_rpc_response(15, RPC_ID_DATA_LOGGER_READ, -ENODEV);
 	net_buf_unref(rsp);
+
+	/* Device that failed to init */
+	flash_logger->state->init_res += 1;
+	send_data_logger_read_command(30, RPC_ENUM_DATA_LOGGER_FLASH_REMOVABLE, 0, 10);
+	rsp = expect_rpc_response(30, RPC_ID_DATA_LOGGER_READ, -ENODEV);
+	net_buf_unref(rsp);
+	flash_logger->state->init_res -= 1;
 
 	/* More data than exists */
 	send_data_logger_read_command(16, RPC_ENUM_DATA_LOGGER_FLASH_ONBOARD, 0, 10);
