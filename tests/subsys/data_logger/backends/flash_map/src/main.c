@@ -303,6 +303,65 @@ ZTEST(data_logger_flash_map, test_standard_operation)
 	test_sequence(true);
 }
 
+static int erase_progress_calls;
+
+static void erase_progress(uint32_t blocks_erased)
+{
+	erase_progress_calls += 1;
+}
+
+static void test_erase_blocks(uint32_t logged_blocks)
+{
+	const struct device *logger = DEVICE_DT_GET(DT_NODELABEL(data_logger_flash));
+	struct data_logger_state state;
+	uint8_t type = 3;
+	int rc;
+
+	erase_progress_calls = 0;
+
+	/* Init to erase value */
+	zassert_equal(0, logger_flash_map_init(logger));
+	data_logger_get_state(logger, &state);
+
+	/* Write requested blocks */
+	for (int i = 0; i < logged_blocks; i++) {
+		zassert_equal(
+			0, data_logger_block_write(logger, type, input_buffer, state.block_size));
+	}
+
+	/* Erase the logger */
+	rc = data_logger_erase(logger, true, erase_progress);
+	zassert_equal(0, rc);
+
+	/* Expected number of callbacks */
+	zassert_true(erase_progress_calls > 0);
+
+	/* Blocks should be reset, not the bytes logged count */
+	data_logger_get_state(logger, &state);
+	zassert_equal(0, state.boot_block);
+	zassert_equal(0, state.current_block);
+	zassert_equal(logged_blocks * 512, state.bytes_logged);
+
+	/* Re-initialise the logger, no data should exist */
+	zassert_equal(0, logger_flash_map_init(logger));
+	data_logger_get_state(logger, &state);
+	zassert_equal(0, state.boot_block);
+	zassert_equal(0, state.current_block);
+}
+
+ZTEST(data_logger_flash_map, test_erase)
+{
+	/* Test erasing all data */
+	const struct device *logger = DEVICE_DT_GET(DT_NODELABEL(data_logger_flash));
+	struct data_logger_state state;
+
+	data_logger_get_state(logger, &state);
+
+	test_erase_blocks(5);
+	test_erase_blocks(state.physical_blocks / 2);
+	test_erase_blocks(3 * state.physical_blocks / 2);
+}
+
 static bool test_data_init(const void *global_state)
 {
 	flash_buffer = flash_simulator_get_memory(DEVICE_DT_GET(DT_NODELABEL(sim_flash)),

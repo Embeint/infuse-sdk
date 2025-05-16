@@ -64,6 +64,14 @@ ZTEST(data_logger_epacket, test_block_read)
 		      data_logger_block_read(logger, UINT32_MAX, 0, buffer, sizeof(buffer)));
 }
 
+ZTEST(data_logger_epacket, test_erase)
+{
+	const struct device *logger = DEVICE_DT_GET(DT_NODELABEL(data_logger_epacket));
+
+	/* Erasing ePacket should always fail */
+	zassert_equal(-ENOTSUP, data_logger_erase(logger, true, NULL));
+}
+
 ZTEST(data_logger_epacket, test_block_write_error)
 {
 	const struct device *logger = DEVICE_DT_GET(DT_NODELABEL(data_logger_epacket));
