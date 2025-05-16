@@ -66,6 +66,25 @@ static int logger_exfat_read(const struct device *dev, uint32_t phy_block, uint1
 	return rc;
 }
 
+static int logger_exfat_reset(const struct device *dev, uint32_t block_hint,
+			      void (*erase_progress)(uint32_t blocks_erased))
+{
+	const struct dl_exfat_config *config = dev->config;
+	struct dl_exfat_data *data = dev->data;
+	int rc;
+
+	ARG_UNUSED(block_hint);
+	ARG_UNUSED(erase_progress);
+	/* For SD cards, erase duration is independent of the amount to erase.
+	 * Therefore the best thing to do is simply erase the file in a single chunk.
+	 * If the exFAT logger is used with a flash chip, this is not true.
+	 */
+	(void)logger_exfat_filesystem_claim(dev, NULL, NULL, K_FOREVER);
+	rc = disk_access_erase(config->disk, data->cached_file_lba, data->common.physical_blocks);
+	logger_exfat_filesystem_release(dev);
+	return rc;
+}
+
 static int filesystem_init(const struct device *dev, const char *bin_file)
 {
 	const struct dl_exfat_config *config = dev->config;
@@ -236,6 +255,7 @@ int logger_exfat_init(const struct device *dev)
 const struct data_logger_api data_logger_exfat_api = {
 	.write = logger_exfat_write,
 	.read = logger_exfat_read,
+	.reset = logger_exfat_reset,
 };
 
 #define DATA_LOGGER_DEFINE(inst)                                                                   \

@@ -67,6 +67,37 @@ static int logger_flash_map_erase(const struct device *dev, uint32_t phy_block, 
 	return flash_area_erase(data->area, offset, len);
 }
 
+static int logger_flash_map_reset(const struct device *dev, uint32_t block_hint,
+				  void (*erase_progress)(uint32_t blocks_erased))
+{
+	struct dl_flash_map_data *data = dev->data;
+	size_t remaining = DATA_LOGGER_FLASH_MAP_BLOCK_SIZE * block_hint;
+	size_t complete = 0;
+	off_t offset = 0;
+	size_t to_erase;
+	int rc;
+
+	while (remaining) {
+		/* Erase in 64kB chunks */
+		to_erase = MIN(remaining, 64 * 1024);
+
+		/* Erase the chunk */
+		rc = flash_area_erase(data->area, offset, to_erase);
+		if (rc < 0) {
+			return rc;
+		}
+
+		/* Update state */
+		complete += to_erase / DATA_LOGGER_FLASH_MAP_BLOCK_SIZE;
+		offset += to_erase;
+		remaining -= to_erase;
+
+		/* Run user callback */
+		erase_progress(complete);
+	}
+	return 0;
+}
+
 /* Need to hook into this function when testing */
 IF_DISABLED(CONFIG_ZTEST, (static))
 int logger_flash_map_init(const struct device *dev)
@@ -101,6 +132,7 @@ const struct data_logger_api data_logger_flash_map_api = {
 	.write = logger_flash_map_write,
 	.read = logger_flash_map_read,
 	.erase = logger_flash_map_erase,
+	.reset = logger_flash_map_reset,
 };
 
 #define DATA_LOGGER_DEFINE(inst)                                                                   \
