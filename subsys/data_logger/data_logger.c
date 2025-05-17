@@ -362,7 +362,7 @@ int data_logger_erase(const struct device *dev, bool erase_all,
 
 	/* Clear erasing flag */
 	data->flags &= ~DATA_LOGGER_FLAGS_ERASING;
-	return 0;
+	return rc;
 }
 
 static int current_block_search(const struct device *dev, uint8_t counter)
