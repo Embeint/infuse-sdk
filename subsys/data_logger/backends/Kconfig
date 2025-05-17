@@ -6,6 +6,12 @@ config DATA_LOGGER_EPACKET
 	depends on EPACKET
 	default y
 
+config DATA_LOGGER_SHIM
+	bool "Shim backend"
+	depends on DT_HAS_EMBEINT_DATA_LOGGER_SHIM_ENABLED
+	depends on ZTEST
+	default y
+
 config DATA_LOGGER_FLASH_MAP
 	bool "Logging to flash_map instance"
 	depends on DT_HAS_EMBEINT_DATA_LOGGER_FLASH_MAP_ENABLED
