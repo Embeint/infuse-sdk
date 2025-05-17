@@ -1,0 +1,15 @@
+# Copyright (c) 2025 Jordan Yates <jordan@embeint.com>
+# SPDX-License-Identifier: LicenseRef-Embeint
+
+description: Data logging shim backend
+
+compatible: "embeint,data-logger-shim"
+
+include: data-logger-base.yaml
+
+properties:
+  physical-blocks:
+    type: int
+    required: true
+    description:
+      Number of physical blocks to report.
