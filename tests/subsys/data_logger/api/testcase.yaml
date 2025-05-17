@@ -1,0 +1,8 @@
+common:
+  tags: data_logger
+  min_flash: 64
+  min_ram: 32
+tests:
+  data_logger.api:
+    integration_platforms:
+      - native_sim
