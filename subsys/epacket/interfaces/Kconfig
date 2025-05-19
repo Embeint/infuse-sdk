@@ -49,6 +49,13 @@ config EPACKET_INTERFACE_SERIAL_BACKEND_INT_SINGLE_BYTE_SEND
 	  By default this is only enabled for the emulated UART backend, as it
 	  can send N bytes in a single IRQ loop due to its instantaneous send.
 
+config EPACKET_INTERFACE_SERIAL_BACKEND_ASYNC_RX_BUFFER
+	int "Size of the ePacket async receive buffers"
+	depends on EPACKET_INTERFACE_SERIAL_BACKEND_ASYNC
+	default 32
+	help
+	  Size of the asynchronous UART receive buffers.
+
 config EPACKET_INTERFACE_UDP
 	bool "ePacket UDP interface"
 	depends on DT_HAS_EMBEINT_EPACKET_UDP_ENABLED

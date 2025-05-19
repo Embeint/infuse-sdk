@@ -30,7 +30,7 @@ struct epacket_serial_data {
 	const struct device *interface;
 	struct net_buf *pending_tx;
 	struct k_fifo tx_queue;
-	uint8_t async_rx_buffer[2][32];
+	uint8_t async_rx_buffer[2][CONFIG_EPACKET_INTERFACE_SERIAL_BACKEND_ASYNC_RX_BUFFER];
 	volatile uint8_t async_rx_buffer_idx;
 };
 
