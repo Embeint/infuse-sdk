@@ -11,7 +11,6 @@ target_include_directories(app PRIVATE ${ZEPHYR_BASE}/subsys/net/ip)
 target_sources(app PRIVATE
     src/common.c
     src/device.c
-    src/net.c
 )
 
 zephyr_include_directories(
