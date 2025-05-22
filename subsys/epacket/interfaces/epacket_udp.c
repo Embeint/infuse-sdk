@@ -40,7 +40,8 @@
 
 #define DT_DRV_COMPAT embeint_epacket_udp
 
-#define STATIC_MAX_PAYLOAD EPACKET_INTERFACE_PAYLOAD_FROM_PACKET(DT_DRV_INST(0), NET_IPV4_MTU)
+#define STATIC_MAX_PAYLOAD                                                                         \
+	EPACKET_INTERFACE_PAYLOAD_FROM_PACKET(DT_DRV_INST(0), (NET_IPV4_MTU - NET_IPV4UDPH_LEN))
 
 enum {
 	UDP_STATE_L4_CONNECTED = BIT(0),
