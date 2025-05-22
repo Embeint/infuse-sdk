@@ -203,6 +203,43 @@ ZTEST(epacket_udp, test_udp_ack)
 	zassert_equal(0, if_max_payload);
 }
 
+ZTEST(epacket_udp, test_udp_max_size)
+{
+	struct epacket_rx_metadata *rx_meta;
+	struct net_buf *rx;
+	struct net_buf *tx;
+
+	/* Turn on the interface */
+	conn_mgr_all_if_up(false);
+
+	/* Expect the callback */
+	zassert_equal(0, k_sem_take(&if_state_change, K_MSEC(100)));
+	zassert_true(if_max_payload > 0);
+
+	tx = epacket_alloc_tx_for_interface(IF_UDP, K_MSEC(100));
+	zassert_not_null(tx);
+
+	/* Send a random packet that requests an acknowledgment */
+	epacket_set_tx_metadata(tx, EPACKET_AUTH_DEVICE, EPACKET_FLAGS_ACK_REQUEST, 0xFF,
+				EPACKET_ADDR_ALL);
+	net_buf_add(tx, net_buf_tailroom(tx));
+	epacket_queue(IF_UDP, tx);
+
+	/* Expect an ACK response */
+	rx = k_fifo_get(&udp_rx_fifo, K_MSEC(1000));
+	zassert_not_null(rx);
+	rx_meta = net_buf_user_data(rx);
+	zassert_equal(INFUSE_ACK, rx_meta->type);
+	net_buf_unref(rx);
+
+	/* Turn off the interface */
+	conn_mgr_all_if_down(false);
+
+	/* Expect the callback */
+	zassert_equal(0, k_sem_take(&if_state_change, K_MSEC(100)));
+	zassert_equal(0, if_max_payload);
+}
+
 ZTEST(epacket_udp, test_udp_reconnect)
 {
 	KV_KEY_TYPE(KV_KEY_EPACKET_UDP_PORT)
