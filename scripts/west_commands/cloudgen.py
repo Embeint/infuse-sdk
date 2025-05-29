@@ -139,11 +139,13 @@ class cloudgen(WestCommand):
                 with tdf_def_file_ext.open("r") as f:
                     tdf_defs_ext = json.load(f)
                     # Ensure IDs sit in extension range
-                    for tdf_id in tdf_defs_ext["definitions"]:
+                    for tdf_id, tdf_def in tdf_defs_ext["definitions"].items():
                         assert int(tdf_id) > 1024
+                        tdf_def["extension"] = True
                     # Ensure no struct name collisions
-                    for struct_name in tdf_defs_ext["structs"]:
+                    for struct_name, struct_def in tdf_defs_ext["structs"].items():
                         assert struct_name not in tdf_defs["structs"]
+                        struct_def["extension"] = True
                 # Merge extensions into base definitions
                 tdf_defs["structs"].update(tdf_defs_ext["structs"])
                 tdf_defs["definitions"].update(tdf_defs_ext["definitions"])
@@ -240,11 +242,13 @@ class cloudgen(WestCommand):
                 with kv_def_file_ext.open("r") as f:
                     kv_defs_ext = json.load(f)
                     # Ensure IDs sit in extension range
-                    for kv_id in kv_defs_ext["definitions"]:
+                    for kv_id, kv_def in kv_defs_ext["definitions"].items():
                         assert int(kv_id) > 32768
+                        kv_def["extension"] = True
                     # Ensure no struct name collisions
-                    for struct_name in kv_defs_ext["structs"]:
+                    for struct_name, struct_def in kv_defs_ext["structs"].items():
                         assert struct_name not in kv_defs["structs"]
+                        struct_def["extension"] = True
                 # Merge extensions into base definitions
                 kv_defs["structs"].update(kv_defs_ext["structs"])
                 kv_defs["definitions"].update(kv_defs_ext["definitions"])
@@ -345,11 +349,13 @@ class cloudgen(WestCommand):
                 with rpc_def_file_ext.open("r") as f:
                     rpc_defs_ext = json.load(f)
                     # Ensure IDs sit in extension range
-                    for rpc_id in rpc_defs_ext["commands"]:
+                    for rpc_id, rpc_def in rpc_defs_ext["commands"].items():
                         assert int(rpc_id) > 32768
+                        rpc_def["extension"] = True
                     # Ensure no struct name collisions
-                    for struct_name in rpc_defs_ext["structs"]:
+                    for struct_name, struct_def in rpc_defs_ext["structs"].items():
                         assert struct_name not in rpc_defs["structs"]
+                        struct_def["extension"] = True
                 # Merge extensions into base definitions
                 rpc_defs["structs"].update(rpc_defs_ext["structs"])
                 rpc_defs["commands"].update(rpc_defs_ext["commands"])
