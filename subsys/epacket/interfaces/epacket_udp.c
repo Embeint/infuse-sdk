@@ -42,6 +42,7 @@
 
 #define STATIC_MAX_PAYLOAD                                                                         \
 	EPACKET_INTERFACE_PAYLOAD_FROM_PACKET(DT_DRV_INST(0), (NET_IPV4_MTU - NET_IPV4UDPH_LEN))
+#define STATIC_MAX_PACKET MIN(CONFIG_EPACKET_PACKET_SIZE_MAX, (NET_IPV4_MTU - NET_IPV4UDPH_LEN))
 
 enum {
 	UDP_STATE_L4_CONNECTED = BIT(0),
@@ -336,9 +337,7 @@ static void epacket_udp_decrypt_res(const struct device *dev, struct net_buf *bu
 
 static uint16_t epacket_udp_max_packet(const struct device *dev)
 {
-	return k_event_test(&udp_state.state, UDP_STATE_SOCKET_OPEN)
-		       ? EPACKET_INTERFACE_MAX_PACKET(DT_DRV_INST(0))
-		       : 0;
+	return k_event_test(&udp_state.state, UDP_STATE_SOCKET_OPEN) ? STATIC_MAX_PACKET : 0;
 }
 
 #ifdef CONFIG_ZTEST
@@ -383,7 +382,7 @@ static const struct epacket_interface_api udp_api = {
 BUILD_ASSERT(sizeof(struct epacket_udp_frame) == DT_INST_PROP(0, header_size));
 static struct epacket_interface_common_data epacket_udp_data;
 static const struct epacket_interface_common_config epacket_udp_config = {
-	.max_packet_size = EPACKET_INTERFACE_MAX_PACKET(DT_DRV_INST(0)),
+	.max_packet_size = STATIC_MAX_PACKET,
 	.header_size = DT_INST_PROP(0, header_size),
 	.footer_size = DT_INST_PROP(0, footer_size),
 };
