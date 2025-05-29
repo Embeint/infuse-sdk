@@ -73,6 +73,15 @@ class cloudgen(WestCommand):
         ]
         subprocess.run(args)
 
+    def ruff_format(self, file):
+        args = [
+            "ruff",
+            "format",
+            "-q",
+            str(file),
+        ]
+        subprocess.run(args)
+
     def _py_type(self, field, struct_prefix: bool):
         ctype_mapping = {
             "uint8_t": "ctypes.c_uint8",
@@ -202,6 +211,7 @@ class cloudgen(WestCommand):
             )
 
         self.clang_format(tdf_output)
+        self.ruff_format(tdf_definitions_output)
 
     def kvgen(self):
         kv_def_file = self.definition_dir / "kv_store.json"
@@ -298,6 +308,7 @@ class cloudgen(WestCommand):
             )
 
         self.clang_format(kv_defs_output)
+        self.ruff_format(kv_py_output)
 
     def rpcgen(self):
         rpc_def_file = self.definition_dir / "rpc.json"
@@ -403,3 +414,4 @@ class cloudgen(WestCommand):
         self.clang_format(rpc_defs_output)
         self.clang_format(rpc_commands_output)
         self.clang_format(rpc_runner_output)
+        self.ruff_format(rpc_defs_py_output)
