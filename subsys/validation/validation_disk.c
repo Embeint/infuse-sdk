@@ -6,6 +6,8 @@
  * SPDX-License-Identifier: LicenseRef-Embeint
  */
 
+#include <string.h>
+
 #include <zephyr/pm/device_runtime.h>
 #include <zephyr/sys/util.h>
 #include <zephyr/random/random.h>
