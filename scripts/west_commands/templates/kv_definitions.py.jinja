@@ -9,7 +9,12 @@ from infuse_iot.util.ctypes import VLACompatLittleEndianStruct
 
 
 class structs:
+{% if extensions %}
+    EXTENSIONS = True
+
+{% endif %}
 {% for name, info in structs.items() %}
+{% if extensions == info.get('extension', False) %}
     class {{ name }}(VLACompatLittleEndianStruct):
         """{{ info['description'] }}"""
 
@@ -34,10 +39,16 @@ class structs:
             return bytes(self.value).decode('utf-8')
 {% endif %}
 
+{% endif %}
 {% endfor %}
 
 class slots:
+{% if extensions %}
+    EXTENSIONS = True
+
+{% endif %}
 {% for base_id, info in definitions.items() %}
+{% if extensions == info.get('extension', False) %}
     class {{ info['name'] | lower }}(VLACompatLittleEndianStruct):
         """{{ info['description'] }}"""
 
@@ -60,11 +71,14 @@ class slots:
 {% endif %}
         _pack_ = 1
 
+{% endif %}
 {% endfor %}
     ID_MAPPING = {
 {% for base_id, info in definitions.items() %}
+{% if extensions == info.get('extension', False) %}
 {% for idx in range(info.get('range', 1)) %}
         {{ base_id + idx }}: {{ info['name'] | lower }},
 {% endfor %}
+{% endif %}
 {% endfor %}
     }

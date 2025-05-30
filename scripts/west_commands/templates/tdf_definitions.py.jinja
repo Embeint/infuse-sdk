@@ -8,7 +8,12 @@ from infuse_iot.generated.tdf_base import TdfReadingBase, TdfStructBase
 
 
 class structs:
+{% if extensions %}
+    EXTENSIONS = True
+
+{% endif %}
 {% for name, info in structs.items() %}
+{% if extensions == info.get('extension', False) %}
     class {{ name }}(TdfStructBase):
         """{{ info['description'] }}"""
 
@@ -35,10 +40,16 @@ class structs:
             return {{ conv['conv']}}
 {% endfor %}
 
+{% endif %}
 {% endfor %}
 
 class readings:
+{% if extensions %}
+    EXTENSIONS = True
+
+{% endif %}
 {% for tdf_id, info in definitions.items() %}
+{% if extensions == info.get('extension', False) %}
     class {{ info['name'] | lower }}(TdfReadingBase):
         """{{ info['description'] }}"""
 
@@ -66,10 +77,13 @@ class readings:
             return {{ conv['conv']}}
 {% endfor %}
 
+{% endif %}
 {% endfor %}
 
 id_type_mapping: dict[int, type[TdfReadingBase]] = {
 {% for tdf_id, info in definitions.items() %}
+{% if extensions == info.get('extension', False) %}
     {{ tdf_id }}: readings.{{ info['name'] | lower }},
+{% endif %}
 {% endfor %}
 }
