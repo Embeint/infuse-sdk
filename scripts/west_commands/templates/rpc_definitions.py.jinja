@@ -9,6 +9,7 @@ import enum
 from infuse_iot.util.ctypes import VLACompatLittleEndianStruct
 
 {% for name, info in structs.items() %}
+{% if extensions == info.get('extension', False) %}
 
 class {{ name }}(VLACompatLittleEndianStruct):
     """{{ info['description'] }}"""
@@ -25,8 +26,10 @@ class {{ name }}(VLACompatLittleEndianStruct):
 {% endif %}
     _pack_ = 1
 
+{% endif %}
 {% endfor %}
 {% for name, info in enums.items() %}
+{% if extensions == info.get('extension', False) %}
 
 class {{ name }}(enum.IntEnum):
     """{{ info['description'] }}"""
@@ -35,8 +38,10 @@ class {{ name }}(enum.IntEnum):
     {{ value['py_name'] }} = {{ value['value'] }}
 {% endfor %}
 
+{% endif %}
 {% endfor -%}
 {% for command_id, info in commands.items() %}
+{% if extensions == info.get('extension', False) %}
 
 class {{ info['name'] }}:
     """{{ info['description'] }}"""
@@ -71,4 +76,5 @@ class {{ info['name'] }}:
 {% endif %}
         _pack_ = 1
 
+{% endif %}
 {% endfor -%}

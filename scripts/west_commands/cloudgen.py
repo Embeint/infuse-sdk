@@ -130,12 +130,14 @@ class cloudgen(WestCommand):
         loader = importlib.util.find_spec("infuse_iot.generated.tdf_definitions")
         tdf_definitions_template = self.env.get_template("tdf_definitions.py.jinja")
         tdf_definitions_output = pathlib.Path(loader.origin)
+        tdf_extensions_exist = False
 
         with tdf_def_file.open("r") as f:
             tdf_defs = json.load(f)
         if self.extra_defs_base:
             tdf_def_file_ext = self.extra_defs_base / "tdf.json"
             if tdf_def_file_ext.exists():
+                tdf_extensions_exist = True
                 with tdf_def_file_ext.open("r") as f:
                     tdf_defs_ext = json.load(f)
                     # Ensure IDs sit in extension range
@@ -211,12 +213,19 @@ class cloudgen(WestCommand):
                     s["displays"].append(display_format(f))
                     f["py_type"] = self._py_type(f, True)
 
-        with tdf_definitions_output.open("w", encoding="utf-8") as f:
-            f.write(
-                tdf_definitions_template.render(
-                    structs=tdf_defs["structs"], definitions=tdf_defs["definitions"]
+        def generate(output: pathlib.Path, extensions: bool):
+            with output.open("w", encoding="utf-8") as f:
+                f.write(
+                    tdf_definitions_template.render(
+                        structs=tdf_defs["structs"],
+                        definitions=tdf_defs["definitions"],
+                        extensions=extensions,
+                    )
                 )
-            )
+
+        generate(tdf_definitions_output, False)
+        if tdf_extensions_exist:
+            generate(self.generate_base / "tdf_definitions.py", True)
 
         self.clang_format(tdf_output)
         self.ruff_format(tdf_definitions_output)
@@ -226,6 +235,7 @@ class cloudgen(WestCommand):
         kv_defs_template = self.env.get_template("kv_types.h.jinja")
         kv_defs_output = self.generate_base / "include" / "infuse" / "fs" / "kv_types.h"
         kv_defs_output.parent.mkdir(parents=True, exist_ok=True)
+        kv_extensions_exist = False
 
         kv_kconfig_template = self.env.get_template("Kconfig.keys.jinja")
         kv_kconfig_output = self.generate_base / "Kconfig.kv_keys"
@@ -239,6 +249,7 @@ class cloudgen(WestCommand):
         if self.extra_defs_base:
             kv_def_file_ext = self.extra_defs_base / "kv_store.json"
             if kv_def_file_ext.exists():
+                kv_extensions_exist = True
                 with kv_def_file_ext.open("r") as f:
                     kv_defs_ext = json.load(f)
                     # Ensure IDs sit in extension range
@@ -310,12 +321,19 @@ class cloudgen(WestCommand):
                 for f in s["fields"]:
                     f["py_type"] = self._py_type(f, True)
 
-        with kv_py_output.open("w", encoding="utf-8") as f:
-            f.write(
-                kv_py_template.render(
-                    structs=kv_defs["structs"], definitions=kv_defs["definitions"]
+        def generate(output: pathlib.Path, extensions: bool):
+            with output.open("w", encoding="utf-8") as f:
+                f.write(
+                    kv_py_template.render(
+                        structs=kv_defs["structs"],
+                        definitions=kv_defs["definitions"],
+                        extensions=extensions,
+                    )
                 )
-            )
+
+        generate(kv_py_output, False)
+        if kv_extensions_exist:
+            generate(self.generate_base / "kv_definitions.py", True)
 
         self.clang_format(kv_defs_output)
         self.ruff_format(kv_py_output)
@@ -325,6 +343,7 @@ class cloudgen(WestCommand):
         rpc_defs_template = self.env.get_template("rpc_types.h.jinja")
         rpc_defs_output = self.generate_base / "include" / "infuse" / "rpc" / "types.h"
         rpc_defs_output.parent.mkdir(parents=True, exist_ok=True)
+        rpc_extensions_exist = False
 
         rpc_kconfig_template = self.env.get_template("Kconfig.commands.jinja")
         rpc_kconfig_output = self.generate_base / "Kconfig.rpc_commands"
@@ -346,6 +365,7 @@ class cloudgen(WestCommand):
         if self.extra_defs_base:
             rpc_def_file_ext = self.extra_defs_base / "rpc.json"
             if rpc_def_file_ext.exists():
+                rpc_extensions_exist = True
                 with rpc_def_file_ext.open("r") as f:
                     rpc_defs_ext = json.load(f)
                     # Ensure IDs sit in extension range
@@ -360,6 +380,43 @@ class cloudgen(WestCommand):
                 rpc_defs["structs"].update(rpc_defs_ext["structs"])
                 rpc_defs["commands"].update(rpc_defs_ext["commands"])
 
+        for d in rpc_defs["structs"].values():
+            for field in d["fields"]:
+                self._array_postfix(d, field)
+        for d in rpc_defs["commands"].values():
+            for field in d["request_params"]:
+                self._array_postfix(d, field)
+            for field in d["response_params"]:
+                self._array_postfix(d, field)
+
+        def enum_type_replace(field):
+            if field["type"].startswith("enum"):
+                n = field["type"].removeprefix("enum ")
+                field["type"] = rpc_defs["enums"][n]["type"]
+
+        # Swap enum types back to underlying type
+        for s in rpc_defs["structs"].values():
+            for field in s["fields"]:
+                enum_type_replace(field)
+        for c in rpc_defs["commands"].values():
+            for field in c["request_params"]:
+                enum_type_replace(field)
+            for field in c["response_params"]:
+                enum_type_replace(field)
+
+        # Python type generation
+        for s in rpc_defs["structs"].values():
+            for field in s["fields"]:
+                field["py_name"] = field["name"]
+                field["py_type"] = self._py_type(field, False)
+        for e in rpc_defs["enums"].values():
+            for value in e["values"]:
+                value["py_name"] = value["name"]
+        for c in rpc_defs["commands"].values():
+            for sub in ["request_params", "response_params"]:
+                for field in c[sub]:
+                    field["py_type"] = self._py_type(field, False)
+
         with rpc_kconfig_output.open("w") as f:
             f.write(rpc_kconfig_template.render(commands=rpc_defs["commands"]))
 
@@ -370,30 +427,6 @@ class cloudgen(WestCommand):
             f.write(rpc_runner_template.render(commands=rpc_defs["commands"]))
 
         with rpc_defs_output.open("w") as f:
-            for d in rpc_defs["structs"].values():
-                for field in d["fields"]:
-                    self._array_postfix(d, field)
-            for d in rpc_defs["commands"].values():
-                for field in d["request_params"]:
-                    self._array_postfix(d, field)
-                for field in d["response_params"]:
-                    self._array_postfix(d, field)
-
-            def enum_type_replace(field):
-                if field["type"].startswith("enum"):
-                    n = field["type"].removeprefix("enum ")
-                    field["type"] = rpc_defs["enums"][n]["type"]
-
-            # Swap enum types back to underlying type
-            for s in rpc_defs["structs"].values():
-                for field in s["fields"]:
-                    enum_type_replace(field)
-            for c in rpc_defs["commands"].values():
-                for field in c["request_params"]:
-                    enum_type_replace(field)
-                for field in c["response_params"]:
-                    enum_type_replace(field)
-
             f.write(
                 rpc_defs_template.render(
                     structs=rpc_defs["structs"],
@@ -402,26 +435,20 @@ class cloudgen(WestCommand):
                 )
             )
 
-        with rpc_defs_py_output.open("w") as f:
-            for s in rpc_defs["structs"].values():
-                for field in s["fields"]:
-                    field["py_name"] = field["name"]
-                    field["py_type"] = self._py_type(field, False)
-            for e in rpc_defs["enums"].values():
-                for value in e["values"]:
-                    value["py_name"] = value["name"]
-            for c in rpc_defs["commands"].values():
-                for sub in ["request_params", "response_params"]:
-                    for field in c[sub]:
-                        field["py_type"] = self._py_type(field, False)
-
-            f.write(
-                rpc_defs_py_template.render(
-                    structs=rpc_defs["structs"],
-                    enums=rpc_defs["enums"],
-                    commands=rpc_defs["commands"],
+        def generate(output: pathlib.Path, extensions: bool):
+            with output.open("w") as f:
+                f.write(
+                    rpc_defs_py_template.render(
+                        structs=rpc_defs["structs"],
+                        enums=rpc_defs["enums"],
+                        commands=rpc_defs["commands"],
+                        extensions=extensions,
+                    )
                 )
-            )
+
+        generate(rpc_defs_py_output, False)
+        if rpc_extensions_exist:
+            generate(self.generate_base / "rpc_definitions.py", True)
 
         self.clang_format(rpc_defs_output)
         self.clang_format(rpc_commands_output)
