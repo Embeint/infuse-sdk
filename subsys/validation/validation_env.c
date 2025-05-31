@@ -51,8 +51,17 @@ int infuse_validation_env(const struct device *dev, uint8_t flags)
 			temp = sensor_value_to_float(&val);
 			VALIDATION_REPORT_VALUE(TEST, "TEMPERATURE", "%.03f", temp);
 		} else if (rc == -ENOTSUP) {
-			/* Unsupported channel */
-			rc = 0;
+			/* Try the die temperature for internal measurements */
+			rc = sensor_channel_get(dev, SENSOR_CHAN_DIE_TEMP, &val);
+			if (rc == 0) {
+				temp = sensor_value_to_float(&val);
+				VALIDATION_REPORT_VALUE(TEST, "TEMPERATURE", "%.03f", temp);
+			} else if (rc == -ENOTSUP) {
+				/* Unsupported channel */
+				rc = 0;
+			} else {
+				VALIDATION_REPORT_ERROR(TEST, "Temperature get failed (%d)", rc);
+			}
 		} else {
 			VALIDATION_REPORT_ERROR(TEST, "Temperature get failed (%d)", rc);
 		}
