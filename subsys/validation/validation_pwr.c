@@ -62,7 +62,9 @@ int infuse_validation_pwr(const struct device *dev, uint8_t flags)
 			VALIDATION_REPORT_ERROR(test, "SoC get failed (%d)", rc);
 			goto driver_end;
 		}
-		if (rc != -ENOTSUP) {
+		if (rc == -ENOTSUP) {
+			rc = 0;
+		} else {
 			VALIDATION_REPORT_VALUE(test, "SOC", "%d", val.relative_state_of_charge);
 		}
 	}
@@ -74,7 +76,9 @@ int infuse_validation_pwr(const struct device *dev, uint8_t flags)
 			VALIDATION_REPORT_ERROR(test, "Charge current get failed (%d)", rc);
 			goto driver_end;
 		}
-		if (rc != -ENOTSUP) {
+		if (rc == -ENOTSUP) {
+			rc = 0;
+		} else {
 			current = (double)val.current / 1e6;
 			VALIDATION_REPORT_VALUE(test, "CURRENT", "%.06f", current);
 		}
@@ -87,7 +91,9 @@ int infuse_validation_pwr(const struct device *dev, uint8_t flags)
 			VALIDATION_REPORT_ERROR(test, "Temperature get failed (%d)", rc);
 			goto driver_end;
 		}
-		if (rc != -ENOTSUP) {
+		if (rc == -ENOTSUP) {
+			rc = 0;
+		} else {
 			temperature = (double)val.temperature / 10.0;
 			VALIDATION_REPORT_VALUE(test, "TEMPERATURE", "%.01f", temperature - 273.0);
 		}
