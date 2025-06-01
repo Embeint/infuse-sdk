@@ -1,0 +1,13 @@
+sample:
+  description: Power task runner sample
+  name: Power task runner
+common:
+  filter: dt_alias_exists("fuel-gauge0")
+  build_only: true
+  required_snippets:
+    - infuse
+tests:
+  sample.task_runner.power:
+    tags: app
+    integration_platforms:
+      - thingy53/nrf5340/cpuapp
