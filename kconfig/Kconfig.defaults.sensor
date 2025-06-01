@@ -8,6 +8,8 @@ configdefault GNSS
 	default y if "$(dt_alias_enabled,gnss)"
 configdefault FUEL_GAUGE
 	default y if "$(dt_alias_enabled,fuel-gauge0)"
+configdefault LORA
+	default y if "$(dt_alias_enabled,lora0)"
 
 # We want to use UBX messages directly
 configdefault GNSS_U_BLOX_NO_API_COMPAT
