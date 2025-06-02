@@ -231,6 +231,13 @@ void rpc_command_runner(struct net_buf *request)
 		}
 		break;
 #endif /* CONFIG_INFUSE_RPC_COMMAND_FILE_WRITE_BASIC */
+#ifdef CONFIG_INFUSE_RPC_COMMAND_ANNOTATE
+	case RPC_ID_ANNOTATE:
+		if (AUTHORISED(auth, ANNOTATE)) { /* GCOVR_EXCL_BR_LINE */
+			response = rpc_command_annotate(request);
+		}
+		break;
+#endif /* CONFIG_INFUSE_RPC_COMMAND_ANNOTATE */
 #ifdef CONFIG_INFUSE_RPC_COMMAND_BT_CONNECT_INFUSE
 	case RPC_ID_BT_CONNECT_INFUSE:
 		if (AUTHORISED(auth, BT_CONNECT_INFUSE)) { /* GCOVR_EXCL_BR_LINE */
