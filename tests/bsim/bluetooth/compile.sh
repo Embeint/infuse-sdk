@@ -17,6 +17,7 @@ APP_GATT=tests/bsim/bluetooth/gatt
 APP_TASK_RUNNER=tests/bsim/bluetooth/task_runner
 
 app_root=$INFUSE_BASE app=$APP_EPACKET conf_file=prj_legacy_adv.conf snippet=infuse compile
+app_root=$INFUSE_BASE app=$APP_EPACKET conf_file=prj_legacy_adv_named.conf snippet=infuse compile
 app_root=$INFUSE_BASE app=$APP_EPACKET conf_file=prj_conn_terminator.conf snippet=infuse compile
 app_root=$INFUSE_BASE app=$APP_EPACKET conf_file=prj_device.conf snippet=infuse compile
 app_root=$INFUSE_BASE app=$APP_EPACKET conf_file=prj_device_public.conf snippet=infuse compile
