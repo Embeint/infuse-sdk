@@ -28,3 +28,7 @@ module-str = ALG TILT
 source "subsys/logging/Kconfig.template.log_config"
 
 endif # ALGORITHM_RUNNER_ALG_TILT
+
+config ALGORITHM_RUNNER_ALG_DEMO
+	bool "Demo implementations of various algorithm types"
+	depends on INFUSE_ZBUS_CHAN_IMU
