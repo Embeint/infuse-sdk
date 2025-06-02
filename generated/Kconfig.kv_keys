@@ -31,7 +31,7 @@ config KV_STORE_KEY_DEVICE_NAME
 	bool "Enable KV key DEVICE_NAME"
 	default y
 	help
-	  Personalised device name
+	  Personalised name for the device
 
 config KV_STORE_KEY_FIXED_LOCATION
 	bool "Enable KV key FIXED_LOCATION"

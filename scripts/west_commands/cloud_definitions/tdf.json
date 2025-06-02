@@ -438,6 +438,14 @@
                 {"name": "val", "type": "int32_t", "description": "Raw ADC reading"}
             ]
         },
+        "43": {
+            "name": "ANNOTATION",
+            "description": "Generic event annotation",
+            "fields": [
+                {"name": "timestamp", "type": "uint32_t", "description": "Annotation timestamp (GNSS seconds)"},
+                {"name": "event", "type": "char", "num": 0, "description": "Event that occurred"}
+            ]
+        },
         "100": {
             "name": "ARRAY_TYPE",
             "description": "Example array type",

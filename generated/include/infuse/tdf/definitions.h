@@ -573,6 +573,21 @@ struct tdf_adc_raw_32 {
 	int32_t val;
 } __packed;
 
+/** Generic event annotation */
+struct tdf_annotation {
+	/** Annotation timestamp (GNSS seconds) */
+	uint32_t timestamp;
+	/** Event that occurred */
+	char event[];
+} __packed;
+
+/** Define a variant of @ref tdf_annotation with a constant length */
+#define TDF_ANNOTATION_VAR(_name, _count)                                                          \
+	struct _name {                                                                             \
+		uint32_t timestamp;                                                                \
+		char event[_count];                                                                \
+	} __packed;
+
 /** Example array type */
 struct tdf_array_type {
 	/** I am an array of length 4 */
@@ -659,6 +674,8 @@ enum tdf_builtin_id {
 	TDF_ADC_RAW_16 = 41,
 	/** Generic 32bit raw ADC reading */
 	TDF_ADC_RAW_32 = 42,
+	/** Generic event annotation */
+	TDF_ANNOTATION = 43,
 	/** Example array type */
 	TDF_ARRAY_TYPE = 100,
 	/** End of builtin TDF range */
@@ -706,6 +723,7 @@ enum tdf_builtin_id {
 #define _TDF_ADC_RAW_8_TYPE                   struct tdf_adc_raw_8
 #define _TDF_ADC_RAW_16_TYPE                  struct tdf_adc_raw_16
 #define _TDF_ADC_RAW_32_TYPE                  struct tdf_adc_raw_32
+#define _TDF_ANNOTATION_TYPE                  struct tdf_annotation
 #define _TDF_ARRAY_TYPE_TYPE                  struct tdf_array_type
 
 /** Size of builtin TDF definitions */
@@ -749,6 +767,7 @@ enum tdf_builtin_size {
 	_TDF_ADC_RAW_8_SIZE = sizeof(struct tdf_adc_raw_8),
 	_TDF_ADC_RAW_16_SIZE = sizeof(struct tdf_adc_raw_16),
 	_TDF_ADC_RAW_32_SIZE = sizeof(struct tdf_adc_raw_32),
+	_TDF_ANNOTATION_SIZE = sizeof(struct tdf_annotation),
 	_TDF_ARRAY_TYPE_SIZE = sizeof(struct tdf_array_type),
 };
 
