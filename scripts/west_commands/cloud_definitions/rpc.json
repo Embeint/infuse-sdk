@@ -161,7 +161,8 @@
             "type": "uint8_t",
             "values": [
                 {"name": "FLASH_ONBOARD", "value": 1, "description": "Onboard flash logger"},
-                {"name": "FLASH_REMOVABLE", "value": 2, "description": "Removable flash logger (SD)"}
+                {"name": "FLASH_REMOVABLE", "value": 2, "description": "Removable flash logger (SD)"},
+                {"name": "UDP", "value": 3, "description": "Networked UDP logger"}
             ]
         },
         "rpc_enum_zperf_data_source": {
@@ -523,6 +524,19 @@
             "response_params": [
                 {"name": "recv_len", "type": "uint32_t", "description": "Number of bytes received"},
                 {"name": "recv_crc", "type": "uint32_t", "description": "CRC of bytes received"}
+            ]
+        },
+        "41": {
+            "name": "annotate",
+            "description": "Write an annotation to the device",
+            "depends_on": "TDF_DATA_LOGGER",
+            "default_auth": "EPACKET_AUTH_DEVICE",
+            "request_params": [
+                {"name": "logger", "type": "enum rpc_enum_data_logger", "description": "Data logger to write annotation to"},
+                {"name": "timestamp", "type": "uint32_t", "description": "Timestamp (GNSS seconds) that event was observed"},
+                {"name": "annotation", "type": "char", "num": 0, "description": "Event string to write"}
+            ],
+            "response_params": [
             ]
         },
         "50": {

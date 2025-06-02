@@ -274,6 +274,17 @@ config INFUSE_RPC_COMMAND_FILE_WRITE_BASIC_REQUIRED_AUTH
 	depends on INFUSE_RPC_COMMAND_FILE_WRITE_BASIC
 	default 1
 
+config INFUSE_RPC_COMMAND_ANNOTATE
+	bool "Enable RPC annotate"
+	depends on TDF_DATA_LOGGER
+	help
+	  Write an annotation to the device
+
+config INFUSE_RPC_COMMAND_ANNOTATE_REQUIRED_AUTH
+	int "Required authorisation level to run annotate"
+	depends on INFUSE_RPC_COMMAND_ANNOTATE
+	default 2
+
 config INFUSE_RPC_COMMAND_BT_CONNECT_INFUSE
 	bool "Enable RPC bt_connect_infuse"
 	depends on EPACKET_INTERFACE_BT_CENTRAL

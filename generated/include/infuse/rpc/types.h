@@ -289,6 +289,8 @@ enum rpc_enum_data_logger {
 	RPC_ENUM_DATA_LOGGER_FLASH_ONBOARD = 1,
 	/** Removable flash logger (SD) */
 	RPC_ENUM_DATA_LOGGER_FLASH_REMOVABLE = 2,
+	/** Networked UDP logger */
+	RPC_ENUM_DATA_LOGGER_UDP = 3,
 };
 
 /** Source for zperf data upload */
@@ -363,6 +365,8 @@ enum rpc_builtin_id {
 	RPC_ID_ZPERF_UPLOAD = 31,
 	/** Write a file to the device */
 	RPC_ID_FILE_WRITE_BASIC = 40,
+	/** Write an annotation to the device */
+	RPC_ID_ANNOTATE = 41,
 	/** Connect to an Infuse-IoT Bluetooth device */
 	RPC_ID_BT_CONNECT_INFUSE = 50,
 	/** Disconnect from a Bluetooth device */
@@ -793,6 +797,21 @@ struct rpc_file_write_basic_response {
 	uint32_t recv_len;
 	/** CRC of bytes received */
 	uint32_t recv_crc;
+} __packed;
+
+/** Write an annotation to the device */
+struct rpc_annotate_request {
+	struct infuse_rpc_req_header header;
+	/** Data logger to write annotation to */
+	uint8_t logger;
+	/** Timestamp (GNSS seconds) that event was observed */
+	uint32_t timestamp;
+	/** Event string to write */
+	char annotation[];
+} __packed;
+
+struct rpc_annotate_response {
+	struct infuse_rpc_rsp_header header;
 } __packed;
 
 /** Connect to an Infuse-IoT Bluetooth device */
