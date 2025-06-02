@@ -104,7 +104,7 @@ struct kv_bluetooth_ctlr_version {
 	struct kv_mcuboot_img_sem_ver version;
 } __packed;
 
-/** Personalised device name */
+/** Personalised name for the device */
 struct kv_device_name {
 	/** Personalised device name */
 	struct kv_string name;
@@ -372,7 +372,7 @@ enum kv_builtin_id {
 	KV_KEY_EXFAT_DISK_INFO = 2,
 	/** External Bluetooth controller version */
 	KV_KEY_BLUETOOTH_CTLR_VERSION = 3,
-	/** Personalised device name */
+	/** Personalised name for the device */
 	KV_KEY_DEVICE_NAME = 4,
 	/** Fixed global location of the device */
 	KV_KEY_FIXED_LOCATION = 10,
