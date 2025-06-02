@@ -104,6 +104,20 @@ struct kv_bluetooth_ctlr_version {
 	struct kv_mcuboot_img_sem_ver version;
 } __packed;
 
+/** Personalised device name */
+struct kv_device_name {
+	/** Personalised device name */
+	struct kv_string name;
+} __packed;
+
+/* clang-format off */
+/** Compile time definition for known array length */
+#define _KV_KEY_DEVICE_NAME_VAR(num) \
+	struct { \
+		KV_STRUCT_KV_STRING_VAR(num) name; \
+	} __packed
+/* clang-format on */
+
 /** Fixed global location of the device */
 struct kv_fixed_location {
 	/** Location */
@@ -358,6 +372,8 @@ enum kv_builtin_id {
 	KV_KEY_EXFAT_DISK_INFO = 2,
 	/** External Bluetooth controller version */
 	KV_KEY_BLUETOOTH_CTLR_VERSION = 3,
+	/** Personalised device name */
+	KV_KEY_DEVICE_NAME = 4,
 	/** Fixed global location of the device */
 	KV_KEY_FIXED_LOCATION = 10,
 	/** WiFi network name */
@@ -440,6 +456,7 @@ enum kv_builtin_size {
 #define _KV_KEY_BLUETOOTH_ADDR_TYPE struct kv_bluetooth_addr
 #define _KV_KEY_EXFAT_DISK_INFO_TYPE struct kv_exfat_disk_info
 #define _KV_KEY_BLUETOOTH_CTLR_VERSION_TYPE struct kv_bluetooth_ctlr_version
+#define _KV_KEY_DEVICE_NAME_TYPE struct kv_device_name
 #define _KV_KEY_FIXED_LOCATION_TYPE struct kv_fixed_location
 #define _KV_KEY_WIFI_SSID_TYPE struct kv_wifi_ssid
 #define _KV_KEY_WIFI_PSK_TYPE struct kv_wifi_psk
@@ -469,6 +486,8 @@ enum kv_builtin_size {
 	IF_ENABLED(CONFIG_KV_STORE_KEY_EXFAT_DISK_INFO, \
 		   (1 +)) \
 	IF_ENABLED(CONFIG_KV_STORE_KEY_BLUETOOTH_CTLR_VERSION, \
+		   (1 +)) \
+	IF_ENABLED(CONFIG_KV_STORE_KEY_DEVICE_NAME, \
 		   (1 +)) \
 	IF_ENABLED(CONFIG_KV_STORE_KEY_FIXED_LOCATION, \
 		   (1 +)) \
@@ -570,6 +589,13 @@ static struct key_value_slot_definition _KV_SLOTS_ARRAY_DEFINE[] = {
 		.flags = KV_FLAGS_REFLECT,
 	},
 #endif /* CONFIG_KV_STORE_KEY_BLUETOOTH_CTLR_VERSION */
+#ifdef CONFIG_KV_STORE_KEY_DEVICE_NAME
+	{
+		.key = KV_KEY_DEVICE_NAME,
+		.range = 1,
+		.flags = KV_FLAGS_REFLECT,
+	},
+#endif /* CONFIG_KV_STORE_KEY_DEVICE_NAME */
 #ifdef CONFIG_KV_STORE_KEY_FIXED_LOCATION
 	{
 		.key = KV_KEY_FIXED_LOCATION,

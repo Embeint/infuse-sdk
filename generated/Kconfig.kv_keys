@@ -27,6 +27,12 @@ config KV_STORE_KEY_BLUETOOTH_CTLR_VERSION
 	help
 	  External Bluetooth controller version
 
+config KV_STORE_KEY_DEVICE_NAME
+	bool "Enable KV key DEVICE_NAME"
+	default y
+	help
+	  Personalised device name
+
 config KV_STORE_KEY_FIXED_LOCATION
 	bool "Enable KV key FIXED_LOCATION"
 	help

@@ -78,6 +78,15 @@
                 {"name": "version", "type": "struct kv_mcuboot_img_sem_ver", "description": "Application version number"}
             ]
         },
+        "4": {
+            "name": "DEVICE_NAME",
+            "description": "Personalised name for the device",
+            "reflect": true,
+            "default": "y",
+            "fields": [
+                {"name": "name", "type": "struct kv_string", "description": "Personalised device name"}
+            ]
+        },
         "10": {
             "name": "FIXED_LOCATION",
             "description": "Fixed global location of the device",
