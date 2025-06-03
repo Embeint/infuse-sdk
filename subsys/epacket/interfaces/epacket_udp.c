@@ -155,6 +155,7 @@ static int epacket_udp_loop(void *a, void *b, void *c)
 	struct epacket_rx_metadata *meta;
 	struct epacket_interface_cb *cb;
 	struct zsock_pollfd pollfds[1];
+	bool first_connection = true;
 	struct sockaddr from;
 	socklen_t from_len;
 	struct net_buf *buf;
@@ -215,6 +216,12 @@ static int epacket_udp_loop(void *a, void *b, void *c)
 
 		pollfds[0].fd = udp_state.sock;
 		pollfds[0].events = ZSOCK_POLLIN;
+
+		if (first_connection) {
+			/* On the first connection after boot, remind the cloud of key state */
+			(void)epacket_send_key_ids(epacket_udp, K_NO_WAIT);
+			first_connection = false;
+		}
 
 		while (true) {
 			/* Wait for data to arrive */
