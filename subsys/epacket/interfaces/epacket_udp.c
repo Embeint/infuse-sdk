@@ -332,6 +332,11 @@ static void epacket_udp_decrypt_res(const struct device *dev, struct net_buf *bu
 			&udp_state.downlink_watchdog,
 			K_SECONDS(CONFIG_EPACKET_INTERFACE_UDP_DOWNLINK_WATCHDOG_TIMEOUT));
 #endif /* CONFIG_EPACKET_INTERFACE_UDP_DOWNLINK_WATCHDOG */
+	} else {
+		/* Decryption failed, try to send a KEY_IDS packet to notify the cloud side
+		 * that device/network keys may have changed.
+		 */
+		(void)epacket_send_key_ids(dev, K_NO_WAIT);
 	}
 }
 
