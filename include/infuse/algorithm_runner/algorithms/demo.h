@@ -15,6 +15,7 @@
 #include <zephyr/toolchain.h>
 
 #include <infuse/algorithm_runner/runner.h>
+#include <infuse/zbus/channels.h>
 
 #ifdef __cplusplus
 extern "C" {
