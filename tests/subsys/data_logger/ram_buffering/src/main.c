@@ -23,11 +23,13 @@ ZTEST(data_logger_ram_buffering, test_basic_buffer)
 
 	data_logger_get_state(logger, &state);
 
-	/* 4kB buffer, 512 byte blocks, expect 7 blocks pending before any flush */
+	/* 4kB buffer, 512 byte blocks (minus alignment testing), expect 7 blocks pending before any
+	 * flush
+	 */
 	for (int i = 0; i < 7; i++) {
 		/* Write block to logger */
 		zassert_equal(0, data_logger_block_write(logger, 0x75 + i, input_buffer,
-							 state.block_size));
+							 state.block_size - i));
 
 		data_logger_get_state(logger, &state);
 		zassert_equal(0, state.current_block);
