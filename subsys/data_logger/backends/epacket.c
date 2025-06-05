@@ -81,7 +81,7 @@ const struct data_logger_api data_logger_epacket_api = {
 #define DATA_LOGGER_DEFINE(inst)                                                                   \
 	COMMON_CONFIG_PRE(inst);                                                                   \
 	static struct dl_epacket_config config##inst = {                                           \
-		.common = COMMON_CONFIG_INIT(inst, false, true),                                   \
+		.common = COMMON_CONFIG_INIT(inst, false, true, 1),                                \
 		.backend = DEVICE_DT_GET(DT_INST_PROP(inst, epacket)),                             \
 		.interface_overhead =                                                              \
 			EPACKET_INTERFACE_PACKET_OVERHEAD(DT_INST_PROP(inst, epacket)),            \

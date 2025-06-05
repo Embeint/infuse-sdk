@@ -125,7 +125,7 @@ const struct data_logger_api data_logger_shim_api = {
 #define DATA_LOGGER_DEFINE(inst)                                                                   \
 	COMMON_CONFIG_PRE(inst);                                                                   \
 	static struct dl_shim_config config##inst = {                                              \
-		.common = COMMON_CONFIG_INIT(inst, false, false),                                  \
+		.common = COMMON_CONFIG_INIT(inst, false, false, 1),                               \
 		.physical_blocks = DT_INST_PROP(inst, physical_blocks),                            \
 	};                                                                                         \
 	static struct dl_shim_data data##inst;                                                     \
