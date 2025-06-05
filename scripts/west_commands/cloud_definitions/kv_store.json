@@ -219,6 +219,21 @@
                 {"name": "address", "type": "struct bt_addr_le", "description": "Peer device Bluetooth address"}
             ]
         },
+        "51": {
+            "name": "LORA_CONFIG",
+            "description": "LoRa modem configuration",
+            "depends_on": "LORA",
+            "default": "y",
+            "reflect": true,
+            "fields": [
+                {"name": "frequency", "type": "uint32_t", "description": "Frequency (Hz)"},
+                {"name": "bandwidth", "type": "uint8_t", "description": "Signal bandwidth (see enum lora_signal_bandwidth)"},
+                {"name": "spreading_factor", "type": "uint8_t", "description": "Spreading factor (see enum lora_datarate)"},
+                {"name": "coding_rate", "type": "uint8_t", "description": "Coding rate (see enum lora_coding_rate)"},
+                {"name": "preamble_len", "type": "uint16_t", "description": "Preamble length"},
+                {"name": "tx_power", "type": "int8_t", "description": "Transmit power (dBm)"}
+            ]
+        },
         "60": {
             "name": "GRAVITY_REFERENCE",
             "description": "Reference gravity vector for tilt calculations",

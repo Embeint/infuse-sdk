@@ -279,6 +279,22 @@ struct kv_bluetooth_peer {
 	struct bt_addr_le address;
 } __packed;
 
+/** LoRa modem configuration */
+struct kv_lora_config {
+	/** Frequency (Hz) */
+	uint32_t frequency;
+	/** Signal bandwidth (see enum lora_signal_bandwidth) */
+	uint8_t bandwidth;
+	/** Spreading factor (see enum lora_datarate) */
+	uint8_t spreading_factor;
+	/** Coding rate (see enum lora_coding_rate) */
+	uint8_t coding_rate;
+	/** Preamble length */
+	uint16_t preamble_len;
+	/** Transmit power (dBm) */
+	int8_t tx_power;
+} __packed;
+
 /** Reference gravity vector for tilt calculations */
 struct kv_gravity_reference {
 	/** X axis component of gravity vector */
@@ -402,6 +418,8 @@ enum kv_builtin_id {
 	KV_KEY_LTE_NETWORKING_MODES = 46,
 	/** Bluetooth peer device */
 	KV_KEY_BLUETOOTH_PEER = 50,
+	/** LoRa modem configuration */
+	KV_KEY_LORA_CONFIG = 51,
 	/** Reference gravity vector for tilt calculations */
 	KV_KEY_GRAVITY_REFERENCE = 60,
 	/** Array of points defining a closed polygon */
@@ -446,6 +464,7 @@ enum kv_builtin_size {
 	_KV_KEY_LTE_MODEM_IMEI_SIZE = sizeof(struct kv_lte_modem_imei),
 	_KV_KEY_LTE_NETWORKING_MODES_SIZE = sizeof(struct kv_lte_networking_modes),
 	_KV_KEY_BLUETOOTH_PEER_SIZE = sizeof(struct kv_bluetooth_peer),
+	_KV_KEY_LORA_CONFIG_SIZE = sizeof(struct kv_lora_config),
 	_KV_KEY_GRAVITY_REFERENCE_SIZE = sizeof(struct kv_gravity_reference),
 	_KV_KEY_TASK_SCHEDULES_DEFAULT_ID_SIZE = sizeof(struct kv_task_schedules_default_id),
 };
@@ -471,6 +490,7 @@ enum kv_builtin_size {
 #define _KV_KEY_LTE_PDP_CONFIG_TYPE struct kv_lte_pdp_config
 #define _KV_KEY_LTE_NETWORKING_MODES_TYPE struct kv_lte_networking_modes
 #define _KV_KEY_BLUETOOTH_PEER_TYPE struct kv_bluetooth_peer
+#define _KV_KEY_LORA_CONFIG_TYPE struct kv_lora_config
 #define _KV_KEY_GRAVITY_REFERENCE_TYPE struct kv_gravity_reference
 #define _KV_KEY_GEOFENCE_TYPE struct kv_geofence
 #define _KV_KEY_TASK_SCHEDULES_DEFAULT_ID_TYPE struct kv_task_schedules_default_id
@@ -516,6 +536,8 @@ enum kv_builtin_size {
 	IF_ENABLED(CONFIG_KV_STORE_KEY_LTE_NETWORKING_MODES, \
 		   (1 +)) \
 	IF_ENABLED(CONFIG_KV_STORE_KEY_BLUETOOTH_PEER, \
+		   (1 +)) \
+	IF_ENABLED(CONFIG_KV_STORE_KEY_LORA_CONFIG, \
 		   (1 +)) \
 	IF_ENABLED(CONFIG_KV_STORE_KEY_GRAVITY_REFERENCE, \
 		   (1 +)) \
@@ -694,6 +716,13 @@ static struct key_value_slot_definition _KV_SLOTS_ARRAY_DEFINE[] = {
 		.flags = KV_FLAGS_REFLECT,
 	},
 #endif /* CONFIG_KV_STORE_KEY_BLUETOOTH_PEER */
+#ifdef CONFIG_KV_STORE_KEY_LORA_CONFIG
+	{
+		.key = KV_KEY_LORA_CONFIG,
+		.range = 1,
+		.flags = KV_FLAGS_REFLECT,
+	},
+#endif /* CONFIG_KV_STORE_KEY_LORA_CONFIG */
 #ifdef CONFIG_KV_STORE_KEY_GRAVITY_REFERENCE
 	{
 		.key = KV_KEY_GRAVITY_REFERENCE,
