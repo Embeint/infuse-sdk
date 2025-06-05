@@ -1,0 +1,15 @@
+sample:
+  description: LoRa ranging sample
+  name: lora_ranger
+common:
+  filter: dt_alias_exists("lora0") and
+    dt_alias_exists("fuel_gauge0") and
+    dt_nodelabel_enabled("led0") and
+    dt_nodelabel_enabled("led1") and
+    dt_nodelabel_enabled("led2")
+  build_only: true
+  required_snippets:
+    - infuse
+tests:
+  sample.lora_ranger:
+    tags: app
