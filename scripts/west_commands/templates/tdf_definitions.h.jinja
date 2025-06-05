@@ -47,6 +47,7 @@ struct {{ name }} {
  */
 
 {% for id, info in definitions.items() %}
+{% if not info['only_flexible'] %}
 /** {{ info['description'] }} */
 struct tdf_{{ info['name'] | lower }} {
 {% for field in info['fields'] %}
@@ -56,6 +57,7 @@ struct tdf_{{ info['name'] | lower }} {
 	{{ field['type'] }} {{ field['name'] }}{{ field["array"] }};
 {% endfor %}
 } __packed;
+{% endif %}
 
 {% if 'flexible' in info %}
 /** Define a variant of @ref tdf_{{ info['name'] | lower }} with a constant length */
@@ -85,13 +87,17 @@ enum tdf_builtin_id {
 /** @cond INTERNAL_HIDDEN */
 
 {% for id, info in definitions.items() %}
+{% if not info['only_flexible'] %}
 #define	_TDF_{{ info['name'] | upper }}_TYPE struct tdf_{{ info['name'] | lower }}
+{% endif %}
 {% endfor %}
 
 /** Size of builtin TDF definitions */
 enum tdf_builtin_size {
 {% for id, info in definitions.items() %}
+{% if not info['only_flexible'] %}
 	_TDF_{{ info['name'] | upper }}_SIZE = sizeof(struct tdf_{{ info['name'] | lower }}),
+{% endif %}
 {% endfor %}
 };
 
