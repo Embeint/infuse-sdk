@@ -588,6 +588,30 @@ struct tdf_annotation {
 		char event[_count];                                                                \
 	} __packed;
 
+/** Received LoRa packet */
+struct tdf_lora_rx {
+	/** Signal to Noise ratio (dB) */
+	int8_t snr;
+	/** Received signal strength (dBm) */
+	int16_t rssi;
+	/** Packet payload */
+	uint8_t payload[];
+} __packed;
+
+/** Define a variant of @ref tdf_lora_rx with a constant length */
+#define TDF_LORA_RX_VAR(_name, _count)                                                             \
+	struct _name {                                                                             \
+		int8_t snr;                                                                        \
+		int16_t rssi;                                                                      \
+		uint8_t payload[_count];                                                           \
+	} __packed;
+
+/** Define a variant of @ref tdf_lora_tx with a constant length */
+#define TDF_LORA_TX_VAR(_name, _count)                                                             \
+	struct _name {                                                                             \
+		uint8_t payload[_count];                                                           \
+	} __packed;
+
 /** Example array type */
 struct tdf_array_type {
 	/** I am an array of length 4 */
@@ -676,6 +700,10 @@ enum tdf_builtin_id {
 	TDF_ADC_RAW_32 = 42,
 	/** Generic event annotation */
 	TDF_ANNOTATION = 43,
+	/** Received LoRa packet */
+	TDF_LORA_RX = 44,
+	/** Transmitted LoRa packet */
+	TDF_LORA_TX = 45,
 	/** Example array type */
 	TDF_ARRAY_TYPE = 100,
 	/** End of builtin TDF range */
@@ -724,6 +752,7 @@ enum tdf_builtin_id {
 #define _TDF_ADC_RAW_16_TYPE                  struct tdf_adc_raw_16
 #define _TDF_ADC_RAW_32_TYPE                  struct tdf_adc_raw_32
 #define _TDF_ANNOTATION_TYPE                  struct tdf_annotation
+#define _TDF_LORA_RX_TYPE                     struct tdf_lora_rx
 #define _TDF_ARRAY_TYPE_TYPE                  struct tdf_array_type
 
 /** Size of builtin TDF definitions */
@@ -768,6 +797,7 @@ enum tdf_builtin_size {
 	_TDF_ADC_RAW_16_SIZE = sizeof(struct tdf_adc_raw_16),
 	_TDF_ADC_RAW_32_SIZE = sizeof(struct tdf_adc_raw_32),
 	_TDF_ANNOTATION_SIZE = sizeof(struct tdf_annotation),
+	_TDF_LORA_RX_SIZE = sizeof(struct tdf_lora_rx),
 	_TDF_ARRAY_TYPE_SIZE = sizeof(struct tdf_array_type),
 };
 

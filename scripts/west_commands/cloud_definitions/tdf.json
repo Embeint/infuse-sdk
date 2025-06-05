@@ -446,6 +446,22 @@
                 {"name": "event", "type": "char", "num": 0, "description": "Event that occurred"}
             ]
         },
+        "44": {
+            "name": "LORA_RX",
+            "description": "Received LoRa packet",
+            "fields": [
+                {"name": "snr", "type": "int8_t", "description": "Signal to Noise ratio (dB)"},
+                {"name": "rssi", "type": "int16_t", "description": "Received signal strength (dBm)"},
+                {"name": "payload", "type": "uint8_t", "num": 0, "description": "Packet payload"}
+            ]
+        },
+        "45": {
+            "name": "LORA_TX",
+            "description": "Transmitted LoRa packet",
+            "fields": [
+                {"name": "payload", "type": "uint8_t", "num": 0, "description": "Payload"}
+            ]
+        },
         "100": {
             "name": "ARRAY_TYPE",
             "description": "Example array type",
