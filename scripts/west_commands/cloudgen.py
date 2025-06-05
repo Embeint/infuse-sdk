@@ -139,6 +139,9 @@ class cloudgen(WestCommand):
         for d in tdf_defs["definitions"].values():
             for field in d["fields"]:
                 self._array_postfix(d, field)
+            d["only_flexible"] = (
+                len(d["fields"]) == 1 and d["fields"][0]["array"] == "[]"
+            )
 
         with tdf_output.open("w") as f:
             f.write(
