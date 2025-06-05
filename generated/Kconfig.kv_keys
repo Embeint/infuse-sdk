@@ -115,6 +115,13 @@ config KV_STORE_KEY_BLUETOOTH_PEER
 	help
 	  Bluetooth peer device
 
+config KV_STORE_KEY_LORA_CONFIG
+	bool "Enable KV key LORA_CONFIG"
+	depends on LORA
+	default y
+	help
+	  LoRa modem configuration
+
 config KV_STORE_KEY_GRAVITY_REFERENCE
 	bool "Enable KV key GRAVITY_REFERENCE"
 	help
