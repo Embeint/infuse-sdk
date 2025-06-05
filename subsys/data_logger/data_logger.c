@@ -120,10 +120,22 @@ static int do_block_write(const struct device *dev, enum infuse_type type, void 
 static int handle_block_write(const struct device *dev, enum infuse_type type, void *block,
 			      uint16_t block_len)
 {
-#ifdef CONFIG_DATA_LOGGER_RAM_BUFFER
 	const struct data_logger_common_config *config = dev->config;
 	struct data_logger_common_data *data = dev->data;
+	uint8_t unaligned, padding;
 
+	if (!config->requires_full_block_write && (config->block_write_align > 1)) {
+		/* Check for analigned data block length */
+		unaligned = block_len % config->block_write_align;
+		if (unaligned > 0) {
+			/* Pad the block to the alignment requirement */
+			padding = config->block_write_align - unaligned;
+			memset((uint8_t *)block + block_len, data->erase_val, padding);
+			block_len += padding;
+		}
+	}
+
+#ifdef CONFIG_DATA_LOGGER_RAM_BUFFER
 	if (config->ram_buf_len) {
 		uint32_t space = config->ram_buf_len - data->ram_buf_offset;
 		int rc;

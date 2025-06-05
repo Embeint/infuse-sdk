@@ -36,15 +36,9 @@ static int logger_flash_map_write(const struct device *dev, uint32_t phy_block,
 {
 	struct dl_flash_map_data *data = dev->data;
 	off_t offset = DATA_LOGGER_FLASH_MAP_BLOCK_SIZE * phy_block;
-	uint8_t *ptr = (uint8_t *)mem;
 
 	/* Data type already encoded into the mem buffer */
 	ARG_UNUSED(data_type);
-
-	/* Ensure writes are word aligned */
-	while (mem_len % sizeof(uint32_t)) {
-		ptr[mem_len++] = data->common.erase_val;
-	}
 
 	return flash_area_write(data->area, offset, mem, mem_len);
 }
@@ -138,7 +132,7 @@ const struct data_logger_api data_logger_flash_map_api = {
 #define DATA_LOGGER_DEFINE(inst)                                                                   \
 	COMMON_CONFIG_PRE(inst);                                                                   \
 	static struct dl_flash_map_config config##inst = {                                         \
-		.common = COMMON_CONFIG_INIT(inst, false, false),                                  \
+		.common = COMMON_CONFIG_INIT(inst, false, false, sizeof(uint32_t)),                \
 		.flash_area_id = DT_FIXED_PARTITION_ID(DT_INST_PROP(inst, partition)),             \
 		.physical_blocks = (DT_REG_SIZE(DT_INST_PROP(inst, partition)) /                   \
 				    DATA_LOGGER_FLASH_MAP_BLOCK_SIZE),                             \

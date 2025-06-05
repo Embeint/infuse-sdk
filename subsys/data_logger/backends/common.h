@@ -64,6 +64,8 @@ struct data_logger_common_config {
 	uint8_t *ram_buf_data;
 	size_t ram_buf_len;
 #endif /* CONFIG_DATA_LOGGER_RAM_BUFFER */
+	/* Block writes must be aligned to this length */
+	uint8_t block_write_align;
 	/* Writes must contain the complete block size */
 	bool requires_full_block_write;
 	/* Write function only queues writes, does not wait for completion */
@@ -74,15 +76,17 @@ struct data_logger_common_config {
 	IF_ENABLED(CONFIG_DATA_LOGGER_RAM_BUFFER,                                                  \
 		   (static uint8_t ram_buf_##inst[DT_INST_PROP(inst, extra_ram_buffer)]))
 
-#define COMMON_CONFIG_INIT(inst, _full_block_write, _queued_writes)                                \
+#define COMMON_CONFIG_INIT(inst, _full_block_write, _queued_writes, _block_write_align)            \
 	COND_CODE_1(CONFIG_DATA_LOGGER_RAM_BUFFER,                                                 \
 		    ({                                                                             \
 			    .ram_buf_data = ram_buf_##inst,                                        \
 			    .ram_buf_len = sizeof(ram_buf_##inst),                                 \
+			    .block_write_align = _block_write_align,                               \
 			    .requires_full_block_write = _full_block_write,                        \
 			    .queued_writes = _queued_writes,                                       \
 		    }),                                                                            \
 		    ({                                                                             \
+			    .block_write_align = _block_write_align,                               \
 			    .requires_full_block_write = _full_block_write,                        \
 			    .queued_writes = _queued_writes,                                       \
 		    }))
