@@ -52,10 +52,24 @@ static const struct task_schedule schedules[] = {
 				.position_dop = 40,
 			},
 	},
+#ifdef CONFIG_BT
+	{
+		.task_id = TASK_ID_TDF_LOGGER,
+		.validity = TASK_VALID_ALWAYS,
+		.task_args.infuse.tdf_logger =
+			{
+				.loggers = TDF_DATA_LOGGER_BT_ADV,
+				.logging_period_ms = 900,
+				.random_delay_ms = 200,
+				.tdfs = TASK_TDF_LOGGER_LOG_ANNOUNCE | TASK_TDF_LOGGER_LOG_LOCATION,
+			},
+	},
+#endif /* CONFIG_BT */
 };
 
 TASK_SCHEDULE_STATES_DEFINE(states, schedules);
-TASK_RUNNER_TASKS_DEFINE(app_tasks, app_tasks_data, (GNSS_TASK, DEVICE_DT_GET(DT_ALIAS(gnss))));
+TASK_RUNNER_TASKS_DEFINE(app_tasks, app_tasks_data, (TDF_LOGGER_TASK, NULL),
+			 (GNSS_TASK, DEVICE_DT_GET(DT_ALIAS(gnss))));
 
 int main(void)
 {

@@ -56,10 +56,24 @@ static const struct task_schedule schedules[] = {
 				.fifo_sample_buffer = 100,
 			},
 	},
+#ifdef CONFIG_BT
+	{
+		.task_id = TASK_ID_TDF_LOGGER,
+		.validity = TASK_VALID_ALWAYS,
+		.task_args.infuse.tdf_logger =
+			{
+				.loggers = TDF_DATA_LOGGER_BT_ADV,
+				.logging_period_ms = 900,
+				.random_delay_ms = 250,
+				.tdfs = TASK_TDF_LOGGER_LOG_ANNOUNCE | TASK_TDF_LOGGER_LOG_ACCEL,
+			},
+	},
+#endif /* CONFIG_BT */
 };
 
 TASK_SCHEDULE_STATES_DEFINE(states, schedules);
-TASK_RUNNER_TASKS_DEFINE(app_tasks, app_tasks_data, (IMU_TASK, DEVICE_DT_GET(DT_ALIAS(imu0))));
+TASK_RUNNER_TASKS_DEFINE(app_tasks, app_tasks_data, (TDF_LOGGER_TASK, NULL),
+			 (IMU_TASK, DEVICE_DT_GET(DT_ALIAS(imu0))));
 
 ALGORITHM_TILT_DEFINE(alg_tilt, TDF_DATA_LOGGER_SERIAL, ALGORITHM_TILT_LOG_ANGLE, 0.025f, 5);
 
