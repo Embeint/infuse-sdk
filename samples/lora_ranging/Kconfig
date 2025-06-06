@@ -1,0 +1,6 @@
+# GNSS task if supported in hardware
+
+configdefault TASK_RUNNER_TASK_GNSS
+	default y if GNSS
+
+source "Kconfig.zephyr"
