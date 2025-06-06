@@ -9,6 +9,7 @@
 #include <string.h>
 
 #include <zephyr/kernel.h>
+#include <zephyr/drivers/gnss.h>
 #include <zephyr/drivers/gpio.h>
 #include <zephyr/drivers/lora.h>
 #include <zephyr/logging/log.h>
@@ -53,6 +54,31 @@ static const struct task_schedule schedules[] = {
 		.periodicity_type = TASK_PERIODICITY_FIXED,
 		.periodicity.fixed.period_s = 5,
 	},
+#ifdef CONFIG_TASK_RUNNER_TASK_GNSS
+	{
+		.task_id = TASK_ID_GNSS,
+		.validity = TASK_VALID_ALWAYS,
+		.periodicity_type = TASK_PERIODICITY_FIXED,
+		.periodicity.fixed.period_s = 5 * SEC_PER_MIN,
+		.timeout_s = SEC_PER_MIN,
+		.task_logging =
+			{
+				{
+					.loggers = TDF_DATA_LOGGER_FLASH,
+					.tdf_mask = TASK_GNSS_LOG_PVT,
+				},
+			},
+		.task_args.infuse.gnss =
+			{
+				.constellations =
+					GNSS_SYSTEM_GPS | GNSS_SYSTEM_QZSS | GNSS_SYSTEM_SBAS,
+				.flags = TASK_GNSS_FLAGS_PERFORMANCE_MODE |
+					 TASK_GNSS_FLAGS_RUN_TO_LOCATION_FIX,
+				.accuracy_m = 5,
+				.position_dop = 40,
+			},
+	},
+#endif /* CONFIG_TASK_RUNNER_TASK_GNSS */
 	{
 		.task_id = TASK_ID_TDF_LOGGER,
 		.validity = TASK_VALID_ALWAYS,
@@ -61,13 +87,17 @@ static const struct task_schedule schedules[] = {
 				.loggers = TDF_DATA_LOGGER_BT_ADV,
 				.logging_period_ms = 900,
 				.random_delay_ms = 200,
-				.tdfs = TASK_TDF_LOGGER_LOG_ANNOUNCE | TASK_TDF_LOGGER_LOG_BATTERY,
+				.tdfs = TASK_TDF_LOGGER_LOG_ANNOUNCE | TASK_TDF_LOGGER_LOG_BATTERY |
+					TASK_TDF_LOGGER_LOG_LOCATION,
 			},
 	},
 };
 
 TASK_SCHEDULE_STATES_DEFINE(states, schedules);
 TASK_RUNNER_TASKS_DEFINE(app_tasks, app_tasks_data, (TDF_LOGGER_TASK, NULL),
+#ifdef CONFIG_TASK_RUNNER_TASK_GNSS
+			 (GNSS_TASK, DEVICE_DT_GET(DT_ALIAS(gnss))),
+#endif
 			 (BATTERY_TASK, DEVICE_DT_GET(DT_ALIAS(fuel_gauge0))));
 
 static void leds_disable(struct k_work *work)
