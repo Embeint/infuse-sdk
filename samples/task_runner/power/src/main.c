@@ -28,19 +28,27 @@ static const struct task_schedule schedules[] = {
 		.validity = TASK_VALID_ALWAYS,
 		.periodicity_type = TASK_PERIODICITY_FIXED,
 		.periodicity.fixed.period_s = 2,
+		.task_logging =
+			{
+				{
+					.loggers = TDF_DATA_LOGGER_SERIAL | TDF_DATA_LOGGER_BT_ADV,
+					.tdf_mask = TASK_BATTERY_LOG_COMPLETE,
+				},
+			},
 	},
+#ifdef CONFIG_BT
 	{
 		.task_id = TASK_ID_TDF_LOGGER,
 		.validity = TASK_VALID_ALWAYS,
-		.periodicity_type = TASK_PERIODICITY_LOCKOUT,
-		.periodicity.lockout.lockout_s = 1,
 		.task_args.infuse.tdf_logger =
 			{
-				.loggers = TDF_DATA_LOGGER_BT_ADV | TDF_DATA_LOGGER_SERIAL,
+				.loggers = TDF_DATA_LOGGER_BT_ADV,
+				.logging_period_ms = 900,
 				.random_delay_ms = 250,
-				.tdfs = TASK_TDF_LOGGER_LOG_ANNOUNCE | TASK_TDF_LOGGER_LOG_BATTERY,
+				.tdfs = TASK_TDF_LOGGER_LOG_ANNOUNCE,
 			},
 	},
+#endif /* CONFIG_BT */
 };
 
 TASK_SCHEDULE_STATES_DEFINE(states, schedules);
