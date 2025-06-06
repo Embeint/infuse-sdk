@@ -2,7 +2,7 @@ sample:
   description: Power task runner sample
   name: Power task runner
 common:
-  filter: dt_alias_exists("fuel-gauge0")
+  filter: dt_alias_exists("fuel-gauge0") and dt_chosen_enabled("zephyr,bt-hci")
   build_only: true
   required_snippets:
     - infuse
