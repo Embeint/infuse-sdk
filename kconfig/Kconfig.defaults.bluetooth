@@ -1,5 +1,11 @@
 # Infuse-IoT SDK Bluetooth defaults
 
+DT_CHOSEN_Z_BT_HCI := zephyr,bt-hci
+
+# Enable Bluetooth by default if supported by hardware
+configdefault BT
+	default y if INFUSE_SDK && !ZTEST && !QEMU_TARGET && !NATIVE_BUILD && $(dt_chosen_enabled,$(DT_CHOSEN_Z_BT_HCI))
+
 config INFUSE_SDK_BLUETOOTH
 	bool "Infuse-IoT SDK Bluetooth defaults"
 	depends on BT
