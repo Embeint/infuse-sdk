@@ -3,6 +3,7 @@
 DT_CHOSEN_Z_BT_HCI := zephyr,bt-hci
 DT_CHOSEN_Z_WIFI := zephyr,wifi
 DT_COMPAT_Z_SDMMC := zephyr,sdmmc-disk
+DT_COMPAT_ST_SDMMC := st,stm32-sdmmc
 
 configdefault BT
 	default y if $(dt_chosen_enabled,$(DT_CHOSEN_Z_BT_HCI))
@@ -12,6 +13,7 @@ configdefault WIFI
 	default y if $(dt_chosen_enabled,$(DT_CHOSEN_Z_WIFI))
 configdefault DISK_ACCESS
 	default y if $(dt_compat_enabled,$(DT_COMPAT_Z_SDMMC))
+	default y if $(dt_compat_enabled,$(DT_COMPAT_ST_SDMMC))
 configdefault GNSS
 	default y if $(dt_alias_enabled,gnss)
 configdefault LORA
