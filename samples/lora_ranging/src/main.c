@@ -17,6 +17,7 @@
 #include <zephyr/zbus/zbus.h>
 
 #include <infuse/identifiers.h>
+#include <infuse/bluetooth/legacy_adv.h>
 #include <infuse/drivers/watchdog.h>
 #include <infuse/time/epoch.h>
 #include <infuse/fs/kv_store.h>
@@ -183,6 +184,9 @@ int main(void)
 
 	/* Start the watchdog */
 	(void)infuse_watchdog_start();
+
+	/* Start legacy advertising */
+	bluetooth_legacy_advertising_run();
 
 	/* Initialise task runner */
 	task_runner_init(schedules, states, ARRAY_SIZE(schedules), app_tasks, app_tasks_data,
