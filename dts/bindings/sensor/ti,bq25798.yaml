@@ -1,0 +1,99 @@
+# Copyright (c) 2025 Embeint Inc
+# SPDX-License-Identifier: Apache-2.0
+
+description: TI BQ25798 Buck-Boost Battery Charger
+
+compatible: "ti,bq25798"
+
+include: [i2c-device.yaml]
+
+properties:
+  en-gpios:
+    type: phandle-array
+    required: true
+    description: |
+      Charger enable GPIO.
+
+  int-gpios:
+    type: phandle-array
+    required: true
+    description: |
+      Charger interrupt GPIO.
+
+  v-sys-min:
+    type: int
+    default: 3500
+    description:
+      Minimum system voltage in milliVolts. Supports 250mV steps
+      from 2500 mV.
+      Default is the POR value for a 1S battery.
+
+  v-in-dpm:
+    type: int
+    default: 3600
+    description:
+      Minimum voltage target for the PMID supply in milliVolts.
+      Default is the POR value.
+
+  input-current-limit:
+    type: int
+    default: 3000
+    description:
+      Input current limit in milliAmps.
+      Reducing this to 1A or less will give greater current resolution.
+      Default is the POR value.
+
+  mppt-ratio:
+    type: int
+    enum:
+      - 56
+      - 62
+      - 68
+      - 75
+      - 81
+      - 87
+      - 93
+      - 100
+    description:
+      Percentage of the open circuit voltage for the MPPT charger
+      to aim for. Don't configure this property to disable MPPT.
+
+  acdrv1-en:
+    type: boolean
+    description:
+      Enable ACFET1-RBFET1 gate driver control
+
+  acdrv2-en:
+    type: boolean
+    description:
+      Enable ACFET2-RBFET2 gate driver control
+
+  ts-rt1:
+    type: int
+    required: true
+    description: |
+      RT1 resistance in ohms.
+
+  ts-rt2:
+    type: int
+    required: true
+    description: |
+      RT2 resistance in ohms.
+
+  ntc-beta:
+    type: int
+    default: 3435
+    description: |
+      NTC Beta value. Default is for a 103AT-2 thermistor
+
+  ntc-r0:
+    type: int
+    default: 10000
+    description: |
+      NTC R0 resistance in Ohms. Default is for a 103AT-2 thermistor
+
+  ntc-t0:
+    type: int
+    default: 299
+    description: |
+      NTC T0 temperature in Kelvin. Default is for a 103AT-2 thermistor

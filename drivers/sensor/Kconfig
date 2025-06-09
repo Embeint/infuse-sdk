@@ -13,3 +13,9 @@ config NRF9X_BATT
 	depends on NRF_MODEM_LIB
 	depends on SENSOR
 	default y
+
+config BQ25798
+	bool "TI BQ25798 Buck-Boost Battery Charger"
+	depends on DT_HAS_TI_BQ25798_ENABLED
+	depends on SENSOR
+	default y
