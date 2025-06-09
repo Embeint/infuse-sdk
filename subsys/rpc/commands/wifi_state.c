@@ -22,7 +22,7 @@ struct net_buf *rpc_command_wifi_state(struct net_buf *request)
 {
 	struct rpc_wifi_state_response rsp = {0};
 	struct net_if *iface = net_if_get_default();
-	struct wifi_iface_status status;
+	struct wifi_iface_status status = {0};
 	int rc;
 
 	if (iface == NULL) {
