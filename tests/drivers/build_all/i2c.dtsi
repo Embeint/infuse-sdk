@@ -42,3 +42,12 @@ test_i2c_lsm6dso: lsm6dso@3 {
 	reg = <0x3>;
 	irq-gpios = <&test_gpio 0 0>;
 };
+
+test_i2c_bq25798: bq25798@4 {
+	compatible = "ti,bq25798";
+	reg = <0x4>;
+	en-gpios = <&test_gpio 0 0>;
+	int-gpios = <&test_gpio 1 0>;
+	ts-rt1 = <5240>;
+	ts-rt2 = <30310>;
+};
