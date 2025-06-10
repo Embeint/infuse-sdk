@@ -6,5 +6,8 @@ configdefault USB_CDC_ACM_LOG_LEVEL
 configdefault NVS_LOG_LEVEL
 	default 2
 
+configdefault ZMS_LOG_LEVEL
+	default 2
+
 configdefault BT_LOG_LEVEL
 	default 2
