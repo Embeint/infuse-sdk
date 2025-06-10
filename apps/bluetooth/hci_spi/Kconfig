@@ -10,6 +10,9 @@ configdefault IMG_MANAGER
 configdefault INFUSE_CPATCH
 	default y if BOOTLOADER_MCUBOOT
 
+configdefault NRF_GRTC_CLEAR_AT_INIT
+	default y
+
 # Reduced RAM footprint on memory constrained platforms
 configdefault BT_MAX_CONN
 	default 4 if SOC_NRF52832
