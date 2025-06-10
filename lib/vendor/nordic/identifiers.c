@@ -13,8 +13,7 @@
 #include <soc_secure.h>
 #include <nrf.h>
 
-/* nRF54Lx does not support `ARM_TRUSTZONE_M` yet */
-#if defined(CONFIG_ARM_TRUSTZONE_M) || defined(CONFIG_SOC_SERIES_NRF54LX)
+#if defined(NRF_UICR_S)
 #define UICR_PTR NRF_UICR_S
 #define UICR_REG OTP
 #else
