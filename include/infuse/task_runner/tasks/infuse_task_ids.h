@@ -28,6 +28,8 @@ enum infuse_task_ids {
 	TASK_ID_GNSS = 4,
 	TASK_ID_NETWORK_SCAN = 5,
 	TASK_ID_BT_SCANNER = 6,
+	TASK_ID_TDF_LOGGER_ALT1 = 7,
+	TASK_ID_TDF_LOGGER_ALT2 = 8,
 };
 
 /**
