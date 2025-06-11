@@ -59,7 +59,7 @@ void task_tdf_logger_manual_run(uint8_t tdf_loggers, uint64_t timestamp, uint16_
 				    }}))
 
 /**
- * @brief TDF logger task
+ * @brief Generic TDF logger task
  *
  * @param define_mem Define memory (None required)
  * @param define_config Define task
@@ -68,6 +68,36 @@ void task_tdf_logger_manual_run(uint8_t tdf_loggers, uint64_t timestamp, uint16_
  */
 #define TDF_LOGGER_TASK(define_mem, define_config, custom_logger)                                  \
 	_TDF_LOGGER_TASK_INSTANCE("tdfl", TASK_ID_TDF_LOGGER, define_mem, define_config,           \
+				  custom_logger)
+
+/**
+ * @brief TDF logger task, alternate instance 1
+ *
+ * Behaves the exact same way as @ref TDF_LOGGER_TASK, but with a different task ID.
+ * This allows multiple instance of TDF logging to run concurrently with each other.
+ *
+ * @param define_mem Define memory (None required)
+ * @param define_config Define task
+ * @param custom_logger Callback for custom logging
+ * @param ... Compile-time argument unused
+ */
+#define TDF_LOGGER_ALT1_TASK(define_mem, define_config, custom_logger)                             \
+	_TDF_LOGGER_TASK_INSTANCE("tdfl1", TASK_ID_TDF_LOGGER_ALT1, define_mem, define_config,     \
+				  custom_logger)
+
+/**
+ * @brief TDF logger task, alternate instance 2
+ *
+ * Behaves the exact same way as @ref TDF_LOGGER_TASK, but with a different task ID.
+ * This allows multiple instance of TDF logging to run concurrently with each other.
+ *
+ * @param define_mem Define memory (None required)
+ * @param define_config Define task
+ * @param custom_logger Callback for custom logging
+ * @param ... Compile-time argument unused
+ */
+#define TDF_LOGGER_ALT2_TASK(define_mem, define_config, custom_logger)                             \
+	_TDF_LOGGER_TASK_INSTANCE("tdfl2", TASK_ID_TDF_LOGGER_ALT2, define_mem, define_config,     \
 				  custom_logger)
 
 #ifdef __cplusplus
