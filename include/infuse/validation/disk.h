@@ -26,8 +26,10 @@ enum {
 	VALIDATION_DISK_POWER_UP = 0,
 	/** Rigorous driver behavioural tests */
 	VALIDATION_DISK_DRIVER = BIT(0),
+	/** Read and write throughput */
+	VALIDATION_DISK_THROUGHPUT = BIT(1),
 	/** Perform a full disk erase */
-	VALIDATION_DISK_ERASE = BIT(1),
+	VALIDATION_DISK_ERASE = BIT(2),
 };
 
 /**

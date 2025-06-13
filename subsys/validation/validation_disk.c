@@ -12,6 +12,7 @@
 #include <zephyr/sys/util.h>
 #include <zephyr/random/random.h>
 #include <zephyr/storage/disk_access.h>
+#include <zephyr/sys/crc.h>
 
 #include <zephyr/device.h>
 #include <infuse/validation/core.h>
@@ -19,6 +20,7 @@
 
 #define TEST "DISK"
 
+static uint8_t throughput_buffer[CONFIG_INFUSE_VALIDATION_DISK_THROUGHPUT_BUFFER_SIZE] __aligned(4);
 static uint8_t write_buffer[512] __aligned(4);
 static uint8_t read_buffer[512] __aligned(4);
 
@@ -68,6 +70,103 @@ static int write_read_erase_sector(const char *disk, uint32_t sector, uint32_t s
 	return 0;
 }
 
+static int throughput_run(const char *disk, uint32_t sector_start, uint32_t sector_size)
+{
+	uint32_t num_sectors = sizeof(throughput_buffer) / sector_size;
+	uint64_t buffer_offset = 0;
+	k_ticks_t t_start, t_end;
+	uint64_t throughput_bps;
+	uint64_t duration_us;
+	uint32_t data_crc;
+	int rc;
+
+	/* Fill buffer with random bytes */
+	sys_rand_get(throughput_buffer, sizeof(throughput_buffer));
+	data_crc = crc32_ieee(throughput_buffer, sizeof(throughput_buffer));
+
+	/* Write a range of sectors one by one */
+	VALIDATION_REPORT_INFO(TEST, "Write Throughput: %d sectors one by one", num_sectors);
+	t_start = k_uptime_ticks();
+	for (int i = 0; i < num_sectors; i++) {
+		rc = disk_access_write(disk, throughput_buffer + buffer_offset, sector_start + i,
+				       1);
+		if (rc < 0) {
+			VALIDATION_REPORT_ERROR(TEST, "disk_access_read (%d)", rc);
+			return rc;
+		}
+		buffer_offset += sector_size;
+	}
+	t_end = k_uptime_ticks();
+	duration_us = k_ticks_to_us_near64(t_end - t_start);
+	throughput_bps = (USEC_PER_SEC * buffer_offset) / duration_us;
+	VALIDATION_REPORT_VALUE(TEST, "WTS_DURATION", "%lld us", duration_us);
+	VALIDATION_REPORT_VALUE(TEST, "WTS_DATARATE", "%lld kB/s", throughput_bps / 1024);
+
+	/* Write a range of sectors in a burst transaction */
+	VALIDATION_REPORT_INFO(TEST, "Write Throughput: %d sectors burst", num_sectors);
+	t_start = k_uptime_ticks();
+	rc = disk_access_write(disk, throughput_buffer, sector_start + num_sectors, num_sectors);
+	if (rc < 0) {
+		VALIDATION_REPORT_ERROR(TEST, "disk_access_read (%d)", rc);
+		return rc;
+	}
+	t_end = k_uptime_ticks();
+	duration_us = k_ticks_to_us_near64(t_end - t_start);
+	throughput_bps = (USEC_PER_SEC * (uint64_t)sector_size * num_sectors) / duration_us;
+	VALIDATION_REPORT_VALUE(TEST, "WTM_DURATION", "%lld us", duration_us);
+	VALIDATION_REPORT_VALUE(TEST, "WTM_DATARATE", "%lld kB/s", throughput_bps / 1024);
+
+	/* Read a range of sectors one by one */
+	VALIDATION_REPORT_INFO(TEST, "Read Throughput: %d sectors one by one", num_sectors);
+	memset(throughput_buffer, 0x00, sizeof(throughput_buffer));
+	buffer_offset = 0;
+	t_start = k_uptime_ticks();
+	for (int i = 0; i < num_sectors; i++) {
+		rc = disk_access_read(disk, throughput_buffer + buffer_offset, sector_start + i, 1);
+		if (rc < 0) {
+			VALIDATION_REPORT_ERROR(TEST, "disk_access_read (%d)", rc);
+			return rc;
+		}
+		buffer_offset += sector_size;
+	}
+	t_end = k_uptime_ticks();
+	duration_us = k_ticks_to_us_near64(t_end - t_start);
+	throughput_bps = (USEC_PER_SEC * buffer_offset) / duration_us;
+	VALIDATION_REPORT_VALUE(TEST, "RTS_DURATION", "%lld us", duration_us);
+	VALIDATION_REPORT_VALUE(TEST, "RTS_DATARATE", "%lld kB/s", throughput_bps / 1024);
+	if (crc32_ieee(throughput_buffer, sizeof(throughput_buffer)) != data_crc) {
+		VALIDATION_REPORT_ERROR(TEST, "Single block read throughput data corruption");
+		return -EIO;
+	}
+
+	/* Read a range of sectors in a burst transaction */
+	VALIDATION_REPORT_INFO(TEST, "Read Throughput: %d sectors burst", num_sectors);
+	memset(throughput_buffer, 0x00, sizeof(throughput_buffer));
+	t_start = k_uptime_ticks();
+	rc = disk_access_read(disk, throughput_buffer, sector_start + num_sectors, num_sectors);
+	if (rc < 0) {
+		VALIDATION_REPORT_ERROR(TEST, "disk_access_read (%d)", rc);
+		return rc;
+	}
+	t_end = k_uptime_ticks();
+	duration_us = k_ticks_to_us_near64(t_end - t_start);
+	throughput_bps = (USEC_PER_SEC * (uint64_t)sector_size * num_sectors) / duration_us;
+	VALIDATION_REPORT_VALUE(TEST, "RTM_DURATION", "%lld us", duration_us);
+	VALIDATION_REPORT_VALUE(TEST, "RTM_DATARATE", "%lld kB/s", throughput_bps / 1024);
+	if (crc32_ieee(throughput_buffer, sizeof(throughput_buffer)) != data_crc) {
+		VALIDATION_REPORT_ERROR(TEST, "Burst block read throughput data corruption");
+		return -EIO;
+	}
+
+	/* Cleanup the disk sectors we used */
+	rc = disk_access_erase(disk, sector_start, 2 * num_sectors);
+	if (rc < 0) {
+		VALIDATION_REPORT_ERROR(TEST, "disk_access_erase (%d)", rc);
+		return rc;
+	}
+	return 0;
+}
+
 int infuse_validation_disk(const char *disk, uint8_t flags)
 {
 	uint32_t sector_count, sector_size;
@@ -106,6 +205,13 @@ int infuse_validation_disk(const char *disk, uint8_t flags)
 		uint32_t sector = (sys_rand32_get() % (sector_count / 2)) + (sector_count / 2);
 
 		rc = write_read_erase_sector(disk, sector, sector_size);
+	}
+	if ((rc == 0) && (flags & VALIDATION_DISK_THROUGHPUT)) {
+		/* Pick a random sector in the back half of the disk */
+		uint32_t sector = (sys_rand32_get() % (sector_count / 2)) + (sector_count / 2);
+
+		/* Shift sector slightly forward so we can't run off the back */
+		rc = throughput_run(disk, sector - 256, sector_size);
 	}
 
 	if ((rc == 0) && (flags & VALIDATION_DISK_ERASE)) {
