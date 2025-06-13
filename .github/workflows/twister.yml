@@ -21,6 +21,10 @@ jobs:
       volumes:
         - /repo-cache/embeint:/github/cache/embeint
         - /repo-cache/ccache:/github/ccache
+    strategy:
+      fail-fast: false
+      matrix:
+        subset: [1, 2, 3, 4]
     env:
       CCACHE_DIR: /github/ccache
       # `--specs` is ignored because ccache is unable to resolve the toolchain specs file path.
@@ -102,26 +106,26 @@ jobs:
         name: Run Tests with Twister (Pull Request)
         run: |
           export ZEPHYR_BASE=${PWD}/zephyr
-          $ZEPHYR_BASE/scripts/twister ${TWISTER_COMMON} ${VENDOR_FILTER} ${PR_OPTIONS} -T infuse-sdk
+          $ZEPHYR_BASE/scripts/twister --subset ${{matrix.subset}}/${{ strategy.job-total }} ${TWISTER_COMMON} ${VENDOR_FILTER} ${PR_OPTIONS} -T infuse-sdk
 
       - if: github.event_name == 'schedule'
         name: Run Unit Tests with Twister (Daily)
         run: |
           export ZEPHYR_BASE=${PWD}/zephyr
-          $ZEPHYR_BASE/scripts/twister ${TWISTER_COMMON} ${UNIT_TESTING} -T infuse-sdk
+          $ZEPHYR_BASE/scripts/twister --subset ${{matrix.subset}}/${{ strategy.job-total }} ${TWISTER_COMMON} ${UNIT_TESTING} -T infuse-sdk
 
       - if: github.event_name == 'schedule'
         name: Run Board Tests with Twister (Daily)
         run: |
           export ZEPHYR_BASE=${PWD}/zephyr
-          $ZEPHYR_BASE/scripts/twister ${TWISTER_COMMON} ${EXTRA_BOARDS} ${DAILY_OPTIONS} -T infuse-sdk
+          $ZEPHYR_BASE/scripts/twister --subset ${{matrix.subset}}/${{ strategy.job-total }} ${TWISTER_COMMON} ${EXTRA_BOARDS} ${DAILY_OPTIONS} -T infuse-sdk
 
       - if: github.event_name == 'schedule'
         name: Run Vendor Tests with Twister (Daily)
         run: |
           export ZEPHYR_BASE=${PWD}/zephyr
           echo 'twister ${TWISTER_COMMON} ${VENDOR_FILTER} ${DAILY_OPTIONS} -T infuse-sdk'
-          $ZEPHYR_BASE/scripts/twister ${TWISTER_COMMON} ${VENDOR_FILTER} ${DAILY_OPTIONS} --all -T infuse-sdk
+          $ZEPHYR_BASE/scripts/twister --subset ${{matrix.subset}}/${{ strategy.job-total }} ${TWISTER_COMMON} ${VENDOR_FILTER} ${DAILY_OPTIONS} --all -T infuse-sdk
 
       - name: Print ccache stats
         if: always()
