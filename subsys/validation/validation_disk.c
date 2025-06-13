@@ -19,8 +19,8 @@
 
 #define TEST "DISK"
 
-static uint8_t write_buffer[512];
-static uint8_t read_buffer[512];
+static uint8_t write_buffer[512] __aligned(4);
+static uint8_t read_buffer[512] __aligned(4);
 
 static int write_read_erase_sector(const char *disk, uint32_t sector, uint32_t sector_size)
 {
@@ -61,7 +61,7 @@ static int write_read_erase_sector(const char *disk, uint32_t sector, uint32_t s
 	/* Validate written == read */
 	if (memcmp(write_buffer, read_buffer, sizeof(write_buffer)) != 0) {
 		VALIDATION_REPORT_ERROR(TEST, "Data read != data written");
-		return rc;
+		return -EINVAL;
 	}
 
 	VALIDATION_REPORT_INFO(TEST, "Write-Read-Erase test passed");
