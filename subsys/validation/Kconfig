@@ -35,6 +35,17 @@ config INFUSE_VALIDATION_LEDS_ACTION_DURATION
 
 endif # INFUSE_VALIDATION_LEDS
 
+if DISK_ACCESS
+
+config INFUSE_VALIDATION_DISK_THROUGHPUT_BUFFER_SIZE
+	int "Size in bytes of the throughput buffer"
+	default 32768
+	help
+	  Increasing the size of this buffer should increase throughput
+	  due to reducing transaction setup overhead.
+
+endif # DISK_ACCESS
+
 if WIFI
 
 config INFUSE_VALIDATE_WIFI_SSID
