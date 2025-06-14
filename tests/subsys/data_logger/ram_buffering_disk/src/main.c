@@ -144,6 +144,57 @@ ZTEST(data_logger_ram_buffering_disk, test_init_state)
 #endif /* CONFIG_DATA_LOGGER_EXFAT_MULTI_FILE */
 }
 
+ZTEST(data_logger_ram_buffering_disk, test_flush)
+{
+	const struct device *logger = DEVICE_DT_GET(DT_NODELABEL(data_logger_exfat));
+	struct data_logger_persistent_block_header *hdr = (void *)output_buffer;
+	struct data_logger_state state;
+
+	/* Init all 0x00 */
+	zassert_equal(0, logger_exfat_init(logger));
+	data_logger_get_state(logger, &state);
+	zassert_equal(0, state.current_block);
+	zassert_equal(0, state.earliest_block);
+	zassert_not_equal(0, state.physical_blocks);
+
+	/* Write two blocks to logger */
+	zassert_equal(0, data_logger_block_write(logger, 0x75, input_buffer, state.block_size));
+	zassert_equal(0, data_logger_block_write(logger, 0x76, input_buffer, state.block_size));
+	k_sleep(K_TICKS(1));
+	data_logger_get_state(logger, &state);
+	zassert_equal(0, state.current_block);
+
+	/* Run the flush command */
+	zassert_equal(0, data_logger_flush(logger));
+	k_sleep(K_TICKS(1));
+	data_logger_get_state(logger, &state);
+	zassert_equal(2, state.current_block);
+
+	/* Data should exist on the backend */
+	zassert_equal(0, data_logger_block_read(logger, 0, 0, output_buffer, state.block_size));
+	zassert_equal(1, hdr->block_wrap);
+	zassert_equal(0x75, hdr->block_type);
+	zassert_equal(0, data_logger_block_read(logger, 1, 0, output_buffer, state.block_size));
+	zassert_equal(1, hdr->block_wrap);
+	zassert_equal(0x76, hdr->block_type);
+
+	/* Run the flush command again, nothing should happen */
+	zassert_equal(0, data_logger_flush(logger));
+	k_sleep(K_TICKS(1));
+	data_logger_get_state(logger, &state);
+	zassert_equal(2, state.current_block);
+
+	/* Re-init should work */
+	zassert_equal(0, logger_exfat_init(logger));
+	data_logger_get_state(logger, &state);
+	zassert_equal(2, state.current_block);
+	zassert_equal(0, state.earliest_block);
+	zassert_not_equal(0, state.physical_blocks);
+
+	/* Write more blocks */
+	log_one_ram_buffer(logger, 2, state.block_size);
+}
+
 static bool test_data_init(const void *global_state)
 {
 	disk_access_ioctl(DISK_NAME, DISK_IOCTL_GET_SECTOR_COUNT, &sector_count);

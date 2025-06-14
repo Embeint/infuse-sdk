@@ -252,6 +252,24 @@ ZTEST(data_logger_api, test_while_erase)
 	k_sem_give(&erase_sem);
 }
 
+ZTEST(data_logger_api, test_flush)
+{
+	const struct device *logger = DEVICE_DT_GET(DT_NODELABEL(data_logger_shim));
+	struct data_logger_shim_function_data *data = data_logger_backend_shim_data_pointer(logger);
+
+	data->read.num_calls = 0;
+	data->write.num_calls = 0;
+	data->erase.num_calls = 0;
+
+	/* Has no effect on loggers without an attached RAM buffer */
+	zassert_equal(0, data_logger_flush(logger));
+
+	/* No functions called */
+	zassert_equal(0, data->read.num_calls);
+	zassert_equal(0, data->write.num_calls);
+	zassert_equal(0, data->erase.num_calls);
+}
+
 static void test_before(void *ignored)
 {
 	const struct device *logger = DEVICE_DT_GET(DT_NODELABEL(data_logger_shim));
