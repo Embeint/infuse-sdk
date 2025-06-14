@@ -83,11 +83,13 @@ static uint32_t disk_lba_from_block(const struct device *dev, uint32_t phy_block
 static int binary_container_create(const struct device *dev, uint32_t phy_block)
 {
 	const struct dl_exfat_config *config = dev->config;
+	struct dl_exfat_data *data = dev->data;
 	uint32_t file_num = phy_block / BLOCKS_PER_FILE;
 	uint32_t fsize = CONFIG_DATA_LOGGER_EXFAT_FILE_SIZE;
 	uint64_t dev_id = infuse_device_id();
 	uint32_t start_lba;
 	char filename[40];
+	bool del = false;
 	FRESULT res;
 	FIL fp;
 
@@ -102,10 +104,24 @@ static int binary_container_create(const struct device *dev, uint32_t phy_block)
 	}
 	res = f_expand(&fp, fsize, 1);
 	if (res != FR_OK) {
-		LOG_ERR("f_expand failed: %d", res);
+		if (res == FR_DENIED) {
+			LOG_WRN("Disk full at %d/%d blocks", data->common.current_block,
+				data->common.physical_blocks);
+			data->common.logical_blocks = data->common.current_block;
+			data->common.physical_blocks = data->common.current_block;
+			/* Delete the file so init doesn't think data exists on the empty file */
+			del = true;
+		} else {
+			LOG_ERR("f_expand failed: %d", res);
+		}
 		res = -ENOMEM;
 	}
 	(void)f_close(&fp);
+
+	if (del) {
+		LOG_INF("Deleting %s", filename);
+		f_unlink(filename);
+	}
 
 	/* Reset entire file to erased state */
 	if (res == FR_OK) {
@@ -293,7 +309,11 @@ static int logger_exfat_range_hint(const struct device *dev, uint32_t *block_sta
 		char *fname_idx_ptr = fno.fname + fname_len - 10;
 		int fname_idx = atoi(fname_idx_ptr);
 
-		last_file_idx = MAX(last_file_idx, fname_idx);
+		/* Only consider files that match the expected size */
+		if (fno.fsize == CONFIG_DATA_LOGGER_EXFAT_FILE_SIZE) {
+			last_file_idx = MAX(last_file_idx, fname_idx);
+		}
+
 		/* Next item */
 		fr = f_findnext(&dj, &fno);
 	}
