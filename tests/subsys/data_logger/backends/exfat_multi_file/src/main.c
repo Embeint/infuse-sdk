@@ -142,6 +142,7 @@ static void test_sequence(bool reinit)
 	}
 
 #ifndef CONFIG_DISK_DRIVER_SDMMC
+	uint32_t failing_block = 0;
 	int rc = 0;
 
 	/* Somewhere in here we should get a write error */
@@ -151,8 +152,14 @@ static void test_sequence(bool reinit)
 
 		/* We expect an expand to fail (-ENOMEM) followed by failures to write (-ENOMEM) */
 		if (rc == -ENOMEM) {
-			uint32_t failing_block = state.current_block;
+			failing_block = state.current_block;
 
+			/* Out of space, expect sizes to be truncated */
+			data_logger_get_state(logger, &state);
+			zassert_equal(failing_block, state.physical_blocks);
+			zassert_equal(failing_block, state.logical_blocks);
+
+			/* Try to write extra blocks */
 			for (int j = 0; j < 5; j++) {
 				rc = data_logger_block_write(logger, 6, input_buffer,
 							     state.block_size);
@@ -164,6 +171,22 @@ static void test_sequence(bool reinit)
 		}
 	}
 	zassert_equal(-ENOMEM, rc);
+
+	/* Re-initialise a full disk (Doesn't know we're out of memory) */
+	zassert_equal(0, logger_exfat_init(logger));
+	data_logger_get_state(logger, &state);
+	zassert_not_equal(0, state.physical_blocks);
+	zassert_not_equal(0, state.logical_blocks);
+	zassert_equal(failing_block, state.current_block);
+	zassert_equal(0, state.earliest_block);
+
+	/* But trying to write again will update state again */
+	rc = data_logger_block_write(logger, 7, input_buffer, state.block_size);
+	data_logger_get_state(logger, &state);
+	zassert_equal(rc, -ENOMEM);
+	zassert_equal(failing_block, state.current_block);
+	zassert_equal(failing_block, state.physical_blocks);
+	zassert_equal(failing_block, state.logical_blocks);
 #endif
 }
 
