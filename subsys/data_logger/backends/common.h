@@ -107,6 +107,25 @@ struct data_logger_api {
 	int (*write)(const struct device *dev, uint32_t phy_block, enum infuse_type data_type,
 		     const void *data, uint16_t data_len);
 
+#if defined(CONFIG_DATA_LOGGER_BURST_WRITES) || defined(__DOXYGEN__)
+	/**
+	 * @brief Write multiple blocks to the logger at once
+	 *
+	 * This function enables taking advantage of multiple blocks sitting in a contiguous
+	 * RAM buffer to reduce transaction overhead and therefore increase write throughput.
+	 *
+	 * @param dev Logger device
+	 * @param start_block Physical block index to start data write at
+	 * @param num_blocks Number of blocks of data
+	 * @param data Data for @a num_blocks blocks to write
+	 *
+	 * @retval 0 on success
+	 * @retval -errno otherwise
+	 */
+	int (*write_burst)(const struct device *dev, uint32_t start_block, uint32_t num_blocks,
+			   const void *data);
+#endif /* CONFIG_DATA_LOGGER_BURST_WRITES */
+
 	/**
 	 * @brief Read data from the logger
 	 *
