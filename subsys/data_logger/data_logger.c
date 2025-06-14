@@ -125,7 +125,7 @@ static int handle_block_write(const struct device *dev, enum infuse_type type, v
 	uint8_t unaligned, padding;
 
 	if (!config->requires_full_block_write && (config->block_write_align > 1)) {
-		/* Check for analigned data block length */
+		/* Check for unaligned data block length */
 		unaligned = block_len % config->block_write_align;
 		if (unaligned > 0) {
 			/* Pad the block to the alignment requirement */
@@ -138,7 +138,66 @@ static int handle_block_write(const struct device *dev, enum infuse_type type, v
 #ifdef CONFIG_DATA_LOGGER_RAM_BUFFER
 	if (config->ram_buf_len) {
 		uint32_t space = config->ram_buf_len - data->ram_buf_offset;
-		int rc;
+		int rc = 0;
+
+#ifdef CONFIG_DATA_LOGGER_BURST_WRITES
+		const struct data_logger_api *api = dev->api;
+
+		if (api->write_burst) {
+			struct data_logger_persistent_block_header *header = block;
+			uint32_t pending;
+
+			/* We have already asserted in `init` that all blocks are the same size */
+			__ASSERT_NO_MSG(IS_PERSISTENT_LOGGER(api));
+			__ASSERT_NO_MSG(block_len == data->block_size);
+
+			/* Push on the block prefix */
+			header->block_type = type;
+			header->block_wrap = (data->current_block / data->physical_blocks) + 1;
+
+			/* Copy block into RAM buffer */
+			memcpy(config->ram_buf_data + data->ram_buf_offset, block, block_len);
+			data->ram_buf_offset += block_len;
+			pending = data->ram_buf_offset / data->block_size;
+			LOG_DBG("RAM buffer: %d/%d", data->ram_buf_offset, config->ram_buf_len);
+
+			if ((data->ram_buf_offset == config->ram_buf_len) ||
+			    (data->current_block + pending == data->logical_blocks)) {
+				int64_t flush_end, flush_start = k_uptime_get();
+				int32_t flush_duration;
+
+				/* Out of space, or end of physical blocks, perform burst write */
+				LOG_DBG("%s writing %d blocks to logical block %u", dev->name,
+					pending, data->current_block);
+
+				/* Request backend to be powered */
+				rc = pm_device_runtime_get(dev);
+				if (rc < 0) {
+					/* Reset pending data, not much else we can do */
+					data->ram_buf_offset = 0;
+					return rc;
+				}
+
+				/* Do the burst write */
+				rc = api->write_burst(dev, data->current_block, pending,
+						      config->ram_buf_data);
+
+				/* Release device after a delay */
+				(void)pm_device_runtime_put_async(dev, K_MSEC(100));
+
+				flush_end = k_uptime_get();
+				data->ram_buf_offset = 0;
+				flush_duration = flush_end - flush_start;
+				LOG_INF("%s -> Flushed %d blocks in %d ms", dev->name, pending,
+					flush_duration);
+
+				data->bytes_logged += pending * block_len;
+				data->current_block += pending;
+			}
+			/* Extra handling not required */
+			return rc;
+		}
+#endif /* CONFIG_DATA_LOGGER_BURST_WRITES */
 
 		if (space > (sizeof(struct ram_buf_header) + block_len)) {
 			/* Space for this block, add header and data to FIFO */
@@ -522,6 +581,20 @@ int data_logger_common_init(const struct device *dev)
 		if (config->ram_buf_len) {
 			LOG_INF("%s -> Extra %zu byte RAM buffer", dev->name, config->ram_buf_len);
 		}
+#ifdef CONFIG_DATA_LOGGER_BURST_WRITES
+		if (api->write_burst) {
+			__ASSERT(IS_PERSISTENT_LOGGER(api), "Expected persistent logger");
+			__ASSERT(config->requires_full_block_write,
+				 "Expected only full block writes");
+			__ASSERT(config->ram_buf_len % data->block_size == 0,
+				 "RAM buffer must be multiple of block size");
+			/* To simplify the initial implementation, only support loggers that don't
+			 * erase (SD)
+			 */
+			__ASSERT(data->logical_blocks == data->physical_blocks,
+				 "Expected no wrapping");
+		}
+#endif /* CONFIG_DATA_LOGGER_BURST_WRITES */
 	}
 #endif /* CONFIG_DATA_LOGGER_RAM_BUFFER */
 	return 0;

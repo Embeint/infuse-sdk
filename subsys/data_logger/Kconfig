@@ -45,6 +45,13 @@ config DATA_LOGGER_RAM_BUFFER
 	  blocks. When enabled, must be configured for individual loggers with the
 	  `extra-ram-buffer` devicetree property.
 
+config DATA_LOGGER_BURST_WRITES
+	bool
+	depends on DATA_LOGGER_RAM_BUFFER
+	help
+	  When multiple blocks are stored contiguously in RAM buffers, more efficient
+	  write operations may be available.
+
 module = DATA_LOGGER
 module-str = data logger
 source "subsys/logging/Kconfig.template.log_config"
