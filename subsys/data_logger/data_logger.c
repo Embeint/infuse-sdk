@@ -35,6 +35,7 @@ struct ram_buf_header {
 struct net_buf_ctx {
 	const struct device *dev;
 	enum infuse_type type;
+	bool flush;
 };
 
 NET_BUF_POOL_DEFINE(block_queue_pool, CONFIG_DATA_LOGGER_OFFLOAD_MAX_PENDING, BLOCK_QUEUE_MAX_SIZE,
@@ -262,6 +263,25 @@ static int do_block_write_ram_buffer(const struct device *dev, enum infuse_type 
 	return do_block_write_ram_buffer_single(dev, type, block, block_len);
 }
 
+static int do_ram_buffer_flush(const struct device *dev)
+{
+	struct data_logger_common_data *data = dev->data;
+
+	if (data->ram_buf_offset == 0) {
+		return 0;
+	}
+
+#ifdef CONFIG_DATA_LOGGER_BURST_WRITES
+	const struct data_logger_api *api = dev->api;
+
+	if (api->write_burst) {
+		return do_ram_buffer_flush_burst(dev);
+	}
+#endif /* CONFIG_DATA_LOGGER_BURST_WRITES */
+	do_ram_buffer_flush_single(dev);
+	return 0;
+}
+
 #endif /* CONFIG_DATA_LOGGER_RAM_BUFFER */
 
 static int handle_block_write(const struct device *dev, enum infuse_type type, void *block,
@@ -312,6 +332,23 @@ static int logger_commit_thread_fn(void *a, void *b, void *c)
 			continue;
 		}
 		ctx = net_buf_user_data(buf);
+
+#ifdef CONFIG_DATA_LOGGER_RAM_BUFFER
+		if (ctx->flush) {
+			const struct device *dev = ctx->dev;
+
+			/* Free the buffer, we don't need it */
+			net_buf_unref(buf);
+
+			/* Perform the flush */
+			(void)do_ram_buffer_flush(dev);
+
+			/* Feed watchdog before sleeping again */
+			infuse_watchdog_feed(wdog_channel);
+			continue;
+		}
+
+#endif /* CONFIG_DATA_LOGGER_RAM_BUFFER */
 
 		rc = handle_block_write(ctx->dev, ctx->type, buf->data, buf->len);
 		if (rc < 0) {
@@ -374,6 +411,7 @@ int data_logger_block_write(const struct device *dev, enum infuse_type type, voi
 	ctx = net_buf_user_data(buf);
 	ctx->dev = dev;
 	ctx->type = type;
+	ctx->flush = false;
 	net_buf_add_mem(buf, block, block_len);
 	k_fifo_put(&block_commit_fifo, buf);
 	return 0;
@@ -478,6 +516,36 @@ int data_logger_erase(const struct device *dev, bool erase_all,
 
 	/* Clear erasing flag */
 	data->flags &= ~DATA_LOGGER_FLAGS_ERASING;
+	return rc;
+}
+
+int data_logger_flush(const struct device *dev)
+{
+	int rc = 0;
+
+#ifdef CONFIG_DATA_LOGGER_RAM_BUFFER
+	const struct data_logger_common_config *config = dev->config;
+
+	if (config->ram_buf_data == NULL) {
+		/* No RAM buffer, nothing to do */
+		return 0;
+	}
+
+#ifdef CONFIG_DATA_LOGGER_OFFLOAD_WRITES
+	struct net_buf_ctx *ctx;
+	struct net_buf *buf;
+
+	/* Request offload thread to perform the flush */
+	buf = net_buf_alloc(&block_queue_pool, K_FOREVER);
+	ctx = net_buf_user_data(buf);
+	ctx->dev = dev;
+	ctx->flush = true;
+	k_fifo_put(&block_commit_fifo, buf);
+#else
+	rc = do_ram_buffer_flush(dev);
+#endif /* CONFIG_DATA_LOGGER_OFFLOAD_WRITES */
+#endif /* CONFIG_DATA_LOGGER_RAM_BUFFER */
+
 	return rc;
 }
 

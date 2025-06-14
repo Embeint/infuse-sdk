@@ -146,6 +146,21 @@ int data_logger_block_read(const struct device *dev, uint32_t block_idx, uint16_
 int data_logger_erase(const struct device *dev, bool erase_all,
 		      void (*erase_progress)(uint32_t blocks_erased));
 
+/**
+ * @brief Flush any data pending in a RAM buffer to the backend
+ *
+ * This function only performs useful work on data loggers with an attached
+ * RAM buffer.
+ *
+ * @param dev Data logger to flush
+ *
+ * @retval 0 on success
+ * @retval -ENOTCONN data logger is currently disconnected
+ * @retval -ENOMEM data logger is full
+ * @retval -errno on error
+ */
+int data_logger_flush(const struct device *dev);
+
 #ifdef CONFIG_ZTEST
 
 /**
