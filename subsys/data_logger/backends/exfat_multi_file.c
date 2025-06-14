@@ -131,17 +131,18 @@ static int binary_container_create(const struct device *dev, uint32_t phy_block)
 	return res;
 }
 
-static int logger_exfat_write(const struct device *dev, uint32_t phy_block,
-			      enum infuse_type data_type, const void *mem, uint16_t mem_len)
+static int logger_exfat_write_burst(const struct device *dev, uint32_t start_block,
+				    uint32_t num_blocks, const void *block_data)
 {
 	const struct dl_exfat_config *config = dev->config;
-	uint32_t disk_lba;
+	struct dl_exfat_data *data = dev->data;
+	uint32_t disk_lba, disk_lba_end;
+	uint32_t write_iter;
 	int rc;
 
-	__ASSERT(mem_len == DATA_LOGGER_EXFAT_BLOCK_SIZE, "Not full block");
-
 	(void)logger_exfat_filesystem_claim(dev, NULL, NULL, K_FOREVER);
-	disk_lba = disk_lba_from_block(dev, phy_block);
+restart:
+	disk_lba = disk_lba_from_block(dev, start_block);
 
 	/* No memory left on filesystem */
 	if (disk_lba == LBA_NO_MEM) {
@@ -151,23 +152,45 @@ static int logger_exfat_write(const struct device *dev, uint32_t phy_block,
 	/* File does not exist on filesystem */
 	else if (disk_lba == LBA_NO_FILE) {
 		/* Allocate the binary file on the filesystem */
-		rc = binary_container_create(dev, phy_block);
+		rc = binary_container_create(dev, start_block);
 		if (rc < 0) {
 			goto end;
 		}
-		/* Recalculate the LBA */
-		disk_lba = disk_lba_from_block(dev, phy_block);
+		/* Re-evaluate */
+		goto restart;
 	}
 
-	LOG_DBG("Writing to logger block: %08X LBA: %08X", phy_block, disk_lba);
-	rc = disk_access_write(config->disk, mem, disk_lba, 1);
+	/* Number of empty blocks remaining on the current file */
+	disk_lba_end = data->cached_file_lba + BLOCKS_PER_FILE;
+	/* How many blocks to write this iteration */
+	write_iter = MIN(num_blocks, (disk_lba_end - disk_lba));
+
+	LOG_DBG("Writing to logger block: %08X (%d) LBA: %08X", start_block, write_iter, disk_lba);
+	rc = disk_access_write(config->disk, block_data, disk_lba, write_iter);
 	if (rc == 0) {
 		/* Sync on each write for now */
 		rc = disk_access_ioctl(config->disk, DISK_IOCTL_CTRL_SYNC, NULL);
 	}
+	num_blocks -= write_iter;
+	if (num_blocks) {
+		/* Didn't write the entire block, loop again */
+		LOG_DBG("Looping for remaining %d", num_blocks);
+		start_block += write_iter;
+		block_data = (uint8_t *)block_data + (DATA_LOGGER_EXFAT_BLOCK_SIZE * write_iter);
+		goto restart;
+	}
+
 end:
 	logger_exfat_filesystem_release(dev);
 	return rc;
+}
+
+static int logger_exfat_write(const struct device *dev, uint32_t phy_block,
+			      enum infuse_type data_type, const void *mem, uint16_t mem_len)
+{
+	__ASSERT(mem_len == DATA_LOGGER_EXFAT_BLOCK_SIZE, "Not full block");
+
+	return logger_exfat_write_burst(dev, phy_block, 1, mem);
 }
 
 static int logger_exfat_read(const struct device *dev, uint32_t phy_block, uint16_t block_offset,
@@ -404,6 +427,9 @@ int logger_exfat_init(const struct device *dev)
 
 const struct data_logger_api data_logger_exfat_api = {
 	.write = logger_exfat_write,
+#ifdef CONFIG_DATA_LOGGER_BURST_WRITES
+	.write_burst = logger_exfat_write_burst,
+#endif /* CONFIG_DATA_LOGGER_BURST_WRITES */
 	.read = logger_exfat_read,
 	.reset = logger_exfat_reset,
 	.search_hint = logger_exfat_range_hint,
