@@ -191,8 +191,10 @@ static int handle_block_write(const struct device *dev, enum infuse_type type, v
 				LOG_INF("%s -> Flushed %d blocks in %d ms", dev->name, pending,
 					flush_duration);
 
-				data->bytes_logged += pending * block_len;
-				data->current_block += pending;
+				if (rc != -ENOMEM) {
+					data->bytes_logged += pending * block_len;
+					data->current_block += pending;
+				}
 			}
 			/* Extra handling not required */
 			return rc;

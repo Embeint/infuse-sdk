@@ -27,26 +27,33 @@
 
 LOG_MODULE_REGISTER(data_logger_exfat, CONFIG_DATA_LOGGER_EXFAT_LOG_LEVEL);
 
-static int logger_exfat_write(const struct device *dev, uint32_t phy_block,
-			      enum infuse_type data_type, const void *mem, uint16_t mem_len)
+static int logger_exfat_write_burst(const struct device *dev, uint32_t start_block,
+				    uint32_t num_blocks, const void *block_data)
 {
 	const struct dl_exfat_config *config = dev->config;
 	struct dl_exfat_data *data = dev->data;
-	uint32_t disk_lba = data->cached_file_lba + phy_block;
+	uint32_t disk_lba = data->cached_file_lba + start_block;
 	int rc;
-
-	__ASSERT(mem_len == DATA_LOGGER_EXFAT_BLOCK_SIZE, "Not full block");
 
 	(void)logger_exfat_filesystem_claim(dev, NULL, NULL, K_FOREVER);
 
-	LOG_DBG("Writing to logger block: %08X LBA: %08X", phy_block, disk_lba);
-	rc = disk_access_write(config->disk, mem, disk_lba, 1);
+	LOG_DBG("Writing %d blocks: %08X LBA: %08X", num_blocks, start_block, disk_lba);
+	rc = disk_access_write(config->disk, block_data, disk_lba, num_blocks);
 	if (rc == 0) {
 		/* Sync on each write for now */
 		rc = disk_access_ioctl(config->disk, DISK_IOCTL_CTRL_SYNC, NULL);
 	}
 	logger_exfat_filesystem_release(dev);
+
 	return rc;
+}
+
+static int logger_exfat_write(const struct device *dev, uint32_t phy_block,
+			      enum infuse_type data_type, const void *mem, uint16_t mem_len)
+{
+	__ASSERT(mem_len == DATA_LOGGER_EXFAT_BLOCK_SIZE, "Not full block");
+
+	return logger_exfat_write_burst(dev, phy_block, 1, mem);
 }
 
 static int logger_exfat_read(const struct device *dev, uint32_t phy_block, uint16_t block_offset,
@@ -254,6 +261,9 @@ int logger_exfat_init(const struct device *dev)
 
 const struct data_logger_api data_logger_exfat_api = {
 	.write = logger_exfat_write,
+#ifdef CONFIG_DATA_LOGGER_BURST_WRITES
+	.write_burst = logger_exfat_write_burst,
+#endif /* CONFIG_DATA_LOGGER_BURST_WRITES */
 	.read = logger_exfat_read,
 	.reset = logger_exfat_reset,
 };

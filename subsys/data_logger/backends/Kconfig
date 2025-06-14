@@ -27,6 +27,7 @@ config DATA_LOGGER_EXFAT
 	select FS_FATFS_EXFAT
 	select FS_FATFS_HAS_RTC
 	select FS_FATFS_EXTRA_NATIVE_API
+	imply DATA_LOGGER_BURST_WRITES
 	default y
 	help
 	  Data is stored on an exFAT filesystem in `.bin` files. Note that the
