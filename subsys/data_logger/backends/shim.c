@@ -83,12 +83,13 @@ int logger_shim_init(const struct device *dev)
 {
 	const struct dl_shim_config *config = dev->config;
 	struct dl_shim_data *data = dev->data;
+	int rc;
 
 	/* Setup common data structure */
 	data->common.physical_blocks = config->physical_blocks;
 	data->common.logical_blocks = config->physical_blocks * 2;
 	data->common.block_size = 512;
-	data->common.erase_size = 512;
+	data->common.erase_size = 1024;
 	data->common.erase_val = 0xFF;
 
 	/* Reset state */
@@ -104,7 +105,11 @@ int logger_shim_init(const struct device *dev)
 	data->func.reset.block_until = NULL;
 
 	/* Common init function */
-	return data_logger_common_init(dev);
+	rc = data_logger_common_init(dev);
+
+	/* Common init does a number of read calls */
+	data->func.read.num_calls = 0;
+	return rc;
 }
 
 struct data_logger_shim_function_data *

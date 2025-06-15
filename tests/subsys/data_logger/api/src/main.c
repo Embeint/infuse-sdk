@@ -75,6 +75,65 @@ ZTEST(data_logger_api, test_write)
 	zassert_equal(3, data->write.num_calls);
 }
 
+ZTEST(data_logger_api, test_wrap)
+{
+	const struct device *logger = DEVICE_DT_GET(DT_NODELABEL(data_logger_shim));
+	struct data_logger_shim_function_data *data = data_logger_backend_shim_data_pointer(logger);
+	struct data_logger_state state;
+	int rc = 0;
+
+	data_logger_get_state(logger, &state);
+	zassert_equal(state.erase_unit, 2 * state.block_size);
+
+	/* Write all blocks */
+	for (int i = 0; i < state.physical_blocks; i++) {
+		rc = data_logger_block_write(logger, 0x10, input_buffer, state.block_size);
+		zassert_equal(0, rc);
+		k_sleep(K_TICKS(1));
+		data_logger_get_state(logger, &state);
+		zassert_equal(i + 1, state.current_block);
+		zassert_equal(i + 1, data->write.num_calls);
+		zassert_equal(0, data->erase.num_calls);
+		zassert_equal(0x10, data->write.data_type);
+		zassert_equal(i, data->write.block);
+	}
+
+	/* Try a write with a failing erase */
+	data->erase.rc = -EIO;
+	rc = data_logger_block_write(logger, 0x10, input_buffer, state.block_size);
+#ifdef CONFIG_DATA_LOGGER_OFFLOAD_WRITES
+	/* Error occurs in other thread */
+	zassert_equal(0, rc);
+#else
+	zassert_equal(-EIO, rc);
+#endif
+	k_sleep(K_TICKS(1));
+
+	/* Nothing written due to erase failure (write isn't called at all) */
+	data_logger_get_state(logger, &state);
+	zassert_equal(1, data->erase.num_calls);
+	zassert_equal(state.physical_blocks, state.current_block);
+	zassert_equal(state.physical_blocks, data->write.num_calls);
+
+	/* Reset erase call counter to simplify maths */
+	data->erase.num_calls = 0;
+	data->erase.rc = 0;
+
+	/* Continue writing with erase */
+	for (int i = 0; i < state.physical_blocks / 2; i++) {
+		rc = data_logger_block_write(logger, 0x11, input_buffer, state.block_size);
+		zassert_equal(0, rc);
+		k_sleep(K_TICKS(1));
+		data_logger_get_state(logger, &state);
+		zassert_equal(state.physical_blocks + i + 1, state.current_block);
+		zassert_equal(state.physical_blocks + i + 1, data->write.num_calls);
+		/* Every second block should result in an erase */
+		zassert_equal((i / 2) + 1, data->erase.num_calls);
+		/* Earliest block keeps jumping up */
+		zassert_equal(ROUND_UP(i + 1, 2), state.earliest_block);
+	}
+}
+
 ZTEST(data_logger_api, test_read)
 {
 	const struct device *logger = DEVICE_DT_GET(DT_NODELABEL(data_logger_shim));
@@ -82,7 +141,6 @@ ZTEST(data_logger_api, test_read)
 	struct data_logger_state state;
 
 	data_logger_get_state(logger, &state);
-	data->read.num_calls = 0;
 
 	/* Write a block */
 	zassert_equal(0, data_logger_block_write(logger, 0x10, input_buffer, state.block_size));
@@ -167,8 +225,6 @@ ZTEST(data_logger_api, test_while_erase)
 	k_sem_init(&erase_sem, 0, 1);
 	k_work_init(&erase_work, do_erase);
 	data_logger_get_state(logger, &state);
-	data->write.num_calls = 0;
-	data->read.num_calls = 0;
 
 	/* Write a block */
 	zassert_equal(0, data_logger_block_write(logger, 0x10, input_buffer, state.block_size));
