@@ -164,7 +164,7 @@ static int do_block_write_ram_buffer_burst(const struct device *dev, enum infuse
 {
 	const struct data_logger_common_config *config = dev->config;
 	struct data_logger_common_data *data = dev->data;
-	const struct data_logger_api *api = dev->api;
+	__maybe_unused const struct data_logger_api *api = dev->api;
 	struct data_logger_persistent_block_header *header = block;
 	uint32_t pending;
 
