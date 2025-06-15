@@ -34,11 +34,14 @@ ZTEST(data_logger_api, test_write)
 	const struct device *logger = DEVICE_DT_GET(DT_NODELABEL(data_logger_shim));
 	struct data_logger_shim_function_data *data = data_logger_backend_shim_data_pointer(logger);
 	struct data_logger_state state;
+	int rc = 0;
 
 	/* Write to block 0 */
 	data_logger_get_state(logger, &state);
 	zassert_equal(0, state.current_block);
-	zassert_equal(0, data_logger_block_write(logger, 0x10, input_buffer, state.block_size));
+	rc = data_logger_block_write(logger, 0x10, input_buffer, state.block_size);
+	zassert_equal(0, rc);
+	k_sleep(K_TICKS(1));
 	data_logger_get_state(logger, &state);
 	zassert_equal(1, state.current_block);
 	zassert_equal(1, data->write.num_calls);
@@ -47,7 +50,9 @@ ZTEST(data_logger_api, test_write)
 	zassert_equal(state.block_size, data->write.data_len);
 
 	/* Write to block 1 */
-	zassert_equal(0, data_logger_block_write(logger, 0x11, input_buffer, state.block_size));
+	rc = data_logger_block_write(logger, 0x11, input_buffer, state.block_size);
+	zassert_equal(0, rc);
+	k_sleep(K_TICKS(1));
 	data_logger_get_state(logger, &state);
 	zassert_equal(2, state.current_block);
 	zassert_equal(2, data->write.num_calls);
@@ -57,8 +62,14 @@ ZTEST(data_logger_api, test_write)
 
 	/* Write error */
 	data->write.rc = -EINVAL;
-	zassert_equal(-EINVAL,
-		      data_logger_block_write(logger, 0x08, input_buffer, state.block_size));
+	rc = data_logger_block_write(logger, 0x08, input_buffer, state.block_size);
+	k_sleep(K_TICKS(1));
+#ifdef CONFIG_DATA_LOGGER_OFFLOAD_WRITES
+	/* Error occurs in other thread */
+	zassert_equal(0, rc);
+#else
+	zassert_equal(-EINVAL, rc);
+#endif
 	data_logger_get_state(logger, &state);
 	zassert_equal(2, state.current_block);
 	zassert_equal(3, data->write.num_calls);
@@ -75,6 +86,7 @@ ZTEST(data_logger_api, test_read)
 
 	/* Write a block */
 	zassert_equal(0, data_logger_block_write(logger, 0x10, input_buffer, state.block_size));
+	k_sleep(K_TICKS(1));
 
 	/* Read block that exists */
 	zassert_equal(0, data_logger_block_read(logger, 0, 0, output_buffer, state.block_size));
@@ -102,6 +114,7 @@ ZTEST(data_logger_api, test_erase)
 
 	/* Write a block */
 	zassert_equal(0, data_logger_block_write(logger, 0x10, input_buffer, state.block_size));
+	k_sleep(K_TICKS(1));
 
 	/* Erase without "erase_all" */
 	zassert_equal(0, data_logger_erase(logger, false, NULL));
@@ -113,6 +126,7 @@ ZTEST(data_logger_api, test_erase)
 
 	/* Write a block */
 	zassert_equal(0, data_logger_block_write(logger, 0x10, input_buffer, state.block_size));
+	k_sleep(K_TICKS(1));
 
 	/* Erase with "erase_all" */
 	zassert_equal(0, data_logger_erase(logger, true, NULL));
@@ -124,6 +138,7 @@ ZTEST(data_logger_api, test_erase)
 
 	/* Write a block */
 	zassert_equal(0, data_logger_block_write(logger, 0x10, input_buffer, state.block_size));
+	k_sleep(K_TICKS(1));
 
 	/* Erase error */
 	data->reset.rc = -EIO;
@@ -152,10 +167,12 @@ ZTEST(data_logger_api, test_while_erase)
 	k_sem_init(&erase_sem, 0, 1);
 	k_work_init(&erase_work, do_erase);
 	data_logger_get_state(logger, &state);
+	data->write.num_calls = 0;
 	data->read.num_calls = 0;
 
 	/* Write a block */
 	zassert_equal(0, data_logger_block_write(logger, 0x10, input_buffer, state.block_size));
+	k_sleep(K_TICKS(1));
 	zassert_equal(1, data->write.num_calls);
 
 	/* Submit erase work */
@@ -165,6 +182,7 @@ ZTEST(data_logger_api, test_while_erase)
 
 	/* Try to write while erasing, no error, no call */
 	zassert_equal(0, data_logger_block_write(logger, 0x10, input_buffer, state.block_size));
+	k_sleep(K_TICKS(1));
 	data_logger_get_state(logger, &state);
 	zassert_equal(1, state.current_block);
 	zassert_equal(1, data->write.num_calls);
@@ -182,6 +200,7 @@ static void test_before(void *ignored)
 {
 	const struct device *logger = DEVICE_DT_GET(DT_NODELABEL(data_logger_shim));
 
+	k_sleep(K_TICKS(1));
 	logger_shim_init(logger);
 }
 

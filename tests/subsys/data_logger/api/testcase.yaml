@@ -2,7 +2,18 @@ common:
   tags: data_logger
   min_flash: 64
   min_ram: 32
+  integration_platforms:
+    - native_sim
 tests:
-  data_logger.api:
-    integration_platforms:
-      - native_sim
+  data_logger.api: {}
+  data_logger.api.offload:
+    extra_configs:
+      - CONFIG_DATA_LOGGER_OFFLOAD_WRITES=y
+  data_logger.api.ram_buffer:
+    extra_configs:
+      - CONFIG_DATA_LOGGER_RAM_BUFFER=y
+  data_logger.api.offload_ram_buffer_burst:
+    extra_configs:
+      - CONFIG_DATA_LOGGER_OFFLOAD_WRITES=y
+      - CONFIG_DATA_LOGGER_RAM_BUFFER=y
+      - CONFIG_TEST_FORCE_DATA_LOGGER_BURST_WRITES=y

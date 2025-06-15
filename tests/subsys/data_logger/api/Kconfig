@@ -1,0 +1,5 @@
+config TEST_FORCE_DATA_LOGGER_BURST_WRITES
+	bool "Force DATA_LOGGER_BURST_WRITES"
+	imply DATA_LOGGER_BURST_WRITES
+
+source "Kconfig.zephyr"
