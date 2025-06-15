@@ -81,7 +81,7 @@ static int do_block_write(const struct device *dev, enum infuse_type type, void 
 		LOG_DBG("%s preparing block for write", dev->name);
 		rc = api->erase(dev, phy_block, erase_blocks);
 		if (rc < 0) {
-			LOG_ERR("%s failed to prepare block (%u)", dev->name, rc);
+			LOG_ERR("%s failed to prepare block (%d)", dev->name, rc);
 			return rc;
 		}
 		/* Old data is no longer present */
