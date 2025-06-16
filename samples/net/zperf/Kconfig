@@ -10,8 +10,8 @@ configdefault NRF70_TX_MAX_DATA_SIZE
 	default 1348
 configdefault NRF70_RX_MAX_DATA_SIZE
 	default 1348
-configdefault HEAP_MEM_POOL_ADD_SIZE_NRF70
-	def_int 60000
+configdefault NRF_WIFI_DATA_HEAP_SIZE
+	def_int 40000
 endif
 
 source "Kconfig.zephyr"

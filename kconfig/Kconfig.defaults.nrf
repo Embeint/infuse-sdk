@@ -85,8 +85,8 @@ config NRF_WIFI_LOW_RAM
 
 # Lower resource requirements in scan only mode
 if NRF70_SCAN_ONLY
-configdefault HEAP_MEM_POOL_ADD_SIZE_NRF70
-	default 30000
+configdefault NRF_WIFI_DATA_HEAP_SIZE
+	default 8000
 configdefault NET_BUF_RX_COUNT
 	default 1
 configdefault NET_BUF_TX_COUNT
@@ -127,12 +127,11 @@ configdefault NRF70_MAX_TX_TOKENS
 	default 6
 configdefault NRF70_MAX_TX_AGGREGATION
 	default 3
-configdefault HEAP_MEM_POOL_ADD_SIZE_NRF70
-	# Control plane is estimated to use 20 kB
+configdefault NRF_WIFI_DATA_HEAP_SIZE
+	def_int 8240 if !IPV6
+	def_int 16688
 	# IPV4 Data plane is (6 + 6) * 644 ~= 8kB
 	# IPV6 Data plane is (6 + 6) * 1348 ~= 16kB
-	def_int 28672 if !IPV6
-	def_int 36864
 endif # NRF_WIFI_LOW_RAM
 
 # WiFi defaults
@@ -140,8 +139,8 @@ configdefault NET_L2_ETHERNET
 	default y if WIFI_NRF70
 configdefault SYSTEM_WORKQUEUE_STACK_SIZE
 	default 6144 if WIFI_NRF70 && !NRF70_SCAN_ONLY
-configdefault HEAP_MEM_POOL_ADD_SIZE_NRF70
-	def_int 100000 if !NRF70_SCAN_ONLY
+configdefault NRF_WIFI_DATA_HEAP_SIZE
+	def_int 80000 if !NRF70_SCAN_ONLY
 configdefault NET_CONNECTION_MANAGER_MONITOR_STACK_SIZE
 	default 4096 if NRF700X_STA_MODE
 	default 1024 if NRF_MODEM_LIB_NET_IF
