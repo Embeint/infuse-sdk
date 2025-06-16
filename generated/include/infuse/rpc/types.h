@@ -249,6 +249,18 @@ struct rpc_struct_sockaddr {
 	uint8_t scope_id;
 } __packed;
 
+/** struct k_heap information */
+struct rpc_struct_heap_info {
+	/** Address of the heap structure */
+	uint32_t addr;
+	/** Number of bytes currently free */
+	uint32_t free_bytes;
+	/** Number of bytes currently allocated */
+	uint32_t allocated_bytes;
+	/** Maximum number of bytes ever concurrently allocated */
+	uint32_t max_allocated_bytes;
+} __packed;
+
 /** Bluetooth LE address type */
 enum rpc_enum_bt_le_addr_type {
 	/** Public address */
@@ -355,6 +367,8 @@ enum rpc_builtin_id {
 	RPC_ID_INFUSE_STATES_UPDATE = 17,
 	/** Erase all data from a data logger */
 	RPC_ID_DATA_LOGGER_ERASE = 18,
+	/** Query stats of heaps */
+	RPC_ID_HEAP_STATS = 19,
 	/** Run AT command against LTE modem */
 	RPC_ID_LTE_AT_CMD = 20,
 	/** Get current LTE interface state */
@@ -685,6 +699,17 @@ struct rpc_data_logger_erase_request {
 
 struct rpc_data_logger_erase_response {
 	struct infuse_rpc_rsp_header header;
+} __packed;
+
+/** Query stats of heaps */
+struct rpc_heap_stats_request {
+	struct infuse_rpc_req_header header;
+} __packed;
+
+struct rpc_heap_stats_response {
+	struct infuse_rpc_rsp_header header;
+	/** Current statistics of application heaps */
+	struct rpc_struct_heap_info stats[];
 } __packed;
 
 /** Run AT command against LTE modem */

@@ -196,6 +196,13 @@ void rpc_command_runner(struct net_buf *request)
 		}
 		break;
 #endif /* CONFIG_INFUSE_RPC_COMMAND_DATA_LOGGER_ERASE */
+#ifdef CONFIG_INFUSE_RPC_COMMAND_HEAP_STATS
+	case RPC_ID_HEAP_STATS:
+		if (AUTHORISED(auth, HEAP_STATS)) { /* GCOVR_EXCL_BR_LINE */
+			response = rpc_command_heap_stats(request);
+		}
+		break;
+#endif /* CONFIG_INFUSE_RPC_COMMAND_HEAP_STATS */
 #ifdef CONFIG_INFUSE_RPC_COMMAND_LTE_AT_CMD
 	case RPC_ID_LTE_AT_CMD:
 		if (AUTHORISED(auth, LTE_AT_CMD)) { /* GCOVR_EXCL_BR_LINE */

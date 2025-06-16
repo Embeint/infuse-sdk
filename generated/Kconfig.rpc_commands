@@ -215,6 +215,18 @@ config INFUSE_RPC_COMMAND_DATA_LOGGER_ERASE_REQUIRED_AUTH
 	depends on INFUSE_RPC_COMMAND_DATA_LOGGER_ERASE
 	default 2
 
+config INFUSE_RPC_COMMAND_HEAP_STATS
+	bool "Enable RPC heap_stats"
+	depends on SYS_HEAP_RUNTIME_STATS
+	default y if INFUSE_SDK
+	help
+	  Query stats of heaps
+
+config INFUSE_RPC_COMMAND_HEAP_STATS_REQUIRED_AUTH
+	int "Required authorisation level to run heap_stats"
+	depends on INFUSE_RPC_COMMAND_HEAP_STATS
+	default 2
+
 config INFUSE_RPC_COMMAND_LTE_AT_CMD
 	bool "Enable RPC lte_at_cmd"
 	depends on NRF_MODEM_LIB
