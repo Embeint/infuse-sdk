@@ -124,6 +124,15 @@
                 {"name": "sin_addr", "type": "uint8_t", "num": 16, "description": "IPv4/IPv6 address"},
                 {"name": "scope_id", "type": "uint8_t", "description": "Interfaces for a scope (IPv6 only)"}
             ]
+        },
+        "rpc_struct_heap_info": {
+            "description": "struct k_heap information",
+            "fields": [
+                {"name": "addr", "type": "uint32_t", "description": "Address of the heap structure"},
+                {"name": "free_bytes", "type": "uint32_t", "description": "Number of bytes currently free"},
+                {"name": "allocated_bytes", "type": "uint32_t", "description": "Number of bytes currently allocated"},
+                {"name": "max_allocated_bytes", "type": "uint32_t", "description": "Maximum number of bytes ever concurrently allocated"}
+            ]
         }
     },
     "enums": {
@@ -437,6 +446,18 @@
                 {"name": "erase_empty", "type": "uint8_t", "description": "Erase entire logger space, even empty blocks"}
             ],
             "response_params": [
+            ]
+        },
+        "19": {
+            "name": "heap_stats",
+            "description": "Query stats of heaps",
+            "depends_on": "SYS_HEAP_RUNTIME_STATS",
+            "default": "y if INFUSE_SDK",
+            "default_auth": "EPACKET_AUTH_DEVICE",
+            "request_params": [
+            ],
+            "response_params": [
+                {"name": "stats", "type": "struct rpc_struct_heap_info", "num": 0, "description": "Current statistics of application heaps"}
             ]
         },
         "20": {
