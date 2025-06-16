@@ -8,12 +8,15 @@
 
 #include <zephyr/net_buf.h>
 #include <zephyr/sys/crc.h>
+#include <zephyr/logging/log.h>
 
 #include <infuse/data_logger/logger.h>
 #include <infuse/epacket/packet.h>
 #include <infuse/rpc/commands.h>
 #include <infuse/rpc/command_runner.h>
 #include <infuse/rpc/types.h>
+
+LOG_MODULE_DECLARE(rpc_server);
 
 struct net_buf *rpc_command_data_logger_read(struct net_buf *request)
 {
@@ -69,6 +72,8 @@ struct net_buf *rpc_command_data_logger_read(struct net_buf *request)
 		rc = -EINVAL;
 		goto end;
 	}
+
+	LOG_INF("Reading blocks %d-%d from %s", req->start_block, req->last_block, logger->name);
 
 	union epacket_interface_address addr = req_meta->interface_address;
 	enum epacket_auth auth = req_meta->auth;
@@ -148,6 +153,7 @@ struct net_buf *rpc_command_data_logger_read(struct net_buf *request)
 		/* Send full buffer */
 		epacket_queue(interface, data_buf);
 	}
+	LOG_DBG("Read complete");
 
 end:
 	return rpc_response_simple_if(interface, rc, &rsp, sizeof(rsp));
