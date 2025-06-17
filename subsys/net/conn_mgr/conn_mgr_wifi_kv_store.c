@@ -22,9 +22,11 @@ static struct net_mgmt_event_callback wifi_mgmt_cb;
 static struct k_work_delayable conn_config_changed;
 static struct k_work_delayable conn_create;
 static struct k_work_delayable conn_timeout;
+static struct k_work_delayable idle_timeout;
 static struct k_work conn_terminate;
 static struct net_if *wifi_if;
 static bool connection_requested;
+static bool did_idle_timeout;
 
 LOG_MODULE_REGISTER(wifi_mgmt, LOG_LEVEL_INF);
 
@@ -102,6 +104,11 @@ static void conn_timeout_worker(struct k_work *work)
 	net_mgmt_event_notify(NET_EVENT_CONN_IF_TIMEOUT, wifi_if);
 }
 
+static void wifi_mgmt_used(struct conn_mgr_conn_binding *const binding)
+{
+	k_work_reschedule(&idle_timeout, K_SECONDS(binding->idle_timeout));
+}
+
 static void conn_config_changed_worker(struct k_work *work)
 {
 	int timeout;
@@ -135,6 +142,7 @@ static void wifi_mgmt_event_handler(struct net_mgmt_event_callback *cb, uint32_t
 {
 	const struct wifi_status *status = cb->info;
 	bool persistent = conn_mgr_if_get_flag(wifi_if, CONN_MGR_IF_PERSISTENT);
+	struct conn_mgr_conn_binding *const binding = conn_mgr_if_get_binding(iface);
 	int timeout;
 
 	if (iface != wifi_if) {
@@ -147,6 +155,11 @@ static void wifi_mgmt_event_handler(struct net_mgmt_event_callback *cb, uint32_t
 			/* Cancel any pending work timeout */
 			LOG_INF("Connection successful");
 			(void)k_work_cancel_delayable(&conn_timeout);
+			/* Start idle timeout if configured */
+			did_idle_timeout = false;
+			if (binding->idle_timeout != CONN_MGR_IF_NO_TIMEOUT) {
+				wifi_mgmt_used(binding);
+			}
 		} else {
 			/* Attempt to schedule the connection again */
 			LOG_WRN("Connection failed, retrying (%d)", status->conn_status);
@@ -161,9 +174,20 @@ static void wifi_mgmt_event_handler(struct net_mgmt_event_callback *cb, uint32_t
 		}
 		LOG_INF("Connection lost (%d)%s", status->disconn_reason,
 			persistent ? ", retrying" : "");
+
+		/* Cancel any pending idle timeouts */
+		if (binding->idle_timeout != CONN_MGR_IF_NO_TIMEOUT) {
+			k_work_cancel_delayable(&idle_timeout);
+		}
+
 		if (persistent) {
 #ifdef CONFIG_WIFI_NM_WPA_SUPPLICANT
-			/* WPA SUPP automatically attempts to reconnect */
+			/* WPA SUPP automatically attempts to reconnect.
+			 * Unless we requested the disconnect in idle timeout.
+			 */
+			if (did_idle_timeout) {
+				k_work_schedule(&conn_create, K_SECONDS(1));
+			}
 #else
 			/* Schedule reconnection attempt */
 			k_work_schedule(&conn_create, K_SECONDS(1));
@@ -175,8 +199,10 @@ static void wifi_mgmt_event_handler(struct net_mgmt_event_callback *cb, uint32_t
 			}
 		} else {
 #ifdef CONFIG_WIFI_NM_WPA_SUPPLICANT
-			/* Stop reconnection attempts */
-			(void)net_mgmt(NET_REQUEST_WIFI_DISCONNECT, wifi_if, NULL, 0);
+			/* Stop reconnection attempts (unless idle timeout already did) */
+			if (!did_idle_timeout) {
+				(void)net_mgmt(NET_REQUEST_WIFI_DISCONNECT, wifi_if, NULL, 0);
+			}
 #endif /* CONFIG_WIFI_NM_WPA_SUPPLICANT */
 		}
 		break;
@@ -198,6 +224,14 @@ static int wifi_mgmt_connect(struct conn_mgr_conn_binding *const binding)
 	}
 	/* Return immediately, function is required to be non-blocking */
 	return 0;
+}
+
+static void conn_idle_worker(struct k_work *work)
+{
+	LOG_INF("Interface idle");
+	did_idle_timeout = true;
+	(void)net_mgmt(NET_REQUEST_WIFI_DISCONNECT, wifi_if, NULL, 0);
+	net_mgmt_event_notify(NET_EVENT_CONN_IF_IDLE_TIMEOUT, wifi_if);
 }
 
 static void conn_terminate_worker(struct k_work *work)
@@ -247,6 +281,7 @@ static void wifi_mgmt_init(struct conn_mgr_conn_binding *const binding)
 
 	k_work_init_delayable(&conn_create, conn_create_worker);
 	k_work_init_delayable(&conn_timeout, conn_timeout_worker);
+	k_work_init_delayable(&idle_timeout, conn_idle_worker);
 	k_work_init_delayable(&conn_config_changed, conn_config_changed_worker);
 	k_work_init(&conn_terminate, conn_terminate_worker);
 
@@ -265,6 +300,7 @@ static void wifi_mgmt_init(struct conn_mgr_conn_binding *const binding)
 
 static struct conn_mgr_conn_api l2_wifi_conn_api = {
 	.connect = wifi_mgmt_connect,
+	.used = wifi_mgmt_used,
 	.disconnect = wifi_mgmt_disconnect,
 	.init = wifi_mgmt_init,
 };
