@@ -233,6 +233,7 @@ static int epacket_udp_loop(void *a, void *b, void *c)
 
 			/* Allocate buffer and receive data */
 			buf = epacket_alloc_rx(K_FOREVER);
+			from_len = sizeof(from);
 			received = zsock_recvfrom(udp_state.sock, buf->data, buf->size, 0, &from,
 						  &from_len);
 			if (received < 0) {
