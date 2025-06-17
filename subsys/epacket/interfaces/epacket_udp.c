@@ -238,7 +238,7 @@ static int epacket_udp_loop(void *a, void *b, void *c)
 			/* Wait for data to arrive */
 			rc = zsock_poll(pollfds, 1, SYS_FOREVER_MS);
 			if (pollfds[0].revents & (ZSOCK_POLLHUP | ZSOCK_POLLNVAL)) {
-				LOG_ERR("Socket closed");
+				LOG_WRN("Socket closed (0x%02X)", pollfds[0].revents);
 				break;
 			}
 
