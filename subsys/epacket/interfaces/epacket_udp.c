@@ -9,6 +9,7 @@
 #include <zephyr/device.h>
 #include <zephyr/logging/log.h>
 #include <zephyr/sys/byteorder.h>
+#include <zephyr/net/conn_mgr_connectivity.h>
 #include <zephyr/net/net_if.h>
 #include <zephyr/net/net_mgmt.h>
 #include <zephyr/net/socket.h>
@@ -83,6 +84,16 @@ static void if_admin_event_handler(struct net_mgmt_event_callback *cb, uint32_t 
 				   struct net_if *iface)
 {
 	struct udp_state *state = CONTAINER_OF(cb, struct udp_state, iface_admin_cb);
+
+	/* Interface is not intended to be persistent, so don't restart the
+	 * watchdog on every interface cycle. Instead, start it on the first
+	 * event and keep it running as a global watchdog.
+	 */
+	if (conn_mgr_if_is_bound(iface) && !conn_mgr_if_get_flag(iface, CONN_MGR_IF_PERSISTENT) &&
+	    k_work_delayable_busy_get(&state->downlink_watchdog)) {
+		LOG_DBG("Ignoring %08x on non-persistent interface", event);
+		return;
+	}
 
 	if (event == NET_EVENT_IF_ADMIN_UP) {
 		/* Application wants the interface connected, start the watchdog */
