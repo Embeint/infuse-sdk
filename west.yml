@@ -12,7 +12,7 @@ manifest:
 
   projects:
     - name: zephyr
-      revision: 90f15195292948672e185374cf5ec2e85859bef5
+      revision: 4918bf9963444dc81726636220ed3020d0cc500a
       # Limit imported repositories to reduce clone time
       import:
         name-allowlist:
@@ -22,6 +22,7 @@ manifest:
           - hal_stm32
           - hostap
           - libmetal
+          - lora-basics-modem
           - loramac-node
           - fatfs
           - mcuboot
