@@ -211,6 +211,11 @@ configdefault LOG
 configdefault LOG_PRINTK
 	default y
 
+# Use new LoRa backend by default
+choice LORA_MODULE_BACKEND
+	default LORA_MODULE_BACKEND_LORA_BASICS_MODEM
+endchoice
+
 # RTT communications
 configdefault SEGGER_RTT_BUFFER_SIZE_UP
 	default 1024
