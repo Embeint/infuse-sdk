@@ -178,16 +178,25 @@ K_THREAD_DEFINE(nrf_modem_thread, 2048, nrf_modem_validator, NULL, NULL, NULL, 5
 #endif /* CONFIG_NRF_MODEM_LIB */
 
 #if CONFIG_LORA
-static int lora_validator(void *a, void *b, void *c)
+static void lora_validation_run(const struct device *dev)
 {
-	atomic_inc(&validators_registered);
-	if (infuse_validation_lora(DEVICE_DT_GET(DT_ALIAS(lora0)), VALIDATION_LORA_TX) == 0) {
+	if (infuse_validation_lora(dev, VALIDATION_LORA_TX) == 0) {
 		atomic_inc(&validators_passed);
 	} else {
 		atomic_inc(&validators_failed);
 	}
 	atomic_inc(&validators_complete);
 	k_sem_give(&task_complete);
+}
+
+static int lora_validator(void *a, void *b, void *c)
+{
+	atomic_inc(&validators_registered);
+#if DT_NODE_EXISTS(DT_ALIAS(lora1))
+	atomic_inc(&validators_registered);
+	lora_validation_run(DEVICE_DT_GET(DT_ALIAS(lora1)));
+#endif
+	lora_validation_run(DEVICE_DT_GET(DT_ALIAS(lora0)));
 	return 0;
 }
 
