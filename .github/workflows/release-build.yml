@@ -87,5 +87,9 @@ jobs:
           west release-build -r infuse-sdk/samples/releases/serial-nrf9160dk.yaml --skip-git
           west release-build -r infuse-sdk/samples/releases/serial-nucleo-l432kc.yaml --skip-git
 
+      - name: Cleanup
+        if: always()
+        run: |
           rm -rf data_logger-tauro*
           rm -rf release-sample-gateway*
+          rm -rf release-sample-serial*
