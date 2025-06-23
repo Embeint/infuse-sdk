@@ -77,6 +77,10 @@ static void conn_create_worker(struct k_work *work)
 	params.channel = WIFI_CHANNEL_ANY;
 	if (kv_store_read(KV_KEY_WIFI_SSID, &wifi_ssid, sizeof(wifi_ssid)) <= 0) {
 		LOG_WRN("No WiFi SSID");
+		if (conn_mgr_if_get_timeout(wifi_if) > CONN_MGR_IF_NO_TIMEOUT) {
+			/* Cancel the timeout worker that was started */
+			k_work_cancel_delayable(&conn_timeout);
+		}
 		return;
 	}
 	params.ssid = wifi_ssid.ssid.value;
