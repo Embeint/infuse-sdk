@@ -9,7 +9,7 @@ pygments>=2.9,!=2.19.0
 sphinx-notfound-page
 sphinx-copybutton
 sphinx-togglebutton
-sphinx-sitemap
+sphinx-sitemap==2.6.0
 sphinx-autobuild
 
 # YAML validation. Used by zephyr_module.
