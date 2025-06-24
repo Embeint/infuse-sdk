@@ -63,4 +63,8 @@ configdefault SNTP_AUTO
 configdefault INFUSE_IMU_SELF_TEST
 	default y
 
+choice LORA_MODULE_BACKEND
+	default LORA_MODULE_BACKEND_LORA_BASICS_MODEM
+endchoice
+
 source "Kconfig.zephyr"
