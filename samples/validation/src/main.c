@@ -180,7 +180,7 @@ K_THREAD_DEFINE(nrf_modem_thread, 2048, nrf_modem_validator, NULL, NULL, NULL, 5
 #if CONFIG_LORA
 static void lora_validation_run(const struct device *dev)
 {
-	if (infuse_validation_lora(dev, VALIDATION_LORA_TX) == 0) {
+	if (infuse_validation_lora(dev, VALIDATION_LORA_TX | VALIDATION_LORA_CAD) == 0) {
 		atomic_inc(&validators_passed);
 	} else {
 		atomic_inc(&validators_failed);
