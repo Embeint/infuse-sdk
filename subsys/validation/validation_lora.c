@@ -60,6 +60,27 @@ int infuse_validation_lora(const struct device *dev, uint8_t flags)
 		}
 	}
 
+	if (flags & VALIDATION_LORA_CAD) {
+		config.tx = false;
+		rc = lora_config(dev, &config);
+		if (rc < 0) {
+			VALIDATION_REPORT_ERROR(TEST, "RX Config failed (%d)", rc);
+			goto test_end;
+		}
+
+		/* Run CAD */
+		VALIDATION_REPORT_INFO(TEST, "Starting CAD");
+		rc = lora_cad(dev, 2);
+		if (rc == -ENOTSUP) {
+			VALIDATION_REPORT_INFO(TEST, "CAD not supported");
+		} else if (rc < 0) {
+			VALIDATION_REPORT_ERROR(TEST, "CAD failed (%d)", rc);
+			goto test_end;
+		} else {
+			VALIDATION_REPORT_VALUE(TEST, "CAD_RESULT", "%d", rc);
+		}
+	}
+
 	if (flags & VALIDATION_LORA_RX) {
 		config.tx = false;
 		rc = lora_config(dev, &config);
