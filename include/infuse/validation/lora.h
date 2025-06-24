@@ -29,6 +29,8 @@ enum {
 	VALIDATION_LORA_TX = BIT(0),
 	/** Receive a packet */
 	VALIDATION_LORA_RX = BIT(1),
+	/** Perform channel activity detection */
+	VALIDATION_LORA_CAD = BIT(2),
 };
 
 /**
