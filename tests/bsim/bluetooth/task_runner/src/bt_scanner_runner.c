@@ -266,7 +266,7 @@ static void main_bt_scanner_defer_logging(void)
 		return;
 	}
 	if ((parsed.tdf_id != TDF_INFUSE_BLUETOOTH_RSSI) ||
-	    (parsed.data_type != TDF_DATA_TYPE_TIME_ARRAY) ||
+	    (parsed.data_type != TDF_DATA_FORMAT_TIME_ARRAY) ||
 	    (parsed.tdf_len != sizeof(struct tdf_infuse_bluetooth_rssi)) || (parsed.time == 0)) {
 		FAIL("Unexpected TDF data\n");
 	}
@@ -309,7 +309,7 @@ static void main_bt_scanner_defer_filter(void)
 		return;
 	}
 	if ((parsed.tdf_id != TDF_INFUSE_BLUETOOTH_RSSI) ||
-	    (parsed.data_type != TDF_DATA_TYPE_TIME_ARRAY) ||
+	    (parsed.data_type != TDF_DATA_FORMAT_TIME_ARRAY) ||
 	    (parsed.tdf_len != sizeof(struct tdf_infuse_bluetooth_rssi)) || (parsed.time == 0)) {
 		FAIL("Unexpected TDF data\n");
 	}
@@ -353,7 +353,7 @@ static void main_bt_scanner_defer_filter_limit(void)
 		return;
 	}
 	if ((parsed.tdf_id != TDF_INFUSE_BLUETOOTH_RSSI) ||
-	    (parsed.data_type != TDF_DATA_TYPE_TIME_ARRAY) ||
+	    (parsed.data_type != TDF_DATA_FORMAT_TIME_ARRAY) ||
 	    (parsed.tdf_len != sizeof(struct tdf_infuse_bluetooth_rssi)) || (parsed.time == 0)) {
 		FAIL("Unexpected TDF data\n");
 	}

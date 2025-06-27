@@ -280,24 +280,23 @@ static inline bool task_schedule_tdf_requested(const struct task_schedule *sched
  * @param tdf_id TDF sensor ID
  * @param tdf_len Length of a single TDF
  * @param tdf_num Number of TDFs to log
- * @param diff_type TDF diff encoding mode
+ * @param format TDF encoding mode
  * @param time Epoch time associated with the first TDF. 0 for no timestamp.
  * @param period Time period between the TDF samples
  * @param data TDF data array
  */
-static inline void task_schedule_tdf_log_array_diff(const struct task_schedule *schedule,
-						    uint8_t tdf_mask, uint16_t tdf_id,
-						    uint8_t tdf_len, uint8_t tdf_num,
-						    uint8_t diff_type, uint64_t time,
-						    uint32_t period, const void *data)
+static inline void task_schedule_tdf_log_core(const struct task_schedule *schedule,
+					      uint8_t tdf_mask, uint16_t tdf_id, uint8_t tdf_len,
+					      uint8_t tdf_num, enum tdf_data_format format,
+					      uint64_t time, uint32_t period, const void *data)
 {
 	if (schedule->task_logging[0].tdf_mask & tdf_mask) {
-		tdf_data_logger_log_array_diff(schedule->task_logging[0].loggers, tdf_id, tdf_len,
-					       tdf_num, diff_type, time, period, data);
+		tdf_data_logger_log_core(schedule->task_logging[0].loggers, tdf_id, tdf_len,
+					 tdf_num, format, time, period, data);
 	}
 	if (schedule->task_logging[1].tdf_mask & tdf_mask) {
-		tdf_data_logger_log_array_diff(schedule->task_logging[1].loggers, tdf_id, tdf_len,
-					       tdf_num, diff_type, time, period, data);
+		tdf_data_logger_log_core(schedule->task_logging[1].loggers, tdf_id, tdf_len,
+					 tdf_num, format, time, period, data);
 	}
 }
 
@@ -318,8 +317,8 @@ static inline void task_schedule_tdf_log_array(const struct task_schedule *sched
 					       uint8_t tdf_num, uint64_t time, uint32_t period,
 					       const void *data)
 {
-	task_schedule_tdf_log_array_diff(schedule, tdf_mask, tdf_id, tdf_len, tdf_num,
-					 TDF_DIFF_NONE, time, period, data);
+	task_schedule_tdf_log_core(schedule, tdf_mask, tdf_id, tdf_len, tdf_num,
+				   TDF_DATA_FORMAT_TIME_ARRAY, time, period, data);
 }
 
 /**
@@ -336,8 +335,8 @@ static inline void task_schedule_tdf_log(const struct task_schedule *schedule, u
 					 uint16_t tdf_id, uint8_t tdf_len, uint64_t time,
 					 const void *data)
 {
-	task_schedule_tdf_log_array_diff(schedule, tdf_mask, tdf_id, tdf_len, 1, TDF_DIFF_NONE,
-					 time, 0, data);
+	task_schedule_tdf_log_core(schedule, tdf_mask, tdf_id, tdf_len, 1, TDF_DATA_FORMAT_SINGLE,
+				   time, 0, data);
 }
 
 /**

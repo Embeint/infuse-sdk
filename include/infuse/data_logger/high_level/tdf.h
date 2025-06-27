@@ -71,7 +71,7 @@ enum tdf_data_logger_mask {
  * @param tdf_id TDF sensor ID
  * @param tdf_len Length of a single TDF
  * @param tdf_num Number of TDFs to add
- * @param diff_type TDF diff encoding mode
+ * @param format TDF data encoding format
  * @param time Epoch time associated with the first TDF. 0 for no timestamp.
  * @param period Time period between the TDF samples
  * @param data TDF data array
@@ -79,9 +79,9 @@ enum tdf_data_logger_mask {
  * @retval 0 On success
  * @retval -errno Error code from @a tdf_add or @a tdf_data_logger_flush on error
  */
-int tdf_data_logger_log_array_diff_dev(const struct device *dev, uint16_t tdf_id, uint8_t tdf_len,
-				       uint8_t tdf_num, uint8_t diff_type, uint64_t time,
-				       uint32_t period, const void *data);
+int tdf_data_logger_log_core_dev(const struct device *dev, uint16_t tdf_id, uint8_t tdf_len,
+				 uint8_t tdf_num, enum tdf_data_format format, uint64_t time,
+				 uint32_t period, const void *data);
 
 /**
  * @brief Add multiple TDFs to multiple data loggers
@@ -90,14 +90,14 @@ int tdf_data_logger_log_array_diff_dev(const struct device *dev, uint16_t tdf_id
  * @param tdf_id TDF sensor ID
  * @param tdf_len Length of a single TDF
  * @param tdf_num Number of TDFs to add
- * @param diff_type TDF diff encoding mode
+ * @param format TDF data encoding format
  * @param time Epoch time associated with the first TDF. 0 for no timestamp.
  * @param period Time period between the TDF samples
  * @param data TDF data array
  */
-void tdf_data_logger_log_array_diff(uint8_t logger_mask, uint16_t tdf_id, uint8_t tdf_len,
-				    uint8_t tdf_num, uint8_t diff_type, uint64_t time,
-				    uint32_t period, const void *data);
+void tdf_data_logger_log_core(uint8_t logger_mask, uint16_t tdf_id, uint8_t tdf_len,
+			      uint8_t tdf_num, enum tdf_data_format format, uint64_t time,
+			      uint32_t period, const void *data);
 
 /**
  * @brief Add multiple TDFs to a data logger
@@ -117,8 +117,8 @@ static inline int tdf_data_logger_log_array_dev(const struct device *dev, uint16
 						uint8_t tdf_len, uint8_t tdf_num, uint64_t time,
 						uint32_t period, const void *data)
 {
-	return tdf_data_logger_log_array_diff_dev(dev, tdf_id, tdf_len, tdf_num, TDF_DIFF_NONE,
-						  time, period, data);
+	return tdf_data_logger_log_core_dev(dev, tdf_id, tdf_len, tdf_num,
+					    TDF_DATA_FORMAT_TIME_ARRAY, time, period, data);
 }
 
 /**
@@ -136,8 +136,8 @@ static inline void tdf_data_logger_log_array(uint8_t logger_mask, uint16_t tdf_i
 					     uint8_t tdf_num, uint64_t time, uint32_t period,
 					     const void *data)
 {
-	tdf_data_logger_log_array_diff(logger_mask, tdf_id, tdf_len, tdf_num, TDF_DIFF_NONE, time,
-				       period, data);
+	tdf_data_logger_log_core(logger_mask, tdf_id, tdf_len, tdf_num, TDF_DATA_FORMAT_TIME_ARRAY,
+				 time, period, data);
 }
 
 /**
@@ -155,8 +155,8 @@ static inline void tdf_data_logger_log_array(uint8_t logger_mask, uint16_t tdf_i
 static inline int tdf_data_logger_log_dev(const struct device *dev, uint16_t tdf_id,
 					  uint8_t tdf_len, uint64_t time, const void *data)
 {
-	return tdf_data_logger_log_array_diff_dev(dev, tdf_id, tdf_len, 1, TDF_DIFF_NONE, time, 0,
-						  data);
+	return tdf_data_logger_log_core_dev(dev, tdf_id, tdf_len, 1, TDF_DATA_FORMAT_SINGLE, time,
+					    0, data);
 }
 
 /**
@@ -171,8 +171,8 @@ static inline int tdf_data_logger_log_dev(const struct device *dev, uint16_t tdf
 static inline void tdf_data_logger_log(uint8_t logger_mask, uint16_t tdf_id, uint8_t tdf_len,
 				       uint64_t time, const void *data)
 {
-	tdf_data_logger_log_array_diff(logger_mask, tdf_id, tdf_len, 1, TDF_DIFF_NONE, time, 0,
-				       data);
+	tdf_data_logger_log_core(logger_mask, tdf_id, tdf_len, 1, TDF_DATA_FORMAT_SINGLE, time, 0,
+				 data);
 }
 
 /**

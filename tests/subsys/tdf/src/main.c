@@ -76,8 +76,8 @@ static void run_test_case(struct tdf_test_case *tdfs, size_t num_tdfs)
 				zassert_equal(0, parsed.period);
 			}
 			zassert_equal(t->expected_rc, parsed.tdf_num);
-			zassert_equal(t->expected_rc > 1 ? TDF_DATA_TYPE_TIME_ARRAY
-							 : TDF_DATA_TYPE_SINGLE,
+			zassert_equal(t->expected_rc > 1 ? TDF_DATA_FORMAT_TIME_ARRAY
+							 : TDF_DATA_FORMAT_SINGLE,
 				      parsed.data_type);
 			zassert_mem_equal(input_buffer, parsed.data, parsed.tdf_len);
 #if __DEBUG__
@@ -1008,12 +1008,15 @@ static void validate_diff_data(struct tdf_buffer_state *state, uint8_t expected_
 	zassert_equal(tdf_id, parsed.tdf_id);
 	zassert_equal(expected_len, parsed.tdf_len);
 	zassert_equal(expected_type, parsed.data_type);
-	if (parsed.data_type == TDF_DATA_TYPE_DIFF_ARRAY) {
-		if (parsed.diff_info.type == TDF_DIFF_16_8) {
+
+	if ((parsed.data_type == TDF_DATA_FORMAT_DIFF_ARRAY_16_8) ||
+	    (parsed.data_type == TDF_DATA_FORMAT_DIFF_ARRAY_32_8) ||
+	    (parsed.data_type == TDF_DATA_FORMAT_DIFF_ARRAY_32_16)) {
+		if (parsed.data_type == TDF_DATA_FORMAT_DIFF_ARRAY_16_8) {
 			diff_len = 3;
-		} else if (parsed.diff_info.type == TDF_DIFF_32_8) {
+		} else if (parsed.data_type == TDF_DATA_FORMAT_DIFF_ARRAY_32_8) {
 			diff_len = 2;
-		} else if (parsed.diff_info.type == TDF_DIFF_32_16) {
+		} else if (parsed.data_type == TDF_DATA_FORMAT_DIFF_ARRAY_32_16) {
 			diff_len = 4;
 		} else {
 			diff_len = 0;
@@ -1043,9 +1046,9 @@ static void validate_diff_data(struct tdf_buffer_state *state, uint8_t expected_
 		net_buf_simple_init_with_data(&relog_state.buf, large_buf2, sizeof(large_buf2));
 		tdf_buffer_state_reset(&relog_state);
 
-		rc = tdf_add_diff(&relog_state, parsed.tdf_id, parsed.tdf_len,
+		rc = tdf_add_core(&relog_state, parsed.tdf_id, parsed.tdf_len,
 				  1 + parsed.diff_info.num, parsed.time, parsed.period, parsed.data,
-				  TDF_DIFF_PRECOMPUTED | parsed.diff_info.type);
+				  TDF_DATA_FORMAT_DIFF_PRECOMPUTED | parsed.data_type);
 		zassert_equal(1 + parsed.diff_info.num, rc);
 
 		/* Parsed re-logged data should match the original */
@@ -1056,7 +1059,6 @@ static void validate_diff_data(struct tdf_buffer_state *state, uint8_t expected_
 		zassert_equal(parsed.tdf_len, parsed2.tdf_len);
 		zassert_equal(parsed.data_type, parsed2.data_type);
 		zassert_equal(parsed.diff_info.num, parsed2.diff_info.num);
-		zassert_equal(parsed.diff_info.type, parsed2.diff_info.type);
 		zassert_equal(parsed.time, parsed2.time);
 		zassert_equal(parsed.period, parsed2.period);
 
@@ -1092,11 +1094,11 @@ static void tdf_diff_test(void *tdf_array, uint16_t tdf_id, uint8_t diff_type, v
 	} else {
 		zassert_unreachable();
 	}
-	if (diff_type == TDF_DIFF_16_8) {
+	if (diff_type == TDF_DATA_FORMAT_DIFF_ARRAY_16_8) {
 		diff_len = 3;
-	} else if (diff_type == TDF_DIFF_32_8) {
+	} else if (diff_type == TDF_DATA_FORMAT_DIFF_ARRAY_32_8) {
 		diff_len = 2;
-	} else if (diff_type == TDF_DIFF_32_16) {
+	} else if (diff_type == TDF_DATA_FORMAT_DIFF_ARRAY_32_16) {
 		diff_len = 4;
 	} else {
 		diff_len = 0;
@@ -1107,9 +1109,9 @@ static void tdf_diff_test(void *tdf_array, uint16_t tdf_id, uint8_t diff_type, v
 	net_buf_simple_init_with_data(&state.buf, buf, sizeof(buf));
 	tdf_buffer_state_reset(&state);
 
-	handled = tdf_add_diff(&state, tdf_id, tdf_len, 1, 0, 10, tdf_array_u8, diff_type);
+	handled = tdf_add_core(&state, tdf_id, tdf_len, 1, 0, 10, tdf_array_u8, diff_type);
 	zassert_equal(1, handled);
-	validate_diff_data(&state, TDF_DATA_TYPE_SINGLE, 1, tdf_id, NULL, NULL, 0);
+	validate_diff_data(&state, TDF_DATA_FORMAT_SINGLE, 1, tdf_id, NULL, NULL, 0);
 
 	/* Should only populate the first 4 TDFs */
 	net_buf_simple_init_with_data(&state.buf, buf, sizeof(buf));
@@ -1117,52 +1119,49 @@ static void tdf_diff_test(void *tdf_array, uint16_t tdf_id, uint8_t diff_type, v
 
 	tdf_array_iter = tdf_array_u8;
 	handled =
-		tdf_add_diff(&state, tdf_id, tdf_len, array_size, 0, 10, tdf_array_iter, diff_type);
+		tdf_add_core(&state, tdf_id, tdf_len, array_size, 0, 10, tdf_array_iter, diff_type);
 	zassert_equal(4, handled);
-	validate_diff_data(&state, TDF_DATA_TYPE_DIFF_ARRAY, 3, tdf_id, tdf_array_iter, diff_1,
-			   diff_len);
+	validate_diff_data(&state, diff_type, 3, tdf_id, tdf_array_iter, diff_1, diff_len);
 
 	/* Should only populate TDFs 1-4 */
 	net_buf_simple_init_with_data(&state.buf, buf, sizeof(buf));
 	tdf_buffer_state_reset(&state);
 
 	tdf_array_iter = tdf_array_u8 + (1 * tdf_len);
-	handled = tdf_add_diff(&state, tdf_id, tdf_len, array_size - 1, 0, 10, tdf_array_iter,
+	handled = tdf_add_core(&state, tdf_id, tdf_len, array_size - 1, 0, 10, tdf_array_iter,
 			       diff_type);
 	zassert_equal(3, handled);
-	validate_diff_data(&state, TDF_DATA_TYPE_DIFF_ARRAY, 2, tdf_id, tdf_array_iter, diff_1,
-			   diff_len);
+	validate_diff_data(&state, diff_type, 2, tdf_id, tdf_array_iter, diff_1, diff_len);
 
 	/* Should populate TDFs 3-4 as a TIME_ARRAY */
 	net_buf_simple_init_with_data(&state.buf, buf, sizeof(buf));
 	tdf_buffer_state_reset(&state);
 
 	tdf_array_iter = tdf_array_u8 + (2 * tdf_len);
-	handled = tdf_add_diff(&state, tdf_id, tdf_len, array_size - 2, 0, 10, tdf_array_iter,
+	handled = tdf_add_core(&state, tdf_id, tdf_len, array_size - 2, 0, 10, tdf_array_iter,
 			       diff_type);
 	zassert_equal(2, handled);
-	validate_diff_data(&state, TDF_DATA_TYPE_TIME_ARRAY, 2, tdf_id, NULL, NULL, 0);
+	validate_diff_data(&state, TDF_DATA_FORMAT_TIME_ARRAY, 2, tdf_id, NULL, NULL, 0);
 
 	/* Should only populate TDFs 4 */
 	net_buf_simple_init_with_data(&state.buf, buf, sizeof(buf));
 	tdf_buffer_state_reset(&state);
 
 	tdf_array_iter = tdf_array_u8 + (3 * tdf_len);
-	handled = tdf_add_diff(&state, tdf_id, tdf_len, array_size - 3, 0, 10, tdf_array_iter,
+	handled = tdf_add_core(&state, tdf_id, tdf_len, array_size - 3, 0, 10, tdf_array_iter,
 			       diff_type);
 	zassert_equal(1, handled);
-	validate_diff_data(&state, TDF_DATA_TYPE_SINGLE, 1, tdf_id, NULL, NULL, 0);
+	validate_diff_data(&state, TDF_DATA_FORMAT_SINGLE, 1, tdf_id, NULL, NULL, 0);
 
 	/* Should handle all remaining TDFs */
 	net_buf_simple_init_with_data(&state.buf, buf, sizeof(buf));
 	tdf_buffer_state_reset(&state);
 
 	tdf_array_iter = tdf_array_u8 + (4 * tdf_len);
-	handled = tdf_add_diff(&state, tdf_id, tdf_len, array_size - 4, 0, 10,
+	handled = tdf_add_core(&state, tdf_id, tdf_len, array_size - 4, 0, 10,
 			       tdf_array_u8 + (4 * tdf_len), diff_type);
 	zassert_equal(4, handled);
-	validate_diff_data(&state, TDF_DATA_TYPE_DIFF_ARRAY, 3, tdf_id, tdf_array_iter, diff_2,
-			   diff_len);
+	validate_diff_data(&state, diff_type, 3, tdf_id, tdf_array_iter, diff_2, diff_len);
 }
 
 ZTEST(tdf_diff, test_16)
@@ -1180,7 +1179,7 @@ ZTEST(tdf_diff, test_16)
 		tdf_array[i].x = 30000 + (10 * i);
 	}
 
-	tdf_diff_test(tdf_array, TDF_EXAMPLE_16, TDF_DIFF_16_8, diff_1, diff_2);
+	tdf_diff_test(tdf_array, TDF_EXAMPLE_16, TDF_DATA_FORMAT_DIFF_ARRAY_16_8, diff_1, diff_2);
 }
 
 ZTEST(tdf_diff, test_32_8)
@@ -1197,7 +1196,7 @@ ZTEST(tdf_diff, test_32_8)
 		tdf_array[i].x = 30000 + (10 * i);
 	}
 
-	tdf_diff_test(tdf_array, TDF_EXAMPLE_32, TDF_DIFF_32_8, diff_1, diff_2);
+	tdf_diff_test(tdf_array, TDF_EXAMPLE_32, TDF_DATA_FORMAT_DIFF_ARRAY_32_8, diff_1, diff_2);
 }
 
 ZTEST(tdf_diff, test_32_16)
@@ -1214,7 +1213,7 @@ ZTEST(tdf_diff, test_32_16)
 		tdf_array[i].x = 3000000 + (1200 * i);
 	}
 
-	tdf_diff_test(tdf_array, TDF_EXAMPLE_32, TDF_DIFF_32_16, diff_1, diff_2);
+	tdf_diff_test(tdf_array, TDF_EXAMPLE_32, TDF_DATA_FORMAT_DIFF_ARRAY_32_16, diff_1, diff_2);
 }
 
 ZTEST(tdf_diff, test_no_valid_diffs)
@@ -1233,39 +1232,42 @@ ZTEST(tdf_diff, test_no_valid_diffs)
 	net_buf_simple_init_with_data(&state.buf, large_buf, sizeof(large_buf));
 	tdf_buffer_state_reset(&state);
 
-	handled = tdf_add_diff(&state, TDF_EXAMPLE_16, sizeof(struct tdf_example_16),
-			       ARRAY_SIZE(tdf_array), 0, 10, tdf_array, TDF_DIFF_16_8);
+	handled = tdf_add_core(&state, TDF_EXAMPLE_16, sizeof(struct tdf_example_16),
+			       ARRAY_SIZE(tdf_array), 0, 10, tdf_array,
+			       TDF_DATA_FORMAT_DIFF_ARRAY_16_8);
 	zassert_equal(ARRAY_SIZE(tdf_array), handled);
-	validate_diff_data(&state, TDF_DATA_TYPE_TIME_ARRAY, ARRAY_SIZE(tdf_array), TDF_EXAMPLE_16,
-			   NULL, NULL, 0);
+	validate_diff_data(&state, TDF_DATA_FORMAT_TIME_ARRAY, ARRAY_SIZE(tdf_array),
+			   TDF_EXAMPLE_16, NULL, NULL, 0);
 
 	/* Last 2 values have a valid diff, no change to output  */
 	tdf_array[ARRAY_SIZE(tdf_array) - 1].z = -2000;
 	tdf_array[ARRAY_SIZE(tdf_array) - 2].z = -2000;
 
 	tdf_buffer_state_reset(&state);
-	handled = tdf_add_diff(&state, TDF_EXAMPLE_16, sizeof(struct tdf_example_16),
-			       ARRAY_SIZE(tdf_array), 0, 10, tdf_array, TDF_DIFF_16_8);
+	handled = tdf_add_core(&state, TDF_EXAMPLE_16, sizeof(struct tdf_example_16),
+			       ARRAY_SIZE(tdf_array), 0, 10, tdf_array,
+			       TDF_DATA_FORMAT_DIFF_ARRAY_16_8);
 	zassert_equal(ARRAY_SIZE(tdf_array), handled);
-	validate_diff_data(&state, TDF_DATA_TYPE_TIME_ARRAY, ARRAY_SIZE(tdf_array), TDF_EXAMPLE_16,
-			   NULL, NULL, 0);
+	validate_diff_data(&state, TDF_DATA_FORMAT_TIME_ARRAY, ARRAY_SIZE(tdf_array),
+			   TDF_EXAMPLE_16, NULL, NULL, 0);
 
 	/* Last 3 values have valid diffs, excluded from time array */
 	tdf_array[ARRAY_SIZE(tdf_array) - 3].z = -2000;
 
 	tdf_buffer_state_reset(&state);
 
-	handled = tdf_add_diff(&state, TDF_EXAMPLE_16, sizeof(struct tdf_example_16),
-			       ARRAY_SIZE(tdf_array), 0, 10, tdf_array, TDF_DIFF_16_8);
+	handled = tdf_add_core(&state, TDF_EXAMPLE_16, sizeof(struct tdf_example_16),
+			       ARRAY_SIZE(tdf_array), 0, 10, tdf_array,
+			       TDF_DATA_FORMAT_DIFF_ARRAY_16_8);
 	zassert_equal(ARRAY_SIZE(tdf_array) - 3, handled);
-	validate_diff_data(&state, TDF_DATA_TYPE_TIME_ARRAY, ARRAY_SIZE(tdf_array) - 3,
+	validate_diff_data(&state, TDF_DATA_FORMAT_TIME_ARRAY, ARRAY_SIZE(tdf_array) - 3,
 			   TDF_EXAMPLE_16, NULL, NULL, 0);
 
 	/* Invalid diff type */
 	tdf_buffer_state_reset(&state);
 
-	handled = tdf_add_diff(&state, TDF_EXAMPLE_16, sizeof(struct tdf_example_16),
-			       ARRAY_SIZE(tdf_array), 0, 10, tdf_array, TDF_DIFF_INVALID);
+	handled = tdf_add_core(&state, TDF_EXAMPLE_16, sizeof(struct tdf_example_16),
+			       ARRAY_SIZE(tdf_array), 0, 10, tdf_array, TDF_DATA_FORMAT_INVALID);
 	zassert_equal(-EINVAL, handled);
 }
 
@@ -1280,21 +1282,22 @@ ZTEST(tdf_diff, test_overflow)
 	net_buf_simple_init_with_data(&state.buf, buf, sizeof(buf));
 	tdf_buffer_state_reset(&state);
 
-	handled = tdf_add_diff(&state, TDF_EXAMPLE_16, sizeof(struct tdf_example_16), 16, 0, 10,
-			       tdf_array, TDF_DIFF_16_8);
+	handled = tdf_add_core(&state, TDF_EXAMPLE_16, sizeof(struct tdf_example_16), 16, 0, 10,
+			       tdf_array, TDF_DATA_FORMAT_DIFF_ARRAY_16_8);
 	zassert_equal(7, handled);
-	validate_diff_data(&state, TDF_DATA_TYPE_DIFF_ARRAY, 6, TDF_EXAMPLE_16, tdf_array, diff_1,
-			   sizeof(diff_1));
+	validate_diff_data(&state, TDF_DATA_FORMAT_DIFF_ARRAY_16_8, 6, TDF_EXAMPLE_16, tdf_array,
+			   diff_1, sizeof(diff_1));
 
 	/* Logging more diffs than can fit in the 32 limit */
 	net_buf_simple_init_with_data(&state.buf, large_buf, sizeof(large_buf));
 	tdf_buffer_state_reset(&state);
 
-	handled = tdf_add_diff(&state, TDF_EXAMPLE_16, sizeof(struct tdf_example_16),
-			       ARRAY_SIZE(tdf_array), 0, 10, tdf_array, TDF_DIFF_16_8);
+	handled = tdf_add_core(&state, TDF_EXAMPLE_16, sizeof(struct tdf_example_16),
+			       ARRAY_SIZE(tdf_array), 0, 10, tdf_array,
+			       TDF_DATA_FORMAT_DIFF_ARRAY_16_8);
 	zassert_equal(64, handled);
-	validate_diff_data(&state, TDF_DATA_TYPE_DIFF_ARRAY, 63, TDF_EXAMPLE_16, tdf_array, diff_1,
-			   sizeof(diff_1));
+	validate_diff_data(&state, TDF_DATA_FORMAT_DIFF_ARRAY_16_8, 63, TDF_EXAMPLE_16, tdf_array,
+			   diff_1, sizeof(diff_1));
 }
 
 ZTEST(tdf_diff, test_invalid_tdfs)
@@ -1306,13 +1309,16 @@ ZTEST(tdf_diff, test_invalid_tdfs)
 	net_buf_simple_init_with_data(&state.buf, buf, sizeof(buf));
 	tdf_buffer_state_reset(&state);
 
-	rc = tdf_add_diff(&state, TDF_EXAMPLE_16, 1, 16, 0, 10, tdf_array, TDF_DIFF_16_8);
+	rc = tdf_add_core(&state, TDF_EXAMPLE_16, 1, 16, 0, 10, tdf_array,
+			  TDF_DATA_FORMAT_DIFF_ARRAY_16_8);
 	zassert_equal(-EINVAL, rc);
 
 	for (int i = 0; i < 3; i++) {
-		rc = tdf_add_diff(&state, TDF_EXAMPLE_32, i, 16, 0, 10, tdf_array, TDF_DIFF_32_8);
+		rc = tdf_add_core(&state, TDF_EXAMPLE_32, i, 16, 0, 10, tdf_array,
+				  TDF_DATA_FORMAT_DIFF_ARRAY_32_8);
 		zassert_equal(-EINVAL, rc);
-		rc = tdf_add_diff(&state, TDF_EXAMPLE_32, i, 16, 0, 10, tdf_array, TDF_DIFF_32_16);
+		rc = tdf_add_core(&state, TDF_EXAMPLE_32, i, 16, 0, 10, tdf_array,
+				  TDF_DATA_FORMAT_DIFF_ARRAY_32_16);
 		zassert_equal(-EINVAL, rc);
 	}
 }
@@ -1332,8 +1338,8 @@ ZTEST(tdf_diff, test_disabled)
 	tdf_buffer_state_reset(&state);
 
 	/* Data should still be logged as a standard TIME_ARRAY */
-	rc = tdf_add_diff(&state, TDF_EXAMPLE_16, sizeof(struct tdf_example_16),
-			  ARRAY_SIZE(tdf_array), 0, 10, tdf_array, TDF_DIFF_16_8);
+	rc = tdf_add_core(&state, TDF_EXAMPLE_16, sizeof(struct tdf_example_16),
+			  ARRAY_SIZE(tdf_array), 0, 10, tdf_array, TDF_DATA_FORMAT_DIFF_ARRAY_16_8);
 	zassert_equal(ARRAY_SIZE(tdf_array), rc);
 
 	tdf_parse_start(&parser, state.buf.data, state.buf.len);
@@ -1341,7 +1347,7 @@ ZTEST(tdf_diff, test_disabled)
 	zassert_equal(0, rc);
 	zassert_equal(TDF_EXAMPLE_16, parsed.tdf_id);
 	zassert_equal(sizeof(struct tdf_example_16), parsed.tdf_len);
-	zassert_equal(TDF_DATA_TYPE_TIME_ARRAY, parsed.data_type);
+	zassert_equal(TDF_DATA_FORMAT_TIME_ARRAY, parsed.data_type);
 	zassert_equal(ARRAY_SIZE(tdf_array), parsed.tdf_num);
 
 	/* No more data in buffer */
