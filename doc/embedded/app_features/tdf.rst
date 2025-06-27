@@ -143,7 +143,7 @@ one base reading, and then a repeating array of differences on each field. For e
       } diffs[];
    } __packed;
 
-As long as the differences on each field fall within `int8_t` from the previous value, this can lead to
+As long as the differences on each field fall within ``int8_t`` from the previous value, this can lead to
 large packing efficiencies (75% in this example). The original values can be reconstructed as follows:
 
 .. code-block:: c
@@ -162,26 +162,26 @@ encoding.
    * - Enum
      - Input Type
      - Diff Type
-   * - :c:enumerator:`TDF_DIFF_16_8`
+   * - :c:enumerator:`TDF_DATA_FORMAT_DIFF_ARRAY_16_8`
      - ``uint16_t`` / ``int16_t``
      - ``int8_t``
-   * - :c:enumerator:`TDF_DIFF_32_8`
+   * - :c:enumerator:`TDF_DATA_FORMAT_DIFF_ARRAY_32_8`
      - ``uint32_t`` / ``int32_t``
      - ``int8_t``
-   * - :c:enumerator:`TDF_DIFF_32_16`
+   * - :c:enumerator:`TDF_DATA_FORMAT_DIFF_ARRAY_32_16`
      - ``uint32_t`` / ``int32_t``
      - ``int16_t``
 
 The input data type defines how the encoder views the TDF struct, for example with
-:c:enumerator:`TDF_DIFF_32_8` the encoder will interpret the input as ``uint32_t`` chunks.
+:c:enumerator:`TDF_DATA_FORMAT_DIFF_ARRAY_32_8` the encoder will interpret the input as ``uint32_t`` chunks.
 The diff type defines the maximum value difference between input chunks that can be
 encoded as a valid diff.
 
 Generally, the input data type will be self-evident from the TDF type being encoded. ``struct tdf_example``
-from above for example should use either :c:enumerator:`TDF_DIFF_32_8` or :c:enumerator:`TDF_DIFF_32_16`.
-The choice comes down to the expected differences between subsequent values. A larger diff type can
-handle larger differences without falling back to :c:enumerator:`TDF_ARRAY_TIME`, but consumes more size
-in the output buffer.
+from above for example should use either :c:enumerator:`TDF_DATA_FORMAT_DIFF_ARRAY_32_8` or
+:c:enumerator:`TDF_DATA_FORMAT_DIFF_ARRAY_32_16`. The choice comes down to the expected differences between
+subsequent values. A larger diff type can handle larger differences without falling back to
+:c:enumerator:`TDF_ARRAY_TIME`, but consumes more size in the output buffer.
 
 When a reading is of this type, an additional 3 byte header is present after the timestamp structure.
 

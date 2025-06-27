@@ -36,25 +36,22 @@ struct tdf_buffer_state {
 	struct net_buf_simple buf;
 };
 
-enum tdf_data_type {
-	TDF_DATA_TYPE_SINGLE,
-	TDF_DATA_TYPE_TIME_ARRAY,
-	TDF_DATA_TYPE_DIFF_ARRAY,
-} __packed;
-
-enum tdf_diff_type {
-	TDF_DIFF_NONE = 0,
+enum tdf_data_format {
+	/** Single sample */
+	TDF_DATA_FORMAT_SINGLE,
+	/** Time array with period */
+	TDF_DATA_FORMAT_TIME_ARRAY,
 	/** 16 bit data, 8 bit diffs */
-	TDF_DIFF_16_8 = 1,
+	TDF_DATA_FORMAT_DIFF_ARRAY_16_8,
 	/** 32 bit data, 8 bit diffs */
-	TDF_DIFF_32_8 = 2,
+	TDF_DATA_FORMAT_DIFF_ARRAY_32_8,
 	/** 32 bit data, 16 bit diffs */
-	TDF_DIFF_32_16 = 3,
-	/** Start of invalid values */
-	TDF_DIFF_INVALID,
+	TDF_DATA_FORMAT_DIFF_ARRAY_32_16,
+	/** Start of invalid range */
+	TDF_DATA_FORMAT_INVALID,
 	/** Data is already in [base, diff...] form */
-	TDF_DIFF_PRECOMPUTED = 0x80,
-};
+	TDF_DATA_FORMAT_DIFF_PRECOMPUTED = 0x80,
+} __packed;
 
 struct tdf_parsed {
 	/** TDF time (0 for none) */
@@ -64,13 +61,11 @@ struct tdf_parsed {
 	/** Length of single TDF */
 	uint8_t tdf_len;
 	/** Data format */
-	enum tdf_data_type data_type;
+	enum tdf_data_format data_type;
 	union {
 		/** Number of TDFs */
 		uint8_t tdf_num;
 		struct {
-			/** Number of diff */
-			enum tdf_diff_type type;
 			/** Number of diffs */
 			uint8_t num;
 
@@ -146,7 +141,7 @@ static inline void tdf_buffer_state_reset(struct tdf_buffer_state *state)
 }
 
 /**
- * @brief Add TDFs to memory buffer with diff encoding
+ * @brief Add TDFs to memory buffer with an explicit format
  *
  * @param state Pointer to current buffer state
  * @param tdf_id TDF sensor ID
@@ -155,15 +150,15 @@ static inline void tdf_buffer_state_reset(struct tdf_buffer_state *state)
  * @param time Epoch time associated with the first TDF. 0 for no timestamp.
  * @param period Epoch time between tdfs when @a tdf_num > 0.
  * @param data TDF data
- * @param diff_type TDF diff type
+ * @param format Data encoding format
  *
  * @retval >0 Number of TDFs successfully added to buffer
  * @retval -EINVAL Invalid arguments
  * @retval -ENOSPC TDF too large to ever fit on buffer
  * @retval -ENOMEM Insufficient space to add any TDFs to buffer
  */
-int tdf_add_diff(struct tdf_buffer_state *state, uint16_t tdf_id, uint8_t tdf_len, uint8_t tdf_num,
-		 uint64_t time, uint32_t period, const void *data, enum tdf_diff_type diff_type);
+int tdf_add_core(struct tdf_buffer_state *state, uint16_t tdf_id, uint8_t tdf_len, uint8_t tdf_num,
+		 uint64_t time, uint32_t period, const void *data, enum tdf_data_format format);
 
 /**
  * @brief Add TDFs to memory buffer
@@ -184,7 +179,10 @@ int tdf_add_diff(struct tdf_buffer_state *state, uint16_t tdf_id, uint8_t tdf_le
 static inline int tdf_add(struct tdf_buffer_state *state, uint16_t tdf_id, uint8_t tdf_len,
 			  uint8_t tdf_num, uint64_t time, uint32_t period, const void *data)
 {
-	return tdf_add_diff(state, tdf_id, tdf_len, tdf_num, time, period, data, TDF_DIFF_NONE);
+	enum tdf_data_format format =
+		tdf_num > 1 ? TDF_DATA_FORMAT_TIME_ARRAY : TDF_DATA_FORMAT_SINGLE;
+
+	return tdf_add_core(state, tdf_id, tdf_len, tdf_num, time, period, data, format);
 }
 
 /**

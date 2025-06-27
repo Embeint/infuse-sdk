@@ -221,13 +221,13 @@ int tdf_data_logger_remote_id_set(const struct device *dev, uint64_t remote_id)
 #endif /* TDF_REMOTE_SUPPORT */
 
 static int log_locked(const struct device *dev, uint16_t tdf_id, uint8_t tdf_len, uint8_t tdf_num,
-		      uint8_t diff_type, uint64_t time, uint32_t period, const void *mem)
+		      enum tdf_data_format format, uint64_t time, uint32_t period, const void *mem)
 {
 	struct tdf_logger_data *data = dev->data;
 	int rc;
 
 relog:
-	rc = tdf_add_diff(&data->tdf_state, tdf_id, tdf_len, tdf_num, time, period, mem, diff_type);
+	rc = tdf_add_core(&data->tdf_state, tdf_id, tdf_len, tdf_num, time, period, mem, format);
 	if (rc == -ENOMEM) {
 		LOG_DBG("%s no space, flush and retry", dev->name);
 		rc = flush_internal(dev, true);
@@ -247,7 +247,7 @@ relog:
 		/* Logging precomputed diffs from a point other that the start is currently
 		 * not supported.
 		 */
-		if (!(diff_type & TDF_DIFF_PRECOMPUTED)) {
+		if (!(format & TDF_DATA_FORMAT_DIFF_PRECOMPUTED)) {
 			goto relog;
 		}
 	}
@@ -262,9 +262,9 @@ relog:
 	return rc;
 }
 
-int tdf_data_logger_log_array_diff_dev(const struct device *dev, uint16_t tdf_id, uint8_t tdf_len,
-				       uint8_t tdf_num, uint8_t diff_type, uint64_t time,
-				       uint32_t period, const void *mem)
+int tdf_data_logger_log_core_dev(const struct device *dev, uint16_t tdf_id, uint8_t tdf_len,
+				 uint8_t tdf_num, enum tdf_data_format format, uint64_t time,
+				 uint32_t period, const void *mem)
 {
 	const struct tdf_logger_config *config = dev->config;
 	struct tdf_logger_data *data = dev->data;
@@ -288,14 +288,14 @@ int tdf_data_logger_log_array_diff_dev(const struct device *dev, uint16_t tdf_id
 	}
 
 	k_sem_take(&data->lock, K_FOREVER);
-	rc = log_locked(dev, tdf_id, tdf_len, tdf_num, diff_type, time, period, mem);
+	rc = log_locked(dev, tdf_id, tdf_len, tdf_num, format, time, period, mem);
 	k_sem_give(&data->lock);
 	return rc < 0 ? rc : 0;
 }
 
-void tdf_data_logger_log_array_diff(uint8_t logger_mask, uint16_t tdf_id, uint8_t tdf_len,
-				    uint8_t tdf_num, uint8_t diff_type, uint64_t time,
-				    uint32_t period, const void *data)
+void tdf_data_logger_log_core(uint8_t logger_mask, uint16_t tdf_id, uint8_t tdf_len,
+			      uint8_t tdf_num, enum tdf_data_format format, uint64_t time,
+			      uint32_t period, const void *data)
 {
 	const struct device *dev;
 
@@ -303,8 +303,8 @@ void tdf_data_logger_log_array_diff(uint8_t logger_mask, uint16_t tdf_id, uint8_
 	do {
 		dev = logger_mask_iter(&logger_mask);
 		if (dev) {
-			(void)tdf_data_logger_log_array_diff_dev(dev, tdf_id, tdf_len, tdf_num,
-								 diff_type, time, period, data);
+			(void)tdf_data_logger_log_core_dev(dev, tdf_id, tdf_len, tdf_num, format,
+							   time, period, data);
 		}
 	} while (dev);
 }
@@ -325,6 +325,8 @@ static void tdf_block_size_update(const struct device *logger, uint16_t block_si
 	const struct tdf_logger_config *config = dev->config;
 	struct tdf_logger_data *data = dev->data;
 	uint16_t limited = MIN(block_size, config->tdf_buffer_max_size);
+	bool is_diff;
+	uint8_t num;
 
 	k_sem_take(&data->lock, K_FOREVER);
 	LOG_DBG("%s: from %d to %d bytes", dev->name, data->tdf_state.buf.size, limited);
@@ -352,14 +354,15 @@ static void tdf_block_size_update(const struct device *logger, uint16_t block_si
 #endif /* TDF_REMOTE_SUPPORT */
 		/* Re-log pending TDF's into the same buffer, which will flush as appropriate */
 		while (tdf_parse(&state, &tdf) == 0) {
-			uint8_t num = tdf.data_type == TDF_DATA_TYPE_DIFF_ARRAY
-					      ? 1 + tdf.diff_info.num
-					      : tdf.tdf_num;
-			uint8_t diff_type = tdf.data_type == TDF_DATA_TYPE_DIFF_ARRAY
-						    ? TDF_DIFF_PRECOMPUTED | tdf.diff_info.type
-						    : TDF_DIFF_NONE;
+			is_diff = (tdf.data_type == TDF_DATA_FORMAT_DIFF_ARRAY_16_8) ||
+				  (tdf.data_type == TDF_DATA_FORMAT_DIFF_ARRAY_32_8) ||
+				  (tdf.data_type == TDF_DATA_FORMAT_DIFF_ARRAY_32_16);
+			num = is_diff ? 1 + tdf.diff_info.num : tdf.tdf_num;
+			if (is_diff) {
+				tdf.data_type |= TDF_DATA_FORMAT_DIFF_PRECOMPUTED;
+			}
 
-			(void)log_locked(dev, tdf.tdf_id, tdf.tdf_len, num, diff_type, tdf.time,
+			(void)log_locked(dev, tdf.tdf_id, tdf.tdf_len, num, tdf.data_type, tdf.time,
 					 tdf.period, tdf.data);
 		}
 	}

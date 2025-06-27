@@ -230,9 +230,9 @@ ZTEST(tdf_data_logger, test_diff_size_change_decrease)
 	epacket_dummy_set_max_packet(CONFIG_EPACKET_PACKET_SIZE_MAX);
 
 	/* Log diff array, data size == (2 + 15) */
-	rc = tdf_data_logger_log_array_diff_dev(logger, TDF_RANDOM, sizeof(uint16_t),
-						ARRAY_SIZE(tdf_data), TDF_DIFF_16_8, 10000, 100,
-						tdf_data);
+	rc = tdf_data_logger_log_core_dev(logger, TDF_RANDOM, sizeof(uint16_t),
+					  ARRAY_SIZE(tdf_data), TDF_DATA_FORMAT_DIFF_ARRAY_16_8,
+					  10000, 100, tdf_data);
 	zassert_equal(0, rc);
 	zassert_is_null(k_fifo_get(sent_queue, K_MSEC(1)));
 
@@ -260,8 +260,7 @@ ZTEST(tdf_data_logger, test_diff_size_change_decrease)
 	zassert_equal(10000, parsed.time);
 	zassert_equal(100, parsed.period);
 	zassert_equal(2, parsed.tdf_len);
-	zassert_equal(TDF_DATA_TYPE_DIFF_ARRAY, parsed.data_type);
-	zassert_equal(TDF_DIFF_16_8, parsed.diff_info.type);
+	zassert_equal(TDF_DATA_FORMAT_DIFF_ARRAY_16_8, parsed.data_type);
 	/* There was not space for all the diffs */
 	zassert_equal(12, parsed.diff_info.num);
 
