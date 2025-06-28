@@ -82,6 +82,7 @@ next-generation real-time operating system managed by the `Linux Foundation`_.
    embedded/index.rst
    embedded/app_features.rst
    embedded/hardware.rst
+   embedded/samples.rst
 
 Cloud Services
 **************

@@ -1,4 +1,4 @@
-.. _lora_ranging:
+.. _embedded_sample_lora_ranging:
 
 LoRa Ranging
 ############
