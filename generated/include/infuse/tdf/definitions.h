@@ -357,7 +357,7 @@ struct tdf_algorithm_output {
 	uint8_t output[];
 } __packed;
 
-/** Define a variant of @ref tdf_algorithm_output with a constant length */
+/** Define a variant of tdf_algorithm_output with a constant length */
 #define TDF_ALGORITHM_OUTPUT_VAR(_name, _count)                                                    \
 	struct _name {                                                                             \
 		uint32_t algorithm_id;                                                             \
@@ -423,7 +423,7 @@ struct tdf_algorithm_class_histogram {
 	uint8_t classes[];
 } __packed;
 
-/** Define a variant of @ref tdf_algorithm_class_histogram with a constant length */
+/** Define a variant of tdf_algorithm_class_histogram with a constant length */
 #define TDF_ALGORITHM_CLASS_HISTOGRAM_VAR(_name, _count)                                           \
 	struct _name {                                                                             \
 		uint32_t algorithm_id;                                                             \
@@ -441,7 +441,7 @@ struct tdf_algorithm_class_time_series {
 	uint8_t values[];
 } __packed;
 
-/** Define a variant of @ref tdf_algorithm_class_time_series with a constant length */
+/** Define a variant of tdf_algorithm_class_time_series with a constant length */
 #define TDF_ALGORITHM_CLASS_TIME_SERIES_VAR(_name, _count)                                         \
 	struct _name {                                                                             \
 		uint32_t algorithm_id;                                                             \
@@ -463,7 +463,7 @@ struct tdf_lte_tac_cells {
 	struct tdf_struct_lte_cell_neighbour neighbours[];
 } __packed;
 
-/** Define a variant of @ref tdf_lte_tac_cells with a constant length */
+/** Define a variant of tdf_lte_tac_cells with a constant length */
 #define TDF_LTE_TAC_CELLS_VAR(_name, _count)                                                       \
 	struct _name {                                                                             \
 		struct tdf_struct_lte_cell_id_global cell;                                         \
@@ -581,7 +581,7 @@ struct tdf_annotation {
 	char event[];
 } __packed;
 
-/** Define a variant of @ref tdf_annotation with a constant length */
+/** Define a variant of tdf_annotation with a constant length */
 #define TDF_ANNOTATION_VAR(_name, _count)                                                          \
 	struct _name {                                                                             \
 		uint32_t timestamp;                                                                \
@@ -598,7 +598,7 @@ struct tdf_lora_rx {
 	uint8_t payload[];
 } __packed;
 
-/** Define a variant of @ref tdf_lora_rx with a constant length */
+/** Define a variant of tdf_lora_rx with a constant length */
 #define TDF_LORA_RX_VAR(_name, _count)                                                             \
 	struct _name {                                                                             \
 		int8_t snr;                                                                        \
@@ -606,7 +606,7 @@ struct tdf_lora_rx {
 		uint8_t payload[_count];                                                           \
 	} __packed;
 
-/** Define a variant of @ref tdf_lora_tx with a constant length */
+/** Define a variant of tdf_lora_tx with a constant length */
 #define TDF_LORA_TX_VAR(_name, _count)                                                             \
 	struct _name {                                                                             \
 		uint8_t payload[_count];                                                           \
