@@ -111,6 +111,155 @@ ZTEST(tdf_data_logger, test_multi)
 	net_buf_unref(buf);
 }
 
+ZTEST(tdf_data_logger, test_index_rollover)
+{
+	const struct device *logger = DEVICE_DT_GET(DT_NODELABEL(tdf_logger_epacket));
+	struct k_fifo *sent_queue = epacket_dummmy_transmit_fifo_get();
+	uint8_t tdf_data[128];
+	struct net_buf *buf;
+	uint64_t time = 100000000;
+	int idx = 0;
+	int rc;
+
+	/* 44 bytes (12 overhead, 8 * 4 data) */
+	rc = tdf_data_logger_log_core_dev(logger, TDF_RANDOM, 4, 8, TDF_DATA_FORMAT_IDX_ARRAY, time,
+					  idx, tdf_data);
+	zassert_equal(0, rc);
+	zassert_is_null(k_fifo_get(sent_queue, K_MSEC(1)));
+	idx += 8;
+
+	/* 38 bytes (6 overhead, 8 * 4 data), should be split across blocks */
+	time = 0;
+	rc = tdf_data_logger_log_core_dev(logger, TDF_RANDOM, 4, 8, TDF_DATA_FORMAT_IDX_ARRAY, time,
+					  idx, tdf_data);
+	zassert_equal(0, rc);
+
+	/* We expect 3 separate chunks logged across the two buffers.
+	 * Only the first one should have a timestamp, but indicies should be consistently
+	 * increasing.
+	 */
+	struct tdf_buffer_state state;
+	struct tdf_parsed parsed;
+	int cnt = 0;
+
+	buf = k_fifo_get(sent_queue, K_MSEC(1));
+	zassert_not_null(buf);
+	net_buf_pull(buf, sizeof(struct epacket_dummy_frame));
+
+	tdf_parse_start(&state, buf->data, buf->len);
+	rc = tdf_parse(&state, &parsed);
+	zassert_equal(0, rc);
+	zassert_equal(TDF_RANDOM, parsed.tdf_id);
+	zassert_equal(TDF_DATA_FORMAT_IDX_ARRAY, parsed.data_type);
+	zassert_equal(100000000, parsed.time);
+	zassert_equal(4, parsed.tdf_len);
+	zassert_equal(8, parsed.tdf_num);
+	zassert_equal(cnt, parsed.base_idx);
+	cnt += parsed.tdf_num;
+
+	rc = tdf_parse(&state, &parsed);
+	zassert_equal(0, rc);
+	zassert_equal(TDF_RANDOM, parsed.tdf_id);
+	zassert_equal(TDF_DATA_FORMAT_IDX_ARRAY, parsed.data_type);
+	zassert_equal(0, parsed.time);
+	zassert_equal(4, parsed.tdf_len);
+	zassert_equal(cnt, parsed.base_idx);
+	cnt += parsed.tdf_num;
+
+	rc = tdf_parse(&state, &parsed);
+	zassert_equal(-ENOMEM, rc);
+	net_buf_unref(buf);
+
+	/* Second packet should have the remaining TDFs */
+	rc = tdf_data_logger_flush_dev(logger);
+	zassert_equal(0, rc);
+	buf = k_fifo_get(sent_queue, K_MSEC(1));
+	zassert_not_null(buf);
+	net_buf_pull(buf, sizeof(struct epacket_dummy_frame));
+
+	tdf_parse_start(&state, buf->data, buf->len);
+	rc = tdf_parse(&state, &parsed);
+	zassert_equal(0, rc);
+	zassert_equal(TDF_RANDOM, parsed.tdf_id);
+	zassert_equal(TDF_DATA_FORMAT_IDX_ARRAY, parsed.data_type);
+	zassert_equal(0, parsed.time);
+	zassert_equal(4, parsed.tdf_len);
+	zassert_equal(cnt, parsed.base_idx);
+	cnt += parsed.tdf_num;
+
+	net_buf_unref(buf);
+
+	rc = tdf_data_logger_flush_dev(logger);
+	zassert_equal(0, rc);
+	buf = k_fifo_get(sent_queue, K_MSEC(1));
+	zassert_is_null(buf);
+
+	/* Expected total number of readings */
+	zassert_equal(16, cnt);
+}
+
+ZTEST(tdf_data_logger, test_index_time_rollover_reset)
+{
+	const struct device *logger = DEVICE_DT_GET(DT_NODELABEL(tdf_logger_epacket));
+	struct k_fifo *sent_queue = epacket_dummmy_transmit_fifo_get();
+	uint8_t tdf_data[128];
+	struct net_buf *buf;
+	uint64_t time = 100000000;
+	int rc;
+
+	/* 92 bytes (12 overhead, 20 * 4 data) */
+	rc = tdf_data_logger_log_core_dev(logger, TDF_RANDOM, 4, 20, TDF_DATA_FORMAT_IDX_ARRAY,
+					  time, 0, tdf_data);
+	zassert_equal(0, rc);
+	buf = k_fifo_get(sent_queue, K_MSEC(1));
+	zassert_not_null(buf);
+	net_buf_pull(buf, sizeof(struct epacket_dummy_frame));
+
+	struct tdf_buffer_state state;
+	struct tdf_parsed parsed;
+	int cnt = 0;
+
+	/* First buffer has timestamp */
+	tdf_parse_start(&state, buf->data, buf->len);
+	rc = tdf_parse(&state, &parsed);
+	zassert_equal(0, rc);
+	zassert_equal(TDF_RANDOM, parsed.tdf_id);
+	zassert_equal(TDF_DATA_FORMAT_IDX_ARRAY, parsed.data_type);
+	zassert_equal(100000000, parsed.time);
+	zassert_equal(4, parsed.tdf_len);
+	zassert_equal(cnt, parsed.base_idx);
+	cnt += parsed.tdf_num;
+	net_buf_unref(buf);
+
+	rc = tdf_data_logger_flush_dev(logger);
+	zassert_equal(0, rc);
+	buf = k_fifo_get(sent_queue, K_MSEC(1));
+	zassert_not_null(buf);
+	net_buf_pull(buf, sizeof(struct epacket_dummy_frame));
+
+	/* Second buffer does not have the timestamp */
+	tdf_parse_start(&state, buf->data, buf->len);
+	rc = tdf_parse(&state, &parsed);
+	zassert_equal(0, rc);
+	zassert_equal(TDF_RANDOM, parsed.tdf_id);
+	zassert_equal(TDF_DATA_FORMAT_IDX_ARRAY, parsed.data_type);
+	zassert_equal(0, parsed.time);
+	zassert_equal(4, parsed.tdf_len);
+	zassert_equal(cnt, parsed.base_idx);
+	cnt += parsed.tdf_num;
+
+	net_buf_unref(buf);
+
+	/* Cleanup */
+	rc = tdf_data_logger_flush_dev(logger);
+	zassert_equal(0, rc);
+	buf = k_fifo_get(sent_queue, K_MSEC(1));
+	zassert_is_null(buf);
+
+	/* Expected total number of readings */
+	zassert_equal(20, cnt);
+}
+
 ZTEST(tdf_data_logger, test_auto_flush)
 {
 	const struct device *logger = DEVICE_DT_GET(DT_NODELABEL(tdf_logger_epacket));

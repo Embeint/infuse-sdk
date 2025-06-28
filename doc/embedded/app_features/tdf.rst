@@ -199,6 +199,33 @@ of diffs present and the mode of the diff encoding.
 
    Encoding data in the :c:enumerator:`TDF_ARRAY_DIFF` format requires :kconfig:option:`CONFIG_TDF_DIFF`.
 
+Index Array
+-----------
+
+For high-frequency data sets, the accuracy of timestamping individual samples (logged individually or in a
+:c:enumerator:`TDF_ARRAY_TIME`) starts to degrade as the sample period approaches the timestamp resolution
+(~15 us, ``1 / 65536``). An example of this is raw audio samples, which might be sampled at 48 kHz
+(sample period 20 us). Using the per-sample timestamp options previously described would result in decoded
+samples not having a consistent period, despite the input data being sampled at a consistent frequency. This
+problem only gets worse as the frequency increases further.
+
+To enable these use-cases, TDF data can be stored as an "Index Array", where instead of attempting to record
+timestamps for each individual sample, only the timestamp of the first sample is recorded (accurate to the
+15 us resolution), and all future samples are timestamped according to the sample index. This mode does not
+attempt to store the actual sampling frequency.
+
+When a reading is of this type, an additional 3 byte header is present after the timestamp structure.
+
+.. code-block:: c
+
+   struct tdf_idx_array_header {
+      uint8_t num;
+      uint16_t sample_idx;
+   } __packed;
+
+The ``sample_idx`` field stores the current (rotating 16 bit) sample index of the recording, with index 0
+corresponding to the first sample.
+
 Size
 ====
 
@@ -219,12 +246,12 @@ reading data.
    * - Number TDFs
      - ``1``
 
-Time Array
-----------
+Time/Index Array
+----------------
 
-When the array type is :c:enumerator:`TDF_ARRAY_TIME`, the field is the size of a single reading
-in the array. To obtain the complete payload size it must be multiplied with the ``num`` field in
-the time array header.
+When the array type is :c:enumerator:`TDF_ARRAY_TIME` or :c:enumerator:`TDF_ARRAY_IDX`, the field is
+the size of a single reading in the array. To obtain the complete payload size it must be multiplied
+with the ``num`` field in the time array header.
 
 .. list-table::
 
@@ -347,6 +374,53 @@ Logging an array of TDFs, evenly spaced in time.
    tdf_data_logger_log_array(TDF_DATA_LOGGER_BT_ADV, TDF_ACC_4G, sizeof(readings[0]), ARRAY_SIZE(readings),
                              base_time, reading_period, readings);
 
+
+Index Array
+===========
+
+Logging an array of high-frequency TDFs, evenly spaced in time.
+
+.. warning::
+
+   It is important that the timestamp provided to TDF logging functions in array mode is the timestamp
+   of the *FIRST* reading, not the *LAST* reading.
+
+.. code-block:: c
+   :caption: Low-Level API
+
+   static uint8_t buffer[256];
+   struct tdf_buffer_state state;
+   struct tdf_acc_4g readings[] = {...};
+   uint64_t base_time = epoch_time_now() - ((ARRAY_SIZE(readings) - 1) * reading_period);
+   uint8_t remaining = ARRAY_SIZE(readings);
+   uint8_t to_log, chunk_size = 16;
+   int idx = 0;
+
+   net_buf_simple_init_with_data(&state.buf, buffer, sizeof(buffer));
+   tdf_buffer_state_reset(&state);
+
+   while(remaining) {
+        to_log = MIN(remaining, chunk_size);
+        tdf_add_core(&state, TDF_ACC_4G, sizeof(reading), to_log, base_time, idx,
+                     readings + idx, TDF_DATA_FORMAT_IDX_ARRAY);
+        /* Only the first sample gets an explicit timestamp */
+        base_log = 0;
+        idx += to_log;
+   }
+
+.. code-block:: c
+   :caption: :ref:`tdf_data_logger_api` API
+
+   struct tdf_acc_4g readings[] = {...};
+   uint64_t base_time = epoch_time_now() - ((ARRAY_SIZE(readings) - 1) * reading_period);
+   int idx = 0;
+
+   for (int i = 0; i < num_buffers; i++) {
+      tdf_data_logger_log_core(TDF_DATA_LOGGER_BT_ADV, TDF_ACC_4G, sizeof(readings[0]), ARRAY_SIZE(readings),
+                              TDF_DATA_FORMAT_IDX_ARRAY, base_time, idx, readings);
+      idx += ARRAY_SIZE(readings);
+      base_time = 0;
+   }
 
 Embedded Parsing
 ****************

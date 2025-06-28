@@ -41,6 +41,8 @@ enum tdf_data_format {
 	TDF_DATA_FORMAT_SINGLE,
 	/** Time array with period */
 	TDF_DATA_FORMAT_TIME_ARRAY,
+	/** Array based on sample indicies */
+	TDF_DATA_FORMAT_IDX_ARRAY,
 	/** 16 bit data, 8 bit diffs */
 	TDF_DATA_FORMAT_DIFF_ARRAY_16_8,
 	/** 32 bit data, 8 bit diffs */
@@ -68,11 +70,14 @@ struct tdf_parsed {
 		struct {
 			/** Number of diffs */
 			uint8_t num;
-
 		} diff_info;
 	};
-	/** Time period between TDFs */
-	uint32_t period;
+	union {
+		/** Time period between TDFs */
+		uint32_t period;
+		/** Index of first sample for @ref TDF_DATA_FORMAT_IDX_ARRAY */
+		uint16_t base_idx;
+	};
 	/** TDF data */
 	void *data;
 };
@@ -87,6 +92,7 @@ enum tdf_flags {
 	TDF_ARRAY_NONE = 0x0000,
 	TDF_ARRAY_TIME = 0x1000,
 	TDF_ARRAY_DIFF = 0x2000,
+	TDF_ARRAY_IDX = 0x3000,
 	/** Masks */
 	TDF_FLAGS_MASK = 0xF000,
 	TDF_TIMESTAMP_MASK = 0xC000,
@@ -148,7 +154,8 @@ static inline void tdf_buffer_state_reset(struct tdf_buffer_state *state)
  * @param tdf_len Length of a single TDF
  * @param tdf_num Number of TDFs to try to add
  * @param time Epoch time associated with the first TDF. 0 for no timestamp.
- * @param period Epoch time between tdfs when @a tdf_num > 0.
+ * @param idx_period Index of first sample if @a format == TDF_DATA_FORMAT_IDX_ARRAY
+ *                   Epoch time between tdfs when @a tdf_num > 0 otherwise.
  * @param data TDF data
  * @param format Data encoding format
  *
@@ -158,7 +165,7 @@ static inline void tdf_buffer_state_reset(struct tdf_buffer_state *state)
  * @retval -ENOMEM Insufficient space to add any TDFs to buffer
  */
 int tdf_add_core(struct tdf_buffer_state *state, uint16_t tdf_id, uint8_t tdf_len, uint8_t tdf_num,
-		 uint64_t time, uint32_t period, const void *data, enum tdf_data_format format);
+		 uint64_t time, uint32_t idx_period, const void *data, enum tdf_data_format format);
 
 /**
  * @brief Add TDFs to memory buffer
