@@ -612,6 +612,22 @@ struct tdf_lora_rx {
 		uint8_t payload[_count];                                                           \
 	} __packed;
 
+/** Sample frequency metadata for a TDF_DATA_FORMAT_IDX_ARRAY array */
+struct tdf_idx_array_freq {
+	/** TDF ID that is being described */
+	uint16_t tdf_id;
+	/** Frequency of samples in Hertz */
+	uint32_t frequency;
+} __packed;
+
+/** Sample frequency metadata for a TDF_DATA_FORMAT_IDX_ARRAY array */
+struct tdf_idx_array_period {
+	/** TDF ID that is being described */
+	uint16_t tdf_id;
+	/** Period between samples in nanoseconds */
+	uint32_t period;
+} __packed;
+
 /** Example array type */
 struct tdf_array_type {
 	/** I am an array of length 4 */
@@ -704,6 +720,10 @@ enum tdf_builtin_id {
 	TDF_LORA_RX = 44,
 	/** Transmitted LoRa packet */
 	TDF_LORA_TX = 45,
+	/** Sample frequency metadata for a TDF_DATA_FORMAT_IDX_ARRAY array */
+	TDF_IDX_ARRAY_FREQ = 46,
+	/** Sample frequency metadata for a TDF_DATA_FORMAT_IDX_ARRAY array */
+	TDF_IDX_ARRAY_PERIOD = 47,
 	/** Example array type */
 	TDF_ARRAY_TYPE = 100,
 	/** End of builtin TDF range */
@@ -753,6 +773,8 @@ enum tdf_builtin_id {
 #define _TDF_ADC_RAW_32_TYPE                  struct tdf_adc_raw_32
 #define _TDF_ANNOTATION_TYPE                  struct tdf_annotation
 #define _TDF_LORA_RX_TYPE                     struct tdf_lora_rx
+#define _TDF_IDX_ARRAY_FREQ_TYPE              struct tdf_idx_array_freq
+#define _TDF_IDX_ARRAY_PERIOD_TYPE            struct tdf_idx_array_period
 #define _TDF_ARRAY_TYPE_TYPE                  struct tdf_array_type
 
 /** Size of builtin TDF definitions */
@@ -798,6 +820,8 @@ enum tdf_builtin_size {
 	_TDF_ADC_RAW_32_SIZE = sizeof(struct tdf_adc_raw_32),
 	_TDF_ANNOTATION_SIZE = sizeof(struct tdf_annotation),
 	_TDF_LORA_RX_SIZE = sizeof(struct tdf_lora_rx),
+	_TDF_IDX_ARRAY_FREQ_SIZE = sizeof(struct tdf_idx_array_freq),
+	_TDF_IDX_ARRAY_PERIOD_SIZE = sizeof(struct tdf_idx_array_period),
 	_TDF_ARRAY_TYPE_SIZE = sizeof(struct tdf_array_type),
 };
 
