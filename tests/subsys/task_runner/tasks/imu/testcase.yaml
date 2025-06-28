@@ -2,9 +2,12 @@ common:
   tags: imu
   min_flash: 64
   min_ram: 32
+  required_snippets:
+    - infuse
+  integration_platforms:
+    - mps2/an385
 tests:
-  task_runner.tasks.imu:
-    required_snippets:
-      - infuse
-    integration_platforms:
-      - mps2/an385
+  task_runner.tasks.imu: {}
+  task_runner.tasks.imu.idx_array:
+    extra_configs:
+      - CONFIG_TASK_RUNNER_TASK_IMU_LOG_IDX_ARRAY=y

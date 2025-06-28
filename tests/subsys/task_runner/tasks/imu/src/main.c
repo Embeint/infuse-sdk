@@ -85,12 +85,14 @@ ZTEST(task_imu, test_invalid_config)
 	zassert_equal(0, k_thread_join(thread, K_NO_WAIT));
 }
 
-static void expect_logging(uint8_t range)
+static void expect_logging(uint8_t range, bool expect_idx_metadata)
 {
 	struct k_fifo *tx_queue = epacket_dummmy_transmit_fifo_get();
 	struct net_buf *pkt = k_fifo_get(tx_queue, K_MSEC(10));
+	struct tdf_idx_array_period *idx_array;
 	struct tdf_parsed tdf;
 	uint16_t expected_tdf;
+	int rc;
 
 	switch (range) {
 	case 2:
@@ -109,7 +111,29 @@ static void expect_logging(uint8_t range)
 
 	zassert_not_null(pkt);
 	net_buf_pull(pkt, sizeof(struct epacket_dummy_frame));
-	zassert_equal(0, tdf_parse_find_in_buf(pkt->data, pkt->len, expected_tdf, &tdf));
+	rc = tdf_parse_find_in_buf(pkt->data, pkt->len, expected_tdf, &tdf);
+	zassert_equal(0, rc);
+	if (IS_ENABLED(CONFIG_TASK_RUNNER_TASK_IMU_LOG_IDX_ARRAY)) {
+		zassert_equal(TDF_DATA_FORMAT_IDX_ARRAY, tdf.data_type);
+		if (expect_idx_metadata) {
+			zassert_not_equal(0, tdf.time);
+		} else {
+			zassert_equal(0, tdf.time);
+		}
+	} else {
+		zassert_true((TDF_DATA_FORMAT_TIME_ARRAY == tdf.data_type) ||
+			     (TDF_DATA_FORMAT_SINGLE == tdf.data_type));
+	}
+	rc = tdf_parse_find_in_buf(pkt->data, pkt->len, TDF_IDX_ARRAY_PERIOD, &tdf);
+	if (expect_idx_metadata) {
+		zassert_equal(0, rc);
+		idx_array = tdf.data;
+		zassert_equal(expected_tdf, idx_array->tdf_id);
+		zassert_not_equal(0, idx_array->period);
+	} else {
+		zassert_equal(-ENOMEM, rc);
+	}
+
 	net_buf_unref(pkt);
 }
 
@@ -119,6 +143,7 @@ static void test_imu(uint8_t range, uint16_t rate, uint16_t num_samples, uint8_t
 	struct k_fifo *tx_queue = epacket_dummmy_transmit_fifo_get();
 	const struct imu_magnitude_array *magnitudes;
 	const struct imu_sample_array *samples;
+	bool idx_metadata;
 	uint16_t one_g;
 	k_tid_t thread;
 
@@ -172,7 +197,9 @@ static void test_imu(uint8_t range, uint16_t rate, uint16_t num_samples, uint8_t
 		if (log == 0) {
 			zassert_is_null(k_fifo_get(tx_queue, K_MSEC(1)));
 		} else {
-			expect_logging(range);
+			idx_metadata =
+				IS_ENABLED(CONFIG_TASK_RUNNER_TASK_IMU_LOG_IDX_ARRAY) && i == 0;
+			expect_logging(range, idx_metadata);
 		}
 	}
 

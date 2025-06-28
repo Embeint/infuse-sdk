@@ -6,8 +6,11 @@ common:
   build_only: true
   required_snippets:
     - infuse
+  integration_platforms:
+    - thingy53/nrf5340/cpuapp
+  tags: app
 tests:
-  sample.task_runner.imu:
-    tags: app
-    integration_platforms:
-      - thingy53/nrf5340/cpuapp
+  sample.task_runner.imu: {}
+  sample.task_runner.imu.idx_array:
+    extra_configs:
+      - CONFIG_TASK_RUNNER_TASK_IMU_LOG_IDX_ARRAY=y
