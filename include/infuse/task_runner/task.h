@@ -282,21 +282,22 @@ static inline bool task_schedule_tdf_requested(const struct task_schedule *sched
  * @param tdf_num Number of TDFs to log
  * @param format TDF encoding mode
  * @param time Epoch time associated with the first TDF. 0 for no timestamp.
- * @param period Time period between the TDF samples
+ * @param idx_period Index of first sample if @a format == TDF_DATA_FORMAT_IDX_ARRAY
+ *                   Epoch time between tdfs when @a tdf_num > 0 otherwise.
  * @param data TDF data array
  */
 static inline void task_schedule_tdf_log_core(const struct task_schedule *schedule,
 					      uint8_t tdf_mask, uint16_t tdf_id, uint8_t tdf_len,
 					      uint8_t tdf_num, enum tdf_data_format format,
-					      uint64_t time, uint32_t period, const void *data)
+					      uint64_t time, uint32_t idx_period, const void *data)
 {
 	if (schedule->task_logging[0].tdf_mask & tdf_mask) {
 		tdf_data_logger_log_core(schedule->task_logging[0].loggers, tdf_id, tdf_len,
-					 tdf_num, format, time, period, data);
+					 tdf_num, format, time, idx_period, data);
 	}
 	if (schedule->task_logging[1].tdf_mask & tdf_mask) {
 		tdf_data_logger_log_core(schedule->task_logging[1].loggers, tdf_id, tdf_len,
-					 tdf_num, format, time, period, data);
+					 tdf_num, format, time, idx_period, data);
 	}
 }
 

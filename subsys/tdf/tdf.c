@@ -28,12 +28,16 @@ struct tdf_array_header {
 		uint8_t num;
 		uint8_t diff_info;
 	};
-	/**
-	 * When the TDF_ARRAY_TIME_PERIOD_SCALED bit is set, the
-	 * TDF_ARRAY_TIME_PERIOD_VAL_MASK value is scaled by
-	 * TDF_ARRAY_TIME_SCALE_FACTOR
-	 */
-	uint16_t period;
+	union {
+		/**
+		 * When the TDF_ARRAY_TIME_PERIOD_SCALED bit is set, the
+		 * TDF_ARRAY_TIME_PERIOD_VAL_MASK value is scaled by
+		 * TDF_ARRAY_TIME_SCALE_FACTOR
+		 */
+		uint16_t period;
+		/** Index of the first sample in the array for TDF_ARRAY_IDX */
+		uint16_t sample_num;
+	};
 } __packed;
 
 enum tdf_diff_type {
@@ -158,7 +162,7 @@ static int tdf_num_valid_diffs(enum tdf_data_format diff_type, uint8_t tdf_len, 
 #endif /* CONFIG_TDF_DIFF */
 
 int tdf_add_core(struct tdf_buffer_state *state, uint16_t tdf_id, uint8_t tdf_len, uint8_t tdf_num,
-		 uint64_t time, uint32_t period, const void *data, enum tdf_data_format format)
+		 uint64_t time, uint32_t idx_period, const void *data, enum tdf_data_format format)
 {
 	struct tdf_array_header *array_header_ptr = NULL;
 	uint16_t buffer_remaining = net_buf_simple_tailroom(&state->buf);
@@ -171,6 +175,7 @@ int tdf_add_core(struct tdf_buffer_state *state, uint16_t tdf_id, uint8_t tdf_le
 	uint16_t timestamp_header = 0;
 	int64_t timestamp_delta = 0;
 	uint16_t tdf_header = TDF_TIMESTAMP_NONE;
+	bool is_idx = format == TDF_DATA_FORMAT_IDX_ARRAY;
 	bool is_diff = false;
 
 #ifdef CONFIG_TDF_DIFF
@@ -184,12 +189,18 @@ int tdf_add_core(struct tdf_buffer_state *state, uint16_t tdf_id, uint8_t tdf_le
 		  (format == TDF_DATA_FORMAT_DIFF_ARRAY_32_16);
 #else
 	/* Override requested diff */
-	format = TDF_DATA_FORMAT_TIME_ARRAY;
+	if (!is_idx) {
+		format = TDF_DATA_FORMAT_TIME_ARRAY;
+	}
 #endif /* CONFIG_TDF_DIFF */
 
-	/* Invalid TDF ID or period */
+	/* Invalid TDF ID or idx_period */
 	if ((tdf_id == 0) || (tdf_id >= 4095) || (tdf_len == 0) || (tdf_num == 0) ||
-	    (period > TDF_ARRAY_TIME_PERIOD_MAX) || (format >= TDF_DATA_FORMAT_INVALID)) {
+	    (format >= TDF_DATA_FORMAT_INVALID)) {
+		return -EINVAL;
+	}
+	/* Invalid idx_period */
+	if ((format != TDF_DATA_FORMAT_IDX_ARRAY) && (idx_period > TDF_ARRAY_TIME_PERIOD_MAX)) {
 		return -EINVAL;
 	}
 	/* TDF can never fit on the buffer */
@@ -197,7 +208,7 @@ int tdf_add_core(struct tdf_buffer_state *state, uint16_t tdf_id, uint8_t tdf_le
 		return -ENOSPC;
 	}
 
-	/* Evaluate headers sizes assuming all data will fit */
+	/* Evaluate header sizes assuming all data will fit */
 	if (time) {
 		if (state->time) {
 			timestamp_delta = time - state->time;
@@ -243,7 +254,7 @@ int tdf_add_core(struct tdf_buffer_state *state, uint16_t tdf_id, uint8_t tdf_le
 		format = TDF_DATA_FORMAT_SINGLE;
 	}
 #endif /* CONFIG_TDF_DIFF */
-	if (tdf_num > 1) {
+	if ((tdf_num > 1) || is_idx) {
 		array_header = sizeof(struct tdf_array_header);
 	} else {
 		format = TDF_DATA_FORMAT_SINGLE;
@@ -283,7 +294,7 @@ int tdf_add_core(struct tdf_buffer_state *state, uint16_t tdf_id, uint8_t tdf_le
 #endif /* CONFIG_TDF_DIFF */
 
 		/* Header may contain bytes we don't need */
-		if ((can_fit == 0) && (tdf_num > 1)) {
+		if ((can_fit == 0) && (tdf_num > 1) && !is_idx) {
 			/* Reclaim the time array header space and re-evaluate */
 			payload_space += sizeof(struct tdf_array_header);
 			can_fit = payload_space / tdf_len;
@@ -328,17 +339,28 @@ int tdf_add_core(struct tdf_buffer_state *state, uint16_t tdf_id, uint8_t tdf_le
 		break;
 	}
 	/* Add array header */
-	if (tdf_num > 1) {
+	if ((tdf_num > 1) || is_idx) {
 		array_header_ptr = net_buf_simple_add(&state->buf, sizeof(struct tdf_array_header));
 
-		header->id_flags |= is_diff ? TDF_ARRAY_DIFF : TDF_ARRAY_TIME;
-		array_header_ptr->num = tdf_num;
-		if (period > TDF_ARRAY_TIME_PERIOD_VAL_MASK) {
-			array_header_ptr->period = TDF_ARRAY_TIME_PERIOD_SCALED |
-						   (period / TDF_ARRAY_TIME_SCALE_FACTOR);
+		if (is_idx) {
+			header->id_flags |= TDF_ARRAY_IDX;
+			/* Start sample index saved directly. 16 bit rollover is fine */
+			array_header_ptr->sample_num = (uint16_t)idx_period;
 		} else {
-			array_header_ptr->period = period;
+			if (is_diff) {
+				header->id_flags |= TDF_ARRAY_DIFF;
+			} else {
+				header->id_flags |= TDF_ARRAY_TIME;
+			}
+			if (idx_period > TDF_ARRAY_TIME_PERIOD_VAL_MASK) {
+				array_header_ptr->period =
+					TDF_ARRAY_TIME_PERIOD_SCALED |
+					(idx_period / TDF_ARRAY_TIME_SCALE_FACTOR);
+			} else {
+				array_header_ptr->period = idx_period;
+			}
 		}
+		array_header_ptr->num = tdf_num;
 	}
 
 #ifdef CONFIG_TDF_DIFF
@@ -473,15 +495,23 @@ int tdf_parse(struct tdf_buffer_state *state, struct tdf_parsed *parsed)
 			parsed->data_type = TDF_DATA_FORMAT_TIME_ARRAY;
 			parsed->tdf_num = t_hdr->num;
 			data_len = (uint16_t)parsed->tdf_len * parsed->tdf_num;
+		} else if (array_flags == TDF_ARRAY_IDX) {
+			parsed->data_type = TDF_DATA_FORMAT_IDX_ARRAY;
+			parsed->tdf_num = t_hdr->num;
+			data_len = (uint16_t)parsed->tdf_len * parsed->tdf_num;
 		} else {
 			return -EINVAL;
 		}
 
-		if (t_hdr->period & TDF_ARRAY_TIME_PERIOD_SCALED) {
-			parsed->period = TDF_ARRAY_TIME_SCALE_FACTOR *
-					 (t_hdr->period & TDF_ARRAY_TIME_PERIOD_VAL_MASK);
+		if (array_flags == TDF_ARRAY_IDX) {
+			parsed->base_idx = t_hdr->sample_num;
 		} else {
-			parsed->period = t_hdr->period;
+			if (t_hdr->period & TDF_ARRAY_TIME_PERIOD_SCALED) {
+				parsed->period = TDF_ARRAY_TIME_SCALE_FACTOR *
+						 (t_hdr->period & TDF_ARRAY_TIME_PERIOD_VAL_MASK);
+			} else {
+				parsed->period = t_hdr->period;
+			}
 		}
 	} else {
 		parsed->data_type = TDF_DATA_FORMAT_SINGLE;

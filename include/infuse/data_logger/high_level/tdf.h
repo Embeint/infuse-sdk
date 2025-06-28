@@ -73,7 +73,8 @@ enum tdf_data_logger_mask {
  * @param tdf_num Number of TDFs to add
  * @param format TDF data encoding format
  * @param time Epoch time associated with the first TDF. 0 for no timestamp.
- * @param period Time period between the TDF samples
+ * @param idx_period Index of first sample if @a format == TDF_DATA_FORMAT_IDX_ARRAY
+ *                   Epoch time between tdfs when @a tdf_num > 0 otherwise.
  * @param data TDF data array
  *
  * @retval 0 On success
@@ -81,7 +82,7 @@ enum tdf_data_logger_mask {
  */
 int tdf_data_logger_log_core_dev(const struct device *dev, uint16_t tdf_id, uint8_t tdf_len,
 				 uint8_t tdf_num, enum tdf_data_format format, uint64_t time,
-				 uint32_t period, const void *data);
+				 uint32_t idx_period, const void *data);
 
 /**
  * @brief Add multiple TDFs to multiple data loggers
@@ -92,12 +93,13 @@ int tdf_data_logger_log_core_dev(const struct device *dev, uint16_t tdf_id, uint
  * @param tdf_num Number of TDFs to add
  * @param format TDF data encoding format
  * @param time Epoch time associated with the first TDF. 0 for no timestamp.
- * @param period Time period between the TDF samples
+ * @param idx_period Index of first sample if @a format == TDF_DATA_FORMAT_IDX_ARRAY
+ *                   Epoch time between tdfs when @a tdf_num > 0 otherwise.
  * @param data TDF data array
  */
 void tdf_data_logger_log_core(uint8_t logger_mask, uint16_t tdf_id, uint8_t tdf_len,
 			      uint8_t tdf_num, enum tdf_data_format format, uint64_t time,
-			      uint32_t period, const void *data);
+			      uint32_t idx_period, const void *data);
 
 /**
  * @brief Add multiple TDFs to a data logger

@@ -28,8 +28,9 @@ static uint64_t base_time;
 
 #define __DEBUG__ 0
 
-static void run_test_case(struct tdf_test_case *tdfs, size_t num_tdfs)
+static void run_test_case(struct tdf_test_case *tdfs, size_t num_tdfs, bool idx_array)
 {
+	enum tdf_data_format expected;
 	struct tdf_buffer_state state;
 	struct tdf_buffer_state parser;
 	struct tdf_parsed parsed;
@@ -43,8 +44,17 @@ static void run_test_case(struct tdf_test_case *tdfs, size_t num_tdfs)
 	/* Add the requested TDFs */
 	for (int i = 0; i < num_tdfs; i++) {
 		t = &tdfs[i];
-		rc = tdf_add(&state, t->p.tdf_id, t->p.tdf_len, t->p.tdf_num, t->p.time,
-			     t->p.period, input_buffer);
+		if (idx_array) {
+			rc = tdf_add_core(&state, t->p.tdf_id, t->p.tdf_len, t->p.tdf_num,
+					  t->p.time, i, input_buffer, TDF_DATA_FORMAT_IDX_ARRAY);
+			if (t->p.tdf_num == 1) {
+				/* We expect the header to always be present on IDX_ARRAY */
+				total_size += 3;
+			}
+		} else {
+			rc = tdf_add(&state, t->p.tdf_id, t->p.tdf_len, t->p.tdf_num, t->p.time,
+				     t->p.period, input_buffer);
+		}
 		total_size += t->expected_size;
 		zassert_equal(t->expected_rc, rc);
 		zassert_equal(total_size, state.buf.len);
@@ -70,15 +80,20 @@ static void run_test_case(struct tdf_test_case *tdfs, size_t num_tdfs)
 			zassert_equal(t->p.time, parsed.time);
 			zassert_equal(t->p.tdf_id, parsed.tdf_id);
 			zassert_equal(t->p.tdf_len, parsed.tdf_len);
-			if (t->expected_rc > 1) {
-				zassert_equal(t->p.period, parsed.period);
-			} else {
-				zassert_equal(0, parsed.period);
-			}
 			zassert_equal(t->expected_rc, parsed.tdf_num);
-			zassert_equal(t->expected_rc > 1 ? TDF_DATA_FORMAT_TIME_ARRAY
-							 : TDF_DATA_FORMAT_SINGLE,
-				      parsed.data_type);
+			if (idx_array) {
+				zassert_equal(i, parsed.base_idx);
+				expected = TDF_DATA_FORMAT_IDX_ARRAY;
+			} else {
+				if (t->expected_rc > 1) {
+					zassert_equal(t->p.period, parsed.period);
+				} else {
+					zassert_equal(0, parsed.period);
+				}
+				expected = t->expected_rc > 1 ? TDF_DATA_FORMAT_TIME_ARRAY
+							      : TDF_DATA_FORMAT_SINGLE;
+			}
+			zassert_equal(expected, parsed.data_type);
 			zassert_mem_equal(input_buffer, parsed.data, parsed.tdf_len);
 #if __DEBUG__
 			printk("TDF %d:\n", i);
@@ -124,7 +139,8 @@ ZTEST(tdf, test_single_no_timestamp)
 			.expected_rc = 1,
 		},
 	};
-	run_test_case(tests, ARRAY_SIZE(tests));
+	run_test_case(tests, ARRAY_SIZE(tests), false);
+	run_test_case(tests, ARRAY_SIZE(tests), true);
 }
 
 ZTEST(tdf, test_single_relative)
@@ -176,7 +192,7 @@ ZTEST(tdf, test_single_relative)
 			.expected_rc = -ENOMEM,
 		},
 	};
-	run_test_case(tests, ARRAY_SIZE(tests));
+	run_test_case(tests, ARRAY_SIZE(tests), false);
 }
 
 ZTEST(tdf, test_single_extended_jump)
@@ -206,7 +222,8 @@ ZTEST(tdf, test_single_extended_jump)
 			.expected_rc = 1,
 		},
 	};
-	run_test_case(tests, ARRAY_SIZE(tests));
+	run_test_case(tests, ARRAY_SIZE(tests), false);
+	run_test_case(tests, ARRAY_SIZE(tests), true);
 }
 
 ZTEST(tdf, test_single_jump_backwards)
@@ -236,7 +253,8 @@ ZTEST(tdf, test_single_jump_backwards)
 			.expected_rc = 1,
 		},
 	};
-	run_test_case(tests, ARRAY_SIZE(tests));
+	run_test_case(tests, ARRAY_SIZE(tests), false);
+	run_test_case(tests, ARRAY_SIZE(tests), true);
 }
 
 ZTEST(tdf, test_single_large_jump)
@@ -277,7 +295,7 @@ ZTEST(tdf, test_single_large_jump)
 			.expected_rc = -ENOMEM,
 		},
 	};
-	run_test_case(tests, ARRAY_SIZE(tests));
+	run_test_case(tests, ARRAY_SIZE(tests), false);
 }
 
 ZTEST(tdf, test_single_large_jump_back)
@@ -318,7 +336,7 @@ ZTEST(tdf, test_single_large_jump_back)
 			.expected_rc = -ENOMEM,
 		},
 	};
-	run_test_case(tests, ARRAY_SIZE(tests));
+	run_test_case(tests, ARRAY_SIZE(tests), false);
 }
 
 ZTEST(tdf, test_single_multiple_jumps)
@@ -370,7 +388,7 @@ ZTEST(tdf, test_single_multiple_jumps)
 			.expected_rc = -ENOMEM,
 		},
 	};
-	run_test_case(tests, ARRAY_SIZE(tests));
+	run_test_case(tests, ARRAY_SIZE(tests), false);
 }
 
 ZTEST(tdf, test_add_multiple)
@@ -413,7 +431,7 @@ ZTEST(tdf, test_add_multiple)
 			.expected_rc = -ENOMEM,
 		},
 	};
-	run_test_case(tests, ARRAY_SIZE(tests));
+	run_test_case(tests, ARRAY_SIZE(tests), false);
 }
 
 ZTEST(tdf, test_add_multiple_long_period)
@@ -456,7 +474,7 @@ ZTEST(tdf, test_add_multiple_long_period)
 			.expected_rc = -ENOMEM,
 		},
 	};
-	run_test_case(tests, ARRAY_SIZE(tests));
+	run_test_case(tests, ARRAY_SIZE(tests), false);
 }
 
 ZTEST(tdf, test_multiple_too_many)
@@ -487,7 +505,7 @@ ZTEST(tdf, test_multiple_too_many)
 			.expected_rc = -ENOMEM,
 		},
 	};
-	run_test_case(tests, ARRAY_SIZE(tests));
+	run_test_case(tests, ARRAY_SIZE(tests), false);
 }
 
 ZTEST(tdf, test_add_multiple_2_to_1)
@@ -507,7 +525,7 @@ ZTEST(tdf, test_add_multiple_2_to_1)
 			.expected_rc = 1,
 		},
 	};
-	run_test_case(tests, ARRAY_SIZE(tests));
+	run_test_case(tests, ARRAY_SIZE(tests), false);
 }
 
 ZTEST(tdf, test_add_multiple_2_to_1_exact)
@@ -527,7 +545,7 @@ ZTEST(tdf, test_add_multiple_2_to_1_exact)
 			.expected_rc = 1,
 		},
 	};
-	run_test_case(tests, ARRAY_SIZE(tests));
+	run_test_case(tests, ARRAY_SIZE(tests), false);
 }
 
 ZTEST(tdf, test_add_no_time_to_time)
@@ -557,7 +575,8 @@ ZTEST(tdf, test_add_no_time_to_time)
 			.expected_rc = 1,
 		},
 	};
-	run_test_case(tests, ARRAY_SIZE(tests));
+	run_test_case(tests, ARRAY_SIZE(tests), false);
+	run_test_case(tests, ARRAY_SIZE(tests), true);
 }
 
 ZTEST(tdf, test_add_time_to_no_time)
@@ -587,7 +606,8 @@ ZTEST(tdf, test_add_time_to_no_time)
 			.expected_rc = 1,
 		},
 	};
-	run_test_case(tests, ARRAY_SIZE(tests));
+	run_test_case(tests, ARRAY_SIZE(tests), false);
+	run_test_case(tests, ARRAY_SIZE(tests), true);
 }
 
 ZTEST(tdf, test_invalid_params)
@@ -846,22 +866,12 @@ ZTEST(tdf, test_parse_missing_array_info)
 	net_buf_simple_add_u8(&parser.buf, 0x34);
 	rc = tdf_parse(&parser, &parsed);
 	zassert_equal(-EINVAL, rc);
-}
-
-ZTEST(tdf, test_parse_invalid_array_type_info)
-{
-	struct tdf_buffer_state parser;
-	struct tdf_parsed parsed;
-	int rc;
-
-	net_buf_simple_init_with_data(&parser.buf, buf, sizeof(buf));
 
 	tdf_buffer_state_reset(&parser);
-	net_buf_simple_add_le16(&parser.buf, TDF_ARRAY_TIME | TDF_ARRAY_DIFF | 1234);
-	net_buf_simple_add_le32(&parser.buf, UINT32_MAX);
-	net_buf_simple_add_le32(&parser.buf, UINT32_MAX);
-	net_buf_simple_add_le32(&parser.buf, UINT32_MAX);
-	net_buf_simple_add_le32(&parser.buf, UINT32_MAX);
+	net_buf_simple_add_le16(&parser.buf, TDF_ARRAY_IDX | 1234);
+	net_buf_simple_add_u8(&parser.buf, 0x03);
+	net_buf_simple_add_u8(&parser.buf, 0x12);
+	net_buf_simple_add_u8(&parser.buf, 0x34);
 	rc = tdf_parse(&parser, &parsed);
 	zassert_equal(-EINVAL, rc);
 }
