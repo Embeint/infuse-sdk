@@ -59,7 +59,7 @@ static int write_read_erase_page(const struct device *dev, size_t page, size_t p
 	/* Validate written == read */
 	if (memcmp(write_buffer, read_buffer, sizeof(write_buffer)) != 0) {
 		VALIDATION_REPORT_ERROR(TEST, "Data read != data written");
-		return rc;
+		return -EINVAL;
 	}
 
 	VALIDATION_REPORT_INFO(TEST, "Write-Read-Erase test passed");
