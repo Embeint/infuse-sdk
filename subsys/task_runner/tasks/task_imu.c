@@ -43,15 +43,24 @@ LOG_MODULE_REGISTER(task_imu, CONFIG_TASK_IMU_LOG_LEVEL);
 struct logging_state {
 	uint16_t acc_tdf;
 	uint16_t gyr_tdf;
-	uint16_t mag_tdf;
+#ifdef CONFIG_TASK_RUNNER_TASK_IMU_LOG_IDX_ARRAY
+	uint32_t acc_period;
+	uint32_t gyr_period;
+	uint32_t acc_idx;
+	uint32_t gyr_idx;
+#endif
 };
 
 static void imu_sample_handler(const struct task_schedule *schedule,
-			       const struct logging_state *log_state,
+			       struct logging_state *log_state,
 			       const struct imu_sample_array *samples)
 {
 	const struct imu_sample *last_acc, *last_gyr;
 	uint64_t epoch_time;
+
+#ifdef CONFIG_TASK_RUNNER_TASK_IMU_LOG_IDX_ARRAY
+	struct tdf_idx_array_period idx_meta;
+#endif /* CONFIG_TASK_RUNNER_TASK_IMU_LOG_IDX_ARRAY */
 
 #ifdef CONFIG_TASK_RUNNER_TASK_IMU_ACC_MAGNITUDE_BROADCAST
 	struct task_imu_acc_mag_container *mags;
@@ -93,6 +102,26 @@ static void imu_sample_handler(const struct task_schedule *schedule,
 
 	/* Log data as TDFs */
 	if (samples->accelerometer.num) {
+#ifdef CONFIG_TASK_RUNNER_TASK_IMU_LOG_IDX_ARRAY
+		epoch_time = 0;
+		if (log_state->acc_period) {
+			epoch_time = epoch_time_from_ticks(samples->accelerometer.timestamp_ticks);
+
+			/* Log timing metadata */
+			idx_meta.tdf_id = log_state->acc_tdf;
+			idx_meta.period = log_state->acc_period * 1000;
+			task_schedule_tdf_log(schedule, TASK_IMU_LOG_ACC, TDF_IDX_ARRAY_PERIOD,
+					      sizeof(idx_meta), epoch_time, &idx_meta);
+			log_state->acc_period = 0;
+		}
+
+		task_schedule_tdf_log_core(
+			schedule, TASK_IMU_LOG_ACC, log_state->acc_tdf, sizeof(struct imu_sample),
+			samples->accelerometer.num, TDF_DATA_FORMAT_IDX_ARRAY, epoch_time,
+			log_state->acc_idx, &samples->samples[samples->accelerometer.offset]);
+
+		log_state->acc_idx += samples->accelerometer.num;
+#else
 		epoch_time = epoch_time_from_ticks(samples->accelerometer.timestamp_ticks);
 
 		task_schedule_tdf_log_array(
@@ -101,8 +130,29 @@ static void imu_sample_handler(const struct task_schedule *schedule,
 			epoch_period_from_array_ticks(samples->accelerometer.buffer_period_ticks,
 						      samples->accelerometer.num),
 			&samples->samples[samples->accelerometer.offset]);
+#endif /* CONFIG_TASK_RUNNER_TASK_IMU_LOG_IDX_ARRAY */
 	}
 	if (samples->gyroscope.num) {
+#ifdef CONFIG_TASK_RUNNER_TASK_IMU_LOG_IDX_ARRAY
+		epoch_time = 0;
+		if (log_state->gyr_period) {
+			epoch_time = epoch_time_from_ticks(samples->gyroscope.timestamp_ticks);
+
+			/* Log timing metadata */
+			idx_meta.tdf_id = log_state->gyr_tdf;
+			idx_meta.period = log_state->gyr_period * 1000;
+			task_schedule_tdf_log(schedule, TASK_IMU_LOG_GYR, TDF_IDX_ARRAY_PERIOD,
+					      sizeof(idx_meta), epoch_time, &idx_meta);
+			log_state->gyr_period = 0;
+		}
+
+		task_schedule_tdf_log_core(
+			schedule, TASK_IMU_LOG_GYR, log_state->gyr_tdf, sizeof(struct imu_sample),
+			samples->gyroscope.num, TDF_DATA_FORMAT_IDX_ARRAY, epoch_time,
+			log_state->gyr_idx, &samples->samples[samples->gyroscope.offset]);
+
+		log_state->gyr_idx += samples->gyroscope.num;
+#else
 		epoch_time = epoch_time_from_ticks(samples->gyroscope.timestamp_ticks);
 
 		task_schedule_tdf_log_array(
@@ -111,6 +161,7 @@ static void imu_sample_handler(const struct task_schedule *schedule,
 			epoch_period_from_array_ticks(samples->gyroscope.buffer_period_ticks,
 						      samples->gyroscope.num),
 			&samples->samples[samples->gyroscope.offset]);
+#endif /* CONFIG_TASK_RUNNER_TASK_IMU_LOG_IDX_ARRAY */
 	}
 }
 
@@ -167,6 +218,13 @@ void imu_task_fn(const struct task_schedule *schedule, struct k_poll_signal *ter
 	log_state.acc_tdf = tdf_id_from_accelerometer_range(args->accelerometer.range_g);
 	log_state.gyr_tdf = tdf_id_from_gyroscope_range(args->gyroscope.range_dps);
 	interrupt_timeout = K_USEC(2 * config_output.expected_interrupt_period_us);
+
+#ifdef CONFIG_TASK_RUNNER_TASK_IMU_LOG_IDX_ARRAY
+	log_state.acc_period = config_output.accelerometer_period_us;
+	log_state.gyr_period = config_output.gyroscope_period_us;
+	log_state.acc_idx = 0;
+	log_state.gyr_idx = 0;
+#endif /* CONFIG_TASK_RUNNER_TASK_IMU_LOG_IDX_ARRAY */
 
 	while (true) {
 		/* Wait for the next IMU interrupt */
