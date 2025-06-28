@@ -462,6 +462,22 @@
                 {"name": "payload", "type": "uint8_t", "num": 0, "description": "Payload"}
             ]
         },
+        "46": {
+            "name": "IDX_ARRAY_FREQ",
+            "description": "Sample frequency metadata for a TDF_DATA_FORMAT_IDX_ARRAY array",
+            "fields": [
+                {"name": "tdf_id", "type": "uint16_t", "description": "TDF ID that is being described"},
+                {"name": "frequency", "type": "uint32_t", "description": "Frequency of samples in Hertz"}
+            ]
+        },
+        "47": {
+            "name": "IDX_ARRAY_PERIOD",
+            "description": "Sample frequency metadata for a TDF_DATA_FORMAT_IDX_ARRAY array",
+            "fields": [
+                {"name": "tdf_id", "type": "uint16_t", "description": "TDF ID that is being described"},
+                {"name": "period", "type": "uint32_t", "description": "Period between samples in nanoseconds"}
+            ]
+        },
         "100": {
             "name": "ARRAY_TYPE",
             "description": "Example array type",

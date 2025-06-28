@@ -212,7 +212,9 @@ problem only gets worse as the frequency increases further.
 To enable these use-cases, TDF data can be stored as an "Index Array", where instead of attempting to record
 timestamps for each individual sample, only the timestamp of the first sample is recorded (accurate to the
 15 us resolution), and all future samples are timestamped according to the sample index. This mode does not
-attempt to store the actual sampling frequency.
+attempt to store the actual sampling frequency. It is recommended to log an instance of
+:c:enumerator:`TDF_IDX_ARRAY_FREQ` or :c:enumerator:`TDF_IDX_ARRAY_PERIOD` with the same base timestamp to
+record this information.
 
 When a reading is of this type, an additional 3 byte header is present after the timestamp structure.
 
@@ -391,6 +393,7 @@ Logging an array of high-frequency TDFs, evenly spaced in time.
    static uint8_t buffer[256];
    struct tdf_buffer_state state;
    struct tdf_acc_4g readings[] = {...};
+   struct tdf_idx_array_freq array_info;
    uint64_t base_time = epoch_time_now() - ((ARRAY_SIZE(readings) - 1) * reading_period);
    uint8_t remaining = ARRAY_SIZE(readings);
    uint8_t to_log, chunk_size = 16;
@@ -398,6 +401,10 @@ Logging an array of high-frequency TDFs, evenly spaced in time.
 
    net_buf_simple_init_with_data(&state.buf, buffer, sizeof(buffer));
    tdf_buffer_state_reset(&state);
+
+   array_info.tdf_id = TDF_ACC_4G;
+   array_info.frequency = 1000;
+   TDF_ADD(&state, TDF_IDX_ARRAY_FREQ, 1, base_time, 0, &array_info);
 
    while(remaining) {
         to_log = MIN(remaining, chunk_size);
@@ -412,11 +419,13 @@ Logging an array of high-frequency TDFs, evenly spaced in time.
    :caption: :ref:`tdf_data_logger_api` API
 
    struct tdf_acc_4g readings[] = {...};
+   struct tdf_idx_array_freq array_info;
    uint64_t base_time = epoch_time_now() - ((ARRAY_SIZE(readings) - 1) * reading_period);
    int idx = 0;
 
+   TDF_DATA_LOGGER_LOG(TDF_DATA_LOGGER_FLASH, TDF_IDX_ARRAY_FREQ, base_time, &array_info);
    for (int i = 0; i < num_buffers; i++) {
-      tdf_data_logger_log_core(TDF_DATA_LOGGER_BT_ADV, TDF_ACC_4G, sizeof(readings[0]), ARRAY_SIZE(readings),
+      tdf_data_logger_log_core(TDF_DATA_LOGGER_FLASH, TDF_ACC_4G, sizeof(readings[0]), ARRAY_SIZE(readings),
                               TDF_DATA_FORMAT_IDX_ARRAY, base_time, idx, readings);
       idx += ARRAY_SIZE(readings);
       base_time = 0;
