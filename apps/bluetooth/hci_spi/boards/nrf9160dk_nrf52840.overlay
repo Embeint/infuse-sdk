@@ -48,4 +48,4 @@
 	};
 };
 
-#include "../app.overlay"
+#include "nordic_sdc.dtsi"

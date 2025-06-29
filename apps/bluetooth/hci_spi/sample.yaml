@@ -3,9 +3,7 @@ sample:
   name: Bluetooth HCI SPI
 common:
   harness: bluetooth
-  platform_allow:
-    - nrf9160dk/nrf52840
-    - tauro/nrf52840
+  filter: dt_compat_enabled("zephyr,bt-hci-spi-slave")
   integration_platforms:
     - tauro/nrf52840
   tags:
@@ -14,13 +12,19 @@ common:
 tests:
   sample.bluetooth.hci_spi:
     sysbuild: false
+    integration_platforms:
+      - thingy91x/nrf5340/cpuapp
   sample.bluetooth.hci_spi.sysbuild:
     sysbuild: true
+    integration_platforms:
+      - thingy91x/nrf5340/cpuapp
   sample.bluetooth.hci_spi.infuse:
+    filter: dt_compat_enabled("zephyr,bt-hci-spi-slave") and not CONFIG_SOC_NRF5340_CPUAPP
     required_snippets:
       - infuse-bt-ctlr
     sysbuild: false
   sample.bluetooth.hci_spi.sysbuild.infuse:
+    filter: dt_compat_enabled("zephyr,bt-hci-spi-slave") and not CONFIG_SOC_NRF5340_CPUAPP
     required_snippets:
       - infuse-bt-ctlr
     sysbuild: true
