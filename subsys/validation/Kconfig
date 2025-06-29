@@ -48,6 +48,10 @@ endif # DISK_ACCESS
 
 if WIFI
 
+# Required for `inet_ntop`
+configdefault POSIX_NETWORKING
+	default y
+
 config INFUSE_VALIDATE_WIFI_SSID
 	string "Network SSID to connect to"
 	default "example"
