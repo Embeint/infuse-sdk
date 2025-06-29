@@ -26,6 +26,8 @@ enum {
 	VALIDATION_NRF_MODEM_FW_VERSION = 0,
 	/** Check SIM card found */
 	VALIDATION_NRF_MODEM_SIM_CARD = BIT(0),
+	/** Perform LTE network scan */
+	VALIDATION_NRF_MODEM_LTE_SCAN = BIT(1),
 };
 
 /**

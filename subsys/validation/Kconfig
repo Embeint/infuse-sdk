@@ -66,5 +66,9 @@ config INFUSE_VALIDATION_SNTP_SERVER
 
 endif # WIFI
 
+config HEAP_MEM_POOL_ADD_SIZE_LTE_CELL_SCAN
+	int "Extra stack size for LTE network scanning"
+	depends on LTE_LINK_CONTROL
+	default 1024
 
 endif # INFUSE_VALIDATION
