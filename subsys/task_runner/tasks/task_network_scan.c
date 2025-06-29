@@ -122,7 +122,7 @@ static int wifi_scan_handle(const struct task_network_scan_args *args)
 	struct net_if *iface;
 	int rc = 0;
 
-	iface = net_if_get_first_by_type(&NET_L2_GET_NAME(ETHERNET));
+	iface = net_if_get_first_wifi();
 
 	/* Have we already found enough APs? */
 	if (state.aps_found >= args->wifi.desired_aps) {

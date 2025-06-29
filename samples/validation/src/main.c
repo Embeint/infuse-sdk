@@ -212,8 +212,7 @@ static int wifi_validator(void *a, void *b, void *c)
 
 	atomic_inc(&validators_registered);
 
-	/* Wi-Fi drivers are added as ETHERNET */
-	iface = net_if_get_first_by_type(&NET_L2_GET_NAME(ETHERNET));
+	iface = net_if_get_first_wifi();
 	if (iface == NULL) {
 		VALIDATION_REPORT_ERROR("SYS", "Failed to retrieve WiFi interface");
 		atomic_inc(&validators_failed);

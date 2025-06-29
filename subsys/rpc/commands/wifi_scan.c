@@ -73,8 +73,7 @@ struct net_buf *rpc_command_wifi_scan(struct net_buf *request)
 	struct net_if *iface;
 	int rc;
 
-	/* Wi-Fi drivers are added as ETHERNET */
-	iface = net_if_get_first_by_type(&NET_L2_GET_NAME(ETHERNET));
+	iface = net_if_get_first_wifi();
 	if (iface == NULL) {
 		return rpc_response_simple_req(request, -ENODEV, &rsp, sizeof(rsp));
 	}
