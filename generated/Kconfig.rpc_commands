@@ -110,7 +110,7 @@ config INFUSE_RPC_COMMAND_APPLICATION_INFO_REQUIRED_AUTH
 
 config INFUSE_RPC_COMMAND_WIFI_SCAN
 	bool "Enable RPC wifi_scan"
-	depends on WIFI
+	depends on NET_L2_WIFI_MGMT
 	default y if INFUSE_SDK
 	help
 	  Scan for WiFi networks
@@ -122,7 +122,7 @@ config INFUSE_RPC_COMMAND_WIFI_SCAN_REQUIRED_AUTH
 
 config INFUSE_RPC_COMMAND_WIFI_STATE
 	bool "Enable RPC wifi_state"
-	depends on WIFI
+	depends on NET_L2_WIFI_MGMT
 	default y if INFUSE_SDK
 	help
 	  Get current WiFi interface state

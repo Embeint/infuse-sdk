@@ -317,7 +317,7 @@
         "10": {
             "name": "wifi_scan",
             "description": "Scan for WiFi networks",
-            "depends_on": "WIFI",
+            "depends_on": "NET_L2_WIFI_MGMT",
             "default": "y if INFUSE_SDK",
             "default_auth": "EPACKET_AUTH_DEVICE",
             "request_params": [],
@@ -329,7 +329,7 @@
         "11": {
             "name": "wifi_state",
             "description": "Get current WiFi interface state",
-            "depends_on": "WIFI",
+            "depends_on": "NET_L2_WIFI_MGMT",
             "default": "y if INFUSE_SDK",
             "default_auth": "EPACKET_AUTH_DEVICE",
             "request_params": [],
