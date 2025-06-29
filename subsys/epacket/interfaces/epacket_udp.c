@@ -9,6 +9,7 @@
 #include <zephyr/device.h>
 #include <zephyr/logging/log.h>
 #include <zephyr/sys/byteorder.h>
+#include <zephyr/net/conn_mgr_monitor.h>
 #include <zephyr/net/conn_mgr_connectivity.h>
 #include <zephyr/net/net_if.h>
 #include <zephyr/net/net_mgmt.h>
@@ -84,6 +85,12 @@ static void if_admin_event_handler(struct net_mgmt_event_callback *cb, uint32_t 
 				   struct net_if *iface)
 {
 	struct udp_state *state = CONTAINER_OF(cb, struct udp_state, iface_admin_cb);
+
+	/* Ignore interfaces that the connection manager is ignoring */
+	if (conn_mgr_is_iface_ignored(iface)) {
+		LOG_DBG("Ignoring %08x on ignored interface", event);
+		return;
+	}
 
 	/* Interface is not intended to be persistent, so don't restart the
 	 * watchdog on every interface cycle. Instead, start it on the first
