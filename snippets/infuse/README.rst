@@ -24,7 +24,7 @@ Supported Upstream Boards
 
 .. rst-class:: rst-columns
 
- * `Nordic Thingy53`_
+ * `Nordic Thingy:53`_
  * `Nordic nRF54L15 DK`_
  * `Nordic nRF5340 DK`_
  * `Nordic nRF52840 DK`_
@@ -39,6 +39,7 @@ Supported Infuse Boards
 .. rst-class:: rst-columns
 
  * `Nordic nRF7002 DK`_
+ * `Nordic Thingy:91 X`_
  * :ref:`board_tauro` (nRF9151 + nRF52840)
 
 Simulation Targets
@@ -52,7 +53,8 @@ Simulation Targets
 
 .. _Nordic nRF52840 DK: https://www.nordicsemi.com/Products/Development-hardware/nRF52840-DK
 .. _Nordic nRF5340 DK: https://www.nordicsemi.com/Products/Development-hardware/nRF5340-DK
-.. _Nordic Thingy53: https://www.nordicsemi.com/Products/Development-hardware/Nordic-Thingy-53
+.. _Nordic Thingy:53: https://www.nordicsemi.com/Products/Development-hardware/Nordic-Thingy-53
+.. _Nordic Thingy:91 X: https://www.nordicsemi.com/Products/Development-hardware/Nordic-Thingy-91-X
 .. _Nordic nRF54L15 DK: https://www.nordicsemi.com/Products/Development-hardware/nRF54L15-DK
 .. _Nordic nRF7002 DK: https://www.nordicsemi.com/Products/Development-hardware/nRF7002-DK
 .. _Nordic nRF9151 DK: https://www.nordicsemi.com/Products/Development-hardware/nRF9151-DK
