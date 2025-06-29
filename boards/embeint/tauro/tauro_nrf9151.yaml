@@ -1,5 +1,5 @@
 identifier: tauro/nrf9151
-name: Tauro-nRF9151-Non-Secure
+name: Tauro-nRF9151-Secure
 type: mcu
 arch: arm
 toolchain:
