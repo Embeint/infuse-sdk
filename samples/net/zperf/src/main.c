@@ -45,8 +45,8 @@ int main(void)
 #endif
 
 	/* Always want network connectivity */
-	conn_mgr_all_if_up(false);
-	conn_mgr_all_if_connect(false);
+	conn_mgr_all_if_up(true);
+	conn_mgr_all_if_connect(true);
 
 	/* Loop forever, zperf runs from the RPC context */
 	for (;;) {

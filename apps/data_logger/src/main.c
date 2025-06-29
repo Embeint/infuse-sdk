@@ -221,8 +221,8 @@ int main(void)
 	bluetooth_legacy_advertising_run();
 
 #ifdef CONFIG_NETWORKING
-	conn_mgr_all_if_up(false);
-	conn_mgr_all_if_connect(false);
+	conn_mgr_all_if_up(true);
+	conn_mgr_all_if_connect(true);
 #endif /* CONFIG_NETWORKING */
 
 	/* Initialise task runner */

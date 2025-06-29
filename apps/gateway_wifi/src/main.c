@@ -57,8 +57,8 @@ int main(void)
 	epacket_send_key_ids(epacket_serial, K_FOREVER);
 
 	/* Turn on the interface */
-	conn_mgr_all_if_up(false);
-	conn_mgr_all_if_connect(false);
+	conn_mgr_all_if_up(true);
+	conn_mgr_all_if_connect(true);
 
 	for (;;) {
 		announce.application = 0x1234;

@@ -85,8 +85,8 @@ int main(void)
 	(void)infuse_watchdog_start();
 
 #ifdef CONFIG_NETWORKING
-	conn_mgr_all_if_up(false);
-	conn_mgr_all_if_connect(false);
+	conn_mgr_all_if_up(true);
+	conn_mgr_all_if_connect(true);
 #endif /* CONFIG_NETWORKING */
 
 	/* Set a default gravity reference for the sample (-z axis) */

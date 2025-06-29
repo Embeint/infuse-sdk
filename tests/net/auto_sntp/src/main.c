@@ -87,8 +87,8 @@ ZTEST(auto_sntp, test_auto_sntp)
 	net_if_ipv4_addr_add(iface, &addr, NET_ADDR_MANUAL, 0);
 #else
 	/* Turn on all interfaces */
-	conn_mgr_all_if_up(false);
-	conn_mgr_all_if_connect(false);
+	conn_mgr_all_if_up(true);
+	conn_mgr_all_if_connect(true);
 #endif /* CONFIG_NET_NATIVE_OFFLOADED_SOCKETS */
 
 	/* Wait for the interface to come up */
