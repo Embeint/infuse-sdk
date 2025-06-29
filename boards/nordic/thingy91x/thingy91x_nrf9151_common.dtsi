@@ -1,0 +1,282 @@
+/*
+ * Copyright (c) 2025 Embeint Inc
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+#include "thingy91x_nrf9151_common-pinctrl.dtsi"
+#include <zephyr/dt-bindings/battery/battery.h>
+#include <zephyr/dt-bindings/input/input-event-codes.h>
+#include <dt-bindings/regulator/npm1300.h>
+#include <dt-bindings/regulator/npm6001.h>
+
+/ {
+	model = "Nordic Thingy:91 X nRF9151";
+	compatible = "nordic,thingy91x-nrf9151";
+
+	chosen {
+		zephyr,console = &rtt0;
+		zephyr,bt-hci = &hci_spi;
+		zephyr,wifi = &nrf70;
+	};
+
+	rtt0: rtt_chan0 {
+		compatible = "segger,rtt-uart";
+		status = "okay";
+	};
+
+	leds {
+		compatible = "gpio-leds";
+		led0: led_0 {
+			gpios = <&gpio0 29 GPIO_ACTIVE_HIGH>;
+			label = "Red LED";
+		};
+		led1: led_1 {
+			gpios = <&gpio0 31 GPIO_ACTIVE_HIGH>;
+			label = "Green LED";
+		};
+		led2: led_2 {
+			gpios = <&gpio0 30 GPIO_ACTIVE_HIGH>;
+			label = "Blue LED";
+		};
+	};
+
+	buttons {
+		compatible = "gpio-keys";
+
+		button0: button_0 {
+			gpios = <&gpio0 26 (GPIO_PULL_UP | GPIO_ACTIVE_LOW)>;
+			label = "Button 1";
+		};
+	};
+
+	npm1300_fuel_gauge: fuel_gauge {
+		compatible = "zephyr,fuel-gauge-composite";
+		source-primary = <&npm1300_charger>;
+		device-chemistry = "lithium-ion-polymer";
+		ocv-capacity-table-0 = <BATTERY_OCV_CURVE_LITHIUM_ION_POLYMER_DEFAULT>;
+		charge-full-design-microamp-hours = <450000>;
+		fuel-gauge-channels;
+	};
+
+	aliases {
+		sw0 = &button0;
+		led0 = &led0;
+		led1 = &led1;
+		led2 = &led2;
+		fuel-gauge0 = &npm1300_fuel_gauge;
+		imu0 = &bmi270;
+		watchdog0 = &wdt0;
+		environmental0 = &bme688;
+	};
+};
+
+&gpiote {
+	status = "okay";
+};
+
+&gpio0 {
+	status = "okay";
+};
+
+&i2c2 {
+	compatible = "nordic,nrf-twim";
+	status = "okay";
+	pinctrl-0 = <&i2c2_default>;
+	pinctrl-1 = <&i2c2_sleep>;
+	pinctrl-names = "default", "sleep";
+
+
+	bme688: bme688@76 {
+		compatible = "bosch,bme680";
+		reg = <0x76>;
+	};
+
+	pmic_main: npm1300@6b {
+		compatible = "nordic,npm1300";
+		status = "okay";
+		pmic-int-pin = <3>;
+		reg = <0x6b>;
+
+		gpios_pmic: npm1300_gpios {
+			compatible = "nordic,npm1300-gpio";
+			status = "okay";
+			gpio-controller;
+			#gpio-cells = <2>;
+			ngpios = <5>;
+
+			/* GPIO1 switches power to the short range RF front end */
+			ldsw_rf_fe_sr_en: GPIO1 {
+				gpios = <1 (GPIO_ACTIVE_LOW | GPIO_OPEN_DRAIN | GPIO_PULL_UP)>;
+				/* Enable Bluetooth & Wi-Fi RF front end by default */
+				gpio-hog;
+				output-high;
+			};
+		};
+
+		regulators {
+			compatible = "nordic,npm1300-regulator";
+			status = "okay";
+
+			/* Main 3.3 V regulator, enabled at boot by default, but also disabled if
+			 * GPIO2 goes low, which is controlled by the main power switch.
+			 */
+			reg_3v3: BUCK2 {
+				regulator-min-microvolt = <3300000>;
+				regulator-max-microvolt = <3300000>;
+				enable-gpio-config = <2 GPIO_ACTIVE_HIGH>;
+			};
+			/* LDO1 is used as a load switch pulling the nPM6001 enable line to VSYS */
+			ldsw_nPM6001_en: LDO1 {
+				regulator-initial-mode = <NPM1300_LDSW_MODE_LDSW>;
+				regulator-allowed-modes = <NPM1300_LDSW_MODE_LDSW>;
+				regulator-boot-on;
+			};
+			/* LDO2 is used as a load switch for sensor power supply */
+			ldsw_sensors: LDO2 {
+				regulator-initial-mode = <NPM1300_LDSW_MODE_LDSW>;
+				regulator-allowed-modes = <NPM1300_LDSW_MODE_LDSW>;
+				regulator-boot-on;
+			};
+		};
+
+		npm1300_charger: charger {
+			compatible = "nordic,npm1300-charger";
+			status = "okay";
+			vbus-limit-microamp = <500000>;
+			/* Battery specs from LiPol LP803448 datasheet (Dwg. nr. FD_3245_70) */
+			term-microvolt = <4200000>;
+			current-microamp = <675000>; /* 0.5C charging current */
+			dischg-limit-microamp = <1000000>; /* Maximum value for PMIC */
+			thermistor-cold-millidegrees = <0>;
+			thermistor-cool-millidegrees = <0>;
+			thermistor-warm-millidegrees = <45000>;
+			thermistor-hot-millidegrees = <45000>;
+			thermistor-ohms = <10000>;
+			thermistor-beta = <3435>;
+			charging-enable;
+		};
+	};
+
+	pmic_wifi: npm6001@70 {
+		compatible = "nordic,npm6001";
+		status = "okay";
+		reg = <0x70>;
+
+		regulators {
+			compatible = "nordic,npm6001-regulator";
+			status = "okay";
+			pmic_wifi_buck0: BUCK0 {
+				regulator-boot-off;
+			};
+			pmic_wifi_buck1: BUCK1 {
+				regulator-boot-off;
+			};
+			pmic_wifi_buck2: BUCK2 {
+				regulator-boot-off;
+			};
+			/* Dedicated 3.3 V regulator for nRF70 */
+			reg_wifi: BUCK3 {
+				regulator-min-microvolt = <3300000>;
+				regulator-max-microvolt = <3300000>;
+				regulator-initial-mode = <NPM6001_MODE_HYS>;
+				regulator-boot-off;
+			};
+		};
+	};
+
+	/* No Infuse-IoT driver support, powers up into low power by default */
+	accel: accelerometer_lp: adxl367@1d {
+		compatible = "adi,adxl367";
+		status = "disabled";
+		reg = <0x1d>;
+	};
+
+	/* TODO: No Infuse-IoT driver support (Zephyr v4.2).
+	 * Zephyr v4.2 has a driver.
+	 * Device is not low power by default.
+	 */
+	magnetometer: bmm350@14 {
+		compatible = "bosch,bmm350";
+		status = "disabled";
+		reg = <0x14>;
+	};
+};
+
+&spi3 {
+	compatible = "nordic,nrf-spim";
+	status = "okay";
+	cs-gpios = <&gpio0 12 (GPIO_ACTIVE_LOW)>,
+		   <&gpio0 10 (GPIO_ACTIVE_LOW)>,
+		   <&gpio0 17 (GPIO_ACTIVE_LOW)>,
+		   <&gpio0 0 (GPIO_ACTIVE_LOW)>;
+	pinctrl-0 = <&spi3_default>;
+	pinctrl-1 = <&spi3_sleep>;
+	pinctrl-names = "default", "sleep";
+
+	gd25le255: gd25le255e@0 {
+		compatible = "jedec,spi-nor";
+		status = "okay";
+		reg = <0>;
+		spi-max-frequency = <8000000>;
+		size = <268435456>;
+		has-dpd;
+		t-enter-dpd = <3000>;
+		t-exit-dpd = <20000>;
+		sfdp-bfp = [e5 20 f3 ff  ff ff ff 0f  44 eb 08 6b  08 3b 42 bb
+			    fe ff ff ff  ff ff 00 ff  ff ff 42 eb  0c 20 0f 52
+			    10 d8 00 ff  d4 31 a5 fe  84 df 14 4f  ec 62 16 33
+			    7a 75 7a 75  04 b3 d5 5c  19 06 14 00  08 50 00 01];
+		jedec-id = [c8 60 19];
+	};
+
+	bmi270: bmi270@1 {
+		compatible = "bosch,bmi270";
+		status = "okay";
+		reg = <1>;
+		spi-max-frequency = <DT_FREQ_M(10)>;
+		irq-gpios = <&gpio0 6 (GPIO_ACTIVE_HIGH)>;
+	};
+
+	nrf70: wifi@2 {
+		/* nRF7002 is loaded, but the nRF9151 only has RAM to run in SSID scanning mode */
+		compatible = "nordic,nrf7000-spi";
+		status = "okay";
+		reg = <2>;
+		spi-max-frequency = <DT_FREQ_M(8)>;
+
+		iovdd-ctrl-gpios = <&gpio0 27 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>;
+		bucken-gpios = <&gpio0 28 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>;
+		host-irq-gpios = <&gpio0 16 GPIO_ACTIVE_HIGH>;
+
+		nordic_wlan0: wlan0 {
+			compatible = "nordic,wlan";
+		};
+
+		wifi-max-tx-pwr-2g-dsss = <21>;
+		wifi-max-tx-pwr-2g-mcs0 = <16>;
+		wifi-max-tx-pwr-2g-mcs7 = <16>;
+		wifi-max-tx-pwr-5g-low-mcs0 = <9>;
+		wifi-max-tx-pwr-5g-low-mcs7 = <9>;
+		wifi-max-tx-pwr-5g-mid-mcs0 = <11>;
+		wifi-max-tx-pwr-5g-mid-mcs7 = <11>;
+		wifi-max-tx-pwr-5g-high-mcs0 = <13>;
+		wifi-max-tx-pwr-5g-high-mcs7 = <13>;
+	};
+
+	/* Nordic nRF5340 */
+	hci_spi: bt-hci@3 {
+		compatible = "zephyr,bt-hci-spi";
+		reg = <3>;
+		spi-max-frequency = <8000000>;
+		reset-gpios = <&gpio0 20 (GPIO_ACTIVE_LOW)>;
+		irq-gpios = <&gpio0 1 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>;
+		reset-assert-duration-ms = <1>;
+		/* Additional GPIO is available here:
+		 * extra-gpios = <&gpio0 9 0>;
+		 */
+	};
+};
+
+/* Include default memory partition configuration file */
+#include <common/nordic/nrf91xx_partition.dtsi>

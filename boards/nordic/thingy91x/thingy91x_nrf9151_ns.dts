@@ -1,0 +1,17 @@
+/*
+ * Copyright (c) 2025 Embeint Inc
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/dts-v1/;
+#include <nordic/nrf9151ns_laca.dtsi>
+#include "thingy91x_nrf9151_common.dtsi"
+
+/ {
+	chosen {
+		zephyr,flash = &flash0;
+		zephyr,sram = &sram0_ns_app;
+		zephyr,code-partition = &slot0_ns_partition;
+	};
+};
