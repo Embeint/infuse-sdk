@@ -164,7 +164,8 @@ static int nrf_modem_validator(void *a, void *b, void *c)
 {
 	atomic_inc(&validators_registered);
 	if (infuse_validation_nrf_modem(VALIDATION_NRF_MODEM_FW_VERSION |
-					VALIDATION_NRF_MODEM_SIM_CARD) == 0) {
+					VALIDATION_NRF_MODEM_SIM_CARD |
+					VALIDATION_NRF_MODEM_LTE_SCAN) == 0) {
 		atomic_inc(&validators_passed);
 	} else {
 		atomic_inc(&validators_failed);

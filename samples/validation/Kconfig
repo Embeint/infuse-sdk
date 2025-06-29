@@ -58,6 +58,11 @@ configdefault CONN_MGR_WIFI_KV_STORE
 configdefault SNTP_AUTO
 	default n
 
+# nRF9x options
+
+configdefault LTE_LC_NEIGHBOR_CELL_MEAS_MODULE
+	default y
+
 # Driver configuration
 
 configdefault INFUSE_IMU_SELF_TEST
@@ -66,5 +71,14 @@ configdefault INFUSE_IMU_SELF_TEST
 choice LORA_MODULE_BACKEND
 	default LORA_MODULE_BACKEND_LORA_BASICS_MODEM
 endchoice
+
+# Log suppression
+
+configdefault INFUSE_NRF_MODEM_MONITOR_LOG_LEVEL
+	default 2
+configdefault EPACKET_UDP_LOG_LEVEL
+	default 2
+configdefault WIFI_NRF70_BUSLIB_LOG_LEVEL
+	default 2
 
 source "Kconfig.zephyr"
