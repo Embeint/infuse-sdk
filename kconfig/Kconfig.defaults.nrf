@@ -83,6 +83,10 @@ config NRF_WIFI_LOW_RAM
 	bool "nRF Wi-Fi low RAM defaults"
 	default y if SRAM_SIZE <= 256
 
+configdefault NRF70_RX_MAX_DATA_SIZE
+	# Value is hardcoded in fmac_main when TX is disabled
+	default 1004 if !NRF70_DATA_TX
+
 # Lower resource requirements in scan only mode
 if NRF70_SCAN_ONLY
 configdefault NRF_WIFI_DATA_HEAP_SIZE
