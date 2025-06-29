@@ -56,7 +56,7 @@ int main(void)
 
 	while (true) {
 		/* Turn on the interface, wait for UDP to be ready */
-		conn_mgr_all_if_up(false);
+		conn_mgr_all_if_up(true);
 		k_sem_take(&epacket_udp_ready, K_FOREVER);
 
 		/* Send the payload in largest chunks we can */

@@ -129,7 +129,7 @@ ZTEST(epacket_udp, test_udp_auto_ack)
 	struct net_buf *rx;
 
 	/* Turn on the interface */
-	conn_mgr_all_if_up(false);
+	conn_mgr_all_if_up(true);
 	zassert_equal(0, k_sem_take(&if_state_change, K_MSEC(100)));
 
 	/* Send packets until automated ACK is expected */
@@ -153,7 +153,7 @@ ZTEST(epacket_udp, test_udp_ack)
 
 	/* Cycle the interface a few times before testing */
 	for (int i = 0; i < 4; i++) {
-		conn_mgr_all_if_up(false);
+		conn_mgr_all_if_up(true);
 		zassert_equal(0, k_sem_take(&if_state_change, K_MSEC(10)));
 		k_sleep(K_MSEC(10));
 		conn_mgr_all_if_down(false);
@@ -164,7 +164,7 @@ ZTEST(epacket_udp, test_udp_ack)
 	zassert_equal(0, if_max_payload);
 
 	/* Turn on the interface */
-	conn_mgr_all_if_up(false);
+	conn_mgr_all_if_up(true);
 
 	/* Expect the callback */
 	zassert_equal(0, k_sem_take(&if_state_change, K_MSEC(100)));
@@ -210,7 +210,7 @@ ZTEST(epacket_udp, test_udp_max_size)
 	struct net_buf *tx;
 
 	/* Turn on the interface */
-	conn_mgr_all_if_up(false);
+	conn_mgr_all_if_up(true);
 
 	/* Expect the callback */
 	zassert_equal(0, k_sem_take(&if_state_change, K_MSEC(100)));
@@ -250,7 +250,7 @@ ZTEST(epacket_udp, test_udp_reconnect)
 	kv_store_write(KV_KEY_EPACKET_UDP_PORT, &udp_port_default, sizeof(udp_port_default));
 
 	/* Turn on the interface */
-	conn_mgr_all_if_up(false);
+	conn_mgr_all_if_up(true);
 	zassert_equal(0, k_sem_take(&if_state_change, K_MSEC(100)));
 
 	/* Correct the port for the next time its queried */
@@ -284,7 +284,7 @@ ZTEST(epacket_udp, test_udp_bad_dns)
 	kv_store_write(KV_KEY_EPACKET_UDP_URL, &udp_url_bad, sizeof(udp_url_bad));
 
 	/* Turn on the interface */
-	conn_mgr_all_if_up(false);
+	conn_mgr_all_if_up(true);
 
 	/* Interface should not report ready */
 	zassert_equal(-EAGAIN, k_sem_take(&if_state_change, K_MSEC(3500)));
