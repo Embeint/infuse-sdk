@@ -31,6 +31,12 @@ struct wifi_connect_context {
 	struct k_sem done;
 };
 
+static const char *const band_to_str[] = {
+	[WIFI_FREQ_BAND_2_4_GHZ] = "2.4 GHz",
+	[WIFI_FREQ_BAND_5_GHZ] = "  5 GHz",
+	[WIFI_FREQ_BAND_6_GHZ] = "  6 GHz",
+};
+
 static K_SEM_DEFINE(l4_connected, 0, 1);
 
 static void l4_event_handler(struct net_mgmt_event_callback *cb, uint32_t event,
@@ -43,8 +49,8 @@ static void l4_event_handler(struct net_mgmt_event_callback *cb, uint32_t event,
 
 static void scan_result_handle(const struct wifi_scan_result *entry)
 {
-	VALIDATION_REPORT_INFO(TEST, "SSID %16s Channel %3d RSSI %3d dBm", entry->ssid,
-			       entry->channel, entry->rssi);
+	VALIDATION_REPORT_INFO(TEST, "Band %s Channel %3d RSSI %3d dBm SSID %s ",
+			       band_to_str[entry->band], entry->channel, entry->rssi, entry->ssid);
 }
 
 static void scan_event_handler(struct net_mgmt_event_callback *cb, uint32_t mgmt_event,
