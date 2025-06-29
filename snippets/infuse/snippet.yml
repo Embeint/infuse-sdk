@@ -61,6 +61,10 @@ boards:
     append:
       EXTRA_DTC_OVERLAY_FILE: boards/thingy53_nrf5340_cpuapp_ns.overlay
       EXTRA_CONF_FILE: infuse_snippet.conf
+  thingy91x/nrf9151/ns:
+    append:
+      EXTRA_DTC_OVERLAY_FILE: boards/thingy91x_nrf9151_ns.overlay
+      EXTRA_CONF_FILE: infuse_snippet.conf
   nucleo_l432kc/stm32l432xx:
     append:
       EXTRA_DTC_OVERLAY_FILE: boards/nucleo_l432kc_stm32l432xx.overlay

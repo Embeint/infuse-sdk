@@ -159,6 +159,7 @@ configdefault TFM_DEVICETREE_LAYOUT
 	default y if BOARD_NRF9160DK_NRF9160_NS
 	default y if BOARD_NRF9161DK_NRF9161_NS
 	default y if BOARD_TAURO_NRF9151_NS
+	default y if BOARD_THINGY91X_NRF9151_NS
 configdefault TFM_BL2_SPI_NOR_FLASH
 	default y if $(dt_has_compat,$(DT_COMPAT_JEDEC_SPI_NOR)) && TFM_DEVICETREE_LAYOUT
 configdefault TFM_BL2_QSPI_FLASH
