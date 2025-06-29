@@ -9,13 +9,10 @@ configdefault NRF_MODEM_LIB
 configdefault LTE_LINK_CONTROL
     default y if NETWORKING
 
-configdefault INFUSE_NRF_MODEM_COEX0_CONTROL
+configdefault MODEM_ANTENNA
     default y
 
-configdefault INFUSE_NRF_MODEM_MAGPIO_CONTROL
-    default y
-
-configdefault INFUSE_NRF_MODEM_MAGPIO
+configdefault MODEM_ANTENNA_AT_MAGPIO
     default "AT\%XMAGPIO=1,0,0,1,1,1574,1577"
 
 # External flash layout needs to match internal

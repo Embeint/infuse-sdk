@@ -375,21 +375,6 @@ static void infuse_modem_init(int ret, void *ctx)
 	rc = nrf_modem_at_sem_timeout_set(CONFIG_INFUSE_NRF_MODEM_MONITOR_AT_TIMEOUT_MS);
 	__ASSERT_NO_MSG(rc == 0);
 
-#ifdef CONFIG_INFUSE_NRF_MODEM_COEX0_CONTROL
-	/* Send requested configuration */
-	rc = nrf_modem_at_printf("%s", CONFIG_INFUSE_NRF_MODEM_COEX0);
-#else
-	/* Clear any previous configuration */
-	rc = nrf_modem_at_printf("%s", "AT\%XCOEX0");
-#endif /* CONFIG_INFUSE_NRF_MODEM_COEX0_CONTROL */
-	__ASSERT_NO_MSG(rc == 0);
-
-#ifdef CONFIG_INFUSE_NRF_MODEM_MAGPIO_CONTROL
-	/* Send requested configuration */
-	rc = nrf_modem_at_printf("%s", CONFIG_INFUSE_NRF_MODEM_MAGPIO);
-	__ASSERT_NO_MSG(rc == 0);
-#endif /* CONFIG_INFUSE_NRF_MODEM_MAGPIO_CONTROL */
-
 #ifndef CONFIG_SOC_NRF9160
 	/* Enable notifications of BIP events */
 	rc = nrf_modem_at_printf("%s", "AT%USATEV=1");

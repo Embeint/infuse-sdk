@@ -9,7 +9,7 @@ configdefault NRF_MODEM_LIB
 configdefault LTE_LINK_CONTROL
     default y if NETWORKING
 
-configdefault INFUSE_NRF_MODEM_COEX0_CONTROL
+configdefault MODEM_ANTENNA
     default y
 
 # External flash layout needs to match internal
