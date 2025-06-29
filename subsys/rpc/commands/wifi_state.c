@@ -20,8 +20,8 @@ LOG_MODULE_DECLARE(rpc_server);
 
 struct net_buf *rpc_command_wifi_state(struct net_buf *request)
 {
+	struct net_if *iface = net_if_get_first_wifi();
 	struct rpc_wifi_state_response rsp = {0};
-	struct net_if *iface = net_if_get_default();
 	struct wifi_iface_status status = {0};
 	int rc;
 
