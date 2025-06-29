@@ -6,6 +6,7 @@
  * SPDX-License-Identifier: LicenseRef-Embeint
  */
 
+#include <zephyr/posix/arpa/inet.h>
 #include <zephyr/net_buf.h>
 #include <zephyr/net/net_if.h>
 #include <zephyr/net/sntp.h>
