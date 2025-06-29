@@ -1,0 +1,84 @@
+/*
+ * Copyright (c) 2024 Embeint Inc
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/dts-v1/;
+#include <nordic/nrf5340_cpuapp_qkaa.dtsi>
+#include "thingy91x_nrf5340_cpuapp-pinctrl.dtsi"
+
+/ {
+	model = "Nordic Thingy:91 X NRF5340 Application";
+	compatible = "nordic,thingy91x-nrf5340-cpuapp";
+
+	chosen {
+		zephyr,sram = &sram0;
+		zephyr,flash = &flash0;
+		zephyr,code-partition = &slot0_partition;
+		zephyr,console = &rtt0;
+		zephyr,bt-hci-ipc = &ipc0;
+		zephyr,bt-hci = &bt_hci_ipc0;
+	};
+
+	rtt0: rtt_chan0 {
+		compatible = "segger,rtt-uart";
+		status = "okay";
+	};
+
+	gpio_fwd: nrf-gpio-forwarder {
+		compatible = "nordic,nrf-gpio-forwarder";
+		status = "okay";
+		uart {
+			gpios = <&gpio0 22 0>, /* nrf7002-coex req-gpios     */
+				<&gpio0 23 0>, /* nrf7002-coex status0-gpios */
+				<&gpio0 20 0>, /* nrf7002-coex grant-gpios   */
+				<&gpio0 6 0>;  /* nrf7002-coex swctrl1-gpios */
+		};
+	};
+
+	aliases {
+		watchdog0 = &wdt0;
+	};
+};
+
+&uicr {
+	gpio-as-nreset;
+};
+
+&vregmain {
+	regulator-initial-mode = <NRF5X_REG_MODE_DCDC>;
+};
+
+&vregradio {
+	regulator-initial-mode = <NRF5X_REG_MODE_DCDC>;
+};
+
+&gpiote {
+	status = "okay";
+};
+
+&gpio0 {
+	status = "okay";
+};
+
+&gpio1 {
+	status = "okay";
+};
+
+&spi0 {
+	compatible = "nordic,nrf-spis";
+	status = "okay";
+	def-char = <0x00>;
+	pinctrl-0 = <&spi0_default>;
+	pinctrl-names = "default";
+
+	hci_spi: bt-hci@0 {
+		compatible = "zephyr,bt-hci-spi-slave";
+		reg = <0>;
+		irq-gpios = <&gpio1 4 GPIO_ACTIVE_HIGH>;
+	};
+};
+
+/* Include default memory partition configuration file */
+#include <common/nordic/nrf5340_cpuapp_partition.dtsi>
