@@ -1,5 +1,8 @@
 if BOARD_TAURO_NRF9151_NS
 
+configdefault TFM_DEVICETREE_LAYOUT
+    default y
+
 configdefault NETWORKING
     default y if !MCUBOOT
 
