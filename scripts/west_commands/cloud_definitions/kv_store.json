@@ -87,6 +87,13 @@
                 {"name": "name", "type": "struct kv_string", "description": "Personalised device name"}
             ]
         },
+        "5": {
+            "name": "INFUSE_APPLICATION_ID",
+            "description": "CONFIG_INFUSE_APPLICATION_ID, store will be reset if the values don't match",
+            "fields": [
+                {"name": "application_id", "type": "uint32_t"}
+            ]
+        },
         "10": {
             "name": "FIXED_LOCATION",
             "description": "Fixed global location of the device",

@@ -151,6 +151,25 @@ static int infuse_common_boot(void)
 #endif /* CONFIG_INFUSE_SDK */
 
 #ifdef CONFIG_KV_STORE
+#ifdef CONFIG_KV_STORE_KEY_INFUSE_APPLICATION_ID
+	KV_KEY_TYPE(KV_KEY_INFUSE_APPLICATION_ID) id;
+
+	rc = KV_STORE_READ(KV_KEY_INFUSE_APPLICATION_ID, &id);
+	if (rc == -ENOENT) {
+		/* Key doesn't exist on first boot, write it */
+		id.application_id = CONFIG_INFUSE_APPLICATION_ID;
+		(void)KV_STORE_WRITE(KV_KEY_INFUSE_APPLICATION_ID, &id);
+	} else if ((rc != sizeof(id)) || (id.application_id != CONFIG_INFUSE_APPLICATION_ID)) {
+		/* Key value is incorrect in some way */
+		LOG_WRN("Resetting KV store due to INFUSE_APPLICATION_ID");
+		/* Reset the KV store */
+		kv_store_reset();
+		/* Write the expected application ID */
+		id.application_id = CONFIG_INFUSE_APPLICATION_ID;
+		(void)KV_STORE_WRITE(KV_KEY_INFUSE_APPLICATION_ID, &id);
+	}
+#endif /* CONFIG_KV_STORE_KEY_INFUSE_APPLICATION_ID */
+
 	KV_KEY_TYPE(KV_KEY_REBOOTS) reboot_fallback = {0};
 
 	/* Get current reboot count */
