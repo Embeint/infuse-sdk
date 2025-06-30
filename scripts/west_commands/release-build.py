@@ -172,7 +172,9 @@ class release_build(WestCommand):
             if not os.path.exists(absolute_repo_path):
                 # Repo is part of the manifest, but not cloned (probably due to manifest groups).
                 # This is not necessarily a problem, but let the user know.
-                print(f"'{project.path}' does not exist (groups: {project.groups})")
+                # Ignore the babblesim repos, most users won't have them cloned out.
+                if "babblesim" not in project.groups:
+                    print(f"'{project.path}' does not exist (groups: {project.groups})")
                 continue
 
             repo = Repo(absolute_repo_path)
