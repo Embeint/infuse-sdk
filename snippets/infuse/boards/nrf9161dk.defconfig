@@ -1,5 +1,8 @@
 if BOARD_NRF9161DK_NRF9161_NS
 
+configdefault TFM_DEVICETREE_LAYOUT
+    default y
+
 configdefault NETWORKING
     default y if !MCUBOOT
 
