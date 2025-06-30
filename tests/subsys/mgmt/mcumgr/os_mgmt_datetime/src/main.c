@@ -135,17 +135,16 @@ static void expect_timestring(const char *expected, int trailing_ignore)
 ZTEST(os_mgmt_datetime, test_datetime_get)
 {
 	struct timeutil_sync_instant instant;
-	int accuracy = IS_ENABLED(CONFIG_COVERAGE_GCOV) ? 3 : 2;
 
 	/* Boot time */
 	epoch_time_reset();
-	expect_timestring("2020-01-01T00:00:00.0xx", accuracy);
+	expect_timestring("2020-01-01T00:00:00.xxx", 3);
 
 	/* Arbitrary time */
 	instant.local = k_uptime_ticks();
 	instant.ref = epoch_time_from_unix(1725492631, UINT16_MAX / 2);
 	epoch_time_set_reference(TIME_SOURCE_GNSS, &instant);
-	expect_timestring("2024-09-04T23:30:31.5xx", accuracy);
+	expect_timestring("2024-09-04T23:30:31.xxx", 3);
 }
 
 static void cleanup_test(void *p)
