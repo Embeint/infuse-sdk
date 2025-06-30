@@ -64,6 +64,12 @@ static void scan_result_handle(const struct wifi_scan_result *entry)
 		/* Already logged maximum APs */
 		return;
 	}
+	if (entry->mac_length != 6) {
+		/* Reporting a network without a valid BSSID doesn't make sense */
+		LOG_DBG("Skipping network without BSSID: '%s'",
+			entry->ssid_length ? (char *)entry->ssid : "");
+		return;
+	}
 
 	bssid = sys_get_be48(entry->mac);
 	bssid_masked = bssid & WIFI_BSSID_MASK;
