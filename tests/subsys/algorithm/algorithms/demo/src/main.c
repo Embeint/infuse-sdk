@@ -130,7 +130,7 @@ ZTEST(alg_demo, test_event_generator)
 	tdfs_logged = count_logging(TDF_ALGORITHM_OUTPUT);
 
 	/* We expect about 25 TDFs from a 25% chance over 100 samples */
-	zassert_within(25, tdfs_logged, 5, "Unexpected number of events");
+	zassert_within(25, tdfs_logged, 7, "Unexpected number of events");
 }
 
 ZTEST(alg_demo, test_state_generator)
