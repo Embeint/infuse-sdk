@@ -46,10 +46,9 @@ configdefault NET_MAX_CONN
 	# DNS + SNTP + UDP + WPA_SUPP consume the default 4
 	default 6
 
-# DNS support
+# Native DNS support (not needed for offloaded `getaddrinfo`)
+if !NRF_MODEM_LIB
 configdefault DNS_RESOLVER
-	default y
-configdefault DNS_RESOLVER_AUTO_INIT
 	default y
 configdefault DNS_SERVER_IP_ADDRESSES
 	default y
@@ -58,6 +57,7 @@ configdefault DNS_SERVER1
 configdefault DNS_NUM_CONCUR_QUERIES
 	# Both libraries do DNS queries immediately upon connection
 	default 2 if SNTP_AUTO && EPACKET_INTERFACE_UDP
+endif
 
 # SNTP time sync
 configdefault SNTP
