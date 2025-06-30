@@ -1,0 +1,10 @@
+common:
+  tags: epacket
+  min_flash: 64
+  min_ram: 32
+tests:
+  epacket.filter:
+    platform_allow:
+      - native_sim
+    integration_platforms:
+      - native_sim

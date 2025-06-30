@@ -13,7 +13,6 @@
 #include <zephyr/random/random.h>
 
 #include <infuse/drivers/watchdog.h>
-#include <infuse/task_runner/runner.h>
 
 K_SEM_DEFINE(watchdog_expired, 0, 1);
 
@@ -37,7 +36,7 @@ ZTEST(epacket_watchdog, test_watchdog)
 	/* Block the processing thread */
 	k_thread_suspend(epacket_processor_thread);
 
-	/* Failing to call task_runner_iterate should result in a watchdog interrupt */
+	/* Suspending the processing thread should result in a watchdog interrupt */
 	rc = k_sem_take(&watchdog_expired, K_MSEC(CONFIG_INFUSE_WATCHDOG_PERIOD_MS + 100));
 	zassert_equal(0, rc, "Watchdog did not expire");
 }
