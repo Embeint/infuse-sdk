@@ -63,6 +63,10 @@ config EPACKET_BUFFERS_TX_DELAYABLE_WORK
 	help
 	  Enable a per TX buffer delayable work item.
 
+config EPACKET_FILTERING
+	bool "ePacket filtering functions"
+	depends on TDF
+
 rsource "interfaces/Kconfig"
 
 endif # EPACKET
