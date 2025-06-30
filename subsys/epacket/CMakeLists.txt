@@ -3,6 +3,7 @@
 zephyr_library_named(epacket)
 
 zephyr_library_sources(epacket.c handlers.c)
+zephyr_library_sources_ifdef(CONFIG_EPACKET_FILTERING filter.c)
 zephyr_library_sources_ifdef(CONFIG_EPACKET_CRYPTO
   keys.c
   interfaces/epacket_common_crypt.c
