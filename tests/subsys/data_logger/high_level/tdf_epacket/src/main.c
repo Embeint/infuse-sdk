@@ -43,7 +43,12 @@ ZTEST(tdf_data_logger, test_standard)
 	struct k_fifo *sent_queue = epacket_dummmy_transmit_fifo_get();
 	uint8_t tdf_data[16];
 	struct net_buf *buf;
+	uint32_t init_size;
 	int rc;
+
+	init_size = tdf_data_logger_block_bytes_remaining(logger);
+	zassert_equal(0, tdf_data_logger_block_bytes_pending(logger));
+	zassert_not_equal(0, init_size);
 
 	/* 7 bytes per log (3 overhead, 4 data) = 56 bytes */
 	for (int i = 0; i < 8; i++) {
@@ -52,9 +57,15 @@ ZTEST(tdf_data_logger, test_standard)
 	}
 	zassert_is_null(k_fifo_get(sent_queue, K_MSEC(1)));
 
+	zassert_equal(56, tdf_data_logger_block_bytes_pending(logger));
+	zassert_equal(init_size - 56, tdf_data_logger_block_bytes_remaining(logger));
+
 	/* Flush logger */
 	rc = tdf_data_logger_flush_dev(logger);
 	zassert_equal(0, rc);
+
+	zassert_equal(0, tdf_data_logger_block_bytes_pending(logger));
+	zassert_equal(init_size, tdf_data_logger_block_bytes_remaining(logger));
 
 	/* Validate payload sent */
 	buf = k_fifo_get(sent_queue, K_MSEC(1));
