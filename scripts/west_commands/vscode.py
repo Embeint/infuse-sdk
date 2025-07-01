@@ -283,6 +283,14 @@ class vscode(WestCommand):
             launch["configurations"][0]["preAttachCommands"] = [
                 f"add-symbol-file {str(path)}" for path in tfm_exists
             ]
+        if cache.get("SYSBUILD", False):
+            # Check if a `mcuboot` folder exists at the same level
+            mcuboot_elf = build_dir / ".." / "mcuboot" / "zephyr" / "zephyr.elf"
+            if mcuboot_elf.exists():
+                # Add the mcuboot .elf file
+                launch["configurations"][0]["preAttachCommands"] = [
+                    f"add-symbol-file {str(mcuboot_elf.resolve())}"
+                ]
 
     def _qemu(self, build_dir, cache):
         assert cache.get("QEMU", False)
