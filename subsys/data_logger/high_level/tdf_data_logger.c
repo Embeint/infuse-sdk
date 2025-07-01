@@ -114,6 +114,20 @@ static const struct device *logger_mask_iter(uint8_t *mask)
 	return NULL;
 }
 
+int tdf_data_logger_block_bytes_pending(const struct device *dev)
+{
+	struct tdf_logger_data *data = dev->data;
+
+	return data->tdf_state.buf.len;
+}
+
+int tdf_data_logger_block_bytes_remaining(const struct device *dev)
+{
+	struct tdf_logger_data *data = dev->data;
+
+	return net_buf_simple_tailroom(&data->tdf_state.buf);
+}
+
 static int flush_internal(const struct device *dev, bool locked)
 {
 	const struct tdf_logger_config *config = dev->config;

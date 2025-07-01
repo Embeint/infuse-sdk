@@ -219,6 +219,24 @@ static inline void tdf_data_logger_log(uint8_t logger_mask, uint16_t tdf_id, uin
 	} while (0)
 
 /**
+ * @brief Query the number of bytes pending on the current block
+ *
+ * @param dev Data logger
+ *
+ * @return int Number of bytes of TDF data currently pending on the block
+ */
+int tdf_data_logger_block_bytes_pending(const struct device *dev);
+
+/**
+ * @brief Query the number of bytes remaining until the logger block will be flushed
+ *
+ * @param dev Data logger
+ *
+ * @return int Number of bytes of TDF data that can be added on the current block
+ */
+int tdf_data_logger_block_bytes_remaining(const struct device *dev);
+
+/**
  * @brief Flush any pending TDFs to backend
  *
  * @param dev Data logger
