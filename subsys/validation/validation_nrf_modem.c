@@ -19,6 +19,7 @@
 #define TEST "MODEM"
 
 static K_SEM_DEFINE(lte_cell_scan_complete, 0, 1);
+static int gci_cells_found;
 
 static int infuse_modem_info(void)
 {
@@ -98,6 +99,7 @@ void network_scan_lte_handler(const struct lte_lc_evt *const evt)
 	}
 	info = &evt->cells_info;
 
+	gci_cells_found = info->gci_cells_count;
 	VALIDATION_REPORT_INFO(TEST, "Found %d global cells", info->gci_cells_count);
 	for (int i = 0; i < info->gci_cells_count; i++) {
 		struct lte_lc_cell *cell = &info->gci_cells[i];
@@ -111,7 +113,7 @@ void network_scan_lte_handler(const struct lte_lc_evt *const evt)
 	k_sem_give(&lte_cell_scan_complete);
 }
 
-static int infuse_net_scan(void)
+static int network_cell_scan(void)
 {
 	struct lte_lc_ncellmeas_params ncellmeas_params = {
 		.search_type = LTE_LC_NEIGHBOR_SEARCH_TYPE_GCI_EXTENDED_COMPLETE,
@@ -137,13 +139,17 @@ static int infuse_net_scan(void)
 		goto cleanup;
 	}
 
-	rc = k_sem_take(&lte_cell_scan_complete, K_SECONDS(10));
+	rc = k_sem_take(&lte_cell_scan_complete,
+			K_SECONDS(CONFIG_INFUSE_VALIDATE_NRF_MODEM_GCI_SEARCH_TIMEOUT));
 	if (rc < 0) {
 		VALIDATION_REPORT_INFO(TEST, "Terminating cell scan");
 		lte_lc_neighbor_cell_measurement_cancel();
 		/* Callback runs on cancel */
 		k_sem_take(&lte_cell_scan_complete, K_FOREVER);
 	}
+
+	/* Validate number of cells found */
+	rc = gci_cells_found >= CONFIG_INFUSE_VALIDATE_NRF_MODEM_GCI_MIN_CELL ? 0 : -EAGAIN;
 
 cleanup:
 	(void)lte_lc_func_mode_set(LTE_LC_FUNC_MODE_DEACTIVATE_LTE);
@@ -166,7 +172,7 @@ int infuse_validation_nrf_modem(uint8_t flags)
 	}
 
 	if ((rc == 0) && (flags & VALIDATION_NRF_MODEM_LTE_SCAN)) {
-		rc = infuse_net_scan();
+		rc = network_cell_scan();
 	}
 
 	if (nrf_modem_lib_shutdown() != 0) {
