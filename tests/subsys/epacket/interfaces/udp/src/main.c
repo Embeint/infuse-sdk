@@ -245,6 +245,7 @@ ZTEST(epacket_udp, test_udp_reconnect)
 	KV_KEY_TYPE(KV_KEY_EPACKET_UDP_PORT)
 	udp_port_default = {CONFIG_EPACKET_INTERFACE_UDP_DEFAULT_PORT - 1};
 	struct net_buf *rx;
+	int rc;
 
 	/* Set incorrect UDP port */
 	kv_store_write(KV_KEY_EPACKET_UDP_PORT, &udp_port_default, sizeof(udp_port_default));
@@ -262,15 +263,21 @@ ZTEST(epacket_udp, test_udp_reconnect)
 			     CONFIG_EPACKET_INTERFACE_UDP_ACK_COUNTDOWN + 1);
 	     i++) {
 		tdf_send(0, NULL);
-		k_sleep(K_SECONDS(1));
+		rc = k_sem_take(&if_state_change, K_SECONDS(1));
+		if (rc == 0) {
+			/* Interface is now disconnected */
+			break;
+		}
 	}
+	/* Ensure loop exited due to disconnect */
+	zassert_equal(0, rc);
 
-	/* No packets expected */
-	rx = k_fifo_get(&udp_rx_fifo, K_MSEC(100));
+	/* No packets expected up until disconnect */
+	rx = k_fifo_get(&udp_rx_fifo, K_NO_WAIT);
 	zassert_is_null(rx);
 
-	/* We expect the interface to have gone UP -> DOWN -> UP */
-	zassert_equal(0, k_sem_take(&if_state_change, K_MSEC(100)));
+	/* We expect the interface to go up again */
+	zassert_equal(0, k_sem_take(&if_state_change, K_SECONDS(2)));
 
 	/* Interface should still work */
 	test_acked_packet();
