@@ -10,9 +10,6 @@ configdefault IMG_MANAGER
 configdefault INFUSE_CPATCH
 	default y if BOOTLOADER_MCUBOOT
 
-configdefault NRF_GRTC_CLEAR_AT_INIT
-	default y
-
 config HEAP_MEM_POOL_ADD_SIZE_HCI_IPC
 	int "Heap size required by IPC library"
 	depends on DT_HAS_ZEPHYR_BT_HCI_IPC_ENABLED

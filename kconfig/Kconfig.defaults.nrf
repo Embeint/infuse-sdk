@@ -5,10 +5,6 @@ if SOC_FAMILY_NORDIC_NRF
 configdefault NRF_CC3XX_PLATFORM
 	default y
 
-# Fix uptime not resetting on reboot (We don't use the RTC)
-configdefault NRF_GRTC_CLEAR_AT_INIT
-	default y
-
 # Use CC3XX platform
 choice MBEDTLS_PSA_CRYPTO_RNG_SOURCE
 	default MBEDTLS_PSA_CRYPTO_EXTERNAL_RNG if NRF_CC3XX_PLATFORM
