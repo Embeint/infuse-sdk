@@ -46,6 +46,18 @@ config INFUSE_VALIDATION_DISK_THROUGHPUT_BUFFER_SIZE
 
 endif # DISK_ACCESS
 
+if NRF_MODEM_LIB
+
+config INFUSE_VALIDATE_NRF_MODEM_GCI_SEARCH_TIMEOUT
+	int "Maximum duration to scan for GCI cells (seconds)"
+	default 10
+
+config INFUSE_VALIDATE_NRF_MODEM_GCI_MIN_CELL
+	int "Number of GCI cells expected to be scanned"
+	default 0
+
+endif # NRF_MODEM_LIB
+
 if WIFI
 
 # Required for `inet_ntop`
