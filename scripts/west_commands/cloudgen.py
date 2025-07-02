@@ -6,6 +6,7 @@ import pathlib
 import json
 import importlib
 import subprocess
+import sys
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
@@ -46,7 +47,7 @@ class cloudgen(WestCommand):
         return parser
 
     def do_run(self, args, unknown_args):
-        self.extra_defs_base = args.defs
+        self.extra_defs_base = pathlib.Path(args.defs) if args.defs else None
         self.output_base = pathlib.Path(args.output)
         self.generate_base = self.output_base / "generated"
         self.definition_dir = pathlib.Path(__file__).parent / "cloud_definitions"
@@ -60,9 +61,14 @@ class cloudgen(WestCommand):
             lstrip_blocks=True,
         )
 
+        if self.extra_defs_base and not self.extra_defs_base.exists():
+            sys.exit(f"Path '{self.extra_defs_base}' does not exist")
+
         self.tdfgen()
         self.kvgen()
         self.rpcgen()
+
+        print(f"Outputs written to '{self.generate_base.absolute()}'")
 
     def clang_format(self, file):
         args = [
@@ -128,7 +134,7 @@ class cloudgen(WestCommand):
         with tdf_def_file.open("r") as f:
             tdf_defs = json.load(f)
         if self.extra_defs_base:
-            tdf_def_file_ext = pathlib.Path(self.extra_defs_base) / "tdf.json"
+            tdf_def_file_ext = self.extra_defs_base / "tdf.json"
             if tdf_def_file_ext.exists():
                 with tdf_def_file_ext.open("r") as f:
                     tdf_defs_ext = json.load(f)
@@ -229,7 +235,7 @@ class cloudgen(WestCommand):
         with kv_def_file.open("r") as f:
             kv_defs = json.load(f)
         if self.extra_defs_base:
-            kv_def_file_ext = pathlib.Path(self.extra_defs_base) / "kv_store.json"
+            kv_def_file_ext = self.extra_defs_base / "kv_store.json"
             if kv_def_file_ext.exists():
                 with kv_def_file_ext.open("r") as f:
                     kv_defs_ext = json.load(f)
@@ -334,7 +340,7 @@ class cloudgen(WestCommand):
         with rpc_def_file.open("r") as f:
             rpc_defs = json.load(f)
         if self.extra_defs_base:
-            rpc_def_file_ext = pathlib.Path(self.extra_defs_base) / "rpc.json"
+            rpc_def_file_ext = self.extra_defs_base / "rpc.json"
             if rpc_def_file_ext.exists():
                 with rpc_def_file_ext.open("r") as f:
                     rpc_defs_ext = json.load(f)
