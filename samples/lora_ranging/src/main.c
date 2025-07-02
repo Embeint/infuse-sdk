@@ -161,6 +161,8 @@ int main(void)
 		.coding_rate = CR_4_5,
 		.preamble_len = 8,
 		.tx_power = 30,
+		/* Use default sync word */
+		.sync_word = 0,
 	};
 	static struct kv_lora_config kv_config;
 	struct lora_tx_64 tx_tdf;
@@ -213,6 +215,7 @@ int main(void)
 		config.coding_rate = kv_config.coding_rate;
 		config.preamble_len = kv_config.preamble_len;
 		config.tx_power = kv_config.tx_power;
+		config.sync_word = kv_config.sync_word;
 
 		/* Configure for RX */
 		config.tx = false;
