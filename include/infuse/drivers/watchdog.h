@@ -71,7 +71,7 @@ extern "C" {
 	{                                                                                          \
 		(void)period_name;                                                                 \
 		wdog_channel =                                                                     \
-			IS_ENABLED(dependency) ? infuse_watchdog_install(&loop_period) : -ENODEV;  \
+			IS_ENABLED(dependency) ? infuse_watchdog_install(&period_name) : -ENODEV;  \
 		return 0;                                                                          \
 	}                                                                                          \
 	SYS_INIT(name##_register, POST_KERNEL, 0);
