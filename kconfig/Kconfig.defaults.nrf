@@ -2,6 +2,10 @@
 
 if SOC_FAMILY_NORDIC_NRF
 
+configdefault LOG_TIMESTAMP_64BIT
+	# GRTC runs at 1Mhz, timestamps rollover after 71 minutes in 32bits
+	default y if NRF_GRTC_TIMER
+
 configdefault NRF_CC3XX_PLATFORM
 	default y
 
