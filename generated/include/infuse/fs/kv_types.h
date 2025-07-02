@@ -298,6 +298,8 @@ struct kv_lora_config {
 	uint16_t preamble_len;
 	/** Transmit power (dBm) */
 	int8_t tx_power;
+	/** Custom sync word */
+	uint8_t sync_word;
 } __packed;
 
 /** Reference gravity vector for tilt calculations */

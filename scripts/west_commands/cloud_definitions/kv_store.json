@@ -238,7 +238,8 @@
                 {"name": "spreading_factor", "type": "uint8_t", "description": "Spreading factor (see enum lora_datarate)"},
                 {"name": "coding_rate", "type": "uint8_t", "description": "Coding rate (see enum lora_coding_rate)"},
                 {"name": "preamble_len", "type": "uint16_t", "description": "Preamble length"},
-                {"name": "tx_power", "type": "int8_t", "description": "Transmit power (dBm)"}
+                {"name": "tx_power", "type": "int8_t", "description": "Transmit power (dBm)"},
+                {"name": "sync_word", "type": "uint8_t", "description": "Custom sync word"}
             ]
         },
         "60": {
