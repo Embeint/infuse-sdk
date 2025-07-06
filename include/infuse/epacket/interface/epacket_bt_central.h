@@ -47,6 +47,9 @@ extern "C" {
  * @param subscribe_commands Subscribe to the command characteristic
  * @param subscribe_data Subscribe to the data characteristic
  * @param subscribe_logging Subscribe to the logging characteristic
+ * @param inactivity_timeout Automatically disconnect if no data sent or received
+ *                           on the command or data characteristics for this long.
+ *                           K_NO_WAIT to disable.
  *
  * @retval 0 on success, *conn is valid
  * @retval 1 if connection already existed, *conn is valid
@@ -55,7 +58,8 @@ extern "C" {
 int epacket_bt_gatt_connect(const bt_addr_le_t *peer, const struct bt_le_conn_param *conn_params,
 			    uint32_t timeout_ms, struct bt_conn **conn,
 			    struct epacket_read_response *security, bool subscribe_commands,
-			    bool subscribe_data, bool subscribe_logging);
+			    bool subscribe_data, bool subscribe_logging,
+			    k_timeout_t inactivity_timeout);
 
 /**
  * @brief Infuse-IoT Bluetooth GATT characteristic notification handle function

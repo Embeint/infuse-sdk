@@ -48,6 +48,8 @@ struct infuse_connection_state {
 	struct bt_conn_auto_discovery discovery;
 	struct bt_gatt_subscribe_params subs[CHAR_NUM];
 	struct k_poll_signal sig;
+	struct k_work_delayable idle_worker;
+	k_timeout_t inactivity_timeout;
 } infuse_conn[CONFIG_BT_MAX_CONN];
 
 struct bt_gatt_read_params_user {
@@ -96,14 +98,20 @@ static uint8_t security_read_result(struct bt_conn *conn, uint8_t err,
 
 static void conn_terminated_cb(struct bt_conn *conn, int reason, void *user_data)
 {
+	uint8_t idx = bt_conn_index(conn);
+
+	/* Cancel any pending idle timeout */
+	k_work_cancel_delayable(&infuse_conn[idx].idle_worker);
 }
 
 uint8_t epacket_bt_gatt_notify_recv_func(struct bt_conn *conn,
 					 struct bt_gatt_subscribe_params *params, const void *data,
 					 uint16_t length)
 {
+	struct infuse_connection_state *s;
 	struct epacket_rx_metadata *meta;
 	struct net_buf *rx_buffer;
+	uint8_t idx;
 
 	if (data == NULL) {
 		/* Unsubscribed */
@@ -136,6 +144,14 @@ uint8_t epacket_bt_gatt_notify_recv_func(struct bt_conn *conn,
 #else
 	meta->rssi = 0;
 #endif /* CONFIG_BT_CONN_AUTO_RSSI */
+
+	/* Refresh inactivity timeout (on command or data characteristics) */
+	idx = bt_conn_index(conn);
+	s = &infuse_conn[idx];
+	if (!K_TIMEOUT_EQ(s->inactivity_timeout, K_NO_WAIT) &&
+	    (params->value_handle != s->remote_info[CHAR_LOGGING].value_handle)) {
+		k_work_reschedule(&s->idle_worker, s->inactivity_timeout);
+	}
 
 	/* Hand off to ePacket core */
 	epacket_raw_receive_handler(rx_buffer);
@@ -173,10 +189,36 @@ static int characteristic_subscribe(struct bt_conn *conn,
 	return rc;
 }
 
+/* Internal API, but should be safe as it is just the opposite of `bt_conn_index` */
+struct bt_conn *bt_conn_lookup_index(uint8_t index);
+
+static void bt_conn_idle(struct k_work *work)
+{
+	struct k_work_delayable *dwork = k_work_delayable_from_work(work);
+	struct infuse_connection_state *s =
+		CONTAINER_OF(dwork, struct infuse_connection_state, idle_worker);
+	uint8_t state_idx = ARRAY_INDEX(infuse_conn, s);
+	struct bt_conn *conn = bt_conn_lookup_index(state_idx);
+	int rc;
+
+	__ASSERT_NO_MSG(conn != NULL);
+
+	LOG_INF("Connection idle, disconnecting");
+	/* Trigger the disconnection, no need to wait for it to complete */
+	rc = bt_conn_disconnect(conn, BT_HCI_ERR_REMOTE_USER_TERM_CONN);
+	if (rc != 0) {
+		LOG_ERR("Failed to trigger disconnection (%d)", rc);
+	}
+
+	/* Release the reference from bt_conn_lookup_index */
+	bt_conn_unref(conn);
+}
+
 int epacket_bt_gatt_connect(const bt_addr_le_t *peer, const struct bt_le_conn_param *conn_params,
 			    uint32_t timeout_ms, struct bt_conn **conn_out,
 			    struct epacket_read_response *security, bool subscribe_commands,
-			    bool subscribe_data, bool subscribe_logging)
+			    bool subscribe_data, bool subscribe_logging,
+			    k_timeout_t inactivity_timeout)
 {
 	const struct bt_conn_le_create_param create_param = {
 		.interval = BT_GAP_SCAN_FAST_INTERVAL_MIN,
@@ -213,6 +255,7 @@ int epacket_bt_gatt_connect(const bt_addr_le_t *peer, const struct bt_le_conn_pa
 	s = &infuse_conn[idx];
 
 	k_poll_signal_init(&s->sig);
+	k_work_init_delayable(&s->idle_worker, bt_conn_idle);
 	s->discovery.characteristics = infuse_iot_characteristics;
 	s->discovery.cache = &infuse_iot_remote_cache;
 	s->discovery.remote_info = s->remote_info;
@@ -279,6 +322,11 @@ conn_created:
 					      &s->subs[CHAR_LOGGING], subscribe_logging);
 	}
 
+	/* Connection all ready, start the inactivity timeout if specified */
+	s->inactivity_timeout = inactivity_timeout;
+	if ((rc == 0) && !K_TIMEOUT_EQ(inactivity_timeout, K_NO_WAIT)) {
+		k_work_schedule(&s->idle_worker, inactivity_timeout);
+	}
 cleanup:
 	if (rc == 0) {
 		*conn_out = conn;
@@ -342,6 +390,11 @@ static void epacket_bt_central_send(const struct device *dev, struct net_buf *bu
 	/* Write the data to the peer */
 	LOG_DBG("Writing %d bytes to handle %d on conn %p", buf->len, handle, (void *)conn);
 	rc = bt_gatt_write_without_response(conn, handle, buf->data, buf->len, false);
+
+	/* Refresh inactivity timeout */
+	if (!K_TIMEOUT_EQ(s->inactivity_timeout, K_NO_WAIT)) {
+		k_work_reschedule(&s->idle_worker, s->inactivity_timeout);
+	}
 
 cleanup:
 	epacket_notify_tx_result(dev, buf, rc);

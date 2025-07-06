@@ -26,6 +26,8 @@ struct net_buf *rpc_command_bt_connect_infuse(struct net_buf *request)
 	const bt_addr_le_t peer = bt_addr_infuse_to_zephyr(&req->peer);
 	const struct bt_le_conn_param params = BT_LE_CONN_PARAM_INIT(0x10, 0x15, 0, 400);
 	struct epacket_read_response security_info;
+	k_timeout_t inactivty =
+		req->inactivity_timeout_ms == 0 ? K_NO_WAIT : K_MSEC(req->inactivity_timeout_ms);
 	struct bt_conn *conn;
 	int rc;
 
@@ -37,7 +39,8 @@ struct net_buf *rpc_command_bt_connect_infuse(struct net_buf *request)
 	rc = epacket_bt_gatt_connect(&peer, &params, req->conn_timeout_ms, &conn, &security_info,
 				     req->subscribe & RPC_ENUM_INFUSE_BT_CHARACTERISTIC_COMMAND,
 				     req->subscribe & RPC_ENUM_INFUSE_BT_CHARACTERISTIC_DATA,
-				     req->subscribe & RPC_ENUM_INFUSE_BT_CHARACTERISTIC_LOGGING);
+				     req->subscribe & RPC_ENUM_INFUSE_BT_CHARACTERISTIC_LOGGING,
+				     inactivty);
 	if (rc >= 0) {
 		/* Copy results */
 		memcpy(rsp.cloud_public_key, security_info.cloud_public_key,
