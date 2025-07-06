@@ -6,6 +6,8 @@ common:
   filter: dt_compat_enabled("zephyr,bt-hci-spi-slave")
   integration_platforms:
     - tauro/nrf52840
+  platform_exclude:
+    - nrf9160dk@0.7.0/nrf52840
   tags:
     - bluetooth
     - spi
