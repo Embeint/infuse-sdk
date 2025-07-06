@@ -132,7 +132,7 @@ static void main_gateway_connect(void)
 	for (int i = 0; i < 5; i++) {
 		/* Initiate connection */
 		rc = epacket_bt_gatt_connect(&addr, &params, 3000, &conn, &security_info, i % 2,
-					     i % 2, i % 2);
+					     i % 2, i % 2, K_NO_WAIT);
 		if (rc != 0) {
 			FAIL("Failed to connect to peer\n");
 			return;
@@ -140,7 +140,7 @@ static void main_gateway_connect(void)
 
 		/* Same connection again should pass with RC == 1 */
 		rc = epacket_bt_gatt_connect(&addr, &params, 3000, &conn2, &security_info, i % 2,
-					     i % 2, i % 2);
+					     i % 2, i % 2, K_NO_WAIT);
 		if (rc != 1) {
 			FAIL("Failed to detect existing connection");
 			return;
@@ -188,7 +188,7 @@ static void main_gateway_connect_multi(void)
 	for (int i = 0; i < 3; i++) {
 		/* Connect to first device */
 		rc = epacket_bt_gatt_connect(&addr[0], &params, 3000, &conn1, &security_info, false,
-					     false, false);
+					     false, false, K_NO_WAIT);
 		if (rc != 0) {
 			FAIL("Failed to connect to first peer\n");
 			return;
@@ -196,7 +196,7 @@ static void main_gateway_connect_multi(void)
 
 		/* Connect to the second device */
 		rc = epacket_bt_gatt_connect(&addr[1], &params, 3000, &conn2, &security_info, false,
-					     false, false);
+					     false, false, K_NO_WAIT);
 		if (rc != 0) {
 			FAIL("Failed to connect to second peer %d\n", rc);
 			return;
@@ -241,7 +241,7 @@ static void main_gateway_connect_then_scan(void)
 
 	/* Initiate connection */
 	rc = epacket_bt_gatt_connect(&addr, &params, 3000, &conn, &security_info, false, false,
-				     false);
+				     false, K_NO_WAIT);
 	if (rc < 0) {
 		FAIL("Failed to connect to peer");
 		return;
@@ -450,7 +450,7 @@ static void main_gateway_connect_recv(void)
 
 		/* Connect to peer device */
 		rc = epacket_bt_gatt_connect(&addr, &params, 3000, &conn, &security_info, false,
-					     data_sub, false);
+					     data_sub, false, K_NO_WAIT);
 		if (rc != 0) {
 			FAIL("Failed to connect to peer\n");
 			return;
@@ -526,7 +526,7 @@ static void main_gateway_remote_rpc_client(void)
 	for (int i = 0; i < 4; i++) {
 		/* Connect to peer device */
 		rc = epacket_bt_gatt_connect(&addr, &params, 3000, &conn, &security_info, true,
-					     false, false);
+					     false, false, K_NO_WAIT);
 		if (rc != 0) {
 			FAIL("Failed to connect to peer\n");
 			return;
