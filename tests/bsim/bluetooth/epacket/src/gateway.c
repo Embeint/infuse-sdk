@@ -27,14 +27,33 @@ int epacket_bt_gatt_encrypt(struct net_buf *buf);
 
 extern enum bst_result_t bst_result;
 static K_SEM_DEFINE(epacket_adv_received, 0, 1);
+static K_SEM_DEFINE(bt_connected, 0, 1);
+static K_SEM_DEFINE(bt_disconnected, 0, 1);
 static bt_addr_le_t adv_device;
 static atomic_t received_packets;
 
 LOG_MODULE_REGISTER(app, LOG_LEVEL_INF);
 
+static void connected(struct bt_conn *conn, uint8_t err)
+{
+	k_sem_give(&bt_connected);
+}
+
+static void disconnected(struct bt_conn *conn, uint8_t reason)
+{
+	k_sem_give(&bt_disconnected);
+}
+
+static struct bt_conn_cb conn_cb = {
+	.connected = connected,
+	.disconnected = disconnected,
+};
+
 static void common_init(void)
 {
 	k_sem_reset(&epacket_adv_received);
+	k_sem_reset(&bt_connected);
+	k_sem_reset(&bt_disconnected);
 	received_packets = 0;
 }
 
@@ -499,6 +518,166 @@ static void main_gateway_connect_recv(void)
 	PASS("Received TDF data from connected peer\n");
 }
 
+static void main_gateway_connect_idle_tx_timeout(void)
+{
+	const struct device *epacket_central = DEVICE_DT_GET(DT_NODELABEL(epacket_bt_central));
+	const struct bt_le_conn_param params = BT_LE_CONN_PARAM_INIT(0x10, 0x15, 0, 400);
+	struct epacket_read_response security_info;
+	union epacket_interface_address if_address;
+	struct bt_conn *conn = NULL;
+	struct net_buf *buf;
+	bt_addr_le_t addr;
+	int rc;
+
+	common_init();
+	bt_conn_cb_register(&conn_cb);
+
+	if (observe_peers(&addr, 1) < 0) {
+		FAIL("Failed to observe peer\n");
+		return;
+	}
+
+	struct rpc_application_info_request req;
+	struct rpc_client_ctx ctx;
+
+	if_address.bluetooth = addr;
+	rpc_client_init(&ctx, epacket_central, if_address);
+
+	/* Connect to peer device with an idle timeout.
+	 * Don't subscribe to cmd responses by default to test the TX path.
+	 */
+	rc = epacket_bt_gatt_connect(&addr, &params, 3000, &conn, &security_info, false, false,
+				     false, K_MSEC(1500));
+	if (rc != 0) {
+		FAIL("Failed to connect to peer\n");
+		return;
+	}
+	bt_conn_unref(conn);
+	conn = NULL;
+
+	/* Connection should stay active while we're sending data */
+	for (int i = 0; i < 5; i++) {
+		/* Command will fail due to no response subscription, we don't care */
+		(void)rpc_client_command_sync(&ctx, RPC_ID_APPLICATION_INFO, &req, sizeof(req),
+					      K_NO_WAIT, K_MSEC(50), &buf);
+
+		rc = k_sem_take(&bt_disconnected, K_MSEC(1000));
+		if (rc == 0) {
+			FAIL("Inactivity timer terminated despite transmissions\n");
+			return;
+		}
+	}
+
+	/* Connection should terminate once we stop */
+	rc = k_sem_take(&bt_disconnected, K_MSEC(2000));
+	if (rc != 0) {
+		FAIL("Inactivity timer did not terminate connection\n");
+		return;
+	}
+	k_sleep(K_MSEC(500));
+
+	PASS("TX Inactivity timeout behaved as expected\n");
+}
+
+static void main_gateway_connect_idle_rx_timeout(void)
+{
+	const struct bt_le_conn_param params = BT_LE_CONN_PARAM_INIT(0x10, 0x15, 0, 400);
+	struct epacket_read_response security_info;
+	struct bt_conn *conn = NULL;
+	bt_addr_le_t addr;
+	int rc;
+
+	common_init();
+	bt_conn_cb_register(&conn_cb);
+
+	if (observe_peers(&addr, 1) < 0) {
+		FAIL("Failed to observe peer\n");
+		return;
+	}
+
+	/* Connect to peer device with a timeout that we expect to expire */
+	rc = epacket_bt_gatt_connect(&addr, &params, 3000, &conn, &security_info, false, false,
+				     false, K_MSEC(500));
+	if (rc != 0) {
+		FAIL("Failed to connect to peer\n");
+		return;
+	}
+	bt_conn_unref(conn);
+	conn = NULL;
+
+	/* Expect the connection to disconnect within 1000 ms */
+	rc = k_sem_take(&bt_disconnected, K_MSEC(1000));
+	if (rc != 0) {
+		FAIL("Inactivity timer did not terminate connection\n");
+		return;
+	}
+	k_sleep(K_MSEC(500));
+
+	/* Connect to peer device with a timeout that should not expire (peer sends at 1Hz) */
+	rc = epacket_bt_gatt_connect(&addr, &params, 3000, &conn, &security_info, false, true,
+				     false, K_MSEC(1500));
+	if (rc != 0) {
+		FAIL("Failed to connect to peer %d\n", rc);
+		return;
+	}
+
+	/* Validate no disconnection */
+	rc = k_sem_take(&bt_disconnected, K_MSEC(5000));
+	if (rc != -EAGAIN) {
+		FAIL("Inactivity timer terminated unexpectedly\n");
+		return;
+	}
+
+	/* Cleanup connection */
+	rc = bt_conn_disconnect_sync(conn);
+	if (rc != 0) {
+		FAIL("Failed to disconnect from peer\n");
+		return;
+	}
+	bt_conn_unref(conn);
+
+	PASS("RX Inactivity timeout behaved as expected\n");
+}
+
+static void main_gateway_connect_idle_rx_log_ignored(void)
+{
+	const struct bt_le_conn_param params = BT_LE_CONN_PARAM_INIT(0x10, 0x15, 0, 400);
+	struct epacket_read_response security_info;
+	struct bt_conn *conn = NULL;
+	bt_addr_le_t addr;
+	int rc;
+
+	common_init();
+	bt_conn_cb_register(&conn_cb);
+
+	if (observe_peers(&addr, 1) < 0) {
+		FAIL("Failed to observe peer\n");
+		return;
+	}
+
+	/* Connect to peer device with a long timeout, subscribed to logging characteristic */
+	rc = epacket_bt_gatt_connect(&addr, &params, 3000, &conn, &security_info, false, false,
+				     true, K_MSEC(2000));
+	if (rc != 0) {
+		FAIL("Failed to connect to peer\n");
+		return;
+	}
+	bt_conn_unref(conn);
+	conn = NULL;
+
+	/* Expect the connection to disconnect within 2500 ms, since logging should not refesh
+	 * the inactivity timeout.
+	 */
+	rc = k_sem_take(&bt_disconnected, K_MSEC(2500));
+	if (rc != 0) {
+		FAIL("Inactivity timer did not ignore logging data\n");
+		return;
+	}
+	k_sleep(K_MSEC(500));
+
+	PASS("RX Inactivity timeout ignored logging data\n");
+}
+
 static void main_gateway_remote_rpc_client(void)
 {
 	const struct bt_le_conn_param params = BT_LE_CONN_PARAM_INIT(0x10, 0x15, 0, 400);
@@ -781,6 +960,28 @@ static const struct bst_test_instance epacket_gateway[] = {
 		.test_pre_init_f = test_init,
 		.test_tick_f = test_tick,
 		.test_main_f = main_gateway_connect_recv,
+	},
+	{
+		.test_id = "epacket_bt_gateway_connect_idle_tx_timeout",
+		.test_descr = "Connect to peer device, test TX idle timeout",
+		.test_pre_init_f = test_init,
+		.test_tick_f = test_tick,
+		.test_main_f = main_gateway_connect_idle_tx_timeout,
+	},
+	{
+		.test_id = "epacket_bt_gateway_connect_idle_rx_timeout",
+		.test_descr = "Connect to peer device, test RX idle timeout",
+		.test_pre_init_f = test_init,
+		.test_tick_f = test_tick,
+		.test_main_f = main_gateway_connect_idle_rx_timeout,
+	},
+	{
+		.test_id = "epacket_bt_gateway_connect_idle_rx_log_ignored",
+		.test_descr = "Connect to peer device, ensure logging output ignored for "
+			      "inactivity timeout",
+		.test_pre_init_f = test_init,
+		.test_tick_f = test_tick,
+		.test_main_f = main_gateway_connect_idle_rx_log_ignored,
 	},
 	{
 		.test_id = "epacket_bt_gateway_remote_rpc",
