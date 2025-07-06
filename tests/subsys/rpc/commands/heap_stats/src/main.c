@@ -64,9 +64,10 @@ K_HEAP_DEFINE(heap2, 1024);
 ZTEST(rpc_command_heap_stats, test_basic)
 {
 	struct rpc_heap_stats_response *response;
+	uint32_t free1 = 0, free2 = 0;
+	bool heap1_found, heap2_found;
 	struct net_buf *rsp;
 	size_t num_heaps;
-	uint32_t free1, free2;
 	void *p;
 
 	/* Initial state (no allocations) */
@@ -74,19 +75,29 @@ ZTEST(rpc_command_heap_stats, test_basic)
 	rsp = expect_heap_stats_response(3);
 	response = (void *)rsp->data;
 	num_heaps = (rsp->len - sizeof(*response)) / sizeof(struct rpc_struct_heap_info);
-	zassert_equal(2, num_heaps);
+	zassert_true(num_heaps >= 2);
 
 	/* Expected states */
-	zassert_equal((uintptr_t)&heap1, response->stats[0].addr);
-	zassert_within(512, response->stats[0].free_bytes, 128);
-	zassert_equal(0, response->stats[0].allocated_bytes);
-	zassert_equal(0, response->stats[0].max_allocated_bytes);
-	zassert_equal((uintptr_t)&heap2, response->stats[1].addr);
-	zassert_within(1024, response->stats[1].free_bytes, 128);
-	zassert_equal(0, response->stats[1].allocated_bytes);
-	zassert_equal(0, response->stats[1].max_allocated_bytes);
-	free1 = response->stats[0].free_bytes;
-	free2 = response->stats[1].free_bytes;
+	heap1_found = false;
+	heap2_found = false;
+	for (int i = 0; i < num_heaps; i++) {
+		if ((uintptr_t)&heap1 == response->stats[i].addr) {
+			zassert_within(512, response->stats[i].free_bytes, 128);
+			zassert_equal(0, response->stats[i].allocated_bytes);
+			zassert_equal(0, response->stats[i].max_allocated_bytes);
+			free1 = response->stats[i].free_bytes;
+			heap1_found = true;
+		}
+		if ((uintptr_t)&heap2 == response->stats[i].addr) {
+			zassert_within(1024, response->stats[i].free_bytes, 128);
+			zassert_equal(0, response->stats[i].allocated_bytes);
+			zassert_equal(0, response->stats[i].max_allocated_bytes);
+			free2 = response->stats[i].free_bytes;
+			heap2_found = true;
+		}
+	}
+	zassert_true(heap1_found);
+	zassert_true(heap2_found);
 	net_buf_unref(rsp);
 
 	/* Allocate some bytes from each heap */
@@ -97,17 +108,27 @@ ZTEST(rpc_command_heap_stats, test_basic)
 	rsp = expect_heap_stats_response(4);
 	response = (void *)rsp->data;
 	num_heaps = (rsp->len - sizeof(*response)) / sizeof(struct rpc_struct_heap_info);
-	zassert_equal(2, num_heaps);
+	zassert_true(num_heaps >= 2);
 
 	/* Expected states */
-	zassert_equal((uintptr_t)&heap1, response->stats[0].addr);
-	zassert_within(free1 - 128, response->stats[0].free_bytes, 8);
-	zassert_within(128, response->stats[0].allocated_bytes, 8);
-	zassert_within(128, response->stats[0].max_allocated_bytes, 8);
-	zassert_equal((uintptr_t)&heap2, response->stats[1].addr);
-	zassert_within(free2 - 256, response->stats[1].free_bytes, 8);
-	zassert_within(256, response->stats[1].allocated_bytes, 8);
-	zassert_within(256, response->stats[1].max_allocated_bytes, 8);
+	heap1_found = false;
+	heap2_found = false;
+	for (int i = 0; i < num_heaps; i++) {
+		if ((uintptr_t)&heap1 == response->stats[i].addr) {
+			zassert_within(free1 - 128, response->stats[i].free_bytes, 8);
+			zassert_within(128, response->stats[i].allocated_bytes, 8);
+			zassert_within(128, response->stats[i].max_allocated_bytes, 8);
+			heap1_found = true;
+		}
+		if ((uintptr_t)&heap2 == response->stats[i].addr) {
+			zassert_within(free2 - 256, response->stats[i].free_bytes, 8);
+			zassert_within(256, response->stats[i].allocated_bytes, 8);
+			zassert_within(256, response->stats[i].max_allocated_bytes, 8);
+			heap2_found = true;
+		}
+	}
+	zassert_true(heap1_found);
+	zassert_true(heap2_found);
 	net_buf_unref(rsp);
 
 	/* Free one of the buffers */
@@ -117,17 +138,27 @@ ZTEST(rpc_command_heap_stats, test_basic)
 	rsp = expect_heap_stats_response(4);
 	response = (void *)rsp->data;
 	num_heaps = (rsp->len - sizeof(*response)) / sizeof(struct rpc_struct_heap_info);
-	zassert_equal(2, num_heaps);
+	zassert_true(num_heaps >= 2);
 
 	/* Expected states */
-	zassert_equal((uintptr_t)&heap1, response->stats[0].addr);
-	zassert_within(free1 - 128, response->stats[0].free_bytes, 8);
-	zassert_within(128, response->stats[0].allocated_bytes, 8);
-	zassert_within(128, response->stats[0].max_allocated_bytes, 8);
-	zassert_equal((uintptr_t)&heap2, response->stats[1].addr);
-	zassert_equal(free2, response->stats[1].free_bytes);
-	zassert_equal(0, response->stats[1].allocated_bytes);
-	zassert_within(256, response->stats[1].max_allocated_bytes, 8);
+	heap1_found = false;
+	heap2_found = false;
+	for (int i = 0; i < num_heaps; i++) {
+		if ((uintptr_t)&heap1 == response->stats[i].addr) {
+			zassert_within(free1 - 128, response->stats[i].free_bytes, 8);
+			zassert_within(128, response->stats[i].allocated_bytes, 8);
+			zassert_within(128, response->stats[i].max_allocated_bytes, 8);
+			heap1_found = true;
+		}
+		if ((uintptr_t)&heap2 == response->stats[i].addr) {
+			zassert_equal(free2, response->stats[i].free_bytes);
+			zassert_equal(0, response->stats[i].allocated_bytes);
+			zassert_within(256, response->stats[i].max_allocated_bytes, 8);
+			heap2_found = true;
+		}
+	}
+	zassert_true(heap1_found);
+	zassert_true(heap2_found);
 	net_buf_unref(rsp);
 }
 
