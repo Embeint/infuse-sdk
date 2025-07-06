@@ -1,0 +1,35 @@
+/*
+ * Copyright (c) 2025 Embeint Inc
+ *
+ * SPDX-License-Identifier: LicenseRef-Embeint
+ */
+
+#include <mem.h>
+
+&flashcontroller0 {
+	reg = <0x00000000 DT_SIZE_K(16)>;
+};
+
+&flash0 {
+	reg = <0x00000000 DT_SIZE_K(16)>;
+	partitions {
+		compatible = "fixed-partitions";
+		#address-cells = <1>;
+		#size-cells = <1>;
+
+		storage: partition@0 {
+			reg = <0x00000000 DT_SIZE_K(16)>;
+		};
+	};
+};
+
+/ {
+	data_logger_flash: data_logger_flash {
+		compatible = "embeint,data-logger-flash-map", "embeint,data-logger";
+		partition = <&storage>;
+
+		tdf_logger_flash: tdf_logger_flash {
+			compatible = "embeint,tdf-data-logger";
+		};
+	};
+};
