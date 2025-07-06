@@ -1,0 +1,10 @@
+common:
+  tags: data_logger tdf
+  min_flash: 64
+  min_ram: 32
+tests:
+  data_logger.tdf.binary_gen:
+    platform_allow:
+      - native_sim
+    integration_platforms:
+      - native_sim
