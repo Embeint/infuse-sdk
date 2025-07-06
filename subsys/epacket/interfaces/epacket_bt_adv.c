@@ -37,9 +37,8 @@ static const struct bt_le_ext_adv_start_param adv_start_param = {
 static const struct bt_le_scan_param scan_param = {
 	.type = BT_LE_SCAN_TYPE_PASSIVE,
 	.options = BT_LE_SCAN_OPT_NONE,
-	/* 32 * 0.625 = 20ms */
-	.interval = 0x0020,
-	.window = 0x0020,
+	.interval = BT_GAP_SCAN_FAST_INTERVAL_MIN,
+	.window = BT_GAP_SCAN_FAST_WINDOW,
 };
 static struct net_buf *adv_set_bufs[CONFIG_BT_EXT_ADV_MAX_ADV_SET];
 static K_FIFO_DEFINE(tx_buf_queue);

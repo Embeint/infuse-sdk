@@ -179,8 +179,8 @@ int epacket_bt_gatt_connect(const bt_addr_le_t *peer, const struct bt_le_conn_pa
 			    bool subscribe_data, bool subscribe_logging)
 {
 	const struct bt_conn_le_create_param create_param = {
-		.interval = BT_GAP_SCAN_FAST_INTERVAL,
-		.window = BT_GAP_SCAN_FAST_INTERVAL,
+		.interval = BT_GAP_SCAN_FAST_INTERVAL_MIN,
+		.window = BT_GAP_SCAN_FAST_WINDOW,
 		.timeout = timeout_ms / 10,
 	};
 	struct infuse_connection_state *s;
