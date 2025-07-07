@@ -26,6 +26,7 @@ static struct k_work_delayable idle_timeout;
 static struct k_work conn_terminate;
 static struct net_if *wifi_if;
 static bool connection_requested;
+static bool did_conn_timeout;
 static bool did_idle_timeout;
 
 LOG_MODULE_REGISTER(wifi_mgmt, LOG_LEVEL_INF);
@@ -101,6 +102,9 @@ static void conn_create_worker(struct k_work *work)
 
 static void conn_timeout_worker(struct k_work *work)
 {
+	did_conn_timeout = true;
+	LOG_INF("Connection attempt timed out");
+
 	/* Cancel the pending connection */
 	(void)net_mgmt(NET_REQUEST_WIFI_DISCONNECT, wifi_if, NULL, 0);
 
@@ -155,7 +159,7 @@ static void wifi_mgmt_event_handler(struct net_mgmt_event_callback *cb, uint32_t
 
 	switch (mgmt_event) {
 	case NET_EVENT_WIFI_CONNECT_RESULT:
-		if (status->conn_status == 0) {
+		if (status->conn_status == WIFI_STATUS_CONN_SUCCESS) {
 			/* Cancel any pending work timeout */
 			LOG_INF("Connection successful");
 			(void)k_work_cancel_delayable(&conn_timeout);
@@ -164,6 +168,9 @@ static void wifi_mgmt_event_handler(struct net_mgmt_event_callback *cb, uint32_t
 			if (binding->idle_timeout != CONN_MGR_IF_NO_TIMEOUT) {
 				wifi_mgmt_used(binding);
 			}
+		} else if (did_conn_timeout && !persistent) {
+			/* Don't retry if the connection timed out and its not persistent */
+			LOG_INF("Non-persistent connection timed-out");
 		} else {
 			/* Attempt to schedule the connection again */
 			LOG_WRN("Connection failed, retrying (%d)", status->conn_status);
@@ -219,6 +226,8 @@ static int wifi_mgmt_connect(struct conn_mgr_conn_binding *const binding)
 
 	/* Connection is now requested */
 	connection_requested = true;
+	did_conn_timeout = false;
+	did_idle_timeout = false;
 	/* Schedule the connection */
 	k_work_schedule(&conn_create, K_NO_WAIT);
 	/* Schedule the timeout if set */
