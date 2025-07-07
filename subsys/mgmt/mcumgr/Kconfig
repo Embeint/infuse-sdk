@@ -6,6 +6,5 @@ config MCUMGR_GRP_OS_INFUSE
 	bool "Infuse-IoT mcumgr handlers for OS management"
 	select MCUMGR_SMP_CBOR_MIN_DECODING_LEVEL_2
 	depends on INFUSE_EPOCH_TIME
-	depends on INFUSE_REBOOT
 
 endif # MCUMGR
