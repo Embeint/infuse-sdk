@@ -105,6 +105,7 @@ int epacket_versioned_v0_encrypt(struct net_buf *buf, uint8_t interface_key)
 	/* Free scratch space */
 	net_buf_unref(scratch);
 
+	meta->sequence = frame->nonce.sequence;
 	return status == PSA_SUCCESS ? 0 : -1;
 }
 
@@ -265,6 +266,7 @@ int epacket_unversioned_v0_encrypt(struct net_buf *buf, uint8_t interface_key)
 	/* Free scratch space */
 	net_buf_unref(scratch);
 
+	meta->sequence = frame->nonce.sequence;
 	return status == PSA_SUCCESS ? 0 : -1;
 }
 
