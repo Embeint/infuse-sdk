@@ -69,8 +69,12 @@ static int os_mgmt_datetime_read(struct smp_streamer *ctxt)
 
 static int os_mgmt_reset(struct smp_streamer *ctxt)
 {
+#ifdef CONFIG_INFUSE_REBOOT
 	infuse_reboot_delayed(INFUSE_REBOOT_MCUMGR, 0x00, 0x00, K_MSEC(2000));
 	return MGMT_ERR_EOK;
+#else
+	return MGMT_ERR_ENOTSUP;
+#endif /* CONFIG_INFUSE_REBOOT */
 }
 
 static int os_mgmt_mcumgr_params(struct smp_streamer *ctxt)
