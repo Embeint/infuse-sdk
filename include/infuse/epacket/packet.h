@@ -73,6 +73,8 @@ struct epacket_tx_metadata {
 	enum infuse_type type;
 	/* Flags to apply to packet */
 	uint16_t flags;
+	/* Sequence number used for packet */
+	uint16_t sequence;
 	/* Interface specific address */
 	union epacket_interface_address interface_address;
 };
