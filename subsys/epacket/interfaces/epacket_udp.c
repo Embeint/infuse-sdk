@@ -61,6 +61,12 @@ struct udp_state {
 	struct net_mgmt_event_callback l4_callback;
 	struct sockaddr remote;
 	struct k_event state;
+#ifdef CONFIG_EPACKET_INTERFACE_UDP_DETECT_UNACKNOWLEDGED
+	struct {
+		sys_slist_t tx_waiting;
+		struct k_spinlock list_lock;
+	} ack_handling;
+#endif /* CONFIG_EPACKET_INTERFACE_UDP_DETECT_UNACKNOWLEDGED */
 	uint32_t last_receive;
 	uint16_t ack_countdown;
 	socklen_t remote_len;
@@ -288,8 +294,86 @@ socket_error:
 
 K_THREAD_DEFINE(epacket_udp_thread, 2048, epacket_udp_loop, NULL, NULL, NULL, 0, K_ESSENTIAL, 0);
 
+#ifdef CONFIG_EPACKET_INTERFACE_UDP_DETECT_UNACKNOWLEDGED
+static void tx_ack_timeout(struct k_work *work)
+{
+	struct k_work_delayable *dwork = k_work_delayable_from_work(work);
+	struct epacket_tx_metadata *tx_meta =
+		CONTAINER_OF(dwork, struct epacket_tx_metadata, dwork);
+	struct net_buf *waiting, *found = NULL;
+
+	K_SPINLOCK(&udp_state.ack_handling.list_lock) {
+		SYS_SLIST_FOR_EACH_CONTAINER(&udp_state.ack_handling.tx_waiting, waiting, node) {
+			if (tx_meta == net_buf_user_data(waiting)) {
+				found = waiting;
+				break;
+			}
+		}
+		if (found) {
+			/* Remove from the list under the lock */
+			sys_slist_find_and_remove(&udp_state.ack_handling.tx_waiting, &found->node);
+		}
+	}
+	if (!found) {
+		return;
+	}
+
+	LOG_DBG("ACK timeout for %d", tx_meta->sequence);
+#ifdef CONFIG_EPACKET_INTERFACE_UDP_DECRYPT_TX_FAILURES
+	/* Decrypt the failing packet so the handler can decode the payload */
+	(void)epacket_udp_tx_decrypt(found);
+#endif /* CONFIG_EPACKET_INTERFACE_UDP_DECRYPT_TX_FAILURES */
+	epacket_notify_tx_result(DEVICE_DT_GET(DT_DRV_INST(0)), found, -ENODATA);
+	net_buf_unref(found);
+}
+
+static void tx_pending_ack_handle(const struct device *dev, struct net_buf *buf)
+{
+	struct epacket_tx_metadata *tx_meta;
+	struct net_buf *waiting, *found = NULL;
+	uint16_t rx_sequence;
+
+	/* Get the incoming sequence number */
+	if (buf->len != sizeof(uint16_t)) {
+		LOG_WRN("ACK with unexpected length (%d)", buf->len);
+		return;
+	}
+	rx_sequence = sys_get_le16(buf->data);
+
+	K_SPINLOCK(&udp_state.ack_handling.list_lock) {
+		/* Scan our pending packets to see if any match */
+		SYS_SLIST_FOR_EACH_CONTAINER(&udp_state.ack_handling.tx_waiting, waiting, node) {
+			tx_meta = net_buf_user_data(waiting);
+			if (tx_meta->sequence == rx_sequence) {
+				found = waiting;
+				break;
+			}
+		}
+		if (found) {
+			/* Remove from the list under the lock */
+			sys_slist_find_and_remove(&udp_state.ack_handling.tx_waiting, &found->node);
+		}
+	}
+	if (!found) {
+		return;
+	}
+
+	LOG_DBG("ACK received for %d", tx_meta->sequence);
+	k_work_cancel_delayable(&tx_meta->dwork);
+	epacket_notify_tx_result(dev, found, 0);
+	net_buf_unref(found);
+}
+
+#else
+static void tx_pending_ack_handle(const struct device *dev, struct net_buf *buf)
+{
+}
+#endif /* CONFIG_EPACKET_INTERFACE_UDP_DETECT_UNACKNOWLEDGED */
+
 static void epacket_udp_send(const struct device *dev, struct net_buf *buf)
 {
+	struct epacket_tx_metadata *meta = net_buf_user_data(buf);
+	__maybe_unused bool user_ack_request = meta->flags & EPACKET_FLAGS_ACK_REQUEST;
 	ssize_t rc;
 
 	/* Don't do work unless the socket is open */
@@ -302,7 +386,6 @@ static void epacket_udp_send(const struct device *dev, struct net_buf *buf)
 	/* Handle ACK request */
 	if ((k_uptime_seconds() - udp_state.last_receive) >=
 	    CONFIG_EPACKET_INTERFACE_UDP_ACK_PERIOD_SEC) {
-		struct epacket_tx_metadata *meta = net_buf_user_data(buf);
 
 		/* Never receive an ACK after requesting */
 		if (udp_state.ack_countdown == 0) {
@@ -336,17 +419,40 @@ static void epacket_udp_send(const struct device *dev, struct net_buf *buf)
 			  udp_state.remote_len);
 	if (rc == -1) {
 		LOG_WRN("Failed to send (%d)", errno);
+#ifdef CONFIG_EPACKET_INTERFACE_UDP_DECRYPT_TX_FAILURES
+		/* Decrypt the failing packet so the handler can decode the payload */
+		(void)epacket_udp_tx_decrypt(buf);
+#endif /* CONFIG_EPACKET_INTERFACE_UDP_DECRYPT_TX_FAILURES */
 		rc = -errno;
+	} else {
+		rc = 0;
 	}
 end:
+#ifdef CONFIG_EPACKET_INTERFACE_UDP_DETECT_UNACKNOWLEDGED
+	if (rc != 0 || !user_ack_request) {
+		epacket_notify_tx_result(dev, buf, rc);
+		net_buf_unref(buf);
+	} else {
+		k_timeout_t timeout =
+			K_MSEC(CONFIG_EPACKET_INTERFACE_UDP_DETECT_UNACKNOWLEDGED_TIMEOUT_MS);
+
+		LOG_DBG("Waiting for ACK on %d", meta->sequence);
+		k_work_init_delayable(&meta->dwork, tx_ack_timeout);
+		k_work_schedule(&meta->dwork, timeout);
+		/* User requested an ACK and the packet was sent */
+		K_SPINLOCK(&udp_state.ack_handling.list_lock) {
+			sys_slist_append(&udp_state.ack_handling.tx_waiting, &buf->node);
+		}
+	}
+#else
 	epacket_notify_tx_result(dev, buf, rc);
 	net_buf_unref(buf);
+#endif /* CONFIG_EPACKET_INTERFACE_UDP_DETECT_UNACKNOWLEDGED */
 }
 
 static void epacket_udp_decrypt_res(const struct device *dev, struct net_buf *buf, int decrypt_res)
 {
-	ARG_UNUSED(dev);
-	ARG_UNUSED(buf);
+	struct epacket_rx_metadata *meta = net_buf_user_data(buf);
 
 	if (decrypt_res == 0) {
 		/* Update ACK state */
@@ -358,6 +464,11 @@ static void epacket_udp_decrypt_res(const struct device *dev, struct net_buf *bu
 			&udp_state.downlink_watchdog,
 			K_SECONDS(CONFIG_EPACKET_INTERFACE_UDP_DOWNLINK_WATCHDOG_TIMEOUT));
 #endif /* CONFIG_EPACKET_INTERFACE_UDP_DOWNLINK_WATCHDOG */
+
+		/* Handle pending ACKs */
+		if (meta->type == INFUSE_ACK) {
+			tx_pending_ack_handle(dev, buf);
+		}
 	} else {
 		/* Decryption failed, try to send a KEY_IDS packet to notify the cloud side
 		 * that device/network keys may have changed.
@@ -386,7 +497,9 @@ static int epacket_udp_init(const struct device *dev)
 {
 	epacket_interface_common_init(dev);
 	k_event_init(&udp_state.state);
-
+#ifdef CONFIG_EPACKET_INTERFACE_UDP_DETECT_UNACKNOWLEDGED
+	sys_slist_init(&udp_state.ack_handling.tx_waiting);
+#endif /* CONFIG_EPACKET_INTERFACE_UDP_DETECT_UNACKNOWLEDGED */
 #ifdef CONFIG_EPACKET_INTERFACE_UDP_DOWNLINK_WATCHDOG
 	k_work_init_delayable(&udp_state.downlink_watchdog, udp_downlink_watchdog_expiry);
 
