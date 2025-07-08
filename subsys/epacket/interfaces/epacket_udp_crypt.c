@@ -19,3 +19,8 @@ int epacket_udp_decrypt(struct net_buf *buf)
 {
 	return epacket_unversioned_v0_decrypt(buf, EPACKET_KEY_INTERFACE_UDP);
 }
+
+int epacket_udp_tx_decrypt(struct net_buf *buf)
+{
+	return epacket_unversioned_v0_tx_decrypt(buf, EPACKET_KEY_INTERFACE_UDP);
+}

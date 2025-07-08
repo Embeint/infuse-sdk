@@ -182,6 +182,16 @@ int epacket_udp_encrypt(struct net_buf *buf);
 int epacket_udp_decrypt(struct net_buf *buf);
 
 /**
+ * @brief Decrypt transmitted UDP packet
+ *
+ * @param buf Packet to decrypt
+ *
+ * @retval 0 on success
+ * @retval -1 on failure
+ */
+int epacket_udp_tx_decrypt(struct net_buf *buf);
+
+/**
  * @brief Decrypt received HCI packet
  *
  * @param buf Packet to decrypt
@@ -239,6 +249,16 @@ int epacket_unversioned_v0_encrypt(struct net_buf *buf, uint8_t interface_key);
  * @retval -1 on failure
  */
 int epacket_unversioned_v0_decrypt(struct net_buf *buf, uint8_t interface_key);
+
+/**
+ * @brief Decrypt transmitted common V0 packet
+ *
+ * @param buf Packet to decrypt
+ *
+ * @retval 0 on success
+ * @retval -1 on failure
+ */
+int epacket_unversioned_v0_tx_decrypt(struct net_buf *buf, uint8_t interface_key);
 
 #ifdef __cplusplus
 }
