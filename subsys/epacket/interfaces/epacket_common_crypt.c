@@ -343,3 +343,55 @@ error:
 	meta->auth = EPACKET_AUTH_FAILURE;
 	return -1;
 }
+
+int epacket_unversioned_v0_tx_decrypt(struct net_buf *buf, uint8_t interface_key)
+{
+	struct epacket_v0_unversioned_frame_format *frame;
+	psa_key_id_t psa_key_id;
+	struct net_buf *scratch;
+	uint8_t epacket_key_id;
+	psa_status_t status;
+	size_t out_len;
+
+	/* Claim scratch space as decryption cannot be applied in place */
+	scratch = epacket_encryption_scratch();
+
+	/* Copy ciphertext across to scratch space */
+	net_buf_add_mem(scratch, buf->data, buf->len);
+	net_buf_reset(buf);
+
+	frame = (void *)scratch->data;
+
+	if (frame->associated_data.flags & EPACKET_FLAGS_ENCRYPTION_DEVICE) {
+		epacket_key_id = EPACKET_KEY_DEVICE | interface_key;
+	} else {
+		epacket_key_id = EPACKET_KEY_NETWORK | interface_key;
+	}
+
+	/* Get the PSA key ID for packet */
+	psa_key_id = epacket_key_id_get(epacket_key_id,
+					sys_get_le24(frame->associated_data.key_identifier),
+					frame->nonce.gps_time / SECONDS_PER_DAY);
+	if (psa_key_id == PSA_KEY_ID_NULL) {
+		goto error;
+	}
+
+	/* Decrypt back into the original packet buffer */
+	status = psa_aead_decrypt(
+		psa_key_id, PSA_ALG_CHACHA20_POLY1305, frame->nonce.raw, sizeof(frame->nonce),
+		frame->associated_data.raw, sizeof(frame->associated_data), frame->ciphertext_tag,
+		scratch->len - sizeof(*frame), net_buf_tail(buf), net_buf_tailroom(buf), &out_len);
+
+	if (status != PSA_SUCCESS) {
+		/* Restore original buffer */
+		net_buf_add_mem(buf, &frame, sizeof(frame));
+		net_buf_add_mem(buf, scratch->data, scratch->len);
+		goto error;
+	}
+	net_buf_add(buf, out_len);
+	net_buf_unref(scratch);
+	return 0;
+error:
+	net_buf_unref(scratch);
+	return -1;
+}
