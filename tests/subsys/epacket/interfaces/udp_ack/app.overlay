@@ -1,0 +1,5 @@
+/ {
+	epacket_udp: epacket_udp {
+		compatible = "embeint,epacket-udp";
+	};
+};

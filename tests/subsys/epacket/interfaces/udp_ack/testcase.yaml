@@ -4,7 +4,7 @@ common:
   min_ram: 32
   run_sequential: true
 tests:
-  epacket.interface.udp:
+  epacket.interface.udp.ack:
     platform_allow:
       - native_sim
     integration_platforms:
