@@ -89,6 +89,18 @@ config EPACKET_INTERFACE_UDP_ACK_COUNTDOWN
 	int "Number of unanswered ACKs to send before dropping server"
 	default 10
 
+config EPACKET_INTERFACE_UDP_DECRYPT_TX_FAILURES
+	bool "Decrypt encrypted payloads when a TX failure of an encrypted packet occurs"
+
+config EPACKET_INTERFACE_UDP_DETECT_UNACKNOWLEDGED
+	bool "Detect packets which request an ACK but don't receive one"
+	select EPACKET_BUFFERS_TX_DELAYABLE_WORK
+	imply EPACKET_INTERFACE_UDP_DECRYPT_TX_FAILURES
+
+config EPACKET_INTERFACE_UDP_DETECT_UNACKNOWLEDGED_TIMEOUT_MS
+	int "Timeout for the cloud to ACK a requested packet"
+	default 2000
+
 config EPACKET_INTERFACE_UDP_DOWNLINK_WATCHDOG
 	bool "Software watchdog for receiving data from cloud UDP server"
 	depends on INFUSE_REBOOT
