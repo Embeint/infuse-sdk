@@ -15,6 +15,7 @@
 
 #include <stdint.h>
 
+#include <zephyr/kernel.h>
 #include <zephyr/device.h>
 #include <zephyr/toolchain.h>
 #include <zephyr/net_buf.h>
@@ -65,6 +66,9 @@ typedef void (*epacket_tx_done_cb)(const struct device *dev, struct net_buf *pkt
 
 /* Metadata for packets that will be transmitted */
 struct epacket_tx_metadata {
+#ifdef CONFIG_EPACKET_BUFFERS_TX_DELAYABLE_WORK
+	struct k_work_delayable dwork;
+#endif
 	/* Callback run when TX completes */
 	epacket_tx_done_cb tx_done;
 	/* Authentication level of packet */

@@ -54,6 +54,11 @@ config EPACKET_PACKET_SIZE_MAX
 	  IPv4 minimum MTU = 576 (28 byte IP + UDP header)
 	  256 is sufficient for Bluetooth only devices.
 
+config EPACKET_BUFFERS_TX_DELAYABLE_WORK
+	bool
+	help
+	  Enable a per TX buffer delayable work item.
+
 rsource "interfaces/Kconfig"
 
 endif # EPACKET
