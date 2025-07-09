@@ -107,6 +107,9 @@ ZTEST(rpc_command_zbus_channel_state, test_data_retrieval)
 	struct rpc_zbus_channel_state_response *response;
 	struct net_buf *rsp;
 
+	/* Ensure we don't publish at T=0 */
+	k_sleep(K_MSEC(100));
+
 	zbus_chan_pub(INFUSE_ZBUS_CHAN_GET(INFUSE_ZBUS_CHAN_BATTERY), &battery, K_FOREVER);
 
 	send_zbus_channel_state_command(1004, INFUSE_ZBUS_CHAN_BATTERY);
