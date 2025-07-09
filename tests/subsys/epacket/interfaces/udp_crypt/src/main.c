@@ -163,6 +163,58 @@ ZTEST(epacket_udp_crypt, test_encrypt_decrypt)
 	test_encrypt_decrypt_auth(EPACKET_AUTH_NETWORK);
 }
 
+static void test_encrypt_decrypt_tx_auth(enum epacket_auth auth)
+{
+	struct net_buf *orig_buf, *tx, *tx_copy_buf;
+	uint8_t *p;
+	int rc;
+
+	/* Create original buffer */
+	orig_buf = epacket_alloc_tx(K_NO_WAIT);
+	zassert_not_null(orig_buf);
+	net_buf_reserve(orig_buf, sizeof(struct epacket_udp_frame));
+	epacket_set_tx_metadata(orig_buf, auth, 0, 0x10, EPACKET_ADDR_ALL);
+	p = net_buf_add(orig_buf, 60);
+	sys_rand_get(p, 60);
+
+	/* Encrypt original buffer */
+	tx = net_buf_clone(orig_buf, K_NO_WAIT);
+	memcpy(tx->user_data, orig_buf->user_data, tx->user_data_size);
+	zassert_not_null(tx);
+	rc = epacket_udp_encrypt(tx);
+	zassert_equal(0, rc);
+	zassert_equal(orig_buf->len + sizeof(struct epacket_udp_frame) + 16, tx->len);
+
+	tx_copy_buf = net_buf_clone(tx, K_NO_WAIT);
+	zassert_not_null(tx_copy_buf);
+
+	/* Decrypt the buffer to TX */
+	rc = epacket_udp_tx_decrypt(tx_copy_buf);
+	zassert_equal(0, rc);
+	zassert_equal(orig_buf->len, tx_copy_buf->len);
+	zassert_mem_equal(orig_buf->data, tx_copy_buf->data, tx_copy_buf->len);
+	net_buf_unref(tx_copy_buf);
+
+	/* Test failure on modified encryption buffer */
+	for (int i = 0; i < tx->len; i++) {
+		tx_copy_buf = net_buf_clone(tx, K_NO_WAIT);
+		zassert_not_null(tx_copy_buf);
+		tx_copy_buf->data[i]++;
+		rc = epacket_udp_tx_decrypt(tx_copy_buf);
+		zassert_equal(-1, rc);
+		net_buf_unref(tx_copy_buf);
+	}
+
+	net_buf_unref(tx);
+	net_buf_unref(orig_buf);
+}
+
+ZTEST(epacket_udp_crypt, test_encrypt_decrypt_tx)
+{
+	test_encrypt_decrypt_tx_auth(EPACKET_AUTH_DEVICE);
+	test_encrypt_decrypt_tx_auth(EPACKET_AUTH_NETWORK);
+}
+
 ZTEST(epacket_udp_crypt, test_pre_encrypted)
 {
 	struct net_buf *orig_buf, *encr_buf;
