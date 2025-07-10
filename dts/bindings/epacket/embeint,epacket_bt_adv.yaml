@@ -11,7 +11,7 @@ properties:
   depends-on:
     default: "CONFIG_EPACKET_INTERFACE_BT_ADV"
   max-packet-size:
-    default: 113
+    default: 103
   header-size:
     default: 23
   footer-size:

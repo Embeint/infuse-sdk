@@ -17,7 +17,7 @@
 #include "epacket_internal.h"
 
 #define EMBEINT_COMPANY_CODE 0x0DE4
-#define BT_MFG_DATA_LEN      113
+#define BT_MFG_DATA_LEN      103
 
 static struct {
 	uint16_t company_code;
@@ -26,9 +26,11 @@ static struct {
 
 /* Maximum serialized data structure length is 124 bytes in order to be
  * received by iOS devices. Layout:
- *                Flags = (2 + 1) bytes
- *         Service UUID = (2 + 2) bytes
- *    Manufacturer Data = (2 + 2 + 113) bytes
+ *    Extended Advertising Header = 10 bytes
+ *    AD Structures:
+ *                          Flags = (2 + 1) bytes
+ *                   Service UUID = (2 + 2) bytes
+ *              Manufacturer Data = (2 + 2 + 103) bytes
  */
 static struct bt_data ad_structures[] = {
 	/* From BT Core Specification Supplement v11:
