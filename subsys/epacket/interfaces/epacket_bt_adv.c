@@ -232,7 +232,7 @@ static const struct epacket_interface_api bt_adv_api = {
 	.receive_ctrl = epacket_bt_adv_receive_control,
 };
 
-BUILD_ASSERT(113 == DT_INST_PROP(0, max_packet_size));
+BUILD_ASSERT(103 == DT_INST_PROP(0, max_packet_size));
 static struct epacket_interface_common_data epacket_bt_adv_data;
 static const struct epacket_interface_common_config epacket_bt_adv_config = {
 	.max_packet_size = EPACKET_INTERFACE_MAX_PACKET(DT_DRV_INST(0)),
