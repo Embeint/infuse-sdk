@@ -1,0 +1,8 @@
+# Auroch nRF9151 board configuration
+
+# Copyright (c) 2025 Embeint Inc
+# SPDX-License-Identifier: Apache-2.0
+
+config BOARD_AUROCH
+	select SOC_NRF9151_LACA if BOARD_AUROCH_NRF9151 || BOARD_AUROCH_NRF9151_NS
+	select SOC_NRF54L15_CPUAPP if BOARD_AUROCH_NRF54L15_CPUAPP
