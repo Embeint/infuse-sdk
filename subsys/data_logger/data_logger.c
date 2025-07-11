@@ -107,15 +107,16 @@ static int do_block_write(const struct device *dev, enum infuse_type type, void 
 	rc = api->write(dev, phy_block, type, block, block_len);
 	if (rc < 0) {
 		LOG_ERR("%s failed to write to backend", dev->name);
-		return rc;
 	}
 
 	/* Release device after a delay */
 	(void)pm_device_runtime_put_async(dev, K_MSEC(100));
 
-	data->bytes_logged += block_len;
-	data->current_block += 1;
-	return 0;
+	if (rc == 0) {
+		data->bytes_logged += block_len;
+		data->current_block += 1;
+	}
+	return rc;
 }
 
 #ifdef CONFIG_DATA_LOGGER_RAM_BUFFER
