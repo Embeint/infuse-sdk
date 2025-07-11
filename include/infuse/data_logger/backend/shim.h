@@ -67,6 +67,14 @@ struct data_logger_shim_function_data {
 int logger_shim_init(const struct device *dev);
 
 /**
+ * @brief Update the current data size of the shim backend
+ *
+ * @param dev Device to update
+ * @param block_size New block size
+ */
+void logger_shim_change_size(const struct device *dev, uint16_t block_size);
+
+/**
  * @brief Get the pointer to the function data struct
  *
  * @param dev Device to get pointer from
