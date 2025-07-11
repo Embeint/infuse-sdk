@@ -5,6 +5,7 @@ common:
   harness: bluetooth
   filter: dt_compat_enabled("zephyr,bt-hci-spi-slave")
   integration_platforms:
+    - auroch/nrf54l15/cpuapp@1.0.0
     - tauro/nrf52840
   platform_exclude:
     - nrf9160dk@0.7.0/nrf52840
