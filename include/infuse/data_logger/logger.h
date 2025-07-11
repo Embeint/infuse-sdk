@@ -65,6 +65,18 @@ struct data_logger_cb {
 	 * @param user_data User context from callback structure
 	 */
 	void (*block_size_update)(const struct device *dev, uint16_t block_size, void *user_data);
+	/**
+	 * @brief Writing to the data logger has failed
+	 *
+	 * @param dev Data logger that failed to write
+	 * @param data_type Data type of the data logger block
+	 * @param mem Pointer to the block data
+	 * @param mem_len Length of the block data
+	 * @param reason Failure reason
+	 * @param user_data User context from callback structure
+	 */
+	void (*write_failure)(const struct device *dev, enum infuse_type data_type, const void *mem,
+			      uint16_t mem_len, int reason, void *user_data);
 	/* Arbitrary user data pointer */
 	void *user_data;
 	/* Private list iteration field */

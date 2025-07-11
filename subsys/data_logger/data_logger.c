@@ -65,6 +65,20 @@ void data_logger_get_state(const struct device *dev, struct data_logger_state *s
 	state->requires_full_block_write = cfg->requires_full_block_write;
 }
 
+static void handle_block_write_fail(const struct device *dev, enum infuse_type type, void *block,
+				    uint16_t block_len, int reason)
+{
+	struct data_logger_common_data *data = dev->data;
+	struct data_logger_cb *cb;
+
+	/* Notify subscribers */
+	SYS_SLIST_FOR_EACH_CONTAINER(&data->callbacks, cb, node) {
+		if (cb->write_failure) {
+			cb->write_failure(dev, type, block, block_len, reason, cb->user_data);
+		}
+	}
+}
+
 static int do_block_write(const struct device *dev, enum infuse_type type, void *block,
 			  uint16_t block_len)
 {
@@ -83,7 +97,7 @@ static int do_block_write(const struct device *dev, enum infuse_type type, void 
 		rc = api->erase(dev, phy_block, erase_blocks);
 		if (rc < 0) {
 			LOG_ERR("%s failed to prepare block (%d)", dev->name, rc);
-			return rc;
+			goto done;
 		}
 		/* Old data is no longer present */
 		data->earliest_block += erase_blocks;
@@ -100,7 +114,7 @@ static int do_block_write(const struct device *dev, enum infuse_type type, void 
 	/* Request backend to be powered */
 	rc = pm_device_runtime_get(dev);
 	if (rc < 0) {
-		return rc;
+		goto done;
 	}
 
 	/* Write block to backend */
@@ -112,9 +126,12 @@ static int do_block_write(const struct device *dev, enum infuse_type type, void 
 	/* Release device after a delay */
 	(void)pm_device_runtime_put_async(dev, K_MSEC(100));
 
+done:
 	if (rc == 0) {
 		data->bytes_logged += block_len;
 		data->current_block += 1;
+	} else {
+		handle_block_write_fail(dev, type, block, block_len, rc);
 	}
 	return rc;
 }
@@ -372,14 +389,17 @@ int data_logger_block_write(const struct device *dev, enum infuse_type type, voi
 			    uint16_t block_len)
 {
 	struct data_logger_common_data *data = dev->data;
+	int rc;
 
 	/* Validate block length */
 	if (block_len > data->block_size) {
-		return data->block_size == 0 ? -ENOTCONN : -EINVAL;
+		rc = data->block_size == 0 ? -ENOTCONN : -EINVAL;
+		goto error;
 	}
 	/* Check there is still space on the logger */
 	if (data->current_block >= data->logical_blocks) {
-		return -ENOMEM;
+		rc = -ENOMEM;
+		goto error;
 	}
 	/* Check if logger is currently erasing */
 	if (data->flags & DATA_LOGGER_FLAGS_ERASING) {
@@ -419,6 +439,9 @@ int data_logger_block_write(const struct device *dev, enum infuse_type type, voi
 #else
 	return handle_block_write(dev, type, block, block_len);
 #endif /* CONFIG_DATA_LOGGER_OFFLOAD_WRITES */
+error:
+	handle_block_write_fail(dev, type, block, block_len, rc);
+	return rc;
 }
 
 int data_logger_block_read(const struct device *dev, uint32_t block_idx, uint16_t block_offset,
