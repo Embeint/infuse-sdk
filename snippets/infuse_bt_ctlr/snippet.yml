@@ -4,3 +4,6 @@ boards:
   tauro/nrf52840:
     append:
       EXTRA_DTC_OVERLAY_FILE: boards/tauro_nrf52840.overlay
+  /auroch(@.*)?/nrf54l15/cpuapp/:
+    append:
+      EXTRA_DTC_OVERLAY_FILE: boards/auroch_nrf54l15.overlay

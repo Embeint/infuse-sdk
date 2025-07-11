@@ -21,4 +21,5 @@ Supported Infuse Boards
 
 .. rst-class:: rst-columns
 
+ * :ref:`board_auroch` (nRF9151 + nRF54L15)
  * :ref:`board_tauro` (nRF9151 + nRF52840)
