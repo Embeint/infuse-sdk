@@ -1,0 +1,8 @@
+# Auroch board configuration
+
+# Copyright (c) 2025 Embeint Inc
+# SPDX-License-Identifier: Apache-2.0
+
+if BOARD_AUROCH_NRF9151_NS
+
+endif # BOARD_AUROCH_NRF9151_NS

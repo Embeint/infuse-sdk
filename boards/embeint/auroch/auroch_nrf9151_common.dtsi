@@ -1,0 +1,175 @@
+/*
+ * Copyright (c) 2025 Embeint Inc
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+#include "auroch_nrf9151_common-pinctrl.dtsi"
+#include <zephyr/dt-bindings/battery/battery.h>
+#include <zephyr/dt-bindings/input/input-event-codes.h>
+#include <zephyr/dt-bindings/sensor/lps22hh.h>
+
+/ {
+	model = "Embeint Auroch nRF9151";
+	compatible = "embeint,auroch-nrf9151";
+
+	chosen {
+		zephyr,console = &rtt0;
+		zephyr,bt-hci = &hci_spi;
+	};
+
+	rtt0: rtt_chan0 {
+		compatible = "segger,rtt-uart";
+		status = "okay";
+	};
+
+	leds {
+		compatible = "gpio-leds";
+		led0: led_0 {
+			gpios = <&gpio0 2 GPIO_ACTIVE_HIGH>;
+			label = "Red LED";
+		};
+		led1: led_1 {
+			gpios = <&gpio0 0 GPIO_ACTIVE_HIGH>;
+			label = "Green LED";
+		};
+		led2: led_2 {
+			gpios = <&gpio0 1 GPIO_ACTIVE_HIGH>;
+			label = "Blue LED";
+		};
+	};
+
+	fuel_gauge: fuel_gauge {
+		compatible = "zephyr,fuel-gauge-composite";
+		source-primary = <&bq25798>;
+		device-chemistry = "lithium-ion-polymer";
+		ocv-capacity-table-0 = <BATTERY_OCV_CURVE_LITHIUM_ION_POLYMER_DEFAULT>;
+		charge-full-design-microamp-hours = <13400000>;
+		fuel-gauge-channels;
+	};
+
+	aliases {
+		led0 = &led0;
+		led1 = &led1;
+		led2 = &led2;
+		fuel-gauge0 = &fuel_gauge;
+		imu0 = &lsm6dsv;
+		gnss = &max_m10;
+		watchdog0 = &wdt0;
+		environmental0 = &sht4x;
+	};
+};
+
+&gpiote {
+	status = "okay";
+};
+
+&gpio0 {
+	status = "okay";
+	/* Every pin except the GNSS timepulse interrupt */
+	sense-edge-mask = <0xdfffffff>;
+};
+
+&spi0 {
+	compatible = "nordic,nrf-spim";
+	status = "okay";
+	cs-gpios = <&gpio0 22 GPIO_ACTIVE_LOW>;
+	pinctrl-0 = <&spi0_default>;
+	pinctrl-1 = <&spi0_sleep>;
+	pinctrl-names = "default", "sleep";
+
+	/* Nordic nRF54L15 (Ezurio BL54L15) */
+	hci_spi: hci_node: bt-hci@0 {
+		compatible = "zephyr,bt-hci-spi";
+		reg = <0>;
+		spi-max-frequency = <8000000>;
+		reset-gpios = <&gpio0 20 (GPIO_ACTIVE_LOW)>;
+		irq-gpios = <&gpio0 21 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>;
+		reset-assert-duration-ms = <1>;
+		/* Additional GPIO is available here:
+		 * extra-gpios = <&gpio0 19 0>;
+		 */
+	};
+};
+
+&spi1 {
+	compatible = "nordic,nrf-spim";
+	status = "okay";
+	cs-gpios = <&gpio0 17 (GPIO_ACTIVE_LOW | GPIO_OPEN_DRAIN)>,
+		   <&gpio0 12 (GPIO_ACTIVE_LOW | GPIO_OPEN_DRAIN)>;
+	pinctrl-0 = <&spi1_default>;
+	pinctrl-1 = <&spi1_sleep>;
+	pinctrl-names = "default", "sleep";
+
+	w25q128jw: w25q128jwpim@0 {
+		compatible = "jedec,spi-nor";
+		status = "okay";
+		reg = <0>;
+		spi-max-frequency = <32000000>;
+		size = <134217728>;
+		has-dpd;
+		t-enter-dpd = <3000>;
+		t-exit-dpd = <20000>;
+		jedec-id = [ef 80 18];
+	};
+
+	lsm6dsv: lsm6dsv@1 {
+		compatible = "st,lsm6dsv16x";
+		status = "okay";
+		reg = <1>;
+		spi-max-frequency = <10000000>;
+		int1-gpios = <&gpio0 16 GPIO_ACTIVE_HIGH>;
+	};
+};
+
+&i2c2 {
+	compatible = "nordic,nrf-twim";
+	status = "okay";
+	pinctrl-0 = <&i2c2_default>;
+	pinctrl-1 = <&i2c2_sleep>;
+	pinctrl-names = "default", "sleep";
+
+	max_m10: max_m10@42 {
+		compatible = "u-blox,m10-i2c";
+		status = "okay";
+		reg = <0x42>;
+		timepulse-gpios = <&gpio0 29 GPIO_ACTIVE_LOW>;
+		reset-gpios = <&gpio0 31 GPIO_ACTIVE_LOW>;
+		extint-gpios = <&gpio0 30 GPIO_ACTIVE_LOW>;
+		data-ready-gpios = <&gpio0 28 GPIO_ACTIVE_LOW>;
+		data-ready-pio = <1>;
+	};
+
+	sht4x: sht4x@44 {
+		compatible = "sensirion,sht4x";
+		status = "okay";
+		reg = <0x44>;
+		repeatability = <2>;
+	};
+
+	lps22hh: lps22hh@5c {
+		compatible = "st,lps22hh";
+		status = "okay";
+		reg = <0x5c>;
+		odr = <LPS22HH_DT_ODR_POWER_DOWN>;
+	};
+
+	bq25798: bq25798@6b {
+		compatible = "ti,bq25798";
+		status = "okay";
+		reg = <0x6b>;
+		en-gpios = <&gpio0 3 GPIO_ACTIVE_LOW>;
+		int-gpios = <&gpio0 4 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
+		ts-rt1 = <5240>;
+		ts-rt2 = <30310>;
+		mppt-ratio = <81>;
+		vac-ovp = <26>;
+		input-current-limit = <999>;
+		v-in-dpm = <3000>;
+		acdrv1-en;
+		acdrv2-en;
+	};
+};
+
+/* Include default memory partition configuration file */
+#include <common/nordic/nrf91xx_partition.dtsi>
