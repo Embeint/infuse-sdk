@@ -713,7 +713,7 @@ int data_logger_common_init(const struct device *dev)
 	return 0;
 }
 
-void data_logger_common_register_cb(const struct device *dev, struct data_logger_cb *cb)
+void data_logger_register_cb(const struct device *dev, struct data_logger_cb *cb)
 {
 	struct data_logger_common_data *data = dev->data;
 

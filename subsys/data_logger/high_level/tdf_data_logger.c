@@ -491,7 +491,7 @@ int tdf_data_logger_init(const struct device *dev)
 	/* Register for callbacks */
 	data->logger_cb.block_size_update = tdf_block_size_update;
 	data->logger_cb.user_data = (void *)dev;
-	data_logger_common_register_cb(config->logger, &data->logger_cb);
+	data_logger_register_cb(config->logger, &data->logger_cb);
 
 	/* Check if there is valid data sitting in RAM */
 	recovered = tdf_data_logger_valid_data_on_buffer(dev, &logger_state);
