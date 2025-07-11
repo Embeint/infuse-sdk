@@ -1,4 +1,5 @@
 /* Use LPUART for HCI link instead of SPI due to nRF54L15 pin issues */
+#ifndef INFUSE_IS_BOOTLOADER
 
 /delete-node/ &hci_spi;
 
@@ -44,3 +45,5 @@
 		rdy-pin = <36>;
 	};
 };
+
+#endif

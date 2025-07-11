@@ -1,6 +1,10 @@
 name: infuse
 
 boards:
+  auroch/nrf9151/ns:
+    append:
+      EXTRA_DTC_OVERLAY_FILE: boards/auroch_nrf9151_ns.overlay
+      EXTRA_CONF_FILE: infuse_snippet.conf
   mps2/an385:
     append:
       EXTRA_DTC_OVERLAY_FILE: boards/mps2_an385.overlay
