@@ -78,7 +78,7 @@ ZTEST(data_logger_epacket, test_block_write_error)
 	uint8_t payload[EPACKET_INTERFACE_MAX_PAYLOAD(DT_NODELABEL(epacket_dummy)) + 1];
 	int rc;
 
-	/* Write random block */
+	/* Write a block with too much data to ever fit */
 	rc = data_logger_block_write(logger, 0, payload, sizeof(payload));
 	zassert_equal(-EINVAL, rc);
 }
@@ -126,9 +126,11 @@ ZTEST(data_logger_epacket, test_block_write)
 
 static void data_logger_setup(void *fixture)
 {
+	const struct device *dummy = DEVICE_DT_GET(DT_NODELABEL(epacket_dummy));
 	const struct device *logger = DEVICE_DT_GET(DT_NODELABEL(data_logger_epacket));
 
 	epacket_dummy_set_max_packet(CONFIG_EPACKET_PACKET_SIZE_MAX);
+	epacket_dummy_reset_callbacks(dummy);
 	(void)logger_epacket_init(logger);
 }
 
