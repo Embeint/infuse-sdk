@@ -27,6 +27,13 @@ static uint16_t max_packet_size = EPACKET_INTERFACE_MAX_PACKET(DT_DRV_INST(0));
 static bool receiving;
 static int receive_rc;
 
+void epacket_dummy_reset_callbacks(const struct device *dev)
+{
+	struct epacket_interface_common_data *data = dev->data;
+
+	sys_slist_init(&data->callback_list);
+}
+
 struct k_fifo *epacket_dummmy_transmit_fifo_get(void)
 {
 	return &epacket_dummy_fifo;

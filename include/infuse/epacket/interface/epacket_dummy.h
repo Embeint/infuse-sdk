@@ -41,6 +41,13 @@ struct epacket_dummy_frame {
 } __packed;
 
 /**
+ * @brief Reset registered epacket callbacks
+ *
+ * @param dev Dummy interface
+ */
+void epacket_dummy_reset_callbacks(const struct device *dev);
+
+/**
  * @brief Get the FIFO that the dummy interface "sends" packets on
  *
  * @return Pointer to the transmit FIFO
