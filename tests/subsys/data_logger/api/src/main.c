@@ -276,6 +276,7 @@ static void test_before(void *ignored)
 
 	k_sleep(K_TICKS(1));
 	logger_shim_init(logger);
+	logger_shim_change_size(logger, 512);
 }
 
 ZTEST_SUITE(data_logger_api, NULL, NULL, test_before, NULL, NULL);

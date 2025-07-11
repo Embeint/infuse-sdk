@@ -112,6 +112,21 @@ int logger_shim_init(const struct device *dev)
 	return rc;
 }
 
+void logger_shim_change_size(const struct device *dev, uint16_t block_size)
+{
+	struct data_logger_common_data *data = dev->data;
+	struct data_logger_cb *cb;
+
+	/* Update internal state */
+	data->block_size = block_size;
+	/* Notify subscribers */
+	SYS_SLIST_FOR_EACH_CONTAINER(&data->callbacks, cb, node) {
+		if (cb->block_size_update) {
+			cb->block_size_update(dev, block_size, cb->user_data);
+		}
+	}
+}
+
 struct data_logger_shim_function_data *
 data_logger_backend_shim_data_pointer(const struct device *dev)
 {
