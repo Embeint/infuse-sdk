@@ -14,7 +14,7 @@
 #include <infuse/data_logger/logger.h>
 #include <infuse/data_logger/backend/shim.h>
 
-static uint8_t input_buffer[512] = {0};
+static uint8_t input_buffer[512 + 1] = {0};
 static uint8_t output_buffer[512];
 
 int logger_shim_init(const struct device *dev);
@@ -29,12 +29,36 @@ ZTEST(data_logger_api, test_init_constants)
 	zassert_equal(512, state.block_size);
 }
 
+static int write_fail_count;
+static int write_fail_data_type;
+static int write_fail_reason;
+static K_SEM_DEFINE(write_fail, 0, 1);
+
+static void write_failure(const struct device *dev, enum infuse_type data_type, const void *mem,
+			  uint16_t mem_len, int reason, void *user_data)
+{
+	write_fail_count += 1;
+	write_fail_data_type = data_type;
+	write_fail_reason = reason;
+	zassert_equal(user_data, (void *)write_failure);
+	zassert_not_null(mem);
+	zassert_not_equal(0, mem_len);
+	k_sem_give(&write_fail);
+}
+
+struct data_logger_cb callbacks = {
+	.write_failure = write_failure,
+};
+
 ZTEST(data_logger_api, test_write)
 {
 	const struct device *logger = DEVICE_DT_GET(DT_NODELABEL(data_logger_shim));
 	struct data_logger_shim_function_data *data = data_logger_backend_shim_data_pointer(logger);
 	struct data_logger_state state;
 	int rc = 0;
+
+	callbacks.user_data = write_failure;
+	data_logger_register_cb(logger, &callbacks);
 
 	/* Write to block 0 */
 	data_logger_get_state(logger, &state);
@@ -65,11 +89,39 @@ ZTEST(data_logger_api, test_write)
 	rc = data_logger_block_write(logger, 0x08, input_buffer, state.block_size);
 	k_sleep(K_TICKS(1));
 #ifdef CONFIG_DATA_LOGGER_OFFLOAD_WRITES
-	/* Error occurs in other thread */
+	/* Error occurs in other thread, wait for the callback */
 	zassert_equal(0, rc);
-#else
-	zassert_equal(-EINVAL, rc);
+	zassert_equal(0, k_sem_take(&write_fail, K_MSEC(1000)));
+	rc = write_fail_reason;
 #endif
+	zassert_equal(-EINVAL, rc);
+	zassert_equal(1, write_fail_count);
+	zassert_equal(0x08, write_fail_data_type);
+
+	data_logger_get_state(logger, &state);
+	zassert_equal(2, state.current_block);
+	zassert_equal(3, data->write.num_calls);
+
+	/* Reset backend error */
+	data->write.rc = 0;
+
+	/* Write more data than can fit */
+	rc = data_logger_block_write(logger, 0x09, input_buffer, state.block_size + 1);
+	k_sleep(K_TICKS(1));
+	zassert_equal(-EINVAL, rc);
+	zassert_equal(2, write_fail_count);
+	zassert_equal(0x09, write_fail_data_type);
+
+	/* Write to disconnected backend */
+	logger_shim_change_size(logger, 0);
+
+	rc = data_logger_block_write(logger, 0x1C, input_buffer, 10);
+	k_sleep(K_TICKS(1));
+	zassert_equal(-ENOTCONN, rc);
+	zassert_equal(3, write_fail_count);
+	zassert_equal(0x1C, write_fail_data_type);
+
+	/* No calls to the backend */
 	data_logger_get_state(logger, &state);
 	zassert_equal(2, state.current_block);
 	zassert_equal(3, data->write.num_calls);
@@ -277,6 +329,8 @@ static void test_before(void *ignored)
 	k_sleep(K_TICKS(1));
 	logger_shim_init(logger);
 	logger_shim_change_size(logger, 512);
+	(void)k_sem_take(&write_fail, K_NO_WAIT);
+	write_fail_count = 0;
 }
 
 ZTEST_SUITE(data_logger_api, NULL, NULL, test_before, NULL, NULL);
