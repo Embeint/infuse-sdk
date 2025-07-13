@@ -37,7 +37,7 @@ extern "C" {
  * @brief Connect to a peer Infuse-IoT device via Bluetooth GATT
  *
  * @note If called multiple times on the same connection, the subscribe requests
- *       are updated on each call.
+ *       and idle timeouts are updated on each call.
  *
  * @param peer Peer device to connect to
  * @param conn_params Connection parameters to setup connection with
@@ -49,7 +49,7 @@ extern "C" {
  * @param subscribe_logging Subscribe to the logging characteristic
  * @param inactivity_timeout Automatically disconnect if no data sent or received
  *                           on the command or data characteristics for this long.
- *                           K_NO_WAIT to disable.
+ *                           K_FOREVER to disable.
  *
  * @retval 0 on success, *conn is valid
  * @retval 1 if connection already existed, *conn is valid

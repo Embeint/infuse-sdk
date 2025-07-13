@@ -148,7 +148,7 @@ uint8_t epacket_bt_gatt_notify_recv_func(struct bt_conn *conn,
 	/* Refresh inactivity timeout (on command or data characteristics) */
 	idx = bt_conn_index(conn);
 	s = &infuse_conn[idx];
-	if (!K_TIMEOUT_EQ(s->inactivity_timeout, K_NO_WAIT) &&
+	if (!K_TIMEOUT_EQ(s->inactivity_timeout, K_FOREVER) &&
 	    (params->value_handle != s->remote_info[CHAR_LOGGING].value_handle)) {
 		k_work_reschedule(&s->idle_worker, s->inactivity_timeout);
 	}
@@ -324,7 +324,7 @@ conn_created:
 
 	/* Connection all ready, start the inactivity timeout if specified */
 	s->inactivity_timeout = inactivity_timeout;
-	if ((rc == 0) && !K_TIMEOUT_EQ(inactivity_timeout, K_NO_WAIT)) {
+	if ((rc == 0) && !K_TIMEOUT_EQ(inactivity_timeout, K_FOREVER)) {
 		k_work_schedule(&s->idle_worker, inactivity_timeout);
 	}
 cleanup:
@@ -392,7 +392,7 @@ static void epacket_bt_central_send(const struct device *dev, struct net_buf *bu
 	rc = bt_gatt_write_without_response(conn, handle, buf->data, buf->len, false);
 
 	/* Refresh inactivity timeout */
-	if (!K_TIMEOUT_EQ(s->inactivity_timeout, K_NO_WAIT)) {
+	if (!K_TIMEOUT_EQ(s->inactivity_timeout, K_FOREVER)) {
 		k_work_reschedule(&s->idle_worker, s->inactivity_timeout);
 	}
 

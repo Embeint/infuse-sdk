@@ -27,7 +27,7 @@ struct net_buf *rpc_command_bt_connect_infuse(struct net_buf *request)
 	const struct bt_le_conn_param params = BT_LE_CONN_PARAM_INIT(0x10, 0x15, 0, 400);
 	struct epacket_read_response security_info;
 	k_timeout_t inactivty =
-		req->inactivity_timeout_ms == 0 ? K_NO_WAIT : K_MSEC(req->inactivity_timeout_ms);
+		req->inactivity_timeout_ms == 0 ? K_FOREVER : K_MSEC(req->inactivity_timeout_ms);
 	struct bt_conn *conn;
 	int rc;
 
