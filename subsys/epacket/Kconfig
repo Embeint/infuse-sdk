@@ -43,6 +43,10 @@ config EPACKET_BUFFERS_RX
 	range 1 16
 	default 3
 
+config EPACKET_FORWARDING
+	bool "Support for handling ePacket forwarding packets"
+	depends on EPACKET_INTERFACE_BT_CENTRAL
+
 config EPACKET_PACKET_SIZE_MAX
 	int "Maximum supported ePacket packet size"
 	range 64 2048
