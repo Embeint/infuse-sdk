@@ -49,6 +49,7 @@ struct infuse_connection_state {
 	struct bt_gatt_subscribe_params subs[CHAR_NUM];
 	struct k_poll_signal sig;
 	struct k_work_delayable idle_worker;
+	struct k_work_delayable term_worker;
 	k_timeout_t inactivity_timeout;
 } infuse_conn[CONFIG_BT_MAX_CONN];
 
@@ -100,8 +101,9 @@ static void conn_terminated_cb(struct bt_conn *conn, int reason, void *user_data
 {
 	uint8_t idx = bt_conn_index(conn);
 
-	/* Cancel any pending idle timeout */
+	/* Cancel any pending timeouts */
 	k_work_cancel_delayable(&infuse_conn[idx].idle_worker);
+	k_work_cancel_delayable(&infuse_conn[idx].term_worker);
 }
 
 uint8_t epacket_bt_gatt_notify_recv_func(struct bt_conn *conn,
@@ -192,18 +194,23 @@ static int characteristic_subscribe(struct bt_conn *conn,
 /* Internal API, but should be safe as it is just the opposite of `bt_conn_index` */
 struct bt_conn *bt_conn_lookup_index(uint8_t index);
 
-static void bt_conn_idle(struct k_work *work)
+static void do_disconnect(struct infuse_connection_state *s, char *reason)
 {
-	struct k_work_delayable *dwork = k_work_delayable_from_work(work);
-	struct infuse_connection_state *s =
-		CONTAINER_OF(dwork, struct infuse_connection_state, idle_worker);
+
 	uint8_t state_idx = ARRAY_INDEX(infuse_conn, s);
 	struct bt_conn *conn = bt_conn_lookup_index(state_idx);
 	int rc;
 
+#ifdef CONFIG_ASSERT
 	__ASSERT_NO_MSG(conn != NULL);
+#else
+	if (conn == NULL) {
+		LOG_DBG("No conn found");
+		return;
+	}
+#endif
 
-	LOG_INF("Connection idle, disconnecting");
+	LOG_INF("Connection %s, disconnecting", reason);
 	/* Trigger the disconnection, no need to wait for it to complete */
 	rc = bt_conn_disconnect(conn, BT_HCI_ERR_REMOTE_USER_TERM_CONN);
 	if (rc != 0) {
@@ -214,11 +221,29 @@ static void bt_conn_idle(struct k_work *work)
 	bt_conn_unref(conn);
 }
 
+static void bt_conn_idle(struct k_work *work)
+{
+	struct k_work_delayable *dwork = k_work_delayable_from_work(work);
+	struct infuse_connection_state *s =
+		CONTAINER_OF(dwork, struct infuse_connection_state, idle_worker);
+
+	do_disconnect(s, "idle");
+}
+
+static void bt_conn_timeout(struct k_work *work)
+{
+	struct k_work_delayable *dwork = k_work_delayable_from_work(work);
+	struct infuse_connection_state *s =
+		CONTAINER_OF(dwork, struct infuse_connection_state, term_worker);
+
+	do_disconnect(s, "timeout");
+}
+
 int epacket_bt_gatt_connect(const bt_addr_le_t *peer, const struct bt_le_conn_param *conn_params,
 			    uint32_t timeout_ms, struct bt_conn **conn_out,
 			    struct epacket_read_response *security, bool subscribe_commands,
 			    bool subscribe_data, bool subscribe_logging,
-			    k_timeout_t inactivity_timeout)
+			    k_timeout_t inactivity_timeout, k_timeout_t absolute_timeout)
 {
 	const struct bt_conn_le_create_param create_param = {
 		.interval = BT_GAP_SCAN_FAST_INTERVAL_MIN,
@@ -256,6 +281,7 @@ int epacket_bt_gatt_connect(const bt_addr_le_t *peer, const struct bt_le_conn_pa
 
 	k_poll_signal_init(&s->sig);
 	k_work_init_delayable(&s->idle_worker, bt_conn_idle);
+	k_work_init_delayable(&s->term_worker, bt_conn_timeout);
 	s->discovery.characteristics = infuse_iot_characteristics;
 	s->discovery.cache = &infuse_iot_remote_cache;
 	s->discovery.remote_info = s->remote_info;
@@ -324,8 +350,13 @@ conn_created:
 
 	/* Connection all ready, start the inactivity timeout if specified */
 	s->inactivity_timeout = inactivity_timeout;
-	if ((rc == 0) && !K_TIMEOUT_EQ(inactivity_timeout, K_FOREVER)) {
-		k_work_schedule(&s->idle_worker, inactivity_timeout);
+	if (rc == 0) {
+		if (!K_TIMEOUT_EQ(inactivity_timeout, K_FOREVER)) {
+			k_work_schedule(&s->idle_worker, inactivity_timeout);
+		}
+		if (!K_TIMEOUT_EQ(absolute_timeout, K_FOREVER)) {
+			k_work_schedule(&s->term_worker, absolute_timeout);
+		}
 	}
 cleanup:
 	if (rc == 0) {

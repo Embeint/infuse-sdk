@@ -40,7 +40,7 @@ struct net_buf *rpc_command_bt_connect_infuse(struct net_buf *request)
 				     req->subscribe & RPC_ENUM_INFUSE_BT_CHARACTERISTIC_COMMAND,
 				     req->subscribe & RPC_ENUM_INFUSE_BT_CHARACTERISTIC_DATA,
 				     req->subscribe & RPC_ENUM_INFUSE_BT_CHARACTERISTIC_LOGGING,
-				     inactivty);
+				     inactivty, K_FOREVER);
 	if (rc >= 0) {
 		/* Copy results */
 		memcpy(rsp.cloud_public_key, security_info.cloud_public_key,
