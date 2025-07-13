@@ -119,6 +119,16 @@ void bt_conn_le_auto_setup(struct bt_conn *conn, struct bt_conn_auto_discovery *
 int bt_conn_disconnect_sync(struct bt_conn *conn);
 
 /**
+ * @brief Wait for a connection to disconnect, without initiating it
+ *
+ * @param conn Connection object to wait for
+ *
+ * @retval 0 on success
+ * @retval -errno Error code @a bt_conn_disconnect
+ */
+int bt_conn_disconnect_wait(struct bt_conn *conn, k_timeout_t timeout);
+
+/**
  * @brief Get last measured RSSI on a connection
  *
  * @param conn Bluetooth connection to query

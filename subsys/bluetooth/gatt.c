@@ -13,6 +13,7 @@
 #include <zephyr/logging/log.h>
 #include <zephyr/sys/byteorder.h>
 #include <zephyr/sys/slist.h>
+#include <zephyr/kernel.h>
 
 #include <infuse/work_q.h>
 #include <infuse/bluetooth/gatt.h>
@@ -40,6 +41,7 @@ struct bt_disconnect_node {
 	struct k_sem sem;
 };
 static sys_slist_t disconnect_list;
+static struct k_spinlock disconnect_lock;
 
 LOG_MODULE_REGISTER(infuse_gatt, LOG_LEVEL_INF);
 
@@ -425,9 +427,11 @@ static void disconnected(struct bt_conn *conn, uint8_t reason)
 
 	struct bt_disconnect_node *node, *nodes;
 
-	SYS_SLIST_FOR_EACH_CONTAINER_SAFE(&disconnect_list, node, nodes, node) {
-		if (conn == node->conn) {
-			k_sem_give(&node->sem);
+	K_SPINLOCK(&disconnect_lock) {
+		SYS_SLIST_FOR_EACH_CONTAINER_SAFE(&disconnect_list, node, nodes, node) {
+			if (conn == node->conn) {
+				k_sem_give(&node->sem);
+			}
 		}
 	}
 }
@@ -441,7 +445,9 @@ int bt_conn_disconnect_sync(struct bt_conn *conn)
 
 	/* Initialise node for list */
 	k_sem_init(&node.sem, 0, 1);
-	sys_slist_append(&disconnect_list, &node.node);
+	K_SPINLOCK(&disconnect_lock) {
+		sys_slist_append(&disconnect_list, &node.node);
+	}
 
 	/* Trigger the disconnection */
 	rc = bt_conn_disconnect(conn, BT_HCI_ERR_REMOTE_USER_TERM_CONN);
@@ -452,7 +458,30 @@ int bt_conn_disconnect_sync(struct bt_conn *conn)
 	/* Wait for the connection to terminate */
 	rc = k_sem_take(&node.sem, K_SECONDS(5));
 end:
-	sys_slist_find_and_remove(&disconnect_list, &node.node);
+	K_SPINLOCK(&disconnect_lock) {
+		sys_slist_find_and_remove(&disconnect_list, &node.node);
+	}
+	return rc;
+}
+
+int bt_conn_disconnect_wait(struct bt_conn *conn, k_timeout_t timeout)
+{
+	struct bt_disconnect_node node = {
+		.conn = conn,
+	};
+	int rc;
+
+	/* Initialise node for list */
+	k_sem_init(&node.sem, 0, 1);
+	K_SPINLOCK(&disconnect_lock) {
+		sys_slist_append(&disconnect_list, &node.node);
+	}
+
+	/* Wait for the connection to terminate */
+	rc = k_sem_take(&node.sem, timeout);
+	K_SPINLOCK(&disconnect_lock) {
+		sys_slist_find_and_remove(&disconnect_list, &node.node);
+	}
 	return rc;
 }
 
