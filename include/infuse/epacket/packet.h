@@ -177,6 +177,41 @@ struct epacket_forward_header {
 	uint8_t destination_payload[];
 } __packed;
 
+enum epacket_forward_auto_conn_flags {
+	/* Automatically disconnect on the first received INFUSE_RPC_RSP */
+	EPACKET_FORWARD_AUTO_CONN_SINGLE_RPC = BIT(0),
+	/* Subscribe to data while connected */
+	EPACKET_FORWARD_AUTO_CONN_SUB_DATA = BIT(1),
+	/* Send a INFUSE_EPACKET_CONN_TERMINATED on connection terminated */
+	EPACKET_FORWARD_AUTO_CONN_DC_NOTIFICATION = BIT(2),
+} __packed;
+
+/** Common header for @ref INFUSE_EPACKET_FORWARD_AUTO_CONN */
+struct epacket_forward_auto_conn_header {
+	/* Total length of this header + payload */
+	uint16_t length;
+	/* Value from `EPACKET_INTERFACE_*` */
+	uint8_t interface;
+	/* Value from `EPACKET_FORWARD_AUTO_CONN_` */
+	uint8_t flags;
+	/* Connection timeout (seconds) */
+	uint8_t conn_timeout;
+	/* Connection idle timeout (seconds) */
+	uint8_t conn_idle_timeout;
+	/* Unconditional connection timeout (seconds) */
+	uint8_t conn_absolute_timeout;
+	/* Destination interface address + packet bytes */
+	uint8_t destination_payload[];
+} __packed;
+
+/** Packet for @ref INFUSE_EPACKET_CONN_TERMINATED */
+struct epacket_conn_terminated {
+	/* Value from `EPACKET_INTERFACE_*` */
+	uint8_t interface;
+	/* Interface address that disconnected */
+	uint8_t address[];
+} __packed;
+
 /**
  * @brief Allocate ePacket TX buffer
  *

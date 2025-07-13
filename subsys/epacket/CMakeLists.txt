@@ -7,6 +7,7 @@ zephyr_library_sources_ifdef(CONFIG_EPACKET_CRYPTO
   keys.c
   interfaces/epacket_common_crypt.c
 )
+zephyr_library_sources_ifdef(CONFIG_EPACKET_FORWARDING forwarding.c)
 
 zephyr_library_sources_ifdef(CONFIG_EPACKET_INTERFACE_BT_ADV interfaces/epacket_bt_adv.c)
 zephyr_library_sources_ifdef(CONFIG_EPACKET_INTERFACE_BT_ADV interfaces/epacket_bt_adv_crypt.c)
