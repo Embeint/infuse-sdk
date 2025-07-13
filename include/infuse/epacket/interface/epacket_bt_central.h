@@ -36,8 +36,8 @@ extern "C" {
 /**
  * @brief Connect to a peer Infuse-IoT device via Bluetooth GATT
  *
- * @note If called multiple times on the same connection, the subscribe requests
- *       and idle timeouts are updated on each call.
+ * @note If called multiple times on the same connection, the subscribe requests,
+ *       inactivity and absolute timeout are updated on each call.
  *
  * @param peer Peer device to connect to
  * @param conn_params Connection parameters to setup connection with
@@ -50,6 +50,8 @@ extern "C" {
  * @param inactivity_timeout Automatically disconnect if no data sent or received
  *                           on the command or data characteristics for this long.
  *                           K_FOREVER to disable.
+ * @param absolute_timeout Unconditionally terminate the connection after this long.
+ *                         K_FOREVER to disable.
  *
  * @retval 0 on success, *conn is valid
  * @retval 1 if connection already existed, *conn is valid
@@ -59,7 +61,7 @@ int epacket_bt_gatt_connect(const bt_addr_le_t *peer, const struct bt_le_conn_pa
 			    uint32_t timeout_ms, struct bt_conn **conn,
 			    struct epacket_read_response *security, bool subscribe_commands,
 			    bool subscribe_data, bool subscribe_logging,
-			    k_timeout_t inactivity_timeout);
+			    k_timeout_t inactivity_timeout, k_timeout_t absolute_timeout);
 
 /**
  * @brief Infuse-IoT Bluetooth GATT characteristic notification handle function
