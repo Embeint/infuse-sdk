@@ -75,9 +75,8 @@ ZTEST(epacket_common, test_receive)
 
 	/* No work scheduled, requested to stop */
 	zassert_false(epacket_dummy_receive_scheduled());
-	zassert_equal(1, epacket_receive(epacket_dummy, K_NO_WAIT));
+	zassert_equal(0, epacket_receive(epacket_dummy, K_NO_WAIT));
 	zassert_false(epacket_dummy_receive_scheduled());
-	k_sleep(K_MSEC(1));
 
 	/* No work scheduled, request for 1 second */
 	zassert_equal(1, epacket_receive(epacket_dummy, K_SECONDS(1)));
@@ -109,8 +108,7 @@ ZTEST(epacket_common, test_receive)
 	k_sleep(K_MSEC(2100));
 	zassert_true(epacket_dummy_receive_scheduled());
 	/* Cancel immediately */
-	zassert_equal(1, epacket_receive(epacket_dummy, K_NO_WAIT));
-	k_sleep(K_MSEC(1));
+	zassert_equal(0, epacket_receive(epacket_dummy, K_NO_WAIT));
 	zassert_false(epacket_dummy_receive_scheduled());
 }
 
@@ -134,8 +132,9 @@ ZTEST(epacket_common, test_receive_error)
 	epacket_dummy_receive_api_override(true, -EIO);
 	zassert_false(epacket_dummy_receive_scheduled());
 
-	/* Function call should not have requested the enable */
-	zassert_equal(1, epacket_receive(epacket_dummy, K_NO_WAIT));
+	/* Function call should fail to disable */
+	zassert_equal(-EIO, epacket_receive(epacket_dummy, K_NO_WAIT));
+
 	/* Should fail to enable */
 	zassert_equal(-EIO, epacket_receive(epacket_dummy, K_FOREVER));
 	zassert_false(epacket_dummy_receive_scheduled());
