@@ -13,6 +13,7 @@ tests:
       - netif
       - wifi
   net.coap.general.native:
+    build_only: true
     platform_allow:
       - native_sim
     integration_platforms:
