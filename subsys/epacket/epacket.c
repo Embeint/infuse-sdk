@@ -125,16 +125,14 @@ int epacket_receive(const struct device *dev, k_timeout_t timeout)
 		return -ENOTSUP;
 	}
 
-	/* Enable receiving if the timeout is not immediate */
-	if (!K_TIMEOUT_EQ(timeout, K_NO_WAIT)) {
-		rc = api->receive_ctrl(dev, true);
-		if (rc < 0) {
-			return rc;
-		}
+	/* Put receiving into desired state */
+	rc = api->receive_ctrl(dev, K_TIMEOUT_EQ(timeout, K_NO_WAIT) ? false : true);
+	if (rc < 0) {
+		return rc;
 	}
 
 	/* No timeout required */
-	if (K_TIMEOUT_EQ(timeout, K_FOREVER)) {
+	if (K_TIMEOUT_EQ(timeout, K_FOREVER) || K_TIMEOUT_EQ(timeout, K_NO_WAIT)) {
 		return 0;
 	}
 
