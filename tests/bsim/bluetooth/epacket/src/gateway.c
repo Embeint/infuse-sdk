@@ -151,7 +151,7 @@ static void main_gateway_connect(void)
 	for (int i = 0; i < 5; i++) {
 		/* Initiate connection */
 		rc = epacket_bt_gatt_connect(&addr, &params, 3000, &conn, &security_info, i % 2,
-					     i % 2, i % 2, K_FOREVER);
+					     i % 2, i % 2, K_FOREVER, K_FOREVER);
 		if (rc != 0) {
 			FAIL("Failed to connect to peer\n");
 			return;
@@ -159,7 +159,7 @@ static void main_gateway_connect(void)
 
 		/* Same connection again should pass with RC == 1 */
 		rc = epacket_bt_gatt_connect(&addr, &params, 3000, &conn2, &security_info, i % 2,
-					     i % 2, i % 2, K_FOREVER);
+					     i % 2, i % 2, K_FOREVER, K_FOREVER);
 		if (rc != 1) {
 			FAIL("Failed to detect existing connection");
 			return;
@@ -207,7 +207,7 @@ static void main_gateway_connect_multi(void)
 	for (int i = 0; i < 3; i++) {
 		/* Connect to first device */
 		rc = epacket_bt_gatt_connect(&addr[0], &params, 3000, &conn1, &security_info, false,
-					     false, false, K_FOREVER);
+					     false, false, K_FOREVER, K_FOREVER);
 		if (rc != 0) {
 			FAIL("Failed to connect to first peer\n");
 			return;
@@ -215,7 +215,7 @@ static void main_gateway_connect_multi(void)
 
 		/* Connect to the second device */
 		rc = epacket_bt_gatt_connect(&addr[1], &params, 3000, &conn2, &security_info, false,
-					     false, false, K_FOREVER);
+					     false, false, K_FOREVER, K_FOREVER);
 		if (rc != 0) {
 			FAIL("Failed to connect to second peer %d\n", rc);
 			return;
@@ -260,7 +260,7 @@ static void main_gateway_connect_then_scan(void)
 
 	/* Initiate connection */
 	rc = epacket_bt_gatt_connect(&addr, &params, 3000, &conn, &security_info, false, false,
-				     false, K_FOREVER);
+				     false, K_FOREVER, K_FOREVER);
 	if (rc < 0) {
 		FAIL("Failed to connect to peer");
 		return;
@@ -469,7 +469,7 @@ static void main_gateway_connect_recv(void)
 
 		/* Connect to peer device */
 		rc = epacket_bt_gatt_connect(&addr, &params, 3000, &conn, &security_info, false,
-					     data_sub, false, K_FOREVER);
+					     data_sub, false, K_FOREVER, K_FOREVER);
 		if (rc != 0) {
 			FAIL("Failed to connect to peer\n");
 			return;
@@ -547,7 +547,7 @@ static void main_gateway_connect_idle_tx_timeout(void)
 	 * Don't subscribe to cmd responses by default to test the TX path.
 	 */
 	rc = epacket_bt_gatt_connect(&addr, &params, 3000, &conn, &security_info, false, false,
-				     false, K_MSEC(1500));
+				     false, K_MSEC(1500), K_FOREVER);
 	if (rc != 0) {
 		FAIL("Failed to connect to peer\n");
 		return;
@@ -597,7 +597,7 @@ static void main_gateway_connect_idle_rx_timeout(void)
 
 	/* Connect to peer device with a timeout that we expect to expire */
 	rc = epacket_bt_gatt_connect(&addr, &params, 3000, &conn, &security_info, false, false,
-				     false, K_MSEC(500));
+				     false, K_MSEC(500), K_FOREVER);
 	if (rc != 0) {
 		FAIL("Failed to connect to peer\n");
 		return;
@@ -615,7 +615,7 @@ static void main_gateway_connect_idle_rx_timeout(void)
 
 	/* Connect to peer device with a timeout that should not expire (peer sends at 1Hz) */
 	rc = epacket_bt_gatt_connect(&addr, &params, 3000, &conn, &security_info, false, true,
-				     false, K_MSEC(1500));
+				     false, K_MSEC(1500), K_FOREVER);
 	if (rc != 0) {
 		FAIL("Failed to connect to peer %d\n", rc);
 		return;
@@ -657,7 +657,7 @@ static void main_gateway_connect_idle_rx_log_ignored(void)
 
 	/* Connect to peer device with a long timeout, subscribed to logging characteristic */
 	rc = epacket_bt_gatt_connect(&addr, &params, 3000, &conn, &security_info, false, false,
-				     true, K_MSEC(2000));
+				     true, K_MSEC(2000), K_FOREVER);
 	if (rc != 0) {
 		FAIL("Failed to connect to peer\n");
 		return;
@@ -676,6 +676,89 @@ static void main_gateway_connect_idle_rx_log_ignored(void)
 	k_sleep(K_MSEC(500));
 
 	PASS("RX Inactivity timeout ignored logging data\n");
+}
+
+static void main_gateway_connect_absolute_timeout(void)
+{
+	const struct bt_le_conn_param params = BT_LE_CONN_PARAM_INIT(0x10, 0x15, 0, 400);
+	struct epacket_read_response security_info;
+	struct bt_conn *conn = NULL;
+	bt_addr_le_t addr;
+	int rc;
+
+	common_init();
+	bt_conn_cb_register(&conn_cb);
+
+	if (observe_peers(&addr, 1) < 0) {
+		FAIL("Failed to observe peer\n");
+		return;
+	}
+
+	/* Connect to peer device with a long timeout, subscribed to all characteristics */
+	rc = epacket_bt_gatt_connect(&addr, &params, 3000, &conn, &security_info, true, true, true,
+				     K_FOREVER, K_SECONDS(5));
+	if (rc != 0) {
+		FAIL("Failed to connect to peer\n");
+		return;
+	}
+	bt_conn_unref(conn);
+	conn = NULL;
+
+	/* Expect the connection to terminate after 5 seconds regardless of the activity */
+	rc = k_sem_take(&bt_disconnected, K_MSEC(4800));
+	if (rc != -EAGAIN) {
+		FAIL("Absolute timeout terminated early\n");
+		return;
+	}
+	rc = k_sem_take(&bt_disconnected, K_MSEC(400));
+	if (rc != 0) {
+		FAIL("Absolute timer did not terminate connection at expected time\n");
+		return;
+	}
+	k_sleep(K_MSEC(500));
+
+	PASS("Absolute connection timeout terminated connection\n");
+}
+
+static void main_gateway_connect_absolute_timeout_cancel(void)
+{
+	const struct bt_le_conn_param params = BT_LE_CONN_PARAM_INIT(0x10, 0x15, 0, 400);
+	struct epacket_read_response security_info;
+	struct bt_conn *conn = NULL;
+	bt_addr_le_t addr;
+	int rc;
+
+	common_init();
+	bt_conn_cb_register(&conn_cb);
+
+	if (observe_peers(&addr, 1) < 0) {
+		FAIL("Failed to observe peer\n");
+		return;
+	}
+
+	/* Connect to peer device with a long timeout, subscribed to all characteristics*/
+	rc = epacket_bt_gatt_connect(&addr, &params, 3000, &conn, &security_info, true, true, true,
+				     K_FOREVER, K_SECONDS(3));
+	if (rc != 0) {
+		FAIL("Failed to connect to peer\n");
+		return;
+	}
+
+	/* Sleep a short duration */
+	k_sleep(K_MSEC(500));
+
+	/* Terminate the connection */
+	rc = bt_conn_disconnect_sync(conn);
+	if (rc != 0) {
+		FAIL("Failed to disconnect\n");
+		return;
+	}
+	bt_conn_unref(conn);
+
+	/* Wait until after the connection would normally terminate */
+	k_sleep(K_SECONDS(3));
+
+	PASS("Absolute connection timeout cleaned up\n");
 }
 
 static void main_gateway_remote_rpc_client(void)
@@ -705,7 +788,7 @@ static void main_gateway_remote_rpc_client(void)
 	for (int i = 0; i < 4; i++) {
 		/* Connect to peer device */
 		rc = epacket_bt_gatt_connect(&addr, &params, 3000, &conn, &security_info, true,
-					     false, false, K_FOREVER);
+					     false, false, K_FOREVER, K_FOREVER);
 		if (rc != 0) {
 			FAIL("Failed to connect to peer\n");
 			return;
@@ -982,6 +1065,20 @@ static const struct bst_test_instance epacket_gateway[] = {
 		.test_pre_init_f = test_init,
 		.test_tick_f = test_tick,
 		.test_main_f = main_gateway_connect_idle_rx_log_ignored,
+	},
+	{
+		.test_id = "epacket_bt_gateway_connect_absolute_timeout",
+		.test_descr = "Connect to peer device, test absolute timeout",
+		.test_pre_init_f = test_init,
+		.test_tick_f = test_tick,
+		.test_main_f = main_gateway_connect_absolute_timeout,
+	},
+	{
+		.test_id = "epacket_bt_gateway_connect_absolute_timeout_cancel",
+		.test_descr = "Connect to peer device, test absolute timeout on disconnection",
+		.test_pre_init_f = test_init,
+		.test_tick_f = test_tick,
+		.test_main_f = main_gateway_connect_absolute_timeout_cancel,
 	},
 	{
 		.test_id = "epacket_bt_gateway_remote_rpc",
