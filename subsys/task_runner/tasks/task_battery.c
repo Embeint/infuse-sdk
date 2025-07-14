@@ -25,7 +25,11 @@ INFUSE_ZBUS_CHAN_DEFINE(INFUSE_ZBUS_CHAN_BATTERY);
 int task_battery_manual_run(const struct device *dev, const struct task_battery_args *args,
 			    struct tdf_battery_state *tdf_battery)
 {
+	const uint32_t verbose_period_ms =
+		CONFIG_TASK_RUNNER_TASK_BATTERY_VERBOSE_PRINT_PERIOD * MSEC_PER_SEC;
+	static k_ticks_t next_verbose_print;
 	union fuel_gauge_prop_val value;
+	k_ticks_t now;
 	int rc;
 
 	/* Request fuel-gauge to be active */
@@ -65,8 +69,15 @@ int task_battery_manual_run(const struct device *dev, const struct task_battery_
 	zbus_chan_pub(ZBUS_CHAN, tdf_battery, K_FOREVER);
 
 	/* Print the measured values */
-	LOG_INF("%s: %6d mV (%3d %%) %6d uA", dev->name, tdf_battery->voltage_mv, tdf_battery->soc,
-		tdf_battery->current_ua);
+	now = k_uptime_ticks();
+	if (now >= next_verbose_print) {
+		LOG_INF("%s: %6d mV (%3d %%) %6d uA", dev->name, tdf_battery->voltage_mv,
+			tdf_battery->soc, tdf_battery->current_ua);
+		next_verbose_print = now + k_ms_to_ticks_near32(verbose_period_ms);
+	} else {
+		LOG_DBG("%s: %6d mV (%3d %%) %6d uA", dev->name, tdf_battery->voltage_mv,
+			tdf_battery->soc, tdf_battery->current_ua);
+	}
 	return 0;
 }
 
