@@ -61,15 +61,16 @@ static void disconnected(struct bt_conn *conn, uint8_t reason)
 	log_construct(dst, 0);
 }
 
-static struct bt_conn_cb conn_cb = {
-	.connected = connected,
-	.disconnected = disconnected,
-};
+static struct bt_conn_cb conn_cb;
 
 void auto_bluetooth_conn_log_configure(uint8_t tdf_logger_mask, uint8_t flags)
 {
 	k_work_init(&logger_work, log_do);
 	loggers = tdf_logger_mask;
 	log_flags = flags;
+
+	/* Callback registration */
+	conn_cb.connected = connected;
+	conn_cb.disconnected = disconnected;
 	bt_conn_cb_register(&conn_cb);
 }
