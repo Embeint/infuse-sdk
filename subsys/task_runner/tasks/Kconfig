@@ -71,6 +71,12 @@ module = TASK_BATTERY
 module-str = Battery task
 source "subsys/logging/Kconfig.template.log_config"
 
+config TASK_RUNNER_TASK_BATTERY_VERBOSE_PRINT_PERIOD
+	int "How often to output measured values at LOG_INF instead of LOG_DBG (seconds)"
+	default 10
+	help
+	  Change the frequency of the battery state output printed to the console
+
 endif # TASK_RUNNER_TASK_BATTERY
 
 config TASK_RUNNER_TASK_BT_SCANNER
