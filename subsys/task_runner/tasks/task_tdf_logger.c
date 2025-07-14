@@ -194,8 +194,9 @@ void task_tdf_logger_manual_run(uint8_t tdf_loggers, uint64_t timestamp, uint16_
 	net = tdfs & TASK_TDF_LOGGER_LOG_NET_CONN;
 	custom = tdfs & TASK_TDF_LOGGER_LOG_CUSTOM;
 
-	if (tdf_loggers == TDF_DATA_LOGGER_BT_ADV) {
-		/* Bluetooth advertising logs very often */
+	if ((tdf_loggers == TDF_DATA_LOGGER_BT_ADV) ||
+	    (tdf_loggers == TDF_DATA_LOGGER_BT_PERIPHERAL)) {
+		/* Bluetooth can log very often */
 		LOG_DBG("Log: %02X Ann: %d Bat: %d Env: %d Loc: %d Acc: %d Net: %d Cus: %d",
 			tdf_loggers, announce, battery, ambient_env, location, accel, net, custom);
 	} else {
