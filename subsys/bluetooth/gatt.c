@@ -569,10 +569,7 @@ void bt_conn_rssi_log(struct bt_conn *conn, uint8_t tdf_loggers)
 #endif /* CONFIG_TDF_DATA_LOGGER */
 #endif /* CONFIG_BT_CONN_AUTO_RSSI */
 
-static struct bt_conn_cb conn_cb = {
-	.connected = connected,
-	.disconnected = disconnected,
-};
+static struct bt_conn_cb conn_cb;
 
 static int infuse_bluetooth_gatt(void)
 {
@@ -590,6 +587,9 @@ static int infuse_bluetooth_gatt(void)
 #endif /* CONFIG_BT_GATT_CLIENT */
 	}
 
+	/* Callback registration */
+	conn_cb.connected = connected;
+	conn_cb.disconnected = disconnected;
 	bt_conn_cb_register(&conn_cb);
 	return 0;
 }
