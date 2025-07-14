@@ -9,6 +9,7 @@
 #define DT_DRV_COMPAT embeint_tdf_data_logger
 
 #include <stdint.h>
+#include <string.h>
 
 #include <zephyr/device.h>
 #include <zephyr/kernel.h>
@@ -488,7 +489,8 @@ int tdf_data_logger_init(const struct device *dev)
 	/* Get required overhead for message buffers */
 	data_logger_get_state(config->logger, &logger_state);
 
-	/* Register for callbacks */
+	/* Register for callbacks (memset due to __noinit) */
+	memset(&data->logger_cb, 0x00, sizeof(data->logger_cb));
 	data->logger_cb.block_size_update = tdf_block_size_update;
 	data->logger_cb.user_data = (void *)dev;
 	data_logger_register_cb(config->logger, &data->logger_cb);
