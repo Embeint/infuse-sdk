@@ -161,7 +161,7 @@ static void main_gateway_connect(void)
 		rc = epacket_bt_gatt_connect(&addr, &params, 3000, &conn2, &security_info, i % 2,
 					     i % 2, i % 2, K_FOREVER, K_FOREVER);
 		if (rc != 1) {
-			FAIL("Failed to detect existing connection");
+			FAIL("Failed to detect existing connection\n");
 			return;
 		}
 		bt_conn_unref(conn2);
@@ -254,7 +254,7 @@ static void main_gateway_connect_then_scan(void)
 
 	common_init();
 	if (observe_peers(&addr, 1) < 0) {
-		FAIL("Failed to observe peer");
+		FAIL("Failed to observe peer\n");
 		return;
 	}
 
@@ -262,23 +262,23 @@ static void main_gateway_connect_then_scan(void)
 	rc = epacket_bt_gatt_connect(&addr, &params, 3000, &conn, &security_info, false, false,
 				     false, K_FOREVER, K_FOREVER);
 	if (rc < 0) {
-		FAIL("Failed to connect to peer");
+		FAIL("Failed to connect to peer\n");
 		return;
 	}
 
 	/* Start scanning again */
 	if (epacket_receive(epacket_bt_adv, K_FOREVER) < 0) {
-		FAIL("Failed to resume scanning");
+		FAIL("Failed to resume scanning\n");
 	}
 	k_sleep(K_SECONDS(6));
 	if (epacket_receive(epacket_bt_adv, K_NO_WAIT) < 0) {
-		FAIL("Failed to terminate scanning");
+		FAIL("Failed to terminate scanning\n");
 	}
 
 	/* Terminate the connection */
 	rc = bt_conn_disconnect_sync(conn);
 	if (rc < 0) {
-		FAIL("Failed to disconnect from peer");
+		FAIL("Failed to disconnect from peer\n");
 		return;
 	}
 	bt_conn_unref(conn);
@@ -350,7 +350,7 @@ static void main_gateway_rpcs(void)
 
 	common_init();
 	if (observe_peers(&addr, 1) < 0) {
-		FAIL("Failed to observe peer");
+		FAIL("Failed to observe peer\n");
 		return;
 	}
 
@@ -380,7 +380,7 @@ static void main_gateway_rpcs(void)
 	send_rpc(1, RPC_ID_BT_CONNECT_INFUSE, &connect, sizeof(connect));
 	buf = expect_response(1, RPC_ID_BT_CONNECT_INFUSE, 0);
 	if (buf == NULL) {
-		FAIL("Failed to connect via RPC");
+		FAIL("Failed to connect via RPC\n");
 		return;
 	}
 	connect_rsp = (void *)buf->data;
@@ -389,7 +389,7 @@ static void main_gateway_rpcs(void)
 	send_rpc(2, RPC_ID_BT_DISCONNECT, &disconnect, sizeof(disconnect));
 	buf = expect_response(2, RPC_ID_BT_DISCONNECT, 0);
 	if (buf == NULL) {
-		FAIL("Unexpected disconnection result");
+		FAIL("Unexpected disconnection result\n");
 		return;
 	}
 	net_buf_unref(buf);
@@ -399,7 +399,7 @@ static void main_gateway_rpcs(void)
 	send_rpc(3, RPC_ID_BT_CONNECT_INFUSE, &connect, sizeof(connect));
 	buf = expect_response(3, RPC_ID_BT_CONNECT_INFUSE, -BT_HCI_ERR_UNKNOWN_CONN_ID);
 	if (buf == NULL) {
-		FAIL("Unexpected connection result");
+		FAIL("Unexpected connection result\n");
 		return;
 	}
 	connect_rsp = (void *)buf->data;
@@ -408,7 +408,7 @@ static void main_gateway_rpcs(void)
 	send_rpc(4, RPC_ID_BT_DISCONNECT, &disconnect, sizeof(disconnect));
 	buf = expect_response(4, RPC_ID_BT_DISCONNECT, -EINVAL);
 	if (buf == NULL) {
-		FAIL("Unexpected disconnection result");
+		FAIL("Unexpected disconnection result\n");
 		return;
 	}
 	net_buf_unref(buf);
@@ -420,7 +420,7 @@ static void main_gateway_rpcs(void)
 	send_rpc(5, RPC_ID_BT_CONNECT_INFUSE, &connect, sizeof(connect));
 	buf = expect_response(5, RPC_ID_BT_CONNECT_INFUSE, 0);
 	if (buf == NULL) {
-		FAIL("Failed to connect via RPC");
+		FAIL("Failed to connect via RPC\n");
 		return;
 	}
 	connect_rsp = (void *)buf->data;
@@ -429,7 +429,7 @@ static void main_gateway_rpcs(void)
 	send_rpc(6, RPC_ID_BT_DISCONNECT, &disconnect, sizeof(disconnect));
 	buf = expect_response(6, RPC_ID_BT_DISCONNECT, 0);
 	if (buf == NULL) {
-		FAIL("Unexpected disconnection result");
+		FAIL("Unexpected disconnection result\n");
 		return;
 	}
 	net_buf_unref(buf);
@@ -800,7 +800,7 @@ static void main_gateway_remote_rpc_client(void)
 		for (int i = 0; i < 5; i++) {
 			buf = epacket_alloc_tx_for_interface(epacket_central, K_MSEC(1));
 			if (buf == NULL) {
-				FAIL("Failed to allocate buffer");
+				FAIL("Failed to allocate buffer\n");
 				return;
 			}
 			epacket_set_tx_metadata(buf, EPACKET_AUTH_NETWORK, 0, INFUSE_KEY_IDS,
@@ -812,7 +812,7 @@ static void main_gateway_remote_rpc_client(void)
 		rc = rpc_client_command_sync(&ctx, RPC_ID_APPLICATION_INFO, &req, sizeof(req),
 					     K_NO_WAIT, K_MSEC(200), &buf);
 		if (rc < 0) {
-			FAIL("Failed to query version (%d)", rc);
+			FAIL("Failed to query version (%d)\n", rc);
 			return;
 		}
 		rsp = (void *)buf->data;
@@ -845,6 +845,69 @@ static void dummy_gateway_handler(struct net_buf *buf)
 	epacket_gateway_receive_handler(epacket_dummy, buf);
 }
 
+static struct net_buf *create_info_request(const struct device *interface,
+					   struct rpc_application_info_request *request)
+{
+	struct net_buf *buf;
+
+	buf = epacket_alloc_tx_for_interface(interface, K_FOREVER);
+	epacket_set_tx_metadata(buf, EPACKET_AUTH_NETWORK, 0, INFUSE_RPC_CMD, EPACKET_ADDR_ALL);
+	net_buf_add_mem(buf, request, sizeof(*request));
+	if (epacket_bt_gatt_encrypt(buf) < 0) {
+		FAIL("Failed to encrypt GATT RPC\n");
+		net_buf_unref(buf);
+		return NULL;
+	}
+	return buf;
+}
+
+static int check_info_response(struct net_buf *buf, struct rpc_application_info_request *request)
+{
+	struct epacket_dummy_frame *frame;
+	struct epacket_received_common_header *common_header;
+	struct epacket_received_decrypted_header *decr_header;
+	struct rpc_application_info_response *info_rsp;
+
+	frame = net_buf_pull_mem(buf, sizeof(struct epacket_dummy_frame));
+	if (frame->type != INFUSE_RECEIVED_EPACKET) {
+		FAIL("Unexpected packet type\n");
+		return -1;
+	}
+	common_header = net_buf_pull_mem(buf, sizeof(struct epacket_received_common_header));
+	if (common_header->interface != EPACKET_INTERFACE_BT_CENTRAL) {
+		FAIL("Unexpected interface\n");
+		return -1;
+	}
+	net_buf_pull_mem(buf, sizeof(struct epacket_interface_address_bt_le));
+	decr_header = net_buf_pull_mem(buf, sizeof(struct epacket_received_decrypted_header));
+	if (decr_header->type != INFUSE_RPC_RSP) {
+		FAIL("Unexpected packet type\n");
+		return -1;
+	}
+
+	info_rsp = (void *)buf->data;
+	if (info_rsp->header.request_id != request->header.request_id) {
+		FAIL("Unexpected request ID\n");
+		return -1;
+	}
+	if (info_rsp->header.command_id != request->header.command_id) {
+		FAIL("Unexpected command ID\n");
+		return -1;
+	}
+	if (info_rsp->header.return_code != 0) {
+		FAIL("Unexpected return code\n");
+		return -1;
+	}
+	/* This only works because both devices have the same timebase due to the
+	 * simulation
+	 */
+	if (info_rsp->uptime != k_uptime_seconds()) {
+		FAIL("Unexpected uptime\n");
+		return -1;
+	}
+	return 0;
+}
+
 static void main_gateway_remote_rpc_forward(void)
 {
 	const struct device *epacket_dummy = DEVICE_DT_GET(DT_NODELABEL(epacket_dummy));
@@ -854,11 +917,10 @@ static void main_gateway_remote_rpc_forward(void)
 	union epacket_interface_address address;
 	struct net_buf *buf;
 	bt_addr_le_t addr;
-	int rc;
 
 	common_init();
 	if (observe_peers(&addr, 1) < 0) {
-		FAIL("Failed to observe peer");
+		FAIL("Failed to observe peer\n");
 		return;
 	}
 
@@ -884,9 +946,6 @@ static void main_gateway_remote_rpc_forward(void)
 		.peer = connect.peer,
 	};
 
-	struct rpc_application_info_request info_request;
-	struct rpc_application_info_response *info_rsp;
-
 	epacket_set_receive_handler(epacket_dummy, dummy_gateway_handler);
 	epacket_set_receive_handler(epacket_central, dummy_gateway_handler);
 
@@ -895,23 +954,21 @@ static void main_gateway_remote_rpc_forward(void)
 		send_rpc(1, RPC_ID_BT_CONNECT_INFUSE, &connect, sizeof(connect));
 		buf = expect_response(1, RPC_ID_BT_CONNECT_INFUSE, 0);
 		if (buf == NULL) {
-			FAIL("Failed to connect via RPC");
+			FAIL("Failed to connect via RPC\n");
 			return;
 		}
 		connect_rsp = (void *)buf->data;
 		net_buf_unref(buf);
 
 		/* Create and encrypt the GATT RPC */
+		struct rpc_application_info_request info_request = {
+			.header.command_id = RPC_ID_APPLICATION_INFO,
+			.header.request_id = 0x12345678,
+		};
+
 		address.bluetooth = addr;
-		info_request.header.command_id = RPC_ID_APPLICATION_INFO;
-		info_request.header.request_id = 0x12345678;
-		buf = epacket_alloc_tx_for_interface(epacket_central, K_FOREVER);
-		epacket_set_tx_metadata(buf, EPACKET_AUTH_NETWORK, 0, INFUSE_RPC_CMD,
-					EPACKET_ADDR_ALL);
-		net_buf_add_mem(buf, &info_request, sizeof(info_request));
-		rc = epacket_bt_gatt_encrypt(buf);
-		if (rc < 0) {
-			FAIL("Failed to encrypt GATT RPC");
+		buf = create_info_request(epacket_central, &info_request);
+		if (buf == NULL) {
 			return;
 		}
 
@@ -938,67 +995,407 @@ static void main_gateway_remote_rpc_forward(void)
 		/* Expect response to appear on the epacket output */
 		buf = k_fifo_get(response_queue, K_SECONDS(1));
 		if (buf == NULL) {
-			FAIL("Failed to receive response");
+			FAIL("Failed to receive response\n");
 			return;
 		}
-
-		struct epacket_dummy_frame *frame;
-		struct epacket_received_common_header *common_header;
-		struct epacket_received_decrypted_header *decr_header;
-
-		frame = net_buf_pull_mem(buf, sizeof(struct epacket_dummy_frame));
-		if (frame->type != INFUSE_RECEIVED_EPACKET) {
-			FAIL("Unexpected packet type");
+		if (check_info_response(buf, &info_request) < 0) {
 			return;
 		}
-		common_header =
-			net_buf_pull_mem(buf, sizeof(struct epacket_received_common_header));
-		if (common_header->interface != EPACKET_INTERFACE_BT_CENTRAL) {
-			FAIL("Unexpected interface");
-			return;
-		}
-		net_buf_pull_mem(buf, sizeof(struct epacket_interface_address_bt_le));
-		decr_header =
-			net_buf_pull_mem(buf, sizeof(struct epacket_received_decrypted_header));
-		if (decr_header->type != INFUSE_RPC_RSP) {
-			FAIL("Unexpected packet type");
-			return;
-		}
-
-		info_rsp = (void *)buf->data;
-		if (info_rsp->header.request_id != info_request.header.request_id) {
-			FAIL("Unexpected request ID");
-			return;
-		}
-		if (info_rsp->header.command_id != info_request.header.command_id) {
-			FAIL("Unexpected command ID");
-			return;
-		}
-		if (info_rsp->header.return_code != 0) {
-			FAIL("Unexpected return code");
-			return;
-		}
-		/* This only works because both devices have the same timebase due to the
-		 * simulation
-		 */
-		if (info_rsp->uptime != k_uptime_seconds()) {
-			FAIL("Unexpected uptime");
-			return;
-		}
-		LOG_HEXDUMP_INF(buf->data, buf->len, "RPC Response");
 		net_buf_unref(buf);
 
 		/* Disconnect from the remote device */
 		send_rpc(2, RPC_ID_BT_DISCONNECT, &disconnect, sizeof(disconnect));
 		buf = expect_response(2, RPC_ID_BT_DISCONNECT, 0);
 		if (buf == NULL) {
-			FAIL("Unexpected disconnection result");
+			FAIL("Unexpected disconnection result\n");
 			return;
 		}
 		net_buf_unref(buf);
 	}
 
 	PASS("RPC forwarder passed\n");
+}
+
+static void main_gateway_remote_rpc_forward_auto_conn(void)
+{
+	const struct device *epacket_dummy = DEVICE_DT_GET(DT_NODELABEL(epacket_dummy));
+	const struct device *epacket_central = DEVICE_DT_GET(DT_NODELABEL(epacket_bt_central));
+	struct k_fifo *response_queue = epacket_dummmy_transmit_fifo_get();
+	union epacket_interface_address address;
+	struct bt_conn *conn = NULL;
+	struct net_buf *buf;
+	bt_addr_le_t addr;
+
+	common_init();
+	if (observe_peers(&addr, 1) < 0) {
+		FAIL("Failed to observe peer\n");
+		return;
+	}
+
+	epacket_set_receive_handler(epacket_dummy, dummy_gateway_handler);
+	epacket_set_receive_handler(epacket_central, dummy_gateway_handler);
+
+	/* Run the process several times */
+	for (int i = 0; i < 3; i++) {
+		/* Create and encrypt the GATT RPC */
+		struct rpc_application_info_request info_request = {
+			.header.command_id = RPC_ID_APPLICATION_INFO,
+			.header.request_id = 0xAA345678,
+		};
+
+		address.bluetooth = addr;
+		buf = create_info_request(epacket_central, &info_request);
+		if (buf == NULL) {
+			return;
+		}
+
+		/* Construct ePacket forwarding packet */
+		struct epacket_dummy_frame dummy_header = {
+			.type = INFUSE_EPACKET_FORWARD_AUTO_CONN,
+			.auth = EPACKET_AUTH_DEVICE,
+		};
+		struct forwarding_bt {
+			struct epacket_forward_auto_conn_header forward_header;
+			uint8_t bt_addr[7];
+		} __packed hdr;
+
+		hdr.forward_header.interface = EPACKET_INTERFACE_BT_CENTRAL;
+		hdr.forward_header.length = sizeof(hdr) + buf->len;
+		hdr.forward_header.flags = 0;
+		hdr.forward_header.conn_timeout = 2;
+		hdr.forward_header.conn_idle_timeout = 1;
+		hdr.forward_header.conn_absolute_timeout = 5;
+		hdr.bt_addr[0] = addr.type;
+		memcpy(hdr.bt_addr + 1, addr.a.val, 6);
+
+		/* Push packet at dummy interface */
+		epacket_dummy_receive_extra(epacket_dummy, &dummy_header, &hdr, sizeof(hdr),
+					    buf->data, buf->len);
+		net_buf_unref(buf);
+
+		/* Expect response to appear on the epacket output */
+		buf = k_fifo_get(response_queue, K_SECONDS(2));
+		if (buf == NULL) {
+			FAIL("Failed to receive response\n");
+			return;
+		}
+		if (check_info_response(buf, &info_request) < 0) {
+			return;
+		}
+		net_buf_unref(buf);
+
+		/* There should be a connection associated with the peer */
+		conn = bt_conn_lookup_addr_le(BT_ID_DEFAULT, &addr);
+		if (conn == NULL) {
+			FAIL("Could not find associated connection\n");
+			return;
+		}
+
+		/* Connection should disconnect due to idle timeout */
+		if (bt_conn_disconnect_wait(conn, K_SECONDS(2)) < 0) {
+			FAIL("Connection did not terminate\n");
+			return;
+		}
+		bt_conn_unref(conn);
+
+		/* Small delay before next iteration */
+		k_sleep(K_MSEC(10));
+	}
+	PASS("RPC auto-conn forwarder passed\n");
+}
+
+static void main_gateway_remote_rpc_forward_auto_conn_single(void)
+{
+	const struct device *epacket_dummy = DEVICE_DT_GET(DT_NODELABEL(epacket_dummy));
+	const struct device *epacket_central = DEVICE_DT_GET(DT_NODELABEL(epacket_bt_central));
+	struct k_fifo *response_queue = epacket_dummmy_transmit_fifo_get();
+	union epacket_interface_address address;
+	struct bt_conn *conn = NULL;
+	struct net_buf *buf;
+	bt_addr_le_t addr;
+
+	common_init();
+	if (observe_peers(&addr, 1) < 0) {
+		FAIL("Failed to observe peer\n");
+		return;
+	}
+
+	epacket_set_receive_handler(epacket_dummy, dummy_gateway_handler);
+	epacket_set_receive_handler(epacket_central, dummy_gateway_handler);
+
+	/* Run the process several times */
+	for (int i = 0; i < 3; i++) {
+		/* Create and encrypt the GATT RPC */
+		struct rpc_application_info_request info_request = {
+			.header.command_id = RPC_ID_APPLICATION_INFO,
+			.header.request_id = 0xAA345678,
+		};
+
+		address.bluetooth = addr;
+		buf = create_info_request(epacket_central, &info_request);
+		if (buf == NULL) {
+			return;
+		}
+
+		/* Construct ePacket forwarding packet */
+		struct epacket_dummy_frame dummy_header = {
+			.type = INFUSE_EPACKET_FORWARD_AUTO_CONN,
+			.auth = EPACKET_AUTH_DEVICE,
+		};
+		struct forwarding_bt {
+			struct epacket_forward_auto_conn_header forward_header;
+			uint8_t bt_addr[7];
+		} __packed hdr;
+
+		hdr.forward_header.interface = EPACKET_INTERFACE_BT_CENTRAL;
+		hdr.forward_header.length = sizeof(hdr) + buf->len;
+		hdr.forward_header.flags = EPACKET_FORWARD_AUTO_CONN_SINGLE_RPC;
+		hdr.forward_header.conn_timeout = 2;
+		hdr.forward_header.conn_idle_timeout = 5;
+		hdr.forward_header.conn_absolute_timeout = 5;
+		hdr.bt_addr[0] = addr.type;
+		memcpy(hdr.bt_addr + 1, addr.a.val, 6);
+
+		/* Push packet at dummy interface */
+		epacket_dummy_receive_extra(epacket_dummy, &dummy_header, &hdr, sizeof(hdr),
+					    buf->data, buf->len);
+		net_buf_unref(buf);
+
+		/* Expect response to appear on the epacket output */
+		buf = k_fifo_get(response_queue, K_SECONDS(2));
+		if (buf == NULL) {
+			FAIL("Failed to receive response\n");
+			return;
+		}
+		if (check_info_response(buf, &info_request) < 0) {
+			return;
+		}
+		net_buf_unref(buf);
+
+		/* Give a short duration to allow for connection cleanup*/
+		k_sleep(K_MSEC(50));
+
+		/* The connection should have been automatically terminated on the RPC_RSP */
+		conn = bt_conn_lookup_addr_le(BT_ID_DEFAULT, &addr);
+		if (conn != NULL) {
+			FAIL("Connection associated with one-shot RPC still active\n");
+			return;
+		}
+	}
+	PASS("RPC auto-conn forwarder passed\n");
+}
+
+static void main_gateway_remote_rpc_forward_auto_conn_dc_notify(void)
+{
+	const struct device *epacket_dummy = DEVICE_DT_GET(DT_NODELABEL(epacket_dummy));
+	const struct device *epacket_central = DEVICE_DT_GET(DT_NODELABEL(epacket_bt_central));
+	struct k_fifo *response_queue = epacket_dummmy_transmit_fifo_get();
+	union epacket_interface_address address;
+	struct bt_conn *conn = NULL;
+	struct net_buf *buf;
+	bt_addr_le_t addr;
+
+	common_init();
+	if (observe_peers(&addr, 1) < 0) {
+		FAIL("Failed to observe peer\n");
+		return;
+	}
+
+	epacket_set_receive_handler(epacket_dummy, dummy_gateway_handler);
+	epacket_set_receive_handler(epacket_central, dummy_gateway_handler);
+
+	/* Run the process several times */
+	for (int i = 0; i < 3; i++) {
+		/* Create and encrypt the GATT RPC */
+		struct rpc_application_info_request info_request = {
+			.header.command_id = RPC_ID_APPLICATION_INFO,
+			.header.request_id = 0xAA345678,
+		};
+
+		address.bluetooth = addr;
+		buf = create_info_request(epacket_central, &info_request);
+		if (buf == NULL) {
+			return;
+		}
+
+		/* Construct ePacket forwarding packet */
+		struct epacket_dummy_frame dummy_header = {
+			.type = INFUSE_EPACKET_FORWARD_AUTO_CONN,
+			.auth = EPACKET_AUTH_DEVICE,
+		};
+		struct forwarding_bt {
+			struct epacket_forward_auto_conn_header forward_header;
+			uint8_t bt_addr[7];
+		} __packed hdr;
+
+		hdr.forward_header.interface = EPACKET_INTERFACE_BT_CENTRAL;
+		hdr.forward_header.length = sizeof(hdr) + buf->len;
+		hdr.forward_header.flags = EPACKET_FORWARD_AUTO_CONN_SINGLE_RPC |
+					   EPACKET_FORWARD_AUTO_CONN_DC_NOTIFICATION;
+		hdr.forward_header.conn_timeout = 2;
+		hdr.forward_header.conn_idle_timeout = 5;
+		hdr.forward_header.conn_absolute_timeout = 5;
+		hdr.bt_addr[0] = addr.type;
+		memcpy(hdr.bt_addr + 1, addr.a.val, 6);
+
+		/* Push packet at dummy interface */
+		epacket_dummy_receive_extra(epacket_dummy, &dummy_header, &hdr, sizeof(hdr),
+					    buf->data, buf->len);
+		net_buf_unref(buf);
+
+		/* Expect response to appear on the epacket output */
+		buf = k_fifo_get(response_queue, K_SECONDS(2));
+		if (buf == NULL) {
+			FAIL("Failed to receive response\n");
+			return;
+		}
+		if (check_info_response(buf, &info_request) < 0) {
+			return;
+		}
+		net_buf_unref(buf);
+
+		/* Give a short duration to allow for connection cleanup*/
+		k_sleep(K_MSEC(50));
+
+		/* The connection should have been automatically terminated on the RPC_RSP */
+		conn = bt_conn_lookup_addr_le(BT_ID_DEFAULT, &addr);
+		if (conn != NULL) {
+			FAIL("Connection associated with one-shot RPC still active\n");
+			return;
+		}
+
+		/* Expect a INFUSE_EPACKET_CONN_TERMINATED packet */
+		struct epacket_dummy_frame *dummy_header_tx;
+		struct epacket_conn_terminated *terminated;
+		struct epacket_interface_address_bt_le *terminated_addr;
+
+		buf = k_fifo_get(response_queue, K_SECONDS(1));
+		if (buf == NULL) {
+			FAIL("Failed to see INFUSE_EPACKET_CONN_TERMINATED\n");
+			return;
+		}
+
+		dummy_header_tx = net_buf_pull_mem(buf, sizeof(*dummy_header_tx));
+		terminated = net_buf_pull_mem(buf, sizeof(*terminated));
+		terminated_addr = net_buf_pull_mem(buf, sizeof(*terminated_addr));
+		if (dummy_header_tx->type != INFUSE_EPACKET_CONN_TERMINATED) {
+			FAIL("Packet is not INFUSE_EPACKET_CONN_TERMINATED\n");
+			return;
+		}
+		if (dummy_header_tx->auth != EPACKET_AUTH_DEVICE) {
+			FAIL("Unexpected auth\n");
+			return;
+		}
+		if (terminated->interface != EPACKET_INTERFACE_BT_CENTRAL) {
+			FAIL("Unexpected interface\n");
+			return;
+		}
+		if (terminated_addr->type != addr.type) {
+			FAIL("Unexpected interface address type\n");
+			return;
+		}
+		if (memcmp(terminated_addr->addr, addr.a.val, 6) != 0) {
+			FAIL("Unexpected interface address value\n");
+			return;
+		}
+		net_buf_unref(buf);
+	}
+	PASS("RPC auto-conn forwarder INFUSE_EPACKET_CONN_TERMINATED passed\n");
+}
+
+static void main_gateway_remote_rpc_forward_auto_conn_fail(void)
+{
+	const struct device *epacket_dummy = DEVICE_DT_GET(DT_NODELABEL(epacket_dummy));
+	const struct device *epacket_central = DEVICE_DT_GET(DT_NODELABEL(epacket_bt_central));
+	struct k_fifo *response_queue = epacket_dummmy_transmit_fifo_get();
+	union epacket_interface_address address;
+	struct net_buf *buf;
+	bt_addr_le_t addr;
+
+	common_init();
+	if (observe_peers(&addr, 1) < 0) {
+		FAIL("Failed to observe peer\n");
+		return;
+	}
+
+	epacket_set_receive_handler(epacket_dummy, dummy_gateway_handler);
+	epacket_set_receive_handler(epacket_central, dummy_gateway_handler);
+
+	/* Create and encrypt the GATT RPC */
+	struct rpc_application_info_request info_request = {
+		.header.command_id = RPC_ID_APPLICATION_INFO,
+		.header.request_id = 0xAA345678,
+	};
+
+	address.bluetooth = addr;
+	buf = create_info_request(epacket_central, &info_request);
+	if (buf == NULL) {
+		return;
+	}
+
+	/* Construct ePacket forwarding packet */
+	struct epacket_dummy_frame dummy_header = {
+		.type = INFUSE_EPACKET_FORWARD_AUTO_CONN,
+		.auth = EPACKET_AUTH_DEVICE,
+	};
+	struct forwarding_bt {
+		struct epacket_forward_auto_conn_header forward_header;
+		uint8_t bt_addr[7];
+	} __packed hdr;
+
+	/* Change address to be incorrect */
+	addr.a.val[0] += 1;
+
+	hdr.forward_header.interface = EPACKET_INTERFACE_BT_CENTRAL;
+	hdr.forward_header.length = sizeof(hdr) + buf->len;
+	hdr.forward_header.flags = EPACKET_FORWARD_AUTO_CONN_DC_NOTIFICATION;
+	hdr.forward_header.conn_timeout = 2;
+	hdr.forward_header.conn_idle_timeout = 5;
+	hdr.forward_header.conn_absolute_timeout = 5;
+	hdr.bt_addr[0] = addr.type;
+	memcpy(hdr.bt_addr + 1, addr.a.val, 6);
+
+	/* Push packet at dummy interface */
+	epacket_dummy_receive_extra(epacket_dummy, &dummy_header, &hdr, sizeof(hdr), buf->data,
+				    buf->len);
+	net_buf_unref(buf);
+
+	/* Expect a INFUSE_EPACKET_CONN_TERMINATED packet */
+	struct epacket_dummy_frame *dummy_header_tx;
+	struct epacket_conn_terminated *terminated;
+	struct epacket_interface_address_bt_le *terminated_addr;
+
+	buf = k_fifo_get(response_queue, K_SECONDS(3));
+	if (buf == NULL) {
+		FAIL("Failed to see INFUSE_EPACKET_CONN_TERMINATED\n");
+		return;
+	}
+
+	dummy_header_tx = net_buf_pull_mem(buf, sizeof(*dummy_header_tx));
+	terminated = net_buf_pull_mem(buf, sizeof(*terminated));
+	terminated_addr = net_buf_pull_mem(buf, sizeof(*terminated_addr));
+	if (dummy_header_tx->type != INFUSE_EPACKET_CONN_TERMINATED) {
+		FAIL("Packet is not INFUSE_EPACKET_CONN_TERMINATED\n");
+		return;
+	}
+	if (dummy_header_tx->auth != EPACKET_AUTH_DEVICE) {
+		FAIL("Unexpected auth\n");
+		return;
+	}
+	if (terminated->interface != EPACKET_INTERFACE_BT_CENTRAL) {
+		FAIL("Unexpected interface\n");
+		return;
+	}
+	if (terminated_addr->type != addr.type) {
+		FAIL("Unexpected interface address type\n");
+		return;
+	}
+	if (memcmp(terminated_addr->addr, addr.a.val, 6) != 0) {
+		FAIL("Unexpected interface address value\n");
+		return;
+	}
+	net_buf_unref(buf);
+	PASS("RPC auto-conn forwarder INFUSE_EPACKET_CONN_TERMINATED passed\n");
 }
 
 static const struct bst_test_instance epacket_gateway[] = {
@@ -1093,6 +1490,34 @@ static const struct bst_test_instance epacket_gateway[] = {
 		.test_pre_init_f = test_init,
 		.test_tick_f = test_tick,
 		.test_main_f = main_gateway_remote_rpc_forward,
+	},
+	{
+		.test_id = "epacket_bt_gateway_remote_rpc_forward_auto_conn",
+		.test_descr = "Run RPC forwarded from serial as INFUSE_EPACKET_FORWARD_AUTO_CONN",
+		.test_pre_init_f = test_init,
+		.test_tick_f = test_tick,
+		.test_main_f = main_gateway_remote_rpc_forward_auto_conn,
+	},
+	{
+		.test_id = "epacket_bt_gateway_remote_rpc_forward_auto_conn_single",
+		.test_descr = "Run INFUSE_EPACKET_FORWARD_AUTO_CONN with SINGLE_RPC",
+		.test_pre_init_f = test_init,
+		.test_tick_f = test_tick,
+		.test_main_f = main_gateway_remote_rpc_forward_auto_conn_single,
+	},
+	{
+		.test_id = "epacket_bt_gateway_remote_rpc_forward_auto_conn_dc_notify",
+		.test_descr = "Run INFUSE_EPACKET_FORWARD_AUTO_CONN with CONN_TERMINATED",
+		.test_pre_init_f = test_init,
+		.test_tick_f = test_tick,
+		.test_main_f = main_gateway_remote_rpc_forward_auto_conn_dc_notify,
+	},
+	{
+		.test_id = "epacket_bt_gateway_remote_rpc_forward_auto_conn_fail",
+		.test_descr = "Run INFUSE_EPACKET_FORWARD_AUTO_CONN that fails to connect",
+		.test_pre_init_f = test_init,
+		.test_tick_f = test_tick,
+		.test_main_f = main_gateway_remote_rpc_forward_auto_conn_fail,
 	},
 	BSTEST_END_MARKER};
 
