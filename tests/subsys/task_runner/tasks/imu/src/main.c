@@ -120,10 +120,17 @@ static void expect_logging(uint8_t range, bool expect_idx_metadata)
 		} else {
 			zassert_equal(0, tdf.time);
 		}
+	} else if (IS_ENABLED(CONFIG_TASK_RUNNER_TASK_IMU_LOG_DIFF_ARRAY)) {
+		/* Real data may show up as TIME_ARRAY or SINGLE, but the simulated data is
+		 * always close enough to be encoded as a diff.
+		 */
+		zassert_equal(TDF_DATA_FORMAT_DIFF_ARRAY_16_8, tdf.data_type);
 	} else {
 		zassert_true((TDF_DATA_FORMAT_TIME_ARRAY == tdf.data_type) ||
 			     (TDF_DATA_FORMAT_SINGLE == tdf.data_type));
 	}
+	zassert_equal(6, tdf.tdf_len);
+
 	rc = tdf_parse_find_in_buf(pkt->data, pkt->len, TDF_IDX_ARRAY_PERIOD, &tdf);
 	if (expect_idx_metadata) {
 		zassert_equal(0, rc);

@@ -11,3 +11,7 @@ tests:
   task_runner.tasks.imu.idx_array:
     extra_configs:
       - CONFIG_TASK_RUNNER_TASK_IMU_LOG_IDX_ARRAY=y
+  task_runner.tasks.imu.diff_array:
+    extra_configs:
+      - CONFIG_TDF_DIFF=y
+      - CONFIG_TASK_RUNNER_TASK_IMU_LOG_DIFF_ARRAY=y
