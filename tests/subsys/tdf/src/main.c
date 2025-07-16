@@ -1123,6 +1123,23 @@ static void tdf_diff_test(void *tdf_array, uint16_t tdf_id, uint8_t diff_type, v
 	zassert_equal(1, handled);
 	validate_diff_data(&state, TDF_DATA_FORMAT_SINGLE, 1, tdf_id, NULL, NULL, 0);
 
+	/* Diff encoding requested with two TDF's, should fallback to TDF_ARRAY_TIME */
+	net_buf_simple_init_with_data(&state.buf, buf, sizeof(buf));
+	tdf_buffer_state_reset(&state);
+
+	handled = tdf_add_core(&state, tdf_id, tdf_len, 2, 0, 10, tdf_array_u8, diff_type);
+	zassert_equal(2, handled);
+	validate_diff_data(&state, TDF_DATA_FORMAT_TIME_ARRAY, 2, tdf_id, NULL, NULL, 0);
+
+	/* 3 should work as expected (2 diffs) */
+	net_buf_simple_init_with_data(&state.buf, buf, sizeof(buf));
+	tdf_buffer_state_reset(&state);
+
+	tdf_array_iter = tdf_array_u8;
+	handled = tdf_add_core(&state, tdf_id, tdf_len, 3, 0, 10, tdf_array_u8, diff_type);
+	zassert_equal(3, handled);
+	validate_diff_data(&state, diff_type, 2, tdf_id, tdf_array_iter, diff_1, diff_len);
+
 	/* Should only populate the first 4 TDFs */
 	net_buf_simple_init_with_data(&state.buf, buf, sizeof(buf));
 	tdf_buffer_state_reset(&state);
