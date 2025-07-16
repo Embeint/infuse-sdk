@@ -42,8 +42,20 @@ config TASK_RUNNER_TASK_IMU_MAX_FIFO
 	int "Maximum number of samples that can be read"
 	default INFUSE_IMU_MAX_FIFO_SAMPLES
 
+choice TASK_RUNNER_TASK_IMU_LOG_TYPE
+	prompt "TDF format to log IMU data as"
+
+config TASK_RUNNER_TASK_IMU_LOG_TIME_ARRAY
+	bool "Log IMU TDFs as TIME_ARRAY"
+
 config TASK_RUNNER_TASK_IMU_LOG_IDX_ARRAY
-	bool "Log TDFs as IDX_ARRAY rather than TIME_ARRAY"
+	bool "Log IMU TDFs as IDX_ARRAY"
+
+config TASK_RUNNER_TASK_IMU_LOG_DIFF_ARRAY
+	bool "Log IMU TDFs as DIFF_ARRAY"
+	depends on TDF_DIFF
+
+endchoice
 
 config TASK_RUNNER_TASK_IMU_ACC_MAGNITUDE_BROADCAST
 	bool "Broadcast accelerometer magnitudes on a zbus channel"

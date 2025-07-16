@@ -38,6 +38,16 @@ ZBUS_CHAN_DEFINE_WITH_ID(INFUSE_ZBUS_NAME(INFUSE_ZBUS_CHAN_IMU_ACC_MAG),
 
 #endif /* CONFIG_TASK_RUNNER_TASK_IMU_ACC_MAGNITUDE_BROADCAST */
 
+#if defined(CONFIG_TASK_RUNNER_TASK_IMU_LOG_TIME_ARRAY)
+static const enum tdf_data_format tdf_format = TDF_DATA_FORMAT_TIME_ARRAY;
+#elif defined(CONFIG_TASK_RUNNER_TASK_IMU_LOG_IDX_ARRAY)
+static const enum tdf_data_format tdf_format = TDF_DATA_FORMAT_IDX_ARRAY;
+#elif defined(CONFIG_TASK_RUNNER_TASK_IMU_LOG_DIFF_ARRAY)
+static const enum tdf_data_format tdf_format = TDF_DATA_FORMAT_DIFF_ARRAY_16_8;
+#else
+#error Unhandled logging data type
+#endif
+
 LOG_MODULE_REGISTER(task_imu, CONFIG_TASK_IMU_LOG_LEVEL);
 
 struct logging_state {
@@ -115,18 +125,18 @@ static void imu_sample_handler(const struct task_schedule *schedule,
 			log_state->acc_period = 0;
 		}
 
-		task_schedule_tdf_log_core(
-			schedule, TASK_IMU_LOG_ACC, log_state->acc_tdf, sizeof(struct imu_sample),
-			samples->accelerometer.num, TDF_DATA_FORMAT_IDX_ARRAY, epoch_time,
-			log_state->acc_idx, &samples->samples[samples->accelerometer.offset]);
+		task_schedule_tdf_log_core(schedule, TASK_IMU_LOG_ACC, log_state->acc_tdf,
+					   sizeof(struct imu_sample), samples->accelerometer.num,
+					   tdf_format, epoch_time, log_state->acc_idx,
+					   &samples->samples[samples->accelerometer.offset]);
 
 		log_state->acc_idx += samples->accelerometer.num;
 #else
 		epoch_time = epoch_time_from_ticks(samples->accelerometer.timestamp_ticks);
 
-		task_schedule_tdf_log_array(
+		task_schedule_tdf_log_core(
 			schedule, TASK_IMU_LOG_ACC, log_state->acc_tdf, sizeof(struct imu_sample),
-			samples->accelerometer.num, epoch_time,
+			samples->accelerometer.num, tdf_format, epoch_time,
 			epoch_period_from_array_ticks(samples->accelerometer.buffer_period_ticks,
 						      samples->accelerometer.num),
 			&samples->samples[samples->accelerometer.offset]);
@@ -146,18 +156,18 @@ static void imu_sample_handler(const struct task_schedule *schedule,
 			log_state->gyr_period = 0;
 		}
 
-		task_schedule_tdf_log_core(
-			schedule, TASK_IMU_LOG_GYR, log_state->gyr_tdf, sizeof(struct imu_sample),
-			samples->gyroscope.num, TDF_DATA_FORMAT_IDX_ARRAY, epoch_time,
-			log_state->gyr_idx, &samples->samples[samples->gyroscope.offset]);
+		task_schedule_tdf_log_core(schedule, TASK_IMU_LOG_GYR, log_state->gyr_tdf,
+					   sizeof(struct imu_sample), samples->gyroscope.num,
+					   tdf_format, epoch_time, log_state->gyr_idx,
+					   &samples->samples[samples->gyroscope.offset]);
 
 		log_state->gyr_idx += samples->gyroscope.num;
 #else
 		epoch_time = epoch_time_from_ticks(samples->gyroscope.timestamp_ticks);
 
-		task_schedule_tdf_log_array(
+		task_schedule_tdf_log_core(
 			schedule, TASK_IMU_LOG_GYR, log_state->gyr_tdf, sizeof(struct imu_sample),
-			samples->gyroscope.num, epoch_time,
+			samples->gyroscope.num, tdf_format, epoch_time,
 			epoch_period_from_array_ticks(samples->gyroscope.buffer_period_ticks,
 						      samples->gyroscope.num),
 			&samples->samples[samples->gyroscope.offset]);
