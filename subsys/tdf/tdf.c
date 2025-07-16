@@ -252,6 +252,7 @@ int tdf_add_core(struct tdf_buffer_state *state, uint16_t tdf_id, uint8_t tdf_le
 		}
 	} else {
 		format = TDF_DATA_FORMAT_SINGLE;
+		is_diff = false;
 	}
 #endif /* CONFIG_TDF_DIFF */
 	if ((tdf_num > 1) || is_idx) {
