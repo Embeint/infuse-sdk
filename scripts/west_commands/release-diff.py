@@ -63,11 +63,10 @@ class release_diff(WestCommand):
             self.manifest_output = yaml.safe_load(f)
 
         def expect_match(field):
-            if (
-                self.manifest_original["application"][field]
-                != self.manifest_output["application"][field]
-            ):
-                sys.exit("Sysbuild configuration does not match between releases")
+            orig = self.manifest_original["application"][field]
+            new = self.manifest_output["application"][field]
+            if orig != new:
+                sys.exit(f"Field '{field}' does not match ({orig} != {new})")
 
         expect_match("TF-M")
         expect_match("sysbuild")
@@ -84,12 +83,27 @@ class release_diff(WestCommand):
 
         input = original_dir / name_orig / "zephyr" / filename
         output = output_dir / name_out / "zephyr" / filename
-        imgtool = original_dir / name_orig / "imgtool.yaml"
-        with imgtool.open("r", encoding="utf-8") as f:
-            imgtool_info = yaml.safe_load(f)
-        input_tlv_len = imgtool_info["tlv_area"]["tlv_hdr"]["tlv_tot"]
+        imgtool_orig_f = original_dir / name_orig / "imgtool.yaml"
+        imgtool_new_f = output_dir / name_out / "imgtool.yaml"
+        with imgtool_orig_f.open("r", encoding="utf-8") as f:
+            imgtool_orig = yaml.safe_load(f)
+        with imgtool_new_f.open("r", encoding="utf-8") as f:
+            imgtool_new = yaml.safe_load(f)
+
+        # Ensure both applications are signed with the same key (IMAGE_TLV_KEYHASH == 0x01)
+        key_orig = next(x for x in imgtool_orig["tlv_area"]["tlvs"] if x["type"] == 1)
+        key_new = next(x for x in imgtool_new["tlv_area"]["tlvs"] if x["type"] == 1)
+        if key_orig["data"] != key_new["data"]:
+            sys.exit("Applications were not built with the same signing key")
+
+        id_orig = self.manifest_original["application"]["id"]
+        id_new = self.manifest_output["application"]["id"]
+
+        input_tlv_len = imgtool_orig["tlv_area"]["tlv_hdr"]["tlv_tot"]
 
         print("")
+        if id_orig != id_new:
+            print(f" 0x{id_orig:08x} -> 0x{id_new:08x}")
         print(f"{ver_orig} -> {ver_new}")
         # The trailing TLV's can change on device, so exclude them from the original image knowledge
         with open(input, "rb") as f_input:
@@ -101,7 +115,9 @@ class release_diff(WestCommand):
                 )
 
         release_dir = output_dir / "diffs"
-        release_dir.mkdir(exist_ok=True)
+        if id_orig != id_new:
+            release_dir /= f"0x{id_orig:08x}"
+        release_dir.mkdir(exist_ok=True, parents=True)
         patch_file = release_dir / f"{ver_orig}.bin"
         with patch_file.open("wb") as f:
             f.write(patch)
