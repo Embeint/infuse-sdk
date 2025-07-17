@@ -1,0 +1,14 @@
+sample:
+  description: LPUART
+  name: LPUART
+common:
+  build_only: true
+  platform_allow:
+    - nrf52840dk/nrf52840
+  integration_platforms:
+    - nrf52840dk/nrf52840
+tests:
+  sample.serial.lpuart: {}
+  sample.serial.lpuart.interrupt:
+    extra_configs:
+      - CONFIG_NRF_SW_LPUART_INT_DRIVEN=y
