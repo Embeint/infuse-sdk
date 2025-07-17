@@ -1,0 +1,13 @@
+&uart0 {
+	lpuart: nrf-sw-lpuart {
+		compatible = "nordic,nrf-sw-lpuart";
+		status = "okay";
+		req-pin = <5>;
+		rdy-pin = <7>;
+	};
+};
+
+&gpiote {
+	/* GPIOTE and UART IRQ priorities must match */
+	interrupts = <6 NRF_DEFAULT_IRQ_PRIORITY>;
+};
