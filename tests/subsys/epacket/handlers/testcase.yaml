@@ -2,8 +2,14 @@ common:
   tags: crypto epacket
   min_flash: 64
   min_ram: 32
+  platform_allow:
+    - native_sim
+    - mps2/an385
+  integration_platforms:
+    - native_sim
+    - mps2/an385
 tests:
-  epacket.handlers:
-    integration_platforms:
-      - native_sim
-      - mps2/an385
+  epacket.handlers: {}
+  epacket.handlers.receive_group:
+    extra_configs:
+      - CONFIG_EPACKET_RECEIVE_GROUPING=y
