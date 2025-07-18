@@ -18,7 +18,7 @@
 #include <infuse/epacket/interface/epacket_bt_central.h>
 #include <infuse/rpc/server.h>
 
-LOG_MODULE_DECLARE(epacket);
+LOG_MODULE_DECLARE(epacket, CONFIG_EPACKET_LOG_LEVEL);
 
 static K_FIFO_DEFINE(packet_queue);
 static uint32_t rpc_disconnect_mask;
@@ -79,6 +79,12 @@ cleanup:
 void epacket_packet_forward(struct net_buf *buf)
 {
 	struct epacket_rx_metadata *meta = net_buf_user_data(buf);
+
+	if ((meta->auth != EPACKET_AUTH_DEVICE) && (meta->auth != EPACKET_AUTH_NETWORK)) {
+		LOG_WRN("Cannot handle forwarding packet with failed auth (%d)", meta->auth);
+		net_buf_unref(buf);
+		return;
+	}
 
 	epacket_backhaul = meta->interface;
 	if (meta->type == INFUSE_EPACKET_FORWARD) {
