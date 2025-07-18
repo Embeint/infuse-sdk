@@ -15,6 +15,7 @@
 #include <zephyr/sys/byteorder.h>
 #include <zephyr/logging/log.h>
 #include <zephyr/sys/util.h>
+#include <zephyr/dfu/mcuboot.h>
 
 #include <zephyr/device.h>
 #include <zephyr/init.h>
@@ -240,6 +241,13 @@ static void bt_uart_isr(const struct device *unused, void *user_data)
 
 static void tx_thread(void *p1, void *p2, void *p3)
 {
+	int cnt = 0;
+
+	ARG_UNUSED(p1);
+	ARG_UNUSED(p2);
+	ARG_UNUSED(p3);
+	ARG_UNUSED(cnt);
+
 	while (1) {
 		struct net_buf *buf;
 		int err;
@@ -252,6 +260,13 @@ static void tx_thread(void *p1, void *p2, void *p3)
 			LOG_ERR("Unable to send (err %d)", err);
 			net_buf_unref(buf);
 		}
+
+#ifdef CONFIG_MCUBOOT_IMG_MANAGER
+		if (cnt++ == 0) {
+			/* We've received a good packet from the BT host, mark image as confirmed */
+			boot_write_img_confirmed();
+		}
+#endif /* CONFIG_MCUBOOT_IMG_MANAGER */
 
 		/* Give other threads a chance to run if tx_queue keeps getting
 		 * new data all the time.

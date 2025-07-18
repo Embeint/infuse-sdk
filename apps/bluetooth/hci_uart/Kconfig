@@ -1,0 +1,37 @@
+# Firmware update values
+
+config INFUSE_APPLICATION_ID
+	hex "Unique application identifier"
+	default 0xB7000002
+
+configdefault IMG_MANAGER
+	default y
+
+configdefault INFUSE_CPATCH
+	default y if BOOTLOADER_MCUBOOT
+
+# Reduced RAM footprint on memory constrained platforms
+configdefault BT_MAX_CONN
+	default 4 if SOC_NRF52832
+	default 8 if SOC_NRF52833
+	default 16
+
+configdefault BT_EXT_ADV_MAX_ADV_SET
+	default 4 if SOC_NRF52832
+	default 6
+
+# Softdevice default values
+
+configdefault BT_CTLR_SDC_PERIPHERAL_COUNT
+	default 3
+
+configdefault BT_CTLR_SDC_SCAN_BUFFER_COUNT
+	default 5
+
+configdefault BT_CTLR_SDC_TX_PACKET_COUNT
+	default 5
+
+configdefault BT_CTLR_SDC_RX_PACKET_COUNT
+	default 5
+
+source "Kconfig.zephyr"
