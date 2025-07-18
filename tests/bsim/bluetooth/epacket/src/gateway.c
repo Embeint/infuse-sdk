@@ -1398,6 +1398,72 @@ static void main_gateway_remote_rpc_forward_auto_conn_fail(void)
 	PASS("RPC auto-conn forwarder INFUSE_EPACKET_CONN_TERMINATED passed\n");
 }
 
+static void main_gateway_remote_rpc_forward_auto_conn_auth_fail(void)
+{
+	const struct device *epacket_dummy = DEVICE_DT_GET(DT_NODELABEL(epacket_dummy));
+	const struct device *epacket_central = DEVICE_DT_GET(DT_NODELABEL(epacket_bt_central));
+	struct k_fifo *response_queue = epacket_dummmy_transmit_fifo_get();
+	union epacket_interface_address address;
+	struct net_buf *buf;
+	bt_addr_le_t addr;
+
+	common_init();
+	if (observe_peers(&addr, 1) < 0) {
+		FAIL("Failed to observe peer\n");
+		return;
+	}
+
+	epacket_set_receive_handler(epacket_dummy, dummy_gateway_handler);
+	epacket_set_receive_handler(epacket_central, dummy_gateway_handler);
+
+	/* Create and encrypt the GATT RPC */
+	struct rpc_application_info_request info_request = {
+		.header.command_id = RPC_ID_APPLICATION_INFO,
+		.header.request_id = 0xAA345678,
+	};
+
+	address.bluetooth = addr;
+	buf = create_info_request(epacket_central, &info_request);
+	if (buf == NULL) {
+		return;
+	}
+
+	/* Construct ePacket forwarding packet */
+	struct epacket_dummy_frame dummy_header = {
+		.type = INFUSE_EPACKET_FORWARD_AUTO_CONN,
+		.auth = EPACKET_AUTH_FAILURE,
+	};
+	struct forwarding_bt {
+		struct epacket_forward_auto_conn_header forward_header;
+		uint8_t bt_addr[7];
+	} __packed hdr;
+
+	hdr.forward_header.interface = EPACKET_INTERFACE_BT_CENTRAL;
+	hdr.forward_header.length = sizeof(hdr) + buf->len;
+	hdr.forward_header.flags = EPACKET_FORWARD_AUTO_CONN_DC_NOTIFICATION;
+	hdr.forward_header.conn_timeout = 2;
+	hdr.forward_header.conn_idle_timeout = 5;
+	hdr.forward_header.conn_absolute_timeout = 5;
+	hdr.bt_addr[0] = addr.type;
+	memcpy(hdr.bt_addr + 1, addr.a.val, 6);
+
+	/* Push this packet many times */
+	for (int i = 0; i < 10; i++) {
+		epacket_dummy_receive_extra(epacket_dummy, &dummy_header, &hdr, sizeof(hdr),
+					    buf->data, buf->len);
+	}
+	net_buf_unref(buf);
+
+	/* Expect no connection terminated because no connections should have been created */
+	buf = k_fifo_get(response_queue, K_SECONDS(3));
+	if (buf != NULL) {
+		FAIL("Connection unexpectedly established\n");
+		return;
+	}
+
+	PASS("RPC auto-conn forwarder with auth failures passed\n");
+}
+
 static const struct bst_test_instance epacket_gateway[] = {
 	{
 		.test_id = "epacket_bt_gateway_scan",
@@ -1518,6 +1584,13 @@ static const struct bst_test_instance epacket_gateway[] = {
 		.test_pre_init_f = test_init,
 		.test_tick_f = test_tick,
 		.test_main_f = main_gateway_remote_rpc_forward_auto_conn_fail,
+	},
+	{
+		.test_id = "epacket_bt_gateway_remote_rpc_forward_auto_conn_auth_fail",
+		.test_descr = "INFUSE_EPACKET_FORWARD_AUTO_CONN that fails authentication",
+		.test_pre_init_f = test_init,
+		.test_tick_f = test_tick,
+		.test_main_f = main_gateway_remote_rpc_forward_auto_conn_auth_fail,
 	},
 	BSTEST_END_MARKER};
 
