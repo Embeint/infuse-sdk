@@ -11,7 +11,9 @@
 #include <infuse/tdf/definitions.h>
 #include <infuse/tdf/util.h>
 
-bool epacket_gateway_forward_filter(uint8_t flags, struct net_buf *buf)
+#include <zephyr/random/random.h>
+
+bool epacket_gateway_forward_filter(uint8_t flags, uint8_t percent, struct net_buf *buf)
 {
 	struct epacket_rx_metadata *meta = net_buf_user_data(buf);
 	struct tdf_parsed tdf;
@@ -33,6 +35,12 @@ bool epacket_gateway_forward_filter(uint8_t flags, struct net_buf *buf)
 
 		/* Try to find a TDF_ANNOUNCE */
 		if (!tdf_parse_find_in_buf(buf->data, buf->len, TDF_ANNOUNCE, &tdf) == 0) {
+			return false;
+		}
+	}
+	if (percent < UINT8_MAX) {
+		/* Is this packet unlucky? */
+		if (sys_rand8_get() > percent) {
 			return false;
 		}
 	}
