@@ -1,0 +1,24 @@
+sample:
+  name: Bluetooth HCI UART
+  description: Allows Zephyr to provide Bluetooth connectivity via UART
+common:
+  harness: bluetooth
+  filter: dt_compat_enabled("zephyr,zephyr,bt-c2h-uart")
+  tags:
+    - uart
+    - bluetooth
+  integration_platforms:
+    - auroch@0.1.0/nrf54l15/cpuapp
+tests:
+  sample.bluetooth.hci_uart: {}
+  sample.bluetooth.hci_uart.sysbuild:
+    sysbuild: true
+  sample.bluetooth.hci_uart.infuse:
+    filter: dt_compat_enabled("zephyr,bt-hci-spi-slave") and not CONFIG_SOC_NRF5340_CPUAPP
+    required_snippets:
+      - infuse-bt-ctlr
+  sample.bluetooth.hci_uart.infuse.sysbuild:
+    filter: dt_compat_enabled("zephyr,bt-hci-spi-slave") and not CONFIG_SOC_NRF5340_CPUAPP
+    required_snippets:
+      - infuse-bt-ctlr
+    sysbuild: true
