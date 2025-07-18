@@ -81,12 +81,11 @@ static int infuse_sim_card(void)
 	VALIDATION_REPORT_INFO(TEST, "%16s: %s", "ICCID", response);
 
 	/* Power down SIM card */
-	rc = lte_lc_func_mode_set(LTE_LC_FUNC_MODE_DEACTIVATE_UICC);
-
-	if (rc != 0) {
+	if (lte_lc_func_mode_set(LTE_LC_FUNC_MODE_DEACTIVATE_UICC) != 0) {
 		VALIDATION_REPORT_ERROR(TEST, "Failed to deactivate UICC");
-		return -EIO;
+		rc = -EIO;
 	}
+
 	return rc;
 }
 
