@@ -43,6 +43,14 @@ config EPACKET_BUFFERS_RX
 	range 1 16
 	default 3
 
+config EPACKET_RECEIVE_GROUPING
+	bool "Append multiple received packets into a single INFUSE_RECEIVED_EPACKET"
+
+config EPACKET_RECEIVE_GROUPING_MAX_HOLD_MS
+	int "Maximum duration to hold a INFUSE_RECEIVED_EPACKET waiting for more packets"
+	depends on EPACKET_RECEIVE_GROUPING
+	default 1000
+
 config EPACKET_FORWARDING
 	bool "Support for handling ePacket forwarding packets"
 	depends on EPACKET_INTERFACE_BT_CENTRAL

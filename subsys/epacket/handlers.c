@@ -16,7 +16,14 @@
 
 #include "forwarding.h"
 
-LOG_MODULE_DECLARE(epacket);
+#ifdef CONFIG_EPACKET_RECEIVE_GROUPING
+const struct device *pending_backhaul;
+static struct k_work_delayable pending_flush_worker;
+static struct net_buf *pending_buffer;
+static struct k_spinlock pending_lock;
+#endif /* CONFIG_EPACKET_RECEIVE_GROUPING */
+
+LOG_MODULE_DECLARE(epacket, CONFIG_EPACKET_LOG_LEVEL);
 
 void epacket_default_receive_handler(struct net_buf *buf)
 {
@@ -57,6 +64,93 @@ done:
 	net_buf_unref(buf);
 }
 
+#ifdef CONFIG_EPACKET_RECEIVE_GROUPING
+
+static void receive_do_flush(struct k_work *work)
+{
+	K_SPINLOCK(&pending_lock) {
+		if (pending_buffer) {
+			LOG_DBG("Flushing buffer %p to %s", pending_buffer, pending_backhaul->name);
+			/* Queue for transmission on backhaul */
+			epacket_queue(pending_backhaul, pending_buffer);
+			pending_buffer = NULL;
+		}
+	}
+}
+
+static void receive_forward(const struct device *backhaul, struct net_buf *buf)
+{
+	const uint32_t max_hold = CONFIG_EPACKET_RECEIVE_GROUPING_MAX_HOLD_MS;
+	static bool is_init;
+	struct net_buf *temp;
+
+	if (!is_init) {
+		k_work_init_delayable(&pending_flush_worker, receive_do_flush);
+		is_init = true;
+	}
+
+	K_SPINLOCK(&pending_lock) {
+		if (pending_buffer) {
+			/* We already have a buffer holding data */
+			if (epacket_received_packet_append(pending_buffer, buf) == 0) {
+				/* Append succeeded, update timeout */
+				k_work_reschedule(&pending_flush_worker, K_MSEC(max_hold));
+				net_buf_unref(buf);
+				buf = NULL;
+				K_SPINLOCK_BREAK;
+			}
+			/* Cancel the pending flush timeout */
+			k_work_cancel_delayable(&pending_flush_worker);
+			/* Queue for transmission on backhaul */
+			epacket_queue(backhaul, pending_buffer);
+			pending_buffer = NULL;
+		}
+	}
+	if (buf == NULL) {
+		return;
+	}
+
+	/* No pending buffer, allocate one */
+	temp = epacket_alloc_tx_for_interface(backhaul, K_FOREVER);
+	K_SPINLOCK(&pending_lock) {
+		if (epacket_received_packet_append(temp, buf) == 0) {
+			pending_backhaul = backhaul;
+			pending_buffer = temp;
+			/* Initialise metadata */
+			epacket_set_tx_metadata(pending_buffer, EPACKET_AUTH_DEVICE, 0x00,
+						INFUSE_RECEIVED_EPACKET, EPACKET_ADDR_ALL);
+			/* Start the flush timeout */
+			k_work_reschedule(&pending_flush_worker, K_MSEC(max_hold));
+		} else {
+			/* Couldn't append to fresh buffer */
+			LOG_WRN("Could not forward packet");
+			net_buf_unref(temp);
+			net_buf_unref(buf);
+		}
+	}
+}
+
+#else
+
+static void receive_forward(const struct device *backhaul, struct net_buf *buf)
+{
+	struct net_buf *forward = epacket_alloc_tx_for_interface(backhaul, K_FOREVER);
+
+	if (epacket_received_packet_append(forward, buf) == 0) {
+		/* Add metadata */
+		epacket_set_tx_metadata(forward, EPACKET_AUTH_DEVICE, 0x00, INFUSE_RECEIVED_EPACKET,
+					EPACKET_ADDR_ALL);
+		/* Queue for transmission on backhaul */
+		epacket_queue(backhaul, forward);
+	} else {
+		LOG_WRN("Could not forward packet");
+		net_buf_unref(forward);
+		net_buf_unref(buf);
+	}
+}
+
+#endif /* CONFIG_EPACKET_RECEIVE_GROUPING */
+
 void epacket_gateway_receive_handler(const struct device *backhaul, struct net_buf *buf)
 {
 	struct epacket_rx_metadata *meta = net_buf_user_data(buf);
@@ -76,20 +170,7 @@ void epacket_gateway_receive_handler(const struct device *backhaul, struct net_b
 	    (meta->interface_id == EPACKET_INTERFACE_BT_CENTRAL)) {
 		LOG_DBG("Received on %s: Auth=%d Type=%d Seq=%d Len=%d", meta->interface->name,
 			meta->auth, meta->type, meta->sequence, buf->len);
-
-		struct net_buf *forward = epacket_alloc_tx_for_interface(backhaul, K_FOREVER);
-
-		if (epacket_received_packet_append(forward, buf) == 0) {
-			/* Add metadata */
-			epacket_set_tx_metadata(forward, EPACKET_AUTH_DEVICE, 0x00,
-						INFUSE_RECEIVED_EPACKET, EPACKET_ADDR_ALL);
-			/* Queue for transmission on backhaul */
-			epacket_queue(backhaul, forward);
-		} else {
-			LOG_WRN("Could not forward packet");
-			net_buf_unref(forward);
-			net_buf_unref(buf);
-		}
+		receive_forward(backhaul, buf);
 		return;
 	}
 
