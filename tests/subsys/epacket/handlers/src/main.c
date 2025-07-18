@@ -208,6 +208,9 @@ ZTEST(epacket_handlers, test_gateway_fallthrough)
 
 static struct net_buf *create_received_tdf_packet(uint8_t payload_len, bool encrypt)
 {
+	static const struct device dummy_bt_adv = {
+		.name = "epacket_bt_adv",
+	};
 	const bt_addr_le_t bt_addr_none = {0, {{0, 0, 0, 0, 0, 0}}};
 	struct net_buf *buf_tx, *buf_rx;
 	struct epacket_tx_metadata *tx_meta;
@@ -234,7 +237,7 @@ static struct net_buf *create_received_tdf_packet(uint8_t payload_len, bool encr
 
 	/* Add metadata */
 	rx_meta = net_buf_user_data(buf_rx);
-	rx_meta->interface = NULL;
+	rx_meta->interface = &dummy_bt_adv;
 	rx_meta->interface_id = EPACKET_INTERFACE_BT_ADV;
 	rx_meta->interface_address.bluetooth = bt_addr_none;
 	rx_meta->rssi = -80;
@@ -245,6 +248,88 @@ static struct net_buf *create_received_tdf_packet(uint8_t payload_len, bool encr
 	net_buf_unref(buf_tx);
 	return buf_rx;
 }
+
+#ifdef CONFIG_EPACKET_RECEIVE_GROUPING
+ZTEST(epacket_handlers, test_gateway_forward)
+{
+	const struct device *epacket_dummy = DEVICE_DT_GET(DT_NODELABEL(epacket_dummy));
+	struct k_fifo *tx_fifo = epacket_dummmy_transmit_fifo_get();
+	struct epacket_dummy_frame *tx_header = {0};
+	struct net_buf *buf_rx, *buf_tx;
+	const uint32_t max_hold = CONFIG_EPACKET_RECEIVE_GROUPING_MAX_HOLD_MS;
+	uint32_t base_len;
+
+	zassert_not_null(tx_fifo);
+
+	buf_rx = create_received_tdf_packet(60, true);
+
+	/* Packet should not be forwarded out until after MAX_HOLD_MS */
+	epacket_gateway_receive_handler(epacket_dummy, buf_rx);
+	buf_tx = k_fifo_get(tx_fifo, K_MSEC(max_hold - 50));
+	zassert_is_null(buf_tx);
+	buf_tx = k_fifo_get(tx_fifo, K_MSEC(100));
+	zassert_not_null(buf_tx);
+	tx_header = (void *)buf_tx->data;
+	zassert_equal(INFUSE_RECEIVED_EPACKET, tx_header->type);
+	zassert_equal(EPACKET_AUTH_DEVICE, tx_header->auth);
+	base_len = buf_tx->len;
+	net_buf_unref(buf_tx);
+
+	/* A new packet should refesh the timeout */
+	buf_rx = create_received_tdf_packet(60, true);
+	epacket_gateway_receive_handler(epacket_dummy, buf_rx);
+	k_sleep(K_MSEC(max_hold / 2));
+	buf_rx = create_received_tdf_packet(60, true);
+	epacket_gateway_receive_handler(epacket_dummy, buf_rx);
+	buf_tx = k_fifo_get(tx_fifo, K_MSEC(max_hold - 50));
+	zassert_is_null(buf_tx);
+	buf_tx = k_fifo_get(tx_fifo, K_MSEC(100));
+	zassert_not_null(buf_tx);
+	tx_header = (void *)buf_tx->data;
+	zassert_equal(INFUSE_RECEIVED_EPACKET, tx_header->type);
+	zassert_equal(EPACKET_AUTH_DEVICE, tx_header->auth);
+	zassert_true(buf_tx->len > base_len);
+	net_buf_unref(buf_tx);
+
+	/* A third packet shouldn't fit, immediate flush and new pending timeout */
+	buf_rx = create_received_tdf_packet(60, true);
+	epacket_gateway_receive_handler(epacket_dummy, buf_rx);
+	buf_rx = create_received_tdf_packet(60, true);
+	epacket_gateway_receive_handler(epacket_dummy, buf_rx);
+	buf_rx = create_received_tdf_packet(60, true);
+	epacket_gateway_receive_handler(epacket_dummy, buf_rx);
+
+	/* The immediate transmission */
+	buf_tx = k_fifo_get(tx_fifo, K_MSEC(10));
+	zassert_not_null(buf_tx);
+	tx_header = (void *)buf_tx->data;
+	zassert_equal(INFUSE_RECEIVED_EPACKET, tx_header->type);
+	zassert_equal(EPACKET_AUTH_DEVICE, tx_header->auth);
+	zassert_true(buf_tx->len > base_len);
+	net_buf_unref(buf_tx);
+
+	/* The later flush */
+	buf_tx = k_fifo_get(tx_fifo, K_MSEC(max_hold - 50));
+	zassert_is_null(buf_tx);
+	buf_tx = k_fifo_get(tx_fifo, K_MSEC(100));
+	zassert_not_null(buf_tx);
+	tx_header = (void *)buf_tx->data;
+	zassert_equal(INFUSE_RECEIVED_EPACKET, tx_header->type);
+	zassert_equal(EPACKET_AUTH_DEVICE, tx_header->auth);
+	zassert_equal(base_len, buf_tx->len);
+	net_buf_unref(buf_tx);
+
+	/* Limit backhaul to be unable to forward */
+	epacket_dummy_set_max_packet(20);
+
+	for (int i = 0; i < 10; i++) {
+		buf_rx = create_received_tdf_packet(60, true);
+		epacket_gateway_receive_handler(epacket_dummy, buf_rx);
+	}
+	buf_tx = k_fifo_get(tx_fifo, K_MSEC(max_hold + 50));
+	zassert_is_null(buf_tx);
+}
+#else
 
 ZTEST(epacket_handlers, test_gateway_forward)
 {
@@ -270,13 +355,15 @@ ZTEST(epacket_handlers, test_gateway_forward)
 	/* Limit backhaul to be unable to forward */
 	epacket_dummy_set_max_packet(20);
 
-	for (int i = 0; i < CONFIG_EPACKET_BUFFERS_RX + 1; i++) {
+	for (int i = 0; i < 10; i++) {
 		buf_rx = create_received_tdf_packet(60, true);
 
 		epacket_gateway_receive_handler(epacket_dummy, buf_rx);
 		zassert_is_null(k_fifo_get(tx_fifo, K_MSEC(100)));
 	}
 }
+
+#endif /* CONFIG_EPACKET_RECEIVE_GROUPING */
 
 static bool security_init(const void *global_state)
 {
