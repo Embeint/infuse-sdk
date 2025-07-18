@@ -239,6 +239,21 @@ static int bq25798_init(const struct device *dev)
 		return rc;
 	}
 
+	/* Check FET detection */
+	rc = i2c_burst_read_dt(&config->bus, BQ25798_REG_CHARGER_STATUS_3, &reg, 1);
+	if (rc != 0) {
+		LOG_ERR("Reg 0x%02X %s error (%d)", BQ25798_REG_CHARGER_STATUS_3, "read", rc);
+		return rc;
+	}
+	if ((config->acdrv_en_cfg & BQ25798_CHARGER_CONTROL_4_EN_ACDRV2) &&
+	    !(reg & BQ25798_CHARGER_STATUS_3_ACRB2)) {
+		LOG_WRN("ACFET%d-RBFET%d requested but not present", 2, 2);
+	}
+	if ((config->acdrv_en_cfg & BQ25798_CHARGER_CONTROL_4_EN_ACDRV1) &&
+	    !(reg & BQ25798_CHARGER_STATUS_3_ACRB1)) {
+		LOG_WRN("ACFET%d-RBFET%d requested but not present", 1, 1);
+	}
+
 	/* Configure ACFETs */
 	rc = i2c_burst_read_dt(&config->bus, BQ25798_REG_CHARGER_CONTROL_4, &reg, 1);
 	if (rc != 0) {
