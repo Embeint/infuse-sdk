@@ -76,6 +76,7 @@ static int bq25798_sample_fetch(const struct device *dev, enum sensor_channel ch
 {
 	const struct bq25798_config *config = dev->config;
 	struct bq25798_data *data = dev->data;
+	uint8_t flags;
 	int rc;
 
 	/* Clear interrupts from other sources */
@@ -94,8 +95,14 @@ static int bq25798_sample_fetch(const struct device *dev, enum sensor_channel ch
 	LOG_DBG("Waiting for ADC completion");
 	rc = k_sem_take(&data->int_sem, K_MSEC(500));
 	if (rc != 0) {
-		LOG_ERR("ADC interrupt did not fire");
-		return -EAGAIN;
+		/* Manually check the register to see if it was just an interrupt problem */
+		rc = i2c_reg_read_byte_dt(&config->bus, BQ25798_REG_CHARGER_FLAG_2, &flags);
+		if ((rc == 0) && (flags & BQ25798_CHARGER_FLAG_2_ADC_DONE)) {
+			LOG_WRN("ADC interrupt did not fire");
+		} else {
+			LOG_ERR("ADC sampling failed");
+			return -EIO;
+		}
 	}
 
 	/* Read the ADC results */
@@ -248,11 +255,11 @@ static int bq25798_init(const struct device *dev)
 
 	/* Configure MPPT */
 	if (config->mppt_ratio == MPPT_DISABLE) {
-		reg = MQ25798_MPPT_CONTROL_MPPT_DISABLE;
+		reg = BQ25798_MPPT_CONTROL_MPPT_DISABLE;
 	} else {
-		reg = MQ25798_MPPT_CONTROL_MPPT_ENABLE | MQ25798_MPPT_CONTROL_VOC_PERIOD_30S |
-		      MQ25798_MPPT_CONTROL_VOC_DELAY_300MS |
-		      (config->mppt_ratio << MQ25798_MPPT_CONTROL_RATIO_OFFSET);
+		reg = BQ25798_MPPT_CONTROL_MPPT_ENABLE | BQ25798_MPPT_CONTROL_VOC_PERIOD_30S |
+		      BQ25798_MPPT_CONTROL_VOC_DELAY_300MS |
+		      (config->mppt_ratio << BQ25798_MPPT_CONTROL_RATIO_OFFSET);
 	}
 	rc = bq25798_reg_write(dev, BQ25798_REG_MPPT_CONTROL, reg);
 	if (rc != 0) {
