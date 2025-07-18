@@ -20,6 +20,7 @@
 
 static K_SEM_DEFINE(lte_cell_scan_complete, 0, 1);
 static int gci_cells_found;
+static bool cell_scan_complete;
 
 static int infuse_modem_info(void)
 {
@@ -96,6 +97,14 @@ void network_scan_lte_handler(const struct lte_lc_evt *const evt)
 	if (evt->type != LTE_LC_EVT_NEIGHBOR_CELL_MEAS) {
 		return;
 	}
+	if (cell_scan_complete) {
+		/* lte_lc_neighbor_cell_measurement_cancel() schedules a callback to
+		 * run after 2 seconds with no cells to cover the case where the scanning
+		 * has not yet started. We don't want to print no cells found, since we
+		 * have already printed the results.
+		 */
+		return;
+	}
 	info = &evt->cells_info;
 
 	gci_cells_found = info->gci_cells_count;
@@ -110,6 +119,7 @@ void network_scan_lte_handler(const struct lte_lc_evt *const evt)
 
 	/* Notify the scan has completed */
 	k_sem_give(&lte_cell_scan_complete);
+	cell_scan_complete = true;
 }
 
 static int network_cell_scan(void)
