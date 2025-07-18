@@ -40,12 +40,13 @@ enum epacket_filter_flags {
  * @brief Determine whether a packet should be forwarded
  *
  * @param flags Criteria from @ref epacket_filter_flags for forwarding packet
+ * @param percent Percent of packets to forward that pass @a flags (255 = all, 128 = half, 0 = none)
  * @param buf ePacket that was received
  *
  * @return true Packet should be forwarded
  * @return false Packet should be dropped
  */
-bool epacket_gateway_forward_filter(uint8_t flags, struct net_buf *buf);
+bool epacket_gateway_forward_filter(uint8_t flags, uint8_t percent, struct net_buf *buf);
 
 /**
  * @}
