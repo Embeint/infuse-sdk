@@ -16,6 +16,7 @@
 #include <infuse/tdf/definitions.h>
 #include <infuse/data_logger/high_level/tdf.h>
 #include <infuse/drivers/watchdog.h>
+#include <infuse/bluetooth/legacy_adv.h>
 
 #include <infuse/task_runner/runner.h>
 #include <infuse/task_runner/tasks/infuse_tasks.h>
@@ -95,10 +96,29 @@ static const struct task_schedule schedules[] = {
 		.periodicity_type = TASK_PERIODICITY_FIXED,
 		.periodicity.fixed.period_s = 10,
 	},
+#ifdef CONFIG_BT
+	{
+		.task_id = TASK_ID_TDF_LOGGER_ALT1,
+		.validity = TASK_VALID_PERMANENTLY_RUNS,
+		.task_args.infuse.tdf_logger =
+			{
+				.loggers = TDF_DATA_LOGGER_BT_ADV,
+				.logging_period_ms = 900,
+				.random_delay_ms = 200,
+				.per_run = 3,
+				.tdfs = TASK_TDF_LOGGER_LOG_ANNOUNCE | TASK_TDF_LOGGER_LOG_BATTERY |
+					TASK_TDF_LOGGER_LOG_AMBIENT_ENV |
+					TASK_TDF_LOGGER_LOG_LOCATION | TASK_TDF_LOGGER_LOG_NET_CONN,
+			},
+	},
+#endif /* CONFIG_BT */
 };
 
 TASK_SCHEDULE_STATES_DEFINE(states, schedules);
 TASK_RUNNER_TASKS_DEFINE(app_tasks, app_tasks_data, (TDF_LOGGER_TASK, NULL),
+#ifdef CONFIG_BT
+			 (TDF_LOGGER_ALT1_TASK, NULL),
+#endif /* CONFIG_BT */
 			 (BATTERY_TASK, DEVICE_DT_GET(DT_ALIAS(fuel_gauge0))),
 			 (NETWORK_SCAN_TASK, NULL));
 
@@ -112,6 +132,13 @@ int main(void)
 	/* Turn on the interface */
 	conn_mgr_all_if_up(true);
 	conn_mgr_all_if_connect(true);
+
+#ifdef CONFIG_BT
+	/* Start legacy Bluetooth advertising to workaround iOS and
+	 * Nordic Softdevice connection issues.
+	 */
+	bluetooth_legacy_advertising_run();
+#endif /* CONFIG_BT */
 
 	/* Initialise task runner */
 	task_runner_init(schedules, states, ARRAY_SIZE(schedules), app_tasks, app_tasks_data,
