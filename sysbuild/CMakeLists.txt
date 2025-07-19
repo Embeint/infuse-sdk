@@ -6,8 +6,13 @@ if(NOT ${SB_CONFIG_INFUSE_INTEGRATION})
 endif()
 
 if(${SB_CONFIG_BOOTLOADER_MCUBOOT})
-  # Infuse snippet should be applied to MCUBoot application
-  set(mcuboot_SNIPPET "infuse" CACHE INTERNAL "")
+  if(${SB_CONFIG_INFUSE_INTEGRATION_BT_CTLR})
+    # infuse-bt-btlr snippet should be applied to MCUBoot application
+    set(mcuboot_SNIPPET "infuse-bt-ctlr" CACHE INTERNAL "")
+  else()
+    # infuse snippet should be applied to MCUBoot application
+    set(mcuboot_SNIPPET "infuse" CACHE INTERNAL "")
+  endif()
   # Ensure multithreading is always enabled in MCUBoot
   # External flash drivers and USB support depend on it
   set(mcuboot_CONFIG_MULTITHREADING "y" CACHE INTERNAL "")
