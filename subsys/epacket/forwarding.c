@@ -69,7 +69,6 @@ static void epacket_forward_direct(struct net_buf *buf)
 	epacket_set_tx_metadata(tx, EPACKET_AUTH_REMOTE_ENCRYPTED, 0, 0, dest);
 	net_buf_add_mem(tx, buf->data, forward_payload);
 
-	LOG_HEXDUMP_WRN(tx->data, tx->len, "TX");
 	epacket_queue(forward_interface, tx);
 
 cleanup:
