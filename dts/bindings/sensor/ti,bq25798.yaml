@@ -43,6 +43,18 @@ properties:
       Reducing this to 1A or less will give greater current resolution.
       Default is the POR value.
 
+  vac-ovp:
+    type: int
+    enum:
+      - 26
+      - 18
+      - 12
+      - 7
+    default: 7
+    description:
+      Input voltage over-voltage protection limit. Default of 7V is the
+      chip default.
+
   mppt-ratio:
     type: int
     enum:
