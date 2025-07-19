@@ -72,20 +72,83 @@ static int bq25798_reg_write(const struct device *dev, uint8_t reg, uint8_t val)
 	return i2c_write_dt(&config->bus, buf, 2);
 }
 
+static const char *const status_str[] = {
+	"Not Charging",      "Trickle Charge", "Pre-Charge",    "Fast Charge (CC)",
+	"Taper Charge (CV)", "Reserved",       "Top-off Timer", "Charge Termination",
+};
+
 static int bq25798_sample_fetch(const struct device *dev, enum sensor_channel chan)
 {
 	const struct bq25798_config *config = dev->config;
 	struct bq25798_data *data = dev->data;
-	uint8_t flags;
+	uint8_t reg;
 	int rc;
+
+#ifdef CONFIG_BQ25798_FETCH_STATUS_CHECKS
+	uint8_t status[5];
+	uint8_t chg_stat;
+
+	/* Status checks */
+	rc = i2c_burst_read_dt(&config->bus, BQ25798_REG_CHARGER_STATUS_0, status, 5);
+	if (rc == 0) {
+		LOG_HEXDUMP_DBG(status, sizeof(status), "Charger status registers");
+		/* Charger status */
+		chg_stat = (status[1] & BQ25798_CHARGER_STATUS_1_CHG_STAT_MASK) >>
+			   BQ25798_CHARGER_STATUS_1_CHG_STAT_OFF;
+		LOG_INF("Charger status: %s", status_str[chg_stat]);
+		/* VBUS present but not good */
+		if (status[0] & BQ25798_CHARGER_STATUS_0_VBUS_PRESENT) {
+			bool ac1 = status[0] & BQ25798_CHARGER_STATUS_0_AC1_PRESENT;
+			bool ac2 = status[0] & BQ25798_CHARGER_STATUS_0_AC2_PRESENT;
+			bool pg = status[0] & BQ25798_CHARGER_STATUS_0_POWER_GOOD;
+
+			LOG_INF("VBUS:%s%s (power %s)", ac1 ? " AC1 present" : "",
+				ac2 ? " AC2 present" : "", pg ? "good" : "bad");
+		}
+		/* Thermal regulation */
+		if (status[2] & BQ25798_CHARGER_STATUS_2_TREG) {
+			LOG_WRN("Thermal regulation");
+		}
+		/* Thermistor status */
+		if (status[4] & BQ25798_CHARGER_STATUS_4_TS_COLD) {
+			LOG_WRN("Thermistor cold");
+		} else if (status[4] & BQ25798_CHARGER_STATUS_4_TS_COOL) {
+			LOG_INF("Thermistor cool");
+		} else if (status[4] & BQ25798_CHARGER_STATUS_4_TS_WARM) {
+			LOG_INF("Thermistor warm");
+		} else if (status[4] & BQ25798_CHARGER_STATUS_4_TS_HOT) {
+			LOG_WRN("Thermistor hot");
+		}
+	}
+	rc = i2c_burst_read_dt(&config->bus, BQ25798_REG_FAULT_STATUS_0, status, 2);
+	if (rc == 0) {
+		LOG_HEXDUMP_DBG(status, 2, "Fault status registers");
+		if (status[0] & BQ25798_CHARGER_FAULT_0_VAC1_OVP) {
+			LOG_WRN("VAC%d over-voltage", 1);
+		}
+		if (status[0] & BQ25798_CHARGER_FAULT_0_VAC2_OVP) {
+			LOG_WRN("VAC%d over-voltage", 2);
+		}
+	}
+
+#endif /* CONFIG_BQ25798_FETCH_STATUS_CHECKS */
+
+#ifdef CONFIG_BQ25798_FETCH_POOR_SOURCE_RETRY
+	rc = i2c_reg_read_byte_dt(&config->bus, BQ25798_REG_CHARGER_CONTROL_0, &reg);
+	if ((rc == 0) && (reg & BQ25798_CHARGER_CONTROL_0_EN_HIZ)) {
+		/* Reset EN_HIZ to force source qualification retry */
+		LOG_INF("Forcing source requalification");
+		reg &= ~BQ25798_CHARGER_CONTROL_0_EN_HIZ;
+		(void)bq25798_reg_write(dev, BQ25798_REG_ADC_CONTROL, reg);
+	}
+#endif /* CONFIG_BQ25798_FETCH_POOR_SOURCE_RETRY */
 
 	/* Clear interrupts from other sources */
 	(void)k_sem_take(&data->int_sem, K_NO_WAIT);
 
 	/* Enable the one-shot measurement */
-	rc = bq25798_reg_write(dev, BQ25798_REG_ADC_CONTROL,
-			       BQ25798_ADC_CONTROL_EN | BQ25798_ADC_CONTROL_ONE_SHOT |
-				       BQ25798_ADC_CONTROL_15_BIT);
+	reg = BQ25798_ADC_CONTROL_EN | BQ25798_ADC_CONTROL_ONE_SHOT | BQ25798_ADC_CONTROL_15_BIT;
+	rc = bq25798_reg_write(dev, BQ25798_REG_ADC_CONTROL, reg);
 	if (rc != 0) {
 		LOG_ERR("Failed to enable ADC (%d)", rc);
 		return rc;
@@ -96,8 +159,8 @@ static int bq25798_sample_fetch(const struct device *dev, enum sensor_channel ch
 	rc = k_sem_take(&data->int_sem, K_MSEC(500));
 	if (rc != 0) {
 		/* Manually check the register to see if it was just an interrupt problem */
-		rc = i2c_reg_read_byte_dt(&config->bus, BQ25798_REG_CHARGER_FLAG_2, &flags);
-		if ((rc == 0) && (flags & BQ25798_CHARGER_FLAG_2_ADC_DONE)) {
+		rc = i2c_reg_read_byte_dt(&config->bus, BQ25798_REG_CHARGER_FLAG_2, &reg);
+		if ((rc == 0) && (reg & BQ25798_CHARGER_FLAG_2_ADC_DONE)) {
 			LOG_WRN("ADC interrupt did not fire");
 		} else {
 			LOG_ERR("ADC sampling failed");
