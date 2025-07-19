@@ -19,3 +19,19 @@ config BQ25798
 	depends on DT_HAS_TI_BQ25798_ENABLED
 	depends on SENSOR
 	default y
+
+if BQ25798
+
+config BQ25798_FETCH_STATUS_CHECKS
+	bool "Query status flags on fetch"
+	default y
+
+config BQ25798_FETCH_POOR_SOURCE_RETRY
+	bool "Automatically retry poor sources on fetch"
+	default y
+	help
+	   By default a poor source is only retried every 7 minutes.
+	   Enabling this flag results in `sensor_fetch` retrying the
+	   source qualification if the charger is in poor source mode.
+
+endif
