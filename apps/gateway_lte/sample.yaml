@@ -1,0 +1,19 @@
+sample:
+  description: Bluetooth <-> LTE bridge
+  name: gateway LTE
+common:
+  build_only: true
+  required_snippets:
+    - infuse
+  depends_on:
+    - netif
+    - modem
+  integration_platforms:
+    - auroch/nrf9151/ns
+tests:
+  sample.app.gateway_lte:
+    tags: gateway
+  sample.app.gateway_lte.sysbuild:
+    tags: gateway
+    sysbuild: true
+    filter: not CONFIG_BUILD_WITH_TFM
