@@ -74,7 +74,8 @@ static const struct task_schedule schedules[] = {
 			{
 				.loggers = TDF_DATA_LOGGER_SERIAL | TDF_DATA_LOGGER_UDP,
 				.tdfs = TASK_TDF_LOGGER_LOG_ANNOUNCE | TASK_TDF_LOGGER_LOG_BATTERY |
-					TASK_TDF_LOGGER_LOG_NET_CONN,
+					TASK_TDF_LOGGER_LOG_NET_CONN |
+					TASK_TDF_LOGGER_LOG_AMBIENT_ENV,
 			},
 	},
 	{
@@ -96,6 +97,14 @@ static const struct task_schedule schedules[] = {
 		.periodicity_type = TASK_PERIODICITY_FIXED,
 		.periodicity.fixed.period_s = 10,
 	},
+#if DT_NODE_EXISTS(DT_ALIAS(environmental0))
+	{
+		.task_id = TASK_ID_ENVIRONMENTAL,
+		.validity = TASK_VALID_ALWAYS,
+		.periodicity_type = TASK_PERIODICITY_FIXED,
+		.periodicity.fixed.period_s = 5,
+	},
+#endif /* DT_NODE_EXISTS(DT_ALIAS(environmental0)) */
 #ifdef CONFIG_BT
 	{
 		.task_id = TASK_ID_TDF_LOGGER_ALT1,
@@ -119,6 +128,9 @@ TASK_RUNNER_TASKS_DEFINE(app_tasks, app_tasks_data, (TDF_LOGGER_TASK, NULL),
 #ifdef CONFIG_BT
 			 (TDF_LOGGER_ALT1_TASK, NULL),
 #endif /* CONFIG_BT */
+#if DT_NODE_EXISTS(DT_ALIAS(environmental0))
+			 (ENVIRONMENTAL_TASK, DEVICE_DT_GET(DT_ALIAS(environmental0))),
+#endif /* DT_NODE_EXISTS(DT_ALIAS(environmental0)) */
 			 (BATTERY_TASK, DEVICE_DT_GET(DT_ALIAS(fuel_gauge0))),
 			 (NETWORK_SCAN_TASK, NULL));
 
