@@ -140,7 +140,7 @@ static int bq25798_sample_fetch(const struct device *dev, enum sensor_channel ch
 		/* Reset EN_HIZ to force source qualification retry */
 		LOG_INF("Forcing source requalification");
 		reg &= ~BQ25798_CHARGER_CONTROL_0_EN_HIZ;
-		(void)bq25798_reg_write(dev, BQ25798_REG_ADC_CONTROL, reg);
+		(void)bq25798_reg_write(dev, BQ25798_REG_CHARGER_CONTROL_0, reg);
 	}
 #endif /* CONFIG_BQ25798_FETCH_POOR_SOURCE_RETRY */
 
