@@ -39,6 +39,7 @@ struct bq25798_config {
 	uint16_t input_current_limit;
 	uint8_t mppt_ratio;
 	uint8_t acdrv_en_cfg;
+	uint8_t vac_ovp;
 };
 
 struct bq25798_data {
@@ -293,8 +294,8 @@ static int bq25798_init(const struct device *dev)
 		return rc;
 	}
 
-	/* Disable the watchdog */
-	reg = BQ25798_CHARGER_CONTROL_1_OVP_12V | BQ25798_CHARGER_CONTROL_1_WD_RST |
+	/* Disable the watchdog, configure over-voltage protection */
+	reg = config->vac_ovp | BQ25798_CHARGER_CONTROL_1_WD_RST |
 	      BQ25798_CHARGER_CONTROL_1_WD_DISABLE;
 	rc = bq25798_reg_write(dev, BQ25798_REG_CHARGER_CONTROL_1, reg);
 	if (rc != 0) {
@@ -403,8 +404,9 @@ static const struct sensor_driver_api bq25798_driver_api = {
 		.acdrv_en_cfg =                                                                    \
 			(DT_INST_PROP(inst, acdrv1_en) ? BQ25798_CHARGER_CONTROL_4_EN_ACDRV1       \
 						       : 0) |                                      \
-			(DT_INST_PROP(inst, acdrv2_en) ? BQ25798_CHARGER_CONTROL_4_EN_ACDRV2       \
-						       : 0)};                                      \
+			(DT_INST_PROP(inst, acdrv2_en) ? BQ25798_CHARGER_CONTROL_4_EN_ACDRV2 : 0), \
+		.vac_ovp = (DT_INST_ENUM_IDX(inst, vac_ovp) << 4),                                 \
+	};                                                                                         \
 	static struct bq25798_data bq25798_##inst##_data;                                          \
 	DEVICE_DT_INST_DEFINE(inst, bq25798_init, NULL, &bq25798_##inst##_data,                    \
 			      &bq25798_##inst##_config, POST_KERNEL, CONFIG_SENSOR_INIT_PRIORITY,  \
