@@ -108,8 +108,8 @@ static void nav_timegps_handle(struct gnss_run_state *state, const struct task_g
 	uint32_t subsec_infuse = (65536 * subsec_us) / 1000000;
 	uint64_t epoch_time = epoch_time_from_gps(timegps->week, week_seconds, subsec_infuse);
 
-	/* If there is no current time knowledge, do a quick sync ASAP */
-	if (!epoch_time_trusted_source(epoch_time_get_source(), true)) {
+	/* If there is no current time knowledge, or it is old enough, do a quick sync ASAP */
+	if (epoch_time_reference_age() > CONFIG_TASK_RUNNER_GNSS_TIME_COARSE_SYNC_PERIOD_SEC) {
 		struct timeutil_sync_instant sync = {
 			.local = k_uptime_ticks(),
 			.ref = epoch_time,
