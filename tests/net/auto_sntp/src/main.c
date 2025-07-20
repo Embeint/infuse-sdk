@@ -41,7 +41,7 @@ static void reference_time_updated(enum epoch_time_source source, struct timeuti
 				   struct timeutil_sync_instant new, void *user_ctx)
 {
 	/* Our manual invalid time point */
-	if (source == TIME_SOURCE_INVALID) {
+	if (source == TIME_SOURCE_GNSS) {
 		return;
 	}
 
@@ -120,7 +120,7 @@ ZTEST(auto_sntp, test_auto_sntp)
 	reference.ref = 10000000;
 	zassert_equal(-EAGAIN,
 		      k_sem_take(&time_ref_updated, K_SECONDS(CONFIG_SNTP_AUTO_RESYNC_AGE - 1)));
-	zassert_equal(0, epoch_time_set_reference(TIME_SOURCE_INVALID, &reference));
+	zassert_equal(0, epoch_time_set_reference(TIME_SOURCE_GNSS, &reference));
 
 	/* Ensure the time sync was delayed by the previous reference */
 	zassert_equal(-EAGAIN,
@@ -138,7 +138,7 @@ ZTEST(auto_sntp, test_auto_sntp)
 	/* Set time sync while disconnected */
 	k_sleep(K_MSEC(500));
 	reference.local = k_uptime_ticks();
-	zassert_equal(0, epoch_time_set_reference(TIME_SOURCE_INVALID, &reference));
+	zassert_equal(0, epoch_time_set_reference(TIME_SOURCE_GNSS, &reference));
 	k_sleep(K_SECONDS(CONFIG_SNTP_AUTO_RESYNC_AGE - 1));
 
 	/* Reconnect by adding IP address */
