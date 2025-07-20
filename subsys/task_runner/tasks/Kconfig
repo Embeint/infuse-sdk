@@ -175,6 +175,15 @@ config TASK_RUNNER_GNSS_TIME_RESYNC_PERIOD_SEC
 	  can minimise the number of time discontinuities when logging higher
 	  frequency data (e.g. IMU samples). The default value is 1 hour.
 
+config TASK_RUNNER_GNSS_TIME_COARSE_SYNC_PERIOD_SEC
+	int "Perform an initial coarse time sync at this period"
+	default 7200
+	help
+	  If the time knowledge of the device is older than this period, perform
+	  an initial time sync as soon as time knowledge is obtained from the GNSS.
+	  This ensures that even if a fine time sync is not obtained, the device RTC
+	  still stays roughly in sync. The default value is 2 hours.
+
 module = TASK_GNSS
 module-str = GNSS task
 source "subsys/logging/Kconfig.template.log_config"
