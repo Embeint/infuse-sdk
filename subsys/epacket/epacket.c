@@ -22,7 +22,9 @@
 
 #include "interfaces/epacket_internal.h"
 
-NET_BUF_POOL_DEFINE(epacket_scratch, 1, CONFIG_EPACKET_PACKET_SIZE_MAX, 0, NULL);
+#define SCRATCH_BUFFERS (IS_ENABLED(CONFIG_EPACKET_PROCESS_THREAD_SPLIT) ? 2 : 1)
+
+NET_BUF_POOL_DEFINE(epacket_scratch, SCRATCH_BUFFERS, CONFIG_EPACKET_PACKET_SIZE_MAX, 0, NULL);
 NET_BUF_POOL_DEFINE(epacket_pool_tx, CONFIG_EPACKET_BUFFERS_TX, CONFIG_EPACKET_PACKET_SIZE_MAX,
 		    sizeof(struct epacket_tx_metadata), NULL);
 NET_BUF_POOL_DEFINE(epacket_pool_rx, CONFIG_EPACKET_BUFFERS_RX, CONFIG_EPACKET_PACKET_SIZE_MAX,
@@ -32,6 +34,12 @@ K_THREAD_STACK_DEFINE(epacket_stack_area, CONFIG_EPACKET_PROCESS_THREAD_STACK_SI
 static struct k_thread epacket_process_thread;
 COND_CODE_0(CONFIG_ZTEST, (static), ())
 k_tid_t epacket_processor_thread;
+
+#ifdef CONFIG_EPACKET_PROCESS_THREAD_SPLIT
+K_THREAD_STACK_DEFINE(epacket_rx_stack_area, CONFIG_EPACKET_PROCESS_THREAD_STACK_SIZE);
+static struct k_thread epacket_rx_process_thread;
+static int wdog_channel_rx;
+#endif /* CONFIG_EPACKET_PROCESS_THREAD_SPLIT */
 
 static K_FIFO_DEFINE(epacket_rx_queue);
 static K_FIFO_DEFINE(epacket_tx_queue);
@@ -295,13 +303,15 @@ static void epacket_processor(void *a, void *b, void *c)
 {
 	struct k_poll_event events[] = {
 		K_POLL_EVENT_STATIC_INITIALIZER(K_POLL_TYPE_FIFO_DATA_AVAILABLE,
-						K_POLL_MODE_NOTIFY_ONLY, &epacket_rx_queue, 0),
-		K_POLL_EVENT_STATIC_INITIALIZER(K_POLL_TYPE_FIFO_DATA_AVAILABLE,
 						K_POLL_MODE_NOTIFY_ONLY, &epacket_tx_queue, 0),
 #ifdef CONFIG_EPACKET_INTERFACE_BT_ADV
 		K_POLL_EVENT_STATIC_INITIALIZER(K_POLL_TYPE_SIGNAL, K_POLL_MODE_NOTIFY_ONLY,
 						&bt_adv_signal_send_next, 0),
-#endif
+#endif /* CONFIG_EPACKET_INTERFACE_BT_ADV */
+#ifndef CONFIG_EPACKET_PROCESS_THREAD_SPLIT
+		K_POLL_EVENT_STATIC_INITIALIZER(K_POLL_TYPE_FIFO_DATA_AVAILABLE,
+						K_POLL_MODE_NOTIFY_ONLY, &epacket_rx_queue, 0),
+#endif /* CONFIG_EPACKET_PROCESS_THREAD_SPLIT */
 	};
 	struct net_buf *buf;
 	int rc;
@@ -322,28 +332,67 @@ static void epacket_processor(void *a, void *b, void *c)
 
 		if (events[0].state == K_POLL_STATE_FIFO_DATA_AVAILABLE) {
 			buf = k_fifo_get(events[0].fifo, K_NO_WAIT);
-			epacket_handle_rx(buf);
+			epacket_handle_tx(buf);
 			events[0].state = K_POLL_STATE_NOT_READY;
 		}
 
-		if (events[1].state == K_POLL_STATE_FIFO_DATA_AVAILABLE) {
-			buf = k_fifo_get(events[1].fifo, K_NO_WAIT);
-			epacket_handle_tx(buf);
-			events[1].state = K_POLL_STATE_NOT_READY;
-		}
-
 #ifdef CONFIG_EPACKET_INTERFACE_BT_ADV
-		if (events[2].state == K_POLL_STATE_SIGNALED) {
+		if (events[1].state == K_POLL_STATE_SIGNALED) {
 			k_poll_signal_reset(&bt_adv_signal_send_next);
 			epacket_bt_adv_send_next();
-			events[2].state = K_POLL_STATE_NOT_READY;
+			events[1].state = K_POLL_STATE_NOT_READY;
 		}
-#endif
+#endif /* CONFIG_EPACKET_INTERFACE_BT_ADV */
+
+#ifndef CONFIG_EPACKET_PROCESS_THREAD_SPLIT
+		int idx = IS_ENABLED(CONFIG_EPACKET_INTERFACE_BT_ADV) ? 2 : 1;
+
+		if (events[idx].state == K_POLL_STATE_FIFO_DATA_AVAILABLE) {
+			buf = k_fifo_get(events[idx].fifo, K_NO_WAIT);
+			epacket_handle_rx(buf);
+			events[idx].state = K_POLL_STATE_NOT_READY;
+		}
+#endif /* CONFIG_EPACKET_PROCESS_THREAD_SPLIT */
 
 		/* Feed watchdog before sleeping again */
 		infuse_watchdog_feed(wdog_channel);
 	}
 }
+
+#ifdef CONFIG_EPACKET_PROCESS_THREAD_SPLIT
+
+static void epacket_processor_rx(void *a, void *b, void *c)
+{
+	struct k_poll_event events[] = {
+		K_POLL_EVENT_STATIC_INITIALIZER(K_POLL_TYPE_FIFO_DATA_AVAILABLE,
+						K_POLL_MODE_NOTIFY_ONLY, &epacket_rx_queue, 0),
+
+	};
+	struct net_buf *buf;
+	int rc;
+
+	k_thread_name_set(NULL, "epacket_proc_rx");
+	infuse_watchdog_thread_register(wdog_channel_rx, _current);
+	while (true) {
+		rc = k_poll(events, ARRAY_SIZE(events), loop_period);
+		infuse_watchdog_feed(wdog_channel_rx);
+		if (rc == -EAGAIN) {
+			/* Only woke to feed the watchdog */
+			continue;
+		}
+
+		if (events[0].state == K_POLL_STATE_FIFO_DATA_AVAILABLE) {
+			buf = k_fifo_get(events[0].fifo, K_NO_WAIT);
+			epacket_handle_rx(buf);
+			events[0].state = K_POLL_STATE_NOT_READY;
+		}
+
+		/* Feed watchdog before sleeping again */
+		infuse_watchdog_feed(wdog_channel_rx);
+	}
+}
+
+#endif /* CONFIG_EPACKET_PROCESS_THREAD_SPLIT */
 
 static int epacket_boot(void)
 {
@@ -355,6 +404,16 @@ static int epacket_boot(void)
 		k_thread_create(&epacket_process_thread, epacket_stack_area,
 				K_THREAD_STACK_SIZEOF(epacket_stack_area), epacket_processor, NULL,
 				NULL, NULL, 0, K_ESSENTIAL, K_NO_WAIT);
+
+#ifdef CONFIG_EPACKET_PROCESS_THREAD_SPLIT
+	wdog_channel_rx = IS_ENABLED(CONFIG_EPACKET_INFUSE_WATCHDOG)
+				  ? infuse_watchdog_install(&loop_period)
+				  : -ENODEV;
+
+	k_thread_create(&epacket_rx_process_thread, epacket_rx_stack_area,
+			K_THREAD_STACK_SIZEOF(epacket_rx_stack_area), epacket_processor_rx, NULL,
+			NULL, NULL, 0, K_ESSENTIAL, K_NO_WAIT);
+#endif /* CONFIG_EPACKET_PROCESS_THREAD_SPLIT */
 	return 0;
 }
 
