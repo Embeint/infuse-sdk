@@ -9,3 +9,7 @@ boards:
     append:
       EXTRA_DTC_OVERLAY_FILE: trace_rtt.overlay
       EXTRA_CONF_FILE: trace_rtt.conf
+  auroch/nrf9151/ns:
+    append:
+      EXTRA_DTC_OVERLAY_FILE: trace_rtt.overlay
+      EXTRA_CONF_FILE: trace_rtt.conf
