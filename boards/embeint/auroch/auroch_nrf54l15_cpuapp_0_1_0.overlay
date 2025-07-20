@@ -32,7 +32,7 @@
 };
 
 &uart20 {
-	current-speed = <460800>;
+	current-speed = <1000000>;
 	status = "okay";
 	pinctrl-0 = <&uart20_default>;
 	pinctrl-1 = <&uart20_sleep>;
