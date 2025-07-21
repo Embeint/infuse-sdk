@@ -59,7 +59,7 @@
             "fields": [
                 {"name": "state", "type": "uint8_t", "description": "Operational state"},
                 {"name": "ssid", "type": "char", "num": 32, "description": "Service Set Identifier (Network Name)"},
-                {"name": "bssid", "type": "char", "num": 6, "description": "Basic Service Set Identifier (MAC address)"},
+                {"name": "bssid", "type": "uint8_t", "num": 6, "description": "Basic Service Set Identifier (MAC address)"},
                 {"name": "band", "type": "uint8_t", "description": "Frequency band"},
                 {"name": "channel", "type": "uint8_t", "description": "Channel index"},
                 {"name": "iface_mode", "type": "uint8_t", "description": "https://w1.fi/wpa_supplicant/devel/defs_8h.html#a4aeb27c1e4abd046df3064ea9756f0bc"},
@@ -96,7 +96,7 @@
                 {"name": "channel", "type": "uint8_t", "description": "Channel index"},
                 {"name": "security", "type": "uint8_t", "description": "IEEE 802.11 security type"},
                 {"name": "rssi", "type": "int8_t", "description": "Received signal strength (dBm)"},
-                {"name": "bssid", "type": "char", "num": 6, "description": "Basic Service Set Identifier (MAC address)"},
+                {"name": "bssid", "type": "uint8_t", "num": 6, "description": "Basic Service Set Identifier (MAC address)"},
                 {"name": "ssid_len", "type": "uint8_t", "description": "SSID length"},
                 {"name": "ssid", "type": "char", "num": 0, "description": "Service Set Identifier (Network Name)"}
             ]

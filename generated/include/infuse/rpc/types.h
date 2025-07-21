@@ -150,7 +150,7 @@ struct rpc_struct_wifi_state {
 	/** Service Set Identifier (Network Name) */
 	char ssid[32];
 	/** Basic Service Set Identifier (MAC address) */
-	char bssid[6];
+	uint8_t bssid[6];
 	/** Frequency band */
 	uint8_t band;
 	/** Channel index */
@@ -212,7 +212,7 @@ struct rpc_struct_wifi_scan_result {
 	/** Received signal strength (dBm) */
 	int8_t rssi;
 	/** Basic Service Set Identifier (MAC address) */
-	char bssid[6];
+	uint8_t bssid[6];
 	/** SSID length */
 	uint8_t ssid_len;
 	/** Service Set Identifier (Network Name) */
