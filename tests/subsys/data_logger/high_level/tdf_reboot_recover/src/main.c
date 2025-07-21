@@ -52,7 +52,7 @@ struct logger_data {
 #endif
 	uint8_t full_block_write;
 	uint8_t block_overhead;
-	uint8_t tdf_buffer[DATA_LOGGER_MAX_SIZE(DT_NODELABEL(data_logger_dummy))];
+	uint8_t tdf_buffer[DATA_LOGGER_MAX_SIZE(DT_NODELABEL(data_logger_dummy))] __aligned(4);
 	uint32_t guard_tail;
 };
 

@@ -48,7 +48,7 @@ struct tdf_logger_config {
 		IF_ENABLED(TDF_REMOTE_SUPPORT, (uint64_t remote_id;))                              \
 		uint8_t full_block_write;                                                          \
 		uint8_t block_overhead;                                                            \
-		uint8_t tdf_buffer[len];                                                           \
+		uint8_t tdf_buffer[len] __aligned(4);                                              \
 		uint32_t guard_tail;                                                               \
 	}
 
@@ -63,7 +63,7 @@ struct tdf_logger_data {
 #endif
 	uint8_t full_block_write;
 	uint8_t block_overhead;
-	uint8_t tdf_buffer[];
+	uint8_t tdf_buffer[] __aligned(4);
 };
 
 #define GUARD_TAIL_OFFSET(len)                                                                     \

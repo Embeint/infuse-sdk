@@ -59,7 +59,8 @@ struct data_logger_common_config {
 
 #define COMMON_CONFIG_PRE(inst)                                                                    \
 	IF_ENABLED(CONFIG_DATA_LOGGER_RAM_BUFFER,                                                  \
-		   (static uint8_t ram_buf_##inst[DT_INST_PROP(inst, extra_ram_buffer)]))
+		   (static uint8_t ram_buf_##inst[DT_INST_PROP(inst, extra_ram_buffer)]            \
+		    __aligned(4)))
 
 #define COMMON_CONFIG_INIT(inst, _full_block_write, _queued_writes, _block_write_align)            \
 	COND_CODE_1(CONFIG_DATA_LOGGER_RAM_BUFFER,                                                 \
