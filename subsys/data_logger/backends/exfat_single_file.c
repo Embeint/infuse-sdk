@@ -61,15 +61,21 @@ static int logger_exfat_read(const struct device *dev, uint32_t phy_block, uint1
 {
 	const struct dl_exfat_config *config = dev->config;
 	struct dl_exfat_data *data = dev->data;
+	bool aligned = ((uintptr_t)mem % sizeof(uint32_t)) == 0;
 	uint32_t disk_lba = data->cached_file_lba + phy_block;
 	int rc;
 
 	LOG_DBG("Reading from logger block: %08X LBA: %08X", phy_block, disk_lba);
 
-	/* Read complete block from file */
-	rc = disk_access_read(config->disk, data->block_buffer, disk_lba, 1);
-	/* Memcpy required data out */
-	memcpy(mem, data->block_buffer + block_offset, mem_len);
+	if (aligned && (block_offset == 0) && (mem_len == DATA_LOGGER_EXFAT_BLOCK_SIZE)) {
+		/* Read directly into provided buffer */
+		rc = disk_access_read(config->disk, mem, disk_lba, 1);
+	} else {
+		/* Read complete block from file */
+		rc = disk_access_read(config->disk, data->block_buffer, disk_lba, 1);
+		/* Memcpy required data out */
+		memcpy(mem, data->block_buffer + block_offset, mem_len);
+	}
 	return rc;
 }
 
