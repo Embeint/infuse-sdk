@@ -121,6 +121,9 @@ void data_logger_get_state(const struct device *dev, struct data_logger_state *s
 /**
  * @brief Write a block to the data logger
  *
+ * @note Some hardware-accelerated backends may have alignment or size restrictions
+ *       for the provided block buffer.
+ *
  * @param dev Data logger to write to
  * @param type Data type being written
  * @param block Block data pointer (Overhead bytes will be overwritten)

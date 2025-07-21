@@ -30,7 +30,7 @@ struct dl_exfat_data {
 	struct data_logger_common_data common;
 	struct k_sem filesystem_claim;
 	FATFS infuse_fatfs;
-	uint8_t block_buffer[DATA_LOGGER_EXFAT_BLOCK_SIZE];
+	uint8_t block_buffer[DATA_LOGGER_EXFAT_BLOCK_SIZE] __aligned(4);
 	uint32_t cached_file_num;
 	uint32_t cached_file_lba;
 };
