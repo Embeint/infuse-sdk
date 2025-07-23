@@ -63,6 +63,20 @@
             "fields": [
                 {"name": "val", "type": "uint8_t", "num": 6, "display": {"fmt": "hex", "digits": 12}, "conversion": {"int": "little"}, "description": "Address bytes"}
             ]
+        },
+        "tdf_struct_wifi_network_params": {
+            "description": "WiFi network parameters",
+            "fields": [
+                {"name": "bssid", "type": "uint8_t", "num": 6, "display": {"fmt": "hex", "digits": 12}, "conversion": {"int": "big"}, "description": "Basic Service Set Identifier (MAC address)"},
+                {"name": "band", "type": "uint8_t", "description": "Frequency band"},
+                {"name": "channel", "type": "uint8_t", "description": "Channel index"},
+                {"name": "iface_mode", "type": "uint8_t", "description": "https://w1.fi/wpa_supplicant/devel/defs_8h.html#a4aeb27c1e4abd046df3064ea9756f0bc"},
+                {"name": "link_mode", "type": "uint8_t", "description": "WiFi link operating mode (https://en.wikipedia.org/wiki/Wi-Fi#Versions_and_generations)"},
+                {"name": "security", "type": "uint8_t", "description": "IEEE 802.11 security type"},
+                {"name": "rssi", "type": "int8_t", "description": "Received signal strength (dBm)"},
+                {"name": "beacon_interval", "type": "uint16_t", "description": "Beacon interval (ms)"},
+                {"name": "twt_capable", "type": "uint8_t", "description": "Target Wake Time capable?"}
+            ]
         }
     },
     "definitions": {
@@ -476,6 +490,27 @@
             "fields": [
                 {"name": "tdf_id", "type": "uint16_t", "description": "TDF ID that is being described"},
                 {"name": "period", "type": "uint32_t", "description": "Period between samples in nanoseconds"}
+            ]
+        },
+        "48": {
+            "name": "WIFI_CONNECTED",
+            "description": "WiFi network is now connected",
+            "fields": [
+                {"name": "network", "type": "struct tdf_struct_wifi_network_params", "description": "Network parameters"}
+            ]
+        },
+        "49": {
+            "name": "WIFI_CONNECTION_FAILED",
+            "description": "Failed to connect to a WiFi network",
+            "fields": [
+                {"name": "reason", "type": "uint8_t", "description": "Reported reason for connection failure"}
+            ]
+        },
+        "50": {
+            "name": "WIFI_DISCONNECTED",
+            "description": "Wi-Fi network is now disconnected",
+            "fields": [
+                {"name": "reason", "type": "uint8_t", "description": "Reported reason for disconnection"}
             ]
         },
         "100": {

@@ -97,6 +97,29 @@ struct tdf_struct_eui48 {
 	uint8_t val[6];
 } __packed;
 
+/** WiFi network parameters */
+struct tdf_struct_wifi_network_params {
+	/** Basic Service Set Identifier (MAC address) */
+	uint8_t bssid[6];
+	/** Frequency band */
+	uint8_t band;
+	/** Channel index */
+	uint8_t channel;
+	/** https://w1.fi/wpa_supplicant/devel/defs_8h.html#a4aeb27c1e4abd046df3064ea9756f0bc */
+	uint8_t iface_mode;
+	/** WiFi link operating mode (https://en.wikipedia.org/wiki/Wi-Fi#Versions_and_generations)
+	 */
+	uint8_t link_mode;
+	/** IEEE 802.11 security type */
+	uint8_t security;
+	/** Received signal strength (dBm) */
+	int8_t rssi;
+	/** Beacon interval (ms) */
+	uint16_t beacon_interval;
+	/** Target Wake Time capable? */
+	uint8_t twt_capable;
+} __packed;
+
 /**
  * @}
  */
@@ -628,6 +651,24 @@ struct tdf_idx_array_period {
 	uint32_t period;
 } __packed;
 
+/** WiFi network is now connected */
+struct tdf_wifi_connected {
+	/** Network parameters */
+	struct tdf_struct_wifi_network_params network;
+} __packed;
+
+/** Failed to connect to a WiFi network */
+struct tdf_wifi_connection_failed {
+	/** Reported reason for connection failure */
+	uint8_t reason;
+} __packed;
+
+/** Wi-Fi network is now disconnected */
+struct tdf_wifi_disconnected {
+	/** Reported reason for disconnection */
+	uint8_t reason;
+} __packed;
+
 /** Example array type */
 struct tdf_array_type {
 	/** I am an array of length 4 */
@@ -724,6 +765,12 @@ enum tdf_builtin_id {
 	TDF_IDX_ARRAY_FREQ = 46,
 	/** Sample frequency metadata for a TDF_DATA_FORMAT_IDX_ARRAY array */
 	TDF_IDX_ARRAY_PERIOD = 47,
+	/** WiFi network is now connected */
+	TDF_WIFI_CONNECTED = 48,
+	/** Failed to connect to a WiFi network */
+	TDF_WIFI_CONNECTION_FAILED = 49,
+	/** Wi-Fi network is now disconnected */
+	TDF_WIFI_DISCONNECTED = 50,
 	/** Example array type */
 	TDF_ARRAY_TYPE = 100,
 	/** End of builtin TDF range */
@@ -775,6 +822,9 @@ enum tdf_builtin_id {
 #define _TDF_LORA_RX_TYPE                     struct tdf_lora_rx
 #define _TDF_IDX_ARRAY_FREQ_TYPE              struct tdf_idx_array_freq
 #define _TDF_IDX_ARRAY_PERIOD_TYPE            struct tdf_idx_array_period
+#define _TDF_WIFI_CONNECTED_TYPE              struct tdf_wifi_connected
+#define _TDF_WIFI_CONNECTION_FAILED_TYPE      struct tdf_wifi_connection_failed
+#define _TDF_WIFI_DISCONNECTED_TYPE           struct tdf_wifi_disconnected
 #define _TDF_ARRAY_TYPE_TYPE                  struct tdf_array_type
 
 /** Size of builtin TDF definitions */
@@ -822,6 +872,9 @@ enum tdf_builtin_size {
 	_TDF_LORA_RX_SIZE = sizeof(struct tdf_lora_rx),
 	_TDF_IDX_ARRAY_FREQ_SIZE = sizeof(struct tdf_idx_array_freq),
 	_TDF_IDX_ARRAY_PERIOD_SIZE = sizeof(struct tdf_idx_array_period),
+	_TDF_WIFI_CONNECTED_SIZE = sizeof(struct tdf_wifi_connected),
+	_TDF_WIFI_CONNECTION_FAILED_SIZE = sizeof(struct tdf_wifi_connection_failed),
+	_TDF_WIFI_DISCONNECTED_SIZE = sizeof(struct tdf_wifi_disconnected),
 	_TDF_ARRAY_TYPE_SIZE = sizeof(struct tdf_array_type),
 };
 
