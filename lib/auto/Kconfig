@@ -12,6 +12,12 @@ config INFUSE_AUTO_TIME_SYNC_LOG
 	depends on TDF_DATA_LOGGER
 	default y
 
+config INFUSE_AUTO_WIFI_CONN_LOG
+	bool "Automatically log WiFi connection events"
+	depends on WIFI
+	depends on TDF_DATA_LOGGER
+	default y
+
 config INFUSE_AUTO_CHARGER_TEMPERATURE_CONTROL
 	bool "Automatically control charging state based on temperature"
 	depends on DT_HAS_EMBEINT_GPIO_CHARGER_CONTROL_ENABLED
