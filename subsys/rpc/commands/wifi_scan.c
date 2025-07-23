@@ -68,6 +68,7 @@ struct net_buf *rpc_command_wifi_scan(struct net_buf *request)
 {
 	struct wifi_scan_context context = {0};
 	struct rpc_wifi_scan_response rsp = {0};
+	struct rpc_wifi_scan_response *rsp_p;
 	struct wifi_scan_params params = {0};
 	bool manual_up = false;
 	struct net_if *iface;
@@ -90,6 +91,7 @@ struct net_buf *rpc_command_wifi_scan(struct net_buf *request)
 
 	/* Allocate response object */
 	context.response = rpc_response_simple_req(request, 0, &rsp, sizeof(rsp));
+	rsp_p = (void *)context.response->data;
 
 	/* Free command as we don't need it and this command takes a while */
 	rpc_command_runner_request_unref(request);
@@ -109,8 +111,8 @@ struct net_buf *rpc_command_wifi_scan(struct net_buf *request)
 	k_sem_take(&context.done, K_FOREVER);
 	LOG_INF("%s scanned %d networks", __func__, context.count);
 
-	/* Populate number of observed networks */
-	rsp.network_count = context.count;
+	/* Update number of observed networks */
+	rsp_p->network_count = context.count;
 done:
 	/* Remove callback handler */
 	net_mgmt_del_event_callback(&context.cb);
