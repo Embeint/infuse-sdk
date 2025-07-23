@@ -297,11 +297,7 @@ int epacket_bt_gatt_connect(const bt_addr_le_t *peer, const struct bt_le_conn_pa
 
 	k_poll(events, ARRAY_SIZE(events), K_FOREVER);
 	k_poll_signal_check(&s->sig, &signaled, &conn_rc);
-	if (!signaled) {
-		LOG_ERR("Conn signal never raised?");
-		rc = -ETIMEDOUT;
-		goto cleanup;
-	}
+	__ASSERT_NO_MSG(signaled != 0);
 	if (conn_rc != 0) {
 		/* Connection failed */
 		rc = conn_rc;
@@ -329,9 +325,12 @@ conn_created:
 	if (rc < 0) {
 		goto cleanup;
 	}
-	k_poll(events, ARRAY_SIZE(events), K_MSEC(500));
+
+	/* The bt_gatt_read_params structure MUST be valid until the callback is run */
+	k_poll(events, ARRAY_SIZE(events), K_FOREVER);
 	k_poll_signal_check(&s->sig, &signaled, &rc);
-	if (!signaled || (rc != 0)) {
+	__ASSERT_NO_MSG(signaled != 0);
+	if (rc != 0) {
 		rc = -EIO;
 		goto cleanup;
 	}
