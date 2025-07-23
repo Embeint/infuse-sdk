@@ -8,6 +8,7 @@ common:
   depends_on:
     - netif
     - modem
+    - ble
   integration_platforms:
     - auroch/nrf9151/ns
 tests:
