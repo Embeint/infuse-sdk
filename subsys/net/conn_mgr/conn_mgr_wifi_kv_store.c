@@ -60,6 +60,7 @@ static void conn_create_worker(struct k_work *work)
 {
 	KV_KEY_TYPE_VAR(KV_KEY_WIFI_SSID, WIFI_SSID_MAX_LEN) wifi_ssid;
 	KV_KEY_TYPE_VAR(KV_KEY_WIFI_PSK, WIFI_PSK_MAX_LEN) wifi_psk;
+	KV_KEY_TYPE_VAR(KV_KEY_WIFI_CHANNELS, 1) wifi_channels;
 	struct wifi_connect_req_params params = {0};
 
 #ifdef CONFIG_WIFI_NM_WPA_SUPPLICANT
@@ -92,6 +93,15 @@ static void conn_create_worker(struct k_work *work)
 		params.security = WIFI_SECURITY_TYPE_PSK;
 		params.psk = wifi_psk.psk.value;
 		params.psk_length = wifi_psk.psk.value_num - 1;
+	}
+	params.band = WIFI_FREQ_BAND_UNKNOWN;
+	params.channel = WIFI_CHANNEL_ANY;
+	if (kv_store_read(KV_KEY_WIFI_CHANNELS, &wifi_channels, sizeof(wifi_channels)) ==
+	    sizeof(wifi_channels)) {
+		if (wifi_channels.band <= WIFI_FREQ_BAND_MAX) {
+			params.band = wifi_channels.band;
+		}
+		params.channel = wifi_channels.channels[0];
 	}
 
 	/* Initiate connection */
@@ -273,6 +283,7 @@ static void kv_value_changed(uint16_t key, const void *data, size_t data_len, vo
 	switch (key) {
 	case KV_KEY_WIFI_SSID:
 	case KV_KEY_WIFI_PSK:
+	case KV_KEY_WIFI_CHANNELS:
 		LOG_INF("Configuration changed (%d %s)", key, data ? "updated" : "deleted");
 		k_work_reschedule(&conn_config_changed, K_MSEC(100));
 	}
