@@ -30,10 +30,10 @@ enum {
 };
 
 /**
- * @brief Automatically log time sync events
+ * @brief Automatically log Bluetooth connection events
  *
  * @param tdf_logger_mask TDF data logger mask to log events to
- * @param flags Extra `AUTO_TIME_SYNC_LOG_` flags
+ * @param flags Extra `AUTO_BT_CONN_LOG_` flags
  */
 void auto_bluetooth_conn_log_configure(uint8_t tdf_logger_mask, uint8_t flags);
 
