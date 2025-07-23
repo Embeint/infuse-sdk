@@ -55,6 +55,12 @@ config KV_STORE_KEY_WIFI_PSK
 	help
 	  WiFi network password
 
+config KV_STORE_KEY_WIFI_CHANNELS
+	bool "Enable KV key WIFI_CHANNELS"
+	default y if WIFI
+	help
+	  WiFi band and channel configuration
+
 config KV_STORE_KEY_NTP_SERVER_URL
 	bool "Enable KV key NTP_SERVER_URL"
 	default y if SNTP

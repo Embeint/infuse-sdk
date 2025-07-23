@@ -121,6 +121,16 @@
                 {"name": "psk", "type": "struct kv_string", "description": "WiFi pre-shared-key"}
             ]
         },
+        "22": {
+            "name": "WIFI_CHANNELS",
+            "description": "WiFi band and channel configuration",
+            "reflect": true,
+            "default": "y if WIFI",
+            "fields": [
+                {"name": "band", "type": "uint8_t", "description": "WiFi frequency band (0 = 2.4Ghz, 1 = 5GHz, 2 = 6Ghz, other = Unknown)"},
+                {"name": "channels", "type": "uint8_t", "num": 0, "description": "WiFi channels network uses"}
+            ]
+        },
         "30": {
             "name": "NTP_SERVER_URL",
             "description": "URL of the NTP server to use for time synchronisation",

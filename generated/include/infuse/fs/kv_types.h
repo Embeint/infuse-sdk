@@ -157,6 +157,23 @@ struct kv_wifi_psk {
 	} __packed
 /* clang-format on */
 
+/** WiFi band and channel configuration */
+struct kv_wifi_channels {
+	/** WiFi frequency band (0 = 2.4Ghz, 1 = 5GHz, 2 = 6Ghz, other = Unknown) */
+	uint8_t band;
+	/** WiFi channels network uses */
+	uint8_t channels[];
+} __packed;
+
+/* clang-format off */
+/** Compile time definition for known array length */
+#define _KV_KEY_WIFI_CHANNELS_VAR(num) \
+	struct { \
+		uint8_t band; \
+		uint8_t channels[num]; \
+	} __packed
+/* clang-format on */
+
 /** URL of the NTP server to use for time synchronisation */
 struct kv_ntp_server_url {
 	/** NTP server URL */
@@ -405,6 +422,8 @@ enum kv_builtin_id {
 	KV_KEY_WIFI_SSID = 20,
 	/** WiFi network password */
 	KV_KEY_WIFI_PSK = 21,
+	/** WiFi band and channel configuration */
+	KV_KEY_WIFI_CHANNELS = 22,
 	/** URL of the NTP server to use for time synchronisation */
 	KV_KEY_NTP_SERVER_URL = 30,
 	/** ePacket UDP server hostname */
@@ -490,6 +509,7 @@ enum kv_builtin_size {
 #define _KV_KEY_FIXED_LOCATION_TYPE struct kv_fixed_location
 #define _KV_KEY_WIFI_SSID_TYPE struct kv_wifi_ssid
 #define _KV_KEY_WIFI_PSK_TYPE struct kv_wifi_psk
+#define _KV_KEY_WIFI_CHANNELS_TYPE struct kv_wifi_channels
 #define _KV_KEY_NTP_SERVER_URL_TYPE struct kv_ntp_server_url
 #define _KV_KEY_EPACKET_UDP_URL_TYPE struct kv_epacket_udp_url
 #define _KV_KEY_EPACKET_UDP_PORT_TYPE struct kv_epacket_udp_port
@@ -525,6 +545,8 @@ enum kv_builtin_size {
 	IF_ENABLED(CONFIG_KV_STORE_KEY_WIFI_SSID, \
 		   (1 +)) \
 	IF_ENABLED(CONFIG_KV_STORE_KEY_WIFI_PSK, \
+		   (1 +)) \
+	IF_ENABLED(CONFIG_KV_STORE_KEY_WIFI_CHANNELS, \
 		   (1 +)) \
 	IF_ENABLED(CONFIG_KV_STORE_KEY_NTP_SERVER_URL, \
 		   (1 +)) \
@@ -657,6 +679,13 @@ static struct key_value_slot_definition _KV_SLOTS_ARRAY_DEFINE[] = {
 		.flags = KV_FLAGS_REFLECT | KV_FLAGS_WRITE_ONLY,
 	},
 #endif /* CONFIG_KV_STORE_KEY_WIFI_PSK */
+#ifdef CONFIG_KV_STORE_KEY_WIFI_CHANNELS
+	{
+		.key = KV_KEY_WIFI_CHANNELS,
+		.range = 1,
+		.flags = KV_FLAGS_REFLECT,
+	},
+#endif /* CONFIG_KV_STORE_KEY_WIFI_CHANNELS */
 #ifdef CONFIG_KV_STORE_KEY_NTP_SERVER_URL
 	{
 		.key = KV_KEY_NTP_SERVER_URL,
