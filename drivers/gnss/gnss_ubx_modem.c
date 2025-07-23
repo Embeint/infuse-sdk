@@ -34,7 +34,7 @@ static void ubx_modem_pipe_callback(struct modem_pipe *pipe, enum modem_pipe_eve
 static void ubx_msg_handle(struct ubx_modem_data *modem, struct ubx_frame *frame,
 			   uint16_t payload_len)
 {
-	struct ubx_message_handler_ctx *curr, *tmp, *prev = NULL;
+	struct ubx_message_handler_ctx *curr, *tmp;
 	struct ubx_message_handler_ctx *to_run[CONFIG_GNSS_UBX_MODEM_MAX_CALLBACKS] = {0};
 	int num_to_run, rc;
 	bool notify;
@@ -56,19 +56,17 @@ static void ubx_msg_handle(struct ubx_modem_data *modem, struct ubx_frame *frame
 		SYS_SLIST_FOR_EACH_CONTAINER_SAFE(&modem->handlers, curr, tmp, _node) {
 			/* Only consider handlers expecting an ACK */
 			if (!(curr->flags & (UBX_HANDLING_ACK | UBX_HANDLING_RSP_ACK))) {
-				prev = curr;
 				continue;
 			}
 			/* Check message that was acked against handler */
 			if ((ack->message_class == curr->message_class) &&
 			    (ack->message_id == curr->message_id)) {
 				/* Remove from handler list */
-				sys_slist_remove(&modem->handlers, &prev->_node, &curr->_node);
+				sys_slist_find_and_remove(&modem->handlers, &curr->_node);
 				/* Store the one-shot handler that should be run */
 				to_run[0] = curr;
 				break;
 			}
-			prev = curr;
 		}
 		k_sem_give(&modem->handlers_sem);
 
