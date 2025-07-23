@@ -28,6 +28,7 @@ static struct net_if *wifi_if;
 static bool connection_requested;
 static bool did_conn_timeout;
 static bool did_idle_timeout;
+static bool is_connected;
 
 LOG_MODULE_REGISTER(wifi_mgmt, LOG_LEVEL_INF);
 
@@ -169,6 +170,7 @@ static void wifi_mgmt_event_handler(struct net_mgmt_event_callback *cb, uint32_t
 
 	switch (mgmt_event) {
 	case NET_EVENT_WIFI_CONNECT_RESULT:
+		is_connected = status->conn_status == WIFI_STATUS_CONN_SUCCESS;
 		if (status->conn_status == WIFI_STATUS_CONN_SUCCESS) {
 			/* Cancel any pending work timeout */
 			LOG_INF("Connection successful");
@@ -188,6 +190,7 @@ static void wifi_mgmt_event_handler(struct net_mgmt_event_callback *cb, uint32_t
 		}
 		break;
 	case NET_EVENT_WIFI_DISCONNECT_RESULT:
+		is_connected = false;
 		if (!connection_requested) {
 			/* Disconnected as a result of user request */
 			LOG_INF("Connection released");
@@ -234,6 +237,10 @@ static int wifi_mgmt_connect(struct conn_mgr_conn_binding *const binding)
 {
 	int timeout;
 
+	if (is_connected) {
+		/* Already connected */
+		return 0;
+	}
 	/* Connection is now requested */
 	connection_requested = true;
 	did_conn_timeout = false;
