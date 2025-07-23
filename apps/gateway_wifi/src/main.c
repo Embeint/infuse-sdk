@@ -17,6 +17,7 @@
 #include <zephyr/net/conn_mgr_connectivity.h>
 
 #include <infuse/auto/bluetooth_conn_log.h>
+#include <infuse/auto/wifi_conn_log.h>
 #include <infuse/epacket/interface.h>
 #include <infuse/epacket/packet.h>
 #include <infuse/data_logger/high_level/tdf.h>
@@ -38,6 +39,10 @@ int main(void)
 
 	/* Log Bluetooth connection events */
 	auto_bluetooth_conn_log_configure(TDF_DATA_LOGGER_SERIAL, AUTO_BT_CONN_LOG_EVENTS_FLUSH);
+
+	/* Log WiFi connection events */
+	auto_wifi_conn_log_configure(TDF_DATA_LOGGER_SERIAL,
+				     AUTO_WIFI_LOG_ALL | AUTO_WIFI_LOG_EVENTS_FLUSH);
 
 	/* Start watchdog */
 	infuse_watchdog_start();
