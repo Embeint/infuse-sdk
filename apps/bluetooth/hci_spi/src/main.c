@@ -52,14 +52,14 @@ LOG_MODULE_REGISTER(LOG_MODULE_NAME);
 /* Needs to be aligned with the SPI master buffer size */
 #define SPI_MAX_MSG_LEN 255
 
-static uint8_t rxmsg[SPI_MAX_MSG_LEN];
+static uint8_t rxmsg[SPI_MAX_MSG_LEN] __aligned(4);
 static struct spi_buf rx;
 const static struct spi_buf_set rx_bufs = {
 	.buffers = &rx,
 	.count = 1,
 };
 
-static uint8_t txmsg[SPI_MAX_MSG_LEN];
+static uint8_t txmsg[SPI_MAX_MSG_LEN] __aligned(4);
 static struct spi_buf tx;
 const static struct spi_buf_set tx_bufs = {
 	.buffers = &tx,
@@ -103,8 +103,8 @@ static K_SEM_DEFINE(sem_spi_tx, 0, 1);
 
 static inline int spi_send(struct net_buf *buf)
 {
-	uint8_t header_master[5] = {0};
-	uint8_t header_slave[5] = {READY_NOW, SANITY_CHECK, 0x00, 0x00, 0x00};
+	uint8_t header_master[5] __aligned(4) = {0};
+	uint8_t header_slave[5] __aligned(4) = {READY_NOW, SANITY_CHECK, 0x00, 0x00, 0x00};
 	int ret;
 
 	LOG_DBG("buf %p type %u len %u", buf, bt_buf_get_type(buf), buf->len);
@@ -162,8 +162,8 @@ static inline int spi_send(struct net_buf *buf)
 
 static void bt_tx_thread(void *p1, void *p2, void *p3)
 {
-	uint8_t header_master[5];
-	uint8_t header_slave[5] = {READY_NOW, SANITY_CHECK, 0x00, 0x00, 0x00};
+	uint8_t header_master[5] __aligned(4);
+	uint8_t header_slave[5] __aligned(4) = {READY_NOW, SANITY_CHECK, 0x00, 0x00, 0x00};
 	struct net_buf *buf = NULL;
 
 	union {
