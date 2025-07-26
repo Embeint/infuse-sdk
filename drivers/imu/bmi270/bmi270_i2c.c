@@ -29,8 +29,8 @@ static int bmi270_reg_write_i2c(const union bmi270_bus *bus, uint8_t start, cons
 
 static int bmi270_bus_init_i2c(const union bmi270_bus *bus)
 {
-	/* I2C is used by default
-	 */
+	ARG_UNUSED(bus);
+
 	return 0;
 }
 

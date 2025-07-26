@@ -118,6 +118,8 @@ static void epacket_dummy_send(const struct device *dev, struct net_buf *buf)
 
 static int epacket_dummy_receive_ctrl(const struct device *dev, bool enable)
 {
+	ARG_UNUSED(dev);
+
 	if (receive_rc == 0) {
 		receiving = enable;
 	}
