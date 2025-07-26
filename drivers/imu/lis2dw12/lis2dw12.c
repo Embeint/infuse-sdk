@@ -486,7 +486,8 @@ static int lis2dw12_self_test(const struct device *dev)
 	}
 	LOG_DBG("Difference = X:%6d Y:%6d Z:%6d", diff_mg.x, diff_mg.y, diff_mg.z);
 
-	return 0;
+	/* Soft reset back to low power state */
+	return lis2dw12_low_power_reset(dev);
 }
 
 #endif /* CONFIG_INFUSE_IMU_SELF_TEST */
