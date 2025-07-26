@@ -27,6 +27,8 @@ static uint8_t rsrq_stored = 255;
 
 int nrf_modem_at_sem_timeout_set(int timeout_ms)
 {
+	ARG_UNUSED(timeout_ms);
+
 	return 0;
 }
 
@@ -124,6 +126,9 @@ int nrf_modem_at_cmd(void *buf, size_t len, const char *fmt, ...)
 	va_list args;
 	int out_len;
 
+	ARG_UNUSED(buf);
+	ARG_UNUSED(len);
+
 	/* Generate command */
 	va_start(args, fmt);
 	out_len = vsnprintf(input_buffer, sizeof(input_buffer), fmt, args);
@@ -147,6 +152,8 @@ static enum pdn_fam pdn_default_fam;
 
 int pdn_ctx_configure(uint8_t cid, const char *apn, enum pdn_fam family, struct pdn_pdp_opt *opts)
 {
+	ARG_UNUSED(opts);
+
 	if (cid != 0) {
 		return 0;
 	}

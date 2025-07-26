@@ -16,6 +16,8 @@
 
 static int nrf9x_gnss_init(const struct device *dev)
 {
+	ARG_UNUSED(dev);
+
 	return 0;
 }
 

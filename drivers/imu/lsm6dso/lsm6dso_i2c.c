@@ -31,6 +31,8 @@ static int lsm6dso_reg_write_i2c(const union lsm6dso_bus *bus, uint8_t start, co
 
 static int lsm6dso_bus_init_i2c(const union lsm6dso_bus *bus)
 {
+	ARG_UNUSED(bus);
+
 	return 0;
 }
 

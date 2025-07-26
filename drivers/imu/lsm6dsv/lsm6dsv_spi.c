@@ -67,6 +67,8 @@ static int lsm6dsv_reg_write_spi(const union lsm6dsv_bus *bus, uint8_t start, co
 
 static int lsm6dsv_bus_init_spi(const union lsm6dsv_bus *bus)
 {
+	ARG_UNUSED(bus);
+
 	return 0;
 }
 

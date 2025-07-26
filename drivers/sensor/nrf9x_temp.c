@@ -57,6 +57,8 @@ static const struct sensor_driver_api nrf9x_temp_driver_api = {
 
 int nrf9x_temp_init(const struct device *dev)
 {
+	ARG_UNUSED(dev);
+
 	return 0;
 }
 

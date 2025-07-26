@@ -67,6 +67,8 @@ static int lis2dw12_reg_write_spi(const union lis2dw12_bus *bus, uint8_t start, 
 
 static int lis2dw12_bus_init_spi(const union lis2dw12_bus *bus)
 {
+	ARG_UNUSED(bus);
+
 	return 0;
 }
 

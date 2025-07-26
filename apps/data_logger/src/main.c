@@ -173,6 +173,9 @@ static void custom_tdf_logger(uint8_t tdf_loggers, uint64_t timestamp)
 #ifdef CONFIG_INFUSE_DFU_EXFAT
 static void dfu_progress_cb(size_t copied, size_t total)
 {
+	ARG_UNUSED(copied);
+	ARG_UNUSED(total);
+
 	/* Feed all the watchdogs */
 	infuse_watchdog_feed_all();
 }

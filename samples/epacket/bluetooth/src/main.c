@@ -33,6 +33,8 @@ struct epacket_interface_cb bt_periph_interface_cb = {
 
 static void bt_periph_interface_state(uint16_t max_payload, void *user)
 {
+	ARG_UNUSED(user);
+
 	LOG_INF("BT PERIPH: %d", max_payload);
 }
 

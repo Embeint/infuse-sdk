@@ -18,6 +18,7 @@
 
 #include <zephyr/kernel.h>
 #include <zephyr/device.h>
+#include <zephyr/toolchain.h>
 
 #include <zephyr/drivers/watchdog.h>
 
@@ -173,6 +174,8 @@ void infuse_watchdog_feed_all(void);
 
 static inline int infuse_watchdog_install(k_timeout_t *feed_period)
 {
+	ARG_UNUSED(feed_period);
+
 	return 0;
 }
 
@@ -183,6 +186,10 @@ static inline void infuse_watchdog_thread_register(int wdog_channel, k_tid_t thr
 static inline int infuse_watchdog_thread_state_lookup(int wdog_channel, uint32_t *info1,
 						      uint32_t *info2)
 {
+	ARG_UNUSED(wdog_channel);
+	ARG_UNUSED(info1);
+	ARG_UNUSED(info2);
+
 	return -EINVAL;
 }
 
@@ -193,6 +200,7 @@ static inline int infuse_watchdog_start(void)
 
 static inline void infuse_watchdog_feed(int wdog_channel)
 {
+	ARG_UNUSED(wdog_channel);
 }
 
 static inline void infuse_watchdog_feed_all(void)
