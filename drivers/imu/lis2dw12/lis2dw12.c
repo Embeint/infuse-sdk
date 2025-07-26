@@ -106,8 +106,12 @@ static int lis2dw12_trim_reset(const struct device *dev)
 
 static int lis2dw12_low_power_reset(const struct device *dev)
 {
+	const struct lis2dw12_config *config = dev->config;
 	uint8_t reg, soft_reset = LIS2DW_CTRL2_SOFT_RESET;
 	int rc = 0;
+
+	/* Disable the IRQ GPIO */
+	(void)gpio_pin_interrupt_configure_dt(&config->irq_gpio, GPIO_INT_DISABLE);
 
 	rc = lis2dw12_reg_write(dev, LIS2DW12_REG_CTRL2, &soft_reset, 1);
 	if (rc < 0) {
@@ -280,7 +284,6 @@ int lis2dw12_configure(const struct device *dev, const struct imu_config *imu_cf
 	data->int_timestamp = k_uptime_ticks();
 
 	/* Enable the IRQ GPIO */
-	(void)gpio_pin_configure_dt(&config->irq_gpio, GPIO_INPUT);
 	(void)gpio_pin_interrupt_configure_dt(&config->irq_gpio, GPIO_INT_EDGE_TO_ACTIVE);
 	if (rc) {
 		rc = -EIO;
