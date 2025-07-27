@@ -208,7 +208,7 @@ ZTEST(epacket_handlers, test_gateway_fallthrough)
 	zassert_is_null(k_fifo_get(tx_fifo, K_MSEC(100)));
 }
 
-static struct net_buf *create_received_tdf_packet(uint8_t payload_len, bool encrypt)
+static struct net_buf *create_received_packet(uint8_t type, uint8_t payload_len, bool encrypt)
 {
 	static const struct device dummy_bt_adv = {
 		.name = "epacket_bt_adv",
@@ -223,9 +223,9 @@ static struct net_buf *create_received_tdf_packet(uint8_t payload_len, bool encr
 	buf_tx = epacket_alloc_tx(K_NO_WAIT);
 	zassert_not_null(buf_tx);
 	net_buf_reserve(buf_tx, sizeof(struct epacket_bt_adv_frame));
-	epacket_set_tx_metadata(buf_tx, EPACKET_AUTH_DEVICE, 0, INFUSE_TDF, EPACKET_ADDR_ALL);
-	p = net_buf_add(buf_tx, 60);
-	sys_rand_get(p, 60);
+	epacket_set_tx_metadata(buf_tx, EPACKET_AUTH_DEVICE, 0, type, EPACKET_ADDR_ALL);
+	p = net_buf_add(buf_tx, payload_len);
+	sys_rand_get(p, payload_len);
 
 	if (encrypt) {
 		zassert_equal(0, epacket_bt_adv_encrypt(buf_tx));
@@ -239,6 +239,7 @@ static struct net_buf *create_received_tdf_packet(uint8_t payload_len, bool encr
 
 	/* Add metadata */
 	rx_meta = net_buf_user_data(buf_rx);
+	rx_meta->type = type;
 	rx_meta->interface = &dummy_bt_adv;
 	rx_meta->interface_id = EPACKET_INTERFACE_BT_ADV;
 	rx_meta->interface_address.bluetooth = bt_addr_none;
@@ -249,6 +250,11 @@ static struct net_buf *create_received_tdf_packet(uint8_t payload_len, bool encr
 	/* Free the TX buffer */
 	net_buf_unref(buf_tx);
 	return buf_rx;
+}
+
+static struct net_buf *create_received_tdf_packet(uint8_t payload_len, bool encrypt)
+{
+	return create_received_packet(INFUSE_TDF, payload_len, encrypt);
 }
 
 #ifdef CONFIG_EPACKET_RECEIVE_GROUPING
@@ -319,6 +325,30 @@ ZTEST(epacket_handlers, test_gateway_forward)
 	zassert_equal(INFUSE_RECEIVED_EPACKET, tx_header->type);
 	zassert_equal(EPACKET_AUTH_DEVICE, tx_header->auth);
 	zassert_equal(base_len, buf_tx->len);
+	net_buf_unref(buf_tx);
+
+	/* A RPC_RSP packet should immediately flush */
+	buf_rx = create_received_tdf_packet(60, true);
+	epacket_gateway_receive_handler(epacket_dummy, buf_rx);
+	buf_rx = create_received_packet(INFUSE_RPC_RSP, 20, true);
+	epacket_gateway_receive_handler(epacket_dummy, buf_rx);
+
+	buf_tx = k_fifo_get(tx_fifo, K_MSEC(100));
+	zassert_not_null(buf_tx);
+	tx_header = (void *)buf_tx->data;
+	zassert_equal(INFUSE_RECEIVED_EPACKET, tx_header->type);
+	zassert_equal(EPACKET_AUTH_DEVICE, tx_header->auth);
+	net_buf_unref(buf_tx);
+
+	/* A RPC_RSP packet should immediately send */
+	buf_rx = create_received_packet(INFUSE_RPC_RSP, 20, true);
+	epacket_gateway_receive_handler(epacket_dummy, buf_rx);
+
+	buf_tx = k_fifo_get(tx_fifo, K_MSEC(100));
+	zassert_not_null(buf_tx);
+	tx_header = (void *)buf_tx->data;
+	zassert_equal(INFUSE_RECEIVED_EPACKET, tx_header->type);
+	zassert_equal(EPACKET_AUTH_DEVICE, tx_header->auth);
 	net_buf_unref(buf_tx);
 
 	/* Limit backhaul to be unable to forward */
