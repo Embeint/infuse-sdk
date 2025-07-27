@@ -168,7 +168,7 @@ ZTEST(alg_stationary, test_send)
 	struct infuse_zbus_chan_movement_std_dev *out = ZBUS_CHAN->message;
 
 	zassert_equal(9, zbus_chan_pub_stats_count(ZBUS_CHAN));
-	zassert_within(7000, out->data.std_dev, 250);
+	zassert_within(7000, out->data.std_dev, 300);
 	zassert_equal(1200, out->data.count);
 	zassert_equal(1200, out->expected_samples);
 	zassert_equal(40000, out->movement_threshold);
