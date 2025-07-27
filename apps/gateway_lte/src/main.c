@@ -149,12 +149,12 @@ static void udp_interface_state(uint16_t current_max_payload, void *user_ctx)
 
 static void bluetooth_adv_handler(struct net_buf *buf)
 {
-	const struct device *epacket_udp = DEVICE_DT_GET(DT_NODELABEL(epacket_udp));
+	const struct device *udp = DEVICE_DT_GET(DT_NODELABEL(epacket_udp));
 
 	/* Forward 25% of Bluetooth advertising packets (0.25 * 255)*/
 	if (epacket_gateway_forward_filter(0, 64, buf)) {
 		/* Forward packets that pass the filter */
-		epacket_gateway_receive_handler(epacket_udp, buf);
+		epacket_gateway_receive_handler(udp, buf);
 	} else {
 		/* Drop packets that don't */
 		net_buf_unref(buf);
@@ -163,9 +163,9 @@ static void bluetooth_adv_handler(struct net_buf *buf)
 
 int main(void)
 {
-	const struct device *epacket_bt_adv = DEVICE_DT_GET(DT_NODELABEL(epacket_bt_adv));
-	const struct device *epacket_bt_central = DEVICE_DT_GET(DT_NODELABEL(epacket_bt_central));
-	const struct device *epacket_udp = DEVICE_DT_GET(DT_NODELABEL(epacket_udp));
+	const struct device *bt_adv = DEVICE_DT_GET(DT_NODELABEL(epacket_bt_adv));
+	const struct device *bt_central = DEVICE_DT_GET(DT_NODELABEL(epacket_bt_central));
+	const struct device *udp = DEVICE_DT_GET(DT_NODELABEL(epacket_udp));
 	struct epacket_interface_cb udp_interface_cb = {
 		.interface_state = udp_interface_state,
 	};
@@ -190,16 +190,16 @@ int main(void)
 	bluetooth_legacy_advertising_run();
 
 	/* Setup reboot reporting */
-	epacket_register_callback(epacket_udp, &udp_interface_cb);
+	epacket_register_callback(udp, &udp_interface_cb);
 
 	/* Gateway receive handlers */
-	epacket_set_receive_handler(epacket_bt_adv, bluetooth_adv_handler);
-	epacket_set_receive_handler(epacket_bt_central, udp_backhaul_handler);
-	epacket_set_receive_handler(epacket_udp, udp_backhaul_handler);
+	epacket_set_receive_handler(bt_adv, bluetooth_adv_handler);
+	epacket_set_receive_handler(bt_central, udp_backhaul_handler);
+	epacket_set_receive_handler(udp, udp_backhaul_handler);
 
 	/* Always listening on Bluetooth advertising and UDP */
-	epacket_receive(epacket_bt_adv, K_FOREVER);
-	epacket_receive(epacket_udp, K_FOREVER);
+	epacket_receive(bt_adv, K_FOREVER);
+	epacket_receive(udp, K_FOREVER);
 
 	/* Turn on the interface */
 	conn_mgr_all_if_up(true);
