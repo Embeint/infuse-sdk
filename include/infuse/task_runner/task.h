@@ -180,10 +180,10 @@ struct task_data {
  */
 #define TASK_RUNNER_TASKS_DEFINE(config_name, data_name, ...)                                      \
 	/* Define task specific variables */                                                       \
-	FOR_EACH(_TASK_VAR_DEFINE, (;), __VA_ARGS__);                                              \
+	FOR_EACH_NONEMPTY_TERM(_TASK_VAR_DEFINE, (;), __VA_ARGS__);                                \
 	/* Define the configurations for each task */                                              \
 	static const struct task_config config_name[] = {                                          \
-		FOR_EACH(_TASK_CONFIG_DEFINE, (,), __VA_ARGS__)                                    \
+		FOR_EACH_NONEMPTY_TERM(_TASK_CONFIG_DEFINE, (,), __VA_ARGS__)                      \
 	};                                                                                         \
 	/* Define the runtime task data array */                                                   \
 	static struct task_data data_name[ARRAY_SIZE(config_name)]
