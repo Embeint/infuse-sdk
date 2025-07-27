@@ -250,6 +250,7 @@ int epacket_bt_gatt_connect(const bt_addr_le_t *peer, const struct bt_le_conn_pa
 		.window = BT_GAP_SCAN_FAST_WINDOW,
 		.timeout = timeout_ms / 10,
 	};
+	struct k_poll_event poll_event;
 	struct infuse_connection_state *s;
 	unsigned int signaled;
 	bool already = false;
@@ -291,11 +292,10 @@ int epacket_bt_gatt_connect(const bt_addr_le_t *peer, const struct bt_le_conn_pa
 	bt_conn_le_auto_setup(conn, &s->discovery, &callbacks);
 
 	/* Wait for connection process to complete */
-	struct k_poll_event events[] = {
-		K_POLL_EVENT_INITIALIZER(K_POLL_TYPE_SIGNAL, K_POLL_MODE_NOTIFY_ONLY, &s->sig),
-	};
+	poll_event = (struct k_poll_event)K_POLL_EVENT_INITIALIZER(
+		K_POLL_TYPE_SIGNAL, K_POLL_MODE_NOTIFY_ONLY, &s->sig);
 
-	k_poll(events, ARRAY_SIZE(events), K_FOREVER);
+	k_poll(&poll_event, 1, K_FOREVER);
 	k_poll_signal_check(&s->sig, &signaled, &conn_rc);
 	__ASSERT_NO_MSG(signaled != 0);
 	if (conn_rc != 0) {
@@ -329,7 +329,8 @@ conn_created:
 	};
 
 	k_poll_signal_reset(&s->sig);
-	events[0].state = K_POLL_STATE_NOT_READY;
+	poll_event = (struct k_poll_event)K_POLL_EVENT_INITIALIZER(
+		K_POLL_TYPE_SIGNAL, K_POLL_MODE_NOTIFY_ONLY, &s->sig);
 
 	/* Read the data handle to get the security parameters */
 	rc = bt_gatt_read(conn, &security_read.params);
@@ -338,7 +339,7 @@ conn_created:
 	}
 
 	/* The bt_gatt_read_params structure MUST be valid until the callback is run */
-	k_poll(events, ARRAY_SIZE(events), K_FOREVER);
+	k_poll(&poll_event, 1, K_FOREVER);
 	k_poll_signal_check(&s->sig, &signaled, &rc);
 	__ASSERT_NO_MSG(signaled != 0);
 	if (rc != 0) {
