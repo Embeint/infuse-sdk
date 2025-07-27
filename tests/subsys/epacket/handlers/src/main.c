@@ -116,6 +116,46 @@ ZTEST(epacket_handlers, test_key_ids)
 	zassert_is_null(rx);
 }
 
+ZTEST(epacket_handlers, test_rate_limiting)
+{
+	const struct device *epacket_dummy = DEVICE_DT_GET(DT_NODELABEL(epacket_dummy));
+	struct epacket_rate_limit_req rate_limit_req = {
+		.magic = EPACKET_RATE_LIMIT_REQ_MAGIC,
+	};
+	k_ticks_t before, after, diff;
+	int wiggle = 2 * MSEC_PER_SEC / (CONFIG_SYS_CLOCK_TICKS_PER_SEC);
+
+	/* No delays or yields initially */
+	before = k_uptime_ticks();
+	epacket_rate_limit_tx();
+	after = k_uptime_ticks();
+	zassert_equal(before, after, "Unexpected context yield");
+
+	/* Randomly check a range of delays */
+	for (int i = 0; i < 20; i++) {
+		rate_limit_req.delay_ms = sys_rand8_get();
+
+		/* Rate limit request results in a delay */
+		epacket_dummy_receive(epacket_dummy, NULL, &rate_limit_req, sizeof(rate_limit_req));
+		k_sleep(K_TICKS(1));
+
+		before = k_uptime_ticks();
+		epacket_rate_limit_tx();
+		after = k_uptime_ticks();
+		zassert_true(after >= before);
+		diff = after - before;
+		zassert_between_inclusive(k_ticks_to_ms_near32(diff), rate_limit_req.delay_ms,
+					  rate_limit_req.delay_ms + wiggle,
+					  "Unexpected rate limit delay");
+
+		/* Additional call doesn't delay or yield */
+		before = k_uptime_ticks();
+		epacket_rate_limit_tx();
+		after = k_uptime_ticks();
+		zassert_equal(before, after, "Unexpected context yield");
+	}
+}
+
 ZTEST(epacket_handlers, test_echo_response)
 {
 	const struct device *epacket_dummy = DEVICE_DT_GET(DT_NODELABEL(epacket_dummy));
