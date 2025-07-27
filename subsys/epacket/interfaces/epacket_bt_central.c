@@ -16,6 +16,10 @@
 #include <infuse/epacket/interface/epacket_bt.h>
 #include <infuse/epacket/interface/epacket_bt_central.h>
 
+#ifdef CONFIG_MEMFAULT_INFUSE_METRICS_BT_CONNECTIONS
+#include <memfault/metrics/metrics.h>
+#endif /* CONFIG_MEMFAULT_INFUSE_METRICS_BT_CONNECTIONS */
+
 #include "epacket_internal.h"
 
 #define DT_DRV_COMPAT embeint_epacket_bt_central
@@ -267,6 +271,9 @@ int epacket_bt_gatt_connect(const bt_addr_le_t *peer, const struct bt_le_conn_pa
 		idx = bt_conn_index(conn);
 		s = &infuse_conn[idx];
 		already = true;
+#ifdef CONFIG_MEMFAULT_INFUSE_METRICS_BT_CONNECTIONS
+		(void)MEMFAULT_METRIC_ADD(epacket_bt_central_conn_already, 1);
+#endif /* CONFIG_MEMFAULT_INFUSE_METRICS_BT_CONNECTIONS */
 		goto conn_created;
 	}
 

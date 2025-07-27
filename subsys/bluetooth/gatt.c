@@ -23,6 +23,10 @@
 #include <infuse/tdf/definitions.h>
 #include <infuse/tdf/util.h>
 
+#ifdef CONFIG_MEMFAULT_INFUSE_METRICS_BT_CONNECTIONS
+#include <memfault/metrics/metrics.h>
+#endif /* CONFIG_MEMFAULT_INFUSE_METRICS_BT_CONNECTIONS */
+
 static struct bt_gatt_state {
 #ifdef CONFIG_BT_CONN_AUTO_RSSI
 	struct k_work_delayable rssi_query;
@@ -363,16 +367,32 @@ static void central_conn_setup(struct bt_conn *conn)
 static void connected(struct bt_conn *conn, uint8_t err)
 {
 	const bt_addr_le_t *dst = bt_conn_get_dst(conn);
-	struct bt_gatt_state *s = &state[bt_conn_index(conn)];
+	struct bt_gatt_state *s __maybe_unused = &state[bt_conn_index(conn)];
+	int rc __maybe_unused;
 
-	ARG_UNUSED(s);
+#ifdef CONFIG_BT_GATT_CLIENT
+	struct bt_conn_info info;
+
+	rc = bt_conn_get_info(conn, &info);
+	/* This can only possibly fail if the connection type is not BT_CONN_TYPE_LE */
+	__ASSERT_NO_MSG(rc == 0);
+
+#ifdef CONFIG_MEMFAULT_INFUSE_METRICS_BT_CONNECTIONS
+	if (info.role == BT_CONN_ROLE_CENTRAL) {
+		/* Connection we initiated */
+		if (err == BT_HCI_ERR_SUCCESS) {
+			(void)MEMFAULT_METRIC_ADD(epacket_bt_central_conn_success, 1);
+		} else {
+			(void)MEMFAULT_METRIC_ADD(epacket_bt_central_conn_failed, 1);
+		}
+	}
+#endif /* CONFIG_MEMFAULT_INFUSE_METRICS_BT_CONNECTIONS */
+#endif /* CONFIG_BT_GATT_CLIENT */
 
 	if (err == BT_HCI_ERR_SUCCESS) {
 		LOG_INF("Connected to %s", bt_addr_le_str(dst));
 	} else {
 		LOG_WRN("Connection to %s failed (error 0x%02X)", bt_addr_le_str(dst), err);
-	}
-	if (err) {
 #ifdef CONFIG_BT_GATT_CLIENT
 		if (s->cb) {
 			connection_error(conn, err);
@@ -382,14 +402,9 @@ static void connected(struct bt_conn *conn, uint8_t err)
 	}
 
 #ifdef CONFIG_BT_GATT_CLIENT
-	struct bt_conn_info info;
-	int rc;
 
 	/* Only handle connections initiated through bt_conn_le_auto_setup */
 	if (s->cb != NULL) {
-		rc = bt_conn_get_info(conn, &info);
-		/* This can only possibly fail if the connection type is not BT_CONN_TYPE_LE */
-		__ASSERT_NO_MSG(rc == 0);
 		if (info.role == BT_CONN_ROLE_CENTRAL) {
 			central_conn_setup(conn);
 		}

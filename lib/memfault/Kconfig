@@ -91,6 +91,15 @@ config MEMFAULT_INFUSE_METRICS_SYNC_SUCCESS_EPACKET_UDP
 
 endchoice # MEMFAULT_INFUSE_METRICS_SYNC_SUCCESS
 
+config MEMFAULT_INFUSE_METRICS_BT_CONNECTIONS
+	bool "Initiated Bluetooth connection metrics"
+	depends on BT_GATT_CLIENT
+	default y
+	help
+	  Metrics related to initiating Bluetooth connections. Successes and failures
+	  are counted for all connections initiated by the device, already connected
+	  is tracked for connections using `epacket_bt_gatt_connect`.
+
 endif # MEMFAULT_INFUSE_CONFIG && MEMFAULT_METRICS
 
 endif # INFUSE_MEMFAULT

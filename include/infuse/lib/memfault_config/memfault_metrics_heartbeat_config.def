@@ -37,3 +37,11 @@ MEMFAULT_METRICS_KEY_DEFINE(epacket_udp_sock_setup_error, kMemfaultMetricType_Un
 MEMFAULT_METRICS_KEY_DEFINE(epacket_udp_connected, kMemfaultMetricType_Timer)
 
 #endif /* CONFIG_MEMFAULT_INFUSE_METRICS_EPACKET_UDP */
+
+#ifdef CONFIG_MEMFAULT_INFUSE_METRICS_BT_CONNECTIONS
+
+MEMFAULT_METRICS_KEY_DEFINE(epacket_bt_central_conn_success, kMemfaultMetricType_Unsigned)
+MEMFAULT_METRICS_KEY_DEFINE(epacket_bt_central_conn_already, kMemfaultMetricType_Unsigned)
+MEMFAULT_METRICS_KEY_DEFINE(epacket_bt_central_conn_failed, kMemfaultMetricType_Unsigned)
+
+#endif /* CONFIG_MEMFAULT_INFUSE_METRICS_BT_CONNECTIONS */
