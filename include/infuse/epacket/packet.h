@@ -129,7 +129,18 @@ enum epacket_flags {
 /** Format of @ref INFUSE_KEY_IDS packet */
 struct epacket_key_ids_data {
 	uint8_t device_key_id[3];
-};
+} __packed;
+
+/** Magic value for @ref epacket_rate_limit_req */
+#define EPACKET_RATE_LIMIT_REQ_MAGIC 0x4E
+
+/** Magic two byte packet that requests a pause in data transmission */
+struct epacket_rate_limit_req {
+	/** @ref EPACKET_RATE_LIMIT_REQ_MAGIC */
+	uint8_t magic;
+	/** Duration to pause transmission for */
+	uint8_t delay_ms;
+} __packed;
 
 /** Format of BLE address in @ref INFUSE_RECEIVED_EPACKET and @ref INFUSE_EPACKET_FORWARD */
 struct epacket_interface_address_bt_le {
@@ -211,6 +222,11 @@ struct epacket_conn_terminated {
 	/* Interface address that disconnected */
 	uint8_t address[];
 } __packed;
+
+/**
+ * @brief Limit the transmission rate of bulk data paths
+ */
+void epacket_rate_limit_tx(void);
 
 /**
  * @brief Query the number of free TX buffers
