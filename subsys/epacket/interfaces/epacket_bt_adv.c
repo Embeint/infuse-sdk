@@ -11,6 +11,7 @@
 
 #include <zephyr/bluetooth/bluetooth.h>
 
+#include <infuse/reboot.h>
 #include <infuse/work_q.h>
 #include <infuse/epacket/interface.h>
 #include <infuse/epacket/packet.h>
@@ -22,6 +23,8 @@
 #include "epacket_internal.h"
 
 #define DT_DRV_COMPAT embeint_epacket_bt_adv
+
+#define SCAN_WDOG_TIMEOUT K_SECONDS(CONFIG_EPACKET_INTERFACE_BT_ADV_SCAN_WATCHDOG_SEC)
 
 LOG_MODULE_REGISTER(epacket_bt_adv, CONFIG_EPACKET_BT_ADV_LOG_LEVEL);
 
@@ -40,6 +43,8 @@ static const struct bt_le_scan_param scan_param = {
 	.interval = BT_GAP_SCAN_FAST_INTERVAL_MIN,
 	.window = BT_GAP_SCAN_FAST_WINDOW,
 };
+static struct k_work_delayable scan_watchdog_work;
+static uint32_t scan_watchdog_timeouts;
 static struct net_buf *adv_set_bufs[CONFIG_BT_EXT_ADV_MAX_ADV_SET];
 static K_FIFO_DEFINE(tx_buf_queue);
 static struct bt_le_ext_adv *adv_set;
@@ -178,6 +183,10 @@ static void scan_cb(const bt_addr_le_t *addr, int8_t rssi, uint8_t adv_type,
 	struct epacket_rx_metadata *meta;
 	struct net_buf *rx_buffer;
 
+	/* Advertising packet observed, reset watchdog */
+	infuse_work_reschedule(&scan_watchdog_work, SCAN_WDOG_TIMEOUT);
+	scan_watchdog_timeouts = 0;
+
 	if (!epacket_bt_adv_is_epacket(adv_type, buf)) {
 		return;
 	}
@@ -213,14 +222,49 @@ static int epacket_bt_adv_receive_control(const struct device *dev, bool enable)
 
 	if (enable) {
 		rc = bt_le_scan_start(&scan_param, scan_cb);
+		infuse_work_reschedule(&scan_watchdog_work, SCAN_WDOG_TIMEOUT);
 	} else {
+		k_work_cancel_delayable(&scan_watchdog_work);
 		rc = bt_le_scan_stop();
 	}
 	return rc;
 }
 
+static void scan_rx_watchdog_expired(struct k_work *work)
+{
+	const uint32_t reboot_age =
+		CONFIG_EPACKET_INTERFACE_BT_ADV_SCAN_WATCHDOG_MIN_REBOOT_AGE_SEC;
+	int rc;
+
+	LOG_WRN("Scan RX watchdog expired, restarting scan");
+	rc = bt_le_scan_stop();
+	if (rc != 0) {
+		LOG_ERR("Failed to stop scanning (%d)", rc);
+	}
+	rc = bt_le_scan_start(&scan_param, scan_cb);
+	if (rc != 0) {
+		LOG_ERR("Failed to restart scanning (%d)", rc);
+	}
+
+	/* Another timeout without any scan results */
+	scan_watchdog_timeouts += 1;
+	if ((scan_watchdog_timeouts >= 2) && (k_uptime_seconds() > reboot_age)) {
+#ifdef CONFIG_INFUSE_REBOOT
+		infuse_reboot_delayed(INFUSE_REBOOT_SW_WATCHDOG,
+				      (uintptr_t)scan_rx_watchdog_expired, scan_watchdog_timeouts,
+				      K_SECONDS(2));
+#else
+		LOG_WRN("INFUSE_REBOOT not supported");
+#endif
+	} else {
+		/* Restart the watchdog */
+		infuse_work_reschedule(&scan_watchdog_work, SCAN_WDOG_TIMEOUT);
+	}
+}
+
 static int epacket_bt_adv_init(const struct device *dev)
 {
+	k_work_init_delayable(&scan_watchdog_work, scan_rx_watchdog_expired);
 	epacket_interface_common_init(dev);
 	epacket_bt_adv_ad_init();
 	k_fifo_init(&tx_buf_queue);
