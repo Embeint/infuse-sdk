@@ -8,6 +8,7 @@ common:
     - nrf9151dk/nrf9151/ns
   min_flash: 64
   min_ram: 32
+  run_sequential: true
 tests:
   data_logger.tdf.reboot_recover:
     required_snippets:
