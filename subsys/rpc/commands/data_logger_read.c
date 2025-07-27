@@ -104,6 +104,9 @@ struct net_buf *rpc_command_data_logger_read(struct net_buf *request)
 		/* Push all block data into messages */
 		while (block_remaining) {
 			if (data_buf == NULL) {
+				/* Respect any rate-limiting requests from the receiving device */
+				epacket_rate_limit_tx();
+
 				/* Allocate new data message */
 				data_buf = epacket_alloc_tx_for_interface(interface, K_FOREVER);
 				if (net_buf_tailroom(data_buf) == 0) {

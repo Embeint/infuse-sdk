@@ -235,6 +235,9 @@ int rpc_client_data_queue(struct rpc_client_ctx *ctx, uint32_t request_id, uint3
 		/* Offsets must be word aligned */
 		__ASSERT_NO_MSG((offset % sizeof(uint32_t)) == 0);
 
+		/* Respect any rate-limiting requests from the receiving device */
+		epacket_rate_limit_tx();
+
 		/* Allocate buffer for command */
 		data_buf = epacket_alloc_tx_for_interface(ctx->interface, K_FOREVER);
 		__ASSERT_NO_MSG(data_buf != NULL);

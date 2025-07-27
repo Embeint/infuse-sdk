@@ -48,6 +48,9 @@ struct net_buf *rpc_command_data_sender(struct net_buf *request)
 	LOG_DBG("Sending %d bytes", remaining);
 
 	while (remaining > 0) {
+		/* Respect any rate-limiting requests from the receiving device */
+		epacket_rate_limit_tx();
+
 		/* Allocate the data packet */
 		data_buf = epacket_alloc_tx_for_interface(interface, K_FOREVER);
 		if (net_buf_tailroom(data_buf) == 0) {

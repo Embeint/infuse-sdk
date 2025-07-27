@@ -39,6 +39,9 @@ struct net_buf *rpc_command_mem_read(struct net_buf *request)
 	req_meta = NULL;
 
 	while (bytes_remaining) {
+		/* Respect any rate-limiting requests from the receiving device */
+		epacket_rate_limit_tx();
+
 		/* Allocate new data message */
 		data_buf = epacket_alloc_tx_for_interface(interface, K_FOREVER);
 		if (net_buf_tailroom(data_buf) == 0) {
