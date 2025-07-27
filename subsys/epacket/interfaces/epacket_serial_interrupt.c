@@ -69,103 +69,113 @@ static void disconnected_handler(struct k_work *work)
 	LOG_DBG("Dropped %d packets", cnt);
 }
 
-static void interrupt_handler(const struct device *dev, void *user_data)
+static void uart_irq_rx_handle(const struct device *epacket_dev, const struct device *uart_dev)
 {
-	const struct device *epacket_dev = user_data;
+	uint8_t buffer[64];
+	int recv_len;
+
+	do {
+		/* Read the endpoint buffer size */
+		recv_len = uart_fifo_read(uart_dev, buffer, sizeof(buffer));
+		/* Extract ePacket packets */
+		if (recv_len > 0) {
+			epacket_serial_reconstruct(epacket_dev, buffer, recv_len,
+						   epacket_raw_receive_handler);
+		}
+	} while (recv_len);
+}
+
+static void uart_irq_tx_handle(const struct device *epacket_dev, const struct device *uart_dev)
+{
 	struct epacket_serial_data *data = epacket_dev->data;
 	int available;
 
-	while (uart_irq_update(dev) && uart_irq_is_pending(dev)) {
-		if (uart_irq_rx_ready(dev)) {
-			uint8_t buffer[64];
-			int recv_len;
+	/* USB doesn't actually run from an interrupt */
+	int key = irq_lock();
 
-			do {
-				/* Read the endpoint buffer size */
-				recv_len = uart_fifo_read(dev, buffer, sizeof(buffer));
-				/* Extract ePacket packets */
-				if (recv_len > 0) {
-					epacket_serial_reconstruct(epacket_dev, buffer, recv_len,
-								   epacket_raw_receive_handler);
-				}
-			} while (recv_len);
-		}
-
-		/* USB doesn't actually run from an interrupt */
-		int key = irq_lock();
-
-		available = uart_irq_tx_ready(dev);
-		if (available > 0) {
-			/* Cancel the buffer flusher */
-			k_work_cancel_delayable(&data->dc_handler);
+	available = uart_irq_tx_ready(uart_dev);
+	if (available > 0) {
+		/* Cancel the buffer flusher */
+		k_work_cancel_delayable(&data->dc_handler);
 
 #ifdef CONFIG_EPACKET_INTERFACE_SERIAL_BACKEND_INT_SINGLE_BYTE_SEND
-			uint8_t next_byte;
+		uint8_t next_byte;
 
+		if (data->pending == NULL) {
+			/* Pull next buffer to send */
+			data->pending = k_fifo_get(&data->tx_fifo, K_NO_WAIT);
 			if (data->pending == NULL) {
-				/* Pull next buffer to send */
-				data->pending = k_fifo_get(&data->tx_fifo, K_NO_WAIT);
-				if (data->pending == NULL) {
-					uart_irq_tx_disable(dev);
-					irq_unlock(key);
-					return;
-				}
-			}
-			/* Push next byte onto FIFO */
-			next_byte = net_buf_pull_u8(data->pending);
-			uart_fifo_fill(dev, &next_byte, 1);
-
-			if (data->pending->len == 0) {
-				pm_device_runtime_put_async(dev, K_MSEC(50));
-				epacket_notify_tx_result(data->interface, data->pending, 0);
-				net_buf_unref(data->pending);
-				data->pending = NULL;
-			}
-#else
-			struct net_buf *buf;
-			int sent, required;
-
-			/* Only need to push if we have a packet */
-			buf = k_fifo_get(&data->tx_fifo, K_NO_WAIT);
-			if (buf == NULL) {
-				uart_irq_tx_disable(dev);
+				uart_irq_tx_disable(uart_dev);
 				irq_unlock(key);
 				return;
 			}
-
-			required = buf->len;
-			if (available < required) {
-				LOG_WRN("Insufficient buffer space");
-				k_fifo_put(&data->tx_fifo, buf);
-				uart_irq_tx_disable(dev);
-				irq_unlock(key);
-				/* Reschedule the buffer flusher */
-				k_work_reschedule(&data->dc_handler, K_MSEC(100));
-				return;
-			}
-
-			/* Push payload */
-			sent = uart_fifo_fill(dev, buf->data, buf->len);
-			if (sent != buf->len) {
-				/* Should be impossible with the IRQ lock and previous checks */
-				LOG_ERR("FIFO fail? %d != %d", sent, buf->len);
-			}
-
-			/* Notify TX result */
-			epacket_notify_tx_result(data->interface, buf, 0);
-
-			/* Free TX buffer */
-			net_buf_unref(buf);
-
-			/* Release the serial port after a delay for transmission.
-			 * 50ms is 720 bytes at 115200 bps.
-			 */
-			pm_device_runtime_put_async(dev, K_MSEC(50));
-
-			LOG_DBG("sent %d/%d", sent, available);
-#endif /* CONFIG_EPACKET_INTERFACE_SERIAL_BACKEND_INT_SINGLE_BYTE_SEND */
 		}
-		irq_unlock(key);
+		/* Push next byte onto FIFO */
+		next_byte = net_buf_pull_u8(data->pending);
+		uart_fifo_fill(uart_dev, &next_byte, 1);
+
+		if (data->pending->len == 0) {
+			pm_device_runtime_put_async(uart_dev, K_MSEC(50));
+			epacket_notify_tx_result(data->interface, data->pending, 0);
+			net_buf_unref(data->pending);
+			data->pending = NULL;
+		}
+#else
+		struct net_buf *buf;
+		int sent, required;
+
+		/* Only need to push if we have a packet */
+		buf = k_fifo_get(&data->tx_fifo, K_NO_WAIT);
+		if (buf == NULL) {
+			uart_irq_tx_disable(uart_dev);
+			irq_unlock(key);
+			return;
+		}
+
+		required = buf->len;
+		if (available < required) {
+			LOG_WRN("Insufficient buffer space");
+			k_fifo_put(&data->tx_fifo, buf);
+			uart_irq_tx_disable(uart_dev);
+			irq_unlock(key);
+			/* Reschedule the buffer flusher */
+			k_work_reschedule(&data->dc_handler, K_MSEC(100));
+			return;
+		}
+
+		/* Push payload */
+		sent = uart_fifo_fill(uart_dev, buf->data, buf->len);
+		if (sent != buf->len) {
+			/* Should be impossible with the IRQ lock and previous checks */
+			LOG_ERR("FIFO fail? %d != %d", sent, buf->len);
+		}
+
+		/* Notify TX result */
+		epacket_notify_tx_result(data->interface, buf, 0);
+
+		/* Free TX buffer */
+		net_buf_unref(buf);
+
+		/* Release the serial port after a delay for transmission.
+		 * 50ms is 720 bytes at 115200 bps.
+		 */
+		pm_device_runtime_put_async(uart_dev, K_MSEC(50));
+
+		LOG_DBG("sent %d/%d", sent, available);
+#endif /* CONFIG_EPACKET_INTERFACE_SERIAL_BACKEND_INT_SINGLE_BYTE_SEND */
+	}
+	irq_unlock(key);
+}
+
+static void interrupt_handler(const struct device *dev, void *user_data)
+{
+	const struct device *epacket_dev = user_data;
+
+	while (uart_irq_update(dev) && uart_irq_is_pending(dev)) {
+		if (uart_irq_rx_ready(dev)) {
+			uart_irq_rx_handle(epacket_dev, dev);
+		}
+		uart_irq_tx_handle(epacket_dev, dev);
 	}
 }
 
