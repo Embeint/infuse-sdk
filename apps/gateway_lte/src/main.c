@@ -101,13 +101,16 @@ static const struct task_schedule schedules[] = {
 	},
 };
 
+#if DT_NODE_EXISTS(DT_ALIAS(environmental0))
+#define ENV_TASK_DEFINE (ENVIRONMENTAL_TASK, DEVICE_DT_GET(DT_ALIAS(environmental0)))
+#else
+#define ENV_TASK_DEFINE
+#endif
+
 TASK_SCHEDULE_STATES_DEFINE(states, schedules);
 TASK_RUNNER_TASKS_DEFINE(app_tasks, app_tasks_data, (TDF_LOGGER_TASK, custom_tdf_logger),
 			 (TDF_LOGGER_ALT1_TASK, NULL),
-			 (BATTERY_TASK, DEVICE_DT_GET(DT_ALIAS(fuel_gauge0))),
-#if DT_NODE_EXISTS(DT_ALIAS(environmental0))
-			 (ENVIRONMENTAL_TASK, DEVICE_DT_GET(DT_ALIAS(environmental0))),
-#endif /* DT_NODE_EXISTS(DT_ALIAS(environmental0)) */
+			 (BATTERY_TASK, DEVICE_DT_GET(DT_ALIAS(fuel_gauge0))), ENV_TASK_DEFINE,
 			 (GNSS_TASK, DEVICE_DT_GET(DT_ALIAS(gnss))));
 
 GATEWAY_HANDLER_DEFINE(udp_backhaul_handler, DEVICE_DT_GET(DT_NODELABEL(epacket_udp)));
