@@ -46,6 +46,7 @@ static K_FIFO_DEFINE(epacket_tx_queue);
 static const struct device *tx_device[CONFIG_EPACKET_BUFFERS_TX];
 static k_timeout_t loop_period = K_FOREVER;
 static int wdog_channel;
+static atomic_t rate_limit_delay;
 
 #ifdef CONFIG_EPACKET_INTERFACE_BT_ADV
 static struct k_poll_signal bt_adv_signal_send_next;
@@ -105,6 +106,15 @@ struct net_buf *epacket_alloc_rx(k_timeout_t timeout)
 		meta->auth = EPACKET_AUTH_FAILURE;
 	}
 	return buf;
+}
+
+void epacket_rate_limit_tx(void)
+{
+	atomic_t delay = atomic_clear(&rate_limit_delay);
+
+	if (delay) {
+		k_sleep(K_MSEC(delay));
+	}
 }
 
 #ifdef CONFIG_INFUSE_SECURITY
@@ -221,6 +231,14 @@ static void epacket_handle_rx(struct net_buf *buf)
 		return;
 	}
 #endif /* CONFIG_INFUSE_SECURITY */
+
+	/* Rate limit request */
+	if ((buf->len == 2) && (buf->data[0] == EPACKET_RATE_LIMIT_REQ_MAGIC)) {
+		LOG_DBG("Rate limit delay %d ms", buf->data[1]);
+		atomic_set(&rate_limit_delay, buf->data[1]);
+		net_buf_unref(buf);
+		return;
+	}
 
 	/* Payload decoding */
 	switch (metadata->interface_id) {
