@@ -151,12 +151,15 @@ static const struct task_schedule schedules[] = {
 	},
 };
 
+#if DT_NODE_EXISTS(DT_ALIAS(gnss))
+#define GNSS_TASK_DEFINE (GNSS_TASK, DEVICE_DT_GET(DT_ALIAS(gnss)))
+#else
+#define GNSS_TASK_DEFINE
+#endif
+
 TASK_SCHEDULE_STATES_DEFINE(states, schedules);
 TASK_RUNNER_TASKS_DEFINE(app_tasks, app_tasks_data, (TDF_LOGGER_TASK, custom_tdf_logger),
-			 (IMU_TASK, DEVICE_DT_GET(DT_ALIAS(imu0))),
-#if DT_NODE_EXISTS(DT_ALIAS(gnss))
-			 (GNSS_TASK, DEVICE_DT_GET(DT_ALIAS(gnss))),
-#endif /* DT_NODE_EXISTS(DT_ALIAS(gnss)) */
+			 (IMU_TASK, DEVICE_DT_GET(DT_ALIAS(imu0))), GNSS_TASK_DEFINE,
 			 (BATTERY_TASK, DEVICE_DT_GET(DT_ALIAS(fuel_gauge0))),
 			 (ENVIRONMENTAL_TASK, DEVICE_DT_GET(DT_ALIAS(environmental0))));
 

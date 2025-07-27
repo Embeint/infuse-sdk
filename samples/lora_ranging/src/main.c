@@ -94,11 +94,14 @@ static const struct task_schedule schedules[] = {
 	},
 };
 
-TASK_SCHEDULE_STATES_DEFINE(states, schedules);
-TASK_RUNNER_TASKS_DEFINE(app_tasks, app_tasks_data, (TDF_LOGGER_TASK, NULL),
-#ifdef CONFIG_TASK_RUNNER_TASK_GNSS
-			 (GNSS_TASK, DEVICE_DT_GET(DT_ALIAS(gnss))),
+#if DT_NODE_EXISTS(DT_ALIAS(gnss))
+#define GNSS_TASK_DEFINE (GNSS_TASK, DEVICE_DT_GET(DT_ALIAS(gnss)))
+#else
+#define GNSS_TASK_DEFINE
 #endif
+
+TASK_SCHEDULE_STATES_DEFINE(states, schedules);
+TASK_RUNNER_TASKS_DEFINE(app_tasks, app_tasks_data, (TDF_LOGGER_TASK, NULL), GNSS_TASK_DEFINE,
 			 (BATTERY_TASK, DEVICE_DT_GET(DT_ALIAS(fuel_gauge0))));
 
 static void leds_disable(struct k_work *work)
