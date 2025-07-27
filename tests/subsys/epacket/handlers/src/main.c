@@ -177,7 +177,9 @@ ZTEST(epacket_handlers, test_echo_no_block)
 		header.auth = EPACKET_AUTH_DEVICE;
 		epacket_dummy_receive(epacket_dummy, &header, payload, sizeof(payload));
 	}
-	k_sleep(K_MSEC(1));
+	/* Wait long enough for the receive thread to process all packets */
+	k_sleep(K_SECONDS(1));
+	/* Validate the number of transmit packets queued */
 	for (int i = 0; i < CONFIG_EPACKET_BUFFERS_TX; i++) {
 		tx = k_fifo_get(tx_fifo, K_MSEC(100));
 		zassert_not_null(tx);
