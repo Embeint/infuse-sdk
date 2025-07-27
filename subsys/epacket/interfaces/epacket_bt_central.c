@@ -305,6 +305,17 @@ int epacket_bt_gatt_connect(const bt_addr_le_t *peer, const struct bt_le_conn_pa
 	}
 
 conn_created:
+	/* Connection available, update the timeouts if specified */
+	s->inactivity_timeout = inactivity_timeout;
+	if (rc == 0) {
+		if (!K_TIMEOUT_EQ(inactivity_timeout, K_FOREVER)) {
+			k_work_schedule(&s->idle_worker, inactivity_timeout);
+		}
+		if (!K_TIMEOUT_EQ(absolute_timeout, K_FOREVER)) {
+			k_work_schedule(&s->term_worker, absolute_timeout);
+		}
+	}
+
 	struct bt_gatt_read_params_user security_read = {
 		.params =
 			{
@@ -345,17 +356,6 @@ conn_created:
 	if (rc == 0 && (s->remote_info[CHAR_LOGGING].ccc_handle != 0)) {
 		rc = characteristic_subscribe(conn, &s->remote_info[CHAR_LOGGING],
 					      &s->subs[CHAR_LOGGING], subscribe_logging);
-	}
-
-	/* Connection all ready, start the inactivity timeout if specified */
-	s->inactivity_timeout = inactivity_timeout;
-	if (rc == 0) {
-		if (!K_TIMEOUT_EQ(inactivity_timeout, K_FOREVER)) {
-			k_work_schedule(&s->idle_worker, inactivity_timeout);
-		}
-		if (!K_TIMEOUT_EQ(absolute_timeout, K_FOREVER)) {
-			k_work_schedule(&s->term_worker, absolute_timeout);
-		}
 	}
 cleanup:
 	if (rc == 0) {
