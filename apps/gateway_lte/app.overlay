@@ -1,0 +1,5 @@
+/ {
+	chosen {
+		infuse,memfault-epacket-dump = &epacket_udp;
+	};
+};
