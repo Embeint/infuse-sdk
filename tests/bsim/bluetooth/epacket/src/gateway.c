@@ -100,6 +100,43 @@ static void main_gateway_scan(void)
 	}
 }
 
+static void main_gateway_scan_wdog(void)
+{
+	const struct device *epacket_bt_adv = DEVICE_DT_GET(DT_NODELABEL(epacket_bt_adv));
+	int rc;
+
+	common_init();
+	epacket_set_receive_handler(epacket_bt_adv, epacket_bt_adv_receive_handler);
+	rc = epacket_receive(epacket_bt_adv, K_FOREVER);
+	if (rc < 0) {
+		FAIL("Failed to start ePacket receive (%d)\n", rc);
+		return;
+	}
+
+	/* Pretend the controller is broken by manually stopping the scanning */
+	rc = bt_le_scan_stop();
+	if (rc < 0) {
+		FAIL("Failed to manually stop Bluetooth scanning (%d)\n", rc);
+	}
+
+	LOG_INF("Expect the watchdog to restart the scanning after %d seconds",
+		CONFIG_EPACKET_INTERFACE_BT_ADV_SCAN_WATCHDOG_SEC);
+	k_sleep(K_SECONDS(9));
+
+	rc = epacket_receive(epacket_bt_adv, K_NO_WAIT);
+	if (rc < 0) {
+		FAIL("Failed to stop ePacket receive (%d)\n", rc);
+		return;
+	}
+
+	if (atomic_get(&received_packets) < 3) {
+		FAIL("Failed to receive expected packets\n");
+	} else {
+		PASS("Received %d packets despite 'broken' controller\n",
+		     atomic_get(&received_packets));
+	}
+}
+
 static int observe_peers(bt_addr_le_t *addr, uint8_t num)
 {
 	const struct device *epacket_bt_adv = DEVICE_DT_GET(DT_NODELABEL(epacket_bt_adv));
@@ -1664,6 +1701,13 @@ static const struct bst_test_instance epacket_gateway[] = {
 		.test_pre_init_f = test_init,
 		.test_tick_f = test_tick,
 		.test_main_f = main_gateway_scan,
+	},
+	{
+		.test_id = "epacket_bt_gateway_scan_wdog",
+		.test_descr = "Check Bluetooth scan watchdog",
+		.test_pre_init_f = test_init,
+		.test_tick_f = test_tick,
+		.test_main_f = main_gateway_scan_wdog,
 	},
 	{
 		.test_id = "epacket_bt_gateway_connect",
