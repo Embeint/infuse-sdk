@@ -81,8 +81,10 @@ static void receive_do_flush(struct k_work *work)
 static void receive_forward(const struct device *backhaul, struct net_buf *buf)
 {
 	const uint32_t max_hold = CONFIG_EPACKET_RECEIVE_GROUPING_MAX_HOLD_MS;
+	struct epacket_rx_metadata *meta = net_buf_user_data(buf);
 	static bool is_init;
 	struct net_buf *temp;
+	bool appended = false;
 
 	if (!is_init) {
 		k_work_init_delayable(&pending_flush_worker, receive_do_flush);
@@ -93,11 +95,16 @@ static void receive_forward(const struct device *backhaul, struct net_buf *buf)
 		if (pending_buffer) {
 			/* We already have a buffer holding data */
 			if (epacket_received_packet_append(pending_buffer, buf) == 0) {
-				/* Append succeeded, update timeout */
-				k_work_reschedule(&pending_flush_worker, K_MSEC(max_hold));
-				net_buf_unref(buf);
-				buf = NULL;
-				K_SPINLOCK_BREAK;
+				/* Append succeeded */
+				appended = true;
+				/* RPC_RSP packets should trigger an immediate flush */
+				if (meta->type != INFUSE_RPC_RSP) {
+					/* Update the timeout */
+					k_work_reschedule(&pending_flush_worker, K_MSEC(max_hold));
+					net_buf_unref(buf);
+					buf = NULL;
+					K_SPINLOCK_BREAK;
+				}
 			}
 			/* Cancel the pending flush timeout */
 			k_work_cancel_delayable(&pending_flush_worker);
@@ -106,7 +113,7 @@ static void receive_forward(const struct device *backhaul, struct net_buf *buf)
 			pending_buffer = NULL;
 		}
 	}
-	if (buf == NULL) {
+	if (appended) {
 		return;
 	}
 
@@ -119,8 +126,14 @@ static void receive_forward(const struct device *backhaul, struct net_buf *buf)
 			/* Initialise metadata */
 			epacket_set_tx_metadata(pending_buffer, EPACKET_AUTH_DEVICE, 0x00,
 						INFUSE_RECEIVED_EPACKET, EPACKET_ADDR_ALL);
-			/* Start the flush timeout */
-			k_work_reschedule(&pending_flush_worker, K_MSEC(max_hold));
+			if (meta->type != INFUSE_RPC_RSP) {
+				/* Start the flush timeout */
+				k_work_reschedule(&pending_flush_worker, K_MSEC(max_hold));
+			} else {
+				/* Queue for transmission on backhaul immediately */
+				epacket_queue(backhaul, pending_buffer);
+				pending_buffer = NULL;
+			}
 		} else {
 			/* Couldn't append to fresh buffer */
 			LOG_WRN("Could not forward packet");
