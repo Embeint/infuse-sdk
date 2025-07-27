@@ -242,9 +242,14 @@ configdefault MEMFAULT_METRICS
 	default n
 configdefault MEMFAULT_HEAP_STATS
 	default n
-configdefault MEMFAULT_REBOOT_REASON_GET_CUSTOM
-	default y
 configdefault MEMFAULT_FAULT_HANDLER_RETURN
 	default y
 configdefault MEMFAULT_CRC16_BUILTIN
 	default n
+configdefault MEMFAULT_METRICS_WIFI
+	# Disable by default, since this would otherwise end up enabled
+	# for scanning only applications.
+	default n
+choice MEMFAULT_REBOOT_REASON_GET
+	default MEMFAULT_REBOOT_REASON_GET_CUSTOM
+endchoice
