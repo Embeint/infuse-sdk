@@ -24,6 +24,7 @@
 #include <infuse/epacket/interface.h>
 #include <infuse/epacket/filter.h>
 #include <infuse/epacket/packet.h>
+#include <infuse/lib/memfault.h>
 #include <infuse/tdf/definitions.h>
 #include <infuse/tdf/util.h>
 
@@ -121,10 +122,12 @@ static const struct gpio_dt_spec led0 = GPIO_DT_SPEC_GET(DT_ALIAS(led0), gpios);
 
 static void custom_tdf_logger(uint8_t tdf_loggers, uint64_t timestamp)
 {
-	ARG_UNUSED(tdf_loggers);
 	ARG_UNUSED(timestamp);
 
-	/* Future custom UDP TDFs */
+	if (tdf_loggers & TDF_DATA_LOGGER_UDP) {
+		/* Dump any pending Memfault chunks each time we send a UDP TDF */
+		(void)infuse_memfault_queue_dump_all(K_MSEC(50));
+	}
 }
 
 static void udp_interface_state(uint16_t current_max_payload, void *user_ctx)
