@@ -33,11 +33,9 @@ bool kv_store_key_metadata(uint16_t key, uint8_t *flags, size_t *reflect_idx)
 				*flags = defs[i].flags;
 			}
 			if (reflect_idx != NULL) {
-				if (defs[i].flags & KV_FLAGS_REFLECT) {
-					*reflect_idx = idx + (key - defs[i].key);
-				} else {
-					*reflect_idx = SIZE_MAX;
-				}
+				*reflect_idx = (defs[i].flags & KV_FLAGS_REFLECT)
+						       ? idx + (key - defs[i].key)
+						       : SIZE_MAX;
 			}
 			return true;
 		}
