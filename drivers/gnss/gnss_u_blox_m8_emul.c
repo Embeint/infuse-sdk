@@ -24,6 +24,7 @@ struct emul_config {
 };
 
 struct emul_data {
+	struct ubx_modem_data modem_data;
 	struct ubx_msg_nav_pvt current_pvt;
 	struct k_timer navigation_timer;
 	struct k_sem new_data;
@@ -119,7 +120,7 @@ static void timer_fired(struct k_timer *timer)
 
 struct ubx_modem_data *ubx_modem_data_get(const struct device *dev)
 {
-	return (struct ubx_modem_data *)dev;
+	return dev->data;
 }
 
 void emul_gnss_pvt_configure(const struct device *dev, int32_t latitude, int32_t longitude,
@@ -153,8 +154,7 @@ void emul_gnss_ubx_dev_ptrs(const struct device *dev, int **pm_rc, int **comms_r
 void ubx_modem_msg_subscribe(struct ubx_modem_data *modem,
 			     struct ubx_message_handler_ctx *handler_ctx)
 {
-	const struct device *dev = (const struct device *)modem;
-	struct emul_data *data = dev->data;
+	struct emul_data *data = CONTAINER_OF(modem, struct emul_data, modem_data);
 
 	LOG_INF("Subscribed to %02X:%02X", handler_ctx->message_class, handler_ctx->message_id);
 	sys_slist_append(&data->handlers, &handler_ctx->_node);
@@ -163,8 +163,7 @@ void ubx_modem_msg_subscribe(struct ubx_modem_data *modem,
 void ubx_modem_msg_unsubscribe(struct ubx_modem_data *modem,
 			       struct ubx_message_handler_ctx *handler_ctx)
 {
-	const struct device *dev = (const struct device *)modem;
-	struct emul_data *data = dev->data;
+	struct emul_data *data = CONTAINER_OF(modem, struct emul_data, modem_data);
 
 	sys_slist_find_and_remove(&data->handlers, &handler_ctx->_node);
 }
@@ -195,9 +194,8 @@ static void navigation_reschedule(struct emul_data *data)
 int ubx_modem_send_sync_acked(struct ubx_modem_data *modem, struct net_buf_simple *buf,
 			      k_timeout_t timeout)
 {
+	struct emul_data *data = CONTAINER_OF(modem, struct emul_data, modem_data);
 	struct ubx_frame *frame = message_validate(buf);
-	const struct device *dev = (const struct device *)modem;
-	struct emul_data *data = dev->data;
 
 	if ((frame->message_class == UBX_MSG_CLASS_CFG) &&
 	    (frame->message_id == UBX_MSG_ID_CFG_RATE)) {
@@ -233,8 +231,7 @@ int ubx_modem_send_async_poll(struct ubx_modem_data *modem, uint8_t message_clas
 			      uint8_t message_id, uint8_t buf[8],
 			      struct ubx_message_handler_ctx *handler_ctx)
 {
-	const struct device *dev = (const struct device *)modem;
-	struct emul_data *data = dev->data;
+	struct emul_data *data = CONTAINER_OF(modem, struct emul_data, modem_data);
 
 	if ((message_class == UBX_MSG_CLASS_NAV) && (message_id == UBX_MSG_ID_NAV_TIMEGPS)) {
 		data->nav_timegps_polled = true;
