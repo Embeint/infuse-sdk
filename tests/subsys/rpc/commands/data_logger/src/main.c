@@ -76,6 +76,35 @@ static void send_data_logger_read_command(uint32_t request_id, uint8_t logger, u
 	epacket_dummy_receive(epacket_dummy, &header, &params, sizeof(params));
 }
 
+static void send_data_logger_read_available_command(uint32_t request_id, uint8_t logger,
+						    uint32_t start, uint32_t num)
+{
+	const struct device *epacket_dummy = DEVICE_DT_GET(DT_NODELABEL(epacket_dummy));
+	struct epacket_dummy_frame header = {
+		.type = INFUSE_RPC_CMD,
+		.auth = EPACKET_AUTH_DEVICE,
+		.flags = 0x0000,
+	};
+	struct rpc_data_logger_read_available_request params = {
+		.header =
+			{
+				.request_id = request_id,
+				.command_id = RPC_ID_DATA_LOGGER_READ_AVAILABLE,
+			},
+		.data_header =
+			{
+				.size = num * 512,
+				.rx_ack_period = 0,
+			},
+		.logger = logger,
+		.start_block = start,
+		.num_blocks = num,
+	};
+
+	/* Push command at RPC server */
+	epacket_dummy_receive(epacket_dummy, &header, &params, sizeof(params));
+}
+
 static void send_data_logger_erase_command(uint32_t request_id, uint8_t logger, bool erase_empty)
 {
 	const struct device *epacket_dummy = DEVICE_DT_GET(DT_NODELABEL(epacket_dummy));
@@ -267,6 +296,7 @@ static void run_logger_read(uint16_t epacket_size, uint32_t start, uint32_t end,
 			zassert_equal(0, rsp->header.return_code);
 			zassert_equal(crc, rsp->sent_crc);
 			zassert_equal(flash_crc, rsp->sent_crc);
+			zassert_equal(num, rsp->sent_len);
 			zassert_equal(bytes_received, rsp->sent_len);
 		} else if (tx_header->type == INFUSE_RPC_DATA) {
 			data = net_buf_pull_mem(tx, sizeof(*data));
@@ -329,6 +359,118 @@ ZTEST(rpc_command_data_logger, test_data_logger_read_disconnect)
 	for (int i = 0; i < 4; i++) {
 		run_logger_read(64, 0, 7, 3);
 	}
+}
+
+static void run_logger_read_available(uint16_t epacket_size, uint32_t start, uint32_t num,
+				      int dc_after, uint32_t expected_bytes)
+{
+	const struct device *flash_logger = DEVICE_DT_GET(DT_NODELABEL(data_logger_flash));
+	const struct device *epacket_dummy = DEVICE_DT_GET(DT_NODELABEL(epacket_dummy));
+	struct k_fifo *tx_fifo = epacket_dummmy_transmit_fifo_get();
+	struct rpc_data_logger_read_available_response *rsp;
+	struct epacket_dummy_frame *tx_header;
+	uint32_t request_id = sys_rand32_get();
+	bool receiving = true;
+	struct net_buf *tx;
+	struct data_logger_state logger_state;
+	struct infuse_rpc_data *data;
+	uint32_t bytes_received = 0;
+	uint32_t expected_offset = 0;
+	uint32_t crc = 0;
+	int packets_received = 0;
+
+	data_logger_get_state(flash_logger, &logger_state);
+
+	uint32_t actual_start = MAX(start, logger_state.earliest_block);
+	uint32_t actual_end = (num == UINT32_MAX) ? 7 : MIN(actual_start + num - 1, 7);
+	uint32_t start_offset = 512 * actual_start;
+	uint32_t num_bytes = 512 * (actual_end - actual_start + 1);
+	uint32_t flash_crc = crc32_ieee(flash_buffer + start_offset, num_bytes);
+
+	zassert_equal(expected_bytes, num_bytes);
+
+	epacket_dummy_set_max_packet(epacket_size);
+	epacket_dummy_set_interface_state(epacket_dummy, true);
+
+	send_data_logger_read_available_command(request_id, RPC_ENUM_DATA_LOGGER_FLASH_ONBOARD,
+						start, num);
+
+	while (receiving) {
+		tx = k_fifo_get(tx_fifo, K_MSEC(100));
+		zassert_not_null(tx);
+		tx_header = net_buf_pull_mem(tx, sizeof(*tx_header));
+		zassert_equal(EPACKET_AUTH_DEVICE, tx_header->auth);
+
+		if (tx_header->type == INFUSE_RPC_RSP) {
+			receiving = false;
+			rsp = net_buf_pull_mem(tx, sizeof(*rsp));
+			zassert_equal(request_id, rsp->header.request_id);
+			zassert_equal(RPC_ID_DATA_LOGGER_READ_AVAILABLE, rsp->header.command_id);
+			zassert_equal(0, rsp->header.return_code);
+			zassert_equal(num_bytes, rsp->sent_len);
+			zassert_equal(bytes_received, rsp->sent_len);
+			zassert_equal(crc, rsp->sent_crc);
+			zassert_equal(flash_crc, rsp->sent_crc);
+			zassert_equal(512, rsp->block_size);
+			zassert_equal(actual_start, rsp->start_block_actual);
+			zassert_equal(logger_state.current_block, rsp->current_block);
+
+		} else if (tx_header->type == INFUSE_RPC_DATA) {
+			data = net_buf_pull_mem(tx, sizeof(*data));
+			zassert_true(tx->len > 0);
+			zassert_equal(request_id, data->request_id);
+			zassert_equal(expected_offset, data->offset);
+			crc = crc32_ieee_update(crc, data->payload, tx->len);
+			bytes_received += tx->len;
+			expected_offset += tx->len;
+		} else {
+			zassert_true(false, "Unexpected packet type");
+		}
+
+		net_buf_unref(tx);
+
+		if (++packets_received == dc_after) {
+			epacket_dummy_set_max_packet(0);
+			epacket_dummy_set_interface_state(epacket_dummy, false);
+			tx = k_fifo_get(tx_fifo, K_MSEC(500));
+			zassert_is_null(tx);
+			break;
+		}
+	}
+}
+
+ZTEST(rpc_command_data_logger, test_data_logger_read_available)
+{
+	const struct device *flash_logger = DEVICE_DT_GET(DT_NODELABEL(data_logger_flash));
+	int rc;
+
+	/* Write 8 blocks */
+	for (int i = 0; i < 8; i++) {
+		sys_rand_get(data_block, sizeof(data_block));
+		rc = data_logger_block_write(flash_logger, INFUSE_TDF, data_block,
+					     sizeof(data_block));
+		zassert_equal(0, rc);
+	}
+
+	/* Run various data logger reads */
+	run_logger_read_available(64, 0, 4, 0, 2048);
+	run_logger_read_available(63, 0, 6, 0, 3072);
+	run_logger_read_available(61, 2, 2, 0, 1024);
+	run_logger_read_available(62, 2, UINT32_MAX, 0, 3072);
+
+	/* Write 2 more blocks, which will result in erases */
+	for (int i = 0; i < 2; i++) {
+		sys_rand_get(data_block, sizeof(data_block));
+		rc = data_logger_block_write(flash_logger, INFUSE_TDF, data_block,
+					     sizeof(data_block));
+		zassert_equal(0, rc);
+	}
+
+	/* Request reads from 0 but that block doesn't exist */
+	run_logger_read_available(64, 0, 2, 0, 1024);
+	run_logger_read_available(63, 0, 4, 0, 2048);
+	/* Don't try UINT32_MAX since our flash CRC validation doesn't handle wrapping */
+	run_logger_read_available(61, 0, 6, 0, 3072);
 }
 
 ZTEST(rpc_command_data_logger, test_data_logger_erase_invalid)
