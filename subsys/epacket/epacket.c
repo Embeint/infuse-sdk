@@ -80,6 +80,16 @@ struct net_buf *epacket_encryption_scratch(void)
 	return net_buf_alloc(&epacket_scratch, K_FOREVER);
 }
 
+int epacket_num_buffers_free_tx(void)
+{
+	return net_buf_num_free(&epacket_pool_tx);
+}
+
+int epacket_num_buffers_free_rx(void)
+{
+	return net_buf_num_free(&epacket_pool_rx);
+}
+
 struct net_buf *epacket_alloc_tx(k_timeout_t timeout)
 {
 	return net_buf_alloc(&epacket_pool_tx, timeout);

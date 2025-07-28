@@ -213,6 +213,20 @@ struct epacket_conn_terminated {
 } __packed;
 
 /**
+ * @brief Query the number of free TX buffers
+ *
+ * @return int Number of free TX buffers
+ */
+int epacket_num_buffers_free_tx(void);
+
+/**
+ * @brief Query the number of free RX buffers
+ *
+ * @return int Number of free RX buffers
+ */
+int epacket_num_buffers_free_rx(void);
+
+/**
  * @brief Allocate ePacket TX buffer
  *
  * @warning This function does not reserve space on the
