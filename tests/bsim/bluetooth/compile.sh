@@ -23,6 +23,7 @@ app_root=$INFUSE_BASE app=$APP_EPACKET conf_file=prj_device.conf snippet=infuse 
 app_root=$INFUSE_BASE app=$APP_EPACKET conf_file=prj_device_public.conf snippet=infuse compile
 app_root=$INFUSE_BASE app=$APP_EPACKET conf_file=prj_device_alt_network.conf snippet=infuse compile
 app_root=$INFUSE_BASE app=$APP_EPACKET conf_file=prj_gateway.conf snippet=infuse compile
+app_root=$INFUSE_BASE app=$APP_EPACKET conf_file=prj_gateway_grouping.conf snippet=infuse compile
 app_root=$INFUSE_BASE app=$APP_GATT snippet=infuse compile
 app_root=$INFUSE_BASE app=$APP_TASK_RUNNER snippet=infuse compile
 
