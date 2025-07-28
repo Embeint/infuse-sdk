@@ -84,6 +84,13 @@ uint8_t epacket_bt_gatt_notify_recv_func(struct bt_conn *conn,
 					 uint16_t length);
 
 /**
+ * @brief Send a @ref epacket_rate_limit_req to all connected peer devices
+ *
+ * @param delay_ms Delay duration to request
+ */
+void epacket_bt_gatt_rate_limit_request(uint8_t delay_ms);
+
+/**
  * @}
  */
 

@@ -374,6 +374,41 @@ cleanup:
 	return rc;
 }
 
+static void infuse_send_rate_limit_request(struct bt_conn *conn, void *data)
+{
+	struct epacket_rate_limit_req *request = data;
+	struct infuse_connection_state *s;
+	uint8_t conn_idx;
+	uint16_t handle;
+	int rc;
+
+	/* Get connection state */
+	conn_idx = bt_conn_index(conn);
+	s = &infuse_conn[conn_idx];
+	/* Get the command characteristic */
+	handle = s->remote_info[CHAR_COMMAND].value_handle;
+	if (handle == 0x0000) {
+		/* Connection does not have this characteristic */
+		return;
+	}
+
+	/* Write the request to the device */
+	rc = bt_gatt_write_without_response(conn, handle, request, sizeof(*request), false);
+	if (rc != 0) {
+		LOG_WRN("Failed to write rate limit request (%d)", rc);
+	}
+}
+
+void epacket_bt_gatt_rate_limit_request(uint8_t delay_ms)
+{
+	struct epacket_rate_limit_req request = {
+		.magic = EPACKET_RATE_LIMIT_REQ_MAGIC,
+		.delay_ms = delay_ms,
+	};
+
+	bt_conn_foreach(BT_CONN_TYPE_LE, infuse_send_rate_limit_request, &request);
+}
+
 static void epacket_bt_central_send(const struct device *dev, struct net_buf *buf)
 {
 	struct epacket_tx_metadata *meta = net_buf_user_data(buf);
