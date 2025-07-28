@@ -111,6 +111,25 @@ struct kv_bluetooth_ctlr_version {
 	struct kv_mcuboot_img_sem_ver version;
 } __packed;
 
+/** Personalised name for the device */
+struct kv_device_name {
+	/** Personalised device name */
+	struct kv_string name;
+} __packed;
+
+/* clang-format off */
+/** Compile time definition for known array length */
+#define _KV_KEY_DEVICE_NAME_VAR(num) \
+	struct { \
+		KV_STRUCT_KV_STRING_VAR(num) name; \
+	} __packed
+/* clang-format on */
+
+/** CONFIG_INFUSE_APPLICATION_ID, store will be reset if the values don't match */
+struct kv_infuse_application_id {
+	uint32_t application_id;
+} __packed;
+
 /** Fixed global location of the device */
 struct kv_fixed_location {
 	/** Location */
@@ -142,6 +161,23 @@ struct kv_wifi_psk {
 #define _KV_KEY_WIFI_PSK_VAR(num) \
 	struct { \
 		KV_STRUCT_KV_STRING_VAR(num) psk; \
+	} __packed
+/* clang-format on */
+
+/** WiFi band and channel configuration */
+struct kv_wifi_channels {
+	/** WiFi frequency band (0 = 2.4Ghz, 1 = 5GHz, 2 = 6Ghz, other = Unknown) */
+	uint8_t band;
+	/** WiFi channels network uses */
+	uint8_t channels[];
+} __packed;
+
+/* clang-format off */
+/** Compile time definition for known array length */
+#define _KV_KEY_WIFI_CHANNELS_VAR(num) \
+	struct { \
+		uint8_t band; \
+		uint8_t channels[num]; \
 	} __packed
 /* clang-format on */
 
@@ -272,6 +308,24 @@ struct kv_bluetooth_peer {
 	struct bt_addr_le address;
 } __packed;
 
+/** LoRa modem configuration */
+struct kv_lora_config {
+	/** Frequency (Hz) */
+	uint32_t frequency;
+	/** Signal bandwidth (see enum lora_signal_bandwidth) */
+	uint8_t bandwidth;
+	/** Spreading factor (see enum lora_datarate) */
+	uint8_t spreading_factor;
+	/** Coding rate (see enum lora_coding_rate) */
+	uint8_t coding_rate;
+	/** Preamble length */
+	uint16_t preamble_len;
+	/** Transmit power (dBm) */
+	int8_t tx_power;
+	/** Custom sync word */
+	uint8_t sync_word;
+} __packed;
+
 /** Reference gravity vector for tilt calculations */
 struct kv_gravity_reference {
 	/** X axis component of gravity vector */
@@ -380,12 +434,18 @@ enum kv_builtin_id {
 	KV_KEY_EXFAT_DISK_INFO = 2,
 	/** External Bluetooth controller version */
 	KV_KEY_BLUETOOTH_CTLR_VERSION = 3,
+	/** Personalised name for the device */
+	KV_KEY_DEVICE_NAME = 4,
+	/** CONFIG_INFUSE_APPLICATION_ID, store will be reset if the values don't match */
+	KV_KEY_INFUSE_APPLICATION_ID = 5,
 	/** Fixed global location of the device */
 	KV_KEY_FIXED_LOCATION = 10,
 	/** WiFi network name */
 	KV_KEY_WIFI_SSID = 20,
 	/** WiFi network password */
 	KV_KEY_WIFI_PSK = 21,
+	/** WiFi band and channel configuration */
+	KV_KEY_WIFI_CHANNELS = 22,
 	/** URL of the NTP server to use for time synchronisation */
 	KV_KEY_NTP_SERVER_URL = 30,
 	/** ePacket UDP server hostname */
@@ -408,6 +468,8 @@ enum kv_builtin_id {
 	KV_KEY_LTE_NETWORKING_MODES = 46,
 	/** Bluetooth peer device */
 	KV_KEY_BLUETOOTH_PEER = 50,
+	/** LoRa modem configuration */
+	KV_KEY_LORA_CONFIG = 51,
 	/** Reference gravity vector for tilt calculations */
 	KV_KEY_GRAVITY_REFERENCE = 60,
 	/** Array of points defining a closed polygon */
@@ -459,11 +521,13 @@ enum kv_builtin_size {
 	_KV_KEY_BLUETOOTH_ADDR_SIZE = sizeof(struct kv_bluetooth_addr),
 	_KV_KEY_EXFAT_DISK_INFO_SIZE = sizeof(struct kv_exfat_disk_info),
 	_KV_KEY_BLUETOOTH_CTLR_VERSION_SIZE = sizeof(struct kv_bluetooth_ctlr_version),
+	_KV_KEY_INFUSE_APPLICATION_ID_SIZE = sizeof(struct kv_infuse_application_id),
 	_KV_KEY_FIXED_LOCATION_SIZE = sizeof(struct kv_fixed_location),
 	_KV_KEY_EPACKET_UDP_PORT_SIZE = sizeof(struct kv_epacket_udp_port),
 	_KV_KEY_LTE_MODEM_IMEI_SIZE = sizeof(struct kv_lte_modem_imei),
 	_KV_KEY_LTE_NETWORKING_MODES_SIZE = sizeof(struct kv_lte_networking_modes),
 	_KV_KEY_BLUETOOTH_PEER_SIZE = sizeof(struct kv_bluetooth_peer),
+	_KV_KEY_LORA_CONFIG_SIZE = sizeof(struct kv_lora_config),
 	_KV_KEY_GRAVITY_REFERENCE_SIZE = sizeof(struct kv_gravity_reference),
 	_KV_KEY_TASK_SCHEDULES_DEFAULT_ID_SIZE = sizeof(struct kv_task_schedules_default_id),
 	_KV_KEY_EXT1_SIZE = sizeof(struct kv_ext1),
@@ -477,9 +541,12 @@ enum kv_builtin_size {
 #define _KV_KEY_BLUETOOTH_ADDR_TYPE struct kv_bluetooth_addr
 #define _KV_KEY_EXFAT_DISK_INFO_TYPE struct kv_exfat_disk_info
 #define _KV_KEY_BLUETOOTH_CTLR_VERSION_TYPE struct kv_bluetooth_ctlr_version
+#define _KV_KEY_DEVICE_NAME_TYPE struct kv_device_name
+#define _KV_KEY_INFUSE_APPLICATION_ID_TYPE struct kv_infuse_application_id
 #define _KV_KEY_FIXED_LOCATION_TYPE struct kv_fixed_location
 #define _KV_KEY_WIFI_SSID_TYPE struct kv_wifi_ssid
 #define _KV_KEY_WIFI_PSK_TYPE struct kv_wifi_psk
+#define _KV_KEY_WIFI_CHANNELS_TYPE struct kv_wifi_channels
 #define _KV_KEY_NTP_SERVER_URL_TYPE struct kv_ntp_server_url
 #define _KV_KEY_EPACKET_UDP_URL_TYPE struct kv_epacket_udp_url
 #define _KV_KEY_EPACKET_UDP_PORT_TYPE struct kv_epacket_udp_port
@@ -491,6 +558,7 @@ enum kv_builtin_size {
 #define _KV_KEY_LTE_PDP_CONFIG_TYPE struct kv_lte_pdp_config
 #define _KV_KEY_LTE_NETWORKING_MODES_TYPE struct kv_lte_networking_modes
 #define _KV_KEY_BLUETOOTH_PEER_TYPE struct kv_bluetooth_peer
+#define _KV_KEY_LORA_CONFIG_TYPE struct kv_lora_config
 #define _KV_KEY_GRAVITY_REFERENCE_TYPE struct kv_gravity_reference
 #define _KV_KEY_GEOFENCE_TYPE struct kv_geofence
 #define _KV_KEY_TASK_SCHEDULES_DEFAULT_ID_TYPE struct kv_task_schedules_default_id
@@ -510,11 +578,15 @@ enum kv_builtin_size {
 		   (1 +)) \
 	IF_ENABLED(CONFIG_KV_STORE_KEY_BLUETOOTH_CTLR_VERSION, \
 		   (1 +)) \
+	IF_ENABLED(CONFIG_KV_STORE_KEY_DEVICE_NAME, \
+		   (1 +)) \
 	IF_ENABLED(CONFIG_KV_STORE_KEY_FIXED_LOCATION, \
 		   (1 +)) \
 	IF_ENABLED(CONFIG_KV_STORE_KEY_WIFI_SSID, \
 		   (1 +)) \
 	IF_ENABLED(CONFIG_KV_STORE_KEY_WIFI_PSK, \
+		   (1 +)) \
+	IF_ENABLED(CONFIG_KV_STORE_KEY_WIFI_CHANNELS, \
 		   (1 +)) \
 	IF_ENABLED(CONFIG_KV_STORE_KEY_NTP_SERVER_URL, \
 		   (1 +)) \
@@ -537,6 +609,8 @@ enum kv_builtin_size {
 	IF_ENABLED(CONFIG_KV_STORE_KEY_LTE_NETWORKING_MODES, \
 		   (1 +)) \
 	IF_ENABLED(CONFIG_KV_STORE_KEY_BLUETOOTH_PEER, \
+		   (1 +)) \
+	IF_ENABLED(CONFIG_KV_STORE_KEY_LORA_CONFIG, \
 		   (1 +)) \
 	IF_ENABLED(CONFIG_KV_STORE_KEY_GRAVITY_REFERENCE, \
 		   (1 +)) \
@@ -612,6 +686,20 @@ static struct key_value_slot_definition _KV_SLOTS_ARRAY_DEFINE[] = {
 		.flags = KV_FLAGS_REFLECT,
 	},
 #endif /* CONFIG_KV_STORE_KEY_BLUETOOTH_CTLR_VERSION */
+#ifdef CONFIG_KV_STORE_KEY_DEVICE_NAME
+	{
+		.key = KV_KEY_DEVICE_NAME,
+		.range = 1,
+		.flags = KV_FLAGS_REFLECT,
+	},
+#endif /* CONFIG_KV_STORE_KEY_DEVICE_NAME */
+#ifdef CONFIG_KV_STORE_KEY_INFUSE_APPLICATION_ID
+	{
+		.key = KV_KEY_INFUSE_APPLICATION_ID,
+		.range = 1,
+		.flags = 0,
+	},
+#endif /* CONFIG_KV_STORE_KEY_INFUSE_APPLICATION_ID */
 #ifdef CONFIG_KV_STORE_KEY_FIXED_LOCATION
 	{
 		.key = KV_KEY_FIXED_LOCATION,
@@ -633,6 +721,13 @@ static struct key_value_slot_definition _KV_SLOTS_ARRAY_DEFINE[] = {
 		.flags = KV_FLAGS_REFLECT | KV_FLAGS_WRITE_ONLY,
 	},
 #endif /* CONFIG_KV_STORE_KEY_WIFI_PSK */
+#ifdef CONFIG_KV_STORE_KEY_WIFI_CHANNELS
+	{
+		.key = KV_KEY_WIFI_CHANNELS,
+		.range = 1,
+		.flags = KV_FLAGS_REFLECT,
+	},
+#endif /* CONFIG_KV_STORE_KEY_WIFI_CHANNELS */
 #ifdef CONFIG_KV_STORE_KEY_NTP_SERVER_URL
 	{
 		.key = KV_KEY_NTP_SERVER_URL,
@@ -710,6 +805,13 @@ static struct key_value_slot_definition _KV_SLOTS_ARRAY_DEFINE[] = {
 		.flags = KV_FLAGS_REFLECT,
 	},
 #endif /* CONFIG_KV_STORE_KEY_BLUETOOTH_PEER */
+#ifdef CONFIG_KV_STORE_KEY_LORA_CONFIG
+	{
+		.key = KV_KEY_LORA_CONFIG,
+		.range = 1,
+		.flags = KV_FLAGS_REFLECT,
+	},
+#endif /* CONFIG_KV_STORE_KEY_LORA_CONFIG */
 #ifdef CONFIG_KV_STORE_KEY_GRAVITY_REFERENCE
 	{
 		.key = KV_KEY_GRAVITY_REFERENCE,

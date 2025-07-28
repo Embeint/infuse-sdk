@@ -150,7 +150,7 @@ struct rpc_struct_wifi_state {
 	/** Service Set Identifier (Network Name) */
 	char ssid[32];
 	/** Basic Service Set Identifier (MAC address) */
-	char bssid[6];
+	uint8_t bssid[6];
 	/** Frequency band */
 	uint8_t band;
 	/** Channel index */
@@ -212,7 +212,7 @@ struct rpc_struct_wifi_scan_result {
 	/** Received signal strength (dBm) */
 	int8_t rssi;
 	/** Basic Service Set Identifier (MAC address) */
-	char bssid[6];
+	uint8_t bssid[6];
 	/** SSID length */
 	uint8_t ssid_len;
 	/** Service Set Identifier (Network Name) */
@@ -227,6 +227,38 @@ struct rpc_struct_xyz_s16 {
 	int16_t y;
 	/** Z axis */
 	int16_t z;
+} __packed;
+
+/** Single Infuse-IoT application state */
+struct rpc_struct_infuse_state {
+	/** State */
+	uint8_t state;
+	/** Duration state is set for */
+	uint16_t timeout;
+} __packed;
+
+/** `struct sockaddr_in` or `struct sockaddr_in6` compatible address */
+struct rpc_struct_sockaddr {
+	/** AF_INET / AF_INET6 */
+	uint8_t sin_family;
+	/** Port number (Network byte order) */
+	uint16_t sin_port;
+	/** IPv4/IPv6 address */
+	uint8_t sin_addr[16];
+	/** Interfaces for a scope (IPv6 only) */
+	uint8_t scope_id;
+} __packed;
+
+/** struct k_heap information */
+struct rpc_struct_heap_info {
+	/** Address of the heap structure */
+	uint32_t addr;
+	/** Number of bytes currently free */
+	uint32_t free_bytes;
+	/** Number of bytes currently allocated */
+	uint32_t allocated_bytes;
+	/** Maximum number of bytes ever concurrently allocated */
+	uint32_t max_allocated_bytes;
 } __packed;
 
 /** Demo struct */
@@ -276,6 +308,22 @@ enum rpc_enum_data_logger {
 	RPC_ENUM_DATA_LOGGER_FLASH_ONBOARD = 1,
 	/** Removable flash logger (SD) */
 	RPC_ENUM_DATA_LOGGER_FLASH_REMOVABLE = 2,
+	/** Networked UDP logger */
+	RPC_ENUM_DATA_LOGGER_UDP = 3,
+};
+
+/** Source for zperf data upload */
+enum rpc_enum_zperf_data_source {
+	/** Constant payload ('i') */
+	RPC_ENUM_ZPERF_DATA_SOURCE_CONSTANT = 0,
+	/** Random payload contents */
+	RPC_ENUM_ZPERF_DATA_SOURCE_RANDOM = 1,
+	/** Read data from onboard flash logger */
+	RPC_ENUM_ZPERF_DATA_SOURCE_FLASH_ONBOARD = 2,
+	/** Read data from removable flash logger (SD) */
+	RPC_ENUM_ZPERF_DATA_SOURCE_FLASH_REMOVABLE = 3,
+	/** Flag (0x80) to specify payload should be encrypted */
+	RPC_ENUM_ZPERF_DATA_SOURCE_ENCRYPT = 128,
 };
 
 /**
@@ -320,14 +368,28 @@ enum rpc_builtin_id {
 	RPC_ID_DATA_LOGGER_READ = 14,
 	/** Read arbitrary memory (NO ADDRESS VALIDATION PERFORMED) */
 	RPC_ID_MEM_READ = 15,
+	/** Read current Infuse-IoT application states */
+	RPC_ID_INFUSE_STATES_QUERY = 16,
+	/** Update Infuse-IoT application states */
+	RPC_ID_INFUSE_STATES_UPDATE = 17,
+	/** Erase all data from a data logger */
+	RPC_ID_DATA_LOGGER_ERASE = 18,
+	/** Query stats of heaps */
+	RPC_ID_HEAP_STATS = 19,
 	/** Run AT command against LTE modem */
 	RPC_ID_LTE_AT_CMD = 20,
 	/** Get current LTE interface state */
 	RPC_ID_LTE_STATE = 21,
+	/** Read data from data logger, with auto-updating start_block */
+	RPC_ID_DATA_LOGGER_READ_AVAILABLE = 22,
 	/** Download a file from a COAP server (Infuse-IoT DTLS protected) */
 	RPC_ID_COAP_DOWNLOAD = 30,
+	/** Network upload bandwidth testing using zperf/iperf */
+	RPC_ID_ZPERF_UPLOAD = 31,
 	/** Write a file to the device */
 	RPC_ID_FILE_WRITE_BASIC = 40,
+	/** Write an annotation to the device */
+	RPC_ID_ANNOTATE = 41,
 	/** Connect to an Infuse-IoT Bluetooth device */
 	RPC_ID_BT_CONNECT_INFUSE = 50,
 	/** Disconnect from a Bluetooth device */
@@ -609,6 +671,58 @@ struct rpc_mem_read_response {
 	uint32_t sent_crc;
 } __packed;
 
+/** Read current Infuse-IoT application states */
+struct rpc_infuse_states_query_request {
+	struct infuse_rpc_req_header header;
+	/** Ignore first N states before populating the output */
+	uint8_t offset;
+} __packed;
+
+struct rpc_infuse_states_query_response {
+	struct infuse_rpc_rsp_header header;
+	/** Additional states that were not queried */
+	uint8_t remaining;
+	/** Currently set states (Timeout 0 == permanent) */
+	struct rpc_struct_infuse_state states[];
+} __packed;
+
+/** Update Infuse-IoT application states */
+struct rpc_infuse_states_update_request {
+	struct infuse_rpc_req_header header;
+	/** Number of states to update */
+	uint8_t num;
+	/** States to update (Timeout 0 == permanent, UINT16_MAX == clear) */
+	struct rpc_struct_infuse_state states[];
+} __packed;
+
+struct rpc_infuse_states_update_response {
+	struct infuse_rpc_rsp_header header;
+} __packed;
+
+/** Erase all data from a data logger */
+struct rpc_data_logger_erase_request {
+	struct infuse_rpc_req_header header;
+	/** Data logger to erase */
+	uint8_t logger;
+	/** Erase entire logger space, even empty blocks */
+	uint8_t erase_empty;
+} __packed;
+
+struct rpc_data_logger_erase_response {
+	struct infuse_rpc_rsp_header header;
+} __packed;
+
+/** Query stats of heaps */
+struct rpc_heap_stats_request {
+	struct infuse_rpc_req_header header;
+} __packed;
+
+struct rpc_heap_stats_response {
+	struct infuse_rpc_rsp_header header;
+	/** Current statistics of application heaps */
+	struct rpc_struct_heap_info stats[];
+} __packed;
+
 /** Run AT command against LTE modem */
 struct rpc_lte_at_cmd_request {
 	struct infuse_rpc_req_header header;
@@ -633,6 +747,32 @@ struct rpc_lte_state_response {
 	struct rpc_struct_network_state common;
 	/** LTE state */
 	struct rpc_struct_lte_state lte;
+} __packed;
+
+/** Read data from data logger, with auto-updating start_block */
+struct rpc_data_logger_read_available_request {
+	struct infuse_rpc_req_header header;
+	struct infuse_rpc_req_data_header data_header;
+	/** Data logger to read from */
+	uint8_t logger;
+	/** Desired block to start read from */
+	uint32_t start_block;
+	/** Maximum number of blocks to read */
+	uint32_t num_blocks;
+} __packed;
+
+struct rpc_data_logger_read_available_response {
+	struct infuse_rpc_rsp_header header;
+	/** Number of bytes sent */
+	uint32_t sent_len;
+	/** CRC32 of bytes sent */
+	uint32_t sent_crc;
+	/** Current block after read completes */
+	uint32_t current_block;
+	/** Actual block that read started at */
+	uint32_t start_block_actual;
+	/** Size of a single block in bytes */
+	uint16_t block_size;
 } __packed;
 
 /** Download a file from a COAP server (Infuse-IoT DTLS protected) */
@@ -662,6 +802,47 @@ struct rpc_coap_download_response {
 	uint32_t resource_crc;
 } __packed;
 
+/** Network upload bandwidth testing using zperf/iperf */
+struct rpc_zperf_upload_request {
+	struct infuse_rpc_req_header header;
+	/** Peer socket address */
+	struct rpc_struct_sockaddr peer_address;
+	/** SOCK_STREAM/SOCK_DGRAM */
+	uint8_t sock_type;
+	/** Source of data to upload */
+	uint8_t data_source;
+	/** Test duration in milliseconds */
+	uint32_t duration_ms;
+	/** Desired rate in kbps (0 for uncapped) */
+	uint32_t rate_kbps;
+	/** Packet size in bytes */
+	uint16_t packet_size;
+} __packed;
+
+struct rpc_zperf_upload_response {
+	struct infuse_rpc_rsp_header header;
+	/** Number of packets sent */
+	uint32_t nb_packets_sent;
+	/** Number of packets received */
+	uint32_t nb_packets_rcvd;
+	/** Number of packets lost */
+	uint32_t nb_packets_lost;
+	/** Number of packets out of order */
+	uint32_t nb_packets_outorder;
+	/** Total length of the transferred data */
+	uint64_t total_len;
+	/** Total time of the transfer in microseconds */
+	uint64_t time_in_us;
+	/** Jitter in microseconds */
+	uint32_t jitter_in_us;
+	/** Client connection time in microsecond */
+	uint64_t client_time_in_us;
+	/** Packet size */
+	uint32_t packet_size;
+	/** Number of packet errors */
+	uint32_t nb_packets_errors;
+} __packed;
+
 /** Write a file to the device */
 struct rpc_file_write_basic_request {
 	struct infuse_rpc_req_header header;
@@ -678,6 +859,21 @@ struct rpc_file_write_basic_response {
 	uint32_t recv_len;
 	/** CRC of bytes received */
 	uint32_t recv_crc;
+} __packed;
+
+/** Write an annotation to the device */
+struct rpc_annotate_request {
+	struct infuse_rpc_req_header header;
+	/** Data logger to write annotation to */
+	uint8_t logger;
+	/** Timestamp (GNSS seconds) that event was observed */
+	uint32_t timestamp;
+	/** Event string to write */
+	char annotation[];
+} __packed;
+
+struct rpc_annotate_response {
+	struct infuse_rpc_rsp_header header;
 } __packed;
 
 /** Connect to an Infuse-IoT Bluetooth device */
