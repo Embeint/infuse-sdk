@@ -14,6 +14,10 @@
 #include <infuse/epacket/packet.h>
 #include <infuse/rpc/server.h>
 
+#ifdef CONFIG_EPACKET_INTERFACE_BT_CENTRAL
+#include <infuse/epacket/interface/epacket_bt_central.h>
+#endif /* CONFIG_EPACKET_INTERFACE_BT_CENTRAL */
+
 #include "forwarding.h"
 
 #ifdef CONFIG_EPACKET_RECEIVE_GROUPING
@@ -119,6 +123,15 @@ static void receive_forward(const struct device *backhaul, struct net_buf *buf)
 
 	/* No pending buffer, allocate one */
 	temp = epacket_alloc_tx_for_interface(backhaul, K_FOREVER);
+
+#ifdef CONFIG_EPACKET_INTERFACE_BT_CENTRAL
+	if (epacket_num_buffers_free_tx() <= 1) {
+		/* Running out of buffers, request a pause */
+		LOG_DBG("Requesting rate limit");
+		epacket_bt_gatt_rate_limit_request(CONFIG_EPACKET_RATE_LIMIT_REQ_DURATION_MS);
+	}
+#endif /* CONFIG_EPACKET_INTERFACE_BT_CENTRAL */
+
 	K_SPINLOCK(&pending_lock) {
 		if (epacket_received_packet_append(temp, buf) == 0) {
 			pending_backhaul = backhaul;
@@ -148,6 +161,14 @@ static void receive_forward(const struct device *backhaul, struct net_buf *buf)
 static void receive_forward(const struct device *backhaul, struct net_buf *buf)
 {
 	struct net_buf *forward = epacket_alloc_tx_for_interface(backhaul, K_FOREVER);
+
+#ifdef CONFIG_EPACKET_INTERFACE_BT_CENTRAL
+	if (epacket_num_buffers_free_tx() <= 1) {
+		/* Running out of buffers, request a pause */
+		LOG_DBG("Requesting rate limit");
+		epacket_bt_gatt_rate_limit_request(CONFIG_EPACKET_RATE_LIMIT_REQ_DURATION_MS);
+	}
+#endif /* CONFIG_EPACKET_INTERFACE_BT_CENTRAL */
 
 	if (epacket_received_packet_append(forward, buf) == 0) {
 		/* Add metadata */
