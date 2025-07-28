@@ -200,3 +200,43 @@ struct net_buf *rpc_command_data_logger_read(struct net_buf *request)
 end:
 	return rpc_response_simple_if(state.interface, rc, &rsp, sizeof(rsp));
 }
+
+struct net_buf *rpc_command_data_logger_read_available(struct net_buf *request)
+{
+	struct epacket_rx_metadata *req_meta = net_buf_user_data(request);
+	struct rpc_data_logger_read_available_request *req = (void *)request->data;
+	struct rpc_data_logger_read_available_response rsp = {0};
+	struct common_state state;
+	uint32_t blocks_to_end;
+	uint32_t block_start;
+	int rc = 0;
+
+	/* Commmon initialisation */
+	rc = core_init(&state, &req->header, req_meta, req->logger);
+	if (rc < 0) {
+		goto end;
+	}
+
+	/* If blocks earlier than present were requested, jump to earliest data */
+	block_start = MAX(req->start_block, state.logger_state.earliest_block);
+	state.block_num = block_start;
+	blocks_to_end = state.logger_state.current_block - state.block_num;
+	state.blocks_remaining = MIN(req->num_blocks, blocks_to_end);
+
+	/* Free command as we no longer need it and this command can take a while */
+	rpc_command_runner_request_unref(request);
+
+	/* Run the data logger read */
+	rc = do_read(&state);
+
+	/* Populate output parameters */
+	data_logger_get_state(state.logger, &state.logger_state);
+	rsp.sent_crc = state.sent_crc;
+	rsp.sent_len = state.sent_len;
+	rsp.current_block = state.logger_state.current_block;
+	rsp.start_block_actual = block_start;
+	rsp.block_size = state.logger_state.block_size;
+
+end:
+	return rpc_response_simple_if(state.interface, rc, &rsp, sizeof(rsp));
+}

@@ -373,6 +373,8 @@ enum rpc_builtin_id {
 	RPC_ID_LTE_AT_CMD = 20,
 	/** Get current LTE interface state */
 	RPC_ID_LTE_STATE = 21,
+	/** Read data from data logger, with auto-updating start_block */
+	RPC_ID_DATA_LOGGER_READ_AVAILABLE = 22,
 	/** Download a file from a COAP server (Infuse-IoT DTLS protected) */
 	RPC_ID_COAP_DOWNLOAD = 30,
 	/** Network upload bandwidth testing using zperf/iperf */
@@ -736,6 +738,32 @@ struct rpc_lte_state_response {
 	struct rpc_struct_network_state common;
 	/** LTE state */
 	struct rpc_struct_lte_state lte;
+} __packed;
+
+/** Read data from data logger, with auto-updating start_block */
+struct rpc_data_logger_read_available_request {
+	struct infuse_rpc_req_header header;
+	struct infuse_rpc_req_data_header data_header;
+	/** Data logger to read from */
+	uint8_t logger;
+	/** Desired block to start read from */
+	uint32_t start_block;
+	/** Maximum number of blocks to read */
+	uint32_t num_blocks;
+} __packed;
+
+struct rpc_data_logger_read_available_response {
+	struct infuse_rpc_rsp_header header;
+	/** Number of bytes sent */
+	uint32_t sent_len;
+	/** CRC32 of bytes sent */
+	uint32_t sent_crc;
+	/** Current block after read completes */
+	uint32_t current_block;
+	/** Actual block that read started at */
+	uint32_t start_block_actual;
+	/** Size of a single block in bytes */
+	uint16_t block_size;
 } __packed;
 
 /** Download a file from a COAP server (Infuse-IoT DTLS protected) */

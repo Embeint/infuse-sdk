@@ -206,6 +206,15 @@ struct net_buf *rpc_command_lte_at_cmd(struct net_buf *request);
 struct net_buf *rpc_command_lte_state(struct net_buf *request);
 
 /**
+ * @brief Run data_logger_read_available RPC
+ *
+ * @param request @ref INFUSE_RPC_CMD packet to respond to
+ *
+ * @return struct net_buf* @ref INFUSE_RPC_RSP packet buffer
+ */
+struct net_buf *rpc_command_data_logger_read_available(struct net_buf *request);
+
+/**
  * @brief Run coap_download RPC
  *
  * @param request @ref INFUSE_RPC_CMD packet to respond to
