@@ -39,6 +39,9 @@ struct net_buf *rpc_command_mem_read(struct net_buf *request)
 	req_meta = NULL;
 
 	while (bytes_remaining) {
+		/* Feed watchdog as this can be a long running process if the data size is high */
+		rpc_server_watchdog_feed();
+
 		/* Respect any rate-limiting requests from the receiving device */
 		epacket_rate_limit_tx();
 
