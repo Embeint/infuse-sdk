@@ -46,6 +46,16 @@ config EPACKET_BUFFERS_RX
 	range 1 16
 	default 3
 
+config EPACKET_RATE_LIMIT_REQ_DURATION_MS
+	int "Duration of the rate limit request delays when running out of TX buffers"
+	range 1 255
+	default 100
+	help
+	  When forwarding packets, the gateway handler will automatically request connected
+	  devices to pause transmissions for a short duration if it faces buffer starvation.
+	  This option controls the duration of the requested pause, and can be tuned based on
+	  how quickly the backhaul interface can free buffers.
+
 config EPACKET_RECEIVE_GROUPING
 	bool "Append multiple received packets into a single INFUSE_RECEIVED_EPACKET"
 
