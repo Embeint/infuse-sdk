@@ -110,7 +110,7 @@ config INFUSE_RPC_COMMAND_APPLICATION_INFO_REQUIRED_AUTH
 
 config INFUSE_RPC_COMMAND_WIFI_SCAN
 	bool "Enable RPC wifi_scan"
-	depends on WIFI
+	depends on NET_L2_WIFI_MGMT
 	default y if INFUSE_SDK
 	help
 	  Scan for WiFi networks
@@ -122,7 +122,7 @@ config INFUSE_RPC_COMMAND_WIFI_SCAN_REQUIRED_AUTH
 
 config INFUSE_RPC_COMMAND_WIFI_STATE
 	bool "Enable RPC wifi_state"
-	depends on WIFI
+	depends on NET_L2_WIFI_MGMT
 	default y if INFUSE_SDK
 	help
 	  Get current WiFi interface state
@@ -179,6 +179,54 @@ config INFUSE_RPC_COMMAND_MEM_READ_REQUIRED_AUTH
 	depends on INFUSE_RPC_COMMAND_MEM_READ
 	default 2
 
+config INFUSE_RPC_COMMAND_INFUSE_STATES_QUERY
+	bool "Enable RPC infuse_states_query"
+	depends on INFUSE_APPLICATION_STATES
+	default y if INFUSE_SDK
+	help
+	  Read current Infuse-IoT application states
+
+config INFUSE_RPC_COMMAND_INFUSE_STATES_QUERY_REQUIRED_AUTH
+	int "Required authorisation level to run infuse_states_query"
+	depends on INFUSE_RPC_COMMAND_INFUSE_STATES_QUERY
+	default 2
+
+config INFUSE_RPC_COMMAND_INFUSE_STATES_UPDATE
+	bool "Enable RPC infuse_states_update"
+	depends on INFUSE_APPLICATION_STATES
+	default y if INFUSE_SDK
+	help
+	  Update Infuse-IoT application states
+
+config INFUSE_RPC_COMMAND_INFUSE_STATES_UPDATE_REQUIRED_AUTH
+	int "Required authorisation level to run infuse_states_update"
+	depends on INFUSE_RPC_COMMAND_INFUSE_STATES_UPDATE
+	default 2
+
+config INFUSE_RPC_COMMAND_DATA_LOGGER_ERASE
+	bool "Enable RPC data_logger_erase"
+	depends on DATA_LOGGER
+	default y if INFUSE_SDK
+	help
+	  Erase all data from a data logger
+
+config INFUSE_RPC_COMMAND_DATA_LOGGER_ERASE_REQUIRED_AUTH
+	int "Required authorisation level to run data_logger_erase"
+	depends on INFUSE_RPC_COMMAND_DATA_LOGGER_ERASE
+	default 2
+
+config INFUSE_RPC_COMMAND_HEAP_STATS
+	bool "Enable RPC heap_stats"
+	depends on SYS_HEAP_RUNTIME_STATS
+	default y if INFUSE_SDK
+	help
+	  Query stats of heaps
+
+config INFUSE_RPC_COMMAND_HEAP_STATS_REQUIRED_AUTH
+	int "Required authorisation level to run heap_stats"
+	depends on INFUSE_RPC_COMMAND_HEAP_STATS
+	default 2
+
 config INFUSE_RPC_COMMAND_LTE_AT_CMD
 	bool "Enable RPC lte_at_cmd"
 	depends on NRF_MODEM_LIB
@@ -203,6 +251,18 @@ config INFUSE_RPC_COMMAND_LTE_STATE_REQUIRED_AUTH
 	depends on INFUSE_RPC_COMMAND_LTE_STATE
 	default 2
 
+config INFUSE_RPC_COMMAND_DATA_LOGGER_READ_AVAILABLE
+	bool "Enable RPC data_logger_read_available"
+	depends on DATA_LOGGER
+	default y if INFUSE_SDK
+	help
+	  Read data from data logger, with auto-updating start_block
+
+config INFUSE_RPC_COMMAND_DATA_LOGGER_READ_AVAILABLE_REQUIRED_AUTH
+	int "Required authorisation level to run data_logger_read_available"
+	depends on INFUSE_RPC_COMMAND_DATA_LOGGER_READ_AVAILABLE
+	default 2
+
 config INFUSE_RPC_COMMAND_COAP_DOWNLOAD
 	bool "Enable RPC coap_download"
 	depends on INFUSE_COAP
@@ -215,6 +275,18 @@ config INFUSE_RPC_COMMAND_COAP_DOWNLOAD_REQUIRED_AUTH
 	depends on INFUSE_RPC_COMMAND_COAP_DOWNLOAD
 	default 2
 
+config INFUSE_RPC_COMMAND_ZPERF_UPLOAD
+	bool "Enable RPC zperf_upload"
+	depends on NET_ZPERF
+	default y if INFUSE_SDK
+	help
+	  Network upload bandwidth testing using zperf/iperf
+
+config INFUSE_RPC_COMMAND_ZPERF_UPLOAD_REQUIRED_AUTH
+	int "Required authorisation level to run zperf_upload"
+	depends on INFUSE_RPC_COMMAND_ZPERF_UPLOAD
+	default 2
+
 config INFUSE_RPC_COMMAND_FILE_WRITE_BASIC
 	bool "Enable RPC file_write_basic"
 	default y if INFUSE_SDK
@@ -225,6 +297,17 @@ config INFUSE_RPC_COMMAND_FILE_WRITE_BASIC_REQUIRED_AUTH
 	int "Required authorisation level to run file_write_basic"
 	depends on INFUSE_RPC_COMMAND_FILE_WRITE_BASIC
 	default 1
+
+config INFUSE_RPC_COMMAND_ANNOTATE
+	bool "Enable RPC annotate"
+	depends on TDF_DATA_LOGGER
+	help
+	  Write an annotation to the device
+
+config INFUSE_RPC_COMMAND_ANNOTATE_REQUIRED_AUTH
+	int "Required authorisation level to run annotate"
+	depends on INFUSE_RPC_COMMAND_ANNOTATE
+	default 2
 
 config INFUSE_RPC_COMMAND_BT_CONNECT_INFUSE
 	bool "Enable RPC bt_connect_infuse"

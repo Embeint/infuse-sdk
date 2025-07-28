@@ -152,6 +152,42 @@ struct net_buf *rpc_command_data_logger_read(struct net_buf *request);
 struct net_buf *rpc_command_mem_read(struct net_buf *request);
 
 /**
+ * @brief Run infuse_states_query RPC
+ *
+ * @param request @ref INFUSE_RPC_CMD packet to respond to
+ *
+ * @return struct net_buf* @ref INFUSE_RPC_RSP packet buffer
+ */
+struct net_buf *rpc_command_infuse_states_query(struct net_buf *request);
+
+/**
+ * @brief Run infuse_states_update RPC
+ *
+ * @param request @ref INFUSE_RPC_CMD packet to respond to
+ *
+ * @return struct net_buf* @ref INFUSE_RPC_RSP packet buffer
+ */
+struct net_buf *rpc_command_infuse_states_update(struct net_buf *request);
+
+/**
+ * @brief Run data_logger_erase RPC
+ *
+ * @param request @ref INFUSE_RPC_CMD packet to respond to
+ *
+ * @return struct net_buf* @ref INFUSE_RPC_RSP packet buffer
+ */
+struct net_buf *rpc_command_data_logger_erase(struct net_buf *request);
+
+/**
+ * @brief Run heap_stats RPC
+ *
+ * @param request @ref INFUSE_RPC_CMD packet to respond to
+ *
+ * @return struct net_buf* @ref INFUSE_RPC_RSP packet buffer
+ */
+struct net_buf *rpc_command_heap_stats(struct net_buf *request);
+
+/**
  * @brief Run lte_at_cmd RPC
  *
  * @param request @ref INFUSE_RPC_CMD packet to respond to
@@ -170,6 +206,15 @@ struct net_buf *rpc_command_lte_at_cmd(struct net_buf *request);
 struct net_buf *rpc_command_lte_state(struct net_buf *request);
 
 /**
+ * @brief Run data_logger_read_available RPC
+ *
+ * @param request @ref INFUSE_RPC_CMD packet to respond to
+ *
+ * @return struct net_buf* @ref INFUSE_RPC_RSP packet buffer
+ */
+struct net_buf *rpc_command_data_logger_read_available(struct net_buf *request);
+
+/**
  * @brief Run coap_download RPC
  *
  * @param request @ref INFUSE_RPC_CMD packet to respond to
@@ -179,6 +224,15 @@ struct net_buf *rpc_command_lte_state(struct net_buf *request);
 struct net_buf *rpc_command_coap_download(struct net_buf *request);
 
 /**
+ * @brief Run zperf_upload RPC
+ *
+ * @param request @ref INFUSE_RPC_CMD packet to respond to
+ *
+ * @return struct net_buf* @ref INFUSE_RPC_RSP packet buffer
+ */
+struct net_buf *rpc_command_zperf_upload(struct net_buf *request);
+
+/**
  * @brief Run file_write_basic RPC
  *
  * @param request @ref INFUSE_RPC_CMD packet to respond to
@@ -186,6 +240,15 @@ struct net_buf *rpc_command_coap_download(struct net_buf *request);
  * @return struct net_buf* @ref INFUSE_RPC_RSP packet buffer
  */
 struct net_buf *rpc_command_file_write_basic(struct net_buf *request);
+
+/**
+ * @brief Run annotate RPC
+ *
+ * @param request @ref INFUSE_RPC_CMD packet to respond to
+ *
+ * @return struct net_buf* @ref INFUSE_RPC_RSP packet buffer
+ */
+struct net_buf *rpc_command_annotate(struct net_buf *request);
 
 /**
  * @brief Run bt_connect_infuse RPC

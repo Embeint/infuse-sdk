@@ -97,6 +97,29 @@ struct tdf_struct_eui48 {
 	uint8_t val[6];
 } __packed;
 
+/** WiFi network parameters */
+struct tdf_struct_wifi_network_params {
+	/** Basic Service Set Identifier (MAC address) */
+	uint8_t bssid[6];
+	/** Frequency band */
+	uint8_t band;
+	/** Channel index */
+	uint8_t channel;
+	/** https://w1.fi/wpa_supplicant/devel/defs_8h.html#a4aeb27c1e4abd046df3064ea9756f0bc */
+	uint8_t iface_mode;
+	/** WiFi link operating mode (https://en.wikipedia.org/wiki/Wi-Fi#Versions_and_generations)
+	 */
+	uint8_t link_mode;
+	/** IEEE 802.11 security type */
+	uint8_t security;
+	/** Received signal strength (dBm) */
+	int8_t rssi;
+	/** Beacon interval (ms) */
+	uint16_t beacon_interval;
+	/** Target Wake Time capable? */
+	uint8_t twt_capable;
+} __packed;
+
 /** Demo struct */
 struct tdf_struct_demo {
 	int8_t x;
@@ -364,7 +387,7 @@ struct tdf_algorithm_output {
 	uint8_t output[];
 } __packed;
 
-/** Define a variant of @ref tdf_algorithm_output with a constant length */
+/** Define a variant of tdf_algorithm_output with a constant length */
 #define TDF_ALGORITHM_OUTPUT_VAR(_name, _count)                                                    \
 	struct _name {                                                                             \
 		uint32_t algorithm_id;                                                             \
@@ -430,7 +453,7 @@ struct tdf_algorithm_class_histogram {
 	uint8_t classes[];
 } __packed;
 
-/** Define a variant of @ref tdf_algorithm_class_histogram with a constant length */
+/** Define a variant of tdf_algorithm_class_histogram with a constant length */
 #define TDF_ALGORITHM_CLASS_HISTOGRAM_VAR(_name, _count)                                           \
 	struct _name {                                                                             \
 		uint32_t algorithm_id;                                                             \
@@ -448,7 +471,7 @@ struct tdf_algorithm_class_time_series {
 	uint8_t values[];
 } __packed;
 
-/** Define a variant of @ref tdf_algorithm_class_time_series with a constant length */
+/** Define a variant of tdf_algorithm_class_time_series with a constant length */
 #define TDF_ALGORITHM_CLASS_TIME_SERIES_VAR(_name, _count)                                         \
 	struct _name {                                                                             \
 		uint32_t algorithm_id;                                                             \
@@ -470,7 +493,7 @@ struct tdf_lte_tac_cells {
 	struct tdf_struct_lte_cell_neighbour neighbours[];
 } __packed;
 
-/** Define a variant of @ref tdf_lte_tac_cells with a constant length */
+/** Define a variant of tdf_lte_tac_cells with a constant length */
 #define TDF_LTE_TAC_CELLS_VAR(_name, _count)                                                       \
 	struct _name {                                                                             \
 		struct tdf_struct_lte_cell_id_global cell;                                         \
@@ -552,6 +575,105 @@ struct tdf_nrf9x_gnss_pvt {
 struct tdf_battery_charge_accumulated {
 	/** Accumulated charge (microamp-seconds) */
 	int32_t charge;
+} __packed;
+
+/** Received signal strength of Infuse-IoT Bluetooth device */
+struct tdf_infuse_bluetooth_rssi {
+	/** Infuse-IoT ID of remote device */
+	uint64_t infuse_id;
+	/** Bluetooth RSSI */
+	int8_t rssi;
+} __packed;
+
+/** Generic 8bit raw ADC reading */
+struct tdf_adc_raw_8 {
+	/** Raw ADC reading */
+	int8_t val;
+} __packed;
+
+/** Generic 16bit raw ADC reading */
+struct tdf_adc_raw_16 {
+	/** Raw ADC reading */
+	int16_t val;
+} __packed;
+
+/** Generic 32bit raw ADC reading */
+struct tdf_adc_raw_32 {
+	/** Raw ADC reading */
+	int32_t val;
+} __packed;
+
+/** Generic event annotation */
+struct tdf_annotation {
+	/** Annotation timestamp (GNSS seconds) */
+	uint32_t timestamp;
+	/** Event that occurred */
+	char event[];
+} __packed;
+
+/** Define a variant of tdf_annotation with a constant length */
+#define TDF_ANNOTATION_VAR(_name, _count)                                                          \
+	struct _name {                                                                             \
+		uint32_t timestamp;                                                                \
+		char event[_count];                                                                \
+	} __packed;
+
+/** Received LoRa packet */
+struct tdf_lora_rx {
+	/** Signal to Noise ratio (dB) */
+	int8_t snr;
+	/** Received signal strength (dBm) */
+	int16_t rssi;
+	/** Packet payload */
+	uint8_t payload[];
+} __packed;
+
+/** Define a variant of tdf_lora_rx with a constant length */
+#define TDF_LORA_RX_VAR(_name, _count)                                                             \
+	struct _name {                                                                             \
+		int8_t snr;                                                                        \
+		int16_t rssi;                                                                      \
+		uint8_t payload[_count];                                                           \
+	} __packed;
+
+/** Define a variant of tdf_lora_tx with a constant length */
+#define TDF_LORA_TX_VAR(_name, _count)                                                             \
+	struct _name {                                                                             \
+		uint8_t payload[_count];                                                           \
+	} __packed;
+
+/** Sample frequency metadata for a TDF_DATA_FORMAT_IDX_ARRAY array */
+struct tdf_idx_array_freq {
+	/** TDF ID that is being described */
+	uint16_t tdf_id;
+	/** Frequency of samples in Hertz */
+	uint32_t frequency;
+} __packed;
+
+/** Sample frequency metadata for a TDF_DATA_FORMAT_IDX_ARRAY array */
+struct tdf_idx_array_period {
+	/** TDF ID that is being described */
+	uint16_t tdf_id;
+	/** Period between samples in nanoseconds */
+	uint32_t period;
+} __packed;
+
+/** WiFi network is now connected */
+struct tdf_wifi_connected {
+	/** Network parameters */
+	struct tdf_struct_wifi_network_params network;
+} __packed;
+
+/** Failed to connect to a WiFi network */
+struct tdf_wifi_connection_failed {
+	/** Reported reason for connection failure */
+	uint8_t reason;
+} __packed;
+
+/** Wi-Fi network is now disconnected */
+struct tdf_wifi_disconnected {
+	/** Reported reason for disconnection */
+	uint8_t reason;
 } __packed;
 
 /** Example array type */
@@ -648,6 +770,30 @@ enum tdf_builtin_id {
 	TDF_NRF9X_GNSS_PVT = 37,
 	/** Battery charge accumulated over time (+ve entering battery, -ve exiting battery) */
 	TDF_BATTERY_CHARGE_ACCUMULATED = 38,
+	/** Received signal strength of Infuse-IoT Bluetooth device */
+	TDF_INFUSE_BLUETOOTH_RSSI = 39,
+	/** Generic 8bit raw ADC reading */
+	TDF_ADC_RAW_8 = 40,
+	/** Generic 16bit raw ADC reading */
+	TDF_ADC_RAW_16 = 41,
+	/** Generic 32bit raw ADC reading */
+	TDF_ADC_RAW_32 = 42,
+	/** Generic event annotation */
+	TDF_ANNOTATION = 43,
+	/** Received LoRa packet */
+	TDF_LORA_RX = 44,
+	/** Transmitted LoRa packet */
+	TDF_LORA_TX = 45,
+	/** Sample frequency metadata for a TDF_DATA_FORMAT_IDX_ARRAY array */
+	TDF_IDX_ARRAY_FREQ = 46,
+	/** Sample frequency metadata for a TDF_DATA_FORMAT_IDX_ARRAY array */
+	TDF_IDX_ARRAY_PERIOD = 47,
+	/** WiFi network is now connected */
+	TDF_WIFI_CONNECTED = 48,
+	/** Failed to connect to a WiFi network */
+	TDF_WIFI_CONNECTION_FAILED = 49,
+	/** Wi-Fi network is now disconnected */
+	TDF_WIFI_DISCONNECTED = 50,
 	/** Example array type */
 	TDF_ARRAY_TYPE = 100,
 	/** Extension TDF 1 */
@@ -695,6 +841,17 @@ enum tdf_builtin_id {
 #define _TDF_DEVICE_TILT_TYPE                 struct tdf_device_tilt
 #define _TDF_NRF9X_GNSS_PVT_TYPE              struct tdf_nrf9x_gnss_pvt
 #define _TDF_BATTERY_CHARGE_ACCUMULATED_TYPE  struct tdf_battery_charge_accumulated
+#define _TDF_INFUSE_BLUETOOTH_RSSI_TYPE       struct tdf_infuse_bluetooth_rssi
+#define _TDF_ADC_RAW_8_TYPE                   struct tdf_adc_raw_8
+#define _TDF_ADC_RAW_16_TYPE                  struct tdf_adc_raw_16
+#define _TDF_ADC_RAW_32_TYPE                  struct tdf_adc_raw_32
+#define _TDF_ANNOTATION_TYPE                  struct tdf_annotation
+#define _TDF_LORA_RX_TYPE                     struct tdf_lora_rx
+#define _TDF_IDX_ARRAY_FREQ_TYPE              struct tdf_idx_array_freq
+#define _TDF_IDX_ARRAY_PERIOD_TYPE            struct tdf_idx_array_period
+#define _TDF_WIFI_CONNECTED_TYPE              struct tdf_wifi_connected
+#define _TDF_WIFI_CONNECTION_FAILED_TYPE      struct tdf_wifi_connection_failed
+#define _TDF_WIFI_DISCONNECTED_TYPE           struct tdf_wifi_disconnected
 #define _TDF_ARRAY_TYPE_TYPE                  struct tdf_array_type
 #define _TDF_EXT1_TYPE                        struct tdf_ext1
 #define _TDF_EXT2_TYPE                        struct tdf_ext2
@@ -736,6 +893,17 @@ enum tdf_builtin_size {
 	_TDF_DEVICE_TILT_SIZE = sizeof(struct tdf_device_tilt),
 	_TDF_NRF9X_GNSS_PVT_SIZE = sizeof(struct tdf_nrf9x_gnss_pvt),
 	_TDF_BATTERY_CHARGE_ACCUMULATED_SIZE = sizeof(struct tdf_battery_charge_accumulated),
+	_TDF_INFUSE_BLUETOOTH_RSSI_SIZE = sizeof(struct tdf_infuse_bluetooth_rssi),
+	_TDF_ADC_RAW_8_SIZE = sizeof(struct tdf_adc_raw_8),
+	_TDF_ADC_RAW_16_SIZE = sizeof(struct tdf_adc_raw_16),
+	_TDF_ADC_RAW_32_SIZE = sizeof(struct tdf_adc_raw_32),
+	_TDF_ANNOTATION_SIZE = sizeof(struct tdf_annotation),
+	_TDF_LORA_RX_SIZE = sizeof(struct tdf_lora_rx),
+	_TDF_IDX_ARRAY_FREQ_SIZE = sizeof(struct tdf_idx_array_freq),
+	_TDF_IDX_ARRAY_PERIOD_SIZE = sizeof(struct tdf_idx_array_period),
+	_TDF_WIFI_CONNECTED_SIZE = sizeof(struct tdf_wifi_connected),
+	_TDF_WIFI_CONNECTION_FAILED_SIZE = sizeof(struct tdf_wifi_connection_failed),
+	_TDF_WIFI_DISCONNECTED_SIZE = sizeof(struct tdf_wifi_disconnected),
 	_TDF_ARRAY_TYPE_SIZE = sizeof(struct tdf_array_type),
 	_TDF_EXT1_SIZE = sizeof(struct tdf_ext1),
 	_TDF_EXT2_SIZE = sizeof(struct tdf_ext2),
