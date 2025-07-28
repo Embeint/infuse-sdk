@@ -28,24 +28,30 @@ ZTEST(epacket_common, test_alloc_failure)
 
 	/* Allocate all TX buffers, then check failure */
 	for (int i = 0; i < CONFIG_EPACKET_BUFFERS_TX; i++) {
+		zassert_equal(CONFIG_EPACKET_BUFFERS_TX - i, epacket_num_buffers_free_tx());
 		tx_bufs[i] = epacket_alloc_tx_for_interface(epacket_dummy, K_NO_WAIT);
 		zassert_not_null(tx_bufs[i]);
 	}
+	zassert_equal(0, epacket_num_buffers_free_tx());
 	zassert_is_null(epacket_alloc_tx_for_interface(epacket_dummy, K_NO_WAIT));
 
 	/* Allocate all RX buffers, then check failure */
 	for (int i = 0; i < CONFIG_EPACKET_BUFFERS_RX; i++) {
+		zassert_equal(CONFIG_EPACKET_BUFFERS_RX - i, epacket_num_buffers_free_rx());
 		rx_bufs[i] = epacket_alloc_rx(K_NO_WAIT);
 		zassert_not_null(rx_bufs[i]);
 	}
+	zassert_equal(0, epacket_num_buffers_free_rx());
 	zassert_is_null(epacket_alloc_rx(K_NO_WAIT));
 
 	/* Free all buffers */
 	for (int i = 0; i < CONFIG_EPACKET_BUFFERS_TX; i++) {
 		net_buf_unref(tx_bufs[i]);
+		zassert_equal(i + 1, epacket_num_buffers_free_tx());
 	}
 	for (int i = 0; i < CONFIG_EPACKET_BUFFERS_RX; i++) {
 		net_buf_unref(rx_bufs[i]);
+		zassert_equal(i + 1, epacket_num_buffers_free_rx());
 	}
 }
 
