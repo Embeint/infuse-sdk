@@ -845,20 +845,26 @@ static void dummy_gateway_handler(struct net_buf *buf)
 	epacket_gateway_receive_handler(epacket_dummy, buf);
 }
 
-static struct net_buf *create_info_request(const struct device *interface,
-					   struct rpc_application_info_request *request)
+static struct net_buf *create_rpc_request(const struct device *interface, void *request,
+					  size_t request_len)
 {
 	struct net_buf *buf;
 
 	buf = epacket_alloc_tx_for_interface(interface, K_FOREVER);
 	epacket_set_tx_metadata(buf, EPACKET_AUTH_NETWORK, 0, INFUSE_RPC_CMD, EPACKET_ADDR_ALL);
-	net_buf_add_mem(buf, request, sizeof(*request));
+	net_buf_add_mem(buf, request, request_len);
 	if (epacket_bt_gatt_encrypt(buf) < 0) {
 		FAIL("Failed to encrypt GATT RPC\n");
 		net_buf_unref(buf);
 		return NULL;
 	}
 	return buf;
+}
+
+static struct net_buf *create_info_request(const struct device *interface,
+					   struct rpc_application_info_request *request)
+{
+	return create_rpc_request(interface, request, sizeof(*request));
 }
 
 static int check_info_response(struct net_buf *buf, struct rpc_application_info_request *request)
@@ -1464,6 +1470,193 @@ static void main_gateway_remote_rpc_forward_auto_conn_auth_fail(void)
 	PASS("RPC auto-conn forwarder with auth failures passed\n");
 }
 
+static void main_gateway_remote_rpc_forward_auto_conn_rate_limit(void)
+{
+	const struct device *epacket_dummy = DEVICE_DT_GET(DT_NODELABEL(epacket_dummy));
+	const struct device *epacket_central = DEVICE_DT_GET(DT_NODELABEL(epacket_bt_central));
+	struct k_fifo *response_queue = epacket_dummmy_transmit_fifo_get();
+	union epacket_interface_address address;
+	struct bt_conn *conn = NULL;
+	struct net_buf *buf;
+	bt_addr_le_t addr;
+
+	common_init();
+	if (observe_peers(&addr, 1) < 0) {
+		FAIL("Failed to observe peer\n");
+		return;
+	}
+
+	epacket_set_receive_handler(epacket_dummy, dummy_gateway_handler);
+	epacket_set_receive_handler(epacket_central, dummy_gateway_handler);
+
+	/* Create and encrypt the GATT RPC */
+	struct rpc_data_sender_request sender_request = {
+		.header =
+			{
+				.command_id = RPC_ID_DATA_SENDER,
+				.request_id = 0xBB345678,
+			},
+		.data_header =
+			{
+				.size = 8192,
+				.rx_ack_period = 0,
+			},
+
+	};
+
+	address.bluetooth = addr;
+	buf = create_rpc_request(epacket_central, &sender_request, sizeof(sender_request));
+	if (buf == NULL) {
+		return;
+	}
+
+	/* Construct ePacket forwarding packet */
+	struct epacket_dummy_frame dummy_header = {
+		.type = INFUSE_EPACKET_FORWARD_AUTO_CONN,
+		.auth = EPACKET_AUTH_DEVICE,
+	};
+	struct forwarding_bt {
+		struct epacket_forward_auto_conn_header forward_header;
+		uint8_t bt_addr[7];
+	} __packed hdr;
+
+	hdr.forward_header.interface = EPACKET_INTERFACE_BT_CENTRAL;
+	hdr.forward_header.length = sizeof(hdr) + buf->len;
+	hdr.forward_header.flags = EPACKET_FORWARD_AUTO_CONN_SINGLE_RPC;
+	hdr.forward_header.conn_timeout = 2;
+	hdr.forward_header.conn_idle_timeout = 5;
+	hdr.forward_header.conn_absolute_timeout = 5;
+	hdr.bt_addr[0] = addr.type;
+	memcpy(hdr.bt_addr + 1, addr.a.val, 6);
+
+	/* Push packet at dummy interface */
+	epacket_dummy_receive_extra(epacket_dummy, &dummy_header, &hdr, sizeof(hdr), buf->data,
+				    buf->len);
+	net_buf_unref(buf);
+
+	struct epacket_dummy_frame *frame;
+	struct epacket_received_common_header *common_header;
+	struct epacket_received_decrypted_header *decr_header;
+	struct infuse_rpc_data *data_header;
+	struct rpc_data_sender_response *sender_rsp;
+	uint32_t expected_offset = 0;
+	uint16_t data_len;
+
+	while (expected_offset != sender_request.data_header.size) {
+		/* Free transmit buffers very slowly.
+		 * Without automatic rate limiting, this would fail with dropped buffers.
+		 */
+#ifdef CONFIG_EPACKET_RECEIVE_GROUPING
+		k_sleep(K_MSEC(100));
+#else
+		k_sleep(K_MSEC(50));
+#endif
+
+		buf = k_fifo_get(response_queue, K_SECONDS(2));
+		if (buf == NULL) {
+			FAIL("Failed to receive response\n");
+			return;
+		}
+
+		frame = net_buf_pull_mem(buf, sizeof(struct epacket_dummy_frame));
+		if (frame->type != INFUSE_RECEIVED_EPACKET) {
+			FAIL("Unexpected packet type\n");
+			return;
+		}
+		/* Consume all grouped packets */
+		while (buf->len) {
+			common_header = net_buf_pull_mem(
+				buf, sizeof(struct epacket_received_common_header));
+			if (common_header->interface != EPACKET_INTERFACE_BT_CENTRAL) {
+				FAIL("Unexpected interface\n");
+				return;
+			}
+			net_buf_pull_mem(buf, sizeof(struct epacket_interface_address_bt_le));
+			decr_header = net_buf_pull_mem(
+				buf, sizeof(struct epacket_received_decrypted_header));
+			if (decr_header->type != INFUSE_RPC_DATA) {
+				FAIL("Unexpected packet type\n");
+				return;
+			}
+			data_header = net_buf_pull_mem(buf, sizeof(struct infuse_rpc_data));
+			if (data_header->request_id != sender_request.header.request_id) {
+				FAIL("Unexpected request ID\n");
+				return;
+			}
+			if (data_header->offset != expected_offset) {
+				FAIL("Unexpected data offset\n");
+				return;
+			}
+			data_len = common_header->len_encrypted - sizeof(*common_header) -
+				   sizeof(struct epacket_interface_address_bt_le) -
+				   sizeof(*decr_header) - sizeof(*data_header);
+			net_buf_pull_mem(buf, data_len);
+
+			expected_offset += data_len;
+
+			if (expected_offset == sender_request.data_header.size) {
+				/* Data transfer complete */
+				break;
+			}
+		}
+		if (buf->len == 0) {
+			net_buf_unref(buf);
+			buf = NULL;
+		}
+	}
+
+	if (buf == NULL) {
+		buf = k_fifo_get(response_queue, K_SECONDS(2));
+		if (buf == NULL) {
+			FAIL("Failed to receive final response\n");
+			return;
+		}
+		frame = net_buf_pull_mem(buf, sizeof(struct epacket_dummy_frame));
+		if (frame->type != INFUSE_RECEIVED_EPACKET) {
+			FAIL("Unexpected final response packet type\n");
+			return;
+		}
+	}
+
+	/* Expect the final RPC_RSP to be present as the last payload */
+	common_header = net_buf_pull_mem(buf, sizeof(struct epacket_received_common_header));
+	if (common_header->interface != EPACKET_INTERFACE_BT_CENTRAL) {
+		FAIL("Unexpected interface\n");
+		return;
+	}
+	net_buf_pull_mem(buf, sizeof(struct epacket_interface_address_bt_le));
+	decr_header = net_buf_pull_mem(buf, sizeof(struct epacket_received_decrypted_header));
+	if (decr_header->type != INFUSE_RPC_RSP) {
+		FAIL("Unexpected packet type\n");
+		return;
+	}
+	sender_rsp = net_buf_pull_mem(buf, sizeof(*sender_rsp));
+	if (sender_rsp->header.request_id != sender_request.header.request_id) {
+		FAIL("Unexpected RPC_RSP request ID\n");
+		return;
+	}
+	if (sender_rsp->header.command_id != RPC_ID_DATA_SENDER) {
+		FAIL("Unexpected RPC_RSP command ID\n");
+		return;
+	}
+	if (sender_rsp->header.return_code != 0) {
+		FAIL("Unexpected RPC_RSP return code\n");
+		return;
+	}
+	net_buf_unref(buf);
+
+	/* Give a short duration to allow for connection cleanup*/
+	k_sleep(K_MSEC(50));
+
+	/* The connection should have been automatically terminated on the RPC_RSP */
+	conn = bt_conn_lookup_addr_le(BT_ID_DEFAULT, &addr);
+	if (conn != NULL) {
+		FAIL("Connection associated with one-shot RPC still active\n");
+		return;
+	}
+	PASS("RPC auto-conn forwarder with rate-limiting passed\n");
+}
+
 static const struct bst_test_instance epacket_gateway[] = {
 	{
 		.test_id = "epacket_bt_gateway_scan",
@@ -1591,6 +1784,13 @@ static const struct bst_test_instance epacket_gateway[] = {
 		.test_pre_init_f = test_init,
 		.test_tick_f = test_tick,
 		.test_main_f = main_gateway_remote_rpc_forward_auto_conn_auth_fail,
+	},
+	{
+		.test_id = "epacket_bt_gateway_remote_rpc_forward_auto_conn_rate_limit",
+		.test_descr = "Rate limiting intergration",
+		.test_pre_init_f = test_init,
+		.test_tick_f = test_tick,
+		.test_main_f = main_gateway_remote_rpc_forward_auto_conn_rate_limit,
 	},
 	BSTEST_END_MARKER};
 
