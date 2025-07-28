@@ -217,6 +217,13 @@ void rpc_command_runner(struct net_buf *request)
 		}
 		break;
 #endif /* CONFIG_INFUSE_RPC_COMMAND_LTE_STATE */
+#ifdef CONFIG_INFUSE_RPC_COMMAND_DATA_LOGGER_READ_AVAILABLE
+	case RPC_ID_DATA_LOGGER_READ_AVAILABLE:
+		if (AUTHORISED(auth, DATA_LOGGER_READ_AVAILABLE)) { /* GCOVR_EXCL_BR_LINE */
+			response = rpc_command_data_logger_read_available(request);
+		}
+		break;
+#endif /* CONFIG_INFUSE_RPC_COMMAND_DATA_LOGGER_READ_AVAILABLE */
 #ifdef CONFIG_INFUSE_RPC_COMMAND_COAP_DOWNLOAD
 	case RPC_ID_COAP_DOWNLOAD:
 		if (AUTHORISED(auth, COAP_DOWNLOAD)) { /* GCOVR_EXCL_BR_LINE */

@@ -251,6 +251,18 @@ config INFUSE_RPC_COMMAND_LTE_STATE_REQUIRED_AUTH
 	depends on INFUSE_RPC_COMMAND_LTE_STATE
 	default 2
 
+config INFUSE_RPC_COMMAND_DATA_LOGGER_READ_AVAILABLE
+	bool "Enable RPC data_logger_read_available"
+	depends on DATA_LOGGER
+	default y if INFUSE_SDK
+	help
+	  Read data from data logger, with auto-updating start_block
+
+config INFUSE_RPC_COMMAND_DATA_LOGGER_READ_AVAILABLE_REQUIRED_AUTH
+	int "Required authorisation level to run data_logger_read_available"
+	depends on INFUSE_RPC_COMMAND_DATA_LOGGER_READ_AVAILABLE
+	default 2
+
 config INFUSE_RPC_COMMAND_COAP_DOWNLOAD
 	bool "Enable RPC coap_download"
 	depends on INFUSE_COAP

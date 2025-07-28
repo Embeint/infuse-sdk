@@ -485,6 +485,26 @@
                 {"name": "lte", "type": "struct rpc_struct_lte_state", "description": "LTE state"}
             ]
         },
+        "22": {
+            "name": "data_logger_read_available",
+            "description": "Read data from data logger, with auto-updating start_block",
+            "depends_on": "DATA_LOGGER",
+            "default": "y if INFUSE_SDK",
+            "default_auth": "EPACKET_AUTH_DEVICE",
+            "rpc_data": true,
+            "request_params": [
+                {"name": "logger", "type": "enum rpc_enum_data_logger", "description": "Data logger to read from"},
+                {"name": "start_block", "type": "uint32_t", "description": "Desired block to start read from"},
+                {"name": "num_blocks", "type": "uint32_t", "description": "Maximum number of blocks to read"}
+            ],
+            "response_params": [
+                {"name": "sent_len", "type": "uint32_t", "description": "Number of bytes sent"},
+                {"name": "sent_crc", "type": "uint32_t", "description": "CRC32 of bytes sent"},
+                {"name": "current_block", "type": "uint32_t", "description": "Current block after read completes"},
+                {"name": "start_block_actual", "type": "uint32_t", "description": "Actual block that read started at"},
+                {"name": "block_size", "type": "uint16_t", "description": "Size of a single block in bytes"}
+            ]
+        },
         "30": {
             "name": "coap_download",
             "description": "Download a file from a COAP server (Infuse-IoT DTLS protected)",
