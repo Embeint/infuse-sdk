@@ -262,7 +262,7 @@ int epacket_bt_gatt_connect(const bt_addr_le_t *peer, const struct bt_le_conn_pa
 	struct bt_conn *conn;
 	uint8_t idx;
 	int conn_rc;
-	int rc;
+	int rc = 0;
 
 	*conn_out = NULL;
 
@@ -317,10 +317,10 @@ conn_created:
 	s->inactivity_timeout = inactivity_timeout;
 	if (rc == 0) {
 		if (!K_TIMEOUT_EQ(inactivity_timeout, K_FOREVER)) {
-			k_work_schedule(&s->idle_worker, inactivity_timeout);
+			k_work_reschedule(&s->idle_worker, inactivity_timeout);
 		}
 		if (!K_TIMEOUT_EQ(absolute_timeout, K_FOREVER)) {
-			k_work_schedule(&s->term_worker, absolute_timeout);
+			k_work_reschedule(&s->term_worker, absolute_timeout);
 		}
 	}
 
