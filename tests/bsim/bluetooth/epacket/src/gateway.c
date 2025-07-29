@@ -757,6 +757,66 @@ static void main_gateway_connect_absolute_timeout(void)
 	PASS("Absolute connection timeout terminated connection\n");
 }
 
+static void main_gateway_connect_absolute_timeout_update(void)
+{
+	const struct bt_le_conn_param params = BT_LE_CONN_PARAM_INIT(0x10, 0x15, 0, 400);
+	struct epacket_read_response security_info;
+	struct bt_conn *conn = NULL;
+	bt_addr_le_t addr;
+	int rc;
+
+	common_init();
+	bt_conn_cb_register(&conn_cb);
+
+	if (observe_peers(&addr, 1) < 0) {
+		FAIL("Failed to observe peer\n");
+		return;
+	}
+
+	/* Connect to peer device with a long timeout, subscribed to all characteristics */
+	rc = epacket_bt_gatt_connect(&addr, &params, 3000, &conn, &security_info, true, true, true,
+				     K_FOREVER, K_SECONDS(1));
+	if (rc != 0) {
+		FAIL("Failed to connect to peer\n");
+		return;
+	}
+	bt_conn_unref(conn);
+	conn = NULL;
+
+	for (int i = 0; i < 6; i++) {
+		rc = k_sem_take(&bt_disconnected, K_MSEC(500));
+		if (rc != -EAGAIN) {
+			FAIL("Connection terminated unexpectedly on iteration %d\n", i);
+			return;
+		}
+
+		/* Refresh the connection */
+		rc = epacket_bt_gatt_connect(&addr, &params, 100, &conn, &security_info, true, true,
+					     true, K_FOREVER, K_SECONDS(1));
+		if (rc != 1) {
+			FAIL("Failed to refresh peer connection\n");
+			return;
+		}
+		bt_conn_unref(conn);
+		conn = NULL;
+	}
+
+	/* Expect the connection to terminate after 5 seconds regardless of the activity */
+	rc = k_sem_take(&bt_disconnected, K_MSEC(800));
+	if (rc != -EAGAIN) {
+		FAIL("Absolute timeout terminated early\n");
+		return;
+	}
+	rc = k_sem_take(&bt_disconnected, K_MSEC(400));
+	if (rc != 0) {
+		FAIL("Absolute timer did not terminate connection at expected time\n");
+		return;
+	}
+	k_sleep(K_MSEC(500));
+
+	PASS("Absolute connection timeout updates each call\n");
+}
+
 static void main_gateway_connect_absolute_timeout_cancel(void)
 {
 	const struct bt_le_conn_param params = BT_LE_CONN_PARAM_INIT(0x10, 0x15, 0, 400);
@@ -1772,6 +1832,13 @@ static const struct bst_test_instance epacket_gateway[] = {
 		.test_pre_init_f = test_init,
 		.test_tick_f = test_tick,
 		.test_main_f = main_gateway_connect_absolute_timeout,
+	},
+	{
+		.test_id = "epacket_bt_gateway_connect_absolute_timeout_update",
+		.test_descr = "Connect to peer device, absolute timeout updated on each call",
+		.test_pre_init_f = test_init,
+		.test_tick_f = test_tick,
+		.test_main_f = main_gateway_connect_absolute_timeout_update,
 	},
 	{
 		.test_id = "epacket_bt_gateway_connect_absolute_timeout_cancel",
