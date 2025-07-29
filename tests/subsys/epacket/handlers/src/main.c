@@ -124,10 +124,11 @@ ZTEST(epacket_handlers, test_rate_limiting)
 	};
 	k_ticks_t before, after, diff;
 	int wiggle = 2 * MSEC_PER_SEC / (CONFIG_SYS_CLOCK_TICKS_PER_SEC);
+	k_ticks_t limit_tx = k_uptime_ticks();
 
 	/* No delays or yields initially */
 	before = k_uptime_ticks();
-	epacket_rate_limit_tx();
+	epacket_rate_limit_tx(&limit_tx, 0);
 	after = k_uptime_ticks();
 	zassert_equal(before, after, "Unexpected context yield");
 
@@ -140,7 +141,7 @@ ZTEST(epacket_handlers, test_rate_limiting)
 		k_sleep(K_TICKS(1));
 
 		before = k_uptime_ticks();
-		epacket_rate_limit_tx();
+		epacket_rate_limit_tx(&limit_tx, 0);
 		after = k_uptime_ticks();
 		zassert_true(after >= before);
 		diff = after - before;
@@ -150,7 +151,7 @@ ZTEST(epacket_handlers, test_rate_limiting)
 
 		/* Additional call doesn't delay or yield */
 		before = k_uptime_ticks();
-		epacket_rate_limit_tx();
+		epacket_rate_limit_tx(&limit_tx, 0);
 		after = k_uptime_ticks();
 		zassert_equal(before, after, "Unexpected context yield");
 	}

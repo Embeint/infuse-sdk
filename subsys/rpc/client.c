@@ -220,6 +220,7 @@ int rpc_client_data_queue(struct rpc_client_ctx *ctx, uint32_t request_id, uint3
 	const uint8_t *bytes = data;
 	struct net_buf *data_buf;
 	size_t add, tail, extra;
+	k_ticks_t limit_tx = k_uptime_ticks();
 
 	if (c == NULL) {
 		LOG_WRN("Invalid request %08X", request_id);
@@ -231,12 +232,13 @@ int rpc_client_data_queue(struct rpc_client_ctx *ctx, uint32_t request_id, uint3
 		return -EINVAL;
 	}
 
+	add = 0;
 	while (data_len) {
 		/* Offsets must be word aligned */
 		__ASSERT_NO_MSG((offset % sizeof(uint32_t)) == 0);
 
 		/* Respect any rate-limiting requests from the receiving device */
-		epacket_rate_limit_tx();
+		epacket_rate_limit_tx(&limit_tx, add);
 
 		/* Allocate buffer for command */
 		data_buf = epacket_alloc_tx_for_interface(ctx->interface, K_FOREVER);

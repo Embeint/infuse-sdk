@@ -108,9 +108,12 @@ struct net_buf *epacket_alloc_rx(k_timeout_t timeout)
 	return buf;
 }
 
-void epacket_rate_limit_tx(void)
+void epacket_rate_limit_tx(k_ticks_t *last_call, uint16_t bytes_transmitted)
 {
 	atomic_t delay = atomic_clear(&rate_limit_delay);
+
+	ARG_UNUSED(last_call);
+	ARG_UNUSED(bytes_transmitted);
 
 	if (delay) {
 		k_sleep(K_MSEC(delay));

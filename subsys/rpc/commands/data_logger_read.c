@@ -36,6 +36,8 @@ static int do_read(struct common_state *state)
 	struct net_buf *data_buf = NULL;
 	struct infuse_rpc_data *data = NULL;
 	uint16_t block_remaining, block_offset;
+	k_ticks_t limit_tx = k_uptime_ticks();
+	uint16_t tx_count = 0;
 	size_t work_mem_size;
 	uint8_t *work_mem;
 	size_t tail;
@@ -67,7 +69,7 @@ static int do_read(struct common_state *state)
 		while (block_remaining) {
 			if (data_buf == NULL) {
 				/* Respect any rate-limiting requests from the receiving device */
-				epacket_rate_limit_tx();
+				epacket_rate_limit_tx(&limit_tx, tx_count);
 
 				/* Allocate new data message */
 				data_buf =
@@ -102,6 +104,7 @@ static int do_read(struct common_state *state)
 								    data_buf->data + sizeof(*data),
 								    data_buf->len - sizeof(*data));
 				state->sent_len += data_buf->len - sizeof(*data);
+				tx_count = data_buf->len;
 
 				/* Send full buffer */
 				epacket_queue(state->interface, data_buf);
