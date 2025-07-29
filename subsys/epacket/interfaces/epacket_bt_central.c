@@ -385,9 +385,18 @@ static void infuse_send_rate_limit_request(struct bt_conn *conn, void *data)
 {
 	struct epacket_rate_limit_req *request = data;
 	struct infuse_connection_state *s;
+	struct bt_conn_info info;
 	uint8_t conn_idx;
 	uint16_t handle;
 	int rc;
+
+	/* Only run for connection objects in the connected state */
+	if (bt_conn_get_info(conn, &info) < 0) {
+		return;
+	}
+	if (info.state != BT_CONN_STATE_CONNECTED) {
+		return;
+	}
 
 	/* Get connection state */
 	conn_idx = bt_conn_index(conn);
