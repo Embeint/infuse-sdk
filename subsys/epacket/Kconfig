@@ -46,6 +46,10 @@ config EPACKET_BUFFERS_RX
 	range 1 16
 	default 3
 
+config EPACKET_RATE_LIMIT_BUFFER_THRESHOLD
+	int "Send a rate limit request when number of free TX buffers reaches this value"
+	default 1
+
 config EPACKET_RATE_LIMIT_REQ_DURATION_MS
 	int "Duration of the rate limit request delays when running out of TX buffers"
 	range 1 255

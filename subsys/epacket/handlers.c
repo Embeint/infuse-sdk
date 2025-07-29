@@ -95,6 +95,14 @@ static void receive_forward(const struct device *backhaul, struct net_buf *buf)
 		is_init = true;
 	}
 
+#ifdef CONFIG_EPACKET_INTERFACE_BT_CENTRAL
+	if (epacket_num_buffers_free_tx() <= CONFIG_EPACKET_RATE_LIMIT_BUFFER_THRESHOLD) {
+		/* Running out of buffers, request a pause */
+		LOG_DBG("Requesting rate limit");
+		epacket_bt_gatt_rate_limit_request(CONFIG_EPACKET_RATE_LIMIT_REQ_DURATION_MS);
+	}
+#endif /* CONFIG_EPACKET_INTERFACE_BT_CENTRAL */
+
 	K_SPINLOCK(&pending_lock) {
 		if (pending_buffer) {
 			/* We already have a buffer holding data */
@@ -123,14 +131,6 @@ static void receive_forward(const struct device *backhaul, struct net_buf *buf)
 
 	/* No pending buffer, allocate one */
 	temp = epacket_alloc_tx_for_interface(backhaul, K_FOREVER);
-
-#ifdef CONFIG_EPACKET_INTERFACE_BT_CENTRAL
-	if (epacket_num_buffers_free_tx() <= 1) {
-		/* Running out of buffers, request a pause */
-		LOG_DBG("Requesting rate limit");
-		epacket_bt_gatt_rate_limit_request(CONFIG_EPACKET_RATE_LIMIT_REQ_DURATION_MS);
-	}
-#endif /* CONFIG_EPACKET_INTERFACE_BT_CENTRAL */
 
 	K_SPINLOCK(&pending_lock) {
 		if (epacket_received_packet_append(temp, buf) == 0) {
@@ -163,7 +163,7 @@ static void receive_forward(const struct device *backhaul, struct net_buf *buf)
 	struct net_buf *forward = epacket_alloc_tx_for_interface(backhaul, K_FOREVER);
 
 #ifdef CONFIG_EPACKET_INTERFACE_BT_CENTRAL
-	if (epacket_num_buffers_free_tx() <= 1) {
+	if (epacket_num_buffers_free_tx() <= CONFIG_EPACKET_RATE_LIMIT_BUFFER_THRESHOLD) {
 		/* Running out of buffers, request a pause */
 		LOG_DBG("Requesting rate limit");
 		epacket_bt_gatt_rate_limit_request(CONFIG_EPACKET_RATE_LIMIT_REQ_DURATION_MS);
