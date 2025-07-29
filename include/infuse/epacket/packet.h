@@ -142,6 +142,14 @@ struct epacket_rate_limit_req {
 	uint8_t delay_ms;
 } __packed;
 
+/** Magic three byte packet that sets a target data throughput */
+struct epacket_rate_throughput_req {
+	/** @ref EPACKET_RATE_LIMIT_REQ_MAGIC */
+	uint8_t magic;
+	/** Target data throughput in kilobits/sec */
+	uint16_t target_throughput_kbps;
+} __packed;
+
 /** Format of BLE address in @ref INFUSE_RECEIVED_EPACKET and @ref INFUSE_EPACKET_FORWARD */
 struct epacket_interface_address_bt_le {
 	uint8_t type;
@@ -222,6 +230,11 @@ struct epacket_conn_terminated {
 	/* Interface address that disconnected */
 	uint8_t address[];
 } __packed;
+
+/**
+ * @brief Reset any active rate limits
+ */
+void epacket_rate_limit_reset(void);
 
 /**
  * @brief Limit the transmission rate of bulk data paths

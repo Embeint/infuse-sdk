@@ -121,6 +121,8 @@ static void update_interface_state(void)
 			}
 		}
 		data->last_notification = 0;
+		/* Reset any local throughput limits */
+		epacket_rate_limit_reset();
 		return;
 	}
 
