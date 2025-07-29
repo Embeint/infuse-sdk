@@ -78,11 +78,13 @@ class release_diff(WestCommand):
 
         if self.manifest_original["application"]["sysbuild"]:
             filename = "zephyr.signed.bin"
+            imgtool_key = 1
         else:
             filename = "tfm_s_zephyr_ns_signed.bin"
+            imgtool_key = 2
 
-        input = original_dir / name_orig / "zephyr" / filename
-        output = output_dir / name_out / "zephyr" / filename
+        input_path = original_dir / name_orig / "zephyr" / filename
+        output_path = output_dir / name_out / "zephyr" / filename
         imgtool_orig_f = original_dir / name_orig / "imgtool.yaml"
         imgtool_new_f = output_dir / name_out / "imgtool.yaml"
         with imgtool_orig_f.open("r", encoding="utf-8") as f:
@@ -90,9 +92,15 @@ class release_diff(WestCommand):
         with imgtool_new_f.open("r", encoding="utf-8") as f:
             imgtool_new = yaml.safe_load(f)
 
-        # Ensure both applications are signed with the same key (IMAGE_TLV_KEYHASH == 0x01)
-        key_orig = next(x for x in imgtool_orig["tlv_area"]["tlvs"] if x["type"] == 1)
-        key_new = next(x for x in imgtool_new["tlv_area"]["tlvs"] if x["type"] == 1)
+        # Ensure both applications are signed with the same key
+        #   (IMAGE_TLV_KEYHASH == 0x01)
+        #   (IMAGE_TLV_PUBKEY == 0x02)
+        key_orig = next(
+            x for x in imgtool_orig["tlv_area"]["tlvs"] if x["type"] == imgtool_key
+        )
+        key_new = next(
+            x for x in imgtool_new["tlv_area"]["tlvs"] if x["type"] == imgtool_key
+        )
         if key_orig["data"] != key_new["data"]:
             sys.exit("Applications were not built with the same signing key")
 
@@ -106,8 +114,8 @@ class release_diff(WestCommand):
             print(f" 0x{id_orig:08x} -> 0x{id_new:08x}")
         print(f"{ver_orig} -> {ver_new}")
         # The trailing TLV's can change on device, so exclude them from the original image knowledge
-        with open(input, "rb") as f_input:
-            with open(output, "rb") as f_output:
+        with open(input_path, "rb") as f_input:
+            with open(output_path, "rb") as f_output:
                 patch = diff.generate(
                     f_input.read(-1)[:-input_tlv_len],
                     f_output.read(-1),
@@ -128,7 +136,7 @@ class release_diff(WestCommand):
             import subprocess
             import tempfile
 
-            output_len = os.stat(output).st_size
+            output_len = os.stat(output_path).st_size
             print("")
             print("Tool Comparison:")
             with tempfile.TemporaryDirectory() as tmp:
@@ -136,7 +144,7 @@ class release_diff(WestCommand):
                 if shutil.which("jdiff") is not None:
                     diff_file = f"{tmp}/jdiff.patch"
                     subprocess.run(
-                        ["jdiff", str(input), str(output), diff_file],
+                        ["jdiff", str(input), str(output_path), diff_file],
                         check=False,
                     )
                     jdiff_size = os.stat(diff_file).st_size
@@ -146,7 +154,7 @@ class release_diff(WestCommand):
                 if shutil.which("bsdiff4") is not None:
                     diff_file = f"{tmp}/bsdiff4.patch"
                     subprocess.run(
-                        ["bsdiff4", str(input), str(output), diff_file],
+                        ["bsdiff4", str(input), str(output_path), diff_file],
                         check=True,
                     )
                     bs_size = os.stat(diff_file).st_size
@@ -154,7 +162,7 @@ class release_diff(WestCommand):
                 if shutil.which("xdelta") is not None:
                     diff_file = f"{tmp}/xdelta.patch"
                     subprocess.run(
-                        ["xdelta", "delta", str(input), str(output), diff_file],
+                        ["xdelta", "delta", str(input), str(output_path), diff_file],
                         check=False,
                     )
                     x_size = os.stat(diff_file).st_size
