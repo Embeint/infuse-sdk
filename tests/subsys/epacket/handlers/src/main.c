@@ -157,6 +157,122 @@ ZTEST(epacket_handlers, test_rate_limiting)
 	}
 }
 
+ZTEST(epacket_handlers, test_rate_throughput)
+{
+	const struct device *epacket_dummy = DEVICE_DT_GET(DT_NODELABEL(epacket_dummy));
+	struct epacket_rate_throughput_req rate_throughput_req = {
+		.magic = EPACKET_RATE_LIMIT_REQ_MAGIC,
+		.target_throughput_kbps = 2,
+	};
+	k_ticks_t before, after, diff;
+	k_ticks_t limit_tx = k_uptime_ticks();
+
+	/* No delays or yields initially */
+	before = k_uptime_ticks();
+	epacket_rate_limit_tx(&limit_tx, 0);
+	after = k_uptime_ticks();
+	zassert_equal(before, after, "Unexpected context yield");
+
+	/* Set a target throughput of 2kbps (256 bytes/sec) */
+	epacket_dummy_receive(epacket_dummy, NULL, &rate_throughput_req,
+			      sizeof(rate_throughput_req));
+	k_sleep(K_TICKS(1));
+
+	/* First call, we haven't reported any data sent yet, no delay */
+	before = k_uptime_ticks();
+	epacket_rate_limit_tx(&limit_tx, 0);
+	after = k_uptime_ticks();
+	zassert_equal(before, after, "Unexpected context yield");
+
+	/* We've sent 256 bytes (our limit), we should be blocked here for 1 second */
+	before = k_uptime_ticks();
+	epacket_rate_limit_tx(&limit_tx, 256);
+	after = k_uptime_ticks();
+	diff = after - before;
+	zassert_between_inclusive(diff, k_ms_to_ticks_near32(1000), k_ms_to_ticks_near32(1000) + 2,
+				  "Unexpected throughput limit delay");
+
+	/* We've sent 128 bytes (half our limit), we should be blocked here for 500ms overall */
+	before = k_uptime_ticks();
+	k_sleep(K_MSEC(100));
+	epacket_rate_limit_tx(&limit_tx, 128);
+	after = k_uptime_ticks();
+	diff = after - before;
+	zassert_between_inclusive(diff, k_ms_to_ticks_near32(500), k_ms_to_ticks_near32(500) + 2,
+				  "Unexpected throughput limit delay");
+
+	/* We've sent 1/4 of the limit in half a second, we shouldn't block */
+	k_sleep(K_MSEC(500));
+	before = k_uptime_ticks();
+	epacket_rate_limit_tx(&limit_tx, 64);
+	after = k_uptime_ticks();
+	zassert_equal(before, after, "Unexpected context yield");
+
+	/* We've sent 512 bytes (twice our limit), we should be blocked here for 2000ms overall */
+	before = k_uptime_ticks();
+	k_sleep(K_MSEC(700));
+	epacket_rate_limit_tx(&limit_tx, 512);
+	after = k_uptime_ticks();
+	diff = after - before;
+	zassert_between_inclusive(diff, k_ms_to_ticks_near32(2000), k_ms_to_ticks_near32(2000) + 2,
+				  "Unexpected throughput limit delay");
+
+	/* Change our throughput to 8kbps (1024 bytes/sec) */
+	rate_throughput_req.target_throughput_kbps = 8;
+	epacket_dummy_receive(epacket_dummy, NULL, &rate_throughput_req,
+			      sizeof(rate_throughput_req));
+	k_sleep(K_TICKS(1));
+
+	/* First call, we haven't reported any data sent yet, no delay */
+	before = k_uptime_ticks();
+	epacket_rate_limit_tx(&limit_tx, 0);
+	after = k_uptime_ticks();
+	zassert_equal(before, after, "Unexpected context yield");
+
+	/* We've sent 1024 bytes (our limit), we should be blocked here for 1 second */
+	before = k_uptime_ticks();
+	epacket_rate_limit_tx(&limit_tx, 1024);
+	after = k_uptime_ticks();
+	diff = after - before;
+	zassert_between_inclusive(diff, k_ms_to_ticks_near32(1000), k_ms_to_ticks_near32(1000) + 2,
+				  "Unexpected throughput limit delay");
+
+	/* We've sent 512 bytes (half our limit), we should be blocked here for 500ms overall */
+	before = k_uptime_ticks();
+	k_sleep(K_MSEC(100));
+	epacket_rate_limit_tx(&limit_tx, 512);
+	after = k_uptime_ticks();
+	diff = after - before;
+	zassert_between_inclusive(diff, k_ms_to_ticks_near32(500), k_ms_to_ticks_near32(500) + 2,
+				  "Unexpected throughput limit delay");
+
+	/* We've sent 1/4 of the limit in half a second, we shouldn't block */
+	k_sleep(K_MSEC(500));
+	before = k_uptime_ticks();
+	epacket_rate_limit_tx(&limit_tx, 512);
+	after = k_uptime_ticks();
+	zassert_equal(before, after, "Unexpected context yield");
+
+	/* We've sent 2048 bytes (twice our limit), we should be blocked here for 2000ms overall */
+	before = k_uptime_ticks();
+	k_sleep(K_MSEC(700));
+	epacket_rate_limit_tx(&limit_tx, 2048);
+	after = k_uptime_ticks();
+	diff = after - before;
+	zassert_between_inclusive(diff, k_ms_to_ticks_near32(2000), k_ms_to_ticks_near32(2000) + 2,
+				  "Unexpected throughput limit delay");
+
+	/* Reset throughput limits, no more delays */
+	epacket_rate_limit_reset();
+
+	before = k_uptime_ticks();
+	epacket_rate_limit_tx(&limit_tx, 2048);
+	epacket_rate_limit_tx(&limit_tx, 2048);
+	epacket_rate_limit_tx(&limit_tx, 2048);
+	after = k_uptime_ticks();
+	zassert_equal(before, after, "Throughput limit reset failure");
+}
+
 ZTEST(epacket_handlers, test_echo_response)
 {
 	const struct device *epacket_dummy = DEVICE_DT_GET(DT_NODELABEL(epacket_dummy));
