@@ -252,6 +252,16 @@
                 {"name": "sync_word", "type": "uint8_t", "description": "Custom sync word"}
             ]
         },
+        "52": {
+            "name": "BLUETOOTH_THROUGHPUT_LIMIT",
+            "description": "Request connected Bluetooth peers to limit throughtput",
+            "depends_on": "BT_CENTRAL",
+            "default": "y",
+            "reflect": true,
+            "fields": [
+                {"name": "limit_kbps", "type": "uint16_t", "description": "Requested throughput limit (kbps)"}
+            ]
+        },
         "60": {
             "name": "GRAVITY_REFERENCE",
             "description": "Reference gravity vector for tilt calculations",
