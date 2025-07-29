@@ -4,6 +4,9 @@ on:
   pull_request:
     branches:
       - main
+    paths-ignore:
+      - doc/**
+      - scripts/**
   schedule:
     # Run at 14:17 UTC every day
     - cron: '17 14 * * *'
