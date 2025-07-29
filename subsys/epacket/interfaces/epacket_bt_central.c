@@ -11,6 +11,7 @@
 #include <zephyr/bluetooth/gatt.h>
 
 #include <infuse/bluetooth/gatt.h>
+#include <infuse/work_q.h>
 #include <infuse/epacket/interface.h>
 #include <infuse/epacket/packet.h>
 #include <infuse/epacket/interface/epacket_bt.h>
@@ -415,14 +416,23 @@ static void infuse_send_rate_limit_request(struct bt_conn *conn, void *data)
 	}
 }
 
-void epacket_bt_gatt_rate_limit_request(uint8_t delay_ms)
+static uint8_t rate_limit_req_ms;
+static void do_rate_limit_request(struct k_work *work)
 {
 	struct epacket_rate_limit_req request = {
 		.magic = EPACKET_RATE_LIMIT_REQ_MAGIC,
-		.delay_ms = delay_ms,
+		.delay_ms = rate_limit_req_ms,
 	};
 
 	bt_conn_foreach(BT_CONN_TYPE_LE, infuse_send_rate_limit_request, &request);
+}
+static K_WORK_DEFINE(rate_limit_worker, do_rate_limit_request);
+
+void epacket_bt_gatt_rate_limit_request(uint8_t delay_ms)
+{
+	/* Run requests from Infuse workqueue to prevent blocking caller */
+	rate_limit_req_ms = delay_ms;
+	infuse_work_submit(&rate_limit_worker);
 }
 
 static void epacket_bt_central_send(const struct device *dev, struct net_buf *buf)
