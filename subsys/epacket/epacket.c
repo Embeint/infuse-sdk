@@ -47,6 +47,7 @@ static const struct device *tx_device[CONFIG_EPACKET_BUFFERS_TX];
 static k_timeout_t loop_period = K_FOREVER;
 static int wdog_channel;
 static atomic_t rate_limit_delay;
+static atomic_t rate_limit_throughput;
 
 #ifdef CONFIG_EPACKET_INTERFACE_BT_ADV
 static struct k_poll_signal bt_adv_signal_send_next;
@@ -108,12 +109,32 @@ struct net_buf *epacket_alloc_rx(k_timeout_t timeout)
 	return buf;
 }
 
+void epacket_rate_limit_reset(void)
+{
+	atomic_clear(&rate_limit_delay);
+	atomic_clear(&rate_limit_throughput);
+}
+
 void epacket_rate_limit_tx(k_ticks_t *last_call, uint16_t bytes_transmitted)
 {
 	atomic_t delay = atomic_clear(&rate_limit_delay);
+	atomic_t throughput_bps = 1024 * atomic_get(&rate_limit_throughput);
 
-	ARG_UNUSED(last_call);
-	ARG_UNUSED(bytes_transmitted);
+	if (throughput_bps) {
+		k_ticks_t now = k_uptime_ticks();
+		uint32_t bits_sent = 8 * bytes_transmitted;
+		uint32_t expected_time_ticks =
+			(CONFIG_SYS_CLOCK_TICKS_PER_SEC * bits_sent) / throughput_bps;
+		k_ticks_t actual_time_ticks = now - *last_call;
+		k_ticks_t to_wait = expected_time_ticks - actual_time_ticks;
+
+		if (to_wait > 0) {
+			k_sleep(K_TICKS(to_wait));
+			now = k_uptime_ticks();
+		}
+
+		*last_call = now;
+	}
 
 	if (delay) {
 		k_sleep(K_MSEC(delay));
@@ -235,12 +256,24 @@ static void epacket_handle_rx(struct net_buf *buf)
 	}
 #endif /* CONFIG_INFUSE_SECURITY */
 
-	/* Rate limit request */
-	if ((buf->len == 2) && (buf->data[0] == EPACKET_RATE_LIMIT_REQ_MAGIC)) {
-		LOG_DBG("Rate limit delay %d ms", buf->data[1]);
-		atomic_set(&rate_limit_delay, buf->data[1]);
-		net_buf_unref(buf);
-		return;
+	/* Rate limit requests */
+	if (buf->data[0] == EPACKET_RATE_LIMIT_REQ_MAGIC) {
+		if (buf->len == sizeof(struct epacket_rate_limit_req)) {
+			struct epacket_rate_limit_req *req = (void *)buf->data;
+
+			LOG_DBG("Rate limit delay %d ms", req->delay_ms);
+			atomic_set(&rate_limit_delay, req->delay_ms);
+			net_buf_unref(buf);
+			return;
+		}
+		if (buf->len == sizeof(struct epacket_rate_throughput_req)) {
+			struct epacket_rate_throughput_req *req = (void *)buf->data;
+
+			LOG_INF("Rate limit throughput to %d kbps", req->target_throughput_kbps);
+			atomic_set(&rate_limit_throughput, req->target_throughput_kbps);
+			net_buf_unref(buf);
+			return;
+		}
 	}
 
 	/* Payload decoding */
