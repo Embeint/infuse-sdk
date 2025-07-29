@@ -240,10 +240,12 @@ static inline uint32_t imu_sample_period(const struct imu_sensor_meta *meta)
  */
 static inline uint16_t imu_sample_rate(const struct imu_sensor_meta *meta)
 {
-	if (meta->num < 2) {
+	uint32_t period_us = k_ticks_to_us_near32(imu_sample_period(meta));
+
+	if (period_us == 0) {
 		return 0;
 	}
-	return 1000000 / k_ticks_to_us_near32(imu_sample_period(meta));
+	return 1000000 / period_us;
 }
 
 /**
