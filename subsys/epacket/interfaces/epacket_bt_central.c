@@ -126,7 +126,7 @@ uint8_t epacket_bt_gatt_notify_recv_func(struct bt_conn *conn,
 	}
 
 	LOG_DBG("Received %d bytes", length);
-	rx_buffer = epacket_alloc_rx(K_MSEC(10));
+	rx_buffer = epacket_alloc_rx(K_NO_WAIT);
 	if (rx_buffer == NULL) {
 		LOG_WRN("Buffer claim timeout");
 		return BT_GATT_ITER_CONTINUE;
