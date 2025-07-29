@@ -225,8 +225,11 @@ struct epacket_conn_terminated {
 
 /**
  * @brief Limit the transmission rate of bulk data paths
+ *
+ * @param last_call Pointer to tick count at last call
+ * @param bytes_transmitted Bytes transmitted since last call
  */
-void epacket_rate_limit_tx(void);
+void epacket_rate_limit_tx(k_ticks_t *last_call, uint16_t bytes_transmitted);
 
 /**
  * @brief Query the number of free TX buffers

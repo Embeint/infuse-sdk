@@ -31,7 +31,8 @@ struct net_buf *rpc_command_mem_read(struct net_buf *request)
 	uint8_t *current_address = (void *)req->address;
 	uint32_t bytes_remaining = req->data_header.size;
 	uint32_t request_id = req->header.request_id;
-	size_t tail;
+	k_ticks_t limit_tx = k_uptime_ticks();
+	size_t tail = 0;
 
 	/* Free command as we no longer need it and this command can take a while */
 	rpc_command_runner_request_unref(request);
@@ -43,7 +44,7 @@ struct net_buf *rpc_command_mem_read(struct net_buf *request)
 		rpc_server_watchdog_feed();
 
 		/* Respect any rate-limiting requests from the receiving device */
-		epacket_rate_limit_tx();
+		epacket_rate_limit_tx(&limit_tx, tail);
 
 		/* Allocate new data message */
 		data_buf = epacket_alloc_tx_for_interface(interface, K_FOREVER);

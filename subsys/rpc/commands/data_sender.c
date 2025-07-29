@@ -27,8 +27,9 @@ struct net_buf *rpc_command_data_sender(struct net_buf *request)
 	uint32_t request_id;
 	uint32_t remaining;
 	uint32_t tx_offset = 0;
+	k_ticks_t limit_tx = k_uptime_ticks();
 	uint8_t *payload;
-	size_t tail;
+	size_t tail = 0;
 
 	/* Cache data from request and free the buffer.
 	 * Scoped in a block to ensure request packet is not used after free.
@@ -49,7 +50,7 @@ struct net_buf *rpc_command_data_sender(struct net_buf *request)
 
 	while (remaining > 0) {
 		/* Respect any rate-limiting requests from the receiving device */
-		epacket_rate_limit_tx();
+		epacket_rate_limit_tx(&limit_tx, tail);
 
 		/* Allocate the data packet */
 		data_buf = epacket_alloc_tx_for_interface(interface, K_FOREVER);
