@@ -208,14 +208,14 @@ ZTEST(infuse_nrf_modem_monitor, test_integration)
 	zassert_equal(LTE_LC_SYSTEM_MODE_LTEM_NBIOT_GPS, net_modes.modes);
 	zassert_equal(CONFIG_LTE_MODE_PREFERENCE_VALUE, net_modes.prefer);
 	kv_store_read(KV_KEY_LTE_PDP_CONFIG, &pdp_config, sizeof(pdp_config));
-	zassert_equal(PDN_FAM_IPV4, pdp_config.family);
+	zassert_equal(PDN_FAM_IPV4V6, pdp_config.family);
 	zassert_mem_equal(CONFIG_INFUSE_NRF_MODEM_MONITOR_DEFAULT_PDP_APN, pdp_config.apn.value,
 			  strlen(CONFIG_INFUSE_NRF_MODEM_MONITOR_DEFAULT_PDP_APN));
 
 	nrf_modem_lib_sim_default_pdn_ctx(&default_apn, &default_family);
 	zassert_mem_equal(CONFIG_INFUSE_NRF_MODEM_MONITOR_DEFAULT_PDP_APN, default_apn,
 			  strlen(CONFIG_INFUSE_NRF_MODEM_MONITOR_DEFAULT_PDP_APN));
-	zassert_equal(PDN_FAM_IPV4, default_family);
+	zassert_equal(PDN_FAM_IPV4V6, default_family);
 
 	nrf_modem_monitor_network_state(&net_state);
 	zassert_equal(LTE_LC_NW_REG_NOT_REGISTERED, net_state.nw_reg_status);

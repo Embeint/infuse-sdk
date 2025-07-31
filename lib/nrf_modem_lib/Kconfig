@@ -53,6 +53,25 @@ config INFUSE_NRF_MODEM_MONITOR_DEFAULT_PDP_APN_SET
 	bool
 	default y if INFUSE_NRF_MODEM_MONITOR_DEFAULT_PDP_APN != ""
 
+choice INFUSE_NRF_MODEM_MONITOR_DEFAULT_PDP_FAMILY
+	prompt "Default protocol family to use for PDP context 0"
+	depends on INFUSE_NRF_MODEM_MONITOR_DEFAULT_PDP_APN_SET
+	default INFUSE_NRF_MODEM_MONITOR_DEFAULT_PDP_FAMILY_IPV4V6
+
+config INFUSE_NRF_MODEM_MONITOR_DEFAULT_PDP_FAMILY_IPV4
+	bool "Internet Protocol"
+
+config INFUSE_NRF_MODEM_MONITOR_DEFAULT_PDP_FAMILY_IPV6
+	bool "Internet Protocol version 6"
+
+config INFUSE_NRF_MODEM_MONITOR_DEFAULT_PDP_FAMILY_IPV4V6
+	bool "Virtual type of dual IP stack"
+
+config INFUSE_NRF_MODEM_MONITOR_DEFAULT_PDP_FAMILY_NON_IP
+	bool "Transfer of non-IP data to external packet data network"
+
+endchoice
+
 config INFUSE_NRF_MODEM_MONITOR_AT_TIMEOUT_MS
 	int "Timeout period for nRF modem AT commands"
 	default 100
