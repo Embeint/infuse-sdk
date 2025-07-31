@@ -398,7 +398,17 @@ static void infuse_modem_init(int ret, void *ctx)
 					strlen(CONFIG_INFUSE_NRF_MODEM_MONITOR_DEFAULT_PDP_APN) + 1,
 				.value = CONFIG_INFUSE_NRF_MODEM_MONITOR_DEFAULT_PDP_APN,
 			},
+#if defined(CONFIG_INFUSE_NRF_MODEM_MONITOR_DEFAULT_PDP_FAMILY_IPV4)
 		.family = PDN_FAM_IPV4,
+#elif defined(CONFIG_INFUSE_NRF_MODEM_MONITOR_DEFAULT_PDP_FAMILY_IPV6)
+		.family = PDN_FAM_IPV6,
+#elif defined(CONFIG_INFUSE_NRF_MODEM_MONITOR_DEFAULT_PDP_FAMILY_IPV4V6)
+		.family = PDN_FAM_IPV4V6,
+#elif defined(CONFIG_INFUSE_NRF_MODEM_MONITOR_DEFAULT_PDP_FAMILY_NON_IP)
+		.family = PDN_FAM_NONIP,
+#else
+#error "Unknown protocol family"
+#endif
 	};
 
 	/* Read the configured value, falling back to the default */
