@@ -395,7 +395,7 @@ static void infuse_modem_init(int ret, void *ctx)
 		.apn =
 			{
 				.value_num =
-					strlen(CONFIG_INFUSE_NRF_MODEM_MONITOR_DEFAULT_PDP_APN),
+					strlen(CONFIG_INFUSE_NRF_MODEM_MONITOR_DEFAULT_PDP_APN) + 1,
 				.value = CONFIG_INFUSE_NRF_MODEM_MONITOR_DEFAULT_PDP_APN,
 			},
 		.family = PDN_FAM_IPV4,
