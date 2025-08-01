@@ -382,9 +382,8 @@ cleanup:
 	return rc;
 }
 
-static void infuse_send_rate_limit_request(struct bt_conn *conn, void *data)
+static int infuse_send_rate_request(struct bt_conn *conn, void *data, size_t len)
 {
-	struct epacket_rate_limit_req *request = data;
 	struct infuse_connection_state *s;
 	struct bt_conn_info info;
 	uint8_t conn_idx;
@@ -393,10 +392,10 @@ static void infuse_send_rate_limit_request(struct bt_conn *conn, void *data)
 
 	/* Only run for connection objects in the connected state */
 	if (bt_conn_get_info(conn, &info) < 0) {
-		return;
+		return -EINVAL;
 	}
 	if (info.state != BT_CONN_STATE_CONNECTED) {
-		return;
+		return -ENOTCONN;
 	}
 
 	/* Get connection state */
@@ -406,14 +405,20 @@ static void infuse_send_rate_limit_request(struct bt_conn *conn, void *data)
 	handle = s->remote_info[CHAR_COMMAND].value_handle;
 	if (handle == 0x0000) {
 		/* Connection does not have this characteristic */
-		return;
+		return -EINVAL;
 	}
 
 	/* Write the request to the device */
-	rc = bt_gatt_write_without_response(conn, handle, request, sizeof(*request), false);
+	rc = bt_gatt_write_without_response(conn, handle, data, len, false);
 	if (rc != 0) {
 		LOG_WRN("Failed to write rate limit request (%d)", rc);
 	}
+	return rc;
+}
+
+static void infuse_send_rate_limit_request_no_ret(struct bt_conn *conn, void *data)
+{
+	(void)infuse_send_rate_request(conn, data, sizeof(struct epacket_rate_limit_req));
 }
 
 static uint8_t rate_limit_req_ms;
@@ -424,7 +429,7 @@ static void do_rate_limit_request(struct k_work *work)
 		.delay_ms = rate_limit_req_ms,
 	};
 
-	bt_conn_foreach(BT_CONN_TYPE_LE, infuse_send_rate_limit_request, &request);
+	bt_conn_foreach(BT_CONN_TYPE_LE, infuse_send_rate_limit_request_no_ret, &request);
 }
 static K_WORK_DEFINE(rate_limit_worker, do_rate_limit_request);
 
@@ -433,6 +438,17 @@ void epacket_bt_gatt_rate_limit_request(uint8_t delay_ms)
 	/* Run requests from Infuse workqueue to prevent blocking caller */
 	rate_limit_req_ms = delay_ms;
 	infuse_work_submit(&rate_limit_worker);
+}
+
+int epacket_bt_gatt_rate_throughput_request(struct bt_conn *conn, uint16_t throughput_kbps)
+{
+
+	struct epacket_rate_throughput_req request = {
+		.magic = EPACKET_RATE_LIMIT_REQ_MAGIC,
+		.target_throughput_kbps = throughput_kbps,
+	};
+
+	return infuse_send_rate_request(conn, &request, sizeof(struct epacket_rate_throughput_req));
 }
 
 static void epacket_bt_central_send(const struct device *dev, struct net_buf *buf)
