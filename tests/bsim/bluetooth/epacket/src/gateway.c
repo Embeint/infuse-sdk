@@ -20,6 +20,8 @@
 #include <infuse/epacket/interface/epacket_dummy.h>
 #include <infuse/epacket/packet.h>
 #include <infuse/bluetooth/gatt.h>
+#include <infuse/fs/kv_store.h>
+#include <infuse/fs/kv_types.h>
 #include <infuse/rpc/types.h>
 #include <infuse/rpc/client.h>
 
@@ -1567,24 +1569,22 @@ static void main_gateway_remote_rpc_forward_auto_conn_auth_fail(void)
 	PASS("RPC auto-conn forwarder with auth failures passed\n");
 }
 
-static void main_gateway_remote_rpc_forward_auto_conn_rate_limit(void)
+static int run_data_sender(bt_addr_le_t *addr, uint32_t size, bool slow_uplink)
 {
 	const struct device *epacket_dummy = DEVICE_DT_GET(DT_NODELABEL(epacket_dummy));
 	const struct device *epacket_central = DEVICE_DT_GET(DT_NODELABEL(epacket_bt_central));
 	struct k_fifo *response_queue = epacket_dummmy_transmit_fifo_get();
+	struct epacket_dummy_frame *frame;
+	struct epacket_received_common_header *common_header;
+	struct epacket_received_decrypted_header *decr_header;
+	struct infuse_rpc_data *data_header;
+	struct rpc_data_sender_response *sender_rsp;
 	union epacket_interface_address address;
 	struct bt_conn *conn = NULL;
 	struct net_buf *buf;
-	bt_addr_le_t addr;
-
-	common_init();
-	if (observe_peers(&addr, 1) < 0) {
-		FAIL("Failed to observe peer\n");
-		return;
-	}
-
-	epacket_set_receive_handler(epacket_dummy, dummy_gateway_handler);
-	epacket_set_receive_handler(epacket_central, dummy_gateway_handler);
+	uint32_t expected_offset = 0;
+	uint16_t data_len;
+	int32_t start_time, duration;
 
 	/* Create and encrypt the GATT RPC */
 	struct rpc_data_sender_request sender_request = {
@@ -1595,16 +1595,19 @@ static void main_gateway_remote_rpc_forward_auto_conn_rate_limit(void)
 			},
 		.data_header =
 			{
-				.size = 8192,
+				.size = size,
 				.rx_ack_period = 0,
 			},
 
 	};
 
-	address.bluetooth = addr;
+	epacket_set_receive_handler(epacket_dummy, dummy_gateway_handler);
+	epacket_set_receive_handler(epacket_central, dummy_gateway_handler);
+
+	address.bluetooth = *addr;
 	buf = create_rpc_request(epacket_central, &sender_request, sizeof(sender_request));
 	if (buf == NULL) {
-		return;
+		return -1;
 	}
 
 	/* Construct ePacket forwarding packet */
@@ -1622,43 +1625,39 @@ static void main_gateway_remote_rpc_forward_auto_conn_rate_limit(void)
 	hdr.forward_header.flags = EPACKET_FORWARD_AUTO_CONN_SINGLE_RPC;
 	hdr.forward_header.conn_timeout = 2;
 	hdr.forward_header.conn_idle_timeout = 5;
-	hdr.forward_header.conn_absolute_timeout = 5;
-	hdr.bt_addr[0] = addr.type;
-	memcpy(hdr.bt_addr + 1, addr.a.val, 6);
+	hdr.forward_header.conn_absolute_timeout = 7;
+	hdr.bt_addr[0] = addr->type;
+	memcpy(hdr.bt_addr + 1, addr->a.val, 6);
 
 	/* Push packet at dummy interface */
 	epacket_dummy_receive_extra(epacket_dummy, &dummy_header, &hdr, sizeof(hdr), buf->data,
 				    buf->len);
 	net_buf_unref(buf);
 
-	struct epacket_dummy_frame *frame;
-	struct epacket_received_common_header *common_header;
-	struct epacket_received_decrypted_header *decr_header;
-	struct infuse_rpc_data *data_header;
-	struct rpc_data_sender_response *sender_rsp;
-	uint32_t expected_offset = 0;
-	uint16_t data_len;
+	start_time = k_uptime_get_32();
 
 	while (expected_offset != sender_request.data_header.size) {
-		/* Free transmit buffers very slowly.
-		 * Without automatic rate limiting, this would fail with dropped buffers.
-		 */
+		if (slow_uplink) {
+			/* Free transmit buffers very slowly.
+			 * Without rate limiting, this would fail with dropped buffers.
+			 */
 #ifdef CONFIG_EPACKET_RECEIVE_GROUPING
-		k_sleep(K_MSEC(100));
+			k_sleep(K_MSEC(100));
 #else
-		k_sleep(K_MSEC(50));
+			k_sleep(K_MSEC(50));
 #endif
+		}
 
 		buf = k_fifo_get(response_queue, K_SECONDS(2));
 		if (buf == NULL) {
 			FAIL("Failed to receive response\n");
-			return;
+			return -1;
 		}
 
 		frame = net_buf_pull_mem(buf, sizeof(struct epacket_dummy_frame));
 		if (frame->type != INFUSE_RECEIVED_EPACKET) {
 			FAIL("Unexpected packet type\n");
-			return;
+			return -1;
 		}
 		/* Consume all grouped packets */
 		while (buf->len) {
@@ -1666,23 +1665,23 @@ static void main_gateway_remote_rpc_forward_auto_conn_rate_limit(void)
 				buf, sizeof(struct epacket_received_common_header));
 			if (common_header->interface != EPACKET_INTERFACE_BT_CENTRAL) {
 				FAIL("Unexpected interface\n");
-				return;
+				return -1;
 			}
 			net_buf_pull_mem(buf, sizeof(struct epacket_interface_address_bt_le));
 			decr_header = net_buf_pull_mem(
 				buf, sizeof(struct epacket_received_decrypted_header));
 			if (decr_header->type != INFUSE_RPC_DATA) {
 				FAIL("Unexpected packet type\n");
-				return;
+				return -1;
 			}
 			data_header = net_buf_pull_mem(buf, sizeof(struct infuse_rpc_data));
 			if (data_header->request_id != sender_request.header.request_id) {
 				FAIL("Unexpected request ID\n");
-				return;
+				return -1;
 			}
 			if (data_header->offset != expected_offset) {
 				FAIL("Unexpected data offset\n");
-				return;
+				return -1;
 			}
 			data_len = common_header->len_encrypted - sizeof(*common_header) -
 				   sizeof(struct epacket_interface_address_bt_le) -
@@ -1706,52 +1705,109 @@ static void main_gateway_remote_rpc_forward_auto_conn_rate_limit(void)
 		buf = k_fifo_get(response_queue, K_SECONDS(2));
 		if (buf == NULL) {
 			FAIL("Failed to receive final response\n");
-			return;
+			return -1;
 		}
 		frame = net_buf_pull_mem(buf, sizeof(struct epacket_dummy_frame));
 		if (frame->type != INFUSE_RECEIVED_EPACKET) {
 			FAIL("Unexpected final response packet type\n");
-			return;
+			return -1;
 		}
 	}
+
+	duration = k_uptime_get_32() - start_time;
 
 	/* Expect the final RPC_RSP to be present as the last payload */
 	common_header = net_buf_pull_mem(buf, sizeof(struct epacket_received_common_header));
 	if (common_header->interface != EPACKET_INTERFACE_BT_CENTRAL) {
 		FAIL("Unexpected interface\n");
-		return;
+		return -1;
 	}
 	net_buf_pull_mem(buf, sizeof(struct epacket_interface_address_bt_le));
 	decr_header = net_buf_pull_mem(buf, sizeof(struct epacket_received_decrypted_header));
 	if (decr_header->type != INFUSE_RPC_RSP) {
 		FAIL("Unexpected packet type\n");
-		return;
+		return -1;
 	}
 	sender_rsp = net_buf_pull_mem(buf, sizeof(*sender_rsp));
 	if (sender_rsp->header.request_id != sender_request.header.request_id) {
 		FAIL("Unexpected RPC_RSP request ID\n");
-		return;
+		return -1;
 	}
 	if (sender_rsp->header.command_id != RPC_ID_DATA_SENDER) {
 		FAIL("Unexpected RPC_RSP command ID\n");
-		return;
+		return -1;
 	}
 	if (sender_rsp->header.return_code != 0) {
 		FAIL("Unexpected RPC_RSP return code\n");
-		return;
+		return -1;
 	}
 	net_buf_unref(buf);
 
-	/* Give a short duration to allow for connection cleanup*/
+	/* Give a short duration to allow for connection cleanup */
 	k_sleep(K_MSEC(50));
 
 	/* The connection should have been automatically terminated on the RPC_RSP */
-	conn = bt_conn_lookup_addr_le(BT_ID_DEFAULT, &addr);
+	conn = bt_conn_lookup_addr_le(BT_ID_DEFAULT, addr);
 	if (conn != NULL) {
 		FAIL("Connection associated with one-shot RPC still active\n");
+		return -1;
+	}
+	return duration;
+}
+
+static void main_gateway_remote_rpc_forward_auto_conn_rate_limit(void)
+{
+	bt_addr_le_t addr;
+
+	(void)kv_store_delete(KV_KEY_BLUETOOTH_THROUGHPUT_LIMIT);
+
+	common_init();
+	if (observe_peers(&addr, 1) < 0) {
+		FAIL("Failed to observe peer\n");
 		return;
 	}
-	PASS("RPC auto-conn forwarder with rate-limiting passed\n");
+
+	/* Run the receiving process for 8kB with a slow uplink */
+	if (run_data_sender(&addr, 8192, true) < 0) {
+		return;
+	}
+	PASS("RPC auto-conn forwarder with delay based rate-limiting passed\n");
+}
+
+static void main_gateway_remote_rpc_forward_auto_conn_rate_throughput(void)
+{
+	bt_addr_le_t addr;
+	int duration;
+
+	struct kv_bluetooth_throughput_limit limit = {
+		.limit_kbps = 8,
+	};
+
+	if (KV_STORE_WRITE(KV_KEY_BLUETOOTH_THROUGHPUT_LIMIT, &limit) != sizeof(limit)) {
+		FAIL("Failed to write throughput limit\n");
+		return;
+	}
+
+	common_init();
+	if (observe_peers(&addr, 1) < 0) {
+		FAIL("Failed to observe peer\n");
+		return;
+	}
+
+	/* Run the receiving process for 4kB with a 8kbps limit */
+	duration = run_data_sender(&addr, 4096, false);
+	if (duration < 0) {
+		return;
+	}
+	/* Expect this to take between 4 and 5 seconds:
+	 *    4 seconds for the data transfer
+	 *  0-1 seconds for the connection
+	 */
+	if ((duration < 4000) || (duration > 5000)) {
+		FAIL("Unexpected connection duration (%d ms)", duration);
+	}
+	PASS("RPC auto-conn forwarder with throughput based rate-limiting passed (%d ms)\n",
+	     duration);
 }
 
 static const struct bst_test_instance epacket_gateway[] = {
@@ -1897,8 +1953,15 @@ static const struct bst_test_instance epacket_gateway[] = {
 		.test_main_f = main_gateway_remote_rpc_forward_auto_conn_auth_fail,
 	},
 	{
+		.test_id = "epacket_bt_gateway_remote_rpc_forward_auto_conn_rate_throughput",
+		.test_descr = "Rate limiting intergration based on target throughput",
+		.test_pre_init_f = test_init,
+		.test_tick_f = test_tick,
+		.test_main_f = main_gateway_remote_rpc_forward_auto_conn_rate_throughput,
+	},
+	{
 		.test_id = "epacket_bt_gateway_remote_rpc_forward_auto_conn_rate_limit",
-		.test_descr = "Rate limiting intergration",
+		.test_descr = "Rate limiting intergration based on pauses",
 		.test_pre_init_f = test_init,
 		.test_tick_f = test_tick,
 		.test_main_f = main_gateway_remote_rpc_forward_auto_conn_rate_limit,
