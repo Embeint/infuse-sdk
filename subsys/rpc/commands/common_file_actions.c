@@ -41,7 +41,7 @@ LOG_MODULE_DECLARE(rpc_server);
 #if defined(SUPPORT_APP_IMG) || defined(SUPPORT_APP_CPATCH)
 
 static int flash_area_check_and_erase(struct rpc_common_file_actions_ctx *ctx, uint8_t partition_id,
-				      uint32_t length, uint32_t crc)
+				      uint32_t length, uint32_t crc, bool mcuboot_trailer)
 {
 	uint32_t current_crc;
 	size_t mem_size;
@@ -68,7 +68,7 @@ static int flash_area_check_and_erase(struct rpc_common_file_actions_ctx *ctx, u
 			length = ctx->fa->fa_size;
 		}
 		/* Erase space for image */
-		rc = infuse_dfu_image_erase(ctx->fa, length, true);
+		rc = infuse_dfu_image_erase(ctx->fa, length, mcuboot_trailer);
 		if (rc != 0) {
 			/* Close flash area */
 			(void)flash_area_close(ctx->fa);
@@ -94,13 +94,13 @@ int rpc_common_file_actions_start(struct rpc_common_file_actions_ctx *ctx,
 #ifdef SUPPORT_APP_IMG
 	case RPC_ENUM_FILE_ACTION_APP_IMG:
 		rc = flash_area_check_and_erase(ctx, FIXED_PARTITION_ID(slot1_partition), length,
-						crc);
+						crc, true);
 		break;
 #endif /* SUPPORT_APP_IMG */
 #ifdef SUPPORT_APP_CPATCH
 	case RPC_ENUM_FILE_ACTION_APP_CPATCH:
 		rc = flash_area_check_and_erase(ctx, FIXED_PARTITION_ID(file_partition), length,
-						crc);
+						crc, false);
 		break;
 #endif /* SUPPORT_APP_CPATCH*/
 #ifdef CONFIG_BT_CONTROLLER_MANAGER
