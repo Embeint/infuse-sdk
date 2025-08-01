@@ -91,6 +91,17 @@ uint8_t epacket_bt_gatt_notify_recv_func(struct bt_conn *conn,
 void epacket_bt_gatt_rate_limit_request(uint8_t delay_ms);
 
 /**
+ * @brief Send a @ref epacket_rate_throughput_req to a specific peer device
+ *
+ * @param conn Connection object
+ * @param throughput_kbps Requested throughput limit in kilobits/sec
+ *
+ * @retval 0 on success
+ * @retval -errno on error
+ */
+int epacket_bt_gatt_rate_throughput_request(struct bt_conn *conn, uint16_t throughput_kbps);
+
+/**
  * @}
  */
 
