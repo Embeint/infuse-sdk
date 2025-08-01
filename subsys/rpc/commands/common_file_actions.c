@@ -34,11 +34,14 @@
 #endif /* FIXED_PARTITION_EXISTS(file_partition) */
 #endif /* CONFIG_INFUSE_CPATCH*/
 #endif /* FIXED_PARTITION_EXISTS(slot1_partition) */
+#if FIXED_PARTITION_EXISTS(file_partition)
+#define SUPPORT_FILE_COPY 1
+#endif /* FIXED_PARTITION_EXISTS(file_partition) */
 #endif /* CONFIG_INFUSE_DFU_HELPERS */
 
 LOG_MODULE_DECLARE(rpc_server);
 
-#if defined(SUPPORT_APP_IMG) || defined(SUPPORT_APP_CPATCH)
+#if defined(SUPPORT_APP_IMG) || defined(SUPPORT_APP_CPATCH) || defined(SUPPORT_FILE_COPY)
 
 static int flash_area_check_and_erase(struct rpc_common_file_actions_ctx *ctx, uint8_t partition_id,
 				      uint32_t length, uint32_t crc, bool mcuboot_trailer)
@@ -77,7 +80,7 @@ static int flash_area_check_and_erase(struct rpc_common_file_actions_ctx *ctx, u
 	return rc;
 }
 
-#endif /* defined(SUPPORT_APP_IMG) || defined(SUPPORT_APP_CPATCH) */
+#endif /* defined(SUPPORT_APP_IMG) || defined(SUPPORT_APP_CPATCH) || defined(SUPPORT_FILE_COPY) */
 
 int rpc_common_file_actions_start(struct rpc_common_file_actions_ctx *ctx,
 				  enum rpc_enum_file_action action, uint32_t length, uint32_t crc)
@@ -103,6 +106,12 @@ int rpc_common_file_actions_start(struct rpc_common_file_actions_ctx *ctx,
 						crc, false);
 		break;
 #endif /* SUPPORT_APP_CPATCH*/
+#ifdef SUPPORT_FILE_COPY
+	case RPC_ENUM_FILE_ACTION_FILE_FOR_COPY:
+		rc = flash_area_check_and_erase(ctx, FIXED_PARTITION_ID(file_partition), length,
+						crc, false);
+		break;
+#endif /* SUPPORT_FILE_COPY*/
 #ifdef CONFIG_BT_CONTROLLER_MANAGER
 	case RPC_ENUM_FILE_ACTION_BT_CTLR_IMG:
 		rc = bt_controller_manager_file_write_start(&ctx->client_ctx,
@@ -127,7 +136,7 @@ int rpc_common_file_actions_start(struct rpc_common_file_actions_ctx *ctx,
 	return rc;
 }
 
-#if defined(SUPPORT_APP_IMG) || defined(SUPPORT_APP_CPATCH)
+#if defined(SUPPORT_APP_IMG) || defined(SUPPORT_APP_CPATCH) || defined(SUPPORT_FILE_COPY)
 
 static int flash_aligned_write(const struct flash_area *fa, uint32_t offset, const void *data,
 			       size_t data_len)
@@ -162,7 +171,7 @@ static int flash_aligned_write(const struct flash_area *fa, uint32_t offset, con
 	return rc;
 }
 
-#endif /* defined(SUPPORT_APP_IMG) || defined(SUPPORT_APP_CPATCH) */
+#endif /* defined(SUPPORT_APP_IMG) || defined(SUPPORT_APP_CPATCH) || defined(SUPPORT_FILE_COPY) */
 
 int rpc_common_file_actions_write(struct rpc_common_file_actions_ctx *ctx, uint32_t offset,
 				  const void *data, size_t data_len)
@@ -182,6 +191,11 @@ int rpc_common_file_actions_write(struct rpc_common_file_actions_ctx *ctx, uint3
 		rc = flash_aligned_write(ctx->fa, offset, data, data_len);
 		break;
 #endif /* SUPPORT_APP_IMG */
+#ifdef SUPPORT_FILE_COPY
+	case RPC_ENUM_FILE_ACTION_FILE_FOR_COPY:
+		rc = flash_aligned_write(ctx->fa, offset, data, data_len);
+		break;
+#endif /* SUPPORT_FILE_COPY*/
 #ifdef CONFIG_BT_CONTROLLER_MANAGER
 	case RPC_ENUM_FILE_ACTION_BT_CTLR_IMG:
 	case RPC_ENUM_FILE_ACTION_BT_CTLR_CPATCH:
@@ -324,6 +338,10 @@ int rpc_common_file_actions_finish(struct rpc_common_file_actions_ctx *ctx, uint
 #endif /* CONFIG_MCUBOOT_IMG_MANAGER */
 		break;
 #endif /* SUPPORT_APP_IMG */
+#ifdef SUPPORT_FILE_COPY
+	case RPC_ENUM_FILE_ACTION_FILE_FOR_COPY:
+		break;
+#endif /* SUPPORT_FILE_COPY*/
 #ifdef CONFIG_BT_CONTROLLER_MANAGER
 	case RPC_ENUM_FILE_ACTION_BT_CTLR_IMG:
 	case RPC_ENUM_FILE_ACTION_BT_CTLR_CPATCH:
@@ -392,6 +410,12 @@ int rpc_common_file_actions_error_cleanup(struct rpc_common_file_actions_ctx *ct
 		flash_area_close(ctx->fa);
 		break;
 #endif /* SUPPORT_APP_IMG */
+#ifdef SUPPORT_FILE_COPY
+	case RPC_ENUM_FILE_ACTION_FILE_FOR_COPY:
+		/* Close the flash area */
+		flash_area_close(ctx->fa);
+		break;
+#endif /* SUPPORT_FILE_COPY*/
 #ifdef CONFIG_BT_CONTROLLER_MANAGER
 	case RPC_ENUM_FILE_ACTION_BT_CTLR_IMG:
 	case RPC_ENUM_FILE_ACTION_BT_CTLR_CPATCH:

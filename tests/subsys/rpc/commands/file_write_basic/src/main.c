@@ -228,7 +228,7 @@ early_rsp:
 	return ret;
 }
 
-void validate_flash_area(struct test_out *ret)
+void validate_flash_area(struct test_out *ret, uint8_t partition_id)
 {
 #if FIXED_PARTITION_EXISTS(slot1_partition)
 	/* Validate file written matches flash contents */
@@ -236,7 +236,7 @@ void validate_flash_area(struct test_out *ret)
 	const struct flash_area *fa;
 	uint32_t fa_crc;
 
-	zassert_equal(0, flash_area_open(FIXED_PARTITION_ID(slot1_partition), &fa));
+	zassert_equal(0, flash_area_open(partition_id, &fa));
 	zassert_equal(0, flash_area_crc32(fa, 0, ret->cmd_len, &fa_crc, buffer, sizeof(buffer)));
 	zassert_equal(ret->cmd_crc, fa_crc, "CRC sent does not equal CRC written");
 	flash_area_close(fa);
@@ -321,28 +321,28 @@ ZTEST(rpc_command_file_write_basic, test_file_write_dfu)
 	zassert_equal(0, ret.cmd_rc);
 	zassert_equal(16000, ret.cmd_len);
 	zassert_equal(ret.written_crc, ret.cmd_crc);
-	validate_flash_area(&ret);
+	validate_flash_area(&ret, FIXED_PARTITION_ID(slot1_partition));
 	/* Data payload with odd length */
 	ret = test_file_write_basic(RPC_ENUM_FILE_ACTION_APP_IMG, 16001, 0, 0, 0, 0, false, false,
 				    NULL);
 	zassert_equal(0, ret.cmd_rc);
 	zassert_equal(16001, ret.cmd_len);
 	zassert_equal(ret.written_crc, ret.cmd_crc);
-	validate_flash_area(&ret);
+	validate_flash_area(&ret, FIXED_PARTITION_ID(slot1_partition));
 	/* Known payload twice, second should skip the write */
 	ret = test_file_write_basic(RPC_ENUM_FILE_ACTION_APP_IMG, sizeof(fixed_payload), 0, 0, 0, 0,
 				    false, false, fixed_payload);
 	zassert_equal(0, ret.cmd_rc);
 	zassert_equal(sizeof(fixed_payload), ret.cmd_len);
 	zassert_equal(fixed_payload_crc, ret.cmd_crc);
-	validate_flash_area(&ret);
+	validate_flash_area(&ret, FIXED_PARTITION_ID(slot1_partition));
 	ret = test_file_write_basic(RPC_ENUM_FILE_ACTION_APP_IMG, sizeof(fixed_payload), 0, 0, 0, 0,
 				    false, true, fixed_payload);
 	zassert_equal(0, ret.cmd_rc);
 	zassert_equal(0, ret.cmd_len);
 	zassert_equal(fixed_payload_crc, ret.cmd_crc);
 	ret.cmd_len = sizeof(fixed_payload);
-	validate_flash_area(&ret);
+	validate_flash_area(&ret, FIXED_PARTITION_ID(slot1_partition));
 }
 #else
 ZTEST(rpc_command_file_write_basic, test_file_write_dfu)
@@ -393,7 +393,7 @@ ZTEST(rpc_command_file_write_basic, test_file_write_dfu_cpatch)
 	zassert_equal(0, ret.cmd_rc);
 	zassert_equal(17023, ret.cmd_len);
 	zassert_equal(ret.written_crc, ret.cmd_crc);
-	validate_flash_area(&ret);
+	validate_flash_area(&ret, FIXED_PARTITION_ID(slot1_partition));
 
 	/* Copy the base image into partition0 and erase partition1 */
 	flash_area_copy(FIXED_PARTITION_ID(slot0_partition), FIXED_PARTITION_ID(slot1_partition),
@@ -451,6 +451,30 @@ ZTEST(rpc_command_file_write_basic, test_file_write_dfu_cpatch)
 #else
 
 ZTEST(rpc_command_file_write_basic, test_file_write_dfu_cpatch)
+{
+	(void)flash_area_copy;
+
+	ztest_test_skip();
+}
+
+#endif /* FIXED_PARTITION_EXISTS(file_partition) */
+
+#if FIXED_PARTITION_EXISTS(file_partition)
+ZTEST(rpc_command_file_write_basic, test_file_write_for_copy)
+{
+	struct test_out ret;
+
+	/* Write an arbitrary image of known size to file_partition */
+	ret = test_file_write_basic(RPC_ENUM_FILE_ACTION_FILE_FOR_COPY, 17023, 0, 0, 0, 0, false,
+				    false, NULL);
+	zassert_equal(0, ret.cmd_rc);
+	zassert_equal(17023, ret.cmd_len);
+	zassert_equal(ret.written_crc, ret.cmd_crc);
+	validate_flash_area(&ret, FIXED_PARTITION_ID(file_partition));
+}
+#else
+
+ZTEST(rpc_command_file_write_basic, test_file_write_for_copy)
 {
 	(void)flash_area_copy;
 
