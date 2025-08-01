@@ -153,7 +153,8 @@
                 {"name": "BT_CTLR_IMG", "value": 2, "description": "Complete Bluetooth controller image for firmware upgrade"},
                 {"name": "APP_CPATCH", "value": 11, "description": "CPatch application image upgrade (binary diff)"},
                 {"name": "BT_CTLR_CPATCH", "value": 12, "description": "CPatch Bluetooth controller image upgrade (binary diff)"},
-                {"name": "NRF91_MODEM_DIFF", "value": 20, "description": "nRF91 LTE modem firmware upgrade diff"}
+                {"name": "NRF91_MODEM_DIFF", "value": 20, "description": "nRF91 LTE modem firmware upgrade diff"},
+                {"name": "FILE_FOR_COPY", "value": 30, "description": "File to copy to another device"}
             ]
         },
         "rpc_enum_infuse_bt_characteristic": {
