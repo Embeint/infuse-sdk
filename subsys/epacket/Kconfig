@@ -29,6 +29,7 @@ config EPACKET_PROCESS_THREAD_SPLIT
 
 config EPACKET_PROCESS_THREAD_STACK_SIZE
 	int "Size of the stack for the thread that processes ePacket frames"
+	default 4096 if COVERAGE
 	default 2048
 
 config EPACKET_INFUSE_WATCHDOG
