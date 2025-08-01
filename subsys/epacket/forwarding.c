@@ -16,6 +16,8 @@
 #include <infuse/epacket/interface.h>
 #include <infuse/epacket/packet.h>
 #include <infuse/epacket/interface/epacket_bt_central.h>
+#include <infuse/fs/kv_store.h>
+#include <infuse/fs/kv_types.h>
 #include <infuse/rpc/server.h>
 
 LOG_MODULE_DECLARE(epacket, CONFIG_EPACKET_LOG_LEVEL);
@@ -122,6 +124,19 @@ static int ensure_bt_connection(union epacket_interface_address *address, uint8_
 	if (flags & EPACKET_FORWARD_AUTO_CONN_DC_NOTIFICATION) {
 		disconnect_notification_mask |= BIT(conn_idx);
 	}
+
+#ifdef CONFIG_KV_STORE_KEY_BLUETOOTH_THROUGHPUT_LIMIT
+	struct kv_bluetooth_throughput_limit limit;
+
+	if (KV_STORE_READ(KV_KEY_BLUETOOTH_THROUGHPUT_LIMIT, &limit) == sizeof(limit)) {
+		LOG_INF("Requesting throughput limit of %d kbps", limit.limit_kbps);
+		/* Throughput limit has been set */
+		rc = epacket_bt_gatt_rate_throughput_request(conn, limit.limit_kbps);
+		if (rc != 0) {
+			LOG_WRN("Failed to request throughput limit (%d)", rc);
+		}
+	}
+#endif /* CONFIG_KV_STORE_KEY_BLUETOOTH_THROUGHPUT_LIMIT */
 
 	/* Unreference the connection for the idle timeout */
 	bt_conn_unref(conn);
