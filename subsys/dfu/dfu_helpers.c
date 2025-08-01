@@ -22,9 +22,9 @@ int infuse_dfu_image_erase(const struct flash_area *fa, size_t image_len, bool m
 {
 	const struct device *dev = flash_area_get_device(fa);
 	struct flash_pages_info page;
+	size_t off __maybe_unused;
 	off_t page_offset;
 	size_t erase_size;
-	size_t off;
 	int rc;
 
 	if (dev == NULL) {
@@ -75,7 +75,7 @@ int infuse_dfu_image_erase(const struct flash_area *fa, size_t image_len, bool m
 
 	return flash_area_flatten(fa, off, erase_size);
 #else
-#error Unknown image management scheme
+	return -ENOTSUP;
 #endif
 }
 
