@@ -310,9 +310,9 @@ ZTEST(rpc_command_file_write_basic, test_file_write_sizes)
 	zassert_equal(ret.written_crc, ret.cmd_crc);
 }
 
+#if FIXED_PARTITION_EXISTS(slot1_partition)
 ZTEST(rpc_command_file_write_basic, test_file_write_dfu)
 {
-#if FIXED_PARTITION_EXISTS(slot1_partition)
 	struct test_out ret;
 
 	/* Size aligned data payload */
@@ -343,8 +343,13 @@ ZTEST(rpc_command_file_write_basic, test_file_write_dfu)
 	zassert_equal(fixed_payload_crc, ret.cmd_crc);
 	ret.cmd_len = sizeof(fixed_payload);
 	validate_flash_area(&ret);
-#endif /* FIXED_PARTITION_EXISTS(slot1_partition) */
 }
+#else
+ZTEST(rpc_command_file_write_basic, test_file_write_dfu)
+{
+	ztest_test_skip();
+}
+#endif /* FIXED_PARTITION_EXISTS(slot1_partition) */
 
 static void flash_area_copy(uint8_t partition_dst, uint8_t partition_src, uint32_t len,
 			    bool source_erase)
@@ -377,11 +382,9 @@ struct patch_file {
 	uint8_t patch[5];
 } __packed hardcoded_patch;
 
+#if FIXED_PARTITION_EXISTS(file_partition)
 ZTEST(rpc_command_file_write_basic, test_file_write_dfu_cpatch)
 {
-	(void)flash_area_copy;
-
-#if FIXED_PARTITION_EXISTS(file_partition)
 	struct test_out ret;
 
 	/* Write an arbitrary image of known size to partition1 */
@@ -443,9 +446,18 @@ ZTEST(rpc_command_file_write_basic, test_file_write_dfu_cpatch)
 				    0, 0, false, false, (void *)&hardcoded_patch);
 	zassert_equal(-EINVAL, ret.cmd_rc);
 	zassert_equal(sizeof(hardcoded_patch), ret.cmd_len);
+}
+
+#else
+
+ZTEST(rpc_command_file_write_basic, test_file_write_dfu_cpatch)
+{
+	(void)flash_area_copy;
+
+	ztest_test_skip();
+}
 
 #endif /* FIXED_PARTITION_EXISTS(file_partition) */
-}
 
 ZTEST(rpc_command_file_write_basic, test_file_write_bt_ctlr)
 {
