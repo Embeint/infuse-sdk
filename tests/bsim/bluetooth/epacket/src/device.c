@@ -19,6 +19,7 @@
 #include "bstests.h"
 
 #include <infuse/epacket/interface.h>
+#include <infuse/data_logger/logger.h>
 #include <infuse/data_logger/high_level/tdf.h>
 #include <infuse/tdf/definitions.h>
 #include <infuse/work_q.h>
@@ -78,6 +79,17 @@ static void main_epacket_bt_basic_broadcast(void)
 		return;
 	}
 #endif /* CONFIG_INFUSE_BOARD_HAS_PUBLIC_BT_ADDRESS */
+
+#ifdef CONFIG_DATA_LOGGER_SHIM
+	const struct device *data_logger = DEVICE_DT_GET_ONE(embeint_data_logger_shim);
+	const uint32_t num_blocks =
+		DT_PROP(DT_COMPAT_GET_ANY_STATUS_OKAY(embeint_data_logger_shim), physical_blocks);
+	uint8_t dummy_data[16] = {0};
+
+	for (int i = 0; i < num_blocks; i++) {
+		data_logger_block_write(data_logger, i, dummy_data, sizeof(dummy_data));
+	}
+#endif /* CONFIG_DATA_LOGGER_SHIM */
 
 	epacket_register_callback(epacket_bt_periph, &interface_cb);
 
