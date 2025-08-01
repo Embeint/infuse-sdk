@@ -113,7 +113,6 @@ jobs:
           ccache -z -s -vv
 
       - name: Run Tests with Coverage Information
-        continue-on-error: true
         run: |
           mkdir -p coverage/reports
           pip install gcovr==6.0
