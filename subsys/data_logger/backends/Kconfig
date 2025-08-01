@@ -9,7 +9,7 @@ config DATA_LOGGER_EPACKET
 config DATA_LOGGER_SHIM
 	bool "Shim backend"
 	depends on DT_HAS_EMBEINT_DATA_LOGGER_SHIM_ENABLED
-	depends on ZTEST
+	depends on ZTEST || SOC_SERIES_BSIM_NRFXX
 	default y
 
 config DATA_LOGGER_FLASH_MAP
