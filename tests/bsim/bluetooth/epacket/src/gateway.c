@@ -1569,7 +1569,7 @@ static void main_gateway_remote_rpc_forward_auto_conn_auth_fail(void)
 	PASS("RPC auto-conn forwarder with auth failures passed\n");
 }
 
-static int run_data_sender(bt_addr_le_t *addr, uint32_t size, bool slow_uplink)
+static int run_data_sender(bt_addr_le_t *addr, uint16_t rpc, uint32_t size, bool slow_uplink)
 {
 	const struct device *epacket_dummy = DEVICE_DT_GET(DT_NODELABEL(epacket_dummy));
 	const struct device *epacket_central = DEVICE_DT_GET(DT_NODELABEL(epacket_bt_central));
@@ -1585,30 +1585,60 @@ static int run_data_sender(bt_addr_le_t *addr, uint32_t size, bool slow_uplink)
 	uint32_t expected_offset = 0;
 	uint16_t data_len;
 	int32_t start_time, duration;
+	uint32_t request_id = 0xBB345678;
+	uint32_t total_data_len;
 
-	/* Create and encrypt the GATT RPC */
-	struct rpc_data_sender_request sender_request = {
-		.header =
-			{
-				.command_id = RPC_ID_DATA_SENDER,
-				.request_id = 0xBB345678,
-			},
-		.data_header =
-			{
-				.size = size,
-				.rx_ack_period = 0,
-			},
+	if (rpc == RPC_ID_DATA_SENDER) {
+		/* Create and encrypt the GATT RPC */
+		struct rpc_data_sender_request sender_request = {
+			.header =
+				{
+					.command_id = RPC_ID_DATA_SENDER,
+					.request_id = request_id,
+				},
+			.data_header =
+				{
+					.size = size,
+					.rx_ack_period = 0,
+				},
 
-	};
+		};
+		buf = create_rpc_request(epacket_central, &sender_request, sizeof(sender_request));
+		total_data_len = sender_request.data_header.size;
+	} else if (rpc == RPC_ID_DATA_LOGGER_READ) {
+		/* Create and encrypt the GATT RPC */
+		struct rpc_data_logger_read_request data_logger_read_request = {
+			.header =
+				{
+					.command_id = RPC_ID_DATA_LOGGER_READ,
+					.request_id = request_id,
+				},
+			.data_header =
+				{
+					.size = size,
+					.rx_ack_period = 0,
+				},
+			.logger = RPC_ENUM_DATA_LOGGER_FLASH_ONBOARD,
+			.start_block = 0,
+			.last_block = (size / 512) - 1,
+
+		};
+		buf = create_rpc_request(epacket_central, &data_logger_read_request,
+					 sizeof(data_logger_read_request));
+		total_data_len = data_logger_read_request.data_header.size;
+	} else {
+		FAIL("Unimplemented RPC %d\n", rpc);
+		return -1;
+	}
+	if (buf == NULL) {
+		FAIL("Failed to allocate request\n");
+		return -1;
+	}
 
 	epacket_set_receive_handler(epacket_dummy, dummy_gateway_handler);
 	epacket_set_receive_handler(epacket_central, dummy_gateway_handler);
 
 	address.bluetooth = *addr;
-	buf = create_rpc_request(epacket_central, &sender_request, sizeof(sender_request));
-	if (buf == NULL) {
-		return -1;
-	}
 
 	/* Construct ePacket forwarding packet */
 	struct epacket_dummy_frame dummy_header = {
@@ -1636,7 +1666,8 @@ static int run_data_sender(bt_addr_le_t *addr, uint32_t size, bool slow_uplink)
 
 	start_time = k_uptime_get_32();
 
-	while (expected_offset != sender_request.data_header.size) {
+	while (expected_offset != total_data_len) {
+		printk("%d %d\n", expect_response, total_data_len);
 		if (slow_uplink) {
 			/* Free transmit buffers very slowly.
 			 * Without rate limiting, this would fail with dropped buffers.
@@ -1675,7 +1706,7 @@ static int run_data_sender(bt_addr_le_t *addr, uint32_t size, bool slow_uplink)
 				return -1;
 			}
 			data_header = net_buf_pull_mem(buf, sizeof(struct infuse_rpc_data));
-			if (data_header->request_id != sender_request.header.request_id) {
+			if (data_header->request_id != request_id) {
 				FAIL("Unexpected request ID\n");
 				return -1;
 			}
@@ -1690,7 +1721,7 @@ static int run_data_sender(bt_addr_le_t *addr, uint32_t size, bool slow_uplink)
 
 			expected_offset += data_len;
 
-			if (expected_offset == sender_request.data_header.size) {
+			if (expected_offset == total_data_len) {
 				/* Data transfer complete */
 				break;
 			}
@@ -1729,12 +1760,12 @@ static int run_data_sender(bt_addr_le_t *addr, uint32_t size, bool slow_uplink)
 		return -1;
 	}
 	sender_rsp = net_buf_pull_mem(buf, sizeof(*sender_rsp));
-	if (sender_rsp->header.request_id != sender_request.header.request_id) {
+	if (sender_rsp->header.request_id != request_id) {
 		FAIL("Unexpected RPC_RSP request ID\n");
 		return -1;
 	}
-	if (sender_rsp->header.command_id != RPC_ID_DATA_SENDER) {
-		FAIL("Unexpected RPC_RSP command ID\n");
+	if (sender_rsp->header.command_id != rpc) {
+		FAIL("Unexpected RPC_RSP command ID %d %d\n", sender_rsp->header.command_id, rpc);
 		return -1;
 	}
 	if (sender_rsp->header.return_code != 0) {
@@ -1768,7 +1799,7 @@ static void main_gateway_remote_rpc_forward_auto_conn_rate_limit(void)
 	}
 
 	/* Run the receiving process for 8kB with a slow uplink */
-	if (run_data_sender(&addr, 8192, true) < 0) {
+	if (run_data_sender(&addr, RPC_ID_DATA_SENDER, 8192, true) < 0) {
 		return;
 	}
 	PASS("RPC auto-conn forwarder with delay based rate-limiting passed\n");
@@ -1795,7 +1826,7 @@ static void main_gateway_remote_rpc_forward_auto_conn_rate_throughput(void)
 	}
 
 	/* Run the receiving process for 4kB with a 8kbps limit */
-	duration = run_data_sender(&addr, 4096, false);
+	duration = run_data_sender(&addr, RPC_ID_DATA_SENDER, 4096, false);
 	if (duration < 0) {
 		return;
 	}
@@ -1808,6 +1839,41 @@ static void main_gateway_remote_rpc_forward_auto_conn_rate_throughput(void)
 	}
 	PASS("RPC auto-conn forwarder with throughput based rate-limiting passed (%d ms)\n",
 	     duration);
+}
+
+static void main_gateway_data_logger_read_throughput(void)
+{
+	bt_addr_le_t addr;
+	int duration;
+
+	struct kv_bluetooth_throughput_limit limit = {
+		.limit_kbps = 8,
+	};
+
+	if (KV_STORE_WRITE(KV_KEY_BLUETOOTH_THROUGHPUT_LIMIT, &limit) != sizeof(limit)) {
+		FAIL("Failed to write throughput limit\n");
+		return;
+	}
+
+	common_init();
+	if (observe_peers(&addr, 1) < 0) {
+		FAIL("Failed to observe peer\n");
+		return;
+	}
+
+	/* Run the data logger read for 4kB with a 8kbps limit */
+	duration = run_data_sender(&addr, RPC_ID_DATA_LOGGER_READ, 4096, false);
+	if (duration < 0) {
+		return;
+	}
+	/* Expect this to take between 4 and 5 seconds:
+	 *    4 seconds for the data transfer
+	 *  0-1 seconds for the connection
+	 */
+	if ((duration < 4000) || (duration > 5000)) {
+		FAIL("Unexpected connection duration (%d ms)", duration);
+	}
+	PASS("Data logger read passed (%d ms)\n", duration);
 }
 
 static const struct bst_test_instance epacket_gateway[] = {
@@ -1965,6 +2031,13 @@ static const struct bst_test_instance epacket_gateway[] = {
 		.test_pre_init_f = test_init,
 		.test_tick_f = test_tick,
 		.test_main_f = main_gateway_remote_rpc_forward_auto_conn_rate_limit,
+	},
+	{
+		.test_id = "epacket_bt_gateway_data_logger_read_throughput",
+		.test_descr = "Data logger read integration",
+		.test_pre_init_f = test_init,
+		.test_tick_f = test_tick,
+		.test_main_f = main_gateway_data_logger_read_throughput,
 	},
 	BSTEST_END_MARKER};
 
