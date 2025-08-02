@@ -63,6 +63,7 @@ ZTEST(epacket_callbacks, test_interface_tx_failure)
 	interface_cb.user_ctx = &interface_cb;
 
 	epacket_register_callback(epacket_dummy, &interface_cb);
+	epacket_set_receive_handler(epacket_dummy, epacket_default_receive_handler);
 
 	/* Allocate buffer */
 	tx = epacket_alloc_tx_for_interface(epacket_dummy, K_NO_WAIT);
@@ -142,6 +143,58 @@ ZTEST(epacket_callbacks, test_interface_tx_failure)
 	k_sleep(K_MSEC(1));
 	k_poll_signal_check(&rx_recv_signal, &signaled, &result);
 	zassert_equal(0, signaled);
+}
+
+static bool packet_received_block_cb(struct net_buf *buf, bool decrypted, void *user_ctx)
+{
+	zassert_not_null(buf);
+	zassert_equal(user_ctx, &interface_cb);
+
+	k_poll_signal_raise(&rx_recv_signal, (int)decrypted);
+
+	/* We don't want the default handler run */
+	return false;
+}
+
+static void interface_unreachable_handler(struct net_buf *buf)
+{
+	/* Default interface handler should never run */
+	zassert_unreachable();
+}
+
+ZTEST(epacket_callbacks, test_interface_rx_stop_default)
+{
+	const struct device *epacket_dummy = DEVICE_DT_GET(DT_NODELABEL(epacket_dummy));
+	struct k_fifo *sent_queue = epacket_dummmy_transmit_fifo_get();
+	uint8_t payload[16];
+	int signaled, result;
+
+	zassert_not_null(sent_queue);
+	zassert_is_null(k_fifo_get(sent_queue, K_NO_WAIT));
+
+	interface_cb.tx_failure = NULL;
+	interface_cb.packet_received = packet_received_block_cb;
+	interface_cb.user_ctx = &interface_cb;
+
+	epacket_register_callback(epacket_dummy, &interface_cb);
+	epacket_set_receive_handler(epacket_dummy, interface_unreachable_handler);
+
+	struct epacket_dummy_frame frame = {
+		.type = INFUSE_RPC_CMD,
+		.auth = EPACKET_AUTH_DEVICE,
+		.flags = 0x00,
+	};
+
+	for (int i = 0; i < 10; i++) {
+		epacket_dummy_receive(epacket_dummy, &frame, payload, sizeof(payload));
+		k_sleep(K_MSEC(1));
+		k_poll_signal_check(&rx_recv_signal, &signaled, &result);
+		zassert_equal(1, signaled);
+		zassert_equal(1, result);
+		k_poll_signal_reset(&rx_recv_signal);
+	}
+	zassert_true(epacket_unregister_callback(epacket_dummy, &interface_cb));
+	k_sleep(K_MSEC(1));
 }
 
 void *callback_setup(void)
