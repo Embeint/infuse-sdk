@@ -20,6 +20,12 @@ config INFUSE_RPC_CLIENT_MAX_IN_FLIGHT
 	range 1 255
 	default 3
 
+config INFUSE_RPC_CLIENT_ALLOW_DEFAULT_HANDLER
+	bool
+	help
+	  Allow the default interface packet handler to run on RPC_DATA and
+	  RPC_RSP packets that the client initiated. Intended for certain tests.
+
 endif # INFUSE_RPC_CLIENT
 
 config INFUSE_RPC_SERVER_WATCHDOG

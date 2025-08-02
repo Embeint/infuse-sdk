@@ -1,0 +1,4 @@
+config INFUSE_RPC_CLIENT_ALLOW_DEFAULT_HANDLER
+	default y
+
+source "Kconfig.zephyr"
