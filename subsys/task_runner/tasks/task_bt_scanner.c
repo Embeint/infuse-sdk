@@ -27,7 +27,7 @@ static struct task_bt_scanner_mem {
 	uint8_t num_observed;
 } state;
 
-static void bt_received(const struct net_buf *buf, bool decrypted, void *user_ctx)
+static bool bt_received(struct net_buf *buf, bool decrypted, void *user_ctx)
 {
 	const struct task_bt_scanner_args *args = &state.schedule->task_args.infuse.bt_scanner;
 	struct epacket_rx_metadata *meta = net_buf_user_data(buf);
@@ -36,11 +36,11 @@ static void bt_received(const struct net_buf *buf, bool decrypted, void *user_ct
 		sys_get_be48(meta->interface_address.bluetooth.a.val), meta->rssi);
 
 	if (!decrypted && !(args->flags & TASK_BT_SCANNER_FLAGS_LOG_ENCRYPTED)) {
-		return;
+		return true;
 	}
 	if (state.max_observed && (state.num_observed >= state.max_observed)) {
 		/* Cancellation is pending */
-		return;
+		return true;
 	}
 
 	struct tdf_infuse_bluetooth_rssi tdf_obs = {
@@ -54,7 +54,7 @@ static void bt_received(const struct net_buf *buf, bool decrypted, void *user_ct
 			if (state.observed[i].infuse_id == tdf_obs.infuse_id) {
 				/* Update RSSI and exit */
 				state.observed[i].rssi = tdf_obs.rssi;
-				return;
+				return true;
 			}
 		}
 	}
@@ -79,6 +79,7 @@ static void bt_received(const struct net_buf *buf, bool decrypted, void *user_ct
 		/* Terminate the task early */
 		task_workqueue_reschedule(state.task, K_NO_WAIT);
 	}
+	return true;
 }
 
 void task_bt_scanner_fn(struct k_work *work)

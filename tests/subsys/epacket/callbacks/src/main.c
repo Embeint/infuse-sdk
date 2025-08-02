@@ -27,12 +27,14 @@ static void tx_failed_cb(const struct net_buf *buf, int reason, void *user_ctx)
 	k_poll_signal_raise(&tx_fail_signal, reason);
 }
 
-static void packet_received_cb(const struct net_buf *buf, bool decrypted, void *user_ctx)
+static bool packet_received_cb(struct net_buf *buf, bool decrypted, void *user_ctx)
 {
 	zassert_not_null(buf);
 	zassert_equal(user_ctx, &interface_cb);
 
 	k_poll_signal_raise(&rx_recv_signal, (int)decrypted);
+
+	return true;
 }
 
 static void tx_done(const struct device *dev, struct net_buf *buf, int result)

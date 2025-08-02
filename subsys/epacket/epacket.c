@@ -225,6 +225,7 @@ static void epacket_handle_rx(struct net_buf *buf)
 	struct epacket_rx_metadata *metadata = net_buf_user_data(buf);
 	const struct epacket_interface_api *api = metadata->interface->api;
 	struct epacket_interface_cb *cb, *cbs;
+	bool default_process = true;
 	int rc;
 
 	interface_data = metadata->interface->data;
@@ -328,12 +329,19 @@ static void epacket_handle_rx(struct net_buf *buf)
 	 */
 	SYS_SLIST_FOR_EACH_CONTAINER_SAFE(&interface_data->callback_list, cb, cbs, node) {
 		if (cb->packet_received) {
-			cb->packet_received(buf, rc == 0, cb->user_ctx);
+			if (!cb->packet_received(buf, rc == 0, cb->user_ctx)) {
+				default_process = false;
+			}
 		}
 	}
 
-	/* Payload handling */
-	interface_data->receive_handler(buf);
+	if (default_process) {
+		/* Payload handling */
+		interface_data->receive_handler(buf);
+	} else {
+		/* Free the buffer, since the interface handler can't */
+		net_buf_unref(buf);
+	}
 }
 
 static void epacket_handle_tx(struct net_buf *buf)

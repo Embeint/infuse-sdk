@@ -74,13 +74,13 @@ static void command_timeout(struct k_timer *timer)
 	run_callback(ctx, NULL, c->command_id, c->request_id);
 }
 
-static void packet_received(const struct net_buf *buf, bool decrypted, void *user_ctx)
+static bool packet_received(struct net_buf *buf, bool decrypted, void *user_ctx)
 {
 	struct epacket_rx_metadata *meta = net_buf_user_data(buf);
 	struct rpc_client_ctx *ctx = user_ctx;
 
 	if (!decrypted) {
-		return;
+		return true;
 	}
 	if (meta->type == INFUSE_RPC_DATA_ACK) {
 		struct infuse_rpc_data_ack *ack = (void *)buf->data;
@@ -88,7 +88,7 @@ static void packet_received(const struct net_buf *buf, bool decrypted, void *use
 
 		if (c == NULL) {
 			LOG_WRN("DATA_ACK for unknown command %08X", ack->request_id);
-			return;
+			return true;
 		}
 		/* ACK received, extend timeout */
 		LOG_DBG("ACK received for %08X", ack->request_id);
@@ -100,6 +100,7 @@ static void packet_received(const struct net_buf *buf, bool decrypted, void *use
 		LOG_DBG("Finalising request %08X", rsp_header->request_id);
 		run_callback(ctx, buf, rsp_header->command_id, rsp_header->request_id);
 	}
+	return true;
 }
 
 void rpc_client_init(struct rpc_client_ctx *ctx, const struct device *dev,
