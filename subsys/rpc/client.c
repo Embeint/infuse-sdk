@@ -96,11 +96,18 @@ static bool packet_received(struct net_buf *buf, bool decrypted, void *user_ctx)
 		k_sem_give(&c->ack);
 	} else if (meta->type == INFUSE_RPC_RSP) {
 		struct infuse_rpc_rsp_header *rsp_header = (void *)buf->data;
+		struct rpc_client_cmd_ctx *c = find_cmd_ctx(ctx, rsp_header->request_id);
 
+		if (c == NULL) {
+			LOG_WRN("RPC_RSP for unknown command %08X", rsp_header->request_id);
+			return true;
+		}
+		/* RPC_RSP received, wrap up command */
 		LOG_DBG("Finalising request %08X", rsp_header->request_id);
 		run_callback(ctx, buf, rsp_header->command_id, rsp_header->request_id);
 	}
-	return true;
+	/* We received a DATA_ACK or RPC_RSP for a command we initiated, halt other processing */
+	return IS_ENABLED(CONFIG_INFUSE_RPC_CLIENT_ALLOW_DEFAULT_HANDLER);
 }
 
 void rpc_client_init(struct rpc_client_ctx *ctx, const struct device *dev,
