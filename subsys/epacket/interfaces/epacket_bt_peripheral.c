@@ -226,11 +226,20 @@ const char *bt_addr_le_str(const bt_addr_le_t *addr);
 static void epacket_bt_peripheral_send(const struct device *dev, struct net_buf *buf)
 {
 	struct epacket_tx_metadata *meta = net_buf_user_data(buf);
+	const bt_addr_le_t *addr = &meta->interface_address.bluetooth;
 	const struct bt_gatt_attr *attr;
-	// struct bt_conn *conn = NULL;
+	struct bt_conn *conn = NULL;
 	int rc;
 
-	LOG_ERR("SENDTO: %s", bt_addr_le_str(&meta->interface_address.bluetooth));
+	/* Send to all, or specific connection */
+	if (!bt_addr_le_eq(addr, BT_ADDR_LE_ANY)) {
+		conn = bt_conn_lookup_addr_le(BT_ID_DEFAULT, addr);
+		if (conn == NULL) {
+			epacket_notify_tx_result(dev, buf, -ENOTCONN);
+			net_buf_unref(buf);
+			return;
+		}
+	}
 
 	/* Encrypt the payload */
 	if (epacket_bt_gatt_encrypt(buf) < 0) {
@@ -260,14 +269,18 @@ static void epacket_bt_peripheral_send(const struct device *dev, struct net_buf 
 		attr = &infuse_svc.attrs[CHRC_DATA];
 	}
 
-	/* Forward the payload to all connections */
-	rc = bt_gatt_notify(NULL, attr, buf->data, buf->len);
+	/* Forward the payload to all/specified connections */
+	rc = bt_gatt_notify(conn, attr, buf->data, buf->len);
 	if (rc == -ENOTCONN) {
 		/* No-one connected is not an error condition */
 		rc = 0;
 	}
 	epacket_notify_tx_result(dev, buf, rc);
 	net_buf_unref(buf);
+	if (conn) {
+		/* Release connection object if obtained */
+		bt_conn_unref(conn);
+	}
 }
 
 static uint16_t epacket_bt_peripheral_max_packet(const struct device *dev)
