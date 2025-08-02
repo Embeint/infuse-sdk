@@ -84,13 +84,18 @@ struct epacket_interface_cb {
 	/**
 	 * @brief A packet was received on the interface
 	 *
-	 * @note Buffer contents must not be modified or freed from this context.
+	 * @note Buffer contents must not be modified from this context if the
+	 *       function returns true.
+	 * @note This context must never free the provided buffer.
 	 *
 	 * @param buf The packet that was received
 	 * @param decrypted True if packet contents have been decrypted successfully
 	 * @param user_ctx User context pointer
+	 *
+	 * @retval true Continue default processing the packet
+	 * @retval false Don't run the default interface packet handler
 	 */
-	void (*packet_received)(const struct net_buf *buf, bool decrypted, void *user_ctx);
+	bool (*packet_received)(struct net_buf *buf, bool decrypted, void *user_ctx);
 
 	/* User provided context pointer */
 	void *user_ctx;

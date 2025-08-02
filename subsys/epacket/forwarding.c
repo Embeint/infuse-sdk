@@ -183,7 +183,7 @@ static void disconnected(struct bt_conn *conn, uint8_t reason)
 	disconnect_notification_mask &= ~conn_id_bit;
 }
 
-void bt_central_packet_received(const struct net_buf *buf, bool decrypted, void *user_ctx)
+bool bt_central_packet_received(struct net_buf *buf, bool decrypted, void *user_ctx)
 {
 	struct epacket_rx_metadata *meta = net_buf_user_data(buf);
 	struct bt_conn *conn = NULL;
@@ -191,14 +191,14 @@ void bt_central_packet_received(const struct net_buf *buf, bool decrypted, void 
 
 	/* Only care about RPC responses to handle EPACKET_FORWARD_AUTO_CONN_SINGLE_RPC */
 	if (meta->type != INFUSE_RPC_RSP) {
-		return;
+		return true;
 	}
 
 	/* Find the associated connection object */
 	conn = bt_conn_lookup_addr_le(BT_ID_DEFAULT, &meta->interface_address.bluetooth);
 	if (conn == NULL) {
 		/* Connection disconnected between RX and now */
-		return;
+		return true;
 	}
 	conn_id = bt_conn_index(conn);
 
@@ -211,6 +211,7 @@ void bt_central_packet_received(const struct net_buf *buf, bool decrypted, void 
 		}
 	}
 	bt_conn_unref(conn);
+	return true;
 }
 
 static void forward_auto_conn_processor(void *a, void *b, void *c)
