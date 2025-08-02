@@ -413,7 +413,7 @@ static void connected(struct bt_conn *conn, uint8_t err)
 
 #ifdef CONFIG_BT_CONN_AUTO_RSSI
 	/* Small delay to give controller a chance to finish setup */
-	infuse_work_reschedule(&state[bt_conn_index(conn)].rssi_query, K_MSEC(10));
+	infuse_work_reschedule(&state[bt_conn_index(conn)].rssi_query, K_MSEC(50));
 #endif /* CONFIG_BT_CONN_AUTO_RSSI */
 }
 
