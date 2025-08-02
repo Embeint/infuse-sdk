@@ -143,6 +143,20 @@ int rpc_client_command_queue(struct rpc_client_ctx *ctx, enum rpc_builtin_id cmd
 int rpc_client_ack_wait(struct rpc_client_ctx *ctx, uint32_t request_id, k_timeout_t timeout);
 
 /**
+ * @brief Callback to load more data for queueing
+ *
+ * @param user_data Arbitrary pointer supplied to @ref rpc_client_data_queue
+ * @param offset Offset of data requested
+ * @param data Pointer to load data into
+ * @param data_len Length of data to load
+ *
+ * @retval 0 on success
+ * @retval -errno on error
+ */
+typedef int (*rpc_client_data_loader)(void *user_data, uint32_t offset, void *data,
+				      size_t data_len);
+
+/**
  * @brief Queue data associated with a previously queued command
  *
  * @param ctx RPC client context
@@ -156,6 +170,37 @@ int rpc_client_ack_wait(struct rpc_client_ctx *ctx, uint32_t request_id, k_timeo
  */
 int rpc_client_data_queue(struct rpc_client_ctx *ctx, uint32_t request_id, uint32_t offset,
 			  const void *data, size_t data_len);
+
+/** State for auto loader control */
+struct rpc_client_auto_load_params {
+	/* Callback to load more data */
+	rpc_client_data_loader loader;
+	/* Total length of data to send */
+	uint32_t total_len;
+	/* Duration to wait for each DATA_ACK */
+	k_timeout_t ack_wait;
+	/* Specified DATA_ACK period */
+	uint8_t ack_period;
+	/* User data pointer for @a loader */
+	void *user_data;
+};
+
+/**
+ * @brief Queue data associated with a previously queued command, loaded via callback
+ *
+ * @param ctx RPC client context
+ * @param request_id Request ID from @ref rpc_client_last_request_id
+ * @param offset Byte offset of data
+ * @param buffer Buffer for loading data
+ * @param buffer_len Buffer data length
+ * @param loader_params Context for loading data
+ *
+ * @retval 0 If data pushed to remote device
+ * @retval -EINVAL If request ID is no longer valid
+ */
+int rpc_client_data_queue_auto_load(struct rpc_client_ctx *ctx, uint32_t request_id,
+				    uint32_t offset, void *buffer, size_t buffer_len,
+				    struct rpc_client_auto_load_params *loader_params);
 
 /**
  * @brief Queue a command for execution on a remote device and wait for the response
