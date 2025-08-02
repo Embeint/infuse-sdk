@@ -19,6 +19,7 @@
 #include "bstests.h"
 
 #include <infuse/epacket/interface.h>
+#include <infuse/epacket/packet.h>
 #include <infuse/data_logger/logger.h>
 #include <infuse/data_logger/high_level/tdf.h>
 #include <infuse/tdf/definitions.h>
@@ -161,6 +162,94 @@ static void main_epacket_bt_adv_loaded(void)
 	PASS("Loaded send complete\n");
 }
 
+static K_SEM_DEFINE(tx_done, 0, 1);
+static const struct device *tx_cb_dev;
+static struct net_buf *tx_cb_pkt;
+static int tx_cb_result;
+
+static void tx_done_cb(const struct device *dev, struct net_buf *pkt, int result)
+{
+	tx_cb_dev = dev;
+	tx_cb_pkt = pkt;
+	tx_cb_result = result;
+	k_sem_give(&tx_done);
+}
+
+static void main_epacket_bt_periph_send_unconnected(void)
+{
+	const struct device *epacket_bt_periph = DEVICE_DT_GET(DT_NODELABEL(epacket_bt_peripheral));
+	union epacket_interface_address dest;
+	struct net_buf *buf;
+
+	dest.bluetooth.type = BT_ADDR_LE_PUBLIC;
+	for (int i = 0; i < sizeof(dest.bluetooth.a.val); i++) {
+		dest.bluetooth.a.val[i] = 0x10 + i;
+	}
+
+	/* To an explicit device should fail */
+	for (int i = 0; i < 5 * CONFIG_EPACKET_BUFFERS_TX; i++) {
+		/* Send a packet to a device we're not connected to */
+		buf = epacket_alloc_tx_for_interface(epacket_bt_periph, K_FOREVER);
+		if (buf == NULL) {
+			FAIL("No buffer\n");
+			return;
+		}
+		epacket_set_tx_metadata(buf, EPACKET_AUTH_DEVICE, 0, INFUSE_TDF, dest);
+		epacket_set_tx_callback(buf, tx_done_cb);
+		epacket_queue(epacket_bt_periph, buf);
+
+		if (k_sem_take(&tx_done, K_MSEC(100)) != 0) {
+			FAIL("No send callback\n");
+			return;
+		}
+		if (tx_cb_dev != epacket_bt_periph) {
+			FAIL("Bad device pointer\n");
+			return;
+		}
+		if (tx_cb_pkt == NULL) {
+			FAIL("Bad buffer pointer\n");
+			return;
+		}
+		if (tx_cb_result != -ENOTCONN) {
+			FAIL("Unexpected result\n");
+			return;
+		}
+	}
+
+	/* When no connected device exists */
+	for (int i = 0; i < 5 * CONFIG_EPACKET_BUFFERS_TX; i++) {
+		/* Send a packet to a device we're not connected to */
+		buf = epacket_alloc_tx_for_interface(epacket_bt_periph, K_FOREVER);
+		if (buf == NULL) {
+			FAIL("No buffer\n");
+			return;
+		}
+		epacket_set_tx_metadata(buf, EPACKET_AUTH_DEVICE, 0, INFUSE_TDF, EPACKET_ADDR_ALL);
+		epacket_set_tx_callback(buf, tx_done_cb);
+		epacket_queue(epacket_bt_periph, buf);
+
+		if (k_sem_take(&tx_done, K_MSEC(100)) != 0) {
+			FAIL("No send callback\n");
+			return;
+		}
+		if (tx_cb_dev != epacket_bt_periph) {
+			FAIL("Bad device pointer\n");
+			return;
+		}
+		if (tx_cb_pkt == NULL) {
+			FAIL("Bad buffer pointer\n");
+			return;
+		}
+		/* Sending to everyone when no-one is connected is not an error */
+		if (tx_cb_result != 0) {
+			FAIL("Unexpected result\n");
+			return;
+		}
+	}
+
+	PASS("Send to unconnected passed\n");
+}
+
 static const struct bst_test_instance ext_adv_advertiser[] = {
 	{
 		.test_id = "epacket_bt_device",
@@ -175,6 +264,13 @@ static const struct bst_test_instance ext_adv_advertiser[] = {
 		.test_pre_init_f = test_init,
 		.test_tick_f = test_tick,
 		.test_main_f = main_epacket_bt_adv_loaded,
+	},
+	{
+		.test_id = "epacket_bt_periph_send_unconnected",
+		.test_descr = "Queue packets to an unconnected device",
+		.test_pre_init_f = test_init,
+		.test_tick_f = test_tick,
+		.test_main_f = main_epacket_bt_periph_send_unconnected,
 	},
 	BSTEST_END_MARKER,
 };
