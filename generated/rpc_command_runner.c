@@ -33,9 +33,10 @@ void rpc_command_runner_request_unref(struct net_buf *request)
 	command_freed = true;
 }
 
-void rpc_command_runner_early_response(const struct device *interface, enum epacket_auth auth,
-				       uint32_t request_id, uint16_t command_id,
-				       struct net_buf *response)
+void rpc_command_runner_early_response(const struct device *interface,
+				       union epacket_interface_address address,
+				       enum epacket_auth auth, uint32_t request_id,
+				       uint16_t command_id, struct net_buf *response)
 {
 	struct infuse_rpc_rsp_header *rsp_header;
 
@@ -44,7 +45,7 @@ void rpc_command_runner_early_response(const struct device *interface, enum epac
 	rsp_header->command_id = command_id;
 
 	/* Metadata and core response info */
-	epacket_set_tx_metadata(response, auth, 0x00, INFUSE_RPC_RSP, EPACKET_ADDR_ALL);
+	epacket_set_tx_metadata(response, auth, 0x00, INFUSE_RPC_RSP, address);
 
 	/* Push response back over incoming interface */
 	epacket_queue(interface, response);
@@ -55,6 +56,7 @@ void rpc_command_runner(struct net_buf *request)
 {
 	struct epacket_rx_metadata *metadata = net_buf_user_data(request);
 	const struct device *interface = metadata->interface;
+	union epacket_interface_address from = metadata->interface_address;
 	struct infuse_rpc_req_header *req_header = (void *)request->data;
 	struct infuse_rpc_rsp_header *rsp_header;
 	struct net_buf *response = NULL;
@@ -332,7 +334,7 @@ void rpc_command_runner(struct net_buf *request)
 	rsp_header->command_id = command_id;
 
 	/* Metadata and core response info */
-	epacket_set_tx_metadata(response, auth, 0x00, INFUSE_RPC_RSP, EPACKET_ADDR_ALL);
+	epacket_set_tx_metadata(response, auth, 0x00, INFUSE_RPC_RSP, from);
 
 	/* Push response back over incoming interface */
 	epacket_queue(interface, response);
