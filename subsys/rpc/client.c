@@ -220,15 +220,21 @@ int rpc_client_ack_wait(struct rpc_client_ctx *ctx, uint32_t request_id, k_timeo
 	return k_sem_take(&c->ack, timeout);
 }
 
-int rpc_client_data_queue(struct rpc_client_ctx *ctx, uint32_t request_id, uint32_t offset,
-			  const void *data, size_t data_len)
+int rpc_client_data_queue_auto_load(struct rpc_client_ctx *ctx, uint32_t request_id,
+				    uint32_t offset, void *buffer, size_t buffer_len,
+				    struct rpc_client_auto_load_params *loader_params)
 {
 	struct rpc_client_cmd_ctx *c = find_cmd_ctx(ctx, request_id);
 	struct infuse_rpc_data *header;
-	const uint8_t *bytes = data;
-	struct net_buf *data_buf;
+	const uint8_t *bytes = buffer;
+	struct net_buf *data_buf = NULL;
 	size_t add, tail, extra;
 	k_ticks_t limit_tx = k_uptime_ticks();
+	uint32_t buffer_remaining = 0;
+	uint32_t bytes_offset = 0;
+	uint32_t data_len;
+	int pkt_cnt = 0;
+	int rc;
 
 	if (c == NULL) {
 		LOG_WRN("Invalid request %08X", request_id);
@@ -240,22 +246,41 @@ int rpc_client_data_queue(struct rpc_client_ctx *ctx, uint32_t request_id, uint3
 		return -EINVAL;
 	}
 
+	data_len = loader_params ? loader_params->total_len : buffer_len;
 	add = 0;
 	while (data_len) {
 		/* Offsets must be word aligned */
 		__ASSERT_NO_MSG((offset % sizeof(uint32_t)) == 0);
 
-		/* Respect any rate-limiting requests from the receiving device */
-		epacket_rate_limit_tx(&limit_tx, add);
+		if (loader_params != NULL) {
+			/* Load data if required */
+			if (buffer_remaining == 0) {
+				buffer_remaining = MIN(buffer_len, data_len);
+				bytes_offset = 0;
+				rc = loader_params->loader(loader_params->user_data, offset, buffer,
+							   buffer_remaining);
+				if (rc < 0) {
+					return rc;
+				}
+			}
+		} else {
+			buffer_remaining = data_len;
+		}
 
-		/* Allocate buffer for command */
-		data_buf = epacket_alloc_tx_for_interface(ctx->interface, K_FOREVER);
-		__ASSERT_NO_MSG(data_buf != NULL);
+		/* No pending buffer */
+		if (data_buf == NULL) {
+			/* Respect any rate-limiting requests from the receiving device */
+			epacket_rate_limit_tx(&limit_tx, add);
 
-		/* Data header */
-		header = net_buf_add(data_buf, sizeof(*header));
-		header->request_id = request_id;
-		header->offset = offset;
+			/* Allocate buffer for command */
+			data_buf = epacket_alloc_tx_for_interface(ctx->interface, K_FOREVER);
+			__ASSERT_NO_MSG(data_buf != NULL);
+
+			/* Data header */
+			header = net_buf_add(data_buf, sizeof(*header));
+			header->request_id = request_id;
+			header->offset = offset;
+		}
 
 		/* Limit payload to interface size */
 		tail = net_buf_tailroom(data_buf);
@@ -264,22 +289,45 @@ int rpc_client_data_queue(struct rpc_client_ctx *ctx, uint32_t request_id, uint3
 		if (extra) {
 			tail -= extra;
 		}
-		add = MIN(tail, data_len);
+		add = MIN(tail, buffer_remaining);
+		buffer_remaining -= add;
 
 		/* Data payload */
-		net_buf_add_mem(data_buf, bytes, add);
+		net_buf_add_mem(data_buf, bytes + bytes_offset, add);
 
-		/* Send data packet */
-		epacket_set_tx_metadata(data_buf, EPACKET_AUTH_NETWORK, 0x00, INFUSE_RPC_DATA,
-					ctx->address);
-		epacket_queue(ctx->interface, data_buf);
-
+		/* Queue if the buffer is full (to alignment limits) or this is the end of data */
+		if ((net_buf_tailroom(data_buf) < sizeof(uint32_t)) || (add == data_len)) {
+			/* Send data packet */
+			epacket_set_tx_metadata(data_buf, EPACKET_AUTH_NETWORK, 0x00,
+						INFUSE_RPC_DATA, ctx->address);
+			epacket_queue(ctx->interface, data_buf);
+			data_buf = NULL;
+			/* Handle DATA_ACK requirements */
+			pkt_cnt += 1;
+			if (loader_params && loader_params->ack_period &&
+			    (pkt_cnt == loader_params->ack_period)) {
+				rc = rpc_client_ack_wait(ctx, request_id, loader_params->ack_wait);
+				if (rc != 0) {
+					LOG_WRN("DATA_ACK timeout");
+					return rc;
+				}
+				pkt_cnt = 0;
+			}
+		}
 		/* Update state */
-		bytes += add;
+		bytes_offset += add;
 		offset += add;
 		data_len -= add;
 	}
 	return 0;
+}
+
+int rpc_client_data_queue(struct rpc_client_ctx *ctx, uint32_t request_id, uint32_t offset,
+			  const void *data, size_t data_len)
+{
+	/* We know rpc_client_data_queue_auto_load doesn't modify buffer if loader is NULL */
+	return rpc_client_data_queue_auto_load(ctx, request_id, offset, (void *)data, data_len,
+					       NULL);
 }
 
 struct sync_ctx {

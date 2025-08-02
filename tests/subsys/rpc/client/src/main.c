@@ -489,6 +489,114 @@ ZTEST(rpc_client, test_command_data)
 	test_command_data_param(512, 1, true);
 }
 
+static int data_loader(void *user_data, uint32_t offset, void *data, size_t data_len)
+{
+	ARG_UNUSED(offset);
+
+	/* Condition for memcpy to not read off end of buffer */
+	zassert_true(data_len <= sizeof(large_buffer));
+
+	/* Delay the sending for a while to enable the loopback logic to run */
+	k_sleep(K_MSEC(250));
+
+	/* Load the next data chunk */
+	memcpy(data, large_buffer, data_len);
+
+	/* Update expected CRC */
+	expected_crc = crc32_ieee_update(expected_crc, data, data_len);
+	return 0;
+}
+
+static void test_command_data_param_auto_loader(uint32_t size, uint8_t ack_period)
+{
+	const struct device *epacket_dummy = DEVICE_DT_GET(DT_NODELABEL(epacket_dummy));
+	struct k_work_delayable dwork;
+	struct rpc_client_ctx ctx;
+	struct rpc_data_receiver_request req = {
+		.data_header =
+			{
+				.size = size,
+				.rx_ack_period = ack_period,
+			},
+	};
+	uint8_t buffer[256];
+	uint32_t request_id;
+	int rc;
+
+	expected_len = size;
+	expected_crc = 0;
+
+	/* Limit backend to a weird payload size to exercise word-alignment logic */
+	epacket_dummy_set_max_packet(117);
+
+	/* Need to do ePacket loopback in an alternate context for blocking API */
+	k_work_init_delayable(&dwork, async_processor);
+	k_work_reschedule(&dwork, K_MSEC(100));
+
+	rpc_client_init(&ctx, epacket_dummy, EPACKET_ADDR_ALL);
+
+	rc = rpc_client_command_queue(&ctx, RPC_ID_DATA_RECEIVER, &req, sizeof(req),
+				      command_data_done, NULL, K_NO_WAIT, K_SECONDS(1));
+	zassert_equal(0, rc);
+	request_id = rpc_client_last_request_id(&ctx);
+
+	/* Using a bad response ID fails */
+	zassert_equal(-EINVAL, rpc_client_ack_wait(&ctx, request_id + 1, K_FOREVER));
+	zassert_equal(-EINVAL, rpc_client_data_queue(&ctx, request_id + 1, 0, buffer, 10));
+	zassert_equal(-EINVAL,
+		      rpc_client_update_response_timeout(&ctx, request_id + 1, K_SECONDS(5)));
+
+	/* Wait for initial ACK */
+	zassert_equal(0, rpc_client_ack_wait(&ctx, request_id, K_SECONDS(1)));
+
+	/* Drop timeout value */
+	zassert_equal(0, rpc_client_update_response_timeout(&ctx, request_id, K_MSEC(950)));
+
+	/* Expect non word-aligned offsets to fail */
+	for (int i = 1; i < sizeof(uint32_t); i++) {
+		zassert_equal(-EINVAL, rpc_client_data_queue(&ctx, request_id, i, buffer, 16));
+	}
+
+	struct rpc_client_auto_load_params loader_params = {
+		.loader = data_loader,
+		.total_len = size,
+		.ack_wait = K_MSEC(1000),
+		.ack_period = ack_period,
+		.user_data = NULL,
+	};
+
+	/* Push requested data size */
+	rc = rpc_client_data_queue_auto_load(&ctx, request_id, 0, buffer, sizeof(buffer),
+					     &loader_params);
+	zassert_equal(0, rc);
+
+	/* Final callback should have run */
+	zassert_equal(0, k_sem_take(&client_cb_sem, K_MSEC(1000)));
+
+	/* Queuing after command completion should return an error */
+	zassert_equal(-EINVAL, rpc_client_data_queue_auto_load(&ctx, request_id, 10, buffer,
+							       sizeof(buffer), &loader_params));
+	zassert_equal(-EINVAL, rpc_client_ack_wait(&ctx, request_id, K_FOREVER));
+	zassert_equal(-EINVAL, rpc_client_update_response_timeout(&ctx, request_id, K_SECONDS(2)));
+
+	/* Cancel loopback worker */
+	k_work_cancel_delayable(&dwork);
+
+	/* Cleanup the RPC context */
+	rpc_client_cleanup(&ctx);
+}
+
+ZTEST(rpc_client, test_command_data_auto_loader)
+{
+	sys_rand_get(large_buffer, sizeof(large_buffer));
+
+	test_command_data_param_auto_loader(1000, 1);
+	test_command_data_param_auto_loader(5000, 2);
+	test_command_data_param_auto_loader(4000, 3);
+	test_command_data_param_auto_loader(512, 1);
+	test_command_data_param_auto_loader(107, 1);
+}
+
 ZTEST(rpc_client, test_sync)
 {
 	const struct device *epacket_dummy = DEVICE_DT_GET(DT_NODELABEL(epacket_dummy));
