@@ -50,10 +50,7 @@ union epacket_interface_address {
 };
 
 /* Empty interface address */
-#define EPACKET_ADDR_ALL                                                                           \
-	(union epacket_interface_address)                                                          \
-	{                                                                                          \
-	}
+#define EPACKET_ADDR_ALL ((union epacket_interface_address){0})
 
 /**
  * @brief Callback run when packet is transmitted

@@ -22,6 +22,18 @@
 
 #include "../subsys/epacket/interfaces/epacket_internal.h"
 
+#ifndef CONFIG_BT
+/* From addr.c */
+const bt_addr_le_t bt_addr_le_any = {0, {{0, 0, 0, 0, 0, 0}}};
+#endif
+
+ZTEST(epacket_bt_adv, test_address)
+{
+	union epacket_interface_address all = EPACKET_ADDR_ALL;
+
+	zassert_true(bt_addr_le_eq(&all.bluetooth, BT_ADDR_LE_ANY));
+}
+
 ZTEST(epacket_bt_adv, test_metadata)
 {
 	struct epacket_rx_metadata *meta;
