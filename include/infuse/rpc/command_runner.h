@@ -48,14 +48,16 @@ void rpc_command_runner_request_unref(struct net_buf *request);
  * @note If used, the RPC implementation must return NULL.
  *
  * @param interface Interface to send response on
+ * @param address Address to send response to
  * @param auth Authentication level of response
  * @param request_id Request ID associated with the response
  * @param command_id Command ID associated with the response
  * @param response Response message to send
  */
-void rpc_command_runner_early_response(const struct device *interface, enum epacket_auth auth,
-				       uint32_t request_id, uint16_t command_id,
-				       struct net_buf *response);
+void rpc_command_runner_early_response(const struct device *interface,
+				       union epacket_interface_address address,
+				       enum epacket_auth auth, uint32_t request_id,
+				       uint16_t command_id, struct net_buf *response);
 
 #ifdef __cplusplus
 }

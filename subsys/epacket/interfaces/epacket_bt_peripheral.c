@@ -221,11 +221,16 @@ static void disconnected(struct bt_conn *conn, uint8_t reason)
 	update_interface_state();
 }
 
+const char *bt_addr_le_str(const bt_addr_le_t *addr);
+
 static void epacket_bt_peripheral_send(const struct device *dev, struct net_buf *buf)
 {
 	struct epacket_tx_metadata *meta = net_buf_user_data(buf);
 	const struct bt_gatt_attr *attr;
+	// struct bt_conn *conn = NULL;
 	int rc;
+
+	LOG_ERR("SENDTO: %s", bt_addr_le_str(&meta->interface_address.bluetooth));
 
 	/* Encrypt the payload */
 	if (epacket_bt_gatt_encrypt(buf) < 0) {

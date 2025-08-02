@@ -15,6 +15,8 @@
 
 #include <zephyr/net_buf.h>
 
+#include <infuse/epacket/packet.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -79,20 +81,23 @@ struct net_buf *rpc_server_pull_data(uint32_t request_id, uint32_t expected_offs
  * @brief Send initial @ref INFUSE_RPC_DATA_ACK to signify we are ready for data
  *
  * @param interface ePacket interface
+ * @param address Address to send DATA_ACK to
  * @param request_id RPC request ID
  */
-void rpc_server_ack_data_ready(const struct device *interface, uint32_t request_id);
+void rpc_server_ack_data_ready(const struct device *interface,
+			       union epacket_interface_address address, uint32_t request_id);
 
 /**
  * @brief Acknowledge received data packets
  *
  * @param interface ePacket interface
+ * @param address Address to send DATA_ACK to
  * @param request_id RPC request ID
  * @param offset Offset of the received data
  * @param ack_period RX acknowledgment period
  */
-void rpc_server_ack_data(const struct device *interface, uint32_t request_id, uint32_t offset,
-			 uint8_t ack_period);
+void rpc_server_ack_data(const struct device *interface, union epacket_interface_address address,
+			 uint32_t request_id, uint32_t offset, uint8_t ack_period);
 
 /**
  * @brief Feed the RPC server watchdog from a RPC implementation
