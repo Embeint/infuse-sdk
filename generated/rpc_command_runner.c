@@ -268,6 +268,13 @@ void rpc_command_runner(struct net_buf *request)
 		}
 		break;
 #endif /* CONFIG_INFUSE_RPC_COMMAND_BT_DISCONNECT */
+#ifdef CONFIG_INFUSE_RPC_COMMAND_BT_FILE_COPY_BASIC
+	case RPC_ID_BT_FILE_COPY_BASIC:
+		if (AUTHORISED(auth, BT_FILE_COPY_BASIC)) { /* GCOVR_EXCL_BR_LINE */
+			response = rpc_command_bt_file_copy_basic(request);
+		}
+		break;
+#endif /* CONFIG_INFUSE_RPC_COMMAND_BT_FILE_COPY_BASIC */
 #ifdef CONFIG_INFUSE_RPC_COMMAND_GRAVITY_REFERENCE_UPDATE
 	case RPC_ID_GRAVITY_REFERENCE_UPDATE:
 		if (AUTHORISED(auth, GRAVITY_REFERENCE_UPDATE)) { /* GCOVR_EXCL_BR_LINE */

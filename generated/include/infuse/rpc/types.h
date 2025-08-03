@@ -389,6 +389,8 @@ enum rpc_builtin_id {
 	RPC_ID_BT_CONNECT_INFUSE = 50,
 	/** Disconnect from a Bluetooth device */
 	RPC_ID_BT_DISCONNECT = 51,
+	/** Copy a local file to a remote device over Bluetooth */
+	RPC_ID_BT_FILE_COPY_BASIC = 52,
 	/** Store the current accelerometer vector as the gravity reference */
 	RPC_ID_GRAVITY_REFERENCE_UPDATE = 60,
 	/** Query current security state and validate identity */
@@ -902,6 +904,29 @@ struct rpc_bt_disconnect_request {
 } __packed;
 
 struct rpc_bt_disconnect_response {
+	struct infuse_rpc_rsp_header header;
+} __packed;
+
+/** Copy a local file to a remote device over Bluetooth */
+struct rpc_bt_file_copy_basic_request {
+	struct infuse_rpc_req_header header;
+	/** Bluetooth LE device to connect to */
+	struct rpc_struct_bt_addr_le peer;
+	/** Action to apply to copied file */
+	uint8_t action;
+	/** File index to copy */
+	uint8_t file_idx;
+	/** File length */
+	uint32_t file_len;
+	/** File CRC */
+	uint32_t file_crc;
+	/** ACK period for data copy over Bluetooth */
+	uint8_t ack_period;
+	/** Pipelining for the data copy */
+	uint8_t pipelining;
+} __packed;
+
+struct rpc_bt_file_copy_basic_response {
 	struct infuse_rpc_rsp_header header;
 } __packed;
 

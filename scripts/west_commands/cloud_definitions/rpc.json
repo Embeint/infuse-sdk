@@ -612,6 +612,24 @@
             "response_params": [
             ]
         },
+        "52": {
+            "name": "bt_file_copy_basic",
+            "description": "Copy a local file to a remote device over Bluetooth",
+            "depends_on": "EPACKET_INTERFACE_BT_CENTRAL && INFUSE_RPC_COMMAND_FILE_WRITE_BASIC && INFUSE_RPC_CLIENT",
+            "default_auth": "EPACKET_AUTH_DEVICE",
+            "request_params": [
+                {"name": "peer", "type": "struct rpc_struct_bt_addr_le", "description": "Bluetooth LE device to connect to"},
+                {"name": "action", "type": "enum rpc_enum_file_action", "description": "Action to apply to copied file"},
+                {"name": "file_idx", "type": "uint8_t", "description": "File index to copy"},
+                {"name": "file_len", "type": "uint32_t", "description": "File length"},
+                {"name": "file_crc", "type": "uint32_t", "description": "File CRC"},
+                {"name": "ack_period", "type": "uint8_t", "description": "ACK period for data copy over Bluetooth"},
+                {"name": "pipelining", "type": "uint8_t", "description": "Pipelining for the data copy"}
+
+            ],
+            "response_params": [
+            ]
+        },
         "60": {
             "name": "gravity_reference_update",
             "description": "Store the current accelerometer vector as the gravity reference",
