@@ -37,8 +37,8 @@ typedef void (*rpc_client_rsp_fn)(const struct net_buf *buf, void *user_data);
 struct rpc_client_cmd_ctx {
 	/* Command timeout timer */
 	struct k_timer timeout;
-	/* @ref INFUSE_RPC_DATA_ACK semaphore */
-	struct k_sem ack;
+	/* Allow the next transmission */
+	struct k_sem tx_tokens;
 	/* Timeout for the response */
 	k_timeout_t rsp_timeout;
 	/* Callback to run on completion */
@@ -49,6 +49,8 @@ struct rpc_client_cmd_ctx {
 	uint32_t request_id;
 	/* RPC command ID */
 	uint16_t command_id;
+	/* Number of TX tokens to give on DATA_ACK */
+	uint16_t tx_tokens_on_ack;
 };
 
 /* RPC client context */
@@ -181,6 +183,8 @@ struct rpc_client_auto_load_params {
 	k_timeout_t ack_wait;
 	/* Specified DATA_ACK period */
 	uint8_t ack_period;
+	/* Maximum number of pending DATA_ACK packets */
+	uint8_t pipelining;
 	/* User data pointer for @a loader */
 	void *user_data;
 };
