@@ -37,6 +37,7 @@ void infuse_watchdog_expired(const struct device *dev, int channel_id)
 ZTEST(drivers_watchdog, test_watchdog)
 {
 	k_timeout_t feed_period;
+	int extra_ms = IS_ENABLED(CONFIG_COVERAGE) ? 50 : 0;
 	int channel, rc;
 
 	/* QEMU watchdog only has one timeout channel */
@@ -78,11 +79,12 @@ ZTEST(drivers_watchdog, test_watchdog)
 	/* Failing to call infuse_watchdog_feed should result in a watchdog interrupt */
 	rc = k_sem_take(&watchdog_warning, K_MSEC(CONFIG_INFUSE_WATCHDOG_PERIOD_MS));
 	zassert_equal(0, rc, "Watchdog warning didn't fire");
-	rc = k_sem_take(&watchdog_expired, K_MSEC(CONFIG_INFUSE_WATCHDOG_SOFTWARE_WARNING_MS + 10));
+	rc = k_sem_take(&watchdog_expired,
+			K_MSEC(CONFIG_INFUSE_WATCHDOG_SOFTWARE_WARNING_MS + 10 + extra_ms));
 	zassert_equal(0, rc, "Watchdog did not expire");
 
 	/* Warning should have been received CONFIG_INFUSE_WATCHDOG_SOFTWARE_WARNING_MS early */
-	zassert_within(CONFIG_INFUSE_WATCHDOG_SOFTWARE_WARNING_MS, warning, 5,
+	zassert_within(CONFIG_INFUSE_WATCHDOG_SOFTWARE_WARNING_MS, warning, 5 + extra_ms,
 		       "Watchdog warning not at expected time");
 	zassert_equal(0, expired_channel, "Unexpected channel ID");
 }
