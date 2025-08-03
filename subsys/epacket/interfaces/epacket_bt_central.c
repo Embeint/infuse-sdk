@@ -472,16 +472,16 @@ static void epacket_bt_central_send(const struct device *dev, struct net_buf *bu
 		goto cleanup;
 	}
 
+	/* Get connection state */
+	conn_idx = bt_conn_index(conn);
+	s = &infuse_conn[conn_idx];
+
 	/* Encrypt the payload */
-	if (epacket_bt_gatt_encrypt(buf, infuse_security_network_key_identifier()) < 0) {
+	if (epacket_bt_gatt_encrypt(buf, s->network_id) < 0) {
 		LOG_WRN("Failed to encrypt");
 		rc = -EIO;
 		goto cleanup;
 	}
-
-	/* Get connection state */
-	conn_idx = bt_conn_index(conn);
-	s = &infuse_conn[conn_idx];
 
 	/* Get appropriate characteristic handle and validate */
 	switch (meta->type) {
