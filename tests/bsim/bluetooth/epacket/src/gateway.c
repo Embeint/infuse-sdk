@@ -7,6 +7,9 @@
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
 #include <zephyr/sys/atomic.h>
+#include <zephyr/drivers/flash.h>
+#include <zephyr/storage/flash_map.h>
+#include <zephyr/random/random.h>
 
 #include "common.h"
 
@@ -27,6 +30,7 @@
 
 int epacket_bt_gatt_encrypt(struct net_buf *buf);
 
+uint8_t mem_buffer[1024];
 extern enum bst_result_t bst_result;
 static K_SEM_DEFINE(epacket_adv_received, 0, 1);
 static K_SEM_DEFINE(bt_connected, 0, 1);
@@ -1876,6 +1880,160 @@ static void main_gateway_data_logger_read_throughput(void)
 	PASS("Data logger read passed (%d ms)\n", duration);
 }
 
+static void main_gateway_bt_file_copy(void)
+{
+	const struct device *epacket_dummy = DEVICE_DT_GET(DT_NODELABEL(epacket_dummy));
+	const struct device *epacket_central = DEVICE_DT_GET(DT_NODELABEL(epacket_bt_central));
+	const struct bt_le_conn_param conn_params = BT_LE_CONN_PARAM_INIT(0x10, 0x15, 0, 400);
+	struct epacket_read_response security_info;
+	struct k_fifo *response_queue = epacket_dummmy_transmit_fifo_get();
+	union epacket_interface_address address;
+	struct bt_conn *conn = NULL;
+	struct net_buf *buf;
+	uint32_t flash_crc;
+	bt_addr_le_t addr;
+	int rc;
+
+	common_init();
+	if (observe_peers(&addr, 1) < 0) {
+		FAIL("Failed to observe peer\n");
+		return;
+	}
+	address.bluetooth = addr;
+
+	epacket_set_receive_handler(epacket_dummy, dummy_gateway_handler);
+	epacket_set_receive_handler(epacket_central, dummy_gateway_handler);
+
+	/* Write random data to the file_partition */
+	const struct flash_area *fa;
+
+	flash_area_open(FIXED_PARTITION_ID(file_partition), &fa);
+	sys_rand_get(mem_buffer, sizeof(mem_buffer));
+	for (int i = 0; i < 8096; i += sizeof(mem_buffer)) {
+		flash_area_write(fa, i, mem_buffer, sizeof(mem_buffer));
+	}
+
+	/* Command requires a connection to the device to already exist */
+	struct rpc_bt_file_copy_basic_request file_copy_request = {
+		.header.command_id = RPC_ID_BT_FILE_COPY_BASIC,
+		.header.request_id = 0xCC345678,
+		.peer =
+			{
+				.type = addr.type,
+				.val =
+					{
+						addr.a.val[0],
+						addr.a.val[1],
+						addr.a.val[2],
+						addr.a.val[3],
+						addr.a.val[4],
+						addr.a.val[5],
+					},
+			},
+		/* FILE_FOR_COPY to simulate flash write times */
+		.action = RPC_ENUM_FILE_ACTION_FILE_FOR_COPY,
+		.file_idx = 0,
+		.file_len = 4123,
+		.ack_period = 1,
+		.pipelining = 0,
+	};
+	struct epacket_dummy_frame dummy_header = {
+		.type = INFUSE_RPC_CMD,
+		.auth = EPACKET_AUTH_DEVICE,
+	};
+	struct infuse_rpc_rsp_header *rpc_rsp;
+	struct epacket_dummy_frame *frame;
+
+	flash_area_crc32(fa, 0, file_copy_request.file_len, &flash_crc, mem_buffer,
+			 sizeof(mem_buffer));
+	file_copy_request.file_crc = flash_crc;
+
+	/* Push packet at dummy interface */
+	epacket_dummy_receive(epacket_dummy, &dummy_header, &file_copy_request,
+			      sizeof(file_copy_request));
+
+	/* Expect error response to appear on the epacket output */
+	buf = k_fifo_get(response_queue, K_SECONDS(1));
+	if (buf == NULL) {
+		FAIL("Failed to receive response\n");
+		return;
+	}
+	frame = net_buf_pull_mem(buf, sizeof(struct epacket_dummy_frame));
+	if (frame->type != INFUSE_RPC_RSP) {
+		FAIL("Unexpected packet type\n");
+		return;
+	}
+	rpc_rsp = net_buf_pull_mem(buf, sizeof(struct infuse_rpc_rsp_header));
+	if (rpc_rsp->command_id != RPC_ID_BT_FILE_COPY_BASIC) {
+		FAIL("Unexpected command ID %d\n", rpc_rsp->command_id);
+		return;
+	}
+	if (rpc_rsp->return_code != -ENOTCONN) {
+		FAIL("Unexpected command return code\n");
+		return;
+	}
+	net_buf_unref(buf);
+
+	/* Run the process several times */
+	for (int i = 0; i < 4; i++) {
+		file_copy_request.header.request_id += 1;
+		file_copy_request.file_len += 1;
+		flash_area_crc32(fa, 0, file_copy_request.file_len, &flash_crc, mem_buffer,
+				 sizeof(mem_buffer));
+		file_copy_request.file_crc = flash_crc;
+		file_copy_request.ack_period = (i > 2) ? i - 1 : 1;
+		file_copy_request.pipelining = (i > 0) ? 2 : 0;
+
+		/* Create the Bluetooth connection */
+		rc = epacket_bt_gatt_connect(&addr, &conn_params, 2000, &conn, &security_info, true,
+					     false, false, K_FOREVER, K_FOREVER);
+		if (rc != 0) {
+			FAIL("Failed to create connection\n");
+			return;
+		}
+
+		/* Push packet at dummy interface */
+		epacket_dummy_receive(epacket_dummy, &dummy_header, &file_copy_request,
+				      sizeof(file_copy_request));
+
+		/* Expect response to appear on the epacket output */
+		buf = k_fifo_get(response_queue, K_SECONDS(2));
+		if (buf == NULL) {
+			FAIL("Failed to receive response\n");
+			return;
+		}
+		frame = net_buf_pull_mem(buf, sizeof(struct epacket_dummy_frame));
+		if (frame->type != INFUSE_RPC_RSP) {
+			FAIL("Unexpected packet type %d\n", frame->type);
+			return;
+		}
+		rpc_rsp = net_buf_pull_mem(buf, sizeof(struct infuse_rpc_rsp_header));
+		if (rpc_rsp->command_id != RPC_ID_BT_FILE_COPY_BASIC) {
+			FAIL("Unexpected command ID %d\n", rpc_rsp->command_id);
+			return;
+		}
+		if (rpc_rsp->return_code != 0) {
+			FAIL("Unexpected command return code\n");
+			return;
+		}
+		net_buf_unref(buf);
+
+		rc = bt_conn_disconnect_sync(conn);
+		bt_conn_unref(conn);
+		if (rc != 0) {
+			FAIL("Failed to disconnect\n");
+			return;
+		}
+
+		/* Give a short duration to allow for connection cleanup*/
+		k_sleep(K_MSEC(50));
+	}
+
+	flash_area_close(fa);
+
+	PASS("BT file copy passed\n");
+}
+
 static const struct bst_test_instance epacket_gateway[] = {
 	{
 		.test_id = "epacket_bt_gateway_scan",
@@ -2038,6 +2196,13 @@ static const struct bst_test_instance epacket_gateway[] = {
 		.test_pre_init_f = test_init,
 		.test_tick_f = test_tick,
 		.test_main_f = main_gateway_data_logger_read_throughput,
+	},
+	{
+		.test_id = "epacket_bt_gateway_bt_file_copy",
+		.test_descr = "Data logger read integration",
+		.test_pre_init_f = test_init,
+		.test_tick_f = test_tick,
+		.test_main_f = main_gateway_bt_file_copy,
 	},
 	BSTEST_END_MARKER};
 
