@@ -30,7 +30,6 @@ jobs:
         sudo apt-get install coccinelle
 
     - name: Run Coding Guidelines Checks
-      continue-on-error: true
       id: coding_guidelines
       env:
         BASE_REF: ${{ github.base_ref }}
@@ -43,7 +42,7 @@ jobs:
         rm -fr ".git/rebase-merge"
         git rebase origin/${BASE_REF}
         git clean -f -d
-        source zephyr-env.sh
+        export PATH=$PATH:$ZEPHYR_BASE/scripts
         # debug
         ls -la
         git log  --pretty=oneline | head -n 10
