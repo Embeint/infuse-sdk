@@ -145,11 +145,12 @@ void epacket_bt_adv_send_next(void);
  * @brief Encrypt Bluetooth GATT packet for transmission
  *
  * @param buf Packet to encrypt
+ * @param network_key_id Network key ID to use
  *
  * @retval 0 on success
  * @retval -1 on failure
  */
-int epacket_bt_gatt_encrypt(struct net_buf *buf);
+int epacket_bt_gatt_encrypt(struct net_buf *buf, uint32_t network_key_id);
 
 /**
  * @brief Decrypt received Bluetooth GATT packet
@@ -214,16 +215,20 @@ int epacket_dummy_decrypt(struct net_buf *buf);
  * @brief Common V0 packet encryption for transmission
  *
  * @param buf Packet to encrypt
+ * @param interface_key Identify the interface
+ * @param network_key_id Network key ID to use
  *
  * @retval 0 on success
  * @retval -1 on failure
  */
-int epacket_versioned_v0_encrypt(struct net_buf *buf, uint8_t interface_key);
+int epacket_versioned_v0_encrypt(struct net_buf *buf, uint8_t interface_key,
+				 uint32_t network_key_id);
 
 /**
  * @brief Decrypt received common V0 packet
  *
  * @param buf Packet to decrypt
+ * @param interface_key Identify the interface
  *
  * @retval 0 on success
  * @retval -1 on failure
@@ -234,16 +239,20 @@ int epacket_versioned_v0_decrypt(struct net_buf *buf, uint8_t interface_key);
  * @brief Common V0 packet encryption for transmission
  *
  * @param buf Packet to encrypt
+ * @param interface_key Identify the interface
+ * @param network_key_id Network key ID to use
  *
  * @retval 0 on success
  * @retval -1 on failure
  */
-int epacket_unversioned_v0_encrypt(struct net_buf *buf, uint8_t interface_key);
+int epacket_unversioned_v0_encrypt(struct net_buf *buf, uint8_t interface_key,
+				   uint32_t network_key_id);
 
 /**
  * @brief Decrypt received common V0 packet
  *
  * @param buf Packet to decrypt
+ * @param interface_key Identify the interface
  *
  * @retval 0 on success
  * @retval -1 on failure
@@ -254,6 +263,7 @@ int epacket_unversioned_v0_decrypt(struct net_buf *buf, uint8_t interface_key);
  * @brief Decrypt transmitted common V0 packet
  *
  * @param buf Packet to decrypt
+ * @param interface_key Identify the interface
  *
  * @retval 0 on success
  * @retval -1 on failure

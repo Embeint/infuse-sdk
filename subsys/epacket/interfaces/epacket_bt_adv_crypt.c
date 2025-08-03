@@ -13,6 +13,7 @@
 
 #include <infuse/epacket/keys.h>
 #include <infuse/epacket/interface/epacket_bt.h>
+#include <infuse/security.h>
 
 #include "epacket_internal.h"
 
@@ -99,7 +100,8 @@ bool epacket_bt_adv_is_epacket(uint8_t adv_type, struct net_buf_simple *buf)
 
 int epacket_bt_adv_encrypt(struct net_buf *buf)
 {
-	return epacket_versioned_v0_encrypt(buf, EPACKET_KEY_INTERFACE_BT_ADV);
+	return epacket_versioned_v0_encrypt(buf, EPACKET_KEY_INTERFACE_BT_ADV,
+					    infuse_security_network_key_identifier());
 }
 
 int epacket_bt_adv_decrypt(struct net_buf *buf)

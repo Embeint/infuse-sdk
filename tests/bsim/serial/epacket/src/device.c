@@ -26,8 +26,6 @@
 #include <infuse/data_logger/high_level/tdf.h>
 #include <infuse/tdf/definitions.h>
 
-int epacket_bt_gatt_encrypt(struct net_buf *buf);
-
 extern enum bst_result_t bst_result;
 static K_SEM_DEFINE(epacket_serial_received, 0, 1);
 static atomic_t received_packets;
