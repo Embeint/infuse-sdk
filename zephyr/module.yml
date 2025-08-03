@@ -1,4 +1,4 @@
-name: infuse-iot
+name: infuse-sdk
 build:
   settings:
     board_root: .
