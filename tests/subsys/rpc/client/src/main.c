@@ -507,7 +507,8 @@ static int data_loader(void *user_data, uint32_t offset, void *data, size_t data
 	return 0;
 }
 
-static void test_command_data_param_auto_loader(uint32_t size, uint8_t ack_period)
+static void test_command_data_param_auto_loader(uint32_t size, uint8_t ack_period,
+						uint8_t pipelining)
 {
 	const struct device *epacket_dummy = DEVICE_DT_GET(DT_NODELABEL(epacket_dummy));
 	struct k_work_delayable dwork;
@@ -562,8 +563,12 @@ static void test_command_data_param_auto_loader(uint32_t size, uint8_t ack_perio
 		.total_len = size,
 		.ack_wait = K_MSEC(1000),
 		.ack_period = ack_period,
+		.pipelining = pipelining,
 		.user_data = NULL,
 	};
+
+	printk("Running auto load: Size %5d bytes, ACK %d, Pipelining %d\n", size, ack_period,
+	       pipelining);
 
 	/* Push requested data size */
 	rc = rpc_client_data_queue_auto_load(&ctx, request_id, 0, buffer, sizeof(buffer),
@@ -590,11 +595,12 @@ ZTEST(rpc_client, test_command_data_auto_loader)
 {
 	sys_rand_get(large_buffer, sizeof(large_buffer));
 
-	test_command_data_param_auto_loader(1000, 1);
-	test_command_data_param_auto_loader(5000, 2);
-	test_command_data_param_auto_loader(4000, 3);
-	test_command_data_param_auto_loader(512, 1);
-	test_command_data_param_auto_loader(107, 1);
+	test_command_data_param_auto_loader(1000, 1, 0);
+	test_command_data_param_auto_loader(3200, 1, 3);
+	test_command_data_param_auto_loader(5000, 2, 3);
+	test_command_data_param_auto_loader(4000, 3, 2);
+	test_command_data_param_auto_loader(512, 1, 1);
+	test_command_data_param_auto_loader(107, 1, 2);
 }
 
 ZTEST(rpc_client, test_sync)

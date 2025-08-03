@@ -58,7 +58,7 @@ static void run_callback(struct rpc_client_ctx *ctx, const struct net_buf *buf, 
 	 * before we get the chance to give the context semaphore.
 	 */
 	c->request_id = 0;
-	k_sem_give(&c->ack);
+	k_sem_give(&c->tx_tokens);
 	k_sem_give(&ctx->cmd_ctx_sem);
 
 	/* Run the callback */
@@ -93,7 +93,14 @@ static bool packet_received(struct net_buf *buf, bool decrypted, void *user_ctx)
 		/* ACK received, extend timeout */
 		LOG_DBG("ACK received for %08X", ack->request_id);
 		k_timer_start(&c->timeout, c->rsp_timeout, K_FOREVER);
-		k_sem_give(&c->ack);
+
+		/* Release semaphores under lock to prevent rescheduling until all released */
+		int key = irq_lock();
+
+		for (int i = 0; i < c->tx_tokens_on_ack; i++) {
+			k_sem_give(&c->tx_tokens);
+		}
+		irq_unlock(key);
 	} else if (meta->type == INFUSE_RPC_RSP) {
 		struct infuse_rpc_rsp_header *rsp_header = (void *)buf->data;
 		struct rpc_client_cmd_ctx *c = find_cmd_ctx(ctx, rsp_header->request_id);
@@ -186,13 +193,14 @@ int rpc_client_command_queue(struct rpc_client_ctx *ctx, enum rpc_builtin_id cmd
 	/* Store command context */
 	c = &ctx->cmd_ctx[ctx_idx];
 	k_timer_init(&c->timeout, command_timeout, NULL);
-	k_sem_init(&c->ack, 0, UINT32_MAX);
+	k_sem_init(&c->tx_tokens, 0, UINT32_MAX);
 	c->timeout.user_data = ctx;
 	c->cb = cb;
 	c->user_data = user_data;
 	c->request_id = ctx->request_id;
 	c->command_id = cmd;
 	c->rsp_timeout = response_timeout;
+	c->tx_tokens_on_ack = 1;
 
 	/* Command header */
 	req_header->command_id = cmd;
@@ -217,7 +225,7 @@ int rpc_client_ack_wait(struct rpc_client_ctx *ctx, uint32_t request_id, k_timeo
 	if (c == NULL) {
 		return -EINVAL;
 	}
-	return k_sem_take(&c->ack, timeout);
+	return k_sem_take(&c->tx_tokens, timeout);
 }
 
 int rpc_client_data_queue_auto_load(struct rpc_client_ctx *ctx, uint32_t request_id,
@@ -232,8 +240,8 @@ int rpc_client_data_queue_auto_load(struct rpc_client_ctx *ctx, uint32_t request
 	k_ticks_t limit_tx = k_uptime_ticks();
 	uint32_t buffer_remaining = 0;
 	uint32_t bytes_offset = 0;
+	uint32_t start_tokens;
 	uint32_t data_len;
-	int pkt_cnt = 0;
 	int rc;
 
 	if (c == NULL) {
@@ -244,6 +252,24 @@ int rpc_client_data_queue_auto_load(struct rpc_client_ctx *ctx, uint32_t request
 	/* Offsets must be word aligned */
 	if (offset % sizeof(uint32_t) != 0) {
 		return -EINVAL;
+	}
+
+	/* Setup TX tokens */
+	k_sem_reset(&c->tx_tokens);
+	if (loader_params && loader_params->ack_period) {
+		/* Each ACK enables the next N packets */
+		c->tx_tokens_on_ack = loader_params->ack_period;
+	}
+	/* Pipelining results in more initial tokens being available */
+	if (loader_params && (loader_params->pipelining > 1)) {
+		start_tokens = c->tx_tokens_on_ack * loader_params->pipelining;
+	} else {
+		start_tokens = c->tx_tokens_on_ack;
+	}
+
+	/* Load initial TX tokens */
+	for (int i = 0; i < start_tokens; i++) {
+		k_sem_give(&c->tx_tokens);
 	}
 
 	data_len = loader_params ? loader_params->total_len : buffer_len;
@@ -269,6 +295,15 @@ int rpc_client_data_queue_auto_load(struct rpc_client_ctx *ctx, uint32_t request
 
 		/* No pending buffer */
 		if (data_buf == NULL) {
+			/* Block until any required ACKs arrive */
+			if (loader_params && loader_params->ack_period) {
+				rc = rpc_client_ack_wait(ctx, request_id, loader_params->ack_wait);
+				if (rc != 0) {
+					LOG_WRN("DATA_ACK timeout");
+					return rc;
+				}
+			}
+
 			/* Respect any rate-limiting requests from the receiving device */
 			epacket_rate_limit_tx(&limit_tx, add);
 
@@ -302,17 +337,6 @@ int rpc_client_data_queue_auto_load(struct rpc_client_ctx *ctx, uint32_t request
 						INFUSE_RPC_DATA, ctx->address);
 			epacket_queue(ctx->interface, data_buf);
 			data_buf = NULL;
-			/* Handle DATA_ACK requirements */
-			pkt_cnt += 1;
-			if (loader_params && loader_params->ack_period &&
-			    (pkt_cnt == loader_params->ack_period)) {
-				rc = rpc_client_ack_wait(ctx, request_id, loader_params->ack_wait);
-				if (rc != 0) {
-					LOG_WRN("DATA_ACK timeout");
-					return rc;
-				}
-				pkt_cnt = 0;
-			}
 		}
 		/* Update state */
 		bytes_offset += add;
