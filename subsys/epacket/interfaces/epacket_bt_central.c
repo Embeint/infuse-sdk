@@ -469,7 +469,7 @@ static void epacket_bt_central_send(const struct device *dev, struct net_buf *bu
 	}
 
 	/* Encrypt the payload */
-	if (epacket_bt_gatt_encrypt(buf) < 0) {
+	if (epacket_bt_gatt_encrypt(buf, infuse_security_network_key_identifier()) < 0) {
 		LOG_WRN("Failed to encrypt");
 		rc = -EIO;
 		goto cleanup;

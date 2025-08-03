@@ -18,6 +18,7 @@
 #include <infuse/epacket/packet.h>
 #include <infuse/epacket/keys.h>
 #include <infuse/epacket/interface/epacket_serial.h>
+#include <infuse/security.h>
 
 #include "epacket_internal.h"
 
@@ -108,7 +109,8 @@ void epacket_serial_reconstruct(const struct device *dev, uint8_t *buffer, size_
 
 int epacket_serial_encrypt(struct net_buf *buf)
 {
-	return epacket_versioned_v0_encrypt(buf, EPACKET_KEY_INTERFACE_SERIAL);
+	return epacket_versioned_v0_encrypt(buf, EPACKET_KEY_INTERFACE_SERIAL,
+					    infuse_security_network_key_identifier());
 }
 
 int epacket_serial_decrypt(struct net_buf *buf)

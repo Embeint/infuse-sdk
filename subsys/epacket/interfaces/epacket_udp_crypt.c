@@ -7,12 +7,14 @@
  */
 
 #include <infuse/epacket/keys.h>
+#include <infuse/security.h>
 
 #include "epacket_internal.h"
 
 int epacket_udp_encrypt(struct net_buf *buf)
 {
-	return epacket_unversioned_v0_encrypt(buf, EPACKET_KEY_INTERFACE_UDP);
+	return epacket_unversioned_v0_encrypt(buf, EPACKET_KEY_INTERFACE_UDP,
+					      infuse_security_network_key_identifier());
 }
 
 int epacket_udp_decrypt(struct net_buf *buf)

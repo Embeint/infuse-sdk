@@ -27,7 +27,8 @@
 
 LOG_MODULE_DECLARE(epacket);
 
-int epacket_versioned_v0_encrypt(struct net_buf *buf, uint8_t interface_key)
+int epacket_versioned_v0_encrypt(struct net_buf *buf, uint8_t interface_key,
+				 uint32_t network_key_id)
 {
 	struct epacket_tx_metadata *meta = net_buf_user_data(buf);
 	uint64_t epoch_time = epoch_time_seconds(epoch_time_now());
@@ -54,7 +55,7 @@ int epacket_versioned_v0_encrypt(struct net_buf *buf, uint8_t interface_key)
 	if (meta->auth == EPACKET_AUTH_NETWORK) {
 		epacket_key_id = EPACKET_KEY_NETWORK | interface_key;
 		meta->flags |= EPACKET_FLAGS_ENCRYPTION_NETWORK;
-		key_identifier = infuse_security_network_key_identifier();
+		key_identifier = network_key_id;
 	} else {
 		epacket_key_id = EPACKET_KEY_DEVICE | interface_key;
 		meta->flags |= EPACKET_FLAGS_ENCRYPTION_DEVICE;
@@ -187,7 +188,8 @@ error:
 	return -1;
 }
 
-int epacket_unversioned_v0_encrypt(struct net_buf *buf, uint8_t interface_key)
+int epacket_unversioned_v0_encrypt(struct net_buf *buf, uint8_t interface_key,
+				   uint32_t network_key_id)
 {
 	struct epacket_tx_metadata *meta = net_buf_user_data(buf);
 	uint64_t epoch_time = epoch_time_seconds(epoch_time_now());
@@ -216,7 +218,7 @@ int epacket_unversioned_v0_encrypt(struct net_buf *buf, uint8_t interface_key)
 	if (meta->auth == EPACKET_AUTH_NETWORK) {
 		epacket_key_id = EPACKET_KEY_NETWORK | interface_key;
 		meta->flags |= EPACKET_FLAGS_ENCRYPTION_NETWORK;
-		key_identifier = infuse_security_network_key_identifier();
+		key_identifier = network_key_id;
 	} else {
 		epacket_key_id = EPACKET_KEY_DEVICE | interface_key;
 		meta->flags |= EPACKET_FLAGS_ENCRYPTION_DEVICE;
