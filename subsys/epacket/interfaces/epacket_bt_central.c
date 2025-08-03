@@ -56,6 +56,7 @@ struct infuse_connection_state {
 	struct k_work_delayable idle_worker;
 	struct k_work_delayable term_worker;
 	k_timeout_t inactivity_timeout;
+	uint32_t network_id;
 } infuse_conn[CONFIG_BT_MAX_CONN];
 
 struct bt_gatt_read_params_user {
@@ -354,6 +355,9 @@ conn_created:
 		rc = -EIO;
 		goto cleanup;
 	}
+
+	/* Store the network ID */
+	s->network_id = security->network_id;
 
 	/* Setup requested subscriptions */
 	rc = characteristic_subscribe(conn, &s->remote_info[CHAR_COMMAND], &s->subs[CHAR_COMMAND],
