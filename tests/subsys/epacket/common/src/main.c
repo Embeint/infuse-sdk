@@ -13,12 +13,39 @@
 
 #include <infuse/types.h>
 #include <infuse/epacket/interface.h>
+#include <infuse/epacket/keys.h>
 #include <infuse/epacket/packet.h>
 #include <infuse/epacket/interface/epacket_dummy.h>
 #include <infuse/epacket/interface/epacket_bt_adv.h>
 #include <infuse/security.h>
 
 #include "../subsys/epacket/interfaces/epacket_internal.h"
+
+ZTEST(epacket_common, test_encrypt_unknown_key)
+{
+	const struct device *epacket_dummy = DEVICE_DT_GET(DT_NODELABEL(epacket_dummy));
+	uint32_t default_network = infuse_security_network_key_identifier();
+	uint8_t payload[6] = {0};
+	struct net_buf *buf;
+	int rc;
+
+	buf = epacket_alloc_tx_for_interface(epacket_dummy, K_NO_WAIT);
+	net_buf_reserve(buf, 32);
+	zassert_not_null(buf);
+
+	/* Arbitrary network key metadata and payload */
+	epacket_set_tx_metadata(buf, EPACKET_AUTH_NETWORK, 0, INFUSE_TDF, EPACKET_ADDR_ALL);
+	net_buf_add_mem(buf, payload, sizeof(payload));
+
+	/* Network IDs we don't know can't be encrypted */
+	rc = epacket_unversioned_v0_encrypt(buf, EPACKET_KEY_INTERFACE_BT_GATT,
+					    default_network + 1);
+	zassert_equal(-1, rc);
+	rc = epacket_versioned_v0_encrypt(buf, EPACKET_KEY_INTERFACE_BT_GATT, default_network + 1);
+	zassert_equal(-1, rc);
+
+	net_buf_unref(buf);
+}
 
 ZTEST(epacket_common, test_alloc_failure)
 {
