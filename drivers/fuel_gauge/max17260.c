@@ -266,11 +266,7 @@ static int max17260_shutdown_exit(const struct device *dev)
 	while (1) {
 		/* Read FSTAT register */
 		rc = reg_read(dev, MAX17260_REG_F_STAT, &reg);
-		if (rc < 0) {
-			goto end;
-		}
-
-		if (!(reg & MAX17260_F_STAT_DATA_NOT_READY)) {
+		if ((rc == 0) && !(reg & MAX17260_F_STAT_DATA_NOT_READY)) {
 			LOG_DBG("Data ready");
 			goto end;
 		}
