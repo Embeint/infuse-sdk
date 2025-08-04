@@ -89,6 +89,15 @@ config TASK_RUNNER_TASK_BATTERY_VERBOSE_PRINT_PERIOD
 	help
 	  Change the frequency of the battery state output printed to the console
 
+config TASK_RUNNER_TASK_BATTERY_FALLBACK_SOC
+	int "Default SoC to use internally if reading the SoC fails"
+	default 50
+	help
+	  If the battery measurement hardware fails, reporting a SoC of 0% will likely
+	  lead to a shutdown of most device functionality. This option controls the
+	  value that is reported instead, allowing the device to continue operation in
+	  the absence of external knowledge.
+
 endif # TASK_RUNNER_TASK_BATTERY
 
 config TASK_RUNNER_TASK_BT_SCANNER

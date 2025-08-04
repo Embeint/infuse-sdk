@@ -51,12 +51,14 @@ int task_battery_manual_run(const struct device *dev, const struct task_battery_
 		tdf_battery->current_ua = value.current;
 	} else if ((rc < 0) && (rc != -ENOTSUP)) {
 		LOG_ERR("Charge current query failed (%d)", rc);
+		tdf_battery->current_ua = -1;
 	}
 	rc = fuel_gauge_get_prop(dev, FUEL_GAUGE_RELATIVE_STATE_OF_CHARGE, &value);
 	if (rc == 0) {
 		tdf_battery->soc = value.relative_state_of_charge;
 	} else if ((rc < 0) && (rc != -ENOTSUP)) {
 		LOG_ERR("SoC query failed (%d)", rc);
+		tdf_battery->soc = CONFIG_TASK_RUNNER_TASK_BATTERY_FALLBACK_SOC;
 	}
 
 	/* Release power requirement */
