@@ -148,6 +148,16 @@ int rpc_client_update_response_timeout(struct rpc_client_ctx *ctx, uint32_t requ
 	return 0;
 }
 
+static void command_tx_done_cb(const struct device *dev, struct net_buf *pkt, int result,
+			       void *user_data)
+{
+	struct rpc_client_cmd_ctx *c = user_data;
+
+	c->tx_result = result;
+	/* Unblock command queue function */
+	k_sem_give(&c->tx_tokens);
+}
+
 int rpc_client_command_queue(struct rpc_client_ctx *ctx, enum rpc_builtin_id cmd, void *req_params,
 			     size_t req_params_len, rpc_client_rsp_fn cb, void *user_data,
 			     k_timeout_t ctx_timeout, k_timeout_t response_timeout)
@@ -156,6 +166,7 @@ int rpc_client_command_queue(struct rpc_client_ctx *ctx, enum rpc_builtin_id cmd
 	struct rpc_client_cmd_ctx *c;
 	uint8_t ctx_idx = UINT8_MAX;
 	struct net_buf *cmd_buf;
+	int rc;
 
 	__ASSERT_NO_MSG(ctx->interface != NULL);
 
@@ -211,11 +222,18 @@ int rpc_client_command_queue(struct rpc_client_ctx *ctx, enum rpc_builtin_id cmd
 
 	/* Send command */
 	epacket_set_tx_metadata(cmd_buf, EPACKET_AUTH_NETWORK, 0x00, INFUSE_RPC_CMD, ctx->address);
+	epacket_set_tx_callback(cmd_buf, command_tx_done_cb, c);
 	epacket_queue(ctx->interface, cmd_buf);
 
 	/* Start the timeout timer */
 	k_timer_start(&c->timeout, response_timeout, K_FOREVER);
-	return 0;
+
+	/* Wait until the command is sent */
+	rc = k_sem_take(&c->tx_tokens, K_SECONDS(1));
+	if (rc == 0) {
+		rc = c->tx_result;
+	}
+	return rc;
 }
 
 int rpc_client_ack_wait(struct rpc_client_ctx *ctx, uint32_t request_id, k_timeout_t timeout)
