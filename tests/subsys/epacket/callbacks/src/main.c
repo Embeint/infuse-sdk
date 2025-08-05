@@ -37,11 +37,14 @@ static bool packet_received_cb(struct net_buf *buf, bool decrypted, void *user_c
 	return true;
 }
 
-static void tx_done(const struct device *dev, struct net_buf *buf, int result)
+static void *expected_user_data;
+
+static void tx_done(const struct device *dev, struct net_buf *buf, int result, void *user_data)
 {
 	const struct device *epacket_dummy = DEVICE_DT_GET(DT_NODELABEL(epacket_dummy));
 
 	zassert_equal(epacket_dummy, dev);
+	zassert_equal(expected_user_data, user_data);
 	zassert_not_null(buf);
 
 	k_poll_signal_raise(&tx_done_signal, result);
@@ -69,7 +72,8 @@ ZTEST(epacket_callbacks, test_interface_tx_failure)
 	tx = epacket_alloc_tx_for_interface(epacket_dummy, K_NO_WAIT);
 	zassert_not_null(tx);
 	epacket_set_tx_metadata(tx, EPACKET_AUTH_DEVICE, 0x1234, 0x20, EPACKET_ADDR_ALL);
-	epacket_set_tx_callback(tx, tx_done);
+	expected_user_data = NULL;
+	epacket_set_tx_callback(tx, tx_done, NULL);
 	net_buf_add_mem(tx, payload, sizeof(payload));
 
 	/* Send buffer on interface */
@@ -95,7 +99,8 @@ ZTEST(epacket_callbacks, test_interface_tx_failure)
 	tx = epacket_alloc_tx_for_interface(epacket_dummy, K_NO_WAIT);
 	zassert_not_null(tx);
 	epacket_set_tx_metadata(tx, EPACKET_AUTH_DEVICE, 0x1234, 0x20, EPACKET_ADDR_ALL);
-	epacket_set_tx_callback(tx, tx_done);
+	expected_user_data = payload;
+	epacket_set_tx_callback(tx, tx_done, payload);
 	net_buf_add_mem(tx, payload, sizeof(payload));
 
 	/* Send buffer on interface */

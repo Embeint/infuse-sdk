@@ -211,7 +211,7 @@ void epacket_notify_tx_result(const struct device *dev, struct net_buf *buf, int
 
 	/* Per buffer notification */
 	if (meta->tx_done) {
-		meta->tx_done(dev, buf, result);
+		meta->tx_done(dev, buf, result, meta->tx_done_user_data);
 	}
 
 	/* Interface error notification */

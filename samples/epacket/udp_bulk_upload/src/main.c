@@ -33,7 +33,8 @@ static void udp_interface_state(uint16_t current_max_payload, void *user_ctx)
 	}
 }
 
-static void last_packet_sent(const struct device *dev, struct net_buf *pkt, int result)
+static void last_packet_sent(const struct device *dev, struct net_buf *pkt, int result,
+			     void *user_data)
 {
 	k_sem_give(&tx_complete);
 }
@@ -77,7 +78,7 @@ int main(void)
 
 			/* Attach callback on last packet */
 			if (bytes_sent >= CONFIG_BULK_UPLOAD_BYTES) {
-				epacket_set_tx_callback(buf, last_packet_sent);
+				epacket_set_tx_callback(buf, last_packet_sent, NULL);
 			}
 
 			/* Queue packet for transmission */

@@ -167,7 +167,7 @@ static const struct device *tx_cb_dev;
 static struct net_buf *tx_cb_pkt;
 static int tx_cb_result;
 
-static void tx_done_cb(const struct device *dev, struct net_buf *pkt, int result)
+static void tx_done_cb(const struct device *dev, struct net_buf *pkt, int result, void *user_data)
 {
 	tx_cb_dev = dev;
 	tx_cb_pkt = pkt;
@@ -195,7 +195,7 @@ static void main_epacket_bt_periph_send_unconnected(void)
 			return;
 		}
 		epacket_set_tx_metadata(buf, EPACKET_AUTH_DEVICE, 0, INFUSE_TDF, dest);
-		epacket_set_tx_callback(buf, tx_done_cb);
+		epacket_set_tx_callback(buf, tx_done_cb, NULL);
 		epacket_queue(epacket_bt_periph, buf);
 
 		if (k_sem_take(&tx_done, K_MSEC(100)) != 0) {
@@ -225,7 +225,7 @@ static void main_epacket_bt_periph_send_unconnected(void)
 			return;
 		}
 		epacket_set_tx_metadata(buf, EPACKET_AUTH_DEVICE, 0, INFUSE_TDF, EPACKET_ADDR_ALL);
-		epacket_set_tx_callback(buf, tx_done_cb);
+		epacket_set_tx_callback(buf, tx_done_cb, NULL);
 		epacket_queue(epacket_bt_periph, buf);
 
 		if (k_sem_take(&tx_done, K_MSEC(100)) != 0) {
