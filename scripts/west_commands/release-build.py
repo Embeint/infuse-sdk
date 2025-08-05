@@ -289,6 +289,9 @@ class release_build(WestCommand):
         build_cmd.extend([f'-DCONFIG_INFUSE_APPLICATION_NAME="{name}"'])
         if self.release.get("disable_logging", False):
             build_cmd.extend(["-DCONFIG_LOG=n"])
+        if extra_configs := self.release.get("extra_configs"):
+            for c in extra_configs:
+                build_cmd.append(f"-D{c}")
 
         print("Run build: ", " ".join(build_cmd))
         proc = subprocess.run(build_cmd, capture_output=True)
