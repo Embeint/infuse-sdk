@@ -255,6 +255,7 @@ int rpc_client_data_queue_auto_load(struct rpc_client_ctx *ctx, uint32_t request
 	const uint8_t *bytes = buffer;
 	struct net_buf *data_buf = NULL;
 	size_t add, tail, extra;
+	k_ticks_t start_time = k_uptime_ticks();
 	k_ticks_t limit_tx = k_uptime_ticks();
 	uint32_t buffer_remaining = 0;
 	uint32_t bytes_offset = 0;
@@ -361,6 +362,11 @@ int rpc_client_data_queue_auto_load(struct rpc_client_ctx *ctx, uint32_t request
 		offset += add;
 		data_len -= add;
 	}
+
+	/* Print statistics */
+	data_len = loader_params ? loader_params->total_len : buffer_len;
+	LOG_INF("Request %08X: %d bytes in %d ms", request_id, data_len,
+		k_ticks_to_ms_near32(k_uptime_ticks() - start_time));
 	return 0;
 }
 
