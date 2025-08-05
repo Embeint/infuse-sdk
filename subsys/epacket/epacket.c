@@ -24,10 +24,15 @@
 
 #define SCRATCH_BUFFERS (IS_ENABLED(CONFIG_EPACKET_PROCESS_THREAD_SPLIT) ? 2 : 1)
 
-NET_BUF_POOL_DEFINE(epacket_scratch, SCRATCH_BUFFERS, CONFIG_EPACKET_PACKET_SIZE_MAX, 0, NULL);
-NET_BUF_POOL_DEFINE(epacket_pool_tx, CONFIG_EPACKET_BUFFERS_TX, CONFIG_EPACKET_PACKET_SIZE_MAX,
+/* Round the maximum buffer size up to the word size of the platform so that all
+ * individual buffers are aligned as well.
+ */
+#define BUFFER_ROUNDED ROUND_UP(CONFIG_EPACKET_PACKET_SIZE_MAX, sizeof(void *))
+
+NET_BUF_POOL_DEFINE(epacket_scratch, SCRATCH_BUFFERS, BUFFER_ROUNDED, 0, NULL);
+NET_BUF_POOL_DEFINE(epacket_pool_tx, CONFIG_EPACKET_BUFFERS_TX, BUFFER_ROUNDED,
 		    sizeof(struct epacket_tx_metadata), NULL);
-NET_BUF_POOL_DEFINE(epacket_pool_rx, CONFIG_EPACKET_BUFFERS_RX, CONFIG_EPACKET_PACKET_SIZE_MAX,
+NET_BUF_POOL_DEFINE(epacket_pool_rx, CONFIG_EPACKET_BUFFERS_RX, BUFFER_ROUNDED,
 		    sizeof(struct epacket_rx_metadata), NULL);
 
 K_THREAD_STACK_DEFINE(epacket_stack_area, CONFIG_EPACKET_PROCESS_THREAD_STACK_SIZE);
