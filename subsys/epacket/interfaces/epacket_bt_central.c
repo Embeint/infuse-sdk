@@ -308,8 +308,11 @@ int epacket_bt_gatt_connect(const bt_addr_le_t *peer, const struct bt_le_conn_pa
 	k_poll_signal_check(&s->sig, &signaled, &conn_rc);
 	__ASSERT_NO_MSG(signaled != 0);
 	if (conn_rc != 0) {
-		/* Connection failed */
-		rc = conn_rc;
+		/* Connection failed.
+		 * conn_rc could be either a negative zephyr code or a positive HCI_ERR_.
+		 * Convert to purely negative.
+		 */
+		rc = (conn_rc > 0) ? -ENOTCONN : conn_rc;
 		goto cleanup;
 	}
 
