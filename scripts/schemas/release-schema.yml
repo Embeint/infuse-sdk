@@ -26,3 +26,7 @@ mapping:
     type: bool
   version_override:
     type: str
+  extra_configs:
+    type: seq
+    sequence:
+      - type: str
