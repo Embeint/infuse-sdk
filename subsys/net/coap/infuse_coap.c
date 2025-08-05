@@ -95,6 +95,8 @@ int infuse_coap_download(int socket, const char *resource, infuse_coap_data_cb d
 		return -ENOMEM;
 	}
 
+	LOG_INF("Downloading: %s", resource);
+
 	/* Pre-split the resource path into components */
 	uint8_t path_split[CONFIG_INFUSE_COAP_MAX_URI_SEGMENTS + 1] = {0};
 	int num_paths = resource_path_split(resource, path_split, ARRAY_SIZE(path_split));
@@ -193,7 +195,7 @@ poll_retry:
 
 		payload = coap_packet_get_payload(&reply, &payload_len);
 		total_received += payload_len;
-		LOG_INF("RX: %d PAYLOAD: %d", received, payload_len);
+		LOG_DBG("RX: %d PAYLOAD: %d", received, payload_len);
 
 		rc = data_cb(blk_ctx.current, payload, payload_len, user_context);
 		if (rc != 0) {
