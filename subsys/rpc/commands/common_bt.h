@@ -33,6 +33,10 @@ static inline bt_addr_le_t bt_addr_infuse_to_zephyr(struct rpc_struct_bt_addr_le
 	};
 }
 
+/* Implementation of BT_FILE_COPY_BASIC */
+int rpc_command_bt_file_copy_basic_run(struct rpc_bt_file_copy_basic_request *req,
+				       struct rpc_bt_file_copy_basic_response *rsp);
+
 #ifdef __cplusplus
 }
 #endif
