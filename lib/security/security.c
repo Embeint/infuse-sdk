@@ -357,20 +357,20 @@ int infuse_security_init(void)
 	/* Create/import device root ECC key pair */
 	root_ecc_key_id = generate_root_ecc_key_pair();
 	if (root_ecc_key_id == PSA_KEY_ID_NULL) {
-		LOG_ERR("Failed to generate root key pair! (%d)", status);
+		LOG_ERR("Failed to generate root key pair!");
 		return -EINVAL;
 	}
 	/* Regenerate root shared secret */
 	device_root_key = derive_shared_secret(root_ecc_key_id);
 	if (device_root_key == PSA_KEY_ID_NULL) {
-		LOG_ERR("Failed to derive shared secret! (%d)", status);
+		LOG_ERR("Failed to derive shared secret!");
 		return -EINVAL;
 	}
 	/* Derive signing key */
 	device_sign_key = infuse_security_derive_chacha_key(device_root_key, &salt, sizeof(salt),
 							    "sign", 4, false);
 	if (device_sign_key == PSA_KEY_ID_NULL) {
-		LOG_ERR("Failed to derive signing key! (%d)", status);
+		LOG_ERR("Failed to derive signing key!");
 		return -EINVAL;
 	}
 
