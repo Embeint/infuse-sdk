@@ -24,6 +24,8 @@
 #include <infuse/epacket/interface.h>
 #include <infuse/epacket/filter.h>
 #include <infuse/epacket/packet.h>
+#include <infuse/fs/kv_store.h>
+#include <infuse/fs/kv_types.h>
 #include <infuse/lib/memfault.h>
 #include <infuse/tdf/definitions.h>
 #include <infuse/tdf/util.h>
@@ -169,6 +171,17 @@ int main(void)
 	struct epacket_interface_cb udp_interface_cb = {
 		.interface_state = udp_interface_state,
 	};
+
+#if CONFIG_LTE_GATEWAY_DEFAULT_MAXIMUM_UPLINK_THROUGHPUT_KBPS > 0
+	/* Set the default throughput to request from connected devices if it doesn't exist */
+	if (!kv_store_key_exists(KV_KEY_BLUETOOTH_THROUGHPUT_LIMIT)) {
+		struct kv_bluetooth_throughput_limit limit = {
+			CONFIG_LTE_GATEWAY_DEFAULT_MAXIMUM_UPLINK_THROUGHPUT_KBPS,
+		};
+
+		KV_STORE_WRITE(KV_KEY_BLUETOOTH_THROUGHPUT_LIMIT, &limit);
+	}
+#endif /* CONFIG_LTE_GATEWAY_DEFAULT_MAXIMUM_UPLINK_THROUGHPUT_KBPS > 0 */
 
 	/* Start watchdog */
 	infuse_watchdog_start();
