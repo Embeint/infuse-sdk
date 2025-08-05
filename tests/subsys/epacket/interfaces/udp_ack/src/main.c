@@ -87,7 +87,8 @@ void udp_tx_failure(const struct net_buf *buf, int reason, void *user_ctx)
 	k_sem_give(&if_tx_failure);
 }
 
-static void epacket_tx_done(const struct device *dev, struct net_buf *pkt, int result)
+static void epacket_tx_done(const struct device *dev, struct net_buf *pkt, int result,
+			    void *user_data)
 {
 	tx_done_result = result;
 	k_sem_give(&tx_done_sem);
@@ -105,7 +106,7 @@ static void tdf_send(uint16_t flags, epacket_tx_done_cb tx_cb)
 	/* Send a random TDF that requests an acknowledgment */
 	epacket_set_tx_metadata(tx, EPACKET_AUTH_DEVICE, flags, INFUSE_TDF, EPACKET_ADDR_ALL);
 	if (tx_cb != NULL) {
-		epacket_set_tx_callback(tx, tx_cb);
+		epacket_set_tx_callback(tx, tx_cb, NULL);
 	}
 	tdf_state.time = 0;
 	tdf_state.buf = tx->b;

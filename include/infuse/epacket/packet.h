@@ -58,8 +58,10 @@ union epacket_interface_address {
  * @param dev Interface packet was sent on
  * @param pkt Packet that was sent
  * @param result Result of sending the packet
+ * @param user_data Arbitrary context provided to @ref epacket_set_tx_callback
  */
-typedef void (*epacket_tx_done_cb)(const struct device *dev, struct net_buf *pkt, int result);
+typedef void (*epacket_tx_done_cb)(const struct device *dev, struct net_buf *pkt, int result,
+				   void *user_data);
 
 /* Metadata for packets that will be transmitted */
 struct epacket_tx_metadata {
@@ -68,6 +70,8 @@ struct epacket_tx_metadata {
 #endif
 	/* Callback run when TX completes */
 	epacket_tx_done_cb tx_done;
+	/* Context provided to @a tx_done */
+	void *tx_done_user_data;
 	/* Authentication level of packet */
 	enum epacket_auth auth;
 	/* Packet type */
@@ -335,12 +339,15 @@ static inline void epacket_set_tx_metadata(struct net_buf *buf, enum epacket_aut
  *
  * @param buf ePacket TX buffer
  * @param tx_done Callback to run on transmission
+ * @param user_data Arbitrary context provided to @a tx_done
  */
-static inline void epacket_set_tx_callback(struct net_buf *buf, epacket_tx_done_cb tx_done)
+static inline void epacket_set_tx_callback(struct net_buf *buf, epacket_tx_done_cb tx_done,
+					   void *user_data)
 {
 	struct epacket_tx_metadata *meta = net_buf_user_data(buf);
 
 	meta->tx_done = tx_done;
+	meta->tx_done_user_data = user_data;
 }
 
 /**

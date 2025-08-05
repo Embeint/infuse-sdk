@@ -17,7 +17,7 @@
 static K_SEM_DEFINE(tx_done, 0, 1);
 static int send_rc;
 
-static void tx_done_cb(const struct device *dev, struct net_buf *buf, int result)
+static void tx_done_cb(const struct device *dev, struct net_buf *buf, int result, void *user_data)
 {
 	send_rc = result;
 	k_sem_give(&tx_done);
@@ -43,7 +43,7 @@ int infuse_validation_bluetooth(uint8_t flags)
 		pkt = epacket_alloc_tx_for_interface(dev, K_FOREVER);
 		epacket_set_tx_metadata(pkt, EPACKET_AUTH_NETWORK, 0, INFUSE_ECHO_REQ,
 					EPACKET_ADDR_ALL);
-		epacket_set_tx_callback(pkt, tx_done_cb);
+		epacket_set_tx_callback(pkt, tx_done_cb, NULL);
 		net_buf_add_mem(pkt, "HELLO", 5);
 		epacket_queue(dev, pkt);
 
