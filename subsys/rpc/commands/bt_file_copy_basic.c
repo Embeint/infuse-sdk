@@ -51,13 +51,10 @@ static int file_loader(void *user_data, uint32_t offset, void *data, size_t data
 	return flash_area_read(fa, offset, data, data_len);
 }
 
-struct net_buf *rpc_command_bt_file_copy_basic(struct net_buf *request)
+int rpc_command_bt_file_copy_basic_run(struct rpc_bt_file_copy_basic_request *req,
+				       struct rpc_bt_file_copy_basic_response *rsp)
 {
-	struct epacket_rx_metadata *req_meta = net_buf_user_data(request);
 	const struct device *interface = DEVICE_DT_GET(DT_INST(0, embeint_epacket_bt_central));
-	const struct device *rsp_interface = req_meta->interface;
-	struct rpc_bt_file_copy_basic_request *req = (void *)request->data;
-	struct rpc_bt_file_copy_basic_response rsp = {0};
 	bt_addr_le_t bluetooth_addr = bt_addr_infuse_to_zephyr(&req->peer);
 	union epacket_interface_address if_address = {
 		.bluetooth = bluetooth_addr,
@@ -95,18 +92,11 @@ struct net_buf *rpc_command_bt_file_copy_basic(struct net_buf *request)
 	}
 	partition_id = FIXED_PARTITION_ID(file_partition);
 
-	/* Request parameters are cached, free the request */
-	rpc_command_runner_request_unref(request);
-	request = NULL;
-	req = NULL;
-	req_meta = NULL;
-
 	/* Validate we are connected to the device before starting */
 	conn = bt_conn_lookup_addr_le(BT_ID_DEFAULT, &bluetooth_addr);
 	if (conn == NULL) {
 		LOG_WRN("Not connected");
-		rc = -ENOTCONN;
-		goto exit;
+		return -ENOTCONN;
 	}
 	bt_conn_unref(conn);
 
@@ -170,6 +160,25 @@ cleanup:
 	flash_area_close(fa);
 	/* Unregister from callbacks */
 	rpc_client_cleanup(&client_ctx);
-exit:
+
+	return rc;
+}
+
+struct net_buf *rpc_command_bt_file_copy_basic(struct net_buf *request)
+{
+	struct epacket_rx_metadata *req_meta = net_buf_user_data(request);
+	const struct device *rsp_interface = req_meta->interface;
+	struct rpc_bt_file_copy_basic_request *req = (void *)request->data;
+	struct rpc_bt_file_copy_basic_request req_copy = *req;
+	struct rpc_bt_file_copy_basic_response rsp = {0};
+	int rc = 0;
+
+	/* Request parameters are cached in `req_copy`, free the request */
+	rpc_command_runner_request_unref(request);
+
+	/* Run the command */
+	rc = rpc_command_bt_file_copy_basic_run(&req_copy, &rsp);
+
+	/* Return the response */
 	return rpc_response_simple_if(rsp_interface, rc, &rsp, sizeof(rsp));
 }

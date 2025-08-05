@@ -47,9 +47,9 @@ static int data_cb(uint32_t offset, const uint8_t *data, uint16_t data_len, void
 	return rc;
 }
 
-struct net_buf *rpc_command_coap_download(struct net_buf *request)
+int rpc_command_coap_download_run(struct rpc_coap_download_request *req, char *resource,
+				  struct rpc_coap_download_response *rsp, int *downloaded)
 {
-	struct rpc_coap_download_request *req = (void *)request->data;
 	const sec_tag_t sec_tls_tags[] = {
 		infuse_security_coap_dtls_tag(),
 	};
@@ -60,11 +60,11 @@ struct net_buf *rpc_command_coap_download(struct net_buf *request)
 	uint8_t *work_mem;
 	size_t work_mem_size;
 	int sock = -1;
-	int downloaded = 0;
 	int rc;
 
 	work_mem = rpc_server_command_working_mem(&work_mem_size);
 
+	*downloaded = 0;
 	rc = rpc_common_file_actions_start(&ctx, req->action, req->resource_len, req->resource_crc);
 	if (rc == FILE_ALREADY_PRESENT) {
 		LOG_INF("File already present");
@@ -123,11 +123,12 @@ struct net_buf *rpc_command_coap_download(struct net_buf *request)
 	}
 
 	/* Download the resource */
-	downloaded = infuse_coap_download(sock, req->resource, data_cb, &ctx, work_mem,
-					  work_mem_size, block_timeout);
-	if (downloaded < 0) {
-		LOG_DBG("infuse_coap_download failed (%d)", downloaded);
-		rc = downloaded;
+	*downloaded = infuse_coap_download(sock, resource, data_cb, &ctx, work_mem, work_mem_size,
+					   block_timeout);
+	if (*downloaded < 0) {
+		rc = *downloaded;
+		*downloaded = 0;
+		LOG_DBG("infuse_coap_download failed (%d)", rc);
 		goto error;
 	}
 
@@ -140,20 +141,11 @@ download_done:
 	if (rc < 0) {
 		LOG_ERR("Failed to finish %d (%d)", req->action, rc);
 	}
-
-	struct rpc_coap_download_response rsp = {
-		.resource_len = ctx.received,
-		.resource_crc = ctx.crc,
-	};
-
-	return rpc_response_simple_req(request, rc, &rsp, sizeof(rsp));
+	rsp->resource_len = ctx.received;
+	rsp->resource_crc = ctx.crc;
+	return rc;
 
 error:
-	struct rpc_coap_download_response err_rsp = {
-		.resource_crc = 0,
-		.resource_len = 0,
-	};
-
 	/* Cleanup resources */
 	(void)rpc_common_file_actions_error_cleanup(&ctx);
 
@@ -162,6 +154,21 @@ error:
 		zsock_close(sock);
 	}
 
-	/* Allocate and return the response */
-	return rpc_response_simple_req(request, rc, &err_rsp, sizeof(err_rsp));
+	rsp->resource_len = 0;
+	rsp->resource_crc = 0;
+	return rc;
+}
+
+struct net_buf *rpc_command_coap_download(struct net_buf *request)
+{
+	struct rpc_coap_download_request *req = (void *)request->data;
+	struct rpc_coap_download_response rsp = {0};
+	int downloaded;
+	int rc;
+
+	/* Run the command */
+	rc = rpc_command_coap_download_run(req, req->resource, &rsp, &downloaded);
+
+	/* Return the response */
+	return rpc_response_simple_req(request, rc, &rsp, sizeof(rsp));
 }
