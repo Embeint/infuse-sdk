@@ -51,6 +51,8 @@ struct rpc_client_cmd_ctx {
 	uint16_t command_id;
 	/* Number of TX tokens to give on DATA_ACK */
 	uint16_t tx_tokens_on_ack;
+	/* Result of TX queuing */
+	int16_t tx_result;
 };
 
 /* RPC client context */
