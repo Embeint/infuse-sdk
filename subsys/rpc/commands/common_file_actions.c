@@ -87,6 +87,7 @@ int rpc_common_file_actions_start(struct rpc_common_file_actions_ctx *ctx,
 {
 	int rc = 0;
 
+	ctx->fa = NULL;
 	ctx->action = action;
 	ctx->received = 0;
 	ctx->crc = 0;
@@ -305,7 +306,29 @@ int rpc_common_file_actions_finish(struct rpc_common_file_actions_ctx *ctx, uint
 	bool reboot = false;
 	int rc = 0;
 
-	ARG_UNUSED(rc);
+#ifdef CONFIG_INFUSE_DFU_HELPERS
+	uint32_t flash_crc;
+	size_t mem_size;
+	uint8_t *mem;
+
+	/* Temporary memory buffer */
+	mem = rpc_server_command_working_mem(&mem_size);
+
+	/* Validate the data written to flash if possible */
+	if ((ctx->fa != NULL) && (ctx->received > 0)) {
+		rc = flash_area_crc32(ctx->fa, 0, ctx->received, &flash_crc, mem, mem_size);
+		if (rc < 0) {
+			LOG_ERR("Could not validate written data");
+			flash_area_close(ctx->fa);
+			return rc;
+		} else if (ctx->crc != flash_crc) {
+			LOG_ERR("CRC mismatch between received and written (%08X != %08X)",
+				ctx->crc, flash_crc);
+			flash_area_close(ctx->fa);
+			return -EBADE;
+		}
+	}
+#endif /* CONFIG_INFUSE_DFU_HELPERS */
 
 	/* Post write actions */
 	switch (ctx->action) {
