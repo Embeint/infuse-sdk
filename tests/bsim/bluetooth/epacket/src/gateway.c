@@ -305,7 +305,7 @@ static void main_gateway_connect_then_scan(void)
 	/* Initiate connection */
 	rc = epacket_bt_gatt_connect(&addr, &params, 3000, &conn, &security_info, false, false,
 				     false, K_FOREVER, K_FOREVER);
-	if (rc < 0) {
+	if (rc != 0) {
 		FAIL("Failed to connect to peer\n");
 		return;
 	}
