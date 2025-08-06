@@ -13,6 +13,7 @@
 #include <stdint.h>
 
 #include <zephyr/toolchain.h>
+#include <zephyr/sys/util.h>
 
 #include <infuse/epacket/interface/common.h>
 
@@ -27,6 +28,19 @@ extern "C" {
  */
 
 #define epacket_udp_frame epacket_v0_unversioned_frame_format
+
+/** UDP specific packet flags */
+enum epacket_flags_udp {
+	/** Device is always available to receive packets */
+	EPACKET_FLAGS_UDP_ALWAYS_RX = BIT(0),
+};
+
+/**
+ * @brief Set flags for the UDP interface
+ *
+ * @param flags Bitmask of @ref epacket_flags_udp flags
+ */
+void epacket_udp_flags_set(uint16_t flags);
 
 #ifdef CONFIG_ZTEST
 

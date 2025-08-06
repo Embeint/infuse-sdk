@@ -70,6 +70,7 @@ struct udp_state {
 	socklen_t remote_len;
 	uint16_t remote_port;
 	uint16_t iface_max_pkt;
+	uint16_t iface_flags;
 	int sock;
 };
 static struct udp_state udp_state;
@@ -77,6 +78,11 @@ static struct udp_state udp_state;
 LOG_MODULE_REGISTER(epacket_udp, CONFIG_EPACKET_UDP_LOG_LEVEL);
 
 #ifdef CONFIG_EPACKET_INTERFACE_UDP_DOWNLINK_WATCHDOG
+
+void epacket_udp_flags_set(uint16_t flags)
+{
+	udp_state.iface_flags = flags;
+}
 
 static void udp_downlink_watchdog_expiry(struct k_work *work)
 {
@@ -412,6 +418,9 @@ static void epacket_udp_send(const struct device *dev, struct net_buf *buf)
 		udp_state.ack_countdown--;
 	}
 
+	/* Add any set flags */
+	meta->flags |= udp_state.iface_flags;
+
 	/* Encrypt the payload */
 	if (epacket_udp_encrypt(buf) < 0) {
 		LOG_WRN("Failed to encrypt");
@@ -420,7 +429,7 @@ static void epacket_udp_send(const struct device *dev, struct net_buf *buf)
 	}
 
 	/* Send to remote server */
-	LOG_DBG("Sending %d bytes to server", buf->len);
+	LOG_DBG("Sending %d bytes to server (Type: %d)", buf->len, meta->type);
 	rc = zsock_sendto(udp_state.sock, buf->data, buf->len, 0, &udp_state.remote,
 			  udp_state.remote_len);
 	if (rc == -1) {
