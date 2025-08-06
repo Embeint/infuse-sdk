@@ -53,6 +53,7 @@ static k_timeout_t loop_period = K_FOREVER;
 static int wdog_channel;
 static atomic_t rate_limit_delay;
 static atomic_t rate_limit_throughput;
+static uint16_t global_flags;
 
 #ifdef CONFIG_EPACKET_INTERFACE_BT_ADV
 static struct k_poll_signal bt_adv_signal_send_next;
@@ -80,6 +81,16 @@ void epacket_interface_common_init(const struct device *dev)
 	data->receive_handler = epacket_default_receive_handler;
 	k_work_init_delayable(&data->receive_timeout, epacket_receive_timeout);
 	sys_slist_init(&data->callback_list);
+}
+
+void epacket_global_flags_set(uint16_t flags)
+{
+	global_flags = flags & (EPACKET_FLAGS_CLOUD_FORWARDING | EPACKET_FLAGS_CLOUD_SELF);
+}
+
+uint16_t epacket_global_flags_get(void)
+{
+	return global_flags;
 }
 
 struct net_buf *epacket_encryption_scratch(void)
