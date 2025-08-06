@@ -19,6 +19,7 @@
 #include <infuse/auto/bluetooth_conn_log.h>
 #include <infuse/auto/wifi_conn_log.h>
 #include <infuse/epacket/interface.h>
+#include <infuse/epacket/interface/epacket_udp.h>
 #include <infuse/epacket/packet.h>
 #include <infuse/data_logger/high_level/tdf.h>
 #include <infuse/tdf/definitions.h>
@@ -36,6 +37,10 @@ int main(void)
 	const struct device *epacket_serial = DEVICE_DT_GET(DT_NODELABEL(epacket_serial));
 	const struct device *epacket_udp = DEVICE_DT_GET(DT_NODELABEL(epacket_udp));
 	struct tdf_announce announce;
+
+	/* Constant ePacket flags */
+	epacket_global_flags_set(EPACKET_FLAGS_CLOUD_FORWARDING | EPACKET_FLAGS_CLOUD_SELF);
+	epacket_udp_flags_set(EPACKET_FLAGS_UDP_ALWAYS_RX);
 
 	/* Log Bluetooth connection events */
 	auto_bluetooth_conn_log_configure(TDF_DATA_LOGGER_SERIAL, AUTO_BT_CONN_LOG_EVENTS_FLUSH);

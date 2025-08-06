@@ -22,6 +22,7 @@
 #include <infuse/data_logger/high_level/tdf.h>
 #include <infuse/drivers/watchdog.h>
 #include <infuse/epacket/interface.h>
+#include <infuse/epacket/interface/epacket_udp.h>
 #include <infuse/epacket/filter.h>
 #include <infuse/epacket/packet.h>
 #include <infuse/fs/kv_store.h>
@@ -182,6 +183,10 @@ int main(void)
 		KV_STORE_WRITE(KV_KEY_BLUETOOTH_THROUGHPUT_LIMIT, &limit);
 	}
 #endif /* CONFIG_LTE_GATEWAY_DEFAULT_MAXIMUM_UPLINK_THROUGHPUT_KBPS > 0 */
+
+	/* Constant ePacket flags */
+	epacket_global_flags_set(EPACKET_FLAGS_CLOUD_FORWARDING | EPACKET_FLAGS_CLOUD_SELF);
+	epacket_udp_flags_set(EPACKET_FLAGS_UDP_ALWAYS_RX);
 
 	/* Start watchdog */
 	infuse_watchdog_start();
