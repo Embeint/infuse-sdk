@@ -21,6 +21,51 @@
 
 #include "../subsys/epacket/interfaces/epacket_internal.h"
 
+ZTEST(epacket_common, test_global_flags)
+{
+	uint16_t global_flags_all = EPACKET_FLAGS_CLOUD_FORWARDING | EPACKET_FLAGS_CLOUD_SELF;
+
+	zassert_equal(0, epacket_global_flags_get(), "Bad initial state");
+
+	/* Invalid flags */
+	epacket_global_flags_set(~global_flags_all);
+	zassert_equal(0, epacket_global_flags_get(), "Invalid flags not ignored");
+	epacket_global_flags_set(global_flags_all);
+	zassert_equal(global_flags_all, epacket_global_flags_get(), "Flags not set");
+	epacket_global_flags_set(EPACKET_FLAGS_CLOUD_FORWARDING);
+	zassert_equal(EPACKET_FLAGS_CLOUD_FORWARDING, epacket_global_flags_get(), "Flags not set");
+	epacket_global_flags_set(EPACKET_FLAGS_CLOUD_SELF);
+	zassert_equal(EPACKET_FLAGS_CLOUD_SELF, epacket_global_flags_get(), "Flags not set");
+	epacket_global_flags_set(0);
+	zassert_equal(0, epacket_global_flags_get(), "Flags not reset");
+}
+
+ZTEST(epacket_common, test_alloc_auto_flags)
+{
+	const struct device *epacket_dummy = DEVICE_DT_GET(DT_NODELABEL(epacket_dummy));
+	struct epacket_tx_metadata *tx_meta;
+	struct net_buf *buf;
+
+	buf = epacket_alloc_tx_for_interface(epacket_dummy, K_NO_WAIT);
+	zassert_not_null(buf);
+	tx_meta = net_buf_user_data(buf);
+
+	epacket_set_tx_metadata(buf, EPACKET_AUTH_DEVICE, 0, INFUSE_TDF, EPACKET_ADDR_ALL);
+	zassert_equal(0, tx_meta->flags, "Flags not empty");
+
+	epacket_global_flags_set(EPACKET_FLAGS_CLOUD_FORWARDING);
+	epacket_set_tx_metadata(buf, EPACKET_AUTH_DEVICE, 0, INFUSE_TDF, EPACKET_ADDR_ALL);
+	zassert_equal(EPACKET_FLAGS_CLOUD_FORWARDING, tx_meta->flags, "Global flags not applied");
+
+	epacket_global_flags_set(EPACKET_FLAGS_CLOUD_SELF);
+	epacket_set_tx_metadata(buf, EPACKET_AUTH_DEVICE, 0, INFUSE_TDF, EPACKET_ADDR_ALL);
+	zassert_equal(EPACKET_FLAGS_CLOUD_SELF, tx_meta->flags, "Global flags not applied");
+
+	epacket_global_flags_set(0);
+
+	net_buf_unref(buf);
+}
+
 ZTEST(epacket_common, test_encrypt_unknown_key)
 {
 	const struct device *epacket_dummy = DEVICE_DT_GET(DT_NODELABEL(epacket_dummy));

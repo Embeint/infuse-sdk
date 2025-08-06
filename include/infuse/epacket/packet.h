@@ -117,7 +117,11 @@ enum epacket_flags {
 	EPACKET_FLAGS_ENCRYPTION_NETWORK = 0,
 	/* Bit 14: Transmitting device requests an ACK */
 	EPACKET_FLAGS_ACK_REQUEST = BIT(14),
-	/* Bits 8-13: Reserved */
+	/* Bit 13: Device can forward data to the cloud */
+	EPACKET_FLAGS_CLOUD_FORWARDING = BIT(13),
+	/* Bit 12: Device sends its own data to the cloud */
+	EPACKET_FLAGS_CLOUD_SELF = BIT(12),
+	/* Bits 8-11: Reserved */
 	/* Bits 0-7: Interface specific */
 	EPACKET_FLAGS_INTERFACE_MASK = 0x00FF,
 };
@@ -246,6 +250,22 @@ void epacket_rate_limit_reset(void);
 void epacket_rate_limit_tx(k_ticks_t *last_call, uint16_t bytes_transmitted);
 
 /**
+ * @brief Set global flags for all transmitted packets
+ *
+ * @note Any flags other than `EPACKET_FLAGS_CLOUD_*` will be ignored
+ *
+ * @param flags Global flags to set
+ */
+void epacket_global_flags_set(uint16_t flags);
+
+/**
+ * @brief Get the current global flags value
+ *
+ * @return uint16_t Current global flags
+ */
+uint16_t epacket_global_flags_get(void);
+
+/**
  * @brief Query the number of free TX buffers
  *
  * @return int Number of free TX buffers
@@ -328,7 +348,7 @@ static inline void epacket_set_tx_metadata(struct net_buf *buf, enum epacket_aut
 	struct epacket_tx_metadata *meta = net_buf_user_data(buf);
 
 	meta->auth = auth;
-	meta->flags = flags;
+	meta->flags = epacket_global_flags_get() | flags;
 	meta->type = type;
 	meta->tx_done = NULL;
 	meta->interface_address = dest;
