@@ -16,6 +16,7 @@
 #include <infuse/tdf/definitions.h>
 #include <infuse/data_logger/high_level/tdf.h>
 #include <infuse/drivers/watchdog.h>
+#include <infuse/epacket/packet.h>
 #include <infuse/bluetooth/legacy_adv.h>
 
 #include <infuse/task_runner/runner.h>
@@ -141,6 +142,9 @@ TASK_RUNNER_TASKS_DEFINE(app_tasks, app_tasks_data, (TDF_LOGGER_TASK, NULL), BT_
 
 int main(void)
 {
+	/* Constant ePacket flags */
+	epacket_global_flags_set(EPACKET_FLAGS_CLOUD_SELF);
+
 	/* Start watchdog */
 	infuse_watchdog_start();
 
