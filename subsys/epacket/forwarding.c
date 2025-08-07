@@ -111,7 +111,7 @@ static int ensure_bt_connection(union epacket_interface_address *address, uint8_
 	rc = epacket_bt_gatt_connect(&address->bluetooth, &params, conn_timeout_ms, &conn,
 				     &security_info, true, sub_data, false, idle_timeout,
 				     absolute_timeout);
-	if (rc < 0) {
+	if (rc != 0) {
 		/* Connection failed */
 		return rc;
 	}
@@ -259,7 +259,7 @@ static void forward_auto_conn_processor(void *a, void *b, void *c)
 		if (ensure_bt_connection(&dest, hdr->flags,
 					 (uint32_t)hdr->conn_timeout * MSEC_PER_SEC,
 					 K_SECONDS(hdr->conn_idle_timeout),
-					 K_SECONDS(hdr->conn_absolute_timeout)) < 0) {
+					 K_SECONDS(hdr->conn_absolute_timeout)) != 0) {
 			if (hdr->flags & EPACKET_FORWARD_AUTO_CONN_DC_NOTIFICATION) {
 				send_conn_terminated(meta->interface, &dest.bluetooth);
 			}

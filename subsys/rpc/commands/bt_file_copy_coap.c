@@ -84,7 +84,7 @@ struct net_buf *rpc_command_bt_file_copy_coap(struct net_buf *request)
 	LOG_INF("Initiating connection");
 	rc = epacket_bt_gatt_connect(&peer, &params, connect_timeout, &conn, &security_info, true,
 				     false, false, K_FOREVER, K_FOREVER);
-	if (rc < 0) {
+	if (rc != 0) {
 		LOG_INF("Connection failed (%d)", rc);
 		rc = -ENOTCONN;
 		goto end;

@@ -54,8 +54,8 @@ extern "C" {
  *                         K_FOREVER to disable.
  *
  * @retval 0 on success, *conn is valid
- * @retval 1 if connection already existed, *conn is valid
- * @retval -errno on error, *conn is invalid
+ * @retval >0 on HCI error, *conn is invalid
+ * @retval <0 on Zephyr error, *conn is invalid
  */
 int epacket_bt_gatt_connect(const bt_addr_le_t *peer, const struct bt_le_conn_param *conn_params,
 			    uint32_t timeout_ms, struct bt_conn **conn,
