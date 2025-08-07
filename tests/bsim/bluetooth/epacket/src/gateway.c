@@ -204,7 +204,7 @@ static void main_gateway_connect(void)
 		/* Same connection again should pass with RC == 1 */
 		rc = epacket_bt_gatt_connect(&addr, &params, 3000, &conn2, &security_info, i % 2,
 					     i % 2, i % 2, K_FOREVER, K_FOREVER);
-		if (rc != 1) {
+		if (rc != 0) {
 			FAIL("Failed to detect existing connection\n");
 			return;
 		}
@@ -441,7 +441,7 @@ static void main_gateway_rpcs(void)
 	/* Connect timeout, disconnect should error */
 	connect.conn_timeout_ms = 10;
 	send_rpc(3, RPC_ID_BT_CONNECT_INFUSE, &connect, sizeof(connect));
-	buf = expect_response(3, RPC_ID_BT_CONNECT_INFUSE, -BT_HCI_ERR_UNKNOWN_CONN_ID);
+	buf = expect_response(3, RPC_ID_BT_CONNECT_INFUSE, BT_HCI_ERR_UNKNOWN_CONN_ID);
 	if (buf == NULL) {
 		FAIL("Unexpected connection result\n");
 		return;
@@ -800,7 +800,7 @@ static void main_gateway_connect_absolute_timeout_update(void)
 		/* Refresh the connection */
 		rc = epacket_bt_gatt_connect(&addr, &params, 100, &conn, &security_info, true, true,
 					     true, K_FOREVER, K_SECONDS(1));
-		if (rc != 1) {
+		if (rc != 0) {
 			FAIL("Failed to refresh peer connection\n");
 			return;
 		}

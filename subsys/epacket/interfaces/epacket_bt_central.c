@@ -81,7 +81,7 @@ static void conn_setup_cb(struct bt_conn *conn, int err, void *user_data)
 	uint8_t idx = bt_conn_index(conn);
 
 	/* Notify command handler */
-	k_poll_signal_raise(&infuse_conn[idx].sig, -err);
+	k_poll_signal_raise(&infuse_conn[idx].sig, err);
 }
 
 static uint8_t security_read_result(struct bt_conn *conn, uint8_t err,
@@ -259,7 +259,6 @@ int epacket_bt_gatt_connect(const bt_addr_le_t *peer, const struct bt_le_conn_pa
 	struct k_poll_event poll_event;
 	struct infuse_connection_state *s;
 	unsigned int signaled;
-	bool already = false;
 	struct bt_conn *conn;
 	uint8_t idx;
 	int conn_rc;
@@ -272,7 +271,6 @@ int epacket_bt_gatt_connect(const bt_addr_le_t *peer, const struct bt_le_conn_pa
 	if (conn != NULL) {
 		idx = bt_conn_index(conn);
 		s = &infuse_conn[idx];
-		already = true;
 #ifdef CONFIG_MEMFAULT_INFUSE_METRICS_BT_CONNECTIONS
 		(void)MEMFAULT_METRIC_ADD(epacket_bt_central_conn_already, 1);
 #endif /* CONFIG_MEMFAULT_INFUSE_METRICS_BT_CONNECTIONS */
@@ -308,11 +306,8 @@ int epacket_bt_gatt_connect(const bt_addr_le_t *peer, const struct bt_le_conn_pa
 	k_poll_signal_check(&s->sig, &signaled, &conn_rc);
 	__ASSERT_NO_MSG(signaled != 0);
 	if (conn_rc != 0) {
-		/* Connection failed.
-		 * conn_rc could be either a negative zephyr code or a positive HCI_ERR_.
-		 * Convert to purely negative.
-		 */
-		rc = (conn_rc > 0) ? -ENOTCONN : conn_rc;
+		/* Connection failed */
+		rc = conn_rc;
 		goto cleanup;
 	}
 
@@ -355,7 +350,6 @@ conn_created:
 	k_poll_signal_check(&s->sig, &signaled, &rc);
 	__ASSERT_NO_MSG(signaled != 0);
 	if (rc != 0) {
-		rc = -EIO;
 		goto cleanup;
 	}
 
@@ -382,9 +376,6 @@ cleanup:
 			(void)bt_conn_disconnect(conn, BT_HCI_ERR_REMOTE_USER_TERM_CONN);
 			bt_conn_unref(conn);
 		}
-	}
-	if ((rc == 0) && already) {
-		rc = 1;
 	}
 	return rc;
 }
