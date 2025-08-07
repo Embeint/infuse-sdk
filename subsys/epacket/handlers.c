@@ -13,6 +13,7 @@
 #include <infuse/epacket/interface.h>
 #include <infuse/epacket/packet.h>
 #include <infuse/rpc/server.h>
+#include <infuse/states.h>
 
 #ifdef CONFIG_EPACKET_INTERFACE_BT_CENTRAL
 #include <infuse/epacket/interface/epacket_bt_central.h>
@@ -193,6 +194,13 @@ void epacket_gateway_receive_handler(const struct device *backhaul, struct net_b
 	if (meta->interface == backhaul) {
 		if ((meta->type == INFUSE_EPACKET_FORWARD) ||
 		    (meta->type == INFUSE_EPACKET_FORWARD_AUTO_CONN)) {
+#ifdef CONFIG_INFUSE_APPLICATION_STATES
+			if (infuse_state_get(INFUSE_STATE_REBOOTING)) {
+				/* Device is about to reboot, don't create more work */
+				net_buf_unref(buf);
+				return;
+			}
+#endif /* CONFIG_INFUSE_APPLICATION_STATES */
 			epacket_packet_forward(buf);
 			return;
 		}
@@ -204,6 +212,13 @@ void epacket_gateway_receive_handler(const struct device *backhaul, struct net_b
 	    (meta->interface_id == EPACKET_INTERFACE_BT_CENTRAL)) {
 		LOG_DBG("Received on %s: Auth=%d Type=%d Seq=%d Len=%d", meta->interface->name,
 			meta->auth, meta->type, meta->sequence, buf->len);
+#ifdef CONFIG_INFUSE_APPLICATION_STATES
+		if (infuse_state_get(INFUSE_STATE_REBOOTING)) {
+			/* Device is about to reboot, don't create more work */
+			net_buf_unref(buf);
+			return;
+		}
+#endif /* CONFIG_INFUSE_APPLICATION_STATES */
 		receive_forward(backhaul, buf);
 		return;
 	}
