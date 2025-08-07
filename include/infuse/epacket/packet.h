@@ -232,6 +232,8 @@ struct epacket_forward_auto_conn_header {
 struct epacket_conn_terminated {
 	/* Value from `EPACKET_INTERFACE_*` */
 	uint8_t interface;
+	/* Reason that interface disconnected */
+	int16_t reason;
 	/* Interface address that disconnected */
 	uint8_t address[];
 } __packed;
