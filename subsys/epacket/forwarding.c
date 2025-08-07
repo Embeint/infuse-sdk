@@ -143,11 +143,13 @@ static int ensure_bt_connection(union epacket_interface_address *address, uint8_
 	return 0;
 }
 
-static void send_conn_terminated(const struct device *backhaul, const bt_addr_le_t *dst)
+static void send_conn_terminated(const struct device *backhaul, int16_t reason,
+				 const bt_addr_le_t *dst)
 {
 	struct epacket_interface_address_bt_le if_address;
 	struct epacket_conn_terminated terminated = {
 		.interface = EPACKET_INTERFACE_BT_CENTRAL,
+		.reason = reason,
 	};
 	struct net_buf *tx;
 
@@ -175,7 +177,7 @@ static void disconnected(struct bt_conn *conn, uint8_t reason)
 	uint32_t conn_id_bit = BIT(conn_id);
 
 	if (disconnect_notification_mask & conn_id_bit) {
-		send_conn_terminated(epacket_backhaul, bt_conn_get_dst(conn));
+		send_conn_terminated(epacket_backhaul, reason, bt_conn_get_dst(conn));
 	}
 
 	/* Clear the masks */
@@ -227,6 +229,7 @@ static void forward_auto_conn_processor(void *a, void *b, void *c)
 	struct epacket_rx_metadata *meta;
 	struct net_buf *buf;
 	struct net_buf *tx;
+	int rc;
 
 	k_thread_name_set(NULL, "auto_conn_forward");
 
@@ -256,12 +259,12 @@ static void forward_auto_conn_processor(void *a, void *b, void *c)
 		memcpy(dest.bluetooth.a.val, dest_encoded->addr, 6);
 
 		/* Ensure we have a valid Bluetooth connection before sending */
-		if (ensure_bt_connection(&dest, hdr->flags,
-					 (uint32_t)hdr->conn_timeout * MSEC_PER_SEC,
-					 K_SECONDS(hdr->conn_idle_timeout),
-					 K_SECONDS(hdr->conn_absolute_timeout)) != 0) {
+		rc = ensure_bt_connection(
+			&dest, hdr->flags, (uint32_t)hdr->conn_timeout * MSEC_PER_SEC,
+			K_SECONDS(hdr->conn_idle_timeout), K_SECONDS(hdr->conn_absolute_timeout));
+		if (rc != 0) {
 			if (hdr->flags & EPACKET_FORWARD_AUTO_CONN_DC_NOTIFICATION) {
-				send_conn_terminated(meta->interface, &dest.bluetooth);
+				send_conn_terminated(meta->interface, rc, &dest.bluetooth);
 			}
 			goto cleanup;
 		}

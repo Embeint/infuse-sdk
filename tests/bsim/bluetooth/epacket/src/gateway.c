@@ -1400,6 +1400,10 @@ static void main_gateway_remote_rpc_forward_auto_conn_dc_notify(void)
 			FAIL("Unexpected interface\n");
 			return;
 		}
+		if (terminated->reason != BT_HCI_ERR_LOCALHOST_TERM_CONN) {
+			FAIL("Unexpected reason\n");
+			return;
+		}
 		if (terminated_addr->type != addr.type) {
 			FAIL("Unexpected interface address type\n");
 			return;
@@ -1494,6 +1498,11 @@ static void main_gateway_remote_rpc_forward_auto_conn_fail(void)
 	}
 	if (terminated->interface != EPACKET_INTERFACE_BT_CENTRAL) {
 		FAIL("Unexpected interface\n");
+		return;
+	}
+	printk("REASON %d\n", terminated->reason);
+	if (terminated->reason != BT_HCI_ERR_UNKNOWN_CONN_ID) {
+		FAIL("Unexpected reason\n");
 		return;
 	}
 	if (terminated_addr->type != addr.type) {
