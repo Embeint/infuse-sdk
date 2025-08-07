@@ -20,6 +20,7 @@
 #include <infuse/time/epoch.h>
 #include <infuse/task_runner/runner.h>
 #include <infuse/data_logger/high_level/tdf.h>
+#include <infuse/states.h>
 #include <infuse/tdf/definitions.h>
 #include <infuse/tdf/util.h>
 
@@ -516,6 +517,13 @@ static void rssi_query_worker(struct k_work *work)
 	struct bt_conn *conn = bt_conn_lookup_index(conn_idx);
 	uint16_t handle;
 	int rc;
+
+#ifdef CONFIG_INFUSE_APPLICATION_STATES
+	if (infuse_state_get(INFUSE_STATE_REBOOTING)) {
+		/* Device is about to reboot, don't create more work */
+		return;
+	}
+#endif /* CONFIG_INFUSE_APPLICATION_STATES */
 
 	if (conn == NULL) {
 		/* Work was not cancelled in time */
