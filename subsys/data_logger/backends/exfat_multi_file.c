@@ -28,6 +28,8 @@
 #include "common.h"
 #include "exfat_common.h"
 
+#define FILESYSTEM_LABEL "INFUSE"
+
 #define BLOCKS_PER_FILE (CONFIG_DATA_LOGGER_EXFAT_FILE_SIZE / DATA_LOGGER_EXFAT_BLOCK_SIZE)
 BUILD_ASSERT(CONFIG_DATA_LOGGER_EXFAT_FILE_SIZE % MIN_CLUSTER_SIZE == 0,
 	     "File size must be multiple of minimum cluster size");
@@ -227,10 +229,10 @@ static int logger_exfat_read(const struct device *dev, uint32_t phy_block, uint1
 	return rc;
 }
 
-static int filesystem_init(const struct device *dev)
+static int filesystem_init(const struct device *dev, const char *label)
 {
 	/* Common filesystem init */
-	return logger_exfat_filesystem_common_init(dev);
+	return logger_exfat_filesystem_common_init(dev, label);
 }
 
 static int logger_exfat_reset(const struct device *dev, uint32_t block_hint,
@@ -375,7 +377,7 @@ int logger_exfat_init(const struct device *dev)
 	res = f_mount(&data->infuse_fatfs, disk_path, 1);
 	LOG_DBG("First mount: %d", res);
 	if (res == FR_OK) {
-		infuse_fs = logger_exfat_filesystem_is_infuse(dev);
+		infuse_fs = logger_exfat_filesystem_is_infuse(dev, FILESYSTEM_LABEL);
 	} else if (res == FR_NOT_READY) {
 		LOG_WRN("Disk '%s' not ready", config->disk);
 		return -EIO;
@@ -383,7 +385,7 @@ int logger_exfat_init(const struct device *dev)
 	/* Handle standard mount failures */
 	if ((res == FR_NO_FILESYSTEM) || (!infuse_fs)) {
 		LOG_INF("Initialising disk '%s'", config->disk);
-		res = filesystem_init(dev);
+		res = filesystem_init(dev, FILESYSTEM_LABEL);
 	}
 	/* Handle errors */
 	if (res != FR_OK) {

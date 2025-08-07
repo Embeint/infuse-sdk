@@ -25,6 +25,8 @@
 #include "common.h"
 #include "exfat_common.h"
 
+#define FILESYSTEM_LABEL "INFUSE-SF"
+
 LOG_MODULE_REGISTER(data_logger_exfat, CONFIG_DATA_LOGGER_EXFAT_LOG_LEVEL);
 
 static int logger_exfat_write_burst(const struct device *dev, uint32_t start_block,
@@ -98,7 +100,7 @@ static int logger_exfat_reset(const struct device *dev, uint32_t block_hint,
 	return rc;
 }
 
-static int filesystem_init(const struct device *dev, const char *bin_file)
+static int filesystem_init(const struct device *dev, const char *label, const char *bin_file)
 {
 	const struct dl_exfat_config *config = dev->config;
 	struct dl_exfat_data *data = dev->data;
@@ -110,7 +112,7 @@ static int filesystem_init(const struct device *dev, const char *bin_file)
 	FIL fp;
 
 	/* Common filesystem init */
-	if (logger_exfat_filesystem_common_init(dev) < 0) {
+	if (logger_exfat_filesystem_common_init(dev, label) < 0) {
 		return -EIO;
 	}
 
@@ -191,7 +193,7 @@ int logger_exfat_init(const struct device *dev)
 	res = f_mount(&data->infuse_fatfs, path, 1);
 	LOG_DBG("First mount: %d", res);
 	if (res == FR_OK) {
-		infuse_fs = logger_exfat_filesystem_is_infuse(dev);
+		infuse_fs = logger_exfat_filesystem_is_infuse(dev, FILESYSTEM_LABEL);
 	} else if (res == FR_NOT_READY) {
 		LOG_WRN("Disk '%s' not ready", config->disk);
 		return -EIO;
@@ -203,7 +205,7 @@ int logger_exfat_init(const struct device *dev)
 	if ((res == FR_NO_FILESYSTEM) || (!infuse_fs)) {
 		/* Handle standard mount failures */
 		LOG_WRN("Creating filesystem on '%s'", config->disk);
-		res = filesystem_init(dev, path);
+		res = filesystem_init(dev, FILESYSTEM_LABEL, path);
 	} else if (res == FR_OK) {
 		/* Filesystem mounted, get file information */
 		res = f_stat(path, &fno);

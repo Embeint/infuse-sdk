@@ -38,19 +38,19 @@ DWORD get_fattime(void)
 	       (DWORD)cal->tm_sec >> 1;
 }
 
-bool logger_exfat_filesystem_is_infuse(const struct device *dev)
+bool logger_exfat_filesystem_is_infuse(const struct device *dev, const char *label)
 {
 	const struct dl_exfat_config *config = dev->config;
-	char label[7] = {0};
+	char fs_label[7] = {0};
 	char path[32];
 	FRESULT res;
 	FIL fp;
 
 	snprintf(path, sizeof(path), "%s:", config->disk);
 
-	res = f_getlabel(path, label, NULL);
-	if (res != FR_OK || (strncmp(label, "INFUSE", 7) != 0)) {
-		LOG_ERR("Bad filesystem label '%s'", label);
+	res = f_getlabel(path, fs_label, NULL);
+	if (res != FR_OK || (strncmp(fs_label, label, 7) != 0)) {
+		LOG_ERR("Bad filesystem label '%s'", fs_label);
 		return false;
 	}
 
@@ -64,7 +64,7 @@ bool logger_exfat_filesystem_is_infuse(const struct device *dev)
 	return true;
 }
 
-int logger_exfat_filesystem_common_init(const struct device *dev)
+int logger_exfat_filesystem_common_init(const struct device *dev, const char *label)
 {
 	const struct dl_exfat_config *config = dev->config;
 	struct dl_exfat_data *data = dev->data;
@@ -108,7 +108,7 @@ int logger_exfat_filesystem_common_init(const struct device *dev)
 	}
 
 	/* Set label ID */
-	snprintf(path, sizeof(path), "%s:INFUSE", config->disk);
+	snprintf(path, sizeof(path), "%s:%s", config->disk, label);
 	res = f_setlabel(path);
 	if (res != FR_OK) {
 		LOG_ERR("f_setlabel failed: %d", res);

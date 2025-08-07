@@ -35,9 +35,9 @@ struct dl_exfat_data {
 	uint32_t cached_file_lba;
 };
 
-bool logger_exfat_filesystem_is_infuse(const struct device *dev);
+bool logger_exfat_filesystem_is_infuse(const struct device *dev, const char *label);
 
-int logger_exfat_filesystem_common_init(const struct device *dev);
+int logger_exfat_filesystem_common_init(const struct device *dev, const char *label);
 
 void logger_exfat_disk_info_store(const struct device *dev);
 
