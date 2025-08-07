@@ -46,7 +46,7 @@ credential manager. This only needs to be performed once per install.
 
     infuse credentials --network-key /path/to/network_key.yaml
 
-New network key files can be generated with the ``infuse-sdk/scripts/network_key_gen.py`` helper.
+New network key files can be generated with the ``infuse-sdk/scripts/network_key_gen.py`` helper, which uses a cryptographically secure random number generator.
 
 .. note::
 

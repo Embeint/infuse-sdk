@@ -2,7 +2,7 @@
 
 import argparse
 import pathlib
-import random
+import secrets
 import sys
 import yaml
 
@@ -29,7 +29,7 @@ if __name__ == "__main__":
 
     contents = {
         "id": args.id,
-        "key": random.randbytes(32),
+        "key": secrets.token_bytes(32),
     }
     yaml.add_representer(int, hexint_presenter)
 
