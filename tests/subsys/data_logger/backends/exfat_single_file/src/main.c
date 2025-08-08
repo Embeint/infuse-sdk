@@ -17,6 +17,7 @@
 
 #include <infuse/identifiers.h>
 #include <infuse/data_logger/logger.h>
+#include <infuse/data_logger/backend/exfat.h>
 #include <infuse/fs/kv_store.h>
 #include <infuse/fs/kv_types.h>
 
@@ -128,6 +129,9 @@ static void test_sequence(bool reinit)
 		zassert_equal((i / state.physical_blocks) + 1, header->block_wrap);
 		zassert_mem_equal(input_buffer + sizeof(*header), output_buffer + sizeof(*header),
 				  sizeof(*header));
+
+		/* Next file has no effect on the single file backend */
+		zassert_equal(0, logger_exfat_file_next(logger));
 
 		/* Reinit logger and validate state not lost */
 		if (reinit) {

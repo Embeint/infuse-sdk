@@ -188,6 +188,8 @@ static void test_sequence(bool reinit)
 	zassert_equal(failing_block, state.physical_blocks);
 	zassert_equal(failing_block, state.logical_blocks);
 #endif
+
+	zassert_equal(-ENOMEM, logger_exfat_file_next(logger));
 }
 
 ZTEST(data_logger_exfat, test_standard_operation)
@@ -200,6 +202,40 @@ ZTEST(data_logger_exfat, test_standard_operation_reinit)
 {
 	/* Test with rebooting each write */
 	test_sequence(true);
+}
+
+ZTEST(data_logger_exfat, test_file_next)
+{
+	const struct device *logger = DEVICE_DT_GET(DT_NODELABEL(data_logger_exfat));
+	const uint32_t file_blocks = CONFIG_DATA_LOGGER_EXFAT_FILE_SIZE / 512;
+	struct data_logger_state state;
+
+	/* Init to erase value */
+	zassert_equal(0, logger_exfat_init(logger));
+
+	/* Next file with no data logged, no change */
+	zassert_equal(0, logger_exfat_file_next(logger));
+	data_logger_get_state(logger, &state);
+	zassert_equal(0, state.current_block);
+
+	/* With one block logger, should align to next file */
+	zassert_equal(0, data_logger_block_write(logger, 5, input_buffer, state.block_size));
+	data_logger_get_state(logger, &state);
+	zassert_equal(1, state.current_block);
+
+	zassert_equal(0, logger_exfat_file_next(logger));
+	data_logger_get_state(logger, &state);
+	zassert_equal(file_blocks, state.current_block);
+
+	/* Another align does nothing */
+	zassert_equal(0, logger_exfat_file_next(logger));
+	data_logger_get_state(logger, &state);
+	zassert_equal(file_blocks, state.current_block);
+
+	/* Initialise recognises the file end */
+	zassert_equal(0, logger_exfat_init(logger));
+	data_logger_get_state(logger, &state);
+	zassert_equal(file_blocks, state.current_block);
 }
 
 ZTEST(data_logger_exfat, test_pm_behaviour)
