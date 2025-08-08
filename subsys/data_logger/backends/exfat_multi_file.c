@@ -133,6 +133,34 @@ static int binary_container_create(const struct device *dev, uint32_t phy_block)
 	return res;
 }
 
+int logger_exfat_file_next(const struct device *dev)
+{
+	struct dl_exfat_data *data = dev->data;
+	uint32_t in_current_block;
+	uint32_t to_skip;
+	uint32_t disk_lba;
+	int rc = 0;
+
+	(void)logger_exfat_filesystem_claim(dev, NULL, NULL, K_FOREVER);
+
+	in_current_block = data->common.current_block % BLOCKS_PER_FILE;
+	if (in_current_block) {
+		to_skip = (BLOCKS_PER_FILE - in_current_block);
+		data->common.current_block += to_skip;
+		LOG_WRN("Skipped %d blocks", to_skip);
+	}
+	if (data->common.current_block % BLOCKS_PER_FILE == 0) {
+		disk_lba = disk_lba_from_block(dev, data->common.current_block);
+		if (disk_lba == LBA_NO_MEM) {
+			rc = -ENOMEM;
+		} else if (disk_lba == LBA_NO_FILE) {
+			rc = binary_container_create(dev, data->common.current_block);
+		}
+	}
+	logger_exfat_filesystem_release(dev);
+	return rc;
+}
+
 static int logger_exfat_write_burst(const struct device *dev, uint32_t start_block,
 				    uint32_t num_blocks, const void *block_data)
 {
@@ -352,6 +380,11 @@ static int logger_exfat_range_hint(const struct device *dev, uint32_t *block_sta
 
 	*block_start = last_file_idx * BLOCKS_PER_FILE;
 	*block_end = (1 + last_file_idx) * BLOCKS_PER_FILE - 1;
+	if (last_file_idx > 0) {
+		/* There could be no data in the current file */
+		*block_start -= 1;
+	}
+
 	LOG_DBG("Search range hint: %d-%d", *block_start, *block_end);
 	return 0;
 }

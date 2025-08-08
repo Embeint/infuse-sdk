@@ -20,7 +20,7 @@ extern "C" {
 /**
  * @brief Claim exFAT filesystem
  *
- * @param dev exFAT logging device to claim filesysem for
+ * @param dev exFAT logging device to claim filesystem for
  * @param buf Block buffer that can be used for reads (Can be NULL if not needed)
  * @param buf_size Size of the block buffer (Must be non-NULL if @a buf provided)
  * @param timeout Duration to wait for filesystem object
@@ -37,6 +37,23 @@ const char *logger_exfat_filesystem_claim(const struct device *dev, uint8_t **bu
  * @param dev exFAT logging device to release
  */
 void logger_exfat_filesystem_release(const struct device *dev);
+
+/**
+ * @brief Stop logging to the current file, create the next file
+ *
+ * This function is intended for use when logging at extremely high frequencies,
+ * when the file creation overhead is problematic.
+ *
+ * @warning This function does not operate from the same context as normal logging,
+ *          so care must be taken that logging is not occurring at the same time to
+ *          avoid corruption of the current block counter.
+ *
+ * @param dev exFAT logging device to move to the next file
+ *
+ * @retval 0 on success
+ * @retval -errno on failure
+ */
+int logger_exfat_file_next(const struct device *dev);
 
 #ifdef __cplusplus
 }

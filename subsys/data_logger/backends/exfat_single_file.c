@@ -173,6 +173,14 @@ static int exfat_single_pm_control(const struct device *dev, enum pm_device_acti
 }
 #endif /* CONFIG_PM_DEVICE */
 
+int logger_exfat_file_next(const struct device *dev)
+{
+	ARG_UNUSED(dev);
+
+	/* There is only a single file, no file creation overhead */
+	return 0;
+}
+
 /* Need to hook into this function when testing */
 IF_DISABLED(CONFIG_ZTEST, (static))
 int logger_exfat_init(const struct device *dev)
