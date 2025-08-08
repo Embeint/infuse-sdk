@@ -591,7 +591,7 @@ static int current_block_search(const struct device *dev, uint8_t counter)
 	struct data_logger_common_data *data = dev->data;
 	const struct data_logger_api *api = dev->api;
 	struct data_logger_persistent_block_header temp;
-	uint32_t high, low, mid, res = 0;
+	uint32_t high, low, mid, res;
 	uint32_t max_search;
 	int rc = -ENOSYS;
 
@@ -604,6 +604,7 @@ static int current_block_search(const struct device *dev, uint8_t counter)
 		high = data->physical_blocks - 1;
 		low = 0;
 	}
+	res = low;
 
 	/* Binary search for last block where block_wrap == counter */
 	while (low <= high) {
