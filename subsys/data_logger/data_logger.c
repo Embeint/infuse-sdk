@@ -90,6 +90,13 @@ static int do_block_write(const struct device *dev, enum infuse_type type, void 
 
 	LOG_DBG("%s writing to logical block %u (Phy block %u)", dev->name, data->current_block,
 		phy_block);
+
+	/* Request backend to be powered */
+	rc = pm_device_runtime_get(dev);
+	if (rc < 0) {
+		goto done;
+	}
+
 	/* Erase next chunk if required */
 	if ((data->current_block >= data->physical_blocks) &&
 	    ((data->current_block % erase_blocks) == 0)) {
@@ -97,7 +104,7 @@ static int do_block_write(const struct device *dev, enum infuse_type type, void 
 		rc = api->erase(dev, phy_block, erase_blocks);
 		if (rc < 0) {
 			LOG_ERR("%s failed to prepare block (%d)", dev->name, rc);
-			goto done;
+			goto release;
 		}
 		/* Old data is no longer present */
 		data->earliest_block += erase_blocks;
@@ -111,17 +118,13 @@ static int do_block_write(const struct device *dev, enum infuse_type type, void 
 		header->block_wrap = (data->current_block / data->physical_blocks) + 1;
 	}
 
-	/* Request backend to be powered */
-	rc = pm_device_runtime_get(dev);
-	if (rc < 0) {
-		goto done;
-	}
-
 	/* Write block to backend */
 	rc = api->write(dev, phy_block, type, block, block_len);
 	if (rc < 0) {
 		LOG_ERR("%s failed to write to backend", dev->name);
 	}
+
+release:
 
 	/* Release device after a delay */
 	(void)pm_device_runtime_put_async(dev, K_MSEC(100));
@@ -519,6 +522,13 @@ int data_logger_erase(const struct device *dev, bool erase_all,
 		return -ENOTSUP;
 	}
 
+	/* Request backend to be powered */
+	rc = pm_device_runtime_get(dev);
+	if (rc < 0) {
+		LOG_ERR("Failed to power up for reset (%d)", rc);
+		return rc;
+	}
+
 	if (erase_all) {
 		block_hint = data->physical_blocks;
 	} else {
@@ -537,6 +547,9 @@ int data_logger_erase(const struct device *dev, bool erase_all,
 		data->earliest_block = 0;
 		data->boot_block = 0;
 	}
+
+	/* Release device */
+	(void)pm_device_runtime_put(dev);
 
 	/* Clear erasing flag */
 	data->flags &= ~DATA_LOGGER_FLAGS_ERASING;
