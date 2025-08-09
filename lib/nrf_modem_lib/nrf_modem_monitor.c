@@ -369,6 +369,7 @@ static void infuse_modem_init(int ret, void *ctx)
 	KV_STRUCT_KV_STRING_VAR(64) modem_info = {0};
 	KV_KEY_TYPE(KV_KEY_LTE_MODEM_IMEI) modem_imei;
 	static bool modem_info_stored;
+	uint8_t val;
 	int rc;
 
 	/* Ensure modem commands don't block forever */
@@ -481,9 +482,17 @@ static void infuse_modem_init(int ret, void *ctx)
 	modem_info_stored = true;
 
 	/* Set default %XDATAPRFL value */
-	rc = nrf_modem_at_printf("AT%%XDATAPRFL=%d", CONFIG_INFUSE_NRF_MODEM_DATA_PROFILE_DEFAULT);
+	val = CONFIG_INFUSE_NRF_MODEM_DATA_PROFILE_DEFAULT;
+	rc = nrf_modem_at_printf("AT%%XDATAPRFL=%d", val);
 	if (rc < 0) {
-		LOG_ERR("AT%%XDATAPRFL=%d (%d)", CONFIG_INFUSE_NRF_MODEM_DATA_PROFILE_DEFAULT, rc);
+		LOG_ERR("AT%%XDATAPRFL=%d (%d)", val, rc);
+	}
+
+	/* Set default %REDMOB value */
+	val = CONFIG_INFUSE_NRF_MODEM_MONITOR_MOBILITY_VALUE;
+	rc = nrf_modem_at_printf("AT%%REDMOB=%d", val);
+	if (rc < 0) {
+		LOG_ERR("AT%%REDMOB=%d (%d)", val, rc);
 	}
 }
 

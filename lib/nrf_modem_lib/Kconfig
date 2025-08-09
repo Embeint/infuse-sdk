@@ -72,6 +72,41 @@ config INFUSE_NRF_MODEM_MONITOR_DEFAULT_PDP_FAMILY_NON_IP
 
 endchoice
 
+choice INFUSE_NRF_MODEM_MONITOR_MOBILITY
+	prompt "Mobility mode for nRF modem"
+	default INFUSE_NRF_MODEM_MONITOR_MOBILITY_DEFAULT
+	help
+	  The proprietary %REDMOB command is used to reduce LTE idle mode mobility,
+	  such as swapping between cells in stationary use cases. The modem defaults
+	  to the 3GPP relaxed monitoring feature if not configured.
+
+config INFUSE_NRF_MODEM_MONITOR_MOBILITY_DEFAULT
+	bool "Functionality according to the 3GPP relaxed monitoring feature"
+	help
+	  Defined in 3GPP TS 36.304 Ch. 5.2.4.12.
+
+config INFUSE_NRF_MODEM_MONITOR_MOBILITY_NORDIC_PROPRIETARY
+	bool "Nordic proprietary reduced mobility feature"
+	help
+	  The main difference between the 3GPP relaxed monitoring feature and the
+	  Nordic-proprietary reduced mobility feature is that the 3GPP feature
+	  requires support from the network and the Nordic-proprietary feature does
+	  not.
+
+config INFUSE_NRF_MODEM_MONITOR_MOBILITY_FULL
+	bool "Full measurements for best possible mobility"
+	help
+	  Disable the 3GPP relaxed monitoring and Nordic-proprietary reduced mobility
+	  features.
+
+endchoice
+
+config INFUSE_NRF_MODEM_MONITOR_MOBILITY_VALUE
+	int
+	default 0 if INFUSE_NRF_MODEM_MONITOR_MOBILITY_DEFAULT
+	default 1 if INFUSE_NRF_MODEM_MONITOR_MOBILITY_NORDIC_PROPRIETARY
+	default 2 if INFUSE_NRF_MODEM_MONITOR_MOBILITY_FULL
+
 config INFUSE_NRF_MODEM_MONITOR_AT_TIMEOUT_MS
 	int "Timeout period for nRF modem AT commands"
 	default 100
