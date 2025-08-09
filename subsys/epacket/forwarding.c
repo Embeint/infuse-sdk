@@ -12,6 +12,7 @@
 
 #include <zephyr/bluetooth/conn.h>
 
+#include <infuse/states.h>
 #include <infuse/types.h>
 #include <infuse/epacket/interface.h>
 #include <infuse/epacket/packet.h>
@@ -25,6 +26,7 @@ LOG_MODULE_DECLARE(epacket, CONFIG_EPACKET_LOG_LEVEL);
 static K_FIFO_DEFINE(packet_queue);
 static uint32_t rpc_disconnect_mask;
 static uint32_t disconnect_notification_mask;
+static uint32_t prioritise_uplink_mask;
 static const struct device *epacket_backhaul;
 
 BUILD_ASSERT(CONFIG_BT_MAX_CONN <= 32, "rpc_disconnect_mask");
@@ -104,6 +106,7 @@ static int ensure_bt_connection(union epacket_interface_address *address, uint8_
 	bool sub_data = flags & EPACKET_FORWARD_AUTO_CONN_SUB_DATA;
 	struct epacket_read_response security_info;
 	struct bt_conn *conn = NULL;
+	bool throughput_limit = false;
 	int conn_idx;
 	int rc;
 
@@ -116,15 +119,6 @@ static int ensure_bt_connection(union epacket_interface_address *address, uint8_
 		return rc;
 	}
 
-	/* Store whether we should disconnect on receiving a RPC response */
-	conn_idx = bt_conn_index(conn);
-	if (flags & EPACKET_FORWARD_AUTO_CONN_SINGLE_RPC) {
-		rpc_disconnect_mask |= BIT(conn_idx);
-	}
-	if (flags & EPACKET_FORWARD_AUTO_CONN_DC_NOTIFICATION) {
-		disconnect_notification_mask |= BIT(conn_idx);
-	}
-
 #ifdef CONFIG_KV_STORE_KEY_BLUETOOTH_THROUGHPUT_LIMIT
 	struct kv_bluetooth_throughput_limit limit;
 
@@ -135,8 +129,23 @@ static int ensure_bt_connection(union epacket_interface_address *address, uint8_
 		if (rc != 0) {
 			LOG_WRN("Failed to request throughput limit (%d)", rc);
 		}
+		/* Uplink is known to be limited */
+		throughput_limit = true;
 	}
 #endif /* CONFIG_KV_STORE_KEY_BLUETOOTH_THROUGHPUT_LIMIT */
+
+	/* Store whether we should disconnect on receiving a RPC response */
+	conn_idx = bt_conn_index(conn);
+	if (flags & EPACKET_FORWARD_AUTO_CONN_SINGLE_RPC) {
+		rpc_disconnect_mask |= BIT(conn_idx);
+	}
+	if (flags & EPACKET_FORWARD_AUTO_CONN_DC_NOTIFICATION) {
+		disconnect_notification_mask |= BIT(conn_idx);
+	}
+	if (throughput_limit && (flags & EPACKET_FORWARD_AUTO_CONN_PRIORITISE_UPLINK)) {
+		prioritise_uplink_mask |= BIT(conn_idx);
+		infuse_state_set_timeout(INFUSE_STATE_HIGH_PRIORITY_UPLINK, 2);
+	}
 
 	/* Unreference the connection for the idle timeout */
 	bt_conn_unref(conn);
@@ -183,18 +192,15 @@ static void disconnected(struct bt_conn *conn, uint8_t reason)
 	/* Clear the masks */
 	rpc_disconnect_mask &= ~conn_id_bit;
 	disconnect_notification_mask &= ~conn_id_bit;
+	prioritise_uplink_mask &= ~conn_id_bit;
 }
 
 bool bt_central_packet_received(struct net_buf *buf, bool decrypted, void *user_ctx)
 {
 	struct epacket_rx_metadata *meta = net_buf_user_data(buf);
 	struct bt_conn *conn = NULL;
+	uint32_t conn_id_bit;
 	int conn_id, rc;
-
-	/* Only care about RPC responses to handle EPACKET_FORWARD_AUTO_CONN_SINGLE_RPC */
-	if (meta->type != INFUSE_RPC_RSP) {
-		return true;
-	}
 
 	/* Find the associated connection object */
 	conn = bt_conn_lookup_addr_le(BT_ID_DEFAULT, &meta->interface_address.bluetooth);
@@ -203,9 +209,15 @@ bool bt_central_packet_received(struct net_buf *buf, bool decrypted, void *user_
 		return true;
 	}
 	conn_id = bt_conn_index(conn);
+	conn_id_bit = BIT(conn_id);
+
+	if (prioritise_uplink_mask & conn_id_bit) {
+		/* Data received on the link, continue prioritising it */
+		infuse_state_set_timeout(INFUSE_STATE_HIGH_PRIORITY_UPLINK, 2);
+	}
 
 	/* Is this RPC_RSP received on a connection with EPACKET_FORWARD_AUTO_CONN_SINGLE_RPC */
-	if (rpc_disconnect_mask & BIT(conn_id)) {
+	if ((meta->type == INFUSE_RPC_RSP) && (rpc_disconnect_mask & conn_id_bit)) {
 		LOG_INF("Initiating disconnect due to RPC_RSP");
 		rc = bt_conn_disconnect(conn, BT_HCI_ERR_REMOTE_USER_TERM_CONN);
 		if (rc != 0) {
