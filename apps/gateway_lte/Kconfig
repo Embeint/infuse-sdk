@@ -6,4 +6,11 @@ config LTE_GATEWAY_DEFAULT_MAXIMUM_UPLINK_THROUGHPUT_KBPS
 	default 50 if SOC_SERIES_NRF91X
 	default 0
 
+# Shuffle memory to prioritise TX buffers
+configdefault NRF_MODEM_LIB_SHMEM_TX_SIZE
+	default 12288
+
+configdefault NRF_MODEM_LIB_SHMEM_RX_SIZE
+	default 10240
+
 source "Kconfig.zephyr"
