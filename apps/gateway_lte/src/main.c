@@ -28,6 +28,7 @@
 #include <infuse/fs/kv_store.h>
 #include <infuse/fs/kv_types.h>
 #include <infuse/lib/memfault.h>
+#include <infuse/states.h>
 #include <infuse/tdf/definitions.h>
 #include <infuse/tdf/util.h>
 
@@ -154,8 +155,11 @@ static void bluetooth_adv_handler(struct net_buf *buf)
 {
 	const struct device *udp = DEVICE_DT_GET(DT_NODELABEL(epacket_udp));
 
-	/* Forward 25% of Bluetooth advertising packets (0.25 * 255)*/
-	if (epacket_gateway_forward_filter(0, 64, buf)) {
+	/* Forward 25% of Bluetooth advertising packets (0.25 * 255)
+	 * Don't forward if a high-priority task is using the link.
+	 */
+	if (!infuse_state_get(INFUSE_STATE_HIGH_PRIORITY_UPLINK) ||
+	    epacket_gateway_forward_filter(0, 64, buf)) {
 		/* Forward packets that pass the filter */
 		epacket_gateway_receive_handler(udp, buf);
 	} else {
