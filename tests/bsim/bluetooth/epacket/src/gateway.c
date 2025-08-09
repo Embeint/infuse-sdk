@@ -28,6 +28,7 @@
 #include <infuse/rpc/types.h>
 #include <infuse/rpc/client.h>
 #include <infuse/security.h>
+#include <infuse/states.h>
 
 int epacket_bt_gatt_encrypt(struct net_buf *buf, uint32_t network_key_id);
 
@@ -1583,7 +1584,8 @@ static void main_gateway_remote_rpc_forward_auto_conn_auth_fail(void)
 	PASS("RPC auto-conn forwarder with auth failures passed\n");
 }
 
-static int run_data_sender(bt_addr_le_t *addr, uint16_t rpc, uint32_t size, bool slow_uplink)
+static int run_data_sender(bt_addr_le_t *addr, uint16_t rpc, uint32_t size, bool slow_uplink,
+			   bool prioritise)
 {
 	const struct device *epacket_dummy = DEVICE_DT_GET(DT_NODELABEL(epacket_dummy));
 	const struct device *epacket_central = DEVICE_DT_GET(DT_NODELABEL(epacket_bt_central));
@@ -1666,7 +1668,8 @@ static int run_data_sender(bt_addr_le_t *addr, uint16_t rpc, uint32_t size, bool
 
 	hdr.forward_header.interface = EPACKET_INTERFACE_BT_CENTRAL;
 	hdr.forward_header.length = sizeof(hdr) + buf->len;
-	hdr.forward_header.flags = EPACKET_FORWARD_AUTO_CONN_SINGLE_RPC;
+	hdr.forward_header.flags = EPACKET_FORWARD_AUTO_CONN_SINGLE_RPC |
+				   (prioritise ? EPACKET_FORWARD_AUTO_CONN_PRIORITISE_UPLINK : 0);
 	hdr.forward_header.conn_timeout = 2;
 	hdr.forward_header.conn_idle_timeout = 5;
 	hdr.forward_header.conn_absolute_timeout = 7;
@@ -1706,6 +1709,10 @@ static int run_data_sender(bt_addr_le_t *addr, uint16_t rpc, uint32_t size, bool
 		}
 		/* Consume all grouped packets */
 		while (buf->len) {
+			if (prioritise != infuse_state_get(INFUSE_STATE_HIGH_PRIORITY_UPLINK)) {
+				FAIL("Unexpected INFUSE_STATE_HIGH_PRIORITY_UPLINK state\n");
+				return 1;
+			}
 			common_header = net_buf_pull_mem(
 				buf, sizeof(struct epacket_received_common_header));
 			if (common_header->interface != EPACKET_INTERFACE_BT_CENTRAL) {
@@ -1813,7 +1820,7 @@ static void main_gateway_remote_rpc_forward_auto_conn_rate_limit(void)
 	}
 
 	/* Run the receiving process for 8kB with a slow uplink */
-	if (run_data_sender(&addr, RPC_ID_DATA_SENDER, 8192, true) < 0) {
+	if (run_data_sender(&addr, RPC_ID_DATA_SENDER, 8192, true, false) < 0) {
 		return;
 	}
 	PASS("RPC auto-conn forwarder with delay based rate-limiting passed\n");
@@ -1840,7 +1847,7 @@ static void main_gateway_remote_rpc_forward_auto_conn_rate_throughput(void)
 	}
 
 	/* Run the receiving process for 4kB with a 8kbps limit */
-	duration = run_data_sender(&addr, RPC_ID_DATA_SENDER, 4096, false);
+	duration = run_data_sender(&addr, RPC_ID_DATA_SENDER, 4096, false, true);
 	if (duration < 0) {
 		return;
 	}
@@ -1876,7 +1883,7 @@ static void main_gateway_data_logger_read_throughput(void)
 	}
 
 	/* Run the data logger read for 4kB with a 8kbps limit */
-	duration = run_data_sender(&addr, RPC_ID_DATA_LOGGER_READ, 4096, false);
+	duration = run_data_sender(&addr, RPC_ID_DATA_LOGGER_READ, 4096, false, false);
 	if (duration < 0) {
 		return;
 	}
