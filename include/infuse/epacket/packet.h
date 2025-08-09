@@ -208,6 +208,8 @@ enum epacket_forward_auto_conn_flags {
 	EPACKET_FORWARD_AUTO_CONN_SUB_DATA = BIT(1),
 	/* Send a INFUSE_EPACKET_CONN_TERMINATED on connection terminated */
 	EPACKET_FORWARD_AUTO_CONN_DC_NOTIFICATION = BIT(2),
+	/* Prioritise uplink throughput to the connection associated with this request */
+	EPACKET_FORWARD_AUTO_CONN_PRIORITISE_UPLINK = BIT(3),
 } __packed;
 
 /** Common header for @ref INFUSE_EPACKET_FORWARD_AUTO_CONN */
