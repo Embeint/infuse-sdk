@@ -78,3 +78,22 @@ class {{ info['name'] }}:
 
 {% endif %}
 {% endfor -%}
+
+
+__all__ = [
+{% for name, info in structs.items() %}
+{% if extensions == info.get('extension', False) %}
+    '{{ name }}',
+{% endif %}
+{% endfor -%}
+{% for name, info in enums.items() %}
+{% if extensions == info.get('extension', False) %}
+    '{{ name }}',
+{% endif %}
+{% endfor -%}
+{% for info in commands.values() %}
+{% if extensions == info.get('extension', False) %}
+    '{{ info['name'] }}',
+{% endif %}
+{% endfor -%}
+]
