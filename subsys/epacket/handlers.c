@@ -87,6 +87,7 @@ static void receive_forward(const struct device *backhaul, struct net_buf *buf)
 {
 	const uint32_t max_hold = CONFIG_EPACKET_RECEIVE_GROUPING_MAX_HOLD_MS;
 	struct epacket_rx_metadata *meta = net_buf_user_data(buf);
+	uint8_t rx_type = meta->type;
 	static bool is_init;
 	struct net_buf *temp;
 	bool appended = false;
@@ -108,14 +109,14 @@ static void receive_forward(const struct device *backhaul, struct net_buf *buf)
 		if (pending_buffer) {
 			/* We already have a buffer holding data */
 			if (epacket_received_packet_append(pending_buffer, buf) == 0) {
-				/* Append succeeded */
+				/* Append succeeded, buf has been freed */
 				appended = true;
+				buf = NULL;
+				meta = NULL;
 				/* RPC_RSP packets should trigger an immediate flush */
-				if (meta->type != INFUSE_RPC_RSP) {
+				if (rx_type != INFUSE_RPC_RSP) {
 					/* Update the timeout */
 					k_work_reschedule(&pending_flush_worker, K_MSEC(max_hold));
-					net_buf_unref(buf);
-					buf = NULL;
 					K_SPINLOCK_BREAK;
 				}
 			}
