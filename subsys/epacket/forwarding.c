@@ -23,11 +23,13 @@
 
 LOG_MODULE_DECLARE(epacket, CONFIG_EPACKET_LOG_LEVEL);
 
+struct conn_state {
+	uint8_t flags;
+};
+
 static K_FIFO_DEFINE(packet_queue);
-static uint32_t rpc_disconnect_mask;
-static uint32_t disconnect_notification_mask;
-static uint32_t prioritise_uplink_mask;
 static const struct device *epacket_backhaul;
+static struct conn_state forwarding_state[CONFIG_BT_MAX_CONN];
 
 BUILD_ASSERT(CONFIG_BT_MAX_CONN <= 32, "rpc_disconnect_mask");
 
@@ -106,6 +108,7 @@ static int ensure_bt_connection(union epacket_interface_address *address, uint8_
 	bool sub_data = flags & EPACKET_FORWARD_AUTO_CONN_SUB_DATA;
 	struct epacket_read_response security_info;
 	struct bt_conn *conn = NULL;
+	struct conn_state *state;
 	bool throughput_limit = false;
 	int conn_idx;
 	int rc;
@@ -136,14 +139,11 @@ static int ensure_bt_connection(union epacket_interface_address *address, uint8_
 
 	/* Store whether we should disconnect on receiving a RPC response */
 	conn_idx = bt_conn_index(conn);
-	if (flags & EPACKET_FORWARD_AUTO_CONN_SINGLE_RPC) {
-		rpc_disconnect_mask |= BIT(conn_idx);
-	}
-	if (flags & EPACKET_FORWARD_AUTO_CONN_DC_NOTIFICATION) {
-		disconnect_notification_mask |= BIT(conn_idx);
-	}
+	state = &forwarding_state[conn_idx];
+	state->flags = flags & (EPACKET_FORWARD_AUTO_CONN_SINGLE_RPC |
+				EPACKET_FORWARD_AUTO_CONN_DC_NOTIFICATION);
 	if (throughput_limit && (flags & EPACKET_FORWARD_AUTO_CONN_PRIORITISE_UPLINK)) {
-		prioritise_uplink_mask |= BIT(conn_idx);
+		state->flags |= EPACKET_FORWARD_AUTO_CONN_PRIORITISE_UPLINK;
 		infuse_state_set_timeout(INFUSE_STATE_HIGH_PRIORITY_UPLINK, 2);
 	}
 
@@ -183,23 +183,21 @@ static void send_conn_terminated(const struct device *backhaul, int16_t reason,
 static void disconnected(struct bt_conn *conn, uint8_t reason)
 {
 	int conn_id = bt_conn_index(conn);
-	uint32_t conn_id_bit = BIT(conn_id);
+	struct conn_state *state = &forwarding_state[conn_id];
 
-	if (disconnect_notification_mask & conn_id_bit) {
+	if (state->flags & EPACKET_FORWARD_AUTO_CONN_DC_NOTIFICATION) {
 		send_conn_terminated(epacket_backhaul, reason, bt_conn_get_dst(conn));
 	}
 
 	/* Clear the masks */
-	rpc_disconnect_mask &= ~conn_id_bit;
-	disconnect_notification_mask &= ~conn_id_bit;
-	prioritise_uplink_mask &= ~conn_id_bit;
+	state->flags = 0;
 }
 
 bool bt_central_packet_received(struct net_buf *buf, bool decrypted, void *user_ctx)
 {
 	struct epacket_rx_metadata *meta = net_buf_user_data(buf);
 	struct bt_conn *conn = NULL;
-	uint32_t conn_id_bit;
+	struct conn_state *state;
 	int conn_id, rc;
 
 	/* Find the associated connection object */
@@ -209,15 +207,16 @@ bool bt_central_packet_received(struct net_buf *buf, bool decrypted, void *user_
 		return true;
 	}
 	conn_id = bt_conn_index(conn);
-	conn_id_bit = BIT(conn_id);
+	state = &forwarding_state[conn_id];
 
-	if (prioritise_uplink_mask & conn_id_bit) {
+	if (state->flags & EPACKET_FORWARD_AUTO_CONN_PRIORITISE_UPLINK) {
 		/* Data received on the link, continue prioritising it */
 		infuse_state_set_timeout(INFUSE_STATE_HIGH_PRIORITY_UPLINK, 2);
 	}
 
 	/* Is this RPC_RSP received on a connection with EPACKET_FORWARD_AUTO_CONN_SINGLE_RPC */
-	if ((meta->type == INFUSE_RPC_RSP) && (rpc_disconnect_mask & conn_id_bit)) {
+	if ((meta->type == INFUSE_RPC_RSP) &&
+	    (state->flags & EPACKET_FORWARD_AUTO_CONN_SINGLE_RPC)) {
 		LOG_INF("Initiating disconnect due to RPC_RSP");
 		rc = bt_conn_disconnect(conn, BT_HCI_ERR_REMOTE_USER_TERM_CONN);
 		if (rc != 0) {
