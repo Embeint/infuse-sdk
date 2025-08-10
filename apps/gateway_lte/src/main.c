@@ -151,15 +151,38 @@ static void udp_interface_state(uint16_t current_max_payload, void *user_ctx)
 	}
 }
 
+static void state_set(enum infuse_state state, bool already, uint16_t timeout, void *user_ctx)
+{
+	const struct device *bt_adv = DEVICE_DT_GET(DT_NODELABEL(epacket_bt_adv));
+	int rc;
+
+	if ((state != INFUSE_STATE_HIGH_PRIORITY_UPLINK) || already) {
+		return;
+	}
+
+	rc = epacket_receive(bt_adv, K_NO_WAIT);
+	LOG_INF("Pausing scanning due to uplink (%d)", rc);
+}
+
+static void state_cleared(enum infuse_state state, void *user_ctx)
+{
+	const struct device *bt_adv = DEVICE_DT_GET(DT_NODELABEL(epacket_bt_adv));
+	int rc;
+
+	if (state != INFUSE_STATE_HIGH_PRIORITY_UPLINK) {
+		return;
+	}
+
+	rc = epacket_receive(bt_adv, K_FOREVER);
+	LOG_INF("Resuming scanning (%d)", rc);
+}
+
 static void bluetooth_adv_handler(struct net_buf *buf)
 {
 	const struct device *udp = DEVICE_DT_GET(DT_NODELABEL(epacket_udp));
 
-	/* Forward 25% of Bluetooth advertising packets (0.25 * 255)
-	 * Don't forward if a high-priority task is using the link.
-	 */
-	if (!infuse_state_get(INFUSE_STATE_HIGH_PRIORITY_UPLINK) ||
-	    epacket_gateway_forward_filter(0, 64, buf)) {
+	/* Forward 25% of Bluetooth advertising packets (0.25 * 255) */
+	if (epacket_gateway_forward_filter(0, 64, buf)) {
 		/* Forward packets that pass the filter */
 		epacket_gateway_receive_handler(udp, buf);
 	} else {
@@ -176,6 +199,10 @@ int main(void)
 	struct epacket_interface_cb udp_interface_cb = {
 		.interface_state = udp_interface_state,
 	};
+	struct infuse_state_cb state_cb = {
+		.state_set = state_set,
+		.state_cleared = state_cleared,
+	};
 
 #if CONFIG_LTE_GATEWAY_DEFAULT_MAXIMUM_UPLINK_THROUGHPUT_KBPS > 0
 	/* Set the default throughput to request from connected devices if it doesn't exist */
@@ -187,6 +214,9 @@ int main(void)
 		KV_STORE_WRITE(KV_KEY_BLUETOOTH_THROUGHPUT_LIMIT, &limit);
 	}
 #endif /* CONFIG_LTE_GATEWAY_DEFAULT_MAXIMUM_UPLINK_THROUGHPUT_KBPS > 0 */
+
+	/* State callbacks */
+	infuse_state_register_callback(&state_cb);
 
 	/* Constant ePacket flags */
 	epacket_global_flags_set(EPACKET_FLAGS_CLOUD_FORWARDING | EPACKET_FLAGS_CLOUD_SELF);
