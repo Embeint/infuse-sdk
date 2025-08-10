@@ -80,7 +80,7 @@ bool infuse_state_set(enum infuse_state state)
 		/* Notify registered callbacks */
 		SYS_SLIST_FOR_EACH_CONTAINER(&cb_list, cb, node) {
 			if (cb->state_set) {
-				cb->state_set(state, 0, cb->user_ctx);
+				cb->state_set(state, already_set, 0, cb->user_ctx);
 			}
 		}
 	}
@@ -116,7 +116,7 @@ bool infuse_state_set_timeout(enum infuse_state state, uint16_t timeout)
 		/* Notify registered callbacks */
 		SYS_SLIST_FOR_EACH_CONTAINER(&cb_list, cb, node) {
 			if (cb->state_set) {
-				cb->state_set(state, timeout, cb->user_ctx);
+				cb->state_set(state, already_set, timeout, cb->user_ctx);
 			}
 		}
 	}

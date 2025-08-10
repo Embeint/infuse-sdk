@@ -221,16 +221,18 @@ ZTEST(application_states, test_state_timeout_override)
 
 struct callback_ctx {
 	enum infuse_state state_expected;
+	bool already_expected;
 	uint16_t timeout_expected;
 	uint32_t set_count;
 	uint32_t clear_count;
 };
 
-static void state_set(enum infuse_state state, uint16_t timeout, void *user_ctx)
+static void state_set(enum infuse_state state, bool already, uint16_t timeout, void *user_ctx)
 {
 	struct callback_ctx *ctx = user_ctx;
 
 	zassert_equal(ctx->state_expected, state);
+	zassert_equal(ctx->already_expected, already);
 	zassert_equal(ctx->timeout_expected, timeout);
 	ctx->set_count += 1;
 }
@@ -259,6 +261,7 @@ ZTEST(application_states, test_callbacks)
 
 	/* Basic set/clear callbacks */
 	ctx.state_expected = INFUSE_STATE_TIME_KNOWN;
+	ctx.already_expected = false;
 	ctx.timeout_expected = 0;
 	infuse_state_set(INFUSE_STATE_TIME_KNOWN);
 	zassert_equal(1, ctx.set_count);
@@ -273,6 +276,7 @@ ZTEST(application_states, test_callbacks)
 	zassert_equal(2, ctx.set_count);
 	zassert_equal(1, ctx.clear_count);
 
+	ctx.already_expected = true;
 	ctx.timeout_expected = 6;
 	infuse_state_set_timeout(INFUSE_STATE_TIME_KNOWN, 6);
 	zassert_equal(3, ctx.set_count);
@@ -282,8 +286,14 @@ ZTEST(application_states, test_callbacks)
 		infuse_states_snapshot(states);
 		infuse_states_tick(states);
 	}
-	zassert_equal(3, ctx.set_count);
-	zassert_equal(2, ctx.clear_count);
+
+	ctx.already_expected = false;
+	ctx.timeout_expected = 0;
+	infuse_state_set(INFUSE_STATE_TIME_KNOWN);
+	infuse_state_clear(INFUSE_STATE_TIME_KNOWN);
+
+	zassert_equal(4, ctx.set_count);
+	zassert_equal(3, ctx.clear_count);
 
 	zassert_true(infuse_state_unregister_callback(&empty_cb));
 	zassert_true(infuse_state_unregister_callback(&some_cb));
@@ -293,8 +303,8 @@ ZTEST(application_states, test_callbacks)
 
 	/* Callback doesn't run after removal */
 	infuse_state_set(INFUSE_STATE_TIME_KNOWN);
-	zassert_equal(3, ctx.set_count);
-	zassert_equal(2, ctx.clear_count);
+	zassert_equal(4, ctx.set_count);
+	zassert_equal(3, ctx.clear_count);
 }
 
 void test_init(void *fixture)
