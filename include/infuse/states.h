@@ -61,10 +61,11 @@ struct infuse_state_cb {
 	 * @brief Application state has been set.
 	 *
 	 * @param state State that has been set
+	 * @param already State was already set
 	 * @param timeout Timeout for the state (0 for indefinite)
 	 * @param user_ctx User context pointer
 	 */
-	void (*state_set)(enum infuse_state state, uint16_t timeout, void *user_ctx);
+	void (*state_set)(enum infuse_state state, bool already, uint16_t timeout, void *user_ctx);
 
 	/**
 	 * @brief Application state has been cleared.
