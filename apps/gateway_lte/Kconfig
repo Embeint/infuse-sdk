@@ -3,14 +3,14 @@
 config LTE_GATEWAY_DEFAULT_MAXIMUM_UPLINK_THROUGHPUT_KBPS
 	int "Expected maximum throughput of the LTE link with good signal"
 	# Theoretical maximum LTE-M uplink for the nRF91 is 375 kbps
-	default 50 if SOC_SERIES_NRF91X
+	default 175 if SOC_SERIES_NRF91X
 	default 0
 
 # Shuffle memory to prioritise TX buffers
 configdefault NRF_MODEM_LIB_SHMEM_TX_SIZE
-	default 12288
+	default 14336
 
 configdefault NRF_MODEM_LIB_SHMEM_RX_SIZE
-	default 10240
+	default 8192
 
 source "Kconfig.zephyr"
