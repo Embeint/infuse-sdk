@@ -225,7 +225,9 @@ class cloudgen(WestCommand):
 
         generate(tdf_definitions_output, False)
         if tdf_extensions_exist:
-            generate(self.generate_base / "tdf_definitions.py", True)
+            py_extensions = self.generate_base / "tdf_definitions.py"
+            generate(py_extensions, True)
+            self.ruff_format(py_extensions)
 
         self.clang_format(tdf_output)
         self.ruff_format(tdf_definitions_output)
@@ -333,7 +335,9 @@ class cloudgen(WestCommand):
 
         generate(kv_py_output, False)
         if kv_extensions_exist:
-            generate(self.generate_base / "kv_definitions.py", True)
+            py_extensions = self.generate_base / "kv_definitions.py"
+            generate(py_extensions, True)
+            self.ruff_format(py_extensions)
 
         self.clang_format(kv_defs_output)
         self.ruff_format(kv_py_output)
@@ -448,7 +452,9 @@ class cloudgen(WestCommand):
 
         generate(rpc_defs_py_output, False)
         if rpc_extensions_exist:
-            generate(self.generate_base / "rpc_definitions.py", True)
+            py_extensions = self.generate_base / "rpc_definitions.py"
+            generate(py_extensions, True)
+            self.ruff_format(py_extensions)
 
         self.clang_format(rpc_defs_output)
         self.clang_format(rpc_commands_output)
