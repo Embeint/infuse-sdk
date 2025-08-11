@@ -53,7 +53,8 @@ class readings:
     class {{ info['name'] | lower }}(TdfReadingBase):
         """{{ info['description'] }}"""
 
-        name = "{{ info['name'] }}"
+        ID = {{ tdf_id }}
+        NAME = "{{ info['name'] }}"
         _fields_ = [
 {% for field in info['fields'] %}
             ("{{ field['py_name'] }}", {{ field['py_type'] }}),
@@ -83,7 +84,7 @@ class readings:
 id_type_mapping: dict[int, type[TdfReadingBase]] = {
 {% for tdf_id, info in definitions.items() %}
 {% if extensions == info.get('extension', False) %}
-    {{ tdf_id }}: readings.{{ info['name'] | lower }},
+    readings.{{ info['name'] | lower }}.ID: readings.{{ info['name'] | lower }},
 {% endif %}
 {% endfor %}
 }
