@@ -144,7 +144,7 @@ class release_diff(WestCommand):
                 if shutil.which("jdiff") is not None:
                     diff_file = f"{tmp}/jdiff.patch"
                     subprocess.run(
-                        ["jdiff", str(input), str(output_path), diff_file],
+                        ["jdiff", str(input_path), str(output_path), diff_file],
                         check=False,
                     )
                     jdiff_size = os.stat(diff_file).st_size
@@ -154,7 +154,7 @@ class release_diff(WestCommand):
                 if shutil.which("bsdiff4") is not None:
                     diff_file = f"{tmp}/bsdiff4.patch"
                     subprocess.run(
-                        ["bsdiff4", str(input), str(output_path), diff_file],
+                        ["bsdiff4", str(input_path), str(output_path), diff_file],
                         check=True,
                     )
                     bs_size = os.stat(diff_file).st_size
@@ -162,7 +162,13 @@ class release_diff(WestCommand):
                 if shutil.which("xdelta") is not None:
                     diff_file = f"{tmp}/xdelta.patch"
                     subprocess.run(
-                        ["xdelta", "delta", str(input), str(output_path), diff_file],
+                        [
+                            "xdelta",
+                            "delta",
+                            str(input_path),
+                            str(output_path),
+                            diff_file,
+                        ],
                         check=False,
                     )
                     x_size = os.stat(diff_file).st_size
