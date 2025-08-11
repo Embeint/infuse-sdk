@@ -440,6 +440,12 @@ class cloudgen(WestCommand):
             )
 
         def generate(output: pathlib.Path, extensions: bool):
+            any_enums = any(
+                [
+                    e.get("extension", False) == extensions
+                    for e in rpc_defs["enums"].values()
+                ]
+            )
             with output.open("w") as f:
                 f.write(
                     rpc_defs_py_template.render(
@@ -447,6 +453,7 @@ class cloudgen(WestCommand):
                         enums=rpc_defs["enums"],
                         commands=rpc_defs["commands"],
                         extensions=extensions,
+                        has_enums=any_enums,
                     )
                 )
 
