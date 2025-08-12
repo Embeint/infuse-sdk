@@ -101,6 +101,9 @@ configdefault BT_PHY_UPDATE
 # But we don't want the PHY update to be triggered automatically by the peripheral
 configdefault BT_AUTO_PHY_UPDATE
 	default n
+# GATT clients should be able to request PHY's
+configdefault BT_USER_PHY_UPDATE
+	default y if BT_GATT_CLIENT
 
 # Connection parameters should be pro-actively negotiated, not delayed by 5
 # seconds as many connections are complete by then.
