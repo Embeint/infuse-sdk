@@ -53,6 +53,7 @@ struct net_buf *rpc_command_bt_file_copy_coap(struct net_buf *request)
 		.inactivity_timeout = K_FOREVER,
 		.absolute_timeout = K_FOREVER,
 		.conn_timeout_ms = req->conn_timeout_ms,
+		.preferred_phy = BT_GAP_LE_PHY_NONE,
 		.subscribe_commands = true,
 		.subscribe_data = false,
 		.subscribe_logging = false,
