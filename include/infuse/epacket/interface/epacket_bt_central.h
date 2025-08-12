@@ -33,35 +33,44 @@ extern "C" {
 
 #define epacket_bt_central_frame epacket_v0_versioned_frame_format
 
+/** @brief Parameters for @ref epacket_bt_gatt_connect */
+struct epacket_bt_gatt_connect_params {
+	/* Connection parameters to setup connection with */
+	struct bt_le_conn_param conn_params;
+	/* Peer device to connect to */
+	bt_addr_le_t peer;
+	/* Automatically disconnect if no data sent or received on the command or data
+	 * characteristics for this long. K_FOREVER to disable.
+	 */
+	k_timeout_t inactivity_timeout;
+	/* Unconditionally terminate the connection after this long. K_FOREVER to disable. */
+	k_timeout_t absolute_timeout;
+	/* Duration to wait while attempting to setup connection */
+	uint32_t conn_timeout_ms;
+	/* Subscribe to the command characteristic */
+	bool subscribe_commands;
+	/* Subscribe to the data characteristic */
+	bool subscribe_data;
+	/* Subscribe to the logging characteristic */
+	bool subscribe_logging;
+};
+
 /**
  * @brief Connect to a peer Infuse-IoT device via Bluetooth GATT
  *
  * @note If called multiple times on the same connection, the subscribe requests,
  *       inactivity and absolute timeout are updated on each call.
  *
- * @param peer Peer device to connect to
- * @param conn_params Connection parameters to setup connection with
- * @param timeout_ms Duration to wait while attempting to setup connection
  * @param conn Output connection object on success
+ * @param params ePacket connection parameters
  * @param security Output security parameters of the peer device on success
- * @param subscribe_commands Subscribe to the command characteristic
- * @param subscribe_data Subscribe to the data characteristic
- * @param subscribe_logging Subscribe to the logging characteristic
- * @param inactivity_timeout Automatically disconnect if no data sent or received
- *                           on the command or data characteristics for this long.
- *                           K_FOREVER to disable.
- * @param absolute_timeout Unconditionally terminate the connection after this long.
- *                         K_FOREVER to disable.
  *
  * @retval 0 on success, *conn is valid
  * @retval >0 on HCI error, *conn is invalid
  * @retval <0 on Zephyr error, *conn is invalid
  */
-int epacket_bt_gatt_connect(const bt_addr_le_t *peer, const struct bt_le_conn_param *conn_params,
-			    uint32_t timeout_ms, struct bt_conn **conn,
-			    struct epacket_read_response *security, bool subscribe_commands,
-			    bool subscribe_data, bool subscribe_logging,
-			    k_timeout_t inactivity_timeout, k_timeout_t absolute_timeout);
+int epacket_bt_gatt_connect(struct bt_conn **conn, struct epacket_bt_gatt_connect_params *params,
+			    struct epacket_read_response *security);
 
 /**
  * @brief Infuse-IoT Bluetooth GATT characteristic notification handle function
