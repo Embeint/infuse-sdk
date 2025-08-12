@@ -155,6 +155,10 @@ ZTEST(epacket_handlers, test_rate_limiting)
 		after = k_uptime_ticks();
 		zassert_equal(before, after, "Unexpected context yield");
 	}
+
+	k_sleep(K_MSEC(100));
+	zassert_equal(CONFIG_EPACKET_BUFFERS_RX, epacket_num_buffers_free_rx());
+	zassert_equal(CONFIG_EPACKET_BUFFERS_TX, epacket_num_buffers_free_tx());
 }
 
 ZTEST(epacket_handlers, test_rate_throughput)
@@ -271,6 +275,10 @@ ZTEST(epacket_handlers, test_rate_throughput)
 	epacket_rate_limit_tx(&limit_tx, 2048);
 	after = k_uptime_ticks();
 	zassert_equal(before, after, "Throughput limit reset failure");
+
+	k_sleep(K_MSEC(100));
+	zassert_equal(CONFIG_EPACKET_BUFFERS_RX, epacket_num_buffers_free_rx());
+	zassert_equal(CONFIG_EPACKET_BUFFERS_TX, epacket_num_buffers_free_tx());
 }
 
 ZTEST(epacket_handlers, test_echo_response)
@@ -315,6 +323,10 @@ ZTEST(epacket_handlers, test_echo_response)
 	epacket_dummy_receive(epacket_dummy, &header, payload, 16);
 
 	zassert_is_null(k_fifo_get(tx_fifo, K_MSEC(100)));
+
+	k_sleep(K_MSEC(100));
+	zassert_equal(CONFIG_EPACKET_BUFFERS_RX, epacket_num_buffers_free_rx());
+	zassert_equal(CONFIG_EPACKET_BUFFERS_TX, epacket_num_buffers_free_tx());
 }
 
 ZTEST(epacket_handlers, test_echo_no_block)
@@ -343,6 +355,10 @@ ZTEST(epacket_handlers, test_echo_no_block)
 		net_buf_unref(tx);
 	}
 	zassert_is_null(k_fifo_get(tx_fifo, K_MSEC(100)));
+
+	k_sleep(K_MSEC(100));
+	zassert_equal(CONFIG_EPACKET_BUFFERS_RX, epacket_num_buffers_free_rx());
+	zassert_equal(CONFIG_EPACKET_BUFFERS_TX, epacket_num_buffers_free_tx());
 }
 
 GATEWAY_HANDLER_DEFINE(dummy_backhaul_handler, DEVICE_DT_GET(DT_NODELABEL(epacket_dummy)));
@@ -517,6 +533,10 @@ ZTEST(epacket_handlers, test_gateway_forward)
 	}
 	buf_tx = k_fifo_get(tx_fifo, K_MSEC(max_hold + 50));
 	zassert_is_null(buf_tx);
+
+	k_sleep(K_MSEC(100));
+	zassert_equal(CONFIG_EPACKET_BUFFERS_RX, epacket_num_buffers_free_rx());
+	zassert_equal(CONFIG_EPACKET_BUFFERS_TX, epacket_num_buffers_free_tx());
 }
 #else
 
@@ -550,6 +570,10 @@ ZTEST(epacket_handlers, test_gateway_forward)
 		epacket_gateway_receive_handler(epacket_dummy, buf_rx);
 		zassert_is_null(k_fifo_get(tx_fifo, K_MSEC(100)));
 	}
+
+	k_sleep(K_MSEC(100));
+	zassert_equal(CONFIG_EPACKET_BUFFERS_RX, epacket_num_buffers_free_rx());
+	zassert_equal(CONFIG_EPACKET_BUFFERS_TX, epacket_num_buffers_free_tx());
 }
 
 #endif /* CONFIG_EPACKET_RECEIVE_GROUPING */
