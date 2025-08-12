@@ -353,11 +353,87 @@ static void mtu_exchange_cb(struct bt_conn *conn, uint8_t err,
 	}
 }
 
+#ifdef CONFIG_BT_USER_PHY_UPDATE
+
+static void phy_updated(struct bt_conn *conn, struct bt_conn_le_phy_info *param)
+{
+	int rc;
+
+	LOG_DBG("PHY updated: %02X %02X", param->rx_phy, param->tx_phy);
+
+	/* Continue setting up connection with MTU exchange */
+	mtu_exchange_params.func = mtu_exchange_cb;
+	rc = bt_gatt_exchange_mtu(conn, &mtu_exchange_params);
+	if (rc < 0) {
+		connection_error(conn, rc);
+	}
+}
+
+/* Returns True if this function handles next step of connection setup */
+static bool central_phy_request(struct bt_conn *conn)
+{
+	struct bt_gatt_state *s = &state[bt_conn_index(conn)];
+	struct bt_conn_info info;
+	int rc;
+
+	if (s->preferred_phy == BT_GAP_LE_PHY_NONE) {
+		return false;
+	}
+
+	/* Get current PHY */
+	rc = bt_conn_get_info(conn, &info);
+	if (rc < 0) {
+		connection_error(conn, rc);
+		return true;
+	}
+
+	if (info.le.phy->rx_phy & s->preferred_phy) {
+		/* Preferred PHY already used */
+		return false;
+	}
+
+	/* No overlap between preferred and current PHY */
+	struct bt_conn_le_phy_param phy_params = {
+		.options = BT_CONN_LE_PHY_OPT_NONE,
+		.pref_rx_phy = s->preferred_phy,
+		.pref_tx_phy = s->preferred_phy,
+	};
+
+	rc = bt_conn_le_phy_update(conn, &phy_params);
+	if (rc == 0) {
+		/* Waiting for PHY update callback */
+	} else if (rc == -EIO) {
+		/* Requested PHY not supported, fallthrough to MTU exchange */
+		LOG_WRN("Unsupported PHY request %02X", s->preferred_phy);
+	} else {
+		/* Some other failure */
+		connection_error(conn, rc);
+	}
+	return rc != -EIO;
+}
+
+#else
+
+static bool central_phy_request(struct bt_conn *conn)
+{
+	ARG_UNUSED(conn);
+
+	return false;
+}
+
+#endif /* CONFIG_BT_USER_PHY_UPDATE */
+
 static void central_conn_setup(struct bt_conn *conn)
 {
 	int rc;
 
-	/* First action, request MTU update */
+	/* First action, request PHY update if preferred PHY set */
+	if (central_phy_request(conn)) {
+		/* MTU exchange triggered by PHY update */
+		return;
+	}
+
+	/* First action if no PHY update, request MTU update */
 	mtu_exchange_params.func = mtu_exchange_cb;
 	rc = bt_gatt_exchange_mtu(conn, &mtu_exchange_params);
 	if (rc < 0) {
@@ -615,6 +691,9 @@ static int infuse_bluetooth_gatt(void)
 	/* Callback registration */
 	conn_cb.connected = connected;
 	conn_cb.disconnected = disconnected;
+#ifdef CONFIG_BT_USER_PHY_UPDATE
+	conn_cb.le_phy_updated = phy_updated;
+#endif /* CONFIG_BT_USER_PHY_UPDATE */
 	bt_conn_cb_register(&conn_cb);
 	return 0;
 }
