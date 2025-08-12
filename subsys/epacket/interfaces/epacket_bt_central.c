@@ -245,16 +245,14 @@ static void bt_conn_timeout(struct k_work *work)
 	do_disconnect(s, "timeout");
 }
 
-int epacket_bt_gatt_connect(const bt_addr_le_t *peer, const struct bt_le_conn_param *conn_params,
-			    uint32_t timeout_ms, struct bt_conn **conn_out,
-			    struct epacket_read_response *security, bool subscribe_commands,
-			    bool subscribe_data, bool subscribe_logging,
-			    k_timeout_t inactivity_timeout, k_timeout_t absolute_timeout)
+int epacket_bt_gatt_connect(struct bt_conn **conn_out,
+			    struct epacket_bt_gatt_connect_params *params,
+			    struct epacket_read_response *security)
 {
 	const struct bt_conn_le_create_param create_param = {
 		.interval = BT_GAP_SCAN_FAST_INTERVAL_MIN,
 		.window = BT_GAP_SCAN_FAST_WINDOW,
-		.timeout = timeout_ms / 10,
+		.timeout = params->conn_timeout_ms / 10,
 	};
 	struct k_poll_event poll_event;
 	struct infuse_connection_state *s;
@@ -267,7 +265,7 @@ int epacket_bt_gatt_connect(const bt_addr_le_t *peer, const struct bt_le_conn_pa
 	*conn_out = NULL;
 
 	/* Determine if connection already exists */
-	conn = bt_conn_lookup_addr_le(BT_ID_DEFAULT, peer);
+	conn = bt_conn_lookup_addr_le(BT_ID_DEFAULT, &params->peer);
 	if (conn != NULL) {
 		idx = bt_conn_index(conn);
 		s = &infuse_conn[idx];
@@ -279,8 +277,8 @@ int epacket_bt_gatt_connect(const bt_addr_le_t *peer, const struct bt_le_conn_pa
 
 	/* Create the connection */
 	conn = NULL;
-	LOG_INF("Creating connection (timeout %d ms)", timeout_ms);
-	rc = bt_conn_le_create(peer, &create_param, conn_params, &conn);
+	LOG_INF("Creating connection (timeout %d ms)", params->conn_timeout_ms);
+	rc = bt_conn_le_create(&params->peer, &create_param, &params->conn_params, &conn);
 	if (rc < 0) {
 		return rc;
 	}
@@ -313,13 +311,13 @@ int epacket_bt_gatt_connect(const bt_addr_le_t *peer, const struct bt_le_conn_pa
 
 conn_created:
 	/* Connection available, update the timeouts if specified */
-	s->inactivity_timeout = inactivity_timeout;
+	s->inactivity_timeout = params->inactivity_timeout;
 	if (rc == 0) {
-		if (!K_TIMEOUT_EQ(inactivity_timeout, K_FOREVER)) {
-			k_work_reschedule(&s->idle_worker, inactivity_timeout);
+		if (!K_TIMEOUT_EQ(params->inactivity_timeout, K_FOREVER)) {
+			k_work_reschedule(&s->idle_worker, params->inactivity_timeout);
 		}
-		if (!K_TIMEOUT_EQ(absolute_timeout, K_FOREVER)) {
-			k_work_reschedule(&s->term_worker, absolute_timeout);
+		if (!K_TIMEOUT_EQ(params->absolute_timeout, K_FOREVER)) {
+			k_work_reschedule(&s->term_worker, params->absolute_timeout);
 		}
 	}
 
@@ -358,14 +356,14 @@ conn_created:
 
 	/* Setup requested subscriptions */
 	rc = characteristic_subscribe(conn, &s->remote_info[CHAR_COMMAND], &s->subs[CHAR_COMMAND],
-				      subscribe_commands);
+				      params->subscribe_commands);
 	if (rc == 0) {
 		rc = characteristic_subscribe(conn, &s->remote_info[CHAR_DATA], &s->subs[CHAR_DATA],
-					      subscribe_data);
+					      params->subscribe_data);
 	}
 	if (rc == 0 && (s->remote_info[CHAR_LOGGING].ccc_handle != 0)) {
 		rc = characteristic_subscribe(conn, &s->remote_info[CHAR_LOGGING],
-					      &s->subs[CHAR_LOGGING], subscribe_logging);
+					      &s->subs[CHAR_LOGGING], params->subscribe_logging);
 	}
 cleanup:
 	if (rc == 0) {
