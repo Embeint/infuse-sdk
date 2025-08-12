@@ -122,6 +122,21 @@ static int ensure_bt_connection(union epacket_interface_address *address, uint8_
 	int conn_idx;
 	int rc;
 
+#ifdef CONFIG_KV_STORE_KEY_BLUETOOTH_THROUGHPUT_LIMIT
+	struct kv_bluetooth_throughput_limit limit = {0};
+
+	if ((KV_STORE_READ(KV_KEY_BLUETOOTH_THROUGHPUT_LIMIT, &limit) == sizeof(limit)) &&
+	    (limit.limit_kbps > 0) && (limit.limit_kbps < 500) &&
+	    (flags & EPACKET_FORWARD_AUTO_CONN_PRIORITISE_UPLINK)) {
+		/* A low throughput limit is requested together with uplink prioritisation.
+		 * Based on this we want to request the 1 Mbit PHY to provide a more stable
+		 * connection, since the throughput from the 2 Mbit PHY doesn't matter.
+		 */
+		LOG_INF("Requesting 1 Mbit PHY");
+		params.preferred_phy = BT_GAP_LE_PHY_1M;
+	}
+#endif /* CONFIG_KV_STORE_KEY_BLUETOOTH_THROUGHPUT_LIMIT */
+
 	/* Create the connection */
 	rc = epacket_bt_gatt_connect(&conn, &params, &security_info);
 	if (rc != 0) {
@@ -130,9 +145,7 @@ static int ensure_bt_connection(union epacket_interface_address *address, uint8_
 	}
 
 #ifdef CONFIG_KV_STORE_KEY_BLUETOOTH_THROUGHPUT_LIMIT
-	struct kv_bluetooth_throughput_limit limit;
-
-	if (KV_STORE_READ(KV_KEY_BLUETOOTH_THROUGHPUT_LIMIT, &limit) == sizeof(limit)) {
+	if (limit.limit_kbps > 0) {
 		LOG_INF("Requesting throughput limit of %d kbps", limit.limit_kbps);
 		/* Throughput limit has been set */
 		rc = epacket_bt_gatt_rate_throughput_request(conn, limit.limit_kbps);
