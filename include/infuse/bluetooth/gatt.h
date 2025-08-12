@@ -104,9 +104,10 @@ struct bt_conn_auto_discovery {
  * @param conn Connection object allocated by @a bt_conn_le_create
  * @param discovery Characteristic discovery configuration
  * @param callbacks Callbacks to call on connection/disconnection
+ * @param preferred_phy Bitmask of preferred PHYs to use for the connection `BT_GAP_LE_PHY_*`
  */
 void bt_conn_le_auto_setup(struct bt_conn *conn, struct bt_conn_auto_discovery *discovery,
-			   const struct bt_conn_auto_setup_cb *callbacks);
+			   const struct bt_conn_auto_setup_cb *callbacks, uint8_t preferred_phy);
 
 /**
  * @brief Trigger a disconnection and wait for it to complete

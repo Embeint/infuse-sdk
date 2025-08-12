@@ -37,6 +37,7 @@ static struct bt_gatt_state {
 #ifdef CONFIG_BT_GATT_CLIENT
 	const struct bt_conn_auto_setup_cb *cb;
 	struct bt_conn_auto_discovery *discovery;
+	uint8_t preferred_phy;
 #endif /* CONFIG_BT_GATT_CLIENT */
 } state[CONFIG_BT_MAX_CONN];
 
@@ -60,12 +61,13 @@ static struct bt_gatt_exchange_params mtu_exchange_params;
 static struct bt_gatt_read_params db_read_params;
 
 void bt_conn_le_auto_setup(struct bt_conn *conn, struct bt_conn_auto_discovery *discovery,
-			   const struct bt_conn_auto_setup_cb *callbacks)
+			   const struct bt_conn_auto_setup_cb *callbacks, uint8_t preferred_phy)
 {
 	struct bt_gatt_state *s = &state[bt_conn_index(conn)];
 
 	s->discovery = discovery;
 	s->cb = callbacks;
+	s->preferred_phy = preferred_phy;
 }
 
 static void connection_done(struct bt_conn *conn)

@@ -214,7 +214,7 @@ static void main_connect_nonexistant(void)
 			FAIL("Failed to initiate connection\n");
 			return;
 		}
-		bt_conn_le_auto_setup(conn, NULL, &callbacks);
+		bt_conn_le_auto_setup(conn, NULL, &callbacks, BT_GAP_LE_PHY_NONE);
 
 		/* Wait for connection process to complete */
 		rc = k_poll(events, ARRAY_SIZE(events), K_SECONDS(3));
@@ -283,7 +283,7 @@ static void main_connect_no_discovery(void)
 			FAIL("Failed to initiate connection\n");
 			return;
 		}
-		bt_conn_le_auto_setup(conn, NULL, &callbacks);
+		bt_conn_le_auto_setup(conn, NULL, &callbacks, BT_GAP_LE_PHY_NONE);
 
 		/* Wait for connection process to complete */
 		rc = k_poll(events, ARRAY_SIZE(events), K_SECONDS(3));
@@ -372,7 +372,7 @@ static void main_connect_discover_name(void)
 			FAIL("Failed to initiate connection\n");
 			return;
 		}
-		bt_conn_le_auto_setup(conn, &discovery, &callbacks);
+		bt_conn_le_auto_setup(conn, &discovery, &callbacks, BT_GAP_LE_PHY_NONE);
 
 		/* Wait for connection process to complete */
 		rc = k_poll(events, ARRAY_SIZE(events), K_SECONDS(3));
@@ -496,7 +496,7 @@ static void main_connect_discover_nonexistant(void)
 			FAIL("Failed to initiate connection\n");
 			return;
 		}
-		bt_conn_le_auto_setup(conn, &discovery, &callbacks);
+		bt_conn_le_auto_setup(conn, &discovery, &callbacks, BT_GAP_LE_PHY_NONE);
 
 		/* Wait for connection process to complete */
 		rc = k_poll(events, ARRAY_SIZE(events), K_SECONDS(3));
@@ -583,7 +583,7 @@ static void main_connect_discover_does_doesnt(void)
 			FAIL("Failed to initiate connection\n");
 			return;
 		}
-		bt_conn_le_auto_setup(conn, &discovery, &callbacks);
+		bt_conn_le_auto_setup(conn, &discovery, &callbacks, BT_GAP_LE_PHY_NONE);
 
 		/* Wait for connection process to complete */
 		rc = k_poll(events, ARRAY_SIZE(events), K_SECONDS(3));
@@ -675,7 +675,7 @@ static void main_connect_discover_doesnt_does(void)
 			FAIL("Failed to initiate connection\n");
 			return;
 		}
-		bt_conn_le_auto_setup(conn, &discovery, &callbacks);
+		bt_conn_le_auto_setup(conn, &discovery, &callbacks, BT_GAP_LE_PHY_NONE);
 
 		/* Wait for connection process to complete */
 		rc = k_poll(events, ARRAY_SIZE(events), K_SECONDS(3));
@@ -753,7 +753,7 @@ static void main_connect_rssi(void)
 		FAIL("Failed to initiate connection\n");
 		return;
 	}
-	bt_conn_le_auto_setup(conn, NULL, &callbacks);
+	bt_conn_le_auto_setup(conn, NULL, &callbacks, BT_GAP_LE_PHY_NONE);
 
 	/* Wait for connection process to complete */
 	rc = k_poll(events, ARRAY_SIZE(events), K_SECONDS(3));
@@ -860,7 +860,7 @@ static void main_connect_terminator(void)
 			FAIL("Failed to initiate connection\n");
 			return;
 		}
-		bt_conn_le_auto_setup(conn, &discovery, &callbacks);
+		bt_conn_le_auto_setup(conn, &discovery, &callbacks, BT_GAP_LE_PHY_NONE);
 
 		/* Wait for connection process to complete */
 		rc = k_poll(events, ARRAY_SIZE(events), K_SECONDS(3));

@@ -294,7 +294,7 @@ int epacket_bt_gatt_connect(struct bt_conn **conn_out,
 	s->discovery.num_characteristics = CHAR_NUM;
 
 	/* Register for the connection to be automatically setup */
-	bt_conn_le_auto_setup(conn, &s->discovery, &callbacks);
+	bt_conn_le_auto_setup(conn, &s->discovery, &callbacks, BT_GAP_LE_PHY_NONE);
 
 	/* Wait for connection process to complete */
 	poll_event = (struct k_poll_event)K_POLL_EVENT_INITIALIZER(
