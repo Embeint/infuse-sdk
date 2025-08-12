@@ -23,24 +23,24 @@ struct net_buf *rpc_command_bt_connect_infuse(struct net_buf *request)
 	struct rpc_bt_connect_infuse_response rsp = {
 		.peer = req->peer,
 	};
-	const bt_addr_le_t peer = bt_addr_infuse_to_zephyr(&req->peer);
-	const struct bt_le_conn_param params = BT_LE_CONN_PARAM_INIT(0x10, 0x15, 0, 400);
+	struct epacket_bt_gatt_connect_params params = {
+		.conn_params = BT_LE_CONN_PARAM_INIT(0x10, 0x15, 0, 400),
+		.peer = bt_addr_infuse_to_zephyr(&req->peer),
+		.inactivity_timeout = req->inactivity_timeout_ms == 0
+					      ? K_FOREVER
+					      : K_MSEC(req->inactivity_timeout_ms),
+		.absolute_timeout = K_FOREVER,
+		.conn_timeout_ms = req->conn_timeout_ms,
+		.subscribe_commands = req->subscribe & RPC_ENUM_INFUSE_BT_CHARACTERISTIC_COMMAND,
+		.subscribe_data = req->subscribe & RPC_ENUM_INFUSE_BT_CHARACTERISTIC_DATA,
+		.subscribe_logging = req->subscribe & RPC_ENUM_INFUSE_BT_CHARACTERISTIC_LOGGING,
+	};
 	struct epacket_read_response security_info;
-	k_timeout_t inactivty =
-		req->inactivity_timeout_ms == 0 ? K_FOREVER : K_MSEC(req->inactivity_timeout_ms);
 	struct bt_conn *conn;
 	int rc;
 
-	if (req->inactivity_timeout_ms != 0) {
-		LOG_WRN("Inactivity timeout not yet supported");
-	}
-
 	/* Run the connection process */
-	rc = epacket_bt_gatt_connect(&peer, &params, req->conn_timeout_ms, &conn, &security_info,
-				     req->subscribe & RPC_ENUM_INFUSE_BT_CHARACTERISTIC_COMMAND,
-				     req->subscribe & RPC_ENUM_INFUSE_BT_CHARACTERISTIC_DATA,
-				     req->subscribe & RPC_ENUM_INFUSE_BT_CHARACTERISTIC_LOGGING,
-				     inactivty, K_FOREVER);
+	rc = epacket_bt_gatt_connect(&conn, &params, &security_info);
 	if (rc == 0) {
 		/* Copy results */
 		memcpy(rsp.cloud_public_key, security_info.cloud_public_key,

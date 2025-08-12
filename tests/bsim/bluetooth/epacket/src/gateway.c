@@ -180,31 +180,39 @@ retry:
 
 static void main_gateway_connect(void)
 {
-	const struct bt_le_conn_param params = BT_LE_CONN_PARAM_INIT(0x10, 0x15, 0, 400);
+	struct epacket_bt_gatt_connect_params params = {
+		.conn_params = BT_LE_CONN_PARAM_INIT(0x10, 0x15, 0, 400),
+		.inactivity_timeout = K_FOREVER,
+		.absolute_timeout = K_FOREVER,
+		.conn_timeout_ms = 3000,
+		.subscribe_commands = false,
+		.subscribe_data = false,
+		.subscribe_logging = false,
+	};
 	struct epacket_read_response security_info;
 	struct bt_conn *conn = NULL, *conn2 = NULL;
-	bt_addr_le_t addr;
 	int8_t rssi;
 	int rc;
 
 	common_init();
-	if (observe_peers(&addr, 1) < 0) {
+	if (observe_peers(&params.peer, 1) < 0) {
 		FAIL("Failed to observe peer\n");
 		return;
 	}
 
 	for (int i = 0; i < 5; i++) {
 		/* Initiate connection */
-		rc = epacket_bt_gatt_connect(&addr, &params, 3000, &conn, &security_info, i % 2,
-					     i % 2, i % 2, K_FOREVER, K_FOREVER);
+		params.subscribe_commands = i % 2;
+		params.subscribe_data = i % 2;
+		params.subscribe_logging = i % 2;
+		rc = epacket_bt_gatt_connect(&conn, &params, &security_info);
 		if (rc != 0) {
 			FAIL("Failed to connect to peer\n");
 			return;
 		}
 
 		/* Same connection again should pass with RC == 1 */
-		rc = epacket_bt_gatt_connect(&addr, &params, 3000, &conn2, &security_info, i % 2,
-					     i % 2, i % 2, K_FOREVER, K_FOREVER);
+		rc = epacket_bt_gatt_connect(&conn2, &params, &security_info);
 		if (rc != 0) {
 			FAIL("Failed to detect existing connection\n");
 			return;
@@ -237,7 +245,15 @@ static void main_gateway_connect(void)
 
 static void main_gateway_connect_multi(void)
 {
-	const struct bt_le_conn_param params = BT_LE_CONN_PARAM_INIT(0x10, 0x15, 0, 400);
+	struct epacket_bt_gatt_connect_params params = {
+		.conn_params = BT_LE_CONN_PARAM_INIT(0x10, 0x15, 0, 400),
+		.inactivity_timeout = K_FOREVER,
+		.absolute_timeout = K_FOREVER,
+		.conn_timeout_ms = 3000,
+		.subscribe_commands = false,
+		.subscribe_data = false,
+		.subscribe_logging = false,
+	};
 	struct epacket_read_response security_info;
 	struct bt_conn *conn1 = NULL, *conn2 = NULL;
 	bt_addr_le_t addr[2];
@@ -251,16 +267,16 @@ static void main_gateway_connect_multi(void)
 
 	for (int i = 0; i < 3; i++) {
 		/* Connect to first device */
-		rc = epacket_bt_gatt_connect(&addr[0], &params, 3000, &conn1, &security_info, false,
-					     false, false, K_FOREVER, K_FOREVER);
+		params.peer = addr[0];
+		rc = epacket_bt_gatt_connect(&conn1, &params, &security_info);
 		if (rc != 0) {
 			FAIL("Failed to connect to first peer\n");
 			return;
 		}
 
 		/* Connect to the second device */
-		rc = epacket_bt_gatt_connect(&addr[1], &params, 3000, &conn2, &security_info, false,
-					     false, false, K_FOREVER, K_FOREVER);
+		params.peer = addr[1];
+		rc = epacket_bt_gatt_connect(&conn2, &params, &security_info);
 		if (rc != 0) {
 			FAIL("Failed to connect to second peer %d\n", rc);
 			return;
@@ -291,21 +307,27 @@ static void main_gateway_connect_multi(void)
 static void main_gateway_connect_then_scan(void)
 {
 	const struct device *epacket_bt_adv = DEVICE_DT_GET(DT_NODELABEL(epacket_bt_adv));
-	const struct bt_le_conn_param params = BT_LE_CONN_PARAM_INIT(0x10, 0x15, 0, 400);
+	struct epacket_bt_gatt_connect_params params = {
+		.conn_params = BT_LE_CONN_PARAM_INIT(0x10, 0x15, 0, 400),
+		.inactivity_timeout = K_FOREVER,
+		.absolute_timeout = K_FOREVER,
+		.conn_timeout_ms = 3000,
+		.subscribe_commands = false,
+		.subscribe_data = false,
+		.subscribe_logging = false,
+	};
 	struct epacket_read_response security_info;
 	struct bt_conn *conn = NULL;
-	bt_addr_le_t addr;
 	int rc;
 
 	common_init();
-	if (observe_peers(&addr, 1) < 0) {
+	if (observe_peers(&params.peer, 1) < 0) {
 		FAIL("Failed to observe peer\n");
 		return;
 	}
 
 	/* Initiate connection */
-	rc = epacket_bt_gatt_connect(&addr, &params, 3000, &conn, &security_info, false, false,
-				     false, K_FOREVER, K_FOREVER);
+	rc = epacket_bt_gatt_connect(&conn, &params, &security_info);
 	if (rc != 0) {
 		FAIL("Failed to connect to peer\n");
 		return;
@@ -491,36 +513,41 @@ void central_handler(struct net_buf *buf)
 
 static void main_gateway_connect_recv(void)
 {
-	const struct bt_le_conn_param params = BT_LE_CONN_PARAM_INIT(0x10, 0x15, 0, 400);
 	const struct device *epacket_central = DEVICE_DT_GET(DT_NODELABEL(epacket_bt_central));
+	struct epacket_bt_gatt_connect_params params = {
+		.conn_params = BT_LE_CONN_PARAM_INIT(0x10, 0x15, 0, 400),
+		.inactivity_timeout = K_FOREVER,
+		.absolute_timeout = K_FOREVER,
+		.conn_timeout_ms = 3000,
+		.subscribe_commands = false,
+		.subscribe_data = false,
+		.subscribe_logging = false,
+	};
 	struct epacket_read_response security_info;
 	struct epacket_rx_metadata *meta;
 	struct bt_conn *conn = NULL;
 	struct net_buf *buf;
-	bt_addr_le_t addr;
-	bool data_sub;
 	int rc;
 
 	common_init();
 	epacket_set_receive_handler(epacket_central, central_handler);
 
-	if (observe_peers(&addr, 1) < 0) {
+	if (observe_peers(&params.peer, 1) < 0) {
 		FAIL("Failed to observe peer\n");
 		return;
 	}
 
 	for (int i = 0; i < 4; i++) {
-		data_sub = i % 2;
+		params.subscribe_data = i % 2;
 
 		/* Connect to peer device */
-		rc = epacket_bt_gatt_connect(&addr, &params, 3000, &conn, &security_info, false,
-					     data_sub, false, K_FOREVER, K_FOREVER);
+		rc = epacket_bt_gatt_connect(&conn, &params, &security_info);
 		if (rc != 0) {
 			FAIL("Failed to connect to peer\n");
 			return;
 		}
 
-		if (data_sub) {
+		if (params.subscribe_data) {
 			/* Wait for a payload */
 			buf = k_fifo_get(&central_fifo, K_SECONDS(2));
 			if (buf == NULL) {
@@ -566,18 +593,25 @@ static void main_gateway_connect_recv(void)
 static void main_gateway_connect_idle_tx_timeout(void)
 {
 	const struct device *epacket_central = DEVICE_DT_GET(DT_NODELABEL(epacket_bt_central));
-	const struct bt_le_conn_param params = BT_LE_CONN_PARAM_INIT(0x10, 0x15, 0, 400);
+	struct epacket_bt_gatt_connect_params params = {
+		.conn_params = BT_LE_CONN_PARAM_INIT(0x10, 0x15, 0, 400),
+		.inactivity_timeout = K_MSEC(1500),
+		.absolute_timeout = K_FOREVER,
+		.conn_timeout_ms = 3000,
+		.subscribe_commands = false,
+		.subscribe_data = false,
+		.subscribe_logging = false,
+	};
 	struct epacket_read_response security_info;
 	union epacket_interface_address if_address;
 	struct bt_conn *conn = NULL;
 	struct net_buf *buf;
-	bt_addr_le_t addr;
 	int rc;
 
 	common_init();
 	bt_conn_cb_register(&conn_cb);
 
-	if (observe_peers(&addr, 1) < 0) {
+	if (observe_peers(&params.peer, 1) < 0) {
 		FAIL("Failed to observe peer\n");
 		return;
 	}
@@ -585,14 +619,13 @@ static void main_gateway_connect_idle_tx_timeout(void)
 	struct rpc_application_info_request req;
 	struct rpc_client_ctx ctx;
 
-	if_address.bluetooth = addr;
+	if_address.bluetooth = params.peer;
 	rpc_client_init(&ctx, epacket_central, if_address);
 
 	/* Connect to peer device with an idle timeout.
 	 * Don't subscribe to cmd responses by default to test the TX path.
 	 */
-	rc = epacket_bt_gatt_connect(&addr, &params, 3000, &conn, &security_info, false, false,
-				     false, K_MSEC(1500), K_FOREVER);
+	rc = epacket_bt_gatt_connect(&conn, &params, &security_info);
 	if (rc != 0) {
 		FAIL("Failed to connect to peer\n");
 		return;
@@ -626,23 +659,29 @@ static void main_gateway_connect_idle_tx_timeout(void)
 
 static void main_gateway_connect_idle_rx_timeout(void)
 {
-	const struct bt_le_conn_param params = BT_LE_CONN_PARAM_INIT(0x10, 0x15, 0, 400);
+	struct epacket_bt_gatt_connect_params params = {
+		.conn_params = BT_LE_CONN_PARAM_INIT(0x10, 0x15, 0, 400),
+		.inactivity_timeout = K_MSEC(500),
+		.absolute_timeout = K_FOREVER,
+		.conn_timeout_ms = 3000,
+		.subscribe_commands = false,
+		.subscribe_data = false,
+		.subscribe_logging = false,
+	};
 	struct epacket_read_response security_info;
 	struct bt_conn *conn = NULL;
-	bt_addr_le_t addr;
 	int rc;
 
 	common_init();
 	bt_conn_cb_register(&conn_cb);
 
-	if (observe_peers(&addr, 1) < 0) {
+	if (observe_peers(&params.peer, 1) < 0) {
 		FAIL("Failed to observe peer\n");
 		return;
 	}
 
 	/* Connect to peer device with a timeout that we expect to expire */
-	rc = epacket_bt_gatt_connect(&addr, &params, 3000, &conn, &security_info, false, false,
-				     false, K_MSEC(500), K_FOREVER);
+	rc = epacket_bt_gatt_connect(&conn, &params, &security_info);
 	if (rc != 0) {
 		FAIL("Failed to connect to peer\n");
 		return;
@@ -659,8 +698,10 @@ static void main_gateway_connect_idle_rx_timeout(void)
 	k_sleep(K_MSEC(500));
 
 	/* Connect to peer device with a timeout that should not expire (peer sends at 1Hz) */
-	rc = epacket_bt_gatt_connect(&addr, &params, 3000, &conn, &security_info, false, true,
-				     false, K_MSEC(1500), K_FOREVER);
+	params.inactivity_timeout = K_MSEC(1500);
+	params.subscribe_data = true;
+	rc = epacket_bt_gatt_connect(&conn, &params, &security_info);
+
 	if (rc != 0) {
 		FAIL("Failed to connect to peer %d\n", rc);
 		return;
@@ -686,23 +727,29 @@ static void main_gateway_connect_idle_rx_timeout(void)
 
 static void main_gateway_connect_idle_rx_log_ignored(void)
 {
-	const struct bt_le_conn_param params = BT_LE_CONN_PARAM_INIT(0x10, 0x15, 0, 400);
+	struct epacket_bt_gatt_connect_params params = {
+		.conn_params = BT_LE_CONN_PARAM_INIT(0x10, 0x15, 0, 400),
+		.inactivity_timeout = K_MSEC(2000),
+		.absolute_timeout = K_FOREVER,
+		.conn_timeout_ms = 3000,
+		.subscribe_commands = false,
+		.subscribe_data = false,
+		.subscribe_logging = true,
+	};
 	struct epacket_read_response security_info;
 	struct bt_conn *conn = NULL;
-	bt_addr_le_t addr;
 	int rc;
 
 	common_init();
 	bt_conn_cb_register(&conn_cb);
 
-	if (observe_peers(&addr, 1) < 0) {
+	if (observe_peers(&params.peer, 1) < 0) {
 		FAIL("Failed to observe peer\n");
 		return;
 	}
 
 	/* Connect to peer device with a long timeout, subscribed to logging characteristic */
-	rc = epacket_bt_gatt_connect(&addr, &params, 3000, &conn, &security_info, false, false,
-				     true, K_MSEC(2000), K_FOREVER);
+	rc = epacket_bt_gatt_connect(&conn, &params, &security_info);
 	if (rc != 0) {
 		FAIL("Failed to connect to peer\n");
 		return;
@@ -725,23 +772,29 @@ static void main_gateway_connect_idle_rx_log_ignored(void)
 
 static void main_gateway_connect_absolute_timeout(void)
 {
-	const struct bt_le_conn_param params = BT_LE_CONN_PARAM_INIT(0x10, 0x15, 0, 400);
+	struct epacket_bt_gatt_connect_params params = {
+		.conn_params = BT_LE_CONN_PARAM_INIT(0x10, 0x15, 0, 400),
+		.inactivity_timeout = K_FOREVER,
+		.absolute_timeout = K_SECONDS(5),
+		.conn_timeout_ms = 3000,
+		.subscribe_commands = true,
+		.subscribe_data = true,
+		.subscribe_logging = true,
+	};
 	struct epacket_read_response security_info;
 	struct bt_conn *conn = NULL;
-	bt_addr_le_t addr;
 	int rc;
 
 	common_init();
 	bt_conn_cb_register(&conn_cb);
 
-	if (observe_peers(&addr, 1) < 0) {
+	if (observe_peers(&params.peer, 1) < 0) {
 		FAIL("Failed to observe peer\n");
 		return;
 	}
 
 	/* Connect to peer device with a long timeout, subscribed to all characteristics */
-	rc = epacket_bt_gatt_connect(&addr, &params, 3000, &conn, &security_info, true, true, true,
-				     K_FOREVER, K_SECONDS(5));
+	rc = epacket_bt_gatt_connect(&conn, &params, &security_info);
 	if (rc != 0) {
 		FAIL("Failed to connect to peer\n");
 		return;
@@ -767,23 +820,29 @@ static void main_gateway_connect_absolute_timeout(void)
 
 static void main_gateway_connect_absolute_timeout_update(void)
 {
-	const struct bt_le_conn_param params = BT_LE_CONN_PARAM_INIT(0x10, 0x15, 0, 400);
+	struct epacket_bt_gatt_connect_params params = {
+		.conn_params = BT_LE_CONN_PARAM_INIT(0x10, 0x15, 0, 400),
+		.inactivity_timeout = K_FOREVER,
+		.absolute_timeout = K_SECONDS(1),
+		.conn_timeout_ms = 3000,
+		.subscribe_commands = true,
+		.subscribe_data = true,
+		.subscribe_logging = true,
+	};
 	struct epacket_read_response security_info;
 	struct bt_conn *conn = NULL;
-	bt_addr_le_t addr;
 	int rc;
 
 	common_init();
 	bt_conn_cb_register(&conn_cb);
 
-	if (observe_peers(&addr, 1) < 0) {
+	if (observe_peers(&params.peer, 1) < 0) {
 		FAIL("Failed to observe peer\n");
 		return;
 	}
 
 	/* Connect to peer device with a long timeout, subscribed to all characteristics */
-	rc = epacket_bt_gatt_connect(&addr, &params, 3000, &conn, &security_info, true, true, true,
-				     K_FOREVER, K_SECONDS(1));
+	rc = epacket_bt_gatt_connect(&conn, &params, &security_info);
 	if (rc != 0) {
 		FAIL("Failed to connect to peer\n");
 		return;
@@ -799,8 +858,7 @@ static void main_gateway_connect_absolute_timeout_update(void)
 		}
 
 		/* Refresh the connection */
-		rc = epacket_bt_gatt_connect(&addr, &params, 100, &conn, &security_info, true, true,
-					     true, K_FOREVER, K_SECONDS(1));
+		rc = epacket_bt_gatt_connect(&conn, &params, &security_info);
 		if (rc != 0) {
 			FAIL("Failed to refresh peer connection\n");
 			return;
@@ -827,23 +885,29 @@ static void main_gateway_connect_absolute_timeout_update(void)
 
 static void main_gateway_connect_absolute_timeout_cancel(void)
 {
-	const struct bt_le_conn_param params = BT_LE_CONN_PARAM_INIT(0x10, 0x15, 0, 400);
+	struct epacket_bt_gatt_connect_params params = {
+		.conn_params = BT_LE_CONN_PARAM_INIT(0x10, 0x15, 0, 400),
+		.inactivity_timeout = K_FOREVER,
+		.absolute_timeout = K_SECONDS(3),
+		.conn_timeout_ms = 3000,
+		.subscribe_commands = true,
+		.subscribe_data = true,
+		.subscribe_logging = true,
+	};
 	struct epacket_read_response security_info;
 	struct bt_conn *conn = NULL;
-	bt_addr_le_t addr;
 	int rc;
 
 	common_init();
 	bt_conn_cb_register(&conn_cb);
 
-	if (observe_peers(&addr, 1) < 0) {
+	if (observe_peers(&params.peer, 1) < 0) {
 		FAIL("Failed to observe peer\n");
 		return;
 	}
 
 	/* Connect to peer device with a long timeout, subscribed to all characteristics*/
-	rc = epacket_bt_gatt_connect(&addr, &params, 3000, &conn, &security_info, true, true, true,
-				     K_FOREVER, K_SECONDS(3));
+	rc = epacket_bt_gatt_connect(&conn, &params, &security_info);
 	if (rc != 0) {
 		FAIL("Failed to connect to peer\n");
 		return;
@@ -868,13 +932,20 @@ static void main_gateway_connect_absolute_timeout_cancel(void)
 
 static void main_gateway_remote_rpc_client(void)
 {
-	const struct bt_le_conn_param params = BT_LE_CONN_PARAM_INIT(0x10, 0x15, 0, 400);
 	const struct device *epacket_central = DEVICE_DT_GET(DT_NODELABEL(epacket_bt_central));
+	struct epacket_bt_gatt_connect_params params = {
+		.conn_params = BT_LE_CONN_PARAM_INIT(0x10, 0x15, 0, 400),
+		.inactivity_timeout = K_FOREVER,
+		.absolute_timeout = K_FOREVER,
+		.conn_timeout_ms = 3000,
+		.subscribe_commands = true,
+		.subscribe_data = false,
+		.subscribe_logging = false,
+	};
 	struct epacket_read_response security_info;
 	union epacket_interface_address address, wrong;
 	struct bt_conn *conn = NULL;
 	struct net_buf *buf;
-	bt_addr_le_t addr;
 	int rc;
 
 	struct rpc_application_info_request req;
@@ -883,24 +954,23 @@ static void main_gateway_remote_rpc_client(void)
 
 	common_init();
 
-	if (observe_peers(&addr, 1) < 0) {
+	if (observe_peers(&params.peer, 1) < 0) {
 		FAIL("Failed to observe peer\n");
 		return;
 	}
-	address.bluetooth = addr;
+	address.bluetooth = params.peer;
 	rpc_client_init(&ctx, epacket_central, address);
 
 	for (int i = 0; i < 4; i++) {
 		/* Connect to peer device */
-		rc = epacket_bt_gatt_connect(&addr, &params, 3000, &conn, &security_info, true,
-					     false, false, K_FOREVER, K_FOREVER);
+		rc = epacket_bt_gatt_connect(&conn, &params, &security_info);
 		if (rc != 0) {
 			FAIL("Failed to connect to peer\n");
 			return;
 		}
 
 		/* Send to incorrect device */
-		wrong.bluetooth = addr;
+		wrong.bluetooth = params.peer;
 		wrong.bluetooth.a.val[0] += 1;
 		for (int i = 0; i < 5; i++) {
 			buf = epacket_alloc_tx_for_interface(epacket_central, K_MSEC(1));
@@ -1901,22 +1971,29 @@ static void main_gateway_bt_file_copy(void)
 {
 	const struct device *epacket_dummy = DEVICE_DT_GET(DT_NODELABEL(epacket_dummy));
 	const struct device *epacket_central = DEVICE_DT_GET(DT_NODELABEL(epacket_bt_central));
-	const struct bt_le_conn_param conn_params = BT_LE_CONN_PARAM_INIT(0x10, 0x15, 0, 400);
+	struct epacket_bt_gatt_connect_params conn_params = {
+		.conn_params = BT_LE_CONN_PARAM_INIT(0x10, 0x15, 0, 400),
+		.inactivity_timeout = K_FOREVER,
+		.absolute_timeout = K_FOREVER,
+		.conn_timeout_ms = 2000,
+		.subscribe_commands = true,
+		.subscribe_data = false,
+		.subscribe_logging = false,
+	};
 	struct epacket_read_response security_info;
 	struct k_fifo *response_queue = epacket_dummmy_transmit_fifo_get();
 	union epacket_interface_address address;
 	struct bt_conn *conn = NULL;
 	struct net_buf *buf;
 	uint32_t flash_crc;
-	bt_addr_le_t addr;
 	int rc;
 
 	common_init();
-	if (observe_peers(&addr, 1) < 0) {
+	if (observe_peers(&conn_params.peer, 1) < 0) {
 		FAIL("Failed to observe peer\n");
 		return;
 	}
-	address.bluetooth = addr;
+	address.bluetooth = conn_params.peer;
 
 	epacket_set_receive_handler(epacket_dummy, dummy_gateway_handler);
 	epacket_set_receive_handler(epacket_central, dummy_gateway_handler);
@@ -1936,15 +2013,15 @@ static void main_gateway_bt_file_copy(void)
 		.header.request_id = 0xCC345678,
 		.peer =
 			{
-				.type = addr.type,
+				.type = conn_params.peer.type,
 				.val =
 					{
-						addr.a.val[0],
-						addr.a.val[1],
-						addr.a.val[2],
-						addr.a.val[3],
-						addr.a.val[4],
-						addr.a.val[5],
+						conn_params.peer.a.val[0],
+						conn_params.peer.a.val[1],
+						conn_params.peer.a.val[2],
+						conn_params.peer.a.val[3],
+						conn_params.peer.a.val[4],
+						conn_params.peer.a.val[5],
 					},
 			},
 		/* FILE_FOR_COPY to simulate flash write times */
@@ -2002,8 +2079,7 @@ static void main_gateway_bt_file_copy(void)
 		file_copy_request.pipelining = (i > 0) ? 2 : 0;
 
 		/* Create the Bluetooth connection */
-		rc = epacket_bt_gatt_connect(&addr, &conn_params, 2000, &conn, &security_info, true,
-					     false, false, K_FOREVER, K_FOREVER);
+		rc = epacket_bt_gatt_connect(&conn, &conn_params, &security_info);
 		if (rc != 0) {
 			FAIL("Failed to create connection\n");
 			return;

@@ -47,8 +47,16 @@ struct net_buf *rpc_command_bt_file_copy_coap(struct net_buf *request)
 	};
 	struct rpc_coap_download_response coap_rsp = {0};
 	struct rpc_bt_file_copy_basic_response copy_rsp = {0};
-	const bt_addr_le_t peer = bt_addr_infuse_to_zephyr(&req->peer);
-	uint16_t connect_timeout = req->conn_timeout_ms;
+	struct epacket_bt_gatt_connect_params connect_params = {
+		.conn_params = BT_LE_CONN_PARAM_INIT(0x10, 0x15, 0, 400),
+		.peer = bt_addr_infuse_to_zephyr(&req->peer),
+		.inactivity_timeout = K_FOREVER,
+		.absolute_timeout = K_FOREVER,
+		.conn_timeout_ms = req->conn_timeout_ms,
+		.subscribe_commands = true,
+		.subscribe_data = false,
+		.subscribe_logging = false,
+	};
 
 	memcpy(coap_req.server_address, req->server_address, sizeof(req->server_address));
 
@@ -77,13 +85,11 @@ struct net_buf *rpc_command_bt_file_copy_coap(struct net_buf *request)
 	}
 
 	/* Create the Bluetooth connection */
-	const struct bt_le_conn_param params = BT_LE_CONN_PARAM_INIT(0x10, 0x15, 0, 400);
 	struct epacket_read_response security_info;
 	struct bt_conn *conn;
 
 	LOG_INF("Initiating connection");
-	rc = epacket_bt_gatt_connect(&peer, &params, connect_timeout, &conn, &security_info, true,
-				     false, false, K_FOREVER, K_FOREVER);
+	rc = epacket_bt_gatt_connect(&conn, &connect_params, &security_info);
 	if (rc != 0) {
 		LOG_INF("Connection failed (%d)", rc);
 		rc = -ENOTCONN;

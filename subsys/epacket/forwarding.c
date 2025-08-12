@@ -104,8 +104,16 @@ static int ensure_bt_connection(union epacket_interface_address *address, uint8_
 				uint32_t conn_timeout_ms, k_timeout_t idle_timeout,
 				k_timeout_t absolute_timeout)
 {
-	const struct bt_le_conn_param params = BT_LE_CONN_PARAM_INIT(0x10, 0x15, 0, 400);
-	bool sub_data = flags & EPACKET_FORWARD_AUTO_CONN_SUB_DATA;
+	struct epacket_bt_gatt_connect_params params = {
+		.conn_params = BT_LE_CONN_PARAM_INIT(0x10, 0x15, 0, 400),
+		.peer = address->bluetooth,
+		.inactivity_timeout = idle_timeout,
+		.absolute_timeout = absolute_timeout,
+		.conn_timeout_ms = conn_timeout_ms,
+		.subscribe_commands = true,
+		.subscribe_data = flags & EPACKET_FORWARD_AUTO_CONN_SUB_DATA,
+		.subscribe_logging = false,
+	};
 	struct epacket_read_response security_info;
 	struct bt_conn *conn = NULL;
 	struct conn_state *state;
@@ -114,9 +122,7 @@ static int ensure_bt_connection(union epacket_interface_address *address, uint8_
 	int rc;
 
 	/* Create the connection */
-	rc = epacket_bt_gatt_connect(&address->bluetooth, &params, conn_timeout_ms, &conn,
-				     &security_info, true, sub_data, false, idle_timeout,
-				     absolute_timeout);
+	rc = epacket_bt_gatt_connect(&conn, &params, &security_info);
 	if (rc != 0) {
 		/* Connection failed */
 		return rc;
