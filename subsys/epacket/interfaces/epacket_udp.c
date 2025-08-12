@@ -268,7 +268,19 @@ static int epacket_udp_loop(void *a, void *b, void *c)
 			}
 
 			/* Allocate buffer and receive data */
-			buf = epacket_alloc_rx(K_FOREVER);
+			buf = epacket_alloc_rx(K_SECONDS(30));
+			if (buf == NULL) {
+#ifdef CONFIG_INFUSE_REBOOT
+				/* Could not claim a RX buffer even with an excessive timeout */
+				infuse_reboot_delayed(INFUSE_REBOOT_SW_WATCHDOG,
+						      (uintptr_t)epacket_udp_loop, 30,
+						      K_SECONDS(2));
+				k_sleep(K_FOREVER);
+#else
+				LOG_ERR("UDP thread blocked on RX buffer");
+				buf = epacket_alloc_rx(K_FOREVER);
+#endif
+			}
 			from_len = sizeof(from);
 			received = zsock_recvfrom(udp_state.sock, buf->data, buf->size, 0, &from,
 						  &from_len);
