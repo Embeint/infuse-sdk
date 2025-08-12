@@ -811,6 +811,102 @@ static void main_connect_rssi(void)
 	PASS("Connect RSSI passed\n\n");
 }
 
+static int connect_with_phy(bt_addr_le_t *addr, uint8_t requested_phy, uint8_t expected_phy)
+{
+	struct k_poll_signal sig;
+	struct bt_conn_auto_setup_cb callbacks = {
+		.conn_setup_cb = conn_setup_cb,
+		.conn_terminated_cb = NULL,
+		.user_data = &sig,
+	};
+	const struct bt_conn_le_create_param create_param = {
+		.interval = BT_GAP_SCAN_FAST_INTERVAL,
+		.window = BT_GAP_SCAN_FAST_INTERVAL,
+		.timeout = 2000 / 10,
+	};
+	const struct bt_le_conn_param conn_params = BT_LE_CONN_PARAM_INIT(0x10, 0x15, 0, 400);
+	struct k_poll_event events[] = {
+		K_POLL_EVENT_INITIALIZER(K_POLL_TYPE_SIGNAL, K_POLL_MODE_NOTIFY_ONLY, &sig),
+	};
+	unsigned int signaled;
+	struct bt_conn *conn = NULL;
+	struct bt_conn_info info;
+	int conn_rc;
+	int rc;
+
+	k_poll_signal_init(&sig);
+
+	/* Initiate connection */
+	conn = NULL;
+	k_poll_signal_reset(&sig);
+	rc = bt_conn_le_create(addr, &create_param, &conn_params, &conn);
+	if (rc < 0) {
+		FAIL("Failed to initiate connection\n");
+		return -1;
+	}
+
+	/* Request the connection to use the 1 Mbit PHY */
+	bt_conn_le_auto_setup(conn, NULL, &callbacks, requested_phy);
+
+	/* Wait for connection process to complete */
+	rc = k_poll(events, ARRAY_SIZE(events), K_SECONDS(3));
+	k_poll_signal_check(&sig, &signaled, &conn_rc);
+	if ((rc != 0) || (signaled == 0)) {
+		FAIL("Signal not raised on connection\n");
+		return -1;
+	}
+	if (conn_rc != 0) {
+		FAIL("Unexpected connection result\n");
+		return -1;
+	}
+
+	rc = bt_conn_get_info(conn, &info);
+	if (rc < 0) {
+		FAIL("Failed to query connection info\n");
+		return -1;
+	}
+
+	if ((info.le.phy->rx_phy != expected_phy) || (info.le.phy->tx_phy != expected_phy)) {
+		FAIL("Expected PHY not set (%d %d)\n", info.le.phy->rx_phy, info.le.phy->tx_phy);
+		return -1;
+	}
+
+	/* Disconnect from peer */
+	rc = bt_conn_disconnect_sync(conn);
+	if (rc < 0) {
+		FAIL("Failed to disconnect from peer\n");
+		return -1;
+	}
+	bt_conn_unref(conn);
+	return 0;
+}
+
+static void main_connect_phy(void)
+{
+	bt_addr_le_t addr;
+
+	common_init();
+	if (observe_peer(&addr) < 0) {
+		FAIL("Failed to observe peer\n");
+		return;
+	}
+
+	/* PHY should update from 2M to 1M */
+	if (connect_with_phy(&addr, BT_GAP_LE_PHY_1M, BT_GAP_LE_PHY_1M) < 0) {
+		return;
+	}
+	/* PHY should remain 2M */
+	if (connect_with_phy(&addr, BT_GAP_LE_PHY_2M, BT_GAP_LE_PHY_2M) < 0) {
+		return;
+	}
+	/* PHY should remain 2M when unsupported is requested */
+	if (connect_with_phy(&addr, BT_GAP_LE_PHY_CODED, BT_GAP_LE_PHY_2M) < 0) {
+		return;
+	}
+
+	PASS("Connect preferred PHY passed\n\n");
+}
+
 static void main_connect_terminator(void)
 {
 	struct k_poll_signal sig;
@@ -941,6 +1037,13 @@ static const struct bst_test_instance gatt_gateway[] = {
 		.test_pre_init_f = test_init,
 		.test_tick_f = test_tick,
 		.test_main_f = main_connect_rssi,
+	},
+	{
+		.test_id = "gatt_connect_phy",
+		.test_descr = "Connect with a preferred PHY",
+		.test_pre_init_f = test_init,
+		.test_tick_f = test_tick,
+		.test_main_f = main_connect_phy,
 	},
 	{
 		.test_id = "gatt_connect_terminator",
