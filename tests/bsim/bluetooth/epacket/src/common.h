@@ -48,5 +48,6 @@
 
 void test_tick(bs_time_t HW_device_time);
 void test_init(void);
+struct k_sem *test_get_reboot_sem(void);
 
 #endif /* ZEPHYR_TEST_BSIM_BT_EXT_ADV_TEST_ */
