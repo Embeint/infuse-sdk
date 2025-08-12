@@ -47,6 +47,8 @@ struct epacket_bt_gatt_connect_params {
 	k_timeout_t absolute_timeout;
 	/* Duration to wait while attempting to setup connection */
 	uint32_t conn_timeout_ms;
+	/* Preferred PHY of the connection (BT_GAP_LE_PHY_*) */
+	uint8_t preferred_phy;
 	/* Subscribe to the command characteristic */
 	bool subscribe_commands;
 	/* Subscribe to the data characteristic */

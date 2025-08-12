@@ -31,6 +31,7 @@ struct net_buf *rpc_command_bt_connect_infuse(struct net_buf *request)
 					      : K_MSEC(req->inactivity_timeout_ms),
 		.absolute_timeout = K_FOREVER,
 		.conn_timeout_ms = req->conn_timeout_ms,
+		.preferred_phy = BT_GAP_LE_PHY_NONE,
 		.subscribe_commands = req->subscribe & RPC_ENUM_INFUSE_BT_CHARACTERISTIC_COMMAND,
 		.subscribe_data = req->subscribe & RPC_ENUM_INFUSE_BT_CHARACTERISTIC_DATA,
 		.subscribe_logging = req->subscribe & RPC_ENUM_INFUSE_BT_CHARACTERISTIC_LOGGING,
