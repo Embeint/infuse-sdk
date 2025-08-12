@@ -6,4 +6,13 @@ config INFUSE_LEGACY_ADV
 config CONN_TERMINATOR
 	bool "Terminate connections after creation"
 
+config INFUSE_REBOOT
+	default y
+
+config INFUSE_REBOOT_COMPILE
+	default n
+
+config INFUSE_REBOOT_RETURN
+	default y
+
 source "Kconfig.zephyr"

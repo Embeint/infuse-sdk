@@ -7,7 +7,7 @@ config INFUSE_TEST_ID
 
 config INFUSE_REBOOT_RETURN
 	bool "Disable FUNC_NOTRETURN on `infuse_reboot`"
-	depends on ZTEST
+	depends on ZTEST || SOC_SERIES_BSIM_NRFXX
 
 if INFUSE_SECURITY || MBEDTLS
 
