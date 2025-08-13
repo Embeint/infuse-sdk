@@ -180,6 +180,42 @@ static void main_legacy_adv_name_watcher(void)
 	PASS("Legacy advertising name watcher complete\n");
 }
 
+static void main_legacy_adv_expect_reboot(void)
+{
+	const struct device *epacket_bt_periph = DEVICE_DT_GET(DT_NODELABEL(epacket_bt_peripheral));
+	struct tdf_announce announce = {0};
+	struct epacket_interface_cb interface_cb = {
+		.interface_state = peripheral_interface_state,
+	};
+	struct k_sem *reboot_sem = test_get_reboot_sem();
+	int rc;
+
+	epacket_register_callback(epacket_bt_periph, &interface_cb);
+
+	LOG_INF("Single ePacket to simplify peer discovery");
+	k_sleep(K_MSEC(100));
+	TDF_DATA_LOGGER_LOG(TDF_DATA_LOGGER_BT_ADV, TDF_ANNOUNCE, 0, &announce);
+	tdf_data_logger_flush(TDF_DATA_LOGGER_BT_ADV);
+
+	LOG_INF("Starting legacy advertiser");
+
+	if (bluetooth_legacy_advertising_run() < 0) {
+		FAIL("Failed to start legacy advertiser\n");
+		return;
+	}
+
+	/* Wait for infuse_reboot or infuse_reboot_delayable to be called */
+	rc = k_sem_take(reboot_sem, K_SECONDS(5));
+	if (rc != 0) {
+		FAIL("Failed to be rebooted\n");
+		return;
+	}
+	PASS("Device rebooted\n");
+
+	/* Give the connection time to terminate */
+	k_sleep(K_SECONDS(2));
+}
+
 static const struct bst_test_instance legacy_adv_advertiser[] = {
 	{
 		.test_id = "epacket_bt_legacy_adv",
@@ -201,6 +237,13 @@ static const struct bst_test_instance legacy_adv_advertiser[] = {
 		.test_pre_init_f = test_init,
 		.test_tick_f = test_tick,
 		.test_main_f = main_legacy_adv_name_watcher,
+	},
+	{
+		.test_id = "legacy_adv_expect_reboot",
+		.test_descr = "Expect to be rebooted",
+		.test_pre_init_f = test_init,
+		.test_tick_f = test_tick,
+		.test_main_f = main_legacy_adv_expect_reboot,
 	},
 	BSTEST_END_MARKER,
 };

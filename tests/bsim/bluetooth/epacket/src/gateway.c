@@ -10,6 +10,7 @@
 #include <zephyr/drivers/flash.h>
 #include <zephyr/storage/flash_map.h>
 #include <zephyr/random/random.h>
+#include <zephyr/bluetooth/hci_types.h>
 
 #include "common.h"
 
@@ -2139,6 +2140,101 @@ static void main_gateway_bt_file_copy(void)
 	PASS("BT file copy passed\n");
 }
 
+static void main_gateway_mcumgr_reboot(void)
+{
+	struct net_buf *buf;
+	bt_addr_le_t addr;
+
+	common_init();
+	if (observe_peers(&addr, 1) < 0) {
+		FAIL("Failed to observe peer\n");
+		return;
+	}
+
+	struct rpc_bt_mcumgr_reboot_request connect = {
+		.peer =
+			{
+				.type = addr.type,
+				.val =
+					{
+						addr.a.val[0],
+						addr.a.val[1],
+						addr.a.val[2],
+						addr.a.val[3],
+						addr.a.val[4],
+						addr.a.val[5],
+					},
+			},
+		.conn_timeout_ms = 2000,
+	};
+
+	/* Non-existent device */
+	connect.peer.val[0] += 1;
+	send_rpc(500, RPC_ID_BT_MCUMGR_REBOOT, &connect, sizeof(connect));
+	buf = expect_response(500, RPC_ID_BT_MCUMGR_REBOOT, BT_HCI_ERR_UNKNOWN_CONN_ID);
+	if (buf == NULL) {
+		FAIL("Failed to connect via RPC\n");
+		return;
+	}
+	net_buf_unref(buf);
+
+	/* Device that exists */
+	connect.peer.val[0] -= 1;
+	send_rpc(1000, RPC_ID_BT_MCUMGR_REBOOT, &connect, sizeof(connect));
+	buf = expect_response(1000, RPC_ID_BT_MCUMGR_REBOOT, 0);
+	if (buf == NULL) {
+		FAIL("Failed to connect via RPC\n");
+		return;
+	}
+	net_buf_unref(buf);
+
+	k_sleep(K_TIMEOUT_ABS_SEC(9));
+
+	PASS("MCUMGR rebooter passed\n");
+}
+
+static void main_gateway_mcumgr_none_reboot(void)
+{
+	struct net_buf *buf;
+	bt_addr_le_t addr;
+
+	common_init();
+	if (observe_peers(&addr, 1) < 0) {
+		FAIL("Failed to observe peer\n");
+		return;
+	}
+
+	struct rpc_bt_mcumgr_reboot_request connect = {
+		.peer =
+			{
+				.type = addr.type,
+				.val =
+					{
+						addr.a.val[0],
+						addr.a.val[1],
+						addr.a.val[2],
+						addr.a.val[3],
+						addr.a.val[4],
+						addr.a.val[5],
+					},
+			},
+		.conn_timeout_ms = 2000,
+	};
+
+	/* Device exists, but no MCUMGR characteristic */
+	send_rpc(600, RPC_ID_BT_MCUMGR_REBOOT, &connect, sizeof(connect));
+	buf = expect_response(600, RPC_ID_BT_MCUMGR_REBOOT, -EBADF);
+	if (buf == NULL) {
+		FAIL("Failed to connect via RPC\n");
+		return;
+	}
+	net_buf_unref(buf);
+
+	k_sleep(K_TIMEOUT_ABS_SEC(9));
+
+	PASS("MCUMGR NONE rebooter passed\n");
+}
+
 static const struct bst_test_instance epacket_gateway[] = {
 	{
 		.test_id = "epacket_bt_gateway_scan",
@@ -2308,6 +2404,20 @@ static const struct bst_test_instance epacket_gateway[] = {
 		.test_pre_init_f = test_init,
 		.test_tick_f = test_tick,
 		.test_main_f = main_gateway_bt_file_copy,
+	},
+	{
+		.test_id = "epacket_bt_gateway_mcumgr_reboot",
+		.test_descr = "Reboot remote device through MCUmgr",
+		.test_pre_init_f = test_init,
+		.test_tick_f = test_tick,
+		.test_main_f = main_gateway_mcumgr_reboot,
+	},
+	{
+		.test_id = "epacket_bt_gateway_mcumgr_none_reboot",
+		.test_descr = "Try to reboot remote device that doesn't have MCUmgr",
+		.test_pre_init_f = test_init,
+		.test_tick_f = test_tick,
+		.test_main_f = main_gateway_mcumgr_none_reboot,
 	},
 	BSTEST_END_MARKER};
 
