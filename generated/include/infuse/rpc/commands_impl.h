@@ -287,6 +287,15 @@ struct net_buf *rpc_command_bt_file_copy_basic(struct net_buf *request);
 struct net_buf *rpc_command_bt_file_copy_coap(struct net_buf *request);
 
 /**
+ * @brief Run bt_mcumgr_reboot RPC
+ *
+ * @param request @ref INFUSE_RPC_CMD packet to respond to
+ *
+ * @return struct net_buf* @ref INFUSE_RPC_RSP packet buffer
+ */
+struct net_buf *rpc_command_bt_mcumgr_reboot(struct net_buf *request);
+
+/**
  * @brief Run gravity_reference_update RPC
  *
  * @param request @ref INFUSE_RPC_CMD packet to respond to

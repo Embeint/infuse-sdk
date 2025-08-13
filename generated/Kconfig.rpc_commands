@@ -355,6 +355,18 @@ config INFUSE_RPC_COMMAND_BT_FILE_COPY_COAP_REQUIRED_AUTH
 	depends on INFUSE_RPC_COMMAND_BT_FILE_COPY_COAP
 	default 2
 
+config INFUSE_RPC_COMMAND_BT_MCUMGR_REBOOT
+	bool "Enable RPC bt_mcumgr_reboot"
+	depends on BT_GATT_CLIENT
+	default y if INFUSE_SDK
+	help
+	  Connect to a Bluetooth device and run the MCUMGR reboot command
+
+config INFUSE_RPC_COMMAND_BT_MCUMGR_REBOOT_REQUIRED_AUTH
+	int "Required authorisation level to run bt_mcumgr_reboot"
+	depends on INFUSE_RPC_COMMAND_BT_MCUMGR_REBOOT
+	default 2
+
 config INFUSE_RPC_COMMAND_GRAVITY_REFERENCE_UPDATE
 	bool "Enable RPC gravity_reference_update"
 	depends on INFUSE_ZBUS_CHAN_IMU && KV_STORE_KEY_GRAVITY_REFERENCE && ZBUS_RUNTIME_OBSERVERS

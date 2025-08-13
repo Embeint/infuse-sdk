@@ -393,6 +393,8 @@ enum rpc_builtin_id {
 	RPC_ID_BT_FILE_COPY_BASIC = 52,
 	/** Copy a file fetched from COAP to a remote device over Bluetooth */
 	RPC_ID_BT_FILE_COPY_COAP = 53,
+	/** Connect to a Bluetooth device and run the MCUMGR reboot command */
+	RPC_ID_BT_MCUMGR_REBOOT = 54,
 	/** Store the current accelerometer vector as the gravity reference */
 	RPC_ID_GRAVITY_REFERENCE_UPDATE = 60,
 	/** Query current security state and validate identity */
@@ -967,6 +969,19 @@ struct rpc_bt_file_copy_coap_response {
 	uint32_t resource_len;
 	/** CRC of resource downloaded from COAP */
 	uint32_t resource_crc;
+} __packed;
+
+/** Connect to a Bluetooth device and run the MCUMGR reboot command */
+struct rpc_bt_mcumgr_reboot_request {
+	struct infuse_rpc_req_header header;
+	/** Bluetooth LE device to run reboot on */
+	struct rpc_struct_bt_addr_le peer;
+	/** Connection timeout in milliseconds */
+	uint16_t conn_timeout_ms;
+} __packed;
+
+struct rpc_bt_mcumgr_reboot_response {
+	struct infuse_rpc_rsp_header header;
 } __packed;
 
 /** Store the current accelerometer vector as the gravity reference */

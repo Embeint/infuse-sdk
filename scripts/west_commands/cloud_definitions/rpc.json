@@ -654,6 +654,19 @@
                 {"name": "resource_crc", "type": "uint32_t", "description": "CRC of resource downloaded from COAP"}
             ]
         },
+        "54": {
+            "name": "bt_mcumgr_reboot",
+            "description": "Connect to a Bluetooth device and run the MCUMGR reboot command",
+            "depends_on": "BT_GATT_CLIENT",
+            "default": "y if INFUSE_SDK",
+            "default_auth": "EPACKET_AUTH_DEVICE",
+            "request_params": [
+                {"name": "peer", "type": "struct rpc_struct_bt_addr_le", "description": "Bluetooth LE device to run reboot on"},
+                      {"name": "conn_timeout_ms", "type": "uint16_t", "description": "Connection timeout in milliseconds"}
+            ],
+            "response_params": [
+            ]
+        },
         "60": {
             "name": "gravity_reference_update",
             "description": "Store the current accelerometer vector as the gravity reference",
