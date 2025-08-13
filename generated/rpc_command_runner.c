@@ -282,6 +282,13 @@ void rpc_command_runner(struct net_buf *request)
 		}
 		break;
 #endif /* CONFIG_INFUSE_RPC_COMMAND_BT_FILE_COPY_COAP */
+#ifdef CONFIG_INFUSE_RPC_COMMAND_BT_MCUMGR_REBOOT
+	case RPC_ID_BT_MCUMGR_REBOOT:
+		if (AUTHORISED(auth, BT_MCUMGR_REBOOT)) { /* GCOVR_EXCL_BR_LINE */
+			response = rpc_command_bt_mcumgr_reboot(request);
+		}
+		break;
+#endif /* CONFIG_INFUSE_RPC_COMMAND_BT_MCUMGR_REBOOT */
 #ifdef CONFIG_INFUSE_RPC_COMMAND_GRAVITY_REFERENCE_UPDATE
 	case RPC_ID_GRAVITY_REFERENCE_UPDATE:
 		if (AUTHORISED(auth, GRAVITY_REFERENCE_UPDATE)) { /* GCOVR_EXCL_BR_LINE */
