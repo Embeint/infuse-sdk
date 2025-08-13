@@ -37,6 +37,15 @@ config EPACKET_INFUSE_WATCHDOG
 	depends on INFUSE_WATCHDOG
 	default y
 
+config EPACKET_BUFFER_EXHAUSTION_TIMEOUT
+	int "Timeout for detecting ePacket buffer exhaustion"
+	default 60
+	help
+		If all buffers (TX or RX) have been claimed from the pool, require that
+		at least one buffer is returned within this duration. This detects all
+		buffers being held by contexts that wouldn't otherwise trigger a watchdog
+		timeout.
+
 config EPACKET_BUFFERS_TX
 	int "Number of ePacket buffers for TX"
 	range 1 16
