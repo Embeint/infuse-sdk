@@ -15,6 +15,7 @@
 #include <infuse/epacket/interface.h>
 #include <infuse/epacket/interface/epacket_serial.h>
 #include <infuse/work_q.h>
+#include <infuse/reboot.h>
 
 #ifdef CONFIG_INFUSE_SECURITY
 #include <infuse/security.h>
@@ -29,11 +30,19 @@
  */
 #define BUFFER_ROUNDED ROUND_UP(CONFIG_EPACKET_PACKET_SIZE_MAX, sizeof(void *))
 
+#define EXHAUST_TIMEOUT K_SECONDS(CONFIG_EPACKET_BUFFER_EXHAUSTION_TIMEOUT)
+
+static void tx_destroy(struct net_buf *buf);
+static void rx_destroy(struct net_buf *buf);
+static void buffer_exhaustion_timeout(struct k_work *work);
+static K_WORK_DELAYABLE_DEFINE(tx_exhausted, buffer_exhaustion_timeout);
+static K_WORK_DELAYABLE_DEFINE(rx_exhausted, buffer_exhaustion_timeout);
+
 NET_BUF_POOL_DEFINE(epacket_scratch, SCRATCH_BUFFERS, BUFFER_ROUNDED, 0, NULL);
 NET_BUF_POOL_DEFINE(epacket_pool_tx, CONFIG_EPACKET_BUFFERS_TX, BUFFER_ROUNDED,
-		    sizeof(struct epacket_tx_metadata), NULL);
+		    sizeof(struct epacket_tx_metadata), tx_destroy);
 NET_BUF_POOL_DEFINE(epacket_pool_rx, CONFIG_EPACKET_BUFFERS_RX, BUFFER_ROUNDED,
-		    sizeof(struct epacket_rx_metadata), NULL);
+		    sizeof(struct epacket_rx_metadata), rx_destroy);
 
 K_THREAD_STACK_DEFINE(epacket_stack_area, CONFIG_EPACKET_PROCESS_THREAD_STACK_SIZE);
 static struct k_thread epacket_process_thread;
@@ -110,9 +119,44 @@ int epacket_num_buffers_free_rx(void)
 	return net_buf_num_free(&epacket_pool_rx);
 }
 
+static void buffer_exhaustion_timeout(struct k_work *work)
+{
+	struct k_work_delayable *dwork = k_work_delayable_from_work(work);
+
+	LOG_ERR("%s pool exhausted", dwork == &tx_exhausted ? "TX" : "RX");
+#ifdef CONFIG_INFUSE_REBOOT
+	/* Trigger a reboot, referenced to the worker so we can determine
+	 * which buffer was the problem.
+	 */
+	infuse_reboot_delayed(INFUSE_REBOOT_SW_WATCHDOG, (uintptr_t)dwork,
+			      CONFIG_EPACKET_BUFFER_EXHAUSTION_TIMEOUT, K_SECONDS(2));
+#else
+	k_oops();
+#endif /* CONFIG_INFUSE_REBOOT */
+}
+
+static void tx_destroy(struct net_buf *buf)
+{
+	k_work_cancel_delayable(&tx_exhausted);
+	net_buf_destroy(buf);
+}
+
+static void rx_destroy(struct net_buf *buf)
+{
+	k_work_cancel_delayable(&rx_exhausted);
+	net_buf_destroy(buf);
+}
+
 struct net_buf *epacket_alloc_tx(k_timeout_t timeout)
 {
-	return net_buf_alloc(&epacket_pool_tx, timeout);
+	struct net_buf *buf = net_buf_alloc(&epacket_pool_tx, timeout);
+
+	if ((buf != NULL) && (epacket_num_buffers_free_tx() == 0)) {
+		/* No TX buffers remaining, start exhaustion timer */
+		LOG_DBG("%s pool empty", "TX");
+		k_work_schedule(&tx_exhausted, EXHAUST_TIMEOUT);
+	}
+	return buf;
 }
 
 struct net_buf *epacket_alloc_rx(k_timeout_t timeout)
@@ -123,6 +167,12 @@ struct net_buf *epacket_alloc_rx(k_timeout_t timeout)
 		struct epacket_rx_metadata *meta = net_buf_user_data(buf);
 		/* Default authorisation state is failure */
 		meta->auth = EPACKET_AUTH_FAILURE;
+
+		if (epacket_num_buffers_free_rx() == 0) {
+			/* No RX buffers remaining, start exhaustion timer */
+			LOG_DBG("%s pool empty", "RX");
+			k_work_schedule(&rx_exhausted, EXHAUST_TIMEOUT);
+		}
 	}
 	return buf;
 }
