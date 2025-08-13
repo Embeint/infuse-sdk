@@ -45,6 +45,7 @@ K_THREAD_STACK_DEFINE(epacket_rx_stack_area, CONFIG_EPACKET_PROCESS_THREAD_STACK
 static struct k_thread epacket_rx_process_thread;
 static k_timeout_t loop_period_rx = K_FOREVER;
 static int wdog_channel_rx;
+k_tid_t epacket_rx_processor_thread;
 #endif /* CONFIG_EPACKET_PROCESS_THREAD_SPLIT */
 
 static K_FIFO_DEFINE(epacket_rx_queue);
@@ -499,9 +500,10 @@ static int epacket_boot(void)
 				  ? infuse_watchdog_install(&loop_period_rx)
 				  : -ENODEV;
 
-	k_thread_create(&epacket_rx_process_thread, epacket_rx_stack_area,
-			K_THREAD_STACK_SIZEOF(epacket_rx_stack_area), epacket_processor_rx, NULL,
-			NULL, NULL, 0, K_ESSENTIAL, K_NO_WAIT);
+	epacket_rx_processor_thread =
+		k_thread_create(&epacket_rx_process_thread, epacket_rx_stack_area,
+				K_THREAD_STACK_SIZEOF(epacket_rx_stack_area), epacket_processor_rx,
+				NULL, NULL, NULL, 0, K_ESSENTIAL, K_NO_WAIT);
 #endif /* CONFIG_EPACKET_PROCESS_THREAD_SPLIT */
 	return 0;
 }

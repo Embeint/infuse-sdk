@@ -2,9 +2,15 @@ common:
   tags: epacket
   min_flash: 64
   min_ram: 32
+  platform_allow:
+    - mps2/an385
+  integration_platforms:
+    - mps2/an385
 tests:
-  epacket.watchdog:
-    platform_allow:
-      - mps2/an385
-    integration_platforms:
-      - mps2/an385
+  epacket.watchdog: {}
+  epacket.watchdog.split:
+    extra_configs:
+      - CONFIG_EPACKET_PROCESS_THREAD_SPLIT=y
+      - CONFIG_INFUSE_WATCHDOG_SW_MULTICHANNEL=y
+      - CONFIG_INFUSE_WATCHDOG_SOFTWARE_WARNING=y
+      - CONFIG_INFUSE_WATCHDOG_SOFTWARE_WARNING_MS=50
