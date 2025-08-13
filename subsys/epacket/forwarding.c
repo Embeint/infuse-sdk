@@ -14,6 +14,7 @@
 
 #include <infuse/states.h>
 #include <infuse/types.h>
+#include <infuse/drivers/watchdog.h>
 #include <infuse/epacket/interface.h>
 #include <infuse/epacket/packet.h>
 #include <infuse/epacket/interface/epacket_bt_central.h>
@@ -260,6 +261,8 @@ static void forward_auto_conn_processor(void *a, void *b, void *c)
 	struct epacket_rx_metadata *meta;
 	struct net_buf *buf;
 	struct net_buf *tx;
+	k_timeout_t loop_period = K_FOREVER;
+	int wdog_channel;
 	int rc;
 
 	k_thread_name_set(NULL, "auto_conn_forward");
@@ -270,8 +273,18 @@ static void forward_auto_conn_processor(void *a, void *b, void *c)
 	bt_central_cb.packet_received = bt_central_packet_received;
 	epacket_register_callback(bt_central, &bt_central_cb);
 
+	/* Setup watchdog */
+	wdog_channel = IS_ENABLED(CONFIG_EPACKET_INFUSE_WATCHDOG)
+			       ? infuse_watchdog_install(&loop_period)
+			       : -ENODEV;
+	infuse_watchdog_thread_register(wdog_channel, _current);
+
 	for (;;) {
-		buf = k_fifo_get(&packet_queue, K_FOREVER);
+		buf = k_fifo_get(&packet_queue, loop_period);
+		infuse_watchdog_feed(wdog_channel);
+		if (buf == NULL) {
+			continue;
+		}
 		meta = net_buf_user_data(buf);
 		hdr = net_buf_pull_mem(buf, sizeof(struct epacket_forward_auto_conn_header));
 
