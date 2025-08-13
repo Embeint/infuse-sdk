@@ -16,6 +16,14 @@
 
 K_SEM_DEFINE(watchdog_expired, 0, 1);
 
+void infuse_watchdog_warning(const struct device *dev, int channel_id)
+{
+	ARG_UNUSED(dev);
+	ARG_UNUSED(channel_id);
+
+	/* Ignore the warning, fallthrough to actual watchdog */
+}
+
 void infuse_watchdog_expired(const struct device *dev, int channel_id)
 {
 	k_sem_give(&watchdog_expired);
@@ -23,7 +31,14 @@ void infuse_watchdog_expired(const struct device *dev, int channel_id)
 
 ZTEST(epacket_watchdog, test_watchdog)
 {
+#ifdef CONFIG_EPACKET_PROCESS_THREAD_SPLIT
+	extern k_tid_t epacket_rx_processor_thread;
+	k_tid_t thread = epacket_rx_processor_thread;
+#else
 	extern k_tid_t epacket_processor_thread;
+	k_tid_t thread = epacket_processor_thread;
+#endif /* CONFIG_EPACKET_PROCESS_THREAD_SPLIT */
+
 	int rc;
 
 	/* Start the watchdog */
@@ -34,7 +49,7 @@ ZTEST(epacket_watchdog, test_watchdog)
 	zassert_equal(-EAGAIN, rc, "Watchdog expired prematurely");
 
 	/* Block the processing thread */
-	k_thread_suspend(epacket_processor_thread);
+	k_thread_suspend(thread);
 
 	/* Suspending the processing thread should result in a watchdog interrupt */
 	rc = k_sem_take(&watchdog_expired, K_MSEC(CONFIG_INFUSE_WATCHDOG_PERIOD_MS + 100));
