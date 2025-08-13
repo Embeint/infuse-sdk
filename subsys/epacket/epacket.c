@@ -43,6 +43,7 @@ k_tid_t epacket_processor_thread;
 #ifdef CONFIG_EPACKET_PROCESS_THREAD_SPLIT
 K_THREAD_STACK_DEFINE(epacket_rx_stack_area, CONFIG_EPACKET_PROCESS_THREAD_STACK_SIZE);
 static struct k_thread epacket_rx_process_thread;
+static k_timeout_t loop_period_rx = K_FOREVER;
 static int wdog_channel_rx;
 #endif /* CONFIG_EPACKET_PROCESS_THREAD_SPLIT */
 
@@ -462,7 +463,7 @@ static void epacket_processor_rx(void *a, void *b, void *c)
 	k_thread_name_set(NULL, "epacket_proc_rx");
 	infuse_watchdog_thread_register(wdog_channel_rx, _current);
 	while (true) {
-		rc = k_poll(events, ARRAY_SIZE(events), loop_period);
+		rc = k_poll(events, ARRAY_SIZE(events), loop_period_rx);
 		infuse_watchdog_feed(wdog_channel_rx);
 		if (rc == -EAGAIN) {
 			/* Only woke to feed the watchdog */
@@ -495,7 +496,7 @@ static int epacket_boot(void)
 
 #ifdef CONFIG_EPACKET_PROCESS_THREAD_SPLIT
 	wdog_channel_rx = IS_ENABLED(CONFIG_EPACKET_INFUSE_WATCHDOG)
-				  ? infuse_watchdog_install(&loop_period)
+				  ? infuse_watchdog_install(&loop_period_rx)
 				  : -ENODEV;
 
 	k_thread_create(&epacket_rx_process_thread, epacket_rx_stack_area,
