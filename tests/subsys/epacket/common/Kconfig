@@ -1,0 +1,12 @@
+# SPDX-License-Identifier: Apache-2.0
+
+config INFUSE_REBOOT
+	default y
+
+config INFUSE_REBOOT_COMPILE
+	default n
+
+config INFUSE_REBOOT_RETURN
+	default y
+
+source "Kconfig.zephyr"

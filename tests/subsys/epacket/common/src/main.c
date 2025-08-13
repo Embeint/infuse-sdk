@@ -12,6 +12,7 @@
 #include <zephyr/sys/byteorder.h>
 
 #include <infuse/types.h>
+#include <infuse/reboot.h>
 #include <infuse/epacket/interface.h>
 #include <infuse/epacket/keys.h>
 #include <infuse/epacket/packet.h>
@@ -20,6 +21,19 @@
 #include <infuse/security.h>
 
 #include "../subsys/epacket/interfaces/epacket_internal.h"
+
+K_SEM_DEFINE(reboot_request, 0, 2);
+
+void infuse_reboot(enum infuse_reboot_reason reason, uint32_t info1, uint32_t info2)
+{
+	k_sem_give(&reboot_request);
+}
+
+void infuse_reboot_delayed(enum infuse_reboot_reason reason, uint32_t info1, uint32_t info2,
+			   k_timeout_t delay)
+{
+	k_sem_give(&reboot_request);
+}
 
 ZTEST(epacket_common, test_global_flags)
 {
@@ -124,6 +138,76 @@ ZTEST(epacket_common, test_alloc_failure)
 	for (int i = 0; i < CONFIG_EPACKET_BUFFERS_RX; i++) {
 		net_buf_unref(rx_bufs[i]);
 		zassert_equal(i + 1, epacket_num_buffers_free_rx());
+	}
+}
+
+ZTEST(epacket_common, test_buffer_exhaustion)
+{
+	struct net_buf *tx_bufs[CONFIG_EPACKET_BUFFERS_TX];
+	struct net_buf *rx_bufs[CONFIG_EPACKET_BUFFERS_RX];
+
+	/** Allocate all buffers */
+	for (int i = 0; i < CONFIG_EPACKET_BUFFERS_TX; i++) {
+		tx_bufs[i] = epacket_alloc_tx(K_NO_WAIT);
+		zassert_not_null(tx_bufs[i]);
+	}
+	for (int i = 0; i < CONFIG_EPACKET_BUFFERS_RX; i++) {
+		rx_bufs[i] = epacket_alloc_rx(K_NO_WAIT);
+		zassert_not_null(rx_bufs[i]);
+	}
+
+	/* Periodically release and reclaim a buffer */
+	BUILD_ASSERT(4 > CONFIG_EPACKET_BUFFER_EXHAUSTION_TIMEOUT);
+	for (int i = 0; i < 4; i++) {
+		k_sleep(K_SECONDS(1));
+		net_buf_unref(tx_bufs[0]);
+		net_buf_unref(rx_bufs[0]);
+		tx_bufs[0] = epacket_alloc_tx(K_NO_WAIT);
+		rx_bufs[0] = epacket_alloc_rx(K_NO_WAIT);
+		zassert_not_null(tx_bufs[0]);
+		zassert_not_null(rx_bufs[0]);
+	}
+	/* Should not have rebooted */
+	zassert_equal(-EBUSY, k_sem_take(&reboot_request, K_NO_WAIT));
+
+	/* Sleep until both buffer watchdogs should have timed out */
+	k_sleep(K_SECONDS(CONFIG_EPACKET_BUFFER_EXHAUSTION_TIMEOUT));
+	zassert_equal(0, k_sem_take(&reboot_request, K_MSEC(10)));
+	zassert_equal(0, k_sem_take(&reboot_request, K_MSEC(10)));
+
+	/* Free all buffers */
+	for (int i = 0; i < CONFIG_EPACKET_BUFFERS_TX; i++) {
+		net_buf_unref(tx_bufs[i]);
+	}
+	for (int i = 0; i < CONFIG_EPACKET_BUFFERS_RX; i++) {
+		net_buf_unref(rx_bufs[i]);
+	}
+}
+
+ZTEST(epacket_common, test_buffer_exhaustion_none)
+{
+	struct net_buf *tx_bufs[CONFIG_EPACKET_BUFFERS_TX - 1];
+	struct net_buf *rx_bufs[CONFIG_EPACKET_BUFFERS_RX - 1];
+
+	/** Allocate all buffers but one */
+	for (int i = 0; i < CONFIG_EPACKET_BUFFERS_TX - 1; i++) {
+		tx_bufs[i] = epacket_alloc_tx(K_NO_WAIT);
+		zassert_not_null(tx_bufs[i]);
+	}
+	for (int i = 0; i < CONFIG_EPACKET_BUFFERS_RX - 1; i++) {
+		rx_bufs[i] = epacket_alloc_rx(K_NO_WAIT);
+		zassert_not_null(rx_bufs[i]);
+	}
+
+	/* Should never reboot */
+	zassert_equal(-EAGAIN, k_sem_take(&reboot_request, K_SECONDS(10)));
+
+	/* Free all buffers */
+	for (int i = 0; i < CONFIG_EPACKET_BUFFERS_TX - 1; i++) {
+		net_buf_unref(tx_bufs[i]);
+	}
+	for (int i = 0; i < CONFIG_EPACKET_BUFFERS_RX - 1; i++) {
+		net_buf_unref(rx_bufs[i]);
 	}
 }
 
