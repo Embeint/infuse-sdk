@@ -38,6 +38,7 @@ int memfault_platform_get_stateofcharge(sMfltPlatformBatterySoc *soc)
 #include <infuse/lib/nrf_modem_monitor.h>
 
 #include <modem/lte_lc.h>
+#include <modem/nrf_modem_lib.h>
 
 static void memfault_lte_event_handler(const struct lte_lc_evt *const evt)
 {
@@ -83,7 +84,7 @@ static void memfault_lte_event_handler(const struct lte_lc_evt *const evt)
 	}
 }
 
-static void memfault_lte_mode_cb(enum lte_lc_func_mode mode, void *ctx)
+static void memfault_lte_mode_cb(int mode, void *ctx)
 {
 	switch (mode) {
 	case LTE_LC_FUNC_MODE_NORMAL:
@@ -109,7 +110,7 @@ static void memfault_lte_mode_cb(enum lte_lc_func_mode mode, void *ctx)
 	}
 }
 
-LTE_LC_ON_CFUN(memfault_lte_mode_cb, memfault_lte_mode_cb, NULL);
+NRF_MODEM_LIB_ON_CFUN(memfault_lte_mode_cb, memfault_lte_mode_cb, NULL);
 
 void memfault_platform_metrics_connectivity_boot(void)
 {
