@@ -1,7 +1,7 @@
 name: infuse
 
 boards:
-  /auroch(@0.1.0)?/nrf9151/ns/:
+  /auroch(@.*)?/nrf9151/ns/:
     append:
       EXTRA_DTC_OVERLAY_FILE: boards/auroch_nrf9151_ns.overlay
       EXTRA_CONF_FILE: infuse_snippet.conf

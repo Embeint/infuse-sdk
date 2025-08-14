@@ -86,6 +86,7 @@
 		reset-gpios = <&gpio0 20 (GPIO_ACTIVE_LOW)>;
 		irq-gpios = <&gpio0 21 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>;
 		reset-assert-duration-ms = <1>;
+		controller-cs-delay-us = <10>;
 		/* Additional GPIO is available here:
 		 * extra-gpios = <&gpio0 19 0>;
 		 */
