@@ -420,6 +420,20 @@ void network_scan_task_fn(struct k_work *work)
 
 	epoch_time = epoch_time_now();
 
+	struct tdf_network_scan_count count = {
+#ifdef CONFIG_WIFI
+		.num_wifi = state.aps_found,
+#endif /* CONFIG_WIFI */
+#ifdef CONFIG_LTE_LINK_CONTROL
+		.num_lte = state.gci_cells +
+			   (state.local_cells.cell.eci != LTE_LC_CELL_EUTRAN_ID_INVALID),
+#endif /* CONFIG_LTE_LINK_CONTROL */
+	};
+
+	/* Network scan count */
+	TASK_SCHEDULE_TDF_LOG(sch, TASK_NETWORK_SCAN_LOG_COUNT, TDF_NETWORK_SCAN_COUNT, epoch_time,
+			      &count);
+
 #ifdef CONFIG_WIFI
 	if (state.aps_found > 0) {
 		/* Individual APs in a TDF_ARRAY_TIME */
