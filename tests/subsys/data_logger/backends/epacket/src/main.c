@@ -15,6 +15,7 @@
 #include <infuse/epacket/interface.h>
 #include <infuse/epacket/packet.h>
 #include <infuse/data_logger/logger.h>
+#include <infuse/data_logger/backend/epacket.h>
 #include <infuse/epacket/interface/epacket_dummy.h>
 
 int logger_epacket_init(const struct device *dev);
@@ -122,6 +123,37 @@ ZTEST(data_logger_epacket, test_block_write)
 	logger_epacket_init(logger);
 	data_logger_get_state(logger, &state);
 	zassert_equal(0, state.current_block);
+}
+
+ZTEST(data_logger_epacket, test_block_write_flags)
+{
+	const struct device *logger = DEVICE_DT_GET(DT_NODELABEL(data_logger_epacket));
+	struct k_fifo *sent_queue = epacket_dummmy_transmit_fifo_get();
+	struct epacket_dummy_frame *frame;
+	struct net_buf *sent;
+	uint8_t payload[4];
+	int rc;
+
+	for (int i = 0; i < 100; i += 0x7) {
+		/* Request arbitrary flags */
+		logger_epacket_flags_set(logger, i);
+
+		/* Write random block */
+		rc = data_logger_block_write(logger, 0, payload, sizeof(payload));
+		zassert_equal(0, rc);
+
+		/* Validate packet was sent with requested flags */
+		sent = k_fifo_get(sent_queue, K_MSEC(1));
+		zassert_not_null(sent);
+		zassert_equal(sizeof(payload) + sizeof(struct epacket_dummy_frame), sent->len);
+		frame = (void *)sent->data;
+		zassert_equal(0, frame->type);
+		zassert_equal(i, frame->flags);
+		net_buf_unref(sent);
+	}
+
+	/* Reset flags to 0 */
+	logger_epacket_flags_set(logger, 0);
 }
 
 static void data_logger_setup(void *fixture)
