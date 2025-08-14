@@ -10,6 +10,7 @@
 
 #include <zephyr/logging/log.h>
 
+#include <nrf_socket.h>
 #include <nrf_modem.h>
 #include <nrf_modem_at.h>
 #include <modem/lte_lc.h>
@@ -48,6 +49,24 @@ int nrf_modem_lib_init(void)
 		e->callback(err, e->context);
 	}
 	return 0;
+}
+
+int nrf_setdnsaddr(int family, const void *in_addr, nrf_socklen_t in_size)
+{
+	ARG_UNUSED(family);
+	ARG_UNUSED(in_addr);
+	ARG_UNUSED(in_size);
+
+	return -1;
+}
+
+int nrf_inet_pton(int af, const char *src, void *dst)
+{
+	ARG_UNUSED(af);
+	ARG_UNUSED(src);
+	ARG_UNUSED(dst);
+
+	return -1;
 }
 
 int nrf_modem_at_notif_handler_set(nrf_modem_at_notif_handler_t callback)
