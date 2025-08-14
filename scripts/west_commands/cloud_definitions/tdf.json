@@ -513,11 +513,12 @@
                 {"name": "reason", "type": "uint8_t", "description": "Reported reason for disconnection"}
             ]
         },
-        "100": {
-            "name": "ARRAY_TYPE",
-            "description": "Example array type",
+        "51": {
+            "name": "NETWORK_SCAN_COUNT",
+            "description": "Counts associated with scanning Wi-Fi and LTE networks",
             "fields": [
-                {"name": "array", "type": "uint8_t", "num": 4, "description": "I am an array of length 4"}
+                {"name": "num_wifi", "type": "uint8_t", "description": "Number of Wi-Fi APs found"},
+                {"name": "num_lte", "type": "uint8_t", "description": "Number of LTE cells found"}
             ]
         }
     }
