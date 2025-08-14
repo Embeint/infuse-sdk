@@ -669,10 +669,12 @@ struct tdf_wifi_disconnected {
 	uint8_t reason;
 } __packed;
 
-/** Example array type */
-struct tdf_array_type {
-	/** I am an array of length 4 */
-	uint8_t array[4];
+/** Counts associated with scanning Wi-Fi and LTE networks */
+struct tdf_network_scan_count {
+	/** Number of Wi-Fi APs found */
+	uint8_t num_wifi;
+	/** Number of LTE cells found */
+	uint8_t num_lte;
 } __packed;
 
 /** Infuse-IoT builtin TDF definitions */
@@ -771,8 +773,8 @@ enum tdf_builtin_id {
 	TDF_WIFI_CONNECTION_FAILED = 49,
 	/** Wi-Fi network is now disconnected */
 	TDF_WIFI_DISCONNECTED = 50,
-	/** Example array type */
-	TDF_ARRAY_TYPE = 100,
+	/** Counts associated with scanning Wi-Fi and LTE networks */
+	TDF_NETWORK_SCAN_COUNT = 51,
 	/** End of builtin TDF range */
 	TDF_BUILTIN_END = 1024,
 };
@@ -825,7 +827,7 @@ enum tdf_builtin_id {
 #define _TDF_WIFI_CONNECTED_TYPE              struct tdf_wifi_connected
 #define _TDF_WIFI_CONNECTION_FAILED_TYPE      struct tdf_wifi_connection_failed
 #define _TDF_WIFI_DISCONNECTED_TYPE           struct tdf_wifi_disconnected
-#define _TDF_ARRAY_TYPE_TYPE                  struct tdf_array_type
+#define _TDF_NETWORK_SCAN_COUNT_TYPE          struct tdf_network_scan_count
 
 /** Size of builtin TDF definitions */
 enum tdf_builtin_size {
@@ -875,7 +877,7 @@ enum tdf_builtin_size {
 	_TDF_WIFI_CONNECTED_SIZE = sizeof(struct tdf_wifi_connected),
 	_TDF_WIFI_CONNECTION_FAILED_SIZE = sizeof(struct tdf_wifi_connection_failed),
 	_TDF_WIFI_DISCONNECTED_SIZE = sizeof(struct tdf_wifi_disconnected),
-	_TDF_ARRAY_TYPE_SIZE = sizeof(struct tdf_array_type),
+	_TDF_NETWORK_SCAN_COUNT_SIZE = sizeof(struct tdf_network_scan_count),
 };
 
 /** @endcond */
