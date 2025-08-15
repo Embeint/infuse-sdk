@@ -71,7 +71,7 @@ extern "C" {
 	static int name##_register(void)                                                           \
 	{                                                                                          \
 		(void)period_name;                                                                 \
-		wdog_channel =                                                                     \
+		chan_name =                                                                        \
 			IS_ENABLED(dependency) ? infuse_watchdog_install(&period_name) : -ENODEV;  \
 		return 0;                                                                          \
 	}                                                                                          \
