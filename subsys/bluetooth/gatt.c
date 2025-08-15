@@ -357,9 +357,18 @@ static void mtu_exchange_cb(struct bt_conn *conn, uint8_t err,
 
 static void phy_updated(struct bt_conn *conn, struct bt_conn_le_phy_info *param)
 {
+	struct bt_conn_info info;
 	int rc;
 
 	LOG_DBG("PHY updated: %02X %02X", param->rx_phy, param->tx_phy);
+
+	/* This can only possibly fail if the connection type is not BT_CONN_TYPE_LE */
+	rc = bt_conn_get_info(conn, &info);
+	__ASSERT_NO_MSG(rc == 0);
+	if (info.role != BT_CONN_ROLE_CENTRAL) {
+		/* We didn't initiate this connection */
+		return;
+	}
 
 	/* Continue setting up connection with MTU exchange */
 	mtu_exchange_params.func = mtu_exchange_cb;
