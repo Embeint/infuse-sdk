@@ -334,11 +334,13 @@ ZTEST(memfault_integration, test_epacket_dump)
 		zassert_equal(-ENOTCONN, rc);
 		/* Reset payload size */
 		epacket_dummy_set_max_packet(CONFIG_EPACKET_PACKET_SIZE_MAX);
+		/* Secure faults result in a trace event being logged just after boot */
+		k_sleep(K_MSEC(2000));
 		/* Dump all messages */
 		rc = infuse_memfault_queue_dump_all(K_NO_WAIT);
 		zassert_equal(0, rc);
 		/* Validate chunks are dumped (Reboot info should be small) */
-		expect_memfault_chunks(false, 10, 100);
+		expect_memfault_chunks(false, 200, 300);
 		break;
 	default:
 		zassert_unreachable("Unexpected reboot count");
