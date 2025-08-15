@@ -330,7 +330,11 @@ static void forward_auto_conn_processor(void *a, void *b, void *c)
 		net_buf_add_mem(tx, buf->data, forward_payload);
 		epacket_queue(forward_interface, tx);
 cleanup:
+		/* Free the provided buffer */
 		net_buf_unref(buf);
+
+		/* Feed watchdog before sleeping again */
+		infuse_watchdog_feed(wdog_channel);
 	}
 }
 
