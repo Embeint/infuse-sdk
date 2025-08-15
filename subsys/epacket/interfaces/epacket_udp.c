@@ -44,6 +44,8 @@
 
 #define UDP_PAYLOAD(max_pkt) EPACKET_INTERFACE_PAYLOAD_FROM_PACKET(DT_DRV_INST(0), max_pkt)
 
+#define CLAIM_TIMEOUT K_SECONDS(CONFIG_EPACKET_INTERFACE_UDP_RX_BUFFER_CLAIM_TIMEOUT)
+
 enum {
 	UDP_STATE_L4_CONNECTED = BIT(0),
 	UDP_STATE_VALID_DNS = BIT(1),
@@ -268,7 +270,7 @@ static int epacket_udp_loop(void *a, void *b, void *c)
 			}
 
 			/* Allocate buffer and receive data */
-			buf = epacket_alloc_rx(K_SECONDS(30));
+			buf = epacket_alloc_rx(CLAIM_TIMEOUT);
 			if (buf == NULL) {
 #ifdef CONFIG_INFUSE_REBOOT
 				/* Could not claim a RX buffer even with an excessive timeout */
