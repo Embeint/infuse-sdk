@@ -118,6 +118,14 @@ config EPACKET_INTERFACE_UDP_DOWNLINK_WATCHDOG_TIMEOUT
 	help
 	  Watchdog period in seconds. Default value is 3 days (3 * 86400)
 
+config EPACKET_INTERFACE_UDP_RX_BUFFER_CLAIM_TIMEOUT
+	int "Timeout duration to claim an ePacket receive buffer"
+	default 120
+	help
+	  If this timeout expires, the device is rebooted. This is intended to be
+	  an absolute last resort, other watchdogs should have picked up on blocked
+	  threads by the time this expires.
+
 module = EPACKET_UDP
 module-str = epacket_udp
 source "subsys/logging/Kconfig.template.log_config"
