@@ -19,6 +19,8 @@
 #include "time_machine.h"
 #include "bstests.h"
 
+#include <infuse/data_logger/high_level/tdf.h>
+#include <infuse/tdf/definitions.h>
 #include <infuse/epacket/interface.h>
 #include <infuse/epacket/interface/epacket_bt_central.h>
 #include <infuse/epacket/interface/epacket_dummy.h>
@@ -78,6 +80,36 @@ static void epacket_bt_adv_receive_handler(struct net_buf *buf)
 	net_buf_unref(buf);
 
 	k_sem_give(&epacket_adv_received);
+}
+
+static void main_epacket_bt_basic_broadcast(void)
+{
+	struct tdf_announce announce = {0};
+
+	LOG_INF("Starting send");
+
+	/* Burst send some packets */
+	for (int i = 0; i < 5; i++) {
+		k_sleep(K_USEC(sys_rand32_get() % 10000));
+		TDF_DATA_LOGGER_LOG(TDF_DATA_LOGGER_BT_ADV | TDF_DATA_LOGGER_BT_PERIPHERAL,
+				    TDF_ANNOUNCE, 0, &announce);
+		tdf_data_logger_flush(TDF_DATA_LOGGER_BT_ADV | TDF_DATA_LOGGER_BT_PERIPHERAL);
+	}
+	k_sleep(K_MSEC(500));
+
+	/* Send 5 packets with spacing */
+	for (int i = 0; i < 8; i++) {
+		k_sleep(K_MSEC(1000));
+		k_sleep(K_USEC(sys_rand32_get() % 10000));
+		LOG_INF("TX %d", i);
+		announce.uptime = k_uptime_seconds();
+		TDF_DATA_LOGGER_LOG(TDF_DATA_LOGGER_BT_ADV | TDF_DATA_LOGGER_BT_PERIPHERAL,
+				    TDF_ANNOUNCE, 0, &announce);
+		tdf_data_logger_flush(TDF_DATA_LOGGER_BT_ADV | TDF_DATA_LOGGER_BT_PERIPHERAL);
+	}
+	k_sleep(K_MSEC(1000));
+
+	PASS("Advertising gateway complete\n");
 }
 
 static void main_gateway_scan(void)
@@ -2236,6 +2268,13 @@ static void main_gateway_mcumgr_none_reboot(void)
 }
 
 static const struct bst_test_instance epacket_gateway[] = {
+	{
+		.test_id = "epacket_bt_gateway",
+		.test_descr = "Basic Infuse-IoT Bluetooth gateway",
+		.test_pre_init_f = test_init,
+		.test_tick_f = test_tick,
+		.test_main_f = main_epacket_bt_basic_broadcast,
+	},
 	{
 		.test_id = "epacket_bt_gateway_scan",
 		.test_descr = "Scans for advertising ePackets on advertising PHY",
