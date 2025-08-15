@@ -70,7 +70,7 @@ static void clear_timeout_state(enum infuse_state state)
 bool infuse_state_set(enum infuse_state state)
 {
 	struct infuse_state_cb *cb;
-	bool already_set;
+	bool already_set = false;
 
 	K_SPINLOCK(&timeout_lock) {
 		already_set = atomic_test_and_set_bit(application_states, state);
@@ -127,7 +127,7 @@ bool infuse_state_set_timeout(enum infuse_state state, uint16_t timeout)
 int infuse_state_get_timeout(enum infuse_state state)
 {
 	uint8_t timeout_idx;
-	int rc;
+	int rc = 0;
 
 	K_SPINLOCK(&timeout_lock) {
 		if (atomic_test_bit(application_states, state)) {
@@ -148,7 +148,7 @@ int infuse_state_get_timeout(enum infuse_state state)
 bool infuse_state_clear(enum infuse_state state)
 {
 	struct infuse_state_cb *cb;
-	bool was_set;
+	bool was_set = false;
 
 	K_SPINLOCK(&timeout_lock) {
 		was_set = atomic_test_and_clear_bit(application_states, state);
