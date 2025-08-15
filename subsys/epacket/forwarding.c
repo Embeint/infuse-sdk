@@ -32,8 +32,6 @@ static K_FIFO_DEFINE(packet_queue);
 static const struct device *epacket_backhaul;
 static struct conn_state forwarding_state[CONFIG_BT_MAX_CONN];
 
-BUILD_ASSERT(CONFIG_BT_MAX_CONN <= 32, "rpc_disconnect_mask");
-
 static void epacket_forward_direct(struct net_buf *buf)
 {
 	struct epacket_forward_header *hdr =
@@ -248,6 +246,9 @@ bool bt_central_packet_received(struct net_buf *buf, bool decrypted, void *user_
 	return true;
 }
 
+INFUSE_WATCHDOG_REGISTER_SYS_INIT(forwarding_wdog, CONFIG_TASK_RUNNER_INFUSE_WATCHDOG, wdog_channel,
+				  loop_period);
+
 static void forward_auto_conn_processor(void *a, void *b, void *c)
 {
 	const struct device *bt_central = DEVICE_DT_GET_ONE(embeint_epacket_bt_central);
@@ -261,8 +262,6 @@ static void forward_auto_conn_processor(void *a, void *b, void *c)
 	struct epacket_rx_metadata *meta;
 	struct net_buf *buf;
 	struct net_buf *tx;
-	k_timeout_t loop_period = K_FOREVER;
-	int wdog_channel;
 	int rc;
 
 	k_thread_name_set(NULL, "auto_conn_forward");
@@ -273,10 +272,7 @@ static void forward_auto_conn_processor(void *a, void *b, void *c)
 	bt_central_cb.packet_received = bt_central_packet_received;
 	epacket_register_callback(bt_central, &bt_central_cb);
 
-	/* Setup watchdog */
-	wdog_channel = IS_ENABLED(CONFIG_EPACKET_INFUSE_WATCHDOG)
-			       ? infuse_watchdog_install(&loop_period)
-			       : -ENODEV;
+	/* Register watchdog */
 	infuse_watchdog_thread_register(wdog_channel, _current);
 
 	for (;;) {
