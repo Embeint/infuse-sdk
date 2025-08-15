@@ -122,6 +122,8 @@ bool memfault_platform_time_get_current(sMemfaultCurrentTime *current_time)
 
 #include "../core/src/memfault_reboot_tracking_private.h"
 
+static struct k_work_delayable secure_fault_trace;
+
 #ifndef CONFIG_TFM_PLATFORM_FAULT_INFO_QUERY
 BUILD_ASSERT(IS_ENABLED(CONFIG_ZTEST));
 
@@ -156,14 +158,48 @@ int infuse_common_boot_secure_fault_info(struct fault_exception_info_t *fault_in
 #define MEMFAULT_REBOOT_INFO_MAGIC   0x21544252
 #define MEMFAULT_REBOOT_INFO_VERSION 2
 
+/* Ensure that the two fault frames match */
+BUILD_ASSERT(sizeof(((struct arch_esf *)(NULL))->basic) ==
+	     sizeof(((struct fault_exception_info_t *)(NULL))->EXC_FRAME_COPY));
+
+#define ARCH_ESF_R0_IDX (offsetof(struct arch_esf, basic.r0) / sizeof(uint32_t))
+#define ARCH_ESF_R1_IDX (offsetof(struct arch_esf, basic.r1) / sizeof(uint32_t))
+#define ARCH_ESF_R2_IDX (offsetof(struct arch_esf, basic.r2) / sizeof(uint32_t))
+#define ARCH_ESF_R3_IDX (offsetof(struct arch_esf, basic.r3) / sizeof(uint32_t))
+#define ARCH_ESF_PC_IDX (offsetof(struct arch_esf, basic.pc) / sizeof(uint32_t))
+#define ARCH_ESF_LR_IDX (offsetof(struct arch_esf, basic.lr) / sizeof(uint32_t))
+
 BUILD_ASSERT(CONFIG_MEMFAULT_INIT_PRIORITY > CONFIG_INFUSE_COMMON_BOOT_INIT_PRIORITY,
 	     "Memfault init must run after common_boot");
+
+static void memfault_secure_fault_trace(struct k_work *work)
+{
+	struct fault_exception_info_t fault_info;
+	uint8_t SFSR;
+
+	/* Pull the complete fault frame */
+	infuse_common_boot_secure_fault_info(&fault_info);
+
+	/* SFSR only has 8 bits of defined information */
+	SFSR = fault_info.SFSR;
+
+	/* Push additional fault information as a trace event */
+	memfault_trace_event_with_log_capture(
+		MEMFAULT_TRACE_REASON(secure_fault),
+		(void *)fault_info.EXC_FRAME_COPY[ARCH_ESF_PC_IDX],
+		(void *)fault_info.EXC_FRAME_COPY[ARCH_ESF_LR_IDX],
+		"R0-3 %08x %08x %08x %08x EXC %08x xPSR %08x SFSR %02x SFAR %08x",
+		fault_info.EXC_FRAME_COPY[ARCH_ESF_R0_IDX],
+		fault_info.EXC_FRAME_COPY[ARCH_ESF_R1_IDX],
+		fault_info.EXC_FRAME_COPY[ARCH_ESF_R2_IDX],
+		fault_info.EXC_FRAME_COPY[ARCH_ESF_R3_IDX], (uint32_t)fault_info.EXC_FRAME,
+		fault_info.xPSR, SFSR, fault_info.SFAR);
+}
 
 void memfault_reboot_tracking_load(sMemfaultRebootTrackingStorage *dst)
 {
 	sMfltRebootInfo *reboot_info = (sMfltRebootInfo *)dst;
 	struct infuse_reboot_state infuse_reboot;
-	struct fault_exception_info_t fault_info;
 
 	if (infuse_common_boot_last_reboot(&infuse_reboot) != 0) {
 		/* No reboot knowledge, therefore no secure fault knowledge */
@@ -184,14 +220,12 @@ void memfault_reboot_tracking_load(sMemfaultRebootTrackingStorage *dst)
 		.lr = infuse_reboot.param_2.link_register,
 	};
 
-	/* Pull the complete fault frame */
-	infuse_common_boot_secure_fault_info(&fault_info);
-	/* Push additional fault information as a trace event */
-	memfault_trace_event_with_log_capture(
-		MEMFAULT_TRACE_REASON(secure_fault), (void *)infuse_reboot.param_1.program_counter,
-		(void *)infuse_reboot.param_2.link_register,
-		"EXC %08x xPSR %08x SFSR %08x SFAR %08x (%d)", (uint32_t)fault_info.EXC_FRAME,
-		fault_info.xPSR, fault_info.SFSR, fault_info.SFAR, !!fault_info.SFARVALID);
+	/* Defer logging of the secure fault trace event until after Memfault has finished
+	 * initialising. Use a delayable worked since an immediate `k_work_submit` will just
+	 * run the work before we have left the function.
+	 */
+	k_work_init_delayable(&secure_fault_trace, memfault_secure_fault_trace);
+	k_work_schedule(&secure_fault_trace, K_SECONDS(1));
 }
 
 #endif /* CONFIG_MEMFAULT_INFUSE_SECURE_FAULT_KNOWLEDGE */

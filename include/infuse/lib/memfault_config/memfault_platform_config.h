@@ -11,3 +11,8 @@
 #define MEMFAULT_METRICS_BATTERY_ENABLE              1
 #define MEMFAULT_METRICS_BATTERY_SOC_PCT_SCALE_VALUE 1
 #endif
+
+/* Infuse-IoT does not generate trace events from ISRs */
+#define MEMFAULT_TRACE_EVENT_WITH_LOG_FROM_ISR_ENABLED 0
+/* Larger event log size required for secure fault info */
+#define MEMFAULT_TRACE_EVENT_MAX_LOG_LEN               100
