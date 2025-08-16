@@ -907,7 +907,7 @@ static void main_connect_phy(void)
 	PASS("Connect preferred PHY passed\n\n");
 }
 
-static void main_connect_terminator(void)
+static void run_connect_terminator(uint8_t phy)
 {
 	struct k_poll_signal sig;
 	struct bt_gatt_remote_char remote_info[3] = {0};
@@ -956,10 +956,10 @@ static void main_connect_terminator(void)
 			FAIL("Failed to initiate connection\n");
 			return;
 		}
-		bt_conn_le_auto_setup(conn, &discovery, &callbacks, BT_GAP_LE_PHY_NONE);
+		bt_conn_le_auto_setup(conn, &discovery, &callbacks, phy);
 
 		/* Wait for connection process to complete */
-		rc = k_poll(events, ARRAY_SIZE(events), K_SECONDS(3));
+		rc = k_poll(events, ARRAY_SIZE(events), K_SECONDS(5));
 		k_poll_signal_check(&sig, &signaled, &conn_rc);
 		if (signaled != 1) {
 			FAIL("Result not signaled\n");
@@ -979,6 +979,16 @@ static void main_connect_terminator(void)
 	} while (conn_rc != 0);
 
 	PASS("Connect terminator passed\n\n");
+}
+
+static void main_connect_terminator(void)
+{
+	run_connect_terminator(BT_GAP_LE_PHY_NONE);
+}
+
+static void main_connect_terminator_phy(void)
+{
+	run_connect_terminator(BT_GAP_LE_PHY_1M);
 }
 
 static const struct bst_test_instance gatt_gateway[] = {
@@ -1051,6 +1061,13 @@ static const struct bst_test_instance gatt_gateway[] = {
 		.test_pre_init_f = test_init,
 		.test_tick_f = test_tick,
 		.test_main_f = main_connect_terminator,
+	},
+	{
+		.test_id = "gatt_connect_terminator_phy",
+		.test_descr = "Connect to device that keeps disconnecting with a preferred PHY",
+		.test_pre_init_f = test_init,
+		.test_tick_f = test_tick,
+		.test_main_f = main_connect_terminator_phy,
 	},
 	BSTEST_END_MARKER};
 
