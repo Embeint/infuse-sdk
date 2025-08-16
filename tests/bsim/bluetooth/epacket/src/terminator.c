@@ -69,7 +69,7 @@ static void main_epacket_conn_refuser(void)
 
 	LOG_INF("Starting connection terminator send");
 
-	for (int i = 0; i < 18; i++) {
+	for (int i = 0; i < 36; i++) {
 		k_sleep(K_MSEC(500));
 		announce.uptime = k_uptime_seconds();
 		TDF_DATA_LOGGER_LOG(TDF_DATA_LOGGER_BT_ADV | TDF_DATA_LOGGER_BT_PERIPHERAL,

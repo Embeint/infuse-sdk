@@ -4,7 +4,7 @@
 
 source ${ZEPHYR_BASE}/tests/bsim/sh_common.source
 
-simulation_id="connect_terminator"
+simulation_id="connect_terminator_phy"
 verbosity_level=2
 
 cd ${BSIM_OUT_PATH}/bin
@@ -15,7 +15,7 @@ Execute ./bs_${BOARD_TS}_tests_bsim_bluetooth_epacket_prj_conn_terminator_conf \
 
 Execute ./bs_${BOARD_TS}_tests_bsim_bluetooth_gatt_prj_conf \
   -v=${verbosity_level} -s=${simulation_id} -d=1 -RealEncryption=0 \
-  -testid=gatt_connect_terminator -rs=6
+  -testid=gatt_connect_terminator_phy -rs=6
 
 Execute ./bs_2G4_phy_v1 -v=${verbosity_level} -s=${simulation_id} \
   -D=2 -sim_length=20e6 $@
