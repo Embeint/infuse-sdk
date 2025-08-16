@@ -38,6 +38,7 @@ static struct bt_gatt_state {
 	const struct bt_conn_auto_setup_cb *cb;
 	struct bt_conn_auto_discovery *discovery;
 	uint8_t preferred_phy;
+	bool connect_cb_run;
 #endif /* CONFIG_BT_GATT_CLIENT */
 } state[CONFIG_BT_MAX_CONN];
 
@@ -65,6 +66,7 @@ void bt_conn_le_auto_setup(struct bt_conn *conn, struct bt_conn_auto_discovery *
 {
 	struct bt_gatt_state *s = &state[bt_conn_index(conn)];
 
+	s->connect_cb_run = false;
 	s->discovery = discovery;
 	s->cb = callbacks;
 	s->preferred_phy = preferred_phy;
@@ -73,6 +75,9 @@ void bt_conn_le_auto_setup(struct bt_conn *conn, struct bt_conn_auto_discovery *
 static void connection_done(struct bt_conn *conn)
 {
 	struct bt_gatt_state *s = &state[bt_conn_index(conn)];
+
+	/* We will call `conn_setup_cb` */
+	s->connect_cb_run = true;
 
 	/* Run user callback */
 	s->cb->conn_setup_cb(conn, 0, s->cb->user_data);
@@ -83,6 +88,9 @@ static void connection_error(struct bt_conn *conn, int err)
 	struct bt_gatt_state *s = &state[bt_conn_index(conn)];
 
 	LOG_ERR("Connection setup failed (%d)", err);
+
+	/* We will call `conn_setup_cb` */
+	s->connect_cb_run = true;
 
 	/* Run user callback */
 	s->cb->conn_setup_cb(conn, err, s->cb->user_data);
@@ -519,7 +527,14 @@ static void disconnected(struct bt_conn *conn, uint8_t reason)
 #endif /* CONFIG_BT_CONN_AUTO_RSSI */
 #ifdef CONFIG_BT_GATT_CLIENT
 	if (s->cb) {
-		if (s->cb->conn_terminated_cb) {
+		/* Have we run `conn_setup_cb` yet?
+		 * We can expect this to happen with a PHY update procedure, which
+		 * doesn't have a result callback that can fail, and hence there is
+		 * nowhere to run `connection_error` from.
+		 */
+		if (!s->connect_cb_run) {
+			s->cb->conn_setup_cb(conn, reason, s->cb->user_data);
+		} else if (s->cb->conn_terminated_cb) {
 			s->cb->conn_terminated_cb(conn, reason, s->cb->user_data);
 		}
 		s->cb = NULL;
