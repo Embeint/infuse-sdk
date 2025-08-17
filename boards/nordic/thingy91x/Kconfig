@@ -1,6 +1,6 @@
 # Thingy:91 X board configuration
 
-# Copyright (c) 2025 Embeint Inc
+# Copyright (c) 2025 Embeint Holdings Pty Ltd
 # SPDX-License-Identifier: Apache-2.0
 
 if BOARD_THINGY91X_NRF5340_CPUAPP

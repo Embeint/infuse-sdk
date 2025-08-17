@@ -1,6 +1,6 @@
 # BMI270 6 Axis IMU configuration
 
-# Copyright (c) 2024 Embeint Inc
+# Copyright (c) 2024 Embeint Holdings Pty Ltd
 # SPDX-License-Identifier: Apache-2.0
 
 menuconfig INFUSE_IMU_BMI270

@@ -1,6 +1,6 @@
 # BMA4XX 3 Axis Accelerometer configuration
 
-# Copyright (c) 2024 Embeint Inc
+# Copyright (c) 2024 Embeint Holdings Pty Ltd
 # SPDX-License-Identifier: Apache-2.0
 
 menuconfig INFUSE_IMU_BMA4XX

@@ -36,7 +36,7 @@ except ImportError:
 # -- Project --------------------------------------------------------------
 
 project = "Infuse-IoT SDK"
-copyright = "2025 Embeint Inc"
+copyright = "2025 Embeint Holdings Pty Ltd"
 author = "Embeint Inc"
 
 # parse version from 'VERSION' file

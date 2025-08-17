@@ -1,6 +1,6 @@
 /**
  * @file
- * @copyright 2024 Embeint Inc
+ * @copyright 2024 Embeint Holdings Pty Ltd
  * @author Aeyohan Furtado <aeyohan@embeint.com>
  *
  * SPDX-License-Identifier: FSL-1.1-ALv2
