@@ -354,7 +354,8 @@
                 {"name": "uptime", "type": "uint32_t", "description": "Uptime before reboot (seconds)"},
                 {"name": "param_1", "type": "uint32_t", "description": "Program counter/Watchdog Info/Other"},
                 {"name": "param_2", "type": "uint32_t", "description": "Link Register/Watchdog Info/Other"},
-                {"name": "thread", "type": "char", "num": 8, "description": "Running thread at reboot"}
+                {"name": "thread", "type": "char", "num": 8, "description": "Running thread at reboot"},
+                {"name": "esf", "type": "uint32_t", "num": 0, "description": "Exception stack frame values"}
             ]
         },
         "13": {
