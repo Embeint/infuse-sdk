@@ -124,12 +124,12 @@ static int secure_fault_info_read(void)
 	LOG_DBG("SecureFault");
 
 	reboot_state.reason = reason;
-	reboot_state.info_type = INFUSE_REBOOT_INFO_EXCEPTION_BASIC;
+	/* We have the basic ESF contents, ensure any other parts are zeroed out */
+	reboot_state.info_type = INFUSE_REBOOT_INFO_EXCEPTION_ESF;
+	memset(&reboot_state.info.exception_full, 0x00, sizeof(reboot_state.info.exception_full));
+	memcpy(&reboot_state.info.exception_full.basic, secure_fault.EXC_FRAME_COPY,
+	       sizeof(reboot_state.info.exception_full.basic));
 	reboot_state.epoch_time_source = TIME_SOURCE_INVALID;
-	reboot_state.info.exception_basic.program_counter =
-		secure_fault.EXC_FRAME_COPY[ARCH_ESF_PC_IDX];
-	reboot_state.info.exception_basic.link_register =
-		secure_fault.EXC_FRAME_COPY[ARCH_ESF_LR_IDX];
 	/* We can't extract the thread name, but we can output the frame pointer as a string.
 	 * This should point back to the stack of the offending thread.
 	 */

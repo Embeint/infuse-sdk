@@ -64,6 +64,8 @@ enum infuse_reboot_info_type {
 	INFUSE_REBOOT_INFO_GENERIC = 0,
 	/** Exception with only PC and LR info */
 	INFUSE_REBOOT_INFO_EXCEPTION_BASIC,
+	/** Exception with full stack frame */
+	INFUSE_REBOOT_INFO_EXCEPTION_ESF,
 	/** Hardware watchdog expiry */
 	INFUSE_REBOOT_INFO_WATCHDOG,
 } __packed;
@@ -84,6 +86,8 @@ union infuse_reboot_info {
 		/** Link register value at exception */
 		uint32_t link_register;
 	} exception_basic;
+	/* Exception stack frame */
+	struct arch_esf exception_full;
 	/* Watchdog reboot information */
 	struct {
 		/** Watchdog info1 per @ref infuse_watchdog_thread_state_lookup */

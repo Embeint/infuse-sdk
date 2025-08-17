@@ -26,11 +26,19 @@
 #include <memfault/panics/assert.h>
 #endif
 
-static const struct device *retention = DEVICE_DT_GET(DT_CHOSEN(infuse_reboot_state));
+#define RETENTION DT_CHOSEN(infuse_reboot_state)
+#define RETENTION_PREFIX_LEN                                                                       \
+	COND_CODE_1(DT_NODE_HAS_PROP(RETENTION, prefix), (DT_PROP_LEN(RETENTION, prefix)), (0))
+
+static const struct device *retention = DEVICE_DT_GET(RETENTION);
+
+BUILD_ASSERT(sizeof(struct infuse_reboot_state) <= (DT_REG_SIZE(RETENTION) - RETENTION_PREFIX_LEN));
+
+uint32_t size = DT_REG_SIZE(RETENTION);
 
 static void reboot_state_store(enum infuse_reboot_reason reason,
 			       enum infuse_reboot_info_type info_type, uint32_t info1,
-			       uint32_t info2)
+			       uint32_t info2, const struct arch_esf *esf)
 {
 	struct infuse_reboot_state state;
 
@@ -40,8 +48,12 @@ static void reboot_state_store(enum infuse_reboot_reason reason,
 	state.epoch_time = epoch_time_now();
 	state.uptime = k_uptime_seconds();
 	state.info_type = info_type;
-	state.info.generic.info1 = info1;
-	state.info.generic.info2 = info2;
+	if (esf != NULL) {
+		memcpy(&state.info.exception_full, esf, sizeof(*esf));
+	} else {
+		state.info.generic.info1 = info1;
+		state.info.generic.info2 = info2;
+	}
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wstringop-truncation"
@@ -84,16 +96,8 @@ static void delayed_do_reboot(struct k_work *work)
 
 void k_sys_fatal_error_handler(unsigned int reason, const struct arch_esf *esf)
 {
-	uint32_t pc = 0, lr = 0;
-
-	/* Extract exception info */
-	if (esf != NULL) {
-		pc = esf->basic.pc;
-		lr = esf->basic.lr;
-	}
-
 	/* Store reboot metadata */
-	reboot_state_store(reason, INFUSE_REBOOT_INFO_EXCEPTION_BASIC, pc, lr);
+	reboot_state_store(reason, INFUSE_REBOOT_INFO_EXCEPTION_ESF, 0, 0, esf);
 	/* Do the reboot */
 	cleanup_and_reboot();
 }
@@ -120,7 +124,8 @@ void infuse_watchdog_expired(const struct device *dev, int channel_id)
 #endif
 
 	/* Store reboot metadata */
-	reboot_state_store(INFUSE_REBOOT_HW_WATCHDOG, INFUSE_REBOOT_INFO_WATCHDOG, info1, info2);
+	reboot_state_store(INFUSE_REBOOT_HW_WATCHDOG, INFUSE_REBOOT_INFO_WATCHDOG, info1, info2,
+			   NULL);
 	/* Wait for watchdog to reboot us */
 	for (;;)
 		;
@@ -133,7 +138,7 @@ void infuse_watchdog_expired(const struct device *dev, int channel_id)
 FUNC_NORETURN void infuse_reboot(enum infuse_reboot_reason reason, uint32_t info1, uint32_t info2)
 {
 	/* Store reboot metadata */
-	reboot_state_store(reason, INFUSE_REBOOT_INFO_GENERIC, info1, info2);
+	reboot_state_store(reason, INFUSE_REBOOT_INFO_GENERIC, info1, info2, NULL);
 	/* Do the reboot */
 	cleanup_and_reboot();
 }
@@ -152,7 +157,7 @@ void infuse_reboot_delayed(enum infuse_reboot_reason reason, uint32_t info1, uin
 	k_work_init_delayable(&reboot_worker, delayed_do_reboot);
 
 	/* Store initial reboot metadata */
-	reboot_state_store(reason, INFUSE_REBOOT_INFO_GENERIC, info1, info2);
+	reboot_state_store(reason, INFUSE_REBOOT_INFO_GENERIC, info1, info2, NULL);
 
 	/* Schedule the reboot */
 	k_work_schedule(&reboot_worker, delay);

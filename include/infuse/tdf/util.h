@@ -99,9 +99,20 @@ static inline void tdf_reboot_info_from_state(struct infuse_reboot_state *state,
 	info->hardware_flags = state->hardware_reason;
 	info->uptime = state->uptime;
 	info->count = reboot.count;
-	/* Generic, Exception Basic, Watchdog all have the same info layout */
-	info->param_1 = state->info.generic.info1;
-	info->param_2 = state->info.generic.info2;
+	if (state->info_type == INFUSE_REBOOT_INFO_EXCEPTION_ESF) {
+#ifdef CONFIG_ARM
+		info->param_1 = state->info.exception_full.basic.pc;
+		info->param_2 = state->info.exception_full.basic.lr;
+#else
+		/* Decoding ESF's is arch specific */
+		info->param_1 = 0;
+		info->param_2 = 0;
+#endif /* CONFIG_ARG */
+	} else {
+		/* Generic, Exception Basic, Watchdog all have the same info layout */
+		info->param_1 = state->info.generic.info1;
+		info->param_2 = state->info.generic.info2;
+	}
 	strncpy(info->thread, state->thread_name, sizeof(info->thread));
 }
 
