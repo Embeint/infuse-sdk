@@ -520,6 +520,13 @@
                 {"name": "num_wifi", "type": "uint8_t", "description": "Number of Wi-Fi APs found"},
                 {"name": "num_lte", "type": "uint8_t", "description": "Number of LTE cells found"}
             ]
+        },
+        "52": {
+            "name": "EXCEPTION_STACK_FRAME",
+            "description": "Generic exception stack frame",
+            "fields": [
+                {"name": "frame", "type": "uint32_t", "num":0, "description": "Stack frame value"}
+            ]
         }
     }
 }
