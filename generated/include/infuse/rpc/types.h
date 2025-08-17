@@ -601,6 +601,8 @@ struct rpc_last_reboot_response {
 	uint32_t param_2;
 	/** Running thread at reboot */
 	char thread[8];
+	/** Exception stack frame values */
+	uint32_t esf[];
 } __packed;
 
 /** Get state of a data logger */

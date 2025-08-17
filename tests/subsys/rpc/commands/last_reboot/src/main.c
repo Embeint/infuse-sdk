@@ -19,6 +19,11 @@
 #include <infuse/epacket/packet.h>
 #include <infuse/epacket/interface/epacket_dummy.h>
 
+static void null_dereference(void)
+{
+	epoch_time_set_reference(TIME_SOURCE_NONE, NULL);
+}
+
 static void send_last_reboot_command(uint32_t request_id)
 {
 	const struct device *epacket_dummy = DEVICE_DT_GET(DT_NODELABEL(epacket_dummy));
@@ -67,6 +72,7 @@ ZTEST(rpc_command_last_reboot, test_reboot_query)
 	KV_KEY_TYPE(KV_KEY_REBOOTS) reboots;
 	struct rpc_last_reboot_response *response;
 	struct net_buf *rsp;
+	int esf_values;
 	ssize_t rc;
 
 	/* KV store should have been initialised and populated with a reboot count */
@@ -80,11 +86,13 @@ ZTEST(rpc_command_last_reboot, test_reboot_query)
 		/* Validate the response */
 		rsp = expect_last_reboot_response(1);
 		response = (void *)rsp->data;
+		esf_values = (rsp->len - sizeof(*response)) / sizeof(response->esf[0]);
 		zassert_equal(INFUSE_REBOOT_UNKNOWN, response->reason);
 		zassert_equal(TIME_SOURCE_NONE, response->epoch_time_source);
 		zassert_equal(0, response->epoch_time);
 		zassert_equal(0, response->param_1);
 		zassert_equal(0, response->param_2);
+		zassert_equal(0, esf_values);
 		net_buf_unref(rsp);
 
 		struct timeutil_sync_instant reference = {
@@ -104,11 +112,31 @@ ZTEST(rpc_command_last_reboot, test_reboot_query)
 		/* Validate the response */
 		rsp = expect_last_reboot_response(333);
 		response = (void *)rsp->data;
+		esf_values = (rsp->len - sizeof(*response)) / sizeof(response->esf[0]);
 		zassert_equal(INFUSE_REBOOT_DFU, response->reason);
 		zassert_equal(TIME_SOURCE_GNSS, response->epoch_time_source);
 		zassert_not_equal(0, response->epoch_time);
 		zassert_equal(0x1234, response->param_1);
 		zassert_equal(0x98765432, response->param_2);
+		zassert_equal(0, esf_values);
+		net_buf_unref(rsp);
+
+		/* Trigger a fault */
+		null_dereference();
+		zassert_unreachable("Test did not reboot");
+		break;
+	case 3:
+		/* Validate previous initial reboot info */
+		send_last_reboot_command(444);
+		rsp = expect_last_reboot_response(444);
+		response = (void *)rsp->data;
+		esf_values = (rsp->len - sizeof(*response)) / sizeof(response->esf[0]);
+		zassert_equal(K_ERR_CPU_EXCEPTION, response->reason);
+		zassert_equal(TIME_SOURCE_GNSS | TIME_SOURCE_RECOVERED,
+			      response->epoch_time_source);
+		zassert_not_equal(0, response->epoch_time);
+		/* Expect a full exception stack frame to be part of the response */
+		zassert_equal(sizeof(struct arch_esf) / sizeof(uint32_t), esf_values);
 		net_buf_unref(rsp);
 		break;
 	default:

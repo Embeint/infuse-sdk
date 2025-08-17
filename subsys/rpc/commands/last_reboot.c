@@ -18,6 +18,7 @@ struct net_buf *rpc_command_last_reboot(struct net_buf *request)
 {
 	struct rpc_last_reboot_response rsp = {0};
 	struct infuse_reboot_state state;
+	struct net_buf *response;
 
 	infuse_common_boot_last_reboot(&state);
 	rsp.reason = state.reason;
@@ -50,5 +51,13 @@ struct net_buf *rpc_command_last_reboot(struct net_buf *request)
 	}
 	memcpy(rsp.thread, state.thread_name, sizeof(rsp.thread));
 
-	return rpc_response_simple_req(request, 0, &rsp, sizeof(rsp));
+	/* Allocate the response object */
+	response = rpc_response_simple_req(request, 0, &rsp, sizeof(rsp));
+
+	if (state.info_type == INFUSE_REBOOT_INFO_EXCEPTION_ESF) {
+		/* Push the exception stack frame into the response */
+		net_buf_add_mem(response, &state.info.exception_full,
+				sizeof(state.info.exception_full));
+	}
+	return response;
 }
