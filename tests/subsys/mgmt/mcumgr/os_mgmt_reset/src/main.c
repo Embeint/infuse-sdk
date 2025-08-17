@@ -109,8 +109,8 @@ ZTEST(os_mgmt_reset, test_reset)
 		rc = infuse_common_boot_last_reboot(&reboot_state);
 		zassert_equal(0, rc);
 		zassert_equal(INFUSE_REBOOT_MCUMGR, reboot_state.reason);
-		zassert_equal(0, reboot_state.info.exception_basic.program_counter);
-		zassert_equal(0, reboot_state.info.exception_basic.link_register);
+		zassert_equal(0, reboot_state.info.generic.info1);
+		zassert_equal(0, reboot_state.info.generic.info2);
 		break;
 	default:
 		zassert_unreachable("Unexpected reboot count");

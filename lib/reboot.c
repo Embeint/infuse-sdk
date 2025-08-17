@@ -40,8 +40,8 @@ static void reboot_state_store(enum infuse_reboot_reason reason,
 	state.epoch_time = epoch_time_now();
 	state.uptime = k_uptime_seconds();
 	state.info_type = info_type;
-	state.info.exception_basic.program_counter = info1;
-	state.info.exception_basic.link_register = info2;
+	state.info.generic.info1 = info1;
+	state.info.generic.info2 = info2;
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wstringop-truncation"
@@ -92,8 +92,10 @@ void k_sys_fatal_error_handler(unsigned int reason, const struct arch_esf *esf)
 		lr = esf->basic.lr;
 	}
 
-	/* Standard reboot process */
-	infuse_reboot(reason, pc, lr);
+	/* Store reboot metadata */
+	reboot_state_store(reason, INFUSE_REBOOT_INFO_EXCEPTION_BASIC, pc, lr);
+	/* Do the reboot */
+	cleanup_and_reboot();
 }
 
 void infuse_watchdog_warning(const struct device *dev, int channel_id)
@@ -131,7 +133,7 @@ void infuse_watchdog_expired(const struct device *dev, int channel_id)
 FUNC_NORETURN void infuse_reboot(enum infuse_reboot_reason reason, uint32_t info1, uint32_t info2)
 {
 	/* Store reboot metadata */
-	reboot_state_store(reason, INFUSE_REBOOT_INFO_EXCEPTION_BASIC, info1, info2);
+	reboot_state_store(reason, INFUSE_REBOOT_INFO_GENERIC, info1, info2);
 	/* Do the reboot */
 	cleanup_and_reboot();
 }
@@ -150,7 +152,7 @@ void infuse_reboot_delayed(enum infuse_reboot_reason reason, uint32_t info1, uin
 	k_work_init_delayable(&reboot_worker, delayed_do_reboot);
 
 	/* Store initial reboot metadata */
-	reboot_state_store(reason, INFUSE_REBOOT_INFO_EXCEPTION_BASIC, info1, info2);
+	reboot_state_store(reason, INFUSE_REBOOT_INFO_GENERIC, info1, info2);
 
 	/* Schedule the reboot */
 	k_work_schedule(&reboot_worker, delay);
