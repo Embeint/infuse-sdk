@@ -1,6 +1,6 @@
 /**
  * @file
- * @copyright 2024 Embeint Inc
+ * @copyright 2024 Embeint Holdings Pty Ltd
  * @author Jordan Yates <jordan@embeint.com>
  *
  * SPDX-License-Identifier: Apache-2.0

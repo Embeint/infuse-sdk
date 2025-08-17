@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-# Copyright (c) 2024 Embeint Inc
+# Copyright (c) 2024 Embeint Holdings Pty Ltd
 
 import argparse
 import shutil
@@ -112,7 +112,7 @@ def c_source_header():
     return (
         """/**
  * @file
- * @copyright $CURRENT_YEAR Embeint Inc
+ * @copyright $CURRENT_YEAR Embeint Holdings Pty Ltd
 """
         + author()
         + """
@@ -129,7 +129,7 @@ def c_header_header():
         """/**
  * @file
  * @brief $1
- * @copyright $CURRENT_YEAR Embeint Inc
+ * @copyright $CURRENT_YEAR Embeint Holdings Pty Ltd
 """
         + author()
         + """

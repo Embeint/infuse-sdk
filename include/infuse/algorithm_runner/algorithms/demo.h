@@ -1,7 +1,7 @@
 /**
  * @file
  * @brief Demonstration algorithms
- * @copyright 2025 Embeint Inc
+ * @copyright 2025 Embeint Holdings Pty Ltd
  * @author Jordan Yates <jordan@embeint.com>
  *
  * SPDX-License-Identifier: FSL-1.1-ALv2

@@ -1,6 +1,6 @@
 # Auroch nRF9151 board configuration
 
-# Copyright (c) 2025 Embeint Inc
+# Copyright (c) 2025 Embeint Holdings Pty Ltd
 # SPDX-License-Identifier: Apache-2.0
 
 if BOARD_AUROCH_NRF9151 || BOARD_AUROCH_NRF9151_NS

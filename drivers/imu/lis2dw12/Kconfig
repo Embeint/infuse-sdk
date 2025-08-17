@@ -1,6 +1,6 @@
 # LIS2DW12 3 Axis Accelerometer configuration
 
-# Copyright (c) 2025 Embeint Inc
+# Copyright (c) 2025 Embeint Holdings Pty Ltd
 # SPDX-License-Identifier: Apache-2.0
 
 menuconfig INFUSE_IMU_LIS2DW12

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Copyright 2024 Embeint Inc
+# Copyright 2024 Embeint Holdings Pty Ltd
 # SPDX-License-Identifier: Apache-2.0
 
 # Compile all the applications needed by the bsim tests in these subfolders

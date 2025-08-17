@@ -1,4 +1,4 @@
-# Copyright (c) 2024 Embeint Inc
+# Copyright (c) 2024 Embeint Holdings Pty Ltd
 # SPDX-License-Identifier: Apache-2.0
 
 zephyr_library()
