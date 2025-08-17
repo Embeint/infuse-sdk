@@ -117,7 +117,7 @@ def c_source_header():
         + author()
         + """
  *
- * SPDX-License-Identifier: LicenseRef-Embeint
+ * SPDX-License-Identifier: FSL-1.1-ALv2
  */
 """
     )
@@ -134,7 +134,7 @@ def c_header_header():
         + author()
         + """
  *
- * SPDX-License-Identifier: LicenseRef-Embeint
+ * SPDX-License-Identifier: FSL-1.1-ALv2
  *
  * @details $2
  */

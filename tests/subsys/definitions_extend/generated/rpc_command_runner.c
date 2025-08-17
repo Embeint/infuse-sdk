@@ -4,7 +4,7 @@
  * @copyright 2024 Embeint Inc
  * @author scripts/west_commands/cloudgen.py
  *
- * SPDX-License-Identifier: LicenseRef-Embeint
+ * SPDX-License-Identifier: FSL-1.1-ALv2
  */
 
 #include <stdbool.h>

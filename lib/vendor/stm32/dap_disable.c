@@ -3,7 +3,7 @@
  * @copyright 2025 Embeint Inc
  * @author Jordan Yates <jordan@embeint.com>
  *
- * SPDX-License-Identifier: LicenseRef-Embeint
+ * SPDX-License-Identifier: FSL-1.1-ALv2
  *
  * STM32 does not have a true debug port disable, but it does have flash readback protection.
  *

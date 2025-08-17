@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2024 Embeint Inc
  *
- * SPDX-License-Identifier: LicenseRef-Embeint
+ * SPDX-License-Identifier: FSL-1.1-ALv2
  */
 
 /* Allocate more memory to the modem library to enable tracing */

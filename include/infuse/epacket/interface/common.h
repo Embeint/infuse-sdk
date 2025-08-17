@@ -4,7 +4,7 @@
  * @copyright 2024 Embeint Inc
  * @author Jordan Yates <jordan@embeint.com>
  *
- * SPDX-License-Identifier: LicenseRef-Embeint
+ * SPDX-License-Identifier: FSL-1.1-ALv2
  */
 
 #ifndef INFUSE_SDK_INCLUDE_INFUSE_EPACKET_INTERFACE_COMMON_H_

@@ -1,5 +1,5 @@
 # Copyright (c) 2024 Embeint Inc
-# SPDX-License-Identifier: LicenseRef-Embeint
+# SPDX-License-Identifier: FSL-1.1-ALv2
 
 description: |
   Battery charger control based on temperature

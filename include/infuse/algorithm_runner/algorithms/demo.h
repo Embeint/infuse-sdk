@@ -4,7 +4,7 @@
  * @copyright 2025 Embeint Inc
  * @author Jordan Yates <jordan@embeint.com>
  *
- * SPDX-License-Identifier: LicenseRef-Embeint
+ * SPDX-License-Identifier: FSL-1.1-ALv2
  */
 
 #ifndef INFUSE_SDK_INCLUDE_INFUSE_ALGORITHM_RUNNER_ALGORITHMS_DEMO_H_

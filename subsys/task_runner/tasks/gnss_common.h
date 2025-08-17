@@ -4,7 +4,7 @@
  * @copyright 2025 Embeint Inc
  * @author Jordan Yates <jordan@embeint.com>
  *
- * SPDX-License-Identifier: LicenseRef-Embeint
+ * SPDX-License-Identifier: FSL-1.1-ALv2
  */
 
 #ifndef INFUSE_SDK_SUBSYS_TASK_RUNNER_TASKS_GNSS_H_
