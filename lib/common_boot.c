@@ -124,6 +124,7 @@ static int secure_fault_info_read(void)
 	LOG_DBG("SecureFault");
 
 	reboot_state.reason = reason;
+	reboot_state.info_type = INFUSE_REBOOT_INFO_EXCEPTION_BASIC;
 	reboot_state.epoch_time_source = TIME_SOURCE_INVALID;
 	reboot_state.info.exception_basic.program_counter =
 		secure_fault.EXC_FRAME_COPY[ARCH_ESF_PC_IDX];
