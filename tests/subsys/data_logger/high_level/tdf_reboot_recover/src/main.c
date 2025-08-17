@@ -73,7 +73,7 @@ int corrupt_indicies[] = {
 	offsetof(struct logger_data, tdf_buffer) + 5,
 };
 
-static void log_corrupt_and_reboot(const struct device *tdf_logger, int corrupt_index)
+static void log_corrupt_and_reboot(const struct device *tdf_logger, int corrupt_index, bool fault)
 {
 	uint64_t t = 1000000;
 	uint32_t data = 123;
@@ -90,7 +90,11 @@ static void log_corrupt_and_reboot(const struct device *tdf_logger, int corrupt_
 	}
 
 	/* Reboot */
-	infuse_reboot(INFUSE_REBOOT_RPC, 0, 0);
+	if (fault) {
+		epoch_time_set_reference(TIME_SOURCE_NONE, NULL);
+	} else {
+		infuse_reboot(INFUSE_REBOOT_RPC, 0, 0);
+	}
 }
 
 static void tdf_reboot_info_log_expect(uint8_t reason)
@@ -109,6 +113,11 @@ static void tdf_reboot_info_log_expect(uint8_t reason)
 	zassert_equal(0, tdf_parse_find_in_buf(buf->data, buf->len, TDF_REBOOT_INFO, &tdf));
 	info = tdf.data;
 	zassert_equal(reason, info->reason);
+	if (reason == K_ERR_CPU_EXCEPTION) {
+		/* Expect the full ESF to be logged */
+		zassert_equal(0, tdf_parse_find_in_buf(buf->data, buf->len,
+						       TDF_EXCEPTION_STACK_FRAME, &tdf));
+	}
 	net_buf_unref(buf);
 }
 
@@ -138,8 +147,8 @@ ZTEST(tdf_data_logger_recovery, test_logger_recovery)
 		/* Check we can log the reboot */
 		tdf_reboot_info_log_expect(INFUSE_REBOOT_UNKNOWN);
 
-		/* Log TDFs and reboot */
-		log_corrupt_and_reboot(tdf_logger, -1);
+		/* Log TDFs and reboot via a fault */
+		log_corrupt_and_reboot(tdf_logger, -1, true);
 		zassert_unreachable();
 	} else if (reboots.count == 2) {
 		/* If we flush now, we should get the 2 TDFs we logged on the previous boot */
@@ -149,8 +158,8 @@ ZTEST(tdf_data_logger_recovery, test_logger_recovery)
 		zassert_equal(sizeof(struct epacket_dummy_frame) + 22, buf->len);
 		net_buf_unref(buf);
 
-		/* Next reboot should detect the RPC reboot type */
-		tdf_reboot_info_log_expect(INFUSE_REBOOT_RPC);
+		/* Next reboot should detect the NULL dereference */
+		tdf_reboot_info_log_expect(K_ERR_CPU_EXCEPTION);
 
 		void tdf_data_logger_lock(const struct device *dev);
 
@@ -164,14 +173,14 @@ ZTEST(tdf_data_logger_recovery, test_logger_recovery)
 		zassert_is_null(k_fifo_get(sent_queue, K_MSEC(100)));
 
 		/* Corrupt header guard */
-		log_corrupt_and_reboot(tdf_logger, 0);
+		log_corrupt_and_reboot(tdf_logger, 0, false);
 		zassert_unreachable();
 	} else if (reboots.count < (ARRAY_SIZE(corrupt_indicies) + 3)) {
 		/* Corrupted data should be detected and purged */
 		zassert_equal(0, tdf_data_logger_flush_dev(tdf_logger));
 		zassert_is_null(k_fifo_get(sent_queue, K_MSEC(100)));
 
-		log_corrupt_and_reboot(tdf_logger, corrupt_indicies[reboots.count - 4]);
+		log_corrupt_and_reboot(tdf_logger, corrupt_indicies[reboots.count - 4], false);
 		zassert_unreachable();
 	}
 #ifdef TDF_REMOTE_SUPPORT
@@ -182,7 +191,7 @@ ZTEST(tdf_data_logger_recovery, test_logger_recovery)
 		tdf_data_logger_remote_id_set(tdf_remote_logger, 0x12345678);
 
 		/* Log TDFs and reboot */
-		log_corrupt_and_reboot(tdf_remote_logger, -1);
+		log_corrupt_and_reboot(tdf_remote_logger, -1, false);
 		zassert_unreachable();
 	} else if (reboots.count == (ARRAY_SIZE(corrupt_indicies) + 4)) {
 		/* If we flush now, we should get the 2 TDFs we logged on the previous boot */
@@ -194,7 +203,8 @@ ZTEST(tdf_data_logger_recovery, test_logger_recovery)
 
 		/* Log TDFs and reboot, corrupting the remote ID */
 		tdf_data_logger_remote_id_set(tdf_remote_logger, 0x12345678);
-		log_corrupt_and_reboot(tdf_remote_logger, offsetof(struct logger_data, remote_id));
+		log_corrupt_and_reboot(tdf_remote_logger, offsetof(struct logger_data, remote_id),
+				       false);
 		zassert_unreachable();
 	} else if (reboots.count < (2 * ARRAY_SIZE(corrupt_indicies))) {
 		/* Corrupted data should be detected and purged */
@@ -204,7 +214,7 @@ ZTEST(tdf_data_logger_recovery, test_logger_recovery)
 		tdf_data_logger_remote_id_set(tdf_remote_logger, 0x12345678);
 		log_corrupt_and_reboot(
 			tdf_remote_logger,
-			corrupt_indicies[reboots.count - ARRAY_SIZE(corrupt_indicies) - 4]);
+			corrupt_indicies[reboots.count - ARRAY_SIZE(corrupt_indicies) - 4], false);
 		zassert_unreachable();
 	}
 #endif /* TDF_REMOTE_SUPPORT */
