@@ -3,11 +3,11 @@ common:
   min_flash: 64
   min_ram: 32
 tests:
-  tdf.gen:
+  tdf.core:
     integration_platforms:
       - native_sim
       - qemu_cortex_m3
-  tdf.gen.diff:
+  tdf.core.diff:
     integration_platforms:
       - native_sim
       - qemu_cortex_m3
