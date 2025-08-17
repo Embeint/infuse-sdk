@@ -60,15 +60,24 @@ enum infuse_reboot_reason {
 
 /** Type of @ref infuse_reboot_info data */
 enum infuse_reboot_info_type {
+	/* Generic reboot, two uint32_t parameters */
+	INFUSE_REBOOT_INFO_GENERIC = 0,
 	/** Exception with only PC and LR info */
-	INFUSE_REBOOT_INFO_EXCEPTION_BASIC = 0,
+	INFUSE_REBOOT_INFO_EXCEPTION_BASIC,
 	/** Hardware watchdog expiry */
 	INFUSE_REBOOT_INFO_WATCHDOG,
 } __packed;
 
 /** Detailed information about the reboot location/cause */
 union infuse_reboot_info {
-	/* Basic reboot information */
+	/* Generic reboot information */
+	struct {
+		/** Info 1 */
+		uint32_t info1;
+		/** Info 2 */
+		uint32_t info2;
+	} generic;
+	/* Basic exception information */
 	struct {
 		/** Program counter value at exception */
 		uint32_t program_counter;
@@ -116,8 +125,8 @@ struct infuse_reboot_state {
  * @brief Trigger a system reboot
  *
  * @param reason Reason the system is rebooting
- * @param info1 Program counter at exception or watchdog channel that expired
- * @param info2 Link register at exception
+ * @param info1 Generic information to identify/diagnose the reboot
+ * @param info2 Generic information to identify/diagnose the reboot
  */
 _NORETURN void infuse_reboot(enum infuse_reboot_reason reason, uint32_t info1, uint32_t info2);
 
@@ -125,8 +134,8 @@ _NORETURN void infuse_reboot(enum infuse_reboot_reason reason, uint32_t info1, u
  * @brief Trigger a system reboot in the future
  *
  * @param reason Reason the system is rebooting
- * @param info1 Program counter at exception or watchdog channel that expired
- * @param info2 Link register at exception
+ * @param info1 Generic information to identify/diagnose the reboot
+ * @param info2 Generic information to identify/diagnose the reboot
  * @param delay Time delay or absolute time to execute the reboot
  */
 void infuse_reboot_delayed(enum infuse_reboot_reason reason, uint32_t info1, uint32_t info2,

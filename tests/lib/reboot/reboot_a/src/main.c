@@ -46,8 +46,8 @@ ZTEST(infuse_reboot, test_reboot)
 		rc = infuse_reboot_state_query(&reboot_state);
 		zassert_equal(0, rc);
 		zassert_equal(INFUSE_REBOOT_RPC, reboot_state.reason);
-		zassert_equal(0x1234, reboot_state.info.exception_basic.program_counter);
-		zassert_equal(0x5678, reboot_state.info.exception_basic.link_register);
+		zassert_equal(0x1234, reboot_state.info.generic.info1);
+		zassert_equal(0x5678, reboot_state.info.generic.info2);
 		zassert_equal(0, reboot_state.uptime);
 		zassert_equal(TIME_SOURCE_NONE, reboot_state.epoch_time_source);
 		zassert_true(reboot_state.epoch_time > 0);

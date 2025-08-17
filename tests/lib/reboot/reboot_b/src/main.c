@@ -62,8 +62,8 @@ ZTEST(infuse_reboot, test_reboot)
 		rc = infuse_reboot_state_query(&reboot_state);
 		zassert_equal(0, rc);
 		zassert_equal(INFUSE_REBOOT_EXTERNAL_TRIGGER, reboot_state.reason);
-		zassert_equal(1000, reboot_state.info.exception_basic.program_counter);
-		zassert_equal(2000, reboot_state.info.exception_basic.link_register);
+		zassert_equal(1000, reboot_state.info.generic.info1);
+		zassert_equal(2000, reboot_state.info.generic.info2);
 		/* Uptime should have been updated at point of reboot */
 		zassert_true(reboot_state.uptime >= 3);
 		/* Time reference should be valid and about half a second after the reference */
