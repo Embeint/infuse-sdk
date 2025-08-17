@@ -141,6 +141,49 @@ static int secure_fault_info_read(void)
 
 #endif /* defined(CONFIG_TFM_PLATFORM_FAULT_INFO_QUERY) && defined(CONFIG_INFUSE_REBOOT) */
 
+#ifdef CONFIG_INFUSE_REBOOT
+
+static void reboot_info_print(int query_rc)
+{
+	LOG_INF("");
+	LOG_INF("Reboot Information");
+	LOG_INF("\tHardware: %08X", reboot_state.hardware_reason);
+	if (query_rc != 0) {
+		LOG_INF("\t   Cause: Unknown");
+		return;
+	}
+	LOG_INF("\t   Cause: %d", reboot_state.reason);
+	LOG_INF("\t  Uptime: %d", reboot_state.uptime);
+	LOG_INF("\t  Thread: %s", reboot_state.thread_name);
+	switch (reboot_state.info_type) {
+	case INFUSE_REBOOT_INFO_GENERIC:
+		LOG_INF("\t  Info 1: %08X", reboot_state.info.generic.info1);
+		LOG_INF("\t  Info 2: %08X", reboot_state.info.generic.info2);
+		break;
+	case INFUSE_REBOOT_INFO_EXCEPTION_BASIC:
+		LOG_INF("\t      PC: %08X", reboot_state.info.exception_basic.program_counter);
+		LOG_INF("\t      LR: %08X", reboot_state.info.exception_basic.link_register);
+		break;
+	case INFUSE_REBOOT_INFO_EXCEPTION_ESF:
+#ifdef CONFIG_ARM
+		LOG_INF("\t      PC: %08X", reboot_state.info.exception_full.basic.pc);
+		LOG_INF("\t      LR: %08X", reboot_state.info.exception_full.basic.lr);
+#else
+		LOG_INF("\t     ESF: Unknown");
+#endif /* CONFIG_ARM */
+		break;
+	case INFUSE_REBOOT_INFO_WATCHDOG:
+		LOG_INF("\t  Wdog 1: %08X", reboot_state.info.watchdog.info1);
+		LOG_INF("\t  Wdog 2: %08X", reboot_state.info.watchdog.info2);
+		break;
+	default:
+		/* Unknown info */
+		break;
+	}
+}
+
+#endif /* CONFIG_INFUSE_REBOOT */
+
 static int infuse_common_boot(void)
 {
 	KV_KEY_TYPE(KV_KEY_REBOOTS) reboot = {0};
@@ -269,26 +312,18 @@ static int infuse_common_boot(void)
 	}
 
 	/* Print the reboot information/causes */
-	LOG_INF("");
-	LOG_INF("Reboot Information");
-	LOG_INF("\tHardware: %08X", reboot_state.hardware_reason);
-	if (rc == 0) {
-		LOG_INF("\t   Cause: %d", reboot_state.reason);
-		LOG_INF("\t  Uptime: %d", reboot_state.uptime);
-		LOG_INF("\t  Thread: %s", reboot_state.thread_name);
-		LOG_INF("\t PC/WDOG: %08X", reboot_state.info.exception_basic.program_counter);
-		LOG_INF("\t LR/WDOG: %08X", reboot_state.info.exception_basic.link_register);
+	reboot_info_print(rc);
 
-		if (reboot_state.epoch_time_source != TIME_SOURCE_INVALID) {
-			/* Restore time knowledge (Assume reboot took 0 ms) */
-			reference.local = 0;
-			reference.ref = reboot_state.epoch_time;
-			epoch_time_set_reference(
-				TIME_SOURCE_RECOVERED | reboot_state.epoch_time_source, &reference);
-		}
-	} else {
-		LOG_INF("\t   Cause: Unknown");
+	if ((rc == 0) && (reboot_state.epoch_time_source != TIME_SOURCE_INVALID)) {
+		/* Restore time knowledge (Assume reboot took 0 ms).
+		 * Do this after `reboot_info_print` to avoid interrupting the debug output.
+		 */
+		reference.local = 0;
+		reference.ref = reboot_state.epoch_time;
+		epoch_time_set_reference(TIME_SOURCE_RECOVERED | reboot_state.epoch_time_source,
+					 &reference);
 	}
+
 #else
 	reboot_state.reason = INFUSE_REBOOT_UNKNOWN;
 #endif /* CONFIG_INFUSE_REBOOT */
