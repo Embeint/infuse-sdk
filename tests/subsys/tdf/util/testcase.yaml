@@ -1,0 +1,9 @@
+common:
+  tags: tdf
+  min_flash: 64
+  min_ram: 32
+tests:
+  tdf.util:
+    integration_platforms:
+      - native_sim
+      - qemu_cortex_m3
