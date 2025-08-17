@@ -49,8 +49,8 @@ ZTEST(common_boot, test_boot)
 		rc = infuse_common_boot_last_reboot(&reboot_state);
 		zassert_equal(0, rc);
 		zassert_equal(INFUSE_REBOOT_EXTERNAL_TRIGGER, reboot_state.reason);
-		zassert_equal(0x56, reboot_state.param_1.program_counter);
-		zassert_equal(0x78, reboot_state.param_2.link_register);
+		zassert_equal(0x56, reboot_state.info.exception_basic.program_counter);
+		zassert_equal(0x78, reboot_state.info.exception_basic.link_register);
 		/* Test complete */
 		return;
 	}
@@ -74,8 +74,8 @@ ZTEST(common_boot, test_boot)
 		rc = infuse_common_boot_last_reboot(&reboot_state);
 		zassert_equal(0, rc);
 		zassert_equal(INFUSE_REBOOT_EXTERNAL_TRIGGER, reboot_state.reason);
-		zassert_equal(0x12, reboot_state.param_1.program_counter);
-		zassert_equal(0x34, reboot_state.param_2.link_register);
+		zassert_equal(0x12, reboot_state.info.exception_basic.program_counter);
+		zassert_equal(0x34, reboot_state.info.exception_basic.link_register);
 		/* Time should have been restored */
 		zassert_equal(TIME_SOURCE_RECOVERED | TIME_SOURCE_NONE, epoch_time_get_source());
 		zassert_true(epoch_time_now() > time_2020);

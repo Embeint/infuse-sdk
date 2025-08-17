@@ -37,8 +37,8 @@ static void reboot_state_store(enum infuse_reboot_reason reason, uint32_t info1,
 	state.epoch_time_source = epoch_time_get_source();
 	state.epoch_time = epoch_time_now();
 	state.uptime = k_uptime_seconds();
-	state.param_1.program_counter = info1;
-	state.param_2.link_register = info2;
+	state.info.exception_basic.program_counter = info1;
+	state.info.exception_basic.link_register = info2;
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wstringop-truncation"

@@ -25,8 +25,8 @@ struct net_buf *rpc_command_last_reboot(struct net_buf *request)
 	rsp.epoch_time = state.epoch_time;
 	rsp.hardware_flags = state.hardware_reason;
 	rsp.uptime = state.uptime;
-	rsp.param_1 = state.param_1.program_counter;
-	rsp.param_2 = state.param_2.link_register;
+	rsp.param_1 = state.info.exception_basic.program_counter;
+	rsp.param_2 = state.info.exception_basic.link_register;
 	memcpy(rsp.thread, state.thread_name, sizeof(rsp.thread));
 
 	return rpc_response_simple_req(request, 0, &rsp, sizeof(rsp));

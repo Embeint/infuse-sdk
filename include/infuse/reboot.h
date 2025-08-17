@@ -58,6 +58,24 @@ enum infuse_reboot_reason {
 	INFUSE_REBOOT_UNKNOWN = 255,
 };
 
+/** Detailed information about the reboot location/cause */
+union infuse_reboot_info {
+	/* Basic reboot information */
+	struct {
+		/** Program counter value at exception */
+		uint32_t program_counter;
+		/** Link register value at exception */
+		uint32_t link_register;
+	} exception_basic;
+	/* Watchdog reboot information */
+	struct {
+		/** Watchdog info1 per @ref infuse_watchdog_thread_state_lookup */
+		uint32_t info1;
+		/** Watchdog info2 per @ref infuse_watchdog_thread_state_lookup */
+		uint32_t info2;
+	} watchdog;
+} __packed;
+
 /** Reboot state information */
 struct infuse_reboot_state {
 	/** First 3 parameters are updated a second time on delayed reboots.
@@ -74,18 +92,8 @@ struct infuse_reboot_state {
 	enum infuse_reboot_reason reason;
 	/** Hardware reboot reason flags */
 	uint32_t hardware_reason;
-	union {
-		/** Program counter value at exception */
-		uint32_t program_counter;
-		/** Watchdog info1 per @ref infuse_watchdog_thread_state_lookup */
-		uint32_t watchdog_info1;
-	} param_1;
-	union {
-		/** Link register value at exception */
-		uint32_t link_register;
-		/** Watchdog info2 per @ref infuse_watchdog_thread_state_lookup */
-		uint32_t watchdog_info2;
-	} param_2;
+	/** Reboot information */
+	union infuse_reboot_info info;
 	/** Thread executing at reboot time */
 	char thread_name[REBOOT_STATE_THREAD_NAME_MAX];
 } __packed;

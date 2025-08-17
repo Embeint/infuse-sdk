@@ -125,8 +125,10 @@ static int secure_fault_info_read(void)
 
 	reboot_state.reason = reason;
 	reboot_state.epoch_time_source = TIME_SOURCE_INVALID;
-	reboot_state.param_1.program_counter = secure_fault.EXC_FRAME_COPY[ARCH_ESF_PC_IDX];
-	reboot_state.param_2.link_register = secure_fault.EXC_FRAME_COPY[ARCH_ESF_LR_IDX];
+	reboot_state.info.exception_basic.program_counter =
+		secure_fault.EXC_FRAME_COPY[ARCH_ESF_PC_IDX];
+	reboot_state.info.exception_basic.link_register =
+		secure_fault.EXC_FRAME_COPY[ARCH_ESF_LR_IDX];
 	/* We can't extract the thread name, but we can output the frame pointer as a string.
 	 * This should point back to the stack of the offending thread.
 	 */
@@ -273,8 +275,8 @@ static int infuse_common_boot(void)
 		LOG_INF("\t   Cause: %d", reboot_state.reason);
 		LOG_INF("\t  Uptime: %d", reboot_state.uptime);
 		LOG_INF("\t  Thread: %s", reboot_state.thread_name);
-		LOG_INF("\t PC/WDOG: %08X", reboot_state.param_1.program_counter);
-		LOG_INF("\t LR/WDOG: %08X", reboot_state.param_2.link_register);
+		LOG_INF("\t PC/WDOG: %08X", reboot_state.info.exception_basic.program_counter);
+		LOG_INF("\t LR/WDOG: %08X", reboot_state.info.exception_basic.link_register);
 
 		if (reboot_state.epoch_time_source != TIME_SOURCE_INVALID) {
 			/* Restore time knowledge (Assume reboot took 0 ms) */

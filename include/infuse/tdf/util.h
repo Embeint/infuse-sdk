@@ -99,8 +99,8 @@ static inline void tdf_reboot_info_from_state(struct infuse_reboot_state *state,
 	info->hardware_flags = state->hardware_reason;
 	info->uptime = state->uptime;
 	info->count = reboot.count;
-	info->param_1 = state->param_1.program_counter;
-	info->param_2 = state->param_2.link_register;
+	info->param_1 = state->info.exception_basic.program_counter;
+	info->param_2 = state->info.exception_basic.link_register;
 	strncpy(info->thread, state->thread_name, sizeof(info->thread));
 }
 

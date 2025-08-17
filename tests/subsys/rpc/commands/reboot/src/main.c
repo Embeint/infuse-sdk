@@ -90,7 +90,8 @@ ZTEST(rpc_command_reboot, test_does_reboot)
 		zassert_equal(0, rc);
 		zassert_equal(INFUSE_REBOOT_RPC, reboot_state.reason);
 		zassert_equal(2, reboot_state.uptime);
-		zassert_equal((uintptr_t)rpc_command_reboot, reboot_state.param_1.program_counter);
+		zassert_equal((uintptr_t)rpc_command_reboot,
+			      reboot_state.info.exception_basic.program_counter);
 		/* Wait to send next command */
 		k_sleep(K_SECONDS(1));
 		/* Trigger another reboot with explicit delay */
@@ -107,7 +108,8 @@ ZTEST(rpc_command_reboot, test_does_reboot)
 		zassert_equal(0, rc);
 		zassert_equal(INFUSE_REBOOT_RPC, reboot_state.reason);
 		zassert_equal(4, reboot_state.uptime);
-		zassert_equal((uintptr_t)rpc_command_reboot, reboot_state.param_1.program_counter);
+		zassert_equal((uintptr_t)rpc_command_reboot,
+			      reboot_state.info.exception_basic.program_counter);
 		/* Test done */
 		break;
 	default:
