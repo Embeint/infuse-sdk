@@ -174,6 +174,14 @@ static inline void tdf_reboot_info_log(uint8_t logger_mask)
 	tdf_reboot_info_from_state(&reboot_state, &reboot_info);
 	/* Push TDF at logger */
 	TDF_DATA_LOGGER_LOG(logger_mask, TDF_REBOOT_INFO, t, &reboot_info);
+	if (reboot_state.info_type == INFUSE_REBOOT_INFO_EXCEPTION_ESF) {
+		/* Except word aligned exception stack frames */
+		BUILD_ASSERT(sizeof(reboot_state.info.exception_full) % sizeof(uint32_t) == 0);
+		/* Push full exception stack frame at the logger */
+		tdf_data_logger_log(logger_mask, TDF_EXCEPTION_STACK_FRAME,
+				    sizeof(reboot_state.info.exception_full), t,
+				    &reboot_state.info.exception_full);
+	}
 #endif /* CONFIG_TDF_UTIL_REBOOT_INFO_LOG */
 }
 
