@@ -9,9 +9,9 @@ import yaml
 from west.commands import WestCommand
 
 try:
-    from infuse_iot.cpatch import diff
+    from infuse_iot.cpatch import cpatch
 except ImportError:
-    diff = None
+    cpatch = None
 
 EXPORT_DESCRIPTION = """\
 This command generates a diff file between two application releases.
@@ -116,7 +116,7 @@ class release_diff(WestCommand):
         # The trailing TLV's can change on device, so exclude them from the original image knowledge
         with open(input_path, "rb") as f_input:
             with open(output_path, "rb") as f_output:
-                patch = diff.generate(
+                patch = cpatch.generate(
                     f_input.read(-1)[:-input_tlv_len],
                     f_output.read(-1),
                     True,
@@ -175,7 +175,7 @@ class release_diff(WestCommand):
                     print(f"\t  xdelta: {x_size} {100 * x_size / output_len:.2f}%")
 
     def do_run(self, args, _unknown_args):
-        if diff is None:
+        if cpatch is None:
             sys.exit("infuse-iot.diff not found")
 
         for original in args.input:
