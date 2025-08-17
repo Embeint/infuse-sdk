@@ -9,7 +9,7 @@ import yaml
 from west.commands import WestCommand
 
 try:
-    from infuse_iot.diff import diff
+    from infuse_iot.cpatch import diff
 except ImportError:
     diff = None
 
