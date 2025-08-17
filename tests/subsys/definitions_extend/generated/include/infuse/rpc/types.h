@@ -290,6 +290,8 @@ enum rpc_enum_file_action {
 	RPC_ENUM_FILE_ACTION_BT_CTLR_CPATCH = 12,
 	/** nRF91 LTE modem firmware upgrade diff */
 	RPC_ENUM_FILE_ACTION_NRF91_MODEM_DIFF = 20,
+	/** File to copy to another device */
+	RPC_ENUM_FILE_ACTION_FILE_FOR_COPY = 30,
 };
 
 /** Infuse-IoT Bluetooth characteristics (Bitmask) */
@@ -394,6 +396,12 @@ enum rpc_builtin_id {
 	RPC_ID_BT_CONNECT_INFUSE = 50,
 	/** Disconnect from a Bluetooth device */
 	RPC_ID_BT_DISCONNECT = 51,
+	/** Copy a local file to a remote device over Bluetooth */
+	RPC_ID_BT_FILE_COPY_BASIC = 52,
+	/** Copy a file fetched from COAP to a remote device over Bluetooth */
+	RPC_ID_BT_FILE_COPY_COAP = 53,
+	/** Connect to a Bluetooth device and run the MCUMGR reboot command */
+	RPC_ID_BT_MCUMGR_REBOOT = 54,
 	/** Store the current accelerometer vector as the gravity reference */
 	RPC_ID_GRAVITY_REFERENCE_UPDATE = 60,
 	/** Query current security state and validate identity */
@@ -909,6 +917,79 @@ struct rpc_bt_disconnect_request {
 } __packed;
 
 struct rpc_bt_disconnect_response {
+	struct infuse_rpc_rsp_header header;
+} __packed;
+
+/** Copy a local file to a remote device over Bluetooth */
+struct rpc_bt_file_copy_basic_request {
+	struct infuse_rpc_req_header header;
+	/** Bluetooth LE device to connect to */
+	struct rpc_struct_bt_addr_le peer;
+	/** Action to apply to copied file */
+	uint8_t action;
+	/** File index to copy */
+	uint8_t file_idx;
+	/** File length */
+	uint32_t file_len;
+	/** File CRC */
+	uint32_t file_crc;
+	/** ACK period for data copy over Bluetooth */
+	uint8_t ack_period;
+	/** Pipelining for the data copy */
+	uint8_t pipelining;
+} __packed;
+
+struct rpc_bt_file_copy_basic_response {
+	struct infuse_rpc_rsp_header header;
+} __packed;
+
+/** Copy a file fetched from COAP to a remote device over Bluetooth */
+struct rpc_bt_file_copy_coap_request {
+	struct infuse_rpc_req_header header;
+	/** Bluetooth LE device to connect to */
+	struct rpc_struct_bt_addr_le peer;
+	/** Connection timeout in milliseconds */
+	uint16_t conn_timeout_ms;
+	/** Action to apply to copied file */
+	uint8_t action;
+	/** File index to use for storage */
+	uint8_t file_idx;
+	/** ACK period for data copy over Bluetooth */
+	uint8_t ack_period;
+	/** Pipelining for the data copy */
+	uint8_t pipelining;
+	/** COAP server address (e.g. coap.dev.infuse-iot.com) */
+	char server_address[48];
+	/** COAP server port */
+	uint16_t server_port;
+	/** COAP block timeout (Default 1000ms) */
+	uint16_t block_timeout_ms;
+	/** Expected resource length (UINT32_MAX if unknown) */
+	uint32_t resource_len;
+	/** Expected resource CRC (UINT32_MAX if unknown) */
+	uint32_t resource_crc;
+	/** Path to file on COAP server (e.g. files/small_file) */
+	char resource[];
+} __packed;
+
+struct rpc_bt_file_copy_coap_response {
+	struct infuse_rpc_rsp_header header;
+	/** Length of resource downloaded from COAP */
+	uint32_t resource_len;
+	/** CRC of resource downloaded from COAP */
+	uint32_t resource_crc;
+} __packed;
+
+/** Connect to a Bluetooth device and run the MCUMGR reboot command */
+struct rpc_bt_mcumgr_reboot_request {
+	struct infuse_rpc_req_header header;
+	/** Bluetooth LE device to run reboot on */
+	struct rpc_struct_bt_addr_le peer;
+	/** Connection timeout in milliseconds */
+	uint16_t conn_timeout_ms;
+} __packed;
+
+struct rpc_bt_mcumgr_reboot_response {
 	struct infuse_rpc_rsp_header header;
 } __packed;
 

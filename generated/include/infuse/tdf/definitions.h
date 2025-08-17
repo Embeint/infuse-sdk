@@ -677,6 +677,12 @@ struct tdf_network_scan_count {
 	uint8_t num_lte;
 } __packed;
 
+/** Define a variant of tdf_exception_stack_frame with a constant length */
+#define TDF_EXCEPTION_STACK_FRAME_VAR(_name, _count)                                               \
+	struct _name {                                                                             \
+		uint32_t frame[_count];                                                            \
+	} __packed;
+
 /** Infuse-IoT builtin TDF definitions */
 enum tdf_builtin_id {
 	/** Common announcement packet */
@@ -775,6 +781,8 @@ enum tdf_builtin_id {
 	TDF_WIFI_DISCONNECTED = 50,
 	/** Counts associated with scanning Wi-Fi and LTE networks */
 	TDF_NETWORK_SCAN_COUNT = 51,
+	/** Generic exception stack frame */
+	TDF_EXCEPTION_STACK_FRAME = 52,
 	/** End of builtin TDF range */
 	TDF_BUILTIN_END = 1024,
 };

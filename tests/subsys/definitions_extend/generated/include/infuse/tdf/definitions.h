@@ -676,11 +676,19 @@ struct tdf_wifi_disconnected {
 	uint8_t reason;
 } __packed;
 
-/** Example array type */
-struct tdf_array_type {
-	/** I am an array of length 4 */
-	uint8_t array[4];
+/** Counts associated with scanning Wi-Fi and LTE networks */
+struct tdf_network_scan_count {
+	/** Number of Wi-Fi APs found */
+	uint8_t num_wifi;
+	/** Number of LTE cells found */
+	uint8_t num_lte;
 } __packed;
+
+/** Define a variant of tdf_exception_stack_frame with a constant length */
+#define TDF_EXCEPTION_STACK_FRAME_VAR(_name, _count)                                               \
+	struct _name {                                                                             \
+		uint32_t frame[_count];                                                            \
+	} __packed;
 
 /** Extension TDF 1 */
 struct tdf_ext1 {
@@ -794,8 +802,10 @@ enum tdf_builtin_id {
 	TDF_WIFI_CONNECTION_FAILED = 49,
 	/** Wi-Fi network is now disconnected */
 	TDF_WIFI_DISCONNECTED = 50,
-	/** Example array type */
-	TDF_ARRAY_TYPE = 100,
+	/** Counts associated with scanning Wi-Fi and LTE networks */
+	TDF_NETWORK_SCAN_COUNT = 51,
+	/** Generic exception stack frame */
+	TDF_EXCEPTION_STACK_FRAME = 52,
 	/** Extension TDF 1 */
 	TDF_EXT1 = 1025,
 	/** Extension TDF 2 */
@@ -852,7 +862,7 @@ enum tdf_builtin_id {
 #define _TDF_WIFI_CONNECTED_TYPE              struct tdf_wifi_connected
 #define _TDF_WIFI_CONNECTION_FAILED_TYPE      struct tdf_wifi_connection_failed
 #define _TDF_WIFI_DISCONNECTED_TYPE           struct tdf_wifi_disconnected
-#define _TDF_ARRAY_TYPE_TYPE                  struct tdf_array_type
+#define _TDF_NETWORK_SCAN_COUNT_TYPE          struct tdf_network_scan_count
 #define _TDF_EXT1_TYPE                        struct tdf_ext1
 #define _TDF_EXT2_TYPE                        struct tdf_ext2
 
@@ -904,7 +914,7 @@ enum tdf_builtin_size {
 	_TDF_WIFI_CONNECTED_SIZE = sizeof(struct tdf_wifi_connected),
 	_TDF_WIFI_CONNECTION_FAILED_SIZE = sizeof(struct tdf_wifi_connection_failed),
 	_TDF_WIFI_DISCONNECTED_SIZE = sizeof(struct tdf_wifi_disconnected),
-	_TDF_ARRAY_TYPE_SIZE = sizeof(struct tdf_array_type),
+	_TDF_NETWORK_SCAN_COUNT_SIZE = sizeof(struct tdf_network_scan_count),
 	_TDF_EXT1_SIZE = sizeof(struct tdf_ext1),
 	_TDF_EXT2_SIZE = sizeof(struct tdf_ext2),
 };
