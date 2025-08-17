@@ -56,7 +56,7 @@ enum infuse_reboot_reason {
 	INFUSE_REBOOT_DFU = 135,
 	/** Unknown reboot reason */
 	INFUSE_REBOOT_UNKNOWN = 255,
-};
+} __packed;
 
 /** Type of @ref infuse_reboot_info data */
 enum infuse_reboot_info_type {
@@ -70,7 +70,11 @@ enum infuse_reboot_info_type {
 	INFUSE_REBOOT_INFO_WATCHDOG,
 } __packed;
 
-/** Detailed information about the reboot location/cause */
+/**
+ * Detailed information about the reboot location/cause
+ * RISCV platforms have 16 byte alignment requirements for @a arch_esf.
+ * Still use __packed so we can guarantee the compiler does not shift memory layout.
+ */
 union infuse_reboot_info {
 	/* Generic reboot information */
 	struct {
@@ -95,7 +99,7 @@ union infuse_reboot_info {
 		/** Watchdog info2 per @ref infuse_watchdog_thread_state_lookup */
 		uint32_t info2;
 	} watchdog;
-} __packed;
+} __packed __aligned(16);
 
 /** Reboot state information */
 struct infuse_reboot_state {
@@ -113,13 +117,15 @@ struct infuse_reboot_state {
 	enum infuse_reboot_reason reason;
 	/** Hardware reboot reason flags */
 	uint32_t hardware_reason;
-	/** Type of the information in @a info */
-	enum infuse_reboot_info_type info_type;
-	/** Reboot information */
-	union infuse_reboot_info info;
 	/** Thread executing at reboot time */
 	char thread_name[REBOOT_STATE_THREAD_NAME_MAX];
-} __packed;
+	/** Type of the information in @a info */
+	enum infuse_reboot_info_type info_type;
+	/** Pad the scructure out so that @a info is 16 byte aligned */
+	uint8_t _padding[5];
+	/** Reboot information */
+	union infuse_reboot_info info;
+} __packed __aligned(16);
 
 /** @cond INTERNAL_HIDDEN */
 #define _NORETURN COND_CODE_1(CONFIG_INFUSE_REBOOT_RETURN, (), (FUNC_NORETURN))
