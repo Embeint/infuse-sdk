@@ -46,8 +46,8 @@ ZTEST(infuse_reboot, test_reboot)
 		rc = infuse_reboot_state_query(&reboot_state);
 		zassert_equal(0, rc);
 		zassert_equal(INFUSE_REBOOT_RPC, reboot_state.reason);
-		zassert_equal(0x1234, reboot_state.param_1.program_counter);
-		zassert_equal(0x5678, reboot_state.param_2.link_register);
+		zassert_equal(0x1234, reboot_state.info.exception_basic.program_counter);
+		zassert_equal(0x5678, reboot_state.info.exception_basic.link_register);
 		zassert_equal(0, reboot_state.uptime);
 		zassert_equal(TIME_SOURCE_NONE, reboot_state.epoch_time_source);
 		zassert_true(reboot_state.epoch_time > 0);
@@ -67,8 +67,8 @@ ZTEST(infuse_reboot, test_reboot)
 		rc = infuse_reboot_state_query(&reboot_state);
 		zassert_equal(0, rc);
 		zassert_equal(INFUSE_REBOOT_HW_WATCHDOG, reboot_state.reason);
-		zassert_equal(4, reboot_state.param_1.watchdog_info1);
-		zassert_equal(0, reboot_state.param_2.watchdog_info2);
+		zassert_equal(4, reboot_state.info.watchdog.info1);
+		zassert_equal(0, reboot_state.info.watchdog.info2);
 		zassert_equal(0, reboot_state.uptime);
 		zassert_equal(TIME_SOURCE_NTP, reboot_state.epoch_time_source);
 		zassert_true(reboot_state.epoch_time >= time_2025);
@@ -89,11 +89,11 @@ ZTEST(infuse_reboot, test_reboot)
 		/* Uptime should be roughly correct */
 		zassert_within(3, reboot_state.uptime, 1);
 		/* Program counter should be somewhere in epoch_time_set_reference */
-		zassert_between_inclusive(reboot_state.param_1.program_counter,
+		zassert_between_inclusive(reboot_state.info.exception_basic.program_counter,
 					  (uintptr_t)epoch_time_set_reference,
 					  (uintptr_t)epoch_time_set_reference + 64);
 		/* Link register should be somewhere in null_dereference */
-		zassert_between_inclusive(reboot_state.param_2.link_register,
+		zassert_between_inclusive(reboot_state.info.exception_basic.link_register,
 					  (uintptr_t)null_dereference,
 					  (uintptr_t)null_dereference + 64);
 		/* No time knowledge again */

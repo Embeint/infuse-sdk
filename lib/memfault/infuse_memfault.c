@@ -216,8 +216,8 @@ void memfault_reboot_tracking_load(sMemfaultRebootTrackingStorage *dst)
 		.magic = MEMFAULT_REBOOT_INFO_MAGIC,
 		.version = MEMFAULT_REBOOT_INFO_VERSION,
 		.last_reboot_reason = kMfltRebootReason_SecurityViolation,
-		.pc = infuse_reboot.param_1.program_counter,
-		.lr = infuse_reboot.param_2.link_register,
+		.pc = infuse_reboot.info.exception_basic.program_counter,
+		.lr = infuse_reboot.info.exception_basic.link_register,
 	};
 
 	/* Defer logging of the secure fault trace event until after Memfault has finished
