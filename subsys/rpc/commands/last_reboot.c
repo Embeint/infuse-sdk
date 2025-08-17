@@ -25,8 +25,29 @@ struct net_buf *rpc_command_last_reboot(struct net_buf *request)
 	rsp.epoch_time = state.epoch_time;
 	rsp.hardware_flags = state.hardware_reason;
 	rsp.uptime = state.uptime;
-	rsp.param_1 = state.info.exception_basic.program_counter;
-	rsp.param_2 = state.info.exception_basic.link_register;
+	switch (state.info_type) {
+	case INFUSE_REBOOT_INFO_GENERIC:
+		rsp.param_1 = state.info.generic.info1;
+		rsp.param_2 = state.info.generic.info2;
+		break;
+	case INFUSE_REBOOT_INFO_EXCEPTION_BASIC:
+		rsp.param_1 = state.info.exception_basic.program_counter;
+		rsp.param_2 = state.info.exception_basic.link_register;
+		break;
+	case INFUSE_REBOOT_INFO_EXCEPTION_ESF:
+#ifdef CONFIG_ARM
+		rsp.param_1 = state.info.exception_full.basic.pc;
+		rsp.param_2 = state.info.exception_full.basic.lr;
+#endif /* CONFIG_ARM */
+		break;
+	case INFUSE_REBOOT_INFO_WATCHDOG:
+		rsp.param_1 = state.info.watchdog.info1;
+		rsp.param_2 = state.info.watchdog.info2;
+		break;
+	default:
+		/* Unknown info */
+		break;
+	}
 	memcpy(rsp.thread, state.thread_name, sizeof(rsp.thread));
 
 	return rpc_response_simple_req(request, 0, &rsp, sizeof(rsp));

@@ -88,12 +88,14 @@ ZTEST(infuse_reboot, test_reboot)
 		zassert_equal((enum infuse_reboot_reason)K_ERR_CPU_EXCEPTION, reboot_state.reason);
 		/* Uptime should be roughly correct */
 		zassert_within(3, reboot_state.uptime, 1);
+		/* Actual exception should result in a full stack frame */
+		zassert_equal(INFUSE_REBOOT_INFO_EXCEPTION_ESF, reboot_state.info_type);
 		/* Program counter should be somewhere in epoch_time_set_reference */
-		zassert_between_inclusive(reboot_state.info.exception_basic.program_counter,
+		zassert_between_inclusive(reboot_state.info.exception_full.basic.pc,
 					  (uintptr_t)epoch_time_set_reference,
 					  (uintptr_t)epoch_time_set_reference + 64);
 		/* Link register should be somewhere in null_dereference */
-		zassert_between_inclusive(reboot_state.info.exception_basic.link_register,
+		zassert_between_inclusive(reboot_state.info.exception_full.basic.lr,
 					  (uintptr_t)null_dereference,
 					  (uintptr_t)null_dereference + 64);
 		/* No time knowledge again */
