@@ -464,16 +464,16 @@
             "name": "LORA_RX",
             "description": "Received LoRa packet",
             "fields": [
-                {"name": "snr", "type": "int8_t", "description": "Signal to Noise ratio (dB)"},
-                {"name": "rssi", "type": "int16_t", "description": "Received signal strength (dBm)"},
-                {"name": "payload", "type": "uint8_t", "num": 0, "description": "Packet payload"}
+                {"name": "snr", "type": "int8_t", "description": "Signal to Noise ratio (dB)", "display": {"postfix": "dB"}},
+                {"name": "rssi", "type": "int16_t", "description": "Received signal strength (dBm)", "display": {"postfix": "dBm"}},
+                {"name": "payload", "type": "uint8_t", "num": 0, "description": "Packet payload", "display": {"fmt": "hex", "digits": 2}}
             ]
         },
         "45": {
             "name": "LORA_TX",
             "description": "Transmitted LoRa packet",
             "fields": [
-                {"name": "payload", "type": "uint8_t", "num": 0, "description": "Payload"}
+                {"name": "payload", "type": "uint8_t", "num": 0, "description": "Payload", "display": {"fmt": "hex", "digits": 2}}
             ]
         },
         "46": {
@@ -481,7 +481,7 @@
             "description": "Sample frequency metadata for a TDF_DATA_FORMAT_IDX_ARRAY array",
             "fields": [
                 {"name": "tdf_id", "type": "uint16_t", "description": "TDF ID that is being described"},
-                {"name": "frequency", "type": "uint32_t", "description": "Frequency of samples in Hertz"}
+                {"name": "frequency", "type": "uint32_t", "description": "Frequency of samples in Hertz", "display": {"postfix": "Hz"}}
             ]
         },
         "47": {
@@ -489,7 +489,7 @@
             "description": "Sample frequency metadata for a TDF_DATA_FORMAT_IDX_ARRAY array",
             "fields": [
                 {"name": "tdf_id", "type": "uint16_t", "description": "TDF ID that is being described"},
-                {"name": "period", "type": "uint32_t", "description": "Period between samples in nanoseconds"}
+                {"name": "period", "type": "uint32_t", "description": "Period between samples in nanoseconds", "display": {"postfix": "ns"}}
             ]
         },
         "48": {
@@ -525,7 +525,7 @@
             "name": "EXCEPTION_STACK_FRAME",
             "description": "Generic exception stack frame",
             "fields": [
-                {"name": "frame", "type": "uint32_t", "num":0, "description": "Stack frame value"}
+                {"name": "frame", "type": "uint32_t", "num":0, "description": "Stack frame value", "display": {"fmt": "hex", "digits": 8}}
             ]
         }
     }
