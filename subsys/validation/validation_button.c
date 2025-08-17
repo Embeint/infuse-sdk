@@ -3,7 +3,7 @@
  * @copyright 2024 Embeint Inc
  * @author Aeyohan Furtado <aeyohan@embeint.com>
  *
- * SPDX-License-Identifier: LicenseRef-Embeint
+ * SPDX-License-Identifier: FSL-1.1-ALv2
  */
 
 #include <zephyr/kernel.h>
