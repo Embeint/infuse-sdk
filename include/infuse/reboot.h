@@ -58,6 +58,14 @@ enum infuse_reboot_reason {
 	INFUSE_REBOOT_UNKNOWN = 255,
 };
 
+/** Type of @ref infuse_reboot_info data */
+enum infuse_reboot_info_type {
+	/** Exception with only PC and LR info */
+	INFUSE_REBOOT_INFO_EXCEPTION_BASIC = 0,
+	/** Hardware watchdog expiry */
+	INFUSE_REBOOT_INFO_WATCHDOG,
+} __packed;
+
 /** Detailed information about the reboot location/cause */
 union infuse_reboot_info {
 	/* Basic reboot information */
@@ -92,6 +100,8 @@ struct infuse_reboot_state {
 	enum infuse_reboot_reason reason;
 	/** Hardware reboot reason flags */
 	uint32_t hardware_reason;
+	/** Type of the information in @a info */
+	enum infuse_reboot_info_type info_type;
 	/** Reboot information */
 	union infuse_reboot_info info;
 	/** Thread executing at reboot time */
