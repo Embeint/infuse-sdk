@@ -48,10 +48,12 @@ LOG_MODULE_REGISTER(charge_control, CONFIG_CHARGER_CONTROL_LOG_LEVEL);
 static void new_env_data(const struct zbus_channel *chan)
 {
 	const struct tdf_ambient_temp_pres_hum *env = zbus_chan_const_msg(chan);
-	int32_t min, max, current = env->temperature / 1000;
+	int32_t current = env->temperature / 1000;
 	bool en = charger_control_data.enabled;
 	struct tdf_charger_en_control control;
 	bool change = false;
+	int min;
+	int max;
 
 	/* Determine thresholds and whether control needs to change */
 	if (en) {
