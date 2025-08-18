@@ -13,17 +13,20 @@
 #include <infuse/time/epoch.h>
 #include <infuse/reboot.h>
 
-static struct auto_time_sync_state {
+struct auto_time_sync_state {
 	struct epoch_time_cb callback;
 	uint8_t logger_mask;
 	uint8_t flags;
-} state;
+};
+
+static struct auto_time_sync_state state;
 
 static void reference_time_updated(enum epoch_time_source source, struct timeutil_sync_instant old,
 				   struct timeutil_sync_instant new, void *user_ctx)
 {
 	struct auto_time_sync_state *log_state = user_ctx;
-	int64_t diff, diff_us;
+	int64_t diff_us;
+	int64_t diff;
 
 	if (log_state->flags & AUTO_TIME_SYNC_LOG_SYNCS) {
 		/* Calculate time shift */

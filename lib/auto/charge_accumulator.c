@@ -33,7 +33,8 @@ static uint32_t measurements;
 static void new_battery_data(const struct zbus_channel *chan)
 {
 	const struct tdf_battery_state *bat = zbus_chan_const_msg(chan);
-	k_ticks_t diff, pub = zbus_chan_pub_stats_last_time(chan);
+	k_ticks_t pub = zbus_chan_pub_stats_last_time(chan);
+	k_ticks_t diff;
 
 	K_SPINLOCK(&lock) {
 		diff = pub - last_measurement;
