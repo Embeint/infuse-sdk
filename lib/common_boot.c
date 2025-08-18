@@ -145,6 +145,12 @@ static int secure_fault_info_read(void)
 
 static void reboot_info_print(int query_rc)
 {
+	char thread_null[REBOOT_STATE_THREAD_NAME_MAX + 1];
+
+	/* Ensure logged name is NULL terminated */
+	strncpy(thread_null, reboot_state.thread_name, REBOOT_STATE_THREAD_NAME_MAX);
+	thread_null[REBOOT_STATE_THREAD_NAME_MAX] = '\0';
+
 	LOG_INF("");
 	LOG_INF("Reboot Information");
 	LOG_INF("\tHardware: %08X", reboot_state.hardware_reason);
@@ -154,7 +160,7 @@ static void reboot_info_print(int query_rc)
 	}
 	LOG_INF("\t   Cause: %d", reboot_state.reason);
 	LOG_INF("\t  Uptime: %d", reboot_state.uptime);
-	LOG_INF("\t  Thread: %s", reboot_state.thread_name);
+	LOG_INF("\t  Thread: %s", thread_null);
 	switch (reboot_state.info_type) {
 	case INFUSE_REBOOT_INFO_GENERIC:
 		LOG_INF("\t  Info 1: %08X", reboot_state.info.generic.info1);
