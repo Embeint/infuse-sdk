@@ -460,7 +460,11 @@ static void epacket_processor(void *a, void *b, void *c)
 	k_poll_signal_init(&bt_adv_signal_send_next);
 #endif
 
-	k_thread_name_set(NULL, "epacket_proc");
+#ifdef CONFIG_EPACKET_PROCESS_THREAD_SPLIT
+	k_thread_name_set(NULL, "ep_tx_proc");
+#else
+	k_thread_name_set(NULL, "ep_proc");
+#endif
 	infuse_watchdog_thread_register(wdog_channel, _current);
 	while (true) {
 		rc = k_poll(events, ARRAY_SIZE(events), loop_period);
@@ -511,7 +515,7 @@ static void epacket_processor_rx(void *a, void *b, void *c)
 	struct net_buf *buf;
 	int rc;
 
-	k_thread_name_set(NULL, "epacket_proc_rx");
+	k_thread_name_set(NULL, "ep_rx_proc");
 	infuse_watchdog_thread_register(wdog_channel_rx, _current);
 	while (true) {
 		rc = k_poll(events, ARRAY_SIZE(events), loop_period_rx);
