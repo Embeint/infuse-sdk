@@ -402,23 +402,24 @@ int infuse_security_init(void)
 	return 0;
 }
 
-psa_key_id_t infuse_security_derive_chacha_key(psa_key_id_t base_key, const void *salt,
-					       size_t salt_len, const void *info, size_t info_len,
-					       bool force_export)
+psa_key_id_t infuse_security_derive_key(psa_key_id_t base_key, psa_algorithm_t algorithm,
+					psa_key_type_t key_type, size_t key_bits,
+					psa_key_usage_t key_usage, const void *salt,
+					size_t salt_len, const void *info, size_t info_len,
+					bool force_export)
 {
 	psa_key_attributes_t key_attributes = PSA_KEY_ATTRIBUTES_INIT;
 	psa_key_derivation_operation_t operation = PSA_KEY_DERIVATION_OPERATION_INIT;
 	psa_key_id_t output_key = PSA_KEY_ID_NULL;
-	psa_key_usage_t usage = PSA_KEY_USAGE_ENCRYPT | PSA_KEY_USAGE_DECRYPT;
 
 	if (IS_ENABLED(CONFIG_INFUSE_SECURITY_CHACHA_KEY_EXPORT) || force_export) {
-		usage |= PSA_KEY_USAGE_EXPORT;
+		key_usage |= PSA_KEY_USAGE_EXPORT;
 	}
-	psa_set_key_usage_flags(&key_attributes, usage);
+	psa_set_key_usage_flags(&key_attributes, key_usage);
 	psa_set_key_lifetime(&key_attributes, PSA_KEY_LIFETIME_VOLATILE);
-	psa_set_key_algorithm(&key_attributes, PSA_ALG_CHACHA20_POLY1305);
-	psa_set_key_type(&key_attributes, PSA_KEY_TYPE_CHACHA20);
-	psa_set_key_bits(&key_attributes, 256);
+	psa_set_key_algorithm(&key_attributes, algorithm);
+	psa_set_key_type(&key_attributes, key_type);
+	psa_set_key_bits(&key_attributes, key_bits);
 
 	if (psa_key_derivation_setup(&operation, PSA_ALG_HKDF(PSA_ALG_SHA_256)) ||
 	    psa_key_derivation_input_bytes(&operation, PSA_KEY_DERIVATION_INPUT_SALT, salt,
@@ -431,6 +432,16 @@ psa_key_id_t infuse_security_derive_chacha_key(psa_key_id_t base_key, const void
 	}
 	psa_key_derivation_abort(&operation);
 	return output_key;
+}
+
+psa_key_id_t infuse_security_derive_chacha_key(psa_key_id_t base_key, const void *salt,
+					       size_t salt_len, const void *info, size_t info_len,
+					       bool force_export)
+{
+	return infuse_security_derive_key(base_key, PSA_ALG_CHACHA20_POLY1305,
+					  PSA_KEY_TYPE_CHACHA20, 256,
+					  PSA_KEY_USAGE_ENCRYPT | PSA_KEY_USAGE_DECRYPT, salt,
+					  salt_len, info, info_len, force_export);
 }
 
 void infuse_security_cloud_public_key(uint8_t public_key[32])

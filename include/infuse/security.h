@@ -112,6 +112,28 @@ psa_key_id_t infuse_security_secondary_network_root_key(void);
 sec_tag_t infuse_security_coap_dtls_tag(void);
 
 /**
+ * @brief Derive a key for use with PSA
+ *
+ * @param base_key Base key to use for HKDF
+ * @param algorithm Algorithm key will be used with
+ * @param key_type Type of key to generate
+ * @param key_bits Length of key to generate (bits)
+ * @param key_usage How the key will be used
+ * @param salt Key derivation randomisation
+ * @param salt_len Length of @a salt
+ * @param info Optional application/usage specific array
+ * @param info_len Length of @a info
+ * @param force_export Force set PSA_KEY_USAGE_EXPORT attribute on generated key
+ *
+ * @return psa_key_id_t Derived key identifier
+ */
+psa_key_id_t infuse_security_derive_key(psa_key_id_t base_key, psa_algorithm_t algorithm,
+					psa_key_type_t key_type, size_t key_bits,
+					psa_key_usage_t key_usage, const void *salt,
+					size_t salt_len, const void *info, size_t info_len,
+					bool force_export);
+
+/**
  * @brief Derive a key for use with ChaCha20-Poly1305
  *
  * @param base_key Base key to use for HKDF
