@@ -247,7 +247,8 @@ static inline int task_runner_task_block(struct k_poll_signal *terminate_signal,
 		K_POLL_EVENT_INITIALIZER(K_POLL_TYPE_SIGNAL, K_POLL_MODE_NOTIFY_ONLY,
 					 terminate_signal),
 	};
-	int signaled, result;
+	int signaled;
+	int result;
 
 	/* Block until requested timeout */
 	(void)k_poll(events, 1, timeout);
