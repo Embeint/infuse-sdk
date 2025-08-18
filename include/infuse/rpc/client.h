@@ -84,7 +84,7 @@ void rpc_client_init(struct rpc_client_ctx *ctx, const struct device *dev,
  *
  * @return uint32_t request ID
  */
-static inline uint32_t rpc_client_last_request_id(struct rpc_client_ctx *ctx)
+static inline uint32_t rpc_client_last_request_id(const struct rpc_client_ctx *ctx)
 {
 	return ctx->request_id;
 }
