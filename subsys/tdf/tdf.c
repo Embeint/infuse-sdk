@@ -161,10 +161,97 @@ static int tdf_num_valid_diffs(enum tdf_data_format diff_type, uint8_t tdf_len, 
 
 #endif /* CONFIG_TDF_DIFF */
 
+static int tdf_input_validate(uint16_t tdf_id, uint8_t tdf_len, uint8_t tdf_num,
+			      uint32_t idx_period, enum tdf_data_format format, uint16_t min_size,
+			      uint16_t max_space)
+{
+	/* Invalid TDF ID or idx_period */
+	if ((tdf_id == 0) || (tdf_id >= 4095) || (tdf_len == 0) || (tdf_num == 0) ||
+	    (format >= TDF_DATA_FORMAT_INVALID)) {
+		return -EINVAL;
+	}
+	/* Invalid idx_period */
+	if ((format != TDF_DATA_FORMAT_IDX_ARRAY) && (idx_period > TDF_ARRAY_TIME_PERIOD_MAX)) {
+		return -EINVAL;
+	}
+	/* TDF can never fit on the buffer */
+	if (min_size > max_space) {
+		return -ENOSPC;
+	}
+	return 0;
+}
+
+static struct tdf_header *tdf_add_header(struct tdf_buffer_state *state, uint16_t tdf_header,
+					 uint16_t tdf_id, uint8_t tdf_len, int64_t epoch_time,
+					 int32_t timestamp_delta)
+{
+	struct tdf_header *header = net_buf_simple_add(&state->buf, sizeof(struct tdf_header));
+
+	header->id_flags = tdf_header | tdf_id;
+	header->size = tdf_len;
+
+	switch (tdf_header) {
+	case TDF_TIMESTAMP_RELATIVE:
+		net_buf_simple_add_le16(&state->buf, timestamp_delta);
+		state->time = epoch_time;
+		break;
+	case TDF_TIMESTAMP_EXTENDED_RELATIVE:
+		net_buf_simple_add_le24(&state->buf, timestamp_delta);
+		state->time = epoch_time;
+		break;
+	case TDF_TIMESTAMP_ABSOLUTE:
+		struct tdf_time *t = net_buf_simple_add(&state->buf, sizeof(struct tdf_time));
+
+		t->seconds = epoch_time_seconds(epoch_time);
+		t->subseconds = epoch_time_subseconds(epoch_time);
+		state->time = epoch_time;
+		break;
+	default:
+		break;
+	}
+
+	return header;
+}
+
+static struct tdf_array_header *tdf_add_array_header(struct tdf_buffer_state *state,
+						     struct tdf_header *header, uint8_t tdf_num,
+						     uint32_t idx_period, bool is_idx, bool is_diff)
+{
+	static struct tdf_array_header *array_header_ptr;
+
+	if ((tdf_num <= 1) && !is_idx) {
+		/* No header needed */
+		return NULL;
+	}
+
+	/* Add array header */
+	array_header_ptr = net_buf_simple_add(&state->buf, sizeof(struct tdf_array_header));
+
+	if (is_idx) {
+		header->id_flags |= TDF_ARRAY_IDX;
+		/* Start sample index saved directly. 16 bit rollover is fine */
+		array_header_ptr->sample_num = (uint16_t)idx_period;
+	} else {
+		if (is_diff) {
+			header->id_flags |= TDF_ARRAY_DIFF;
+		} else {
+			header->id_flags |= TDF_ARRAY_TIME;
+		}
+		if (idx_period > TDF_ARRAY_TIME_PERIOD_VAL_MASK) {
+			array_header_ptr->period = TDF_ARRAY_TIME_PERIOD_SCALED |
+						   (idx_period / TDF_ARRAY_TIME_SCALE_FACTOR);
+		} else {
+			array_header_ptr->period = idx_period;
+		}
+	}
+	array_header_ptr->num = tdf_num;
+	return array_header_ptr;
+}
+
 int tdf_add_core(struct tdf_buffer_state *state, uint16_t tdf_id, uint8_t tdf_len, uint8_t tdf_num,
 		 uint64_t time, uint32_t idx_period, const void *data, enum tdf_data_format format)
 {
-	struct tdf_array_header *array_header_ptr = NULL;
+	struct tdf_array_header *array_header_ptr;
 	uint16_t buffer_remaining = net_buf_simple_tailroom(&state->buf);
 	uint16_t max_space = state->buf.size - (state->buf.data - state->buf.__buf);
 	uint16_t min_size =
@@ -177,6 +264,7 @@ int tdf_add_core(struct tdf_buffer_state *state, uint16_t tdf_id, uint8_t tdf_le
 	uint16_t tdf_header = TDF_TIMESTAMP_NONE;
 	bool is_idx = format == TDF_DATA_FORMAT_IDX_ARRAY;
 	bool is_diff = false;
+	int rc;
 
 #ifdef CONFIG_TDF_DIFF
 	uint8_t per_tdf_fields = 0;
@@ -194,18 +282,10 @@ int tdf_add_core(struct tdf_buffer_state *state, uint16_t tdf_id, uint8_t tdf_le
 	}
 #endif /* CONFIG_TDF_DIFF */
 
-	/* Invalid TDF ID or idx_period */
-	if ((tdf_id == 0) || (tdf_id >= 4095) || (tdf_len == 0) || (tdf_num == 0) ||
-	    (format >= TDF_DATA_FORMAT_INVALID)) {
-		return -EINVAL;
-	}
-	/* Invalid idx_period */
-	if ((format != TDF_DATA_FORMAT_IDX_ARRAY) && (idx_period > TDF_ARRAY_TIME_PERIOD_MAX)) {
-		return -EINVAL;
-	}
-	/* TDF can never fit on the buffer */
-	if (min_size > max_space) {
-		return -ENOSPC;
+	/* Input validation */
+	rc = tdf_input_validate(tdf_id, tdf_len, tdf_num, idx_period, format, min_size, max_space);
+	if (rc < 0) {
+		return rc;
 	}
 
 	/* Evaluate header sizes assuming all data will fit */
@@ -314,55 +394,13 @@ int tdf_add_core(struct tdf_buffer_state *state, uint16_t tdf_id, uint8_t tdf_le
 #endif /* CONFIG_TDF_DIFF */
 	}
 
-	/* Log data */
-	struct tdf_header *header = net_buf_simple_add(&state->buf, sizeof(struct tdf_header));
+	/* Base Headers */
+	struct tdf_header *header =
+		tdf_add_header(state, tdf_header, tdf_id, tdf_len, time, timestamp_delta);
 
-	header->id_flags = tdf_header | tdf_id;
-	header->size = tdf_len;
-
-	switch (tdf_header) {
-	case TDF_TIMESTAMP_RELATIVE:
-		net_buf_simple_add_le16(&state->buf, timestamp_delta);
-		state->time = time;
-		break;
-	case TDF_TIMESTAMP_EXTENDED_RELATIVE:
-		net_buf_simple_add_le24(&state->buf, timestamp_delta);
-		state->time = time;
-		break;
-	case TDF_TIMESTAMP_ABSOLUTE:
-		struct tdf_time *t = net_buf_simple_add(&state->buf, sizeof(struct tdf_time));
-
-		t->seconds = epoch_time_seconds(time);
-		t->subseconds = epoch_time_subseconds(time);
-		state->time = time;
-		break;
-	default:
-		break;
-	}
-	/* Add array header */
-	if ((tdf_num > 1) || is_idx) {
-		array_header_ptr = net_buf_simple_add(&state->buf, sizeof(struct tdf_array_header));
-
-		if (is_idx) {
-			header->id_flags |= TDF_ARRAY_IDX;
-			/* Start sample index saved directly. 16 bit rollover is fine */
-			array_header_ptr->sample_num = (uint16_t)idx_period;
-		} else {
-			if (is_diff) {
-				header->id_flags |= TDF_ARRAY_DIFF;
-			} else {
-				header->id_flags |= TDF_ARRAY_TIME;
-			}
-			if (idx_period > TDF_ARRAY_TIME_PERIOD_VAL_MASK) {
-				array_header_ptr->period =
-					TDF_ARRAY_TIME_PERIOD_SCALED |
-					(idx_period / TDF_ARRAY_TIME_SCALE_FACTOR);
-			} else {
-				array_header_ptr->period = idx_period;
-			}
-		}
-		array_header_ptr->num = tdf_num;
-	}
+	/* Array headers (optional) */
+	array_header_ptr =
+		tdf_add_array_header(state, header, tdf_num, idx_period, is_idx, is_diff);
 
 #ifdef CONFIG_TDF_DIFF
 	if (is_diff && tdf_num > 1) {
