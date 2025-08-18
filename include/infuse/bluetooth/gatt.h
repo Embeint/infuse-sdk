@@ -123,6 +123,7 @@ int bt_conn_disconnect_sync(struct bt_conn *conn);
  * @brief Wait for a connection to disconnect, without initiating it
  *
  * @param conn Connection object to wait for
+ * @param timeout Duration to wait for
  *
  * @retval 0 on success
  * @retval -errno Error code @a bt_conn_disconnect
