@@ -31,68 +31,66 @@ static void ubx_modem_pipe_callback(struct modem_pipe *pipe, enum modem_pipe_eve
 	}
 }
 
-static void ubx_msg_handle(struct ubx_modem_data *modem, struct ubx_frame *frame,
-			   uint16_t payload_len)
+static void ubx_msg_handle_ack(struct ubx_modem_data *modem, struct ubx_frame *frame,
+			       uint16_t payload_len)
 {
-	struct ubx_message_handler_ctx *curr, *tmp;
 	struct ubx_message_handler_ctx *to_run[CONFIG_GNSS_UBX_MODEM_MAX_CALLBACKS] = {0};
-	int num_to_run, rc;
+	struct ubx_message_handler_ctx *curr;
+	struct ubx_message_handler_ctx *tmp;
+	int rc;
+
+	/* ACK-ACK and ACK-NAK have the same payload structures */
+	const struct ubx_msg_id_ack_ack *ack = (const void *)frame->payload_and_checksum;
+
+	/* Iterate over all one shot handlers */
+	k_sem_take(&modem->handlers_sem, K_FOREVER);
+	SYS_SLIST_FOR_EACH_CONTAINER_SAFE(&modem->handlers, curr, tmp, _node) {
+		/* Only consider handlers expecting an ACK */
+		if (!(curr->flags & (UBX_HANDLING_ACK | UBX_HANDLING_RSP_ACK))) {
+			continue;
+		}
+		/* Check message that was acked against handler */
+		if ((ack->message_class == curr->message_class) &&
+		    (ack->message_id == curr->message_id)) {
+			/* Remove from handler list */
+			sys_slist_find_and_remove(&modem->handlers, &curr->_node);
+			/* Store the one-shot handler that should be run */
+			to_run[0] = curr;
+			break;
+		}
+	}
+	k_sem_give(&modem->handlers_sem);
+
+	if (to_run[0]) {
+		/* If UBX_HANDLING_RSP_ACK, handler was for the main response */
+		ubx_message_handler_t cb = curr->flags & UBX_HANDLING_RSP_ACK
+						   ? ubx_modem_ack_handler
+						   : curr->message_cb;
+		/* Run callback */
+		rc = cb(frame->message_class, frame->message_id, frame->payload_and_checksum,
+			payload_len, curr->user_data);
+		/* Raise signal if provided */
+		if (curr->signal) {
+			k_poll_signal_raise(curr->signal, rc);
+		}
+	} else {
+		if (!IS_ENABLED(CONFIG_GNSS_UBX_RAW_FRAME_HANDLER)) {
+			LOG_WRN("Unhandled ACK for %02x:%02x", ack->message_class, ack->message_id);
+		}
+	}
+}
+
+static void ubx_msg_handle_non_ack(struct ubx_modem_data *modem, struct ubx_frame *frame,
+				   uint16_t payload_len)
+{
+	struct ubx_message_handler_ctx *to_run[CONFIG_GNSS_UBX_MODEM_MAX_CALLBACKS] = {0};
+	struct ubx_message_handler_ctx *curr;
+	struct ubx_message_handler_ctx *tmp;
+	int num_to_run = 0;
 	bool notify;
-
-#ifdef CONFIG_GNSS_UBX_RAW_FRAME_HANDLER
-	{
-		uint16_t total_len = sizeof(*frame) + payload_len + sizeof(uint16_t);
-
-		ubx_modem_raw_frame_handler(frame, total_len);
-	}
-#endif /* CONFIG_GNSS_UBX_RAW_FRAME_HANDLER*/
-
-	if (frame->message_class == UBX_MSG_CLASS_ACK) {
-		/* ACK-ACK and ACK-NAK have the same payload structures */
-		const struct ubx_msg_id_ack_ack *ack = (const void *)frame->payload_and_checksum;
-
-		/* Iterate over all one shot handlers */
-		k_sem_take(&modem->handlers_sem, K_FOREVER);
-		SYS_SLIST_FOR_EACH_CONTAINER_SAFE(&modem->handlers, curr, tmp, _node) {
-			/* Only consider handlers expecting an ACK */
-			if (!(curr->flags & (UBX_HANDLING_ACK | UBX_HANDLING_RSP_ACK))) {
-				continue;
-			}
-			/* Check message that was acked against handler */
-			if ((ack->message_class == curr->message_class) &&
-			    (ack->message_id == curr->message_id)) {
-				/* Remove from handler list */
-				sys_slist_find_and_remove(&modem->handlers, &curr->_node);
-				/* Store the one-shot handler that should be run */
-				to_run[0] = curr;
-				break;
-			}
-		}
-		k_sem_give(&modem->handlers_sem);
-
-		if (to_run[0]) {
-			/* If UBX_HANDLING_RSP_ACK, handler was for the main response */
-			ubx_message_handler_t cb = curr->flags & UBX_HANDLING_RSP_ACK
-							   ? ubx_modem_ack_handler
-							   : curr->message_cb;
-			/* Run callback */
-			rc = cb(frame->message_class, frame->message_id,
-				frame->payload_and_checksum, payload_len, curr->user_data);
-			/* Raise signal if provided */
-			if (curr->signal) {
-				k_poll_signal_raise(curr->signal, rc);
-			}
-		} else {
-			if (!IS_ENABLED(CONFIG_GNSS_UBX_RAW_FRAME_HANDLER)) {
-				LOG_WRN("Unhandled ACK for %02x:%02x", ack->message_class,
-					ack->message_id);
-			}
-		}
-		return;
-	}
+	int rc;
 
 	/* Iterate over all pending message callbacks */
-	num_to_run = 0;
 	k_sem_take(&modem->handlers_sem, K_FOREVER);
 	SYS_SLIST_FOR_EACH_CONTAINER_SAFE(&modem->handlers, curr, tmp, _node) {
 		/* Notify if:
@@ -137,6 +135,47 @@ static void ubx_msg_handle(struct ubx_modem_data *modem, struct ubx_frame *frame
 	}
 }
 
+static void ubx_msg_handle(struct ubx_modem_data *modem, struct ubx_frame *frame,
+			   uint16_t payload_len)
+{
+#ifdef CONFIG_GNSS_UBX_RAW_FRAME_HANDLER
+	{
+		uint16_t total_len = sizeof(*frame) + payload_len + sizeof(uint16_t);
+
+		ubx_modem_raw_frame_handler(frame, total_len);
+	}
+#endif /* CONFIG_GNSS_UBX_RAW_FRAME_HANDLER*/
+
+	if (frame->message_class == UBX_MSG_CLASS_ACK) {
+		ubx_msg_handle_ack(modem, frame, payload_len);
+	} else {
+		ubx_msg_handle_non_ack(modem, frame, payload_len);
+	}
+}
+
+static bool fifo_read_to_sync(struct ubx_modem_data *modem, struct ubx_frame *frame)
+{
+	/* Pull single bytes until sync bytes found */
+	while (modem->rx_buffer_pending < 2) {
+		if (modem_pipe_receive(modem->pipe, modem->rx_buffer + modem->rx_buffer_pending,
+				       1) <= 0) {
+			return true;
+		}
+
+		if ((modem->rx_buffer_pending) == 0 &&
+		    (frame->preamble_sync_char_1 != UBX_PREAMBLE_SYNC_CHAR_1)) {
+			continue;
+		}
+		if ((modem->rx_buffer_pending) == 1 &&
+		    (frame->preamble_sync_char_2 != UBX_PREAMBLE_SYNC_CHAR_2)) {
+			modem->rx_buffer_pending = 0;
+			continue;
+		}
+		modem->rx_buffer_pending++;
+	}
+	return false;
+}
+
 static void fifo_read_runner(struct k_work *work)
 {
 	struct ubx_modem_data *modem = CONTAINER_OF(work, struct ubx_modem_data, fifo_read_worker);
@@ -147,24 +186,9 @@ static void fifo_read_runner(struct k_work *work)
 	int received;
 
 	while (true) {
-		/* Pull single bytes until sync bytes found */
-		while (modem->rx_buffer_pending < 2) {
-			if (modem_pipe_receive(modem->pipe,
-					       modem->rx_buffer + modem->rx_buffer_pending,
-					       1) <= 0) {
-				return;
-			}
-
-			if ((modem->rx_buffer_pending) == 0 &&
-			    (frame->preamble_sync_char_1 != UBX_PREAMBLE_SYNC_CHAR_1)) {
-				continue;
-			}
-			if ((modem->rx_buffer_pending) == 1 &&
-			    (frame->preamble_sync_char_2 != UBX_PREAMBLE_SYNC_CHAR_2)) {
-				modem->rx_buffer_pending = 0;
-				continue;
-			}
-			modem->rx_buffer_pending++;
+		/* Read until we see SYNC bytes */
+		if (fifo_read_to_sync(modem, frame)) {
+			return;
 		}
 
 		/* Pull remainder of frame header */
