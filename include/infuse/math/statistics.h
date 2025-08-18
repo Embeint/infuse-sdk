@@ -66,7 +66,7 @@ void statistics_update(struct statistics_state *state, int32_t value);
  *
  * @return float Mean of samples
  */
-static inline float statistics_mean(struct statistics_state *state)
+static inline float statistics_mean(const struct statistics_state *state)
 {
 	if (state->n == 0) {
 		return 0.0f;
@@ -83,7 +83,7 @@ static inline float statistics_mean(struct statistics_state *state)
  *
  * @return float Variance of samples
  */
-static inline float statistics_variance(struct statistics_state *state)
+static inline float statistics_variance(const struct statistics_state *state)
 {
 	if (state->n < 2) {
 		return 0.0f;
@@ -108,7 +108,7 @@ static inline float statistics_variance(struct statistics_state *state)
  *
  * @return uint32_t Approximate mean of samples
  */
-static inline int32_t statistics_mean_rough(struct statistics_state *state)
+static inline int32_t statistics_mean_rough(const struct statistics_state *state)
 {
 	return state->m;
 }
@@ -128,7 +128,7 @@ static inline int32_t statistics_mean_rough(struct statistics_state *state)
  *
  * @return uint64_t Approximate variance of samples
  */
-static inline uint64_t statistics_variance_rough(struct statistics_state *state)
+static inline uint64_t statistics_variance_rough(const struct statistics_state *state)
 {
 	if (state->n < 2) {
 		return 0;
