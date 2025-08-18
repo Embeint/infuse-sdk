@@ -14,6 +14,7 @@
 #include <zephyr/kernel.h>
 #include <zephyr/net_buf.h>
 #include <zephyr/modem/pipe.h>
+#include <zephyr/modem/ubx.h>
 #include <zephyr/sys/ring_buffer.h>
 
 #ifdef __cplusplus
@@ -249,8 +250,6 @@ int ubx_modem_send_async_poll(struct ubx_modem_data *modem, uint8_t message_clas
 			      struct ubx_message_handler_ctx *handler_ctx);
 
 #ifdef CONFIG_GNSS_UBX_RAW_FRAME_HANDLER
-
-#include <zephyr/modem/ubx.h>
 
 /**
  * @brief Function prototype for raw UBX frame handler

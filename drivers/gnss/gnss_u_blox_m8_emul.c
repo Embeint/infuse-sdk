@@ -19,6 +19,7 @@
 
 #include <infuse/gnss/ubx/modem.h>
 #include <infuse/gnss/ubx/protocol.h>
+#include <infuse/drivers/gnss/gnss_emul.h>
 
 struct emul_config {
 };
@@ -44,7 +45,9 @@ LOG_MODULE_REGISTER(ubx_m8_emul, LOG_LEVEL_INF);
 static void message_dispatch(struct emul_data *data, uint8_t msg_class, uint8_t msg_id, void *msg,
 			     size_t msg_len)
 {
-	struct ubx_message_handler_ctx *curr, *tmp, *prev = NULL;
+	struct ubx_message_handler_ctx *curr;
+	struct ubx_message_handler_ctx *tmp;
+	struct ubx_message_handler_ctx *prev = NULL;
 	bool notify;
 	int rc;
 
@@ -123,22 +126,20 @@ struct ubx_modem_data *ubx_modem_data_get(const struct device *dev)
 	return dev->data;
 }
 
-void emul_gnss_pvt_configure(const struct device *dev, int32_t latitude, int32_t longitude,
-			     int32_t height, uint32_t h_acc, uint32_t v_acc, uint32_t t_acc,
-			     uint16_t p_dop, uint8_t num_sv)
+void emul_gnss_pvt_configure(const struct device *dev, struct gnss_pvt_emul_location *emul_location)
 {
 	struct emul_data *data = dev->data;
 
-	data->current_pvt.lat = latitude;
-	data->current_pvt.lon = longitude;
-	data->current_pvt.height = height;
-	data->current_pvt.h_acc = h_acc;
-	data->current_pvt.v_acc = v_acc;
-	data->current_pvt.t_acc = t_acc;
-	data->current_pvt.p_dop = p_dop;
-	data->current_pvt.num_sv = num_sv;
+	data->current_pvt.lat = emul_location->latitude;
+	data->current_pvt.lon = emul_location->longitude;
+	data->current_pvt.height = emul_location->height;
+	data->current_pvt.h_acc = emul_location->h_acc;
+	data->current_pvt.v_acc = emul_location->v_acc;
+	data->current_pvt.t_acc = emul_location->t_acc;
+	data->current_pvt.p_dop = emul_location->p_dop;
+	data->current_pvt.num_sv = emul_location->num_sv;
 
-	data->current_pvt.valid = t_acc < (2 * NSEC_PER_MSEC)
+	data->current_pvt.valid = emul_location->t_acc < (2 * NSEC_PER_MSEC)
 					  ? UBX_MSG_NAV_PVT_VALID_DATE | UBX_MSG_NAV_PVT_VALID_TIME
 					  : 0;
 }
@@ -291,12 +292,14 @@ static int emul_pm_control(const struct device *dev, enum pm_device_action actio
 {
 	struct emul_data *data = dev->data;
 	int rc = data->pm_rc;
+	struct gnss_pvt_emul_location emul_loc = {
+		0, 0, 0, UINT32_MAX, UINT32_MAX, UINT32_MAX, UINT16_MAX, 0,
+	};
 
 	switch (action) {
 	case PM_DEVICE_ACTION_RESUME:
 		/* Reset state on resume */
-		emul_gnss_pvt_configure(dev, 0, 0, 0, UINT32_MAX, UINT32_MAX, UINT32_MAX,
-					UINT16_MAX, 0);
+		emul_gnss_pvt_configure(dev, &emul_loc);
 		navigation_reschedule(data);
 		break;
 	case PM_DEVICE_ACTION_SUSPEND:

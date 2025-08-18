@@ -33,22 +33,26 @@ extern "C" {
  */
 void emul_gnss_ubx_dev_ptrs(const struct device *dev, int **pm_rc, int **comms_reset_cnt);
 
+/** Emulated GNSS parameters */
+struct gnss_pvt_emul_location {
+	int32_t latitude;
+	int32_t longitude;
+	int32_t height;
+	uint32_t h_acc;
+	uint32_t v_acc;
+	uint32_t t_acc;
+	uint16_t p_dop;
+	uint8_t num_sv;
+};
+
 /**
  * @brief Configure the currently output PVT message
  *
  * @param dev Emulated GNSS device
- * @param latitude Latitude (scaled by 1e7)
- * @param longitude Longitude (scaled by 1e7)
- * @param height Height (mm)
- * @param h_acc Horizontal accuracy (mm)
- * @param v_acc Vertical accuracy (mm)
- * @param t_acc Time accuracy (nanoseconds)
- * @param p_dop Position dilution of precision
- * @param num_sv Number of satellite vehicles
+ * @param emul_location Emulated location
  */
-void emul_gnss_pvt_configure(const struct device *dev, int32_t latitude, int32_t longitude,
-			     int32_t height, uint32_t h_acc, uint32_t v_acc, uint32_t t_acc,
-			     uint16_t p_dop, uint8_t num_sv);
+void emul_gnss_pvt_configure(const struct device *dev,
+			     struct gnss_pvt_emul_location *emul_location);
 
 /**
  * @}
