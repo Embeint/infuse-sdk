@@ -658,7 +658,7 @@ BUILD_ASSERT(sizeof(struct ubx_msg_nav_sat) == 8);
 
 enum ubx_msg_nav_sat_sv_flags {
 	/** Signal quality indicator */
-	UBX_MSG_NAV_SAT_FLAGS_QUALITY_IND_MASK = (0x7),
+	UBX_MSG_NAV_SAT_FLAGS_QUALITY_IND_MASK = 0x7,
 	UBX_MSG_NAV_SAT_FLAGS_QUALITY_IND_NO_SIGNAL = 0,
 	UBX_MSG_NAV_SAT_FLAGS_QUALITY_IND_SEARCHING = 1,
 	UBX_MSG_NAV_SAT_FLAGS_QUALITY_IND_ACQUIRED = 2,
@@ -830,9 +830,10 @@ static inline void ubx_msg_prepare(struct net_buf_simple *buf, uint8_t msg_class
  */
 static inline void ubx_msg_finalise(struct net_buf_simple *buf)
 {
-	uint8_t ckA = 0, ckB = 0;
 	struct ubx_frame *frame;
 	uint16_t payload_size;
+	uint8_t ckA = 0;
+	uint8_t ckB = 0;
 
 	frame = (void *)buf->data;
 	__ASSERT_NO_MSG(frame->preamble_sync_char_1 == UBX_PREAMBLE_SYNC_CHAR_1);

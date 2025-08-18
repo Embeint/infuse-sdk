@@ -106,7 +106,8 @@ static void run_location_fix(k_tid_t thread, int32_t latitude, int32_t longitude
 			     uint32_t plateau_start, uint32_t plateau_slope, uint32_t plateau_end,
 			     uint32_t final_accuracy, uint8_t final_num_sv)
 {
-	uint32_t accuracy;
+	struct gnss_pvt_emul_location emul_loc = {0,          0, UINT32_MAX, UINT32_MAX,
+						  UINT32_MAX, 0, UINT16_MAX, 0};
 
 	/* Wait 20 seconds to simulate cold boot */
 	if (task_wait(thread, K_SECONDS(20))) {
@@ -114,49 +115,62 @@ static void run_location_fix(k_tid_t thread, int32_t latitude, int32_t longitude
 	}
 
 	/* Initially has some time knowledge */
-	emul_gnss_pvt_configure(DEV, 0, 0, UINT32_MAX, UINT32_MAX, UINT32_MAX, 100 * NSEC_PER_MSEC,
-				UINT16_MAX, 0);
+	emul_loc.t_acc = 100 * NSEC_PER_MSEC;
+	emul_gnss_pvt_configure(DEV, &emul_loc);
 	if (task_wait(thread, K_SECONDS(1))) {
 		return;
 	}
-	emul_gnss_pvt_configure(DEV, 0, 0, UINT32_MAX, UINT32_MAX, UINT32_MAX, 1 * NSEC_PER_MSEC,
-				UINT16_MAX, 0);
+	emul_loc.t_acc = 1 * NSEC_PER_MSEC;
+	emul_gnss_pvt_configure(DEV, &emul_loc);
 	if (task_wait(thread, K_SECONDS(4))) {
 		return;
 	}
 	/* Poor initial fix, 100ms time accuracy */
-	emul_gnss_pvt_configure(DEV, latitude, longitude, height, 15 * KM, 500 * M,
-				100 * NSEC_PER_MSEC, 1000, 3);
+	emul_loc.latitude = latitude;
+	emul_loc.longitude = longitude;
+	emul_loc.height = height;
+	emul_loc.h_acc = 15 * KM;
+	emul_loc.v_acc = 500 * M;
+	emul_loc.t_acc = 100 * NSEC_PER_MSEC;
+	emul_loc.p_dop = 1000;
+	emul_loc.num_sv = 3;
+	emul_gnss_pvt_configure(DEV, &emul_loc);
 	if (task_wait(thread, K_SECONDS(5))) {
 		return;
 	}
 	/* Quickly improve from 200m to plateau value */
-	accuracy = 100 * M;
-	while (accuracy >= plateau_start) {
-		emul_gnss_pvt_configure(DEV, latitude, longitude, height, accuracy, 100 * M,
-					10 * NSEC_PER_MSEC, 500, 3);
+	emul_loc.h_acc = 100 * M;
+	emul_loc.t_acc = 10 * NSEC_PER_MSEC;
+	emul_loc.p_dop = 500;
+	while (emul_loc.h_acc >= plateau_start) {
+		emul_gnss_pvt_configure(DEV, &emul_loc);
 		if (task_wait(thread, K_SECONDS(1))) {
 			return;
 		}
-		accuracy -= 20 * M;
+		emul_loc.h_acc -= 20 * M;
 	}
 
 	/* Plateau the improvmement, 50ns time accuracy */
-	accuracy = plateau_start;
-	while (accuracy > plateau_end) {
-		emul_gnss_pvt_configure(DEV, latitude, longitude, height, accuracy, 50 * M, 50, 150,
-					8);
+	emul_loc.h_acc = plateau_start;
+	emul_loc.v_acc = 50 * M;
+	emul_loc.t_acc = 50;
+	emul_loc.p_dop = 150;
+	emul_loc.num_sv = 8;
+	while (emul_loc.h_acc > plateau_end) {
+		emul_gnss_pvt_configure(DEV, &emul_loc);
 		if (task_wait(thread, K_SECONDS(1))) {
 			return;
 		}
-		accuracy -= plateau_slope;
+		emul_loc.h_acc -= plateau_slope;
 	}
 
 	/* Improve the accuracy until we hit final accuracy */
-	while (accuracy > final_accuracy) {
-		accuracy -= 2 * M;
-		emul_gnss_pvt_configure(DEV, latitude, longitude, height, accuracy, 10 * M, 50, 50,
-					final_num_sv);
+	emul_loc.v_acc = 10 * M;
+	emul_loc.p_dop = 50;
+	emul_loc.num_sv = final_num_sv;
+	while (emul_loc.h_acc > final_accuracy) {
+		emul_loc.h_acc -= 2 * M;
+		emul_gnss_pvt_configure(DEV, &emul_loc);
 		if (task_wait(thread, K_SECONDS(1))) {
 			return;
 		}
@@ -559,13 +573,15 @@ static void logger_before(void *fixture)
 	}
 
 #ifdef CONFIG_GNSS_NRF9X_EMUL
+	struct gnss_pvt_emul_location emul_loc = {0};
 	/* nRF modem reports all fields as 0 on boot */
-	emul_gnss_pvt_configure(DEV, 0, 0, 0, 0, 0, 0, 0, 0);
+	emul_gnss_pvt_configure(DEV, &emul_loc);
 #endif /* CONFIG_GNSS_NRF9X_EMUL */
 #ifdef CONFIG_GNSS_UBX_MODEM_EMUL
+	struct gnss_pvt_emul_location emul_loc = {0,          0,          UINT32_MAX, UINT32_MAX,
+						  UINT32_MAX, UINT32_MAX, UINT16_MAX, 0};
 	/* UBX modem reports all fields as 1 on boot */
-	emul_gnss_pvt_configure(DEV, 0, 0, UINT32_MAX, UINT32_MAX, UINT32_MAX, UINT32_MAX,
-				UINT16_MAX, 0);
+	emul_gnss_pvt_configure(DEV, &emul_loc);
 #endif /* CONFIG_GNSS_UBX_MODEM_EMUL */
 }
 

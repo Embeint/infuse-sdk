@@ -53,8 +53,9 @@ static int get_fix_rate_handler(uint8_t message_class, uint8_t message_id, const
 	uint32_t *fix_interval_ms = user_data;
 	const uint8_t *val_ptr = valget->cfg_data;
 	size_t val_len = payload_len - sizeof(*valget);
-	uint16_t meas = 0, nav = 0;
 	struct ubx_cfg_val cfg_val;
+	uint16_t meas = 0;
+	uint16_t nav = 0;
 
 	__ASSERT_NO_MSG(valget->version == 0x01);
 
@@ -400,7 +401,8 @@ static int ubx_m10_i2c_software_standby(const struct device *dev)
 					 &data->common.mon_rxr_signal),
 	};
 	unsigned int signaled;
-	int result, rc;
+	int result;
+	int rc;
 
 	/* Reset previous events */
 	k_poll_signal_reset(&data->common.mon_rxr_signal);

@@ -602,7 +602,7 @@ struct ubx_cfg_val {
  * uint16_t val_len = buffer_len;
  *
  * while (ubx_cfg_val_parse(&val_ptr, &val_len, &cfg_val) == 0) {
- *     // Handle cfg_val
+ *     Handle cfg_val here...
  * }
  * @endcode
  *

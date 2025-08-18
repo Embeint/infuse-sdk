@@ -209,7 +209,8 @@ static int get_gnss_handler(uint8_t message_class, uint8_t message_id, const voi
 			    size_t payload_len, void *user_data)
 {
 	const struct ubx_msg_cfg_gnss *gnss = payload;
-	gnss_systems_t out = 0, *systems = user_data;
+	gnss_systems_t *systems = user_data;
+	gnss_systems_t out = 0;
 
 	for (int i = 0; i < gnss->num_cfg_blocks; i++) {
 		uint8_t gnss_id = gnss->configs[i].gnss_id;
@@ -367,7 +368,8 @@ static int ubx_m8_spi_software_standby(const struct device *dev)
 					 &data->common.mon_rxr_signal),
 	};
 	unsigned int signaled;
-	int result, rc;
+	int result;
+	int rc;
 
 	/* Reset previous events */
 	k_poll_signal_reset(&data->common.mon_rxr_signal);
@@ -406,7 +408,8 @@ static int ubx_m8_spi_software_resume(const struct device *dev)
 					 &data->common.mon_rxr_signal),
 	};
 	unsigned int signaled;
-	int result, rc;
+	int result;
+	int rc;
 
 	/* Reset previous events */
 	k_poll_signal_reset(&data->common.mon_rxr_signal);

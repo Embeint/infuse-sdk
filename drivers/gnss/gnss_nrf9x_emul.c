@@ -16,11 +16,13 @@
 #include <nrf_modem_gnss.h>
 #include <modem/lte_lc.h>
 
+#include <infuse/drivers/gnss/gnss_emul.h>
+
 #define DT_DRV_COMPAT nordic_nrf9x_gnss_emul
 
 #define SUPPORTED_SYSTEMS (GNSS_SYSTEM_GPS | GNSS_SYSTEM_QZSS)
 
-static struct nrf9x_data {
+struct nrf9x_data {
 	nrf_modem_gnss_event_handler_type_t handler;
 	struct nrf_modem_gnss_pvt_data_frame pvt_frame;
 	struct k_work_delayable worker;
@@ -28,25 +30,25 @@ static struct nrf9x_data {
 	k_ticks_t latest_timepulse;
 	uint64_t next_interrupt;
 	uint16_t interval;
-} nrf9x_inst_data;
+};
 
-void emul_gnss_pvt_configure(const struct device *dev, int32_t latitude, int32_t longitude,
-			     int32_t height, uint32_t h_acc, uint32_t v_acc, uint32_t t_acc,
-			     uint16_t p_dop, uint8_t num_sv)
+static struct nrf9x_data nrf9x_inst_data;
+
+void emul_gnss_pvt_configure(const struct device *dev, struct gnss_pvt_emul_location *emul_location)
 {
 	struct nrf_modem_gnss_pvt_data_frame *f = &nrf9x_inst_data.pvt_frame;
 
-	f->latitude = (double)latitude / 1e7;
-	f->longitude = (double)longitude / 1e7;
-	f->altitude = (float)height / 1e3f;
-	f->accuracy = (float)h_acc / 1e3f;
-	f->altitude_accuracy = (float)v_acc / 1e3f;
-	f->pdop = (float)p_dop / 10.0f;
-	f->hdop = (float)p_dop / 10.0f;
+	f->latitude = (double)emul_location->latitude / 1e7;
+	f->longitude = (double)emul_location->longitude / 1e7;
+	f->altitude = (float)emul_location->height / 1e3f;
+	f->accuracy = (float)emul_location->h_acc / 1e3f;
+	f->altitude_accuracy = (float)emul_location->v_acc / 1e3f;
+	f->pdop = (float)emul_location->p_dop / 10.0f;
+	f->hdop = (float)emul_location->p_dop / 10.0f;
 	/* Not a real conversion, but should work for our purposes */
-	f->tdop = (float)t_acc / 1000.0f;
+	f->tdop = (float)emul_location->t_acc / 1000.0f;
 
-	if (t_acc) {
+	if (emul_location->t_acc) {
 		f->datetime.year = 2025;
 		f->datetime.month = 2;
 		f->datetime.day = 1;
@@ -54,7 +56,8 @@ void emul_gnss_pvt_configure(const struct device *dev, int32_t latitude, int32_t
 	}
 
 	for (int i = 0; i < ARRAY_SIZE(f->sv); i++) {
-		f->sv[i].flags = (i < num_sv) ? NRF_MODEM_GNSS_SV_FLAG_USED_IN_FIX : 0;
+		f->sv[i].flags =
+			(i < emul_location->num_sv) ? NRF_MODEM_GNSS_SV_FLAG_USED_IN_FIX : 0;
 	}
 }
 
@@ -90,6 +93,8 @@ int32_t nrf_modem_gnss_event_handler_set(nrf_modem_gnss_event_handler_type_t han
 
 int32_t nrf_modem_gnss_use_case_set(uint8_t use_case)
 {
+	ARG_UNUSED(use_case);
+
 	return 0;
 }
 
