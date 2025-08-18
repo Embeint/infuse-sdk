@@ -212,8 +212,9 @@ static inline int16_t imu_accelerometer_1g(uint8_t full_scale)
 		return 4096;
 	case 16:
 		return 2048;
+	default:
+		return -1;
 	}
-	return -1;
 }
 
 /**
