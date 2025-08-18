@@ -425,9 +425,9 @@ static int run_test_sequence(const struct device *dev, struct lis2dw12_fifo_fram
 
 	/* Output in milli-gs */
 	one_g = imu_accelerometer_1g(4);
-	average->x = (1000 * (int32_t)sum_x / 5) / one_g;
-	average->y = (1000 * (int32_t)sum_y / 5) / one_g;
-	average->z = (1000 * (int32_t)sum_z / 5) / one_g;
+	average->x = (1000 * sum_x / 5) / one_g;
+	average->y = (1000 * sum_y / 5) / one_g;
+	average->z = (1000 * sum_z / 5) / one_g;
 	return 0;
 }
 

@@ -581,7 +581,8 @@ static int lsm6dso_self_test_acc(const struct device *dev)
 	int16_t raw_positive[6][3] = {0};
 	int32_t avg_base[3] = {0};
 	int32_t avg_positive[3] = {0};
-	int16_t mg_positive[3], mg_base[3];
+	int16_t mg_positive[3];
+	int16_t mg_base[3];
 	int16_t mg_difference[3];
 	uint8_t reg_val;
 	int16_t one_g;
@@ -666,8 +667,8 @@ static int lsm6dso_self_test_acc(const struct device *dev)
 	/* Convert raw register readings to milli-g */
 	one_g = imu_accelerometer_1g(4);
 	for (int i = 0; i < 3; i++) {
-		mg_positive[i] = (1000 * (int32_t)avg_positive[i]) / one_g;
-		mg_base[i] = (1000 * (int32_t)avg_base[i]) / one_g;
+		mg_positive[i] = (1000 * avg_positive[i]) / one_g;
+		mg_base[i] = (1000 * avg_base[i]) / one_g;
 		mg_difference[i] = mg_positive[i] - mg_base[i];
 	}
 
@@ -697,7 +698,8 @@ static int lsm6dso_self_test_gyr(const struct device *dev)
 	int16_t raw_positive[6][3] = {0};
 	int32_t avg_base[3] = {0};
 	int32_t avg_positive[3] = {0};
-	int16_t mg_positive[3], mg_base[3];
+	int16_t mg_positive[3];
+	int16_t mg_base[3];
 	int16_t mg_difference[3];
 	uint8_t reg_val;
 	int rc;
@@ -780,8 +782,8 @@ static int lsm6dso_self_test_gyr(const struct device *dev)
 
 	/* Convert raw register readings to dps */
 	for (int i = 0; i < 3; i++) {
-		mg_positive[i] = (2000 * (int32_t)avg_positive[i]) / (INT16_MAX + 1);
-		mg_base[i] = (2000 * (int32_t)avg_base[i]) / (INT16_MAX + 1);
+		mg_positive[i] = (2000 * avg_positive[i]) / (INT16_MAX + 1);
+		mg_base[i] = (2000 * avg_base[i]) / (INT16_MAX + 1);
 		mg_difference[i] = mg_positive[i] - mg_base[i];
 	}
 
