@@ -21,8 +21,6 @@
 
 #include "lis2dw12.h"
 
-#define FIFO_SAMPLES MIN(LIS2DW12_FIFO_FRAME_SIZE, CONFIG_INFUSE_IMU_MAX_FIFO_SAMPLES)
-
 struct lis2dw12_config {
 	union lis2dw12_bus bus;
 	const struct lis2dw12_bus_io *bus_io;
@@ -39,7 +37,7 @@ struct lis2dw12_data {
 	uint16_t acc_time_scale;
 	uint8_t accel_range;
 	uint8_t fifo_threshold;
-	struct lis2dw12_fifo_frame fifo_data_buffer[FIFO_SAMPLES];
+	struct lis2dw12_fifo_frame fifo_data_buffer[LIS2DW12_FIFO_FRAME_SIZE];
 };
 
 struct sensor_config {
@@ -259,7 +257,7 @@ int lis2dw12_configure(const struct device *dev, const struct imu_config *imu_cf
 	 * to read data before the FIFO is full and we lose all knowledge of how many FIFO frames
 	 * were dropped.
 	 */
-	data->fifo_threshold = MIN((FIFO_SAMPLES - 1), imu_cfg->fifo_sample_buffer);
+	data->fifo_threshold = MIN((LIS2DW12_FIFO_FRAME_SIZE - 1), imu_cfg->fifo_sample_buffer);
 
 	config_regs = accel_conf(dev, imu_cfg->accelerometer.sample_rate_hz,
 				 imu_cfg->accelerometer.full_scale_range,

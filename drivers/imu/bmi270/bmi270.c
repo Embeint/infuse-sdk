@@ -496,7 +496,9 @@ int bmi270_data_read(const struct device *dev, struct imu_sample_array *samples,
 	uint8_t fh_mode, fh_param;
 	int32_t int_period_ticks;
 	int32_t frame_period_ticks;
-
+	bool extra_pending = false;
+	int64_t sim_timestamp;
+	uint8_t reg_val;
 	int rc;
 
 	/* Init sample output */
@@ -514,10 +516,31 @@ int bmi270_data_read(const struct device *dev, struct imu_sample_array *samples,
 	}
 	LOG_DBG("Reading %d bytes", fifo_length);
 
+	/* More data pending than we have FIFO */
+	if (fifo_length > sizeof(data->fifo_data_buffer)) {
+		/* Round down to what we can actually fit in the buffer.
+		 * Partial reads don't remove the sample from the FIFO.
+		 */
+		fifo_length = sizeof(data->fifo_data_buffer);
+		extra_pending = true;
+	}
+
 	/* Read the FIFO data */
 	rc = bmi270_reg_read(dev, BMI270_REG_FIFO_DATA, data->fifo_data_buffer, fifo_length);
 	if (rc < 0) {
 		return rc;
+	}
+
+	if (extra_pending) {
+		/* Reset the FIFO, since handling any remaining data is questionable */
+		LOG_WRN("Flushing FIFO due to overrun");
+		reg_val = BMI270_CMD_FIFO_FLUSH;
+		rc = bmi270_reg_write(dev, BMI270_REG_CMD, &reg_val, 1);
+		if (rc < 0) {
+			LOG_WRN("FIFO flush failed");
+		}
+		(void)k_sem_take(&data->int1_sem, K_NO_WAIT);
+		sim_timestamp = k_uptime_ticks();
 	}
 
 	/* Scan through to count frames */
@@ -652,6 +675,12 @@ int bmi270_data_read(const struct device *dev, struct imu_sample_array *samples,
 			buffer_offset += 6;
 		}
 	}
+
+	if (extra_pending) {
+		/* Set the interrupt time to the FIFO flush */
+		data->int1_timestamp = sim_timestamp;
+	}
+
 	return 0;
 }
 
