@@ -22,11 +22,11 @@ LOG_MODULE_REGISTER(infuse_coap, CONFIG_INFUSE_COAP_LOG_LEVEL);
 /* Determine the locations of '/' characters and encode into array */
 static int resource_path_split(const char *resource, uint8_t *component_starts, uint8_t array_len)
 {
-	uint8_t resource_len = strlen(resource);
 	uint8_t num_paths = 1;
+	int i = 0;
 
 	/* Scan through string for the '/' character */
-	for (int i = 0; i < resource_len; i++) {
+	while (resource[i] != '\0') {
 		if (resource[i] == '/') {
 			if (num_paths == (array_len - 1)) {
 				/* Too many path splits */
@@ -35,9 +35,10 @@ static int resource_path_split(const char *resource, uint8_t *component_starts, 
 			/* Store the start of the next component */
 			component_starts[num_paths++] = i + 1;
 		}
+		i++;
 	}
 	/* Add the end of the string with a hypothetical next component */
-	component_starts[num_paths] = resource_len + 1;
+	component_starts[num_paths] = i + 1;
 	return num_paths;
 }
 
