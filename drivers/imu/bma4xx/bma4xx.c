@@ -21,7 +21,8 @@
 
 #include "bma4xx.h"
 
-#define FIFO_BYTES MIN(BMA4XX_FIFO_LEN, (7 * CONFIG_INFUSE_IMU_MAX_FIFO_SAMPLES))
+#define FRAME_SIZE 7
+#define FIFO_BYTES MIN(BMA4XX_FIFO_LEN, (FRAME_SIZE * CONFIG_INFUSE_IMU_MAX_FIFO_SAMPLES))
 
 struct bma4xx_config {
 	union bma4xx_bus bus;
@@ -115,6 +116,8 @@ static void bma4xx_gpio_callback(const struct device *dev, struct gpio_callback 
 
 	ARG_UNUSED(cb);
 	ARG_UNUSED(pins);
+
+	LOG_DBG("");
 
 	data->int1_prev_timestamp = data->int1_timestamp;
 	data->int1_timestamp = k_uptime_ticks();
@@ -250,14 +253,14 @@ int bma4xx_configure(const struct device *dev, const struct imu_config *imu_cfg,
 	/* FIFO configuration */
 	rc |= bma4xx_reg_write(dev, BMA4XX_REG_FIFO_CONFIG0,
 			       BMA4XX_FIFO_CONFIG0_EN_XYZ | BMA4XX_FIFO_CONFIG0_DATA_12BIT);
-	fifo_watermark = MIN(7 * imu_cfg->fifo_sample_buffer, FIFO_BYTES);
+	fifo_watermark = MIN(FRAME_SIZE * imu_cfg->fifo_sample_buffer, FIFO_BYTES);
 	rc |= bma4xx_reg_write(dev, BMA4XX_REG_FIFO_CONFIG1, (fifo_watermark >> 0) & 0xFF);
 	rc |= bma4xx_reg_write(dev, BMA4XX_REG_FIFO_CONFIG2, (fifo_watermark >> 8) & 0xFF);
 	data->fifo_threshold = fifo_watermark;
 	LOG_DBG("Watermark: %d bytes", fifo_watermark);
 
 	output->expected_interrupt_period_us =
-		(fifo_watermark / 7) * output->accelerometer_period_us;
+		(fifo_watermark / FRAME_SIZE) * output->accelerometer_period_us;
 
 	/* Flush the FIFO, enable GPIO interrupts */
 	rc |= bma4xx_reg_write(dev, BMA4XX_REG_CMD, BMA4XX_CMD_FIFO_FLUSH);
@@ -300,6 +303,8 @@ int bma4xx_data_read(const struct device *dev, struct imu_sample_array *samples,
 	uint16_t extra_frames, interrupt_frame = 0;
 	uint8_t fh_mode, fh_param;
 	uint8_t acc_samples = 0;
+	bool extra_pending = false;
+	int64_t sim_timestamp;
 	int rc;
 
 	/* Init sample output */
@@ -320,10 +325,28 @@ int bma4xx_data_read(const struct device *dev, struct imu_sample_array *samples,
 	}
 	LOG_DBG("Reading %d bytes", fifo_length);
 
+	/* More data pending than we have FIFO */
+	if (fifo_length > sizeof(data->fifo_data_buffer)) {
+		/* Round down to what we can actually fit in the buffer */
+		fifo_length = ROUND_DOWN(sizeof(data->fifo_data_buffer), FRAME_SIZE);
+		extra_pending = true;
+	}
+
 	/* Read the FIFO data */
 	rc = bma4xx_reg_read(dev, BMA4XX_REG_FIFO_DATA, data->fifo_data_buffer, fifo_length);
 	if (rc < 0) {
 		goto cleanup;
+	}
+
+	if (extra_pending) {
+		/* Reset the FIFO, since handling any remaining data is questionable */
+		LOG_WRN("Flushing FIFO due to overrun");
+		rc = bma4xx_reg_write(dev, BMA4XX_REG_CMD, BMA4XX_CMD_FIFO_FLUSH);
+		if (rc < 0) {
+			LOG_WRN("FIFO flush failed");
+		}
+		(void)k_sem_take(&data->int1_sem, K_NO_WAIT);
+		sim_timestamp = k_uptime_ticks();
 	}
 
 	/* Scan through to populate data and count frames */
@@ -392,6 +415,11 @@ int bma4xx_data_read(const struct device *dev, struct imu_sample_array *samples,
 	samples->accelerometer.timestamp_ticks = first_frame_time;
 	samples->accelerometer.buffer_period_ticks =
 		(acc_samples - 1) * int_period_ticks / interrupt_frame;
+
+	if (extra_pending) {
+		/* Set the interrupt time to the FIFO flush */
+		data->int1_timestamp = sim_timestamp;
+	}
 
 cleanup:
 	(void)bma4xx_bus_pm(dev, false);
