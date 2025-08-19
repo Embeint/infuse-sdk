@@ -85,8 +85,8 @@ int hardware_unique_key_init(void)
 	}
 
 	/* Derive our HUK root from the KMU HUK */
-	const char *label = "INFUSE_HUK";
-	const char *context = "CTX";
+	const char *const label = "INFUSE_HUK";
+	const char *const context = "CTX";
 
 	rc = nrf_cc3xx_platform_kmu_shadow_key_derive(0, HUK_SIZE_BYTES * 8, label, strlen(label),
 						      context, strlen(context), key, 32);

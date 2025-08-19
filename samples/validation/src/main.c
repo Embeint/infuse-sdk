@@ -140,9 +140,10 @@ K_THREAD_DEFINE(gnss_thread, 2048, gnss_validator, NULL, NULL, NULL, 5, 0, 0);
 static int disk_validator(void *a, void *b, void *c)
 {
 #ifdef CONFIG_SDMMC_STM32
-	const char *disk = DT_PROP(DT_COMPAT_GET_ANY_STATUS_OKAY(st_stm32_sdmmc), disk_name);
+	const char *const disk = DT_PROP(DT_COMPAT_GET_ANY_STATUS_OKAY(st_stm32_sdmmc), disk_name);
 #else
-	const char *disk = DT_PROP(DT_COMPAT_GET_ANY_STATUS_OKAY(zephyr_sdmmc_disk), disk_name);
+	const char *const disk =
+		DT_PROP(DT_COMPAT_GET_ANY_STATUS_OKAY(zephyr_sdmmc_disk), disk_name);
 #endif
 
 	atomic_inc(&validators_registered);

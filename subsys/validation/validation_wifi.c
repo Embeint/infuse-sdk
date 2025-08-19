@@ -100,7 +100,7 @@ done:
 
 static int validation_wifi_sntp(void)
 {
-	const char *sntp_server = CONFIG_INFUSE_VALIDATION_SNTP_SERVER;
+	const char *const sntp_server = CONFIG_INFUSE_VALIDATION_SNTP_SERVER;
 	char addr_str[INET6_ADDRSTRLEN] = {0};
 	struct sntp_time s_time;
 	struct sntp_ctx s_ctx;

@@ -42,7 +42,7 @@ enum algorithms {
 	NUM_ALGORITHMS,
 };
 
-const char *algorithm_names[] = {
+const char *const algorithm_names[] = {
 	[ASCON_128] = "ascon-128",
 	[ASCON_128A] = "ascon-128a",
 	[ASCON_80PQ] = "ascon-80pq",
@@ -59,7 +59,7 @@ enum sign_alg {
 	NUM_SIGN_ALGORITHMS,
 };
 
-const char *sign_algorithm_names[] = {
+const char *const sign_algorithm_names[] = {
 	[SHA256] = "SHA256",
 	[HMAC_SHA256] = "HMAC-SHA256",
 	[ECDSA_SHA256] = "ECDSA-SHA256",

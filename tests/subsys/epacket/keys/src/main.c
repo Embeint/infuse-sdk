@@ -66,7 +66,7 @@ ZTEST(epacket_keys, test_network_ids)
 
 ZTEST(epacket_keys, test_invalid_key)
 {
-	const char *info = "test";
+	const char *const info = "test";
 	psa_key_id_t id;
 
 	zassert_equal(-EINVAL, epacket_key_derive(PSA_KEY_ID_NULL, info, strlen(info), 1, &id));

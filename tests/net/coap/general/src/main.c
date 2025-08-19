@@ -28,7 +28,7 @@
 K_SEM_DEFINE(l4_up, 0, 1);
 
 /* Static COAP test server run by TZI */
-const char *coap_test_server = "coap.me";
+const char *const coap_test_server = "coap.me";
 uint8_t work_area[2048];
 
 struct cb_ctx {
