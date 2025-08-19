@@ -115,6 +115,9 @@ psa_key_id_t epacket_key_id_get(uint8_t key_type, uint32_t key_identifier, uint3
 		}
 	}
 	interface = key_type & EPACKET_KEY_INTERFACE_MASK;
+	if (interface >= EPACKET_KEY_INTERFACE_NUM) {
+		return PSA_KEY_ID_NULL;
+	}
 
 	/* Handle key rotation */
 	if (storage[interface].rotation != key_rotation) {

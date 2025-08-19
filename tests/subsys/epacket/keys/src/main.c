@@ -162,6 +162,11 @@ ZTEST(epacket_keys, test_key_id_get)
 {
 	psa_key_id_t id_1, id_2;
 
+	/* Invalid interface ID */
+	id_1 = epacket_key_id_get(EPACKET_KEY_INTERFACE_NUM,
+				  infuse_security_network_key_identifier(), 1);
+	zassert_equal(PSA_KEY_ID_NULL, id_1);
+
 	/* We expect rotations of the same interface key to have the same ID */
 	id_1 = epacket_key_id_get(EPACKET_KEY_DEVICE | EPACKET_KEY_INTERFACE_SERIAL,
 				  infuse_security_device_key_identifier(), 1);
