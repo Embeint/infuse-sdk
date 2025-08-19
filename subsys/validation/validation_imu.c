@@ -250,6 +250,92 @@ loop_break:
 	return rc == 0 ? rc2 : rc;
 }
 
+static int validate_fifo_overrun(const struct device *dev)
+{
+	struct imu_config config = {
+		.accelerometer =
+			{
+				.full_scale_range = 4,
+				.sample_rate_hz = 400,
+				.low_power = false,
+			},
+		.gyroscope = {0},
+		.fifo_sample_buffer = CONFIG_INFUSE_IMU_MAX_FIFO_SAMPLES - 10,
+	};
+	struct imu_config_output config_output;
+	int32_t buffer_period_us;
+	int rc2;
+	int rc;
+
+	/* Configure IMU with maximum FIFO buffering */
+	rc = imu_configure(dev, &config, &config_output);
+	if (rc < 0) {
+		if (rc == -ENOTSUP) {
+			VALIDATION_REPORT_INFO(TEST, "Configuration not supported");
+			return 0;
+		}
+		VALIDATION_REPORT_ERROR(TEST, "Failed to configure (%d)", rc);
+		return rc;
+	}
+
+	int64_t int_expected = config_output.expected_interrupt_period_us;
+	int64_t int_threshold_min = (80 * int_expected) / 100;
+	int64_t int_threshold_max = (120 * int_expected) / 100;
+
+	/* Wait for the interrupt */
+	rc = imu_data_wait(dev, K_USEC(2 * int_expected));
+	if (rc < 0) {
+		VALIDATION_REPORT_ERROR(TEST, "Interrupt timeout");
+		rc = -EINVAL;
+		goto cleanup;
+	}
+	/* Wait another 40 samples (@ 400hz) */
+	k_sleep(K_MSEC(100));
+	rc = imu_data_read(dev, imu_samples, MAX_SAMPLES);
+	if (rc < 0) {
+		VALIDATION_REPORT_ERROR(TEST, "Data read failed (%d)", rc);
+		rc = -EINVAL;
+		goto cleanup;
+	}
+	/* Some small leeway for drivers with approximate FIFO knowledge */
+	if (imu_samples->accelerometer.num < CONFIG_INFUSE_IMU_MAX_FIFO_SAMPLES - 2) {
+		VALIDATION_REPORT_ERROR(TEST, "Unexpected number of samples read (%d < %d)",
+					imu_samples->accelerometer.num,
+					CONFIG_INFUSE_IMU_MAX_FIFO_SAMPLES - 2);
+		rc = -EINVAL;
+		goto cleanup;
+	}
+	/* Operation should continue after overrun */
+	rc = imu_data_wait(dev, K_USEC(2 * int_expected));
+	if (rc < 0) {
+		VALIDATION_REPORT_ERROR(TEST, "Interrupt timeout");
+		rc = -EINVAL;
+		goto cleanup;
+	}
+	rc = imu_data_read(dev, imu_samples, MAX_SAMPLES);
+	if (rc < 0) {
+		VALIDATION_REPORT_ERROR(TEST, "Data read failed (%d)", rc);
+		rc = -EINVAL;
+		goto cleanup;
+	}
+	buffer_period_us = k_ticks_to_us_near32(imu_samples->accelerometer.buffer_period_ticks);
+	if ((buffer_period_us < int_threshold_min) || (buffer_period_us > int_threshold_max)) {
+		VALIDATION_REPORT_ERROR(TEST, "Unexpected buffer period (%d < %d < %d)",
+					(int32_t)int_threshold_min, buffer_period_us,
+					(int32_t)int_threshold_max);
+		rc = -EINVAL;
+		goto cleanup;
+	}
+cleanup:
+	/* Reset IMU */
+	rc2 = imu_configure(dev, NULL, NULL);
+	if (rc2 < 0) {
+		VALIDATION_REPORT_ERROR(TEST, "Failed to reset (%d)", rc2);
+		return rc2;
+	}
+	return rc == 0 ? rc2 : rc;
+}
+
 int infuse_validation_imu(const struct device *dev, uint8_t flags)
 {
 	int rc;
@@ -306,6 +392,11 @@ int infuse_validation_imu(const struct device *dev, uint8_t flags)
 		}
 		VALIDATION_REPORT_INFO(TEST, "Driver test @ (Acc 8G 100Hz) (Gyr 100Hz)");
 		rc = validate_sample_timing(dev, 8, 100, 100);
+		if (rc < 0) {
+			goto driver_end;
+		}
+		VALIDATION_REPORT_INFO(TEST, "Driver test - FIFO overrun");
+		rc = validate_fifo_overrun(dev);
 		if (rc < 0) {
 			goto driver_end;
 		}
