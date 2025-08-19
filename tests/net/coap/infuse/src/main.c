@@ -29,7 +29,7 @@
 
 K_SEM_DEFINE(l4_up, 0, 1);
 
-const char *coap_test_server = "coap.dev.infuse-iot.com";
+const char *const coap_test_server = "coap.dev.infuse-iot.com";
 
 /* Hardcoded authentication that only has access to test files */
 const uint8_t test_identity[8] = {0xfd, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff};

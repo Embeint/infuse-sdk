@@ -235,8 +235,8 @@ psa_status_t psa_its_remove(psa_storage_uid_t uid)
 int secure_storage_init(void)
 {
 	psa_key_id_t huk_id = hardware_unique_key_id();
-	const char *info = "SECURE_STORAGE";
-	const char *salt = "SS_SALT";
+	const char *const info = "SECURE_STORAGE";
+	const char *const salt = "SS_SALT";
 
 	/* Derive secure storage key from HUK */
 	secure_storage_key_id = infuse_security_derive_chacha_key(huk_id, salt, strlen(salt), info,

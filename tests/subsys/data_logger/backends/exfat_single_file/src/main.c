@@ -56,7 +56,7 @@ ZTEST(data_logger_exfat, test_init_constants)
 ZTEST(data_logger_exfat, test_init_state)
 {
 	const struct device *logger = DEVICE_DT_GET(DT_NODELABEL(data_logger_exfat));
-	const char *readme = DISK_NAME ":README.txt";
+	const char *const readme = DISK_NAME ":README.txt";
 	struct data_logger_state state;
 	FIL fp;
 
@@ -75,7 +75,7 @@ ZTEST(data_logger_exfat, test_init_state)
 ZTEST(data_logger_exfat, test_bad_label)
 {
 	const struct device *logger = DEVICE_DT_GET(DT_NODELABEL(data_logger_exfat));
-	const char *bad_label = DISK_NAME ":BADLABEL";
+	const char *const bad_label = DISK_NAME ":BADLABEL";
 	struct data_logger_state state;
 
 	/* Init and write some data */

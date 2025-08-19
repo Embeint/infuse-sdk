@@ -268,7 +268,7 @@ static int logger_exfat_reset(const struct device *dev, uint32_t block_hint,
 {
 	const struct dl_exfat_config *config = dev->config;
 	struct dl_exfat_data *data = dev->data;
-	const char *infuse_prefix = "infuse_";
+	const char *const infuse_prefix = "infuse_";
 	uint32_t blocks_erased = 0;
 	char filename[40];
 	FILINFO fno;
