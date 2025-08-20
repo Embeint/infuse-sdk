@@ -438,47 +438,24 @@ int tdf_add_core(struct tdf_buffer_state *state, uint16_t tdf_id, uint8_t tdf_le
 	return tdf_num;
 }
 
-int tdf_parse(struct tdf_buffer_state *state, struct tdf_parsed *parsed)
+static uint16_t tdf_time_flags_length(uint16_t time_flags)
 {
-	if (state->buf.len <= sizeof(struct tdf_header)) {
-		return -ENOMEM;
-	}
-
-	struct tdf_header *header = net_buf_simple_pull_mem(&state->buf, sizeof(struct tdf_header));
-	uint16_t time_flags = header->id_flags & TDF_TIMESTAMP_MASK;
-	uint16_t array_flags = header->id_flags & TDF_ARRAY_MASK;
-	struct tdf_array_header *t_hdr;
-	uint8_t diff_bytes_per_tdf;
-	uint16_t data_len;
-	int32_t time_diff;
-
-	parsed->tdf_id = header->id_flags & TDF_ID_MASK;
-	parsed->tdf_len = header->size;
-	parsed->tdf_num = 1;
-	parsed->period = 0;
-
-	/* Invalid TDF ID */
-	if ((parsed->tdf_id == 0) || (parsed->tdf_id == 4095)) {
-		return -EINVAL;
-	}
-
-	/* Validate header length */
 	switch (time_flags) {
 	case TDF_TIMESTAMP_ABSOLUTE:
-		data_len = sizeof(struct tdf_time);
-		break;
+		return sizeof(struct tdf_time);
 	case TDF_TIMESTAMP_RELATIVE:
-		data_len = sizeof(uint16_t);
-		break;
+		return sizeof(uint16_t);
 	case TDF_TIMESTAMP_EXTENDED_RELATIVE:
-		data_len = 3;
-		break;
+		return 3;
 	default:
-		data_len = 0;
+		return 0;
 	}
-	if (state->buf.len <= data_len) {
-		return -EINVAL;
-	}
+}
+
+static int tdf_time_flags_consume(struct tdf_buffer_state *state, struct tdf_parsed *parsed,
+				  uint16_t time_flags)
+{
+	int32_t time_diff;
 
 	switch (time_flags) {
 	case TDF_TIMESTAMP_ABSOLUTE:
@@ -510,6 +487,46 @@ int tdf_parse(struct tdf_buffer_state *state, struct tdf_parsed *parsed)
 		parsed->time = 0;
 		break;
 	}
+	return 0;
+}
+
+int tdf_parse(struct tdf_buffer_state *state, struct tdf_parsed *parsed)
+{
+	if (state->buf.len <= sizeof(struct tdf_header)) {
+		return -ENOMEM;
+	}
+
+	struct tdf_header *header = net_buf_simple_pull_mem(&state->buf, sizeof(struct tdf_header));
+	uint16_t time_flags = header->id_flags & TDF_TIMESTAMP_MASK;
+	uint16_t array_flags = header->id_flags & TDF_ARRAY_MASK;
+	struct tdf_array_header *t_hdr;
+	uint8_t diff_bytes_per_tdf;
+	uint16_t data_len;
+	int rc;
+
+	parsed->tdf_id = header->id_flags & TDF_ID_MASK;
+	parsed->tdf_len = header->size;
+	parsed->tdf_num = 1;
+	parsed->period = 0;
+
+	/* Invalid TDF ID */
+	if ((parsed->tdf_id == 0) || (parsed->tdf_id == 4095)) {
+		return -EINVAL;
+	}
+
+	/* Validate time header length */
+	data_len = tdf_time_flags_length(time_flags);
+	if (state->buf.len <= data_len) {
+		return -EINVAL;
+	}
+
+	/* Consume time information */
+	rc = tdf_time_flags_consume(state, parsed, time_flags);
+	if (rc < 0) {
+		return rc;
+	}
+
+	/* Consume array information */
 	if (array_flags) {
 		if (state->buf.len <= sizeof(struct tdf_array_header)) {
 			return -EINVAL;
