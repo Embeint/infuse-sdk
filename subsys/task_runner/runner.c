@@ -384,6 +384,44 @@ static bool task_has_terminated(uint8_t task_idx)
 	return true;
 }
 
+#ifdef CONFIG_KV_STORE_KEY_TASK_SCHEDULES
+
+static bool iterate_handle_task_reload(void)
+{
+	if (atomic_test_and_clear_bit(&runner_flags, FLAGS_TRIGGER_SCHEDULE_RELOAD)) {
+		/* Schedules have changed in KV store, terminate all running schedules */
+		LOG_WRN("Schedules updated, terminating tasks");
+		for (int i = 0; i < sch_num; i++) {
+			struct task_schedule_state *state = &sch_states[i];
+			struct task_data *d = &tsk_states[state->task_idx];
+
+			if ((i == d->schedule_idx) && d->running) {
+				task_terminate(i);
+			}
+		}
+		atomic_set_bit(&runner_flags, FLAGS_TASKS_TERMINATING);
+	}
+	if (atomic_test_bit(&runner_flags, FLAGS_TASKS_TERMINATING)) {
+		/* Wait until all tasks have terminated */
+		for (int i = 0; i < tsk_num; i++) {
+			if (tsk_states[i].running) {
+				LOG_DBG("Task %d still running", i);
+				return true;
+			}
+		}
+		/* Reload schedules from KV store */
+		LOG_INF("All tasks terminated, reloading");
+		atomic_clear_bit(&runner_flags, FLAGS_TASKS_TERMINATING);
+
+		sch_num = task_runner_schedules_load(CONFIG_TASK_RUNNER_DEFAULT_SCHEDULES_ID,
+						     default_sch, default_num, sch);
+		init_schedules(default_num, false);
+	}
+	return false;
+}
+
+#endif /* CONFIG_KV_STORE_KEY_TASK_SCHEDULES */
+
 INFUSE_WATCHDOG_REGISTER_SYS_INIT(tr_wdog, CONFIG_TASK_RUNNER_INFUSE_WATCHDOG, wdog_channel,
 				  loop_period);
 
@@ -407,34 +445,9 @@ void task_runner_iterate(atomic_t *app_states, uint32_t uptime, uint32_t gps_tim
 	}
 
 #ifdef CONFIG_KV_STORE_KEY_TASK_SCHEDULES
-	if (atomic_test_and_clear_bit(&runner_flags, FLAGS_TRIGGER_SCHEDULE_RELOAD)) {
-		/* Schedules have changed in KV store, terminate all running schedules */
-		LOG_WRN("Schedules updated, terminating tasks");
-		for (int i = 0; i < sch_num; i++) {
-			struct task_schedule_state *state = &sch_states[i];
-			struct task_data *d = &tsk_states[state->task_idx];
-
-			if ((i == d->schedule_idx) && d->running) {
-				task_terminate(i);
-			}
-		}
-		atomic_set_bit(&runner_flags, FLAGS_TASKS_TERMINATING);
-	}
-	if (atomic_test_bit(&runner_flags, FLAGS_TASKS_TERMINATING)) {
-		/* Wait until all tasks have terminated */
-		for (int i = 0; i < tsk_num; i++) {
-			if (tsk_states[i].running) {
-				LOG_DBG("Task %d still running", i);
-				return;
-			}
-		}
-		/* Reload schedules from KV store */
-		LOG_INF("All tasks terminated, reloading");
-		atomic_clear_bit(&runner_flags, FLAGS_TASKS_TERMINATING);
-
-		sch_num = task_runner_schedules_load(CONFIG_TASK_RUNNER_DEFAULT_SCHEDULES_ID,
-						     default_sch, default_num, sch);
-		init_schedules(default_num, false);
+	/* Handle any task reloading */
+	if (iterate_handle_task_reload()) {
+		return;
 	}
 #endif /* CONFIG_KV_STORE_KEY_TASK_SCHEDULES */
 
