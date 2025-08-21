@@ -91,9 +91,31 @@ static void expect_logging(uint8_t count)
 	zassert_equal(count, found);
 }
 
+static int moving_count;
+static int stopped_count;
+
+static void state_set(enum infuse_state state, bool already, uint16_t timeout, void *user_ctx)
+{
+	switch (state) {
+	case INFUSE_STATE_DEVICE_STARTED_MOVING:
+		zassert_equal(1, timeout);
+		moving_count += 1;
+		break;
+	case INFUSE_STATE_DEVICE_STOPPED_MOVING:
+		zassert_equal(1, timeout);
+		stopped_count += 1;
+		break;
+	default:
+		break;
+	}
+}
+
 ZTEST(alg_stationary, test_send)
 {
 	INFUSE_STATES_ARRAY(states);
+	struct infuse_state_cb state_cb = {
+		.state_set = state_set,
+	};
 	k_tid_t imu_thread;
 
 	schedule[0].task_args.infuse.imu = (struct task_imu_args){
@@ -108,6 +130,7 @@ ZTEST(alg_stationary, test_send)
 	/* Initialise algorithm runner */
 	algorithm_runner_init();
 	algorithm_runner_register(&test_alg);
+	infuse_state_register_callback(&state_cb);
 
 	/* Start with lots of movement */
 	imu_emul_accelerometer_data_configure(DEV, 0.0f, 0.0f, 1.0f, 800);
@@ -120,6 +143,8 @@ ZTEST(alg_stationary, test_send)
 		zassert_false(infuse_state_get(INFUSE_STATE_DEVICE_STATIONARY));
 		k_sleep(K_MINUTES(1));
 	}
+	zassert_equal(0, moving_count);
+	zassert_equal(0, stopped_count);
 
 	/* Reduce the movement, let the window update */
 	imu_emul_accelerometer_data_configure(DEV, 0.0f, 0.0f, 1.0f, 100);
@@ -130,6 +155,14 @@ ZTEST(alg_stationary, test_send)
 		zassert_true(infuse_state_get(INFUSE_STATE_DEVICE_STATIONARY));
 		k_sleep(K_MINUTES(1));
 	}
+	zassert_equal(0, moving_count);
+	zassert_equal(1, stopped_count);
+
+	/* Start moving again */
+	imu_emul_accelerometer_data_configure(DEV, 0.0f, 0.0f, 1.0f, 800);
+	k_sleep(K_MINUTES(4));
+	zassert_equal(1, moving_count);
+	zassert_equal(1, stopped_count);
 
 	/* Run for 30 seconds, then change the sample rate drastically */
 	k_sleep(K_SECONDS(30));
@@ -138,6 +171,7 @@ ZTEST(alg_stationary, test_send)
 	schedule[0].task_args.infuse.imu.accelerometer.rate_hz = 10;
 	schedule[0].task_args.infuse.imu.fifo_sample_buffer = 10;
 	imu_thread = task_schedule(0);
+	imu_emul_accelerometer_data_configure(DEV, 0.0f, 0.0f, 1.0f, 100);
 
 	/* The changed sample rate should have skipped the decision */
 	k_sleep(K_MINUTES(3));
@@ -148,6 +182,8 @@ ZTEST(alg_stationary, test_send)
 	zassert_false(infuse_state_get(INFUSE_STATE_DEVICE_STATIONARY));
 	k_sleep(K_MINUTES(2));
 	zassert_true(infuse_state_get(INFUSE_STATE_DEVICE_STATIONARY));
+	zassert_equal(1, moving_count);
+	zassert_equal(2, stopped_count);
 
 	/* Terminate the IMU producer */
 	task_terminate(0);
@@ -160,18 +196,25 @@ ZTEST(alg_stationary, test_send)
 	}
 	zassert_false(infuse_state_get(INFUSE_STATE_DEVICE_STATIONARY));
 
+	/* Stationary timing out shouldn't update the moving count */
+	zassert_equal(1, moving_count);
+	zassert_equal(2, stopped_count);
+
 	/* Flush the pending TDF's */
 	tdf_data_logger_flush(TDF_DATA_LOGGER_SERIAL);
-	expect_logging(9);
+	expect_logging(11);
 
 	/* Validate the last published data */
 	struct infuse_zbus_chan_movement_std_dev *out = ZBUS_CHAN->message;
 
-	zassert_equal(9, zbus_chan_pub_stats_count(ZBUS_CHAN));
+	zassert_equal(11, zbus_chan_pub_stats_count(ZBUS_CHAN));
 	zassert_within(7000, out->data.std_dev, 300);
 	zassert_equal(1200, out->data.count);
 	zassert_equal(1200, out->expected_samples);
 	zassert_equal(40000, out->movement_threshold);
+
+	/* Unregister callback */
+	infuse_state_unregister_callback(&state_cb);
 }
 
 static void test_before(void *fixture)
