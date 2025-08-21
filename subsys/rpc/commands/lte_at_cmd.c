@@ -23,6 +23,7 @@ struct net_buf *rpc_command_lte_at_cmd(struct net_buf *request)
 	struct rpc_lte_at_cmd_request *req = (void *)request->data;
 	struct rpc_lte_at_cmd_response rsp = {0};
 	struct net_buf *rsp_buf;
+	size_t tailroom;
 	uint8_t *tail;
 	int rc;
 
@@ -39,8 +40,10 @@ struct net_buf *rpc_command_lte_at_cmd(struct net_buf *request)
 	rsp_buf = rpc_response_simple_req(request, 0, &rsp, sizeof(rsp));
 
 	tail = net_buf_tail(rsp_buf);
-	rc = nrf_modem_at_cmd(tail, net_buf_tailroom(rsp_buf), "%s", req->cmd);
+	tailroom = net_buf_tailroom(rsp_buf);
+	rc = nrf_modem_at_cmd(tail, tailroom, "%s", req->cmd);
 	if (rc >= 0) {
+		tail[tailroom - 1] = 0x00;
 		net_buf_add(rsp_buf, strlen(tail));
 	} else {
 		/* Update return code */
