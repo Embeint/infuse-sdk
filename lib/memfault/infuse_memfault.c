@@ -219,6 +219,13 @@ void memfault_reboot_tracking_load(sMemfaultRebootTrackingStorage *dst)
 		.pc = infuse_reboot.info.exception_basic.program_counter,
 		.lr = infuse_reboot.info.exception_basic.link_register,
 	};
+#ifdef CONFIG_ARM
+	if (infuse_reboot.info_type == INFUSE_REBOOT_INFO_EXCEPTION_ESF) {
+		/* Stack frame instead of basic ESF */
+		reboot_info->pc = infuse_reboot.info.exception_full.basic.pc;
+		reboot_info->lr = infuse_reboot.info.exception_full.basic.lr;
+	}
+#endif /* CONFIG_ARM */
 
 	/* Defer logging of the secure fault trace event until after Memfault has finished
 	 * initialising. Use a delayable worked since an immediate `k_work_submit` will just
