@@ -92,9 +92,16 @@ void algorithm_stationary_windowed_fn(const struct zbus_channel *chan, const voi
 		 * The timeout is included so that even if the IMU stops producing data, the
 		 * state will get cleared.
 		 */
-		infuse_state_set_timeout(INFUSE_STATE_DEVICE_STATIONARY, c->window_seconds + 10);
+		if (!infuse_state_set_timeout(INFUSE_STATE_DEVICE_STATIONARY,
+					      c->window_seconds + 10)) {
+			/* State was not previously set */
+			infuse_state_set_timeout(INFUSE_STATE_DEVICE_STOPPED_MOVING, 1);
+		}
 	} else {
-		infuse_state_clear(INFUSE_STATE_DEVICE_STATIONARY);
+		if (infuse_state_clear(INFUSE_STATE_DEVICE_STATIONARY)) {
+			/* Stationary state was previously set */
+			infuse_state_set_timeout(INFUSE_STATE_DEVICE_STARTED_MOVING, 1);
+		}
 	}
 
 reset:
