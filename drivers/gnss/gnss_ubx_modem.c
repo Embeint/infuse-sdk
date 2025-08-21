@@ -256,7 +256,9 @@ void ubx_modem_init(struct ubx_modem_data *modem, struct modem_pipe *pipe)
 
 void ubx_modem_software_standby(struct ubx_modem_data *modem)
 {
-	struct ubx_message_handler_ctx *curr, *tmp, *prev = NULL;
+	struct ubx_message_handler_ctx *prev = NULL;
+	struct ubx_message_handler_ctx *curr;
+	struct ubx_message_handler_ctx *tmp;
 
 	/** Purge any callbacks expecting a response */
 	k_sem_take(&modem->handlers_sem, K_FOREVER);
@@ -334,7 +336,8 @@ int ubx_modem_send_sync(struct ubx_modem_data *modem, struct net_buf_simple *buf
 	struct k_poll_event events[] = {
 		K_POLL_EVENT_INITIALIZER(K_POLL_TYPE_SIGNAL, K_POLL_MODE_NOTIFY_ONLY, &sig),
 	};
-	int signaled, rc;
+	int signaled;
+	int rc;
 
 	k_poll_signal_init(&sig);
 
