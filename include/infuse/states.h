@@ -42,6 +42,10 @@ enum infuse_state {
 	INFUSE_STATE_DEVICE_STATIONARY = 4,
 	/* Device is currently sending high-priority data to the cloud */
 	INFUSE_STATE_HIGH_PRIORITY_UPLINK = 5,
+	/* Device started moving */
+	INFUSE_STATE_DEVICE_STARTED_MOVING = 6,
+	/* Device stopped moving */
+	INFUSE_STATE_DEVICE_STOPPED_MOVING = 7,
 	/* Start of application-specific state range */
 	INFUSE_STATES_APP_START = 128,
 	INFUSE_STATES_END = UINT8_MAX
