@@ -418,6 +418,7 @@ static void infuse_modem_init(int ret, void *ctx)
 #else
 	/* Read the configured value */
 	rc = kv_store_read(KV_KEY_LTE_PDP_CONFIG, &pdp_config, sizeof(pdp_config));
+	pdp_config.apn.value[sizeof(pdp_config.apn.value) - 1] = '\0';
 #endif /* CONFIG_INFUSE_NRF_MODEM_MONITOR_DEFAULT_PDP_APN_SET */
 
 	/* If a PDP configuration has been set */
