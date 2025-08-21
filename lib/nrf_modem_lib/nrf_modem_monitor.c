@@ -113,7 +113,7 @@ static void network_info_update(struct k_work *work)
 	}
 
 	if (!sim_card_queried) {
-		KV_STRUCT_KV_STRING_VAR(24) sim_uicc;
+		KV_STRUCT_KV_STRING_VAR(25) sim_uicc;
 
 		rc = nrf_modem_at_scanf("AT%XICCID", "%%XICCID: %24s", sim_uicc.value);
 		if (rc == 1) {
@@ -366,7 +366,7 @@ static void lte_kv_value_changed(uint16_t key, const void *data, size_t data_len
 
 static void infuse_modem_init(int ret, void *ctx)
 {
-	KV_STRUCT_KV_STRING_VAR(64) modem_info = {0};
+	KV_STRUCT_KV_STRING_VAR(65) modem_info = {0};
 	KV_KEY_TYPE(KV_KEY_LTE_MODEM_IMEI) modem_imei;
 	static bool modem_info_stored;
 	uint8_t val;
