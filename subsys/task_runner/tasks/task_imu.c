@@ -140,7 +140,9 @@ static void imu_sample_handler(const struct task_schedule *schedule,
 			epoch_period_from_array_ticks(samples->accelerometer.buffer_period_ticks,
 						      samples->accelerometer.num),
 			&samples->samples[samples->accelerometer.offset]);
+
 #endif /* CONFIG_TASK_RUNNER_TASK_IMU_LOG_IDX_ARRAY */
+		tdf_data_logger_flush(TDF_DATA_LOGGER_BT_PERIPHERAL);
 	}
 	if (samples->gyroscope.num) {
 #ifdef CONFIG_TASK_RUNNER_TASK_IMU_LOG_IDX_ARRAY

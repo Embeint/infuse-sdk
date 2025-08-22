@@ -8,6 +8,7 @@
 
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
+#include <zephyr/drivers/gpio.h>
 #include <zephyr/drivers/sensor.h>
 #include <zephyr/pm/device_runtime.h>
 #include <zephyr/net/conn_mgr_connectivity.h>
@@ -20,6 +21,7 @@
 #include <infuse/time/epoch.h>
 #include <infuse/fs/kv_store.h>
 #include <infuse/fs/kv_types.h>
+#include <infuse/auto/bluetooth_conn_log.h>
 #include <infuse/epacket/interface.h>
 #include <infuse/epacket/packet.h>
 #include <infuse/lib/memfault.h>
@@ -31,7 +33,6 @@
 #include <infuse/task_runner/tasks/infuse_tasks.h>
 
 LOG_MODULE_REGISTER(app, LOG_LEVEL_INF);
-
 static void custom_tdf_logger(uint8_t tdf_loggers, uint64_t timestamp);
 
 /* Log data to SD card if available, otherwise serial and UDP comms */
@@ -65,17 +66,15 @@ static const struct task_schedule schedules[] = {
 #endif /* CONFIG_EPACKET_INTERFACE_UDP */
 	{
 		.task_id = TASK_ID_TDF_LOGGER,
-		.validity = TASK_VALID_ALWAYS,
-		.periodicity_type = TASK_PERIODICITY_LOCKOUT,
-		.periodicity.lockout.lockout_s = 2,
+		.validity = TASK_VALID_PERMANENTLY_RUNS,
 		.task_args.infuse.tdf_logger =
 			{
-				.loggers = TDF_DATA_LOGGER_BT_ADV | TDF_DATA_LOGGER_SERIAL,
-				.random_delay_ms = 1000,
+				.loggers = TDF_DATA_LOGGER_BT_ADV,
+				.logging_period_ms = 900,
+				.random_delay_ms = 200,
+				.per_run = 2,
 				.tdfs = TASK_TDF_LOGGER_LOG_ANNOUNCE | TASK_TDF_LOGGER_LOG_BATTERY |
-					TASK_TDF_LOGGER_LOG_AMBIENT_ENV |
-					TASK_TDF_LOGGER_LOG_LOCATION | TASK_TDF_LOGGER_LOG_ACCEL |
-					TASK_TDF_LOGGER_LOG_NET_CONN,
+					TASK_TDF_LOGGER_LOG_AMBIENT_ENV | TASK_TDF_LOGGER_LOG_ACCEL,
 			},
 	},
 	{
@@ -84,7 +83,7 @@ static const struct task_schedule schedules[] = {
 		.task_logging =
 			{
 				{
-					.loggers = STORAGE_LOGGER,
+					.loggers = TDF_DATA_LOGGER_BT_PERIPHERAL,
 					.tdf_mask = TASK_IMU_LOG_ACC | TASK_IMU_LOG_GYR,
 				},
 			},
@@ -93,14 +92,14 @@ static const struct task_schedule schedules[] = {
 				.accelerometer =
 					{
 						.range_g = 4,
-						.rate_hz = 50,
+						.rate_hz = 104,
 					},
 				.gyroscope =
 					{
 						.range_dps = 500,
-						.rate_hz = 50,
+						.rate_hz = 104,
 					},
-				.fifo_sample_buffer = 100,
+				.fifo_sample_buffer = 20,
 			},
 	},
 #if DT_NODE_EXISTS(DT_ALIAS(gnss))
@@ -224,7 +223,7 @@ int main(void)
 	/* Start legacy Bluetooth advertising to workaround iOS and
 	 * Nordic Softdevice connection issues.
 	 */
-	bluetooth_legacy_advertising_run();
+	// bluetooth_legacy_advertising_run();
 
 #ifdef CONFIG_NETWORKING
 	conn_mgr_all_if_up(true);
@@ -238,6 +237,19 @@ int main(void)
 	/* Start auto iteration */
 	task_runner_start_auto_iterate();
 
+#if DT_NODE_EXISTS(DT_ALIAS(led0))
+	const struct gpio_dt_spec led = GPIO_DT_SPEC_GET(DT_ALIAS(led0), gpios);
+
+	/* Blink LED once a second as proof of life */
+	gpio_pin_configure_dt(&led, GPIO_OUTPUT_INACTIVE);
+	while (1) {
+		gpio_pin_set_dt(&led, 1);
+		k_sleep(K_MSEC(10));
+		gpio_pin_set_dt(&led, 0);
+		k_sleep(K_MSEC(990));
+	}
+#else
 	/* No more work to do in this context */
 	k_sleep(K_FOREVER);
+#endif
 }
