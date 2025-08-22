@@ -42,6 +42,8 @@ class release_build(WestCommand):
             EXPORT_DESCRIPTION,
             accepts_unknown_args=False,
         )
+        self.network_key: None | pathlib.Path = None
+        self.network_key_secondary: None | pathlib.Path = None
 
     def do_add_parser(self, parser_adder):
         parser = parser_adder.add_parser(
@@ -94,14 +96,20 @@ class release_build(WestCommand):
         self.signing_key = self._absolute_path(
             self.args.release.parent, self.release["signing_key"]
         )
+        if not self.signing_key.exists():
+            sys.exit(f"ERROR: Signing key {self.signing_key} does not exist")
         if key := self.release.get("network_key", None):
             self.network_key = self._absolute_path(self.args.release.parent, key)
+            if not self.network_key.exists():
+                sys.exit(f"ERROR: Network key {self.network_key} does not exist")
         else:
             self.network_key = None
         if key := self.release.get("network_key_secondary", None):
             self.network_key_secondary = self._absolute_path(
                 self.args.release.parent, key
             )
+            if not self.network_key_secondary.exists():
+                sys.exit(f"ERROR: Network key {self.network_key} does not exist")
         else:
             self.network_key_secondary = None
 
