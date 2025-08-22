@@ -195,7 +195,7 @@ class release_build(WestCommand):
                 on_disk_commit = repo.commit()
                 if manifest_commit != on_disk_commit:
                     error_msg.append(
-                        f"Repository '{project.path}' commit mismatch ({manifest_commit.hexsha()[:8]} !=  {on_disk_commit.hexsha()[:8]})"
+                        f"Repository '{project.path}' commit mismatch ({manifest_commit.hexsha[:8]} !=  {on_disk_commit.hexsha[:8]})"
                     )
             # Ensure there is no uncommitted content on disk
             if repo.is_dirty(untracked_files=True):
