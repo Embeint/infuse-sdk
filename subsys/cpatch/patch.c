@@ -112,6 +112,43 @@ static int do_write(const struct flash_area *input, struct stream_flash_ctx *out
 	return 0;
 }
 
+static int do_cpatch(const struct flash_area *input, struct stream_flash_ctx *output,
+		     struct patch_state *state)
+{
+	int rc;
+
+	while (true) {
+		uint8_t len;
+
+		rc = binary_patch_read(state, &len, 1);
+		if (len == 0) {
+			break;
+		}
+		state->operation_count = len & 0x7F;
+		LOG_DBG("PATCH_COPY: %d", state->operation_count);
+		rc = do_copy(input, output, state);
+		if (rc < 0) {
+			return rc;
+		}
+		if (len & 0x80) {
+			state->operation_count = 1;
+		} else {
+			rc = binary_patch_read(state, &len, 1);
+			if (len == 0) {
+				break;
+			}
+			state->operation_count = len;
+		}
+		LOG_DBG("PATCH_WRITE: %d", state->operation_count);
+		rc = do_write(input, output, state);
+		if (rc < 0) {
+			return rc;
+		}
+	}
+
+	return 0;
+}
+
 static int crc_update(uint8_t *buf, size_t len, size_t offset)
 {
 	progress_crc = crc32_ieee_update(progress_crc, buf, len);
@@ -220,35 +257,7 @@ static int opcode_run(const struct flash_area *input, struct stream_flash_ctx *o
 		rc = do_write(input, output, state);
 		break;
 	case FAMILY_PATCH:
-		while (true) {
-			uint8_t len;
-
-			rc = binary_patch_read(state, &len, 1);
-			if (len == 0) {
-				break;
-			}
-			state->operation_count = len & 0x7F;
-			LOG_DBG("PATCH_COPY: %d", state->operation_count);
-			rc = do_copy(input, output, state);
-			if (rc < 0) {
-				break;
-			}
-			if (len & 0x80) {
-				state->operation_count = 1;
-			} else {
-				rc = binary_patch_read(state, &len, 1);
-				if (len == 0) {
-					break;
-				}
-				state->operation_count = len;
-			}
-			LOG_DBG("PATCH_WRITE: %d", state->operation_count);
-			rc = do_write(input, output, state);
-			if (rc < 0) {
-				break;
-			}
-		}
-
+		rc = do_cpatch(input, output, state);
 		break;
 	default:
 		return -EINVAL;
