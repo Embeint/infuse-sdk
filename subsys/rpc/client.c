@@ -248,8 +248,13 @@ int rpc_client_ack_wait(struct rpc_client_ctx *ctx, uint32_t request_id, k_timeo
 
 int rpc_client_data_queue_auto_load(struct rpc_client_ctx *ctx, uint32_t request_id,
 				    uint32_t offset, void *buffer, size_t buffer_len,
-				    struct rpc_client_auto_load_params *loader_params)
+				    const struct rpc_client_auto_load_params *loader_params)
 {
+	const struct rpc_client_auto_load_params loader_fallback = {
+		.total_len = buffer_len,
+		.ack_period = 0,
+		.pipelining = 1,
+	};
 	struct rpc_client_cmd_ctx *c = find_cmd_ctx(ctx, request_id);
 	struct infuse_rpc_data *header;
 	const uint8_t *bytes = buffer;
@@ -273,17 +278,22 @@ int rpc_client_data_queue_auto_load(struct rpc_client_ctx *ctx, uint32_t request
 		return -EINVAL;
 	}
 
+	if (loader_params == NULL) {
+		loader_params = &loader_fallback;
+		buffer_remaining = buffer_len;
+	}
+
 	/* Setup TX tokens */
 	k_sem_reset(&c->tx_tokens);
-	if (loader_params && loader_params->ack_period) {
+	if (loader_params->ack_period) {
 		/* Each ACK enables the next N packets */
 		c->tx_tokens_on_ack = loader_params->ack_period;
 	}
+
 	/* Pipelining results in more initial tokens being available */
-	if (loader_params && (loader_params->pipelining > 1)) {
-		start_tokens = c->tx_tokens_on_ack * loader_params->pipelining;
-	} else {
-		start_tokens = c->tx_tokens_on_ack;
+	start_tokens = c->tx_tokens_on_ack;
+	if (loader_params->pipelining > 1) {
+		start_tokens *= loader_params->pipelining;
 	}
 
 	/* Load initial TX tokens */
@@ -291,31 +301,27 @@ int rpc_client_data_queue_auto_load(struct rpc_client_ctx *ctx, uint32_t request
 		k_sem_give(&c->tx_tokens);
 	}
 
-	data_len = loader_params ? loader_params->total_len : buffer_len;
+	data_len = loader_params->total_len;
 	add = 0;
 	while (data_len) {
 		/* Offsets must be word aligned */
 		__ASSERT_NO_MSG((offset % sizeof(uint32_t)) == 0);
 
-		if (loader_params != NULL) {
-			/* Load data if required */
-			if (buffer_remaining == 0) {
-				buffer_remaining = MIN(buffer_len, data_len);
-				bytes_offset = 0;
-				rc = loader_params->loader(loader_params->user_data, offset, buffer,
-							   buffer_remaining);
-				if (rc < 0) {
-					return rc;
-				}
+		/* Load data if required */
+		if (buffer_remaining == 0) {
+			buffer_remaining = MIN(buffer_len, data_len);
+			bytes_offset = 0;
+			rc = loader_params->loader(loader_params->user_data, offset, buffer,
+						   buffer_remaining);
+			if (rc < 0) {
+				return rc;
 			}
-		} else {
-			buffer_remaining = data_len;
 		}
 
 		/* No pending buffer */
 		if (data_buf == NULL) {
 			/* Block until any required ACKs arrive */
-			if (loader_params && loader_params->ack_period) {
+			if (loader_params->ack_period) {
 				rc = rpc_client_ack_wait(ctx, request_id, loader_params->ack_wait);
 				if (rc != 0) {
 					LOG_WRN("DATA_ACK timeout");
@@ -364,8 +370,7 @@ int rpc_client_data_queue_auto_load(struct rpc_client_ctx *ctx, uint32_t request
 	}
 
 	/* Print statistics */
-	data_len = loader_params ? loader_params->total_len : buffer_len;
-	LOG_INF("Request %08X: %d bytes in %d ms", request_id, data_len,
+	LOG_INF("Request %08X: %d bytes in %d ms", request_id, loader_params->total_len,
 		k_ticks_to_ms_near32(k_uptime_ticks() - start_time));
 	return 0;
 }
