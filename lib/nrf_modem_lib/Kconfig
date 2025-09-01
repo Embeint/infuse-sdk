@@ -162,6 +162,10 @@ config INFUSE_NRF_MODEM_LIB_SIM_IMEI
 	string "Simulated IMEI"
 	default "359404230110000"
 
+config INFUSE_NRF_MODEM_LIB_SIM_IMSI
+	string "Simulated IMSI"
+	default "525053090792900"
+
 config INFUSE_NRF_MODEM_LIB_SIM_UICC
 	string "Simulated UICC"
 	default "8901990000000000000"

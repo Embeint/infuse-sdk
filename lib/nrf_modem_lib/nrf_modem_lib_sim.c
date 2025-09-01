@@ -96,6 +96,8 @@ int nrf_modem_at_scanf(const char *cmd, const char *fmt, ...)
 		out = CONFIG_INFUSE_NRF_MODEM_LIB_SIM_ESN "\nOK";
 	} else if (strstr("AT+CGSN=1", cmd)) {
 		out = "+CGSN: \"" CONFIG_INFUSE_NRF_MODEM_LIB_SIM_IMEI "\"\nOK";
+	} else if (strstr("AT+CIMI", cmd)) {
+		out = CONFIG_INFUSE_NRF_MODEM_LIB_SIM_IMSI "\nOK";
 	} else if (strstr("AT%XICCID", cmd)) {
 		out = "%XICCID: " CONFIG_INFUSE_NRF_MODEM_LIB_SIM_UICC "\nOK";
 	} else if (strstr("AT+CESQ", cmd)) {
