@@ -228,6 +228,16 @@
                 {"name": "prefer", "type": "uint8_t", "description": "Preference as per `enum lte_lc_system_mode_preference`"}
             ]
         },
+        "47": {
+            "name": "LTE_SIM_IMSI",
+            "description": "'International Modem Subscriber Identity' as returned by AT+CIMI",
+            "reflect": true,
+            "read_only": true,
+            "default": "y if NRF_MODEM_LIB",
+            "fields": [
+                {"name": "imsi", "type": "uint64_t", "description": "15 digit IMSI"}
+            ]
+        },
         "50": {
             "name": "BLUETOOTH_PEER",
             "description": "Bluetooth peer device",

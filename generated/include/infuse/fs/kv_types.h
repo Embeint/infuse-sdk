@@ -297,6 +297,12 @@ struct kv_lte_networking_modes {
 	uint8_t prefer;
 } __packed;
 
+/** 'International Modem Subscriber Identity' as returned by AT+CIMI */
+struct kv_lte_sim_imsi {
+	/** 15 digit IMSI */
+	uint64_t imsi;
+} __packed;
+
 /** Bluetooth peer device */
 struct kv_bluetooth_peer {
 	/** Peer device Bluetooth address */
@@ -452,6 +458,8 @@ enum kv_builtin_id {
 	KV_KEY_LTE_PDP_CONFIG = 45,
 	/** Enabled LTE networking modes and preferences */
 	KV_KEY_LTE_NETWORKING_MODES = 46,
+	/** 'International Modem Subscriber Identity' as returned by AT+CIMI */
+	KV_KEY_LTE_SIM_IMSI = 47,
 	/** Bluetooth peer device */
 	KV_KEY_BLUETOOTH_PEER = 50,
 	/** LoRa modem configuration */
@@ -502,6 +510,7 @@ enum kv_builtin_size {
 	_KV_KEY_EPACKET_UDP_PORT_SIZE = sizeof(struct kv_epacket_udp_port),
 	_KV_KEY_LTE_MODEM_IMEI_SIZE = sizeof(struct kv_lte_modem_imei),
 	_KV_KEY_LTE_NETWORKING_MODES_SIZE = sizeof(struct kv_lte_networking_modes),
+	_KV_KEY_LTE_SIM_IMSI_SIZE = sizeof(struct kv_lte_sim_imsi),
 	_KV_KEY_BLUETOOTH_PEER_SIZE = sizeof(struct kv_bluetooth_peer),
 	_KV_KEY_LORA_CONFIG_SIZE = sizeof(struct kv_lora_config),
 	_KV_KEY_BLUETOOTH_THROUGHPUT_LIMIT_SIZE = sizeof(struct kv_bluetooth_throughput_limit),
@@ -531,6 +540,7 @@ enum kv_builtin_size {
 #define _KV_KEY_LTE_SIM_UICC_TYPE struct kv_lte_sim_uicc
 #define _KV_KEY_LTE_PDP_CONFIG_TYPE struct kv_lte_pdp_config
 #define _KV_KEY_LTE_NETWORKING_MODES_TYPE struct kv_lte_networking_modes
+#define _KV_KEY_LTE_SIM_IMSI_TYPE struct kv_lte_sim_imsi
 #define _KV_KEY_BLUETOOTH_PEER_TYPE struct kv_bluetooth_peer
 #define _KV_KEY_LORA_CONFIG_TYPE struct kv_lora_config
 #define _KV_KEY_BLUETOOTH_THROUGHPUT_LIMIT_TYPE struct kv_bluetooth_throughput_limit
@@ -579,6 +589,8 @@ enum kv_builtin_size {
 	IF_ENABLED(CONFIG_KV_STORE_KEY_LTE_PDP_CONFIG, \
 		   (1 +)) \
 	IF_ENABLED(CONFIG_KV_STORE_KEY_LTE_NETWORKING_MODES, \
+		   (1 +)) \
+	IF_ENABLED(CONFIG_KV_STORE_KEY_LTE_SIM_IMSI, \
 		   (1 +)) \
 	IF_ENABLED(CONFIG_KV_STORE_KEY_BLUETOOTH_PEER, \
 		   (1 +)) \
@@ -770,6 +782,13 @@ static struct key_value_slot_definition _KV_SLOTS_ARRAY_DEFINE[] = {
 		.flags = KV_FLAGS_REFLECT,
 	},
 #endif /* CONFIG_KV_STORE_KEY_LTE_NETWORKING_MODES */
+#ifdef CONFIG_KV_STORE_KEY_LTE_SIM_IMSI
+	{
+		.key = KV_KEY_LTE_SIM_IMSI,
+		.range = 1,
+		.flags = KV_FLAGS_REFLECT | KV_FLAGS_READ_ONLY,
+	},
+#endif /* CONFIG_KV_STORE_KEY_LTE_SIM_IMSI */
 #ifdef CONFIG_KV_STORE_KEY_BLUETOOTH_PEER
 	{
 		.key = KV_KEY_BLUETOOTH_PEER,
