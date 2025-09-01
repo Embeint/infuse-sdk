@@ -206,7 +206,7 @@ struct rpc_client_auto_load_params {
  */
 int rpc_client_data_queue_auto_load(struct rpc_client_ctx *ctx, uint32_t request_id,
 				    uint32_t offset, void *buffer, size_t buffer_len,
-				    struct rpc_client_auto_load_params *loader_params);
+				    const struct rpc_client_auto_load_params *loader_params);
 
 /**
  * @brief Queue a command for execution on a remote device and wait for the response
