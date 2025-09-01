@@ -113,15 +113,25 @@ static void network_info_update(struct k_work *work)
 	}
 
 	if (!sim_card_queried) {
+		KV_KEY_TYPE(KV_KEY_LTE_SIM_IMSI) sim_imsi;
 		KV_STRUCT_KV_STRING_VAR(25) sim_uicc;
 
+		/* SIM IMSI */
+		rc = nrf_modem_at_scanf("AT+CIMI", "%" SCNd64 "\n", &sim_imsi.imsi);
+		if (rc == 1) {
+			if (KV_STORE_WRITE(KV_KEY_LTE_SIM_IMSI, &sim_imsi) > 0) {
+				/* Print value when first saved to KV store */
+				LOG_INF("IMSI: %lld", sim_imsi.imsi);
+			}
+		}
+		/* SIM ICCID */
 		rc = nrf_modem_at_scanf("AT%XICCID", "%%XICCID: %24s", sim_uicc.value);
 		if (rc == 1) {
 			sim_uicc.value_num = strlen(sim_uicc.value) + 1;
 			if (kv_store_write(KV_KEY_LTE_SIM_UICC, &sim_uicc, 1 + sim_uicc.value_num) >
 			    0) {
 				/* Print value when first saved to KV store */
-				LOG_INF("SIM: %s", sim_uicc.value);
+				LOG_INF("UICC: %s", sim_uicc.value);
 			}
 			sim_card_queried = true;
 		}
