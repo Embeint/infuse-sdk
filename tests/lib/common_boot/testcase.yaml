@@ -4,6 +4,7 @@ common:
   min_ram: 32
 tests:
   lib.common_boot:
+    ignore_faults: true
     expect_reboot: true
     platform_exclude:
       - native_sim
@@ -12,3 +13,14 @@ tests:
       - infuse
     integration_platforms:
       - mps2/an385
+    harness: console
+    harness_config:
+      type: multi_line
+      ordered: false
+      regex:
+        - "Version: (.*)"
+        - "Device: (.*)"
+        - "Board: (.*)"
+        - "UICC: (.*)"
+        - "IMSI: (.*)"
+        - "Reboots: (.*)"

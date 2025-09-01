@@ -26,6 +26,7 @@ static __noinit int resetting_with_bad_id;
 ZTEST(common_boot, test_boot)
 {
 	KV_STRING_CONST(sim_uicc, "89000000000012345");
+	KV_KEY_TYPE(KV_KEY_LTE_SIM_IMSI) sim_imsi;
 	KV_KEY_TYPE(KV_KEY_INFUSE_APPLICATION_ID) id;
 	KV_KEY_TYPE(KV_KEY_REBOOTS) reboots;
 	uint64_t time_2020 = epoch_time_from_gps(2086, 259218, 0);
@@ -44,6 +45,7 @@ ZTEST(common_boot, test_boot)
 	if (resetting_with_bad_id == KV_FINAL_RESET_KEY) {
 		/* KV store should have been reset */
 		zassert_false(kv_store_key_exists(KV_KEY_LTE_SIM_UICC), "KV store not reset");
+		zassert_false(kv_store_key_exists(KV_KEY_LTE_SIM_IMSI), "KV store not reset");
 		zassert_equal(1, reboots.count, "KV store not reset");
 		/* We should still have the reboot reason state */
 		rc = infuse_common_boot_last_reboot(&reboot_state);
@@ -57,8 +59,10 @@ ZTEST(common_boot, test_boot)
 
 	switch (reboots.count) {
 	case 1:
-		/* Set SIM value */
+		sim_imsi.imsi = 123456789012345ll;
+		/* Set SIM values */
 		zassert_equal(sizeof(sim_uicc), KV_STORE_WRITE(KV_KEY_LTE_SIM_UICC, &sim_uicc));
+		zassert_equal(sizeof(sim_imsi), KV_STORE_WRITE(KV_KEY_LTE_SIM_IMSI, &sim_imsi));
 		/* No reboot information yet */
 		rc = infuse_common_boot_last_reboot(&reboot_state);
 		zassert_equal(-ENOENT, rc);
