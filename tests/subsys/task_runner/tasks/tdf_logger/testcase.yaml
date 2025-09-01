@@ -2,9 +2,15 @@ common:
   tags: data_logger tdf
   min_flash: 64
   min_ram: 32
+  required_snippets:
+    - infuse
+  integration_platforms:
+    - mps2/an385
 tests:
-  task_runner.tasks.tdf_logger:
-    required_snippets:
-      - infuse
-    integration_platforms:
-      - mps2/an385
+  task_runner.tasks.tdf_logger.complete: {}
+  task_runner.tasks.tdf_logger.voltage:
+    extra_configs:
+      - CONFIG_TASK_TDF_LOGGER_BATTERY_TYPE_VOLTAGE=y
+  task_runner.tasks.tdf_logger.soc:
+    extra_configs:
+      - CONFIG_TASK_TDF_LOGGER_BATTERY_TYPE_SOC=y
