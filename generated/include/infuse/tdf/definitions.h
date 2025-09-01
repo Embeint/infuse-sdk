@@ -685,6 +685,18 @@ struct tdf_network_scan_count {
 		uint32_t frame[_count];                                                            \
 	} __packed;
 
+/** Battery voltage */
+struct tdf_battery_voltage {
+	/** Battery voltage (milliVolts) */
+	uint16_t voltage;
+} __packed;
+
+/** Battery state of charge */
+struct tdf_battery_soc {
+	/** State of charge (percent) */
+	uint8_t soc;
+} __packed;
+
 /** Infuse-IoT builtin TDF definitions */
 enum tdf_builtin_id {
 	/** Common announcement packet */
@@ -785,6 +797,10 @@ enum tdf_builtin_id {
 	TDF_NETWORK_SCAN_COUNT = 51,
 	/** Generic exception stack frame */
 	TDF_EXCEPTION_STACK_FRAME = 52,
+	/** Battery voltage */
+	TDF_BATTERY_VOLTAGE = 53,
+	/** Battery state of charge */
+	TDF_BATTERY_SOC = 54,
 	/** End of builtin TDF range */
 	TDF_BUILTIN_END = 1024,
 };
@@ -838,6 +854,8 @@ enum tdf_builtin_id {
 #define _TDF_WIFI_CONNECTION_FAILED_TYPE      struct tdf_wifi_connection_failed
 #define _TDF_WIFI_DISCONNECTED_TYPE           struct tdf_wifi_disconnected
 #define _TDF_NETWORK_SCAN_COUNT_TYPE          struct tdf_network_scan_count
+#define _TDF_BATTERY_VOLTAGE_TYPE             struct tdf_battery_voltage
+#define _TDF_BATTERY_SOC_TYPE                 struct tdf_battery_soc
 
 /** Size of builtin TDF definitions */
 enum tdf_builtin_size {
@@ -888,6 +906,8 @@ enum tdf_builtin_size {
 	_TDF_WIFI_CONNECTION_FAILED_SIZE = sizeof(struct tdf_wifi_connection_failed),
 	_TDF_WIFI_DISCONNECTED_SIZE = sizeof(struct tdf_wifi_disconnected),
 	_TDF_NETWORK_SCAN_COUNT_SIZE = sizeof(struct tdf_network_scan_count),
+	_TDF_BATTERY_VOLTAGE_SIZE = sizeof(struct tdf_battery_voltage),
+	_TDF_BATTERY_SOC_SIZE = sizeof(struct tdf_battery_soc),
 };
 
 /** @endcond */
