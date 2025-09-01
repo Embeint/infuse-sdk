@@ -84,7 +84,19 @@ static void log_battery(uint8_t loggers, uint64_t timestamp)
 	/* Get latest value */
 	zbus_chan_read(C_GET(INFUSE_ZBUS_CHAN_BATTERY), &battery, K_FOREVER);
 	/* Add to specified loggers */
+#if defined(CONFIG_TASK_TDF_LOGGER_BATTERY_TYPE_COMPLETE)
 	TDF_DATA_LOGGER_LOG(loggers, TDF_BATTERY_STATE, timestamp, &battery);
+#elif defined(CONFIG_TASK_TDF_LOGGER_BATTERY_TYPE_VOLTAGE)
+	struct tdf_battery_voltage tdf = {.voltage = battery.voltage_mv};
+
+	TDF_DATA_LOGGER_LOG(loggers, TDF_BATTERY_VOLTAGE, timestamp, &tdf);
+#elif defined(CONFIG_TASK_TDF_LOGGER_BATTERY_TYPE_SOC)
+	struct tdf_battery_soc tdf = {.soc = battery.soc};
+
+	TDF_DATA_LOGGER_LOG(loggers, TDF_BATTERY_SOC, timestamp, &tdf);
+#else
+#error Unknown battery logging type
+#endif
 #endif
 }
 
