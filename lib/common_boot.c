@@ -296,9 +296,17 @@ static int infuse_common_boot(void)
 	KV_STRUCT_KV_STRING_VAR(24) sim_uicc;
 
 	if (KV_STORE_READ(KV_KEY_LTE_SIM_UICC, &sim_uicc) > 0) {
-		LOG_INF("\t    SIM: %s", sim_uicc.value);
+		LOG_INF("\t   UICC: %s", sim_uicc.value);
 	}
 #endif /* CONFIG_KV_STORE_KEY_LTE_SIM_UICC */
+#ifdef CONFIG_KV_STORE_KEY_LTE_SIM_IMSI
+	KV_KEY_TYPE(KV_KEY_LTE_SIM_IMSI) sim_imsi;
+
+	if (KV_STORE_READ(KV_KEY_LTE_SIM_IMSI, &sim_imsi) > 0) {
+		LOG_INF("\t   IMSI: %lld", sim_imsi.imsi);
+	}
+#endif /* CONFIG_KV_STORE_KEY_LTE_SIM_IMSI */
+
 	LOG_INF("\tReboots: %d", reboot.count);
 #ifdef CONFIG_INFUSE_REBOOT
 	struct timeutil_sync_instant reference;
