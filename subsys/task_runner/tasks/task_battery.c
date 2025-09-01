@@ -90,6 +90,9 @@ void battery_task_fn(struct k_work *work)
 	const struct task_battery_args *args = &sch->task_args.infuse.battery;
 	const struct device *fuel_gauge = task->executor.workqueue.task_arg.const_arg;
 	struct tdf_battery_state tdf_battery = {0};
+	struct tdf_battery_voltage tdf_voltage;
+	struct tdf_battery_soc tdf_soc;
+	uint64_t epoch_time;
 	int rc;
 
 	if (task_runner_task_block(&task->terminate_signal, K_NO_WAIT) == 1) {
@@ -100,9 +103,17 @@ void battery_task_fn(struct k_work *work)
 
 	rc = task_battery_manual_run(fuel_gauge, &sch->task_args.infuse.battery, &tdf_battery);
 	if (rc == 0) {
-		/* Log output TDF */
-		TASK_SCHEDULE_TDF_LOG(sch, TASK_BATTERY_LOG_COMPLETE, TDF_BATTERY_STATE,
-				      epoch_time_now(), &tdf_battery);
+		tdf_voltage.voltage = tdf_battery.voltage_mv;
+		tdf_soc.soc = tdf_battery.soc;
+		epoch_time = epoch_time_now();
+
+		/* Log output TDFs */
+		TASK_SCHEDULE_TDF_LOG(sch, TASK_BATTERY_LOG_COMPLETE, TDF_BATTERY_STATE, epoch_time,
+				      &tdf_battery);
+		TASK_SCHEDULE_TDF_LOG(sch, TASK_BATTERY_LOG_VOLTAGE, TDF_BATTERY_VOLTAGE,
+				      epoch_time, &tdf_voltage);
+		TASK_SCHEDULE_TDF_LOG(sch, TASK_BATTERY_LOG_SOC, TDF_BATTERY_SOC, epoch_time,
+				      &tdf_soc);
 	}
 
 	if (args->repeat_interval_ms) {

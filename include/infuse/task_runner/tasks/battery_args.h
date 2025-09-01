@@ -21,6 +21,10 @@ extern "C" {
 enum {
 	/* Battery voltage, charge current, charge percentage */
 	TASK_BATTERY_LOG_COMPLETE = BIT(0),
+	/* Battery voltage */
+	TASK_BATTERY_LOG_VOLTAGE = BIT(1),
+	/* Battery charge percentage */
+	TASK_BATTERY_LOG_SOC = BIT(2),
 };
 
 /** @brief Battery task arguments */
