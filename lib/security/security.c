@@ -402,31 +402,29 @@ int infuse_security_init(void)
 	return 0;
 }
 
-psa_key_id_t infuse_security_derive_key(psa_key_id_t base_key, psa_algorithm_t algorithm,
-					psa_key_type_t key_type, size_t key_bits,
-					psa_key_usage_t key_usage, const void *salt,
-					size_t salt_len, const void *info, size_t info_len,
-					bool force_export)
+psa_key_id_t infuse_security_derive_key(const struct infuse_security_key_params *params)
 {
 	psa_key_attributes_t key_attributes = PSA_KEY_ATTRIBUTES_INIT;
 	psa_key_derivation_operation_t operation = PSA_KEY_DERIVATION_OPERATION_INIT;
 	psa_key_id_t output_key = PSA_KEY_ID_NULL;
+	psa_key_usage_t key_usage = params->key_usage;
 
-	if (IS_ENABLED(CONFIG_INFUSE_SECURITY_CHACHA_KEY_EXPORT) || force_export) {
+	if (IS_ENABLED(CONFIG_INFUSE_SECURITY_CHACHA_KEY_EXPORT) || params->force_export) {
 		key_usage |= PSA_KEY_USAGE_EXPORT;
 	}
 	psa_set_key_usage_flags(&key_attributes, key_usage);
 	psa_set_key_lifetime(&key_attributes, PSA_KEY_LIFETIME_VOLATILE);
-	psa_set_key_algorithm(&key_attributes, algorithm);
-	psa_set_key_type(&key_attributes, key_type);
-	psa_set_key_bits(&key_attributes, key_bits);
+	psa_set_key_algorithm(&key_attributes, params->algorithm);
+	psa_set_key_type(&key_attributes, params->key_type);
+	psa_set_key_bits(&key_attributes, params->key_bits);
 
 	if (psa_key_derivation_setup(&operation, PSA_ALG_HKDF(PSA_ALG_SHA_256)) ||
-	    psa_key_derivation_input_bytes(&operation, PSA_KEY_DERIVATION_INPUT_SALT, salt,
-					   salt_len) ||
-	    psa_key_derivation_input_bytes(&operation, PSA_KEY_DERIVATION_INPUT_INFO, info,
-					   info_len) ||
-	    psa_key_derivation_input_key(&operation, PSA_KEY_DERIVATION_INPUT_SECRET, base_key) ||
+	    psa_key_derivation_input_bytes(&operation, PSA_KEY_DERIVATION_INPUT_SALT, params->salt,
+					   params->salt_len) ||
+	    psa_key_derivation_input_bytes(&operation, PSA_KEY_DERIVATION_INPUT_INFO, params->info,
+					   params->info_len) ||
+	    psa_key_derivation_input_key(&operation, PSA_KEY_DERIVATION_INPUT_SECRET,
+					 params->base_key) ||
 	    psa_key_derivation_output_key(&key_attributes, &operation, &output_key)) {
 		output_key = PSA_KEY_ID_NULL;
 	}
@@ -438,10 +436,20 @@ psa_key_id_t infuse_security_derive_chacha_key(psa_key_id_t base_key, const void
 					       size_t salt_len, const void *info, size_t info_len,
 					       bool force_export)
 {
-	return infuse_security_derive_key(base_key, PSA_ALG_CHACHA20_POLY1305,
-					  PSA_KEY_TYPE_CHACHA20, 256,
-					  PSA_KEY_USAGE_ENCRYPT | PSA_KEY_USAGE_DECRYPT, salt,
-					  salt_len, info, info_len, force_export);
+	const struct infuse_security_key_params params = {
+		.base_key = base_key,
+		.algorithm = PSA_ALG_CHACHA20_POLY1305,
+		.key_type = PSA_KEY_TYPE_CHACHA20,
+		.key_bits = 256,
+		.key_usage = PSA_KEY_USAGE_ENCRYPT | PSA_KEY_USAGE_DECRYPT,
+		.salt = salt,
+		.salt_len = salt_len,
+		.info = info,
+		.info_len = info_len,
+		.force_export = force_export,
+	};
+
+	return infuse_security_derive_key(&params);
 }
 
 void infuse_security_cloud_public_key(uint8_t public_key[32])
