@@ -156,6 +156,7 @@ ZTEST(infuse_nrf_modem_monitor, test_integration)
 	KV_KEY_TYPE_VAR(KV_KEY_LTE_PDP_CONFIG, 16) pdp_config;
 	KV_KEY_TYPE(KV_KEY_LTE_NETWORKING_MODES) net_modes;
 	KV_KEY_TYPE(KV_KEY_LTE_MODEM_IMEI) imei;
+	KV_KEY_TYPE(KV_KEY_LTE_SIM_IMSI) imsi;
 	struct net_if *iface = net_if_get_default();
 	struct nrf_modem_network_state net_state;
 	struct nrf_modem_fault_info fault_info = {0};
@@ -182,6 +183,7 @@ ZTEST(infuse_nrf_modem_monitor, test_integration)
 	zassert_false(kv_store_key_exists(KV_KEY_LTE_MODEM_ESN));
 	zassert_false(kv_store_key_exists(KV_KEY_LTE_MODEM_IMEI));
 	zassert_false(kv_store_key_exists(KV_KEY_LTE_SIM_UICC));
+	zassert_false(kv_store_key_exists(KV_KEY_LTE_SIM_IMSI));
 	zassert_false(kv_store_key_exists(KV_KEY_LTE_PDP_CONFIG));
 	zassert_false(kv_store_key_exists(KV_KEY_LTE_NETWORKING_MODES));
 
@@ -195,6 +197,7 @@ ZTEST(infuse_nrf_modem_monitor, test_integration)
 	zassert_true(kv_store_key_exists(KV_KEY_LTE_MODEM_ESN));
 	zassert_true(kv_store_key_exists(KV_KEY_LTE_MODEM_IMEI));
 	zassert_false(kv_store_key_exists(KV_KEY_LTE_SIM_UICC));
+	zassert_false(kv_store_key_exists(KV_KEY_LTE_SIM_IMSI));
 	zassert_true(kv_store_key_exists(KV_KEY_LTE_PDP_CONFIG));
 	zassert_true(kv_store_key_exists(KV_KEY_LTE_NETWORKING_MODES));
 
@@ -227,6 +230,9 @@ ZTEST(infuse_nrf_modem_monitor, test_integration)
 	/* SIM card queried now that LTE is active */
 	zassert_true(kv_store_key_exists(KV_KEY_LTE_SIM_UICC));
 	kv_string_equal(KV_KEY_LTE_SIM_UICC, CONFIG_INFUSE_NRF_MODEM_LIB_SIM_UICC);
+	zassert_true(kv_store_key_exists(KV_KEY_LTE_SIM_IMSI));
+	KV_STORE_READ(KV_KEY_LTE_SIM_IMSI, &imsi);
+	zassert_equal(atoll(CONFIG_INFUSE_NRF_MODEM_LIB_SIM_IMSI), imsi.imsi);
 
 	nrf_modem_monitor_network_state(&net_state);
 	zassert_equal(LTE_LC_NW_REG_SEARCHING, net_state.nw_reg_status);
