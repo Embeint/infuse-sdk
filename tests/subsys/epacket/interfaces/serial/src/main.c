@@ -35,15 +35,21 @@ ZTEST(epacket_serial, test_reconstructor)
 	uint8_t buffer[64];
 	struct net_buf *out;
 
+	for (int i = 0; i < sizeof(buffer); i++) {
+		buffer[i] = i + 1;
+	}
+
 	/* Valid packet 1 */
 	s.len = 10;
 	epacket_serial_reconstruct(NULL, (void *)&s, sizeof(s), receive_handler);
 	zassert_is_null(k_fifo_get(&packet_queue, K_MSEC(100)));
 	epacket_serial_reconstruct(NULL, buffer, 9, receive_handler);
 	zassert_is_null(k_fifo_get(&packet_queue, K_MSEC(100)));
-	epacket_serial_reconstruct(NULL, buffer, 1, receive_handler);
+	epacket_serial_reconstruct(NULL, buffer + 9, 1, receive_handler);
 	out = k_fifo_get(&packet_queue, K_MSEC(100));
 	zassert_not_null(out);
+	zassert_equal(s.len, out->len);
+	zassert_mem_equal(buffer, out->data, out->len);
 	net_buf_unref(out);
 
 	/* Valid packet 2 */
@@ -52,9 +58,11 @@ ZTEST(epacket_serial, test_reconstructor)
 	zassert_is_null(k_fifo_get(&packet_queue, K_MSEC(100)));
 	epacket_serial_reconstruct(NULL, buffer, 3, receive_handler);
 	zassert_is_null(k_fifo_get(&packet_queue, K_MSEC(100)));
-	epacket_serial_reconstruct(NULL, buffer, 1, receive_handler);
+	epacket_serial_reconstruct(NULL, buffer + 3, 1, receive_handler);
 	out = k_fifo_get(&packet_queue, K_MSEC(100));
 	zassert_not_null(out);
+	zassert_equal(s.len, out->len);
+	zassert_mem_equal(buffer, out->data, out->len);
 	net_buf_unref(out);
 
 	/* Random junk ascii */
@@ -73,9 +81,11 @@ ZTEST(epacket_serial, test_reconstructor)
 	zassert_is_null(k_fifo_get(&packet_queue, K_MSEC(100)));
 	epacket_serial_reconstruct(NULL, buffer, 29, receive_handler);
 	zassert_is_null(k_fifo_get(&packet_queue, K_MSEC(100)));
-	epacket_serial_reconstruct(NULL, buffer, 1, receive_handler);
+	epacket_serial_reconstruct(NULL, buffer + 29, 1, receive_handler);
 	out = k_fifo_get(&packet_queue, K_MSEC(100));
 	zassert_not_null(out);
+	zassert_equal(s.len, out->len);
+	zassert_mem_equal(buffer, out->data, out->len);
 	net_buf_unref(out);
 
 	/* Bad sync bytes */
