@@ -328,6 +328,7 @@ static void mtu_exchange_cb(struct bt_conn *conn, uint8_t err,
 			    struct bt_gatt_exchange_params *params)
 {
 	struct bt_gatt_state *s = &state[bt_conn_index(conn)];
+	int rc;
 
 	if (err) {
 		connection_error(conn, err);
@@ -355,9 +356,9 @@ static void mtu_exchange_cb(struct bt_conn *conn, uint8_t err,
 	db_read_params.by_uuid.start_handle = BT_ATT_FIRST_ATTRIBUTE_HANDLE;
 	db_read_params.by_uuid.end_handle = BT_ATT_LAST_ATTRIBUTE_HANDLE;
 
-	err = bt_gatt_read(conn, &db_read_params);
-	if (err < 0) {
-		connection_error(conn, err);
+	rc = bt_gatt_read(conn, &db_read_params);
+	if (rc < 0) {
+		connection_error(conn, rc);
 	}
 }
 
