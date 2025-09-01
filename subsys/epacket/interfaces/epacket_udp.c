@@ -184,21 +184,78 @@ static int epacket_udp_dns_query(void)
 			       &udp_state.remote, &udp_state.remote_len);
 }
 
+static void udp_core_read_loop(void)
+{
+	const struct device *epacket_udp = DEVICE_DT_GET(DT_DRV_INST(0));
+	struct epacket_rx_metadata *meta;
+	struct zsock_pollfd pollfds[1];
+	struct sockaddr from;
+	socklen_t from_len;
+	struct net_buf *buf;
+	int received;
+	uint16_t port;
+	uint8_t *addr;
+	int rc;
+
+	pollfds[0].fd = udp_state.sock;
+	pollfds[0].events = ZSOCK_POLLIN;
+
+	while (true) {
+		/* Wait for data to arrive */
+		rc = zsock_poll(pollfds, 1, SYS_FOREVER_MS);
+		if (pollfds[0].revents & (ZSOCK_POLLHUP | ZSOCK_POLLNVAL)) {
+			LOG_WRN("Socket closed (0x%02X)", pollfds[0].revents);
+			return;
+		}
+
+		/* Allocate buffer and receive data */
+		buf = epacket_alloc_rx(CLAIM_TIMEOUT);
+		if (buf == NULL) {
+#ifdef CONFIG_INFUSE_REBOOT
+			/* Could not claim a RX buffer even with an excessive timeout */
+			infuse_reboot_delayed(INFUSE_REBOOT_SW_WATCHDOG,
+					      (uintptr_t)udp_core_read_loop, 30, K_SECONDS(2));
+			k_sleep(K_FOREVER);
+#else
+			LOG_ERR("UDP thread blocked on RX buffer");
+			buf = epacket_alloc_rx(K_FOREVER);
+#endif
+		}
+		from_len = sizeof(from);
+		received =
+			zsock_recvfrom(udp_state.sock, buf->data, buf->size, 0, &from, &from_len);
+		if (received < 0) {
+			LOG_ERR("Failed to receive (%d)", errno);
+			net_buf_unref(buf);
+			return;
+		}
+		net_buf_add(buf, received);
+		addr = ((struct sockaddr_in *)&from)->sin_addr.s4_addr;
+		port = ((struct sockaddr_in *)&from)->sin_port;
+		LOG_DBG("Received %d bytes from %d.%d.%d.%d:%d", received, addr[0], addr[1],
+			addr[2], addr[3], ntohs(port));
+
+#ifdef CONFIG_MEMFAULT_INFUSE_METRICS_SYNC_SUCCESS_EPACKET_UDP
+		memfault_metrics_connectivity_record_sync_success();
+#endif
+
+		meta = net_buf_user_data(buf);
+		meta->interface = epacket_udp;
+		meta->interface_id = EPACKET_INTERFACE_UDP;
+		meta->rssi = 0;
+
+		/* Hand off to core ePacket functions */
+		epacket_raw_receive_handler(buf);
+	}
+}
+
 static int epacket_udp_loop(void *a, void *b, void *c)
 {
 	const struct device *epacket_udp = DEVICE_DT_GET(DT_DRV_INST(0));
 	struct epacket_interface_common_data *data = epacket_udp->data;
 	struct sockaddr_in local_addr = {0};
-	struct epacket_rx_metadata *meta;
 	struct epacket_interface_cb *cb;
-	struct zsock_pollfd pollfds[1];
 	bool first_connection = true;
-	struct sockaddr from;
-	socklen_t from_len;
-	struct net_buf *buf;
-	uint16_t port;
-	uint8_t *addr;
-	int received;
 	int rc;
 
 	local_addr.sin_family = AF_INET;
@@ -252,63 +309,16 @@ static int epacket_udp_loop(void *a, void *b, void *c)
 		}
 		k_event_post(&udp_state.state, UDP_STATE_CLIENTS_NOTIFIED_UP);
 
-		pollfds[0].fd = udp_state.sock;
-		pollfds[0].events = ZSOCK_POLLIN;
-
 		if (first_connection) {
 			/* On the first connection after boot, remind the cloud of key state */
 			(void)epacket_send_key_ids(epacket_udp, K_NO_WAIT);
 			first_connection = false;
 		}
 
-		while (true) {
-			/* Wait for data to arrive */
-			rc = zsock_poll(pollfds, 1, SYS_FOREVER_MS);
-			if (pollfds[0].revents & (ZSOCK_POLLHUP | ZSOCK_POLLNVAL)) {
-				LOG_WRN("Socket closed (0x%02X)", pollfds[0].revents);
-				break;
-			}
+		/* Loop reading data */
+		udp_core_read_loop();
 
-			/* Allocate buffer and receive data */
-			buf = epacket_alloc_rx(CLAIM_TIMEOUT);
-			if (buf == NULL) {
-#ifdef CONFIG_INFUSE_REBOOT
-				/* Could not claim a RX buffer even with an excessive timeout */
-				infuse_reboot_delayed(INFUSE_REBOOT_SW_WATCHDOG,
-						      (uintptr_t)epacket_udp_loop, 30,
-						      K_SECONDS(2));
-				k_sleep(K_FOREVER);
-#else
-				LOG_ERR("UDP thread blocked on RX buffer");
-				buf = epacket_alloc_rx(K_FOREVER);
-#endif
-			}
-			from_len = sizeof(from);
-			received = zsock_recvfrom(udp_state.sock, buf->data, buf->size, 0, &from,
-						  &from_len);
-			if (received < 0) {
-				LOG_ERR("Failed to receive (%d)", errno);
-				net_buf_unref(buf);
-				break;
-			}
-			net_buf_add(buf, received);
-			addr = ((struct sockaddr_in *)&from)->sin_addr.s4_addr;
-			port = ((struct sockaddr_in *)&from)->sin_port;
-			LOG_DBG("Received %d bytes from %d.%d.%d.%d:%d", received, addr[0], addr[1],
-				addr[2], addr[3], ntohs(port));
-
-#ifdef CONFIG_MEMFAULT_INFUSE_METRICS_SYNC_SUCCESS_EPACKET_UDP
-			memfault_metrics_connectivity_record_sync_success();
-#endif
-
-			meta = net_buf_user_data(buf);
-			meta->interface = epacket_udp;
-			meta->interface_id = EPACKET_INTERFACE_UDP;
-			meta->rssi = 0;
-
-			/* Hand off to core ePacket functions */
-			epacket_raw_receive_handler(buf);
-		}
+		/* Core read loop exits when no longer connected */
 		MEMFAULT_METRIC_TIMER_STOP(epacket_udp_connected);
 socket_error:
 		/* Close socket if still open */
