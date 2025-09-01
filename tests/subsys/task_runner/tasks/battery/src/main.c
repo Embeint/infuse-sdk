@@ -57,37 +57,64 @@ static void task_schedule(struct task_data *data)
 	k_work_reschedule(&data->executor.workqueue.work, K_NO_WAIT);
 }
 
-static void expect_logging(uint32_t battery_uv, int32_t current_ua, uint8_t soc)
+static void expect_logging(uint8_t log_mask, uint32_t battery_uv, int32_t current_ua, uint8_t soc)
 {
 	struct k_fifo *tx_queue = epacket_dummmy_transmit_fifo_get();
-	struct tdf_battery_state *state;
 	struct tdf_parsed tdf;
 	struct net_buf *pkt;
+	int rc;
 
 	tdf_data_logger_flush(TDF_DATA_LOGGER_SERIAL);
 	pkt = k_fifo_get(tx_queue, K_MSEC(10));
+	if (log_mask == 0) {
+		zassert_is_null(pkt);
+		return;
+	}
+
 	zassert_not_null(pkt);
 
 	net_buf_pull(pkt, sizeof(struct epacket_dummy_frame));
-	zassert_equal(0, tdf_parse_find_in_buf(pkt->data, pkt->len, TDF_BATTERY_STATE, &tdf));
-	state = tdf.data;
 
-	zassert_equal(battery_uv / 1000, state->voltage_mv);
-	zassert_equal(current_ua, state->current_ua);
-	zassert_equal(soc, state->soc);
+	if (log_mask & TASK_BATTERY_LOG_COMPLETE) {
+		struct tdf_battery_state *state;
+
+		rc = tdf_parse_find_in_buf(pkt->data, pkt->len, TDF_BATTERY_STATE, &tdf);
+		zassert_equal(0, rc);
+		state = tdf.data;
+
+		zassert_equal(battery_uv / 1000, state->voltage_mv);
+		zassert_equal(current_ua, state->current_ua);
+		zassert_equal(soc, state->soc);
+	}
+	if (log_mask & TASK_BATTERY_LOG_VOLTAGE) {
+		struct tdf_battery_voltage *state;
+
+		rc = tdf_parse_find_in_buf(pkt->data, pkt->len, TDF_BATTERY_VOLTAGE, &tdf);
+		zassert_equal(0, rc);
+		state = tdf.data;
+
+		zassert_equal(battery_uv / 1000, state->voltage);
+	}
+	if (log_mask & TASK_BATTERY_LOG_SOC) {
+		struct tdf_battery_soc *state;
+
+		rc = tdf_parse_find_in_buf(pkt->data, pkt->len, TDF_BATTERY_SOC, &tdf);
+		zassert_equal(0, rc);
+		state = tdf.data;
+
+		zassert_equal(soc, state->soc);
+	}
 
 	net_buf_unref(pkt);
 }
 
-static void test_battery(uint32_t battery_uv, int32_t current_ua, bool log)
+static void test_battery(uint32_t battery_uv, int32_t current_ua, uint8_t log_mask)
 {
 	INFUSE_ZBUS_TYPE(INFUSE_ZBUS_CHAN_BATTERY) battery_reading;
 	uint32_t pub_count;
 
-	if (log) {
-		schedule.task_logging[0].tdf_mask = TASK_BATTERY_LOG_COMPLETE;
-		schedule.task_logging[0].loggers = TDF_DATA_LOGGER_SERIAL;
-	}
+	schedule.task_logging[0].tdf_mask = log_mask;
+	schedule.task_logging[0].loggers = TDF_DATA_LOGGER_SERIAL;
 
 	/* Configure emulator */
 	emul_fuel_gauge_set_battery_charging(EMUL_DEV, battery_uv, current_ua);
@@ -109,9 +136,7 @@ static void test_battery(uint32_t battery_uv, int32_t current_ua, bool log)
 	zassert_equal(current_ua, battery_reading.current_ua);
 	zassert_equal(1, battery_reading.soc);
 
-	if (log) {
-		expect_logging(battery_uv, current_ua, 1);
-	}
+	expect_logging(log_mask, battery_uv, current_ua, 1);
 }
 
 ZTEST(task_bat, test_no_log)
@@ -124,12 +149,15 @@ ZTEST(task_bat, test_no_log)
 	/* Setup links between task config and data */
 	task_runner_init(&schedule, &state, 1, &config, &data, 1);
 
-	test_battery(3700000, 10000, false);
-	test_battery(3501000, -15000, false);
+	test_battery(3700000, 10000, 0);
+	test_battery(3501000, -15000, 0);
 }
 
 ZTEST(task_bat, test_log)
 {
+	uint8_t log_all =
+		TASK_BATTERY_LOG_COMPLETE | TASK_BATTERY_LOG_VOLTAGE | TASK_BATTERY_LOG_SOC;
+
 	schedule = (struct task_schedule){
 		.task_id = TASK_ID_BATTERY,
 		.validity = TASK_VALID_ALWAYS,
@@ -138,8 +166,14 @@ ZTEST(task_bat, test_log)
 	/* Setup links between task config and data */
 	task_runner_init(&schedule, &state, 1, &config, &data, 1);
 
-	test_battery(3700000, 10000, true);
-	test_battery(3501000, -15000, true);
+	test_battery(3700000, 10000, TASK_BATTERY_LOG_COMPLETE);
+	test_battery(3501000, -15000, TASK_BATTERY_LOG_COMPLETE);
+
+	test_battery(4200000, 18000, TASK_BATTERY_LOG_VOLTAGE);
+	test_battery(4201000, -7000, TASK_BATTERY_LOG_VOLTAGE);
+
+	test_battery(3600000, 15000, log_all);
+	test_battery(3601000, -10000, log_all);
 }
 
 ZTEST(task_bat, test_periodic)
@@ -160,6 +194,9 @@ ZTEST(task_bat, test_periodic)
 				.repeat_interval_ms = 990,
 			},
 	};
+
+	/* Configure emulator */
+	emul_fuel_gauge_set_battery_charging(EMUL_DEV, 3700000, 1000);
 
 	/* Setup links between task config and data */
 	task_runner_init(&schedule, &state, 1, &config, &data, 1);
