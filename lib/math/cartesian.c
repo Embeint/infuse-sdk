@@ -87,29 +87,32 @@ bool cartesian_point_in_polygon(struct cartesian_point_2d point,
 		size_t j = (i + 1) % vertices;
 		struct cartesian_line_2d edge = {polygon[i], polygon[j]};
 
-		if (cartesian_line_intersection(ray, edge, &intersection)) {
+		/* If the test ray doesn't intersect with the polygon */
+		if (!cartesian_line_intersection(ray, edge, &intersection)) {
+			continue;
+		}
 
-			/* Check if the intersection is to the right of or at the test point */
-			if (intersection.x >= point.x) {
+		/* If the intersection is to the left of the test point */
+		if (intersection.x < point.x) {
+			continue;
+		}
 
-				if (intersection.x == point.x && intersection.y == point.y) {
-					/* The point is on a vertex */
-					return true;
-				}
+		/* The point is on a vertex */
+		if (intersection.x == point.x && intersection.y == point.y) {
+			return true;
+		}
 
-				/* Handle edge cases */
-				if (edge.a.y == point.y || edge.b.y == point.y) {
-					/* If the intersection is at a vertex, count it
-					 * only, if the other endpoint is below the ray
-					 */
-					if ((edge.a.y > point.y && edge.b.y <= point.y) ||
-					    (edge.b.y > point.y && edge.a.y <= point.y)) {
-						intersections++;
-					}
-				} else {
-					intersections++;
-				}
+		/* Handle edge cases */
+		if (edge.a.y == point.y || edge.b.y == point.y) {
+			/* If the intersection is at a vertex, count it
+			 * only, if the other endpoint is below the ray
+			 */
+			if ((edge.a.y > point.y && edge.b.y <= point.y) ||
+			    (edge.b.y > point.y && edge.a.y <= point.y)) {
+				intersections++;
 			}
+		} else {
+			intersections++;
 		}
 	}
 
