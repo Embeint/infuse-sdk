@@ -527,6 +527,20 @@
             "fields": [
                 {"name": "frame", "type": "uint32_t", "num":0, "description": "Stack frame value", "display": {"fmt": "hex", "digits": 8}}
             ]
+        },
+        "53": {
+            "name": "BATTERY_VOLTAGE",
+            "description": "Battery voltage",
+            "fields": [
+                {"name": "voltage", "type": "uint16_t", "description": "Battery voltage (milliVolts)", "display": {"postfix": "mV"}}
+            ]
+        },
+        "54": {
+            "name": "BATTERY_SOC",
+            "description": "Battery state of charge",
+            "fields": [
+                {"name": "soc", "type": "uint8_t", "description": "State of charge (percent)", "display": {"postfix": "%"}}
+            ]
         }
     }
 }
