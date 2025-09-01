@@ -30,40 +30,50 @@ LOG_MODULE_DECLARE(epacket_serial);
 
 static const uint8_t sync_bytes[2] = {EPACKET_SERIAL_SYNC_A, EPACKET_SERIAL_SYNC_B};
 
+static uint16_t epacket_serial_prefix_search(uint16_t pkt_idx, uint16_t *payload_remaining,
+					     uint8_t byte)
+{
+	static uint8_t len_lsb;
+
+	switch (pkt_idx) {
+	case 0:
+	case 1:
+		/* SYNC bytes */
+		if (byte != sync_bytes[pkt_idx]) {
+			return 0;
+		}
+		break;
+	case 2:
+		/* First byte of payload length field */
+		len_lsb = byte;
+		break;
+	case 3:
+		/* Second byte of payload length field */
+		*payload_remaining = ((uint16_t)byte << 8) | len_lsb;
+		if (*payload_remaining == 0) {
+			/* Empty payload is invalid */
+			return 0;
+		}
+		break;
+	}
+	return pkt_idx + 1;
+}
+
 void epacket_serial_reconstruct(const struct device *dev, uint8_t *buffer, size_t len,
 				void (*handler)(struct net_buf *))
 {
+	struct epacket_rx_metadata *meta;
 	static struct net_buf *rx_buffer;
 	static uint16_t payload_remaining;
-	static uint8_t len_lsb;
 	static uint16_t pkt_idx;
-	struct epacket_rx_metadata *meta;
 
 	for (int i = 0; i < len; i++) {
-		switch (pkt_idx) {
-		case 0:
-		case 1:
-			if (buffer[i] != sync_bytes[pkt_idx]) {
-				pkt_idx = 0;
-				continue;
-			}
-			break;
-		case 2:
-			len_lsb = buffer[i];
-			break;
-		case 3:
-			payload_remaining = ((uint16_t)buffer[i] << 8) | len_lsb;
-			if (payload_remaining == 0) {
-				/* Empty payload is invalid */
-				pkt_idx = 0;
-				continue;
-			}
-			break;
-		}
-		pkt_idx++;
+		/* Search for packet header */
+		pkt_idx = epacket_serial_prefix_search(pkt_idx, &payload_remaining, buffer[i]);
 		if (pkt_idx <= 4) {
 			continue;
 		}
+
 		/* Allocate RX buffer */
 		if (pkt_idx == 5) {
 			if (payload_remaining > CONFIG_EPACKET_PACKET_SIZE_MAX) {
@@ -79,31 +89,37 @@ void epacket_serial_reconstruct(const struct device *dev, uint8_t *buffer, size_
 		/* Payload bytes */
 		uint16_t to_add = MIN(payload_remaining, len - i);
 
+		/* No more data in provided buffer */
+		if (to_add == 0) {
+			return;
+		}
+
 		/* Add payload to buffer */
-		if (to_add > 0) {
-			if (rx_buffer) {
-				net_buf_add_mem(rx_buffer, buffer + i, to_add);
-			}
-			pkt_idx += to_add;
-			payload_remaining -= to_add;
-			i += to_add - 1;
+		if (rx_buffer) {
+			net_buf_add_mem(rx_buffer, buffer + i, to_add);
+		}
+		pkt_idx += to_add;
+		payload_remaining -= to_add;
+		i += to_add - 1;
+
+		/* Still more bytes to come after exhausting this input buffer */
+		if (payload_remaining) {
+			return;
 		}
 
-		/* Is packet done? */
-		if (payload_remaining == 0) {
-			if (rx_buffer) {
-				meta = net_buf_user_data(rx_buffer);
-				meta->interface = dev;
-				meta->interface_id = EPACKET_INTERFACE_SERIAL;
-				meta->rssi = 0;
+		/* All data received, add metadata and ship it */
+		if (rx_buffer) {
+			meta = net_buf_user_data(rx_buffer);
+			meta->interface = dev;
+			meta->interface_id = EPACKET_INTERFACE_SERIAL;
+			meta->rssi = 0;
 
-				/* Hand off to core ePacket functions */
-				handler(rx_buffer);
-			}
-			/* Reset parsing state */
-			rx_buffer = NULL;
-			pkt_idx = 0;
+			/* Hand off to core ePacket functions */
+			handler(rx_buffer);
 		}
+		/* Reset parsing state */
+		rx_buffer = NULL;
+		pkt_idx = 0;
 	}
 }
 
