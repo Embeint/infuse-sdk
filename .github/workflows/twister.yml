@@ -128,8 +128,10 @@ jobs:
         name: Run Vendor Tests with Twister (Daily)
         run: |
           export ZEPHYR_BASE=${PWD}/zephyr
-          echo 'twister ${TWISTER_COMMON} ${VENDOR_FILTER} ${DAILY_OPTIONS} -T infuse-sdk'
-          $ZEPHYR_BASE/scripts/twister --subset ${{matrix.subset}}/${{ strategy.job-total }} ${TWISTER_COMMON} ${VENDOR_FILTER} ${DAILY_OPTIONS} --all -T infuse-sdk
+          echo 'twister ${TWISTER_COMMON} ${VENDOR_FILTER} ${DAILY_OPTIONS} --all -T infuse-sdk/apps -T infuse-sdk/samples'
+          $ZEPHYR_BASE/scripts/twister --subset ${{matrix.subset}}/${{ strategy.job-total }} ${TWISTER_COMMON} ${VENDOR_FILTER} ${DAILY_OPTIONS} --all -T infuse-sdk/apps -T infuse-sdk/samples
+          echo 'twister ${TWISTER_COMMON} ${VENDOR_FILTER} ${DAILY_OPTIONS} -T infuse-sdk/tests'
+          $ZEPHYR_BASE/scripts/twister --subset ${{matrix.subset}}/${{ strategy.job-total }} ${TWISTER_COMMON} ${VENDOR_FILTER} ${DAILY_OPTIONS} -T infuse-sdk/tests
 
       - name: Print ccache stats
         if: always()
