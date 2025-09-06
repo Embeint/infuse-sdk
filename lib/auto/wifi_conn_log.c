@@ -22,7 +22,7 @@ static struct net_mgmt_event_callback wifi_mgmt_cb;
 static uint8_t loggers;
 static uint8_t log_flags;
 
-static void wifi_mgmt_event_handler(struct net_mgmt_event_callback *cb, uint32_t mgmt_event,
+static void wifi_mgmt_event_handler(struct net_mgmt_event_callback *cb, uint64_t mgmt_event,
 				    struct net_if *iface)
 {
 	/* Log with time if not flushing */

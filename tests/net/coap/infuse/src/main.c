@@ -49,7 +49,7 @@ uint64_t infuse_device_id(void)
 	return 0xFFFFFFFFFFFFFFFDULL;
 }
 
-static void l4_event_handler(struct net_mgmt_event_callback *cb, uint32_t mgmt_event,
+static void l4_event_handler(struct net_mgmt_event_callback *cb, uint64_t mgmt_event,
 			     struct net_if *iface)
 {
 	ARG_UNUSED(iface);

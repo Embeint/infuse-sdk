@@ -94,14 +94,14 @@ static void udp_downlink_watchdog_expiry(struct k_work *work)
 		      CONFIG_EPACKET_INTERFACE_UDP_DOWNLINK_WATCHDOG_TIMEOUT);
 }
 
-static void if_admin_event_handler(struct net_mgmt_event_callback *cb, uint32_t event,
+static void if_admin_event_handler(struct net_mgmt_event_callback *cb, uint64_t event,
 				   struct net_if *iface)
 {
 	struct udp_state *state = CONTAINER_OF(cb, struct udp_state, iface_admin_cb);
 
 	/* Ignore interfaces that the connection manager is ignoring */
 	if (conn_mgr_is_iface_ignored(iface)) {
-		LOG_DBG("Ignoring %08x on ignored interface", event);
+		LOG_DBG("Ignoring %08llx on ignored interface", event);
 		return;
 	}
 
@@ -111,7 +111,7 @@ static void if_admin_event_handler(struct net_mgmt_event_callback *cb, uint32_t 
 	 */
 	if (conn_mgr_if_is_bound(iface) && !conn_mgr_if_get_flag(iface, CONN_MGR_IF_PERSISTENT) &&
 	    k_work_delayable_busy_get(&state->downlink_watchdog)) {
-		LOG_DBG("Ignoring %08x on non-persistent interface", event);
+		LOG_DBG("Ignoring %08llx on non-persistent interface", event);
 		return;
 	}
 
@@ -149,7 +149,7 @@ static void cleanup_interface(const struct device *epacket_udp)
 	}
 }
 
-static void l4_event_handler(struct net_mgmt_event_callback *cb, uint32_t event,
+static void l4_event_handler(struct net_mgmt_event_callback *cb, uint64_t event,
 			     struct net_if *iface)
 {
 	uint16_t iface_max_pkt;

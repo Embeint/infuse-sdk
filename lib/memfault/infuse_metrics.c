@@ -167,7 +167,7 @@ void memfault_metrics_heartbeat_collect_data(void)
 
 #ifdef CONFIG_MEMFAULT_INFUSE_METRICS_CONNECTIVITY_L4
 
-static void l4_event_handler(struct net_mgmt_event_callback *cb, uint32_t event,
+static void l4_event_handler(struct net_mgmt_event_callback *cb, uint64_t event,
 			     struct net_if *iface)
 {
 	if (event == NET_EVENT_L4_CONNECTED) {
