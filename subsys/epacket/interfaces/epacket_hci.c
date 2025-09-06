@@ -163,8 +163,7 @@ static void epacket_hci_send(const struct device *dev, struct net_buf *buf)
 	struct epacket_tx_metadata *meta = net_buf_user_data(buf);
 	infuse_hci_cmd_vs_epacket_t *epacket_hdr;
 	static uint16_t sequence_num;
-	struct net_buf *cmd = bt_hci_cmd_create(INFUSE_HCI_OPCODE_CMD_VS_EPACKET,
-						sizeof(*epacket_hdr) + buf->len);
+	struct net_buf *cmd = bt_hci_cmd_alloc(K_FOREVER);
 	int rc;
 
 	if (cmd == NULL) {

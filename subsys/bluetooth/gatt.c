@@ -643,7 +643,7 @@ static void rssi_query_worker(struct k_work *work)
 		return;
 	}
 
-	buf = bt_hci_cmd_create(BT_HCI_OP_READ_RSSI, sizeof(*cp));
+	buf = bt_hci_cmd_alloc(K_FOREVER);
 	if (!buf) {
 		LOG_DBG("Unable to allocate command buffer");
 		goto reschedule;
