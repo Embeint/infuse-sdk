@@ -104,7 +104,7 @@ static void scan_result_handle(const struct wifi_scan_result *entry)
 	state.aps_found++;
 }
 
-static void scan_event_handler(struct net_mgmt_event_callback *cb, uint32_t mgmt_event,
+static void scan_event_handler(struct net_mgmt_event_callback *cb, uint64_t mgmt_event,
 			       struct net_if *iface)
 {
 	switch (mgmt_event) {

@@ -46,7 +46,7 @@ static void scan_result_handle(const struct wifi_scan_result *entry, struct net_
 	net_buf_add_mem(rsp, entry->ssid, entry->ssid_length);
 }
 
-static void scan_event_handler(struct net_mgmt_event_callback *cb, uint32_t mgmt_event,
+static void scan_event_handler(struct net_mgmt_event_callback *cb, uint64_t mgmt_event,
 			       struct net_if *iface)
 {
 	struct wifi_scan_context *context = CONTAINER_OF(cb, struct wifi_scan_context, cb);

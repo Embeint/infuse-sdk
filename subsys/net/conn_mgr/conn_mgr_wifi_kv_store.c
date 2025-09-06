@@ -39,7 +39,7 @@ LOG_MODULE_REGISTER(wifi_mgmt, LOG_LEVEL_INF);
 static struct net_mgmt_event_callback wpa_supp_cb;
 static bool wpa_ready;
 
-static void wpa_supp_event_handler(struct net_mgmt_event_callback *cb, uint32_t mgmt_event,
+static void wpa_supp_event_handler(struct net_mgmt_event_callback *cb, uint64_t mgmt_event,
 				   struct net_if *iface)
 {
 	switch (mgmt_event) {
@@ -156,7 +156,7 @@ static void conn_config_changed_worker(struct k_work *work)
 	}
 }
 
-static void wifi_mgmt_event_handler(struct net_mgmt_event_callback *cb, uint32_t mgmt_event,
+static void wifi_mgmt_event_handler(struct net_mgmt_event_callback *cb, uint64_t mgmt_event,
 				    struct net_if *iface)
 {
 	const struct wifi_status *status = cb->info;

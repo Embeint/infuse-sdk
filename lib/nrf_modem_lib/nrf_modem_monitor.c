@@ -555,7 +555,7 @@ static void connectivity_timeout(struct k_work *work)
 #endif /* CONFIG_INFUSE_REBOOT */
 }
 
-static void iface_state_handler(struct net_mgmt_event_callback *cb, uint32_t mgmt_event,
+static void iface_state_handler(struct net_mgmt_event_callback *cb, uint64_t mgmt_event,
 				struct net_if *iface)
 {
 	if (iface != monitor.lte_net_if) {

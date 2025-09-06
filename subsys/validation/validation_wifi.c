@@ -39,7 +39,7 @@ static const char *const band_to_str[] = {
 
 static K_SEM_DEFINE(l4_connected, 0, 1);
 
-static void l4_event_handler(struct net_mgmt_event_callback *cb, uint32_t event,
+static void l4_event_handler(struct net_mgmt_event_callback *cb, uint64_t event,
 			     struct net_if *iface)
 {
 	if (event == NET_EVENT_L4_CONNECTED) {
@@ -53,7 +53,7 @@ static void scan_result_handle(const struct wifi_scan_result *entry)
 			       band_to_str[entry->band], entry->channel, entry->rssi, entry->ssid);
 }
 
-static void scan_event_handler(struct net_mgmt_event_callback *cb, uint32_t mgmt_event,
+static void scan_event_handler(struct net_mgmt_event_callback *cb, uint64_t mgmt_event,
 			       struct net_if *iface)
 {
 	struct wifi_scan_context *context = CONTAINER_OF(cb, struct wifi_scan_context, cb);
@@ -136,7 +136,7 @@ static int validation_wifi_sntp(void)
 	return rc;
 }
 
-static void wifi_mgmt_event_handler(struct net_mgmt_event_callback *cb, uint32_t mgmt_event,
+static void wifi_mgmt_event_handler(struct net_mgmt_event_callback *cb, uint64_t mgmt_event,
 				    struct net_if *iface)
 {
 	struct wifi_connect_context *context = CONTAINER_OF(cb, struct wifi_connect_context, cb);
