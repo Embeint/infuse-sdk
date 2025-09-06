@@ -255,6 +255,19 @@ class vscode(WestCommand):
         launch["configurations"][0]["gdbPath"] = parent_cache.get("CMAKE_GDB")
         launch["configurations"][1]["gdbPath"] = parent_cache.get("CMAKE_GDB")
 
+    def _tfm_sub_image(self, build_dir):
+        tfm_elfs = [
+            "bl2.elf",
+            "tfm_s.elf",
+        ]
+        tfm_paths = [build_dir / "tfm" / "bin" / elf for elf in tfm_elfs]
+        tfm_exists = [p for p in tfm_paths if p.exists()]
+
+        # Add TF-M .elf files
+        launch["configurations"][0]["preAttachCommands"] = [
+            f"add-symbol-file {str(path)}" for path in tfm_exists
+        ]
+
     def _zephyr_build(self, build_dir, cache):
         self.cpp_properties(build_dir, cache)
 
@@ -272,17 +285,7 @@ class vscode(WestCommand):
         )
 
         if cache.get("BOARD")[-3:] == "/ns":
-            tfm_elfs = [
-                "bl2.elf",
-                "tfm_s.elf",
-            ]
-            tfm_paths = [build_dir / "tfm" / "bin" / elf for elf in tfm_elfs]
-            tfm_exists = [p for p in tfm_paths if p.exists()]
-
-            # Add TF-M .elf files
-            launch["configurations"][0]["preAttachCommands"] = [
-                f"add-symbol-file {str(path)}" for path in tfm_exists
-            ]
+            self._tfm_sub_image(build_dir)
         if cache.get("SYSBUILD", False):
             # Check if a `mcuboot` folder exists at the same level
             mcuboot_elf = build_dir / ".." / "mcuboot" / "zephyr" / "zephyr.elf"
@@ -297,6 +300,8 @@ class vscode(WestCommand):
 
         self.cpp_properties(build_dir, cache)
 
+        if cache.get("BOARD")[-3:] == "/ns":
+            self._tfm_sub_image(build_dir)
         launch["configurations"][0]["name"] = "QEMU Attach"
         launch["configurations"][0]["servertype"] = "external"
         launch["configurations"][0]["gdbTarget"] = "localhost:1234"
