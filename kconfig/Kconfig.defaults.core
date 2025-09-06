@@ -224,8 +224,6 @@ configdefault UART_USE_RUNTIME_CONFIGURE
 	default n
 
 # Debug options
-configdefault DEBUG_INFO
-	default y
 configdefault DEBUG_THREAD_INFO
 	default y
 configdefault OUTPUT_DISASSEMBLY
