@@ -283,6 +283,7 @@ jobs:
       - name: Move coverage files
         run: |
           mv ./coverage/reports/*/*.json ./coverage/reports
+          rm -f ./coverage/reports/merged.json
           ls -la ./coverage/reports
 
       - name: Generate list of coverage files
