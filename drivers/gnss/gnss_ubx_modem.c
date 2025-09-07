@@ -6,7 +6,6 @@
  * SPDX-License-Identifier: FSL-1.1-ALv2
  */
 
-#include <zephyr/modem/ubx.h>
 #include <zephyr/logging/log.h>
 
 #include <infuse/gnss/ubx/protocol.h>
