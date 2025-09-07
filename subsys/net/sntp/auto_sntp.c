@@ -114,7 +114,7 @@ static void sntp_work(struct k_work *work)
 		goto error;
 	}
 
-	rc = sntp_init_async(&service_auto_sntp, &sntp_context, &addr, addrlen);
+	rc = sntp_init_async(&sntp_context, &addr, addrlen, &service_auto_sntp);
 	if (rc < 0) {
 		LOG_ERR("Failed to init ctx (%d)", rc);
 		goto error;
