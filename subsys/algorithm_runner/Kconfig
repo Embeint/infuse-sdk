@@ -3,6 +3,7 @@
 config ALGORITHM_RUNNER
 	bool "Infuse-IoT algorithm runner"
 	depends on ZBUS_CHANNEL_ID
+	select INFUSE_WORKQ
 
 if ALGORITHM_RUNNER
 

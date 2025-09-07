@@ -1,7 +1,12 @@
 # Infuse-IoT libraries
 
+config INFUSE_WORKQ
+	bool "Enable Infuse-IoT workqueue"
+	default y if INFUSE_SDK
+
 config INFUSE_WORKQ_STACK_SIZE
 	int "Stack size of the Infuse-IoT workqueue"
+	depends on INFUSE_WORKQ
 	default 8192 if COVERAGE
 	default 2048
 

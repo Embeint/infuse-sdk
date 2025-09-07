@@ -3,6 +3,7 @@
 config TASK_RUNNER
 	bool "Infuse-IoT Task Runner"
 	select INFUSE_APPLICATION_STATES
+	select INFUSE_WORKQ
 	select POLL
 
 if TASK_RUNNER
