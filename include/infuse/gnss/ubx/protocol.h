@@ -11,7 +11,6 @@
 #ifndef INFUSE_GNSS_UBX_PROTOCOL_H_
 #define INFUSE_GNSS_UBX_PROTOCOL_H_
 
-#include <zephyr/modem/ubx.h>
 #include <zephyr/net_buf.h>
 #include <zephyr/toolchain.h>
 
@@ -23,6 +22,22 @@ extern "C" {
  * @defgroup ubx_message_protocol UBX Message Protocol
  * @{
  */
+
+#define UBX_PREAMBLE_SYNC_CHAR_1 0xB5
+#define UBX_PREAMBLE_SYNC_CHAR_2 0x62
+
+/**
+ * @brief UBX Message Frame
+ */
+struct ubx_frame {
+	uint8_t preamble_sync_char_1;
+	uint8_t preamble_sync_char_2;
+	uint8_t message_class;
+	uint8_t message_id;
+	uint8_t payload_size_low;
+	uint8_t payload_size_high;
+	uint8_t payload_and_checksum[];
+};
 
 /**
  * @brief UBX Message Classes
@@ -830,6 +845,7 @@ static inline void ubx_msg_prepare(struct net_buf_simple *buf, uint8_t msg_class
  */
 static inline void ubx_msg_finalise(struct net_buf_simple *buf)
 {
+	const unsigned int crc_start_idx = offsetof(struct ubx_frame, message_class);
 	struct ubx_frame *frame;
 	uint16_t payload_size;
 	uint8_t ckA = 0;
@@ -843,7 +859,7 @@ static inline void ubx_msg_finalise(struct net_buf_simple *buf)
 	frame->payload_size_low = payload_size;
 	frame->payload_size_high = payload_size >> 8;
 	/* Calculate frame CRC */
-	for (unsigned int i = UBX_FRM_CHECKSUM_START_IDX; i < buf->len; i++) {
+	for (unsigned int i = crc_start_idx; i < buf->len; i++) {
 		ckA += buf->data[i];
 		ckB += ckA;
 	}

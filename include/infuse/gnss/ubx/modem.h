@@ -14,8 +14,9 @@
 #include <zephyr/kernel.h>
 #include <zephyr/net_buf.h>
 #include <zephyr/modem/pipe.h>
-#include <zephyr/modem/ubx.h>
 #include <zephyr/sys/ring_buffer.h>
+
+#include <infuse/gnss/ubx/protocol.h>
 
 #ifdef __cplusplus
 extern "C" {
