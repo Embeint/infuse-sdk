@@ -52,7 +52,7 @@
 		sense-resistor-milli-ohms = <300000>;
 		sense-gain-div = <300>;
 		/* Each unit is ~150uA */
-		noise-threshold = <4>;
+		zephyr,noise-threshold = <4>;
 		/* Supports the range from 150mA to 1A */
 		gain-extended-range = "ADC_GAIN_1_2";
 	};
