@@ -351,27 +351,18 @@ ZTEST(rpc_command_file_write_basic, test_file_write_dfu)
 }
 #endif /* FIXED_PARTITION_EXISTS(slot1_partition) */
 
-static void flash_area_copy(uint8_t partition_dst, uint8_t partition_src, uint32_t len,
-			    bool source_erase)
+static void flash_area_copy_wrapped(uint8_t partition_dst, uint8_t partition_src, uint32_t len,
+				    bool source_erase)
 {
 	const struct flash_area *fa_dst, *fa_src;
 	uint8_t buffer[128];
-	uint32_t off = 0;
 
 	zassert_equal(0, flash_area_open(partition_dst, &fa_dst));
 	zassert_equal(0, flash_area_open(partition_src, &fa_src));
 
 	zassert_equal(0, flash_area_erase(fa_dst, 0, fa_dst->fa_size));
-
-	while (off < len) {
-		zassert_equal(0, flash_area_read(fa_src, off, buffer, sizeof(buffer)));
-		zassert_equal(0, flash_area_write(fa_dst, off, buffer, sizeof(buffer)));
-		off += sizeof(buffer);
-	}
-
-	if (source_erase) {
-		zassert_equal(0, flash_area_erase(fa_src, 0, fa_src->fa_size));
-	}
+	zassert_equal(
+		0, flash_area_copy(fa_src, 0, fa_dst, 0, fa_dst->fa_size, buffer, sizeof(buffer)));
 
 	flash_area_close(fa_dst);
 	flash_area_close(fa_src);
@@ -396,8 +387,8 @@ ZTEST(rpc_command_file_write_basic, test_file_write_dfu_cpatch)
 	validate_flash_area(&ret, FIXED_PARTITION_ID(slot1_partition));
 
 	/* Copy the base image into partition0 and erase partition1 */
-	flash_area_copy(FIXED_PARTITION_ID(slot0_partition), FIXED_PARTITION_ID(slot1_partition),
-			17023, true);
+	flash_area_copy_wrapped(FIXED_PARTITION_ID(slot0_partition),
+				FIXED_PARTITION_ID(slot1_partition), 17023, true);
 
 	/* Construct patch file that just regenerates the original file */
 	hardcoded_patch.patch[0] = 48; /* COPY_LEN_U32 */
@@ -452,7 +443,7 @@ ZTEST(rpc_command_file_write_basic, test_file_write_dfu_cpatch)
 
 ZTEST(rpc_command_file_write_basic, test_file_write_dfu_cpatch)
 {
-	(void)flash_area_copy;
+	(void)flash_area_copy_wrapped;
 
 	ztest_test_skip();
 }
@@ -476,7 +467,7 @@ ZTEST(rpc_command_file_write_basic, test_file_write_for_copy)
 
 ZTEST(rpc_command_file_write_basic, test_file_write_for_copy)
 {
-	(void)flash_area_copy;
+	(void)flash_area_copy_wrapped;
 
 	ztest_test_skip();
 }

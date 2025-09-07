@@ -270,22 +270,17 @@ ZTEST(rpc_command_coap_download, test_download_bt_ctlr)
 #endif /* CONFIG_TEST_NATIVE_MOCK */
 }
 
-static void flash_area_copy(uint8_t partition_dst, uint8_t partition_src, uint32_t len)
+static void flash_area_copy_wrapped(uint8_t partition_dst, uint8_t partition_src, uint32_t len)
 {
 	const struct flash_area *fa_dst, *fa_src;
 	uint8_t buffer[128];
-	uint32_t off = 0;
 
 	zassert_equal(0, flash_area_open(partition_dst, &fa_dst));
 	zassert_equal(0, flash_area_open(partition_src, &fa_src));
 
 	zassert_equal(0, flash_area_erase(fa_dst, 0, fa_dst->fa_size));
-
-	while (off < len) {
-		zassert_equal(0, flash_area_read(fa_src, off, buffer, sizeof(buffer)));
-		zassert_equal(0, flash_area_write(fa_dst, off, buffer, sizeof(buffer)));
-		off += sizeof(buffer);
-	}
+	zassert_equal(
+		0, flash_area_copy(fa_src, 0, fa_dst, 0, fa_dst->fa_size, buffer, sizeof(buffer)));
 
 	flash_area_close(fa_dst);
 	flash_area_close(fa_src);
@@ -312,8 +307,8 @@ ZTEST(rpc_command_coap_download, test_download_cpatch)
 	expect_coap_download_response(21, 0, 18940, 0xE58FF061);
 
 	/* Copy the base image into partition0 */
-	flash_area_copy(FIXED_PARTITION_ID(slot0_partition), FIXED_PARTITION_ID(slot1_partition),
-			18940);
+	flash_area_copy_wrapped(FIXED_PARTITION_ID(slot0_partition),
+				FIXED_PARTITION_ID(slot1_partition), 18940);
 
 	/* Patch file should download and apply cleanly now */
 	send_download_command(22, "coap.dev.infuse-iot.com", 5684, 0,
