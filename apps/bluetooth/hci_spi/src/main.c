@@ -103,24 +103,11 @@ static K_SEM_DEFINE(sem_spi_tx, 0, 1);
 
 static inline int spi_send(struct net_buf *buf)
 {
-	uint8_t header_master[5] __aligned(4) = {0};
-	uint8_t header_slave[5] __aligned(4) = {READY_NOW, SANITY_CHECK, 0x00, 0x00, 0x00};
+	uint8_t header_master[5] = {0};
+	uint8_t header_slave[5] = {READY_NOW, SANITY_CHECK, 0x00, 0x00, 0x00};
 	int ret;
 
-	LOG_DBG("buf %p type %u len %u", buf, bt_buf_get_type(buf), buf->len);
-
-	switch (bt_buf_get_type(buf)) {
-	case BT_BUF_ACL_IN:
-		net_buf_push_u8(buf, HCI_ACL);
-		break;
-	case BT_BUF_EVT:
-		net_buf_push_u8(buf, HCI_EVT);
-		break;
-	default:
-		LOG_ERR("Unknown type %u", bt_buf_get_type(buf));
-		net_buf_unref(buf);
-		return -EINVAL;
-	}
+	LOG_DBG("buf %p type %u len %u", buf, buf->data[0], buf->len);
 
 	if (buf->len > SPI_MAX_MSG_LEN) {
 		LOG_ERR("TX message too long");
@@ -240,7 +227,7 @@ static void bt_tx_thread(void *p1, void *p2, void *p3)
 			continue;
 		}
 
-		LOG_DBG("buf %p type %u len %u", buf, bt_buf_get_type(buf), buf->len);
+		LOG_DBG("buf %p type %u len %u", buf, buf->data[0], buf->len);
 
 		ret = bt_send(buf);
 		if (ret) {
