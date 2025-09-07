@@ -3,6 +3,7 @@
 menuconfig EPACKET
 	bool "ePacket subsystem"
 	depends on NET_BUF
+	select INFUSE_WORKQ
 	select POLL
 
 if EPACKET

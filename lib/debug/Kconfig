@@ -2,6 +2,7 @@
 
 config INFUSE_WORKQUEUE_BLOCK_TEST
 	bool "Randomly block the system and Infuse-IoT workqueue"
+	select INFUSE_WORKQ
 	help
 	  Randomly block the system and Infuse-IoT workqueue for non-trivial
 	  durations to see whether the application recovers or whether it
