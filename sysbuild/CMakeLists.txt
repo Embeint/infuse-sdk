@@ -16,7 +16,14 @@ if(${SB_CONFIG_BOOTLOADER_MCUBOOT})
   # Ensure multithreading is always enabled in MCUBoot
   # External flash drivers and USB support depend on it
   set(mcuboot_CONFIG_MULTITHREADING "y" CACHE INTERNAL "")
-  if (${SB_CONFIG_SOC_FAMILY_NORDIC_NRF})
+  # Override ridiculous defaults forced by MCUBoot for nRF development kits
+  # in the name of saving ROM that is wasted regardless.
+  if(SB_CONFIG_BOARD_NRF7002DK OR SB_CONFIG_BOARD_NRF9160DK)
+    # External SPI_NOR force enable
+    set(mcuboot_CONFIG_SPI "y" CACHE INTERNAL "")
+    set(mcuboot_CONFIG_SPI_NOR "y" CACHE INTERNAL "")
+  endif()
+  if(SB_CONFIG_BOARD_NRF52840DK OR SB_CONFIG_BOARD_THINGY53)
     # External QSPI support
     set(mcuboot_CONFIG_NORDIC_QSPI_NOR "y" CACHE INTERNAL "")
   endif()
