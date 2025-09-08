@@ -35,6 +35,11 @@ configdefault TFM_LOG_LEVEL_SILENCE
 
 endif # BOARD_THINGY91X_NRF9151_NS
 
+# nRF9151 only has RAM for scanning
+choice WIFI_USAGE_MODE
+	default WIFI_USAGE_MODE_SCAN_ONLY
+endchoice # WIFI_USAGE_MODE
+
 # nPM1300 multi-function device
 configdefault MFD
 	default y
