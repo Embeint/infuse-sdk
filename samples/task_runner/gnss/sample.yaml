@@ -10,6 +10,7 @@ tests:
   sample.task_runner.gnss:
     tags: app
     integration_platforms:
+      - thingy91x/nrf9151/ns
       - tauro/nrf9151/ns
   sample.task_runner.gnss.api_compat:
     tags: app
