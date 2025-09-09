@@ -213,6 +213,7 @@ static bool handle_pvt_frame(const struct task_gnss_args *args)
 	struct tdf_nrf9x_gnss_pvt tdf;
 	uint32_t runtime = k_uptime_seconds() - state.task_start;
 	bool valid_time, valid_hacc, valid_pdop;
+	bool info = k_uptime_seconds() % 30 == 0;
 	int rc;
 
 	/* Get data */
@@ -223,7 +224,7 @@ static bool handle_pvt_frame(const struct task_gnss_args *args)
 	}
 
 	/* Periodically print fix state */
-	if (k_uptime_seconds() % 30 == 0) {
+	if (info) {
 		LOG_INF("NAV-PVT: Lat: %9d Lon: %9d Height: %6d", tdf.lat, tdf.lon, tdf.height);
 		LOG_INF("         HAcc: %u mm VAcc: %u mm pDOP: %d NumSV: %d", tdf.h_acc, tdf.v_acc,
 			tdf.p_dop / 100, tdf.num_sv);
@@ -232,6 +233,22 @@ static bool handle_pvt_frame(const struct task_gnss_args *args)
 		LOG_DBG("         HAcc: %u mm VAcc: %u mm pDOP: %d NumSV: %d", tdf.h_acc, tdf.v_acc,
 			tdf.p_dop / 100, tdf.num_sv);
 	}
+#ifdef CONFIG_TASK_RUNNER_GNSS_SATELLITE_INFO
+	for (int i = 0; i < NRF_MODEM_GNSS_MAX_SATELLITES; i++) {
+		uint8_t used = !!(frame.sv[i].flags & NRF_MODEM_GNSS_SV_FLAG_USED_IN_FIX);
+
+		if (frame.sv[i].sv == 0) {
+			continue;
+		}
+		if (info) {
+			LOG_INF("\tID: %3d CNo: %3d dB/Hz Used: %d", frame.sv[i].sv,
+				frame.sv[i].cn0, used);
+		} else {
+			LOG_DBG("\tID: %3d CNo: %3d dB/Hz Used: %d", frame.sv[i].sv,
+				frame.sv[i].cn0, used);
+		}
+	}
+#endif /* CONFIG_TASK_RUNNER_GNSS_SATELLITE_INFO */
 
 	if (run_target == TASK_GNSS_FLAGS_RUN_FOREVER) {
 		/* If running perpetually, log each output */
