@@ -186,6 +186,10 @@ config TASK_RUNNER_TASK_GNSS_STACK_SIZE
 	default 4096 if COVERAGE
 	default 2048
 
+config TASK_RUNNER_GNSS_SATELLITE_INFO
+	bool "Display satellite information while running fixes"
+	imply GNSS_U_BLOX_LARGE_MESSAGES
+
 config TASK_RUNNER_GNSS_MINIMUM_ACCURACY_M
 	int "Accuracies worse than this threshold are reported as (-181,-91)"
 	default 100000

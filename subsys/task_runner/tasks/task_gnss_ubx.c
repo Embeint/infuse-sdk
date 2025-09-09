@@ -44,6 +44,9 @@ struct gnss_run_state {
 	struct ubx_modem_data *modem;
 	const struct task_schedule *schedule;
 	struct ubx_message_handler_ctx timegps;
+#ifdef CONFIG_TASK_RUNNER_GNSS_SATELLITE_INFO
+	struct ubx_message_handler_ctx nav_sat;
+#endif /* CONFIG_TASK_RUNNER_GNSS_SATELLITE_INFO */
 	struct ubx_msg_nav_pvt latest_pvt;
 	struct ubx_msg_nav_pvt best_fix;
 	struct ubx_msg_nav_timegps latest_timegps;
@@ -275,6 +278,31 @@ static bool nav_pvt_handle(struct gnss_run_state *state, const struct task_gnss_
 	return false;
 }
 
+#ifdef CONFIG_TASK_RUNNER_GNSS_SATELLITE_INFO
+static int nav_sat_cb(uint8_t message_class, uint8_t message_id, const void *payload,
+		      size_t payload_len, void *user_data)
+{
+	const struct ubx_msg_nav_sat *sat = payload;
+	bool info = k_uptime_seconds() % 30 == 0;
+
+	for (int i = 0; i < sat->num_svs; i++) {
+		uint8_t quality = sat->svs[i].flags & UBX_MSG_NAV_SAT_FLAGS_QUALITY_IND_MASK;
+		uint8_t used = !!(sat->svs[i].flags & UBX_MSG_NAV_SAT_FLAGS_SV_USED);
+
+		if (info) {
+			LOG_INF("\tGNSS: %d ID: %3d CNo: %3d dB/Hz Qual: %d Used: %d",
+				sat->svs[i].gnss_id, sat->svs[i].sv_id, sat->svs[i].cno, quality,
+				used);
+		} else {
+			LOG_DBG("\tGNSS: %d ID: %3d CNo: %3d dB/Hz Qual: %d Used: %d",
+				sat->svs[i].gnss_id, sat->svs[i].sv_id, sat->svs[i].cno, quality,
+				used);
+		}
+	}
+	return 0;
+}
+#endif /* CONFIG_TASK_RUNNER_GNSS_SATELLITE_INFO */
+
 void gnss_task_fn(const struct task_schedule *schedule, struct k_poll_signal *terminate,
 		  void *gnss_dev)
 {
@@ -349,6 +377,10 @@ void gnss_task_fn(const struct task_schedule *schedule, struct k_poll_signal *te
 			       UBX_MSG_CFG_VALSET_LAYERS_RAM | UBX_MSG_CFG_VALSET_LAYERS_BBR);
 	/* Core location message */
 	UBX_CFG_VALUE_APPEND(&cfg_buf, UBX_CFG_KEY_MSGOUT_UBX_NAV_PVT_I2C, 1);
+#ifdef CONFIG_TASK_RUNNER_GNSS_SATELLITE_INFO
+	/* Satellite information message */
+	UBX_CFG_VALUE_APPEND(&cfg_buf, UBX_CFG_KEY_MSGOUT_UBX_NAV_SAT_I2C, 1);
+#endif /* CONFIG_TASK_RUNNER_GNSS_SATELLITE_INFO */
 	/* Power mode configuration */
 	if (args->flags & TASK_GNSS_FLAGS_PERFORMANCE_MODE) {
 		/* Normal mode tracking (default values) */
@@ -400,10 +432,37 @@ void gnss_task_fn(const struct task_schedule *schedule, struct k_poll_signal *te
 	if (rc < 0) {
 		LOG_WRN("Failed to configure NAV-PVT rate");
 	}
+
+#ifdef CONFIG_TASK_RUNNER_GNSS_SATELLITE_INFO
+	const struct ubx_msg_cfg_msg cfg_msg_sat = {
+		.msg_class = UBX_MSG_CLASS_NAV,
+		.msg_id = UBX_MSG_ID_NAV_SAT,
+		.rate = 1,
+	};
+
+	ubx_msg_simple(&msg_buf, UBX_MSG_CLASS_CFG, UBX_MSG_ID_CFG_RATE, &cfg_msg_sat,
+		       sizeof(cfg_msg_sat));
+	rc = ubx_modem_send_sync_acked(run_state.modem, &msg_buf, K_MSEC(250));
+	if (rc < 0) {
+		LOG_WRN("Failed to configure navigation rate");
+	}
+#endif /* CONFIG_TASK_RUNNER_GNSS_SATELLITE_INFO */
 #endif /* CONFIG_GNSS_UBX_M8 */
 
 	/* Subscribe to NAV-PVT message */
 	ubx_modem_msg_subscribe(run_state.modem, &pvt_handler_ctx);
+
+#ifdef CONFIG_TASK_RUNNER_GNSS_SATELLITE_INFO
+	struct ubx_message_handler_ctx sat_handler_ctx = {
+		.message_class = UBX_MSG_CLASS_NAV,
+		.message_id = UBX_MSG_ID_NAV_SAT,
+		.message_cb = nav_sat_cb,
+		.user_data = NULL,
+	};
+
+	/* Subscribe to NAV-SAT message */
+	ubx_modem_msg_subscribe(run_state.modem, &sat_handler_ctx);
+#endif /* CONFIG_TASK_RUNNER_GNSS_SATELLITE_INFO */
 
 	/* Block until runner requests termination (all work happens in NAV-PVT callback) */
 	struct k_poll_event events[] = {
@@ -466,6 +525,9 @@ void gnss_task_fn(const struct task_schedule *schedule, struct k_poll_signal *te
 
 	/* Cleanup message subscription */
 	ubx_modem_msg_unsubscribe(run_state.modem, &pvt_handler_ctx);
+#ifdef CONFIG_TASK_RUNNER_GNSS_SATELLITE_INFO
+	ubx_modem_msg_unsubscribe(run_state.modem, &sat_handler_ctx);
+#endif /* CONFIG_TASK_RUNNER_GNSS_SATELLITE_INFO */
 
 	/* Release power requirement */
 	rc = pm_device_runtime_put(gnss);
