@@ -61,6 +61,10 @@ boards:
     append:
       EXTRA_DTC_OVERLAY_FILE: boards/tauro_nrf9151_ns.overlay
       EXTRA_CONF_FILE: infuse_snippet.conf
+  tauro2/nrf9151/ns:
+    append:
+      EXTRA_DTC_OVERLAY_FILE: boards/tauro2_nrf9151_ns.overlay
+      EXTRA_CONF_FILE: infuse_snippet.conf
   thingy53/nrf5340/cpuapp:
     append:
       EXTRA_DTC_OVERLAY_FILE: boards/thingy53_nrf5340_cpuapp.overlay

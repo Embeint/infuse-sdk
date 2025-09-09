@@ -1,0 +1,19 @@
+identifier: tauro2/nrf9151
+name: Tauro2-nRF9151-Secure
+type: mcu
+arch: arm
+toolchain:
+  - gnuarmemb
+  - xtools
+  - zephyr
+ram: 128
+flash: 192
+supported:
+  - ble
+  - gpio
+  - i2c
+  - pwm
+  - spi
+  - watchdog
+  - counter
+vendor: embeint
