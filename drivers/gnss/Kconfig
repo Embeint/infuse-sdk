@@ -34,9 +34,16 @@ module = GNSS_UBX_MODEM
 module-str = u-blox GNSS
 source "subsys/logging/Kconfig.template.log_config"
 
+config GNSS_U_BLOX_LARGE_MESSAGES
+	bool
+	help
+	  Configure defaults for large messages. Intended for supporting optional
+	  messages like NAV-PVT.
+
 config GNSS_U_BLOX_PIPE_SIZE
 	int "UBX modem pipe size"
 	range 128 2048
+	default 1024 if GNSS_U_BLOX_LARGE_MESSAGES
 	default 512
 	help
 	  Maximum number of bytes that can be stored in the pipe buffer.
@@ -44,6 +51,7 @@ config GNSS_U_BLOX_PIPE_SIZE
 config GNSS_U_BLOX_MAX_MSG_SIZE
 	int "UBX modem pipe size"
 	range 128 512
+	default 512 if GNSS_U_BLOX_LARGE_MESSAGES
 	default 256
 	help
 	  Maximum size of a UBX message that driver can handle.
