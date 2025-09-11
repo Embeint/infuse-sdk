@@ -23,6 +23,7 @@ tests:
     tags: app
   sample.app.lte_tracker.wifi_scanner:
     tags: app
+    sysbuild: true
     extra_args:
-      - EXTRA_CONF_FILE=wifi_scanning.conf
-      - SHIELD=nrf7002ek
+      - lte_tracker_SHIELD=nrf7002ek
+      - lte_tracker_EXTRA_CONF_FILE=wifi_scanning.conf

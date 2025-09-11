@@ -20,8 +20,9 @@ tests:
       - CONFIG_GNSS_U_BLOX_NO_API_COMPAT=n
   sample.task_runner.gnss.sparkfun:
     tags: app
-    platform_allow:
-      - nrf52840dk/nrf52840
+    sysbuild: true
+    depends_on: arduino_i2c
     integration_platforms:
       - nrf52840dk/nrf52840
-    extra_args: SHIELD=sparkfun_sam_m10
+    extra_args:
+      - task_runner_gnss_SHIELD=sparkfun_sam_m10

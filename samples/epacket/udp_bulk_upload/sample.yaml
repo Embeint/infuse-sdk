@@ -14,8 +14,9 @@ tests:
       - nrf7002dk/nrf5340/cpuapp
   sample.epacket.udp_bulk_upload.nrf7002eb:
     tags: net epacket
+    sysbuild: true
     platform_allow:
       - thingy53/nrf5340/cpuapp
     extra_args:
-      - SHIELD=nrf7002eb
-      - EXTRA_DTC_OVERLAY_FILE=epacket_udp.overlay
+      - udp_bulk_upload_SHIELD=nrf7002eb
+      - udp_bulk_upload_EXTRA_DTC_OVERLAY_FILE=epacket_udp.overlay
