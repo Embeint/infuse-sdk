@@ -18,9 +18,10 @@ tests:
       - CONFIG_PM_DEVICE_RUNTIME=y
   data_logger.exfat_multi.sd:
     build_only: true
+    sysbuild: true
     depends_on: arduino_spi
     extra_args:
-      - SHIELD=sparkfun_microsd
+      - exfat_multi_file_SHIELD=sparkfun_microsd
     # Shield will fail to compile on any board with an existing SPI device
     # on the Arduino SPI bus. Limit testing to a board we know without this
     # problem.
