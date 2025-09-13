@@ -10,8 +10,6 @@
 #include <zephyr/bluetooth/conn.h>
 #include <zephyr/bluetooth/gatt.h>
 
-#include "common.h"
-
 #include "bs_types.h"
 #include "bs_tracing.h"
 #include "time_machine.h"
@@ -26,6 +24,21 @@
 #include <infuse/bluetooth/gatt.h>
 #include <infuse/tdf/definitions.h>
 #include <infuse/tdf/tdf.h>
+
+#define FAIL(...)                                                                                  \
+	do {                                                                                       \
+		bst_result = Failed;                                                               \
+		bs_trace_error_time_line(__VA_ARGS__);                                             \
+	} while (0)
+
+#define PASS(...)                                                                                  \
+	do {                                                                                       \
+		bst_result = Passed;                                                               \
+		bs_trace_info_time(1, "PASSED: " __VA_ARGS__);                                     \
+	} while (0)
+
+#define WAIT_SECONDS 30                            /* seconds */
+#define WAIT_TIME    (WAIT_SECONDS * USEC_PER_SEC) /* microseconds*/
 
 extern enum bst_result_t bst_result;
 static K_SEM_DEFINE(epacket_adv_received, 0, 1);
@@ -989,6 +1002,19 @@ static void main_connect_terminator(void)
 static void main_connect_terminator_phy(void)
 {
 	run_connect_terminator(BT_GAP_LE_PHY_1M);
+}
+
+void test_tick(bs_time_t HW_device_time)
+{
+	if (bst_result != Passed) {
+		FAIL("test failed (not passed after %i seconds)\n", WAIT_SECONDS);
+	}
+}
+
+void test_init(void)
+{
+	bst_ticker_set_next_tick_absolute(WAIT_TIME);
+	bst_result = In_progress;
 }
 
 static const struct bst_test_instance gatt_gateway[] = {

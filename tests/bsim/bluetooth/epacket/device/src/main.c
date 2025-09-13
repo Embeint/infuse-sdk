@@ -11,8 +11,6 @@
 #include <zephyr/bluetooth/bluetooth.h>
 #include <zephyr/random/random.h>
 
-#include "common.h"
-
 #include "bs_types.h"
 #include "bs_tracing.h"
 #include "time_machine.h"
@@ -24,6 +22,21 @@
 #include <infuse/data_logger/high_level/tdf.h>
 #include <infuse/tdf/definitions.h>
 #include <infuse/work_q.h>
+
+#define FAIL(...)                                                                                  \
+	do {                                                                                       \
+		bst_result = Failed;                                                               \
+		bs_trace_error_time_line(__VA_ARGS__);                                             \
+	} while (0)
+
+#define PASS(...)                                                                                  \
+	do {                                                                                       \
+		bst_result = Passed;                                                               \
+		bs_trace_info_time(1, "PASSED: " __VA_ARGS__);                                     \
+	} while (0)
+
+#define WAIT_SECONDS 30                            /* seconds */
+#define WAIT_TIME    (WAIT_SECONDS * USEC_PER_SEC) /* microseconds*/
 
 extern enum bst_result_t bst_result;
 static int connection_notifications;
@@ -248,6 +261,19 @@ static void main_epacket_bt_periph_send_unconnected(void)
 	}
 
 	PASS("Send to unconnected passed\n");
+}
+
+void test_tick(bs_time_t HW_device_time)
+{
+	if (bst_result != Passed) {
+		FAIL("test failed (not passed after %i seconds)\n", WAIT_SECONDS);
+	}
+}
+
+void test_init(void)
+{
+	bst_ticker_set_next_tick_absolute(WAIT_TIME);
+	bst_result = In_progress;
 }
 
 static const struct bst_test_instance ext_adv_advertiser[] = {

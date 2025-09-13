@@ -7,8 +7,7 @@ find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
 project(bsim_test_task_runner_bluetooth)
 
 target_sources(app PRIVATE
-    src/common.c
-    src/bt_scanner_runner.c
+    src/main.c
 )
 
 zephyr_include_directories(

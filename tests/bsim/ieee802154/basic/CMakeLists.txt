@@ -9,8 +9,7 @@ project(bsim_test_ieee802154_basic)
 target_include_directories(app PRIVATE ${ZEPHYR_BASE}/subsys/net/ip)
 
 target_sources(app PRIVATE
-    src/common.c
-    src/device.c
+    src/main.c
 )
 
 zephyr_include_directories(

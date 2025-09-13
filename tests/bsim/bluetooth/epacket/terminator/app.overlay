@@ -1,0 +1,12 @@
+#include <mem.h>
+
+/ {
+	epacket_dummy: epacket_dummy {
+		compatible = "embeint,epacket-dummy";
+	};
+
+	data_logger_shim: data_logger_shim {
+		compatible = "embeint,data-logger-shim", "embeint,data-logger";
+		physical-blocks = <128>;
+	};
+};
