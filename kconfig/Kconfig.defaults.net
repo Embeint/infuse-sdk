@@ -8,23 +8,6 @@ configdefault WIFI
 	default y if $(dt_chosen_enabled,$(DT_CHOSEN_Z_WIFI))
 
 if WIFI
-choice WIFI_USAGE_MODE
-	prompt "Desired application usage of the Wi-Fi driver"
-	default WIFI_USAGE_MODE_STA
-
-config WIFI_USAGE_MODE_STA
-	bool "Wi-Fi interface acts as a Station"
-
-config WIFI_USAGE_MODE_AP
-	bool "Wi-Fi interface acts as an Access Point"
-
-config WIFI_USAGE_MODE_STA_AP
-	bool "Wi-Fi interface acts as an Access Point and Station"
-
-config WIFI_USAGE_MODE_SCAN_ONLY
-	bool "Wi-Fi interface used for SSID scanning only"
-
-endchoice # WIFI_USAGE_MODE
 
 # Reduce the default priority to prevent blocking other threads
 # during crypto operations

@@ -1,8 +1,8 @@
 # Crypto library configuration
 
 config PSA_CRYPTO_DRIVER_OBERON
-	# The Oberon driver is required to provide HKDF needed for protected storage and bultin keys
-	prompt "Oberon PSA driver" if !(TFM_PARTITION_PROTECTED_STORAGE || TFM_CRYPTO_BUILTIN_KEYS)
+	# The Oberon driver is required to provide HKDF needed for protected storage and builtin keys
+	prompt "Oberon PSA driver" if !TFM_PARTITION_PROTECTED_STORAGE
 	bool
 	default y
 	help
@@ -67,7 +67,7 @@ if CRYPTO_XOODYAK
 
 config CRYPTO_XOODYAK_OPTIMIZED_ARM
 	bool
-	depends on ARMV7_M_ARMV8_M_MAINLINE || CONFIG_ARMV6_M_ARMV8_M_BASELINE
+	depends on ARMV7_M_ARMV8_M_MAINLINE || ARMV6_M_ARMV8_M_BASELINE
 	default y
 
 endif
