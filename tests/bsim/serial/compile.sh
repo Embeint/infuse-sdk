@@ -10,15 +10,8 @@ set -ue
 : "${ZEPHYR_BASE:?ZEPHYR_BASE must be set to point to the zephyr root directory}"
 : "${INFUSE_BASE:?INFUSE_BASE must be set to point to the Infuse-IoT root directory}"
 
-source ${ZEPHYR_BASE}/tests/bsim/compile.source
+#Set a default value to BOARD if it does not have one yet
+BOARD="${BOARD:-nrf52_bsim/native}"
+OPTS="-iv --no-clean --outdir bsim/serial -p ${BOARD}"
 
-APP=tests/bsim/serial/epacket
-
-app_root=$INFUSE_BASE app=$APP conf_file=prj_device.conf snippet=infuse compile
-app_root=$INFUSE_BASE app=$APP conf_file=prj_device_pm.conf snippet=infuse compile
-app_root=$INFUSE_BASE app=$APP conf_file=prj_device_int_single.conf snippet=infuse compile
-app_root=$INFUSE_BASE app=$APP conf_file=prj_device_int_single_pm.conf snippet=infuse compile
-app_root=$INFUSE_BASE app=$APP conf_file=prj_device_async.conf snippet=infuse compile
-app_root=$INFUSE_BASE app=$APP conf_file=prj_device_async_pm.conf snippet=infuse compile
-
-wait_for_background_jobs
+west twister $OPTS -T ${INFUSE_BASE}/tests/bsim/serial/

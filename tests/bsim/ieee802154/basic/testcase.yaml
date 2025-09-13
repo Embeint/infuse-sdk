@@ -1,0 +1,13 @@
+common:
+  build_only: true
+  required_snippets:
+    - infuse
+  tags:
+    - bluetooth
+  platform_allow:
+    - nrf52_bsim/native
+  harness: bsim
+tests:
+  ieee802154.basic:
+    harness_config:
+      bsim_exe_name: tests_bsim_ieee802154_basic_prj_conf
