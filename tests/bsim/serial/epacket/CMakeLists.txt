@@ -7,8 +7,7 @@ find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
 project(bsim_test_serial_epacket)
 
 target_sources(app PRIVATE
-    src/common.c
-    src/device.c
+    src/main.c
 )
 
 zephyr_include_directories(

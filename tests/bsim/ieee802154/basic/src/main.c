@@ -9,10 +9,9 @@
 #include <zephyr/random/random.h>
 #include <zephyr/sys/byteorder.h>
 
-#include "common.h"
-
 #include "bs_types.h"
 #include "bs_tracing.h"
+#include "bstests.h"
 
 #include <zephyr/net_buf.h>
 #include <zephyr/net/ieee802154_radio.h>
@@ -25,6 +24,23 @@ LOG_MODULE_REGISTER(app, LOG_LEVEL_INF);
 	(CONFIG_NET_CONFIG_IEEE802154_PAN_ID & 0xFF), (CONFIG_NET_CONFIG_IEEE802154_PAN_ID >> 8)
 #define DEST_BROADCAST_BYTES 0xff, 0xff
 
+#define FAIL(...)                                                                                  \
+	do {                                                                                       \
+		bst_result = Failed;                                                               \
+		bs_trace_error_time_line(__VA_ARGS__);                                             \
+	} while (0)
+
+#define PASS(...)                                                                                  \
+	do {                                                                                       \
+		bst_result = Passed;                                                               \
+		bs_trace_info_time(1, "PASSED: " __VA_ARGS__);                                     \
+	} while (0)
+
+#define WAIT_SECONDS 30                            /* seconds */
+#define WAIT_TIME    (WAIT_SECONDS * USEC_PER_SEC) /* microseconds*/
+
+extern enum bst_result_t bst_result;
+
 struct test_cfg {
 	uint16_t pan_id;
 	int16_t expected_cnt;
@@ -34,8 +50,6 @@ struct test_cfg {
 	uint8_t sequence;
 	bool do_tx;
 };
-
-extern enum bst_result_t bst_result;
 
 static K_SEM_DEFINE(load_complete, 0, 1);
 
@@ -269,6 +283,19 @@ static void test_args(int argc, char *argv[])
 			test_cfg.do_tx = false;
 		}
 	}
+}
+
+void test_tick(bs_time_t HW_device_time)
+{
+	if (bst_result != Passed) {
+		FAIL("test failed (not passed after %i seconds)\n", WAIT_SECONDS);
+	}
+}
+
+void test_init(void)
+{
+	bst_ticker_set_next_tick_absolute(WAIT_TIME);
+	bst_result = In_progress;
 }
 
 static const struct bst_test_instance ieee802154_basic[] = {

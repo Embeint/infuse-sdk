@@ -9,15 +9,15 @@ verbosity_level=2
 
 cd ${BSIM_OUT_PATH}/bin
 
-Execute ./bs_${BOARD_TS}_tests_bsim_bluetooth_epacket_prj_device_conf \
+Execute ./bs_${BOARD_TS}_tests_bsim_bluetooth_epacket_device_prj_conf \
   -v=${verbosity_level} -s=${simulation_id} -d=0 -RealEncryption=0 \
   -testid=epacket_bt_device -rs=23
 
-Execute ./bs_${BOARD_TS}_tests_bsim_bluetooth_epacket_prj_device_conf \
+Execute ./bs_${BOARD_TS}_tests_bsim_bluetooth_epacket_device_prj_conf \
   -v=${verbosity_level} -s=${simulation_id} -d=1 -RealEncryption=0 \
   -testid=epacket_bt_device -rs=15
 
-Execute ./bs_${BOARD_TS}_tests_bsim_bluetooth_epacket_prj_gateway_conf \
+Execute ./bs_${BOARD_TS}_tests_bsim_bluetooth_epacket_gateway_prj_conf \
   -v=${verbosity_level} -s=${simulation_id} -d=2 -RealEncryption=0 \
   -testid=epacket_bt_gateway_connect_multi -rs=6
 

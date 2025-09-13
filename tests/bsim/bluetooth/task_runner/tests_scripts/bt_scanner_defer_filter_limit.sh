@@ -13,23 +13,23 @@ Execute ./bs_${BOARD_TS}_tests_bsim_bluetooth_task_runner_prj_conf \
   -v=${verbosity_level} -s=${simulation_id} -d=0 -RealEncryption=0 \
   -testid=bt_scanner_defer_filter_limit -rs=10
 
-Execute ./bs_${BOARD_TS}_tests_bsim_bluetooth_epacket_prj_device_conf \
+Execute ./bs_${BOARD_TS}_tests_bsim_bluetooth_epacket_device_prj_conf \
   -v=${verbosity_level} -s=${simulation_id} -d=1 -RealEncryption=0 \
   -testid=epacket_bt_device -rs=20
 
-Execute ./bs_${BOARD_TS}_tests_bsim_bluetooth_epacket_prj_device_conf \
+Execute ./bs_${BOARD_TS}_tests_bsim_bluetooth_epacket_device_prj_conf \
   -v=${verbosity_level} -s=${simulation_id} -d=2 -RealEncryption=0 \
   -testid=epacket_bt_device -rs=21
 
-Execute ./bs_${BOARD_TS}_tests_bsim_bluetooth_epacket_prj_device_conf \
+Execute ./bs_${BOARD_TS}_tests_bsim_bluetooth_epacket_device_prj_conf \
   -v=${verbosity_level} -s=${simulation_id} -d=3 -RealEncryption=0 \
   -testid=epacket_bt_device -rs=22
 
-Execute ./bs_${BOARD_TS}_tests_bsim_bluetooth_epacket_prj_device_conf \
+Execute ./bs_${BOARD_TS}_tests_bsim_bluetooth_epacket_device_prj_conf \
   -v=${verbosity_level} -s=${simulation_id} -d=4 -RealEncryption=0 \
   -testid=epacket_bt_device -rs=23
 
-Execute ./bs_${BOARD_TS}_tests_bsim_bluetooth_epacket_prj_device_conf \
+Execute ./bs_${BOARD_TS}_tests_bsim_bluetooth_epacket_device_prj_conf \
   -v=${verbosity_level} -s=${simulation_id} -d=5 -RealEncryption=0 \
   -testid=epacket_bt_device -rs=24
 

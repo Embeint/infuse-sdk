@@ -12,8 +12,6 @@
 #include <zephyr/random/random.h>
 #include <zephyr/bluetooth/hci_types.h>
 
-#include "common.h"
-
 #include "bs_types.h"
 #include "bs_tracing.h"
 #include "time_machine.h"
@@ -28,10 +26,26 @@
 #include <infuse/bluetooth/gatt.h>
 #include <infuse/fs/kv_store.h>
 #include <infuse/fs/kv_types.h>
+#include <infuse/reboot.h>
 #include <infuse/rpc/types.h>
 #include <infuse/rpc/client.h>
 #include <infuse/security.h>
 #include <infuse/states.h>
+
+#define FAIL(...)                                                                                  \
+	do {                                                                                       \
+		bst_result = Failed;                                                               \
+		bs_trace_error_time_line(__VA_ARGS__);                                             \
+	} while (0)
+
+#define PASS(...)                                                                                  \
+	do {                                                                                       \
+		bst_result = Passed;                                                               \
+		bs_trace_info_time(1, "PASSED: " __VA_ARGS__);                                     \
+	} while (0)
+
+#define WAIT_SECONDS 30                            /* seconds */
+#define WAIT_TIME    (WAIT_SECONDS * USEC_PER_SEC) /* microseconds*/
 
 int epacket_bt_gatt_encrypt(struct net_buf *buf, uint32_t network_key_id);
 
@@ -40,10 +54,27 @@ extern enum bst_result_t bst_result;
 static K_SEM_DEFINE(epacket_adv_received, 0, 1);
 static K_SEM_DEFINE(bt_connected, 0, 1);
 static K_SEM_DEFINE(bt_disconnected, 0, 1);
+static K_SEM_DEFINE(reboot_request, 0, 1);
 static bt_addr_le_t adv_device;
 static atomic_t received_packets;
 
 LOG_MODULE_REGISTER(app, LOG_LEVEL_INF);
+
+int infuse_reboot_state_query(struct infuse_reboot_state *state)
+{
+	return -ENOENT;
+}
+
+void infuse_reboot(enum infuse_reboot_reason reason, uint32_t info1, uint32_t info2)
+{
+	k_sem_give(&reboot_request);
+}
+
+void infuse_reboot_delayed(enum infuse_reboot_reason reason, uint32_t info1, uint32_t info2,
+			   k_timeout_t delay)
+{
+	k_sem_give(&reboot_request);
+}
 
 static void connected(struct bt_conn *conn, uint8_t err)
 {
@@ -2265,6 +2296,19 @@ static void main_gateway_mcumgr_none_reboot(void)
 	k_sleep(K_TIMEOUT_ABS_SEC(9));
 
 	PASS("MCUMGR NONE rebooter passed\n");
+}
+
+void test_tick(bs_time_t HW_device_time)
+{
+	if (bst_result != Passed) {
+		FAIL("test failed (not passed after %i seconds)\n", WAIT_SECONDS);
+	}
+}
+
+void test_init(void)
+{
+	bst_ticker_set_next_tick_absolute(WAIT_TIME);
+	bst_result = In_progress;
 }
 
 static const struct bst_test_instance epacket_gateway[] = {

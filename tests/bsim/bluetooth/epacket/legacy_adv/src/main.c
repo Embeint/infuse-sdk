@@ -8,8 +8,6 @@
 #include <zephyr/logging/log.h>
 #include <zephyr/bluetooth/bluetooth.h>
 
-#include "common.h"
-
 #include "bs_types.h"
 #include "bs_tracing.h"
 #include "time_machine.h"
@@ -21,12 +19,45 @@
 #include <infuse/fs/kv_store.h>
 #include <infuse/fs/kv_types.h>
 #include <infuse/tdf/definitions.h>
+#include <infuse/reboot.h>
+
+#define FAIL(...)                                                                                  \
+	do {                                                                                       \
+		bst_result = Failed;                                                               \
+		bs_trace_error_time_line(__VA_ARGS__);                                             \
+	} while (0)
+
+#define PASS(...)                                                                                  \
+	do {                                                                                       \
+		bst_result = Passed;                                                               \
+		bs_trace_info_time(1, "PASSED: " __VA_ARGS__);                                     \
+	} while (0)
+
+#define WAIT_SECONDS 30                            /* seconds */
+#define WAIT_TIME    (WAIT_SECONDS * USEC_PER_SEC) /* microseconds*/
 
 extern enum bst_result_t bst_result;
 static int connection_notifications;
 static int disconnection_notifications;
+static K_SEM_DEFINE(reboot_request, 0, 1);
 
 LOG_MODULE_REGISTER(app, LOG_LEVEL_INF);
+
+int infuse_reboot_state_query(struct infuse_reboot_state *state)
+{
+	return -ENOENT;
+}
+
+void infuse_reboot(enum infuse_reboot_reason reason, uint32_t info1, uint32_t info2)
+{
+	k_sem_give(&reboot_request);
+}
+
+void infuse_reboot_delayed(enum infuse_reboot_reason reason, uint32_t info1, uint32_t info2,
+			   k_timeout_t delay)
+{
+	k_sem_give(&reboot_request);
+}
 
 static void peripheral_interface_state(uint16_t current_max_payload, void *user_ctx)
 {
@@ -187,7 +218,6 @@ static void main_legacy_adv_expect_reboot(void)
 	struct epacket_interface_cb interface_cb = {
 		.interface_state = peripheral_interface_state,
 	};
-	struct k_sem *reboot_sem = test_get_reboot_sem();
 	int rc;
 
 	epacket_register_callback(epacket_bt_periph, &interface_cb);
@@ -205,7 +235,7 @@ static void main_legacy_adv_expect_reboot(void)
 	}
 
 	/* Wait for infuse_reboot or infuse_reboot_delayable to be called */
-	rc = k_sem_take(reboot_sem, K_SECONDS(5));
+	rc = k_sem_take(&reboot_request, K_SECONDS(5));
 	if (rc != 0) {
 		FAIL("Failed to be rebooted\n");
 		return;
@@ -214,6 +244,19 @@ static void main_legacy_adv_expect_reboot(void)
 
 	/* Give the connection time to terminate */
 	k_sleep(K_SECONDS(2));
+}
+
+void test_tick(bs_time_t HW_device_time)
+{
+	if (bst_result != Passed) {
+		FAIL("test failed (not passed after %i seconds)\n", WAIT_SECONDS);
+	}
+}
+
+void test_init(void)
+{
+	bst_ticker_set_next_tick_absolute(WAIT_TIME);
+	bst_result = In_progress;
 }
 
 static const struct bst_test_instance legacy_adv_advertiser[] = {

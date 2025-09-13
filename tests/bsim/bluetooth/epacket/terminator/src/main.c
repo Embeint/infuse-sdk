@@ -8,8 +8,6 @@
 #include <zephyr/logging/log.h>
 #include <zephyr/bluetooth/conn.h>
 
-#include "common.h"
-
 #include "bs_types.h"
 #include "bs_tracing.h"
 #include "time_machine.h"
@@ -18,6 +16,21 @@
 #include <infuse/epacket/interface.h>
 #include <infuse/data_logger/high_level/tdf.h>
 #include <infuse/tdf/definitions.h>
+
+#define FAIL(...)                                                                                  \
+	do {                                                                                       \
+		bst_result = Failed;                                                               \
+		bs_trace_error_time_line(__VA_ARGS__);                                             \
+	} while (0)
+
+#define PASS(...)                                                                                  \
+	do {                                                                                       \
+		bst_result = Passed;                                                               \
+		bs_trace_info_time(1, "PASSED: " __VA_ARGS__);                                     \
+	} while (0)
+
+#define WAIT_SECONDS 30                            /* seconds */
+#define WAIT_TIME    (WAIT_SECONDS * USEC_PER_SEC) /* microseconds*/
 
 static void bt_conn_connected(struct bt_conn *conn, uint8_t err);
 
@@ -79,6 +92,19 @@ static void main_epacket_conn_refuser(void)
 	k_sleep(K_MSEC(500));
 
 	PASS("Connection terminator complete\n");
+}
+
+void test_tick(bs_time_t HW_device_time)
+{
+	if (bst_result != Passed) {
+		FAIL("test failed (not passed after %i seconds)\n", WAIT_SECONDS);
+	}
+}
+
+void test_init(void)
+{
+	bst_ticker_set_next_tick_absolute(WAIT_TIME);
+	bst_result = In_progress;
 }
 
 static const struct bst_test_instance conn_terminator[] = {

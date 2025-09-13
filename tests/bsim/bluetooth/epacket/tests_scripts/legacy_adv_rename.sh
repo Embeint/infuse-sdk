@@ -9,11 +9,11 @@ verbosity_level=2
 
 cd ${BSIM_OUT_PATH}/bin
 
-Execute ./bs_${BOARD_TS}_tests_bsim_bluetooth_epacket_prj_legacy_adv_named_conf \
+Execute ./bs_${BOARD_TS}_tests_bsim_bluetooth_epacket_legacy_adv_prj_named_conf \
   -v=${verbosity_level} -s=${simulation_id} -d=0 -RealEncryption=0 \
   -testid=legacy_adv_name_update -rs=23
 
-Execute ./bs_${BOARD_TS}_tests_bsim_bluetooth_epacket_prj_legacy_adv_named_conf \
+Execute ./bs_${BOARD_TS}_tests_bsim_bluetooth_epacket_legacy_adv_prj_named_conf \
   -v=${verbosity_level} -s=${simulation_id} -d=1 -RealEncryption=0 \
   -testid=legacy_adv_name_scanner -rs=24
 

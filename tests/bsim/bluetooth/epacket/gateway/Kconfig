@@ -1,11 +1,5 @@
 # Test options
 
-config INFUSE_LEGACY_ADV
-	bool "Start legacy advertiser"
-
-config CONN_TERMINATOR
-	bool "Terminate connections after creation"
-
 config INFUSE_REBOOT
 	default y
 
