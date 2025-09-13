@@ -122,4 +122,9 @@ configdefault BT_DEVICE_APPEARANCE
 configdefault BT_CTLR_CONN_RSSI
 	default y
 
+# Infuse-IoT SPI controller builds support more buffers by default.
+# Mismatches between the controller and host trigger a startup warning.
+configdefault BT_BUF_ACL_TX_COUNT
+	default 5 if DT_HAS_ZEPHYR_BT_HCI_SPI_ENABLED
+
 endif # INFUSE_SDK_BLUETOOTH
