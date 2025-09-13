@@ -22,3 +22,9 @@ tests:
       bsim_exe_name: tests_bsim_bluetooth_epacket_gateway_prj_knows_alt_conf
     extra_args:
       - EXTRA_CONF_FILE=prj_knows_alt.conf
+  bluetooth.epacket.gateway.sdc:
+    harness_config:
+      bsim_exe_name: tests_bsim_bluetooth_epacket_gateway_sdc_prj_conf
+    extra_args:
+      - DTC_OVERLAY_FILE="./app.overlay;./nrf_sdc.overlay"
+      - EXTRA_CONF_FILE=prj_sdc.conf

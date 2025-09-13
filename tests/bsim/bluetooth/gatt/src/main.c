@@ -751,6 +751,7 @@ static void main_connect_rssi(void)
 	struct tdf_bluetooth_rssi *bt_rssi;
 	struct tdf_parsed tdf;
 	int conn_rc;
+	int rssi;
 	int rc;
 
 	common_init();
@@ -780,9 +781,10 @@ static void main_connect_rssi(void)
 		return;
 	}
 
-	/* -59 dBm is the default PHY RSSI */
-	if (bt_conn_rssi(conn) != -59) {
-		FAIL("Unexpected RSSI\n");
+	/* -59 dBm is the default PHY RSSI, -51 dBm for the Nordic SDC for some reason */
+	rssi = bt_conn_rssi(conn);
+	if ((rssi != -59) && (rssi != -51)) {
+		FAIL("Unexpected RSSI %d dBm\n", bt_conn_rssi(conn));
 		return;
 	}
 
@@ -806,7 +808,8 @@ static void main_connect_rssi(void)
 		}
 		bt_rssi = tdf.data;
 		if ((tdf.time == 0) || (tdf.tdf_num != 1) || (bt_rssi->address.type != addr.type) ||
-		    (memcmp(bt_rssi->address.val, addr.a.val, 6) != 0) || (bt_rssi->rssi != -59)) {
+		    (memcmp(bt_rssi->address.val, addr.a.val, 6) != 0) ||
+		    ((bt_rssi->rssi != -59) && (bt_rssi->rssi != -51))) {
 			FAIL("Unexpected TDF data\n");
 			return;
 		}

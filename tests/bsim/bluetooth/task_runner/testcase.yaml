@@ -12,3 +12,8 @@ tests:
   bluetooth.task_runner:
     harness_config:
       bsim_exe_name: tests_bsim_bluetooth_task_runner_prj_conf
+  bluetooth.task_runner.sdc:
+    harness_config:
+      bsim_exe_name: tests_bsim_bluetooth_task_runner_sdc_prj_conf
+    extra_args:
+      - DTC_OVERLAY_FILE="./app.overlay;./nrf_sdc.overlay"
