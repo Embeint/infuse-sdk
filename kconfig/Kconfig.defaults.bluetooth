@@ -85,6 +85,10 @@ configdefault BT_CTLR_ADV_DATA_LEN_MAX
 configdefault BT_CTLR_SCAN_DATA_LEN_MAX
 	default 124
 
+# Increase the radio utilisation for continuous scanninging on the Zephyr controller
+configdefault BT_CTLR_SCAN_UNRESERVED
+	default y
+
 # GATT central options
 configdefault BT_GATT_CLIENT
 	default y if BT_CENTRAL
