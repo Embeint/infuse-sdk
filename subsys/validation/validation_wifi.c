@@ -149,7 +149,7 @@ static void wifi_mgmt_event_handler(struct net_mgmt_event_callback *cb, uint64_t
 		k_sem_give(&context->done);
 		break;
 	default:
-		VALIDATION_REPORT_INFO(TEST, "Unknown event %08X", mgmt_event);
+		VALIDATION_REPORT_INFO(TEST, "Unknown event %08llX", mgmt_event);
 	}
 }
 
