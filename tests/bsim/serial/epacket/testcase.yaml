@@ -1,0 +1,38 @@
+common:
+  build_only: true
+  required_snippets:
+    - infuse
+  tags:
+    - bluetooth
+  platform_allow:
+    - nrf52_bsim/native
+  harness: bsim
+tests:
+  serial.epacket:
+    harness_config:
+      bsim_exe_name: tests_bsim_serial_epacket_prj_device_conf
+  serial.epacket.pm:
+    harness_config:
+      bsim_exe_name: tests_bsim_serial_epacket_prj_device_pm_conf
+    extra_args:
+      - EXTRA_CONF_FILE=prj_pm.conf
+  serial.epacket.async:
+    harness_config:
+      bsim_exe_name: tests_bsim_serial_epacket_prj_device_async_conf
+    extra_args:
+      - EXTRA_CONF_FILE=prj_async.conf
+  serial.epacket.async_pm:
+    harness_config:
+      bsim_exe_name: tests_bsim_serial_epacket_prj_device_async_pm_conf
+    extra_args:
+      - EXTRA_CONF_FILE=prj_async_pm.conf
+  serial.epacket.int_single:
+    harness_config:
+      bsim_exe_name: tests_bsim_serial_epacket_prj_device_int_single_conf
+    extra_args:
+      - EXTRA_CONF_FILE=prj_int_single.conf
+  serial.epacket.int_single_pm:
+    harness_config:
+      bsim_exe_name: tests_bsim_serial_epacket_prj_device_int_single_pm_conf
+    extra_args:
+      - EXTRA_CONF_FILE=prj_int_single_pm.conf

@@ -1,0 +1,21 @@
+common:
+  build_only: true
+  required_snippets:
+    - infuse
+  tags:
+    - bluetooth
+  platform_allow:
+    - nrf52_bsim/native
+    - nrf5340bsim/nrf5340/cpunet
+  harness: bsim
+tests:
+  bluetooth.epacket.legacy_adv:
+    harness_config:
+      bsim_exe_name: tests_bsim_bluetooth_epacket_legacy_adv_prj_conf
+    extra_args:
+      - EXTRA_CONF_FILE=prj_hardcoded.conf
+  bluetooth.epacket.legacy_adv.named:
+    harness_config:
+      bsim_exe_name: tests_bsim_bluetooth_epacket_legacy_adv_prj_named_conf
+    extra_args:
+      - EXTRA_CONF_FILE=prj_named.conf

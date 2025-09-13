@@ -1,0 +1,14 @@
+common:
+  build_only: true
+  required_snippets:
+    - infuse
+  tags:
+    - bluetooth
+  platform_allow:
+    - nrf52_bsim/native
+    - nrf5340bsim/nrf5340/cpunet
+  harness: bsim
+tests:
+  bluetooth.task_runner:
+    harness_config:
+      bsim_exe_name: tests_bsim_bluetooth_task_runner_prj_conf
