@@ -5,11 +5,6 @@ menuconfig EPACKET
 	depends on NET_BUF
 	select POLL
 
-config EPACKET_CRYPTO
-	bool
-	depends on INFUSE_SECURITY
-	default y
-
 if EPACKET
 
 module = EPACKET
@@ -105,3 +100,8 @@ config EPACKET_FILTERING
 rsource "interfaces/Kconfig"
 
 endif # EPACKET
+
+config EPACKET_CRYPTO
+	bool
+	depends on INFUSE_SECURITY
+	default y

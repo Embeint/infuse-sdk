@@ -11,12 +11,11 @@ menuconfig INFUSE_IMU_BMA4XX
 	select SPI if $(dt_compat_on_bus,$(DT_COMPAT_BOSCH_BMA4XX),spi)
 	help
 	  Enable driver for BMA4XX IMU sensor
+if INFUSE_IMU_BMA4XX
 
 # Zephyr and Infuse driver conflict
 configdefault BMA4XX
-	default n if INFUSE_IMU_BMA4XX
-
-if INFUSE_IMU_BMA4XX
+	default n
 
 config BMA4XX_BUS_I2C
 	bool

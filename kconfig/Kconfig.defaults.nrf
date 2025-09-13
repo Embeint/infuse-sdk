@@ -114,15 +114,15 @@ endif # NRF70_SCAN_ONLY
 # Limit nRF memory usage to the bare minimum
 if NRF_WIFI_LOW_RAM
 configdefault NRF_WIFI_IFACE_MTU
-	default 576 if !IPV6 # Minimum IPv4 compatible MTU
-	default 1280         # Minimum IPv6 compatible MTU
+	default 576 if !NET_IPV6 # Minimum IPv4 compatible MTU
+	default 1280             # Minimum IPv6 compatible MTU
 configdefault NRF70_TX_MAX_DATA_SIZE
 	# Interface MTU + nRF header sizes
-	default 644 if !IPV6
+	default 644 if !NET_IPV6
 	default 1348
 configdefault NRF70_RX_MAX_DATA_SIZE
 	# Interface MTU + nRF header sizes
-	default 644 if !IPV6
+	default 644 if !NET_IPV6
 	default 1348
 configdefault NRF70_MAX_TX_PENDING_QLEN
 	# Disable the limit so packets aren't dropped
@@ -134,7 +134,7 @@ configdefault NRF70_MAX_TX_TOKENS
 configdefault NRF70_MAX_TX_AGGREGATION
 	default 3
 configdefault NRF_WIFI_DATA_HEAP_SIZE
-	def_int 8240 if !IPV6
+	def_int 8240 if !NET_IPV6
 	def_int 16688
 	# IPV4 Data plane is (6 + 6) * 644 ~= 8kB
 	# IPV6 Data plane is (6 + 6) * 1348 ~= 16kB
@@ -152,7 +152,7 @@ configdefault NRF_WIFI_DATA_HEAP_SIZE
 	# NRF70_TX_MAX_DATA_SIZE * NRF70_MAX_TX_TOKENS
 	def_int 80000 if !NRF70_SCAN_ONLY
 configdefault NET_CONNECTION_MANAGER_MONITOR_STACK_SIZE
-	default 4096 if NRF700X_STA_MODE
+	default 4096 if NRF70_STA_MODE
 	default 1024 if NRF_MODEM_LIB_NET_IF
 configdefault NRF_WIFI_IF_AUTO_START
 	default n
@@ -197,5 +197,19 @@ configdefault UART_0_NRF_TX_BUFFER_SIZE
 # UART20 is the standard serial port on Nordic nRF54L boards
 configdefault UART_20_NRF_TX_BUFFER_SIZE
 	default 1024 if EPACKET_INTERFACE_SERIAL
+
+# Symbols used by SDK-NRF libraries but not defined upstream
+config ZEPHYR_NRF_MODULE
+	bool
+config SOC_SERIES_NRF71X
+	bool
+config NORDIC_SECURITY_BACKEND
+	bool
+config UNITY
+	bool
+config FOTA_DOWNLOAD
+	bool
+config DATE_TIME
+	bool
 
 endif # SOC_FAMILY_NORDIC_NRF

@@ -12,11 +12,11 @@ menuconfig INFUSE_IMU_BMI270
 	help
 	  Enable driver for BMI270 IMU sensor
 
+if INFUSE_IMU_BMI270
+
 # Zephyr and Infuse driver conflict
 configdefault BMI270
-	default n if INFUSE_IMU_BMI270
-
-if INFUSE_IMU_BMI270
+	default n
 
 config BMI270_BUS_I2C
 	bool

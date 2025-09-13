@@ -12,11 +12,11 @@ menuconfig INFUSE_IMU_LSM6DSO
 	help
 	  Enable driver for LSM6DSO IMU sensor
 
+if INFUSE_IMU_LSM6DSO
+
 # Zephyr and Infuse driver conflict
 configdefault LSM6DSO
-	default n if INFUSE_IMU_LSM6DSO
-
-if INFUSE_IMU_LSM6DSO
+	default n
 
 config LSM6DSO_BUS_I2C
 	bool

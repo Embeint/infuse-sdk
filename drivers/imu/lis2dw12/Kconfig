@@ -12,11 +12,11 @@ menuconfig INFUSE_IMU_LIS2DW12
 	help
 	  Enable driver for LIS2DW12 IMU sensor
 
+if INFUSE_IMU_LIS2DW12
+
 # Zephyr and Infuse driver conflict
 configdefault LIS2DW12
-	default n if INFUSE_IMU_BMA4XX
-
-if INFUSE_IMU_LIS2DW12
+	default n
 
 config LIS2DW12_BUS_I2C
 	bool
