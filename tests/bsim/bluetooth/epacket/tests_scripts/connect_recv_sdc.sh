@@ -4,7 +4,7 @@
 
 source ${ZEPHYR_BASE}/tests/bsim/sh_common.source
 
-simulation_id="epacket_connect_recv"
+simulation_id="epacket_connect_recv_sdc"
 verbosity_level=2
 
 cd ${BSIM_OUT_PATH}/bin
