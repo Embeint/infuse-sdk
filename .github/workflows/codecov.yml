@@ -140,7 +140,7 @@ jobs:
             -T infuse-sdk/tests --coverage-tool gcovr \
             -e nano --coverage-basedir infuse-sdk \
             -x=CONFIG_TEST_EXTRA_STACK_SIZE=4096 \
-            -x=CONFIG_COVERAGE_DUMP_PATH_EXCLUSIVE=\"*twister-out/*infuse-sdk*\"
+            -x=CONFIG_COVERAGE_DUMP_PATH_EXCLUDE=\"*modules/crypto/mbedtls*\"
 
       - name: Print ccache stats
         if: always()
