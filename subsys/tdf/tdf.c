@@ -275,11 +275,6 @@ int tdf_add_core(struct tdf_buffer_state *state, uint16_t tdf_id, uint8_t tdf_le
 	is_diff = (format == TDF_DATA_FORMAT_DIFF_ARRAY_16_8) ||
 		  (format == TDF_DATA_FORMAT_DIFF_ARRAY_32_8) ||
 		  (format == TDF_DATA_FORMAT_DIFF_ARRAY_32_16);
-#else
-	/* Override requested diff */
-	if (!is_idx) {
-		format = TDF_DATA_FORMAT_TIME_ARRAY;
-	}
 #endif /* CONFIG_TDF_DIFF */
 
 	/* Input validation */
@@ -323,7 +318,6 @@ int tdf_add_core(struct tdf_buffer_state *state, uint16_t tdf_id, uint8_t tdf_le
 
 			if (diffs < 0) {
 				/* No diff encoding */
-				format = TDF_DATA_FORMAT_TIME_ARRAY;
 				is_diff = false;
 				tdf_num = -diffs;
 			} else {
@@ -331,14 +325,12 @@ int tdf_add_core(struct tdf_buffer_state *state, uint16_t tdf_id, uint8_t tdf_le
 			}
 		}
 	} else {
-		format = TDF_DATA_FORMAT_SINGLE;
 		is_diff = false;
 	}
 #endif /* CONFIG_TDF_DIFF */
 	if ((tdf_num > 1) || is_idx) {
 		array_header = sizeof(struct tdf_array_header);
 	} else {
-		format = TDF_DATA_FORMAT_SINGLE;
 		is_diff = false;
 	}
 	total_header = sizeof(struct tdf_header) + array_header + timestamp_header;
@@ -394,6 +386,8 @@ int tdf_add_core(struct tdf_buffer_state *state, uint16_t tdf_id, uint8_t tdf_le
 #endif /* CONFIG_TDF_DIFF */
 	}
 
+	__ASSERT_NO_MSG(tdf_num > 0);
+
 	/* Base Headers */
 	struct tdf_header *header =
 		tdf_add_header(state, tdf_header, tdf_id, tdf_len, time, timestamp_delta);
@@ -426,6 +420,7 @@ int tdf_add_core(struct tdf_buffer_state *state, uint16_t tdf_id, uint8_t tdf_le
 
 			encode_fn((tdf_num - 1) * per_tdf_fields, current, next, diff_ptr);
 		}
+		__ASSERT_NO_MSG(array_header_ptr != NULL);
 		array_header_ptr->diff_info = (tdf_diff_encoded[format] << 6) | (tdf_num - 1);
 	} else {
 #endif /* CONFIG_TDF_DIFF */
