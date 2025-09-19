@@ -33,9 +33,9 @@
 #include <modem/modem_info.h>
 #include <nrf_modem_at.h>
 
-LOG_MODULE_REGISTER(modem_monitor, CONFIG_INFUSE_MODEM_MONITOR_LOG_LEVEL);
+#include "../modem_monitor.h"
 
-#define CONNECTIVITY_TIMEOUT K_SECONDS(CONFIG_INFUSE_MODEM_MONITOR_CONNECTIVITY_TIMEOUT_SEC)
+LOG_MODULE_DECLARE(modem_monitor, CONFIG_INFUSE_MODEM_MONITOR_LOG_LEVEL);
 
 #define LTE_LC_SYSTEM_MODE_DEFAULT 0xff
 #define LTE_MODE_DEFAULT                                                                           \
@@ -54,7 +54,6 @@ enum {
 	 * is ongoing. As such we want to skip non-critical AT commands in this state.
 	 */
 	FLAGS_PDN_CONN_IN_PROGRESS = 2,
-	FLAGS_IP_CONN_EXPECTED = 3,
 };
 
 static struct {
@@ -293,11 +292,9 @@ static void lte_reg_handler(const struct lte_lc_evt *const evt)
 		/* Handle the connectivity watchdog */
 		if ((evt->nw_reg_status == LTE_LC_NW_REG_REGISTERED_HOME) ||
 		    (evt->nw_reg_status == LTE_LC_NW_REG_REGISTERED_ROAMING)) {
-			atomic_set_bit(&monitor.flags, FLAGS_IP_CONN_EXPECTED);
-			k_work_reschedule(&monitor.connectivity_timeout, CONNECTIVITY_TIMEOUT);
+			modem_monitor_ip_connectivity_expected(true);
 		} else {
-			atomic_clear_bit(&monitor.flags, FLAGS_IP_CONN_EXPECTED);
-			k_work_cancel_delayable(&monitor.connectivity_timeout);
+			modem_monitor_ip_connectivity_expected(false);
 		}
 		/* Request update of knowledge of network info */
 		infuse_work_reschedule(&monitor.update_work, K_NO_WAIT);
@@ -560,40 +557,10 @@ void lte_net_if_modem_fault_app_handler(struct nrf_modem_fault_info *fault_info)
 #endif /* CONFIG_INFUSE_REBOOT */
 }
 
-static void connectivity_timeout(struct k_work *work)
-{
-	if (!atomic_test_bit(&monitor.flags, FLAGS_IP_CONN_EXPECTED)) {
-		/* Network registration was lost before interface state callback occurred */
-		return;
-	}
-
-	/* Interface has failed to gain IP connectivity, the safest option is to reboot */
-#ifdef CONFIG_INFUSE_REBOOT
-	LOG_ERR("Networking connectivity failed, rebooting in 2 seconds...");
-	infuse_reboot_delayed(INFUSE_REBOOT_SW_WATCHDOG, (uintptr_t)connectivity_timeout,
-			      CONFIG_INFUSE_MODEM_MONITOR_CONNECTIVITY_TIMEOUT_SEC, K_SECONDS(2));
-#else
-	LOG_ERR("Networking connectivity failed, no reboot support!");
-#endif /* CONFIG_INFUSE_REBOOT */
-}
-
-static void iface_state_handler(struct net_mgmt_event_callback *cb, uint64_t mgmt_event,
-				struct net_if *iface)
-{
-	if (iface != monitor.lte_net_if) {
-		return;
-	}
-	if (mgmt_event == NET_EVENT_IF_UP) {
-		/* Interface is UP, cancel the timeout */
-		k_work_cancel_delayable(&monitor.connectivity_timeout);
-	} else if (mgmt_event == NET_EVENT_IF_DOWN) {
-		/* Interface is DOWN, restart the timeout */
-		k_work_reschedule(&monitor.connectivity_timeout, CONNECTIVITY_TIMEOUT);
-	}
-}
-
 int lte_modem_monitor_init(void)
 {
+	struct net_if *iface = net_if_get_first_by_type(&(NET_L2_GET_NAME(OFFLOADED_NETDEV)));
+
 	k_work_init_delayable(&monitor.update_work, network_info_update);
 	k_work_init(&monitor.signal_quality_work, signal_quality_update);
 	/* Initial state */
@@ -603,15 +570,10 @@ int lte_modem_monitor_init(void)
 	monitor.network_state.edrx_cfg.ptw = -1.0f;
 	monitor.rsrp_cached = INT16_MIN;
 	monitor.rsrq_cached = INT8_MIN;
-	/* Network connectivity timeout handler */
-	monitor.lte_net_if = net_if_get_first_by_type(&(NET_L2_GET_NAME(OFFLOADED_NETDEV)));
-	__ASSERT_NO_MSG(monitor.lte_net_if != NULL);
-	k_work_init_delayable(&monitor.connectivity_timeout, connectivity_timeout);
-	net_mgmt_init_event_callback(&monitor.mgmt_iface_cb, iface_state_handler,
-				     NET_EVENT_IF_UP | NET_EVENT_IF_DOWN);
-	net_mgmt_add_event_callback(&monitor.mgmt_iface_cb);
 	/* Register handler */
 	lte_lc_register_handler(lte_reg_handler);
+	/* Initialise generic monitor */
+	modem_monitor_init(iface);
 	return 0;
 }
 
