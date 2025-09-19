@@ -12,7 +12,7 @@
 
 #include <infuse/rpc/commands.h>
 #include <infuse/rpc/types.h>
-#include <infuse/lib/nrf_modem_monitor.h>
+#include <infuse/lib/lte_modem_monitor.h>
 
 #include <nrf_modem_at.h>
 
@@ -32,7 +32,7 @@ struct net_buf *rpc_command_lte_at_cmd(struct net_buf *request)
 		return rpc_response_simple_req(request, -EINVAL, &rsp, sizeof(rsp));
 	}
 #ifdef CONFIG_INFUSE_NRF_MODEM_MONITOR
-	if (!nrf_modem_monitor_is_at_safe()) {
+	if (!lte_modem_monitor_is_at_safe()) {
 		return rpc_response_simple_req(request, -EAGAIN, &rsp, sizeof(rsp));
 	}
 #endif

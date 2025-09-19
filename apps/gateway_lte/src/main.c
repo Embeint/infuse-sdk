@@ -230,7 +230,7 @@ int main(void)
 	tdf_reboot_info_log(TDF_DATA_LOGGER_FLASH | TDF_DATA_LOGGER_BT_ADV | TDF_DATA_LOGGER_UDP);
 
 	/* Log LTE connection events */
-	nrf_modem_monitor_network_state_log(TDF_DATA_LOGGER_FLASH);
+	lte_modem_monitor_network_state_log(TDF_DATA_LOGGER_FLASH);
 
 	/* Configure time event logging */
 	auto_time_sync_log_configure(TDF_DATA_LOGGER_FLASH,

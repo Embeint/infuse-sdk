@@ -9,8 +9,8 @@
  * @details
  */
 
-#ifndef INFUSE_SDK_INCLUDE_INFUSE_LIB_NRF_MODEM_MONITOR_H_
-#define INFUSE_SDK_INCLUDE_INFUSE_LIB_NRF_MODEM_MONITOR_H_
+#ifndef INFUSE_SDK_INCLUDE_INFUSE_LIB_LTE_MODEM_MONITOR_H_
+#define INFUSE_SDK_INCLUDE_INFUSE_LIB_LTE_MODEM_MONITOR_H_
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -21,7 +21,7 @@ extern "C" {
 
 /**
  * @brief nrf_modem_monitor API
- * @defgroup nrf_modem_monitor_apis nrf_modem_monitor APIs
+ * @defgroup lte_modem_monitor_apis nrf_modem_monitor APIs
  * @{
  */
 
@@ -138,7 +138,7 @@ struct lte_edrx_cfg {
 	float ptw;
 };
 
-struct nrf_modem_network_state {
+struct lte_modem_network_state {
 	enum lte_registration_status nw_reg_status;
 	enum lte_access_technology lte_mode;
 	enum lte_rrc_mode rrc_mode;
@@ -160,14 +160,14 @@ struct nrf_modem_network_state {
  * @retval true AT command interface can be used
  * @retval false AT command interface should not be used
  */
-bool nrf_modem_monitor_is_at_safe(void);
+bool lte_modem_monitor_is_at_safe(void);
 
 /**
  * @brief Get current network state
  *
  * @param state Network state
  */
-void nrf_modem_monitor_network_state(struct nrf_modem_network_state *state);
+void lte_modem_monitor_network_state(struct lte_modem_network_state *state);
 
 /**
  * @brief Configure the modem monitor to automatically log network state changes
@@ -176,7 +176,7 @@ void nrf_modem_monitor_network_state(struct nrf_modem_network_state *state);
  *
  * @param tdf_logger_mask TDF data logger mask to log state changes to
  */
-void nrf_modem_monitor_network_state_log(uint8_t tdf_logger_mask);
+void lte_modem_monitor_network_state_log(uint8_t tdf_logger_mask);
 
 /**
  * @brief Get current signal quality
@@ -190,7 +190,7 @@ void nrf_modem_monitor_network_state_log(uint8_t tdf_logger_mask);
  * @retval 0 on success
  * @retval -errno on error
  */
-int nrf_modem_monitor_signal_quality(int16_t *rsrp, int8_t *rsrq, bool cached);
+int lte_modem_monitor_signal_quality(int16_t *rsrp, int8_t *rsrq, bool cached);
 
 /**
  * @brief Get current connectivity statistics
@@ -201,7 +201,7 @@ int nrf_modem_monitor_signal_quality(int16_t *rsrp, int8_t *rsrq, bool cached);
  * @retval 0 on success
  * @retval -errno on error
  */
-int nrf_modem_monitor_connectivity_stats(int *tx_kbytes, int *rx_kbytes);
+int lte_modem_monitor_connectivity_stats(int *tx_kbytes, int *rx_kbytes);
 
 /**
  * @}
@@ -211,4 +211,4 @@ int nrf_modem_monitor_connectivity_stats(int *tx_kbytes, int *rx_kbytes);
 }
 #endif
 
-#endif /* INFUSE_SDK_INCLUDE_INFUSE_LIB_NRF_MODEM_MONITOR_H_ */
+#endif /* INFUSE_SDK_INCLUDE_INFUSE_LIB_LTE_MODEM_MONITOR_H_ */
