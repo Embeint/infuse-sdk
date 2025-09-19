@@ -81,37 +81,37 @@ config KV_STORE_KEY_EPACKET_UDP_PORT
 
 config KV_STORE_KEY_LTE_MODEM_MODEL
 	bool "Enable KV key LTE_MODEM_MODEL"
-	default y if NRF_MODEM_LIB
+	default y if NRF_MODEM_LIB || MODEM_CELLULAR
 	help
 	  Modem model as returned by AT+CGMM
 
 config KV_STORE_KEY_LTE_MODEM_FIRMWARE_REVISION
 	bool "Enable KV key LTE_MODEM_FIRMWARE_REVISION"
-	default y if NRF_MODEM_LIB
+	default y if NRF_MODEM_LIB || MODEM_CELLULAR
 	help
 	  Modem firmware revision as returned by AT+CGMR
 
 config KV_STORE_KEY_LTE_MODEM_ESN
 	bool "Enable KV key LTE_MODEM_ESN"
-	default y if NRF_MODEM_LIB
+	default y if NRF_MODEM_LIB || MODEM_CELLULAR
 	help
 	  'Electronic Serial Number' as returned by AT+CGSN=0
 
 config KV_STORE_KEY_LTE_MODEM_IMEI
 	bool "Enable KV key LTE_MODEM_IMEI"
-	default y if NRF_MODEM_LIB
+	default y if NRF_MODEM_LIB || MODEM_CELLULAR
 	help
 	  'International Modem Equiment Identifier' as returned by AT+CGSN=1
 
 config KV_STORE_KEY_LTE_SIM_UICC
 	bool "Enable KV key LTE_SIM_UICC"
-	default y if NRF_MODEM_LIB
+	default y if NRF_MODEM_LIB || MODEM_CELLULAR
 	help
 	  SIM Universal Identifier (https://www.itu.int/en/ITU-T/inr/forms/Pages/iin.aspx)
 
 config KV_STORE_KEY_LTE_PDP_CONFIG
 	bool "Enable KV key LTE_PDP_CONFIG"
-	default y if NRF_MODEM_LIB
+	default y if NRF_MODEM_LIB || MODEM_CELLULAR
 	help
 	  Packet Data Protocol (PDP) default context configuration
 
@@ -123,7 +123,7 @@ config KV_STORE_KEY_LTE_NETWORKING_MODES
 
 config KV_STORE_KEY_LTE_SIM_IMSI
 	bool "Enable KV key LTE_SIM_IMSI"
-	default y if NRF_MODEM_LIB
+	default y if NRF_MODEM_LIB || MODEM_CELLULAR
 	help
 	  'International Modem Subscriber Identity' as returned by AT+CIMI
 
