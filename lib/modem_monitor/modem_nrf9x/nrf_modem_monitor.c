@@ -16,7 +16,7 @@
 #include <zephyr/sys/__assert.h>
 
 #include <infuse/work_q.h>
-#include <infuse/lib/nrf_modem_monitor.h>
+#include <infuse/lib/lte_modem_monitor.h>
 #include <infuse/fs/kv_store.h>
 #include <infuse/fs/kv_types.h>
 #include <infuse/reboot.h>
@@ -58,7 +58,7 @@ enum {
 };
 
 static struct {
-	struct nrf_modem_network_state network_state;
+	struct lte_modem_network_state network_state;
 	/* `lte_reg_handler` runs from the system workqueue, and the modem AT commands wait forever
 	 * on the response. This is problematic as the low level functions rely on malloc, which
 	 * can fail. Running AT commands directly from the callback context therefore has the
@@ -99,7 +99,7 @@ BUILD_ASSERT(LTE_ACCESS_TECH_NB_IOT == (enum lte_access_technology)LTE_LC_LTE_MO
 BUILD_ASSERT(LTE_RRC_MODE_IDLE == (enum lte_rrc_mode)LTE_LC_RRC_MODE_IDLE);
 BUILD_ASSERT(LTE_RRC_MODE_CONNECTED == (enum lte_rrc_mode)LTE_LC_RRC_MODE_CONNECTED);
 
-bool nrf_modem_monitor_is_at_safe(void)
+bool lte_modem_monitor_is_at_safe(void)
 {
 #ifdef CONFIG_SOC_NRF9160
 	return true;
@@ -109,13 +109,13 @@ bool nrf_modem_monitor_is_at_safe(void)
 }
 
 #ifdef CONFIG_INFUSE_NRF_MODEM_MONITOR_CONN_STATE_LOG
-void nrf_modem_monitor_network_state_log(uint8_t tdf_logger_mask)
+void lte_modem_monitor_network_state_log(uint8_t tdf_logger_mask)
 {
 	monitor.network_state_loggers = tdf_logger_mask;
 }
 #endif /* CONFIG_INFUSE_NRF_MODEM_MONITOR_CONN_STATE_LOG */
 
-void nrf_modem_monitor_network_state(struct nrf_modem_network_state *state)
+void lte_modem_monitor_network_state(struct lte_modem_network_state *state)
 {
 	*state = monitor.network_state;
 }
@@ -217,7 +217,7 @@ state_logging:
 		int8_t rsrq;
 
 		/* Query signal strengths (other state already queried above) */
-		(void)nrf_modem_monitor_signal_quality(&rsrp, &rsrq, true);
+		(void)lte_modem_monitor_signal_quality(&rsrp, &rsrq, true);
 		/* Convert to TDF */
 		tdf_lte_conn_status_from_monitor(&monitor.network_state, &tdf, rsrp, rsrq);
 		/* Add to specified loggers */
@@ -232,10 +232,10 @@ static void signal_quality_update(struct k_work *work)
 	int16_t rsrp;
 	int8_t rsrq;
 
-	(void)nrf_modem_monitor_signal_quality(&rsrp, &rsrq, false);
+	(void)lte_modem_monitor_signal_quality(&rsrp, &rsrq, false);
 }
 
-int nrf_modem_monitor_signal_quality(int16_t *rsrp, int8_t *rsrq, bool cached)
+int lte_modem_monitor_signal_quality(int16_t *rsrp, int8_t *rsrq, bool cached)
 {
 	bool sleeping = atomic_test_bit(&monitor.flags, FLAGS_MODEM_SLEEPING);
 	bool connected = atomic_test_bit(&monitor.flags, FLAGS_CELL_CONNECTED);
@@ -271,7 +271,7 @@ int nrf_modem_monitor_signal_quality(int16_t *rsrp, int8_t *rsrq, bool cached)
 	return 0;
 }
 
-int nrf_modem_monitor_connectivity_stats(int *tx_kbytes, int *rx_kbytes)
+int lte_modem_monitor_connectivity_stats(int *tx_kbytes, int *rx_kbytes)
 {
 	int rc;
 
@@ -594,7 +594,7 @@ static void iface_state_handler(struct net_mgmt_event_callback *cb, uint64_t mgm
 	}
 }
 
-int nrf_modem_monitor_init(void)
+int lte_modem_monitor_init(void)
 {
 	k_work_init_delayable(&monitor.update_work, network_info_update);
 	k_work_init(&monitor.signal_quality_work, signal_quality_update);
@@ -617,4 +617,4 @@ int nrf_modem_monitor_init(void)
 	return 0;
 }
 
-SYS_INIT(nrf_modem_monitor_init, APPLICATION, 0);
+SYS_INIT(lte_modem_monitor_init, APPLICATION, 0);

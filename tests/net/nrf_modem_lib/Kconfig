@@ -1,5 +1,9 @@
 # SPDX-License-Identifier: Apache-2.0
 
+config INFUSE_MODEM_MONITOR
+	bool
+	default y
+
 config INFUSE_REBOOT
 	default y
 
