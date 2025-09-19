@@ -465,7 +465,7 @@
         "20": {
             "name": "lte_at_cmd",
             "description": "Run AT command against LTE modem",
-            "depends_on": "NRF_MODEM_LIB",
+            "depends_on": "NRF_MODEM_LIB || MODEM_CELLULAR",
             "default": "y if INFUSE_SDK",
             "default_auth": "EPACKET_AUTH_DEVICE",
             "request_params": [
