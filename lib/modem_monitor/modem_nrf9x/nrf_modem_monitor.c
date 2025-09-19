@@ -78,6 +78,27 @@ static struct {
 #endif /* CONFIG_INFUSE_NRF_MODEM_MONITOR_CONN_STATE_LOG */
 } monitor;
 
+/* Validate nRF and generic event mappings */
+BUILD_ASSERT(LTE_REGISTRATION_NOT_REGISTERED ==
+	     (enum lte_registration_status)LTE_LC_NW_REG_NOT_REGISTERED);
+BUILD_ASSERT(LTE_REGISTRATION_REGISTERED_HOME ==
+	     (enum lte_registration_status)LTE_LC_NW_REG_REGISTERED_HOME);
+BUILD_ASSERT(LTE_REGISTRATION_SEARCHING == (enum lte_registration_status)LTE_LC_NW_REG_SEARCHING);
+BUILD_ASSERT(LTE_REGISTRATION_REGISTRATION_DENIED ==
+	     (enum lte_registration_status)LTE_LC_NW_REG_REGISTRATION_DENIED);
+BUILD_ASSERT(LTE_REGISTRATION_UNKNOWN == (enum lte_registration_status)LTE_LC_NW_REG_UNKNOWN);
+BUILD_ASSERT(LTE_REGISTRATION_REGISTERED_ROAMING ==
+	     (enum lte_registration_status)LTE_LC_NW_REG_REGISTERED_ROAMING);
+BUILD_ASSERT(LTE_REGISTRATION_NRF91_UICC_FAIL ==
+	     (enum lte_registration_status)LTE_LC_NW_REG_UICC_FAIL);
+
+BUILD_ASSERT(LTE_ACCESS_TECH_NONE == (enum lte_access_technology)LTE_LC_LTE_MODE_NONE);
+BUILD_ASSERT(LTE_ACCESS_TECH_LTE_M == (enum lte_access_technology)LTE_LC_LTE_MODE_LTEM);
+BUILD_ASSERT(LTE_ACCESS_TECH_NB_IOT == (enum lte_access_technology)LTE_LC_LTE_MODE_NBIOT);
+
+BUILD_ASSERT(LTE_RRC_MODE_IDLE == (enum lte_rrc_mode)LTE_LC_RRC_MODE_IDLE);
+BUILD_ASSERT(LTE_RRC_MODE_CONNECTED == (enum lte_rrc_mode)LTE_LC_RRC_MODE_CONNECTED);
+
 bool nrf_modem_monitor_is_at_safe(void)
 {
 #ifdef CONFIG_SOC_NRF9160
@@ -137,8 +158,8 @@ static void network_info_update(struct k_work *work)
 		}
 	}
 
-	if ((monitor.network_state.nw_reg_status != LTE_LC_NW_REG_REGISTERED_HOME) &&
-	    (monitor.network_state.nw_reg_status != LTE_LC_NW_REG_REGISTERED_ROAMING)) {
+	if ((monitor.network_state.nw_reg_status != LTE_REGISTRATION_REGISTERED_HOME) &&
+	    (monitor.network_state.nw_reg_status != LTE_REGISTRATION_REGISTERED_ROAMING)) {
 		/* No cell information (except for potentially Cell ID and TAC) */
 		uint32_t id = monitor.network_state.cell.id;
 		uint32_t tac = monitor.network_state.cell.tac;
@@ -285,14 +306,17 @@ static void lte_reg_handler(const struct lte_lc_evt *const evt)
 		LOG_DBG("PSM_UPDATE");
 		LOG_DBG("     TAU: %d", evt->psm_cfg.tau);
 		LOG_DBG("  ACTIVE: %d", evt->psm_cfg.active_time);
-		monitor.network_state.psm_cfg = evt->psm_cfg;
+		monitor.network_state.psm_cfg.tau = evt->psm_cfg.tau;
+		monitor.network_state.psm_cfg.active_time = evt->psm_cfg.active_time;
 		break;
 	case LTE_LC_EVT_EDRX_UPDATE:
 		LOG_DBG("EDRX_UPDATE");
 		LOG_DBG("    Mode: %d", evt->edrx_cfg.mode);
 		LOG_DBG("     PTW: %d", (int)evt->edrx_cfg.ptw);
 		LOG_DBG("Interval: %d", (int)evt->edrx_cfg.edrx);
-		monitor.network_state.edrx_cfg = evt->edrx_cfg;
+		monitor.network_state.edrx_cfg.mode = evt->edrx_cfg.mode;
+		monitor.network_state.edrx_cfg.edrx = evt->edrx_cfg.edrx;
+		monitor.network_state.edrx_cfg.ptw = evt->edrx_cfg.ptw;
 		break;
 	case LTE_LC_EVT_RRC_UPDATE:
 		LOG_DBG("RRC_UPDATE");

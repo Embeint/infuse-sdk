@@ -221,7 +221,7 @@ ZTEST(infuse_nrf_modem_monitor, test_integration)
 	zassert_equal(PDN_FAM_IPV4V6, default_family);
 
 	nrf_modem_monitor_network_state(&net_state);
-	zassert_equal(LTE_LC_NW_REG_NOT_REGISTERED, net_state.nw_reg_status);
+	zassert_equal(LTE_REGISTRATION_NOT_REGISTERED, net_state.nw_reg_status);
 
 	/* Searching for a second */
 	nrf_modem_lib_sim_send_at("+CEREG: 2,\"702A\",\"08C3BD0C\",7\r\n");
@@ -235,7 +235,7 @@ ZTEST(infuse_nrf_modem_monitor, test_integration)
 	zassert_equal(atoll(CONFIG_INFUSE_NRF_MODEM_LIB_SIM_IMSI), imsi.imsi);
 
 	nrf_modem_monitor_network_state(&net_state);
-	zassert_equal(LTE_LC_NW_REG_SEARCHING, net_state.nw_reg_status);
+	zassert_equal(LTE_REGISTRATION_SEARCHING, net_state.nw_reg_status);
 	zassert_equal(0x702A, net_state.cell.tac);
 	zassert_equal(0x08C3BD0C, net_state.cell.id);
 
@@ -270,14 +270,14 @@ ZTEST(infuse_nrf_modem_monitor, test_integration)
 	k_sleep(K_SECONDS(1));
 
 	nrf_modem_monitor_network_state(&net_state);
-	zassert_equal(LTE_LC_NW_REG_REGISTERED_ROAMING, net_state.nw_reg_status);
+	zassert_equal(LTE_REGISTRATION_REGISTERED_ROAMING, net_state.nw_reg_status);
 	zassert_equal(0x702A, net_state.cell.tac);
 	zassert_equal(0x08C3BD0C, net_state.cell.id);
 	zassert_equal(103, net_state.cell.phys_cell_id);
 	zassert_equal(505, net_state.cell.mcc);
 	zassert_equal(1, net_state.cell.mnc);
 	zassert_equal(9410, net_state.cell.earfcn);
-	zassert_equal(LTE_LC_LTE_MODE_LTEM, net_state.lte_mode);
+	zassert_equal(LTE_ACCESS_TECH_LTE_M, net_state.lte_mode);
 	zassert_equal(28, net_state.band);
 	zassert_equal(16, net_state.psm_cfg.active_time);
 	zassert_equal(46800, net_state.psm_cfg.tau);
@@ -304,7 +304,7 @@ ZTEST(infuse_nrf_modem_monitor, test_integration)
 	nrf_modem_lib_sim_send_at("+CEDRXP: 4,\"0001\",\"0001\",\"0001\"\r\n");
 	k_sleep(K_SECONDS(1));
 	nrf_modem_monitor_network_state(&net_state);
-	zassert_equal(LTE_LC_LTE_MODE_LTEM, net_state.edrx_cfg.mode);
+	zassert_equal(LTE_ACCESS_TECH_LTE_M, net_state.edrx_cfg.mode);
 	zassert_within(10.24f, net_state.edrx_cfg.edrx, 0.01f);
 	zassert_within(2.56f, net_state.edrx_cfg.ptw, 0.01f);
 
@@ -355,7 +355,7 @@ ZTEST(infuse_nrf_modem_monitor, test_integration)
 	k_sleep(K_SECONDS(2));
 
 	nrf_modem_monitor_network_state(&net_state);
-	zassert_equal(LTE_LC_LTE_MODE_NBIOT, net_state.lte_mode);
+	zassert_equal(LTE_ACCESS_TECH_NB_IOT, net_state.lte_mode);
 	zassert_equal(0x702B, net_state.cell.tac);
 	zassert_equal(0x08C3BD0D, net_state.cell.id);
 
@@ -419,7 +419,8 @@ ZTEST(infuse_nrf_modem_monitor, test_integration)
 	/* Changing network configuration should request a reboot */
 	net_modes.modes = LTE_LC_SYSTEM_MODE_LTEM;
 	zassert_equal(-EBUSY, k_sem_take(&reboot_request, K_NO_WAIT));
-	kv_store_write(KV_KEY_LTE_NETWORKING_MODES, &net_modes, sizeof(net_modes));
+	zassert_equal(sizeof(net_modes),
+		      kv_store_write(KV_KEY_LTE_NETWORKING_MODES, &net_modes, sizeof(net_modes)));
 	zassert_equal(0, k_sem_take(&reboot_request, K_SECONDS(1)));
 
 	/* Modem fault should request a reboot */
