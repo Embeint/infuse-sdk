@@ -14,7 +14,7 @@
 #include <infuse/data_logger/logger.h>
 #include <infuse/data_logger/high_level/tdf.h>
 #include <infuse/drivers/imu.h>
-#include <infuse/lib/nrf_modem_monitor.h>
+#include <infuse/lib/lte_modem_monitor.h>
 #include <infuse/fs/kv_store.h>
 #include <infuse/fs/kv_types.h>
 #include <infuse/math/common.h>
@@ -179,13 +179,13 @@ static void log_network_connection(uint8_t loggers, uint64_t timestamp)
 {
 #ifdef CONFIG_TASK_RUNNER_TASK_TDF_LOGGER_NRF_MODEM_MONITOR
 	struct tdf_lte_conn_status tdf;
-	struct nrf_modem_network_state state;
+	struct lte_modem_network_state state;
 	int16_t rsrp;
 	int8_t rsrq;
 
 	/* Query LTE network state */
-	nrf_modem_monitor_network_state(&state);
-	(void)nrf_modem_monitor_signal_quality(&rsrp, &rsrq, true);
+	lte_modem_monitor_network_state(&state);
+	(void)lte_modem_monitor_signal_quality(&rsrp, &rsrq, true);
 	/* Convert to TDF */
 	tdf_lte_conn_status_from_monitor(&state, &tdf, rsrp, rsrq);
 	/* Add to specified loggers */

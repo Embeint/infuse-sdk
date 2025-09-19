@@ -12,7 +12,7 @@
 
 #include <infuse/rpc/commands.h>
 #include <infuse/rpc/types.h>
-#include <infuse/lib/nrf_modem_monitor.h>
+#include <infuse/lib/lte_modem_monitor.h>
 
 #include <nrf_modem_at.h>
 
@@ -20,14 +20,14 @@
 
 LOG_MODULE_DECLARE(rpc_server);
 
-static void nrf_modem_lte_state(struct rpc_struct_lte_state *lte)
+static void lte_modem_lte_state(struct rpc_struct_lte_state *lte)
 {
-	struct nrf_modem_network_state state;
+	struct lte_modem_network_state state;
 	int16_t rsrp;
 	int8_t rsrq;
 
 	/* Generic network state */
-	nrf_modem_monitor_network_state(&state);
+	lte_modem_monitor_network_state(&state);
 
 	lte->registration_state = state.nw_reg_status;
 	lte->access_technology = state.lte_mode;
@@ -43,7 +43,7 @@ static void nrf_modem_lte_state(struct rpc_struct_lte_state *lte)
 	lte->edrx_paging_window = state.edrx_cfg.ptw;
 
 	/* Current signal state */
-	(void)nrf_modem_monitor_signal_quality(&rsrp, &rsrq, false);
+	(void)lte_modem_monitor_signal_quality(&rsrp, &rsrq, false);
 	lte->rsrp = rsrp;
 	lte->rsrq = rsrq;
 }
@@ -61,7 +61,7 @@ struct net_buf *rpc_command_lte_state(struct net_buf *request)
 	rpc_common_net_query(iface, &rsp.common);
 
 	/* LTE specific state */
-	nrf_modem_lte_state(&rsp.lte);
+	lte_modem_lte_state(&rsp.lte);
 
 	/* Allocate and return the response */
 	return rpc_response_simple_req(request, 0, &rsp, sizeof(rsp));

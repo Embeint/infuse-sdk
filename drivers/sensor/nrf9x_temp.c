@@ -10,7 +10,7 @@
 #include <zephyr/drivers/sensor.h>
 #include <zephyr/sys/__assert.h>
 
-#include <infuse/lib/nrf_modem_monitor.h>
+#include <infuse/lib/lte_modem_monitor.h>
 
 #include <nrf_modem_at.h>
 
@@ -28,7 +28,7 @@ static int nrf9x_temp_sample_fetch(const struct device *dev, enum sensor_channel
 	__ASSERT_NO_MSG(chan == SENSOR_CHAN_ALL || chan == SENSOR_CHAN_DIE_TEMP);
 
 #ifdef CONFIG_INFUSE_NRF_MODEM_MONITOR
-	if (!nrf_modem_monitor_is_at_safe()) {
+	if (!lte_modem_monitor_is_at_safe()) {
 		return -EAGAIN;
 	}
 #endif

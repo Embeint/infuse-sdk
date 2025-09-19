@@ -1,3 +1,6 @@
 # Modem monitor configuration
 
+config INFUSE_MODEM_MONITOR
+	bool
+
 rsource "modem_nrf9x/Kconfig"

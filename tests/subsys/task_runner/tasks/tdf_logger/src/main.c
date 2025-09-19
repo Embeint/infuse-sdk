@@ -16,7 +16,7 @@
 #include <infuse/data_logger/logger.h>
 #include <infuse/data_logger/high_level/tdf.h>
 #include <infuse/drivers/imu.h>
-#include <infuse/lib/nrf_modem_monitor.h>
+#include <infuse/lib/lte_modem_monitor.h>
 #include <infuse/tdf/tdf.h>
 #include <infuse/zbus/channels.h>
 
@@ -461,12 +461,12 @@ static struct signal_quality_info {
 	int8_t rsrq;
 } signal_qual;
 
-void nrf_modem_monitor_network_state(struct nrf_modem_network_state *state)
+void lte_modem_monitor_network_state(struct lte_modem_network_state *state)
 {
-	*state = (struct nrf_modem_network_state){0};
+	*state = (struct lte_modem_network_state){0};
 }
 
-int nrf_modem_monitor_signal_quality(int16_t *rsrp, int8_t *rsrq, bool cached)
+int lte_modem_monitor_signal_quality(int16_t *rsrp, int8_t *rsrq, bool cached)
 {
 	*rsrp = signal_qual.rsrp;
 	*rsrq = signal_qual.rsrq;

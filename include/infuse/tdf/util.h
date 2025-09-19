@@ -24,7 +24,7 @@
 #include <infuse/time/epoch.h>
 #include <infuse/fs/kv_store.h>
 #include <infuse/fs/kv_types.h>
-#include <infuse/lib/nrf_modem_monitor.h>
+#include <infuse/lib/lte_modem_monitor.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -137,7 +137,7 @@ static inline void tdf_bt_addr_le_from_stack(const bt_addr_le_t *addr,
  * @param rsrp Reference signal received power (dBm) (INT16_MIN if unknown)
  * @param rsrq Reference signal received quality (dB) (INT8_MIN if unknown)
  */
-static inline void tdf_lte_conn_status_from_monitor(struct nrf_modem_network_state *network_state,
+static inline void tdf_lte_conn_status_from_monitor(struct lte_modem_network_state *network_state,
 						    struct tdf_lte_conn_status *tdf, int16_t rsrp,
 						    int8_t rsrq)
 {
