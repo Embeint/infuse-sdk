@@ -305,10 +305,12 @@ int tdf_data_logger_log_core_dev(const struct device *dev, uint16_t tdf_id, uint
 		return -ENOTCONN;
 	}
 
+#ifndef CONFIG_ZTEST
 	/* Logging on the system workqueue can cause deadlocks and should be avoided */
 	if (k_current_get() == k_work_queue_thread_get(&k_sys_work_q)) {
 		LOG_WRN("%s logging on system workqueue", dev->name);
 	}
+#endif /* CONFIG_ZTEST */
 
 	k_sem_take(&data->lock, K_FOREVER);
 	rc = log_locked(dev, tdf_id, tdf_len, tdf_num, format, time, idx_period, mem);
