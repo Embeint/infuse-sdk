@@ -101,13 +101,16 @@ static int do_block_write(const struct device *dev, enum infuse_type type, void 
 	if ((data->current_block >= data->physical_blocks) &&
 	    ((data->current_block % erase_blocks) == 0)) {
 		LOG_DBG("%s preparing block for write", dev->name);
+		/* Old data is no longer present as soon as we start erasing */
+		data->earliest_block += erase_blocks;
+		/* Do the erase */
 		rc = api->erase(dev, phy_block, erase_blocks);
 		if (rc < 0) {
+			/* Restore previous value of `earliest_block` */
+			data->earliest_block -= erase_blocks;
 			LOG_ERR("%s failed to prepare block (%d)", dev->name, rc);
 			goto release;
 		}
-		/* Old data is no longer present */
-		data->earliest_block += erase_blocks;
 	}
 
 	/* Add persistent block header if required */
