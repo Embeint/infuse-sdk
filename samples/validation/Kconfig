@@ -74,7 +74,7 @@ endchoice
 
 # Log suppression
 
-configdefault INFUSE_NRF_MODEM_MONITOR_LOG_LEVEL
+configdefault INFUSE_MODEM_MONITOR_LOG_LEVEL
 	default 2
 configdefault EPACKET_UDP_LOG_LEVEL
 	default 2
