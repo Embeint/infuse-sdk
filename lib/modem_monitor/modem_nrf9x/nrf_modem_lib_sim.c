@@ -90,11 +90,10 @@ void nrf_modem_lib_sim_signal_strength(uint8_t rsrp, uint8_t rsrq)
 int nrf_modem_at_printf(const char *fmt, ...)
 {
 	va_list args;
-	int out_len;
 
 	/* Generate command */
 	va_start(args, fmt);
-	out_len = vsnprintf(input_buffer, sizeof(input_buffer), fmt, args);
+	(void)vsnprintf(input_buffer, sizeof(input_buffer), fmt, args);
 	va_end(args);
 
 	LOG_INF("%s: %s", __func__, input_buffer);
@@ -145,14 +144,13 @@ int nrf_modem_at_scanf(const char *cmd, const char *fmt, ...)
 int nrf_modem_at_cmd(void *buf, size_t len, const char *fmt, ...)
 {
 	va_list args;
-	int out_len;
 
 	ARG_UNUSED(buf);
 	ARG_UNUSED(len);
 
 	/* Generate command */
 	va_start(args, fmt);
-	out_len = vsnprintf(input_buffer, sizeof(input_buffer), fmt, args);
+	(void)vsnprintf(input_buffer, sizeof(input_buffer), fmt, args);
 	va_end(args);
 
 	LOG_INF("%s: %s", __func__, input_buffer);
