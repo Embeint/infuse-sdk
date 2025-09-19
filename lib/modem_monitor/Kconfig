@@ -1,0 +1,3 @@
+# Modem monitor configuration
+
+rsource "modem_nrf9x/Kconfig"
