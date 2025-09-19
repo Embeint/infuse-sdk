@@ -163,7 +163,7 @@
             "description": "Modem model as returned by AT+CGMM",
             "reflect": true,
             "read_only": true,
-            "default": "y if NRF_MODEM_LIB",
+            "default": "y if NRF_MODEM_LIB || MODEM_CELLULAR",
             "fields": [
                 {"name": "model", "type": "struct kv_string", "description": "Modem model"}
             ]
@@ -173,7 +173,7 @@
             "description": "Modem firmware revision as returned by AT+CGMR",
             "reflect": true,
             "read_only": true,
-            "default": "y if NRF_MODEM_LIB",
+            "default": "y if NRF_MODEM_LIB || MODEM_CELLULAR",
             "fields": [
                 {"name": "revision", "type": "struct kv_string", "description": "Firmware revision"}
             ]
@@ -183,7 +183,7 @@
             "description": "'Electronic Serial Number' as returned by AT+CGSN=0",
             "reflect": true,
             "read_only": true,
-            "default": "y if NRF_MODEM_LIB",
+            "default": "y if NRF_MODEM_LIB || MODEM_CELLULAR",
             "fields": [
                 {"name": "esn", "type": "struct kv_string", "description": "ESN or IMEI if not available"}
             ]
@@ -193,7 +193,7 @@
             "description": "'International Modem Equiment Identifier' as returned by AT+CGSN=1",
             "reflect": true,
             "read_only": true,
-            "default": "y if NRF_MODEM_LIB",
+            "default": "y if NRF_MODEM_LIB || MODEM_CELLULAR",
             "fields": [
                 {"name": "imei", "type": "uint64_t", "description": "15 digit IMEI"}
             ]
@@ -203,7 +203,7 @@
             "description": "SIM Universal Identifier (https://www.itu.int/en/ITU-T/inr/forms/Pages/iin.aspx)",
             "reflect": true,
             "read_only": true,
-            "default": "y if NRF_MODEM_LIB",
+            "default": "y if NRF_MODEM_LIB || MODEM_CELLULAR",
             "fields": [
                 {"name": "uicc", "type": "struct kv_string", "description": "Variable length UICC string"}
             ]
@@ -212,7 +212,7 @@
             "name": "LTE_PDP_CONFIG",
             "description": "Packet Data Protocol (PDP) default context configuration",
             "reflect": true,
-            "default": "y if NRF_MODEM_LIB",
+            "default": "y if NRF_MODEM_LIB || MODEM_CELLULAR",
             "fields": [
                 {"name": "family", "type": "uint8_t", "description": "Protocol family (0 = IPv4, 1 = IPv6, 2 = IPv4v6, 3 = Non-IP)"},
                 {"name": "apn", "type": "struct kv_string", "description": "Access Point Name"}
@@ -233,7 +233,7 @@
             "description": "'International Modem Subscriber Identity' as returned by AT+CIMI",
             "reflect": true,
             "read_only": true,
-            "default": "y if NRF_MODEM_LIB",
+            "default": "y if NRF_MODEM_LIB || MODEM_CELLULAR",
             "fields": [
                 {"name": "imsi", "type": "uint64_t", "description": "15 digit IMSI"}
             ]
