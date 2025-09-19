@@ -14,66 +14,6 @@ config INFUSE_NRF_MODEM_MONITOR
 
 if INFUSE_NRF_MODEM_MONITOR
 
-module = INFUSE_NRF_MODEM_MONITOR
-module-str = modem_mon
-source "subsys/logging/Kconfig.template.log_config"
-
-config INFUSE_NRF_MODEM_MONITOR_CONN_STATE_LOG
-	bool "Automatic logging of LTE connection state"
-	depends on INFUSE_EPOCH_TIME
-	depends on TDF_DATA_LOGGER
-	help
-	  Automatically log TDF_LTE_CONN_STATUS TDFs in response to registration
-	  state and cell tower changes. Output loggers must be configured with
-	  `lte_modem_monitor_network_state_log`.
-
-config INFUSE_NRF_MODEM_MONITOR_CONNECTIVITY_TIMEOUT_SEC
-	int "Timeout for receiving L4 connectivity after registering on the network"
-	default 120
-	help
-	  Once registered to a LTE network (home or roaming), the Zephyr networking
-	  stack still needs to receive an IP address before considering the interface
-	  active. If the interface is not considered active within this time period,
-	  the assumption is that something has gone wrong with the interface bring-up
-	  and the application is rebooted. Typically the interface goes active within
-	  a few seconds of registering to the network.
-
-	  The current situation that has been observed to cause this is the IP address
-	  being assigned to a PDP context other than 0, which the network stack
-	  integration fails to handle.
-
-config INFUSE_NRF_MODEM_MONITOR_DEFAULT_PDP_APN
-	string "Default APN to use for PDP context 0"
-	depends on KV_STORE_KEY_LTE_PDP_CONFIG
-	default ""
-	help
-	  The default APN to use for PDP context 0, if it has not been set to
-	  some other value in the KV store key. If set to the empty string,
-	  the APN is only set if the KV slot has been explicitly written to.
-
-config INFUSE_NRF_MODEM_MONITOR_DEFAULT_PDP_APN_SET
-	bool
-	default y if INFUSE_NRF_MODEM_MONITOR_DEFAULT_PDP_APN != ""
-
-choice INFUSE_NRF_MODEM_MONITOR_DEFAULT_PDP_FAMILY
-	prompt "Default protocol family to use for PDP context 0"
-	depends on INFUSE_NRF_MODEM_MONITOR_DEFAULT_PDP_APN_SET
-	default INFUSE_NRF_MODEM_MONITOR_DEFAULT_PDP_FAMILY_IPV4V6
-
-config INFUSE_NRF_MODEM_MONITOR_DEFAULT_PDP_FAMILY_IPV4
-	bool "Internet Protocol"
-
-config INFUSE_NRF_MODEM_MONITOR_DEFAULT_PDP_FAMILY_IPV6
-	bool "Internet Protocol version 6"
-
-config INFUSE_NRF_MODEM_MONITOR_DEFAULT_PDP_FAMILY_IPV4V6
-	bool "Virtual type of dual IP stack"
-
-config INFUSE_NRF_MODEM_MONITOR_DEFAULT_PDP_FAMILY_NON_IP
-	bool "Transfer of non-IP data to external packet data network"
-
-endchoice
-
 choice INFUSE_NRF_MODEM_MONITOR_MOBILITY
 	prompt "Mobility mode for nRF modem"
 	default INFUSE_NRF_MODEM_MONITOR_MOBILITY_DEFAULT

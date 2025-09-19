@@ -33,9 +33,9 @@
 #include <modem/modem_info.h>
 #include <nrf_modem_at.h>
 
-LOG_MODULE_REGISTER(modem_monitor, CONFIG_INFUSE_NRF_MODEM_MONITOR_LOG_LEVEL);
+LOG_MODULE_REGISTER(modem_monitor, CONFIG_INFUSE_MODEM_MONITOR_LOG_LEVEL);
 
-#define CONNECTIVITY_TIMEOUT K_SECONDS(CONFIG_INFUSE_NRF_MODEM_MONITOR_CONNECTIVITY_TIMEOUT_SEC)
+#define CONNECTIVITY_TIMEOUT K_SECONDS(CONFIG_INFUSE_MODEM_MONITOR_CONNECTIVITY_TIMEOUT_SEC)
 
 #define LTE_LC_SYSTEM_MODE_DEFAULT 0xff
 #define LTE_MODE_DEFAULT                                                                           \
@@ -73,9 +73,9 @@ static struct {
 	atomic_t flags;
 	int16_t rsrp_cached;
 	int8_t rsrq_cached;
-#ifdef CONFIG_INFUSE_NRF_MODEM_MONITOR_CONN_STATE_LOG
+#ifdef CONFIG_INFUSE_MODEM_MONITOR_CONN_STATE_LOG
 	uint8_t network_state_loggers;
-#endif /* CONFIG_INFUSE_NRF_MODEM_MONITOR_CONN_STATE_LOG */
+#endif /* CONFIG_INFUSE_MODEM_MONITOR_CONN_STATE_LOG */
 } monitor;
 
 /* Validate nRF and generic event mappings */
@@ -108,12 +108,12 @@ bool lte_modem_monitor_is_at_safe(void)
 #endif /* CONFIG_SOC_NRF9160 */
 }
 
-#ifdef CONFIG_INFUSE_NRF_MODEM_MONITOR_CONN_STATE_LOG
+#ifdef CONFIG_INFUSE_MODEM_MONITOR_CONN_STATE_LOG
 void lte_modem_monitor_network_state_log(uint8_t tdf_logger_mask)
 {
 	monitor.network_state_loggers = tdf_logger_mask;
 }
-#endif /* CONFIG_INFUSE_NRF_MODEM_MONITOR_CONN_STATE_LOG */
+#endif /* CONFIG_INFUSE_MODEM_MONITOR_CONN_STATE_LOG */
 
 void lte_modem_monitor_network_state(struct lte_modem_network_state *state)
 {
@@ -210,7 +210,7 @@ static void network_info_update(struct k_work *work)
 	}
 
 state_logging:
-#ifdef CONFIG_INFUSE_NRF_MODEM_MONITOR_CONN_STATE_LOG
+#ifdef CONFIG_INFUSE_MODEM_MONITOR_CONN_STATE_LOG
 	if (monitor.network_state_loggers) {
 		struct tdf_lte_conn_status tdf;
 		int16_t rsrp;
@@ -224,7 +224,7 @@ state_logging:
 		TDF_DATA_LOGGER_LOG(monitor.network_state_loggers, TDF_LTE_CONN_STATUS,
 				    epoch_time_now(), &tdf);
 	}
-#endif /* CONFIG_INFUSE_NRF_MODEM_MONITOR_CONN_STATE_LOG */
+#endif /* CONFIG_INFUSE_MODEM_MONITOR_CONN_STATE_LOG */
 }
 
 static void signal_quality_update(struct k_work *work)
@@ -423,23 +423,22 @@ static void infuse_modem_init(int ret, void *ctx)
 #ifdef CONFIG_KV_STORE_KEY_LTE_PDP_CONFIG
 	KV_KEY_TYPE_VAR(KV_KEY_LTE_PDP_CONFIG, 32) pdp_config;
 
-#ifdef CONFIG_INFUSE_NRF_MODEM_MONITOR_DEFAULT_PDP_APN_SET
-	const KV_KEY_TYPE_VAR(
-		KV_KEY_LTE_PDP_CONFIG,
-		sizeof(CONFIG_INFUSE_NRF_MODEM_MONITOR_DEFAULT_PDP_APN)) pdp_default = {
+#ifdef CONFIG_INFUSE_MODEM_MONITOR_DEFAULT_PDP_APN_SET
+	const KV_KEY_TYPE_VAR(KV_KEY_LTE_PDP_CONFIG,
+			      sizeof(CONFIG_INFUSE_MODEM_MONITOR_DEFAULT_PDP_APN)) pdp_default = {
 		.apn =
 			{
 				.value_num =
-					strlen(CONFIG_INFUSE_NRF_MODEM_MONITOR_DEFAULT_PDP_APN) + 1,
-				.value = CONFIG_INFUSE_NRF_MODEM_MONITOR_DEFAULT_PDP_APN,
+					strlen(CONFIG_INFUSE_MODEM_MONITOR_DEFAULT_PDP_APN) + 1,
+				.value = CONFIG_INFUSE_MODEM_MONITOR_DEFAULT_PDP_APN,
 			},
-#if defined(CONFIG_INFUSE_NRF_MODEM_MONITOR_DEFAULT_PDP_FAMILY_IPV4)
+#if defined(CONFIG_INFUSE_MODEM_MONITOR_DEFAULT_PDP_FAMILY_IPV4)
 		.family = PDN_FAM_IPV4,
-#elif defined(CONFIG_INFUSE_NRF_MODEM_MONITOR_DEFAULT_PDP_FAMILY_IPV6)
+#elif defined(CONFIG_INFUSE_MODEM_MONITOR_DEFAULT_PDP_FAMILY_IPV6)
 		.family = PDN_FAM_IPV6,
-#elif defined(CONFIG_INFUSE_NRF_MODEM_MONITOR_DEFAULT_PDP_FAMILY_IPV4V6)
+#elif defined(CONFIG_INFUSE_MODEM_MONITOR_DEFAULT_PDP_FAMILY_IPV4V6)
 		.family = PDN_FAM_IPV4V6,
-#elif defined(CONFIG_INFUSE_NRF_MODEM_MONITOR_DEFAULT_PDP_FAMILY_NON_IP)
+#elif defined(CONFIG_INFUSE_MODEM_MONITOR_DEFAULT_PDP_FAMILY_NON_IP)
 		.family = PDN_FAM_NONIP,
 #else
 #error "Unknown protocol family"
@@ -453,7 +452,7 @@ static void infuse_modem_init(int ret, void *ctx)
 	/* Read the configured value */
 	rc = kv_store_read(KV_KEY_LTE_PDP_CONFIG, &pdp_config, sizeof(pdp_config));
 	pdp_config.apn.value[sizeof(pdp_config.apn.value) - 1] = '\0';
-#endif /* CONFIG_INFUSE_NRF_MODEM_MONITOR_DEFAULT_PDP_APN_SET */
+#endif /* CONFIG_INFUSE_MODEM_MONITOR_DEFAULT_PDP_APN_SET */
 
 	/* If a PDP configuration has been set */
 	if ((rc > 0) && (strlen(pdp_config.apn.value) > 0)) {
@@ -572,8 +571,7 @@ static void connectivity_timeout(struct k_work *work)
 #ifdef CONFIG_INFUSE_REBOOT
 	LOG_ERR("Networking connectivity failed, rebooting in 2 seconds...");
 	infuse_reboot_delayed(INFUSE_REBOOT_SW_WATCHDOG, (uintptr_t)connectivity_timeout,
-			      CONFIG_INFUSE_NRF_MODEM_MONITOR_CONNECTIVITY_TIMEOUT_SEC,
-			      K_SECONDS(2));
+			      CONFIG_INFUSE_MODEM_MONITOR_CONNECTIVITY_TIMEOUT_SEC, K_SECONDS(2));
 #else
 	LOG_ERR("Networking connectivity failed, no reboot support!");
 #endif /* CONFIG_INFUSE_REBOOT */

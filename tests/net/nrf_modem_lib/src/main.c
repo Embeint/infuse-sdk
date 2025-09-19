@@ -164,7 +164,7 @@ ZTEST(infuse_nrf_modem_monitor, test_integration)
 	const char *default_apn;
 	int rc;
 
-#ifdef CONFIG_INFUSE_NRF_MODEM_MONITOR_CONN_STATE_LOG
+#ifdef CONFIG_INFUSE_MODEM_MONITOR_CONN_STATE_LOG
 	struct tdf_lte_conn_status *lte_conn_status;
 	struct k_fifo *tx_fifo = epacket_dummmy_transmit_fifo_get();
 	struct tdf_parsed tdf;
@@ -239,7 +239,7 @@ ZTEST(infuse_nrf_modem_monitor, test_integration)
 	zassert_equal(0x702A, net_state.cell.tac);
 	zassert_equal(0x08C3BD0C, net_state.cell.id);
 
-#ifdef CONFIG_INFUSE_NRF_MODEM_MONITOR_CONN_STATE_LOG
+#ifdef CONFIG_INFUSE_MODEM_MONITOR_CONN_STATE_LOG
 	k_sleep(K_MSEC(10));
 	tdf_data_logger_flush(TDF_DATA_LOGGER_SERIAL);
 	tx = k_fifo_get(tx_fifo, K_MSEC(100));
@@ -285,7 +285,7 @@ ZTEST(infuse_nrf_modem_monitor, test_integration)
 	zassert_equal(-1.0f, net_state.edrx_cfg.edrx);
 	zassert_equal(-1.0f, net_state.edrx_cfg.ptw);
 
-#ifdef CONFIG_INFUSE_NRF_MODEM_MONITOR_CONN_STATE_LOG
+#ifdef CONFIG_INFUSE_MODEM_MONITOR_CONN_STATE_LOG
 	k_sleep(K_MSEC(10));
 	tdf_data_logger_flush(TDF_DATA_LOGGER_SERIAL);
 	tx = k_fifo_get(tx_fifo, K_MSEC(100));
@@ -317,7 +317,7 @@ ZTEST(infuse_nrf_modem_monitor, test_integration)
 	nrf_modem_lib_sim_send_at("+CEREG: 2,\"702A\",\"08C3BD0C\",7\r\n");
 	k_sleep(K_SECONDS(1));
 
-#ifdef CONFIG_INFUSE_NRF_MODEM_MONITOR_CONN_STATE_LOG
+#ifdef CONFIG_INFUSE_MODEM_MONITOR_CONN_STATE_LOG
 	tdf_data_logger_flush(TDF_DATA_LOGGER_SERIAL);
 	tx = k_fifo_get(tx_fifo, K_MSEC(100));
 	zassert_not_null(tx);
@@ -403,12 +403,12 @@ ZTEST(infuse_nrf_modem_monitor, test_integration)
 			K_SECONDS(CONFIG_INFUSE_NRF_MODEM_MONITOR_CONNECTIVITY_TIMEOUT_SEC + 1));
 	zassert_equal(-EAGAIN, rc);
 
-#ifdef CONFIG_INFUSE_NRF_MODEM_MONITOR_CONN_STATE_LOG
+#ifdef CONFIG_INFUSE_MODEM_MONITOR_CONN_STATE_LOG
 	/* No other logging after disabling */
 	tdf_data_logger_flush(TDF_DATA_LOGGER_SERIAL);
 	tx = k_fifo_get(tx_fifo, K_MSEC(100));
 	zassert_is_null(tx);
-#endif /* CONFIG_INFUSE_NRF_MODEM_MONITOR_CONN_STATE_LOG */
+#endif /* CONFIG_INFUSE_MODEM_MONITOR_CONN_STATE_LOG */
 
 	/* Changing APN configuration should request a reboot */
 	memcpy(pdp_config.apn.value, "upd", 3);
