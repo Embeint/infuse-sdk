@@ -74,7 +74,7 @@
             "description": "LTE interface status",
             "fields": [
                 {"name": "registration_state", "type": "uint8_t", "description": "Network registration state"},
-                {"name": "access_technology", "type": "uint8_t", "description": "0 = None, 7 = LTE-M, 9 = NB-IoT"},
+                {"name": "access_technology", "type": "uint8_t", "description": "Access Technology (3GPP TS 127.007)"},
                 {"name": "mcc", "type": "uint16_t", "description": "Mobile Country Code"},
                 {"name": "mnc", "type": "uint16_t", "description": "Mobile Network Code"},
                 {"name": "cell_id", "type": "uint32_t", "description": "E-UTRAN cell ID"},
@@ -465,7 +465,7 @@
         "20": {
             "name": "lte_at_cmd",
             "description": "Run AT command against LTE modem",
-            "depends_on": "NRF_MODEM_LIB",
+            "depends_on": "NRF_MODEM_LIB || MODEM_CELLULAR",
             "default": "y if INFUSE_SDK",
             "default_auth": "EPACKET_AUTH_DEVICE",
             "request_params": [
@@ -478,7 +478,7 @@
         "21": {
             "name": "lte_state",
             "description": "Get current LTE interface state",
-            "depends_on": "INFUSE_NRF_MODEM_MONITOR",
+            "depends_on": "INFUSE_MODEM_MONITOR",
             "default": "y if INFUSE_SDK",
             "default_auth": "EPACKET_AUTH_DEVICE",
             "request_params": [],

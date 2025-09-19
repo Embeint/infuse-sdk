@@ -175,7 +175,7 @@ struct rpc_struct_wifi_state {
 struct rpc_struct_lte_state {
 	/** Network registration state */
 	uint8_t registration_state;
-	/** 0 = None, 7 = LTE-M, 9 = NB-IoT */
+	/** Access Technology (3GPP TS 127.007) */
 	uint8_t access_technology;
 	/** Mobile Country Code */
 	uint16_t mcc;
