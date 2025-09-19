@@ -11,4 +11,4 @@ tests:
     build_only: false
   net.nrf_modem_lib.conn_log:
     extra_configs:
-      - CONFIG_INFUSE_NRF_MODEM_MONITOR_CONN_STATE_LOG=y
+      - CONFIG_INFUSE_MODEM_MONITOR_CONN_STATE_LOG=y
