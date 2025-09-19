@@ -1,4 +1,4 @@
-# Modem monitor configuration
+# nRF9x Modem monitor configuration
 
 config INFUSE_NRF_MODEM_MONITOR
 	bool "Infuse-IoT integration with Nordic LTE modem"
