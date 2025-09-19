@@ -8,6 +8,7 @@ config INFUSE_NRF_MODEM_MONITOR
 	select LTE_LC_EDRX_MODULE
 	select LTE_LC_PSM_MODULE
 	select LTE_LC_MODEM_SLEEP_MODULE
+	select INFUSE_MODEM_MONITOR
 	select INFUSE_WORKQ
 	default y
 
@@ -24,7 +25,7 @@ config INFUSE_NRF_MODEM_MONITOR_CONN_STATE_LOG
 	help
 	  Automatically log TDF_LTE_CONN_STATUS TDFs in response to registration
 	  state and cell tower changes. Output loggers must be configured with
-	  `nrf_modem_monitor_network_state_log`.
+	  `lte_modem_monitor_network_state_log`.
 
 config INFUSE_NRF_MODEM_MONITOR_CONNECTIVITY_TIMEOUT_SEC
 	int "Timeout for receiving L4 connectivity after registering on the network"
@@ -130,7 +131,7 @@ endif
 
 config INFUSE_NRF_MODEM_LIB_SIM
 	bool "Basic implementation of nRF modem API for testing"
-	depends on NATIVE_BUILD
+	depends on NATIVE_BUILD || QEMU_TARGET
 
 if INFUSE_NRF_MODEM_LIB_SIM
 
@@ -145,6 +146,7 @@ config LTE_LC_MODEM_SLEEP_MODULE
 	default y
 
 config INFUSE_NRF_MODEM_MONITOR
+	select INFUSE_MODEM_MONITOR
 	default y
 
 config INFUSE_NRF_MODEM_LIB_SIM_MODEL

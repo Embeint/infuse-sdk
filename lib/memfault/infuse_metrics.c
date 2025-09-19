@@ -35,7 +35,7 @@ int memfault_platform_get_stateofcharge(sMfltPlatformBatterySoc *soc)
 
 #ifdef CONFIG_MEMFAULT_INFUSE_NRF_MODEM
 
-#include <infuse/lib/nrf_modem_monitor.h>
+#include <infuse/lib/lte_modem_monitor.h>
 
 #include <modem/lte_lc.h>
 #include <modem/nrf_modem_lib.h>
@@ -121,12 +121,12 @@ void memfault_platform_metrics_connectivity_boot(void)
 
 static void memfault_metrics_nrf_modem_collect_data(void)
 {
-	struct nrf_modem_network_state network;
+	struct lte_modem_network_state network;
 	int tx_kbytes, rx_kbytes;
 	int16_t rsrp;
 	int8_t rsrq;
 
-	nrf_modem_monitor_network_state(&network);
+	lte_modem_monitor_network_state(&network);
 
 	MEMFAULT_METRIC_SET_UNSIGNED(ncs_lte_mode, network.lte_mode);
 	MEMFAULT_METRIC_SET_UNSIGNED(ncs_lte_band, network.band);
@@ -144,11 +144,11 @@ static void memfault_metrics_nrf_modem_collect_data(void)
 					     (int)(1000 * network.edrx_cfg.ptw));
 	}
 
-	if (nrf_modem_monitor_signal_quality(&rsrp, &rsrq, true) == 0) {
+	if (lte_modem_monitor_signal_quality(&rsrp, &rsrq, true) == 0) {
 		MEMFAULT_METRIC_SET_SIGNED(ncs_lte_rsrp_dbm, rsrp);
 		MEMFAULT_METRIC_SET_SIGNED(ncs_lte_rsrq_db, rsrq);
 	}
-	if (nrf_modem_monitor_connectivity_stats(&tx_kbytes, &rx_kbytes) == 0) {
+	if (lte_modem_monitor_connectivity_stats(&tx_kbytes, &rx_kbytes) == 0) {
 		MEMFAULT_METRIC_SET_UNSIGNED(ncs_lte_tx_kilobytes, tx_kbytes);
 		MEMFAULT_METRIC_SET_UNSIGNED(ncs_lte_rx_kilobytes, rx_kbytes);
 	}
