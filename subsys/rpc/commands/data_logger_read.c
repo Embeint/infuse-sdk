@@ -99,7 +99,7 @@ static int do_read(struct common_state *state)
 			block_offset += tail;
 
 			if (net_buf_tailroom(data_buf) < sizeof(uint32_t)) {
-				/* Update sent data CRC (payload only, not the header )*/
+				/* Update sent data CRC (payload only, not the header) */
 				state->sent_crc = crc32_ieee_update(state->sent_crc,
 								    data_buf->data + sizeof(*data),
 								    data_buf->len - sizeof(*data));

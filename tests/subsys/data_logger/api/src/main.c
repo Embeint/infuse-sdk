@@ -302,6 +302,48 @@ ZTEST(data_logger_api, test_while_erase)
 
 	/* Unblock the erase worker */
 	k_sem_give(&erase_sem);
+	data->reset.block_until = NULL;
+}
+
+static void do_writes(struct k_work *work)
+{
+	const struct device *logger = DEVICE_DT_GET(DT_NODELABEL(data_logger_shim));
+	struct data_logger_state state;
+	int rc = 0;
+
+	data_logger_get_state(logger, &state);
+
+	for (int i = 0; i < state.physical_blocks + 1; i++) {
+		rc = data_logger_block_write(logger, 0x10, input_buffer, state.block_size);
+		zassert_equal(0, rc);
+	}
+}
+
+ZTEST(data_logger_api, test_while_prepare)
+{
+	const struct device *logger = DEVICE_DT_GET(DT_NODELABEL(data_logger_shim));
+	struct data_logger_shim_function_data *data = data_logger_backend_shim_data_pointer(logger);
+	struct data_logger_state state;
+	struct k_work erase_work;
+	struct k_sem erase_sem;
+
+	k_sem_init(&erase_sem, 0, 1);
+	k_work_init(&erase_work, do_writes);
+	data_logger_get_state(logger, &state);
+
+	/* Submit block write work */
+	data->erase.block_until = &erase_sem;
+	k_work_submit(&erase_work);
+	k_sleep(K_TICKS(100));
+
+	/* Writing should currently be blocked in the erase step */
+	data_logger_get_state(logger, &state);
+	zassert_equal(state.physical_blocks, state.current_block);
+	/* Earliest block should no longer be available, since we are actively erasing it */
+	zassert_not_equal(0, state.earliest_block);
+
+	/* Unblock the erase worker */
+	k_sem_give(&erase_sem);
 }
 
 ZTEST(data_logger_api, test_flush)
@@ -325,12 +367,15 @@ ZTEST(data_logger_api, test_flush)
 static void test_before(void *ignored)
 {
 	const struct device *logger = DEVICE_DT_GET(DT_NODELABEL(data_logger_shim));
+	struct data_logger_shim_function_data *data = data_logger_backend_shim_data_pointer(logger);
 
 	k_sleep(K_TICKS(1));
 	logger_shim_init(logger);
 	logger_shim_change_size(logger, 512);
 	(void)k_sem_take(&write_fail, K_NO_WAIT);
 	write_fail_count = 0;
+	data->erase.block_until = NULL;
+	data->reset.block_until = NULL;
 }
 
 ZTEST_SUITE(data_logger_api, NULL, NULL, test_before, NULL, NULL);
