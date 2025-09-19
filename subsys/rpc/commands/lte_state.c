@@ -14,8 +14,6 @@
 #include <infuse/rpc/types.h>
 #include <infuse/lib/lte_modem_monitor.h>
 
-#include <nrf_modem_at.h>
-
 #include "common_net_query.h"
 
 LOG_MODULE_DECLARE(rpc_server);
@@ -50,7 +48,11 @@ static void lte_modem_lte_state(struct rpc_struct_lte_state *lte)
 
 struct net_buf *rpc_command_lte_state(struct net_buf *request)
 {
+#ifdef CONFIG_NRF_MODEM_LIB
 	struct net_if *iface = net_if_get_first_by_type(&(NET_L2_GET_NAME(OFFLOADED_NETDEV)));
+#else
+	struct net_if *iface = net_if_get_first_by_type(&(NET_L2_GET_NAME(PPP)));
+#endif
 	struct rpc_lte_state_response rsp = {0};
 
 	if (iface == NULL) {
