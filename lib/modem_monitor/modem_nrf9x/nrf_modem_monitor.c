@@ -239,7 +239,8 @@ int lte_modem_monitor_signal_quality(int16_t *rsrp, int8_t *rsrq, bool cached)
 	bool sleeping = atomic_test_bit(&monitor.flags, FLAGS_MODEM_SLEEPING);
 	bool connected = atomic_test_bit(&monitor.flags, FLAGS_CELL_CONNECTED);
 	bool pdn_in_progress = atomic_test_bit(&monitor.flags, FLAGS_PDN_CONN_IN_PROGRESS);
-	uint8_t rsrp_idx, rsrq_idx;
+	uint8_t rsrp_idx;
+	uint8_t rsrq_idx;
 	int rc;
 
 	*rsrp = cached ? monitor.rsrp_cached : INT16_MIN;
