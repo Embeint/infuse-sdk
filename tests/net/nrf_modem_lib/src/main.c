@@ -17,7 +17,7 @@
 #include <infuse/fs/kv_store.h>
 #include <infuse/fs/kv_types.h>
 #include <infuse/reboot.h>
-#include <infuse/lib/nrf_modem_monitor.h>
+#include <infuse/lib/lte_modem_monitor.h>
 #include <infuse/lib/nrf_modem_lib_sim.h>
 #include <infuse/tdf/tdf.h>
 #include <infuse/tdf/definitions.h>
@@ -60,33 +60,33 @@ static void test_signal_strength(void)
 	int rc;
 
 	/* Initial values */
-	rc = nrf_modem_monitor_signal_quality(&rsrp, &rsrq, true);
+	rc = lte_modem_monitor_signal_quality(&rsrp, &rsrq, true);
 	zassert_equal(0, rc);
 	zassert_equal(INT16_MIN, rsrp);
 	zassert_equal(INT8_MIN, rsrq);
-	rc = nrf_modem_monitor_signal_quality(&rsrp, &rsrq, false);
+	rc = lte_modem_monitor_signal_quality(&rsrp, &rsrq, false);
 	zassert_equal(0, rc);
 	zassert_equal(INT16_MIN, rsrp);
 	zassert_equal(INT8_MIN, rsrq);
 
 	/* Let values be reported */
 	nrf_modem_lib_sim_signal_strength(32, 2);
-	rc = nrf_modem_monitor_signal_quality(&rsrp, &rsrq, false);
+	rc = lte_modem_monitor_signal_quality(&rsrp, &rsrq, false);
 	zassert_equal(0, rc);
 	zassert_equal(-139, rsrp);
 	zassert_equal(-4, rsrq);
-	rc = nrf_modem_monitor_signal_quality(&rsrp, &rsrq, true);
+	rc = lte_modem_monitor_signal_quality(&rsrp, &rsrq, true);
 	zassert_equal(0, rc);
 	zassert_equal(-139, rsrp);
 	zassert_equal(-4, rsrq);
 
 	/* Revert to unknown, cache should be preserved */
 	nrf_modem_lib_sim_signal_strength(255, 255);
-	rc = nrf_modem_monitor_signal_quality(&rsrp, &rsrq, false);
+	rc = lte_modem_monitor_signal_quality(&rsrp, &rsrq, false);
 	zassert_equal(0, rc);
 	zassert_equal(INT16_MIN, rsrp);
 	zassert_equal(INT8_MIN, rsrq);
-	rc = nrf_modem_monitor_signal_quality(&rsrp, &rsrq, true);
+	rc = lte_modem_monitor_signal_quality(&rsrp, &rsrq, true);
 	zassert_equal(0, rc);
 	zassert_equal(-139, rsrp);
 	zassert_equal(-4, rsrq);
@@ -99,16 +99,16 @@ static void test_at_safe(void)
 	int rc;
 
 	/* Safe by default */
-	zassert_true(nrf_modem_monitor_is_at_safe());
+	zassert_true(lte_modem_monitor_is_at_safe());
 
 	/* BIP connecting */
 	nrf_modem_lib_sim_send_at("%USATEV: BIP Connecting\r\n");
 	k_sleep(K_MSEC(10));
-	zassert_false(nrf_modem_monitor_is_at_safe());
+	zassert_false(lte_modem_monitor_is_at_safe());
 
 	/* Can't query signal quality while AT blocked */
 	nrf_modem_lib_sim_signal_strength(32, 2);
-	rc = nrf_modem_monitor_signal_quality(&rsrp, &rsrq, false);
+	rc = lte_modem_monitor_signal_quality(&rsrp, &rsrq, false);
 	zassert_equal(0, rc);
 	zassert_equal(INT16_MIN, rsrp);
 	zassert_equal(INT8_MIN, rsrq);
@@ -117,12 +117,12 @@ static void test_at_safe(void)
 	/* BIP connected */
 	nrf_modem_lib_sim_send_at("%USATEV: BIP Connected\r\n");
 	k_sleep(K_MSEC(10));
-	zassert_true(nrf_modem_monitor_is_at_safe());
+	zassert_true(lte_modem_monitor_is_at_safe());
 
 	/* BIP connected */
 	nrf_modem_lib_sim_send_at("%USATEV: BIP Closed\r\n");
 	k_sleep(K_MSEC(10));
-	zassert_true(nrf_modem_monitor_is_at_safe());
+	zassert_true(lte_modem_monitor_is_at_safe());
 }
 
 static void test_connectivity_stats(void)
@@ -130,7 +130,7 @@ static void test_connectivity_stats(void)
 	int tx_kb, rx_kb, rc;
 
 	/* Hardcoded values from simulator */
-	rc = nrf_modem_monitor_connectivity_stats(&tx_kb, &rx_kb);
+	rc = lte_modem_monitor_connectivity_stats(&tx_kb, &rx_kb);
 	zassert_equal(0, rc);
 	zassert_equal(18, tx_kb);
 	zassert_equal(6, rx_kb);
@@ -139,13 +139,13 @@ static void test_connectivity_stats(void)
 	nrf_modem_lib_sim_send_at("%USATEV: BIP Connecting\r\n");
 	k_sleep(K_MSEC(10));
 
-	rc = nrf_modem_monitor_connectivity_stats(&tx_kb, &rx_kb);
+	rc = lte_modem_monitor_connectivity_stats(&tx_kb, &rx_kb);
 	zassert_equal(-EAGAIN, rc);
 
 	nrf_modem_lib_sim_send_at("%USATEV: BIP Closed\r\n");
 	k_sleep(K_MSEC(10));
 
-	rc = nrf_modem_monitor_connectivity_stats(&tx_kb, &rx_kb);
+	rc = lte_modem_monitor_connectivity_stats(&tx_kb, &rx_kb);
 	zassert_equal(0, rc);
 	zassert_equal(18, tx_kb);
 	zassert_equal(6, rx_kb);
@@ -158,13 +158,13 @@ ZTEST(infuse_nrf_modem_monitor, test_integration)
 	KV_KEY_TYPE(KV_KEY_LTE_MODEM_IMEI) imei;
 	KV_KEY_TYPE(KV_KEY_LTE_SIM_IMSI) imsi;
 	struct net_if *iface = net_if_get_default();
-	struct nrf_modem_network_state net_state;
+	struct lte_modem_network_state net_state;
 	struct nrf_modem_fault_info fault_info = {0};
 	enum pdn_fam default_family;
 	const char *default_apn;
 	int rc;
 
-#ifdef CONFIG_INFUSE_NRF_MODEM_MONITOR_CONN_STATE_LOG
+#ifdef CONFIG_INFUSE_MODEM_MONITOR_CONN_STATE_LOG
 	struct tdf_lte_conn_status *lte_conn_status;
 	struct k_fifo *tx_fifo = epacket_dummmy_transmit_fifo_get();
 	struct tdf_parsed tdf;
@@ -175,7 +175,7 @@ ZTEST(infuse_nrf_modem_monitor, test_integration)
 	zassert_is_null(tx);
 
 	/* Enable conn status logging */
-	nrf_modem_monitor_network_state_log(TDF_DATA_LOGGER_SERIAL);
+	lte_modem_monitor_network_state_log(TDF_DATA_LOGGER_SERIAL);
 #endif
 
 	zassert_false(kv_store_key_exists(KV_KEY_LTE_MODEM_MODEL));
@@ -212,16 +212,16 @@ ZTEST(infuse_nrf_modem_monitor, test_integration)
 	zassert_equal(CONFIG_LTE_MODE_PREFERENCE_VALUE, net_modes.prefer);
 	kv_store_read(KV_KEY_LTE_PDP_CONFIG, &pdp_config, sizeof(pdp_config));
 	zassert_equal(PDN_FAM_IPV4V6, pdp_config.family);
-	zassert_mem_equal(CONFIG_INFUSE_NRF_MODEM_MONITOR_DEFAULT_PDP_APN, pdp_config.apn.value,
-			  strlen(CONFIG_INFUSE_NRF_MODEM_MONITOR_DEFAULT_PDP_APN));
+	zassert_mem_equal(CONFIG_INFUSE_MODEM_MONITOR_DEFAULT_PDP_APN, pdp_config.apn.value,
+			  strlen(CONFIG_INFUSE_MODEM_MONITOR_DEFAULT_PDP_APN));
 
 	nrf_modem_lib_sim_default_pdn_ctx(&default_apn, &default_family);
-	zassert_mem_equal(CONFIG_INFUSE_NRF_MODEM_MONITOR_DEFAULT_PDP_APN, default_apn,
-			  strlen(CONFIG_INFUSE_NRF_MODEM_MONITOR_DEFAULT_PDP_APN));
+	zassert_mem_equal(CONFIG_INFUSE_MODEM_MONITOR_DEFAULT_PDP_APN, default_apn,
+			  strlen(CONFIG_INFUSE_MODEM_MONITOR_DEFAULT_PDP_APN));
 	zassert_equal(PDN_FAM_IPV4V6, default_family);
 
-	nrf_modem_monitor_network_state(&net_state);
-	zassert_equal(LTE_LC_NW_REG_NOT_REGISTERED, net_state.nw_reg_status);
+	lte_modem_monitor_network_state(&net_state);
+	zassert_equal(LTE_REGISTRATION_NOT_REGISTERED, net_state.nw_reg_status);
 
 	/* Searching for a second */
 	nrf_modem_lib_sim_send_at("+CEREG: 2,\"702A\",\"08C3BD0C\",7\r\n");
@@ -234,12 +234,12 @@ ZTEST(infuse_nrf_modem_monitor, test_integration)
 	KV_STORE_READ(KV_KEY_LTE_SIM_IMSI, &imsi);
 	zassert_equal(atoll(CONFIG_INFUSE_NRF_MODEM_LIB_SIM_IMSI), imsi.imsi);
 
-	nrf_modem_monitor_network_state(&net_state);
-	zassert_equal(LTE_LC_NW_REG_SEARCHING, net_state.nw_reg_status);
+	lte_modem_monitor_network_state(&net_state);
+	zassert_equal(LTE_REGISTRATION_SEARCHING, net_state.nw_reg_status);
 	zassert_equal(0x702A, net_state.cell.tac);
 	zassert_equal(0x08C3BD0C, net_state.cell.id);
 
-#ifdef CONFIG_INFUSE_NRF_MODEM_MONITOR_CONN_STATE_LOG
+#ifdef CONFIG_INFUSE_MODEM_MONITOR_CONN_STATE_LOG
 	k_sleep(K_MSEC(10));
 	tdf_data_logger_flush(TDF_DATA_LOGGER_SERIAL);
 	tx = k_fifo_get(tx_fifo, K_MSEC(100));
@@ -269,15 +269,15 @@ ZTEST(infuse_nrf_modem_monitor, test_integration)
 		"+CEREG: 5,\"702A\",\"08C3BD0C\",7,,,\"00001000\",\"00101101\"\r\n");
 	k_sleep(K_SECONDS(1));
 
-	nrf_modem_monitor_network_state(&net_state);
-	zassert_equal(LTE_LC_NW_REG_REGISTERED_ROAMING, net_state.nw_reg_status);
+	lte_modem_monitor_network_state(&net_state);
+	zassert_equal(LTE_REGISTRATION_REGISTERED_ROAMING, net_state.nw_reg_status);
 	zassert_equal(0x702A, net_state.cell.tac);
 	zassert_equal(0x08C3BD0C, net_state.cell.id);
 	zassert_equal(103, net_state.cell.phys_cell_id);
 	zassert_equal(505, net_state.cell.mcc);
 	zassert_equal(1, net_state.cell.mnc);
 	zassert_equal(9410, net_state.cell.earfcn);
-	zassert_equal(LTE_LC_LTE_MODE_LTEM, net_state.lte_mode);
+	zassert_equal(LTE_ACCESS_TECH_LTE_M, net_state.lte_mode);
 	zassert_equal(28, net_state.band);
 	zassert_equal(16, net_state.psm_cfg.active_time);
 	zassert_equal(46800, net_state.psm_cfg.tau);
@@ -285,7 +285,7 @@ ZTEST(infuse_nrf_modem_monitor, test_integration)
 	zassert_equal(-1.0f, net_state.edrx_cfg.edrx);
 	zassert_equal(-1.0f, net_state.edrx_cfg.ptw);
 
-#ifdef CONFIG_INFUSE_NRF_MODEM_MONITOR_CONN_STATE_LOG
+#ifdef CONFIG_INFUSE_MODEM_MONITOR_CONN_STATE_LOG
 	k_sleep(K_MSEC(10));
 	tdf_data_logger_flush(TDF_DATA_LOGGER_SERIAL);
 	tx = k_fifo_get(tx_fifo, K_MSEC(100));
@@ -303,21 +303,21 @@ ZTEST(infuse_nrf_modem_monitor, test_integration)
 	/* eDRX configuration */
 	nrf_modem_lib_sim_send_at("+CEDRXP: 4,\"0001\",\"0001\",\"0001\"\r\n");
 	k_sleep(K_SECONDS(1));
-	nrf_modem_monitor_network_state(&net_state);
-	zassert_equal(LTE_LC_LTE_MODE_LTEM, net_state.edrx_cfg.mode);
+	lte_modem_monitor_network_state(&net_state);
+	zassert_equal(LTE_ACCESS_TECH_LTE_M, net_state.edrx_cfg.mode);
 	zassert_within(10.24f, net_state.edrx_cfg.edrx, 0.01f);
 	zassert_within(2.56f, net_state.edrx_cfg.ptw, 0.01f);
 
 	/* If no connectivity is gained in required timeout, expect a reboot to be requested */
 	rc = k_sem_take(&reboot_request,
-			K_SECONDS(CONFIG_INFUSE_NRF_MODEM_MONITOR_CONNECTIVITY_TIMEOUT_SEC + 1));
+			K_SECONDS(CONFIG_INFUSE_MODEM_MONITOR_CONNECTIVITY_TIMEOUT_SEC + 1));
 	zassert_equal(0, rc);
 
 	/* Revert to searching */
 	nrf_modem_lib_sim_send_at("+CEREG: 2,\"702A\",\"08C3BD0C\",7\r\n");
 	k_sleep(K_SECONDS(1));
 
-#ifdef CONFIG_INFUSE_NRF_MODEM_MONITOR_CONN_STATE_LOG
+#ifdef CONFIG_INFUSE_MODEM_MONITOR_CONN_STATE_LOG
 	tdf_data_logger_flush(TDF_DATA_LOGGER_SERIAL);
 	tx = k_fifo_get(tx_fifo, K_MSEC(100));
 	zassert_not_null(tx);
@@ -330,7 +330,7 @@ ZTEST(infuse_nrf_modem_monitor, test_integration)
 	net_buf_unref(tx);
 
 	/* Disable conn status logging */
-	nrf_modem_monitor_network_state_log(0);
+	lte_modem_monitor_network_state_log(0);
 #endif
 
 	/* Back on the network, gain network connectivity this time */
@@ -342,7 +342,7 @@ ZTEST(infuse_nrf_modem_monitor, test_integration)
 
 	/* No connectivity timeout */
 	rc = k_sem_take(&reboot_request,
-			K_SECONDS(CONFIG_INFUSE_NRF_MODEM_MONITOR_CONNECTIVITY_TIMEOUT_SEC + 1));
+			K_SECONDS(CONFIG_INFUSE_MODEM_MONITOR_CONNECTIVITY_TIMEOUT_SEC + 1));
 	zassert_equal(-EAGAIN, rc);
 
 	/* Cell changes while BIP is pending */
@@ -354,8 +354,8 @@ ZTEST(infuse_nrf_modem_monitor, test_integration)
 	nrf_modem_lib_sim_send_at("%USATEV: BIP Closed\r\n");
 	k_sleep(K_SECONDS(2));
 
-	nrf_modem_monitor_network_state(&net_state);
-	zassert_equal(LTE_LC_LTE_MODE_NBIOT, net_state.lte_mode);
+	lte_modem_monitor_network_state(&net_state);
+	zassert_equal(LTE_ACCESS_TECH_NB_IOT, net_state.lte_mode);
 	zassert_equal(0x702B, net_state.cell.tac);
 	zassert_equal(0x08C3BD0D, net_state.cell.id);
 
@@ -371,7 +371,7 @@ ZTEST(infuse_nrf_modem_monitor, test_integration)
 	rc = net_if_down(iface);
 	zassert_equal(0, rc);
 	rc = k_sem_take(&reboot_request,
-			K_SECONDS(CONFIG_INFUSE_NRF_MODEM_MONITOR_CONNECTIVITY_TIMEOUT_SEC + 1));
+			K_SECONDS(CONFIG_INFUSE_MODEM_MONITOR_CONNECTIVITY_TIMEOUT_SEC + 1));
 	zassert_equal(0, rc);
 
 	/* Back to searching */
@@ -385,7 +385,7 @@ ZTEST(infuse_nrf_modem_monitor, test_integration)
 	nrf_modem_lib_sim_send_at("+CEREG: 2,\"702A\",\"08C3BD0C\",7\r\n");
 
 	rc = k_sem_take(&reboot_request,
-			K_SECONDS(CONFIG_INFUSE_NRF_MODEM_MONITOR_CONNECTIVITY_TIMEOUT_SEC + 1));
+			K_SECONDS(CONFIG_INFUSE_MODEM_MONITOR_CONNECTIVITY_TIMEOUT_SEC + 1));
 	zassert_equal(-EAGAIN, rc);
 
 	/* Connectivity gained, lost with inverse ordering, no timeout */
@@ -400,15 +400,15 @@ ZTEST(infuse_nrf_modem_monitor, test_integration)
 	zassert_equal(0, rc);
 	k_sleep(K_SECONDS(1));
 	rc = k_sem_take(&reboot_request,
-			K_SECONDS(CONFIG_INFUSE_NRF_MODEM_MONITOR_CONNECTIVITY_TIMEOUT_SEC + 1));
+			K_SECONDS(CONFIG_INFUSE_MODEM_MONITOR_CONNECTIVITY_TIMEOUT_SEC + 1));
 	zassert_equal(-EAGAIN, rc);
 
-#ifdef CONFIG_INFUSE_NRF_MODEM_MONITOR_CONN_STATE_LOG
+#ifdef CONFIG_INFUSE_MODEM_MONITOR_CONN_STATE_LOG
 	/* No other logging after disabling */
 	tdf_data_logger_flush(TDF_DATA_LOGGER_SERIAL);
 	tx = k_fifo_get(tx_fifo, K_MSEC(100));
 	zassert_is_null(tx);
-#endif /* CONFIG_INFUSE_NRF_MODEM_MONITOR_CONN_STATE_LOG */
+#endif /* CONFIG_INFUSE_MODEM_MONITOR_CONN_STATE_LOG */
 
 	/* Changing APN configuration should request a reboot */
 	memcpy(pdp_config.apn.value, "upd", 3);
@@ -417,7 +417,7 @@ ZTEST(infuse_nrf_modem_monitor, test_integration)
 	zassert_equal(0, k_sem_take(&reboot_request, K_SECONDS(1)));
 
 	/* Changing network configuration should request a reboot */
-	net_modes.modes = LTE_LC_SYSTEM_MODE_LTEM;
+	net_modes.modes = LTE_ACCESS_TECH_LTE_M;
 	zassert_equal(-EBUSY, k_sem_take(&reboot_request, K_NO_WAIT));
 	kv_store_write(KV_KEY_LTE_NETWORKING_MODES, &net_modes, sizeof(net_modes));
 	zassert_equal(0, k_sem_take(&reboot_request, K_SECONDS(1)));

@@ -16,7 +16,7 @@
 #include <zephyr/sys/__assert.h>
 
 #include <infuse/work_q.h>
-#include <infuse/lib/nrf_modem_monitor.h>
+#include <infuse/lib/lte_modem_monitor.h>
 #include <infuse/fs/kv_store.h>
 #include <infuse/fs/kv_types.h>
 #include <infuse/reboot.h>
@@ -33,9 +33,9 @@
 #include <modem/modem_info.h>
 #include <nrf_modem_at.h>
 
-LOG_MODULE_REGISTER(modem_monitor, CONFIG_INFUSE_NRF_MODEM_MONITOR_LOG_LEVEL);
+#include "../modem_monitor.h"
 
-#define CONNECTIVITY_TIMEOUT K_SECONDS(CONFIG_INFUSE_NRF_MODEM_MONITOR_CONNECTIVITY_TIMEOUT_SEC)
+LOG_MODULE_DECLARE(modem_monitor, CONFIG_INFUSE_MODEM_MONITOR_LOG_LEVEL);
 
 #define LTE_LC_SYSTEM_MODE_DEFAULT 0xff
 #define LTE_MODE_DEFAULT                                                                           \
@@ -54,11 +54,10 @@ enum {
 	 * is ongoing. As such we want to skip non-critical AT commands in this state.
 	 */
 	FLAGS_PDN_CONN_IN_PROGRESS = 2,
-	FLAGS_IP_CONN_EXPECTED = 3,
 };
 
 static struct {
-	struct nrf_modem_network_state network_state;
+	struct lte_modem_network_state network_state;
 	/* `lte_reg_handler` runs from the system workqueue, and the modem AT commands wait forever
 	 * on the response. This is problematic as the low level functions rely on malloc, which
 	 * can fail. Running AT commands directly from the callback context therefore has the
@@ -73,12 +72,33 @@ static struct {
 	atomic_t flags;
 	int16_t rsrp_cached;
 	int8_t rsrq_cached;
-#ifdef CONFIG_INFUSE_NRF_MODEM_MONITOR_CONN_STATE_LOG
+#ifdef CONFIG_INFUSE_MODEM_MONITOR_CONN_STATE_LOG
 	uint8_t network_state_loggers;
-#endif /* CONFIG_INFUSE_NRF_MODEM_MONITOR_CONN_STATE_LOG */
+#endif /* CONFIG_INFUSE_MODEM_MONITOR_CONN_STATE_LOG */
 } monitor;
 
-bool nrf_modem_monitor_is_at_safe(void)
+/* Validate nRF and generic event mappings */
+BUILD_ASSERT(LTE_REGISTRATION_NOT_REGISTERED ==
+	     (enum lte_registration_status)LTE_LC_NW_REG_NOT_REGISTERED);
+BUILD_ASSERT(LTE_REGISTRATION_REGISTERED_HOME ==
+	     (enum lte_registration_status)LTE_LC_NW_REG_REGISTERED_HOME);
+BUILD_ASSERT(LTE_REGISTRATION_SEARCHING == (enum lte_registration_status)LTE_LC_NW_REG_SEARCHING);
+BUILD_ASSERT(LTE_REGISTRATION_REGISTRATION_DENIED ==
+	     (enum lte_registration_status)LTE_LC_NW_REG_REGISTRATION_DENIED);
+BUILD_ASSERT(LTE_REGISTRATION_UNKNOWN == (enum lte_registration_status)LTE_LC_NW_REG_UNKNOWN);
+BUILD_ASSERT(LTE_REGISTRATION_REGISTERED_ROAMING ==
+	     (enum lte_registration_status)LTE_LC_NW_REG_REGISTERED_ROAMING);
+BUILD_ASSERT(LTE_REGISTRATION_NRF91_UICC_FAIL ==
+	     (enum lte_registration_status)LTE_LC_NW_REG_UICC_FAIL);
+
+BUILD_ASSERT(LTE_ACCESS_TECH_NONE == (enum lte_access_technology)LTE_LC_LTE_MODE_NONE);
+BUILD_ASSERT(LTE_ACCESS_TECH_LTE_M == (enum lte_access_technology)LTE_LC_LTE_MODE_LTEM);
+BUILD_ASSERT(LTE_ACCESS_TECH_NB_IOT == (enum lte_access_technology)LTE_LC_LTE_MODE_NBIOT);
+
+BUILD_ASSERT(LTE_RRC_MODE_IDLE == (enum lte_rrc_mode)LTE_LC_RRC_MODE_IDLE);
+BUILD_ASSERT(LTE_RRC_MODE_CONNECTED == (enum lte_rrc_mode)LTE_LC_RRC_MODE_CONNECTED);
+
+bool lte_modem_monitor_is_at_safe(void)
 {
 #ifdef CONFIG_SOC_NRF9160
 	return true;
@@ -87,14 +107,14 @@ bool nrf_modem_monitor_is_at_safe(void)
 #endif /* CONFIG_SOC_NRF9160 */
 }
 
-#ifdef CONFIG_INFUSE_NRF_MODEM_MONITOR_CONN_STATE_LOG
-void nrf_modem_monitor_network_state_log(uint8_t tdf_logger_mask)
+#ifdef CONFIG_INFUSE_MODEM_MONITOR_CONN_STATE_LOG
+void lte_modem_monitor_network_state_log(uint8_t tdf_logger_mask)
 {
 	monitor.network_state_loggers = tdf_logger_mask;
 }
-#endif /* CONFIG_INFUSE_NRF_MODEM_MONITOR_CONN_STATE_LOG */
+#endif /* CONFIG_INFUSE_MODEM_MONITOR_CONN_STATE_LOG */
 
-void nrf_modem_monitor_network_state(struct nrf_modem_network_state *state)
+void lte_modem_monitor_network_state(struct lte_modem_network_state *state)
 {
 	*state = monitor.network_state;
 }
@@ -137,8 +157,8 @@ static void network_info_update(struct k_work *work)
 		}
 	}
 
-	if ((monitor.network_state.nw_reg_status != LTE_LC_NW_REG_REGISTERED_HOME) &&
-	    (monitor.network_state.nw_reg_status != LTE_LC_NW_REG_REGISTERED_ROAMING)) {
+	if ((monitor.network_state.nw_reg_status != LTE_REGISTRATION_REGISTERED_HOME) &&
+	    (monitor.network_state.nw_reg_status != LTE_REGISTRATION_REGISTERED_ROAMING)) {
 		/* No cell information (except for potentially Cell ID and TAC) */
 		uint32_t id = monitor.network_state.cell.id;
 		uint32_t tac = monitor.network_state.cell.tac;
@@ -189,21 +209,21 @@ static void network_info_update(struct k_work *work)
 	}
 
 state_logging:
-#ifdef CONFIG_INFUSE_NRF_MODEM_MONITOR_CONN_STATE_LOG
+#ifdef CONFIG_INFUSE_MODEM_MONITOR_CONN_STATE_LOG
 	if (monitor.network_state_loggers) {
 		struct tdf_lte_conn_status tdf;
 		int16_t rsrp;
 		int8_t rsrq;
 
 		/* Query signal strengths (other state already queried above) */
-		(void)nrf_modem_monitor_signal_quality(&rsrp, &rsrq, true);
+		(void)lte_modem_monitor_signal_quality(&rsrp, &rsrq, true);
 		/* Convert to TDF */
 		tdf_lte_conn_status_from_monitor(&monitor.network_state, &tdf, rsrp, rsrq);
 		/* Add to specified loggers */
 		TDF_DATA_LOGGER_LOG(monitor.network_state_loggers, TDF_LTE_CONN_STATUS,
 				    epoch_time_now(), &tdf);
 	}
-#endif /* CONFIG_INFUSE_NRF_MODEM_MONITOR_CONN_STATE_LOG */
+#endif /* CONFIG_INFUSE_MODEM_MONITOR_CONN_STATE_LOG */
 }
 
 static void signal_quality_update(struct k_work *work)
@@ -211,15 +231,16 @@ static void signal_quality_update(struct k_work *work)
 	int16_t rsrp;
 	int8_t rsrq;
 
-	(void)nrf_modem_monitor_signal_quality(&rsrp, &rsrq, false);
+	(void)lte_modem_monitor_signal_quality(&rsrp, &rsrq, false);
 }
 
-int nrf_modem_monitor_signal_quality(int16_t *rsrp, int8_t *rsrq, bool cached)
+int lte_modem_monitor_signal_quality(int16_t *rsrp, int8_t *rsrq, bool cached)
 {
 	bool sleeping = atomic_test_bit(&monitor.flags, FLAGS_MODEM_SLEEPING);
 	bool connected = atomic_test_bit(&monitor.flags, FLAGS_CELL_CONNECTED);
 	bool pdn_in_progress = atomic_test_bit(&monitor.flags, FLAGS_PDN_CONN_IN_PROGRESS);
-	uint8_t rsrp_idx, rsrq_idx;
+	uint8_t rsrp_idx;
+	uint8_t rsrq_idx;
 	int rc;
 
 	*rsrp = cached ? monitor.rsrp_cached : INT16_MIN;
@@ -250,7 +271,7 @@ int nrf_modem_monitor_signal_quality(int16_t *rsrp, int8_t *rsrq, bool cached)
 	return 0;
 }
 
-int nrf_modem_monitor_connectivity_stats(int *tx_kbytes, int *rx_kbytes)
+int lte_modem_monitor_connectivity_stats(int *tx_kbytes, int *rx_kbytes)
 {
 	int rc;
 
@@ -272,11 +293,9 @@ static void lte_reg_handler(const struct lte_lc_evt *const evt)
 		/* Handle the connectivity watchdog */
 		if ((evt->nw_reg_status == LTE_LC_NW_REG_REGISTERED_HOME) ||
 		    (evt->nw_reg_status == LTE_LC_NW_REG_REGISTERED_ROAMING)) {
-			atomic_set_bit(&monitor.flags, FLAGS_IP_CONN_EXPECTED);
-			k_work_reschedule(&monitor.connectivity_timeout, CONNECTIVITY_TIMEOUT);
+			modem_monitor_ip_connectivity_expected(true);
 		} else {
-			atomic_clear_bit(&monitor.flags, FLAGS_IP_CONN_EXPECTED);
-			k_work_cancel_delayable(&monitor.connectivity_timeout);
+			modem_monitor_ip_connectivity_expected(false);
 		}
 		/* Request update of knowledge of network info */
 		infuse_work_reschedule(&monitor.update_work, K_NO_WAIT);
@@ -285,14 +304,17 @@ static void lte_reg_handler(const struct lte_lc_evt *const evt)
 		LOG_DBG("PSM_UPDATE");
 		LOG_DBG("     TAU: %d", evt->psm_cfg.tau);
 		LOG_DBG("  ACTIVE: %d", evt->psm_cfg.active_time);
-		monitor.network_state.psm_cfg = evt->psm_cfg;
+		monitor.network_state.psm_cfg.tau = evt->psm_cfg.tau;
+		monitor.network_state.psm_cfg.active_time = evt->psm_cfg.active_time;
 		break;
 	case LTE_LC_EVT_EDRX_UPDATE:
 		LOG_DBG("EDRX_UPDATE");
 		LOG_DBG("    Mode: %d", evt->edrx_cfg.mode);
 		LOG_DBG("     PTW: %d", (int)evt->edrx_cfg.ptw);
 		LOG_DBG("Interval: %d", (int)evt->edrx_cfg.edrx);
-		monitor.network_state.edrx_cfg = evt->edrx_cfg;
+		monitor.network_state.edrx_cfg.mode = evt->edrx_cfg.mode;
+		monitor.network_state.edrx_cfg.edrx = evt->edrx_cfg.edrx;
+		monitor.network_state.edrx_cfg.ptw = evt->edrx_cfg.ptw;
 		break;
 	case LTE_LC_EVT_RRC_UPDATE:
 		LOG_DBG("RRC_UPDATE");
@@ -399,23 +421,22 @@ static void infuse_modem_init(int ret, void *ctx)
 #ifdef CONFIG_KV_STORE_KEY_LTE_PDP_CONFIG
 	KV_KEY_TYPE_VAR(KV_KEY_LTE_PDP_CONFIG, 32) pdp_config;
 
-#ifdef CONFIG_INFUSE_NRF_MODEM_MONITOR_DEFAULT_PDP_APN_SET
-	const KV_KEY_TYPE_VAR(
-		KV_KEY_LTE_PDP_CONFIG,
-		sizeof(CONFIG_INFUSE_NRF_MODEM_MONITOR_DEFAULT_PDP_APN)) pdp_default = {
+#ifdef CONFIG_INFUSE_MODEM_MONITOR_DEFAULT_PDP_APN_SET
+	const KV_KEY_TYPE_VAR(KV_KEY_LTE_PDP_CONFIG,
+			      sizeof(CONFIG_INFUSE_MODEM_MONITOR_DEFAULT_PDP_APN)) pdp_default = {
 		.apn =
 			{
 				.value_num =
-					strlen(CONFIG_INFUSE_NRF_MODEM_MONITOR_DEFAULT_PDP_APN) + 1,
-				.value = CONFIG_INFUSE_NRF_MODEM_MONITOR_DEFAULT_PDP_APN,
+					strlen(CONFIG_INFUSE_MODEM_MONITOR_DEFAULT_PDP_APN) + 1,
+				.value = CONFIG_INFUSE_MODEM_MONITOR_DEFAULT_PDP_APN,
 			},
-#if defined(CONFIG_INFUSE_NRF_MODEM_MONITOR_DEFAULT_PDP_FAMILY_IPV4)
+#if defined(CONFIG_INFUSE_MODEM_MONITOR_DEFAULT_PDP_FAMILY_IPV4)
 		.family = PDN_FAM_IPV4,
-#elif defined(CONFIG_INFUSE_NRF_MODEM_MONITOR_DEFAULT_PDP_FAMILY_IPV6)
+#elif defined(CONFIG_INFUSE_MODEM_MONITOR_DEFAULT_PDP_FAMILY_IPV6)
 		.family = PDN_FAM_IPV6,
-#elif defined(CONFIG_INFUSE_NRF_MODEM_MONITOR_DEFAULT_PDP_FAMILY_IPV4V6)
+#elif defined(CONFIG_INFUSE_MODEM_MONITOR_DEFAULT_PDP_FAMILY_IPV4V6)
 		.family = PDN_FAM_IPV4V6,
-#elif defined(CONFIG_INFUSE_NRF_MODEM_MONITOR_DEFAULT_PDP_FAMILY_NON_IP)
+#elif defined(CONFIG_INFUSE_MODEM_MONITOR_DEFAULT_PDP_FAMILY_NON_IP)
 		.family = PDN_FAM_NONIP,
 #else
 #error "Unknown protocol family"
@@ -429,7 +450,7 @@ static void infuse_modem_init(int ret, void *ctx)
 	/* Read the configured value */
 	rc = kv_store_read(KV_KEY_LTE_PDP_CONFIG, &pdp_config, sizeof(pdp_config));
 	pdp_config.apn.value[sizeof(pdp_config.apn.value) - 1] = '\0';
-#endif /* CONFIG_INFUSE_NRF_MODEM_MONITOR_DEFAULT_PDP_APN_SET */
+#endif /* CONFIG_INFUSE_MODEM_MONITOR_DEFAULT_PDP_APN_SET */
 
 	/* If a PDP configuration has been set */
 	if ((rc > 0) && (strlen(pdp_config.apn.value) > 0)) {
@@ -537,41 +558,10 @@ void lte_net_if_modem_fault_app_handler(struct nrf_modem_fault_info *fault_info)
 #endif /* CONFIG_INFUSE_REBOOT */
 }
 
-static void connectivity_timeout(struct k_work *work)
+int lte_modem_monitor_init(void)
 {
-	if (!atomic_test_bit(&monitor.flags, FLAGS_IP_CONN_EXPECTED)) {
-		/* Network registration was lost before interface state callback occurred */
-		return;
-	}
+	struct net_if *iface = net_if_get_first_by_type(&(NET_L2_GET_NAME(OFFLOADED_NETDEV)));
 
-	/* Interface has failed to gain IP connectivity, the safest option is to reboot */
-#ifdef CONFIG_INFUSE_REBOOT
-	LOG_ERR("Networking connectivity failed, rebooting in 2 seconds...");
-	infuse_reboot_delayed(INFUSE_REBOOT_SW_WATCHDOG, (uintptr_t)connectivity_timeout,
-			      CONFIG_INFUSE_NRF_MODEM_MONITOR_CONNECTIVITY_TIMEOUT_SEC,
-			      K_SECONDS(2));
-#else
-	LOG_ERR("Networking connectivity failed, no reboot support!");
-#endif /* CONFIG_INFUSE_REBOOT */
-}
-
-static void iface_state_handler(struct net_mgmt_event_callback *cb, uint64_t mgmt_event,
-				struct net_if *iface)
-{
-	if (iface != monitor.lte_net_if) {
-		return;
-	}
-	if (mgmt_event == NET_EVENT_IF_UP) {
-		/* Interface is UP, cancel the timeout */
-		k_work_cancel_delayable(&monitor.connectivity_timeout);
-	} else if (mgmt_event == NET_EVENT_IF_DOWN) {
-		/* Interface is DOWN, restart the timeout */
-		k_work_reschedule(&monitor.connectivity_timeout, CONNECTIVITY_TIMEOUT);
-	}
-}
-
-int nrf_modem_monitor_init(void)
-{
 	k_work_init_delayable(&monitor.update_work, network_info_update);
 	k_work_init(&monitor.signal_quality_work, signal_quality_update);
 	/* Initial state */
@@ -581,16 +571,11 @@ int nrf_modem_monitor_init(void)
 	monitor.network_state.edrx_cfg.ptw = -1.0f;
 	monitor.rsrp_cached = INT16_MIN;
 	monitor.rsrq_cached = INT8_MIN;
-	/* Network connectivity timeout handler */
-	monitor.lte_net_if = net_if_get_first_by_type(&(NET_L2_GET_NAME(OFFLOADED_NETDEV)));
-	__ASSERT_NO_MSG(monitor.lte_net_if != NULL);
-	k_work_init_delayable(&monitor.connectivity_timeout, connectivity_timeout);
-	net_mgmt_init_event_callback(&monitor.mgmt_iface_cb, iface_state_handler,
-				     NET_EVENT_IF_UP | NET_EVENT_IF_DOWN);
-	net_mgmt_add_event_callback(&monitor.mgmt_iface_cb);
 	/* Register handler */
 	lte_lc_register_handler(lte_reg_handler);
+	/* Initialise generic monitor */
+	modem_monitor_init(iface);
 	return 0;
 }
 
-SYS_INIT(nrf_modem_monitor_init, APPLICATION, 0);
+SYS_INIT(lte_modem_monitor_init, APPLICATION, 0);
