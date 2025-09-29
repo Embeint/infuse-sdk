@@ -67,9 +67,8 @@ void rpc_server_pull_data_reset(void)
 {
 	data_packet_ack_counter = 0;
 }
-
-struct net_buf *rpc_server_pull_data(uint32_t request_id, uint32_t expected_offset, int *err,
-				     k_timeout_t timeout)
+static struct net_buf *pull_data_core(uint32_t request_id, uint32_t expected_offset, int *err,
+				      k_timeout_t timeout, bool requires_aligned)
 {
 	struct infuse_rpc_data *data;
 	struct net_buf *buf;
@@ -98,7 +97,7 @@ struct net_buf *rpc_server_pull_data(uint32_t request_id, uint32_t expected_offs
 		if (data->offset != expected_offset) {
 			LOG_WRN("Missed data %08X-%08X", expected_offset, data->offset - 1);
 		}
-		if (data->offset % sizeof(uint32_t)) {
+		if (requires_aligned && (data->offset % sizeof(uint32_t))) {
 			LOG_WRN("Unaligned data offset %08X", data->offset);
 			net_buf_unref(buf);
 			*err = -EINVAL;
@@ -108,6 +107,18 @@ struct net_buf *rpc_server_pull_data(uint32_t request_id, uint32_t expected_offs
 		rpc_server_watchdog_feed();
 		return buf;
 	}
+}
+
+struct net_buf *rpc_server_pull_data(uint32_t request_id, uint32_t expected_offset, int *err,
+				     k_timeout_t timeout)
+{
+	return pull_data_core(request_id, expected_offset, err, timeout, true);
+}
+
+struct net_buf *rpc_server_pull_data_unaligned(uint32_t request_id, uint32_t expected_offset,
+					       int *err, k_timeout_t timeout)
+{
+	return pull_data_core(request_id, expected_offset, err, timeout, false);
 }
 
 static void send_ack(const struct device *interface, union epacket_interface_address address,
