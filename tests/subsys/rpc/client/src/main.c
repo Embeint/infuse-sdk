@@ -375,6 +375,7 @@ static void test_command_data_param(uint32_t size, uint8_t ack_period, bool sing
 				.size = size,
 				.rx_ack_period = ack_period,
 			},
+		.unaligned_input = 0,
 	};
 	uint8_t buffer[128];
 	uint32_t request_id;

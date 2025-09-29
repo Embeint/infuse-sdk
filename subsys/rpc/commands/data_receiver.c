@@ -29,6 +29,7 @@ struct net_buf *rpc_command_data_receiver(struct net_buf *request)
 	uint32_t received = 0;
 	uint32_t expected_offset = 0;
 	uint8_t ack_period;
+	uint8_t unaligned;
 	uint32_t crc = 0;
 	size_t var_len;
 	int rc = 0;
@@ -47,6 +48,7 @@ struct net_buf *rpc_command_data_receiver(struct net_buf *request)
 		expected = req->data_header.size;
 		remaining = req->data_header.size;
 		ack_period = req->data_header.rx_ack_period;
+		unaligned = req->unaligned_input;
 
 		rpc_command_runner_request_unref(request);
 		request = NULL;
@@ -57,7 +59,13 @@ struct net_buf *rpc_command_data_receiver(struct net_buf *request)
 	rpc_server_ack_data_ready(interface, from, request_id);
 
 	while (remaining > 0) {
-		data_buf = rpc_server_pull_data(request_id, expected_offset, &rc, K_MSEC(500));
+		if (unaligned) {
+			data_buf = rpc_server_pull_data_unaligned(request_id, expected_offset, &rc,
+								  K_MSEC(500));
+		} else {
+			data_buf =
+				rpc_server_pull_data(request_id, expected_offset, &rc, K_MSEC(500));
+		}
 		if (data_buf == NULL) {
 			goto end;
 		}

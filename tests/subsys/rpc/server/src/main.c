@@ -388,6 +388,7 @@ static void test_data_receiver(uint32_t total_send, uint8_t skip_after, uint8_t 
 	req->header.request_id = request_id;
 	req->data_header.size = send_remaining;
 	req->data_header.rx_ack_period = ack_period;
+	req->unaligned_input = 0;
 	epacket_dummy_receive(epacket_dummy, &header, payload,
 			      sizeof(struct rpc_data_receiver_request));
 

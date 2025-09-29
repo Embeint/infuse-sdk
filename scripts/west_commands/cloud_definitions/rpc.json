@@ -717,7 +717,9 @@
             "default": "y if ZTEST",
             "default_auth": "EPACKET_AUTH_DEVICE",
             "rpc_data": true,
-            "request_params": [],
+            "request_params": [
+                {"name": "unaligned_input", "type": "uint8_t", "description": "Allow unaligned input data"}
+            ],
             "response_params": [
                 {"name": "recv_len", "type": "uint32_t", "description": "Number of bytes received"},
                 {"name": "recv_crc", "type": "uint32_t", "description": "CRC32 of bytes received"}
