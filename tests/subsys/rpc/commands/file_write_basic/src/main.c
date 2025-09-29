@@ -268,18 +268,21 @@ ZTEST(rpc_command_file_write_basic, test_invalid_action)
 	struct epacket_dummy_frame *tx_header;
 	struct net_buf *tx;
 
-	epacket_dummy_receive(epacket_dummy, &hdr, &req, sizeof(req));
+	for (int i = 0; i <= CONFIG_EPACKET_BUFFERS_RX; i++) {
+		epacket_dummy_receive(epacket_dummy, &hdr, &req, sizeof(req));
 
-	/* Wait for the invalid response */
-	tx = k_fifo_get(tx_fifo, K_MSEC(1000));
-	zassert_not_null(tx);
-	tx_header = (void *)tx->data;
-	rsp = (void *)(tx->data + sizeof(*tx_header));
+		/* Wait for the invalid response */
+		tx = k_fifo_get(tx_fifo, K_MSEC(1000));
+		zassert_not_null(tx);
+		tx_header = (void *)tx->data;
+		rsp = (void *)(tx->data + sizeof(*tx_header));
 
-	zassert_equal(INFUSE_RPC_RSP, tx_header->type);
-	zassert_equal(-EINVAL, rsp->header.return_code);
+		zassert_equal(INFUSE_RPC_RSP, tx_header->type);
+		zassert_equal(-EINVAL, rsp->header.return_code);
 
-	net_buf_unref(tx);
+		net_buf_unref(tx);
+		req.header.request_id += 1;
+	}
 }
 
 ZTEST(rpc_command_file_write_basic, test_file_write_sizes)
@@ -456,12 +459,14 @@ ZTEST(rpc_command_file_write_basic, test_file_write_for_copy)
 	struct test_out ret;
 
 	/* Write an arbitrary image of known size to file_partition */
-	ret = test_file_write_basic(RPC_ENUM_FILE_ACTION_FILE_FOR_COPY, 17023, 0, 0, 0, 0, false,
-				    false, NULL);
-	zassert_equal(0, ret.cmd_rc);
-	zassert_equal(17023, ret.cmd_len);
-	zassert_equal(ret.written_crc, ret.cmd_crc);
-	validate_flash_area(&ret, FIXED_PARTITION_ID(file_partition));
+	for (int i = 0; i <= CONFIG_EPACKET_BUFFERS_RX; i++) {
+		ret = test_file_write_basic(RPC_ENUM_FILE_ACTION_FILE_FOR_COPY, 17023, 0, 0, 0, 0,
+					    false, false, NULL);
+		zassert_equal(0, ret.cmd_rc);
+		zassert_equal(17023, ret.cmd_len);
+		zassert_equal(ret.written_crc, ret.cmd_crc);
+		validate_flash_area(&ret, FIXED_PARTITION_ID(file_partition));
+	}
 }
 #else
 
@@ -521,15 +526,18 @@ ZTEST(rpc_command_file_write_basic, test_file_write_bt_ctlr)
 ZTEST(rpc_command_file_write_basic, test_lost_payload)
 {
 	struct test_out ret;
+
 	/* "Lost" data payload after some packets */
-	ret = test_file_write_basic(RPC_ENUM_FILE_ACTION_DISCARD, 1000, 5, 0, 0, 0, false, false,
-				    NULL);
-	zassert_equal(0, ret.cmd_rc);
-	zassert_true(ret.cmd_len < 1000);
-	ret = test_file_write_basic(RPC_ENUM_FILE_ACTION_DISCARD, 1000, 10, 0, 0, 0, false, false,
-				    NULL);
-	zassert_equal(0, ret.cmd_rc);
-	zassert_true(ret.cmd_len < 1000);
+	for (int i = 0; i <= CONFIG_EPACKET_BUFFERS_RX; i++) {
+		ret = test_file_write_basic(RPC_ENUM_FILE_ACTION_DISCARD, 1000, 5, 0, 0, 0, false,
+					    false, NULL);
+		zassert_equal(0, ret.cmd_rc);
+		zassert_true(ret.cmd_len < 1000);
+		ret = test_file_write_basic(RPC_ENUM_FILE_ACTION_DISCARD, 1000, 10, 0, 0, 0, false,
+					    false, NULL);
+		zassert_equal(0, ret.cmd_rc);
+		zassert_true(ret.cmd_len < 1000);
+	}
 }
 
 ZTEST(rpc_command_file_write_basic, test_early_hangup)
@@ -537,14 +545,16 @@ ZTEST(rpc_command_file_write_basic, test_early_hangup)
 	struct test_out ret;
 
 	/* Stop sending data after some packets */
-	ret = test_file_write_basic(RPC_ENUM_FILE_ACTION_DISCARD, 1000, 0, 3, 0, 0, false, false,
-				    NULL);
-	zassert_equal(-ETIMEDOUT, ret.cmd_rc);
-	zassert_true(ret.cmd_len < 1000);
-	ret = test_file_write_basic(RPC_ENUM_FILE_ACTION_DISCARD, 1000, 0, 11, 0, 0, false, false,
-				    NULL);
-	zassert_equal(-ETIMEDOUT, ret.cmd_rc);
-	zassert_true(ret.cmd_len < 1000);
+	for (int i = 0; i <= CONFIG_EPACKET_BUFFERS_RX; i++) {
+		ret = test_file_write_basic(RPC_ENUM_FILE_ACTION_DISCARD, 1000, 0, 3, 0, 0, false,
+					    false, NULL);
+		zassert_equal(-ETIMEDOUT, ret.cmd_rc);
+		zassert_true(ret.cmd_len < 1000);
+		ret = test_file_write_basic(RPC_ENUM_FILE_ACTION_DISCARD, 1000, 0, 11, 0, 0, false,
+					    false, NULL);
+		zassert_equal(-ETIMEDOUT, ret.cmd_rc);
+		zassert_true(ret.cmd_len < 1000);
+	}
 }
 
 ZTEST(rpc_command_file_write_basic, test_invalid_request_id)
@@ -552,16 +562,18 @@ ZTEST(rpc_command_file_write_basic, test_invalid_request_id)
 	struct test_out ret;
 
 	/* Inject request ID after some packets */
-	ret = test_file_write_basic(RPC_ENUM_FILE_ACTION_DISCARD, 1000, 0, 0, 4, 0, false, false,
-				    NULL);
-	zassert_equal(0, ret.cmd_rc);
-	zassert_equal(1000, ret.cmd_len);
-	zassert_equal(ret.written_crc, ret.cmd_crc);
-	ret = test_file_write_basic(RPC_ENUM_FILE_ACTION_DISCARD, 1000, 0, 0, 10, 0, false, false,
-				    NULL);
-	zassert_equal(0, ret.cmd_rc);
-	zassert_equal(1000, ret.cmd_len);
-	zassert_equal(ret.written_crc, ret.cmd_crc);
+	for (int i = 0; i <= CONFIG_EPACKET_BUFFERS_RX; i++) {
+		ret = test_file_write_basic(RPC_ENUM_FILE_ACTION_DISCARD, 1000, 0, 0, 4, 0, false,
+					    false, NULL);
+		zassert_equal(0, ret.cmd_rc);
+		zassert_equal(1000, ret.cmd_len);
+		zassert_equal(ret.written_crc, ret.cmd_crc);
+		ret = test_file_write_basic(RPC_ENUM_FILE_ACTION_DISCARD, 1000, 0, 0, 10, 0, false,
+					    false, NULL);
+		zassert_equal(0, ret.cmd_rc);
+		zassert_equal(1000, ret.cmd_len);
+		zassert_equal(ret.written_crc, ret.cmd_crc);
+	}
 }
 
 ZTEST(rpc_command_file_write_basic, test_data_ack)
@@ -606,14 +618,16 @@ ZTEST(rpc_command_file_write_basic, test_everything_wrong)
 	struct test_out ret;
 
 	/* Everything going wrong */
-	ret = test_file_write_basic(RPC_ENUM_FILE_ACTION_DISCARD, 1000, 3, 0, 7, 1, false, false,
-				    NULL);
-	zassert_equal(0, ret.cmd_rc);
-	zassert_true(ret.cmd_len < 1000);
-	ret = test_file_write_basic(RPC_ENUM_FILE_ACTION_DISCARD, 1000, 3, 0, 7, 2, false, false,
-				    NULL);
-	zassert_equal(0, ret.cmd_rc);
-	zassert_true(ret.cmd_len < 1000);
+	for (int i = 0; i <= CONFIG_EPACKET_BUFFERS_RX; i++) {
+		ret = test_file_write_basic(RPC_ENUM_FILE_ACTION_DISCARD, 1000, 3, 0, 7, 1, false,
+					    false, NULL);
+		zassert_equal(0, ret.cmd_rc);
+		zassert_true(ret.cmd_len < 1000);
+		ret = test_file_write_basic(RPC_ENUM_FILE_ACTION_DISCARD, 1000, 3, 0, 7, 2, false,
+					    false, NULL);
+		zassert_equal(0, ret.cmd_rc);
+		zassert_true(ret.cmd_len < 1000);
+	}
 }
 
 ZTEST(rpc_command_file_write_basic, test_push_too_much_data)
@@ -621,9 +635,11 @@ ZTEST(rpc_command_file_write_basic, test_push_too_much_data)
 	struct test_out ret;
 
 	/* Send too much data */
-	ret = test_file_write_basic(RPC_ENUM_FILE_ACTION_DISCARD, 1000, 0, 0, 0, 0, true, false,
-				    NULL);
-	zassert_equal(-EINVAL, ret.cmd_rc);
+	for (int i = 0; i <= CONFIG_EPACKET_BUFFERS_RX; i++) {
+		ret = test_file_write_basic(RPC_ENUM_FILE_ACTION_DISCARD, 1000, 0, 0, 0, 0, true,
+					    false, NULL);
+		zassert_equal(-EINVAL, ret.cmd_rc);
+	}
 }
 
 void *file_write_basic_setup(void)
