@@ -72,6 +72,7 @@ struct net_buf *rpc_command_data_receiver(struct net_buf *request)
 		var_len = RPC_DATA_VAR_LEN(data_buf);
 		if (var_len > remaining) {
 			LOG_WRN("Received too much data %d/%d", var_len, remaining);
+			net_buf_unref(data_buf);
 			rc = -EINVAL;
 			goto end;
 		}
