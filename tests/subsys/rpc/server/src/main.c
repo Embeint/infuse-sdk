@@ -518,22 +518,28 @@ ZTEST(rpc_server, test_data_receiver_sizes)
 ZTEST(rpc_server, test_data_receiver_lost_payload)
 {
 	/* "Lost" data payload after some packets */
-	test_data_receiver(1000, 5, 0, 0, 0, false, false, false);
-	test_data_receiver(1000, 10, 0, 0, 0, false, false, false);
+	for (int i = 0; i <= CONFIG_EPACKET_BUFFERS_RX; i++) {
+		test_data_receiver(1000, 5, 0, 0, 0, false, false, false);
+		test_data_receiver(1000, 10, 0, 0, 0, false, false, false);
+	}
 }
 
 ZTEST(rpc_server, test_data_receiver_early_hangup)
 {
 	/* Stop sending data after some packets */
-	test_data_receiver(1000, 0, 3, 0, 0, false, false, false);
-	test_data_receiver(1000, 0, 11, 0, 0, false, false, false);
+	for (int i = 0; i <= CONFIG_EPACKET_BUFFERS_RX; i++) {
+		test_data_receiver(1000, 0, 3, 0, 0, false, false, false);
+		test_data_receiver(1000, 0, 11, 0, 0, false, false, false);
+	}
 }
 
 ZTEST(rpc_server, test_data_receiver_invalid_request_id)
 {
 	/* Bad request ID after some packets */
-	test_data_receiver(1000, 0, 0, 4, 0, false, false, false);
-	test_data_receiver(1000, 0, 0, 10, 0, false, false, false);
+	for (int i = 0; i <= CONFIG_EPACKET_BUFFERS_RX; i++) {
+		test_data_receiver(1000, 0, 0, 4, 0, false, false, false);
+		test_data_receiver(1000, 0, 0, 10, 0, false, false, false);
+	}
 }
 
 ZTEST(rpc_server, test_data_receiver_data_ack)
@@ -550,21 +556,27 @@ ZTEST(rpc_server, test_data_receiver_data_ack)
 ZTEST(rpc_server, test_data_receiver_everything_wrong)
 {
 	/* Everything going wrong */
-	test_data_receiver(1000, 3, 0, 7, 1, false, false, false);
-	test_data_receiver(1000, 3, 0, 7, 2, false, false, false);
+	for (int i = 0; i <= CONFIG_EPACKET_BUFFERS_RX; i++) {
+		test_data_receiver(1000, 3, 0, 7, 1, false, false, false);
+		test_data_receiver(1000, 3, 0, 7, 2, false, false, false);
+	}
 }
 
 ZTEST(rpc_server, test_data_receiver_push_too_much_data)
 {
 	/* Send too much data */
-	test_data_receiver(1000, 0, 0, 0, 0, true, false, false);
+	for (int i = 0; i <= CONFIG_EPACKET_BUFFERS_RX; i++) {
+		test_data_receiver(1000, 0, 0, 0, 0, true, false, false);
+	}
 }
 
 ZTEST(rpc_server, test_data_receiver_push_unaligned_data)
 {
 	/* Send unaligned data, both accepted and not accepted */
-	test_data_receiver(1000, 0, 0, 0, 0, false, true, false);
-	test_data_receiver(1000, 0, 0, 0, 0, false, true, true);
+	for (int i = 0; i <= CONFIG_EPACKET_BUFFERS_RX; i++) {
+		test_data_receiver(1000, 0, 0, 0, 0, false, true, false);
+		test_data_receiver(1000, 0, 0, 0, 0, false, true, true);
+	}
 }
 
 ZTEST(rpc_server, test_data_ack_fn)
