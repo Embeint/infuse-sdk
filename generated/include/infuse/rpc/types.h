@@ -1042,6 +1042,8 @@ struct rpc_data_sender_response {
 struct rpc_data_receiver_request {
 	struct infuse_rpc_req_header header;
 	struct infuse_rpc_req_data_header data_header;
+	/** Allow unaligned input data */
+	uint8_t unaligned_input;
 } __packed;
 
 struct rpc_data_receiver_response {

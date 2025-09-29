@@ -121,6 +121,12 @@ config KV_STORE_KEY_LTE_NETWORKING_MODES
 	help
 	  Enabled LTE networking modes and preferences
 
+config KV_STORE_KEY_LTE_SIM_IMSI
+	bool "Enable KV key LTE_SIM_IMSI"
+	default y if NRF_MODEM_LIB
+	help
+	  'International Modem Subscriber Identity' as returned by AT+CIMI
+
 config KV_STORE_KEY_BLUETOOTH_PEER
 	bool "Enable KV key BLUETOOTH_PEER"
 	help
