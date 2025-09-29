@@ -78,6 +78,23 @@ struct net_buf *rpc_server_pull_data(uint32_t request_id, uint32_t expected_offs
 				     k_timeout_t timeout);
 
 /**
+ * @brief Attempt to pull unaligned @ref INFUSE_RPC_DATA packet from queue
+ *
+ * Unlike @ref rpc_server_pull_data, the offsets are not expected to be aligned to word
+ * boundaries.
+ *
+ * @param request_id RPC request ID
+ * @param expected_offset Expected data offset
+ * @param err Error code when function returned NULL
+ * @param timeout Duration to wait for packet
+ *
+ * @retval buf @ref INFUSE_RPC_DATA packet on success
+ * @retval NULL on error
+ */
+struct net_buf *rpc_server_pull_data_unaligned(uint32_t request_id, uint32_t expected_offset,
+					       int *err, k_timeout_t timeout);
+
+/**
  * @brief Send initial @ref INFUSE_RPC_DATA_ACK to signify we are ready for data
  *
  * @param interface ePacket interface
