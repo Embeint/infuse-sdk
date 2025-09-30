@@ -1,0 +1,203 @@
+/*
+ * Copyright (c) 2025 Embeint Inc
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/* This file is common to the secure and non-secure domain */
+
+#include "kudu-pinctrl.dtsi"
+#include <zephyr/dt-bindings/battery/battery.h>
+#include <zephyr/dt-bindings/sensor/lps22hh.h>
+
+/ {
+	chosen {
+		zephyr,console = &rtt0;
+		zephyr,flash-controller = &rram_controller;
+		zephyr,flash = &cpuapp_rram;
+	};
+
+	rtt0: rtt_chan0 {
+		compatible = "segger,rtt-uart";
+		status = "okay";
+	};
+
+	leds {
+		compatible = "gpio-leds";
+		led0: led_0 {
+			gpios = <&gpio2 9 GPIO_ACTIVE_HIGH>;
+			label = "Red LED";
+		};
+		led1: led_1 {
+			gpios = <&gpio2 7 GPIO_ACTIVE_HIGH>;
+			label = "Green LED";
+		};
+		led2: led_2 {
+			gpios = <&gpio2 8 GPIO_ACTIVE_HIGH>;
+			label = "Blue LED";
+		};
+	};
+
+	fuel_gauge: fuel_gauge {
+		compatible = "zephyr,fuel-gauge-composite";
+		source-primary = <&bq25798>;
+		device-chemistry = "lithium-ion-polymer";
+		ocv-capacity-table-0 = <BATTERY_OCV_CURVE_LITHIUM_ION_POLYMER_DEFAULT>;
+		charge-full-design-microamp-hours = <13400000>;
+		fuel-gauge-channels;
+	};
+
+	aliases {
+		led0 = &led0;
+		led1 = &led1;
+		led2 = &led2;
+		watchdog0 = &wdt31;
+		environmental0 = &sht4x;
+		imu0 = &lsm6dsv;
+	};
+};
+
+&cpuapp_sram {
+	status = "okay";
+};
+
+&lfxo {
+	load-capacitors = "internal";
+	load-capacitance-femtofarad = <9000>;
+};
+
+&hfxo {
+	load-capacitors = "internal";
+	load-capacitance-femtofarad = <9000>;
+};
+
+&regulators {
+	status = "okay";
+};
+
+&vregmain {
+	status = "okay";
+	regulator-initial-mode = <NRF5X_REG_MODE_DCDC>;
+};
+
+&grtc {
+	owned-channels = <0 1 2 3 4 5 6 7 8 9 10 11>;
+	/* Channels 7-11 reserved for Zero Latency IRQs, 3-4 for FLPR */
+	child-owned-channels = <3 4 7 8 9 10 11>;
+	status = "okay";
+};
+
+&gpio0 {
+	status = "okay";
+};
+
+&gpio1 {
+	status = "okay";
+};
+
+&gpio2 {
+	status = "okay";
+};
+
+&gpiote20 {
+	status = "okay";
+};
+
+&gpiote30 {
+	status = "okay";
+};
+
+&radio {
+	status = "okay";
+};
+
+&ieee802154 {
+	status = "okay";
+};
+
+&temp {
+	status = "okay";
+};
+
+&clock {
+	status = "okay";
+};
+
+&spi20 {
+	status = "okay";
+	cs-gpios = <&gpio1 7 (GPIO_ACTIVE_LOW)>,
+		   <&gpio1 13 (GPIO_ACTIVE_LOW)>,
+		   <&gpio1 5 (GPIO_ACTIVE_LOW)>;
+	pinctrl-0 = <&spi20_default>;
+	pinctrl-1 = <&spi20_sleep>;
+	pinctrl-names = "default", "sleep";
+
+	lsm6dsv: lsm6dsv@0 {
+		compatible = "st,lsm6dsv16x";
+		status = "okay";
+		reg = <0>;
+		spi-max-frequency = <8000000>;
+		int1-gpios = <&gpio1 6 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>;
+	};
+
+	w25q128jw: w25q128jwpim@1 {
+		compatible = "jedec,spi-nor";
+		status = "okay";
+		reg = <1>;
+		spi-max-frequency = <8000000>;
+		size = <134217728>;
+		has-dpd;
+		t-enter-dpd = <3000>;
+		t-exit-dpd = <20000>;
+		jedec-id = [ef 40 18];
+	};
+
+	sdhc0: sdhc@2 {
+		compatible = "zephyr,sdhc-spi-slot";
+		status = "okay";
+		reg = <2>;
+		spi-max-frequency = <8000000>;
+		mmc: mmc {
+			compatible = "zephyr,sdmmc-disk";
+			status = "okay";
+			disk-name = "SD";
+		};
+	};
+};
+
+&i2c21 {
+	status = "okay";
+	pinctrl-0 = <&i2c21_default>;
+	pinctrl-1 = <&i2c21_sleep>;
+	pinctrl-names = "default", "sleep";
+
+	sht4x: sht4x@44 {
+		compatible = "sensirion,sht4x";
+		status = "okay";
+		reg = <0x44>;
+		repeatability = <2>;
+	};
+
+	lps22hh: lps22hh@5d {
+		compatible = "st,lps22hh";
+		status = "okay";
+		reg = <0x5d>;
+		odr = <LPS22HH_DT_ODR_POWER_DOWN>;
+	};
+
+	bq25798: bq25798@6b {
+		compatible = "ti,bq25798";
+		status = "okay";
+		reg = <0x6b>;
+		en-gpios = <&gpio2 10 GPIO_ACTIVE_LOW>;
+		int-gpios = <&gpio0 3 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
+		ts-rt1 = <5240>;
+		ts-rt2 = <30310>;
+		mppt-ratio = <81>;
+		vac-ovp = <26>;
+		input-current-limit = <999>;
+		v-in-dpm = <3000>;
+		acdrv1-en;
+		acdrv2-en;
+	};
+};

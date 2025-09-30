@@ -1,0 +1,6 @@
+board:
+  name: kudu
+  full_name: Kudu CAT1 LTE Gateway
+  vendor: embeint
+  socs:
+  - name: nrf54l15

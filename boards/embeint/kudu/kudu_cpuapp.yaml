@@ -1,0 +1,22 @@
+# Copyright (c) 2024 Nordic Semiconductor ASA
+# SPDX-License-Identifier: Apache-2.0
+
+identifier: kudu/nrf54l15/cpuapp
+name: Kudu CAT1 LTE Gateway
+type: mcu
+arch: arm
+toolchain:
+  - gnuarmemb
+  - zephyr
+sysbuild: true
+ram: 188
+flash: 1428
+supported:
+  - adc
+  - ble
+  - counter
+  - gpio
+  - i2c
+  - retained_mem
+  - spi
+  - watchdog

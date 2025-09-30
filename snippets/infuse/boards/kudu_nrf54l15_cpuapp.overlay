@@ -1,0 +1,54 @@
+#include <common/nordic/infuse_nrf54l15_cpuapp.dtsi>
+#include <common/infuse_bluetooth.dtsi>
+
+/ {
+	chosen {
+		infuse,reboot-state = &retention0;
+		infuse,kv-partition = &storage_partition;
+	};
+
+	epacket_serial: epacket_serial {
+		compatible = "embeint,epacket-serial";
+		serial = <&rtt0>;
+	};
+
+	data_logger_serial: data_logger_serial {
+		compatible = "embeint,data-logger-epacket", "embeint,data-logger";
+		epacket = <&epacket_serial>;
+
+		tdf_logger_serial: tdf_logger_serial {
+			compatible = "embeint,tdf-data-logger";
+		};
+	};
+
+	data_logger_flash: data_logger_flash {
+		compatible = "embeint,data-logger-flash-map", "embeint,data-logger";
+		partition = <&data_logger_partition>;
+
+		tdf_logger_flash: tdf_logger_flash {
+			compatible = "embeint,tdf-data-logger";
+		};
+	};
+};
+
+&spi20 {
+	zephyr,pm-device-runtime-auto;
+};
+
+&w25q128jw {
+	zephyr,pm-device-runtime-auto;
+	partitions {
+		compatible = "fixed-partitions";
+		#address-cells = <1>;
+		#size-cells = <1>;
+
+		file_partition: partition@0 {
+			label = "files";
+			reg = <0x00000000 0x00080000>;
+		};
+		data_logger_partition: partition@80000 {
+			label = "data_logger";
+			reg = <0x00080000 0x00F80000>;
+		};
+	};
+};
