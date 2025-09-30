@@ -42,6 +42,7 @@ Supported Infuse Boards
  * `Nordic Thingy:91 X`_
  * :ref:`board_auroch` (nRF9151 + nRF54L15)
  * :ref:`board_tauro` (nRF9151 + nRF52840)
+ * :ref:`board_kudu` (nRF54L15)
 
 Simulation Targets
 ******************

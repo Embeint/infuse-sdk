@@ -5,6 +5,10 @@ boards:
     append:
       EXTRA_DTC_OVERLAY_FILE: boards/auroch_nrf9151_ns.overlay
       EXTRA_CONF_FILE: infuse_snippet.conf
+  kudu/nrf54l15/cpuapp:
+    append:
+      EXTRA_DTC_OVERLAY_FILE: boards/kudu_nrf54l15_cpuapp.overlay
+      EXTRA_CONF_FILE: infuse_snippet.conf
   mps2/an385:
     append:
       EXTRA_DTC_OVERLAY_FILE: boards/mps2_an385.overlay
