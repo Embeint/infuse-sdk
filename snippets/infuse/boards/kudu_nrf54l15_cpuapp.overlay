@@ -36,6 +36,19 @@
 		};
 	};
 
+	epacket_udp: epacket_udp {
+		compatible = "embeint,epacket-udp";
+	};
+
+	data_logger_udp: data_logger_udp {
+		compatible = "embeint,data-logger-epacket", "embeint,data-logger";
+		epacket = <&epacket_udp>;
+
+		tdf_logger_udp: tdf_logger_udp {
+			compatible = "embeint,tdf-data-logger";
+		};
+	};
+
 	epacket_serial: epacket_serial {
 		compatible = "embeint,epacket-serial";
 		serial = <&rtt0>;
@@ -61,6 +74,10 @@
 };
 
 &spi20 {
+	zephyr,pm-device-runtime-auto;
+};
+
+&telit_le910c1 {
 	zephyr,pm-device-runtime-auto;
 };
 

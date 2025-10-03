@@ -20,3 +20,4 @@ supported:
   - retained_mem
   - spi
   - watchdog
+  - netif:modem
