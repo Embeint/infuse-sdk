@@ -1,10 +1,39 @@
 #include <common/nordic/infuse_nrf54l15_cpuapp.dtsi>
 #include <common/infuse_bluetooth.dtsi>
 
+/* Recover the FLPR core RAM for the main application */
+&cpuapp_sram {
+	reg = <0x20000000 (DT_SIZE_K(256) - 0x100)>;
+	ranges = <0x0 0x20000000 (DT_SIZE_K(256) - 0x100)>;
+};
+/delete-node/ &retained_mem_region;
+
 / {
 	chosen {
 		infuse,reboot-state = &retention0;
 		infuse,kv-partition = &storage_partition;
+	};
+
+	/* Move the retained memory region to the new end of application RAM */
+	retained_mem_region: memory@2003FF00 {
+		compatible = "zephyr,memory-region", "mmio-sram";
+		reg = <0x2003FF00 0x100>;
+		zephyr,memory-region = "RetainedMem";
+		status = "okay";
+
+		retainedmem {
+			compatible = "zephyr,retained-ram";
+			status = "okay";
+			#address-cells = <1>;
+			#size-cells = <1>;
+
+			retention0: retention@0 {
+				compatible = "zephyr,retention";
+				status = "okay";
+				reg = <0x0 0x100>;
+				prefix = [DE 03];
+			};
+		};
 	};
 
 	epacket_serial: epacket_serial {
