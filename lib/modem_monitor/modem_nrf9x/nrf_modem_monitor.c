@@ -137,7 +137,7 @@ static void network_info_update(struct k_work *work)
 		KV_STRUCT_KV_STRING_VAR(25) sim_uicc;
 
 		/* SIM IMSI */
-		rc = nrf_modem_at_scanf("AT+CIMI", "%" SCNd64 "\n", &sim_imsi.imsi);
+		rc = nrf_modem_at_scanf("AT+CIMI", "%" SCNu64 "\n", &sim_imsi.imsi);
 		if (rc == 1) {
 			if (KV_STORE_WRITE(KV_KEY_LTE_SIM_IMSI, &sim_imsi) > 0) {
 				/* Print value when first saved to KV store */
@@ -508,7 +508,7 @@ static void infuse_modem_init(int ret, void *ctx)
 	modem_info.value_num = strlen(modem_info.value) + 1;
 	(void)kv_store_write(KV_KEY_LTE_MODEM_ESN, &modem_info, 1 + modem_info.value_num);
 	/* Modem IMEI */
-	nrf_modem_at_scanf("AT+CGSN=1", "+CGSN: \"%" SCNd64 "\"\n", &modem_imei.imei);
+	nrf_modem_at_scanf("AT+CGSN=1", "+CGSN: \"%" SCNu64 "\"\n", &modem_imei.imei);
 	(void)KV_STORE_WRITE(KV_KEY_LTE_MODEM_IMEI, &modem_imei);
 	/* Modem info has been stored */
 	modem_info_stored = true;
