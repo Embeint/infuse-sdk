@@ -7,6 +7,26 @@ if NETWORKING
 configdefault WIFI
 	default y if $(dt_chosen_enabled,$(DT_CHOSEN_Z_WIFI))
 
+# LTE Modem
+if $(dt_alias_enabled,modem)
+configdefault MODEM
+	default y
+configdefault MODEM_CELLULAR
+	default y
+configdefault MODEM_MODULES
+	default y
+configdefault MODEM_DEDICATED_WORKQUEUE
+	default y
+configdefault MODEM_AT_USER_PIPE
+	default y
+configdefault NET_DRIVERS
+	default y
+configdefault NET_L2_PPP
+	default y
+configdefault NET_L2_PPP_OPTION_DNS_USE
+	default y
+endif # $(dt_alias_enabled,modem)
+
 if WIFI
 
 # Reduce the default priority to prevent blocking other threads
