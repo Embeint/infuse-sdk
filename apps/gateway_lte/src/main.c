@@ -35,6 +35,8 @@
 #include <infuse/task_runner/runner.h>
 #include <infuse/task_runner/tasks/infuse_tasks.h>
 
+#include <zephyr/pm/device_runtime.h>
+
 LOG_MODULE_REGISTER(app, LOG_LEVEL_INF);
 
 static void custom_tdf_logger(uint8_t tdf_loggers, uint64_t timestamp);
@@ -127,6 +129,7 @@ TASK_RUNNER_TASKS_DEFINE(app_tasks, app_tasks_data, (TDF_LOGGER_TASK, custom_tdf
 			 GNSS_TASK_DEFINE);
 
 GATEWAY_HANDLER_DEFINE(udp_backhaul_handler, DEVICE_DT_GET(DT_NODELABEL(epacket_udp)));
+GATEWAY_HANDLER_DEFINE(serial_backhaul_handler, DEVICE_DT_GET(DT_NODELABEL(epacket_serial)));
 
 #if DT_NODE_EXISTS(DT_ALIAS(led0))
 static const struct gpio_dt_spec led0 = GPIO_DT_SPEC_GET(DT_ALIAS(led0), gpios);
@@ -260,6 +263,17 @@ int main(void)
 	/* Always listening on Bluetooth advertising and UDP */
 	epacket_receive(bt_adv, K_FOREVER);
 	epacket_receive(udp, K_FOREVER);
+
+	const struct device *serial = DEVICE_DT_GET(DT_NODELABEL(epacket_serial));
+
+	epacket_set_receive_handler(serial, serial_backhaul_handler);
+	epacket_receive(serial, K_FOREVER);
+
+#ifdef CONFIG_MODEM_CELLULAR
+	const struct device *modem = DEVICE_DT_GET(DT_ALIAS(modem));
+
+	pm_device_runtime_get(modem);
+#endif /* CONFIG_MODEM_CELLULAR */
 
 	/* Turn on the interface */
 	conn_mgr_all_if_up(true);
