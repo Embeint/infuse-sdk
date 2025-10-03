@@ -1,3 +1,6 @@
 if BOARD_KUDU_NRF54L15_CPUAPP
 
+configdefault NETWORKING
+    default y if !MCUBOOT
+
 endif # BOARD_KUDU_NRF54L15_CPUAPP
