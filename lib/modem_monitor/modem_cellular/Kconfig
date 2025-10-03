@@ -1,0 +1,9 @@
+# Cellular Modem monitor configuration
+
+config INFUSE_CELLULAR_MODEM_MONITOR
+	bool "Infuse-IoT integration with Cellular Modems"
+	depends on KV_STORE
+	depends on MODEM_CELLULAR
+	select INFUSE_MODEM_MONITOR
+	select INFUSE_WORKQ
+	default y

@@ -67,4 +67,5 @@ endchoice
 
 endif # INFUSE_MODEM_MONITOR
 
+rsource "modem_cellular/Kconfig"
 rsource "modem_nrf9x/Kconfig"
