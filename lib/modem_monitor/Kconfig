@@ -49,6 +49,7 @@ config INFUSE_MODEM_MONITOR_DEFAULT_PDP_APN_SET
 choice INFUSE_MODEM_MONITOR_DEFAULT_PDP_FAMILY
 	prompt "Default protocol family to use for PDP context 0"
 	depends on INFUSE_MODEM_MONITOR_DEFAULT_PDP_APN_SET
+	default INFUSE_MODEM_MONITOR_DEFAULT_PDP_FAMILY_IPV4 if MODEM_CELLULAR
 	default INFUSE_MODEM_MONITOR_DEFAULT_PDP_FAMILY_IPV4V6
 
 config INFUSE_MODEM_MONITOR_DEFAULT_PDP_FAMILY_IPV4
@@ -67,4 +68,5 @@ endchoice
 
 endif # INFUSE_MODEM_MONITOR
 
+rsource "modem_cellular/Kconfig"
 rsource "modem_nrf9x/Kconfig"
