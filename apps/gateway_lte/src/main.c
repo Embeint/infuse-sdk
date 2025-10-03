@@ -82,6 +82,7 @@ static const struct task_schedule schedules[] = {
 		.periodicity.fixed.period_s = 30,
 	},
 #endif /* DT_NODE_EXISTS(DT_ALIAS(environmental0)) */
+#if DT_NODE_EXISTS(DT_ALIAS(gnss))
 	{
 		.task_id = TASK_ID_GNSS,
 		.validity = TASK_VALID_ALWAYS,
@@ -105,6 +106,7 @@ static const struct task_schedule schedules[] = {
 				.position_dop = 100,
 			},
 	},
+#endif /* DT_NODE_EXISTS(DT_ALIAS(gnss)) */
 };
 
 #if DT_NODE_EXISTS(DT_ALIAS(environmental0))
@@ -112,12 +114,17 @@ static const struct task_schedule schedules[] = {
 #else
 #define ENV_TASK_DEFINE
 #endif
+#if DT_NODE_EXISTS(DT_ALIAS(gnss))
+#define GNSS_TASK_DEFINE (GNSS_TASK, DEVICE_DT_GET(DT_ALIAS(gnss)))
+#else
+#define GNSS_TASK_DEFINE
+#endif
 
 TASK_SCHEDULE_STATES_DEFINE(states, schedules);
 TASK_RUNNER_TASKS_DEFINE(app_tasks, app_tasks_data, (TDF_LOGGER_TASK, custom_tdf_logger),
 			 (TDF_LOGGER_ALT1_TASK, NULL),
 			 (BATTERY_TASK, DEVICE_DT_GET(DT_ALIAS(fuel_gauge0))), ENV_TASK_DEFINE,
-			 (GNSS_TASK, DEVICE_DT_GET(DT_ALIAS(gnss))));
+			 GNSS_TASK_DEFINE);
 
 GATEWAY_HANDLER_DEFINE(udp_backhaul_handler, DEVICE_DT_GET(DT_NODELABEL(epacket_udp)));
 
