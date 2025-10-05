@@ -54,6 +54,7 @@
 		watchdog0 = &wdt31;
 		fuel-gauge0 = &fuel_gauge;
 		environmental0 = &sht4x;
+		environmental1 = &lps22hh;
 		imu0 = &lsm6dsv;
 		modem = &telit_le910c1;
 	};

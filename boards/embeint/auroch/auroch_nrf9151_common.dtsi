@@ -57,6 +57,7 @@
 		gnss = &max_m10;
 		watchdog0 = &wdt0;
 		environmental0 = &sht4x;
+		environmental1 = &lps22hh;
 	};
 };
 
