@@ -15,6 +15,7 @@
 #include <zephyr/net/net_if.h>
 #include <zephyr/net/net_mgmt.h>
 #include <zephyr/net/conn_mgr_connectivity.h>
+#include <zephyr/pm/device_runtime.h>
 
 #include <infuse/auto/bluetooth_conn_log.h>
 #include <infuse/auto/time_sync_log.h>
@@ -260,6 +261,11 @@ int main(void)
 	/* Always listening on Bluetooth advertising and UDP */
 	epacket_receive(bt_adv, K_FOREVER);
 	epacket_receive(udp, K_FOREVER);
+
+#ifdef CONFIG_MODEM_CELLULAR
+	/* For now the Cellular Modem abstraction is not linked to a connection manager */
+	pm_device_runtime_get(DEVICE_DT_GET(DT_ALIAS(modem)));
+#endif /* CONFIG_MODEM_CELLULAR */
 
 	/* Turn on the interface */
 	conn_mgr_all_if_up(true);
