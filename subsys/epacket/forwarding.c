@@ -109,7 +109,7 @@ static int ensure_bt_connection(union epacket_interface_address *address, uint8_
 		.inactivity_timeout = idle_timeout,
 		.absolute_timeout = absolute_timeout,
 		.conn_timeout_ms = conn_timeout_ms,
-		.preferred_phy = BT_GAP_LE_PHY_NONE,
+		.preferred_phy = BT_GAP_LE_PHY_2M,
 		.subscribe_commands = true,
 		.subscribe_data = flags & EPACKET_FORWARD_AUTO_CONN_SUB_DATA,
 		.subscribe_logging = false,
