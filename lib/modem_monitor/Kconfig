@@ -33,9 +33,15 @@ config INFUSE_MODEM_MONITOR_CONNECTIVITY_TIMEOUT_SEC
 	  being assigned to a PDP context other than 0, which the network stack
 	  integration fails to handle.
 
+# Disable the hardcoded APN from Zephyr by default
+configdefault MODEM_CELLULAR_APN
+	default ""
+
 config INFUSE_MODEM_MONITOR_DEFAULT_PDP_APN
 	string "Default APN to use for PDP context 0"
 	depends on KV_STORE_KEY_LTE_PDP_CONFIG
+	# internet is unlikely to be correct, but nothing is guaranteed to be incorrect
+	default "internet" if MODEM_CELLULAR
 	default ""
 	help
 	  The default APN to use for PDP context 0, if it has not been set to
