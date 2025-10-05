@@ -6,13 +6,6 @@ config LTE_GATEWAY_DEFAULT_MAXIMUM_UPLINK_THROUGHPUT_KBPS
 	default 175 if SOC_SERIES_NRF91X
 	default 0
 
-# Shuffle memory to prioritise TX buffers
-configdefault NRF_MODEM_LIB_SHMEM_TX_SIZE
-	default 14336
-
-configdefault NRF_MODEM_LIB_SHMEM_RX_SIZE
-	default 8192
-
 #
 # Defaults for native nRF91 gateways
 #
@@ -26,5 +19,30 @@ configdefault LTE_PSM_REQ
 	default n
 configdefault INFUSE_NRF_MODEM_DATA_PROFILE_DEFAULT
 	default 4
+# Shuffle memory to prioritise TX buffers
+configdefault NRF_MODEM_LIB_SHMEM_TX_SIZE
+	default 14336
+configdefault NRF_MODEM_LIB_SHMEM_RX_SIZE
+	default 8192
+
+#
+# Defaults for offloaded modem_cellular gateways
+#
+configdefault BT_CTLR_SDC_PERIPHERAL_COUNT
+	default 2
+configdefault MODEM_CMUX_MTU
+	default 1500
+configdefault MODEM_CELLULAR_UART_BUFFER_SIZES
+	default 1500
+configdefault MODEM_CELLULAR_CHAT_BUFFER_SIZE
+	default 256
+configdefault MODEM_CELLULAR_USER_PIPE_BUFFER_SIZES
+	default 256
+# Huge impact on RAM consumption of the application
+# Limit it to 768, i.e. 2 buffers can contain our maximum packet size
+configdefault NET_BUF_DATA_SIZE
+	default 768 if !NRF_MODEM_LIB
+configdefault MODEM_PPP_NET_BUF_FRAG_SIZE
+	default 512
 
 source "Kconfig.zephyr"
