@@ -81,6 +81,8 @@ K_THREAD_DEFINE(env_thread, 2048, env_validator, NULL, NULL, NULL, 5, 0, 0);
 static int pwr_validator(void *a, void *b, void *c)
 {
 	atomic_inc(&validators_registered);
+	/* Give the fuel gauge a second to settle to steady state */
+	k_sleep(K_MSEC(1000));
 	if (infuse_validation_pwr(DEVICE_DT_GET(DT_ALIAS(fuel_gauge0)),
 				  VALIDATION_PWR_BATTERY_VOLTAGE | VALIDATION_PWR_BATTERY_CURRENT |
 					  VALIDATION_PWR_BATTERY_SOC |
