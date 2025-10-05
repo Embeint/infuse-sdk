@@ -19,6 +19,7 @@ manifest:
           - cmsis-dsp
           - cmsis_6
           - hal_nordic
+          - hal_st
           - hal_stm32
           - hostap
           - libmetal
