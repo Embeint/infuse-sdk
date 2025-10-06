@@ -93,5 +93,7 @@
 
 			#include "spi.dtsi"
 		};
+
+		#include "other.dtsi"
 	};
 };
