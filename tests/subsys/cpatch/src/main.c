@@ -125,8 +125,11 @@ static void test_output_validate(const char *output)
 
 static int progress_cb_cnt;
 
-static void cpatch_progress_cb(uint32_t progress_offset)
+static void cpatch_progress_cb(uint32_t progress, uint32_t total)
 {
+	ARG_UNUSED(progress);
+	ARG_UNUSED(total);
+
 	progress_cb_cnt += 1;
 }
 

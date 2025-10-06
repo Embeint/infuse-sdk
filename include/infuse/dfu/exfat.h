@@ -20,6 +20,7 @@
 #include <zephyr/storage/flash_map.h>
 
 #include <infuse/version.h>
+#include <infuse/util/progress_cb.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -29,14 +30,6 @@ extern "C" {
  * @defgroup dfu_exfat_apis DFU from SD card APIs
  * @{
  */
-
-/**
- * @brief Progress callback for DFU copy
- *
- * @param copied Number of bytes that have been copied so far
- * @param total Total number of bytes to be copied
- */
-typedef void (*dfu_exfat_progress_cb_t)(size_t copied, size_t total);
 
 /**
  * @brief Check whether a valid DFU file exists on the filesystem
@@ -71,13 +64,15 @@ int dfu_exfat_app_upgrade_exists(const struct device *dev, struct infuse_version
  * @param dev exFAT data logger device
  * @param upgrade New version from @ref dfu_exfat_app_upgrade_exists
  * @param flash_area_id Output flash area ID
- * @param progress_cb Optional progress callback
+ * @param erase_progress_cb Optional erase progress callback
+ * @param write_progress_cb Optional write progress callback
  *
  * @retval 0 On success
  * @retval -errno On error
  */
 int dfu_exfat_app_upgrade_copy(const struct device *dev, struct infuse_version upgrade,
-			       uint8_t flash_area_id, dfu_exfat_progress_cb_t progress_cb);
+			       uint8_t flash_area_id, infuse_progress_cb_t erase_progress_cb,
+			       infuse_progress_cb_t write_progress_cb);
 
 /**
  * @}

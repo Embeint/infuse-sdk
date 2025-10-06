@@ -320,7 +320,7 @@ int cpatch_patch_start(const struct flash_area *input, const struct flash_area *
 
 int cpatch_patch_apply(const struct flash_area *input, const struct flash_area *patch,
 		       struct stream_flash_ctx *output, struct cpatch_header *header,
-		       cpatch_progress_cb_t progress_cb)
+		       infuse_progress_cb_t progress_cb)
 {
 	struct patch_state state = {0};
 	uint32_t this_callback, last_callback = 0;
@@ -346,7 +346,7 @@ int cpatch_patch_apply(const struct flash_area *input, const struct flash_area *
 		this_callback = stream_flash_bytes_written(output) & CALLBACK_CHUNK_MASK;
 		if (progress_cb && (this_callback != last_callback)) {
 			last_callback = this_callback;
-			progress_cb(last_callback);
+			progress_cb(last_callback, header->output_file.length);
 		}
 	}
 

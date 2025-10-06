@@ -19,7 +19,7 @@
 
 /* Implementation taken from zephyr_img_mgmt.c */
 int infuse_dfu_image_erase(const struct flash_area *fa, size_t image_len,
-			   void (*progress_callback)(uint32_t offset), bool mcuboot_trailer)
+			   infuse_progress_cb_t progress_cb, bool mcuboot_trailer)
 {
 	const struct device *dev = flash_area_get_device(fa);
 	struct flash_pages_info page;
@@ -49,7 +49,7 @@ int infuse_dfu_image_erase(const struct flash_area *fa, size_t image_len,
 	erase_size = page.start_offset + page.size - fa->fa_off;
 
 	/* Perform the erase */
-	max_chunk = progress_callback ? CONFIG_INFUSE_DFU_HELPERS_ERASE_CHUNK_SIZE : erase_size;
+	max_chunk = progress_cb ? CONFIG_INFUSE_DFU_HELPERS_ERASE_CHUNK_SIZE : erase_size;
 	remaining = erase_size;
 	off = 0;
 	while (remaining) {
@@ -62,8 +62,8 @@ int infuse_dfu_image_erase(const struct flash_area *fa, size_t image_len,
 		off += chunk_size;
 		remaining -= chunk_size;
 		/* Run provided callback */
-		if (progress_callback) {
-			progress_callback(off);
+		if (progress_cb) {
+			progress_cb(off, erase_size);
 		}
 	}
 

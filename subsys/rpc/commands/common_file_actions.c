@@ -43,8 +43,11 @@ LOG_MODULE_DECLARE(rpc_server);
 
 #if defined(SUPPORT_APP_IMG) || defined(SUPPORT_APP_CPATCH) || defined(SUPPORT_FILE_COPY)
 
-static void cpatch_watchdog(uint32_t progress_offset)
+static void cpatch_watchdog(uint32_t progress, uint32_t total)
 {
+	ARG_UNUSED(progress);
+	ARG_UNUSED(total);
+
 	rpc_server_watchdog_feed();
 }
 

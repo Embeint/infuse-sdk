@@ -46,7 +46,18 @@ static void flash_area_validate(uint8_t flash_area_id, uint8_t *expected, size_t
 	flash_area_close(fa);
 }
 
-static void progress_cb_validate(size_t written, size_t total)
+static void erase_progress_cb_validate(uint32_t erased, uint32_t total)
+{
+	static bool called;
+
+	/* Only called once */
+	zassert_false(called);
+	zassert_equal(4096, erased);
+	zassert_equal(4096, total);
+	called = true;
+}
+
+static void write_progress_cb_validate(uint32_t written, uint32_t total)
 {
 	static size_t tracked_written;
 
@@ -73,8 +84,8 @@ ZTEST(dfu_exfat, test_dfu_image_find)
 
 	/* Run function without any folders */
 	zassert_equal(0, dfu_exfat_app_upgrade_exists(logger, &upgrade_version));
-	zassert_equal(-ENOENT,
-		      dfu_exfat_app_upgrade_copy(logger, upgrade_version, output_partition, NULL));
+	zassert_equal(-ENOENT, dfu_exfat_app_upgrade_copy(logger, upgrade_version, output_partition,
+							  NULL, NULL));
 
 	/* Create app image folder */
 	disk = logger_exfat_filesystem_claim(logger, NULL, NULL, K_NO_WAIT);
@@ -86,8 +97,8 @@ ZTEST(dfu_exfat, test_dfu_image_find)
 	logger_exfat_filesystem_release(logger);
 
 	zassert_equal(0, dfu_exfat_app_upgrade_exists(logger, &upgrade_version));
-	zassert_equal(-ENOENT,
-		      dfu_exfat_app_upgrade_copy(logger, upgrade_version, output_partition, NULL));
+	zassert_equal(-ENOENT, dfu_exfat_app_upgrade_copy(logger, upgrade_version, output_partition,
+							  NULL, NULL));
 
 	/* Create upgrade file with smaller version number */
 	disk = logger_exfat_filesystem_claim(logger, NULL, NULL, K_NO_WAIT);
@@ -99,8 +110,8 @@ ZTEST(dfu_exfat, test_dfu_image_find)
 	logger_exfat_filesystem_release(logger);
 
 	zassert_equal(0, dfu_exfat_app_upgrade_exists(logger, &upgrade_version));
-	zassert_equal(-ENOENT,
-		      dfu_exfat_app_upgrade_copy(logger, upgrade_version, output_partition, NULL));
+	zassert_equal(-ENOENT, dfu_exfat_app_upgrade_copy(logger, upgrade_version, output_partition,
+							  NULL, NULL));
 
 	/* Create upgrade file with same version number */
 	disk = logger_exfat_filesystem_claim(logger, NULL, NULL, K_NO_WAIT);
@@ -112,8 +123,8 @@ ZTEST(dfu_exfat, test_dfu_image_find)
 	logger_exfat_filesystem_release(logger);
 
 	zassert_equal(0, dfu_exfat_app_upgrade_exists(logger, &upgrade_version));
-	zassert_equal(-ENOENT,
-		      dfu_exfat_app_upgrade_copy(logger, upgrade_version, output_partition, NULL));
+	zassert_equal(-ENOENT, dfu_exfat_app_upgrade_copy(logger, upgrade_version, output_partition,
+							  NULL, NULL));
 
 	/* Create upgrade file with larger version number */
 	disk = logger_exfat_filesystem_claim(logger, NULL, NULL, K_NO_WAIT);
@@ -128,8 +139,8 @@ ZTEST(dfu_exfat, test_dfu_image_find)
 	zassert_equal(2, upgrade_version.major);
 	zassert_equal(3, upgrade_version.minor);
 	zassert_equal(1, upgrade_version.revision);
-	zassert_equal(0,
-		      dfu_exfat_app_upgrade_copy(logger, upgrade_version, output_partition, NULL));
+	zassert_equal(0, dfu_exfat_app_upgrade_copy(logger, upgrade_version, output_partition, NULL,
+						    NULL));
 	flash_area_validate(output_partition, input_buffer, 1024);
 
 	/* Multiple larger version numbers */
@@ -146,7 +157,8 @@ ZTEST(dfu_exfat, test_dfu_image_find)
 	zassert_equal(1, upgrade_version.minor);
 	zassert_equal(0, upgrade_version.revision);
 	zassert_equal(0, dfu_exfat_app_upgrade_copy(logger, upgrade_version, output_partition,
-						    progress_cb_validate));
+						    erase_progress_cb_validate,
+						    write_progress_cb_validate));
 	flash_area_validate(output_partition, input_buffer, 1569);
 }
 

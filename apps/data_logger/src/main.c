@@ -174,7 +174,7 @@ static void custom_tdf_logger(uint8_t tdf_loggers, uint64_t timestamp)
 }
 
 #ifdef CONFIG_INFUSE_DFU_EXFAT
-static void dfu_progress_cb(size_t copied, size_t total)
+static void dfu_progress_cb(uint32_t copied, uint32_t total)
 {
 	ARG_UNUSED(copied);
 	ARG_UNUSED(total);
@@ -193,7 +193,7 @@ static void dfu_exfat_run(void)
 		LOG_INF("Upgrade image to %d.%d.%d", upgrade_version.major, upgrade_version.minor,
 			upgrade_version.revision);
 		if (dfu_exfat_app_upgrade_copy(logger, upgrade_version, upgrade_partition,
-					       dfu_progress_cb) == 0) {
+					       dfu_progress_cb, dfu_progress_cb) == 0) {
 			LOG_INF("New image copied");
 			if (boot_request_upgrade_multi(0, 0) == 0) {
 				LOG_INF("Rebooting into new image");

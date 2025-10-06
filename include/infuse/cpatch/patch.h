@@ -21,6 +21,8 @@
 #include <zephyr/storage/stream_flash.h>
 #include <zephyr/toolchain.h>
 
+#include <infuse/util/progress_cb.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -107,7 +109,7 @@ int cpatch_patch_start(const struct flash_area *input, const struct flash_area *
  */
 int cpatch_patch_apply(const struct flash_area *input, const struct flash_area *patch,
 		       struct stream_flash_ctx *output, struct cpatch_header *header,
-		       cpatch_progress_cb_t progress_cb);
+		       infuse_progress_cb_t progress_cb);
 
 /**
  * @}
