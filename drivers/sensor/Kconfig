@@ -35,3 +35,11 @@ config BQ25798_FETCH_POOR_SOURCE_RETRY
 	   source qualification if the charger is in poor source mode.
 
 endif
+
+config SENSOR_GENERIC_SIM
+	bool "Generic simulated sensor"
+	depends on DT_HAS_ZEPHYR_GENERIC_SIM_SENSOR_ENABLED
+	depends on SENSOR
+	default y
+	help
+	  Simulated sensor that can expose any configured channel.

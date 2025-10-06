@@ -1,0 +1,15 @@
+# Copyright (c) 2025 Embeint Holdings Pty Ltd
+# SPDX-License-Identifier: FSL-1.1-ALv2
+
+description: |
+  Generic simulated sensor
+
+compatible: "zephyr,generic-sim-sensor"
+
+properties:
+  negated-init-rc:
+    type: int
+    default: 0
+    description:
+      Value to return in init function (negated due to devicetree limitation
+      to unsigned integers).
