@@ -127,7 +127,7 @@ jobs:
       - name: Set up ccache
         run: |
           mkdir -p ${CCACHE_DIR}
-          ccache -M 10G
+          ccache -M 20G
           ccache -p
           ccache -z -s -vv
 
@@ -237,7 +237,7 @@ jobs:
       - name: Set up ccache
         run: |
           mkdir -p ${CCACHE_DIR}
-          ccache -M 10G
+          ccache -M 20G
           ccache -p
           ccache -z -s -vv
 
