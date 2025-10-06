@@ -55,7 +55,6 @@ int infuse_dfu_image_erase(const struct flash_area *fa, size_t image_len,
 	while (remaining) {
 		/* Erase next chunk */
 		chunk_size = MIN(max_chunk, remaining);
-		printk("Erasing %6d at 0x%08X\n", off, chunk_size);
 		rc = flash_area_flatten(fa, off, chunk_size);
 		if (rc < 0) {
 			return rc;
