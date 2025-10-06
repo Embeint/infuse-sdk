@@ -15,6 +15,8 @@
 
 #include <zephyr/storage/flash_map.h>
 
+#include <infuse/util/progress_cb.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -36,7 +38,7 @@ extern "C" {
  * @retval -errno Error code from @a flash_area_erase on failure
  */
 int infuse_dfu_image_erase(const struct flash_area *fa, size_t image_len,
-			   void (*progress_callback)(uint32_t offset), bool mcuboot_trailer);
+			   infuse_progress_cb_t progress_cb, bool mcuboot_trailer);
 
 /**
  * @brief Prepare the nRF91 modem for a delta image upgrade

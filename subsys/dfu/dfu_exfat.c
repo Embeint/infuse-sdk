@@ -102,7 +102,8 @@ int dfu_exfat_app_upgrade_exists(const struct device *dev, struct infuse_version
 }
 
 int dfu_exfat_app_upgrade_copy(const struct device *dev, struct infuse_version upgrade,
-			       uint8_t flash_area_id, dfu_exfat_progress_cb_t progress_cb)
+			       uint8_t flash_area_id, infuse_progress_cb_t erase_progress_cb,
+			       infuse_progress_cb_t write_progress_cb)
 {
 	const struct flash_area *fa;
 	uint8_t *block_buffer;
@@ -147,7 +148,7 @@ int dfu_exfat_app_upgrade_copy(const struct device *dev, struct infuse_version u
 	}
 
 	/* Erase output area */
-	if (infuse_dfu_image_erase(fa, fno.fsize, NULL, true) != 0) {
+	if (infuse_dfu_image_erase(fa, fno.fsize, erase_progress_cb, true) != 0) {
 		rc = -EIO;
 		goto close_area;
 	}
@@ -174,8 +175,8 @@ int dfu_exfat_app_upgrade_copy(const struct device *dev, struct infuse_version u
 		remaining -= iter;
 
 		/* Call progress callback if supplied */
-		if (progress_cb) {
-			progress_cb(offset, fno.fsize);
+		if (write_progress_cb) {
+			write_progress_cb(offset, fno.fsize);
 		}
 	}
 
