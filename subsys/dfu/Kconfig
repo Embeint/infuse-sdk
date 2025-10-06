@@ -6,12 +6,22 @@ config INFUSE_DFU_HELPERS
 	depends on FLASH_PAGE_LAYOUT
 	default y if MCUBOOT_IMG_MANAGER || INFUSE_RPC_COMMAND_BT_FILE_COPY_BASIC || SOC_SERIES_BSIM_NRFXX
 
+if INFUSE_DFU_HELPERS
+
+config INFUSE_DFU_HELPERS_ERASE_CHUNK_SIZE
+	int "Number of bytes to erase in each call to `flash_area_flatten`"
+	default 65536
+	help
+	  Erasing a large flash area can take a long time, break up large erases into
+	  chunks of this size to provide an opportunity for watchdogs to be fed.
+
 config INFUSE_DFU_EXFAT
 	bool "Upgrade application images from an exFAT filesystem"
-	depends on INFUSE_DFU_HELPERS
 	depends on MCUBOOT_IMG_MANAGER
 	depends on DATA_LOGGER_EXFAT
 	default y
 	help
 	  Enable functions to automate the process of upgrading firmware from a
 	  /dfu folder on a mounted filesystem.
+
+endif # INFUSE_DFU_HELPERS

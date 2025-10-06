@@ -147,7 +147,7 @@ int dfu_exfat_app_upgrade_copy(const struct device *dev, struct infuse_version u
 	}
 
 	/* Erase output area */
-	if (infuse_dfu_image_erase(fa, fno.fsize, true) != 0) {
+	if (infuse_dfu_image_erase(fa, fno.fsize, NULL, true) != 0) {
 		rc = -EIO;
 		goto close_area;
 	}

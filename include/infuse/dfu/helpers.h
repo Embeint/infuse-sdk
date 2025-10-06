@@ -29,12 +29,14 @@ extern "C" {
  *
  * @param fa Flash area to erase (must be already opened)
  * @param image_len Length of image
+ * @param progress_callback Optional progress callback
  * @param mcuboot_trailer Erase space for MCUBoot trailer
  *
  * @retval 0 On success
  * @retval -errno Error code from @a flash_area_erase on failure
  */
-int infuse_dfu_image_erase(const struct flash_area *fa, size_t image_len, bool mcuboot_trailer);
+int infuse_dfu_image_erase(const struct flash_area *fa, size_t image_len,
+			   void (*progress_callback)(uint32_t offset), bool mcuboot_trailer);
 
 /**
  * @brief Prepare the nRF91 modem for a delta image upgrade
