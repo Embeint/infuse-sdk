@@ -34,7 +34,7 @@ jobs:
     env:
       CCACHE_DIR: /github/ccache
       # `--specs` is ignored because ccache is unable to resolve the toolchain specs file path.
-      CCACHE_IGNOREOPTIONS: '--specs=*'
+      CCACHE_IGNOREOPTIONS: '-specs=* --specs=*'
       # Ignore nrf54l09pdk until upgrading to Zephyr v4.2, v4.1 and HAL v3.12.0 are incompatible
       TWISTER_COMMON: ' --force-color --inline-logs -v -N -M --retry-failed 3 -P nrf54l09pdk/nrf54l09/cpuapp -P nrf54l20pdk/nrf54l20/cpuapp'
       DAILY_OPTIONS: ' -M --build-only --show-footprint'
