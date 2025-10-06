@@ -43,6 +43,11 @@ LOG_MODULE_DECLARE(rpc_server);
 
 #if defined(SUPPORT_APP_IMG) || defined(SUPPORT_APP_CPATCH) || defined(SUPPORT_FILE_COPY)
 
+static void cpatch_watchdog(uint32_t progress_offset)
+{
+	rpc_server_watchdog_feed();
+}
+
 static int flash_area_check_and_erase(struct rpc_common_file_actions_ctx *ctx, uint8_t partition_id,
 				      uint32_t length, uint32_t crc, bool mcuboot_trailer)
 {
@@ -71,7 +76,7 @@ static int flash_area_check_and_erase(struct rpc_common_file_actions_ctx *ctx, u
 			length = ctx->fa->fa_size;
 		}
 		/* Erase space for image */
-		rc = infuse_dfu_image_erase(ctx->fa, length, mcuboot_trailer);
+		rc = infuse_dfu_image_erase(ctx->fa, length, cpatch_watchdog, mcuboot_trailer);
 		if (rc != 0) {
 			/* Close flash area */
 			(void)flash_area_close(ctx->fa);
@@ -219,11 +224,6 @@ int rpc_common_file_actions_write(struct rpc_common_file_actions_ctx *ctx, uint3
 
 #ifdef SUPPORT_APP_CPATCH
 
-static void cpatch_watchdog(uint32_t progress_offset)
-{
-	rpc_server_watchdog_feed();
-}
-
 static int validate_cpatch(struct rpc_common_file_actions_ctx *ctx)
 {
 	const struct flash_area *fa_original;
@@ -263,7 +263,7 @@ static int finish_cpatch(struct rpc_common_file_actions_ctx *ctx)
 
 	LOG_INF("Erasing %d bytes of secondary partition", header.output_file.length);
 	/* Erase space for image */
-	rc = infuse_dfu_image_erase(fa_output, header.output_file.length, true);
+	rc = infuse_dfu_image_erase(fa_output, header.output_file.length, cpatch_watchdog, true);
 	if (rc < 0) {
 		goto cleanup;
 	}

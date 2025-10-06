@@ -18,11 +18,15 @@
 #endif /* CONFIG_NRF_MODEM_LIB */
 
 /* Implementation taken from zephyr_img_mgmt.c */
-int infuse_dfu_image_erase(const struct flash_area *fa, size_t image_len, bool mcuboot_trailer)
+int infuse_dfu_image_erase(const struct flash_area *fa, size_t image_len,
+			   void (*progress_callback)(uint32_t offset), bool mcuboot_trailer)
 {
 	const struct device *dev = flash_area_get_device(fa);
 	struct flash_pages_info page;
-	size_t off __maybe_unused;
+	size_t remaining;
+	size_t max_chunk;
+	size_t chunk_size;
+	size_t off;
 	off_t page_offset;
 	size_t erase_size;
 	int rc;
@@ -45,9 +49,23 @@ int infuse_dfu_image_erase(const struct flash_area *fa, size_t image_len, bool m
 	erase_size = page.start_offset + page.size - fa->fa_off;
 
 	/* Perform the erase */
-	rc = flash_area_flatten(fa, 0, erase_size);
-	if (rc < 0) {
-		return rc;
+	max_chunk = progress_callback ? CONFIG_INFUSE_DFU_HELPERS_ERASE_CHUNK_SIZE : erase_size;
+	remaining = erase_size;
+	off = 0;
+	while (remaining) {
+		/* Erase next chunk */
+		chunk_size = MIN(max_chunk, remaining);
+		printk("Erasing %6d at 0x%08X\n", off, chunk_size);
+		rc = flash_area_flatten(fa, off, chunk_size);
+		if (rc < 0) {
+			return rc;
+		}
+		off += chunk_size;
+		remaining -= chunk_size;
+		/* Run provided callback */
+		if (progress_callback) {
+			progress_callback(off);
+		}
 	}
 
 	if (!mcuboot_trailer) {
