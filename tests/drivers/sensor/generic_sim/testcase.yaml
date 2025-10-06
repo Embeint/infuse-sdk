@@ -1,0 +1,9 @@
+sample:
+  description: Generic simulated sensor
+  name: Generic simulated sensor
+
+tests:
+  sensor.generic_sim:
+    sysbuild: true
+    integration_platforms:
+      - native_sim
