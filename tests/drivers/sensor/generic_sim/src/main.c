@@ -26,12 +26,15 @@ ZTEST(drivers_sensor_generic_sim, test_init_pass)
 	zassert_true(device_is_ready(dev));
 }
 
-ZTEST(drivers_sensor_generic_sim, test_set_invalid)
+ZTEST(drivers_sensor_generic_sim, test_invalid_set_get)
 {
 	const struct device *dev = DEVICE_DT_GET(DT_NODELABEL(test_sensor));
 	struct sensor_value val = {0};
 
 	zassert_equal(-EINVAL, generic_sim_channel_set(dev, SENSOR_CHAN_ALL, val));
+	zassert_equal(-EINVAL, generic_sim_channel_set(dev, SENSOR_CHAN_ALL + 1, val));
+	zassert_equal(-ENOTSUP, sensor_channel_get(dev, SENSOR_CHAN_ALL, &val));
+	zassert_equal(-ENOTSUP, sensor_channel_get(dev, SENSOR_CHAN_ALL + 1, &val));
 }
 
 ZTEST(drivers_sensor_generic_sim, test_value_echo)
