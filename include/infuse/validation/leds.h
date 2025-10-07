@@ -15,6 +15,7 @@
 
 #include <zephyr/device.h>
 #include <zephyr/drivers/gpio.h>
+#include <zephyr/drivers/led.h>
 #include <zephyr/sys/util.h>
 
 #ifdef __cplusplus
@@ -41,6 +42,19 @@ enum {
  * @retval -errno On failure
  */
 int infuse_validation_leds_gpio(const struct gpio_dt_spec *leds, uint8_t num_leds, uint8_t flags);
+
+/**
+ * @brief Validate LED devices
+ *
+ * @param leds leds to test
+ * @param num_leds number of LEDs in @p leds
+ * @param flags Validation tests to run
+ *
+ * @retval 0 On success
+ * @retval -errno On failure
+ */
+int infuse_validation_leds_controller(const struct led_dt_spec *leds, uint8_t num_leds,
+				      uint8_t flags);
 
 /**
  * @}
