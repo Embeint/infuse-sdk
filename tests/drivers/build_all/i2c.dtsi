@@ -51,3 +51,29 @@ test_i2c_bq25798: bq25798@4 {
 	ts-rt1 = <5240>;
 	ts-rt2 = <30310>;
 };
+
+test_i2c_lp5814: lp5814@5 {
+	compatible = "ti,lp5814";
+	reg = <0x5>;
+	out0-current-max = <0xFF>;
+	out3-current-max = <0xFF>;
+};
+
+test_i2c_lp5815: lp5815@6 {
+	compatible = "ti,lp5815";
+	reg = <0x6>;
+	out0-current-max = <0xFF>;
+};
+
+test_i2c_lp5816: lp5816@7 {
+	compatible = "ti,lp5816";
+	reg = <0x7>;
+	out0-current-max = <0xFF>;
+	out3-current-max = <0xFF>;
+};
+
+test_i2c_lp5817: lp5817@8 {
+	compatible = "ti,lp5817";
+	reg = <0x8>;
+	out0-current-max = <0xFF>;
+};
