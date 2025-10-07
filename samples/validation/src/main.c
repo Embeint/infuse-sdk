@@ -278,7 +278,7 @@ static int button_validator(void *a, void *b, void *c)
 K_THREAD_DEFINE(button_thread, 512, button_validator, NULL, NULL, NULL, 5, 0, 0);
 #endif /* CONFIG_INFUSE_VALIDATION_BUTTON_REQUIRE_MANUAL */
 
-#ifdef CONFIG_INFUSE_VALIDATION_LEDS
+#ifdef CONFIG_INFUSE_VALIDATION_LEDS_GPIO
 #define GET_GPIO_SPEC(gpio_spec) GPIO_DT_SPEC_GET(gpio_spec, gpios)
 static int leds_validator(void *a, void *b, void *c)
 {
@@ -300,7 +300,7 @@ static int leds_validator(void *a, void *b, void *c)
 }
 
 K_THREAD_DEFINE(leds_thread, 1024, leds_validator, NULL, NULL, NULL, 5, 0, 0);
-#endif /* CONFIG_INFUSE_VALIDATION_LED */
+#endif /* CONFIG_INFUSE_VALIDATION_LEDS_GPIO */
 
 #if DT_NODE_EXISTS(DT_COMPAT_GET_ANY_STATUS_OKAY(embeint_epacket_bt_adv))
 static int bt_validator(void *a, void *b, void *c)
