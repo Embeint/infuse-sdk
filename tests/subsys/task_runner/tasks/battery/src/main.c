@@ -17,8 +17,6 @@
 #include <infuse/epacket/interface/epacket_dummy.h>
 #include <infuse/data_logger/logger.h>
 #include <infuse/data_logger/high_level/tdf.h>
-#include <infuse/drivers/imu.h>
-#include <infuse/drivers/imu/emul.h>
 #include <infuse/states.h>
 #include <infuse/tdf/tdf.h>
 #include <infuse/zbus/channels.h>
@@ -75,34 +73,40 @@ static void expect_logging(uint8_t log_mask, uint32_t battery_uv, int32_t curren
 
 	net_buf_pull(pkt, sizeof(struct epacket_dummy_frame));
 
+	rc = tdf_parse_find_in_buf(pkt->data, pkt->len, TDF_BATTERY_STATE, &tdf);
 	if (log_mask & TASK_BATTERY_LOG_COMPLETE) {
 		struct tdf_battery_state *state;
 
-		rc = tdf_parse_find_in_buf(pkt->data, pkt->len, TDF_BATTERY_STATE, &tdf);
 		zassert_equal(0, rc);
 		state = tdf.data;
 
 		zassert_equal(battery_uv / 1000, state->voltage_mv);
 		zassert_equal(current_ua, state->current_ua);
 		zassert_equal(soc, state->soc);
+	} else {
+		zassert_equal(-ENOMEM, rc);
 	}
+	rc = tdf_parse_find_in_buf(pkt->data, pkt->len, TDF_BATTERY_VOLTAGE, &tdf);
 	if (log_mask & TASK_BATTERY_LOG_VOLTAGE) {
 		struct tdf_battery_voltage *state;
 
-		rc = tdf_parse_find_in_buf(pkt->data, pkt->len, TDF_BATTERY_VOLTAGE, &tdf);
 		zassert_equal(0, rc);
 		state = tdf.data;
 
 		zassert_equal(battery_uv / 1000, state->voltage);
+	} else {
+		zassert_equal(-ENOMEM, rc);
 	}
+	rc = tdf_parse_find_in_buf(pkt->data, pkt->len, TDF_BATTERY_SOC, &tdf);
 	if (log_mask & TASK_BATTERY_LOG_SOC) {
 		struct tdf_battery_soc *state;
 
-		rc = tdf_parse_find_in_buf(pkt->data, pkt->len, TDF_BATTERY_SOC, &tdf);
 		zassert_equal(0, rc);
 		state = tdf.data;
 
 		zassert_equal(soc, state->soc);
+	} else {
+		zassert_equal(-ENOMEM, rc);
 	}
 
 	net_buf_unref(pkt);
@@ -220,6 +224,14 @@ ZTEST(task_bat, test_periodic)
 
 static void logger_before(void *fixture)
 {
+	struct k_fifo *tx_queue = epacket_dummmy_transmit_fifo_get();
+	struct net_buf *pkt;
+
+	tdf_data_logger_flush(TDF_DATA_LOGGER_SERIAL);
+	pkt = k_fifo_get(tx_queue, K_MSEC(10));
+	if (pkt) {
+		net_buf_unref(pkt);
+	}
 	k_sem_reset(&bat_published);
 }
 
