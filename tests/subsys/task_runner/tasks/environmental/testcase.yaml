@@ -1,0 +1,12 @@
+common:
+  tags: env
+  min_flash: 64
+  min_ram: 32
+tests:
+  task_runner.tasks.env:
+    required_snippets:
+      - infuse
+    platform_allow:
+      - mps2/an385
+    integration_platforms:
+      - mps2/an385
