@@ -12,6 +12,7 @@
 #include <zephyr/logging/log.h>
 #include <zephyr/sys/atomic.h>
 #include <zephyr/sys/sys_heap.h>
+#include <zephyr/drivers/led.h>
 
 #include <infuse/security.h>
 #include <infuse/validation/bluetooth.h>
@@ -289,7 +290,8 @@ static int leds_validator(void *a, void *b, void *c)
 
 	atomic_inc(&validators_registered);
 
-	if (infuse_validation_leds(leds, ARRAY_SIZE(leds), VALIDATION_LEDS_OBSERVE_ONLY) == 0) {
+	if (infuse_validation_leds_gpio(leds, ARRAY_SIZE(leds), VALIDATION_LEDS_OBSERVE_ONLY) ==
+	    0) {
 		atomic_inc(&validators_passed);
 	} else {
 		atomic_inc(&validators_failed);
@@ -301,6 +303,30 @@ static int leds_validator(void *a, void *b, void *c)
 
 K_THREAD_DEFINE(leds_thread, 1024, leds_validator, NULL, NULL, NULL, 5, 0, 0);
 #endif /* CONFIG_INFUSE_VALIDATION_LEDS_GPIO */
+
+#ifdef CONFIG_INFUSE_VALIDATION_LEDS_CONTROLLER
+static int leds_validator(void *a, void *b, void *c)
+{
+	/* clang-format off */
+	const struct led_dt_spec leds[] = {
+		DT_FOREACH_CHILD_SEP(DT_ALIAS(led_controller0), LED_DT_SPEC_GET, (,))};
+	/* clang-format on */
+
+	atomic_inc(&validators_registered);
+
+	if (infuse_validation_leds_controller(leds, ARRAY_SIZE(leds),
+					      VALIDATION_LEDS_OBSERVE_ONLY) == 0) {
+		atomic_inc(&validators_passed);
+	} else {
+		atomic_inc(&validators_failed);
+	}
+	atomic_inc(&validators_complete);
+	k_sem_give(&task_complete);
+	return 0;
+}
+
+K_THREAD_DEFINE(leds_thread, 1024, leds_validator, NULL, NULL, NULL, 5, 0, 0);
+#endif /* CONFIG_INFUSE_VALIDATION_LEDS_CONTROLLER */
 
 #if DT_NODE_EXISTS(DT_COMPAT_GET_ANY_STATUS_OKAY(embeint_epacket_bt_adv))
 static int bt_validator(void *a, void *b, void *c)
