@@ -1,0 +1,5 @@
+description: TI LP5815 LED Driver
+
+compatible: "ti,lp5815"
+
+include: ["ti,lp581x.yaml"]

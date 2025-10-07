@@ -1,0 +1,32 @@
+description: TI LP581X LED Driver
+
+compatible: "ti,lp581x"
+
+include: ["i2c-device.yaml", "led-controller.yaml"]
+
+properties:
+  out0-current-max:
+    type: int
+    default: 0
+    description: Maximum output current of channel 0 in 0.1 mA (0-25.5 mA).
+                 Default value is the power-on default. Valid range = 0 - 255.
+                 A value of 0 disables the channel.
+  out1-current-max:
+    type: int
+    default: 0
+    description: Maximum output current of channel 1 in 0.1 mA (0-25.5 mA)
+                 Default value is the power-on default. Valid range = 0 - 255.
+                 A value of 0 disables the channel.
+  out2-current-max:
+    type: int
+    default: 0
+    description: Maximum output current of channel 2 in 0.1 mA (0-25.5 mA)
+                 Default value is the power-on default. Valid range = 0 - 255.
+                 A value of 0 disables the channel.
+
+child-binding:
+  properties:
+    index:
+      required: true
+    color-mapping:
+      required: true
