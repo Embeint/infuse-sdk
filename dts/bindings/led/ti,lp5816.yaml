@@ -1,0 +1,13 @@
+description: TI LP5816 LED Driver
+
+compatible: "ti,lp5816"
+
+include: ["ti,lp581x.yaml"]
+
+properties:
+  out3-current-max:
+    type: int
+    default: 0
+    description: Maximum output current of channel 0 in 0.1 mA (0-25.5 mA).
+                 Default value is the power-on default. Valid range = 0 - 255.
+                 A value of 0 disables the channel.

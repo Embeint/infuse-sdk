@@ -1,0 +1,5 @@
+description: TI LP5817 LED Driver
+
+compatible: "ti,lp5817"
+
+include: ["ti,lp581x.yaml"]

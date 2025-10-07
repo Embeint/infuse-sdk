@@ -3,6 +3,7 @@
 rsource "fuel_gauge/Kconfig"
 rsource "gnss/Kconfig"
 rsource "imu/Kconfig"
+rsource "led/Kconfig"
 rsource "sensor/Kconfig"
 rsource "shared_device/Kconfig"
 rsource "watchdog/Kconfig"
