@@ -18,7 +18,31 @@
 
 #define TEST "LED"
 
-int infuse_validation_leds(const struct gpio_dt_spec *leds, uint8_t num_leds, uint8_t flags)
+static int leds_toggle(const struct gpio_dt_spec *leds, uint8_t num_leds)
+{
+	int rc = 0;
+
+	/* Toggle LEDs in sequence */
+	for (int i = 0; i < num_leds; i++) {
+		rc = gpio_pin_set_dt(&leds[i], true);
+		if (rc < 0) {
+			VALIDATION_REPORT_ERROR(TEST, "Device=%s:%d (LED #%d) failed to set pin",
+						leds[i].port->name, leds[i].pin, num_leds);
+			break;
+		}
+		k_sleep(K_MSEC(CONFIG_INFUSE_VALIDATION_LEDS_ACTION_DURATION));
+		rc = gpio_pin_set_dt(&leds[i], false);
+		if (rc < 0) {
+			VALIDATION_REPORT_ERROR(TEST, "Device=%s:%d (LED #%d) failed to clear pin",
+						leds[i].port->name, leds[i].pin, num_leds);
+			break;
+		}
+	}
+
+	return rc;
+}
+
+int infuse_validation_leds_gpio(const struct gpio_dt_spec *leds, uint8_t num_leds, uint8_t flags)
 {
 	int rc = 0;
 
@@ -43,7 +67,7 @@ int infuse_validation_leds(const struct gpio_dt_spec *leds, uint8_t num_leds, ui
 		}
 	}
 
-	/* Setup GPIO pin */
+	/* Setup GPIO pins */
 	for (int i = 0; i < num_leds; i++) {
 		rc = gpio_pin_configure_dt(&leds[i], GPIO_OUTPUT_INACTIVE);
 		if (rc < 0) {
@@ -53,17 +77,8 @@ int infuse_validation_leds(const struct gpio_dt_spec *leds, uint8_t num_leds, ui
 		}
 	}
 
-	/* Toggle LEDs in sequence */
-	for (int i = 0; i < num_leds; i++) {
-		rc = gpio_pin_set_dt(&leds[i], true);
-		if (rc < 0) {
-			VALIDATION_REPORT_ERROR(TEST, "Device=%s:%d (LED #%d) failed to set pin",
-						leds[i].port->name, leds[i].pin, num_leds);
-			goto handle_end_gpio;
-		}
-		k_sleep(K_MSEC(CONFIG_INFUSE_VALIDATION_LEDS_ACTION_DURATION));
-		rc = gpio_pin_set_dt(&leds[i], false);
-	}
+	/* Run the toggle test */
+	rc = leds_toggle(leds, num_leds);
 
 handle_end_gpio:
 	for (int i = 0; i < num_leds; i++) {

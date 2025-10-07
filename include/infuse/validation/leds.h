@@ -31,7 +31,7 @@ enum {
 };
 
 /**
- * @brief Validate LED devices
+ * @brief Validate GPIO LED devices
  *
  * @param leds leds gpio specs to test
  * @param num_leds number of LEDs in @p leds
@@ -40,7 +40,7 @@ enum {
  * @retval 0 On success
  * @retval -errno On failure
  */
-int infuse_validation_leds(const struct gpio_dt_spec *leds, uint8_t num_leds, uint8_t flags);
+int infuse_validation_leds_gpio(const struct gpio_dt_spec *leds, uint8_t num_leds, uint8_t flags);
 
 /**
  * @}
