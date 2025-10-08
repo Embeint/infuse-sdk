@@ -14,7 +14,7 @@
             "fields": [
                 {"name": "id", "type": "uint16_t"},
                 {"name": "len", "type": "int16_t"},
-                {"name": "data", "type": "uint8_t", "num": 0}
+                {"name": "data", "type": "uint8_t", "num": 0, "counted_by": "len"}
             ]
         },
         "rpc_struct_kv_store_crc": {
@@ -98,7 +98,7 @@
                 {"name": "rssi", "type": "int8_t", "description": "Received signal strength (dBm)"},
                 {"name": "bssid", "type": "uint8_t", "num": 6, "description": "Basic Service Set Identifier (MAC address)"},
                 {"name": "ssid_len", "type": "uint8_t", "description": "SSID length"},
-                {"name": "ssid", "type": "char", "num": 0, "description": "Service Set Identifier (Network Name)"}
+                {"name": "ssid", "type": "char", "num": 0, "counted_by": "ssid_len", "description": "Service Set Identifier (Network Name)"}
             ]
         },
         "rpc_struct_xyz_s16": {
