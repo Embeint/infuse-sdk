@@ -42,10 +42,16 @@ class {{ name }}(enum.IntEnum):
 
 {% endif %}
 {% endfor -%}
+
+class RPCDefinitionBase:
+    HELP: str
+    DESCRIPTION: str
+    COMMAND_ID: int
+
 {% for command_id, info in commands.items() %}
 {% if extensions == info.get('extension', False) %}
 
-class {{ info['name'] }}:
+class {{ info['name'] }}(RPCDefinitionBase):
     """{{ info['description'] }}"""
 
     HELP = "{{ info['description'] }}"
@@ -81,8 +87,16 @@ class {{ info['name'] }}:
 {% endif %}
 {% endfor -%}
 
+id_type_mapping: dict[int, type[RPCDefinitionBase]] = {
+{% for command_id, info in commands.items() %}
+{% if extensions == info.get('extension', False) %}
+    {{ info['name'] | lower }}.COMMAND_ID: {{ info['name'] | lower }},
+{% endif %}
+{% endfor %}
+}
 
 __all__ = [
+      'id_type_mapping',
 {% for name, info in structs.items() %}
 {% if extensions == info.get('extension', False) %}
     '{{ name }}',
