@@ -44,6 +44,7 @@ class {{ name }}(enum.IntEnum):
 {% endfor -%}
 
 class RPCDefinitionBase:
+    NAME: str
     HELP: str
     DESCRIPTION: str
     COMMAND_ID: int
@@ -54,6 +55,7 @@ class RPCDefinitionBase:
 class {{ info['name'] }}(RPCDefinitionBase):
     """{{ info['description'] }}"""
 
+    NAME = "{{ info['name'] }}"
     HELP = "{{ info['description'] }}"
     DESCRIPTION = "{{ info['description'] }}"
     COMMAND_ID = {{ command_id }}
