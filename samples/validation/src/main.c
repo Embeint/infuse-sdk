@@ -370,6 +370,25 @@ SYS_INIT(validation_init, APPLICATION, 99);
 int main(void)
 {
 	VALIDATION_REPORT_INFO("SYS", "Starting");
+
+#if DT_NODE_EXISTS(DT_ALIAS(charger0))
+	/* No API checking, just validate the device initialised correctly */
+	const struct device *charger = DEVICE_DT_GET(DT_ALIAS(charger0));
+
+	atomic_inc(&validators_registered);
+	VALIDATION_REPORT_INFO("CHARGER", "DEV=%s", charger->name);
+
+	if (device_is_ready(charger)) {
+		VALIDATION_REPORT_INFO("CHARGER", "Device ready");
+		VALIDATION_REPORT_PASS("CHARGER", "DEV=%s", charger->name);
+		atomic_inc(&validators_passed);
+	} else {
+		VALIDATION_REPORT_ERROR("CHARGER", "Device not ready");
+		atomic_inc(&validators_failed);
+	}
+	atomic_inc(&validators_complete);
+#endif /* DT_NODE_EXISTS(DT_ALIAS(charger0)) */
+
 	for (;;) {
 		k_sem_take(&task_complete, K_FOREVER);
 		if (validators_registered == validators_complete) {
