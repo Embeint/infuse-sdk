@@ -40,7 +40,7 @@ struct emul_data {
 	sys_slist_t handlers;
 };
 
-LOG_MODULE_REGISTER(ubx_m8_emul, LOG_LEVEL_INF);
+LOG_MODULE_REGISTER(ubx_m8_emul, CONFIG_GNSS_UBX_MODEM_LOG_LEVEL);
 
 static void message_dispatch(struct emul_data *data, uint8_t msg_class, uint8_t msg_id, void *msg,
 			     size_t msg_len)

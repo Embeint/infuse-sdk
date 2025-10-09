@@ -42,7 +42,7 @@ struct ubx_m8_spi_data {
 	struct modem_backend_ublox_spi spi_backend;
 };
 
-LOG_MODULE_DECLARE(ubx_modem);
+LOG_MODULE_DECLARE(ubx_modem, CONFIG_GNSS_UBX_MODEM_LOG_LEVEL);
 
 #ifndef CONFIG_GNSS_U_BLOX_NO_API_COMPAT
 
