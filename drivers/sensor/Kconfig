@@ -36,6 +36,12 @@ config BQ25798_FETCH_POOR_SOURCE_RETRY
 
 endif
 
+config PAC194X
+	bool "Microchip PAC194X single/multi-channel power monitor"
+	depends on DT_HAS_MICROCHIP_PAC1941_1_ENABLED
+	depends on SENSOR
+	default y
+
 config SENSOR_GENERIC_SIM
 	bool "Generic simulated sensor"
 	depends on DT_HAS_ZEPHYR_GENERIC_SIM_SENSOR_ENABLED

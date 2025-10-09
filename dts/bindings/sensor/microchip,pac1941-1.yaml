@@ -1,0 +1,41 @@
+# Copyright (c) 2025 Embeint Holdings Pty Ltd
+# SPDX-License-Identifier: FSL-1.1-ALv2
+
+description: |
+  Single Channel High-Side Power Monitor with Accumulator, 9V Full-Scale Range
+
+compatible: "microchip,pac1941-1"
+
+include: [i2c-device.yaml]
+
+properties:
+  power-down-gpios:
+    type: phandle-array
+    description: GPIO used to put the device in a power down state
+
+  sense-resistor-milli-ohms:
+    type: int
+    required: true
+    description: Value of the sense resistor in milli-ohms
+
+  fsr-vbus-channel-1:
+    type: string
+    enum:
+      - "0V to 9V"
+      - "-9V to 9V"
+      - "-4.5V to 4.5V"
+    default: "0V to 9V"
+    description:
+      Full scale range of the VBUS measurements on channel 1. Default
+      is the same as the hardware reset value.
+
+  fsr-vsense-channel-1:
+    type: string
+    enum:
+      - "0mV to 100mV"
+      - "-100mV to 100mV"
+      - "-50mV to 50mV"
+    default: "0mV to 100mV"
+    description:
+      Full scale range of the VBUS measurements on channel 1. Default
+      is the same as the hardware reset value.
