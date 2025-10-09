@@ -77,3 +77,12 @@ test_i2c_lp5817: lp5817@8 {
 	reg = <0x8>;
 	out0-current-max = <0xFF>;
 };
+
+pax194x: pax1941@10 {
+	compatible = "microchip,pac1941-1";
+	reg = <0x10>;
+	power-down-gpios = <&test_gpio 0 GPIO_ACTIVE_LOW>;
+	sense-resistor-milli-ohms = <100>;
+	fsr-vbus-channel-1 = "0V to 9V";
+	fsr-vsense-channel-1 = "-100mV to 100mV";
+};
