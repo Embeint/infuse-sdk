@@ -42,7 +42,7 @@ struct ubx_m10_i2c_data {
 
 BUILD_ASSERT(__alignof(struct ubx_frame) == 1);
 
-LOG_MODULE_DECLARE(ubx_modem);
+LOG_MODULE_DECLARE(ubx_modem, CONFIG_GNSS_UBX_MODEM_LOG_LEVEL);
 
 #ifndef CONFIG_GNSS_U_BLOX_NO_API_COMPAT
 
