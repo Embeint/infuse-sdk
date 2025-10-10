@@ -502,7 +502,7 @@ int data_logger_block_read(const struct device *dev, uint32_t block_idx, uint16_
 		LOG_ERR("%s failed to read from backend", dev->name);
 	}
 	/* Read data remaining after wrap */
-	if (second_read) {
+	if (second_read && (rc == 0)) {
 		block = (uint8_t *)block + block_len;
 		LOG_DBG("%s reading remaining %d bytes", dev->name, second_read);
 		rc = api->read(dev, 0, 0, block, second_read);
