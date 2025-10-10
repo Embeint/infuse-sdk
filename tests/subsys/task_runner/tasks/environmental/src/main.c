@@ -26,8 +26,8 @@
 #include <infuse/task_runner/tasks/environmental.h>
 
 #define DEV DEVICE_DT_GET_ANY(zephyr_generic_sim_sensor)
-ENVIRONMENTAL_TASK(1, 0, DEV);
-struct task_config config = ENVIRONMENTAL_TASK(0, 1, DEV);
+ENVIRONMENTAL_TASK(1, 0, DEV, NULL);
+struct task_config config = ENVIRONMENTAL_TASK(0, 1, DEV, NULL);
 struct task_data data;
 struct task_schedule schedule;
 struct task_schedule_state state;
