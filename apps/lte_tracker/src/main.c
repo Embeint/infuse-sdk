@@ -125,7 +125,9 @@ static const struct task_schedule schedules[] = {
 };
 
 #if DT_NODE_EXISTS(DT_ALIAS(environmental0))
-#define ENV_TASK_DEFINE (ENVIRONMENTAL_TASK, DEVICE_DT_GET(DT_ALIAS(environmental0)))
+#define ENV_TASK_DEFINE                                                                            \
+	(ENVIRONMENTAL_TASK, DEVICE_DT_GET(DT_ALIAS(environmental0)),                              \
+	 DEVICE_DT_GET_OR_NULL(DT_ALIAS(environmental1)))
 #else
 #define ENV_TASK_DEFINE
 #endif

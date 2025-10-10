@@ -161,7 +161,8 @@ TASK_SCHEDULE_STATES_DEFINE(states, schedules);
 TASK_RUNNER_TASKS_DEFINE(app_tasks, app_tasks_data, (TDF_LOGGER_TASK, custom_tdf_logger),
 			 (IMU_TASK, DEVICE_DT_GET(DT_ALIAS(imu0))), GNSS_TASK_DEFINE,
 			 (BATTERY_TASK, DEVICE_DT_GET(DT_ALIAS(fuel_gauge0))),
-			 (ENVIRONMENTAL_TASK, DEVICE_DT_GET(DT_ALIAS(environmental0))));
+			 (ENVIRONMENTAL_TASK, DEVICE_DT_GET(DT_ALIAS(environmental0)),
+			  DEVICE_DT_GET_OR_NULL(DT_ALIAS(environmental1))));
 
 static void custom_tdf_logger(uint8_t tdf_loggers, uint64_t timestamp)
 {

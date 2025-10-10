@@ -21,6 +21,14 @@
 extern "C" {
 #endif
 
+/** Configuration struct to hold multiple devices */
+struct task_environmental_devices {
+	/** Primary environmental sensor, used in preference to @a secondary */
+	const struct device *primary;
+	/** Secondary environmental sensor, used if a channel doesn't exist on @a primary */
+	const struct device *secondary;
+};
+
 /**
  * @brief Environmental task function
  *
@@ -33,14 +41,18 @@ void environmental_task_fn(struct k_work *work);
  *
  * @param define_mem Define memory
  * @param define_config Define task
- * @param env_ptr Environmental sensing device bound to task
+ * @param env_primary Environmental sensing device bound to task (Primary)
+ * @param env_secondary Environmental sensing device bound to task (Seconday, optional)
  */
-#define ENVIRONMENTAL_TASK(define_mem, define_config, env_ptr)                                     \
+#define ENVIRONMENTAL_TASK(define_mem, define_config, env_primary, env_secondary)                  \
+	IF_ENABLED(define_mem, (const struct task_environmental_devices _env_task_devices = {      \
+					.primary = env_primary,                                    \
+					.secondary = env_secondary,                                \
+				}))                                                                \
 	IF_ENABLED(define_config, ({.name = "env",                                                 \
 				    .task_id = TASK_ID_ENVIRONMENTAL,                              \
 				    .exec_type = TASK_EXECUTOR_WORKQUEUE,                          \
-				    .flags = TASK_FLAG_ARG_IS_DEVICE,                              \
-				    .task_arg.dev = env_ptr,                                       \
+				    .task_arg.const_arg = &_env_task_devices,                      \
 				    .executor.workqueue = {                                        \
 					    .worker_fn = environmental_task_fn,                    \
 				    }}))
