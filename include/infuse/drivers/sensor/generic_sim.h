@@ -21,8 +21,19 @@ extern "C" {
  * @brief Reset all channels back to unconfigured
  *
  * @param dev Generic simulator sensor device to reset
+ * @param reset_rc Reset the return codes
  */
-void generic_sim_reset(const struct device *dev);
+void generic_sim_reset(const struct device *dev, bool reset_rc);
+
+/**
+ * @brief Configure return value for generic sensor device
+ *
+ * @param dev Generic simulator sensor device to reset
+ * @param resume_rc Return code for @a PM_DEVICE_ACTION_RESUME
+ * @param suspend_rc Return code for @a PM_DEVICE_ACTION_SUSPEND
+ * @param fetch_rc Return code for @a sensor_sample_fetch
+ */
+void generic_sim_func_rc(const struct device *dev, int resume_rc, int suspend_rc, int fetch_rc);
 
 /**
  * @brief Set the value to be returned for a given channel

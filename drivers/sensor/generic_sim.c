@@ -13,12 +13,16 @@
 #include <zephyr/drivers/sensor.h>
 #include <zephyr/logging/log.h>
 #include <zephyr/sys/atomic.h>
+#include <zephyr/pm/device.h>
 
 #include <infuse/drivers/sensor/generic_sim.h>
 
 struct generic_sim_data {
 	struct sensor_value channel_values[SENSOR_CHAN_ALL];
 	ATOMIC_DEFINE(channels_set, SENSOR_CHAN_ALL);
+	int resume_rc;
+	int suspend_rc;
+	int fetch_rc;
 };
 
 struct generic_sim_cfg {
@@ -27,11 +31,25 @@ struct generic_sim_cfg {
 
 LOG_MODULE_DECLARE(GENERIC_SIM, CONFIG_SENSOR_LOG_LEVEL);
 
-void generic_sim_reset(const struct device *dev)
+void generic_sim_reset(const struct device *dev, bool reset_rc)
 {
 	struct generic_sim_data *data = dev->data;
 
 	memset(data->channels_set, 0, sizeof(data->channels_set));
+	if (reset_rc) {
+		data->resume_rc = 0;
+		data->suspend_rc = 0;
+		data->fetch_rc = 0;
+	}
+}
+
+void generic_sim_func_rc(const struct device *dev, int resume_rc, int suspend_rc, int fetch_rc)
+{
+	struct generic_sim_data *data = dev->data;
+
+	data->resume_rc = resume_rc;
+	data->suspend_rc = suspend_rc;
+	data->fetch_rc = fetch_rc;
 }
 
 int generic_sim_channel_set(const struct device *dev, enum sensor_channel chan,
@@ -50,7 +68,13 @@ int generic_sim_channel_set(const struct device *dev, enum sensor_channel chan,
 
 static int generic_sim_sample_fetch(const struct device *dev, enum sensor_channel chan)
 {
-	return 0;
+	struct generic_sim_data *data = dev->data;
+
+	if (chan > SENSOR_CHAN_ALL) {
+		return -ENOTSUP;
+	}
+
+	return data->fetch_rc;
 }
 
 static int generic_sim_channel_get(const struct device *dev, enum sensor_channel chan,
@@ -71,6 +95,26 @@ static int generic_sim_channel_get(const struct device *dev, enum sensor_channel
 	return 0;
 }
 
+#ifdef CONFIG_PM_DEVICE
+static int generic_sim_pm_control(const struct device *dev, enum pm_device_action action)
+{
+	struct generic_sim_data *data = dev->data;
+
+	switch (action) {
+	case PM_DEVICE_ACTION_SUSPEND:
+		return data->suspend_rc;
+	case PM_DEVICE_ACTION_RESUME:
+		return data->resume_rc;
+	case PM_DEVICE_ACTION_TURN_OFF:
+		return 0;
+	case PM_DEVICE_ACTION_TURN_ON:
+		return 0;
+	default:
+		return -ENOTSUP;
+	}
+}
+#endif /* CONFIG_PM_DEVICE */
+
 static const struct sensor_driver_api generic_sim_driver_api = {
 	.sample_fetch = generic_sim_sample_fetch,
 	.channel_get = generic_sim_channel_get,
@@ -88,8 +132,10 @@ int generic_sim_init(const struct device *dev)
 		.init_rc = -DT_INST_PROP(inst, negated_init_rc),                                   \
 	};                                                                                         \
 	static struct generic_sim_data generic_sim_data_##inst;                                    \
-	SENSOR_DEVICE_DT_INST_DEFINE(inst, generic_sim_init, NULL, &generic_sim_data_##inst,       \
-				     &generic_sim_cfg_##inst, POST_KERNEL,                         \
-				     CONFIG_SENSOR_INIT_PRIORITY, &generic_sim_driver_api);
+	PM_DEVICE_DT_INST_DEFINE(inst, generic_sim_pm_control);                                    \
+	SENSOR_DEVICE_DT_INST_DEFINE(inst, generic_sim_init, PM_DEVICE_DT_INST_GET(inst),          \
+				     &generic_sim_data_##inst, &generic_sim_cfg_##inst,            \
+				     POST_KERNEL, CONFIG_SENSOR_INIT_PRIORITY,                     \
+				     &generic_sim_driver_api);
 
 DT_INST_FOREACH_STATUS_OKAY(GENERIC_SIM_DEFINE)

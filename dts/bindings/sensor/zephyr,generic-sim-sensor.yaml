@@ -6,6 +6,8 @@ description: |
 
 compatible: "zephyr,generic-sim-sensor"
 
+include: [sensor-device.yaml]
+
 properties:
   negated-init-rc:
     type: int
