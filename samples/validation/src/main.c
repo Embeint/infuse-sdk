@@ -61,16 +61,24 @@ K_THREAD_DEFINE(imu_thread, 2048, imu_validator, NULL, NULL, NULL, 5, 0, 0);
 #endif /* DT_NODE_EXISTS(DT_ALIAS(imu0)) */
 
 #if DT_NODE_EXISTS(DT_ALIAS(environmental0))
-static int env_validator(void *a, void *b, void *c)
+
+static void env_validation_run(const struct device *dev)
 {
 	atomic_inc(&validators_registered);
-	if (infuse_validation_env(DEVICE_DT_GET(DT_ALIAS(environmental0)), VALIDATION_ENV_DRIVER) ==
-	    0) {
+	if (infuse_validation_env(dev, VALIDATION_ENV_DRIVER) == 0) {
 		atomic_inc(&validators_passed);
 	} else {
 		atomic_inc(&validators_failed);
 	}
 	atomic_inc(&validators_complete);
+}
+
+static int env_validator(void *a, void *b, void *c)
+{
+	env_validation_run(DEVICE_DT_GET(DT_ALIAS(environmental0)));
+#if DT_NODE_EXISTS(DT_ALIAS(environmental1))
+	env_validation_run(DEVICE_DT_GET(DT_ALIAS(environmental1)));
+#endif /* DT_NODE_EXISTS(DT_ALIAS(environmental1)) */
 	k_sem_give(&task_complete);
 	return 0;
 }
