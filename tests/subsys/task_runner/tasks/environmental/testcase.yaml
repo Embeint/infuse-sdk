@@ -2,11 +2,16 @@ common:
   tags: env
   min_flash: 64
   min_ram: 32
+  required_snippets:
+    - infuse
+  platform_allow:
+    - mps2/an385
+  integration_platforms:
+    - mps2/an385
+
 tests:
-  task_runner.tasks.env:
-    required_snippets:
-      - infuse
-    platform_allow:
-      - mps2/an385
-    integration_platforms:
-      - mps2/an385
+  task_runner.tasks.env: {}
+  task_runner.tasks.env.pm:
+    extra_configs:
+      - CONFIG_PM_DEVICE=y
+      - CONFIG_PM_DEVICE_RUNTIME=y
