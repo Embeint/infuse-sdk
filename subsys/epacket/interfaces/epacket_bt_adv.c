@@ -49,6 +49,8 @@ static struct net_buf *adv_set_bufs[CONFIG_BT_EXT_ADV_MAX_ADV_SET];
 static K_FIFO_DEFINE(tx_buf_queue);
 static struct bt_le_ext_adv *adv_set;
 static bool adv_set_active;
+static uint8_t scan_suspended;
+static K_SEM_DEFINE(scan_control, 1, 1);
 
 static void bt_adv_broadcast(const struct device *dev, struct net_buf *pkt)
 {
@@ -218,15 +220,23 @@ static void scan_cb(const bt_addr_le_t *addr, int8_t rssi, uint8_t adv_type,
 
 static int epacket_bt_adv_receive_control(const struct device *dev, bool enable)
 {
-	int rc;
+	int rc = 0;
 
+	k_sem_take(&scan_control, K_FOREVER);
 	if (enable) {
-		rc = bt_le_scan_start(&scan_param, scan_cb);
+		if (scan_suspended == 0) {
+			/* Scanning has been temporarily blocked */
+			rc = bt_le_scan_start(&scan_param, scan_cb);
+		}
 		infuse_work_reschedule(&scan_watchdog_work, SCAN_WDOG_TIMEOUT);
 	} else {
 		k_work_cancel_delayable(&scan_watchdog_work);
-		rc = bt_le_scan_stop();
+		if (scan_suspended == 0) {
+			/* Scanning has already been stopped */
+			rc = bt_le_scan_stop();
+		}
 	}
+	k_sem_give(&scan_control);
 	return rc;
 }
 
@@ -260,6 +270,40 @@ static void scan_rx_watchdog_expired(struct k_work *work)
 		/* Restart the watchdog */
 		infuse_work_reschedule(&scan_watchdog_work, SCAN_WDOG_TIMEOUT);
 	}
+}
+
+void epacket_bt_adv_scan_suspend(void)
+{
+	int rc;
+
+	k_sem_take(&scan_control, K_FOREVER);
+	if (k_work_delayable_is_pending(&scan_watchdog_work) && (scan_suspended == 0)) {
+		/* Scanning is currently ongoing, cancel it */
+		LOG_INF("Suspending scanning");
+		rc = bt_le_scan_stop();
+		if (rc != 0) {
+			LOG_ERR("Failed to stop scanning (%d)", rc);
+		}
+	}
+	scan_suspended += 1;
+	k_sem_give(&scan_control);
+}
+
+void epacket_bt_adv_scan_resume(void)
+{
+	int rc;
+
+	k_sem_take(&scan_control, K_FOREVER);
+	scan_suspended -= 1;
+	if (k_work_delayable_is_pending(&scan_watchdog_work) && (scan_suspended == 0)) {
+		/* Scanning is still desired by the application */
+		LOG_INF("Resuming scanning");
+		rc = bt_le_scan_start(&scan_param, scan_cb);
+		if (rc != 0) {
+			LOG_ERR("Failed to restart scanning (%d)", rc);
+		}
+	}
+	k_sem_give(&scan_control);
 }
 
 static int epacket_bt_adv_init(const struct device *dev)
