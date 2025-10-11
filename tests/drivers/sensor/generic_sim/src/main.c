@@ -9,6 +9,7 @@
 #include <zephyr/ztest.h>
 #include <zephyr/kernel.h>
 #include <zephyr/devicetree.h>
+#include <zephyr/pm/device_runtime.h>
 
 #include <infuse/drivers/sensor/generic_sim.h>
 
@@ -22,8 +23,10 @@ ZTEST(drivers_sensor_generic_sim, test_init_fail)
 ZTEST(drivers_sensor_generic_sim, test_init_pass)
 {
 	const struct device *dev = DEVICE_DT_GET(DT_NODELABEL(test_sensor));
+	const struct device *dev_pm = DEVICE_DT_GET(DT_NODELABEL(test_sensor_pm));
 
 	zassert_true(device_is_ready(dev));
+	zassert_true(device_is_ready(dev_pm));
 }
 
 ZTEST(drivers_sensor_generic_sim, test_invalid_set_get)
@@ -35,6 +38,39 @@ ZTEST(drivers_sensor_generic_sim, test_invalid_set_get)
 	zassert_equal(-EINVAL, generic_sim_channel_set(dev, SENSOR_CHAN_ALL + 1, val));
 	zassert_equal(-ENOTSUP, sensor_channel_get(dev, SENSOR_CHAN_ALL, &val));
 	zassert_equal(-ENOTSUP, sensor_channel_get(dev, SENSOR_CHAN_ALL + 1, &val));
+
+	zassert_equal(-ENOTSUP, sensor_sample_fetch_chan(dev, SENSOR_CHAN_ALL + 1));
+}
+
+ZTEST(drivers_sensor_generic_sim, test_fetch_rc)
+{
+	const struct device *dev = DEVICE_DT_GET(DT_NODELABEL(test_sensor));
+
+	zassert_equal(0, sensor_sample_fetch(dev));
+	generic_sim_func_rc(dev, 0, 0, -EIO);
+	zassert_equal(-EIO, sensor_sample_fetch(dev));
+	generic_sim_reset(dev, false);
+	zassert_equal(-EIO, sensor_sample_fetch(dev));
+	generic_sim_reset(dev, true);
+	zassert_equal(0, sensor_sample_fetch(dev));
+}
+
+ZTEST(drivers_sensor_generic_sim, test_pm)
+{
+	const struct device *dev = DEVICE_DT_GET(DT_NODELABEL(test_sensor_pm));
+
+	if (!IS_ENABLED(CONFIG_PM_DEVICE_RUNTIME)) {
+		ztest_test_skip();
+		return;
+	}
+
+	generic_sim_func_rc(dev, -EIO, 0, 0);
+	zassert_equal(-EIO, pm_device_runtime_get(dev));
+	generic_sim_func_rc(dev, 0, -EIO, 0);
+	zassert_equal(0, pm_device_runtime_get(dev));
+	zassert_equal(-EIO, pm_device_runtime_put(dev));
+	generic_sim_func_rc(dev, 0, 0, 0);
+	zassert_equal(0, pm_device_runtime_put(dev));
 }
 
 ZTEST(drivers_sensor_generic_sim, test_value_echo)
@@ -58,7 +94,7 @@ ZTEST(drivers_sensor_generic_sim, test_value_echo)
 	}
 
 	/* Reset clears all channels */
-	generic_sim_reset(dev);
+	generic_sim_reset(dev, true);
 	for (int i = 0; i < SENSOR_CHAN_ALL; i++) {
 		zassert_equal(-ENOTSUP, sensor_channel_get(dev, i, &val_read));
 	}
@@ -68,7 +104,7 @@ static void before_fn(void *unused)
 {
 	const struct device *dev = DEVICE_DT_GET(DT_NODELABEL(test_sensor));
 
-	generic_sim_reset(dev);
+	generic_sim_reset(dev, true);
 }
 
 ZTEST_SUITE(drivers_sensor_generic_sim, NULL, NULL, before_fn, NULL, NULL);

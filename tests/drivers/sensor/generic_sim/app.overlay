@@ -15,4 +15,10 @@
 		status = "okay";
 		negated-init-rc = <2>;
 	};
+
+	test_sensor_pm: test_sensor_pm {
+		compatible = "zephyr,generic-sim-sensor";
+		status = "okay";
+		zephyr,pm-device-runtime-auto;
+	};
 };
