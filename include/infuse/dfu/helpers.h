@@ -27,6 +27,26 @@ extern "C" {
  */
 
 /**
+ * @brief Prepare a flash area for write/erase
+ *
+ * Prepare to erase or write to a flash area.
+ *
+ * @note MUST call @ref infuse_dfu_write_erase_finish when complete
+ *
+ * @param fa Flash area (must be already opened)
+ */
+void infuse_dfu_write_erase_start(const struct flash_area *fa);
+
+/**
+ * @brief Finalise a flash area write/erase
+ *
+ * Cleanup the @ref infuse_dfu_write_erase_start call once complete.
+ *
+ * @param fa Flash area (must be already opened)
+ */
+void infuse_dfu_write_erase_finish(const struct flash_area *fa);
+
+/**
  * @brief Erase a flash area to be ready for a new image
  *
  * @param fa Flash area to erase (must be already opened)
@@ -56,6 +76,17 @@ int infuse_dfu_nrf91_modem_delta_prepare(void);
  * @retval -errno Error code from nrf_modem_delta_dfu_write_done or nrf_modem_delta_dfu_update
  */
 int infuse_dfu_nrf91_modem_delta_finish(void);
+
+#ifdef CONFIG_ZTEST
+
+/**
+ * @brief Get the current balance count of the start/finish helpers
+ *
+ * @return int Number of start calls minus finish calls
+ */
+int infuse_dfu_write_erase_call_count(void);
+
+#endif /* CONFIG_ZTEST */
 
 /**
  * @}

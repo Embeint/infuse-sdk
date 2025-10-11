@@ -12,14 +12,52 @@
 #include <zephyr/dfu/mcuboot.h>
 
 #include <infuse/dfu/helpers.h>
+#include <infuse/epacket/interface/epacket_bt_adv.h>
 
 #ifdef CONFIG_NRF_MODEM_LIB
 #include "nrf_modem_delta_dfu.h"
 #endif /* CONFIG_NRF_MODEM_LIB */
 
+#define INTERNAL_FLASH DEVICE_DT_GET(DT_CHOSEN(zephyr_flash_controller))
+
+#ifdef CONFIG_ZTEST
+static int write_erase_call_count;
+
+int infuse_dfu_write_erase_call_count(void)
+{
+	return write_erase_call_count;
+}
+
+#endif /* CONFIG_ZTEST */
+
+void infuse_dfu_write_erase_start(const struct flash_area *fa)
+{
+#ifdef CONFIG_EPACKET_INTERFACE_BT_ADV
+	if (fa->fa_dev == INTERNAL_FLASH) {
+		/* Erasing/writing internal flash while Bluetooth scanning is very slow */
+		epacket_bt_adv_scan_suspend();
+	}
+#endif /* CONFIG_EPACKET_INTERFACE_BT_ADV */
+#ifdef CONFIG_ZTEST
+	write_erase_call_count += 1;
+#endif /* CONFIG_ZTEST */
+}
+
+void infuse_dfu_write_erase_finish(const struct flash_area *fa)
+{
+#ifdef CONFIG_EPACKET_INTERFACE_BT_ADV
+	if (fa->fa_dev == INTERNAL_FLASH) {
+		epacket_bt_adv_scan_resume();
+	}
+#endif /* CONFIG_EPACKET_INTERFACE_BT_ADV */
+#ifdef CONFIG_ZTEST
+	write_erase_call_count -= 1;
+#endif /* CONFIG_ZTEST */
+}
+
 /* Implementation taken from zephyr_img_mgmt.c */
-int infuse_dfu_image_erase(const struct flash_area *fa, size_t image_len,
-			   infuse_progress_cb_t progress_cb, bool mcuboot_trailer)
+int infuse_dfu_image_erase_wrapped(const struct flash_area *fa, size_t image_len,
+				   infuse_progress_cb_t progress_cb, bool mcuboot_trailer)
 {
 	const struct device *dev = flash_area_get_device(fa);
 	struct flash_pages_info page;
@@ -94,6 +132,18 @@ int infuse_dfu_image_erase(const struct flash_area *fa, size_t image_len,
 #else
 	return -ENOTSUP;
 #endif
+}
+
+int infuse_dfu_image_erase(const struct flash_area *fa, size_t image_len,
+			   infuse_progress_cb_t progress_cb, bool mcuboot_trailer)
+{
+	int rc;
+
+	infuse_dfu_write_erase_start(fa);
+	rc = infuse_dfu_image_erase_wrapped(fa, image_len, progress_cb, mcuboot_trailer);
+	infuse_dfu_write_erase_finish(fa);
+
+	return rc;
 }
 
 #ifdef CONFIG_NRF_MODEM_LIB
