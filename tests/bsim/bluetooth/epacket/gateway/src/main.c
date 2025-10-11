@@ -20,6 +20,7 @@
 #include <infuse/data_logger/high_level/tdf.h>
 #include <infuse/tdf/definitions.h>
 #include <infuse/epacket/interface.h>
+#include <infuse/epacket/interface/epacket_bt_adv.h>
 #include <infuse/epacket/interface/epacket_bt_central.h>
 #include <infuse/epacket/interface/epacket_dummy.h>
 #include <infuse/epacket/packet.h>
@@ -170,6 +171,71 @@ static void main_gateway_scan(void)
 	} else {
 		PASS("Received %d packets from advertiser\n", atomic_get(&received_packets));
 	}
+}
+
+static void main_gateway_scan_suspend(void)
+{
+	const struct device *epacket_bt_adv = DEVICE_DT_GET(DT_NODELABEL(epacket_bt_adv));
+	int rc;
+
+	common_init();
+	epacket_set_receive_handler(epacket_bt_adv, epacket_bt_adv_receive_handler);
+
+	/* Suspend and resume while not scanning does nothing */
+	epacket_bt_adv_scan_suspend();
+	epacket_bt_adv_scan_resume();
+
+	/* Start scanning while suspended */
+	epacket_bt_adv_scan_suspend();
+	rc = epacket_receive(epacket_bt_adv, K_FOREVER);
+	if (rc < 0) {
+		FAIL("Failed to start ePacket receive (%d)\n", rc);
+		return;
+	}
+
+	/* No data received to start with */
+	if (k_sem_take(&epacket_adv_received, K_MSEC(1100)) != -EAGAIN) {
+		FAIL("Received ePacket while suspended\n");
+		return;
+	}
+
+	/* Reference counted API, so the resume should not actually resume */
+	epacket_bt_adv_scan_suspend();
+	epacket_bt_adv_scan_resume();
+	if (k_sem_take(&epacket_adv_received, K_MSEC(1100)) != -EAGAIN) {
+		FAIL("Received ePacket while suspended\n");
+		return;
+	}
+
+	/* Unblock the scanning, data received */
+	epacket_bt_adv_scan_resume();
+	if (k_sem_take(&epacket_adv_received, K_MSEC(1100)) != 0) {
+		FAIL("Failed to receive ePacket after resume\n");
+		return;
+	}
+
+	/* Suspend the scanning again */
+	epacket_bt_adv_scan_suspend();
+	if (k_sem_take(&epacket_adv_received, K_MSEC(1100)) != -EAGAIN) {
+		FAIL("Received ePacket while suspended\n");
+		return;
+	}
+
+	/* Halt scanning manually */
+	rc = epacket_receive(epacket_bt_adv, K_NO_WAIT);
+	if (rc < 0) {
+		FAIL("Failed to stop ePacket receive (%d)\n", rc);
+		return;
+	}
+
+	/* Unblock the scanning, but still no packets should be received */
+	epacket_bt_adv_scan_resume();
+	if (k_sem_take(&epacket_adv_received, K_MSEC(1100)) != -EAGAIN) {
+		FAIL("Received ePacket after halt\n");
+		return;
+	}
+
+	PASS("Scan suspend passed\n");
 }
 
 static void main_gateway_scan_wdog(void)
@@ -2325,6 +2391,13 @@ static const struct bst_test_instance epacket_gateway[] = {
 		.test_pre_init_f = test_init,
 		.test_tick_f = test_tick,
 		.test_main_f = main_gateway_scan,
+	},
+	{
+		.test_id = "epacket_bt_gateway_scan_suspend",
+		.test_descr = "Test suspending scanning",
+		.test_pre_init_f = test_init,
+		.test_tick_f = test_tick,
+		.test_main_f = main_gateway_scan_suspend,
 	},
 	{
 		.test_id = "epacket_bt_gateway_scan_wdog",
