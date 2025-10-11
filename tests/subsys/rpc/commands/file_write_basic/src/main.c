@@ -13,6 +13,7 @@
 #include <zephyr/storage/flash_map.h>
 
 #include <infuse/bluetooth/controller_manager.h>
+#include <infuse/dfu/helpers.h>
 #include <infuse/types.h>
 #include <infuse/rpc/commands.h>
 #include <infuse/rpc/server.h>
@@ -346,6 +347,9 @@ ZTEST(rpc_command_file_write_basic, test_file_write_dfu)
 	zassert_equal(fixed_payload_crc, ret.cmd_crc);
 	ret.cmd_len = sizeof(fixed_payload);
 	validate_flash_area(&ret, FIXED_PARTITION_ID(slot1_partition));
+
+	/* Balanced call count */
+	zassert_equal(0, infuse_dfu_write_erase_call_count());
 }
 #else
 ZTEST(rpc_command_file_write_basic, test_file_write_dfu)
@@ -440,6 +444,9 @@ ZTEST(rpc_command_file_write_basic, test_file_write_dfu_cpatch)
 				    0, 0, false, false, (void *)&hardcoded_patch);
 	zassert_equal(-EINVAL, ret.cmd_rc);
 	zassert_equal(sizeof(hardcoded_patch), ret.cmd_len);
+
+	/* Balanced call count */
+	zassert_equal(0, infuse_dfu_write_erase_call_count());
 }
 
 #else
