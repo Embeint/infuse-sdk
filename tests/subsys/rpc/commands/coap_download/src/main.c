@@ -14,6 +14,7 @@
 #include <zephyr/net/tls_credentials.h>
 #include <zephyr/sys/crc.h>
 
+#include <infuse/dfu/helpers.h>
 #include <infuse/security.h>
 #include <infuse/common_boot.h>
 #include <infuse/types.h>
@@ -232,6 +233,9 @@ ZTEST(rpc_command_coap_download, test_download)
 	send_download_command(20, "coap.dev.infuse-iot.com", 5684, 0, RPC_ENUM_FILE_ACTION_APP_IMG,
 			      "file/small_file", UINT32_MAX / 2, UINT32_MAX);
 	expect_coap_download_response(20, -EINVAL, 0, 0);
+
+	/* Balanced call count */
+	zassert_equal(0, infuse_dfu_write_erase_call_count());
 }
 
 ZTEST(rpc_command_coap_download, test_download_bt_ctlr)
@@ -315,6 +319,9 @@ ZTEST(rpc_command_coap_download, test_download_cpatch)
 			      RPC_ENUM_FILE_ACTION_APP_CPATCH, "file/hello_world-validate", 333,
 			      UINT32_MAX);
 	expect_coap_download_response(22, 0, 333, 0x8451810D);
+
+	/* Balanced call count */
+	zassert_equal(0, infuse_dfu_write_erase_call_count());
 }
 
 ZTEST_SUITE(rpc_command_coap_download, NULL, NULL, NULL, NULL, NULL);
