@@ -139,7 +139,7 @@ ZTEST(infuse_coap, test_invalid_work_area)
 ZTEST(infuse_coap, test_bad_socket)
 {
 	struct cb_ctx context;
-	int sock = 0, rc;
+	int sock = -1, rc;
 
 	/* Download from bad socket */
 	rc = infuse_coap_download(sock, "file/small_file", data_cb, &context, work_area,
