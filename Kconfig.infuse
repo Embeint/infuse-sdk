@@ -30,7 +30,6 @@ config INFUSE_APPLICATION_NAME
 	  Typically set by the `release-build` scripts.
 
 rsource "kconfig/Kconfig.defaults.core"
-rsource "kconfig/Kconfig.defaults.net"
 rsource "kconfig/Kconfig.defaults.nrf"
 rsource "kconfig/Kconfig.defaults.stm32"
 rsource "kconfig/Kconfig.defaults.sensor"
@@ -40,6 +39,7 @@ endif # INFUSE_SDK
 
 rsource "kconfig/Kconfig.defaults.802154"
 rsource "kconfig/Kconfig.defaults.bluetooth"
+rsource "kconfig/Kconfig.defaults.net"
 
 if ZTEST
 rsource "kconfig/Kconfig.defaults.ztest"

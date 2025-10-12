@@ -2,7 +2,12 @@
 
 DT_CHOSEN_Z_WIFI := zephyr,wifi
 
-if NETWORKING
+config INFUSE_SDK_NETWORKING
+	bool "Infuse-IoT SDK Networking defaults"
+	depends on NETWORKING
+	default y if INFUSE_SDK
+
+if INFUSE_SDK_NETWORKING
 
 configdefault WIFI
 	default y if $(dt_chosen_enabled,$(DT_CHOSEN_Z_WIFI))
@@ -90,6 +95,8 @@ configdefault NET_SOCKETS_ENABLE_DTLS
 	default y
 configdefault MBEDTLS_KEY_EXCHANGE_PSK_ENABLED
 	default y
+configdefault PSA_WANT_KEY_TYPE_ECC_PUBLIC_KEY
+	default y if !BUILD_WITH_TFM
 configdefault PSA_WANT_ALG_TLS12_PSK_TO_MS
 	default y
 configdefault PSA_WANT_ALG_TLS12_PRF
@@ -111,7 +118,7 @@ configdefault CONN_MGR_WIFI_KV_STORE
 configdefault NET_IF_MAX_IPV4_COUNT
 	default 2 if NRF_MODEM_LIB_NET_IF && WIFI
 
-endif # NETWORKING
+endif # INFUSE_SDK_NETWORKING
 
 if SHIELD_NRF7002EB || SHIELD_NRF7002EK
 
