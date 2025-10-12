@@ -61,7 +61,9 @@ configdefault DNS_RESOLVER
 configdefault DNS_SERVER_IP_ADDRESSES
 	default y
 configdefault DNS_SERVER1
-	default "8.8.8.8"
+	default "1.1.1.1"
+configdefault DNS_SERVER2
+	default "1.0.0.1"
 configdefault DNS_NUM_CONCUR_QUERIES
 	# Both libraries do DNS queries immediately upon connection
 	default 2 if SNTP_AUTO && EPACKET_INTERFACE_UDP
