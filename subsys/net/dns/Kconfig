@@ -10,3 +10,9 @@ config INFUSE_DNS
 	  queries at once, returning errors otherwise. This library
 	  mediates access to the shared resource, blocking until a
 	  query slot is available before running.
+
+config INFUSE_DNS_ASYNC
+	bool "Asynchronous variant of INFUSE_DNS"
+	depends on INFUSE_DNS
+	depends on DNS_RESOLVER
+	default y
