@@ -12,13 +12,14 @@ tests:
     depends_on:
       - netif
       - wifi
-  net.auto_sntp.native:
+  net.auto_sntp.native.sync:
     platform_allow:
       - native_sim
     integration_platforms:
       - native_sim
     extra_configs:
       - CONFIG_NATIVE_SIM_SLOWDOWN_TO_REAL_TIME=y
+      - CONFIG_INFUSE_DNS_ASYNC=n
     extra_args:
       - OVERLAY_CONFIG="overlay-nsos.conf"
     harness: console
@@ -42,5 +43,38 @@ tests:
         - "Unix time: (.*)"
         - "Now: (.*) UTC"
         - "pool.ntp.org -> (.*)"
+        - "Sending request..."
+        - "Unix time: (.*)"
+  net.auto_sntp.native.async:
+    platform_allow:
+      - native_sim
+    integration_platforms:
+      - native_sim
+    extra_configs:
+      - CONFIG_NATIVE_SIM_SLOWDOWN_TO_REAL_TIME=y
+      - CONFIG_INFUSE_DNS_ASYNC=y
+    extra_args:
+      - OVERLAY_CONFIG="overlay-nsos.conf"
+    harness: console
+    harness_config:
+      type: multi_line
+      ordered: true
+      regex:
+        - "/?/?/? -> (.*)"
+        - "Sending request..."
+        - "Unix time: (.*)"
+        - "Now: (.*) UTC"
+        - "/?/?/? -> (.*)"
+        - "Sending request..."
+        - "SNTP query timeout"
+        - "/?/?/? -> (.*)"
+        - "Sending request..."
+        - "Unix time: (.*)"
+        - "Now: (.*) UTC"
+        - "/?/?/? -> (.*)"
+        - "Sending request..."
+        - "Unix time: (.*)"
+        - "Now: (.*) UTC"
+        - "/?/?/? -> (.*)"
         - "Sending request..."
         - "Unix time: (.*)"

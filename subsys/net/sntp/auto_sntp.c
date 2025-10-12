@@ -19,6 +19,8 @@
 #include <infuse/fs/kv_store.h>
 #include <infuse/fs/kv_types.h>
 
+#define SNTP_PORT 123
+
 static void sntp_service_handler(struct net_socket_service_event *sev);
 
 static struct epoch_time_cb time_callback;
@@ -90,13 +92,71 @@ static void sntp_timeout_work(struct k_work *work)
 	k_work_reschedule(&sntp_worker, K_SECONDS(CONFIG_SNTP_AUTO_RESYNC_AGE));
 }
 
+static int sntp_start_async_query(struct sockaddr *addr, socklen_t addrlen)
+{
+	int rc;
+
+	rc = sntp_init_async(&sntp_context, addr, addrlen, &service_auto_sntp);
+	if (rc < 0) {
+		LOG_ERR("Failed to init ctx (%d)", rc);
+		return rc;
+	}
+
+	LOG_INF("Sending request...");
+	rc = sntp_send_async(&sntp_context);
+	if (rc == 0) {
+		k_work_schedule(&sntp_timeout, K_MSEC(CONFIG_SNTP_QUERY_TIMEOUT_MS));
+		return 0;
+	}
+
+	LOG_ERR("Failed to send request (%d)", rc);
+	sntp_close_async(&service_auto_sntp);
+	return rc;
+}
+
+#ifdef CONFIG_INFUSE_DNS_ASYNC
+
+static void async_dns_cb(int result, struct sockaddr *addr, socklen_t addrlen,
+			 struct infuse_async_dns_context *ctx)
+{
+	struct k_work_delayable *delayable = ctx->user_data;
+	struct sockaddr_in *saddr_in;
+
+	if (result < 0) {
+		LOG_ERR("SNTP DNS query failed (%d)", result);
+		goto error;
+	}
+
+	/* Next phase on first callback only */
+	if ((ctx->user_data == NULL) || (result == INFUSE_ASYNC_DNS_COMPLETE)) {
+		return;
+	}
+	ctx->user_data = NULL;
+
+	/* Async DNS doesn't populate the port */
+	BUILD_ASSERT(offsetof(struct sockaddr_in, sin_port) ==
+		     offsetof(struct sockaddr_in6, sin6_port));
+	saddr_in = (struct sockaddr_in *)addr;
+	saddr_in->sin_port = htons(SNTP_PORT);
+
+	/* Start the async SNTP query */
+	if (sntp_start_async_query(addr, addrlen) < 0) {
+		goto error;
+	}
+
+	return;
+error:
+	/* Failed to perform SNTP DNS query, retry in 5 seconds */
+	k_work_reschedule(delayable, K_SECONDS(5));
+}
+
+#endif /* CONFIG_INFUSE_DNS_ASYNC */
+
 static void sntp_work(struct k_work *work)
 {
 	struct k_work_delayable *delayable = k_work_delayable_from_work(work);
 	KV_STRING_CONST(ntp_default, CONFIG_SNTP_AUTO_DEFAULT_SERVER);
 	KV_KEY_TYPE_VAR(KV_KEY_NTP_SERVER_URL, 64) ntp_server;
-	struct sockaddr addr;
-	socklen_t addrlen;
 	int rc;
 
 	/* Pull NTP server address from KV store */
@@ -108,28 +168,37 @@ static void sntp_work(struct k_work *work)
 		goto error;
 	}
 
+#ifdef CONFIG_INFUSE_DNS_ASYNC
+	static struct infuse_async_dns_context sntp_dns_ctx = {
+		.cb = async_dns_cb,
+	};
+
+	sntp_dns_ctx.user_data = delayable;
+
+	rc = infuse_async_dns(ntp_server.url.value, AF_INET, &sntp_dns_ctx, 10000);
+	if (rc < 0) {
+		LOG_ERR("DNS failed to start query for %s (%d)", ntp_server.url.value, rc);
+		goto error;
+	}
+	return;
+#else
+	struct sockaddr addr;
+	socklen_t addrlen;
+
 	/* Get IP address from DNS */
-	rc = infuse_sync_dns(ntp_server.url.value, 123, AF_INET, SOCK_DGRAM, &addr, &addrlen);
+	rc = infuse_sync_dns(ntp_server.url.value, SNTP_PORT, AF_INET, SOCK_DGRAM, &addr, &addrlen);
 	if (rc < 0) {
 		LOG_ERR("DNS query failed for %s (%d)", ntp_server.url.value, rc);
 		goto error;
 	}
 
-	rc = sntp_init_async(&sntp_context, &addr, addrlen, &service_auto_sntp);
-	if (rc < 0) {
-		LOG_ERR("Failed to init ctx (%d)", rc);
-		goto error;
-	}
-
-	LOG_INF("Sending request...");
-	rc = sntp_send_async(&sntp_context);
+	/* Start the async SNTP query */
+	rc = sntp_start_async_query(&addr, addrlen);
 	if (rc == 0) {
-		k_work_schedule(&sntp_timeout, K_MSEC(CONFIG_SNTP_QUERY_TIMEOUT_MS));
 		return;
 	}
 
-	LOG_ERR("Failed to send request (%d)", rc);
-	sntp_close_async(&service_auto_sntp);
+#endif /* CONFIG_INFUSE_DNS_ASYNC */
 
 error:
 	/* Failed to perform SNTP update, retry in 5 seconds */
