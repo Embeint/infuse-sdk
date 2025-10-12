@@ -13,6 +13,11 @@
 #include <infuse/time/epoch.h>
 #include <infuse/states.h>
 
+#ifdef CONFIG_INFUSE_EPOCH_TIME_PRINT_REF_ON_SYNC
+#include <time.h>
+#include <sys/time.h>
+#endif /* CONFIG_INFUSE_EPOCH_TIME_PRINT_REF_ON_SYNC */
+
 #define JAN_01_01_2020 (1261872018ULL * INFUSE_EPOCH_TIME_TICKS_PER_SEC)
 
 static const struct timeutil_sync_config infuse_civil_config = {
@@ -139,6 +144,16 @@ int epoch_time_set_reference(enum epoch_time_source source, struct timeutil_sync
 	LOG_INF("Now: %d-%02d-%02dT%02d:%02d:%02d.%03d UTC", 1900 + c.tm_year, 1 + c.tm_mon,
 		c.tm_mday, c.tm_hour, c.tm_min, c.tm_sec, epoch_time_milliseconds(now));
 #endif /* CONFIG_INFUSE_EPOCH_TIME_PRINT_ON_SYNC */
+#ifdef CONFIG_INFUSE_EPOCH_TIME_PRINT_REF_ON_SYNC
+	struct timeval tv_now;
+	struct tm *t;
+
+	(void)gettimeofday(&tv_now, NULL);
+	t = gmtime(&tv_now.tv_sec);
+	LOG_INF("Ref: %d-%02d-%02dT%02d:%02d:%02d.%03d UTC", 1900 + t->tm_year, 1 + t->tm_mon,
+		t->tm_mday, t->tm_hour, t->tm_min, t->tm_sec, tv_now.tv_usec / USEC_PER_MSEC);
+#endif /* INFUSE_EPOCH_TIME_PRINT_REF_ON_SYNC */
+
 	return rc;
 }
 
