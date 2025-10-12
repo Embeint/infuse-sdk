@@ -13,8 +13,6 @@ import colorama
 import pykwalify.core
 import yaml
 
-from typing_extensions import Tuple
-
 from west.commands import WestCommand
 from west.manifest import Project, ManifestProject
 
@@ -216,7 +214,7 @@ class release_build(WestCommand):
             else:
                 sys.exit(msg)
 
-    def expected_version(self, repo: Repo) -> Tuple[str, str]:
+    def expected_version(self, repo: Repo) -> tuple[str, str]:
         version_file = self.application / "VERSION"
         if not version_file.exists():
             sys.exit(f"{version_file} does not exist")
@@ -350,6 +348,9 @@ class release_build(WestCommand):
         if "CONFIG_EPACKET_INTERFACE_UDP" in configs:
             if "CONFIG_EPACKET_INTERFACE_UDP_DOWNLINK_WATCHDOG" not in configs:
                 warnings.append("UDP interface enabled without downlink watchdog")
+
+        if "CONFIG_DNS_RESOLVER_CACHE" in configs:
+            warnings.append("Application cannot handle changing IP addresses")
 
         if self.tfm_build:
             key_file_0 = configs["CONFIG_TFM_KEY_FILE_S"]
