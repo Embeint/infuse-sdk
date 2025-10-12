@@ -99,6 +99,7 @@ int rpc_common_file_actions_start(struct rpc_common_file_actions_ctx *ctx,
 	ctx->action = action;
 	ctx->received = 0;
 	ctx->crc = 0;
+	ctx->needs_cleanup = false;
 
 	switch (ctx->action) {
 	case RPC_ENUM_FILE_ACTION_DISCARD:
@@ -142,6 +143,17 @@ int rpc_common_file_actions_start(struct rpc_common_file_actions_ctx *ctx,
 	default:
 		rc = -EINVAL;
 	}
+
+#ifdef CONFIG_INFUSE_DFU_HELPERS
+	if (ctx->fa && (rc == 0)) {
+		/* Write should proceed, closed by either:
+		 *   rpc_common_file_actions_finish or
+		 *   rpc_common_file_actions_error_cleanup
+		 */
+		infuse_dfu_write_erase_start(ctx->fa);
+		ctx->needs_cleanup = true;
+	}
+#endif /* CONFIG_INFUSE_DFU_HELPERS */
 	return rc;
 }
 
@@ -255,6 +267,7 @@ static int finish_cpatch(struct rpc_common_file_actions_ctx *ctx)
 
 	flash_area_open(FIXED_PARTITION_ID(slot0_partition), &fa_original);
 	flash_area_open(FIXED_PARTITION_ID(slot1_partition), &fa_output);
+	infuse_dfu_write_erase_start(fa_output);
 
 	/* Start patch process */
 	rc = cpatch_patch_start(fa_original, ctx->fa, &header);
@@ -295,6 +308,7 @@ static int finish_cpatch(struct rpc_common_file_actions_ctx *ctx)
 
 cleanup:
 	/* Cleanup files */
+	infuse_dfu_write_erase_finish(fa_output);
 	flash_area_close(fa_output);
 	flash_area_close(fa_original);
 
@@ -313,6 +327,11 @@ int rpc_common_file_actions_finish(struct rpc_common_file_actions_ctx *ctx, uint
 	uint32_t flash_crc;
 	size_t mem_size;
 	uint8_t *mem;
+
+	if (ctx->needs_cleanup) {
+		infuse_dfu_write_erase_finish(ctx->fa);
+		ctx->needs_cleanup = false;
+	}
 
 	/* Temporary memory buffer */
 	mem = rpc_server_command_working_mem(&mem_size);
@@ -424,6 +443,12 @@ int rpc_common_file_actions_deferred(struct rpc_common_file_actions_ctx *ctx, ui
 int rpc_common_file_actions_error_cleanup(struct rpc_common_file_actions_ctx *ctx)
 {
 	int rc = 0;
+
+#ifdef CONFIG_INFUSE_DFU_HELPERS
+	if (ctx->needs_cleanup) {
+		infuse_dfu_write_erase_finish(ctx->fa);
+	}
+#endif /* CONFIG_INFUSE_DFU_HELPERS */
 
 	switch (ctx->action) {
 #ifdef SUPPORT_APP_IMG

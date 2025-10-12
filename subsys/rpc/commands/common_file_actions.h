@@ -18,9 +18,10 @@ struct rpc_common_file_actions_ctx {
 		const struct flash_area *fa;
 		uint32_t client_ctx;
 	};
-	enum rpc_enum_file_action action;
 	uint32_t received;
 	uint32_t crc;
+	enum rpc_enum_file_action action;
+	bool needs_cleanup;
 };
 
 #define FILE_ALREADY_PRESENT 1
