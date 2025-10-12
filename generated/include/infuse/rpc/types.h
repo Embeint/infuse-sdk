@@ -173,7 +173,7 @@ struct rpc_struct_wifi_state {
 
 /** LTE interface status */
 struct rpc_struct_lte_state {
-	/** Network registration state */
+	/** Network registration state (3GPP TS 127.007) */
 	uint8_t registration_state;
 	/** Access Technology (3GPP TS 127.007) */
 	uint8_t access_technology;
