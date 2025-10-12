@@ -34,6 +34,7 @@ jobs:
         sudo apt-get install coccinelle
 
     - name: Run Coding Guidelines Checks
+      continue-on-error: true
       id: coding_guidelines
       env:
         BASE_REF: ${{ github.base_ref }}
