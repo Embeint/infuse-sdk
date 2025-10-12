@@ -73,7 +73,7 @@
         "rpc_struct_lte_state": {
             "description": "LTE interface status",
             "fields": [
-                {"name": "registration_state", "type": "uint8_t", "description": "Network registration state"},
+                {"name": "registration_state", "type": "uint8_t", "description": "Network registration state (3GPP TS 127.007)"},
                 {"name": "access_technology", "type": "uint8_t", "description": "Access Technology (3GPP TS 127.007)"},
                 {"name": "mcc", "type": "uint16_t", "description": "Mobile Country Code"},
                 {"name": "mnc", "type": "uint16_t", "description": "Mobile Network Code"},

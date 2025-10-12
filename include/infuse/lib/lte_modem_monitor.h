@@ -15,6 +15,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#include <zephyr/drivers/cellular.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -24,49 +26,6 @@ extern "C" {
  * @defgroup lte_modem_monitor_apis nrf_modem_monitor APIs
  * @{
  */
-
-/**
- * Network registration status.
- *
- * @note Maps directly to the registration status as returned by the AT command `AT+CEREG?`.
- */
-enum lte_registration_status {
-	/** Not registered. UE is not currently searching for an operator to register to. */
-	LTE_REGISTRATION_NOT_REGISTERED = 0,
-	/** Registered, home network. */
-	LTE_REGISTRATION_REGISTERED_HOME = 1,
-	/**
-	 * Not registered, but UE is currently trying to attach or searching for an operator to
-	 * register to.
-	 */
-	LTE_REGISTRATION_SEARCHING = 2,
-	/** Registration denied. */
-	LTE_REGISTRATION_REGISTRATION_DENIED = 3,
-	/** Unknown, for example out of LTE coverage. */
-	LTE_REGISTRATION_UNKNOWN = 4,
-	/** Registered, roaming. */
-	LTE_REGISTRATION_REGISTERED_ROAMING = 5,
-	/** Registered for "SMS only", home network. */
-	LTE_REGISTRATION_REGISTERED_HOME_SMS_ONLY = 6,
-	/** Registered for "SMS only", roaming. */
-	LTE_REGISTRATION_REGISTERED_ROAMING_SMS_ONLY = 7,
-	/** Attached for emergency bearer services only */
-	LTE_REGISTRATION_ATTACHED_EMERGENCY_ONLY = 7,
-	/** Not registered due to UICC failure (nRF91 only). */
-	LTE_REGISTRATION_NRF91_UICC_FAIL = 90
-};
-
-/**
- * LTE mode.
- */
-enum lte_access_technology {
-	/** None. */
-	LTE_ACCESS_TECH_NONE = 0,
-	/** LTE-M. */
-	LTE_ACCESS_TECH_LTE_M = 7,
-	/** NB-IoT. */
-	LTE_ACCESS_TECH_NB_IOT = 9,
-};
 
 /**
  * LTE "Radio Resource Control" state.
@@ -127,9 +86,10 @@ struct lte_edrx_cfg {
 	/**
 	 * LTE mode for which the configuration is valid.
 	 *
-	 * If the mode is @ref LTE_ACCESS_TECH_NONE, access technology is not using eDRX.
+	 * If the mode is @a CELLULAR_ACCESS_TECHNOLOGY_UNKNOWN, access technology is not using
+	 * eDRX.
 	 */
-	enum lte_access_technology mode;
+	enum cellular_access_technology mode;
 
 	/** eDRX interval in seconds. */
 	float edrx;
@@ -139,8 +99,8 @@ struct lte_edrx_cfg {
 };
 
 struct lte_modem_network_state {
-	enum lte_registration_status nw_reg_status;
-	enum lte_access_technology lte_mode;
+	enum cellular_registration_status nw_reg_status;
+	enum cellular_access_technology lte_mode;
 	enum lte_rrc_mode rrc_mode;
 	struct lte_psm_cfg psm_cfg;
 	struct lte_edrx_cfg edrx_cfg;
