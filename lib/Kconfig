@@ -39,6 +39,11 @@ config INFUSE_EPOCH_TIME_PRINT_ON_SYNC
 	depends on INFUSE_EPOCH_TIME
 	default y
 
+config INFUSE_EPOCH_TIME_PRINT_REF_ON_SYNC
+	bool "Print the current reference local time on sync"
+	depends on ARCH_POSIX
+	default y
+
 config INFUSE_CUSTOM_IDENTIFIERS
 	bool "Rely on some other source to supply an implementation of infuse_device_id"
 	help
