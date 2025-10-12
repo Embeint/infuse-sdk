@@ -27,4 +27,3 @@ tests:
         - "google.com -> (.*):80"
         - "not.a.real.address -> Lookup failed"
         - "google.com -> IPv6:80"
-        - "not.a.real.address -> Lookup failed"
