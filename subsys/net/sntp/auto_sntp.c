@@ -73,7 +73,8 @@ static void sntp_service_handler(struct net_socket_service_event *sev)
 	/* Update reference instant */
 	struct timeutil_sync_instant sync_point = {
 		.local = ticks,
-		.ref = epoch_time_from_unix(s_time.seconds, s_time.fraction / 15259),
+		/* SNTP seconds fraction is [0, UINT32_MAX] */
+		.ref = epoch_time_from_unix(s_time.seconds, s_time.fraction >> 16),
 	};
 	if (epoch_time_set_reference(TIME_SOURCE_NTP, &sync_point) < 0) {
 		LOG_ERR("Failed to set reference (%d)", rc);
