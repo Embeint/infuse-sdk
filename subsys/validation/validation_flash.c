@@ -32,6 +32,13 @@ static int write_read_erase_page(const struct device *dev, size_t page, size_t p
 	VALIDATION_REPORT_INFO(TEST, "Testing address %d.%d (0x%08lX)", page, page_offset,
 			       write_offset);
 
+	/* Ensure page starts erased */
+	rc = flash_erase(dev, erase_offset, page_size);
+	if (rc < 0) {
+		VALIDATION_REPORT_ERROR(TEST, "flash_erase (%d)", rc);
+		return rc;
+	}
+
 	/* Fill buffer with random bytes */
 	sys_rand_get(write_buffer, sizeof(write_buffer));
 
