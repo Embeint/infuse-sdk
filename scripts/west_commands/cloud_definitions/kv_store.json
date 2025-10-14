@@ -36,6 +36,14 @@
                 {"name": "lower", "type": "uint8_t"},
                 {"name": "upper", "type": "uint8_t"}
             ]
+        },
+        "kv_utc_hms": {
+            "description": "UTC Hour-Minute-Second",
+            "fields": [
+                {"name": "hour", "type": "uint8_t"},
+                {"name": "minute", "type": "uint8_t"},
+                {"name": "second", "type": "uint8_t"}
+            ]
         }
     },
     "definitions": {
@@ -270,6 +278,15 @@
             "reflect": true,
             "fields": [
                 {"name": "limit_kbps", "type": "uint16_t", "description": "Requested throughput limit (kbps)"}
+            ]
+        },
+        "53": {
+            "name": "LED_DISABLE_DAILY_TIME_RANGE",
+            "description": "Disable LEDs between two UTC times daily",
+            "reflect": true,
+            "fields": [
+                {"name": "disable_start", "type": "struct kv_utc_hms", "description": "Disable LEDs at this time"},
+                {"name": "disable_end", "type": "struct kv_utc_hms", "description": "Re-enable LEDs at this time"}
             ]
         },
         "60": {

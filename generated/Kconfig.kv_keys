@@ -146,6 +146,11 @@ config KV_STORE_KEY_BLUETOOTH_THROUGHPUT_LIMIT
 	help
 	  Request connected Bluetooth peers to limit throughtput
 
+config KV_STORE_KEY_LED_DISABLE_DAILY_TIME_RANGE
+	bool "Enable KV key LED_DISABLE_DAILY_TIME_RANGE"
+	help
+	  Disable LEDs between two UTC times daily
+
 config KV_STORE_KEY_GRAVITY_REFERENCE
 	bool "Enable KV key GRAVITY_REFERENCE"
 	help
