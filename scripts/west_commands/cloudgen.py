@@ -118,6 +118,8 @@ class cloudgen(WestCommand):
             if field["num"] == 0:
                 field["array"] = "[]"
                 d["flexible"] = True
+                if "counted_by" in field:
+                    d["counted_by"] = field["counted_by"]
             else:
                 field["array"] = f"[{field['num']}]"
 

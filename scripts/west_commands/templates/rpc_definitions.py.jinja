@@ -26,6 +26,9 @@ class {{ name }}(VLACompatLittleEndianStruct):
 {% if 'flexible' in info %}
     vla_field = ("{{ info['fields'][-1]['name'] }}", {{ info['fields'][-1]['py_type'] }})
 {% endif %}
+{% if 'counted_by' in info %}
+    vla_counted_by = "{{ info['counted_by'] }}"
+{% endif %}
     _pack_ = 1
 
 {% endif %}
