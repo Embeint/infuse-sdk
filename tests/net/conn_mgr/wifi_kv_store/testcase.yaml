@@ -1,0 +1,8 @@
+common:
+  tags: infuse net
+tests:
+  net.conn_mgr.wifi_kv_store:
+    platform_allow:
+      - native_sim
+    integration_platforms:
+      - native_sim
