@@ -1,0 +1,20 @@
+# Infuse-IoT watchdog configuration
+
+config WIFI_SIM
+	bool "Simulated WiFi device"
+	select WIFI_OFFLOAD
+
+if WIFI_SIM
+
+config WIFI_SIM_AP_SSID
+	string "Network name that results in a connection to the network"
+	default "nsos_sim_network"
+
+config WIFI_SIM_AP_PSK
+	string "Network pre-shared-key that results in a connection to the network"
+	default "nsos_sim_password"
+
+config WIFI_SIM_IF_AUTO_START
+	bool "Automatically start the interface"
+
+endif # WIFI_SIM
