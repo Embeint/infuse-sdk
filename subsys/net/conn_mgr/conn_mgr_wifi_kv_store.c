@@ -22,12 +22,11 @@ static struct net_mgmt_event_callback wifi_mgmt_cb;
 static struct k_work_delayable conn_config_changed;
 static struct k_work_delayable conn_create;
 static struct k_work_delayable conn_timeout;
-static struct k_work_delayable idle_timeout;
 static struct k_work conn_terminate;
 static struct net_if *wifi_if;
 static bool connection_requested;
 static bool did_conn_timeout;
-static bool did_idle_timeout;
+static bool manual_disconnect;
 static bool is_connected;
 
 LOG_MODULE_REGISTER(wifi_mgmt, LOG_LEVEL_INF);
@@ -114,18 +113,15 @@ static void conn_create_worker(struct k_work *work)
 static void conn_timeout_worker(struct k_work *work)
 {
 	did_conn_timeout = true;
+	manual_disconnect = true;
 	LOG_INF("Connection attempt timed out");
 
-	/* Cancel the pending connection */
+	/* Cancel any pending connections */
+	k_work_cancel_delayable(&conn_create);
 	(void)net_mgmt(NET_REQUEST_WIFI_DISCONNECT, wifi_if, NULL, 0);
 
 	/* Notify stack of timeout */
 	net_mgmt_event_notify(NET_EVENT_CONN_IF_TIMEOUT, wifi_if);
-}
-
-static void wifi_mgmt_used(struct conn_mgr_conn_binding *const binding)
-{
-	k_work_reschedule(&idle_timeout, K_SECONDS(binding->idle_timeout));
 }
 
 static void conn_config_changed_worker(struct k_work *work)
@@ -143,6 +139,7 @@ static void conn_config_changed_worker(struct k_work *work)
 	}
 
 	/* Configuration changed, trigger a disconnect */
+	manual_disconnect = true;
 	(void)net_mgmt(NET_REQUEST_WIFI_DISCONNECT, wifi_if, NULL, 0);
 	/* Reschedule connection */
 	if (conn_mgr_if_get_flag(wifi_if, CONN_MGR_IF_PERSISTENT)) {
@@ -161,7 +158,6 @@ static void wifi_mgmt_event_handler(struct net_mgmt_event_callback *cb, uint64_t
 {
 	const struct wifi_status *status = cb->info;
 	bool persistent = conn_mgr_if_get_flag(wifi_if, CONN_MGR_IF_PERSISTENT);
-	struct conn_mgr_conn_binding *const binding = conn_mgr_if_get_binding(iface);
 	int timeout;
 
 	if (iface != wifi_if) {
@@ -175,11 +171,7 @@ static void wifi_mgmt_event_handler(struct net_mgmt_event_callback *cb, uint64_t
 			/* Cancel any pending work timeout */
 			LOG_INF("Connection successful");
 			(void)k_work_cancel_delayable(&conn_timeout);
-			/* Start idle timeout if configured */
-			did_idle_timeout = false;
-			if (binding->idle_timeout != CONN_MGR_IF_NO_TIMEOUT) {
-				wifi_mgmt_used(binding);
-			}
+			manual_disconnect = false;
 		} else if (did_conn_timeout && !persistent) {
 			/* Don't retry if the connection timed out and its not persistent */
 			LOG_INF("Non-persistent connection timed-out");
@@ -199,17 +191,12 @@ static void wifi_mgmt_event_handler(struct net_mgmt_event_callback *cb, uint64_t
 		LOG_INF("Connection lost (%d)%s", status->disconn_reason,
 			persistent ? ", retrying" : "");
 
-		/* Cancel any pending idle timeouts */
-		if (binding->idle_timeout != CONN_MGR_IF_NO_TIMEOUT) {
-			k_work_cancel_delayable(&idle_timeout);
-		}
-
 		if (persistent) {
 #ifdef CONFIG_WIFI_NM_WPA_SUPPLICANT
 			/* WPA SUPP automatically attempts to reconnect.
-			 * Unless we requested the disconnect in idle timeout.
+			 * Unless we explicitly requested the disconnect.
 			 */
-			if (did_idle_timeout) {
+			if (manual_disconnect) {
 				k_work_schedule(&conn_create, K_SECONDS(1));
 			}
 #else
@@ -223,8 +210,8 @@ static void wifi_mgmt_event_handler(struct net_mgmt_event_callback *cb, uint64_t
 			}
 		} else {
 #ifdef CONFIG_WIFI_NM_WPA_SUPPLICANT
-			/* Stop reconnection attempts (unless idle timeout already did) */
-			if (!did_idle_timeout) {
+			/* Stop reconnection attempts (unless explicit disconnect already did) */
+			if (!manual_disconnect) {
 				(void)net_mgmt(NET_REQUEST_WIFI_DISCONNECT, wifi_if, NULL, 0);
 			}
 #endif /* CONFIG_WIFI_NM_WPA_SUPPLICANT */
@@ -244,7 +231,6 @@ static int wifi_mgmt_connect(struct conn_mgr_conn_binding *const binding)
 	/* Connection is now requested */
 	connection_requested = true;
 	did_conn_timeout = false;
-	did_idle_timeout = false;
 	/* Schedule the connection */
 	k_work_schedule(&conn_create, K_NO_WAIT);
 	/* Schedule the timeout if set */
@@ -256,16 +242,9 @@ static int wifi_mgmt_connect(struct conn_mgr_conn_binding *const binding)
 	return 0;
 }
 
-static void conn_idle_worker(struct k_work *work)
-{
-	LOG_INF("Interface idle");
-	did_idle_timeout = true;
-	(void)net_mgmt(NET_REQUEST_WIFI_DISCONNECT, wifi_if, NULL, 0);
-	net_mgmt_event_notify(NET_EVENT_CONN_IF_IDLE_TIMEOUT, wifi_if);
-}
-
 static void conn_terminate_worker(struct k_work *work)
 {
+	manual_disconnect = true;
 	(void)net_mgmt(NET_REQUEST_WIFI_DISCONNECT, wifi_if, NULL, 0);
 }
 
@@ -312,7 +291,6 @@ static void wifi_mgmt_init(struct conn_mgr_conn_binding *const binding)
 
 	k_work_init_delayable(&conn_create, conn_create_worker);
 	k_work_init_delayable(&conn_timeout, conn_timeout_worker);
-	k_work_init_delayable(&idle_timeout, conn_idle_worker);
 	k_work_init_delayable(&conn_config_changed, conn_config_changed_worker);
 	k_work_init(&conn_terminate, conn_terminate_worker);
 
@@ -331,7 +309,6 @@ static void wifi_mgmt_init(struct conn_mgr_conn_binding *const binding)
 
 static struct conn_mgr_conn_api l2_wifi_conn_api = {
 	.connect = wifi_mgmt_connect,
-	.used = wifi_mgmt_used,
 	.disconnect = wifi_mgmt_disconnect,
 	.init = wifi_mgmt_init,
 };
