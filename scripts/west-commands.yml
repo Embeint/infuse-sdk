@@ -5,6 +5,11 @@ west-commands:
       - name: vscode
         class: vscode
         help: generate Visual Studio code configuration
+  - file: scripts/west_commands/zed.py
+    commands:
+      - name: zed
+        class: zed
+        help: generate Zed configuration
   - file: scripts/west_commands/cloudgen.py
     commands:
       - name: cloudgen
