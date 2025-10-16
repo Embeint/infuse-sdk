@@ -98,7 +98,7 @@ file_snippets = {
 def author():
     """Get current git user configuration"""
 
-    def git_config(config):
+    def git_config(config: str):
         proc = subprocess.run(
             ["git", "config", config], stdout=subprocess.PIPE, check=False
         )
@@ -230,7 +230,12 @@ class vscode(WestCommand):
         parser.add_argument("--snr", type=str, help="JTAG serial number")
         return parser
 
-    def cpp_properties(self, build_dir, cache, include_path=True):
+    def cpp_properties(
+        self,
+        build_dir: pathlib.Path,
+        cache: zcmake.CMakeCache,
+        include_path: bool = True,
+    ):
         c_cpp_properties["configurations"][0]["compilerPath"] = cache.get(
             "CMAKE_C_COMPILER"
         )
@@ -239,7 +244,7 @@ class vscode(WestCommand):
                 str(build_dir / "zephyr" / "include" / "generated")
             ]
 
-    def _tfm_build(self, build_dir, cache):
+    def _tfm_build(self, build_dir: pathlib.Path, _cache: zcmake.CMakeCache):
         launch["configurations"][0]["executable"] = str(build_dir / "bin" / "tfm_s.elf")
         launch["configurations"][1]["executable"] = str(build_dir / "bin" / "tfm_s.elf")
 
@@ -255,7 +260,7 @@ class vscode(WestCommand):
         launch["configurations"][0]["gdbPath"] = parent_cache.get("CMAKE_GDB")
         launch["configurations"][1]["gdbPath"] = parent_cache.get("CMAKE_GDB")
 
-    def _tfm_sub_image(self, build_dir):
+    def _tfm_sub_image(self, build_dir: pathlib.Path):
         tfm_elfs = [
             "bl2.elf",
             "tfm_s.elf",
@@ -268,7 +273,7 @@ class vscode(WestCommand):
             f"add-symbol-file {str(path)}" for path in tfm_exists
         ]
 
-    def _zephyr_build(self, build_dir, cache):
+    def _zephyr_build(self, build_dir: pathlib.Path, cache: zcmake.CMakeCache):
         self.cpp_properties(build_dir, cache)
 
         launch["configurations"][0]["gdbPath"] = cache.get("CMAKE_GDB")
@@ -295,7 +300,7 @@ class vscode(WestCommand):
                     f"add-symbol-file {str(mcuboot_elf.resolve())}"
                 ]
 
-    def _qemu(self, build_dir, cache):
+    def _qemu(self, build_dir: pathlib.Path, cache: zcmake.CMakeCache):
         assert cache.get("QEMU", False)
 
         self.cpp_properties(build_dir, cache)
@@ -321,7 +326,7 @@ class vscode(WestCommand):
             build_dir / "zephyr" / "zephyr.elf"
         )
 
-    def _native(self, build_dir, cache):
+    def _native(self, build_dir: pathlib.Path, cache: zcmake.CMakeCache):
         assert cache.get("BOARD")[:10] in [
             "native_sim",
             "nrf52_bsim",
@@ -365,7 +370,9 @@ class vscode(WestCommand):
         launch["configurations"][0]["rtos"] = "Zephyr"
         launch["configurations"][1]["rtos"] = "Zephyr"
 
-    def _jlink(self, snr, build_dir, cache, runners_yaml):
+    def _jlink(
+        self, snr, build_dir: pathlib.Path, cache: zcmake.CMakeCache, runners_yaml
+    ):
         self._jlink_device(runners_yaml)
         if snr is not None:
             launch["configurations"][0]["serialNumber"] = snr
@@ -420,7 +427,7 @@ class vscode(WestCommand):
 
         return str(svd_output)
 
-    def _openocd(self, build_dir, cache, runners_yaml, vscode_folder):
+    def _openocd(self, build_dir: pathlib.Path, cache, runners_yaml, vscode_folder):
         board_dir = cache["BOARD_DIR"]
         cfg_path = f"{board_dir}/support/openocd.cfg"
 
@@ -440,7 +447,7 @@ class vscode(WestCommand):
                 launch["configurations"][0]["svdFile"] = svd_path
                 launch["configurations"][1]["svdFile"] = svd_path
 
-    def _physical_hardware(self, build_dir, cache):
+    def _physical_hardware(self, build_dir: pathlib.Path, cache: zcmake.CMakeCache):
         if build_dir.parts[-1] == "tfm":
             self._tfm_build(build_dir, cache)
         else:
