@@ -17,8 +17,6 @@ This command generates default Zed configuration files for
 use with the Embeint SDK.
 """
 
-settings = {"lsp": {"clangd": {"binary": {"arguments": []}}}}
-
 
 class zed(WestCommand):
     def __init__(self):
@@ -57,6 +55,7 @@ class zed(WestCommand):
         zed_folder = pathlib.Path(args.workspace) / ".zed"
         zed_folder.mkdir(exist_ok=True)
 
+        workspace_dir = pathlib.Path(args.workspace).absolute().resolve()
         build_dir = pathlib.Path(args.dir).absolute().resolve()
         cache = zcmake.CMakeCache.from_build_dir(build_dir)
         runners_yaml = None
@@ -79,7 +78,33 @@ class zed(WestCommand):
             compiler_folder = pathlib.Path(cache.get("CMAKE_GDB")).parent
             clangd_args.append(f"--query-driver={compiler_folder}/**")
 
-        settings["lsp"]["clangd"]["binary"]["arguments"] = clangd_args
+        settings = {
+            "lsp": {
+                "clangd": {
+                    "binary": {
+                        "arguments": clangd_args,
+                    }
+                }
+            },
+            "languages": {
+                "C": {
+                    "formatter": {
+                        "external": {
+                            "command": "clang-format",
+                            "arguments": [
+                                f"--style=file:{workspace_dir}/infuse-sdk/.clang-format",
+                                "--assume-filename={buffer_path}",
+                            ],
+                        }
+                    },
+                    "format_on_save": "on",
+                    "tab_size": 8,
+                }
+            },
+            "file_types": {
+                "C": ["h"],
+            },
+        }
 
         log.inf(f"Writing `settings.json` to {zed_folder}")
 
