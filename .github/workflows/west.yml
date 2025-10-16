@@ -90,19 +90,24 @@ jobs:
           echo "github.base_ref: ${{ github.base_ref }}"
           echo "github.ref_name: ${{ github.ref_name }}"
 
-      - name: Test `vscode`
+      - name: Test editors
         run: |
           # Standard workspace setup
           west vscode
           west vscode --search-exclude
 
-          # launch.json generation for various board/app types
+          # Editor configuration file generation for various board/app types
           west build -p -b native_sim zephyr/samples/hello_world
           west vscode -d build
+          west zed -d build
           west build -p -b qemu_cortex_m3 zephyr/samples/hello_world
           west vscode -d build
+          west zed -d build
           west build -p -b nrf52840dk/nrf52840 zephyr/samples/hello_world
           west vscode -d build
+          west zed -d build
           west build -p -b nrf9151dk/nrf9151/ns zephyr/samples/hello_world
           west vscode -d build
           west vscode -d build/tfm
+          west zed -d build
+          west zed -d build/tfm
