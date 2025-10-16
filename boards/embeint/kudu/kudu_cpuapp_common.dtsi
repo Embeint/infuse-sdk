@@ -138,6 +138,15 @@
 		compatible = "telit,le910cx";
 		mdm-power-gpios = <&gpio2 3 (GPIO_ACTIVE_LOW | GPIO_OPEN_DRAIN)>;
 		mdm-reset-gpios = <&gpio0 1 (GPIO_ACTIVE_LOW | GPIO_OPEN_DRAIN)>;
+		/*
+		 * Telit modem can in theory handle up to 3.75 Mbps.
+		 * While IP data appears to work fine at the high baudrate, for unknown
+		 * reasons the AT DLCI channels stop responding after some time. The higher
+		 * the baudrate, the sooner they stop responding.
+		 * 921600 appears to be stable for hours
+		 * 3500000 normally fails within a few minutes
+		 */
+		target-speed = <921600>;
 	};
 };
 
