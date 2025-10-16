@@ -8,14 +8,17 @@ from pathlib import Path
 from infuse_iot.util.argparse import ValidDir
 
 
-def board_copy(args):
-    input_base = args.input.name
-    output_base = args.output.name
+def board_copy(args: argparse.Namespace):
+    input_base: str = args.input.name
+    output_base: str = args.output.name
 
     # Copy the base files
     shutil.copytree(args.input, args.output, dirs_exist_ok=True)
 
     for filename in os.listdir(args.output):
+        if (args.output / filename).is_dir():
+            # Skip directories for now
+            continue
         if input_base in filename:
             # Replace the old board name in the file path
             new_filename = filename.replace(input_base, output_base)
