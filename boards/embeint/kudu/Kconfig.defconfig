@@ -23,15 +23,6 @@ choice MODEM_CELLULAR_SIM_DETECTION
 	default MODEM_CELLULAR_SIM_DETECTION_FORCE_PRESENT
 endchoice
 
-# Telit modem can in theory handle up to 3.75 Mbps.
-# While IP data appears to work fine at the high baudrate, for unknown
-# reasons the AT DLCI channels stop responding after some time. The higher
-# the baudrate, the sooner they stop responding.
-# 921600 appears to be stable for hours
-# 3500000 normally fails within a few minutes
-configdefault MODEM_CELLULAR_NEW_BAUDRATE
-	default 921600
-
 # We want to use the UART ASYNC API
 configdefault UART_ASYNC_API
 	default y
