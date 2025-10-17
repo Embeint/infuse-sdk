@@ -13,3 +13,7 @@ tests:
     extra_args: DTC_OVERLAY_FILE=ubx_m8.overlay
   task_runner.tasks.gnss.nrf9x:
     extra_args: DTC_OVERLAY_FILE=nrf9x.overlay
+  task_runner.tasks.gnss.zephyr:
+    extra_configs:
+      - CONFIG_GNSS_EMUL_MANUAL_UPDATE=y
+    extra_args: DTC_OVERLAY_FILE=zephyr.overlay

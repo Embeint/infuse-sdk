@@ -11,6 +11,7 @@
 #include <zephyr/ztest.h>
 #include <zephyr/kernel.h>
 #include <zephyr/drivers/gnss.h>
+#include <zephyr/drivers/gnss/gnss_emul.h>
 
 #include <infuse/time/epoch.h>
 #include <infuse/epacket/packet.h>
@@ -32,42 +33,83 @@ struct task_data data;
 struct task_schedule schedule = {.validity = TASK_VALID_ALWAYS, .task_id = TASK_ID_GNSS};
 struct task_schedule_state state;
 
-static K_SEM_DEFINE(location_published, 0, 1);
-static K_SEM_DEFINE(nav_pvt_published, 0, 1);
-
-void location_new_data_cb(const struct zbus_channel *chan);
-void nav_pvt_new_data_cb(const struct zbus_channel *chan);
-
 #if defined(CONFIG_TASK_RUNNER_TASK_GNSS_UBX)
 #define NAV_PVT_CHANNEL INFUSE_ZBUS_CHAN_UBX_NAV_PVT
 #define NAV_PVT_NAME    INFUSE_ZBUS_NAME(INFUSE_ZBUS_CHAN_UBX_NAV_PVT)
 #elif defined(CONFIG_TASK_RUNNER_TASK_GNSS_NRF9X)
 #define NAV_PVT_CHANNEL INFUSE_ZBUS_CHAN_NRF9X_NAV_PVT
 #define NAV_PVT_NAME    INFUSE_ZBUS_NAME(INFUSE_ZBUS_CHAN_NRF9X_NAV_PVT)
+#elif defined(CONFIG_TASK_RUNNER_TASK_GNSS_ZEPHYR)
+/* No high resolution PVT channel */
 #else
 #error Unknown GNSS task
 #endif
 
-INFUSE_ZBUS_CHAN_DECLARE(INFUSE_ZBUS_CHAN_LOCATION, NAV_PVT_CHANNEL);
+static void location_new_data_cb(const struct zbus_channel *chan);
+static K_SEM_DEFINE(location_published, 0, 1);
+
+INFUSE_ZBUS_CHAN_DECLARE(INFUSE_ZBUS_CHAN_LOCATION);
 ZBUS_LISTENER_DEFINE(location_listener, location_new_data_cb);
-ZBUS_LISTENER_DEFINE(nav_pvt_listener, nav_pvt_new_data_cb);
 ZBUS_CHAN_ADD_OBS(INFUSE_ZBUS_NAME(INFUSE_ZBUS_CHAN_LOCATION), location_listener, 5);
+#define ZBUS_CHAN INFUSE_ZBUS_CHAN_GET(INFUSE_ZBUS_CHAN_LOCATION)
+
+#ifdef NAV_PVT_CHANNEL
+
+static void nav_pvt_new_data_cb(const struct zbus_channel *chan);
+static K_SEM_DEFINE(nav_pvt_published, 0, 1);
+
+INFUSE_ZBUS_CHAN_DECLARE(NAV_PVT_CHANNEL);
+ZBUS_LISTENER_DEFINE(nav_pvt_listener, nav_pvt_new_data_cb);
 ZBUS_CHAN_ADD_OBS(NAV_PVT_NAME, nav_pvt_listener, 5);
-#define ZBUS_CHAN     INFUSE_ZBUS_CHAN_GET(INFUSE_ZBUS_CHAN_LOCATION)
 #define ZBUS_CHAN_PVT INFUSE_ZBUS_CHAN_GET(NAV_PVT_CHANNEL)
+#endif /*  NAV_PVT_CHANNEL */
 
 #define M  1000
 #define KM (1000 * M)
 
-void location_new_data_cb(const struct zbus_channel *chan)
+#ifdef CONFIG_GNSS_EMUL
+
+/* Zephyr emulator uses different functions */
+void emul_gnss_pvt_configure(const struct device *dev, struct gnss_pvt_emul_location *emul_location)
+{
+	struct navigation_data nav = {
+		.latitude = (int64_t)emul_location->latitude * 100,
+		.longitude = (int64_t)emul_location->longitude * 100,
+		.bearing = 0,
+		.speed = 0,
+		.altitude = emul_location->height,
+	};
+	struct gnss_info info = {
+		.satellites_cnt = emul_location->num_sv,
+		.hdop = (uint32_t)emul_location->p_dop * 10,
+	};
+	int64_t time_base = 1500000000000LL;
+
+	if (emul_location->h_acc <= 5000) {
+		info.fix_status = GNSS_FIX_STATUS_GNSS_FIX;
+	} else if (emul_location->num_sv > 0) {
+		info.fix_status = GNSS_FIX_STATUS_ESTIMATED_FIX;
+	} else {
+		info.fix_status = GNSS_FIX_STATUS_NO_FIX;
+		time_base = 0;
+	}
+
+	gnss_emul_set_data(dev, &nav, &info, time_base);
+}
+
+#endif /* CONFIG_GNSS_EMUL */
+
+static void location_new_data_cb(const struct zbus_channel *chan)
 {
 	k_sem_give(&location_published);
 }
 
-void nav_pvt_new_data_cb(const struct zbus_channel *chan)
+#ifdef NAV_PVT_CHANNEL
+static void nav_pvt_new_data_cb(const struct zbus_channel *chan)
 {
 	k_sem_give(&nav_pvt_published);
 }
+#endif /* NAV_PVT_CHANNEL */
 
 static k_tid_t task_schedule(struct task_data *data)
 {
@@ -183,7 +225,9 @@ static void expected_location_fix(k_tid_t thread, uint32_t start, uint32_t durat
 
 	/* Final location should be pushed */
 	zassert_equal(0, k_sem_take(&location_published, K_SECONDS(2)));
+#ifdef NAV_PVT_CHANNEL
 	zassert_equal(0, k_sem_take(&nav_pvt_published, K_MSEC(1)));
+#endif /* NAV_PVT_CHANNEL */
 	if (thread) {
 		/* Thread should have terminated */
 		zassert_equal(0, k_thread_join(thread, K_NO_WAIT));
@@ -223,13 +267,17 @@ static void expected_logging(int32_t latitude, int32_t longitude, int32_t height
 	zassert_equal(latitude, gcs->location.latitude);
 	zassert_equal(longitude, gcs->location.longitude);
 	zassert_equal(height, gcs->location.height);
+#ifdef CONFIG_GNSS_EMUL
+	/* Zephyr GNSS API doesn't expose accuracy properly */
+#else
 	zassert_within(h_acc, gcs->h_acc, h_acc_threshold);
 	zassert_equal(v_acc, gcs->v_acc);
+#endif /* CONFIG_GNSS_EMUL */
 
 	net_buf_unref(pkt);
 }
 
-ZTEST(task_gnss_ubx, test_time_fix)
+ZTEST(task_gnss, test_time_fix)
 {
 	k_tid_t thread;
 	uint32_t start;
@@ -253,7 +301,9 @@ ZTEST(task_gnss_ubx, test_time_fix)
 
 	/* No location should be published */
 	zassert_equal(-EAGAIN, k_sem_take(&location_published, K_SECONDS(2)));
+#ifdef NAV_PVT_CHANNEL
 	zassert_equal(-EAGAIN, k_sem_take(&nav_pvt_published, K_MSEC(1)));
+#endif /* NAV_PVT_CHANNEL */
 	if (thread) {
 		/* Thread should have terminated */
 		zassert_equal(0, k_thread_join(thread, K_NO_WAIT));
@@ -265,7 +315,83 @@ ZTEST(task_gnss_ubx, test_time_fix)
 	zassert_equal(TIME_SOURCE_GNSS, epoch_time_get_source());
 }
 
-ZTEST(task_gnss_ubx, test_location_fix)
+#ifdef CONFIG_TASK_RUNNER_TASK_GNSS_ZEPHYR
+
+ZTEST(task_gnss, test_device_limitations)
+{
+	const struct device *bad_dev = DEVICE_DT_GET(DT_NODELABEL(epacket_dummy));
+	k_tid_t thread;
+
+	/* Provide a pointer that doesn't match DT_ALIAS(gnss) */
+	thread = k_thread_create(
+		config.executor.thread.thread, config.executor.thread.stack,
+		config.executor.thread.stack_size, (k_thread_entry_t)config.executor.thread.task_fn,
+		(void *)&schedule, &data.terminate_signal, (void *)bad_dev, 5, 0, K_NO_WAIT);
+
+	/* Thread should automatically terminate */
+	zassert_equal(0, k_thread_join(thread, K_SECONDS(2)));
+}
+
+#else
+
+ZTEST(task_gnss, test_device_limitations)
+{
+	ztest_test_skip();
+}
+
+#endif
+
+ZTEST(task_gnss, test_run_forever)
+{
+	struct gnss_pvt_emul_location emul_loc = {
+		.latitude = -270000100,
+		.longitude = 1530009000,
+		.height = 56412,
+		.h_acc = 500,
+		.v_acc = 500,
+		.t_acc = 5,
+		.p_dop = 10,
+		.num_sv = 8,
+	};
+	k_tid_t thread;
+	int i;
+
+	schedule.timeout_s = 0;
+	schedule.task_logging[0].loggers = TDF_DATA_LOGGER_SERIAL;
+	schedule.task_logging[0].tdf_mask = TASK_GNSS_LOG_LLHA;
+	schedule.task_args.infuse.gnss = (struct task_gnss_args){
+		.flags = TASK_GNSS_FLAGS_RUN_FOREVER,
+	};
+
+	/* Start the thread */
+	thread = task_schedule(&data);
+
+	/* TASK_GNSS_FLAGS_RUN_FOREVER always publishes */
+	for (i = 0; i < 10; i++) {
+		zassert_equal(0, k_sem_take(&location_published, K_MSEC(1100)));
+		k_sleep(K_TICKS(1));
+		expected_logging(-910000000, -1810000000, 0, INT32_MAX, INT32_MAX, 1);
+	}
+
+	/* Set the good location knowledge */
+	emul_gnss_pvt_configure(DEV, &emul_loc);
+
+	/* Continue forever */
+	for (; i < 60; i++) {
+		zassert_equal(0, k_sem_take(&location_published, K_MSEC(1100)));
+		k_sleep(K_TICKS(1));
+		expected_logging(emul_loc.latitude, emul_loc.longitude, emul_loc.height,
+				 emul_loc.h_acc, emul_loc.v_acc, 1);
+	}
+
+	/* Until requested to stop */
+	k_poll_signal_raise(&data.terminate_signal, 0);
+
+	/* Thread should terminated */
+	zassert_true(task_wait(thread, K_SECONDS(2)));
+}
+
+ZTEST(task_gnss, test_location_fix)
 {
 	gnss_systems_t sys_default, sys_enabled;
 	k_tid_t thread;
@@ -281,7 +407,11 @@ ZTEST(task_gnss_ubx, test_location_fix)
 		.position_dop = 100,
 	};
 
+#ifdef CONFIG_GNSS_EMUL
+	rc = gnss_emul_get_enabled_systems(DEV, &sys_default);
+#else
 	rc = gnss_get_enabled_systems(DEV, &sys_default);
+#endif /* CONFIG_GNSS_EMUL */
 	zassert_equal(0, rc);
 
 	/* Schedule a location fix that completes in <1 minute */
@@ -294,17 +424,21 @@ ZTEST(task_gnss_ubx, test_location_fix)
 	expected_no_logging();
 
 	/* Expect default constellations */
+#ifdef CONFIG_GNSS_EMUL
+	rc = gnss_emul_get_enabled_systems(DEV, &sys_enabled);
+#else
 	rc = gnss_get_enabled_systems(DEV, &sys_enabled);
+#endif /* CONFIG_GNSS_EMUL */
 	zassert_equal(0, rc);
 	zassert_equal(sys_default, sys_enabled);
 }
 
-ZTEST(task_gnss_ubx, test_location_fix_constellations)
+ZTEST(task_gnss, test_location_fix_constellations)
 {
-	gnss_systems_t sys_enabled;
+	__maybe_unused gnss_systems_t sys_enabled;
+	__maybe_unused int rc;
 	k_tid_t thread;
 	uint32_t start;
-	int rc;
 
 	schedule.timeout_s = 0;
 	schedule.task_logging[0].loggers = TDF_DATA_LOGGER_SERIAL;
@@ -326,7 +460,11 @@ ZTEST(task_gnss_ubx, test_location_fix_constellations)
 	expected_no_logging();
 
 	/* Expect requested constellations */
+#ifdef CONFIG_GNSS_EMUL
+	rc = gnss_emul_get_enabled_systems(DEV, &sys_enabled);
+#else
 	rc = gnss_get_enabled_systems(DEV, &sys_enabled);
+#endif /* CONFIG_GNSS_EMUL */
 	zassert_equal(0, rc);
 	zassert_equal(GNSS_SYSTEM_GPS | GNSS_SYSTEM_QZSS, sys_enabled);
 }
@@ -336,7 +474,7 @@ static void task_terminator(struct k_work *work)
 	task_terminate(&data);
 }
 
-ZTEST(task_gnss_ubx, test_location_fix_runner_terminate)
+ZTEST(task_gnss, test_location_fix_runner_terminate)
 {
 	struct k_work_delayable terminator;
 	k_tid_t thread;
@@ -367,7 +505,7 @@ ZTEST(task_gnss_ubx, test_location_fix_runner_terminate)
 	zassert_equal(TIME_SOURCE_GNSS, epoch_time_get_source());
 }
 
-ZTEST(task_gnss_ubx, test_location_fix_plateau)
+ZTEST(task_gnss, test_location_fix_plateau)
 {
 	k_tid_t thread;
 	uint32_t start;
@@ -403,7 +541,17 @@ ZTEST(task_gnss_ubx, test_location_fix_plateau)
 	zassert_equal(TIME_SOURCE_GNSS, epoch_time_get_source());
 }
 
-ZTEST(task_gnss_ubx, test_location_fix_plateau_timeout)
+#ifdef CONFIG_TASK_RUNNER_TASK_GNSS_ZEPHYR
+
+ZTEST(task_gnss, test_location_fix_plateau_timeout)
+{
+	/* Zephyr GNSS API doesn't report fine-grained accuracies */
+	ztest_test_skip();
+}
+
+#else
+
+ZTEST(task_gnss, test_location_fix_plateau_timeout)
 {
 	k_tid_t thread;
 	uint32_t start;
@@ -439,7 +587,9 @@ ZTEST(task_gnss_ubx, test_location_fix_plateau_timeout)
 	zassert_equal(TIME_SOURCE_GNSS, epoch_time_get_source());
 }
 
-ZTEST(task_gnss_ubx, test_location_fix_plateau_min_accuracy)
+#endif /* CONFIG_GNSS_EMUL */
+
+ZTEST(task_gnss, test_location_fix_plateau_min_accuracy)
 {
 	struct k_work_delayable terminator;
 	k_tid_t thread;
@@ -481,7 +631,7 @@ ZTEST(task_gnss_ubx, test_location_fix_plateau_min_accuracy)
 	zassert_equal(TIME_SOURCE_GNSS, epoch_time_get_source());
 }
 
-ZTEST(task_gnss_ubx, test_location_fix_no_location_timeout)
+ZTEST(task_gnss, test_location_fix_no_location_timeout)
 {
 	k_tid_t thread;
 	uint32_t start;
@@ -517,7 +667,7 @@ ZTEST(task_gnss_ubx, test_location_fix_no_location_timeout)
 	zassert_equal(TIME_SOURCE_NONE, epoch_time_get_source());
 }
 
-ZTEST(task_gnss_ubx, test_pm_failure)
+ZTEST(task_gnss, test_pm_failure)
 {
 #ifdef CONFIG_GNSS_UBX_MODEM_EMUL
 	int *pm_rc, *comms_reset_cnt;
@@ -559,7 +709,9 @@ static void logger_before(void *fixture)
 
 	epoch_time_reset();
 	k_sem_reset(&location_published);
+#ifdef NAV_PVT_CHANNEL
 	k_sem_reset(&nav_pvt_published);
+#endif /* NAV_PVT_CHANNEL  */
 	/* Setup links between task config and data */
 	task_runner_init(&schedule, &state, 1, &config, &data, 1);
 
@@ -585,4 +737,4 @@ static void logger_before(void *fixture)
 #endif /* CONFIG_GNSS_UBX_MODEM_EMUL */
 }
 
-ZTEST_SUITE(task_gnss_ubx, NULL, NULL, logger_before, NULL, NULL);
+ZTEST_SUITE(task_gnss, NULL, NULL, logger_before, NULL, NULL);

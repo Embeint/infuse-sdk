@@ -1,0 +1,13 @@
+#include "app.overlay"
+
+/ {
+	aliases {
+		gnss = &gnss;
+	};
+
+	gnss: gnss {
+		compatible = "zephyr,gnss-emul";
+		status = "okay";
+		zephyr,pm-device-runtime-auto;
+	};
+};
