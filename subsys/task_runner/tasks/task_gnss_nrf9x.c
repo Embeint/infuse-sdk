@@ -275,7 +275,7 @@ static bool handle_pvt_frame(const struct task_gnss_args *args)
 			.tm_sec = tdf.sec,
 		};
 		time_t unix_time = mktime(&gps_time);
-		uint32_t subseconds = 32768 * (uint32_t)tdf.ms / 1000;
+		uint32_t subseconds = 65536 * (uint32_t)tdf.ms / 1000;
 		uint64_t epoch_time = epoch_time_from_unix(unix_time, subseconds);
 		struct timeutil_sync_instant sync = {
 			.local = state.interrupt_time,
