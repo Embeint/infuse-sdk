@@ -199,9 +199,12 @@ static inline int tdf_add(struct tdf_buffer_state *state, uint16_t tdf_id, uint8
  * @param data Pointer to TDF memory buffer
  * @param size Size of TDF memory buffer
  */
-static inline void tdf_parse_start(struct tdf_buffer_state *state, void *data, size_t size)
+static inline void tdf_parse_start(struct tdf_buffer_state *state, const void *data, size_t size)
 {
-	net_buf_simple_init_with_data(&state->buf, data, size);
+	/* While net_buf_simple as a generic object can modify the provided data pointer,
+	 * the tdf_parse functions only use read-only functions (net_buf_simple_pull_*).
+	 */
+	net_buf_simple_init_with_data(&state->buf, (void *)data, size);
 	state->time = 0;
 }
 
@@ -228,7 +231,7 @@ int tdf_parse(struct tdf_buffer_state *state, struct tdf_parsed *parsed);
  * @retval 0 On success
  * @retval -ENOMEM If buffer consumed without finding the TDF
  */
-static inline int tdf_parse_find_in_buf(void *data, size_t size, uint16_t tdf_id,
+static inline int tdf_parse_find_in_buf(const void *data, size_t size, uint16_t tdf_id,
 					struct tdf_parsed *parsed)
 {
 	struct tdf_buffer_state state;
