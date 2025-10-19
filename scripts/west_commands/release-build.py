@@ -233,6 +233,26 @@ class release_build(WestCommand):
         v_hex_tweak = f"{prefix}+{commit_hash[:8]}"
         return v_int_tweak, v_hex_tweak
 
+    def do_spdx_init(self):
+        spdx_init_cmd = ["west", "spdx", "--init", "-d"]
+
+        # Prepare application directory for SPDX
+        proc = subprocess.run(
+            spdx_init_cmd + [str(self.build_app_dir)], capture_output=True
+        )
+        if proc.returncode != 0:
+            print("SPDX initialisation stderr:")
+            sys.exit(proc.stderr.decode("utf-8"))
+
+    def do_spdx_generate(self):
+        spdx_cmd = ["west", "spdx", "-d"]
+
+        # Generate SPDX output
+        proc = subprocess.run(spdx_cmd + [str(self.build_app_dir)], capture_output=True)
+        if proc.returncode != 0:
+            print("SPDX generation stderr:")
+            sys.exit(proc.stderr.decode("utf-8"))
+
     def do_release_build(self, expected_version):
         name = self.application.name
         self.build_dir = pathlib.Path(f"build/release/{self.release['board']}/{name}")
@@ -242,8 +262,11 @@ class release_build(WestCommand):
             self.build_app_dir = self.build_dir
         signing_key_config = f'"{str(self.signing_key)}"'
 
+        # Remove the build directory for a pristine build
+        # Do this because `west build -p` deletes SPDX files
+        shutil.rmtree(self.build_dir, True)
+
         build_cmd = ["west", "build"]
-        build_cmd.extend(["-p"])
         build_cmd.extend(["--board", self.release["board"]])
         build_cmd.extend(["--source-dir", str(self.application)])
         build_cmd.extend(["--build-dir", str(self.build_dir)])
@@ -298,13 +321,16 @@ class release_build(WestCommand):
         if extra_configs := self.release.get("extra_configs"):
             for c in extra_configs:
                 build_cmd.append(f"-D{c}")
+        build_cmd.append("-DCONFIG_BUILD_OUTPUT_META=y")
 
+        self.do_spdx_init()
         print("Run build: ", " ".join(build_cmd))
         proc = subprocess.run(build_cmd, capture_output=True)
         if proc.returncode != 0:
             sys.exit(proc.stdout.decode("utf-8"))
         self.build_log = proc.stdout.decode("utf-8")
         self.build_err = proc.stderr.decode("utf-8")
+        self.do_spdx_generate()
 
     def validate_build(self, expected_version: str) -> dict:
         cache = zcmake.CMakeCache.from_build_dir(self.build_app_dir)
@@ -415,12 +441,13 @@ class release_build(WestCommand):
             dst.mkdir(parents=True)
         shutil.copy(src / file, dst / file)
 
-    def export_folder(self, dst, src):
+    def export_folder(self, dst: pathlib.Path, src: pathlib.Path):
         # Copy relevant files to output directory
         files = [
             "compile_commands.json",
             "CMakeCache.txt",
             "imgtool.yaml",
+            "spdx",
             "zephyr/.config",
             "zephyr/domains.yaml",
             "zephyr/runners.yaml",
@@ -449,7 +476,10 @@ class release_build(WestCommand):
             if not out_loc.parent.exists():
                 out_loc.parent.mkdir(parents=True)
 
-            shutil.copy(in_loc, out_loc)
+            if in_loc.is_file():
+                shutil.copy(in_loc, out_loc)
+            else:
+                shutil.copytree(in_loc, out_loc, dirs_exist_ok=True)
 
     def export_build(self, build_configs: dict, version: str):
         board_normalised = self.release["board"].replace("/", "_")
@@ -487,6 +517,7 @@ class release_build(WestCommand):
                     output_dir / domain["name"], self.build_dir / domain["name"]
                 )
 
+            self.export_file(output_dir, self.build_dir, "build_info.yml")
             self.export_file(output_dir, self.build_dir, "domains.yaml")
             self.export_file(output_dir, self.build_dir, "CMakeCache.txt")
             self.export_file(
