@@ -248,6 +248,14 @@ configdefault MEMFAULT_METRICS_WIFI
 	# Disable by default, since this would otherwise end up enabled
 	# for scanning only applications.
 	default n
+configdefault MEMFAULT_METRICS_BLUETOOTH
+	# Disable by default, provided metrics don't map well to Infuse-IoT
+	# which tends not to be consistently paired to a single peer.
+	default n
 choice MEMFAULT_REBOOT_REASON_GET
 	default MEMFAULT_REBOOT_REASON_GET_CUSTOM
 endchoice
+# Temporary option until Memfault updated
+# https://github.com/memfault/memfault-firmware-sdk/issues/96
+config PARTITION_MANAGER_ENABLED
+	bool
