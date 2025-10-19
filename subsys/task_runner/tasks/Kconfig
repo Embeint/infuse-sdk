@@ -181,6 +181,7 @@ config TASK_RUNNER_TASK_GNSS_NRF9X
 config TASK_RUNNER_TASK_GNSS_ZEPHYR
 	bool "Generic Zephyr GNSS device"
 	select TASK_RUNNER_TASK_GNSS_THREAD
+	select INFUSE_ZBUS_CHAN_LOCATION
 	depends on GNSS
 
 endchoice
