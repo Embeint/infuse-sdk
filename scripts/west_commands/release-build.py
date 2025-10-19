@@ -444,7 +444,6 @@ class release_build(WestCommand):
     def export_folder(self, dst: pathlib.Path, src: pathlib.Path):
         # Copy relevant files to output directory
         files = [
-            "compile_commands.json",
             "CMakeCache.txt",
             "imgtool.yaml",
             "spdx",
@@ -456,7 +455,6 @@ class release_build(WestCommand):
             "zephyr/zephyr.dts",
             "zephyr/zephyr.elf",
             "zephyr/zephyr.hex",
-            "zephyr/zephyr.lst",
             "zephyr/zephyr.map",
             "zephyr/tfm_merged.hex",
             "zephyr/tfm_s_zephyr_ns.bin",
