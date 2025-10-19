@@ -57,6 +57,7 @@
 		environmental1 = &lps22hh;
 		imu0 = &lsm6dsv;
 		modem = &telit_le910c1;
+		gnss = &telit_le910c1_gnss;
 	};
 };
 
@@ -136,6 +137,7 @@
 
 	telit_le910c1: telit_le910c1 {
 		compatible = "telit,le910cx";
+		status = "okay";
 		mdm-power-gpios = <&gpio2 3 (GPIO_ACTIVE_LOW | GPIO_OPEN_DRAIN)>;
 		mdm-reset-gpios = <&gpio0 1 (GPIO_ACTIVE_LOW | GPIO_OPEN_DRAIN)>;
 		/*
@@ -147,6 +149,11 @@
 		 * 3500000 normally fails within a few minutes
 		 */
 		target-speed = <921600>;
+
+		telit_le910c1_gnss: telit_le910c1_gnss {
+			compatible = "telit,le910cx-gnss";
+			status = "okay";
+		};
 	};
 };
 
