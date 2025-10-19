@@ -107,7 +107,7 @@ int cellular_modem_at_cmd(void *buf, size_t len, const char *cmd)
 	modem_chat_script_set_abort_matches(&script, abort_matches, 1);
 	modem_chat_script_set_timeout(&script, 2);
 
-	cmd_ctx.rc = modem_at_user_pipe_claim();
+	cmd_ctx.rc = modem_at_user_pipe_claim(&modem_chat_ctx, K_MSEC(200));
 	if (cmd_ctx.rc) {
 		*cmd_ctx.buf = '\0';
 		return cmd_ctx.rc;
@@ -137,7 +137,6 @@ static int lte_at_cmd_modem_init(void)
 	};
 
 	modem_chat_init(&modem_chat_ctx, &chat_cfg);
-	modem_at_user_pipe_init(&modem_chat_ctx);
 	return 0;
 }
 
