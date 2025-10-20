@@ -146,6 +146,8 @@ struct task_schedule {
 	uint8_t validity;
 	/** TASK_PERIODICITY_* value */
 	uint8_t periodicity_type;
+	/** Task will not start for the first N minutes after boot */
+	uint8_t boot_lockout_minutes;
 	/** Duration after which task is requested to terminate */
 	uint32_t timeout_s;
 	/** Battery charge thresholds to start the task */
