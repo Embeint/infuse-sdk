@@ -6,6 +6,8 @@
  * SPDX-License-Identifier: FSL-1.1-ALv2
  */
 
+#include <zephyr/sys/clock.h>
+
 #include <infuse/states.h>
 #include <infuse/task_runner/schedule.h>
 
@@ -111,6 +113,12 @@ bool task_schedule_should_start(const struct task_schedule *schedule,
 		return false;
 	}
 	if ((validity_masked == TASK_VALID_INACTIVE) && is_active) {
+		return false;
+	}
+
+	/* Boot lockout */
+	if (schedule->boot_lockout_minutes &&
+	    ((uptime / SEC_PER_MIN) < schedule->boot_lockout_minutes)) {
 		return false;
 	}
 
