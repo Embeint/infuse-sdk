@@ -48,6 +48,8 @@ enum infuse_state {
 	INFUSE_STATE_DEVICE_STOPPED_MOVING = 7,
 	/* Suppress LED activity */
 	INFUSE_STATE_LED_SUPPRESS = 8,
+	/* Device is moving (not stationary) */
+	INFUSE_STATE_DEVICE_MOVING = 9,
 	/* Start of application-specific state range */
 	INFUSE_STATES_APP_START = 128,
 	INFUSE_STATES_END = UINT8_MAX
