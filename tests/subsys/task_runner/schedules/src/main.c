@@ -197,6 +197,30 @@ ZTEST(task_runner_schedules, test_inactive_schedule)
 	}
 }
 
+ZTEST(task_runner_schedules, test_boot_lockout)
+{
+	INFUSE_STATES_ARRAY(app_states) = {0};
+	struct task_schedule schedule = {
+		.validity = TASK_VALID_ALWAYS,
+		.boot_lockout_minutes = 2,
+	};
+	struct task_schedule_state state = {0};
+
+	zassert_true(task_schedule_validate(&schedule));
+
+	zassert_false(task_schedule_should_start(&schedule, &state, app_states, 0, 100, 100));
+	zassert_false(task_schedule_should_start(&schedule, &state, app_states, 100, 101, 100));
+	zassert_false(task_schedule_should_start(&schedule, &state, app_states, 118, 102, 100));
+	zassert_false(task_schedule_should_start(&schedule, &state, app_states, 119, 103, 100));
+	zassert_true(task_schedule_should_start(&schedule, &state, app_states, 120, 104, 100));
+	zassert_true(task_schedule_should_start(&schedule, &state, app_states, 121, 105, 100));
+	zassert_true(task_schedule_should_start(&schedule, &state, app_states, 123, 106, 100));
+	zassert_true(task_schedule_should_start(&schedule, &state, app_states, 1000, 107, 100));
+	zassert_true(task_schedule_should_start(&schedule, &state, app_states, 1000000, 108, 100));
+	zassert_true(
+		task_schedule_should_start(&schedule, &state, app_states, UINT32_MAX, 109, 100));
+}
+
 ZTEST(task_runner_schedules, test_periodicity_fixed)
 {
 	INFUSE_STATES_ARRAY(app_states) = {0};
