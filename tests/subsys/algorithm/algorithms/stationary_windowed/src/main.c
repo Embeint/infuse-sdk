@@ -137,10 +137,14 @@ ZTEST(alg_stationary, test_send)
 
 	/* Boot the IMU data generator */
 	imu_thread = task_schedule(0);
+	zassert_false(infuse_state_get(INFUSE_STATE_DEVICE_STATIONARY));
+	zassert_false(infuse_state_get(INFUSE_STATE_DEVICE_MOVING));
+	k_sleep(K_MINUTES(2));
 
-	/* 5 minutes, state should not be set */
+	/* 5 minutes, stationary state should not be set */
 	for (int i = 0; i < 5; i++) {
 		zassert_false(infuse_state_get(INFUSE_STATE_DEVICE_STATIONARY));
+		zassert_true(infuse_state_get(INFUSE_STATE_DEVICE_MOVING));
 		k_sleep(K_MINUTES(1));
 	}
 	zassert_equal(0, moving_count);
@@ -153,6 +157,7 @@ ZTEST(alg_stationary, test_send)
 	/* Stationary state should be set */
 	for (int i = 0; i < 5; i++) {
 		zassert_true(infuse_state_get(INFUSE_STATE_DEVICE_STATIONARY));
+		zassert_false(infuse_state_get(INFUSE_STATE_DEVICE_MOVING));
 		k_sleep(K_MINUTES(1));
 	}
 	zassert_equal(0, moving_count);
@@ -180,8 +185,10 @@ ZTEST(alg_stationary, test_send)
 		infuse_states_tick(states);
 	}
 	zassert_false(infuse_state_get(INFUSE_STATE_DEVICE_STATIONARY));
+	zassert_false(infuse_state_get(INFUSE_STATE_DEVICE_MOVING));
 	k_sleep(K_MINUTES(2));
 	zassert_true(infuse_state_get(INFUSE_STATE_DEVICE_STATIONARY));
+	zassert_false(infuse_state_get(INFUSE_STATE_DEVICE_MOVING));
 	zassert_equal(1, moving_count);
 	zassert_equal(2, stopped_count);
 
@@ -195,6 +202,7 @@ ZTEST(alg_stationary, test_send)
 		infuse_states_tick(states);
 	}
 	zassert_false(infuse_state_get(INFUSE_STATE_DEVICE_STATIONARY));
+	zassert_false(infuse_state_get(INFUSE_STATE_DEVICE_MOVING));
 
 	/* Stationary timing out shouldn't update the moving count */
 	zassert_equal(1, moving_count);
@@ -202,12 +210,12 @@ ZTEST(alg_stationary, test_send)
 
 	/* Flush the pending TDF's */
 	tdf_data_logger_flush(TDF_DATA_LOGGER_SERIAL);
-	expect_logging(11);
+	expect_logging(12);
 
 	/* Validate the last published data */
 	struct infuse_zbus_chan_movement_std_dev *out = ZBUS_CHAN->message;
 
-	zassert_equal(11, zbus_chan_pub_stats_count(ZBUS_CHAN));
+	zassert_equal(12, zbus_chan_pub_stats_count(ZBUS_CHAN));
 	zassert_within(7000, out->data.std_dev, 300);
 	zassert_equal(1200, out->data.count);
 	zassert_equal(1200, out->expected_samples);
