@@ -87,6 +87,7 @@ static const struct task_schedule schedules[] = {
 	{
 		.task_id = TASK_ID_GNSS,
 		.validity = TASK_VALID_ALWAYS,
+		.boot_lockout_minutes = 5,
 		.periodicity_type = TASK_PERIODICITY_LOCKOUT,
 		.periodicity.lockout.lockout_s =
 			TASK_RUNNER_LOCKOUT_IGNORE_FIRST | (30 * SEC_PER_MIN),
