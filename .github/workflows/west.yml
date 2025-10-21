@@ -24,7 +24,9 @@ jobs:
       options: '--entrypoint /bin/bash'
       volumes:
         - /repo-cache/embeint:/github/cache/embeint
+        - /repo-cache/pip-cache:/github/pip-cache
     env:
+      PIP_CACHE_DIR: /github/pip-cache
       BASE_REF: ${{ github.base_ref }}
       ZEPHYR_TOOLCHAIN_VARIANT: zephyr
     steps:
@@ -52,13 +54,11 @@ jobs:
         uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
         with:
           python-version: ${{ matrix.python-version }}
-          cache: pip
-          cache-dependency-path: infuse-sdk/scripts/requirements-actions.txt
 
       - name: Install Python packages
         working-directory: infuse-sdk
         run: |
-          pip install -r scripts/requirements-actions.txt --require-hashes
+          pip install  --cache-dir $PIP_CACHE_DIR -r scripts/requirements-actions.txt --require-hashes
 
       - name: Environment Setup
         working-directory: infuse-sdk
@@ -76,7 +76,7 @@ jobs:
           west update --path-cache /github/cache/embeint 2>&1 1> west.update.log || west update --path-cache /github/cache/embeint 2>&1 1> west.update.log || ( rm -rf ../modules ../bootloader ../tools && west update --path-cache /github/cache/embeint)
           west forall -c 'git reset --hard HEAD'
 
-          pip install -r scripts/requirements.txt
+          pip install --cache-dir $PIP_CACHE_DIR -r scripts/requirements.txt
 
           echo "ZEPHYR_SDK_INSTALL_DIR=/opt/toolchains/zephyr-sdk-$( cat SDK_VERSION )" >> $GITHUB_ENV
 
