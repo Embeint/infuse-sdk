@@ -131,7 +131,7 @@ static int flash_validator(void *a, void *b, void *c)
 K_THREAD_DEFINE(flash_thread, 2048, flash_validator, NULL, NULL, NULL, 5, 0, 0);
 #endif /* FLASH_COMPAT */
 
-#if DT_NODE_EXISTS(DT_ALIAS(gnss))
+#if DT_NODE_EXISTS(DT_ALIAS(gnss)) && IS_ENABLED(CONFIG_GNSS_VALIDATION_SUPPORTED)
 static int gnss_validator(void *a, void *b, void *c)
 {
 	atomic_inc(&validators_registered);
@@ -146,7 +146,7 @@ static int gnss_validator(void *a, void *b, void *c)
 }
 
 K_THREAD_DEFINE(gnss_thread, 2048, gnss_validator, NULL, NULL, NULL, 5, 0, 0);
-#endif /* DT_NODE_EXISTS(DT_ALIAS(gnss)) */
+#endif /* DT_NODE_EXISTS(DT_ALIAS(gnss)) && IS_ENABLED(CONFIG_GNSS_VALIDATION_SUPPORTED) */
 
 #ifdef CONFIG_DISK_DRIVER_SDMMC
 static int disk_validator(void *a, void *b, void *c)

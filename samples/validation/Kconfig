@@ -60,6 +60,13 @@ configdefault CONN_MGR_WIFI_KV_STORE
 configdefault SNTP_AUTO
 	default n
 
+# GNSS options
+
+config GNSS_VALIDATION_SUPPORTED
+	bool
+	depends on GNSS_UBX_MODEM || GNSS_NRF9X
+	default y
+
 # nRF9x options
 
 configdefault LTE_LC_NEIGHBOR_CELL_MEAS_MODULE
