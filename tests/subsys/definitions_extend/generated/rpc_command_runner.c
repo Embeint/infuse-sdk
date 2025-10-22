@@ -27,7 +27,7 @@
 static bool command_freed;
 static bool response_sent;
 
-LOG_MODULE_DECLARE(rpc_server);
+LOG_MODULE_DECLARE(rpc_server, CONFIG_INFUSE_RPC_LOG_LEVEL);
 
 void rpc_command_runner_request_unref(struct net_buf *request)
 {

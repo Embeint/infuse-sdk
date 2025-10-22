@@ -20,7 +20,7 @@
 
 #include "common_bt.h"
 
-LOG_MODULE_DECLARE(rpc_server);
+LOG_MODULE_DECLARE(rpc_server, CONFIG_INFUSE_RPC_LOG_LEVEL);
 
 static const struct bt_uuid_128 mcumgr_uuid = BT_UUID_INIT_128(SMP_BT_CHR_UUID_VAL);
 

@@ -22,7 +22,7 @@
 #include <infuse/rpc/types.h>
 #include <infuse/security.h>
 
-LOG_MODULE_DECLARE(rpc_server);
+LOG_MODULE_DECLARE(rpc_server, CONFIG_INFUSE_RPC_LOG_LEVEL);
 
 static int data_logger_read(const struct device *logger, uint64_t byte_offset, uint8_t *data,
 			    uint32_t len)

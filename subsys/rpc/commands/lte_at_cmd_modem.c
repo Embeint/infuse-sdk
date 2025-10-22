@@ -21,7 +21,7 @@ struct ctx {
 	int rc;
 };
 
-LOG_MODULE_DECLARE(rpc_server);
+LOG_MODULE_DECLARE(rpc_server, CONFIG_INFUSE_RPC_LOG_LEVEL);
 
 void match_copy(struct ctx *cmd_ctx, char *str, bool newline)
 {

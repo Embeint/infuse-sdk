@@ -25,7 +25,7 @@ struct file_copy_ctx {
 	int rc;
 };
 
-LOG_MODULE_DECLARE(rpc_server);
+LOG_MODULE_DECLARE(rpc_server, CONFIG_INFUSE_RPC_LOG_LEVEL);
 
 static void command_data_done(const struct net_buf *buf, void *user_data)
 {

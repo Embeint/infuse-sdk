@@ -16,7 +16,7 @@
 
 #include "common_net_query.h"
 
-LOG_MODULE_DECLARE(rpc_server);
+LOG_MODULE_DECLARE(rpc_server, CONFIG_INFUSE_RPC_LOG_LEVEL);
 
 static void lte_modem_lte_state(struct rpc_struct_lte_state *lte)
 {

@@ -15,7 +15,7 @@
 #include <infuse/rpc/types.h>
 #include <infuse/epacket/packet.h>
 
-LOG_MODULE_DECLARE(rpc_server);
+LOG_MODULE_DECLARE(rpc_server, CONFIG_INFUSE_RPC_LOG_LEVEL);
 
 struct net_buf *rpc_command_data_receiver(struct net_buf *request)
 {

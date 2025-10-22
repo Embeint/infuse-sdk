@@ -30,7 +30,7 @@
 
 #include "common_file_actions.h"
 
-LOG_MODULE_DECLARE(rpc_server);
+LOG_MODULE_DECLARE(rpc_server, CONFIG_INFUSE_RPC_LOG_LEVEL);
 
 static int data_cb(uint32_t offset, const uint8_t *data, uint16_t data_len, void *context)
 {

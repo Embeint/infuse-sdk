@@ -20,7 +20,7 @@
 #include <psa/crypto.h>
 #include <mbedtls/platform_util.h>
 
-LOG_MODULE_DECLARE(rpc_server);
+LOG_MODULE_DECLARE(rpc_server, CONFIG_INFUSE_RPC_LOG_LEVEL);
 
 struct net_buf *rpc_command_security_state(struct net_buf *request)
 {

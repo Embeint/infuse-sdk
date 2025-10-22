@@ -21,7 +21,7 @@
 #error Unsupported AT interface
 #endif
 
-LOG_MODULE_DECLARE(rpc_server);
+LOG_MODULE_DECLARE(rpc_server, CONFIG_INFUSE_RPC_LOG_LEVEL);
 
 struct net_buf *rpc_command_lte_at_cmd(struct net_buf *request)
 {

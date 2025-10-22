@@ -12,7 +12,7 @@
 
 #include "bma4xx.h"
 
-LOG_MODULE_DECLARE(bma4xx);
+LOG_MODULE_DECLARE(bma4xx, CONFIG_SENSOR_LOG_LEVEL);
 
 static int bma4xx_bus_check_spi(const union bma4xx_bus *bus)
 {

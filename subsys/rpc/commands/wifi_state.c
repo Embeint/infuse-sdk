@@ -16,7 +16,7 @@
 
 #include "common_net_query.h"
 
-LOG_MODULE_DECLARE(rpc_server);
+LOG_MODULE_DECLARE(rpc_server, CONFIG_INFUSE_RPC_LOG_LEVEL);
 
 struct net_buf *rpc_command_wifi_state(struct net_buf *request)
 {

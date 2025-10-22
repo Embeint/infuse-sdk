@@ -25,7 +25,7 @@ static const char *const ubx_gnss_names[] = {
 	[UBX_GNSS_ID_GLONASS] = "GLONASS",
 };
 
-LOG_MODULE_DECLARE(ubx_modem);
+LOG_MODULE_DECLARE(ubx_modem, CONFIG_GNSS_UBX_MODEM_LOG_LEVEL);
 
 int ubx_gnss_id_to_gnss_system(enum ubx_gnss_id gnss_id)
 {

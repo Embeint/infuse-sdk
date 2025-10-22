@@ -22,7 +22,7 @@
 
 static const char readme_text[] = "Infuse-IoT binary data logs\n";
 
-LOG_MODULE_DECLARE(data_logger_exfat);
+LOG_MODULE_DECLARE(data_logger_exfat, CONFIG_DATA_LOGGER_EXFAT_LOG_LEVEL);
 
 DWORD get_fattime(void)
 {

@@ -15,7 +15,7 @@
 
 #define BMI270_SPI_ACC_DELAY_US 2
 
-LOG_MODULE_DECLARE(bmi270);
+LOG_MODULE_DECLARE(bmi270, CONFIG_SENSOR_LOG_LEVEL);
 
 static int bmi270_bus_check_spi(const union bmi270_bus *bus)
 {

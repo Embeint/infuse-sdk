@@ -16,7 +16,7 @@
 
 #include "../../fs/kv_store/kv_internal.h"
 
-LOG_MODULE_DECLARE(rpc_server);
+LOG_MODULE_DECLARE(rpc_server, CONFIG_INFUSE_RPC_LOG_LEVEL);
 
 struct net_buf *rpc_command_kv_reflect_crcs(struct net_buf *request)
 {

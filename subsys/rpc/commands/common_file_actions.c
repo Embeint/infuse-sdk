@@ -39,7 +39,7 @@
 #endif /* FIXED_PARTITION_EXISTS(file_partition) */
 #endif /* CONFIG_INFUSE_DFU_HELPERS */
 
-LOG_MODULE_DECLARE(rpc_server);
+LOG_MODULE_DECLARE(rpc_server, CONFIG_INFUSE_RPC_LOG_LEVEL);
 
 #if defined(SUPPORT_APP_IMG) || defined(SUPPORT_APP_CPATCH) || defined(SUPPORT_FILE_COPY)
 
