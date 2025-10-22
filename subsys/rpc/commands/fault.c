@@ -17,7 +17,7 @@
 
 #define SECURE_RAM DT_PROP(DT_COMPAT_GET_ANY_STATUS_OKAY(arm_trusted_firmware_m), sram_secure)
 
-LOG_MODULE_DECLARE(rpc_server);
+LOG_MODULE_DECLARE(rpc_server, CONFIG_INFUSE_RPC_LOG_LEVEL);
 
 static uint32_t __noinline stack_overflow(uint32_t depth)
 {

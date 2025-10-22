@@ -13,7 +13,7 @@
 #include <infuse/rpc/types.h>
 #include <infuse/time/epoch.h>
 
-LOG_MODULE_DECLARE(rpc_server);
+LOG_MODULE_DECLARE(rpc_server, CONFIG_INFUSE_RPC_LOG_LEVEL);
 
 struct net_buf *rpc_command_time_set(struct net_buf *request)
 {

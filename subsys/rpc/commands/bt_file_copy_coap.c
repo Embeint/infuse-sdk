@@ -19,7 +19,7 @@
 #include "common_coap.h"
 #include "common_bt.h"
 
-LOG_MODULE_DECLARE(rpc_server);
+LOG_MODULE_DECLARE(rpc_server, CONFIG_INFUSE_RPC_LOG_LEVEL);
 
 struct net_buf *rpc_command_bt_file_copy_coap(struct net_buf *request)
 {

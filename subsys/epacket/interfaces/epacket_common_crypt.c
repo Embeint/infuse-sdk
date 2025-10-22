@@ -25,7 +25,7 @@
 
 #include "epacket_internal.h"
 
-LOG_MODULE_DECLARE(epacket);
+LOG_MODULE_DECLARE(epacket, CONFIG_EPACKET_LOG_LEVEL);
 
 int epacket_versioned_v0_encrypt(struct net_buf *buf, uint8_t interface_key,
 				 uint32_t network_key_id)

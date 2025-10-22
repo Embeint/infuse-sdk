@@ -16,7 +16,7 @@
 #include <infuse/rpc/command_runner.h>
 #include <infuse/rpc/types.h>
 
-LOG_MODULE_DECLARE(rpc_server);
+LOG_MODULE_DECLARE(rpc_server, CONFIG_INFUSE_RPC_LOG_LEVEL);
 
 struct common_state {
 	const struct device *interface;

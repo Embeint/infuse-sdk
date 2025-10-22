@@ -22,7 +22,7 @@ static uint32_t value_crc_slots[KV_REFLECT_NUM];
 #endif
 static uint32_t reflect_crc;
 
-LOG_MODULE_DECLARE(kv_store);
+LOG_MODULE_DECLARE(kv_store, CONFIG_KV_STORE_LOG_LEVEL);
 
 uint32_t kv_store_reflect_crc(void)
 {
