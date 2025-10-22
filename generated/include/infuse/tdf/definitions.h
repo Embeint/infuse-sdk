@@ -697,6 +697,26 @@ struct tdf_battery_soc {
 	uint8_t soc;
 } __packed;
 
+/** Infuse-IoT application state transitioned from cleared to set */
+struct tdf_state_event_set {
+	/** Infuse-IoT application event */
+	uint8_t state;
+} __packed;
+
+/** Infuse-IoT application state transitioned from set to cleared */
+struct tdf_state_event_cleared {
+	/** Infuse-IoT application event */
+	uint8_t state;
+} __packed;
+
+/** Duration an Infuse-IoT application state was asserted for */
+struct tdf_state_duration {
+	/** Infuse-IoT application event */
+	uint8_t state;
+	/** Duration state was asserted for */
+	uint32_t duration;
+} __packed;
+
 /** Infuse-IoT builtin TDF definitions */
 enum tdf_builtin_id {
 	/** Common announcement packet */
@@ -801,6 +821,12 @@ enum tdf_builtin_id {
 	TDF_BATTERY_VOLTAGE = 53,
 	/** Battery state of charge */
 	TDF_BATTERY_SOC = 54,
+	/** Infuse-IoT application state transitioned from cleared to set */
+	TDF_STATE_EVENT_SET = 55,
+	/** Infuse-IoT application state transitioned from set to cleared */
+	TDF_STATE_EVENT_CLEARED = 56,
+	/** Duration an Infuse-IoT application state was asserted for */
+	TDF_STATE_DURATION = 57,
 	/** End of builtin TDF range */
 	TDF_BUILTIN_END = 1024,
 };
@@ -856,6 +882,9 @@ enum tdf_builtin_id {
 #define _TDF_NETWORK_SCAN_COUNT_TYPE          struct tdf_network_scan_count
 #define _TDF_BATTERY_VOLTAGE_TYPE             struct tdf_battery_voltage
 #define _TDF_BATTERY_SOC_TYPE                 struct tdf_battery_soc
+#define _TDF_STATE_EVENT_SET_TYPE             struct tdf_state_event_set
+#define _TDF_STATE_EVENT_CLEARED_TYPE         struct tdf_state_event_cleared
+#define _TDF_STATE_DURATION_TYPE              struct tdf_state_duration
 
 /** Size of builtin TDF definitions */
 enum tdf_builtin_size {
@@ -908,6 +937,9 @@ enum tdf_builtin_size {
 	_TDF_NETWORK_SCAN_COUNT_SIZE = sizeof(struct tdf_network_scan_count),
 	_TDF_BATTERY_VOLTAGE_SIZE = sizeof(struct tdf_battery_voltage),
 	_TDF_BATTERY_SOC_SIZE = sizeof(struct tdf_battery_soc),
+	_TDF_STATE_EVENT_SET_SIZE = sizeof(struct tdf_state_event_set),
+	_TDF_STATE_EVENT_CLEARED_SIZE = sizeof(struct tdf_state_event_cleared),
+	_TDF_STATE_DURATION_SIZE = sizeof(struct tdf_state_duration),
 };
 
 /** @endcond */

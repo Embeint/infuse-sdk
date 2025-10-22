@@ -541,6 +541,28 @@
             "fields": [
                 {"name": "soc", "type": "uint8_t", "description": "State of charge (percent)", "display": {"postfix": "%"}}
             ]
+        },
+        "55": {
+            "name": "STATE_EVENT_SET",
+            "description": "Infuse-IoT application state transitioned from cleared to set",
+            "fields": [
+                {"name": "state", "type": "uint8_t", "description": "Infuse-IoT application event"}
+            ]
+        },
+        "56": {
+            "name": "STATE_EVENT_CLEARED",
+            "description": "Infuse-IoT application state transitioned from set to cleared",
+            "fields": [
+                {"name": "state", "type": "uint8_t", "description": "Infuse-IoT application event"}
+            ]
+        },
+        "57": {
+            "name": "STATE_DURATION",
+            "description": "Duration an Infuse-IoT application state was asserted for",
+            "fields": [
+                {"name": "state", "type": "uint8_t", "description": "Infuse-IoT application event"},
+                {"name": "duration", "type": "uint32_t", "description": "Duration state was asserted for"}
+            ]
         }
     }
 }
