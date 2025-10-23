@@ -27,12 +27,19 @@ static bool task_schedule_states_eval(const struct task_schedule_state_condition
 {
 	uint8_t state_idx;
 	bool state_val;
+	bool result;
+	bool or_cond;
 	int i;
 
 	/* No states to evaluate, return default value */
 	if (states->states[0] == 0) {
 		return fallthrough;
 	}
+
+	/* Setup initial value depending on whether OR is set on S0
+	 * in order to cancel its effect.
+	 */
+	result = !(states->metadata & (BIT(4)));
 
 	for (i = 0; i < ARRAY_SIZE(states->states); i++) {
 		state_idx = states->states[i];
@@ -44,13 +51,15 @@ static bool task_schedule_states_eval(const struct task_schedule_state_condition
 		if (states->metadata & BIT(i)) {
 			state_val = !state_val;
 		}
-		/* Fail if not set */
-		if (!state_val) {
-			return false;
+		or_cond = !!(states->metadata & BIT(i + 4));
+		if (or_cond) {
+			result |= state_val;
+		} else {
+			result &= state_val;
 		}
 	}
-	/* No states failed evaluation */
-	return true;
+	/* Final result */
+	return result;
 }
 
 bool task_schedule_validate(const struct task_schedule *schedule)
