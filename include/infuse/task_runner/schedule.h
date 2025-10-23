@@ -63,15 +63,22 @@ enum task_runner_periodicity_type {
 
 /** Invert the state */
 #define TR_NOT 0x100
+/** OR the state with the previous result */
+#define TR_OR  0x200
+/** AND the state with the previous result */
+#define TR_AND 0x00
 
 /** @cond INTERNAL_HIDDEN */
 
-#define _TR_STATE_BASE                    0xFF
-#define _TR_STATES_BIT_COMMON(state, idx) ((state) & TR_NOT ? BIT(idx) : 0)
+#define _TR_STATE_BASE                 0xFF
+#define _TR_NOT_BIT_COMMON(state, idx) ((state) & TR_NOT ? BIT(idx) : 0)
+#define _TR_OR_BIT_COMMON(state, idx)  ((state) & TR_OR ? BIT(idx) : 0)
 #define _TR_STATES_DEFINE_ALL(s0, s1, s2, s3)                                                      \
 	{                                                                                          \
-		.metadata = _TR_STATES_BIT_COMMON(s0, 0) | _TR_STATES_BIT_COMMON(s1, 1) |          \
-			    _TR_STATES_BIT_COMMON(s2, 2) | _TR_STATES_BIT_COMMON(s3, 3),           \
+		.metadata = _TR_NOT_BIT_COMMON(s0, 0) | _TR_NOT_BIT_COMMON(s1, 1) |                \
+			    _TR_NOT_BIT_COMMON(s2, 2) | _TR_NOT_BIT_COMMON(s3, 3) |                \
+			    _TR_OR_BIT_COMMON(s0, 4) | _TR_OR_BIT_COMMON(s1, 5) |                  \
+			    _TR_OR_BIT_COMMON(s2, 6) | _TR_OR_BIT_COMMON(s3, 7),                   \
 		.states = {                                                                        \
 			(s0) & _TR_STATE_BASE,                                                     \
 			(s1) & _TR_STATE_BASE,                                                     \
@@ -91,15 +98,20 @@ enum task_runner_periodicity_type {
 /**
  * @brief Helper for constructing a task_schedule_state_conditions struct
  *
+ * Each provided state can be optionally inverted (with @ref TR_NOT).
+ * Each provided state is evaluated with the following priority:
+ *    (((S0 OP S1) OP S2) OP S3)
+ * By default, the OP between each state is AND (&&), but this can be switched to OR (||)
+ * by specifying @ref TR_OR on S1, S2, or S3.
+ *
  * @code{.c}
  * struct state_control test1 = TASK_STATES_DEFINE(10);
  * struct state_control test2 = TASK_STATES_DEFINE(10, 11, 45, 200);
  * struct state_control test3 = TASK_STATES_DEFINE(TR_NOT | 34, 12, TR_NOT | 99);
+ *  struct state_control test4 = TASK_STATES_DEFINE(TR_NOT | 34, TR_OR | 12, TR_OR | TR_NOT | 99);
  * @endcode
  *
  * @param ... Variable number of states (up to 4) which are evaluated together.
- *            Each state can be optionally inverted (with @ref TR_NOT), and
- *            all states are AND'ed together for the final decision.
  */
 #define TASK_STATES_DEFINE(...)                                                                    \
 	_TR_GET_MACRO(__VA_ARGS__, _TR_STATES_4, _TR_STATES_3, _TR_STATES_2, _TR_STATES_1)         \
