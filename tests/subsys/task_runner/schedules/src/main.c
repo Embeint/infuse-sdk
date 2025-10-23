@@ -468,15 +468,25 @@ ZTEST(task_runner_schedules, test_app_states_basic)
 		.states_start = TASK_STATES_DEFINE(INFUSE_STATE_TIME_KNOWN),
 		.states_terminate = TASK_STATES_DEFINE(INFUSE_STATE_TIME_KNOWN),
 	};
+	/* TR_OR has no effect on first state */
+	struct task_schedule schedule2 = {
+		.validity = TASK_VALID_ALWAYS,
+		.states_start = TASK_STATES_DEFINE(TR_OR | INFUSE_STATE_TIME_KNOWN),
+		.states_terminate = TASK_STATES_DEFINE(TR_OR | INFUSE_STATE_TIME_KNOWN),
+	};
 
 	/* State not set, neither should pass */
 	zassert_false(TEST_ITER_STATES_START(&schedule, &state, app_states));
 	zassert_false(TEST_ITER_STATES_TERMINATE(&schedule, &state, app_states));
+	zassert_false(TEST_ITER_STATES_START(&schedule2, &state, app_states));
+	zassert_false(TEST_ITER_STATES_TERMINATE(&schedule2, &state, app_states));
 
 	/* State set, both should pass */
 	atomic_set_bit(app_states, INFUSE_STATE_TIME_KNOWN);
 	zassert_true(TEST_ITER_STATES_START(&schedule, &state, app_states));
 	zassert_true(TEST_ITER_STATES_TERMINATE(&schedule, &state, app_states));
+	zassert_true(TEST_ITER_STATES_START(&schedule2, &state, app_states));
+	zassert_true(TEST_ITER_STATES_TERMINATE(&schedule2, &state, app_states));
 	atomic_clear_bit(app_states, INFUSE_STATE_TIME_KNOWN);
 }
 
@@ -514,15 +524,25 @@ ZTEST(task_runner_schedules, test_app_states_inverted)
 		.states_start = TASK_STATES_DEFINE(TR_NOT | INFUSE_STATE_TIME_KNOWN),
 		.states_terminate = TASK_STATES_DEFINE(TR_NOT | INFUSE_STATE_TIME_KNOWN),
 	};
+	/* TR_OR has no effect on first state */
+	struct task_schedule schedule2 = {
+		.validity = TASK_VALID_ALWAYS,
+		.states_start = TASK_STATES_DEFINE(TR_NOT | TR_OR | INFUSE_STATE_TIME_KNOWN),
+		.states_terminate = TASK_STATES_DEFINE(TR_NOT | TR_OR | INFUSE_STATE_TIME_KNOWN),
+	};
 
 	/* State not set, neither should pass */
 	zassert_true(TEST_ITER_STATES_START(&schedule, &state, app_states));
 	zassert_true(TEST_ITER_STATES_TERMINATE(&schedule, &state, app_states));
+	zassert_true(TEST_ITER_STATES_START(&schedule2, &state, app_states));
+	zassert_true(TEST_ITER_STATES_TERMINATE(&schedule2, &state, app_states));
 
 	/* State set, both should pass */
 	atomic_set_bit(app_states, INFUSE_STATE_TIME_KNOWN);
 	zassert_false(TEST_ITER_STATES_START(&schedule, &state, app_states));
 	zassert_false(TEST_ITER_STATES_TERMINATE(&schedule, &state, app_states));
+	zassert_false(TEST_ITER_STATES_START(&schedule2, &state, app_states));
+	zassert_false(TEST_ITER_STATES_TERMINATE(&schedule2, &state, app_states));
 	atomic_clear_bit(app_states, INFUSE_STATE_TIME_KNOWN);
 }
 
@@ -556,6 +576,56 @@ ZTEST(task_runner_schedules, test_app_states_multiple)
 	zassert_true(TEST_ITER_STATES_TERMINATE(&schedule, &state, app_states));
 }
 
+ZTEST(task_runner_schedules, test_app_states_multiple_or)
+{
+	INFUSE_STATES_ARRAY(app_states) = {0};
+	struct task_schedule_state state = {0};
+	/* (((10 || 20) && 30) && 40) */
+	struct task_schedule schedule1 = {
+		.validity = TASK_VALID_ALWAYS,
+		.states_start = TASK_STATES_DEFINE(10, TR_OR | 20, 30, 40),
+		.states_terminate = TASK_STATES_DEFINE(10, TR_OR | 20, 30, 40),
+	};
+	/* (((10 || 20) && 30) || 40) */
+	struct task_schedule schedule2 = {
+		.validity = TASK_VALID_ALWAYS,
+		.states_start = TASK_STATES_DEFINE(10, TR_OR | 20, 30, TR_OR | 40),
+		.states_terminate = TASK_STATES_DEFINE(10, TR_OR | 20, 30, TR_OR | 40),
+	};
+	/* (((10 && 20) || 30) && 40) */
+	struct task_schedule schedule3 = {
+		.validity = TASK_VALID_ALWAYS,
+		.states_start = TASK_STATES_DEFINE(10, 20, TR_OR | 30, 40),
+		.states_terminate = TASK_STATES_DEFINE(10, 20, TR_OR | 30, 40),
+	};
+
+	/* Exhaustively test combinations  */
+	for (int i = 0; i < 16; i++) {
+		bool s0 = i & BIT(0);
+		bool s1 = i & BIT(1);
+		bool s2 = i & BIT(2);
+		bool s3 = i & BIT(3);
+
+		atomic_set_bit_to(app_states, 10, s0);
+		atomic_set_bit_to(app_states, 20, s1);
+		atomic_set_bit_to(app_states, 30, s2);
+		atomic_set_bit_to(app_states, 40, s3);
+
+		zassert_equal(TEST_ITER_STATES_START(&schedule1, &state, app_states),
+			      (((s0 || s1) && s2) && s3));
+		zassert_equal(TEST_ITER_STATES_TERMINATE(&schedule1, &state, app_states),
+			      (((s0 || s1) && s2) && s3));
+		zassert_equal(TEST_ITER_STATES_START(&schedule2, &state, app_states),
+			      (((s0 || s1) && s2) || s3));
+		zassert_equal(TEST_ITER_STATES_TERMINATE(&schedule2, &state, app_states),
+			      (((s0 || s1) && s2) || s3));
+		zassert_equal(TEST_ITER_STATES_START(&schedule3, &state, app_states),
+			      (((s0 && s1) || s2) && s3));
+		zassert_equal(TEST_ITER_STATES_TERMINATE(&schedule3, &state, app_states),
+			      (((s0 && s1) || s2) && s3));
+	}
+}
+
 ZTEST(task_runner_schedules, test_app_states_multiple_inversions)
 {
 	INFUSE_STATES_ARRAY(app_states) = {0};
@@ -582,6 +652,68 @@ ZTEST(task_runner_schedules, test_app_states_multiple_inversions)
 
 	zassert_false(TEST_ITER_STATES_START(&schedule, &state, app_states));
 	zassert_false(TEST_ITER_STATES_TERMINATE(&schedule, &state, app_states));
+}
+
+ZTEST(task_runner_schedules, test_app_states_multiple_inversions_or)
+{
+	INFUSE_STATES_ARRAY(app_states) = {0};
+	struct task_schedule_state state = {0};
+	/* (((10 || 20) && !30) && 40) */
+	struct task_schedule schedule1 = {
+		.validity = TASK_VALID_ALWAYS,
+		.states_start = TASK_STATES_DEFINE(10, TR_OR | 20, TR_NOT | 30, 40),
+		.states_terminate = TASK_STATES_DEFINE(10, TR_OR | 20, TR_NOT | 30, 40),
+	};
+	/* (((!10 || 20) && 30) || 40) */
+	struct task_schedule schedule2 = {
+		.validity = TASK_VALID_ALWAYS,
+		.states_start = TASK_STATES_DEFINE(TR_NOT | 10, TR_OR | 20, 30, TR_OR | 40),
+		.states_terminate = TASK_STATES_DEFINE(TR_NOT | 10, TR_OR | 20, 30, TR_OR | 40),
+	};
+	/* (((10 && !20) || !30) && 40) */
+	struct task_schedule schedule3 = {
+		.validity = TASK_VALID_ALWAYS,
+		.states_start = TASK_STATES_DEFINE(10, TR_NOT | 20, TR_NOT | TR_OR | 30, 40),
+		.states_terminate = TASK_STATES_DEFINE(10, TR_NOT | 20, TR_NOT | TR_OR | 30, 40),
+	};
+	/* (((10 || !20) && 30) || !40) */
+	struct task_schedule schedule4 = {
+		.validity = TASK_VALID_ALWAYS,
+		.states_start =
+			TASK_STATES_DEFINE(10, TR_OR | TR_NOT | 20, 30, TR_OR | TR_NOT | 40),
+		.states_terminate =
+			TASK_STATES_DEFINE(10, TR_OR | TR_NOT | 20, 30, TR_OR | TR_NOT | 40),
+	};
+
+	/* Exhaustively test combinations  */
+	for (int i = 0; i < 16; i++) {
+		bool s0 = i & BIT(0);
+		bool s1 = i & BIT(1);
+		bool s2 = i & BIT(2);
+		bool s3 = i & BIT(3);
+
+		atomic_set_bit_to(app_states, 10, s0);
+		atomic_set_bit_to(app_states, 20, s1);
+		atomic_set_bit_to(app_states, 30, s2);
+		atomic_set_bit_to(app_states, 40, s3);
+
+		zassert_equal(TEST_ITER_STATES_START(&schedule1, &state, app_states),
+			      (((s0 || s1) && !s2) && s3));
+		zassert_equal(TEST_ITER_STATES_TERMINATE(&schedule1, &state, app_states),
+			      (((s0 || s1) && !s2) && s3));
+		zassert_equal(TEST_ITER_STATES_START(&schedule2, &state, app_states),
+			      (((!s0 || s1) && s2) || s3));
+		zassert_equal(TEST_ITER_STATES_TERMINATE(&schedule2, &state, app_states),
+			      (((!s0 || s1) && s2) || s3));
+		zassert_equal(TEST_ITER_STATES_START(&schedule3, &state, app_states),
+			      (((s0 && !s1) || !s2) && s3));
+		zassert_equal(TEST_ITER_STATES_TERMINATE(&schedule3, &state, app_states),
+			      (((s0 && !s1) || !s2) && s3));
+		zassert_equal(TEST_ITER_STATES_START(&schedule4, &state, app_states),
+			      (((s0 || !s1) && s2) || !s3));
+		zassert_equal(TEST_ITER_STATES_TERMINATE(&schedule4, &state, app_states),
+			      (((s0 || !s1) && s2) || !s3));
+	}
 }
 
 ZTEST(task_runner_schedules, test_timeout)
