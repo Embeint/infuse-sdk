@@ -85,14 +85,22 @@ void emul_gnss_pvt_configure(const struct device *dev, struct gnss_pvt_emul_loca
 	};
 	int64_t time_base = 1500000000000LL;
 
-	if (emul_location->h_acc <= 5000) {
+	if (emul_location->h_acc <= 50000) {
+		info.fix_quality = GNSS_FIX_QUALITY_GNSS_SPS;
 		info.fix_status = GNSS_FIX_STATUS_GNSS_FIX;
 	} else if (emul_location->num_sv > 0) {
+		info.fix_quality = GNSS_FIX_QUALITY_ESTIMATED;
 		info.fix_status = GNSS_FIX_STATUS_ESTIMATED_FIX;
 	} else {
+		info.fix_quality = GNSS_FIX_QUALITY_INVALID;
 		info.fix_status = GNSS_FIX_STATUS_NO_FIX;
 		time_base = 0;
 	}
+
+#ifdef CONFIG_TASK_RUNNER_GNSS_HDOP_ACCURACY_FACTOR
+	/* For simulators that determine HACC from HDOP */
+	info.hdop = emul_location->h_acc / CONFIG_TASK_RUNNER_GNSS_HDOP_ACCURACY_FACTOR;
+#endif /* CONFIG_TASK_RUNNER_GNSS_HDOP_ACCURACY_FACTOR */
 
 	gnss_emul_set_data(dev, &nav, &info, time_base);
 }
@@ -267,10 +275,11 @@ static void expected_logging(int32_t latitude, int32_t longitude, int32_t height
 	zassert_equal(latitude, gcs->location.latitude);
 	zassert_equal(longitude, gcs->location.longitude);
 	zassert_equal(height, gcs->location.height);
+	zassert_within(h_acc, gcs->h_acc, h_acc_threshold);
 #ifdef CONFIG_GNSS_EMUL
 	/* Zephyr GNSS API doesn't expose accuracy properly */
+	zassert_equal(gcs->h_acc, gcs->v_acc);
 #else
-	zassert_within(h_acc, gcs->h_acc, h_acc_threshold);
 	zassert_equal(v_acc, gcs->v_acc);
 #endif /* CONFIG_GNSS_EMUL */
 
@@ -499,7 +508,7 @@ ZTEST(task_gnss, test_location_fix_runner_terminate)
 	k_work_reschedule(&terminator, K_MSEC(44500));
 	run_location_fix(thread, -270000000, 1530000000, 70 * M, 100 * M, 5 * M, 20 * M, 5 * M, 16);
 	expected_location_fix(thread, start, 46);
-	expected_logging(-270000000, 1530000000, 70 * M, 40 * M, 50 * M, 1 * M);
+	expected_logging(-270000000, 1530000000, 70 * M, 40 * M, 50 * M, 10 * M);
 
 	/* Time should be valid despite the early exit */
 	zassert_equal(TIME_SOURCE_GNSS, epoch_time_get_source());
@@ -541,16 +550,6 @@ ZTEST(task_gnss, test_location_fix_plateau)
 	zassert_equal(TIME_SOURCE_GNSS, epoch_time_get_source());
 }
 
-#ifdef CONFIG_TASK_RUNNER_TASK_GNSS_ZEPHYR
-
-ZTEST(task_gnss, test_location_fix_plateau_timeout)
-{
-	/* Zephyr GNSS API doesn't report fine-grained accuracies */
-	ztest_test_skip();
-}
-
-#else
-
 ZTEST(task_gnss, test_location_fix_plateau_timeout)
 {
 	k_tid_t thread;
@@ -581,13 +580,11 @@ ZTEST(task_gnss, test_location_fix_plateau_timeout)
 	/* Run the location fix with a slow plateau that should trigger timeout */
 	run_location_fix(thread, 230000000, -1500000000, 70 * M, 25 * M, 10, 20 * M, 5 * M, 16);
 	expected_location_fix(thread, start, 41);
-	expected_logging(230000000, -1500000000, 70 * M, 24950, 50 * M, 1 * M);
+	expected_logging(230000000, -1500000000, 70 * M, 24950, 50 * M, 10 * M);
 
 	/* Time should be valid */
 	zassert_equal(TIME_SOURCE_GNSS, epoch_time_get_source());
 }
-
-#endif /* CONFIG_GNSS_EMUL */
 
 ZTEST(task_gnss, test_location_fix_plateau_min_accuracy)
 {
@@ -625,7 +622,7 @@ ZTEST(task_gnss, test_location_fix_plateau_min_accuracy)
 	/* Run the location fix with a plateau before the minimum accuracy is reached */
 	run_location_fix(thread, 230000000, -1500000000, 70 * M, 25 * M, 10, 20 * M, 5 * M, 16);
 	expected_location_fix(thread, start, 120);
-	expected_logging(230000000, -1500000000, 70 * M, 24160, 50 * M, 1 * M);
+	expected_logging(230000000, -1500000000, 70 * M, 24160, 50 * M, 10 * M);
 
 	/* Time should be valid */
 	zassert_equal(TIME_SOURCE_GNSS, epoch_time_get_source());
