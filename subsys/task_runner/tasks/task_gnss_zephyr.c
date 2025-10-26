@@ -73,7 +73,8 @@ static k_ticks_t data_timestamp(struct gnss_run_state *state)
 	}
 }
 
-static uint64_t log_and_publish(struct gnss_run_state *state, const struct gnss_data *data)
+static uint64_t log_and_publish(struct gnss_run_state *state, const struct gnss_data *data,
+				int32_t h_acc)
 {
 	const struct navigation_data *nav = &data->nav_data;
 	const struct gnss_info *inf = &data->info;
@@ -91,16 +92,10 @@ static uint64_t log_and_publish(struct gnss_run_state *state, const struct gnss_
 
 	switch (inf->fix_status) {
 	case GNSS_FIX_STATUS_ESTIMATED_FIX:
-		llha.h_acc = 100000;
-		llha.v_acc = 100000;
-		break;
 	case GNSS_FIX_STATUS_GNSS_FIX:
-		llha.h_acc = 1000;
-		llha.v_acc = 1000;
-		break;
 	case GNSS_FIX_STATUS_DGNSS_FIX:
-		llha.h_acc = 500;
-		llha.v_acc = 500;
+		llha.h_acc = h_acc;
+		llha.v_acc = h_acc;
 		break;
 	default:
 		/* Set invalid location on insufficient accuracy */
@@ -164,16 +159,25 @@ static bool gnss_data_handle(struct gnss_run_state *state, const struct task_gns
 	int32_t lat = nav->latitude / 100;
 	int32_t lon = nav->longitude / 100;
 	uint32_t runtime = k_uptime_seconds() - state->task_start;
+	int32_t h_acc = INT32_MAX;
+
+	/* Estimate the location accuracy from HDOP */
+	if (inf->fix_quality > GNSS_FIX_QUALITY_INVALID) {
+		h_acc = CONFIG_TASK_RUNNER_GNSS_HDOP_ACCURACY_FACTOR * inf->hdop;
+	}
+
+	bool valid_hacc = (h_acc <= (1000 * (int32_t)args->accuracy_m));
+	bool valid_pdop = (inf->hdop <= (100 * (uint32_t)args->position_dop));
 
 	/* Periodically print fix state */
 	if (k_uptime_seconds() % 30 == 0) {
 		LOG_INF("NAV-PVT: Lat: %9d Lon: %9d Height: %6d", lat, lon, nav->altitude);
-		LOG_INF("         Status: %d pDOP: %d NumSV: %d", inf->fix_status, inf->hdop / 1000,
-			inf->satellites_cnt);
+		LOG_INF("         Status: %d HAcc: %dmm pDOP: %d NumSV: %d", inf->fix_status, h_acc,
+			inf->hdop / 1000, inf->satellites_cnt);
 	} else {
 		LOG_DBG("NAV-PVT: Lat: %9d Lon: %9d Height: %6d", lat, lon, nav->altitude);
-		LOG_DBG("         Status: %d pDOP: %d NumSV: %d", inf->fix_status, inf->hdop / 1000,
-			inf->satellites_cnt);
+		LOG_DBG("         Status: %d HAcc: %dmm pDOP: %d NumSV: %d", inf->fix_status, h_acc,
+			inf->hdop / 1000, inf->satellites_cnt);
 	}
 
 	/* If there is no current time knowledge, or it is old enough, do a quick sync ASAP */
@@ -194,16 +198,15 @@ static bool gnss_data_handle(struct gnss_run_state *state, const struct task_gns
 
 	if (run_target == TASK_GNSS_FLAGS_RUN_FOREVER) {
 		/* If running perpetually, log each output */
-		log_and_publish(state, &state->gnss_data_latest);
+		log_and_publish(state, &state->gnss_data_latest, h_acc);
 	} else if (run_target == TASK_GNSS_FLAGS_RUN_TO_LOCATION_FIX) {
-		/* Zephyr GNSS API has no accuracy information (Standard NMEA limitation) */
-		if (inf->fix_status == GNSS_FIX_STATUS_GNSS_FIX) {
+		/* Check if the fix has timed out */
+		if (gnss_run_to_fix_timeout(args, &state->timeout_state, h_acc, runtime)) {
 			return true;
 		}
-		/* Since there is not accuracy info, we can only check the any fix timeout */
-		if ((args->run_to_fix.any_fix_timeout) &&
-		    (runtime >= args->run_to_fix.any_fix_timeout) &&
-		    (inf->fix_status == GNSS_FIX_STATUS_NO_FIX)) {
+		/* Check if the location fix  */
+		if (valid_hacc && valid_pdop) {
+			LOG_INF("Terminating due to %s", "fix obtained");
 			return true;
 		}
 	} else if (run_target == TASK_GNSS_FLAGS_RUN_TO_TIME_SYNC) {
@@ -314,11 +317,16 @@ void gnss_task_fn(const struct task_schedule *schedule, struct k_poll_signal *te
 		int32_t lat = fix->nav_data.latitude / 100;
 		int32_t lon = fix->nav_data.longitude / 100;
 		int32_t height = (fix->nav_data.altitude + fix->info.geoid_separation) / 1000;
+		int32_t h_acc = INT32_MAX;
 		uint64_t epoch_time;
 
-		LOG_INF("Final Location: Lat %9d Lon %9d Height %dm Status %d", lat, lon, height,
-			fix->info.fix_status);
-		epoch_time = log_and_publish(&run_state, fix);
+		if (fix->info.fix_quality > GNSS_FIX_QUALITY_INVALID) {
+			h_acc = CONFIG_TASK_RUNNER_GNSS_HDOP_ACCURACY_FACTOR * fix->info.hdop;
+		}
+
+		LOG_INF("Final Location: Lat %9d Lon %9d Height %dm Acc %dmm Status %d", lat, lon,
+			height, h_acc, fix->info.fix_status);
+		epoch_time = log_and_publish(&run_state, fix, h_acc);
 
 		/* Log fix information */
 		TASK_SCHEDULE_TDF_LOG(schedule, TASK_GNSS_LOG_FIX_INFO, TDF_GNSS_FIX_INFO,
