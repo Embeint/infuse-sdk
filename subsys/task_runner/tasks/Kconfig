@@ -218,6 +218,16 @@ config TASK_RUNNER_GNSS_TIME_COARSE_SYNC_PERIOD_SEC
 	  This ensures that even if a fine time sync is not obtained, the device RTC
 	  still stays roughly in sync. The default value is 2 hours.
 
+config TASK_RUNNER_GNSS_HDOP_ACCURACY_FACTOR
+	int "Conversion factor to estimate accuracy from HDOP"
+	depends on TASK_RUNNER_TASK_GNSS_ZEPHYR
+	default 5
+	help
+	  For GNSS receivers that only report dilution-of-precision (DOP), the location
+	  accuracy can be approximated by multiplying the horizontal DOP by the User
+	  Equivalent Range Error (UERE). The default value of 5 results in an estimated
+	  accuracy of 5m for a HDOP of 1.0.
+
 module = TASK_GNSS
 module-str = GNSS task
 source "subsys/logging/Kconfig.template.log_config"
