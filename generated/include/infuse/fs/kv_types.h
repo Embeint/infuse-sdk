@@ -132,6 +132,12 @@ struct kv_infuse_application_id {
 	uint32_t application_id;
 } __packed;
 
+/** Control STATE_APPLICATION_ACTIVE */
+struct kv_application_active {
+	/** Active for any non-zero value */
+	uint8_t active;
+} __packed;
+
 /** Fixed global location of the device */
 struct kv_fixed_location {
 	/** Location */
@@ -445,6 +451,8 @@ enum kv_builtin_id {
 	KV_KEY_DEVICE_NAME = 4,
 	/** CONFIG_INFUSE_APPLICATION_ID, store will be reset if the values don't match */
 	KV_KEY_INFUSE_APPLICATION_ID = 5,
+	/** Control STATE_APPLICATION_ACTIVE */
+	KV_KEY_APPLICATION_ACTIVE = 6,
 	/** Fixed global location of the device */
 	KV_KEY_FIXED_LOCATION = 10,
 	/** WiFi network name */
@@ -523,6 +531,7 @@ enum kv_builtin_size {
 	_KV_KEY_EXFAT_DISK_INFO_SIZE = sizeof(struct kv_exfat_disk_info),
 	_KV_KEY_BLUETOOTH_CTLR_VERSION_SIZE = sizeof(struct kv_bluetooth_ctlr_version),
 	_KV_KEY_INFUSE_APPLICATION_ID_SIZE = sizeof(struct kv_infuse_application_id),
+	_KV_KEY_APPLICATION_ACTIVE_SIZE = sizeof(struct kv_application_active),
 	_KV_KEY_FIXED_LOCATION_SIZE = sizeof(struct kv_fixed_location),
 	_KV_KEY_EPACKET_UDP_PORT_SIZE = sizeof(struct kv_epacket_udp_port),
 	_KV_KEY_LTE_MODEM_IMEI_SIZE = sizeof(struct kv_lte_modem_imei),
@@ -544,6 +553,7 @@ enum kv_builtin_size {
 #define _KV_KEY_BLUETOOTH_CTLR_VERSION_TYPE struct kv_bluetooth_ctlr_version
 #define _KV_KEY_DEVICE_NAME_TYPE struct kv_device_name
 #define _KV_KEY_INFUSE_APPLICATION_ID_TYPE struct kv_infuse_application_id
+#define _KV_KEY_APPLICATION_ACTIVE_TYPE struct kv_application_active
 #define _KV_KEY_FIXED_LOCATION_TYPE struct kv_fixed_location
 #define _KV_KEY_WIFI_SSID_TYPE struct kv_wifi_ssid
 #define _KV_KEY_WIFI_PSK_TYPE struct kv_wifi_psk
@@ -705,6 +715,13 @@ static struct key_value_slot_definition _KV_SLOTS_ARRAY_DEFINE[] = {
 		.flags = 0,
 	},
 #endif /* CONFIG_KV_STORE_KEY_INFUSE_APPLICATION_ID */
+#ifdef CONFIG_KV_STORE_KEY_APPLICATION_ACTIVE
+	{
+		.key = KV_KEY_APPLICATION_ACTIVE,
+		.range = 1,
+		.flags = 0,
+	},
+#endif /* CONFIG_KV_STORE_KEY_APPLICATION_ACTIVE */
 #ifdef CONFIG_KV_STORE_KEY_FIXED_LOCATION
 	{
 		.key = KV_KEY_FIXED_LOCATION,

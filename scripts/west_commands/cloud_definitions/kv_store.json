@@ -102,6 +102,13 @@
                 {"name": "application_id", "type": "uint32_t"}
             ]
         },
+        "6": {
+            "name": "APPLICATION_ACTIVE",
+            "description": "Control STATE_APPLICATION_ACTIVE",
+            "fields": [
+                {"name": "active", "type": "uint8_t", "description": "Active for any non-zero value"}
+            ]
+        },
         "10": {
             "name": "FIXED_LOCATION",
             "description": "Fixed global location of the device",

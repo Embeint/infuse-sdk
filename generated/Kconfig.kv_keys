@@ -38,6 +38,11 @@ config KV_STORE_KEY_INFUSE_APPLICATION_ID
 	help
 	  CONFIG_INFUSE_APPLICATION_ID, store will be reset if the values don't match
 
+config KV_STORE_KEY_APPLICATION_ACTIVE
+	bool "Enable KV key APPLICATION_ACTIVE"
+	help
+	  Control STATE_APPLICATION_ACTIVE
+
 config KV_STORE_KEY_FIXED_LOCATION
 	bool "Enable KV key FIXED_LOCATION"
 	help
