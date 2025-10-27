@@ -16,16 +16,17 @@
 
 static void kv_state_obs_value_changed(uint16_t key, const void *data, size_t data_len,
 				       void *user_ctx);
-static void reference_time_updated(enum epoch_time_source source, struct timeutil_sync_instant old,
-				   struct timeutil_sync_instant new, void *user_ctx);
-
-static struct k_work_delayable led_delayable;
 static struct kv_store_cb kv_observer_cb = {
 	.value_changed = kv_state_obs_value_changed,
 };
+
+#ifdef CONFIG_KV_STORE_KEY_LED_DISABLE_DAILY_TIME_RANGE
+static void reference_time_updated(enum epoch_time_source source, struct timeutil_sync_instant old,
+				   struct timeutil_sync_instant new, void *user_ctx);
 static struct epoch_time_cb epoch_observer_cb = {
 	.reference_time_updated = reference_time_updated,
 };
+static struct k_work_delayable led_delayable;
 static uint32_t disable_daily_seconds_start;
 static uint32_t disable_daily_seconds_end;
 static bool has_disable_daily;
@@ -93,9 +94,19 @@ static void led_disable_delayable(struct k_work *work)
 	k_work_reschedule(&led_delayable, K_SECONDS(boundary));
 }
 
+static void reference_time_updated(enum epoch_time_source source, struct timeutil_sync_instant old,
+				   struct timeutil_sync_instant new, void *user_ctx)
+{
+	/* Re-evaluate immediately */
+	k_work_reschedule(&led_delayable, K_NO_WAIT);
+}
+
+#endif /* CONFIG_KV_STORE_KEY_LED_DISABLE_DAILY_TIME_RANGE */
+
 static void kv_state_obs_value_changed(uint16_t key, const void *data, size_t data_len,
 				       void *user_ctx)
 {
+#ifdef CONFIG_KV_STORE_KEY_LED_DISABLE_DAILY_TIME_RANGE
 	const struct kv_led_disable_daily_time_range *disable_daily;
 
 	if (key == KV_KEY_LED_DISABLE_DAILY_TIME_RANGE) {
@@ -116,21 +127,30 @@ static void kv_state_obs_value_changed(uint16_t key, const void *data, size_t da
 			k_work_reschedule(&led_delayable, K_NO_WAIT);
 		}
 	}
-}
+#endif /* CONFIG_KV_STORE_KEY_LED_DISABLE_DAILY_TIME_RANGE */
+#ifdef CONFIG_KV_STORE_KEY_APPLICATION_ACTIVE
+	const struct kv_application_active *active;
 
-static void reference_time_updated(enum epoch_time_source source, struct timeutil_sync_instant old,
-				   struct timeutil_sync_instant new, void *user_ctx)
-{
-	/* Re-evaluate immediately */
-	k_work_reschedule(&led_delayable, K_NO_WAIT);
+	if (key == KV_KEY_APPLICATION_ACTIVE) {
+		if (data == NULL) {
+			/* Slot has not been written, assume active */
+			infuse_state_set(INFUSE_STATE_APPLICATION_ACTIVE);
+		} else {
+			active = data;
+			infuse_state_set_to(INFUSE_STATE_APPLICATION_ACTIVE, active->active != 0);
+		}
+	}
+#endif /* CONFIG_KV_STORE_KEY_APPLICATION_ACTIVE */
 }
 
 static int kv_state_observer_init(void)
 {
+	kv_store_register_callback(&kv_observer_cb);
+
+#ifdef CONFIG_KV_STORE_KEY_LED_DISABLE_DAILY_TIME_RANGE
 	struct kv_led_disable_daily_time_range disable_daily;
 
 	epoch_time_register_callback(&epoch_observer_cb);
-	kv_store_register_callback(&kv_observer_cb);
 	k_work_init_delayable(&led_delayable, led_disable_delayable);
 	/* Initialise the cached values */
 	if (KV_STORE_READ(KV_KEY_LED_DISABLE_DAILY_TIME_RANGE, &disable_daily) ==
@@ -141,6 +161,20 @@ static int kv_state_observer_init(void)
 	}
 	/* Evaluate immediately */
 	k_work_schedule(&led_delayable, K_NO_WAIT);
+#endif /* CONFIG_KV_STORE_KEY_LED_DISABLE_DAILY_TIME_RANGE */
+#ifdef CONFIG_KV_STORE_KEY_APPLICATION_ACTIVE
+	struct kv_application_active active;
+
+	if (KV_STORE_READ(KV_KEY_APPLICATION_ACTIVE, &active) == sizeof(active)) {
+		infuse_state_set_to(INFUSE_STATE_APPLICATION_ACTIVE, active.active != 0);
+	} else {
+		/* Slot has not been written, assume active */
+		infuse_state_set(INFUSE_STATE_APPLICATION_ACTIVE);
+	}
+#else
+	/* KV key is not enabled, assume active */
+	infuse_state_set(INFUSE_STATE_APPLICATION_ACTIVE);
+#endif /* CONFIG_KV_STORE_KEY_APPLICATION_ACTIVE */
 	return 0;
 }
 
