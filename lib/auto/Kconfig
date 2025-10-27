@@ -15,7 +15,6 @@ config INFUSE_AUTO_TIME_SYNC_LOG
 config INFUSE_AUTO_KV_STATE_OBSERVER
 	bool "Automatically set application states based on KV"
 	depends on INFUSE_APPLICATION_STATES
-	depends on KV_STORE_KEY_LED_DISABLE_DAILY_TIME_RANGE || KV_STORE_KEY_APPLICATION_ACTIVE
 	default y
 
 config INFUSE_AUTO_WIFI_CONN_LOG

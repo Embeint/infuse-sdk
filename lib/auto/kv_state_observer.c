@@ -14,11 +14,16 @@
 #include <infuse/states.h>
 #include <infuse/time/epoch.h>
 
+#if defined(CONFIG_KV_STORE_KEY_LED_DISABLE_DAILY_TIME_RANGE) ||                                   \
+	defined(CONFIG_KV_STORE_KEY_APPLICATION_ACTIVE)
+#define KV_OBSERVER_CB 1
+
 static void kv_state_obs_value_changed(uint16_t key, const void *data, size_t data_len,
 				       void *user_ctx);
 static struct kv_store_cb kv_observer_cb = {
 	.value_changed = kv_state_obs_value_changed,
 };
+#endif
 
 #ifdef CONFIG_KV_STORE_KEY_LED_DISABLE_DAILY_TIME_RANGE
 static void reference_time_updated(enum epoch_time_source source, struct timeutil_sync_instant old,
@@ -103,6 +108,7 @@ static void reference_time_updated(enum epoch_time_source source, struct timeuti
 
 #endif /* CONFIG_KV_STORE_KEY_LED_DISABLE_DAILY_TIME_RANGE */
 
+#ifdef KV_OBSERVER_CB
 static void kv_state_obs_value_changed(uint16_t key, const void *data, size_t data_len,
 				       void *user_ctx)
 {
@@ -142,10 +148,13 @@ static void kv_state_obs_value_changed(uint16_t key, const void *data, size_t da
 	}
 #endif /* CONFIG_KV_STORE_KEY_APPLICATION_ACTIVE */
 }
+#endif /* KV_OBSERVER_CB */
 
 static int kv_state_observer_init(void)
 {
+#ifdef KV_OBSERVER_CB
 	kv_store_register_callback(&kv_observer_cb);
+#endif /* KV_OBSERVER_CB */
 
 #ifdef CONFIG_KV_STORE_KEY_LED_DISABLE_DAILY_TIME_RANGE
 	struct kv_led_disable_daily_time_range disable_daily;
