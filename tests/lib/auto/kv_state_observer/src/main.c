@@ -44,6 +44,11 @@ ZTEST(kv_state_observer, test_led_suppress_time_unknown)
 	};
 	int rc;
 
+	if (!IS_ENABLED(CONFIG_KV_STORE_KEY_LED_DISABLE_DAILY_TIME_RANGE)) {
+		ztest_test_skip();
+		return;
+	}
+
 	/* Write a time limit when no time is known */
 	zassert_false(infuse_state_get(INFUSE_STATE_LED_SUPPRESS));
 	zassert_equal(TIME_SOURCE_NONE, epoch_time_get_source());
@@ -76,6 +81,11 @@ ZTEST(kv_state_observer, test_led_suppress)
 			},
 	};
 	int rc;
+
+	if (!IS_ENABLED(CONFIG_KV_STORE_KEY_LED_DISABLE_DAILY_TIME_RANGE)) {
+		ztest_test_skip();
+		return;
+	}
 
 	zassert_false(infuse_state_get(INFUSE_STATE_LED_SUPPRESS));
 
@@ -140,6 +150,11 @@ ZTEST(kv_state_observer, test_led_suppress_overflow)
 	};
 	int rc;
 
+	if (!IS_ENABLED(CONFIG_KV_STORE_KEY_LED_DISABLE_DAILY_TIME_RANGE)) {
+		ztest_test_skip();
+		return;
+	}
+
 	zassert_false(infuse_state_get(INFUSE_STATE_LED_SUPPRESS));
 
 	/* 2024-07-03T23:59:01 UTC */
@@ -158,6 +173,54 @@ ZTEST(kv_state_observer, test_led_suppress_overflow)
 	zassert_false(infuse_state_get(INFUSE_STATE_LED_SUPPRESS));
 }
 
+ZTEST(kv_state_observer, test_application_active)
+{
+	struct kv_application_active active;
+	int rc;
+
+	if (!IS_ENABLED(CONFIG_KV_STORE_KEY_APPLICATION_ACTIVE)) {
+		ztest_test_skip();
+		return;
+	}
+
+	/* Enabled while not present (fail open) */
+	zassert_true(infuse_state_get(INFUSE_STATE_APPLICATION_ACTIVE));
+
+	/* Write inactive */
+	active.active = 0x00;
+	rc = KV_STORE_WRITE(KV_KEY_APPLICATION_ACTIVE, &active);
+	zassert_equal(sizeof(active), rc);
+	zassert_false(infuse_state_get(INFUSE_STATE_APPLICATION_ACTIVE));
+
+	/* Delete while inactive */
+	rc = kv_store_delete(KV_KEY_APPLICATION_ACTIVE);
+	zassert_equal(0, rc);
+	zassert_true(infuse_state_get(INFUSE_STATE_APPLICATION_ACTIVE));
+
+	/* Write active */
+	active.active = 0x01;
+	rc = KV_STORE_WRITE(KV_KEY_APPLICATION_ACTIVE, &active);
+	zassert_equal(sizeof(active), rc);
+	zassert_true(infuse_state_get(INFUSE_STATE_APPLICATION_ACTIVE));
+
+	/* Write inactive */
+	active.active = 0x00;
+	rc = KV_STORE_WRITE(KV_KEY_APPLICATION_ACTIVE, &active);
+	zassert_equal(sizeof(active), rc);
+	zassert_false(infuse_state_get(INFUSE_STATE_APPLICATION_ACTIVE));
+
+	/* Write different active */
+	active.active = 0xA9;
+	rc = KV_STORE_WRITE(KV_KEY_APPLICATION_ACTIVE, &active);
+	zassert_equal(sizeof(active), rc);
+	zassert_true(infuse_state_get(INFUSE_STATE_APPLICATION_ACTIVE));
+
+	/* Delete while active */
+	rc = kv_store_delete(KV_KEY_APPLICATION_ACTIVE);
+	zassert_equal(0, rc);
+	zassert_true(infuse_state_get(INFUSE_STATE_APPLICATION_ACTIVE));
+}
+
 void test_init(void *fixture)
 {
 	struct timeutil_sync_instant reference = {
@@ -166,6 +229,7 @@ void test_init(void *fixture)
 	};
 
 	kv_store_delete(KV_KEY_LED_DISABLE_DAILY_TIME_RANGE);
+	kv_store_delete(KV_KEY_APPLICATION_ACTIVE);
 	epoch_time_set_reference(TIME_SOURCE_NONE, &reference);
 }
 
