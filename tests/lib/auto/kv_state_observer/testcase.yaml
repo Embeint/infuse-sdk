@@ -1,9 +1,20 @@
+common:
+  platform_allow:
+    - native_sim
+  integration_platforms:
+    - native_sim
+  tags: infuse
+  min_flash: 64
+  min_ram: 32
 tests:
-  libraries.auto.kv_state_observer:
-    platform_allow:
-      - native_sim
-    integration_platforms:
-      - native_sim
-    tags: infuse
-    min_flash: 64
-    min_ram: 32
+  libraries.auto.kv_state_observer.none: {}
+  libraries.auto.kv_state_observer.led_disable:
+    extra_configs:
+      - CONFIG_KV_STORE_KEY_LED_DISABLE_DAILY_TIME_RANGE=y
+  libraries.auto.kv_state_observer.app_active:
+    extra_configs:
+      - CONFIG_KV_STORE_KEY_APPLICATION_ACTIVE=y
+  libraries.auto.kv_state_observer.all:
+    extra_configs:
+      - CONFIG_KV_STORE_KEY_LED_DISABLE_DAILY_TIME_RANGE=y
+      - CONFIG_KV_STORE_KEY_APPLICATION_ACTIVE=y

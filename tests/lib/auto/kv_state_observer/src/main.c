@@ -179,7 +179,8 @@ ZTEST(kv_state_observer, test_application_active)
 	int rc;
 
 	if (!IS_ENABLED(CONFIG_KV_STORE_KEY_APPLICATION_ACTIVE)) {
-		ztest_test_skip();
+		/* State should be automatically enabled if KEY is not enabled */
+		zassert_true(infuse_state_get(INFUSE_STATE_APPLICATION_ACTIVE));
 		return;
 	}
 
