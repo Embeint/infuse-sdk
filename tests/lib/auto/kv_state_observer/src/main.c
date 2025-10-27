@@ -17,6 +17,8 @@
 #include <infuse/states.h>
 #include <infuse/time/epoch.h>
 
+void kv_state_observer_init_internal(void);
+
 static void set_now(uint32_t gps_time)
 {
 	struct timeutil_sync_instant reference;
@@ -179,13 +181,9 @@ ZTEST(kv_state_observer, test_application_active)
 	int rc;
 
 	if (!IS_ENABLED(CONFIG_KV_STORE_KEY_APPLICATION_ACTIVE)) {
-		/* State should be automatically enabled if KEY is not enabled */
-		zassert_true(infuse_state_get(INFUSE_STATE_APPLICATION_ACTIVE));
+		ztest_test_skip();
 		return;
 	}
-
-	/* Enabled while not present (fail open) */
-	zassert_true(infuse_state_get(INFUSE_STATE_APPLICATION_ACTIVE));
 
 	/* Write inactive */
 	active.active = 0x00;
@@ -222,6 +220,37 @@ ZTEST(kv_state_observer, test_application_active)
 	zassert_true(infuse_state_get(INFUSE_STATE_APPLICATION_ACTIVE));
 }
 
+ZTEST(kv_state_observer, test_application_active_boot)
+{
+	struct kv_application_active active;
+	int rc;
+
+	if (!IS_ENABLED(CONFIG_KV_STORE_KEY_APPLICATION_ACTIVE)) {
+		/* State should be automatically enabled if KEY is not enabled */
+		zassert_true(infuse_state_get(INFUSE_STATE_APPLICATION_ACTIVE));
+		return;
+	}
+
+	/* Enabled when not present on boot (fail open) */
+	zassert_true(infuse_state_get(INFUSE_STATE_APPLICATION_ACTIVE));
+
+	/* Booting with ACTIVE set */
+	active.active = 0xA9;
+	rc = KV_STORE_WRITE(KV_KEY_APPLICATION_ACTIVE, &active);
+	zassert_equal(sizeof(active), rc);
+	infuse_state_clear(INFUSE_STATE_APPLICATION_ACTIVE);
+	kv_state_observer_init_internal();
+	zassert_true(infuse_state_get(INFUSE_STATE_APPLICATION_ACTIVE));
+
+	/* Booting with ACTIVE cleared */
+	active.active = 0x00;
+	rc = KV_STORE_WRITE(KV_KEY_APPLICATION_ACTIVE, &active);
+	zassert_equal(sizeof(active), rc);
+	infuse_state_clear(INFUSE_STATE_APPLICATION_ACTIVE);
+	kv_state_observer_init_internal();
+	zassert_false(infuse_state_get(INFUSE_STATE_APPLICATION_ACTIVE));
+}
+
 void test_init(void *fixture)
 {
 	struct timeutil_sync_instant reference = {
@@ -232,6 +261,7 @@ void test_init(void *fixture)
 	kv_store_delete(KV_KEY_LED_DISABLE_DAILY_TIME_RANGE);
 	kv_store_delete(KV_KEY_APPLICATION_ACTIVE);
 	epoch_time_set_reference(TIME_SOURCE_NONE, &reference);
+	kv_state_observer_init_internal();
 }
 
 ZTEST_SUITE(kv_state_observer, NULL, NULL, test_init, NULL, NULL);

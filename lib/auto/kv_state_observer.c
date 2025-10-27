@@ -150,17 +150,12 @@ static void kv_state_obs_value_changed(uint16_t key, const void *data, size_t da
 }
 #endif /* KV_OBSERVER_CB */
 
-static int kv_state_observer_init(void)
+IF_DISABLED(CONFIG_ZTEST, (static))
+void kv_state_observer_init_internal(void)
 {
-#ifdef KV_OBSERVER_CB
-	kv_store_register_callback(&kv_observer_cb);
-#endif /* KV_OBSERVER_CB */
-
 #ifdef CONFIG_KV_STORE_KEY_LED_DISABLE_DAILY_TIME_RANGE
 	struct kv_led_disable_daily_time_range disable_daily;
 
-	epoch_time_register_callback(&epoch_observer_cb);
-	k_work_init_delayable(&led_delayable, led_disable_delayable);
 	/* Initialise the cached values */
 	if (KV_STORE_READ(KV_KEY_LED_DISABLE_DAILY_TIME_RANGE, &disable_daily) ==
 	    sizeof(disable_daily)) {
@@ -184,6 +179,19 @@ static int kv_state_observer_init(void)
 	/* KV key is not enabled, assume active */
 	infuse_state_set(INFUSE_STATE_APPLICATION_ACTIVE);
 #endif /* CONFIG_KV_STORE_KEY_APPLICATION_ACTIVE */
+}
+
+static int kv_state_observer_init(void)
+{
+#ifdef KV_OBSERVER_CB
+	kv_store_register_callback(&kv_observer_cb);
+#endif /* KV_OBSERVER_CB */
+#ifdef CONFIG_KV_STORE_KEY_LED_DISABLE_DAILY_TIME_RANGE
+	epoch_time_register_callback(&epoch_observer_cb);
+	k_work_init_delayable(&led_delayable, led_disable_delayable);
+#endif /* CONFIG_KV_STORE_KEY_LED_DISABLE_DAILY_TIME_RANGE */
+
+	kv_state_observer_init_internal();
 	return 0;
 }
 
