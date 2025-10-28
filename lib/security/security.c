@@ -38,6 +38,11 @@ enum {
 	INFUSE_ROOT_NETWORK_KEY_ID,
 };
 
+struct infuse_key_info {
+	psa_key_id_t psa_id;
+	uint32_t key_id;
+};
+
 #define TLS_TAG_INFUSE_COAP 12
 
 static const uint8_t infuse_cloud_public_key[32] = {
@@ -46,16 +51,17 @@ static const uint8_t infuse_cloud_public_key[32] = {
 	0xa8, 0x7c, 0xd5, 0x1d, 0x64, 0x74, 0x1c, 0x53, 0xe0, 0x0a,
 };
 
-static psa_key_id_t root_ecc_key_id, device_root_key, device_sign_key, network_root_key;
-static uint32_t cached_network_id, cached_device_id;
+static psa_key_id_t root_ecc_key_id, device_sign_key;
 static uint8_t device_public_key[32];
+
+static struct infuse_key_info device_info;
+static struct infuse_key_info network_info;
 
 #ifdef CONFIG_INFUSE_SECURITY_SECONDARY_NETWORK_ENABLE
 
 #include <infuse/network_key_secondary.h>
 
-static psa_key_id_t secondary_network_root_key;
-static uint32_t secondary_cached_network_id;
+static struct infuse_key_info secondary_network_info;
 
 #endif /* CONFIG_INFUSE_SECURITY_SECONDARY_NETWORK_ENABLE */
 
@@ -194,14 +200,14 @@ static psa_key_id_t derive_shared_secret(psa_key_id_t root_key_id)
 	}
 
 	/* Calculate device key identifier (CRC32 over the two public keys) */
-	cached_device_id = crc32_ieee(infuse_cloud_public_key, sizeof(infuse_cloud_public_key));
-	cached_device_id =
-		crc32_ieee_update(cached_device_id, device_public_key, sizeof(device_public_key));
-	cached_device_id &= 0x00FFFFFF;
+	device_info.key_id = crc32_ieee(infuse_cloud_public_key, sizeof(infuse_cloud_public_key));
+	device_info.key_id =
+		crc32_ieee_update(device_info.key_id, device_public_key, sizeof(device_public_key));
+	device_info.key_id &= 0x00FFFFFF;
 
 #ifdef CONFIG_INFUSE_SECURITY_TEST_CREDENTIALS
 	/* This is the device ID the cloud server expects for test_shared_secret */
-	cached_device_id = 0x2F33D3;
+	device_info.key_id = 0x2F33D3;
 #endif
 	return key_id;
 }
@@ -249,7 +255,7 @@ static int coap_dtls_load(void)
 	snprintf(dtls_identity_str, sizeof(dtls_identity_str), "%016" PRIx64, infuse_device_id());
 
 	/* Derive Infuse-IoT COAP key */
-	dtls_coap_key = infuse_security_derive_chacha_key(device_root_key, &dtls_coap_salt,
+	dtls_coap_key = infuse_security_derive_chacha_key(device_info.psa_id, &dtls_coap_salt,
 							  sizeof(dtls_coap_salt), "coap", 4, true);
 	if (dtls_coap_key == PSA_KEY_ID_NULL) {
 		LOG_ERR("COAP key derivation failed");
@@ -361,13 +367,13 @@ int infuse_security_init(void)
 		return -EINVAL;
 	}
 	/* Regenerate root shared secret */
-	device_root_key = derive_shared_secret(root_ecc_key_id);
-	if (device_root_key == PSA_KEY_ID_NULL) {
+	device_info.psa_id = derive_shared_secret(root_ecc_key_id);
+	if (device_info.psa_id == PSA_KEY_ID_NULL) {
 		LOG_ERR("Failed to derive shared secret!");
 		return -EINVAL;
 	}
 	/* Derive signing key */
-	device_sign_key = infuse_security_derive_chacha_key(device_root_key, &salt, sizeof(salt),
+	device_sign_key = infuse_security_derive_chacha_key(device_info.psa_id, &salt, sizeof(salt),
 							    "sign", 4, false);
 	if (device_sign_key == PSA_KEY_ID_NULL) {
 		LOG_ERR("Failed to derive signing key!");
@@ -381,19 +387,19 @@ int infuse_security_init(void)
 	}
 
 	/* Load root network key */
-	cached_network_id = INFUSE_NETWORK_KEY_ID;
-	network_root_key = explicit_key_load(infuse_network_key, sizeof(infuse_network_key));
-	if (network_root_key == PSA_KEY_ID_NULL) {
+	network_info.key_id = INFUSE_NETWORK_KEY_ID;
+	network_info.psa_id = explicit_key_load(infuse_network_key, sizeof(infuse_network_key));
+	if (network_info.psa_id == PSA_KEY_ID_NULL) {
 		LOG_ERR("Failed to load network root!");
 		return -EINVAL;
 	}
 
 #ifdef CONFIG_INFUSE_SECURITY_SECONDARY_NETWORK_ENABLE
 	/* Load secondary network key */
-	secondary_cached_network_id = SECONDARY_NETWORK_KEY_ID;
-	secondary_network_root_key =
+	secondary_network_info.key_id = SECONDARY_NETWORK_KEY_ID;
+	secondary_network_info.psa_id =
 		explicit_key_load(secondary_network_key, sizeof(secondary_network_key));
-	if (secondary_network_root_key == PSA_KEY_ID_NULL) {
+	if (secondary_network_info.psa_id == PSA_KEY_ID_NULL) {
 		LOG_ERR("Failed to load secondary network root!");
 		return -EINVAL;
 	}
@@ -464,7 +470,7 @@ void infuse_security_device_public_key(uint8_t public_key[32])
 
 psa_key_id_t infuse_security_device_root_key(void)
 {
-	return device_root_key;
+	return device_info.psa_id;
 }
 
 psa_key_id_t infuse_security_device_sign_key(void)
@@ -474,29 +480,29 @@ psa_key_id_t infuse_security_device_sign_key(void)
 
 psa_key_id_t infuse_security_network_root_key(void)
 {
-	return network_root_key;
+	return network_info.psa_id;
 }
 
 uint32_t infuse_security_device_key_identifier(void)
 {
-	return cached_device_id;
+	return device_info.key_id;
 }
 
 uint32_t infuse_security_network_key_identifier(void)
 {
-	return cached_network_id;
+	return network_info.key_id;
 }
 
 #ifdef CONFIG_INFUSE_SECURITY_SECONDARY_NETWORK_ENABLE
 
 psa_key_id_t infuse_security_secondary_network_root_key(void)
 {
-	return secondary_network_root_key;
+	return secondary_network_info.psa_id;
 }
 
 uint32_t infuse_security_secondary_network_key_identifier(void)
 {
-	return secondary_cached_network_id;
+	return secondary_network_info.key_id;
 }
 
 #endif /* CONFIG_INFUSE_SECURITY_SECONDARY_NETWORK_ENABLE */
