@@ -185,6 +185,22 @@
                 {"name": "FLASH_REMOVABLE", "value": 3, "description": "Read data from removable flash logger (SD)"},
                 {"name": "ENCRYPT", "value": 128, "description": "Flag (0x80) to specify payload should be encrypted"}
             ]
+        },
+        "rpc_enum_key_id": {
+            "description": "Infuse security key identifier",
+            "type": "uint8_t",
+            "values": [
+                {"name": "NETWORK_KEY", "value": 0, "description": "Primary network key"},
+                {"name": "SECONDARY_NETWORK_KEY", "value": 1, "description": "Secondary network key"}
+            ]
+        },
+        "rpc_enum_key_action": {
+            "description": "Infuse security key action",
+            "type": "uint8_t",
+            "values": [
+                {"name": "KEY_WRITE", "value": 0, "description": "Write updated value for the key"},
+                {"name": "KEY_DELETE", "value": 1, "description": "Delete exisiting value for the key"}
+            ]
         }
     },
     "commands": {
@@ -699,6 +715,21 @@
                 {"name": "challenge_response_type", "type": "uint8_t", "description": "Type of the challenge response"},
                 {"name": "challenge_response", "type": "uint8_t", "num": 0, "description": "Challenge response data"}
             ]
+        },
+        "30001": {
+            "name": "security_key_update",
+            "description": "Update key material",
+            "depends_on": "INFUSE_REBOOT",
+            "default": "y if INFUSE_SECURITY",
+            "default_auth": "EPACKET_AUTH_DEVICE",
+            "request_params": [
+                {"name": "key_id", "type": "enum rpc_enum_key_id", "description": "Security key to update"},
+                {"name": "key_action", "type": "enum rpc_enum_key_action", "description": "Action to take"},
+                {"name": "key_global_identifier", "type": "uint32_t", "description": "24 bit key identifier (Network keys only)"},
+                {"name": "key_bitstream", "type": "uint8_t", "num": 32, "description": "Key bitstream"},
+                {"name": "reboot_delay", "type": "uint8_t", "description": "Reboot in this many seconds to load new keys"}
+            ],
+            "response_params": []
         },
         "32765": {
             "name": "data_sender",

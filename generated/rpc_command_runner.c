@@ -305,6 +305,13 @@ void rpc_command_runner(struct net_buf *request)
 		}
 		break;
 #endif /* CONFIG_INFUSE_RPC_COMMAND_SECURITY_STATE */
+#ifdef CONFIG_INFUSE_RPC_COMMAND_SECURITY_KEY_UPDATE
+	case RPC_ID_SECURITY_KEY_UPDATE:
+		if (AUTHORISED(auth, SECURITY_KEY_UPDATE)) { /* GCOVR_EXCL_BR_LINE */
+			response = rpc_command_security_key_update(request);
+		}
+		break;
+#endif /* CONFIG_INFUSE_RPC_COMMAND_SECURITY_KEY_UPDATE */
 #ifdef CONFIG_INFUSE_RPC_COMMAND_DATA_SENDER
 	case RPC_ID_DATA_SENDER:
 		if (AUTHORISED(auth, DATA_SENDER)) { /* GCOVR_EXCL_BR_LINE */
