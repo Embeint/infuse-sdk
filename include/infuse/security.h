@@ -187,6 +187,51 @@ uint32_t infuse_security_network_key_identifier(void);
 uint32_t infuse_security_secondary_network_key_identifier(void);
 
 /**
+ * @brief Update the device network key
+ *
+ * @note Does not reload any key information loaded by other modules.
+ *       Generally the device must be rebooted to apply the new key.
+ *
+ * @param id 24 bit network key identifier
+ * @param key Root network key
+ *
+ * @retval 0 On success
+ * @retval -errno On failure
+ */
+int infuse_security_network_key_write(uint32_t key_id, const uint8_t key[32]);
+
+/**
+ * @brief Update the device secondary network key
+ *
+ * @note Does not reload any key information loaded by other modules.
+ *       Generally the device must be rebooted to apply the new key.
+ *
+ * @param id 24 bit network key identifier
+ * @param key Root network key
+ *
+ * @retval 0 On success
+ * @retval -errno On failure
+ */
+int infuse_security_secondary_network_key_write(uint32_t key_id, const uint8_t key[32]);
+
+#ifdef CONFIG_ZTEST
+
+/**
+ * @brief Re-run network key load logic for test purposes
+ *
+ * @retval 0 On success
+ * @retval -errno On failure
+ */
+int infuse_security_network_keys_load(void);
+
+/**
+ * @brief Un-load network keys in order to re-run @ref infuse_security_network_keys_load
+ */
+void infuse_security_network_keys_unload(void);
+
+#endif /* CONFIG_ZTEST */
+
+/**
  * @}
  */
 

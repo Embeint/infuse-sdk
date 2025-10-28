@@ -369,6 +369,40 @@ static int infuse_network_key_load(struct infuse_key_info *info, uint32_t its_id
 	return 0;
 }
 
+IF_DISABLED(CONFIG_ZTEST, (static))
+int infuse_security_network_keys_load(void)
+{
+	int rc;
+
+	/* Load root network key */
+	rc = infuse_network_key_load(&network_info, INFUSE_ROOT_NETWORK_KEY_ID,
+				     INFUSE_NETWORK_KEY_ID, infuse_network_key);
+	if (rc < 0) {
+		return rc;
+	}
+
+#ifdef CONFIG_INFUSE_SECURITY_SECONDARY_NETWORK_ENABLE
+	/* Load secondary network key */
+	rc = infuse_network_key_load(&secondary_network_info, INFUSE_ROOT_SECONDARY_NETWORK_KEY_ID,
+				     SECONDARY_NETWORK_KEY_ID, secondary_network_key);
+	if (rc < 0) {
+		return rc;
+	}
+#endif /* CONFIG_INFUSE_SECURITY_SECONDARY_NETWORK_ENABLE */
+
+	return 0;
+}
+
+#ifdef CONFIG_ZTEST
+void infuse_security_network_keys_unload(void)
+{
+	(void)psa_destroy_key(network_info.psa_id);
+#ifdef CONFIG_INFUSE_SECURITY_SECONDARY_NETWORK_ENABLE
+	(void)psa_destroy_key(secondary_network_info.psa_id);
+#endif /* CONFIG_INFUSE_SECURITY_SECONDARY_NETWORK_ENABLE */
+}
+#endif /* CONFIG_ZTEST */
+
 int infuse_security_init(void)
 {
 	uint32_t salt = 0x1234;
@@ -426,23 +460,8 @@ int infuse_security_init(void)
 		return rc;
 	}
 
-	/* Load root network key */
-	rc = infuse_network_key_load(&network_info, INFUSE_ROOT_NETWORK_KEY_ID,
-				     INFUSE_NETWORK_KEY_ID, infuse_network_key);
-	if (rc < 0) {
-		return rc;
-	}
-
-#ifdef CONFIG_INFUSE_SECURITY_SECONDARY_NETWORK_ENABLE
-	/* Load secondary network key */
-	rc = infuse_network_key_load(&secondary_network_info, INFUSE_ROOT_SECONDARY_NETWORK_KEY_ID,
-				     SECONDARY_NETWORK_KEY_ID, secondary_network_key);
-	if (rc < 0) {
-		return rc;
-	}
-#endif /* CONFIG_INFUSE_SECURITY_SECONDARY_NETWORK_ENABLE */
-
-	return 0;
+	/* Load network keys */
+	return infuse_security_network_keys_load();
 }
 
 psa_key_id_t infuse_security_derive_key(const struct infuse_security_key_params *params)
@@ -530,6 +549,26 @@ uint32_t infuse_security_network_key_identifier(void)
 	return network_info.key_id;
 }
 
+#ifdef ITS_AVAILABLE
+static int network_key_do_write(uint32_t its_id, uint32_t key_id, const uint8_t key[32])
+{
+	struct infuse_key_storage storage;
+
+	if (key == NULL) {
+		return psa_its_remove(its_id);
+	}
+	storage.id = key_id;
+	memcpy(storage.key, key, sizeof(storage.key));
+
+	return psa_its_set(its_id, sizeof(storage), &storage, PSA_STORAGE_FLAG_NONE);
+}
+
+int infuse_security_network_key_write(uint32_t key_id, const uint8_t key[32])
+{
+	return network_key_do_write(INFUSE_ROOT_NETWORK_KEY_ID, key_id, key);
+}
+#endif /* ITS_AVAILABLE */
+
 #ifdef CONFIG_INFUSE_SECURITY_SECONDARY_NETWORK_ENABLE
 
 psa_key_id_t infuse_security_secondary_network_root_key(void)
@@ -541,6 +580,13 @@ uint32_t infuse_security_secondary_network_key_identifier(void)
 {
 	return secondary_network_info.key_id;
 }
+
+#ifdef ITS_AVAILABLE
+int infuse_security_secondary_network_key_write(uint32_t key_id, const uint8_t key[32])
+{
+	return network_key_do_write(INFUSE_ROOT_SECONDARY_NETWORK_KEY_ID, key_id, key);
+}
+#endif /* ITS_AVAILABLE */
 
 #endif /* CONFIG_INFUSE_SECURITY_SECONDARY_NETWORK_ENABLE */
 
