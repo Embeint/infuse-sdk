@@ -390,6 +390,18 @@ config INFUSE_RPC_COMMAND_SECURITY_STATE_REQUIRED_AUTH
 	depends on INFUSE_RPC_COMMAND_SECURITY_STATE
 	default 1
 
+config INFUSE_RPC_COMMAND_SECURITY_KEY_UPDATE
+	bool "Enable RPC security_key_update"
+	depends on INFUSE_REBOOT
+	default y if INFUSE_SECURITY
+	help
+	  Update key material
+
+config INFUSE_RPC_COMMAND_SECURITY_KEY_UPDATE_REQUIRED_AUTH
+	int "Required authorisation level to run security_key_update"
+	depends on INFUSE_RPC_COMMAND_SECURITY_KEY_UPDATE
+	default 2
+
 config INFUSE_RPC_COMMAND_DATA_SENDER
 	bool "Enable RPC data_sender"
 	depends on ENTROPY_GENERATOR
