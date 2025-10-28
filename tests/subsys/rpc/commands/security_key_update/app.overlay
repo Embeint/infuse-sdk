@@ -1,0 +1,9 @@
+/ {
+	chosen {
+		infuse,kv-partition = &storage_partition;
+	};
+
+	epacket_dummy: epacket_dummy {
+		compatible = "embeint,epacket-dummy";
+	};
+};
