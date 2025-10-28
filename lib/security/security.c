@@ -329,6 +329,18 @@ static psa_key_id_t explicit_key_load(const uint8_t *key, uint8_t key_len)
 	return key_id;
 }
 
+static int infuse_network_key_load(struct infuse_key_info *info, uint32_t default_id,
+				   const uint8_t default_val[32])
+{
+	info->key_id = default_id;
+	info->psa_id = explicit_key_load(default_val, 32);
+	if (info->psa_id == PSA_KEY_ID_NULL) {
+		LOG_ERR("Failed to load network key!");
+		return -EINVAL;
+	}
+	return 0;
+}
+
 int infuse_security_init(void)
 {
 	uint32_t salt = 0x1234;
@@ -387,21 +399,17 @@ int infuse_security_init(void)
 	}
 
 	/* Load root network key */
-	network_info.key_id = INFUSE_NETWORK_KEY_ID;
-	network_info.psa_id = explicit_key_load(infuse_network_key, sizeof(infuse_network_key));
-	if (network_info.psa_id == PSA_KEY_ID_NULL) {
-		LOG_ERR("Failed to load network root!");
-		return -EINVAL;
+	rc = infuse_network_key_load(&network_info, INFUSE_NETWORK_KEY_ID, infuse_network_key);
+	if (rc < 0) {
+		return rc;
 	}
 
 #ifdef CONFIG_INFUSE_SECURITY_SECONDARY_NETWORK_ENABLE
 	/* Load secondary network key */
-	secondary_network_info.key_id = SECONDARY_NETWORK_KEY_ID;
-	secondary_network_info.psa_id =
-		explicit_key_load(secondary_network_key, sizeof(secondary_network_key));
-	if (secondary_network_info.psa_id == PSA_KEY_ID_NULL) {
-		LOG_ERR("Failed to load secondary network root!");
-		return -EINVAL;
+	rc = infuse_network_key_load(&secondary_network_info, SECONDARY_NETWORK_KEY_ID,
+				     secondary_network_key);
+	if (rc < 0) {
+		return rc;
 	}
 #endif /* CONFIG_INFUSE_SECURITY_SECONDARY_NETWORK_ENABLE */
 
