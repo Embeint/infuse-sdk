@@ -1,0 +1,10 @@
+common:
+  tags: crypto
+  min_flash: 64
+  min_ram: 32
+tests:
+  lib.security:
+    platform_allow:
+      - mps2/an385
+    integration_platforms:
+      - mps2/an385
