@@ -8,6 +8,7 @@ if INFUSE_IMU
 
 config INFUSE_IMU_MAX_FIFO_SAMPLES
 	int "Maximum number of samples pending in a FIFO that can be handled"
+	default 32 if INFUSE_IMU_LIS2DW12
 	default 128
 	help
 	  Save RAM by notifying drivers and application logic of the maximum number
