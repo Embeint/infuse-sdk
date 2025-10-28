@@ -36,12 +36,18 @@ enum {
 	INFUSE_ROOT_ECC_PUBLIC_KEY_ID,
 	INFUSE_ROOT_ECC_SHARED_SECRET_KEY_ID,
 	INFUSE_ROOT_NETWORK_KEY_ID,
+	INFUSE_ROOT_SECONDARY_NETWORK_KEY_ID,
 };
 
 struct infuse_key_info {
 	psa_key_id_t psa_id;
 	uint32_t key_id;
 };
+
+struct infuse_key_storage {
+	uint32_t id;
+	uint8_t key[32];
+} __packed;
 
 #define TLS_TAG_INFUSE_COAP 12
 
@@ -329,11 +335,33 @@ static psa_key_id_t explicit_key_load(const uint8_t *key, uint8_t key_len)
 	return key_id;
 }
 
-static int infuse_network_key_load(struct infuse_key_info *info, uint32_t default_id,
-				   const uint8_t default_val[32])
+static int infuse_network_key_load(struct infuse_key_info *info, uint32_t its_id,
+				   uint32_t default_id, const uint8_t default_val[32])
 {
-	info->key_id = default_id;
-	info->psa_id = explicit_key_load(default_val, 32);
+	uint32_t used_id = default_id;
+	const uint8_t *used_val = default_val;
+
+#ifdef ITS_AVAILABLE
+	struct infuse_key_storage stored_network;
+	psa_status_t status;
+	size_t olen;
+
+	/* Check to see if a non-default value has been written to ITS */
+	status = psa_its_get(its_id, 0, sizeof(stored_network), &stored_network, &olen);
+	if ((status == PSA_SUCCESS) && (olen == sizeof(stored_network))) {
+		/* Alternate network key has been written to storage, use it instead */
+		LOG_DBG("Using loaded ID %08x from %08x", used_id, its_id);
+		used_id = stored_network.id;
+		used_val = stored_network.key;
+	}
+#endif /* ITS_AVAILABLE */
+
+	info->key_id = used_id;
+	info->psa_id = explicit_key_load(used_val, 32);
+#ifdef ITS_AVAILABLE
+	/* Clear from RAM */
+	memset(&stored_network, 0x00, sizeof(stored_network));
+#endif /* ITS_AVAILABLE */
 	if (info->psa_id == PSA_KEY_ID_NULL) {
 		LOG_ERR("Failed to load network key!");
 		return -EINVAL;
@@ -399,15 +427,16 @@ int infuse_security_init(void)
 	}
 
 	/* Load root network key */
-	rc = infuse_network_key_load(&network_info, INFUSE_NETWORK_KEY_ID, infuse_network_key);
+	rc = infuse_network_key_load(&network_info, INFUSE_ROOT_NETWORK_KEY_ID,
+				     INFUSE_NETWORK_KEY_ID, infuse_network_key);
 	if (rc < 0) {
 		return rc;
 	}
 
 #ifdef CONFIG_INFUSE_SECURITY_SECONDARY_NETWORK_ENABLE
 	/* Load secondary network key */
-	rc = infuse_network_key_load(&secondary_network_info, SECONDARY_NETWORK_KEY_ID,
-				     secondary_network_key);
+	rc = infuse_network_key_load(&secondary_network_info, INFUSE_ROOT_SECONDARY_NETWORK_KEY_ID,
+				     SECONDARY_NETWORK_KEY_ID, secondary_network_key);
 	if (rc < 0) {
 		return rc;
 	}
