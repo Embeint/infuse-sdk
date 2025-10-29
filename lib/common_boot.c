@@ -257,9 +257,11 @@ static int infuse_common_boot(void)
 		critical_failed = true;
 	}
 #ifdef CONFIG_BT_CONTROLLER_MANAGER
-	rc = bt_controller_manager_init();
-	if (rc) {
-		LOG_WRN("Failed to init controller manager (%d)", rc);
+	if (rc == 0) {
+		rc = bt_controller_manager_init();
+		if (rc) {
+			LOG_WRN("Failed to init controller manager (%d)", rc);
+		}
 	}
 #endif /* CONFIG_BT_CONTROLLER_MANAGE*/
 #endif /* CONFIG_BT */
