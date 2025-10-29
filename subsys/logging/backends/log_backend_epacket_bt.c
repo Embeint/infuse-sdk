@@ -92,11 +92,6 @@ static void init_ble(struct log_backend const *const backend)
 	log_backend_deactivate(log_backend_epacket_bt_get());
 }
 
-static int backend_ready(const struct log_backend *const backend)
-{
-	return -EACCES;
-}
-
 static int format_set(const struct log_backend *const backend, uint32_t log_type)
 {
 	ARG_UNUSED(backend);
@@ -108,11 +103,10 @@ const struct log_backend_api log_backend_epacket_bt_api = {
 	.process = process,
 	.panic = panic,
 	.init = init_ble,
-	.is_ready = backend_ready,
 	.format_set = format_set,
 };
 
-LOG_BACKEND_DEFINE(log_backend_epacket_bt, log_backend_epacket_bt_api, true);
+LOG_BACKEND_DEFINE(log_backend_epacket_bt, log_backend_epacket_bt_api, false);
 
 static const struct log_backend *log_backend_epacket_bt_get(void)
 {
