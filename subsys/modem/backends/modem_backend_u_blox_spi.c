@@ -154,29 +154,37 @@ static int modem_backend_ublox_spi_close(void *data)
 	return 0;
 }
 
-static int modem_backend_ublox_spi_transmit(void *data, const uint8_t *buf, size_t size)
+static int modem_backend_ublox_spi_transmit(void *data, const uint8_t *buf, size_t size,
+					    const uint8_t *extra_buf, size_t extra_size)
 {
 	struct modem_backend_ublox_spi *backend = data;
+	size_t total_size = size + extra_size;
 	const struct spi_buf rx = {
 		.buf = backend->spi_rx,
 		.len = sizeof(backend->spi_rx),
 	};
-	const struct spi_buf tx = {
-		.buf = (uint8_t *)buf,
-		.len = size,
+	const struct spi_buf tx[2] = {
+		{
+			.buf = (uint8_t *)buf,
+			.len = size,
+		},
+		{
+			.buf = (uint8_t *)extra_buf,
+			.len = extra_size,
+		},
 	};
 	const struct spi_buf_set rxbs = {
 		.buffers = &rx,
 		.count = 1,
 	};
 	const struct spi_buf_set txbs = {
-		.buffers = &tx,
-		.count = 1,
+		.buffers = tx,
+		.count = extra_size == 0 ? 1 : 2,
 	};
 	int rc;
 
-	if (size > sizeof(backend->spi_rx)) {
-		LOG_WRN("Payload too large (%d > %d)", size, sizeof(backend->spi_rx));
+	if (total_size > sizeof(backend->spi_rx)) {
+		LOG_WRN("Payload too large (%d > %d)", total_size, sizeof(backend->spi_rx));
 		return -ENOMEM;
 	}
 
@@ -197,8 +205,9 @@ static int modem_backend_ublox_spi_transmit(void *data, const uint8_t *buf, size
 			       backend);
 	if (rc < 0) {
 		LOG_ERR("FIFO read trigger failed");
+		return rc;
 	}
-	return rc;
+	return total_size;
 }
 
 static int modem_backend_ublox_spi_receive(void *data, uint8_t *buf, size_t size)
