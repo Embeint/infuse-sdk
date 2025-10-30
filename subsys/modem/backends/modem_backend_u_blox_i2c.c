@@ -23,7 +23,7 @@ enum {
 	MODE_CLOSED = BIT(2),
 };
 
-static void write_cb(struct rtio *r, const struct rtio_sqe *sqe, void *arg)
+static void write_cb(struct rtio *r, const struct rtio_sqe *sqe, int res, void *arg)
 {
 	struct modem_backend_ublox_i2c *backend = arg;
 	struct rtio_cqe *wr_cqe;
@@ -42,7 +42,7 @@ static void write_cb(struct rtio *r, const struct rtio_sqe *sqe, void *arg)
 	modem_pipe_notify_transmit_idle(&backend->common.pipe);
 }
 
-static void fifo_bytes_read_cb(struct rtio *r, const struct rtio_sqe *sqe, void *arg)
+static void fifo_bytes_read_cb(struct rtio *r, const struct rtio_sqe *sqe, int res, void *arg)
 {
 	struct modem_backend_ublox_i2c *backend = arg;
 	struct rtio_cqe *wr_cqe, *rd_cqe;
@@ -87,7 +87,7 @@ static void fifo_bytes_read_cb(struct rtio *r, const struct rtio_sqe *sqe, void 
 	}
 }
 
-static void fifo_bytes_pending_cb(struct rtio *r, const struct rtio_sqe *sqe, void *arg)
+static void fifo_bytes_pending_cb(struct rtio *r, const struct rtio_sqe *sqe, int res, void *arg)
 {
 	struct modem_backend_ublox_i2c *backend = arg;
 	struct rtio_cqe *wr_cqe, *rd_cqe;
