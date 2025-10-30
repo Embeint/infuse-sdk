@@ -54,6 +54,8 @@ enum infuse_reboot_reason {
 	INFUSE_REBOOT_SW_WATCHDOG = 134,
 	/** Rebooting for device firmware update */
 	INFUSE_REBOOT_DFU = 135,
+	/** Bluetooth controller fault */
+	INFUSE_REBOOT_BT_CTLR_FAULT = 136,
 	/** Unknown reboot reason */
 	INFUSE_REBOOT_UNKNOWN = 255,
 } __packed;

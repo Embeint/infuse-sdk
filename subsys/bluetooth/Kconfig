@@ -19,6 +19,13 @@ config BT_CONN_AUTO_RSSI
 	depends on BT_CTLR_CONN_RSSI || !HAS_BT_CTLR
 	default y
 
+config BT_INFUSE_ASSERT_HANDLER
+	bool "Handle Bluetooth controller assertions"
+	depends on INFUSE_REBOOT
+	depends on HAS_BT_CTLR
+	select BT_CTLR_ASSERT_HANDLER
+	default y
+
 if BT_CONN_AUTO_RSSI
 
 config BT_CONN_AUTO_RSSI_INTERVAL_MS
