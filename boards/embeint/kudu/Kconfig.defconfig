@@ -11,7 +11,7 @@ if NETWORKING
 # Constant latency to improve UART stability.
 # According to the datasheet this increases idle power consumption by 530 uA.
 # This is negligible compared to the consumption of the LTE CAT1 modem.
-configdefault NRF_FORCE_CONSTANT_LATENCY
+configdefault SOC_NRF_FORCE_CONSTLAT
 	default y
 configdefault NRFX_POWER
 	default y
