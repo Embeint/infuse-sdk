@@ -98,7 +98,7 @@ static int count_logging(uint16_t tdf_id)
 ZTEST(alg_demo, test_event_generator)
 {
 	k_tid_t imu_thread;
-	int tdfs_logged;
+	int tdfs_logged = 0;
 
 	schedule[0].task_args.infuse.imu = (struct task_imu_args){
 		.accelerometer =
@@ -119,18 +119,22 @@ ZTEST(alg_demo, test_event_generator)
 	/* Boot the IMU data generator */
 	imu_thread = task_schedule(0);
 
-	/* Let it run for 100 seconds (100 buffers) */
-	k_sleep(K_SECONDS(100));
+	/* Let it run for 1000 seconds (1000 buffers) */
+	for (int i = 0; i < 20; i++) {
+		tdfs_logged += count_logging(TDF_ALGORITHM_OUTPUT);
+		k_sleep(K_SECONDS(50));
+	}
 
 	/* Terminate the IMU producer */
 	task_terminate(0);
 	zassert_equal(0, k_thread_join(imu_thread, K_SECONDS(2)));
 
 	tdf_data_logger_flush(TDF_DATA_LOGGER_SERIAL);
-	tdfs_logged = count_logging(TDF_ALGORITHM_OUTPUT);
+	tdfs_logged += count_logging(TDF_ALGORITHM_OUTPUT);
 
-	/* We expect about 25 TDFs from a 25% chance over 100 samples */
-	zassert_within(25, tdfs_logged, 7, "Unexpected number of events");
+	/* We expect about 250 TDFs from a 25% chance over 1000 samples */
+	printk("TDFS LOGGED: %d\n", tdfs_logged);
+	zassert_within(250, tdfs_logged, 50, "Unexpected number of events");
 }
 
 ZTEST(alg_demo, test_state_generator)
