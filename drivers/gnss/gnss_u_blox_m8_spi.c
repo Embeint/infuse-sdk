@@ -503,7 +503,7 @@ static const struct gnss_driver_api gnss_api = {
 		.common =                                                                          \
 			UBX_COMMON_CONFIG_INST(inst, ubx_m8_spi_software_standby,                  \
 					       ubx_m8_spi_software_resume, ubx_m8_spi_port_setup), \
-		.spi = SPI_DT_SPEC_INST_GET(inst, SPI_WORD_SET(8) | SPI_TRANSFER_MSB, 0),          \
+		.spi = SPI_DT_SPEC_INST_GET(inst, SPI_WORD_SET(8) | SPI_TRANSFER_MSB),             \
 	};                                                                                         \
 	static struct ubx_m8_spi_data ubx_m8_data_##inst;                                          \
 	PM_DEVICE_DT_INST_DEFINE(inst, ubx_common_pm_control);                                     \

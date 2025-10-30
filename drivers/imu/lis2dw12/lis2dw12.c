@@ -569,7 +569,7 @@ struct infuse_imu_api lis2dw12_imu_api = {
 
 /* Initializes a struct lis2dw12_config for an instance on a SPI bus. */
 #define LIS2DW12_CONFIG_SPI(inst)                                                                  \
-	.bus.spi = SPI_DT_SPEC_INST_GET(inst, SPI_WORD_SET(8) | SPI_TRANSFER_MSB, 0),              \
+	.bus.spi = SPI_DT_SPEC_INST_GET(inst, SPI_WORD_SET(8) | SPI_TRANSFER_MSB),                 \
 	.bus_io = &lis2dw12_bus_io_spi,
 
 /* Initializes a struct lis2dw12_config for an instance on an I2C bus. */

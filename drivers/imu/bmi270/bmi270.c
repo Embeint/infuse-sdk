@@ -751,7 +751,7 @@ struct infuse_imu_api bmi270_imu_api = {
 
 /* Initializes a struct bmi270_config for an instance on a SPI bus. */
 #define BMI270_CONFIG_SPI(inst)                                                                    \
-	.bus.spi = SPI_DT_SPEC_INST_GET(inst, SPI_WORD_SET(8) | SPI_TRANSFER_MSB, 0),              \
+	.bus.spi = SPI_DT_SPEC_INST_GET(inst, SPI_WORD_SET(8) | SPI_TRANSFER_MSB),                 \
 	.bus_io = &bmi270_bus_io_spi,
 
 /* Initializes a struct bmi270_config for an instance on an I2C bus. */
