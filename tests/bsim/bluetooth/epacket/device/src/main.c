@@ -116,7 +116,7 @@ static void main_epacket_bt_basic_broadcast(void)
 	LOG_INF("Starting send");
 
 	/* Burst send some packets */
-	for (int i = 0; i < 5; i++) {
+	for (int i = 0; i < 10; i++) {
 		k_sleep(K_USEC(sys_rand32_get() % 10000));
 		TDF_DATA_LOGGER_LOG(TDF_DATA_LOGGER_BT_ADV | TDF_DATA_LOGGER_BT_PERIPHERAL,
 				    TDF_ANNOUNCE_V2, 0, &announce);
@@ -126,15 +126,14 @@ static void main_epacket_bt_basic_broadcast(void)
 
 	/* Send 5 packets with spacing */
 	for (int i = 0; i < 8; i++) {
-		k_sleep(K_MSEC(1000));
 		k_sleep(K_USEC(sys_rand32_get() % 10000));
 		LOG_INF("TX %d", i);
 		announce.uptime = k_uptime_seconds();
 		TDF_DATA_LOGGER_LOG(TDF_DATA_LOGGER_BT_ADV | TDF_DATA_LOGGER_BT_PERIPHERAL,
 				    TDF_ANNOUNCE_V2, 0, &announce);
 		tdf_data_logger_flush(TDF_DATA_LOGGER_BT_ADV | TDF_DATA_LOGGER_BT_PERIPHERAL);
+		k_sleep(K_MSEC(1000));
 	}
-	k_sleep(K_MSEC(1000));
 
 	if (connection_notifications != disconnection_notifications) {
 		FAIL("Unbalanced notifications\n");
