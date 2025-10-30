@@ -178,7 +178,7 @@ ZTEST(rpc_command_coap_download, test_download_invalid)
 	/* Basic discard download */
 	send_download_command(100, "coap.dev.infuse-iot.com", 5684, 0, RPC_ENUM_FILE_ACTION_DISCARD,
 			      "file/small_file", UINT32_MAX, UINT32_MAX);
-	expect_coap_download_response(100, -ENOENT, 0, 0);
+	expect_coap_download_response(100, -EINVAL, 0, 0);
 
 	/* Re-add the credential */
 	zassert_equal(0, tls_credential_add(tag, TLS_CREDENTIAL_PSK_ID, cred, sizeof(cred)));
