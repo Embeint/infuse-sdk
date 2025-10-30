@@ -120,16 +120,6 @@ configdefault CONN_MGR_WIFI_KV_STORE
 configdefault NET_IF_MAX_IPV4_COUNT
 	default 2 if NRF_MODEM_LIB_NET_IF && WIFI
 
-# Fallback FD (socket) count
-# Infuse-IoT common sockets
-#             DNS Resolver: 1
-#   Sockets Service (Base): 1
-#   Sockets Service (SNTP): 1 (Transient)
-#              ePacket UDP: 1
-#            COAP Download: 2 (Transient, 1 base, 1 DTLS)
-configdefault ZVFS_OPEN_MAX
-	default 8
-
 endif # INFUSE_SDK_NETWORKING
 
 if SHIELD_NRF7002EB || SHIELD_NRF7002EK
