@@ -631,7 +631,7 @@ struct infuse_imu_api bma4xx_imu_api = {
 
 /* Initializes a struct bma4xx_config for an instance on a SPI bus. */
 #define BMA4XX_CONFIG_SPI(inst)                                                                    \
-	.bus.spi = SPI_DT_SPEC_INST_GET(inst, SPI_WORD_SET(8) | SPI_TRANSFER_MSB, 0),              \
+	.bus.spi = SPI_DT_SPEC_INST_GET(inst, SPI_WORD_SET(8) | SPI_TRANSFER_MSB),                 \
 	.bus_io = &bma4xx_bus_io_spi,
 
 /* Initializes a struct bma4xx_config for an instance on an I2C bus. */
