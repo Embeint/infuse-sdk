@@ -1,2 +1,3 @@
 /* Infuse-IoT specific Memfault traces */
 MEMFAULT_TRACE_REASON_DEFINE(secure_fault)
+MEMFAULT_TRACE_REASON_DEFINE(bt_ctlr_fault)
