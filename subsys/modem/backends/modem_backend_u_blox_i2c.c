@@ -253,10 +253,12 @@ static int modem_backend_ublox_i2c_close(void *data)
 	return 0;
 }
 
-static int modem_backend_ublox_i2c_transmit(void *data, const uint8_t *buf, size_t size)
+static int modem_backend_ublox_i2c_transmit(void *data, const uint8_t *buf, size_t size,
+					    const uint8_t *extra_buf, size_t extra_size)
 {
 	struct modem_backend_ublox_i2c *backend = data;
 	struct rtio_sqe *wr_sqe, *cb_sqe;
+	struct rtio_sqe *extra_sqe = NULL;
 	int rc;
 
 	if (k_sem_take(&backend->bus_sem, K_MSEC(100)) < 0) {
@@ -264,9 +266,13 @@ static int modem_backend_ublox_i2c_transmit(void *data, const uint8_t *buf, size
 	}
 
 	wr_sqe = rtio_sqe_acquire(&i2c_rtio);
+	if (extra_size > 0) {
+		extra_sqe = rtio_sqe_acquire(&i2c_rtio);
+	}
 	cb_sqe = rtio_sqe_acquire(&i2c_rtio);
 
 	__ASSERT_NO_MSG(wr_sqe != NULL);
+	__ASSERT_NO_MSG((extra_sqe != NULL) || (extra_size == 0));
 	__ASSERT_NO_MSG(cb_sqe != NULL);
 
 	rtio_sqe_prep_write(wr_sqe, &i2c_iodev, RTIO_PRIO_NORM, (uint8_t *)buf, size, NULL);
@@ -275,6 +281,13 @@ static int modem_backend_ublox_i2c_transmit(void *data, const uint8_t *buf, size
 	wr_sqe->flags |= RTIO_SQE_CHAINED;
 	cb_sqe->flags |= RTIO_SQE_NO_RESPONSE;
 	wr_sqe->iodev_flags |= RTIO_IODEV_I2C_STOP | RTIO_IODEV_I2C_RESTART;
+
+	if (extra_size > 0) {
+		rtio_sqe_prep_write(extra_sqe, &i2c_iodev, RTIO_PRIO_NORM, (uint8_t *)extra_buf,
+				    extra_size, NULL);
+		extra_sqe->flags |= RTIO_SQE_CHAINED;
+		extra_sqe->iodev_flags |= RTIO_IODEV_I2C_STOP | RTIO_IODEV_I2C_RESTART;
+	}
 
 	/* Power up I2C */
 	pm_device_runtime_get(backend->i2c->bus);
