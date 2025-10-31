@@ -198,7 +198,7 @@ uint32_t infuse_security_secondary_network_key_identifier(void);
  * @retval 0 On success
  * @retval -errno On failure
  */
-int infuse_security_network_key_write(uint32_t key_id, const uint8_t key[32]);
+int infuse_security_network_key_write(uint32_t id, const uint8_t key[32]);
 
 /**
  * @brief Update the device secondary network key
@@ -212,7 +212,7 @@ int infuse_security_network_key_write(uint32_t key_id, const uint8_t key[32]);
  * @retval 0 On success
  * @retval -errno On failure
  */
-int infuse_security_secondary_network_key_write(uint32_t key_id, const uint8_t key[32]);
+int infuse_security_secondary_network_key_write(uint32_t id, const uint8_t key[32]);
 
 #ifdef CONFIG_ZTEST
 
