@@ -84,14 +84,14 @@ union infuse_reboot_info {
 		uint32_t info1;
 		/** Info 2 */
 		uint32_t info2;
-	} generic;
+	} __packed generic;
 	/* Basic exception information */
 	struct {
 		/** Program counter value at exception */
 		uint32_t program_counter;
 		/** Link register value at exception */
 		uint32_t link_register;
-	} exception_basic;
+	} __packed exception_basic;
 	/* Exception stack frame */
 	struct arch_esf exception_full;
 	/* Watchdog reboot information */
@@ -100,7 +100,7 @@ union infuse_reboot_info {
 		uint32_t info1;
 		/** Watchdog info2 per @ref infuse_watchdog_thread_state_lookup */
 		uint32_t info2;
-	} watchdog;
+	} __packed watchdog;
 } __packed __aligned(16);
 
 /** Reboot state information */

@@ -34,7 +34,7 @@ struct security_state_response_hw_id_encrypted {
 	struct {
 		struct security_state_response_hw_id data;
 		uint8_t tag[16];
-	} ciphertext;
+	} __packed ciphertext;
 } __packed;
 
 #ifdef __cplusplus
