@@ -35,7 +35,7 @@ module-str = u-blox GNSS
 source "subsys/logging/Kconfig.template.log_config"
 
 config GNSS_U_BLOX_LARGE_MESSAGES
-	bool
+	bool "Support large UBX messages"
 	help
 	  Configure defaults for large messages. Intended for supporting optional
 	  messages like NAV-PVT.
