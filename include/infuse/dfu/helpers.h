@@ -51,7 +51,7 @@ void infuse_dfu_write_erase_finish(const struct flash_area *fa);
  *
  * @param fa Flash area to erase (must be already opened)
  * @param image_len Length of image
- * @param progress_callback Optional progress callback
+ * @param progress_cb Optional progress callback
  * @param mcuboot_trailer Erase space for MCUBoot trailer
  *
  * @retval 0 On success

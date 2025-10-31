@@ -42,7 +42,7 @@ struct lte_cell {
 	int mcc;
 	/** Mobile Network Code. */
 	int mnc;
-	/** E-UTRAN cell ID, range 0 - @ref LTE_LC_CELL_EUTRAN_ID_MAX. */
+	/** E-UTRAN cell ID, range 0 - @a LTE_LC_CELL_EUTRAN_ID_MAX. */
 	uint32_t id;
 	/** Tracking area code. */
 	uint32_t tac;
