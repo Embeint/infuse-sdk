@@ -34,17 +34,20 @@ struct task_imu_args {
 	struct {
 		uint16_t rate_hz;
 		uint8_t range_g;
-	} accelerometer;
+		uint8_t pad;
+	} __packed accelerometer;
 	/** Gyroscope configuration  */
 	struct {
 		uint16_t rate_hz;
 		uint16_t range_dps;
-	} gyroscope;
+		uint8_t pad;
+	} __packed gyroscope;
 	/** Magnetometer configuration  */
 	struct {
 		uint16_t rate_hz;
 		uint8_t range_gauss;
-	} magnetometer;
+		uint8_t pad;
+	} __packed magnetometer;
 	/** Requested number of samples to buffer in FIFO */
 	uint16_t fifo_sample_buffer;
 	/** Run for this many buffers then terminate */

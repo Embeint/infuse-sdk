@@ -39,7 +39,7 @@ struct algorithm_runner_common_config {
 		uint8_t loggers;
 		/** TDFs to log (bitmask defined by the activity) */
 		uint8_t tdf_mask;
-	} logging;
+	} __packed logging;
 } __packed;
 
 /**

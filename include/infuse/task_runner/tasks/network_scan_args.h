@@ -70,7 +70,7 @@ struct task_network_scan_args {
 		uint8_t desired_aps;
 		/** Maximum number of access-points to report */
 		uint8_t max_aps;
-	} wifi;
+	} __packed wifi;
 	/** LTE Cell scanning arguments */
 	struct {
 		/**
@@ -80,7 +80,7 @@ struct task_network_scan_args {
 		 * cells.
 		 */
 		uint8_t desired_cells;
-	} lte;
+	} __packed lte;
 
 } __packed;
 

@@ -138,7 +138,7 @@ struct task_schedule_state_conditions {
 	uint8_t metadata;
 	/** Array of states to test */
 	uint8_t states[4];
-};
+} __packed;
 
 /**
  * Normally the lockout period must elapse after boot before the periodicity check passes.
@@ -168,26 +168,26 @@ struct task_schedule {
 		uint8_t lower;
 		/** Start task if <= this charge */
 		uint8_t upper;
-	} battery_start;
+	} __packed battery_start;
 	/** Battery charge thresholds to terminate the task */
 	struct battery_terminate_thresholds {
 		/** Terminate task if <= this charge */
 		uint8_t lower;
 		/** Terminate task if >= this charge */
 		uint8_t upper;
-	} battery_terminate;
+	} __packed battery_terminate;
 	/** Periodicity parameters */
 	union periodicity_args {
 		struct periodicity_periodic {
 			uint32_t period_s;
-		} fixed;
+		} __packed fixed;
 		struct periodicity_lockout {
 			uint32_t lockout_s;
-		} lockout;
+		} __packed lockout;
 		struct periodicity_after {
 			uint8_t schedule_idx;
 			uint16_t duration_s;
-		} after;
+		} __packed after;
 	} periodicity;
 	/** @a states_start will evaluate as true 2x this many seconds after last run started */
 	uint16_t states_start_timeout_2x_s;
