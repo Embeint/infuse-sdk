@@ -99,7 +99,10 @@ class zed(WestCommand):
                     },
                     "format_on_save": "on",
                     "tab_size": 8,
-                }
+                },
+                "YAML": {
+                    "tab_size": 2,
+                },
             },
             "file_types": {
                 "C": ["h"],
