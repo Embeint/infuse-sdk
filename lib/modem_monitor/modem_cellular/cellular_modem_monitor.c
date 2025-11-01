@@ -131,12 +131,12 @@ static void network_status_changed(const struct device *dev,
 	monitor.network_state.cell.rsrq = ns->cell.lte.rsrq;
 }
 
-static void periodic_script_result(const struct device *dev,
-				   const struct cellular_evt_periodic_script_result *psr)
+static void comms_check_result(const struct device *dev,
+			       const struct cellular_evt_modem_comms_check_result *ccr)
 {
 	static uint8_t consecutive_failures;
 
-	if (psr->success) {
+	if (ccr->success) {
 		/* Reset failure count */
 		consecutive_failures = 0;
 		return;
@@ -177,8 +177,8 @@ static void modem_event_cb(const struct device *dev, enum cellular_event evt, co
 	case CELLULAR_EVENT_NETWORK_STATUS_CHANGED:
 		network_status_changed(dev, payload);
 		break;
-	case CELLULAR_EVENT_PERIODIC_SCRIPT_RESULT:
-		periodic_script_result(dev, payload);
+	case CELLULAR_EVENT_MODEM_COMMS_CHECK_RESULT:
+		comms_check_result(dev, payload);
 		break;
 	case CELLULAR_EVENT_MODEM_SUSPENDED:
 		modem_suspended(dev);
@@ -217,7 +217,7 @@ int lte_modem_monitor_init(void)
 	const struct device *modem = DEVICE_DT_GET(DT_ALIAS(modem));
 	const enum cellular_event cb_events =
 		CELLULAR_EVENT_MODEM_INFO_CHANGED | CELLULAR_EVENT_REGISTRATION_STATUS_CHANGED |
-		CELLULAR_EVENT_NETWORK_STATUS_CHANGED | CELLULAR_EVENT_PERIODIC_SCRIPT_RESULT |
+		CELLULAR_EVENT_NETWORK_STATUS_CHANGED | CELLULAR_EVENT_MODEM_COMMS_CHECK_RESULT |
 		CELLULAR_EVENT_MODEM_SUSPENDED;
 
 #ifdef CONFIG_INFUSE_MODEM_MONITOR_DEFAULT_PDP_APN_SET
