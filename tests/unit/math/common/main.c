@@ -194,4 +194,33 @@ ZTEST(infuse_math, test_bitmask_get_next)
 	zassert_equal(0x00000008, math_bitmask_get_next_bits(0x7000438A, next_idx, &next_idx, 1));
 }
 
+ZTEST(infuse_math, test_2d_linear_interpolate)
+{
+	zassert_equal(0, math_2d_linear_interpolate_fast(-5, 5, -5, 5, 0));
+	zassert_equal(-5, math_2d_linear_interpolate_fast(-5, 5, -5, 5, -5));
+	zassert_equal(5, math_2d_linear_interpolate_fast(-5, 5, -5, 5, 5));
+	zassert_equal(5, math_2d_linear_interpolate_fast(-5, 5, 5, -5, -5));
+	zassert_equal(-5, math_2d_linear_interpolate_fast(-5, 5, 5, -5, 5));
+
+	for (int i = 0; i <= 100; i++) {
+		zassert_equal(i, math_2d_linear_interpolate_fast(0, 100, 0, 100, i));
+		zassert_equal(2 * i, math_2d_linear_interpolate_fast(0, 100, 0, 200, i));
+		zassert_equal(-5 * i, math_2d_linear_interpolate_fast(0, 100, 0, -500, i));
+	}
+
+	int32_t lim_min = -23170;
+	int32_t lim_max = 23170;
+
+	/* At guaranteed limits */
+	zassert_equal(0, math_2d_linear_interpolate_fast(lim_min, lim_max, lim_min, lim_max, 0));
+	zassert_equal(lim_min,
+		      math_2d_linear_interpolate_fast(lim_min, lim_max, lim_min, lim_max, lim_min));
+	zassert_equal(lim_max,
+		      math_2d_linear_interpolate_fast(lim_min, lim_max, lim_min, lim_max, lim_max));
+	zassert_equal(lim_max,
+		      math_2d_linear_interpolate_fast(lim_min, lim_max, lim_max, lim_min, lim_min));
+	zassert_equal(lim_min,
+		      math_2d_linear_interpolate_fast(lim_min, lim_max, lim_max, lim_min, lim_max));
+}
+
 ZTEST_SUITE(infuse_math, NULL, NULL, NULL, NULL, NULL);

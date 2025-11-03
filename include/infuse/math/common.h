@@ -157,6 +157,25 @@ uint32_t math_bitmask_get_next_bits(uint32_t bitmask, uint8_t start_idx, uint8_t
 				    uint8_t num_bits);
 
 /**
+ * @brief Interpolate a value at a specific point from a 2D line
+ *
+ * The line is defined by two points, P0 and P1.
+ * Guaranteed for all values in the range [-23170, 23170].
+ * Values outside of that range may overflow if all values are large.
+ *
+ * @note @a x0 and @a x1 MUST NOT be equal
+ *
+ * @param x0 X coordinate of P0
+ * @param x1 X coordinate of P1
+ * @param y0 Y coordinate of P0
+ * @param y1 Y coordinate of P1
+ * @param x Value to lookup
+ *
+ * @return int32_t Interpolated value of the line at @a x
+ */
+int32_t math_2d_linear_interpolate_fast(int32_t x0, int32_t x1, int32_t y0, int32_t y1, int32_t x);
+
+/**
  * @}
  */
 

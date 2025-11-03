@@ -6,6 +6,7 @@
  * SPDX-License-Identifier: FSL-1.1-ALv2
  */
 
+#include <zephyr/sys/__assert.h>
 #include <zephyr/sys/util.h>
 
 #include <infuse/math/common.h>
@@ -156,4 +157,17 @@ uint32_t math_bitmask_get_next_bits(uint32_t bitmask, uint8_t start_idx, uint8_t
 	}
 	*next_idx = idx;
 	return out;
+}
+
+int32_t math_2d_linear_interpolate_fast(int32_t x0, int32_t x1, int32_t y0, int32_t y1, int32_t x)
+{
+#ifdef CONFIG_ASSERT
+	__ASSERT_NO_MSG(x0 != x1);
+#else
+	/* Prevent divide by 0's */
+	if (x1 == x0) {
+		return y0;
+	}
+#endif /* CONFIG_ASSERT */
+	return y0 + ((y1 - y0) * (x - x0) / (x1 - x0));
 }
