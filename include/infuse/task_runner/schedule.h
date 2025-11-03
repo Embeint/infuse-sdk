@@ -56,6 +56,8 @@ enum task_runner_periodicity_type {
 	TASK_PERIODICITY_LOCKOUT = 2,
 	/** Task can only run N seconds after another schedule terminates */
 	TASK_PERIODICITY_AFTER = 3,
+	/** @ref TASK_PERIODICITY_LOCKOUT with a dynamic lockout based on battery charge */
+	TASK_PERIODICITY_LOCKOUT_DYNAMIC_BATTERY = 4,
 	/** @cond INTERNAL_HIDDEN */
 	_TASK_PERIODICITY_END,
 	/** @endcond */
@@ -178,16 +180,34 @@ struct task_schedule {
 	} __packed battery_terminate;
 	/** Periodicity parameters */
 	union periodicity_args {
+		/** Start on global N second boundaries */
 		struct periodicity_periodic {
 			uint32_t period_s;
 		} __packed fixed;
+		/** Start N seconds after task last started */
 		struct periodicity_lockout {
 			uint32_t lockout_s;
 		} __packed lockout;
+		/** Start N seconds after another task finishes */
 		struct periodicity_after {
 			uint8_t schedule_idx;
 			uint16_t duration_s;
 		} __packed after;
+		/**
+		 * Lockout for a variable duration based on battery state.
+		 * Lockout scales linearly between @a lockout_min and @a lockout_max
+		 * when battery is between @a battery_min and @a battery_max.
+		 */
+		struct periodicity_lockout_dynamic_battery {
+			/** Lockout between runs at <= @a battery_min */
+			uint16_t lockout_min;
+			/** Lockout between runs at >= @a battery_max */
+			uint16_t lockout_max;
+			/** Lower battery threshold */
+			uint8_t battery_min;
+			/** Upper battery threshold */
+			uint8_t battery_max;
+		} __packed lockout_dynamic_battery;
 	} periodicity;
 	/** @a states_start will evaluate as true 2x this many seconds after last run started */
 	uint16_t states_start_timeout_2x_s;

@@ -8,6 +8,7 @@
 
 #include <zephyr/sys/clock.h>
 
+#include <infuse/math/common.h>
 #include <infuse/states.h>
 #include <infuse/task_runner/schedule.h>
 
@@ -83,6 +84,15 @@ bool task_schedule_validate(const struct task_schedule *schedule)
 	    (schedule->periodicity.lockout.lockout_s == 0)) {
 		return false;
 	}
+	if (schedule->periodicity_type == TASK_PERIODICITY_LOCKOUT_DYNAMIC_BATTERY) {
+		const struct periodicity_lockout_dynamic_battery *ldb =
+			&schedule->periodicity.lockout_dynamic_battery;
+
+		if ((ldb->battery_min >= ldb->battery_max) || (ldb->lockout_min == 0) ||
+		    (ldb->lockout_max == 0)) {
+			return false;
+		}
+	}
 	if ((schedule->battery_start.lower > 100) || (schedule->battery_start.upper > 100) ||
 	    (schedule->battery_terminate.lower > 100) ||
 	    (schedule->battery_terminate.upper > 100)) {
@@ -103,6 +113,7 @@ bool task_schedule_should_start(const struct task_schedule *schedule,
 				struct task_schedule_state *state, atomic_t *app_states,
 				uint32_t uptime, uint32_t epoch_time, uint8_t battery_soc)
 {
+	const struct periodicity_lockout_dynamic_battery *ldb;
 	uint8_t validity_masked = schedule->validity & _TASK_VALID_MASK;
 	uint32_t since_last_run = uptime - state->last_run;
 	uint32_t lockout_val;
@@ -110,6 +121,7 @@ bool task_schedule_should_start(const struct task_schedule *schedule,
 	bool periodicity = true;
 	bool battery_lower;
 	bool battery_upper;
+	bool ignore_first;
 	bool states;
 
 	/* No tasks should be started when system is about to go down */
@@ -133,15 +145,29 @@ bool task_schedule_should_start(const struct task_schedule *schedule,
 
 	if (schedule->periodicity_type == TASK_PERIODICITY_FIXED) {
 		periodicity = (epoch_time % schedule->periodicity.fixed.period_s) == 0;
-	} else if (schedule->periodicity_type == TASK_PERIODICITY_LOCKOUT) {
-		lockout_val =
-			schedule->periodicity.lockout.lockout_s & TASK_RUNNER_LOCKOUT_VALUE_MASK;
+	} else if ((schedule->periodicity_type == TASK_PERIODICITY_LOCKOUT) ||
+		   (schedule->periodicity_type == TASK_PERIODICITY_LOCKOUT_DYNAMIC_BATTERY)) {
+		ldb = &schedule->periodicity.lockout_dynamic_battery;
+		if (schedule->periodicity_type == TASK_PERIODICITY_LOCKOUT) {
+			lockout_val = schedule->periodicity.lockout.lockout_s;
+		} else if (battery_soc <= ldb->battery_min) {
+			lockout_val = ldb->lockout_min;
+		} else if (battery_soc >= ldb->battery_max) {
+			lockout_val = ldb->lockout_max;
+		} else {
+			/*Linear scale depending on SoC */
+			lockout_val = math_2d_linear_interpolate_fast(
+				ldb->battery_min, ldb->battery_max, ldb->lockout_min,
+				ldb->lockout_max, battery_soc);
+		}
+
+		ignore_first = lockout_val & TASK_RUNNER_LOCKOUT_IGNORE_FIRST;
+		lockout_val &= TASK_RUNNER_LOCKOUT_VALUE_MASK;
 		periodicity = since_last_run >= lockout_val;
 		/* Valid if TASK_RUNNER_LOCKOUT_IGNORE_FIRST set, schedule has not yet run, and
 		 * uptime is not 0 (we need state->last_run to end up a non-zero value)
 		 */
-		if (schedule->periodicity.lockout.lockout_s & TASK_RUNNER_LOCKOUT_IGNORE_FIRST &&
-		    (state->last_run == 0) && uptime) {
+		if (ignore_first && (state->last_run == 0) && uptime) {
 			periodicity = true;
 		}
 	} else if (schedule->periodicity_type == TASK_PERIODICITY_AFTER) {
