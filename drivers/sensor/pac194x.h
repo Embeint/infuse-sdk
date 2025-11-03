@@ -48,7 +48,11 @@ enum pac194x_reg {
 	PAC194X_REG_NEG_PWR_FSR = 0x1D,
 	PAC194X_REG_REFRESH_G = 0x1E,
 	PAC194X_REG_REFRESH_V = 0x1F,
-
+	PAC194X_REG_SLOW = 0x20,
+	PAC194X_REG_CTRL_ACT = 0x21,
+	PAC194X_REG_NEG_PWR_FSR_ACT = 0x22,
+	PAC194X_REG_CTRL_LAT = 0x23,
+	PAC194X_REG_NEG_PWR_FSR_LAT = 0x24,
 	PAC194X_REG_PRODUCT_ID = 0xFD,
 	PAC194X_REG_MANUFACTURER_ID = 0xFE,
 	PAC194X_REG_REVISION_ID = 0xFF,
@@ -96,6 +100,7 @@ struct pac194x_config {
 	struct gpio_dt_spec power_down_gpio;
 	int32_t full_scale_current_microamps;
 	uint16_t fsr_config;
+	uint8_t disabled_channels;
 	uint8_t vbus_shift;
 	uint8_t vsense_shift;
 	enum pac194x_product_id product_id;
