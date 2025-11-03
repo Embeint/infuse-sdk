@@ -81,6 +81,38 @@ ZTEST(task_runner_schedules, test_validate_schedules)
 		.battery_terminate.lower = 70,
 		.battery_terminate.upper = 60,
 	};
+	struct task_schedule invalid12 = {
+		.validity = TASK_VALID_ALWAYS,
+		.periodicity_type = TASK_PERIODICITY_LOCKOUT_DYNAMIC_BATTERY,
+		.periodicity.lockout_dynamic_battery.lockout_max = 10,
+		.periodicity.lockout_dynamic_battery.lockout_min = 20,
+		.periodicity.lockout_dynamic_battery.battery_max = 45,
+		.periodicity.lockout_dynamic_battery.battery_min = 46,
+	};
+	struct task_schedule invalid13 = {
+		.validity = TASK_VALID_ALWAYS,
+		.periodicity_type = TASK_PERIODICITY_LOCKOUT_DYNAMIC_BATTERY,
+		.periodicity.lockout_dynamic_battery.lockout_max = 10,
+		.periodicity.lockout_dynamic_battery.lockout_min = 20,
+		.periodicity.lockout_dynamic_battery.battery_max = 32,
+		.periodicity.lockout_dynamic_battery.battery_min = 32,
+	};
+	struct task_schedule invalid14 = {
+		.validity = TASK_VALID_ALWAYS,
+		.periodicity_type = TASK_PERIODICITY_LOCKOUT_DYNAMIC_BATTERY,
+		.periodicity.lockout_dynamic_battery.lockout_max = 0,
+		.periodicity.lockout_dynamic_battery.lockout_min = 20,
+		.periodicity.lockout_dynamic_battery.battery_max = 30,
+		.periodicity.lockout_dynamic_battery.battery_min = 40,
+	};
+	struct task_schedule invalid15 = {
+		.validity = TASK_VALID_ALWAYS,
+		.periodicity_type = TASK_PERIODICITY_LOCKOUT_DYNAMIC_BATTERY,
+		.periodicity.lockout_dynamic_battery.lockout_max = 10,
+		.periodicity.lockout_dynamic_battery.lockout_min = 0,
+		.periodicity.lockout_dynamic_battery.battery_max = 30,
+		.periodicity.lockout_dynamic_battery.battery_min = 40,
+	};
 
 	zassert_false(task_schedule_validate(&invalid1));
 	zassert_false(task_schedule_validate(&invalid2));
@@ -93,6 +125,10 @@ ZTEST(task_runner_schedules, test_validate_schedules)
 	zassert_false(task_schedule_validate(&invalid9));
 	zassert_false(task_schedule_validate(&invalid10));
 	zassert_false(task_schedule_validate(&invalid11));
+	zassert_false(task_schedule_validate(&invalid12));
+	zassert_false(task_schedule_validate(&invalid13));
+	zassert_false(task_schedule_validate(&invalid14));
+	zassert_false(task_schedule_validate(&invalid15));
 }
 
 ZTEST(task_runner_schedules, test_empty_schedule)
@@ -357,6 +393,100 @@ ZTEST(task_runner_schedules, test_periodicity_after)
 	for (int i = 0; i < 20; i++) {
 		zassert_false(task_schedule_should_start(&schedule, &state, app_states, i,
 							 10000 + i, 100));
+	}
+}
+
+ZTEST(task_runner_schedules, test_periodicity_lockout_dynamic_battery)
+{
+	INFUSE_STATES_ARRAY(app_states) = {0};
+	/* Runs more frequently at lower batteries */
+	struct task_schedule schedule1 = {
+		.validity = TASK_VALID_ALWAYS,
+		.periodicity_type = TASK_PERIODICITY_LOCKOUT_DYNAMIC_BATTERY,
+		.periodicity.lockout_dynamic_battery =
+			{
+				.lockout_min = 30,
+				.lockout_max = 60,
+				.battery_min = 35,
+				.battery_max = 65,
+			},
+	};
+	/* Runs less frequently at lower batteries */
+	struct task_schedule schedule2 = {
+		.validity = TASK_VALID_ALWAYS,
+		.periodicity_type = TASK_PERIODICITY_LOCKOUT_DYNAMIC_BATTERY,
+		.periodicity.lockout_dynamic_battery =
+			{
+				.lockout_min = 60,
+				.lockout_max = 30,
+				.battery_min = 35,
+				.battery_max = 65,
+			},
+	};
+	struct task_schedule_state state = {
+		.last_run = 20,
+	};
+
+	zassert_true(task_schedule_validate(&schedule1));
+
+	/* Never starts before 30 seconds */
+	for (int i = 0; i < 30; i++) {
+		for (int j = 0; j < 100; j++) {
+			zassert_false(task_schedule_should_start(&schedule1, &state, app_states,
+								 state.last_run + i, 10000, j));
+			zassert_false(task_schedule_should_start(&schedule2, &state, app_states,
+								 state.last_run + i, 10000, j));
+		}
+	}
+
+	/* Always runs after 60 seconds */
+	for (int i = 60; i < 90; i++) {
+		for (int j = 0; j < 100; j++) {
+			zassert_true(task_schedule_should_start(&schedule1, &state, app_states,
+								state.last_run + i, 10000, j));
+			zassert_true(task_schedule_should_start(&schedule2, &state, app_states,
+								state.last_run + i, 10000, j));
+		}
+	}
+
+	for (int i = 0; i <= 29; i++) {
+		/* This schedule runs more frequently at lower batteries */
+		zassert_true(task_schedule_should_start(&schedule1, &state, app_states,
+							state.last_run + 30 + i, 10000, 35 + i));
+		/* Running 1 second earlier or with 1% more battery should fail */
+		zassert_false(task_schedule_should_start(&schedule1, &state, app_states,
+							 state.last_run + 30 + i - 1, 10000,
+							 35 + i));
+		zassert_false(task_schedule_should_start(&schedule1, &state, app_states,
+							 state.last_run + 30 + i, 10000,
+							 35 + i + 1));
+		/* Running 1 second later or with 1% less battery should still work */
+		zassert_true(task_schedule_should_start(&schedule1, &state, app_states,
+							state.last_run + 30 + i + 1, 10000,
+							35 + i));
+		zassert_true(task_schedule_should_start(&schedule1, &state, app_states,
+							state.last_run + 30 + i, 10000,
+							35 + i - 1));
+	}
+
+	for (int i = 0; i <= 29; i++) {
+		/* This schedule runs more frequently at higher batteries */
+		zassert_true(task_schedule_should_start(&schedule2, &state, app_states,
+							state.last_run + 30 + i, 10000, 65 - i));
+		/* Running 1 second earlier or with 1% less battery should fail */
+		zassert_false(task_schedule_should_start(&schedule2, &state, app_states,
+							 state.last_run + 30 + i - 1, 10000,
+							 65 - i));
+		zassert_false(task_schedule_should_start(&schedule2, &state, app_states,
+							 state.last_run + 30 + i, 10000,
+							 65 - i - 1));
+		/* Running 1 second later or with 1% more battery should still work */
+		zassert_true(task_schedule_should_start(&schedule2, &state, app_states,
+							state.last_run + 30 + i + 1, 10000,
+							65 - i));
+		zassert_true(task_schedule_should_start(&schedule2, &state, app_states,
+							state.last_run + 30 + i, 10000,
+							65 - i + 1));
 	}
 }
 
