@@ -23,10 +23,13 @@
 
 static void sntp_service_handler(struct net_socket_service_event *sev);
 
+static struct kv_store_cb sntp_kv_cb;
 static struct epoch_time_cb time_callback;
 static struct net_mgmt_event_callback l4_callback;
 static struct k_work_delayable sntp_worker;
 static struct k_work_delayable sntp_timeout;
+static struct sockaddr sntp_addr_cached;
+static socklen_t sntp_addrlen_cached;
 static struct sntp_ctx sntp_context;
 
 NET_SOCKET_SERVICE_SYNC_DEFINE_STATIC(service_auto_sntp, sntp_service_handler, 1);
@@ -68,6 +71,7 @@ static void sntp_service_handler(struct net_socket_service_event *sev)
 	sntp_close_async(&service_auto_sntp);
 	if (rc != 0) {
 		LOG_WRN("Read failure");
+		sntp_addrlen_cached = 0;
 		return;
 	}
 	LOG_INF("Unix time: %llu", s_time.seconds);
@@ -87,6 +91,9 @@ static void sntp_timeout_work(struct k_work *work)
 {
 	LOG_WRN("SNTP query timeout");
 	sntp_close_async(&service_auto_sntp);
+
+	/* Re-query the DNS */
+	sntp_addrlen_cached = 0;
 
 	/* Reschedule worker */
 	k_work_reschedule(&sntp_worker, K_SECONDS(CONFIG_SNTP_AUTO_RESYNC_AGE));
@@ -139,8 +146,12 @@ static void async_dns_cb(int result, struct sockaddr *addr, socklen_t addrlen,
 	saddr_in = (struct sockaddr_in *)addr;
 	saddr_in->sin_port = htons(SNTP_PORT);
 
+	/* Cache the address for future runs */
+	memcpy(&sntp_addr_cached, addr, sizeof(*addr));
+	sntp_addrlen_cached = addrlen;
+
 	/* Start the async SNTP query */
-	if (sntp_start_async_query(addr, addrlen) < 0) {
+	if (sntp_start_async_query(&sntp_addr_cached, sntp_addrlen_cached) < 0) {
 		goto error;
 	}
 
@@ -158,6 +169,17 @@ static void sntp_work(struct k_work *work)
 	KV_STRING_CONST(ntp_default, CONFIG_SNTP_AUTO_DEFAULT_SERVER);
 	KV_KEY_TYPE_VAR(KV_KEY_NTP_SERVER_URL, 64) ntp_server;
 	int rc;
+
+	if (sntp_addrlen_cached > 0) {
+		/* We still have a valid cached SNTP server address */
+		LOG_INF("Using cached SNTP address");
+		rc = sntp_start_async_query(&sntp_addr_cached, sntp_addrlen_cached);
+		if (rc == 0) {
+			return;
+		}
+		/* Failed to start the query */
+		sntp_addrlen_cached = 0;
+	}
 
 	/* Pull NTP server address from KV store */
 	rc = KV_STORE_READ_FALLBACK(KV_KEY_NTP_SERVER_URL, &ntp_server, &ntp_default);
@@ -182,18 +204,17 @@ static void sntp_work(struct k_work *work)
 	}
 	return;
 #else
-	struct sockaddr addr;
-	socklen_t addrlen;
-
 	/* Get IP address from DNS */
-	rc = infuse_sync_dns(ntp_server.url.value, SNTP_PORT, AF_INET, SOCK_DGRAM, &addr, &addrlen);
+	rc = infuse_sync_dns(ntp_server.url.value, SNTP_PORT, AF_INET, SOCK_DGRAM,
+			     &sntp_addr_cached, &sntp_addrlen_cached);
 	if (rc < 0) {
 		LOG_ERR("DNS query failed for %s (%d)", ntp_server.url.value, rc);
+		sntp_addrlen_cached = 0;
 		goto error;
 	}
 
 	/* Start the async SNTP query */
-	rc = sntp_start_async_query(&addr, addrlen);
+	rc = sntp_start_async_query(&sntp_addr_cached, sntp_addrlen_cached);
 	if (rc == 0) {
 		return;
 	}
@@ -203,6 +224,15 @@ static void sntp_work(struct k_work *work)
 error:
 	/* Failed to perform SNTP update, retry in 5 seconds */
 	k_work_reschedule(delayable, K_SECONDS(5));
+}
+
+static void kv_value_changed(uint16_t key, const void *data, size_t data_len, void *user_ctx)
+{
+	if (key == KV_KEY_NTP_SERVER_URL) {
+		LOG_DBG("NTP server changed");
+		/* Reset cache knowledge */
+		sntp_addrlen_cached = 0;
+	}
 }
 
 static void reference_time_updated(enum epoch_time_source source, struct timeutil_sync_instant old,
@@ -224,6 +254,10 @@ int sntp_auto_init(void)
 {
 	k_work_init_delayable(&sntp_worker, sntp_work);
 	k_work_init_delayable(&sntp_timeout, sntp_timeout_work);
+
+	/* Register for callbacks on KV changes */
+	sntp_kv_cb.value_changed = kv_value_changed;
+	kv_store_register_callback(&sntp_kv_cb);
 
 	/* Register for callbacks on time updates */
 	time_callback.reference_time_updated = reference_time_updated;
