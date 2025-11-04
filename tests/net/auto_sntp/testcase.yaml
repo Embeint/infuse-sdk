@@ -27,22 +27,22 @@ tests:
       type: multi_line
       ordered: true
       regex:
-        - "pool.ntp.org -> (.*)"
+        - "time.cloudflare.com -> (.*)"
         - "Sending request..."
         - "Unix time: (.*)"
         - "Now: (.*) UTC"
         - "www.google.com -> (.*)"
         - "Sending request..."
         - "SNTP query timeout"
-        - "pool.ntp.org -> (.*)"
+        - "time.cloudflare.com -> (.*)"
         - "Sending request..."
         - "Unix time: (.*)"
         - "Now: (.*) UTC"
-        - "pool.ntp.org -> (.*)"
+        - "time.cloudflare.com -> (.*)"
         - "Sending request..."
         - "Unix time: (.*)"
         - "Now: (.*) UTC"
-        - "pool.ntp.org -> (.*)"
+        - "time.cloudflare.com -> (.*)"
         - "Sending request..."
         - "Unix time: (.*)"
   net.auto_sntp.native.async:
