@@ -91,7 +91,7 @@ static const struct task_schedule schedules[] = {
 		.periodicity_type = TASK_PERIODICITY_LOCKOUT,
 		.periodicity.lockout.lockout_s =
 			TASK_RUNNER_LOCKOUT_IGNORE_FIRST | (30 * SEC_PER_MIN),
-		.timeout_s = SEC_PER_MIN,
+		.timeout_s = 2 * SEC_PER_MIN,
 		.task_logging =
 			{
 				{
@@ -106,6 +106,20 @@ static const struct task_schedule schedules[] = {
 				/* FIX_OK: 1m accuracy, 10.0 PDOP */
 				.accuracy_m = 1,
 				.position_dop = 100,
+				.run_to_fix =
+					{
+						/* 1 minute to get some location knowledge */
+						.any_fix_timeout = SEC_PER_MIN,
+						/* Accuracy must improve by at least 1m every 10
+						 * seconds after hitting 50m.
+						 */
+						.fix_plateau =
+							{
+								.min_accuracy_m = 50,
+								.min_accuracy_improvement_m = 1,
+								.timeout = 10,
+							},
+					},
 			},
 	},
 #endif /* DT_NODE_EXISTS(DT_ALIAS(gnss)) */
