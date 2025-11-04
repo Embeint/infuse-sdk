@@ -14,7 +14,7 @@ if SNTP_AUTO
 
 config SNTP_AUTO_DEFAULT_SERVER
 	string "Default SNTP server"
-	default "pool.ntp.org"
+	default "time.cloudflare.com"
 
 config SNTP_QUERY_TIMEOUT_MS
 	int "Maximum duration to wait for response from SNTP server"
