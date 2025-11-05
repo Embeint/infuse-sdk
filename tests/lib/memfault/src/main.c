@@ -175,6 +175,7 @@ ZTEST(memfault_integration, test_memfault_reboot_reason_get)
 	reboot_reason_test(INFUSE_REBOOT_EXTERNAL_TRIGGER, 0, kMfltRebootReason_ButtonReset);
 	reboot_reason_test(INFUSE_REBOOT_HW_WATCHDOG, 0, kMfltRebootReason_HardwareWatchdog);
 	reboot_reason_test(INFUSE_REBOOT_SW_WATCHDOG, 0, kMfltRebootReason_SoftwareWatchdog);
+	reboot_reason_test(INFUSE_REBOOT_BT_CTLR_FAULT, 0, kMfltRebootReason_Assert);
 
 	reboot_reason_test(INFUSE_REBOOT_UNKNOWN, 0, kMfltRebootReason_Unknown);
 	reboot_reason_test(INFUSE_REBOOT_UNKNOWN, RESET_PIN, kMfltRebootReason_PinReset);
