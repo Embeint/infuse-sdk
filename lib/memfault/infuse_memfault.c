@@ -353,6 +353,9 @@ void memfault_reboot_reason_get(sResetBootupInfo *info)
 	case INFUSE_REBOOT_SW_WATCHDOG:
 		info->reset_reason = kMfltRebootReason_SoftwareWatchdog;
 		break;
+	case INFUSE_REBOOT_BT_CTLR_FAULT:
+		info->reset_reason = kMfltRebootReason_Assert;
+		break;
 	default:
 		info->reset_reason = zephyr_to_memfault_reboot_reason(state.hardware_reason);
 	}
