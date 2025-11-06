@@ -66,6 +66,15 @@ struct data_logger_cb {
 	 */
 	void (*block_size_update)(const struct device *dev, uint16_t block_size, void *user_data);
 	/**
+	 * @brief Writing to the data logger has succeeded
+	 *
+	 * @param dev Data logger that was written to
+	 * @param data_type Data type of the data logger block
+	 * @param user_data User context from callback structure
+	 */
+	void (*write_success)(const struct device *dev, enum infuse_type data_type,
+			      void *user_data);
+	/**
 	 * @brief Writing to the data logger has failed
 	 *
 	 * @param dev Data logger that failed to write
