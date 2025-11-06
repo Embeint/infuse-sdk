@@ -219,6 +219,10 @@ choice SEGGER_RTT_SECTION
 	default SEGGER_RTT_SECTION_NONE
 endchoice
 
+# LLEXT Options
+configdefault LLEXT_EXPORT_DEFAULT_GROUPS
+	default n
+
 # Size optimisations
 configdefault UART_USE_RUNTIME_CONFIGURE
 	default n
