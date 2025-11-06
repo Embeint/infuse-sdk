@@ -198,6 +198,12 @@ configdefault UART_0_NRF_TX_BUFFER_SIZE
 configdefault UART_20_NRF_TX_BUFFER_SIZE
 	default 1024 if EPACKET_INTERFACE_SERIAL
 
+# If running HCI link over SPI and the Wake line is used, we need
+# to account for larger than usual delays while the Bluetooth controller
+# is writing to onboard flash while performing a DFU.
+configdefault SPI_NRFX_WAKE_TIMEOUT_US
+	default 1000 if BT_SPI
+
 # Symbols used by SDK-NRF libraries but not defined upstream
 config ZEPHYR_NRF_MODULE
 	bool
