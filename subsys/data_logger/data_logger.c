@@ -65,6 +65,19 @@ void data_logger_get_state(const struct device *dev, struct data_logger_state *s
 	state->requires_full_block_write = cfg->requires_full_block_write;
 }
 
+static void handle_block_write_success(const struct device *dev, enum infuse_type type)
+{
+	struct data_logger_common_data *data = dev->data;
+	struct data_logger_cb *cb;
+
+	/* Notify subscribers */
+	SYS_SLIST_FOR_EACH_CONTAINER(&data->callbacks, cb, node) {
+		if (cb->write_success) {
+			cb->write_success(dev, type, cb->user_data);
+		}
+	}
+}
+
 static void handle_block_write_fail(const struct device *dev, enum infuse_type type, void *block,
 				    uint16_t block_len, int reason)
 {
@@ -136,6 +149,7 @@ done:
 	if (rc == 0) {
 		data->bytes_logged += block_len;
 		data->current_block += 1;
+		handle_block_write_success(dev, type);
 	} else {
 		handle_block_write_fail(dev, type, block, block_len, rc);
 	}

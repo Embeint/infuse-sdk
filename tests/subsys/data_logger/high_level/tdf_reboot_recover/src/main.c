@@ -36,6 +36,8 @@ struct test_tdf_buffer_state {
 
 struct test_data_logger_cb {
 	void (*block_size_update)(const struct device *dev, uint16_t block_size, void *user_data);
+	void (*write_success)(const struct device *dev, enum infuse_type data_type,
+			      void *user_data);
 	void (*write_failure)(const struct device *dev, enum infuse_type data_type, const void *mem,
 			      uint16_t mem_len, int reason, void *user_data);
 	void *user_data;
