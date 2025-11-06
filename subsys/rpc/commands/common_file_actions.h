@@ -14,10 +14,8 @@
 #include <infuse/rpc/types.h>
 
 struct rpc_common_file_actions_ctx {
-	union {
-		const struct flash_area *fa;
-		uint32_t client_ctx;
-	};
+	const struct flash_area *fa;
+	uint32_t client_ctx;
 	uint32_t received;
 	uint32_t crc;
 	enum rpc_enum_file_action action;

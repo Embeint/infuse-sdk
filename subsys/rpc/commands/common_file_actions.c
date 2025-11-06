@@ -96,6 +96,7 @@ int rpc_common_file_actions_start(struct rpc_common_file_actions_ctx *ctx,
 	int rc = 0;
 
 	ctx->fa = NULL;
+	ctx->client_ctx = 0;
 	ctx->action = action;
 	ctx->received = 0;
 	ctx->crc = 0;
