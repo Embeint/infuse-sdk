@@ -8,7 +8,10 @@
 
 #include <zephyr/bluetooth/bluetooth.h>
 
+#include <infuse/bluetooth/controller_manager.h>
 #include <infuse/epacket/packet.h>
+#include <infuse/fs/kv_store.h>
+#include <infuse/fs/kv_types.h>
 #include <infuse/validation/core.h>
 #include <infuse/validation/bluetooth.h>
 
@@ -38,6 +41,24 @@ int infuse_validation_bluetooth(uint8_t flags)
 		VALIDATION_REPORT_ERROR(TEST, "Bluetooth enable failed (%d)", rc);
 		goto test_end;
 	}
+
+#ifdef CONFIG_BT_CONTROLLER_MANAGER
+	rc = bt_controller_manager_init();
+	if (rc) {
+		VALIDATION_REPORT_ERROR(TEST, "Bluetooth Controller Manager failed (%d)", rc);
+		goto test_end;
+	}
+#ifdef CONFIG_KV_STORE_KEY_BLUETOOTH_CTLR_VERSION
+	KV_KEY_TYPE(KV_KEY_BLUETOOTH_CTLR_VERSION) bt_ctlr_ver;
+
+	if (KV_STORE_READ(KV_KEY_BLUETOOTH_CTLR_VERSION, &bt_ctlr_ver) > 0) {
+		VALIDATION_REPORT_VALUE(TEST, "CTLR_VERSION", "%d.%d.%d+%08x",
+					bt_ctlr_ver.version.major, bt_ctlr_ver.version.minor,
+					bt_ctlr_ver.version.revision,
+					bt_ctlr_ver.version.build_num);
+	}
+#endif /* CONFIG_KV_STORE_KEY_BLUETOOTH_CTLR_VERSION */
+#endif /* CONFIG_BT_CONTROLLER_MANAGE*/
 
 	if (flags & VALIDATION_BLUETOOTH_ADV_TX) {
 		pkt = epacket_alloc_tx_for_interface(dev, K_FOREVER);
