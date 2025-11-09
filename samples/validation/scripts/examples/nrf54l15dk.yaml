@@ -1,0 +1,54 @@
+general:
+  test-title: "nRF54L15DK Validation"
+  result-folder: "./records"
+  valid-dut-regex: "\\d+"
+  test-timeout: 10.0
+  operator-id: true
+  valid-operator-regex: "\\d+"
+  images:
+    url-base: "https://upload.wikimedia.org/wikipedia/commons/thumb/"
+    pass: "3/3b/Eo_circle_green_checkmark.svg/250px-Eo_circle_green_checkmark.svg.png"
+    fail: "d/db/Stop_cross.svg/240px-Stop_cross.svg.png"
+infuse:
+  # nRF54L15DK
+  board: 48adb89a-ee68-46f9-b29c-9186c7f945c2
+  # test organisation
+  organisation: 413c1966-9186-40da-b412-590afb10c301
+socs:
+  Application MCU:
+    device-id: nrf54l15_m33
+    jlink-snr: 1
+    serial-port: /dev/ttyACM2
+    serial-baudrate: 115200
+    primary: true
+    binaries:
+      test:
+        file: "./build/nrf54l15dk/nrf54l15/cpuapp/validation/zephyr/zephyr.hex"
+        verify: VERIFY_READ
+        reset: RESET_DEFAULT
+        provision: true
+      success:
+        file: "./build/nrf54l15dk/nrf54l15/cpuapp/low_power/zephyr/zephyr.hex"
+        provision: true
+tests:
+  FLASH:
+    subtests:
+      PAGE_SIZE:
+        type: int
+        int-equals: 65536
+      PAGE_CNT:
+        type: int
+        int-equals: 128
+  ENV:
+    subtests:
+      TEMPERATURE:
+        type: float
+        unit: degree Celsius
+        float-in-range: [0, 50]
+  SYS:
+    subtests:
+      INFUSE_ID:
+        type: int
+        int-in-range: [0x1, 0xFFFFFFFFFFFFFFFE]
+  LED: {}
+  BT: {}

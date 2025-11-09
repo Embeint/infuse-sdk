@@ -1,0 +1,123 @@
+general:
+  test-title: "Tauro Validation"
+  result-folder: "./records"
+  valid-dut-regex: "\\d+"
+  test-timeout: 60.0
+  operator-id: false
+  valid-operator-regex: "\\d+"
+  images:
+    url-base: "https://upload.wikimedia.org/wikipedia/commons/thumb/"
+    pass: "3/3b/Eo_circle_green_checkmark.svg/250px-Eo_circle_green_checkmark.svg.png"
+    fail: "d/db/Stop_cross.svg/240px-Stop_cross.svg.png"
+infuse:
+  # Tauro
+  board: 3a76ed5b-4ea0-4f6f-bfc5-f8ab5be7395e
+  # Tauro
+  organisation: 3e4c514b-5f8d-49e9-a93e-aa50dcacd68e
+socs:
+  Bluetooth Controller:
+    device-id: nrf52840_xxAA
+    jlink-snr: 2
+    recover: true
+    binaries:
+      test:
+        file: "./build/tauro/nrf52840/hci_spi/zephyr/zephyr.hex"
+        erase: ERASE_ALL
+        verify: VERIFY_READ
+        reset: RESET_DEFAULT
+  Application MCU:
+    device-id: nrf9151_xxCA
+    jlink-snr: 1
+    primary: true
+    recover: true
+    nrf91-modem-firmware: ~/mfw_nrf91x1_2.0.3.zip
+    binaries:
+      test:
+        file: "./build/tauro/nrf9151/ns/validation/zephyr/tfm_merged.hex"
+        erase: ERASE_ALL
+        verify: VERIFY_READ
+        reset: RESET_DEFAULT
+        provision: true
+      success:
+        file: "./build/tauro/nrf9151/ns/lte_tracker/zephyr/tfm_merged.hex"
+        erase: ERASE_ALL
+        verify: VERIFY_READ
+        reset: RESET_DEFAULT
+        provision: true
+tests:
+  SYS:
+    subtests:
+      INFUSE_ID:
+        type: int
+        int-in-range: [0x1, 0xFFFFFFFFFFFFFFFE]
+  FLASH:
+    subtests:
+      PAGE_SIZE:
+        type: int
+        int-equals: 65536
+      PAGE_CNT:
+        type: int
+        int-equals: 256
+  ENV:
+    subtests:
+      TEMPERATURE:
+        type: float
+        unit: degree Celsius
+        float-in-range: [0, 50]
+      PRESSURE:
+        type: float
+        unit: kilopascal
+        float-in-range: [95, 105]
+      HUMIDITY:
+        type: float
+        unit: percent
+        float-in-range: [5, 95]
+  PWR:
+    subtests:
+      VOLTAGE:
+        type: float
+        unit: volt
+        float-in-range: [3.3, 4.3]
+      CURRENT:
+        type: float
+        unit: ampere
+        float-in-range: [-0.1, 0.1]
+      SOC:
+        type: int
+        unit: percent
+        int-in-range: [10, 100]
+  MODEM:
+    subtests:
+      MODEL:
+        type: str
+        str-equals: nRF9151-LACA
+      ESN:
+        type: int
+        int-in-range: [100000000000000, 999999999999999]
+      IMEI:
+        type: int
+        int-in-range: [100000000000000, 999999999999999]
+      FW_VERSION:
+        type: str
+        str-equals: mfw_nrf91x1_2.0.3
+      SIM_IMSI:
+        type: int
+        int-in-range: [1, 999999999999999]
+      SIM_ICCID:
+        type: int
+        int-in-range: [8900000000000000000, 8999999999999999999]
+  DISK:
+    subtests:
+      SECTOR_COUNT:
+        type: int
+      SECTOR_SIZE:
+        type: int
+        int-equals: 512
+  IMU: {}
+  BT:
+    subtests:
+      CTLR_VERSION:
+        type: str
+        str-equals: 1.0.1+122f4d5b
+  GNSS: {}
+  LED: {}
