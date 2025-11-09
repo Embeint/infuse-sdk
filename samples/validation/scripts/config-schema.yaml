@@ -1,0 +1,177 @@
+# SPDX-License-Identifier: FSL-1.1-ALv2
+#
+# Copyright (c) 2025, Embeint Inc
+
+schema;subtest-schema:
+  type: map
+  mapping:
+    regex;(.*):
+      type: map
+      mapping:
+        type:
+          required: true
+          type: str
+          enum: [int, float, str]
+          desc: type of the value output by the test
+        unit:
+          type: str
+          desc: Unit of the value, passed to openhtf.util.units.UNITS-BY-ALL
+        float-equals:
+          type: float
+          desc: Value must equal this to pass
+        int-equals:
+          type: int
+          desc: Value must equal this to pass
+        str-equals:
+          type: str
+          desc: Value must equal this to pass
+        float-in-range:
+          type: seq
+          range:
+            min: 2
+            max: 2
+          sequence:
+            - type: float
+        int-in-range:
+          type: seq
+          range:
+            min: 2
+            max: 2
+          sequence:
+            - type: int
+
+schema;test-schema:
+  type: map
+  required: true
+  mapping:
+    regex;([A-Z]*):
+      type: map
+      required: true
+      mapping:
+        subtests:
+          include: subtest-schema
+
+schema;binary-schema:
+  type: map
+  mapping:
+    file:
+      type: str
+      required: true
+      desc: File to program
+    reset:
+      type: str
+      desc: SoC reset option from `nrfutil device program`
+    erase:
+      type: str
+      desc: SoC erase mode from `nrfutil device program`
+    verify:
+      type: str
+      desc: Flash verification option from `nrfutil device program`
+    provision:
+      type: bool
+      desc: Merge Infuse-IoT provisioning information into the file
+
+schema;soc-schema:
+  type: map
+  required: true
+  mapping:
+    regex;(.*):
+      type: map
+      required: true
+      mapping:
+        device-id:
+          type: str
+          required: true
+        jlink-snr:
+          type: int
+          required: true
+        serial-port:
+          type: str
+        serial-baudrate:
+          type: int
+        recover:
+          type: bool
+        primary:
+          type: bool
+          desc: This SoC is the primary Application ID for the purposes of IDs
+        nrf91-modem-firmware:
+          type: str
+          desc: If provided, will be flashed between recovery and test binaries
+        binaries:
+          type: map
+          required: true
+          mapping:
+            test:
+              required: true
+              include: binary-schema
+            success:
+              include: binary-schema
+
+type: map
+mapping:
+  general:
+    type: map
+    required: true
+    mapping:
+      test-title:
+        type: str
+        required: true
+      result-folder:
+        type: str
+        required: true
+      valid-dut-regex:
+        type: str
+        required: true
+      test-timeout:
+        type: float
+        required: true
+      operator-id:
+        type: bool
+      valid-operator-regex:
+        type: str
+      images:
+        type: map
+        required: true
+        mapping:
+          url-base:
+            type: str
+            required: true
+          pass:
+            type: str
+            required: true
+          fail:
+            type: str
+            required: true
+  infuse:
+    type: map
+    mapping:
+      board:
+        type: str
+        required: true
+      organisation:
+        type: str
+        required: true
+  socs:
+    include: soc-schema
+  tests:
+    include: test-schema
+
+  # OpenHTF default configuration options
+  attachments_directory:
+    type: str
+  plug_teardown_timeout_s:
+    type: float
+  allow_unset_measurements:
+    type: bool
+  station_id:
+    type: str
+  cancel_timeout_s:
+    type: float
+  stop_on_first_failure:
+    type: bool
+  capture_source:
+    type: bool
+  frontend_throttle_s:
+    type: float
+  station_server_port:
+    type: int
