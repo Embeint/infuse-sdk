@@ -191,8 +191,8 @@ int infuse_validation_disk(const char *disk, uint8_t flags)
 		goto test_end;
 	}
 
-	VALIDATION_REPORT_INFO(TEST, "Sector Count: %d", sector_count);
-	VALIDATION_REPORT_INFO(TEST, " Sector Size: %d", sector_size);
+	VALIDATION_REPORT_VALUE(TEST, "SECTOR_COUNT", "%u", sector_count);
+	VALIDATION_REPORT_VALUE(TEST, "SECTOR_SIZE", "%u", sector_size);
 
 	if (sector_count == 0 || sector_size == 0) {
 		VALIDATION_REPORT_ERROR(TEST, "Invalid disk parameters");
