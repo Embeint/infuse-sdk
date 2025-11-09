@@ -32,27 +32,28 @@ static int infuse_modem_info(void)
 		VALIDATION_REPORT_ERROR(TEST, "Failed to read model identifier");
 		return -EIO;
 	}
-	VALIDATION_REPORT_INFO(TEST, "%16s: %s", "Modem Model", storage);
+	VALIDATION_REPORT_VALUE(TEST, "MODEL", "%s", storage);
 
 	/* Modem ESN */
 	if (nrf_modem_at_scanf("AT+CGSN=0", "%64s\n", storage) != 1) {
 		VALIDATION_REPORT_ERROR(TEST, "Failed to read ESN");
 		return -EIO;
 	}
-	VALIDATION_REPORT_INFO(TEST, "%16s: %s", "Modem ESN", storage);
+	VALIDATION_REPORT_VALUE(TEST, "ESN", "%s", storage);
 
 	/* Modem IMEI */
 	if (nrf_modem_at_scanf("AT+CGSN=1", "+CGSN: \"%" SCNd64 "\"\n", &imei) != 1) {
 		VALIDATION_REPORT_ERROR(TEST, "Failed to read IMEI");
 		return -EIO;
 	}
-	VALIDATION_REPORT_INFO(TEST, "%16s: %s", "Modem IMEI", storage);
+	VALIDATION_REPORT_VALUE(TEST, "IMEI", "%llu", imei);
+
 	/* Modem firmware revision */
 	if (nrf_modem_at_scanf("AT+CGMR", "%64s\n", storage) != 1) {
 		VALIDATION_REPORT_ERROR(TEST, "Failed to read firmware version");
 		return -EIO;
 	}
-	VALIDATION_REPORT_INFO(TEST, "%16s: %s", "Firmware Version", storage);
+	VALIDATION_REPORT_VALUE(TEST, "FW_VERSION", "%s", storage);
 
 	return 0;
 }
@@ -74,12 +75,13 @@ static int infuse_sim_card(void)
 		VALIDATION_REPORT_ERROR(TEST, "Failed to read IMSI");
 		rc = -EIO;
 	}
-	VALIDATION_REPORT_INFO(TEST, "%16s: %s", "IMSI", response);
+	VALIDATION_REPORT_VALUE(TEST, "SIM_IMSI", "%s", response);
+
 	if (nrf_modem_at_scanf("AT%XICCID", "%%XICCID: %64s\n", response) != 1) {
 		VALIDATION_REPORT_ERROR(TEST, "Failed to read ICCID");
 		rc = -EIO;
 	}
-	VALIDATION_REPORT_INFO(TEST, "%16s: %s", "ICCID", response);
+	VALIDATION_REPORT_VALUE(TEST, "SIM_ICCID", "%s", response);
 
 	/* Power down SIM card */
 	if (lte_lc_func_mode_set(LTE_LC_FUNC_MODE_DEACTIVATE_UICC) != 0) {
