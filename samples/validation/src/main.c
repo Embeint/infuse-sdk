@@ -424,8 +424,14 @@ int main(void)
 #endif /* CONFIG_SYS_HEAP_RUNTIME_STATS */
 
 	(void)validators_failed;
-	VALIDATION_REPORT_INFO("SYS", "Complete with %d/%d passed", (int32_t)validators_passed,
-			       (int32_t)validators_registered);
+	if (validators_passed == validators_registered) {
+		VALIDATION_REPORT_PASS("SYS", "Complete with %d/%d passed",
+				       (int32_t)validators_passed, (int32_t)validators_registered);
+	} else {
+		VALIDATION_REPORT_ERROR("SYS", "Complete with %d/%d passed",
+					(int32_t)validators_passed, (int32_t)validators_registered);
+	}
+
 	k_sleep(K_FOREVER);
 	return 0;
 }
