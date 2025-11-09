@@ -15,6 +15,7 @@
 #include <zephyr/drivers/led.h>
 
 #include <infuse/security.h>
+#include <infuse/identifiers.h>
 #include <infuse/validation/bluetooth.h>
 #include <infuse/validation/button.h>
 #include <infuse/validation/core.h>
@@ -377,7 +378,10 @@ SYS_INIT(validation_init, APPLICATION, 99);
 
 int main(void)
 {
+	uint64_t device_id = infuse_device_id();
+
 	VALIDATION_REPORT_INFO("SYS", "Starting");
+	VALIDATION_REPORT_VALUE("SYS", "INFUSE_ID", "0x%016llx", device_id);
 
 #if DT_NODE_EXISTS(DT_ALIAS(charger0))
 	/* No API checking, just validate the device initialised correctly */
