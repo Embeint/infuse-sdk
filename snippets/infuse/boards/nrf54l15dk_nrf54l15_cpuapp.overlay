@@ -7,6 +7,10 @@
 		infuse,kv-partition = &storage_partition;
 	};
 
+	aliases {
+		environmental0 = &temp;
+	};
+
 	epacket_serial: epacket_serial {
 		compatible = "embeint,epacket-serial";
 		serial = <&uart20>;
