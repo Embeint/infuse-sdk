@@ -261,10 +261,12 @@ int infuse_validation_wifi(struct net_if *iface, uint8_t flags)
 	}
 
 done:
-
 	/* Put interface down if we brought it up */
 	if (manual_up) {
 		(void)net_if_down(iface);
+	}
+	if (rc == 0) {
+		VALIDATION_REPORT_PASS(TEST, "PASSED");
 	}
 	return rc;
 }
