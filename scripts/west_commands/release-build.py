@@ -489,6 +489,7 @@ class release_build(WestCommand):
             output_dir = pathlib.Path(f"{app_name}-{board_normalised}-{version}")
         output_dir.mkdir(parents=True, exist_ok=True)
         merged_hex = f"{output_dir.name}.hex"
+        ota_bin = f"ota-{output_dir.name}.bin"
 
         with (output_dir / "build_log.txt").open("w") as f:
             f.write(self.build_log)
@@ -522,6 +523,11 @@ class release_build(WestCommand):
                 output_dir / "_sysbuild", self.build_dir / "_sysbuild", "autoconf.h"
             )
 
+            # Copy OTA upgrade file to output directory
+            shutil.copy(
+                output_dir / app_name / "zephyr" / "zephyr.signed.bin",
+                output_dir / ota_bin,
+            )
             # Merge hex files into the output directory
             cache = zcmake.CMakeCache.from_build_dir(self.build_dir)
             zephyr_base = cache["ZEPHYR_BASE"]
@@ -536,6 +542,11 @@ class release_build(WestCommand):
             primary_dir = app_name
         else:
             self.export_folder(output_dir / app_name, self.build_dir)
+            # Copy TF-M OTA upgrade file to root
+            shutil.copy(
+                output_dir / app_name / "zephyr" / "tfm_s_zephyr_ns_signed.bin",
+                output_dir / ota_bin,
+            )
             # Copy TF-M complete file to root
             shutil.copy(
                 output_dir / app_name / "zephyr" / "tfm_merged.hex",
