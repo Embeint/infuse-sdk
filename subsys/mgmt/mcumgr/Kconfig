@@ -7,4 +7,15 @@ config MCUMGR_GRP_OS_INFUSE
 	select MCUMGR_SMP_CBOR_MIN_DECODING_LEVEL_2
 	depends on INFUSE_EPOCH_TIME
 
+config MCUMGR_GRP_OS_INFUSE_RESET_MIN_UPTIME
+	int "Minimum uptime for 'reset' command to be actioned"
+	default 0
+	depends on MCUMGR_GRP_OS_INFUSE
+	depends on INFUSE_REBOOT
+	help
+	  Optional minimum uptime in seconds before the reset management
+	  command will be actioned. Can be used to prevent malicious actors
+	  from chain rebooting devices through the un-authenticated MCUMgr
+	  protocol.
+
 endif # MCUMGR
