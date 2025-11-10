@@ -32,7 +32,7 @@
 static struct net_buf *nb;
 static void cleanup_test(void *p);
 
-static void send_reset(void)
+static void send_reset(uint8_t expected_result)
 {
 	uint8_t buffer[ZCBOR_BUFFER_SIZE];
 	uint8_t buffer_out[OUTPUT_BUFFER_SIZE];
@@ -72,6 +72,7 @@ static void send_reset(void)
 
 	/* Retrieve response buffer and ensure validity */
 	nb = smp_dummy_get_outgoing();
+	zassert_not_null(nb);
 	smp_dummy_disable();
 
 	/* Process received data by removing header */
@@ -80,10 +81,19 @@ static void send_reset(void)
 
 	ok = zcbor_map_decode_bulk(zsd, output_decode, ARRAY_SIZE(output_decode), &decoded) == 0;
 	zassert_true(ok, "Expected decode to be successful");
-	zassert_equal(decoded, 0, "Did not expect any decoded elements");
-	zassert_false(
-		zcbor_map_decode_bulk_key_found(output_decode, ARRAY_SIZE(output_decode), "rc"),
-		"Did not expect to receive rc element");
+	if (expected_result == MGMT_ERR_EOK) {
+		zassert_equal(decoded, 0, "Did not expect any decoded elements");
+		zassert_false(zcbor_map_decode_bulk_key_found(output_decode,
+							      ARRAY_SIZE(output_decode), "rc"),
+			      "Did not expect to receive rc element");
+	} else {
+		zassert_equal(decoded, 1, "Expected to receive one decoded element");
+		zassert_true(zcbor_map_decode_bulk_key_found(output_decode,
+							     ARRAY_SIZE(output_decode), "rc"),
+			     "Expected to receive rc element");
+		zassert_equal(expected_result, rc);
+	}
+	net_buf_unref(nb);
 }
 
 ZTEST(os_mgmt_reset, test_reset)
@@ -98,8 +108,17 @@ ZTEST(os_mgmt_reset, test_reset)
 
 	switch (reboots.count) {
 	case 1:
+#if CONFIG_MCUMGR_GRP_OS_INFUSE_RESET_MIN_UPTIME > 0
+		/* Send reset command on boot, should fail */
+		send_reset(MGMT_ERR_EBUSY);
+		/* Command should still fail  */
+		k_sleep(K_TIMEOUT_ABS_SEC(CONFIG_MCUMGR_GRP_OS_INFUSE_RESET_MIN_UPTIME - 1));
+		send_reset(MGMT_ERR_EBUSY);
+		/* Wait until command should work */
+		k_sleep(K_TIMEOUT_ABS_SEC(CONFIG_MCUMGR_GRP_OS_INFUSE_RESET_MIN_UPTIME));
+#endif /* CONFIG_MCUMGR_GRP_OS_INFUSE_RESET_MIN_UPTIME > 0 */
 		/* Send reset command */
-		send_reset();
+		send_reset(MGMT_ERR_EOK);
 		/* Wait for the reboot */
 		k_sleep(K_SECONDS(3));
 		zassert_unreachable("Reset command did not trigger reboot");
