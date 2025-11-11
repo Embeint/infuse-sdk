@@ -1,0 +1,20 @@
+line-length = 120
+indent-width = 4
+
+[lint]
+select = [
+    "B",      # flake8-bugbear
+    "E",      # pycodestyle
+    "F",      # pyflakes
+    "I",      # isort
+    "SIM",    # flake8-simplify
+    "UP",     # pyupgrade
+    "W",      # pycodestyle warnings
+    ]
+ignore = [
+    "SIM105", # Allow try-except-pass
+    "SIM108", # Allow if-else blocks instead of forcing ternary operator
+    ]
+
+[format]
+line-ending = "lf"
