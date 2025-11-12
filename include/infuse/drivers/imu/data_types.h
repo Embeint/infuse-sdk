@@ -24,11 +24,15 @@ extern "C" {
  * @{
  */
 
+/** IMU sample struct */
 struct imu_sample {
 	int16_t x;
 	int16_t y;
 	int16_t z;
-} __packed;
+};
+/* Validate __packed attribute is not required */
+BUILD_ASSERT(sizeof(struct imu_sample) == 6);
+BUILD_ASSERT(_Alignof(struct imu_sample) == 2);
 
 /** Metadata for each sub-sensor in a FIFO buffer */
 struct imu_sensor_meta {
