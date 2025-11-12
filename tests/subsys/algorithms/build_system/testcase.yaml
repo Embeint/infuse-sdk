@@ -1,0 +1,39 @@
+common:
+  tags: algorithms
+  min_flash: 64
+  min_ram: 32
+  platform_allow:
+    - mps2/an385      # Cortex-M3
+    - mps2/an386      # Cortex-M4
+    - mps2/an521/cpu0 # Cortex-M33
+  integration_platforms:
+    - mps2/an385      # Cortex-M3
+    - mps2/an386      # Cortex-M4
+    - mps2/an521/cpu0 # Cortex-M33
+  harness: console
+  harness_config:
+    type: multi_line
+    ordered: true
+    regex:
+      - "INIT"
+      - "RUN: 0 0"
+      - "RUN: 1 2"
+      - "RUN: 2 5"
+tests:
+  algorithms.build_system.native:
+    extra_configs:
+      - CONFIG_TEST_ALGORITHM_BUILD_NATIVE=y
+  algorithms.build_system.llext:
+    extra_configs:
+      - CONFIG_TEST_ALGORITHM_BUILD_LLEXT=y
+      - CONFIG_FPU=n
+  algorithms.build_system.llext.softabi:
+    filter: CONFIG_CPU_HAS_FPU
+    extra_configs:
+      - CONFIG_TEST_ALGORITHM_BUILD_LLEXT=y
+      - CONFIG_FP_SOFTABI=y
+  algorithms.build_system.llext.hardabi:
+    filter: CONFIG_CPU_HAS_FPU
+    extra_configs:
+      - CONFIG_TEST_ALGORITHM_BUILD_LLEXT=y
+      - CONFIG_FP_HARDABI=y
