@@ -11,6 +11,7 @@
 #include <zephyr/zbus/zbus.h>
 
 #include <infuse/drivers/imu.h>
+#include <infuse/drivers/imu/data_types.h>
 #include <infuse/math/common.h>
 #include <infuse/task_runner/task.h>
 #include <infuse/task_runner/tasks/imu.h>

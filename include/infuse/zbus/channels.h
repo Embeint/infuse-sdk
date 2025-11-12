@@ -14,6 +14,7 @@
 
 #include <zephyr/zbus/zbus.h>
 
+#include <infuse/drivers/imu/data_types.h>
 #include <infuse/tdf/definitions.h>
 
 #ifdef __cplusplus

@@ -10,9 +10,10 @@
 #include <zephyr/zbus/zbus.h>
 
 #include <infuse/algorithm_runner/algorithms/stationary_windowed.h>
+#include <infuse/drivers/imu.h>
+#include <infuse/drivers/imu/data_types.h>
 #include <infuse/math/common.h>
 #include <infuse/states.h>
-#include <infuse/task_runner/tasks/imu.h>
 #include <infuse/time/epoch.h>
 #include <infuse/zbus/channels.h>
 

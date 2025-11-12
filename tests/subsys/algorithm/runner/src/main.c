@@ -15,11 +15,11 @@
 #include <infuse/algorithm_runner/runner.h>
 #include <infuse/data_logger/logger.h>
 #include <infuse/data_logger/high_level/tdf.h>
+#include <infuse/drivers/imu/data_types.h>
 #include <infuse/epacket/interface/epacket_dummy.h>
 #include <infuse/math/statistics.h>
 #include <infuse/states.h>
 #include <infuse/task_runner/runner.h>
-#include <infuse/task_runner/tasks/imu.h>
 #include <infuse/zbus/channels.h>
 
 struct algorithm_state {

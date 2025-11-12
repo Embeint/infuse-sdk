@@ -12,7 +12,8 @@
 #include <zephyr/zbus/zbus.h>
 
 #include <infuse/algorithm_runner/algorithms/demo.h>
-#include <infuse/task_runner/tasks/imu.h>
+#include <infuse/drivers/imu.h>
+#include <infuse/drivers/imu/data_types.h>
 #include <infuse/time/epoch.h>
 #include <infuse/zbus/channels.h>
 
