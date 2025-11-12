@@ -1,0 +1,44 @@
+# Infuse-IoT algorithm abstraction
+
+config INFUSE_ALGORITHMS
+	bool "Infuse-IoT algorithm support"
+
+if INFUSE_ALGORITHMS
+
+config LLEXT_EXPORT_SYMBOL_GROUP_INFUSE_ALG
+	bool "Infuse-IoT algorithm runner exports"
+	default y
+
+config LLEXT_EXPORT_SYMBOL_GROUP_FP_SOFT
+	bool "Software floating point library exports"
+	default y
+
+config INFUSE_ALGORITHM_LLEXT_BUILTIN
+	bool
+	help
+	  Application includes an LLEXT algorithm.
+
+config INFUSE_ALGORITHM_LLEXT_NATIVE
+	bool
+	help
+	  Application includes an LLEXT algorithm running
+	  natively (not loaded through LLEXT).
+
+config INFUSE_ALGORITHM_CPU_NAME
+	string
+	default "cortex_m0" if CPU_CORTEX_M0
+	default "cortex_m3" if CPU_CORTEX_M3
+	default "cortex_m4" if CPU_CORTEX_M4
+	default "cortex_m33" if CPU_CORTEX_M33
+	help
+	  Hidden helper option to calculate the library path
+
+config INFUSE_ALGORITHM_FLOAT_ABI_DIR
+	string
+	default "hard" if FPU && FP_HARDABI
+	default "softfp" if FPU && FP_SOFTABI
+	default "soft"
+	help
+	  Hidden helper option to calculate the library path
+
+endif # INFUSE_ALGORITHMS

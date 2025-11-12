@@ -1,5 +1,6 @@
 # Infuse-IoT subsys compilation
 
+add_subdirectory_ifdef(CONFIG_INFUSE_ALGORITHMS algorithms)
 add_subdirectory_ifdef(CONFIG_ALGORITHM_RUNNER algorithm_runner)
 add_subdirectory_ifdef(CONFIG_BT bluetooth)
 add_subdirectory_ifdef(CONFIG_INFUSE_CPATCH cpatch)
