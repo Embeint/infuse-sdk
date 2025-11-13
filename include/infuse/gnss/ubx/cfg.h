@@ -318,18 +318,35 @@ enum ubx_cfg_key_navspg_utcstandard {
 	UBX_CFG_NAVSPG_UTCSTANDARD_NICT = 9,
 };
 
+/**
+ * Dynamic model for the modem.
+ * Changes filtering of the position solution and sanity-check limits.
+ * Documented limits are from MAX-M10S integration manual.
+ */
 enum ubx_cfg_key_navspg_dynmodel {
+	/* Max Alt: 12 km Max Hor Vel: 310 m/s Max Ver Vel: 50 m/s */
 	UBX_CFG_NAVSPG_DYNMODEL_PORTABLE = 0,
+	/* Max Alt: 9 km Max Hor Vel: 10 m/s Max Ver Vel: 6 m/s */
 	UBX_CFG_NAVSPG_DYNMODEL_STATIONARY = 2,
+	/* Max Alt: 9 km Max Hor Vel: 30 m/s Max Ver Vel: 20 m/s */
 	UBX_CFG_NAVSPG_DYNMODEL_PEDESTRIAN = 3,
+	/* Max Alt: 6 km Max Hor Vel: 100 m/s Max Ver Vel: 15 m/s */
 	UBX_CFG_NAVSPG_DYNMODEL_AUTOMOTIVE = 4,
+	/* Max Alt: 0.5 km Max Hor Vel: 25 m/s Max Ver Vel: 5 m/s */
 	UBX_CFG_NAVSPG_DYNMODEL_SEA = 5,
+	/* Max Alt: 80 km Max Hor Vel: 100 m/s Max Ver Vel: 6400 m/s */
 	UBX_CFG_NAVSPG_DYNMODEL_AIRBORNE1G = 6,
+	/* Max Alt: 80 km Max Hor Vel: 250 m/s Max Ver Vel: 10000 m/s */
 	UBX_CFG_NAVSPG_DYNMODEL_AIRBORNE2G = 7,
+	/* Max Alt: 80 km Max Hor Vel: 500 m/s Max Ver Vel: 20000 m/s */
 	UBX_CFG_NAVSPG_DYNMODEL_AIRBORNE4G = 8,
+	/* Max Alt: 9 km Max Hor Vel: 30 m/s Max Ver Vel: 20 m/s */
 	UBX_CFG_NAVSPG_DYNMODEL_WRIST = 9,
+	/* Unknown */
 	UBX_CFG_NAVSPG_DYNMODEL_BIKE = 10,
+	/* Unknown */
 	UBX_CFG_NAVSPG_DYNMODEL_MOWER = 11,
+	/* Unknown */
 	UBX_CFG_NAVSPG_DYNMODEL_ESCOOTER = 12,
 };
 
