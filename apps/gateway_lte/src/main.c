@@ -120,6 +120,8 @@ static const struct task_schedule schedules[] = {
 								.timeout = 10,
 							},
 					},
+				/* Gateways not expected to move */
+				.dynamic_model = UBX_CFG_NAVSPG_DYNMODEL_STATIONARY,
 			},
 	},
 #endif /* DT_NODE_EXISTS(DT_ALIAS(gnss)) */

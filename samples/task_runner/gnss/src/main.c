@@ -50,6 +50,7 @@ static const struct task_schedule schedules[] = {
 					 TASK_GNSS_FLAGS_RUN_FOREVER,
 				.accuracy_m = 5,
 				.position_dop = 40,
+				.dynamic_model = UBX_CFG_NAVSPG_DYNMODEL_PEDESTRIAN,
 			},
 	},
 #if DT_NODE_EXISTS(DT_ALIAS(fuel_gauge0))
