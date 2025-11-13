@@ -91,6 +91,13 @@ int32_t nrf_modem_gnss_event_handler_set(nrf_modem_gnss_event_handler_type_t han
 	return 0;
 }
 
+int32_t nrf_modem_gnss_dyn_mode_change(uint32_t mode)
+{
+	ARG_UNUSED(mode);
+
+	return 0;
+}
+
 int32_t nrf_modem_gnss_use_case_set(uint8_t use_case)
 {
 	ARG_UNUSED(use_case);

@@ -226,6 +226,7 @@ void gnss_task_fn(const struct task_schedule *schedule, struct k_poll_signal *te
 	uint8_t run_target = (args->flags & TASK_GNSS_FLAGS_RUN_MASK);
 	struct gnss_run_state run_state = {0};
 	gnss_systems_t constellations;
+	uint8_t dynamics;
 	int rc;
 
 	/* Validate the GNSS device */
@@ -268,6 +269,41 @@ void gnss_task_fn(const struct task_schedule *schedule, struct k_poll_signal *te
 	}
 	if (gnss_get_enabled_systems(gnss, &constellations) == 0) {
 		LOG_INF("Constellations: %02X (%s)", constellations, "enabled");
+	}
+
+	/* Configure dynamic model */
+	switch (args->dynamic_model) {
+	case UBX_CFG_NAVSPG_DYNMODEL_STATIONARY:
+		dynamics = GNSS_NAVIGATION_MODE_ZERO_DYNAMICS;
+		break;
+	case UBX_CFG_NAVSPG_DYNMODEL_PEDESTRIAN:
+	case UBX_CFG_NAVSPG_DYNMODEL_WRIST:
+	case UBX_CFG_NAVSPG_DYNMODEL_BIKE:
+	case UBX_CFG_NAVSPG_DYNMODEL_MOWER:
+		dynamics = GNSS_NAVIGATION_MODE_LOW_DYNAMICS;
+		break;
+	case UBX_CFG_NAVSPG_DYNMODEL_AUTOMOTIVE:
+	case UBX_CFG_NAVSPG_DYNMODEL_AIRBORNE1G:
+	case UBX_CFG_NAVSPG_DYNMODEL_AIRBORNE2G:
+	case UBX_CFG_NAVSPG_DYNMODEL_AIRBORNE4G:
+		dynamics = GNSS_NAVIGATION_MODE_HIGH_DYNAMICS;
+		break;
+	case UBX_CFG_NAVSPG_DYNMODEL_PORTABLE:
+	case UBX_CFG_NAVSPG_DYNMODEL_SEA:
+	case UBX_CFG_NAVSPG_DYNMODEL_ESCOOTER:
+		dynamics = GNSS_NAVIGATION_MODE_BALANCED_DYNAMICS;
+		break;
+	default:
+		LOG_WRN("Unknown dynamics (%d), reverting to BALANCED", args->dynamic_model);
+		dynamics = GNSS_NAVIGATION_MODE_BALANCED_DYNAMICS;
+	}
+	rc = gnss_set_navigation_mode(gnss, dynamics);
+	if (rc == -ENOSYS) {
+		LOG_INF("Dynamic model configuration not supported");
+	} else if (rc < 0) {
+		LOG_WRN("Failed to configure dynamic model (%d)", rc);
+	} else {
+		LOG_INF("Dynamic model: %d", dynamics);
 	}
 
 	/* Configure output fix rate */
