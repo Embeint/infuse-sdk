@@ -14,6 +14,9 @@
 
 #include <zephyr/sys/util.h>
 
+/* UBLOX definitions are used since they are more specific than generic Zephyr */
+#include <infuse/gnss/ubx/cfg.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -68,6 +71,8 @@ struct task_gnss_args {
 			uint8_t timeout;
 		} fix_plateau;
 	} run_to_fix;
+	/** Dynamic model from @ref ubx_cfg_key_navspg_dynmodel */
+	uint8_t dynamic_model;
 } __packed;
 
 #ifdef __cplusplus

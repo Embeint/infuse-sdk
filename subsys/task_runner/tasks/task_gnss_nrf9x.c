@@ -61,6 +61,7 @@ static void gnss_event_handler(int event)
 
 static int nrf9x_gnss_boot(const struct task_gnss_args *args)
 {
+	uint32_t dynamics;
 	int rc;
 
 	rc = lte_lc_func_mode_set(LTE_LC_FUNC_MODE_ACTIVATE_GNSS);
@@ -81,6 +82,36 @@ static int nrf9x_gnss_boot(const struct task_gnss_args *args)
 	rc = nrf_modem_gnss_fix_interval_set(1);
 	if (rc != 0) {
 		LOG_ERR("Failed to %s (%d)", "set fix interval", rc);
+		return rc;
+	}
+	switch (args->dynamic_model) {
+	case UBX_CFG_NAVSPG_DYNMODEL_STATIONARY:
+		dynamics = NRF_MODEM_GNSS_DYNAMICS_STATIONARY;
+		break;
+	case UBX_CFG_NAVSPG_DYNMODEL_PEDESTRIAN:
+	case UBX_CFG_NAVSPG_DYNMODEL_WRIST:
+	case UBX_CFG_NAVSPG_DYNMODEL_BIKE:
+	case UBX_CFG_NAVSPG_DYNMODEL_MOWER:
+		dynamics = NRF_MODEM_GNSS_DYNAMICS_PEDESTRIAN;
+		break;
+	case UBX_CFG_NAVSPG_DYNMODEL_AUTOMOTIVE:
+	case UBX_CFG_NAVSPG_DYNMODEL_AIRBORNE1G:
+	case UBX_CFG_NAVSPG_DYNMODEL_AIRBORNE2G:
+	case UBX_CFG_NAVSPG_DYNMODEL_AIRBORNE4G:
+		dynamics = NRF_MODEM_GNSS_DYNAMICS_AUTOMOTIVE;
+		break;
+	case UBX_CFG_NAVSPG_DYNMODEL_PORTABLE:
+	case UBX_CFG_NAVSPG_DYNMODEL_SEA:
+	case UBX_CFG_NAVSPG_DYNMODEL_ESCOOTER:
+		dynamics = NRF_MODEM_GNSS_DYNAMICS_GENERAL_PURPOSE;
+		break;
+	default:
+		LOG_WRN("Unknown dynamics (%d), reverting to GENERAL_PURPOSE", args->dynamic_model);
+		dynamics = NRF_MODEM_GNSS_DYNAMICS_GENERAL_PURPOSE;
+	}
+	rc = nrf_modem_gnss_dyn_mode_change(dynamics);
+	if (rc != 0) {
+		LOG_ERR("Failed to %s (%d)", "set dynamic model", rc);
 		return rc;
 	}
 	rc = nrf_modem_gnss_start();

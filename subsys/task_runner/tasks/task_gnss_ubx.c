@@ -317,6 +317,7 @@ void gnss_task_fn(const struct task_schedule *schedule, struct k_poll_signal *te
 		.user_data = &run_state,
 	};
 	gnss_systems_t constellations;
+	uint8_t dynamics;
 	int rc;
 
 	run_state.dev = gnss;
@@ -371,6 +372,16 @@ void gnss_task_fn(const struct task_schedule *schedule, struct k_poll_signal *te
 			args->position_dop / 10);
 	}
 
+	/* Dynamic model */
+	dynamics = args->dynamic_model;
+	if ((dynamics == 1) || (dynamics > 12)) {
+		/* Unknown dynamics platform */
+		LOG_WRN("Unknown dynamics (%d), reverting to PORTABLE", dynamics);
+		dynamics = UBX_CFG_NAVSPG_DYNMODEL_PORTABLE;
+	} else {
+		LOG_INF("Dynamic model: %d", dynamics);
+	}
+
 #ifdef CONFIG_GNSS_UBX_M10
 	NET_BUF_SIMPLE_DEFINE(cfg_buf, 48);
 	ubx_msg_prepare_valset(&cfg_buf,
@@ -400,6 +411,8 @@ void gnss_task_fn(const struct task_schedule *schedule, struct k_poll_signal *te
 	}
 	/* Align timepulse to GPS time */
 	UBX_CFG_VALUE_APPEND(&cfg_buf, UBX_CFG_KEY_TP_TIMEGRID_TP1, UBX_CFG_TP_TIMEGRID_TP1_GPS);
+	/* Platform dynamics */
+	UBX_CFG_VALUE_APPEND(&cfg_buf, UBX_CFG_KEY_NAVSPG_DYNMODEL, dynamics);
 
 	ubx_msg_finalise(&cfg_buf);
 	rc = ubx_modem_send_sync_acked(run_state.modem, &cfg_buf, K_MSEC(250));
