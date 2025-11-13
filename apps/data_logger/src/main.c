@@ -120,6 +120,7 @@ static const struct task_schedule schedules[] = {
 			{
 				.flags = TASK_GNSS_FLAGS_RUN_FOREVER |
 					 TASK_GNSS_FLAGS_PERFORMANCE_MODE,
+				.dynamic_model = UBX_CFG_NAVSPG_DYNMODEL_PORTABLE,
 			},
 	},
 #endif /* DT_NODE_EXISTS(DT_ALIAS(gnss)) */
