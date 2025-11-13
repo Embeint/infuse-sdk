@@ -1,0 +1,18 @@
+# Copyright (c) 2025 Embeint Pty Ltd
+# SPDX-License-Identifier: Apache-2.0
+
+menuconfig T5838
+	bool "Invensense T5838 low power digital microphone"
+	default y
+	depends on DT_HAS_INVENSENSE_T5838_ENABLED
+	depends on AUDIO_DMIC_NRFX_PDM
+	help
+	  Enable Invensense T5838 Digital Microphone Driver.
+
+if T5838
+
+module = T5838
+module-str = T5838 microphone driver
+source "subsys/logging/Kconfig.template.log_config"
+
+endif # T5838

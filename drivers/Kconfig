@@ -1,5 +1,6 @@
 # Infuse-IoT driver configuration
 
+rsource "audio/Kconfig"
 rsource "fuel_gauge/Kconfig"
 rsource "gnss/Kconfig"
 rsource "imu/Kconfig"

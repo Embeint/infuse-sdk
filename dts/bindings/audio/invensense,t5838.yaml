@@ -1,0 +1,31 @@
+# Copyright (c) 2025 Embeint Pty Ttd
+# SPDX-License-Identifier: Apache-2.0
+
+description: T5838 microphone driver
+
+compatible: "invensense,t5838"
+
+include: [base.yaml, pinctrl-device.yaml, pdm-dmic.yaml]
+
+properties:
+  reg:
+    required: true
+
+  en-gpios:
+    type: phandle-array
+    description: Enable GPIO
+
+  thsel-gpios:
+    type: phandle-array
+    required: true
+    description: thsel pin
+
+  wake-gpios:
+    type: phandle-array
+    required: true
+    description: wake pin
+
+  pdmclk-gpios:
+    type: phandle-array
+    required: true
+    description: pdmclk pin
