@@ -563,6 +563,20 @@
                 {"name": "state", "type": "uint8_t", "description": "Infuse-IoT application event"},
                 {"name": "duration", "type": "uint32_t", "description": "Duration state was asserted for"}
             ]
+        },
+        "58": {
+            "name": "PCM_16BIT_CHAN_LEFT",
+            "description": "16bit PCM (Audio) data for the left channel",
+            "fields": [
+                {"name": "val", "type": "int16_t", "description": "Left channel sample"}
+            ]
+        },
+        "59": {
+            "name": "PCM_16BIT_CHAN_RIGHT",
+            "description": "Duration an Infuse-IoT application state was asserted for",
+            "fields": [
+                {"name": "val", "type": "int16_t", "description": "Right channel sample"}
+            ]
         }
     }
 }
