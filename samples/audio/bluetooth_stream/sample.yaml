@@ -1,0 +1,13 @@
+sample:
+  description: Stream Audio over Bluetooth using TDF
+  name: Audio Bluetooth Stream
+common:
+  build_only: true
+  required_snippets:
+    - infuse
+  filter: dt_compat_enabled("invensense,t5838")
+  integration_platforms:
+    - nrf52840dk/nrf52840
+tests:
+  sample.audio.bluetooth_stream:
+    tags: validation
