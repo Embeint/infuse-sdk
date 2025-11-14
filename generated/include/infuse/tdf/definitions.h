@@ -717,6 +717,18 @@ struct tdf_state_duration {
 	uint32_t duration;
 } __packed;
 
+/** 16bit PCM (Audio) data for the left channel */
+struct tdf_pcm_16bit_chan_left {
+	/** Left channel sample */
+	int16_t val;
+} __packed;
+
+/** Duration an Infuse-IoT application state was asserted for */
+struct tdf_pcm_16bit_chan_right {
+	/** Right channel sample */
+	int16_t val;
+} __packed;
+
 /** Infuse-IoT builtin TDF definitions */
 enum tdf_builtin_id {
 	/** Common announcement packet */
@@ -827,6 +839,10 @@ enum tdf_builtin_id {
 	TDF_STATE_EVENT_CLEARED = 56,
 	/** Duration an Infuse-IoT application state was asserted for */
 	TDF_STATE_DURATION = 57,
+	/** 16bit PCM (Audio) data for the left channel */
+	TDF_PCM_16BIT_CHAN_LEFT = 58,
+	/** Duration an Infuse-IoT application state was asserted for */
+	TDF_PCM_16BIT_CHAN_RIGHT = 59,
 	/** End of builtin TDF range */
 	TDF_BUILTIN_END = 1024,
 };
@@ -885,6 +901,8 @@ enum tdf_builtin_id {
 #define _TDF_STATE_EVENT_SET_TYPE             struct tdf_state_event_set
 #define _TDF_STATE_EVENT_CLEARED_TYPE         struct tdf_state_event_cleared
 #define _TDF_STATE_DURATION_TYPE              struct tdf_state_duration
+#define _TDF_PCM_16BIT_CHAN_LEFT_TYPE         struct tdf_pcm_16bit_chan_left
+#define _TDF_PCM_16BIT_CHAN_RIGHT_TYPE        struct tdf_pcm_16bit_chan_right
 
 /** Size of builtin TDF definitions */
 enum tdf_builtin_size {
@@ -940,6 +958,8 @@ enum tdf_builtin_size {
 	_TDF_STATE_EVENT_SET_SIZE = sizeof(struct tdf_state_event_set),
 	_TDF_STATE_EVENT_CLEARED_SIZE = sizeof(struct tdf_state_event_cleared),
 	_TDF_STATE_DURATION_SIZE = sizeof(struct tdf_state_duration),
+	_TDF_PCM_16BIT_CHAN_LEFT_SIZE = sizeof(struct tdf_pcm_16bit_chan_left),
+	_TDF_PCM_16BIT_CHAN_RIGHT_SIZE = sizeof(struct tdf_pcm_16bit_chan_right),
 };
 
 /** @endcond */
