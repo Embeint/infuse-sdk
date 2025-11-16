@@ -8,21 +8,56 @@ properties:
   out0-current-max:
     type: int
     default: 0
-    description: Maximum output current of channel 0 in 0.1 mA (0-25.5 mA).
-                 Default value is the power-on default. Valid range = 0 - 255.
-                 A value of 0 disables the channel.
+    description: |
+      Maximum output current of channel 0 in 0.1 mA (0-25.5 mA).
+      Default value is the power-on default. Valid range = 0 - 255.
+      A value of 0 disables the channel.
   out1-current-max:
     type: int
     default: 0
-    description: Maximum output current of channel 1 in 0.1 mA (0-25.5 mA)
-                 Default value is the power-on default. Valid range = 0 - 255.
-                 A value of 0 disables the channel.
+    description: |
+      Maximum output current of channel 1 in 0.1 mA (0-25.5 mA)
+      Default value is the power-on default. Valid range = 0 - 255.
+      A value of 0 disables the channel.
   out2-current-max:
     type: int
     default: 0
-    description: Maximum output current of channel 2 in 0.1 mA (0-25.5 mA)
-                 Default value is the power-on default. Valid range = 0 - 255.
-                 A value of 0 disables the channel.
+    description: |
+      Maximum output current of channel 2 in 0.1 mA (0-25.5 mA)
+      Default value is the power-on default. Valid range = 0 - 255.
+      A value of 0 disables the channel.
+
+  fade-duration-ms:
+    type: int
+    enum:
+      - 0
+      - 50
+      - 100
+      - 150
+      - 200
+      - 250
+      - 300
+      - 350
+      - 400
+      - 450
+      - 500
+      - 1000
+      - 2000
+      - 4000
+      - 6000
+      - 8000
+    default: 0
+    description: |
+      Duration of the fade effect from the previous PWM value to the updated
+      value. The 0 value disables this effect. Does not apply to the animation
+      mode. Applies to all LED channels.
+
+  exponential-fading:
+    type: boolean
+    description: |
+      Fade according to an exponential curve, instead of a linear one. This
+      results in a more natural fading effect to the human eye. Applies to all
+      LED channels.
 
 child-binding:
   properties:
