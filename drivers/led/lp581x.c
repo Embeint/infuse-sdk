@@ -22,6 +22,8 @@ struct lp581x_config {
 	uint8_t out1_current;
 	uint8_t out2_current;
 	uint8_t out3_current;
+	uint8_t fade_duration_idx;
+	uint8_t exponential_fading;
 	uint8_t num_leds;
 };
 
@@ -50,6 +52,7 @@ static int lp581x_enable(const struct device *dev)
 {
 	const struct lp581x_config *config = dev->config;
 	uint8_t leds_all = LP581X_CONFIG1_OUT0_EN | LP581X_CONFIG1_OUT1_EN | LP581X_CONFIG1_OUT2_EN;
+	uint8_t fade_cfg;
 	int rc;
 
 	/* Toggle SDA 8 times while SCL is held high to exit shutdown mode */
@@ -88,6 +91,31 @@ static int lp581x_enable(const struct device *dev)
 	rc = i2c_reg_write_byte_dt(&config->bus, LP581X_REG_DEV_CONFIG1, leds_all);
 	if (rc < 0) {
 		LOG_DBG("Failed to enable LEDs (%d)", rc);
+		return rc;
+	}
+
+	/* Manual fading control */
+	if (config->fade_duration_idx == 0) {
+		fade_cfg = 0x00;
+	} else {
+		fade_cfg =
+			((config->num_leds == 4) ? 0x0F : 0x07) | (config->fade_duration_idx << 4);
+	}
+	rc = i2c_reg_write_byte_dt(&config->bus, LP581X_REG_DEV_CONFIG2, fade_cfg);
+	if (rc < 0) {
+		LOG_DBG("Failed to configure fading (%d)", rc);
+		return rc;
+	}
+
+	/* Exponential fading curve */
+	if (config->exponential_fading) {
+		fade_cfg = (config->num_leds == 4) ? 0xF0 : 0x70;
+	} else {
+		fade_cfg = 0x00;
+	}
+	rc = i2c_reg_write_byte_dt(&config->bus, LP581X_REG_DEV_CONFIG3, fade_cfg);
+	if (rc < 0) {
+		LOG_DBG("Failed to configure fading (%d)", rc);
 		return rc;
 	}
 
@@ -164,6 +192,8 @@ static DEVICE_API(led, lp581x_led_api) = {
 		.out1_current = DT_INST_PROP(inst, out1_current_max),                              \
 		.out2_current = DT_INST_PROP(inst, out2_current_max),                              \
 		.out3_current = DT_INST_PROP_OR(inst, out3_current_max, 0),                        \
+		.fade_duration_idx = DT_INST_ENUM_IDX(inst, fade_duration_ms),                     \
+		.exponential_fading = DT_INST_PROP(inst, exponential_fading),                      \
 		.num_leds = _num_leds,                                                             \
 	};                                                                                         \
                                                                                                    \
