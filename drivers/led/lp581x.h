@@ -16,7 +16,7 @@
 extern "C" {
 #endif
 
-/* Output current limits in 0.1 mA */
+/** Output current limits in 0.1 mA */
 #define LP581X_MAX_CURRENT_SETTING 255
 
 enum lp581x_regs {
@@ -48,6 +48,10 @@ enum lp581x_regs {
 	LP581X_REG_OUT1_MANUAL_PWM = 0x19,
 	LP581X_REG_OUT2_MANUAL_PWM = 0x1A,
 	LP581X_REG_OUT3_MANUAL_PWM = 0x1B,
+	LP581X_REG_PATTERN0_BASE = 0x1C,
+	LP581X_REG_PATTERN1_BASE = 0x25,
+	LP581X_REG_PATTERN2_BASE = 0x2E,
+	LP581X_REG_PATTERN3_BASE = 0x37,
 	LP581X_REG_FLAG = 0x40,
 };
 
@@ -105,6 +109,19 @@ enum {
 #define LP581X_STOP_CMD     0xAA
 #define LP581X_PAUSE_CMD    0x01
 #define LP581X_CONTINUE_CMD 0x00
+
+struct lp581x_pattern_regs {
+	/* PAUSE T0 in upper bits, PAUSE T1 in lower bits */
+	uint8_t pause_time;
+	/* Play times in lower bits */
+	uint8_t play_count;
+	/* PWM values */
+	uint8_t pwm[5];
+	/* SLOPER T1 in upper bits, SLOPER T0 in lower bits */
+	uint8_t sloper1;
+	/* SLOPER T3 in upper bits, SLOPER T2 in lower bits */
+	uint8_t sloper2;
+} __packed;
 
 #ifdef __cplusplus
 }
