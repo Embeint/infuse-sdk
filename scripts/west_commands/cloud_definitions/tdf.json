@@ -573,9 +573,17 @@
         },
         "59": {
             "name": "PCM_16BIT_CHAN_RIGHT",
-            "description": "Duration an Infuse-IoT application state was asserted for",
+            "description": "16bit PCM (Audio) data for the right channel",
             "fields": [
                 {"name": "val", "type": "int16_t", "description": "Right channel sample"}
+            ]
+        },
+        "60": {
+            "name": "PCM_16BIT_CHAN_DUAL",
+            "description": "16bit PCM (Audio) data for both the left and right channels",
+            "fields": [
+                {"name": "left", "type": "int16_t", "description": "Left channel sample"},
+                {"name": "right", "type": "int16_t", "description": "Right channel sample"}
             ]
         }
     }
