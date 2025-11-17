@@ -1,0 +1,13 @@
+sample:
+  description: LED driver demonstration application
+  name: LP581x Demo
+common:
+  filter: dt_compat_enabled("ti,lp5815") or dt_compat_enabled("ti,lp5817")
+  required_snippets:
+    - infuse
+  integration_platforms:
+    - nrf52840dk/nrf52840
+  build_only: true
+tests:
+  sample.led.lp581x:
+    tags: led
