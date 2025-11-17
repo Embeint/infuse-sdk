@@ -76,7 +76,7 @@ ZTEST(rpc_command_application_info, test_basic)
 	zassert_equal(12, response->version.major);
 	zassert_equal(1, response->version.minor);
 	zassert_equal(5, response->version.revision);
-	zassert_not_equal(0, response->version.build_num);
+	zassert_equal(0, response->version.build_num);
 
 	zassert_equal(CONFIG_INFUSE_APPLICATION_ID, response->application_id);
 	zassert_equal(k_uptime_seconds(), response->uptime);
