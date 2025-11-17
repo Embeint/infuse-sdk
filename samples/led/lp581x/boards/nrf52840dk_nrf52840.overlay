@@ -1,0 +1,40 @@
+/*
+ * Copyright (c) 2025 Embeint Inc
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+#include <zephyr/dt-bindings/led/led.h>
+
+/ {
+	aliases {
+		led-controller0 = &lp5815;
+	};
+};
+
+&arduino_i2c {
+	lp5815: lp5815@2d {
+		compatible = "ti,lp5815";
+		reg = <0x2d>;
+		/* 1/4 of maximum current (~6mA) */
+		out0-current-max = <0x40>;
+		out1-current-max = <0x40>;
+		out2-current-max = <0x40>;
+
+		fade-duration-ms = <200>;
+		exponential-fading;
+
+		led_0 {
+			index = <0>;
+			color-mapping = <LED_COLOR_ID_RED>;
+		};
+		led_1 {
+			index = <1>;
+			color-mapping = <LED_COLOR_ID_GREEN>;
+		};
+		led_2 {
+			index = <2>;
+			color-mapping = <LED_COLOR_ID_BLUE>;
+		};
+	};
+};
