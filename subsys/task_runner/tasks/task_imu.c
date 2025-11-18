@@ -222,7 +222,7 @@ void imu_task_fn(const struct task_schedule *schedule, struct k_poll_signal *ter
 		return;
 	}
 
-	LOG_WRN("%d Acc period: %d us Gyr period: %d us Int period: %d us", rc,
+	LOG_INF("Acc period: %d us Gyr period: %d us Int period: %d us",
 		config_output.accelerometer_period_us, config_output.gyroscope_period_us,
 		config_output.expected_interrupt_period_us);
 
