@@ -120,6 +120,17 @@ enum task_runner_periodicity_type {
 	(__VA_ARGS__)
 
 /**
+ * @brief Helper macro to initialise `states_start_timeout_2x_s`
+ *
+ * Maximum value is `2 * UINT16_MAX`, just over 34 hours.
+ *
+ * @param seconds Desired timeout in seconds
+ *
+ * @retval Value for use with `states_start_timeout_2x_s`
+ */
+#define TASK_STATES_START_TIMEOUT(seconds) ((seconds) / 2)
+
+/**
  * @brief Control TDF logging output of a task
  */
 struct task_schedule_tdf_logging {
