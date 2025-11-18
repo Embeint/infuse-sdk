@@ -86,7 +86,7 @@ void algorithm_stationary_windowed_fn(const struct zbus_channel *chan, const voi
 		goto reset;
 	}
 
-	LOG_INF("Stationary: %s (%u <= %u)", stationary ? "yes" : "no", chan_data.data.std_dev,
+	LOG_DBG("Stationary: %s (%u <= %u)", stationary ? "yes" : "no", chan_data.data.std_dev,
 		c->std_dev_threshold_ug);
 	if (stationary) {
 		/* Set state until next decision point.
@@ -98,11 +98,15 @@ void algorithm_stationary_windowed_fn(const struct zbus_channel *chan, const voi
 					      c->window_seconds + 10)) {
 			/* State was not previously set */
 			infuse_state_set_timeout(INFUSE_STATE_DEVICE_STOPPED_MOVING, 1);
+			LOG_INF("Now %s (%u <= %u)", "stationary", chan_data.data.std_dev,
+				c->std_dev_threshold_ug);
 		}
 	} else {
 		if (infuse_state_clear(INFUSE_STATE_DEVICE_STATIONARY)) {
 			/* Stationary state was previously set */
 			infuse_state_set_timeout(INFUSE_STATE_DEVICE_STARTED_MOVING, 1);
+			LOG_INF("Now %s (%u > %u)", "moving", chan_data.data.std_dev,
+				c->std_dev_threshold_ug);
 		}
 		infuse_state_set_timeout(INFUSE_STATE_DEVICE_MOVING, c->window_seconds + 10);
 	}
