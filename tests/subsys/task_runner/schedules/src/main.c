@@ -625,7 +625,7 @@ ZTEST(task_runner_schedules, test_app_states_timeout)
 	INFUSE_STATES_ARRAY(app_states) = {0};
 	struct task_schedule schedule = {
 		.validity = TASK_VALID_ALWAYS,
-		.states_start_timeout_2x_s = 10,
+		.states_start_timeout_2x_s = TASK_STATES_START_TIMEOUT(20),
 		.states_start = TASK_STATES_DEFINE(INFUSE_STATE_TIME_KNOWN),
 	};
 	struct task_schedule_state state = {
