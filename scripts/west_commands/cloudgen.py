@@ -2,14 +2,13 @@
 # Copyright (c) 2024 Embeint Holdings Pty Ltd
 
 import argparse
-import pathlib
-import json
 import importlib
+import json
+import pathlib
 import subprocess
 import sys
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
-
 from west.commands import WestCommand
 
 EXPORT_DESCRIPTION = """\
@@ -41,9 +40,7 @@ class cloudgen(WestCommand):
             required=True,
             help="Output module for the generated files",
         )
-        parser.add_argument(
-            "--defs", "-d", type=str, help="Folder containing extentsion definitions"
-        )
+        parser.add_argument("--defs", "-d", type=str, help="Folder containing extentsion definitions")
         return parser
 
     def do_run(self, args, unknown_args):
@@ -160,16 +157,10 @@ class cloudgen(WestCommand):
         for d in tdf_defs["definitions"].values():
             for field in d["fields"]:
                 self._array_postfix(d, field)
-            d["only_flexible"] = (
-                len(d["fields"]) == 1 and d["fields"][0]["array"] == "[]"
-            )
+            d["only_flexible"] = len(d["fields"]) == 1 and d["fields"][0]["array"] == "[]"
 
         with tdf_output.open("w") as f:
-            f.write(
-                tdf_template.render(
-                    structs=tdf_defs["structs"], definitions=tdf_defs["definitions"]
-                )
-            )
+            f.write(tdf_template.render(structs=tdf_defs["structs"], definitions=tdf_defs["definitions"]))
 
         def conv_formula(f):
             conv = f"self._{f['name']}"
@@ -193,12 +184,11 @@ class cloudgen(WestCommand):
             digits = d.get("digits")
             if d.get("fmt") == "hex":
                 if digits:
-                    fmt = '"0x{{:0{}x}}"'.format(digits)
+                    fmt = f'"0x{{:0{digits}x}}"'
                 else:
-                    fmt = '"0x{:x}"'
-            if d.get("fmt") == "float":
-                if digits:
-                    fmt = '"{{:.{}f}}"'.format(digits)
+                    fmt = '"0x{:x}"'  # noqa : SIM102
+            if d.get("fmt") == "float" and digits:
+                fmt = f'"{{:.{digits}f}}"'  # noqa : SIM102
             p = d.get("postfix", "")
             return {"name": f["name"], "fmt": fmt, "postfix": f'"{p}"'}
 
@@ -291,22 +281,26 @@ class cloudgen(WestCommand):
 
         with kv_defs_output.open("w") as f:
             # Simplify template logic for array postfix
-            def array_postfix(d, field):
+            def array_postfix(name, d, field):
                 field["array"] = ""
                 if "num" in field:
                     if field["num"] == 0:
+                        if len(d["fields"]) == 1:
+                            err = f"KV definition '{name}' contains only a single VLA element. "
+                            err += "Due to C language limitations, it must contain at least one non-VLA element."
+                            sys.exit(err)
                         field["array"] = "[]"
                         field["flexible"] = True
                         d["flexible"] = True
                     else:
                         field["array"] = f"[{field['num']}]"
 
-            for d in kv_defs["structs"].values():
+            for name, d in kv_defs["structs"].items():
                 for field in d["fields"]:
-                    array_postfix(d, field)
+                    array_postfix(name, d, field)
             for d in kv_defs["definitions"].values():
                 for field in d["fields"]:
-                    array_postfix(d, field)
+                    array_postfix(d["name"], d, field)
                     # If contained struct is flexible, so is this struct
                     if field["type"].startswith("struct "):
                         s = field["type"].removeprefix("struct ")
@@ -314,11 +308,7 @@ class cloudgen(WestCommand):
                             field["flexible_type"] = s
                             d["flexible"] = True
 
-            f.write(
-                kv_defs_template.render(
-                    structs=kv_defs["structs"], definitions=kv_defs["definitions"]
-                )
-            )
+            f.write(kv_defs_template.render(structs=kv_defs["structs"], definitions=kv_defs["definitions"]))
 
         for x in ["structs", "definitions"]:
             for s in kv_defs[x].values():
@@ -355,9 +345,7 @@ class cloudgen(WestCommand):
         rpc_kconfig_output = self.generate_base / "Kconfig.rpc_commands"
 
         rpc_commands_template = self.env.get_template("rpc_commands.h.jinja")
-        rpc_commands_output = (
-            self.generate_base / "include" / "infuse" / "rpc" / "commands_impl.h"
-        )
+        rpc_commands_output = self.generate_base / "include" / "infuse" / "rpc" / "commands_impl.h"
 
         rpc_runner_template = self.env.get_template("rpc_runner.c.jinja")
         rpc_runner_output = self.generate_base / "rpc_command_runner.c"
@@ -442,12 +430,7 @@ class cloudgen(WestCommand):
             )
 
         def generate(output: pathlib.Path, extensions: bool):
-            any_enums = any(
-                [
-                    e.get("extension", False) == extensions
-                    for e in rpc_defs["enums"].values()
-                ]
-            )
+            any_enums = any([e.get("extension", False) == extensions for e in rpc_defs["enums"].values()])
             with output.open("w") as f:
                 f.write(
                     rpc_defs_py_template.render(
