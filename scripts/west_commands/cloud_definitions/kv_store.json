@@ -18,6 +18,7 @@
         "kv_string": {
             "description": "String type",
             "fields": [
+                {"name": "value_num", "type": "uint8_t", "description": "Length of `value` (including NULL)"},
                 {"name": "value", "type": "char", "num": 0, "description": "NULL terminated C string"}
             ]
         },
@@ -312,6 +313,7 @@
             "description": "Array of points defining a closed polygon",
             "reflect": true,
             "fields": [
+                {"name": "points_num", "type": "uint8_t", "description": "Number of points in the geofence"},
                 {"name": "points", "type": "struct gcs_location", "num": 0, "description": "Points in geofence"}
             ]
         },
@@ -348,6 +350,7 @@
             "description": "Keys reserved for secure storage (do not enable)",
             "depends_on": "!INFUSE_SDK",
             "fields": [
+                {"name": "data_num", "type": "uint8_t", "description": "Opaque data"},
                 {"name": "data", "type": "uint8_t", "num": 0, "description": "Opaque data"}
             ]
         }

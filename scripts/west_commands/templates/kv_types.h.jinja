@@ -31,11 +31,6 @@ extern "C" {
 /** {{ info['description'] }} */
 struct {{ name }} {
 {% for field in info['fields'] %}
-{% if field['num'] == 0 %}
-{% if info['fields']|length == 1 %}
-	uint8_t {{ field['name'] }}_num;
-{% endif %}
-{% endif %}
 	{{ field['type'] }} {{ field['name'] }}{{ field['array'] }};
 {% endfor %}
 } __packed;
@@ -47,9 +42,6 @@ struct {{ name }} {
 	struct { \
 	{% for field in info['fields'] %}
 	{% if field['num'] == 0 %}
-	{% if info['fields']|length == 1 %}
-		uint8_t {{ field['name'] }}_num; \
-	{% endif %}
 		{{ field['type'] }} {{ field['name'] }}[num]; \
 	{% else %}
 		{{ field['type'] }} {{ field['name'] }}{{ field['array'] }}; \

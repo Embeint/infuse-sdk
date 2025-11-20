@@ -366,8 +366,9 @@ struct kv_gravity_reference {
 
 /** Array of points defining a closed polygon */
 struct kv_geofence {
-	/** Points in geofence */
+	/** Number of points in the geofence */
 	uint8_t points_num;
+	/** Points in geofence */
 	struct gcs_location points[];
 } __packed;
 
@@ -425,6 +426,7 @@ struct kv_task_schedules {
 struct kv_secure_storage_reserved {
 	/** Opaque data */
 	uint8_t data_num;
+	/** Opaque data */
 	uint8_t data[];
 } __packed;
 
