@@ -139,7 +139,7 @@ ZTEST(alg_stationary, test_send)
 	imu_thread = task_schedule(0);
 	zassert_false(infuse_state_get(INFUSE_STATE_DEVICE_STATIONARY));
 	zassert_false(infuse_state_get(INFUSE_STATE_DEVICE_MOVING));
-	k_sleep(K_MINUTES(2));
+	k_sleep(K_SECONDS((2 * SEC_PER_MIN) + 1));
 
 	/* 5 minutes, stationary state should not be set */
 	for (int i = 0; i < 5; i++) {
