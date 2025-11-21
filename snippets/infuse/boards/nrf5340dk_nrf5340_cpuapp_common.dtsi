@@ -25,36 +25,6 @@
 	};
 };
 
-/* Allocate more ROM to non-secure application */
-/delete-node/ &slot0_s_partition;
-/delete-node/ &slot0_ns_partition;
-/delete-node/ &slot1_s_partition;
-/delete-node/ &slot1_ns_partition;
-
-&slot0_partition {
-	slot0_s_partition: partition@0 {
-		label = "image-0-secure";
-		reg = <0x00000000 0x28000>;
-	};
-
-	slot0_ns_partition: partition@28000 {
-		label = "image-0-nonsecure";
-		reg = <0x00028000 0x48000>;
-	};
-};
-
-&slot1_partition {
-	slot1_s_partition: partition@0 {
-		label = "image-1-secure";
-		reg = <0x00000000 0x28000>;
-	};
-
-	slot1_ns_partition: partition@28000 {
-		label = "image-1-nonsecure";
-		reg = <0x00028000 0x48000>;
-	};
-};
-
 &uart0 {
 	zephyr,pm-device-runtime-auto;
 };
