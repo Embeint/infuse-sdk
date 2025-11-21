@@ -1,6 +1,8 @@
 # Infuse-IoT SDK log defaults
 
-configdefault USB_CDC_ACM_LOG_LEVEL
+configdefault USBD_LOG_LEVEL
+	default 0
+configdefault USBD_CDC_ACM_LOG_LEVEL
 	default 0
 
 configdefault NVS_LOG_LEVEL
