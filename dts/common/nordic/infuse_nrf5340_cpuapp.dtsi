@@ -1,6 +1,5 @@
 / {
 	chosen {
-		zephyr,entropy = &cryptocell;
 		infuse,reboot-state = &retention0;
 		infuse,kv-partition = &storage_partition;
 	};
@@ -28,6 +27,17 @@
 	};
 };
 
+#ifndef INFUSE_IS_BOOTLOADER
+
+/ {
+	chosen {
+		zephyr,entropy = &cryptocell;
+	};
+};
+
+/* Bootloader shouldn't be using cryptocell */
 &cryptocell {
 	status = "okay";
 };
+
+#endif /* !INFUSE_IS_BOOTLOADER */
