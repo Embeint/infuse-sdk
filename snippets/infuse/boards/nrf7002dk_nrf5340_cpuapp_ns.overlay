@@ -4,7 +4,6 @@
 /* Allocate more memory to non-secure application  */
 /delete-node/ &sram0_s;
 /delete-node/ &sram0_ns;
-/delete-node/ &sram0_ns_app;
 
 / {
 	tfm_config {
@@ -51,25 +50,31 @@
 			compatible = "embeint,tdf-data-logger";
 		};
 	};
+};
 
-	reserved-memory {
+&sram0 {
+	sram0_image: sram@0 {
+		/* Secure + Nonsecure */
+		reg = <0x0 DT_SIZE_K(448)>;
+		ranges = <0x0 0x0 0x70000>;
 		#address-cells = <1>;
 		#size-cells = <1>;
-		ranges;
 
-		sram0_s: image_s@20000000 {
+		sram0_s: sram0_image@0 {
 			/* Secure image memory */
-			reg = <0x20000000 DT_SIZE_K(96)>;
+			reg = <0x0 DT_SIZE_K(96)>;
 		};
+	};
+	sram0_ns: sram@18000 {
+		/* Non-Secure image memory */
+		reg = <0x18000 DT_SIZE_K(416)>;
+		ranges = <0x0 0x18000 DT_SIZE_K(416)>;
+		#address-cells = <1>;
+		#size-cells = <1>;
 
-		sram0_ns: image_ns@20018000 {
-			/* Non-Secure image memory */
-			reg = <0x20018000 DT_SIZE_K(416)>;
-		};
-
-		sram0_ns_app: image_ns_app@20018000 {
+		sram0_ns_app: sram0_ns@0 {
 			/* Non-Secure application memory */
-			reg = <0x20018000 DT_SIZE_K(352)>;
+			reg = <0x0 DT_SIZE_K(352)>;
 		};
 	};
 };
