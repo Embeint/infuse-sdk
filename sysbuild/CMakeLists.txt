@@ -27,6 +27,10 @@ if(${SB_CONFIG_BOOTLOADER_MCUBOOT})
     # External QSPI support
     set(mcuboot_CONFIG_NORDIC_QSPI_NOR "y" CACHE INTERNAL "")
   endif()
+  if(SB_CONFIG_BOARD_THINGY53)
+    # Console is configured in devicetree as USB interface, which is not available
+    set(mcuboot_CONFIG_BOARD_SERIAL_BACKEND_CDC_ACM "n" CACHE INTERNAL "")
+  endif()
   # Notify DTS that this is a bootloader build
   set(mcuboot_DTS_EXTRA_CPPFLAGS "-DINFUSE_IS_BOOTLOADER=1" CACHE INTERNAL "")
 endif()
