@@ -50,6 +50,7 @@ ZTEST(kv_store, test_key_enabled)
 		switch (i) {
 		case KV_KEY_REBOOTS:
 		case KV_KEY_DEVICE_NAME:
+		case KV_KEY_BOARD_TARGET:
 		case KV_KEY_WIFI_PSK:
 		case KV_KEY_LTE_SIM_UICC:
 		case KV_KEY_GEOFENCE + 0:
@@ -73,6 +74,7 @@ ZTEST(kv_store, test_key_write_only)
 		switch (i) {
 		case KV_KEY_REBOOTS:
 		case KV_KEY_DEVICE_NAME:
+		case KV_KEY_BOARD_TARGET:
 		case KV_KEY_LTE_SIM_UICC:
 		case KV_KEY_GEOFENCE + 0:
 		case KV_KEY_GEOFENCE + 1:
@@ -106,6 +108,7 @@ ZTEST(kv_store, test_key_read_only)
 		case KV_KEY_GEOFENCE + 4:
 			zassert_equal(0, kv_store_external_read_only(i));
 			break;
+		case KV_KEY_BOARD_TARGET:
 		case KV_KEY_LTE_SIM_UICC:
 			zassert_equal(-EPERM, kv_store_external_read_only(i));
 			break;
@@ -130,26 +133,29 @@ ZTEST(kv_store, test_metadata_reflect_idx)
 		case KV_KEY_DEVICE_NAME:
 			zassert_equal(0, idx);
 			break;
-		case KV_KEY_WIFI_PSK:
+		case KV_KEY_BOARD_TARGET:
 			zassert_equal(1, idx);
 			break;
-		case KV_KEY_LTE_SIM_UICC:
+		case KV_KEY_WIFI_PSK:
 			zassert_equal(2, idx);
 			break;
-		case KV_KEY_GEOFENCE + 0:
+		case KV_KEY_LTE_SIM_UICC:
 			zassert_equal(3, idx);
 			break;
-		case KV_KEY_GEOFENCE + 1:
+		case KV_KEY_GEOFENCE + 0:
 			zassert_equal(4, idx);
 			break;
-		case KV_KEY_GEOFENCE + 2:
+		case KV_KEY_GEOFENCE + 1:
 			zassert_equal(5, idx);
 			break;
-		case KV_KEY_GEOFENCE + 3:
+		case KV_KEY_GEOFENCE + 2:
 			zassert_equal(6, idx);
 			break;
-		case KV_KEY_GEOFENCE + 4:
+		case KV_KEY_GEOFENCE + 3:
 			zassert_equal(7, idx);
+			break;
+		case KV_KEY_GEOFENCE + 4:
+			zassert_equal(8, idx);
 			break;
 		default:
 			break;

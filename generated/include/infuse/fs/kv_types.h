@@ -138,6 +138,20 @@ struct kv_application_active {
 	uint8_t active;
 } __packed;
 
+/** Value of CONFIG_BOARD_TARGET */
+struct kv_board_target {
+	/** Value of CONFIG_BOARD_TARGET */
+	struct kv_string board_target;
+} __packed;
+
+/* clang-format off */
+/** Compile time definition for known array length */
+#define _KV_KEY_BOARD_TARGET_VAR(num) \
+	struct { \
+		KV_STRUCT_KV_STRING_VAR(num) board_target; \
+	} __packed
+/* clang-format on */
+
 /** Fixed global location of the device */
 struct kv_fixed_location {
 	/** Location */
@@ -455,6 +469,8 @@ enum kv_builtin_id {
 	KV_KEY_INFUSE_APPLICATION_ID = 5,
 	/** Control STATE_APPLICATION_ACTIVE */
 	KV_KEY_APPLICATION_ACTIVE = 6,
+	/** Value of CONFIG_BOARD_TARGET */
+	KV_KEY_BOARD_TARGET = 7,
 	/** Fixed global location of the device */
 	KV_KEY_FIXED_LOCATION = 10,
 	/** WiFi network name */
@@ -556,6 +572,7 @@ enum kv_builtin_size {
 #define _KV_KEY_DEVICE_NAME_TYPE struct kv_device_name
 #define _KV_KEY_INFUSE_APPLICATION_ID_TYPE struct kv_infuse_application_id
 #define _KV_KEY_APPLICATION_ACTIVE_TYPE struct kv_application_active
+#define _KV_KEY_BOARD_TARGET_TYPE struct kv_board_target
 #define _KV_KEY_FIXED_LOCATION_TYPE struct kv_fixed_location
 #define _KV_KEY_WIFI_SSID_TYPE struct kv_wifi_ssid
 #define _KV_KEY_WIFI_PSK_TYPE struct kv_wifi_psk
@@ -592,6 +609,8 @@ enum kv_builtin_size {
 	IF_ENABLED(CONFIG_KV_STORE_KEY_BLUETOOTH_CTLR_VERSION, \
 		   (1 +)) \
 	IF_ENABLED(CONFIG_KV_STORE_KEY_DEVICE_NAME, \
+		   (1 +)) \
+	IF_ENABLED(CONFIG_KV_STORE_KEY_BOARD_TARGET, \
 		   (1 +)) \
 	IF_ENABLED(CONFIG_KV_STORE_KEY_FIXED_LOCATION, \
 		   (1 +)) \
@@ -724,6 +743,13 @@ static struct key_value_slot_definition _KV_SLOTS_ARRAY_DEFINE[] = {
 		.flags = 0,
 	},
 #endif /* CONFIG_KV_STORE_KEY_APPLICATION_ACTIVE */
+#ifdef CONFIG_KV_STORE_KEY_BOARD_TARGET
+	{
+		.key = KV_KEY_BOARD_TARGET,
+		.range = 1,
+		.flags = KV_FLAGS_REFLECT | KV_FLAGS_READ_ONLY,
+	},
+#endif /* CONFIG_KV_STORE_KEY_BOARD_TARGET */
 #ifdef CONFIG_KV_STORE_KEY_FIXED_LOCATION
 	{
 		.key = KV_KEY_FIXED_LOCATION,

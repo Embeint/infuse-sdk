@@ -220,6 +220,11 @@ static int infuse_common_boot(void)
 		id.application_id = CONFIG_INFUSE_APPLICATION_ID;
 		(void)KV_STORE_WRITE(KV_KEY_INFUSE_APPLICATION_ID, &id);
 	}
+#ifdef CONFIG_KV_STORE_KEY_BOARD_TARGET
+	KV_STRING_CONST(board_target, CONFIG_BOARD_TARGET);
+
+	(void)KV_STORE_WRITE(KV_KEY_BOARD_TARGET, &board_target);
+#endif /* CONFIG_KV_STORE_KEY_BOARD_TARGET */
 #endif /* CONFIG_KV_STORE_KEY_INFUSE_APPLICATION_ID */
 
 	KV_KEY_TYPE(KV_KEY_REBOOTS) reboot_fallback = {0};
