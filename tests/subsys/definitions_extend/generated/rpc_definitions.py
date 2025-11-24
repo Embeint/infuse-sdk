@@ -19,9 +19,17 @@ class rpc_struct_demo(VLACompatLittleEndianStruct):
     _pack_ = 1
 
 
-class ext1:
+class RPCDefinitionBase:
+    NAME: str
+    HELP: str
+    DESCRIPTION: str
+    COMMAND_ID: int
+
+
+class ext1(RPCDefinitionBase):
     """Extension RPC 1"""
 
+    NAME = "ext1"
     HELP = "Extension RPC 1"
     DESCRIPTION = "Extension RPC 1"
     COMMAND_ID = 32769
@@ -39,7 +47,12 @@ class ext1:
         _pack_ = 1
 
 
+id_type_mapping: dict[int, type[RPCDefinitionBase]] = {
+    ext1.COMMAND_ID: ext1,
+}
+
 __all__ = [
+    "id_type_mapping",
     "rpc_struct_demo",
     "ext1",
 ]

@@ -229,7 +229,7 @@ config INFUSE_RPC_COMMAND_HEAP_STATS_REQUIRED_AUTH
 
 config INFUSE_RPC_COMMAND_LTE_AT_CMD
 	bool "Enable RPC lte_at_cmd"
-	depends on NRF_MODEM_LIB
+	depends on NRF_MODEM_LIB || MODEM_CELLULAR
 	default y if INFUSE_SDK
 	help
 	  Run AT command against LTE modem
@@ -241,7 +241,7 @@ config INFUSE_RPC_COMMAND_LTE_AT_CMD_REQUIRED_AUTH
 
 config INFUSE_RPC_COMMAND_LTE_STATE
 	bool "Enable RPC lte_state"
-	depends on INFUSE_NRF_MODEM_MONITOR
+	depends on INFUSE_MODEM_MONITOR
 	default y if INFUSE_SDK
 	help
 	  Get current LTE interface state
@@ -389,6 +389,18 @@ config INFUSE_RPC_COMMAND_SECURITY_STATE_REQUIRED_AUTH
 	int "Required authorisation level to run security_state"
 	depends on INFUSE_RPC_COMMAND_SECURITY_STATE
 	default 1
+
+config INFUSE_RPC_COMMAND_SECURITY_KEY_UPDATE
+	bool "Enable RPC security_key_update"
+	depends on INFUSE_REBOOT
+	default y if INFUSE_SECURITY
+	help
+	  Update key material
+
+config INFUSE_RPC_COMMAND_SECURITY_KEY_UPDATE_REQUIRED_AUTH
+	int "Required authorisation level to run security_key_update"
+	depends on INFUSE_RPC_COMMAND_SECURITY_KEY_UPDATE
+	default 2
 
 config INFUSE_RPC_COMMAND_DATA_SENDER
 	bool "Enable RPC data_sender"

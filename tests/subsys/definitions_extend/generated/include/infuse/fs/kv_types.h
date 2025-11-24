@@ -69,6 +69,13 @@ struct kv_range_u8 {
 	uint8_t upper;
 } __packed;
 
+/** UTC Hour-Minute-Second */
+struct kv_utc_hms {
+	uint8_t hour;
+	uint8_t minute;
+	uint8_t second;
+} __packed;
+
 /** Demo struct */
 struct kv_struct_demo {
 	int8_t x;
@@ -131,6 +138,26 @@ struct kv_device_name {
 struct kv_infuse_application_id {
 	uint32_t application_id;
 } __packed;
+
+/** Control STATE_APPLICATION_ACTIVE */
+struct kv_application_active {
+	/** Active for any non-zero value */
+	uint8_t active;
+} __packed;
+
+/** Value of CONFIG_BOARD_TARGET */
+struct kv_board_target {
+	/** Value of CONFIG_BOARD_TARGET */
+	struct kv_string board_target;
+} __packed;
+
+/* clang-format off */
+/** Compile time definition for known array length */
+#define _KV_KEY_BOARD_TARGET_VAR(num) \
+	struct { \
+		KV_STRUCT_KV_STRING_VAR(num) board_target; \
+	} __packed
+/* clang-format on */
 
 /** Fixed global location of the device */
 struct kv_fixed_location {
@@ -340,6 +367,14 @@ struct kv_bluetooth_throughput_limit {
 	uint16_t limit_kbps;
 } __packed;
 
+/** Disable LEDs between two UTC times daily */
+struct kv_led_disable_daily_time_range {
+	/** Disable LEDs at this time */
+	struct kv_utc_hms disable_start;
+	/** Re-enable LEDs at this time */
+	struct kv_utc_hms disable_end;
+} __packed;
+
 /** Reference gravity vector for tilt calculations */
 struct kv_gravity_reference {
 	/** X axis component of gravity vector */
@@ -352,8 +387,9 @@ struct kv_gravity_reference {
 
 /** Array of points defining a closed polygon */
 struct kv_geofence {
-	/** Points in geofence */
+	/** Number of points in the geofence */
 	uint8_t points_num;
+	/** Points in geofence */
 	struct gcs_location points[];
 } __packed;
 
@@ -411,6 +447,7 @@ struct kv_task_schedules {
 struct kv_secure_storage_reserved {
 	/** Opaque data */
 	uint8_t data_num;
+	/** Opaque data */
 	uint8_t data[];
 } __packed;
 
@@ -452,6 +489,10 @@ enum kv_builtin_id {
 	KV_KEY_DEVICE_NAME = 4,
 	/** CONFIG_INFUSE_APPLICATION_ID, store will be reset if the values don't match */
 	KV_KEY_INFUSE_APPLICATION_ID = 5,
+	/** Control STATE_APPLICATION_ACTIVE */
+	KV_KEY_APPLICATION_ACTIVE = 6,
+	/** Value of CONFIG_BOARD_TARGET */
+	KV_KEY_BOARD_TARGET = 7,
 	/** Fixed global location of the device */
 	KV_KEY_FIXED_LOCATION = 10,
 	/** WiFi network name */
@@ -488,6 +529,8 @@ enum kv_builtin_id {
 	KV_KEY_LORA_CONFIG = 51,
 	/** Request connected Bluetooth peers to limit throughtput */
 	KV_KEY_BLUETOOTH_THROUGHPUT_LIMIT = 52,
+	/** Disable LEDs between two UTC times daily */
+	KV_KEY_LED_DISABLE_DAILY_TIME_RANGE = 53,
 	/** Reference gravity vector for tilt calculations */
 	KV_KEY_GRAVITY_REFERENCE = 60,
 	/** Array of points defining a closed polygon */
@@ -540,6 +583,7 @@ enum kv_builtin_size {
 	_KV_KEY_EXFAT_DISK_INFO_SIZE = sizeof(struct kv_exfat_disk_info),
 	_KV_KEY_BLUETOOTH_CTLR_VERSION_SIZE = sizeof(struct kv_bluetooth_ctlr_version),
 	_KV_KEY_INFUSE_APPLICATION_ID_SIZE = sizeof(struct kv_infuse_application_id),
+	_KV_KEY_APPLICATION_ACTIVE_SIZE = sizeof(struct kv_application_active),
 	_KV_KEY_FIXED_LOCATION_SIZE = sizeof(struct kv_fixed_location),
 	_KV_KEY_EPACKET_UDP_PORT_SIZE = sizeof(struct kv_epacket_udp_port),
 	_KV_KEY_LTE_MODEM_IMEI_SIZE = sizeof(struct kv_lte_modem_imei),
@@ -548,6 +592,7 @@ enum kv_builtin_size {
 	_KV_KEY_BLUETOOTH_PEER_SIZE = sizeof(struct kv_bluetooth_peer),
 	_KV_KEY_LORA_CONFIG_SIZE = sizeof(struct kv_lora_config),
 	_KV_KEY_BLUETOOTH_THROUGHPUT_LIMIT_SIZE = sizeof(struct kv_bluetooth_throughput_limit),
+	_KV_KEY_LED_DISABLE_DAILY_TIME_RANGE_SIZE = sizeof(struct kv_led_disable_daily_time_range),
 	_KV_KEY_GRAVITY_REFERENCE_SIZE = sizeof(struct kv_gravity_reference),
 	_KV_KEY_TASK_SCHEDULES_DEFAULT_ID_SIZE = sizeof(struct kv_task_schedules_default_id),
 	_KV_KEY_EXT1_SIZE = sizeof(struct kv_ext1),
@@ -563,6 +608,8 @@ enum kv_builtin_size {
 #define _KV_KEY_BLUETOOTH_CTLR_VERSION_TYPE struct kv_bluetooth_ctlr_version
 #define _KV_KEY_DEVICE_NAME_TYPE struct kv_device_name
 #define _KV_KEY_INFUSE_APPLICATION_ID_TYPE struct kv_infuse_application_id
+#define _KV_KEY_APPLICATION_ACTIVE_TYPE struct kv_application_active
+#define _KV_KEY_BOARD_TARGET_TYPE struct kv_board_target
 #define _KV_KEY_FIXED_LOCATION_TYPE struct kv_fixed_location
 #define _KV_KEY_WIFI_SSID_TYPE struct kv_wifi_ssid
 #define _KV_KEY_WIFI_PSK_TYPE struct kv_wifi_psk
@@ -581,6 +628,7 @@ enum kv_builtin_size {
 #define _KV_KEY_BLUETOOTH_PEER_TYPE struct kv_bluetooth_peer
 #define _KV_KEY_LORA_CONFIG_TYPE struct kv_lora_config
 #define _KV_KEY_BLUETOOTH_THROUGHPUT_LIMIT_TYPE struct kv_bluetooth_throughput_limit
+#define _KV_KEY_LED_DISABLE_DAILY_TIME_RANGE_TYPE struct kv_led_disable_daily_time_range
 #define _KV_KEY_GRAVITY_REFERENCE_TYPE struct kv_gravity_reference
 #define _KV_KEY_GEOFENCE_TYPE struct kv_geofence
 #define _KV_KEY_TASK_SCHEDULES_DEFAULT_ID_TYPE struct kv_task_schedules_default_id
@@ -601,6 +649,8 @@ enum kv_builtin_size {
 	IF_ENABLED(CONFIG_KV_STORE_KEY_BLUETOOTH_CTLR_VERSION, \
 		   (1 +)) \
 	IF_ENABLED(CONFIG_KV_STORE_KEY_DEVICE_NAME, \
+		   (1 +)) \
+	IF_ENABLED(CONFIG_KV_STORE_KEY_BOARD_TARGET, \
 		   (1 +)) \
 	IF_ENABLED(CONFIG_KV_STORE_KEY_FIXED_LOCATION, \
 		   (1 +)) \
@@ -637,6 +687,8 @@ enum kv_builtin_size {
 	IF_ENABLED(CONFIG_KV_STORE_KEY_LORA_CONFIG, \
 		   (1 +)) \
 	IF_ENABLED(CONFIG_KV_STORE_KEY_BLUETOOTH_THROUGHPUT_LIMIT, \
+		   (1 +)) \
+	IF_ENABLED(CONFIG_KV_STORE_KEY_LED_DISABLE_DAILY_TIME_RANGE, \
 		   (1 +)) \
 	IF_ENABLED(CONFIG_KV_STORE_KEY_GRAVITY_REFERENCE, \
 		   (1 +)) \
@@ -726,6 +778,20 @@ static struct key_value_slot_definition _KV_SLOTS_ARRAY_DEFINE[] = {
 		.flags = 0,
 	},
 #endif /* CONFIG_KV_STORE_KEY_INFUSE_APPLICATION_ID */
+#ifdef CONFIG_KV_STORE_KEY_APPLICATION_ACTIVE
+	{
+		.key = KV_KEY_APPLICATION_ACTIVE,
+		.range = 1,
+		.flags = 0,
+	},
+#endif /* CONFIG_KV_STORE_KEY_APPLICATION_ACTIVE */
+#ifdef CONFIG_KV_STORE_KEY_BOARD_TARGET
+	{
+		.key = KV_KEY_BOARD_TARGET,
+		.range = 1,
+		.flags = KV_FLAGS_REFLECT | KV_FLAGS_READ_ONLY,
+	},
+#endif /* CONFIG_KV_STORE_KEY_BOARD_TARGET */
 #ifdef CONFIG_KV_STORE_KEY_FIXED_LOCATION
 	{
 		.key = KV_KEY_FIXED_LOCATION,
@@ -852,6 +918,13 @@ static struct key_value_slot_definition _KV_SLOTS_ARRAY_DEFINE[] = {
 		.flags = KV_FLAGS_REFLECT,
 	},
 #endif /* CONFIG_KV_STORE_KEY_BLUETOOTH_THROUGHPUT_LIMIT */
+#ifdef CONFIG_KV_STORE_KEY_LED_DISABLE_DAILY_TIME_RANGE
+	{
+		.key = KV_KEY_LED_DISABLE_DAILY_TIME_RANGE,
+		.range = 1,
+		.flags = KV_FLAGS_REFLECT,
+	},
+#endif /* CONFIG_KV_STORE_KEY_LED_DISABLE_DAILY_TIME_RANGE */
 #ifdef CONFIG_KV_STORE_KEY_GRAVITY_REFERENCE
 	{
 		.key = KV_KEY_GRAVITY_REFERENCE,
