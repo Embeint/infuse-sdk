@@ -33,8 +33,18 @@ bool epacket_gateway_forward_filter(uint8_t flags, uint8_t percent, struct net_b
 				(meta->auth == EPACKET_AUTH_NETWORK));
 		__ASSERT_NO_MSG(meta->type == INFUSE_TDF);
 
-		/* Try to find a TDF_ANNOUNCE */
-		if (!tdf_parse_find_in_buf(buf->data, buf->len, TDF_ANNOUNCE, &tdf) == 0) {
+		/* Try to find a TDF_ANNOUNCE or TDF_ANNOUNCE_V2 */
+		struct tdf_buffer_state state;
+		bool found = false;
+
+		tdf_parse_start(&state, buf->data, buf->len);
+		while (tdf_parse(&state, &tdf) == 0) {
+			if ((tdf.tdf_id == TDF_ANNOUNCE) || (tdf.tdf_id == TDF_ANNOUNCE_V2)) {
+				found = true;
+				break;
+			}
+		}
+		if (!found) {
 			return false;
 		}
 	}
