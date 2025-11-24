@@ -237,10 +237,7 @@ static inline int tdf_parse_find_in_buf(const void *data, size_t size, uint16_t 
 	struct tdf_buffer_state state;
 
 	tdf_parse_start(&state, data, size);
-	while (true) {
-		if (tdf_parse(&state, parsed) < 0) {
-			return -ENOMEM;
-		}
+	while (tdf_parse(&state, parsed) == 0) {
 		if (parsed->tdf_id == tdf_id) {
 			return 0;
 		}
