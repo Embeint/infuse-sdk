@@ -105,7 +105,7 @@ ZTEST(task_tdf_logger, test_log_before_data)
 	pkt = k_fifo_get(tx_queue, K_MSEC(100));
 	zassert_not_null(pkt);
 	net_buf_pull(pkt, sizeof(struct epacket_dummy_frame));
-	zassert_equal(0, tdf_parse_find_in_buf(pkt->data, pkt->len, TDF_ANNOUNCE, &tdf));
+	zassert_equal(0, tdf_parse_find_in_buf(pkt->data, pkt->len, TDF_ANNOUNCE_V2, &tdf));
 	zassert_equal(0, tdf.time);
 	zassert_equal(-ENOMEM, tdf_parse_find_in_buf(pkt->data, pkt->len, TDF_BATTERY_TYPE, &tdf));
 	zassert_equal(-ENOMEM,
@@ -136,9 +136,9 @@ ZTEST(task_tdf_logger, test_no_flush)
 	pkt = k_fifo_get(tx_queue, K_MSEC(100));
 	zassert_not_null(pkt);
 	net_buf_pull(pkt, sizeof(struct epacket_dummy_frame));
-	zassert_equal(0, tdf_parse_find_in_buf(pkt->data, pkt->len, TDF_ANNOUNCE, &tdf));
+	zassert_equal(0, tdf_parse_find_in_buf(pkt->data, pkt->len, TDF_ANNOUNCE_V2, &tdf));
 	zassert_not_equal(0, tdf.time);
-	zassert_equal(sizeof(struct tdf_announce), tdf.tdf_len);
+	zassert_equal(sizeof(struct tdf_announce_v2), tdf.tdf_len);
 	zassert_equal(-ENOMEM, tdf_parse_find_in_buf(pkt->data, pkt->len, TDF_BATTERY_TYPE, &tdf));
 	zassert_equal(-ENOMEM,
 		      tdf_parse_find_in_buf(pkt->data, pkt->len, TDF_AMBIENT_TEMP_PRES_HUM, &tdf));

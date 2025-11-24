@@ -73,7 +73,7 @@ static void peripheral_interface_state(uint16_t current_max_payload, void *user_
 static void main_epacket_bt_legacy_broadcast(void)
 {
 	const struct device *epacket_bt_periph = DEVICE_DT_GET(DT_NODELABEL(epacket_bt_peripheral));
-	struct tdf_announce announce = {0};
+	struct tdf_announce_v2 announce = {0};
 	struct epacket_interface_cb interface_cb = {
 		.interface_state = peripheral_interface_state,
 	};
@@ -82,7 +82,7 @@ static void main_epacket_bt_legacy_broadcast(void)
 
 	LOG_INF("Single ePacket to simplify peer discovery");
 	k_sleep(K_MSEC(100));
-	TDF_DATA_LOGGER_LOG(TDF_DATA_LOGGER_BT_ADV, TDF_ANNOUNCE, 0, &announce);
+	TDF_DATA_LOGGER_LOG(TDF_DATA_LOGGER_BT_ADV, TDF_ANNOUNCE_V2, 0, &announce);
 	tdf_data_logger_flush(TDF_DATA_LOGGER_BT_ADV);
 
 	LOG_INF("Starting legacy advertiser");
@@ -95,7 +95,7 @@ static void main_epacket_bt_legacy_broadcast(void)
 	/* Only push ePackets over GATT after that */
 	for (int i = 0; i < 9; i++) {
 		announce.uptime = k_uptime_seconds();
-		TDF_DATA_LOGGER_LOG(TDF_DATA_LOGGER_BT_PERIPHERAL, TDF_ANNOUNCE, 0, &announce);
+		TDF_DATA_LOGGER_LOG(TDF_DATA_LOGGER_BT_PERIPHERAL, TDF_ANNOUNCE_V2, 0, &announce);
 		tdf_data_logger_flush(TDF_DATA_LOGGER_BT_ADV);
 		k_sleep(K_SECONDS(1));
 	}
@@ -214,7 +214,7 @@ static void main_legacy_adv_name_watcher(void)
 static void main_legacy_adv_expect_reboot(void)
 {
 	const struct device *epacket_bt_periph = DEVICE_DT_GET(DT_NODELABEL(epacket_bt_peripheral));
-	struct tdf_announce announce = {0};
+	struct tdf_announce_v2 announce = {0};
 	struct epacket_interface_cb interface_cb = {
 		.interface_state = peripheral_interface_state,
 	};
@@ -224,7 +224,7 @@ static void main_legacy_adv_expect_reboot(void)
 
 	LOG_INF("Single ePacket to simplify peer discovery");
 	k_sleep(K_MSEC(100));
-	TDF_DATA_LOGGER_LOG(TDF_DATA_LOGGER_BT_ADV, TDF_ANNOUNCE, 0, &announce);
+	TDF_DATA_LOGGER_LOG(TDF_DATA_LOGGER_BT_ADV, TDF_ANNOUNCE_V2, 0, &announce);
 	tdf_data_logger_flush(TDF_DATA_LOGGER_BT_ADV);
 
 	LOG_INF("Starting legacy advertiser");
