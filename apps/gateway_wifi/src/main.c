@@ -25,6 +25,8 @@
 #include <infuse/tdf/definitions.h>
 #include <infuse/drivers/watchdog.h>
 
+#include <infuse/task_runner/tasks/tdf_logger.h>
+
 LOG_MODULE_REGISTER(app, LOG_LEVEL_INF);
 
 GATEWAY_HANDLER_DEFINE(udp_backhaul_handler, DEVICE_DT_GET(DT_NODELABEL(epacket_udp)));
@@ -36,7 +38,6 @@ int main(void)
 	const struct device *epacket_bt_central = DEVICE_DT_GET(DT_NODELABEL(epacket_bt_central));
 	const struct device *epacket_serial = DEVICE_DT_GET(DT_NODELABEL(epacket_serial));
 	const struct device *epacket_udp = DEVICE_DT_GET(DT_NODELABEL(epacket_udp));
-	struct tdf_announce announce;
 
 	/* Constant ePacket flags */
 	epacket_global_flags_set(EPACKET_FLAGS_CLOUD_FORWARDING | EPACKET_FLAGS_CLOUD_SELF);
@@ -71,21 +72,11 @@ int main(void)
 	conn_mgr_all_if_connect(true);
 
 	for (;;) {
-		announce.application = 0x1234;
-		announce.reboots = 0;
-		announce.uptime = k_uptime_get() / 1000;
-		announce.version = (struct tdf_struct_mcuboot_img_sem_ver){
-			.major = 1,
-			.minor = 2,
-			.revision = 3,
-			.build_num = 4,
-		};
+		task_tdf_logger_manual_run(TDF_DATA_LOGGER_UDP, 0, TASK_TDF_LOGGER_LOG_ANNOUNCE,
+					   NULL);
+		tdf_data_logger_flush(TDF_DATA_LOGGER_UDP);
 
-		tdf_data_logger_log_dev(tdf_logger_udp, TDF_ANNOUNCE, (sizeof(announce)), 0,
-					&announce);
-		tdf_data_logger_flush_dev(tdf_logger_udp);
-
-		LOG_INF("Sent uptime %d on %s", announce.uptime, tdf_logger_udp->name);
+		LOG_INF("Sent uptime %d on %s", k_uptime_seconds(), tdf_logger_udp->name);
 		k_sleep(K_SECONDS(1));
 	}
 	return 0;
