@@ -173,9 +173,9 @@ struct rpc_struct_wifi_state {
 
 /** LTE interface status */
 struct rpc_struct_lte_state {
-	/** Network registration state */
+	/** Network registration state (3GPP TS 127.007) */
 	uint8_t registration_state;
-	/** 0 = None, 7 = LTE-M, 9 = NB-IoT */
+	/** Access Technology (3GPP TS 127.007) */
 	uint8_t access_technology;
 	/** Mobile Country Code */
 	uint16_t mcc;
@@ -330,6 +330,22 @@ enum rpc_enum_zperf_data_source {
 	RPC_ENUM_ZPERF_DATA_SOURCE_ENCRYPT = 128,
 };
 
+/** Infuse security key identifier */
+enum rpc_enum_key_id {
+	/** Primary network key */
+	RPC_ENUM_KEY_ID_NETWORK_KEY = 0,
+	/** Secondary network key */
+	RPC_ENUM_KEY_ID_SECONDARY_NETWORK_KEY = 1,
+};
+
+/** Infuse security key action */
+enum rpc_enum_key_action {
+	/** Write updated value for the key */
+	RPC_ENUM_KEY_ACTION_KEY_WRITE = 0,
+	/** Delete exisiting value for the key */
+	RPC_ENUM_KEY_ACTION_KEY_DELETE = 1,
+};
+
 /**
  * @}
  */
@@ -408,6 +424,8 @@ enum rpc_builtin_id {
 	RPC_ID_GRAVITY_REFERENCE_UPDATE = 60,
 	/** Query current security state and validate identity */
 	RPC_ID_SECURITY_STATE = 30000,
+	/** Update key material */
+	RPC_ID_SECURITY_KEY_UPDATE = 30001,
 	/** Send multiple INFUSE_RPC_DATA packets */
 	RPC_ID_DATA_SENDER = 32765,
 	/** Receive multiple INFUSE_RPC_DATA packets */
@@ -1035,6 +1053,25 @@ struct rpc_security_state_response {
 	uint8_t challenge_response_type;
 	/** Challenge response data */
 	uint8_t challenge_response[];
+} __packed;
+
+/** Update key material */
+struct rpc_security_key_update_request {
+	struct infuse_rpc_req_header header;
+	/** Security key to update */
+	uint8_t key_id;
+	/** Action to take */
+	uint8_t key_action;
+	/** 24 bit key identifier (Network keys only) */
+	uint32_t key_global_identifier;
+	/** Key bitstream */
+	uint8_t key_bitstream[32];
+	/** Reboot in this many seconds to load new keys */
+	uint8_t reboot_delay;
+} __packed;
+
+struct rpc_security_key_update_response {
+	struct infuse_rpc_rsp_header header;
 } __packed;
 
 /** Send multiple INFUSE_RPC_DATA packets */

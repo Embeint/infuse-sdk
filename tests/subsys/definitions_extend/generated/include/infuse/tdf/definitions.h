@@ -209,6 +209,26 @@ struct tdf_reboot_info {
 	char thread[8];
 } __packed;
 
+/** Common announcement packet */
+struct tdf_announce_v2 {
+	/** Unique application ID */
+	uint32_t application;
+	/** Running application version */
+	struct tdf_struct_mcuboot_img_sem_ver version;
+	/** CRC of board name */
+	uint16_t board_crc;
+	/** Key-Value store reflect global CRC */
+	uint32_t kv_crc;
+	/** Logger blocks written */
+	uint32_t blocks;
+	/** Uptime in seconds */
+	uint32_t uptime;
+	/** Reboot counter */
+	uint16_t reboots;
+	/** Flags (BIT(0) == SD blocks) */
+	uint8_t flags;
+} __packed;
+
 /** Accelerometer +-2G */
 struct tdf_acc_2g {
 	/** Raw sample */
@@ -704,6 +724,46 @@ struct tdf_battery_soc {
 	uint8_t soc;
 } __packed;
 
+/** Infuse-IoT application state transitioned from cleared to set */
+struct tdf_state_event_set {
+	/** Infuse-IoT application event */
+	uint8_t state;
+} __packed;
+
+/** Infuse-IoT application state transitioned from set to cleared */
+struct tdf_state_event_cleared {
+	/** Infuse-IoT application event */
+	uint8_t state;
+} __packed;
+
+/** Duration an Infuse-IoT application state was asserted for */
+struct tdf_state_duration {
+	/** Infuse-IoT application event */
+	uint8_t state;
+	/** Duration state was asserted for */
+	uint32_t duration;
+} __packed;
+
+/** 16bit PCM (Audio) data for the left channel */
+struct tdf_pcm_16bit_chan_left {
+	/** Left channel sample */
+	int16_t val;
+} __packed;
+
+/** 16bit PCM (Audio) data for the right channel */
+struct tdf_pcm_16bit_chan_right {
+	/** Right channel sample */
+	int16_t val;
+} __packed;
+
+/** 16bit PCM (Audio) data for both the left and right channels */
+struct tdf_pcm_16bit_chan_dual {
+	/** Left channel sample */
+	int16_t left;
+	/** Right channel sample */
+	int16_t right;
+} __packed;
+
 /** Extension TDF 1 */
 struct tdf_ext1 {
 	/** Demo 1 */
@@ -734,6 +794,8 @@ enum tdf_builtin_id {
 	TDF_TIME_SYNC = 5,
 	/** Information pertaining to the previous reboot */
 	TDF_REBOOT_INFO = 6,
+	/** Common announcement packet */
+	TDF_ANNOUNCE_V2 = 7,
 	/** Accelerometer +-2G */
 	TDF_ACC_2G = 10,
 	/** Accelerometer +-4G */
@@ -824,6 +886,18 @@ enum tdf_builtin_id {
 	TDF_BATTERY_VOLTAGE = 53,
 	/** Battery state of charge */
 	TDF_BATTERY_SOC = 54,
+	/** Infuse-IoT application state transitioned from cleared to set */
+	TDF_STATE_EVENT_SET = 55,
+	/** Infuse-IoT application state transitioned from set to cleared */
+	TDF_STATE_EVENT_CLEARED = 56,
+	/** Duration an Infuse-IoT application state was asserted for */
+	TDF_STATE_DURATION = 57,
+	/** 16bit PCM (Audio) data for the left channel */
+	TDF_PCM_16BIT_CHAN_LEFT = 58,
+	/** 16bit PCM (Audio) data for the right channel */
+	TDF_PCM_16BIT_CHAN_RIGHT = 59,
+	/** 16bit PCM (Audio) data for both the left and right channels */
+	TDF_PCM_16BIT_CHAN_DUAL = 60,
 	/** Extension TDF 1 */
 	TDF_EXT1 = 1025,
 	/** Extension TDF 2 */
@@ -840,6 +914,7 @@ enum tdf_builtin_id {
 #define _TDF_AMBIENT_TEMPERATURE_TYPE         struct tdf_ambient_temperature
 #define _TDF_TIME_SYNC_TYPE                   struct tdf_time_sync
 #define _TDF_REBOOT_INFO_TYPE                 struct tdf_reboot_info
+#define _TDF_ANNOUNCE_V2_TYPE                 struct tdf_announce_v2
 #define _TDF_ACC_2G_TYPE                      struct tdf_acc_2g
 #define _TDF_ACC_4G_TYPE                      struct tdf_acc_4g
 #define _TDF_ACC_8G_TYPE                      struct tdf_acc_8g
@@ -883,6 +958,12 @@ enum tdf_builtin_id {
 #define _TDF_NETWORK_SCAN_COUNT_TYPE          struct tdf_network_scan_count
 #define _TDF_BATTERY_VOLTAGE_TYPE             struct tdf_battery_voltage
 #define _TDF_BATTERY_SOC_TYPE                 struct tdf_battery_soc
+#define _TDF_STATE_EVENT_SET_TYPE             struct tdf_state_event_set
+#define _TDF_STATE_EVENT_CLEARED_TYPE         struct tdf_state_event_cleared
+#define _TDF_STATE_DURATION_TYPE              struct tdf_state_duration
+#define _TDF_PCM_16BIT_CHAN_LEFT_TYPE         struct tdf_pcm_16bit_chan_left
+#define _TDF_PCM_16BIT_CHAN_RIGHT_TYPE        struct tdf_pcm_16bit_chan_right
+#define _TDF_PCM_16BIT_CHAN_DUAL_TYPE         struct tdf_pcm_16bit_chan_dual
 #define _TDF_EXT1_TYPE                        struct tdf_ext1
 #define _TDF_EXT2_TYPE                        struct tdf_ext2
 
@@ -894,6 +975,7 @@ enum tdf_builtin_size {
 	_TDF_AMBIENT_TEMPERATURE_SIZE = sizeof(struct tdf_ambient_temperature),
 	_TDF_TIME_SYNC_SIZE = sizeof(struct tdf_time_sync),
 	_TDF_REBOOT_INFO_SIZE = sizeof(struct tdf_reboot_info),
+	_TDF_ANNOUNCE_V2_SIZE = sizeof(struct tdf_announce_v2),
 	_TDF_ACC_2G_SIZE = sizeof(struct tdf_acc_2g),
 	_TDF_ACC_4G_SIZE = sizeof(struct tdf_acc_4g),
 	_TDF_ACC_8G_SIZE = sizeof(struct tdf_acc_8g),
@@ -937,6 +1019,12 @@ enum tdf_builtin_size {
 	_TDF_NETWORK_SCAN_COUNT_SIZE = sizeof(struct tdf_network_scan_count),
 	_TDF_BATTERY_VOLTAGE_SIZE = sizeof(struct tdf_battery_voltage),
 	_TDF_BATTERY_SOC_SIZE = sizeof(struct tdf_battery_soc),
+	_TDF_STATE_EVENT_SET_SIZE = sizeof(struct tdf_state_event_set),
+	_TDF_STATE_EVENT_CLEARED_SIZE = sizeof(struct tdf_state_event_cleared),
+	_TDF_STATE_DURATION_SIZE = sizeof(struct tdf_state_duration),
+	_TDF_PCM_16BIT_CHAN_LEFT_SIZE = sizeof(struct tdf_pcm_16bit_chan_left),
+	_TDF_PCM_16BIT_CHAN_RIGHT_SIZE = sizeof(struct tdf_pcm_16bit_chan_right),
+	_TDF_PCM_16BIT_CHAN_DUAL_SIZE = sizeof(struct tdf_pcm_16bit_chan_dual),
 	_TDF_EXT1_SIZE = sizeof(struct tdf_ext1),
 	_TDF_EXT2_SIZE = sizeof(struct tdf_ext2),
 };
