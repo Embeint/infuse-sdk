@@ -202,6 +202,26 @@ struct tdf_reboot_info {
 	char thread[8];
 } __packed;
 
+/** Common announcement packet */
+struct tdf_announce_v2 {
+	/** Unique application ID */
+	uint32_t application;
+	/** Running application version */
+	struct tdf_struct_mcuboot_img_sem_ver version;
+	/** CRC of board name */
+	uint16_t board_crc;
+	/** Key-Value store reflect global CRC */
+	uint32_t kv_crc;
+	/** Logger blocks written */
+	uint32_t blocks;
+	/** Uptime in seconds */
+	uint32_t uptime;
+	/** Reboot counter */
+	uint16_t reboots;
+	/** Flags (BIT(0) == SD blocks) */
+	uint8_t flags;
+} __packed;
+
 /** Accelerometer +-2G */
 struct tdf_acc_2g {
 	/** Raw sample */
@@ -751,6 +771,8 @@ enum tdf_builtin_id {
 	TDF_TIME_SYNC = 5,
 	/** Information pertaining to the previous reboot */
 	TDF_REBOOT_INFO = 6,
+	/** Common announcement packet */
+	TDF_ANNOUNCE_V2 = 7,
 	/** Accelerometer +-2G */
 	TDF_ACC_2G = 10,
 	/** Accelerometer +-4G */
@@ -865,6 +887,7 @@ enum tdf_builtin_id {
 #define _TDF_AMBIENT_TEMPERATURE_TYPE         struct tdf_ambient_temperature
 #define _TDF_TIME_SYNC_TYPE                   struct tdf_time_sync
 #define _TDF_REBOOT_INFO_TYPE                 struct tdf_reboot_info
+#define _TDF_ANNOUNCE_V2_TYPE                 struct tdf_announce_v2
 #define _TDF_ACC_2G_TYPE                      struct tdf_acc_2g
 #define _TDF_ACC_4G_TYPE                      struct tdf_acc_4g
 #define _TDF_ACC_8G_TYPE                      struct tdf_acc_8g
@@ -923,6 +946,7 @@ enum tdf_builtin_size {
 	_TDF_AMBIENT_TEMPERATURE_SIZE = sizeof(struct tdf_ambient_temperature),
 	_TDF_TIME_SYNC_SIZE = sizeof(struct tdf_time_sync),
 	_TDF_REBOOT_INFO_SIZE = sizeof(struct tdf_reboot_info),
+	_TDF_ANNOUNCE_V2_SIZE = sizeof(struct tdf_announce_v2),
 	_TDF_ACC_2G_SIZE = sizeof(struct tdf_acc_2g),
 	_TDF_ACC_4G_SIZE = sizeof(struct tdf_acc_4g),
 	_TDF_ACC_8G_SIZE = sizeof(struct tdf_acc_8g),
