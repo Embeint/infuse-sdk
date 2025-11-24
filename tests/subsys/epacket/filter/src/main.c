@@ -68,6 +68,7 @@ ZTEST(epacket_filter, test_tdf_announce)
 {
 	const uint8_t flags = FILTER_FORWARD_ONLY_TDF_ANNOUNCE;
 	struct tdf_ambient_temp_pres_hum env = {0};
+	struct tdf_announce_v2 announce_v2 = {0};
 	struct tdf_announce announce = {0};
 	struct tdf_buffer_state buffer_state;
 	struct epacket_rx_metadata *meta;
@@ -104,10 +105,23 @@ ZTEST(epacket_filter, test_tdf_announce)
 	buf->len = buffer_state.buf.len;
 	zassert_true(epacket_gateway_forward_filter(flags, UINT8_MAX, buf));
 
+	/* TDF_ANNOUNCE_V2 payload */
+	tdf_buffer_state_reset(&buffer_state);
+	TDF_ADD(&buffer_state, TDF_ANNOUNCE_V2, 1, 0, 0, &announce_v2);
+	buf->len = buffer_state.buf.len;
+	zassert_true(epacket_gateway_forward_filter(flags, UINT8_MAX, buf));
+
 	/* TDF_ANNOUNCE payload after other TDF */
 	tdf_buffer_state_reset(&buffer_state);
 	TDF_ADD(&buffer_state, TDF_AMBIENT_TEMP_PRES_HUM, 1, 0, 0, &env);
 	TDF_ADD(&buffer_state, TDF_ANNOUNCE, 1, 0, 0, &announce);
+	buf->len = buffer_state.buf.len;
+	zassert_true(epacket_gateway_forward_filter(flags, UINT8_MAX, buf));
+
+	/* TDF_ANNOUNCE_V2 payload after other TDF */
+	tdf_buffer_state_reset(&buffer_state);
+	TDF_ADD(&buffer_state, TDF_AMBIENT_TEMP_PRES_HUM, 1, 0, 0, &env);
+	TDF_ADD(&buffer_state, TDF_ANNOUNCE_V2, 1, 0, 0, &announce_v2);
 	buf->len = buffer_state.buf.len;
 	zassert_true(epacket_gateway_forward_filter(flags, UINT8_MAX, buf));
 
@@ -117,7 +131,7 @@ ZTEST(epacket_filter, test_tdf_announce)
 ZTEST(epacket_filter, test_tdf_percent)
 {
 	struct tdf_ambient_temp_pres_hum env = {0};
-	struct tdf_announce announce = {0};
+	struct tdf_announce_v2 announce = {0};
 	struct tdf_buffer_state buffer_state;
 	struct epacket_rx_metadata *meta;
 	struct net_buf *buf;
@@ -137,10 +151,10 @@ ZTEST(epacket_filter, test_tdf_percent)
 	meta->type = INFUSE_TDF;
 	zassert_false(epacket_gateway_forward_filter(FILTER_FORWARD_ONLY_TDF, 0, buf));
 
-	/* Passes TDF_ANNOUNCE but 0% chance of passing percent */
+	/* Passes TDF_ANNOUNCE_V2 but 0% chance of passing percent */
 	tdf_buffer_state_reset(&buffer_state);
 	TDF_ADD(&buffer_state, TDF_AMBIENT_TEMP_PRES_HUM, 1, 0, 0, &env);
-	TDF_ADD(&buffer_state, TDF_ANNOUNCE, 1, 0, 0, &announce);
+	TDF_ADD(&buffer_state, TDF_ANNOUNCE_V2, 1, 0, 0, &announce);
 	buf->len = buffer_state.buf.len;
 	zassert_false(epacket_gateway_forward_filter(FILTER_FORWARD_ONLY_TDF_ANNOUNCE, 0, buf));
 

@@ -116,7 +116,7 @@ static void epacket_bt_adv_receive_handler(struct net_buf *buf)
 
 static void main_epacket_bt_basic_broadcast(void)
 {
-	struct tdf_announce announce = {0};
+	struct tdf_announce_v2 announce = {0};
 
 	LOG_INF("Starting send");
 
@@ -124,7 +124,7 @@ static void main_epacket_bt_basic_broadcast(void)
 	for (int i = 0; i < 5; i++) {
 		k_sleep(K_USEC(sys_rand32_get() % 10000));
 		TDF_DATA_LOGGER_LOG(TDF_DATA_LOGGER_BT_ADV | TDF_DATA_LOGGER_BT_PERIPHERAL,
-				    TDF_ANNOUNCE, 0, &announce);
+				    TDF_ANNOUNCE_V2, 0, &announce);
 		tdf_data_logger_flush(TDF_DATA_LOGGER_BT_ADV | TDF_DATA_LOGGER_BT_PERIPHERAL);
 	}
 	k_sleep(K_MSEC(500));
@@ -136,7 +136,7 @@ static void main_epacket_bt_basic_broadcast(void)
 		LOG_INF("TX %d", i);
 		announce.uptime = k_uptime_seconds();
 		TDF_DATA_LOGGER_LOG(TDF_DATA_LOGGER_BT_ADV | TDF_DATA_LOGGER_BT_PERIPHERAL,
-				    TDF_ANNOUNCE, 0, &announce);
+				    TDF_ANNOUNCE_V2, 0, &announce);
 		tdf_data_logger_flush(TDF_DATA_LOGGER_BT_ADV | TDF_DATA_LOGGER_BT_PERIPHERAL);
 	}
 	k_sleep(K_MSEC(1000));

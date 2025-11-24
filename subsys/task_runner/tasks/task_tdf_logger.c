@@ -8,6 +8,7 @@
 
 #include <zephyr/logging/log.h>
 #include <zephyr/random/random.h>
+#include <zephyr/sys/crc.h>
 #include <zephyr/zbus/zbus.h>
 
 #include <infuse/version.h>
@@ -38,7 +39,7 @@ static void log_announce(uint8_t loggers, uint64_t timestamp)
 	struct infuse_version v = application_version_get();
 
 	KV_STORE_READ(KV_KEY_REBOOTS, &reboots);
-	struct tdf_announce announce = {
+	struct tdf_announce_v2 announce = {
 		.application = CONFIG_INFUSE_APPLICATION_ID,
 		.version =
 			{
@@ -47,6 +48,7 @@ static void log_announce(uint8_t loggers, uint64_t timestamp)
 				.revision = v.revision,
 				.build_num = v.build_num,
 			},
+		.board_crc = crc16_ccitt(0x0000, CONFIG_BOARD_TARGET, strlen(CONFIG_BOARD_TARGET)),
 		.kv_crc = kv_store_reflect_crc(),
 		.uptime = k_uptime_seconds(),
 		.reboots = reboots.count,
@@ -70,7 +72,7 @@ static void log_announce(uint8_t loggers, uint64_t timestamp)
 	}
 #endif /* defined(CONFIG_DATA_LOGGER_EXFAT) || defined(CONFIG_DATA_LOGGER_FLASH_MAP) */
 
-	TDF_DATA_LOGGER_LOG(loggers, TDF_ANNOUNCE, timestamp, &announce);
+	TDF_DATA_LOGGER_LOG(loggers, TDF_ANNOUNCE_V2, timestamp, &announce);
 }
 
 static void log_battery(uint8_t loggers, uint64_t timestamp)

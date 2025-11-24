@@ -63,7 +63,7 @@ static void main_serial_loopback(void)
 	const struct device *epacket_serial = DEVICE_DT_GET(DT_NODELABEL(epacket_serial));
 	const struct device *serial_dev =
 		DEVICE_DT_GET(DT_PROP(DT_NODELABEL(epacket_serial), serial));
-	struct tdf_announce announce = {0};
+	struct tdf_announce_v2 announce = {0};
 	int rc;
 
 	epacket_set_receive_handler(epacket_serial, epacket_serial_receive_handler);
@@ -74,9 +74,9 @@ static void main_serial_loopback(void)
 	}
 
 	for (int i = 0; i < 5; i++) {
-		TDF_DATA_LOGGER_LOG(TDF_DATA_LOGGER_SERIAL, TDF_ANNOUNCE, 0, &announce);
+		TDF_DATA_LOGGER_LOG(TDF_DATA_LOGGER_SERIAL, TDF_ANNOUNCE_V2, 0, &announce);
 		tdf_data_logger_flush(TDF_DATA_LOGGER_SERIAL);
-		TDF_DATA_LOGGER_LOG(TDF_DATA_LOGGER_SERIAL, TDF_ANNOUNCE, 0, &announce);
+		TDF_DATA_LOGGER_LOG(TDF_DATA_LOGGER_SERIAL, TDF_ANNOUNCE_V2, 0, &announce);
 		tdf_data_logger_flush(TDF_DATA_LOGGER_SERIAL);
 		k_sleep(K_MSEC(250));
 	}
@@ -94,7 +94,7 @@ static void main_serial_loopback(void)
 	}
 
 	for (int i = 0; i < 1; i++) {
-		TDF_DATA_LOGGER_LOG(TDF_DATA_LOGGER_SERIAL, TDF_ANNOUNCE, 0, &announce);
+		TDF_DATA_LOGGER_LOG(TDF_DATA_LOGGER_SERIAL, TDF_ANNOUNCE_V2, 0, &announce);
 		tdf_data_logger_flush(TDF_DATA_LOGGER_SERIAL);
 		k_sleep(K_MSEC(250));
 	}

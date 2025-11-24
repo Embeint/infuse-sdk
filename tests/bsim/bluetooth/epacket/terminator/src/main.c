@@ -72,7 +72,7 @@ static void peripheral_interface_state(uint16_t current_max_payload, void *user_
 static void main_epacket_conn_refuser(void)
 {
 	const struct device *epacket_bt_periph = DEVICE_DT_GET(DT_NODELABEL(epacket_bt_peripheral));
-	struct tdf_announce announce = {0};
+	struct tdf_announce_v2 announce = {0};
 	struct epacket_interface_cb interface_cb = {
 		.interface_state = peripheral_interface_state,
 	};
@@ -86,7 +86,7 @@ static void main_epacket_conn_refuser(void)
 		k_sleep(K_MSEC(500));
 		announce.uptime = k_uptime_seconds();
 		TDF_DATA_LOGGER_LOG(TDF_DATA_LOGGER_BT_ADV | TDF_DATA_LOGGER_BT_PERIPHERAL,
-				    TDF_ANNOUNCE, 0, &announce);
+				    TDF_ANNOUNCE_V2, 0, &announce);
 		tdf_data_logger_flush(TDF_DATA_LOGGER_BT_ADV | TDF_DATA_LOGGER_BT_PERIPHERAL);
 	}
 	k_sleep(K_MSEC(500));

@@ -14,6 +14,7 @@
 #include <zephyr/net/net_if.h>
 #include <zephyr/net/net_mgmt.h>
 #include <zephyr/net/wifi_mgmt.h>
+#include <zephyr/sys/crc.h>
 
 #include <infuse/fs/kv_store.h>
 #include <infuse/fs/kv_types.h>
@@ -45,7 +46,7 @@ int main(void)
 	const struct device *epacket_bt_periph = DEVICE_DT_GET(DT_NODELABEL(epacket_bt_peripheral));
 	const struct device *epacket_serial = DEVICE_DT_GET(DT_NODELABEL(epacket_serial));
 	struct infuse_version version = application_version_get();
-	struct tdf_announce announce = {0};
+	struct tdf_announce_v2 announce = {0};
 
 	(void)KV_STORE_READ(KV_KEY_REBOOTS, &reboots);
 
@@ -60,12 +61,13 @@ int main(void)
 	announce.version.minor = version.minor;
 	announce.version.revision = version.revision;
 	announce.version.build_num = version.build_num;
+	announce.board_crc = crc16_ccitt(0x0000, CONFIG_BOARD_TARGET, strlen(CONFIG_BOARD_TARGET));
 
 	for (;;) {
 		announce.uptime = k_uptime_get() / 1000;
 
 		TDF_DATA_LOGGER_LOG(TDF_DATA_LOGGER_BT_ADV | TDF_DATA_LOGGER_BT_PERIPHERAL,
-				    TDF_ANNOUNCE, 0, &announce);
+				    TDF_ANNOUNCE_V2, 0, &announce);
 		tdf_data_logger_flush(TDF_DATA_LOGGER_BT_ADV | TDF_DATA_LOGGER_BT_PERIPHERAL);
 		LOG_INF("Sent announce %d on Advertising and GATT", announce.uptime);
 
