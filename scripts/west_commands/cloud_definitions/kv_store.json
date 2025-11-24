@@ -110,6 +110,16 @@
                 {"name": "active", "type": "uint8_t", "description": "Active for any non-zero value"}
             ]
         },
+        "7": {
+            "name": "BOARD_TARGET",
+            "description": "Value of CONFIG_BOARD_TARGET",
+            "reflect": true,
+            "read_only": true,
+            "default": "y",
+            "fields": [
+                {"name": "board_target", "type": "struct kv_string", "description": "Value of CONFIG_BOARD_TARGET"}
+            ]
+        },
         "10": {
             "name": "FIXED_LOCATION",
             "description": "Fixed global location of the device",

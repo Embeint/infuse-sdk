@@ -43,6 +43,12 @@ config KV_STORE_KEY_APPLICATION_ACTIVE
 	help
 	  Control STATE_APPLICATION_ACTIVE
 
+config KV_STORE_KEY_BOARD_TARGET
+	bool "Enable KV key BOARD_TARGET"
+	default y
+	help
+	  Value of CONFIG_BOARD_TARGET
+
 config KV_STORE_KEY_FIXED_LOCATION
 	bool "Enable KV key FIXED_LOCATION"
 	help
