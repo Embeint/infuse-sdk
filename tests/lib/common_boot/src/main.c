@@ -26,6 +26,7 @@ static __noinit int resetting_with_bad_id;
 ZTEST(common_boot, test_boot)
 {
 	KV_STRING_CONST(sim_uicc, "89000000000012345");
+	KV_STRUCT_KV_STRING_VAR(65) board_target;
 	KV_KEY_TYPE(KV_KEY_LTE_SIM_IMSI) sim_imsi;
 	KV_KEY_TYPE(KV_KEY_INFUSE_APPLICATION_ID) id;
 	KV_KEY_TYPE(KV_KEY_REBOOTS) reboots;
@@ -35,12 +36,18 @@ ZTEST(common_boot, test_boot)
 	struct infuse_reboot_state reboot_state;
 	ssize_t rc;
 
-	/* KV store should have been initialised and populated with a reboot count and app ID */
+	/* KV store should have been initialised and populated with a reboot count, app ID and
+	 * BOARD_TARGET
+	 */
 	rc = KV_STORE_READ(KV_KEY_REBOOTS, &reboots);
 	zassert_equal(sizeof(reboots), rc);
 	rc = KV_STORE_READ(KV_KEY_INFUSE_APPLICATION_ID, &id);
 	zassert_equal(sizeof(id), rc);
 	zassert_equal(CONFIG_INFUSE_APPLICATION_ID, id.application_id);
+	rc = kv_store_read(KV_KEY_BOARD_TARGET, &board_target, sizeof(board_target));
+	zassert_true(rc > 0);
+	zassert_equal(strlen(CONFIG_BOARD_TARGET) + 1, board_target.value_num);
+	zassert_equal(0, strcmp(CONFIG_BOARD_TARGET, board_target.value));
 
 	if (resetting_with_bad_id == KV_FINAL_RESET_KEY) {
 		/* KV store should have been reset */
