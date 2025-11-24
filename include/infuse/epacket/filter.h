@@ -30,7 +30,7 @@ enum epacket_filter_flags {
 	FILTER_FORWARD_ONLY_DECRYPTED = BIT(0),
 	/** Only forward TDF packets */
 	FILTER_FORWARD_ONLY_TDF = BIT(1),
-	/** Only forward TDF packets that contain a TDF_ANNOUNCE reading.
+	/** Only forward TDF packets that contain a TDF_ANNOUNCE or TDF_ANNOUNCE_V2 reading.
 	 * Implies ONLY_DECRYPTED and ONLY_TDF)
 	 */
 	FILTER_FORWARD_ONLY_TDF_ANNOUNCE = BIT(2),
