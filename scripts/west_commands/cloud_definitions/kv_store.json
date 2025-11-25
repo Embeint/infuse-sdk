@@ -3,16 +3,16 @@
         "gcs_location": {
             "description": "Geographic Co-ordinate System location",
             "fields": [
-                {"name": "latitude", "type": "int32_t", "description": "Degrees north/south, scaled by 1e-7"},
-                {"name": "longitude", "type": "int32_t", "description": "Degrees north/south, scaled by 1e-7"},
-                {"name": "height", "type": "int32_t", "description": "Height above WGS-84 ellipsoid, mm"}
+                {"name": "latitude", "type": "int32_t", "description": "Degrees north/south, scaled by 1e-7", "display": {"fmt": "float", "digits": 5, "postfix": "deg"}, "conversion": {"m": 0.0000001, "c": 0}},
+                {"name": "longitude", "type": "int32_t", "description": "Degrees north/south, scaled by 1e-7", "display": {"fmt": "float", "digits": 5, "postfix": "deg"}, "conversion": {"m": 0.0000001, "c": 0}},
+                {"name": "height", "type": "int32_t", "description": "Height above WGS-84 ellipsoid, mm", "display": {"fmt": "float", "digits": 3, "postfix": "m"}, "conversion": {"m": 0.001, "c": 0}}
             ]
         },
         "bt_addr_le": {
             "description": "Bluetooth address type (bt_addr_le_t)",
             "fields": [
                 {"name": "type", "type": "uint8_t", "description": "Address type (0 == Public, 1 == Random)"},
-                {"name": "val", "type": "uint8_t", "num": 6, "description": "Address bytes"}
+                {"name": "val", "type": "uint8_t", "num": 6, "description": "Address bytes", "display": {"fmt": "hex", "digits": 12}, "conversion": {"int": "little"}}
             ]
         },
         "kv_string": {
@@ -28,7 +28,7 @@
                 {"name": "major", "type": "uint8_t"},
                 {"name": "minor", "type": "uint8_t"},
                 {"name": "revision", "type": "uint16_t"},
-                {"name": "build_num", "type": "uint32_t"}
+                {"name": "build_num", "type": "uint32_t", "display": {"fmt": "hex", "digits": 8}}
             ]
         },
         "kv_range_u8": {
@@ -100,7 +100,7 @@
             "name": "INFUSE_APPLICATION_ID",
             "description": "CONFIG_INFUSE_APPLICATION_ID, store will be reset if the values don't match",
             "fields": [
-                {"name": "application_id", "type": "uint32_t"}
+                {"name": "application_id", "type": "uint32_t", "display": {"fmt": "hex", "digits": 8}}
             ]
         },
         "6": {
@@ -279,12 +279,12 @@
             "default": "y",
             "reflect": true,
             "fields": [
-                {"name": "frequency", "type": "uint32_t", "description": "Frequency (Hz)"},
+                {"name": "frequency", "type": "uint32_t", "description": "Frequency (Hz)", "display": {"postfix": "Hz"}},
                 {"name": "bandwidth", "type": "uint8_t", "description": "Signal bandwidth (see enum lora_signal_bandwidth)"},
                 {"name": "spreading_factor", "type": "uint8_t", "description": "Spreading factor (see enum lora_datarate)"},
                 {"name": "coding_rate", "type": "uint8_t", "description": "Coding rate (see enum lora_coding_rate)"},
                 {"name": "preamble_len", "type": "uint16_t", "description": "Preamble length"},
-                {"name": "tx_power", "type": "int8_t", "description": "Transmit power (dBm)"},
+                {"name": "tx_power", "type": "int8_t", "description": "Transmit power (dBm)", "display": {"postfix": "dBm"}},
                 {"name": "sync_word", "type": "uint8_t", "description": "Custom sync word"}
             ]
         },
@@ -295,7 +295,7 @@
             "default": "y",
             "reflect": true,
             "fields": [
-                {"name": "limit_kbps", "type": "uint16_t", "description": "Requested throughput limit (kbps)"}
+                {"name": "limit_kbps", "type": "uint16_t", "description": "Requested throughput limit (kbps)", "display": {"postfix": "kbps"}}
             ]
         },
         "53": {
