@@ -49,12 +49,14 @@ static struct k_work_delayable led_disable;
 LOG_MODULE_REGISTER(app, LOG_LEVEL_INF);
 
 static const struct task_schedule schedules[] = {
+#if DT_NODE_EXISTS(DT_ALIAS(fuel_gauge0))
 	{
 		.task_id = TASK_ID_BATTERY,
 		.validity = TASK_VALID_ALWAYS,
 		.periodicity_type = TASK_PERIODICITY_FIXED,
 		.periodicity.fixed.period_s = 5,
 	},
+#endif /* DT_NODE_EXISTS(DT_ALIAS(fuel_gauge0)) */
 #ifdef CONFIG_TASK_RUNNER_TASK_GNSS
 	{
 		.task_id = TASK_ID_GNSS,
@@ -99,10 +101,15 @@ static const struct task_schedule schedules[] = {
 #else
 #define GNSS_TASK_DEFINE
 #endif
+#if DT_NODE_EXISTS(DT_ALIAS(fuel_gauge0))
+#define BAT_TASK_DEFINE (GNSS_TASK, DEVICE_DT_GET(DT_ALIAS(fuel_gauge0)))
+#else
+#define BAT_TASK_DEFINE
+#endif
 
 TASK_SCHEDULE_STATES_DEFINE(states, schedules);
 TASK_RUNNER_TASKS_DEFINE(app_tasks, app_tasks_data, (TDF_LOGGER_TASK, NULL), GNSS_TASK_DEFINE,
-			 (BATTERY_TASK, DEVICE_DT_GET(DT_ALIAS(fuel_gauge0))));
+			 BAT_TASK_DEFINE);
 
 static void leds_disable(struct k_work *work)
 {
@@ -167,6 +174,10 @@ int main(void)
 		/* Use default sync word */
 		.sync_word = 0,
 	};
+	const struct lora_recv_async_callbacks cb = {
+		.recv = lora_receive_cb,
+		.user_data = NULL,
+	};
 	static struct kv_lora_config kv_config;
 	struct lora_tx_64 tx_tdf;
 	uint16_t cnt = 0;
@@ -228,7 +239,7 @@ int main(void)
 		}
 
 		/* Start receiving */
-		rc = lora_recv_async(dev, lora_receive_cb, NULL);
+		rc = lora_recv_async(dev, &cb);
 		if (rc < 0) {
 			LOG_ERR("LoRa receive start failed");
 		}
@@ -237,7 +248,7 @@ int main(void)
 		k_sleep(K_SECONDS(30));
 
 		/* Stop receiving */
-		rc = lora_recv_async(dev, NULL, NULL);
+		rc = lora_recv_async(dev, NULL);
 		if (rc < 0) {
 			LOG_ERR("LoRa receive stop failed");
 		}

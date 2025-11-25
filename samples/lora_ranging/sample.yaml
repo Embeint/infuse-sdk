@@ -3,13 +3,17 @@ sample:
   name: lora_ranger
 common:
   filter: dt_alias_exists("lora0") and
-    dt_alias_exists("fuel_gauge0") and
     dt_nodelabel_enabled("led0") and
     dt_nodelabel_enabled("led1") and
     dt_nodelabel_enabled("led2")
+  tags: app
   build_only: true
   required_snippets:
     - infuse
 tests:
-  sample.lora_ranger:
-    tags: app
+  sample.lora_ranger: {}
+  sample.lora_ranger.shield:
+    extra_args:
+      - SHIELD=semtech_sx1262mb2das
+    platform_allow:
+      - nrf52840dk/nrf52840
