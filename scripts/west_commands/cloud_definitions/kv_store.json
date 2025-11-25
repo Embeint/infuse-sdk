@@ -347,10 +347,10 @@
                 {"name": "task_id", "type": "uint8_t", "description": "Task ID referenced by schedule"},
                 {"name": "validity", "type": "uint8_t", "description": "TASK_VALID_* value"},
                 {"name": "periodicity_type", "type": "uint8_t", "description": "TASK_PERIODICITY_* value"},
+                {"name": "boot_lockout_minutes", "type": "uint8_t", "description": "Task will not start for the first N minutes after boot"},
                 {"name": "timeout_s", "type": "uint32_t", "description": "Duration after which task is requested to terminate"},
                 {"name": "battery_start", "type": "struct kv_range_u8", "description": "Battery charge thresholds to start the task"},
                 {"name": "battery_terminate", "type": "struct kv_range_u8", "description": "Battery charge thresholds to terminate the task"},
-                {"name": "periodicity", "type": "uint32_t", "description": "Periodicity values"},
                 {"name": "_remainder", "type": "uint8_t", "num": 0, "description": "Remainder of schedule struct"}
             ]
         },

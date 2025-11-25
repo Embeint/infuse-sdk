@@ -409,14 +409,14 @@ struct kv_task_schedules {
 	uint8_t validity;
 	/** TASK_PERIODICITY_* value */
 	uint8_t periodicity_type;
+	/** Task will not start for the first N minutes after boot */
+	uint8_t boot_lockout_minutes;
 	/** Duration after which task is requested to terminate */
 	uint32_t timeout_s;
 	/** Battery charge thresholds to start the task */
 	struct kv_range_u8 battery_start;
 	/** Battery charge thresholds to terminate the task */
 	struct kv_range_u8 battery_terminate;
-	/** Periodicity values */
-	uint32_t periodicity;
 	/** Remainder of schedule struct */
 	uint8_t _remainder[];
 } __packed;
@@ -428,10 +428,10 @@ struct kv_task_schedules {
 		uint8_t task_id; \
 		uint8_t validity; \
 		uint8_t periodicity_type; \
+		uint8_t boot_lockout_minutes; \
 		uint32_t timeout_s; \
 		struct kv_range_u8 battery_start; \
 		struct kv_range_u8 battery_terminate; \
-		uint32_t periodicity; \
 		uint8_t _remainder[num]; \
 	} __packed
 /* clang-format on */
