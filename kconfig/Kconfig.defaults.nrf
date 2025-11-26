@@ -202,7 +202,7 @@ configdefault UART_20_NRF_TX_BUFFER_SIZE
 # to account for larger than usual delays while the Bluetooth controller
 # is writing to onboard flash while performing a DFU.
 configdefault SPI_NRFX_WAKE_TIMEOUT_US
-	default 1000 if BT_SPI
+	default 2000 if BT_SPI
 
 # Symbols used by SDK-NRF libraries but not defined upstream
 config ZEPHYR_NRF_MODULE
