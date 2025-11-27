@@ -548,11 +548,11 @@ struct tdf_nrf9x_gnss_pvt {
 	uint32_t v_acc;
 	/** Horizontal Speed (2-D) */
 	int32_t h_speed;
-	/** Horizonal speed accuracy estimate */
+	/** Horizontal speed accuracy estimate */
 	uint32_t h_speed_acc;
 	/** Horizontal Speed (2-D) */
 	int32_t v_speed;
-	/** Horizonal speed accuracy estimate */
+	/** Horizontal speed accuracy estimate */
 	uint32_t v_speed_acc;
 	/** Heading of motion (2-D) */
 	int32_t head_mot;
