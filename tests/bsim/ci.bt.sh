@@ -13,6 +13,15 @@ set -uex
 # nrf52_bsim set:
 nice ${INFUSE_BASE}/tests/bsim/bluetooth/compile.sh
 
+BOARD=nrf52_bsim/native \
 RESULTS_FILE=${WORK_DIR}/bsim_results.bt.52.xml \
+SEARCH_PATH=${INFUSE_BASE}/tests/bsim/bluetooth \
+${ZEPHYR_BASE}/tests/bsim/run_parallel.sh
+
+# nrf54l15bsim/nrf54l15/cpuapp set:
+nice ${INFUSE_BASE}/tests/bsim/bluetooth/compile.nrf54l15bsim_nrf54l15_cpuapp.sh
+
+BOARD=nrf54l15bsim/nrf54l15/cpuapp \
+RESULTS_FILE=${WORK_DIR}/bsim_results.bt.54.xml \
 SEARCH_PATH=${INFUSE_BASE}/tests/bsim/bluetooth \
 ${ZEPHYR_BASE}/tests/bsim/run_parallel.sh
