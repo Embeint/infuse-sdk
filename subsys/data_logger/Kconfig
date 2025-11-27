@@ -81,6 +81,6 @@ source "subsys/logging/Kconfig.template.log_config"
 
 config TDF_DATA_LOGGER_SERIAL_DUMMY_BACKEND
 	bool "Route `TDF_DATA_LOGGER_SERIAL to `dt_nodelabel(tdf_logger_dummy)"
-	depends on ZTEST || BOARD_NRF52_BSIM
+	depends on ZTEST || SOC_SERIES_BSIM_NRFXX
 
 endif # TDF_DATA_LOGGER
