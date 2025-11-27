@@ -78,7 +78,7 @@ config INFUSE_RPC_COMMAND_KV_REFLECT_CRCS
 	depends on KV_STORE
 	default y if INFUSE_SDK
 	help
-	  Read KV store CRC's
+	  Read KV store CRCs
 
 config INFUSE_RPC_COMMAND_KV_REFLECT_CRCS_REQUIRED_AUTH
 	int "Required authorisation level to run kv_reflect_crcs"

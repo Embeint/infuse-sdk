@@ -335,7 +335,7 @@ enum rpc_enum_key_id {
 enum rpc_enum_key_action {
 	/** Write updated value for the key */
 	RPC_ENUM_KEY_ACTION_KEY_WRITE = 0,
-	/** Delete exisiting value for the key */
+	/** Delete existing value for the key */
 	RPC_ENUM_KEY_ACTION_KEY_DELETE = 1,
 };
 
@@ -363,7 +363,7 @@ enum rpc_builtin_id {
 	RPC_ID_KV_WRITE = 5,
 	/** Read values from the KV store */
 	RPC_ID_KV_READ = 6,
-	/** Read KV store CRC's */
+	/** Read KV store CRCs */
 	RPC_ID_KV_REFLECT_CRCS = 7,
 	/** Query current state of zbus channel */
 	RPC_ID_ZBUS_CHANNEL_STATE = 8,
@@ -511,7 +511,7 @@ struct rpc_kv_read_response {
 	struct rpc_struct_kv_store_value values[];
 } __packed;
 
-/** Read KV store CRC's */
+/** Read KV store CRCs */
 struct rpc_kv_reflect_crcs_request {
 	struct infuse_rpc_req_header header;
 	/** Number of CRCs to skip in response */
@@ -904,7 +904,7 @@ struct rpc_bt_connect_infuse_request {
 	struct rpc_struct_bt_addr_le peer;
 	/** Connection timeout in milliseconds */
 	uint16_t conn_timeout_ms;
-	/** Chacteristics to subscribe to */
+	/** Characteristics to subscribe to */
 	uint8_t subscribe;
 	/** Automatically terminate connection if no data traffic (0 = No timeout) */
 	uint16_t inactivity_timeout_ms;
