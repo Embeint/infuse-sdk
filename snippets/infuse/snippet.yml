@@ -21,6 +21,10 @@ boards:
     append:
       EXTRA_DTC_OVERLAY_FILE: boards/nrf52_bsim.overlay
       EXTRA_CONF_FILE: infuse_snippet.conf
+  nrf54l15bsim/nrf54l15/cpuapp:
+    append:
+      EXTRA_DTC_OVERLAY_FILE: boards/nrf54l15bsim_nrf54l15_cpuapp.overlay
+      EXTRA_CONF_FILE: infuse_snippet.conf
   nrf52840dk/nrf52840:
     append:
       EXTRA_DTC_OVERLAY_FILE: boards/nrf52840dk_nrf52840.overlay
