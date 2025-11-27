@@ -1,0 +1,49 @@
+#include <common/infuse_bluetooth.dtsi>
+
+/ {
+	chosen {
+		infuse,kv-partition = &storage_partition;
+	};
+
+	epacket_serial: epacket_serial {
+		compatible = "embeint,epacket-serial";
+		serial = <&uart20>;
+	};
+
+	data_logger_serial: data_logger_serial {
+		compatible = "embeint,data-logger-epacket", "embeint,data-logger";
+		epacket = <&epacket_serial>;
+
+		tdf_logger_serial: tdf_logger_serial {
+			compatible = "embeint,tdf-data-logger";
+		};
+	};
+};
+
+&uart20 {
+	zephyr,pm-device-runtime-auto;
+};
+
+/* Allocate other useful testing Infuse-IoT partitions */
+/delete-node/ &storage_partition;
+
+&cpuapp_rram {
+	partitions {
+		slot0_partition: partition@10000 {
+			label = "image-0";
+			reg = <0x10000 DT_SIZE_K(512)>;
+		};
+		slot1_partition: partition@90000 {
+			label = "image-1";
+			reg = <0x90000 DT_SIZE_K(512)>;
+		};
+		file_partition: partition@110000 {
+			label = "files";
+			reg = <0x110000 DT_SIZE_K(128)>;
+		};
+		storage_partition: partition@140000 {
+			label = "storage";
+			reg = <0x00140000 DT_SIZE_K(128)>;
+		};
+	};
+};
