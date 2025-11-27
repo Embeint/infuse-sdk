@@ -199,7 +199,7 @@
             "type": "uint8_t",
             "values": [
                 {"name": "KEY_WRITE", "value": 0, "description": "Write updated value for the key"},
-                {"name": "KEY_DELETE", "value": 1, "description": "Delete exisiting value for the key"}
+                {"name": "KEY_DELETE", "value": 1, "description": "Delete existing value for the key"}
             ]
         }
     },
@@ -285,7 +285,7 @@
         },
         "7": {
             "name": "kv_reflect_crcs",
-            "description": "Read KV store CRC's",
+            "description": "Read KV store CRCs",
             "depends_on": "KV_STORE",
             "default": "y if INFUSE_SDK",
             "default_auth": "EPACKET_AUTH_DEVICE",
@@ -607,7 +607,7 @@
             "request_params": [
                 {"name": "peer", "type": "struct rpc_struct_bt_addr_le", "description": "Bluetooth LE device to connect to"},
                 {"name": "conn_timeout_ms", "type": "uint16_t", "description": "Connection timeout in milliseconds"},
-                {"name": "subscribe", "type": "enum rpc_enum_infuse_bt_characteristic", "description": "Chacteristics to subscribe to"},
+                {"name": "subscribe", "type": "enum rpc_enum_infuse_bt_characteristic", "description": "Characteristics to subscribe to"},
                 {"name": "inactivity_timeout_ms", "type": "uint16_t", "description": "Automatically terminate connection if no data traffic (0 = No timeout)"}
             ],
             "response_params": [
