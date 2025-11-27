@@ -34,7 +34,7 @@ struct lp581x_data {
 	bool was_animating;
 };
 
-LOG_MODULE_REGISTER(lp5815, LOG_LEVEL_DBG);
+LOG_MODULE_REGISTER(lp5815, CONFIG_LED_LOG_LEVEL);
 
 /** Single transaction for compatibility, instead of double transaction of `i2c_burst_write` */
 static int lp581x_reg_multi_write(const struct device *dev, uint8_t start_addr, const uint8_t *buf,
