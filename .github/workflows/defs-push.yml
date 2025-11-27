@@ -1,0 +1,103 @@
+name: Push definitions to Infuse-IoT Cloud API
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - scripts/west_commands/cloud_definitions/kv_store.json
+      - scripts/west_commands/cloud_definitions/rpc.json
+      - scripts/west_commands/cloud_definitions/tdf.json
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  defs-push:
+    name: Push definitions
+    runs-on: ubuntu-24.04
+    env:
+      INFUSE_API_URL: ${{ vars.INFUSE_API_URL }}
+      INFUSE_API_KEY: ${{ secrets.INFUSE_API_KEY_DEFS_PUSH }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          # We want the full history so github.event.before always exists locally
+          fetch-depth: 0
+
+      - name: Detect changed files
+        id: changed
+        run: |
+          set -euo pipefail
+
+          BEFORE="${{ github.event.before }}"
+          AFTER="${{ github.sha }}"
+
+          if [ "$BEFORE" = "0000000000000000000000000000000000000000" ]; then
+            # First push on this branch – treat all defs as changed
+            CHANGED_FILES=$'scripts/west_commands/cloud_definitions/kv_store.json\nscripts/west_commands/cloud_definitions/rpc.json\nscripts/west_commands/cloud_definitions/tdf.json'
+          else
+            CHANGED_FILES="$(git diff --name-only "$BEFORE" "$AFTER")"
+          fi
+
+          for f in kv_store rpc tdf; do
+            FILE="scripts/west_commands/cloud_definitions/${f}.json"
+            if echo "$CHANGED_FILES" | grep -q "$FILE"; then
+              echo "${f}=true" >> "$GITHUB_OUTPUT"
+            else
+              echo "${f}=false" >> "$GITHUB_OUTPUT"
+            fi
+          done
+
+      - name: Push KV Store definitions
+        if: steps.changed.outputs.kv_store == 'true'
+        run: |
+          curl "https://${INFUSE_API_URL}/defs/kv" \
+            --fail \
+            --show-error \
+            --silent \
+            --connect-timeout 5 \
+            --max-time 30 \
+            --request POST \
+            --header 'Content-Type: application/json' \
+            --header "X-Api-Key: ${INFUSE_API_KEY}" \
+            --data-binary @scripts/west_commands/cloud_definitions/kv_store.json \
+            --output /dev/null \
+            -w 'Status: %{http_code}\n'
+
+      - name: Push RPC definitions
+        if: steps.changed.outputs.rpc == 'true'
+        run: |
+          curl "https://${INFUSE_API_URL}/defs/rpc" \
+            --fail \
+            --show-error \
+            --silent \
+            --connect-timeout 5 \
+            --max-time 30 \
+            --request POST \
+            --header 'Content-Type: application/json' \
+            --header "X-Api-Key: ${INFUSE_API_KEY}" \
+            --data-binary @scripts/west_commands/cloud_definitions/rpc.json \
+            --output /dev/null \
+            -w 'Status: %{http_code}\n'
+
+      - name: Push TDF definitions
+        if: steps.changed.outputs.tdf == 'true'
+        run: |
+          curl "https://${INFUSE_API_URL}/defs/tdf" \
+            --fail \
+            --show-error \
+            --silent \
+            --connect-timeout 5 \
+            --max-time 30 \
+            --request POST \
+            --header 'Content-Type: application/json' \
+            --header "X-Api-Key: ${INFUSE_API_KEY}" \
+            --data-binary @scripts/west_commands/cloud_definitions/tdf.json \
+            --output /dev/null \
+            -w 'Status: %{http_code}\n'
