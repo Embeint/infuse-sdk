@@ -112,7 +112,7 @@ config KV_STORE_KEY_LTE_MODEM_IMEI
 	bool "Enable KV key LTE_MODEM_IMEI"
 	default y if NRF_MODEM_LIB || MODEM_CELLULAR
 	help
-	  'International Modem Equiment Identifier' as returned by AT+CGSN=1
+	  'International Modem Equipment Identifier' as returned by AT+CGSN=1
 
 config KV_STORE_KEY_LTE_SIM_UICC
 	bool "Enable KV key LTE_SIM_UICC"
@@ -155,7 +155,7 @@ config KV_STORE_KEY_BLUETOOTH_THROUGHPUT_LIMIT
 	depends on BT_CENTRAL
 	default y
 	help
-	  Request connected Bluetooth peers to limit throughtput
+	  Request connected Bluetooth peers to limit throughput
 
 config KV_STORE_KEY_LED_DISABLE_DAILY_TIME_RANGE
 	bool "Enable KV key LED_DISABLE_DAILY_TIME_RANGE"

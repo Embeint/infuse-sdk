@@ -216,7 +216,7 @@
         },
         "43": {
             "name": "LTE_MODEM_IMEI",
-            "description": "'International Modem Equiment Identifier' as returned by AT+CGSN=1",
+            "description": "'International Modem Equipment Identifier' as returned by AT+CGSN=1",
             "reflect": true,
             "read_only": true,
             "default": "y if NRF_MODEM_LIB || MODEM_CELLULAR",
@@ -290,7 +290,7 @@
         },
         "52": {
             "name": "BLUETOOTH_THROUGHPUT_LIMIT",
-            "description": "Request connected Bluetooth peers to limit throughtput",
+            "description": "Request connected Bluetooth peers to limit throughput",
             "depends_on": "BT_CENTRAL",
             "default": "y",
             "reflect": true,

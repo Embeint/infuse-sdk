@@ -279,7 +279,7 @@ struct kv_lte_modem_esn {
 	} __packed
 /* clang-format on */
 
-/** 'International Modem Equiment Identifier' as returned by AT+CGSN=1 */
+/** 'International Modem Equipment Identifier' as returned by AT+CGSN=1 */
 struct kv_lte_modem_imei {
 	/** 15 digit IMEI */
 	uint64_t imei;
@@ -354,7 +354,7 @@ struct kv_lora_config {
 	uint8_t sync_word;
 } __packed;
 
-/** Request connected Bluetooth peers to limit throughtput */
+/** Request connected Bluetooth peers to limit throughput */
 struct kv_bluetooth_throughput_limit {
 	/** Requested throughput limit (kbps) */
 	uint16_t limit_kbps;
@@ -491,7 +491,7 @@ enum kv_builtin_id {
 	KV_KEY_LTE_MODEM_FIRMWARE_REVISION = 41,
 	/** 'Electronic Serial Number' as returned by AT+CGSN=0 */
 	KV_KEY_LTE_MODEM_ESN = 42,
-	/** 'International Modem Equiment Identifier' as returned by AT+CGSN=1 */
+	/** 'International Modem Equipment Identifier' as returned by AT+CGSN=1 */
 	KV_KEY_LTE_MODEM_IMEI = 43,
 	/** SIM Universal Identifier (https://www.itu.int/en/ITU-T/inr/forms/Pages/iin.aspx) */
 	KV_KEY_LTE_SIM_UICC = 44,
@@ -505,7 +505,7 @@ enum kv_builtin_id {
 	KV_KEY_BLUETOOTH_PEER = 50,
 	/** LoRa modem configuration */
 	KV_KEY_LORA_CONFIG = 51,
-	/** Request connected Bluetooth peers to limit throughtput */
+	/** Request connected Bluetooth peers to limit throughput */
 	KV_KEY_BLUETOOTH_THROUGHPUT_LIMIT = 52,
 	/** Disable LEDs between two UTC times daily */
 	KV_KEY_LED_DISABLE_DAILY_TIME_RANGE = 53,
