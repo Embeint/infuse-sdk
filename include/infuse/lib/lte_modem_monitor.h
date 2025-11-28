@@ -106,6 +106,10 @@ struct lte_modem_network_state {
 	struct lte_edrx_cfg edrx_cfg;
 	struct lte_cell cell;
 	uint16_t band;
+	/* Access-Spectrum RAI support */
+	uint8_t as_rai;
+	/* Control-Plane RAI support */
+	uint8_t cp_rai;
 };
 
 /**

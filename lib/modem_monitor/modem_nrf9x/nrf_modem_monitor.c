@@ -172,6 +172,8 @@ static void network_info_update(struct k_work *work)
 		monitor.network_state.psm_cfg.active_time = -1;
 		monitor.network_state.edrx_cfg.edrx = -1.0f;
 		monitor.network_state.edrx_cfg.ptw = -1.0f;
+		monitor.network_state.as_rai = UINT8_MAX;
+		monitor.network_state.cp_rai = UINT8_MAX;
 		goto state_logging;
 	}
 
@@ -340,6 +342,9 @@ static void lte_reg_handler(const struct lte_lc_evt *const evt)
 		/* Reset cached signal strength */
 		monitor.rsrp_cached = INT16_MIN;
 		monitor.rsrq_cached = INT8_MIN;
+		/* RAI support unknown */
+		monitor.network_state.as_rai = UINT8_MAX;
+		monitor.network_state.cp_rai = UINT8_MAX;
 		/* Set cell connected flag */
 		atomic_set_bit_to(&monitor.flags, FLAGS_CELL_CONNECTED,
 				  evt->cell.id <= LTE_LC_CELL_EUTRAN_ID_MAX);
@@ -357,6 +362,15 @@ static void lte_reg_handler(const struct lte_lc_evt *const evt)
 			monitor.network_state.lte_mode = evt->lte_mode;
 		}
 		break;
+#ifdef CONFIG_LTE_LC_RAI_MODULE
+	case LTE_LC_EVT_RAI_UPDATE:
+		LOG_DBG("RAI_UPDATE");
+		LOG_DBG("  AS-RAI: %d", evt->rai_cfg.as_rai);
+		LOG_DBG("  CP-RAI: %d", evt->rai_cfg.cp_rai);
+		monitor.network_state.as_rai = evt->rai_cfg.as_rai;
+		monitor.network_state.cp_rai = evt->rai_cfg.cp_rai;
+		break;
+#endif /* CONFIG_LTE_LC_RAI_MODULE */
 	case LTE_LC_EVT_MODEM_SLEEP_ENTER:
 		LOG_DBG("MODEM_SLEEP_ENTER");
 		LOG_DBG("    Type: %d", evt->modem_sleep.type);
@@ -579,6 +593,8 @@ int lte_modem_monitor_init(void)
 	monitor.network_state.edrx_cfg.mode = CELLULAR_ACCESS_TECHNOLOGY_UNKNOWN;
 	monitor.network_state.edrx_cfg.edrx = -1.0f;
 	monitor.network_state.edrx_cfg.ptw = -1.0f;
+	monitor.network_state.as_rai = UINT8_MAX;
+	monitor.network_state.cp_rai = UINT8_MAX;
 	monitor.rsrp_cached = INT16_MIN;
 	monitor.rsrq_cached = INT8_MIN;
 	/* Register handler */
