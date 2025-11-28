@@ -383,7 +383,7 @@ void gnss_task_fn(const struct task_schedule *schedule, struct k_poll_signal *te
 	}
 
 #ifdef CONFIG_GNSS_UBX_M10
-	NET_BUF_SIMPLE_DEFINE(cfg_buf, 48);
+	NET_BUF_SIMPLE_DEFINE(cfg_buf, 50);
 	ubx_msg_prepare_valset(&cfg_buf,
 			       UBX_MSG_CFG_VALSET_LAYERS_RAM | UBX_MSG_CFG_VALSET_LAYERS_BBR);
 	/* Core location message */
