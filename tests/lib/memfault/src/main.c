@@ -219,6 +219,7 @@ ZTEST(memfault_integration, test_memfault_platform_time)
 
 ZTEST(memfault_integration, test_epacket_dump)
 {
+	KV_KEY_TYPE(KV_KEY_MEMFAULT_DISABLE) memfault_control;
 	KV_KEY_TYPE(KV_KEY_REBOOTS) reboots;
 	const struct device *epacket_dummy = DEVICE_DT_GET(DT_NODELABEL(epacket_dummy));
 	struct infuse_reboot_state reboot_state;
@@ -342,6 +343,64 @@ ZTEST(memfault_integration, test_epacket_dump)
 		zassert_equal(0, rc);
 		/* Validate chunks are dumped (Reboot info should be small) */
 		expect_memfault_chunks(false, 200, 300);
+
+		/* Trigger annother fault */
+		send_fault_command(0, K_ERR_STACK_CHK_FAIL);
+		k_sleep(K_MSEC(100));
+		zassert_unreachable("K_ERR_STACK_CHK_FAIL did not trigger exception");
+		break;
+	case 7:
+		/* Validate previous reboot information */
+		rc = infuse_common_boot_last_reboot(&reboot_state);
+		zassert_equal(0, rc);
+		zassert_equal((enum infuse_reboot_reason)K_ERR_STACK_CHK_FAIL, reboot_state.reason);
+
+		/* KV key written, but not disabled */
+		memfault_control.disable = 0;
+		zassert_equal(sizeof(memfault_control),
+			      KV_STORE_WRITE(KV_KEY_MEMFAULT_DISABLE, &memfault_control));
+
+		/* Run the interface state callback */
+		epacket_dummy_set_interface_state(epacket_dummy, true);
+
+		/* Start dumping all messages */
+		rc = infuse_memfault_queue_dump_all(K_NO_WAIT);
+		zassert_equal(0, rc);
+
+		/* Validate chunks are dumped */
+		expect_memfault_chunks(false, 1000, 10000);
+
+		/* Run the interface state callback */
+		epacket_dummy_set_interface_state(epacket_dummy, false);
+
+		/* Trigger annother fault */
+		send_fault_command(0, K_ERR_STACK_CHK_FAIL);
+		k_sleep(K_MSEC(100));
+		zassert_unreachable("K_ERR_STACK_CHK_FAIL did not trigger exception");
+		break;
+	case 8:
+		/* Validate previous reboot information */
+		rc = infuse_common_boot_last_reboot(&reboot_state);
+		zassert_equal(0, rc);
+		zassert_equal((enum infuse_reboot_reason)K_ERR_STACK_CHK_FAIL, reboot_state.reason);
+
+		/* KV key written, dumpping disabled */
+		memfault_control.disable = 1;
+		zassert_equal(sizeof(memfault_control),
+			      KV_STORE_WRITE(KV_KEY_MEMFAULT_DISABLE, &memfault_control));
+
+		/* Run the interface state callback */
+		epacket_dummy_set_interface_state(epacket_dummy, true);
+
+		/* Start dumping all messages */
+		rc = infuse_memfault_queue_dump_all(K_NO_WAIT);
+		zassert_equal(0, rc);
+
+		/* Validate no chunks are sent */
+		expect_memfault_chunks(false, 0, 0);
+
+		/* Run the interface state callback */
+		epacket_dummy_set_interface_state(epacket_dummy, false);
 		break;
 	default:
 		zassert_unreachable("Unexpected reboot count");
