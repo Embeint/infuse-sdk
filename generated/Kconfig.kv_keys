@@ -162,6 +162,13 @@ config KV_STORE_KEY_LED_DISABLE_DAILY_TIME_RANGE
 	help
 	  Disable LEDs between two UTC times daily
 
+config KV_STORE_KEY_MEMFAULT_DISABLE
+	bool "Enable KV key MEMFAULT_DISABLE"
+	depends on MEMFAULT
+	default y
+	help
+	  Disable Memfault reporting at runtime
+
 config KV_STORE_KEY_GRAVITY_REFERENCE
 	bool "Enable KV key GRAVITY_REFERENCE"
 	help
