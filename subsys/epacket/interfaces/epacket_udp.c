@@ -27,6 +27,11 @@
 #include <infuse/fs/kv_types.h>
 #include <infuse/net/dns.h>
 
+#ifdef CONFIG_LTE_LINK_CONTROL
+#include <zephyr/net/socket_ncs.h>
+#include <nrf_socket.h>
+#endif /* CONFIG_LTE_LINK_CONTROL */
+
 #ifdef CONFIG_MEMFAULT_INFUSE_METRICS_EPACKET_UDP
 #include <memfault/metrics/metrics.h>
 #else
@@ -447,6 +452,14 @@ static void epacket_udp_send(const struct device *dev, struct net_buf *buf)
 
 	/* Add any set flags */
 	meta->flags |= udp_state.iface_flags;
+
+#ifdef CONFIG_LTE_LINK_CONTROL
+	if (meta->flags & EPACKET_FLAGS_UDP_SINGLE_TX) {
+		int option = NRF_RAI_LAST;
+
+		(void)zsock_setsockopt(udp_state.sock, SOL_SOCKET, SO_RAI, &option, sizeof(option));
+	}
+#endif /* CONFIG_LTE_LINK_CONTROL */
 
 	/* Encrypt the payload */
 	if (epacket_udp_encrypt(buf) < 0) {

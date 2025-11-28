@@ -31,6 +31,13 @@ extern "C" {
 
 /** UDP specific packet flags */
 enum epacket_flags_udp {
+	/* Packet is a single transmission on the interface.
+	 * This can be used for backends as a hint that the interface
+	 * can be dropped back to an idle state (e.g LTE RAI).
+	 * If this flag is set and additional packets are queued, there
+	 * may be power, time and efficiency implications.
+	 */
+	EPACKET_FLAGS_UDP_SINGLE_TX = BIT(1),
 	/** Device is always available to receive packets */
 	EPACKET_FLAGS_UDP_ALWAYS_RX = BIT(0),
 };
