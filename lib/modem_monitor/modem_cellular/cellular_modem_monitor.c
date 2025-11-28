@@ -258,6 +258,8 @@ int lte_modem_monitor_init(void)
 	monitor.network_state.edrx_cfg.ptw = -1.0f;
 	monitor.network_state.cell.rsrp = INT16_MIN;
 	monitor.network_state.cell.rsrq = INT8_MIN;
+	monitor.network_state.as_rai = UINT8_MAX;
+	monitor.network_state.cp_rai = UINT8_MAX;
 	/* Cellular modem events */
 	cellular_set_callback(modem, cb_events, modem_event_cb, NULL);
 	/* Initialise generic monitor */

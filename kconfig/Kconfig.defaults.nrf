@@ -80,6 +80,12 @@ configdefault LTE_PSM_REQ_RPTAU
 # requirement. Currently only supported on the nRF9120 based chips.
 configdefault LTE_PROPRIETARY_PSM_REQ
 	default y if SOC_NRF9120
+# Enable Release Assistance Indication (RAI) support.
+# Only supported on the nRF9120 based chips (Modem firmware v2.0.x>=2).
+configdefault LTE_LC_RAI_MODULE
+	default y if SOC_NRF9120
+configdefault LTE_RAI_REQ
+	default y if SOC_NRF9120
 
 config NRF_WIFI_LOW_RAM
 	bool "nRF Wi-Fi low RAM defaults"
