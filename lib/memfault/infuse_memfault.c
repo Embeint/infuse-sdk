@@ -22,6 +22,8 @@
 #include <infuse/epacket/interface.h>
 #include <infuse/epacket/packet.h>
 #include <infuse/lib/memfault.h>
+#include <infuse/fs/kv_store.h>
+#include <infuse/fs/kv_types.h>
 
 #include "memfault/core/platform/device_info.h"
 #include "memfault/core/platform/system_time.h"
@@ -375,6 +377,23 @@ bool infuse_memfault_dump_chunks_epacket(const struct device *dev)
 	if (!memfault_packetizer_data_available()) {
 		return true;
 	}
+
+#ifdef CONFIG_KV_STORE_KEY_MEMFAULT_DISABLE
+	KV_KEY_TYPE(KV_KEY_MEMFAULT_DISABLE) memfault_control;
+
+	if ((KV_STORE_READ(KV_KEY_MEMFAULT_DISABLE, &memfault_control) ==
+	     sizeof(memfault_control)) &&
+	    (memfault_control.disable > 0)) {
+		uint8_t discard_buffer[128];
+		size_t len = sizeof(discard_buffer);
+
+		/* Sending packets has been suppressed, drain the packetizer */
+		while (memfault_packetizer_get_chunk(discard_buffer, &len)) {
+			len = sizeof(discard_buffer);
+		}
+		return true;
+	}
+#endif /* CONFIG_KV_STORE_KEY_MEMFAULT_DISABLE */
 
 	while (true) {
 		if (tx == NULL) {

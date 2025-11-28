@@ -307,6 +307,15 @@
                 {"name": "disable_end", "type": "struct kv_utc_hms", "description": "Re-enable LEDs at this time"}
             ]
         },
+        "54": {
+            "name": "MEMFAULT_DISABLE",
+            "description": "Disable Memfault reporting at runtime",
+            "depends_on": "MEMFAULT",
+            "default": "y",
+            "fields": [
+                {"name": "disable", "type": "uint8_t", "description": "Disable for any non-zero value"}
+            ]
+        },
         "60": {
             "name": "GRAVITY_REFERENCE",
             "description": "Reference gravity vector for tilt calculations",
