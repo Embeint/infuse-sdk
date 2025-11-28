@@ -300,6 +300,15 @@ static int epacket_udp_loop(void *a, void *b, void *c)
 		LOG_INF("Waiting for UDP packets on port %d", ntohs(local_addr.sin_port));
 		MEMFAULT_METRIC_TIMER_START(epacket_udp_connected);
 
+		/* Send the key IDs before callbacks, so the cloud proactively has them before
+		 * arbitrary packets are queued by the callbacks.
+		 */
+		if (first_connection) {
+			/* On the first connection after boot, remind the cloud of key state */
+			(void)epacket_send_key_ids(epacket_udp, K_NO_WAIT);
+			first_connection = false;
+		}
+
 		/* Interface is now connected */
 		SYS_SLIST_FOR_EACH_CONTAINER(&data->callback_list, cb, node) {
 			if (cb->interface_state) {
@@ -308,12 +317,6 @@ static int epacket_udp_loop(void *a, void *b, void *c)
 			}
 		}
 		k_event_post(&udp_state.state, UDP_STATE_CLIENTS_NOTIFIED_UP);
-
-		if (first_connection) {
-			/* On the first connection after boot, remind the cloud of key state */
-			(void)epacket_send_key_ids(epacket_udp, K_NO_WAIT);
-			first_connection = false;
-		}
 
 		/* Loop reading data */
 		udp_core_read_loop();
