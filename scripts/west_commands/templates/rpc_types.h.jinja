@@ -92,18 +92,6 @@ struct infuse_rpc_rsp_header {
  * @{
  */
 
-{% for name, info in structs.items() %}
-/** {{ info['description'] }} */
-struct {{ name }} {
-{% for field in info['fields'] %}
-{% if 'description' in field %}
-	/** {{ field['description'] }} */
-{% endif %}
-	{{ field['type'] }} {{ field['name'] }}{{ field['array'] }};
-{% endfor %}
-} __packed;
-
-{% endfor %}
 {% for name, info in enums.items() %}
 /** {{ info['description'] }} */
 enum {{ name }} {
@@ -116,6 +104,19 @@ enum {{ name }} {
 };
 
 {% endfor %}
+{% for name, info in structs.items() %}
+/** {{ info['description'] }} */
+struct {{ name }} {
+{% for field in info['fields'] %}
+{% if 'description' in field %}
+	/** {{ field['description'] }} */
+{% endif %}
+	{{ field['type'] }} {{ field['name'] }}{{ field['array'] }};
+{% endfor %}
+} __packed;
+
+{% endfor %}
+
 /**
  * @}
  */
