@@ -303,51 +303,12 @@ static int nav_sat_cb(uint8_t message_class, uint8_t message_id, const void *pay
 }
 #endif /* CONFIG_TASK_RUNNER_GNSS_SATELLITE_INFO */
 
-void gnss_task_fn(const struct task_schedule *schedule, struct k_poll_signal *terminate,
-		  void *gnss_dev)
+static void gnss_configure(const struct device *gnss, const struct task_gnss_args *args)
 {
-	const struct device *gnss = gnss_dev;
-	const struct task_gnss_args *args = &schedule->task_args.infuse.gnss;
-	uint8_t run_target = (args->flags & TASK_GNSS_FLAGS_RUN_MASK);
-	struct gnss_run_state run_state = {0};
-	struct ubx_message_handler_ctx pvt_handler_ctx = {
-		.message_class = UBX_MSG_CLASS_NAV,
-		.message_id = UBX_MSG_ID_NAV_PVT,
-		.message_cb = nav_pvt_cb,
-		.user_data = &run_state,
-	};
+	struct ubx_modem_data *modem = ubx_modem_data_get(gnss);
 	gnss_systems_t constellations;
 	uint8_t dynamics;
 	int rc;
-
-	run_state.dev = gnss;
-	run_state.modem = ubx_modem_data_get(gnss);
-	run_state.schedule = schedule;
-	run_state.best_fix.h_acc = UINT32_MAX;
-	run_state.task_start = k_uptime_seconds();
-	run_state.time_acquired = 0;
-	gnss_timeout_reset(&run_state.timeout_state);
-	k_poll_signal_init(&run_state.nav_pvt_rx);
-	k_poll_signal_init(&run_state.nav_timegps_rx);
-
-	LOG_DBG("Starting");
-
-	/* Request sensor to be powered */
-	rc = pm_device_runtime_get(gnss);
-	if ((rc < 0) && pm_device_is_powered(gnss)) {
-		/* Device is in software shutdown mode, try to recover communications */
-		LOG_WRN("Failed to request PM, resetting comms");
-		rc = ubx_modem_comms_reset(gnss);
-		if (rc == 0) {
-			/* Communications recovered, try PM again */
-			rc = pm_device_runtime_get(gnss);
-		}
-	}
-	if (rc < 0) {
-		k_sleep(K_SECONDS(1));
-		LOG_ERR("Terminating due to %s", "PM failure");
-		return;
-	}
 
 	/* Constellation configuration if requested */
 	if (args->constellations) {
@@ -415,7 +376,7 @@ void gnss_task_fn(const struct task_schedule *schedule, struct k_poll_signal *te
 	UBX_CFG_VALUE_APPEND(&cfg_buf, UBX_CFG_KEY_NAVSPG_DYNMODEL, dynamics);
 
 	ubx_msg_finalise(&cfg_buf);
-	rc = ubx_modem_send_sync_acked(run_state.modem, &cfg_buf, K_MSEC(250));
+	rc = ubx_modem_send_sync_acked(modem, &cfg_buf, K_MSEC(250));
 	if (rc < 0) {
 		LOG_WRN("Failed to configure modem");
 	}
@@ -436,12 +397,12 @@ void gnss_task_fn(const struct task_schedule *schedule, struct k_poll_signal *te
 
 	ubx_msg_simple(&msg_buf, UBX_MSG_CLASS_CFG, UBX_MSG_ID_CFG_RATE, &cfg_rate,
 		       sizeof(cfg_rate));
-	rc = ubx_modem_send_sync_acked(run_state.modem, &msg_buf, K_MSEC(250));
+	rc = ubx_modem_send_sync_acked(modem, &msg_buf, K_MSEC(250));
 	if (rc < 0) {
 		LOG_WRN("Failed to configure navigation rate");
 	}
 	ubx_msg_simple(&msg_buf, UBX_MSG_CLASS_CFG, UBX_MSG_ID_CFG_MSG, &cfg_msg, sizeof(cfg_msg));
-	rc = ubx_modem_send_sync_acked(run_state.modem, &msg_buf, K_MSEC(250));
+	rc = ubx_modem_send_sync_acked(modem, &msg_buf, K_MSEC(250));
 	if (rc < 0) {
 		LOG_WRN("Failed to configure NAV-PVT rate");
 	}
@@ -455,12 +416,60 @@ void gnss_task_fn(const struct task_schedule *schedule, struct k_poll_signal *te
 
 	ubx_msg_simple(&msg_buf, UBX_MSG_CLASS_CFG, UBX_MSG_ID_CFG_RATE, &cfg_msg_sat,
 		       sizeof(cfg_msg_sat));
-	rc = ubx_modem_send_sync_acked(run_state.modem, &msg_buf, K_MSEC(250));
+	rc = ubx_modem_send_sync_acked(modem, &msg_buf, K_MSEC(250));
 	if (rc < 0) {
 		LOG_WRN("Failed to configure navigation rate");
 	}
 #endif /* CONFIG_TASK_RUNNER_GNSS_SATELLITE_INFO */
 #endif /* CONFIG_GNSS_UBX_M8 */
+}
+
+void gnss_task_fn(const struct task_schedule *schedule, struct k_poll_signal *terminate,
+		  void *gnss_dev)
+{
+	const struct device *gnss = gnss_dev;
+	const struct task_gnss_args *args = &schedule->task_args.infuse.gnss;
+	uint8_t run_target = (args->flags & TASK_GNSS_FLAGS_RUN_MASK);
+	struct gnss_run_state run_state = {0};
+	struct ubx_message_handler_ctx pvt_handler_ctx = {
+		.message_class = UBX_MSG_CLASS_NAV,
+		.message_id = UBX_MSG_ID_NAV_PVT,
+		.message_cb = nav_pvt_cb,
+		.user_data = &run_state,
+	};
+	int rc;
+
+	run_state.dev = gnss;
+	run_state.modem = ubx_modem_data_get(gnss);
+	run_state.schedule = schedule;
+	run_state.best_fix.h_acc = UINT32_MAX;
+	run_state.task_start = k_uptime_seconds();
+	run_state.time_acquired = 0;
+	gnss_timeout_reset(&run_state.timeout_state);
+	k_poll_signal_init(&run_state.nav_pvt_rx);
+	k_poll_signal_init(&run_state.nav_timegps_rx);
+
+	LOG_DBG("Starting");
+
+	/* Request sensor to be powered */
+	rc = pm_device_runtime_get(gnss);
+	if ((rc < 0) && pm_device_is_powered(gnss)) {
+		/* Device is in software shutdown mode, try to recover communications */
+		LOG_WRN("Failed to request PM, resetting comms");
+		rc = ubx_modem_comms_reset(gnss);
+		if (rc == 0) {
+			/* Communications recovered, try PM again */
+			rc = pm_device_runtime_get(gnss);
+		}
+	}
+	if (rc < 0) {
+		k_sleep(K_SECONDS(1));
+		LOG_ERR("Terminating due to %s", "PM failure");
+		return;
+	}
+
+	/* Configure the modem according to the arguments */
+	gnss_configure(gnss, args);
 
 	/* Subscribe to NAV-PVT message */
 	ubx_modem_msg_subscribe(run_state.modem, &pvt_handler_ctx);
