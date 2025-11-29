@@ -168,6 +168,16 @@ enum rpc_enum_key_action {
 	RPC_ENUM_KEY_ACTION_KEY_DELETE = 1,
 };
 
+/** Field support status */
+enum rpc_enum_support_status {
+	/** Field is not supported */
+	RPC_ENUM_SUPPORT_STATUS_UNSUPPORTED = 0,
+	/** Field is supported */
+	RPC_ENUM_SUPPORT_STATUS_SUPPORTED = 1,
+	/** Field support status is unknown */
+	RPC_ENUM_SUPPORT_STATUS_UNKNOWN = 255,
+};
+
 /** MCUboot semantic versioning struct */
 struct rpc_struct_mcuboot_img_sem_ver {
 	uint8_t major;
@@ -277,6 +287,42 @@ struct rpc_struct_lte_state {
 	int16_t rsrp;
 	/** Reference signal received quality (dB) */
 	int8_t rsrq;
+} __packed;
+
+/** LTE interface status */
+struct rpc_struct_lte_state_v2 {
+	/** Network registration state (3GPP TS 127.007) */
+	uint8_t registration_state;
+	/** Access Technology (3GPP TS 127.007) */
+	uint8_t access_technology;
+	/** Mobile Country Code */
+	uint16_t mcc;
+	/** Mobile Network Code */
+	uint16_t mnc;
+	/** E-UTRAN cell ID */
+	uint32_t cell_id;
+	/** Tracking area code */
+	uint32_t tac;
+	/** Tracking area update period */
+	int32_t tau;
+	/** Tracking area code (3GPP TS 36.101) */
+	uint16_t earfcn;
+	/** LTE Band (3GPP 36.101) */
+	uint8_t band;
+	/** Seconds between RRC idle and PSM */
+	int16_t psm_active_time;
+	/** Period between eDRX paging windows */
+	float edrx_interval;
+	/** Duration of eDRX paging window */
+	float edrx_paging_window;
+	/** Reference signal received power (dBm) */
+	int16_t rsrp;
+	/** Reference signal received quality (dB) */
+	int8_t rsrq;
+	/** Access Spectrum RAI supported */
+	uint8_t as_rai;
+	/** Control Plane RAI supported */
+	uint8_t cp_rai;
 } __packed;
 
 /** WiFi interface status */
@@ -396,6 +442,8 @@ enum rpc_builtin_id {
 	RPC_ID_LTE_STATE = 21,
 	/** Read data from data logger, with auto-updating start_block */
 	RPC_ID_DATA_LOGGER_READ_AVAILABLE = 22,
+	/** Get current LTE interface state (with RAI information) */
+	RPC_ID_LTE_STATE_V2 = 23,
 	/** Download a file from a COAP server (Infuse-IoT DTLS protected) */
 	RPC_ID_COAP_DOWNLOAD = 30,
 	/** Network upload bandwidth testing using zperf/iperf */
@@ -795,6 +843,19 @@ struct rpc_data_logger_read_available_response {
 	uint32_t start_block_actual;
 	/** Size of a single block in bytes */
 	uint16_t block_size;
+} __packed;
+
+/** Get current LTE interface state (with RAI information) */
+struct rpc_lte_state_v2_request {
+	struct infuse_rpc_req_header header;
+} __packed;
+
+struct rpc_lte_state_v2_response {
+	struct infuse_rpc_rsp_header header;
+	/** Common network state */
+	struct rpc_struct_network_state common;
+	/** LTE state */
+	struct rpc_struct_lte_state_v2 lte;
 } __packed;
 
 /** Download a file from a COAP server (Infuse-IoT DTLS protected) */

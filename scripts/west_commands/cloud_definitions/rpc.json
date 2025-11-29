@@ -89,6 +89,27 @@
                 {"name": "rsrq", "type": "int8_t", "description": "Reference signal received quality (dB)"}
             ]
         },
+        "rpc_struct_lte_state_v2": {
+            "description": "LTE interface status",
+            "fields": [
+                {"name": "registration_state", "type": "uint8_t", "description": "Network registration state (3GPP TS 127.007)"},
+                {"name": "access_technology", "type": "uint8_t", "description": "Access Technology (3GPP TS 127.007)"},
+                {"name": "mcc", "type": "uint16_t", "description": "Mobile Country Code"},
+                {"name": "mnc", "type": "uint16_t", "description": "Mobile Network Code"},
+                {"name": "cell_id", "type": "uint32_t", "description": "E-UTRAN cell ID"},
+                {"name": "tac", "type": "uint32_t", "description": "Tracking area code"},
+                {"name": "tau", "type": "int32_t", "description": "Tracking area update period"},
+                {"name": "earfcn", "type": "uint16_t", "description": "Tracking area code (3GPP TS 36.101)"},
+                {"name": "band", "type": "uint8_t", "description": "LTE Band (3GPP 36.101)"},
+                {"name": "psm_active_time", "type": "int16_t", "description": "Seconds between RRC idle and PSM"},
+                {"name": "edrx_interval", "type": "float", "description": "Period between eDRX paging windows"},
+                {"name": "edrx_paging_window", "type": "float", "description": "Duration of eDRX paging window"},
+                {"name": "rsrp", "type": "int16_t", "description": "Reference signal received power (dBm)"},
+                {"name": "rsrq", "type": "int8_t", "description": "Reference signal received quality (dB)"},
+                {"name": "as_rai", "type": "enum rpc_enum_support_status", "description": "Access Spectrum RAI supported"},
+                {"name": "cp_rai", "type": "enum rpc_enum_support_status", "description": "Control Plane RAI supported"}
+            ]
+        },
         "rpc_struct_wifi_scan_result": {
             "description": "WiFi interface status",
             "fields": [
@@ -200,6 +221,15 @@
             "values": [
                 {"name": "KEY_WRITE", "value": 0, "description": "Write updated value for the key"},
                 {"name": "KEY_DELETE", "value": 1, "description": "Delete existing value for the key"}
+            ]
+        },
+        "rpc_enum_support_status": {
+            "description": "Field support status",
+            "type": "uint8_t",
+            "values": [
+                {"name": "UNSUPPORTED", "value": 0, "description": "Field is not supported"},
+                {"name": "SUPPORTED", "value": 1, "description": "Field is supported"},
+                {"name": "UNKNOWN", "value": 255, "description": "Field support status is unknown"}
             ]
         }
     },
@@ -521,6 +551,18 @@
                 {"name": "current_block", "type": "uint32_t", "description": "Current block after read completes"},
                 {"name": "start_block_actual", "type": "uint32_t", "description": "Actual block that read started at"},
                 {"name": "block_size", "type": "uint16_t", "description": "Size of a single block in bytes"}
+            ]
+        },
+        "23": {
+            "name": "lte_state_v2",
+            "description": "Get current LTE interface state (with RAI information)",
+            "depends_on": "INFUSE_MODEM_MONITOR",
+            "default": "y if INFUSE_SDK",
+            "default_auth": "EPACKET_AUTH_DEVICE",
+            "request_params": [],
+            "response_params": [
+                {"name": "common", "type": "struct rpc_struct_network_state", "description": "Common network state"},
+                {"name": "lte", "type": "struct rpc_struct_lte_state_v2", "description": "LTE state"}
             ]
         },
         "30": {
