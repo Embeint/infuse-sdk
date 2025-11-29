@@ -29,7 +29,7 @@ static void write_cb(struct rtio *r, const struct rtio_sqe *sqe, void *arg)
 	struct rtio_cqe *wr_cqe;
 
 	/* Release bus */
-	k_sem_give(&backend->bus_sem);
+	k_sem_give(&backend->common.bus_sem);
 
 	/* Can't release directly in the completion callback */
 	pm_device_runtime_put_async(backend->i2c->bus, K_MSEC(10));
@@ -39,7 +39,7 @@ static void write_cb(struct rtio *r, const struct rtio_sqe *sqe, void *arg)
 	rtio_cqe_release(r, wr_cqe);
 
 	/* Notify transmit idle */
-	modem_pipe_notify_transmit_idle(&backend->pipe);
+	modem_pipe_notify_transmit_idle(&backend->common.pipe);
 }
 
 static void fifo_bytes_read_cb(struct rtio *r, const struct rtio_sqe *sqe, void *arg)
@@ -56,7 +56,7 @@ static void fifo_bytes_read_cb(struct rtio *r, const struct rtio_sqe *sqe, void 
 	__ASSERT_NO_MSG(rd_cqe != NULL);
 
 	/* Dump received data */
-	LOG_HEXDUMP_DBG(rd_cqe->userdata, backend->bytes_pending, "RX");
+	LOG_HEXDUMP_DBG(rd_cqe->userdata, backend->common.bytes_pending, "RX");
 
 	if (wr_cqe->result < 0) {
 		rc = wr_cqe->result;
@@ -67,22 +67,22 @@ static void fifo_bytes_read_cb(struct rtio *r, const struct rtio_sqe *sqe, void 
 	rtio_cqe_release(r, rd_cqe);
 
 	/* Finish buffer put */
-	ring_buf_put_finish(&backend->pipe_ring_buf, backend->bytes_pending);
+	ring_buf_put_finish(&backend->common.pipe_ring_buf, backend->common.bytes_pending);
 
 	/* Release bus */
-	k_sem_give(&backend->bus_sem);
+	k_sem_give(&backend->common.bus_sem);
 
 	/* Notify consumers that data exists to read */
-	modem_pipe_notify_receive_ready(&backend->pipe);
+	modem_pipe_notify_receive_ready(&backend->common.pipe);
 
 	/* Release bus */
 	pm_device_runtime_put_async(backend->i2c->bus, K_MSEC(10));
 
 	/* If in interrupt driven mode and data ready pin still asserted after read, poll again */
-	if (!(backend->flags & MODE_POLLING)) {
-		if (gpio_pin_get_dt(backend->data_ready)) {
+	if (!(backend->common.flags & MODE_POLLING)) {
+		if (gpio_pin_get_dt(backend->common.data_ready)) {
 			LOG_DBG("Rescheduling poll");
-			k_work_reschedule(&backend->fifo_read, K_NO_WAIT);
+			k_work_reschedule(&backend->common.fifo_read, K_NO_WAIT);
 		}
 	}
 }
@@ -95,7 +95,7 @@ static void fifo_bytes_pending_cb(struct rtio *r, const struct rtio_sqe *sqe, vo
 	int rc;
 
 	/* Register is in BE format */
-	backend->bytes_pending = sys_be16_to_cpu(backend->bytes_pending);
+	backend->common.bytes_pending = sys_be16_to_cpu(backend->common.bytes_pending);
 
 	/* Consume completion events */
 	wr_cqe = rtio_cqe_consume(r);
@@ -108,40 +108,40 @@ static void fifo_bytes_pending_cb(struct rtio *r, const struct rtio_sqe *sqe, vo
 	rtio_cqe_release(r, wr_cqe);
 	rtio_cqe_release(r, rd_cqe);
 
-	if (backend->flags & MODE_BOOTING) {
+	if (backend->common.flags & MODE_BOOTING) {
 		if (failed) {
 			LOG_DBG("Not ready yet...");
 		} else {
 			LOG_DBG("Modem pipe opened");
-			backend->flags ^= MODE_BOOTING;
-			modem_pipe_notify_opened(&backend->pipe);
+			backend->common.flags ^= MODE_BOOTING;
+			modem_pipe_notify_opened(&backend->common.pipe);
 		}
 	}
 
 	/* If in polling mode, or query failed */
-	if ((backend->flags & MODE_POLLING) || failed) {
+	if ((backend->common.flags & MODE_POLLING) || failed) {
 		/* Reschedule another data poll */
-		k_work_reschedule(&backend->fifo_read, backend->poll_period);
+		k_work_reschedule(&backend->common.fifo_read, backend->common.poll_period);
 	}
 	/* If we aren't running the FIFO read */
-	if (failed || (backend->bytes_pending == 0)) {
+	if (failed || (backend->common.bytes_pending == 0)) {
 		/* Release bus */
-		k_sem_give(&backend->bus_sem);
+		k_sem_give(&backend->common.bus_sem);
 		/* Can't release directly in the completion callback */
 		pm_device_runtime_put_async(backend->i2c->bus, K_MSEC(10));
 		return;
 	}
 
-	uint16_t pending = backend->bytes_pending;
+	uint16_t pending = backend->common.bytes_pending;
 	struct rtio_sqe *wr_sqe, *rd_sqe, *cb_sqe;
 	const uint8_t fifo_addr = 0xFF;
 	uint8_t *output_buf;
 
 	/* Limit read to buffer claim size */
-	backend->bytes_pending =
-		ring_buf_put_claim(&backend->pipe_ring_buf, &output_buf, backend->bytes_pending);
+	backend->common.bytes_pending = ring_buf_put_claim(
+		&backend->common.pipe_ring_buf, &output_buf, backend->common.bytes_pending);
 
-	LOG_DBG("Pending: %d Reading: %d", pending, backend->bytes_pending);
+	LOG_DBG("Pending: %d Reading: %d", pending, backend->common.bytes_pending);
 
 	/* Prepare RTIO sequence */
 	wr_sqe = rtio_sqe_acquire(&i2c_rtio);
@@ -153,7 +153,7 @@ static void fifo_bytes_pending_cb(struct rtio *r, const struct rtio_sqe *sqe, vo
 	__ASSERT_NO_MSG(cb_sqe != NULL);
 
 	rtio_sqe_prep_tiny_write(wr_sqe, &i2c_iodev, RTIO_PRIO_NORM, &fifo_addr, 1, NULL);
-	rtio_sqe_prep_read(rd_sqe, &i2c_iodev, 0, output_buf, backend->bytes_pending, NULL);
+	rtio_sqe_prep_read(rd_sqe, &i2c_iodev, 0, output_buf, backend->common.bytes_pending, NULL);
 	rtio_sqe_prep_callback(cb_sqe, fifo_bytes_read_cb, (void *)backend, NULL);
 
 	wr_sqe->flags |= RTIO_SQE_TRANSACTION;
@@ -168,7 +168,7 @@ static void fifo_bytes_pending_cb(struct rtio *r, const struct rtio_sqe *sqe, vo
 	if (rc < 0) {
 		LOG_ERR("Failed to submit RTIO (%d)", rc);
 		/* Release bus */
-		k_sem_give(&backend->bus_sem);
+		k_sem_give(&backend->common.bus_sem);
 		/* Can't release directly in the completion callback */
 		pm_device_runtime_put_async(backend->i2c->bus, K_MSEC(10));
 	}
@@ -178,16 +178,16 @@ static void fifo_read_start(struct k_work *work)
 {
 	struct k_work_delayable *dwork = k_work_delayable_from_work(work);
 	struct modem_backend_ublox_i2c *backend =
-		CONTAINER_OF(dwork, struct modem_backend_ublox_i2c, fifo_read);
+		CONTAINER_OF(dwork, struct modem_backend_ublox_i2c, common.fifo_read);
 	struct rtio_sqe *wr_sqe, *rd_sqe, *cb_sqe;
 	const uint8_t len_addr = 0xFD;
 	int rc;
 
-	if (backend->flags & MODE_CLOSED) {
+	if (backend->common.flags & MODE_CLOSED) {
 		return;
 	}
 
-	if (k_sem_take(&backend->bus_sem, K_NO_WAIT) < 0) {
+	if (k_sem_take(&backend->common.bus_sem, K_NO_WAIT) < 0) {
 		/* Bus in use, try again in 1 msec */
 		k_work_reschedule(dwork, K_MSEC(1));
 		return;
@@ -203,7 +203,8 @@ static void fifo_read_start(struct k_work *work)
 	__ASSERT_NO_MSG(cb_sqe != NULL);
 
 	rtio_sqe_prep_tiny_write(wr_sqe, &i2c_iodev, RTIO_PRIO_NORM, &len_addr, 1, NULL);
-	rtio_sqe_prep_read(rd_sqe, &i2c_iodev, 0, (uint8_t *)&backend->bytes_pending, 2, NULL);
+	rtio_sqe_prep_read(rd_sqe, &i2c_iodev, 0, (uint8_t *)&backend->common.bytes_pending, 2,
+			   NULL);
 	rtio_sqe_prep_callback(cb_sqe, fifo_bytes_pending_cb, (void *)backend, NULL);
 
 	wr_sqe->flags |= RTIO_SQE_TRANSACTION;
@@ -230,8 +231,8 @@ static int modem_backend_ublox_i2c_open(void *data)
 	LOG_DBG("Opening I2C modem backend");
 
 	/* Schedule the boot poll loop */
-	backend->flags = MODE_BOOTING | MODE_POLLING;
-	k_work_reschedule(&backend->fifo_read, K_NO_WAIT);
+	backend->common.flags = MODE_BOOTING | MODE_POLLING;
+	k_work_reschedule(&backend->common.fifo_read, K_NO_WAIT);
 	return 0;
 }
 
@@ -243,13 +244,13 @@ static int modem_backend_ublox_i2c_close(void *data)
 	LOG_DBG("Closing I2C modem backend");
 
 	/* Disable data ready interrupt */
-	(void)gpio_pin_interrupt_configure_dt(backend->data_ready, GPIO_INT_DISABLE);
-	(void)gpio_pin_configure_dt(backend->data_ready, GPIO_DISCONNECTED);
+	(void)gpio_pin_interrupt_configure_dt(backend->common.data_ready, GPIO_INT_DISABLE);
+	(void)gpio_pin_configure_dt(backend->common.data_ready, GPIO_DISCONNECTED);
 	/* Cancel any pending queries */
-	backend->flags = MODE_CLOSED;
-	k_work_cancel_delayable_sync(&backend->fifo_read, &sync);
+	backend->common.flags = MODE_CLOSED;
+	k_work_cancel_delayable_sync(&backend->common.fifo_read, &sync);
 	/* Notify pipe closed */
-	modem_pipe_notify_closed(&backend->pipe);
+	modem_pipe_notify_closed(&backend->common.pipe);
 	return 0;
 }
 
@@ -261,7 +262,7 @@ static int modem_backend_ublox_i2c_transmit(void *data, const uint8_t *buf, size
 	struct rtio_sqe *extra_sqe = NULL;
 	int rc;
 
-	if (k_sem_take(&backend->bus_sem, K_MSEC(100)) < 0) {
+	if (k_sem_take(&backend->common.bus_sem, K_MSEC(100)) < 0) {
 		return -EAGAIN;
 	}
 
@@ -303,18 +304,18 @@ static int modem_backend_ublox_i2c_receive(void *data, uint8_t *buf, size_t size
 {
 	struct modem_backend_ublox_i2c *backend = data;
 
-	return ring_buf_get(&backend->pipe_ring_buf, buf, size);
+	return ring_buf_get(&backend->common.pipe_ring_buf, buf, size);
 }
 
 static void data_ready_gpio_callback(const struct device *dev, struct gpio_callback *cb,
 				     uint32_t pins)
 {
 	struct modem_backend_ublox_i2c *backend =
-		CONTAINER_OF(cb, struct modem_backend_ublox_i2c, data_ready_cb);
+		CONTAINER_OF(cb, struct modem_backend_ublox_i2c, common.data_ready_cb);
 
 	LOG_DBG("Data ready interrupt");
 	/* Schedule the FIFO data query */
-	k_work_reschedule(&backend->fifo_read, K_NO_WAIT);
+	k_work_reschedule(&backend->common.fifo_read, K_NO_WAIT);
 }
 
 struct modem_pipe_api modem_backend_ublox_i2c_api = {
@@ -328,32 +329,33 @@ struct modem_pipe *modem_backend_ublox_i2c_init(struct modem_backend_ublox_i2c *
 						const struct modem_backend_ublox_i2c_config *config)
 {
 	backend->i2c = config->i2c;
-	backend->data_ready = config->data_ready;
-	backend->poll_period = config->poll_period;
-	backend->flags = MODE_CLOSED;
+	backend->common.data_ready = config->data_ready;
+	backend->common.poll_period = config->poll_period;
+	backend->common.flags = MODE_CLOSED;
 	i2c_iodev.data = (void *)config->i2c;
-	k_poll_signal_init(&backend->read_result);
-	k_poll_signal_init(&backend->read_result);
-	k_work_init_delayable(&backend->fifo_read, fifo_read_start);
-	k_sem_init(&backend->bus_sem, 1, 1);
-	modem_pipe_init(&backend->pipe, backend, &modem_backend_ublox_i2c_api);
-	ring_buf_init(&backend->pipe_ring_buf, sizeof(backend->pipe_memory), backend->pipe_memory);
-	gpio_init_callback(&backend->data_ready_cb, data_ready_gpio_callback,
+	k_poll_signal_init(&backend->common.read_result);
+	k_poll_signal_init(&backend->common.read_result);
+	k_work_init_delayable(&backend->common.fifo_read, fifo_read_start);
+	k_sem_init(&backend->common.bus_sem, 1, 1);
+	modem_pipe_init(&backend->common.pipe, backend, &modem_backend_ublox_i2c_api);
+	ring_buf_init(&backend->common.pipe_ring_buf, sizeof(backend->common.pipe_memory),
+		      backend->common.pipe_memory);
+	gpio_init_callback(&backend->common.data_ready_cb, data_ready_gpio_callback,
 			   BIT(config->data_ready->pin));
-	if (gpio_add_callback(config->data_ready->port, &backend->data_ready_cb) < 0) {
+	if (gpio_add_callback(config->data_ready->port, &backend->common.data_ready_cb) < 0) {
 		LOG_ERR("Unable to add data ready callback");
 	}
 
-	return &backend->pipe;
+	return &backend->common.pipe;
 }
 
 void modem_backend_ublox_i2c_use_data_ready_gpio(struct modem_backend_ublox_i2c *backend)
 {
 	/* Clear the polling bit */
-	backend->flags &= ~MODE_POLLING;
+	backend->common.flags &= ~MODE_POLLING;
 	/* Enable the interrupt */
-	(void)gpio_pin_configure_dt(backend->data_ready, GPIO_INPUT);
-	(void)gpio_pin_interrupt_configure_dt(backend->data_ready, GPIO_INT_EDGE_TO_ACTIVE);
+	(void)gpio_pin_configure_dt(backend->common.data_ready, GPIO_INPUT);
+	(void)gpio_pin_interrupt_configure_dt(backend->common.data_ready, GPIO_INT_EDGE_TO_ACTIVE);
 	/* Trigger a query immediately in case line already high */
-	k_work_reschedule(&backend->fifo_read, K_NO_WAIT);
+	k_work_reschedule(&backend->common.fifo_read, K_NO_WAIT);
 }

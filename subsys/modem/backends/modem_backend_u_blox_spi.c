@@ -29,17 +29,18 @@ void fifo_read_cb(const struct device *dev, int result, void *data)
 	uint32_t written;
 
 	/* Put received data in buffer */
-	written = ring_buf_put(&backend->pipe_ring_buf, backend->spi_rx, sizeof(backend->spi_rx));
-	if (written != sizeof(backend->spi_rx) && !(backend->flags & MODE_BOOTING)) {
+	written = ring_buf_put(&backend->common.pipe_ring_buf, backend->spi_rx,
+			       sizeof(backend->spi_rx));
+	if (written != sizeof(backend->spi_rx) && !(backend->common.flags & MODE_BOOTING)) {
 		LOG_WRN("Dropped %u bytes", sizeof(backend->spi_rx) - written);
 	}
 	/* Notify consumers that data exists to read */
-	modem_pipe_notify_receive_ready(&backend->pipe);
+	modem_pipe_notify_receive_ready(&backend->common.pipe);
 
 	/* If in polling mode, or query failed */
-	if ((backend->flags & MODE_POLLING) || (result != 0)) {
+	if ((backend->common.flags & MODE_POLLING) || (result != 0)) {
 		/* Reschedule another data poll */
-		k_work_reschedule(&backend->fifo_read, backend->poll_period);
+		k_work_reschedule(&backend->common.fifo_read, backend->common.poll_period);
 	}
 
 	/* Check if port is idle (backwards so we can exit early) */
@@ -59,19 +60,19 @@ void fifo_read_cb(const struct device *dev, int result, void *data)
 #endif
 
 	/* Release bus semaphore */
-	k_sem_give(&backend->bus_sem);
+	k_sem_give(&backend->common.bus_sem);
 
 	/* Notify transmit idle */
-	modem_pipe_notify_transmit_idle(&backend->pipe);
+	modem_pipe_notify_transmit_idle(&backend->common.pipe);
 
 	/* Still data pending, queue again */
 	if (FF_counter < 50) {
-		k_work_reschedule(&backend->fifo_read, K_NO_WAIT);
-	} else if (backend->flags & MODE_BOOTING) {
+		k_work_reschedule(&backend->common.fifo_read, K_NO_WAIT);
+	} else if (backend->common.flags & MODE_BOOTING) {
 		/* Initial junk has been purged */
 		LOG_DBG("Modem pipe opened");
-		backend->flags ^= MODE_BOOTING;
-		modem_pipe_notify_opened(&backend->pipe);
+		backend->common.flags ^= MODE_BOOTING;
+		modem_pipe_notify_opened(&backend->common.pipe);
 	}
 }
 
@@ -79,7 +80,7 @@ static void fifo_read_trigger(struct k_work *work)
 {
 	struct k_work_delayable *dwork = k_work_delayable_from_work(work);
 	struct modem_backend_ublox_spi *backend =
-		CONTAINER_OF(dwork, struct modem_backend_ublox_spi, fifo_read);
+		CONTAINER_OF(dwork, struct modem_backend_ublox_spi, common.fifo_read);
 	const struct spi_buf rx = {
 		.buf = backend->spi_rx,
 		.len = sizeof(backend->spi_rx),
@@ -90,12 +91,12 @@ static void fifo_read_trigger(struct k_work *work)
 	};
 	int rc;
 
-	if (backend->flags & MODE_CLOSED) {
+	if (backend->common.flags & MODE_CLOSED) {
 		return;
 	}
 
-	if (k_sem_take(&backend->bus_sem, K_NO_WAIT) < 0) {
-		k_work_reschedule(&backend->fifo_read, K_MSEC(10));
+	if (k_sem_take(&backend->common.bus_sem, K_NO_WAIT) < 0) {
+		k_work_reschedule(&backend->common.fifo_read, K_MSEC(10));
 		return;
 	}
 
@@ -111,8 +112,8 @@ static void fifo_read_trigger(struct k_work *work)
 #ifdef CONFIG_MODEM_BACKEND_U_BLOX_SPI_PM_MODE_BURST
 		pm_device_runtime_put(backend->spi->bus);
 #endif
-		k_sem_give(&backend->bus_sem);
-		k_work_reschedule(&backend->fifo_read, K_MSEC(10));
+		k_sem_give(&backend->common.bus_sem);
+		k_work_reschedule(&backend->common.fifo_read, K_MSEC(10));
 	}
 }
 
@@ -126,8 +127,8 @@ static int modem_backend_ublox_spi_open(void *data)
 	pm_device_runtime_get(backend->spi->bus);
 #endif
 	/* Schedule the boot poll loop */
-	backend->flags = MODE_BOOTING | MODE_POLLING;
-	k_work_reschedule(&backend->fifo_read, K_NO_WAIT);
+	backend->common.flags = MODE_BOOTING | MODE_POLLING;
+	k_work_reschedule(&backend->common.fifo_read, K_NO_WAIT);
 	return 0;
 }
 
@@ -139,18 +140,18 @@ static int modem_backend_ublox_spi_close(void *data)
 	LOG_DBG("Closing SPI modem backend");
 
 	/* Disable data ready interrupt */
-	(void)gpio_pin_interrupt_configure_dt(backend->data_ready, GPIO_INT_DISABLE);
-	(void)gpio_pin_configure_dt(backend->data_ready, GPIO_DISCONNECTED);
+	(void)gpio_pin_interrupt_configure_dt(backend->common.data_ready, GPIO_INT_DISABLE);
+	(void)gpio_pin_configure_dt(backend->common.data_ready, GPIO_DISCONNECTED);
 	/* Cancel any pending queries */
-	backend->flags = MODE_CLOSED;
-	k_work_cancel_delayable_sync(&backend->fifo_read, &sync);
+	backend->common.flags = MODE_CLOSED;
+	k_work_cancel_delayable_sync(&backend->common.fifo_read, &sync);
 
 #ifdef CONFIG_MODEM_BACKEND_U_BLOX_SPI_PM_MODE_ALWAYS
 	pm_device_runtime_put(backend->spi->bus);
 #endif
 
 	/* Notify pipe closed */
-	modem_pipe_notify_closed(&backend->pipe);
+	modem_pipe_notify_closed(&backend->common.pipe);
 	return 0;
 }
 
@@ -189,7 +190,7 @@ static int modem_backend_ublox_spi_transmit(void *data, const uint8_t *buf, size
 	}
 
 	/* Wait for bus to be available */
-	if (k_sem_take(&backend->bus_sem, K_MSEC(100)) < 0) {
+	if (k_sem_take(&backend->common.bus_sem, K_MSEC(100)) < 0) {
 		return -EAGAIN;
 	}
 
@@ -214,18 +215,18 @@ static int modem_backend_ublox_spi_receive(void *data, uint8_t *buf, size_t size
 {
 	struct modem_backend_ublox_spi *backend = data;
 
-	return ring_buf_get(&backend->pipe_ring_buf, buf, size);
+	return ring_buf_get(&backend->common.pipe_ring_buf, buf, size);
 }
 
 static void data_ready_gpio_callback(const struct device *dev, struct gpio_callback *cb,
 				     uint32_t pins)
 {
 	struct modem_backend_ublox_spi *backend =
-		CONTAINER_OF(cb, struct modem_backend_ublox_spi, data_ready_cb);
+		CONTAINER_OF(cb, struct modem_backend_ublox_spi, common.data_ready_cb);
 
 	LOG_DBG("Data ready interrupt");
 	/* Schedule the FIFO data query */
-	k_work_reschedule(&backend->fifo_read, K_NO_WAIT);
+	k_work_reschedule(&backend->common.fifo_read, K_NO_WAIT);
 }
 
 struct modem_pipe_api modem_backend_ublox_spi_api = {
@@ -239,31 +240,32 @@ struct modem_pipe *modem_backend_ublox_spi_init(struct modem_backend_ublox_spi *
 						const struct modem_backend_ublox_spi_config *config)
 {
 	backend->spi = config->spi;
-	backend->data_ready = config->data_ready;
-	backend->poll_period = config->poll_period;
-	backend->flags = MODE_CLOSED;
-	k_poll_signal_init(&backend->read_result);
-	k_poll_signal_init(&backend->read_result);
-	k_work_init_delayable(&backend->fifo_read, fifo_read_trigger);
-	k_sem_init(&backend->bus_sem, 1, 1);
-	modem_pipe_init(&backend->pipe, backend, &modem_backend_ublox_spi_api);
-	ring_buf_init(&backend->pipe_ring_buf, sizeof(backend->pipe_memory), backend->pipe_memory);
-	gpio_init_callback(&backend->data_ready_cb, data_ready_gpio_callback,
+	backend->common.data_ready = config->data_ready;
+	backend->common.poll_period = config->poll_period;
+	backend->common.flags = MODE_CLOSED;
+	k_poll_signal_init(&backend->common.read_result);
+	k_poll_signal_init(&backend->common.read_result);
+	k_work_init_delayable(&backend->common.fifo_read, fifo_read_trigger);
+	k_sem_init(&backend->common.bus_sem, 1, 1);
+	modem_pipe_init(&backend->common.pipe, backend, &modem_backend_ublox_spi_api);
+	ring_buf_init(&backend->common.pipe_ring_buf, sizeof(backend->common.pipe_memory),
+		      backend->common.pipe_memory);
+	gpio_init_callback(&backend->common.data_ready_cb, data_ready_gpio_callback,
 			   BIT(config->data_ready->pin));
-	if (gpio_add_callback(config->data_ready->port, &backend->data_ready_cb) < 0) {
+	if (gpio_add_callback(config->data_ready->port, &backend->common.data_ready_cb) < 0) {
 		LOG_ERR("Unable to add data ready callback");
 	}
 
-	return &backend->pipe;
+	return &backend->common.pipe;
 }
 
 void modem_backend_ublox_spi_use_data_ready_gpio(struct modem_backend_ublox_spi *backend)
 {
 	/* Clear the polling bit */
-	backend->flags &= ~MODE_POLLING;
+	backend->common.flags &= ~MODE_POLLING;
 	/* Enable the interrupt */
-	(void)gpio_pin_configure_dt(backend->data_ready, GPIO_INPUT);
-	(void)gpio_pin_interrupt_configure_dt(backend->data_ready, GPIO_INT_EDGE_TO_ACTIVE);
+	(void)gpio_pin_configure_dt(backend->common.data_ready, GPIO_INPUT);
+	(void)gpio_pin_interrupt_configure_dt(backend->common.data_ready, GPIO_INT_EDGE_TO_ACTIVE);
 	/* Trigger a query immediately in case line already high */
-	k_work_reschedule(&backend->fifo_read, K_NO_WAIT);
+	k_work_reschedule(&backend->common.fifo_read, K_NO_WAIT);
 }
