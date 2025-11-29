@@ -29,10 +29,13 @@ enum {
 };
 
 enum {
-	/** Bits 1-0: Run until */
+	/** Runs until terminated by the scheduler */
 	TASK_GNSS_FLAGS_RUN_FOREVER = 0,
+	/** Terminates when the location is known to specified accuracy, implies performance mode */
 	TASK_GNSS_FLAGS_RUN_TO_LOCATION_FIX = 1,
+	/** Terminates when the time has been synced, implies performance mode */
 	TASK_GNSS_FLAGS_RUN_TO_TIME_SYNC = 2,
+	/** Bits 1-0: Run until */
 	TASK_GNSS_FLAGS_RUN_MASK = 0x3,
 	/** Bit 7: Performance mode */
 	TASK_GNSS_FLAGS_PERFORMANCE_MODE = BIT(7),
@@ -57,20 +60,25 @@ struct task_gnss_args {
 	 * In @a TASK_GNSS_FLAGS_RUN_TO_LOCATION_FIX, sets PDOP to terminate at.
 	 */
 	uint16_t position_dop;
-	/** @a TASK_GNSS_FLAGS_RUN_TO_LOCATION_FIX specific arguments */
-	struct {
-		/** Terminate fix if this duration passes without any location information */
-		uint8_t any_fix_timeout;
-		/** Terminate fix if the accuracy plateaus */
-		struct task_gnss_plateau_args {
-			/** Plateau detection only enabled once accuracy reaches this level */
-			uint8_t min_accuracy_m;
-			/** Location accuracy must improve by at least this many meters */
-			uint8_t min_accuracy_improvement_m;
-			/** Timeout for accuracy to improve by @a min_accuracy_improvement */
-			uint8_t timeout;
-		} fix_plateau;
-	} run_to_fix;
+	union {
+		/** @a TASK_GNSS_FLAGS_RUN_TO_LOCATION_FIX specific arguments */
+		struct {
+			/** Terminate fix if this duration passes without any location information
+			 */
+			uint8_t any_fix_timeout;
+			/** Terminate fix if the accuracy plateaus */
+			struct task_gnss_plateau_args {
+				/** Plateau detection only enabled once accuracy reaches this level
+				 */
+				uint8_t min_accuracy_m;
+				/** Location accuracy must improve by at least this many meters */
+				uint8_t min_accuracy_improvement_m;
+				/** Timeout for accuracy to improve by @a min_accuracy_improvement
+				 */
+				uint8_t timeout;
+			} fix_plateau;
+		} run_to_fix;
+	};
 	/** Dynamic model from @ref ubx_cfg_key_navspg_dynmodel */
 	uint8_t dynamic_model;
 } __packed;

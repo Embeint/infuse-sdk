@@ -306,7 +306,9 @@ static int nav_sat_cb(uint8_t message_class, uint8_t message_id, const void *pay
 static void gnss_configure(const struct device *gnss, const struct task_gnss_args *args)
 {
 	struct ubx_modem_data *modem = ubx_modem_data_get(gnss);
+	uint8_t run_target = (args->flags & TASK_GNSS_FLAGS_RUN_MASK);
 	gnss_systems_t constellations;
+	bool performance_mode;
 	uint8_t dynamics;
 	int rc;
 
@@ -326,7 +328,9 @@ static void gnss_configure(const struct device *gnss, const struct task_gnss_arg
 		LOG_INF("Constellations: %02X (%s)", constellations, "enabled");
 	}
 
-	if (args->flags & TASK_GNSS_FLAGS_PERFORMANCE_MODE) {
+	performance_mode = (args->flags & TASK_GNSS_FLAGS_PERFORMANCE_MODE) ||
+			   (run_target != TASK_GNSS_FLAGS_RUN_FOREVER);
+	if (performance_mode) {
 		LOG_INF("Mode: Performance");
 	} else {
 		LOG_INF("Mode: Low Power (Accuracy %d m, PDOP %d)", args->accuracy_m,
@@ -354,7 +358,7 @@ static void gnss_configure(const struct device *gnss, const struct task_gnss_arg
 	UBX_CFG_VALUE_APPEND(&cfg_buf, UBX_CFG_KEY_MSGOUT_UBX_NAV_SAT_I2C, 1);
 #endif /* CONFIG_TASK_RUNNER_GNSS_SATELLITE_INFO */
 	/* Power mode configuration */
-	if (args->flags & TASK_GNSS_FLAGS_PERFORMANCE_MODE) {
+	if (performance_mode) {
 		/* Normal mode tracking (default values) */
 		UBX_CFG_VALUE_APPEND(&cfg_buf, UBX_CFG_KEY_NAVSPG_OUTFIL_PACC, 100);
 		UBX_CFG_VALUE_APPEND(&cfg_buf, UBX_CFG_KEY_NAVSPG_OUTFIL_PDOP, 250);
