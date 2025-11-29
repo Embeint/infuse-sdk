@@ -92,6 +92,82 @@ struct infuse_rpc_rsp_header {
  * @{
  */
 
+/** Bluetooth LE address type */
+enum rpc_enum_bt_le_addr_type {
+	/** Public address */
+	RPC_ENUM_BT_LE_ADDR_TYPE_PUBLIC = 0,
+	/** Static random address */
+	RPC_ENUM_BT_LE_ADDR_TYPE_RANDOM = 1,
+};
+
+/** Actions to take upon receiving a file */
+enum rpc_enum_file_action {
+	/** Discard received file (Useful for testing) */
+	RPC_ENUM_FILE_ACTION_DISCARD = 0,
+	/** Complete application image for firmware upgrade */
+	RPC_ENUM_FILE_ACTION_APP_IMG = 1,
+	/** Complete Bluetooth controller image for firmware upgrade */
+	RPC_ENUM_FILE_ACTION_BT_CTLR_IMG = 2,
+	/** CPatch application image upgrade (binary diff) */
+	RPC_ENUM_FILE_ACTION_APP_CPATCH = 11,
+	/** CPatch Bluetooth controller image upgrade (binary diff) */
+	RPC_ENUM_FILE_ACTION_BT_CTLR_CPATCH = 12,
+	/** nRF91 LTE modem firmware upgrade diff */
+	RPC_ENUM_FILE_ACTION_NRF91_MODEM_DIFF = 20,
+	/** File to copy to another device */
+	RPC_ENUM_FILE_ACTION_FILE_FOR_COPY = 30,
+};
+
+/** Infuse-IoT Bluetooth characteristics (Bitmask) */
+enum rpc_enum_infuse_bt_characteristic {
+	/** Command characteristic */
+	RPC_ENUM_INFUSE_BT_CHARACTERISTIC_COMMAND = 1,
+	/** Data characteristic */
+	RPC_ENUM_INFUSE_BT_CHARACTERISTIC_DATA = 2,
+	/** Serial log characteristic */
+	RPC_ENUM_INFUSE_BT_CHARACTERISTIC_LOGGING = 4,
+};
+
+/** Data Logger identifier */
+enum rpc_enum_data_logger {
+	/** Onboard flash logger */
+	RPC_ENUM_DATA_LOGGER_FLASH_ONBOARD = 1,
+	/** Removable flash logger (SD) */
+	RPC_ENUM_DATA_LOGGER_FLASH_REMOVABLE = 2,
+	/** Networked UDP logger */
+	RPC_ENUM_DATA_LOGGER_UDP = 3,
+};
+
+/** Source for zperf data upload */
+enum rpc_enum_zperf_data_source {
+	/** Constant payload ('i') */
+	RPC_ENUM_ZPERF_DATA_SOURCE_CONSTANT = 0,
+	/** Random payload contents */
+	RPC_ENUM_ZPERF_DATA_SOURCE_RANDOM = 1,
+	/** Read data from onboard flash logger */
+	RPC_ENUM_ZPERF_DATA_SOURCE_FLASH_ONBOARD = 2,
+	/** Read data from removable flash logger (SD) */
+	RPC_ENUM_ZPERF_DATA_SOURCE_FLASH_REMOVABLE = 3,
+	/** Flag (0x80) to specify payload should be encrypted */
+	RPC_ENUM_ZPERF_DATA_SOURCE_ENCRYPT = 128,
+};
+
+/** Infuse security key identifier */
+enum rpc_enum_key_id {
+	/** Primary network key */
+	RPC_ENUM_KEY_ID_NETWORK_KEY = 0,
+	/** Secondary network key */
+	RPC_ENUM_KEY_ID_SECONDARY_NETWORK_KEY = 1,
+};
+
+/** Infuse security key action */
+enum rpc_enum_key_action {
+	/** Write updated value for the key */
+	RPC_ENUM_KEY_ACTION_KEY_WRITE = 0,
+	/** Delete existing value for the key */
+	RPC_ENUM_KEY_ACTION_KEY_DELETE = 1,
+};
+
 /** MCUboot semantic versioning struct */
 struct rpc_struct_mcuboot_img_sem_ver {
 	uint8_t major;
@@ -263,81 +339,6 @@ struct rpc_struct_heap_info {
 	uint32_t max_allocated_bytes;
 } __packed;
 
-/** Bluetooth LE address type */
-enum rpc_enum_bt_le_addr_type {
-	/** Public address */
-	RPC_ENUM_BT_LE_ADDR_TYPE_PUBLIC = 0,
-	/** Static random address */
-	RPC_ENUM_BT_LE_ADDR_TYPE_RANDOM = 1,
-};
-
-/** Actions to take upon receiving a file */
-enum rpc_enum_file_action {
-	/** Discard received file (Useful for testing) */
-	RPC_ENUM_FILE_ACTION_DISCARD = 0,
-	/** Complete application image for firmware upgrade */
-	RPC_ENUM_FILE_ACTION_APP_IMG = 1,
-	/** Complete Bluetooth controller image for firmware upgrade */
-	RPC_ENUM_FILE_ACTION_BT_CTLR_IMG = 2,
-	/** CPatch application image upgrade (binary diff) */
-	RPC_ENUM_FILE_ACTION_APP_CPATCH = 11,
-	/** CPatch Bluetooth controller image upgrade (binary diff) */
-	RPC_ENUM_FILE_ACTION_BT_CTLR_CPATCH = 12,
-	/** nRF91 LTE modem firmware upgrade diff */
-	RPC_ENUM_FILE_ACTION_NRF91_MODEM_DIFF = 20,
-	/** File to copy to another device */
-	RPC_ENUM_FILE_ACTION_FILE_FOR_COPY = 30,
-};
-
-/** Infuse-IoT Bluetooth characteristics (Bitmask) */
-enum rpc_enum_infuse_bt_characteristic {
-	/** Command characteristic */
-	RPC_ENUM_INFUSE_BT_CHARACTERISTIC_COMMAND = 1,
-	/** Data characteristic */
-	RPC_ENUM_INFUSE_BT_CHARACTERISTIC_DATA = 2,
-	/** Serial log characteristic */
-	RPC_ENUM_INFUSE_BT_CHARACTERISTIC_LOGGING = 4,
-};
-
-/** Data Logger identifier */
-enum rpc_enum_data_logger {
-	/** Onboard flash logger */
-	RPC_ENUM_DATA_LOGGER_FLASH_ONBOARD = 1,
-	/** Removable flash logger (SD) */
-	RPC_ENUM_DATA_LOGGER_FLASH_REMOVABLE = 2,
-	/** Networked UDP logger */
-	RPC_ENUM_DATA_LOGGER_UDP = 3,
-};
-
-/** Source for zperf data upload */
-enum rpc_enum_zperf_data_source {
-	/** Constant payload ('i') */
-	RPC_ENUM_ZPERF_DATA_SOURCE_CONSTANT = 0,
-	/** Random payload contents */
-	RPC_ENUM_ZPERF_DATA_SOURCE_RANDOM = 1,
-	/** Read data from onboard flash logger */
-	RPC_ENUM_ZPERF_DATA_SOURCE_FLASH_ONBOARD = 2,
-	/** Read data from removable flash logger (SD) */
-	RPC_ENUM_ZPERF_DATA_SOURCE_FLASH_REMOVABLE = 3,
-	/** Flag (0x80) to specify payload should be encrypted */
-	RPC_ENUM_ZPERF_DATA_SOURCE_ENCRYPT = 128,
-};
-
-/** Infuse security key identifier */
-enum rpc_enum_key_id {
-	/** Primary network key */
-	RPC_ENUM_KEY_ID_NETWORK_KEY = 0,
-	/** Secondary network key */
-	RPC_ENUM_KEY_ID_SECONDARY_NETWORK_KEY = 1,
-};
-
-/** Infuse security key action */
-enum rpc_enum_key_action {
-	/** Write updated value for the key */
-	RPC_ENUM_KEY_ACTION_KEY_WRITE = 0,
-	/** Delete existing value for the key */
-	RPC_ENUM_KEY_ACTION_KEY_DELETE = 1,
-};
 
 /**
  * @}
