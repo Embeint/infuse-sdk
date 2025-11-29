@@ -311,7 +311,7 @@ static int ubx_m8_spi_port_setup(const struct device *dev, bool hardware_reset)
 		.mode = UBX_MSG_CFG_PRT_SPI_MODE_0,
 		.in_proto_mask = UBX_MSG_CFG_PRT_PROTO_MASK_UBX,
 		.out_proto_mask = UBX_MSG_CFG_PRT_PROTO_MASK_UBX,
-		.flags = 0,
+		.flags = UBX_MSG_CFG_PRT_SPI_EXTENDED_TIMEOUT,
 	};
 
 	ubx_msg_simple(&cfg_buf, UBX_MSG_CLASS_CFG, UBX_MSG_ID_CFG_PRT, &cfg_prt, sizeof(cfg_prt));

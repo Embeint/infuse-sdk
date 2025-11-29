@@ -342,6 +342,7 @@ static int ubx_m10_i2c_port_setup(const struct device *dev, bool hardware_reset)
 			       UBX_MSG_CFG_VALSET_LAYERS_RAM | UBX_MSG_CFG_VALSET_LAYERS_BBR);
 	UBX_CFG_VALUE_APPEND(&cfg_buf, UBX_CFG_KEY_UART1_ENABLED, false);
 	UBX_CFG_VALUE_APPEND(&cfg_buf, UBX_CFG_KEY_I2C_ENABLED, true);
+	UBX_CFG_VALUE_APPEND(&cfg_buf, UBX_CFG_KEY_I2C_EXTENDEDTIMEOUT, true);
 	UBX_CFG_VALUE_APPEND(&cfg_buf, UBX_CFG_KEY_I2CINPROT_UBX, true);
 	UBX_CFG_VALUE_APPEND(&cfg_buf, UBX_CFG_KEY_I2CINPROT_NMEA, false);
 	UBX_CFG_VALUE_APPEND(&cfg_buf, UBX_CFG_KEY_I2COUTPROT_UBX, true);
