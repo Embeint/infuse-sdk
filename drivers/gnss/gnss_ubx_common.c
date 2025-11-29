@@ -162,6 +162,13 @@ static int nav_sat_cb(uint8_t message_class, uint8_t message_id, const void *pay
 #endif /* CONFIG_GNSS_SATELLITES */
 #endif /* CONFIG_GNSS_U_BLOX_NO_API_COMPAT */
 
+void ubx_modem_fifo_poll(const struct device *dev)
+{
+	const struct ubx_common_config *cfg = dev->config;
+
+	cfg->pm_funcs.fifo_poll(dev);
+}
+
 void ubx_common_extint_wake(const struct device *dev)
 {
 	const struct ubx_common_config *cfg = dev->config;

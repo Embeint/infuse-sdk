@@ -101,6 +101,15 @@ struct ubx_modem_data {
 struct ubx_modem_data *ubx_modem_data_get(const struct device *dev);
 
 /**
+ * @brief Explicitly trigger a poll of the modem data FIFO
+ *
+ * Only required if the TX READY pin is not operational.
+ *
+ * @param dev Modem device
+ */
+void ubx_modem_fifo_poll(const struct device *dev);
+
+/**
  * @brief Initialise UBX modem handler
  *
  * @param modem Modem data structure

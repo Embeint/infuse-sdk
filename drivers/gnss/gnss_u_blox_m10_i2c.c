@@ -476,6 +476,14 @@ static int ubx_m10_i2c_software_resume(const struct device *dev)
 	return rc;
 }
 
+static void ubx_m10_fifo_poll(const struct device *dev)
+{
+	struct ubx_m10_i2c_data *data = dev->data;
+
+	/* Schedule the FIFO data query */
+	k_work_reschedule(&data->i2c_backend.common.fifo_read, K_NO_WAIT);
+}
+
 static int ubx_m10_i2c_init(const struct device *dev)
 {
 	const struct ubx_m10_i2c_config *cfg = dev->config;
@@ -513,7 +521,7 @@ static const struct gnss_driver_api gnss_api = {
 	static const struct ubx_m10_i2c_config ubx_m10_cfg_##inst = {                              \
 		.common = UBX_COMMON_CONFIG_INST(inst, ubx_m10_i2c_software_standby,               \
 						 ubx_m10_i2c_software_resume,                      \
-						 ubx_m10_i2c_port_setup),                          \
+						 ubx_m10_i2c_port_setup, ubx_m10_fifo_poll),       \
 		.i2c = I2C_DT_SPEC_INST_GET(inst),                                                 \
 	};                                                                                         \
 	static struct ubx_m10_i2c_data ubx_m10_data_##inst;                                        \

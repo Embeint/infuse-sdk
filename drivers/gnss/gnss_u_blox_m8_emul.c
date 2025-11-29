@@ -126,6 +126,11 @@ struct ubx_modem_data *ubx_modem_data_get(const struct device *dev)
 	return dev->data;
 }
 
+void ubx_modem_fifo_poll(const struct device *dev)
+{
+	ARG_UNUSED(dev);
+}
+
 void emul_gnss_pvt_configure(const struct device *dev, struct gnss_pvt_emul_location *emul_location)
 {
 	struct emul_data *data = dev->data;
