@@ -13,6 +13,11 @@ set -uex
 # nrf52_bsim set:
 nice ${INFUSE_BASE}/tests/bsim/bluetooth/compile.sh
 
+echo `pwd`
+echo `INFUSE BASE ${INFUSE_BASE}`
+ls ${INFUSE_BASE}/tests/bsim/bluetooth
+SEARCH_PATH=${INFUSE_BASE}/tests/bsim/bluetooth `find ${SEARCH_PATH} -name "*.sh"`
+
 RESULTS_FILE=${WORK_DIR}/bsim_results.bt.52.xml \
 SEARCH_PATH=${INFUSE_BASE}/tests/bsim/bluetooth \
 ${ZEPHYR_BASE}/tests/bsim/run_parallel.sh
