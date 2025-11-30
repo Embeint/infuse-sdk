@@ -175,6 +175,50 @@ ZTEST(kv_state_observer, test_led_suppress_overflow)
 	zassert_false(infuse_state_get(INFUSE_STATE_LED_SUPPRESS));
 }
 
+ZTEST(kv_state_observer, test_led_suppress_boot)
+{
+	struct kv_led_disable_daily_time_range time_limits = {
+		.disable_start =
+			{
+				.hour = 12,
+				.minute = 43,
+				.second = 20,
+			},
+		.disable_end =
+			{
+				.hour = 12,
+				.minute = 43,
+				.second = 30,
+			},
+	};
+	int rc;
+
+	if (!IS_ENABLED(CONFIG_KV_STORE_KEY_LED_DISABLE_DAILY_TIME_RANGE)) {
+		ztest_test_skip();
+		return;
+	}
+
+	/* Booting with key written set */
+	rc = KV_STORE_WRITE(KV_KEY_LED_DISABLE_DAILY_TIME_RANGE, &time_limits);
+	zassert_equal(sizeof(time_limits), rc);
+	kv_state_observer_init_internal();
+
+	/* Not in the suppress window at boot */
+	zassert_false(infuse_state_get(INFUSE_STATE_LED_SUPPRESS));
+
+	/* 2024-07-02T12:43:01 UTC */
+	set_now(1403959399);
+	zassert_false(infuse_state_get(INFUSE_STATE_LED_SUPPRESS));
+
+	/* Sleep into the suppression window */
+	k_sleep(K_SECONDS(20));
+	zassert_true(infuse_state_get(INFUSE_STATE_LED_SUPPRESS));
+
+	/* Sleep out of the suppression window */
+	k_sleep(K_SECONDS(10));
+	zassert_false(infuse_state_get(INFUSE_STATE_LED_SUPPRESS));
+}
+
 ZTEST(kv_state_observer, test_application_active)
 {
 	struct kv_application_active active;
