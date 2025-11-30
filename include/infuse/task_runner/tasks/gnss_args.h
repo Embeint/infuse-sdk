@@ -39,6 +39,11 @@ enum {
 	TASK_GNSS_FLAGS_RUN_MASK = 0x3,
 	/** Bit 7: Performance mode */
 	TASK_GNSS_FLAGS_PERFORMANCE_MODE = BIT(7),
+	/**
+	 * Note that the configured accuracy and position values for this mode do not equate to
+	 * targeted or expected accuracies. Instead they specify thresholds for checking whether
+	 * a fix has been obtained or if the modem should stop and try again later.
+	 */
 	TASK_GNSS_FLAGS_LOW_POWER_MODE = 0x00,
 };
 
@@ -49,14 +54,22 @@ struct task_gnss_args {
 	/** Operational flags */
 	uint8_t flags;
 	/**
-	 * Horizontal accuracy (meters)
-	 * In @a TASK_GNSS_FLAGS_LOW_POWER_MODE, sets desired accuracy.
+	 * Accuracy (meters)
+	 *
+	 * For Microntroller based checks (@a TASK_GNSS_FLAGS_RUN_TO_LOCATION_FIX) this is the
+	 * horizontal accuracy. For GNSS modem implemented functionality, this may be 3D accuracy.
+	 *
+	 * In @a TASK_GNSS_FLAGS_LOW_POWER_MODE, sets accuracy to transition to low power mode.
 	 * In @a TASK_GNSS_FLAGS_RUN_TO_LOCATION_FIX, sets accuracy to terminate at.
 	 */
 	uint16_t accuracy_m;
 	/**
-	 * Horizontal diluation of precision (0.1)
-	 * In @a TASK_GNSS_FLAGS_LOW_POWER_MODE, sets desired PDOP.
+	 * Diluation of precision (0.1)
+	 *
+	 * For Microntroller based checks (@a TASK_GNSS_FLAGS_RUN_TO_LOCATION_FIX) this is the
+	 * horizontal DOP. For GNSS modem implemented functionality, this may be 3D DOP.
+	 *
+	 * In @a TASK_GNSS_FLAGS_LOW_POWER_MODE, sets accuracy to transition to low power mode.
 	 * In @a TASK_GNSS_FLAGS_RUN_TO_LOCATION_FIX, sets PDOP to terminate at.
 	 */
 	uint16_t position_dop;
