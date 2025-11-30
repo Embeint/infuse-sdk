@@ -303,14 +303,23 @@ static int nav_sat_cb(uint8_t message_class, uint8_t message_id, const void *pay
 }
 #endif /* CONFIG_TASK_RUNNER_GNSS_SATELLITE_INFO */
 
-static void gnss_configure(const struct device *gnss, const struct task_gnss_args *args)
+/**
+ * @retval true Modem is forced into ACTIVE mode while EXTINT is high
+ * @retval false Modem is not forced into any mode
+ */
+static bool gnss_configure(const struct device *gnss, const struct task_gnss_args *args,
+			   uint32_t *max_sleep_s)
 {
 	struct ubx_modem_data *modem = ubx_modem_data_get(gnss);
 	uint8_t run_target = (args->flags & TASK_GNSS_FLAGS_RUN_MASK);
 	gnss_systems_t constellations;
+	bool extint_force_active = false;
 	bool performance_mode;
 	uint8_t dynamics;
 	int rc;
+
+	/* Default modes, modem never sleeps */
+	*max_sleep_s = 0;
 
 	/* Constellation configuration if requested */
 	if (args->constellations) {
@@ -348,7 +357,7 @@ static void gnss_configure(const struct device *gnss, const struct task_gnss_arg
 	}
 
 #ifdef CONFIG_GNSS_UBX_M10
-	NET_BUF_SIMPLE_DEFINE(cfg_buf, 50);
+	NET_BUF_SIMPLE_DEFINE(cfg_buf, 80);
 	ubx_msg_prepare_valset(&cfg_buf,
 			       UBX_MSG_CFG_VALSET_LAYERS_RAM | UBX_MSG_CFG_VALSET_LAYERS_BBR);
 	/* Core location message */
@@ -370,7 +379,26 @@ static void gnss_configure(const struct device *gnss, const struct task_gnss_arg
 		UBX_CFG_VALUE_APPEND(&cfg_buf, UBX_CFG_KEY_NAVSPG_OUTFIL_PDOP, args->position_dop);
 		UBX_CFG_VALUE_APPEND(&cfg_buf, UBX_CFG_KEY_PM_ONTIME, 0);
 		UBX_CFG_VALUE_APPEND(&cfg_buf, UBX_CFG_KEY_PM_UPDATEEPH, true);
-		UBX_CFG_VALUE_APPEND(&cfg_buf, UBX_CFG_KEY_PM_DONOTENTEROFF, true);
+		if (args->low_power.acquisition_timeout == 0) {
+			UBX_CFG_VALUE_APPEND(&cfg_buf, UBX_CFG_KEY_PM_MAXACQTIME, 0);
+			UBX_CFG_VALUE_APPEND(&cfg_buf, UBX_CFG_KEY_PM_DONOTENTEROFF, true);
+		} else {
+			UBX_CFG_VALUE_APPEND(&cfg_buf, UBX_CFG_KEY_PM_MAXACQTIME,
+					     args->low_power.acquisition_timeout);
+			UBX_CFG_VALUE_APPEND(&cfg_buf, UBX_CFG_KEY_PM_ACQPERIOD,
+					     args->low_power.search_period);
+			UBX_CFG_VALUE_APPEND(&cfg_buf, UBX_CFG_KEY_PM_DONOTENTEROFF, false);
+
+			/* Force the modem out of backup mode when EXTINT is "high" so we can
+			 * talk to the modem when desired.
+			 */
+			UBX_CFG_VALUE_APPEND(&cfg_buf, UBX_CFG_KEY_PM_EXTINTWAKE, true);
+			extint_force_active = true;
+
+			/* Modem can sleep for up to `search_period` seconds */
+			*max_sleep_s = args->low_power.search_period + 2;
+		}
+
 		UBX_CFG_VALUE_APPEND(&cfg_buf, UBX_CFG_KEY_PM_OPERATEMODE,
 				     UBX_CFG_KEY_PM_OPERATEMODE_PSMCT);
 	}
@@ -426,6 +454,26 @@ static void gnss_configure(const struct device *gnss, const struct task_gnss_arg
 	}
 #endif /* CONFIG_TASK_RUNNER_GNSS_SATELLITE_INFO */
 #endif /* CONFIG_GNSS_UBX_M8 */
+	return extint_force_active;
+}
+
+static void extint_ctrl_reset(const struct device *gnss)
+{
+#ifdef CONFIG_GNSS_UBX_M10
+	struct ubx_modem_data *modem = ubx_modem_data_get(gnss);
+	int rc;
+
+	NET_BUF_SIMPLE_DEFINE(cfg_buf, 32);
+	ubx_msg_prepare_valset(&cfg_buf,
+			       UBX_MSG_CFG_VALSET_LAYERS_RAM | UBX_MSG_CFG_VALSET_LAYERS_BBR);
+	UBX_CFG_VALUE_APPEND(&cfg_buf, UBX_CFG_KEY_PM_EXTINTWAKE, false);
+
+	ubx_msg_finalise(&cfg_buf);
+	rc = ubx_modem_send_sync_acked(modem, &cfg_buf, K_MSEC(250));
+	if (rc < 0) {
+		LOG_WRN("Failed to reset EXTINT control");
+	}
+#endif /* CONFIG_GNSS_UBX_M10 */
 }
 
 void gnss_task_fn(const struct task_schedule *schedule, struct k_poll_signal *terminate,
@@ -441,6 +489,9 @@ void gnss_task_fn(const struct task_schedule *schedule, struct k_poll_signal *te
 		.message_cb = nav_pvt_cb,
 		.user_data = &run_state,
 	};
+	bool extint_force_active;
+	uint32_t data_timeout;
+	uint32_t max_sleep_s;
 	int rc;
 
 	run_state.dev = gnss;
@@ -473,7 +524,7 @@ void gnss_task_fn(const struct task_schedule *schedule, struct k_poll_signal *te
 	}
 
 	/* Configure the modem according to the arguments */
-	gnss_configure(gnss, args);
+	extint_force_active = gnss_configure(gnss, args, &max_sleep_s);
 
 	/* Subscribe to NAV-PVT message */
 	ubx_modem_msg_subscribe(run_state.modem, &pvt_handler_ctx);
@@ -500,11 +551,27 @@ void gnss_task_fn(const struct task_schedule *schedule, struct k_poll_signal *te
 	};
 	int signaled, result;
 
+	if (extint_force_active) {
+		/* Don't want to force modem active while running */
+		ubx_modem_extint_control(gnss, false);
+	}
+	data_timeout = k_uptime_seconds();
+
 	while (1) {
 		/* Block on the NAV-PVT callback and Task Runner requests */
 		if (k_poll(events, ARRAY_SIZE(events), K_SECONDS(2)) == -EAGAIN) {
-			LOG_WRN("Terminating due to %s", "callback timeout");
-			break;
+			if (k_uptime_seconds() >= data_timeout) {
+				/* Data has not arrived within the expected time */
+				LOG_WRN("Terminating due to %s", "data timeout");
+				break;
+			}
+			if (max_sleep_s > 0) {
+				/* Modem is expected to sleep, poll to see if it is back awake.
+				 * Required since the comms interfaces also go to sleep (despite
+				 * the EXTENDEDTIMEOUT setting...)
+				 */
+				ubx_modem_fifo_poll(gnss);
+			}
 		}
 		k_poll_signal_check(terminate, &signaled, &result);
 		if (signaled) {
@@ -517,11 +584,13 @@ void gnss_task_fn(const struct task_schedule *schedule, struct k_poll_signal *te
 			if (nav_pvt_handle(&run_state, args)) {
 				break;
 			}
+			data_timeout = k_uptime_seconds() + max_sleep_s;
 		}
 		k_poll_signal_check(&run_state.nav_timegps_rx, &signaled, &result);
 		if (signaled) {
 			k_poll_signal_reset(&run_state.nav_timegps_rx);
 			nav_timegps_handle(&run_state, args);
+			data_timeout = k_uptime_seconds() + max_sleep_s;
 		}
 	}
 
@@ -554,6 +623,14 @@ void gnss_task_fn(const struct task_schedule *schedule, struct k_poll_signal *te
 #ifdef CONFIG_TASK_RUNNER_GNSS_SATELLITE_INFO
 	ubx_modem_msg_unsubscribe(run_state.modem, &sat_handler_ctx);
 #endif /* CONFIG_TASK_RUNNER_GNSS_SATELLITE_INFO */
+
+	if (extint_force_active) {
+		/* Modem could be in sleep mode, need to force active */
+		ubx_modem_extint_control(gnss, 1);
+		k_sleep(K_MSEC(250));
+		/* Stop EXTINT forcing the power state */
+		extint_ctrl_reset(gnss);
+	}
 
 	/* Release power requirement */
 	rc = pm_device_runtime_put(gnss);

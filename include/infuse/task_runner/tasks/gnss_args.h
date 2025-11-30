@@ -91,6 +91,13 @@ struct task_gnss_args {
 				uint8_t timeout;
 			} fix_plateau;
 		} run_to_fix;
+		/** @a TASK_GNSS_FLAGS_LOW_POWER_MODE specific arguments */
+		struct {
+			/** Duration to search for any GNSS signals (0 == no timeout) */
+			uint16_t acquisition_timeout;
+			/** Period between acquisition searches on timeout */
+			uint16_t search_period;
+		} low_power;
 	};
 	/** Dynamic model from @ref ubx_cfg_key_navspg_dynmodel */
 	uint8_t dynamic_model;
