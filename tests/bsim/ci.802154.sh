@@ -7,13 +7,12 @@
 
 export INFUSE_BASE="${INFUSE_BASE:-${PWD}}"
 export ZEPHYR_BASE="${ZEPHYR_BASE:-${INFUSE_BASE}/../zephyr}"
-cd ${INFUSE_BASE}
 
 set -uex
 
 # nrf52_bsim set:
-nice tests/bsim/ieee802154/compile.sh
+nice ${INFUSE_BASE}/tests/bsim/ieee802154/compile.sh
 
 RESULTS_FILE=${WORK_DIR}/bsim_results.802154.52.xml \
-SEARCH_PATH=tests/bsim/ieee802154 \
+SEARCH_PATH=${INFUSE_BASE}/tests/bsim/ieee802154 \
 ${ZEPHYR_BASE}/tests/bsim/run_parallel.sh
