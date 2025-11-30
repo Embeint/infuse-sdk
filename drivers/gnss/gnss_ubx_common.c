@@ -169,6 +169,13 @@ void ubx_modem_fifo_poll(const struct device *dev)
 	cfg->pm_funcs.fifo_poll(dev);
 }
 
+void ubx_modem_extint_control(const struct device *dev, bool high)
+{
+	const struct ubx_common_config *cfg = dev->config;
+
+	gpio_pin_set_raw(cfg->extint_gpio.port, cfg->extint_gpio.pin, high ? 1 : 0);
+}
+
 void ubx_common_extint_wake(const struct device *dev)
 {
 	const struct ubx_common_config *cfg = dev->config;

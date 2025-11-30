@@ -110,6 +110,14 @@ struct ubx_modem_data *ubx_modem_data_get(const struct device *dev);
 void ubx_modem_fifo_poll(const struct device *dev);
 
 /**
+ * @brief Control the EXTINT pin state
+ *
+ * @param dev Modem device to control EXTINT pin state for
+ * @param high True to drive pin high, low otherwise
+ */
+void ubx_modem_extint_control(const struct device *dev, bool high);
+
+/**
  * @brief Initialise UBX modem handler
  *
  * @param modem Modem data structure
