@@ -131,6 +131,12 @@ void ubx_modem_fifo_poll(const struct device *dev)
 	ARG_UNUSED(dev);
 }
 
+void ubx_modem_extint_control(const struct device *dev, bool high)
+{
+	ARG_UNUSED(dev);
+	ARG_UNUSED(high);
+}
+
 void emul_gnss_pvt_configure(const struct device *dev, struct gnss_pvt_emul_location *emul_location)
 {
 	struct emul_data *data = dev->data;
