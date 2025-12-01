@@ -21,6 +21,7 @@
 #include <infuse/fs/kv_types.h>
 #include <infuse/math/statistics.h>
 #include <infuse/states.h>
+#include <infuse/reboot.h>
 #include <infuse/task_runner/runner.h>
 #include <infuse/zbus/channels.h>
 
@@ -30,6 +31,7 @@ struct algorithm_args {
 
 struct algorithm_state {
 	const struct zbus_channel *expected_chan;
+	const struct zbus_channel *next_chan;
 	uint32_t expected_arg;
 	uint32_t run_cnt;
 };
@@ -59,6 +61,18 @@ struct algorithm_state alg3_state = {0};
 INFUSE_ZBUS_CHAN_DEFINE(INFUSE_ZBUS_CHAN_BATTERY);
 INFUSE_ZBUS_CHAN_DEFINE(INFUSE_ZBUS_CHAN_AMBIENT_ENV);
 INFUSE_ZBUS_CHAN_DEFINE(INFUSE_ZBUS_CHAN_LOCATION);
+static K_SEM_DEFINE(reboot_request, 0, 1);
+
+void infuse_reboot(enum infuse_reboot_reason reason, uint32_t info1, uint32_t info2)
+{
+	k_sem_give(&reboot_request);
+}
+
+void infuse_reboot_delayed(enum infuse_reboot_reason reason, uint32_t info1, uint32_t info2,
+			   k_timeout_t delay)
+{
+	k_sem_give(&reboot_request);
+}
 
 static void algorithm_impl(const struct zbus_channel *chan,
 			   const struct algorithm_runner_common_config *common, const void *args,
@@ -79,6 +93,12 @@ static void algorithm_impl(const struct zbus_channel *chan,
 	} else {
 		zassert_is_null(a);
 	}
+	if (d->next_chan) {
+		/* Update for the next run */
+		d->expected_chan = d->next_chan;
+		d->next_chan = NULL;
+	}
+
 	d->run_cnt += 1;
 }
 
@@ -211,7 +231,39 @@ ZTEST(algorithm_runner, test_running)
 	alg1_state.expected_arg = args_updated.arg;
 	algorithm_runner_register(&alg1);
 	zassert_equal(sizeof(args1), kv_store_key_data_size(KV_KEY_ALG_TILT_ARGS));
-	zassert_true(algorithm_runner_unregister(&alg1));
+
+	/* Reset run counts */
+	alg1_state.run_cnt = 0;
+	alg1_state.expected_chan = INFUSE_ZBUS_CHAN_GET(INFUSE_ZBUS_CHAN_BATTERY);
+
+	/* Run twice */
+	zbus_chan_pub(INFUSE_ZBUS_CHAN_GET(INFUSE_ZBUS_CHAN_BATTERY), &battery, K_FOREVER);
+	zbus_chan_pub(INFUSE_ZBUS_CHAN_GET(INFUSE_ZBUS_CHAN_BATTERY), &battery, K_FOREVER);
+	zassert_equal(2, alg1_state.run_cnt);
+
+	/* Write new configuration values, reconfigure should be called */
+	args_updated.arg = 0x1000AABB;
+	alg1_state.expected_arg = args_updated.arg;
+	alg1_state.expected_chan = NULL;
+	alg1_state.next_chan = INFUSE_ZBUS_CHAN_GET(INFUSE_ZBUS_CHAN_BATTERY);
+
+	zassert_equal(sizeof(args_updated),
+		      kv_store_write(KV_KEY_ALG_TILT_ARGS, &args_updated, sizeof(args_updated)));
+
+	zbus_chan_pub(INFUSE_ZBUS_CHAN_GET(INFUSE_ZBUS_CHAN_BATTERY), &battery, K_FOREVER);
+	zassert_equal(4, alg1_state.run_cnt);
+
+	/* Write a bad configuration, should trigger reboot (With no algorithm run) */
+	zassert_equal(sizeof(bad_value),
+		      kv_store_write(KV_KEY_ALG_TILT_ARGS, &bad_value, sizeof(bad_value)));
+
+	zassert_equal(-EBUSY, k_sem_take(&reboot_request, K_NO_WAIT));
+	zbus_chan_pub(INFUSE_ZBUS_CHAN_GET(INFUSE_ZBUS_CHAN_BATTERY), &battery, K_FOREVER);
+	zassert_equal(4, alg1_state.run_cnt);
+	zassert_equal(0, k_sem_take(&reboot_request, K_MSEC(100)));
+
+	/* Algorithm should have been automatically unregistered */
+	zassert_false(algorithm_runner_unregister(&alg1));
 }
 
 ZTEST(algorithm_runner, test_logging)
