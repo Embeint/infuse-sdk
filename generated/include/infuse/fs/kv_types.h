@@ -29,20 +29,27 @@ extern "C" {
 
 /** Geographic Co-ordinate System location */
 struct gcs_location {
+	/** Degrees north/south, scaled by 1e-7 */
 	int32_t latitude;
+	/** Degrees north/south, scaled by 1e-7 */
 	int32_t longitude;
+	/** Height above WGS-84 ellipsoid, mm */
 	int32_t height;
 } __packed;
 
 /** Bluetooth address type (bt_addr_le_t) */
 struct bt_addr_le {
+	/** Address type (0 == Public, 1 == Random) */
 	uint8_t type;
+	/** Address bytes */
 	uint8_t val[6];
 } __packed;
 
 /** String type */
 struct kv_string {
+	/** Length of `value` (including NULL) */
 	uint8_t value_num;
+	/** NULL terminated C string */
 	char value[];
 } __packed;
 
@@ -78,19 +85,25 @@ struct kv_utc_hms {
 
 /** Algorithm logging configuration */
 struct kv_algorithm_logging {
+	/** TDF logger to log to */
 	uint8_t loggers;
+	/** TDFs to log (algorithm specific bitmask */
 	uint8_t tdf_mask;
 } __packed;
 
 /** Arguments for 'Stationary Windowed' algorithm */
 struct kv_algorithm_stationary_windowed_args {
+	/** TDF logger to log to */
 	uint32_t window_seconds;
+	/** Standard deviation threshold in micro-g, above this value the device is moving */
 	uint32_t std_dev_threshold_ug;
 } __packed;
 
 /** Arguments for 'Tilt' algorithm */
 struct kv_algorithm_tilt_args {
+	/** IIR filter alpha (see @ref iir_filter_single_pole_f32) */
 	float iir_filter_alpha;
+	/** Percentage within one G magnitude must be to use for tilt calculation */
 	uint8_t one_g_percent;
 } __packed;
 
