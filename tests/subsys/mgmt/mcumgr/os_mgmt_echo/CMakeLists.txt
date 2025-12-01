@@ -19,3 +19,5 @@ FILE(GLOB app_sources
 )
 
 target_sources(app PRIVATE ${app_sources})
+target_include_directories(app PRIVATE ${ZEPHYR_BASE}/subsys/mgmt/mcumgr/transport/include/mgmt/mcumgr/transport/)
+target_include_directories(app PRIVATE ${ZEPHYR_BASE}/subsys/mgmt/mcumgr/grp/os_mgmt/include/)
