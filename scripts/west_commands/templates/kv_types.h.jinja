@@ -31,6 +31,9 @@ extern "C" {
 /** {{ info['description'] }} */
 struct {{ name }} {
 {% for field in info['fields'] %}
+	{% if 'description' in field %}
+		/** {{ field['description'] }} */
+	{% endif %}
 	{{ field['type'] }} {{ field['name'] }}{{ field['array'] }};
 {% endfor %}
 } __packed;
