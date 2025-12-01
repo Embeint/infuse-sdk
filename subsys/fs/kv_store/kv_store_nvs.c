@@ -61,6 +61,11 @@ bool kv_store_key_exists(uint16_t key)
 	return nvs_read(&fs, key, NULL, 0) > 0;
 }
 
+ssize_t kv_store_key_data_size(uint16_t key)
+{
+	return nvs_read(&fs, key, NULL, 0);
+}
+
 ssize_t kv_store_delete(uint16_t key)
 {
 	struct kv_store_cb *cb;

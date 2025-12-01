@@ -61,6 +61,11 @@ bool kv_store_key_exists(uint16_t key)
 	return zms_get_data_length(&fs, ID_PRE | key) > 0;
 }
 
+ssize_t kv_store_key_data_size(uint16_t key)
+{
+	return zms_get_data_length(&fs, ID_PRE | key);
+}
+
 ssize_t kv_store_delete(uint16_t key)
 {
 	struct kv_store_cb *cb;
