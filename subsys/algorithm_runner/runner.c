@@ -14,6 +14,8 @@
 #include <infuse/work_q.h>
 #include <infuse/algorithm_runner/runner.h>
 #include <infuse/task_runner/runner.h>
+#include <infuse/fs/kv_types.h>
+#include <infuse/fs/kv_store.h>
 
 static void new_zbus_data(const struct zbus_channel *chan);
 
@@ -58,7 +60,7 @@ static void exec_fn(struct k_work *work)
 			alg->_changed->id);
 		/* Run algorithm with the channel claimed */
 		zbus_chan_claim(alg->_changed, K_FOREVER);
-		alg->impl(alg->_changed, alg->config, alg->runtime_state);
+		alg->impl(alg->_changed, alg->config, alg->arguments, alg->runtime_state);
 		/* Clear new data flag */
 		alg->_changed = NULL;
 	}
@@ -71,35 +73,35 @@ void algorithm_runner_init(void)
 	k_work_init(&runner, exec_fn);
 }
 
-void algorithm_runner_register(struct algorithm_runner_algorithm *algorithm)
+void algorithm_runner_register(struct algorithm_runner_algorithm *alg)
 {
-	__ASSERT_NO_MSG(algorithm->impl != NULL);
+	__ASSERT_NO_MSG(alg->impl != NULL);
 
-	/* Initialise algorithm */
-	algorithm->impl(NULL, algorithm->config, algorithm->runtime_state);
+	/* Initialise alg */
+	alg->impl(NULL, alg->config, alg->arguments, alg->runtime_state);
 
 	/* Add to list of algorithms to be run */
 	k_sem_take(&list_lock, K_FOREVER);
-	sys_slist_append(&algorithms, &algorithm->_node);
+	sys_slist_append(&algorithms, &alg->_node);
 	k_sem_give(&list_lock);
 }
 
-bool algorithm_runner_unregister(struct algorithm_runner_algorithm *algorithm)
+bool algorithm_runner_unregister(struct algorithm_runner_algorithm *alg)
 {
 	bool res;
 
 	/* Remove from list of algorithms to be run */
 	k_sem_take(&list_lock, K_FOREVER);
-	res = sys_slist_find_and_remove(&algorithms, &algorithm->_node);
+	res = sys_slist_find_and_remove(&algorithms, &alg->_node);
 	k_sem_give(&list_lock);
 
 	return res;
 }
 
-void algorithm_runner_tdf_log(const struct algorithm_runner_common_config *config, uint8_t tdf_mask,
+void algorithm_runner_tdf_log(const struct kv_algorithm_logging *logging, uint8_t tdf_mask,
 			      uint16_t tdf_id, uint8_t tdf_len, uint64_t time, const void *data)
 {
-	if (config->logging.tdf_mask & tdf_mask) {
-		tdf_data_logger_log(config->logging.loggers, tdf_id, tdf_len, time, data);
+	if (logging->tdf_mask & tdf_mask) {
+		tdf_data_logger_log(logging->loggers, tdf_id, tdf_len, time, data);
 	}
 }

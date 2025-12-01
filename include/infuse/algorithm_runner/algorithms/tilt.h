@@ -19,7 +19,6 @@
 #include <infuse/algorithm_runner/runner.h>
 #include <infuse/math/statistics.h>
 #include <infuse/math/filter.h>
-#include <infuse/fs/kv_types.h>
 #include <infuse/zbus/channels.h>
 
 #ifdef __cplusplus
@@ -36,15 +35,6 @@ enum {
 	ALGORITHM_TILT_LOG_ANGLE = BIT(0),
 };
 
-struct algorithm_tilt_config {
-	/** Common algorithm configuration */
-	struct algorithm_runner_common_config common;
-	/** IIR filter alpha (see @ref iir_filter_single_pole_f32) */
-	float iir_filter_alpha;
-	/** Percentage within one G magnitude must be to use for tilt calculation */
-	uint8_t one_g_percent;
-} __packed;
-
 struct algorithm_tilt_data {
 	struct iir_filter_single_pole_f32 filter;
 	struct kv_gravity_reference gravity;
@@ -54,7 +44,9 @@ struct algorithm_tilt_data {
 };
 
 /** Algorithm implementation, see @ref algorithm_run_fn */
-void algorithm_tilt_fn(const struct zbus_channel *chan, const void *config, void *data);
+void algorithm_tilt_fn(const struct zbus_channel *chan,
+		       const struct algorithm_runner_common_config *common, const void *args,
+		       void *data);
 
 /**
  * @brief Statically define an instance of the tilt algorithm
@@ -66,25 +58,29 @@ void algorithm_tilt_fn(const struct zbus_channel *chan, const void *config, void
  * @param one_g_valid_percent Accelerometer magnitude must be with N percent of 1G to use for tilt
  */
 #define ALGORITHM_TILT_DEFINE(name, loggers_, tdfs, filter_alpha, one_g_valid_percent)             \
-	static const struct algorithm_tilt_config name##_config = {                                \
-		.common =                                                                          \
+	static const struct algorithm_runner_common_config name##_config = {                       \
+		.algorithm_id = 0x15F20001,                                                        \
+		.zbus_channel = INFUSE_ZBUS_CHAN_IMU,                                              \
+		.arguments_size = sizeof(struct kv_alg_tilt_args),                                 \
+		.state_size = sizeof(struct algorithm_tilt_data),                                  \
+	};                                                                                         \
+	static struct kv_alg_tilt_args name##_default_args = {                                     \
+		.logging =                                                                         \
 			{                                                                          \
-				.algorithm_id = 0x15F20001,                                        \
-				.zbus_channel = INFUSE_ZBUS_CHAN_IMU,                              \
-				.state_size = sizeof(struct algorithm_tilt_data),                  \
-				.logging =                                                         \
-					{                                                          \
-						.loggers = loggers_,                               \
-						.tdf_mask = tdfs,                                  \
-					},                                                         \
+				.loggers = loggers_,                                               \
+				.tdf_mask = tdfs,                                                  \
 			},                                                                         \
-		.iir_filter_alpha = filter_alpha,                                                  \
-		.one_g_percent = one_g_valid_percent,                                              \
+		.args =                                                                            \
+			{                                                                          \
+				.iir_filter_alpha = filter_alpha,                                  \
+				.one_g_percent = one_g_valid_percent,                              \
+			},                                                                         \
 	};                                                                                         \
 	static struct algorithm_tilt_data name##_data;                                             \
 	static struct algorithm_runner_algorithm name = {                                          \
 		.impl = algorithm_tilt_fn,                                                         \
-		.config = &name##_config.common,                                                   \
+		.config = &name##_config,                                                          \
+		.arguments = &name##_default_args,                                                 \
 		.runtime_state = &name##_data,                                                     \
 	}
 

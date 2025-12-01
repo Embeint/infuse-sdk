@@ -34,15 +34,6 @@ enum {
 	ALGORITHM_STATIONARY_WINDOWED_LOG_WINDOW_STD_DEV = BIT(0),
 };
 
-struct algorithm_stationary_windowed_config {
-	/* Common algorithm configuration */
-	struct algorithm_runner_common_config common;
-	/** Duration of window to examine */
-	uint32_t window_seconds;
-	/* Standard deviation threshold in micro-g, above this value the device is moving */
-	uint32_t std_dev_threshold_ug;
-} __packed;
-
 struct algorithm_stationary_windowed_data {
 	struct statistics_state stats;
 	uint32_t window_end;
@@ -50,8 +41,9 @@ struct algorithm_stationary_windowed_data {
 };
 
 /** Algorithm implementation, see @ref algorithm_run_fn */
-void algorithm_stationary_windowed_fn(const struct zbus_channel *chan, const void *config,
-				      void *data);
+void algorithm_stationary_windowed_fn(const struct zbus_channel *chan,
+				      const struct algorithm_runner_common_config *common,
+				      const void *args, void *data);
 
 /**
  * @brief Statically define an instance of the stationary windows algorithm
@@ -64,25 +56,29 @@ void algorithm_stationary_windowed_fn(const struct zbus_channel *chan, const voi
  *                     moving.
  */
 #define ALGORITHM_STATIONARY_WINDOWED_DEFINE(name, loggers_, tdfs, window_seconds_, threshold_ug)  \
-	static const struct algorithm_stationary_windowed_config name##_config = {                 \
-		.common =                                                                          \
+	static const struct algorithm_runner_common_config name##_config = {                       \
+		.algorithm_id = 0x15F20000,                                                        \
+		.zbus_channel = INFUSE_ZBUS_CHAN_IMU_ACC_MAG,                                      \
+		.arguments_size = sizeof(struct kv_alg_stationary_windowed_args),                  \
+		.state_size = sizeof(struct algorithm_stationary_windowed_data),                   \
+	};                                                                                         \
+	static struct kv_alg_stationary_windowed_args name##_default_args = {                      \
+		.logging =                                                                         \
 			{                                                                          \
-				.algorithm_id = 0x15F20000,                                        \
-				.zbus_channel = INFUSE_ZBUS_CHAN_IMU_ACC_MAG,                      \
-				.state_size = sizeof(struct algorithm_stationary_windowed_data),   \
-				.logging =                                                         \
-					{                                                          \
-						.loggers = loggers_,                               \
-						.tdf_mask = tdfs,                                  \
-					},                                                         \
+				.loggers = loggers_,                                               \
+				.tdf_mask = tdfs,                                                  \
 			},                                                                         \
-		.window_seconds = window_seconds_,                                                 \
-		.std_dev_threshold_ug = threshold_ug,                                              \
+		.args =                                                                            \
+			{                                                                          \
+				.window_seconds = window_seconds_,                                 \
+				.std_dev_threshold_ug = threshold_ug,                              \
+			},                                                                         \
 	};                                                                                         \
 	static struct algorithm_stationary_windowed_data name##_data;                              \
 	static struct algorithm_runner_algorithm name = {                                          \
 		.impl = algorithm_stationary_windowed_fn,                                          \
-		.config = &name##_config.common,                                                   \
+		.config = &name##_config,                                                          \
+		.arguments = &name##_default_args,                                                 \
 		.runtime_state = &name##_data,                                                     \
 	}
 

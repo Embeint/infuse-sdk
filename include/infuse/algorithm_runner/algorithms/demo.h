@@ -33,14 +33,16 @@ enum {
 	ALGORITHM_DEMO_METRIC_LOG = BIT(0),
 };
 
-struct algorithm_demo_common_config {
-	/** Common algorithm configuration */
-	struct algorithm_runner_common_config common;
-	/* Demo algorithm config */
+struct algorithm_demo_common_args {
+	/* Common logging configuration */
+	struct kv_algorithm_logging logging;
+	/* Algorithm specific arguments */
 	union {
+		/* Chance to emit an event on each buffer (%) */
 		uint8_t event_gen_chance;
+		/* Number of samples to compute metric over */
 		uint16_t compute_metric_len;
-	};
+	} __packed;
 } __packed;
 
 union algorithm_demo_common_data {
@@ -49,13 +51,19 @@ union algorithm_demo_common_data {
 };
 
 /** Algorithm implementation, see @ref algorithm_run_fn */
-void algorithm_demo_event_fn(const struct zbus_channel *chan, const void *config, void *data);
+void algorithm_demo_event_fn(const struct zbus_channel *chan,
+			     const struct algorithm_runner_common_config *common, const void *args,
+			     void *data);
 
 /** Algorithm implementation, see @ref algorithm_run_fn */
-void algorithm_demo_state_fn(const struct zbus_channel *chan, const void *config, void *data);
+void algorithm_demo_state_fn(const struct zbus_channel *chan,
+			     const struct algorithm_runner_common_config *common, const void *args,
+			     void *data);
 
 /** Algorithm implementation, see @ref algorithm_run_fn */
-void algorithm_demo_metric_fn(const struct zbus_channel *chan, const void *config, void *data);
+void algorithm_demo_metric_fn(const struct zbus_channel *chan,
+			      const struct algorithm_runner_common_config *common, const void *args,
+			      void *data);
 
 /**
  * @brief Statically define an instance of the demo event algorithm
@@ -69,24 +77,25 @@ void algorithm_demo_metric_fn(const struct zbus_channel *chan, const void *confi
  * @param event_chance_percent Chance to emit an event on each buffer
  */
 #define ALGORITHM_DEMO_EVENT_DEFINE(name, loggers_, tdfs, event_chance_percent)                    \
-	static const struct algorithm_demo_common_config name##_config = {                         \
-		.common =                                                                          \
+	static const struct algorithm_runner_common_config name##_config = {                       \
+		.algorithm_id = 0xFFFFFFF0,                                                        \
+		.zbus_channel = INFUSE_ZBUS_CHAN_IMU,                                              \
+		.arguments_size = sizeof(struct algorithm_demo_common_args),                       \
+		.state_size = sizeof(union algorithm_demo_common_data),                            \
+	};                                                                                         \
+	static struct algorithm_demo_common_args name##_default_args = {                           \
+		.logging =                                                                         \
 			{                                                                          \
-				.algorithm_id = 0xFFFFFFF0,                                        \
-				.zbus_channel = INFUSE_ZBUS_CHAN_IMU,                              \
-				.state_size = sizeof(union algorithm_demo_common_data),            \
-				.logging =                                                         \
-					{                                                          \
-						.loggers = loggers_,                               \
-						.tdf_mask = tdfs,                                  \
-					},                                                         \
+				.loggers = loggers_,                                               \
+				.tdf_mask = tdfs,                                                  \
 			},                                                                         \
 		.event_gen_chance = event_chance_percent,                                          \
 	};                                                                                         \
 	static union algorithm_demo_common_data name##_data;                                       \
 	static struct algorithm_runner_algorithm name = {                                          \
 		.impl = algorithm_demo_event_fn,                                                   \
-		.config = &name##_config.common,                                                   \
+		.config = &name##_config,                                                          \
+		.arguments = &name##_default_args,                                                 \
 		.runtime_state = &name##_data,                                                     \
 	}
 
@@ -100,23 +109,24 @@ void algorithm_demo_metric_fn(const struct zbus_channel *chan, const void *confi
  * @param tdfs TDFs to log
  */
 #define ALGORITHM_DEMO_STATE_DEFINE(name, loggers_, tdfs)                                          \
-	static const struct algorithm_demo_common_config name##_config = {                         \
-		.common =                                                                          \
+	static const struct algorithm_runner_common_config name##_config = {                       \
+		.algorithm_id = 0xFFFFFFF1,                                                        \
+		.zbus_channel = INFUSE_ZBUS_CHAN_IMU,                                              \
+		.arguments_size = sizeof(struct algorithm_demo_common_args),                       \
+		.state_size = sizeof(union algorithm_demo_common_data),                            \
+	};                                                                                         \
+	static struct algorithm_demo_common_args name##_default_args = {                           \
+		.logging =                                                                         \
 			{                                                                          \
-				.algorithm_id = 0xFFFFFFF1,                                        \
-				.zbus_channel = INFUSE_ZBUS_CHAN_IMU,                              \
-				.state_size = sizeof(union algorithm_demo_common_data),            \
-				.logging =                                                         \
-					{                                                          \
-						.loggers = loggers_,                               \
-						.tdf_mask = tdfs,                                  \
-					},                                                         \
+				.loggers = loggers_,                                               \
+				.tdf_mask = tdfs,                                                  \
 			},                                                                         \
 	};                                                                                         \
 	static union algorithm_demo_common_data name##_data;                                       \
 	static struct algorithm_runner_algorithm name = {                                          \
 		.impl = algorithm_demo_state_fn,                                                   \
-		.config = &name##_config.common,                                                   \
+		.config = &name##_config,                                                          \
+		.arguments = &name##_default_args,                                                 \
 		.runtime_state = &name##_data,                                                     \
 	}
 
@@ -131,24 +141,25 @@ void algorithm_demo_metric_fn(const struct zbus_channel *chan, const void *confi
  * @param metric_compute_len Number of samples to compute metric over
  */
 #define ALGORITHM_DEMO_METRIC_DEFINE(name, loggers_, tdfs, metric_compute_len)                     \
-	static const struct algorithm_demo_common_config name##_config = {                         \
-		.common =                                                                          \
+	static const struct algorithm_runner_common_config name##_config = {                       \
+		.algorithm_id = 0xFFFFFFF2,                                                        \
+		.zbus_channel = INFUSE_ZBUS_CHAN_IMU,                                              \
+		.arguments_size = sizeof(struct algorithm_demo_common_args),                       \
+		.state_size = sizeof(union algorithm_demo_common_data),                            \
+	};                                                                                         \
+	static struct algorithm_demo_common_args name##_default_args = {                           \
+		.logging =                                                                         \
 			{                                                                          \
-				.algorithm_id = 0xFFFFFFF2,                                        \
-				.zbus_channel = INFUSE_ZBUS_CHAN_IMU,                              \
-				.state_size = sizeof(union algorithm_demo_common_data),            \
-				.logging =                                                         \
-					{                                                          \
-						.loggers = loggers_,                               \
-						.tdf_mask = tdfs,                                  \
-					},                                                         \
+				.loggers = loggers_,                                               \
+				.tdf_mask = tdfs,                                                  \
 			},                                                                         \
 		.compute_metric_len = metric_compute_len,                                          \
 	};                                                                                         \
 	static union algorithm_demo_common_data name##_data;                                       \
 	static struct algorithm_runner_algorithm name = {                                          \
 		.impl = algorithm_demo_metric_fn,                                                  \
-		.config = &name##_config.common,                                                   \
+		.config = &name##_config,                                                          \
+		.arguments = &name##_default_args,                                                 \
 		.runtime_state = &name##_data,                                                     \
 	}
 
