@@ -99,7 +99,7 @@ static void send_reset(uint8_t expected_result)
 ZTEST(os_mgmt_reset, test_reset)
 {
 	KV_KEY_TYPE(KV_KEY_REBOOTS) reboots;
-	struct infuse_reboot_state reboot_state;
+	__maybe_unused struct infuse_reboot_state reboot_state;
 	ssize_t rc;
 
 	/* KV store should have been initialised and populated with a reboot count */
@@ -107,6 +107,7 @@ ZTEST(os_mgmt_reset, test_reset)
 	zassert_equal(sizeof(reboots), rc);
 
 	switch (reboots.count) {
+#ifdef CONFIG_INFUSE_REBOOT
 	case 1:
 #if CONFIG_MCUMGR_GRP_OS_INFUSE_RESET_MIN_UPTIME > 0
 		/* Send reset command on boot, should fail */
@@ -131,6 +132,12 @@ ZTEST(os_mgmt_reset, test_reset)
 		zassert_equal(0, reboot_state.info.generic.info1);
 		zassert_equal(0, reboot_state.info.generic.info2);
 		break;
+#else
+	case 1:
+		/* Send reset command on boot, should fail */
+		send_reset(MGMT_ERR_ENOTSUP);
+		break;
+#endif /* !CONFIG_INFUSE_REBOOT */
 	default:
 		zassert_unreachable("Unexpected reboot count");
 		break;
