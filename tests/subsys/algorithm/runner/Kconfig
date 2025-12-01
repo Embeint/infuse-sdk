@@ -1,0 +1,6 @@
+# Override KV_STORE_KEY_ALG_TILT_ARGS dependencies
+
+config KV_STORE_KEY_ALG_TILT_ARGS
+	default y
+
+source "Kconfig.zephyr"
