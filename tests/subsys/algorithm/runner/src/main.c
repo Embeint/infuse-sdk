@@ -50,11 +50,13 @@ INFUSE_ZBUS_CHAN_DEFINE(INFUSE_ZBUS_CHAN_BATTERY);
 INFUSE_ZBUS_CHAN_DEFINE(INFUSE_ZBUS_CHAN_AMBIENT_ENV);
 INFUSE_ZBUS_CHAN_DEFINE(INFUSE_ZBUS_CHAN_LOCATION);
 
-static void algorithm_impl(const struct zbus_channel *chan, const void *config, void *data)
+static void algorithm_impl(const struct zbus_channel *chan,
+			   const struct algorithm_runner_common_config *common, const void *args,
+			   void *data)
 {
 	struct algorithm_state *d = data;
 
-	zassert_not_null(config);
+	zassert_not_null(common);
 	zassert_not_null(data);
 	zassert_equal(d->expected_chan, chan);
 	if (chan) {
@@ -165,12 +167,10 @@ ZTEST(algorithm_runner, test_running)
 ZTEST(algorithm_runner, test_logging)
 {
 	struct k_fifo *tx_fifo = epacket_dummmy_transmit_fifo_get();
-	const struct algorithm_runner_common_config config1 = {
-		.logging =
-			{
-				.loggers = TDF_DATA_LOGGER_SERIAL,
-				.tdf_mask = BIT(1),
-			},
+
+	const struct kv_algorithm_logging logging = {
+		.loggers = TDF_DATA_LOGGER_SERIAL,
+		.tdf_mask = BIT(1),
 	};
 	struct tdf_acc_4g data;
 	struct net_buf *tx;
@@ -178,20 +178,20 @@ ZTEST(algorithm_runner, test_logging)
 	zassert_not_null(tx_fifo);
 
 	/* Not requested */
-	algorithm_runner_tdf_log(&config1, BIT(0), TDF_ACC_4G, sizeof(data), 0, &data);
+	algorithm_runner_tdf_log(&logging, BIT(0), TDF_ACC_4G, sizeof(data), 0, &data);
 	tdf_data_logger_flush(TDF_DATA_LOGGER_SERIAL);
 	tx = k_fifo_get(tx_fifo, K_MSEC(100));
 	zassert_is_null(tx);
 
 	/* Requested */
-	algorithm_runner_tdf_log(&config1, BIT(1), TDF_ACC_4G, sizeof(data), 0, &data);
+	algorithm_runner_tdf_log(&logging, BIT(1), TDF_ACC_4G, sizeof(data), 0, &data);
 	tdf_data_logger_flush(TDF_DATA_LOGGER_SERIAL);
 	tx = k_fifo_get(tx_fifo, K_MSEC(100));
 	zassert_not_null(tx);
 	net_buf_unref(tx);
 
 	/* Not requested */
-	algorithm_runner_tdf_log(&config1, BIT(2), TDF_ACC_4G, sizeof(data), 0, &data);
+	algorithm_runner_tdf_log(&logging, BIT(2), TDF_ACC_4G, sizeof(data), 0, &data);
 	tdf_data_logger_flush(TDF_DATA_LOGGER_SERIAL);
 	tx = k_fifo_get(tx_fifo, K_MSEC(100));
 	zassert_is_null(tx);

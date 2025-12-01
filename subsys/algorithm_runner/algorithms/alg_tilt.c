@@ -24,9 +24,11 @@ INFUSE_ZBUS_CHAN_DEFINE(INFUSE_ZBUS_CHAN_TILT);
 
 LOG_MODULE_REGISTER(alg_tilt, CONFIG_ALG_TILT_LOG_LEVEL);
 
-void algorithm_tilt_fn(const struct zbus_channel *chan, const void *config, void *data)
+void algorithm_tilt_fn(const struct zbus_channel *chan,
+		       const struct algorithm_runner_common_config *common, const void *args,
+		       void *data)
 {
-	const struct algorithm_tilt_config *c = config;
+	const struct kv_alg_tilt_args *a = args;
 	struct algorithm_tilt_data *d = data;
 	const struct imu_sample_array *samples;
 	struct infuse_zbus_chan_tilt chan_data;
@@ -34,7 +36,7 @@ void algorithm_tilt_fn(const struct zbus_channel *chan, const void *config, void
 
 	if (chan == NULL) {
 		/* Tilt angle starts at 0 (cos(0) == 1.0) */
-		iir_filter_single_pole_f32_init(&d->filter, c->iir_filter_alpha, 1.0f);
+		iir_filter_single_pole_f32_init(&d->filter, a->args.iir_filter_alpha, 1.0f);
 		d->reference_valid = false;
 		return;
 	}
@@ -59,7 +61,7 @@ void algorithm_tilt_fn(const struct zbus_channel *chan, const void *config, void
 	}
 
 	int16_t one_g = imu_accelerometer_1g(samples->accelerometer.full_scale_range);
-	int16_t one_g_percent = (c->one_g_percent * (int32_t)one_g) / 100;
+	int16_t one_g_percent = (a->args.one_g_percent * (int32_t)one_g) / 100;
 	int16_t limit_lower = one_g - one_g_percent;
 	int16_t limit_upper = one_g + one_g_percent;
 	uint32_t limit_lower_sq = limit_lower * limit_lower;
@@ -121,7 +123,7 @@ void algorithm_tilt_fn(const struct zbus_channel *chan, const void *config, void
 	zbus_chan_pub(ZBUS_CHAN, &chan_data, K_FOREVER);
 
 	/* Log output TDF */
-	algorithm_runner_tdf_log(&c->common, ALGORITHM_TILT_LOG_ANGLE, TDF_DEVICE_TILT,
+	algorithm_runner_tdf_log(&a->logging, ALGORITHM_TILT_LOG_ANGLE, TDF_DEVICE_TILT,
 				 sizeof(chan_data), epoch_time_from_ticks(last_acc),
 				 &chan_data.cosine);
 	return;

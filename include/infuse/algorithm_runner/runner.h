@@ -16,6 +16,8 @@
 #include <zephyr/sys/slist.h>
 #include <zephyr/zbus/zbus.h>
 
+#include <infuse/fs/kv_types.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -31,15 +33,10 @@ struct algorithm_runner_common_config {
 	uint32_t algorithm_id;
 	/* Primary channel that triggers algorithm run */
 	uint32_t zbus_channel;
+	/* Size of the arguments structure */
+	uint16_t arguments_size;
 	/* Required runtime state size */
 	uint16_t state_size;
-	/* Algorithm output logging */
-	struct {
-		/** TDF loggers to log to */
-		uint8_t loggers;
-		/** TDFs to log (bitmask defined by the activity) */
-		uint8_t tdf_mask;
-	} __packed logging;
 } __packed;
 
 /**
@@ -52,16 +49,21 @@ struct algorithm_runner_common_config {
  * @param chan Channel pointer corresponding to @a zbus_channel in
  * @ref algorithm_runner_common_config. Value is NULL on the very first call to initialise data
  * structures.
- * @param config Pointer to the constant algorithm configuration
+ * @param common Pointer to common algorithm config
+ * @param arguments Pointer to algorithm specific arguments
  * @param data Pointer to the mutable algorithm state
  */
-typedef void (*algorithm_run_fn)(const struct zbus_channel *chan, const void *config, void *data);
+typedef void (*algorithm_run_fn)(const struct zbus_channel *chan,
+				 const struct algorithm_runner_common_config *common,
+				 const void *args, void *data);
 
 struct algorithm_runner_algorithm {
 	/* Function that implements the algorithm */
 	algorithm_run_fn impl;
 	/* Algorithm configuration */
 	const struct algorithm_runner_common_config *config;
+	/* Algorithm arguments */
+	void *arguments;
 	/* Algorithm runtime state */
 	void *runtime_state;
 	/* Internal state: new data on channel */
@@ -100,14 +102,14 @@ bool algorithm_runner_unregister(struct algorithm_runner_algorithm *algorithm);
 /**
  * @brief Log a single TDF as requested by algorithm configuration
  *
- * @param config Common algorithm configuration
+ * @param logging Algorithm logging configuration
  * @param tdf_mask Single TDF mask that corresponds to @a tdf_id
  * @param tdf_id TDF sensor ID
  * @param tdf_len Length of a single TDF
  * @param time Epoch time associated with the TDF. 0 for no timestamp.
  * @param data TDF data array
  */
-void algorithm_runner_tdf_log(const struct algorithm_runner_common_config *config, uint8_t tdf_mask,
+void algorithm_runner_tdf_log(const struct kv_algorithm_logging *logging, uint8_t tdf_mask,
 			      uint16_t tdf_id, uint8_t tdf_len, uint64_t time, const void *data);
 
 /**

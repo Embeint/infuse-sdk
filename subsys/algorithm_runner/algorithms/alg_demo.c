@@ -23,9 +23,11 @@ TDF_ALGORITHM_OUTPUT_VAR(tdf_demo_event_output, 1);
 TDF_ALGORITHM_OUTPUT_VAR(tdf_demo_state_output, 1);
 TDF_ALGORITHM_OUTPUT_VAR(tdf_demo_metric_output, 4);
 
-void algorithm_demo_event_fn(const struct zbus_channel *chan, const void *config, void *data)
+void algorithm_demo_event_fn(const struct zbus_channel *chan,
+			     const struct algorithm_runner_common_config *common, const void *args,
+			     void *data)
 {
-	const struct algorithm_demo_common_config *c = config;
+	const struct algorithm_demo_common_args *a = args;
 	struct tdf_demo_event_output tdf;
 	uint8_t rand_100;
 
@@ -38,19 +40,19 @@ void algorithm_demo_event_fn(const struct zbus_channel *chan, const void *config
 	zbus_chan_finish(chan);
 
 	rand_100 = sys_rand32_get() % 100;
-	LOG_DBG("Event roll: %d for %d%%", rand_100, c->event_gen_chance);
-	if (rand_100 >= c->event_gen_chance) {
+	LOG_DBG("Event roll: %d for %d%%", rand_100, a->event_gen_chance);
+	if (rand_100 >= a->event_gen_chance) {
 		return;
 	}
-	LOG_INF("Event generated from %d%% chance", c->event_gen_chance);
+	LOG_INF("Event generated from %d%% chance", a->event_gen_chance);
 
 	/* Populate the event TDF */
-	tdf.algorithm_id = c->common.algorithm_id;
+	tdf.algorithm_id = common->algorithm_id;
 	tdf.algorithm_version = 0;
 	tdf.output[0] = rand_100;
 
 	/* Log output TDF */
-	algorithm_runner_tdf_log(&c->common, ALGORITHM_DEMO_EVENT_LOG, TDF_ALGORITHM_OUTPUT,
+	algorithm_runner_tdf_log(&a->logging, ALGORITHM_DEMO_EVENT_LOG, TDF_ALGORITHM_OUTPUT,
 				 sizeof(tdf), epoch_time_now(), &tdf);
 }
 
@@ -65,9 +67,11 @@ static const uint8_t demo_state_transitions[4][4] = {
 	{20, 30, 10, 50},
 };
 
-void algorithm_demo_state_fn(const struct zbus_channel *chan, const void *config, void *data)
+void algorithm_demo_state_fn(const struct zbus_channel *chan,
+			     const struct algorithm_runner_common_config *common, const void *args,
+			     void *data)
 {
-	const struct algorithm_demo_common_config *c = config;
+	const struct algorithm_demo_common_args *a = args;
 	union algorithm_demo_common_data *d = data;
 	struct tdf_demo_state_output tdf;
 	const uint8_t *transitions;
@@ -99,22 +103,24 @@ void algorithm_demo_state_fn(const struct zbus_channel *chan, const void *config
 		d->current_state = i;
 
 		/* Populate the event TDF */
-		tdf.algorithm_id = c->common.algorithm_id;
+		tdf.algorithm_id = common->algorithm_id;
 		tdf.algorithm_version = 0;
 		tdf.output[0] = d->current_state;
 
 		/* Log output TDF */
-		algorithm_runner_tdf_log(&c->common, ALGORITHM_DEMO_STATE_LOG, TDF_ALGORITHM_OUTPUT,
-					 sizeof(tdf), epoch_time_now(), &tdf);
+		algorithm_runner_tdf_log(&a->logging, ALGORITHM_DEMO_STATE_LOG,
+					 TDF_ALGORITHM_OUTPUT, sizeof(tdf), epoch_time_now(), &tdf);
 
 	} else {
 		LOG_DBG("Remain in %d", i);
 	}
 }
 
-void algorithm_demo_metric_fn(const struct zbus_channel *chan, const void *config, void *data)
+void algorithm_demo_metric_fn(const struct zbus_channel *chan,
+			      const struct algorithm_runner_common_config *common, const void *args,
+			      void *data)
 {
-	const struct algorithm_demo_common_config *c = config;
+	const struct algorithm_demo_common_args *a = args;
 	union algorithm_demo_common_data *d = data;
 	const struct imu_sample_array *samples;
 	struct tdf_demo_metric_output tdf;
@@ -129,7 +135,7 @@ void algorithm_demo_metric_fn(const struct zbus_channel *chan, const void *confi
 	samples = chan->message;
 
 	for (int i = 0; i < samples->accelerometer.num; i++) {
-		if (++d->processed < c->compute_metric_len) {
+		if (++d->processed < a->compute_metric_len) {
 			continue;
 		}
 		d->processed = 0;
@@ -139,14 +145,14 @@ void algorithm_demo_metric_fn(const struct zbus_channel *chan, const void *confi
 		LOG_INF("Metric: %d", metric);
 
 		/* Populate the metric TDF */
-		tdf.algorithm_id = c->common.algorithm_id;
+		tdf.algorithm_id = common->algorithm_id;
 		tdf.algorithm_version = 0;
 		sys_put_le32(metric, tdf.output);
 
 		t_event = imu_sample_timestamp(&samples->accelerometer, i);
 
 		/* Log output TDF */
-		algorithm_runner_tdf_log(&c->common, ALGORITHM_DEMO_METRIC_LOG,
+		algorithm_runner_tdf_log(&a->logging, ALGORITHM_DEMO_METRIC_LOG,
 					 TDF_ALGORITHM_OUTPUT, sizeof(tdf),
 					 epoch_time_from_ticks(t_event), &tdf);
 	}
