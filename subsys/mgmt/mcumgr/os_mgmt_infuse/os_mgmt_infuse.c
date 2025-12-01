@@ -36,7 +36,7 @@ static int os_mgmt_echo(struct smp_streamer *ctxt)
 
 	ok = zcbor_map_decode_bulk(zsd, echo_decode, ARRAY_SIZE(echo_decode), &decoded) == 0;
 
-	if (!ok) {
+	if (!ok || (decoded != 1)) {
 		return MGMT_ERR_EINVAL;
 	}
 
