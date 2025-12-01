@@ -14,6 +14,9 @@ common:
     - mps2/an385
 tests:
   mgmt.mcumgr.infuse_os.reboot: {}
+  mgmt.mcumgr.infuse_os.reboot.disabled:
+    extra_configs:
+      - CONFIG_INFUSE_REBOOT=n
   mgmt.mcumgr.infuse_os.reboot.min_uptime:
     extra_configs:
       - CONFIG_MCUMGR_GRP_OS_INFUSE_RESET_MIN_UPTIME=5
