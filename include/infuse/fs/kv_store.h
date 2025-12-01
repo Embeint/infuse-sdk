@@ -102,6 +102,16 @@ bool kv_store_key_enabled(uint16_t key);
 bool kv_store_key_exists(uint16_t key);
 
 /**
+ * @brief Check the size of data stored for a key
+ *
+ * @param key Key to check
+ *
+ * @retval >0 Size of the stored key value in bytes
+ * @retval -ENOENT If key value does not exist in the store
+ */
+ssize_t kv_store_key_data_size(uint16_t key);
+
+/**
  * @brief Check whether a given keys data is valid to return externally
  *
  * @param key Key to check
