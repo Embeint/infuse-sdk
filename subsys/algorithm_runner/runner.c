@@ -77,6 +77,21 @@ void algorithm_runner_register(struct algorithm_runner_algorithm *alg)
 {
 	__ASSERT_NO_MSG(alg->impl != NULL);
 
+#ifdef CONFIG_KV_STORE
+	if (alg->config->arguments_kv_key > 0) {
+		if (kv_store_key_data_size(alg->config->arguments_kv_key) ==
+		    alg->config->arguments_size) {
+			/* Configuration exists in KV store, load it */
+			kv_store_read(alg->config->arguments_kv_key, alg->arguments,
+				      alg->config->arguments_size);
+		} else {
+			/* No configuration, or invalid size. Update from defaults */
+			kv_store_write(alg->config->arguments_kv_key, alg->arguments,
+				       alg->config->arguments_size);
+		}
+	}
+#endif /* CONFIG_KV_STORE */
+
 	/* Initialise alg */
 	alg->impl(NULL, alg->config, alg->arguments, alg->runtime_state);
 

@@ -61,6 +61,7 @@ void algorithm_stationary_windowed_fn(const struct zbus_channel *chan,
 		.zbus_channel = INFUSE_ZBUS_CHAN_IMU_ACC_MAG,                                      \
 		.arguments_size = sizeof(struct kv_alg_stationary_windowed_args),                  \
 		.state_size = sizeof(struct algorithm_stationary_windowed_data),                   \
+		.arguments_kv_key = KV_KEY_ALG_STATIONARY_WINDOWED_ARGS,                           \
 	};                                                                                         \
 	static struct kv_alg_stationary_windowed_args name##_default_args = {                      \
 		.logging =                                                                         \
