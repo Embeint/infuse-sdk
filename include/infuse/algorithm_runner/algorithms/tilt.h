@@ -63,6 +63,7 @@ void algorithm_tilt_fn(const struct zbus_channel *chan,
 		.zbus_channel = INFUSE_ZBUS_CHAN_IMU,                                              \
 		.arguments_size = sizeof(struct kv_alg_tilt_args),                                 \
 		.state_size = sizeof(struct algorithm_tilt_data),                                  \
+		.arguments_kv_key = KV_KEY_ALG_TILT_ARGS,                                          \
 	};                                                                                         \
 	static struct kv_alg_tilt_args name##_default_args = {                                     \
 		.logging =                                                                         \

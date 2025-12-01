@@ -37,6 +37,8 @@ struct algorithm_runner_common_config {
 	uint16_t arguments_size;
 	/* Required runtime state size */
 	uint16_t state_size;
+	/* KV Store key holding @a arguments (If > 0) */
+	uint16_t arguments_kv_key;
 } __packed;
 
 /**
