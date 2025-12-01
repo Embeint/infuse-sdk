@@ -70,6 +70,8 @@ struct algorithm_runner_algorithm {
 	void *runtime_state;
 	/* Internal state: new data on channel */
 	const struct zbus_channel *_changed;
+	/* Internal state: configuration has changed */
+	bool _reload;
 	/* Internal state: list node object*/
 	sys_snode_t _node;
 };

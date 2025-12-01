@@ -16,6 +16,7 @@
 #include <infuse/task_runner/runner.h>
 #include <infuse/fs/kv_types.h>
 #include <infuse/fs/kv_store.h>
+#include <infuse/reboot.h>
 
 static void new_zbus_data(const struct zbus_channel *chan);
 
@@ -52,6 +53,38 @@ static void exec_fn(struct k_work *work)
 
 	k_sem_take(&list_lock, K_FOREVER);
 	SYS_SLIST_FOR_EACH_CONTAINER_SAFE(&algorithms, alg, algs, _node) {
+#ifdef CONFIG_KV_STORE
+		int read_len;
+
+		if (alg->_reload) {
+			/* Configuration changed in KV store */
+			read_len = kv_store_read(alg->config->arguments_kv_key, alg->arguments,
+						 alg->config->arguments_size);
+			if (read_len != alg->config->arguments_size) {
+#ifdef CONFIG_INFUSE_REBOOT
+				/* Invalid written configuration, but we no-longer have the
+				 * default values from the static variable. Force a reboot, which
+				 * will reset the configuration.
+				 */
+				infuse_reboot_delayed(INFUSE_REBOOT_CFG_CHANGE,
+						      alg->config->algorithm_id,
+						      alg->config->arguments_kv_key, K_SECONDS(2));
+#endif /* CONFIG_INFUSE_REBOOT */
+				/* Reboot failed or is not enabled, unregister the algorithm,
+				 * nothing else we can do.
+				 */
+				LOG_WRN("Invalid configuration for %08X, unregistering",
+					alg->config->algorithm_id);
+				sys_slist_find_and_remove(&algorithms, &alg->_node);
+				continue;
+			}
+			/* Re-initialise the algorithm */
+			LOG_DBG("Re-initialising algorithm %08X", alg->config->algorithm_id);
+			alg->impl(NULL, alg->config, alg->arguments, alg->runtime_state);
+			/* Don't reload again */
+			alg->_reload = false;
+		}
+#endif /* CONFIG_KV_STORE */
 		/* Only run algorithms that have new data */
 		if (alg->_changed == NULL) {
 			continue;
@@ -67,8 +100,38 @@ static void exec_fn(struct k_work *work)
 	k_sem_give(&list_lock);
 }
 
+#ifdef CONFIG_KV_STORE
+
+static void alg_kv_value_changed(uint16_t key, const void *data, size_t data_len, void *user_ctx)
+{
+	struct algorithm_runner_algorithm *alg, *algs;
+
+	/* Iterate over linked algorithms */
+	k_sem_take(&list_lock, K_FOREVER);
+	SYS_SLIST_FOR_EACH_CONTAINER_SAFE(&algorithms, alg, algs, _node) {
+		if (key == alg->config->arguments_kv_key) {
+			/* Arguments have changed, force a reload before next run */
+			alg->_reload = true;
+		}
+	}
+	k_sem_give(&list_lock);
+}
+
+#endif /* CONFIG_KV_STORE */
+
 void algorithm_runner_init(void)
 {
+#ifdef CONFIG_KV_STORE
+	static struct kv_store_cb alg_kv_cb = {
+		.value_changed = alg_kv_value_changed,
+	};
+
+	/* Check is only to handle tests that call `algorithm_runner_init` multiple times */
+	if (runner.handler == NULL) {
+		kv_store_register_callback(&alg_kv_cb);
+	}
+#endif /* CONFIG_KV_STORE */
+
 	sys_slist_init(&algorithms);
 	k_work_init(&runner, exec_fn);
 }
