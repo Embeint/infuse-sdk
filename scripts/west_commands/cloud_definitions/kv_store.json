@@ -45,6 +45,27 @@
                 {"name": "minute", "type": "uint8_t"},
                 {"name": "second", "type": "uint8_t"}
             ]
+        },
+        "kv_algorithm_logging": {
+            "description": "Algorithm logging configuration",
+            "fields": [
+                {"name": "loggers", "type": "uint8_t", "description": "TDF logger to log to"},
+                {"name": "tdf_mask", "type": "uint8_t", "description": "TDFs to log (algorithm specific bitmask"}
+            ]
+        },
+        "kv_algorithm_stationary_windowed_args": {
+            "description": "Arguments for 'Stationary Windowed' algorithm",
+            "fields": [
+                {"name": "window_seconds", "type": "uint32_t", "description": "TDF logger to log to"},
+                {"name": "std_dev_threshold_ug", "type": "uint32_t", "description": "Standard deviation threshold in micro-g, above this value the device is moving"}
+            ]
+        },
+        "kv_algorithm_tilt_args": {
+            "description": "Arguments for 'Tilt' algorithm",
+            "fields": [
+                {"name": "iir_filter_alpha", "type": "float", "description": "IIR filter alpha (see @ref iir_filter_single_pole_f32)"},
+                {"name": "one_g_percent", "type": "uint8_t", "description": "Percentage within one G magnitude must be to use for tilt calculation"}
+            ]
         }
     },
     "definitions": {
@@ -334,6 +355,26 @@
             "fields": [
                 {"name": "points_num", "type": "uint8_t", "description": "Number of points in the geofence"},
                 {"name": "points", "type": "struct gcs_location", "num": 0, "description": "Points in geofence"}
+            ]
+        },
+        "200": {
+            "name": "ALG_STATIONARY_WINDOWED_ARGS",
+            "description": "Configuration for the 'Stationary Windowed' algorithm",
+            "depends_on": "ALGORITHM_RUNNER_ALG_STATIONARY_WINDOWED",
+            "reflect": true,
+            "fields": [
+                {"name": "logging", "type": "struct kv_algorithm_logging", "description": "Algorithm logging"},
+                {"name": "args", "type": "struct kv_algorithm_stationary_windowed_args", "description": "Algorithm arguments"}
+            ]
+        },
+        "201": {
+            "name": "ALG_TILT_ARGS",
+            "description": "Configuration for the 'Tilt' algorithm",
+            "depends_on": "ALGORITHM_RUNNER_ALG_TILT",
+            "reflect": true,
+            "fields": [
+                {"name": "logging", "type": "struct kv_algorithm_logging", "description": "Algorithm logging"},
+                {"name": "args", "type": "struct kv_algorithm_tilt_args", "description": "Algorithm arguments"}
             ]
         },
         "1000": {

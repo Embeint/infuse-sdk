@@ -76,6 +76,24 @@ struct kv_utc_hms {
 	uint8_t second;
 } __packed;
 
+/** Algorithm logging configuration */
+struct kv_algorithm_logging {
+	uint8_t loggers;
+	uint8_t tdf_mask;
+} __packed;
+
+/** Arguments for 'Stationary Windowed' algorithm */
+struct kv_algorithm_stationary_windowed_args {
+	uint32_t window_seconds;
+	uint32_t std_dev_threshold_ug;
+} __packed;
+
+/** Arguments for 'Tilt' algorithm */
+struct kv_algorithm_tilt_args {
+	float iir_filter_alpha;
+	uint8_t one_g_percent;
+} __packed;
+
 /**
  * @}
  */
@@ -401,6 +419,22 @@ struct kv_geofence {
 	} __packed
 /* clang-format on */
 
+/** Configuration for the 'Stationary Windowed' algorithm */
+struct kv_alg_stationary_windowed_args {
+	/** Algorithm logging */
+	struct kv_algorithm_logging logging;
+	/** Algorithm arguments */
+	struct kv_algorithm_stationary_windowed_args args;
+} __packed;
+
+/** Configuration for the 'Tilt' algorithm */
+struct kv_alg_tilt_args {
+	/** Algorithm logging */
+	struct kv_algorithm_logging logging;
+	/** Algorithm arguments */
+	struct kv_algorithm_tilt_args args;
+} __packed;
+
 /** Unique identifier for default schedule set */
 struct kv_task_schedules_default_id {
 	/** If this value changes, existing schedules are overwritten */
@@ -527,6 +561,10 @@ enum kv_builtin_id {
 #endif
 	/** Maximum number of KV_KEY_GEOFENCE slots that can be enabled */
 	KV_KEY_GEOFENCE_MAX = 115,
+	/** Configuration for the 'Stationary Windowed' algorithm */
+	KV_KEY_ALG_STATIONARY_WINDOWED_ARGS = 200,
+	/** Configuration for the 'Tilt' algorithm */
+	KV_KEY_ALG_TILT_ARGS = 201,
 	/** Unique identifier for default schedule set */
 	KV_KEY_TASK_SCHEDULES_DEFAULT_ID = 1000,
 	/** Task runner task schedule definition (@ref task_schedule) */
@@ -569,6 +607,8 @@ enum kv_builtin_size {
 	_KV_KEY_LED_DISABLE_DAILY_TIME_RANGE_SIZE = sizeof(struct kv_led_disable_daily_time_range),
 	_KV_KEY_MEMFAULT_DISABLE_SIZE = sizeof(struct kv_memfault_disable),
 	_KV_KEY_GRAVITY_REFERENCE_SIZE = sizeof(struct kv_gravity_reference),
+	_KV_KEY_ALG_STATIONARY_WINDOWED_ARGS_SIZE = sizeof(struct kv_alg_stationary_windowed_args),
+	_KV_KEY_ALG_TILT_ARGS_SIZE = sizeof(struct kv_alg_tilt_args),
 	_KV_KEY_TASK_SCHEDULES_DEFAULT_ID_SIZE = sizeof(struct kv_task_schedules_default_id),
 };
 
@@ -604,6 +644,8 @@ enum kv_builtin_size {
 #define _KV_KEY_MEMFAULT_DISABLE_TYPE struct kv_memfault_disable
 #define _KV_KEY_GRAVITY_REFERENCE_TYPE struct kv_gravity_reference
 #define _KV_KEY_GEOFENCE_TYPE struct kv_geofence
+#define _KV_KEY_ALG_STATIONARY_WINDOWED_ARGS_TYPE struct kv_alg_stationary_windowed_args
+#define _KV_KEY_ALG_TILT_ARGS_TYPE struct kv_alg_tilt_args
 #define _KV_KEY_TASK_SCHEDULES_DEFAULT_ID_TYPE struct kv_task_schedules_default_id
 #define _KV_KEY_TASK_SCHEDULES_TYPE struct kv_task_schedules
 #define _KV_KEY_SECURE_STORAGE_RESERVED_TYPE struct kv_secure_storage_reserved
@@ -664,6 +706,10 @@ enum kv_builtin_size {
 		   (1 +)) \
 	IF_ENABLED(CONFIG_KV_STORE_KEY_GEOFENCE, \
 		   (CONFIG_KV_STORE_KEY_GEOFENCE_RANGE +)) \
+	IF_ENABLED(CONFIG_KV_STORE_KEY_ALG_STATIONARY_WINDOWED_ARGS, \
+		   (1 +)) \
+	IF_ENABLED(CONFIG_KV_STORE_KEY_ALG_TILT_ARGS, \
+		   (1 +)) \
 	IF_ENABLED(CONFIG_KV_STORE_KEY_TASK_SCHEDULES_DEFAULT_ID, \
 		   (1 +)) \
 	IF_ENABLED(CONFIG_KV_STORE_KEY_TASK_SCHEDULES, \
@@ -914,6 +960,20 @@ static struct key_value_slot_definition _KV_SLOTS_ARRAY_DEFINE[] = {
 		.flags = KV_FLAGS_REFLECT,
 	},
 #endif /* CONFIG_KV_STORE_KEY_GEOFENCE */
+#ifdef CONFIG_KV_STORE_KEY_ALG_STATIONARY_WINDOWED_ARGS
+	{
+		.key = KV_KEY_ALG_STATIONARY_WINDOWED_ARGS,
+		.range = 1,
+		.flags = KV_FLAGS_REFLECT,
+	},
+#endif /* CONFIG_KV_STORE_KEY_ALG_STATIONARY_WINDOWED_ARGS */
+#ifdef CONFIG_KV_STORE_KEY_ALG_TILT_ARGS
+	{
+		.key = KV_KEY_ALG_TILT_ARGS,
+		.range = 1,
+		.flags = KV_FLAGS_REFLECT,
+	},
+#endif /* CONFIG_KV_STORE_KEY_ALG_TILT_ARGS */
 #ifdef CONFIG_KV_STORE_KEY_TASK_SCHEDULES_DEFAULT_ID
 	{
 		.key = KV_KEY_TASK_SCHEDULES_DEFAULT_ID,

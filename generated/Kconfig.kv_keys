@@ -185,6 +185,18 @@ config KV_STORE_KEY_GEOFENCE_RANGE
 	range 1 16
 	default 1
 
+config KV_STORE_KEY_ALG_STATIONARY_WINDOWED_ARGS
+	bool "Enable KV key ALG_STATIONARY_WINDOWED_ARGS"
+	depends on ALGORITHM_RUNNER_ALG_STATIONARY_WINDOWED
+	help
+	  Configuration for the 'Stationary Windowed' algorithm
+
+config KV_STORE_KEY_ALG_TILT_ARGS
+	bool "Enable KV key ALG_TILT_ARGS"
+	depends on ALGORITHM_RUNNER_ALG_TILT
+	help
+	  Configuration for the 'Tilt' algorithm
+
 config KV_STORE_KEY_TASK_SCHEDULES_DEFAULT_ID
 	bool "Enable KV key TASK_SCHEDULES_DEFAULT_ID"
 	default y if TASK_RUNNER
