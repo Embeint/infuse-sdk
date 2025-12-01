@@ -1,6 +1,10 @@
 #include <mem.h>
 
 / {
+	chosen {
+		infuse,kv-partition = &storage_partition;
+	};
+
 	data_logger_dummy: data_logger_dummy {
 		compatible = "embeint,data-logger-epacket", "embeint,data-logger";
 		epacket = <&epacket_dummy>;

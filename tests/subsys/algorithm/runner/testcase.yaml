@@ -4,6 +4,9 @@ common:
   min_ram: 32
 tests:
   algorithm.runner:
+    platform_allow:
+      - native_sim
+      - mps2/an385
     integration_platforms:
       - native_sim
-      - qemu_cortex_m3
+      - mps2/an385
