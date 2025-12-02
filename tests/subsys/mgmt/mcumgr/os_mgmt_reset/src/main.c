@@ -94,6 +94,7 @@ static void send_reset(uint8_t expected_result)
 		zassert_equal(expected_result, rc);
 	}
 	net_buf_unref(nb);
+	nb = NULL;
 }
 
 ZTEST(os_mgmt_reset, test_reset)
