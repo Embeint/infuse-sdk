@@ -343,16 +343,16 @@ ZTEST(data_logger_api, test_while_prepare)
 	const struct device *logger = DEVICE_DT_GET(DT_NODELABEL(data_logger_shim));
 	struct data_logger_shim_function_data *data = data_logger_backend_shim_data_pointer(logger);
 	struct data_logger_state state;
-	struct k_work erase_work;
+	struct k_work write_work;
 	struct k_sem erase_sem;
 
 	k_sem_init(&erase_sem, 0, 1);
-	k_work_init(&erase_work, do_writes);
+	k_work_init(&write_work, do_writes);
 	data_logger_get_state(logger, &state);
 
 	/* Submit block write work */
 	data->erase.block_until = &erase_sem;
-	k_work_submit(&erase_work);
+	k_work_submit(&write_work);
 	k_sleep(K_TICKS(100));
 
 	/* Writing should currently be blocked in the erase step */
@@ -363,6 +363,11 @@ ZTEST(data_logger_api, test_while_prepare)
 
 	/* Unblock the erase worker */
 	k_sem_give(&erase_sem);
+
+	/* Wait until the write work item completes */
+	while (k_work_is_pending(&write_work)) {
+		k_sleep(K_TICKS(1));
+	}
 }
 
 ZTEST(data_logger_api, test_flush)
