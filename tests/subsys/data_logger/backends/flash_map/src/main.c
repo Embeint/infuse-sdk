@@ -310,7 +310,7 @@ static void erase_progress(uint32_t blocks_erased)
 	erase_progress_calls += 1;
 }
 
-static void test_erase_blocks(uint32_t logged_blocks)
+static void test_erase_blocks(uint32_t logged_blocks, bool erase_all)
 {
 	const struct device *logger = DEVICE_DT_GET(DT_NODELABEL(data_logger_flash));
 	struct data_logger_state state;
@@ -330,7 +330,7 @@ static void test_erase_blocks(uint32_t logged_blocks)
 	}
 
 	/* Erase the logger */
-	rc = data_logger_erase(logger, true, erase_progress);
+	rc = data_logger_erase(logger, erase_all, erase_progress);
 	zassert_equal(0, rc);
 
 	/* Expected number of callbacks */
@@ -357,9 +357,15 @@ ZTEST(data_logger_flash_map, test_erase)
 
 	data_logger_get_state(logger, &state);
 
-	test_erase_blocks(5);
-	test_erase_blocks(state.physical_blocks / 2);
-	test_erase_blocks(3 * state.physical_blocks / 2);
+	/* Erasing entire flash space */
+	test_erase_blocks(5, true);
+	test_erase_blocks(state.physical_blocks / 2, true);
+	test_erase_blocks(3 * state.physical_blocks / 2, true);
+
+	/* Erasing only logged data */
+	test_erase_blocks(5, false);
+	test_erase_blocks(state.physical_blocks / 2, false);
+	test_erase_blocks(3 * state.physical_blocks / 2, false);
 }
 
 ZTEST(data_logger_flash_map, test_erase_exclusion)
