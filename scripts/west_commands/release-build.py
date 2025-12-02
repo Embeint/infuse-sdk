@@ -265,6 +265,7 @@ class release_build(WestCommand):
             build_cmd.extend(
                 [
                     "--",
+                    f'-DCONFIG_TFM_IMAGE_VERSION_S="{expected_version}"',
                     # Both keys are considered valid by the TF-M BL2
                     f"-DCONFIG_TFM_KEY_FILE_S={signing_key_config}",
                     f"-DCONFIG_TFM_KEY_FILE_NS={signing_key_config}",
@@ -276,8 +277,6 @@ class release_build(WestCommand):
                     "-DCONFIG_TFM_LCS_SECURED_DISABLE_DEBUG_PORT=y",
                 ]
             )
-            if self.version is not None:
-                build_cmd.extend([f'-DCONFIG_TFM_IMAGE_VERSION_S="{self.version}+0"'])
 
         if self.network_key is not None:
             build_cmd.extend([f'-DCONFIG_INFUSE_SECURITY_DEFAULT_NETWORK="{self.network_key}"'])
