@@ -102,9 +102,15 @@ configdefault BT_CTLR_SDC_ALLOW_PARALLEL_SCANNING_AND_INITIATING
 # switch PHY's results in iPhones having problems connecting to devices.
 configdefault BT_PHY_UPDATE
 	default y
-# But we don't want the PHY update to be triggered automatically by the peripheral
+# But we don't want the PHY update to be triggered automatically by the stack
 configdefault BT_AUTO_PHY_UPDATE
 	default n
+choice BT_AUTO_PHY_CENTRAL
+	default BT_AUTO_PHY_CENTRAL_NONE
+endchoice
+choice BT_AUTO_PHY_PERIPHERAL
+	default BT_AUTO_PHY_PERIPHERAL_NONE
+endchoice
 # GATT clients should be able to request PHY's
 configdefault BT_USER_PHY_UPDATE
 	default y if BT_GATT_CLIENT

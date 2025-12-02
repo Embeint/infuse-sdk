@@ -50,6 +50,11 @@ struct bt_disconnect_node {
 static sys_slist_t disconnect_list;
 static struct k_spinlock disconnect_lock;
 
+/* Ensure auto PHY updates are disabled since they break the setup flow */
+BUILD_ASSERT(!IS_ENABLED(CONFIG_BT_AUTO_PHY_UPDATE));
+BUILD_ASSERT(!IS_ENABLED(CONFIG_BT_CENTRAL) || IS_ENABLED(CONFIG_BT_AUTO_PHY_CENTRAL_NONE));
+BUILD_ASSERT(!IS_ENABLED(CONFIG_BT_PERIPHERAL) || IS_ENABLED(CONFIG_BT_AUTO_PHY_PERIPHERAL_NONE));
+
 LOG_MODULE_REGISTER(infuse_gatt, LOG_LEVEL_INF);
 
 const char *bt_addr_le_str(const bt_addr_le_t *addr);
