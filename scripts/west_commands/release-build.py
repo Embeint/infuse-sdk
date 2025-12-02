@@ -2,32 +2,27 @@
 # Copyright (c) 2024 Embeint Holdings Pty Ltd
 
 import argparse
+import os
 import pathlib
+import re
+import shutil
 import subprocess
 import sys
-import shutil
-import os
-import re
 
 import colorama
 import pykwalify.core
 import yaml
-
-from west.commands import WestCommand
-from west.manifest import Project, ManifestProject
-
-from git import Repo, exc
-
 import zcmake
+from git import Repo, exc
+from west.commands import WestCommand
+from west.manifest import ManifestProject, Project
 
 EXPORT_DESCRIPTION = """\
 This command generates an application release.
 """
 
-RELEASE_SCHEMA_PATH = str(
-    pathlib.Path(__file__).parent.parent / "schemas" / "release-schema.yml"
-)
-with open(RELEASE_SCHEMA_PATH, "r", encoding="utf-8") as f:
+RELEASE_SCHEMA_PATH = str(pathlib.Path(__file__).parent.parent / "schemas" / "release-schema.yml")
+with open(RELEASE_SCHEMA_PATH, encoding="utf-8") as f:
     release_schema = yaml.safe_load(f)
 
 
@@ -57,9 +52,7 @@ class release_build(WestCommand):
             required=True,
             help="Release configuration file",
         )
-        parser.add_argument(
-            "--ignore-git", action="store_true", help="Ignore git check failures"
-        )
+        parser.add_argument("--ignore-git", action="store_true", help="Ignore git check failures")
         parser.add_argument(
             "--skip-git",
             action="store_true",
@@ -80,20 +73,12 @@ class release_build(WestCommand):
             self.release = yaml.safe_load(f)
 
         try:
-            pykwalify.core.Core(
-                source_data=self.release, schema_data=release_schema
-            ).validate()
+            pykwalify.core.Core(source_data=self.release, schema_data=release_schema).validate()
         except pykwalify.errors.SchemaError as e:
-            sys.exit(
-                f"ERROR: Malformed section in file: {self.args.release.as_posix()}\n{e}"
-            )
+            sys.exit(f"ERROR: Malformed section in file: {self.args.release.as_posix()}\n{e}")
 
-        self.application = self._absolute_path(
-            self.args.release.parent, self.release["application_folder"]
-        )
-        self.signing_key = self._absolute_path(
-            self.args.release.parent, self.release["signing_key"]
-        )
+        self.application = self._absolute_path(self.args.release.parent, self.release["application_folder"])
+        self.signing_key = self._absolute_path(self.args.release.parent, self.release["signing_key"])
         if not self.signing_key.exists():
             sys.exit(f"ERROR: Signing key {self.signing_key} does not exist")
         if key := self.release.get("network_key", None):
@@ -103,9 +88,7 @@ class release_build(WestCommand):
         else:
             self.network_key = None
         if key := self.release.get("network_key_secondary", None):
-            self.network_key_secondary = self._absolute_path(
-                self.args.release.parent, key
-            )
+            self.network_key_secondary = self._absolute_path(self.args.release.parent, key)
             if not self.network_key_secondary.exists():
                 sys.exit(f"ERROR: Network key {self.network_key} does not exist")
         else:
@@ -155,12 +138,8 @@ class release_build(WestCommand):
                 sys.exit(str(e))
 
         # Calculate the ahead and behind counts
-        ahead = len(
-            list(repo.iter_commits(f"{remote_commit.hexsha}..{local_commit.hexsha}"))
-        )
-        behind = len(
-            list(repo.iter_commits(f"{local_commit.hexsha}..{remote_commit.hexsha}"))
-        )
+        ahead = len(list(repo.iter_commits(f"{remote_commit.hexsha}..{local_commit.hexsha}")))
+        behind = len(list(repo.iter_commits(f"{local_commit.hexsha}..{remote_commit.hexsha}")))
 
         return ahead, behind
 
@@ -192,17 +171,15 @@ class release_build(WestCommand):
                         f"Manifest project '{project.path}' contains {ahead} commits not present on origin"
                     )
                 if behind != 0:
-                    error_msg.append(
-                        f"Manifest project '{project.path}' is missing {behind} commits present on origin"
-                    )
+                    error_msg.append(f"Manifest project '{project.path}' is missing {behind} commits present on origin")
             else:
                 # Ensure revision specified in manifest matches currently checked out commit
                 manifest_commit = repo.commit(project.revision)
                 on_disk_commit = repo.commit()
                 if manifest_commit != on_disk_commit:
-                    error_msg.append(
-                        f"Repository '{project.path}' commit mismatch ({manifest_commit.hexsha[:8]} !=  {on_disk_commit.hexsha[:8]})"
-                    )
+                    err = f"Repository '{project.path}' commit mismatch "
+                    err += f"({manifest_commit.hexsha[:8]} != {on_disk_commit.hexsha[:8]})"
+                    error_msg.append(err)
             # Ensure there is no uncommitted content on disk
             if repo.is_dirty(untracked_files=True):
                 error_msg.append(f"Repository '{project.path}' has uncommitted changes")
@@ -237,9 +214,7 @@ class release_build(WestCommand):
         spdx_init_cmd = ["west", "spdx", "--init", "-d"]
 
         # Prepare application directory for SPDX
-        proc = subprocess.run(
-            spdx_init_cmd + [str(self.build_app_dir)], capture_output=True
-        )
+        proc = subprocess.run(spdx_init_cmd + [str(self.build_app_dir)], capture_output=True)
         if proc.returncode != 0:
             print("SPDX initialisation stderr:")
             sys.exit(proc.stderr.decode("utf-8"))
@@ -305,9 +280,7 @@ class release_build(WestCommand):
                 build_cmd.extend([f'-DCONFIG_TFM_IMAGE_VERSION_S="{self.version}+0"'])
 
         if self.network_key is not None:
-            build_cmd.extend(
-                [f'-DCONFIG_INFUSE_SECURITY_DEFAULT_NETWORK="{self.network_key}"']
-            )
+            build_cmd.extend([f'-DCONFIG_INFUSE_SECURITY_DEFAULT_NETWORK="{self.network_key}"'])
         if self.network_key_secondary is not None:
             build_cmd.extend(
                 [
@@ -334,14 +307,7 @@ class release_build(WestCommand):
 
     def validate_build(self, expected_version: str) -> dict:
         cache = zcmake.CMakeCache.from_build_dir(self.build_app_dir)
-        autoconf = (
-            self.build_app_dir
-            / "zephyr"
-            / "include"
-            / "generated"
-            / "zephyr"
-            / "autoconf.h"
-        )
+        autoconf = self.build_app_dir / "zephyr" / "include" / "generated" / "zephyr" / "autoconf.h"
         warnings = []
         errors = []
 
@@ -361,19 +327,18 @@ class release_build(WestCommand):
         if "CONFIG_INFUSE_SECURITY" in configs:
             network_key = configs["CONFIG_INFUSE_SECURITY_DEFAULT_NETWORK"]
             if network_key.endswith("default_network.yaml"):
-                warnings.append(
-                    "Default Infuse-IoT network key used! Communications are not secure!"
-                )
+                warnings.append("Default Infuse-IoT network key used! Communications are not secure!")
         if (
             "CONFIG_INFUSE_RPC_COMMAND_FILE_WRITE_BASIC" in configs
             or "CONFIG_INFUSE_RPC_COMMAND_COAP_DOWNLOAD" in configs
-        ):
-            if "CONFIG_INFUSE_DFU_HELPERS" not in configs:
-                errors.append("DFU RPCs enabled but image erase helpers not enabled")
+        ) and "CONFIG_INFUSE_DFU_HELPERS" not in configs:
+            errors.append("DFU RPCs enabled but image erase helpers not enabled")
 
-        if "CONFIG_EPACKET_INTERFACE_UDP" in configs:
-            if "CONFIG_EPACKET_INTERFACE_UDP_DOWNLINK_WATCHDOG" not in configs:
-                warnings.append("UDP interface enabled without downlink watchdog")
+        if (
+            "CONFIG_EPACKET_INTERFACE_UDP" in configs
+            and "CONFIG_EPACKET_INTERFACE_UDP_DOWNLINK_WATCHDOG" not in configs
+        ):
+            warnings.append("UDP interface enabled without downlink watchdog")
 
         if "CONFIG_DNS_RESOLVER_CACHE" in configs:
             warnings.append("Application cannot handle changing IP addresses")
@@ -383,17 +348,13 @@ class release_build(WestCommand):
             key_file_1 = configs["CONFIG_TFM_KEY_FILE_NS"]
             tfm_key_path = "modules/tee/tf-m/trusted-firmware-m/bl2/ext/mcuboot"
             if (tfm_key_path in key_file_0) or (tfm_key_path in key_file_1):
-                errors.append(
-                    "Default TF-M signing key used! Application is not secure!"
-                )
+                errors.append("Default TF-M signing key used! Application is not secure!")
         else:
             if "CONFIG_INFUSE_COMMON_BOOT_DEBUG_PORT_DISABLE" not in configs:
                 warnings.append("Debug port is not disabled by application")
             key_file = configs["CONFIG_MCUBOOT_SIGNATURE_KEY_FILE"]
             if "bootloader/mcuboot" in key_file:
-                errors.append(
-                    "Default MCUboot signing key used! Application is not secure!"
-                )
+                errors.append("Default MCUboot signing key used! Application is not secure!")
         if self.tfm_build:
             signed_bin = self.build_app_dir / "zephyr" / "tfm_s_zephyr_ns_signed.bin"
         else:
@@ -406,14 +367,7 @@ class release_build(WestCommand):
             print(colorama.Fore.RED + err + colorama.Fore.RESET)
 
         # TODO: replace with cache['IMGTOOL'] once PyPi version updated
-        imgtool_path = (
-            pathlib.Path(cache["ZEPHYR_BASE"])
-            / ".."
-            / "bootloader"
-            / "mcuboot"
-            / "scripts"
-            / "imgtool.py"
-        )
+        imgtool_path = pathlib.Path(cache["ZEPHYR_BASE"]) / ".." / "bootloader" / "mcuboot" / "scripts" / "imgtool.py"
 
         # Work out what imgtool says about the image
         imgtool_output = self.build_app_dir / "imgtool.yaml"
@@ -430,9 +384,7 @@ class release_build(WestCommand):
 
         # Check the version we expected against the version imgtool decodes
         if expected_version != imgtool_yaml["header"]["version"]:
-            sys.exit(
-                f"Unexpected image versions ({expected_version} != {imgtool_yaml['header']['version']})"
-            )
+            sys.exit(f"Unexpected image versions ({expected_version} != {imgtool_yaml['header']['version']})")
 
         return configs
 
@@ -512,16 +464,12 @@ class release_build(WestCommand):
                 else:
                     merge_files.append(unsigned)
 
-                self.export_folder(
-                    output_dir / domain["name"], self.build_dir / domain["name"]
-                )
+                self.export_folder(output_dir / domain["name"], self.build_dir / domain["name"])
 
             self.export_file(output_dir, self.build_dir, "build_info.yml")
             self.export_file(output_dir, self.build_dir, "domains.yaml")
             self.export_file(output_dir, self.build_dir, "CMakeCache.txt")
-            self.export_file(
-                output_dir / "_sysbuild", self.build_dir / "_sysbuild", "autoconf.h"
-            )
+            self.export_file(output_dir / "_sysbuild", self.build_dir / "_sysbuild", "autoconf.h")
 
             # Copy OTA upgrade file to output directory
             shutil.copy(
@@ -588,8 +536,7 @@ class release_build(WestCommand):
             "commands": [
                 c.removeprefix("CONFIG_INFUSE_RPC_COMMAND_").lower()
                 for c in build_configs
-                if c.startswith("CONFIG_INFUSE_RPC_COMMAND_")
-                and not c.endswith("_REQUIRED_AUTH")
+                if c.startswith("CONFIG_INFUSE_RPC_COMMAND_") and not c.endswith("_REQUIRED_AUTH")
             ],
             "kv_keys": [
                 k.removeprefix("CONFIG_KV_STORE_KEY_")

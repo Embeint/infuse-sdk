@@ -2,24 +2,24 @@
 # Copyright (c) 2024 Embeint Holdings Pty Ltd
 
 import argparse
-import shutil
-import pathlib
 import json
+import pathlib
+import shutil
 import subprocess
 import sys
-import yaml
+
 import pylink
+import yaml
 
 try:
     from simple_term_menu import TerminalMenu
 except NotImplementedError:
     pass
 
+import zcmake
+from west import log
 from west.commands import WestCommand
 from west.util import west_topdir
-from west import log
-
-import zcmake
 
 EXPORT_DESCRIPTION = """\
 This command generates default VSCode configuration files for
@@ -99,9 +99,7 @@ def author():
     """Get current git user configuration"""
 
     def git_config(config: str):
-        proc = subprocess.run(
-            ["git", "config", config], stdout=subprocess.PIPE, check=False
-        )
+        proc = subprocess.run(["git", "config", config], stdout=subprocess.PIPE, check=False)
         return proc.stdout.strip().decode()
 
     return f" * @author {git_config('user.name')} <{git_config('user.email')}>"
@@ -161,7 +159,7 @@ extern "C" {
 #endif
 
 #endif /* ${RELATIVE_FILEPATH/(?:^.*\\\\src\\\\)?(\\w+)(?!\\w*$)|(\\W)|(\\w+)$/${1:/upcase}${2:+_}${3:/upcase}${3:+_}/g} */
-"""
+"""  # noqa: E501
     )
 
 
@@ -224,9 +222,7 @@ class vscode(WestCommand):
             action="store_true",
             help="Exclude common build folders from search paths",
         )
-        parser.add_argument(
-            "--build-dir", "-d", dest="dir", type=str, help="Application build folder"
-        )
+        parser.add_argument("--build-dir", "-d", dest="dir", type=str, help="Application build folder")
         parser.add_argument("--snr", type=str, help="JTAG serial number")
         return parser
 
@@ -236,13 +232,9 @@ class vscode(WestCommand):
         cache: zcmake.CMakeCache,
         include_path: bool = True,
     ):
-        c_cpp_properties["configurations"][0]["compilerPath"] = cache.get(
-            "CMAKE_C_COMPILER"
-        )
+        c_cpp_properties["configurations"][0]["compilerPath"] = cache.get("CMAKE_C_COMPILER")
         if include_path:
-            c_cpp_properties["configurations"][0]["includePath"] = [
-                str(build_dir / "zephyr" / "include" / "generated")
-            ]
+            c_cpp_properties["configurations"][0]["includePath"] = [str(build_dir / "zephyr" / "include" / "generated")]
 
     def _tfm_build(self, build_dir: pathlib.Path, _cache: zcmake.CMakeCache):
         launch["configurations"][0]["executable"] = str(build_dir / "bin" / "tfm_s.elf")
@@ -250,9 +242,7 @@ class vscode(WestCommand):
 
         bl2_elf = build_dir / "bin" / "bl2.elf"
         if bl2_elf.exists():
-            launch["configurations"][0]["preAttachCommands"] = [
-                f"add-symbol-file {bl2_elf}"
-            ]
+            launch["configurations"][0]["preAttachCommands"] = [f"add-symbol-file {bl2_elf}"]
 
         # Get options from parent Zephyr build
         parent_cache = zcmake.CMakeCache.from_build_dir(build_dir.parent)
@@ -269,9 +259,7 @@ class vscode(WestCommand):
         tfm_exists = [p for p in tfm_paths if p.exists()]
 
         # Add TF-M .elf files
-        launch["configurations"][0]["preAttachCommands"] = [
-            f"add-symbol-file {str(path)}" for path in tfm_exists
-        ]
+        launch["configurations"][0]["preAttachCommands"] = [f"add-symbol-file {str(path)}" for path in tfm_exists]
 
     def _zephyr_build(self, build_dir: pathlib.Path, cache: zcmake.CMakeCache):
         self.cpp_properties(build_dir, cache)
@@ -282,12 +270,8 @@ class vscode(WestCommand):
             launch["configurations"][0]["svdFile"] = cache.get("SOC_SVD_FILE")
             launch["configurations"][1]["svdFile"] = cache.get("SOC_SVD_FILE")
 
-        launch["configurations"][0]["executable"] = str(
-            build_dir / "zephyr" / "zephyr.elf"
-        )
-        launch["configurations"][1]["executable"] = str(
-            build_dir / "zephyr" / "zephyr.elf"
-        )
+        launch["configurations"][0]["executable"] = str(build_dir / "zephyr" / "zephyr.elf")
+        launch["configurations"][1]["executable"] = str(build_dir / "zephyr" / "zephyr.elf")
 
         if cache.get("BOARD")[-3:] == "/ns":
             self._tfm_sub_image(build_dir)
@@ -296,9 +280,7 @@ class vscode(WestCommand):
             mcuboot_elf = build_dir / ".." / "mcuboot" / "zephyr" / "zephyr.elf"
             if mcuboot_elf.exists():
                 # Add the mcuboot .elf file
-                launch["configurations"][0]["preAttachCommands"] = [
-                    f"add-symbol-file {str(mcuboot_elf.resolve())}"
-                ]
+                launch["configurations"][0]["preAttachCommands"] = [f"add-symbol-file {str(mcuboot_elf.resolve())}"]
 
     def _qemu(self, build_dir: pathlib.Path, cache: zcmake.CMakeCache):
         assert cache.get("QEMU", False)
@@ -313,18 +295,14 @@ class vscode(WestCommand):
         launch["configurations"][0]["serverpath"] = cache.get("QEMU")
         launch["configurations"][0]["gdbPath"] = cache.get("CMAKE_GDB")
         launch["configurations"][0]["runToEntryPoint"] = False
-        launch["configurations"][0]["executable"] = str(
-            build_dir / "zephyr" / "zephyr.elf"
-        )
+        launch["configurations"][0]["executable"] = str(build_dir / "zephyr" / "zephyr.elf")
 
         launch["configurations"][1]["name"] = "QEMU Launch"
         launch["configurations"][1]["servertype"] = "qemu"
         launch["configurations"][1]["serverpath"] = cache.get("QEMU")
         launch["configurations"][1]["gdbPath"] = cache.get("CMAKE_GDB")
         launch["configurations"][1]["runToEntryPoint"] = False
-        launch["configurations"][1]["executable"] = str(
-            build_dir / "zephyr" / "zephyr.elf"
-        )
+        launch["configurations"][1]["executable"] = str(build_dir / "zephyr" / "zephyr.elf")
 
     def _native(self, build_dir: pathlib.Path, cache: zcmake.CMakeCache):
         assert cache.get("BOARD")[:10] in [
@@ -341,9 +319,7 @@ class vscode(WestCommand):
         launch["configurations"][0].pop("executable")
         launch["configurations"][0]["name"] = "Native Launch"
         launch["configurations"][0]["type"] = "cppdbg"
-        launch["configurations"][0]["program"] = str(
-            build_dir / "zephyr" / "zephyr.exe"
-        )
+        launch["configurations"][0]["program"] = str(build_dir / "zephyr" / "zephyr.exe")
         launch["configurations"][0]["cwd"] = str(build_dir)
 
         if cache.get("BOARD")[:10] == "nrf52_bsim":
@@ -370,9 +346,7 @@ class vscode(WestCommand):
         launch["configurations"][0]["rtos"] = "Zephyr"
         launch["configurations"][1]["rtos"] = "Zephyr"
 
-    def _jlink(
-        self, snr, build_dir: pathlib.Path, cache: zcmake.CMakeCache, runners_yaml
-    ):
+    def _jlink(self, snr, build_dir: pathlib.Path, cache: zcmake.CMakeCache, runners_yaml):
         self._jlink_device(runners_yaml)
         if snr is not None:
             launch["configurations"][0]["serialNumber"] = snr
@@ -458,9 +432,7 @@ class vscode(WestCommand):
         vscode_folder.mkdir(exist_ok=True)
 
         if args.dir is None:
-            log.inf(
-                f"Writing `settings.json`, `extensions.json` and `infuse.code-snippets` to {vscode_folder}"
-            )
+            log.inf(f"Writing `settings.json`, `extensions.json` and `infuse.code-snippets` to {vscode_folder}")
 
             settings["python.defaultInterpreterPath"] = shutil.which("python3")
             file_snippets["new_file_c"]["body"] = c_source_header().splitlines()
@@ -487,14 +459,10 @@ class vscode(WestCommand):
             build_dir = pathlib.Path(args.dir).absolute().resolve()
 
             if not (build_dir / "CMakeCache.txt").exists():
-                log.err(
-                    f"{build_dir} does not appear to be a valid cmake build directory"
-                )
+                log.err(f"{build_dir} does not appear to be a valid cmake build directory")
                 sys.exit(1)
             if (build_dir / "_sysbuild").exists():
-                log.err(
-                    f"{build_dir} is a sysbuild directory, not an application directory"
-                )
+                log.err(f"{build_dir} is a sysbuild directory, not an application directory")
                 sys.exit(1)
 
             cache = zcmake.CMakeCache.from_build_dir(build_dir)
@@ -507,9 +475,7 @@ class vscode(WestCommand):
                 with pathlib.Path(runners_yaml_path).open("r", encoding="utf-8") as f:
                     runners_yaml = yaml.safe_load(f)
 
-            c_cpp_properties["configurations"][0]["compileCommands"] = str(
-                build_dir / "compile_commands.json"
-            )
+            c_cpp_properties["configurations"][0]["compileCommands"] = str(build_dir / "compile_commands.json")
 
             if runners_yaml is None:
                 if cache["BOARD"] == "unit_testing":
@@ -525,9 +491,7 @@ class vscode(WestCommand):
                 self._physical_hardware(build_dir, cache)
                 self._openocd(build_dir, cache, runners_yaml, vscode_folder)
 
-            log.inf(
-                f"Writing `c_cpp_properties.json` and `launch.json` to {vscode_folder}"
-            )
+            log.inf(f"Writing `c_cpp_properties.json` and `launch.json` to {vscode_folder}")
 
             with (vscode_folder / "c_cpp_properties.json").open("w") as f:
                 json.dump(c_cpp_properties, f, indent=4)

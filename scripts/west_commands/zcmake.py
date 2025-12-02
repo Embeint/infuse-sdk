@@ -11,11 +11,10 @@ See build.py for the build command itself.
 
 from __future__ import annotations
 
+import os
+import re
 from collections import OrderedDict
 from typing import final
-
-import re
-import os
 
 DEFAULT_CACHE = "CMakeCache.txt"
 DEFAULT_CMAKE_GENERATOR = "Ninja"
@@ -70,18 +69,16 @@ class CMakeCacheEntry:
         val = val.upper()
         if val in ("ON", "YES", "TRUE", "Y"):
             return True
-        elif val in ("OFF", "NO", "FALSE", "N", "IGNORE", "NOTFOUND", ""):
-            return False
-        elif val.endswith("-NOTFOUND"):
-            return False
-        elif val == "NEVER":
+        elif (
+            val in ("OFF", "NO", "FALSE", "N", "IGNORE", "NOTFOUND", "") or val.endswith("-NOTFOUND") or val == "NEVER"
+        ):
             return False
         else:
             try:
                 v = int(val)
                 return v != 0
             except ValueError as exc:
-                raise ValueError("invalid bool {}".format(val)) from exc
+                raise ValueError(f"invalid bool {val}") from exc
 
     @classmethod
     def from_line(cls, line: str, line_no: int) -> None | CMakeCacheEntry:
@@ -103,13 +100,12 @@ class CMakeCacheEntry:
             try:
                 value = cls._to_bool(value)
             except ValueError as exc:
-                args = exc.args + ("on line {}: {}".format(line_no, line),)
+                args = exc.args + (f"on line {line_no}: {line}",)
                 raise ValueError(args) from exc
-        elif type_ in {"STRING", "INTERNAL", "STATIC", "UNINITIALIZED"}:
-            # If the value is a CMake list (i.e. is a string which
+        elif type_ in {"STRING", "INTERNAL", "STATIC", "UNINITIALIZED"} and ";" in value:
+            # The value is a CMake list (i.e. is a string which
             # contains a ';'), convert to a Python list.
-            if ";" in value:
-                value = value.split(";")
+            value = value.split(";")
 
         return CMakeCacheEntry(name, value)
 
@@ -137,16 +133,14 @@ class CMakeCache:
 
     def load(self, cache_file: str):
         entries: list[CMakeCacheEntry] = []
-        with open(cache_file, "r", encoding="utf-8") as cache:
+        with open(cache_file, encoding="utf-8") as cache:
             for line_no, line in enumerate(cache):
                 entry = CMakeCacheEntry.from_line(line, line_no)
                 if entry:
                     entries.append(entry)
         self._entries = OrderedDict((e.name, e) for e in entries)
 
-    def get(
-        self, name: str, default: None | bool | str | list[str] = None
-    ) -> None | bool | str | list[str]:
+    def get(self, name: str, default: None | bool | str | list[str] = None) -> None | bool | str | list[str]:
         entry = self._entries.get(name)
         if entry is not None:
             return entry.value

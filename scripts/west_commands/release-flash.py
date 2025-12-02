@@ -4,10 +4,9 @@
 import argparse
 import pathlib
 import subprocess
+
 import yaml
-
 from west.commands import WestCommand
-
 
 EXPORT_DESCRIPTION = """\
 This command flashes an application release.

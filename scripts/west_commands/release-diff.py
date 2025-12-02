@@ -4,8 +4,8 @@
 import argparse
 import pathlib
 import sys
-import yaml
 
+import yaml
 from west.commands import WestCommand
 
 try:
@@ -95,12 +95,8 @@ class release_diff(WestCommand):
         # Ensure both applications are signed with the same key
         #   (IMAGE_TLV_KEYHASH == 0x01)
         #   (IMAGE_TLV_PUBKEY == 0x02)
-        key_orig = next(
-            x for x in imgtool_orig["tlv_area"]["tlvs"] if x["type"] == imgtool_key
-        )
-        key_new = next(
-            x for x in imgtool_new["tlv_area"]["tlvs"] if x["type"] == imgtool_key
-        )
+        key_orig = next(x for x in imgtool_orig["tlv_area"]["tlvs"] if x["type"] == imgtool_key)
+        key_new = next(x for x in imgtool_new["tlv_area"]["tlvs"] if x["type"] == imgtool_key)
         if key_orig["data"] != key_new["data"]:
             sys.exit("Applications were not built with the same signing key")
 
@@ -114,13 +110,12 @@ class release_diff(WestCommand):
             print(f" 0x{id_orig:08x} -> 0x{id_new:08x}")
         print(f"{ver_orig} -> {ver_new}")
         # The trailing TLV's can change on device, so exclude them from the original image knowledge
-        with open(input_path, "rb") as f_input:
-            with open(output_path, "rb") as f_output:
-                patch = cpatch.generate(
-                    f_input.read(-1)[:-input_tlv_len],
-                    f_output.read(-1),
-                    True,
-                )
+        with open(input_path, "rb") as f_input, open(output_path, "rb") as f_output:
+            patch = cpatch.generate(
+                f_input.read(-1)[:-input_tlv_len],
+                f_output.read(-1),
+                True,
+            )
 
         release_dir = output_dir / "diffs"
         if id_orig != id_new:
@@ -148,9 +143,7 @@ class release_diff(WestCommand):
                         check=False,
                     )
                     jdiff_size = os.stat(diff_file).st_size
-                    print(
-                        f"\tJojoDiff: {jdiff_size} {100 * jdiff_size / output_len:.2f}%"
-                    )
+                    print(f"\tJojoDiff: {jdiff_size} {100 * jdiff_size / output_len:.2f}%")
                 if shutil.which("bsdiff4") is not None:
                     diff_file = f"{tmp}/bsdiff4.patch"
                     subprocess.run(
