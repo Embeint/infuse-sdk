@@ -1,4 +1,7 @@
 # Infuse-IoT SDK STM32 defaults
+#
+# Copyright (c) 2025 Embeint Holdings Pty Ltd
+# SPDX-License-Identifier: FSL-1.1-ALv2
 
 if SOC_FAMILY_STM32
 

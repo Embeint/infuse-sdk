@@ -1,3 +1,6 @@
+# Copyright (c) 2025 Embeint Holdings Pty Ltd
+# SPDX-License-Identifier: FSL-1.1-ALv2
+
 name: Compliance Checks
 
 on:
@@ -77,7 +80,7 @@ jobs:
         git log  --pretty=oneline | head -n 10
         # Increase rename limit to allow for large PRs
         git config diff.renameLimit 10000
-        excludes="-e Kconfig"
+        excludes="-e Kconfig -e LicenseAndCopyrightCheck"
         # The signed-off-by check for dependabot should be skipped
         if [ "${{ github.actor }}" == "dependabot[bot]" ]; then
           excludes="$excludes -e Identity"

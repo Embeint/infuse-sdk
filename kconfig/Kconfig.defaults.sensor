@@ -1,4 +1,7 @@
 # Infuse-IoT SDK sensor defaults
+#
+# Copyright (c) 2025 Embeint Holdings Pty Ltd
+# SPDX-License-Identifier: FSL-1.1-ALv2
 
 configdefault SENSOR
 	default y

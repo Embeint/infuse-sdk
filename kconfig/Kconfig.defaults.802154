@@ -1,4 +1,7 @@
 # Infuse-IoT SDK 802.15.4 defaults
+#
+# Copyright (c) 2025 Embeint Holdings Pty Ltd
+# SPDX-License-Identifier: FSL-1.1-ALv2
 
 # nrfxlib defaults the choice to the proprietary library,
 # which doesn't support the babblesim boards.

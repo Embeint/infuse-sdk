@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025 Embeint Pty Ltd
+ * Copyright (c) 2025 Embeint Holdings Pty Ltd
  *
  * SPDX-License-Identifier: Apache-2.0
  */
