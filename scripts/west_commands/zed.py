@@ -2,15 +2,14 @@
 # Copyright (c) 2025 Embeint Holdings Pty Ltd
 
 import argparse
-import pathlib
 import json
-import yaml
+import pathlib
 
+import yaml
+import zcmake
+from west import log
 from west.commands import WestCommand
 from west.util import west_topdir
-from west import log
-
-import zcmake
 
 EXPORT_DESCRIPTION = """\
 This command generates default Zed configuration files for

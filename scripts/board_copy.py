@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 
 import argparse
-import shutil
 import os
+import shutil
 from pathlib import Path
 
 from infuse_iot.util.argparse import ValidDir
@@ -45,9 +45,7 @@ def board_copy(args: argparse.Namespace):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        description="Copy and rename a board definition", allow_abbrev=False
-    )
+    parser = argparse.ArgumentParser(description="Copy and rename a board definition", allow_abbrev=False)
     parser.add_argument(
         "--input",
         "-i",

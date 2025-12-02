@@ -4,6 +4,7 @@ import argparse
 import pathlib
 import secrets
 import sys
+
 import yaml
 
 
@@ -12,9 +13,7 @@ def hexint_presenter(dumper, data):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        description="Generate a network key file", allow_abbrev=False
-    )
+    parser = argparse.ArgumentParser(description="Generate a network key file", allow_abbrev=False)
     parser.add_argument(
         "--id",
         type=lambda x: int(x, 16),

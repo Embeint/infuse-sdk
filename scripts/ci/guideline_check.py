@@ -2,19 +2,21 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright (c) 2021 Intel Corporation
 
-import os
-import sh
 import argparse
+import os
 import re
+
+import sh
 from unidiff import PatchSet
 
 if "ZEPHYR_BASE" not in os.environ:
     exit("$ZEPHYR_BASE environment variable undefined.")
 
-coccinelle_scripts = ["/scripts/coccinelle/reserved_names.cocci",
-                      "/scripts/coccinelle/same_identifier.cocci",
-                      #"/scripts/coccinelle/identifier_length.cocci",
-                      ]
+coccinelle_scripts = [
+    "/scripts/coccinelle/reserved_names.cocci",
+    "/scripts/coccinelle/same_identifier.cocci",
+    # "/scripts/coccinelle/identifier_length.cocci",
+]
 
 
 def parse_coccinelle(contents: str, violations: dict):
@@ -30,14 +32,10 @@ def parse_coccinelle(contents: str, violations: dict):
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(
-        description="Check commits against Cocccinelle rules", allow_abbrev=False)
-    parser.add_argument('-r', "--repository", required=False,
-                        help="Path to repository")
-    parser.add_argument('-c', '--commits', default=None,
-                        help="Commit range in the form: a..b")
-    parser.add_argument("-o", "--output", required=False,
-                        help="Print violation into a file")
+    parser = argparse.ArgumentParser(description="Check commits against Cocccinelle rules", allow_abbrev=False)
+    parser.add_argument("-r", "--repository", required=False, help="Path to repository")
+    parser.add_argument("-c", "--commits", default=None, help="Commit range in the form: a..b")
+    parser.add_argument("-o", "--output", required=False, help="Print violation into a file")
     return parser.parse_args()
 
 
@@ -47,13 +45,13 @@ def main():
         exit("missing commit range")
 
     if args.repository is None:
-        repository_path = os.environ['ZEPHYR_BASE']
+        repository_path = os.environ["ZEPHYR_BASE"]
     else:
         repository_path = args.repository
 
     sh_special_args = {
-        '_tty_out': False,
-        '_cwd': repository_path
+        "_tty_out": False,
+        "_cwd": repository_path,
     }
 
     # pylint does not like the 'sh' library
@@ -72,13 +70,7 @@ def main():
             script_path = os.getenv("ZEPHYR_BASE") + "/" + script
             print(f"Running {script} on {f.path}")
             try:
-                cocci = sh.coccicheck(
-                    "--mode=report",
-                    "--cocci=" +
-                    script_path,
-                    f.path,
-                    _timeout=10,
-                    **sh_special_args)
+                cocci = sh.coccicheck("--mode=report", "--cocci=" + script_path, f.path, _timeout=10, **sh_special_args)
                 parse_coccinelle(cocci, violations)
             except sh.TimeoutException:
                 print("we timed out waiting, skipping...")
@@ -86,19 +78,14 @@ def main():
         for hunk in f:
             for line in hunk:
                 if line.is_added:
-                    violation = "{}:{}".format(f.path, line.target_line_no)
+                    violation = f"{f.path}:{line.target_line_no}"
                     if violation in violations:
                         numViolations += 1
                         if args.output:
                             with open(args.output, "a+") as fp:
-                                fp.write("{}:{}\n".format(
-                                    violation, "\t\n".join(
-                                        violations[violation])))
+                                fp.write("{}:{}\n".format(violation, "\t\n".join(violations[violation])))
                         else:
-                            print(
-                                "{}:{}".format(
-                                    violation, "\t\n".join(
-                                        violations[violation])))
+                            print("{}:{}".format(violation, "\t\n".join(violations[violation])))
 
     return numViolations
 
