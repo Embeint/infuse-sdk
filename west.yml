@@ -1,4 +1,6 @@
 # The west manifest file for the Infuse SDK.
+#
+# SPDX-License-Identifier: FSL-1.1-ALv2
 
 manifest:
   defaults:

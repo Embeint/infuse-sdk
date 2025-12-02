@@ -1,3 +1,8 @@
+/*
+ * Copyright (c) 2025 Embeint Holdings Pty Ltd
+ * SPDX-License-Identifier: FSL-1.1-ALv2
+ */
+
 #include <zephyr/dt-bindings/battery/battery.h>
 #include <common/nordic/infuse_nrf9161_ns.dtsi>
 

@@ -1,4 +1,7 @@
 # Infuse-IoT SDK networking defaults
+#
+# Copyright (c) 2025 Embeint Holdings Pty Ltd
+# SPDX-License-Identifier: FSL-1.1-ALv2
 
 DT_CHOSEN_Z_WIFI := zephyr,wifi
 

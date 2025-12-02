@@ -1,4 +1,7 @@
 # Test defaults for Infuse-IoT libraries
+#
+# Copyright (c) 2025 Embeint Holdings Pty Ltd
+# SPDX-License-Identifier: FSL-1.1-ALv2
 
 config INFUSE_TEST_ID
 	bool "Use hardcode test ID (0xFFFFFFFFFFFFFFFD)"

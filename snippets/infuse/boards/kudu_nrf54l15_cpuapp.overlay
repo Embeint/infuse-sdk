@@ -1,3 +1,8 @@
+/*
+ * Copyright (c) 2025 Embeint Holdings Pty Ltd
+ * SPDX-License-Identifier: FSL-1.1-ALv2
+ */
+
 #include <common/nordic/infuse_nrf54l15_cpuapp.dtsi>
 #include <common/infuse_bluetooth.dtsi>
 
