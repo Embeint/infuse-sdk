@@ -101,7 +101,7 @@
             "name": "BLUETOOTH_CTLR_VERSION",
             "description": "External Bluetooth controller version",
             "reflect": true,
-            "depends_on": "!BT_CTLR",
+            "depends_on": "!HAS_BT_CTLR",
             "default": "y if BT",
             "fields": [
                 {"name": "application", "type": "uint32_t", "description": "Application ID"},
