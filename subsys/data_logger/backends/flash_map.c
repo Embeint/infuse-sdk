@@ -64,12 +64,16 @@ static int logger_flash_map_erase(const struct device *dev, uint32_t phy_block, 
 static int logger_flash_map_reset(const struct device *dev, uint32_t block_hint,
 				  void (*erase_progress)(uint32_t blocks_erased))
 {
+	const struct dl_flash_map_config *config = dev->config;
 	struct dl_flash_map_data *data = dev->data;
 	size_t remaining = DATA_LOGGER_FLASH_MAP_BLOCK_SIZE * block_hint;
 	size_t complete = 0;
 	off_t offset = 0;
 	size_t to_erase;
 	int rc;
+
+	/* Ensure overall erase is aligned to requirements */
+	remaining = ROUND_UP(remaining, config->erase_size);
 
 	while (remaining) {
 		/* Erase in 64kB chunks */
