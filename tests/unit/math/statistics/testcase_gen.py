@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import random
+
 import numpy
 
 
@@ -8,12 +9,8 @@ def test_output(a):
     means = [numpy.mean(a[:n]) for n in range(1, len(a) + 1)]
     variances = [numpy.var(a[:n], ddof=1) for n in range(1, len(a) + 1)]
     print(f"const int32_t array_values[] = {{ {', '.join([str(i) for i in a])} }};")
-    print(
-        f"const float array_means[] = {{ {', '.join([f'{i:.3f}f' for i in means])} }};"
-    )
-    print(
-        f"const float array_vars[] = {{ {', '.join([f'{i:.3f}f' for i in variances])} }};"
-    )
+    print(f"const float array_means[] = {{ {', '.join([f'{i:.3f}f' for i in means])} }};")
+    print(f"const float array_vars[] = {{ {', '.join([f'{i:.3f}f' for i in variances])} }};")
 
 
 # To regenerate new outputs

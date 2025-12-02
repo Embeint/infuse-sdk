@@ -24,9 +24,7 @@ sys.path.insert(0, str(ZEPHYR_BASE / "doc" / "_scripts"))
 sys.path.insert(0, str(ZEPHYR_BASE / "scripts" / "west_commands"))
 
 # Add the directory which contains the pytest-twister-pytest
-sys.path.insert(
-    0, str(ZEPHYR_BASE / "scripts" / "pylib" / "pytest-twister-harness" / "src")
-)
+sys.path.insert(0, str(ZEPHYR_BASE / "scripts" / "pylib" / "pytest-twister-harness" / "src"))
 
 try:
     import west as west_found
@@ -213,9 +211,7 @@ html_context = {
 latex_elements = {
     "papersize": "a4paper",
     "maketitle": (ZEPHYR_BASE / "doc" / "_static" / "latex" / "title.tex").read_text(),
-    "preamble": (
-        ZEPHYR_BASE / "doc" / "_static" / "latex" / "preamble.tex"
-    ).read_text(),
+    "preamble": (ZEPHYR_BASE / "doc" / "_static" / "latex" / "preamble.tex").read_text(),
     "makeindex": r"\usepackage[columns=1]{idxlayout}\makeindex",
     "fontpkg": textwrap.dedent(r"""
                                     \usepackage{noto}
@@ -297,15 +293,7 @@ kconfig_ext_paths = [INFUSE_BASE, ZEPHYR_BASE]
 kconfig_gh_link_base_url = "https://github.com/Embeint/infuse-sdk"
 kconfig_zephyr_version = f"v{version}" if is_release else "main"
 os.environ["ZEPHYR_MEMFAULT_FIRMWARE_SDK_KCONFIG"] = str(
-    (
-        Path(__file__).parents[2]
-        / "modules"
-        / "lib"
-        / "memfault"
-        / "ports"
-        / "zephyr"
-        / "Kconfig.3_7_0"
-    ).resolve()
+    (Path(__file__).parents[2] / "modules" / "lib" / "memfault" / "ports" / "zephyr" / "Kconfig.3_7_0").resolve()
 )
 
 # -- Options for zephyr.external_content ----------------------------------
