@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
-import random
 import math
+import random
 
 
 def random_int16():

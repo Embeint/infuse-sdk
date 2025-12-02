@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 
-import hifitime
 import time
 
-if __name__ == '__main__':
+import hifitime
+
+if __name__ == "__main__":
     epoch_gps = hifitime.Epoch.init_from_gpst_seconds(0)
     start_1900 = hifitime.Epoch.init_from_gregorian_utc(1900, 1, 1, 0, 0, 0, 0)
     start_1970 = hifitime.Epoch.init_from_gregorian_utc(1970, 1, 1, 0, 0, 0, 0)
