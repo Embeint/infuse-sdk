@@ -4,6 +4,7 @@ config PSA_CRYPTO_DRIVER_OBERON
 	# The Oberon driver is required to provide HKDF needed for protected storage and builtin keys
 	prompt "Oberon PSA driver" if !TFM_PARTITION_PROTECTED_STORAGE
 	bool
+	depends on SOC_FAMILY_NORDIC_NRF
 	default y
 	help
 	  This configuration enables the usage of the Oberon PSA driver.
