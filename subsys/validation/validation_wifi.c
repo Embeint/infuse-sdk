@@ -116,7 +116,7 @@ static int validation_wifi_sntp(void)
 		VALIDATION_REPORT_ERROR(TEST, "DNS query failed (%d)", rc);
 		return rc;
 	}
-	inet_ntop(addr.sa_family, &net_sin(&addr)->sin_addr, addr_str, sizeof(addr_str));
+	zsock_inet_ntop(addr.sa_family, &net_sin(&addr)->sin_addr, addr_str, sizeof(addr_str));
 	VALIDATION_REPORT_VALUE(TEST, "SNTP_IP", "%s", addr_str);
 
 	rc = sntp_init(&s_ctx, &addr, addrlen);
