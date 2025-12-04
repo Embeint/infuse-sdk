@@ -67,10 +67,6 @@ config EPACKET_INTERFACE_UDP
 
 if EPACKET_INTERFACE_UDP
 
-config ZVFS_OPEN_ADD_SIZE_EPACKET_UDP
-	int "ePacket UDP interface holds a permanent socket"
-	default 1
-
 config EPACKET_INTERFACE_UDP_DEFAULT_URL
 	string "ePacket UDP default server URL"
 	default "udp.dev.infuse-iot.com"
