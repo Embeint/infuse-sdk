@@ -53,7 +53,7 @@ class release_flash(WestCommand):
         flash_cmd = [
             "west",
             "flash",
-            "--skip-rebuild",
+            "--no-rebuild",
             "-d",
             str(args.release / manifest["application"]["primary"]),
             "--hex-file",
