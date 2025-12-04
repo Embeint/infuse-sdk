@@ -12,6 +12,10 @@ config SNTP_AUTO
 
 if SNTP_AUTO
 
+config ZVFS_OPEN_ADD_SIZE_SNTP_AUTO
+	int "SNTP query requires a socket"
+	default 1
+
 config SNTP_AUTO_DEFAULT_SERVER
 	string "Default SNTP server"
 	default "time.cloudflare.com"
