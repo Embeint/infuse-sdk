@@ -804,6 +804,28 @@ enum ubx_msg_rxm_pmreq_wakeup {
  */
 
 /**
+ * @addtogroup UBX_MSG_CLASS_SEC
+ * @ingroup ubx_message_protocol
+ * @{
+ */
+
+enum ubx_msg_id_sec {
+	UBX_MSG_ID_SEC_UNIQID = 0x03,
+};
+
+/** @ref UBX_MSG_ID_SEC_UNIQID */
+struct ubx_msg_sec_uniqid {
+	uint8_t version;
+	uint8_t reserved0[3];
+	uint8_t uniqueId[6];
+} __packed;
+BUILD_ASSERT(sizeof(struct ubx_msg_sec_uniqid) == 10);
+
+/**
+ * @}
+ */
+
+/**
  * @brief Create a net_buf_simple large enough to hold a message
  *
  * @warning Only works for fixed length messages
