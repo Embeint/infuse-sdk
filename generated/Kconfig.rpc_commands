@@ -391,6 +391,18 @@ config INFUSE_RPC_COMMAND_GRAVITY_REFERENCE_UPDATE_REQUIRED_AUTH
 	depends on INFUSE_RPC_COMMAND_GRAVITY_REFERENCE_UPDATE
 	default 2
 
+config INFUSE_RPC_COMMAND_UBX_ASSIST_NOW_ZTP_CREDS
+	bool "Enable RPC ubx_assist_now_ztp_creds"
+	depends on GNSS_UBX_M10
+	default y
+	help
+	  Retrieve U-blox AssistNow Zero Touch Provisioning credentials
+
+config INFUSE_RPC_COMMAND_UBX_ASSIST_NOW_ZTP_CREDS_REQUIRED_AUTH
+	int "Required authorisation level to run ubx_assist_now_ztp_creds"
+	depends on INFUSE_RPC_COMMAND_UBX_ASSIST_NOW_ZTP_CREDS
+	default 2
+
 config INFUSE_RPC_COMMAND_SECURITY_STATE
 	bool "Enable RPC security_state"
 	default y if INFUSE_SECURITY

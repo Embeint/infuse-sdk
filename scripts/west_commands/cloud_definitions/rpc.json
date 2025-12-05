@@ -742,6 +742,20 @@
                 {"name": "sample_period_us", "type": "uint32_t", "description": "Period between samples"}
             ]
         },
+        "70": {
+            "name": "ubx_assist_now_ztp_creds",
+            "description": "Retrieve U-blox AssistNow Zero Touch Provisioning credentials",
+            "depends_on": "GNSS_UBX_M10",
+            "default": "y",
+            "default_auth": "EPACKET_AUTH_DEVICE",
+            "request_params": [
+                {"name": "mon_ver_offset", "type": "uint8_t", "description": "Frame offset of UBX-MON-VER data"}
+            ],
+            "response_params": [
+                {"name": "ubx_sec_uniqid", "type": "uint8_t", "num": 18, "description": "Raw UBX-SEC-UNIQID frame"},
+                {"name": "ubx_mon_ver", "type": "uint8_t", "num": 0, "description": "Raw UBX-MON-VER frame"}
+            ]
+        },
         "30000": {
             "name": "security_state",
             "description": "Query current security state and validate identity",
