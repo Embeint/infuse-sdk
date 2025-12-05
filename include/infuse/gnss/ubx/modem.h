@@ -49,6 +49,8 @@ enum ubx_message_handler_flags {
 	UBX_HANDLING_RSP = BIT(1),
 	/* Message results in a response AND an ACK/NAK */
 	UBX_HANDLING_RSP_ACK = BIT(2),
+	/* Response callback wants the raw frame */
+	UBX_HANDLING_RAW_FRAME_CB = BIT(3),
 };
 
 /**
@@ -246,6 +248,27 @@ int ubx_modem_send_sync_acked(struct ubx_modem_data *modem, struct net_buf_simpl
 int ubx_modem_send_sync_poll(struct ubx_modem_data *modem, uint8_t message_class,
 			     uint8_t message_id, ubx_message_handler_t handler, void *user_data,
 			     k_timeout_t timeout);
+
+/**
+ * @brief Request a (raw) poll response from the modem and wait for the response
+ *
+ * Unlike @ref ubx_modem_send_sync_poll, the payload provided to @a handler is the complete UBX
+ * frame.
+ *
+ * @param modem Modem data structure
+ * @param message_class UBX message class to poll
+ * @param message_id UBX message ID to poll
+ * @param handler Callback to handle the poll response
+ * @param user_data Arbitrary user data provided to @a handler
+ * @param timeout Duration to wait for response
+ *
+ * @retval rc Returned code from @a handler on success
+ * @retval -ETIMEDOUT On response timeout
+ * @retval -errno Negative error code otherwise
+ */
+int ubx_modem_send_sync_raw_poll(struct ubx_modem_data *modem, uint8_t message_class,
+				 uint8_t message_id, ubx_message_handler_t handler, void *user_data,
+				 k_timeout_t timeout);
 
 /**
  * @brief Request a poll response from the modem

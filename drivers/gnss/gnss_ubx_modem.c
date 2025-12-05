@@ -13,6 +13,10 @@
 
 LOG_MODULE_REGISTER(ubx_modem, CONFIG_GNSS_UBX_MODEM_LOG_LEVEL);
 
+/* Frame header + 16bit checksum */
+#define UBX_FRAME_OVERHEAD (sizeof(struct ubx_frame) + sizeof(uint16_t))
+BUILD_ASSERT(UBX_FRAME_OVERHEAD == 8);
+
 static void ubx_modem_pipe_callback(struct modem_pipe *pipe, enum modem_pipe_event event,
 				    void *user_data)
 {
@@ -36,6 +40,8 @@ static void ubx_msg_handle_ack(struct ubx_modem_data *modem, struct ubx_frame *f
 	struct ubx_message_handler_ctx *to_run[CONFIG_GNSS_UBX_MODEM_MAX_CALLBACKS] = {0};
 	struct ubx_message_handler_ctx *curr;
 	struct ubx_message_handler_ctx *tmp;
+	const void *callback_ptr;
+	uint16_t callback_len;
 	int rc;
 
 	/* ACK-ACK and ACK-NAK have the same payload structures */
@@ -65,9 +71,18 @@ static void ubx_msg_handle_ack(struct ubx_modem_data *modem, struct ubx_frame *f
 		ubx_message_handler_t cb = curr->flags & UBX_HANDLING_RSP_ACK
 						   ? ubx_modem_ack_handler
 						   : curr->message_cb;
+
+		/* Desired callback pointer */
+		callback_ptr = frame->payload_and_checksum;
+		callback_len = payload_len;
+		if (curr->flags & UBX_HANDLING_RAW_FRAME_CB) {
+			callback_ptr = frame;
+			callback_len += UBX_FRAME_OVERHEAD;
+		}
+
 		/* Run callback */
-		rc = cb(frame->message_class, frame->message_id, frame->payload_and_checksum,
-			payload_len, curr->user_data);
+		rc = cb(frame->message_class, frame->message_id, callback_ptr, callback_len,
+			curr->user_data);
 		/* Raise signal if provided */
 		if (curr->signal) {
 			k_poll_signal_raise(curr->signal, rc);
@@ -85,6 +100,8 @@ static void ubx_msg_handle_non_ack(struct ubx_modem_data *modem, struct ubx_fram
 	struct ubx_message_handler_ctx *to_run[CONFIG_GNSS_UBX_MODEM_MAX_CALLBACKS] = {0};
 	struct ubx_message_handler_ctx *curr;
 	struct ubx_message_handler_ctx *tmp;
+	const void *callback_ptr;
+	uint16_t callback_len;
 	int num_to_run = 0;
 	bool notify;
 	int rc;
@@ -123,10 +140,16 @@ static void ubx_msg_handle_non_ack(struct ubx_modem_data *modem, struct ubx_fram
 
 	/* Run the saved contexts */
 	for (int i = 0; i < num_to_run; i++) {
+		/* Desired callback pointer */
+		callback_ptr = frame->payload_and_checksum;
+		callback_len = payload_len;
+		if (to_run[i]->flags & UBX_HANDLING_RAW_FRAME_CB) {
+			callback_ptr = frame;
+			callback_len += UBX_FRAME_OVERHEAD;
+		}
 		/* Run callback */
-		rc = to_run[i]->message_cb(frame->message_class, frame->message_id,
-					   frame->payload_and_checksum, payload_len,
-					   to_run[i]->user_data);
+		rc = to_run[i]->message_cb(frame->message_class, frame->message_id, callback_ptr,
+					   callback_len, to_run[i]->user_data);
 		/* Raise signal if provided and no ACK/NAK is expected */
 		if (to_run[i]->signal && (to_run[i]->flags & UBX_HANDLING_RSP)) {
 			k_poll_signal_raise(to_run[i]->signal, rc);
@@ -378,21 +401,36 @@ int ubx_modem_send_sync_acked(struct ubx_modem_data *modem, struct net_buf_simpl
 				   timeout);
 }
 
-int ubx_modem_send_sync_poll(struct ubx_modem_data *modem, uint8_t message_class,
-			     uint8_t message_id, ubx_message_handler_t handler, void *user_data,
-			     k_timeout_t timeout)
+static int ubx_sync_poll_internal(struct ubx_modem_data *modem, uint8_t message_class,
+				  uint8_t message_id, uint8_t flags, ubx_message_handler_t handler,
+				  void *user_data, k_timeout_t timeout)
 {
 	NET_BUF_SIMPLE_DEFINE(poll_req, 16);
-	uint8_t flags;
 
 	/* Poll requests are just 0 byte messages with the given class and id */
 	ubx_msg_prepare(&poll_req, message_class, message_id);
 	ubx_msg_finalise(&poll_req);
 
 	/* CFG messages always generate an ACK as well */
-	flags = message_class == UBX_MSG_CLASS_CFG ? UBX_HANDLING_RSP_ACK : UBX_HANDLING_RSP;
+	flags |= (message_class == UBX_MSG_CLASS_CFG) ? UBX_HANDLING_RSP_ACK : UBX_HANDLING_RSP;
 
 	return ubx_modem_send_sync(modem, &poll_req, flags, handler, user_data, timeout);
+}
+
+int ubx_modem_send_sync_poll(struct ubx_modem_data *modem, uint8_t message_class,
+			     uint8_t message_id, ubx_message_handler_t handler, void *user_data,
+			     k_timeout_t timeout)
+{
+	return ubx_sync_poll_internal(modem, message_class, message_id, 0, handler, user_data,
+				      timeout);
+}
+
+int ubx_modem_send_sync_raw_poll(struct ubx_modem_data *modem, uint8_t message_class,
+				 uint8_t message_id, ubx_message_handler_t handler, void *user_data,
+				 k_timeout_t timeout)
+{
+	return ubx_sync_poll_internal(modem, message_class, message_id, UBX_HANDLING_RAW_FRAME_CB,
+				      handler, user_data, timeout);
 }
 
 int ubx_modem_send_async_poll(struct ubx_modem_data *modem, uint8_t message_class,
