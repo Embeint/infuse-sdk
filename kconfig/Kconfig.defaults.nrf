@@ -98,28 +98,6 @@ configdefault NRF70_RX_MAX_DATA_SIZE
 	# Value is hardcoded in fmac_main when TX is disabled
 	default 1004 if !NRF70_DATA_TX
 
-# Lower resource requirements in scan only mode
-if NRF70_SCAN_ONLY
-configdefault NRF_WIFI_DATA_HEAP_SIZE
-	default 8000
-configdefault NET_BUF_RX_COUNT
-	default 1
-configdefault NET_BUF_TX_COUNT
-	default 1
-configdefault NET_PKT_RX_COUNT
-	default 1
-configdefault NET_PKT_TX_COUNT
-	default 1
-configdefault NET_TC_TX_COUNT
-	default 1
-configdefault NET_MAX_CONTEXTS
-	default 1
-configdefault NET_TX_STACK_SIZE
-	default 1024
-configdefault NET_RX_STACK_SIZE
-	default 1024
-endif # NRF70_SCAN_ONLY
-
 # Limit nRF memory usage to the bare minimum
 if NRF_WIFI_LOW_RAM
 configdefault NRF_WIFI_IFACE_MTU
@@ -142,11 +120,13 @@ configdefault NRF70_MAX_TX_TOKENS
 	default 6
 configdefault NRF70_MAX_TX_AGGREGATION
 	default 3
+if !NRF70_SCAN_ONLY
 configdefault NRF_WIFI_DATA_HEAP_SIZE
 	def_int 8240 if !NET_IPV6
 	def_int 16688
 	# IPV4 Data plane is (6 + 6) * 644 ~= 8kB
 	# IPV6 Data plane is (6 + 6) * 1348 ~= 16kB
+endif # !NRF70_SCAN_ONLY
 endif # NRF_WIFI_LOW_RAM
 
 # WiFi defaults
