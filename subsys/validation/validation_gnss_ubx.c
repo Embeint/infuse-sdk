@@ -29,13 +29,28 @@ static int mon_ver_handler(uint8_t message_class, uint8_t message_id, const void
 	const struct ubx_msg_mon_ver *ver = payload;
 	uint8_t num_ext = (payload_len - sizeof(*ver)) / 30;
 
-	VALIDATION_REPORT_INFO(TEST, "   SW: %s", ver->sw_version);
-	VALIDATION_REPORT_INFO(TEST, "   HW: %s", ver->hw_version);
+	VALIDATION_REPORT_INFO(TEST, "    SW: %s", ver->sw_version);
+	VALIDATION_REPORT_INFO(TEST, "    HW: %s", ver->hw_version);
 	for (int i = 0; i < num_ext; i++) {
-		VALIDATION_REPORT_INFO(TEST, "EXT %d: %s", i, ver->extension[i].ext_version);
+		VALIDATION_REPORT_INFO(TEST, " EXT %d: %s", i, ver->extension[i].ext_version);
 	}
 	return 0;
 }
+
+#ifdef CONFIG_GNSS_UBX_M10
+
+static int sec_uniqid_handler(uint8_t message_class, uint8_t message_id, const void *payload,
+			      size_t payload_len, void *user_data)
+{
+	const struct ubx_msg_sec_uniqid *uniqid = payload;
+	const uint8_t *id = uniqid->uniqueId;
+
+	VALIDATION_REPORT_INFO(TEST, "UNIQID: %02X%02X%02X%02X%02X%02X", id[0], id[1], id[2], id[3],
+			       id[4], id[5]);
+	return 0;
+}
+
+#endif /* CONFIG_GNSS_UBX_M10 */
 
 #ifdef CONFIG_GNSS_UBX_M8
 static int ubx_m8_dcdc_burn(struct ubx_modem_data *modem)
@@ -79,7 +94,18 @@ int infuse_validation_gnss(const struct device *dev, uint8_t flags)
 				      NULL, SYNC_MESSAGE_TIMEOUT);
 	if (rc < 0) {
 		VALIDATION_REPORT_ERROR(TEST, "Failed to query MON-VER (%d)", rc);
+		goto power_down;
 	}
+
+#ifdef CONFIG_GNSS_UBX_M10
+	/* Query and display system version information */
+	rc = ubx_modem_send_sync_poll(modem, UBX_MSG_CLASS_SEC, UBX_MSG_ID_SEC_UNIQID,
+				      sec_uniqid_handler, NULL, SYNC_MESSAGE_TIMEOUT);
+	if (rc < 0) {
+		VALIDATION_REPORT_ERROR(TEST, "Failed to query SEC-UNIQID (%d)", rc);
+		goto power_down;
+	}
+#endif /* CONFIG_GNSS_UBX_M10 */
 
 #ifdef CONFIG_GNSS_UBX_M8
 	if (flags & VALIDATION_GNSS_UBX_M8_DC_DC_BURN) {
@@ -91,9 +117,9 @@ int infuse_validation_gnss(const struct device *dev, uint8_t flags)
 		}
 		VALIDATION_REPORT_INFO(TEST, "DC-DC converter permanently enabled");
 	}
-power_down:
 #endif /* CONFIG_GNSS_UBX_M8 */
 
+power_down:
 	/* Power down device */
 	if (pm_device_runtime_put(dev) < 0) {
 		if (rc == 0) {
