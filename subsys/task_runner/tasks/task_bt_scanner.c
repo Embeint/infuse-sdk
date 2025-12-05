@@ -91,7 +91,7 @@ void task_bt_scanner_fn(struct k_work *work)
 	int rc;
 
 	if (task->executor.workqueue.reschedule_counter > 0) {
-		LOG_DBG("Terminating receive");
+		LOG_INF("Terminating receive (%u/%u)", state.num_observed, state.max_observed);
 		if ((args->flags & TASK_BT_SCANNER_FLAGS_DEFER_LOGGING) && state.num_observed) {
 			task_schedule_tdf_log_array(state.schedule, TASK_BT_SCANNER_LOG_INFUSE_BT,
 						    TDF_INFUSE_BLUETOOTH_RSSI,
