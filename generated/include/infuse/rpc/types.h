@@ -464,6 +464,8 @@ enum rpc_builtin_id {
 	RPC_ID_BT_MCUMGR_REBOOT = 54,
 	/** Store the current accelerometer vector as the gravity reference */
 	RPC_ID_GRAVITY_REFERENCE_UPDATE = 60,
+	/** Retrieve U-blox AssistNow Zero Touch Provisioning credentials */
+	RPC_ID_UBX_ASSIST_NOW_ZTP_CREDS = 70,
 	/** Query current security state and validate identity */
 	RPC_ID_SECURITY_STATE = 30000,
 	/** Update key material */
@@ -1085,6 +1087,21 @@ struct rpc_gravity_reference_update_response {
 	uint16_t num_samples;
 	/** Period between samples */
 	uint32_t sample_period_us;
+} __packed;
+
+/** Retrieve U-blox AssistNow Zero Touch Provisioning credentials */
+struct rpc_ubx_assist_now_ztp_creds_request {
+	struct infuse_rpc_req_header header;
+	/** Frame offset of UBX-MON-VER data */
+	uint8_t mon_ver_offset;
+} __packed;
+
+struct rpc_ubx_assist_now_ztp_creds_response {
+	struct infuse_rpc_rsp_header header;
+	/** Raw UBX-SEC-UNIQID frame */
+	uint8_t ubx_sec_uniqid[18];
+	/** Raw UBX-MON-VER frame */
+	uint8_t ubx_mon_ver[];
 } __packed;
 
 /** Query current security state and validate identity */
