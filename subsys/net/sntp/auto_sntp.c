@@ -24,13 +24,20 @@
 static void sntp_service_handler(struct net_socket_service_event *sev);
 
 static struct kv_store_cb sntp_kv_cb;
-static struct epoch_time_cb time_callback;
 static struct net_mgmt_event_callback l4_callback;
 static struct k_work_delayable sntp_worker;
 static struct k_work_delayable sntp_timeout;
 static struct sockaddr sntp_addr_cached;
 static socklen_t sntp_addrlen_cached;
 static struct sntp_ctx sntp_context;
+
+#ifdef CONFIG_SNTP_AUTO_IMMEDIATELY
+static struct epoch_time_cb time_callback;
+#endif /* CONFIG_SNTP_AUTO_IMMEDIATELY */
+
+#ifdef CONFIG_SNTP_AUTO_SYNC_POINTS
+static bool l4_connected;
+#endif /* CONFIG_SNTP_AUTO_SYNC_POINTS */
 
 NET_SOCKET_SERVICE_SYNC_DEFINE_STATIC(service_auto_sntp, sntp_service_handler, 1);
 
@@ -39,6 +46,15 @@ LOG_MODULE_REGISTER(sntp_auto, CONFIG_SNTP_AUTO_LOG_LEVEL);
 static void l4_event_handler(struct net_mgmt_event_callback *cb, uint64_t event,
 			     struct net_if *iface)
 {
+#ifdef CONFIG_SNTP_AUTO_SYNC_POINTS
+	if (event == NET_EVENT_L4_CONNECTED) {
+		l4_connected = true;
+	} else if (event == NET_EVENT_L4_DISCONNECTED) {
+		k_work_cancel_delayable(&sntp_worker);
+		l4_connected = false;
+	}
+#endif /* CONFIG_SNTP_AUTO_SYNC_POINTS */
+#ifdef CONFIG_SNTP_AUTO_IMMEDIATELY
 	k_timeout_t delay = K_NO_WAIT;
 	uint32_t sync_age;
 
@@ -48,10 +64,10 @@ static void l4_event_handler(struct net_mgmt_event_callback *cb, uint64_t event,
 			delay = K_SECONDS(CONFIG_SNTP_AUTO_RESYNC_AGE - sync_age);
 		}
 		k_work_reschedule(&sntp_worker, delay);
-	}
-	if (event == NET_EVENT_L4_DISCONNECTED) {
+	} else if (event == NET_EVENT_L4_DISCONNECTED) {
 		k_work_cancel_delayable(&sntp_worker);
 	}
+#endif /* CONFIG_SNTP_AUTO_IMMEDIATELY */
 }
 
 static void sntp_service_handler(struct net_socket_service_event *sev)
@@ -63,8 +79,10 @@ static void sntp_service_handler(struct net_socket_service_event *sev)
 	/* Cancel timeout */
 	k_work_cancel_delayable(&sntp_timeout);
 
+#ifdef CONFIG_SNTP_AUTO_IMMEDIATELY
 	/* Reschedule worker */
 	k_work_reschedule(&sntp_worker, K_SECONDS(CONFIG_SNTP_AUTO_RESYNC_AGE));
+#endif /* CONFIG_SNTP_AUTO_IMMEDIATELY */
 
 	/* Read the response from the socket */
 	rc = sntp_read_async(sev, &s_time);
@@ -235,6 +253,38 @@ static void kv_value_changed(uint16_t key, const void *data, size_t data_len, vo
 	}
 }
 
+#ifdef CONFIG_SNTP_AUTO_SYNC_POINTS
+
+void sntp_auto_sync_point(void)
+{
+	uint32_t sync_age;
+
+	if (!l4_connected) {
+		/* No network connectivity */
+		return;
+	}
+
+	if (k_work_delayable_is_pending(&sntp_worker) ||
+	    k_work_delayable_is_pending(&sntp_timeout)) {
+		/* SNTP query already running */
+		LOG_DBG("SNTP query already running");
+		return;
+	}
+
+	sync_age = epoch_time_reference_age();
+	if (sync_age < CONFIG_SNTP_AUTO_RESYNC_AGE) {
+		/* SNTP not yet required */
+		return;
+	}
+
+	/* Schedule the SNTP query */
+	k_work_reschedule(&sntp_worker, K_NO_WAIT);
+}
+
+#endif /* CONFIG_SNTP_AUTO_SYNC_POINTS */
+
+#ifdef CONFIG_SNTP_AUTO_IMMEDIATELY
+
 static void reference_time_updated(enum epoch_time_source source, struct timeutil_sync_instant old,
 				   struct timeutil_sync_instant new, void *user_ctx)
 {
@@ -250,6 +300,8 @@ static void reference_time_updated(enum epoch_time_source source, struct timeuti
 	}
 }
 
+#endif /* CONFIG_SNTP_AUTO_IMMEDIATELY */
+
 int sntp_auto_init(void)
 {
 	k_work_init_delayable(&sntp_worker, sntp_work);
@@ -259,10 +311,12 @@ int sntp_auto_init(void)
 	sntp_kv_cb.value_changed = kv_value_changed;
 	kv_store_register_callback(&sntp_kv_cb);
 
+#ifdef CONFIG_SNTP_AUTO_IMMEDIATELY
 	/* Register for callbacks on time updates */
 	time_callback.reference_time_updated = reference_time_updated;
 	time_callback.user_ctx = &sntp_worker;
 	epoch_time_register_callback(&time_callback);
+#endif /* CONFIG_SNTP_AUTO_IMMEDIATELY */
 
 	/* Register for callbacks on network connectivity */
 	net_mgmt_init_event_callback(&l4_callback, l4_event_handler,

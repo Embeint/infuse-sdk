@@ -29,6 +29,25 @@ config SNTP_AUTO_RESYNC_AGE
 	   resynchronising at a high frequency. Therefore set the default period
 	   to 24 hours.
 
+choice SNTP_AUTO_MODE
+	prompt "When to send SNTP queries"
+	default SNTP_AUTO_IMMEDIATELY
+
+config SNTP_AUTO_IMMEDIATELY
+	bool "Run SNTP queries immediately upon timeout"
+	help
+	  Run the SNTP query as roon as the re-sync timer expires.
+
+config SNTP_AUTO_SYNC_POINTS
+	bool "Only run SNTP queries when triggered by the application"
+	help
+	  Instead of automatically running SNTP queries as soon as the re-sync
+	  timer expires, wait for the application to signal that the query can
+	  occur. This is useful for networking backends which may be in an idle
+	  state and have a high overhead to reconnect.
+
+endchoice
+
 module = SNTP_AUTO
 module-str = sntp_auto
 source "subsys/logging/Kconfig.template.log_config"
