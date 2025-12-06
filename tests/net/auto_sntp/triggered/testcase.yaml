@@ -3,16 +3,7 @@ common:
   min_flash: 64
   min_ram: 32
 tests:
-  net.auto_sntp.wifi:
-    build_only: true
-    integration_platforms:
-      - nrf7002dk/nrf5340/cpuapp
-    required_snippets:
-      - infuse
-    depends_on:
-      - netif
-      - wifi
-  net.auto_sntp.native.sync:
+  net.auto_sntp.triggered.native.sync:
     platform_allow:
       - native_sim
     integration_platforms:
@@ -20,6 +11,7 @@ tests:
     extra_configs:
       - CONFIG_NATIVE_SIM_SLOWDOWN_TO_REAL_TIME=y
       - CONFIG_INFUSE_DNS_ASYNC=n
+      - CONFIG_SNTP_AUTO_LOG_LEVEL_DBG=y
     extra_args:
       - OVERLAY_CONFIG="overlay-nsos.conf"
     harness: console
@@ -27,28 +19,18 @@ tests:
       type: multi_line
       ordered: true
       regex:
+        - "SNTP query already running"
         - "time.cloudflare.com -> (.*)"
         - "Sending request..."
         - "Unix time: (.*)"
         - "Now: (.*) UTC"
-        - "www.google.com -> (.*)"
-        - "Sending request..."
-        - "SNTP query timeout"
-        - "www.google.com -> (.*)"
-        - "Sending request..."
-        - "SNTP query timeout"
-        - "time.cloudflare.com -> (.*)"
-        - "Sending request..."
-        - "Unix time: (.*)"
-        - "Now: (.*) UTC"
+        - "Ref: (.*) UTC"
         - "Using cached SNTP address"
         - "Sending request..."
         - "Unix time: (.*)"
         - "Now: (.*) UTC"
-        - "Using cached SNTP address"
-        - "Sending request..."
-        - "Unix time: (.*)"
-  net.auto_sntp.native.async:
+        - "Ref: (.*) UTC"
+  net.auto_sntp.triggered.native.async:
     platform_allow:
       - native_sim
     integration_platforms:
@@ -56,6 +38,7 @@ tests:
     extra_configs:
       - CONFIG_NATIVE_SIM_SLOWDOWN_TO_REAL_TIME=y
       - CONFIG_INFUSE_DNS_ASYNC=y
+      - CONFIG_SNTP_AUTO_LOG_LEVEL_DBG=y
     extra_args:
       - OVERLAY_CONFIG="overlay-nsos.conf"
     harness: console
@@ -63,24 +46,14 @@ tests:
       type: multi_line
       ordered: true
       regex:
+        - "SNTP query already running"
         - "/?/?/? -> (.*)"
         - "Sending request..."
         - "Unix time: (.*)"
         - "Now: (.*) UTC"
-        - "/?/?/? -> (.*)"
-        - "Sending request..."
-        - "SNTP query timeout"
-        - "/?/?/? -> (.*)"
-        - "Sending request..."
-        - "SNTP query timeout"
-        - "/?/?/? -> (.*)"
-        - "Sending request..."
-        - "Unix time: (.*)"
-        - "Now: (.*) UTC"
+        - "Ref: (.*) UTC"
         - "Using cached SNTP address"
         - "Sending request..."
         - "Unix time: (.*)"
         - "Now: (.*) UTC"
-        - "Using cached SNTP address"
-        - "Sending request..."
-        - "Unix time: (.*)"
+        - "Ref: (.*) UTC"

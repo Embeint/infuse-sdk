@@ -1,0 +1,15 @@
+# Build as SDK application on real hardware
+configdefault INFUSE_SDK
+	default y if SOC_FAMILY_NORDIC_NRF
+
+config WIFI_SSID
+	string "WiFi SSID"
+	depends on WIFI
+	default "test_ssid"
+
+config WIFI_PSK
+	string "WiFi PSK"
+	depends on WIFI
+	default "test_psk"
+
+source "Kconfig.zephyr"
