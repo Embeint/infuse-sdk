@@ -29,6 +29,10 @@ config SNTP_AUTO_RESYNC_AGE
 	   resynchronising at a high frequency. Therefore set the default period
 	   to 24 hours.
 
+config SNTP_AUTO_RETRY_PERIOD_MS
+	int "How long to wait before retrying a failed SNTP query"
+	default 2000
+
 choice SNTP_AUTO_MODE
 	prompt "When to send SNTP queries"
 	default SNTP_AUTO_IMMEDIATELY
