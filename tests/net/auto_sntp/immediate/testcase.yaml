@@ -19,6 +19,7 @@ tests:
       - native_sim
     extra_configs:
       - CONFIG_NATIVE_SIM_SLOWDOWN_TO_REAL_TIME=y
+      - CONFIG_SNTP_AUTO_QUERY_TIMEOUT_MS=2000
       - CONFIG_INFUSE_DNS_ASYNC=n
     extra_args:
       - OVERLAY_CONFIG="overlay-nsos.conf"
@@ -37,6 +38,7 @@ tests:
         - "www.google.com -> (.*)"
         - "Sending request..."
         - "SNTP query timeout"
+        - "Giving up SNTP queries after \\d failures"
         - "time.cloudflare.com -> (.*)"
         - "Sending request..."
         - "Unix time: (.*)"
@@ -55,6 +57,7 @@ tests:
       - native_sim
     extra_configs:
       - CONFIG_NATIVE_SIM_SLOWDOWN_TO_REAL_TIME=y
+      - CONFIG_SNTP_AUTO_QUERY_TIMEOUT_MS=2000
       - CONFIG_INFUSE_DNS_ASYNC=y
     extra_args:
       - OVERLAY_CONFIG="overlay-nsos.conf"
@@ -73,6 +76,7 @@ tests:
         - "/?/?/? -> (.*)"
         - "Sending request..."
         - "SNTP query timeout"
+        - "Giving up SNTP queries after \\d failures"
         - "/?/?/? -> (.*)"
         - "Sending request..."
         - "Unix time: (.*)"
