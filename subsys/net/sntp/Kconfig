@@ -33,6 +33,13 @@ config SNTP_AUTO_RETRY_PERIOD_MS
 	int "How long to wait before retrying a failed SNTP query"
 	default 2000
 
+config SNTP_AUTO_RETRY_LIMIT
+	int "Maximum number of times to attempt a SNTP query"
+	default 3
+	help
+	  If the SNTP query fails this many times, it is halted until the next
+	  triggering event.
+
 choice SNTP_AUTO_MODE
 	prompt "When to send SNTP queries"
 	default SNTP_AUTO_IMMEDIATELY
