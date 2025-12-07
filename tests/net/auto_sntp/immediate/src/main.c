@@ -105,9 +105,9 @@ ZTEST(auto_sntp, test_auto_sntp)
 	/* Change the SNTP server address to an invalid value, which should timeout twice in a row,
 	 * with a DNS requery in between
 	 */
-	int timeout_ms =
-		2 * ((CONFIG_SNTP_AUTO_RESYNC_AGE * MSEC_PER_SEC) + CONFIG_SNTP_QUERY_TIMEOUT_MS) +
-		500;
+	int timeout_ms = 2 * ((CONFIG_SNTP_AUTO_RESYNC_AGE * MSEC_PER_SEC) +
+			      CONFIG_SNTP_AUTO_QUERY_TIMEOUT_MS) +
+			 500;
 
 	zassert_true(KV_STORE_WRITE(KV_KEY_NTP_SERVER_URL, &sntp_invalid) > 0);
 	zassert_equal(-EAGAIN, k_sem_take(&time_ref_updated, K_MSEC(timeout_ms)));

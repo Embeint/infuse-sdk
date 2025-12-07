@@ -130,7 +130,7 @@ static int sntp_start_async_query(struct sockaddr *addr, socklen_t addrlen)
 	LOG_INF("Sending request...");
 	rc = sntp_send_async(&sntp_context);
 	if (rc == 0) {
-		k_work_schedule(&sntp_timeout, K_MSEC(CONFIG_SNTP_QUERY_TIMEOUT_MS));
+		k_work_schedule(&sntp_timeout, K_MSEC(CONFIG_SNTP_AUTO_QUERY_TIMEOUT_MS));
 		return 0;
 	}
 
