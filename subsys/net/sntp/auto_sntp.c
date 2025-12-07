@@ -175,8 +175,8 @@ static void async_dns_cb(int result, struct sockaddr *addr, socklen_t addrlen,
 
 	return;
 error:
-	/* Failed to perform SNTP DNS query, retry in 5 seconds */
-	k_work_reschedule(delayable, K_SECONDS(5));
+	/* Failed to perform SNTP DNS query, retry shortly */
+	k_work_reschedule(delayable, K_MSEC(CONFIG_SNTP_AUTO_RETRY_PERIOD_MS));
 }
 
 #endif /* CONFIG_INFUSE_DNS_ASYNC */
@@ -240,8 +240,8 @@ static void sntp_work(struct k_work *work)
 #endif /* CONFIG_INFUSE_DNS_ASYNC */
 
 error:
-	/* Failed to perform SNTP update, retry in 5 seconds */
-	k_work_reschedule(delayable, K_SECONDS(5));
+	/* Failed to perform SNTP update, retry shortly */
+	k_work_reschedule(delayable, K_MSEC(CONFIG_SNTP_AUTO_RETRY_PERIOD_MS));
 }
 
 static void kv_value_changed(uint16_t key, const void *data, size_t data_len, void *user_ctx)
