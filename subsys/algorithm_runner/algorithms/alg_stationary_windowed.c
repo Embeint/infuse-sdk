@@ -32,8 +32,9 @@ void algorithm_stationary_windowed_fn(const struct zbus_channel *chan,
 	const struct imu_magnitude_array *magnitudes;
 	uint32_t uptime = k_uptime_seconds();
 	uint16_t sample_rate;
-	uint64_t variance;
-	uint64_t std_dev;
+	float variance_f;
+	uint32_t variance;
+	uint16_t std_dev;
 	bool stationary;
 	int16_t one_g;
 
@@ -61,14 +62,15 @@ void algorithm_stationary_windowed_fn(const struct zbus_channel *chan,
 	chan_data.movement_threshold = a->args.std_dev_threshold_ug;
 
 	/* Raw variance */
-	variance = (uint64_t)statistics_variance(&d->stats);
+	variance_f = statistics_variance(&d->stats);
+	variance = min(variance_f, UINT32_MAX);
 	/* Raw standard deviation */
-	std_dev = math_sqrt64(variance);
+	std_dev = math_sqrt32(variance);
 
 	/* Standard deviation is in the same units as the input data,
 	 * so we can convert to micro-g's through the usual equation.
 	 */
-	chan_data.data.std_dev = (1000000 * std_dev) / one_g;
+	chan_data.data.std_dev = (1000000 * (uint64_t)std_dev) / one_g;
 	chan_data.data.count = d->stats.n;
 	stationary = chan_data.data.std_dev <= a->args.std_dev_threshold_ug;
 
