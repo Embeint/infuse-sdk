@@ -77,7 +77,7 @@ jobs:
         with:
           python-version: 3.12
 
-      - name: install-packages
+      - name: Install Python packages
         working-directory: infuse-sdk
         if: github.event_name == 'pull_request'
         run: |
