@@ -188,14 +188,23 @@ config KV_STORE_KEY_GEOFENCE_RANGE
 config KV_STORE_KEY_ALG_STATIONARY_WINDOWED_ARGS
 	bool "Enable KV key ALG_STATIONARY_WINDOWED_ARGS"
 	depends on ALGORITHM_RUNNER_ALG_STATIONARY_WINDOWED
+	default y
 	help
 	  Configuration for the 'Stationary Windowed' algorithm
 
 config KV_STORE_KEY_ALG_TILT_ARGS
 	bool "Enable KV key ALG_TILT_ARGS"
 	depends on ALGORITHM_RUNNER_ALG_TILT
+	default y
 	help
 	  Configuration for the 'Tilt' algorithm
+
+config KV_STORE_KEY_ALG_MOVEMENT_THRESHOLD_ARGS
+	bool "Enable KV key ALG_MOVEMENT_THRESHOLD_ARGS"
+	depends on ALGORITHM_RUNNER_ALG_MOVEMENT_THRESHOLD
+	default y
+	help
+	  Configuration for the 'Movement Threshold' algorithm
 
 config KV_STORE_KEY_TASK_SCHEDULES_DEFAULT_ID
 	bool "Enable KV key TASK_SCHEDULES_DEFAULT_ID"
