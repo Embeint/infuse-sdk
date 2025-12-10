@@ -1,0 +1,23 @@
+/ {
+	aliases {
+		imu0 = &imu_emul;
+	};
+
+	imu_emul: imu_emul {
+		compatible = "embeint,imu-emul";
+	};
+
+	data_logger_dummy: data_logger_dummy {
+		compatible = "embeint,data-logger-epacket", "embeint,data-logger";
+		epacket = <&epacket_dummy>;
+
+		tdf_logger_dummy: tdf_logger_dummy {
+			compatible = "embeint,tdf-data-logger";
+		};
+	};
+
+	epacket_dummy: epacket_dummy {
+		compatible = "embeint,epacket-dummy";
+		zephyr,pm-device-runtime-auto;
+	};
+};
