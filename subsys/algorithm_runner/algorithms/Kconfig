@@ -9,7 +9,7 @@ config ALGORITHM_RUNNER_ALG_STATIONARY_WINDOWED
 if ALGORITHM_RUNNER_ALG_STATIONARY_WINDOWED
 
 module = ALG_STATIONARY_WINDOWED
-module-str = ALG STATIONARY
+module-str = ALG Stationary
 source "subsys/logging/Kconfig.template.log_config"
 
 endif # ALGORITHM_RUNNER_ALG_STATIONARY_WINDOWED
@@ -24,10 +24,23 @@ config ALGORITHM_RUNNER_ALG_TILT
 if ALGORITHM_RUNNER_ALG_TILT
 
 module = ALG_TILT
-module-str = ALG TILT
+module-str = ALG Tilt
 source "subsys/logging/Kconfig.template.log_config"
 
 endif # ALGORITHM_RUNNER_ALG_TILT
+
+config ALGORITHM_RUNNER_ALG_MOVEMENT_THRESHOLD
+	bool "Movement detection through static threshold algorithm"
+	depends on INFUSE_APPLICATION_STATES
+	depends on INFUSE_ZBUS_CHAN_IMU_ACC_MAG
+
+if ALGORITHM_RUNNER_ALG_MOVEMENT_THRESHOLD
+
+module = ALG_MOVEMENT_THRESHOLD
+module-str = ALG Threshold
+source "subsys/logging/Kconfig.template.log_config"
+
+endif # ALGORITHM_RUNNER_ALG_MOVEMENT_THRESHOLD
 
 config ALGORITHM_RUNNER_ALG_DEMO
 	bool "Demo implementations of various algorithm types"

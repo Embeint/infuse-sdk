@@ -37,7 +37,6 @@ enum {
 struct algorithm_stationary_windowed_data {
 	struct statistics_state stats;
 	uint32_t window_end;
-	uint32_t print_end;
 };
 
 /** Algorithm implementation, see @ref algorithm_run_fn */
