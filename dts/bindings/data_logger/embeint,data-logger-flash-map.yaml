@@ -13,3 +13,9 @@ properties:
     required: true
     description: |
       Flash Map partition to log data to.
+
+  block-size:
+    type: int
+    default: 512
+    description: |
+      Size of blocks on the underlying flash map device

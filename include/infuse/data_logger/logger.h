@@ -113,7 +113,8 @@ struct data_logger_cb {
  */
 #define DATA_LOGGER_MAX_SIZE(node_id)                                                              \
 	COND_CODE_1(                                                                               \
-		DT_NODE_HAS_COMPAT(node_id, embeint_data_logger_flash_map), (512),                 \
+		DT_NODE_HAS_COMPAT(node_id, embeint_data_logger_flash_map),                        \
+		(DT_PROP(node_id, block_size)),                                                    \
 		(COND_CODE_1(DT_NODE_HAS_COMPAT(node_id, embeint_data_logger_epacket),             \
 			     (EPACKET_INTERFACE_MAX_PAYLOAD(DT_PROP(node_id, epacket))),           \
 			     ((COND_CODE_1(DT_NODE_HAS_COMPAT(node_id, embeint_data_logger_exfat), \
