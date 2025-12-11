@@ -112,6 +112,8 @@ K_THREAD_DEFINE(pwr_thread, 2048, pwr_validator, NULL, NULL, NULL, 5, 0, 0);
 
 #if defined(CONFIG_SPI_NOR)
 #define FLASH_COMPAT jedec_spi_nor
+#elif defined(CONFIG_SPI_NAND)
+#define FLASH_COMPAT jedec_spi_nand
 #endif
 
 #ifdef FLASH_COMPAT

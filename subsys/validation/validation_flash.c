@@ -19,12 +19,16 @@
 
 #define TEST "FLASH"
 
-static uint8_t write_buffer[256];
-static uint8_t read_buffer[256];
+#define BUFFER_SIZE (IS_ENABLED(CONFIG_SPI_NAND) ? 4096 : 256)
+
+static uint8_t write_buffer[BUFFER_SIZE];
+static uint8_t read_buffer[BUFFER_SIZE];
 
 static int write_read_erase_page(const struct device *dev, size_t page, size_t page_size)
 {
-	size_t page_offset = sys_rand32_get() % (page_size - sizeof(write_buffer));
+	const struct flash_parameters *parameters = flash_get_parameters(dev);
+	size_t page_offset = ROUND_DOWN(sys_rand32_get() % (page_size - sizeof(write_buffer)),
+					parameters->write_block_size);
 	off_t erase_offset = page * page_size;
 	off_t write_offset = erase_offset + page_offset;
 	int rc;
@@ -56,6 +60,25 @@ static int write_read_erase_page(const struct device *dev, size_t page, size_t p
 		return rc;
 	}
 
+	/* Validate written == read */
+	if (memcmp(write_buffer, read_buffer, sizeof(write_buffer)) != 0) {
+		VALIDATION_REPORT_ERROR(TEST, "Data read != data written");
+		return -EINVAL;
+	}
+
+	/* Read a partial page with an unaligned offsets and size */
+	rc = flash_read(dev, write_offset + 49, read_buffer, 51);
+	if (rc < 0) {
+		VALIDATION_REPORT_ERROR(TEST, "flash_read (%d)", rc);
+		return rc;
+	}
+
+	/* Validate written == read */
+	if (memcmp(write_buffer + 49, read_buffer, 51) != 0) {
+		VALIDATION_REPORT_ERROR(TEST, "Unaligned data read != data written");
+		return -EINVAL;
+	}
+
 	/* Erase the page */
 	rc = flash_erase(dev, erase_offset, page_size);
 	if (rc < 0) {
@@ -63,10 +86,20 @@ static int write_read_erase_page(const struct device *dev, size_t page, size_t p
 		return rc;
 	}
 
-	/* Validate written == read */
-	if (memcmp(write_buffer, read_buffer, sizeof(write_buffer)) != 0) {
-		VALIDATION_REPORT_ERROR(TEST, "Data read != data written");
-		return -EINVAL;
+	/* Read the erased data back */
+	rc = flash_read(dev, write_offset, read_buffer, sizeof(read_buffer));
+	if (rc < 0) {
+		VALIDATION_REPORT_ERROR(TEST, "flash_erase_readback (%d)", rc);
+		return rc;
+	}
+
+	/* Validate data is actually erased */
+	for (int i = 0; i < sizeof(read_buffer); i++) {
+		if (read_buffer[i] != parameters->erase_value) {
+			VALIDATION_REPORT_ERROR(TEST,
+						"Data erased != Erase value (Offset %d: %02X)", i,
+						read_buffer[i]);
+		}
 	}
 
 	VALIDATION_REPORT_INFO(TEST, "Write-Read-Erase test passed");
