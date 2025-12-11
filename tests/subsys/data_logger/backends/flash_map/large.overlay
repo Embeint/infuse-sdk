@@ -1,0 +1,37 @@
+#include <mem.h>
+
+/ {
+	data_logger_flash: data_logger_flash {
+		compatible = "embeint,data-logger-flash-map", "embeint,data-logger";
+		partition = <&data_logger_partition>;
+		block-size = <1024>;
+		full-block-write;
+	};
+
+	sim_flash: sim_flash {
+		compatible = "zephyr,sim-flash";
+
+		#address-cells = <1>;
+		#size-cells = <1>;
+		erase-value = <0xff>;
+
+		flash_sim0: flash_sim@0 {
+			compatible = "soc-nv-flash";
+			reg = <0x00000000 DT_SIZE_K(32)>;
+
+			erase-block-size = <2048>;
+			write-block-size = <1024>;
+
+			partitions {
+				compatible = "fixed-partitions";
+				#address-cells = <1>;
+				#size-cells = <1>;
+
+				data_logger_partition: partition@1000 {
+					label = "data_logger";
+					reg = <0x00000000 DT_SIZE_K(32)>;
+				};
+			};
+		};
+	};
+};
