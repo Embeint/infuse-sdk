@@ -19,3 +19,8 @@ properties:
     default: 512
     description: |
       Size of blocks on the underlying flash map device
+
+  full-block-write:
+    type: boolean
+    description: |
+      Underlying flash map device requires full block writes
