@@ -1,12 +1,12 @@
 # Infuse-IoT sysbuild integration
 
-if(NOT ${SB_CONFIG_INFUSE_INTEGRATION})
+if(NOT SB_CONFIG_INFUSE_INTEGRATION)
   # Not Infuse sysbuild, exit
   return()
 endif()
 
-if(${SB_CONFIG_BOOTLOADER_MCUBOOT})
-  if(${SB_CONFIG_INFUSE_INTEGRATION_BT_CTLR})
+if(SB_CONFIG_BOOTLOADER_MCUBOOT)
+  if(SB_CONFIG_INFUSE_INTEGRATION_BT_CTLR)
     # infuse-bt-btlr snippet should be applied to MCUBoot application
     set(mcuboot_SNIPPET "infuse-bt-ctlr" CACHE INTERNAL "")
   else()
