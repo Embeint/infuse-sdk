@@ -15,8 +15,10 @@
 
 #include <infuse/data_logger/logger.h>
 
-static uint8_t input_buffer[1024] = {0};
-static uint8_t output_buffer[1024];
+#define NODE DT_NODELABEL(data_logger_flash)
+
+static uint8_t input_buffer[2 * DT_PROP(NODE, block_size)] = {0};
+static uint8_t output_buffer[2 * DT_PROP(NODE, block_size)];
 static uint8_t *flash_buffer;
 static size_t flash_buffer_size;
 
@@ -24,24 +26,23 @@ int logger_flash_map_init(const struct device *dev);
 
 ZTEST(data_logger_flash_map, test_init_constants)
 {
-	const struct device *logger = DEVICE_DT_GET(DT_NODELABEL(data_logger_flash));
+	const struct device *logger = DEVICE_DT_GET(NODE);
 	struct data_logger_state state;
 
 	data_logger_get_state(logger, &state);
-	zassert_not_equal(0, state.block_size);
+	zassert_equal(DT_PROP(NODE, block_size), state.block_size);
 	zassert_not_equal(0, state.erase_unit);
-	zassert_equal(0, state.bytes_logged);
 	zassert_equal(sizeof(struct data_logger_persistent_block_header), state.block_overhead);
 	zassert_equal(flash_buffer_size / state.block_size, state.physical_blocks);
 	zassert_equal(254 * state.physical_blocks, state.logical_blocks);
 	zassert_equal(0, flash_buffer_size % state.erase_unit);
 	zassert_equal(0, state.erase_unit % state.block_size);
-	zassert_false(state.requires_full_block_write);
+	zassert_equal(DT_PROP(NODE, full_block_write), state.requires_full_block_write);
 }
 
 ZTEST(data_logger_flash_map, test_init_erased)
 {
-	const struct device *logger = DEVICE_DT_GET(DT_NODELABEL(data_logger_flash));
+	const struct device *logger = DEVICE_DT_GET(NODE);
 	struct data_logger_state state;
 
 	/* Init all 0x00 */
@@ -66,7 +67,7 @@ ZTEST(data_logger_flash_map, test_init_erased)
 
 ZTEST(data_logger_flash_map, test_init_erased_invalid_start)
 {
-	const struct device *logger = DEVICE_DT_GET(DT_NODELABEL(data_logger_flash));
+	const struct device *logger = DEVICE_DT_GET(NODE);
 
 	/* Init all 0x00, set the first byte to a valid wrap count */
 	memset(flash_buffer, 0x00, flash_buffer_size);
@@ -76,7 +77,7 @@ ZTEST(data_logger_flash_map, test_init_erased_invalid_start)
 
 ZTEST(data_logger_flash_map, test_init_part_written)
 {
-	const struct device *logger = DEVICE_DT_GET(DT_NODELABEL(data_logger_flash));
+	const struct device *logger = DEVICE_DT_GET(NODE);
 	struct data_logger_state state;
 
 	data_logger_get_state(logger, &state);
@@ -97,7 +98,7 @@ ZTEST(data_logger_flash_map, test_init_part_written)
 
 ZTEST(data_logger_flash_map, test_init_all_written)
 {
-	const struct device *logger = DEVICE_DT_GET(DT_NODELABEL(data_logger_flash));
+	const struct device *logger = DEVICE_DT_GET(NODE);
 	struct data_logger_state state;
 
 	/* Init all 0x01 */
@@ -119,7 +120,7 @@ ZTEST(data_logger_flash_map, test_init_all_written)
 
 ZTEST(data_logger_flash_map, test_init_all_written_with_start_erase)
 {
-	const struct device *logger = DEVICE_DT_GET(DT_NODELABEL(data_logger_flash));
+	const struct device *logger = DEVICE_DT_GET(NODE);
 	struct data_logger_state state;
 	uint16_t blocks_in_erase;
 
@@ -147,7 +148,7 @@ ZTEST(data_logger_flash_map, test_init_all_written_with_start_erase)
 
 ZTEST(data_logger_flash_map, test_init_all_written_with_end_erase)
 {
-	const struct device *logger = DEVICE_DT_GET(DT_NODELABEL(data_logger_flash));
+	const struct device *logger = DEVICE_DT_GET(NODE);
 	uint8_t *flash_buffer_end = flash_buffer + flash_buffer_size;
 	struct data_logger_state state;
 	uint16_t blocks_in_erase;
@@ -177,7 +178,7 @@ ZTEST(data_logger_flash_map, test_init_all_written_with_end_erase)
 
 ZTEST(data_logger_flash_map, test_write_errors)
 {
-	const struct device *logger = DEVICE_DT_GET(DT_NODELABEL(data_logger_flash));
+	const struct device *logger = DEVICE_DT_GET(NODE);
 	struct data_logger_state state;
 
 	/* Init full */
@@ -193,7 +194,7 @@ ZTEST(data_logger_flash_map, test_write_errors)
 
 ZTEST(data_logger_flash_map, test_read_errors)
 {
-	const struct device *logger = DEVICE_DT_GET(DT_NODELABEL(data_logger_flash));
+	const struct device *logger = DEVICE_DT_GET(NODE);
 	struct data_logger_state state;
 
 	/* Init part full */
@@ -221,8 +222,10 @@ ZTEST(data_logger_flash_map, test_read_errors)
 
 ZTEST(data_logger_flash_map, test_read_wrap)
 {
-	const struct device *logger = DEVICE_DT_GET(DT_NODELABEL(data_logger_flash));
+	const struct device *logger = DEVICE_DT_GET(NODE);
 	struct data_logger_state state;
+	uint16_t block_size = DT_PROP(NODE, block_size);
+	uint16_t block_short = block_size - 12;
 
 	/* Init half 0x02, half 0x01 */
 	memset(flash_buffer, 0x01, flash_buffer_size);
@@ -246,10 +249,11 @@ ZTEST(data_logger_flash_map, test_read_wrap)
 	zassert_mem_equal(input_buffer, output_buffer, 2 * state.block_size);
 
 	/* Read across wrap around boundary with offset */
-	zassert_equal(0, data_logger_block_read(logger, state.physical_blocks - 1, 500,
+	zassert_equal(0, data_logger_block_read(logger, state.physical_blocks - 1, block_short,
 						output_buffer, 20));
-	memset(input_buffer, 0x01, state.block_size - 500);
-	memset(input_buffer + state.block_size - 500, 0x02, 20 - (state.block_size - 500));
+	memset(input_buffer, 0x01, state.block_size - block_short);
+	memset(input_buffer + state.block_size - block_short, 0x02,
+	       20 - (state.block_size - block_short));
 	zassert_mem_equal(input_buffer, output_buffer, 20);
 }
 
@@ -257,7 +261,7 @@ static void test_sequence(bool reinit)
 {
 	const struct flash_parameters *params =
 		flash_get_parameters(DEVICE_DT_GET(DT_NODELABEL(sim_flash)));
-	const struct device *logger = DEVICE_DT_GET(DT_NODELABEL(data_logger_flash));
+	const struct device *logger = DEVICE_DT_GET(NODE);
 	struct data_logger_persistent_block_header *header = (void *)output_buffer;
 	struct data_logger_state state;
 	uint8_t type;
@@ -312,7 +316,8 @@ static void erase_progress(uint32_t blocks_erased)
 
 static void test_erase_blocks(uint32_t logged_blocks, bool erase_all)
 {
-	const struct device *logger = DEVICE_DT_GET(DT_NODELABEL(data_logger_flash));
+	const struct device *logger = DEVICE_DT_GET(NODE);
+	uint16_t block_size = DT_PROP(NODE, block_size);
 	struct data_logger_state state;
 	uint8_t type = 3;
 	int rc;
@@ -340,7 +345,7 @@ static void test_erase_blocks(uint32_t logged_blocks, bool erase_all)
 	data_logger_get_state(logger, &state);
 	zassert_equal(0, state.boot_block);
 	zassert_equal(0, state.current_block);
-	zassert_equal(logged_blocks * 512, state.bytes_logged);
+	zassert_equal(logged_blocks * block_size, state.bytes_logged);
 
 	/* Re-initialise the logger, no data should exist */
 	zassert_equal(0, logger_flash_map_init(logger));
@@ -352,7 +357,7 @@ static void test_erase_blocks(uint32_t logged_blocks, bool erase_all)
 ZTEST(data_logger_flash_map, test_erase)
 {
 	/* Test erasing all data */
-	const struct device *logger = DEVICE_DT_GET(DT_NODELABEL(data_logger_flash));
+	const struct device *logger = DEVICE_DT_GET(NODE);
 	struct data_logger_state state;
 
 	data_logger_get_state(logger, &state);
@@ -371,7 +376,7 @@ ZTEST(data_logger_flash_map, test_erase)
 ZTEST(data_logger_flash_map, test_erase_exclusion)
 {
 	/* Test read/write while erasing */
-	const struct device *logger = DEVICE_DT_GET(DT_NODELABEL(data_logger_flash));
+	const struct device *logger = DEVICE_DT_GET(NODE);
 	struct data_logger_state state;
 
 	data_logger_get_state(logger, &state);
