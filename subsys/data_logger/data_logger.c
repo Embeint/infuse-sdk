@@ -22,7 +22,6 @@
 #include "backends/common.h"
 
 #define IS_PERSISTENT_LOGGER(api) (api->read != NULL)
-#define BLOCK_QUEUE_MAX_SIZE      512
 
 /* Block header on the ram buffer */
 struct ram_buf_header {
@@ -38,8 +37,8 @@ struct net_buf_ctx {
 	bool flush;
 };
 
-NET_BUF_POOL_DEFINE(block_queue_pool, CONFIG_DATA_LOGGER_OFFLOAD_MAX_PENDING, BLOCK_QUEUE_MAX_SIZE,
-		    sizeof(struct net_buf_ctx), NULL);
+NET_BUF_POOL_DEFINE(block_queue_pool, CONFIG_DATA_LOGGER_OFFLOAD_MAX_PENDING,
+		    CONFIG_DATA_LOGGER_OFFLOAD_MAX_BLOCK_SIZE, sizeof(struct net_buf_ctx), NULL);
 K_FIFO_DEFINE(block_commit_fifo);
 
 #endif /* CONFIG_DATA_LOGGER_OFFLOAD_WRITES */
@@ -693,7 +692,7 @@ int data_logger_common_init(const struct device *dev)
 		const struct data_logger_common_config *config = dev->config;
 
 		if (!config->queued_writes) {
-			__ASSERT(data->block_size <= BLOCK_QUEUE_MAX_SIZE,
+			__ASSERT(data->block_size <= CONFIG_DATA_LOGGER_OFFLOAD_MAX_BLOCK_SIZE,
 				 "Block will not fit on queue");
 		}
 	}
