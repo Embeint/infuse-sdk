@@ -16,14 +16,14 @@
 
 #include "common.h"
 
-#define DATA_LOGGER_FLASH_MAP_BLOCK_SIZE 512
-#define DATA_LOGGER_FLASH_MAP_MAX_WRAPS  254
+#define DATA_LOGGER_FLASH_MAP_MAX_WRAPS 254
 
 struct dl_flash_map_config {
 	struct data_logger_common_config common;
 	uint32_t physical_blocks;
 	uint16_t erase_size;
 	uint16_t max_block_size;
+	uint8_t block_addr_shift;
 	uint8_t flash_area_id;
 };
 struct dl_flash_map_data {
@@ -34,8 +34,9 @@ struct dl_flash_map_data {
 static int logger_flash_map_write(const struct device *dev, uint32_t phy_block,
 				  enum infuse_type data_type, const void *mem, uint16_t mem_len)
 {
+	const struct dl_flash_map_config *config = dev->config;
 	struct dl_flash_map_data *data = dev->data;
-	off_t offset = DATA_LOGGER_FLASH_MAP_BLOCK_SIZE * phy_block;
+	off_t offset = phy_block << config->block_addr_shift;
 
 	/* Data type already encoded into the mem buffer */
 	ARG_UNUSED(data_type);
@@ -46,17 +47,19 @@ static int logger_flash_map_write(const struct device *dev, uint32_t phy_block,
 static int logger_flash_map_read(const struct device *dev, uint32_t phy_block,
 				 uint16_t block_offset, void *mem, uint16_t mem_len)
 {
+	const struct dl_flash_map_config *config = dev->config;
 	struct dl_flash_map_data *data = dev->data;
-	off_t offset = (DATA_LOGGER_FLASH_MAP_BLOCK_SIZE * phy_block) + block_offset;
+	off_t offset = (phy_block << config->block_addr_shift) + block_offset;
 
 	return flash_area_read(data->area, offset, mem, mem_len);
 }
 
 static int logger_flash_map_erase(const struct device *dev, uint32_t phy_block, uint32_t num)
 {
+	const struct dl_flash_map_config *config = dev->config;
 	struct dl_flash_map_data *data = dev->data;
-	off_t offset = DATA_LOGGER_FLASH_MAP_BLOCK_SIZE * phy_block;
-	size_t len = DATA_LOGGER_FLASH_MAP_BLOCK_SIZE * num;
+	off_t offset = phy_block << config->block_addr_shift;
+	size_t len = num << config->block_addr_shift;
 
 	return flash_area_erase(data->area, offset, len);
 }
@@ -66,7 +69,7 @@ static int logger_flash_map_reset(const struct device *dev, uint32_t block_hint,
 {
 	const struct dl_flash_map_config *config = dev->config;
 	struct dl_flash_map_data *data = dev->data;
-	size_t remaining = DATA_LOGGER_FLASH_MAP_BLOCK_SIZE * block_hint;
+	size_t remaining = block_hint << config->block_addr_shift;
 	size_t complete = 0;
 	off_t offset = 0;
 	size_t to_erase;
@@ -86,7 +89,7 @@ static int logger_flash_map_reset(const struct device *dev, uint32_t block_hint,
 		}
 
 		/* Update state */
-		complete += to_erase / DATA_LOGGER_FLASH_MAP_BLOCK_SIZE;
+		complete += to_erase >> config->block_addr_shift;
 		offset += to_erase;
 		remaining -= to_erase;
 
@@ -134,15 +137,17 @@ const struct data_logger_api data_logger_flash_map_api = {
 };
 
 #define DATA_LOGGER_DEFINE(inst)                                                                   \
+	BUILD_ASSERT(IS_POWER_OF_TWO(DT_INST_PROP(inst, block_size)));                             \
 	COMMON_CONFIG_PRE(inst);                                                                   \
 	static struct dl_flash_map_config config##inst = {                                         \
 		.common = COMMON_CONFIG_INIT(inst, false, false, sizeof(uint32_t)),                \
 		.flash_area_id = DT_FIXED_PARTITION_ID(DT_INST_PROP(inst, partition)),             \
 		.physical_blocks = (DT_REG_SIZE(DT_INST_PROP(inst, partition)) /                   \
-				    DATA_LOGGER_FLASH_MAP_BLOCK_SIZE),                             \
+				    DT_INST_PROP(inst, block_size)),                               \
 		.erase_size = DT_PROP_OR(DT_GPARENT(DT_INST_PROP(inst, partition)),                \
 					 erase_block_size, 4096),                                  \
-		.max_block_size = DATA_LOGGER_FLASH_MAP_BLOCK_SIZE,                                \
+		.max_block_size = DT_INST_PROP(inst, block_size),                                  \
+		.block_addr_shift = LOG2(DT_INST_PROP(inst, block_size)),                          \
 	};                                                                                         \
 	static struct dl_flash_map_data data##inst;                                                \
 	DEVICE_DT_INST_DEFINE(inst, logger_flash_map_init, NULL, &data##inst, &config##inst,       \
