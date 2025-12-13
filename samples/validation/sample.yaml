@@ -5,13 +5,20 @@ common:
   build_only: true
   required_snippets:
     - infuse
-  depends_on:
-    - ble
-  integration_platforms:
-    - auroch/nrf9151/ns
-    - kudu/nrf54l15/cpuapp
-    - thingy53/nrf5340/cpuapp
-    - tauro/nrf9151/ns
 tests:
   sample.validation:
     tags: validation
+    integration_platforms:
+      - auroch/nrf9151/ns
+      - kudu/nrf54l15/cpuapp
+      - thingy53/nrf5340/cpuapp
+      - tauro/nrf9151/ns
+  sample.validation.nrf70_test:
+    tags: validation
+    platform_allow:
+      - nrf7002dk/nrf5340/cpuapp
+    integration_platforms:
+      - nrf7002dk/nrf5340/cpuapp
+    extra_configs:
+      - CONFIG_NETWORKING=n
+      - CONFIG_VALIDATION_NRF70_XO_TUNE=y

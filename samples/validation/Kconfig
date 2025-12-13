@@ -5,6 +5,11 @@ DT_CHOSEN_Z_WIFI := zephyr,wifi
 DT_COMPAT_Z_SDMMC := zephyr,sdmmc-disk
 DT_COMPAT_ST_SDMMC := st,stm32-sdmmc
 
+config VALIDATION_NRF70_XO_TUNE
+	bool "Run external oscillator calibration"
+	depends on $(dt_chosen_enabled,$(DT_CHOSEN_Z_WIFI))
+	depends on !NETWORKING
+
 configdefault BT
 	default y if $(dt_chosen_enabled,$(DT_CHOSEN_Z_BT_HCI))
 configdefault NETWORKING
@@ -24,6 +29,10 @@ configdefault INFUSE_VALIDATION_LEDS_GPIO
 	default y if $(dt_alias_enabled,led0)
 configdefault INFUSE_VALIDATION_LEDS_CONTROLLER
 	default y if $(dt_alias_enabled,led-controller0)
+choice NRF70_OPER_MODES
+	default NRF70_RADIO_TEST if VALIDATION_NRF70_XO_TUNE
+endchoice
+
 
 # Floating point
 
