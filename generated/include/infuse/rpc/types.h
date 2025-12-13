@@ -444,6 +444,8 @@ enum rpc_builtin_id {
 	RPC_ID_DATA_LOGGER_READ_AVAILABLE = 22,
 	/** Get current LTE interface state (with RAI information) */
 	RPC_ID_LTE_STATE_V2 = 23,
+	/** Get state of a data logger (Larger erase unit) */
+	RPC_ID_DATA_LOGGER_STATE_V2 = 24,
 	/** Download a file from a COAP server (Infuse-IoT DTLS protected) */
 	RPC_ID_COAP_DOWNLOAD = 30,
 	/** Network upload bandwidth testing using zperf/iperf */
@@ -858,6 +860,37 @@ struct rpc_lte_state_v2_response {
 	struct rpc_struct_network_state common;
 	/** LTE state */
 	struct rpc_struct_lte_state_v2 lte;
+} __packed;
+
+/** Get state of a data logger (Larger erase unit) */
+struct rpc_data_logger_state_v2_request {
+	struct infuse_rpc_req_header header;
+	/** Data logger to read from */
+	uint8_t logger;
+} __packed;
+
+struct rpc_data_logger_state_v2_response {
+	struct infuse_rpc_rsp_header header;
+	/** Number of bytes logged since boot */
+	uint64_t bytes_logged;
+	/** Number of logical blocks on the logger */
+	uint32_t logical_blocks;
+	/** Number of physical blocks on the logger */
+	uint32_t physical_blocks;
+	/** Number of logical blocks present at boot */
+	uint32_t boot_block;
+	/** Number of logical blocks that have been written */
+	uint32_t current_block;
+	/** Earliest logical block that still exists on the logger */
+	uint32_t earliest_block;
+	/** Size of a single block in bytes */
+	uint16_t block_size;
+	/** Number of bytes at the start of the block that should not contain data */
+	uint16_t block_overhead;
+	/** Minimum erase unit of the logger in bytes */
+	uint32_t erase_unit;
+	/** Current application uptime */
+	uint32_t uptime;
 } __packed;
 
 /** Download a file from a COAP server (Infuse-IoT DTLS protected) */
