@@ -30,6 +30,7 @@
 #include <infuse/validation/nrf_modem.h>
 #include <infuse/validation/cellular_modem.h>
 #include <infuse/validation/wifi.h>
+#include <infuse/validation/nrf70_radio_test.h>
 
 #ifdef CONFIG_NRF_MODEM_LIB
 #include <modem/nrf_modem_lib.h>
@@ -241,6 +242,26 @@ K_THREAD_DEFINE(lora_thread, 2048, lora_validator, NULL, NULL, NULL, 5, 0, 0);
 #endif /* CONFIG_LORA */
 
 #ifdef CONFIG_WIFI
+#ifdef CONFIG_NRF70_RADIO_TEST
+
+static int wifi_validator(void *a, void *b, void *c)
+{
+	const struct device *dev = DEVICE_DT_GET(DT_COMPAT_GET_ANY_STATUS_OKAY(nordic_wlan));
+
+	atomic_inc(&validators_registered);
+
+	if (infuse_validation_nrf70_radio_test(dev, VALIDATION_NRF70_RADIO_TEST_XO_TUNE, 1) == 0) {
+		atomic_inc(&validators_passed);
+	} else {
+		atomic_inc(&validators_failed);
+	}
+
+	atomic_inc(&validators_complete);
+	k_sem_give(&task_complete);
+	return 0;
+}
+
+#else
 
 static int wifi_validator(void *a, void *b, void *c)
 {
@@ -266,6 +287,8 @@ end:
 	k_sem_give(&task_complete);
 	return 0;
 }
+
+#endif /* CONFIG_NRF70_RADIO_TEST */
 
 K_THREAD_DEFINE(wifi_thread, 6144, wifi_validator, NULL, NULL, NULL, 5, 0, 0);
 #endif /* CONFIG_WIFI */
