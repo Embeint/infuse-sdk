@@ -90,6 +90,7 @@ configdefault LTE_LC_RAI_MODULE
 configdefault LTE_RAI_REQ
 	default y if SOC_NRF9120
 
+if !NRF70_RADIO_TEST
 config NRF_WIFI_LOW_RAM
 	bool "nRF Wi-Fi low RAM defaults"
 	default y if SRAM_SIZE <= 256
@@ -148,6 +149,7 @@ configdefault NRF_WIFI_IF_AUTO_START
 choice NET_SOCKETPAIR_ALLOCATION_STRATEGY
 	default NET_SOCKETPAIR_STATIC
 endchoice
+endif # !NRF70_RADIO_TEST
 choice NRF70_OPER_MODES
 	default NRF70_SCAN_ONLY if WIFI_USAGE_MODE_SCAN_ONLY
 endchoice
