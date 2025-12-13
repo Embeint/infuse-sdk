@@ -21,7 +21,7 @@
 struct dl_flash_map_config {
 	struct data_logger_common_config common;
 	uint32_t physical_blocks;
-	uint16_t erase_size;
+	uint32_t erase_size;
 	uint16_t max_block_size;
 	uint8_t block_addr_shift;
 	uint8_t flash_area_id;
