@@ -38,12 +38,12 @@ struct data_logger_state {
 	uint32_t current_block;
 	/* Earliest logical block that still exists on the logger */
 	uint32_t earliest_block;
+	/* Minimum erase unit of the logger in bytes */
+	uint32_t erase_unit;
 	/* Size of a single block in bytes */
 	uint16_t block_size;
 	/* Number of bytes at the start of the block that should not contain data */
 	uint16_t block_overhead;
-	/* Minimum erase unit of the logger in bytes */
-	uint16_t erase_unit;
 	/* Writes require the full block size to be provided */
 	bool requires_full_block_write;
 };
