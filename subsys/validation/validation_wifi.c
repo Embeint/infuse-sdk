@@ -163,6 +163,7 @@ static int validation_network_connect(struct net_if *iface, uint8_t flags)
 		.security = WIFI_SECURITY_TYPE_PSK,
 		.channel = WIFI_CHANNEL_ANY,
 		.band = WIFI_FREQ_BAND_2_4_GHZ,
+		.timeout = 10,
 	};
 	struct net_mgmt_event_callback l4_cb;
 	struct wifi_iface_status wifi_status;
