@@ -322,6 +322,9 @@ ZTEST(data_logger_api, test_while_erase)
 	/* Unblock the erase worker */
 	k_sem_give(&erase_sem);
 	data->reset.block_until = NULL;
+
+	/* Give the erase worker time to exit before `erase_work` exits scope */
+	k_sleep(K_MSEC(100));
 }
 
 static void do_writes(struct k_work *work)

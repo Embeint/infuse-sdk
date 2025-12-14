@@ -163,6 +163,7 @@ static int validation_network_connect(struct net_if *iface, uint8_t flags)
 		.security = WIFI_SECURITY_TYPE_PSK,
 		.channel = WIFI_CHANNEL_ANY,
 		.band = WIFI_FREQ_BAND_2_4_GHZ,
+		.timeout = 10,
 	};
 	struct net_mgmt_event_callback l4_cb;
 	struct wifi_iface_status wifi_status;
@@ -234,24 +235,25 @@ done:
 
 int infuse_validation_wifi(struct net_if *iface, uint8_t flags)
 {
-	const char *dev_name = iface->if_dev->dev->name;
+	const struct device *dev = iface->if_dev->dev;
 	bool manual_up = false;
 	int rc;
 
-	VALIDATION_REPORT_INFO(TEST, "IFACE=%s", dev_name);
+	VALIDATION_REPORT_INFO(TEST, "IFACE=%s", dev->name);
 
 	/* Request interface to come up if it is not already */
 	if (!net_if_is_admin_up(iface)) {
 		rc = net_if_up(iface);
 		if (rc != 0) {
-			VALIDATION_REPORT_ERROR(TEST, "Failed to bring up %s (%d)", dev_name, rc);
+			VALIDATION_REPORT_ERROR(TEST, "Failed to bring up %s (%d)", dev->name, rc);
 			return rc;
 		}
 		manual_up = true;
 	}
 
 	if (flags & VALIDATION_WIFI_SSID_SCAN) {
-		if (validation_network_scan(iface) < 0) {
+		rc = validation_network_scan(iface);
+		if (rc < 0) {
 			goto done;
 		}
 	}

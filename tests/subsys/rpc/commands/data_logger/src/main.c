@@ -26,7 +26,7 @@ static size_t flash_buffer_size;
 static uint8_t *flash_buffer;
 uint8_t data_block[512];
 
-static void send_data_logger_state_command(uint32_t request_id, uint8_t logger)
+static void send_data_logger_state_command(uint32_t request_id, uint8_t logger, uint16_t rpc_id)
 {
 	const struct device *epacket_dummy = DEVICE_DT_GET(DT_NODELABEL(epacket_dummy));
 	struct epacket_dummy_frame header = {
@@ -38,7 +38,7 @@ static void send_data_logger_state_command(uint32_t request_id, uint8_t logger)
 		.header =
 			{
 				.request_id = request_id,
-				.command_id = RPC_ID_DATA_LOGGER_STATE,
+				.command_id = rpc_id,
 			},
 		.logger = logger,
 	};
@@ -150,6 +150,46 @@ static struct net_buf *expect_rpc_response(uint32_t request_id, uint16_t command
 	return rsp;
 }
 
+static void basic_tests(const struct device *flash_logger, uint16_t rpc_id)
+{
+	struct net_buf *rsp;
+
+	/* Data logger that doesn't exist */
+	send_data_logger_state_command(10, RPC_ENUM_DATA_LOGGER_FLASH_REMOVABLE, rpc_id);
+	rsp = expect_rpc_response(10, rpc_id, -ENODEV);
+	net_buf_unref(rsp);
+
+	/* Data logger that failed to init */
+	flash_logger->state->init_res += 1;
+	send_data_logger_state_command(11, RPC_ENUM_DATA_LOGGER_FLASH_ONBOARD, rpc_id);
+	rsp = expect_rpc_response(11, rpc_id, -EBADF);
+	net_buf_unref(rsp);
+	flash_logger->state->init_res -= 1;
+
+	/* Data logger that exists */
+	send_data_logger_state_command(10, RPC_ENUM_DATA_LOGGER_FLASH_ONBOARD, rpc_id);
+	rsp = expect_rpc_response(10, rpc_id, 0);
+
+	if (rpc_id == RPC_ID_DATA_LOGGER_STATE) {
+		struct rpc_data_logger_state_response *response = (void *)rsp->data;
+
+		zassert_equal(512, response->block_size);
+		zassert_equal(0, response->bytes_logged);
+		zassert_equal(0, response->boot_block);
+		zassert_equal(0, response->earliest_block);
+		zassert_equal(0, response->current_block);
+	} else {
+		struct rpc_data_logger_state_v2_response *response = (void *)rsp->data;
+
+		zassert_equal(512, response->block_size);
+		zassert_equal(0, response->bytes_logged);
+		zassert_equal(0, response->boot_block);
+		zassert_equal(0, response->earliest_block);
+		zassert_equal(0, response->current_block);
+	}
+	net_buf_unref(rsp);
+}
+
 ZTEST(rpc_command_data_logger, test_data_logger_state)
 {
 	const struct device *flash_logger = DEVICE_DT_GET(DT_NODELABEL(data_logger_flash));
@@ -161,28 +201,8 @@ ZTEST(rpc_command_data_logger, test_data_logger_state)
 
 	zassert_true(device_is_ready(flash_logger));
 
-	/* Data logger that doesn't exist */
-	send_data_logger_state_command(10, RPC_ENUM_DATA_LOGGER_FLASH_REMOVABLE);
-	rsp = expect_rpc_response(10, RPC_ID_DATA_LOGGER_STATE, -ENODEV);
-	net_buf_unref(rsp);
-
-	/* Data logger that failed to init */
-	flash_logger->state->init_res += 1;
-	send_data_logger_state_command(11, RPC_ENUM_DATA_LOGGER_FLASH_ONBOARD);
-	rsp = expect_rpc_response(11, RPC_ID_DATA_LOGGER_STATE, -EBADF);
-	net_buf_unref(rsp);
-	flash_logger->state->init_res -= 1;
-
-	/* Data logger that exists */
-	send_data_logger_state_command(10, RPC_ENUM_DATA_LOGGER_FLASH_ONBOARD);
-	rsp = expect_rpc_response(10, RPC_ID_DATA_LOGGER_STATE, 0);
-	response = (void *)rsp->data;
-	zassert_equal(512, response->block_size);
-	zassert_equal(0, response->bytes_logged);
-	zassert_equal(0, response->boot_block);
-	zassert_equal(0, response->earliest_block);
-	zassert_equal(0, response->current_block);
-	net_buf_unref(rsp);
+	basic_tests(flash_logger, RPC_ID_DATA_LOGGER_STATE);
+	basic_tests(flash_logger, RPC_ID_DATA_LOGGER_STATE_V2);
 
 	/* Give uptime a chance to be not 0 */
 	k_sleep(K_MSEC(1500));
@@ -194,7 +214,8 @@ ZTEST(rpc_command_data_logger, test_data_logger_state)
 		zassert_equal(0, rc);
 		logged += sizeof(data_block);
 
-		send_data_logger_state_command(10, RPC_ENUM_DATA_LOGGER_FLASH_ONBOARD);
+		send_data_logger_state_command(10, RPC_ENUM_DATA_LOGGER_FLASH_ONBOARD,
+					       RPC_ID_DATA_LOGGER_STATE);
 		rsp = expect_rpc_response(10, RPC_ID_DATA_LOGGER_STATE, 0);
 		response = (void *)rsp->data;
 		zassert_equal(0, response->boot_block);

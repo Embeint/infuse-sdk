@@ -34,8 +34,8 @@ struct data_logger_common_data {
 	uint32_t boot_block;
 	uint32_t current_block;
 	uint32_t earliest_block;
+	uint32_t erase_size;
 	uint16_t block_size;
-	uint16_t erase_size;
 	uint8_t erase_val;
 	uint8_t flags;
 #ifdef CONFIG_DATA_LOGGER_RAM_BUFFER

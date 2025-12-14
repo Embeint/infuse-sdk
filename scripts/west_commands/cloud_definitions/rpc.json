@@ -565,6 +565,28 @@
                 {"name": "lte", "type": "struct rpc_struct_lte_state_v2", "description": "LTE state"}
             ]
         },
+        "24": {
+            "name": "data_logger_state_v2",
+            "description": "Get state of a data logger (Larger erase unit)",
+            "depends_on": "DATA_LOGGER",
+            "default": "y if INFUSE_SDK",
+            "default_auth": "EPACKET_AUTH_DEVICE",
+            "request_params": [
+                {"name": "logger", "type": "enum rpc_enum_data_logger", "description": "Data logger to read from"}
+            ],
+            "response_params": [
+                {"name": "bytes_logged", "type": "uint64_t", "description": "Number of bytes logged since boot"},
+                {"name": "logical_blocks", "type": "uint32_t", "description": "Number of logical blocks on the logger"},
+                {"name": "physical_blocks", "type": "uint32_t", "description": "Number of physical blocks on the logger"},
+                {"name": "boot_block", "type": "uint32_t", "description": "Number of logical blocks present at boot"},
+                {"name": "current_block", "type": "uint32_t", "description": "Number of logical blocks that have been written"},
+                {"name": "earliest_block", "type": "uint32_t", "description": "Earliest logical block that still exists on the logger"},
+                {"name": "block_size", "type": "uint16_t", "description": "Size of a single block in bytes"},
+                {"name": "block_overhead", "type": "uint16_t", "description": "Number of bytes at the start of the block that should not contain data"},
+                {"name": "erase_unit", "type": "uint32_t", "description": "Minimum erase unit of the logger in bytes"},
+                {"name": "uptime", "type": "uint32_t", "description": "Current application uptime"}
+            ]
+        },
         "30": {
             "name": "coap_download",
             "description": "Download a file from a COAP server (Infuse-IoT DTLS protected)",
