@@ -39,6 +39,9 @@
 #endif /* FIXED_PARTITION_EXISTS(file_partition) */
 #endif /* CONFIG_INFUSE_DFU_HELPERS */
 
+static __maybe_unused uint8_t
+	common_file_actions_write_buffer[CONFIG_INFUSE_RPC_COMMON_FILE_ACTIONS_WRITE_BUFFER];
+
 LOG_MODULE_DECLARE(rpc_server, CONFIG_INFUSE_RPC_LOG_LEVEL);
 
 #if defined(SUPPORT_APP_IMG) || defined(SUPPORT_APP_CPATCH) || defined(SUPPORT_FILE_COPY)
@@ -88,6 +91,35 @@ static int flash_area_check_and_erase(struct rpc_common_file_actions_ctx *ctx, u
 	return rc;
 }
 
+static int common_file_actions_stream_writer_init(struct rpc_common_file_actions_ctx *ctx,
+						  uint8_t partition_id,
+						  const struct device *partition_dev,
+						  off_t partition_offset, size_t file_len,
+						  uint32_t crc, bool trailer)
+{
+	const struct flash_parameters *params = flash_get_parameters(partition_dev);
+	int rc;
+
+	/* Setup flash for file to write */
+	rc = flash_area_check_and_erase(ctx, partition_id, file_len, crc, trailer);
+	if (rc == FILE_ALREADY_PRESENT) {
+		return rc;
+	} else if (rc < 0) {
+		return rc;
+	}
+
+	/* Round up write size to write alignment */
+	file_len = ROUND_UP(file_len, params->write_block_size);
+	return stream_flash_init(&ctx->stream_ctx, partition_dev, common_file_actions_write_buffer,
+				 sizeof(common_file_actions_write_buffer), partition_offset,
+				 file_len, NULL);
+}
+
+#define STREAM_WRITER_INIT(ctx, partition, length, crc, trailer)                                   \
+	common_file_actions_stream_writer_init(                                                    \
+		ctx, FIXED_PARTITION_ID(partition), FIXED_PARTITION_DEVICE(partition),             \
+		FIXED_PARTITION_OFFSET(partition), length, crc, trailer)
+
 #endif /* defined(SUPPORT_APP_IMG) || defined(SUPPORT_APP_CPATCH) || defined(SUPPORT_FILE_COPY) */
 
 int rpc_common_file_actions_start(struct rpc_common_file_actions_ctx *ctx,
@@ -96,6 +128,7 @@ int rpc_common_file_actions_start(struct rpc_common_file_actions_ctx *ctx,
 	int rc = 0;
 
 	ctx->fa = NULL;
+	ctx->stream_ctx.buf_len = 0;
 	ctx->client_ctx = 0;
 	ctx->action = action;
 	ctx->received = 0;
@@ -107,20 +140,17 @@ int rpc_common_file_actions_start(struct rpc_common_file_actions_ctx *ctx,
 		break;
 #ifdef SUPPORT_APP_IMG
 	case RPC_ENUM_FILE_ACTION_APP_IMG:
-		rc = flash_area_check_and_erase(ctx, FIXED_PARTITION_ID(slot1_partition), length,
-						crc, true);
+		rc = STREAM_WRITER_INIT(ctx, slot1_partition, length, crc, true);
 		break;
 #endif /* SUPPORT_APP_IMG */
 #ifdef SUPPORT_APP_CPATCH
 	case RPC_ENUM_FILE_ACTION_APP_CPATCH:
-		rc = flash_area_check_and_erase(ctx, FIXED_PARTITION_ID(file_partition), length,
-						crc, false);
+		rc = STREAM_WRITER_INIT(ctx, file_partition, length, crc, false);
 		break;
 #endif /* SUPPORT_APP_CPATCH*/
 #ifdef SUPPORT_FILE_COPY
 	case RPC_ENUM_FILE_ACTION_FILE_FOR_COPY:
-		rc = flash_area_check_and_erase(ctx, FIXED_PARTITION_ID(file_partition), length,
-						crc, false);
+		rc = STREAM_WRITER_INIT(ctx, file_partition, length, crc, false);
 		break;
 #endif /* SUPPORT_FILE_COPY*/
 #ifdef CONFIG_BT_CONTROLLER_MANAGER
@@ -158,43 +188,6 @@ int rpc_common_file_actions_start(struct rpc_common_file_actions_ctx *ctx,
 	return rc;
 }
 
-#if defined(SUPPORT_APP_IMG) || defined(SUPPORT_APP_CPATCH) || defined(SUPPORT_FILE_COPY)
-
-static int flash_aligned_write(const struct flash_area *fa, uint32_t offset, const void *data,
-			       size_t data_len)
-{
-	const struct flash_parameters *params;
-	size_t unaligned, aligned = data_len;
-	uint8_t trailing[CONFIG_INFUSE_RPC_COMMON_FILE_ACTIONS_WRITE_BUFFER];
-	int rc = 0;
-
-	/* Get backing flash parameters */
-	params = flash_get_parameters(fa->fa_dev);
-
-	__ASSERT(params->write_block_size <= sizeof(trailing),
-		 "Required write alignment too large");
-
-	/* Split write into an aligned and unaligned portion */
-	unaligned = data_len % params->write_block_size;
-	if (unaligned) {
-		aligned -= unaligned;
-		memset(trailing, params->erase_value, params->write_block_size);
-		memcpy(trailing, (uint8_t *)data + aligned, unaligned);
-	}
-
-	/* Aligned write first */
-	if (aligned) {
-		rc = flash_area_write(fa, offset, data, aligned);
-	}
-	/* Trailing unaligned write second */
-	if (unaligned && (rc == 0)) {
-		rc = flash_area_write(fa, offset + aligned, trailing, params->write_block_size);
-	}
-	return rc;
-}
-
-#endif /* defined(SUPPORT_APP_IMG) || defined(SUPPORT_APP_CPATCH) || defined(SUPPORT_FILE_COPY) */
-
 int rpc_common_file_actions_write(struct rpc_common_file_actions_ctx *ctx, uint32_t offset,
 				  const void *data, size_t data_len)
 {
@@ -210,12 +203,12 @@ int rpc_common_file_actions_write(struct rpc_common_file_actions_ctx *ctx, uint3
 		__fallthrough;
 #endif /* SUPPORT_APP_CPATCH */
 	case RPC_ENUM_FILE_ACTION_APP_IMG:
-		rc = flash_aligned_write(ctx->fa, offset, data, data_len);
+		rc = stream_flash_buffered_write(&ctx->stream_ctx, data, data_len, false);
 		break;
 #endif /* SUPPORT_APP_IMG */
 #ifdef SUPPORT_FILE_COPY
 	case RPC_ENUM_FILE_ACTION_FILE_FOR_COPY:
-		rc = flash_aligned_write(ctx->fa, offset, data, data_len);
+		rc = stream_flash_buffered_write(&ctx->stream_ctx, data, data_len, false);
 		break;
 #endif /* SUPPORT_FILE_COPY*/
 #ifdef CONFIG_BT_CONTROLLER_MANAGER
@@ -323,6 +316,22 @@ int rpc_common_file_actions_finish(struct rpc_common_file_actions_ctx *ctx, uint
 {
 	bool reboot = false;
 	int rc = 0;
+
+#if defined(SUPPORT_APP_IMG) || defined(SUPPORT_APP_CPATCH) || defined(SUPPORT_FILE_COPY)
+	if (ctx->stream_ctx.buf_len &&
+	    ((ctx->action == RPC_ENUM_FILE_ACTION_APP_IMG) ||
+	     (ctx->action == RPC_ENUM_FILE_ACTION_APP_CPATCH) ||
+	     (ctx->action == RPC_ENUM_FILE_ACTION_FILE_FOR_COPY)) &&
+	    stream_flash_bytes_buffered(&ctx->stream_ctx)) {
+		/* Flush pending bytes to the flash */
+		rc = stream_flash_buffered_write(&ctx->stream_ctx, NULL, 0, true);
+		if (rc < 0) {
+			LOG_ERR("Could not flush remaining data");
+			flash_area_close(ctx->fa);
+			return rc;
+		}
+	}
+#endif /* defined(SUPPORT_APP_IMG) || defined(SUPPORT_APP_CPATCH) || defined(SUPPORT_FILE_COPY) */
 
 #ifdef CONFIG_INFUSE_DFU_HELPERS
 	uint32_t flash_crc;

@@ -10,11 +10,13 @@
 #include <stdbool.h>
 
 #include <zephyr/storage/flash_map.h>
+#include <zephyr/storage/stream_flash.h>
 
 #include <infuse/rpc/types.h>
 
 struct rpc_common_file_actions_ctx {
 	const struct flash_area *fa;
+	struct stream_flash_ctx stream_ctx;
 	uint32_t client_ctx;
 	uint32_t received;
 	uint32_t crc;

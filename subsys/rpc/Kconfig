@@ -54,7 +54,7 @@ config INFUSE_RPC_COMMON_FILE_ACTIONS
 
 config INFUSE_RPC_COMMON_FILE_ACTIONS_WRITE_BUFFER
 	int "Size of write buffer for ensuring aligned writes to flash devices"
-	default 4
+	default 256
 
 config INFUSE_RPC_SERVER_WORKING_MEMORY
 	int "Size of working memory for command"
