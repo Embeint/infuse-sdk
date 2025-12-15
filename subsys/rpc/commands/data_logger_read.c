@@ -37,6 +37,8 @@ static int do_read(struct common_state *state)
 	struct infuse_rpc_data *data = NULL;
 	uint16_t block_remaining, block_offset;
 	k_ticks_t limit_tx = k_uptime_ticks();
+	uint32_t throughput;
+	uint32_t milliseconds;
 	uint16_t tx_count = 0;
 	size_t work_mem_size;
 	uint8_t *work_mem;
@@ -50,6 +52,7 @@ static int do_read(struct common_state *state)
 
 	LOG_INF("Reading blocks %d-%d from %s", state->block_num,
 		state->block_num + state->blocks_remaining - 1, state->logger->name);
+	milliseconds = k_uptime_get_32();
 
 	while (state->blocks_remaining--) {
 		/* Feed watchdog as this can be a long running process if the block count is high */
@@ -122,8 +125,15 @@ static int do_read(struct common_state *state)
 		/* Send full buffer */
 		epacket_queue(state->interface, data_buf);
 	}
-	LOG_DBG("Read complete");
 
+	/* Log read throughput */
+	milliseconds = k_uptime_get_32() - milliseconds;
+	if (milliseconds > 0) {
+		throughput = (8 * 1000 * state->sent_len) / milliseconds / 1024;
+	} else {
+		throughput = 0;
+	}
+	LOG_INF("Read %u bytes in %u ms (%u kbps)", state->sent_len, milliseconds, throughput);
 	return 0;
 }
 
