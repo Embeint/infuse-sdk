@@ -69,9 +69,55 @@ static int resource_path_append(struct coap_packet *request, const char *resourc
 	return 0;
 }
 
+static int get_block_size(size_t working_size, uint16_t block_size, enum coap_block_size *used_size)
+{
+	switch (block_size) {
+	case 1024:
+		*used_size = COAP_BLOCK_1024;
+		break;
+	case 512:
+		*used_size = COAP_BLOCK_512;
+		break;
+	case 256:
+		*used_size = COAP_BLOCK_256;
+		break;
+	case 128:
+		*used_size = COAP_BLOCK_128;
+		break;
+	case 64:
+		*used_size = COAP_BLOCK_64;
+		break;
+	case 32:
+		*used_size = COAP_BLOCK_32;
+		break;
+	case 16:
+		*used_size = COAP_BLOCK_16;
+		break;
+	case 0:
+		/* Automatically determine block size */
+		if (MTU_SUPPORTS_1KB && (working_size >= (1024 + 64))) {
+			*used_size = COAP_BLOCK_1024;
+		} else if (working_size >= (512 + 64)) {
+			*used_size = COAP_BLOCK_512;
+		} else if (working_size >= (256 + 64)) {
+			*used_size = COAP_BLOCK_256;
+		} else if (working_size >= (128 + 64)) {
+			*used_size = COAP_BLOCK_128;
+		} else if (working_size >= 128) {
+			*used_size = COAP_BLOCK_64;
+		} else {
+			return -ENOMEM;
+		}
+		break;
+	default:
+		return -EINVAL;
+	}
+	return 0;
+}
+
 int infuse_coap_download(int socket, const char *resource, infuse_coap_data_cb data_cb,
 			 void *user_context, uint8_t *working_mem, size_t working_size,
-			 int timeout_ms)
+			 uint16_t req_block_size, int timeout_ms)
 {
 	struct coap_block_context blk_ctx;
 	struct coap_packet request, reply;
@@ -89,19 +135,9 @@ int infuse_coap_download(int socket, const char *resource, infuse_coap_data_cb d
 		return -EINVAL;
 	}
 
-	/* Determine block size */
-	if (MTU_SUPPORTS_1KB && (working_size >= (1024 + 64))) {
-		block_size = COAP_BLOCK_1024;
-	} else if (working_size >= (512 + 64)) {
-		block_size = COAP_BLOCK_512;
-	} else if (working_size >= (256 + 64)) {
-		block_size = COAP_BLOCK_256;
-	} else if (working_size >= (128 + 64)) {
-		block_size = COAP_BLOCK_128;
-	} else if (working_size >= 128) {
-		block_size = COAP_BLOCK_64;
-	} else {
-		return -ENOMEM;
+	rc = get_block_size(working_size, req_block_size, &block_size);
+	if (rc < 0) {
+		return rc;
 	}
 
 	LOG_INF("Downloading: %s (Block size %d)", resource, block_size);

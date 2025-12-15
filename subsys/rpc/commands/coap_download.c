@@ -124,7 +124,7 @@ int rpc_command_coap_download_run(struct rpc_coap_download_request *req, char *r
 
 	/* Download the resource */
 	*downloaded = infuse_coap_download(sock, resource, data_cb, &ctx, work_mem, work_mem_size,
-					   block_timeout);
+					   0, block_timeout);
 	if (*downloaded < 0) {
 		rc = *downloaded;
 		*downloaded = 0;
