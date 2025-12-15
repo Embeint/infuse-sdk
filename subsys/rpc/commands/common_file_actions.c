@@ -165,7 +165,7 @@ static int flash_aligned_write(const struct flash_area *fa, uint32_t offset, con
 {
 	const struct flash_parameters *params;
 	size_t unaligned, aligned = data_len;
-	uint8_t trailing[16];
+	uint8_t trailing[CONFIG_INFUSE_RPC_COMMON_FILE_ACTIONS_WRITE_BUFFER];
 	int rc = 0;
 
 	/* Get backing flash parameters */
@@ -174,7 +174,7 @@ static int flash_aligned_write(const struct flash_area *fa, uint32_t offset, con
 	__ASSERT(params->write_block_size <= sizeof(trailing),
 		 "Required write alignment too large");
 
-	/* Split write into a aligned and unaliged portion */
+	/* Split write into an aligned and unaligned portion */
 	unaligned = data_len % params->write_block_size;
 	if (unaligned) {
 		aligned -= unaligned;
