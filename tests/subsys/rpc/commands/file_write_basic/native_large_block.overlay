@@ -1,0 +1,14 @@
+/* Repurpose scratch partition for patch files  */
+/delete-node/ &scratch_partition;
+
+&flash0 {
+	/* Emulate hardware that only supports large writes */
+	write-block-size = < 0x400 >;
+
+	partitions {
+		file_partition: partition@de000 {
+			label = "files";
+			reg = < 0xde000 0x1e000 >;
+		};
+	};
+};

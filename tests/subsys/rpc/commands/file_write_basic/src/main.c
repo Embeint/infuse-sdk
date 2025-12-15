@@ -358,18 +358,19 @@ ZTEST(rpc_command_file_write_basic, test_file_write_dfu)
 }
 #endif /* FIXED_PARTITION_EXISTS(slot1_partition) */
 
+static uint8_t flash_copy_buffer[CONFIG_INFUSE_RPC_COMMON_FILE_ACTIONS_WRITE_BUFFER];
+
 static void flash_area_copy_wrapped(uint8_t partition_dst, uint8_t partition_src, uint32_t len,
 				    bool source_erase)
 {
 	const struct flash_area *fa_dst, *fa_src;
-	uint8_t buffer[128];
 
 	zassert_equal(0, flash_area_open(partition_dst, &fa_dst));
 	zassert_equal(0, flash_area_open(partition_src, &fa_src));
 
 	zassert_equal(0, flash_area_erase(fa_dst, 0, fa_dst->fa_size));
-	zassert_equal(
-		0, flash_area_copy(fa_src, 0, fa_dst, 0, fa_dst->fa_size, buffer, sizeof(buffer)));
+	zassert_equal(0, flash_area_copy(fa_src, 0, fa_dst, 0, fa_dst->fa_size, flash_copy_buffer,
+					 sizeof(flash_copy_buffer)));
 
 	flash_area_close(fa_dst);
 	flash_area_close(fa_src);
