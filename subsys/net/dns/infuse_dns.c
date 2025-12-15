@@ -19,15 +19,25 @@ LOG_MODULE_REGISTER(infuse_dns, LOG_LEVEL_INF);
 K_SEM_DEFINE(dns_ctx, CONFIG_DNS_NUM_CONCUR_QUERIES, CONFIG_DNS_NUM_CONCUR_QUERIES);
 #endif /* CONFIG_DNS_RESOLVER */
 
-static void dns_result_display(struct sockaddr *addr, const char *host, uint16_t port)
+static void dns_result_display(struct sockaddr *addr, const char *host, uint16_t dns_id)
+{
+	char addr_str[INET6_ADDRSTRLEN];
+
+	zsock_inet_ntop(addr->sa_family, &net_sin(addr)->sin_addr, addr_str, sizeof(addr_str));
+	if (host != NULL) {
+		LOG_INF("%s -> %s", host, addr_str);
+	} else {
+		LOG_INF("%04X -> %s", dns_id, addr_str);
+	}
+}
+
+static void sockaddr_port_assign(struct sockaddr *addr, uint16_t port)
 {
 #ifdef CONFIG_NET_IPV4
 	if (addr->sa_family == AF_INET) {
 		struct sockaddr_in *ipv4 = (struct sockaddr_in *)addr;
-		uint8_t *b = ipv4->sin_addr.s4_addr;
 
 		ipv4->sin_port = htons(port);
-		LOG_INF("%s -> %d.%d.%d.%d:%d", host, b[0], b[1], b[2], b[3], port);
 	}
 #endif /* CONFIG_NET_IPV4 */
 #ifdef CONFIG_NET_IPV6
@@ -35,7 +45,6 @@ static void dns_result_display(struct sockaddr *addr, const char *host, uint16_t
 		struct sockaddr_in6 *ipv6 = (struct sockaddr_in6 *)addr;
 
 		ipv6->sin6_port = htons(port);
-		LOG_INF("%s -> IPv6:%d", host, port);
 	}
 #endif /* CONFIG_NET_IPV6 */
 }
@@ -80,8 +89,11 @@ int infuse_sync_dns(const char *host, uint16_t port, int family, int socktype,
 	k_sem_give(&dns_ctx);
 #endif /* CONFIG_DNS_RESOLVER */
 
+	/* Populate the port */
+	sockaddr_port_assign(addr, port);
+
 	/* Display DNS result */
-	dns_result_display(addr, host, port);
+	dns_result_display(addr, host, 0);
 	return 0;
 }
 
@@ -95,7 +107,8 @@ static void dns_result_cb(enum dns_resolve_status status, struct dns_addrinfo *i
 
 	switch (status) {
 	case DNS_EAI_NODATA:
-		LOG_WRN("%s -> Lookup failed (%d, %d)", "???", DNS_EAI_NODATA, DNS_EAI_NODATA);
+		LOG_WRN("%04X -> Lookup failed (%d, %d)", context->_dns_id, DNS_EAI_NODATA,
+			DNS_EAI_NODATA);
 		rc = -EINVAL;
 		goto done;
 	case DNS_EAI_ALLDONE:
@@ -107,7 +120,7 @@ static void dns_result_cb(enum dns_resolve_status status, struct dns_addrinfo *i
 		rc = INFUSE_ASYNC_DNS_RESULT;
 		break;
 	default:
-		LOG_DBG("DNS resolving error (%d)", status);
+		LOG_WRN("%04X -> DNS resolving error (%d)", context->_dns_id, status);
 		rc = -EIO;
 		goto done;
 	}
@@ -116,8 +129,8 @@ static void dns_result_cb(enum dns_resolve_status status, struct dns_addrinfo *i
 		return;
 	}
 
-	/* Display DNS result (Host and port not cached for async) */
-	dns_result_display(&info->ai_addr, "???", 0);
+	/* Display DNS result */
+	dns_result_display(&info->ai_addr, NULL, context->_dns_id);
 
 	context->cb(INFUSE_ASYNC_DNS_RESULT, &info->ai_addr, info->ai_addrlen, context);
 	return;
@@ -145,10 +158,14 @@ int infuse_async_dns(const char *host, int family, struct infuse_async_dns_conte
 	(void)k_sem_take(&dns_ctx, K_FOREVER);
 
 	/* Start the DNS query process */
-	rc = dns_get_addr_info(host, query_type, NULL, dns_result_cb, context, timeout);
+	rc = dns_get_addr_info(host, query_type, &context->_dns_id, dns_result_cb, context,
+			       timeout);
 	if (rc < 0) {
+		LOG_ERR("Failed to start DNS query for '%s'", host);
 		/* Release the context on error */
 		k_sem_give(&dns_ctx);
+	} else {
+		LOG_INF("Started DNS query for '%s' (ID %04X)", host, context->_dns_id);
 	}
 	return rc;
 }
