@@ -385,7 +385,9 @@ int rpc_common_file_actions_finish(struct rpc_common_file_actions_ctx *ctx, uint
 	case RPC_ENUM_FILE_ACTION_APP_IMG:
 		/* Close the flash area */
 		flash_area_close(ctx->fa);
-#ifdef CONFIG_MCUBOOT_IMG_MANAGER
+#if defined(CONFIG_MCUBOOT_UPGRADE_ONLY_AUTOMATIC)
+		reboot = true;
+#elif defined(CONFIG_MCUBOOT_IMG_MANAGER)
 		if (boot_request_upgrade_multi(0, BOOT_UPGRADE_TEST) == 0) {
 			reboot = true;
 		}
