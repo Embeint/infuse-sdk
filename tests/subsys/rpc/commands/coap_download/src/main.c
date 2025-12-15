@@ -28,6 +28,11 @@ struct rpc_coap_download_request_send {
 	char resource[128];
 } __packed;
 
+struct rpc_coap_download_request_v2_send {
+	struct rpc_coap_download_v2_request core;
+	char resource[128];
+} __packed;
+
 #ifdef CONFIG_TEST_NATIVE_MOCK
 static size_t bt_image_len;
 static size_t bt_image_crc;
@@ -90,6 +95,39 @@ static void send_download_command(uint32_t request_id, const char *server, uint1
 				},
 			.server_port = port,
 			.block_timeout_ms = timeout,
+			.action = action,
+			.resource_crc = crc,
+			.resource_len = len,
+		}};
+
+	strncpy(params.core.server_address, server, sizeof(params.core.server_address));
+	params.core.server_port = port;
+	strncpy(params.resource, resource, sizeof(params.resource));
+
+	/* Push command at RPC server */
+	epacket_dummy_receive(epacket_dummy, &header, &params, sizeof(params));
+}
+
+static void send_download_v2_command(uint32_t request_id, const char *server, uint16_t port,
+				     uint16_t timeout, uint8_t action, char *resource, uint32_t len,
+				     uint32_t crc, uint16_t block_size)
+{
+	const struct device *epacket_dummy = DEVICE_DT_GET(DT_NODELABEL(epacket_dummy));
+	struct epacket_dummy_frame header = {
+		.type = INFUSE_RPC_CMD,
+		.auth = EPACKET_AUTH_DEVICE,
+		.flags = 0x0000,
+	};
+	struct rpc_coap_download_request_v2_send params = {
+		.core = {
+			.header =
+				{
+					.request_id = request_id,
+					.command_id = RPC_ID_COAP_DOWNLOAD_V2,
+				},
+			.server_port = port,
+			.block_timeout_ms = timeout,
+			.block_size = block_size,
 			.action = action,
 			.resource_crc = crc,
 			.resource_len = len,
@@ -236,6 +274,22 @@ ZTEST(rpc_command_coap_download, test_download)
 
 	/* Balanced call count */
 	zassert_equal(0, infuse_dfu_write_erase_call_count());
+
+	/* V2 RPCs test
+	 * Should be its own subtest, but TLS credentials causing weird issues after
+	 * the TLS remove/add test in test_invalid
+	 */
+	/* Basic discard download */
+	send_download_v2_command(48, "coap.dev.infuse-iot.com", 5684, 0,
+				 RPC_ENUM_FILE_ACTION_DISCARD, "file/small_file", UINT32_MAX,
+				 UINT32_MAX, 0);
+	expect_coap_download_response(48, 0, 12, 0xb5289bef);
+
+	/* Larger discard download */
+	send_download_v2_command(50, "coap.dev.infuse-iot.com", 5684, 0,
+				 RPC_ENUM_FILE_ACTION_DISCARD, "file/med_file", UINT32_MAX,
+				 UINT32_MAX, 1024);
+	expect_coap_download_response(50, 0, 10030, 0x9919d24e);
 }
 
 ZTEST(rpc_command_coap_download, test_download_bt_ctlr)
