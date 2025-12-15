@@ -634,6 +634,27 @@
                 {"name": "nb_packets_errors", "type": "uint32_t", "description": "Number of packet errors"}
             ]
         },
+        "32": {
+            "name": "coap_download_v2",
+            "description": "Download a file from a COAP server (Infuse-IoT DTLS protected)",
+            "depends_on": "INFUSE_COAP",
+            "default": "y if INFUSE_SDK",
+            "default_auth": "EPACKET_AUTH_DEVICE",
+            "request_params": [
+                {"name": "server_address", "type": "char", "num": 48, "description": "COAP server address (e.g. coap.dev.infuse-iot.com)"},
+                {"name": "server_port", "type": "uint16_t", "description": "COAP server port"},
+                {"name": "block_timeout_ms", "type": "uint16_t", "description": "COAP block timeout (Default 1000ms)"},
+                {"name": "block_size", "type": "uint16_t", "description": "Block size to use (1024, 512, 256, 128, 64, 32, 16, 0 == auto)"},
+                {"name": "action", "type": "enum rpc_enum_file_action", "description": "Action to apply to downloaded file"},
+                {"name": "resource_len", "type": "uint32_t", "description": "Expected resource length (UINT32_MAX if unknown)"},
+                {"name": "resource_crc", "type": "uint32_t", "description": "Expected resource CRC (UINT32_MAX if unknown)"},
+                {"name": "resource", "type": "char", "num": 0, "description": "Path to file on COAP server (e.g. files/small_file)"}
+            ],
+            "response_params": [
+                {"name": "resource_len", "type": "uint32_t", "description": "Length of resource downloaded"},
+                {"name": "resource_crc", "type": "uint32_t", "description": "CRC of resource downloaded"}
+            ]
+        },
         "40": {
             "name": "file_write_basic",
             "description": "Write a file to the device",
