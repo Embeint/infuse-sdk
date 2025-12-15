@@ -13,3 +13,13 @@ tests:
       - native_sim
     integration_platforms:
       - native_sim
+  rpc.commands.file_write_basic.native_large:
+    platform_allow:
+      - native_sim
+    integration_platforms:
+      - native_sim
+    extra_args:
+      - DTC_OVERLAY_FILE="./native_large_block.overlay;./app.overlay"
+    extra_configs:
+      - CONFIG_INFUSE_RPC_COMMON_FILE_ACTIONS_WRITE_BUFFER=1024
+      - CONFIG_INFUSE_RPC_SERVER_WORKING_MEMORY=1024
