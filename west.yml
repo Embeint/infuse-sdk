@@ -28,7 +28,6 @@ manifest:
           - lora-basics-modem
           - loramac-node
           - fatfs
-          - mcuboot
           - mbedtls
           - open-amp
           - segger
@@ -37,6 +36,9 @@ manifest:
           - trusted-firmware-m
           - picolibc
           - zcbor
+    - name: mcuboot
+      revision: 9b33a6d77ca98f73903e6055eb72589761fcfa40
+      path: bootloader/mcuboot
     - name: sdk-nrf
       path: modules/nrfconnect/sdk-nrf
       revision: 7c17ceccaf289dd33fe6453f44820b7bcaab5781
