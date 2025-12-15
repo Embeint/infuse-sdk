@@ -17,6 +17,14 @@
 
 BUILD_ASSERT(COAP_TOKEN_MAX_LEN == sizeof(uint64_t));
 
+#ifdef CONFIG_NET_IPV4_MTU
+/* If the MTU is explicitly defined, check the size before trying to use 1KB blocks */
+#define MTU_SUPPORTS_1KB (CONFIG_NET_IPV4_MTU >= (1024 + 64))
+#else
+/* Assume it is supported until a configuration proves otherwise */
+#define MTU_SUPPORTS_1KB 1
+#endif
+
 LOG_MODULE_REGISTER(infuse_coap, CONFIG_INFUSE_COAP_LOG_LEVEL);
 
 /* Determine the locations of '/' characters and encode into array */
@@ -82,7 +90,7 @@ int infuse_coap_download(int socket, const char *resource, infuse_coap_data_cb d
 	}
 
 	/* Determine block size */
-	if (working_size >= (1024 + 64)) {
+	if (MTU_SUPPORTS_1KB && (working_size >= (1024 + 64))) {
 		block_size = COAP_BLOCK_1024;
 	} else if (working_size >= (512 + 64)) {
 		block_size = COAP_BLOCK_512;
@@ -96,7 +104,7 @@ int infuse_coap_download(int socket, const char *resource, infuse_coap_data_cb d
 		return -ENOMEM;
 	}
 
-	LOG_INF("Downloading: %s", resource);
+	LOG_INF("Downloading: %s (Block size %d)", resource, block_size);
 
 	/* Pre-split the resource path into components */
 	uint8_t path_split[CONFIG_INFUSE_COAP_MAX_URI_SEGMENTS + 1] = {0};
