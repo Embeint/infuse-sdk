@@ -24,6 +24,14 @@ tests:
       type: multi_line
       ordered: true
       regex:
-        - "google.com -> (.*):80"
+        - "google.com -> ([\\d\\.]+)"
         - "not.a.real.address -> Lookup failed"
-        - "google.com -> IPv6:80"
+        - "google.com -> ([0-9A-Fa-f:]+)"
+        - "Started DNS query for 'google.com' \\(ID [0-9A-F]{4}\\)"
+        - "[0-9A-F]{4} -> ([\\d\\.]+)"
+        - "Started DNS query for 'not.a.real.address' \\(ID [0-9A-F]{4}\\)"
+        - "[0-9A-F]{4} -> DNS resolving error"
+        - "Started DNS query for 'google.com' \\(ID [0-9A-F]{4}\\)"
+        - "[0-9A-F]{4} -> ([0-9A-Fa-f:]+)"
+        - "Started DNS query for 'not.a.real.address' \\(ID [0-9A-F]{4}\\)"
+        - "[0-9A-F]{4} -> DNS resolving error"

@@ -64,6 +64,8 @@ typedef void (*infuse_async_dns_cb)(int result, struct sockaddr *addr, socklen_t
 struct infuse_async_dns_context {
 	/* Callback to run on events */
 	infuse_async_dns_cb cb;
+	/* DNS query ID (Internal use) */
+	uint16_t _dns_id;
 	/* Arbitarary user context */
 	void *user_data;
 };
