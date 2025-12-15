@@ -299,6 +299,7 @@ static int finish_cpatch(struct rpc_common_file_actions_ctx *ctx)
 	/* Apply the patch */
 	LOG_INF("Applying %d byte patch file", header.patch_file.length);
 	rc = cpatch_patch_apply(fa_original, ctx->fa, &stream_ctx, &header, cpatch_watchdog);
+	LOG_INF("Patching result: %d", rc);
 
 cleanup:
 	/* Cleanup files */
