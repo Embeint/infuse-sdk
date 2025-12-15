@@ -46,6 +46,7 @@ typedef int (*infuse_coap_data_cb)(uint32_t offset, const uint8_t *data, uint16_
  * @param user_context Arbitrary user context for @a data_cb
  * @param working_mem Memory buffer for sending/receiving packets with
  * @param working_size Size of @a working_mem in bytes
+ * @param block_size COAP block size to use (in bytes, 0 == auto)
  * @param timeout_ms Timeout waiting for each response from server
  *
  * @retval >=0 bytes downloaded on success
@@ -53,7 +54,7 @@ typedef int (*infuse_coap_data_cb)(uint32_t offset, const uint8_t *data, uint16_
  */
 int infuse_coap_download(int socket, const char *resource, infuse_coap_data_cb data_cb,
 			 void *user_context, uint8_t *working_mem, size_t working_size,
-			 int timeout_ms);
+			 uint16_t block_size, int timeout_ms);
 
 /**
  * @}

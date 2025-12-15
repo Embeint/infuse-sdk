@@ -96,21 +96,21 @@ ZTEST(infuse_coap, test_resource_errors)
 	context.expected_data = NULL;
 	context.expected_offset = 0;
 	rc = infuse_coap_download(sock, "secret", data_cb, &context, work_area, sizeof(work_area),
-				  1000);
+				  0, 1000);
 	zassert_equal(-401, rc);
 
 	/* 404 response: invalid-path */
 	context.expected_data = NULL;
 	context.expected_offset = 0;
 	rc = infuse_coap_download(sock, "invalid-path", data_cb, &context, work_area,
-				  sizeof(work_area), 1000);
+				  sizeof(work_area), 0, 1000);
 	zassert_equal(-404, rc);
 
 	/* 405 response: location-query */
 	context.expected_data = NULL;
 	context.expected_offset = 0;
 	rc = infuse_coap_download(sock, "location-query", data_cb, &context, work_area,
-				  sizeof(work_area), 1000);
+				  sizeof(work_area), 0, 1000);
 	zassert_equal(-405, rc);
 
 	/* Close socket */
@@ -133,20 +133,21 @@ ZTEST(infuse_coap, test_download)
 	/* Short retrieval: hello -> world */
 	context.expected_data = "world";
 	context.expected_offset = 0;
-	rc = infuse_coap_download(sock, "hello", data_cb, &context, work_area, 128, 1000);
+	rc = infuse_coap_download(sock, "hello", data_cb, &context, work_area, 128, 0, 1000);
 	zassert_equal(strlen(context.expected_data), rc);
 
 	/* Multi component URI: seg1/seg2/seg3 -> Matroshka */
 	context.expected_data = "Matroshka";
 	context.expected_offset = 0;
-	rc = infuse_coap_download(sock, "seg1/seg2/seg3", data_cb, &context, work_area, 200, 1000);
+	rc = infuse_coap_download(sock, "seg1/seg2/seg3", data_cb, &context, work_area, 200, 0,
+				  1000);
 	zassert_equal(strlen(context.expected_data), rc);
 
 	/* Long retrieval: large -> 1700 bytes == 2 packets at 1024 block size */
 	context.expected_data = NULL;
 	context.expected_offset = 0;
 	context.cb_count = 0;
-	rc = infuse_coap_download(sock, "large", data_cb, &context, work_area, sizeof(work_area),
+	rc = infuse_coap_download(sock, "large", data_cb, &context, work_area, sizeof(work_area), 0,
 				  1000);
 	zassert_equal(1700, rc);
 	zassert_equal(2, context.cb_count);
@@ -155,7 +156,7 @@ ZTEST(infuse_coap, test_download)
 	context.expected_data = NULL;
 	context.expected_offset = 0;
 	context.cb_count = 0;
-	rc = infuse_coap_download(sock, "large", data_cb, &context, work_area, 700, 1000);
+	rc = infuse_coap_download(sock, "large", data_cb, &context, work_area, 700, 0, 1000);
 	zassert_equal(1700, rc);
 	zassert_equal(4, context.cb_count);
 
@@ -163,7 +164,7 @@ ZTEST(infuse_coap, test_download)
 	context.expected_data = NULL;
 	context.expected_offset = 0;
 	context.cb_count = 0;
-	rc = infuse_coap_download(sock, "large", data_cb, &context, work_area, 400, 1000);
+	rc = infuse_coap_download(sock, "large", data_cb, &context, work_area, 400, 0, 1000);
 	zassert_equal(1700, rc);
 	zassert_equal(7, context.cb_count);
 
@@ -189,7 +190,7 @@ ZTEST(infuse_coap, test_separate_response)
 	context.expected_data = "That took a long time";
 	context.expected_offset = 0;
 	rc = infuse_coap_download(sock, "separate", data_cb, &context, work_area, sizeof(work_area),
-				  7000);
+				  0, 7000);
 	zassert_equal(strlen(context.expected_data), rc);
 
 	/* Close socket */

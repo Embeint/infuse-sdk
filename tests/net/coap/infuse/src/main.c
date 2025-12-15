@@ -110,12 +110,12 @@ ZTEST(infuse_coap, test_bad_params)
 	int sock = 0, rc;
 
 	/* No data callback handler */
-	rc = infuse_coap_download(sock, "test", NULL, NULL, work_area, sizeof(work_area), 1000);
+	rc = infuse_coap_download(sock, "test", NULL, NULL, work_area, sizeof(work_area), 0, 1000);
 	zassert_equal(-EINVAL, rc);
 
 	/* Path with too many components */
 	rc = infuse_coap_download(sock, "a/b/c/d/e/f/g/h/i/g", data_cb, NULL, work_area,
-				  sizeof(work_area), 1000);
+				  sizeof(work_area), 0, 1000);
 	zassert_equal(-EINVAL, rc);
 
 	/* Path that is way too long for a 128 byte work area */
@@ -123,7 +123,7 @@ ZTEST(infuse_coap, test_bad_params)
 		"this_path_is_way_too_long_and_should_trigger_the_append_resource_path_error "
 		"this_path_is_way_too_long_and_should_trigger_the_append_resource_path_error";
 
-	rc = infuse_coap_download(sock, long_uri, data_cb, NULL, work_area, 128, 1000);
+	rc = infuse_coap_download(sock, long_uri, data_cb, NULL, work_area, 128, 0, 1000);
 	zassert_equal(-EINVAL, rc);
 }
 
@@ -132,7 +132,8 @@ ZTEST(infuse_coap, test_invalid_work_area)
 	struct cb_ctx context;
 	int sock = 0, rc;
 
-	rc = infuse_coap_download(sock, "file/small_file", data_cb, &context, work_area, 32, 1000);
+	rc = infuse_coap_download(sock, "file/small_file", data_cb, &context, work_area, 32, 0,
+				  1000);
 	zassert_equal(-ENOMEM, rc);
 }
 
@@ -143,7 +144,7 @@ ZTEST(infuse_coap, test_bad_socket)
 
 	/* Download from bad socket */
 	rc = infuse_coap_download(sock, "file/small_file", data_cb, &context, work_area,
-				  sizeof(work_area), 1000);
+				  sizeof(work_area), 0, 1000);
 	zassert_equal(-EBADF, rc);
 }
 
@@ -163,14 +164,14 @@ ZTEST(infuse_coap, test_timeout)
 	context.expected_data = NULL;
 	context.expected_offset = 0;
 	rc = infuse_coap_download(sock, "file/med_file", data_cb, &context, work_area,
-				  sizeof(work_area), 1);
+				  sizeof(work_area), 0, 1);
 	zassert_equal(-ETIMEDOUT, rc);
 
 	/* Request another resource, "world" response should be discarded due to token mismatch */
 	context.expected_data = "hello_world\n";
 	context.expected_offset = 0;
 	rc = infuse_coap_download(sock, "file/small_file", data_cb, &context, work_area,
-				  sizeof(work_area), 1000);
+				  sizeof(work_area), 0, 1000);
 
 	/* Close socket */
 	zassert_equal(0, zsock_close(sock));
@@ -207,7 +208,7 @@ ZTEST(infuse_coap, test_socket_close)
 	context.expected_data = "hello_world\n";
 	context.expected_offset = 0;
 	rc = infuse_coap_download(sock, "file/small_file", data_cb, &context, work_area,
-				  sizeof(work_area), 1000);
+				  sizeof(work_area), 0, 1000);
 	zassert_equal(-EBADF, rc);
 
 	k_sem_give(&l4_up);
@@ -229,7 +230,8 @@ ZTEST(infuse_coap, test_download)
 	context.expected_data = "hello_world\n";
 	context.expected_offset = 0;
 	context.cb_count = 0;
-	rc = infuse_coap_download(sock, "file/small_file", data_cb, &context, work_area, 128, 1000);
+	rc = infuse_coap_download(sock, "file/small_file", data_cb, &context, work_area, 128, 0,
+				  1000);
 	zassert_equal(strlen(context.expected_data), rc);
 	zassert_equal(1, context.cb_count);
 
@@ -238,9 +240,27 @@ ZTEST(infuse_coap, test_download)
 	context.expected_offset = 0;
 	context.cb_count = 0;
 	rc = infuse_coap_download(sock, "file/med_file", data_cb, &context, work_area,
-				  sizeof(work_area), 1000);
+				  sizeof(work_area), 1024, 1000);
 	zassert_equal(10030, rc);
 	zassert_equal(10, context.cb_count);
+
+	/* Medium retrieval: file/med_file -> 10030 bytes == 20 packets at 512 block size */
+	context.expected_data = NULL;
+	context.expected_offset = 0;
+	context.cb_count = 0;
+	rc = infuse_coap_download(sock, "file/med_file", data_cb, &context, work_area,
+				  sizeof(work_area), 512, 1000);
+	zassert_equal(10030, rc);
+	zassert_equal(20, context.cb_count);
+
+	/* Medium retrieval: file/med_file -> 10030 bytes == 40 packets at 256 block size */
+	context.expected_data = NULL;
+	context.expected_offset = 0;
+	context.cb_count = 0;
+	rc = infuse_coap_download(sock, "file/med_file", data_cb, &context, work_area,
+				  sizeof(work_area), 256, 1000);
+	zassert_equal(10030, rc);
+	zassert_equal(40, context.cb_count);
 
 	/* Close socket */
 	zassert_equal(0, zsock_close(sock));
@@ -266,7 +286,7 @@ ZTEST(infuse_coap, test_download_early_terminate)
 
 	/* Attempt to download, error should match that from callback */
 	rc = infuse_coap_download(sock, "file/med_file", early_term_cb, &context, work_area,
-				  sizeof(work_area), 1000);
+				  sizeof(work_area), 0, 1000);
 	zassert_equal(-ECHILD, rc);
 
 	/* Close socket */
