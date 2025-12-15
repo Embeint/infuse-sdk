@@ -19,3 +19,12 @@ config MCUMGR_GRP_OS_INFUSE_RESET_MIN_UPTIME
 	  protocol.
 
 endif # MCUMGR
+
+config MCUBOOT_UPGRADE_ONLY_AUTOMATIC
+	bool "MCUBoot is compiled with MCUBOOT_UPGRADE_ONLY_AUTOMATIC"
+	depends on MCUBOOT_BOOTLOADER_MODE_OVERWRITE_ONLY
+	depends on MCUBOOT_BOOTLOADER_MODE_HAS_NO_DOWNGRADE
+	help
+	  When compiled with MCUBOOT_UPGRADE_ONLY_AUTOMATIC, writing swap
+	  status to the new image is not required (and may not be possible).
+	  Simply reboot to trigger the upgrade.
