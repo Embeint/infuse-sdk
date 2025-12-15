@@ -56,6 +56,23 @@ void algorithm_demo_event_fn(const struct zbus_channel *chan,
 				 sizeof(tdf), epoch_time_now(), &tdf);
 }
 
+#ifdef CONFIG_ALGORITHM_RUNNER_ALG_DEMO_SLOW_TRANSITIONS
+
+static const uint8_t demo_state_transitions[5][5] = {
+	/* State 0 transitions (Rarely to state 2, 3 or 4) */
+	{94, 0, 2, 2, 2},
+	/* State 1 transitions (95/5 to stay or return to 0) */
+	{5, 95, 0, 0, 0},
+	/* State 2 transitions (Return to 0 or 1) */
+	{4, 6, 90, 0, 0},
+	/* State 3 transitions */
+	{20, 25, 10, 50, 5},
+	/* State 4 transitions (75/25 to stay or return to 0) */
+	{25, 0, 0, 0, 75},
+};
+
+#else
+
 static const uint8_t demo_state_transitions[4][4] = {
 	/* State 0 transitions (Rarely to state 2 or 3) */
 	{90, 0, 5, 5},
@@ -66,6 +83,8 @@ static const uint8_t demo_state_transitions[4][4] = {
 	/* State 3 transitions */
 	{20, 30, 10, 50},
 };
+
+#endif /* CONFIG_ALGORITHM_RUNNER_ALG_DEMO_SLOW_TRANSITIONS */
 
 void algorithm_demo_state_fn(const struct zbus_channel *chan,
 			     const struct algorithm_runner_common_config *common, const void *args,
@@ -92,7 +111,7 @@ void algorithm_demo_state_fn(const struct zbus_channel *chan,
 
 	/* Determine which state we are transitioning to or staying in */
 	cumulative = 0;
-	for (i = 0; i < 4; i++) {
+	for (i = 0; i < sizeof(demo_state_transitions[0]); i++) {
 		cumulative += transitions[i];
 		if (rand_100 < cumulative) {
 			break;

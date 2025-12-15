@@ -45,3 +45,7 @@ endif # ALGORITHM_RUNNER_ALG_MOVEMENT_THRESHOLD
 config ALGORITHM_RUNNER_ALG_DEMO
 	bool "Demo implementations of various algorithm types"
 	depends on INFUSE_ZBUS_CHAN_IMU
+
+config ALGORITHM_RUNNER_ALG_DEMO_SLOW_TRANSITIONS
+	bool "Make the transitions between states much less likely"
+	depends on ALGORITHM_RUNNER_ALG_DEMO
