@@ -253,6 +253,15 @@ struct net_buf *rpc_command_coap_download(struct net_buf *request);
 struct net_buf *rpc_command_zperf_upload(struct net_buf *request);
 
 /**
+ * @brief Run coap_download_v2 RPC
+ *
+ * @param request @ref INFUSE_RPC_CMD packet to respond to
+ *
+ * @return struct net_buf* @ref INFUSE_RPC_RSP packet buffer
+ */
+struct net_buf *rpc_command_coap_download_v2(struct net_buf *request);
+
+/**
  * @brief Run file_write_basic RPC
  *
  * @param request @ref INFUSE_RPC_CMD packet to respond to

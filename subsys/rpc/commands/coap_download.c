@@ -47,8 +47,8 @@ static int data_cb(uint32_t offset, const uint8_t *data, uint16_t data_len, void
 	return rc;
 }
 
-int rpc_command_coap_download_run(struct rpc_coap_download_request *req, char *resource,
-				  struct rpc_coap_download_response *rsp, int *downloaded)
+int rpc_command_coap_download_run(struct rpc_coap_download_v2_request *req, char *resource,
+				  struct rpc_coap_download_v2_response *rsp, int *downloaded)
 {
 	const sec_tag_t sec_tls_tags[] = {
 		infuse_security_coap_dtls_tag(),
@@ -124,7 +124,7 @@ int rpc_command_coap_download_run(struct rpc_coap_download_request *req, char *r
 
 	/* Download the resource */
 	*downloaded = infuse_coap_download(sock, resource, data_cb, &ctx, work_mem, work_mem_size,
-					   0, block_timeout);
+					   req->block_size, block_timeout);
 	if (*downloaded < 0) {
 		rc = *downloaded;
 		*downloaded = 0;
@@ -159,10 +159,44 @@ error:
 	return rc;
 }
 
+/* Responses are equivalent */
+BUILD_ASSERT(sizeof(struct rpc_coap_download_response) ==
+	     sizeof(struct rpc_coap_download_v2_response));
+
+#ifdef CONFIG_INFUSE_RPC_COMMAND_COAP_DOWNLOAD
 struct net_buf *rpc_command_coap_download(struct net_buf *request)
 {
 	struct rpc_coap_download_request *req = (void *)request->data;
-	struct rpc_coap_download_response rsp = {0};
+	struct rpc_coap_download_v2_response rsp = {0};
+	int downloaded;
+	int rc;
+
+	/* Copy legacy request over to new format (with auto block size) */
+	struct rpc_coap_download_v2_request req_v2 = {
+		.header = req->header,
+		.server_port = req->server_port,
+		.block_timeout_ms = req->block_timeout_ms,
+		.block_size = 0,
+		.action = req->action,
+		.resource_len = req->resource_len,
+		.resource_crc = req->resource_crc,
+	};
+
+	memcpy(req_v2.server_address, req->server_address, sizeof(req_v2.server_address));
+
+	/* Run the command */
+	rc = rpc_command_coap_download_run(&req_v2, req->resource, &rsp, &downloaded);
+
+	/* Return the response */
+	return rpc_response_simple_req(request, rc, &rsp, sizeof(rsp));
+}
+#endif /* CONFIG_INFUSE_RPC_COMMAND_COAP_DOWNLOAD */
+
+#ifdef CONFIG_INFUSE_RPC_COMMAND_COAP_DOWNLOAD_V2
+struct net_buf *rpc_command_coap_download_v2(struct net_buf *request)
+{
+	struct rpc_coap_download_v2_request *req = (void *)request->data;
+	struct rpc_coap_download_v2_response rsp = {0};
 	int downloaded;
 	int rc;
 
@@ -172,3 +206,4 @@ struct net_buf *rpc_command_coap_download(struct net_buf *request)
 	/* Return the response */
 	return rpc_response_simple_req(request, rc, &rsp, sizeof(rsp));
 }
+#endif /* CONFIG_INFUSE_RPC_COMMAND_COAP_DOWNLOAD_V2 */

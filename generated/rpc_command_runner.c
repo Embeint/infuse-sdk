@@ -256,6 +256,13 @@ void rpc_command_runner(struct net_buf *request)
 		}
 		break;
 #endif /* CONFIG_INFUSE_RPC_COMMAND_ZPERF_UPLOAD */
+#ifdef CONFIG_INFUSE_RPC_COMMAND_COAP_DOWNLOAD_V2
+	case RPC_ID_COAP_DOWNLOAD_V2:
+		if (AUTHORISED(auth, COAP_DOWNLOAD_V2)) { /* GCOVR_EXCL_BR_LINE */
+			response = rpc_command_coap_download_v2(request);
+		}
+		break;
+#endif /* CONFIG_INFUSE_RPC_COMMAND_COAP_DOWNLOAD_V2 */
 #ifdef CONFIG_INFUSE_RPC_COMMAND_FILE_WRITE_BASIC
 	case RPC_ID_FILE_WRITE_BASIC:
 		if (AUTHORISED(auth, FILE_WRITE_BASIC)) { /* GCOVR_EXCL_BR_LINE */
