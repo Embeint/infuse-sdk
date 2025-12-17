@@ -212,49 +212,36 @@ static void log_soc_temperature(uint8_t loggers, uint64_t timestamp)
 void task_tdf_logger_manual_run(uint8_t tdf_loggers, uint64_t timestamp, uint16_t tdfs,
 				tdf_logger_custom_log_t custom_logger)
 {
-	bool announce, battery, ambient_env, location, accel, net, custom, soc_temp;
-
-	announce = tdfs & TASK_TDF_LOGGER_LOG_ANNOUNCE;
-	battery = tdfs & TASK_TDF_LOGGER_LOG_BATTERY;
-	ambient_env = tdfs & TASK_TDF_LOGGER_LOG_AMBIENT_ENV;
-	location = tdfs & TASK_TDF_LOGGER_LOG_LOCATION;
-	accel = tdfs & TASK_TDF_LOGGER_LOG_ACCEL;
-	net = tdfs & TASK_TDF_LOGGER_LOG_NET_CONN;
-	custom = tdfs & TASK_TDF_LOGGER_LOG_CUSTOM;
-	soc_temp = tdfs & TASK_TDF_LOGGER_LOG_SOC_TEMPERATURE;
-
 	if ((tdf_loggers == TDF_DATA_LOGGER_BT_ADV) ||
 	    (tdf_loggers == TDF_DATA_LOGGER_BT_PERIPHERAL)) {
 		/* Bluetooth can log very often */
-		LOG_DBG("Log: %02X Ann: %d Bat: %d Env: %d Loc: %d Acc: %d Net: %d Cus: %d",
-			tdf_loggers, announce, battery, ambient_env, location, accel, net, custom);
+		LOG_DBG("Log: %02X TDFs: %04X", tdf_loggers, tdfs);
 	} else {
-		LOG_INF("Log: %02X Ann: %d Bat: %d Env: %d Loc: %d Acc: %d Net: %d Cus: %d",
-			tdf_loggers, announce, battery, ambient_env, location, accel, net, custom);
+		LOG_INF("Log: %04X TDFs: %04X", tdf_loggers, tdfs);
 	}
 
-	if (announce) {
+	if (tdfs & TASK_TDF_LOGGER_LOG_ANNOUNCE) {
 		log_announce(tdf_loggers, timestamp);
 	}
-	if (battery) {
+	if (tdfs & TASK_TDF_LOGGER_LOG_BATTERY) {
 		log_battery(tdf_loggers, timestamp);
 	}
-	if (ambient_env) {
+	if (tdfs & TASK_TDF_LOGGER_LOG_AMBIENT_ENV) {
 		log_ambient_env(tdf_loggers, timestamp);
 	}
-	if (accel) {
+	if (tdfs & TASK_TDF_LOGGER_LOG_ACCEL) {
 		log_accel(tdf_loggers, timestamp);
 	}
-	if (location) {
+	if (tdfs & TASK_TDF_LOGGER_LOG_LOCATION) {
 		log_location(tdf_loggers, timestamp);
 	}
-	if (net) {
+	if (tdfs & TASK_TDF_LOGGER_LOG_NET_CONN) {
 		log_network_connection(tdf_loggers, timestamp);
 	}
-	if (soc_temp) {
+	if (tdfs & TASK_TDF_LOGGER_LOG_SOC_TEMPERATURE) {
 		log_soc_temperature(tdf_loggers, timestamp);
 	}
-	if (custom && (custom_logger != NULL)) {
+	if ((tdfs & TASK_TDF_LOGGER_LOG_CUSTOM) && (custom_logger != NULL)) {
 		custom_logger(tdf_loggers, timestamp);
 	}
 }
