@@ -19,6 +19,7 @@
 #include <infuse/validation/bluetooth.h>
 #include <infuse/validation/button.h>
 #include <infuse/validation/core.h>
+#include <infuse/validation/die_temp.h>
 #include <infuse/validation/disk.h>
 #include <infuse/validation/env.h>
 #include <infuse/validation/imu.h>
@@ -61,6 +62,24 @@ static int imu_validator(void *a, void *b, void *c)
 
 K_THREAD_DEFINE(imu_thread, 2048, imu_validator, NULL, NULL, NULL, 5, 0, 0);
 #endif /* DT_NODE_EXISTS(DT_ALIAS(imu0)) */
+
+#if DT_NODE_EXISTS(DT_ALIAS(die_temp0))
+
+static int die_temp_validator(void *a, void *b, void *c)
+{
+	atomic_inc(&validators_registered);
+	if (infuse_validation_die_temperature(DEVICE_DT_GET(DT_ALIAS(die_temp0)),
+					      VALIDATION_DIE_TEMP_TEMPERATURE) == 0) {
+		atomic_inc(&validators_passed);
+	} else {
+		atomic_inc(&validators_failed);
+	}
+	atomic_inc(&validators_complete);
+	return 0;
+}
+
+K_THREAD_DEFINE(die_temp_thread, 2048, die_temp_validator, NULL, NULL, NULL, 5, 0, 0);
+#endif /* DT_NODE_EXISTS(DT_ALIAS(die_temp0)) */
 
 #if DT_NODE_EXISTS(DT_ALIAS(environmental0))
 
