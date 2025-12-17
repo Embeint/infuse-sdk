@@ -35,6 +35,7 @@ struct task_schedule_state state;
 INFUSE_ZBUS_CHAN_DEFINE(INFUSE_ZBUS_CHAN_BATTERY);
 INFUSE_ZBUS_CHAN_DEFINE(INFUSE_ZBUS_CHAN_AMBIENT_ENV);
 INFUSE_ZBUS_CHAN_DEFINE(INFUSE_ZBUS_CHAN_LOCATION);
+INFUSE_ZBUS_CHAN_DEFINE(INFUSE_ZBUS_CHAN_SOC_TEMPERATURE);
 
 IMU_SAMPLE_ARRAY_TYPE_DEFINE(imu_sample_container, 4);
 ZBUS_CHAN_DEFINE_WITH_ID(INFUSE_ZBUS_NAME(INFUSE_ZBUS_CHAN_IMU), INFUSE_ZBUS_CHAN_IMU,
@@ -254,6 +255,35 @@ ZTEST(task_tdf_logger, test_battery)
 	zassert_equal(0, tdf_parse_find_in_buf(pkt->data, pkt->len, TDF_BATTERY_TYPE, &tdf));
 	zassert_equal(0, tdf.time);
 	zassert_equal(TDF_BATTERY_SIZE, tdf.tdf_len);
+	net_buf_unref(pkt);
+}
+
+ZTEST(task_tdf_logger, test_soc_temperature)
+{
+	const struct zbus_channel *chan_soc_temp =
+		INFUSE_ZBUS_CHAN_GET(INFUSE_ZBUS_CHAN_SOC_TEMPERATURE);
+	struct k_fifo *tx_queue = epacket_dummmy_transmit_fifo_get();
+	struct tdf_soc_temperature soc_temperature = {.temperature = 251};
+	struct tdf_parsed tdf;
+	struct net_buf *pkt;
+
+	zassert_not_null(tx_queue);
+
+	/* Publish data */
+	zbus_chan_pub(chan_soc_temp, &soc_temperature, K_FOREVER);
+
+	schedule.task_args.infuse.tdf_logger = (struct task_tdf_logger_args){
+		.loggers = TDF_DATA_LOGGER_SERIAL,
+		.tdfs = TASK_TDF_LOGGER_LOG_SOC_TEMPERATURE,
+	};
+	/* SoC temperature data should send */
+	task_schedule(&data);
+	pkt = k_fifo_get(tx_queue, K_MSEC(100));
+	zassert_not_null(pkt);
+	net_buf_pull(pkt, sizeof(struct epacket_dummy_frame));
+	zassert_equal(0, tdf_parse_find_in_buf(pkt->data, pkt->len, TDF_SOC_TEMPERATURE, &tdf));
+	zassert_equal(0, tdf.time);
+	zassert_equal(sizeof(soc_temperature), tdf.tdf_len);
 	net_buf_unref(pkt);
 }
 
