@@ -92,6 +92,92 @@ struct infuse_rpc_rsp_header {
  * @{
  */
 
+/** Bluetooth LE address type */
+enum rpc_enum_bt_le_addr_type {
+	/** Public address */
+	RPC_ENUM_BT_LE_ADDR_TYPE_PUBLIC = 0,
+	/** Static random address */
+	RPC_ENUM_BT_LE_ADDR_TYPE_RANDOM = 1,
+};
+
+/** Actions to take upon receiving a file */
+enum rpc_enum_file_action {
+	/** Discard received file (Useful for testing) */
+	RPC_ENUM_FILE_ACTION_DISCARD = 0,
+	/** Complete application image for firmware upgrade */
+	RPC_ENUM_FILE_ACTION_APP_IMG = 1,
+	/** Complete Bluetooth controller image for firmware upgrade */
+	RPC_ENUM_FILE_ACTION_BT_CTLR_IMG = 2,
+	/** CPatch application image upgrade (binary diff) */
+	RPC_ENUM_FILE_ACTION_APP_CPATCH = 11,
+	/** CPatch Bluetooth controller image upgrade (binary diff) */
+	RPC_ENUM_FILE_ACTION_BT_CTLR_CPATCH = 12,
+	/** nRF91 LTE modem firmware upgrade diff */
+	RPC_ENUM_FILE_ACTION_NRF91_MODEM_DIFF = 20,
+	/** File to copy to another device */
+	RPC_ENUM_FILE_ACTION_FILE_FOR_COPY = 30,
+};
+
+/** Infuse-IoT Bluetooth characteristics (Bitmask) */
+enum rpc_enum_infuse_bt_characteristic {
+	/** Command characteristic */
+	RPC_ENUM_INFUSE_BT_CHARACTERISTIC_COMMAND = 1,
+	/** Data characteristic */
+	RPC_ENUM_INFUSE_BT_CHARACTERISTIC_DATA = 2,
+	/** Serial log characteristic */
+	RPC_ENUM_INFUSE_BT_CHARACTERISTIC_LOGGING = 4,
+};
+
+/** Data Logger identifier */
+enum rpc_enum_data_logger {
+	/** Onboard flash logger */
+	RPC_ENUM_DATA_LOGGER_FLASH_ONBOARD = 1,
+	/** Removable flash logger (SD) */
+	RPC_ENUM_DATA_LOGGER_FLASH_REMOVABLE = 2,
+	/** Networked UDP logger */
+	RPC_ENUM_DATA_LOGGER_UDP = 3,
+};
+
+/** Source for zperf data upload */
+enum rpc_enum_zperf_data_source {
+	/** Constant payload ('i') */
+	RPC_ENUM_ZPERF_DATA_SOURCE_CONSTANT = 0,
+	/** Random payload contents */
+	RPC_ENUM_ZPERF_DATA_SOURCE_RANDOM = 1,
+	/** Read data from onboard flash logger */
+	RPC_ENUM_ZPERF_DATA_SOURCE_FLASH_ONBOARD = 2,
+	/** Read data from removable flash logger (SD) */
+	RPC_ENUM_ZPERF_DATA_SOURCE_FLASH_REMOVABLE = 3,
+	/** Flag (0x80) to specify payload should be encrypted */
+	RPC_ENUM_ZPERF_DATA_SOURCE_ENCRYPT = 128,
+};
+
+/** Infuse security key identifier */
+enum rpc_enum_key_id {
+	/** Primary network key */
+	RPC_ENUM_KEY_ID_NETWORK_KEY = 0,
+	/** Secondary network key */
+	RPC_ENUM_KEY_ID_SECONDARY_NETWORK_KEY = 1,
+};
+
+/** Infuse security key action */
+enum rpc_enum_key_action {
+	/** Write updated value for the key */
+	RPC_ENUM_KEY_ACTION_KEY_WRITE = 0,
+	/** Delete existing value for the key */
+	RPC_ENUM_KEY_ACTION_KEY_DELETE = 1,
+};
+
+/** Field support status */
+enum rpc_enum_support_status {
+	/** Field is not supported */
+	RPC_ENUM_SUPPORT_STATUS_UNSUPPORTED = 0,
+	/** Field is supported */
+	RPC_ENUM_SUPPORT_STATUS_SUPPORTED = 1,
+	/** Field support status is unknown */
+	RPC_ENUM_SUPPORT_STATUS_UNKNOWN = 255,
+};
+
 /** MCUboot semantic versioning struct */
 struct rpc_struct_mcuboot_img_sem_ver {
 	uint8_t major;
@@ -203,6 +289,42 @@ struct rpc_struct_lte_state {
 	int8_t rsrq;
 } __packed;
 
+/** LTE interface status */
+struct rpc_struct_lte_state_v2 {
+	/** Network registration state (3GPP TS 127.007) */
+	uint8_t registration_state;
+	/** Access Technology (3GPP TS 127.007) */
+	uint8_t access_technology;
+	/** Mobile Country Code */
+	uint16_t mcc;
+	/** Mobile Network Code */
+	uint16_t mnc;
+	/** E-UTRAN cell ID */
+	uint32_t cell_id;
+	/** Tracking area code */
+	uint32_t tac;
+	/** Tracking area update period */
+	int32_t tau;
+	/** Tracking area code (3GPP TS 36.101) */
+	uint16_t earfcn;
+	/** LTE Band (3GPP 36.101) */
+	uint8_t band;
+	/** Seconds between RRC idle and PSM */
+	int16_t psm_active_time;
+	/** Period between eDRX paging windows */
+	float edrx_interval;
+	/** Duration of eDRX paging window */
+	float edrx_paging_window;
+	/** Reference signal received power (dBm) */
+	int16_t rsrp;
+	/** Reference signal received quality (dB) */
+	int8_t rsrq;
+	/** Access Spectrum RAI supported */
+	uint8_t as_rai;
+	/** Control Plane RAI supported */
+	uint8_t cp_rai;
+} __packed;
+
 /** WiFi interface status */
 struct rpc_struct_wifi_scan_result {
 	/** Frequency band */
@@ -270,81 +392,6 @@ struct rpc_struct_demo {
 	int8_t z;
 } __packed;
 
-/** Bluetooth LE address type */
-enum rpc_enum_bt_le_addr_type {
-	/** Public address */
-	RPC_ENUM_BT_LE_ADDR_TYPE_PUBLIC = 0,
-	/** Static random address */
-	RPC_ENUM_BT_LE_ADDR_TYPE_RANDOM = 1,
-};
-
-/** Actions to take upon receiving a file */
-enum rpc_enum_file_action {
-	/** Discard received file (Useful for testing) */
-	RPC_ENUM_FILE_ACTION_DISCARD = 0,
-	/** Complete application image for firmware upgrade */
-	RPC_ENUM_FILE_ACTION_APP_IMG = 1,
-	/** Complete Bluetooth controller image for firmware upgrade */
-	RPC_ENUM_FILE_ACTION_BT_CTLR_IMG = 2,
-	/** CPatch application image upgrade (binary diff) */
-	RPC_ENUM_FILE_ACTION_APP_CPATCH = 11,
-	/** CPatch Bluetooth controller image upgrade (binary diff) */
-	RPC_ENUM_FILE_ACTION_BT_CTLR_CPATCH = 12,
-	/** nRF91 LTE modem firmware upgrade diff */
-	RPC_ENUM_FILE_ACTION_NRF91_MODEM_DIFF = 20,
-	/** File to copy to another device */
-	RPC_ENUM_FILE_ACTION_FILE_FOR_COPY = 30,
-};
-
-/** Infuse-IoT Bluetooth characteristics (Bitmask) */
-enum rpc_enum_infuse_bt_characteristic {
-	/** Command characteristic */
-	RPC_ENUM_INFUSE_BT_CHARACTERISTIC_COMMAND = 1,
-	/** Data characteristic */
-	RPC_ENUM_INFUSE_BT_CHARACTERISTIC_DATA = 2,
-	/** Serial log characteristic */
-	RPC_ENUM_INFUSE_BT_CHARACTERISTIC_LOGGING = 4,
-};
-
-/** Data Logger identifier */
-enum rpc_enum_data_logger {
-	/** Onboard flash logger */
-	RPC_ENUM_DATA_LOGGER_FLASH_ONBOARD = 1,
-	/** Removable flash logger (SD) */
-	RPC_ENUM_DATA_LOGGER_FLASH_REMOVABLE = 2,
-	/** Networked UDP logger */
-	RPC_ENUM_DATA_LOGGER_UDP = 3,
-};
-
-/** Source for zperf data upload */
-enum rpc_enum_zperf_data_source {
-	/** Constant payload ('i') */
-	RPC_ENUM_ZPERF_DATA_SOURCE_CONSTANT = 0,
-	/** Random payload contents */
-	RPC_ENUM_ZPERF_DATA_SOURCE_RANDOM = 1,
-	/** Read data from onboard flash logger */
-	RPC_ENUM_ZPERF_DATA_SOURCE_FLASH_ONBOARD = 2,
-	/** Read data from removable flash logger (SD) */
-	RPC_ENUM_ZPERF_DATA_SOURCE_FLASH_REMOVABLE = 3,
-	/** Flag (0x80) to specify payload should be encrypted */
-	RPC_ENUM_ZPERF_DATA_SOURCE_ENCRYPT = 128,
-};
-
-/** Infuse security key identifier */
-enum rpc_enum_key_id {
-	/** Primary network key */
-	RPC_ENUM_KEY_ID_NETWORK_KEY = 0,
-	/** Secondary network key */
-	RPC_ENUM_KEY_ID_SECONDARY_NETWORK_KEY = 1,
-};
-
-/** Infuse security key action */
-enum rpc_enum_key_action {
-	/** Write updated value for the key */
-	RPC_ENUM_KEY_ACTION_KEY_WRITE = 0,
-	/** Delete exisiting value for the key */
-	RPC_ENUM_KEY_ACTION_KEY_DELETE = 1,
-};
 
 /**
  * @}
@@ -370,7 +417,7 @@ enum rpc_builtin_id {
 	RPC_ID_KV_WRITE = 5,
 	/** Read values from the KV store */
 	RPC_ID_KV_READ = 6,
-	/** Read KV store CRC's */
+	/** Read KV store CRCs */
 	RPC_ID_KV_REFLECT_CRCS = 7,
 	/** Query current state of zbus channel */
 	RPC_ID_ZBUS_CHANNEL_STATE = 8,
@@ -402,10 +449,16 @@ enum rpc_builtin_id {
 	RPC_ID_LTE_STATE = 21,
 	/** Read data from data logger, with auto-updating start_block */
 	RPC_ID_DATA_LOGGER_READ_AVAILABLE = 22,
+	/** Get current LTE interface state (with RAI information) */
+	RPC_ID_LTE_STATE_V2 = 23,
+	/** Get state of a data logger (Larger erase unit) */
+	RPC_ID_DATA_LOGGER_STATE_V2 = 24,
 	/** Download a file from a COAP server (Infuse-IoT DTLS protected) */
 	RPC_ID_COAP_DOWNLOAD = 30,
 	/** Network upload bandwidth testing using zperf/iperf */
 	RPC_ID_ZPERF_UPLOAD = 31,
+	/** Download a file from a COAP server (Infuse-IoT DTLS protected) */
+	RPC_ID_COAP_DOWNLOAD_V2 = 32,
 	/** Write a file to the device */
 	RPC_ID_FILE_WRITE_BASIC = 40,
 	/** Write an annotation to the device */
@@ -422,6 +475,8 @@ enum rpc_builtin_id {
 	RPC_ID_BT_MCUMGR_REBOOT = 54,
 	/** Store the current accelerometer vector as the gravity reference */
 	RPC_ID_GRAVITY_REFERENCE_UPDATE = 60,
+	/** Retrieve U-blox AssistNow Zero Touch Provisioning credentials */
+	RPC_ID_UBX_ASSIST_NOW_ZTP_CREDS = 70,
 	/** Query current security state and validate identity */
 	RPC_ID_SECURITY_STATE = 30000,
 	/** Update key material */
@@ -520,7 +575,7 @@ struct rpc_kv_read_response {
 	struct rpc_struct_kv_store_value values[];
 } __packed;
 
-/** Read KV store CRC's */
+/** Read KV store CRCs */
 struct rpc_kv_reflect_crcs_request {
 	struct infuse_rpc_req_header header;
 	/** Number of CRCs to skip in response */
@@ -805,6 +860,50 @@ struct rpc_data_logger_read_available_response {
 	uint16_t block_size;
 } __packed;
 
+/** Get current LTE interface state (with RAI information) */
+struct rpc_lte_state_v2_request {
+	struct infuse_rpc_req_header header;
+} __packed;
+
+struct rpc_lte_state_v2_response {
+	struct infuse_rpc_rsp_header header;
+	/** Common network state */
+	struct rpc_struct_network_state common;
+	/** LTE state */
+	struct rpc_struct_lte_state_v2 lte;
+} __packed;
+
+/** Get state of a data logger (Larger erase unit) */
+struct rpc_data_logger_state_v2_request {
+	struct infuse_rpc_req_header header;
+	/** Data logger to read from */
+	uint8_t logger;
+} __packed;
+
+struct rpc_data_logger_state_v2_response {
+	struct infuse_rpc_rsp_header header;
+	/** Number of bytes logged since boot */
+	uint64_t bytes_logged;
+	/** Number of logical blocks on the logger */
+	uint32_t logical_blocks;
+	/** Number of physical blocks on the logger */
+	uint32_t physical_blocks;
+	/** Number of logical blocks present at boot */
+	uint32_t boot_block;
+	/** Number of logical blocks that have been written */
+	uint32_t current_block;
+	/** Earliest logical block that still exists on the logger */
+	uint32_t earliest_block;
+	/** Size of a single block in bytes */
+	uint16_t block_size;
+	/** Number of bytes at the start of the block that should not contain data */
+	uint16_t block_overhead;
+	/** Minimum erase unit of the logger in bytes */
+	uint32_t erase_unit;
+	/** Current application uptime */
+	uint32_t uptime;
+} __packed;
+
 /** Download a file from a COAP server (Infuse-IoT DTLS protected) */
 struct rpc_coap_download_request {
 	struct infuse_rpc_req_header header;
@@ -873,6 +972,35 @@ struct rpc_zperf_upload_response {
 	uint32_t nb_packets_errors;
 } __packed;
 
+/** Download a file from a COAP server (Infuse-IoT DTLS protected) */
+struct rpc_coap_download_v2_request {
+	struct infuse_rpc_req_header header;
+	/** COAP server address (e.g. coap.dev.infuse-iot.com) */
+	char server_address[48];
+	/** COAP server port */
+	uint16_t server_port;
+	/** COAP block timeout (Default 1000ms) */
+	uint16_t block_timeout_ms;
+	/** Block size to use (1024, 512, 256, 128, 64, 32, 16, 0 == auto) */
+	uint16_t block_size;
+	/** Action to apply to downloaded file */
+	uint8_t action;
+	/** Expected resource length (UINT32_MAX if unknown) */
+	uint32_t resource_len;
+	/** Expected resource CRC (UINT32_MAX if unknown) */
+	uint32_t resource_crc;
+	/** Path to file on COAP server (e.g. files/small_file) */
+	char resource[];
+} __packed;
+
+struct rpc_coap_download_v2_response {
+	struct infuse_rpc_rsp_header header;
+	/** Length of resource downloaded */
+	uint32_t resource_len;
+	/** CRC of resource downloaded */
+	uint32_t resource_crc;
+} __packed;
+
 /** Write a file to the device */
 struct rpc_file_write_basic_request {
 	struct infuse_rpc_req_header header;
@@ -913,7 +1041,7 @@ struct rpc_bt_connect_infuse_request {
 	struct rpc_struct_bt_addr_le peer;
 	/** Connection timeout in milliseconds */
 	uint16_t conn_timeout_ms;
-	/** Chacteristics to subscribe to */
+	/** Characteristics to subscribe to */
 	uint8_t subscribe;
 	/** Automatically terminate connection if no data traffic (0 = No timeout) */
 	uint16_t inactivity_timeout_ms;
@@ -1032,6 +1160,21 @@ struct rpc_gravity_reference_update_response {
 	uint16_t num_samples;
 	/** Period between samples */
 	uint32_t sample_period_us;
+} __packed;
+
+/** Retrieve U-blox AssistNow Zero Touch Provisioning credentials */
+struct rpc_ubx_assist_now_ztp_creds_request {
+	struct infuse_rpc_req_header header;
+	/** Frame offset of UBX-MON-VER data */
+	uint8_t mon_ver_offset;
+} __packed;
+
+struct rpc_ubx_assist_now_ztp_creds_response {
+	struct infuse_rpc_rsp_header header;
+	/** Raw UBX-SEC-UNIQID frame */
+	uint8_t ubx_sec_uniqid[18];
+	/** Raw UBX-MON-VER frame */
+	uint8_t ubx_mon_ver[];
 } __packed;
 
 /** Query current security state and validate identity */

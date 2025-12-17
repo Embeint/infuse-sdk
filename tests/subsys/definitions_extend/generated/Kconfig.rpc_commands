@@ -78,7 +78,7 @@ config INFUSE_RPC_COMMAND_KV_REFLECT_CRCS
 	depends on KV_STORE
 	default y if INFUSE_SDK
 	help
-	  Read KV store CRC's
+	  Read KV store CRCs
 
 config INFUSE_RPC_COMMAND_KV_REFLECT_CRCS_REQUIRED_AUTH
 	int "Required authorisation level to run kv_reflect_crcs"
@@ -263,6 +263,30 @@ config INFUSE_RPC_COMMAND_DATA_LOGGER_READ_AVAILABLE_REQUIRED_AUTH
 	depends on INFUSE_RPC_COMMAND_DATA_LOGGER_READ_AVAILABLE
 	default 2
 
+config INFUSE_RPC_COMMAND_LTE_STATE_V2
+	bool "Enable RPC lte_state_v2"
+	depends on INFUSE_MODEM_MONITOR
+	default y if INFUSE_SDK
+	help
+	  Get current LTE interface state (with RAI information)
+
+config INFUSE_RPC_COMMAND_LTE_STATE_V2_REQUIRED_AUTH
+	int "Required authorisation level to run lte_state_v2"
+	depends on INFUSE_RPC_COMMAND_LTE_STATE_V2
+	default 2
+
+config INFUSE_RPC_COMMAND_DATA_LOGGER_STATE_V2
+	bool "Enable RPC data_logger_state_v2"
+	depends on DATA_LOGGER
+	default y if INFUSE_SDK
+	help
+	  Get state of a data logger (Larger erase unit)
+
+config INFUSE_RPC_COMMAND_DATA_LOGGER_STATE_V2_REQUIRED_AUTH
+	int "Required authorisation level to run data_logger_state_v2"
+	depends on INFUSE_RPC_COMMAND_DATA_LOGGER_STATE_V2
+	default 2
+
 config INFUSE_RPC_COMMAND_COAP_DOWNLOAD
 	bool "Enable RPC coap_download"
 	depends on INFUSE_COAP
@@ -285,6 +309,18 @@ config INFUSE_RPC_COMMAND_ZPERF_UPLOAD
 config INFUSE_RPC_COMMAND_ZPERF_UPLOAD_REQUIRED_AUTH
 	int "Required authorisation level to run zperf_upload"
 	depends on INFUSE_RPC_COMMAND_ZPERF_UPLOAD
+	default 2
+
+config INFUSE_RPC_COMMAND_COAP_DOWNLOAD_V2
+	bool "Enable RPC coap_download_v2"
+	depends on INFUSE_COAP
+	default y if INFUSE_SDK
+	help
+	  Download a file from a COAP server (Infuse-IoT DTLS protected)
+
+config INFUSE_RPC_COMMAND_COAP_DOWNLOAD_V2_REQUIRED_AUTH
+	int "Required authorisation level to run coap_download_v2"
+	depends on INFUSE_RPC_COMMAND_COAP_DOWNLOAD_V2
 	default 2
 
 config INFUSE_RPC_COMMAND_FILE_WRITE_BASIC
@@ -377,6 +413,18 @@ config INFUSE_RPC_COMMAND_GRAVITY_REFERENCE_UPDATE
 config INFUSE_RPC_COMMAND_GRAVITY_REFERENCE_UPDATE_REQUIRED_AUTH
 	int "Required authorisation level to run gravity_reference_update"
 	depends on INFUSE_RPC_COMMAND_GRAVITY_REFERENCE_UPDATE
+	default 2
+
+config INFUSE_RPC_COMMAND_UBX_ASSIST_NOW_ZTP_CREDS
+	bool "Enable RPC ubx_assist_now_ztp_creds"
+	depends on GNSS_UBX_M10
+	default y
+	help
+	  Retrieve U-blox AssistNow Zero Touch Provisioning credentials
+
+config INFUSE_RPC_COMMAND_UBX_ASSIST_NOW_ZTP_CREDS_REQUIRED_AUTH
+	int "Required authorisation level to run ubx_assist_now_ztp_creds"
+	depends on INFUSE_RPC_COMMAND_UBX_ASSIST_NOW_ZTP_CREDS
 	default 2
 
 config INFUSE_RPC_COMMAND_SECURITY_STATE

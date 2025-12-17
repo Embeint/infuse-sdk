@@ -217,6 +217,24 @@ struct net_buf *rpc_command_lte_state(struct net_buf *request);
 struct net_buf *rpc_command_data_logger_read_available(struct net_buf *request);
 
 /**
+ * @brief Run lte_state_v2 RPC
+ *
+ * @param request @ref INFUSE_RPC_CMD packet to respond to
+ *
+ * @return struct net_buf* @ref INFUSE_RPC_RSP packet buffer
+ */
+struct net_buf *rpc_command_lte_state_v2(struct net_buf *request);
+
+/**
+ * @brief Run data_logger_state_v2 RPC
+ *
+ * @param request @ref INFUSE_RPC_CMD packet to respond to
+ *
+ * @return struct net_buf* @ref INFUSE_RPC_RSP packet buffer
+ */
+struct net_buf *rpc_command_data_logger_state_v2(struct net_buf *request);
+
+/**
  * @brief Run coap_download RPC
  *
  * @param request @ref INFUSE_RPC_CMD packet to respond to
@@ -233,6 +251,15 @@ struct net_buf *rpc_command_coap_download(struct net_buf *request);
  * @return struct net_buf* @ref INFUSE_RPC_RSP packet buffer
  */
 struct net_buf *rpc_command_zperf_upload(struct net_buf *request);
+
+/**
+ * @brief Run coap_download_v2 RPC
+ *
+ * @param request @ref INFUSE_RPC_CMD packet to respond to
+ *
+ * @return struct net_buf* @ref INFUSE_RPC_RSP packet buffer
+ */
+struct net_buf *rpc_command_coap_download_v2(struct net_buf *request);
 
 /**
  * @brief Run file_write_basic RPC
@@ -305,6 +332,15 @@ struct net_buf *rpc_command_bt_mcumgr_reboot(struct net_buf *request);
  * @return struct net_buf* @ref INFUSE_RPC_RSP packet buffer
  */
 struct net_buf *rpc_command_gravity_reference_update(struct net_buf *request);
+
+/**
+ * @brief Run ubx_assist_now_ztp_creds RPC
+ *
+ * @param request @ref INFUSE_RPC_CMD packet to respond to
+ *
+ * @return struct net_buf* @ref INFUSE_RPC_RSP packet buffer
+ */
+struct net_buf *rpc_command_ubx_assist_now_ztp_creds(struct net_buf *request);
 
 /**
  * @brief Run security_state RPC
