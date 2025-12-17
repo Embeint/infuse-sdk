@@ -18,5 +18,6 @@
 #include <infuse/task_runner/tasks/gnss.h>
 #include <infuse/task_runner/tasks/network_scan.h>
 #include <infuse/task_runner/tasks/tdf_logger.h>
+#include <infuse/task_runner/tasks/soc_temperature.h>
 
 #endif /* INFUSE_SDK_INCLUDE_INFUSE_TASK_RUNNER_TASKS_INFUSE_TASKS_H_ */
