@@ -28,7 +28,8 @@
 #include <infuse/task_runner/tasks/tdf_logger.h>
 
 INFUSE_ZBUS_CHAN_DECLARE(INFUSE_ZBUS_CHAN_BATTERY, INFUSE_ZBUS_CHAN_AMBIENT_ENV,
-			 INFUSE_ZBUS_CHAN_LOCATION, INFUSE_ZBUS_CHAN_IMU);
+			 INFUSE_ZBUS_CHAN_LOCATION, INFUSE_ZBUS_CHAN_IMU,
+			 INFUSE_ZBUS_CHAN_SOC_TEMPERATURE);
 #define C_GET INFUSE_ZBUS_CHAN_GET
 
 LOG_MODULE_REGISTER(task_tdfl, CONFIG_TASK_TDF_LOGGER_LOG_LEVEL);
@@ -195,10 +196,23 @@ static void log_network_connection(uint8_t loggers, uint64_t timestamp)
 #endif /* TASK_RUNNER_TASK_TDF_LOGGER_LTE_MODEM_MONITOR */
 }
 
+static void log_soc_temperature(uint8_t loggers, uint64_t timestamp)
+{
+#ifdef CONFIG_INFUSE_ZBUS_CHAN_SOC_TEMPERATURE
+	INFUSE_ZBUS_TYPE(INFUSE_ZBUS_CHAN_SOC_TEMPERATURE) soc_temp;
+
+	/* Get latest value */
+	zbus_chan_read(C_GET(INFUSE_ZBUS_CHAN_SOC_TEMPERATURE), &soc_temp, K_FOREVER);
+
+	/* Add to specified loggers */
+	TDF_DATA_LOGGER_LOG(loggers, TDF_SOC_TEMPERATURE, timestamp, &soc_temp);
+#endif
+}
+
 void task_tdf_logger_manual_run(uint8_t tdf_loggers, uint64_t timestamp, uint16_t tdfs,
 				tdf_logger_custom_log_t custom_logger)
 {
-	bool announce, battery, ambient_env, location, accel, net, custom;
+	bool announce, battery, ambient_env, location, accel, net, custom, soc_temp;
 
 	announce = tdfs & TASK_TDF_LOGGER_LOG_ANNOUNCE;
 	battery = tdfs & TASK_TDF_LOGGER_LOG_BATTERY;
@@ -207,6 +221,7 @@ void task_tdf_logger_manual_run(uint8_t tdf_loggers, uint64_t timestamp, uint16_
 	accel = tdfs & TASK_TDF_LOGGER_LOG_ACCEL;
 	net = tdfs & TASK_TDF_LOGGER_LOG_NET_CONN;
 	custom = tdfs & TASK_TDF_LOGGER_LOG_CUSTOM;
+	soc_temp = tdfs & TASK_TDF_LOGGER_LOG_SOC_TEMPERATURE;
 
 	if ((tdf_loggers == TDF_DATA_LOGGER_BT_ADV) ||
 	    (tdf_loggers == TDF_DATA_LOGGER_BT_PERIPHERAL)) {
@@ -235,6 +250,9 @@ void task_tdf_logger_manual_run(uint8_t tdf_loggers, uint64_t timestamp, uint16_
 	}
 	if (net) {
 		log_network_connection(tdf_loggers, timestamp);
+	}
+	if (soc_temp) {
+		log_soc_temperature(tdf_loggers, timestamp);
 	}
 	if (custom && (custom_logger != NULL)) {
 		custom_logger(tdf_loggers, timestamp);
