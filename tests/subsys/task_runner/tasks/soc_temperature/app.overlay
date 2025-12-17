@@ -1,0 +1,20 @@
+/ {
+	data_logger_dummy: data_logger_dummy {
+		compatible = "embeint,data-logger-epacket", "embeint,data-logger";
+		epacket = <&epacket_dummy>;
+
+		tdf_logger_dummy: tdf_logger_dummy {
+			compatible = "embeint,tdf-data-logger";
+		};
+	};
+
+	epacket_dummy: epacket_dummy {
+		compatible = "embeint,epacket-dummy";
+		zephyr,pm-device-runtime-auto;
+	};
+
+	sim_die_temp: generic_sim_die_temp {
+		compatible = "zephyr,generic-sim-sensor";
+		status = "okay";
+	};
+};
