@@ -63,6 +63,8 @@ enum infuse_zbus_channel_id {
 	INFUSE_ZBUS_CHAN_UBX_NAV_PVT = INFUSE_ZBUS_CHAN_BASE + 7,
 	/** @brief Data type: @ref tdf_nrf9x_gnss_pvt */
 	INFUSE_ZBUS_CHAN_NRF9X_NAV_PVT = INFUSE_ZBUS_CHAN_BASE + 8,
+	/** @brief Data type: @ref tdf_soc_temperature */
+	INFUSE_ZBUS_CHAN_SOC_TEMPERATURE = INFUSE_ZBUS_CHAN_BASE + 9,
 };
 
 #define _INFUSE_ZBUS_CHAN_BATTERY_TYPE          struct tdf_battery_state
@@ -74,6 +76,7 @@ enum infuse_zbus_channel_id {
 #define _INFUSE_ZBUS_CHAN_TILT_TYPE             struct infuse_zbus_chan_tilt
 #define _INFUSE_ZBUS_CHAN_UBX_NAV_PVT_TYPE      struct tdf_ubx_nav_pvt
 #define _INFUSE_ZBUS_CHAN_NRF9X_NAV_PVT_TYPE    struct tdf_nrf9x_gnss_pvt
+#define _INFUSE_ZBUS_CHAN_SOC_TEMPERATURE_TYPE  struct tdf_soc_temperature
 
 #define _INFUSE_ZBUS_CHAN_BATTERY_NAME          zbus_infuse_battery
 #define _INFUSE_ZBUS_CHAN_AMBIENT_ENV_NAME      zbus_infuse_ambient_env
@@ -84,6 +87,7 @@ enum infuse_zbus_channel_id {
 #define _INFUSE_ZBUS_CHAN_TILT_NAME             zbus_infuse_tilt
 #define _INFUSE_ZBUS_CHAN_UBX_NAV_PVT_NAME      zbus_infuse_ubx_nav_pvt
 #define _INFUSE_ZBUS_CHAN_NRF9X_NAV_PVT_NAME    zbus_infuse_nrf9x_nav_pvt
+#define _INFUSE_ZBUS_CHAN_SOC_TEMPERATURE_NAME  zbus_infuse_soc_temperature
 
 /** @brief Get the type associated with an Infuse zbus channel */
 #define INFUSE_ZBUS_TYPE(channel) _##channel##_TYPE

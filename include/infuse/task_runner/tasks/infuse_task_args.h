@@ -17,6 +17,7 @@
 #include <infuse/task_runner/tasks/tdf_logger_args.h>
 #include <infuse/task_runner/tasks/imu_args.h>
 #include <infuse/task_runner/tasks/network_scan_args.h>
+#include <infuse/task_runner/tasks/soc_temperature_args.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -36,6 +37,7 @@ union infuse_task_arguments {
 	struct task_gnss_args gnss;
 	struct task_network_scan_args network_scan;
 	struct task_bt_scanner_args bt_scanner;
+	struct task_soc_temperature_args soc_temperature;
 };
 
 /**
