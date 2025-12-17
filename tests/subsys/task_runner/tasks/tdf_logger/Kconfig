@@ -12,6 +12,9 @@ configdefault INFUSE_ZBUS_CHAN_LOCATION
 configdefault INFUSE_ZBUS_CHAN_IMU
 	default y
 
+configdefault INFUSE_ZBUS_CHAN_SOC_TEMPERATURE
+	default y
+
 configdefault TASK_RUNNER_TASK_TDF_LOGGER_LTE_MODEM_MONITOR
 	default y
 
