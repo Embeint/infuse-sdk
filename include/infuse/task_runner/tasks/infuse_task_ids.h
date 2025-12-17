@@ -30,6 +30,7 @@ enum infuse_task_ids {
 	TASK_ID_BT_SCANNER = 6,
 	TASK_ID_TDF_LOGGER_ALT1 = 7,
 	TASK_ID_TDF_LOGGER_ALT2 = 8,
+	TASK_ID_SOC_TEMPERATURE = 9,
 };
 
 /**

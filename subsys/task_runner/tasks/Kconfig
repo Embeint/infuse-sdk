@@ -148,6 +148,19 @@ source "subsys/logging/Kconfig.template.log_config"
 
 endif # TASK_RUNNER_TASK_ENVIRONMENTAL
 
+config TASK_RUNNER_TASK_SOC_TEMPERATURE
+	bool "SoC temperature sensing task"
+	select INFUSE_ZBUS_CHAN_SOC_TEMPERATURE
+	depends on ZBUS
+
+if TASK_RUNNER_TASK_SOC_TEMPERATURE
+
+module = TASK_SOC_TEMPERATURE
+module-str = SoC temperature task
+source "subsys/logging/Kconfig.template.log_config"
+
+endif # TASK_RUNNER_TASK_SOC_TEMPERATURE
+
 config TASK_RUNNER_TASK_GNSS
 	bool "GNSS location task"
 	depends on ZBUS

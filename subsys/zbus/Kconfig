@@ -44,3 +44,8 @@ config INFUSE_ZBUS_CHAN_NRF9X_NAV_PVT
 	bool
 	help
 	  INFUSE_ZBUS_CHAN_NRF9X_NAV_PVT producer is compiled in
+
+config INFUSE_ZBUS_CHAN_SOC_TEMPERATURE
+	bool
+	help
+	  INFUSE_ZBUS_CHAN_SOC_TEMPERATURE producer is compiled in
