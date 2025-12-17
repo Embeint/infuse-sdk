@@ -228,6 +228,20 @@ void rpc_command_runner(struct net_buf *request)
 		}
 		break;
 #endif /* CONFIG_INFUSE_RPC_COMMAND_DATA_LOGGER_READ_AVAILABLE */
+#ifdef CONFIG_INFUSE_RPC_COMMAND_LTE_STATE_V2
+	case RPC_ID_LTE_STATE_V2:
+		if (AUTHORISED(auth, LTE_STATE_V2)) { /* GCOVR_EXCL_BR_LINE */
+			response = rpc_command_lte_state_v2(request);
+		}
+		break;
+#endif /* CONFIG_INFUSE_RPC_COMMAND_LTE_STATE_V2 */
+#ifdef CONFIG_INFUSE_RPC_COMMAND_DATA_LOGGER_STATE_V2
+	case RPC_ID_DATA_LOGGER_STATE_V2:
+		if (AUTHORISED(auth, DATA_LOGGER_STATE_V2)) { /* GCOVR_EXCL_BR_LINE */
+			response = rpc_command_data_logger_state_v2(request);
+		}
+		break;
+#endif /* CONFIG_INFUSE_RPC_COMMAND_DATA_LOGGER_STATE_V2 */
 #ifdef CONFIG_INFUSE_RPC_COMMAND_COAP_DOWNLOAD
 	case RPC_ID_COAP_DOWNLOAD:
 		if (AUTHORISED(auth, COAP_DOWNLOAD)) { /* GCOVR_EXCL_BR_LINE */
@@ -242,6 +256,13 @@ void rpc_command_runner(struct net_buf *request)
 		}
 		break;
 #endif /* CONFIG_INFUSE_RPC_COMMAND_ZPERF_UPLOAD */
+#ifdef CONFIG_INFUSE_RPC_COMMAND_COAP_DOWNLOAD_V2
+	case RPC_ID_COAP_DOWNLOAD_V2:
+		if (AUTHORISED(auth, COAP_DOWNLOAD_V2)) { /* GCOVR_EXCL_BR_LINE */
+			response = rpc_command_coap_download_v2(request);
+		}
+		break;
+#endif /* CONFIG_INFUSE_RPC_COMMAND_COAP_DOWNLOAD_V2 */
 #ifdef CONFIG_INFUSE_RPC_COMMAND_FILE_WRITE_BASIC
 	case RPC_ID_FILE_WRITE_BASIC:
 		if (AUTHORISED(auth, FILE_WRITE_BASIC)) { /* GCOVR_EXCL_BR_LINE */
@@ -298,6 +319,13 @@ void rpc_command_runner(struct net_buf *request)
 		}
 		break;
 #endif /* CONFIG_INFUSE_RPC_COMMAND_GRAVITY_REFERENCE_UPDATE */
+#ifdef CONFIG_INFUSE_RPC_COMMAND_UBX_ASSIST_NOW_ZTP_CREDS
+	case RPC_ID_UBX_ASSIST_NOW_ZTP_CREDS:
+		if (AUTHORISED(auth, UBX_ASSIST_NOW_ZTP_CREDS)) { /* GCOVR_EXCL_BR_LINE */
+			response = rpc_command_ubx_assist_now_ztp_creds(request);
+		}
+		break;
+#endif /* CONFIG_INFUSE_RPC_COMMAND_UBX_ASSIST_NOW_ZTP_CREDS */
 #ifdef CONFIG_INFUSE_RPC_COMMAND_SECURITY_STATE
 	case RPC_ID_SECURITY_STATE:
 		if (AUTHORISED(auth, SECURITY_STATE)) { /* GCOVR_EXCL_BR_LINE */

@@ -153,6 +153,13 @@
                 {"name": "flags", "type": "uint8_t", "description": "Flags (BIT(0) == SD blocks)", "display": {"fmt": "hex", "digits": 2}}
             ]
         },
+        "8": {
+            "name": "SOC_TEMPERATURE",
+            "description": "SoC die temperature",
+            "fields": [
+                {"name": "temperature", "type": "int16_t", "description": "SoC die temperature (centidegrees)", "display": {"fmt": "float", "digits": 2, "postfix": "deg"}, "conversion": {"m": 0.01, "c": 0}}
+            ]
+        },
         "10": {
             "name": "ACC_2G",
             "description": "Accelerometer +-2G",

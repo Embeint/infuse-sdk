@@ -229,6 +229,12 @@ struct tdf_announce_v2 {
 	uint8_t flags;
 } __packed;
 
+/** SoC die temperature */
+struct tdf_soc_temperature {
+	/** SoC die temperature (centidegrees) */
+	int16_t temperature;
+} __packed;
+
 /** Accelerometer +-2G */
 struct tdf_acc_2g {
 	/** Raw sample */
@@ -555,11 +561,11 @@ struct tdf_nrf9x_gnss_pvt {
 	uint32_t v_acc;
 	/** Horizontal Speed (2-D) */
 	int32_t h_speed;
-	/** Horizonal speed accuracy estimate */
+	/** Horizontal speed accuracy estimate */
 	uint32_t h_speed_acc;
 	/** Horizontal Speed (2-D) */
 	int32_t v_speed;
-	/** Horizonal speed accuracy estimate */
+	/** Horizontal speed accuracy estimate */
 	uint32_t v_speed_acc;
 	/** Heading of motion (2-D) */
 	int32_t head_mot;
@@ -796,6 +802,8 @@ enum tdf_builtin_id {
 	TDF_REBOOT_INFO = 6,
 	/** Common announcement packet */
 	TDF_ANNOUNCE_V2 = 7,
+	/** SoC die temperature */
+	TDF_SOC_TEMPERATURE = 8,
 	/** Accelerometer +-2G */
 	TDF_ACC_2G = 10,
 	/** Accelerometer +-4G */
@@ -915,6 +923,7 @@ enum tdf_builtin_id {
 #define _TDF_TIME_SYNC_TYPE                   struct tdf_time_sync
 #define _TDF_REBOOT_INFO_TYPE                 struct tdf_reboot_info
 #define _TDF_ANNOUNCE_V2_TYPE                 struct tdf_announce_v2
+#define _TDF_SOC_TEMPERATURE_TYPE             struct tdf_soc_temperature
 #define _TDF_ACC_2G_TYPE                      struct tdf_acc_2g
 #define _TDF_ACC_4G_TYPE                      struct tdf_acc_4g
 #define _TDF_ACC_8G_TYPE                      struct tdf_acc_8g
@@ -976,6 +985,7 @@ enum tdf_builtin_size {
 	_TDF_TIME_SYNC_SIZE = sizeof(struct tdf_time_sync),
 	_TDF_REBOOT_INFO_SIZE = sizeof(struct tdf_reboot_info),
 	_TDF_ANNOUNCE_V2_SIZE = sizeof(struct tdf_announce_v2),
+	_TDF_SOC_TEMPERATURE_SIZE = sizeof(struct tdf_soc_temperature),
 	_TDF_ACC_2G_SIZE = sizeof(struct tdf_acc_2g),
 	_TDF_ACC_4G_SIZE = sizeof(struct tdf_acc_4g),
 	_TDF_ACC_8G_SIZE = sizeof(struct tdf_acc_8g),

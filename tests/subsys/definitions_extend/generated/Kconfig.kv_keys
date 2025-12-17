@@ -22,7 +22,7 @@ config KV_STORE_KEY_EXFAT_DISK_INFO
 
 config KV_STORE_KEY_BLUETOOTH_CTLR_VERSION
 	bool "Enable KV key BLUETOOTH_CTLR_VERSION"
-	depends on !BT_CTLR
+	depends on !HAS_BT_CTLR
 	default y if BT
 	help
 	  External Bluetooth controller version
@@ -112,7 +112,7 @@ config KV_STORE_KEY_LTE_MODEM_IMEI
 	bool "Enable KV key LTE_MODEM_IMEI"
 	default y if NRF_MODEM_LIB || MODEM_CELLULAR
 	help
-	  'International Modem Equiment Identifier' as returned by AT+CGSN=1
+	  'International Modem Equipment Identifier' as returned by AT+CGSN=1
 
 config KV_STORE_KEY_LTE_SIM_UICC
 	bool "Enable KV key LTE_SIM_UICC"
@@ -155,12 +155,19 @@ config KV_STORE_KEY_BLUETOOTH_THROUGHPUT_LIMIT
 	depends on BT_CENTRAL
 	default y
 	help
-	  Request connected Bluetooth peers to limit throughtput
+	  Request connected Bluetooth peers to limit throughput
 
 config KV_STORE_KEY_LED_DISABLE_DAILY_TIME_RANGE
 	bool "Enable KV key LED_DISABLE_DAILY_TIME_RANGE"
 	help
 	  Disable LEDs between two UTC times daily
+
+config KV_STORE_KEY_MEMFAULT_DISABLE
+	bool "Enable KV key MEMFAULT_DISABLE"
+	depends on MEMFAULT
+	default y
+	help
+	  Disable Memfault reporting at runtime
 
 config KV_STORE_KEY_GRAVITY_REFERENCE
 	bool "Enable KV key GRAVITY_REFERENCE"
@@ -177,6 +184,27 @@ config KV_STORE_KEY_GEOFENCE_RANGE
 	depends on KV_STORE_KEY_GEOFENCE
 	range 1 16
 	default 1
+
+config KV_STORE_KEY_ALG_STATIONARY_WINDOWED_ARGS
+	bool "Enable KV key ALG_STATIONARY_WINDOWED_ARGS"
+	depends on ALGORITHM_RUNNER_ALG_STATIONARY_WINDOWED
+	default y
+	help
+	  Configuration for the 'Stationary Windowed' algorithm
+
+config KV_STORE_KEY_ALG_TILT_ARGS
+	bool "Enable KV key ALG_TILT_ARGS"
+	depends on ALGORITHM_RUNNER_ALG_TILT
+	default y
+	help
+	  Configuration for the 'Tilt' algorithm
+
+config KV_STORE_KEY_ALG_MOVEMENT_THRESHOLD_ARGS
+	bool "Enable KV key ALG_MOVEMENT_THRESHOLD_ARGS"
+	depends on ALGORITHM_RUNNER_ALG_MOVEMENT_THRESHOLD
+	default y
+	help
+	  Configuration for the 'Movement Threshold' algorithm
 
 config KV_STORE_KEY_TASK_SCHEDULES_DEFAULT_ID
 	bool "Enable KV key TASK_SCHEDULES_DEFAULT_ID"

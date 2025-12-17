@@ -29,20 +29,27 @@ extern "C" {
 
 /** Geographic Co-ordinate System location */
 struct gcs_location {
+	/** Degrees north/south, scaled by 1e-7 */
 	int32_t latitude;
+	/** Degrees north/south, scaled by 1e-7 */
 	int32_t longitude;
+	/** Height above WGS-84 ellipsoid, mm */
 	int32_t height;
 } __packed;
 
 /** Bluetooth address type (bt_addr_le_t) */
 struct bt_addr_le {
+	/** Address type (0 == Public, 1 == Random) */
 	uint8_t type;
+	/** Address bytes */
 	uint8_t val[6];
 } __packed;
 
 /** String type */
 struct kv_string {
+	/** Length of `value` (including NULL) */
 	uint8_t value_num;
+	/** NULL terminated C string */
 	char value[];
 } __packed;
 
@@ -74,6 +81,38 @@ struct kv_utc_hms {
 	uint8_t hour;
 	uint8_t minute;
 	uint8_t second;
+} __packed;
+
+/** Algorithm logging configuration */
+struct kv_algorithm_logging {
+	/** TDF logger to log to */
+	uint8_t loggers;
+	/** TDFs to log (algorithm specific bitmask */
+	uint8_t tdf_mask;
+} __packed;
+
+/** Arguments for 'Stationary Windowed' algorithm */
+struct kv_algorithm_stationary_windowed_args {
+	/** Duration of the window in seconds */
+	uint32_t window_seconds;
+	/** Standard deviation threshold in micro-g, above this value the device is moving */
+	uint32_t std_dev_threshold_ug;
+} __packed;
+
+/** Arguments for 'Tilt' algorithm */
+struct kv_algorithm_tilt_args {
+	/** IIR filter alpha (see @ref iir_filter_single_pole_f32) */
+	float iir_filter_alpha;
+	/** Percentage within one G magnitude must be to use for tilt calculation */
+	uint8_t one_g_percent;
+} __packed;
+
+/** Arguments for 'Shot Triggered' algorithm */
+struct kv_algorithm_movement_threshold_args {
+	/** How long moving state is refreshed for when movement detected */
+	uint32_t moving_for;
+	/** Magnitude this far away from 1G triggers the moving state */
+	uint32_t threshold_ug;
 } __packed;
 
 /** Demo struct */
@@ -286,7 +325,7 @@ struct kv_lte_modem_esn {
 	} __packed
 /* clang-format on */
 
-/** 'International Modem Equiment Identifier' as returned by AT+CGSN=1 */
+/** 'International Modem Equipment Identifier' as returned by AT+CGSN=1 */
 struct kv_lte_modem_imei {
 	/** 15 digit IMEI */
 	uint64_t imei;
@@ -361,7 +400,7 @@ struct kv_lora_config {
 	uint8_t sync_word;
 } __packed;
 
-/** Request connected Bluetooth peers to limit throughtput */
+/** Request connected Bluetooth peers to limit throughput */
 struct kv_bluetooth_throughput_limit {
 	/** Requested throughput limit (kbps) */
 	uint16_t limit_kbps;
@@ -373,6 +412,12 @@ struct kv_led_disable_daily_time_range {
 	struct kv_utc_hms disable_start;
 	/** Re-enable LEDs at this time */
 	struct kv_utc_hms disable_end;
+} __packed;
+
+/** Disable Memfault reporting at runtime */
+struct kv_memfault_disable {
+	/** Disable for any non-zero value */
+	uint8_t disable;
 } __packed;
 
 /** Reference gravity vector for tilt calculations */
@@ -402,6 +447,30 @@ struct kv_geofence {
 	} __packed
 /* clang-format on */
 
+/** Configuration for the 'Stationary Windowed' algorithm */
+struct kv_alg_stationary_windowed_args {
+	/** Algorithm logging */
+	struct kv_algorithm_logging logging;
+	/** Algorithm arguments */
+	struct kv_algorithm_stationary_windowed_args args;
+} __packed;
+
+/** Configuration for the 'Tilt' algorithm */
+struct kv_alg_tilt_args {
+	/** Algorithm logging */
+	struct kv_algorithm_logging logging;
+	/** Algorithm arguments */
+	struct kv_algorithm_tilt_args args;
+} __packed;
+
+/** Configuration for the 'Movement Threshold' algorithm */
+struct kv_alg_movement_threshold_args {
+	/** Algorithm logging */
+	struct kv_algorithm_logging logging;
+	/** Algorithm arguments */
+	struct kv_algorithm_movement_threshold_args args;
+} __packed;
+
 /** Unique identifier for default schedule set */
 struct kv_task_schedules_default_id {
 	/** If this value changes, existing schedules are overwritten */
@@ -416,14 +485,14 @@ struct kv_task_schedules {
 	uint8_t validity;
 	/** TASK_PERIODICITY_* value */
 	uint8_t periodicity_type;
+	/** Task will not start for the first N minutes after boot */
+	uint8_t boot_lockout_minutes;
 	/** Duration after which task is requested to terminate */
 	uint32_t timeout_s;
 	/** Battery charge thresholds to start the task */
 	struct kv_range_u8 battery_start;
 	/** Battery charge thresholds to terminate the task */
 	struct kv_range_u8 battery_terminate;
-	/** Periodicity values */
-	uint32_t periodicity;
 	/** Remainder of schedule struct */
 	uint8_t _remainder[];
 } __packed;
@@ -435,10 +504,10 @@ struct kv_task_schedules {
 		uint8_t task_id; \
 		uint8_t validity; \
 		uint8_t periodicity_type; \
+		uint8_t boot_lockout_minutes; \
 		uint32_t timeout_s; \
 		struct kv_range_u8 battery_start; \
 		struct kv_range_u8 battery_terminate; \
-		uint32_t periodicity; \
 		uint8_t _remainder[num]; \
 	} __packed
 /* clang-format on */
@@ -513,7 +582,7 @@ enum kv_builtin_id {
 	KV_KEY_LTE_MODEM_FIRMWARE_REVISION = 41,
 	/** 'Electronic Serial Number' as returned by AT+CGSN=0 */
 	KV_KEY_LTE_MODEM_ESN = 42,
-	/** 'International Modem Equiment Identifier' as returned by AT+CGSN=1 */
+	/** 'International Modem Equipment Identifier' as returned by AT+CGSN=1 */
 	KV_KEY_LTE_MODEM_IMEI = 43,
 	/** SIM Universal Identifier (https://www.itu.int/en/ITU-T/inr/forms/Pages/iin.aspx) */
 	KV_KEY_LTE_SIM_UICC = 44,
@@ -527,10 +596,12 @@ enum kv_builtin_id {
 	KV_KEY_BLUETOOTH_PEER = 50,
 	/** LoRa modem configuration */
 	KV_KEY_LORA_CONFIG = 51,
-	/** Request connected Bluetooth peers to limit throughtput */
+	/** Request connected Bluetooth peers to limit throughput */
 	KV_KEY_BLUETOOTH_THROUGHPUT_LIMIT = 52,
 	/** Disable LEDs between two UTC times daily */
 	KV_KEY_LED_DISABLE_DAILY_TIME_RANGE = 53,
+	/** Disable Memfault reporting at runtime */
+	KV_KEY_MEMFAULT_DISABLE = 54,
 	/** Reference gravity vector for tilt calculations */
 	KV_KEY_GRAVITY_REFERENCE = 60,
 	/** Array of points defining a closed polygon */
@@ -541,6 +612,12 @@ enum kv_builtin_id {
 #endif
 	/** Maximum number of KV_KEY_GEOFENCE slots that can be enabled */
 	KV_KEY_GEOFENCE_MAX = 115,
+	/** Configuration for the 'Stationary Windowed' algorithm */
+	KV_KEY_ALG_STATIONARY_WINDOWED_ARGS = 200,
+	/** Configuration for the 'Tilt' algorithm */
+	KV_KEY_ALG_TILT_ARGS = 201,
+	/** Configuration for the 'Movement Threshold' algorithm */
+	KV_KEY_ALG_MOVEMENT_THRESHOLD_ARGS = 202,
 	/** Unique identifier for default schedule set */
 	KV_KEY_TASK_SCHEDULES_DEFAULT_ID = 1000,
 	/** Task runner task schedule definition (@ref task_schedule) */
@@ -593,7 +670,11 @@ enum kv_builtin_size {
 	_KV_KEY_LORA_CONFIG_SIZE = sizeof(struct kv_lora_config),
 	_KV_KEY_BLUETOOTH_THROUGHPUT_LIMIT_SIZE = sizeof(struct kv_bluetooth_throughput_limit),
 	_KV_KEY_LED_DISABLE_DAILY_TIME_RANGE_SIZE = sizeof(struct kv_led_disable_daily_time_range),
+	_KV_KEY_MEMFAULT_DISABLE_SIZE = sizeof(struct kv_memfault_disable),
 	_KV_KEY_GRAVITY_REFERENCE_SIZE = sizeof(struct kv_gravity_reference),
+	_KV_KEY_ALG_STATIONARY_WINDOWED_ARGS_SIZE = sizeof(struct kv_alg_stationary_windowed_args),
+	_KV_KEY_ALG_TILT_ARGS_SIZE = sizeof(struct kv_alg_tilt_args),
+	_KV_KEY_ALG_MOVEMENT_THRESHOLD_ARGS_SIZE = sizeof(struct kv_alg_movement_threshold_args),
 	_KV_KEY_TASK_SCHEDULES_DEFAULT_ID_SIZE = sizeof(struct kv_task_schedules_default_id),
 	_KV_KEY_EXT1_SIZE = sizeof(struct kv_ext1),
 	_KV_KEY_EXT2_SIZE = sizeof(struct kv_ext2),
@@ -629,8 +710,12 @@ enum kv_builtin_size {
 #define _KV_KEY_LORA_CONFIG_TYPE struct kv_lora_config
 #define _KV_KEY_BLUETOOTH_THROUGHPUT_LIMIT_TYPE struct kv_bluetooth_throughput_limit
 #define _KV_KEY_LED_DISABLE_DAILY_TIME_RANGE_TYPE struct kv_led_disable_daily_time_range
+#define _KV_KEY_MEMFAULT_DISABLE_TYPE struct kv_memfault_disable
 #define _KV_KEY_GRAVITY_REFERENCE_TYPE struct kv_gravity_reference
 #define _KV_KEY_GEOFENCE_TYPE struct kv_geofence
+#define _KV_KEY_ALG_STATIONARY_WINDOWED_ARGS_TYPE struct kv_alg_stationary_windowed_args
+#define _KV_KEY_ALG_TILT_ARGS_TYPE struct kv_alg_tilt_args
+#define _KV_KEY_ALG_MOVEMENT_THRESHOLD_ARGS_TYPE struct kv_alg_movement_threshold_args
 #define _KV_KEY_TASK_SCHEDULES_DEFAULT_ID_TYPE struct kv_task_schedules_default_id
 #define _KV_KEY_TASK_SCHEDULES_TYPE struct kv_task_schedules
 #define _KV_KEY_SECURE_STORAGE_RESERVED_TYPE struct kv_secure_storage_reserved
@@ -694,6 +779,12 @@ enum kv_builtin_size {
 		   (1 +)) \
 	IF_ENABLED(CONFIG_KV_STORE_KEY_GEOFENCE, \
 		   (CONFIG_KV_STORE_KEY_GEOFENCE_RANGE +)) \
+	IF_ENABLED(CONFIG_KV_STORE_KEY_ALG_STATIONARY_WINDOWED_ARGS, \
+		   (1 +)) \
+	IF_ENABLED(CONFIG_KV_STORE_KEY_ALG_TILT_ARGS, \
+		   (1 +)) \
+	IF_ENABLED(CONFIG_KV_STORE_KEY_ALG_MOVEMENT_THRESHOLD_ARGS, \
+		   (1 +)) \
 	IF_ENABLED(CONFIG_KV_STORE_KEY_TASK_SCHEDULES_DEFAULT_ID, \
 		   (1 +)) \
 	IF_ENABLED(CONFIG_KV_STORE_KEY_TASK_SCHEDULES, \
@@ -925,6 +1016,13 @@ static struct key_value_slot_definition _KV_SLOTS_ARRAY_DEFINE[] = {
 		.flags = KV_FLAGS_REFLECT,
 	},
 #endif /* CONFIG_KV_STORE_KEY_LED_DISABLE_DAILY_TIME_RANGE */
+#ifdef CONFIG_KV_STORE_KEY_MEMFAULT_DISABLE
+	{
+		.key = KV_KEY_MEMFAULT_DISABLE,
+		.range = 1,
+		.flags = 0,
+	},
+#endif /* CONFIG_KV_STORE_KEY_MEMFAULT_DISABLE */
 #ifdef CONFIG_KV_STORE_KEY_GRAVITY_REFERENCE
 	{
 		.key = KV_KEY_GRAVITY_REFERENCE,
@@ -939,6 +1037,27 @@ static struct key_value_slot_definition _KV_SLOTS_ARRAY_DEFINE[] = {
 		.flags = KV_FLAGS_REFLECT,
 	},
 #endif /* CONFIG_KV_STORE_KEY_GEOFENCE */
+#ifdef CONFIG_KV_STORE_KEY_ALG_STATIONARY_WINDOWED_ARGS
+	{
+		.key = KV_KEY_ALG_STATIONARY_WINDOWED_ARGS,
+		.range = 1,
+		.flags = KV_FLAGS_REFLECT,
+	},
+#endif /* CONFIG_KV_STORE_KEY_ALG_STATIONARY_WINDOWED_ARGS */
+#ifdef CONFIG_KV_STORE_KEY_ALG_TILT_ARGS
+	{
+		.key = KV_KEY_ALG_TILT_ARGS,
+		.range = 1,
+		.flags = KV_FLAGS_REFLECT,
+	},
+#endif /* CONFIG_KV_STORE_KEY_ALG_TILT_ARGS */
+#ifdef CONFIG_KV_STORE_KEY_ALG_MOVEMENT_THRESHOLD_ARGS
+	{
+		.key = KV_KEY_ALG_MOVEMENT_THRESHOLD_ARGS,
+		.range = 1,
+		.flags = KV_FLAGS_REFLECT,
+	},
+#endif /* CONFIG_KV_STORE_KEY_ALG_MOVEMENT_THRESHOLD_ARGS */
 #ifdef CONFIG_KV_STORE_KEY_TASK_SCHEDULES_DEFAULT_ID
 	{
 		.key = KV_KEY_TASK_SCHEDULES_DEFAULT_ID,
