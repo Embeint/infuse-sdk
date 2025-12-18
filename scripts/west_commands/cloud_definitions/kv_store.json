@@ -73,6 +73,14 @@
                 {"name": "moving_for", "type": "uint32_t", "description": "How long moving state is refreshed for when movement detected"},
                 {"name": "threshold_ug", "type": "uint32_t", "description": "Magnitude this far away from 1G triggers the moving state"}
             ]
+        },
+        "kv_algorithm_movement_threshold_args_v2": {
+            "description": "Arguments for 'Shot Triggered' algorithm",
+            "fields": [
+                {"name": "moving_for", "type": "uint32_t", "description": "How long moving state is refreshed for when movement detected"},
+                {"name": "initial_threshold_ug", "type": "uint32_t", "description": "Magnitude this far away from 1G triggers the moving state"},
+                {"name": "continue_threshold_ug", "type": "uint32_t", "description": "Magnitude this far away from 1G continues the moving state"}
+            ]
         }
     },
     "definitions": {
@@ -391,10 +399,20 @@
             "description": "Configuration for the 'Movement Threshold' algorithm",
             "depends_on": "ALGORITHM_RUNNER_ALG_MOVEMENT_THRESHOLD",
             "reflect": true,
-            "default": "y",
             "fields": [
                 {"name": "logging", "type": "struct kv_algorithm_logging", "description": "Algorithm logging"},
                 {"name": "args", "type": "struct kv_algorithm_movement_threshold_args", "description": "Algorithm arguments"}
+            ]
+        },
+        "203": {
+            "name": "ALG_MOVEMENT_THRESHOLD_ARGS_V2",
+            "description": "Configuration for the 'Movement Threshold' algorithm",
+            "depends_on": "ALGORITHM_RUNNER_ALG_MOVEMENT_THRESHOLD",
+            "reflect": true,
+            "default": "y",
+            "fields": [
+                {"name": "logging", "type": "struct kv_algorithm_logging", "description": "Algorithm logging"},
+                {"name": "args", "type": "struct kv_algorithm_movement_threshold_args_v2", "description": "Algorithm arguments"}
             ]
         },
         "1000": {

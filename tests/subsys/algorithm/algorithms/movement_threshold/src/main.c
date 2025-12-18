@@ -34,7 +34,7 @@ struct task_data data[1];
 struct task_schedule schedule[1] = {{.task_id = TASK_ID_IMU}};
 struct task_schedule_state state[1];
 
-ALGORITHM_MOVEMENT_THRESHOLD_DEFINE(test_alg, 3, 40000);
+ALGORITHM_MOVEMENT_THRESHOLD_DEFINE(test_alg, 3, 40000, 40000);
 
 static k_tid_t task_schedule(uint8_t index)
 {
@@ -149,17 +149,18 @@ ZTEST(alg_movement_threshold, test_impl)
 	}
 
 	/* Overwrite configuration with a threshold > 1G */
-	struct kv_alg_movement_threshold_args kv_config = {
+	struct kv_alg_movement_threshold_args_v2 kv_config = {
 		.args =
 			{
 
 				.moving_for = 4,
-				.threshold_ug = 1500000,
+				.initial_threshold_ug = 1500000,
+				.continue_threshold_ug = 1500000,
 			},
 	};
 
 	zassert_equal(sizeof(kv_config),
-		      KV_STORE_WRITE(KV_KEY_ALG_MOVEMENT_THRESHOLD_ARGS, &kv_config));
+		      KV_STORE_WRITE(KV_KEY_ALG_MOVEMENT_THRESHOLD_ARGS_V2, &kv_config));
 	k_sleep(K_SECONDS(2));
 
 	/* Same noise as before no longer moving */

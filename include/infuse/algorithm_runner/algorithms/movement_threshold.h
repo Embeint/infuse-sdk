@@ -34,8 +34,10 @@ extern "C" {
  */
 
 struct algorithm_movement_threshold_data {
-	uint32_t threshold_low;
-	uint32_t threshold_high;
+	uint32_t initial_threshold_low;
+	uint32_t initial_threshold_high;
+	uint32_t continue_threshold_low;
+	uint32_t continue_threshold_high;
 	uint8_t full_scale_range;
 };
 
@@ -49,22 +51,25 @@ void algorithm_movement_threshold_fn(const struct zbus_channel *chan,
  *
  * @param name Variable name base
  * @param moving_for_ How long the moving state is set for
- * @param threshold_ug Magnitude this far away from 1G triggers the moving state
+ * @param initial_threshold_ug Magnitude this far away from 1G triggers the moving state
+ * @param continue_threshold_ug_ Magnitude this far away from 1G continues the moving state
  */
-#define ALGORITHM_MOVEMENT_THRESHOLD_DEFINE(name, moving_for_, threshold_ug_)                      \
+#define ALGORITHM_MOVEMENT_THRESHOLD_DEFINE(name, moving_for_, initial_threshold_ug_,              \
+					    continue_threshold_ug_)                                \
 	static const struct algorithm_runner_common_config name##_config = {                       \
 		.algorithm_id = 0x15F20002,                                                        \
 		.zbus_channel = INFUSE_ZBUS_CHAN_IMU_ACC_MAG,                                      \
-		.arguments_size = sizeof(struct kv_alg_movement_threshold_args),                   \
+		.arguments_size = sizeof(struct kv_alg_movement_threshold_args_v2),                \
 		.state_size = sizeof(struct algorithm_movement_threshold_data),                    \
-		.arguments_kv_key = KV_KEY_ALG_MOVEMENT_THRESHOLD_ARGS,                            \
+		.arguments_kv_key = KV_KEY_ALG_MOVEMENT_THRESHOLD_ARGS_V2,                         \
 	};                                                                                         \
-	static struct kv_alg_movement_threshold_args name##_default_args = {                       \
+	static struct kv_alg_movement_threshold_args_v2 name##_default_args = {                    \
 		.logging = {0},                                                                    \
 		.args =                                                                            \
 			{                                                                          \
 				.moving_for = moving_for_,                                         \
-				.threshold_ug = threshold_ug_,                                     \
+				.initial_threshold_ug = initial_threshold_ug_,                     \
+				.continue_threshold_ug = continue_threshold_ug_,                   \
 			},                                                                         \
 	};                                                                                         \
 	static struct algorithm_movement_threshold_data name##_data;                               \
