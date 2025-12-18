@@ -185,6 +185,38 @@ ZTEST(alg_movement_threshold, test_impl)
 	zassert_false(infuse_state_get(INFUSE_STATE_DEVICE_MOVING));
 	zassert_equal(4, moving_count);
 
+	/* Overwrite configuration with differing initial and continue thresholds (0.4G vs 0.9G) */
+	struct kv_alg_movement_threshold_args_v2 kv_config2 = {
+		.args =
+			{
+
+				.moving_for = 4,
+				.initial_threshold_ug = 400000,
+				.continue_threshold_ug = 900000,
+			},
+	};
+	zassert_equal(sizeof(kv_config2),
+		      KV_STORE_WRITE(KV_KEY_ALG_MOVEMENT_THRESHOLD_ARGS_V2, &kv_config2));
+	k_sleep(K_SECONDS(2));
+
+	imu_emul_accelerometer_data_configure(DEV, 0.0f, 0.0f, 1.0f, 5000);
+
+	for (int i = 0; i < 10; i++) {
+		infuse_states_snapshot(states);
+		infuse_states_tick(states);
+		k_sleep(K_SECONDS(1));
+	}
+	infuse_states_snapshot(states);
+	infuse_states_tick(states);
+
+	/* Despite accelerometer variance not changing, should hae transitioned between moving and
+	 * not moving due to the different thresholds. This is easier than testing the reverse
+	 * condition (lower continue threshold).
+	 */
+	zassert_equal(7, moving_count);
+
+	imu_emul_accelerometer_data_configure(DEV, 0.0f, 0.0f, 1.0f, 1);
+
 	/* Terminate the IMU producer */
 	task_terminate(0);
 	zassert_equal(0, k_thread_join(imu_thread, K_SECONDS(2)));
