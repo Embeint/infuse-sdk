@@ -1,0 +1,9 @@
+# SPDX-License-Identifier: Apache-2.0
+
+config INFUSE_COMMON_BOOT_PER_DEVICE_NAME
+	default y
+
+config BT_DEVICE_NAME
+	default "NAME"
+
+source "Kconfig.zephyr"
