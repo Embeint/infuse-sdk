@@ -25,8 +25,11 @@ static __noinit int resetting_with_bad_id;
 
 ZTEST(common_boot, test_boot)
 {
+	KV_STRING_CONST(default_name, "NAME FFFD");
+	KV_STRING_CONST(new_name, "NEW NAME");
 	KV_STRING_CONST(sim_uicc, "89000000000012345");
 	KV_STRUCT_KV_STRING_VAR(65) board_target;
+	KV_STRUCT_KV_STRING_VAR(65) device_name;
 	KV_KEY_TYPE(KV_KEY_LTE_SIM_IMSI) sim_imsi;
 	KV_KEY_TYPE(KV_KEY_INFUSE_APPLICATION_ID) id;
 	KV_KEY_TYPE(KV_KEY_REBOOTS) reboots;
@@ -36,8 +39,8 @@ ZTEST(common_boot, test_boot)
 	struct infuse_reboot_state reboot_state;
 	ssize_t rc;
 
-	/* KV store should have been initialised and populated with a reboot count, app ID and
-	 * BOARD_TARGET
+	/* KV store should have been initialised and populated with a reboot count, app ID,
+	 * BOARD_TARGET and DEVICE_NAME
 	 */
 	rc = KV_STORE_READ(KV_KEY_REBOOTS, &reboots);
 	zassert_equal(sizeof(reboots), rc);
@@ -48,6 +51,18 @@ ZTEST(common_boot, test_boot)
 	zassert_true(rc > 0);
 	zassert_equal(strlen(CONFIG_BOARD_TARGET) + 1, board_target.value_num);
 	zassert_equal(0, strcmp(CONFIG_BOARD_TARGET, board_target.value));
+	rc = KV_STORE_READ(KV_KEY_DEVICE_NAME, &device_name);
+	if (reboots.count == 1) {
+		/* Default name was constructed */
+		zassert_equal(sizeof(default_name), rc);
+		zassert_mem_equal(&default_name, &device_name, sizeof(default_name));
+		/* Overwrite name for next boots */
+		rc = kv_store_write(KV_KEY_DEVICE_NAME, &new_name, sizeof(new_name));
+	} else {
+		/* Default name should not have overwritten the explicit name */
+		zassert_equal(sizeof(new_name), rc);
+		zassert_mem_equal(&new_name, &device_name, sizeof(new_name));
+	}
 
 	if (resetting_with_bad_id == KV_FINAL_RESET_KEY) {
 		/* KV store should have been reset */
