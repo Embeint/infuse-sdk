@@ -36,7 +36,7 @@ void soc_temperature_task_fn(struct k_work *work);
  * @param soc_temp_dev SoC temperature sensing device
  */
 #define SOC_TEMPERATURE_TASK(define_mem, define_config, soc_temp_dev)                              \
-	IF_ENABLED(define_config, ({.name = "env",                                                 \
+	IF_ENABLED(define_config, ({.name = "soc_temp",                                            \
 				    .task_id = TASK_ID_SOC_TEMPERATURE,                            \
 				    .exec_type = TASK_EXECUTOR_WORKQUEUE,                          \
 				    .flags = TASK_FLAG_ARG_IS_DEVICE,                              \
