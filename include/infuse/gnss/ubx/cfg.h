@@ -380,11 +380,11 @@ enum ubx_cfg_key_pm {
 
 enum ubx_cfg_key_pm_operatemode {
 	/** Normal operation, no power save mode active */
-	UBX_CFG_KEY_PM_OPERATEMODE_FULL = 0,
+	UBX_CFG_PM_OPERATEMODE_FULL = 0,
 	/** PSM ON/OFF operation */
-	UBX_CFG_KEY_PM_OPERATEMODE_PSMOO = 1,
+	UBX_CFG_PM_OPERATEMODE_PSMOO = 1,
 	/** PSM cyclic tracking operation */
-	UBX_CFG_KEY_PM_OPERATEMODE_PSMCT = 2,
+	UBX_CFG_PM_OPERATEMODE_PSMCT = 2,
 };
 
 /**
