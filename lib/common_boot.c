@@ -132,7 +132,7 @@ static int secure_fault_info_read(void)
 	/* We can't extract the thread name, but we can output the frame pointer as a string.
 	 * This should point back to the stack of the offending thread.
 	 */
-	snprintf(frame_ptr_str, sizeof(frame_ptr_str), "%08lx", (uintptr_t)secure_fault.EXC_FRAME);
+	snprintk(frame_ptr_str, sizeof(frame_ptr_str), "%08lx", (uintptr_t)secure_fault.EXC_FRAME);
 	memcpy(reboot_state.thread_name, frame_ptr_str, sizeof(reboot_state.thread_name));
 
 	return 0;
@@ -224,6 +224,20 @@ static int infuse_common_boot(void)
 
 	(void)KV_STORE_WRITE(KV_KEY_BOARD_TARGET, &board_target);
 #endif /* CONFIG_KV_STORE_KEY_BOARD_TARGET */
+
+#ifdef CONFIG_INFUSE_COMMON_BOOT_PER_DEVICE_NAME
+
+	if (!kv_store_key_exists(KV_KEY_DEVICE_NAME)) {
+		/* Construct default device name from Infuse ID */
+		KV_STRING_CONST(name, CONFIG_BT_DEVICE_NAME " 0000");
+		uint16_t id_trailing = device_id & 0xFFFF;
+
+		snprintk(name.value, sizeof(name.value), CONFIG_BT_DEVICE_NAME " %04X",
+			 id_trailing);
+		(void)kv_store_write(KV_KEY_DEVICE_NAME, &name, sizeof(name));
+	}
+#endif /* CONFIG_INFUSE_COMMON_BOOT_PER_DEVICE_NAME */
+
 #endif /* CONFIG_KV_STORE_KEY_INFUSE_APPLICATION_ID */
 
 	KV_KEY_TYPE(KV_KEY_REBOOTS) reboot_fallback = {0};
