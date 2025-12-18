@@ -372,7 +372,7 @@ static bool gnss_configure(const struct device *gnss, const struct task_gnss_arg
 		UBX_CFG_VALUE_APPEND(&cfg_buf, UBX_CFG_KEY_NAVSPG_OUTFIL_PACC, 100);
 		UBX_CFG_VALUE_APPEND(&cfg_buf, UBX_CFG_KEY_NAVSPG_OUTFIL_PDOP, 250);
 		UBX_CFG_VALUE_APPEND(&cfg_buf, UBX_CFG_KEY_PM_OPERATEMODE,
-				     UBX_CFG_KEY_PM_OPERATEMODE_FULL);
+				     UBX_CFG_PM_OPERATEMODE_FULL);
 	} else {
 		/* Cyclic Tracking, entering POT ASAP, no acquisition timeout */
 		UBX_CFG_VALUE_APPEND(&cfg_buf, UBX_CFG_KEY_NAVSPG_OUTFIL_PACC, args->accuracy_m);
@@ -400,7 +400,7 @@ static bool gnss_configure(const struct device *gnss, const struct task_gnss_arg
 		}
 
 		UBX_CFG_VALUE_APPEND(&cfg_buf, UBX_CFG_KEY_PM_OPERATEMODE,
-				     UBX_CFG_KEY_PM_OPERATEMODE_PSMCT);
+				     UBX_CFG_PM_OPERATEMODE_PSMCT);
 	}
 	/* Align timepulse to GPS time */
 	UBX_CFG_VALUE_APPEND(&cfg_buf, UBX_CFG_KEY_TP_TIMEGRID_TP1, UBX_CFG_TP_TIMEGRID_TP1_GPS);
