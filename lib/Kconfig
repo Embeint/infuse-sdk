@@ -80,6 +80,15 @@ config INFUSE_BOARD_HAS_PUBLIC_BT_ADDRESS
 	  Use a board provided public Bluetooth MAC address instead of the random static
 	  address. The board must implement `infuse_board_public_bt_addr`.
 
+config INFUSE_COMMON_BOOT_PER_DEVICE_NAME
+	bool "If not otherwise set, configure DEVICE_NAME to be unique at boot"
+	depends on KV_STORE_KEY_DEVICE_NAME
+	depends on BT_HCI_HOST
+	default y
+	help
+	  If not otherwise set, write the DEVICE_NAME key to be the concatanation of
+	  BT_DEVICE_NAME and the last 4 characters of the Infuse device ID.
+
 module = INFUSE_COMMON
 module-str = infuse
 source "subsys/logging/Kconfig.template.log_config"
