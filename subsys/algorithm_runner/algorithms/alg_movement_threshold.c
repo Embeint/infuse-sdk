@@ -21,7 +21,7 @@ void algorithm_movement_threshold_fn(const struct zbus_channel *chan,
 				     const struct algorithm_runner_common_config *common,
 				     const void *args, void *data)
 {
-	const struct kv_alg_movement_threshold_args *a = args;
+	const struct kv_alg_movement_threshold_args_v2 *a = args;
 	struct algorithm_movement_threshold_data *d = data;
 	const struct imu_magnitude_array *magnitudes;
 	bool moving = false;
@@ -37,21 +37,40 @@ void algorithm_movement_threshold_fn(const struct zbus_channel *chan,
 	if (magnitudes->meta.full_scale_range != d->full_scale_range) {
 		/* Recompute the thresholds in raw units */
 		int32_t one_g_raw = imu_accelerometer_1g(magnitudes->meta.full_scale_range);
-		int32_t threshold_raw = (one_g_raw * (uint64_t)a->args.threshold_ug) / 1000000;
+		int32_t initial_threshold_raw =
+			(one_g_raw * (uint64_t)a->args.initial_threshold_ug) / 1000000;
+		int32_t continue_threshold_raw =
+			(one_g_raw * (uint64_t)a->args.continue_threshold_ug) / 1000000;
 
-		/* Ensure low threshold never wraps */
-		d->threshold_low = (threshold_raw < one_g_raw) ? one_g_raw - threshold_raw : 0;
-		d->threshold_high = one_g_raw + threshold_raw;
+		/* Ensure thresholds never wraps */
+		d->initial_threshold_low =
+			(initial_threshold_raw < one_g_raw) ? one_g_raw - initial_threshold_raw : 0;
+		d->initial_threshold_high = one_g_raw + initial_threshold_raw;
+		d->continue_threshold_low = (continue_threshold_raw < one_g_raw)
+						    ? one_g_raw - continue_threshold_raw
+						    : 0;
+		d->continue_threshold_high = one_g_raw + continue_threshold_raw;
 		d->full_scale_range = magnitudes->meta.full_scale_range;
 
-		LOG_INF("Threshold: %u uG, stationary range = [%u - %u]", a->args.threshold_ug,
-			d->threshold_low, d->threshold_high);
+		LOG_INF("Initial threshold %u range = [%u - %u]", a->args.initial_threshold_ug,
+			d->initial_threshold_low, d->initial_threshold_high);
+		LOG_INF("Continue threshold %u range = [%u - %u]", a->args.continue_threshold_ug,
+			d->continue_threshold_low, d->continue_threshold_high);
 	}
+
+	bool already_moving = infuse_state_get(INFUSE_STATE_DEVICE_MOVING);
+	const uint32_t threshold_low =
+		already_moving ? d->continue_threshold_low : d->initial_threshold_low;
+	const uint32_t threshold_high =
+		already_moving ? d->continue_threshold_high : d->initial_threshold_high;
+
+	LOG_DBG("%s, thresholds [%u - %u]", already_moving ? "Moving" : "Stationary", threshold_low,
+		threshold_high);
 
 	/* Does any magnitude exceed the threshold? */
 	for (uint16_t i = 0; i < magnitudes->meta.num; i++) {
-		if ((magnitudes->magnitudes[i] < d->threshold_low) ||
-		    (magnitudes->magnitudes[i] > d->threshold_high)) {
+		if ((magnitudes->magnitudes[i] < threshold_low) ||
+		    (magnitudes->magnitudes[i] > threshold_high)) {
 			moving = true;
 			break;
 		}
