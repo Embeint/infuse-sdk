@@ -24,7 +24,7 @@ configdefault GNSS
 configdefault LORA
 	default y if $(dt_alias_enabled,lora0)
 configdefault FUEL_GAUGE
-	default y if "$(dt_alias_enabled,fuel-gauge0)"
+	default y if $(dt_alias_enabled,fuel-gauge0)
 configdefault INFUSE_VALIDATION_LEDS_GPIO
 	default y if $(dt_alias_enabled,led0)
 configdefault INFUSE_VALIDATION_LEDS_CONTROLLER
