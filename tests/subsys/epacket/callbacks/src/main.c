@@ -15,16 +15,16 @@
 #include <infuse/epacket/interface/epacket_dummy.h>
 
 static struct epacket_interface_cb interface_cb;
-static struct k_poll_signal tx_fail_signal;
+static struct k_poll_signal tx_result_signal;
 static struct k_poll_signal tx_done_signal;
 static struct k_poll_signal rx_recv_signal;
 
-static void tx_failed_cb(const struct net_buf *buf, int reason, void *user_ctx)
+static void tx_result_cb(const struct net_buf *buf, int result, void *user_ctx)
 {
 	zassert_not_null(buf);
 	zassert_equal(user_ctx, &interface_cb);
 
-	k_poll_signal_raise(&tx_fail_signal, reason);
+	k_poll_signal_raise(&tx_result_signal, result);
 }
 
 static bool packet_received_cb(struct net_buf *buf, bool decrypted, void *user_ctx)
@@ -61,7 +61,7 @@ ZTEST(epacket_callbacks, test_interface_tx_failure)
 	zassert_not_null(sent_queue);
 	zassert_is_null(k_fifo_get(sent_queue, K_NO_WAIT));
 
-	interface_cb.tx_failure = tx_failed_cb;
+	interface_cb.tx_result = tx_result_cb;
 	interface_cb.packet_received = packet_received_cb;
 	interface_cb.user_ctx = &interface_cb;
 
@@ -83,9 +83,10 @@ ZTEST(epacket_callbacks, test_interface_tx_failure)
 	sent = k_fifo_get(sent_queue, K_MSEC(1));
 	zassert_not_null(sent);
 	net_buf_unref(sent);
-	/* No interface failure callback */
-	k_poll_signal_check(&tx_fail_signal, &signaled, &result);
-	zassert_equal(0, signaled);
+	/* Interface TX result callback */
+	k_poll_signal_check(&tx_result_signal, &signaled, &result);
+	zassert_equal(1, signaled);
+	zassert_equal(0, result);
 	/* TX done callback */
 	k_poll_signal_check(&tx_done_signal, &signaled, &result);
 	zassert_equal(1, signaled);
@@ -109,10 +110,10 @@ ZTEST(epacket_callbacks, test_interface_tx_failure)
 	/* Validate it wasn't sent properly, callback received */
 	zassert_is_null(k_fifo_get(sent_queue, K_MSEC(1)));
 	/* Interface failure callback */
-	k_poll_signal_check(&tx_fail_signal, &signaled, &result);
+	k_poll_signal_check(&tx_result_signal, &signaled, &result);
 	zassert_equal(1, signaled);
 	zassert_equal(-ENOTCONN, result);
-	k_poll_signal_reset(&tx_fail_signal);
+	k_poll_signal_reset(&tx_result_signal);
 	/* TX done callback */
 	k_poll_signal_check(&tx_done_signal, &signaled, &result);
 	zassert_equal(1, signaled);
@@ -177,7 +178,7 @@ ZTEST(epacket_callbacks, test_interface_rx_stop_default)
 	zassert_not_null(sent_queue);
 	zassert_is_null(k_fifo_get(sent_queue, K_NO_WAIT));
 
-	interface_cb.tx_failure = NULL;
+	interface_cb.tx_result = NULL;
 	interface_cb.packet_received = packet_received_block_cb;
 	interface_cb.user_ctx = &interface_cb;
 
@@ -205,7 +206,7 @@ ZTEST(epacket_callbacks, test_interface_rx_stop_default)
 void *callback_setup(void)
 {
 	k_poll_signal_init(&tx_done_signal);
-	k_poll_signal_init(&tx_fail_signal);
+	k_poll_signal_init(&tx_result_signal);
 	k_poll_signal_init(&rx_recv_signal);
 	return NULL;
 }

@@ -123,7 +123,7 @@ void rpc_client_init(struct rpc_client_ctx *ctx, const struct device *dev,
 	ctx->interface = dev;
 	ctx->address = address;
 	ctx->interface_cb.interface_state = NULL;
-	ctx->interface_cb.tx_failure = NULL;
+	ctx->interface_cb.tx_result = NULL;
 	ctx->interface_cb.packet_received = packet_received;
 	ctx->interface_cb.user_ctx = ctx;
 	ctx->request_id = sys_rand32_get();
