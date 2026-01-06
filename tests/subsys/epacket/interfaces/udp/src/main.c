@@ -37,8 +37,8 @@ static int tx_done_result;
 
 K_SEM_DEFINE(if_state_change, 0, 1);
 static int if_max_payload;
-K_SEM_DEFINE(if_tx_failure, 0, 1);
-static int if_tx_failure_reason;
+K_SEM_DEFINE(if_tx_result, 0, 1);
+static int if_tx_result_reason;
 K_SEM_DEFINE(downlink_watchdog_expired, 0, 1);
 static enum infuse_reboot_reason reboot_reason;
 
@@ -59,10 +59,10 @@ void udp_interface_state(uint16_t current_max_payload, void *user_ctx)
 	k_sem_give(&if_state_change);
 }
 
-void udp_tx_failure(const struct net_buf *buf, int reason, void *user_ctx)
+void udp_tx_result(const struct net_buf *buf, int result, void *user_ctx)
 {
-	if_tx_failure_reason = reason;
-	k_sem_give(&if_tx_failure);
+	if_tx_result_reason = result;
+	k_sem_give(&if_tx_result);
 }
 
 static void epacket_tx_done(const struct device *dev, struct net_buf *pkt, int result,
@@ -116,8 +116,8 @@ ZTEST(epacket_udp, test_udp_send_before_conn)
 		tdf_send(0, epacket_tx_done);
 		zassert_equal(0, k_sem_take(&tx_done_sem, K_MSEC(100)));
 		zassert_equal(-ENOTCONN, tx_done_result);
-		zassert_equal(0, k_sem_take(&if_tx_failure, K_MSEC(100)));
-		zassert_equal(-ENOTCONN, if_tx_failure_reason);
+		zassert_equal(0, k_sem_take(&if_tx_result, K_MSEC(100)));
+		zassert_equal(-ENOTCONN, if_tx_result_reason);
 	}
 
 	/* Watchdog should not have expired since application never requested connectivity */
@@ -174,7 +174,8 @@ ZTEST(epacket_udp, test_udp_ack)
 	for (int i = 0; i < 3; i++) {
 		/* Send a packet requesting an ACK */
 		tdf_send(EPACKET_FLAGS_ACK_REQUEST, NULL);
-		zassert_equal(-EAGAIN, k_sem_take(&if_tx_failure, K_MSEC(10)));
+		zassert_equal(0, k_sem_take(&if_tx_result, K_MSEC(10)));
+		zassert_equal(0, if_tx_result_reason);
 
 		/* Expect an ACK response */
 		rx = k_fifo_get(&udp_rx_fifo, K_MSEC(1000));
@@ -309,7 +310,7 @@ ZTEST(epacket_udp, test_udp_bad_dns)
 
 static struct epacket_interface_cb udp_if_cb = {
 	.interface_state = udp_interface_state,
-	.tx_failure = udp_tx_failure,
+	.tx_result = udp_tx_result,
 };
 
 static void test_init(void *state)
@@ -324,7 +325,7 @@ static void test_init(void *state)
 
 	k_sem_take(&tx_done_sem, K_NO_WAIT);
 	k_sem_take(&if_state_change, K_NO_WAIT);
-	k_sem_take(&if_tx_failure, K_NO_WAIT);
+	k_sem_take(&if_tx_result, K_NO_WAIT);
 	k_sem_take(&downlink_watchdog_expired, K_NO_WAIT);
 
 	epacket_set_receive_handler(IF_UDP, rx_fifo_pusher);

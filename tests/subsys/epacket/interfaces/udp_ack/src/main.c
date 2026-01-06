@@ -37,8 +37,8 @@ static int tx_done_result;
 
 K_SEM_DEFINE(if_state_change, 0, 1);
 static int if_max_payload;
-K_SEM_DEFINE(if_tx_failure, 0, 1);
-static int if_tx_failure_reason;
+K_SEM_DEFINE(if_tx_result, 0, 1);
+static int if_tx_result_reason;
 static int tdf_buffers_recovered;
 K_SEM_DEFINE(downlink_watchdog_expired, 0, 1);
 static enum infuse_reboot_reason reboot_reason;
@@ -60,14 +60,14 @@ void udp_interface_state(uint16_t current_max_payload, void *user_ctx)
 	k_sem_give(&if_state_change);
 }
 
-void udp_tx_failure(const struct net_buf *buf, int reason, void *user_ctx)
+void udp_tx_result(const struct net_buf *buf, int reason, void *user_ctx)
 {
 	struct epacket_tx_metadata *tx_meta = net_buf_user_data(buf);
 	struct tdf_buffer_state state;
 	struct tdf_parsed parsed;
 
 	/* Sends with socket closed don't have a payload */
-	if (buf->len > 0) {
+	if ((reason < 0) && (buf->len > 0)) {
 		zassert_equal(INFUSE_TDF, tx_meta->type);
 
 		/* We expect all failures to give us back a decrypted packet we can parse.
@@ -83,8 +83,8 @@ void udp_tx_failure(const struct net_buf *buf, int reason, void *user_ctx)
 		tdf_buffers_recovered += 1;
 	}
 
-	if_tx_failure_reason = reason;
-	k_sem_give(&if_tx_failure);
+	if_tx_result_reason = reason;
+	k_sem_give(&if_tx_result);
 }
 
 static void epacket_tx_done(const struct device *dev, struct net_buf *pkt, int result,
@@ -216,7 +216,7 @@ ZTEST(epacket_udp_ack, test_udp_ack_timeout)
 
 static struct epacket_interface_cb udp_if_cb = {
 	.interface_state = udp_interface_state,
-	.tx_failure = udp_tx_failure,
+	.tx_result = udp_tx_result,
 };
 
 static void test_init(void *state)
@@ -230,7 +230,7 @@ static void test_init(void *state)
 
 	k_sem_reset(&tx_done_sem);
 	k_sem_reset(&if_state_change);
-	k_sem_reset(&if_tx_failure);
+	k_sem_reset(&if_tx_result);
 	k_sem_reset(&downlink_watchdog_expired);
 
 	epacket_set_receive_handler(IF_UDP, rx_fifo_pusher);

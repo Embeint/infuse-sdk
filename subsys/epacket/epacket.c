@@ -277,12 +277,10 @@ void epacket_notify_tx_result(const struct device *dev, struct net_buf *buf, int
 		meta->tx_done(dev, buf, result, meta->tx_done_user_data);
 	}
 
-	/* Interface error notification */
-	if (result < 0) {
-		SYS_SLIST_FOR_EACH_CONTAINER(&data->callback_list, cb, node) {
-			if (cb->tx_failure) {
-				cb->tx_failure(buf, result, cb->user_ctx);
-			}
+	/* Interface send notification */
+	SYS_SLIST_FOR_EACH_CONTAINER(&data->callback_list, cb, node) {
+		if (cb->tx_result) {
+			cb->tx_result(buf, result, cb->user_ctx);
 		}
 	}
 }

@@ -73,13 +73,13 @@ struct epacket_interface_cb {
 	void (*interface_state)(uint16_t current_max_payload, void *user_ctx);
 
 	/**
-	 * @brief A packet failed to transmit on the interface
+	 * @brief The interface attempted to transmit a packet
 	 *
-	 * @param buf The packet that failed to transmit
-	 * @param reason The error code from the interface
+	 * @param buf The packet that was queued for transmission
+	 * @param result The result of the transmission (0 == success, negative on error)
 	 * @param user_ctx User context pointer
 	 */
-	void (*tx_failure)(const struct net_buf *buf, int reason, void *user_ctx);
+	void (*tx_result)(const struct net_buf *buf, int result, void *user_ctx);
 
 	/**
 	 * @brief A packet was received on the interface
