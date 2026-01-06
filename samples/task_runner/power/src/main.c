@@ -9,6 +9,7 @@
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
 #include <zephyr/net/conn_mgr_connectivity.h>
+#include <zephyr/drivers/charger.h>
 
 #include <infuse/drivers/watchdog.h>
 #include <infuse/time/epoch.h>
@@ -55,6 +56,44 @@ TASK_SCHEDULE_STATES_DEFINE(states, schedules);
 TASK_RUNNER_TASKS_DEFINE(app_tasks, app_tasks_data, (TDF_LOGGER_TASK, NULL),
 			 (BATTERY_TASK, DEVICE_DT_GET(DT_ALIAS(fuel_gauge0))));
 
+#if DT_NODE_EXISTS(DT_ALIAS(charger0))
+
+static const char *const status_names[] = {
+	[CHARGER_STATUS_UNKNOWN] = "Unknown",
+	[CHARGER_STATUS_CHARGING] = "Charging",
+	[CHARGER_STATUS_DISCHARGING] = "Discharging",
+	[CHARGER_STATUS_NOT_CHARGING] = "Not charging",
+	[CHARGER_STATUS_FULL] = "Full",
+};
+static const char *const online_names[] = {
+	[CHARGER_ONLINE_OFFLINE] = "Not present",
+	[CHARGER_ONLINE_FIXED] = "Present (fixed)",
+	[CHARGER_ONLINE_PROGRAMMABLE] = "Present (programmable)",
+};
+
+static void charger_prop_status(enum charger_status status)
+{
+	LOG_INF("Charging status: %s", status_names[status]);
+}
+
+static void charger_prop_online(enum charger_online online)
+{
+	LOG_INF("Charger input: %s", online_names[online]);
+}
+
+static void charger_callback_setup(void)
+{
+	const struct device *charger = DEVICE_DT_GET(DT_ALIAS(charger0));
+	union charger_propval propval;
+
+	propval.status_notification = charger_prop_status;
+	charger_set_prop(charger, CHARGER_PROP_STATUS_NOTIFICATION, &propval);
+	propval.online_notification = charger_prop_online;
+	charger_set_prop(charger, CHARGER_PROP_ONLINE_NOTIFICATION, &propval);
+}
+
+#endif /* DT_NODE_EXISTS(DT_ALIAS(charger0)) */
+
 int main(void)
 {
 	/* Start the watchdog */
@@ -64,6 +103,10 @@ int main(void)
 	conn_mgr_all_if_up(true);
 	conn_mgr_all_if_connect(true);
 #endif /* CONFIG_NETWORKING */
+
+#if DT_NODE_EXISTS(DT_ALIAS(charger0))
+	charger_callback_setup();
+#endif /* DT_NODE_EXISTS(DT_ALIAS(charger0)) */
 
 	/* Initialise task runner */
 	task_runner_init(schedules, states, ARRAY_SIZE(schedules), app_tasks, app_tasks_data,
