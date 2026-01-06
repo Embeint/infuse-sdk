@@ -152,9 +152,9 @@ GATEWAY_HANDLER_DEFINE(udp_backhaul_handler, DEVICE_DT_GET(DT_NODELABEL(epacket_
 static const struct gpio_dt_spec led0 = GPIO_DT_SPEC_GET(DT_ALIAS(led0), gpios);
 #endif
 
-/* Forward 25% of all Bluetooth packets by default */
+/* Forward 25% of all Bluetooth packets by default, RSSI if whole packet dropped */
 static const struct kv_gateway_bluetooth_forward_options bt_forwarding_options_default = {
-	.flags = 0,
+	.flags = FILTER_FORWARD_RSSI_FALLBACK,
 	.percent = 256 / 4,
 };
 static struct kv_gateway_bluetooth_forward_options bt_forwarding_options;
@@ -221,9 +221,8 @@ static void kv_value_changed(uint16_t key, const void *data, size_t data_len, vo
 	}
 
 	if ((data == NULL) || (data_len != sizeof(bt_forwarding_options))) {
-		/* Forward everything (until gateway reboots and resets default) */
-		bt_forwarding_options.flags = 0;
-		bt_forwarding_options.percent = 255;
+		/* Revert to the defaults */
+		bt_forwarding_options = bt_forwarding_options_default;
 	} else {
 		/* Use configured values */
 		bt_forwarding_options.flags = options->flags;
@@ -241,6 +240,18 @@ static void bluetooth_adv_handler(struct net_buf *buf)
 		/* Forward packets that pass the filter */
 		epacket_gateway_receive_handler(udp, buf);
 	} else {
+		if (bt_forwarding_options.flags & FILTER_FORWARD_RSSI_FALLBACK) {
+			struct epacket_rx_metadata *meta = net_buf_user_data(buf);
+			struct tdf_infuse_bluetooth_rssi tdf_rssi = {
+				.infuse_id = meta->packet_device_id,
+				.rssi = meta->rssi,
+			};
+
+			/* Log the RSSI */
+			TDF_DATA_LOGGER_LOG(TDF_DATA_LOGGER_UDP, TDF_INFUSE_BLUETOOTH_RSSI,
+					    epoch_time_now(), &tdf_rssi);
+		}
+
 		/* Drop packets that don't */
 		net_buf_unref(buf);
 	}

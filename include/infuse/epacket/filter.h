@@ -34,6 +34,8 @@ enum epacket_filter_flags {
 	 * Implies ONLY_DECRYPTED and ONLY_TDF)
 	 */
 	FILTER_FORWARD_ONLY_TDF_ANNOUNCE = BIT(2),
+	/** If filtering fails, application should forward the RSSI */
+	FILTER_FORWARD_RSSI_FALLBACK = BIT(3),
 };
 
 /**
