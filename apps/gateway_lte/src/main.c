@@ -152,6 +152,13 @@ GATEWAY_HANDLER_DEFINE(udp_backhaul_handler, DEVICE_DT_GET(DT_NODELABEL(epacket_
 static const struct gpio_dt_spec led0 = GPIO_DT_SPEC_GET(DT_ALIAS(led0), gpios);
 #endif
 
+/* Forward 25% of all Bluetooth packets by default */
+static const struct kv_gateway_bluetooth_forward_options bt_forwarding_options_default = {
+	.flags = 0,
+	.percent = 256 / 4,
+};
+static struct kv_gateway_bluetooth_forward_options bt_forwarding_options;
+
 static void custom_tdf_logger(uint8_t tdf_loggers, uint64_t timestamp)
 {
 	ARG_UNUSED(timestamp);
@@ -205,12 +212,32 @@ static void state_cleared(enum infuse_state state, void *user_ctx)
 	LOG_INF("Resuming scanning (%d)", rc);
 }
 
+static void kv_value_changed(uint16_t key, const void *data, size_t data_len, void *user_ctx)
+{
+	const struct kv_gateway_bluetooth_forward_options *options = data;
+
+	if (key != KV_KEY_GATEWAY_BLUETOOTH_FORWARD_OPTIONS) {
+		return;
+	}
+
+	if ((data == NULL) || (data_len != sizeof(bt_forwarding_options))) {
+		/* Forward everything (until gateway reboots and resets default) */
+		bt_forwarding_options.flags = 0;
+		bt_forwarding_options.percent = 255;
+	} else {
+		/* Use configured values */
+		bt_forwarding_options.flags = options->flags;
+		bt_forwarding_options.percent = options->percent;
+	}
+}
+
 static void bluetooth_adv_handler(struct net_buf *buf)
 {
 	const struct device *udp = DEVICE_DT_GET(DT_NODELABEL(epacket_udp));
 
 	/* Forward 25% of Bluetooth advertising packets (0.25 * 255) */
-	if (epacket_gateway_forward_filter(0, 64, buf)) {
+	if (epacket_gateway_forward_filter(bt_forwarding_options.flags,
+					   bt_forwarding_options.percent, buf)) {
 		/* Forward packets that pass the filter */
 		epacket_gateway_receive_handler(udp, buf);
 	} else {
@@ -231,6 +258,10 @@ int main(void)
 		.state_set = state_set,
 		.state_cleared = state_cleared,
 	};
+	struct kv_store_cb kv_cb = {
+		.value_changed = kv_value_changed,
+	};
+	int rc;
 
 #if CONFIG_LTE_GATEWAY_DEFAULT_MAXIMUM_UPLINK_THROUGHPUT_KBPS > 0
 	/* Set the default throughput to request from connected devices if it doesn't exist */
@@ -242,6 +273,20 @@ int main(void)
 		KV_STORE_WRITE(KV_KEY_BLUETOOTH_THROUGHPUT_LIMIT, &limit);
 	}
 #endif /* CONFIG_LTE_GATEWAY_DEFAULT_MAXIMUM_UPLINK_THROUGHPUT_KBPS > 0 */
+
+	/* Setup Bluetooth forwarding configuration */
+	rc = kv_store_read_fallback(KV_KEY_GATEWAY_BLUETOOTH_FORWARD_OPTIONS,
+				    &bt_forwarding_options, sizeof(bt_forwarding_options),
+				    &bt_forwarding_options_default,
+				    sizeof(bt_forwarding_options_default));
+	if (rc < 0) {
+		LOG_WRN("Setting Bluetooth forwarding options failed (%d)", rc);
+		memcpy(&bt_forwarding_options, &bt_forwarding_options_default,
+		       sizeof(bt_forwarding_options));
+	}
+
+	/* KV store callbacks */
+	kv_store_register_callback(&kv_cb);
 
 	/* State callbacks */
 	infuse_state_register_callback(&state_cb);
