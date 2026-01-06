@@ -429,6 +429,14 @@ struct kv_memfault_disable {
 	uint8_t disable;
 } __packed;
 
+/** Forwarding configuration for Bluetooth advertising packets */
+struct kv_gateway_bluetooth_forward_options {
+	/** Forwarding flags (see @ref epacket_filter_flags) */
+	uint8_t flags;
+	/** Percent of packets to forward that pass flags (255 = all, 128 = half, 0 = none) */
+	uint8_t percent;
+} __packed;
+
 /** Reference gravity vector for tilt calculations */
 struct kv_gravity_reference {
 	/** X axis component of gravity vector */
@@ -606,6 +614,8 @@ enum kv_builtin_id {
 	KV_KEY_LED_DISABLE_DAILY_TIME_RANGE = 53,
 	/** Disable Memfault reporting at runtime */
 	KV_KEY_MEMFAULT_DISABLE = 54,
+	/** Forwarding configuration for Bluetooth advertising packets */
+	KV_KEY_GATEWAY_BLUETOOTH_FORWARD_OPTIONS = 55,
 	/** Reference gravity vector for tilt calculations */
 	KV_KEY_GRAVITY_REFERENCE = 60,
 	/** Array of points defining a closed polygon */
@@ -666,6 +676,8 @@ enum kv_builtin_size {
 	_KV_KEY_BLUETOOTH_THROUGHPUT_LIMIT_SIZE = sizeof(struct kv_bluetooth_throughput_limit),
 	_KV_KEY_LED_DISABLE_DAILY_TIME_RANGE_SIZE = sizeof(struct kv_led_disable_daily_time_range),
 	_KV_KEY_MEMFAULT_DISABLE_SIZE = sizeof(struct kv_memfault_disable),
+	_KV_KEY_GATEWAY_BLUETOOTH_FORWARD_OPTIONS_SIZE =
+		sizeof(struct kv_gateway_bluetooth_forward_options),
 	_KV_KEY_GRAVITY_REFERENCE_SIZE = sizeof(struct kv_gravity_reference),
 	_KV_KEY_ALG_STATIONARY_WINDOWED_ARGS_SIZE = sizeof(struct kv_alg_stationary_windowed_args),
 	_KV_KEY_ALG_TILT_ARGS_SIZE = sizeof(struct kv_alg_tilt_args),
@@ -706,6 +718,7 @@ enum kv_builtin_size {
 #define _KV_KEY_BLUETOOTH_THROUGHPUT_LIMIT_TYPE struct kv_bluetooth_throughput_limit
 #define _KV_KEY_LED_DISABLE_DAILY_TIME_RANGE_TYPE struct kv_led_disable_daily_time_range
 #define _KV_KEY_MEMFAULT_DISABLE_TYPE struct kv_memfault_disable
+#define _KV_KEY_GATEWAY_BLUETOOTH_FORWARD_OPTIONS_TYPE struct kv_gateway_bluetooth_forward_options
 #define _KV_KEY_GRAVITY_REFERENCE_TYPE struct kv_gravity_reference
 #define _KV_KEY_GEOFENCE_TYPE struct kv_geofence
 #define _KV_KEY_ALG_STATIONARY_WINDOWED_ARGS_TYPE struct kv_alg_stationary_windowed_args
@@ -769,6 +782,8 @@ enum kv_builtin_size {
 	IF_ENABLED(CONFIG_KV_STORE_KEY_BLUETOOTH_THROUGHPUT_LIMIT, \
 		   (1 +)) \
 	IF_ENABLED(CONFIG_KV_STORE_KEY_LED_DISABLE_DAILY_TIME_RANGE, \
+		   (1 +)) \
+	IF_ENABLED(CONFIG_KV_STORE_KEY_GATEWAY_BLUETOOTH_FORWARD_OPTIONS, \
 		   (1 +)) \
 	IF_ENABLED(CONFIG_KV_STORE_KEY_GRAVITY_REFERENCE, \
 		   (1 +)) \
@@ -1025,6 +1040,13 @@ static struct key_value_slot_definition _KV_SLOTS_ARRAY_DEFINE[] = {
 		.flags = 0,
 	},
 #endif /* CONFIG_KV_STORE_KEY_MEMFAULT_DISABLE */
+#ifdef CONFIG_KV_STORE_KEY_GATEWAY_BLUETOOTH_FORWARD_OPTIONS
+	{
+		.key = KV_KEY_GATEWAY_BLUETOOTH_FORWARD_OPTIONS,
+		.range = 1,
+		.flags = KV_FLAGS_REFLECT,
+	},
+#endif /* CONFIG_KV_STORE_KEY_GATEWAY_BLUETOOTH_FORWARD_OPTIONS */
 #ifdef CONFIG_KV_STORE_KEY_GRAVITY_REFERENCE
 	{
 		.key = KV_KEY_GRAVITY_REFERENCE,

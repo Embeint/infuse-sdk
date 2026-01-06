@@ -362,6 +362,15 @@
                 {"name": "disable", "type": "uint8_t", "description": "Disable for any non-zero value"}
             ]
         },
+        "55": {
+            "name": "GATEWAY_BLUETOOTH_FORWARD_OPTIONS",
+            "description": "Forwarding configuration for Bluetooth advertising packets",
+            "reflect": true,
+            "fields": [
+                {"name": "flags", "type": "uint8_t", "description": "Forwarding flags (see @ref epacket_filter_flags)", "display": {"fmt": "hex", "digits": 2}},
+                {"name": "percent", "type": "uint8_t", "description": "Percent of packets to forward that pass flags (255 = all, 128 = half, 0 = none)"}
+            ]
+        },
         "60": {
             "name": "GRAVITY_REFERENCE",
             "description": "Reference gravity vector for tilt calculations",
