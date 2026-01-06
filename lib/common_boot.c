@@ -277,7 +277,7 @@ static int infuse_common_boot(void)
 
 	LOG_INF("\tVersion: %d.%d.%d+%08x", v.major, v.minor, v.revision, v.build_num);
 	LOG_INF("\t Device: %016llx", device_id);
-	LOG_INF("\t  Board: %s", CONFIG_BOARD);
+	LOG_INF("\t  Board: %s", CONFIG_BOARD_TARGET);
 #ifdef CONFIG_BT
 	const char *bt_addr_le_str(const bt_addr_le_t *addr);
 	bt_addr_le_t bt_addr[CONFIG_BT_ID_MAX];
