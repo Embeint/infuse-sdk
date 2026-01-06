@@ -24,7 +24,6 @@ endif # INFUSE_VALIDATION_BUTTON
 
 config INFUSE_VALIDATION_LEDS_GPIO
 	bool "Infuse-IoT LEDs/GPIO validation"
-	default y
 	depends on DT_HAS_GPIO_LEDS_ENABLED
 	depends on GPIO
 
