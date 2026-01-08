@@ -683,6 +683,17 @@
             "response_params": [
             ]
         },
+        "42": {
+            "name": "shipping_mode",
+            "description": "Enter/Exit shipping mode on a device",
+            "default_auth": "EPACKET_AUTH_DEVICE",
+            "request_params": [
+                {"name": "enter", "type": "uint8_t", "description": "Non-zero to enter shipping mode, zero to exit"}
+            ],
+            "response_params": [
+                {"name": "expected_delay_ms", "type": "uint32_t", "description": "Expected delay to enter/exit shipping mode"}
+            ]
+        },
         "50": {
             "name": "bt_connect_infuse",
             "description": "Connect to an Infuse-IoT Bluetooth device",

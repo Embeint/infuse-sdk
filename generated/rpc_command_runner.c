@@ -277,6 +277,13 @@ void rpc_command_runner(struct net_buf *request)
 		}
 		break;
 #endif /* CONFIG_INFUSE_RPC_COMMAND_ANNOTATE */
+#ifdef CONFIG_INFUSE_RPC_COMMAND_SHIPPING_MODE
+	case RPC_ID_SHIPPING_MODE:
+		if (AUTHORISED(auth, SHIPPING_MODE)) { /* GCOVR_EXCL_BR_LINE */
+			response = rpc_command_shipping_mode(request);
+		}
+		break;
+#endif /* CONFIG_INFUSE_RPC_COMMAND_SHIPPING_MODE */
 #ifdef CONFIG_INFUSE_RPC_COMMAND_BT_CONNECT_INFUSE
 	case RPC_ID_BT_CONNECT_INFUSE:
 		if (AUTHORISED(auth, BT_CONNECT_INFUSE)) { /* GCOVR_EXCL_BR_LINE */

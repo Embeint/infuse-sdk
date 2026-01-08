@@ -345,6 +345,16 @@ config INFUSE_RPC_COMMAND_ANNOTATE_REQUIRED_AUTH
 	depends on INFUSE_RPC_COMMAND_ANNOTATE
 	default 2
 
+config INFUSE_RPC_COMMAND_SHIPPING_MODE
+	bool "Enable RPC shipping_mode"
+	help
+	  Enter/Exit shipping mode on a device
+
+config INFUSE_RPC_COMMAND_SHIPPING_MODE_REQUIRED_AUTH
+	int "Required authorisation level to run shipping_mode"
+	depends on INFUSE_RPC_COMMAND_SHIPPING_MODE
+	default 2
+
 config INFUSE_RPC_COMMAND_BT_CONNECT_INFUSE
 	bool "Enable RPC bt_connect_infuse"
 	depends on EPACKET_INTERFACE_BT_CENTRAL
