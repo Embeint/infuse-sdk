@@ -222,6 +222,11 @@ static void wifi_mgmt_event_handler(struct net_mgmt_event_callback *cb, uint64_t
 	}
 }
 
+static bool wifi_mgmt_has_connection_config(struct conn_mgr_conn_binding *const binding)
+{
+	return kv_store_key_exists(KV_KEY_WIFI_SSID);
+}
+
 static int wifi_mgmt_connect(struct conn_mgr_conn_binding *const binding)
 {
 	int timeout;
@@ -310,6 +315,7 @@ static void wifi_mgmt_init(struct conn_mgr_conn_binding *const binding)
 }
 
 static struct conn_mgr_conn_api l2_wifi_conn_api = {
+	.has_connection_config = wifi_mgmt_has_connection_config,
 	.connect = wifi_mgmt_connect,
 	.disconnect = wifi_mgmt_disconnect,
 	.init = wifi_mgmt_init,
