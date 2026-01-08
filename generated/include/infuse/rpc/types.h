@@ -517,6 +517,8 @@ enum rpc_builtin_id {
 	RPC_ID_ANNOTATE = 41,
 	/** Write an annotation to the device */
 	RPC_ID_TDF_DATA_LOGGER_FLUSH = 42,
+	/** Enter/Exit shipping mode on a device */
+	RPC_ID_SHIPPING_MODE = 43,
 	/** Connect to an Infuse-IoT Bluetooth device */
 	RPC_ID_BT_CONNECT_INFUSE = 50,
 	/** Disconnect from a Bluetooth device */
@@ -1137,6 +1139,19 @@ struct rpc_tdf_data_logger_flush_response {
 	uint8_t num;
 	/** Flush status */
 	struct rpc_struct_data_logger_flushed flushed[];
+} __packed;
+
+/** Enter/Exit shipping mode on a device */
+struct rpc_shipping_mode_request {
+	struct infuse_rpc_req_header header;
+	/** Non-zero to enter shipping mode, zero to exit */
+	uint8_t enter;
+} __packed;
+
+struct rpc_shipping_mode_response {
+	struct infuse_rpc_rsp_header header;
+	/** Expected delay to enter/exit shipping mode */
+	uint32_t expected_delay_ms;
 } __packed;
 
 /** Connect to an Infuse-IoT Bluetooth device */
