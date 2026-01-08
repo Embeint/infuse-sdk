@@ -82,6 +82,8 @@ static void conn_create_worker(struct k_work *work)
 		if (conn_mgr_if_get_timeout(wifi_if) > CONN_MGR_IF_NO_TIMEOUT) {
 			/* Cancel the timeout worker that was started */
 			k_work_cancel_delayable(&conn_timeout);
+			/* Notify stack of timeout */
+			net_mgmt_event_notify(NET_EVENT_CONN_IF_TIMEOUT, wifi_if);
 		}
 		return;
 	}
