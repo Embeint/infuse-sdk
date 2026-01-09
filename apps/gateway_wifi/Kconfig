@@ -1,0 +1,7 @@
+# WiFi Gateway specific options/defaults
+
+# Disable the packet discarding behaviour of the nRF70 driver
+configdefault NRF70_MAX_TX_PENDING_QLEN
+	default 32768
+
+source "Kconfig.zephyr"
