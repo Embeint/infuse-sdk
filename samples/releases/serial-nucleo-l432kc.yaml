@@ -5,3 +5,9 @@ board: nucleo_l432kc/stm32l432xx
 signing_key: ../../../bootloader/mcuboot/root-rsa-2048.pem
 network_key: ../../lib/security/default_network.yaml
 disable_logging: true
+extra_configs:
+  - CONFIG_INFUSE_RPC_COMMAND_DATA_LOGGER_STATE=n
+  - CONFIG_INFUSE_RPC_COMMAND_DATA_LOGGER_READ=n
+  - CONFIG_INFUSE_RPC_COMMAND_DATA_LOGGER_READ_AVAILABLE=n
+  - CONFIG_INFUSE_RPC_COMMAND_DATA_LOGGER_READ_CHUNKS=n
+  - CONFIG_INFUSE_RPC_COMMAND_DATA_LOGGER_ERASE=n
