@@ -154,6 +154,14 @@
                 {"name": "allocated_bytes", "type": "uint32_t", "description": "Number of bytes currently allocated"},
                 {"name": "max_allocated_bytes", "type": "uint32_t", "description": "Maximum number of bytes ever concurrently allocated"}
             ]
+        },
+        "rpc_struct_data_logger_chunk": {
+            "description": "Data logger chunk description",
+            "fields": [
+                {"name": "start_block", "type": "uint32_t", "description": "Start block of data chunk"},
+                {"name": "start_offset", "type": "uint16_t", "description": "Offset within start block"},
+                {"name": "num_bytes", "type": "uint32_t", "description": "Bytes to read (can read over block boundaries)"}
+            ]
         }
     },
     "enums": {
@@ -587,6 +595,26 @@
                 {"name": "uptime", "type": "uint32_t", "description": "Current application uptime"}
             ]
         },
+        "25": {
+            "name": "data_logger_read_chunks",
+            "description": "Read a number of arbitrary chunks from a data logger",
+            "depends_on": "DATA_LOGGER",
+            "default": "y if INFUSE_SDK",
+            "default_auth": "EPACKET_AUTH_DEVICE",
+            "rpc_data": true,
+            "request_params": [
+                {"name": "logger", "type": "enum rpc_enum_data_logger", "description": "Data logger to read from"},
+                {"name": "num_chunks", "type": "uint8_t", "description": "Number of data chunks in trailing array"},
+                {"name": "chunks", "type": "struct rpc_struct_data_logger_chunk", "num": 0, "description": "Data chunks to read", "counted_by": "num_chunks"}
+            ],
+            "response_params": [
+                {"name": "sent_len", "type": "uint32_t", "description": "Number of bytes sent"},
+                {"name": "sent_crc", "type": "uint32_t", "description": "CRC32 of bytes sent"},
+                {"name": "current_block", "type": "uint32_t", "description": "Current block after read completes"},
+                {"name": "block_size", "type": "uint16_t", "description": "Size of a single block in bytes"}
+            ]
+        },
+
         "30": {
             "name": "coap_download",
             "description": "Download a file from a COAP server (Infuse-IoT DTLS protected)",

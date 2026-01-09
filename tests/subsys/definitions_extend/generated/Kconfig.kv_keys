@@ -202,6 +202,12 @@ config KV_STORE_KEY_ALG_TILT_ARGS
 config KV_STORE_KEY_ALG_MOVEMENT_THRESHOLD_ARGS
 	bool "Enable KV key ALG_MOVEMENT_THRESHOLD_ARGS"
 	depends on ALGORITHM_RUNNER_ALG_MOVEMENT_THRESHOLD
+	help
+	  Configuration for the 'Movement Threshold' algorithm
+
+config KV_STORE_KEY_ALG_MOVEMENT_THRESHOLD_ARGS_V2
+	bool "Enable KV key ALG_MOVEMENT_THRESHOLD_ARGS_V2"
+	depends on ALGORITHM_RUNNER_ALG_MOVEMENT_THRESHOLD
 	default y
 	help
 	  Configuration for the 'Movement Threshold' algorithm
