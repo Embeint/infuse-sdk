@@ -287,6 +287,18 @@ config INFUSE_RPC_COMMAND_DATA_LOGGER_STATE_V2_REQUIRED_AUTH
 	depends on INFUSE_RPC_COMMAND_DATA_LOGGER_STATE_V2
 	default 2
 
+config INFUSE_RPC_COMMAND_DATA_LOGGER_READ_CHUNKS
+	bool "Enable RPC data_logger_read_chunks"
+	depends on DATA_LOGGER
+	default y if INFUSE_SDK
+	help
+	  Read a number of arbitrary chunks from a data logger
+
+config INFUSE_RPC_COMMAND_DATA_LOGGER_READ_CHUNKS_REQUIRED_AUTH
+	int "Required authorisation level to run data_logger_read_chunks"
+	depends on INFUSE_RPC_COMMAND_DATA_LOGGER_READ_CHUNKS
+	default 2
+
 config INFUSE_RPC_COMMAND_COAP_DOWNLOAD
 	bool "Enable RPC coap_download"
 	depends on INFUSE_COAP

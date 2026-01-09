@@ -385,6 +385,16 @@ struct rpc_struct_heap_info {
 	uint32_t max_allocated_bytes;
 } __packed;
 
+/** Data logger chunk description */
+struct rpc_struct_data_logger_chunk {
+	/** Start block of data chunk */
+	uint32_t start_block;
+	/** Offset within start block */
+	uint16_t start_offset;
+	/** Bytes to read (can read over block boundaries) */
+	uint32_t num_bytes;
+} __packed;
+
 /** Demo struct */
 struct rpc_struct_demo {
 	int8_t x;
@@ -453,6 +463,8 @@ enum rpc_builtin_id {
 	RPC_ID_LTE_STATE_V2 = 23,
 	/** Get state of a data logger (Larger erase unit) */
 	RPC_ID_DATA_LOGGER_STATE_V2 = 24,
+	/** Read a number of arbitrary chunks from a data logger */
+	RPC_ID_DATA_LOGGER_READ_CHUNKS = 25,
 	/** Download a file from a COAP server (Infuse-IoT DTLS protected) */
 	RPC_ID_COAP_DOWNLOAD = 30,
 	/** Network upload bandwidth testing using zperf/iperf */
@@ -902,6 +914,30 @@ struct rpc_data_logger_state_v2_response {
 	uint32_t erase_unit;
 	/** Current application uptime */
 	uint32_t uptime;
+} __packed;
+
+/** Read a number of arbitrary chunks from a data logger */
+struct rpc_data_logger_read_chunks_request {
+	struct infuse_rpc_req_header header;
+	struct infuse_rpc_req_data_header data_header;
+	/** Data logger to read from */
+	uint8_t logger;
+	/** Number of data chunks in trailing array */
+	uint8_t num_chunks;
+	/** Data chunks to read */
+	struct rpc_struct_data_logger_chunk chunks[];
+} __packed;
+
+struct rpc_data_logger_read_chunks_response {
+	struct infuse_rpc_rsp_header header;
+	/** Number of bytes sent */
+	uint32_t sent_len;
+	/** CRC32 of bytes sent */
+	uint32_t sent_crc;
+	/** Current block after read completes */
+	uint32_t current_block;
+	/** Size of a single block in bytes */
+	uint16_t block_size;
 } __packed;
 
 /** Download a file from a COAP server (Infuse-IoT DTLS protected) */

@@ -27,8 +27,10 @@ struct common_state {
 	uint32_t request_id;
 	uint32_t block_num;
 	uint32_t blocks_remaining;
+	uint32_t bytes_remaining;
 	uint32_t sent_len;
 	uint32_t sent_crc;
+	uint16_t first_offset;
 };
 
 static int do_read(struct common_state *state)
@@ -37,6 +39,7 @@ static int do_read(struct common_state *state)
 	struct infuse_rpc_data *data = NULL;
 	uint16_t block_remaining, block_offset;
 	k_ticks_t limit_tx = k_uptime_ticks();
+	uint32_t start_sent = state->sent_len;
 	uint32_t throughput;
 	uint32_t milliseconds;
 	uint16_t tx_count = 0;
@@ -54,7 +57,12 @@ static int do_read(struct common_state *state)
 		state->block_num + state->blocks_remaining - 1, state->logger->name);
 	milliseconds = k_uptime_get_32();
 
-	while (state->blocks_remaining--) {
+	/* Auto populate byte count if not provided */
+	if (state->bytes_remaining == 0) {
+		state->bytes_remaining = state->blocks_remaining * state->logger_state.block_size;
+	}
+
+	while (state->bytes_remaining) {
 		/* Feed watchdog as this can be a long running process if the block count is high */
 		rpc_server_watchdog_feed();
 
@@ -64,9 +72,12 @@ static int do_read(struct common_state *state)
 		if (rc < 0) {
 			break;
 		}
-		block_remaining = state->logger_state.block_size;
-		block_offset = 0;
+		block_remaining = state->logger_state.block_size - state->first_offset;
+		block_remaining = MIN(block_remaining, state->bytes_remaining);
+		block_offset = state->first_offset;
 		state->block_num += 1;
+		/* Only very first block can have non-zero offset */
+		state->first_offset = 0;
 
 		/* Push all block data into messages */
 		while (block_remaining) {
@@ -81,7 +92,7 @@ static int do_read(struct common_state *state)
 					/* Backend connection has been lost */
 					net_buf_unref(data_buf);
 					data_buf = NULL;
-					state->blocks_remaining = 0;
+					state->bytes_remaining = 0;
 					break;
 				}
 
@@ -94,10 +105,15 @@ static int do_read(struct common_state *state)
 				data->offset = state->sent_len;
 			}
 
-			/* Add as much payload as we can to buffer (aligned to 4 byte chunks) */
+			/* Add as much payload as we can to buffer (aligned to 4 byte chunks until
+			 * the last block)
+			 */
 			tail = MIN(block_remaining, net_buf_tailroom(data_buf));
-			tail = ROUND_DOWN(tail, 4);
+			if (block_remaining > state->logger_state.block_size) {
+				tail = ROUND_DOWN(tail, 4);
+			}
 			net_buf_add_mem(data_buf, work_mem + block_offset, tail);
+			state->bytes_remaining -= tail;
 			block_remaining -= tail;
 			block_offset += tail;
 
@@ -127,14 +143,16 @@ static int do_read(struct common_state *state)
 	}
 
 	/* Log read throughput */
+	uint32_t iter_sent = state->sent_len - start_sent;
+
 	milliseconds = k_uptime_get_32() - milliseconds;
 	if (milliseconds > 0) {
-		throughput = (8 * 1000 * state->sent_len) / milliseconds / 1024;
+		throughput = (8 * 1000 * iter_sent) / milliseconds / 1024;
 	} else {
 		throughput = 0;
 	}
-	LOG_INF("Read %u bytes in %u ms (%u kbps)", state->sent_len, milliseconds, throughput);
-	return 0;
+	LOG_INF("Read %u bytes in %u ms (%u kbps)", iter_sent, milliseconds, throughput);
+	return rc;
 }
 
 static int core_init(struct common_state *state, struct infuse_rpc_req_header *req_header,
@@ -145,6 +163,8 @@ static int core_init(struct common_state *state, struct infuse_rpc_req_header *r
 		.addr = req_meta->interface_address,
 		.auth = req_meta->auth,
 		.request_id = req_header->request_id,
+		.bytes_remaining = 0,
+		.first_offset = 0,
 	};
 
 	switch (logger) {
@@ -255,6 +275,49 @@ struct net_buf *rpc_command_data_logger_read_available(struct net_buf *request)
 	rsp.sent_len = state.sent_len;
 	rsp.current_block = state.logger_state.current_block;
 	rsp.start_block_actual = block_start;
+	rsp.block_size = state.logger_state.block_size;
+
+end:
+	return rpc_response_simple_if(state.interface, rc, &rsp, sizeof(rsp));
+}
+
+struct net_buf *rpc_command_data_logger_read_chunks(struct net_buf *request)
+{
+	struct epacket_rx_metadata *req_meta = net_buf_user_data(request);
+	struct rpc_data_logger_read_chunks_request *req = (void *)request->data;
+	struct rpc_data_logger_read_chunks_response rsp = {0};
+	struct rpc_struct_data_logger_chunk *info;
+	struct common_state state;
+	int rc;
+
+	/* Commmon initialisation */
+	rc = core_init(&state, &req->header, req_meta, req->logger);
+	if (rc < 0) {
+		goto end;
+	}
+
+	/* Read out the chunks */
+	for (int i = 0; i < req->num_chunks; i++) {
+		info = &req->chunks[i];
+
+		state.block_num = info->start_block;
+		state.first_offset = info->start_offset;
+		state.blocks_remaining = ROUND_UP(info->num_bytes, state.logger_state.block_size) /
+					 state.logger_state.block_size;
+		state.bytes_remaining = info->num_bytes;
+
+		/* Run the data logger read for the chunk */
+		rc = do_read(&state);
+		if (rc < 0) {
+			break;
+		}
+	}
+
+	/* Populate output parameters */
+	data_logger_get_state(state.logger, &state.logger_state);
+	rsp.sent_crc = state.sent_crc;
+	rsp.sent_len = state.sent_len;
+	rsp.current_block = state.logger_state.current_block;
 	rsp.block_size = state.logger_state.block_size;
 
 end:

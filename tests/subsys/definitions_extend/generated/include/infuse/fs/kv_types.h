@@ -115,6 +115,16 @@ struct kv_algorithm_movement_threshold_args {
 	uint32_t threshold_ug;
 } __packed;
 
+/** Arguments for 'Shot Triggered' algorithm */
+struct kv_algorithm_movement_threshold_args_v2 {
+	/** How long moving state is refreshed for when movement detected */
+	uint32_t moving_for;
+	/** Magnitude this far away from 1G triggers the moving state */
+	uint32_t initial_threshold_ug;
+	/** Magnitude this far away from 1G continues the moving state */
+	uint32_t continue_threshold_ug;
+} __packed;
+
 /** Demo struct */
 struct kv_struct_demo {
 	int8_t x;
@@ -471,6 +481,14 @@ struct kv_alg_movement_threshold_args {
 	struct kv_algorithm_movement_threshold_args args;
 } __packed;
 
+/** Configuration for the 'Movement Threshold' algorithm */
+struct kv_alg_movement_threshold_args_v2 {
+	/** Algorithm logging */
+	struct kv_algorithm_logging logging;
+	/** Algorithm arguments */
+	struct kv_algorithm_movement_threshold_args_v2 args;
+} __packed;
+
 /** Unique identifier for default schedule set */
 struct kv_task_schedules_default_id {
 	/** If this value changes, existing schedules are overwritten */
@@ -618,6 +636,8 @@ enum kv_builtin_id {
 	KV_KEY_ALG_TILT_ARGS = 201,
 	/** Configuration for the 'Movement Threshold' algorithm */
 	KV_KEY_ALG_MOVEMENT_THRESHOLD_ARGS = 202,
+	/** Configuration for the 'Movement Threshold' algorithm */
+	KV_KEY_ALG_MOVEMENT_THRESHOLD_ARGS_V2 = 203,
 	/** Unique identifier for default schedule set */
 	KV_KEY_TASK_SCHEDULES_DEFAULT_ID = 1000,
 	/** Task runner task schedule definition (@ref task_schedule) */
@@ -675,6 +695,8 @@ enum kv_builtin_size {
 	_KV_KEY_ALG_STATIONARY_WINDOWED_ARGS_SIZE = sizeof(struct kv_alg_stationary_windowed_args),
 	_KV_KEY_ALG_TILT_ARGS_SIZE = sizeof(struct kv_alg_tilt_args),
 	_KV_KEY_ALG_MOVEMENT_THRESHOLD_ARGS_SIZE = sizeof(struct kv_alg_movement_threshold_args),
+	_KV_KEY_ALG_MOVEMENT_THRESHOLD_ARGS_V2_SIZE =
+		sizeof(struct kv_alg_movement_threshold_args_v2),
 	_KV_KEY_TASK_SCHEDULES_DEFAULT_ID_SIZE = sizeof(struct kv_task_schedules_default_id),
 	_KV_KEY_EXT1_SIZE = sizeof(struct kv_ext1),
 	_KV_KEY_EXT2_SIZE = sizeof(struct kv_ext2),
@@ -716,6 +738,7 @@ enum kv_builtin_size {
 #define _KV_KEY_ALG_STATIONARY_WINDOWED_ARGS_TYPE struct kv_alg_stationary_windowed_args
 #define _KV_KEY_ALG_TILT_ARGS_TYPE struct kv_alg_tilt_args
 #define _KV_KEY_ALG_MOVEMENT_THRESHOLD_ARGS_TYPE struct kv_alg_movement_threshold_args
+#define _KV_KEY_ALG_MOVEMENT_THRESHOLD_ARGS_V2_TYPE struct kv_alg_movement_threshold_args_v2
 #define _KV_KEY_TASK_SCHEDULES_DEFAULT_ID_TYPE struct kv_task_schedules_default_id
 #define _KV_KEY_TASK_SCHEDULES_TYPE struct kv_task_schedules
 #define _KV_KEY_SECURE_STORAGE_RESERVED_TYPE struct kv_secure_storage_reserved
@@ -784,6 +807,8 @@ enum kv_builtin_size {
 	IF_ENABLED(CONFIG_KV_STORE_KEY_ALG_TILT_ARGS, \
 		   (1 +)) \
 	IF_ENABLED(CONFIG_KV_STORE_KEY_ALG_MOVEMENT_THRESHOLD_ARGS, \
+		   (1 +)) \
+	IF_ENABLED(CONFIG_KV_STORE_KEY_ALG_MOVEMENT_THRESHOLD_ARGS_V2, \
 		   (1 +)) \
 	IF_ENABLED(CONFIG_KV_STORE_KEY_TASK_SCHEDULES_DEFAULT_ID, \
 		   (1 +)) \
@@ -1058,6 +1083,13 @@ static struct key_value_slot_definition _KV_SLOTS_ARRAY_DEFINE[] = {
 		.flags = KV_FLAGS_REFLECT,
 	},
 #endif /* CONFIG_KV_STORE_KEY_ALG_MOVEMENT_THRESHOLD_ARGS */
+#ifdef CONFIG_KV_STORE_KEY_ALG_MOVEMENT_THRESHOLD_ARGS_V2
+	{
+		.key = KV_KEY_ALG_MOVEMENT_THRESHOLD_ARGS_V2,
+		.range = 1,
+		.flags = KV_FLAGS_REFLECT,
+	},
+#endif /* CONFIG_KV_STORE_KEY_ALG_MOVEMENT_THRESHOLD_ARGS_V2 */
 #ifdef CONFIG_KV_STORE_KEY_TASK_SCHEDULES_DEFAULT_ID
 	{
 		.key = KV_KEY_TASK_SCHEDULES_DEFAULT_ID,
