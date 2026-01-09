@@ -63,6 +63,9 @@ static int zperf_upload_data_loader(void *user_ctx, uint64_t offset, uint8_t *da
 	size_t work_mem_size;
 	int rc;
 
+	/* Feed watchdog as upload duration can be requested as longer than the watchdog period */
+	rpc_server_watchdog_feed();
+
 	uint8_t *storage = encrypt ? rpc_server_command_working_mem(&work_mem_size) : data;
 
 	/* Populate the payload from the requested source */
