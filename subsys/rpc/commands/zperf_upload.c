@@ -91,7 +91,6 @@ static int zperf_upload_data_loader(void *user_ctx, uint64_t offset, uint8_t *da
 		/* Read from the logger */
 		rc = data_logger_read(logger, offset, storage, len);
 		if (rc < 0) {
-			LOG_ERR("5 %d", rc);
 			return rc;
 		}
 	}
