@@ -10,8 +10,19 @@
 
 uint64_t infuse_device_id(void)
 {
-#ifdef CONFIG_INFUSE_TEST_ID
+#if defined(CONFIG_INFUSE_TEST_ID)
 	return INFUSE_TEST_DEVICE_ID;
+#elif defined(CONFIG_INFUSE_CACHE_DEVICE_ID)
+	static uint64_t cached;
+
+	if (cached == 0) {
+		/* ID is cached to avoid needing to go to OTP on every call.
+		 * This could be expensive depending on the `vendor_infuse_device_id`
+		 * implementation.
+		 */
+		cached = vendor_infuse_device_id();
+	}
+	return cached;
 #else
 	return vendor_infuse_device_id();
 #endif /* CONFIG_INFUSE_TEST_ID */

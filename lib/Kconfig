@@ -10,6 +10,10 @@ config INFUSE_WORKQ_STACK_SIZE
 	default 8192 if COVERAGE
 	default 2048
 
+config INFUSE_CACHE_DEVICE_ID
+	bool "Cache result of infuse_device_id lookup"
+	default y
+
 config INFUSE_COMMON_BOOT
 	bool "Infuse-IoT common boot logic"
 	default y if INFUSE_SDK
