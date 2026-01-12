@@ -15,6 +15,7 @@
 #include <zephyr/net/tls_credentials.h>
 #include <zephyr/net/socket.h>
 
+#include <infuse/identifiers.h>
 #include <infuse/fs/kv_store.h>
 #include <infuse/fs/kv_types.h>
 #include <infuse/net/coap.h>
@@ -46,7 +47,7 @@ struct cb_ctx {
 
 uint64_t infuse_device_id(void)
 {
-	return 0xFFFFFFFFFFFFFFFDULL;
+	return INFUSE_TEST_DEVICE_ID;
 }
 
 static void l4_event_handler(struct net_mgmt_event_callback *cb, uint64_t mgmt_event,

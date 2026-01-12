@@ -22,6 +22,9 @@ extern "C" {
  * @{
  */
 
+/** @brief Test device ID with fixed keys that cloud knows about */
+#define INFUSE_TEST_DEVICE_ID 0xFFFFFFFFFFFFFFFDULL
+
 /** @cond INTERNAL_HIDDEN */
 /**
  * @brief Expected vendor implementation of ID
@@ -39,7 +42,7 @@ uint64_t vendor_infuse_device_id(void);
 static inline uint64_t infuse_device_id(void)
 {
 #ifdef CONFIG_INFUSE_TEST_ID
-	return 0xFFFFFFFFFFFFFFFDULL;
+	return INFUSE_TEST_DEVICE_ID;
 #else
 	return vendor_infuse_device_id();
 #endif /* CONFIG_INFUSE_TEST_ID */
