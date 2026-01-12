@@ -1,5 +1,6 @@
 # Infuse-IoT libraries compilation
 
+zephyr_sources(identifiers.c)
 zephyr_sources(version.c)
 zephyr_sources_ifdef(CONFIG_INFUSE_WORKQ infuse_work_q.c)
 zephyr_sources_ifdef(CONFIG_INFUSE_REBOOT_COMPILE reboot.c)
