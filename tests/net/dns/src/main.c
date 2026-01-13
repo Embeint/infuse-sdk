@@ -87,8 +87,7 @@ static void async_dns_cb(int result, struct sockaddr *addr, socklen_t addrlen,
 
 	address_len = cb_ctx->user_data;
 	if (result == INFUSE_ASYNC_DNS_RESULT) {
-		/* Completion events have not occurred */
-		zassert_equal(-EBUSY, k_sem_take(&async_success, K_NO_WAIT));
+		/* Completion event has not occurred (Previous results may have been provided) */
 		zassert_equal(-EBUSY, k_sem_take(&async_complete, K_NO_WAIT));
 		/* Address is provided */
 		zassert_not_null(addr);
