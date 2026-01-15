@@ -15,21 +15,38 @@
 #include <psa/internal_trusted_storage.h>
 
 #include <infuse/security.h>
+#include <infuse/fs/kv_store.h>
+#include <infuse/fs/kv_types.h>
 
-ZTEST(security_network_keys, test_network_ids)
+static void default_init(void)
 {
+	infuse_security_init();
+
+	/* Refresh network keys to default state */
+	(void)infuse_security_network_key_write(0, NULL);
+	(void)infuse_security_secondary_network_key_write(0, NULL);
+	infuse_security_network_keys_unload();
+	infuse_security_network_keys_load();
+}
+
+ZTEST(security, test_network_ids)
+{
+	default_init();
+
 	/* Default network IDs */
 	zassert_equal(0x000000, infuse_security_network_key_identifier());
 	zassert_equal(0xFFFFFF, infuse_security_secondary_network_key_identifier());
 }
 
-ZTEST(security_network_keys, test_key_update)
+ZTEST(security, test_network_key_update)
 {
 	uint8_t key_material[32];
 	uint32_t key_id_1 = 0xA5A5A5;
 	uint32_t key_id_2 = 0x8B8B8B;
 	uint32_t val = 0x12345678;
 	int rc;
+
+	default_init();
 
 	sys_rand_get(key_material, sizeof(key_material));
 
@@ -80,19 +97,54 @@ ZTEST(security_network_keys, test_key_update)
 	zassert_equal(0xFFFFFF, infuse_security_secondary_network_key_identifier());
 }
 
-static bool security_init(const void *global_state)
+ZTEST(security, test_secondary_shared_secret)
 {
+#ifdef CONFIG_INFUSE_SECURITY_SECONDARY_REMOTE_ENABLE
+	struct kv_secondary_remote_public_key remote;
+	psa_key_id_t secondary_psa_id;
+	uint32_t secondary_key_id;
+
+	default_init();
+
+	/* No secondary public key exists, values are NULL */
+	secondary_key_id = infuse_security_secondary_device_key_identifier();
+	secondary_psa_id = infuse_security_secondary_device_root_key();
+	zassert_equal(0x00, secondary_key_id);
+	zassert_equal(PSA_KEY_ID_NULL, secondary_psa_id);
+	zassert_equal(-ENOENT, infuse_security_secondary_device_key_reset());
+
+	/* Secondary public key written to KV store */
+	sys_rand_get(remote.public_key, sizeof(remote.public_key));
+	zassert_equal(sizeof(remote), KV_STORE_WRITE(KV_KEY_SECONDARY_REMOTE_PUBLIC_KEY, &remote));
+
+	/* Shared secret not automatically generated */
+	secondary_key_id = infuse_security_secondary_device_key_identifier();
+	secondary_psa_id = infuse_security_secondary_device_root_key();
+	zassert_equal(0x00, secondary_key_id);
+	zassert_equal(PSA_KEY_ID_NULL, secondary_psa_id);
+
+	/* Generated after init */
 	infuse_security_init();
-	return true;
+
+	secondary_key_id = infuse_security_secondary_device_key_identifier();
+	secondary_psa_id = infuse_security_secondary_device_root_key();
+	zassert_not_equal(0x00, secondary_key_id);
+	zassert_not_equal(PSA_KEY_ID_NULL, secondary_psa_id);
+
+	/* Should use cached value on next init */
+	infuse_security_init();
+
+	secondary_key_id = infuse_security_secondary_device_key_identifier();
+	secondary_psa_id = infuse_security_secondary_device_root_key();
+	zassert_not_equal(0x00, secondary_key_id);
+	zassert_not_equal(PSA_KEY_ID_NULL, secondary_psa_id);
+
+	/* Can delete cached device key */
+	zassert_equal(0, infuse_security_secondary_device_key_reset());
+	zassert_equal(-ENOENT, infuse_security_secondary_device_key_reset());
+#else
+	ztest_test_skip();
+#endif /* CONFIG_INFUSE_SECURITY_SECONDARY_REMOTE_ENABLE */
 }
 
-static void test_before(void *fixture)
-{
-	/* Refresh network keys to default state */
-	(void)infuse_security_network_key_write(0, NULL);
-	(void)infuse_security_secondary_network_key_write(0, NULL);
-	infuse_security_network_keys_unload();
-	infuse_security_network_keys_load();
-}
-
-ZTEST_SUITE(security_network_keys, security_init, NULL, test_before, NULL, NULL);
+ZTEST_SUITE(security, NULL, NULL, NULL, NULL, NULL);
