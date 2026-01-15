@@ -71,7 +71,7 @@ static struct infuse_key_info secondary_network_info;
 
 #endif /* CONFIG_INFUSE_SECURITY_SECONDARY_NETWORK_ENABLE */
 
-LOG_MODULE_REGISTER(security, LOG_LEVEL_INF);
+LOG_MODULE_REGISTER(security, CONFIG_INFUSE_SECURITY_LOG_LEVEL);
 
 psa_key_attributes_t infuse_security_hkdf_attributes(void)
 {
