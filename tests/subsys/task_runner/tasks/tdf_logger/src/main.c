@@ -43,17 +43,18 @@ ZBUS_CHAN_DEFINE_WITH_ID(INFUSE_ZBUS_NAME(INFUSE_ZBUS_CHAN_IMU), INFUSE_ZBUS_CHA
 			 ZBUS_MSG_INIT(0));
 
 #if defined(CONFIG_TASK_TDF_LOGGER_BATTERY_TYPE_COMPLETE)
-#define TDF_BATTERY_TYPE TDF_BATTERY_STATE
-#define TDF_BATTERY_SIZE sizeof(TDF_TYPE(TDF_BATTERY_STATE))
+#define TDF_BATTERY_TYPE   TDF_BATTERY_STATE
+#define TDF_BATTERY_STRUCT TDF_TYPE(TDF_BATTERY_STATE)
 #elif defined(CONFIG_TASK_TDF_LOGGER_BATTERY_TYPE_VOLTAGE)
-#define TDF_BATTERY_TYPE TDF_BATTERY_VOLTAGE
-#define TDF_BATTERY_SIZE sizeof(TDF_TYPE(TDF_BATTERY_VOLTAGE))
+#define TDF_BATTERY_TYPE   TDF_BATTERY_VOLTAGE
+#define TDF_BATTERY_STRUCT TDF_TYPE(TDF_BATTERY_VOLTAGE)
 #elif defined(CONFIG_TASK_TDF_LOGGER_BATTERY_TYPE_SOC)
-#define TDF_BATTERY_TYPE TDF_BATTERY_SOC
-#define TDF_BATTERY_SIZE sizeof(TDF_TYPE(TDF_BATTERY_SOC))
+#define TDF_BATTERY_TYPE   TDF_BATTERY_SOC
+#define TDF_BATTERY_STRUCT TDF_TYPE(TDF_BATTERY_SOC)
 #else
 #error Unknown battery logging type
 #endif
+#define TDF_BATTERY_SIZE sizeof(TDF_BATTERY_STRUCT)
 
 static void task_schedule(struct task_data *data)
 {
@@ -92,10 +93,19 @@ ZTEST(task_tdf_logger, test_log_before_data)
 		.tdfs = TASK_TDF_LOGGER_LOG_BATTERY | TASK_TDF_LOGGER_LOG_AMBIENT_ENV |
 			TASK_TDF_LOGGER_LOG_LOCATION | TASK_TDF_LOGGER_LOG_ACCEL,
 	};
-	/* No data, no packets */
 	task_schedule(&data);
 	pkt = k_fifo_get(tx_queue, K_MSEC(100));
+#ifdef CONFIG_TASK_TDF_LOGGER_BATTERY_LOG_ZERO_ON_TIMEOUT
+	/* Battery TDF will be logged */
+	zassert_not_null(pkt);
+	net_buf_pull(pkt, sizeof(struct epacket_dummy_frame));
+	zassert_equal(0, tdf_parse_find_in_buf(pkt->data, pkt->len, TDF_BATTERY_TYPE, &tdf));
+	zassert_equal(0, tdf.time);
+	net_buf_unref(pkt);
+#else
+	/* No data, no packets */
 	zassert_is_null(pkt);
+#endif /* CONFIG_TASK_TDF_LOGGER_BATTERY_LOG_ZERO_ON_TIMEOUT */
 
 	schedule.task_args.infuse.tdf_logger = (struct task_tdf_logger_args){
 		.loggers = TDF_DATA_LOGGER_SERIAL,
@@ -238,6 +248,8 @@ ZTEST(task_tdf_logger, test_battery)
 	struct tdf_parsed tdf;
 	struct net_buf *pkt;
 
+	TDF_BATTERY_STRUCT tdf_zero = {0};
+
 	zassert_not_null(tx_queue);
 
 	/* Publish data */
@@ -255,12 +267,27 @@ ZTEST(task_tdf_logger, test_battery)
 	zassert_equal(0, tdf_parse_find_in_buf(pkt->data, pkt->len, TDF_BATTERY_TYPE, &tdf));
 	zassert_equal(0, tdf.time);
 	zassert_equal(TDF_BATTERY_SIZE, tdf.tdf_len);
+	zassert_not_equal(0, memcmp(&tdf_zero, tdf.data, TDF_BATTERY_SIZE));
 	net_buf_unref(pkt);
 
 	/* Wait until data invalid, should not send */
 	k_sleep(K_SECONDS(CONFIG_TASK_TDF_LOGGER_BATTERY_TIMEOUT_SEC));
 	task_schedule(&data);
-	zassert_is_null(k_fifo_get(tx_queue, K_MSEC(100)));
+	pkt = k_fifo_get(tx_queue, K_MSEC(100));
+
+#ifdef CONFIG_TASK_TDF_LOGGER_BATTERY_LOG_ZERO_ON_TIMEOUT
+	/* All zero TDF should have sent */
+	zassert_not_null(pkt);
+	net_buf_pull(pkt, sizeof(struct epacket_dummy_frame));
+	zassert_equal(0, tdf_parse_find_in_buf(pkt->data, pkt->len, TDF_BATTERY_TYPE, &tdf));
+	zassert_equal(0, tdf.time);
+	zassert_equal(TDF_BATTERY_SIZE, tdf.tdf_len);
+	zassert_mem_equal(tdf.data, &tdf_zero, TDF_BATTERY_SIZE);
+	net_buf_unref(pkt);
+#else
+	/* Data should not have sent */
+	zassert_is_null(pkt);
+#endif /* CONFIG_TASK_TDF_LOGGER_BATTERY_LOG_ZERO_ON_TIMEOUT */
 }
 
 ZTEST(task_tdf_logger, test_soc_temperature)
