@@ -49,6 +49,13 @@ config KV_STORE_KEY_BOARD_TARGET
 	help
 	  Value of CONFIG_BOARD_TARGET
 
+config KV_STORE_KEY_SECONDARY_REMOTE_PUBLIC_KEY
+	bool "Enable KV key SECONDARY_REMOTE_PUBLIC_KEY"
+	depends on INFUSE_SECURITY_SECONDARY_REMOTE_ENABLE
+	default y
+	help
+	  Storage of secondary remote public key
+
 config KV_STORE_KEY_FIXED_LOCATION
 	bool "Enable KV key FIXED_LOCATION"
 	help

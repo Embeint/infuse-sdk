@@ -156,6 +156,16 @@
                 {"name": "board_target", "type": "struct kv_string", "description": "Value of CONFIG_BOARD_TARGET"}
             ]
         },
+        "8": {
+            "name": "SECONDARY_REMOTE_PUBLIC_KEY",
+            "description": "Storage of secondary remote public key",
+            "depends_on": "INFUSE_SECURITY_SECONDARY_REMOTE_ENABLE",
+            "reflect": true,
+            "default": "y",
+            "fields": [
+                {"name": "public_key", "type": "uint8_t", "num": 32, "description": "Remote public key"}
+            ]
+        },
         "10": {
             "name": "FIXED_LOCATION",
             "description": "Fixed global location of the device",
