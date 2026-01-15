@@ -646,7 +646,7 @@ int infuse_security_secondary_device_key_reset(void)
 	if (status == PSA_SUCCESS) {
 		return 0;
 	} else if (status == PSA_ERROR_DOES_NOT_EXIST) {
-		return -ENODATA;
+		return -ENOENT;
 	} else {
 		return -EIO;
 	}
