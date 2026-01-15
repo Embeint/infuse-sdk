@@ -220,7 +220,8 @@
             "type": "uint8_t",
             "values": [
                 {"name": "NETWORK_KEY", "value": 0, "description": "Primary network key"},
-                {"name": "SECONDARY_NETWORK_KEY", "value": 1, "description": "Secondary network key"}
+                {"name": "SECONDARY_NETWORK_KEY", "value": 1, "description": "Secondary network key"},
+                {"name": "SECONDARY_REMOTE_PUBLIC_KEY", "value": 2, "description": "Secondary remote public key"}
             ]
         },
         "rpc_enum_key_action": {

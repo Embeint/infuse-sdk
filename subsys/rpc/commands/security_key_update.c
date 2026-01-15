@@ -13,6 +13,8 @@
 #include <infuse/rpc/commands.h>
 #include <infuse/rpc/types.h>
 #include <infuse/security.h>
+#include <infuse/fs/kv_store.h>
+#include <infuse/fs/kv_types.h>
 
 LOG_MODULE_DECLARE(rpc_server, CONFIG_INFUSE_RPC_LOG_LEVEL);
 
@@ -45,6 +47,18 @@ struct net_buf *rpc_command_security_key_update(struct net_buf *request)
 								 key_ptr);
 		break;
 #endif /* CONFIG_INFUSE_SECURITY_SECONDARY_NETWORK_ENABLE */
+#ifdef CONFIG_INFUSE_SECURITY_SECONDARY_REMOTE_ENABLE
+	case RPC_ENUM_KEY_ID_SECONDARY_REMOTE_PUBLIC_KEY:
+		if (key_ptr == NULL) {
+			rc = kv_store_delete(KV_KEY_SECONDARY_REMOTE_PUBLIC_KEY);
+		} else {
+			rc = kv_store_write(KV_KEY_SECONDARY_REMOTE_PUBLIC_KEY, key_ptr,
+					    sizeof(req->key_bitstream));
+			/* 0 on success */
+			rc = (rc == sizeof(req->key_bitstream)) ? 0 : rc;
+		}
+		break;
+#endif /* CONFIG_INFUSE_SECURITY_SECONDARY_REMOTE_ENABLE */
 	default:
 		rc = -EINVAL;
 	}

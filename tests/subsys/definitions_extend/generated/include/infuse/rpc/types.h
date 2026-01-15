@@ -158,6 +158,8 @@ enum rpc_enum_key_id {
 	RPC_ENUM_KEY_ID_NETWORK_KEY = 0,
 	/** Secondary network key */
 	RPC_ENUM_KEY_ID_SECONDARY_NETWORK_KEY = 1,
+	/** Secondary remote public key */
+	RPC_ENUM_KEY_ID_SECONDARY_REMOTE_PUBLIC_KEY = 2,
 };
 
 /** Infuse security key action */
