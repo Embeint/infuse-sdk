@@ -11,6 +11,7 @@
 
 #include <infuse/reboot.h>
 #include <infuse/rpc/commands.h>
+#include <infuse/rpc/commands/security_key_update.h>
 #include <infuse/rpc/types.h>
 #include <infuse/security.h>
 #include <infuse/fs/kv_store.h>
@@ -36,6 +37,21 @@ struct net_buf *rpc_command_security_key_update(struct net_buf *request)
 		rc = -EINVAL;
 		goto end;
 	}
+
+	/* Using EPACKET_AUTH_DEVICE instead of 2 doesn't work (preprocessor weirdness?) */
+#if CONFIG_INFUSE_RPC_COMMAND_SECURITY_KEY_UPDATE_REQUIRED_AUTH < 2
+	struct epacket_rx_metadata *meta = net_buf_user_data(request);
+
+	if (meta->auth != EPACKET_AUTH_DEVICE) {
+		/* If packet is not device authorised, defer to application for whether this should
+		 * be run
+		 */
+		if (!infuse_rpc_command_security_authorised(meta, req)) {
+			rc = -EPERM;
+			goto end;
+		}
+	}
+#endif /* CONFIG_INFUSE_RPC_COMMAND_SECURITY_KEY_UPDATE_REQUIRED_AUTH < 2 */
 
 	switch (req->key_id) {
 	case RPC_ENUM_KEY_ID_NETWORK_KEY:
