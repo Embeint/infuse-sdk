@@ -25,6 +25,10 @@ config TASK_TDF_LOGGER_ENVIRONMENTAL_TIMEOUT_SEC
 	int "Environmental sample age must be shorter than this to log"
 	default 3600
 
+config TASK_TDF_LOGGER_BATTERY_TIMEOUT_SEC
+	int "Battery sample age must be shorter than this to log"
+	default 3600
+
 choice TASK_TDF_LOGGER_BATTERY_TYPE
 	prompt "TDF type for battery logging"
 	default TASK_TDF_LOGGER_BATTERY_TYPE_COMPLETE
