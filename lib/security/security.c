@@ -161,13 +161,18 @@ static psa_key_id_t generate_root_ecc_key_pair(void)
 	return key_id;
 }
 
-static psa_key_id_t derive_shared_secret(psa_key_id_t root_key_id)
+static void derive_shared_secret(psa_key_id_t root_key_id, const uint8_t public_key[32],
+				 struct infuse_key_info *key_info,
+				 mbedtls_svc_key_id_t shared_secret_storage_id)
 {
 	psa_key_attributes_t key_attributes = infuse_security_hkdf_attributes();
 	uint8_t __maybe_unused shared_secret[32];
 	size_t __maybe_unused olen;
 	psa_status_t status;
 	psa_key_id_t key_id;
+
+	/* Initialise key ID */
+	key_info->key_id = PSA_KEY_ID_NULL;
 
 #ifdef CONFIG_INFUSE_SECURITY_TEST_CREDENTIALS
 	static const uint8_t test_shared_secret[32] = {
@@ -180,19 +185,18 @@ static psa_key_id_t derive_shared_secret(psa_key_id_t root_key_id)
 				&key_id);
 #else
 	/* Attempt to open the key before spending time generating it */
-	status = psa_open_key(INFUSE_ROOT_ECC_SHARED_SECRET_KEY_ID, &key_id);
+	status = psa_open_key(shared_secret_storage_id, &key_id);
 	if (status != PSA_SUCCESS) {
 		/* Calculate shared secret */
-		status = psa_raw_key_agreement(PSA_ALG_ECDH, root_key_id, infuse_cloud_public_key,
-					       sizeof(infuse_cloud_public_key), shared_secret,
-					       sizeof(shared_secret), &olen);
+		status = psa_raw_key_agreement(PSA_ALG_ECDH, root_key_id, public_key, 32,
+					       shared_secret, sizeof(shared_secret), &olen);
 		if (status != PSA_SUCCESS) {
-			return PSA_KEY_ID_NULL;
+			return;
 		}
 		/* Override lifetime to persistent */
 		psa_set_key_lifetime(&key_attributes, PSA_KEY_LIFETIME_PERSISTENT);
 		/* Set the persistent key ID */
-		psa_set_key_id(&key_attributes, INFUSE_ROOT_ECC_SHARED_SECRET_KEY_ID);
+		psa_set_key_id(&key_attributes, shared_secret_storage_id);
 		/* Import device shared key into PSA */
 		status = psa_import_key(&key_attributes, shared_secret, sizeof(shared_secret),
 					&key_id);
@@ -202,20 +206,22 @@ static psa_key_id_t derive_shared_secret(psa_key_id_t root_key_id)
 #endif /* CONFIG_INFUSE_SECURITY_TEST_CREDENTIALS */
 	if (status != PSA_SUCCESS) {
 		LOG_WRN("Failed to import %s root (%d)", "device", status);
-		return PSA_KEY_ID_NULL;
+		return;
 	}
 
 	/* Calculate device key identifier (CRC32 over the two public keys) */
-	device_info.key_id = crc32_ieee(infuse_cloud_public_key, sizeof(infuse_cloud_public_key));
-	device_info.key_id =
-		crc32_ieee_update(device_info.key_id, device_public_key, sizeof(device_public_key));
-	device_info.key_id &= 0x00FFFFFF;
+	key_info->key_id = crc32_ieee(public_key, 32);
+	key_info->key_id =
+		crc32_ieee_update(key_info->key_id, device_public_key, sizeof(device_public_key));
+	key_info->key_id &= 0x00FFFFFF;
 
 #ifdef CONFIG_INFUSE_SECURITY_TEST_CREDENTIALS
 	/* This is the device ID the cloud server expects for test_shared_secret */
-	device_info.key_id = 0x2F33D3;
+	key_info->key_id = 0x2F33D3;
 #endif
-	return key_id;
+
+	key_info->psa_id = key_id;
+	return;
 }
 
 static int coap_dtls_load(void)
@@ -440,8 +446,9 @@ int infuse_security_init(void)
 		LOG_ERR("Failed to generate root key pair!");
 		return -EINVAL;
 	}
-	/* Regenerate root shared secret */
-	device_info.psa_id = derive_shared_secret(root_ecc_key_id);
+	/* Regenerate primary root shared secret */
+	derive_shared_secret(root_ecc_key_id, infuse_cloud_public_key, &device_info,
+			     INFUSE_ROOT_ECC_SHARED_SECRET_KEY_ID);
 	if (device_info.psa_id == PSA_KEY_ID_NULL) {
 		LOG_ERR("Failed to derive shared secret!");
 		return -EINVAL;
