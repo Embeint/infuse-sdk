@@ -15,6 +15,7 @@
 #include <infuse/security.h>
 #include <infuse/identifiers.h>
 #include <infuse/crypto/hardware_unique_key.h>
+#include <infuse/fs/kv_store.h>
 #include <infuse/fs/kv_types.h>
 #include <infuse/fs/secure_storage.h>
 
@@ -37,6 +38,7 @@ enum {
 	INFUSE_ROOT_ECC_SHARED_SECRET_KEY_ID,
 	INFUSE_ROOT_NETWORK_KEY_ID,
 	INFUSE_ROOT_SECONDARY_NETWORK_KEY_ID,
+	INFUSE_ROOT_ECC_SECONDARY_SHARED_SECRET_KEY_ID,
 };
 
 struct infuse_key_info {
@@ -70,6 +72,12 @@ static struct infuse_key_info network_info;
 static struct infuse_key_info secondary_network_info;
 
 #endif /* CONFIG_INFUSE_SECURITY_SECONDARY_NETWORK_ENABLE */
+
+#ifdef CONFIG_INFUSE_SECURITY_SECONDARY_REMOTE_ENABLE
+
+static struct infuse_key_info secondary_device_info;
+
+#endif /* CONFIG_INFUSE_SECURITY_SECONDARY_REMOTE_ENABLE */
 
 LOG_MODULE_REGISTER(security, CONFIG_INFUSE_SECURITY_LOG_LEVEL);
 
@@ -124,7 +132,10 @@ static psa_key_id_t generate_root_ecc_key_pair(void)
 
 	/* Attempt to open the key before spending time generating it */
 	status = psa_open_key(INFUSE_ROOT_ECC_KEY_ID, &key_id);
-	if (status != PSA_SUCCESS) {
+	if (status == PSA_SUCCESS) {
+		LOG_DBG("Using pre-existing root identity");
+	} else {
+		LOG_DBG("Generating root identity");
 #ifdef ITS_AVAILABLE
 		/* Remove any existing derived keys */
 		(void)psa_its_remove(INFUSE_ROOT_ECC_PUBLIC_KEY_ID);
@@ -186,7 +197,10 @@ static void derive_shared_secret(psa_key_id_t root_key_id, const uint8_t public_
 #else
 	/* Attempt to open the key before spending time generating it */
 	status = psa_open_key(shared_secret_storage_id, &key_id);
-	if (status != PSA_SUCCESS) {
+	if (status == PSA_SUCCESS) {
+		LOG_DBG("Using cached shared secret for %08X", shared_secret_storage_id);
+	} else {
+		LOG_DBG("Computing shared secret for %08X", shared_secret_storage_id);
 		/* Calculate shared secret */
 		status = psa_raw_key_agreement(PSA_ALG_ECDH, root_key_id, public_key, 32,
 					       shared_secret, sizeof(shared_secret), &olen);
@@ -461,6 +475,21 @@ int infuse_security_init(void)
 		return -EINVAL;
 	}
 
+#ifdef CONFIG_INFUSE_SECURITY_SECONDARY_REMOTE_ENABLE
+	struct kv_secondary_remote_public_key remote;
+
+	if (kv_store_read(KV_KEY_SECONDARY_REMOTE_PUBLIC_KEY, &remote, sizeof(remote)) ==
+	    sizeof(remote)) {
+		LOG_HEXDUMP_DBG(&remote, sizeof(remote), "Secondary remote public key");
+		/* Secondary remote public key exists */
+		derive_shared_secret(root_ecc_key_id, remote.public_key, &secondary_device_info,
+				     INFUSE_ROOT_ECC_SECONDARY_SHARED_SECRET_KEY_ID);
+		if (secondary_device_info.psa_id == PSA_KEY_ID_NULL) {
+			LOG_WRN("Failed to derive secondary shared secret!");
+		}
+	}
+#endif /* CONFIG_INFUSE_SECURITY_SECONDARY_REMOTE_ENABLE */
+
 	/* Load COAP key */
 	rc = coap_dtls_load();
 	if (rc < 0) {
@@ -596,6 +625,34 @@ int infuse_security_secondary_network_key_write(uint32_t key_id, const uint8_t k
 #endif /* ITS_AVAILABLE */
 
 #endif /* CONFIG_INFUSE_SECURITY_SECONDARY_NETWORK_ENABLE */
+
+#ifdef CONFIG_INFUSE_SECURITY_SECONDARY_REMOTE_ENABLE
+
+psa_key_id_t infuse_security_secondary_device_root_key(void)
+{
+	return secondary_device_info.psa_id;
+}
+
+uint32_t infuse_security_secondary_device_key_identifier(void)
+{
+	return secondary_device_info.key_id;
+}
+
+int infuse_security_secondary_device_key_reset(void)
+{
+	psa_status_t status;
+
+	status = psa_its_remove(INFUSE_ROOT_ECC_SECONDARY_SHARED_SECRET_KEY_ID);
+	if (status == PSA_SUCCESS) {
+		return 0;
+	} else if (status == PSA_ERROR_DOES_NOT_EXIST) {
+		return -ENODATA;
+	} else {
+		return -EIO;
+	}
+}
+
+#endif /* CONFIG_INFUSE_SECURITY_SECONDARY_REMOTE_ENABLE */
 
 #if defined(CONFIG_TLS_CREDENTIALS) || defined(CONFIG_NRF_MODEM_LIB)
 sec_tag_t infuse_security_coap_dtls_tag(void)

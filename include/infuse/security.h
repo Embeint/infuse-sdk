@@ -76,6 +76,15 @@ void infuse_security_device_public_key(uint8_t public_key[32]);
 psa_key_id_t infuse_security_device_root_key(void);
 
 /**
+ * @brief Get secondary device root key identifier
+ *
+ * @note This key is only valid for key derivation options through HKDF
+ *
+ * @return psa_key_id_t Secondary device root key identifier
+ */
+psa_key_id_t infuse_security_secondary_device_root_key(void);
+
+/**
  * @brief Get device signing key identifier
  *
  * @note This key is only valid for ChaCha20-Poly1305 operations
@@ -171,6 +180,16 @@ psa_key_id_t infuse_security_derive_chacha_key(psa_key_id_t base_key, const void
 uint32_t infuse_security_device_key_identifier(void);
 
 /**
+ * @brief Get the current secondary device key identifier
+ *
+ * The device key identifier is constructed as a CRC32 hash computed over the
+ * remote and device public keys, truncated to 24 bits.
+ *
+ * @return uint32_t 24bit secondary device key identifier
+ */
+uint32_t infuse_security_secondary_device_key_identifier(void);
+
+/**
  * @brief Get the current network key identifier
  *
  * @return uint32_t 24 bit network key identifier
@@ -185,6 +204,15 @@ uint32_t infuse_security_network_key_identifier(void);
  * @return uint32_t 24 bit network key identifier
  */
 uint32_t infuse_security_secondary_network_key_identifier(void);
+
+/**
+ * @brief Delete cached secondary device key information
+ *
+ * @retval 0 On success
+ * @retval -ENOENT if no cached key information exists
+ * @retval -EIO On other error
+ */
+int infuse_security_secondary_device_key_reset(void);
 
 /**
  * @brief Update the device network key
