@@ -256,6 +256,11 @@ ZTEST(task_tdf_logger, test_battery)
 	zassert_equal(0, tdf.time);
 	zassert_equal(TDF_BATTERY_SIZE, tdf.tdf_len);
 	net_buf_unref(pkt);
+
+	/* Wait until data invalid, should not send */
+	k_sleep(K_SECONDS(CONFIG_TASK_TDF_LOGGER_BATTERY_TIMEOUT_SEC));
+	task_schedule(&data);
+	zassert_is_null(k_fifo_get(tx_queue, K_MSEC(100)));
 }
 
 ZTEST(task_tdf_logger, test_soc_temperature)
