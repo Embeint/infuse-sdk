@@ -25,7 +25,8 @@ static int nrf9x_batt_sample_fetch(const struct device *dev, enum sensor_channel
 	struct nrf9x_batt_data *data = dev->data;
 	int rc;
 
-	__ASSERT_NO_MSG(chan == SENSOR_CHAN_ALL || chan == SENSOR_CHAN_VOLTAGE);
+	__ASSERT_NO_MSG((chan == SENSOR_CHAN_ALL) || (chan == SENSOR_CHAN_VOLTAGE) ||
+			(chan == SENSOR_CHAN_GAUGE_VOLTAGE));
 
 #ifdef CONFIG_INFUSE_NRF_MODEM_MONITOR
 	if (!lte_modem_monitor_is_at_safe()) {
@@ -41,7 +42,11 @@ static int nrf9x_batt_channel_get(const struct device *dev, enum sensor_channel 
 {
 	struct nrf9x_batt_data *data = dev->data;
 
-	if (chan != SENSOR_CHAN_VOLTAGE) {
+	switch (chan) {
+	case SENSOR_CHAN_VOLTAGE:
+	case SENSOR_CHAN_GAUGE_VOLTAGE:
+		break;
+	default:
 		return -ENOTSUP;
 	}
 
