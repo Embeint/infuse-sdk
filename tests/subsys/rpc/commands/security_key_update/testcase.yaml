@@ -2,11 +2,14 @@ common:
   tags: infuse
   min_flash: 64
   min_ram: 32
+  required_snippets:
+    - infuse
+  platform_allow:
+    - mps2/an385
+  integration_platforms:
+    - mps2/an385
 tests:
-  rpc.commands.security_key_update:
-    required_snippets:
-      - infuse
-    platform_allow:
-      - mps2/an385
-    integration_platforms:
-      - mps2/an385
+  rpc.commands.security_key_update: {}
+  rpc.commands.security_key_update.network_auth:
+    extra_configs:
+      - CONFIG_INFUSE_RPC_COMMAND_SECURITY_KEY_UPDATE_REQUIRED_AUTH=1
