@@ -25,6 +25,12 @@ extern "C" {
 /** @brief Test device ID with fixed keys that cloud knows about */
 #define INFUSE_TEST_DEVICE_ID 0xFFFFFFFFFFFFFFFDULL
 
+/** @brief Address prefix for locally managed addesses */
+#define INFUSE_LOCALLY_MANAGED_PREFIX 0xFFFF000000000000ULL
+
+/** @brief Top two bits of a static random Bluetooth address must always be set */
+#define BLUETOOTH_STATIC_RANDOM_PREFIX 0xC00000000000ULL
+
 /** @cond INTERNAL_HIDDEN */
 /**
  * @brief Expected vendor implementation of ID
@@ -40,6 +46,18 @@ uint64_t vendor_infuse_device_id(void);
  * @return uint64_t local device ID
  */
 uint64_t infuse_device_id(void);
+
+/**
+ * @brief Convert a Bluetooth address to a locally managed Infuse-Iot device ID
+ *
+ * @param bt_addr 48 bit Bluetooth address to convert
+ *
+ * @return uint64_t Locally managed device ID
+ */
+static inline uint64_t local_infuse_device_id_from_bt(uint64_t bt_addr)
+{
+	return 0xFFFF000000000000ULL | bt_addr;
+}
 
 /**
  * @}
