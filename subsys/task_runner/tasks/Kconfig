@@ -44,6 +44,9 @@ config TASK_TDF_LOGGER_BATTERY_TYPE_SOC
 
 endchoice
 
+config TASK_TDF_LOGGER_BATTERY_LOG_ZERO_ON_TIMEOUT
+	bool "When battery data has timed out send an all 0 TDF instead of no TDF"
+
 endif # TASK_RUNNER_TASK_TDF_LOGGER
 
 config TASK_RUNNER_TASK_IMU

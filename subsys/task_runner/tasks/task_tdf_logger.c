@@ -83,11 +83,14 @@ static void log_battery(uint8_t loggers, uint64_t timestamp)
 
 	if (infuse_zbus_channel_data_age(C_GET(INFUSE_ZBUS_CHAN_BATTERY)) >=
 	    (CONFIG_TASK_TDF_LOGGER_BATTERY_TIMEOUT_SEC * MSEC_PER_SEC)) {
+#ifndef CONFIG_TASK_TDF_LOGGER_BATTERY_LOG_ZERO_ON_TIMEOUT
 		return;
+#endif /* !CONFIG_TASK_TDF_LOGGER_BATTERY_LOG_ZERO_ON_TIMEOUT */
+	} else {
+		/* Get latest value */
+		zbus_chan_read(C_GET(INFUSE_ZBUS_CHAN_BATTERY), &battery, K_FOREVER);
 	}
 
-	/* Get latest value */
-	zbus_chan_read(C_GET(INFUSE_ZBUS_CHAN_BATTERY), &battery, K_FOREVER);
 	/* Add to specified loggers */
 #if defined(CONFIG_TASK_TDF_LOGGER_BATTERY_TYPE_COMPLETE)
 	TDF_DATA_LOGGER_LOG(loggers, TDF_BATTERY_STATE, timestamp, &battery);

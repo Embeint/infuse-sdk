@@ -14,3 +14,6 @@ tests:
   task_runner.tasks.tdf_logger.soc:
     extra_configs:
       - CONFIG_TASK_TDF_LOGGER_BATTERY_TYPE_SOC=y
+  task_runner.tasks.tdf_logger.battery_zero:
+    extra_configs:
+      - CONFIG_TASK_TDF_LOGGER_BATTERY_LOG_ZERO_ON_TIMEOUT=y
