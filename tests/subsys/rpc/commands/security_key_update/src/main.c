@@ -16,6 +16,8 @@
 #include <infuse/rpc/types.h>
 #include <infuse/epacket/packet.h>
 #include <infuse/epacket/interface/epacket_dummy.h>
+#include <infuse/fs/kv_store.h>
+#include <infuse/fs/kv_types.h>
 
 #include <psa/crypto.h>
 
@@ -93,7 +95,7 @@ ZTEST(rpc_command_security_key_update, test_invalid)
 	sys_rand_get(bitstream, sizeof(bitstream));
 
 	/* Bad key ID */
-	send_security_key_update_command(0x106, 2, RPC_ENUM_KEY_ACTION_KEY_WRITE, 0x123456,
+	send_security_key_update_command(0x106, 3, RPC_ENUM_KEY_ACTION_KEY_WRITE, 0x123456,
 					 bitstream, 5);
 	expect_security_key_update_response(0x106, -EINVAL);
 	zassert_equal(-EAGAIN, k_sem_take(&reboot_request, K_MSEC(100)));
@@ -189,6 +191,36 @@ ZTEST(rpc_command_security_key_update, test_secondary_network_keys)
 					 RPC_ENUM_KEY_ACTION_KEY_DELETE, 0x78AB32, bitstream, 0);
 	expect_security_key_update_response(0x202, PSA_ERROR_DOES_NOT_EXIST);
 	zassert_equal(-EAGAIN, k_sem_take(&reboot_request, K_MSEC(100)));
+}
+
+ZTEST(rpc_command_security_key_update, test_secondary_remote)
+{
+	struct kv_secondary_remote_public_key remote_public_key;
+	uint8_t bitstream[32];
+
+	sys_rand_get(bitstream, sizeof(bitstream));
+
+	zassert_equal(-ENOENT,
+		      KV_STORE_READ(KV_KEY_SECONDARY_REMOTE_PUBLIC_KEY, &remote_public_key));
+
+	/* Write new secondary remote, reboot */
+	send_security_key_update_command(0x300, RPC_ENUM_KEY_ID_SECONDARY_REMOTE_PUBLIC_KEY,
+					 RPC_ENUM_KEY_ACTION_KEY_WRITE, 0, bitstream, 2);
+	expect_security_key_update_response(0x300, 0);
+	zassert_equal(0, k_sem_take(&reboot_request, K_MSEC(100)));
+
+	zassert_equal(sizeof(remote_public_key),
+		      KV_STORE_READ(KV_KEY_SECONDARY_REMOTE_PUBLIC_KEY, &remote_public_key));
+	zassert_mem_equal(bitstream, remote_public_key.public_key, sizeof(bitstream));
+
+	/* Delete secondary remote, reboot */
+	send_security_key_update_command(0x301, RPC_ENUM_KEY_ID_SECONDARY_REMOTE_PUBLIC_KEY,
+					 RPC_ENUM_KEY_ACTION_KEY_DELETE, 0, bitstream, 2);
+	expect_security_key_update_response(0x301, 0);
+	zassert_equal(0, k_sem_take(&reboot_request, K_MSEC(100)));
+
+	zassert_equal(-ENOENT,
+		      KV_STORE_READ(KV_KEY_SECONDARY_REMOTE_PUBLIC_KEY, &remote_public_key));
 }
 
 static void test_before(void *fixture)
