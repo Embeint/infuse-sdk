@@ -169,7 +169,7 @@ ZTEST(alg_movement_threshold, test_impl)
 	zassert_equal(3, moving_count);
 
 	/* Much larger sample variation */
-	imu_emul_accelerometer_data_configure(DEV, 0.0f, 0.0f, 1.0f, 10000);
+	imu_emul_accelerometer_data_configure(DEV, 0.0f, 0.0f, 1.0f, 20000);
 	k_sleep(K_SECONDS(3));
 	zassert_equal(4, moving_count);
 
