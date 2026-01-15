@@ -43,6 +43,10 @@ config INFUSE_SECURITY_SKIP_INIT
 	  Only use this when tests both don't require any crypto support AND the
 	  extra boot time from initialising the keys is problematic for repeatability.
 
+module = INFUSE_SECURITY
+module-str = Infuse-IoT security
+source "subsys/logging/Kconfig.template.log_config"
+
 endif # INFUSE_SECURITY
 
 rsource "hardware_unique_key/Kconfig"
