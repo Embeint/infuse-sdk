@@ -20,11 +20,9 @@ LOG_MODULE_DECLARE(rpc_server, CONFIG_INFUSE_RPC_LOG_LEVEL);
 struct net_buf *rpc_command_data_receiver(struct net_buf *request)
 {
 	struct infuse_rpc_data *data;
-	const struct device *interface;
-	union epacket_interface_address from;
 	uint32_t request_id, remaining, expected;
+	struct epacket_rx_metadata rx_meta;
 	struct net_buf *data_buf;
-	enum epacket_auth auth;
 	uint32_t data_offset;
 	uint32_t received = 0;
 	uint32_t expected_offset = 0;
@@ -41,10 +39,8 @@ struct net_buf *rpc_command_data_receiver(struct net_buf *request)
 		struct epacket_rx_metadata *req_meta = net_buf_user_data(request);
 		struct rpc_data_receiver_request *req = (void *)request->data;
 
+		rx_meta = *req_meta;
 		request_id = req->header.request_id;
-		interface = req_meta->interface;
-		from = req_meta->interface_address;
-		auth = req_meta->auth;
 		expected = req->data_header.size;
 		remaining = req->data_header.size;
 		ack_period = req->data_header.rx_ack_period;
@@ -56,7 +52,7 @@ struct net_buf *rpc_command_data_receiver(struct net_buf *request)
 	LOG_DBG("Receiving %d bytes", remaining);
 
 	/* Initial ACK to signal readiness */
-	rpc_server_ack_data_ready(interface, from, request_id);
+	rpc_server_ack_data_ready(&rx_meta, request_id);
 
 	while (remaining > 0) {
 		if (unaligned) {
@@ -86,7 +82,7 @@ struct net_buf *rpc_command_data_receiver(struct net_buf *request)
 
 		/* Handle any acknowledgements required */
 		if (remaining > 0) {
-			rpc_server_ack_data(interface, from, request_id, data_offset, ack_period);
+			rpc_server_ack_data(&rx_meta, request_id, data_offset, ack_period);
 		}
 	}
 
@@ -96,10 +92,9 @@ end:
 		.recv_len = received,
 		.recv_crc = crc,
 	};
-	struct net_buf *response = rpc_response_simple_if(interface, rc, &rsp, sizeof(rsp));
+	struct net_buf *response = rpc_response_simple_if(rx_meta.interface, rc, &rsp, sizeof(rsp));
 
-	rpc_command_runner_early_response(interface, from, auth, request_id, RPC_ID_DATA_RECEIVER,
-					  response);
+	rpc_command_runner_early_response(&rx_meta, request_id, RPC_ID_DATA_RECEIVER, response);
 	k_sleep(K_MSEC(100));
 	return NULL;
 }
