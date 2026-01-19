@@ -106,3 +106,9 @@ config EPACKET_CRYPTO
 	bool
 	depends on INFUSE_SECURITY
 	default y
+
+config EPACKET_SECURITY_TEST_STUBS
+	bool "Test stubs for when INFUSE_SECURITY is disabled"
+	depends on !INFUSE_SECURITY
+	depends on ZTEST
+	default y
