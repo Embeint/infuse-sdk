@@ -418,3 +418,14 @@ int main(void)
 	}
 	return 0;
 }
+
+/* ePacket stubs required for the HCI interface as INFUSE_SECURITY is not enabled */
+uint32_t infuse_security_device_key_identifier(void)
+{
+	return 0;
+}
+
+uint32_t infuse_security_network_key_identifier(void)
+{
+	return 0;
+}
