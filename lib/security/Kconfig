@@ -16,6 +16,7 @@ config INFUSE_SECURITY_DEFAULT_NETWORK
 
 config INFUSE_SECURITY_SECONDARY_REMOTE_ENABLE
 	bool "Support a secondary remote in parallel with cloud device key"
+	depends on KV_STORE
 	help
 	  Enable generation of a secondary shared device key. The remote public key
 	  used for the secondary device key is stored in KV_KEY_SECONDARY_REMOTE_PUBLIC_KEY.
