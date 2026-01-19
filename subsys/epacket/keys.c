@@ -32,6 +32,10 @@ static const char *const key_info[] = {
 };
 BUILD_ASSERT(ARRAY_SIZE(key_info) == EPACKET_KEY_INTERFACE_NUM, "");
 
+#ifdef CONFIG_INFUSE_SECURITY_SECONDARY_REMOTE_ENABLE
+static struct key_storage secondary_device_keys[EPACKET_KEY_INTERFACE_NUM];
+#endif /* CONFIG_INFUSE_SECURITY_SECONDARY_REMOTE_ENABLE */
+
 #ifdef CONFIG_INFUSE_SECURITY_SECONDARY_NETWORK_ENABLE
 static struct key_storage secondary_network_keys[EPACKET_KEY_INTERFACE_NUM];
 #endif /* CONFIG_INFUSE_SECURITY_SECONDARY_NETWORK_ENABLE */
@@ -79,10 +83,17 @@ psa_key_id_t epacket_key_id_get(uint8_t key_type, uint32_t key_identifier, uint3
 
 	/* Extract key info */
 	if (key_type & EPACKET_KEY_DEVICE) {
-		base = infuse_security_device_root_key();
-		storage = device_keys;
-		if (key_identifier != infuse_security_device_key_identifier()) {
-			/* Can only decode our own key */
+		if (key_identifier == infuse_security_device_key_identifier()) {
+			base = infuse_security_device_root_key();
+			storage = device_keys;
+		}
+#ifdef CONFIG_INFUSE_SECURITY_SECONDARY_REMOTE_ENABLE
+		else if (key_identifier == infuse_security_secondary_device_key_identifier()) {
+			base = infuse_security_secondary_device_root_key();
+			storage = secondary_device_keys;
+		}
+#endif /* CONFIG_INFUSE_SECURITY_SECONDARY_REMOTE_ENABLE */
+		else {
 			return PSA_KEY_ID_NULL;
 		}
 	} else {
