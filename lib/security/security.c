@@ -140,6 +140,7 @@ static psa_key_id_t generate_root_ecc_key_pair(void)
 		/* Remove any existing derived keys */
 		(void)psa_its_remove(INFUSE_ROOT_ECC_PUBLIC_KEY_ID);
 		(void)psa_its_remove(INFUSE_ROOT_ECC_SHARED_SECRET_KEY_ID);
+		(void)psa_its_remove(INFUSE_ROOT_ECC_SECONDARY_SHARED_SECRET_KEY_ID);
 #endif /* ITS_AVAILABLE */
 #ifdef CONFIG_MODEM_KEY_MGMT
 		/* COAP PSK is also a derived key */
@@ -640,6 +641,7 @@ uint32_t infuse_security_secondary_device_key_identifier(void)
 
 int infuse_security_secondary_device_key_reset(void)
 {
+#ifdef ITS_AVAILABLE
 	psa_status_t status;
 
 	status = psa_its_remove(INFUSE_ROOT_ECC_SECONDARY_SHARED_SECRET_KEY_ID);
@@ -650,6 +652,10 @@ int infuse_security_secondary_device_key_reset(void)
 	} else {
 		return -EIO;
 	}
+#else
+	/* No cached information to delete */
+	return 0;
+#endif /* ITS_AVAILABLE */
 }
 
 #endif /* CONFIG_INFUSE_SECURITY_SECONDARY_REMOTE_ENABLE */
