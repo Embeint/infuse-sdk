@@ -588,13 +588,18 @@ ZTEST(rpc_server, test_data_ack_fn)
 	uint32_t offsets[] = {3, 2, 6, 1, 7, 342, 343};
 	uint32_t num_offsets;
 	struct net_buf *tx;
+	struct epacket_rx_metadata rx_meta = {
+		.interface = epacket_dummy,
+		.auth = EPACKET_AUTH_DEVICE,
+	};
+
+	rx_meta.interface_address = EPACKET_ADDR_ALL;
 
 	zassert_not_null(tx_fifo);
 
 	for (int i = 0; i < ARRAY_SIZE(offsets); i++) {
 		for (int j = 0; j <= i; j++) {
-			rpc_server_ack_data(epacket_dummy, EPACKET_ADDR_ALL, 0x1234, offsets[j],
-					    i + 1);
+			rpc_server_ack_data(&rx_meta, 0x1234, offsets[j], i + 1);
 		}
 		tx = k_fifo_get(tx_fifo, K_MSEC(1));
 		zassert_not_null(tx);

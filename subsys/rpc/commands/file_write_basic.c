@@ -32,11 +32,9 @@ struct net_buf *rpc_command_file_write_basic(struct net_buf *request)
 {
 	struct rpc_common_file_actions_ctx ctx;
 	struct infuse_rpc_data *data;
-	const struct device *interface;
-	union epacket_interface_address from;
+	struct epacket_rx_metadata rx_meta;
 	uint32_t request_id, remaining, expected, crc;
 	struct net_buf *data_buf;
-	enum epacket_auth auth;
 	uint32_t data_offset;
 	uint32_t expected_offset = 0;
 	uint8_t action, ack_period;
@@ -50,11 +48,9 @@ struct net_buf *rpc_command_file_write_basic(struct net_buf *request)
 		struct epacket_rx_metadata *req_meta = net_buf_user_data(request);
 		struct rpc_file_write_basic_request *req = (void *)request->data;
 
+		rx_meta = *req_meta;
 		request_id = req->header.request_id;
-		interface = req_meta->interface;
-		from = req_meta->interface_address;
 		action = req->action;
-		auth = req_meta->auth;
 		expected = req->data_header.size;
 		remaining = req->data_header.size;
 		crc = req->file_crc;
@@ -77,7 +73,7 @@ struct net_buf *rpc_command_file_write_basic(struct net_buf *request)
 	LOG_DBG("Receiving %d bytes", expected);
 
 	/* Initial ACK to signal readiness */
-	rpc_server_ack_data_ready(interface, from, request_id);
+	rpc_server_ack_data_ready(&rx_meta, request_id);
 
 	while (remaining > 0) {
 		data_buf = rpc_server_pull_data(request_id, expected_offset, &rc, K_MSEC(500));
@@ -107,7 +103,7 @@ struct net_buf *rpc_command_file_write_basic(struct net_buf *request)
 
 		/* Handle any acknowledgements required */
 		if (remaining > 0) {
-			rpc_server_ack_data(interface, from, request_id, data_offset, ack_period);
+			rpc_server_ack_data(&rx_meta, request_id, data_offset, ack_period);
 		}
 	}
 
@@ -128,10 +124,9 @@ write_done:
 		.recv_len = ctx.received,
 		.recv_crc = ctx.crc,
 	};
-	struct net_buf *response = rpc_response_simple_if(interface, rc, &rsp, sizeof(rsp));
+	struct net_buf *response = rpc_response_simple_if(rx_meta.interface, rc, &rsp, sizeof(rsp));
 
-	rpc_command_runner_early_response(interface, from, auth, request_id,
-					  RPC_ID_FILE_WRITE_BASIC, response);
+	rpc_command_runner_early_response(&rx_meta, request_id, RPC_ID_FILE_WRITE_BASIC, response);
 
 	if (rc == 0) {
 		/* Perform deferred long operations */
@@ -148,5 +143,5 @@ error:
 		.recv_crc = 0,
 	};
 
-	return rpc_response_simple_if(interface, rc, &rsp_err, sizeof(rsp_err));
+	return rpc_response_simple_if(rx_meta.interface, rc, &rsp_err, sizeof(rsp_err));
 }
