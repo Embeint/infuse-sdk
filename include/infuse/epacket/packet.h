@@ -340,6 +340,31 @@ static inline struct net_buf *epacket_alloc_tx_for_interface(const struct device
 }
 
 /**
+ * @brief Set all metadata on a packet
+ *
+ * @param buf ePacket TX buffer
+ * @param auth Authentication level to use for packet
+ * @param key_identifier Explicit key identifier to use
+ * @param flags Desired packet flags
+ * @param type Packet type
+ * @param dest Destination address
+ */
+static inline void epacket_set_tx_metadata_core(struct net_buf *buf, enum epacket_auth auth,
+						uint32_t key_identifier, uint16_t flags,
+						enum infuse_type type,
+						union epacket_interface_address dest)
+{
+	struct epacket_tx_metadata *meta = net_buf_user_data(buf);
+
+	meta->auth = auth;
+	meta->key_identifier = key_identifier;
+	meta->flags = epacket_global_flags_get() | flags;
+	meta->type = type;
+	meta->tx_done = NULL;
+	meta->interface_address = dest;
+}
+
+/**
  * @brief Set metadata on a packet
  *
  * Automatically populates the key ID based on the authentication type.
@@ -354,18 +379,15 @@ static inline void epacket_set_tx_metadata(struct net_buf *buf, enum epacket_aut
 					   uint16_t flags, enum infuse_type type,
 					   union epacket_interface_address dest)
 {
-	struct epacket_tx_metadata *meta = net_buf_user_data(buf);
+	uint32_t key_id = 0x00;
 
-	meta->auth = auth;
 	if (auth == EPACKET_AUTH_DEVICE) {
-		meta->key_identifier = infuse_security_device_key_identifier();
+		key_id = infuse_security_device_key_identifier();
 	} else if (EPACKET_AUTH_NETWORK) {
-		meta->key_identifier = infuse_security_network_key_identifier();
+		key_id = infuse_security_network_key_identifier();
 	}
-	meta->flags = epacket_global_flags_get() | flags;
-	meta->type = type;
-	meta->tx_done = NULL;
-	meta->interface_address = dest;
+
+	epacket_set_tx_metadata_core(buf, auth, key_id, flags, type, dest);
 }
 
 /**
