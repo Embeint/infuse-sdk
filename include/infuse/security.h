@@ -19,6 +19,8 @@
 
 #include <zephyr/net/tls_credentials.h>
 
+#include <infuse/security_ids.h>
+
 #include <psa/crypto_types.h>
 
 #ifdef __cplusplus
@@ -168,42 +170,6 @@ psa_key_id_t infuse_security_derive_key(const struct infuse_security_key_params 
 psa_key_id_t infuse_security_derive_chacha_key(psa_key_id_t base_key, const void *salt,
 					       size_t salt_len, const void *info, size_t info_len,
 					       bool force_export);
-
-/**
- * @brief Get the current device key identifier
- *
- * The device key identifier is constructed as a CRC32 hash computed over the
- * cloud and device public keys, truncated to 24 bits.
- *
- * @return uint32_t 24bit device key identifier
- */
-uint32_t infuse_security_device_key_identifier(void);
-
-/**
- * @brief Get the current secondary device key identifier
- *
- * The device key identifier is constructed as a CRC32 hash computed over the
- * remote and device public keys, truncated to 24 bits.
- *
- * @return uint32_t 24bit secondary device key identifier
- */
-uint32_t infuse_security_secondary_device_key_identifier(void);
-
-/**
- * @brief Get the current network key identifier
- *
- * @return uint32_t 24 bit network key identifier
- */
-uint32_t infuse_security_network_key_identifier(void);
-
-/**
- * @brief Get the secondary network key identifier
- *
- * Depends on CONFIG_INFUSE_SECURITY_SECONDARY_NETWORK_ENABLE.
- *
- * @return uint32_t 24 bit network key identifier
- */
-uint32_t infuse_security_secondary_network_key_identifier(void);
 
 /**
  * @brief Delete cached secondary device key information
