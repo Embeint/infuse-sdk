@@ -153,6 +153,7 @@ ZTEST(rpc_server, test_auth_level)
 	/* ECHO with EPACKET_AUTH_DEVICE */
 	req_header->command_id = RPC_ID_ECHO;
 	header.auth = EPACKET_AUTH_DEVICE;
+	header.key_identifier = sys_rand16_get();
 	epacket_dummy_receive(epacket_dummy, &header, payload,
 			      sizeof(struct rpc_echo_request) + sizeof(payload));
 	tx = k_fifo_get(tx_fifo, K_MSEC(100));
@@ -161,12 +162,14 @@ ZTEST(rpc_server, test_auth_level)
 	rsp = (void *)(tx->data + sizeof(*tx_header));
 	zassert_equal(INFUSE_RPC_RSP, tx_header->type);
 	zassert_equal(EPACKET_AUTH_DEVICE, tx_header->auth);
+	zassert_equal(header.key_identifier, tx_header->key_identifier);
 	zassert_equal(0, rsp->header.return_code);
 	net_buf_unref(tx);
 
 	/* ECHO with EPACKET_AUTH_NETWORK */
 	req_header->command_id = RPC_ID_ECHO;
 	header.auth = EPACKET_AUTH_NETWORK;
+	header.key_identifier = sys_rand16_get();
 	epacket_dummy_receive(epacket_dummy, &header, payload,
 			      sizeof(struct rpc_echo_request) + sizeof(payload));
 	tx = k_fifo_get(tx_fifo, K_MSEC(100));
@@ -175,12 +178,14 @@ ZTEST(rpc_server, test_auth_level)
 	rsp = (void *)(tx->data + sizeof(*tx_header));
 	zassert_equal(INFUSE_RPC_RSP, tx_header->type);
 	zassert_equal(EPACKET_AUTH_NETWORK, tx_header->auth);
+	zassert_equal(header.key_identifier, tx_header->key_identifier);
 	zassert_equal(0, rsp->header.return_code);
 	net_buf_unref(tx);
 
 	/* DATA_SENDER with EPACKET_AUTH_NETWORK */
 	req_header->command_id = RPC_ID_DATA_SENDER;
 	header.auth = EPACKET_AUTH_NETWORK;
+	header.key_identifier = sys_rand16_get();
 	epacket_dummy_receive(epacket_dummy, &header, payload,
 			      sizeof(struct rpc_echo_request) + sizeof(payload));
 	tx = k_fifo_get(tx_fifo, K_MSEC(100));
@@ -189,6 +194,7 @@ ZTEST(rpc_server, test_auth_level)
 	rsp = (void *)(tx->data + sizeof(*tx_header));
 	zassert_equal(INFUSE_RPC_RSP, tx_header->type);
 	zassert_equal(EPACKET_AUTH_NETWORK, tx_header->auth);
+	zassert_equal(header.key_identifier, tx_header->key_identifier);
 	zassert_equal(-EACCES, rsp->header.return_code);
 	net_buf_unref(tx);
 }
@@ -214,6 +220,7 @@ ZTEST(rpc_server, test_echo_response)
 		/* Send a command */
 		header.type = INFUSE_RPC_CMD;
 		header.auth = EPACKET_AUTH_DEVICE;
+		header.key_identifier = sys_rand16_get();
 		req_header->command_id = RPC_ID_ECHO;
 		req_header->request_id = request_id;
 
@@ -226,6 +233,7 @@ ZTEST(rpc_server, test_echo_response)
 		rsp = (void *)(tx->data + sizeof(*tx_header));
 		zassert_equal(INFUSE_RPC_RSP, tx_header->type);
 		zassert_equal(EPACKET_AUTH_DEVICE, tx_header->auth);
+		zassert_equal(header.key_identifier, tx_header->key_identifier);
 		zassert_equal(request_id, rsp->header.request_id);
 		zassert_equal(RPC_ID_ECHO, rsp->header.command_id);
 		zassert_equal(0, rsp->header.return_code);
@@ -285,6 +293,7 @@ static void test_data_sender(uint32_t to_send, int dc_after)
 	/* Send a command */
 	header.type = INFUSE_RPC_CMD;
 	header.auth = EPACKET_AUTH_DEVICE;
+	header.key_identifier = sys_rand16_get();
 	req->header.command_id = RPC_ID_DATA_SENDER;
 	req->header.request_id = request_id;
 	req->data_header.size = to_send;
@@ -293,11 +302,15 @@ static void test_data_sender(uint32_t to_send, int dc_after)
 	epacket_dummy_receive(epacket_dummy, &header, payload,
 			      sizeof(struct rpc_data_sender_request));
 
+	printk("JSDKLF\n");
 	while (receiving) {
 		tx = k_fifo_get(tx_fifo, K_MSEC(100));
 		zassert_not_null(tx);
 		tx_header = (void *)tx->data;
 		zassert_equal(EPACKET_AUTH_DEVICE, tx_header->auth);
+		printk("%d %d %d\n", tx_header->type, header.key_identifier,
+		       tx_header->key_identifier);
+		zassert_equal(header.key_identifier, tx_header->key_identifier);
 
 		if (tx_header->type == INFUSE_RPC_RSP) {
 			receiving = false;
@@ -384,6 +397,7 @@ static void test_data_receiver(uint32_t total_send, uint8_t skip_after, uint8_t 
 	/* Send the initiating command */
 	header.type = INFUSE_RPC_CMD;
 	header.auth = EPACKET_AUTH_DEVICE;
+	header.key_identifier = sys_rand16_get();
 	req->header.command_id = RPC_ID_DATA_RECEIVER;
 	req->header.request_id = request_id;
 	req->data_header.size = send_remaining;
@@ -400,6 +414,7 @@ static void test_data_receiver(uint32_t total_send, uint8_t skip_after, uint8_t 
 	num_offsets = (tx->len - sizeof(*tx_header) - sizeof(*data_ack)) / sizeof(uint32_t);
 	zassert_equal(INFUSE_RPC_DATA_ACK, tx_header->type);
 	zassert_equal(EPACKET_AUTH_NETWORK, tx_header->auth);
+	zassert_equal(header.key_identifier, tx_header->key_identifier);
 	zassert_equal(request_id, data_ack->request_id);
 	zassert_equal(0, num_offsets);
 	net_buf_unref(tx);
@@ -454,6 +469,7 @@ ack_handler:
 				tx_header = (void *)tx->data;
 				data_ack = (void *)(tx->data + sizeof(*tx_header));
 				zassert_equal(INFUSE_RPC_DATA_ACK, tx_header->type);
+				zassert_equal(header.key_identifier, tx_header->key_identifier);
 				zassert_equal(ack_period, num_offsets);
 				packets_acked += num_offsets;
 				for (int i = 1; i < ack_period; i++) {
@@ -477,6 +493,7 @@ ack_handler:
 	rsp = (void *)(tx->data + sizeof(*tx_header));
 	zassert_equal(INFUSE_RPC_RSP, tx_header->type);
 	zassert_equal(EPACKET_AUTH_DEVICE, tx_header->auth);
+	zassert_equal(header.key_identifier, tx_header->key_identifier);
 	zassert_equal(request_id, rsp->header.request_id);
 	zassert_equal(RPC_ID_DATA_RECEIVER, rsp->header.command_id);
 	if (had_stop) {
