@@ -107,6 +107,7 @@ static void epacket_dummy_send(const struct device *dev, struct net_buf *buf)
 	header->type = meta->type;
 	header->auth = meta->auth;
 	header->flags = meta->flags;
+	header->key_identifier = meta->key_identifier;
 
 	epacket_notify_tx_result(dev, buf, error_code);
 	if (error_code == 0) {
@@ -143,6 +144,7 @@ int epacket_dummy_decrypt(struct net_buf *buf)
 	meta->auth = header->auth;
 	meta->type = header->type;
 	meta->flags = header->flags;
+	meta->key_identifier = header->key_identifier;
 	meta->sequence = 0;
 	return 0;
 }

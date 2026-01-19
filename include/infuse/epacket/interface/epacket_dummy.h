@@ -26,7 +26,7 @@ extern "C" {
  */
 
 /* Expected size of the dummy frame header */
-#define EPACKET_DUMMY_FRAME_EXPECTED_SIZE 3
+#define EPACKET_DUMMY_FRAME_EXPECTED_SIZE 8
 
 /* ePacket dummy data frame */
 struct epacket_dummy_frame {
@@ -36,6 +36,8 @@ struct epacket_dummy_frame {
 	uint8_t auth;
 	/* Payload flags */
 	uint16_t flags;
+	/* Key identifier */
+	uint32_t key_identifier;
 	/* Payload bytes */
 	uint8_t payload[];
 } __packed;

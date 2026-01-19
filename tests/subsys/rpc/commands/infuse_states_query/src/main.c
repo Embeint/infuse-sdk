@@ -150,7 +150,7 @@ ZTEST(rpc_command_infuse_states_query, test_basic)
 	net_buf_unref(rsp);
 
 	/* Reduce packet size so not all states can fit */
-	epacket_dummy_set_max_packet(30);
+	epacket_dummy_set_max_packet(34);
 
 	send_infuse_states_query_command(7, 0);
 	rsp = expect_infuse_states_query_response(7);

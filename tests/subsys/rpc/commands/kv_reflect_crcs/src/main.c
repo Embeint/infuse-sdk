@@ -94,14 +94,14 @@ ZTEST(rpc_command_kv_reflect_crcs, test_kv_reflect_crcs_overflow)
 	size_t expect_len;
 
 	/* Limit payload size:
-	 *   4 byte dummy header
+	 *   8 byte dummy header
 	 *   0 byte dummy footer
 	 *   8 byte RPC response header
 	 *   4 byte Command response header
 	 *
 	 * 6 bytes per ID:CRC pair, should fit 2.
 	 */
-	epacket_dummy_set_max_packet(32);
+	epacket_dummy_set_max_packet(36);
 
 	send_kv_reflect_crcs_command(1001, 0);
 	rsp = expect_kv_reflect_crcs_response(1001, 0);

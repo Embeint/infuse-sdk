@@ -12,7 +12,7 @@ tests:
   data_logger.tdf.epacket_footer:
     extra_args: DTC_OVERLAY_FILE="./app.overlay;./footer.overlay"
     extra_configs:
-      - CONFIG_EPACKET_PACKET_SIZE_MAX=70
+      - CONFIG_EPACKET_PACKET_SIZE_MAX=74
     platform_allow:
       - mps2/an385
       - qemu_cortex_m3
