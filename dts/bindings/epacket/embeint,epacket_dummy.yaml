@@ -11,6 +11,6 @@ properties:
   depends-on:
     default: "CONFIG_EPACKET_INTERFACE_DUMMY"
   header-size:
-    default: 4
+    default: 8
   footer-size:
     default: 0

@@ -387,7 +387,7 @@ static void test_command_data_param(uint32_t size, uint8_t ack_period, bool sing
 	expected_crc = 0;
 
 	/* Limit backend to a weird payload size to exercise word-alignment logic */
-	epacket_dummy_set_max_packet(117);
+	epacket_dummy_set_max_packet(121);
 
 	/* Need to do ePacket loopback in an alternate context for blocking API */
 	k_work_init_delayable(&dwork, async_processor);
@@ -529,7 +529,7 @@ static void test_command_data_param_auto_loader(uint32_t size, uint8_t ack_perio
 	expected_crc = 0;
 
 	/* Limit backend to a weird payload size to exercise word-alignment logic */
-	epacket_dummy_set_max_packet(117);
+	epacket_dummy_set_max_packet(121);
 
 	/* Need to do ePacket loopback in an alternate context for blocking API */
 	k_work_init_delayable(&dwork, async_processor);

@@ -445,8 +445,8 @@ ZTEST(tdf_data_logger, test_size_change_increase)
 	struct net_buf *buf;
 	int rc;
 
-	/* Start at 44 bytes (40 payload) */
-	epacket_dummy_set_max_packet(44);
+	/* Start at 48 bytes (40 payload) */
+	epacket_dummy_set_max_packet(48);
 	epacket_dummy_set_interface_state(dummy, true);
 
 	/* Log 32 bytes */
