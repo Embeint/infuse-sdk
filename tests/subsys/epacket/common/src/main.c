@@ -84,23 +84,25 @@ ZTEST(epacket_common, test_encrypt_unknown_key)
 {
 	const struct device *epacket_dummy = DEVICE_DT_GET(DT_NODELABEL(epacket_dummy));
 	uint32_t default_network = infuse_security_network_key_identifier();
+	struct epacket_tx_metadata *meta;
 	uint8_t payload[6] = {0};
 	struct net_buf *buf;
 	int rc;
 
 	buf = epacket_alloc_tx_for_interface(epacket_dummy, K_NO_WAIT);
-	net_buf_reserve(buf, 32);
 	zassert_not_null(buf);
+	net_buf_reserve(buf, 32);
+	meta = net_buf_user_data(buf);
 
 	/* Arbitrary network key metadata and payload */
 	epacket_set_tx_metadata(buf, EPACKET_AUTH_NETWORK, 0, INFUSE_TDF, EPACKET_ADDR_ALL);
 	net_buf_add_mem(buf, payload, sizeof(payload));
 
 	/* Network IDs we don't know can't be encrypted */
-	rc = epacket_unversioned_v0_encrypt(buf, EPACKET_KEY_INTERFACE_BT_GATT,
-					    default_network + 1);
+	meta->key_identifier = default_network + 1;
+	rc = epacket_unversioned_v0_encrypt(buf, EPACKET_KEY_INTERFACE_BT_GATT);
 	zassert_equal(-1, rc);
-	rc = epacket_versioned_v0_encrypt(buf, EPACKET_KEY_INTERFACE_BT_GATT, default_network + 1);
+	rc = epacket_versioned_v0_encrypt(buf, EPACKET_KEY_INTERFACE_BT_GATT);
 	zassert_equal(-1, rc);
 
 	net_buf_unref(buf);

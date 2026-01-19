@@ -468,8 +468,13 @@ static void epacket_bt_central_send(const struct device *dev, struct net_buf *bu
 	conn_idx = bt_conn_index(conn);
 	s = &infuse_conn[conn_idx];
 
+	/* Override network ID if packet is network encrypted */
+	if (meta->auth == EPACKET_AUTH_NETWORK) {
+		meta->key_identifier = s->network_id;
+	}
+
 	/* Encrypt the payload */
-	if (epacket_bt_gatt_encrypt(buf, s->network_id) < 0) {
+	if (epacket_bt_gatt_encrypt(buf) < 0) {
 		LOG_WRN("Failed to encrypt");
 		rc = -EIO;
 		goto cleanup;

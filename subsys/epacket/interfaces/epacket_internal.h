@@ -145,12 +145,11 @@ void epacket_bt_adv_send_next(void);
  * @brief Encrypt Bluetooth GATT packet for transmission
  *
  * @param buf Packet to encrypt
- * @param network_key_id Network key ID to use
  *
  * @retval 0 on success
  * @retval -1 on failure
  */
-int epacket_bt_gatt_encrypt(struct net_buf *buf, uint32_t network_key_id);
+int epacket_bt_gatt_encrypt(struct net_buf *buf);
 
 /**
  * @brief Decrypt received Bluetooth GATT packet
@@ -216,13 +215,11 @@ int epacket_dummy_decrypt(struct net_buf *buf);
  *
  * @param buf Packet to encrypt
  * @param interface_key Identify the interface
- * @param network_key_id Network key ID to use
  *
  * @retval 0 on success
  * @retval -1 on failure
  */
-int epacket_versioned_v0_encrypt(struct net_buf *buf, uint8_t interface_key,
-				 uint32_t network_key_id);
+int epacket_versioned_v0_encrypt(struct net_buf *buf, uint8_t interface_key);
 
 /**
  * @brief Decrypt received common V0 packet
@@ -240,13 +237,11 @@ int epacket_versioned_v0_decrypt(struct net_buf *buf, uint8_t interface_key);
  *
  * @param buf Packet to encrypt
  * @param interface_key Identify the interface
- * @param network_key_id Network key ID to use
  *
  * @retval 0 on success
  * @retval -1 on failure
  */
-int epacket_unversioned_v0_encrypt(struct net_buf *buf, uint8_t interface_key,
-				   uint32_t network_key_id);
+int epacket_unversioned_v0_encrypt(struct net_buf *buf, uint8_t interface_key);
 
 /**
  * @brief Decrypt received common V0 packet
