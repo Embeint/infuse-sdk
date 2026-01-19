@@ -125,8 +125,7 @@ void epacket_serial_reconstruct(const struct device *dev, uint8_t *buffer, size_
 
 int epacket_serial_encrypt(struct net_buf *buf)
 {
-	return epacket_versioned_v0_encrypt(buf, EPACKET_KEY_INTERFACE_SERIAL,
-					    infuse_security_network_key_identifier());
+	return epacket_versioned_v0_encrypt(buf, EPACKET_KEY_INTERFACE_SERIAL);
 }
 
 int epacket_serial_decrypt(struct net_buf *buf)

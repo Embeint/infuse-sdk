@@ -48,7 +48,7 @@
 #define WAIT_SECONDS 30                            /* seconds */
 #define WAIT_TIME    (WAIT_SECONDS * USEC_PER_SEC) /* microseconds*/
 
-int epacket_bt_gatt_encrypt(struct net_buf *buf, uint32_t network_key_id);
+int epacket_bt_gatt_encrypt(struct net_buf *buf);
 
 uint8_t mem_buffer[1024];
 extern enum bst_result_t bst_result;
@@ -1169,7 +1169,7 @@ static struct net_buf *create_rpc_request(const struct device *interface, void *
 	buf = epacket_alloc_tx_for_interface(interface, K_FOREVER);
 	epacket_set_tx_metadata(buf, EPACKET_AUTH_NETWORK, 0, INFUSE_RPC_CMD, EPACKET_ADDR_ALL);
 	net_buf_add_mem(buf, request, request_len);
-	if (epacket_bt_gatt_encrypt(buf, infuse_security_network_key_identifier()) < 0) {
+	if (epacket_bt_gatt_encrypt(buf) < 0) {
 		FAIL("Failed to encrypt GATT RPC\n");
 		net_buf_unref(buf);
 		return NULL;

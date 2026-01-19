@@ -21,6 +21,7 @@
 #include <zephyr/net_buf.h>
 #include <zephyr/bluetooth/bluetooth.h>
 
+#include <infuse/security_ids.h>
 #include <infuse/types.h>
 #include <infuse/epacket/interface.h>
 
@@ -76,6 +77,8 @@ struct epacket_tx_metadata {
 	enum epacket_auth auth;
 	/* Packet type */
 	enum infuse_type type;
+	/* Key identifier to use to encrypt packet for the auth level */
+	uint32_t key_identifier;
 	/* Flags to apply to packet */
 	uint16_t flags;
 	/* Sequence number used for packet */
@@ -339,6 +342,8 @@ static inline struct net_buf *epacket_alloc_tx_for_interface(const struct device
 /**
  * @brief Set metadata on a packet
  *
+ * Automatically populates the key ID based on the authentication type.
+ *
  * @param buf ePacket TX buffer
  * @param auth Authentication level to use for packet
  * @param flags Desired packet flags
@@ -352,6 +357,11 @@ static inline void epacket_set_tx_metadata(struct net_buf *buf, enum epacket_aut
 	struct epacket_tx_metadata *meta = net_buf_user_data(buf);
 
 	meta->auth = auth;
+	if (auth == EPACKET_AUTH_DEVICE) {
+		meta->key_identifier = infuse_security_device_key_identifier();
+	} else if (EPACKET_AUTH_NETWORK) {
+		meta->key_identifier = infuse_security_network_key_identifier();
+	}
 	meta->flags = epacket_global_flags_get() | flags;
 	meta->type = type;
 	meta->tx_done = NULL;

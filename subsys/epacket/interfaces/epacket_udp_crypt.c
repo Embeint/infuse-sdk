@@ -13,8 +13,7 @@
 
 int epacket_udp_encrypt(struct net_buf *buf)
 {
-	return epacket_unversioned_v0_encrypt(buf, EPACKET_KEY_INTERFACE_UDP,
-					      infuse_security_network_key_identifier());
+	return epacket_unversioned_v0_encrypt(buf, EPACKET_KEY_INTERFACE_UDP);
 }
 
 int epacket_udp_decrypt(struct net_buf *buf)
