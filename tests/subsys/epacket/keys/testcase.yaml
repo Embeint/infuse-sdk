@@ -10,3 +10,10 @@ tests:
     integration_platforms:
       - native_sim
       - mps2/an385
+  epacket.keys.secondary_remote:
+    platform_allow:
+      - mps2/an385
+    integration_platforms:
+      - mps2/an385
+    extra_configs:
+      - CONFIG_INFUSE_SECURITY_SECONDARY_REMOTE_ENABLE=y

@@ -17,6 +17,18 @@
 
 #define KEY_SIZE 32
 
+#ifdef CONFIG_INFUSE_SECURITY_SECONDARY_REMOTE_ENABLE
+
+#include <infuse/fs/kv_store.h>
+#include <infuse/fs/kv_types.h>
+
+/* Actual value doesn't matter, as we are just testing internal round trips */
+struct kv_secondary_remote_public_key secondary_remote = {
+	.public_key = {0x01, 0x02, 0x03, 0x04},
+};
+
+#endif /* CONFIG_INFUSE_SECURITY_SECONDARY_REMOTE_ENABLE */
+
 /* How many bits differ between two arrays */
 static uint32_t bit_difference(const void *a, const void *b, size_t size)
 {
@@ -253,8 +265,71 @@ ZTEST(epacket_keys, test_extension_networks)
 	zassert_equal(prev_key, out_key);
 }
 
+ZTEST(epacket_keys, test_secondary_remote)
+{
+#ifdef CONFIG_INFUSE_SECURITY_SECONDARY_REMOTE_ENABLE
+	uint8_t key_1[KEY_SIZE];
+	uint8_t key_2[KEY_SIZE];
+	const char *info;
+	psa_key_id_t root_1, root_2;
+	uint32_t root_id_1, root_id_2;
+	psa_key_id_t id_1, id_2;
+	uint32_t rotation;
+	uint8_t interface_id;
+	int rc1, rc2;
+
+	info = "test";
+	rotation = 1;
+
+	/* Keys are loaded */
+	root_1 = infuse_security_device_root_key();
+	root_2 = infuse_security_secondary_device_root_key();
+	root_id_1 = infuse_security_device_key_identifier();
+	root_id_2 = infuse_security_secondary_device_key_identifier();
+	zassert_not_equal(PSA_KEY_ID_NULL, root_1);
+	zassert_not_equal(PSA_KEY_ID_NULL, root_2);
+	zassert_not_equal(root_id_1, root_id_2);
+	zassert_not_equal(root_1, root_2);
+
+	/* Same inputs on different roots give different keys */
+	rc1 = epacket_key_derive(root_1, info, strlen(info), rotation, &id_1);
+	rc2 = epacket_key_derive(root_2, info, strlen(info), rotation, &id_2);
+
+	zassert_not_equal(id_1, id_2, "Same derived key ID");
+	zassert_equal(0, rc1, "Derivation failed");
+	zassert_equal(0, rc2, "Derivation failed");
+	zassert_equal(0, epacket_key_export(id_1, key_1), "Export failed");
+	zassert_equal(0, epacket_key_export(id_2, key_2), "Export failed");
+	zassert_not_equal(0, bit_difference(key_1, key_2, KEY_SIZE),
+			  "Derivation returned same key values");
+
+	psa_key_id_t derived_1, derived_2;
+
+	/* Retrieving keys for both identifiers works */
+	interface_id = EPACKET_KEY_DEVICE | EPACKET_KEY_INTERFACE_SERIAL;
+	derived_1 = epacket_key_id_get(interface_id, root_id_1, 50);
+	derived_2 = epacket_key_id_get(interface_id, root_id_2, 50);
+	zassert_not_equal(PSA_KEY_ID_NULL, derived_1);
+	zassert_not_equal(PSA_KEY_ID_NULL, derived_2);
+	zassert_not_equal(derived_1, derived_2);
+
+	/* Cleanup root keys */
+	zassert_equal(0, epacket_key_delete(id_1), "Delete failed");
+	zassert_equal(0, epacket_key_delete(id_2), "Delete failed");
+#else
+	ztest_test_skip();
+#endif /* CONFIG_INFUSE_SECURITY_SECONDARY_REMOTE_ENABLE */
+}
+
 static bool security_init(const void *global_state)
 {
+#ifdef CONFIG_INFUSE_SECURITY_SECONDARY_REMOTE_ENABLE
+	/* Setup secondary remote key */
+	if (KV_STORE_WRITE(KV_KEY_SECONDARY_REMOTE_PUBLIC_KEY, &secondary_remote) !=
+	    sizeof(secondary_remote)) {
+		return false;
+	}
+#endif /* CONFIG_INFUSE_SECURITY_SECONDARY_REMOTE_ENABLE */
 	infuse_security_init();
 	return true;
 }
