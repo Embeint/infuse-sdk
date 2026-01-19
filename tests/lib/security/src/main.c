@@ -101,10 +101,15 @@ ZTEST(security, test_secondary_shared_secret)
 {
 #ifdef CONFIG_INFUSE_SECURITY_SECONDARY_REMOTE_ENABLE
 	struct kv_secondary_remote_public_key remote;
+	psa_key_id_t primary_psa_id;
 	psa_key_id_t secondary_psa_id;
+	uint32_t primary_key_id;
 	uint32_t secondary_key_id;
 
 	default_init();
+
+	primary_key_id = infuse_security_device_key_identifier();
+	primary_psa_id = infuse_security_device_root_key();
 
 	/* No secondary public key exists, values are NULL */
 	secondary_key_id = infuse_security_secondary_device_key_identifier();
@@ -129,7 +134,9 @@ ZTEST(security, test_secondary_shared_secret)
 	secondary_key_id = infuse_security_secondary_device_key_identifier();
 	secondary_psa_id = infuse_security_secondary_device_root_key();
 	zassert_not_equal(0x00, secondary_key_id);
+	zassert_not_equal(primary_key_id, secondary_key_id);
 	zassert_not_equal(PSA_KEY_ID_NULL, secondary_psa_id);
+	zassert_not_equal(primary_psa_id, secondary_psa_id);
 
 	/* Should use cached value on next init */
 	infuse_security_init();
