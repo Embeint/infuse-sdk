@@ -42,6 +42,25 @@ static inline int8_t utc_timezone_location_approximate(int32_t longitude)
 }
 
 /**
+ * @brief Calculate the approximate UTC timezone of a location in minutes
+ *
+ * This function splits the earth into 15 minute longitude chunks to approximate the
+ * timezone without requiring any information other than the location. Due to the
+ * vagaries of actual time-zones, the true timezone offset may differ from this value
+ * by up to 3 hours (Western China).
+ *
+ * @param longitude Longitude (scaled by 1e7)
+ *
+ * @return int16_t Approximate timezone offset in minutes
+ */
+static inline int16_t utc_timezone_minutes_location_approximate(int32_t longitude)
+{
+	int32_t rounding = longitude > 0 ? 1250000 : -1250000;
+
+	return (longitude + rounding) / 2500000;
+}
+
+/**
  * @}
  */
 
