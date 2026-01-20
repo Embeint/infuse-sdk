@@ -42,3 +42,20 @@ config INFUSE_AUTO_BATTERY_CHARGE_ACCUMULATOR
 	bool "Automatically accumulate battery charge over time"
 	depends on ZBUS_CHANNEL_PUBLISH_STATS
 	depends on INFUSE_ZBUS_CHAN_BATTERY
+
+config INFUSE_AUTO_LOCATION_TIMEZONE
+	bool "Determine an approximate timezone from the location channel"
+	depends on INFUSE_ZBUS_CHAN_LOCATION
+	depends on INFUSE_EPOCH_TIME
+
+if INFUSE_AUTO_LOCATION_TIMEZONE
+
+module = LOCATION_TIMEZONE
+module-str = Location based timezones
+source "subsys/logging/Kconfig.template.log_config"
+
+config INFUSE_AUTO_LOCATION_TIMEZONE_REQUIRED_ACCURACY
+	int "Required location accuracy in meters to calculate a timezone"
+	default 10000
+
+endif # INFUSE_AUTO_LOCATION_TIMEZONE
