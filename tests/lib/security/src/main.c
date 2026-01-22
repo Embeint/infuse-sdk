@@ -101,6 +101,7 @@ ZTEST(security, test_secondary_shared_secret)
 {
 #ifdef CONFIG_INFUSE_SECURITY_SECONDARY_REMOTE_ENABLE
 	struct kv_secondary_remote_public_key remote;
+	uint8_t secondary_readback[32];
 	psa_key_id_t primary_psa_id;
 	psa_key_id_t secondary_psa_id;
 	psa_key_id_t secondary_sign_psa_id;
@@ -116,6 +117,7 @@ ZTEST(security, test_secondary_shared_secret)
 	secondary_key_id = infuse_security_secondary_device_key_identifier();
 	secondary_psa_id = infuse_security_secondary_device_root_key();
 	secondary_sign_psa_id = infuse_security_secondary_device_sign_key();
+	zassert_not_equal(0, infuse_security_secondary_remote_public_key(secondary_readback));
 	zassert_equal(0x00, secondary_key_id);
 	zassert_equal(PSA_KEY_ID_NULL, secondary_psa_id);
 	zassert_equal(PSA_KEY_ID_NULL, secondary_sign_psa_id);
@@ -139,12 +141,14 @@ ZTEST(security, test_secondary_shared_secret)
 	secondary_key_id = infuse_security_secondary_device_key_identifier();
 	secondary_psa_id = infuse_security_secondary_device_root_key();
 	secondary_sign_psa_id = infuse_security_secondary_device_sign_key();
+	zassert_equal(0, infuse_security_secondary_remote_public_key(secondary_readback));
 	zassert_not_equal(0x00, secondary_key_id);
 	zassert_not_equal(primary_key_id, secondary_key_id);
 	zassert_not_equal(PSA_KEY_ID_NULL, secondary_psa_id);
 	zassert_not_equal(PSA_KEY_ID_NULL, secondary_sign_psa_id);
 	zassert_not_equal(primary_psa_id, secondary_psa_id);
 	zassert_not_equal(primary_psa_id, secondary_sign_psa_id);
+	zassert_mem_equal(remote.public_key, secondary_readback, sizeof(secondary_readback));
 
 	/* Should use cached value on next init */
 	infuse_security_init();
@@ -152,9 +156,11 @@ ZTEST(security, test_secondary_shared_secret)
 	secondary_key_id = infuse_security_secondary_device_key_identifier();
 	secondary_psa_id = infuse_security_secondary_device_root_key();
 	secondary_sign_psa_id = infuse_security_secondary_device_sign_key();
+	zassert_equal(0, infuse_security_secondary_remote_public_key(secondary_readback));
 	zassert_not_equal(0x00, secondary_key_id);
 	zassert_not_equal(PSA_KEY_ID_NULL, secondary_psa_id);
 	zassert_not_equal(PSA_KEY_ID_NULL, secondary_sign_psa_id);
+	zassert_mem_equal(remote.public_key, secondary_readback, sizeof(secondary_readback));
 
 	/* Can delete cached device key */
 	zassert_equal(0, infuse_security_secondary_device_key_reset());
