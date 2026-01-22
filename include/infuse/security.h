@@ -69,6 +69,16 @@ void infuse_security_cloud_public_key(uint8_t public_key[32]);
 void infuse_security_device_public_key(uint8_t public_key[32]);
 
 /**
+ * @brief Retrieve current secondary remote public key
+ *
+ * @param public_key Storage for public key
+ *
+ * @retval 0 Key successfully read
+ * @retval -errno Key read error
+ */
+int infuse_security_secondary_remote_public_key(uint8_t public_key[32]);
+
+/**
  * @brief Get device root key identifier
  *
  * @note This key is only valid for key derivation options through HKDF

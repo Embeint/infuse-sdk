@@ -647,6 +647,23 @@ uint32_t infuse_security_secondary_device_key_identifier(void)
 	return secondary_device_info.key_id;
 }
 
+BUILD_ASSERT(sizeof(struct kv_secondary_remote_public_key) == 32);
+
+int infuse_security_secondary_remote_public_key(uint8_t public_key[32])
+{
+	int rc;
+
+	rc = kv_store_read(KV_KEY_SECONDARY_REMOTE_PUBLIC_KEY, public_key,
+			   sizeof(struct kv_secondary_remote_public_key));
+	if (rc == sizeof(struct kv_secondary_remote_public_key)) {
+		return 0;
+	} else if (rc < 0) {
+		return rc;
+	} else {
+		return -EINVAL;
+	}
+}
+
 psa_key_id_t infuse_security_secondary_device_sign_key(void)
 {
 	return secondary_device_sign_key;
