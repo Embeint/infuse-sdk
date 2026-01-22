@@ -58,15 +58,19 @@ psa_key_attributes_t infuse_security_hkdf_attributes(void);
  * @brief Retrieve current cloud public key
  *
  * @param public_key Storage for public key
+ *
+ * @retval 0 Always
  */
-void infuse_security_cloud_public_key(uint8_t public_key[32]);
+int infuse_security_cloud_public_key(uint8_t public_key[32]);
 
 /**
  * @brief Retrieve current device public key
  *
  * @param public_key Storage for public key
+ *
+ * @retval 0 Always
  */
-void infuse_security_device_public_key(uint8_t public_key[32]);
+int infuse_security_device_public_key(uint8_t public_key[32]);
 
 /**
  * @brief Retrieve current secondary remote public key
