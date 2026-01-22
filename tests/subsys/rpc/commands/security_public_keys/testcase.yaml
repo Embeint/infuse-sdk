@@ -1,0 +1,10 @@
+common:
+  tags: infuse
+  min_flash: 64
+  min_ram: 32
+tests:
+  rpc.commands.security_public_keys:
+    required_snippets:
+      - infuse
+    integration_platforms:
+      - mps2/an385
