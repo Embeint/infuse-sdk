@@ -76,6 +76,7 @@ static struct infuse_key_info secondary_network_info;
 #ifdef CONFIG_INFUSE_SECURITY_SECONDARY_REMOTE_ENABLE
 
 static struct infuse_key_info secondary_device_info;
+static psa_key_id_t secondary_device_sign_key;
 
 #endif /* CONFIG_INFUSE_SECURITY_SECONDARY_REMOTE_ENABLE */
 
@@ -488,6 +489,13 @@ int infuse_security_init(void)
 		if (secondary_device_info.psa_id == PSA_KEY_ID_NULL) {
 			LOG_WRN("Failed to derive secondary shared secret!");
 		}
+		/* Secondary signing key */
+		secondary_device_sign_key = infuse_security_derive_chacha_key(
+			secondary_device_info.psa_id, &salt, sizeof(salt), "sign", 4, false);
+		if (secondary_device_sign_key == PSA_KEY_ID_NULL) {
+			LOG_ERR("Failed to derive secondary signing key!");
+			return -EINVAL;
+		}
 	}
 #endif /* CONFIG_INFUSE_SECURITY_SECONDARY_REMOTE_ENABLE */
 
@@ -637,6 +645,11 @@ psa_key_id_t infuse_security_secondary_device_root_key(void)
 uint32_t infuse_security_secondary_device_key_identifier(void)
 {
 	return secondary_device_info.key_id;
+}
+
+psa_key_id_t infuse_security_secondary_device_sign_key(void)
+{
+	return secondary_device_sign_key;
 }
 
 int infuse_security_secondary_device_key_reset(void)

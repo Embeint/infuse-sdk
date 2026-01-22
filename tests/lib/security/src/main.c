@@ -103,6 +103,7 @@ ZTEST(security, test_secondary_shared_secret)
 	struct kv_secondary_remote_public_key remote;
 	psa_key_id_t primary_psa_id;
 	psa_key_id_t secondary_psa_id;
+	psa_key_id_t secondary_sign_psa_id;
 	uint32_t primary_key_id;
 	uint32_t secondary_key_id;
 
@@ -114,8 +115,10 @@ ZTEST(security, test_secondary_shared_secret)
 	/* No secondary public key exists, values are NULL */
 	secondary_key_id = infuse_security_secondary_device_key_identifier();
 	secondary_psa_id = infuse_security_secondary_device_root_key();
+	secondary_sign_psa_id = infuse_security_secondary_device_sign_key();
 	zassert_equal(0x00, secondary_key_id);
 	zassert_equal(PSA_KEY_ID_NULL, secondary_psa_id);
+	zassert_equal(PSA_KEY_ID_NULL, secondary_sign_psa_id);
 	zassert_equal(-ENOENT, infuse_security_secondary_device_key_reset());
 
 	/* Secondary public key written to KV store */
@@ -125,26 +128,33 @@ ZTEST(security, test_secondary_shared_secret)
 	/* Shared secret not automatically generated */
 	secondary_key_id = infuse_security_secondary_device_key_identifier();
 	secondary_psa_id = infuse_security_secondary_device_root_key();
+	secondary_sign_psa_id = infuse_security_secondary_device_sign_key();
 	zassert_equal(0x00, secondary_key_id);
 	zassert_equal(PSA_KEY_ID_NULL, secondary_psa_id);
+	zassert_equal(PSA_KEY_ID_NULL, secondary_sign_psa_id);
 
 	/* Generated after init */
 	infuse_security_init();
 
 	secondary_key_id = infuse_security_secondary_device_key_identifier();
 	secondary_psa_id = infuse_security_secondary_device_root_key();
+	secondary_sign_psa_id = infuse_security_secondary_device_sign_key();
 	zassert_not_equal(0x00, secondary_key_id);
 	zassert_not_equal(primary_key_id, secondary_key_id);
 	zassert_not_equal(PSA_KEY_ID_NULL, secondary_psa_id);
+	zassert_not_equal(PSA_KEY_ID_NULL, secondary_sign_psa_id);
 	zassert_not_equal(primary_psa_id, secondary_psa_id);
+	zassert_not_equal(primary_psa_id, secondary_sign_psa_id);
 
 	/* Should use cached value on next init */
 	infuse_security_init();
 
 	secondary_key_id = infuse_security_secondary_device_key_identifier();
 	secondary_psa_id = infuse_security_secondary_device_root_key();
+	secondary_sign_psa_id = infuse_security_secondary_device_sign_key();
 	zassert_not_equal(0x00, secondary_key_id);
 	zassert_not_equal(PSA_KEY_ID_NULL, secondary_psa_id);
+	zassert_not_equal(PSA_KEY_ID_NULL, secondary_sign_psa_id);
 
 	/* Can delete cached device key */
 	zassert_equal(0, infuse_security_secondary_device_key_reset());
