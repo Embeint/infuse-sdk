@@ -86,6 +86,9 @@ class {{ info['name'] }}(RPCDefinitionBase):
         ]
 {% if info['response_params']|length and info['response_params'][-1].get('num') == 0 %}
         vla_field = ("{{ info['response_params'][-1]['name'] }}", {{ info['response_params'][-1]['py_type'] }})
+{% if info['response_params'][-1].get('counted_by') %}
+        vla_counted_by = "{{ info['response_params'][-1].get('counted_by') }}"
+{% endif %}
 {% endif %}
         _pack_ = 1
 
