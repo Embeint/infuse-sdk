@@ -559,14 +559,16 @@ psa_key_id_t infuse_security_derive_chacha_key(psa_key_id_t base_key, const void
 	return infuse_security_derive_key(&params);
 }
 
-void infuse_security_cloud_public_key(uint8_t public_key[32])
+int infuse_security_cloud_public_key(uint8_t public_key[32])
 {
 	memcpy(public_key, infuse_cloud_public_key, sizeof(infuse_cloud_public_key));
+	return 0;
 }
 
-void infuse_security_device_public_key(uint8_t public_key[32])
+int infuse_security_device_public_key(uint8_t public_key[32])
 {
 	memcpy(public_key, device_public_key, sizeof(device_public_key));
+	return 0;
 }
 
 psa_key_id_t infuse_security_device_root_key(void)
