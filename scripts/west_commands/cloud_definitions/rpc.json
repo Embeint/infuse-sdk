@@ -162,6 +162,13 @@
                 {"name": "start_offset", "type": "uint16_t", "description": "Offset within start block"},
                 {"name": "num_bytes", "type": "uint32_t", "description": "Bytes to read (can read over block boundaries)"}
             ]
+        },
+        "rpc_struct_public_key_info_256bit": {
+            "description": "256 bit public key and identifier",
+            "fields": [
+                {"name": "id", "type": "enum rpc_enum_key_id","description": "Public key identifier"},
+                {"name": "key", "type": "uint8_t", "num": 32}
+            ]
         }
     },
     "enums": {
@@ -221,7 +228,9 @@
             "values": [
                 {"name": "NETWORK_KEY", "value": 0, "description": "Primary network key"},
                 {"name": "SECONDARY_NETWORK_KEY", "value": 1, "description": "Secondary network key"},
-                {"name": "SECONDARY_REMOTE_PUBLIC_KEY", "value": 2, "description": "Secondary remote public key"}
+                {"name": "SECONDARY_REMOTE_PUBLIC_KEY", "value": 2, "description": "Secondary remote public key"},
+                {"name": "DEVICE_PUBLIC_KEY", "value": 3, "description": "Root device public key"},
+                {"name": "CLOUD_PUBLIC_KEY", "value": 4, "description": "Cloud public key"}
             ]
         },
         "rpc_enum_key_action": {
@@ -858,6 +867,20 @@
                 {"name": "reboot_delay", "type": "uint8_t", "description": "Reboot in this many seconds to load new keys"}
             ],
             "response_params": []
+        },
+        "30002": {
+            "name": "security_public_keys",
+            "description": "Query device public keys",
+            "default": "y if INFUSE_SECURITY",
+            "default_auth": "EPACKET_AUTH_NETWORK",
+            "request_params": [
+                {"name": "skip", "type": "uint8_t", "description": "Skip first N keys in response"}
+            ],
+            "response_params": [
+                {"name": "keys_total", "type": "uint8_t", "description": "Number of public keys available"},
+                {"name": "keys_included", "type": "uint8_t", "description": "Number of public keys in this response"},
+                {"name": "public_keys", "type": "struct rpc_struct_public_key_info_256bit", "num": 0, "description": "Cloud public ECC key", "counted_by": "keys_included"}
+            ]
         },
         "32765": {
             "name": "data_sender",

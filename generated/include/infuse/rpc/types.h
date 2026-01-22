@@ -160,6 +160,10 @@ enum rpc_enum_key_id {
 	RPC_ENUM_KEY_ID_SECONDARY_NETWORK_KEY = 1,
 	/** Secondary remote public key */
 	RPC_ENUM_KEY_ID_SECONDARY_REMOTE_PUBLIC_KEY = 2,
+	/** Root device public key */
+	RPC_ENUM_KEY_ID_DEVICE_PUBLIC_KEY = 3,
+	/** Cloud public key */
+	RPC_ENUM_KEY_ID_CLOUD_PUBLIC_KEY = 4,
 };
 
 /** Infuse security key action */
@@ -397,6 +401,13 @@ struct rpc_struct_data_logger_chunk {
 	uint32_t num_bytes;
 } __packed;
 
+/** 256 bit public key and identifier */
+struct rpc_struct_public_key_info_256bit {
+	/** Public key identifier */
+	uint8_t id;
+	uint8_t key[32];
+} __packed;
+
 
 /**
  * @}
@@ -488,6 +499,8 @@ enum rpc_builtin_id {
 	RPC_ID_SECURITY_STATE = 30000,
 	/** Update key material */
 	RPC_ID_SECURITY_KEY_UPDATE = 30001,
+	/** Query device public keys */
+	RPC_ID_SECURITY_PUBLIC_KEYS = 30002,
 	/** Send multiple INFUSE_RPC_DATA packets */
 	RPC_ID_DATA_SENDER = 32765,
 	/** Receive multiple INFUSE_RPC_DATA packets */
@@ -1244,6 +1257,23 @@ struct rpc_security_key_update_request {
 
 struct rpc_security_key_update_response {
 	struct infuse_rpc_rsp_header header;
+} __packed;
+
+/** Query device public keys */
+struct rpc_security_public_keys_request {
+	struct infuse_rpc_req_header header;
+	/** Skip first N keys in response */
+	uint8_t skip;
+} __packed;
+
+struct rpc_security_public_keys_response {
+	struct infuse_rpc_rsp_header header;
+	/** Number of public keys available */
+	uint8_t keys_total;
+	/** Number of public keys in this response */
+	uint8_t keys_included;
+	/** Cloud public ECC key */
+	struct rpc_struct_public_key_info_256bit public_keys[];
 } __packed;
 
 /** Send multiple INFUSE_RPC_DATA packets */

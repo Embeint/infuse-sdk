@@ -370,6 +370,15 @@ struct net_buf *rpc_command_security_state(struct net_buf *request);
 struct net_buf *rpc_command_security_key_update(struct net_buf *request);
 
 /**
+ * @brief Run security_public_keys RPC
+ *
+ * @param request @ref INFUSE_RPC_CMD packet to respond to
+ *
+ * @return struct net_buf* @ref INFUSE_RPC_RSP packet buffer
+ */
+struct net_buf *rpc_command_security_public_keys(struct net_buf *request);
+
+/**
  * @brief Run data_sender RPC
  *
  * @param request @ref INFUSE_RPC_CMD packet to respond to
