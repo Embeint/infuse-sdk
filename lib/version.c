@@ -23,13 +23,22 @@ static const struct infuse_version build_version = {
 struct infuse_version application_version_get(void)
 {
 #ifdef CONFIG_MCUBOOT_IMG_MANAGER
+	static struct infuse_version cached_ver;
 	struct mcuboot_img_header header;
+	static bool cached;
 	int rc;
+
+	if (cached) {
+		/* Return the cached version, no need to read flash again */
+		return cached_ver;
+	}
 
 	/* Prefer version as reported by mcuboot */
 	rc = boot_read_bank_header(FIXED_PARTITION_ID(slot0_partition), &header, sizeof(header));
 	if ((rc == 0) && (header.mcuboot_version == 1)) {
-		return header.h.v1.sem_ver;
+		cached_ver = header.h.v1.sem_ver;
+		cached = true;
+		return cached_ver;
 	}
 #endif /* CONFIG_MCUBOOT_IMG_MANAGER */
 
