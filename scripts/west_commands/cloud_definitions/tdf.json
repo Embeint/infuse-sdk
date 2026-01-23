@@ -150,7 +150,7 @@
                 {"name": "blocks", "type": "uint32_t", "description": "Logger blocks written"},
                 {"name": "uptime", "type": "uint32_t", "description": "Uptime in seconds"},
                 {"name": "reboots", "type": "uint16_t", "description": "Reboot counter"},
-                {"name": "flags", "type": "uint8_t", "description": "Flags (BIT(0) == SD blocks)", "display": {"fmt": "hex", "digits": 2}}
+                {"name": "flags", "type": "uint8_t", "description": "Flags (BIT(0) = SD blocks, BIT(7) == Shipping)", "display": {"fmt": "hex", "digits": 2}}
             ]
         },
         "8": {
