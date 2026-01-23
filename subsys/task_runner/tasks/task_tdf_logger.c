@@ -19,6 +19,7 @@
 #include <infuse/fs/kv_store.h>
 #include <infuse/fs/kv_types.h>
 #include <infuse/math/common.h>
+#include <infuse/states.h>
 #include <infuse/tdf/tdf.h>
 #include <infuse/tdf/definitions.h>
 #include <infuse/tdf/util.h>
@@ -59,7 +60,7 @@ static void log_announce(uint8_t loggers, uint64_t timestamp)
 #if defined(CONFIG_DATA_LOGGER_EXFAT)
 	const struct device *logger = DEVICE_DT_GET(DT_NODELABEL(data_logger_exfat));
 
-	announce.flags |= 0x01;
+	announce.flags |= BIT(0);
 #else
 	const struct device *logger = DEVICE_DT_GET(DT_NODELABEL(data_logger_flash));
 #endif
@@ -72,6 +73,12 @@ static void log_announce(uint8_t loggers, uint64_t timestamp)
 		announce.blocks = UINT32_MAX;
 	}
 #endif /* defined(CONFIG_DATA_LOGGER_EXFAT) || defined(CONFIG_DATA_LOGGER_FLASH_MAP) */
+#if defined(CONFIG_INFUSE_APPLICATION_STATES)
+	if (!infuse_state_get(INFUSE_STATE_APPLICATION_ACTIVE)) {
+		/* Device is not active */
+		announce.flags |= BIT(7);
+	}
+#endif /* defined(CONFIG_INFUSE_APPLICATION_STATES) */
 
 	TDF_DATA_LOGGER_LOG(loggers, TDF_ANNOUNCE_V2, timestamp, &announce);
 }
