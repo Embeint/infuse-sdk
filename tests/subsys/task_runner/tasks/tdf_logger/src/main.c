@@ -10,6 +10,7 @@
 
 #include <zephyr/ztest.h>
 #include <zephyr/kernel.h>
+#include <zephyr/sys/crc.h>
 
 #include <infuse/epacket/packet.h>
 #include <infuse/epacket/interface/epacket_dummy.h>
@@ -17,6 +18,9 @@
 #include <infuse/data_logger/high_level/tdf.h>
 #include <infuse/drivers/imu.h>
 #include <infuse/lib/lte_modem_monitor.h>
+#include <infuse/fs/kv_store.h>
+#include <infuse/fs/kv_types.h>
+#include <infuse/states.h>
 #include <infuse/tdf/tdf.h>
 #include <infuse/zbus/channels.h>
 
@@ -238,6 +242,63 @@ ZTEST(task_tdf_logger, test_reschedule)
 
 	/* 100 seconds, +- 10% */
 	zassert_within(100 * MSEC_PER_SEC, last - start, 10 * MSEC_PER_SEC);
+}
+
+ZTEST(task_tdf_logger, test_announce)
+{
+	struct k_fifo *tx_queue = epacket_dummmy_transmit_fifo_get();
+	uint16_t board_crc = crc16_ccitt(0x0000, CONFIG_BOARD_TARGET, strlen(CONFIG_BOARD_TARGET));
+	struct kv_reboots reboots;
+	struct tdf_announce_v2 *parsed;
+	struct net_buf *pkt;
+	struct tdf_parsed tdf;
+
+	zassert_not_null(tx_queue);
+
+	schedule.task_args.infuse.tdf_logger = (struct task_tdf_logger_args){
+		.loggers = TDF_DATA_LOGGER_SERIAL,
+		.tdfs = TASK_TDF_LOGGER_LOG_ANNOUNCE,
+	};
+
+	zassert_true(infuse_state_get(INFUSE_STATE_APPLICATION_ACTIVE));
+
+	/* Announce data should send */
+	task_schedule(&data);
+	pkt = k_fifo_get(tx_queue, K_MSEC(100));
+	zassert_not_null(pkt);
+	net_buf_pull(pkt, sizeof(struct epacket_dummy_frame));
+	zassert_equal(0, tdf_parse_find_in_buf(pkt->data, pkt->len, TDF_ANNOUNCE_V2, &tdf));
+	zassert_equal(0, tdf.time);
+	zassert_equal(sizeof(*parsed), tdf.tdf_len);
+	parsed = (void *)tdf.data;
+	zassert_equal(CONFIG_INFUSE_APPLICATION_ID, parsed->application);
+	zassert_equal(board_crc, parsed->board_crc);
+	zassert_equal(k_uptime_seconds(), parsed->uptime);
+	zassert_equal(kv_store_reflect_crc(), parsed->kv_crc);
+	zassert_equal(1, parsed->reboots);
+	zassert_equal(0x00, parsed->flags);
+	net_buf_unref(pkt);
+
+	/* Bump reboot count, set into shipping mode */
+	reboots.count = 5;
+	zassert_equal(sizeof(reboots), KV_STORE_WRITE(KV_KEY_REBOOTS, &reboots));
+	infuse_state_clear(INFUSE_STATE_APPLICATION_ACTIVE);
+
+	task_schedule(&data);
+	pkt = k_fifo_get(tx_queue, K_MSEC(100));
+	zassert_not_null(pkt);
+	net_buf_pull(pkt, sizeof(struct epacket_dummy_frame));
+	zassert_equal(0, tdf_parse_find_in_buf(pkt->data, pkt->len, TDF_ANNOUNCE_V2, &tdf));
+	zassert_equal(0, tdf.time);
+	zassert_equal(sizeof(*parsed), tdf.tdf_len);
+	parsed = (void *)tdf.data;
+	zassert_equal(CONFIG_INFUSE_APPLICATION_ID, parsed->application);
+	zassert_equal(board_crc, parsed->board_crc);
+	zassert_equal(k_uptime_seconds(), parsed->uptime);
+	zassert_equal(kv_store_reflect_crc(), parsed->kv_crc);
+	zassert_equal(5, parsed->reboots);
+	zassert_equal(BIT(7), parsed->flags);
+	net_buf_unref(pkt);
 }
 
 ZTEST(task_tdf_logger, test_battery)
