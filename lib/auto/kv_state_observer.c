@@ -166,7 +166,7 @@ void kv_state_observer_init_internal(void)
 	/* Evaluate immediately */
 	k_work_schedule(&led_delayable, K_NO_WAIT);
 #endif /* CONFIG_KV_STORE_KEY_LED_DISABLE_DAILY_TIME_RANGE */
-#ifdef CONFIG_KV_STORE_KEY_APPLICATION_ACTIVE
+#if defined(CONFIG_KV_STORE_KEY_APPLICATION_ACTIVE)
 	struct kv_application_active active;
 
 	if (KV_STORE_READ(KV_KEY_APPLICATION_ACTIVE, &active) == sizeof(active)) {
@@ -175,7 +175,7 @@ void kv_state_observer_init_internal(void)
 		/* Slot has not been written, assume active */
 		infuse_state_set(INFUSE_STATE_APPLICATION_ACTIVE);
 	}
-#else
+#elif defined(CONFIG_INFUSE_AUTO_KV_STATE_OBSERVER_ASSUME_ACTIVE)
 	/* KV key is not enabled, assume active */
 	infuse_state_set(INFUSE_STATE_APPLICATION_ACTIVE);
 #endif /* CONFIG_KV_STORE_KEY_APPLICATION_ACTIVE */
