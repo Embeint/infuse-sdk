@@ -135,46 +135,79 @@ static int pac194x_channel_get(const struct device *dev, enum sensor_channel cha
 	return sensor_value_from_micro(val, val_micro);
 }
 
+static int wait_until_ready(const struct device *dev)
+{
+	const struct pac194x_config *config = dev->config;
+	uint8_t regs[3] = {0};
+	int elapsed = 0;
+	int rc = -EIO;
+
+	while (elapsed <= 150) {
+		/* Wait for next poll */
+		k_sleep(K_MSEC(10));
+		elapsed += 10;
+
+		/* Read the ID bytes */
+		rc = pac194x_read_n(dev, PAC194X_REG_PRODUCT_ID, regs, 3);
+		if (rc < 0) {
+			continue;
+		}
+		if (regs[0] != config->product_id) {
+			rc = -EIO;
+			continue;
+		}
+		LOG_DBG("Manu: 0x%02X Part: 0x%02X Rev: 0x%02X", regs[1], regs[0], regs[2]);
+		break;
+	}
+	if (rc == 0) {
+		LOG_DBG("Ready after %d ms", elapsed);
+	} else {
+		LOG_ERR("Failed to read ID registers");
+	}
+	return rc;
+}
+
 static int pac194x_power_up(const struct device *dev)
 {
 	const struct pac194x_config *config = dev->config;
 	uint16_t ctrl = PAC194X_CTRL_SLOW_ALERT_INPUT | PAC194X_CTRL_GPIO_ALERT_INPUT |
 			PAC194X_CTRL_MODE_SINGLE_SHOT_8X | config->disabled_channels;
-	uint8_t regs[3] = {0};
 	int rc = 0;
 
-	/* Time to first communications after power up is maximum 50ms */
 	if (config->power_down_gpio.port) {
+		/* Move out of power down state */
 		gpio_pin_configure_dt(&config->power_down_gpio, GPIO_OUTPUT_INACTIVE);
 	}
 
-	/* Up to 50 ms before first communications */
-	k_sleep(K_MSEC(50));
+	/* Wait until communications are working */
+	rc = wait_until_ready(dev);
+	if (rc < 0) {
+		goto end;
+	}
 
 	/* Write the control register */
 	rc = pac194x_write_u16(dev, PAC194X_REG_CTRL, ctrl);
 	if (rc < 0) {
-		return rc;
+		goto end;
+	}
+
+	/* Configure the full scale ranges */
+	rc = pac194x_write_u16(dev, PAC194X_REG_NEG_PWR_FSR, config->fsr_config);
+	if (rc < 0) {
+		goto end;
 	}
 
 	/* REFRESH to update internal registers */
 	rc = pac194x_write_cmd(dev, PAC194X_REG_REFRESH, 1);
 	if (rc < 0) {
-		return rc;
+		goto end;
 	}
-
-	/* Read the ID bytes */
-	rc = pac194x_read_n(dev, PAC194X_REG_PRODUCT_ID, regs, 3);
-	if (rc < 0) {
-		LOG_DBG("Failed to read ID registers");
-		return -EIO;
+end:
+	if ((rc < 0) && config->power_down_gpio.port) {
+		/* Resume failed, put back into sleep mode */
+		gpio_pin_set_dt(&config->power_down_gpio, 1);
 	}
-	LOG_DBG("Manu: 0x%02X Part: 0x%02X Rev: 0x%02X", regs[1], regs[0], regs[2]);
-	if (regs[0] != config->product_id) {
-		LOG_ERR("Unexpected product ID (%02X != %02X)", regs[0], config->product_id);
-		return -EINVAL;
-	}
-	return 0;
+	return rc;
 }
 
 static void pac194x_suspend(const struct device *dev)
@@ -190,44 +223,14 @@ static void pac194x_suspend(const struct device *dev)
 static int pac194x_resume(const struct device *dev)
 {
 	const struct pac194x_config *config = dev->config;
-	const uint16_t ctrl = PAC194X_CTRL_SLOW_ALERT_INPUT | PAC194X_CTRL_GPIO_ALERT_INPUT |
-			      PAC194X_CTRL_MODE_SINGLE_SHOT_8X | config->disabled_channels;
-	int rc = 0;
 
 	if (!config->power_down_gpio.port) {
 		/* Already in the correct state from power up */
 		return 0;
 	}
 
-	/* Disable the power down mode */
-	gpio_pin_configure_dt(&config->power_down_gpio, GPIO_OUTPUT_INACTIVE);
-
-	/* Measured duration until chip responds */
-	k_sleep(K_MSEC(50));
-
-	/* Put the device into single shot mode */
-	rc = pac194x_write_u16(dev, PAC194X_REG_CTRL, ctrl);
-	if (rc < 0) {
-		goto end;
-	}
-
-	/* Configure the full scale ranges */
-	rc = pac194x_write_u16(dev, PAC194X_REG_NEG_PWR_FSR, config->fsr_config);
-	if (rc < 0) {
-		goto end;
-	}
-
-	/* Update the registers */
-	rc = pac194x_write_cmd(dev, PAC194X_REG_REFRESH, 3);
-	if (rc < 0) {
-		goto end;
-	}
-end:
-	if ((rc < 0) && config->power_down_gpio.port) {
-		/* Resume failed, put back into sleep mode */
-		gpio_pin_set_dt(&config->power_down_gpio, 1);
-	}
-	return rc;
+	/* Run power up sequence */
+	return pac194x_power_up(dev);
 }
 
 static int pac194x_pm_control(const struct device *dev, enum pm_device_action action)
