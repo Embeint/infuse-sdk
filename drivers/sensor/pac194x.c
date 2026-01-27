@@ -70,35 +70,46 @@ static int pac194x_sample_fetch(const struct device *dev, enum sensor_channel ch
 
 	ARG_UNUSED(chan);
 
-	/* REFRESH to read the latest sample */
-	rc = pac194x_write_cmd(dev, PAC194X_REG_REFRESH, 5);
+	/* REFRESH to trigger the single shot sample.
+	 * The single shot measurement on one channel is expected to take 5.2 ms.
+	 */
+	rc = pac194x_write_cmd(dev, PAC194X_REG_REFRESH, 8);
 	if (rc < 0) {
 		return rc;
 	}
 
-	/* Read number of samples */
+	/* REFRESH to load the results into the registers. */
+	rc = pac194x_write_cmd(dev, PAC194X_REG_REFRESH, 1);
+	if (rc < 0) {
+		return rc;
+	}
+
+	/* Read number of samples and validate against expected count */
 	rc = pac194x_read_n(dev, PAC194X_REG_ACC_COUNT, values, 4);
 	if (rc < 0) {
 		return rc;
 	}
-	/* Ignore for now until we move back to single-shot sampling */
 	acc_count = sys_get_be32(values);
-	ARG_UNUSED(acc_count);
+	if (acc_count != 8) {
+		LOG_WRN("Unexpected sample count: %d", acc_count);
+		return -EINVAL;
+	}
 
-	rc = pac194x_read_n(dev, PAC194X_REG_VBUS_0, values, 2);
+	/* Read out the 8 sample averages */
+	rc = pac194x_read_n(dev, PAC194X_REG_VBUS_0_AVG, values, 2);
 	if (rc < 0) {
 		return rc;
 	}
 	data->v_bus = sys_get_be16(values);
 
-	rc = pac194x_read_n(dev, PAC194X_REG_VSENSE_0, values, 2);
+	rc = pac194x_read_n(dev, PAC194X_REG_VSENSE_0_AVG, values, 2);
 	if (rc < 0) {
 		return rc;
 	}
 	data->v_sense = sys_get_be16(values);
 
-	LOG_DBG("  VBUS raw: %d", data->v_bus);
-	LOG_DBG("VSENSE raw: %d", data->v_sense);
+	LOG_DBG("  VBUS AVG raw: %d", data->v_bus);
+	LOG_DBG("VSENSE AVG raw: %d", data->v_sense);
 	return 0;
 }
 
@@ -127,8 +138,8 @@ static int pac194x_channel_get(const struct device *dev, enum sensor_channel cha
 static int pac194x_power_up(const struct device *dev)
 {
 	const struct pac194x_config *config = dev->config;
-	uint16_t ctrl = PAC194X_CTRL_SLOW_ALERT_SLOW | PAC194X_CTRL_GPIO_ALERT_INPUT |
-			PAC194X_CTRL_MODE_SLEEP;
+	uint16_t ctrl = PAC194X_CTRL_SLOW_ALERT_INPUT | PAC194X_CTRL_GPIO_ALERT_INPUT |
+			PAC194X_CTRL_MODE_SINGLE_SHOT_8X | config->disabled_channels;
 	uint8_t regs[3] = {0};
 	int rc = 0;
 
@@ -179,28 +190,44 @@ static void pac194x_suspend(const struct device *dev)
 static int pac194x_resume(const struct device *dev)
 {
 	const struct pac194x_config *config = dev->config;
-	uint16_t ctrl = PAC194X_CTRL_SLOW_ALERT_SLOW | PAC194X_CTRL_GPIO_ALERT_INPUT |
-			PAC194X_CTRL_MODE_1024_SPS;
+	const uint16_t ctrl = PAC194X_CTRL_SLOW_ALERT_INPUT | PAC194X_CTRL_GPIO_ALERT_INPUT |
+			      PAC194X_CTRL_MODE_SINGLE_SHOT_8X | config->disabled_channels;
 	int rc = 0;
 
-	if (config->power_down_gpio.port) {
-		gpio_pin_configure_dt(&config->power_down_gpio, GPIO_OUTPUT_INACTIVE);
-		/* Up to 50 ms before first communications */
-		k_sleep(K_MSEC(50));
+	if (!config->power_down_gpio.port) {
+		/* Already in the correct state from power up */
+		return 0;
+	}
+
+	/* Disable the power down mode */
+	gpio_pin_configure_dt(&config->power_down_gpio, GPIO_OUTPUT_INACTIVE);
+
+	/* Measured duration until chip responds */
+	k_sleep(K_MSEC(50));
+
+	/* Put the device into single shot mode */
+	rc = pac194x_write_u16(dev, PAC194X_REG_CTRL, ctrl);
+	if (rc < 0) {
+		goto end;
 	}
 
 	/* Configure the full scale ranges */
 	rc = pac194x_write_u16(dev, PAC194X_REG_NEG_PWR_FSR, config->fsr_config);
 	if (rc < 0) {
-		return rc;
+		goto end;
 	}
 
-	/* Prepare the control register for the first REFRESH command */
-	rc = pac194x_write_u16(dev, PAC194X_REG_CTRL, ctrl);
+	/* Update the registers */
+	rc = pac194x_write_cmd(dev, PAC194X_REG_REFRESH, 3);
 	if (rc < 0) {
-		return rc;
+		goto end;
 	}
-	return pac194x_write_cmd(dev, PAC194X_REG_REFRESH, 2);
+end:
+	if ((rc < 0) && config->power_down_gpio.port) {
+		/* Resume failed, put back into sleep mode */
+		gpio_pin_set_dt(&config->power_down_gpio, 1);
+	}
+	return rc;
 }
 
 static int pac194x_pm_control(const struct device *dev, enum pm_device_action action)
@@ -261,13 +288,14 @@ static DEVICE_API(sensor, pac194x_driver_api) = {
 #define INST_FULL_SCALE_CURRENT(inst)                                                              \
 	((1000000 * 100) / DT_INST_PROP(inst, sense_resistor_milli_ohms))
 
-#define PAC194X_DRIVER_INIT(inst, type)                                                            \
+#define PAC194X_DRIVER_INIT(inst, type, _disabled_channels)                                        \
 	static const struct pac194x_config drv_config_##type##inst = {                             \
 		.bus = I2C_DT_SPEC_INST_GET(inst),                                                 \
 		.power_down_gpio = GPIO_DT_SPEC_INST_GET_OR(inst, power_down_gpios, {0}),          \
 		.full_scale_current_microamps = INST_FULL_SCALE_CURRENT(inst),                     \
 		.fsr_config = (DT_INST_ENUM_IDX(inst, fsr_vbus_channel_1) << 6) |                  \
 			      (DT_INST_ENUM_IDX(inst, fsr_vsense_channel_1) << 14),                \
+		.disabled_channels = _disabled_channels,                                           \
 		.vbus_shift = DT_INST_ENUM_IDX(inst, fsr_vbus_channel_1) == 1 ? 15 : 16,           \
 		.vsense_shift = DT_INST_ENUM_IDX(inst, fsr_vsense_channel_1) == 1 ? 15 : 16,       \
 		.product_id = PAC194X_PRODUCT_ID_##type,                                           \
@@ -280,5 +308,5 @@ static DEVICE_API(sensor, pac194x_driver_api) = {
 				     &pac194x_driver_api);
 
 #define DT_DRV_COMPAT microchip_pac1941_1
-DT_INST_FOREACH_STATUS_OKAY_VARGS(PAC194X_DRIVER_INIT, PAC1941_1)
+DT_INST_FOREACH_STATUS_OKAY_VARGS(PAC194X_DRIVER_INIT, PAC1941_1, 0x70)
 #undef DT_DRV_COMPAT
