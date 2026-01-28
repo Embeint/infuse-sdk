@@ -52,6 +52,16 @@ static bool adv_set_active;
 static uint8_t scan_suspended;
 static K_SEM_DEFINE(scan_control, 1, 1);
 
+#ifdef CONFIG_EPACKET_INTERFACE_BT_ADV_FALLBACK_SCAN_CALLBACK
+static bt_le_scan_cb_t *fallback_scan_cb;
+
+void epacket_bt_adv_set_fallback_scan_callback(bt_le_scan_cb_t scan_cb)
+{
+	fallback_scan_cb = scan_cb;
+}
+
+#endif /* CONFIG_EPACKET_INTERFACE_BT_ADV_FALLBACK_SCAN_CALLBACK */
+
 static void bt_adv_broadcast(const struct device *dev, struct net_buf *pkt)
 {
 	struct bt_le_adv_param adv_param = {
@@ -190,6 +200,11 @@ static void scan_cb(const bt_addr_le_t *addr, int8_t rssi, uint8_t adv_type,
 	scan_watchdog_timeouts = 0;
 
 	if (!epacket_bt_adv_is_epacket(adv_type, buf)) {
+#ifdef CONFIG_EPACKET_INTERFACE_BT_ADV_FALLBACK_SCAN_CALLBACK
+		if (fallback_scan_cb != NULL) {
+			fallback_scan_cb(addr, rssi, adv_type, buf);
+		}
+#endif /* CONFIG_EPACKET_INTERFACE_BT_ADV_FALLBACK_SCAN_CALLBACK */
 		return;
 	}
 	LOG_DBG("%s: %d bytes %d dBm", bt_addr_le_str(addr), buf->len, rssi);

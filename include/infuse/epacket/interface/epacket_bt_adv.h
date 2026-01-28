@@ -13,6 +13,7 @@
 #include <stdint.h>
 
 #include <zephyr/toolchain.h>
+#include <zephyr/bluetooth/bluetooth.h>
 
 #include <infuse/epacket/interface/common.h>
 
@@ -52,6 +53,18 @@ void epacket_bt_adv_scan_suspend(void);
  * Release the constraint of Bluetooth scanning created by @ref epacket_bt_adv_scan_suspend.
  */
 void epacket_bt_adv_scan_resume(void);
+
+/**
+ * @brief Register a callback to be run on non-Infuse Bluetooth packets
+ *
+ * Only available if @kconfig{CONFIG_EPACKET_INTERFACE_BT_ADV_FALLBACK_SCAN_CALLBACK} is enabled
+ *
+ * @note Callback runs from the Bluetooth stack context, blocking function calls should be
+ *       avoided or deferred to an alternate context.
+ *
+ * @param scan_cb Callback to run on non-Infuse Bluetooth packets
+ */
+void epacket_bt_adv_set_fallback_scan_callback(bt_le_scan_cb_t scan_cb);
 
 /**
  * @}
