@@ -152,9 +152,14 @@ config EPACKET_INTERFACE_BT_ADV_SCAN_WATCHDOG_MIN_REBOOT_AGE_SEC
 	int "Minimum uptime to trigger a reboot if scanning fails"
 	default 14400
 	help
-	  If restating scanning does not result in advertising packets being observed, reboot
+	  If restarting scanning does not result in advertising packets being observed, reboot
 	  the device if the application has been running for at least this long. Default is
 	  4 hours.
+
+config EPACKET_INTERFACE_BT_ADV_FALLBACK_SCAN_CALLBACK
+	bool "Allow applications to register a callback for all observing non-Infuse advertising packets"
+	help
+	  Callback is registered via `epacket_bt_adv_set_fallback_scan_callback`.
 
 module = EPACKET_BT_ADV
 module-str = epacket_bt_adv
