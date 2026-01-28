@@ -275,6 +275,62 @@ static void main_gateway_scan_wdog(void)
 	}
 }
 
+#ifdef CONFIG_EPACKET_INTERFACE_BT_ADV_FALLBACK_SCAN_CALLBACK
+static int custom_callbacks_observed;
+
+static void app_scan_cb(const bt_addr_le_t *addr, int8_t rssi, uint8_t adv_type,
+			struct net_buf_simple *buf)
+{
+	LOG_HEXDUMP_INF(buf->data, buf->len, "PACKET");
+	LOG_INF("TYPE: %d RSSI: %d dBm", adv_type, rssi);
+	custom_callbacks_observed += 1;
+}
+
+#endif /* CONFIG_EPACKET_INTERFACE_BT_ADV_FALLBACK_SCAN_CALLBACK */
+
+static void main_gateway_scan_app_cb(void)
+{
+#ifdef CONFIG_EPACKET_INTERFACE_BT_ADV_FALLBACK_SCAN_CALLBACK
+	const struct device *epacket_bt_adv = DEVICE_DT_GET(DT_NODELABEL(epacket_bt_adv));
+	int rc;
+
+	common_init();
+	epacket_set_receive_handler(epacket_bt_adv, epacket_bt_adv_receive_handler);
+	rc = epacket_receive(epacket_bt_adv, K_FOREVER);
+	if (rc < 0) {
+		FAIL("Failed to start ePacket receive (%d)\n", rc);
+		return;
+	}
+
+	/* 2 seconds without the callback set */
+	k_sleep(K_SECONDS(2));
+	if (custom_callbacks_observed != 0) {
+		FAIL("Callbacks observed without setting? (%d)\n", custom_callbacks_observed);
+		return;
+	}
+
+	/* Set the callback, continue observing for 4 seconds */
+	epacket_bt_adv_set_fallback_scan_callback(app_scan_cb);
+	k_sleep(K_SECONDS(4));
+
+	/* Disable the receiving */
+	rc = epacket_receive(epacket_bt_adv, K_NO_WAIT);
+	if (rc < 0) {
+		FAIL("Failed to stop ePacket receive (%d)\n", rc);
+		return;
+	}
+
+	/* Validate callback was run */
+	if (custom_callbacks_observed == 0) {
+		FAIL("No callbacks observed\n");
+		return;
+	}
+	PASS("User callbacks observed\n");
+#else
+	FAIL("Application callbacks not supported\n");
+#endif /* CONFIG_EPACKET_INTERFACE_BT_ADV_FALLBACK_SCAN_CALLBACK */
+}
+
 static int observe_peers(bt_addr_le_t *addr, uint8_t num)
 {
 	const struct device *epacket_bt_adv = DEVICE_DT_GET(DT_NODELABEL(epacket_bt_adv));
@@ -2405,6 +2461,13 @@ static const struct bst_test_instance epacket_gateway[] = {
 		.test_pre_init_f = test_init,
 		.test_tick_f = test_tick,
 		.test_main_f = main_gateway_scan_wdog,
+	},
+	{
+		.test_id = "epacket_bt_gateway_scan_app_cb",
+		.test_descr = "Test application Bluetooth callback",
+		.test_pre_init_f = test_init,
+		.test_tick_f = test_tick,
+		.test_main_f = main_gateway_scan_app_cb,
 	},
 	{
 		.test_id = "epacket_bt_gateway_connect",

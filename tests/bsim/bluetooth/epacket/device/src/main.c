@@ -16,6 +16,7 @@
 #include "time_machine.h"
 #include "bstests.h"
 
+#include <infuse/bluetooth/legacy_adv.h>
 #include <infuse/epacket/interface.h>
 #include <infuse/epacket/packet.h>
 #include <infuse/data_logger/logger.h>
@@ -262,6 +263,17 @@ static void main_epacket_bt_periph_send_unconnected(void)
 	PASS("Send to unconnected passed\n");
 }
 
+static void main_epacket_bt_name(void)
+{
+	/* Start the legacy name broadcaster */
+	bluetooth_legacy_advertising_run();
+
+	/* Wait for test to complete */
+	k_sleep(K_SECONDS(9));
+
+	PASS("Advertising device complete\n");
+}
+
 void test_tick(bs_time_t HW_device_time)
 {
 	if (bst_result != Passed) {
@@ -296,6 +308,13 @@ static const struct bst_test_instance ext_adv_advertiser[] = {
 		.test_pre_init_f = test_init,
 		.test_tick_f = test_tick,
 		.test_main_f = main_epacket_bt_periph_send_unconnected,
+	},
+	{
+		.test_id = "epacket_bt_name",
+		.test_descr = "Advertising Bluetooth name",
+		.test_pre_init_f = test_init,
+		.test_tick_f = test_tick,
+		.test_main_f = main_epacket_bt_name,
 	},
 	BSTEST_END_MARKER,
 };
