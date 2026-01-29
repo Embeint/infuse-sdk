@@ -1,0 +1,10 @@
+#include <mem.h>
+
+/ {
+	chosen {
+		/delete-property/ zephyr,flash-controller;
+	};
+};
+/delete-node/ &sim_flash_controller;
+
+#include "../app.overlay"

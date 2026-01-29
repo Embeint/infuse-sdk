@@ -1,4 +1,5 @@
 # Infuse-IoT subsys compilation
 
 add_subdirectory_ifdef(CONFIG_KV_STORE kv_store)
+add_subdirectory_ifdef(CONFIG_INFUSE_LITTLEFS littlefs)
 add_subdirectory_ifdef(CONFIG_INFUSE_SECURE_STORAGE secure_storage)

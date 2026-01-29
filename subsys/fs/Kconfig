@@ -1,2 +1,3 @@
 rsource "kv_store/Kconfig"
+rsource "littlefs/Kconfig"
 rsource "secure_storage/Kconfig"

@@ -1,0 +1,38 @@
+# Infuse-IoT SDK LittleFS integration
+
+# Workaround for not being able to have commas in macro arguments
+DT_CHOSEN_INFUSE_LITTLEFS_PARTITION := infuse,littlefs-partition
+
+config INFUSE_LITTLEFS
+	bool "Infuse-IoT LittleFS integration"
+	depends on $(dt_chosen_enabled,$(DT_CHOSEN_INFUSE_LITTLEFS_PARTITION))
+	select FILE_SYSTEM_LITTLEFS
+	select FILE_SYSTEM_LIB_LINK
+	default y
+
+if INFUSE_LITTLEFS
+
+config INFUSE_LITTLEFS_CACHE_SIZE
+	int "Cache size for the LittleFS integration"
+	default 256
+	help
+	  Each cache buffers a portion of a block in RAM. The littlefs
+	  needs a read cache, a program cache, and one additional cache
+	  per file. Larger caches can improve performance by storing
+	  more data and reducing the number of disk accesses. Must be a
+	  multiple of the read and program sizes of the underlying flash
+	  device, and a factor of the block size.
+
+config INFUSE_LITTLEFS_LOOKAHEAD_SIZE
+	int "Lookahead buffer size for the LittleFS integration in bytes"
+	default 64
+	help
+	  A larger lookahead buffer increases the number of blocks found
+	  during an allocation pass. The lookahead buffer is stored as a
+	  compact bitmap, so each byte of RAM can track 8 blocks.
+
+module = INFUSE_LITTLEFS
+module-str = Infuse-IoT LittleFS integration
+source "subsys/logging/Kconfig.template.log_config"
+
+endif # INFUSE_LITTLEFS
