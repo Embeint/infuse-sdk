@@ -292,6 +292,8 @@ static int finish_cpatch(struct rpc_common_file_actions_ctx *ctx)
 	 * as all data has been written.
 	 */
 	mem = rpc_server_command_working_mem(&mem_size);
+	/* Limit buffer size to common flash erase size */
+	mem_size = MIN(mem_size, 4096);
 	rc = stream_flash_init(&stream_ctx, FIXED_PARTITION_DEVICE(slot1_partition), mem, mem_size,
 			       FIXED_PARTITION_OFFSET(slot1_partition), out_len, NULL);
 	__ASSERT_NO_MSG(rc == 0);
