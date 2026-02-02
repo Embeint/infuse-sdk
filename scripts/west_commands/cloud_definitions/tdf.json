@@ -54,7 +54,7 @@
         "tdf_struct_bt_addr_le": {
             "description": "Bluetooth address type (bt_addr_le_t)",
             "fields": [
-                {"name": "type", "type": "uint8_t", "description": "Address type (0 == Public, 1 == Random)"},
+                {"name": "type", "type": "uint8_t", "description": "Address type (0 = Public, 1 = Random)"},
                 {"name": "val", "type": "uint8_t", "num": 6, "display": {"fmt": "hex", "digits": 12}, "conversion": {"int": "little"}, "description": "Address bytes"}
             ]
         },
@@ -90,7 +90,7 @@
                 {"name": "blocks", "type": "uint32_t", "description": "Logger blocks written"},
                 {"name": "uptime", "type": "uint32_t", "description": "Uptime in seconds"},
                 {"name": "reboots", "type": "uint16_t", "description": "Reboot counter"},
-                {"name": "flags", "type": "uint8_t", "description": "Flags (BIT(0) == SD blocks)", "display": {"fmt": "hex", "digits": 2}}
+                {"name": "flags", "type": "uint8_t", "description": "Flags (BIT(0) = SD blocks)", "display": {"fmt": "hex", "digits": 2}}
             ]
         },
         "2": {
@@ -150,7 +150,7 @@
                 {"name": "blocks", "type": "uint32_t", "description": "Logger blocks written"},
                 {"name": "uptime", "type": "uint32_t", "description": "Uptime in seconds"},
                 {"name": "reboots", "type": "uint16_t", "description": "Reboot counter"},
-                {"name": "flags", "type": "uint8_t", "description": "Flags (BIT(0) = SD blocks, BIT(7) == Shipping)", "display": {"fmt": "hex", "digits": 2}}
+                {"name": "flags", "type": "uint8_t", "description": "Flags (BIT(0) = SD blocks, BIT(7) = Shipping)", "display": {"fmt": "hex", "digits": 2}}
             ]
         },
         "8": {
@@ -359,7 +359,7 @@
             "description": "Data throughput of Bluetooth link",
             "fields": [
                 {"name": "address", "type": "struct tdf_struct_bt_addr_le", "description": "Address of remote device"},
-                {"name": "throughput", "type": "int32_t", "display": {"postfix": "B/sec"}, "description": "Data throughput (-1 == disconnected)"}
+                {"name": "throughput", "type": "int32_t", "display": {"postfix": "B/sec"}, "description": "Data throughput (-1 = disconnected)"}
             ]
         },
         "32": {
@@ -448,7 +448,7 @@
             "name": "INFUSE_BLUETOOTH_RSSI",
             "description": "Received signal strength of Infuse-IoT Bluetooth device",
             "fields": [
-                {"name": "infuse_id", "type": "uint64_t", "description": "Infuse-IoT ID of remote device"},
+                {"name": "infuse_id", "type": "uint64_t", "display": {"fmt": "hex", "digits": 16}, "description": "Infuse-IoT ID of remote device"},
                 {"name": "rssi", "type": "int8_t", "display": {"postfix": "dBm"}, "description": "Bluetooth RSSI"}
             ]
         },
