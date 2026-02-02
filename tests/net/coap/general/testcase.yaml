@@ -20,3 +20,13 @@ tests:
       - native_sim
     extra_args:
       - OVERLAY_CONFIG="overlay-nsos.conf"
+  net.coap.general.native.serial:
+    build_only: true
+    platform_allow:
+      - native_sim
+    integration_platforms:
+      - native_sim
+    extra_configs:
+      - CONFIG_INFUSE_COAP_BACKEND_SERIAL=y
+    extra_args:
+      - OVERLAY_CONFIG="overlay-nsos.conf"

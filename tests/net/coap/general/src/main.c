@@ -29,7 +29,7 @@ K_SEM_DEFINE(l4_up, 0, 1);
 
 /* Static COAP test server run by TZI */
 const char *const coap_test_server = "coap.me";
-uint8_t work_area[2048];
+uint8_t work_area[4096];
 
 struct cb_ctx {
 	const char *expected_data;
@@ -51,6 +51,8 @@ static void l4_event_handler(struct net_mgmt_event_callback *cb, uint64_t mgmt_e
 int data_cb(uint32_t offset, const uint8_t *data, uint16_t data_len, void *context)
 {
 	struct cb_ctx *ctx = context;
+
+	printk("%d: %d %d\n", ctx->cb_count, ctx->expected_offset, offset);
 
 	zassert_equal(ctx->expected_offset, offset);
 	if (ctx->expected_data) {
