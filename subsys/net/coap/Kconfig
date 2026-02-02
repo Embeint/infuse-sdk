@@ -22,12 +22,35 @@ config INFUSE_COAP_MAX_TIMEOUTS
 
 choice INFUSE_COAP_BACKEND
 	prompt "Infuse CoAP download implementation"
-	default INFUSE_COAP_BACKEND_SERIAL
+	default INFUSE_COAP_BACKEND_PARALLEL
 
 config INFUSE_COAP_BACKEND_SERIAL
 	bool "Reception of block request N is required before block N+1 requested"
+	help
+	  Basic backend that sends a single request and waits for the response before
+	  taking further action.
+
+config INFUSE_COAP_BACKEND_PARALLEL
+	bool "Multiple block requests can be in-flight"
+	help
+	  More complicated implementation that requires a larger working memory array,
+	  but can dramatically increase download throughputs.
 
 endchoice
+
+config INFUSE_COAP_BACKEND_PARALLEL_MAX_IN_FLIGHT
+	int "Maximum number of requests that can be in-flight at once"
+	depends on INFUSE_COAP_BACKEND_PARALLEL
+	default 4
+	help
+	  This value is used for both the number of requests that can be in-flight and
+	  the number of out-of-order payloads that can be buffered in RAM. Actual maximum
+	  may be reduced based on provided working memory.
+
+config INFUSE_COAP_TEST_PACKET_DROP_BITMASK
+	int "Bitmask of received packets to drop while receiving to test retry logic"
+	depends on ZTEST
+	default 16389
 
 module = INFUSE_COAP
 module-str = infuse_coap
