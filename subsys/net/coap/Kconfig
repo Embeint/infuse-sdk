@@ -20,6 +20,15 @@ config INFUSE_COAP_MAX_TIMEOUTS
 	  When polling for a chunk times out, the library will retry the
 	  download this many times before giving up.
 
+choice INFUSE_COAP_BACKEND
+	prompt "Infuse CoAP download implementation"
+	default INFUSE_COAP_BACKEND_SERIAL
+
+config INFUSE_COAP_BACKEND_SERIAL
+	bool "Reception of block request N is required before block N+1 requested"
+
+endchoice
+
 module = INFUSE_COAP
 module-str = infuse_coap
 source "subsys/logging/Kconfig.template.log_config"
