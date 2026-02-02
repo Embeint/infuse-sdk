@@ -51,6 +51,8 @@ class RPCDefinitionBase:
     HELP: str
     DESCRIPTION: str
     COMMAND_ID: int
+    request: type[VLACompatLittleEndianStruct]
+    response: type[VLACompatLittleEndianStruct]
 
 {% for command_id, info in commands.items() %}
 {% if extensions == info.get('extension', False) %}

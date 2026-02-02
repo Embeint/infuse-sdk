@@ -24,6 +24,8 @@ class RPCDefinitionBase:
     HELP: str
     DESCRIPTION: str
     COMMAND_ID: int
+    request: type[VLACompatLittleEndianStruct]
+    response: type[VLACompatLittleEndianStruct]
 
 
 class ext1(RPCDefinitionBase):
