@@ -164,10 +164,13 @@ class cloudgen(WestCommand):
 
         def conv_formula(f):
             conv = f"self._{f['name']}"
+            h = f["conversion"].get("hex", None)
             i = f["conversion"].get("int", None)
             m = f["conversion"].get("m", 1)
             c = f["conversion"].get("c", 0)
 
+            if h is not None:
+                conv = f"bytes({conv}).hex()"
             if i is not None:
                 conv = f"int.from_bytes({conv}, byteorder='{i}')"
             if m != 1:
