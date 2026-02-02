@@ -87,7 +87,7 @@ struct tdf_struct_lte_cell_neighbour {
 
 /** Bluetooth address type (bt_addr_le_t) */
 struct tdf_struct_bt_addr_le {
-	/** Address type (0 == Public, 1 == Random) */
+	/** Address type (0 = Public, 1 = Random) */
 	uint8_t type;
 	/** Address bytes */
 	uint8_t val[6];
@@ -146,7 +146,7 @@ struct tdf_announce {
 	uint32_t uptime;
 	/** Reboot counter */
 	uint16_t reboots;
-	/** Flags (BIT(0) == SD blocks) */
+	/** Flags (BIT(0) = SD blocks) */
 	uint8_t flags;
 } __packed;
 
@@ -218,7 +218,7 @@ struct tdf_announce_v2 {
 	uint32_t uptime;
 	/** Reboot counter */
 	uint16_t reboots;
-	/** Flags (BIT(0) == SD blocks) */
+	/** Flags (BIT(0) = SD blocks, BIT(7) = Shipping) */
 	uint8_t flags;
 } __packed;
 
@@ -460,7 +460,7 @@ struct tdf_bluetooth_rssi {
 struct tdf_bluetooth_data_throughput {
 	/** Address of remote device */
 	struct tdf_struct_bt_addr_le address;
-	/** Data throughput (-1 == disconnected) */
+	/** Data throughput (-1 = disconnected) */
 	int32_t throughput;
 } __packed;
 
