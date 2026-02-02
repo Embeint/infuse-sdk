@@ -25,6 +25,10 @@ BUILD_ASSERT(COAP_TOKEN_MAX_LEN == sizeof(uint64_t));
 #define MTU_SUPPORTS_1KB 1
 #endif
 
+#ifdef CONFIG_INFUSE_COAP_TEST_PACKET_DROP_BITMASK
+static uint32_t rx_pkt_count;
+#endif /* INFUSE_COAP_TEST_PACKET_DROPS */
+
 LOG_MODULE_REGISTER(infuse_coap, CONFIG_INFUSE_COAP_LOG_LEVEL);
 
 /* Determine the locations of '/' characters and encode into array */
@@ -205,6 +209,14 @@ poll_retry:
 			LOG_ERR("No data");
 			return -EIO;
 		}
+#ifdef CONFIG_INFUSE_COAP_TEST_PACKET_DROP_BITMASK
+		if (BIT(rx_pkt_count % 32) & CONFIG_INFUSE_COAP_TEST_PACKET_DROP_BITMASK) {
+			LOG_WRN("ZTEST: Dropping RX packet %d", rx_pkt_count);
+			rx_pkt_count++;
+			goto poll_retry;
+		}
+		rx_pkt_count++;
+#endif /* CONFIG_INFUSE_COAP_TEST_PACKET_DROP_BITMASK */
 		rc = coap_packet_parse(&reply, working_mem, received, NULL, 0);
 		if (rc < 0) {
 			LOG_ERR("Invalid data received");
