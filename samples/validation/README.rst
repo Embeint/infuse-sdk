@@ -18,4 +18,4 @@ final image flashing.
 Sample configurations for the ``nrf54L15DK``, ``nRF9161DK`` and ``Tauro``
 board are available under ``samples/validation/examples``.
 
-.. OpenHTF:: https://github.com/google/openhtf
+.. _OpenHTF: https://github.com/google/openhtf
