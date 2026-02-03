@@ -259,7 +259,7 @@ doxybridge_projects = {"zephyr": doxyrunner_projects["infuse"]["outdir"]}
 
 # -- Options for html_redirect plugin -------------------------------------
 
-html_redirect_pages = []
+html_redirect_pages = ()
 
 # -- Options for zephyr.link-roles ----------------------------------------
 
