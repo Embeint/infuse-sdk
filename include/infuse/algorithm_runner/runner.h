@@ -52,7 +52,7 @@ struct algorithm_runner_common_config {
  * @ref algorithm_runner_common_config. Value is NULL on the very first call to initialise data
  * structures.
  * @param common Pointer to common algorithm config
- * @param arguments Pointer to algorithm specific arguments
+ * @param args Pointer to algorithm specific arguments
  * @param data Pointer to the mutable algorithm state
  */
 typedef void (*algorithm_run_fn)(const struct zbus_channel *chan,

@@ -51,7 +51,7 @@ void algorithm_movement_threshold_fn(const struct zbus_channel *chan,
  *
  * @param name Variable name base
  * @param moving_for_ How long the moving state is set for
- * @param initial_threshold_ug Magnitude this far away from 1G triggers the moving state
+ * @param initial_threshold_ug_ Magnitude this far away from 1G triggers the moving state
  * @param continue_threshold_ug_ Magnitude this far away from 1G continues the moving state
  */
 #define ALGORITHM_MOVEMENT_THRESHOLD_DEFINE(name, moving_for_, initial_threshold_ug_,              \
