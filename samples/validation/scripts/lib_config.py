@@ -122,7 +122,7 @@ class InfuseConfig:
             board_id=self.board,
         )
         if infuse_id:
-            new_device.device_id = f"{self._id:016x}"
+            new_device.device_id = f"{infuse_id:016x}"
 
         response = create_device.sync_detailed(client=client, body=new_device)
         if response.status_code != HTTPStatus.CREATED:
