@@ -65,7 +65,20 @@ config INFUSE_NRF_MODEM_DATA_PROFILE_DEFAULT
 	  Levels 4 and 3 are meant for devices that can prioritize the time
 	  spent on finding service over power consumption. Battery-operated
 	  devices should use levels 2, 1, or 0. 2 is the default value used
-	  by the modem.
+	  by the modem. The durations below are the times between cell searches
+	  when connectivity is not established. Values from AT Command Guide v1.4.
+
+	  0 == Starts at 10 seconds, progressing to 40 seconds over a 5 minute window.
+	       After the above, sleep for; 5, 10, 30, 30, 60 minutes. 60 minutes repeats.
+	  1 == Starts at 10 seconds, progressing to 40 seconds over a 5 minute window.
+	       After the above, sleep for; 5, 10 minutes. 10 minutes repeats.
+	  2 == Starts at 10 seconds, progressing to 40 seconds over a 5 minute window.
+	       Remain at 40 seconds for the next 10 minutes.
+	       After the above, sleep for; 60, 90, 300 seconds. 300 seconds repeats.
+	  3 == Starts at 10 seconds, progressing to 40 seconds over a 5 minute window.
+	       Remain at 40 seconds for the next 10 minutes.
+	       After the above, sleep for; 60, 90 seconds. 90 seconds repeats.
+	  4 == Sleep is permanently 10 seconds.
 
 endif
 
