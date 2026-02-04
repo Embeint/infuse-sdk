@@ -64,4 +64,6 @@ config INFUSE_RPC_SERVER_WORKING_MEMORY
 	default 512 if INFUSE_RPC_COMMAND_DATA_LOGGER_READ
 	default 16
 
+rsource "commands/Kconfig"
+
 endif # INFUSE_RPC
