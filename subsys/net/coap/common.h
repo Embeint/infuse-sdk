@@ -21,6 +21,11 @@
 extern "C" {
 #endif
 
+/* Overestimate of the CoAP header overhead to receive N bytes of payload.
+ * Includes IPv4 UDP header.
+ */
+#define COAP_RSP_OVERHEAD 64
+
 /**
  * @brief Determine where the URI segments are for a resource string
  *

@@ -19,16 +19,6 @@
 
 BUILD_ASSERT(COAP_TOKEN_MAX_LEN == sizeof(uint64_t));
 
-#ifdef CONFIG_NET_IPV4_MTU
-/* If the MTU is explicitly defined, check the size before trying to use 1KB blocks */
-#define MTU_SUPPORTS_1KB (CONFIG_NET_IPV4_MTU >= (1024 + 64))
-#else
-/* Assume it is supported until a configuration proves otherwise */
-#define MTU_SUPPORTS_1KB 1
-#endif
-
-#define COAP_RSP_OVERHEAD 64
-
 LOG_MODULE_REGISTER(infuse_coap, CONFIG_INFUSE_COAP_LOG_LEVEL);
 
 /* Structure to hold received block data temporarily */
