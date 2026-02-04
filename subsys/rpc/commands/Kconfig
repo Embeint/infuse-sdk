@@ -1,0 +1,10 @@
+# Kconfig options associated with commands.
+# Not the compilation control, which is auto-generated.
+# Options MUST NOT start with INFUSE_RPC_COMMAND
+
+config INFUSE_RPC_OPTION_KV_WRITE_APP_VALIDATE
+	bool "Run all KV writes through an application provided validator"
+	depends on INFUSE_RPC_COMMAND_KV_WRITE
+	help
+	  Application validation runs after the standard read-only checks
+	  and only if they pass.

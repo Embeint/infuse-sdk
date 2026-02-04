@@ -10,6 +10,7 @@
 #include <zephyr/logging/log.h>
 
 #include <infuse/rpc/commands.h>
+#include <infuse/rpc/commands/kv_write.h>
 #include <infuse/rpc/types.h>
 #include <infuse/fs/kv_store.h>
 
@@ -17,6 +18,7 @@ LOG_MODULE_DECLARE(rpc_server, CONFIG_INFUSE_RPC_LOG_LEVEL);
 
 struct net_buf *rpc_command_kv_write(struct net_buf *request)
 {
+	__maybe_unused struct epacket_rx_metadata *meta = net_buf_user_data(request);
 	struct rpc_kv_write_request *req = (void *)request->data;
 	struct rpc_kv_write_response rsp;
 	struct net_buf *response;
@@ -44,8 +46,20 @@ struct net_buf *rpc_command_kv_write(struct net_buf *request)
 	for (int i = 0; i < req->num; i++) {
 		struct rpc_struct_kv_store_value *v = (void *)(request->data + offset);
 
-		/* Check for write only protection */
+		/* Check for read only protection */
 		rc = kv_store_external_read_only(v->id);
+
+#ifdef CONFIG_INFUSE_RPC_OPTION_KV_WRITE_APP_VALIDATE
+		if (rc == 0) {
+			const void *ptr = v->len == 0 ? NULL : v->data;
+
+			/* Run application validation if read only check passed */
+			rc = infuse_rpc_command_kv_write_validate(meta, v->id, ptr, v->len)
+				     ? 0
+				     : -EINVAL;
+		}
+#endif /* CONFIG_INFUSE_RPC_OPTION_KV_WRITE_APP_VALIDATE */
+
 		if (rc == 0) {
 			if (v->len == 0) {
 				/* Write the value */
