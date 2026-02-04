@@ -427,6 +427,11 @@ static void infuse_modem_init(int ret, void *ctx)
 	uint8_t val;
 	int rc;
 
+	if (ret < 0) {
+		/* Modem failed to initialise, nothing to do here */
+		return;
+	}
+
 	/* Ensure modem commands don't block forever */
 	rc = nrf_modem_at_sem_timeout_set(CONFIG_INFUSE_NRF_MODEM_MONITOR_AT_TIMEOUT_MS);
 	__ASSERT_NO_MSG(rc == 0);
