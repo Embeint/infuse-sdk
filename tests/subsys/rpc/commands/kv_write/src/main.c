@@ -14,6 +14,7 @@
 #include <infuse/types.h>
 #include <infuse/fs/kv_store.h>
 #include <infuse/fs/kv_types.h>
+#include <infuse/rpc/commands/kv_write.h>
 #include <infuse/rpc/types.h>
 #include <infuse/epacket/packet.h>
 #include <infuse/epacket/interface/epacket_dummy.h>
@@ -246,4 +247,112 @@ ZTEST(rpc_command_kv_write, test_kv_write_multi)
 	zassert_mem_equal(&test_string, &ssid, sizeof(test_string));
 }
 
-ZTEST_SUITE(rpc_command_kv_write, NULL, NULL, NULL, NULL, NULL);
+static int expected_key;
+static void *expected_data;
+static size_t expected_len;
+static bool write_allowed;
+
+bool infuse_rpc_command_kv_write_validate(struct epacket_rx_metadata *meta, uint16_t key,
+					  const void *data, size_t len)
+{
+	zassert_not_null(meta);
+	zassert_equal(EPACKET_INTERFACE_DUMMY, meta->interface_id);
+	zassert_equal(EPACKET_AUTH_DEVICE, meta->auth);
+
+	if (expected_key == -1) {
+		/* Other tests running */
+		return true;
+	}
+
+	zassert_equal(expected_key, key);
+	zassert_equal(expected_len, len);
+	if (len > 0) {
+		zassert_not_null(expected_data);
+		zassert_not_null(data);
+		/* Asserted above, but compiler can't tell and complains */
+		if (expected_data && data) {
+			zassert_mem_equal(expected_data, data, len);
+		}
+	} else {
+		zassert_is_null(expected_data);
+		zassert_is_null(data);
+	}
+
+	return write_allowed;
+}
+
+ZTEST(rpc_command_kv_write, test_kv_write_app_validation)
+{
+	KV_KEY_TYPE(KV_KEY_REBOOTS) reboots;
+	NET_BUF_SIMPLE_DEFINE(values, 128);
+	struct rpc_struct_kv_store_value *value;
+	struct rpc_kv_write_response *response;
+	struct net_buf *rsp;
+
+	if (!IS_ENABLED(CONFIG_INFUSE_RPC_OPTION_KV_WRITE_APP_VALIDATE)) {
+		ztest_test_skip();
+		return;
+	}
+
+	(void)kv_store_delete(KV_KEY_REBOOTS);
+
+	/* Write that is not allowed (return code, no value written) */
+	net_buf_simple_reset(&values);
+	value = net_buf_simple_add(&values, sizeof(*value));
+	value->id = KV_KEY_REBOOTS;
+	value->len = sizeof(reboots);
+	net_buf_simple_add_mem(&values, &reboots, sizeof(reboots));
+
+	expected_key = KV_KEY_REBOOTS;
+	expected_data = &reboots;
+	expected_len = sizeof(reboots);
+	write_allowed = false;
+
+	send_kv_write_command(1, &values, 1);
+	rsp = expect_kv_write_response(1, 0, 1);
+	response = (void *)rsp->data;
+	zassert_equal(-EINVAL, response->rc[0]);
+	net_buf_unref(rsp);
+	zassert_false(kv_store_key_exists(KV_KEY_REBOOTS));
+
+	/* Write now allowed */
+	write_allowed = true;
+	send_kv_write_command(2, &values, 1);
+	rsp = expect_kv_write_response(2, 0, 1);
+	response = (void *)rsp->data;
+	zassert_equal(sizeof(reboots), response->rc[0]);
+	net_buf_unref(rsp);
+	zassert_true(kv_store_key_exists(KV_KEY_REBOOTS));
+
+	/* Delete that is not allowed */
+	value->len = 0;
+	expected_data = NULL;
+	expected_len = 0;
+	write_allowed = false;
+
+	send_kv_write_command(3, &values, 1);
+	rsp = expect_kv_write_response(3, 0, 1);
+	response = (void *)rsp->data;
+	zassert_equal(-EINVAL, response->rc[0]);
+	net_buf_unref(rsp);
+	zassert_true(kv_store_key_exists(KV_KEY_REBOOTS));
+
+	/* Delete now allowed */
+	write_allowed = true;
+
+	send_kv_write_command(4, &values, 1);
+	rsp = expect_kv_write_response(4, 0, 1);
+	response = (void *)rsp->data;
+	zassert_equal(0, response->rc[0]);
+	net_buf_unref(rsp);
+	zassert_false(kv_store_key_exists(KV_KEY_REBOOTS));
+}
+
+static void test_before(void *fixture)
+{
+	/* Reset validation state */
+	expected_key = -1;
+	write_allowed = true;
+}
+
+ZTEST_SUITE(rpc_command_kv_write, NULL, NULL, test_before, NULL, NULL);
