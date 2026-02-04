@@ -87,7 +87,7 @@ static uint32_t rx_pkt_count;
 /* Initialize download context */
 static int download_context_init(struct download_context *ctx, int sock, uint8_t *working_mem,
 				 size_t working_size, uint16_t req_block_size,
-				 int request_timeout_ms, const char *resource,
+				 int request_timeout_ms, const char *resource, size_t file_size,
 				 infuse_coap_data_cb callback, void *user_data)
 {
 	size_t work_remaining = working_size;
@@ -117,6 +117,11 @@ static int download_context_init(struct download_context *ctx, int sock, uint8_t
 	ctx->request_timeout_ms = request_timeout_ms;
 
 	ctx->sock = sock;
+	if (file_size > 0) {
+		ctx->total_size = file_size;
+		ctx->total_blocks =
+			ROUND_UP(file_size, ctx->block_size_bytes) / ctx->block_size_bytes;
+	}
 
 	ctx->chunk_callback = callback;
 	ctx->user_data = user_data;
@@ -459,9 +464,10 @@ static int process_response(struct download_context *ctx, uint8_t *response_buf,
 	/* Set size knowledge if not known */
 	size2 = coap_get_option_int(&response, COAP_OPTION_SIZE2);
 	if ((ctx->total_size == 0) && (size2 != -ENOENT)) {
-		LOG_INF("Size of download is %d bytes", size2);
 		ctx->total_size = size2;
 		ctx->total_blocks = ROUND_UP(size2, ctx->block_size_bytes) / ctx->block_size_bytes;
+		LOG_INF("Size of download is %d bytes (%d blocks)", ctx->total_size,
+			ctx->total_blocks);
 	}
 
 	LOG_DBG("Received block %u (%u bytes, more=%d)", block_num, payload_len, has_more);
@@ -599,9 +605,9 @@ static bool is_download_complete(struct download_context *ctx)
 }
 
 /* Main download function */
-int infuse_coap_download(int socket, const char *resource, infuse_coap_data_cb data_cb,
-			 void *user_context, uint8_t *working_mem, size_t working_size,
-			 uint16_t req_block_size, int timeout_ms)
+int infuse_coap_download(int socket, const char *resource, size_t file_size,
+			 infuse_coap_data_cb data_cb, void *user_context, uint8_t *working_mem,
+			 size_t working_size, uint16_t req_block_size, int timeout_ms)
 {
 	struct zsock_pollfd pollfds = {
 		.fd = socket,
@@ -612,12 +618,16 @@ int infuse_coap_download(int socket, const char *resource, infuse_coap_data_cb d
 
 	/* Setup download context */
 	rc = download_context_init(&ctx, socket, working_mem, working_size, req_block_size,
-				   timeout_ms, resource, data_cb, user_context);
+				   timeout_ms, resource, file_size, data_cb, user_context);
 	if (rc < 0) {
 		return rc;
 	}
 
 	LOG_INF("Downloading: %s (Block size %d)", resource, ctx.block_size_bytes);
+	if (ctx.total_size > 0) {
+		LOG_INF("Size of download is %d bytes (%d blocks)", ctx.total_size,
+			ctx.total_blocks);
+	}
 
 	/* Main download loop */
 	while (!is_download_complete(&ctx) && (ctx.error_code == 0)) {

@@ -25,9 +25,9 @@ static uint32_t rx_pkt_count;
 
 LOG_MODULE_REGISTER(infuse_coap, CONFIG_INFUSE_COAP_LOG_LEVEL);
 
-int infuse_coap_download(int socket, const char *resource, infuse_coap_data_cb data_cb,
-			 void *user_context, uint8_t *working_mem, size_t working_size,
-			 uint16_t req_block_size, int timeout_ms)
+int infuse_coap_download(int socket, const char *resource, size_t file_size,
+			 infuse_coap_data_cb data_cb, void *user_context, uint8_t *working_mem,
+			 size_t working_size, uint16_t req_block_size, int timeout_ms)
 {
 	struct coap_block_context blk_ctx;
 	struct coap_packet request, reply;
@@ -64,7 +64,7 @@ int infuse_coap_download(int socket, const char *resource, infuse_coap_data_cb d
 	pollfds[0].fd = socket;
 	pollfds[0].events = ZSOCK_POLLIN;
 
-	coap_block_transfer_init(&blk_ctx, block_size, 0);
+	coap_block_transfer_init(&blk_ctx, block_size, file_size);
 
 	while (next_block) {
 		/* Minimum work area size should gaurantee adding these headers cannot fail */
