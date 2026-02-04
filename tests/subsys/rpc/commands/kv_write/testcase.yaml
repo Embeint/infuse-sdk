@@ -2,9 +2,12 @@ common:
   tags: infuse
   min_flash: 64
   min_ram: 32
+  required_snippets:
+    - infuse
+  integration_platforms:
+    - mps2/an385
 tests:
-  rpc.commands.kv_write:
-    required_snippets:
-      - infuse
-    integration_platforms:
-      - mps2/an385
+  rpc.commands.kv_write: {}
+  rpc.commands.kv_write.user_validation:
+    extra_configs:
+      - CONFIG_INFUSE_RPC_OPTION_KV_WRITE_APP_VALIDATE=y
