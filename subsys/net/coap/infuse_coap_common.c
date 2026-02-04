@@ -6,11 +6,15 @@
  * SPDX-License-Identifier: FSL-1.1-ALv2
  */
 
+#include <zephyr/net/net_if.h>
+
 #include "common.h"
+
+#define COAP_PKT_SIZE(payload_size) ((payload_size) + COAP_RSP_OVERHEAD)
 
 #ifdef CONFIG_NET_IPV4_MTU
 /* If the MTU is explicitly defined, check the size before trying to use 1KB blocks */
-#define MTU_SUPPORTS_1KB (CONFIG_NET_IPV4_MTU >= (1024 + COAP_RSP_OVERHEAD))
+#define MTU_SUPPORTS_1KB (CONFIG_NET_IPV4_MTU >= COAP_PKT_SIZE(1024))
 #else
 /* Assume it is supported until a configuration proves otherwise */
 #define MTU_SUPPORTS_1KB 1
@@ -60,6 +64,10 @@ int ic_resource_path_append(struct coap_packet *request, const char *resource,
 
 int ic_get_block_size(size_t working_size, uint16_t block_size, enum coap_block_size *used_size)
 {
+	bool supports_1kb = MTU_SUPPORTS_1KB;
+	struct net_if *iface;
+	uint16_t iface_mtu;
+
 	switch (block_size) {
 	case 1024:
 		*used_size = COAP_BLOCK_1024;
@@ -83,14 +91,23 @@ int ic_get_block_size(size_t working_size, uint16_t block_size, enum coap_block_
 		*used_size = COAP_BLOCK_16;
 		break;
 	case 0:
+		/* Dynamically check the networking interface MTU if possible */
+		iface = net_if_get_default();
+		if (iface != NULL) {
+			iface_mtu = net_if_get_mtu(iface);
+			if (iface_mtu > 0) {
+				/* Interface MTU is known, override the kconfig based decision */
+				supports_1kb = iface_mtu > COAP_PKT_SIZE(1024);
+			}
+		}
 		/* Automatically determine block size */
-		if (MTU_SUPPORTS_1KB && (working_size >= (1024 + COAP_RSP_OVERHEAD))) {
+		if (supports_1kb && (working_size >= COAP_PKT_SIZE(1024))) {
 			*used_size = COAP_BLOCK_1024;
-		} else if (working_size >= (512 + COAP_RSP_OVERHEAD)) {
+		} else if (working_size >= COAP_PKT_SIZE(512)) {
 			*used_size = COAP_BLOCK_512;
-		} else if (working_size >= (256 + COAP_RSP_OVERHEAD)) {
+		} else if (working_size >= COAP_PKT_SIZE(256)) {
 			*used_size = COAP_BLOCK_256;
-		} else if (working_size >= (128 + COAP_RSP_OVERHEAD)) {
+		} else if (working_size >= COAP_PKT_SIZE(128)) {
 			*used_size = COAP_BLOCK_128;
 		} else if (working_size >= 128) {
 			*used_size = COAP_BLOCK_64;
