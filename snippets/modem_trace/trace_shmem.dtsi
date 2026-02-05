@@ -8,16 +8,14 @@
 /delete-node/ &sram0_ns_modem;
 /delete-node/ &sram0_ns_app;
 
-/ {
-	reserved-memory {
-		sram0_ns_modem: image_ns_modem@20010000 {
-			/* Modem (shared) memory */
-			reg = <0x20010000 DT_SIZE_K(40)>;
-		};
+&sram0_ns {
+	sram0_ns_modem: sram0_ns@0 {
+		/* Modem (shared) memory */
+		reg = <0x0 DT_SIZE_K(40)>;
+	};
 
-		sram0_ns_app: image_ns_app@2001a000 {
-			/* Non-Secure application memory */
-			reg = <0x2001a000 DT_SIZE_K(152)>;
-		};
+	sram0_ns_app: sram0_ns@a000 {
+		/* Non-Secure application memory */
+		reg = <0xa000 DT_SIZE_K(152)>;
 	};
 };
