@@ -303,22 +303,22 @@ static int nav_sat_cb(uint8_t message_class, uint8_t message_id, const void *pay
 }
 #endif /* CONFIG_TASK_RUNNER_GNSS_SATELLITE_INFO */
 
-/**
- * @retval true Modem is forced into ACTIVE mode while EXTINT is high
- * @retval false Modem is not forced into any mode
+/* extint_force_active:
+ *    true: Modem is forced into ACTIVE mode while EXTINT is high
+ *   false: Modem is not forced into any mode
  */
-static bool gnss_configure(const struct device *gnss, const struct task_gnss_args *args,
-			   uint32_t *max_sleep_s)
+static int gnss_configure(const struct device *gnss, const struct task_gnss_args *args,
+			  uint32_t *max_sleep_s, bool *extint_force_active)
 {
 	struct ubx_modem_data *modem = ubx_modem_data_get(gnss);
 	uint8_t run_target = (args->flags & TASK_GNSS_FLAGS_RUN_MASK);
 	gnss_systems_t constellations;
-	bool extint_force_active = false;
 	bool performance_mode;
 	uint8_t dynamics;
 	int rc;
 
 	/* Default modes, modem never sleeps */
+	*extint_force_active = false;
 	*max_sleep_s = 0;
 
 	/* Constellation configuration if requested */
@@ -393,7 +393,7 @@ static bool gnss_configure(const struct device *gnss, const struct task_gnss_arg
 			 * talk to the modem when desired.
 			 */
 			UBX_CFG_VALUE_APPEND(&cfg_buf, UBX_CFG_KEY_PM_EXTINTWAKE, true);
-			extint_force_active = true;
+			*extint_force_active = true;
 
 			/* Modem can sleep for up to `search_period` seconds */
 			*max_sleep_s = args->low_power.search_period + 2;
@@ -454,7 +454,7 @@ static bool gnss_configure(const struct device *gnss, const struct task_gnss_arg
 	}
 #endif /* CONFIG_TASK_RUNNER_GNSS_SATELLITE_INFO */
 #endif /* CONFIG_GNSS_UBX_M8 */
-	return extint_force_active;
+	return rc;
 }
 
 static void extint_ctrl_reset(const struct device *gnss)
@@ -474,6 +474,29 @@ static void extint_ctrl_reset(const struct device *gnss)
 		LOG_WRN("Failed to reset EXTINT control");
 	}
 #endif /* CONFIG_GNSS_UBX_M10 */
+}
+
+static int retry_power_up(const struct device *gnss)
+{
+	int rc;
+
+	/* Put back into suspended mode */
+	(void)pm_device_runtime_put(gnss);
+	if (pm_device_is_powered(gnss)) {
+		/* Device is still powered, try a comms reset */
+		LOG_WRN("Trying comms reset");
+		rc = ubx_modem_comms_reset(gnss);
+		if (rc == 0) {
+			/* Communications recovered, try PM again */
+			rc = pm_device_runtime_get(gnss);
+		}
+	} else {
+		/* Device is no longer powered, try to power up again */
+		LOG_WRN("Trying power cycle");
+		rc = pm_device_runtime_get(gnss);
+	}
+
+	return rc;
 }
 
 void gnss_task_fn(const struct task_schedule *schedule, struct k_poll_signal *terminate,
@@ -524,7 +547,19 @@ void gnss_task_fn(const struct task_schedule *schedule, struct k_poll_signal *te
 	}
 
 	/* Configure the modem according to the arguments */
-	extint_force_active = gnss_configure(gnss, args, &max_sleep_s);
+	rc = gnss_configure(gnss, args, &max_sleep_s, &extint_force_active);
+	if (rc < 0) {
+		rc = retry_power_up(gnss);
+		if (rc == 0) {
+			/* Try again */
+			(void)gnss_configure(gnss, args, &max_sleep_s, &extint_force_active);
+		} else {
+			/* Cycling the modem failed */
+			k_sleep(K_SECONDS(1));
+			LOG_ERR("Terminating due to %s", "power cycle failure");
+			return;
+		}
+	}
 
 	/* Subscribe to NAV-PVT message */
 	ubx_modem_msg_subscribe(run_state.modem, &pvt_handler_ctx);
