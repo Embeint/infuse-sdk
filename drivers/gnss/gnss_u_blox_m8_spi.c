@@ -387,17 +387,17 @@ static int ubx_m8_spi_software_standby(const struct device *dev)
 	rc = k_poll(mon_rxr_events, ARRAY_SIZE(mon_rxr_events), SYNC_MESSAGE_TIMEOUT);
 	if (rc < 0) {
 		LOG_DBG("MON-RXR timeout");
-		return rc;
-	}
-	k_poll_signal_check(&data->common.mon_rxr_signal, &signaled, &result);
-	if (result & UBX_MSG_MON_RXR_AWAKE) {
-		LOG_WRN("MON-RXR reported %s", "awake");
-		return -EINVAL;
+	} else {
+		k_poll_signal_check(&data->common.mon_rxr_signal, &signaled, &result);
+		if (result & UBX_MSG_MON_RXR_AWAKE) {
+			LOG_WRN("MON-RXR reported %s", "awake");
+			rc = -EINVAL;
+		}
 	}
 
 	/* Modem takes some time to go to sleep and respond to wakeup requests */
 	data->common.min_wake_time = K_TIMEOUT_ABS_MS(k_uptime_get() + 100);
-	return 0;
+	return rc;
 }
 
 static int ubx_m8_spi_software_resume(const struct device *dev)
