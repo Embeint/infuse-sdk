@@ -255,8 +255,18 @@ int ubx_common_pm_control(const struct device *dev, enum pm_device_action action
 		/* Put into low power mode */
 		rc = cfg->pm_funcs.software_standby(dev);
 		if (rc < 0) {
-			LOG_INF("Failed to go to standby mode");
-			return rc;
+			LOG_WRN("Failed to go to standby mode");
+			/* It is important here that even if the modem backend reports a failure,
+			 * that it is not propogated back to the PM subsystem. A failing SUSPEND
+			 * call results in the usage counter remaining at 1, which means that any
+			 * future attempts to use the device will not run the RESUME action. If the
+			 * device did actually go to standby mode but the MON-RXR notification was
+			 * missed, there is now no path to resuming communcations without an
+			 * application power cycle. It is instead safer to clear the error, accept
+			 * the possibility that the modem is still drawing power (less likely than a
+			 * missed message), but allow future runs to operate.
+			 */
+			rc = 0;
 		}
 		/* Notify modem layer */
 		ubx_modem_software_standby(&data->modem);
@@ -264,7 +274,7 @@ int ubx_common_pm_control(const struct device *dev, enum pm_device_action action
 	case PM_DEVICE_ACTION_RESUME:
 		rc = cfg->pm_funcs.software_resume(dev);
 		if (rc < 0) {
-			LOG_INF("Failed to resume");
+			LOG_WRN("Failed to resume");
 			return rc;
 		}
 		/* Enable timepulse interrupt */

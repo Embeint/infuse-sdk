@@ -422,17 +422,18 @@ static int ubx_m10_i2c_software_standby(const struct device *dev)
 	rc = k_poll(mon_rxr_events, ARRAY_SIZE(mon_rxr_events), SYNC_MESSAGE_TIMEOUT);
 	if (rc < 0) {
 		LOG_WRN("MON-RXR timeout");
-		return rc;
-	}
-	k_poll_signal_check(&data->common.mon_rxr_signal, &signaled, &result);
-	if (result & UBX_MSG_MON_RXR_AWAKE) {
-		LOG_WRN("MON-RXR reported %s", "awake");
-		return -EINVAL;
+	} else {
+		k_poll_signal_check(&data->common.mon_rxr_signal, &signaled, &result);
+		if (result & UBX_MSG_MON_RXR_AWAKE) {
+			/* Never observed in practice */
+			LOG_DBG("MON-RXR reported %s", "awake");
+			rc = -EINVAL;
+		}
 	}
 
 	/* Modem takes some time to go to sleep and respond to wakeup requests */
 	data->common.min_wake_time = K_TIMEOUT_ABS_MS(k_uptime_get() + 100);
-	return 0;
+	return rc;
 }
 
 static int ubx_m10_i2c_software_resume(const struct device *dev)
@@ -448,7 +449,7 @@ static int ubx_m10_i2c_software_resume(const struct device *dev)
 	ubx_common_extint_wake(dev);
 
 	/* Ublox-M10 apparently does not output MON-RXR on wake, despite the M10 interface
-	 * description saying it does.
+	 * description saying it does. This is a confirmed bug with the I2C interface.
 	 */
 #ifdef CONFIG_GNSS_U_BLOX_NO_API_COMPAT
 	/* Validate we woke properly by running an arbitrary command with no effect */
