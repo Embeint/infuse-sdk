@@ -70,6 +70,7 @@ int infuse_validation_bluetooth(uint8_t flags)
 
 		if (k_sem_take(&tx_done, K_SECONDS(1)) != 0) {
 			VALIDATION_REPORT_ERROR(TEST, "Advertising TX timeout");
+			rc = -ETIMEDOUT;
 			goto test_end;
 		}
 
