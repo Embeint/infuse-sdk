@@ -98,6 +98,8 @@ int ic_get_block_size(size_t working_size, uint16_t block_size, enum coap_block_
 			if (iface_mtu > 0) {
 				/* Interface MTU is known, override the kconfig based decision */
 				supports_1kb = iface_mtu > COAP_PKT_SIZE(1024);
+				/* Also limit the buffer size */
+				working_size = MIN(working_size, iface_mtu);
 			}
 		}
 		/* Automatically determine block size */
