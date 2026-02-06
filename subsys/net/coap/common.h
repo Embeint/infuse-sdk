@@ -21,10 +21,16 @@
 extern "C" {
 #endif
 
-/* Overestimate of the CoAP header overhead to receive N bytes of payload.
- * Includes IPv4 UDP header.
+/* Overheads associated with receiving a N byte CoAP block over DTLS 1.2.
+ * Assuming the PSK_AES128_SHA256 cipher.
+ *
+ *             IPv4 Header: 20 bytes
+ *              UDP Header: 8 bytes
+ *  DTLS 1.2 Record Header: 13 bytes
+ *         DTLS 1.2 Crypto: 64 bytes
+ *             CoAP Header: 16 bytes for 4 byte tokens
  */
-#define COAP_RSP_OVERHEAD 64
+#define COAP_RSP_OVERHEAD (20 + 8 + 13 + 64 + 16)
 
 /**
  * @brief Determine where the URI segments are for a resource string
