@@ -132,6 +132,8 @@ K_THREAD_DEFINE(pwr_thread, 2048, pwr_validator, NULL, NULL, NULL, 5, 0, 0);
 
 #if defined(CONFIG_SPI_NOR)
 #define FLASH_COMPAT jedec_spi_nor
+#elif defined(CONFIG_FLASH_MSPI_NOR)
+#define FLASH_COMPAT jedec_mspi_nor
 #elif defined(CONFIG_SPI_NAND)
 #define FLASH_COMPAT jedec_spi_nand
 #endif
@@ -444,6 +446,9 @@ int main(void)
 	}
 	atomic_inc(&validators_complete);
 #endif /* DT_NODE_EXISTS(DT_ALIAS(charger0)) */
+
+	/* Delay to allow other tests to register */
+	k_sleep(K_MSEC(10));
 
 	for (;;) {
 		k_sem_take(&task_complete, K_FOREVER);
