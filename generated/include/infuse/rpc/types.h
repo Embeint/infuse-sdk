@@ -408,6 +408,14 @@ struct rpc_struct_public_key_info_256bit {
 	uint8_t key[32];
 } __packed;
 
+/** IPv6 address */
+struct rpc_struct_thread_stats {
+	uint32_t stack_size;
+	uint32_t stack_used;
+	uint8_t utilization;
+	char name[];
+} __packed;
+
 
 /**
  * @}
@@ -471,6 +479,8 @@ enum rpc_builtin_id {
 	RPC_ID_DATA_LOGGER_STATE_V2 = 24,
 	/** Read a number of arbitrary chunks from a data logger */
 	RPC_ID_DATA_LOGGER_READ_CHUNKS = 25,
+	/** Read a number of arbitrary chunks from a data logger */
+	RPC_ID_THREAD_STATS = 26,
 	/** Download a file from a COAP server (Infuse-IoT DTLS protected) */
 	RPC_ID_COAP_DOWNLOAD = 30,
 	/** Network upload bandwidth testing using zperf/iperf */
@@ -944,6 +954,18 @@ struct rpc_data_logger_read_chunks_response {
 	uint32_t current_block;
 	/** Size of a single block in bytes */
 	uint16_t block_size;
+} __packed;
+
+/** Read a number of arbitrary chunks from a data logger */
+struct rpc_thread_stats_request {
+	struct infuse_rpc_req_header header;
+	struct infuse_rpc_req_data_header data_header;
+} __packed;
+
+struct rpc_thread_stats_response {
+	struct infuse_rpc_rsp_header header;
+	/** Number of thread */
+	uint16_t num_threads;
 } __packed;
 
 /** Download a file from a COAP server (Infuse-IoT DTLS protected) */

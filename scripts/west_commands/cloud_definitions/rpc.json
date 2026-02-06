@@ -169,6 +169,15 @@
                 {"name": "id", "type": "enum rpc_enum_key_id","description": "Public key identifier"},
                 {"name": "key", "type": "uint8_t", "num": 32}
             ]
+        },
+        "rpc_struct_thread_stats": {
+            "description": "IPv6 address",
+            "fields": [
+                {"name": "stack_size", "type": "uint32_t"},
+                {"name": "stack_used", "type": "uint32_t"},
+                {"name": "utilization", "type": "uint8_t"},
+                {"name": "name", "type": "char", "num": 0}
+            ]
         }
     },
     "enums": {
@@ -624,7 +633,18 @@
                 {"name": "block_size", "type": "uint16_t", "description": "Size of a single block in bytes"}
             ]
         },
-
+        "26": {
+            "name": "thread_stats",
+            "description": "Query runtime thread statistics",
+            "depends_on": "THREAD_ANALYZER",
+            "default": "y if INFUSE_SDK",
+            "default_auth": "EPACKET_AUTH_DEVICE",
+            "rpc_data": true,
+            "request_params": [],
+            "response_params": [
+                {"name": "num_threads", "type": "uint16_t", "description": "Number of thread"}
+            ]
+        },
         "30": {
             "name": "coap_download",
             "description": "Download a file from a COAP server (Infuse-IoT DTLS protected)",
