@@ -244,6 +244,15 @@ struct net_buf *rpc_command_data_logger_state_v2(struct net_buf *request);
 struct net_buf *rpc_command_data_logger_read_chunks(struct net_buf *request);
 
 /**
+ * @brief Run thread_stats RPC
+ *
+ * @param request @ref INFUSE_RPC_CMD packet to respond to
+ *
+ * @return struct net_buf* @ref INFUSE_RPC_RSP packet buffer
+ */
+struct net_buf *rpc_command_thread_stats(struct net_buf *request);
+
+/**
  * @brief Run coap_download RPC
  *
  * @param request @ref INFUSE_RPC_CMD packet to respond to
