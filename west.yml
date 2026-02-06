@@ -14,7 +14,7 @@ manifest:
 
   projects:
     - name: zephyr
-      revision: 7eab92b0458bac93a6bf72fc03b8643054bd7c6d
+      revision: 12689b268fea79523e4df5cf4257cec7610a82b5
       # Limit imported repositories to reduce clone time
       import:
         name-allowlist:
@@ -41,7 +41,7 @@ manifest:
       path: bootloader/mcuboot
     - name: sdk-nrf
       path: modules/nrfconnect/sdk-nrf
-      revision: 3e000af1a31a6cb1ecccba14fb049ab6089f21e3
+      revision: 8b1debd1fdd12e93d8321e4d52cc96cc19578777
       import: true
     - name: memfault-firmware-sdk
       path: modules/lib/memfault
