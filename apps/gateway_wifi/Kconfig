@@ -1,5 +1,11 @@
 # WiFi Gateway specific options/defaults
 
+# Default RPCs (if hardware supports)
+configdefault INFUSE_RPC_COMMAND_BT_FILE_COPY_BASIC
+	default y
+configdefault INFUSE_RPC_COMMAND_BT_FILE_COPY_COAP
+	default y
+
 # Disable the packet discarding behaviour of the nRF70 driver
 configdefault NRF70_MAX_TX_PENDING_QLEN
 	default 32768

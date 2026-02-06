@@ -6,6 +6,12 @@ config LTE_GATEWAY_DEFAULT_MAXIMUM_UPLINK_THROUGHPUT_KBPS
 	default 175 if SOC_SERIES_NRF91X
 	default 0
 
+# Default RPCs (if hardware supports)
+configdefault INFUSE_RPC_COMMAND_BT_FILE_COPY_BASIC
+	default y
+configdefault INFUSE_RPC_COMMAND_BT_FILE_COPY_COAP
+	default y
+
 #
 # Defaults for native nRF91 gateways
 #

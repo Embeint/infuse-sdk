@@ -1,0 +1,7 @@
+# USB Gateway specific options
+
+# Default RPCs (if hardware supports)
+configdefault INFUSE_RPC_COMMAND_BT_FILE_COPY_BASIC
+	default y
+
+source "Kconfig.zephyr"
