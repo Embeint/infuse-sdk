@@ -383,7 +383,7 @@ config INFUSE_RPC_COMMAND_BT_DISCONNECT_REQUIRED_AUTH
 
 config INFUSE_RPC_COMMAND_BT_FILE_COPY_BASIC
 	bool "Enable RPC bt_file_copy_basic"
-	depends on EPACKET_INTERFACE_BT_CENTRAL && INFUSE_RPC_COMMAND_FILE_WRITE_BASIC && INFUSE_RPC_CLIENT
+	depends on EPACKET_INTERFACE_BT_CENTRAL && INFUSE_RPC_COMMAND_FILE_WRITE_BASIC && INFUSE_RPC_CLIENT && $(dt_nodelabel_exists,file_partition)
 	help
 	  Copy a local file to a remote device over Bluetooth
 
