@@ -755,7 +755,7 @@
         "52": {
             "name": "bt_file_copy_basic",
             "description": "Copy a local file to a remote device over Bluetooth",
-            "depends_on": "EPACKET_INTERFACE_BT_CENTRAL && INFUSE_RPC_COMMAND_FILE_WRITE_BASIC && INFUSE_RPC_CLIENT",
+            "depends_on": "EPACKET_INTERFACE_BT_CENTRAL && INFUSE_RPC_COMMAND_FILE_WRITE_BASIC && INFUSE_RPC_CLIENT && $(dt_nodelabel_exists,file_partition)",
             "default_auth": "EPACKET_AUTH_DEVICE",
             "request_params": [
                 {"name": "peer", "type": "struct rpc_struct_bt_addr_le", "description": "Bluetooth LE device to connect to"},
