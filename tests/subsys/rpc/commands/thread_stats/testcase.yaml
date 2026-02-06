@@ -1,0 +1,12 @@
+common:
+  tags: infuse
+  min_flash: 64
+  min_ram: 32
+tests:
+  rpc.commands.thread_stats:
+    required_snippets:
+      - infuse
+    platform_allow:
+      - mps2/an385
+    integration_platforms:
+      - mps2/an385
