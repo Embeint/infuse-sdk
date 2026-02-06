@@ -100,17 +100,20 @@ configdefault NRF70_RX_MAX_DATA_SIZE
 	default 1004 if !NRF70_DATA_TX
 
 # Limit nRF memory usage to the bare minimum
+# Go slightly higher than the standard 576 minimum MTU in order to support
+# downloading 512 byte CoAP block with DTLS 1.2. This requires a 636 byte
+# MTU.
 if NRF_WIFI_LOW_RAM
 configdefault NRF_WIFI_IFACE_MTU
-	default 576 if !NET_IPV6 # Minimum IPv4 compatible MTU
+	default 636 if !NET_IPV6 # Minimum MTU for 512 byte CoAP blocks
 	default 1280             # Minimum IPv6 compatible MTU
 configdefault NRF70_TX_MAX_DATA_SIZE
 	# Interface MTU + nRF header sizes
-	default 644 if !NET_IPV6
+	default 704 if !NET_IPV6
 	default 1348
 configdefault NRF70_RX_MAX_DATA_SIZE
 	# Interface MTU + nRF header sizes
-	default 644 if !NET_IPV6
+	default 704 if !NET_IPV6
 	default 1348
 configdefault NRF70_MAX_TX_PENDING_QLEN
 	# Disable the limit so packets aren't dropped
@@ -123,9 +126,9 @@ configdefault NRF70_MAX_TX_AGGREGATION
 	default 3
 if !NRF70_SCAN_ONLY
 configdefault NRF_WIFI_DATA_HEAP_SIZE
-	def_int 8240 if !NET_IPV6
+	def_int 8704 if !NET_IPV6
 	def_int 16688
-	# IPV4 Data plane is (6 + 6) * 644 ~= 8kB
+	# IPV4 Data plane is (6 + 6) * 704 ~= 8kB
 	# IPV6 Data plane is (6 + 6) * 1348 ~= 16kB
 endif # !NRF70_SCAN_ONLY
 endif # NRF_WIFI_LOW_RAM
