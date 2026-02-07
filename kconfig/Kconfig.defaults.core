@@ -237,6 +237,10 @@ configdefault DEBUG_THREAD_INFO
 	default y
 configdefault OUTPUT_DISASSEMBLY
 	default y if !ZTEST && !SOC_SERIES_BSIM_NRFXX
+configdefault THREAD_ANALYZER
+	default y if !ZTEST
+configdefault THREAD_RUNTIME_STATS
+	default n
 
 # Memfault options
 configdefault MEMFAULT_NRF_CONNECT_SDK
