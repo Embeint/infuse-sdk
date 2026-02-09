@@ -1,0 +1,12 @@
+sample:
+  description: nRF91x1 LTE modem EMC testing
+  name: nRF91x1 LTE modem EMC
+common:
+  build_only: true
+  filter: CONFIG_SOC_NRF9120
+  integration_platforms:
+    - nrf9161dk/nrf9161/ns
+    - nrf9151dk/nrf9151/ns
+tests:
+  sample.nrf91x1_emc_shell:
+    tags: validation
