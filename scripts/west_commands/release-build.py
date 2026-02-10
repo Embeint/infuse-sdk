@@ -13,7 +13,7 @@ import colorama
 import pykwalify.core
 import yaml
 import zcmake
-from git import Repo, exc
+from git import Commit, GitCommandError, Repo, exc
 from west.commands import WestCommand
 from west.manifest import ManifestProject, Project
 
@@ -117,14 +117,31 @@ class release_build(WestCommand):
         # Export build outputs
         self.export_build(configs, expected_hex)
 
-    def count_commits_ahead_behind(self, repo: Repo):
+    def commit_on_origin(self, repo: Repo, commit: Commit):
+        for ref in repo.remotes.origin.refs:
+            try:
+                # Equivalent to: git merge-base --is-ancestor <commit> <ref>
+                repo.git.merge_base("--is-ancestor", commit.hexsha, ref.name)
+                return True
+            except GitCommandError:
+                # Not reachable from this ref
+                continue
+
+        return False
+
+    def count_commits_ahead_behind(self, repo: Repo) -> tuple[int, int, bool]:
         # Ensure the repository is up-to-date
         repo.remotes.origin.fetch()
 
-        # Get the active branch
-        active_branch = repo.active_branch
-        if not active_branch:
-            raise RuntimeError("No active branch found")
+        try:
+            # Get the active branch
+            active_branch = repo.active_branch
+            if not active_branch:
+                raise RuntimeError("No active branch found")
+        except TypeError:
+            # HEAD is detached, check whether it exists on origin
+            commit = repo.commit(repo.head)
+            return 0, 0, self.commit_on_origin(repo, commit)
 
         # Get the commit objects for local and remote branches
         local_commit = repo.commit(active_branch)
@@ -133,7 +150,7 @@ class release_build(WestCommand):
         except exc.BadName as e:
             if self.args.ignore_git:
                 print(str(e))
-                return 0, 0
+                return 0, 0, True
             else:
                 sys.exit(str(e))
 
@@ -141,7 +158,7 @@ class release_build(WestCommand):
         ahead = len(list(repo.iter_commits(f"{remote_commit.hexsha}..{local_commit.hexsha}")))
         behind = len(list(repo.iter_commits(f"{local_commit.hexsha}..{remote_commit.hexsha}")))
 
-        return ahead, behind
+        return ahead, behind, True
 
     def validate_manifest_repos_state(self) -> None:
         if self.args.skip_git:
@@ -165,7 +182,11 @@ class release_build(WestCommand):
             repo = Repo(absolute_repo_path)
 
             if isinstance(project, ManifestProject):
-                ahead, behind = self.count_commits_ahead_behind(repo)
+                ahead, behind, on_origin = self.count_commits_ahead_behind(repo)
+                if not on_origin:
+                    error_msg.append(
+                        f"Manifest project '{project.path}' is checked out to a commit not present on origin"
+                    )
                 if ahead != 0:
                     error_msg.append(
                         f"Manifest project '{project.path}' contains {ahead} commits not present on origin"
