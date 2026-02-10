@@ -94,6 +94,7 @@ struct net_buf *rpc_command_file_write_basic(struct net_buf *request)
 		rc = rpc_common_file_actions_write(&ctx, data_offset, data->payload, var_len);
 		if (rc < 0) {
 			LOG_ERR("Failed to handle offset %08X (%d)", data_offset, rc);
+			net_buf_unref(data_buf);
 			goto error;
 		}
 
