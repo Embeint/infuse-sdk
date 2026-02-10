@@ -414,7 +414,7 @@ static void test_data_receiver(uint32_t total_send, uint8_t skip_after, uint8_t 
 	num_offsets = (tx->len - sizeof(*tx_header) - sizeof(*data_ack)) / sizeof(uint32_t);
 	zassert_equal(INFUSE_RPC_DATA_ACK, tx_header->type);
 	zassert_equal(EPACKET_AUTH_NETWORK, tx_header->auth);
-	zassert_equal(header.key_identifier, tx_header->key_identifier);
+	zassert_equal(infuse_security_network_key_identifier(), tx_header->key_identifier);
 	zassert_equal(request_id, data_ack->request_id);
 	zassert_equal(0, num_offsets);
 	net_buf_unref(tx);
@@ -469,7 +469,8 @@ ack_handler:
 				tx_header = (void *)tx->data;
 				data_ack = (void *)(tx->data + sizeof(*tx_header));
 				zassert_equal(INFUSE_RPC_DATA_ACK, tx_header->type);
-				zassert_equal(header.key_identifier, tx_header->key_identifier);
+				zassert_equal(infuse_security_network_key_identifier(),
+					      tx_header->key_identifier);
 				zassert_equal(ack_period, num_offsets);
 				packets_acked += num_offsets;
 				for (int i = 1; i < ack_period; i++) {
