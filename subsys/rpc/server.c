@@ -125,6 +125,15 @@ static void send_ack(struct epacket_rx_metadata *rx_meta, uint32_t request_id, u
 {
 	struct infuse_rpc_data_ack *data_ack;
 	struct net_buf *ack;
+	uint32_t network_key_id;
+
+	if (rx_meta->auth == EPACKET_AUTH_NETWORK) {
+		/* RPC request is network auth, use the same key ID in response */
+		network_key_id = rx_meta->key_identifier;
+	} else {
+		/* RPC request is device auth, use the default network key ID */
+		network_key_id = infuse_security_network_key_identifier();
+	}
 
 	/* Allocate the RPC_DATA_ACK packet */
 	ack = epacket_alloc_tx_for_interface(rx_meta->interface, K_FOREVER);
@@ -133,7 +142,7 @@ static void send_ack(struct epacket_rx_metadata *rx_meta, uint32_t request_id, u
 		return;
 	}
 	data_ack = net_buf_add(ack, sizeof(*data_ack));
-	epacket_set_tx_metadata_core(ack, EPACKET_AUTH_NETWORK, rx_meta->key_identifier, 0,
+	epacket_set_tx_metadata_core(ack, EPACKET_AUTH_NETWORK, network_key_id, 0,
 				     INFUSE_RPC_DATA_ACK, rx_meta->interface_address);
 	/* Populate data */
 	data_ack->request_id = request_id;
