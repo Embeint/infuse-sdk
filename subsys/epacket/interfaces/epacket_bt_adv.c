@@ -62,6 +62,24 @@ void epacket_bt_adv_set_fallback_scan_callback(bt_le_scan_cb_t scan_cb)
 
 #endif /* CONFIG_EPACKET_INTERFACE_BT_ADV_FALLBACK_SCAN_CALLBACK */
 
+#if CONFIG_EPACKET_INTERFACE_BT_ADV_CONNECTABLE_WATCHDOG_SEC > 0
+
+static void connectable_wdog_expiry(struct k_work *work)
+{
+#ifdef CONFIG_INFUSE_REBOOT
+	LOG_WRN("Connectable advertising watchdog expired, rebooting in 2 seconds...");
+	infuse_reboot_delayed(INFUSE_REBOOT_SW_WATCHDOG, (uintptr_t)connectable_wdog_expiry,
+			      CONFIG_EPACKET_INTERFACE_BT_ADV_CONNECTABLE_WATCHDOG_SEC,
+			      K_SECONDS(2));
+#else
+	LOG_ERR("Connectable advertising watchdog expired, reboot not supported...");
+#endif
+}
+
+static K_WORK_DELAYABLE_DEFINE(connectable_wdog, connectable_wdog_expiry);
+
+#endif /* CONFIG_EPACKET_INTERFACE_BT_ADV_CONNECTABLE_WATCHDOG_SEC > 0 */
+
 static void bt_adv_broadcast(const struct device *dev, struct net_buf *pkt)
 {
 	struct bt_le_adv_param adv_param = {
@@ -108,7 +126,14 @@ static void bt_adv_broadcast(const struct device *dev, struct net_buf *pkt)
 
 	/* Start transmitting the data */
 	rc = bt_le_ext_adv_start(adv_set, &adv_start_param);
-	if (rc == -ENOMEM) {
+	if (rc == 0) {
+#if CONFIG_EPACKET_INTERFACE_BT_ADV_CONNECTABLE_WATCHDOG_SEC > 0
+		/* Connectable advertising started, reset watchdog */
+		k_work_reschedule(
+			&connectable_wdog,
+			K_SECONDS(CONFIG_EPACKET_INTERFACE_BT_ADV_CONNECTABLE_WATCHDOG_SEC));
+#endif /* CONFIG_EPACKET_INTERFACE_BT_ADV_CONNECTABLE_WATCHDOG_SEC */
+	} else if (rc == -ENOMEM) {
 		/* No Bluetooth connections left, clear connectable flag */
 		adv_param.options ^= BT_LE_ADV_OPT_CONN;
 		rc = bt_le_ext_adv_update_param(adv_set, &adv_param);
@@ -327,6 +352,13 @@ static int epacket_bt_adv_init(const struct device *dev)
 	epacket_interface_common_init(dev);
 	epacket_bt_adv_ad_init();
 	k_fifo_init(&tx_buf_queue);
+
+#if CONFIG_EPACKET_INTERFACE_BT_ADV_CONNECTABLE_WATCHDOG_SEC > 0
+	/* Start connectable watchdog on boot */
+	k_work_reschedule(&connectable_wdog,
+			  K_SECONDS(CONFIG_EPACKET_INTERFACE_BT_ADV_CONNECTABLE_WATCHDOG_SEC));
+#endif /* CONFIG_EPACKET_INTERFACE_BT_ADV_CONNECTABLE_WATCHDOG_SEC */
+
 	return 0;
 }
 
