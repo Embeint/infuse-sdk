@@ -30,12 +30,12 @@ settings = {
     "files.trimTrailingWhitespace": True,
     "files.trimFinalNewlines": True,
     "files.insertFinalNewline": True,
-    "scm.showHistoryGraph": False,
     "editor.tabCompletion": "on",
     "editor.trimAutoWhitespace": True,
     "editor.formatOnSave": True,
     "editor.defaultFormatter": "ms-vscode.cpptools",
     "C_Cpp.clang_format_style": "file:${workspaceFolder}/infuse-sdk/.clang-format",
+    "C_Cpp.files.exclude": {},
     "search.exclude": {
         "**/*.a": True,
         "**/*.o": True,
@@ -224,6 +224,14 @@ class vscode(WestCommand):
         )
         parser.add_argument("--build-dir", "-d", dest="dir", type=str, help="Application build folder")
         parser.add_argument("--snr", type=str, help="JTAG serial number")
+
+        vendor_group = parser.add_mutually_exclusive_group()
+        vendor_group.add_argument(
+            "--nrf", dest="vendor", action="store_const", const="nrf", help="Nordic Semiconductor SoC"
+        )
+        vendor_group.add_argument(
+            "--stm", dest="vendor", action="store_const", const="stm", help="ST Microelectronics SoC"
+        )
         return parser
 
     def cpp_properties(
@@ -448,6 +456,14 @@ class vscode(WestCommand):
                 settings["search.exclude"]["twister-out*"] = True
                 # Default output prefix for `west release-build`
                 settings["search.exclude"]["release-*"] = True
+
+            # Limit HAL file parsing based on the vendor to improve responsiveness
+            exclude = {}
+            if args.vendor == "nrf":
+                exclude["${workspaceFolder}/modules/hal/stm32/**"] = True
+            elif args.vendor == "stm":
+                exclude["${workspaceFolder}/modules/hal/nordic/**"] = True
+            settings["C_Cpp.files.exclude"] = exclude
 
             with (vscode_folder / "settings.json").open("w") as f:
                 json.dump(settings, f, indent=4)
