@@ -5,3 +5,5 @@ board: nrf9160dk/nrf9160/ns
 signing_key: ../../../modules/tee/tf-m/trusted-firmware-m/bl2/ext/mcuboot/root-EC-P256.pem
 network_key: ../../../sample_network.yaml
 network_key_secondary: ../../../second_network.yaml
+extra_configs:
+  - CONFIG_TFM_ZEPHYR_4_0_TO_4_2_COMPATIBILITY=y
