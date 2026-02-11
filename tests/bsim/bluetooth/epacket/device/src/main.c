@@ -23,6 +23,7 @@
 #include <infuse/data_logger/high_level/tdf.h>
 #include <infuse/tdf/definitions.h>
 #include <infuse/work_q.h>
+#include <infuse/reboot.h>
 
 #define FAIL(...)                                                                                  \
 	do {                                                                                       \
@@ -274,6 +275,54 @@ static void main_epacket_bt_name(void)
 	PASS("Advertising device complete\n");
 }
 
+static K_SEM_DEFINE(reboot_request, 0, 1);
+
+#ifdef CONFIG_BSIM_REBOOT_SHIM
+
+int infuse_reboot_state_query(struct infuse_reboot_state *state)
+{
+	return -ENOENT;
+}
+
+void infuse_reboot(enum infuse_reboot_reason reason, uint32_t info1, uint32_t info2)
+{
+	k_sem_give(&reboot_request);
+}
+
+void infuse_reboot_delayed(enum infuse_reboot_reason reason, uint32_t info1, uint32_t info2,
+			   k_timeout_t delay)
+{
+	k_sem_give(&reboot_request);
+}
+
+#endif /* CONFIG_BSIM_REBOOT_SHIM */
+
+static void main_epacket_bt_connectable_wdog(void)
+{
+	const uint32_t wdog_period = CONFIG_EPACKET_INTERFACE_BT_ADV_CONNECTABLE_WATCHDOG_SEC;
+	struct tdf_announce_v2 announce = {0};
+
+	/* Send packets for a while */
+	while (k_uptime_seconds() < (wdog_period + 2)) {
+		k_sleep(K_MSEC(500));
+		TDF_DATA_LOGGER_LOG(TDF_DATA_LOGGER_BT_ADV | TDF_DATA_LOGGER_BT_PERIPHERAL,
+				    TDF_ANNOUNCE_V2, 0, &announce);
+		tdf_data_logger_flush(TDF_DATA_LOGGER_BT_ADV | TDF_DATA_LOGGER_BT_PERIPHERAL);
+	}
+
+	if (k_sem_take(&reboot_request, K_SECONDS(wdog_period - 1)) != -EAGAIN) {
+		FAIL("Connectable watchdog expired too early\n");
+		return;
+	}
+
+	if (k_sem_take(&reboot_request, K_SECONDS(2)) != -0) {
+		FAIL("Connectable watchdog did not expire\n");
+		return;
+	}
+
+	PASS("Connectable watchdog expired successfully\n");
+}
+
 void test_tick(bs_time_t HW_device_time)
 {
 	if (bst_result != Passed) {
@@ -315,6 +364,13 @@ static const struct bst_test_instance ext_adv_advertiser[] = {
 		.test_pre_init_f = test_init,
 		.test_tick_f = test_tick,
 		.test_main_f = main_epacket_bt_name,
+	},
+	{
+		.test_id = "epacket_bt_connectable_wdog",
+		.test_descr = "Connectable Bluetooth advertising watchdog",
+		.test_pre_init_f = test_init,
+		.test_tick_f = test_tick,
+		.test_main_f = main_epacket_bt_connectable_wdog,
 	},
 	BSTEST_END_MARKER,
 };
