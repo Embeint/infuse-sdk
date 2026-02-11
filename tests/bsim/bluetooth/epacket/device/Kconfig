@@ -1,0 +1,19 @@
+# Override REBOOT dependencies
+
+config BSIM_REBOOT_SHIM
+	bool "Compile in reboot shim"
+
+if BSIM_REBOOT_SHIM
+
+config INFUSE_REBOOT
+	default y
+
+config INFUSE_REBOOT_COMPILE
+	default n
+
+config INFUSE_REBOOT_RETURN
+	default y
+
+endif # BSIM_REBOOT_SHIM
+
+source "Kconfig.zephyr"
