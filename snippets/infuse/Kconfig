@@ -15,6 +15,7 @@ rsource "boards/nrf9151dk.defconfig"
 rsource "boards/nrf9160dk.defconfig"
 rsource "boards/nrf9161dk.defconfig"
 rsource "boards/tauro.defconfig"
+rsource "boards/tauro2.defconfig"
 rsource "boards/thingy53.defconfig"
 rsource "boards/thingy91x.defconfig"
 

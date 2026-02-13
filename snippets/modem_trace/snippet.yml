@@ -5,7 +5,7 @@ boards:
     append:
       EXTRA_DTC_OVERLAY_FILE: trace_uart1.overlay
       EXTRA_CONF_FILE: trace_uart1.conf
-  tauro/nrf9151/ns:
+  tauro(2)?/nrf9151/ns:
     append:
       EXTRA_DTC_OVERLAY_FILE: trace_rtt.overlay
       EXTRA_CONF_FILE: trace_rtt.conf
