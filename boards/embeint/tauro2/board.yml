@@ -1,0 +1,8 @@
+board:
+  name: tauro2
+  vendor: embeint
+  socs:
+  - name: nrf9151
+    variants:
+    - name: 'ns'
+  - name: nrf54l15

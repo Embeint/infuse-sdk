@@ -1,0 +1,15 @@
+identifier: tauro2/nrf54l15/cpuapp
+name: Tauro2-nRF54L15
+type: mcu
+arch: arm
+ram: 64
+flash: 512
+toolchain:
+  - zephyr
+  - gnuarmemb
+supported:
+  - ble
+  - netif:openthread
+  - gpio
+  - spi
+vendor: embeint

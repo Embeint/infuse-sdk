@@ -1,0 +1,221 @@
+/*
+ * Copyright (c) 2026 Embeint Holdings Pty Ltd
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+#include "tauro2_nrf9151_common-pinctrl.dtsi"
+#include <zephyr/dt-bindings/battery/battery.h>
+#include <zephyr/dt-bindings/input/input-event-codes.h>
+#include <zephyr/dt-bindings/sensor/lps22hh.h>
+#include <zephyr/dt-bindings/led/led.h>
+
+/ {
+	model = "Embeint Tauro2 nRF9151";
+	compatible = "embeint,tauro2-nrf9151";
+
+	chosen {
+		zephyr,console = &rtt0;
+		zephyr,bt-hci = &hci_spi;
+	};
+
+	rtt0: rtt_chan0 {
+		compatible = "segger,rtt-uart";
+		status = "okay";
+	};
+
+	/* Measures V_SYS instead of V_BAT, but as a fallback better than nothing.
+	 * Values looks to be within ~100mV even when charging.
+	 */
+	nrf9x_batt: nrf9x_batt {
+		compatible = "nordic,nrf9x-batt";
+	};
+
+	fuel_gauge: fuel_gauge {
+		compatible = "zephyr,fuel-gauge-composite";
+		source-primary = <&ina236>;
+		source-secondary = <&nrf9x_batt>;
+		device-chemistry = "lithium-ion-polymer";
+		ocv-capacity-table-0 = <BATTERY_OCV_CURVE_LITHIUM_ION_POLYMER_DEFAULT>;
+		charge-full-design-microamp-hours = <13400000>;
+		source-secondary-fallback;
+	};
+
+	aliases {
+		led-controller0 = &lp5815;
+		charger0 = &bq25186;
+		fuel-gauge0 = &fuel_gauge;
+		imu0 = &lsm6dsv;
+		gnss = &max_m10;
+		watchdog0 = &wdt0;
+		environmental0 = &sht4x;
+		environmental1 = &lps22hh;
+	};
+};
+
+&gpiote {
+	status = "okay";
+};
+
+&gpio0 {
+	status = "okay";
+	/* Every pin except the GNSS timepulse interrupt */
+	sense-edge-mask = <0xfffdffff>;
+};
+
+&spi0 {
+	compatible = "nordic,nrf-spim";
+	status = "okay";
+	cs-gpios = <&gpio0 29 (GPIO_ACTIVE_LOW | GPIO_OPEN_DRAIN)>;
+	pinctrl-0 = <&spi0_default>;
+	pinctrl-1 = <&spi0_sleep>;
+	pinctrl-names = "default", "sleep";
+
+	lsm6dsv: lsm6dsv@0 {
+		compatible = "st,lsm6dsv16x";
+		reg = <0>;
+		spi-max-frequency = <10000000>;
+		int1-gpios = <&gpio0 1 GPIO_ACTIVE_HIGH>;
+	};
+};
+
+&spi1 {
+	compatible = "nordic,nrf-spim";
+	status = "okay";
+	cs-gpios = <&gpio0 22 GPIO_ACTIVE_LOW>;
+	pinctrl-0 = <&spi1_default>;
+	pinctrl-1 = <&spi1_sleep>;
+	pinctrl-names = "default", "sleep";
+
+	wake-gpios = <&gpio0 20 GPIO_ACTIVE_HIGH>;
+
+	/* Nordic nRF54L15 (Ezurio BL54L15) */
+	hci_spi: bt-hci@0 {
+		compatible = "zephyr,bt-hci-spi";
+		reg = <0>;
+		spi-max-frequency = <8000000>;
+		reset-gpios = <&gpio0 15 (GPIO_ACTIVE_LOW)>;
+		irq-gpios = <&gpio0 21 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>;
+		reset-assert-duration-ms = <1>;
+		spi-cs-setup-delay-ns = <10000>;
+	};
+};
+
+
+&spi3 {
+	compatible = "nordic,nrf-spim";
+	status = "okay";
+	cs-gpios = <&gpio0 7 (GPIO_ACTIVE_LOW | GPIO_OPEN_DRAIN)>,
+			<&gpio0 6 (GPIO_ACTIVE_HIGH)>;
+	pinctrl-0 = <&spi3_default>;
+	pinctrl-1 = <&spi3_sleep>;
+	pinctrl-names = "default", "sleep";
+
+	w25q128jw: w25q128jwpiq@0 {
+		compatible = "jedec,spi-nor";
+		status = "okay";
+		reg = <0>;
+		spi-max-frequency = <32000000>;
+		size = <134217728>;
+		has-dpd;
+		t-enter-dpd = <3000>;
+		t-exit-dpd = <20000>;
+		jedec-id = [ef 80 18];
+	};
+
+	sdhc0: sdhc@1 {
+		compatible = "zephyr,sdhc-spi-slot";
+		status = "okay";
+		reg = <1>;
+		spi-max-frequency = <32000000>;
+		pwr-gpios = <&gpio0 5 GPIO_ACTIVE_HIGH>;
+		mmc: mmc {
+			compatible = "zephyr,sdmmc-disk";
+			status = "okay";
+			disk-name = "SD";
+		};
+	};
+};
+
+&i2c2 {
+	compatible = "nordic,nrf-twim";
+	status = "okay";
+	pinctrl-0 = <&i2c2_default>;
+	pinctrl-1 = <&i2c2_sleep>;
+	pinctrl-names = "default", "sleep";
+	clock-frequency = <I2C_BITRATE_FAST>;
+
+	lp5815: lp5815@2d {
+		compatible = "ti,lp5815";
+		reg = <0x2d>;
+		/* 1/2 of maximum current (~12mA) */
+		out0-current-max = <0x80>;
+		out1-current-max = <0x80>;
+		out2-current-max = <0x80>;
+
+		red_led: led_0 {
+			index = <0>;
+			color-mapping = <LED_COLOR_ID_RED>;
+		};
+		green_led: led_1 {
+			index = <1>;
+			color-mapping = <LED_COLOR_ID_GREEN>;
+		};
+		blue_led: led_2 {
+			index = <2>;
+			color-mapping = <LED_COLOR_ID_BLUE>;
+		};
+	};
+
+	ina236: ina236@40 {
+		reg = <0x40>;
+		compatible = "ti,ina236";
+		status = "okay";
+		current-lsb-microamps = <32>;
+		rshunt-micro-ohms = <82000>;
+		adc-mode = "Shutdown single shot";
+	};
+
+	max_m10: max_m10@42 {
+		compatible = "u-blox,m10-i2c";
+		status = "okay";
+		reg = <0x42>;
+		timepulse-gpios = <&gpio0 17 GPIO_ACTIVE_LOW>;
+		reset-gpios = <&gpio0 19 GPIO_ACTIVE_LOW>;
+		extint-gpios = <&gpio0 18 GPIO_ACTIVE_LOW>;
+		data-ready-gpios = <&gpio0 16 GPIO_ACTIVE_LOW>;
+		data-ready-pio = <1>;
+	};
+
+	sht4x: sht4x@44 {
+		compatible = "sensirion,sht4x";
+		status = "okay";
+		reg = <0x44>;
+		repeatability = <2>;
+	};
+
+	lps22hh: lps22hh@5c {
+		compatible = "st,lps22hh";
+		status = "okay";
+		reg = <0x5c>;
+		odr = <LPS22HH_DT_ODR_POWER_DOWN>;
+	};
+
+	bq25186: bq25186@6a {
+		compatible = "ti,bq25186";
+		reg = <0x6a>;
+		int-gpios = <&gpio0 12 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
+		constant-charge-voltage-max-microvolt = <4200000>;
+		precharge-voltage-threshold-microvolt = <3000000>;
+		constant-charge-current-max-microamp = <1000000>;
+		battery-discharge-current-limit-milliamp = <3000>;
+		battery-undervoltage-lockout-millivolt = <2600>;
+		re-charge-threshold-millivolt = <100>;
+		vsys-target-regulation = "4V5";
+		/*  EN: <&gpio0 11 GPIO_ACTIVE_LOW>
+		 */
+	};
+};
+
+/* Include default memory partition configuration file */
+#include <vendor/nordic/nrf91xx_partition.dtsi>
