@@ -522,17 +522,18 @@ class release_build(WestCommand):
             )
             primary_dir = app_name
 
-        repo = Repo(self.args.release, search_parent_directories=True)
-        remotes = [r.url for r in repo.remotes]
+        app_repo = Repo(self.args.release, search_parent_directories=True)
+        remotes = [r.url for r in app_repo.remotes]
 
         # Create manifest file
         manifest = {
             "configuration": {
                 "file": str(self.args.release.resolve().absolute()),
-                "repo": {
+                "application_repo": {
                     "remotes": remotes,
-                    "commit": repo.commit().binsha.hex(),
+                    "commit": app_repo.commit().binsha.hex(),
                 },
+                "manifest_repos": {},
             },
             "application": {
                 "id": int(build_configs["CONFIG_INFUSE_APPLICATION_ID"], 0),
@@ -564,6 +565,16 @@ class release_build(WestCommand):
                 if k.startswith("CONFIG_KV_STORE_KEY_") and not k.endswith("_RANGE")
             ],
         }
+
+        # Inject critical repository revisions into the manifest file
+        for project in self.manifest.projects:
+            if project.name in ["infuse-sdk", "zephyr", "trusted-firmware-m", "mcuboot"]:
+                manifest["configuration"]["manifest_repos"][project.name] = {
+                    "remote": project.url,
+                    "commit": project.revision,
+                }
+        if self.args.skip_git or self.args.ignore_git:
+            manifest["configuration"]["dirty"] = True
 
         if self.network_key is not None:
             with self.network_key.open("r", encoding="utf-8") as f:
