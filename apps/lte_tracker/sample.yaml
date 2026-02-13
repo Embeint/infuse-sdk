@@ -16,9 +16,11 @@ tests:
   sample.app.lte_tracker:
     platform_allow:
       - tauro/nrf9151/ns
+      - tauro2/nrf9151/ns
       - thingy91x/nrf9151/ns
     integration_platforms:
       - tauro/nrf9151/ns
+      - tauro2/nrf9151/ns
       - thingy91x/nrf9151/ns
     tags: app
   sample.app.lte_tracker.wifi_scanner:

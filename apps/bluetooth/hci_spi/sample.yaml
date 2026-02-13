@@ -6,6 +6,7 @@ common:
   filter: dt_compat_enabled("zephyr,bt-hci-spi-slave")
   integration_platforms:
     - auroch@1.0.0/nrf54l15/cpuapp
+    - tauro2/nrf54l15/cpuapp
     - tauro/nrf52840
   platform_exclude:
     - nrf9160dk@0.7.0/nrf52840
