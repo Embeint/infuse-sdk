@@ -1,0 +1,19 @@
+if BOARD_TAURO2_NRF9151_NS
+
+configdefault TFM_DEVICETREE_LAYOUT
+    default y
+
+configdefault NETWORKING
+    default y if !MCUBOOT
+
+configdefault NRF_MODEM_LIB
+    default y if NETWORKING
+
+configdefault LTE_LINK_CONTROL
+    default y if NETWORKING
+
+# External flash layout needs to match internal
+configdefault SPI_NOR_FLASH_LAYOUT_PAGE_SIZE
+    default 4096 if MCUBOOT
+
+endif # BOARD_TAURO2_NRF9151_NS

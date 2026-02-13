@@ -1,0 +1,192 @@
+#include <common/nordic/infuse_nrf9151_ns.dtsi>
+#include <common/infuse_bluetooth.dtsi>
+
+/* MCUboot secondary on external flash */
+/delete-node/ &slot0_partition;
+/delete-node/ &slot1_partition;
+
+/ {
+	tfm_config {
+		compatible = "arm,trusted-firmware-m";
+		sram = <&sram0>;
+		sram-secure = <&sram0_s>;
+		sram-nonsecure = <&sram0_ns>;
+		spu-flash-region-size = <0x00008000>;
+		spu-sram-region-size = <0x00002000>;
+
+		onboard_flash {
+			driver = "Driver_FLASH0";
+			complete = <&flash0>;
+			img-bl2 = <&boot_partition>;
+			img-primary-secure = <&slot0_s_partition>;
+			img-primary-nonsecure = <&slot0_ns_partition>;
+			partition-ps = <&tfm_ps_partition>;
+			partition-its = <&tfm_its_partition>;
+			partition-otp = <&tfm_otp_partition>;
+			partition-nonsecure-storage = <&storage_partition>;
+		};
+
+		spi_flash {
+			driver = "Driver_FLASH_SPI_NOR0";
+			define-prefix = "SPI_";
+			complete = <&w25q128jw>;
+			erase-block-size = <4096>;
+			write-block-size = <1>;
+			img-secondary-secure = <&slot1_s_partition>;
+			img-secondary-nonsecure = <&slot1_ns_partition>;
+			/* Drive pin high to disable SD card interface */
+			extra-defines = "SPI_NOR_ENABLE_PIN=20";
+		};
+	};
+
+	epacket_udp: epacket_udp {
+		compatible = "embeint,epacket-udp";
+	};
+
+	data_logger_udp: data_logger_udp {
+		compatible = "embeint,data-logger-epacket", "embeint,data-logger";
+		epacket = <&epacket_udp>;
+
+		tdf_logger_udp: tdf_logger_udp {
+			compatible = "embeint,tdf-data-logger";
+		};
+	};
+
+	epacket_serial: epacket_serial {
+		compatible = "embeint,epacket-serial";
+		serial = <&rtt0>;
+	};
+
+	data_logger_serial: data_logger_serial {
+		compatible = "embeint,data-logger-epacket", "embeint,data-logger";
+		epacket = <&epacket_serial>;
+
+		tdf_logger_serial: tdf_logger_serial {
+			compatible = "embeint,tdf-data-logger";
+		};
+	};
+
+	data_logger_flash: data_logger_flash {
+		compatible = "embeint,data-logger-flash-map", "embeint,data-logger";
+		partition = <&data_logger_partition>;
+
+		tdf_logger_flash: tdf_logger_flash {
+			compatible = "embeint,tdf-data-logger";
+		};
+	};
+
+	data_logger_exfat: data_logger_exfat {
+		compatible = "embeint,data-logger-exfat", "embeint,data-logger";
+		disk = <&mmc>;
+
+		tdf_logger_exfat: tdf_logger_removable: tdf_logger_exfat {
+			compatible = "embeint,tdf-data-logger";
+		};
+	};
+};
+
+&flash0 {
+	partitions {
+		boot_partition: partition@0 {
+			label = "mcuboot";
+			reg = <0x00000000 0x00010000>;
+		};
+		slot0_partition: partition@10000 {
+			compatible = "fixed-subpartitions";
+			label = "image-0";
+			reg = <0x00010000 0x000E0000>;
+			ranges = <0x0 0x10000 0xE0000>;
+			#address-cells = <1>;
+			#size-cells = <1>;
+
+			slot0_s_partition: partition@0 {
+				label = "image-0-secure";
+				reg = <0x00000000 0x30000>;
+			};
+
+			slot0_ns_partition: partition@30000 {
+				label = "image-0-nonsecure";
+				reg = <0x00030000 0xB0000>;
+			};
+		};
+	};
+};
+
+&spi0 {
+	zephyr,pm-device-runtime-auto;
+};
+
+&spi1 {
+	zephyr,pm-device-runtime-auto;
+};
+
+&i2c2 {
+	zephyr,pm-device-runtime-auto;
+};
+
+&spi3 {
+	zephyr,pm-device-runtime-auto;
+};
+
+&sht4x {
+	zephyr,pm-device-runtime-auto;
+};
+
+&lps22hh {
+	zephyr,pm-device-runtime-auto;
+};
+
+&max_m10 {
+	zephyr,pm-device-runtime-auto;
+};
+
+&mmc {
+	zephyr,pm-device-runtime-auto;
+};
+
+&lsm6dsv {
+	zephyr,pm-device-runtime-auto;
+};
+
+&hci_spi {
+	epacket_hci: epacket_hci {
+		compatible = "embeint,epacket-hci";
+	};
+};
+
+&w25q128jw {
+	zephyr,pm-device-runtime-auto;
+
+	partitions {
+		compatible = "fixed-partitions";
+		#address-cells = <1>;
+		#size-cells = <1>;
+
+		slot1_partition: partition@0 {
+			compatible = "fixed-subpartitions";
+			label = "image-1";
+			reg = <0x00000000 0x000E0000>;
+			ranges = <0x0 0x0 0xE0000>;
+			#address-cells = <1>;
+			#size-cells = <1>;
+
+			slot1_s_partition: partition@0 {
+				label = "image-1-secure";
+				reg = <0x00000000 0x30000>;
+			};
+
+			slot1_ns_partition: partition@30000 {
+				label = "image-1-nonsecure";
+				reg = <0x00030000 0xB0000>;
+			};
+		};
+		file_partition: partition@E0000 {
+			label = "files";
+			reg = <0x000E0000 0x00080000>;
+		};
+		data_logger_partition: partition@160000 {
+			label = "data_logger";
+			reg = <0x00160000 0x000ea0000>;
+		};
+	};
+};
