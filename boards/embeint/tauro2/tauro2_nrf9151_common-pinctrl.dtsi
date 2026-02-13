@@ -1,0 +1,78 @@
+/*
+ * Copyright (c) 2026 Embeint Holdings Pty Ltd
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+&pinctrl {
+	spi0_default: spi0_default {
+		group1 {
+			psels = <NRF_PSEL(SPIM_SCK, 0, 30)>,
+				<NRF_PSEL(SPIM_MISO, 0, 0)>,
+				<NRF_PSEL(SPIM_MOSI, 0, 31)>;
+			nordic,drive-mode = <NRF_DRIVE_H0H1>;
+		};
+	};
+
+	spi0_sleep: spi0_sleep {
+		group1 {
+			psels = <NRF_PSEL(SPIM_SCK, 0, 30)>,
+				<NRF_PSEL(SPIM_MISO, 0, 0)>,
+				<NRF_PSEL(SPIM_MOSI, 0, 31)>;
+			low-power-enable;
+			bias-pull-down;
+		};
+	};
+
+	spi1_default: spi1_default {
+		group1 {
+			psels = <NRF_PSEL(SPIM_SCK, 0, 25)>,
+				<NRF_PSEL(SPIM_MISO, 0, 23)>,
+				<NRF_PSEL(SPIM_MOSI, 0, 24)>;
+			nordic,drive-mode = <NRF_DRIVE_H0H1>;
+		};
+	};
+
+	spi1_sleep: spi1_sleep {
+		group1 {
+			psels = <NRF_PSEL(SPIM_SCK, 0, 25)>,
+				<NRF_PSEL(SPIM_MISO, 0, 23)>,
+				<NRF_PSEL(SPIM_MOSI, 0, 24)>;
+			low-power-enable;
+			bias-pull-down;
+		};
+	};
+
+	i2c2_default: i2c2_default {
+		group1 {
+			psels = <NRF_PSEL(TWIM_SDA, 0, 3)>,
+				<NRF_PSEL(TWIM_SCL, 0, 2)>;
+		};
+	};
+
+	i2c2_sleep: i2c2_sleep {
+		group1 {
+			psels = <NRF_PSEL(TWIM_SDA, 0, 3)>,
+				<NRF_PSEL(TWIM_SCL, 0, 2)>;
+			low-power-enable;
+		};
+	};
+
+	spi3_default: spi3_default {
+		group1 {
+			psels = <NRF_PSEL(SPIM_SCK, 0, 9)>,
+				<NRF_PSEL(SPIM_MISO, 0, 8)>,
+				<NRF_PSEL(SPIM_MOSI, 0, 10)>;
+			nordic,drive-mode = <NRF_DRIVE_H0H1>;
+		};
+	};
+
+	spi3_sleep: spi3_sleep {
+		group1 {
+			psels = <NRF_PSEL(SPIM_SCK, 0, 9)>,
+				<NRF_PSEL(SPIM_MISO, 0, 8)>,
+				<NRF_PSEL(SPIM_MOSI, 0, 10)>;
+			low-power-enable;
+			bias-pull-down;
+		};
+	};
+};

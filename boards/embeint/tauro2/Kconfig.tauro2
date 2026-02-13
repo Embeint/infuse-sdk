@@ -1,0 +1,8 @@
+# Tauro2 nRF9151 board configuration
+
+# Copyright (c) 2026 Embeint Holdings Pty Ltd
+# SPDX-License-Identifier: Apache-2.0
+
+config BOARD_TAURO2
+	select SOC_NRF9151_LACA if BOARD_TAURO2_NRF9151 || BOARD_TAURO2_NRF9151_NS
+	select SOC_NRF54L15_CPUAPP if BOARD_TAURO2_NRF54L15_CPUAPP
