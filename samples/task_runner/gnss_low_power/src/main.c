@@ -54,7 +54,7 @@ static const struct task_schedule schedules[] = {
 					},
 			},
 	},
-#if DT_NODE_EXISTS(DT_ALIAS(fuel_gauge0))
+#if DT_NODE_HAS_STATUS_OKAY(DT_ALIAS(fuel_gauge0))
 	{
 		.task_id = TASK_ID_BATTERY,
 		.validity = TASK_VALID_ALWAYS,
@@ -68,7 +68,7 @@ static const struct task_schedule schedules[] = {
 				},
 			},
 	},
-#endif /* DT_NODE_EXISTS(DT_ALIAS(fuel_gauge0)) */
+#endif /* DT_NODE_HAS_STATUS_OKAY(DT_ALIAS(fuel_gauge0)) */
 #ifdef CONFIG_BT
 	{
 		.task_id = TASK_ID_TDF_LOGGER,
@@ -85,11 +85,11 @@ static const struct task_schedule schedules[] = {
 #endif /* CONFIG_BT */
 };
 
-#if DT_NODE_EXISTS(DT_ALIAS(fuel_gauge0))
+#if DT_NODE_HAS_STATUS_OKAY(DT_ALIAS(fuel_gauge0))
 #define BAT_TASK_DEFINE (BATTERY_TASK, DEVICE_DT_GET(DT_ALIAS(fuel_gauge0)))
 #else
 #define BAT_TASK_DEFINE
-#endif /* DT_NODE_EXISTS(DT_ALIAS(fuel_gauge0)) */
+#endif /* DT_NODE_HAS_STATUS_OKAY(DT_ALIAS(fuel_gauge0)) */
 
 TASK_SCHEDULE_STATES_DEFINE(states, schedules);
 TASK_RUNNER_TASKS_DEFINE(app_tasks, app_tasks_data, (TDF_LOGGER_TASK, NULL), BAT_TASK_DEFINE,

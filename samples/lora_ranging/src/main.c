@@ -49,14 +49,14 @@ static struct k_work_delayable led_disable;
 LOG_MODULE_REGISTER(app, LOG_LEVEL_INF);
 
 static const struct task_schedule schedules[] = {
-#if DT_NODE_EXISTS(DT_ALIAS(fuel_gauge0))
+#if DT_NODE_HAS_STATUS_OKAY(DT_ALIAS(fuel_gauge0))
 	{
 		.task_id = TASK_ID_BATTERY,
 		.validity = TASK_VALID_ALWAYS,
 		.periodicity_type = TASK_PERIODICITY_FIXED,
 		.periodicity.fixed.period_s = 5,
 	},
-#endif /* DT_NODE_EXISTS(DT_ALIAS(fuel_gauge0)) */
+#endif /* DT_NODE_HAS_STATUS_OKAY(DT_ALIAS(fuel_gauge0)) */
 #ifdef CONFIG_TASK_RUNNER_TASK_GNSS
 	{
 		.task_id = TASK_ID_GNSS,
@@ -96,12 +96,12 @@ static const struct task_schedule schedules[] = {
 	},
 };
 
-#if DT_NODE_EXISTS(DT_ALIAS(gnss))
+#if DT_NODE_HAS_STATUS_OKAY(DT_ALIAS(gnss))
 #define GNSS_TASK_DEFINE (GNSS_TASK, DEVICE_DT_GET(DT_ALIAS(gnss)))
 #else
 #define GNSS_TASK_DEFINE
 #endif
-#if DT_NODE_EXISTS(DT_ALIAS(fuel_gauge0))
+#if DT_NODE_HAS_STATUS_OKAY(DT_ALIAS(fuel_gauge0))
 #define BAT_TASK_DEFINE (GNSS_TASK, DEVICE_DT_GET(DT_ALIAS(fuel_gauge0)))
 #else
 #define BAT_TASK_DEFINE

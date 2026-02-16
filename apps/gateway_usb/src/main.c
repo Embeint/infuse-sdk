@@ -75,7 +75,7 @@ int main(void)
 	/* Start auto iteration */
 	task_runner_start_auto_iterate();
 
-#if DT_NODE_EXISTS(DT_ALIAS(led0))
+#if DT_NODE_HAS_STATUS_OKAY(DT_ALIAS(led0))
 	const struct gpio_dt_spec led = GPIO_DT_SPEC_GET(DT_ALIAS(led0), gpios);
 
 	/* Blink LED once a second as proof of life */

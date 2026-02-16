@@ -103,7 +103,7 @@ static const struct task_schedule schedules[] = {
 				.fifo_sample_buffer = 100,
 			},
 	},
-#if DT_NODE_EXISTS(DT_ALIAS(gnss))
+#if DT_NODE_HAS_STATUS_OKAY(DT_ALIAS(gnss))
 	{
 		.task_id = TASK_ID_GNSS,
 		.validity = TASK_VALID_ALWAYS,
@@ -123,7 +123,7 @@ static const struct task_schedule schedules[] = {
 				.dynamic_model = UBX_CFG_NAVSPG_DYNMODEL_PORTABLE,
 			},
 	},
-#endif /* DT_NODE_EXISTS(DT_ALIAS(gnss)) */
+#endif /* DT_NODE_HAS_STATUS_OKAY(DT_ALIAS(gnss)) */
 	{
 		.task_id = TASK_ID_BATTERY,
 		.validity = TASK_VALID_ALWAYS,
@@ -152,7 +152,7 @@ static const struct task_schedule schedules[] = {
 	},
 };
 
-#if DT_NODE_EXISTS(DT_ALIAS(gnss))
+#if DT_NODE_HAS_STATUS_OKAY(DT_ALIAS(gnss))
 #define GNSS_TASK_DEFINE (GNSS_TASK, DEVICE_DT_GET(DT_ALIAS(gnss)))
 #else
 #define GNSS_TASK_DEFINE

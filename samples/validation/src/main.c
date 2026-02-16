@@ -45,7 +45,7 @@ static atomic_t validators_passed;
 static atomic_t validators_failed;
 static atomic_t validators_complete;
 
-#if DT_NODE_EXISTS(DT_ALIAS(imu0))
+#if DT_NODE_HAS_STATUS_OKAY(DT_ALIAS(imu0))
 static int imu_validator(void *a, void *b, void *c)
 {
 	atomic_inc(&validators_registered);
@@ -61,9 +61,9 @@ static int imu_validator(void *a, void *b, void *c)
 }
 
 K_THREAD_DEFINE(imu_thread, 2048, imu_validator, NULL, NULL, NULL, 5, 0, 0);
-#endif /* DT_NODE_EXISTS(DT_ALIAS(imu0)) */
+#endif /* DT_NODE_HAS_STATUS_OKAY(DT_ALIAS(imu0)) */
 
-#if DT_NODE_EXISTS(DT_ALIAS(die_temp0))
+#if DT_NODE_HAS_STATUS_OKAY(DT_ALIAS(die_temp0))
 
 static int die_temp_validator(void *a, void *b, void *c)
 {
@@ -79,9 +79,9 @@ static int die_temp_validator(void *a, void *b, void *c)
 }
 
 K_THREAD_DEFINE(die_temp_thread, 2048, die_temp_validator, NULL, NULL, NULL, 5, 0, 0);
-#endif /* DT_NODE_EXISTS(DT_ALIAS(die_temp0)) */
+#endif /* DT_NODE_HAS_STATUS_OKAY(DT_ALIAS(die_temp0)) */
 
-#if DT_NODE_EXISTS(DT_ALIAS(environmental0))
+#if DT_NODE_HAS_STATUS_OKAY(DT_ALIAS(environmental0))
 
 static void env_validation_run(const struct device *dev)
 {
@@ -97,17 +97,17 @@ static void env_validation_run(const struct device *dev)
 static int env_validator(void *a, void *b, void *c)
 {
 	env_validation_run(DEVICE_DT_GET(DT_ALIAS(environmental0)));
-#if DT_NODE_EXISTS(DT_ALIAS(environmental1))
+#if DT_NODE_HAS_STATUS_OKAY(DT_ALIAS(environmental1))
 	env_validation_run(DEVICE_DT_GET(DT_ALIAS(environmental1)));
-#endif /* DT_NODE_EXISTS(DT_ALIAS(environmental1)) */
+#endif /* DT_NODE_HAS_STATUS_OKAY(DT_ALIAS(environmental1)) */
 	k_sem_give(&task_complete);
 	return 0;
 }
 
 K_THREAD_DEFINE(env_thread, 2048, env_validator, NULL, NULL, NULL, 5, 0, 0);
-#endif /* DT_NODE_EXISTS(DT_ALIAS(environmental0)) */
+#endif /* DT_NODE_HAS_STATUS_OKAY(DT_ALIAS(environmental0)) */
 
-#if DT_NODE_EXISTS(DT_ALIAS(fuel_gauge0))
+#if DT_NODE_HAS_STATUS_OKAY(DT_ALIAS(fuel_gauge0))
 static int pwr_validator(void *a, void *b, void *c)
 {
 	atomic_inc(&validators_registered);
@@ -128,7 +128,7 @@ static int pwr_validator(void *a, void *b, void *c)
 
 K_THREAD_DEFINE(pwr_thread, 2048, pwr_validator, NULL, NULL, NULL, 5, 0, 0);
 
-#endif /* DT_NODE_EXISTS(DT_ALIAS(fuel_gauge0)) */
+#endif /* DT_NODE_HAS_STATUS_OKAY(DT_ALIAS(fuel_gauge0)) */
 
 #if defined(CONFIG_SPI_NOR)
 #define FLASH_COMPAT jedec_spi_nor
@@ -156,7 +156,7 @@ static int flash_validator(void *a, void *b, void *c)
 K_THREAD_DEFINE(flash_thread, 2048, flash_validator, NULL, NULL, NULL, 5, 0, 0);
 #endif /* FLASH_COMPAT */
 
-#if DT_NODE_EXISTS(DT_ALIAS(gnss)) && IS_ENABLED(CONFIG_GNSS_VALIDATION_SUPPORTED)
+#if DT_NODE_HAS_STATUS_OKAY(DT_ALIAS(gnss)) && IS_ENABLED(CONFIG_GNSS_VALIDATION_SUPPORTED)
 static int gnss_validator(void *a, void *b, void *c)
 {
 	atomic_inc(&validators_registered);
@@ -171,7 +171,8 @@ static int gnss_validator(void *a, void *b, void *c)
 }
 
 K_THREAD_DEFINE(gnss_thread, 2048, gnss_validator, NULL, NULL, NULL, 5, 0, 0);
-#endif /* DT_NODE_EXISTS(DT_ALIAS(gnss)) && IS_ENABLED(CONFIG_GNSS_VALIDATION_SUPPORTED) */
+#endif /* DT_NODE_HAS_STATUS_OKAY(DT_ALIAS(gnss)) && IS_ENABLED(CONFIG_GNSS_VALIDATION_SUPPORTED)  \
+	*/
 
 #ifdef CONFIG_DISK_DRIVER_SDMMC
 static int disk_validator(void *a, void *b, void *c)
@@ -216,7 +217,7 @@ static int nrf_modem_validator(void *a, void *b, void *c)
 K_THREAD_DEFINE(nrf_modem_thread, 2048, nrf_modem_validator, NULL, NULL, NULL, 5, 0, 0);
 #endif /* CONFIG_NRF_MODEM_LIB */
 
-#if DT_NODE_EXISTS(DT_ALIAS(modem))
+#if DT_NODE_HAS_STATUS_OKAY(DT_ALIAS(modem))
 static int cellular_modem_validator(void *a, void *b, void *c)
 {
 	const struct device *modem = DEVICE_DT_GET(DT_ALIAS(modem));
@@ -234,7 +235,7 @@ static int cellular_modem_validator(void *a, void *b, void *c)
 }
 
 K_THREAD_DEFINE(cellular_modem_thread, 2048, cellular_modem_validator, NULL, NULL, NULL, 5, 0, 0);
-#endif /* DT_NODE_EXISTS(DT_ALIAS(modem)) */
+#endif /* DT_NODE_HAS_STATUS_OKAY(DT_ALIAS(modem)) */
 
 #if CONFIG_LORA
 static void lora_validation_run(const struct device *dev)
@@ -251,7 +252,7 @@ static void lora_validation_run(const struct device *dev)
 static int lora_validator(void *a, void *b, void *c)
 {
 	atomic_inc(&validators_registered);
-#if DT_NODE_EXISTS(DT_ALIAS(lora1))
+#if DT_NODE_HAS_STATUS_OKAY(DT_ALIAS(lora1))
 	atomic_inc(&validators_registered);
 	lora_validation_run(DEVICE_DT_GET(DT_ALIAS(lora1)));
 #endif
@@ -429,7 +430,7 @@ int main(void)
 	VALIDATION_REPORT_INFO("SYS", "Starting");
 	VALIDATION_REPORT_VALUE("SYS", "INFUSE_ID", "0x%016llx", device_id);
 
-#if DT_NODE_EXISTS(DT_ALIAS(charger0))
+#if DT_NODE_HAS_STATUS_OKAY(DT_ALIAS(charger0))
 	/* No API checking, just validate the device initialised correctly */
 	const struct device *charger = DEVICE_DT_GET(DT_ALIAS(charger0));
 
@@ -445,7 +446,7 @@ int main(void)
 		atomic_inc(&validators_failed);
 	}
 	atomic_inc(&validators_complete);
-#endif /* DT_NODE_EXISTS(DT_ALIAS(charger0)) */
+#endif /* DT_NODE_HAS_STATUS_OKAY(DT_ALIAS(charger0)) */
 
 	/* Delay to allow other tests to register */
 	k_sleep(K_MSEC(10));

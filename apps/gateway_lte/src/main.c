@@ -75,15 +75,15 @@ static const struct task_schedule schedules[] = {
 		.periodicity_type = TASK_PERIODICITY_FIXED,
 		.periodicity.fixed.period_s = 30,
 	},
-#if DT_NODE_EXISTS(DT_ALIAS(environmental0))
+#if DT_NODE_HAS_STATUS_OKAY(DT_ALIAS(environmental0))
 	{
 		.task_id = TASK_ID_ENVIRONMENTAL,
 		.validity = TASK_VALID_ALWAYS,
 		.periodicity_type = TASK_PERIODICITY_FIXED,
 		.periodicity.fixed.period_s = 30,
 	},
-#endif /* DT_NODE_EXISTS(DT_ALIAS(environmental0)) */
-#if DT_NODE_EXISTS(DT_ALIAS(gnss))
+#endif /* DT_NODE_HAS_STATUS_OKAY(DT_ALIAS(environmental0)) */
+#if DT_NODE_HAS_STATUS_OKAY(DT_ALIAS(gnss))
 	{
 		.task_id = TASK_ID_GNSS,
 		.validity = TASK_VALID_ALWAYS,
@@ -124,17 +124,17 @@ static const struct task_schedule schedules[] = {
 				.dynamic_model = UBX_CFG_NAVSPG_DYNMODEL_STATIONARY,
 			},
 	},
-#endif /* DT_NODE_EXISTS(DT_ALIAS(gnss)) */
+#endif /* DT_NODE_HAS_STATUS_OKAY(DT_ALIAS(gnss)) */
 };
 
-#if DT_NODE_EXISTS(DT_ALIAS(environmental0))
+#if DT_NODE_HAS_STATUS_OKAY(DT_ALIAS(environmental0))
 #define ENV_TASK_DEFINE                                                                            \
 	(ENVIRONMENTAL_TASK, DEVICE_DT_GET(DT_ALIAS(environmental0)),                              \
 	 DEVICE_DT_GET_OR_NULL(DT_ALIAS(environmental1)))
 #else
 #define ENV_TASK_DEFINE
 #endif
-#if DT_NODE_EXISTS(DT_ALIAS(gnss))
+#if DT_NODE_HAS_STATUS_OKAY(DT_ALIAS(gnss))
 #define GNSS_TASK_DEFINE (GNSS_TASK, DEVICE_DT_GET(DT_ALIAS(gnss)))
 #else
 #define GNSS_TASK_DEFINE
@@ -148,7 +148,7 @@ TASK_RUNNER_TASKS_DEFINE(app_tasks, app_tasks_data, (TDF_LOGGER_TASK, custom_tdf
 
 GATEWAY_HANDLER_DEFINE(udp_backhaul_handler, DEVICE_DT_GET(DT_NODELABEL(epacket_udp)));
 
-#if DT_NODE_EXISTS(DT_ALIAS(led0))
+#if DT_NODE_HAS_STATUS_OKAY(DT_ALIAS(led0))
 static const struct gpio_dt_spec led0 = GPIO_DT_SPEC_GET(DT_ALIAS(led0), gpios);
 #endif
 
@@ -297,7 +297,7 @@ int main(void)
 	/* Start auto iteration */
 	task_runner_start_auto_iterate();
 
-#if DT_NODE_EXISTS(DT_ALIAS(led0))
+#if DT_NODE_HAS_STATUS_OKAY(DT_ALIAS(led0))
 	(void)gpio_pin_configure_dt(&led0, GPIO_OUTPUT_INACTIVE);
 
 	/* Boot LED sequence */
@@ -306,7 +306,7 @@ int main(void)
 		k_sleep(K_MSEC(200));
 	}
 	gpio_pin_set_dt(&led0, 0);
-#endif /* DT_NODE_EXISTS(DT_ALIAS(led0)) */
+#endif /* DT_NODE_HAS_STATUS_OKAY(DT_ALIAS(led0)) */
 
 	/* Nothing further to do */
 	k_sleep(K_FOREVER);
