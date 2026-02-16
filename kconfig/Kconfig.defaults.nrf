@@ -93,6 +93,7 @@ configdefault LTE_RAI_REQ
 if !NRF70_RADIO_TEST
 config NRF_WIFI_LOW_RAM
 	bool "nRF Wi-Fi low RAM defaults"
+	depends on WIFI_NRF70
 	default y if SRAM_SIZE <= 256
 
 configdefault NRF70_RX_MAX_DATA_SIZE
