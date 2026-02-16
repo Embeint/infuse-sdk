@@ -53,10 +53,12 @@ configdefault SYS_HEAP_ARRAY_SIZE
 # Larger logging buffer sizes
 
 configdefault LOG_BUFFER_SIZE
+	default 4096 if SRAM_SIZE < 256
 	default 4096 if NRF_WIFI_LOW_RAM
 	default 16384
 
 configdefault SEGGER_RTT_BUFFER_SIZE_UP
+	default 4096 if SRAM_SIZE < 256
 	default 4096 if NRF_WIFI_LOW_RAM
 	default 16384
 
