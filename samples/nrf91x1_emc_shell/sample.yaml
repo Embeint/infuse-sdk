@@ -3,7 +3,7 @@ sample:
   name: nRF91x1 LTE modem EMC
 common:
   build_only: true
-  filter: CONFIG_SOC_NRF9120
+  filter: CONFIG_SOC_NRF9120 and dt_chosen_enabled("zephyr,shell-uart")
   integration_platforms:
     - nrf9161dk/nrf9161/ns
     - nrf9151dk/nrf9151/ns
