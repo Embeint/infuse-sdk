@@ -31,10 +31,10 @@ LOG_MODULE_REGISTER(algorithm, CONFIG_ALGORITHM_RUNNER_LOG_LEVEL);
 
 static void new_zbus_data(const struct zbus_channel *chan)
 {
-	struct algorithm_runner_algorithm *alg, *algs;
+	struct algorithm_runner_algorithm *alg;
 	bool run = false;
 
-	SYS_SLIST_FOR_EACH_CONTAINER_SAFE(&algorithms, alg, algs, _node) {
+	SYS_SLIST_FOR_EACH_CONTAINER(&algorithms, alg, _node) {
 		if (alg->config->zbus_channel == chan->id) {
 			alg->_changed = chan;
 			run = true;
@@ -104,11 +104,11 @@ static void exec_fn(struct k_work *work)
 
 static void alg_kv_value_changed(uint16_t key, const void *data, size_t data_len, void *user_ctx)
 {
-	struct algorithm_runner_algorithm *alg, *algs;
+	struct algorithm_runner_algorithm *alg;
 
 	/* Iterate over linked algorithms */
 	k_sem_take(&list_lock, K_FOREVER);
-	SYS_SLIST_FOR_EACH_CONTAINER_SAFE(&algorithms, alg, algs, _node) {
+	SYS_SLIST_FOR_EACH_CONTAINER(&algorithms, alg, _node) {
 		if (key == alg->config->arguments_kv_key) {
 			/* Arguments have changed, force a reload before next run */
 			alg->_reload = true;
