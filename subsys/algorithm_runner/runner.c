@@ -25,7 +25,7 @@ ZBUS_GLOBAL_ADD_OBS(runner_listener, 5);
 
 static struct k_work runner;
 static sys_slist_t algorithms;
-static K_SEM_DEFINE(list_lock, 1, 1);
+static K_MUTEX_DEFINE(list_lock);
 
 LOG_MODULE_REGISTER(algorithm, CONFIG_ALGORITHM_RUNNER_LOG_LEVEL);
 
@@ -51,7 +51,7 @@ static void exec_fn(struct k_work *work)
 {
 	struct algorithm_runner_algorithm *alg, *algs;
 
-	k_sem_take(&list_lock, K_FOREVER);
+	k_mutex_lock(&list_lock, K_FOREVER);
 	SYS_SLIST_FOR_EACH_CONTAINER_SAFE(&algorithms, alg, algs, _node) {
 #ifdef CONFIG_KV_STORE
 		int read_len;
@@ -97,7 +97,7 @@ static void exec_fn(struct k_work *work)
 		/* Clear new data flag */
 		alg->_changed = NULL;
 	}
-	k_sem_give(&list_lock);
+	k_mutex_unlock(&list_lock);
 }
 
 #ifdef CONFIG_KV_STORE
@@ -107,14 +107,14 @@ static void alg_kv_value_changed(uint16_t key, const void *data, size_t data_len
 	struct algorithm_runner_algorithm *alg;
 
 	/* Iterate over linked algorithms */
-	k_sem_take(&list_lock, K_FOREVER);
+	k_mutex_lock(&list_lock, K_FOREVER);
 	SYS_SLIST_FOR_EACH_CONTAINER(&algorithms, alg, _node) {
 		if (key == alg->config->arguments_kv_key) {
 			/* Arguments have changed, force a reload before next run */
 			alg->_reload = true;
 		}
 	}
-	k_sem_give(&list_lock);
+	k_mutex_unlock(&list_lock);
 }
 
 #endif /* CONFIG_KV_STORE */
@@ -159,9 +159,9 @@ void algorithm_runner_register(struct algorithm_runner_algorithm *alg)
 	alg->impl(NULL, alg->config, alg->arguments, alg->runtime_state);
 
 	/* Add to list of algorithms to be run */
-	k_sem_take(&list_lock, K_FOREVER);
+	k_mutex_lock(&list_lock, K_FOREVER);
 	sys_slist_append(&algorithms, &alg->_node);
-	k_sem_give(&list_lock);
+	k_mutex_unlock(&list_lock);
 }
 
 bool algorithm_runner_unregister(struct algorithm_runner_algorithm *alg)
@@ -169,9 +169,9 @@ bool algorithm_runner_unregister(struct algorithm_runner_algorithm *alg)
 	bool res;
 
 	/* Remove from list of algorithms to be run */
-	k_sem_take(&list_lock, K_FOREVER);
+	k_mutex_lock(&list_lock, K_FOREVER);
 	res = sys_slist_find_and_remove(&algorithms, &alg->_node);
-	k_sem_give(&list_lock);
+	k_mutex_unlock(&list_lock);
 
 	return res;
 }
