@@ -132,6 +132,21 @@ configdefault NRF_WIFI_DATA_HEAP_SIZE
 	# IPV4 Data plane is (6 + 6) * 704 ~= 8kB
 	# IPV6 Data plane is (6 + 6) * 1348 ~= 16kB
 endif # !NRF70_SCAN_ONLY
+
+# Defaults based on observed usage in real applications (+ headroom)
+configdefault NET_TX_STACK_SIZE
+	default 1536
+configdefault NET_RX_STACK_SIZE
+	default 1536
+configdefault NET_CONNECTION_MANAGER_MONITOR_STACK_SIZE
+	default 1024
+configdefault WIFI_NM_WPA_SUPPLICANT_WQ_STACK_SIZE
+	default 1024
+configdefault NRF70_BH_WQ_STACK_SIZE
+	default 1536
+configdefault NRF70_IRQ_WQ_STACK_SIZE
+	default 1024
+
 endif # NRF_WIFI_LOW_RAM
 
 # WiFi defaults
@@ -160,7 +175,7 @@ choice NRF70_OPER_MODES
 	default NRF70_SCAN_ONLY if WIFI_USAGE_MODE_SCAN_ONLY
 endchoice
 configdefault NRF_WIFI_RX_STBC_HT
-	# Compatability issues with some WiFi routers (confirmed by Nordic)
+	# Compatibility issues with some WiFi routers (confirmed by Nordic)
 	# Disable until fix available
 	default n
 
