@@ -159,6 +159,10 @@ endif # !NRF70_RADIO_TEST
 choice NRF70_OPER_MODES
 	default NRF70_SCAN_ONLY if WIFI_USAGE_MODE_SCAN_ONLY
 endchoice
+configdefault NRF_WIFI_RX_STBC_HT
+	# Compatability issues with some WiFi routers (confirmed by Nordic)
+	# Disable until fix available
+	default n
 
 # MbedTLS requirements for WiFi connectivity
 configdefault PSA_WANT_KEY_TYPE_AES
