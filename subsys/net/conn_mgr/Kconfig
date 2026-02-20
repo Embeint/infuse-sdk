@@ -16,6 +16,17 @@ config CONN_MGR_WIFI_KV_STORE_PERSISTENT
 	bool "WiFi connection should be persistent"
 	default y
 
+config CONN_MGR_WIFI_KV_STORE_CONNECT_CALLER_CONTEXT
+	bool "Run the initiating `NET_REQUEST_WIFI_CONNECT` call in the context of the caller"
+	default y if WIFI_NM_WPA_SUPPLICANT
+	help
+	  Run the `NET_REQUEST_WIFI_CONNECT` call resulting from `conn_mgr_if_connect` in the
+	  context of the caller of `conn_mgr_if_connect`, instead of deferring it to the system
+	  workqueue. For some WiFi backends (WPA Supplicant) this call can block for excessive
+	  durations due to crypto operations (>700ms on nRF54L15), which is suboptimal on the
+	  system workqueue. Enabling this option requires that the original caller can afford to
+	  block while the system workqueue can't.
+
 config CONN_MGR_WIFI_KV_STORE_CACHE_LAST_FREQUENCY
 	bool "Use the WiFi band and channel from the previous connection"
 	help
