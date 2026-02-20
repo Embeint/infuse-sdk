@@ -67,12 +67,26 @@ static void conn_create_worker(struct k_work *work)
 
 #ifdef CONFIG_WIFI_NM_WPA_SUPPLICANT
 	if (!wpa_ready) {
-		struct k_work_delayable *delayable = k_work_delayable_from_work(work);
-
 		/* WPA supplicant needs a few milliseconds to initialise after IF up */
-		k_work_reschedule(delayable, K_MSEC(5));
 		LOG_DBG("Delaying for WPA supplicant");
-		return;
+		if (work == NULL) {
+			struct conn_mgr_conn_binding *const binding =
+				conn_mgr_if_get_binding(wifi_if);
+
+			/* Called from `conn_mgr_if_connect` context, block until ready */
+			__ASSERT_NO_MSG(
+				IS_ENABLED(CONFIG_CONN_MGR_WIFI_KV_STORE_CONNECT_CALLER_CONTEXT));
+
+			/* Wait until WPA ready (binding must be unlocked to allow WPA callbacks) */
+			conn_mgr_binding_unlock(binding);
+			while (!wpa_ready) {
+				k_sleep(K_MSEC(5));
+			}
+			conn_mgr_binding_lock(binding);
+		} else {
+			k_work_reschedule(k_work_delayable_from_work(work), K_MSEC(5));
+			return;
+		}
 	}
 #endif /* CONFIG_WIFI_NM_WPA_SUPPLICANT */
 
@@ -281,8 +295,15 @@ static int wifi_mgmt_connect(struct conn_mgr_conn_binding *const binding)
 		last_band = WIFI_FREQ_BAND_UNKNOWN;
 		last_channel = UINT_MAX;
 	}
-	/* Schedule the connection */
-	k_work_schedule(&conn_create, K_NO_WAIT);
+
+	if (IS_ENABLED(CONFIG_CONN_MGR_WIFI_KV_STORE_CONNECT_CALLER_CONTEXT)) {
+		/* Run the connect call directly */
+		conn_create_worker(NULL);
+	} else {
+		/* Schedule the connection */
+		k_work_schedule(&conn_create, K_NO_WAIT);
+	}
+
 	/* Schedule the timeout if set */
 	if (timeout > CONN_MGR_IF_NO_TIMEOUT) {
 		k_work_schedule(&conn_timeout, K_SECONDS(timeout));
