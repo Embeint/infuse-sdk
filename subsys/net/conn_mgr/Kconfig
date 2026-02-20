@@ -16,6 +16,16 @@ config CONN_MGR_WIFI_KV_STORE_PERSISTENT
 	bool "WiFi connection should be persistent"
 	default y
 
+config CONN_MGR_WIFI_KV_STORE_CACHE_LAST_FREQUENCY
+	bool "Use the WiFi band and channel from the previous connection"
+	help
+	  When initiating a connection, explicitly specify the band and channel of
+	  the previous connection that succeeded, if available. Cached information
+	  is reset when the configuration changes or a connection fails. For WiFi
+	  modems that limit scanning to the provided frequencies, this can dramatically
+	  speed up subsequent connections at the cost of failing to connect on the first
+	  time if the WiFi channel changes (Multi-AP scenario).
+
 module = CONN_MGR_WIFI_KV_STORE
 module-str = conn_mgr_wifi
 source "subsys/logging/Kconfig.template.log_config"

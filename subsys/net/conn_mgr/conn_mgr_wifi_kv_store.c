@@ -24,6 +24,8 @@ static struct k_work_delayable conn_create;
 static struct k_work_delayable conn_timeout;
 static struct k_work conn_terminate;
 static struct net_if *wifi_if;
+static enum wifi_frequency_bands last_band;
+static unsigned int last_channel;
 static bool connection_requested;
 static bool did_conn_timeout;
 static bool manual_disconnect;
@@ -106,6 +108,16 @@ static void conn_create_worker(struct k_work *work)
 		params.channel = wifi_channels.channels[0];
 	}
 
+	if (IS_ENABLED(CONFIG_CONN_MGR_WIFI_KV_STORE_CACHE_LAST_FREQUENCY)) {
+		/* Override band and channel with cached values from last connection */
+		if (last_band <= WIFI_FREQ_BAND_MAX) {
+			params.band = last_band;
+		}
+		if (last_channel < UINT_MAX) {
+			params.channel = last_channel;
+		}
+	}
+
 	/* Initiate connection */
 	LOG_INF("Initiating connection to '%s'", params.ssid);
 	(void)net_mgmt(NET_REQUEST_WIFI_CONNECT, wifi_if, &params,
@@ -158,9 +170,11 @@ static void conn_config_changed_worker(struct k_work *work)
 static void wifi_mgmt_event_handler(struct net_mgmt_event_callback *cb, uint64_t mgmt_event,
 				    struct net_if *iface)
 {
-	const struct wifi_status *status = cb->info;
 	bool persistent = conn_mgr_if_get_flag(wifi_if, CONN_MGR_IF_PERSISTENT);
+	const struct wifi_status *status = cb->info;
+	struct wifi_iface_status iface_status = {0};
 	int timeout;
+	int rc;
 
 	if (iface != wifi_if) {
 		return;
@@ -171,16 +185,31 @@ static void wifi_mgmt_event_handler(struct net_mgmt_event_callback *cb, uint64_t
 		is_connected = status->conn_status == WIFI_STATUS_CONN_SUCCESS;
 		if (status->conn_status == WIFI_STATUS_CONN_SUCCESS) {
 			/* Cancel any pending work timeout */
-			LOG_INF("Connection successful");
 			(void)k_work_cancel_delayable(&conn_timeout);
 			manual_disconnect = false;
-		} else if (did_conn_timeout && !persistent) {
-			/* Don't retry if the connection timed out and its not persistent */
-			LOG_INF("Non-persistent connection timed-out");
+			/* Get the connection parameters */
+			rc = net_mgmt(NET_REQUEST_WIFI_IFACE_STATUS, iface, &iface_status,
+				      sizeof(struct wifi_iface_status));
+			if (rc == 0) {
+				last_band = iface_status.band;
+				last_channel = iface_status.channel;
+			} else {
+				last_band = WIFI_FREQ_BAND_UNKNOWN;
+				last_channel = UINT_MAX;
+			}
+			LOG_INF("Connection successful (Band %d, Channel %d)", iface_status.band,
+				iface_status.channel);
 		} else {
-			/* Attempt to schedule the connection again */
-			LOG_WRN("Connection failed, retrying (%d)", status->conn_status);
-			k_work_schedule(&conn_create, K_SECONDS(1));
+			last_band = WIFI_FREQ_BAND_UNKNOWN;
+			last_channel = UINT_MAX;
+			if (did_conn_timeout && !persistent) {
+				/* Don't retry if the connection timed out and its not persistent */
+				LOG_INF("Non-persistent connection timed-out");
+			} else {
+				/* Attempt to schedule the connection again */
+				LOG_WRN("Connection failed, retrying (%d)", status->conn_status);
+				k_work_schedule(&conn_create, K_SECONDS(1));
+			}
 		}
 		break;
 	case NET_EVENT_WIFI_DISCONNECT_RESULT:
@@ -235,13 +264,26 @@ static int wifi_mgmt_connect(struct conn_mgr_conn_binding *const binding)
 		/* Already connected */
 		return 0;
 	}
+	/* Get connection timeout information */
+	timeout = conn_mgr_if_get_timeout(binding->iface);
 	/* Connection is now requested */
 	connection_requested = true;
 	did_conn_timeout = false;
+	if (IS_ENABLED(CONFIG_CONN_MGR_WIFI_KV_STORE_CACHE_LAST_FREQUENCY) &&
+	    (timeout == CONN_MGR_IF_NO_TIMEOUT)) {
+		/* Don't use cached information without a timeout, as there is no guarantee
+		 * that the AP is still available on the same band/channel. Failing to overwrite
+		 * the cache could result in the connection never succeeding despite the network
+		 * being available. Furthermore, if there is no timeout on the connection, power
+		 * usage is most likely not an issue.
+		 */
+		LOG_WRN("No connection timeout with cached band & channel");
+		last_band = WIFI_FREQ_BAND_UNKNOWN;
+		last_channel = UINT_MAX;
+	}
 	/* Schedule the connection */
 	k_work_schedule(&conn_create, K_NO_WAIT);
 	/* Schedule the timeout if set */
-	timeout = conn_mgr_if_get_timeout(binding->iface);
 	if (timeout > CONN_MGR_IF_NO_TIMEOUT) {
 		k_work_schedule(&conn_timeout, K_SECONDS(timeout));
 	}
@@ -278,6 +320,9 @@ static void kv_value_changed(uint16_t key, const void *data, size_t data_len, vo
 	case KV_KEY_WIFI_PSK:
 	case KV_KEY_WIFI_CHANNELS:
 		LOG_INF("Configuration changed (%d %s)", key, data ? "updated" : "deleted");
+		/* Reset cached band/channel info */
+		last_band = WIFI_FREQ_BAND_UNKNOWN;
+		last_channel = UINT_MAX;
 		k_work_reschedule(&conn_config_changed, K_MSEC(100));
 	}
 }
@@ -288,6 +333,8 @@ static void wifi_mgmt_init(struct conn_mgr_conn_binding *const binding)
 		.value_changed = kv_value_changed,
 	};
 
+	last_band = WIFI_FREQ_BAND_UNKNOWN;
+	last_channel = UINT_MAX;
 	wifi_if = binding->iface;
 	kv_cb.user_ctx = wifi_if;
 
