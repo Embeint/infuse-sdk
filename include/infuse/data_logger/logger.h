@@ -104,6 +104,13 @@ struct data_logger_cb {
 	COND_CODE_1(DT_NODE_HAS_COMPAT(node_id, embeint_data_logger_epacket),                      \
 		    (EPACKET_INTERFACE_IS_COMPILED_IN(DT_PROP(node_id, epacket))), (1))
 
+/** @cond INTERNAL_HIDDEN */
+#define _DL_IS_FLASH_MAP(node_id)   DT_NODE_HAS_COMPAT(node_id, embeint_data_logger_flash_map)
+#define _DL_IS_EPACKET(node_id)     DT_NODE_HAS_COMPAT(node_id, embeint_data_logger_epacket)
+#define _DL_IS_EXFAT(node_id)       DT_NODE_HAS_COMPAT(node_id, embeint_data_logger_exfat)
+#define _DL_IS_DISK_ACCESS(node_id) DT_NODE_HAS_COMPAT(node_id, embeint_data_logger_disk_access)
+/** @endcond */
+
 /**
  * @brief Maximum required block size for each logger backend
  *
@@ -112,13 +119,11 @@ struct data_logger_cb {
  * @returns Maximum size of a block on the logger
  */
 #define DATA_LOGGER_MAX_SIZE(node_id)                                                              \
-	COND_CODE_1(                                                                               \
-		DT_NODE_HAS_COMPAT(node_id, embeint_data_logger_flash_map),                        \
-		(DT_PROP(node_id, block_size)),                                                    \
-		(COND_CODE_1(DT_NODE_HAS_COMPAT(node_id, embeint_data_logger_epacket),             \
-			     (EPACKET_INTERFACE_MAX_PAYLOAD(DT_PROP(node_id, epacket))),           \
-			     ((COND_CODE_1(DT_NODE_HAS_COMPAT(node_id, embeint_data_logger_exfat), \
-					   (512), ()))))))
+	COND_CASE_1(_DL_IS_FLASH_MAP(node_id), (DT_PROP(node_id, block_size)),                     \
+		    _DL_IS_EPACKET(node_id),                                                       \
+		    (EPACKET_INTERFACE_MAX_PAYLOAD(DT_PROP(node_id, epacket))),                    \
+		    _DL_IS_EXFAT(node_id), (512), _DL_IS_DISK_ACCESS(node_id),                     \
+		    (CONFIG_DATA_LOGGER_DISK_ACCESS_MAX_SECTOR_SIZE), ())
 
 /**
  * @brief Get the current data logger state
