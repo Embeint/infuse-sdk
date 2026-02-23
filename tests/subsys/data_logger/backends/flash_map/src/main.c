@@ -176,6 +176,46 @@ ZTEST(data_logger_flash_map, test_init_all_written_with_end_erase)
 	}
 }
 
+ZTEST(data_logger_flash_map, test_init_all_written_with_mid_erase)
+{
+	const struct device *logger = DEVICE_DT_GET(NODE);
+	struct data_logger_state state;
+	uint32_t half_flash = flash_buffer_size / 2;
+	uint16_t blocks_in_erase;
+
+	data_logger_get_state(logger, &state);
+	zassert_not_equal(0, state.block_size);
+	blocks_in_erase = state.erase_unit / state.block_size;
+
+	/* Init first half to 0x03, second half to 0x02 */
+	memset(flash_buffer, 0x03, half_flash);
+	memset(flash_buffer + half_flash, 0x04, half_flash);
+
+	/* Erase to the midpoint */
+	memset(flash_buffer + half_flash - state.erase_unit, 0x00, state.erase_unit);
+
+	zassert_equal(0, logger_flash_map_init(logger));
+	data_logger_get_state(logger, &state);
+	zassert_equal(0x02 * state.physical_blocks + (state.physical_blocks / 2) - blocks_in_erase,
+		      state.current_block);
+	zassert_equal(0x01 * state.physical_blocks + (state.physical_blocks / 2),
+		      state.earliest_block);
+
+	/* Init first half to 0x03, second half to 0x02 */
+	memset(flash_buffer, 0x03, half_flash);
+	memset(flash_buffer + half_flash, 0x04, half_flash);
+
+	/* Erase from the midpoint */
+	memset(flash_buffer + half_flash, 0x00, state.erase_unit);
+
+	zassert_equal(0, logger_flash_map_init(logger));
+	data_logger_get_state(logger, &state);
+	zassert_equal(0x02 * state.physical_blocks + (state.physical_blocks / 2),
+		      state.current_block);
+	zassert_equal(0x01 * state.physical_blocks + (state.physical_blocks / 2) + blocks_in_erase,
+		      state.earliest_block);
+}
+
 ZTEST(data_logger_flash_map, test_write_errors)
 {
 	const struct device *logger = DEVICE_DT_GET(NODE);
