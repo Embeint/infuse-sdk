@@ -16,6 +16,19 @@ config CONN_MGR_WIFI_KV_STORE_PERSISTENT
 	bool "WiFi connection should be persistent"
 	default y
 
+config CONN_MGR_WIFI_KV_STORE_PRECOMPUTE_PBKDF2
+	bool "Pre-compute the PBKDF2 key used for WiFi network connections"
+	default y if WIFI_NM_WPA_SUPPLICANT
+	depends on WIFI_NM_WPA_SUPPLICANT
+	help
+	  ASCII passphrases are not used directly for connecting to WiFi networks, instead they
+	  are used as inputs to the PBKDF2 algorithm to generate a fixed length key. This derivation
+	  can take over 700ms even on a 128 Mhz Cortex-M33, so pre-computing the value once and
+	  providing it directly can be a large time and energy save if the same network is repeatedly
+	  connected to.
+
+	  Currently depends on WPA Supplicant due to the PBKDF2 computation.
+
 config CONN_MGR_WIFI_KV_STORE_CONNECT_CALLER_CONTEXT
 	bool "Run the initiating `NET_REQUEST_WIFI_CONNECT` call in the context of the caller"
 	default y if WIFI_NM_WPA_SUPPLICANT
