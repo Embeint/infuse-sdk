@@ -61,7 +61,7 @@
         "tdf_struct_eui48": {
             "description": "IEEE EUI-48 address",
             "fields": [
-                {"name": "val", "type": "uint8_t", "num": 6, "display": {"fmt": "hex", "digits": 12}, "conversion": {"int": "little"}, "description": "Address bytes"}
+                {"name": "val", "type": "uint8_t", "num": 6, "display": {"fmt": "hex", "digits": 12}, "conversion": {"int": "big"}, "description": "Address bytes"}
             ]
         },
         "tdf_struct_wifi_network_params": {
