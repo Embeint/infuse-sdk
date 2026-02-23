@@ -31,6 +31,16 @@ static bool did_conn_timeout;
 static bool manual_disconnect;
 static bool is_connected;
 
+#ifdef CONFIG_CONN_MGR_WIFI_KV_STORE_PRECOMPUTE_PBKDF2
+
+#include "common.h"
+#include "sha1.h"
+
+static uint8_t pbkdf2_cache[WIFI_PSK_PBKDF2_KEY_LEN];
+static bool pbkdf2_cache_valid;
+
+#endif /* CONFIG_CONN_MGR_WIFI_KV_STORE_PRECOMPUTE_PBKDF2 */
+
 LOG_MODULE_REGISTER(wifi_mgmt, LOG_LEVEL_INF);
 
 #ifdef CONFIG_WIFI_NM_WPA_SUPPLICANT
@@ -111,6 +121,25 @@ static void conn_create_worker(struct k_work *work)
 		params.security = WIFI_SECURITY_TYPE_PSK;
 		params.psk = wifi_psk.psk.value;
 		params.psk_length = wifi_psk.psk.value_num - 1;
+#ifdef CONFIG_CONN_MGR_WIFI_KV_STORE_PRECOMPUTE_PBKDF2
+		if (pbkdf2_cache_valid) {
+			LOG_DBG("Using cached PBKDF2 key");
+		} else {
+			/* Pre-compute the PBKDF2 output for all future runs */
+			LOG_DBG("Computing PBKDF2 key");
+			if (pbkdf2_sha1(params.psk, params.ssid, params.ssid_length, 4096,
+					pbkdf2_cache, sizeof(pbkdf2_cache)) == 0) {
+				pbkdf2_cache_valid = true;
+			} else {
+				LOG_WRN("Failed to compute PBKDF2 key");
+			}
+		}
+		if (pbkdf2_cache_valid) {
+			params.psk = pbkdf2_cache;
+			params.psk_length = sizeof(pbkdf2_cache);
+			params.psk_is_pbkdf2 = true;
+		}
+#endif /* CONFIG_CONN_MGR_WIFI_KV_STORE_PRECOMPUTE_PBKDF2 */
 	}
 	params.band = WIFI_FREQ_BAND_UNKNOWN;
 	params.channel = WIFI_CHANNEL_ANY;
@@ -339,6 +368,11 @@ static void kv_value_changed(uint16_t key, const void *data, size_t data_len, vo
 	switch (key) {
 	case KV_KEY_WIFI_SSID:
 	case KV_KEY_WIFI_PSK:
+#ifdef CONFIG_CONN_MGR_WIFI_KV_STORE_PRECOMPUTE_PBKDF2
+		/* SSID or PSK changed, cached PBKDF2 output is invalid */
+		pbkdf2_cache_valid = false;
+#endif /* CONFIG_CONN_MGR_WIFI_KV_STORE_PRECOMPUTE_PBKDF2 */
+		__fallthrough;
 	case KV_KEY_WIFI_CHANNELS:
 		LOG_INF("Configuration changed (%d %s)", key, data ? "updated" : "deleted");
 		/* Reset cached band/channel info */
