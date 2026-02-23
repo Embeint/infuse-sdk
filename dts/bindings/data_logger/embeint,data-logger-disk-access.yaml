@@ -1,0 +1,15 @@
+# Copyright (c) 2026 Jordan Yates <jordan@embeint.com>
+# SPDX-License-Identifier: FSL-1.1-ALv2
+
+description: Data logging backend using the disk access API
+
+compatible: "embeint,data-logger-disk-access"
+
+include: data-logger-base.yaml
+
+properties:
+  disk:
+    type: phandle
+    required: true
+    description: |
+      Disk to use for data logger.

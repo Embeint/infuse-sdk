@@ -18,6 +18,28 @@ config DATA_LOGGER_FLASH_MAP
 	depends on FLASH_MAP
 	default y
 
+config DATA_LOGGER_DISK_ACCESS
+	bool "Logging to raw disk"
+	depends on DT_HAS_EMBEINT_DATA_LOGGER_DISK_ACCESS_ENABLED
+	select DISK_ACCESS
+	default y
+
+if DATA_LOGGER_DISK_ACCESS
+
+config DATA_LOGGER_DISK_ACCESS_MAX_SECTOR_SIZE
+	int "Maximum sector size supported by the driver"
+	default 512
+
+config DATA_LOGGER_DISK_ACCESS_ERASE_SECTOR_CHUNKS
+	int "Number of chunks to erase at a time in `reset`"
+	default 256
+
+module = DATA_LOGGER_DISK_ACCESS
+module-str = Data Logger Disk Access
+source "subsys/logging/Kconfig.template.log_config"
+
+endif # DATA_LOGGER_DISK_ACCESS
+
 config DATA_LOGGER_EXFAT
 	bool "Logging to exFAT filesystem"
 	depends on DT_HAS_EMBEINT_DATA_LOGGER_EXFAT_ENABLED
