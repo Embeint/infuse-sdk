@@ -479,7 +479,7 @@ enum rpc_builtin_id {
 	RPC_ID_DATA_LOGGER_STATE_V2 = 24,
 	/** Read a number of arbitrary chunks from a data logger */
 	RPC_ID_DATA_LOGGER_READ_CHUNKS = 25,
-	/** Read a number of arbitrary chunks from a data logger */
+	/** Query runtime thread statistics */
 	RPC_ID_THREAD_STATS = 26,
 	/** Download a file from a COAP server (Infuse-IoT DTLS protected) */
 	RPC_ID_COAP_DOWNLOAD = 30,
@@ -956,7 +956,7 @@ struct rpc_data_logger_read_chunks_response {
 	uint16_t block_size;
 } __packed;
 
-/** Read a number of arbitrary chunks from a data logger */
+/** Query runtime thread statistics */
 struct rpc_thread_stats_request {
 	struct infuse_rpc_req_header header;
 	struct infuse_rpc_req_data_header data_header;
