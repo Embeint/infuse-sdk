@@ -1,6 +1,10 @@
 /* Repurpose scratch partition for patch files  */
 /delete-node/ &scratch_partition;
 
+&flashcontroller0 {
+	zephyr,pm-device-runtime-auto;
+};
+
 &flash0 {
 	/* Emulate hardware that only supports word aligned writes */
 	write-block-size = < 0x4 >;

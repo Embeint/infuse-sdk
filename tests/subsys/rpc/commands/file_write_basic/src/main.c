@@ -11,6 +11,7 @@
 #include <zephyr/sys/byteorder.h>
 #include <zephyr/sys/crc.h>
 #include <zephyr/storage/flash_map.h>
+#include <zephyr/pm/device_runtime.h>
 
 #include <infuse/bluetooth/controller_manager.h>
 #include <infuse/dfu/helpers.h>
@@ -77,6 +78,18 @@ int bt_controller_manager_file_write_finish(uint32_t ctx, uint32_t *len, uint32_
 }
 
 #endif /* CONFIG_TEST_NATIVE_MOCK */
+
+__maybe_unused static void zassert_device_released(const struct device *dev)
+{
+	int usage = pm_device_runtime_usage(dev);
+
+	if ((usage == -ENOSYS) || (usage == -ENOTSUP)) {
+		/* PM not supported/enabled */
+		return;
+	}
+	/* Usage counter should be 0 */
+	zassert_equal(0, usage);
+}
 
 static struct test_out test_file_write_basic(uint8_t action, uint32_t total_send,
 					     uint8_t skip_after, uint8_t stop_after,
@@ -318,7 +331,10 @@ ZTEST(rpc_command_file_write_basic, test_file_write_sizes)
 #if FIXED_PARTITION_EXISTS(slot1_partition)
 ZTEST(rpc_command_file_write_basic, test_file_write_dfu)
 {
+	const struct device *slot1_dev = FIXED_PARTITION_DEVICE(slot1_partition);
 	struct test_out ret;
+
+	zassert_device_released(slot1_dev);
 
 	/* Size aligned data payload */
 	ret = test_file_write_basic(RPC_ENUM_FILE_ACTION_APP_IMG, 16000, 0, 0, 0, 0, false, false,
@@ -351,6 +367,8 @@ ZTEST(rpc_command_file_write_basic, test_file_write_dfu)
 
 	/* Balanced call count */
 	zassert_equal(0, infuse_dfu_write_erase_call_count());
+
+	zassert_device_released(slot1_dev);
 }
 #else
 ZTEST(rpc_command_file_write_basic, test_file_write_dfu)
@@ -385,7 +403,12 @@ struct patch_file {
 #if FIXED_PARTITION_EXISTS(file_partition)
 ZTEST(rpc_command_file_write_basic, test_file_write_dfu_cpatch)
 {
+	const struct device *slot0_dev = FIXED_PARTITION_DEVICE(slot0_partition);
+	const struct device *slot1_dev = FIXED_PARTITION_DEVICE(slot1_partition);
 	struct test_out ret;
+
+	zassert_device_released(slot0_dev);
+	zassert_device_released(slot1_dev);
 
 	/* Write an arbitrary image of known size to partition1 */
 	ret = test_file_write_basic(RPC_ENUM_FILE_ACTION_APP_IMG, 17023, 0, 0, 0, 0, false, false,
@@ -449,6 +472,9 @@ ZTEST(rpc_command_file_write_basic, test_file_write_dfu_cpatch)
 
 	/* Balanced call count */
 	zassert_equal(0, infuse_dfu_write_erase_call_count());
+
+	zassert_device_released(slot0_dev);
+	zassert_device_released(slot1_dev);
 }
 
 #else
@@ -465,7 +491,10 @@ ZTEST(rpc_command_file_write_basic, test_file_write_dfu_cpatch)
 #if FIXED_PARTITION_EXISTS(file_partition)
 ZTEST(rpc_command_file_write_basic, test_file_write_for_copy)
 {
+	const struct device *partition_dev = FIXED_PARTITION_DEVICE(file_partition);
 	struct test_out ret;
+
+	zassert_device_released(partition_dev);
 
 	/* Write an arbitrary image of known size to file_partition */
 	for (int i = 0; i <= CONFIG_EPACKET_BUFFERS_RX; i++) {
@@ -476,6 +505,8 @@ ZTEST(rpc_command_file_write_basic, test_file_write_for_copy)
 		zassert_equal(ret.written_crc, ret.cmd_crc);
 		validate_flash_area(&ret, FIXED_PARTITION_ID(file_partition));
 	}
+
+	zassert_device_released(partition_dev);
 }
 #else
 
@@ -637,6 +668,26 @@ ZTEST(rpc_command_file_write_basic, test_everything_wrong)
 		zassert_equal(-EINVAL, ret.cmd_rc);
 		zassert_true(ret.cmd_len < 1000);
 	}
+
+#if FIXED_PARTITION_EXISTS(slot1_partition)
+	const struct device *slot1_dev = FIXED_PARTITION_DEVICE(slot1_partition);
+
+	zassert_device_released(slot1_dev);
+
+	/* Everything going wrong (PM validation) */
+	for (int i = 0; i <= CONFIG_EPACKET_BUFFERS_RX; i++) {
+		ret = test_file_write_basic(RPC_ENUM_FILE_ACTION_APP_IMG, 1000, 3, 0, 7, 1, false,
+					    false, NULL);
+		zassert_equal(-EINVAL, ret.cmd_rc);
+		zassert_true(ret.cmd_len < 1000);
+		ret = test_file_write_basic(RPC_ENUM_FILE_ACTION_APP_IMG, 1000, 3, 0, 7, 2, false,
+					    false, NULL);
+		zassert_equal(-EINVAL, ret.cmd_rc);
+		zassert_true(ret.cmd_len < 1000);
+	}
+
+	zassert_device_released(slot1_dev);
+#endif /* FIXED_PARTITION_EXISTS(slot1_partition) */
 }
 
 ZTEST(rpc_command_file_write_basic, test_push_too_much_data)
