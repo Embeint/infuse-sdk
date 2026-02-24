@@ -188,6 +188,13 @@ config EPACKET_INTERFACE_BT_PERIPHERAL
 
 if EPACKET_INTERFACE_BT_PERIPHERAL
 
+config EPACKET_INTERFACE_BT_PERIPHERAL_MAX_WAIT_MS
+	int "Maximum duration to wait for an ePacket buffer in the RX callback"
+	default 50
+	help
+	  Blocking the Bluetooth RX thread waiting for an ePacket buffer is sub-optimal, but needs
+	  to be balanced against the failures triggered by dropping expected data.
+
 module = EPACKET_BT_PERIPHERAL
 module-str = epacket_bt_peripheral
 source "subsys/logging/Kconfig.template.log_config"
