@@ -12,6 +12,7 @@
 #include <zephyr/logging/log.h>
 #include <zephyr/sys/crc.h>
 #include <zephyr/dfu/mcuboot.h>
+#include <zephyr/pm/device_runtime.h>
 
 #include <infuse/bluetooth/controller_manager.h>
 #include <infuse/cpatch/patch.h>
@@ -44,6 +45,26 @@ static __maybe_unused uint8_t
 
 LOG_MODULE_DECLARE(rpc_server, CONFIG_INFUSE_RPC_LOG_LEVEL);
 
+__maybe_unused static int pm_flash_area_open(uint8_t id, const struct flash_area **fa)
+{
+	int rc;
+
+	/* Open the flash area */
+	rc = flash_area_open(id, fa);
+	if (rc == 0) {
+		/* Power up the flash device */
+		rc = pm_device_runtime_get((*fa)->fa_dev);
+	}
+	return rc;
+}
+
+__maybe_unused static void pm_flash_area_close(const struct flash_area *fa)
+{
+	/* Power down the flash device */
+	(void)pm_device_runtime_put(fa->fa_dev);
+	flash_area_close(fa);
+}
+
 #if defined(SUPPORT_APP_IMG) || defined(SUPPORT_APP_CPATCH) || defined(SUPPORT_FILE_COPY)
 
 static void cpatch_watchdog(uint32_t progress, uint32_t total)
@@ -68,7 +89,7 @@ static int flash_area_check_and_erase(struct rpc_common_file_actions_ctx *ctx, u
 	mem = rpc_server_command_working_mem(&mem_size);
 
 	/* Check if file contents already match */
-	rc = flash_area_open(partition_id, &ctx->fa);
+	rc = pm_flash_area_open(partition_id, &ctx->fa);
 	if (rc == 0) {
 		if (crc != UINT32_MAX) {
 			rc = flash_area_crc32(ctx->fa, 0, length, &current_crc, mem, mem_size);
@@ -85,7 +106,7 @@ static int flash_area_check_and_erase(struct rpc_common_file_actions_ctx *ctx, u
 		rc = infuse_dfu_image_erase(ctx->fa, length, cpatch_watchdog, mcuboot_trailer);
 		if (rc != 0) {
 			/* Close flash area */
-			(void)flash_area_close(ctx->fa);
+			(void)pm_flash_area_close(ctx->fa);
 		}
 	}
 	return rc;
@@ -239,12 +260,12 @@ static int validate_cpatch(struct rpc_common_file_actions_ctx *ctx)
 	struct cpatch_header header;
 	int rc;
 
-	flash_area_open(FIXED_PARTITION_ID(slot0_partition), &fa_original);
+	pm_flash_area_open(FIXED_PARTITION_ID(slot0_partition), &fa_original);
 
 	/* Start patch process */
 	rc = cpatch_patch_start(fa_original, ctx->fa, &header);
 	/* Cleanup files */
-	flash_area_close(fa_original);
+	pm_flash_area_close(fa_original);
 
 	return rc;
 }
@@ -259,8 +280,17 @@ static int finish_cpatch(struct rpc_common_file_actions_ctx *ctx)
 	uint8_t *mem;
 	int rc;
 
-	flash_area_open(FIXED_PARTITION_ID(slot0_partition), &fa_original);
-	flash_area_open(FIXED_PARTITION_ID(slot1_partition), &fa_output);
+	rc = pm_flash_area_open(FIXED_PARTITION_ID(slot0_partition), &fa_original);
+	if (rc < 0) {
+		/* Nothing to cleanup */
+		return rc;
+	}
+	rc = pm_flash_area_open(FIXED_PARTITION_ID(slot1_partition), &fa_output);
+	if (rc < 0) {
+		/* Close the original FA, nothing else to cleanup */
+		pm_flash_area_close(fa_original);
+		return rc;
+	}
 	infuse_dfu_write_erase_start(fa_output);
 
 	/* Start patch process */
@@ -306,8 +336,8 @@ static int finish_cpatch(struct rpc_common_file_actions_ctx *ctx)
 cleanup:
 	/* Cleanup files */
 	infuse_dfu_write_erase_finish(fa_output);
-	flash_area_close(fa_output);
-	flash_area_close(fa_original);
+	pm_flash_area_close(fa_output);
+	pm_flash_area_close(fa_original);
 
 	return rc;
 }
@@ -330,7 +360,7 @@ int rpc_common_file_actions_finish(struct rpc_common_file_actions_ctx *ctx, uint
 		rc = stream_flash_buffered_write(&ctx->stream_ctx, NULL, 0, true);
 		if (rc < 0) {
 			LOG_ERR("Could not flush remaining data");
-			flash_area_close(ctx->fa);
+			pm_flash_area_close(ctx->fa);
 			return rc;
 		}
 	}
@@ -354,12 +384,12 @@ int rpc_common_file_actions_finish(struct rpc_common_file_actions_ctx *ctx, uint
 		rc = flash_area_crc32(ctx->fa, 0, ctx->received, &flash_crc, mem, mem_size);
 		if (rc < 0) {
 			LOG_ERR("Could not validate written data");
-			flash_area_close(ctx->fa);
+			pm_flash_area_close(ctx->fa);
 			return rc;
 		} else if (ctx->crc != flash_crc) {
 			LOG_ERR("CRC mismatch between received and written (%08X != %08X)",
 				ctx->crc, flash_crc);
-			flash_area_close(ctx->fa);
+			pm_flash_area_close(ctx->fa);
 			return -EBADE;
 		}
 	}
@@ -374,19 +404,23 @@ int rpc_common_file_actions_finish(struct rpc_common_file_actions_ctx *ctx, uint
 			/* Patching takes a long time, validate the patch data
 			 * but return before applying
 			 */
-			return validate_cpatch(ctx);
+			rc = validate_cpatch(ctx);
+			if (rc < 0) {
+				pm_flash_area_close(ctx->fa);
+			}
+			return rc;
 		}
 		/* Run the patch apply process */
 		rc = finish_cpatch(ctx);
 		if (rc < 0) {
-			flash_area_close(ctx->fa);
+			pm_flash_area_close(ctx->fa);
 			return rc;
 		}
 		__fallthrough;
 #endif /* SUPPORT_APP_CPATCH */
 	case RPC_ENUM_FILE_ACTION_APP_IMG:
 		/* Close the flash area */
-		flash_area_close(ctx->fa);
+		pm_flash_area_close(ctx->fa);
 #if defined(CONFIG_MCUBOOT_UPGRADE_ONLY_AUTOMATIC)
 		reboot = true;
 #elif defined(CONFIG_MCUBOOT_IMG_MANAGER)
@@ -400,6 +434,8 @@ int rpc_common_file_actions_finish(struct rpc_common_file_actions_ctx *ctx, uint
 #endif /* SUPPORT_APP_IMG */
 #ifdef SUPPORT_FILE_COPY
 	case RPC_ENUM_FILE_ACTION_FILE_FOR_COPY:
+		/* Close the flash area */
+		pm_flash_area_close(ctx->fa);
 		break;
 #endif /* SUPPORT_FILE_COPY*/
 #ifdef CONFIG_BT_CONTROLLER_MANAGER
@@ -473,13 +509,13 @@ int rpc_common_file_actions_error_cleanup(struct rpc_common_file_actions_ctx *ct
 #endif /* SUPPORT_APP_CPATCH */
 	case RPC_ENUM_FILE_ACTION_APP_IMG:
 		/* Close the flash area */
-		flash_area_close(ctx->fa);
+		pm_flash_area_close(ctx->fa);
 		break;
 #endif /* SUPPORT_APP_IMG */
 #ifdef SUPPORT_FILE_COPY
 	case RPC_ENUM_FILE_ACTION_FILE_FOR_COPY:
 		/* Close the flash area */
-		flash_area_close(ctx->fa);
+		pm_flash_area_close(ctx->fa);
 		break;
 #endif /* SUPPORT_FILE_COPY*/
 #ifdef CONFIG_BT_CONTROLLER_MANAGER
