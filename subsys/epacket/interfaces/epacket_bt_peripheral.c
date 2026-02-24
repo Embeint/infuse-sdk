@@ -168,13 +168,14 @@ static ssize_t write_both(struct bt_conn *conn, const struct bt_gatt_attr *attr,
 			  uint16_t len, uint16_t offset, uint8_t flags)
 {
 	const char *bt_addr_le_str(const bt_addr_le_t *addr);
+	const k_timeout_t timeout = K_MSEC(CONFIG_EPACKET_INTERFACE_BT_PERIPHERAL_MAX_WAIT_MS);
 	struct epacket_rx_metadata *meta;
 	struct net_buf *rx_buffer;
 
 	if (offset != 0) {
 		return BT_GATT_ERR(BT_ATT_ERR_INVALID_OFFSET);
 	}
-	rx_buffer = epacket_alloc_rx(K_MSEC(10));
+	rx_buffer = epacket_alloc_rx(timeout);
 	if (rx_buffer == NULL) {
 		LOG_WRN("Buffer claim timeout");
 		return BT_GATT_ERR(BT_ATT_ERR_INSUFFICIENT_RESOURCES);
