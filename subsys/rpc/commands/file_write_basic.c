@@ -30,10 +30,11 @@ LOG_MODULE_DECLARE(rpc_server, CONFIG_INFUSE_RPC_LOG_LEVEL);
 
 struct net_buf *rpc_command_file_write_basic(struct net_buf *request)
 {
-	struct rpc_common_file_actions_ctx ctx;
+	struct rpc_common_file_actions_ctx ctx = {0};
 	struct infuse_rpc_data *data;
 	struct epacket_rx_metadata rx_meta;
-	uint32_t request_id, remaining, expected, crc;
+	uint32_t request_id, remaining;
+	uint32_t expected_len, expected_crc;
 	struct net_buf *data_buf;
 	uint32_t data_offset;
 	uint32_t expected_offset = 0;
@@ -51,9 +52,9 @@ struct net_buf *rpc_command_file_write_basic(struct net_buf *request)
 		rx_meta = *req_meta;
 		request_id = req->header.request_id;
 		action = req->action;
-		expected = req->data_header.size;
+		expected_len = req->data_header.size;
 		remaining = req->data_header.size;
-		crc = req->file_crc;
+		expected_crc = req->file_crc;
 		ack_period = req->data_header.rx_ack_period;
 
 		rpc_command_runner_request_unref(request);
@@ -61,7 +62,7 @@ struct net_buf *rpc_command_file_write_basic(struct net_buf *request)
 	}
 
 	/* Start file write process */
-	rc = rpc_common_file_actions_start(&ctx, action, expected, crc);
+	rc = rpc_common_file_actions_start(&ctx, action, expected_len, expected_crc);
 	if (rc == FILE_ALREADY_PRESENT) {
 		LOG_INF("File already present");
 		goto write_done;
@@ -70,7 +71,7 @@ struct net_buf *rpc_command_file_write_basic(struct net_buf *request)
 		LOG_ERR("Failed to prepare for %d (%d)", action, rc);
 		goto error;
 	}
-	LOG_DBG("Receiving %d bytes", expected);
+	LOG_DBG("Receiving %d bytes", expected_len);
 
 	/* Initial ACK to signal readiness */
 	rpc_server_ack_data_ready(&rx_meta, request_id);
@@ -99,13 +100,24 @@ struct net_buf *rpc_command_file_write_basic(struct net_buf *request)
 		}
 
 		expected_offset = data_offset + var_len;
-		remaining = expected - expected_offset;
+		remaining = expected_len - expected_offset;
 		net_buf_unref(data_buf);
 
 		/* Handle any acknowledgements required */
 		if (remaining > 0) {
 			rpc_server_ack_data(&rx_meta, request_id, data_offset, ack_period);
 		}
+	}
+
+	if (ctx.received != expected_len) {
+		LOG_ERR("Unexpected length received (%u != %u)", ctx.received, expected_len);
+		rc = -EINVAL;
+		goto error;
+	}
+	if ((expected_crc != UINT32_MAX) && (ctx.crc != expected_crc)) {
+		LOG_ERR("Unexpected data CRC (%08X != %08X)", ctx.crc, expected_crc);
+		rc = -EINVAL;
+		goto error;
 	}
 
 write_done:
@@ -140,8 +152,8 @@ error:
 
 	/* Allocate and return response */
 	struct rpc_file_write_basic_response rsp_err = {
-		.recv_len = 0,
-		.recv_crc = 0,
+		.recv_len = ctx.received,
+		.recv_crc = ctx.crc,
 	};
 
 	return rpc_response_simple_if(rx_meta.interface, rc, &rsp_err, sizeof(rsp_err));
