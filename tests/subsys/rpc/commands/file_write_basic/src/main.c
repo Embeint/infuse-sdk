@@ -82,7 +82,7 @@ static struct test_out test_file_write_basic(uint8_t action, uint32_t total_send
 					     uint8_t skip_after, uint8_t stop_after,
 					     uint8_t bad_id_after, uint8_t ack_period,
 					     bool too_much_data, bool expect_skip,
-					     uint8_t *fixed_source)
+					     const void *fixed_source)
 {
 	const struct device *epacket_dummy = DEVICE_DT_GET(DT_NODELABEL(epacket_dummy));
 	struct k_fifo *tx_fifo = epacket_dummmy_transmit_fifo_get();
@@ -106,7 +106,7 @@ static struct test_out test_file_write_basic(uint8_t action, uint32_t total_send
 	zassert_not_null(tx_fifo);
 
 	if (fixed_source != NULL) {
-		crc = crc32_ieee(fixed_payload, sizeof(fixed_payload));
+		crc = crc32_ieee(fixed_source, total_send);
 	}
 
 	/* Send the initiating command */
@@ -146,7 +146,8 @@ static struct test_out test_file_write_basic(uint8_t action, uint32_t total_send
 
 		if (fixed_source != NULL) {
 			/* Send fixed payload to the server */
-			memcpy(data_hdr->payload, fixed_source + tx_offset, to_send);
+			memcpy(data_hdr->payload, (const uint8_t *)fixed_source + tx_offset,
+			       to_send);
 		} else {
 			/* Send randomised data to the server */
 			sys_rand_get(payload, sizeof(payload));
@@ -417,7 +418,7 @@ ZTEST(rpc_command_file_write_basic, test_file_write_dfu_cpatch)
 
 	/* Write the patch file */
 	ret = test_file_write_basic(RPC_ENUM_FILE_ACTION_APP_CPATCH, sizeof(hardcoded_patch), 0, 0,
-				    0, 0, false, false, (void *)&hardcoded_patch);
+				    0, 0, false, false, &hardcoded_patch);
 	zassert_equal(0, ret.cmd_rc);
 	zassert_equal(sizeof(hardcoded_patch), ret.cmd_len);
 	zassert_equal(ret.written_crc, ret.cmd_crc);
@@ -442,7 +443,7 @@ ZTEST(rpc_command_file_write_basic, test_file_write_dfu_cpatch)
 
 	/* Write the patch file, validate failure */
 	ret = test_file_write_basic(RPC_ENUM_FILE_ACTION_APP_CPATCH, sizeof(hardcoded_patch), 0, 0,
-				    0, 0, false, false, (void *)&hardcoded_patch);
+				    0, 0, false, false, &hardcoded_patch);
 	zassert_equal(-EINVAL, ret.cmd_rc);
 	zassert_equal(sizeof(hardcoded_patch), ret.cmd_len);
 
@@ -503,7 +504,7 @@ ZTEST(rpc_command_file_write_basic, test_file_write_bt_ctlr)
 	ret = test_file_write_basic(RPC_ENUM_FILE_ACTION_BT_CTLR_IMG, 3000, 0, 0, 0, 0, false,
 				    false, NULL);
 	zassert_equal(-EIO, ret.cmd_rc);
-	zassert_equal(0, ret.cmd_len);
+	zassert_equal(3000, ret.cmd_len);
 	zassert_false(bt_in_progress);
 	bt_start_rc = 0;
 
@@ -539,11 +540,11 @@ ZTEST(rpc_command_file_write_basic, test_lost_payload)
 	for (int i = 0; i <= CONFIG_EPACKET_BUFFERS_RX; i++) {
 		ret = test_file_write_basic(RPC_ENUM_FILE_ACTION_DISCARD, 1000, 5, 0, 0, 0, false,
 					    false, NULL);
-		zassert_equal(0, ret.cmd_rc);
+		zassert_equal(-EINVAL, ret.cmd_rc);
 		zassert_true(ret.cmd_len < 1000);
 		ret = test_file_write_basic(RPC_ENUM_FILE_ACTION_DISCARD, 1000, 10, 0, 0, 0, false,
 					    false, NULL);
-		zassert_equal(0, ret.cmd_rc);
+		zassert_equal(-EINVAL, ret.cmd_rc);
 		zassert_true(ret.cmd_len < 1000);
 	}
 }
@@ -629,11 +630,11 @@ ZTEST(rpc_command_file_write_basic, test_everything_wrong)
 	for (int i = 0; i <= CONFIG_EPACKET_BUFFERS_RX; i++) {
 		ret = test_file_write_basic(RPC_ENUM_FILE_ACTION_DISCARD, 1000, 3, 0, 7, 1, false,
 					    false, NULL);
-		zassert_equal(0, ret.cmd_rc);
+		zassert_equal(-EINVAL, ret.cmd_rc);
 		zassert_true(ret.cmd_len < 1000);
 		ret = test_file_write_basic(RPC_ENUM_FILE_ACTION_DISCARD, 1000, 3, 0, 7, 2, false,
 					    false, NULL);
-		zassert_equal(0, ret.cmd_rc);
+		zassert_equal(-EINVAL, ret.cmd_rc);
 		zassert_true(ret.cmd_len < 1000);
 	}
 }
