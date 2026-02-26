@@ -65,6 +65,13 @@ struct net_buf *rpc_command_security_key_update(struct net_buf *request)
 #endif /* CONFIG_INFUSE_SECURITY_SECONDARY_NETWORK_ENABLE */
 #ifdef CONFIG_INFUSE_SECURITY_SECONDARY_REMOTE_ENABLE
 	case RPC_ENUM_KEY_ID_SECONDARY_REMOTE_PUBLIC_KEY:
+		/* When writing a new key, ensure an old one isn't cached */
+		rc = infuse_security_secondary_device_key_reset();
+		rc = (rc == -ENOENT) ? 0 : rc;
+		if (rc < 0) {
+			goto end;
+		}
+
 		if (key_ptr == NULL) {
 			rc = kv_store_delete(KV_KEY_SECONDARY_REMOTE_PUBLIC_KEY);
 		} else {
