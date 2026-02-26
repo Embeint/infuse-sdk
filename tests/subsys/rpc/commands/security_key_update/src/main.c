@@ -22,6 +22,9 @@
 
 #include <psa/crypto.h>
 
+/* Copied from security internal definition */
+#define SECONDARY_SHARED_SECRET_KEY_ID 30005
+
 K_SEM_DEFINE(reboot_request, 0, 1);
 K_SEM_DEFINE(auth_checked, 0, 1);
 static bool command_is_authorised;
@@ -218,6 +221,7 @@ ZTEST(rpc_command_security_key_update, test_secondary_remote)
 {
 	struct kv_secondary_remote_public_key remote_public_key;
 	uint8_t bitstream[32];
+	psa_key_id_t key_id;
 
 	sys_rand_get(bitstream, sizeof(bitstream));
 
@@ -235,6 +239,11 @@ ZTEST(rpc_command_security_key_update, test_secondary_remote)
 		      KV_STORE_READ(KV_KEY_SECONDARY_REMOTE_PUBLIC_KEY, &remote_public_key));
 	zassert_mem_equal(bitstream, remote_public_key.public_key, sizeof(bitstream));
 
+	/* Re-initialise security core, key should exist in PSA */
+	zassert_equal(0, infuse_security_init());
+	zassert_equal(PSA_SUCCESS, psa_open_key(SECONDARY_SHARED_SECRET_KEY_ID, &key_id));
+	zassert_equal(PSA_SUCCESS, psa_close_key(key_id));
+
 	/* Delete secondary remote, reboot */
 	send_security_key_update_command(0x301, EPACKET_AUTH_DEVICE,
 					 RPC_ENUM_KEY_ID_SECONDARY_REMOTE_PUBLIC_KEY,
@@ -242,8 +251,14 @@ ZTEST(rpc_command_security_key_update, test_secondary_remote)
 	expect_security_key_update_response(0x301, EPACKET_AUTH_DEVICE, 0);
 	zassert_equal(0, k_sem_take(&reboot_request, K_MSEC(100)));
 
+	/* Key should no longer exist in PSA or KV store */
 	zassert_equal(-ENOENT,
 		      KV_STORE_READ(KV_KEY_SECONDARY_REMOTE_PUBLIC_KEY, &remote_public_key));
+	zassert_equal(PSA_ERROR_DOES_NOT_EXIST,
+		      psa_open_key(SECONDARY_SHARED_SECRET_KEY_ID, &key_id));
+
+	/* Re-initialise security core */
+	zassert_equal(0, infuse_security_init());
 
 #if CONFIG_INFUSE_RPC_COMMAND_SECURITY_KEY_UPDATE_REQUIRED_AUTH < 2
 	/* Failing network authorisation check */
@@ -254,6 +269,13 @@ ZTEST(rpc_command_security_key_update, test_secondary_remote)
 	expect_security_key_update_response(0x302, EPACKET_AUTH_NETWORK, -EPERM);
 	zassert_equal(-EAGAIN, k_sem_take(&reboot_request, K_MSEC(100)));
 
+	/* Key should not exist in PSA or KV store */
+	zassert_equal(-ENOENT,
+		      KV_STORE_READ(KV_KEY_SECONDARY_REMOTE_PUBLIC_KEY, &remote_public_key));
+	zassert_equal(0, infuse_security_init());
+	zassert_equal(PSA_ERROR_DOES_NOT_EXIST,
+		      psa_open_key(SECONDARY_SHARED_SECRET_KEY_ID, &key_id));
+
 	/* Passing network authorisation check */
 	command_is_authorised = true;
 	send_security_key_update_command(0x303, EPACKET_AUTH_NETWORK,
@@ -261,6 +283,11 @@ ZTEST(rpc_command_security_key_update, test_secondary_remote)
 					 RPC_ENUM_KEY_ACTION_KEY_WRITE, 0, bitstream, 2);
 	expect_security_key_update_response(0x303, EPACKET_AUTH_NETWORK, 0);
 	zassert_equal(0, k_sem_take(&reboot_request, K_MSEC(100)));
+
+	/* Re-initialise security core, key should exist in PSA */
+	zassert_equal(0, infuse_security_init());
+	zassert_equal(PSA_SUCCESS, psa_open_key(SECONDARY_SHARED_SECRET_KEY_ID, &key_id));
+	zassert_equal(PSA_SUCCESS, psa_close_key(key_id));
 #endif /* CONFIG_INFUSE_RPC_COMMAND_SECURITY_KEY_UPDATE_REQUIRED_AUTH < 2 */
 }
 
