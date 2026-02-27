@@ -114,11 +114,11 @@ int lp581x_animation_pattern_program(const struct device *dev, uint8_t pattern_i
 		.play_count = pattern->sloper.play_count,
 		.pwm =
 			{
-				pattern->pre_pause.duration,
+				pattern->pre_pause.pwm,
 				pattern->sloper.pwm[0],
 				pattern->sloper.pwm[1],
 				pattern->sloper.pwm[2],
-				pattern->post_pause.duration,
+				pattern->post_pause.pwm,
 			},
 		.sloper1 = (pattern->sloper.duration[1] << 4) | pattern->sloper.duration[0],
 		.sloper2 = (pattern->sloper.duration[3] << 4) | pattern->sloper.duration[2],
