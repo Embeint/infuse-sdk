@@ -47,6 +47,21 @@ static void l4_event_handler(struct net_mgmt_event_callback *cb, uint64_t event,
 	}
 }
 
+static int validation_mac_address(struct net_if *iface)
+{
+	struct net_linkaddr *linkaddr = net_if_get_link_addr(iface);
+
+	if ((linkaddr->type != NET_LINK_ETHERNET) || (linkaddr->len != 6)) {
+		VALIDATION_REPORT_ERROR(TEST, "Invalid MAC type or length (%d, %d)", linkaddr->type,
+					linkaddr->len);
+		return -EINVAL;
+	}
+	VALIDATION_REPORT_INFO(TEST, "MAC=%02x-%02x-%02x-%02x-%02x-%02x", linkaddr->addr[0],
+			       linkaddr->addr[1], linkaddr->addr[2], linkaddr->addr[3],
+			       linkaddr->addr[4], linkaddr->addr[5]);
+	return 0;
+}
+
 static void scan_result_handle(const struct wifi_scan_result *entry)
 {
 	VALIDATION_REPORT_INFO(TEST, "Band %s Channel %3d RSSI %3d dBm SSID %s ",
@@ -249,6 +264,12 @@ int infuse_validation_wifi(struct net_if *iface, uint8_t flags)
 			return rc;
 		}
 		manual_up = true;
+	}
+
+	/* Display interface MAC address */
+	rc = validation_mac_address(iface);
+	if (rc < 0) {
+		goto done;
 	}
 
 	if (flags & VALIDATION_WIFI_SSID_SCAN) {
