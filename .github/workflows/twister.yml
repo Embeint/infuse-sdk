@@ -7,9 +7,11 @@ on:
   pull_request:
     branches:
       - main
-    paths-ignore:
-      - doc/**
-      - scripts/**
+    paths:
+      - '**'
+      - '!doc/**'
+      - '!scripts/**'
+      - '!.github/**'
   schedule:
     # Run at 14:17 UTC every day
     - cron: '17 14 * * *'
