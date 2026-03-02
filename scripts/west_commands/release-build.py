@@ -522,16 +522,16 @@ class release_build(WestCommand):
             )
             primary_dir = app_name
 
-        app_repo = Repo(self.args.release, search_parent_directories=True)
-        remotes = [r.url for r in app_repo.remotes]
+        release_repo = Repo(self.args.release, search_parent_directories=True)
+        remotes = [r.url for r in release_repo.remotes]
 
         # Create manifest file
         manifest = {
             "configuration": {
                 "file": str(self.args.release.resolve().absolute()),
-                "application_repo": {
+                "release_repo": {
                     "remotes": remotes,
-                    "commit": app_repo.commit().binsha.hex(),
+                    "commit": release_repo.commit().binsha.hex(),
                 },
                 "manifest_repos": {},
             },
