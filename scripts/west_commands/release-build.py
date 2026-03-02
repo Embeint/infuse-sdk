@@ -66,7 +66,7 @@ class release_build(WestCommand):
             return p
         return (relative_root / p).resolve().absolute()
 
-    def do_run(self, args, _unknown_args):
+    def do_run(self, args: argparse.Namespace, _unknown_args):
         self.args = args
 
         with self.args.release.open("r", encoding="utf-8") as f:
@@ -108,7 +108,7 @@ class release_build(WestCommand):
         # Validate state of all manifest repositories
         self.validate_manifest_repos_state()
         # Expected application version
-        repo = Repo(self.application, search_parent_directories=True)
+        repo = Repo(self.args.release.parent, search_parent_directories=True)
         expected_int, expected_hex = self.expected_version(repo)
         # Perform release build
         self.do_release_build(expected_int)
@@ -249,7 +249,7 @@ class release_build(WestCommand):
             print("SPDX generation stderr:")
             sys.exit(proc.stderr.decode("utf-8"))
 
-    def do_release_build(self, expected_version):
+    def do_release_build(self, expected_version: str):
         name = self.application.name
         self.build_dir = pathlib.Path(f"build/release/{self.release['board']}/{name}")
         if self.sysbuild:
