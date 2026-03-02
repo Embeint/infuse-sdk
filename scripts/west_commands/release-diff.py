@@ -54,9 +54,20 @@ class release_diff(WestCommand):
             action="store_true",
             help="Compare diff efficiency between tools",
         )
+        parser.add_argument(
+            "--ignore-board",
+            action="store_true",
+            help="Force diff generation even if boards mismatch (revision introduction)",
+        )
         return parser
 
-    def do_generation(self, original_dir, output_dir, tool_compare):
+    def do_generation(
+        self,
+        original_dir: pathlib.Path,
+        output_dir: pathlib.Path,
+        tool_compare: bool,
+        ignore_board: bool,
+    ):
         with (original_dir / "manifest.yaml").open("r", encoding="utf-8") as f:
             self.manifest_original = yaml.safe_load(f)
         with (output_dir / "manifest.yaml").open("r", encoding="utf-8") as f:
@@ -66,6 +77,8 @@ class release_diff(WestCommand):
             orig = self.manifest_original["application"][field]
             new = self.manifest_output["application"][field]
             if orig != new:
+                if field == "board" and ignore_board:
+                    return
                 sys.exit(f"Field '{field}' does not match ({orig} != {new})")
 
         expect_match("TF-M")
@@ -172,4 +185,4 @@ class release_diff(WestCommand):
             sys.exit("infuse-iot.diff not found")
 
         for original in args.input:
-            self.do_generation(original, args.output, args.tool_compare)
+            self.do_generation(original, args.output, args.tool_compare, args.ignore_board)
