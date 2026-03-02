@@ -7,9 +7,11 @@ on:
   pull_request:
     branches:
       - main
-    paths-ignore:
-      - doc/**
-      - scripts/**
+    paths:
+      - '**'
+      - '!doc/**'
+      - '!scripts/**'
+      - 'scripts/west_commands/release-build.py'
 
 permissions:
   contents: read
