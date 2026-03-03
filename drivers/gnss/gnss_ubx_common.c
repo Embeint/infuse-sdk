@@ -309,6 +309,10 @@ int ubx_common_pm_control(const struct device *dev, enum pm_device_action action
 		}
 		if (rc < 0) {
 			LOG_WRN("Failed to establish comms");
+			if (rc == -EAGAIN) {
+				/* Waiting for OPEN timed out, close the pipe */
+				(void)modem_pipe_close(data->modem.pipe, K_SECONDS(2));
+			}
 			return rc;
 		}
 		/* Configure modem for comms */
