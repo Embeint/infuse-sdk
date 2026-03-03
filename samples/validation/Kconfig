@@ -5,6 +5,13 @@ DT_CHOSEN_Z_WIFI := zephyr,wifi
 DT_COMPAT_Z_SDMMC := zephyr,sdmmc-disk
 DT_COMPAT_ST_SDMMC := st,stm32-sdmmc
 
+config VALIDATION_DRIVER_TESTS
+	bool "Run the longer tests which validate driver behaviour"
+	default y
+	help
+	  Some tests are intended for validating driver implementations as opposed
+	  to testing board assembly.
+
 config VALIDATION_NRF70_XO_TUNE
 	bool "Run external oscillator calibration"
 	depends on $(dt_chosen_enabled,$(DT_CHOSEN_Z_WIFI))

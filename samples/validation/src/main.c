@@ -48,9 +48,13 @@ static atomic_t validators_complete;
 #if DT_NODE_HAS_STATUS_OKAY(DT_ALIAS(imu0))
 static int imu_validator(void *a, void *b, void *c)
 {
+	uint8_t imu_tests = VALIDATION_IMU_SELF_TEST;
+
+	if (IS_ENABLED(CONFIG_VALIDATION_DRIVER_TESTS)) {
+		imu_tests |= VALIDATION_IMU_DRIVER;
+	}
 	atomic_inc(&validators_registered);
-	if (infuse_validation_imu(DEVICE_DT_GET(DT_ALIAS(imu0)),
-				  VALIDATION_IMU_SELF_TEST | VALIDATION_IMU_DRIVER) == 0) {
+	if (infuse_validation_imu(DEVICE_DT_GET(DT_ALIAS(imu0)), imu_tests) == 0) {
 		atomic_inc(&validators_passed);
 	} else {
 		atomic_inc(&validators_failed);
@@ -432,10 +436,13 @@ int main(void)
 	k_sleep(K_MSEC(10));
 
 #if CONFIG_NRF_MODEM_LIB
+	uint8_t nrf_modem_tests = VALIDATION_NRF_MODEM_FW_VERSION | VALIDATION_NRF_MODEM_SIM_CARD;
+
+	if (IS_ENABLED(CONFIG_VALIDATION_DRIVER_TESTS)) {
+		nrf_modem_tests |= VALIDATION_NRF_MODEM_LTE_SCAN;
+	}
 	atomic_inc(&validators_registered);
-	if (infuse_validation_nrf_modem(VALIDATION_NRF_MODEM_FW_VERSION |
-					VALIDATION_NRF_MODEM_SIM_CARD |
-					VALIDATION_NRF_MODEM_LTE_SCAN) == 0) {
+	if (infuse_validation_nrf_modem(nrf_modem_tests) == 0) {
 		atomic_inc(&validators_passed);
 	} else {
 		atomic_inc(&validators_failed);
