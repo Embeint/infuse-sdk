@@ -63,29 +63,10 @@ static int imu_validator(void *a, void *b, void *c)
 K_THREAD_DEFINE(imu_thread, 2048, imu_validator, NULL, NULL, NULL, 5, 0, 0);
 #endif /* DT_NODE_HAS_STATUS_OKAY(DT_ALIAS(imu0)) */
 
-#if DT_NODE_HAS_STATUS_OKAY(DT_ALIAS(die_temp0))
-
-static int die_temp_validator(void *a, void *b, void *c)
-{
-	atomic_inc(&validators_registered);
-	if (infuse_validation_die_temperature(DEVICE_DT_GET(DT_ALIAS(die_temp0)),
-					      VALIDATION_DIE_TEMP_TEMPERATURE) == 0) {
-		atomic_inc(&validators_passed);
-	} else {
-		atomic_inc(&validators_failed);
-	}
-	atomic_inc(&validators_complete);
-	return 0;
-}
-
-K_THREAD_DEFINE(die_temp_thread, 2048, die_temp_validator, NULL, NULL, NULL, 5, 0, 0);
-#endif /* DT_NODE_HAS_STATUS_OKAY(DT_ALIAS(die_temp0)) */
-
 #if DT_NODE_HAS_STATUS_OKAY(DT_ALIAS(environmental0))
 
 static void env_validation_run(const struct device *dev)
 {
-	atomic_inc(&validators_registered);
 	if (infuse_validation_env(dev, VALIDATION_ENV_DRIVER) == 0) {
 		atomic_inc(&validators_passed);
 	} else {
@@ -94,25 +75,43 @@ static void env_validation_run(const struct device *dev)
 	atomic_inc(&validators_complete);
 }
 
-static int env_validator(void *a, void *b, void *c)
+#endif /* DT_NODE_HAS_STATUS_OKAY(DT_ALIAS(environmental0)) */
+
+static int simple_sensor_validator(void *a, void *b, void *c)
 {
+	if (IS_ENABLED(DT_NODE_HAS_STATUS_OKAY(DT_ALIAS(die_temp0)))) {
+		atomic_inc(&validators_registered);
+	}
+	if (IS_ENABLED(DT_NODE_HAS_STATUS_OKAY(DT_ALIAS(environmental0)))) {
+		atomic_inc(&validators_registered);
+	}
+	if (IS_ENABLED(DT_NODE_HAS_STATUS_OKAY(DT_ALIAS(environmental1)))) {
+		atomic_inc(&validators_registered);
+	}
+	if (IS_ENABLED(DT_NODE_HAS_STATUS_OKAY(DT_ALIAS(fuel_gauge0)))) {
+		atomic_inc(&validators_registered);
+	}
+
+#if DT_NODE_HAS_STATUS_OKAY(DT_ALIAS(die_temp0))
+	if (infuse_validation_die_temperature(DEVICE_DT_GET(DT_ALIAS(die_temp0)),
+					      VALIDATION_DIE_TEMP_TEMPERATURE) == 0) {
+		atomic_inc(&validators_passed);
+	} else {
+		atomic_inc(&validators_failed);
+	}
+	atomic_inc(&validators_complete);
+#endif /* DT_NODE_HAS_STATUS_OKAY(DT_ALIAS(die_temp0)) */
+
+#if DT_NODE_HAS_STATUS_OKAY(DT_ALIAS(environmental0))
 	env_validation_run(DEVICE_DT_GET(DT_ALIAS(environmental0)));
+#endif /* DT_NODE_HAS_STATUS_OKAY(DT_ALIAS(environmental0)) */
 #if DT_NODE_HAS_STATUS_OKAY(DT_ALIAS(environmental1))
 	env_validation_run(DEVICE_DT_GET(DT_ALIAS(environmental1)));
 #endif /* DT_NODE_HAS_STATUS_OKAY(DT_ALIAS(environmental1)) */
-	k_sem_give(&task_complete);
-	return 0;
-}
-
-K_THREAD_DEFINE(env_thread, 2048, env_validator, NULL, NULL, NULL, 5, 0, 0);
-#endif /* DT_NODE_HAS_STATUS_OKAY(DT_ALIAS(environmental0)) */
 
 #if DT_NODE_HAS_STATUS_OKAY(DT_ALIAS(fuel_gauge0))
-static int pwr_validator(void *a, void *b, void *c)
-{
-	atomic_inc(&validators_registered);
 	/* Give the fuel gauge a second to settle to steady state */
-	k_sleep(K_MSEC(1000));
+	k_sleep(K_TIMEOUT_ABS_MS(1000));
 	if (infuse_validation_pwr(DEVICE_DT_GET(DT_ALIAS(fuel_gauge0)),
 				  VALIDATION_PWR_BATTERY_VOLTAGE | VALIDATION_PWR_BATTERY_CURRENT |
 					  VALIDATION_PWR_BATTERY_SOC |
@@ -122,13 +121,13 @@ static int pwr_validator(void *a, void *b, void *c)
 		atomic_inc(&validators_failed);
 	}
 	atomic_inc(&validators_complete);
+#endif /* DT_NODE_HAS_STATUS_OKAY(DT_ALIAS(environmental1)) */
+
 	k_sem_give(&task_complete);
 	return 0;
 }
 
-K_THREAD_DEFINE(pwr_thread, 2048, pwr_validator, NULL, NULL, NULL, 5, 0, 0);
-
-#endif /* DT_NODE_HAS_STATUS_OKAY(DT_ALIAS(fuel_gauge0)) */
+K_THREAD_DEFINE(sensor_thread, 2048, simple_sensor_validator, NULL, NULL, NULL, 5, 0, 0);
 
 #if defined(CONFIG_SPI_NOR)
 #define FLASH_COMPAT jedec_spi_nor
@@ -197,25 +196,6 @@ static int disk_validator(void *a, void *b, void *c)
 
 K_THREAD_DEFINE(disk_thread, 2048, disk_validator, NULL, NULL, NULL, 5, 0, 0);
 #endif /* CONFIG_DISK_DRIVER_SDMMC */
-
-#if CONFIG_NRF_MODEM_LIB
-static int nrf_modem_validator(void *a, void *b, void *c)
-{
-	atomic_inc(&validators_registered);
-	if (infuse_validation_nrf_modem(VALIDATION_NRF_MODEM_FW_VERSION |
-					VALIDATION_NRF_MODEM_SIM_CARD |
-					VALIDATION_NRF_MODEM_LTE_SCAN) == 0) {
-		atomic_inc(&validators_passed);
-	} else {
-		atomic_inc(&validators_failed);
-	}
-	atomic_inc(&validators_complete);
-	k_sem_give(&task_complete);
-	return 0;
-}
-
-K_THREAD_DEFINE(nrf_modem_thread, 2048, nrf_modem_validator, NULL, NULL, NULL, 5, 0, 0);
-#endif /* CONFIG_NRF_MODEM_LIB */
 
 #if DT_NODE_HAS_STATUS_OKAY(DT_ALIAS(modem))
 static int cellular_modem_validator(void *a, void *b, void *c)
@@ -450,6 +430,19 @@ int main(void)
 
 	/* Delay to allow other tests to register */
 	k_sleep(K_MSEC(10));
+
+#if CONFIG_NRF_MODEM_LIB
+	atomic_inc(&validators_registered);
+	if (infuse_validation_nrf_modem(VALIDATION_NRF_MODEM_FW_VERSION |
+					VALIDATION_NRF_MODEM_SIM_CARD |
+					VALIDATION_NRF_MODEM_LTE_SCAN) == 0) {
+		atomic_inc(&validators_passed);
+	} else {
+		atomic_inc(&validators_failed);
+	}
+	atomic_inc(&validators_complete);
+	k_sem_give(&task_complete);
+#endif /* CONFIG_NRF_MODEM_LIB */
 
 	for (;;) {
 		k_sem_take(&task_complete, K_FOREVER);
