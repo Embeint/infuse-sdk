@@ -82,6 +82,10 @@ config GNSS_VALIDATION_SUPPORTED
 
 configdefault LTE_LC_NEIGHBOR_CELL_MEAS_MODULE
 	default y
+configdefault NRF_SYS_EVENT
+	default y if SOC_NRF9120
+configdefault SOC_NRF_FORCE_CONSTLAT
+	default y if SOC_NRF9120 && USE_SEGGER_RTT
 
 # Driver configuration
 
