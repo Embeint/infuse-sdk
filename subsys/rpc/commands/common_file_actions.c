@@ -136,16 +136,17 @@ static int common_file_actions_stream_writer_init(struct rpc_common_file_actions
 				 file_len, NULL);
 }
 
-#define STREAM_WRITER_INIT(ctx, partition, length, crc, trailer)                                   \
+#define STREAM_WRITER_INIT(ctx, partition, offset, length, crc, trailer)                           \
 	common_file_actions_stream_writer_init(                                                    \
 		ctx, FIXED_PARTITION_ID(partition), FIXED_PARTITION_DEVICE(partition),             \
-		FIXED_PARTITION_OFFSET(partition), length, crc, trailer)
+		FIXED_PARTITION_OFFSET(partition) + offset, length, crc, trailer)
 
 #endif /* defined(SUPPORT_APP_IMG) || defined(SUPPORT_APP_CPATCH) || defined(SUPPORT_FILE_COPY) */
 
 int rpc_common_file_actions_start(struct rpc_common_file_actions_ctx *ctx,
 				  enum rpc_enum_file_action action, uint32_t length, uint32_t crc)
 {
+	__maybe_unused off_t offset;
 	int rc = 0;
 
 	ctx->fa = NULL;
@@ -161,17 +162,18 @@ int rpc_common_file_actions_start(struct rpc_common_file_actions_ctx *ctx,
 		break;
 #ifdef SUPPORT_APP_IMG
 	case RPC_ENUM_FILE_ACTION_APP_IMG:
-		rc = STREAM_WRITER_INIT(ctx, slot1_partition, length, crc, true);
+		offset = boot_get_image_start_offset(FIXED_PARTITION_ID(slot1_partition));
+		rc = STREAM_WRITER_INIT(ctx, slot1_partition, offset, length, crc, true);
 		break;
 #endif /* SUPPORT_APP_IMG */
 #ifdef SUPPORT_APP_CPATCH
 	case RPC_ENUM_FILE_ACTION_APP_CPATCH:
-		rc = STREAM_WRITER_INIT(ctx, file_partition, length, crc, false);
+		rc = STREAM_WRITER_INIT(ctx, file_partition, 0, length, crc, false);
 		break;
 #endif /* SUPPORT_APP_CPATCH*/
 #ifdef SUPPORT_FILE_COPY
 	case RPC_ENUM_FILE_ACTION_FILE_FOR_COPY:
-		rc = STREAM_WRITER_INIT(ctx, file_partition, length, crc, false);
+		rc = STREAM_WRITER_INIT(ctx, file_partition, 0, length, crc, false);
 		break;
 #endif /* SUPPORT_FILE_COPY*/
 #ifdef CONFIG_BT_CONTROLLER_MANAGER
@@ -277,6 +279,7 @@ static int finish_cpatch(struct rpc_common_file_actions_ctx *ctx)
 	const struct flash_parameters *params;
 	struct cpatch_header header;
 	size_t mem_size, out_len;
+	uint32_t flash_offset;
 	uint8_t *mem;
 	int rc;
 
@@ -324,8 +327,11 @@ static int finish_cpatch(struct rpc_common_file_actions_ctx *ctx)
 	mem = rpc_server_command_working_mem(&mem_size);
 	/* Limit buffer size to common flash erase size */
 	mem_size = MIN(mem_size, 4096);
+	/* Required offset of the image in the flash area */
+	flash_offset = FIXED_PARTITION_OFFSET(slot1_partition) +
+		       boot_get_image_start_offset(FIXED_PARTITION_ID(slot1_partition));
 	rc = stream_flash_init(&stream_ctx, FIXED_PARTITION_DEVICE(slot1_partition), mem, mem_size,
-			       FIXED_PARTITION_OFFSET(slot1_partition), out_len, NULL);
+			       flash_offset, out_len, NULL);
 	__ASSERT_NO_MSG(rc == 0);
 
 	/* Apply the patch */
@@ -367,6 +373,7 @@ int rpc_common_file_actions_finish(struct rpc_common_file_actions_ctx *ctx, uint
 #endif /* defined(SUPPORT_APP_IMG) || defined(SUPPORT_APP_CPATCH) || defined(SUPPORT_FILE_COPY) */
 
 #ifdef CONFIG_INFUSE_DFU_HELPERS
+	off_t offset = 0;
 	uint32_t flash_crc;
 	size_t mem_size;
 	uint8_t *mem;
@@ -381,7 +388,10 @@ int rpc_common_file_actions_finish(struct rpc_common_file_actions_ctx *ctx, uint
 
 	/* Validate the data written to flash if possible */
 	if ((ctx->fa != NULL) && (ctx->received > 0)) {
-		rc = flash_area_crc32(ctx->fa, 0, ctx->received, &flash_crc, mem, mem_size);
+		if (ctx->action == RPC_ENUM_FILE_ACTION_APP_IMG) {
+			offset = boot_get_image_start_offset(ctx->fa->fa_id);
+		}
+		rc = flash_area_crc32(ctx->fa, offset, ctx->received, &flash_crc, mem, mem_size);
 		if (rc < 0) {
 			LOG_ERR("Could not validate written data");
 			pm_flash_area_close(ctx->fa);
