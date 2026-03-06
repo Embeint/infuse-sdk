@@ -8,12 +8,14 @@
 
 #include <zephyr/audio/dmic.h>
 #include <zephyr/drivers/gpio.h>
+#include <zephyr/drivers/regulator.h>
 #include <zephyr/drivers/pinctrl.h>
 #include <zephyr/logging/log.h>
 #include <zephyr/pm/device.h>
 
 struct t5838_config {
 	const struct device *dmic;
+	const struct device *pwr_reg;
 	struct gpio_dt_spec en_gpio;
 	struct gpio_dt_spec thsel_gpio;
 	struct gpio_dt_spec wake_gpio;
@@ -50,20 +52,28 @@ static int dmic_nrfx_pdm_read(const struct device *dev, uint8_t stream, void **b
 static int t5838_pm_control(const struct device *dev, enum pm_device_action action)
 {
 	const struct t5838_config *config = dev->config;
-	int rc;
+	int rc = 0;
 
 	switch (action) {
 	case PM_DEVICE_ACTION_SUSPEND:
 		if (config->en_gpio.port) {
 			gpio_pin_set_dt(&config->en_gpio, 0);
 		}
-		rc = 0;
+#ifdef CONFIG_REGULATOR
+		if (config->pwr_reg) {
+			rc = regulator_disable(config->pwr_reg);
+		}
+#endif /* CONFIG_REGULATOR */
 		break;
 	case PM_DEVICE_ACTION_RESUME:
+#ifdef CONFIG_REGULATOR
+		if (config->pwr_reg) {
+			rc = regulator_enable(config->pwr_reg);
+		}
+#endif /* CONFIG_REGULATOR */
 		if (config->en_gpio.port) {
 			gpio_pin_set_dt(&config->en_gpio, 1);
 		}
-		rc = 0;
 		break;
 	default:
 		rc = -ENOTSUP;
@@ -77,6 +87,11 @@ static int t5838_init(const struct device *dev)
 
 	if (!device_is_ready(config->dmic)) {
 		LOG_DBG("Underlying interface not ready");
+		return -ENODEV;
+	}
+
+	if (config->pwr_reg && !device_is_ready(config->pwr_reg)) {
+		LOG_DBG("Power regulator not ready");
 		return -ENODEV;
 	}
 
@@ -97,8 +112,11 @@ static const struct _dmic_ops dmic_ops = {
 };
 
 #define T5838_INIT(inst)                                                                           \
+	BUILD_ASSERT(!DT_INST_NODE_HAS_PROP(inst, pwr_regulator) || IS_ENABLED(CONFIG_REGULATOR),  \
+		     "Regulator API not enabled");                                                 \
 	static const struct t5838_config t5838_##inst##_config = {                                 \
 		.dmic = DEVICE_DT_GET(DT_INST_PARENT(inst)),                                       \
+		.pwr_reg = DEVICE_DT_GET_OR_NULL(DT_INST_PHANDLE(inst, pwr_regulator)),            \
 		.en_gpio = GPIO_DT_SPEC_INST_GET_OR(inst, en_gpios, {}),                           \
 		.thsel_gpio = GPIO_DT_SPEC_INST_GET_OR(inst, thsel_gpios, {}),                     \
 		.wake_gpio = GPIO_DT_SPEC_INST_GET(inst, wake_gpios),                              \
