@@ -11,6 +11,10 @@ properties:
   reg:
     required: true
 
+  pwr-regulator:
+    type: phandle
+    description: Power regulator
+
   en-gpios:
     type: phandle-array
     description: Enable GPIO
