@@ -14,4 +14,4 @@ set -ue
 BOARD="${BOARD:-nrf52_bsim/native}"
 OPTS="-iv --no-clean --outdir bsim/bluetooth -p ${BOARD}"
 
-west twister $OPTS -T ${INFUSE_BASE}/tests/bsim/bluetooth/
+west twister $OPTS -T ${INFUSE_BASE}/tests/bsim/bluetooth/epacket

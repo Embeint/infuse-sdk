@@ -151,6 +151,8 @@ static void scan_cb(const bt_addr_le_t *addr, int8_t rssi, uint8_t adv_type,
 {
 	const char *name;
 
+	LOG_ERR("SCAN CB: %d bytes %d dBm", buf->len, rssi);
+
 	/* Only look at legacy advertising packets with a name */
 	if (adv_type != BT_GAP_ADV_TYPE_ADV_IND) {
 		return;

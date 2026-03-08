@@ -781,6 +781,8 @@ static void main_connect_rssi(void)
 		return;
 	}
 
+	k_sleep(K_MSEC(10));
+
 	/* -59 dBm is the default PHY RSSI, -51 dBm for the Nordic SDC for some reason */
 	rssi = bt_conn_rssi(conn);
 	if ((rssi != -59) && (rssi != -51)) {

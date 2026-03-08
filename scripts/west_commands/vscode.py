@@ -316,6 +316,7 @@ class vscode(WestCommand):
         assert cache.get("BOARD")[:10] in [
             "native_sim",
             "nrf52_bsim",
+            "nrf54l15bs",
             "unit_testi",
         ]
 
@@ -330,7 +331,7 @@ class vscode(WestCommand):
         launch["configurations"][0]["program"] = str(build_dir / "zephyr" / "zephyr.exe")
         launch["configurations"][0]["cwd"] = str(build_dir)
 
-        if cache.get("BOARD")[:10] == "nrf52_bsim":
+        if cache.get("BOARD")[:10] in ["nrf52_bsim", "nrf54l15bs"]:
             # Template likely arguments
             launch["configurations"][0]["args"] = [
                 "-s=sim_id",

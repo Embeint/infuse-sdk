@@ -337,6 +337,7 @@ static int observe_peers(bt_addr_le_t *addr, uint8_t num)
 	uint8_t observed = 0;
 
 	epacket_set_receive_handler(epacket_bt_adv, epacket_bt_adv_receive_handler);
+	LOG_INF("Starting Bluetooth peer observation");
 	if (epacket_receive(epacket_bt_adv, K_FOREVER) < 0) {
 		return -1;
 	}

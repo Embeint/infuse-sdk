@@ -5,7 +5,7 @@
 source ${ZEPHYR_BASE}/tests/bsim/sh_common.source
 
 simulation_id="epacket_mcumgr_reboot"
-verbosity_level=2
+verbosity_level=5
 
 cd ${BSIM_OUT_PATH}/bin
 
