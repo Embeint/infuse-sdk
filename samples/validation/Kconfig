@@ -107,6 +107,8 @@ endchoice
 
 configdefault INFUSE_MODEM_MONITOR_LOG_LEVEL
 	default 2
+configdefault EPACKET_LOG_LEVEL
+	default 2
 configdefault EPACKET_UDP_LOG_LEVEL
 	default 2
 configdefault WIFI_NRF70_BUSLIB_LOG_LEVEL
@@ -114,6 +116,8 @@ configdefault WIFI_NRF70_BUSLIB_LOG_LEVEL
 configdefault SD_LOG_LEVEL
 	default 2
 configdefault MODEM_LOG_LEVEL
+	default 2
+configdefault WIFI_NM_WPA_SUPPLICANT_LOG_LEVEL
 	default 2
 
 source "Kconfig.zephyr"
