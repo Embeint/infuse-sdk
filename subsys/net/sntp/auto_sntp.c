@@ -107,11 +107,11 @@ static void sntp_service_handler(struct net_socket_service_event *sev)
 		sntp_addrlen_cached = 0;
 		return;
 	}
-	LOG_INF("Unix time: %llu", s_time.seconds);
+	LOG_INF("Unix time: %llu (delay %d us)", s_time.seconds, s_time.rsp_delay_us);
 
 	/* Update reference instant */
 	struct timeutil_sync_instant sync_point = {
-		.local = ticks,
+		.local = ticks - k_us_to_ticks_near32(s_time.rsp_delay_us),
 		/* SNTP seconds fraction is [0, UINT32_MAX] */
 		.ref = epoch_time_from_unix(s_time.seconds, s_time.fraction >> 16),
 	};
