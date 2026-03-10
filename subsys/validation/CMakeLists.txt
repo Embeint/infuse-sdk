@@ -1,6 +1,7 @@
 # Infuse-IoT validation subsystem
 
 zephyr_library()
+zephyr_library_sources_ifdef(CONFIG_AUDIO_DMIC validation_dmic.c)
 zephyr_library_sources_ifdef(CONFIG_EPACKET_INTERFACE_BT_ADV validation_bluetooth.c)
 zephyr_library_sources_ifdef(CONFIG_INFUSE_IMU validation_imu.c)
 zephyr_library_sources_ifdef(CONFIG_SENSOR validation_die_temp.c)
