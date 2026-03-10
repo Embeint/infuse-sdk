@@ -21,6 +21,7 @@
 #include <infuse/validation/core.h>
 #include <infuse/validation/die_temp.h>
 #include <infuse/validation/disk.h>
+#include <infuse/validation/dmic.h>
 #include <infuse/validation/env.h>
 #include <infuse/validation/imu.h>
 #include <infuse/validation/leds.h>
@@ -246,6 +247,26 @@ static int lora_validator(void *a, void *b, void *c)
 
 K_THREAD_DEFINE(lora_thread, 2048, lora_validator, NULL, NULL, NULL, 5, 0, 0);
 #endif /* CONFIG_LORA */
+
+#if CONFIG_AUDIO_DMIC
+static int dmic_validator(void *a, void *b, void *c)
+{
+	const struct device *microphone = DEVICE_DT_GET(DT_ALIAS(dmic_dev));
+
+	atomic_inc(&validators_registered);
+	if (infuse_validation_dmic(microphone, VALIDATION_DMIC_POWER_UP |
+						       VALIDATION_DMIC_STATISTICAL_SAMPLE) == 0) {
+		atomic_inc(&validators_passed);
+	} else {
+		atomic_inc(&validators_failed);
+	}
+	atomic_inc(&validators_complete);
+	k_sem_give(&task_complete);
+	return 0;
+}
+
+K_THREAD_DEFINE(dmic_thread, 2048, dmic_validator, NULL, NULL, NULL, 5, 0, 0);
+#endif /* CONFIG_AUDIO_DMIC */
 
 #ifdef CONFIG_WIFI
 #ifdef CONFIG_NRF70_RADIO_TEST

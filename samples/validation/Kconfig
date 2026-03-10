@@ -36,6 +36,10 @@ configdefault INFUSE_VALIDATION_LEDS_GPIO
 	default y if $(dt_alias_enabled,led0)
 configdefault INFUSE_VALIDATION_LEDS_CONTROLLER
 	default y if $(dt_alias_enabled,led-controller0)
+configdefault AUDIO
+	default y if $(dt_alias_enabled,dmic-dev)
+configdefault AUDIO_DMIC
+	default y if $(dt_alias_enabled,dmic-dev)
 choice NRF70_OPER_MODES
 	default NRF70_RADIO_TEST if VALIDATION_NRF70_XO_TUNE
 endchoice
@@ -118,6 +122,8 @@ configdefault SD_LOG_LEVEL
 configdefault MODEM_LOG_LEVEL
 	default 2
 configdefault WIFI_NM_WPA_SUPPLICANT_LOG_LEVEL
+	default 2
+configdefault AUDIO_DMIC_LOG_LEVEL
 	default 2
 
 source "Kconfig.zephyr"
