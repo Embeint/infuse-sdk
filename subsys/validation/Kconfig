@@ -50,6 +50,18 @@ config INFUSE_VALIDATION_DISK_THROUGHPUT_BUFFER_SIZE
 
 endif # DISK_ACCESS
 
+if AUDIO_DMIC
+
+config INFUSE_VALIDATION_DMIC_ANALYZE_DURATION
+	int "Seconds to analyze data for"
+	default 2
+
+config INFUSE_VALIDATION_DMIC_BUFFERS_DROP
+	int "Number of audio buffers to drop at start before analyzing data"
+	default 1
+
+endif # AUDIO_DMIC
+
 if NRF_MODEM_LIB
 
 config INFUSE_VALIDATE_NRF_MODEM_GCI_SEARCH_TIMEOUT
