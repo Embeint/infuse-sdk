@@ -218,6 +218,7 @@ void imu_task_fn(const struct task_schedule *schedule, struct k_poll_signal *ter
 	rc = imu_configure(imu, &config, &config_output);
 	if (rc < 0) {
 		k_sleep(K_SECONDS(1));
+		(void)pm_device_runtime_put(imu);
 		LOG_ERR("Terminating due to %s", "configuration failure");
 		return;
 	}
