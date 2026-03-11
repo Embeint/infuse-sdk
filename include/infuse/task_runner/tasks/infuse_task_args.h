@@ -10,6 +10,7 @@
 #ifndef INFUSE_SDK_INCLUDE_INFUSE_TASK_RUNNER_TASKS_INFUSE_TASK_ARGS_H_
 #define INFUSE_SDK_INCLUDE_INFUSE_TASK_RUNNER_TASKS_INFUSE_TASK_ARGS_H_
 
+#include <infuse/task_runner/tasks/audio_dmic_args.h>
 #include <infuse/task_runner/tasks/battery_args.h>
 #include <infuse/task_runner/tasks/bt_scanner_args.h>
 #include <infuse/task_runner/tasks/environmental_args.h>
@@ -30,6 +31,7 @@ extern "C" {
  */
 
 union infuse_task_arguments {
+	struct task_audio_dmic_args audio_dmic;
 	struct task_tdf_logger_args tdf_logger;
 	struct task_imu_args imu;
 	struct task_battery_args battery;
