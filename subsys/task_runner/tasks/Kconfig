@@ -287,3 +287,28 @@ configdefault WIFI_MGMT_SCAN_CHAN_MAX_MANUAL
 	default 8
 
 endif # TASK_RUNNER_TASK_NETWORK_SCAN
+
+config TASK_RUNNER_TASK_AUDIO_DMIC
+	bool "LTE Cell scanning task"
+	depends on AUDIO_DMIC
+
+if TASK_RUNNER_TASK_AUDIO_DMIC
+
+module = TASK_AUDIO_DMIC
+module-str = AUDIO_DMIC task
+source "subsys/logging/Kconfig.template.log_config"
+
+config TASK_RUNNER_TASK_AUDIO_DMIC_STACK_SIZE
+	int "Stack size of the task thread"
+	default 4096 if COVERAGE
+	default 1024
+
+config TASK_RUNNER_TASK_AUDIO_DMIC_BUFFER_SAMPLE
+	int "Number of samples per memory buffer"
+	default 256
+
+config TASK_RUNNER_TASK_AUDIO_DMIC_BUFFER_COUNT
+	int "Number of memory buffers"
+	default 4
+
+endif # TASK_RUNNER_TASK_AUDIO_DMIC

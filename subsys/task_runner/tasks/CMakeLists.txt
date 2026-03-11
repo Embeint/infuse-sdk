@@ -1,5 +1,6 @@
 # Task Runner tasks compilation
 
+zephyr_library_sources_ifdef(CONFIG_TASK_RUNNER_TASK_AUDIO_DMIC task_audio_dmic.c)
 zephyr_library_sources_ifdef(CONFIG_TASK_RUNNER_TASK_BATTERY task_battery.c)
 zephyr_library_sources_ifdef(CONFIG_TASK_RUNNER_TASK_BT_SCANNER task_bt_scanner.c)
 zephyr_library_sources_ifdef(CONFIG_TASK_RUNNER_TASK_ENVIRONMENTAL task_environmental.c)
