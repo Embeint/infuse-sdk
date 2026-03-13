@@ -320,7 +320,7 @@ class release_build(WestCommand):
         print("Run build: ", " ".join(build_cmd))
         proc = subprocess.run(build_cmd, capture_output=True)
         if proc.returncode != 0:
-            sys.exit(proc.stdout.decode("utf-8"))
+            sys.exit(proc.stderr.decode("utf-8"))
         self.build_log = proc.stdout.decode("utf-8")
         self.build_err = proc.stderr.decode("utf-8")
         self.do_spdx_generate()
