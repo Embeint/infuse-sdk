@@ -9,6 +9,13 @@ configdefault LOG_TIMESTAMP_64BIT
 	# GRTC runs at 1Mhz, timestamps rollover after 71 minutes in 32bits
 	default y if NRF_GRTC_TIMER
 
+# nRF54L15 Errata 15
+# HFINT (which drives the GRTC) drift at low temperatures and can cause GRTC failures
+# Periodically calibrating the HFINT from the HFXO is the recommended workaround and
+# takes less than a millisecond to perform.
+configdefault CLOCK_CONTROL_NRF_HFINT_CALIBRATION
+	default y
+
 configdefault NRF_CC3XX_PLATFORM
 	default y
 
