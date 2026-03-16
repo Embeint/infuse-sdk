@@ -251,6 +251,8 @@ configdefault MEMFAULT_FS_BYTES_FREE_METRIC
 	default n
 configdefault MEMFAULT_METRICS
 	default n
+configdefault MEMFAULT_MCUMGR_GRP
+	default n
 configdefault MEMFAULT_HEAP_STATS
 	default n
 configdefault MEMFAULT_FAULT_HANDLER_RETURN
@@ -268,7 +270,3 @@ configdefault MEMFAULT_METRICS_BLUETOOTH
 choice MEMFAULT_REBOOT_REASON_GET
 	default MEMFAULT_REBOOT_REASON_GET_CUSTOM
 endchoice
-# Temporary option until Memfault updated
-# https://github.com/memfault/memfault-firmware-sdk/issues/96
-config PARTITION_MANAGER_ENABLED
-	bool
