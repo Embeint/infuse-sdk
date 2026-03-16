@@ -251,6 +251,8 @@ configdefault MEMFAULT_FS_BYTES_FREE_METRIC
 	default n
 configdefault MEMFAULT_METRICS
 	default n
+configdefault MEMFAULT_MCUMGR_GRP
+	default n
 configdefault MEMFAULT_HEAP_STATS
 	default n
 configdefault MEMFAULT_FAULT_HANDLER_RETURN
@@ -271,4 +273,12 @@ endchoice
 # Temporary option until Memfault updated
 # https://github.com/memfault/memfault-firmware-sdk/issues/96
 config PARTITION_MANAGER_ENABLED
+	bool
+config MBEDTLS_PEM_PARSE_C
+	bool
+config MBEDTLS_PEM_WRITE_C
+	bool
+config NRF_CLOUD_COAP_MAX_USER_OPTIONS
+	bool
+config MODEM_JWT
 	bool
