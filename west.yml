@@ -45,7 +45,7 @@ manifest:
       import: true
     - name: memfault-firmware-sdk
       path: modules/lib/memfault
-      revision: 1.30.2
+      revision: 1.36.0
       remote: memfault
 
   self:
