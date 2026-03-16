@@ -14,7 +14,7 @@ configdefault LOG_TIMESTAMP_64BIT
 # Periodically calibrating the HFINT from the HFXO is the recommended workaround and
 # takes less than a millisecond to perform.
 configdefault CLOCK_CONTROL_NRF_HFINT_CALIBRATION
-	default y
+	default y if !MPSL
 
 configdefault NRF_CC3XX_PLATFORM
 	default y
