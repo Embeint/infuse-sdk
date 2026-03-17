@@ -22,6 +22,16 @@ config INFUSE_AUTO_KV_STATE_OBSERVER_ASSUME_ACTIVE
 	depends on INFUSE_AUTO_KV_STATE_OBSERVER
 	default y
 
+config INFUSE_AUTO_KV_UPDATE_LOG
+	bool "Automatically log KV data updates"
+	depends on KV_STORE
+	default y
+
+config INFUSE_AUTO_KV_UPDATE_LOG_MAX_SIZE
+	int "Maximum size of the value to log"
+	depends on INFUSE_AUTO_KV_UPDATE_LOG
+	default 128
+
 config INFUSE_AUTO_WIFI_CONN_LOG
 	bool "Automatically log WiFi connection events"
 	depends on WIFI

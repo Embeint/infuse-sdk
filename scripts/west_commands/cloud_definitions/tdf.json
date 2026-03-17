@@ -606,6 +606,14 @@
                 {"name": "left", "type": "int16_t", "description": "Left channel sample"},
                 {"name": "right", "type": "int16_t", "description": "Right channel sample"}
             ]
+        },
+        "61": {
+            "name": "KVS_VALUE_CHANGED",
+            "description": "Record of key value store data updates",
+            "fields": [
+                {"name": "key", "type": "uint16_t", "description": "KV Store key identifier"},
+                {"name": "value", "type": "uint8_t", "num": 0, "description": "New data value, empty for delete, '*' for write-only"}
+            ]
         }
     }
 }

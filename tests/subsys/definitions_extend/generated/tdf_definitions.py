@@ -4,7 +4,7 @@
 
 import ctypes
 
-from infuse_iot.generated.tdf_base import TdfReadingBase, TdfStructBase
+from infuse_iot.generated.tdf_base import TdfReadingBase, TdfStructBase  # noqa F401
 
 
 class structs:

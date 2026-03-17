@@ -176,6 +176,11 @@ config KV_STORE_KEY_MEMFAULT_DISABLE
 	help
 	  Disable Memfault reporting at runtime
 
+config KV_STORE_KEY_GATEWAY_BLUETOOTH_FORWARD_OPTIONS
+	bool "Enable KV key GATEWAY_BLUETOOTH_FORWARD_OPTIONS"
+	help
+	  Forwarding configuration for Bluetooth advertising packets
+
 config KV_STORE_KEY_GRAVITY_REFERENCE
 	bool "Enable KV key GRAVITY_REFERENCE"
 	help

@@ -249,6 +249,13 @@ void rpc_command_runner(struct net_buf *request)
 		}
 		break;
 #endif /* CONFIG_INFUSE_RPC_COMMAND_DATA_LOGGER_READ_CHUNKS */
+#ifdef CONFIG_INFUSE_RPC_COMMAND_THREAD_STATS
+	case RPC_ID_THREAD_STATS:
+		if (AUTHORISED(auth, THREAD_STATS)) { /* GCOVR_EXCL_BR_LINE */
+			response = rpc_command_thread_stats(request);
+		}
+		break;
+#endif /* CONFIG_INFUSE_RPC_COMMAND_THREAD_STATS */
 #ifdef CONFIG_INFUSE_RPC_COMMAND_COAP_DOWNLOAD
 	case RPC_ID_COAP_DOWNLOAD:
 		if (AUTHORISED(auth, COAP_DOWNLOAD)) { /* GCOVR_EXCL_BR_LINE */
