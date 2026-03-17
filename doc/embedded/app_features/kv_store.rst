@@ -34,6 +34,13 @@ Infuse-IoT also allows custom user-defined TDFs to be integrated with the framew
 :kconfig:option:`CONFIG_INFUSE_DEFS_GENERATED_DOWNSTREAM`. See :ref:`tooling_user_definitions`
 for more details.
 
+Audit Logging
+*************
+
+All changes to KV store values can be logged to a :ref:`tdf_data_logger_api` for the purposes
+of audit logging with :kconfig:option:`CONFIG_INFUSE_AUTO_KV_UPDATE_LOG`, configured through
+:c:func:`auto_kv_update_log_configure`.
+
 API Reference
 *************
 
