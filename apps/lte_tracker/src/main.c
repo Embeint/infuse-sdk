@@ -12,6 +12,7 @@
 #include <zephyr/net/net_mgmt.h>
 #include <zephyr/net/conn_mgr_connectivity.h>
 
+#include <infuse/auto/kv_update_log.h>
 #include <infuse/time/epoch.h>
 #include <infuse/tdf/definitions.h>
 #include <infuse/data_logger/high_level/tdf.h>
@@ -166,6 +167,9 @@ int main(void)
 	/* Initialise task runner */
 	task_runner_init(schedules, states, ARRAY_SIZE(schedules), app_tasks, app_tasks_data,
 			 ARRAY_SIZE(app_tasks));
+
+	/* Log KV store changes (UDP in this sample as we may not have flash) */
+	auto_kv_update_log_configure(TDF_DATA_LOGGER_UDP);
 
 	/* Start auto iteration */
 	task_runner_start_auto_iterate();
