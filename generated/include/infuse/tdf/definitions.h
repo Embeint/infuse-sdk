@@ -763,6 +763,21 @@ struct tdf_pcm_16bit_chan_dual {
 	int16_t right;
 } __packed;
 
+/** Record of key value store data updates */
+struct tdf_kvs_value_changed {
+	/** KV Store key identifier */
+	uint16_t key;
+	/** New data value, empty for delete, '*' for write-only */
+	uint8_t value[];
+} __packed;
+
+/** Define a variant of tdf_kvs_value_changed with a constant length */
+#define TDF_KVS_VALUE_CHANGED_VAR(_name, _count)                                                   \
+	struct _name {                                                                             \
+		uint16_t key;                                                                      \
+		uint8_t value[_count];                                                             \
+	} __packed;
+
 /** Infuse-IoT builtin TDF definitions */
 enum tdf_builtin_id {
 	/** Common announcement packet */
@@ -883,6 +898,8 @@ enum tdf_builtin_id {
 	TDF_PCM_16BIT_CHAN_RIGHT = 59,
 	/** 16bit PCM (Audio) data for both the left and right channels */
 	TDF_PCM_16BIT_CHAN_DUAL = 60,
+	/** Record of key value store data updates */
+	TDF_KVS_VALUE_CHANGED = 61,
 	/** End of builtin TDF range */
 	TDF_BUILTIN_END = 1024,
 };
@@ -946,6 +963,7 @@ enum tdf_builtin_id {
 #define _TDF_PCM_16BIT_CHAN_LEFT_TYPE         struct tdf_pcm_16bit_chan_left
 #define _TDF_PCM_16BIT_CHAN_RIGHT_TYPE        struct tdf_pcm_16bit_chan_right
 #define _TDF_PCM_16BIT_CHAN_DUAL_TYPE         struct tdf_pcm_16bit_chan_dual
+#define _TDF_KVS_VALUE_CHANGED_TYPE           struct tdf_kvs_value_changed
 
 /** Size of builtin TDF definitions */
 enum tdf_builtin_size {
@@ -1006,6 +1024,7 @@ enum tdf_builtin_size {
 	_TDF_PCM_16BIT_CHAN_LEFT_SIZE = sizeof(struct tdf_pcm_16bit_chan_left),
 	_TDF_PCM_16BIT_CHAN_RIGHT_SIZE = sizeof(struct tdf_pcm_16bit_chan_right),
 	_TDF_PCM_16BIT_CHAN_DUAL_SIZE = sizeof(struct tdf_pcm_16bit_chan_dual),
+	_TDF_KVS_VALUE_CHANGED_SIZE = sizeof(struct tdf_kvs_value_changed),
 };
 
 /** @endcond */
