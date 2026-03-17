@@ -13,6 +13,7 @@
 #include <zephyr/net/conn_mgr_connectivity.h>
 
 #include <infuse/version.h>
+#include <infuse/auto/kv_update_log.h>
 #include <infuse/auto/time_sync_log.h>
 #include <infuse/bluetooth/legacy_adv.h>
 #include <infuse/drivers/watchdog.h>
@@ -236,6 +237,9 @@ int main(void)
 	/* Initialise task runner */
 	task_runner_init(schedules, states, ARRAY_SIZE(schedules), app_tasks, app_tasks_data,
 			 ARRAY_SIZE(app_tasks));
+
+	/* Log KV store changes to storage */
+	auto_kv_update_log_configure(STORAGE_LOGGER);
 
 	/* Start auto iteration */
 	task_runner_start_auto_iterate();
