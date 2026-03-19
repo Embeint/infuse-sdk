@@ -66,6 +66,17 @@ ZTEST(epoch_time, test_time_source_valid)
 	zassert_true(epoch_time_trusted_source(TIME_SOURCE_RECOVERED | TIME_SOURCE_EPACKET, true));
 }
 
+ZTEST(epoch_time, test_time_source_precise)
+{
+	for (int i = 0; i < TIME_SOURCE_RECOVERED; i++) {
+		bool expected_precise = (i == TIME_SOURCE_GNSS) || (i == TIME_SOURCE_NTP);
+
+		zassert_equal(expected_precise, epoch_time_precise_source(i));
+		zassert_equal(expected_precise,
+			      epoch_time_precise_source(TIME_SOURCE_RECOVERED | i));
+	}
+}
+
 static void validate_unix_conversions(struct tm *expected, uint64_t gps_time, uint64_t unix_time,
 				      uint16_t subseconds)
 {

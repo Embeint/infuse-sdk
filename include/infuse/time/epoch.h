@@ -109,7 +109,7 @@ void epoch_time_register_callback(struct epoch_time_cb *cb);
  * @param source Time source from @ref epoch_time_get_source
  * @return Time source without @ref TIME_SOURCE_RECOVERED set
  */
-static inline epoch_time_source_base(enum epoch_time_source source)
+static inline enum epoch_time_source epoch_time_source_base(enum epoch_time_source source)
 {
 	return source & ~TIME_SOURCE_RECOVERED;
 }
@@ -129,6 +129,26 @@ static inline bool epoch_time_trusted_source(enum epoch_time_source source, bool
 	bool base_good = IN_RANGE(base, TIME_SOURCE_NONE + 1, TIME_SOURCE_INVALID - 1);
 
 	return base_good && (!recovered || recovered_ok);
+}
+
+/**
+ * @brief Determine whether a given time source is considered 'precise'
+ *
+ * Precise in this context means the accuracy of the time knowledge can be reasonably assumed
+ * to be within a few milliseconds.
+ *
+ * @param source Time source
+ * @return true Time source is precise
+ * @return false Time source is not precise
+ */
+static inline bool epoch_time_precise_source(enum epoch_time_source source)
+{
+	enum epoch_time_source base = epoch_time_source_base(source);
+
+	/* Delays associated with RPC and ePacket methods are not controllable
+	 * by the device.
+	 */
+	return (base == TIME_SOURCE_GNSS) || (base == TIME_SOURCE_NTP);
 }
 
 /**
