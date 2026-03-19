@@ -91,6 +91,8 @@ struct epacket_tx_metadata {
 struct epacket_rx_metadata {
 	/* Device ID in packet */
 	uint64_t packet_device_id;
+	/* Local time packet was received */
+	k_ticks_t rx_timestamp;
 	/* GPS time in packet */
 	uint32_t packet_gps_time;
 	/* Key ID used by packet */
