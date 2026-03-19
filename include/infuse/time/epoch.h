@@ -104,6 +104,17 @@ struct epoch_time_cb {
 void epoch_time_register_callback(struct epoch_time_cb *cb);
 
 /**
+ * @brief Extract the base time source (no flags) from a time source
+ *
+ * @param source Time source from @ref epoch_time_get_source
+ * @return Time source without @ref TIME_SOURCE_RECOVERED set
+ */
+static inline epoch_time_source_base(enum epoch_time_source source)
+{
+	return source & ~TIME_SOURCE_RECOVERED;
+}
+
+/**
  * @brief Determine whether a given time source should be trusted
  *
  * @param source Time source
@@ -113,7 +124,7 @@ void epoch_time_register_callback(struct epoch_time_cb *cb);
  */
 static inline bool epoch_time_trusted_source(enum epoch_time_source source, bool recovered_ok)
 {
-	enum epoch_time_source base = source & ~TIME_SOURCE_RECOVERED;
+	enum epoch_time_source base = epoch_time_source_base(source);
 	bool recovered = !!(source & TIME_SOURCE_RECOVERED);
 	bool base_good = IN_RANGE(base, TIME_SOURCE_NONE + 1, TIME_SOURCE_INVALID - 1);
 
