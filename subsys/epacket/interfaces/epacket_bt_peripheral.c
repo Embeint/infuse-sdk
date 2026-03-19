@@ -196,6 +196,7 @@ static ssize_t write_both(struct bt_conn *conn, const struct bt_gatt_attr *attr,
 	meta->interface = DEVICE_DT_INST_GET(0);
 	meta->interface_id = EPACKET_INTERFACE_BT_PERIPHERAL;
 	meta->interface_address.bluetooth = *bt_conn_get_dst(conn);
+	meta->rx_timestamp = k_uptime_ticks();
 
 #ifdef CONFIG_BT_CONN_AUTO_RSSI
 	meta->rssi = bt_conn_rssi(conn);

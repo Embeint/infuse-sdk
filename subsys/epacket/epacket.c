@@ -299,6 +299,8 @@ static void epacket_handle_rx(struct net_buf *buf)
 	LOG_DBG("%s: received %d byte packet (%d dBm)", metadata->interface->name, buf->len,
 		metadata->rssi);
 
+	__ASSERT_NO_MSG(metadata->rx_timestamp >= 0);
+
 #ifdef CONFIG_INFUSE_SECURITY
 	static uint32_t prev_key_request;
 	uint32_t uptime = k_uptime_seconds();

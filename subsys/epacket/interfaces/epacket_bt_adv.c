@@ -252,6 +252,7 @@ static void scan_cb(const bt_addr_le_t *addr, int8_t rssi, uint8_t adv_type,
 	meta->interface = DEVICE_DT_INST_GET(0);
 	meta->interface_id = EPACKET_INTERFACE_BT_ADV;
 	meta->interface_address.bluetooth = *addr;
+	meta->rx_timestamp = k_uptime_ticks();
 	meta->rssi = rssi;
 
 	/* Hand off to ePacket core */

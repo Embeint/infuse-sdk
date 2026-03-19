@@ -416,6 +416,7 @@ static struct net_buf *create_received_packet(uint8_t type, uint8_t payload_len,
 	rx_meta->interface = &dummy_bt_adv;
 	rx_meta->interface_id = EPACKET_INTERFACE_BT_ADV;
 	rx_meta->interface_address.bluetooth = bt_addr_none;
+	rx_meta->rx_timestamp = k_uptime_ticks();
 	rx_meta->rssi = -80;
 	rx_meta->flags = encrypt ? EPACKET_FLAGS_ENCRYPTION_DEVICE : 0x00;
 	rx_meta->auth = encrypt ? EPACKET_AUTH_FAILURE : EPACKET_AUTH_DEVICE;

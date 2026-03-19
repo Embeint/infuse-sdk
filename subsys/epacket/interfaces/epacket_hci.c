@@ -48,6 +48,7 @@ uint8_t infuse_hci_cmd_vs_epacket(const infuse_hci_cmd_vs_epacket_t *p_params, u
 	meta = net_buf_user_data(buf);
 	meta->interface = DEVICE_DT_GET(DT_DRV_INST(0));
 	meta->interface_id = EPACKET_INTERFACE_HCI;
+	meta->rx_timestamp = k_uptime_ticks();
 	meta->rssi = 0;
 
 	LOG_HEXDUMP_DBG(p_params, len, "RX");
@@ -143,6 +144,7 @@ static bool infuse_hci_evt_handler(struct net_buf_simple *evt_buf)
 	meta = net_buf_user_data(buf);
 	meta->interface = DEVICE_DT_GET(DT_DRV_INST(0));
 	meta->interface_id = EPACKET_INTERFACE_HCI;
+	meta->rx_timestamp = k_uptime_ticks();
 	meta->rssi = 0;
 
 	/* Push payload into buffer */

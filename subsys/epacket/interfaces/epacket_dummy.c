@@ -79,6 +79,7 @@ void epacket_dummy_receive_extra(const struct device *dev, const struct epacket_
 
 	meta->interface = dev;
 	meta->interface_id = EPACKET_INTERFACE_DUMMY;
+	meta->rx_timestamp = k_uptime_ticks();
 	meta->rssi = 0;
 
 	/* Construct payload */

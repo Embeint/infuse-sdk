@@ -247,6 +247,7 @@ static void udp_core_read_loop(void)
 		meta = net_buf_user_data(buf);
 		meta->interface = epacket_udp;
 		meta->interface_id = EPACKET_INTERFACE_UDP;
+		meta->rx_timestamp = k_uptime_ticks();
 		meta->rssi = 0;
 
 		/* Hand off to core ePacket functions */

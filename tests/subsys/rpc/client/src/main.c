@@ -61,6 +61,7 @@ static void epacket_loopback(bool require_packet)
 	rx_meta = net_buf_user_data(loop);
 	rx_meta->interface = epacket_dummy;
 	rx_meta->interface_id = EPACKET_INTERFACE_DUMMY;
+	rx_meta->rx_timestamp = k_uptime_ticks();
 
 	/* Feed back as received packet */
 	epacket_raw_receive_handler(loop);
