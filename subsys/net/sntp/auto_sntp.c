@@ -283,10 +283,13 @@ void sntp_auto_sync_point(void)
 		return;
 	}
 
-	sync_age = epoch_time_reference_age();
-	if (sync_age < CONFIG_SNTP_AUTO_RESYNC_AGE) {
-		/* SNTP not yet required */
-		return;
+	/* Don't consider a coarse time sync as a reason to avoid SNTP */
+	if (epoch_time_precise_source(epoch_time_get_source())) {
+		sync_age = epoch_time_reference_age();
+		if (sync_age < CONFIG_SNTP_AUTO_RESYNC_AGE) {
+			/* SNTP not yet required */
+			return;
+		}
 	}
 
 	/* Schedule the SNTP query */
@@ -303,9 +306,13 @@ static void reference_time_updated(enum epoch_time_source source, struct timeuti
 {
 	struct k_work_delayable *worker = user_ctx;
 
-	ARG_UNUSED(source);
 	ARG_UNUSED(old);
 	ARG_UNUSED(new);
+
+	if (!epoch_time_precise_source(source)) {
+		/* SNTP is a precise source, don't reschedule because of a coarse sync */
+		return;
+	}
 
 	/* Reschedule time sync */
 	if (k_work_delayable_is_pending(worker)) {
