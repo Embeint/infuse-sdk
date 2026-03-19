@@ -26,6 +26,7 @@
 #include <infuse/fs/kv_types.h>
 #include <infuse/tdf/tdf.h>
 #include <infuse/tdf/definitions.h>
+#include <infuse/time/epoch.h>
 
 #include "../subsys/epacket/interfaces/epacket_internal.h"
 
@@ -41,6 +42,7 @@ K_SEM_DEFINE(if_tx_result, 0, 1);
 static int if_tx_result_reason;
 K_SEM_DEFINE(downlink_watchdog_expired, 0, 1);
 static enum infuse_reboot_reason reboot_reason;
+static struct epoch_time_cb time_callback;
 
 void infuse_reboot(enum infuse_reboot_reason reason, uint32_t info1, uint32_t info2)
 {
@@ -147,10 +149,26 @@ ZTEST(epacket_udp, test_udp_auto_ack)
 	net_buf_unref(rx);
 }
 
+static void reference_time_updated(enum epoch_time_source source, struct timeutil_sync_instant old,
+				   struct timeutil_sync_instant new, void *user_ctx)
+{
+	int *time_updates = user_ctx;
+
+	zassert_equal(TIME_SOURCE_EPACKET, source);
+	*time_updates = (*time_updates) + 1;
+}
+
 ZTEST(epacket_udp, test_udp_ack)
 {
 	struct epacket_rx_metadata *rx_meta;
 	struct net_buf *rx;
+	int time_updates = 0;
+
+	time_callback.reference_time_updated = reference_time_updated;
+	time_callback.user_ctx = &time_updates;
+	epoch_time_register_callback(&time_callback);
+
+	zassert_equal(TIME_SOURCE_NONE, epoch_time_get_source());
 
 	/* Cycle the interface a few times before testing */
 	for (int i = 0; i < 4; i++) {
@@ -183,6 +201,9 @@ ZTEST(epacket_udp, test_udp_ack)
 		rx_meta = net_buf_user_data(rx);
 		zassert_equal(INFUSE_ACK, rx_meta->type);
 		net_buf_unref(rx);
+
+		/* Time should have been updated on the first loop, then never again */
+		zassert_equal(1, time_updates);
 
 		k_sleep(K_MSEC(500));
 	}
@@ -329,6 +350,8 @@ static void test_init(void *state)
 	k_sem_take(&downlink_watchdog_expired, K_NO_WAIT);
 
 	epacket_set_receive_handler(IF_UDP, rx_fifo_pusher);
+
+	epoch_time_reset();
 }
 
 static void test_after(void *fixture)
