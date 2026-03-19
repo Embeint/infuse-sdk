@@ -37,12 +37,17 @@ ZTEST(epoch_time, test_time_source_valid)
 	zassert_true(epoch_time_trusted_source(TIME_SOURCE_NTP, true));
 	zassert_true(epoch_time_trusted_source(TIME_SOURCE_RPC, false));
 	zassert_true(epoch_time_trusted_source(TIME_SOURCE_RPC, true));
+	zassert_true(epoch_time_trusted_source(TIME_SOURCE_EPACKET, false));
+	zassert_true(epoch_time_trusted_source(TIME_SOURCE_EPACKET, true));
 	zassert_false(epoch_time_trusted_source(TIME_SOURCE_RECOVERED | TIME_SOURCE_GNSS, false));
 	zassert_true(epoch_time_trusted_source(TIME_SOURCE_RECOVERED | TIME_SOURCE_GNSS, true));
 	zassert_false(epoch_time_trusted_source(TIME_SOURCE_RECOVERED | TIME_SOURCE_NTP, false));
 	zassert_true(epoch_time_trusted_source(TIME_SOURCE_RECOVERED | TIME_SOURCE_NTP, true));
 	zassert_false(epoch_time_trusted_source(TIME_SOURCE_RECOVERED | TIME_SOURCE_RPC, false));
 	zassert_true(epoch_time_trusted_source(TIME_SOURCE_RECOVERED | TIME_SOURCE_RPC, true));
+	zassert_false(
+		epoch_time_trusted_source(TIME_SOURCE_RECOVERED | TIME_SOURCE_EPACKET, false));
+	zassert_true(epoch_time_trusted_source(TIME_SOURCE_RECOVERED | TIME_SOURCE_EPACKET, true));
 }
 
 static void validate_unix_conversions(struct tm *expected, uint64_t gps_time, uint64_t unix_time,
