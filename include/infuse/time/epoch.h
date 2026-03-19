@@ -69,6 +69,8 @@ enum epoch_time_source {
 	TIME_SOURCE_NTP,
 	/* Time directly set by Remote Procedure Call */
 	TIME_SOURCE_RPC,
+	/* Time from observed ePacket headers */
+	TIME_SOURCE_EPACKET,
 	/* Unknown time source value */
 	TIME_SOURCE_INVALID,
 	/* Time has been preserved across a reboot */
