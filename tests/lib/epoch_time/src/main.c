@@ -15,6 +15,22 @@
 #include <infuse/time/timezone.h>
 #include <infuse/states.h>
 
+ZTEST(epoch_time, test_time_source_base)
+{
+	zassert_equal(TIME_SOURCE_GNSS, epoch_time_source_base(TIME_SOURCE_GNSS));
+	zassert_equal(TIME_SOURCE_GNSS,
+		      epoch_time_source_base(TIME_SOURCE_RECOVERED | TIME_SOURCE_GNSS));
+	zassert_equal(TIME_SOURCE_NTP, epoch_time_source_base(TIME_SOURCE_NTP));
+	zassert_equal(TIME_SOURCE_NTP,
+		      epoch_time_source_base(TIME_SOURCE_RECOVERED | TIME_SOURCE_NTP));
+	zassert_equal(TIME_SOURCE_RPC, epoch_time_source_base(TIME_SOURCE_RPC));
+	zassert_equal(TIME_SOURCE_RPC,
+		      epoch_time_source_base(TIME_SOURCE_RECOVERED | TIME_SOURCE_RPC));
+	zassert_equal(TIME_SOURCE_EPACKET, epoch_time_source_base(TIME_SOURCE_EPACKET));
+	zassert_equal(TIME_SOURCE_EPACKET,
+		      epoch_time_source_base(TIME_SOURCE_RECOVERED | TIME_SOURCE_EPACKET));
+}
+
 ZTEST(epoch_time, test_time_source_valid)
 {
 	zassert_false(epoch_time_trusted_source(TIME_SOURCE_NONE, false));
