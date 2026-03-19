@@ -518,6 +518,17 @@ static void epacket_udp_decrypt_res(const struct device *dev, struct net_buf *bu
 		return;
 	}
 
+	/* If we don't have any time knowledge, use the server timestamp */
+	if (epoch_time_source_base(epoch_time_get_source()) == TIME_SOURCE_NONE) {
+		struct timeutil_sync_instant rx_sync_instant = {
+			.ref = epoch_time_from(meta->packet_gps_time, 0),
+			.local = meta->rx_timestamp,
+		};
+
+		LOG_INF("Setting local time from server");
+		epoch_time_set_reference(TIME_SOURCE_EPACKET, &rx_sync_instant);
+	}
+
 	/* Update ACK state */
 	udp_state.last_receive = k_uptime_seconds();
 	udp_state.ack_countdown = CONFIG_EPACKET_INTERFACE_UDP_ACK_COUNTDOWN;
