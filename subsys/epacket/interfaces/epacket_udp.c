@@ -509,26 +509,26 @@ static void epacket_udp_decrypt_res(const struct device *dev, struct net_buf *bu
 {
 	struct epacket_rx_metadata *meta = net_buf_user_data(buf);
 
-	if (decrypt_res == 0) {
-		/* Update ACK state */
-		udp_state.last_receive = k_uptime_seconds();
-		udp_state.ack_countdown = CONFIG_EPACKET_INTERFACE_UDP_ACK_COUNTDOWN;
-#ifdef CONFIG_EPACKET_INTERFACE_UDP_DOWNLINK_WATCHDOG
-		/* Feed the downlink watchdog */
-		k_work_reschedule(
-			&udp_state.downlink_watchdog,
-			K_SECONDS(CONFIG_EPACKET_INTERFACE_UDP_DOWNLINK_WATCHDOG_TIMEOUT));
-#endif /* CONFIG_EPACKET_INTERFACE_UDP_DOWNLINK_WATCHDOG */
-
-		/* Handle pending ACKs */
-		if (meta->type == INFUSE_ACK) {
-			tx_pending_ack_handle(dev, buf);
-		}
-	} else {
+	if (decrypt_res != 0) {
 		/* Decryption failed, try to send a KEY_IDS packet to notify the cloud side
 		 * that device/network keys may have changed.
 		 */
 		(void)epacket_send_key_ids(dev, K_NO_WAIT);
+		return;
+	}
+
+	/* Update ACK state */
+	udp_state.last_receive = k_uptime_seconds();
+	udp_state.ack_countdown = CONFIG_EPACKET_INTERFACE_UDP_ACK_COUNTDOWN;
+#ifdef CONFIG_EPACKET_INTERFACE_UDP_DOWNLINK_WATCHDOG
+	/* Feed the downlink watchdog */
+	k_work_reschedule(&udp_state.downlink_watchdog,
+			  K_SECONDS(CONFIG_EPACKET_INTERFACE_UDP_DOWNLINK_WATCHDOG_TIMEOUT));
+#endif /* CONFIG_EPACKET_INTERFACE_UDP_DOWNLINK_WATCHDOG */
+
+	/* Handle pending ACKs */
+	if (meta->type == INFUSE_ACK) {
+		tx_pending_ack_handle(dev, buf);
 	}
 }
 
