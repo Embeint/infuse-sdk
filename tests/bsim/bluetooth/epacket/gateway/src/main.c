@@ -337,6 +337,7 @@ static int observe_peers(bt_addr_le_t *addr, uint8_t num)
 	uint8_t observed = 0;
 
 	epacket_set_receive_handler(epacket_bt_adv, epacket_bt_adv_receive_handler);
+	LOG_INF("Starting Bluetooth peer observation");
 	if (epacket_receive(epacket_bt_adv, K_FOREVER) < 0) {
 		return -1;
 	}
@@ -649,6 +650,9 @@ static void main_gateway_rpcs(void)
 		return;
 	}
 	net_buf_unref(buf);
+
+	/* Small delay to allow disconnect to complete */
+	k_sleep(K_MSEC(10));
 
 	/* Connect timeout, disconnect should error */
 	connect.conn_timeout_ms = 10;
@@ -1245,6 +1249,7 @@ static int check_info_response(struct net_buf *buf, struct rpc_application_info_
 	struct epacket_received_common_header *common_header;
 	struct epacket_received_decrypted_header *decr_header;
 	struct rpc_application_info_response *info_rsp;
+	uint32_t expected_uptime;
 
 	frame = net_buf_pull_mem(buf, sizeof(struct epacket_dummy_frame));
 	if (frame->type != INFUSE_RECEIVED_EPACKET) {
@@ -1277,10 +1282,12 @@ static int check_info_response(struct net_buf *buf, struct rpc_application_info_
 		return -1;
 	}
 	/* This only works because both devices have the same timebase due to the
-	 * simulation
+	 * simulation. Still allow for the previous second in case we ran across a boundary.
 	 */
-	if (info_rsp->uptime != k_uptime_seconds()) {
-		FAIL("Unexpected uptime\n");
+	expected_uptime = k_uptime_seconds();
+	if ((info_rsp->uptime != expected_uptime) && (info_rsp->uptime != (expected_uptime - 1))) {
+		FAIL("Unexpected uptime (%d != [%d, %d])\n", info_rsp->uptime, expected_uptime,
+		     expected_uptime - 1);
 		return -1;
 	}
 	return 0;
@@ -1757,24 +1764,24 @@ static void main_gateway_remote_rpc_forward_auto_conn_fail(void)
 	terminated = net_buf_pull_mem(buf, sizeof(*terminated));
 	terminated_addr = net_buf_pull_mem(buf, sizeof(*terminated_addr));
 	if (dummy_header_tx->type != INFUSE_EPACKET_CONN_TERMINATED) {
-		FAIL("Packet is not INFUSE_EPACKET_CONN_TERMINATED\n");
+		FAIL("Packet is not INFUSE_EPACKET_CONN_TERMINATED %d\n", dummy_header_tx->type);
 		return;
 	}
 	if (dummy_header_tx->auth != EPACKET_AUTH_DEVICE) {
-		FAIL("Unexpected auth\n");
+		FAIL("Unexpected auth (%d)\n", dummy_header_tx->auth);
 		return;
 	}
 	if (terminated->interface != EPACKET_INTERFACE_BT_CENTRAL) {
-		FAIL("Unexpected interface\n");
+		FAIL("Unexpected interface (%d)\n", terminated->interface);
 		return;
 	}
-	printk("REASON %d\n", terminated->reason);
 	if (terminated->reason != BT_HCI_ERR_UNKNOWN_CONN_ID) {
-		FAIL("Unexpected reason\n");
+		FAIL("Unexpected reason (%d)\n", terminated->reason);
 		return;
 	}
 	if (terminated_addr->type != addr.type) {
-		FAIL("Unexpected interface address type\n");
+		FAIL("Unexpected interface address type (%d != %d)\n", terminated_addr->type,
+		     addr.type);
 		return;
 	}
 	if (memcmp(terminated_addr->addr, addr.a.val, 6) != 0) {
@@ -1951,7 +1958,6 @@ static int run_data_sender(bt_addr_le_t *addr, uint16_t rpc, uint32_t size, bool
 	start_time = k_uptime_get_32();
 
 	while (expected_offset != total_data_len) {
-		printk("%d %d\n", expect_response, total_data_len);
 		if (slow_uplink) {
 			/* Free transmit buffers very slowly.
 			 * Without rate limiting, this would fail with dropped buffers.
@@ -1990,16 +1996,18 @@ static int run_data_sender(bt_addr_le_t *addr, uint16_t rpc, uint32_t size, bool
 			decr_header = net_buf_pull_mem(
 				buf, sizeof(struct epacket_received_decrypted_header));
 			if (decr_header->type != INFUSE_RPC_DATA) {
-				FAIL("Unexpected packet type\n");
+				FAIL("Unexpected packet type (%d)\n", decr_header->type);
 				return -1;
 			}
 			data_header = net_buf_pull_mem(buf, sizeof(struct infuse_rpc_data));
 			if (data_header->request_id != request_id) {
-				FAIL("Unexpected request ID\n");
+				FAIL("Unexpected request ID (%08x != %08x)\n",
+				     data_header->request_id, request_id);
 				return -1;
 			}
 			if (data_header->offset != expected_offset) {
-				FAIL("Unexpected data offset\n");
+				FAIL("Unexpected data offset (%d != %d)\n", data_header->offset,
+				     expected_offset);
 				return -1;
 			}
 			data_len = common_header->len_encrypted - sizeof(*common_header) -
@@ -2284,6 +2292,7 @@ static void main_gateway_bt_file_copy(void)
 		}
 
 		/* Push packet at dummy interface */
+		printk("Queuing file_copy_basic command\n");
 		epacket_dummy_receive(epacket_dummy, &dummy_header, &file_copy_request,
 				      sizeof(file_copy_request));
 
