@@ -60,6 +60,7 @@ int infuse_dfu_image_erase_wrapped(const struct flash_area *fa, size_t image_len
 				   infuse_progress_cb_t progress_cb, bool mcuboot_trailer)
 {
 	const struct device *dev = flash_area_get_device(fa);
+	const struct flash_parameters *fparams;
 	struct flash_pages_info page;
 	size_t remaining;
 	size_t max_chunk;
@@ -78,6 +79,12 @@ int infuse_dfu_image_erase_wrapped(const struct flash_area *fa, size_t image_len
 		return -EINVAL;
 	}
 	page_offset = fa->fa_off + image_len - 1;
+
+	/* Check whether an explicit erase is needed or whether we can write directly */
+	fparams = flash_get_parameters(dev);
+	if (!(flash_params_get_erase_cap(fparams) & FLASH_ERASE_C_EXPLICIT)) {
+		return 0;
+	}
 
 	/* align requested erase size to the erase-block-size */
 	rc = flash_get_page_info_by_offs(dev, page_offset, &page);
