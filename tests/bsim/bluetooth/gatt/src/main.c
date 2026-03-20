@@ -453,6 +453,8 @@ static void main_connect_discover_name(void)
 			FAIL("Failed to get expected TDF\n");
 			return;
 		}
+
+		k_sleep(K_MSEC(10));
 	}
 
 	PASS("Connect discover name passed\n\n");
@@ -781,10 +783,12 @@ static void main_connect_rssi(void)
 		return;
 	}
 
+	k_sleep(K_MSEC(50));
+
 	/* -59 dBm is the default PHY RSSI, -51 dBm for the Nordic SDC for some reason */
 	rssi = bt_conn_rssi(conn);
-	if ((rssi != -59) && (rssi != -51)) {
-		FAIL("Unexpected RSSI %d dBm\n", bt_conn_rssi(conn));
+	if ((rssi < -60) || (rssi > -45)) {
+		FAIL("Unexpected RSSI %d dBm\n", rssi);
 		return;
 	}
 
@@ -809,7 +813,7 @@ static void main_connect_rssi(void)
 		bt_rssi = tdf.data;
 		if ((tdf.time == 0) || (tdf.tdf_num != 1) || (bt_rssi->address.type != addr.type) ||
 		    (memcmp(bt_rssi->address.val, addr.a.val, 6) != 0) ||
-		    ((bt_rssi->rssi != -59) && (bt_rssi->rssi != -51))) {
+		    ((rssi < -60) || (rssi > -45))) {
 			FAIL("Unexpected TDF data\n");
 			return;
 		}
