@@ -126,7 +126,7 @@ uint8_t epacket_bt_gatt_notify_recv_func(struct bt_conn *conn,
 		return BT_GATT_ITER_CONTINUE;
 	}
 
-	LOG_DBG("Received %d bytes", length);
+	LOG_ERR("Received %d bytes", length);
 	rx_buffer = epacket_alloc_rx(K_NO_WAIT);
 	if (rx_buffer == NULL) {
 		LOG_WRN("Buffer claim timeout");
@@ -404,6 +404,7 @@ static int infuse_send_rate_request(struct bt_conn *conn, void *data, size_t len
 		return -EINVAL;
 	}
 
+	LOG_ERR("WRITE RATE LIMIT: %d bytes", len);
 	/* Write the request to the device */
 	rc = bt_gatt_write_without_response(conn, handle, data, len, false);
 	if (rc != 0) {

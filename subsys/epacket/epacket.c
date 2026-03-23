@@ -188,6 +188,8 @@ void epacket_rate_limit_tx(k_ticks_t *last_call, uint16_t bytes_transmitted)
 	atomic_t delay = atomic_clear(&rate_limit_delay);
 	atomic_t throughput_bps = 1024 * atomic_get(&rate_limit_throughput);
 
+	LOG_ERR("%d %d", delay, throughput_bps);
+
 	if (throughput_bps) {
 		k_ticks_t now = k_uptime_ticks();
 		uint32_t bits_sent = 8 * bytes_transmitted;
@@ -262,6 +264,28 @@ int epacket_receive(const struct device *dev, k_timeout_t timeout)
 
 void epacket_raw_receive_handler(struct net_buf *buf)
 {
+	/* Quick processing of rate-limit requests.
+	 * These don't require any decryption, and should be actioned ASAP (jumping the queue).
+	 */
+	if (buf->data[0] == EPACKET_RATE_LIMIT_REQ_MAGIC) {
+		if (buf->len == sizeof(struct epacket_rate_limit_req)) {
+			struct epacket_rate_limit_req *req = (void *)buf->data;
+
+			LOG_ERR("Rate limit delay %d ms", req->delay_ms);
+			atomic_add(&rate_limit_delay, req->delay_ms);
+			net_buf_unref(buf);
+			return;
+		}
+		if (buf->len == sizeof(struct epacket_rate_throughput_req)) {
+			struct epacket_rate_throughput_req *req = (void *)buf->data;
+
+			LOG_ERR("Rate limit throughput to %d kbps", req->target_throughput_kbps);
+			atomic_set(&rate_limit_throughput, req->target_throughput_kbps);
+			net_buf_unref(buf);
+			return;
+		}
+	}
+
 	/* Push packet at processing queue */
 	k_fifo_put(&epacket_rx_queue, buf);
 }
@@ -322,26 +346,6 @@ static void epacket_handle_rx(struct net_buf *buf)
 		return;
 	}
 #endif /* CONFIG_INFUSE_SECURITY */
-
-	/* Rate limit requests */
-	if (buf->data[0] == EPACKET_RATE_LIMIT_REQ_MAGIC) {
-		if (buf->len == sizeof(struct epacket_rate_limit_req)) {
-			struct epacket_rate_limit_req *req = (void *)buf->data;
-
-			LOG_DBG("Rate limit delay %d ms", req->delay_ms);
-			atomic_set(&rate_limit_delay, req->delay_ms);
-			net_buf_unref(buf);
-			return;
-		}
-		if (buf->len == sizeof(struct epacket_rate_throughput_req)) {
-			struct epacket_rate_throughput_req *req = (void *)buf->data;
-
-			LOG_INF("Rate limit throughput to %d kbps", req->target_throughput_kbps);
-			atomic_set(&rate_limit_throughput, req->target_throughput_kbps);
-			net_buf_unref(buf);
-			return;
-		}
-	}
 
 	/* Payload decoding */
 	switch (metadata->interface_id) {

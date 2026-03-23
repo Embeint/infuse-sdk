@@ -98,15 +98,17 @@ static void receive_forward(const struct device *backhaul, struct net_buf *buf)
 	}
 
 #ifdef CONFIG_EPACKET_INTERFACE_BT_CENTRAL
+	LOG_ERR("%d/%d", epacket_num_buffers_free_tx(), CONFIG_EPACKET_RATE_LIMIT_BUFFER_THRESHOLD);
 	if (epacket_num_buffers_free_tx() <= CONFIG_EPACKET_RATE_LIMIT_BUFFER_THRESHOLD) {
 		/* Running out of buffers, request a pause */
-		LOG_DBG("Requesting rate limit");
+		LOG_ERR("Requesting rate limit");
 		epacket_bt_gatt_rate_limit_request(CONFIG_EPACKET_RATE_LIMIT_REQ_DURATION_MS);
 	}
 #endif /* CONFIG_EPACKET_INTERFACE_BT_CENTRAL */
 
 	K_SPINLOCK(&pending_lock) {
 		if (pending_buffer) {
+			LOG_ERR("Pending space: %d", net_buf_tailroom(pending_buffer));
 			/* We already have a buffer holding data */
 			if (epacket_received_packet_append(pending_buffer, buf) == 0) {
 				/* Append succeeded, buf has been freed */

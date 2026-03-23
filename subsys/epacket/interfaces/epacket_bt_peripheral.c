@@ -186,7 +186,7 @@ static ssize_t write_both(struct bt_conn *conn, const struct bt_gatt_attr *attr,
 		return BT_GATT_ERR(BT_ATT_ERR_INSUFFICIENT_RESOURCES);
 	}
 
-	LOG_DBG("%s: Wrote %d bytes", bt_addr_le_str(bt_conn_get_dst(conn)), len);
+	LOG_ERR("%s: Wrote %d bytes", bt_addr_le_str(bt_conn_get_dst(conn)), len);
 
 	/* Copy payload across */
 	net_buf_add_mem(rx_buffer, buf, len);
@@ -270,6 +270,7 @@ static void epacket_bt_peripheral_send(const struct device *dev, struct net_buf 
 		attr = &infuse_svc.attrs[CHRC_DATA];
 	}
 
+	LOG_ERR("Notify %d bytes", buf->len);
 	/* Forward the payload to all/specified connections */
 	rc = bt_gatt_notify(conn, attr, buf->data, buf->len);
 	if (rc == -ENOTCONN) {
