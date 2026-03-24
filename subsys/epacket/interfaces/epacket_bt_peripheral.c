@@ -260,6 +260,7 @@ static void epacket_bt_peripheral_send(const struct device *dev, struct net_buf 
 	case INFUSE_RPC_DATA:
 	case INFUSE_RPC_DATA_ACK:
 	case INFUSE_RPC_RSP:
+	case INFUSE_KEY_IDS:
 		attr = &infuse_svc.attrs[CHRC_COMMAND];
 		break;
 #ifdef CONFIG_LOG_BACKEND_EPACKET_BT
