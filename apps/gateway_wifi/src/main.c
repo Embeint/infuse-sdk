@@ -8,6 +8,10 @@
 
 #include <stdio.h>
 
+#ifdef CONFIG_SOC_NRF5340_CPUAPP
+#include <nrfx_clock.h>
+#endif /* CONFIG_SOC_NRF5340_CPUAPP */
+
 #include <zephyr/kernel.h>
 #include <zephyr/device.h>
 #include <zephyr/logging/log.h>
@@ -38,6 +42,17 @@ int main(void)
 	const struct device *epacket_bt_central = DEVICE_DT_GET(DT_NODELABEL(epacket_bt_central));
 	const struct device *epacket_serial = DEVICE_DT_GET(DT_NODELABEL(epacket_serial));
 	const struct device *epacket_udp = DEVICE_DT_GET(DT_NODELABEL(epacket_udp));
+
+#ifdef CONFIG_SOC_NRF5340_CPUAPP
+	int err;
+
+	/* For optimal performance, the CPU frequency needs to be set to 128 MHz */
+	err = nrfx_clock_divider_set(NRF_CLOCK_DOMAIN_HFCLK, NRF_CLOCK_HFCLK_DIV_1);
+	err -= NRFX_ERROR_BASE_NUM;
+	if (err != 0) {
+		LOG_WRN("Failed to set 128 MHz: %d", err);
+	}
+#endif /* CONFIG_SOC_NRF5340_CPUAPP */
 
 	/* Constant ePacket flags */
 	epacket_global_flags_set(EPACKET_FLAGS_CLOUD_FORWARDING | EPACKET_FLAGS_CLOUD_SELF);
