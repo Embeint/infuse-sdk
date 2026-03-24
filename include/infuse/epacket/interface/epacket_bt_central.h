@@ -66,13 +66,14 @@ struct epacket_bt_gatt_connect_params {
  * @param conn Output connection object on success
  * @param params ePacket connection parameters
  * @param security Output security parameters of the peer device on success
+ * @param already True if the connection already existed
  *
  * @retval 0 on success, *conn is valid
  * @retval >0 on HCI error, *conn is invalid
  * @retval <0 on Zephyr error, *conn is invalid
  */
 int epacket_bt_gatt_connect(struct bt_conn **conn, struct epacket_bt_gatt_connect_params *params,
-			    struct epacket_read_response *security);
+			    struct epacket_read_response *security, bool *already);
 
 /**
  * @brief Infuse-IoT Bluetooth GATT characteristic notification handle function

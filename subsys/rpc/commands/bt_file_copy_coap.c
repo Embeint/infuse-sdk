@@ -58,6 +58,7 @@ struct net_buf *rpc_command_bt_file_copy_coap(struct net_buf *request)
 		.subscribe_data = false,
 		.subscribe_logging = false,
 	};
+	bool already;
 
 	memcpy(coap_req.server_address, req->server_address, sizeof(req->server_address));
 
@@ -90,7 +91,7 @@ struct net_buf *rpc_command_bt_file_copy_coap(struct net_buf *request)
 	struct bt_conn *conn;
 
 	LOG_INF("Initiating connection");
-	rc = epacket_bt_gatt_connect(&conn, &connect_params, &security_info);
+	rc = epacket_bt_gatt_connect(&conn, &connect_params, &security_info, &already);
 	if (rc != 0) {
 		LOG_INF("Connection failed (%d)", rc);
 		rc = -ENOTCONN;

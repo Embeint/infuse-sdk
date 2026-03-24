@@ -378,6 +378,7 @@ static void main_gateway_connect(void)
 	};
 	struct epacket_read_response security_info;
 	struct bt_conn *conn = NULL, *conn2 = NULL;
+	bool already;
 	int8_t rssi;
 	int rc;
 
@@ -392,16 +393,24 @@ static void main_gateway_connect(void)
 		params.subscribe_commands = i % 2;
 		params.subscribe_data = i % 2;
 		params.subscribe_logging = i % 2;
-		rc = epacket_bt_gatt_connect(&conn, &params, &security_info);
+		rc = epacket_bt_gatt_connect(&conn, &params, &security_info, &already);
 		if (rc != 0) {
 			FAIL("Failed to connect to peer\n");
 			return;
 		}
+		if (already) {
+			FAIL("Thought connection already present\n");
+			return;
+		}
 
 		/* Same connection again should pass with RC == 1 */
-		rc = epacket_bt_gatt_connect(&conn2, &params, &security_info);
+		rc = epacket_bt_gatt_connect(&conn2, &params, &security_info, &already);
 		if (rc != 0) {
 			FAIL("Failed to detect existing connection\n");
+			return;
+		}
+		if (!already) {
+			FAIL("Didn't detect already present connection\n");
 			return;
 		}
 		bt_conn_unref(conn2);
@@ -445,6 +454,7 @@ static void main_gateway_connect_multi(void)
 	struct epacket_read_response security_info;
 	struct bt_conn *conn1 = NULL, *conn2 = NULL;
 	bt_addr_le_t addr[2];
+	bool already;
 	int rc;
 
 	common_init();
@@ -456,17 +466,25 @@ static void main_gateway_connect_multi(void)
 	for (int i = 0; i < 3; i++) {
 		/* Connect to first device */
 		params.peer = addr[0];
-		rc = epacket_bt_gatt_connect(&conn1, &params, &security_info);
+		rc = epacket_bt_gatt_connect(&conn1, &params, &security_info, &already);
 		if (rc != 0) {
 			FAIL("Failed to connect to first peer\n");
+			return;
+		}
+		if (already) {
+			FAIL("Thought connection already present\n");
 			return;
 		}
 
 		/* Connect to the second device */
 		params.peer = addr[1];
-		rc = epacket_bt_gatt_connect(&conn2, &params, &security_info);
+		rc = epacket_bt_gatt_connect(&conn2, &params, &security_info, &already);
 		if (rc != 0) {
 			FAIL("Failed to connect to second peer %d\n", rc);
+			return;
+		}
+		if (already) {
+			FAIL("Thought connection already present\n");
 			return;
 		}
 
@@ -507,6 +525,7 @@ static void main_gateway_connect_then_scan(void)
 	};
 	struct epacket_read_response security_info;
 	struct bt_conn *conn = NULL;
+	bool already;
 	int rc;
 
 	common_init();
@@ -516,7 +535,7 @@ static void main_gateway_connect_then_scan(void)
 	}
 
 	/* Initiate connection */
-	rc = epacket_bt_gatt_connect(&conn, &params, &security_info);
+	rc = epacket_bt_gatt_connect(&conn, &params, &security_info, &already);
 	if (rc != 0) {
 		FAIL("Failed to connect to peer\n");
 		return;
@@ -717,6 +736,7 @@ static void main_gateway_connect_recv(void)
 	struct epacket_rx_metadata *meta;
 	struct bt_conn *conn = NULL;
 	struct net_buf *buf;
+	bool already;
 	int rc;
 
 	common_init();
@@ -731,7 +751,7 @@ static void main_gateway_connect_recv(void)
 		params.subscribe_data = i % 2;
 
 		/* Connect to peer device */
-		rc = epacket_bt_gatt_connect(&conn, &params, &security_info);
+		rc = epacket_bt_gatt_connect(&conn, &params, &security_info, &already);
 		if (rc != 0) {
 			FAIL("Failed to connect to peer\n");
 			return;
@@ -797,6 +817,7 @@ static void main_gateway_connect_idle_tx_timeout(void)
 	union epacket_interface_address if_address;
 	struct bt_conn *conn = NULL;
 	struct net_buf *buf;
+	bool already;
 	int rc;
 
 	common_init();
@@ -816,7 +837,7 @@ static void main_gateway_connect_idle_tx_timeout(void)
 	/* Connect to peer device with an idle timeout.
 	 * Don't subscribe to cmd responses by default to test the TX path.
 	 */
-	rc = epacket_bt_gatt_connect(&conn, &params, &security_info);
+	rc = epacket_bt_gatt_connect(&conn, &params, &security_info, &already);
 	if (rc != 0) {
 		FAIL("Failed to connect to peer\n");
 		return;
@@ -862,6 +883,7 @@ static void main_gateway_connect_idle_rx_timeout(void)
 	};
 	struct epacket_read_response security_info;
 	struct bt_conn *conn = NULL;
+	bool already;
 	int rc;
 
 	common_init();
@@ -873,7 +895,7 @@ static void main_gateway_connect_idle_rx_timeout(void)
 	}
 
 	/* Connect to peer device with a timeout that we expect to expire */
-	rc = epacket_bt_gatt_connect(&conn, &params, &security_info);
+	rc = epacket_bt_gatt_connect(&conn, &params, &security_info, &already);
 	if (rc != 0) {
 		FAIL("Failed to connect to peer\n");
 		return;
@@ -892,7 +914,7 @@ static void main_gateway_connect_idle_rx_timeout(void)
 	/* Connect to peer device with a timeout that should not expire (peer sends at 1Hz) */
 	params.inactivity_timeout = K_MSEC(1500);
 	params.subscribe_data = true;
-	rc = epacket_bt_gatt_connect(&conn, &params, &security_info);
+	rc = epacket_bt_gatt_connect(&conn, &params, &security_info, &already);
 
 	if (rc != 0) {
 		FAIL("Failed to connect to peer %d\n", rc);
@@ -931,6 +953,7 @@ static void main_gateway_connect_idle_rx_log_ignored(void)
 	};
 	struct epacket_read_response security_info;
 	struct bt_conn *conn = NULL;
+	bool already;
 	int rc;
 
 	common_init();
@@ -942,7 +965,7 @@ static void main_gateway_connect_idle_rx_log_ignored(void)
 	}
 
 	/* Connect to peer device with a long timeout, subscribed to logging characteristic */
-	rc = epacket_bt_gatt_connect(&conn, &params, &security_info);
+	rc = epacket_bt_gatt_connect(&conn, &params, &security_info, &already);
 	if (rc != 0) {
 		FAIL("Failed to connect to peer\n");
 		return;
@@ -977,6 +1000,7 @@ static void main_gateway_connect_absolute_timeout(void)
 	};
 	struct epacket_read_response security_info;
 	struct bt_conn *conn = NULL;
+	bool already;
 	int rc;
 
 	common_init();
@@ -988,7 +1012,7 @@ static void main_gateway_connect_absolute_timeout(void)
 	}
 
 	/* Connect to peer device with a long timeout, subscribed to all characteristics */
-	rc = epacket_bt_gatt_connect(&conn, &params, &security_info);
+	rc = epacket_bt_gatt_connect(&conn, &params, &security_info, &already);
 	if (rc != 0) {
 		FAIL("Failed to connect to peer\n");
 		return;
@@ -1026,6 +1050,7 @@ static void main_gateway_connect_absolute_timeout_update(void)
 	};
 	struct epacket_read_response security_info;
 	struct bt_conn *conn = NULL;
+	bool already;
 	int rc;
 
 	common_init();
@@ -1037,7 +1062,7 @@ static void main_gateway_connect_absolute_timeout_update(void)
 	}
 
 	/* Connect to peer device with a long timeout, subscribed to all characteristics */
-	rc = epacket_bt_gatt_connect(&conn, &params, &security_info);
+	rc = epacket_bt_gatt_connect(&conn, &params, &security_info, &already);
 	if (rc != 0) {
 		FAIL("Failed to connect to peer\n");
 		return;
@@ -1053,7 +1078,7 @@ static void main_gateway_connect_absolute_timeout_update(void)
 		}
 
 		/* Refresh the connection */
-		rc = epacket_bt_gatt_connect(&conn, &params, &security_info);
+		rc = epacket_bt_gatt_connect(&conn, &params, &security_info, &already);
 		if (rc != 0) {
 			FAIL("Failed to refresh peer connection\n");
 			return;
@@ -1092,6 +1117,7 @@ static void main_gateway_connect_absolute_timeout_cancel(void)
 	};
 	struct epacket_read_response security_info;
 	struct bt_conn *conn = NULL;
+	bool already;
 	int rc;
 
 	common_init();
@@ -1103,7 +1129,7 @@ static void main_gateway_connect_absolute_timeout_cancel(void)
 	}
 
 	/* Connect to peer device with a long timeout, subscribed to all characteristics*/
-	rc = epacket_bt_gatt_connect(&conn, &params, &security_info);
+	rc = epacket_bt_gatt_connect(&conn, &params, &security_info, &already);
 	if (rc != 0) {
 		FAIL("Failed to connect to peer\n");
 		return;
@@ -1142,6 +1168,7 @@ static void main_gateway_remote_rpc_client(void)
 	struct epacket_read_response security_info;
 	union epacket_interface_address address, wrong;
 	struct bt_conn *conn = NULL;
+	bool already;
 	struct net_buf *buf;
 	int rc;
 
@@ -1160,7 +1187,7 @@ static void main_gateway_remote_rpc_client(void)
 
 	for (int i = 0; i < 4; i++) {
 		/* Connect to peer device */
-		rc = epacket_bt_gatt_connect(&conn, &params, &security_info);
+		rc = epacket_bt_gatt_connect(&conn, &params, &security_info, &already);
 		if (rc != 0) {
 			FAIL("Failed to connect to peer\n");
 			return;
@@ -2184,6 +2211,7 @@ static void main_gateway_bt_file_copy(void)
 	struct bt_conn *conn = NULL;
 	struct net_buf *buf;
 	uint32_t flash_crc;
+	bool already;
 	int rc;
 
 	common_init();
@@ -2277,7 +2305,7 @@ static void main_gateway_bt_file_copy(void)
 		file_copy_request.pipelining = (i > 0) ? 2 : 0;
 
 		/* Create the Bluetooth connection */
-		rc = epacket_bt_gatt_connect(&conn, &conn_params, &security_info);
+		rc = epacket_bt_gatt_connect(&conn, &conn_params, &security_info, &already);
 		if (rc != 0) {
 			FAIL("Failed to create connection\n");
 			return;
