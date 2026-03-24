@@ -19,25 +19,59 @@
 #include <zephyr/net/net_mgmt.h>
 #include <zephyr/net/wifi_mgmt.h>
 #include <zephyr/net/conn_mgr_connectivity.h>
+#include <zephyr/zbus/zbus.h>
 
 #include <infuse/auto/bluetooth_conn_log.h>
 #include <infuse/auto/wifi_conn_log.h>
+#include <infuse/bluetooth/legacy_adv.h>
 #include <infuse/epacket/interface.h>
 #include <infuse/epacket/interface/epacket_udp.h>
 #include <infuse/epacket/packet.h>
 #include <infuse/data_logger/high_level/tdf.h>
 #include <infuse/tdf/definitions.h>
 #include <infuse/drivers/watchdog.h>
+#include <infuse/zbus/channels.h>
 
-#include <infuse/task_runner/tasks/tdf_logger.h>
+#include <infuse/task_runner/runner.h>
+#include <infuse/task_runner/tasks/infuse_tasks.h>
 
 LOG_MODULE_REGISTER(app, LOG_LEVEL_INF);
+
+static const struct task_schedule schedules[] = {
+	{
+		.task_id = TASK_ID_TDF_LOGGER,
+		.validity = TASK_VALID_ALWAYS,
+		.periodicity_type = TASK_PERIODICITY_LOCKOUT,
+		.periodicity.lockout.lockout_s = 5,
+		.task_args.infuse.tdf_logger =
+			{
+				.loggers = TDF_DATA_LOGGER_UDP,
+				.tdfs = TASK_TDF_LOGGER_LOG_ANNOUNCE | TASK_TDF_LOGGER_LOG_NET_CONN,
+			},
+	},
+	{
+		.task_id = TASK_ID_TDF_LOGGER_ALT1,
+		.validity = TASK_VALID_PERMANENTLY_RUNS,
+		.task_args.infuse.tdf_logger =
+			{
+				.loggers = TDF_DATA_LOGGER_BT_ADV,
+				.logging_period_ms = 4500,
+				.random_delay_ms = 1000,
+				.tdfs = TASK_TDF_LOGGER_LOG_ANNOUNCE | TASK_TDF_LOGGER_LOG_NET_CONN,
+			},
+	},
+};
+
+TASK_SCHEDULE_STATES_DEFINE(states, schedules);
+TASK_RUNNER_TASKS_DEFINE(app_tasks, app_tasks_data, (TDF_LOGGER_TASK, NULL),
+			 (TDF_LOGGER_ALT1_TASK, NULL));
+
+INFUSE_ZBUS_CHAN_DEFINE(INFUSE_ZBUS_CHAN_BATTERY);
 
 GATEWAY_HANDLER_DEFINE(udp_backhaul_handler, DEVICE_DT_GET(DT_NODELABEL(epacket_udp)));
 
 int main(void)
 {
-	const struct device *tdf_logger_udp = DEVICE_DT_GET(DT_NODELABEL(tdf_logger_udp));
 	const struct device *epacket_bt_adv = DEVICE_DT_GET(DT_NODELABEL(epacket_bt_adv));
 	const struct device *epacket_bt_central = DEVICE_DT_GET(DT_NODELABEL(epacket_bt_central));
 	const struct device *epacket_serial = DEVICE_DT_GET(DT_NODELABEL(epacket_serial));
@@ -65,6 +99,9 @@ int main(void)
 	auto_wifi_conn_log_configure(TDF_DATA_LOGGER_SERIAL,
 				     AUTO_WIFI_LOG_ALL | AUTO_WIFI_LOG_EVENTS_FLUSH);
 
+	/* Start legacy Bluetooth advertising */
+	bluetooth_legacy_advertising_run();
+
 	/* Start watchdog */
 	infuse_watchdog_start();
 
@@ -86,13 +123,14 @@ int main(void)
 	conn_mgr_all_if_up(true);
 	conn_mgr_all_if_connect(true);
 
-	for (;;) {
-		task_tdf_logger_manual_run(TDF_DATA_LOGGER_UDP, 0, TASK_TDF_LOGGER_LOG_ANNOUNCE,
-					   NULL);
-		tdf_data_logger_flush(TDF_DATA_LOGGER_UDP);
+	/* Initialise task runner */
+	task_runner_init(schedules, states, ARRAY_SIZE(schedules), app_tasks, app_tasks_data,
+			 ARRAY_SIZE(app_tasks));
 
-		LOG_INF("Sent uptime %d on %s", k_uptime_seconds(), tdf_logger_udp->name);
-		k_sleep(K_SECONDS(1));
-	}
+	/* Start auto iteration */
+	task_runner_start_auto_iterate();
+
+	/* Nothing further to do */
+	k_sleep(K_FOREVER);
 	return 0;
 }
