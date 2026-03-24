@@ -547,7 +547,7 @@ class release_build(WestCommand):
             },
             "features": {
                 "bluetooth": "CONFIG_BT" in build_configs,
-                "bluetooth_controller": "CONFIG_BT_CTLR" in build_configs,
+                "bluetooth_controller": "CONFIG_HAS_BT_CTLR" in build_configs,
                 "wifi": "CONFIG_WIFI" in build_configs,
                 "lte": "CONFIG_NRF_MODEM_LIB" in build_configs,
                 "mcumgr": "CONFIG_MCUMGR" in build_configs,
