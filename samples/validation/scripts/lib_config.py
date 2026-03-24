@@ -218,8 +218,8 @@ class ValidationConfig:
 
     def _core_validate(self) -> None:
         # Validate the provided configuration file
-        CONFIG_SCHEMA_PATH = str(pathlib.Path(__file__).parent / "config-schema.yaml")
-        with open(CONFIG_SCHEMA_PATH, encoding="utf-8") as f:
+        SCHEMA_PATH = str(pathlib.Path(__file__).parent / "config-schema.yaml")
+        with open(SCHEMA_PATH, encoding="utf-8") as f:
             config_schema = yaml.safe_load(f)
 
         try:
