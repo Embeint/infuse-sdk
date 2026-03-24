@@ -120,7 +120,8 @@ struct epacket_interface_api {
 	 *
 	 * @param dev Interface device
 	 * @param buf Packet buffer
-	 * @param decrypt_result 0 if successfully decrypted, -1 otherwise
+	 * @param decrypt_result 0 if successfully decrypted, -2 on bad device key identifier, -1
+	 *                       otherwise
 	 */
 	void (*decrypt_result)(const struct device *dev, struct net_buf *buf, int decrypt_result);
 	/**

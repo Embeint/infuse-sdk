@@ -116,6 +116,7 @@ int epacket_versioned_v0_decrypt(struct net_buf *buf, uint8_t interface_key)
 	uint8_t epacket_key_id;
 	psa_status_t status;
 	size_t out_len;
+	int err = -1;
 
 	/* Not enough data in buffer */
 	if (buf->len <= sizeof(struct epacket_v0_versioned_frame_format) + 16) {
@@ -153,6 +154,9 @@ int epacket_versioned_v0_decrypt(struct net_buf *buf, uint8_t interface_key)
 	psa_key_id = epacket_key_id_get(epacket_key_id, meta->key_identifier,
 					frame.nonce.gps_time / SECONDS_PER_DAY);
 	if (psa_key_id == PSA_KEY_ID_NULL) {
+		if (meta->auth == EPACKET_AUTH_DEVICE) {
+			err = -2;
+		}
 		goto error;
 	}
 
@@ -182,7 +186,7 @@ int epacket_versioned_v0_decrypt(struct net_buf *buf, uint8_t interface_key)
 	return 0;
 error:
 	meta->auth = EPACKET_AUTH_FAILURE;
-	return -1;
+	return err;
 }
 
 int epacket_unversioned_v0_encrypt(struct net_buf *buf, uint8_t interface_key)
@@ -274,6 +278,7 @@ int epacket_unversioned_v0_decrypt(struct net_buf *buf, uint8_t interface_key)
 	uint8_t epacket_key_id;
 	psa_status_t status;
 	size_t out_len;
+	int err = -1;
 
 	/* Not enough data in buffer */
 	if (buf->len <= sizeof(struct epacket_v0_unversioned_frame_format) + 16) {
@@ -307,6 +312,9 @@ int epacket_unversioned_v0_decrypt(struct net_buf *buf, uint8_t interface_key)
 	psa_key_id = epacket_key_id_get(epacket_key_id, meta->key_identifier,
 					frame.nonce.gps_time / SECONDS_PER_DAY);
 	if (psa_key_id == PSA_KEY_ID_NULL) {
+		if (meta->auth == EPACKET_AUTH_DEVICE) {
+			err = -2;
+		}
 		goto error;
 	}
 
@@ -336,7 +344,7 @@ int epacket_unversioned_v0_decrypt(struct net_buf *buf, uint8_t interface_key)
 	return 0;
 error:
 	meta->auth = EPACKET_AUTH_FAILURE;
-	return -1;
+	return err;
 }
 
 int epacket_unversioned_v0_tx_decrypt(struct net_buf *buf, uint8_t interface_key)

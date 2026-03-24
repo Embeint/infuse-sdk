@@ -327,7 +327,7 @@ ZTEST(epacket_serial, test_encrypt_decrypt)
 		zassert_not_null(in);
 		rc = epacket_serial_decrypt(rx_copy_buf);
 		meta = net_buf_user_data(rx_copy_buf);
-		zassert_equal(-1, rc);
+		zassert_true(rc < 0);
 		zassert_equal(EPACKET_AUTH_FAILURE, meta->auth);
 		zassert_equal(in->len, rx_copy_buf->len);
 		zassert_mem_equal(in->data, rx_copy_buf->data, in->len);
