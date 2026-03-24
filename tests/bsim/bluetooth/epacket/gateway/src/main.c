@@ -20,6 +20,7 @@
 #include <infuse/data_logger/high_level/tdf.h>
 #include <infuse/tdf/definitions.h>
 #include <infuse/epacket/interface.h>
+#include <infuse/epacket/interface/common.h>
 #include <infuse/epacket/interface/epacket_bt_adv.h>
 #include <infuse/epacket/interface/epacket_bt_central.h>
 #include <infuse/epacket/interface/epacket_dummy.h>
@@ -56,6 +57,7 @@ static K_SEM_DEFINE(epacket_adv_received, 0, 1);
 static K_SEM_DEFINE(bt_connected, 0, 1);
 static K_SEM_DEFINE(bt_disconnected, 0, 1);
 static K_SEM_DEFINE(reboot_request, 0, 1);
+static uint64_t adv_infuse_id;
 static bt_addr_le_t adv_device;
 static atomic_t received_packets;
 
@@ -106,6 +108,7 @@ static void epacket_bt_adv_receive_handler(struct net_buf *buf)
 
 	LOG_INF("RX Type: %02X Flags: %04X Auth: %d Len: %d RSSI: %ddBm", meta->type, meta->flags,
 		meta->auth, buf->len, meta->rssi);
+	adv_infuse_id = meta->packet_device_id;
 	adv_device = meta->interface_address.bluetooth;
 	atomic_inc(&received_packets);
 
@@ -1878,6 +1881,100 @@ static void main_gateway_remote_rpc_forward_auto_conn_auth_fail(void)
 	PASS("RPC auto-conn forwarder with auth failures passed\n");
 }
 
+static void main_gateway_remote_rpc_forward_auto_conn_bad_key_id(void)
+{
+	const struct device *epacket_dummy = DEVICE_DT_GET(DT_NODELABEL(epacket_dummy));
+	const struct device *epacket_central = DEVICE_DT_GET(DT_NODELABEL(epacket_bt_central));
+	struct k_fifo *response_queue = epacket_dummmy_transmit_fifo_get();
+	struct epacket_received_common_header *common_header;
+	struct epacket_received_decrypted_header *decr_header;
+	union epacket_interface_address address;
+	struct epacket_dummy_frame *dummy_frame;
+	struct net_buf *buf;
+	bt_addr_le_t addr;
+
+	common_init();
+	if (observe_peers(&addr, 1) < 0) {
+		FAIL("Failed to observe peer\n");
+		return;
+	}
+
+	epacket_set_receive_handler(epacket_dummy, dummy_gateway_handler);
+	epacket_set_receive_handler(epacket_central, dummy_gateway_handler);
+
+	/* Create and encrypt the GATT RPC */
+	struct rpc_application_info_request info_request = {
+		.header.command_id = RPC_ID_APPLICATION_INFO,
+		.header.request_id = 0xAA345678,
+	};
+
+	address.bluetooth = addr;
+	buf = create_info_request(epacket_central, &info_request);
+	if (buf == NULL) {
+		return;
+	}
+
+	/* Manually override the auth info to DEVICE and the destination address.
+	 * This will obviously not decrypt, but should be picked up by the remote as
+	 * a request with a bad key identifier (our own key id).
+	 */
+	struct epacket_v0_versioned_frame_format *frame = (void *)buf->data;
+
+	frame->associated_data.flags |= EPACKET_FLAGS_ENCRYPTION_DEVICE;
+	frame->associated_data.device_id_upper = adv_infuse_id >> 32;
+	frame->nonce.device_id_lower = adv_infuse_id & UINT32_MAX;
+
+	/* Construct ePacket forwarding packet */
+	struct epacket_dummy_frame dummy_header = {
+		.type = INFUSE_EPACKET_FORWARD_AUTO_CONN,
+		.auth = EPACKET_AUTH_DEVICE,
+	};
+	struct forwarding_bt {
+		struct epacket_forward_auto_conn_header forward_header;
+		uint8_t bt_addr[7];
+	} __packed hdr;
+
+	hdr.forward_header.interface = EPACKET_INTERFACE_BT_CENTRAL;
+	hdr.forward_header.length = sizeof(hdr) + buf->len;
+	hdr.forward_header.flags = EPACKET_FORWARD_AUTO_CONN_DC_NOTIFICATION;
+	hdr.forward_header.conn_timeout = 2;
+	hdr.forward_header.conn_idle_timeout = 5;
+	hdr.forward_header.conn_absolute_timeout = 5;
+	hdr.bt_addr[0] = addr.type;
+	memcpy(hdr.bt_addr + 1, addr.a.val, 6);
+
+	/* Push this packet many times */
+	epacket_dummy_receive_extra(epacket_dummy, &dummy_header, &hdr, sizeof(hdr), buf->data,
+				    buf->len);
+	net_buf_unref(buf);
+
+	/* Expect an INFUSE_KEY_IDS response */
+	buf = k_fifo_get(response_queue, K_SECONDS(3));
+	if (buf == NULL) {
+		FAIL("Failed to receive INFUSE_KEY_IDS packet\n");
+		return;
+	}
+	dummy_frame = net_buf_pull_mem(buf, sizeof(struct epacket_dummy_frame));
+	if (dummy_frame->type != INFUSE_RECEIVED_EPACKET) {
+		FAIL("Unexpected packet type (%d)\n", dummy_frame->type);
+		return;
+	}
+	common_header = net_buf_pull_mem(buf, sizeof(struct epacket_received_common_header));
+	if (common_header->interface != EPACKET_INTERFACE_BT_CENTRAL) {
+		FAIL("Unexpected interface (%d)\n", common_header->interface);
+		return;
+	}
+	net_buf_pull_mem(buf, sizeof(struct epacket_interface_address_bt_le));
+	decr_header = net_buf_pull_mem(buf, sizeof(struct epacket_received_decrypted_header));
+	if (decr_header->type != INFUSE_KEY_IDS) {
+		FAIL("Unexpected packet type (%d)\n", decr_header->type);
+		return;
+	}
+
+	net_buf_unref(buf);
+	PASS("RPC auto-conn forwarder with bad key identifier passed\n");
+}
+
 static int run_data_sender(bt_addr_le_t *addr, uint16_t rpc, uint32_t size, bool slow_uplink,
 			   bool prioritise)
 {
@@ -2623,6 +2720,13 @@ static const struct bst_test_instance epacket_gateway[] = {
 		.test_pre_init_f = test_init,
 		.test_tick_f = test_tick,
 		.test_main_f = main_gateway_remote_rpc_forward_auto_conn_auth_fail,
+	},
+	{
+		.test_id = "epacket_bt_gateway_remote_rpc_forward_auto_conn_bad_key_id",
+		.test_descr = "INFUSE_EPACKET_FORWARD_AUTO_CONN with a bad key identifier",
+		.test_pre_init_f = test_init,
+		.test_tick_f = test_tick,
+		.test_main_f = main_gateway_remote_rpc_forward_auto_conn_bad_key_id,
 	},
 	{
 		.test_id = "epacket_bt_gateway_remote_rpc_forward_auto_conn_rate_throughput",
