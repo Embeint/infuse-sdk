@@ -146,7 +146,7 @@ static void test_encrypt_decrypt_auth(enum epacket_auth auth)
 		zassert_not_null(in);
 		rc = epacket_udp_decrypt(rx_copy_buf);
 		meta = net_buf_user_data(rx_copy_buf);
-		zassert_equal(-1, rc);
+		zassert_true(rc < 0);
 		zassert_equal(EPACKET_AUTH_FAILURE, meta->auth);
 		zassert_equal(in->len, rx_copy_buf->len);
 		zassert_mem_equal(in->data, rx_copy_buf->data, in->len);
@@ -201,7 +201,7 @@ static void test_encrypt_decrypt_tx_auth(enum epacket_auth auth)
 		zassert_not_null(tx_copy_buf);
 		tx_copy_buf->data[i]++;
 		rc = epacket_udp_tx_decrypt(tx_copy_buf);
-		zassert_equal(-1, rc);
+		zassert_true(rc < 0);
 		net_buf_unref(tx_copy_buf);
 	}
 

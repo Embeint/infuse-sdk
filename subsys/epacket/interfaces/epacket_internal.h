@@ -79,6 +79,7 @@ int epacket_serial_encrypt(struct net_buf *buf);
  *
  * @retval 0 on success
  * @retval -1 on failure
+ * @retval -2 on bad device key identifier
  */
 int epacket_serial_decrypt(struct net_buf *buf);
 
@@ -128,6 +129,7 @@ int epacket_bt_adv_encrypt(struct net_buf *buf);
  *
  * @retval 0 on success
  * @retval -1 on failure
+ * @retval -2 on bad device key identifier
  */
 int epacket_bt_adv_decrypt(struct net_buf *buf);
 
@@ -158,6 +160,7 @@ int epacket_bt_gatt_encrypt(struct net_buf *buf);
  *
  * @retval 0 on success
  * @retval -1 on failure
+ * @retval -2 on bad device key identifier
  */
 int epacket_bt_gatt_decrypt(struct net_buf *buf);
 
@@ -178,6 +181,7 @@ int epacket_udp_encrypt(struct net_buf *buf);
  *
  * @retval 0 on success
  * @retval -1 on failure
+ * @retval -2 on bad device key identifier
  */
 int epacket_udp_decrypt(struct net_buf *buf);
 
@@ -229,6 +233,7 @@ int epacket_versioned_v0_encrypt(struct net_buf *buf, uint8_t interface_key);
  *
  * @retval 0 on success
  * @retval -1 on failure
+ * @retval -2 on bad device key identifier
  */
 int epacket_versioned_v0_decrypt(struct net_buf *buf, uint8_t interface_key);
 
@@ -251,6 +256,7 @@ int epacket_unversioned_v0_encrypt(struct net_buf *buf, uint8_t interface_key);
  *
  * @retval 0 on success
  * @retval -1 on failure
+ * @retval -2 on bad device key identifier
  */
 int epacket_unversioned_v0_decrypt(struct net_buf *buf, uint8_t interface_key);
 
