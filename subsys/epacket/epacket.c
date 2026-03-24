@@ -391,6 +391,14 @@ static void epacket_handle_rx(struct net_buf *buf)
 		/* Notify backend of decryption result */
 		api->decrypt_result(metadata->interface, buf, rc);
 	}
+#ifdef CONFIG_INFUSE_SECURITY
+	if (rc == -2) {
+		/* Bad device key identifer, notify the sender */
+		if (epacket_send_key_ids(metadata->interface, K_NO_WAIT) != 0) {
+			LOG_WRN("Unable to respond to key ID request");
+		}
+	}
+#endif /* CONFIG_INFUSE_SECURITY */
 
 	/* Run any external interface receive callbacks
 	 * (safe as callback may trigger unregistration)
