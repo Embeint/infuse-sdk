@@ -118,6 +118,7 @@ static int ensure_bt_connection(union epacket_interface_address *address, uint8_
 	struct bt_conn *conn = NULL;
 	struct conn_state *state;
 	bool throughput_limit = false;
+	bool already;
 	int conn_idx;
 	int rc;
 
@@ -137,7 +138,7 @@ static int ensure_bt_connection(union epacket_interface_address *address, uint8_
 #endif /* CONFIG_KV_STORE_KEY_BLUETOOTH_THROUGHPUT_LIMIT */
 
 	/* Create the connection */
-	rc = epacket_bt_gatt_connect(&conn, &params, &security_info);
+	rc = epacket_bt_gatt_connect(&conn, &params, &security_info, &already);
 	if (rc != 0) {
 		/* Connection failed */
 		return rc;

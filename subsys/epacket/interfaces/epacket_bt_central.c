@@ -248,7 +248,7 @@ static void bt_conn_timeout(struct k_work *work)
 
 int epacket_bt_gatt_connect(struct bt_conn **conn_out,
 			    struct epacket_bt_gatt_connect_params *params,
-			    struct epacket_read_response *security)
+			    struct epacket_read_response *security, bool *already)
 {
 	const struct bt_conn_le_create_param create_param = {
 		.interval = BT_GAP_SCAN_FAST_INTERVAL_MIN,
@@ -268,6 +268,7 @@ int epacket_bt_gatt_connect(struct bt_conn **conn_out,
 	/* Determine if connection already exists */
 	conn = bt_conn_lookup_addr_le(BT_ID_DEFAULT, &params->peer);
 	if (conn != NULL) {
+		*already = true;
 		idx = bt_conn_index(conn);
 		s = &infuse_conn[idx];
 #ifdef CONFIG_MEMFAULT_INFUSE_METRICS_BT_CONNECTIONS
@@ -277,6 +278,7 @@ int epacket_bt_gatt_connect(struct bt_conn **conn_out,
 	}
 
 	/* Create the connection */
+	*already = false;
 	conn = NULL;
 	LOG_INF("Creating connection (timeout %d ms)", params->conn_timeout_ms);
 	rc = bt_conn_le_create(&params->peer, &create_param, &params->conn_params, &conn);

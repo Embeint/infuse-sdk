@@ -38,10 +38,11 @@ struct net_buf *rpc_command_bt_connect_infuse(struct net_buf *request)
 	};
 	struct epacket_read_response security_info;
 	struct bt_conn *conn;
+	bool already;
 	int rc;
 
 	/* Run the connection process */
-	rc = epacket_bt_gatt_connect(&conn, &params, &security_info);
+	rc = epacket_bt_gatt_connect(&conn, &params, &security_info, &already);
 	if (rc == 0) {
 		/* Copy results */
 		memcpy(rsp.cloud_public_key, security_info.cloud_public_key,
