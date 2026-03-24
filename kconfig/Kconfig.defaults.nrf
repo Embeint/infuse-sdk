@@ -225,18 +225,4 @@ configdefault UART_20_NRF_TX_BUFFER_SIZE
 configdefault SPI_NRFX_WAKE_TIMEOUT_US
 	default 2000 if BT_SPI
 
-# Symbols used by SDK-NRF libraries but not defined upstream
-config ZEPHYR_NRF_MODULE
-	bool
-config SOC_SERIES_NRF71X
-	bool
-config NORDIC_SECURITY_BACKEND
-	bool
-config UNITY
-	bool
-config FOTA_DOWNLOAD
-	bool
-config DATE_TIME
-	bool
-
 endif # SOC_FAMILY_NORDIC_NRF

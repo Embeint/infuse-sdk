@@ -1,0 +1,18 @@
+# This file exists purely to define symbols that may come from other modules (NCS, etc)
+# and would otherwise be caught by the `check_compliance.py` Kconfig linting.
+#
+# DO NOT include this file in the main Kconfig tree
+
+# Symbols used by SDK-NRF libraries but not defined upstream
+config ZEPHYR_NRF_MODULE
+	bool
+config SOC_SERIES_NRF71X
+	bool
+config NORDIC_SECURITY_BACKEND
+	bool
+config UNITY
+	bool
+config FOTA_DOWNLOAD
+	bool
+config DATE_TIME
+	bool
