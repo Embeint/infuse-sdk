@@ -14,6 +14,7 @@
 
 #include <zephyr/kernel.h>
 #include <zephyr/device.h>
+#include <zephyr/drivers/gpio.h>
 #include <zephyr/logging/log.h>
 #include <zephyr/net/net_if.h>
 #include <zephyr/net/net_mgmt.h>
@@ -70,12 +71,27 @@ INFUSE_ZBUS_CHAN_DEFINE(INFUSE_ZBUS_CHAN_BATTERY);
 
 GATEWAY_HANDLER_DEFINE(udp_backhaul_handler, DEVICE_DT_GET(DT_NODELABEL(epacket_udp)));
 
+#if DT_NODE_HAS_STATUS_OKAY(DT_ALIAS(led0))
+static const struct gpio_dt_spec led0 = GPIO_DT_SPEC_GET(DT_ALIAS(led0), gpios);
+#endif
+
+static void udp_interface_state(uint16_t current_max_payload, void *user_ctx)
+{
+#if DT_NODE_HAS_STATUS_OKAY(DT_ALIAS(led0))
+	/* Set LED according to WiFi connection state */
+	(void)gpio_pin_set_dt(&led0, current_max_payload > 0);
+#endif /* DT_NODE_HAS_STATUS_OKAY(DT_ALIAS(led0)) */
+}
+
 int main(void)
 {
 	const struct device *epacket_bt_adv = DEVICE_DT_GET(DT_NODELABEL(epacket_bt_adv));
 	const struct device *epacket_bt_central = DEVICE_DT_GET(DT_NODELABEL(epacket_bt_central));
 	const struct device *epacket_serial = DEVICE_DT_GET(DT_NODELABEL(epacket_serial));
 	const struct device *epacket_udp = DEVICE_DT_GET(DT_NODELABEL(epacket_udp));
+	struct epacket_interface_cb udp_interface_cb = {
+		.interface_state = udp_interface_state,
+	};
 
 #ifdef CONFIG_SOC_NRF5340_CPUAPP
 	int err;
@@ -87,6 +103,10 @@ int main(void)
 		LOG_WRN("Failed to set 128 MHz: %d", err);
 	}
 #endif /* CONFIG_SOC_NRF5340_CPUAPP */
+
+#if DT_NODE_HAS_STATUS_OKAY(DT_ALIAS(led0))
+	(void)gpio_pin_configure_dt(&led0, GPIO_OUTPUT_INACTIVE);
+#endif /* DT_NODE_HAS_STATUS_OKAY(DT_ALIAS(led0)) */
 
 	/* Constant ePacket flags */
 	epacket_global_flags_set(EPACKET_FLAGS_CLOUD_FORWARDING | EPACKET_FLAGS_CLOUD_SELF);
@@ -101,6 +121,9 @@ int main(void)
 
 	/* Start legacy Bluetooth advertising */
 	bluetooth_legacy_advertising_run();
+
+	/* Setup UDP callbacks */
+	epacket_register_callback(epacket_udp, &udp_interface_cb);
 
 	/* Start watchdog */
 	infuse_watchdog_start();
