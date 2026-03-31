@@ -14,7 +14,7 @@ manifest:
 
   projects:
     - name: zephyr
-      revision: e2159df1ad8e4e0a70c7274e5ece14f220026172
+      revision: embeint-v4.4.0
       # Limit imported repositories to reduce clone time
       import:
         name-allowlist:
@@ -32,16 +32,17 @@ manifest:
           - open-amp
           - segger
           - nrf_wifi
+          - tf-psa-crypto
           - tinycrypt
           - trusted-firmware-m
           - picolibc
           - zcbor
     - name: mcuboot
-      revision: 9b33a6d77ca98f73903e6055eb72589761fcfa40
+      revision: embeint-v4.4.0
       path: bootloader/mcuboot
     - name: sdk-nrf
       path: modules/nrfconnect/sdk-nrf
-      revision: 8b1debd1fdd12e93d8321e4d52cc96cc19578777
+      revision: feature/v3.3.0
       import: true
     - name: memfault-firmware-sdk
       path: modules/lib/memfault
