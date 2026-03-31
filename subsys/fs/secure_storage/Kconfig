@@ -8,6 +8,7 @@ config INFUSE_SECURE_STORAGE
 	depends on KV_STORE
 	select MBEDTLS
 	select MBEDTLS_PSA_CRYPTO_C
+	select MBEDTLS_PSA_CRYPTO_STORAGE_C
 	select HWINFO
 
 endchoice

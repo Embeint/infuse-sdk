@@ -110,6 +110,12 @@ configdefault PSA_WANT_ALG_ECDSA
 	default y if !BUILD_WITH_TFM
 configdefault PSA_WANT_ALG_JPAKE
 	default y if !BUILD_WITH_TFM
+configdefault PSA_WANT_ALG_SHA_256
+	default y if !BUILD_WITH_TFM
+configdefault PSA_WANT_KEY_TYPE_AES
+	default y if !BUILD_WITH_TFM
+configdefault PSA_WANT_ALG_CBC_NO_PADDING
+	default y if !BUILD_WITH_TFM
 endif # INFUSE_COAP && !NRF_MODEM_LIB
 
 # Zephyr networking
