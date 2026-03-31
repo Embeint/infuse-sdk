@@ -14,7 +14,7 @@ manifest:
 
   projects:
     - name: zephyr
-      revision: 42272e5572d85f2b2a02a604f85d2ddac1e8bb1a
+      revision: bc0712b4e49ab128c4ea0cb1dc153d99e5cab825
       # Limit imported repositories to reduce clone time
       import:
         name-allowlist:
@@ -29,19 +29,21 @@ manifest:
           - loramac-node
           - fatfs
           - mbedtls
+          - mbedtls-3.6 # Required for TF-M build until TF-M jumps to v2.3
           - open-amp
           - segger
           - nrf_wifi
+          - tf-psa-crypto
           - tinycrypt
           - trusted-firmware-m
           - picolibc
           - zcbor
     - name: mcuboot
-      revision: 9b33a6d77ca98f73903e6055eb72589761fcfa40
+      revision: d19b3925abbd11d5ca0a819cdced8c278ca96fb3
       path: bootloader/mcuboot
     - name: sdk-nrf
       path: modules/nrfconnect/sdk-nrf
-      revision: 8b1debd1fdd12e93d8321e4d52cc96cc19578777
+      revision: 88ea8b334803984be1b5d83659d040f772f954e2
       import: true
     - name: memfault-firmware-sdk
       path: modules/lib/memfault
