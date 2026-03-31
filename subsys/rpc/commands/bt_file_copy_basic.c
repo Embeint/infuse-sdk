@@ -90,7 +90,7 @@ int rpc_command_bt_file_copy_basic_run(struct rpc_bt_file_copy_basic_request *re
 	if (req->file_idx != 0) {
 		LOG_WRN("Multiple file storage not yet supported");
 	}
-	partition_id = FIXED_PARTITION_ID(file_partition);
+	partition_id = PARTITION_ID(file_partition);
 
 	/* Validate we are connected to the device before starting */
 	conn = bt_conn_lookup_addr_le(BT_ID_DEFAULT, &bluetooth_addr);

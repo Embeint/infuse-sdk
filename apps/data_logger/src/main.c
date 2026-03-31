@@ -189,7 +189,7 @@ static void dfu_progress_cb(uint32_t copied, uint32_t total)
 static void dfu_exfat_run(void)
 {
 	const struct device *logger = DEVICE_DT_GET_ONE(embeint_data_logger_exfat);
-	uint8_t upgrade_partition = FIXED_PARTITION_ID(slot1_partition);
+	uint8_t upgrade_partition = PARTITION_ID(slot1_partition);
 	struct infuse_version upgrade_version;
 
 	if (dfu_exfat_app_upgrade_exists(logger, &upgrade_version) == 1) {

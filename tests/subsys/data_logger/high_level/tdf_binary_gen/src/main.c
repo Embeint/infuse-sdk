@@ -135,7 +135,7 @@ static bool test_flash_erase(const void *global_state)
 	const struct flash_area *area;
 
 	/* Erase flash at start of test */
-	flash_area_open(DT_FIXED_PARTITION_ID(DT_NODELABEL(storage)), &area);
+	flash_area_open(DT_PARTITION_ID(DT_NODELABEL(storage)), &area);
 	flash_area_erase(area, 0, area->fa_size);
 	flash_area_close(area);
 	return true;

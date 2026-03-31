@@ -2324,7 +2324,7 @@ static void main_gateway_bt_file_copy(void)
 	/* Write random data to the file_partition */
 	const struct flash_area *fa;
 
-	flash_area_open(FIXED_PARTITION_ID(file_partition), &fa);
+	flash_area_open(PARTITION_ID(file_partition), &fa);
 	sys_rand_get(mem_buffer, sizeof(mem_buffer));
 	for (int i = 0; i < 8096; i += sizeof(mem_buffer)) {
 		flash_area_write(fa, i, mem_buffer, sizeof(mem_buffer));
