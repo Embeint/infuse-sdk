@@ -1,5 +1,6 @@
 board:
   name: tauro2
+  full_name: Tauro 2
   vendor: embeint
   socs:
   - name: nrf9151
