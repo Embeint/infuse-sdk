@@ -71,7 +71,7 @@ int logger_exfat_init(const struct device *dev);
 ZTEST(dfu_exfat, test_dfu_image_find)
 {
 	const struct device *logger = DEVICE_DT_GET(DT_NODELABEL(data_logger_exfat));
-	int output_partition = FIXED_PARTITION_ID(slot1_partition);
+	int output_partition = PARTITION_ID(slot1_partition);
 	struct infuse_version upgrade_version;
 	char disk_path[64];
 	const char *disk;

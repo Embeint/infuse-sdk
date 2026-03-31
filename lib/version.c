@@ -34,7 +34,7 @@ struct infuse_version application_version_get(void)
 	}
 
 	/* Prefer version as reported by mcuboot */
-	rc = boot_read_bank_header(FIXED_PARTITION_ID(slot0_partition), &header, sizeof(header));
+	rc = boot_read_bank_header(PARTITION_ID(slot0_partition), &header, sizeof(header));
 	if ((rc == 0) && (header.mcuboot_version == 1)) {
 		cached_ver = header.h.v1.sem_ver;
 		cached = true;
