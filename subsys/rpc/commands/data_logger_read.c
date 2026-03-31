@@ -132,7 +132,7 @@ static int do_read(struct common_state *state)
 		}
 	}
 	/* Flush final buffers */
-	if ((rc == 0) && (data_buf != NULL)) {
+	if (data_buf != NULL) {
 		/* Update sent data CRC (payload only, not the header )*/
 		state->sent_crc = crc32_ieee_update(state->sent_crc, data_buf->data + sizeof(*data),
 						    data_buf->len - sizeof(*data));
