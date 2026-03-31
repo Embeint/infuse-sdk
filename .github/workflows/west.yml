@@ -23,7 +23,7 @@ jobs:
   west-extensions:
     runs-on: self-hosted
     container:
-      image: ghcr.io/zephyrproject-rtos/ci-repo-cache:v0.28.6.20251003
+      image: ghcr.io/zephyrproject-rtos/ci-repo-cache:v0.29.1.20260327
       options: '--entrypoint /bin/bash'
       volumes:
         - /repo-cache/embeint:/github/cache/embeint
