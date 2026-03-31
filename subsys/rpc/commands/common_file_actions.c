@@ -27,17 +27,17 @@
 #include "common_file_actions.h"
 
 #ifdef CONFIG_INFUSE_DFU_HELPERS
-#if FIXED_PARTITION_EXISTS(slot1_partition)
+#if PARTITION_EXISTS(slot1_partition)
 #define SUPPORT_APP_IMG 1
 #ifdef CONFIG_INFUSE_CPATCH
-#if FIXED_PARTITION_EXISTS(file_partition)
+#if PARTITION_EXISTS(file_partition)
 #define SUPPORT_APP_CPATCH 1
-#endif /* FIXED_PARTITION_EXISTS(file_partition) */
+#endif /* PARTITION_EXISTS(file_partition) */
 #endif /* CONFIG_INFUSE_CPATCH*/
-#endif /* FIXED_PARTITION_EXISTS(slot1_partition) */
-#if FIXED_PARTITION_EXISTS(file_partition)
+#endif /* PARTITION_EXISTS(slot1_partition) */
+#if PARTITION_EXISTS(file_partition)
 #define SUPPORT_FILE_COPY 1
-#endif /* FIXED_PARTITION_EXISTS(file_partition) */
+#endif /* PARTITION_EXISTS(file_partition) */
 #endif /* CONFIG_INFUSE_DFU_HELPERS */
 
 static __maybe_unused uint8_t
@@ -140,8 +140,8 @@ static int common_file_actions_stream_writer_init(struct rpc_common_file_actions
 
 #define STREAM_WRITER_INIT(ctx, partition, offset, length, crc, trailer)                           \
 	common_file_actions_stream_writer_init(                                                    \
-		ctx, FIXED_PARTITION_ID(partition), FIXED_PARTITION_DEVICE(partition),             \
-		FIXED_PARTITION_OFFSET(partition) + offset, length, crc, trailer)
+		ctx, PARTITION_ID(partition), PARTITION_DEVICE(partition),                         \
+		PARTITION_OFFSET(partition) + offset, length, crc, trailer)
 
 #endif /* defined(SUPPORT_APP_IMG) || defined(SUPPORT_APP_CPATCH) || defined(SUPPORT_FILE_COPY) */
 
@@ -164,7 +164,7 @@ int rpc_common_file_actions_start(struct rpc_common_file_actions_ctx *ctx,
 		break;
 #ifdef SUPPORT_APP_IMG
 	case RPC_ENUM_FILE_ACTION_APP_IMG:
-		offset = boot_get_image_start_offset(FIXED_PARTITION_ID(slot1_partition));
+		offset = boot_get_image_start_offset(PARTITION_ID(slot1_partition));
 		rc = STREAM_WRITER_INIT(ctx, slot1_partition, offset, length, crc, true);
 		break;
 #endif /* SUPPORT_APP_IMG */
@@ -264,7 +264,7 @@ static int validate_cpatch(struct rpc_common_file_actions_ctx *ctx)
 	struct cpatch_header header;
 	int rc;
 
-	pm_flash_area_open(FIXED_PARTITION_ID(slot0_partition), &fa_original);
+	pm_flash_area_open(PARTITION_ID(slot0_partition), &fa_original);
 
 	/* Start patch process */
 	rc = cpatch_patch_start(fa_original, ctx->fa, &header);
@@ -285,12 +285,12 @@ static int finish_cpatch(struct rpc_common_file_actions_ctx *ctx)
 	uint8_t *mem;
 	int rc;
 
-	rc = pm_flash_area_open(FIXED_PARTITION_ID(slot0_partition), &fa_original);
+	rc = pm_flash_area_open(PARTITION_ID(slot0_partition), &fa_original);
 	if (rc < 0) {
 		/* Nothing to cleanup */
 		return rc;
 	}
-	rc = pm_flash_area_open(FIXED_PARTITION_ID(slot1_partition), &fa_output);
+	rc = pm_flash_area_open(PARTITION_ID(slot1_partition), &fa_output);
 	if (rc < 0) {
 		/* Close the original FA, nothing else to cleanup */
 		pm_flash_area_close(fa_original);
@@ -330,9 +330,9 @@ static int finish_cpatch(struct rpc_common_file_actions_ctx *ctx)
 	/* Limit buffer size to common flash erase size */
 	mem_size = MIN(mem_size, 4096);
 	/* Required offset of the image in the flash area */
-	flash_offset = FIXED_PARTITION_OFFSET(slot1_partition) +
-		       boot_get_image_start_offset(FIXED_PARTITION_ID(slot1_partition));
-	rc = stream_flash_init(&stream_ctx, FIXED_PARTITION_DEVICE(slot1_partition), mem, mem_size,
+	flash_offset = PARTITION_OFFSET(slot1_partition) +
+		       boot_get_image_start_offset(PARTITION_ID(slot1_partition));
+	rc = stream_flash_init(&stream_ctx, PARTITION_DEVICE(slot1_partition), mem, mem_size,
 			       flash_offset, out_len, NULL);
 	__ASSERT_NO_MSG(rc == 0);
 

@@ -233,7 +233,7 @@ ZTEST(rpc_command_coap_download, test_download)
 	const struct flash_area *fa;
 
 	/* Ensure consistent starting point */
-	flash_area_open(FIXED_PARTITION_ID(slot1_partition), &fa);
+	flash_area_open(PARTITION_ID(slot1_partition), &fa);
 	flash_area_erase(fa, 0, fa->fa_size);
 	flash_area_close(fa);
 
@@ -349,7 +349,7 @@ ZTEST(rpc_command_coap_download, test_download_cpatch)
 	const struct flash_area *fa_dst;
 
 	/* Clear any previous state in the original image slot */
-	zassert_equal(0, flash_area_open(FIXED_PARTITION_ID(slot0_partition), &fa_dst));
+	zassert_equal(0, flash_area_open(PARTITION_ID(slot0_partition), &fa_dst));
 	zassert_equal(0, flash_area_erase(fa_dst, 0, fa_dst->fa_size));
 	flash_area_close(fa_dst);
 
@@ -365,8 +365,8 @@ ZTEST(rpc_command_coap_download, test_download_cpatch)
 	expect_coap_download_response(21, 0, 18940, 0xE58FF061);
 
 	/* Copy the base image into partition0 */
-	flash_area_copy_wrapped(FIXED_PARTITION_ID(slot0_partition),
-				FIXED_PARTITION_ID(slot1_partition), 18940);
+	flash_area_copy_wrapped(PARTITION_ID(slot0_partition), PARTITION_ID(slot1_partition),
+				18940);
 
 	/* Patch file should download and apply cleanly now */
 	send_download_command(22, "coap.dev.infuse-iot.com", 5684, 0,
