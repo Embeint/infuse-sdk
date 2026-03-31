@@ -131,10 +131,13 @@ static psa_key_id_t generate_root_ecc_key_pair(void)
 	psa_status_t status;
 	psa_key_id_t key_id;
 
-	/* Attempt to open the key before spending time generating it */
-	status = psa_open_key(INFUSE_ROOT_ECC_KEY_ID, &key_id);
+	/* Check if the key exists by probing the key attributes */
+	status = psa_get_key_attributes(INFUSE_ROOT_ECC_KEY_ID, &key_attributes);
 	if (status == PSA_SUCCESS) {
+		/* Key exists, free any resources allocated by the above call */
 		LOG_DBG("Using pre-existing root identity");
+		psa_reset_key_attributes(&key_attributes);
+		key_id = INFUSE_ROOT_ECC_KEY_ID;
 	} else {
 		LOG_DBG("Generating root identity");
 #ifdef ITS_AVAILABLE
@@ -178,8 +181,8 @@ static void derive_shared_secret(psa_key_id_t root_key_id, const uint8_t public_
 				 struct infuse_key_info *key_info,
 				 mbedtls_svc_key_id_t shared_secret_storage_id)
 {
-	psa_key_attributes_t key_attributes = infuse_security_hkdf_attributes();
 	uint8_t __maybe_unused shared_secret[32];
+	psa_key_attributes_t key_attributes;
 	size_t __maybe_unused olen;
 	psa_status_t status;
 	psa_key_id_t key_id;
@@ -194,13 +197,19 @@ static void derive_shared_secret(psa_key_id_t root_key_id, const uint8_t public_
 		0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
 	};
 
+	/* Base HKDF attributes */
+	key_attributes = infuse_security_hkdf_attributes();
 	status = psa_import_key(&key_attributes, test_shared_secret, sizeof(test_shared_secret),
 				&key_id);
 #else
-	/* Attempt to open the key before spending time generating it */
-	status = psa_open_key(shared_secret_storage_id, &key_id);
+
+	/* Check if the key exists by probing the key attributes */
+	status = psa_get_key_attributes(shared_secret_storage_id, &key_attributes);
 	if (status == PSA_SUCCESS) {
+		/* Key exists, free any resources allocated by the above call */
 		LOG_DBG("Using cached shared secret for %08X", shared_secret_storage_id);
+		psa_reset_key_attributes(&key_attributes);
+		key_id = shared_secret_storage_id;
 	} else {
 		LOG_DBG("Computing shared secret for %08X", shared_secret_storage_id);
 		/* Calculate shared secret */
@@ -209,6 +218,8 @@ static void derive_shared_secret(psa_key_id_t root_key_id, const uint8_t public_
 		if (status != PSA_SUCCESS) {
 			return;
 		}
+		/* Base HKDF attributes */
+		key_attributes = infuse_security_hkdf_attributes();
 		/* Override lifetime to persistent */
 		psa_set_key_lifetime(&key_attributes, PSA_KEY_LIFETIME_PERSISTENT);
 		/* Set the persistent key ID */

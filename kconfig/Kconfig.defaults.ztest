@@ -18,7 +18,7 @@ configdefault MAIN_STACK_SIZE
 	default 2048
 configdefault ZTEST_STACK_SIZE
 	default 2048
-configdefault MBEDTLS_ENTROPY_POLL_ZEPHYR
+configdefault MBEDTLS_PSA_DRIVER_GET_ENTROPY
 	default n if NRF_CC3XX_PLATFORM
 
 endif # INFUSE_SECURITY || MBEDTLS
