@@ -8,13 +8,13 @@ manifest:
     - name: bsim
       remote: zephyrproject
       repo-path: babblesim-manifest
-      revision: 2ba22a0608ad9f46da1b96ee5121af357053c791
+      revision: 7e10d556b5dd04360756cdf1f4b80d4f5bcac6cf
       path: tools/bsim
       groups:
         - babblesim
     - name: nrf_hw_models
       remote: zephyrproject
-      revision: 26ed181181eed53e400db8f63fa83c566a05d971
+      revision: 158b9710d6e10c57b2c623f8f4178f0bbc85c23f
       path: modules/bsim_hw_models/nrf_hw_models
       groups:
         - babblesim
@@ -22,7 +22,7 @@ manifest:
       remote: babblesim
       repo-path: base
       path: tools/bsim/components
-      revision: 2cfac3dca2071452ae481d115d8541880568753d
+      revision: 1cce925c72805cfdbb6341ca8c0755c7d42699d3
       groups:
         - babblesim
     - name: babblesim_ext_2G4_channel_NtNcable
@@ -64,28 +64,28 @@ manifest:
       remote: babblesim
       repo-path: ext_2G4_libPhyComv1
       path: tools/bsim/components/ext_2G4_libPhyComv1
-      revision: e18e41e8e3fa9f996559ed98b9238a5702dcdd36
+      revision: 23e7a84f5bc452a361ab30acf3abb9dbdb57e9a8
       groups:
         - babblesim
     - name: babblesim_ext_2G4_modem_BLE_simple
       remote: babblesim
       repo-path: ext_2G4_modem_BLE_simple
       path: tools/bsim/components/ext_2G4_modem_BLE_simple
-      revision: 4d2379de510684cd4b1c3bbbb09bce7b5a20bc1f
+      revision: 3712283f0bd3a982f620908579c99af35e969554
       groups:
         - babblesim
     - name: babblesim_ext_2G4_modem_magic
       remote: babblesim
       repo-path: ext_2G4_modem_magic
       path: tools/bsim/components/ext_2G4_modem_magic
-      revision: edfcda2d3937a74be0a59d6cd47e0f50183453da
+      revision: d8281acb634895c8a769489c27146bdfe1a54938
       groups:
         - babblesim
     - name: babblesim_ext_2G4_phy_v1
       remote: babblesim
       repo-path: ext_2G4_phy_v1
       path: tools/bsim/components/ext_2G4_phy_v1
-      revision: 8964ed1eb94606c2ea555340907bdc5171793e65
+      revision: b0e49ae3dd4d6d0f2286fd1392cee1b5206f5bbc
       groups:
         - babblesim
     - name: babblesim_ext_libCryptov1
