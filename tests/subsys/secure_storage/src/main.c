@@ -14,12 +14,12 @@
 
 #if defined(CONFIG_KV_STORE_NVS)
 #define ID_PRE 0
-#include <zephyr/fs/nvs.h>
+#include <zephyr/kvss/nvs.h>
 #define WRITE nvs_write
 #define READ  nvs_read
 #elif defined(CONFIG_KV_STORE_ZMS)
 #define ID_PRE (CONFIG_KV_STORE_ZMS_ID_PREFIX << 16)
-#include <zephyr/fs/zms.h>
+#include <zephyr/kvss/zms.h>
 #define WRITE zms_write
 #define READ  zms_read
 #else
