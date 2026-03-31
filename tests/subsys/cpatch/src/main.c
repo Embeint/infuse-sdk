@@ -78,8 +78,8 @@ static void test_file_setup(const char *original, const char *patch)
 	zassert_not_null(f_patch);
 
 	/* Write input files to a flash area */
-	zassert_equal(0, flash_area_open(FIXED_PARTITION_ID(ORIG_PARTITION), &fa_original));
-	zassert_equal(0, flash_area_open(FIXED_PARTITION_ID(PATCH_PARTITION), &fa_patch));
+	zassert_equal(0, flash_area_open(PARTITION_ID(ORIG_PARTITION), &fa_original));
+	zassert_equal(0, flash_area_open(PARTITION_ID(PATCH_PARTITION), &fa_patch));
 
 	write_file_to_flash_area(f_original, fa_original);
 	write_file_to_flash_area(f_patch, fa_patch);
@@ -115,7 +115,7 @@ static void test_output_validate(const char *output)
 
 	/* Validate output matches expected file */
 	f_new = fopen(output, "rb");
-	zassert_equal(0, flash_area_open(FIXED_PARTITION_ID(NEW_PARTITION), &fa_new));
+	zassert_equal(0, flash_area_open(PARTITION_ID(NEW_PARTITION), &fa_new));
 
 	file_matches_flash_area(f_new, fa_new);
 
@@ -144,13 +144,13 @@ static int test_binary_patch(bool small_output, bool callback)
 	progress_cb_cnt = 0;
 
 	/* Write input files to a flash area */
-	zassert_equal(0, flash_area_open(FIXED_PARTITION_ID(ORIG_PARTITION), &fa_original));
-	zassert_equal(0, flash_area_open(FIXED_PARTITION_ID(PATCH_PARTITION), &fa_patch));
+	zassert_equal(0, flash_area_open(PARTITION_ID(ORIG_PARTITION), &fa_original));
+	zassert_equal(0, flash_area_open(PARTITION_ID(PATCH_PARTITION), &fa_patch));
 
-	output_size = small_output ? 4096 : FIXED_PARTITION_SIZE(NEW_PARTITION);
-	rc = stream_flash_init(&output_ctx, FIXED_PARTITION_DEVICE(NEW_PARTITION), output_scratch,
-			       sizeof(output_scratch), FIXED_PARTITION_OFFSET(NEW_PARTITION),
-			       output_size, NULL);
+	output_size = small_output ? 4096 : PARTITION_SIZE(NEW_PARTITION);
+	rc = stream_flash_init(&output_ctx, PARTITION_DEVICE(NEW_PARTITION), output_scratch,
+			       sizeof(output_scratch), PARTITION_OFFSET(NEW_PARTITION), output_size,
+			       NULL);
 	zassert_equal(0, rc);
 
 	/* Run patch */
@@ -222,21 +222,21 @@ ZTEST(cpatch, test_data_corruption)
 	/* Corrupt various parts of the header */
 	for (int i = 0; i < 32; i++) {
 		test_file_setup(STRINGIFY(BIN_HELLO_WORLD), STRINGIFY(PATCH_HELLO_TO_PHILO));
-		flash_area_corrupt(FIXED_PARTITION_ID(PATCH_PARTITION), i);
+		flash_area_corrupt(PARTITION_ID(PATCH_PARTITION), i);
 		zassert_equal(-EINVAL, test_binary_patch(false, false));
 	}
 
 	/* Corrupt various parts of the patch file */
 	for (int i = 0; i < 32; i++) {
 		test_file_setup(STRINGIFY(BIN_HELLO_WORLD), STRINGIFY(PATCH_HELLO_TO_PHILO));
-		flash_area_corrupt(FIXED_PARTITION_ID(PATCH_PARTITION), 32 + (3 * i));
+		flash_area_corrupt(PARTITION_ID(PATCH_PARTITION), 32 + (3 * i));
 		zassert_equal(-EINVAL, test_binary_patch(false, false));
 	}
 
 	/* Corrupt various parts of the original file */
 	for (int i = 0; i < 32; i++) {
 		test_file_setup(STRINGIFY(BIN_HELLO_WORLD), STRINGIFY(PATCH_HELLO_TO_PHILO));
-		flash_area_corrupt(FIXED_PARTITION_ID(ORIG_PARTITION), (5 * i));
+		flash_area_corrupt(PARTITION_ID(ORIG_PARTITION), (5 * i));
 		zassert_equal(-EINVAL, test_binary_patch(false, false));
 	}
 }
