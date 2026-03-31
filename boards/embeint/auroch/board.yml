@@ -1,5 +1,6 @@
 board:
   name: auroch
+  full_name: Auroch
   vendor: embeint
   socs:
   - name: nrf9151
