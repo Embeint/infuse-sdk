@@ -18,9 +18,17 @@
 #include <infuse/fs/kv_store.h>
 #include <infuse/fs/kv_types.h>
 
+static int psa_free_infuse_init(void)
+{
+	/* Reset PSA configuration */
+	mbedtls_psa_crypto_free();
+
+	return infuse_security_init();
+}
+
 static void default_init(void)
 {
-	infuse_security_init();
+	(void)psa_free_infuse_init();
 
 	/* Refresh network keys to default state */
 	(void)infuse_security_network_key_write(0, NULL);
@@ -36,6 +44,47 @@ ZTEST(security, test_network_ids)
 	/* Default network IDs */
 	zassert_equal(0x000000, infuse_security_network_key_identifier());
 	zassert_equal(0xFFFFFF, infuse_security_secondary_network_key_identifier());
+}
+
+ZTEST(security, test_root_reset)
+{
+	uint8_t root_public_key_initial[32];
+	uint8_t root_public_key_check[32];
+	uint32_t root_key_id_initial;
+	int rc;
+
+	default_init();
+
+	/* Read out the initial root key information */
+	root_key_id_initial = infuse_security_device_key_identifier();
+	rc = infuse_security_device_public_key(root_public_key_initial);
+	zassert_equal(0, rc);
+
+	/* Re-initialise once, should be no change */
+	rc = infuse_security_init();
+	zassert_equal(0, rc);
+	rc = infuse_security_device_public_key(root_public_key_check);
+	zassert_equal(0, rc);
+	zassert_equal(root_key_id_initial, infuse_security_device_key_identifier());
+	rc = memcmp(root_public_key_initial, root_public_key_check,
+		    sizeof(root_public_key_initial));
+	zassert_equal(0, rc);
+
+	/* Run the reset functionality */
+	rc = infuse_security_device_root_reset();
+	zassert_equal(0, rc);
+
+	/* Re-initialise the security module (simulating reboot) */
+	rc = psa_free_infuse_init();
+	zassert_equal(0, rc);
+
+	/* Check new keypair being used */
+	rc = infuse_security_device_public_key(root_public_key_check);
+	zassert_equal(0, rc);
+	zassert_not_equal(root_key_id_initial, infuse_security_device_key_identifier());
+	rc = memcmp(root_public_key_initial, root_public_key_check,
+		    sizeof(root_public_key_initial));
+	zassert_not_equal(0, rc);
 }
 
 ZTEST(security, test_network_key_update)
@@ -136,7 +185,7 @@ ZTEST(security, test_secondary_shared_secret)
 	zassert_equal(PSA_KEY_ID_NULL, secondary_sign_psa_id);
 
 	/* Generated after init */
-	infuse_security_init();
+	psa_free_infuse_init();
 
 	secondary_key_id = infuse_security_secondary_device_key_identifier();
 	secondary_psa_id = infuse_security_secondary_device_root_key();
@@ -151,7 +200,7 @@ ZTEST(security, test_secondary_shared_secret)
 	zassert_mem_equal(remote.public_key, secondary_readback, sizeof(secondary_readback));
 
 	/* Should use cached value on next init */
-	infuse_security_init();
+	psa_free_infuse_init();
 
 	secondary_key_id = infuse_security_secondary_device_key_identifier();
 	secondary_psa_id = infuse_security_secondary_device_root_key();
