@@ -57,6 +57,14 @@ struct net_buf *rpc_command_security_key_update(struct net_buf *request)
 	case RPC_ENUM_KEY_ID_NETWORK_KEY:
 		rc = infuse_security_network_key_write(req->key_global_identifier, key_ptr);
 		break;
+	case RPC_ENUM_KEY_ID_DEVICE_PUBLIC_KEY:
+		if (req->key_action == RPC_ENUM_KEY_ACTION_KEY_DELETE) {
+			/* Deleting the root keypair (forcing a refresh) is the only valid option */
+			rc = infuse_security_device_root_reset();
+		} else {
+			rc = -EPERM;
+		}
+		break;
 #ifdef CONFIG_INFUSE_SECURITY_SECONDARY_NETWORK_ENABLE
 	case RPC_ENUM_KEY_ID_SECONDARY_NETWORK_KEY:
 		rc = infuse_security_secondary_network_key_write(req->key_global_identifier,
