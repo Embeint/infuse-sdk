@@ -509,6 +509,24 @@ int infuse_security_init(void)
 	return infuse_security_network_keys_load();
 }
 
+int infuse_security_device_root_reset(void)
+{
+#ifdef ITS_AVAILABLE
+	psa_status_t status;
+
+	/* Delete the root keypair, `infuse_security_init` takes care of deleting all
+	 * cached persistent keys when it runs
+	 */
+	status = psa_its_remove(INFUSE_ROOT_ECC_KEY_ID);
+	if (status != PSA_SUCCESS) {
+		return -EIO;
+	}
+#else
+	/* Root keypair is not saved persistently  */
+#endif
+	return 0;
+}
+
 psa_key_id_t infuse_security_derive_key(const struct infuse_security_key_params *params)
 {
 	psa_key_attributes_t key_attributes = PSA_KEY_ATTRIBUTES_INIT;
