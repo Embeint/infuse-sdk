@@ -47,6 +47,20 @@ int infuse_security_init(void);
 void infuse_security_disable_dap(void);
 
 /**
+ * @brief Reset the device root key-pair
+ *
+ * After the next reboot a new root key-pair will be generated, requiring external
+ * devices to re-query the root public key.
+ *
+ * @note The credentials from before this function is called will remain valid until
+ *       the device is reset.
+ *
+ * @retval 0 On success
+ * @retval -errno On failure
+ */
+int infuse_security_device_root_reset(void);
+
+/**
  * @brief Retrieve the key attributes required for creating a key compatible with
  * @ref infuse_security_derive_chacha_key
  *
