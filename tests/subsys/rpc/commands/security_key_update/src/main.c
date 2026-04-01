@@ -116,7 +116,7 @@ ZTEST(rpc_command_security_key_update, test_invalid)
 	sys_rand_get(bitstream, sizeof(bitstream));
 
 	/* Bad key ID */
-	send_security_key_update_command(0x106, EPACKET_AUTH_DEVICE, 3,
+	send_security_key_update_command(0x106, EPACKET_AUTH_DEVICE, 30,
 					 RPC_ENUM_KEY_ACTION_KEY_WRITE, 0x123456, bitstream, 5);
 	expect_security_key_update_response(0x106, EPACKET_AUTH_DEVICE, -EINVAL);
 	zassert_equal(-EAGAIN, k_sem_take(&reboot_request, K_MSEC(100)));
@@ -126,6 +126,54 @@ ZTEST(rpc_command_security_key_update, test_invalid)
 					 0x123456, bitstream, 5);
 	expect_security_key_update_response(0x210, EPACKET_AUTH_DEVICE, -EINVAL);
 	zassert_equal(-EAGAIN, k_sem_take(&reboot_request, K_MSEC(100)));
+
+	/* Writing to device public key */
+	send_security_key_update_command(0x107, EPACKET_AUTH_DEVICE,
+					 RPC_ENUM_KEY_ID_DEVICE_PUBLIC_KEY,
+					 RPC_ENUM_KEY_ACTION_KEY_WRITE, 0x123456, bitstream, 32);
+	expect_security_key_update_response(0x107, EPACKET_AUTH_DEVICE, -EPERM);
+	zassert_equal(-EAGAIN, k_sem_take(&reboot_request, K_MSEC(100)));
+}
+
+ZTEST(rpc_command_security_key_update, test_root_keypair_reset)
+{
+	uint8_t root_public_key_initial[32];
+	uint8_t root_public_key_check[32];
+	uint32_t root_key_id_initial;
+	uint8_t bitstream[32] = {0};
+	int rc;
+
+	/* Read out the initial root key information */
+	root_key_id_initial = infuse_security_device_key_identifier();
+	rc = infuse_security_device_public_key(root_public_key_initial);
+	zassert_equal(0, rc);
+
+	printk("%d\n", root_key_id_initial);
+
+	/* Request a reset of the root keypair, no reboot */
+	send_security_key_update_command(0x1100, EPACKET_AUTH_DEVICE,
+					 RPC_ENUM_KEY_ID_DEVICE_PUBLIC_KEY,
+					 RPC_ENUM_KEY_ACTION_KEY_DELETE, 0, bitstream, 0);
+	expect_security_key_update_response(0x1100, EPACKET_AUTH_DEVICE, 0);
+	zassert_equal(-EAGAIN, k_sem_take(&reboot_request, K_MSEC(100)));
+
+	/* Manually close keys here to free resources.
+	 * This is only required in the test because we are not actually rebooting.
+	 */
+	psa_close_key(KV_KEY_SECURE_STORAGE_RESERVED);
+	psa_close_key(KV_KEY_SECURE_STORAGE_RESERVED + 2);
+
+	/* Re-initialise */
+	rc = infuse_security_init();
+	zassert_equal(0, rc);
+
+	/* Check new keypair being used */
+	rc = infuse_security_device_public_key(root_public_key_check);
+	zassert_equal(0, rc);
+	zassert_not_equal(root_key_id_initial, infuse_security_device_key_identifier());
+	rc = memcmp(root_public_key_initial, root_public_key_check,
+		    sizeof(root_public_key_initial));
+	zassert_not_equal(0, rc);
 }
 
 ZTEST(rpc_command_security_key_update, test_primary_network_keys)
