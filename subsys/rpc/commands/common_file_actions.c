@@ -76,8 +76,9 @@ static void cpatch_watchdog(uint32_t progress, uint32_t total)
 }
 
 static int flash_area_check_and_erase(struct rpc_common_file_actions_ctx *ctx, uint8_t partition_id,
-				      uint32_t length, uint32_t crc, bool mcuboot_trailer)
+				      uint32_t *length, uint32_t crc, bool mcuboot_trailer)
 {
+	uint32_t len = *length;
 	uint32_t current_crc;
 	size_t mem_size;
 	uint8_t *mem;
@@ -91,19 +92,20 @@ static int flash_area_check_and_erase(struct rpc_common_file_actions_ctx *ctx, u
 	/* Check if file contents already match */
 	rc = pm_flash_area_open(partition_id, &ctx->fa);
 	if (rc == 0) {
-		if (crc != UINT32_MAX) {
-			rc = flash_area_crc32(ctx->fa, 0, length, &current_crc, mem, mem_size);
+		if ((crc != UINT32_MAX) && (len != UINT32_MAX)) {
+			rc = flash_area_crc32(ctx->fa, 0, len, &current_crc, mem, mem_size);
 			if (current_crc == crc) {
 				ctx->crc = crc;
 				return FILE_ALREADY_PRESENT;
 			}
 		}
 		/* Limit erase size to flash area size */
-		if (length == UINT32_MAX) {
-			length = ctx->fa->fa_size;
+		if (len == UINT32_MAX) {
+			len = ctx->fa->fa_size;
+			*length = len;
 		}
 		/* Erase space for image */
-		rc = infuse_dfu_image_erase(ctx->fa, length, cpatch_watchdog, mcuboot_trailer);
+		rc = infuse_dfu_image_erase(ctx->fa, len, cpatch_watchdog, mcuboot_trailer);
 		if (rc != 0) {
 			/* Close flash area */
 			(void)pm_flash_area_close(ctx->fa);
@@ -122,7 +124,7 @@ static int common_file_actions_stream_writer_init(struct rpc_common_file_actions
 	int rc;
 
 	/* Setup flash for file to write */
-	rc = flash_area_check_and_erase(ctx, partition_id, file_len, crc, trailer);
+	rc = flash_area_check_and_erase(ctx, partition_id, &file_len, crc, trailer);
 	if (rc == FILE_ALREADY_PRESENT) {
 		return rc;
 	} else if (rc < 0) {
