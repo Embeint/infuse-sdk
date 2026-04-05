@@ -173,6 +173,10 @@ static void conn_timeout_worker(struct k_work *work)
 	manual_disconnect = true;
 	LOG_INF("Connection attempt timed out");
 
+	/* Reset cached band & channel information */
+	last_band = WIFI_FREQ_BAND_UNKNOWN;
+	last_channel = UINT_MAX;
+
 	/* Cancel any pending connections */
 	k_work_cancel_delayable(&conn_create);
 	(void)net_mgmt(NET_REQUEST_WIFI_DISCONNECT, wifi_if, NULL, 0);
