@@ -148,9 +148,9 @@ TASK_RUNNER_TASKS_DEFINE(app_tasks, app_tasks_data, (TDF_LOGGER_TASK, custom_tdf
 
 GATEWAY_HANDLER_DEFINE(udp_backhaul_handler, DEVICE_DT_GET(DT_NODELABEL(epacket_udp)));
 
-#if DT_NODE_HAS_STATUS_OKAY(DT_ALIAS(led0))
-static const struct gpio_dt_spec led0 = GPIO_DT_SPEC_GET(DT_ALIAS(led0), gpios);
-#endif
+static const struct gpio_dt_spec led0 = GPIO_DT_SPEC_GET_OR(DT_ALIAS(led0), gpios, {0});
+static const struct gpio_dt_spec led1 = GPIO_DT_SPEC_GET_OR(DT_ALIAS(led1), gpios, {0});
+static const struct gpio_dt_spec led2 = GPIO_DT_SPEC_GET_OR(DT_ALIAS(led2), gpios, {0});
 
 /* Forward 25% of all Bluetooth packets by default, RSSI if whole packet dropped */
 static const struct kv_gateway_bluetooth_forward_options bt_forwarding_options_default = {
@@ -257,8 +257,46 @@ static void bluetooth_adv_handler(struct net_buf *buf)
 	}
 }
 
+static void leds_init(void)
+{
+	if (led0.port) {
+		(void)gpio_pin_configure_dt(&led0, GPIO_OUTPUT_INACTIVE);
+	}
+	if (led1.port) {
+		(void)gpio_pin_configure_dt(&led1, GPIO_OUTPUT_INACTIVE);
+	}
+	if (led2.port) {
+		(void)gpio_pin_configure_dt(&led2, GPIO_OUTPUT_INACTIVE);
+	}
+}
+
+static void led_set_dt(const struct gpio_dt_spec *spec, int value)
+{
+	if (spec->port == NULL) {
+		return;
+	}
+	gpio_pin_set_dt(spec, value);
+}
+
+static void led_pulse_dt(const struct gpio_dt_spec *spec, k_timeout_t pulse_duration)
+{
+	if (spec->port == NULL) {
+		return;
+	}
+	gpio_pin_set_dt(spec, 1);
+	k_sleep(pulse_duration);
+	gpio_pin_set_dt(spec, 0);
+}
+
 int main(void)
 {
+#if defined(CONFIG_NRF_MODEM_LIB)
+	struct net_if *iface = net_if_get_first_by_type(&(NET_L2_GET_NAME(OFFLOADED_NETDEV)));
+#elif defined(CONFIG_NET_L2_PPP)
+	struct net_if *iface = net_if_get_first_by_type(&(NET_L2_GET_NAME(PPP)));
+#else
+#error Unknown LTE modem network interface
+#endif
 	const struct device *bt_adv = DEVICE_DT_GET(DT_NODELABEL(epacket_bt_adv));
 	const struct device *bt_central = DEVICE_DT_GET(DT_NODELABEL(epacket_bt_central));
 	const struct device *udp = DEVICE_DT_GET(DT_NODELABEL(epacket_udp));
@@ -272,6 +310,7 @@ int main(void)
 	struct kv_store_cb kv_cb = {
 		.value_changed = kv_value_changed,
 	};
+	uint16_t udp_payload_size;
 	int rc;
 
 #if CONFIG_LTE_GATEWAY_DEFAULT_MAXIMUM_UPLINK_THROUGHPUT_KBPS > 0
@@ -295,6 +334,9 @@ int main(void)
 		memcpy(&bt_forwarding_options, &bt_forwarding_options_default,
 		       sizeof(bt_forwarding_options));
 	}
+
+	/* Set up LEDs */
+	leds_init();
 
 	/* KV store callbacks */
 	kv_store_register_callback(&kv_cb);
@@ -339,8 +381,6 @@ int main(void)
 
 #ifdef CONFIG_MODEM_CELLULAR
 	/* For now the Cellular Modem abstraction is not linked to a connection manager */
-	struct net_if *iface = net_if_get_first_by_type(&(NET_L2_GET_NAME(PPP)));
-
 	net_if_up(iface);
 #else
 	/* Turn on the interface */
@@ -355,18 +395,29 @@ int main(void)
 	/* Start auto iteration */
 	task_runner_start_auto_iterate();
 
-#if DT_NODE_HAS_STATUS_OKAY(DT_ALIAS(led0))
-	(void)gpio_pin_configure_dt(&led0, GPIO_OUTPUT_INACTIVE);
-
 	/* Boot LED sequence */
 	for (int i = 0; i < 5; i++) {
-		(void)gpio_pin_toggle_dt(&led0);
+		led_set_dt(&led0, 1);
+		led_set_dt(&led1, 1);
+		led_set_dt(&led2, 1);
+		k_sleep(K_MSEC(200));
+		led_set_dt(&led0, 0);
+		led_set_dt(&led1, 0);
+		led_set_dt(&led2, 0);
 		k_sleep(K_MSEC(200));
 	}
-	gpio_pin_set_dt(&led0, 0);
-#endif /* DT_NODE_HAS_STATUS_OKAY(DT_ALIAS(led0)) */
 
-	/* Nothing further to do */
-	k_sleep(K_FOREVER);
-	return 0;
+	/* Periodic LEDs based on connection state */
+	while (true) {
+		k_sleep(K_SECONDS(5));
+
+		udp_payload_size = epacket_interface_max_packet_size(udp);
+		if (!net_if_flag_is_set(iface, NET_IF_LOWER_UP)) {
+			led_pulse_dt(&led0, K_SECONDS(1));
+		} else if (udp_payload_size > 0) {
+			led_pulse_dt(&led1, K_MSEC(200));
+		} else {
+			led_pulse_dt(&led2, K_MSEC(200));
+		}
+	}
 }
