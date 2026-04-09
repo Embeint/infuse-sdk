@@ -160,8 +160,10 @@ ZTEST(infuse_nrf_modem_monitor, test_integration)
 	struct net_if *iface = net_if_get_default();
 	struct lte_modem_network_state net_state;
 	struct nrf_modem_fault_info fault_info = {0};
+	char ipv4_addr[NET_IPV4_ADDR_LEN] = {0};
 	enum pdn_fam default_family;
 	const char *default_apn;
+	struct net_if_addr *added;
 	int rc;
 
 #ifdef CONFIG_INFUSE_MODEM_MONITOR_CONN_STATE_LOG
@@ -340,6 +342,21 @@ ZTEST(infuse_nrf_modem_monitor, test_integration)
 	rc = net_if_up(iface);
 	zassert_equal(0, rc);
 
+	/* Connectivity timeout as we don't have IP connectivity */
+	rc = k_sem_take(&reboot_request,
+			K_SECONDS(CONFIG_INFUSE_MODEM_MONITOR_CONNECTIVITY_TIMEOUT_SEC + 1));
+	zassert_equal(0, rc);
+
+	/* Revert to searching */
+	nrf_modem_lib_sim_send_at("+CEREG: 2,\"702A\",\"08C3BD0C\",7\r\n");
+	k_sleep(K_SECONDS(1));
+
+	/* Back on the network, gain network and IP connectivity this time */
+	nrf_modem_lib_sim_send_at(
+		"+CEREG: 5,\"702A\",\"08C3BD0C\",7,,,\"00001000\",\"00101101\"\r\n");
+	added = net_if_ipv4_addr_add(iface, (struct in_addr *)&ipv4_addr, NET_ADDR_MANUAL, 0);
+	zassert_not_null(added);
+
 	/* No connectivity timeout */
 	rc = k_sem_take(&reboot_request,
 			K_SECONDS(CONFIG_INFUSE_MODEM_MONITOR_CONNECTIVITY_TIMEOUT_SEC + 1));
@@ -367,11 +384,12 @@ ZTEST(infuse_nrf_modem_monitor, test_integration)
 
 	/* Modem wakes */
 	nrf_modem_lib_sim_send_at("%XMODEMSLEEP: 1,0\r\n");
-	/* Network connectivity goes down, reboot should be requested */
-	rc = net_if_down(iface);
-	zassert_equal(0, rc);
+	/* IP connectivity goes down, reboot should be requested */
+	zassert_true(net_if_ipv4_addr_rm(iface, (struct in_addr *)&ipv4_addr));
 	rc = k_sem_take(&reboot_request,
 			K_SECONDS(CONFIG_INFUSE_MODEM_MONITOR_CONNECTIVITY_TIMEOUT_SEC + 1));
+	zassert_equal(0, rc);
+	rc = net_if_down(iface);
 	zassert_equal(0, rc);
 
 	/* Back to searching */

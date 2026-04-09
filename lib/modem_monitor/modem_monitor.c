@@ -48,19 +48,19 @@ static void connectivity_timeout(struct k_work *work)
 #endif /* CONFIG_INFUSE_REBOOT */
 }
 
-static void iface_state_handler(struct net_mgmt_event_callback *cb, uint64_t mgmt_event,
-				struct net_if *iface)
+static void l4_event_handler(struct net_mgmt_event_callback *cb, uint64_t mgmt_event,
+			     struct net_if *iface)
 {
 	if (iface != generic_monitor.net_if) {
 		return;
 	}
-	if (mgmt_event == NET_EVENT_IF_UP) {
-		/* Interface is UP, cancel the timeout */
-		LOG_DBG("Interface %p is UP, cancelling timeout", iface);
+	if (mgmt_event == NET_EVENT_L4_CONNECTED) {
+		/* Interface is connected, cancel the timeout */
+		LOG_DBG("Interface %p is connected, cancelling timeout", iface);
 		k_work_cancel_delayable(&generic_monitor.connectivity_timeout);
-	} else if (mgmt_event == NET_EVENT_IF_DOWN) {
-		/* Interface is DOWN, restart the timeout */
-		LOG_DBG("Interface %p is DOWN, cancelling timeout", iface);
+	} else if (mgmt_event == NET_EVENT_L4_DISCONNECTED) {
+		/* Interface is disconnected, restart the timeout */
+		LOG_DBG("Interface %p is disconnected, restarting timeout", iface);
 		k_work_reschedule(&generic_monitor.connectivity_timeout, CONNECTIVITY_TIMEOUT);
 	}
 }
@@ -83,7 +83,7 @@ void modem_monitor_init(struct net_if *iface)
 	__ASSERT_NO_MSG(iface != NULL);
 	generic_monitor.net_if = iface;
 	k_work_init_delayable(&generic_monitor.connectivity_timeout, connectivity_timeout);
-	net_mgmt_init_event_callback(&generic_monitor.mgmt_iface_cb, iface_state_handler,
-				     NET_EVENT_IF_UP | NET_EVENT_IF_DOWN);
+	net_mgmt_init_event_callback(&generic_monitor.mgmt_iface_cb, l4_event_handler,
+				     NET_EVENT_L4_CONNECTED | NET_EVENT_L4_DISCONNECTED);
 	net_mgmt_add_event_callback(&generic_monitor.mgmt_iface_cb);
 }
