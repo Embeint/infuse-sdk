@@ -12,7 +12,6 @@
 #include <zephyr/net/net_if.h>
 #include <zephyr/net/net_mgmt.h>
 #include <zephyr/toolchain.h>
-#include <zephyr/pm/device_runtime.h>
 
 #include <infuse/lib/lte_modem_monitor.h>
 #include <infuse/fs/kv_store.h>
@@ -146,6 +145,7 @@ static void network_status_changed(const struct device *dev,
 static void comms_check_result(const struct device *dev,
 			       const struct cellular_evt_modem_comms_check_result *ccr)
 {
+	struct net_if *iface = net_if_get_first_by_type(&(NET_L2_GET_NAME(PPP)));
 	static uint8_t consecutive_failures;
 
 	if (ccr->success) {
@@ -160,7 +160,7 @@ static void comms_check_result(const struct device *dev,
 	LOG_WRN("Modem AT link dead, suspending %s", dev->name);
 	/* Suspend the modem */
 	monitor.at_link_dead = true;
-	pm_device_runtime_put(dev);
+	net_if_down(iface);
 }
 
 static void modem_suspended(const struct device *dev)
