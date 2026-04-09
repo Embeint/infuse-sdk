@@ -339,12 +339,14 @@ int main(void)
 
 #ifdef CONFIG_MODEM_CELLULAR
 	/* For now the Cellular Modem abstraction is not linked to a connection manager */
-	pm_device_runtime_get(DEVICE_DT_GET(DT_ALIAS(modem)));
-#endif /* CONFIG_MODEM_CELLULAR */
+	struct net_if *iface = net_if_get_first_by_type(&(NET_L2_GET_NAME(PPP)));
 
+	net_if_up(iface);
+#else
 	/* Turn on the interface */
 	conn_mgr_all_if_up(true);
 	conn_mgr_all_if_connect(true);
+#endif /* CONFIG_MODEM_CELLULAR */
 
 	/* Initialise task runner */
 	task_runner_init(schedules, states, ARRAY_SIZE(schedules), app_tasks, app_tasks_data,
