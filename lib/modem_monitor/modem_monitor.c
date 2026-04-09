@@ -34,6 +34,7 @@ static void connectivity_timeout(struct k_work *work)
 {
 	if (!atomic_test_bit(&generic_monitor.flags, FLAGS_IP_CONN_EXPECTED)) {
 		/* Network registration was lost before interface state callback occurred */
+		LOG_DBG("Timeout expired but connectivity not expected");
 		return;
 	}
 
@@ -55,9 +56,11 @@ static void iface_state_handler(struct net_mgmt_event_callback *cb, uint64_t mgm
 	}
 	if (mgmt_event == NET_EVENT_IF_UP) {
 		/* Interface is UP, cancel the timeout */
+		LOG_DBG("Interface %p is UP, cancelling timeout", iface);
 		k_work_cancel_delayable(&generic_monitor.connectivity_timeout);
 	} else if (mgmt_event == NET_EVENT_IF_DOWN) {
 		/* Interface is DOWN, restart the timeout */
+		LOG_DBG("Interface %p is DOWN, cancelling timeout", iface);
 		k_work_reschedule(&generic_monitor.connectivity_timeout, CONNECTIVITY_TIMEOUT);
 	}
 }
@@ -65,9 +68,11 @@ static void iface_state_handler(struct net_mgmt_event_callback *cb, uint64_t mgm
 void modem_monitor_ip_connectivity_expected(bool expected)
 {
 	if (expected) {
+		LOG_DBG("IP connectivity expected");
 		atomic_set_bit(&generic_monitor.flags, FLAGS_IP_CONN_EXPECTED);
 		k_work_reschedule(&generic_monitor.connectivity_timeout, CONNECTIVITY_TIMEOUT);
 	} else {
+		LOG_DBG("IP connectivity not expected");
 		atomic_clear_bit(&generic_monitor.flags, FLAGS_IP_CONN_EXPECTED);
 		k_work_cancel_delayable(&generic_monitor.connectivity_timeout);
 	}
