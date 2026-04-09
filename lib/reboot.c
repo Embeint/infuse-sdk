@@ -65,17 +65,50 @@ static void reboot_state_store(enum infuse_reboot_reason reason,
 	retention_write(retention, 0, (void *)&state, sizeof(state));
 }
 
+#if defined(CONFIG_MODEM_CELLULAR)
+
+static bool networking_trigger_shutdown(void)
+{
+	/* For now the Cellular Modem abstraction is not linked to a connection manager */
+	struct net_if *iface = net_if_get_first_by_type(&(NET_L2_GET_NAME(PPP)));
+
+	return net_if_down(iface) == 0 ? true : false;
+}
+
+#elif defined(CONFIG_NET_CONNECTION_MANAGER)
+
+static bool networking_trigger_shutdown(void)
+{
+	(void)conn_mgr_all_if_disconnect(false);
+	(void)conn_mgr_all_if_down(false);
+	return true;
+}
+
+#else
+
+static bool networking_trigger_shutdown(void)
+{
+	/* No modem to shutdown */
+	return false;
+}
+
+#endif
+
+static bool networking_attempt_clean_shutdown(void)
+{
+	/* If not in an interrupt context, attempt to cleanly bring
+	 * down all networking interfaces when triggering a reboot.
+	 */
+	if (k_is_in_isr()) {
+		return false;
+	}
+
+	/* Trigger the networking interfaces to shutdown */
+	return networking_trigger_shutdown();
+}
+
 FUNC_NORETURN static void cleanup_and_reboot(void)
 {
-#ifdef CONFIG_NET_CONNECTION_MANAGER
-	if (!k_is_in_isr()) {
-		/* If not in an interrupt context, attempt to cleanly bring
-		 * down all networking interfaces before rebooting.
-		 */
-		(void)conn_mgr_all_if_disconnect(false);
-		(void)conn_mgr_all_if_down(false);
-	}
-#endif /* CONFIG_NET_CONNECTION_MANAGER*/
 	/* Flush any logs */
 	LOG_PANIC();
 	/* Trigger the reboot */
@@ -137,6 +170,11 @@ void infuse_watchdog_expired(const struct device *dev, int channel_id)
 
 FUNC_NORETURN void infuse_reboot(enum infuse_reboot_reason reason, uint32_t info1, uint32_t info2)
 {
+	/* Request networking backends to shutdown */
+	if (networking_attempt_clean_shutdown()) {
+		/* Some backend is shutting down, give it a chance to complete */
+		k_sleep(K_SECONDS(2));
+	}
 	/* Store reboot metadata */
 	reboot_state_store(reason, INFUSE_REBOOT_INFO_GENERIC, info1, info2, NULL);
 	/* Do the reboot */
@@ -152,6 +190,9 @@ void infuse_reboot_delayed(enum infuse_reboot_reason reason, uint32_t info1, uin
 	/* Set rebooting state */
 	infuse_state_set(INFUSE_STATE_REBOOTING);
 #endif
+
+	/* Request networking backends to shutdown while we're waiting to reboot */
+	networking_attempt_clean_shutdown();
 
 	/* Init the worker */
 	k_work_init_delayable(&reboot_worker, delayed_do_reboot);
