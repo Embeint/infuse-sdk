@@ -29,6 +29,12 @@ extern "C" {
 
 #define epacket_bt_adv_frame epacket_v0_versioned_frame_format
 
+/** Bluetooth advertising specific packet flags */
+enum epacket_flags_bt_adv {
+	/** Transmitting device is explicitly indoors */
+	EPACKET_FLAGS_BT_ADV_INDOORS = BIT(0),
+};
+
 /**
  * @brief Request Bluetooth scanning to be suspended
  *
@@ -65,6 +71,13 @@ void epacket_bt_adv_scan_resume(void);
  * @param scan_cb Callback to run on non-Infuse Bluetooth packets
  */
 void epacket_bt_adv_set_fallback_scan_callback(bt_le_scan_cb_t scan_cb);
+
+/**
+ * @brief Set constant interface flags for Bluetooth advertising packets
+ *
+ * @param flags Flags to set
+ */
+void epacket_bt_adv_set_interface_flags(enum epacket_flags_bt_adv flags);
 
 /**
  * @}

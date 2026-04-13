@@ -48,6 +48,7 @@ static uint32_t scan_watchdog_timeouts;
 static struct net_buf *adv_set_bufs[CONFIG_BT_EXT_ADV_MAX_ADV_SET];
 static K_FIFO_DEFINE(tx_buf_queue);
 static struct bt_le_ext_adv *adv_set;
+static enum epacket_flags_bt_adv interface_flags;
 static bool adv_set_active;
 static uint8_t scan_suspended;
 static K_SEM_DEFINE(scan_control, 1, 1);
@@ -195,6 +196,11 @@ static void adv_set_complete(struct bt_le_ext_adv *adv, struct bt_le_ext_adv_sen
 
 static void epacket_bt_adv_send(const struct device *dev, struct net_buf *buf)
 {
+	struct epacket_tx_metadata *tx_meta = net_buf_user_data(buf);
+
+	/* Apply constant interface flags */
+	tx_meta->flags |= interface_flags;
+
 	/* Encrypt the payload */
 	if (epacket_bt_adv_encrypt(buf) < 0) {
 		LOG_WRN("Failed to encrypt");
@@ -345,6 +351,11 @@ void epacket_bt_adv_scan_resume(void)
 		}
 	}
 	k_sem_give(&scan_control);
+}
+
+void epacket_bt_adv_set_interface_flags(enum epacket_flags_bt_adv flags)
+{
+	interface_flags = flags & EPACKET_FLAGS_INTERFACE_MASK;
 }
 
 static int epacket_bt_adv_init(const struct device *dev)
