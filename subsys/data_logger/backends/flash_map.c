@@ -70,17 +70,26 @@ static int logger_flash_map_reset(const struct device *dev, uint32_t block_hint,
 	const struct dl_flash_map_config *config = dev->config;
 	struct dl_flash_map_data *data = dev->data;
 	size_t remaining = block_hint << config->block_addr_shift;
+	uint32_t chunk_size;
 	size_t complete = 0;
 	off_t offset = 0;
 	size_t to_erase;
 	int rc;
 
+	if (config->erase_size == KB(4)) {
+		/* Standard SPI-NOR size and it has more efficient 64kB erases */
+		chunk_size = KB(64);
+	} else {
+		/* Erase block by block */
+		chunk_size = config->erase_size;
+	}
+
 	/* Ensure overall erase is aligned to requirements */
 	remaining = ROUND_UP(remaining, config->erase_size);
 
 	while (remaining) {
-		/* Erase in 64kB chunks */
-		to_erase = MIN(remaining, 64 * 1024);
+		/* Limit potentially larger chunks to the amount requested */
+		to_erase = MIN(remaining, chunk_size);
 
 		/* Erase the chunk */
 		rc = flash_area_erase(data->area, offset, to_erase);
