@@ -19,6 +19,8 @@
 #include <infuse/epacket/packet.h>
 #include <infuse/epacket/interface/epacket_dummy.h>
 #include <infuse/data_logger/logger.h>
+#include <infuse/data_logger/high_level/tdf.h>
+#include <infuse/tdf/definitions.h>
 
 int logger_flash_map_init(const struct device *dev);
 
@@ -138,6 +140,27 @@ static void send_data_logger_read_chunks_command(uint32_t request_id, uint8_t lo
 	/* Push command at RPC server */
 	epacket_dummy_receive_extra(epacket_dummy, &header, &params, sizeof(params), chunks,
 				    num_chunks * sizeof(*chunks));
+}
+
+static void send_tdf_data_logger_flush_command(uint32_t request_id, uint8_t loggers)
+{
+	const struct device *epacket_dummy = DEVICE_DT_GET(DT_NODELABEL(epacket_dummy));
+	struct epacket_dummy_frame header = {
+		.type = INFUSE_RPC_CMD,
+		.auth = EPACKET_AUTH_DEVICE,
+		.flags = 0x0000,
+	};
+	struct rpc_tdf_data_logger_flush_request params = {
+		.header =
+			{
+				.request_id = request_id,
+				.command_id = RPC_ID_TDF_DATA_LOGGER_FLUSH,
+			},
+		.loggers = loggers,
+	};
+
+	/* Push command at RPC server */
+	epacket_dummy_receive(epacket_dummy, &header, &params, sizeof(params));
 }
 
 static void send_data_logger_erase_command(uint32_t request_id, uint8_t logger, bool erase_empty)
@@ -708,6 +731,90 @@ ZTEST(rpc_command_data_logger, test_data_logger_erase)
 	zassert_equal(0, state.boot_block);
 	zassert_equal(5, state.current_block);
 	zassert_equal(13 * 512, state.bytes_logged);
+}
+
+ZTEST(rpc_command_data_logger, test_tdf_data_logger_flush)
+{
+	const struct device *flash_logger = DEVICE_DT_GET(DT_NODELABEL(data_logger_flash));
+	struct rpc_tdf_data_logger_flush_response *response;
+	struct tdf_acc_4g test_tdf = {.sample = {1, 2, 3}};
+	struct data_logger_state state;
+	struct net_buf *rsp;
+
+	/* Initial state */
+	data_logger_get_state(flash_logger, &state);
+	zassert_equal(0, state.current_block);
+
+	/* Nothing pending */
+	send_tdf_data_logger_flush_command(0x345, TDF_DATA_LOGGER_FLASH);
+	rsp = expect_rpc_response(0x345, RPC_ID_TDF_DATA_LOGGER_FLUSH, 0);
+	response = (void *)rsp->data;
+
+	zassert_equal(1, response->num);
+	zassert_equal(TDF_DATA_LOGGER_FLASH, response->flushed[0].logger);
+	zassert_equal(0, response->flushed[0].num);
+	net_buf_unref(rsp);
+
+	/* Pend a TDF, not flushed */
+	TDF_DATA_LOGGER_LOG(TDF_DATA_LOGGER_FLASH, TDF_ACC_4G, 0, &test_tdf);
+	data_logger_get_state(flash_logger, &state);
+	zassert_equal(0, state.current_block);
+
+	/* Flush via RPC */
+	send_tdf_data_logger_flush_command(0x346, TDF_DATA_LOGGER_FLASH);
+	rsp = expect_rpc_response(0x346, RPC_ID_TDF_DATA_LOGGER_FLUSH, 0);
+	response = (void *)rsp->data;
+
+	zassert_equal(1, response->num);
+	zassert_equal(TDF_DATA_LOGGER_FLASH, response->flushed[0].logger);
+	zassert_equal(3 + sizeof(test_tdf), response->flushed[0].num);
+	data_logger_get_state(flash_logger, &state);
+	zassert_equal(1, state.current_block);
+	net_buf_unref(rsp);
+
+	/* Flush again, no change */
+	send_tdf_data_logger_flush_command(0x347, TDF_DATA_LOGGER_FLASH);
+	rsp = expect_rpc_response(0x347, RPC_ID_TDF_DATA_LOGGER_FLUSH, 0);
+	response = (void *)rsp->data;
+
+	zassert_equal(1, response->num);
+	zassert_equal(TDF_DATA_LOGGER_FLASH, response->flushed[0].logger);
+	zassert_equal(0, response->flushed[0].num);
+	data_logger_get_state(flash_logger, &state);
+	zassert_equal(1, state.current_block);
+	net_buf_unref(rsp);
+
+	/* Pend again, not flushed */
+	TDF_DATA_LOGGER_LOG(TDF_DATA_LOGGER_FLASH, TDF_ACC_4G, 0, &test_tdf);
+	TDF_DATA_LOGGER_LOG(TDF_DATA_LOGGER_FLASH, TDF_ACC_4G, 0, &test_tdf);
+
+	/* Flush with not present logger */
+	send_tdf_data_logger_flush_command(0x348, TDF_DATA_LOGGER_FLASH | TDF_DATA_LOGGER_UDP);
+	rsp = expect_rpc_response(0x348, RPC_ID_TDF_DATA_LOGGER_FLUSH, 0);
+	response = (void *)rsp->data;
+
+	/* Not present logger not present in output */
+	zassert_equal(1, response->num);
+	zassert_equal(TDF_DATA_LOGGER_FLASH, response->flushed[0].logger);
+	zassert_equal(2 * (3 + sizeof(test_tdf)), response->flushed[0].num);
+	data_logger_get_state(flash_logger, &state);
+	zassert_equal(2, state.current_block);
+	net_buf_unref(rsp);
+
+	/* Multiple existing loggers */
+	TDF_DATA_LOGGER_LOG(TDF_DATA_LOGGER_FLASH, TDF_ACC_4G, 0, &test_tdf);
+	send_tdf_data_logger_flush_command(0x347, TDF_DATA_LOGGER_FLASH | TDF_DATA_LOGGER_SERIAL);
+	rsp = expect_rpc_response(0x347, RPC_ID_TDF_DATA_LOGGER_FLUSH, 0);
+	response = (void *)rsp->data;
+
+	zassert_equal(2, response->num);
+	zassert_equal(TDF_DATA_LOGGER_FLASH, response->flushed[0].logger);
+	zassert_equal(3 + sizeof(test_tdf), response->flushed[0].num);
+	zassert_equal(TDF_DATA_LOGGER_SERIAL, response->flushed[1].logger);
+	zassert_equal(0, response->flushed[1].num);
+	data_logger_get_state(flash_logger, &state);
+	zassert_equal(3, state.current_block);
+	net_buf_unref(rsp);
 }
 
 void data_logger_reset(void *fixture)

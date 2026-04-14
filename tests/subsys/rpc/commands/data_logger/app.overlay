@@ -12,9 +12,22 @@
 		compatible = "embeint,epacket-dummy";
 	};
 
+	data_logger_dummy: data_logger_dummy {
+		compatible = "embeint,data-logger-epacket", "embeint,data-logger";
+		epacket = <&epacket_dummy>;
+
+		tdf_logger_dummy: tdf_logger_dummy {
+			compatible = "embeint,tdf-data-logger";
+		};
+	};
+
 	data_logger_flash: data_logger_flash {
 		compatible = "embeint,data-logger-flash-map", "embeint,data-logger";
 		partition = <&data_logger_partition>;
+
+		tdf_logger_flash: tdf_logger_flash {
+			compatible = "embeint,tdf-data-logger";
+		};
 	};
 
 	sim_flash: sim_flash {
