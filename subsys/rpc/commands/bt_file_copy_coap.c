@@ -31,7 +31,7 @@ struct net_buf *rpc_command_bt_file_copy_coap(struct net_buf *request)
 	int rc;
 
 	/* Setup arguments for sub-commands */
-	struct rpc_coap_download_request coap_req = {
+	struct rpc_coap_download_v2_request coap_req = {
 		.server_port = req->server_port,
 		.block_timeout_ms = req->block_timeout_ms,
 		.action = RPC_ENUM_FILE_ACTION_FILE_FOR_COPY,
@@ -45,7 +45,7 @@ struct net_buf *rpc_command_bt_file_copy_coap(struct net_buf *request)
 		.ack_period = req->ack_period,
 		.pipelining = req->pipelining,
 	};
-	struct rpc_coap_download_response coap_rsp = {0};
+	struct rpc_coap_download_v2_response coap_rsp = {0};
 	struct rpc_bt_file_copy_basic_response copy_rsp = {0};
 	struct epacket_bt_gatt_connect_params connect_params = {
 		.conn_params = BT_LE_CONN_PARAM_INIT(0x10, 0x15, 0, 400),
