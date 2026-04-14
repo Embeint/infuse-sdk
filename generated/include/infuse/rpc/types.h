@@ -138,6 +138,22 @@ enum rpc_enum_data_logger {
 	RPC_ENUM_DATA_LOGGER_UDP = 3,
 };
 
+/** TDF data Logger identifier */
+enum rpc_enum_tdf_data_logger {
+	/** Onboard flash TDF logger */
+	RPC_ENUM_TDF_DATA_LOGGER_FLASH_ONBOARD = 1,
+	/** Removable flash TDF logger (SD) */
+	RPC_ENUM_TDF_DATA_LOGGER_FLASH_REMOVABLE = 2,
+	/** Serial TDF logger */
+	RPC_ENUM_TDF_DATA_LOGGER_SERIAL = 4,
+	/** Networked UDP TDF logger */
+	RPC_ENUM_TDF_DATA_LOGGER_UDP = 8,
+	/** Bluetooth advertising TDF logger */
+	RPC_ENUM_TDF_DATA_LOGGER_BT_ADV = 16,
+	/** Bluetooth peripheral TDF logger */
+	RPC_ENUM_TDF_DATA_LOGGER_BT_PERIPH = 32,
+};
+
 /** Source for zperf data upload */
 enum rpc_enum_zperf_data_source {
 	/** Constant payload ('i') */
@@ -416,6 +432,14 @@ struct rpc_struct_thread_stats {
 	char name[];
 } __packed;
 
+/** IPv6 address */
+struct rpc_struct_data_logger_flushed {
+	/** Logger that was flushed */
+	uint8_t logger;
+	/** Number of bytes flushed */
+	uint16_t num;
+} __packed;
+
 
 /**
  * @}
@@ -491,6 +515,8 @@ enum rpc_builtin_id {
 	RPC_ID_FILE_WRITE_BASIC = 40,
 	/** Write an annotation to the device */
 	RPC_ID_ANNOTATE = 41,
+	/** Write an annotation to the device */
+	RPC_ID_TDF_DATA_LOGGER_FLUSH = 42,
 	/** Connect to an Infuse-IoT Bluetooth device */
 	RPC_ID_BT_CONNECT_INFUSE = 50,
 	/** Disconnect from a Bluetooth device */
@@ -1096,6 +1122,21 @@ struct rpc_annotate_request {
 
 struct rpc_annotate_response {
 	struct infuse_rpc_rsp_header header;
+} __packed;
+
+/** Write an annotation to the device */
+struct rpc_tdf_data_logger_flush_request {
+	struct infuse_rpc_req_header header;
+	/** TDF data loggers to flush */
+	uint8_t loggers;
+} __packed;
+
+struct rpc_tdf_data_logger_flush_response {
+	struct infuse_rpc_rsp_header header;
+	/** Number of loggers in response */
+	uint8_t num;
+	/** Flush status */
+	struct rpc_struct_data_logger_flushed flushed[];
 } __packed;
 
 /** Connect to an Infuse-IoT Bluetooth device */
