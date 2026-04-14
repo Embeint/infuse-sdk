@@ -61,6 +61,12 @@ config KV_STORE_KEY_FIXED_LOCATION
 	help
 	  Fixed global location of the device
 
+config KV_STORE_KEY_BROADCAST_FIXED_INDOORS
+	bool "Enable KV key BROADCAST_FIXED_INDOORS"
+	depends on EPACKET_INTERFACE_BT_ADV
+	help
+	  Device is fixed indoors and should broadcast the fact
+
 config KV_STORE_KEY_WIFI_SSID
 	bool "Enable KV key WIFI_SSID"
 	default y if WIFI

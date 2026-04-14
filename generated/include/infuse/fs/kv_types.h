@@ -213,6 +213,12 @@ struct kv_fixed_location {
 	struct gcs_location location;
 } __packed;
 
+/** Device is fixed indoors and should broadcast the fact */
+struct kv_broadcast_fixed_indoors {
+	/** Non-zero: Device is indoors */
+	uint8_t indoors;
+} __packed;
+
 /** WiFi network name */
 struct kv_wifi_ssid {
 	/** WiFi network name */
@@ -576,6 +582,8 @@ enum kv_builtin_id {
 	KV_KEY_SECONDARY_REMOTE_PUBLIC_KEY = 8,
 	/** Fixed global location of the device */
 	KV_KEY_FIXED_LOCATION = 10,
+	/** Device is fixed indoors and should broadcast the fact */
+	KV_KEY_BROADCAST_FIXED_INDOORS = 11,
 	/** WiFi network name */
 	KV_KEY_WIFI_SSID = 20,
 	/** WiFi network password */
@@ -667,6 +675,7 @@ enum kv_builtin_size {
 	_KV_KEY_APPLICATION_ACTIVE_SIZE = sizeof(struct kv_application_active),
 	_KV_KEY_SECONDARY_REMOTE_PUBLIC_KEY_SIZE = sizeof(struct kv_secondary_remote_public_key),
 	_KV_KEY_FIXED_LOCATION_SIZE = sizeof(struct kv_fixed_location),
+	_KV_KEY_BROADCAST_FIXED_INDOORS_SIZE = sizeof(struct kv_broadcast_fixed_indoors),
 	_KV_KEY_EPACKET_UDP_PORT_SIZE = sizeof(struct kv_epacket_udp_port),
 	_KV_KEY_LTE_MODEM_IMEI_SIZE = sizeof(struct kv_lte_modem_imei),
 	_KV_KEY_LTE_NETWORKING_MODES_SIZE = sizeof(struct kv_lte_networking_modes),
@@ -699,6 +708,7 @@ enum kv_builtin_size {
 #define _KV_KEY_BOARD_TARGET_TYPE struct kv_board_target
 #define _KV_KEY_SECONDARY_REMOTE_PUBLIC_KEY_TYPE struct kv_secondary_remote_public_key
 #define _KV_KEY_FIXED_LOCATION_TYPE struct kv_fixed_location
+#define _KV_KEY_BROADCAST_FIXED_INDOORS_TYPE struct kv_broadcast_fixed_indoors
 #define _KV_KEY_WIFI_SSID_TYPE struct kv_wifi_ssid
 #define _KV_KEY_WIFI_PSK_TYPE struct kv_wifi_psk
 #define _KV_KEY_WIFI_CHANNELS_TYPE struct kv_wifi_channels
@@ -746,6 +756,8 @@ enum kv_builtin_size {
 	IF_ENABLED(CONFIG_KV_STORE_KEY_SECONDARY_REMOTE_PUBLIC_KEY, \
 		   (1 +)) \
 	IF_ENABLED(CONFIG_KV_STORE_KEY_FIXED_LOCATION, \
+		   (1 +)) \
+	IF_ENABLED(CONFIG_KV_STORE_KEY_BROADCAST_FIXED_INDOORS, \
 		   (1 +)) \
 	IF_ENABLED(CONFIG_KV_STORE_KEY_WIFI_SSID, \
 		   (1 +)) \
@@ -907,6 +919,13 @@ static struct key_value_slot_definition _KV_SLOTS_ARRAY_DEFINE[] = {
 		.flags = KV_FLAGS_REFLECT,
 	},
 #endif /* CONFIG_KV_STORE_KEY_FIXED_LOCATION */
+#ifdef CONFIG_KV_STORE_KEY_BROADCAST_FIXED_INDOORS
+	{
+		.key = KV_KEY_BROADCAST_FIXED_INDOORS,
+		.range = 1,
+		.flags = KV_FLAGS_REFLECT,
+	},
+#endif /* CONFIG_KV_STORE_KEY_BROADCAST_FIXED_INDOORS */
 #ifdef CONFIG_KV_STORE_KEY_WIFI_SSID
 	{
 		.key = KV_KEY_WIFI_SSID,
