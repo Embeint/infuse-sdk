@@ -9,13 +9,15 @@
 #include <zephyr/init.h>
 #include <zephyr/kernel.h>
 
+#include <infuse/epacket/interface/epacket_bt_adv.h>
 #include <infuse/fs/kv_store.h>
 #include <infuse/fs/kv_types.h>
 #include <infuse/states.h>
 #include <infuse/time/epoch.h>
 
 #if defined(CONFIG_KV_STORE_KEY_LED_DISABLE_DAILY_TIME_RANGE) ||                                   \
-	defined(CONFIG_KV_STORE_KEY_APPLICATION_ACTIVE)
+	defined(CONFIG_KV_STORE_KEY_APPLICATION_ACTIVE) ||                                         \
+	defined(CONFIG_KV_STORE_KEY_BROADCAST_FIXED_INDOORS)
 #define KV_OBSERVER_CB 1
 
 static void kv_state_obs_value_changed(uint16_t key, const void *data, size_t data_len,
@@ -147,6 +149,20 @@ static void kv_state_obs_value_changed(uint16_t key, const void *data, size_t da
 		}
 	}
 #endif /* CONFIG_KV_STORE_KEY_APPLICATION_ACTIVE */
+#ifdef CONFIG_KV_STORE_KEY_BROADCAST_FIXED_INDOORS
+	const struct kv_broadcast_fixed_indoors *indoors;
+
+	if (key == KV_KEY_BROADCAST_FIXED_INDOORS) {
+		if (data == NULL) {
+			epacket_bt_adv_set_interface_flags(0);
+		} else {
+			indoors = data;
+			epacket_bt_adv_set_interface_flags(
+				indoors->indoors ? EPACKET_FLAGS_BT_ADV_INDOORS : 0);
+		}
+	}
+
+#endif /* CONFIG_KV_STORE_KEY_BROADCAST_FIXED_INDOORS */
 }
 #endif /* KV_OBSERVER_CB */
 
@@ -166,6 +182,14 @@ void kv_state_observer_init_internal(void)
 	/* Evaluate immediately */
 	k_work_schedule(&led_delayable, K_NO_WAIT);
 #endif /* CONFIG_KV_STORE_KEY_LED_DISABLE_DAILY_TIME_RANGE */
+#ifdef CONFIG_KV_STORE_KEY_BROADCAST_FIXED_INDOORS
+	struct kv_broadcast_fixed_indoors indoors;
+
+	if ((KV_STORE_READ(KV_KEY_BROADCAST_FIXED_INDOORS, &indoors) == sizeof(indoors)) &&
+	    indoors.indoors) {
+		epacket_bt_adv_set_interface_flags(EPACKET_FLAGS_BT_ADV_INDOORS);
+	}
+#endif /* CONFIG_KV_STORE_KEY_BROADCAST_FIXED_INDOORS */
 #if defined(CONFIG_KV_STORE_KEY_APPLICATION_ACTIVE)
 	struct kv_application_active active;
 
