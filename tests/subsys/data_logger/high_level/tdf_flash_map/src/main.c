@@ -45,7 +45,7 @@ ZTEST(tdf_data_logger_flash, test_standard)
 
 	/* Flush logger */
 	rc = tdf_data_logger_flush_dev(tdf_logger);
-	zassert_equal(0, rc);
+	zassert_true(rc > 0);
 	data_logger_get_state(data_logger, &state);
 	zassert_equal(1, state.current_block);
 }
@@ -108,7 +108,7 @@ ZTEST(tdf_data_logger_flash, test_auto_flush)
 	zassert_equal(0, state.current_block);
 
 	rc = tdf_data_logger_flush_dev(tdf_logger);
-	zassert_equal(0, rc);
+	zassert_true(rc > 0);
 	data_logger_get_state(data_logger, &state);
 	zassert_equal(1, state.current_block);
 

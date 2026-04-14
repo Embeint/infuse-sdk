@@ -154,7 +154,7 @@ ZTEST(tdf_data_logger_recovery, test_logger_recovery)
 		zassert_unreachable();
 	} else if (reboots.count == 2) {
 		/* If we flush now, we should get the 2 TDFs we logged on the previous boot */
-		zassert_equal(0, tdf_data_logger_flush_dev(tdf_logger));
+		zassert_true(tdf_data_logger_flush_dev(tdf_logger) > 0);
 		buf = k_fifo_get(sent_queue, K_MSEC(100));
 		zassert_not_null(buf);
 		zassert_equal(sizeof(struct epacket_dummy_frame) + 22, buf->len);
@@ -197,7 +197,7 @@ ZTEST(tdf_data_logger_recovery, test_logger_recovery)
 		zassert_unreachable();
 	} else if (reboots.count == (ARRAY_SIZE(corrupt_indicies) + 4)) {
 		/* If we flush now, we should get the 2 TDFs we logged on the previous boot */
-		zassert_equal(0, tdf_data_logger_flush_dev(tdf_remote_logger));
+		zassert_true(tdf_data_logger_flush_dev(tdf_remote_logger) > 0);
 		buf = k_fifo_get(sent_queue, K_MSEC(100));
 		zassert_not_null(buf);
 		zassert_equal(sizeof(struct epacket_dummy_frame) + 22 + sizeof(uint64_t), buf->len);

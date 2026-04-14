@@ -122,7 +122,7 @@ ZTEST(tdf_data_logger_flash, test_standard)
 
 	/* Flush remaining data to disk */
 	rc = tdf_data_logger_flush_dev(tdf_logger);
-	zassert_equal(0, rc);
+	zassert_true(rc >= 0);
 
 	/* Ensure we haven't overwritten data */
 	data_logger_get_state(data_logger, &state);

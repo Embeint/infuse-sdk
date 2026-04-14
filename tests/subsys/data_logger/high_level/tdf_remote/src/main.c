@@ -64,7 +64,7 @@ ZTEST(tdf_data_logger_remote, test_standard)
 
 	/* Flush logger */
 	rc = tdf_data_logger_flush_dev(tdf_logger);
-	zassert_equal(0, rc);
+	zassert_true(rc > 0);
 	data_logger_get_state(data_logger, &state);
 	zassert_equal(1, state.current_block);
 
@@ -99,7 +99,7 @@ ZTEST(tdf_data_logger_remote, test_id_change)
 
 	/* Change the ID, data should now flush */
 	rc = tdf_data_logger_remote_id_set(tdf_logger, 0x12345678ABC0AAAA);
-	zassert_equal(0, rc);
+	zassert_true(rc > 0);
 	data_logger_get_state(data_logger, &state);
 	zassert_equal(1, state.current_block);
 	validate_tdf_remote(data_logger, 0, 0x800012345678ABCD);
@@ -108,7 +108,7 @@ ZTEST(tdf_data_logger_remote, test_id_change)
 	rc = tdf_data_logger_log_dev(tdf_logger, TDF_RANDOM, 17, 0, tdf_data);
 	zassert_equal(0, rc);
 	rc = tdf_data_logger_flush_dev(tdf_logger);
-	zassert_equal(0, rc);
+	zassert_true(rc > 0);
 	data_logger_get_state(data_logger, &state);
 	zassert_equal(2, state.current_block);
 	validate_tdf_remote(data_logger, 1, 0x12345678ABC0AAAA);

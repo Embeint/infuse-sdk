@@ -241,7 +241,7 @@ int tdf_data_logger_block_bytes_remaining(const struct device *dev);
  *
  * @param dev Data logger
  *
- * @retval 0 On success (Or no data to flush)
+ * @retval >=0 On success, number of bytes flushed
  * @retval -errno Error code from @a data_logger_block_write
  */
 int tdf_data_logger_flush_dev(const struct device *dev);

@@ -141,6 +141,7 @@ static int flush_internal(const struct device *dev, bool locked)
 {
 	const struct tdf_logger_config *config = dev->config;
 	struct tdf_logger_data *data = dev->data;
+	int pending;
 	int rc;
 
 	/* No work to do */
@@ -163,6 +164,7 @@ static int flush_internal(const struct device *dev, bool locked)
 		/* Lock access */
 		k_sem_take(&data->lock, K_FOREVER);
 	}
+	pending = data->tdf_state.buf.len;
 
 	/* Re-add the overhead */
 	net_buf_simple_push(&data->tdf_state.buf, data->block_overhead);
@@ -182,6 +184,8 @@ static int flush_internal(const struct device *dev, bool locked)
 		LOG_DBG("%s failed to write block (%d)", dev->name, rc);
 	} else if (rc < 0) {
 		LOG_ERR("%s failed to write block (%d)", dev->name, rc);
+	} else {
+		rc = pending;
 	}
 
 	/* Reset buffer and reserve overhead */

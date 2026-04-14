@@ -39,7 +39,7 @@ ZTEST(tdf_data_logger_exfat, test_block_padding)
 
 	/* Flush logger (Data should be padded and not assert) */
 	rc = tdf_data_logger_flush_dev(tdf_logger);
-	zassert_equal(0, rc);
+	zassert_true(rc > 0);
 	data_logger_get_state(data_logger, &state);
 	zassert_equal(1, state.current_block);
 }
