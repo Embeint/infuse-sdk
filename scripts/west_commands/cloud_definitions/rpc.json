@@ -178,6 +178,13 @@
                 {"name": "utilization", "type": "uint8_t"},
                 {"name": "name", "type": "char", "num": 0}
             ]
+        },
+        "rpc_struct_data_logger_flushed": {
+            "description": "IPv6 address",
+            "fields": [
+                {"name": "logger", "type": "uint8_t", "description": "Logger that was flushed"},
+                {"name": "num", "type": "uint16_t", "description": "Number of bytes flushed"}
+            ]
         }
     },
     "enums": {
@@ -218,6 +225,18 @@
                 {"name": "FLASH_ONBOARD", "value": 1, "description": "Onboard flash logger"},
                 {"name": "FLASH_REMOVABLE", "value": 2, "description": "Removable flash logger (SD)"},
                 {"name": "UDP", "value": 3, "description": "Networked UDP logger"}
+            ]
+        },
+        "rpc_enum_tdf_data_logger": {
+            "description": "TDF data Logger identifier",
+            "type": "uint8_t",
+            "values": [
+                {"name": "FLASH_ONBOARD", "value": 1, "description": "Onboard flash TDF logger"},
+                {"name": "FLASH_REMOVABLE", "value": 2, "description": "Removable flash TDF logger (SD)"},
+                {"name": "SERIAL", "value": 4, "description": "Serial TDF logger"},
+                {"name": "UDP", "value": 8, "description": "Networked UDP TDF logger"},
+                {"name": "BT_ADV", "value": 16, "description": "Bluetooth advertising TDF logger"},
+                {"name": "BT_PERIPH", "value": 32, "description": "Bluetooth peripheral TDF logger"}
             ]
         },
         "rpc_enum_zperf_data_source": {
@@ -741,6 +760,21 @@
             "response_params": [
             ]
         },
+        "42": {
+            "name": "tdf_data_logger_flush",
+            "description": "Write an annotation to the device",
+            "default": "y if INFUSE_SDK",
+            "depends_on": "TDF_DATA_LOGGER",
+            "default_auth": "EPACKET_AUTH_DEVICE",
+            "request_params": [
+                {"name": "loggers", "type": "enum rpc_enum_tdf_data_logger", "description": "TDF data loggers to flush"}
+            ],
+            "response_params": [
+                {"name": "num", "type": "uint8_t", "description": "Number of loggers in response"},
+                {"name": "flushed", "type": "struct rpc_struct_data_logger_flushed", "num": 0, "description": "Flush status", "counted_by": "num"}
+            ]
+        },
+
         "50": {
             "name": "bt_connect_infuse",
             "description": "Connect to an Infuse-IoT Bluetooth device",

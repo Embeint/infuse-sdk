@@ -369,6 +369,18 @@ config INFUSE_RPC_COMMAND_ANNOTATE_REQUIRED_AUTH
 	depends on INFUSE_RPC_COMMAND_ANNOTATE
 	default 2
 
+config INFUSE_RPC_COMMAND_TDF_DATA_LOGGER_FLUSH
+	bool "Enable RPC tdf_data_logger_flush"
+	depends on TDF_DATA_LOGGER
+	default y if INFUSE_SDK
+	help
+	  Write an annotation to the device
+
+config INFUSE_RPC_COMMAND_TDF_DATA_LOGGER_FLUSH_REQUIRED_AUTH
+	int "Required authorisation level to run tdf_data_logger_flush"
+	depends on INFUSE_RPC_COMMAND_TDF_DATA_LOGGER_FLUSH
+	default 2
+
 config INFUSE_RPC_COMMAND_BT_CONNECT_INFUSE
 	bool "Enable RPC bt_connect_infuse"
 	depends on EPACKET_INTERFACE_BT_CENTRAL

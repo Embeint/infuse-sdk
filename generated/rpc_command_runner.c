@@ -291,6 +291,13 @@ void rpc_command_runner(struct net_buf *request)
 		}
 		break;
 #endif /* CONFIG_INFUSE_RPC_COMMAND_ANNOTATE */
+#ifdef CONFIG_INFUSE_RPC_COMMAND_TDF_DATA_LOGGER_FLUSH
+	case RPC_ID_TDF_DATA_LOGGER_FLUSH:
+		if (AUTHORISED(auth, TDF_DATA_LOGGER_FLUSH)) { /* GCOVR_EXCL_BR_LINE */
+			response = rpc_command_tdf_data_logger_flush(request);
+		}
+		break;
+#endif /* CONFIG_INFUSE_RPC_COMMAND_TDF_DATA_LOGGER_FLUSH */
 #ifdef CONFIG_INFUSE_RPC_COMMAND_BT_CONNECT_INFUSE
 	case RPC_ID_BT_CONNECT_INFUSE:
 		if (AUTHORISED(auth, BT_CONNECT_INFUSE)) { /* GCOVR_EXCL_BR_LINE */
