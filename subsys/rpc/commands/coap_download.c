@@ -28,6 +28,7 @@
 #include "nrf_modem_delta_dfu.h"
 #endif /* CONFIG_NRF_MODEM_LIB */
 
+#include "common_coap.h"
 #include "common_file_actions.h"
 
 LOG_MODULE_DECLARE(rpc_server, CONFIG_INFUSE_RPC_LOG_LEVEL);
