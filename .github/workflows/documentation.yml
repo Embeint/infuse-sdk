@@ -145,12 +145,12 @@ jobs:
         DOC_TAG=${DOC_TAG} SPHINXOPTS="-q -t publish" make -C doc ${DOC_TARGET}
 
     - name: compress-docs
-      if: 0
+      if: ${{ github.event_name == 'push' }}
       run: |
         tar cfJ html-output.tar.xz --directory=infuse-sdk/doc/_build html
 
     - name: upload-build
-      if: 0
+      if: ${{ github.event_name == 'push' }}
       uses: actions/upload-artifact@v4
       with:
         name: html-output
@@ -158,8 +158,8 @@ jobs:
 
   doc-publish:
     name: Publish Documentation
-    if: 0
-    runs-on: ubuntu-22.04
+    if: ${{ github.event_name == 'push' }}
+    runs-on: ubuntu-24.04
     needs: doc-build-html
 
     steps:
