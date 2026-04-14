@@ -14,7 +14,11 @@ tests:
   libraries.auto.kv_state_observer.app_active:
     extra_configs:
       - CONFIG_KV_STORE_KEY_APPLICATION_ACTIVE=y
+  libraries.auto.kv_state_observer.fixed_indoors:
+    extra_configs:
+      - CONFIG_KV_STORE_KEY_BROADCAST_FIXED_INDOORS=y
   libraries.auto.kv_state_observer.all:
     extra_configs:
       - CONFIG_KV_STORE_KEY_LED_DISABLE_DAILY_TIME_RANGE=y
       - CONFIG_KV_STORE_KEY_APPLICATION_ACTIVE=y
+      - CONFIG_KV_STORE_KEY_BROADCAST_FIXED_INDOORS=y

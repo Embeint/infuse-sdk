@@ -16,8 +16,16 @@
 #include <infuse/fs/kv_types.h>
 #include <infuse/states.h>
 #include <infuse/time/epoch.h>
+#include <infuse/epacket/interface/epacket_bt_adv.h>
 
 void kv_state_observer_init_internal(void);
+
+static enum epacket_flags_bt_adv set_flags;
+
+void epacket_bt_adv_set_interface_flags(enum epacket_flags_bt_adv flags)
+{
+	set_flags = flags;
+}
 
 static void set_now(uint32_t gps_time)
 {
@@ -295,6 +303,81 @@ ZTEST(kv_state_observer, test_application_active_boot)
 	zassert_false(infuse_state_get(INFUSE_STATE_APPLICATION_ACTIVE));
 }
 
+ZTEST(kv_state_observer, test_broadcast_fixed_indoors)
+{
+	struct kv_broadcast_fixed_indoors indoors;
+	int rc;
+
+	if (!IS_ENABLED(CONFIG_KV_STORE_KEY_BROADCAST_FIXED_INDOORS)) {
+		ztest_test_skip();
+		return;
+	}
+
+	/* Write not indoors */
+	indoors.indoors = 0x00;
+	rc = KV_STORE_WRITE(KV_KEY_BROADCAST_FIXED_INDOORS, &indoors);
+	zassert_equal(sizeof(indoors), rc);
+	zassert_equal(0, set_flags);
+
+	/* Delete while not indoors */
+	rc = kv_store_delete(KV_KEY_BROADCAST_FIXED_INDOORS);
+	zassert_equal(0, rc);
+	zassert_equal(0, set_flags);
+
+	/* Write indoors */
+	indoors.indoors = 0x01;
+	rc = KV_STORE_WRITE(KV_KEY_BROADCAST_FIXED_INDOORS, &indoors);
+	zassert_equal(sizeof(indoors), rc);
+	zassert_equal(EPACKET_FLAGS_BT_ADV_INDOORS, set_flags);
+
+	/* Write not indoors */
+	indoors.indoors = 0x00;
+	rc = KV_STORE_WRITE(KV_KEY_BROADCAST_FIXED_INDOORS, &indoors);
+	zassert_equal(sizeof(indoors), rc);
+	zassert_equal(0, set_flags);
+
+	/* Write different indoors */
+	indoors.indoors = 0xA9;
+	rc = KV_STORE_WRITE(KV_KEY_BROADCAST_FIXED_INDOORS, &indoors);
+	zassert_equal(sizeof(indoors), rc);
+	zassert_equal(EPACKET_FLAGS_BT_ADV_INDOORS, set_flags);
+
+	/* Delete while indoors */
+	rc = kv_store_delete(KV_KEY_BROADCAST_FIXED_INDOORS);
+	zassert_equal(0, rc);
+	zassert_equal(0, set_flags);
+}
+
+ZTEST(kv_state_observer, test_broadcast_fixed_indoors_boot)
+{
+	struct kv_broadcast_fixed_indoors indoors;
+	int rc;
+
+	if (!IS_ENABLED(CONFIG_KV_STORE_KEY_BROADCAST_FIXED_INDOORS)) {
+		/* No flags set */
+		zassert_equal(0, set_flags);
+		return;
+	}
+
+	/* Nothing set when not present on boot */
+	zassert_equal(0, set_flags);
+
+	/* Booting with indoors set */
+	indoors.indoors = 0xA9;
+	rc = KV_STORE_WRITE(KV_KEY_BROADCAST_FIXED_INDOORS, &indoors);
+	zassert_equal(sizeof(indoors), rc);
+	kv_state_observer_init_internal();
+	zassert_equal(EPACKET_FLAGS_BT_ADV_INDOORS, set_flags);
+
+	/* Booting with indoors cleared */
+	indoors.indoors = 0x00;
+	rc = KV_STORE_WRITE(KV_KEY_BROADCAST_FIXED_INDOORS, &indoors);
+	zassert_equal(sizeof(indoors), rc);
+	set_flags = 0;
+	kv_state_observer_init_internal();
+	zassert_equal(0, set_flags);
+}
+
 void test_init(void *fixture)
 {
 	struct timeutil_sync_instant reference = {
@@ -304,6 +387,7 @@ void test_init(void *fixture)
 
 	kv_store_delete(KV_KEY_LED_DISABLE_DAILY_TIME_RANGE);
 	kv_store_delete(KV_KEY_APPLICATION_ACTIVE);
+	kv_store_delete(KV_KEY_BROADCAST_FIXED_INDOORS);
 	epoch_time_set_reference(TIME_SOURCE_NONE, &reference);
 	kv_state_observer_init_internal();
 }
