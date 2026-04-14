@@ -247,6 +247,16 @@ int tdf_data_logger_block_bytes_remaining(const struct device *dev);
 int tdf_data_logger_flush_dev(const struct device *dev);
 
 /**
+ * @brief Get a TDF logger devices from a mask
+ *
+ * @param logger_mask Logger to retrieve (exactly one bit set)
+ *
+ * @retval NULL if logger does not exist or @a logger_mask is not exactly one bit
+ * @retval device logger device associated with @a logger_mask
+ */
+const struct device *tdf_data_logger_from_mask(uint8_t logger_mask);
+
+/**
  * @brief Flush any pending TDFs to multiple backends
  *
  * @param logger_mask Bitmask of loggers to flush (@ref tdf_data_logger_mask)

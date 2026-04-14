@@ -115,6 +115,14 @@ static const struct device *logger_mask_iter(uint8_t *mask)
 	return NULL;
 }
 
+const struct device *tdf_data_logger_from_mask(uint8_t logger_mask)
+{
+	if (__builtin_popcount(logger_mask) != 1) {
+		return NULL;
+	}
+	return logger_mask_iter(&logger_mask);
+}
+
 int tdf_data_logger_block_bytes_pending(const struct device *dev)
 {
 	struct tdf_logger_data *data = dev->data;
