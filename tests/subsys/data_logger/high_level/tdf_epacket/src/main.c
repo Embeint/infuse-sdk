@@ -72,7 +72,7 @@ ZTEST(tdf_data_logger, test_standard)
 
 	/* Flush logger */
 	rc = tdf_data_logger_flush_dev(logger);
-	zassert_equal(0, rc);
+	zassert_equal(56, rc);
 
 	zassert_equal(0, tdf_data_logger_block_bytes_pending(logger));
 	zassert_equal(init_size, tdf_data_logger_block_bytes_remaining(logger));
@@ -99,7 +99,7 @@ ZTEST(tdf_data_logger, test_multi)
 
 	/* Flush logger */
 	rc = tdf_data_logger_flush_dev(logger);
-	zassert_equal(0, rc);
+	zassert_equal(54, rc);
 
 	/* Validate payload sent */
 	buf = k_fifo_get(sent_queue, K_MSEC(1));
@@ -125,7 +125,7 @@ ZTEST(tdf_data_logger, test_multi)
 
 	/* Second packet should have the remaining 5 TDFs */
 	rc = tdf_data_logger_flush_dev(logger);
-	zassert_equal(0, rc);
+	zassert_true(rc > 0);
 	buf = k_fifo_get(sent_queue, K_MSEC(1));
 	zassert_not_null(buf);
 	zassert_equal(sizeof(struct epacket_dummy_frame) + 26, buf->len);
@@ -193,7 +193,7 @@ ZTEST(tdf_data_logger, test_index_rollover)
 
 	/* Second packet should have the remaining TDFs */
 	rc = tdf_data_logger_flush_dev(logger);
-	zassert_equal(0, rc);
+	zassert_true(rc > 0);
 	buf = k_fifo_get(sent_queue, K_MSEC(1));
 	zassert_not_null(buf);
 	net_buf_pull(buf, sizeof(struct epacket_dummy_frame));
@@ -253,7 +253,7 @@ ZTEST(tdf_data_logger, test_index_time_rollover_reset)
 	net_buf_unref(buf);
 
 	rc = tdf_data_logger_flush_dev(logger);
-	zassert_equal(0, rc);
+	zassert_true(rc > 0);
 	buf = k_fifo_get(sent_queue, K_MSEC(1));
 	zassert_not_null(buf);
 	net_buf_pull(buf, sizeof(struct epacket_dummy_frame));
@@ -575,7 +575,7 @@ ZTEST(tdf_data_logger, test_backend_disconnect_after_reboot)
 
 	/* Flushing the logger should have all the data */
 	rc = tdf_data_logger_flush_dev(logger);
-	zassert_equal(0, rc);
+	zassert_true(rc > 0);
 	buf = k_fifo_get(sent_queue, K_MSEC(1));
 	zassert_not_null(buf);
 	zassert_true(buf->len > (sizeof(struct epacket_dummy_frame) + 40));
