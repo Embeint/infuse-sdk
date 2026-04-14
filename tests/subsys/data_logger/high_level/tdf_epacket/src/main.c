@@ -28,7 +28,7 @@ int tdf_data_logger_init(const struct device *dev);
 
 ZTEST(tdf_data_logger, test_log_error)
 {
-	const struct device *logger = DEVICE_DT_GET(DT_NODELABEL(tdf_logger_epacket));
+	const struct device *logger = DEVICE_DT_GET(DT_NODELABEL(tdf_logger_dummy));
 	uint8_t tdf_data[128];
 
 	/* TDF's too large to fit on the log */
@@ -37,9 +37,19 @@ ZTEST(tdf_data_logger, test_log_error)
 	}
 }
 
+ZTEST(tdf_data_logger, test_common)
+{
+	const struct device *logger = DEVICE_DT_GET(DT_NODELABEL(tdf_logger_dummy));
+
+	zassert_equal(NULL, tdf_data_logger_from_mask(0));
+	zassert_equal(logger, tdf_data_logger_from_mask(TDF_DATA_LOGGER_SERIAL));
+	zassert_equal(NULL,
+		      tdf_data_logger_from_mask(TDF_DATA_LOGGER_SERIAL | TDF_DATA_LOGGER_UDP));
+}
+
 ZTEST(tdf_data_logger, test_standard)
 {
-	const struct device *logger = DEVICE_DT_GET(DT_NODELABEL(tdf_logger_epacket));
+	const struct device *logger = DEVICE_DT_GET(DT_NODELABEL(tdf_logger_dummy));
 	struct k_fifo *sent_queue = epacket_dummmy_transmit_fifo_get();
 	uint8_t tdf_data[16];
 	struct net_buf *buf;
@@ -76,7 +86,7 @@ ZTEST(tdf_data_logger, test_standard)
 
 ZTEST(tdf_data_logger, test_multi)
 {
-	const struct device *logger = DEVICE_DT_GET(DT_NODELABEL(tdf_logger_epacket));
+	const struct device *logger = DEVICE_DT_GET(DT_NODELABEL(tdf_logger_dummy));
 	struct k_fifo *sent_queue = epacket_dummmy_transmit_fifo_get();
 	uint8_t tdf_data[128];
 	struct net_buf *buf;
@@ -124,7 +134,7 @@ ZTEST(tdf_data_logger, test_multi)
 
 ZTEST(tdf_data_logger, test_index_rollover)
 {
-	const struct device *logger = DEVICE_DT_GET(DT_NODELABEL(tdf_logger_epacket));
+	const struct device *logger = DEVICE_DT_GET(DT_NODELABEL(tdf_logger_dummy));
 	struct k_fifo *sent_queue = epacket_dummmy_transmit_fifo_get();
 	uint8_t tdf_data[128];
 	struct net_buf *buf;
@@ -211,7 +221,7 @@ ZTEST(tdf_data_logger, test_index_rollover)
 
 ZTEST(tdf_data_logger, test_index_time_rollover_reset)
 {
-	const struct device *logger = DEVICE_DT_GET(DT_NODELABEL(tdf_logger_epacket));
+	const struct device *logger = DEVICE_DT_GET(DT_NODELABEL(tdf_logger_dummy));
 	struct k_fifo *sent_queue = epacket_dummmy_transmit_fifo_get();
 	uint8_t tdf_data[128];
 	struct net_buf *buf;
@@ -273,7 +283,7 @@ ZTEST(tdf_data_logger, test_index_time_rollover_reset)
 
 ZTEST(tdf_data_logger, test_auto_flush)
 {
-	const struct device *logger = DEVICE_DT_GET(DT_NODELABEL(tdf_logger_epacket));
+	const struct device *logger = DEVICE_DT_GET(DT_NODELABEL(tdf_logger_dummy));
 	struct k_fifo *sent_queue = epacket_dummmy_transmit_fifo_get();
 	uint8_t tdf_data[128];
 	struct net_buf *buf;
@@ -313,7 +323,7 @@ ZTEST(tdf_data_logger, test_auto_flush)
 ZTEST(tdf_data_logger, test_size_change_decrease)
 {
 	const struct device *dummy = DEVICE_DT_GET(DT_NODELABEL(epacket_dummy));
-	const struct device *logger = DEVICE_DT_GET(DT_NODELABEL(tdf_logger_epacket));
+	const struct device *logger = DEVICE_DT_GET(DT_NODELABEL(tdf_logger_dummy));
 	struct k_fifo *sent_queue = epacket_dummmy_transmit_fifo_get();
 	uint8_t tdf_data[128] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
 	struct net_buf *buf;
@@ -381,7 +391,7 @@ ZTEST(tdf_data_logger, test_size_change_decrease)
 ZTEST(tdf_data_logger, test_diff_size_change_decrease)
 {
 	const struct device *dummy = DEVICE_DT_GET(DT_NODELABEL(epacket_dummy));
-	const struct device *logger = DEVICE_DT_GET(DT_NODELABEL(tdf_logger_epacket));
+	const struct device *logger = DEVICE_DT_GET(DT_NODELABEL(tdf_logger_dummy));
 	struct k_fifo *sent_queue = epacket_dummmy_transmit_fifo_get();
 	uint16_t tdf_data[16] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
 	struct net_buf *buf;
@@ -439,7 +449,7 @@ ZTEST(tdf_data_logger, test_diff_size_change_decrease)
 ZTEST(tdf_data_logger, test_size_change_increase)
 {
 	const struct device *dummy = DEVICE_DT_GET(DT_NODELABEL(epacket_dummy));
-	const struct device *logger = DEVICE_DT_GET(DT_NODELABEL(tdf_logger_epacket));
+	const struct device *logger = DEVICE_DT_GET(DT_NODELABEL(tdf_logger_dummy));
 	struct k_fifo *sent_queue = epacket_dummmy_transmit_fifo_get();
 	uint8_t tdf_data[128];
 	struct net_buf *buf;
@@ -475,7 +485,7 @@ ZTEST(tdf_data_logger, test_size_change_increase)
 ZTEST(tdf_data_logger, test_backend_disconnect)
 {
 	const struct device *dummy = DEVICE_DT_GET(DT_NODELABEL(epacket_dummy));
-	const struct device *logger = DEVICE_DT_GET(DT_NODELABEL(tdf_logger_epacket));
+	const struct device *logger = DEVICE_DT_GET(DT_NODELABEL(tdf_logger_dummy));
 	struct k_fifo *sent_queue = epacket_dummmy_transmit_fifo_get();
 	uint8_t tdf_data[128];
 	struct net_buf *buf;
@@ -535,7 +545,7 @@ ZTEST(tdf_data_logger, test_backend_disconnect_after_reboot)
 {
 	const struct device *dummy = DEVICE_DT_GET(DT_NODELABEL(epacket_dummy));
 	const struct device *data_logger = DEVICE_DT_GET(DT_NODELABEL(data_logger_epacket));
-	const struct device *logger = DEVICE_DT_GET(DT_NODELABEL(tdf_logger_epacket));
+	const struct device *logger = DEVICE_DT_GET(DT_NODELABEL(tdf_logger_dummy));
 	struct k_fifo *sent_queue = epacket_dummmy_transmit_fifo_get();
 	uint8_t tdf_data[128];
 	struct net_buf *buf;
@@ -575,7 +585,7 @@ ZTEST(tdf_data_logger, test_backend_disconnect_after_reboot)
 void data_logger_reset(void *fixture)
 {
 	const struct device *dummy = DEVICE_DT_GET(DT_NODELABEL(epacket_dummy));
-	const struct device *logger = DEVICE_DT_GET(DT_NODELABEL(tdf_logger_epacket));
+	const struct device *logger = DEVICE_DT_GET(DT_NODELABEL(tdf_logger_dummy));
 	struct k_fifo *sent_queue = epacket_dummmy_transmit_fifo_get();
 	struct net_buf *buf;
 
