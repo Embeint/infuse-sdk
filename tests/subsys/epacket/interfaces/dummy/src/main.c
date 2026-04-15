@@ -77,6 +77,52 @@ ZTEST(epacket_dummy, test_send_queue)
 	zassert_is_null(k_fifo_get(sent_queue, K_NO_WAIT));
 }
 
+ZTEST(epacket_dummy, test_rx_semaphore)
+{
+	const struct device *epacket_dummy = DEVICE_DT_GET(DT_NODELABEL(epacket_dummy));
+	struct k_sem *epacket_rx_started = epacket_dummy_rx_started_sem_get();
+
+	(void)k_sem_take(epacket_rx_started, K_NO_WAIT);
+
+	epacket_receive(epacket_dummy, K_FOREVER);
+	zassert_equal(0, k_sem_take(epacket_rx_started, K_NO_WAIT));
+	zassert_equal(-EBUSY, k_sem_take(epacket_rx_started, K_NO_WAIT));
+	epacket_receive(epacket_dummy, K_NO_WAIT);
+	zassert_equal(-EBUSY, k_sem_take(epacket_rx_started, K_NO_WAIT));
+	epacket_receive(epacket_dummy, K_SECONDS(1));
+	zassert_equal(0, k_sem_take(epacket_rx_started, K_NO_WAIT));
+	zassert_equal(-EAGAIN, k_sem_take(epacket_rx_started, K_SECONDS(2)));
+}
+
+static uint32_t expected_timestamp;
+static K_SEM_DEFINE(packet_received, 0, 1);
+
+static void rx_gps_test_handler(struct net_buf *rx)
+{
+	struct epacket_rx_metadata *meta = net_buf_user_data(rx);
+
+	zassert_equal(expected_timestamp, meta->packet_gps_time);
+	net_buf_unref(rx);
+	k_sem_give(&packet_received);
+}
+
+ZTEST(epacket_dummy, test_rx)
+{
+	const struct device *epacket_dummy = DEVICE_DT_GET(DT_NODELABEL(epacket_dummy));
+	struct epacket_dummy_frame frame = {
+		.type = INFUSE_TDF,
+		.auth = EPACKET_AUTH_NETWORK,
+	};
+	uint8_t tdf = 0;
+
+	epacket_set_receive_handler(epacket_dummy, rx_gps_test_handler);
+	expected_timestamp = 1234567;
+	epacket_dummy_set_gps_timestamp(expected_timestamp);
+
+	epacket_dummy_receive(epacket_dummy, &frame, &tdf, 1);
+	zassert_equal(0, k_sem_take(&packet_received, K_SECONDS(1)));
+}
+
 ZTEST(epacket_dummy, test_packet_size)
 {
 	const struct device *epacket_dummy = DEVICE_DT_GET(DT_NODELABEL(epacket_dummy));

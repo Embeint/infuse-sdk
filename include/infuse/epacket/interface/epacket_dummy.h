@@ -57,6 +57,20 @@ void epacket_dummy_reset_callbacks(const struct device *dev);
 struct k_fifo *epacket_dummmy_transmit_fifo_get(void);
 
 /**
+ * @brief Get the semaphore that is given each time reception starts
+ *
+ * @return Pointer to the semaphore
+ */
+struct k_sem *epacket_dummy_rx_started_sem_get(void);
+
+/**
+ * @brief Set the GPS timestamp used for received packets
+ *
+ * @param timestamp GPS timestamp to use
+ */
+void epacket_dummy_set_gps_timestamp(uint32_t timestamp);
+
+/**
  * @brief If set to a non-zero value, treat all sends as errors
  *
  * @param error_code Error code to return.
