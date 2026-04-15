@@ -22,6 +22,8 @@
 LOG_MODULE_REGISTER(epacket_dummy, CONFIG_EPACKET_LOG_LEVEL);
 
 static K_FIFO_DEFINE(epacket_dummy_fifo);
+static K_SEM_DEFINE(epacket_dummy_rx_started, 0, 1);
+static uint32_t rx_gps_timestamp;
 static int send_error_code;
 static uint16_t max_packet_size = EPACKET_INTERFACE_MAX_PACKET(DT_DRV_INST(0));
 static bool receiving;
@@ -37,6 +39,16 @@ void epacket_dummy_reset_callbacks(const struct device *dev)
 struct k_fifo *epacket_dummmy_transmit_fifo_get(void)
 {
 	return &epacket_dummy_fifo;
+}
+
+struct k_sem *epacket_dummy_rx_started_sem_get(void)
+{
+	return &epacket_dummy_rx_started;
+}
+
+void epacket_dummy_set_gps_timestamp(uint32_t timestamp)
+{
+	rx_gps_timestamp = timestamp;
 }
 
 void epacket_dummy_set_tx_failure(int error_code)
@@ -124,6 +136,9 @@ static int epacket_dummy_receive_ctrl(const struct device *dev, bool enable)
 
 	if (receive_rc == 0) {
 		receiving = enable;
+		if (enable) {
+			k_sem_give(&epacket_dummy_rx_started);
+		}
 	}
 	return receive_rc;
 }
@@ -147,6 +162,8 @@ int epacket_dummy_decrypt(struct net_buf *buf)
 	meta->flags = header->flags;
 	meta->key_identifier = header->key_identifier;
 	meta->sequence = 0;
+	meta->packet_gps_time = rx_gps_timestamp;
+	meta->packet_device_id = 1;
 	return 0;
 }
 
