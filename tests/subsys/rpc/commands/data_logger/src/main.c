@@ -163,7 +163,7 @@ static void send_tdf_data_logger_flush_command(uint32_t request_id, uint8_t logg
 	epacket_dummy_receive(epacket_dummy, &header, &params, sizeof(params));
 }
 
-static void send_data_logger_erase_command(uint32_t request_id, uint8_t logger, bool erase_empty)
+static void send_data_logger_erase_command(uint32_t request_id, uint8_t logger, uint8_t erase_mode)
 {
 	const struct device *epacket_dummy = DEVICE_DT_GET(DT_NODELABEL(epacket_dummy));
 	struct epacket_dummy_frame header = {
@@ -178,7 +178,7 @@ static void send_data_logger_erase_command(uint32_t request_id, uint8_t logger, 
 				.command_id = RPC_ID_DATA_LOGGER_ERASE,
 			},
 		.logger = logger,
-		.erase_empty = erase_empty,
+		.erase_empty = erase_mode,
 	};
 
 	/* Push command at RPC server */
@@ -672,15 +672,23 @@ ZTEST(rpc_command_data_logger, test_data_logger_erase_invalid)
 	const struct device *flash_logger = DEVICE_DT_GET(DT_NODELABEL(data_logger_flash));
 	struct net_buf *rsp;
 
-	send_data_logger_erase_command(0x1234, UINT8_MAX, false);
+	send_data_logger_erase_command(0x1234, UINT8_MAX, 0x00);
 	rsp = expect_rpc_response(0x1234, RPC_ID_DATA_LOGGER_ERASE, -ENODEV);
 	net_buf_unref(rsp);
 
 	/* Pretend logger failed to initialise */
 	flash_logger->state->init_res += 1;
 	/* Try to erase */
-	send_data_logger_erase_command(0x1234, RPC_ENUM_DATA_LOGGER_FLASH_ONBOARD, false);
-	rsp = expect_rpc_response(0x1234, RPC_ID_DATA_LOGGER_ERASE, -EBADF);
+	send_data_logger_erase_command(0x1235, RPC_ENUM_DATA_LOGGER_FLASH_ONBOARD, 0x00);
+	rsp = expect_rpc_response(0x1235, RPC_ID_DATA_LOGGER_ERASE, -EBADF);
+	net_buf_unref(rsp);
+	/* Try to erase full */
+	send_data_logger_erase_command(0x1236, RPC_ENUM_DATA_LOGGER_FLASH_ONBOARD, 0x01);
+	rsp = expect_rpc_response(0x1236, RPC_ID_DATA_LOGGER_ERASE, -EBADF);
+	net_buf_unref(rsp);
+	/* Erase with override */
+	send_data_logger_erase_command(0x1237, RPC_ENUM_DATA_LOGGER_FLASH_ONBOARD, 0xAA);
+	rsp = expect_rpc_response(0x1237, RPC_ID_DATA_LOGGER_ERASE, 0);
 	net_buf_unref(rsp);
 	/* Restore init result */
 	flash_logger->state->init_res -= 1;
@@ -708,7 +716,7 @@ ZTEST(rpc_command_data_logger, test_data_logger_erase)
 	zassert_equal(8 * 512, state.bytes_logged);
 
 	/* Erase request */
-	send_data_logger_erase_command(0x1235, RPC_ENUM_DATA_LOGGER_FLASH_ONBOARD, true);
+	send_data_logger_erase_command(0x1235, RPC_ENUM_DATA_LOGGER_FLASH_ONBOARD, 0x01);
 	rsp = expect_rpc_response(0x1235, RPC_ID_DATA_LOGGER_ERASE, 0);
 	net_buf_unref(rsp);
 
