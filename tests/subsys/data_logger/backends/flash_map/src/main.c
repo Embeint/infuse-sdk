@@ -12,6 +12,8 @@
 #include <zephyr/kernel.h>
 #include <zephyr/drivers/flash.h>
 #include <zephyr/drivers/flash/flash_simulator.h>
+#include <zephyr/pm/device.h>
+#include <zephyr/pm/device_runtime.h>
 
 #include <infuse/data_logger/logger.h>
 
@@ -461,6 +463,32 @@ ZTEST(data_logger_flash_map, test_erase_exclusion)
 	zassert_equal(4, state.current_block);
 }
 
+ZTEST(data_logger_flash_map, test_pm)
+{
+	const struct device *sim_flash = DEVICE_DT_GET(DT_NODELABEL(sim_flash));
+	const struct device *logger = DEVICE_DT_GET(NODE);
+	enum pm_device_state state;
+
+	if (!IS_ENABLED(CONFIG_PM_DEVICE_RUNTIME)) {
+		ztest_test_skip();
+		return;
+	}
+
+	/* Suspended by default */
+	zassert_equal(0, pm_device_state_get(logger, &state));
+	zassert_equal(PM_DEVICE_STATE_SUSPENDED, state);
+	zassert_equal(0, pm_device_state_get(sim_flash, &state));
+	zassert_equal(PM_DEVICE_STATE_SUSPENDED, state);
+
+	/* Logger PM control defers to */
+	zassert_equal(0, pm_device_runtime_get(logger));
+	zassert_equal(0, pm_device_state_get(sim_flash, &state));
+	zassert_equal(PM_DEVICE_STATE_ACTIVE, state);
+	zassert_equal(0, pm_device_runtime_put(logger));
+	zassert_equal(0, pm_device_state_get(sim_flash, &state));
+	zassert_equal(PM_DEVICE_STATE_SUSPENDED, state);
+}
+
 static bool test_data_init(const void *global_state)
 {
 	flash_buffer = flash_simulator_get_memory(DEVICE_DT_GET(DT_NODELABEL(sim_flash)),
@@ -468,4 +496,10 @@ static bool test_data_init(const void *global_state)
 	return true;
 }
 
-ZTEST_SUITE(data_logger_flash_map, test_data_init, NULL, NULL, NULL, NULL);
+static void after_fn(void *unused)
+{
+	/* Small delay to allow PM to release */
+	k_sleep(K_MSEC(200));
+}
+
+ZTEST_SUITE(data_logger_flash_map, test_data_init, NULL, NULL, after_fn, NULL);
