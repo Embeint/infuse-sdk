@@ -843,7 +843,7 @@ struct rpc_data_logger_erase_request {
 	struct infuse_rpc_req_header header;
 	/** Data logger to erase */
 	uint8_t logger;
-	/** Erase entire logger space, even empty blocks */
+	/** Erase entire logger space, even empty blocks (0xAA == ignore init failures) */
 	uint8_t erase_empty;
 } __packed;
 

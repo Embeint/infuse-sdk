@@ -29,6 +29,7 @@ struct net_buf *rpc_command_data_logger_erase(struct net_buf *request)
 	struct rpc_data_logger_erase_request *req = (void *)request->data;
 	struct rpc_data_logger_erase_response rsp = {0};
 	const struct device *logger;
+	bool init_override = req->erase_empty == 0xAA;
 	bool erase_all = req->erase_empty;
 	int rc = 0;
 
@@ -54,7 +55,7 @@ struct net_buf *rpc_command_data_logger_erase(struct net_buf *request)
 	req_meta = NULL;
 
 	/* Ensure device initialised properly */
-	if (!device_is_ready(logger)) {
+	if (!device_is_ready(logger) && !init_override) {
 		rc = -EBADF;
 		goto end;
 	}
