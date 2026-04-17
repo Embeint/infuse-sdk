@@ -537,7 +537,7 @@
             "default_auth": "EPACKET_AUTH_DEVICE",
             "request_params": [
                 {"name": "logger", "type": "enum rpc_enum_data_logger", "description": "Data logger to erase"},
-                {"name": "erase_empty", "type": "uint8_t", "description": "Erase entire logger space, even empty blocks"}
+                {"name": "erase_empty", "type": "uint8_t", "description": "Erase entire logger space, even empty blocks (0xAA == ignore init failures)"}
             ],
             "response_params": [
             ]
