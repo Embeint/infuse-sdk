@@ -11,6 +11,8 @@
 #include <zephyr/device.h>
 #include <zephyr/drivers/flash.h>
 #include <zephyr/storage/flash_map.h>
+#include <zephyr/pm/device.h>
+#include <zephyr/pm/device_runtime.h>
 
 #include <infuse/data_logger/logger.h>
 
@@ -108,6 +110,26 @@ static int logger_flash_map_reset(const struct device *dev, uint32_t block_hint,
 	return 0;
 }
 
+#ifdef CONFIG_PM_DEVICE
+static int flash_map_pm_control(const struct device *dev, enum pm_device_action action)
+{
+	struct dl_flash_map_data *data = dev->data;
+	int rc = 0;
+
+	switch (action) {
+	case PM_DEVICE_ACTION_SUSPEND:
+		rc = pm_device_runtime_put(data->area->fa_dev);
+		break;
+	case PM_DEVICE_ACTION_RESUME:
+		rc = pm_device_runtime_get(data->area->fa_dev);
+		break;
+	default:
+		return -ENOTSUP;
+	}
+	return rc;
+}
+#endif /* CONFIG_PM_DEVICE */
+
 /* Need to hook into this function when testing */
 IF_DISABLED(CONFIG_ZTEST, (static))
 int logger_flash_map_init(const struct device *dev)
@@ -135,7 +157,12 @@ int logger_flash_map_init(const struct device *dev)
 	}
 
 	/* Common init function */
-	return data_logger_common_init(dev);
+	rc = data_logger_common_init(dev);
+
+	/* Always want PM enabled on this device */
+	pm_device_init_suspended(dev);
+	(void)pm_device_runtime_enable(dev);
+	return rc;
 }
 
 const struct data_logger_api data_logger_flash_map_api = {
@@ -160,8 +187,10 @@ const struct data_logger_api data_logger_flash_map_api = {
 		.block_addr_shift = LOG2(DT_INST_PROP(inst, block_size)),                          \
 	};                                                                                         \
 	static struct dl_flash_map_data data##inst;                                                \
-	DEVICE_DT_INST_DEFINE(inst, logger_flash_map_init, NULL, &data##inst, &config##inst,       \
-			      POST_KERNEL, 80, &data_logger_flash_map_api);
+	PM_DEVICE_DT_INST_DEFINE(inst, flash_map_pm_control);                                      \
+	DEVICE_DT_INST_DEFINE(inst, logger_flash_map_init, PM_DEVICE_DT_INST_GET(inst),            \
+			      &data##inst, &config##inst, POST_KERNEL, 80,                         \
+			      &data_logger_flash_map_api);
 
 #define DATA_LOGGER_DEFINE_WRAPPER(inst)                                                           \
 	IF_ENABLED(DATA_LOGGER_DEPENDENCIES_MET(DT_DRV_INST(inst)), (DATA_LOGGER_DEFINE(inst)))
