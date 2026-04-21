@@ -111,12 +111,12 @@ struct net_buf *epacket_encryption_scratch(void)
 
 int epacket_num_buffers_free_tx(void)
 {
-	return net_buf_num_free(&epacket_pool_tx);
+	return net_buf_get_available(&epacket_pool_tx);
 }
 
 int epacket_num_buffers_free_rx(void)
 {
-	return net_buf_num_free(&epacket_pool_rx);
+	return net_buf_get_available(&epacket_pool_rx);
 }
 
 static void buffer_exhaustion_timeout(struct k_work *work)
