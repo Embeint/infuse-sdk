@@ -52,6 +52,8 @@ configdefault EPACKET
 	default y
 configdefault NET_BUF
 	default y
+configdefault NET_BUF_POOL_USAGE
+	default y
 configdefault EVENTS
 	default y
 configdefault UART_INTERRUPT_DRIVEN
