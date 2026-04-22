@@ -30,6 +30,7 @@ static struct {
 #ifdef CONFIG_INFUSE_MODEM_MONITOR_CONN_STATE_LOG
 	uint8_t network_state_loggers;
 #endif /* CONFIG_INFUSE_MODEM_MONITOR_CONN_STATE_LOG */
+	struct k_work_delayable shutdown_fallback;
 	bool at_link_dead;
 } monitor;
 
@@ -142,6 +143,14 @@ static void network_status_changed(const struct device *dev,
 	monitor.network_state.cell.rsrq = ns->cell.lte.rsrq;
 }
 
+static void modem_shutdown_fallback(struct k_work *work)
+{
+	const struct device *modem = DEVICE_DT_GET(DT_ALIAS(modem));
+
+	LOG_ERR("Clean modem shutdown timed out, rebooting");
+	infuse_reboot(INFUSE_REBOOT_LTE_MODEM_FAULT, (uintptr_t)modem, 0xA800DEAD);
+}
+
 static void comms_check_result(const struct device *dev,
 			       const struct cellular_evt_modem_comms_check_result *ccr)
 {
@@ -161,6 +170,8 @@ static void comms_check_result(const struct device *dev,
 	/* Suspend the modem */
 	monitor.at_link_dead = true;
 	net_if_down(iface);
+	/* Fallback reboot if interface doesn't go down nicely */
+	k_work_schedule(&monitor.shutdown_fallback, K_SECONDS(30));
 }
 
 static void modem_suspended(const struct device *dev)
@@ -258,6 +269,8 @@ int lte_modem_monitor_init(void)
 	}
 
 #endif /* CONFIG_INFUSE_MODEM_MONITOR_DEFAULT_PDP_APN_SET */
+
+	k_work_init_delayable(&monitor.shutdown_fallback, modem_shutdown_fallback);
 
 	/* Setup KV callbacks */
 	monitor.lte_kv_cb.value_changed = lte_kv_value_changed;
