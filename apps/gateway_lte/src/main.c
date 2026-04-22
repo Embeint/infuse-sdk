@@ -290,13 +290,6 @@ static void led_pulse_dt(const struct gpio_dt_spec *spec, k_timeout_t pulse_dura
 
 int main(void)
 {
-#if defined(CONFIG_NRF_MODEM_LIB)
-	struct net_if *iface = net_if_get_first_by_type(&(NET_L2_GET_NAME(OFFLOADED_NETDEV)));
-#elif defined(CONFIG_NET_L2_PPP)
-	struct net_if *iface = net_if_get_first_by_type(&(NET_L2_GET_NAME(PPP)));
-#else
-#error Unknown LTE modem network interface
-#endif
 	const struct device *bt_adv = DEVICE_DT_GET(DT_NODELABEL(epacket_bt_adv));
 	const struct device *bt_central = DEVICE_DT_GET(DT_NODELABEL(epacket_bt_central));
 	const struct device *udp = DEVICE_DT_GET(DT_NODELABEL(epacket_udp));
@@ -310,7 +303,9 @@ int main(void)
 	struct kv_store_cb kv_cb = {
 		.value_changed = kv_value_changed,
 	};
+	struct lte_modem_network_state lte_state;
 	uint16_t udp_payload_size;
+	bool lte_modem_active;
 	int rc;
 
 #if CONFIG_LTE_GATEWAY_DEFAULT_MAXIMUM_UPLINK_THROUGHPUT_KBPS > 0
@@ -380,6 +375,13 @@ int main(void)
 	epacket_receive(udp, K_FOREVER);
 
 #ifdef CONFIG_MODEM_CELLULAR
+#if defined(CONFIG_NRF_MODEM_LIB)
+	struct net_if *iface = net_if_get_first_by_type(&(NET_L2_GET_NAME(OFFLOADED_NETDEV)));
+#elif defined(CONFIG_NET_L2_PPP)
+	struct net_if *iface = net_if_get_first_by_type(&(NET_L2_GET_NAME(PPP)));
+#else
+#error Unknown LTE modem network interface
+#endif
 	/* For now the Cellular Modem abstraction is not linked to a connection manager */
 	net_if_up(iface);
 #else
@@ -411,8 +413,20 @@ int main(void)
 	while (true) {
 		k_sleep(K_SECONDS(5));
 
+		lte_modem_monitor_network_state(&lte_state);
+		switch (lte_state.nw_reg_status) {
+		case CELLULAR_REGISTRATION_SEARCHING:
+		case CELLULAR_REGISTRATION_REGISTERED_HOME:
+		case CELLULAR_REGISTRATION_REGISTERED_ROAMING:
+		case CELLULAR_REGISTRATION_DENIED:
+			lte_modem_active = true;
+			break;
+		default:
+			lte_modem_active = false;
+		}
+
 		udp_payload_size = epacket_interface_max_packet_size(udp);
-		if (!net_if_flag_is_set(iface, NET_IF_LOWER_UP)) {
+		if (!lte_modem_active) {
 			led_pulse_dt(&led0, K_SECONDS(1));
 		} else if (udp_payload_size > 0) {
 			led_pulse_dt(&led1, K_MSEC(200));
