@@ -11,7 +11,7 @@
 #include <zephyr/sys/reboot.h>
 
 #include <nrfx_rramc.h>
-#include <nrf.h>
+#include <soc.h>
 
 void infuse_security_disable_dap(void)
 {
