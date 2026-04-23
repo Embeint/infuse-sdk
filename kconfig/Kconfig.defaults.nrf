@@ -24,9 +24,9 @@ choice MBEDTLS_PSA_CRYPTO_RNG_SOURCE
 	default MBEDTLS_PSA_CRYPTO_EXTERNAL_RNG if NRF_CC3XX_PLATFORM
 endchoice
 
-# Oberon backend
+# Oberon backend (Disabled until accelerator API supported)
 configdefault NRF_OBERON
-	default y if !BUILD_WITH_TFM
+	default y if !BUILD_WITH_TFM && 0
 
 # LTE defaults
 configdefault AT_MONITOR_HEAP_SIZE
