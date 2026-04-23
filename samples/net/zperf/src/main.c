@@ -28,9 +28,8 @@ int main(void)
 
 	/* For optimal performance, the CPU frequency needs to be set to 128 MHz */
 	err = nrfx_clock_divider_set(NRF_CLOCK_DOMAIN_HFCLK, NRF_CLOCK_HFCLK_DIV_1);
-	err -= NRFX_ERROR_BASE_NUM;
 	if (err != 0) {
-		LOG_WRN("Failed to set 128 MHz: %d", err);
+		LOG_WRN("Failed to set 128 MHz: 0x%08x", err);
 	}
 #endif /* CONFIG_SOC_NRF5340_CPUAPP */
 
