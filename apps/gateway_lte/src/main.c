@@ -61,7 +61,7 @@ static const struct task_schedule schedules[] = {
 		.task_args.infuse.tdf_logger =
 			{
 				.loggers = TDF_DATA_LOGGER_BT_ADV,
-				.logging_period_ms = 4500,
+				.logging_period_ms = 1000,
 				.random_delay_ms = 1000,
 				.tdfs = TASK_TDF_LOGGER_LOG_ANNOUNCE | TASK_TDF_LOGGER_LOG_BATTERY |
 					TASK_TDF_LOGGER_LOG_NET_CONN |
