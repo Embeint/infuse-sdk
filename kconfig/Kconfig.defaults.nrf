@@ -197,20 +197,20 @@ configdefault PSA_WANT_ALG_ECDSA
 	default y if NRF70_STA_MODE
 configdefault MBEDTLS_HASH_ALL_ENABLED
 	default y if NRF70_STA_MODE
-configdefault MBEDTLS_ECP_C
-	default y if NRF70_STA_MODE
-configdefault MBEDTLS_ECP_DP_SECP256R1_ENABLED
-	default y if NRF70_STA_MODE
-configdefault MBEDTLS_ECDH_C
-	default y if NRF70_STA_MODE
-configdefault MBEDTLS_ECDSA_C
-	default y if NRF70_STA_MODE
-configdefault MBEDTLS_ECJPAKE_C
-	default y if NRF70_STA_MODE && !BUILD_WITH_TFM
-configdefault MBEDTLS_CIPHER_AES_ENABLED
-	default y if NRF70_STA_MODE
-configdefault MBEDTLS_CIPHER_MODE_CTR_ENABLED
-	default y if NRF70_STA_MODE
+# configdefault MBEDTLS_ECP_C
+# 	default y if NRF70_STA_MODE
+# configdefault MBEDTLS_ECP_DP_SECP256R1_ENABLED
+# 	default y if NRF70_STA_MODE
+# configdefault MBEDTLS_ECDH_C
+# 	default y if NRF70_STA_MODE
+# configdefault MBEDTLS_ECDSA_C
+# 	default y if NRF70_STA_MODE
+# configdefault MBEDTLS_ECJPAKE_C
+# 	default y if NRF70_STA_MODE && !BUILD_WITH_TFM
+# configdefault MBEDTLS_CIPHER_AES_ENABLED
+# 	default y if NRF70_STA_MODE
+# configdefault MBEDTLS_CIPHER_MODE_CTR_ENABLED
+# 	default y if NRF70_STA_MODE
 
 # UART0 is the standard serial port on Nordic boards
 configdefault UART_0_NRF_TX_BUFFER_SIZE
