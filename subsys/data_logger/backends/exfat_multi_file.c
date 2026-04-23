@@ -128,7 +128,8 @@ static int binary_container_create(const struct device *dev, uint32_t phy_block)
 	/* Reset entire file to erased state */
 	if (res == FR_OK) {
 		start_lba = disk_lba_from_block(dev, phy_block);
-		res = disk_access_erase(config->disk, start_lba, BLOCKS_PER_FILE);
+		res = disk_access_erase(config->disk, start_lba, BLOCKS_PER_FILE,
+					DISK_ACCESS_ERASE_PHYSICAL);
 	}
 	return res;
 }

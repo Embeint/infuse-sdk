@@ -69,7 +69,7 @@ static int logger_disk_access_erase(const struct device *dev, uint32_t phy_block
 {
 	const struct dl_disk_access_config *config = dev->config;
 
-	return disk_access_erase(config->disk, phy_block, num);
+	return disk_access_erase(config->disk, phy_block, num, DISK_ACCESS_ERASE_PHYSICAL);
 }
 
 static int logger_disk_access_reset(const struct device *dev, uint32_t block_hint,
@@ -88,7 +88,8 @@ static int logger_disk_access_reset(const struct device *dev, uint32_t block_hin
 
 	while (sector < sectors_to_erase) {
 		/* Erase the chunk */
-		rc = disk_access_erase(config->disk, sector, sector_chunks);
+		rc = disk_access_erase(config->disk, sector, sector_chunks,
+				       DISK_ACCESS_ERASE_PHYSICAL);
 		if (rc < 0) {
 			return rc;
 		}
@@ -102,7 +103,8 @@ static int logger_disk_access_reset(const struct device *dev, uint32_t block_hin
 
 	ARG_UNUSED(erase_progress);
 
-	return disk_access_erase(config->disk, 0, data->common.physical_blocks);
+	return disk_access_erase(config->disk, 0, data->common.physical_blocks,
+				 DISK_ACCESS_ERASE_PHYSICAL);
 }
 
 /* Need to hook into this function when testing */
