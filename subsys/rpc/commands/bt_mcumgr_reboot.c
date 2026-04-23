@@ -11,7 +11,6 @@
 #include <zephyr/mgmt/mcumgr/transport/smp_bt.h>
 #include <zephyr/mgmt/mcumgr/mgmt/mgmt_defines.h>
 #include <zephyr/mgmt/mcumgr/grp/os_mgmt/os_mgmt.h>
-#include "../../../zephyr/subsys/mgmt/mcumgr/transport/include/mgmt/mcumgr/transport/smp_internal.h"
 
 #include <infuse/bluetooth/gatt.h>
 #include <infuse/epacket/interface/epacket_bt_central.h>
@@ -19,6 +18,26 @@
 #include <infuse/rpc/types.h>
 
 #include "common_bt.h"
+
+/* Definition duplicated from mcumgr/transport/smp_internal.h as the header is both non-public
+ * and required CONFIG_ZCBOR.
+ */
+struct smp_hdr {
+#ifdef CONFIG_LITTLE_ENDIAN
+	uint8_t nh_op: 3; /* MGMT_OP_[...] */
+	uint8_t nh_version: 2;
+	uint8_t _res1: 3;
+#else
+	uint8_t _res1: 3;
+	uint8_t nh_version: 2;
+	uint8_t nh_op: 3; /* MGMT_OP_[...] */
+#endif
+	uint8_t nh_flags;  /* Reserved for future flags */
+	uint16_t nh_len;   /* Length of the payload */
+	uint16_t nh_group; /* MGMT_GROUP_ID_[...] */
+	uint8_t nh_seq;    /* Sequence number */
+	uint8_t nh_id;     /* Message ID within group */
+} __packed;
 
 LOG_MODULE_DECLARE(rpc_server, CONFIG_INFUSE_RPC_LOG_LEVEL);
 
