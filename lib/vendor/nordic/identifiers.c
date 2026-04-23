@@ -11,7 +11,7 @@
 #include <infuse/identifiers.h>
 
 #include <soc_secure.h>
-#include <nrf.h>
+#include <soc.h>
 
 #if defined(NRF_UICR_S)
 #define FICR_PTR NRF_FICR_NS

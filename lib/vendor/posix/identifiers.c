@@ -9,7 +9,7 @@
 #include <stdint.h>
 
 #if defined(CONFIG_SOC_SERIES_BSIM_NRFXX)
-#include <nrf.h>
+#include <soc.h>
 #endif
 
 uint64_t vendor_infuse_device_id(void)
