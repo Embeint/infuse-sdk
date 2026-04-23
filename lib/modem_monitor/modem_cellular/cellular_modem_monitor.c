@@ -9,6 +9,7 @@
 #include <stdlib.h>
 
 #include <zephyr/drivers/cellular.h>
+#include <zephyr/logging/log.h>
 #include <zephyr/net/net_if.h>
 #include <zephyr/net/net_mgmt.h>
 #include <zephyr/toolchain.h>
