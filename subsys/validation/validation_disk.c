@@ -54,7 +54,7 @@ static int write_read_erase_sector(const char *disk, uint32_t sector, uint32_t s
 	}
 
 	/* Erase the page */
-	rc = disk_access_erase(disk, sector, 1);
+	rc = disk_access_erase(disk, sector, 1, DISK_ACCESS_ERASE_PHYSICAL);
 	if (rc < 0) {
 		VALIDATION_REPORT_ERROR(TEST, "disk_access_erase (%d)", rc);
 		return rc;
@@ -159,7 +159,7 @@ static int throughput_run(const char *disk, uint32_t sector_start, uint32_t sect
 	}
 
 	/* Cleanup the disk sectors we used */
-	rc = disk_access_erase(disk, sector_start, 2 * num_sectors);
+	rc = disk_access_erase(disk, sector_start, 2 * num_sectors, DISK_ACCESS_ERASE_PHYSICAL);
 	if (rc < 0) {
 		VALIDATION_REPORT_ERROR(TEST, "disk_access_erase (%d)", rc);
 		return rc;
@@ -217,7 +217,7 @@ int infuse_validation_disk(const char *disk, uint8_t flags)
 	if ((rc == 0) && (flags & VALIDATION_DISK_ERASE)) {
 		VALIDATION_REPORT_INFO(TEST, "Erasing entire disk");
 
-		rc = disk_access_erase(disk, 0, sector_count);
+		rc = disk_access_erase(disk, 0, sector_count, DISK_ACCESS_ERASE_PHYSICAL);
 		if (rc == 0) {
 			VALIDATION_REPORT_INFO(TEST, "Disk erase complete");
 		} else {

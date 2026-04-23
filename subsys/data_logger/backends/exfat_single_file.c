@@ -95,7 +95,8 @@ static int logger_exfat_reset(const struct device *dev, uint32_t block_hint,
 	 * If the exFAT logger is used with a flash chip, this is not true.
 	 */
 	(void)logger_exfat_filesystem_claim(dev, NULL, NULL, K_FOREVER);
-	rc = disk_access_erase(config->disk, data->cached_file_lba, data->common.physical_blocks);
+	rc = disk_access_erase(config->disk, data->cached_file_lba, data->common.physical_blocks,
+			       DISK_ACCESS_ERASE_PHYSICAL);
 	logger_exfat_filesystem_release(dev);
 	return rc;
 }
@@ -142,7 +143,7 @@ static int filesystem_init(const struct device *dev, const char *label, const ch
 	/* Erase the contents of the binary file */
 	if (res == FR_OK) {
 		res = disk_access_erase(config->disk, data->cached_file_lba,
-					data->common.physical_blocks);
+					data->common.physical_blocks, DISK_ACCESS_ERASE_PHYSICAL);
 		if (res != 0) {
 			LOG_ERR("Failed to erase file: %d", res);
 		}

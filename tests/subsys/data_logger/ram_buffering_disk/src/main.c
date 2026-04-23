@@ -204,7 +204,7 @@ static bool test_data_init(const void *global_state)
 
 static void partition_wipe(void *fixture)
 {
-	disk_access_erase(DISK_NAME, 0, sector_count);
+	disk_access_erase(DISK_NAME, 0, sector_count, DISK_ACCESS_ERASE_PHYSICAL);
 }
 
 ZTEST_SUITE(data_logger_ram_buffering_disk, test_data_init, NULL, partition_wipe, NULL, NULL);
