@@ -459,13 +459,13 @@ static void infuse_modem_init(int ret, void *ctx)
 				.value = CONFIG_INFUSE_MODEM_MONITOR_DEFAULT_PDP_APN,
 			},
 #if defined(CONFIG_INFUSE_MODEM_MONITOR_DEFAULT_PDP_FAMILY_IPV4)
-		.family = PDN_FAM_IPV4,
+		.family = LTE_LC_PDN_FAM_IPV4,
 #elif defined(CONFIG_INFUSE_MODEM_MONITOR_DEFAULT_PDP_FAMILY_IPV6)
-		.family = PDN_FAM_IPV6,
+		.family = LTE_LC_PDN_FAM_IPV6,
 #elif defined(CONFIG_INFUSE_MODEM_MONITOR_DEFAULT_PDP_FAMILY_IPV4V6)
-		.family = PDN_FAM_IPV4V6,
+		.family = LTE_LC_PDN_FAM_IPV4V6,
 #elif defined(CONFIG_INFUSE_MODEM_MONITOR_DEFAULT_PDP_FAMILY_NON_IP)
-		.family = PDN_FAM_NONIP,
+		.family = LTE_LC_PDN_FAM_NONIP,
 #else
 #error "Unknown protocol family"
 #endif
@@ -483,7 +483,7 @@ static void infuse_modem_init(int ret, void *ctx)
 	/* If a PDP configuration has been set */
 	if ((rc > 0) && (strlen(pdp_config.apn.value) > 0)) {
 		LOG_DBG("PDP configuration: %d %s", pdp_config.family, pdp_config.apn.value);
-		rc = pdn_ctx_configure(0, pdp_config.apn.value, pdp_config.family, NULL);
+		rc = lte_lc_pdn_ctx_configure(0, pdp_config.apn.value, pdp_config.family, NULL);
 		if (rc < 0) {
 			LOG_ERR("Failed to request PDP configuration (%d)", rc);
 			/* Remove the invalid configuration */
