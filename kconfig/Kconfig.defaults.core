@@ -198,11 +198,6 @@ configdefault PSA_WANT_KEY_TYPE_CHACHA20
 	default y
 configdefault PSA_WANT_ALG_CHACHA20_POLY1305
 	default y
-# DTLS
-configdefault PSA_WANT_KEY_TYPE_AES
-	default y if NETWORKING
-configdefault PSA_WANT_ALG_CBC_NO_PADDING
-	default y if NETWORKING
 
 # Logging
 configdefault PRINTK
