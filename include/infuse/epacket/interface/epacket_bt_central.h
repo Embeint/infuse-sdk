@@ -76,11 +76,21 @@ int epacket_bt_gatt_connect(struct bt_conn **conn, struct epacket_bt_gatt_connec
 			    struct epacket_read_response *security, bool *already);
 
 /**
+ * @brief Setup @ref epacket_bt_gatt_notify_recv_func
+ *
+ * @param conn Connection object. Must not be NULL.
+ */
+void epacket_bt_gatt_notify_init(struct bt_conn *conn);
+
+/**
  * @brief Infuse-IoT Bluetooth GATT characteristic notification handle function
  *
  * Public API function so that connections setup through a function other than
  * @ref epacket_bt_gatt_connect can hook the connection up as an ePacket data source
  * dynamically.
+ *
+ * @note Users must ensure that @ref epacket_bt_gatt_notify_init is called before any data
+ *       is received on the connection.
  *
  * @param conn Connection object. May be NULL, indicating that the peer is
  *             being unpaired

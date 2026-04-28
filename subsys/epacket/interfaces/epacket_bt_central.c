@@ -112,6 +112,17 @@ static void conn_terminated_cb(struct bt_conn *conn, int reason, void *user_data
 	k_work_cancel_delayable(&infuse_conn[idx].term_worker);
 }
 
+void epacket_bt_gatt_notify_init(struct bt_conn *conn)
+{
+	struct infuse_connection_state *s;
+	uint8_t idx;
+
+	/* Ensure the internal work objects aren't scheduled */
+	idx = bt_conn_index(conn);
+	s = &infuse_conn[idx];
+	s->inactivity_timeout = K_FOREVER;
+}
+
 uint8_t epacket_bt_gatt_notify_recv_func(struct bt_conn *conn,
 					 struct bt_gatt_subscribe_params *params, const void *data,
 					 uint16_t length)
