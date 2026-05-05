@@ -21,11 +21,13 @@ tests:
       bsim_exe_name: tests_bsim_serial_epacket_prj_device_async_conf
     extra_args:
       - EXTRA_CONF_FILE=prj_async.conf
+      - DTC_OVERLAY_FILE=async.overlay
   serial.epacket.async_pm:
     harness_config:
       bsim_exe_name: tests_bsim_serial_epacket_prj_device_async_pm_conf
     extra_args:
       - EXTRA_CONF_FILE=prj_async_pm.conf
+      - DTC_OVERLAY_FILE=async.overlay
   serial.epacket.int_single:
     harness_config:
       bsim_exe_name: tests_bsim_serial_epacket_prj_device_int_single_conf
