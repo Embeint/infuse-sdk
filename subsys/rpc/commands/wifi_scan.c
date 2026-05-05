@@ -41,9 +41,16 @@ static void scan_result_handle(const struct wifi_scan_result *entry, struct net_
 	scan_result.security = entry->security;
 	scan_result.rssi = entry->rssi;
 	memcpy(scan_result.bssid, entry->mac, entry->mac_length);
-	scan_result.ssid_len = entry->ssid_length;
+	if ((entry->ssid_length > 0) && (entry->ssid[0] == '\x00')) {
+		/* Length reported but contents are NULL.
+		 * Eliminate the SSID to preserve packet space for actual SSIDs.
+		 */
+		scan_result.ssid_len = 0;
+	} else {
+		scan_result.ssid_len = entry->ssid_length;
+	}
 	net_buf_add_mem(rsp, &scan_result, sizeof(scan_result));
-	net_buf_add_mem(rsp, entry->ssid, entry->ssid_length);
+	net_buf_add_mem(rsp, entry->ssid, scan_result.ssid_len);
 }
 
 static void scan_event_handler(struct net_mgmt_event_callback *cb, uint64_t mgmt_event,
