@@ -81,7 +81,7 @@
 			reg = <0x00000000 0x00010000>;
 		};
 		slot0_partition: partition@10000 {
-			compatible = "fixed-subpartitions";
+			compatible = "zephyr,mapped-partition";
 			label = "image-0";
 			reg = <0x00010000 0x000E0000>;
 			ranges = <0x0 0x10000 0xE0000>;
@@ -89,11 +89,13 @@
 			#size-cells = <1>;
 
 			slot0_s_partition: partition@0 {
+				compatible = "zephyr,mapped-partition";
 				label = "image-0-secure";
 				reg = <0x00000000 0x30000>;
 			};
 
 			slot0_ns_partition: partition@30000 {
+				compatible = "zephyr,mapped-partition";
 				label = "image-0-nonsecure";
 				reg = <0x00030000 0xB0000>;
 			};
