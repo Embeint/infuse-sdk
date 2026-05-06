@@ -214,6 +214,12 @@ configdefault SPI_NRFX_WAKE_TIMEOUT_US
 # Symbols used by SDK-NRF libraries but not defined upstream
 config ZEPHYR_NRF_MODULE
 	bool
+config SOC_NRF54LV10A
+	bool
+config SOC_NRF54LS05B
+	bool
+config SOC_NRF54LS05B_CPUAPP
+	bool
 config NORDIC_SECURITY_BACKEND
 	bool
 config UNITY
