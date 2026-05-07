@@ -293,4 +293,4 @@ int lte_modem_monitor_init(void)
 	return 0;
 }
 
-SYS_INIT(lte_modem_monitor_init, APPLICATION, 0);
+SYS_INIT(lte_modem_monitor_init, APPLICATION, CONFIG_INFUSE_CELLULAR_MODEM_MONITOR_INIT_PRIORITY);

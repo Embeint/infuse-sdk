@@ -8,3 +8,12 @@ config INFUSE_CELLULAR_MODEM_MONITOR
 	select INFUSE_MODEM_MONITOR
 	select INFUSE_WORKQ
 	default y
+
+config INFUSE_CELLULAR_MODEM_MONITOR_INIT_PRIORITY
+	int "Cellular modem integration initialisation priority"
+	depends on INFUSE_CELLULAR_MODEM_MONITOR
+	default 11
+	help
+	  Must be later than INFUSE_COMMON_BOOT_INIT_PRIORITY to ensure
+	  default PDP configuration applies to KV store if the common init
+	  resets the KV store.
