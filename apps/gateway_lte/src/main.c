@@ -40,6 +40,10 @@ LOG_MODULE_REGISTER(app, LOG_LEVEL_INF);
 
 static void custom_tdf_logger(uint8_t tdf_loggers, uint64_t timestamp);
 
+enum {
+	APP_STATES_GNSS_TRIGGER = INFUSE_STATES_APP_START,
+};
+
 static const struct task_schedule schedules[] = {
 	{
 		.task_id = TASK_ID_TDF_LOGGER,
@@ -123,6 +127,23 @@ static const struct task_schedule schedules[] = {
 				/* Gateways not expected to move */
 				.dynamic_model = UBX_CFG_NAVSPG_DYNMODEL_STATIONARY,
 			},
+	},
+	{
+		.task_id = TASK_ID_GNSS,
+		.validity = TASK_VALID_ALWAYS,
+		.timeout_s = 2 * SEC_PER_MIN,
+		.states_start = TASK_STATES_DEFINE(APP_STATES_GNSS_TRIGGER),
+		.task_args.infuse.gnss =
+			{
+				.flags = TASK_GNSS_FLAGS_RUN_TO_LOCATION_FIX |
+					 TASK_GNSS_FLAGS_PERFORMANCE_MODE,
+				/* FIX_OK: 1m accuracy, 10.0 PDOP */
+				.accuracy_m = 1,
+				.position_dop = 100,
+				/* Gateways not expected to move */
+				.dynamic_model = UBX_CFG_NAVSPG_DYNMODEL_STATIONARY,
+			},
+
 	},
 #endif /* DT_NODE_HAS_STATUS_OKAY(DT_ALIAS(gnss)) */
 };
