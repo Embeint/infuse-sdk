@@ -74,3 +74,8 @@ config INFUSE_AUTO_LOCATION_TIMEZONE_REQUIRED_ACCURACY
 	default 10000
 
 endif # INFUSE_AUTO_LOCATION_TIMEZONE
+
+config INFUSE_AUTO_SOC_DEVICE_CONTROL
+	bool "Automatically control the power state of a device based on battery charge"
+	depends on INFUSE_ZBUS_CHAN_BATTERY
+	depends on PM_DEVICE_RUNTIME
