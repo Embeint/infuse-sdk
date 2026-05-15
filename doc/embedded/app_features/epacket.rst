@@ -58,6 +58,20 @@ on an interface:
 When a packet is received, the default packet handler is :c:func:`epacket_default_receive_handler`.
 This can be updated on a per interface basis with :c:func:`epacket_set_receive_handler`.
 
+Specific Backends
+=================
+
+Information about specific backends can be found here:
+
+  * :ref:`epacket_bt_adv`
+
+.. toctree::
+   :maxdepth: 1
+   :glob:
+   :hidden:
+
+   epacket/*
+
 Additional Callbacks
 ====================
 
