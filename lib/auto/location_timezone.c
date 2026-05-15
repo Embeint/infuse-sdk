@@ -25,6 +25,17 @@ static int8_t current_timezone = INT8_MIN;
 
 LOG_MODULE_REGISTER(loc_tz, CONFIG_LOCATION_TIMEZONE_LOG_LEVEL);
 
+#ifdef CONFIG_ZTEST
+
+void location_timezone_reset(void)
+{
+	LOG_INF("Resetting back to no timezone knowledge");
+	current_timezone_minutes = INT16_MIN;
+	current_timezone = INT8_MIN;
+}
+
+#endif /* CONFIG_ZTEST */
+
 int location_timezone(int8_t *timezone)
 {
 	if (current_timezone == INT8_MIN) {
