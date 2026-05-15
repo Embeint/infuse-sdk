@@ -47,6 +47,15 @@ int location_timezone(int8_t *timezone);
  */
 int location_local_time(uint32_t *local_time_seconds);
 
+#ifdef CONFIG_ZTEST
+
+/**
+ * @brief Reset location knowledge of the module for testing purposes
+ */
+void location_timezone_reset(void);
+
+#endif /* CONFIG_ZTEST */
+
 /**
  * @}
  */

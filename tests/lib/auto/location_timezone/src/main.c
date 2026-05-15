@@ -84,6 +84,11 @@ ZTEST(location_timezone, test_timezone)
 	zassert_equal(0, location_local_time(&local_time));
 	zassert_equal(-2, timezone);
 	zassert_equal(utc_time + (-2 * SEC_PER_HOUR), local_time);
+
+	/* Reset knowledge */
+	location_timezone_reset();
+	zassert_equal(-EAGAIN, location_timezone(&timezone));
+	zassert_equal(-EAGAIN, location_local_time(&local_time));
 }
 
 ZTEST_SUITE(location_timezone, NULL, NULL, NULL, NULL, NULL);
