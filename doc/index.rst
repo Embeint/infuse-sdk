@@ -128,8 +128,8 @@ Getting started guides to get setup with the Infuse-IoT platform and tutorials u
    :hidden:
    :caption: Guides and Tutorials
 
-   getting_started/index.rst
-   getting_started/embedded/index.rst
+   guides/index.rst
+   guides/embedded/index.rst
 
 Mobile Components
 *****************

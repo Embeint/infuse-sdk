@@ -51,7 +51,7 @@ Setting up VSCode with WSL is slightly different.
 
 1. Install `VScode <https://code.visualstudio.com/download>`_ on the Windows Desktop
    (not WSL).
-2. Once installed, open `VScode` and click on the bottom right corner with the blue box with the
+2. Once installed, open ``VScode`` and click on the bottom right corner with the blue box with the
    white arrows and Select *"Connect to WSL"* and follow the prompts (this may take a
    little while for the first time).
 3. Then select "Open Folder" and navigate to ``~/infuse-iot``.
