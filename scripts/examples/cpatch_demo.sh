@@ -5,9 +5,9 @@ APP_VER=$APP_DIR/VERSION
 BOOT_DELAY=15
 
 # Validate arguments
-if [ "$#" -ne 1 ]; then
+if [ "$#" -ne 1 ] && [ "$#" -ne 2 ]; then
     echo "Unexpected argument count"
-    echo "Usage: cpatch_demo.sh board"
+    echo "Usage: cpatch_demo.sh board [commit]"
     exit 1
 fi
 RELEASE_FILE=infuse-sdk/samples/releases/serial-$1.yaml
@@ -16,9 +16,26 @@ if [ ! -f $RELEASE_FILE ]; then
     exit 1
 fi
 
+if [ "$#" -eq 2 ]; then
+    # Store current commit, checkout target commit
+    START_COMMIT=`git -C $APP_DIR rev-parse HEAD`
+    echo "Original commit: $START_COMMIT"
+    echo "Checking out: $2"
+    git -C $APP_DIR checkout $2 &> /dev/null
+    west update > /dev/null
+fi
+
 # Build original application release
 echo "\nBuilding original application release"
 west release-build -r $RELEASE_FILE --skip-git
+
+if [ "$#" -eq 2 ]; then
+    # Revert to original commit
+    START_COMMIT=`git -C $APP_DIR rev-parse HEAD`
+    echo "Checking out: $START_COMMIT"
+    git -C $APP_DIR checkout $START_COMMIT &> /dev/null
+    west update > /dev/null
+fi
 
 # Increment the major version number
 sed -i -E 's/^(VERSION_MAJOR\s*=\s*)([0-9]+)/echo "\1$((\2 + 1))"/ge' "$APP_VER"
