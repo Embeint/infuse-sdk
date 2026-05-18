@@ -16,8 +16,6 @@
 #include <psa/crypto.h>
 #include <psa/crypto_extra.h>
 
-#include <mbedtls/poly1305.h>
-
 #include <infuse/crypto/ascon.h>
 #include <infuse/crypto/xoodyak.h>
 
@@ -55,7 +53,6 @@ enum sign_alg {
 	HMAC_SHA256,
 	CMAC,
 	ECDSA_SHA256,
-	POLY1305,
 	NUM_SIGN_ALGORITHMS,
 };
 
@@ -63,7 +60,6 @@ const char *const sign_algorithm_names[] = {
 	[SHA256] = "SHA256",
 	[HMAC_SHA256] = "HMAC-SHA256",
 	[ECDSA_SHA256] = "ECDSA-SHA256",
-	[POLY1305] = "POLY1305",
 	[CMAC] = "CMAC",
 };
 
@@ -71,7 +67,7 @@ uint64_t encrypt_cycles[NUM_ALGORITHMS][ARRAY_SIZE(plaintext_lengths)][REPEATS] 
 uint64_t decrypt_cycles[NUM_ALGORITHMS][ARRAY_SIZE(plaintext_lengths)][REPEATS] = {0};
 uint64_t sign_cycles[NUM_SIGN_ALGORITHMS][ARRAY_SIZE(plaintext_lengths)][REPEATS] = {0};
 
-psa_key_id_t chacha_key_id, hmac_key_id, cmac_key_id, ecdsa_key_id, poly1305_key_id;
+psa_key_id_t chacha_key_id, hmac_key_id, cmac_key_id, ecdsa_key_id;
 
 static int key_setup(uint8_t key[32])
 {
@@ -292,21 +288,6 @@ int main(void)
 				LOG_INF("psa_sign_hash failed! (Error: %d)", status);
 			}
 			sign_cycles[SHA256][i][r] = timing_cycles_get(&start_time, &end_time);
-		}
-		for (int r = 0; r < REPEATS; r++) {
-			mbedtls_poly1305_context ctx;
-
-			start_time = timing_counter_get();
-			mbedtls_poly1305_init(&ctx);
-			mbedtls_poly1305_starts(&ctx, key);
-			mbedtls_poly1305_update(&ctx, plaintext, plaintext_lengths[i]);
-			mbedtls_poly1305_finish(&ctx, signature);
-			mbedtls_poly1305_free(&ctx);
-			end_time = timing_counter_get();
-			if (status != PSA_SUCCESS) {
-				LOG_INF("psa_sign_hash failed! (Error: %d)", status);
-			}
-			sign_cycles[POLY1305][i][r] = timing_cycles_get(&start_time, &end_time);
 		}
 		for (int r = 0; r < REPEATS; r++) {
 			size_t slen;
