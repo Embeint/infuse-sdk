@@ -22,14 +22,13 @@ on:
 env:
   AWS_REGION: ap-southeast-2
 
-permissions:
-  id-token: write
-  contents: read
-
 jobs:
   doc-build-html:
     name: "Documentation Build (HTML)"
     runs-on: self-hosted
+    permissions:
+      id-token: write
+      contents: read
     container:
       image: ghcr.io/zephyrproject-rtos/ci-repo-cache:v0.28.6.20251003
       options: '--entrypoint /bin/bash'
@@ -158,6 +157,8 @@ jobs:
     name: Publish Documentation
     runs-on: ubuntu-24.04
     needs: doc-build-html
+    permissions:
+      id-token: write
 
     steps:
     - name: Download html artifacts
