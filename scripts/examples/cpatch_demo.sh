@@ -3,16 +3,28 @@
 APP_DIR=infuse-sdk/samples/releases/serial
 APP_VER=$APP_DIR/VERSION
 
+# Validate arguments
+if [ "$#" -ne 1 ]; then
+    echo "Unexpected argument count"
+    echo "Usage: cpatch_demo.sh board"
+    exit 1
+fi
+RELEASE_FILE=infuse-sdk/samples/releases/serial-$1.yaml
+if [ ! -f $RELEASE_FILE ]; then
+    echo "$RELEASE_FILE does not exist!"
+    exit 1
+fi
+
 # Build original application release
 echo "\nBuilding original application release"
-west release-build -r infuse-sdk/samples/releases/serial-$1.yaml  --skip-git
+west release-build -r $RELEASE_FILE --skip-git
 
 # Increment the major version number
 sed -i -E 's/^(VERSION_MAJOR\s*=\s*)([0-9]+)/echo "\1$((\2 + 1))"/ge' "$APP_VER"
 
 # Build new application release
 echo "\nBuilding updated application release"
-west release-build -r infuse-sdk/samples/releases/serial-$1.yaml  --skip-git
+west release-build -r $RELEASE_FILE --skip-git
 
 # Get the output directories
 first_release=$(ls -1d release-sample-serial-* | head -n 1)
