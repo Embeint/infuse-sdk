@@ -2,6 +2,7 @@
 
 APP_DIR=infuse-sdk/samples/releases/serial
 APP_VER=$APP_DIR/VERSION
+BOOT_DELAY=15
 
 # Validate arguments
 if [ "$#" -ne 1 ]; then
@@ -32,17 +33,18 @@ second_release=$(ls -1d release-sample-serial-* | tail -n 1)
 
 # Generate the patch file to go from the first to the second
 echo "\nGenerating patch file for upgrade"
-west release-diff $first_release $second_release
+west release-diff -i $first_release -o $second_release
 
 # Flash the first release to the board and wait for boot
 echo "\nFlashing original application release"
 west release-flash -r $first_release --erase
-sleep 15.0
+echo "\nGiving application $BOOT_DELAY seconds to boot"
+sleep $BOOT_DELAY
 
 # Display the current application version
-infuse rpc application_info
+infuse rpc --gateway application_info
 
 # Perform the patch to the updated version
 patch_file=$(ls -1 $second_release/diffs/* | head -n 1)
 echo "\nUpgrading from $first_release to $second_release"
-infuse rpc file_write_basic --cpatch -f $patch_file
+infuse rpc --gateway file_write_basic --cpatch --file $patch_file
