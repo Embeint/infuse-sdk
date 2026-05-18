@@ -6,6 +6,10 @@
  * SPDX-License-Identifier: FSL-1.1-ALv2
  */
 
+#ifndef __STDC_WANT_LIB_EXT1__
+#define __STDC_WANT_LIB_EXT1__ 1 /* Ask for the C11 memset_s() */
+#endif
+
 #include <string.h>
 
 #include <zephyr/drivers/hwinfo.h>
@@ -15,6 +19,17 @@
 #include <psa/crypto.h>
 
 static psa_key_id_t huk_key_id;
+
+/* Picolibc supports memset_s but doesn't define __STDC_LIB_EXT1__ */
+#if !defined(__STDC_LIB_EXT1__) && !defined(CONFIG_PICOLIBC)
+static int memset_s(void *dest, size_t destsz, int ch, size_t count)
+{
+	ARG_UNUSED(destsz);
+
+	memset(dest, ch, count);
+	return 0;
+}
+#endif /* !defined(__STDC_LIB_EXT1__) && !defined(CONFIG_PICOLIBC) */
 
 int hardware_unique_key_init(void)
 {
@@ -40,7 +55,7 @@ int hardware_unique_key_init(void)
 	}
 
 	status = psa_import_key(&key_attributes, key, sizeof(key), &huk_key_id);
-	memset(key, 0x00, sizeof(key));
+	memset_s(key, sizeof(key), 0x00, sizeof(key));
 	return status == PSA_SUCCESS ? 0 : -EINVAL;
 }
 
