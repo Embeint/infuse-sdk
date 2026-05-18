@@ -16,6 +16,15 @@
 		environmental0 = &temp;
 	};
 
+};
+
+&uart20 {
+	zephyr,pm-device-runtime-auto;
+};
+
+#ifndef INFUSE_IS_BOOTLOADER
+
+/ {
 	epacket_serial: epacket_serial {
 		compatible = "embeint,epacket-serial";
 		serial = <&uart20>;
@@ -38,10 +47,6 @@
 			compatible = "embeint,tdf-data-logger";
 		};
 	};
-};
-
-&uart20 {
-	zephyr,pm-device-runtime-auto;
 };
 
 /* For demonstration purposes, use the sQSPI interface for flash */
@@ -158,11 +163,4 @@
 };
 
 
-#ifdef INFUSE_IS_BOOTLOADER
-
-/* Bootloader doesn't know about external flash */
-/delete-node/ &data_logger_flash;
-/delete-node/ &file_partition;
-/delete-node/ &data_logger_partition;
-
-#endif /* INFUSE_IS_BOOTLOADER */
+#endif /* !INFUSE_IS_BOOTLOADER */
