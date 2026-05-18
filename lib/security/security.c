@@ -6,7 +6,12 @@
  * SPDX-License-Identifier: FSL-1.1-ALv2
  */
 
+#ifndef __STDC_WANT_LIB_EXT1__
+#define __STDC_WANT_LIB_EXT1__ 1 /* Ask for the C11 memset_s() */
+#endif
+
 #include <stdio.h>
+#include <string.h>
 
 #include <zephyr/logging/log.h>
 #include <zephyr/sys/crc.h>
@@ -82,6 +87,21 @@ static psa_key_id_t secondary_device_sign_key;
 
 LOG_MODULE_REGISTER(security, CONFIG_INFUSE_SECURITY_LOG_LEVEL);
 
+/* Picolibc supports memset_s but doesn't define __STDC_LIB_EXT1__ */
+#if !defined(__STDC_LIB_EXT1__) && !defined(CONFIG_PICOLIBC)
+/* Only CONFIG_NATIVE_LIBC has been observed to not support __STDC_LIB_EXT1__ */
+BUILD_ASSERT(IS_ENABLED(CONFIG_NATIVE_LIBC), "Unexpected libc doesn't support __STDC_LIB_EXT1__");
+
+static int memset_s(void *dest, size_t destsz, int ch, size_t count)
+{
+	ARG_UNUSED(destsz);
+
+	LOG_WRN_ONCE("%s not provided by stdlib", __func__);
+	memset(dest, ch, count);
+	return 0;
+}
+#endif /* !defined(__STDC_LIB_EXT1__) && !defined(CONFIG_PICOLIBC) */
+
 psa_key_attributes_t infuse_security_hkdf_attributes(void)
 {
 	psa_key_attributes_t key_attributes = PSA_KEY_ATTRIBUTES_INIT;
@@ -109,10 +129,12 @@ static void device_public_key_export(void)
 #endif /* ITS_AVAILABLE */
 
 	/* Export public key and save */
-	status = psa_export_public_key(INFUSE_ROOT_ECC_KEY_ID, device_public_key, 32, &olen);
-	if ((status != PSA_SUCCESS) || (olen != 32)) {
+	status = psa_export_public_key(INFUSE_ROOT_ECC_KEY_ID, device_public_key,
+				       sizeof(device_public_key), &olen);
+	if ((status != PSA_SUCCESS) || (olen != sizeof(device_public_key))) {
 		LOG_ERR("Public key export failed (%d %d)", status, olen);
-		memset(device_public_key, 0x00, 32);
+		memset_s(device_public_key, sizeof(device_public_key), 0x00,
+			 sizeof(device_public_key));
 	}
 #ifdef ITS_AVAILABLE
 	else {
@@ -292,9 +314,9 @@ static int coap_dtls_load(void)
 
 	/* Export key back into buffer for TLS credentials */
 	status = psa_export_key(dtls_coap_key, dtls_psk, sizeof(dtls_psk), &olen);
-	if ((status != PSA_SUCCESS) || (olen != 32)) {
+	if ((status != PSA_SUCCESS) || (olen != sizeof(dtls_psk))) {
 		LOG_ERR("COAP key export failed (%d %d)", status, olen);
-		memset(dtls_psk, 0x00, 32);
+		memset_s(dtls_psk, sizeof(dtls_psk), 0x00, sizeof(dtls_psk));
 		return -EINVAL;
 	}
 
@@ -382,7 +404,7 @@ static int infuse_network_key_load(struct infuse_key_info *info, uint32_t its_id
 	info->psa_id = explicit_key_load(used_val, 32);
 #ifdef ITS_AVAILABLE
 	/* Clear from RAM */
-	memset(&stored_network, 0x00, sizeof(stored_network));
+	memset_s(&stored_network, sizeof(stored_network), 0x00, sizeof(stored_network));
 #endif /* ITS_AVAILABLE */
 	if (info->psa_id == PSA_KEY_ID_NULL) {
 		LOG_ERR("Failed to load network key!");
