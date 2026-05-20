@@ -66,8 +66,8 @@ int data_cb(uint32_t offset, const uint8_t *data, uint16_t data_len, void *conte
 
 static int socket_setup(void)
 {
-	struct sockaddr address;
-	socklen_t address_len;
+	struct net_sockaddr address;
+	net_socklen_t address_len;
 	int sock;
 
 	/* IPv4 lookup */

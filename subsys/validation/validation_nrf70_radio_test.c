@@ -6,13 +6,9 @@
  * SPDX-License-Identifier: FSL-1.1-ALv2
  */
 
-#include <zephyr/posix/arpa/inet.h>
 #include <zephyr/net_buf.h>
 #include <zephyr/net/net_if.h>
-#include <zephyr/net/sntp.h>
 #include <zephyr/net/wifi_mgmt.h>
-
-#include <infuse/net/dns.h>
 
 #include <infuse/validation/core.h>
 #include <infuse/validation/nrf70_radio_test.h>

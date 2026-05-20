@@ -28,7 +28,7 @@ struct wifi_sim_iface_data {
 
 LOG_MODULE_REGISTER(sim_wifi, LOG_LEVEL_INF);
 
-static int offload_dummy_get(sa_family_t family, enum net_sock_type type,
+static int offload_dummy_get(net_sa_family_t family, enum net_sock_type type,
 			     enum net_ip_protocol ip_proto, struct net_context **context)
 {
 	return -1;

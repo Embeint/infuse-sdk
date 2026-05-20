@@ -75,8 +75,8 @@ static int socket_setup(void)
 	const sec_tag_t sec_tls_tags[] = {
 		infuse_security_coap_dtls_tag(),
 	};
-	struct sockaddr address;
-	socklen_t address_len;
+	struct net_sockaddr address;
+	net_socklen_t address_len;
 	int sock;
 	int rc;
 

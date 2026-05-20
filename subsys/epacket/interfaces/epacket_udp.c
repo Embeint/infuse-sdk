@@ -64,7 +64,7 @@ struct udp_state {
 	struct net_mgmt_event_callback iface_admin_cb;
 #endif
 	struct net_mgmt_event_callback l4_callback;
-	struct sockaddr remote;
+	struct net_sockaddr remote;
 	struct k_event state;
 #ifdef CONFIG_EPACKET_INTERFACE_UDP_DETECT_UNACKNOWLEDGED
 	struct {
@@ -74,7 +74,7 @@ struct udp_state {
 #endif /* CONFIG_EPACKET_INTERFACE_UDP_DETECT_UNACKNOWLEDGED */
 	uint32_t last_receive;
 	uint16_t ack_countdown;
-	socklen_t remote_len;
+	net_socklen_t remote_len;
 	uint16_t remote_port;
 	uint16_t iface_max_pkt;
 	uint16_t iface_flags;
@@ -194,8 +194,8 @@ static void udp_core_read_loop(void)
 	const struct device *epacket_udp = DEVICE_DT_GET(DT_DRV_INST(0));
 	struct epacket_rx_metadata *meta;
 	struct zsock_pollfd pollfds[1];
-	struct sockaddr from;
-	socklen_t from_len;
+	struct net_sockaddr from;
+	net_socklen_t from_len;
 	struct net_buf *buf;
 	int received;
 	uint16_t port;
@@ -235,8 +235,8 @@ static void udp_core_read_loop(void)
 			return;
 		}
 		net_buf_add(buf, received);
-		addr = ((struct sockaddr_in *)&from)->sin_addr.s4_addr;
-		port = ((struct sockaddr_in *)&from)->sin_port;
+		addr = ((struct net_sockaddr_in *)&from)->sin_addr.s4_addr;
+		port = ((struct net_sockaddr_in *)&from)->sin_port;
 		LOG_DBG("Received %d bytes from %d.%d.%d.%d:%d", received, addr[0], addr[1],
 			addr[2], addr[3], ntohs(port));
 
@@ -259,7 +259,7 @@ static int epacket_udp_loop(void *a, void *b, void *c)
 {
 	const struct device *epacket_udp = DEVICE_DT_GET(DT_DRV_INST(0));
 	struct epacket_interface_common_data *data = epacket_udp->data;
-	struct sockaddr_in local_addr = {0};
+	struct net_sockaddr_in local_addr = {0};
 	struct epacket_interface_cb *cb;
 	bool first_connection = true;
 	int rc;
@@ -297,7 +297,8 @@ static int epacket_udp_loop(void *a, void *b, void *c)
 		udp_state.ack_countdown = CONFIG_EPACKET_INTERFACE_UDP_ACK_COUNTDOWN;
 
 		/* Bind so we can receive downlink packets */
-		rc = zsock_bind(udp_state.sock, (struct sockaddr *)&local_addr, sizeof(local_addr));
+		rc = zsock_bind(udp_state.sock, (struct net_sockaddr *)&local_addr,
+				sizeof(local_addr));
 		if (rc < 0) {
 			MEMFAULT_METRIC_ADD(epacket_udp_sock_setup_error, 1);
 			LOG_ERR("Failed to bind socket (%d)", errno);
