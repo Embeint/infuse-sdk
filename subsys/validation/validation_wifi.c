@@ -119,8 +119,8 @@ static int validation_wifi_sntp(void)
 	char addr_str[INET6_ADDRSTRLEN] = {0};
 	struct sntp_time s_time;
 	struct sntp_ctx s_ctx;
-	struct sockaddr addr;
-	socklen_t addrlen;
+	struct net_sockaddr addr;
+	net_socklen_t addrlen;
 	int rc;
 
 	VALIDATION_REPORT_INFO(TEST, "DNS query for %s", sntp_server);

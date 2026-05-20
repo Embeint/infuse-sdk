@@ -38,8 +38,8 @@ static void l4_event_handler(struct net_mgmt_event_callback *cb, uint64_t mgmt_e
 
 ZTEST(infuse_dns, test_dns_query)
 {
-	struct sockaddr address;
-	socklen_t address_len;
+	struct net_sockaddr address;
+	net_socklen_t address_len;
 
 	/* Wait for the interface to come up */
 	zassert_equal(0, k_sem_take(&l4_up, IF_DELAY));
@@ -47,7 +47,7 @@ ZTEST(infuse_dns, test_dns_query)
 	/* IPv4 lookups */
 	zassert_equal(
 		0, infuse_sync_dns("google.com", 80, AF_INET, SOCK_STREAM, &address, &address_len));
-	zassert_equal(sizeof(struct sockaddr_in), address_len);
+	zassert_equal(sizeof(struct net_sockaddr_in), address_len);
 
 	zassert_not_equal(0, infuse_sync_dns("not.a.real.address", 80, AF_INET, SOCK_STREAM,
 					     &address, &address_len));
@@ -57,7 +57,7 @@ ZTEST(infuse_dns, test_dns_query)
 	/* IPv6 lookups */
 	zassert_equal(0, infuse_sync_dns("google.com", 80, AF_INET6, SOCK_STREAM, &address,
 					 &address_len));
-	zassert_equal(sizeof(struct sockaddr_in6), address_len);
+	zassert_equal(sizeof(struct net_sockaddr_in6), address_len);
 
 #ifndef CONFIG_NET_NATIVE_OFFLOADED_SOCKETS
 	/* IPv6 queries through getaddrinfo to invalid addresses on POSIX can take a long time and
@@ -78,10 +78,10 @@ static K_SEM_DEFINE(async_success, 0, 1);
 static K_SEM_DEFINE(async_complete, 0, 1);
 static K_SEM_DEFINE(async_failure, 0, 1);
 
-static void async_dns_cb(int result, struct sockaddr *addr, socklen_t addrlen,
+static void async_dns_cb(int result, struct net_sockaddr *addr, net_socklen_t addrlen,
 			 struct infuse_async_dns_context *cb_ctx)
 {
-	socklen_t *address_len;
+	net_socklen_t *address_len;
 
 	zassert_not_null(cb_ctx);
 
@@ -108,7 +108,7 @@ static void async_dns_cb(int result, struct sockaddr *addr, socklen_t addrlen,
 
 ZTEST(infuse_dns, test_dns_query_async)
 {
-	socklen_t address_len;
+	net_socklen_t address_len;
 	struct infuse_async_dns_context cb_ctx = {
 		.cb = async_dns_cb,
 		.user_data = &address_len,
@@ -130,7 +130,7 @@ ZTEST(infuse_dns, test_dns_query_async)
 	zassert_equal(0, k_sem_take(&async_success, K_SECONDS(2)));
 	zassert_equal(0, k_sem_take(&async_complete, K_MSEC(100)));
 	zassert_equal(-EBUSY, k_sem_take(&async_failure, K_NO_WAIT));
-	zassert_equal(sizeof(struct sockaddr_in), address_len);
+	zassert_equal(sizeof(struct net_sockaddr_in), address_len);
 
 	zassert_equal(0, infuse_async_dns("not.a.real.address", AF_INET, &cb_ctx, 2000));
 	zassert_equal(0, k_sem_take(&async_failure, K_SECONDS(2)));
@@ -144,7 +144,7 @@ ZTEST(infuse_dns, test_dns_query_async)
 	zassert_equal(0, k_sem_take(&async_success, K_SECONDS(2)));
 	zassert_equal(0, k_sem_take(&async_complete, K_MSEC(100)));
 	zassert_equal(-EBUSY, k_sem_take(&async_failure, K_NO_WAIT));
-	zassert_equal(sizeof(struct sockaddr_in6), address_len);
+	zassert_equal(sizeof(struct net_sockaddr_in6), address_len);
 
 	zassert_equal(0, infuse_async_dns("not.a.real.address", AF_INET6, &cb_ctx, 2000));
 	zassert_equal(0, k_sem_take(&async_failure, K_SECONDS(2)));

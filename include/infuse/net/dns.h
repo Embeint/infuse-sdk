@@ -40,7 +40,7 @@ extern "C" {
  * @retval -errno on failure
  */
 int infuse_sync_dns(const char *host, uint16_t port, int family, int socktype,
-		    struct sockaddr *addr, socklen_t *addrlen);
+		    struct net_sockaddr *addr, net_socklen_t *addrlen);
 
 /* One result for the DNS query (multiple results are possible) */
 #define INFUSE_ASYNC_DNS_RESULT   0
@@ -57,7 +57,7 @@ struct infuse_async_dns_context;
  * @param addrlen For @ref INFUSE_ASYNC_DNS_RESULT, the length of the address
  * @param cb_ctx @ref infuse_async_dns_context provided to @ref infuse_async_dns
  */
-typedef void (*infuse_async_dns_cb)(int result, struct sockaddr *addr, socklen_t addrlen,
+typedef void (*infuse_async_dns_cb)(int result, struct net_sockaddr *addr, net_socklen_t addrlen,
 				    struct infuse_async_dns_context *cb_ctx);
 
 /** Async query context for @ref infuse_async_dns */

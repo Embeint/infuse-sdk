@@ -57,8 +57,8 @@ int rpc_command_coap_download_run(struct rpc_coap_download_v2_request *req, char
 	struct rpc_common_file_actions_ctx ctx;
 	int block_timeout = req->block_timeout_ms == 0 ? 1000 : req->block_timeout_ms;
 	size_t file_size = req->resource_len == UINT32_MAX ? 0 : req->resource_len;
-	struct sockaddr address;
-	socklen_t address_len;
+	struct net_sockaddr address;
+	net_socklen_t address_len;
 	uint8_t *work_mem;
 	size_t work_mem_size;
 	int sock = -1;

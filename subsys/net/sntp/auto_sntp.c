@@ -27,8 +27,8 @@ static struct kv_store_cb sntp_kv_cb;
 static struct net_mgmt_event_callback l4_callback;
 static struct k_work_delayable sntp_worker;
 static struct k_work_delayable sntp_timeout;
-static struct sockaddr sntp_addr_cached;
-static socklen_t sntp_addrlen_cached;
+static struct net_sockaddr sntp_addr_cached;
+static net_socklen_t sntp_addrlen_cached;
 static struct sntp_ctx sntp_context;
 static uint8_t sntp_failures;
 
@@ -131,7 +131,7 @@ static void sntp_timeout_work(struct k_work *work)
 	sntp_error_handle(&sntp_worker);
 }
 
-static int sntp_start_async_query(struct sockaddr *addr, socklen_t addrlen)
+static int sntp_start_async_query(struct net_sockaddr *addr, net_socklen_t addrlen)
 {
 	int rc;
 
@@ -155,11 +155,11 @@ static int sntp_start_async_query(struct sockaddr *addr, socklen_t addrlen)
 
 #ifdef CONFIG_INFUSE_DNS_ASYNC
 
-static void async_dns_cb(int result, struct sockaddr *addr, socklen_t addrlen,
+static void async_dns_cb(int result, struct net_sockaddr *addr, net_socklen_t addrlen,
 			 struct infuse_async_dns_context *ctx)
 {
 	struct k_work_delayable *delayable = ctx->user_data;
-	struct sockaddr_in *saddr_in;
+	struct net_sockaddr_in *saddr_in;
 
 	if (result < 0) {
 		LOG_ERR("SNTP DNS query failed (%d)", result);
@@ -173,9 +173,9 @@ static void async_dns_cb(int result, struct sockaddr *addr, socklen_t addrlen,
 	ctx->user_data = NULL;
 
 	/* Async DNS doesn't populate the port */
-	BUILD_ASSERT(offsetof(struct sockaddr_in, sin_port) ==
-		     offsetof(struct sockaddr_in6, sin6_port));
-	saddr_in = (struct sockaddr_in *)addr;
+	BUILD_ASSERT(offsetof(struct net_sockaddr_in, sin_port) ==
+		     offsetof(struct net_sockaddr_in6, sin6_port));
+	saddr_in = (struct net_sockaddr_in *)addr;
 	saddr_in->sin_port = htons(SNTP_PORT);
 
 	/* Cache the address for future runs */

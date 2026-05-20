@@ -144,14 +144,14 @@ struct net_buf *rpc_command_zperf_upload(struct net_buf *request)
 
 	/* Peer address construction */
 	if (IS_ENABLED(CONFIG_NET_IPV4) && (req->peer_address.sin_family == AF_INET)) {
-		struct sockaddr_in *peer_addr = net_sin(&params.peer_addr);
+		struct net_sockaddr_in *peer_addr = net_sin(&params.peer_addr);
 
 		peer_addr->sin_family = AF_INET;
 		peer_addr->sin_port = req->peer_address.sin_port;
 		memcpy(peer_addr->sin_addr.s4_addr, req->peer_address.sin_addr,
 		       sizeof(peer_addr->sin_addr.s4_addr));
 	} else if (IS_ENABLED(CONFIG_NET_IPV6) && (req->peer_address.sin_family == AF_INET6)) {
-		struct sockaddr_in6 *peer_addr = net_sin6(&params.peer_addr);
+		struct net_sockaddr_in6 *peer_addr = net_sin6(&params.peer_addr);
 
 		peer_addr->sin6_family = AF_INET6;
 		peer_addr->sin6_port = req->peer_address.sin_port;

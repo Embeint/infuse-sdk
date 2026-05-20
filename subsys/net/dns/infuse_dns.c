@@ -19,7 +19,7 @@ LOG_MODULE_REGISTER(infuse_dns, LOG_LEVEL_INF);
 K_SEM_DEFINE(dns_ctx, CONFIG_DNS_NUM_CONCUR_QUERIES, CONFIG_DNS_NUM_CONCUR_QUERIES);
 #endif /* CONFIG_DNS_RESOLVER */
 
-static void dns_result_display(struct sockaddr *addr, const char *host, uint16_t dns_id)
+static void dns_result_display(struct net_sockaddr *addr, const char *host, uint16_t dns_id)
 {
 	char addr_str[INET6_ADDRSTRLEN];
 
@@ -31,18 +31,18 @@ static void dns_result_display(struct sockaddr *addr, const char *host, uint16_t
 	}
 }
 
-static void sockaddr_port_assign(struct sockaddr *addr, uint16_t port)
+static void sockaddr_port_assign(struct net_sockaddr *addr, uint16_t port)
 {
 #ifdef CONFIG_NET_IPV4
 	if (addr->sa_family == AF_INET) {
-		struct sockaddr_in *ipv4 = (struct sockaddr_in *)addr;
+		struct net_sockaddr_in *ipv4 = (struct net_sockaddr_in *)addr;
 
 		ipv4->sin_port = htons(port);
 	}
 #endif /* CONFIG_NET_IPV4 */
 #ifdef CONFIG_NET_IPV6
 	if (addr->sa_family == AF_INET6) {
-		struct sockaddr_in6 *ipv6 = (struct sockaddr_in6 *)addr;
+		struct net_sockaddr_in6 *ipv6 = (struct net_sockaddr_in6 *)addr;
 
 		ipv6->sin6_port = htons(port);
 	}
@@ -50,7 +50,7 @@ static void sockaddr_port_assign(struct sockaddr *addr, uint16_t port)
 }
 
 int infuse_sync_dns(const char *host, uint16_t port, int family, int socktype,
-		    struct sockaddr *addr, socklen_t *addrlen)
+		    struct net_sockaddr *addr, net_socklen_t *addrlen)
 {
 	struct zsock_addrinfo hints = {
 		.ai_family = family,
