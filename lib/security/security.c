@@ -163,7 +163,8 @@ static psa_key_id_t generate_root_ecc_key_pair(void)
 	} else {
 		LOG_DBG("Generating root identity");
 #ifdef ITS_AVAILABLE
-		/* Remove any existing derived keys */
+		/* Remove any existing root/derived keys */
+		(void)psa_its_remove(INFUSE_ROOT_ECC_KEY_ID);
 		(void)psa_its_remove(INFUSE_ROOT_ECC_PUBLIC_KEY_ID);
 		(void)psa_its_remove(INFUSE_ROOT_ECC_SHARED_SECRET_KEY_ID);
 		(void)psa_its_remove(INFUSE_ROOT_ECC_SECONDARY_SHARED_SECRET_KEY_ID);
