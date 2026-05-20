@@ -155,8 +155,8 @@ static int modem_backend_ublox_spi_close(void *data)
 	return 0;
 }
 
-static int modem_backend_ublox_spi_transmit(void *data, const uint8_t *buf, size_t size,
-					    const uint8_t *extra_buf, size_t extra_size)
+static int modem_backend_ublox_spi_transmit_double(void *data, const uint8_t *buf, size_t size,
+						   const uint8_t *extra_buf, size_t extra_size)
 {
 	struct modem_backend_ublox_spi *backend = data;
 	size_t total_size = size + extra_size;
@@ -231,7 +231,7 @@ static void data_ready_gpio_callback(const struct device *dev, struct gpio_callb
 
 struct modem_pipe_api modem_backend_ublox_spi_api = {
 	.open = modem_backend_ublox_spi_open,
-	.transmit = modem_backend_ublox_spi_transmit,
+	.transmit_double = modem_backend_ublox_spi_transmit_double,
 	.receive = modem_backend_ublox_spi_receive,
 	.close = modem_backend_ublox_spi_close,
 };
