@@ -254,8 +254,8 @@ static int modem_backend_ublox_i2c_close(void *data)
 	return 0;
 }
 
-static int modem_backend_ublox_i2c_transmit(void *data, const uint8_t *buf, size_t size,
-					    const uint8_t *extra_buf, size_t extra_size)
+static int modem_backend_ublox_i2c_transmit_double(void *data, const uint8_t *buf, size_t size,
+						   const uint8_t *extra_buf, size_t extra_size)
 {
 	struct modem_backend_ublox_i2c *backend = data;
 	struct rtio_sqe *wr_sqe, *cb_sqe;
@@ -320,7 +320,7 @@ static void data_ready_gpio_callback(const struct device *dev, struct gpio_callb
 
 struct modem_pipe_api modem_backend_ublox_i2c_api = {
 	.open = modem_backend_ublox_i2c_open,
-	.transmit = modem_backend_ublox_i2c_transmit,
+	.transmit_double = modem_backend_ublox_i2c_transmit_double,
 	.receive = modem_backend_ublox_i2c_receive,
 	.close = modem_backend_ublox_i2c_close,
 };
