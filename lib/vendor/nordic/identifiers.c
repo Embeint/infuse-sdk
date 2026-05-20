@@ -23,7 +23,7 @@
 #define UICR_REG CUSTOMER
 #endif
 
-#if defined(CONFIG_SOC_SERIES_NRF52X) || defined(CONFIG_SOC_SERIES_NRF54LX)
+#if defined(CONFIG_SOC_SERIES_NRF52) || defined(CONFIG_SOC_SERIES_NRF54L)
 #define HAS_DEVICEADDR 1
 #endif
 struct nrf_uicr_structure {
