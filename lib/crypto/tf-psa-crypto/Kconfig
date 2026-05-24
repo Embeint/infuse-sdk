@@ -1,0 +1,35 @@
+# Crypto library configuration
+
+config PSA_CRYPTO_DRIVER_OBERON
+	# The Oberon driver is required to provide HKDF needed for protected storage and builtin keys
+	prompt "Oberon PSA driver" if !TFM_PARTITION_PROTECTED_STORAGE
+	bool
+	depends on SOC_FAMILY_NORDIC_NRF
+	default y
+	help
+	  This configuration enables the usage of the Oberon PSA driver.
+
+config TF_PSA_CRYPTO_OBERON_ACCELERATOR
+	bool "PSA crypto acceleration through the Oberon library"
+	select TF_PSA_CRYPTO_EXTERNAL_ACCELERATOR_INTEGRATION
+	depends on NRF_OBERON
+	default y
+	help
+	  The integration does not attempt to accelerate every algorithm supported
+	  by Oberon, only those commonly used by Infuse-IoT.
+
+config TF_PSA_CRYPTO_OBERON_ACCELERATOR_SHA
+	bool "Accelerate SHA algorithms"
+	depends on TF_PSA_CRYPTO_OBERON_ACCELERATOR
+	help
+	  Accelerating SHA costs ~2.7kB of ROM if only SHA256 is enabled,
+	  or ~10kB if SHA1, SHA224, SHA256, SHA384 and SHA512 are enabled.
+	  Accelerated functions also require additional stack.
+
+config TF_PSA_CRYPTO_OBERON_ACCELERATOR_KEY_AGREEMENT
+	bool "Accelerate 'key_agreement' for ECDH Curve25519"
+	depends on TF_PSA_CRYPTO_OBERON_ACCELERATOR
+	help
+	  Accelerating this function costs ~2.7kB of ROM as the builtin
+	  implementation cannot be removed without significant other
+	  functionality extensions.

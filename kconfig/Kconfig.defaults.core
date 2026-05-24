@@ -169,7 +169,7 @@ configdefault MBEDTLS_HEAP_SIZE
 	default 16384 if NET_SOCKETS_ENABLE_DTLS
 	default 8192
 configdefault TF_PSA_CRYPTO_USER_CONFIG_FILE
-	default "infuse/crypto/mbedtls/infuse_user_config.h"
+	default "infuse/crypto/tf-psa-crypto/infuse_user_config.h"
 configdefault MBEDTLS_PSA_CRYPTO_C
 	default y
 
