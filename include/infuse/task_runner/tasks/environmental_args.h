@@ -23,6 +23,8 @@ enum {
 	TASK_ENVIRONMENTAL_LOG_TPH = BIT(0),
 	/* Temperature */
 	TASK_ENVIRONMENTAL_LOG_T = BIT(1),
+	/* Pressure */
+	TASK_ENVIRONMENTAL_LOG_P = BIT(2),
 };
 
 /** @brief Environmental task arguments */

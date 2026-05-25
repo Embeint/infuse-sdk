@@ -73,11 +73,13 @@ void environmental_task_fn(struct k_work *work)
 	const struct device *secondary = devices->secondary;
 	struct tdf_ambient_temp_pres_hum tdf_tph = {0};
 	struct tdf_ambient_temperature tdf_temp = {0};
+	struct tdf_ambient_pressure tdf_press = {0};
 	struct sensor_value value;
 	bool primary_sampled = false;
 	bool secondary_sampled = false;
 	bool has_pressure = false;
 	bool has_humidity = false;
+	uint64_t epoch_time;
 	int rc;
 
 	/* Sample from provided sensors */
@@ -110,6 +112,7 @@ void environmental_task_fn(struct k_work *work)
 	    ((secondary_sampled &&
 	      (sensor_channel_get(secondary, SENSOR_CHAN_PRESS, &value) == 0)))) {
 		tdf_tph.pressure = sensor_value_to_milli(&value);
+		tdf_press.pressure = tdf_tph.pressure;
 		has_pressure = true;
 	}
 	if ((primary_sampled && (sensor_channel_get(primary, SENSOR_CHAN_HUMIDITY, &value) == 0)) ||
@@ -124,10 +127,13 @@ void environmental_task_fn(struct k_work *work)
 	env_release(secondary, secondary_sampled);
 
 	/* Log output TDFs */
+	epoch_time = epoch_time_now();
 	TASK_SCHEDULE_TDF_LOG(sch, TASK_ENVIRONMENTAL_LOG_TPH, TDF_AMBIENT_TEMP_PRES_HUM,
-			      epoch_time_now(), &tdf_tph);
-	TASK_SCHEDULE_TDF_LOG(sch, TASK_ENVIRONMENTAL_LOG_T, TDF_AMBIENT_TEMPERATURE,
-			      epoch_time_now(), &tdf_temp);
+			      epoch_time, &tdf_tph);
+	TASK_SCHEDULE_TDF_LOG(sch, TASK_ENVIRONMENTAL_LOG_T, TDF_AMBIENT_TEMPERATURE, epoch_time,
+			      &tdf_temp);
+	TASK_SCHEDULE_TDF_LOG(sch, TASK_ENVIRONMENTAL_LOG_P, TDF_AMBIENT_PRESSURE, epoch_time,
+			      &tdf_press);
 
 	/* Publish new data reading */
 	zbus_chan_pub(ZBUS_CHAN, &tdf_tph, K_FOREVER);
