@@ -778,6 +778,12 @@ struct tdf_kvs_value_changed {
 		uint8_t value[_count];                                                             \
 	} __packed;
 
+/** Ambient pressure */
+struct tdf_ambient_pressure {
+	/** Atmospheric pressure (pascals) */
+	uint32_t pressure;
+} __packed;
+
 /** Infuse-IoT builtin TDF definitions */
 enum tdf_builtin_id {
 	/** Common announcement packet */
@@ -900,6 +906,8 @@ enum tdf_builtin_id {
 	TDF_PCM_16BIT_CHAN_DUAL = 60,
 	/** Record of key value store data updates */
 	TDF_KVS_VALUE_CHANGED = 61,
+	/** Ambient pressure */
+	TDF_AMBIENT_PRESSURE = 62,
 	/** End of builtin TDF range */
 	TDF_BUILTIN_END = 1024,
 };
@@ -964,6 +972,7 @@ enum tdf_builtin_id {
 #define _TDF_PCM_16BIT_CHAN_RIGHT_TYPE        struct tdf_pcm_16bit_chan_right
 #define _TDF_PCM_16BIT_CHAN_DUAL_TYPE         struct tdf_pcm_16bit_chan_dual
 #define _TDF_KVS_VALUE_CHANGED_TYPE           struct tdf_kvs_value_changed
+#define _TDF_AMBIENT_PRESSURE_TYPE            struct tdf_ambient_pressure
 
 /** Size of builtin TDF definitions */
 enum tdf_builtin_size {
@@ -1025,6 +1034,7 @@ enum tdf_builtin_size {
 	_TDF_PCM_16BIT_CHAN_RIGHT_SIZE = sizeof(struct tdf_pcm_16bit_chan_right),
 	_TDF_PCM_16BIT_CHAN_DUAL_SIZE = sizeof(struct tdf_pcm_16bit_chan_dual),
 	_TDF_KVS_VALUE_CHANGED_SIZE = sizeof(struct tdf_kvs_value_changed),
+	_TDF_AMBIENT_PRESSURE_SIZE = sizeof(struct tdf_ambient_pressure),
 };
 
 /** @endcond */

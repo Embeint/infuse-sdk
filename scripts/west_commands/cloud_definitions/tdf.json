@@ -614,6 +614,13 @@
                 {"name": "key", "type": "uint16_t", "description": "KV Store key identifier"},
                 {"name": "value", "type": "uint8_t", "num": 0, "description": "New data value, empty for delete, '*' for write-only"}
             ]
+        },
+        "62": {
+            "name": "AMBIENT_PRESSURE",
+            "description": "Ambient pressure",
+            "fields": [
+                {"name": "pressure", "type": "uint32_t", "description": "Atmospheric pressure (pascals)", "display": {"fmt": "float", "digits": 3, "postfix": "kPA"}, "conversion": {"m": 0.001, "c": 0} }
+            ]
         }
     }
 }
