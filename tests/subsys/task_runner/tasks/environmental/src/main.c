@@ -139,6 +139,17 @@ static void expect_logging(uint8_t log_mask, int32_t temperature, uint32_t press
 	} else {
 		zassert_equal(-ENOMEM, rc);
 	}
+	rc = tdf_parse_find_in_buf(pkt->data, pkt->len, TDF_AMBIENT_PRESSURE, &tdf);
+	if (log_mask & TASK_ENVIRONMENTAL_LOG_P) {
+		struct tdf_ambient_pressure *state;
+
+		zassert_equal(0, rc);
+		state = tdf.data;
+
+		zassert_equal(pressure, state->pressure);
+	} else {
+		zassert_equal(-ENOMEM, rc);
+	}
 
 	net_buf_unref(pkt);
 }
@@ -204,10 +215,12 @@ static void test_env(const struct test_configuration *config, uint8_t log_mask)
 
 static void test_cfg(const struct test_configuration *config)
 {
-	uint8_t log_all = TASK_ENVIRONMENTAL_LOG_TPH | TASK_ENVIRONMENTAL_LOG_T;
+	uint8_t log_all =
+		TASK_ENVIRONMENTAL_LOG_TPH | TASK_ENVIRONMENTAL_LOG_T | TASK_ENVIRONMENTAL_LOG_P;
 
 	test_env(config, 0);
 	test_env(config, TASK_ENVIRONMENTAL_LOG_T);
+	test_env(config, TASK_ENVIRONMENTAL_LOG_P);
 	test_env(config, TASK_ENVIRONMENTAL_LOG_TPH);
 	test_env(config, log_all);
 }
