@@ -1,0 +1,29 @@
+/* Common nordic USB */
+
+/ {
+	chosen {
+		zephyr,console = &cdc_acm_uart;
+	};
+
+	epacket_serial: epacket_serial {
+		compatible = "embeint,epacket-serial";
+		serial = <&cdc_acm_uart>;
+	};
+
+	data_logger_serial: data_logger_serial {
+		compatible = "embeint,data-logger-epacket", "embeint,data-logger";
+		epacket = <&epacket_serial>;
+
+		tdf_logger_serial: tdf_logger_serial {
+			compatible = "embeint,tdf-data-logger";
+		};
+	};
+};
+
+&usbhs {
+	status = "okay";
+
+	cdc_acm_uart: cdc_acm_uart {
+		compatible = "zephyr,cdc-acm-uart";
+	};
+};
