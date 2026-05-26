@@ -8,6 +8,9 @@ boards:
   /nrf53.*/:
     append:
       EXTRA_DTC_OVERLAY_FILE: nordic_usbd.overlay
+  /nrf54lm20.*/:
+    append:
+      EXTRA_DTC_OVERLAY_FILE: nordic_usbd_hs.overlay
   /thingy5.*/:
     append:
       EXTRA_DTC_OVERLAY_FILE: nordic_usbd.overlay
