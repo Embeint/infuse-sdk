@@ -21,7 +21,7 @@
 INFUSE_ZBUS_CHAN_DEFINE(INFUSE_ZBUS_CHAN_BATTERY);
 
 #ifdef CONFIG_TEST_ALGORITHM_BUILD_LLEXT
-static uint8_t test_algorithm[] __aligned(sizeof(void *)) = {
+static const uint8_t test_algorithm[] __aligned(sizeof(void *)) = {
 #include "test_algorithm.inc"
 };
 #endif /* CONFIG_TEST_ALGORITHM_BUILD_LLEXT */
