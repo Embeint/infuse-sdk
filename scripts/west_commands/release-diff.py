@@ -69,9 +69,16 @@ class release_diff(WestCommand):
         tool_compare: bool,
         ignore_board: bool,
     ):
-        with (original_dir / "manifest.yaml").open("r", encoding="utf-8") as f:
+        original_manifest = original_dir / "manifest.yaml"
+        output_manifest = output_dir / "manifest.yaml"
+        if not original_manifest.exists():
+            sys.exit(f"'{str(original_manifest)}' does not exist, is this a release folder?")
+        if not output_manifest.exists():
+            sys.exit(f"'{str(output_manifest)}' does not exist, is this a release folder?")
+
+        with original_manifest.open("r", encoding="utf-8") as f:
             self.manifest_original = yaml.safe_load(f)
-        with (output_dir / "manifest.yaml").open("r", encoding="utf-8") as f:
+        with output_manifest.open("r", encoding="utf-8") as f:
             self.manifest_output = yaml.safe_load(f)
 
         def expect_match(field):
@@ -101,6 +108,12 @@ class release_diff(WestCommand):
         output_path = output_dir / name_out / "zephyr" / filename
         imgtool_orig_f = original_dir / name_orig / "imgtool.yaml"
         imgtool_new_f = output_dir / name_out / "imgtool.yaml"
+
+        if not imgtool_orig_f.exists():
+            sys.exit(f"'{str(original_manifest)}' does not exist, can't validate files")
+        if not imgtool_new_f.exists():
+            sys.exit(f"'{str(output_manifest)}' does not exist, can't validate files")
+
         with imgtool_orig_f.open("r", encoding="utf-8") as f:
             imgtool_orig = yaml.safe_load(f)
         with imgtool_new_f.open("r", encoding="utf-8") as f:
