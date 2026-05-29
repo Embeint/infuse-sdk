@@ -40,13 +40,14 @@ class release_diff(WestCommand):
             "--input",
             "-i",
             type=pathlib.Path,
-            nargs="*",
+            nargs="+",
             help="Original release folder/s",
         )
         parser.add_argument(
             "--output",
             "-o",
             type=pathlib.Path,
+            required=True,
             help="Updated release folder",
         )
         parser.add_argument(
