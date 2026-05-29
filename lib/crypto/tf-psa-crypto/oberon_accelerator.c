@@ -332,6 +332,7 @@ psa_status_t psa_driver_external_integration_aead_decrypt(
 	rc = ocrypto_chacha20_poly1305_decrypt(tag, plaintext, ciphertext, ciphertext_no_tag,
 					       additional_data, additional_data_length, nonce,
 					       nonce_length, key_buffer);
+	*plaintext_length = ciphertext_no_tag;
 	return rc == 0 ? PSA_SUCCESS : PSA_ERROR_INVALID_SIGNATURE;
 #else
 	return PSA_ERROR_NOT_SUPPORTED;
