@@ -257,6 +257,8 @@ class vscode(WestCommand):
         self.cpp_properties(build_dir, parent_cache, False)
         launch["configurations"][0]["gdbPath"] = parent_cache.get("CMAKE_GDB")
         launch["configurations"][1]["gdbPath"] = parent_cache.get("CMAKE_GDB")
+        launch["configurations"][0]["objdumpPath"] = parent_cache.get("CMAKE_OBJDUMP")
+        launch["configurations"][1]["objdumpPath"] = parent_cache.get("CMAKE_OBJDUMP")
 
     def _tfm_sub_image(self, build_dir: pathlib.Path):
         tfm_elfs = [
@@ -274,6 +276,8 @@ class vscode(WestCommand):
 
         launch["configurations"][0]["gdbPath"] = cache.get("CMAKE_GDB")
         launch["configurations"][1]["gdbPath"] = cache.get("CMAKE_GDB")
+        launch["configurations"][0]["objdumpPath"] = cache.get("CMAKE_OBJDUMP")
+        launch["configurations"][1]["objdumpPath"] = cache.get("CMAKE_OBJDUMP")
         if cache.get("SOC_SVD_FILE", False):
             launch["configurations"][0]["svdFile"] = cache.get("SOC_SVD_FILE")
             launch["configurations"][1]["svdFile"] = cache.get("SOC_SVD_FILE")
@@ -302,6 +306,7 @@ class vscode(WestCommand):
         launch["configurations"][0]["gdbTarget"] = "localhost:1234"
         launch["configurations"][0]["serverpath"] = cache.get("QEMU")
         launch["configurations"][0]["gdbPath"] = cache.get("CMAKE_GDB")
+        launch["configurations"][0]["objdumpPath"] = cache.get("CMAKE_OBJDUMP")
         launch["configurations"][0]["runToEntryPoint"] = False
         launch["configurations"][0]["executable"] = str(build_dir / "zephyr" / "zephyr.elf")
 
@@ -309,6 +314,7 @@ class vscode(WestCommand):
         launch["configurations"][1]["servertype"] = "qemu"
         launch["configurations"][1]["serverpath"] = cache.get("QEMU")
         launch["configurations"][1]["gdbPath"] = cache.get("CMAKE_GDB")
+        launch["configurations"][1]["objdumpPath"] = cache.get("CMAKE_OBJDUMP")
         launch["configurations"][1]["runToEntryPoint"] = False
         launch["configurations"][1]["executable"] = str(build_dir / "zephyr" / "zephyr.elf")
 
