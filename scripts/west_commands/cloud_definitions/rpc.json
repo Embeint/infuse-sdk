@@ -185,6 +185,22 @@
                 {"name": "logger", "type": "uint8_t", "description": "Logger that was flushed"},
                 {"name": "num", "type": "uint16_t", "description": "Number of bytes flushed"}
             ]
+        },
+        "rpc_struct_filesystem_file_metadata": {
+            "description": "Metadata associated with file on the filesystem",
+            "fields": [
+                {"name": "timestamp", "type": "uint32_t", "description": "Creation timestamp"},
+                {"name": "identifier", "type": "uint32_t", "description": "Opaque identifier for cloud"},
+                {"name": "crc", "type": "uint32_t", "description": "Data validation"}
+            ]
+        },
+        "rpc_struct_filesystem_file_info": {
+            "description": "Information about file on the filesystem",
+            "fields": [
+                {"name": "metadata", "type": "struct rpc_struct_filesystem_file_metadata", "description": "File metadata"},
+                {"name": "name", "type": "uint32_t", "description": "Name of the file"},
+                {"name": "size", "type": "uint32_t", "description": "Length of the file"}
+            ]
         }
     },
     "enums": {
@@ -276,6 +292,16 @@
                 {"name": "UNSUPPORTED", "value": 0, "description": "Field is not supported"},
                 {"name": "SUPPORTED", "value": 1, "description": "Field is supported"},
                 {"name": "UNKNOWN", "value": 255, "description": "Field support status is unknown"}
+            ]
+        },
+        "rpc_enum_filesystem_folder": {
+            "description": "Folder identifier",
+            "type": "uint8_t",
+            "values": [
+                {"name": "GENERAL", "value": 0, "description": "Singleton files that don't fit in other locations"},
+                {"name": "ALGORITHMS", "value": 1, "description": "Dynamic algorithms"},
+                {"name": "A_GNSS", "value": 2, "description": "GNSS assistance data"},
+                {"name": "COPY", "value": 3, "description": "Files to copy to other devices"}
             ]
         }
     },
@@ -886,6 +912,34 @@
                 {"name": "num_samples", "type": "uint16_t", "description": "Number of samples used in the averaging"},
                 {"name": "sample_period_us", "type": "uint32_t", "description": "Period between samples"}
             ]
+        },
+        "61": {
+            "name": "filesystem_ls",
+            "description": "Query files currently on the filesystem",
+            "depends_on": "INFUSE_LITTLEFS",
+            "default": "y",
+            "default_auth": "EPACKET_AUTH_DEVICE",
+            "request_params": [
+                {"name": "folder", "type": "enum rpc_enum_filesystem_folder", "description": "Folder to query"},
+                {"name": "skip", "type": "uint8_t", "description": "Skip first N files in response"}
+            ],
+            "response_params": [
+                {"name": "total_files", "type": "uint8_t", "description": "Total files in the folder"},
+                {"name": "contained_files", "type": "uint8_t", "description": "Number of files in this response"},
+                {"name": "files", "num": 0, "counted_by": "contained_files", "type": "struct rpc_struct_filesystem_file_info", "description": "File information"}
+            ]
+        },
+        "62": {
+            "name": "filesystem_rm",
+            "description": "Delete file currently on the filesystem",
+            "depends_on": "INFUSE_LITTLEFS",
+            "default": "y",
+            "default_auth": "EPACKET_AUTH_DEVICE",
+            "request_params": [
+                {"name": "folder", "type": "enum rpc_enum_filesystem_folder", "description": "Folder that file exists in"},
+                {"name": "file", "type": "uint32_t", "description": "File to delete"}
+            ],
+            "response_params": []
         },
         "70": {
             "name": "ubx_assist_now_ztp_creds",

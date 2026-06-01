@@ -200,6 +200,18 @@ enum rpc_enum_support_status {
 	RPC_ENUM_SUPPORT_STATUS_UNKNOWN = 255,
 };
 
+/** Folder identifier */
+enum rpc_enum_filesystem_folder {
+	/** Singleton files that don't fit in other locations */
+	RPC_ENUM_FILESYSTEM_FOLDER_GENERAL = 0,
+	/** Dynamic algorithms */
+	RPC_ENUM_FILESYSTEM_FOLDER_ALGORITHMS = 1,
+	/** GNSS assistance data */
+	RPC_ENUM_FILESYSTEM_FOLDER_A_GNSS = 2,
+	/** Files to copy to other devices */
+	RPC_ENUM_FILESYSTEM_FOLDER_COPY = 3,
+};
+
 /** MCUboot semantic versioning struct */
 struct rpc_struct_mcuboot_img_sem_ver {
 	uint8_t major;
@@ -440,6 +452,26 @@ struct rpc_struct_data_logger_flushed {
 	uint16_t num;
 } __packed;
 
+/** Metadata associated with file on the filesystem */
+struct rpc_struct_filesystem_file_metadata {
+	/** Creation timestamp */
+	uint32_t timestamp;
+	/** Opaque identifier for cloud */
+	uint32_t identifier;
+	/** Data validation */
+	uint32_t crc;
+} __packed;
+
+/** Information about file on the filesystem */
+struct rpc_struct_filesystem_file_info {
+	/** File metadata */
+	struct rpc_struct_filesystem_file_metadata metadata;
+	/** Name of the file */
+	uint32_t name;
+	/** Length of the file */
+	uint32_t size;
+} __packed;
+
 
 /**
  * @}
@@ -531,6 +563,10 @@ enum rpc_builtin_id {
 	RPC_ID_BT_MCUMGR_REBOOT = 54,
 	/** Store the current accelerometer vector as the gravity reference */
 	RPC_ID_GRAVITY_REFERENCE_UPDATE = 60,
+	/** Query files currently on the filesystem */
+	RPC_ID_FILESYSTEM_LS = 61,
+	/** Delete file currently on the filesystem */
+	RPC_ID_FILESYSTEM_RM = 62,
 	/** Retrieve U-blox AssistNow Zero Touch Provisioning credentials */
 	RPC_ID_UBX_ASSIST_NOW_ZTP_CREDS = 70,
 	/** Query current security state and validate identity */
@@ -1280,6 +1316,38 @@ struct rpc_gravity_reference_update_response {
 	uint16_t num_samples;
 	/** Period between samples */
 	uint32_t sample_period_us;
+} __packed;
+
+/** Query files currently on the filesystem */
+struct rpc_filesystem_ls_request {
+	struct infuse_rpc_req_header header;
+	/** Folder to query */
+	uint8_t folder;
+	/** Skip first N files in response */
+	uint8_t skip;
+} __packed;
+
+struct rpc_filesystem_ls_response {
+	struct infuse_rpc_rsp_header header;
+	/** Total files in the folder */
+	uint8_t total_files;
+	/** Number of files in this response */
+	uint8_t contained_files;
+	/** File information */
+	struct rpc_struct_filesystem_file_info files[];
+} __packed;
+
+/** Delete file currently on the filesystem */
+struct rpc_filesystem_rm_request {
+	struct infuse_rpc_req_header header;
+	/** Folder that file exists in */
+	uint8_t folder;
+	/** File to delete */
+	uint32_t file;
+} __packed;
+
+struct rpc_filesystem_rm_response {
+	struct infuse_rpc_rsp_header header;
 } __packed;
 
 /** Retrieve U-blox AssistNow Zero Touch Provisioning credentials */
