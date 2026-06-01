@@ -19,12 +19,18 @@
 #include <infuse/dfu/helpers.h>
 #include <infuse/reboot.h>
 #include <infuse/rpc/commands.h>
+#include <infuse/fs/littlefs.h>
+#include <infuse/time/epoch.h>
 
 #ifdef CONFIG_NRF_MODEM_LIB
 #include "nrf_modem_delta_dfu.h"
 #endif /* CONFIG_NRF_MODEM_LIB */
 
 #include "common_file_actions.h"
+
+#ifdef CONFIG_INFUSE_LITTLEFS
+#define SUPPORT_FILE_COPY_FS 1
+#endif /* CONFIG_INFUSE_LITTLEFS */
 
 #ifdef CONFIG_INFUSE_DFU_HELPERS
 #if PARTITION_EXISTS(slot1_partition)
@@ -35,8 +41,8 @@
 #endif /* PARTITION_EXISTS(file_partition) */
 #endif /* CONFIG_INFUSE_CPATCH*/
 #endif /* PARTITION_EXISTS(slot1_partition) */
-#if PARTITION_EXISTS(file_partition)
-#define SUPPORT_FILE_COPY 1
+#if PARTITION_EXISTS(file_partition) && !defined(SUPPORT_FILE_COPY_FS)
+#define SUPPORT_FILE_COPY_RAW 1
 #endif /* PARTITION_EXISTS(file_partition) */
 #endif /* CONFIG_INFUSE_DFU_HELPERS */
 
@@ -65,7 +71,7 @@ __maybe_unused static void pm_flash_area_close(const struct flash_area *fa)
 	flash_area_close(fa);
 }
 
-#if defined(SUPPORT_APP_IMG) || defined(SUPPORT_APP_CPATCH) || defined(SUPPORT_FILE_COPY)
+#if defined(SUPPORT_APP_IMG) || defined(SUPPORT_APP_CPATCH) || defined(SUPPORT_FILE_COPY_RAW)
 
 static void cpatch_watchdog(uint32_t progress, uint32_t total)
 {
@@ -143,7 +149,40 @@ static int common_file_actions_stream_writer_init(struct rpc_common_file_actions
 		ctx, PARTITION_ID(partition), PARTITION_DEVICE(partition),                         \
 		PARTITION_OFFSET(partition) + offset, length, crc, trailer)
 
-#endif /* defined(SUPPORT_APP_IMG) || defined(SUPPORT_APP_CPATCH) || defined(SUPPORT_FILE_COPY) */
+#endif /* APP_IMG || APP_CPATCH || FILE_COPY_RAW */
+
+#ifdef SUPPORT_FILE_COPY_FS
+
+static int file_copy_fs_init(struct rpc_common_file_actions_ctx *ctx, uint32_t length, uint32_t crc)
+{
+	uint32_t file_crc;
+	size_t mem_size;
+	uint8_t *mem;
+	int rc;
+
+	/* Can only do duplicate detection if both length and CRC provided */
+	if ((crc != UINT32_MAX) && (length != UINT32_MAX)) {
+		rc = infuse_littlefs_file_size(INFUSE_LFS_FOLDER_COPY, 0);
+		if (rc >= length) {
+			/* File is possibly long enough to match data */
+			mem = rpc_server_command_working_mem(&mem_size);
+			rc = infuse_littlefs_file_crc32(INFUSE_LFS_FOLDER_COPY, 0, length,
+							&file_crc, mem, mem_size);
+			if ((rc == 0) && (file_crc == crc)) {
+				/* File already matches */
+				ctx->crc = crc;
+				return FILE_ALREADY_PRESENT;
+			}
+		}
+	}
+
+	/* Delete any previous file */
+	(void)infuse_littlefs_file_delete(INFUSE_LFS_FOLDER_COPY, 0);
+	/* Create the new file */
+	return infuse_littlefs_file_create(INFUSE_LFS_FOLDER_COPY, 0, &ctx->fs_meta);
+}
+
+#endif /* SUPPORT_FILE_COPY_FS */
 
 int rpc_common_file_actions_start(struct rpc_common_file_actions_ctx *ctx,
 				  enum rpc_enum_file_action action, uint32_t length, uint32_t crc)
@@ -172,12 +211,17 @@ int rpc_common_file_actions_start(struct rpc_common_file_actions_ctx *ctx,
 	case RPC_ENUM_FILE_ACTION_APP_CPATCH:
 		rc = STREAM_WRITER_INIT(ctx, file_partition, 0, length, crc, false);
 		break;
-#endif /* SUPPORT_APP_CPATCH*/
-#ifdef SUPPORT_FILE_COPY
+#endif /* SUPPORT_APP_CPATCH */
+#ifdef SUPPORT_FILE_COPY_RAW
 	case RPC_ENUM_FILE_ACTION_FILE_FOR_COPY:
 		rc = STREAM_WRITER_INIT(ctx, file_partition, 0, length, crc, false);
 		break;
-#endif /* SUPPORT_FILE_COPY*/
+#endif /* SUPPORT_FILE_COPY_RAW*/
+#ifdef SUPPORT_FILE_COPY_FS
+	case RPC_ENUM_FILE_ACTION_FILE_FOR_COPY:
+		rc = file_copy_fs_init(ctx, length, crc);
+		break;
+#endif /* SUPPORT_FILE_COPY_FS */
 #ifdef CONFIG_BT_CONTROLLER_MANAGER
 	case RPC_ENUM_FILE_ACTION_BT_CTLR_IMG:
 		rc = bt_controller_manager_file_write_start(&ctx->client_ctx,
@@ -231,11 +275,16 @@ int rpc_common_file_actions_write(struct rpc_common_file_actions_ctx *ctx, uint3
 		rc = stream_flash_buffered_write(&ctx->stream_ctx, data, data_len, false);
 		break;
 #endif /* SUPPORT_APP_IMG */
-#ifdef SUPPORT_FILE_COPY
+#ifdef SUPPORT_FILE_COPY_RAW
 	case RPC_ENUM_FILE_ACTION_FILE_FOR_COPY:
 		rc = stream_flash_buffered_write(&ctx->stream_ctx, data, data_len, false);
 		break;
-#endif /* SUPPORT_FILE_COPY*/
+#endif /* SUPPORT_FILE_COPY_RAW */
+#ifdef SUPPORT_FILE_COPY_FS
+	case RPC_ENUM_FILE_ACTION_FILE_FOR_COPY:
+		rc = infuse_littlefs_file_write(data, data_len);
+		break;
+#endif /* SUPPORT_FILE_COPY_FS */
 #ifdef CONFIG_BT_CONTROLLER_MANAGER
 	case RPC_ENUM_FILE_ACTION_BT_CTLR_IMG:
 	case RPC_ENUM_FILE_ACTION_BT_CTLR_CPATCH:
@@ -355,10 +404,16 @@ cleanup:
 int rpc_common_file_actions_finish(struct rpc_common_file_actions_ctx *ctx, uint16_t rpc_id,
 				   bool defer_long)
 {
+	__maybe_unused uint32_t data_crc;
+	size_t mem_size;
+	uint8_t *mem;
 	bool reboot = false;
 	int rc = 0;
 
-#if defined(SUPPORT_APP_IMG) || defined(SUPPORT_APP_CPATCH) || defined(SUPPORT_FILE_COPY)
+	/* Temporary memory buffer */
+	mem = rpc_server_command_working_mem(&mem_size);
+
+#if defined(SUPPORT_APP_IMG) || defined(SUPPORT_APP_CPATCH) || defined(SUPPORT_FILE_COPY_RAW)
 	if (ctx->stream_ctx.buf_len &&
 	    ((ctx->action == RPC_ENUM_FILE_ACTION_APP_IMG) ||
 	     (ctx->action == RPC_ENUM_FILE_ACTION_APP_CPATCH) ||
@@ -372,35 +427,53 @@ int rpc_common_file_actions_finish(struct rpc_common_file_actions_ctx *ctx, uint
 			return rc;
 		}
 	}
-#endif /* defined(SUPPORT_APP_IMG) || defined(SUPPORT_APP_CPATCH) || defined(SUPPORT_FILE_COPY) */
+#endif /* APP_IMG || APP_CPATCH || FILE_COPY_RAW */
+
+#ifdef SUPPORT_FILE_COPY_FS
+	/* If 0 bytes were received, the file already existed on disk */
+	if ((ctx->action == RPC_ENUM_FILE_ACTION_FILE_FOR_COPY) && (ctx->received > 0)) {
+		ctx->fs_meta.identifier = 0;
+		ctx->fs_meta.timestamp = epoch_time_seconds(epoch_time_now());
+		ctx->fs_meta.crc = ctx->crc;
+		rc = infuse_littlefs_file_close();
+		if (rc < 0) {
+			LOG_ERR("Could not close file (%d)", rc);
+			return rc;
+		}
+		rc = infuse_littlefs_file_crc32(INFUSE_LFS_FOLDER_COPY, 0, UINT32_MAX, &data_crc,
+						mem, mem_size);
+		if (rc < 0) {
+			LOG_ERR("Could not validate written data");
+			return rc;
+		} else if (ctx->crc != data_crc) {
+			LOG_ERR("CRC mismatch between received and written (%08X != %08X)",
+				ctx->crc, data_crc);
+			return -EBADE;
+		}
+	}
+#endif /* SUPPORT_FILE_COPY_FS */
 
 #ifdef CONFIG_INFUSE_DFU_HELPERS
 	off_t offset = 0;
-	uint32_t flash_crc;
-	size_t mem_size;
-	uint8_t *mem;
 
 	if (ctx->needs_cleanup) {
 		infuse_dfu_write_erase_finish(ctx->fa);
 		ctx->needs_cleanup = false;
 	}
 
-	/* Temporary memory buffer */
-	mem = rpc_server_command_working_mem(&mem_size);
-
 	/* Validate the data written to flash if possible */
 	if ((ctx->fa != NULL) && (ctx->received > 0)) {
 		if (ctx->action == RPC_ENUM_FILE_ACTION_APP_IMG) {
 			offset = boot_get_image_start_offset(ctx->fa->fa_id);
 		}
-		rc = flash_area_crc32(ctx->fa, offset, ctx->received, &flash_crc, mem, mem_size);
+		rc = flash_area_crc32(ctx->fa, offset, ctx->received, &data_crc, mem, mem_size);
 		if (rc < 0) {
 			LOG_ERR("Could not validate written data");
 			pm_flash_area_close(ctx->fa);
 			return rc;
-		} else if (ctx->crc != flash_crc) {
+		} else if (ctx->crc != data_crc) {
 			LOG_ERR("CRC mismatch between received and written (%08X != %08X)",
-				ctx->crc, flash_crc);
+				ctx->crc, data_crc);
 			pm_flash_area_close(ctx->fa);
 			return -EBADE;
 		}
@@ -444,12 +517,12 @@ int rpc_common_file_actions_finish(struct rpc_common_file_actions_ctx *ctx, uint
 #endif /* CONFIG_MCUBOOT_IMG_MANAGER */
 		break;
 #endif /* SUPPORT_APP_IMG */
-#ifdef SUPPORT_FILE_COPY
+#ifdef SUPPORT_FILE_COPY_RAW
 	case RPC_ENUM_FILE_ACTION_FILE_FOR_COPY:
 		/* Close the flash area */
 		pm_flash_area_close(ctx->fa);
 		break;
-#endif /* SUPPORT_FILE_COPY*/
+#endif /* SUPPORT_FILE_COPY_RAW*/
 #ifdef CONFIG_BT_CONTROLLER_MANAGER
 	case RPC_ENUM_FILE_ACTION_BT_CTLR_IMG:
 	case RPC_ENUM_FILE_ACTION_BT_CTLR_CPATCH:
@@ -524,12 +597,18 @@ int rpc_common_file_actions_error_cleanup(struct rpc_common_file_actions_ctx *ct
 		pm_flash_area_close(ctx->fa);
 		break;
 #endif /* SUPPORT_APP_IMG */
-#ifdef SUPPORT_FILE_COPY
+#ifdef SUPPORT_FILE_COPY_RAW
 	case RPC_ENUM_FILE_ACTION_FILE_FOR_COPY:
 		/* Close the flash area */
 		pm_flash_area_close(ctx->fa);
 		break;
-#endif /* SUPPORT_FILE_COPY*/
+#endif /* SUPPORT_FILE_COPY_RAW */
+#ifdef SUPPORT_FILE_COPY_FS
+	case RPC_ENUM_FILE_ACTION_FILE_FOR_COPY:
+		/* Close the flash area */
+		rc = infuse_littlefs_file_close();
+		break;
+#endif /* SUPPORT_FILE_COPY_FS */
 #ifdef CONFIG_BT_CONTROLLER_MANAGER
 	case RPC_ENUM_FILE_ACTION_BT_CTLR_IMG:
 	case RPC_ENUM_FILE_ACTION_BT_CTLR_CPATCH:
