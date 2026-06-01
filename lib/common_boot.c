@@ -16,6 +16,7 @@
 #include <infuse/identifiers.h>
 #include <infuse/fs/kv_store.h>
 #include <infuse/fs/kv_types.h>
+#include <infuse/fs/littlefs.h>
 #include <infuse/reboot.h>
 #include <infuse/time/epoch.h>
 #include <infuse/security.h>
@@ -375,6 +376,13 @@ static int infuse_common_boot(void)
 		critical_failed = true;
 	}
 #endif /* CONFIG_INFUSE_SECURITY */
+
+#ifdef CONFIG_INFUSE_LITTLEFS
+	rc = infuse_littlefs_init();
+	if (rc < 0) {
+		LOG_ERR("Failed to initialise LittleFS (%d)", rc);
+	}
+#endif /* CONFIG_INFUSE_LITTLEFS */
 
 #ifdef CONFIG_INFUSE_COMMON_BOOT_AUTO_IMG_CONFIRM
 	if (critical_failed == false) {
