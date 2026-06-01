@@ -1,0 +1,6 @@
+/ {
+	chosen {
+		/* Use slot1 as a convenient, large, unused partition */
+		infuse,littlefs-partition = &slot1_partition;
+	};
+};
