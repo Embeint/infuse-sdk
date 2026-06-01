@@ -12,6 +12,7 @@
 #include <zephyr/storage/flash_map.h>
 #include <zephyr/bluetooth/conn.h>
 
+#include <infuse/fs/littlefs.h>
 #include <infuse/rpc/commands.h>
 #include <infuse/rpc/command_runner.h>
 #include <infuse/rpc/types.h>
@@ -46,9 +47,19 @@ static void command_data_done(const struct net_buf *buf, void *user_data)
 
 static int file_loader(void *user_data, uint32_t offset, void *data, size_t data_len)
 {
+#ifdef CONFIG_INFUSE_LITTLEFS
+	int rc;
+
+	rc = infuse_littlefs_file_seek(offset);
+	if (rc < 0) {
+		return rc;
+	}
+	return infuse_littlefs_file_read(data, data_len);
+#else
 	const struct flash_area *fa = user_data;
 
 	return flash_area_read(fa, offset, data, data_len);
+#endif
 }
 
 int rpc_command_bt_file_copy_basic_run(struct rpc_bt_file_copy_basic_request *req,
@@ -61,12 +72,10 @@ int rpc_command_bt_file_copy_basic_run(struct rpc_bt_file_copy_basic_request *re
 	};
 	struct file_copy_ctx completion_ctx = {0};
 	struct rpc_client_ctx client_ctx;
-	const struct flash_area *fa;
 	struct bt_conn *conn;
 	uint32_t request_id;
 	size_t work_mem_size;
 	uint8_t *work_mem;
-	uint8_t partition_id;
 	int rc = 0;
 
 	struct rpc_file_write_basic_request write_req = {
@@ -86,11 +95,26 @@ int rpc_command_bt_file_copy_basic_run(struct rpc_bt_file_copy_basic_request *re
 		.pipelining = req->pipelining,
 	};
 
+#ifdef CONFIG_INFUSE_LITTLEFS
+	rc = infuse_littlefs_file_size(INFUSE_LFS_FOLDER_COPY, req->file_idx);
+	if (rc < 0) {
+		LOG_WRN("Failed to check file size (%d)", rc);
+		return rc;
+	} else if (rc < req->file_len) {
+		LOG_WRN("File %d is only %d bytes long, %d bytes requested", req->file_idx, rc,
+			req->file_len);
+		return -EINVAL;
+	}
+#else
+	const struct flash_area *fa;
+	uint8_t partition_id;
+
 	/* Data source */
 	if (req->file_idx != 0) {
 		LOG_WRN("Multiple file storage not yet supported");
 	}
 	partition_id = PARTITION_ID(file_partition);
+#endif /* CONFIG_INFUSE_LITTLEFS */
 
 	/* Validate we are connected to the device before starting */
 	conn = bt_conn_lookup_addr_le(BT_ID_DEFAULT, &bluetooth_addr);
@@ -115,9 +139,17 @@ int rpc_command_bt_file_copy_basic_run(struct rpc_bt_file_copy_basic_request *re
 
 	request_id = rpc_client_last_request_id(&client_ctx);
 
+#ifdef CONFIG_INFUSE_LITTLEFS
+	rc = infuse_littlefs_file_open(INFUSE_LFS_FOLDER_COPY, req->file_idx);
+	if (rc < 0) {
+		LOG_WRN("Failed to open file %d", req->file_idx);
+		goto cleanup;
+	}
+#else
 	rc = flash_area_open(partition_id, &fa);
 	__ASSERT_NO_MSG(rc == 0);
 	load_params.user_data = (void *)fa;
+#endif
 
 	/* Wait for initial ACK */
 	rc = rpc_client_ack_wait(&client_ctx, request_id, K_SECONDS(5));
@@ -157,7 +189,11 @@ int rpc_command_bt_file_copy_basic_run(struct rpc_bt_file_copy_basic_request *re
 	}
 
 cleanup:
+#ifdef CONFIG_INFUSE_LITTLEFS
+	(void)infuse_littlefs_file_close();
+#else
 	flash_area_close(fa);
+#endif
 	/* Unregister from callbacks */
 	rpc_client_cleanup(&client_ctx);
 
