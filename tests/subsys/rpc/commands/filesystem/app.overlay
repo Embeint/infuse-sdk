@@ -1,0 +1,43 @@
+#include <mem.h>
+
+/ {
+	chosen {
+		infuse,littlefs-partition = &littlefs_partition;
+	};
+
+	epacket_dummy: epacket_dummy {
+		compatible = "embeint,epacket-dummy";
+	};
+
+	sim_flash: sim_flash {
+		compatible = "zephyr,sim-flash";
+
+		#address-cells = <1>;
+		#size-cells = <1>;
+		erase-value = <0xff>;
+
+		flash_sim0: flash_sim@0 {
+			compatible = "soc-nv-flash";
+			reg = <0x00000000 DT_SIZE_K(64)>;
+
+			erase-block-size = <512>;
+			write-block-size = <4>;
+
+			partitions {
+				compatible = "fixed-partitions";
+				#address-cells = <1>;
+				#size-cells = <1>;
+
+				littlefs_partition: partition@0 {
+					label = "littlefs";
+					reg = <0x00000000 DT_SIZE_K(32)>;
+				};
+
+				storage_partition: partition@8000 {
+					label = "storage";
+					reg = <0x00008000 DT_SIZE_K(32)>;
+				};
+			};
+		};
+	};
+};
