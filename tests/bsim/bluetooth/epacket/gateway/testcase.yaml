@@ -12,6 +12,11 @@ tests:
   bluetooth.epacket.gateway:
     harness_config:
       bsim_exe_name: tests_bsim_bluetooth_epacket_gateway_prj_conf
+  bluetooth.epacket.gateway.littlefs:
+    harness_config:
+      bsim_exe_name: tests_bsim_bluetooth_epacket_gateway_prj_littlefs_conf
+    extra_args:
+      - DTC_OVERLAY_FILE="./app.overlay;./littlefs.overlay"
   bluetooth.epacket.gateway.grouping:
     harness_config:
       bsim_exe_name: tests_bsim_bluetooth_epacket_gateway_prj_grouping_conf

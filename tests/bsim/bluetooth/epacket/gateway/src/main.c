@@ -28,6 +28,7 @@
 #include <infuse/bluetooth/gatt.h>
 #include <infuse/fs/kv_store.h>
 #include <infuse/fs/kv_types.h>
+#include <infuse/fs/littlefs.h>
 #include <infuse/reboot.h>
 #include <infuse/rpc/types.h>
 #include <infuse/rpc/client.h>
@@ -2307,7 +2308,9 @@ static void main_gateway_bt_file_copy(void)
 	union epacket_interface_address address;
 	struct bt_conn *conn = NULL;
 	struct net_buf *buf;
-	uint32_t flash_crc;
+	uint32_t data_crc;
+	uint32_t file_len = 4132;
+	uint8_t file_idx;
 	bool already;
 	int rc;
 
@@ -2320,15 +2323,46 @@ static void main_gateway_bt_file_copy(void)
 
 	epacket_set_receive_handler(epacket_dummy, dummy_gateway_handler);
 	epacket_set_receive_handler(epacket_central, dummy_gateway_handler);
+	sys_rand_get(mem_buffer, sizeof(mem_buffer));
 
-	/* Write random data to the file_partition */
+#ifdef CONFIG_INFUSE_LITTLEFS
+	struct infuse_littlefs_metadata meta = {0};
+
+	/* Filesystem backend support arbitrary file indicies */
+	file_idx = 0xAA;
+
+	/* Write random data to the filesystem */
+	rc = infuse_littlefs_file_create(INFUSE_LFS_FOLDER_COPY, file_idx, &meta);
+	if (rc < 0) {
+		FAIL("Failed to create file\n");
+		return;
+	}
+	for (int i = 0; i < 8096; i += sizeof(mem_buffer)) {
+		rc = infuse_littlefs_file_write(mem_buffer, sizeof(mem_buffer));
+		if (rc < 0) {
+			FAIL("Failed to write data at offset %d\n", i);
+			return;
+		}
+	}
+	rc = infuse_littlefs_file_close();
+	if (rc < 0) {
+		FAIL("Failed to close file\n");
+		return;
+	}
+#else
 	const struct flash_area *fa;
 
+	/* Flash area backend only supports index 0 */
+	file_idx = 0;
+
+	/* Write random data to the file_partition */
 	flash_area_open(PARTITION_ID(file_partition), &fa);
-	sys_rand_get(mem_buffer, sizeof(mem_buffer));
 	for (int i = 0; i < 8096; i += sizeof(mem_buffer)) {
 		flash_area_write(fa, i, mem_buffer, sizeof(mem_buffer));
 	}
+
+	flash_area_crc32(fa, 0, file_len, &data_crc, mem_buffer, sizeof(mem_buffer));
+#endif
 
 	/* Command requires a connection to the device to already exist */
 	struct rpc_bt_file_copy_basic_request file_copy_request = {
@@ -2349,8 +2383,8 @@ static void main_gateway_bt_file_copy(void)
 			},
 		/* FILE_FOR_COPY to simulate flash write times */
 		.action = RPC_ENUM_FILE_ACTION_FILE_FOR_COPY,
-		.file_idx = 0,
-		.file_len = 4123,
+		.file_idx = file_idx,
+		.file_len = file_len,
 		.ack_period = 1,
 		.pipelining = 0,
 	};
@@ -2360,10 +2394,6 @@ static void main_gateway_bt_file_copy(void)
 	};
 	struct infuse_rpc_rsp_header *rpc_rsp;
 	struct epacket_dummy_frame *frame;
-
-	flash_area_crc32(fa, 0, file_copy_request.file_len, &flash_crc, mem_buffer,
-			 sizeof(mem_buffer));
-	file_copy_request.file_crc = flash_crc;
 
 	/* Push packet at dummy interface */
 	epacket_dummy_receive(epacket_dummy, &dummy_header, &file_copy_request,
@@ -2391,13 +2421,90 @@ static void main_gateway_bt_file_copy(void)
 	}
 	net_buf_unref(buf);
 
+#ifdef CONFIG_INFUSE_LITTLEFS
+	/* Test tring to send a file we don't have */
+	file_copy_request.file_idx += 1;
+
+	epacket_dummy_receive(epacket_dummy, &dummy_header, &file_copy_request,
+			      sizeof(file_copy_request));
+
+	/* Expect error response to appear on the epacket output */
+	buf = k_fifo_get(response_queue, K_SECONDS(1));
+	if (buf == NULL) {
+		FAIL("Failed to receive response\n");
+		return;
+	}
+	frame = net_buf_pull_mem(buf, sizeof(struct epacket_dummy_frame));
+	if (frame->type != INFUSE_RPC_RSP) {
+		FAIL("Unexpected packet type\n");
+		return;
+	}
+	rpc_rsp = net_buf_pull_mem(buf, sizeof(struct infuse_rpc_rsp_header));
+	if (rpc_rsp->command_id != RPC_ID_BT_FILE_COPY_BASIC) {
+		FAIL("Unexpected command ID %d\n", rpc_rsp->command_id);
+		return;
+	}
+	if (rpc_rsp->return_code != -ENOENT) {
+		FAIL("Unexpected command return code\n");
+		return;
+	}
+	net_buf_unref(buf);
+
+	file_copy_request.file_idx -= 1;
+
+	/* Try to send more data than exists in the file */
+	file_copy_request.file_len += UINT16_MAX;
+
+	epacket_dummy_receive(epacket_dummy, &dummy_header, &file_copy_request,
+			      sizeof(file_copy_request));
+
+	/* Expect error response to appear on the epacket output */
+	buf = k_fifo_get(response_queue, K_SECONDS(1));
+	if (buf == NULL) {
+		FAIL("Failed to receive response\n");
+		return;
+	}
+	frame = net_buf_pull_mem(buf, sizeof(struct epacket_dummy_frame));
+	if (frame->type != INFUSE_RPC_RSP) {
+		FAIL("Unexpected packet type\n");
+		return;
+	}
+	rpc_rsp = net_buf_pull_mem(buf, sizeof(struct infuse_rpc_rsp_header));
+	if (rpc_rsp->command_id != RPC_ID_BT_FILE_COPY_BASIC) {
+		FAIL("Unexpected command ID %d\n", rpc_rsp->command_id);
+		return;
+	}
+	if (rpc_rsp->return_code != -EINVAL) {
+		FAIL("Unexpected command return code\n");
+		return;
+	}
+	net_buf_unref(buf);
+
+	file_copy_request.file_len -= UINT16_MAX;
+#endif
+
+	/* The filesystem variant takes longer to setup due to the larger number of flash writes
+	 * required to setup the file, resulting in less time to run the test.
+	 */
+	int iterations = IS_ENABLED(CONFIG_INFUSE_LITTLEFS) ? 2 : 4;
+
 	/* Run the process several times */
-	for (int i = 0; i < 4; i++) {
+	for (int i = 0; i < iterations; i++) {
 		file_copy_request.header.request_id += 1;
 		file_copy_request.file_len += 1;
-		flash_area_crc32(fa, 0, file_copy_request.file_len, &flash_crc, mem_buffer,
+#ifdef CONFIG_INFUSE_LITTLEFS
+		rc = infuse_littlefs_file_crc32(INFUSE_LFS_FOLDER_COPY, file_idx,
+						file_copy_request.file_len, &data_crc, mem_buffer,
+						sizeof(mem_buffer));
+		if (rc < 0) {
+			FAIL("Failed to compute file CRC\n");
+			return;
+		}
+#else
+		flash_area_crc32(fa, 0, file_copy_request.file_len, &data_crc, mem_buffer,
 				 sizeof(mem_buffer));
-		file_copy_request.file_crc = flash_crc;
+#endif
+		file_copy_request.file_crc = data_crc;
 		file_copy_request.ack_period = (i > 2) ? i - 1 : 1;
 		file_copy_request.pipelining = (i > 0) ? 2 : 0;
 
@@ -2445,7 +2552,9 @@ static void main_gateway_bt_file_copy(void)
 		k_sleep(K_MSEC(50));
 	}
 
+#ifndef CONFIG_INFUSE_LITTLEFS
 	flash_area_close(fa);
+#endif
 
 	PASS("BT file copy passed\n");
 }

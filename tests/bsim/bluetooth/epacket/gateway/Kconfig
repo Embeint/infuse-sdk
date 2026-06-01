@@ -9,4 +9,7 @@ config INFUSE_REBOOT_COMPILE
 config INFUSE_REBOOT_RETURN
 	default y
 
+configdefault INFUSE_LITTLEFS_CACHE_SIZE
+	default 1024
+
 source "Kconfig.zephyr"
