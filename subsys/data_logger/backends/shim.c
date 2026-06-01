@@ -33,8 +33,8 @@ struct dl_shim_data {
 static int logger_shim_write(const struct device *dev, uint32_t phy_block,
 			     enum infuse_type data_type, const void *mem, uint16_t mem_len)
 {
+	__maybe_unused enum pm_device_state state;
 	struct dl_shim_data *data = dev->data;
-	enum pm_device_state state;
 
 	if (pm_device_runtime_is_enabled(dev)) {
 		__ASSERT_NO_MSG(pm_device_state_get(dev, &state) == 0);
@@ -51,8 +51,8 @@ static int logger_shim_write(const struct device *dev, uint32_t phy_block,
 static int logger_shim_read(const struct device *dev, uint32_t phy_block, uint16_t block_offset,
 			    void *mem, uint16_t mem_len)
 {
+	__maybe_unused enum pm_device_state state;
 	struct dl_shim_data *data = dev->data;
-	enum pm_device_state state;
 
 	if (pm_device_runtime_is_enabled(dev)) {
 		__ASSERT_NO_MSG(pm_device_state_get(dev, &state) == 0);
@@ -69,8 +69,8 @@ static int logger_shim_read(const struct device *dev, uint32_t phy_block, uint16
 
 static int logger_shim_erase(const struct device *dev, uint32_t phy_block, uint32_t num)
 {
+	__maybe_unused enum pm_device_state state;
 	struct dl_shim_data *data = dev->data;
-	enum pm_device_state state;
 
 	if (pm_device_runtime_is_enabled(dev)) {
 		__ASSERT_NO_MSG(pm_device_state_get(dev, &state) == 0);
@@ -89,8 +89,8 @@ static int logger_shim_erase(const struct device *dev, uint32_t phy_block, uint3
 static int logger_shim_reset(const struct device *dev, uint32_t block_hint,
 			     void (*erase_progress)(uint32_t blocks_erased))
 {
+	__maybe_unused enum pm_device_state state;
 	struct dl_shim_data *data = dev->data;
-	enum pm_device_state state;
 
 	if (pm_device_runtime_is_enabled(dev)) {
 		__ASSERT_NO_MSG(pm_device_state_get(dev, &state) == 0);
