@@ -347,6 +347,20 @@ void rpc_command_runner(struct net_buf *request)
 		}
 		break;
 #endif /* CONFIG_INFUSE_RPC_COMMAND_GRAVITY_REFERENCE_UPDATE */
+#ifdef CONFIG_INFUSE_RPC_COMMAND_FILESYSTEM_LS
+	case RPC_ID_FILESYSTEM_LS:
+		if (AUTHORISED(auth, FILESYSTEM_LS)) { /* GCOVR_EXCL_BR_LINE */
+			response = rpc_command_filesystem_ls(request);
+		}
+		break;
+#endif /* CONFIG_INFUSE_RPC_COMMAND_FILESYSTEM_LS */
+#ifdef CONFIG_INFUSE_RPC_COMMAND_FILESYSTEM_RM
+	case RPC_ID_FILESYSTEM_RM:
+		if (AUTHORISED(auth, FILESYSTEM_RM)) { /* GCOVR_EXCL_BR_LINE */
+			response = rpc_command_filesystem_rm(request);
+		}
+		break;
+#endif /* CONFIG_INFUSE_RPC_COMMAND_FILESYSTEM_RM */
 #ifdef CONFIG_INFUSE_RPC_COMMAND_UBX_ASSIST_NOW_ZTP_CREDS
 	case RPC_ID_UBX_ASSIST_NOW_ZTP_CREDS:
 		if (AUTHORISED(auth, UBX_ASSIST_NOW_ZTP_CREDS)) { /* GCOVR_EXCL_BR_LINE */

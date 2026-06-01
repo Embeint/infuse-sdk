@@ -461,6 +461,30 @@ config INFUSE_RPC_COMMAND_GRAVITY_REFERENCE_UPDATE_REQUIRED_AUTH
 	depends on INFUSE_RPC_COMMAND_GRAVITY_REFERENCE_UPDATE
 	default 2
 
+config INFUSE_RPC_COMMAND_FILESYSTEM_LS
+	bool "Enable RPC filesystem_ls"
+	depends on INFUSE_LITTLEFS
+	default y
+	help
+	  Query files currently on the filesystem
+
+config INFUSE_RPC_COMMAND_FILESYSTEM_LS_REQUIRED_AUTH
+	int "Required authorisation level to run filesystem_ls"
+	depends on INFUSE_RPC_COMMAND_FILESYSTEM_LS
+	default 2
+
+config INFUSE_RPC_COMMAND_FILESYSTEM_RM
+	bool "Enable RPC filesystem_rm"
+	depends on INFUSE_LITTLEFS
+	default y
+	help
+	  Delete file currently on the filesystem
+
+config INFUSE_RPC_COMMAND_FILESYSTEM_RM_REQUIRED_AUTH
+	int "Required authorisation level to run filesystem_rm"
+	depends on INFUSE_RPC_COMMAND_FILESYSTEM_RM
+	default 2
+
 config INFUSE_RPC_COMMAND_UBX_ASSIST_NOW_ZTP_CREDS
 	bool "Enable RPC ubx_assist_now_ztp_creds"
 	depends on GNSS_UBX_M10
