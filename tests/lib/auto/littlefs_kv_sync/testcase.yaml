@@ -1,0 +1,10 @@
+common:
+  tags: fs
+  min_flash: 64
+  min_ram: 32
+tests:
+  libraries.auto.littlefs_kv_sync:
+    platform_allow:
+      - native_sim
+    integration_platforms:
+      - native_sim
