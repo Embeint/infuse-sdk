@@ -183,6 +183,32 @@
                 {"name": "indoors", "type": "uint8_t", "description": "Non-zero: Device is indoors"}
             ]
         },
+        "12": {
+            "name": "LITTLEFS_FS_STATE",
+            "description": "State of LittleFS filesystem",
+            "depends_on": "INFUSE_LITTLEFS",
+            "reflect": true,
+            "read_only": true,
+            "default": "y",
+            "fields": [
+                {"name": "disk_version", "type": "uint32_t", "display": {"fmt": "hex", "digits": 8},  "description": "On-disk filesystem version"},
+                {"name": "block_size", "type": "uint32_t",  "description": "Size of filesystem blocks in bytes"},
+                {"name": "block_count", "type": "uint32_t",  "description": "Total number of blocks in the filesystem"},
+                {"name": "blocks_used", "type": "uint32_t",  "description": "Blocks currently in use by the filesystem"}
+            ]
+        },
+        "13": {
+            "name": "LITTLEFS_ALGORITHMS_STATE",
+            "description": "State of algorithms on the LittleFS filesystem",
+            "depends_on": "INFUSE_LITTLEFS",
+            "reflect": true,
+            "read_only": true,
+            "default": "y",
+            "fields": [
+                {"name": "count", "type": "uint8_t",  "description": "Number of algorithms on filesystem"},
+                {"name": "crc_xor", "type": "uint32_t",  "description": "XOR of all file data CRCs"}
+            ]
+        },
         "20": {
             "name": "WIFI_SSID",
             "description": "WiFi network name",

@@ -32,6 +32,13 @@ config INFUSE_AUTO_KV_UPDATE_LOG_MAX_SIZE
 	depends on INFUSE_AUTO_KV_UPDATE_LOG
 	default 128
 
+config INFUSE_AUTO_LITTLEFS_KV_SYNC
+	bool "Automatically sync state between LittleFS and KV store"
+	depends on INFUSE_LITTLEFS
+	depends on KV_STORE
+	depends on INFUSE_WORKQ
+	default y
+
 config INFUSE_AUTO_WIFI_CONN_LOG
 	bool "Automatically log WiFi connection events"
 	depends on WIFI
