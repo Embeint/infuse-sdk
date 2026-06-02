@@ -67,6 +67,20 @@ config KV_STORE_KEY_BROADCAST_FIXED_INDOORS
 	help
 	  Device is fixed indoors and should broadcast the fact
 
+config KV_STORE_KEY_LITTLEFS_FS_STATE
+	bool "Enable KV key LITTLEFS_FS_STATE"
+	depends on INFUSE_LITTLEFS
+	default y
+	help
+	  State of LittleFS filesystem
+
+config KV_STORE_KEY_LITTLEFS_ALGORITHMS_STATE
+	bool "Enable KV key LITTLEFS_ALGORITHMS_STATE"
+	depends on INFUSE_LITTLEFS
+	default y
+	help
+	  State of algorithms on the LittleFS filesystem
+
 config KV_STORE_KEY_WIFI_SSID
 	bool "Enable KV key WIFI_SSID"
 	default y if WIFI

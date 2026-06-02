@@ -219,6 +219,26 @@ struct kv_broadcast_fixed_indoors {
 	uint8_t indoors;
 } __packed;
 
+/** State of LittleFS filesystem */
+struct kv_littlefs_fs_state {
+	/** On-disk filesystem version */
+	uint32_t disk_version;
+	/** Size of filesystem blocks in bytes */
+	uint32_t block_size;
+	/** Total number of blocks in the filesystem */
+	uint32_t block_count;
+	/** Blocks currently in use by the filesystem */
+	uint32_t blocks_used;
+} __packed;
+
+/** State of algorithms on the LittleFS filesystem */
+struct kv_littlefs_algorithms_state {
+	/** Number of algorithms on filesystem */
+	uint8_t count;
+	/** XOR of all file data CRCs */
+	uint32_t crc_xor;
+} __packed;
+
 /** WiFi network name */
 struct kv_wifi_ssid {
 	/** WiFi network name */
@@ -584,6 +604,10 @@ enum kv_builtin_id {
 	KV_KEY_FIXED_LOCATION = 10,
 	/** Device is fixed indoors and should broadcast the fact */
 	KV_KEY_BROADCAST_FIXED_INDOORS = 11,
+	/** State of LittleFS filesystem */
+	KV_KEY_LITTLEFS_FS_STATE = 12,
+	/** State of algorithms on the LittleFS filesystem */
+	KV_KEY_LITTLEFS_ALGORITHMS_STATE = 13,
 	/** WiFi network name */
 	KV_KEY_WIFI_SSID = 20,
 	/** WiFi network password */
@@ -676,6 +700,8 @@ enum kv_builtin_size {
 	_KV_KEY_SECONDARY_REMOTE_PUBLIC_KEY_SIZE = sizeof(struct kv_secondary_remote_public_key),
 	_KV_KEY_FIXED_LOCATION_SIZE = sizeof(struct kv_fixed_location),
 	_KV_KEY_BROADCAST_FIXED_INDOORS_SIZE = sizeof(struct kv_broadcast_fixed_indoors),
+	_KV_KEY_LITTLEFS_FS_STATE_SIZE = sizeof(struct kv_littlefs_fs_state),
+	_KV_KEY_LITTLEFS_ALGORITHMS_STATE_SIZE = sizeof(struct kv_littlefs_algorithms_state),
 	_KV_KEY_EPACKET_UDP_PORT_SIZE = sizeof(struct kv_epacket_udp_port),
 	_KV_KEY_LTE_MODEM_IMEI_SIZE = sizeof(struct kv_lte_modem_imei),
 	_KV_KEY_LTE_NETWORKING_MODES_SIZE = sizeof(struct kv_lte_networking_modes),
@@ -709,6 +735,8 @@ enum kv_builtin_size {
 #define _KV_KEY_SECONDARY_REMOTE_PUBLIC_KEY_TYPE struct kv_secondary_remote_public_key
 #define _KV_KEY_FIXED_LOCATION_TYPE struct kv_fixed_location
 #define _KV_KEY_BROADCAST_FIXED_INDOORS_TYPE struct kv_broadcast_fixed_indoors
+#define _KV_KEY_LITTLEFS_FS_STATE_TYPE struct kv_littlefs_fs_state
+#define _KV_KEY_LITTLEFS_ALGORITHMS_STATE_TYPE struct kv_littlefs_algorithms_state
 #define _KV_KEY_WIFI_SSID_TYPE struct kv_wifi_ssid
 #define _KV_KEY_WIFI_PSK_TYPE struct kv_wifi_psk
 #define _KV_KEY_WIFI_CHANNELS_TYPE struct kv_wifi_channels
@@ -758,6 +786,10 @@ enum kv_builtin_size {
 	IF_ENABLED(CONFIG_KV_STORE_KEY_FIXED_LOCATION, \
 		   (1 +)) \
 	IF_ENABLED(CONFIG_KV_STORE_KEY_BROADCAST_FIXED_INDOORS, \
+		   (1 +)) \
+	IF_ENABLED(CONFIG_KV_STORE_KEY_LITTLEFS_FS_STATE, \
+		   (1 +)) \
+	IF_ENABLED(CONFIG_KV_STORE_KEY_LITTLEFS_ALGORITHMS_STATE, \
 		   (1 +)) \
 	IF_ENABLED(CONFIG_KV_STORE_KEY_WIFI_SSID, \
 		   (1 +)) \
@@ -926,6 +958,20 @@ static struct key_value_slot_definition _KV_SLOTS_ARRAY_DEFINE[] = {
 		.flags = KV_FLAGS_REFLECT,
 	},
 #endif /* CONFIG_KV_STORE_KEY_BROADCAST_FIXED_INDOORS */
+#ifdef CONFIG_KV_STORE_KEY_LITTLEFS_FS_STATE
+	{
+		.key = KV_KEY_LITTLEFS_FS_STATE,
+		.range = 1,
+		.flags = KV_FLAGS_REFLECT | KV_FLAGS_READ_ONLY,
+	},
+#endif /* CONFIG_KV_STORE_KEY_LITTLEFS_FS_STATE */
+#ifdef CONFIG_KV_STORE_KEY_LITTLEFS_ALGORITHMS_STATE
+	{
+		.key = KV_KEY_LITTLEFS_ALGORITHMS_STATE,
+		.range = 1,
+		.flags = KV_FLAGS_REFLECT | KV_FLAGS_READ_ONLY,
+	},
+#endif /* CONFIG_KV_STORE_KEY_LITTLEFS_ALGORITHMS_STATE */
 #ifdef CONFIG_KV_STORE_KEY_WIFI_SSID
 	{
 		.key = KV_KEY_WIFI_SSID,
