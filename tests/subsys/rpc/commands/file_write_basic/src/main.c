@@ -21,6 +21,7 @@
 #include <infuse/rpc/types.h>
 #include <infuse/security.h>
 #include <infuse/fs/kv_store.h>
+#include <infuse/fs/littlefs.h>
 #include <infuse/epacket/packet.h>
 #include <infuse/epacket/interface/epacket_dummy.h>
 #include <infuse/cpatch/patch.h>
@@ -488,7 +489,60 @@ ZTEST(rpc_command_file_write_basic, test_file_write_dfu_cpatch)
 
 #endif /* PARTITION_EXISTS(file_partition) */
 
-#if PARTITION_EXISTS(file_partition)
+#if defined(CONFIG_INFUSE_LITTLEFS)
+
+uint8_t buffer[256];
+
+ZTEST(rpc_command_file_write_basic, test_file_write_for_copy)
+{
+	struct infuse_littlefs_metadata meta;
+	struct test_out ret;
+	uint32_t file_crc;
+	int rc;
+
+	/* Write an arbitrary image of known size to filesystem */
+	for (int i = 0; i <= 2; i++) {
+		ret = test_file_write_basic(RPC_ENUM_FILE_ACTION_FILE_FOR_COPY, 17023, 0, 0, 0, 0,
+					    false, false, NULL);
+		zassert_equal(0, ret.cmd_rc);
+		zassert_equal(17023, ret.cmd_len);
+		zassert_equal(ret.written_crc, ret.cmd_crc);
+	}
+
+	zassert_equal(17023, infuse_littlefs_file_size(INFUSE_LFS_FOLDER_COPY, 0));
+	rc = infuse_littlefs_file_metadata(INFUSE_LFS_FOLDER_COPY, 0, &meta);
+	zassert_equal(0, rc);
+	zassert_equal(ret.written_crc, meta.crc);
+	zassert_equal(0, meta.identifier);
+	zassert_true(meta.timestamp > 0);
+
+	rc = infuse_littlefs_file_crc32(INFUSE_LFS_FOLDER_COPY, 0, 17023, &file_crc, buffer,
+					sizeof(buffer));
+	zassert_equal(0, rc);
+	zassert_equal(ret.written_crc, file_crc);
+
+	/* Sleep for KV sync to finish */
+	k_sleep(K_SECONDS(2));
+
+	/* Duplicate detection with filesystem */
+	ret = test_file_write_basic(RPC_ENUM_FILE_ACTION_FILE_FOR_COPY, sizeof(fixed_payload), 0, 0,
+				    0, 0, false, false, fixed_payload);
+	zassert_equal(0, ret.cmd_rc);
+	zassert_equal(sizeof(fixed_payload), ret.cmd_len);
+	zassert_equal(ret.written_crc, ret.cmd_crc);
+
+	ret = test_file_write_basic(RPC_ENUM_FILE_ACTION_FILE_FOR_COPY, sizeof(fixed_payload), 0, 0,
+				    0, 0, false, false, fixed_payload);
+	zassert_equal(0, ret.cmd_rc);
+	zassert_equal(0, ret.cmd_len);
+	zassert_equal(ret.written_crc, ret.cmd_crc);
+
+	/* Sleep for KV sync to finish */
+	k_sleep(K_SECONDS(2));
+}
+
+#elif PARTITION_EXISTS(file_partition)
+
 ZTEST(rpc_command_file_write_basic, test_file_write_for_copy)
 {
 	const struct device *partition_dev = PARTITION_DEVICE(file_partition);
@@ -508,6 +562,7 @@ ZTEST(rpc_command_file_write_basic, test_file_write_for_copy)
 
 	zassert_device_released(partition_dev);
 }
+
 #else
 
 ZTEST(rpc_command_file_write_basic, test_file_write_for_copy)
@@ -706,6 +761,10 @@ void *file_write_basic_setup(void)
 {
 	sys_rand_get(fixed_payload, sizeof(fixed_payload));
 	fixed_payload_crc = crc32_ieee(fixed_payload, sizeof(fixed_payload));
+
+#ifdef CONFIG_INFUSE_LITTLEFS
+	(void)infuse_littlefs_init();
+#endif /* CONFIG_INFUSE_LITTLEFS */
 	return NULL;
 }
 
