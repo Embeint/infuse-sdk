@@ -1,0 +1,14 @@
+/ {
+	chosen {
+		infuse,littlefs-partition = &littlefs_partition;
+	};
+};
+
+&flash0 {
+	partitions {
+		littlefs_partition: partition@100000 {
+			label = "littlefs";
+			reg = < 0x100000 0x20000 >;
+		};
+	};
+};
