@@ -59,6 +59,7 @@ int rpc_command_coap_download_run(struct rpc_coap_download_v2_request *req, char
 	struct rpc_common_file_actions_ctx ctx;
 	int block_timeout = req->block_timeout_ms == 0 ? 1000 : req->block_timeout_ms;
 	size_t file_size = req->resource_len == UINT32_MAX ? 0 : req->resource_len;
+	enum infuse_littlefs_folder fs_folder;
 	struct net_sockaddr address;
 	net_socklen_t address_len;
 	uint8_t *work_mem;
@@ -67,9 +68,11 @@ int rpc_command_coap_download_run(struct rpc_coap_download_v2_request *req, char
 	int rc;
 
 	work_mem = rpc_server_command_working_mem(&work_mem_size);
+	fs_folder = rpc_common_file_actions_folder_from_action(req->action, 0);
 
 	*downloaded = 0;
-	rc = rpc_common_file_actions_start(&ctx, req->action, req->resource_len, req->resource_crc);
+	rc = rpc_common_file_actions_start(&ctx, req->action, req->resource_len, req->resource_crc,
+					   fs_folder, 0, 0);
 	if (rc == FILE_ALREADY_PRESENT) {
 		LOG_INF("File already present");
 		goto download_done;
