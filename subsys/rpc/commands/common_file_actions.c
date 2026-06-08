@@ -160,14 +160,17 @@ static int file_copy_fs_init(struct rpc_common_file_actions_ctx *ctx, uint32_t l
 	uint8_t *mem;
 	int rc;
 
+	/* Filesystem naive RPCs should automatically have this set */
+	__ASSERT_NO_MSG(ctx->fs_path.folder == INFUSE_LFS_FOLDER_COPY);
+
 	/* Can only do duplicate detection if both length and CRC provided */
 	if ((crc != UINT32_MAX) && (length != UINT32_MAX)) {
-		rc = infuse_littlefs_file_size(INFUSE_LFS_FOLDER_COPY, 0);
+		rc = infuse_littlefs_file_size(ctx->fs_path.folder, ctx->fs_path.file);
 		if (rc >= length) {
 			/* File is possibly long enough to match data */
 			mem = rpc_server_command_working_mem(&mem_size);
-			rc = infuse_littlefs_file_crc32(INFUSE_LFS_FOLDER_COPY, 0, length,
-							&file_crc, mem, mem_size);
+			rc = infuse_littlefs_file_crc32(ctx->fs_path.folder, ctx->fs_path.file,
+							length, &file_crc, mem, mem_size);
 			if ((rc == 0) && (file_crc == crc)) {
 				/* File already matches */
 				ctx->crc = crc;
@@ -177,15 +180,30 @@ static int file_copy_fs_init(struct rpc_common_file_actions_ctx *ctx, uint32_t l
 	}
 
 	/* Delete any previous file */
-	(void)infuse_littlefs_file_delete(INFUSE_LFS_FOLDER_COPY, 0);
+	(void)infuse_littlefs_file_delete(ctx->fs_path.folder, ctx->fs_path.file);
 	/* Create the new file */
-	return infuse_littlefs_file_create(INFUSE_LFS_FOLDER_COPY, 0, &ctx->fs_meta);
+	return infuse_littlefs_file_create(ctx->fs_path.folder, ctx->fs_path.file, &ctx->fs_meta);
 }
 
 #endif /* SUPPORT_FILE_COPY_FS */
 
+enum infuse_littlefs_folder
+rpc_common_file_actions_folder_from_action(enum rpc_enum_file_action action,
+					   uint8_t explicit_folder)
+{
+	ARG_UNUSED(explicit_folder);
+
+	/* Only FILE_FOR_COPY actually writes to filesystem currently */
+	if (action == RPC_ENUM_FILE_ACTION_FILE_FOR_COPY) {
+		return INFUSE_LFS_FOLDER_COPY;
+	}
+	return UINT8_MAX;
+}
+
 int rpc_common_file_actions_start(struct rpc_common_file_actions_ctx *ctx,
-				  enum rpc_enum_file_action action, uint32_t length, uint32_t crc)
+				  enum rpc_enum_file_action action, uint32_t length, uint32_t crc,
+				  enum infuse_littlefs_folder fs_folder, uint32_t fs_file,
+				  uint32_t fs_identifier)
 {
 	__maybe_unused off_t offset;
 	int rc = 0;
@@ -193,6 +211,9 @@ int rpc_common_file_actions_start(struct rpc_common_file_actions_ctx *ctx,
 	ctx->fa = NULL;
 	ctx->stream_ctx.buf_len = 0;
 	ctx->client_ctx = 0;
+	ctx->fs_path.folder = fs_folder;
+	ctx->fs_path.file = fs_file;
+	ctx->fs_meta.identifier = fs_identifier;
 	ctx->action = action;
 	ctx->received = 0;
 	ctx->crc = 0;
@@ -431,7 +452,6 @@ int rpc_common_file_actions_finish(struct rpc_common_file_actions_ctx *ctx, bool
 #ifdef SUPPORT_FILE_COPY_FS
 	/* If 0 bytes were received, the file already existed on disk */
 	if ((ctx->action == RPC_ENUM_FILE_ACTION_FILE_FOR_COPY) && (ctx->received > 0)) {
-		ctx->fs_meta.identifier = 0;
 		ctx->fs_meta.timestamp = epoch_time_seconds(epoch_time_now());
 		ctx->fs_meta.crc = ctx->crc;
 		rc = infuse_littlefs_file_close();
@@ -439,8 +459,8 @@ int rpc_common_file_actions_finish(struct rpc_common_file_actions_ctx *ctx, bool
 			LOG_ERR("Could not close file (%d)", rc);
 			return rc;
 		}
-		rc = infuse_littlefs_file_crc32(INFUSE_LFS_FOLDER_COPY, 0, UINT32_MAX, &data_crc,
-						mem, mem_size);
+		rc = infuse_littlefs_file_crc32(INFUSE_LFS_FOLDER_COPY, ctx->fs_path.file,
+						UINT32_MAX, &data_crc, mem, mem_size);
 		if (rc < 0) {
 			LOG_ERR("Could not validate written data");
 			return rc;
