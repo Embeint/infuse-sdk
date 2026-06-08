@@ -35,6 +35,7 @@ struct net_buf *rpc_command_file_write_basic(struct net_buf *request)
 	struct epacket_rx_metadata rx_meta;
 	uint32_t request_id, remaining;
 	uint32_t expected_len, expected_crc;
+	enum infuse_littlefs_folder fs_folder;
 	struct net_buf *data_buf;
 	uint32_t data_offset;
 	uint32_t expected_offset = 0;
@@ -56,13 +57,15 @@ struct net_buf *rpc_command_file_write_basic(struct net_buf *request)
 		remaining = req->data_header.size;
 		expected_crc = req->file_crc;
 		ack_period = req->data_header.rx_ack_period;
+		fs_folder = rpc_common_file_actions_folder_from_action(action, 0);
 
 		rpc_command_runner_request_unref(request);
 		request = NULL;
 	}
 
 	/* Start file write process */
-	rc = rpc_common_file_actions_start(&ctx, action, expected_len, expected_crc);
+	rc = rpc_common_file_actions_start(&ctx, action, expected_len, expected_crc, fs_folder, 0,
+					   0);
 	if (rc == FILE_ALREADY_PRESENT) {
 		LOG_INF("File already present");
 		goto write_done;

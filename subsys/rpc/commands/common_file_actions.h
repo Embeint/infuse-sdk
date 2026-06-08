@@ -18,6 +18,10 @@
 struct rpc_common_file_actions_ctx {
 	const struct flash_area *fa;
 	struct stream_flash_ctx stream_ctx;
+	struct {
+		enum infuse_littlefs_folder folder;
+		uint32_t file;
+	} fs_path;
 	struct infuse_littlefs_metadata fs_meta;
 	uint32_t client_ctx;
 	uint32_t received;
@@ -28,8 +32,14 @@ struct rpc_common_file_actions_ctx {
 
 #define FILE_ALREADY_PRESENT 1
 
+enum infuse_littlefs_folder
+rpc_common_file_actions_folder_from_action(enum rpc_enum_file_action action,
+					   uint8_t explicit_folder);
+
 int rpc_common_file_actions_start(struct rpc_common_file_actions_ctx *ctx,
-				  enum rpc_enum_file_action action, uint32_t length, uint32_t crc);
+				  enum rpc_enum_file_action action, uint32_t length, uint32_t crc,
+				  enum infuse_littlefs_folder fs_folder, uint32_t fs_file,
+				  uint32_t fs_identifier);
 
 int rpc_common_file_actions_write(struct rpc_common_file_actions_ctx *ctx, uint32_t offset,
 				  const void *data, size_t data_len);
