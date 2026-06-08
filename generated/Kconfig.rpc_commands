@@ -391,6 +391,17 @@ config INFUSE_RPC_COMMAND_SHIPPING_MODE_REQUIRED_AUTH
 	depends on INFUSE_RPC_COMMAND_SHIPPING_MODE
 	default 2
 
+config INFUSE_RPC_COMMAND_FILE_WRITE
+	bool "Enable RPC file_write"
+	default y if INFUSE_SDK
+	help
+	  Write a file to the device
+
+config INFUSE_RPC_COMMAND_FILE_WRITE_REQUIRED_AUTH
+	int "Required authorisation level to run file_write"
+	depends on INFUSE_RPC_COMMAND_FILE_WRITE
+	default 1
+
 config INFUSE_RPC_COMMAND_BT_CONNECT_INFUSE
 	bool "Enable RPC bt_connect_infuse"
 	depends on EPACKET_INTERFACE_BT_CENTRAL

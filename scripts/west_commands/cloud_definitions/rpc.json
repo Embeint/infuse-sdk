@@ -811,6 +811,24 @@
                 {"name": "expected_delay_ms", "type": "uint32_t", "description": "Expected delay to enter/exit shipping mode"}
             ]
         },
+        "44": {
+            "name": "file_write",
+            "description": "Write a file to the device",
+            "default": "y if INFUSE_SDK",
+            "default_auth": "EPACKET_AUTH_NETWORK",
+            "rpc_data": true,
+            "request_params": [
+                {"name": "action", "type": "enum rpc_enum_file_action", "description": "Action to apply to written file"},
+                {"name": "folder", "type": "uint8_t", "description": "File folder (for filesystem writes)"},
+                {"name": "filename", "type": "uint32_t", "description": "File name (for filesystem writes)"},
+                {"name": "identifier", "type": "uint32_t", "description": "File identifier (for filesystem writes)"},
+                {"name": "file_crc", "type": "uint32_t", "description": "Expected file CRC"}
+            ],
+            "response_params": [
+                {"name": "recv_len", "type": "uint32_t", "description": "Number of bytes received"},
+                {"name": "recv_crc", "type": "uint32_t", "description": "CRC of bytes received"}
+            ]
+        },
         "50": {
             "name": "bt_connect_infuse",
             "description": "Connect to an Infuse-IoT Bluetooth device",
