@@ -316,6 +316,15 @@ struct net_buf *rpc_command_tdf_data_logger_flush(struct net_buf *request);
 struct net_buf *rpc_command_shipping_mode(struct net_buf *request);
 
 /**
+ * @brief Run file_write RPC
+ *
+ * @param request @ref INFUSE_RPC_CMD packet to respond to
+ *
+ * @return struct net_buf* @ref INFUSE_RPC_RSP packet buffer
+ */
+struct net_buf *rpc_command_file_write(struct net_buf *request);
+
+/**
  * @brief Run bt_connect_infuse RPC
  *
  * @param request @ref INFUSE_RPC_CMD packet to respond to
