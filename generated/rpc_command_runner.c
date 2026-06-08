@@ -305,6 +305,13 @@ void rpc_command_runner(struct net_buf *request)
 		}
 		break;
 #endif /* CONFIG_INFUSE_RPC_COMMAND_SHIPPING_MODE */
+#ifdef CONFIG_INFUSE_RPC_COMMAND_FILE_WRITE
+	case RPC_ID_FILE_WRITE:
+		if (AUTHORISED(auth, FILE_WRITE)) { /* GCOVR_EXCL_BR_LINE */
+			response = rpc_command_file_write(request);
+		}
+		break;
+#endif /* CONFIG_INFUSE_RPC_COMMAND_FILE_WRITE */
 #ifdef CONFIG_INFUSE_RPC_COMMAND_BT_CONNECT_INFUSE
 	case RPC_ID_BT_CONNECT_INFUSE:
 		if (AUTHORISED(auth, BT_CONNECT_INFUSE)) { /* GCOVR_EXCL_BR_LINE */

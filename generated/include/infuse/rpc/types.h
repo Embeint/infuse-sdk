@@ -551,6 +551,8 @@ enum rpc_builtin_id {
 	RPC_ID_TDF_DATA_LOGGER_FLUSH = 42,
 	/** Enter/Exit shipping mode on a device */
 	RPC_ID_SHIPPING_MODE = 43,
+	/** Write a file to the device */
+	RPC_ID_FILE_WRITE = 44,
 	/** Connect to an Infuse-IoT Bluetooth device */
 	RPC_ID_BT_CONNECT_INFUSE = 50,
 	/** Disconnect from a Bluetooth device */
@@ -1188,6 +1190,30 @@ struct rpc_shipping_mode_response {
 	struct infuse_rpc_rsp_header header;
 	/** Expected delay to enter/exit shipping mode */
 	uint32_t expected_delay_ms;
+} __packed;
+
+/** Write a file to the device */
+struct rpc_file_write_request {
+	struct infuse_rpc_req_header header;
+	struct infuse_rpc_req_data_header data_header;
+	/** Action to apply to written file */
+	uint8_t action;
+	/** File folder (for filesystem writes) */
+	uint8_t folder;
+	/** File name (for filesystem writes) */
+	uint32_t filename;
+	/** File identifier (for filesystem writes) */
+	uint32_t identifier;
+	/** Expected file CRC */
+	uint32_t file_crc;
+} __packed;
+
+struct rpc_file_write_response {
+	struct infuse_rpc_rsp_header header;
+	/** Number of bytes received */
+	uint32_t recv_len;
+	/** CRC of bytes received */
+	uint32_t recv_crc;
 } __packed;
 
 /** Connect to an Infuse-IoT Bluetooth device */
