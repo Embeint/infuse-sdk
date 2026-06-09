@@ -13,3 +13,8 @@ properties:
     required: true
     description:
       Number of physical blocks to report.
+  max-wraps:
+    type: int
+    default: 2
+    description:
+      Maximum times shim logger can wrap
