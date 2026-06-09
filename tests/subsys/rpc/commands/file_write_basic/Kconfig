@@ -5,4 +5,7 @@ config TEST_NATIVE_MOCK
 config BT_CONTROLLER_MANAGER
 	default y if TEST_NATIVE_MOCK
 
+config TEST_FILE_WRITE
+	bool "Test `file_write` instead of `file_write_basic`"
+
 source "Kconfig.zephyr"
