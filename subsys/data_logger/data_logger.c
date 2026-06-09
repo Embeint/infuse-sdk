@@ -470,9 +470,9 @@ int data_logger_block_read(const struct device *dev, uint32_t block_idx, uint16_
 {
 	struct data_logger_common_data *data = dev->data;
 	const struct data_logger_api *api = dev->api;
+	uint32_t extra_blocks_accessed = (block_offset + block_len - 1) / data->block_size;
+	uint32_t end_logical = block_idx + extra_blocks_accessed;
 	uint32_t phy_block = block_idx % data->physical_blocks;
-	uint32_t end_logical =
-		((data->block_size * block_idx) + block_offset + block_len - 1) / data->block_size;
 	uint32_t end_phy = end_logical % data->physical_blocks;
 	uint32_t second_read = 0;
 	int rc;
