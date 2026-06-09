@@ -39,6 +39,7 @@ struct data_logger_shim_function_data {
 		uint32_t block;
 		uint16_t block_offset;
 		uint16_t data_len;
+		void (*read_cb)(uint32_t block, uint16_t block_offset, uint16_t data_len);
 		int rc;
 	} read;
 	struct {
@@ -73,6 +74,14 @@ int logger_shim_init(const struct device *dev);
  * @param block_size New block size
  */
 void logger_shim_change_size(const struct device *dev, uint16_t block_size);
+
+/**
+ * @brief Set the current block of the shim backend
+ *
+ * @param dev Device to update
+ * @param current_block New value for the current block
+ */
+void logger_shim_set_current_block(const struct device *dev, uint32_t current_block);
 
 /**
  * @brief Get the pointer to the function data struct

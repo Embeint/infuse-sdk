@@ -23,6 +23,7 @@
 struct dl_shim_config {
 	struct data_logger_common_config common;
 	uint32_t physical_blocks;
+	uint8_t max_wraps;
 };
 
 struct dl_shim_data {
@@ -63,7 +64,11 @@ static int logger_shim_read(const struct device *dev, uint32_t phy_block, uint16
 
 	data->func.read.num_calls += 1;
 	data->func.read.block = phy_block;
+	data->func.read.block_offset = block_offset;
 	data->func.read.data_len = mem_len;
+	if (data->func.read.read_cb) {
+		data->func.read.read_cb(phy_block, block_offset, mem_len);
+	}
 	return data->func.read.rc;
 }
 
@@ -114,7 +119,7 @@ int logger_shim_init(const struct device *dev)
 
 	/* Setup common data structure */
 	data->common.physical_blocks = config->physical_blocks;
-	data->common.logical_blocks = config->physical_blocks * 2;
+	data->common.logical_blocks = config->physical_blocks * config->max_wraps;
 	data->common.block_size = 512;
 	data->common.erase_size = 1024;
 	data->common.erase_val = 0xFF;
@@ -163,6 +168,13 @@ void logger_shim_change_size(const struct device *dev, uint16_t block_size)
 	}
 }
 
+void logger_shim_set_current_block(const struct device *dev, uint32_t current_block)
+{
+	struct data_logger_common_data *data = dev->data;
+
+	data->current_block = current_block;
+}
+
 struct data_logger_shim_function_data *
 data_logger_backend_shim_data_pointer(const struct device *dev)
 {
@@ -191,6 +203,7 @@ const struct data_logger_api data_logger_shim_api = {
 	static struct dl_shim_config config##inst = {                                              \
 		.common = COMMON_CONFIG_INIT(inst, false, false, 1),                               \
 		.physical_blocks = DT_INST_PROP(inst, physical_blocks),                            \
+		.max_wraps = DT_INST_PROP(inst, max_wraps),                                        \
 	};                                                                                         \
 	static struct dl_shim_data data##inst;                                                     \
 	PM_DEVICE_DT_INST_DEFINE(inst, shim_pm_control);                                           \

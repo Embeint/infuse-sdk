@@ -19,8 +19,8 @@
 
 #define NODE DT_NODELABEL(data_logger_flash)
 
-static uint8_t input_buffer[2 * DT_PROP(NODE, block_size)] = {0};
-static uint8_t output_buffer[2 * DT_PROP(NODE, block_size)];
+static uint8_t input_buffer[3 * DT_PROP(NODE, block_size)] = {0};
+static uint8_t output_buffer[3 * DT_PROP(NODE, block_size)];
 static uint8_t *flash_buffer;
 static size_t flash_buffer_size;
 
@@ -272,6 +272,7 @@ ZTEST(data_logger_flash_map, test_read_wrap)
 	/* Init half 0x02, half 0x01 */
 	memset(flash_buffer, 0x01, flash_buffer_size);
 	memset(flash_buffer, 0x02, flash_buffer_size / 2);
+	flash_buffer[block_size + 1] = 0xAA;
 	zassert_equal(0, logger_flash_map_init(logger));
 	data_logger_get_state(logger, &state);
 	zassert_equal(3 * state.physical_blocks / 2, state.current_block);
@@ -281,6 +282,7 @@ ZTEST(data_logger_flash_map, test_read_wrap)
 	zassert_equal(0, data_logger_block_read(logger, state.physical_blocks, 200, output_buffer,
 						state.block_size));
 	memset(input_buffer, 0x02, state.block_size);
+	input_buffer[state.block_size - 200 + 1] = 0xAA;
 	zassert_mem_equal(input_buffer, output_buffer, state.block_size);
 
 	/* Read across wrap around boundary */
@@ -289,6 +291,14 @@ ZTEST(data_logger_flash_map, test_read_wrap)
 	memset(input_buffer, 0x01, state.block_size);
 	memset(input_buffer + state.block_size, 0x02, state.block_size);
 	zassert_mem_equal(input_buffer, output_buffer, 2 * state.block_size);
+
+	/* Read across wrap around boundary multiple trailing blocks */
+	zassert_equal(0, data_logger_block_read(logger, state.physical_blocks - 1, 0, output_buffer,
+						3 * state.block_size));
+	memset(input_buffer, 0x01, state.block_size);
+	memset(input_buffer + state.block_size, 0x02, 2 * state.block_size);
+	input_buffer[(2 * state.block_size) + 1] = 0xAA;
+	zassert_mem_equal(input_buffer, output_buffer, 3 * state.block_size);
 
 	/* Read across wrap around boundary with offset */
 	zassert_equal(0, data_logger_block_read(logger, state.physical_blocks - 1, block_short,
