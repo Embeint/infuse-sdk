@@ -14,7 +14,7 @@ manifest:
 
   projects:
     - name: zephyr
-      revision: 6b22106d9c7292c35f8479abafa6d8a4ffe1348a
+      revision: 75a60d85cb9d09cd6d893484970f91da8cc7dcde
       # Limit imported repositories to reduce clone time
       import:
         name-allowlist:
@@ -40,7 +40,7 @@ manifest:
           - picolibc
           - zcbor
     - name: mcuboot
-      revision: d19b3925abbd11d5ca0a819cdced8c278ca96fb3
+      revision: 88e5b0bd61bc354ce4c8e2d05113e3c5334930df
       path: bootloader/mcuboot
     - name: sdk-nrf
       path: modules/nrfconnect/sdk-nrf
