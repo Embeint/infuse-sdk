@@ -23,6 +23,13 @@ configdefault MBEDTLS_PSA_DRIVER_GET_ENTROPY
 
 endif # INFUSE_SECURITY || MBEDTLS
 
+# Enable semihosting for QEMU if possible when testing coverage
+configdefault SEMIHOST
+	default y if COVERAGE && QEMU_TARGET
+choice COVERAGE_DUMP_METHOD
+	default COVERAGE_SEMIHOST
+endchoice
+
 choice MBEDTLS_PSA_ITS_BACKEND
 	default MBEDTLS_PSA_ITS_BACKEND_MBEDTLS_FILE if ZTEST
 endchoice
