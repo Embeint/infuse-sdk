@@ -17,6 +17,7 @@
 #include <infuse/dfu/helpers.h>
 #include <infuse/rpc/commands.h>
 #include <infuse/rpc/types.h>
+#include <infuse/rpc/command_runner.h>
 #include <infuse/fs/kv_store.h>
 #include <infuse/security.h>
 #include <infuse/net/coap.h>
@@ -49,7 +50,8 @@ static int data_cb(uint32_t offset, const uint8_t *data, uint16_t data_len, void
 }
 
 int rpc_command_coap_download_run(struct rpc_coap_download_v2_request *req, char *resource,
-				  struct rpc_coap_download_v2_response *rsp, int *downloaded)
+				  struct rpc_coap_download_v2_response *rsp, int *downloaded,
+				  bool *dfu_reboot)
 {
 	const sec_tag_t sec_tls_tags[] = {
 		infuse_security_coap_dtls_tag(),
@@ -139,7 +141,7 @@ int rpc_command_coap_download_run(struct rpc_coap_download_v2_request *req, char
 
 download_done:
 	/* Finish file write process */
-	rc = rpc_common_file_actions_finish(&ctx, RPC_ID_COAP_DOWNLOAD, false);
+	rc = rpc_common_file_actions_finish(&ctx, false, dfu_reboot);
 	if (rc < 0) {
 		LOG_ERR("Failed to finish %d (%d)", req->action, rc);
 	}
@@ -161,6 +163,38 @@ error:
 	return rc;
 }
 
+static struct net_buf *rpc_command_coap_handle_response(struct net_buf *request,
+							struct rpc_coap_download_v2_response *rsp,
+							int rc, uint8_t action, bool dfu_reboot)
+{
+	const struct infuse_rpc_req_header *req_header = (const void *)request->data;
+	struct epacket_rx_metadata *req_meta = net_buf_user_data(request);
+	struct net_buf *response =
+		rpc_response_simple_if(req_meta->interface, rc, rsp, sizeof(*rsp));
+
+	if (!dfu_reboot) {
+		/* We're not rebooting, let the server send the response */
+		return response;
+	}
+
+	/* Queue the response before scheduling the reboot, as reboots start shutting down
+	 * networking interfaces.
+	 */
+	rpc_command_runner_early_response(req_meta, req_header->request_id, req_header->command_id,
+					  response);
+	/* Hopefully sufficient time for response to be transmitted */
+	k_sleep(K_MSEC(1000));
+#ifdef CONFIG_INFUSE_REBOOT
+	/* Schedule the reboot */
+	LOG_INF("File action complete, rebooting for DFU");
+	infuse_reboot_delayed(INFUSE_REBOOT_DFU, req_header->command_id, action, K_SECONDS(2));
+#else
+	LOG_WRN("INFUSE_REBOOT not enabled, cannot reboot");
+#endif /* CONFIG_INFUSE_REBOOT */
+	/* We sent the response, server should not send anything */
+	return NULL;
+}
+
 /* Responses are equivalent */
 BUILD_ASSERT(sizeof(struct rpc_coap_download_response) ==
 	     sizeof(struct rpc_coap_download_v2_response));
@@ -170,6 +204,7 @@ struct net_buf *rpc_command_coap_download(struct net_buf *request)
 {
 	struct rpc_coap_download_request *req = (void *)request->data;
 	struct rpc_coap_download_v2_response rsp = {0};
+	bool dfu_reboot = false;
 	int downloaded;
 	int rc;
 
@@ -187,10 +222,10 @@ struct net_buf *rpc_command_coap_download(struct net_buf *request)
 	memcpy(req_v2.server_address, req->server_address, sizeof(req_v2.server_address));
 
 	/* Run the command */
-	rc = rpc_command_coap_download_run(&req_v2, req->resource, &rsp, &downloaded);
+	rc = rpc_command_coap_download_run(&req_v2, req->resource, &rsp, &downloaded, &dfu_reboot);
 
-	/* Return the response */
-	return rpc_response_simple_req(request, rc, &rsp, sizeof(rsp));
+	/* Handle the response */
+	return rpc_command_coap_handle_response(request, &rsp, rc, req_v2.action, dfu_reboot);
 }
 #endif /* CONFIG_INFUSE_RPC_COMMAND_COAP_DOWNLOAD */
 
@@ -199,13 +234,14 @@ struct net_buf *rpc_command_coap_download_v2(struct net_buf *request)
 {
 	struct rpc_coap_download_v2_request *req = (void *)request->data;
 	struct rpc_coap_download_v2_response rsp = {0};
+	bool dfu_reboot = false;
 	int downloaded;
 	int rc;
 
 	/* Run the command */
-	rc = rpc_command_coap_download_run(req, req->resource, &rsp, &downloaded);
+	rc = rpc_command_coap_download_run(req, req->resource, &rsp, &downloaded, &dfu_reboot);
 
-	/* Return the response */
-	return rpc_response_simple_req(request, rc, &rsp, sizeof(rsp));
+	/* Handle the response */
+	return rpc_command_coap_handle_response(request, &rsp, rc, req->action, dfu_reboot);
 }
 #endif /* CONFIG_INFUSE_RPC_COMMAND_COAP_DOWNLOAD_V2 */

@@ -401,13 +401,12 @@ cleanup:
 
 #endif /* SUPPORT_APP_CPATCH */
 
-int rpc_common_file_actions_finish(struct rpc_common_file_actions_ctx *ctx, uint16_t rpc_id,
-				   bool defer_long)
+int rpc_common_file_actions_finish(struct rpc_common_file_actions_ctx *ctx, bool defer_long,
+				   bool *dfu_reboot)
 {
 	__maybe_unused uint32_t data_crc;
 	size_t mem_size;
 	uint8_t *mem;
-	bool reboot = false;
 	int rc = 0;
 
 	/* Temporary memory buffer */
@@ -507,10 +506,10 @@ int rpc_common_file_actions_finish(struct rpc_common_file_actions_ctx *ctx, uint
 		/* Close the flash area */
 		pm_flash_area_close(ctx->fa);
 #if defined(CONFIG_MCUBOOT_UPGRADE_ONLY_AUTOMATIC)
-		reboot = true;
+		*dfu_reboot = true;
 #elif defined(CONFIG_MCUBOOT_IMG_MANAGER)
 		if (boot_request_upgrade_multi(0, BOOT_UPGRADE_TEST) == 0) {
-			reboot = true;
+			*dfu_reboot = true;
 		}
 #else
 		LOG_WRN("Cannot request application upgrade");
@@ -530,7 +529,7 @@ int rpc_common_file_actions_finish(struct rpc_common_file_actions_ctx *ctx, uint
 		rc = bt_controller_manager_file_write_finish(ctx->client_ctx, &ctx->received,
 							     &ctx->crc);
 		if (rc == 0) {
-			reboot = true;
+			*dfu_reboot = true;
 		}
 		break;
 #endif /* CONFIG_BT_CONTROLLER_MANAGER */
@@ -541,7 +540,7 @@ int rpc_common_file_actions_finish(struct rpc_common_file_actions_ctx *ctx, uint
 			rc = -EIO;
 		}
 		if (rc == 0) {
-			reboot = true;
+			*dfu_reboot = true;
 		}
 		break;
 #endif /* CONFIG_NRF_MODEM_LIB */
@@ -549,27 +548,17 @@ int rpc_common_file_actions_finish(struct rpc_common_file_actions_ctx *ctx, uint
 		break;
 	}
 
-	if (reboot) {
-#ifdef CONFIG_INFUSE_REBOOT
-		/* Schedule the reboot in a few seconds time */
-		LOG_INF("File action complete, rebooting for DFU");
-		infuse_reboot_delayed(INFUSE_REBOOT_DFU, rpc_id, ctx->action, K_SECONDS(2));
-#else
-		LOG_WRN("INFUSE_REBOOT not enabled, cannot reboot");
-#endif /* CONFIG_INFUSE_REBOOT */
-	}
-
 	return rc;
 }
 
-int rpc_common_file_actions_deferred(struct rpc_common_file_actions_ctx *ctx, uint16_t rpc_id)
+int rpc_common_file_actions_deferred(struct rpc_common_file_actions_ctx *ctx, bool *dfu_reboot)
 {
 	/* Deferred write actions */
 	switch (ctx->action) {
 #ifdef SUPPORT_APP_CPATCH
 	case RPC_ENUM_FILE_ACTION_APP_CPATCH:
 		/* Run the normal finish logic */
-		return rpc_common_file_actions_finish(ctx, rpc_id, false);
+		return rpc_common_file_actions_finish(ctx, false, dfu_reboot);
 #endif /* SUPPORT_APP_CPATCH */
 	default:
 		return 0;

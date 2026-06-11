@@ -125,9 +125,10 @@ write_done:
 	 * take any action (rebooting us) until the patching is actually complete.
 	 */
 	bool defer = IS_ENABLED(CONFIG_BT_CTLR_ONLY) ? false : true;
+	bool dfu_reboot = false;
 
 	/* Finish file write process, deferring long operations */
-	rc = rpc_common_file_actions_finish(&ctx, RPC_ID_FILE_WRITE_BASIC, defer);
+	rc = rpc_common_file_actions_finish(&ctx, defer, &dfu_reboot);
 	if (rc < 0) {
 		LOG_ERR("Failed to finish %d (%d)", action, rc);
 	}
@@ -143,8 +144,26 @@ write_done:
 
 	if (rc == 0) {
 		/* Perform deferred long operations */
-		(void)rpc_common_file_actions_deferred(&ctx, RPC_ID_FILE_WRITE_BASIC);
+		(void)rpc_common_file_actions_deferred(&ctx, &dfu_reboot);
 	}
+
+	if (dfu_reboot) {
+#ifdef CONFIG_INFUSE_REBOOT
+		/* The response has been queued, perform a short delay to allow the data to be sent
+		 * before infuse_reboot_delayed potentially starts shutting down interfaces.
+		 */
+		k_sleep(K_MSEC(500));
+		/* Schedule the reboot in a few seconds time */
+		LOG_INF("File action complete, rebooting for DFU");
+		infuse_reboot_delayed(INFUSE_REBOOT_DFU, RPC_ID_FILE_WRITE_BASIC, action,
+				      K_SECONDS(2));
+#else
+		LOG_WRN("INFUSE_REBOOT not enabled, cannot reboot");
+#endif /* CONFIG_INFUSE_REBOOT */
+
+		/* Give a  */
+	}
+
 	return NULL;
 error:
 	/* Cleanup resources */
