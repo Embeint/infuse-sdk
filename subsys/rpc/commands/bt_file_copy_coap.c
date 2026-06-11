@@ -58,6 +58,7 @@ struct net_buf *rpc_command_bt_file_copy_coap(struct net_buf *request)
 		.subscribe_data = false,
 		.subscribe_logging = false,
 	};
+	bool dfu_reboot;
 	bool already;
 
 	memcpy(coap_req.server_address, req->server_address, sizeof(req->server_address));
@@ -65,7 +66,8 @@ struct net_buf *rpc_command_bt_file_copy_coap(struct net_buf *request)
 	/* COAP file download */
 	LOG_INF("Download '%s' from %s:%d", req->resource, coap_req.server_address,
 		coap_req.server_port);
-	rc = rpc_command_coap_download_run(&coap_req, req->resource, &coap_rsp, &downloaded);
+	rc = rpc_command_coap_download_run(&coap_req, req->resource, &coap_rsp, &downloaded,
+					   &dfu_reboot);
 	rsp.resource_len = coap_rsp.resource_len;
 	rsp.resource_crc = coap_rsp.resource_crc;
 
