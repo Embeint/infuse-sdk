@@ -6,3 +6,17 @@ description: U-BLOX M10 GNSS Module
 compatible: "u-blox,m10-i2c"
 
 include: [i2c-device.yaml, "u-blox-common.yaml"]
+
+properties:
+  rf-lna-mode:
+    type: string
+    enum:
+      - "NORMAL"
+      - "LOWGAIN"
+      - "BYPASS"
+    default: "NORMAL"
+    description: |
+      Operating mode for the RF LNA.
+      Normal: internal LNA enabled at full gain
+      Low Gain: LNA enabled in low gain mode
+      Bypass: Bypass LNA

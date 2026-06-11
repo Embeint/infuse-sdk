@@ -32,6 +32,7 @@
 struct ubx_m10_i2c_config {
 	struct ubx_common_config common;
 	struct i2c_dt_spec i2c;
+	uint8_t rf_lna_mode;
 };
 
 struct ubx_m10_i2c_data {
@@ -364,6 +365,9 @@ static int ubx_m10_i2c_port_setup(const struct device *dev, bool hardware_reset)
 			     UBX_CFG_TXREADY_INTERFACE_I2C);
 	UBX_CFG_VALUE_APPEND(&cfg_buf, UBX_CFG_KEY_TXREADY_THRESHOLD, 1);
 
+	/* Setup RF low-noise amplifier */
+	UBX_CFG_VALUE_APPEND(&cfg_buf, UBX_CFG_KEY_HW_RF_LNA_MODE, cfg->rf_lna_mode);
+
 	/* We set the timepulse pin to use falling edges here, as the timepulse pin has a
 	 * weak pullup to VCC internally. Using the rising edge default can result in spurious
 	 * timepulse edges when the modem wakes from sleep modes:
@@ -525,6 +529,7 @@ static DEVICE_API(gnss, gnss_api) = {
 						 ubx_m10_i2c_software_resume,                      \
 						 ubx_m10_i2c_port_setup, ubx_m10_fifo_poll),       \
 		.i2c = I2C_DT_SPEC_INST_GET(inst),                                                 \
+		.rf_lna_mode = DT_INST_ENUM_IDX(inst, rf_lna_mode),                                \
 	};                                                                                         \
 	static struct ubx_m10_i2c_data ubx_m10_data_##inst;                                        \
 	PM_DEVICE_DT_INST_DEFINE(inst, ubx_common_pm_control);                                     \
