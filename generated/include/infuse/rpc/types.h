@@ -116,6 +116,8 @@ enum rpc_enum_file_action {
 	RPC_ENUM_FILE_ACTION_NRF91_MODEM_DIFF = 20,
 	/** File to copy to another device */
 	RPC_ENUM_FILE_ACTION_FILE_FOR_COPY = 30,
+	/** Write file to LittleFS */
+	RPC_ENUM_FILE_ACTION_WRITE_LITTLEFS = 31,
 };
 
 /** Infuse-IoT Bluetooth characteristics (Bitmask) */

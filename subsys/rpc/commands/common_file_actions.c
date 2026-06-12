@@ -151,17 +151,15 @@ static int common_file_actions_stream_writer_init(struct rpc_common_file_actions
 
 #endif /* APP_IMG || APP_CPATCH || FILE_COPY_RAW */
 
-#ifdef SUPPORT_FILE_COPY_FS
+#ifdef CONFIG_INFUSE_LITTLEFS
 
-static int file_copy_fs_init(struct rpc_common_file_actions_ctx *ctx, uint32_t length, uint32_t crc)
+static int littlefs_write_init(struct rpc_common_file_actions_ctx *ctx, uint32_t length,
+			       uint32_t crc)
 {
 	uint32_t file_crc;
 	size_t mem_size;
 	uint8_t *mem;
 	int rc;
-
-	/* Filesystem naive RPCs should automatically have this set */
-	__ASSERT_NO_MSG(ctx->fs_path.folder == INFUSE_LFS_FOLDER_COPY);
 
 	/* Can only do duplicate detection if both length and CRC provided */
 	if ((crc != UINT32_MAX) && (length != UINT32_MAX)) {
@@ -185,17 +183,16 @@ static int file_copy_fs_init(struct rpc_common_file_actions_ctx *ctx, uint32_t l
 	return infuse_littlefs_file_create(ctx->fs_path.folder, ctx->fs_path.file, &ctx->fs_meta);
 }
 
-#endif /* SUPPORT_FILE_COPY_FS */
+#endif /* CONFIG_INFUSE_LITTLEFS */
 
 enum infuse_littlefs_folder
 rpc_common_file_actions_folder_from_action(enum rpc_enum_file_action action,
 					   uint8_t explicit_folder)
 {
-	ARG_UNUSED(explicit_folder);
-
-	/* Only FILE_FOR_COPY actually writes to filesystem currently */
 	if (action == RPC_ENUM_FILE_ACTION_FILE_FOR_COPY) {
 		return INFUSE_LFS_FOLDER_COPY;
+	} else if (action == RPC_ENUM_FILE_ACTION_WRITE_LITTLEFS) {
+		return explicit_folder;
 	}
 	return UINT8_MAX;
 }
@@ -240,7 +237,7 @@ int rpc_common_file_actions_start(struct rpc_common_file_actions_ctx *ctx,
 #endif /* SUPPORT_FILE_COPY_RAW*/
 #ifdef SUPPORT_FILE_COPY_FS
 	case RPC_ENUM_FILE_ACTION_FILE_FOR_COPY:
-		rc = file_copy_fs_init(ctx, length, crc);
+		rc = littlefs_write_init(ctx, length, crc);
 		break;
 #endif /* SUPPORT_FILE_COPY_FS */
 #ifdef CONFIG_BT_CONTROLLER_MANAGER
@@ -261,6 +258,11 @@ int rpc_common_file_actions_start(struct rpc_common_file_actions_ctx *ctx,
 		}
 		break;
 #endif /* CONFIG_NRF_MODEM_LIB */
+#ifdef CONFIG_INFUSE_LITTLEFS
+	case RPC_ENUM_FILE_ACTION_WRITE_LITTLEFS:
+		rc = littlefs_write_init(ctx, length, crc);
+		break;
+#endif /* CONFIG_INFUSE_LITTLEFS */
 	default:
 		rc = -EINVAL;
 	}
@@ -306,6 +308,11 @@ int rpc_common_file_actions_write(struct rpc_common_file_actions_ctx *ctx, uint3
 		rc = infuse_littlefs_file_write(data, data_len);
 		break;
 #endif /* SUPPORT_FILE_COPY_FS */
+#ifdef CONFIG_INFUSE_LITTLEFS
+	case RPC_ENUM_FILE_ACTION_WRITE_LITTLEFS:
+		rc = infuse_littlefs_file_write(data, data_len);
+		break;
+#endif /* CONFIG_INFUSE_LITTLEFS */
 #ifdef CONFIG_BT_CONTROLLER_MANAGER
 	case RPC_ENUM_FILE_ACTION_BT_CTLR_IMG:
 	case RPC_ENUM_FILE_ACTION_BT_CTLR_CPATCH:
@@ -449,9 +456,12 @@ int rpc_common_file_actions_finish(struct rpc_common_file_actions_ctx *ctx, bool
 	}
 #endif /* APP_IMG || APP_CPATCH || FILE_COPY_RAW */
 
-#ifdef SUPPORT_FILE_COPY_FS
+#ifdef CONFIG_INFUSE_LITTLEFS
+	bool is_littlefs = (ctx->action == RPC_ENUM_FILE_ACTION_FILE_FOR_COPY) ||
+			   (ctx->action == RPC_ENUM_FILE_ACTION_WRITE_LITTLEFS);
+
 	/* If 0 bytes were received, the file already existed on disk */
-	if ((ctx->action == RPC_ENUM_FILE_ACTION_FILE_FOR_COPY) && (ctx->received > 0)) {
+	if (is_littlefs && (ctx->received > 0)) {
 		ctx->fs_meta.timestamp = epoch_time_seconds(epoch_time_now());
 		ctx->fs_meta.crc = ctx->crc;
 		rc = infuse_littlefs_file_close();
@@ -459,8 +469,8 @@ int rpc_common_file_actions_finish(struct rpc_common_file_actions_ctx *ctx, bool
 			LOG_ERR("Could not close file (%d)", rc);
 			return rc;
 		}
-		rc = infuse_littlefs_file_crc32(INFUSE_LFS_FOLDER_COPY, ctx->fs_path.file,
-						UINT32_MAX, &data_crc, mem, mem_size);
+		rc = infuse_littlefs_file_crc32(ctx->fs_path.folder, ctx->fs_path.file, UINT32_MAX,
+						&data_crc, mem, mem_size);
 		if (rc < 0) {
 			LOG_ERR("Could not validate written data");
 			return rc;
@@ -470,7 +480,7 @@ int rpc_common_file_actions_finish(struct rpc_common_file_actions_ctx *ctx, bool
 			return -EBADE;
 		}
 	}
-#endif /* SUPPORT_FILE_COPY_FS */
+#endif /* CONFIG_INFUSE_LITTLEFS */
 
 #ifdef CONFIG_INFUSE_DFU_HELPERS
 	off_t offset = 0;
@@ -614,10 +624,20 @@ int rpc_common_file_actions_error_cleanup(struct rpc_common_file_actions_ctx *ct
 #endif /* SUPPORT_FILE_COPY_RAW */
 #ifdef SUPPORT_FILE_COPY_FS
 	case RPC_ENUM_FILE_ACTION_FILE_FOR_COPY:
-		/* Close the flash area */
+		/* Close the file */
+		ctx->fs_meta.timestamp = epoch_time_seconds(epoch_time_now());
+		ctx->fs_meta.crc = ctx->crc;
 		rc = infuse_littlefs_file_close();
 		break;
 #endif /* SUPPORT_FILE_COPY_FS */
+#ifdef CONFIG_INFUSE_LITTLEFS
+	case RPC_ENUM_FILE_ACTION_WRITE_LITTLEFS:
+		/* Close the file */
+		ctx->fs_meta.timestamp = epoch_time_seconds(epoch_time_now());
+		ctx->fs_meta.crc = ctx->crc;
+		rc = infuse_littlefs_file_close();
+		break;
+#endif /* CONFIG_INFUSE_LITTLEFS */
 #ifdef CONFIG_BT_CONTROLLER_MANAGER
 	case RPC_ENUM_FILE_ACTION_BT_CTLR_IMG:
 	case RPC_ENUM_FILE_ACTION_BT_CTLR_CPATCH:
