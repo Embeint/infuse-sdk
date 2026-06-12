@@ -46,9 +46,16 @@ struct net_buf *rpc_command_file_write_impl(struct epacket_rx_metadata *rx_meta,
 	ack_period = req->data_header.rx_ack_period;
 	fs_folder = rpc_common_file_actions_folder_from_action(action, req->folder);
 
-	/* Manual validation of possible parameter mismatch in RPC_ID_FILE_WRITE */
+	/* Manual validation of invalid combinations */
+	if ((rpc_id == RPC_ID_FILE_WRITE_BASIC) &&
+	    (action == RPC_ENUM_FILE_ACTION_WRITE_LITTLEFS)) {
+		LOG_WRN("FILE_WRITE_BASIC does not support WRITE_LITTLEFS");
+		rc = -EINVAL;
+		goto error_no_cleanup;
+	}
 	if ((rpc_id == RPC_ID_FILE_WRITE) && (action == RPC_ENUM_FILE_ACTION_FILE_FOR_COPY) &&
 	    (req->folder != INFUSE_LFS_FOLDER_COPY)) {
+		LOG_WRN("FILE_FOR_COPY must use FOLDER_COPY");
 		rc = -EINVAL;
 		goto error_no_cleanup;
 	}
