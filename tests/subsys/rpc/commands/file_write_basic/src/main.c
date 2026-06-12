@@ -316,6 +316,21 @@ ZTEST(rpc_command_file_write_basic, test_invalid_action)
 		net_buf_unref(tx);
 		req.header.request_id += 1;
 	}
+
+#if !defined(CONFIG_TEST_FILE_WRITE)
+	req.action = RPC_ENUM_FILE_ACTION_WRITE_LITTLEFS;
+
+	epacket_dummy_receive(epacket_dummy, &hdr, &req, sizeof(req));
+
+	/* Wait for the invalid response */
+	tx = k_fifo_get(tx_fifo, K_MSEC(1000));
+	zassert_not_null(tx);
+	tx_header = (void *)tx->data;
+	rsp = (void *)(tx->data + sizeof(*tx_header));
+
+	zassert_equal(INFUSE_RPC_RSP, tx_header->type);
+	zassert_equal(-EINVAL, rsp->header.return_code);
+#endif /* !defined(CONFIG_TEST_FILE_WRITE) */
 }
 
 ZTEST(rpc_command_file_write_basic, test_file_write_sizes)
