@@ -33,6 +33,11 @@ struct rpc_coap_download_request_v2_send {
 	char resource[128];
 } __packed;
 
+#ifdef CONFIG_TLS_CREDENTIALS
+/* Buffer must remain valid after `tls_credential_add` */
+static char dtls_identity_buffer[16];
+#endif /* CONFIG_TLS_CREDENTIALS */
+
 #ifdef CONFIG_TEST_NATIVE_MOCK
 static size_t bt_image_len;
 static size_t bt_image_crc;
@@ -202,13 +207,13 @@ ZTEST(rpc_command_coap_download, test_download_invalid)
 
 #ifdef CONFIG_TLS_CREDENTIALS
 	sec_tag_t tag = infuse_security_coap_dtls_tag();
-	char cred[16];
 	size_t cred_len;
 
 	/* Cache the credential */
-	cred_len = sizeof(cred);
-	zassert_equal(0, tls_credential_get(tag, TLS_CREDENTIAL_PSK_ID, cred, &cred_len));
-	zassert_equal(sizeof(cred), cred_len);
+	cred_len = sizeof(dtls_identity_buffer);
+	zassert_equal(
+		0, tls_credential_get(tag, TLS_CREDENTIAL_PSK_ID, dtls_identity_buffer, &cred_len));
+	zassert_equal(sizeof(dtls_identity_buffer), cred_len);
 
 	/* Delete the credential */
 	zassert_equal(0, tls_credential_delete(tag, TLS_CREDENTIAL_PSK_ID));
@@ -219,7 +224,8 @@ ZTEST(rpc_command_coap_download, test_download_invalid)
 	expect_coap_download_response(100, -EINVAL, 0, 0);
 
 	/* Re-add the credential */
-	zassert_equal(0, tls_credential_add(tag, TLS_CREDENTIAL_PSK_ID, cred, sizeof(cred)));
+	zassert_equal(0, tls_credential_add(tag, TLS_CREDENTIAL_PSK_ID, dtls_identity_buffer,
+					    sizeof(dtls_identity_buffer)));
 #endif /* CONFIG_TLS_CREDENTIALS */
 
 	/* Everything works after all the failures */
@@ -274,11 +280,10 @@ ZTEST(rpc_command_coap_download, test_download)
 
 	/* Balanced call count */
 	zassert_equal(0, infuse_dfu_write_erase_call_count());
+}
 
-	/* V2 RPCs test
-	 * Should be its own subtest, but TLS credentials causing weird issues after
-	 * the TLS remove/add test in test_invalid
-	 */
+ZTEST(rpc_command_coap_download, test_download_v2)
+{
 	/* Basic discard download */
 	send_download_v2_command(48, "coap.dev.infuse-iot.com", 5684, 0,
 				 RPC_ENUM_FILE_ACTION_DISCARD, "file/small_file", UINT32_MAX,
