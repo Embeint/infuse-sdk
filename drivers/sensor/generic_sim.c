@@ -115,7 +115,7 @@ static int generic_sim_pm_control(const struct device *dev, enum pm_device_actio
 }
 #endif /* CONFIG_PM_DEVICE */
 
-static const struct sensor_driver_api generic_sim_driver_api = {
+static DEVICE_API(sensor, generic_sim_driver_api) = {
 	.sample_fetch = generic_sim_sample_fetch,
 	.channel_get = generic_sim_channel_get,
 };

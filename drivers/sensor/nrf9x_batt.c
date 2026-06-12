@@ -53,7 +53,7 @@ static int nrf9x_batt_channel_get(const struct device *dev, enum sensor_channel 
 	return sensor_value_from_milli(val, data->voltage_mv);
 }
 
-static const struct sensor_driver_api nrf9x_batt_driver_api = {
+static DEVICE_API(sensor, nrf9x_batt_driver_api) = {
 	.sample_fetch = nrf9x_batt_sample_fetch,
 	.channel_get = nrf9x_batt_channel_get,
 };

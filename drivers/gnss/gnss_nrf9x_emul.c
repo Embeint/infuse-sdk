@@ -193,7 +193,7 @@ static int nrf9x_gnss_init(const struct device *dev)
 	return 0;
 }
 
-const struct gnss_driver_api emul_gnss_api = {
+static DEVICE_API(gnss, emul_gnss_api) = {
 	.set_enabled_systems = emul_set_enabled_systems,
 	.get_enabled_systems = emul_get_enabled_systems,
 	.get_supported_systems = emul_get_supported_systems,
