@@ -492,7 +492,7 @@ static int ubx_m8_spi_init(const struct device *dev)
 	return ubx_common_init(dev, pipe);
 }
 
-static const struct gnss_driver_api gnss_api = {
+static DEVICE_API(gnss, gnss_api) = {
 #ifndef CONFIG_GNSS_U_BLOX_NO_API_COMPAT
 	.set_fix_rate = ubx_m8_spi_set_fix_rate,
 	.get_fix_rate = ubx_m8_spi_get_fix_rate,

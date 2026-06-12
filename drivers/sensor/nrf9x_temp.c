@@ -50,7 +50,7 @@ static int nrf9x_temp_channel_get(const struct device *dev, enum sensor_channel 
 	return 0;
 }
 
-static const struct sensor_driver_api nrf9x_temp_driver_api = {
+static DEVICE_API(sensor, nrf9x_temp_driver_api) = {
 	.sample_fetch = nrf9x_temp_sample_fetch,
 	.channel_get = nrf9x_temp_channel_get,
 };

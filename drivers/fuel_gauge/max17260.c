@@ -321,7 +321,7 @@ static int max17260_init(const struct device *dev)
 	return max17260_shutdown_exit(dev);
 }
 
-static const struct fuel_gauge_driver_api max17260_api = {
+static DEVICE_API(fuel_gauge, max17260_api) = {
 	.get_property = max17260_get_prop,
 	.set_property = max17260_set_prop,
 	.get_buffer_property = NULL,
