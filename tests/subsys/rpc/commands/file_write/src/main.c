@@ -26,7 +26,7 @@
 #include <infuse/epacket/interface/epacket_dummy.h>
 #include <infuse/cpatch/patch.h>
 
-static uint8_t fixed_payload[8192];
+static uint8_t fixed_payload[1024];
 static uint32_t fixed_payload_crc;
 
 struct test_out {
@@ -196,15 +196,152 @@ ZTEST(rpc_command_file_write, test_file_write_for_copy_bad_folder)
 	zassert_equal(-ENOENT, rc);
 }
 
-void *file_write_basic_setup(void)
+ZTEST(rpc_command_file_write, test_file_write_for_copy)
+{
+	struct infuse_littlefs_metadata meta;
+	uint32_t second_filename = 4854;
+	uint32_t filename = 1234;
+	uint32_t identifier = 0xAB7234;
+	struct test_out ret;
+	int rc;
+
+	ret = test_file_write(RPC_ENUM_FILE_ACTION_FILE_FOR_COPY, INFUSE_LFS_FOLDER_COPY, filename,
+			      identifier, sizeof(fixed_payload), 0, fixed_payload);
+	zassert_equal(0, ret.cmd_rc);
+	zassert_equal(sizeof(fixed_payload), ret.cmd_len);
+	zassert_equal(fixed_payload_crc, ret.cmd_crc);
+
+	/* File created with expected metadata */
+	rc = infuse_littlefs_file_size(INFUSE_LFS_FOLDER_COPY, filename);
+	zassert_equal(sizeof(fixed_payload), rc);
+	rc = infuse_littlefs_file_metadata(INFUSE_LFS_FOLDER_COPY, filename, &meta);
+	zassert_equal(0, rc);
+	zassert_equal(identifier, meta.identifier);
+	zassert_equal(fixed_payload_crc, meta.crc);
+
+	/* Another file with random data  */
+	ret = test_file_write(RPC_ENUM_FILE_ACTION_FILE_FOR_COPY, INFUSE_LFS_FOLDER_COPY,
+			      second_filename, identifier + 1000, 130, 0, NULL);
+	zassert_equal(0, ret.cmd_rc);
+	zassert_equal(130, ret.cmd_len);
+	zassert_equal(ret.written_crc, ret.cmd_crc);
+	rc = infuse_littlefs_file_size(INFUSE_LFS_FOLDER_COPY, second_filename);
+	zassert_equal(130, rc);
+	rc = infuse_littlefs_file_metadata(INFUSE_LFS_FOLDER_COPY, second_filename, &meta);
+	zassert_equal(0, rc);
+	zassert_equal(identifier + 1000, meta.identifier);
+	zassert_equal(ret.written_crc, meta.crc);
+
+	/* First file is still good */
+	rc = infuse_littlefs_file_metadata(INFUSE_LFS_FOLDER_COPY, filename, &meta);
+	zassert_equal(0, rc);
+	zassert_equal(identifier, meta.identifier);
+	zassert_equal(fixed_payload_crc, meta.crc);
+}
+
+ZTEST(rpc_command_file_write, test_file_write_littlefs)
+{
+	struct infuse_littlefs_metadata meta;
+	uint32_t identifier;
+	struct test_out ret;
+	int rc;
+	struct test_files {
+		uint8_t folder;
+		uint32_t filename;
+		uint32_t length;
+	} tests[] = {
+		{
+			.folder = INFUSE_LFS_FOLDER_GENERAL,
+			.filename = 100,
+			.length = 128,
+		},
+		{
+			.folder = INFUSE_LFS_FOLDER_GENERAL,
+			.filename = 293100,
+			.length = 1023,
+		},
+		{
+			.folder = INFUSE_LFS_FOLDER_A_GNSS,
+			.filename = 100,
+			.length = 999,
+		},
+		{
+			.folder = INFUSE_LFS_FOLDER_COPY,
+			.filename = 1,
+			.length = 300,
+		},
+		{
+			.folder = INFUSE_LFS_FOLDER_ALGORITHMS,
+			.filename = 3,
+			.length = 555,
+		},
+		{
+			.folder = INFUSE_LFS_FOLDER_ALGORITHMS,
+			.filename = 4,
+			.length = 556,
+		},
+	};
+	struct test_files *test;
+
+	for (int i = 0; i < ARRAY_SIZE(tests); i++) {
+		test = &tests[i];
+		identifier = 0x1000 + i;
+
+		ret = test_file_write(RPC_ENUM_FILE_ACTION_WRITE_LITTLEFS, test->folder,
+				      test->filename, identifier, test->length, 0, fixed_payload);
+		zassert_equal(0, ret.cmd_rc);
+		zassert_equal(test->length, ret.cmd_len);
+		zassert_equal(ret.written_crc, ret.cmd_crc);
+
+		/* File created with expected metadata */
+		rc = infuse_littlefs_file_size(test->folder, test->filename);
+		zassert_equal(test->length, rc);
+		rc = infuse_littlefs_file_metadata(test->folder, test->filename, &meta);
+		zassert_equal(0, rc);
+		zassert_equal(identifier, meta.identifier);
+		zassert_equal(ret.written_crc, meta.crc);
+	}
+
+	/* Writing the first file again should be skipped as it already exists */
+	test = &tests[0];
+	ret = test_file_write(RPC_ENUM_FILE_ACTION_WRITE_LITTLEFS, test->folder, test->filename,
+			      0x1000, test->length, 0, fixed_payload);
+	zassert_equal(0, ret.cmd_rc);
+	zassert_equal(0, ret.cmd_len);
+
+	/* Even with a different ID */
+	test = &tests[0];
+	ret = test_file_write(RPC_ENUM_FILE_ACTION_WRITE_LITTLEFS, test->folder, test->filename,
+			      0x1000 + 1, test->length, 0, fixed_payload);
+	zassert_equal(0, ret.cmd_rc);
+	zassert_equal(0, ret.cmd_len);
+
+	/* New contents should delete the old file and write new data */
+	test = &tests[0];
+	ret = test_file_write(RPC_ENUM_FILE_ACTION_WRITE_LITTLEFS, test->folder, test->filename,
+			      0x2000, test->length + 1, 0, fixed_payload);
+	zassert_equal(0, ret.cmd_rc);
+	zassert_equal(test->length + 1, ret.cmd_len);
+	zassert_equal(ret.written_crc, ret.cmd_crc);
+
+	rc = infuse_littlefs_file_size(test->folder, test->filename);
+	zassert_equal(test->length + 1, rc);
+	rc = infuse_littlefs_file_metadata(test->folder, test->filename, &meta);
+	zassert_equal(0, rc);
+	zassert_equal(0x2000, meta.identifier);
+	zassert_equal(ret.written_crc, meta.crc);
+
+	k_sleep(K_SECONDS(1));
+}
+
+void *file_write_setup(void)
 {
 	sys_rand_get(fixed_payload, sizeof(fixed_payload));
 	fixed_payload_crc = crc32_ieee(fixed_payload, sizeof(fixed_payload));
 
-#ifdef CONFIG_INFUSE_LITTLEFS
+	(void)infuse_littfs_format();
 	(void)infuse_littlefs_init();
-#endif /* CONFIG_INFUSE_LITTLEFS */
 	return NULL;
 }
 
-ZTEST_SUITE(rpc_command_file_write, NULL, file_write_basic_setup, NULL, NULL, NULL);
+ZTEST_SUITE(rpc_command_file_write, NULL, file_write_setup, NULL, NULL, NULL);
