@@ -47,6 +47,9 @@ static void command_data_done(const struct net_buf *buf, void *user_data)
 
 static int file_loader(void *user_data, uint32_t offset, void *data, size_t data_len)
 {
+	/* Prevent RPC server watchdog channel timing out */
+	rpc_server_watchdog_feed();
+
 #ifdef CONFIG_INFUSE_LITTLEFS
 	int rc;
 
@@ -150,6 +153,9 @@ int rpc_command_bt_file_copy_basic_run(struct rpc_bt_file_copy_basic_request *re
 	__ASSERT_NO_MSG(rc == 0);
 	load_params.user_data = (void *)fa;
 #endif
+
+	/* Feed watchdog before waiting (a potentially long time) for the first ACK */
+	rpc_server_watchdog_feed();
 
 	/* Wait for initial ACK */
 	rc = rpc_client_ack_wait(&client_ctx, request_id, K_SECONDS(5));
