@@ -54,6 +54,10 @@ ZTEST(algorithm_runner_llext, test_loading)
 	cfg = &test_algorithm_config;
 #endif /* CONFIG_TEST_ALGORITHM_BUILD_NATIVE */
 
+	struct tdf_battery_state battery = {.voltage_mv = 3700, .current_ua = -100, .soc = 70};
+
+	zbus_chan_pub(chan, &battery, K_FOREVER);
+
 	/* Validate exported configuration */
 	zassert_equal(ALGORITHM_ID_EXPECTED, cfg->algorithm_id);
 	zassert_equal(ALGORITHM_ZBUS_EXPECTED, cfg->zbus_channel);
