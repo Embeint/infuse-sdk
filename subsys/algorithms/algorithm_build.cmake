@@ -66,6 +66,7 @@ function(algorithm_generate_targets
 
     # Include Directories
     list(APPEND CFLAGS "-I${INFUSE_SDK_BASE}/include")
+    list(APPEND CFLAGS "-I${INFUSE_SDK_BASE}/generated/include")
     list(APPEND CFLAGS "-I${ZEPHYR_BASE}/include")
     foreach(INC_FOLDER IN LISTS INC_FOLDERS)
       list(APPEND CFLAGS "-I${INC_FOLDER}")
