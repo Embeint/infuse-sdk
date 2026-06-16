@@ -545,6 +545,8 @@ enum rpc_builtin_id {
 	RPC_ID_ZPERF_UPLOAD = 31,
 	/** Download a file from a COAP server (Infuse-IoT DTLS protected) */
 	RPC_ID_COAP_DOWNLOAD_V2 = 32,
+	/** Download a file from a COAP server (Infuse-IoT DTLS protected) */
+	RPC_ID_COAP_DOWNLOAD_V3 = 33,
 	/** Write a file to the device */
 	RPC_ID_FILE_WRITE_BASIC = 40,
 	/** Write an annotation to the device */
@@ -1126,6 +1128,41 @@ struct rpc_coap_download_v2_request {
 } __packed;
 
 struct rpc_coap_download_v2_response {
+	struct infuse_rpc_rsp_header header;
+	/** Length of resource downloaded */
+	uint32_t resource_len;
+	/** CRC of resource downloaded */
+	uint32_t resource_crc;
+} __packed;
+
+/** Download a file from a COAP server (Infuse-IoT DTLS protected) */
+struct rpc_coap_download_v3_request {
+	struct infuse_rpc_req_header header;
+	/** COAP server address (e.g. coap.dev.infuse-iot.com) */
+	char server_address[48];
+	/** COAP server port */
+	uint16_t server_port;
+	/** COAP block timeout (Default 1000ms) */
+	uint16_t block_timeout_ms;
+	/** Block size to use (1024, 512, 256, 128, 64, 32, 16, 0 == auto) */
+	uint16_t block_size;
+	/** Action to apply to downloaded file */
+	uint8_t action;
+	/** File folder (for filesystem writes) */
+	uint8_t folder;
+	/** File name (for filesystem writes) */
+	uint32_t filename;
+	/** File identifier (for filesystem writes) */
+	uint32_t identifier;
+	/** Expected resource length (UINT32_MAX if unknown) */
+	uint32_t resource_len;
+	/** Expected resource CRC (UINT32_MAX if unknown) */
+	uint32_t resource_crc;
+	/** Path to file on COAP server (e.g. files/small_file) */
+	char resource[];
+} __packed;
+
+struct rpc_coap_download_v3_response {
 	struct infuse_rpc_rsp_header header;
 	/** Length of resource downloaded */
 	uint32_t resource_len;
