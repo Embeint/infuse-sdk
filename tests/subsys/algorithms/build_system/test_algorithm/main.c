@@ -7,6 +7,7 @@
 #include <zephyr/llext/symbol.h>
 
 #include <infuse/algorithms/implementation.h>
+#include <infuse/zbus/types.h>
 
 #include "algorithm_info.h"
 
@@ -25,8 +26,8 @@ struct algorithm_state {
 
 static void algorithm_fn(const struct zbus_channel *chan)
 {
+	const INFUSE_ZBUS_TYPE(INFUSE_ZBUS_CHAN_BATTERY) * data;
 	static struct algorithm_state state;
-	const void *data;
 	float test_float = 2.75f;
 	int test;
 
@@ -39,6 +40,7 @@ static void algorithm_fn(const struct zbus_channel *chan)
 	test = state.run_cnt * test_float;
 
 	printk("RUN: %d %d\n", state.run_cnt, test);
+	printk("%d mV %d uA %d%%\n", data->voltage_mv, data->current_ua, data->soc);
 	state.run_cnt += 1;
 	zbus_chan_finish(chan);
 }

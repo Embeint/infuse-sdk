@@ -17,8 +17,11 @@ common:
     regex:
       - "INIT"
       - "RUN: 0 0"
+      - "3700 mV -100 uA 70%"
       - "RUN: 1 2"
+      - "3700 mV -100 uA 70%"
       - "RUN: 2 5"
+      - "3700 mV -100 uA 70%"
 tests:
   algorithms.build_system.native:
     extra_configs:
