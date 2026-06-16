@@ -126,7 +126,7 @@ int rpc_command_bt_file_copy_basic_run(struct rpc_bt_file_copy_basic_request *re
 	rpc_server_watchdog_feed();
 
 	/* Wait for initial ACK */
-	rc = rpc_client_ack_wait(&client_ctx, request_id, K_SECONDS(5));
+	rc = rpc_client_ack_wait(&client_ctx, request_id, K_SECONDS(15));
 	if (rc < 0) {
 		LOG_WRN("Initial ACK not received");
 		goto cleanup;
@@ -145,7 +145,7 @@ int rpc_command_bt_file_copy_basic_run(struct rpc_bt_file_copy_basic_request *re
 					     &load_params);
 
 	/* Wait for final RPC_RSP */
-	rc = k_sem_take(&completion_ctx.done, K_SECONDS(1));
+	rc = k_sem_take(&completion_ctx.done, K_SECONDS(2));
 	if (rc == 0) {
 		rc = completion_ctx.rc;
 	}
