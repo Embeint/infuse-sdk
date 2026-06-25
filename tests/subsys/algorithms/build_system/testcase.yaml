@@ -16,11 +16,11 @@ common:
     ordered: true
     regex:
       - "INIT"
-      - "RUN: 0 0"
+      - "RUN: 0 RUN\\*2.75: 0 RUN\\^2: 0"
       - "3700 mV -100 uA 70%"
-      - "RUN: 1 2"
+      - "RUN: 1 RUN\\*2.75: 2 RUN\\^2: 1"
       - "3700 mV -100 uA 70%"
-      - "RUN: 2 5"
+      - "RUN: 2 RUN\\*2.75: 5 RUN\\^2: 4"
       - "3700 mV -100 uA 70%"
 tests:
   algorithms.build_system.native:

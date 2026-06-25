@@ -10,6 +10,7 @@
 #include <infuse/zbus/types.h>
 
 #include "algorithm_info.h"
+#include "helper.h"
 
 static void algorithm_fn(const struct zbus_channel *chan);
 
@@ -30,6 +31,7 @@ static void algorithm_fn(const struct zbus_channel *chan)
 	static struct algorithm_state state;
 	float test_float = 2.75f;
 	int test;
+	int external_test;
 
 	if (chan == NULL) {
 		printk("INIT\n");
@@ -38,8 +40,9 @@ static void algorithm_fn(const struct zbus_channel *chan)
 
 	data = zbus_chan_const_msg(chan);
 	test = state.run_cnt * test_float;
+	external_test = get_squared(state.run_cnt);
 
-	printk("RUN: %d %d\n", state.run_cnt, test);
+	printk("RUN: %d RUN*2.75: %d RUN^2: %d\n", state.run_cnt, test, external_test);
 	printk("%d mV %d uA %d%%\n", data->voltage_mv, data->current_ua, data->soc);
 	state.run_cnt += 1;
 	zbus_chan_finish(chan);
