@@ -77,15 +77,31 @@ function(algorithm_generate_targets
       algorithm_target_name_core(${ALG_NAME} ${PROFILE_NAME} ${FP_MODE} target_name)
       algorithm_target_dir_core(${PROFILE_NAME} ${FP_MODE} ${OUTPUT_BASE} target_folder)
       make_directory(${target_folder})
+
+      # Prepare object file list and compile commands for each source file
+      set(OBJ_FILES)
+      set(COMPILE_COMMANDS)
+
+      foreach(SRC IN LISTS SRC_FILES)
+        get_filename_component(SRC_NAME ${SRC} NAME_WE)
+        set(OBJ ${target_folder}/${SRC_NAME}.o)
+        list(APPEND OBJ_FILES ${OBJ})
+        list(APPEND COMPILE_COMMANDS
+          COMMAND ${CMAKE_C_COMPILER} ${CFLAGS} "-mfloat-abi=${FP_MODE}" -c ${SRC} -o ${OBJ}
+        )
+      endforeach()
+
+      # Link all object files into a single relocatable object
+      list(APPEND COMPILE_COMMANDS
+        COMMAND ${CMAKE_LINKER} -r ${OBJ_FILES} -o ${target_folder}/${ALG_NAME}.llext
+      )
+
       add_custom_command(
         OUTPUT
           ${target_folder}/${ALG_NAME}.llext.stripped
           ${target_folder}/${ALG_NAME}.llext
           ${target_folder}/${ALG_NAME}.inc
-        # Compile to an object file
-        COMMAND ${CMAKE_C_COMPILER} ${CFLAGS} "-mfloat-abi=${FP_MODE}"
-          -o ${target_folder}/${ALG_NAME}.llext
-          ${SRC_FILES}
+        ${COMPILE_COMMANDS}
         # Strip unneeded sections from the object file
         COMMAND ${CMAKE_OBJCOPY} --strip-unneeded
           --remove-section .comment
