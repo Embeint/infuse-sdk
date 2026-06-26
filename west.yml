@@ -44,7 +44,7 @@ manifest:
       path: bootloader/mcuboot
     - name: sdk-nrf
       path: modules/nrfconnect/sdk-nrf
-      revision: 88ea8b334803984be1b5d83659d040f772f954e2
+      revision: 02ebe56d8c01ffdbaaa4ca1dcc470e9327566603
       import: true
     - name: memfault-firmware-sdk
       path: modules/lib/memfault
