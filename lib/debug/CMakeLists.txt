@@ -1,6 +1,6 @@
 # Infuse-IoT debugging libraries
 
-zephyr_sources_ifdef(CONFIG_INFUSE_WORKQUEUE_BLOCK_TEST workqueue_blocker.c)
+infuse_sources_ifdef(CONFIG_INFUSE_WORKQUEUE_BLOCK_TEST workqueue_blocker.c)
 
 if(CONFIG_INFUSE_WORKQUEUE_BLOCK_TEST)
   message(WARNING

@@ -1,6 +1,6 @@
 # Infuse IoT Hardware Unique Key configuration
 
-zephyr_sources_ifdef(CONFIG_INFUSE_HUK_TFM huk_tfm.c)
-zephyr_sources_ifdef(CONFIG_INFUSE_HUK_NORDIC_KMU_CC3XX huk_nrf_kmu_cc3xx.c)
-zephyr_sources_ifdef(CONFIG_INFUSE_HUK_NORDIC_KMU_CRACEN huk_nrf_kmu_cracen.c)
-zephyr_sources_ifdef(CONFIG_INFUSE_HUK_HWID_HASH huk_hwid_hash.c)
+infuse_sources_ifdef(CONFIG_INFUSE_HUK_TFM huk_tfm.c)
+infuse_sources_ifdef(CONFIG_INFUSE_HUK_NORDIC_KMU_CC3XX huk_nrf_kmu_cc3xx.c)
+infuse_sources_ifdef(CONFIG_INFUSE_HUK_NORDIC_KMU_CRACEN huk_nrf_kmu_cracen.c)
+infuse_sources_ifdef(CONFIG_INFUSE_HUK_HWID_HASH huk_hwid_hash.c)

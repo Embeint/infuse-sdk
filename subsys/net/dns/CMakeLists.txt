@@ -1,3 +1,3 @@
 # DNS helpers
 
-zephyr_sources_ifdef(CONFIG_INFUSE_DNS infuse_dns.c)
+infuse_sources_ifdef(CONFIG_INFUSE_DNS infuse_dns.c)
