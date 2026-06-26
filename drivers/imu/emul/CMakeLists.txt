@@ -1,3 +1,3 @@
 # Emulated IMU driver
 
-zephyr_sources(imu_emul.c)
+infuse_sources(imu_emul.c)

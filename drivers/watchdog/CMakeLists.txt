@@ -1,3 +1,3 @@
 # Infuse-IoT watchdog sources
 
-zephyr_sources(watchdog.c)
+infuse_sources(watchdog.c)

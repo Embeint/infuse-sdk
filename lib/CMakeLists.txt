@@ -1,11 +1,11 @@
 # Infuse-IoT libraries compilation
 
-zephyr_sources(identifiers.c)
-zephyr_sources(version.c)
-zephyr_sources_ifdef(CONFIG_INFUSE_WORKQ infuse_work_q.c)
-zephyr_sources_ifdef(CONFIG_INFUSE_REBOOT_COMPILE reboot.c)
-zephyr_sources_ifdef(CONFIG_INFUSE_COMMON_BOOT common_boot.c)
-zephyr_sources_ifdef(CONFIG_INFUSE_EPOCH_TIME time/epoch.c)
+infuse_sources(identifiers.c)
+infuse_sources(version.c)
+infuse_sources_ifdef(CONFIG_INFUSE_WORKQ infuse_work_q.c)
+infuse_sources_ifdef(CONFIG_INFUSE_REBOOT_COMPILE reboot.c)
+infuse_sources_ifdef(CONFIG_INFUSE_COMMON_BOOT common_boot.c)
+infuse_sources_ifdef(CONFIG_INFUSE_EPOCH_TIME time/epoch.c)
 
 add_subdirectory(auto)
 add_subdirectory(crypto)

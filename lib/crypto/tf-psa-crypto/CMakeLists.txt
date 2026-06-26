@@ -6,5 +6,5 @@ if(CONFIG_TF_PSA_CRYPTO_OBERON_ACCELERATOR)
   target_include_directories(oberon_accel INTERFACE ${CMAKE_CURRENT_LIST_DIR}/include)
   target_link_libraries(zephyr_interface INTERFACE oberon_accel)
   # Actual integration
-  zephyr_sources(oberon_accelerator.c)
+  infuse_sources(oberon_accelerator.c)
 endif()

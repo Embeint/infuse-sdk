@@ -1,3 +1,3 @@
 # Infuse-IoT Posix specific implementations
 
-zephyr_sources_ifndef(CONFIG_INFUSE_CUSTOM_IDENTIFIERS identifiers.c)
+infuse_sources_ifndef(CONFIG_INFUSE_CUSTOM_IDENTIFIERS identifiers.c)

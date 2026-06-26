@@ -1,4 +1,4 @@
 # Infuse-IoT STM32 specific implementations
 
-zephyr_sources_ifndef(CONFIG_INFUSE_CUSTOM_IDENTIFIERS identifiers.c)
-zephyr_sources_ifdef(CONFIG_INFUSE_COMMON_BOOT_DEBUG_PORT_DISABLE dap_disable.c)
+infuse_sources_ifndef(CONFIG_INFUSE_CUSTOM_IDENTIFIERS identifiers.c)
+infuse_sources_ifdef(CONFIG_INFUSE_COMMON_BOOT_DEBUG_PORT_DISABLE dap_disable.c)

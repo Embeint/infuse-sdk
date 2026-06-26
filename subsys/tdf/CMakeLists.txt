@@ -1,8 +1,8 @@
 # TDF compilation
 
-zephyr_sources(
+infuse_sources(
   tdf.c
 )
-zephyr_sources_ifdef(CONFIG_TDF_DIFF
+infuse_sources_ifdef(CONFIG_TDF_DIFF
   diffs.c
 )

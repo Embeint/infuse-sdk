@@ -2,4 +2,4 @@
 
 zephyr_include_directories(include)
 
-zephyr_sources(secure_storage.c)
+infuse_sources(secure_storage.c)
