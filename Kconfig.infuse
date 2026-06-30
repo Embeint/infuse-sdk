@@ -39,6 +39,7 @@ endif # INFUSE_SDK
 
 rsource "kconfig/Kconfig.defaults.802154"
 rsource "kconfig/Kconfig.defaults.bluetooth"
+rsource "kconfig/Kconfig.defaults.modules"
 rsource "kconfig/Kconfig.defaults.net"
 
 if ZTEST

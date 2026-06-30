@@ -11,6 +11,8 @@ manifest:
       url-base: https://github.com/embeint
     - name: memfault
       url-base: https://github.com/memfault
+    - name: ncs
+      url-base: https://github.com/nrfconnect
 
   projects:
     - name: zephyr
@@ -44,7 +46,7 @@ manifest:
       path: bootloader/mcuboot
     - name: sdk-nrf
       path: modules/nrfconnect/sdk-nrf
-      revision: 02ebe56d8c01ffdbaaa4ca1dcc470e9327566603
+      revision: 83ef0d4927200d63a10fe4017f2ebf61a7200b93
       import: true
     - name: memfault-firmware-sdk
       path: modules/lib/memfault
