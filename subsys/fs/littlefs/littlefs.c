@@ -518,6 +518,16 @@ void infuse_littlefs_register_cb(struct infuse_littlefs_cb *cb)
 
 #ifdef CONFIG_ZTEST
 
+void infuse_littfs_format(void)
+{
+	int rc;
+
+	rc = lfs_format(&lfs_state.lfs, &lfs_cfg);
+	if (rc < 0) {
+		LOG_WRN("Failed to format filesystem (%d)", rc);
+	}
+}
+
 void infuse_littlefs_reset(void)
 {
 	sys_slist_init(&cb_list);

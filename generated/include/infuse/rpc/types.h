@@ -116,6 +116,8 @@ enum rpc_enum_file_action {
 	RPC_ENUM_FILE_ACTION_NRF91_MODEM_DIFF = 20,
 	/** File to copy to another device */
 	RPC_ENUM_FILE_ACTION_FILE_FOR_COPY = 30,
+	/** Write file to LittleFS */
+	RPC_ENUM_FILE_ACTION_WRITE_LITTLEFS = 31,
 };
 
 /** Infuse-IoT Bluetooth characteristics (Bitmask) */
@@ -543,6 +545,8 @@ enum rpc_builtin_id {
 	RPC_ID_ZPERF_UPLOAD = 31,
 	/** Download a file from a COAP server (Infuse-IoT DTLS protected) */
 	RPC_ID_COAP_DOWNLOAD_V2 = 32,
+	/** Download a file from a COAP server (Infuse-IoT DTLS protected) */
+	RPC_ID_COAP_DOWNLOAD_V3 = 33,
 	/** Write a file to the device */
 	RPC_ID_FILE_WRITE_BASIC = 40,
 	/** Write an annotation to the device */
@@ -551,6 +555,8 @@ enum rpc_builtin_id {
 	RPC_ID_TDF_DATA_LOGGER_FLUSH = 42,
 	/** Enter/Exit shipping mode on a device */
 	RPC_ID_SHIPPING_MODE = 43,
+	/** Write a file to the device */
+	RPC_ID_FILE_WRITE = 44,
 	/** Connect to an Infuse-IoT Bluetooth device */
 	RPC_ID_BT_CONNECT_INFUSE = 50,
 	/** Disconnect from a Bluetooth device */
@@ -1129,6 +1135,41 @@ struct rpc_coap_download_v2_response {
 	uint32_t resource_crc;
 } __packed;
 
+/** Download a file from a COAP server (Infuse-IoT DTLS protected) */
+struct rpc_coap_download_v3_request {
+	struct infuse_rpc_req_header header;
+	/** COAP server address (e.g. coap.dev.infuse-iot.com) */
+	char server_address[48];
+	/** COAP server port */
+	uint16_t server_port;
+	/** COAP block timeout (Default 1000ms) */
+	uint16_t block_timeout_ms;
+	/** Block size to use (1024, 512, 256, 128, 64, 32, 16, 0 == auto) */
+	uint16_t block_size;
+	/** Action to apply to downloaded file */
+	uint8_t action;
+	/** File folder (for filesystem writes) */
+	uint8_t folder;
+	/** File name (for filesystem writes) */
+	uint32_t filename;
+	/** File identifier (for filesystem writes) */
+	uint32_t identifier;
+	/** Expected resource length (UINT32_MAX if unknown) */
+	uint32_t resource_len;
+	/** Expected resource CRC (UINT32_MAX if unknown) */
+	uint32_t resource_crc;
+	/** Path to file on COAP server (e.g. files/small_file) */
+	char resource[];
+} __packed;
+
+struct rpc_coap_download_v3_response {
+	struct infuse_rpc_rsp_header header;
+	/** Length of resource downloaded */
+	uint32_t resource_len;
+	/** CRC of resource downloaded */
+	uint32_t resource_crc;
+} __packed;
+
 /** Write a file to the device */
 struct rpc_file_write_basic_request {
 	struct infuse_rpc_req_header header;
@@ -1188,6 +1229,30 @@ struct rpc_shipping_mode_response {
 	struct infuse_rpc_rsp_header header;
 	/** Expected delay to enter/exit shipping mode */
 	uint32_t expected_delay_ms;
+} __packed;
+
+/** Write a file to the device */
+struct rpc_file_write_request {
+	struct infuse_rpc_req_header header;
+	struct infuse_rpc_req_data_header data_header;
+	/** Action to apply to written file */
+	uint8_t action;
+	/** File folder (for filesystem writes) */
+	uint8_t folder;
+	/** File name (for filesystem writes) */
+	uint32_t filename;
+	/** File identifier (for filesystem writes) */
+	uint32_t identifier;
+	/** Expected file CRC */
+	uint32_t file_crc;
+} __packed;
+
+struct rpc_file_write_response {
+	struct infuse_rpc_rsp_header header;
+	/** Number of bytes received */
+	uint32_t recv_len;
+	/** CRC of bytes received */
+	uint32_t recv_crc;
 } __packed;
 
 /** Connect to an Infuse-IoT Bluetooth device */

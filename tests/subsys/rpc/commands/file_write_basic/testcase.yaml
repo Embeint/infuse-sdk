@@ -30,3 +30,28 @@ tests:
     extra_configs:
       - CONFIG_INFUSE_RPC_COMMON_FILE_ACTIONS_WRITE_BUFFER=1024
       - CONFIG_INFUSE_RPC_SERVER_WORKING_MEMORY=1024
+  # FILE_WRITE should behave the same way as FILE_WRITE_BASIC
+  # for the non-filesystem actions
+  rpc.commands.file_write_basic.fw:
+    required_snippets:
+      - infuse
+    integration_platforms:
+      - mps2/an385
+    extra_configs:
+      - CONFIG_TEST_FILE_WRITE=y
+  rpc.commands.file_write_basic.fw.native:
+    platform_allow:
+      - native_sim
+    integration_platforms:
+      - native_sim
+    extra_configs:
+      - CONFIG_TEST_FILE_WRITE=y
+  rpc.commands.file_write_basic.fw.native.littlefs:
+    platform_allow:
+      - native_sim
+    integration_platforms:
+      - native_sim
+    extra_args:
+      - DTC_OVERLAY_FILE="./littlefs.overlay;./app.overlay"
+    extra_configs:
+      - CONFIG_TEST_FILE_WRITE=y

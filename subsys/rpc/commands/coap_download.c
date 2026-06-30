@@ -49,8 +49,8 @@ static int data_cb(uint32_t offset, const uint8_t *data, uint16_t data_len, void
 	return rc;
 }
 
-int rpc_command_coap_download_run(struct rpc_coap_download_v2_request *req, char *resource,
-				  struct rpc_coap_download_v2_response *rsp, int *downloaded,
+int rpc_command_coap_download_run(struct rpc_coap_download_v3_request *req, char *resource,
+				  struct rpc_coap_download_v3_response *rsp, int *downloaded,
 				  bool *dfu_reboot)
 {
 	const sec_tag_t sec_tls_tags[] = {
@@ -59,6 +59,7 @@ int rpc_command_coap_download_run(struct rpc_coap_download_v2_request *req, char
 	struct rpc_common_file_actions_ctx ctx;
 	int block_timeout = req->block_timeout_ms == 0 ? 1000 : req->block_timeout_ms;
 	size_t file_size = req->resource_len == UINT32_MAX ? 0 : req->resource_len;
+	enum infuse_littlefs_folder fs_folder;
 	struct net_sockaddr address;
 	net_socklen_t address_len;
 	uint8_t *work_mem;
@@ -66,10 +67,19 @@ int rpc_command_coap_download_run(struct rpc_coap_download_v2_request *req, char
 	int sock = -1;
 	int rc;
 
+	if ((req->action == RPC_ENUM_FILE_ACTION_WRITE_LITTLEFS) &&
+	    (req->header.command_id != RPC_ID_COAP_DOWNLOAD_V3)) {
+		LOG_ERR("RPC %d does not support WRITE_LITTLEFS", req->action);
+		rc = -EINVAL;
+		goto error_no_cleanup;
+	}
+
 	work_mem = rpc_server_command_working_mem(&work_mem_size);
+	fs_folder = rpc_common_file_actions_folder_from_action(req->action, req->folder);
 
 	*downloaded = 0;
-	rc = rpc_common_file_actions_start(&ctx, req->action, req->resource_len, req->resource_crc);
+	rc = rpc_common_file_actions_start(&ctx, req->action, req->resource_len, req->resource_crc,
+					   fs_folder, req->filename, req->identifier);
 	if (rc == FILE_ALREADY_PRESENT) {
 		LOG_INF("File already present");
 		goto download_done;
@@ -158,13 +168,14 @@ error:
 		zsock_close(sock);
 	}
 
+error_no_cleanup:
 	rsp->resource_len = 0;
 	rsp->resource_crc = 0;
 	return rc;
 }
 
 static struct net_buf *rpc_command_coap_handle_response(struct net_buf *request,
-							struct rpc_coap_download_v2_response *rsp,
+							struct rpc_coap_download_v3_response *rsp,
 							int rc, uint8_t action, bool dfu_reboot)
 {
 	const struct infuse_rpc_req_header *req_header = (const void *)request->data;
@@ -198,34 +209,39 @@ static struct net_buf *rpc_command_coap_handle_response(struct net_buf *request,
 /* Responses are equivalent */
 BUILD_ASSERT(sizeof(struct rpc_coap_download_response) ==
 	     sizeof(struct rpc_coap_download_v2_response));
+BUILD_ASSERT(sizeof(struct rpc_coap_download_v2_response) ==
+	     sizeof(struct rpc_coap_download_v3_response));
 
 #ifdef CONFIG_INFUSE_RPC_COMMAND_COAP_DOWNLOAD
 struct net_buf *rpc_command_coap_download(struct net_buf *request)
 {
 	struct rpc_coap_download_request *req = (void *)request->data;
-	struct rpc_coap_download_v2_response rsp = {0};
+	struct rpc_coap_download_v3_response rsp = {0};
 	bool dfu_reboot = false;
 	int downloaded;
 	int rc;
 
 	/* Copy legacy request over to new format (with auto block size) */
-	struct rpc_coap_download_v2_request req_v2 = {
+	struct rpc_coap_download_v3_request req_v3 = {
 		.header = req->header,
 		.server_port = req->server_port,
 		.block_timeout_ms = req->block_timeout_ms,
 		.block_size = 0,
 		.action = req->action,
+		.folder = 0,
+		.filename = 0,
+		.identifier = 0,
 		.resource_len = req->resource_len,
 		.resource_crc = req->resource_crc,
 	};
 
-	memcpy(req_v2.server_address, req->server_address, sizeof(req_v2.server_address));
+	memcpy(req_v3.server_address, req->server_address, sizeof(req_v3.server_address));
 
 	/* Run the command */
-	rc = rpc_command_coap_download_run(&req_v2, req->resource, &rsp, &downloaded, &dfu_reboot);
+	rc = rpc_command_coap_download_run(&req_v3, req->resource, &rsp, &downloaded, &dfu_reboot);
 
 	/* Handle the response */
-	return rpc_command_coap_handle_response(request, &rsp, rc, req_v2.action, dfu_reboot);
+	return rpc_command_coap_handle_response(request, &rsp, rc, req_v3.action, dfu_reboot);
 }
 #endif /* CONFIG_INFUSE_RPC_COMMAND_COAP_DOWNLOAD */
 
@@ -233,7 +249,40 @@ struct net_buf *rpc_command_coap_download(struct net_buf *request)
 struct net_buf *rpc_command_coap_download_v2(struct net_buf *request)
 {
 	struct rpc_coap_download_v2_request *req = (void *)request->data;
-	struct rpc_coap_download_v2_response rsp = {0};
+	struct rpc_coap_download_v3_response rsp = {0};
+	bool dfu_reboot = false;
+	int downloaded;
+	int rc;
+
+	/* Copy request over to V3 format */
+	struct rpc_coap_download_v3_request req_v3 = {
+		.header = req->header,
+		.server_port = req->server_port,
+		.block_timeout_ms = req->block_timeout_ms,
+		.block_size = req->block_size,
+		.action = req->action,
+		.folder = 0,
+		.filename = 0,
+		.identifier = 0,
+		.resource_len = req->resource_len,
+		.resource_crc = req->resource_crc,
+	};
+
+	memcpy(req_v3.server_address, req->server_address, sizeof(req_v3.server_address));
+
+	/* Run the command */
+	rc = rpc_command_coap_download_run(&req_v3, req->resource, &rsp, &downloaded, &dfu_reboot);
+
+	/* Handle the response */
+	return rpc_command_coap_handle_response(request, &rsp, rc, req_v3.action, dfu_reboot);
+}
+#endif /* CONFIG_INFUSE_RPC_COMMAND_COAP_DOWNLOAD_V2 */
+
+#ifdef CONFIG_INFUSE_RPC_COMMAND_COAP_DOWNLOAD_V3
+struct net_buf *rpc_command_coap_download_v3(struct net_buf *request)
+{
+	struct rpc_coap_download_v3_request *req = (void *)request->data;
+	struct rpc_coap_download_v3_response rsp = {0};
 	bool dfu_reboot = false;
 	int downloaded;
 	int rc;

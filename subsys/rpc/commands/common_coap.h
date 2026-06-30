@@ -9,6 +9,6 @@
 #include <infuse/rpc/types.h>
 
 /* Implementation of COAP_DOWNLOAD */
-int rpc_command_coap_download_run(struct rpc_coap_download_v2_request *req, char *resource,
-				  struct rpc_coap_download_v2_response *rsp, int *downloaded,
+int rpc_command_coap_download_run(struct rpc_coap_download_v3_request *req, char *resource,
+				  struct rpc_coap_download_v3_response *rsp, int *downloaded,
 				  bool *dfu_reboot);

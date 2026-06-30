@@ -101,8 +101,13 @@ static struct test_out test_file_write_basic(uint8_t action, uint32_t total_send
 	const struct device *epacket_dummy = DEVICE_DT_GET(DT_NODELABEL(epacket_dummy));
 	struct k_fifo *tx_fifo = epacket_dummmy_transmit_fifo_get();
 	struct epacket_dummy_frame *tx_header, header = {0};
+#ifdef CONFIG_TEST_FILE_WRITE
+	struct rpc_file_write_request *req;
+	struct rpc_file_write_response *rsp;
+#else
 	struct rpc_file_write_basic_request *req;
 	struct rpc_file_write_basic_response *rsp;
+#endif /* CONFIG_TEST_FILE_WRITE */
 	struct infuse_rpc_data_ack *data_ack;
 	struct infuse_rpc_data *data_hdr;
 	uint8_t payload[sizeof(struct infuse_rpc_data) + 64] = {0};
@@ -126,14 +131,21 @@ static struct test_out test_file_write_basic(uint8_t action, uint32_t total_send
 	/* Send the initiating command */
 	header.type = INFUSE_RPC_CMD;
 	header.auth = EPACKET_AUTH_NETWORK;
-	req->header.command_id = RPC_ID_FILE_WRITE_BASIC;
 	req->header.request_id = request_id;
 	req->data_header.size = send_remaining;
 	req->data_header.rx_ack_period = ack_period;
 	req->action = action;
 	req->file_crc = crc;
-	epacket_dummy_receive(epacket_dummy, &header, payload,
-			      sizeof(struct rpc_file_write_basic_request));
+#ifdef CONFIG_TEST_FILE_WRITE
+	req->header.command_id = RPC_ID_FILE_WRITE;
+	req->folder = 0;
+	req->filename = 0;
+	req->identifier = 0;
+#else
+	req->header.command_id = RPC_ID_FILE_WRITE_BASIC;
+#endif /* CONFIG_TEST_FILE_WRITE */
+
+	epacket_dummy_receive(epacket_dummy, &header, payload, sizeof(*req));
 
 	if (expect_skip) {
 		goto write_skip;
@@ -231,7 +243,11 @@ early_rsp:
 	zassert_equal(INFUSE_RPC_RSP, tx_header->type);
 	zassert_equal(EPACKET_AUTH_NETWORK, tx_header->auth);
 	zassert_equal(request_id, rsp->header.request_id);
+#ifdef CONFIG_TEST_FILE_WRITE
+	zassert_equal(RPC_ID_FILE_WRITE, rsp->header.command_id);
+#else
 	zassert_equal(RPC_ID_FILE_WRITE_BASIC, rsp->header.command_id);
+#endif /* CONFIG_TEST_FILE_WRITE */
 
 	struct test_out ret = {
 		.cmd_rc = rsp->header.return_code,
@@ -299,6 +315,21 @@ ZTEST(rpc_command_file_write_basic, test_invalid_action)
 		net_buf_unref(tx);
 		req.header.request_id += 1;
 	}
+
+#if !defined(CONFIG_TEST_FILE_WRITE)
+	req.action = RPC_ENUM_FILE_ACTION_WRITE_LITTLEFS;
+
+	epacket_dummy_receive(epacket_dummy, &hdr, &req, sizeof(req));
+
+	/* Wait for the invalid response */
+	tx = k_fifo_get(tx_fifo, K_MSEC(1000));
+	zassert_not_null(tx);
+	tx_header = (void *)tx->data;
+	rsp = (void *)(tx->data + sizeof(*tx_header));
+
+	zassert_equal(INFUSE_RPC_RSP, tx_header->type);
+	zassert_equal(-EINVAL, rsp->header.return_code);
+#endif /* !defined(CONFIG_TEST_FILE_WRITE) */
 }
 
 ZTEST(rpc_command_file_write_basic, test_file_write_sizes)

@@ -114,6 +114,11 @@ void infuse_littlefs_register_cb(struct infuse_littlefs_cb *cb);
 #ifdef CONFIG_ZTEST
 
 /**
+ * @brief Format backing memory
+ */
+void infuse_littfs_format(void);
+
+/**
  * @brief Reset internal state
  */
 void infuse_littlefs_reset(void);

@@ -22,6 +22,7 @@
 #include <infuse/epacket/packet.h>
 #include <infuse/epacket/interface/epacket_dummy.h>
 #include <infuse/time/epoch.h>
+#include <infuse/fs/littlefs.h>
 
 struct rpc_coap_download_request_send {
 	struct rpc_coap_download_request core;
@@ -30,6 +31,11 @@ struct rpc_coap_download_request_send {
 
 struct rpc_coap_download_request_v2_send {
 	struct rpc_coap_download_v2_request core;
+	char resource[128];
+} __packed;
+
+struct rpc_coap_download_request_v3_send {
+	struct rpc_coap_download_v3_request core;
 	char resource[128];
 } __packed;
 
@@ -134,6 +140,43 @@ static void send_download_v2_command(uint32_t request_id, const char *server, ui
 			.block_timeout_ms = timeout,
 			.block_size = block_size,
 			.action = action,
+			.resource_crc = crc,
+			.resource_len = len,
+		}};
+
+	strncpy(params.core.server_address, server, sizeof(params.core.server_address));
+	params.core.server_port = port;
+	strncpy(params.resource, resource, sizeof(params.resource));
+
+	/* Push command at RPC server */
+	epacket_dummy_receive(epacket_dummy, &header, &params, sizeof(params));
+}
+
+static void send_download_v3_command(uint32_t request_id, const char *server, uint16_t port,
+				     uint16_t timeout, uint8_t action, uint8_t folder,
+				     uint32_t filename, uint32_t identifier, char *resource,
+				     uint32_t len, uint32_t crc, uint16_t block_size)
+{
+	const struct device *epacket_dummy = DEVICE_DT_GET(DT_NODELABEL(epacket_dummy));
+	struct epacket_dummy_frame header = {
+		.type = INFUSE_RPC_CMD,
+		.auth = EPACKET_AUTH_DEVICE,
+		.flags = 0x0000,
+	};
+	struct rpc_coap_download_request_v3_send params = {
+		.core = {
+			.header =
+				{
+					.request_id = request_id,
+					.command_id = RPC_ID_COAP_DOWNLOAD_V3,
+				},
+			.server_port = port,
+			.block_timeout_ms = timeout,
+			.block_size = block_size,
+			.action = action,
+			.folder = folder,
+			.filename = filename,
+			.identifier = identifier,
 			.resource_crc = crc,
 			.resource_len = len,
 		}};
@@ -297,6 +340,116 @@ ZTEST(rpc_command_coap_download, test_download_v2)
 	expect_coap_download_response(50, 0, 10030, 0x9919d24e);
 }
 
+ZTEST(rpc_command_coap_download, test_download_v3)
+{
+	struct infuse_littlefs_metadata meta;
+	int rc;
+
+	/* Basic discard download */
+	send_download_v3_command(200, "coap.dev.infuse-iot.com", 5684, 0,
+				 RPC_ENUM_FILE_ACTION_DISCARD, 0, 0, 0, "file/small_file",
+				 UINT32_MAX, UINT32_MAX, 0);
+	expect_coap_download_response(200, 0, 12, 0xb5289bef);
+
+	/* Larger discard download */
+	send_download_v3_command(201, "coap.dev.infuse-iot.com", 5684, 0,
+				 RPC_ENUM_FILE_ACTION_DISCARD, 0, 0, 0, "file/med_file", UINT32_MAX,
+				 UINT32_MAX, 1024);
+	expect_coap_download_response(201, 0, 10030, 0x9919d24e);
+
+	/* Write an algorithm */
+	send_download_v3_command(202, "coap.dev.infuse-iot.com", 5684, 0,
+				 RPC_ENUM_FILE_ACTION_WRITE_LITTLEFS, INFUSE_LFS_FOLDER_ALGORITHMS,
+				 0, 1000, "file/small_file", 12, 0xb5289bef, 512);
+	expect_coap_download_response(202, 0, 12, 0xb5289bef);
+	rc = infuse_littlefs_file_size(INFUSE_LFS_FOLDER_ALGORITHMS, 0);
+	zassert_equal(12, rc);
+	rc = infuse_littlefs_file_metadata(INFUSE_LFS_FOLDER_ALGORITHMS, 0, &meta);
+	zassert_equal(0, rc);
+	zassert_equal(1000, meta.identifier);
+	zassert_equal(0xb5289bef, meta.crc);
+
+	/* Same algorithm again doesn't download data */
+	send_download_v3_command(203, "coap.dev.infuse-iot.com", 5684, 0,
+				 RPC_ENUM_FILE_ACTION_WRITE_LITTLEFS, INFUSE_LFS_FOLDER_ALGORITHMS,
+				 0, 1000, "file/small_file", 12, 0xb5289bef, 512);
+	expect_coap_download_response(203, 0, 0, 0xb5289bef);
+	rc = infuse_littlefs_file_size(INFUSE_LFS_FOLDER_ALGORITHMS, 0);
+	zassert_equal(12, rc);
+	rc = infuse_littlefs_file_metadata(INFUSE_LFS_FOLDER_ALGORITHMS, 0, &meta);
+	zassert_equal(0, rc);
+	zassert_equal(1000, meta.identifier);
+	zassert_equal(0xb5289bef, meta.crc);
+
+	/* Different algorithm to same slot overwrites */
+	send_download_v3_command(204, "coap.dev.infuse-iot.com", 5684, 0,
+				 RPC_ENUM_FILE_ACTION_WRITE_LITTLEFS, INFUSE_LFS_FOLDER_ALGORITHMS,
+				 0, 1001, "file/med_file", 10030, 0x9919d24e, 1024);
+	expect_coap_download_response(204, 0, 10030, 0x9919d24e);
+	rc = infuse_littlefs_file_size(INFUSE_LFS_FOLDER_ALGORITHMS, 0);
+	zassert_equal(10030, rc);
+	rc = infuse_littlefs_file_metadata(INFUSE_LFS_FOLDER_ALGORITHMS, 0, &meta);
+	zassert_equal(0, rc);
+	zassert_equal(1001, meta.identifier);
+	zassert_equal(0x9919d24e, meta.crc);
+
+	/* Different algorithm */
+	send_download_v3_command(205, "coap.dev.infuse-iot.com", 5684, 0,
+				 RPC_ENUM_FILE_ACTION_WRITE_LITTLEFS, INFUSE_LFS_FOLDER_ALGORITHMS,
+				 5, 0x200, "file/small_file", 12, 0xb5289bef, 0);
+	expect_coap_download_response(205, 0, 12, 0xb5289bef);
+	rc = infuse_littlefs_file_size(INFUSE_LFS_FOLDER_ALGORITHMS, 5);
+	zassert_equal(12, rc);
+	rc = infuse_littlefs_file_metadata(INFUSE_LFS_FOLDER_ALGORITHMS, 5, &meta);
+	zassert_equal(0, rc);
+	zassert_equal(0x200, meta.identifier);
+	zassert_equal(0xb5289bef, meta.crc);
+
+	/* Non-algorithm folder */
+	send_download_v3_command(206, "coap.dev.infuse-iot.com", 5684, 0,
+				 RPC_ENUM_FILE_ACTION_WRITE_LITTLEFS, INFUSE_LFS_FOLDER_COPY, 100,
+				 0x201, "file/small_file", 12, 0xb5289bef, 0);
+	expect_coap_download_response(206, 0, 12, 0xb5289bef);
+	rc = infuse_littlefs_file_size(INFUSE_LFS_FOLDER_COPY, 100);
+	zassert_equal(12, rc);
+	rc = infuse_littlefs_file_metadata(INFUSE_LFS_FOLDER_COPY, 100, &meta);
+	zassert_equal(0, rc);
+	zassert_equal(0x201, meta.identifier);
+	zassert_equal(0xb5289bef, meta.crc);
+}
+
+ZTEST(rpc_command_coap_download, test_download_v3_error_cleanup)
+{
+	struct infuse_littlefs_metadata meta;
+	int rc;
+
+	/* Download request that will immediately timeout, file should be closed, but not deleted */
+	send_download_v3_command(20, "coap.dev.infuse-iot.com", 5684, 1,
+				 RPC_ENUM_FILE_ACTION_WRITE_LITTLEFS, INFUSE_LFS_FOLDER_ALGORITHMS,
+				 0, 1001, "file/med_file", 10030, 0x9919d24e, 1024);
+	expect_coap_download_response(20, -ETIMEDOUT, 0, 0);
+	rc = infuse_littlefs_file_size(INFUSE_LFS_FOLDER_ALGORITHMS, 0);
+	zassert_equal(0, rc);
+	rc = infuse_littlefs_file_metadata(INFUSE_LFS_FOLDER_ALGORITHMS, 0, &meta);
+	zassert_equal(0, rc);
+	zassert_equal(1001, meta.identifier);
+	zassert_equal(0, meta.crc);
+}
+
+ZTEST(rpc_command_coap_download, test_download_littlefs_reject)
+{
+	/* ACTION_WRITE_LITTLEFS should be rejected for legacy RPCs */
+	send_download_command(99, "coap.dev.infuse-iot.com", 5684, 0,
+			      RPC_ENUM_FILE_ACTION_WRITE_LITTLEFS, "file/small_file", UINT32_MAX,
+			      UINT32_MAX);
+	expect_coap_download_response(99, -EINVAL, 0, 0);
+
+	send_download_v2_command(100, "coap.dev.infuse-iot.com", 5684, 0,
+				 RPC_ENUM_FILE_ACTION_WRITE_LITTLEFS, "file/small_file", UINT32_MAX,
+				 UINT32_MAX, 0);
+	expect_coap_download_response(100, -EINVAL, 0, 0);
+}
+
 ZTEST(rpc_command_coap_download, test_download_bt_ctlr)
 {
 #ifdef CONFIG_TEST_NATIVE_MOCK
@@ -383,4 +536,10 @@ ZTEST(rpc_command_coap_download, test_download_cpatch)
 	zassert_equal(0, infuse_dfu_write_erase_call_count());
 }
 
-ZTEST_SUITE(rpc_command_coap_download, NULL, NULL, NULL, NULL, NULL);
+void coap_download_setup(void *ctx)
+{
+	(void)infuse_littfs_format();
+	(void)infuse_littlefs_init();
+}
+
+ZTEST_SUITE(rpc_command_coap_download, NULL, NULL, coap_download_setup, NULL, NULL);

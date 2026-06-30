@@ -1,6 +1,5 @@
 / {
 	chosen {
-		infuse,kv-partition = &storage_partition;
 		infuse,littlefs-partition = &littlefs_partition;
 	};
 
@@ -11,13 +10,9 @@
 
 &flash0 {
 	partitions {
-		file_partition: partition@100000 {
-			label = "file";
-			reg = < 0x100000 0x4000 >;
-		};
-		littlefs_partition: partition@104000 {
+		littlefs_partition: partition@100000 {
 			label = "littlefs";
-			reg = < 0x104000 0x20000 >;
+			reg = < 0x100000 0x20000 >;
 		};
 	};
 };
