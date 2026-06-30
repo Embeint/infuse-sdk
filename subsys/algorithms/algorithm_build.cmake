@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: FSL-1.1-ALv2
 
 file(GLOB PROFILE_FILES "${CMAKE_CURRENT_LIST_DIR}/profiles/profile_*.cmake")
+set(ALGORITHM_BUILD_DIR "${CMAKE_CURRENT_LIST_DIR}")
 
 # Determine the target name for any application
 function(algorithm_target_name_core
@@ -100,11 +101,16 @@ function(algorithm_generate_targets
           ${llext_file}
           ${stripped_file}
         # Convert object file to a hex list that can be included into a C array
-        COMMAND ${PYTHON_EXECUTABLE} ${ZEPHYR_BASE}/scripts/build/file2hex.py
-          --file ${stripped_file} > ${inc_file}
+        COMMAND ${CMAKE_COMMAND}
+          -DPYTHON_EXECUTABLE=${PYTHON_EXECUTABLE}
+          -DFILE2HEX_SCRIPT=${ZEPHYR_BASE}/scripts/build/file2hex.py
+          -DINPUT_FILE=${stripped_file}
+          -DOUTPUT_FILE=${inc_file}
+          -P ${ALGORITHM_BUILD_DIR}/file2hex.cmake
         DEPENDS
           ${obj_target}
         COMMAND_EXPAND_LISTS
+        VERBATIM
         COMMENT "Generating ${ALG_NAME} for configuration ${PROFILE_NAME}-${FP_MODE}"
       )
       add_custom_target(${target_name} ALL DEPENDS ${stripped_file})
