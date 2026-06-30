@@ -1,0 +1,7 @@
+# SPDX-License-Identifier: FSL-1.1-ALv2
+
+execute_process(
+  COMMAND ${PYTHON_EXECUTABLE} ${FILE2HEX_SCRIPT} --file ${INPUT_FILE}
+  OUTPUT_FILE ${OUTPUT_FILE}
+  COMMAND_ERROR_IS_FATAL ANY
+)
