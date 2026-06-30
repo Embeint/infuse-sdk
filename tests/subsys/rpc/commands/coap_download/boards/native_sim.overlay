@@ -1,6 +1,7 @@
 / {
 	chosen {
 		infuse,kv-partition = &storage_partition;
+		infuse,littlefs-partition = &littlefs_partition;
 	};
 
 	epacket_dummy: epacket_dummy {
@@ -13,6 +14,10 @@
 		file_partition: partition@100000 {
 			label = "file";
 			reg = < 0x100000 0x4000 >;
+		};
+		littlefs_partition: partition@104000 {
+			label = "littlefs";
+			reg = < 0x104000 0x20000 >;
 		};
 	};
 };
