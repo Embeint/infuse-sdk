@@ -64,58 +64,50 @@ function(algorithm_generate_targets
     # Import the CFLAGS and variants from the profile
     include("${PROFILE_FILE}")
 
-    # Include Directories
-    list(APPEND CFLAGS "-I${INFUSE_SDK_BASE}/include")
-    list(APPEND CFLAGS "-I${INFUSE_SDK_BASE}/generated/include")
-    list(APPEND CFLAGS "-I${ZEPHYR_BASE}/include")
-    foreach(INC_FOLDER IN LISTS INC_FOLDERS)
-      list(APPEND CFLAGS "-I${INC_FOLDER}")
-    endforeach()
-
     # Build the algorithm for each supported floating-point mode
     foreach(FP_MODE IN LISTS PROFILE_FP_MODES)
       algorithm_target_name_core(${ALG_NAME} ${PROFILE_NAME} ${FP_MODE} target_name)
       algorithm_target_dir_core(${PROFILE_NAME} ${FP_MODE} ${OUTPUT_BASE} target_folder)
-      make_directory(${target_folder})
+      set(llext_file ${target_folder}/${ALG_NAME}.llext)
+      set(stripped_file ${target_folder}/${ALG_NAME}.llext.stripped)
+      set(inc_file ${target_folder}/${ALG_NAME}.inc)
 
-      # Prepare object file list and compile commands for each source file
-      set(OBJ_FILES)
-      set(COMPILE_COMMANDS)
-
-      foreach(SRC IN LISTS SRC_FILES)
-        get_filename_component(SRC_NAME ${SRC} NAME_WE)
-        set(OBJ ${target_folder}/${SRC_NAME}.o)
-        list(APPEND OBJ_FILES ${OBJ})
-        list(APPEND COMPILE_COMMANDS
-          COMMAND ${CMAKE_C_COMPILER} ${CFLAGS} "-mfloat-abi=${FP_MODE}" -c ${SRC} -o ${OBJ}
-        )
-      endforeach()
-
-      # Link all object files into a single relocatable object
-      list(APPEND COMPILE_COMMANDS
-        COMMAND ${CMAKE_LINKER} -r ${OBJ_FILES} -o ${target_folder}/${ALG_NAME}.llext
+      set(obj_target ${target_name}_objects)
+      add_library(${obj_target} OBJECT ${SRC_FILES})
+      target_compile_options(${obj_target} PRIVATE
+        ${CFLAGS}
+        "-mfloat-abi=${FP_MODE}"
+      )
+      target_include_directories(${obj_target} PRIVATE
+        ${INFUSE_SDK_BASE}/include
+        ${INFUSE_SDK_BASE}/generated/include
+        ${ZEPHYR_BASE}/include
+        ${INC_FOLDERS}
       )
 
+      # Link all object files into a single relocatable object
       add_custom_command(
         OUTPUT
-          ${target_folder}/${ALG_NAME}.llext.stripped
-          ${target_folder}/${ALG_NAME}.llext
-          ${target_folder}/${ALG_NAME}.inc
-        ${COMPILE_COMMANDS}
+          ${stripped_file}
+          ${llext_file}
+          ${inc_file}
+        COMMAND ${CMAKE_COMMAND} -E make_directory ${target_folder}
+        COMMAND ${CMAKE_LINKER} -r $<TARGET_OBJECTS:${obj_target}> -o ${llext_file}
         # Strip unneeded sections from the object file
         COMMAND ${CMAKE_OBJCOPY} --strip-unneeded
           --remove-section .comment
           --remove-section .ARM.attributes
-          ${target_folder}/${ALG_NAME}.llext
-          ${target_folder}/${ALG_NAME}.llext.stripped
+          ${llext_file}
+          ${stripped_file}
         # Convert object file to a hex list that can be included into a C array
         COMMAND ${PYTHON_EXECUTABLE} ${ZEPHYR_BASE}/scripts/build/file2hex.py
-          --file ${target_folder}/${ALG_NAME}.llext.stripped > ${target_folder}/${ALG_NAME}.inc
+          --file ${stripped_file} > ${inc_file}
         DEPENDS
-          ${SRC_FILES}
+          ${obj_target}
+        COMMAND_EXPAND_LISTS
         COMMENT "Generating ${ALG_NAME} for configuration ${PROFILE_NAME}-${FP_MODE}"
       )
-      add_custom_target(${target_name} ALL DEPENDS ${target_folder}/${ALG_NAME}.llext.stripped)
+      add_custom_target(${target_name} ALL DEPENDS ${stripped_file})
     endforeach()
   endforeach()
 endfunction()
