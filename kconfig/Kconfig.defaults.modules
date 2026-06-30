@@ -1,0 +1,19 @@
+# Infuse-IoT SDK module Kconfig fixups
+
+# Upstream symbols depends on NEWLIB_LIBC
+# Duplicate here to also accept PICOLIBC until upstream does
+menuconfig NRF_EDGEAI
+	bool "nRF Edge AI Library"
+	depends on FPU
+	depends on PICOLIBC
+
+if NRF_EDGEAI
+
+config NRF_EDGEAI_COMPLIANCE_SUPPRESS
+	bool
+	help
+	  Symbol exists only to suppress compliance warnings about
+	  pointless `menuconfig` above. Remove when upstream supports
+	  PICOLIBC.
+
+endif
