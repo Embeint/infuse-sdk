@@ -54,10 +54,21 @@ endfunction()
 # Generate targets to build a given algorithm for all application configurations
 function(algorithm_generate_targets
     ALG_NAME          # Name of the algorithm
-    SRC_FILES         # Source files that implement the algorithm
-    INC_FOLDERS       # Extra include folders for the algorithm
-    OUTPUT_BASE       # Base folder that algortithms are built into
     )
+
+  cmake_parse_arguments(ARG
+    ""
+    "OUTPUT_BASE"
+    "SOURCES;INCLUDES"
+    ${ARGN}
+  )
+
+  if(NOT ARG_OUTPUT_BASE)
+    message(FATAL_ERROR "algorithm_generate_targets requires OUTPUT_BASE")
+  endif()
+  if(NOT ARG_SOURCES)
+    message(FATAL_ERROR "algorithm_generate_targets requires SOURCES")
+  endif()
 
   foreach(PROFILE_FILE IN LISTS PROFILE_FILES)
     message(DEBUG "Profile file: ${PROFILE_FILE}")
@@ -68,13 +79,13 @@ function(algorithm_generate_targets
     # Build the algorithm for each supported floating-point mode
     foreach(FP_MODE IN LISTS PROFILE_FP_MODES)
       algorithm_target_name_core(${ALG_NAME} ${PROFILE_NAME} ${FP_MODE} target_name)
-      algorithm_target_dir_core(${PROFILE_NAME} ${FP_MODE} ${OUTPUT_BASE} target_folder)
+      algorithm_target_dir_core(${PROFILE_NAME} ${FP_MODE} ${ARG_OUTPUT_BASE} target_folder)
       set(llext_file ${target_folder}/${ALG_NAME}.llext)
       set(stripped_file ${target_folder}/${ALG_NAME}.llext.stripped)
       set(inc_file ${target_folder}/${ALG_NAME}.inc)
 
       set(obj_target ${target_name}_objects)
-      add_library(${obj_target} OBJECT ${SRC_FILES})
+      add_library(${obj_target} OBJECT ${ARG_SOURCES})
       target_compile_options(${obj_target} PRIVATE
         ${CFLAGS}
         "-mfloat-abi=${FP_MODE}"
@@ -83,7 +94,7 @@ function(algorithm_generate_targets
         ${INFUSE_SDK_BASE}/include
         ${INFUSE_SDK_BASE}/generated/include
         ${ZEPHYR_BASE}/include
-        ${INC_FOLDERS}
+        ${ARG_INCLUDES}
       )
 
       # Link all object files into a single relocatable object

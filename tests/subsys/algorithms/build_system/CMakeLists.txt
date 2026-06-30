@@ -19,8 +19,11 @@ if(CONFIG_TEST_ALGORITHM_BUILD_LLEXT)
   include(${INFUSE_SDK_BASE}/subsys/algorithms/algorithm_build.cmake)
   set(algorithm_name test_algorithm)
   set(algorithm_base_dir "${PROJECT_BINARY_DIR}/llext")
-  # Leave source and includes within quotes to prevent unpacking lists.
-  algorithm_generate_targets(${algorithm_name} "${algorithm_src}" "${algorithm_inc}" ${algorithm_base_dir})
+  algorithm_generate_targets(${algorithm_name}
+    SOURCES ${algorithm_src}
+    INCLUDES ${algorithm_inc}
+    OUTPUT_BASE ${algorithm_base_dir}
+  )
   # Add algorithm as application dependency
   algorithm_target_name(${algorithm_name} algorithm_target)
   add_dependencies(app ${algorithm_target})
