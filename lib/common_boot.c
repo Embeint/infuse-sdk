@@ -27,6 +27,10 @@
 #include <modem/nrf_modem_lib.h>
 #endif
 
+#ifdef CONFIG_KV_STORE_KEY_NRF_EDGE_AI_RUNTIME_VERSION
+#include <nrf_edgeai/nrf_edgeai.h>
+#endif
+
 int infuse_board_public_bt_addr(bt_addr_le_t *addr);
 
 LOG_MODULE_REGISTER(infuse, CONFIG_INFUSE_COMMON_LOG_LEVEL);
@@ -240,6 +244,17 @@ static int infuse_common_boot(void)
 #endif /* CONFIG_INFUSE_COMMON_BOOT_PER_DEVICE_NAME */
 
 #endif /* CONFIG_KV_STORE_KEY_INFUSE_APPLICATION_ID */
+
+#ifdef CONFIG_KV_STORE_KEY_NRF_EDGE_AI_RUNTIME_VERSION
+	nrf_edgeai_rt_version_t edgeai_version = nrf_edgeai_runtime_version();
+	struct kv_nrf_edge_ai_runtime_version kv_edgeai_version = {
+		.major = edgeai_version.field.major,
+		.minor = edgeai_version.field.minor,
+		.patch = edgeai_version.field.patch,
+	};
+
+	(void)KV_STORE_WRITE(KV_KEY_NRF_EDGE_AI_RUNTIME_VERSION, &kv_edgeai_version);
+#endif /* CONFIG_KV_STORE_KEY_NRF_EDGE_AI_RUNTIME_VERSION */
 
 	KV_KEY_TYPE(KV_KEY_REBOOTS) reboot_fallback = {0};
 

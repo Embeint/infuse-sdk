@@ -463,6 +463,16 @@ struct kv_gateway_bluetooth_forward_options {
 	uint8_t percent;
 } __packed;
 
+/** Version of the nRF Edge AI runtime */
+struct kv_nrf_edge_ai_runtime_version {
+	/** Major version */
+	uint8_t major;
+	/** Minor version */
+	uint8_t minor;
+	/** Patch version */
+	uint16_t patch;
+} __packed;
+
 /** Reference gravity vector for tilt calculations */
 struct kv_gravity_reference {
 	/** X axis component of gravity vector */
@@ -648,6 +658,8 @@ enum kv_builtin_id {
 	KV_KEY_MEMFAULT_DISABLE = 54,
 	/** Forwarding configuration for Bluetooth advertising packets */
 	KV_KEY_GATEWAY_BLUETOOTH_FORWARD_OPTIONS = 55,
+	/** Version of the nRF Edge AI runtime */
+	KV_KEY_NRF_EDGE_AI_RUNTIME_VERSION = 56,
 	/** Reference gravity vector for tilt calculations */
 	KV_KEY_GRAVITY_REFERENCE = 60,
 	/** Array of points defining a closed polygon */
@@ -713,6 +725,7 @@ enum kv_builtin_size {
 	_KV_KEY_MEMFAULT_DISABLE_SIZE = sizeof(struct kv_memfault_disable),
 	_KV_KEY_GATEWAY_BLUETOOTH_FORWARD_OPTIONS_SIZE =
 		sizeof(struct kv_gateway_bluetooth_forward_options),
+	_KV_KEY_NRF_EDGE_AI_RUNTIME_VERSION_SIZE = sizeof(struct kv_nrf_edge_ai_runtime_version),
 	_KV_KEY_GRAVITY_REFERENCE_SIZE = sizeof(struct kv_gravity_reference),
 	_KV_KEY_ALG_STATIONARY_WINDOWED_ARGS_SIZE = sizeof(struct kv_alg_stationary_windowed_args),
 	_KV_KEY_ALG_TILT_ARGS_SIZE = sizeof(struct kv_alg_tilt_args),
@@ -757,6 +770,7 @@ enum kv_builtin_size {
 #define _KV_KEY_LED_DISABLE_DAILY_TIME_RANGE_TYPE struct kv_led_disable_daily_time_range
 #define _KV_KEY_MEMFAULT_DISABLE_TYPE struct kv_memfault_disable
 #define _KV_KEY_GATEWAY_BLUETOOTH_FORWARD_OPTIONS_TYPE struct kv_gateway_bluetooth_forward_options
+#define _KV_KEY_NRF_EDGE_AI_RUNTIME_VERSION_TYPE struct kv_nrf_edge_ai_runtime_version
 #define _KV_KEY_GRAVITY_REFERENCE_TYPE struct kv_gravity_reference
 #define _KV_KEY_GEOFENCE_TYPE struct kv_geofence
 #define _KV_KEY_ALG_STATIONARY_WINDOWED_ARGS_TYPE struct kv_alg_stationary_windowed_args
@@ -828,6 +842,8 @@ enum kv_builtin_size {
 	IF_ENABLED(CONFIG_KV_STORE_KEY_LED_DISABLE_DAILY_TIME_RANGE, \
 		   (1 +)) \
 	IF_ENABLED(CONFIG_KV_STORE_KEY_GATEWAY_BLUETOOTH_FORWARD_OPTIONS, \
+		   (1 +)) \
+	IF_ENABLED(CONFIG_KV_STORE_KEY_NRF_EDGE_AI_RUNTIME_VERSION, \
 		   (1 +)) \
 	IF_ENABLED(CONFIG_KV_STORE_KEY_GRAVITY_REFERENCE, \
 		   (1 +)) \
@@ -1112,6 +1128,13 @@ static struct key_value_slot_definition _KV_SLOTS_ARRAY_DEFINE[] = {
 		.flags = KV_FLAGS_REFLECT,
 	},
 #endif /* CONFIG_KV_STORE_KEY_GATEWAY_BLUETOOTH_FORWARD_OPTIONS */
+#ifdef CONFIG_KV_STORE_KEY_NRF_EDGE_AI_RUNTIME_VERSION
+	{
+		.key = KV_KEY_NRF_EDGE_AI_RUNTIME_VERSION,
+		.range = 1,
+		.flags = KV_FLAGS_REFLECT,
+	},
+#endif /* CONFIG_KV_STORE_KEY_NRF_EDGE_AI_RUNTIME_VERSION */
 #ifdef CONFIG_KV_STORE_KEY_GRAVITY_REFERENCE
 	{
 		.key = KV_KEY_GRAVITY_REFERENCE,

@@ -201,6 +201,13 @@ config KV_STORE_KEY_GATEWAY_BLUETOOTH_FORWARD_OPTIONS
 	help
 	  Forwarding configuration for Bluetooth advertising packets
 
+config KV_STORE_KEY_NRF_EDGE_AI_RUNTIME_VERSION
+	bool "Enable KV key NRF_EDGE_AI_RUNTIME_VERSION"
+	depends on NRF_EDGEAI
+	default y
+	help
+	  Version of the nRF Edge AI runtime
+
 config KV_STORE_KEY_GRAVITY_REFERENCE
 	bool "Enable KV key GRAVITY_REFERENCE"
 	help
