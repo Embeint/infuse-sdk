@@ -406,6 +406,18 @@
                 {"name": "percent", "type": "uint8_t", "description": "Percent of packets to forward that pass flags (255 = all, 128 = half, 0 = none)"}
             ]
         },
+        "56": {
+            "name": "NRF_EDGE_AI_RUNTIME_VERSION",
+            "description": "Version of the nRF Edge AI runtime",
+            "depends_on": "NRF_EDGEAI",
+            "default": "y",
+            "reflect": true,
+            "fields": [
+                {"name": "major", "type": "uint8_t", "description": "Major version"},
+                {"name": "minor", "type": "uint8_t", "description": "Minor version"},
+                {"name": "patch", "type": "uint16_t", "description": "Patch version"}
+            ]
+        },
         "60": {
             "name": "GRAVITY_REFERENCE",
             "description": "Reference gravity vector for tilt calculations",
