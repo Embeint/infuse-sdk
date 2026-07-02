@@ -14,6 +14,7 @@ tests:
       - thingy53/nrf5340/cpuapp
       - tauro/nrf9151/ns
       - tauro2/nrf9151/ns
+      - nrf54l15tag/nrf54l15/cpuapp
   sample.validation.nrf70_test:
     tags: validation
     platform_allow:
