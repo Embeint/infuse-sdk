@@ -1,0 +1,10 @@
+tests:
+  libraries.nrf_edge_ai:
+    arch_allow: arm
+    filter: CONFIG_CPU_HAS_FPU
+    required_snippets:
+      - infuse
+    integration_platforms:
+      - nrf54l15dk/nrf54l15/cpuapp
+      - mps2/an386
+    tags: infuse
