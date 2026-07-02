@@ -11,7 +11,11 @@ boards:
       EXTRA_CONF_FILE: infuse_snippet.conf
   mps2/an385:
     append:
-      EXTRA_DTC_OVERLAY_FILE: boards/mps2_an385.overlay
+      EXTRA_DTC_OVERLAY_FILE: boards/mps2_an38x.overlay
+      EXTRA_CONF_FILE: infuse_snippet.conf
+  mps2/an386:
+    append:
+      EXTRA_DTC_OVERLAY_FILE: boards/mps2_an38x.overlay
       EXTRA_CONF_FILE: infuse_snippet.conf
   native_sim/native:
     append:
