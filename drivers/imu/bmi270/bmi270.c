@@ -179,6 +179,7 @@ static int bmi270_device_init(const struct device *dev)
 	if (rc < 0) {
 		goto init_end;
 	}
+	k_sleep(K_USEC(BMI270_PWR_CONF_DELAY));
 
 init_end:
 	if (rc) {
@@ -211,10 +212,12 @@ static int bmi270_low_power_reset(const struct device *dev)
 	(void)k_sem_take(&data->int1_sem, K_NO_WAIT);
 
 	reg_val = 0x00;
-	rc = bmi270_reg_read(dev, BMI270_REG_PWR_CTRL, &reg_val, 1);
+	rc = bmi270_reg_write(dev, BMI270_REG_PWR_CTRL, &reg_val, 1);
 	if (rc == 0) {
+		k_sleep(K_USEC(BMI270_PWR_CONF_DELAY));
 		reg_val = BMI270_PWR_CONF_ADV_POWER_SAVE_EN;
-		rc = bmi270_reg_read(dev, BMI270_REG_PWR_CONF, &reg_val, 1);
+		rc = bmi270_reg_write(dev, BMI270_REG_PWR_CONF, &reg_val, 1);
+		k_sleep(K_USEC(BMI270_PWR_CONF_DELAY));
 	}
 	return rc;
 }
@@ -438,7 +441,9 @@ int bmi270_configure(const struct device *dev, const struct imu_config *imu_cfg,
 	/* Enable the sensors */
 	reg_val = BMI270_PWR_CONF_ADV_POWER_SAVE_DIS | BMI270_PWR_CONF_FIFO_SELF_WAKE_EN;
 	rc |= bmi270_reg_write(dev, BMI270_REG_PWR_CONF, &reg_val, 1);
+	k_sleep(K_USEC(BMI270_PWR_CONF_DELAY));
 	rc |= bmi270_reg_write(dev, BMI270_REG_PWR_CTRL, &pwr_ctrl, 1);
+	k_sleep(K_USEC(BMI270_PWR_CONF_DELAY));
 
 	/* FIFO watermark calculation.
 	 * Each sample consumes 6 bytes in the FIFO.
