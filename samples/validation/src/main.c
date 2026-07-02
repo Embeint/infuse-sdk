@@ -346,7 +346,7 @@ static int leds_validator(void *a, void *b, void *c)
 {
 	/* clang-format off */
 	const struct gpio_dt_spec leds[] = {
-		DT_FOREACH_CHILD_SEP(DT_PATH(leds), GET_GPIO_SPEC, (,))};
+		DT_FOREACH_CHILD_STATUS_OKAY_SEP(DT_PATH(leds), GET_GPIO_SPEC, (,))};
 	/* clang-format on */
 
 	atomic_inc(&validators_registered);
@@ -370,7 +370,7 @@ static int leds_validator(void *a, void *b, void *c)
 {
 	/* clang-format off */
 	const struct led_dt_spec leds[] = {
-		DT_FOREACH_CHILD_SEP(DT_ALIAS(led_controller0), LED_DT_SPEC_GET, (,))};
+		DT_FOREACH_CHILD_STATUS_OKAY_SEP(DT_ALIAS(led_controller0), LED_DT_SPEC_GET, (,))};
 	/* clang-format on */
 
 	atomic_inc(&validators_registered);
