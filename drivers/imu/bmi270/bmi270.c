@@ -200,6 +200,44 @@ static void bmi270_gpio_callback(const struct device *dev, struct gpio_callback 
 	k_sem_give(&data->int1_sem);
 }
 
+static int bmi270_init_after_reset(const struct device *dev)
+{
+	uint8_t chip_id;
+	int rc;
+
+	/* Registers accessible after this delay */
+	k_sleep(K_USEC(BMI270_POR_DELAY));
+	/* Initialise the bus */
+	rc = bmi270_bus_init(dev);
+	if (rc < 0) {
+		LOG_ERR("Cannot communicate with IMU");
+		return rc;
+	}
+	/* Check communications with the device */
+	rc = bmi270_reg_read(dev, BMI270_REG_CHIP_ID, &chip_id, 1);
+	if ((rc < 0) || (chip_id != BMI270_CHIP_ID)) {
+		LOG_ERR("Invalid chip ID %02X", chip_id);
+		return -EIO;
+	}
+	/* Perform init sequence */
+	return bmi270_device_init(dev);
+}
+
+__maybe_unused static int bmi270_soft_reset(const struct device *dev)
+{
+	uint8_t reg_val;
+	int rc;
+
+	/* Issue soft-reset command */
+	reg_val = BMI270_CMD_SOFTRESET;
+	rc = bmi270_reg_write(dev, BMI270_REG_CMD, &reg_val, 1);
+	if (rc < 0) {
+		return rc;
+	}
+	/* Perform standard init sequence */
+	return bmi270_init_after_reset(dev);
+}
+
 static int bmi270_low_power_reset(const struct device *dev)
 {
 	const struct bmi270_config *config = dev->config;
@@ -689,10 +727,148 @@ int bmi270_data_read(const struct device *dev, struct imu_sample_array *samples,
 	return 0;
 }
 
+#ifdef CONFIG_INFUSE_IMU_SELF_TEST
+
+/* Recommended self-test procedure from datasheet (4.12.1 & 4.12.2) */
+static int bmi270_self_test(const struct device *dev)
+{
+	int16_t mg_positive[3], mg_negative[3];
+	uint8_t acc_raw_positive[6] = {0};
+	uint8_t acc_raw_negative[6] = {0};
+	int32_t mg_difference[3];
+	int16_t one_g;
+	uint8_t reg_val;
+	int rc;
+
+	LOG_DBG("Starting self-test procedure");
+
+	/* Reset back to default state */
+	rc = bmi270_soft_reset(dev);
+	if (rc < 0) {
+		return rc;
+	}
+
+	/* 1. Enable accelerometer */
+	reg_val = BMI270_PWR_CTRL_ACC_EN;
+	rc = bmi270_reg_write(dev, BMI270_REG_PWR_CTRL, &reg_val, 1);
+	if (rc < 0) {
+		return rc;
+	}
+
+	/* 2. Set +16g range */
+	reg_val = BMI270_ACC_RANGE_16G;
+	rc = bmi270_reg_write(dev, BMI270_REG_ACC_RANGE, &reg_val, 1);
+	if (rc < 0) {
+		return rc;
+	}
+
+	/* 3. Set self-test high amplitude */
+	reg_val = BMI270_ACC_SELF_TEST_HIGH_AMPLITUDE;
+	rc = bmi270_reg_write(dev, BMI270_REG_ACC_SELF_TEST, &reg_val, 1);
+	if (rc < 0) {
+		return rc;
+	}
+
+	/* 4. Set ODR 1600Hz, continuous sampling, normal mode, high-performance filter */
+	reg_val = BMI270_ACC_CONF_ODR_1600 | BMI270_ACC_CONF_PERF_NORM |
+		  BMI270_ACC_CONF_FILTER_PERFORMANCE;
+	rc = bmi270_reg_write(dev, BMI270_REG_ACC_CONF, &reg_val, 1);
+	if (rc < 0) {
+		return rc;
+	}
+
+	/* 5. Wait > 2 ms */
+	k_sleep(K_MSEC(3));
+
+	/* 6. Set positive self-test polarity */
+	reg_val = BMI270_ACC_SELF_TEST_HIGH_AMPLITUDE | BMI270_ACC_SELF_TEST_POSITIVE;
+	rc = bmi270_reg_write(dev, BMI270_REG_ACC_SELF_TEST, &reg_val, 1);
+	if (rc < 0) {
+		return rc;
+	}
+
+	/* 7. Enable self-test */
+	reg_val = BMI270_ACC_SELF_TEST_HIGH_AMPLITUDE | BMI270_ACC_SELF_TEST_POSITIVE |
+		  BMI270_ACC_SELF_TEST_EN;
+	rc = bmi270_reg_write(dev, BMI270_REG_ACC_SELF_TEST, &reg_val, 1);
+	if (rc < 0) {
+		return rc;
+	}
+
+	/* 8. Wait > 50 ms */
+	k_sleep(K_MSEC(60));
+
+	/* 9. Read and store each axis (DATA_8 to DATA_13) */
+	rc = bmi270_reg_read(dev, BMI270_REG_DATA_8, acc_raw_positive, sizeof(acc_raw_positive));
+	if (rc < 0) {
+		return rc;
+	}
+
+	/* 10. Set negative self-test polarity */
+	reg_val = BMI270_ACC_SELF_TEST_HIGH_AMPLITUDE | BMI270_ACC_SELF_TEST_NEGATIVE;
+	rc = bmi270_reg_write(dev, BMI270_REG_ACC_SELF_TEST, &reg_val, 1);
+	if (rc < 0) {
+		return rc;
+	}
+
+	/* 11. Enable self-test */
+	reg_val = BMI270_ACC_SELF_TEST_HIGH_AMPLITUDE | BMI270_ACC_SELF_TEST_NEGATIVE |
+		  BMI270_ACC_SELF_TEST_EN;
+	rc = bmi270_reg_write(dev, BMI270_REG_ACC_SELF_TEST, &reg_val, 1);
+	if (rc < 0) {
+		return rc;
+	}
+
+	/* 12. Wait > 50 ms */
+	k_sleep(K_MSEC(60));
+
+	/* 13. Read and store each axis (DATA_8 to DATA_13) */
+	rc = bmi270_reg_read(dev, BMI270_REG_DATA_8, acc_raw_negative, sizeof(acc_raw_negative));
+	if (rc < 0) {
+		return rc;
+	}
+
+	/* 15. Disable self-test */
+	reg_val = 0x00;
+	rc = bmi270_reg_write(dev, BMI270_REG_ACC_SELF_TEST, &reg_val, 1);
+	if (rc < 0) {
+		return rc;
+	}
+
+	/* Convert raw register readings to milli-g */
+	one_g = imu_accelerometer_1g(16);
+	for (int i = 0; i < 3; i++) {
+		mg_positive[i] = (1000 * (int16_t)sys_get_le16(acc_raw_positive + (2 * i)) / one_g);
+		mg_negative[i] = (1000 * (int16_t)sys_get_le16(acc_raw_negative + (2 * i)) / one_g);
+		mg_difference[i] = (int32_t)mg_positive[i] - (int32_t)mg_negative[i];
+	}
+
+	/* Compare measured differences against specified minimums */
+	if ((mg_difference[0] < BMI270_SELF_TEST_ACC_MINIMUM_X) ||
+	    (mg_difference[1] > BMI270_SELF_TEST_ACC_MAXIMUM_Y) ||
+	    (mg_difference[2] < BMI270_SELF_TEST_ACC_MINIMUM_Z)) {
+		LOG_ERR("Self-test failed: X:%6d Y:%6d Z:%6d", mg_difference[0], mg_difference[1],
+			mg_difference[2]);
+		return -EINVAL;
+	}
+	LOG_DBG("Difference = X:%6d Y:%6d Z:%6d", mg_difference[0], mg_difference[1],
+		mg_difference[2]);
+
+	/* Issue a soft-reset before returning */
+	rc = bmi270_soft_reset(dev);
+	if (rc < 0) {
+		return rc;
+	}
+
+	/* Gyroscope self-test not supported with maximum-fifo configuration */
+	return 0;
+}
+
+#endif /* CONFIG_INFUSE_IMU_SELF_TEST */
+
 static int bmi270_pm_control(const struct device *dev, enum pm_device_action action)
 {
 	const struct bmi270_config *config = dev->config;
-	uint8_t chip_id;
 	int rc = 0;
 
 	switch (action) {
@@ -703,22 +879,8 @@ static int bmi270_pm_control(const struct device *dev, enum pm_device_action act
 	case PM_DEVICE_ACTION_TURN_ON:
 		/* Configure GPIO */
 		gpio_pin_configure_dt(&config->int1_gpio, GPIO_INPUT);
-		/* Registers accessible after this delay */
-		k_sleep(K_USEC(BMI270_POR_DELAY));
-		/* Initialise the bus */
-		rc = bmi270_bus_init(dev);
-		if (rc < 0) {
-			LOG_ERR("Cannot communicate with IMU");
-			return rc;
-		}
-		/* Check communications with the device */
-		rc = bmi270_reg_read(dev, BMI270_REG_CHIP_ID, &chip_id, 1);
-		if ((rc < 0) || (chip_id != BMI270_CHIP_ID)) {
-			LOG_ERR("Invalid chip ID %02X", chip_id);
-			return -EIO;
-		}
-		/* Perform init sequence */
-		rc = bmi270_device_init(dev);
+		/* Initialise the chip after power on */
+		rc = bmi270_init_after_reset(dev);
 		break;
 	default:
 		return -ENOTSUP;
@@ -752,6 +914,9 @@ struct infuse_imu_api bmi270_imu_api = {
 	.configure = bmi270_configure,
 	.data_wait = bmi270_data_wait,
 	.data_read = bmi270_data_read,
+#ifdef CONFIG_INFUSE_IMU_SELF_TEST
+	.self_test = bmi270_self_test,
+#endif
 };
 
 /* Initializes a struct bmi270_config for an instance on a SPI bus. */
