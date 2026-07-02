@@ -1,0 +1,16 @@
+if BOARD_NRF54L15TAG_NRF54L15_CPUAPP
+
+configdefault SERIAL
+    default y
+configdefault CONSOLE
+    default y
+configdefault USE_SEGGER_RTT
+    default y
+configdefault UART_CONSOLE
+    default y
+configdefault RTT_CONSOLE
+    default n
+configdefault LOG_BACKEND_RTT
+    default n
+
+endif # BOARD_NRF54L15TAG_NRF54L15_CPUAPP
