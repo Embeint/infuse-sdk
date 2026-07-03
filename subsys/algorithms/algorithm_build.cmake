@@ -61,13 +61,29 @@ function(algorithm_target_inc
   set(${FILE_OUT} "${directory_out}/${ALG_NAME}.inc" PARENT_SCOPE)
 endfunction()
 
+# Determine the nRF Edge AI library for a CPU profile
+function(nrf_edgeai_lib_path
+    CPU               # CPU type (cortex_m3, cortex_m4, etc)
+    LIBRARY_OUT       # Variable that the library path will be output in
+    )
+  string(REPLACE "_" "-" nrf_edgeai_cpu_dir ${CPU})
+  set(nrf_edgeai_lib
+    ${ZEPHYR_SDK_EDGE_AI_MODULE_DIR}/lib/nrf_edgeai/${nrf_edgeai_cpu_dir}/libnrf_edgeai_${nrf_edgeai_cpu_dir}.a
+  )
+  if(EXISTS ${nrf_edgeai_lib})
+    set(${LIBRARY_OUT} ${nrf_edgeai_lib} PARENT_SCOPE)
+  else()
+    set(${LIBRARY_OUT} PARENT_SCOPE)
+  endif()
+endfunction()
+
 # Generate targets to build a given algorithm for all application configurations
 function(algorithm_generate_targets
     ALG_NAME          # Name of the algorithm
     )
 
   cmake_parse_arguments(ARG
-    ""
+    "NRF_EDGEAI"
     "OUTPUT_BASE"
     "SOURCES;INCLUDES"
     ${ARGN}
@@ -88,12 +104,25 @@ function(algorithm_generate_targets
 
     # Build the algorithm for each supported floating-point mode
     foreach(FP_MODE IN LISTS PROFILE_FP_MODES)
+      if(ARG_NRF_EDGEAI)
+        if(NOT "${FP_MODE}" STREQUAL "hard")
+          message(DEBUG "Skipping ${PROFILE_NAME}-${FP_MODE}: nRF Edge AI requires hard-float ABI")
+          continue()
+        endif()
+        nrf_edgeai_lib_path(${PROFILE_NAME} nrf_edgeai_lib)
+        if(NOT nrf_edgeai_lib)
+          message(DEBUG "Skipping ${PROFILE_NAME}: nRF Edge AI library is not available")
+          continue()
+        endif()
+      endif()
+
       algorithm_target_name_core(${ALG_NAME} ${PROFILE_NAME} ${FP_MODE} target_name)
       algorithm_target_dir_core(${PROFILE_NAME} ${FP_MODE} ${ARG_OUTPUT_BASE} target_folder)
       set(llext_file ${target_folder}/${ALG_NAME}.llext)
       set(map_file ${target_folder}/${ALG_NAME}.map)
       set(stripped_file ${target_folder}/${ALG_NAME}.llext.stripped)
       set(inc_file ${target_folder}/${ALG_NAME}.inc)
+      set(exported_sym_link_args ${target_folder}/${ALG_NAME}.exported_sym.args)
 
       set(obj_target ${target_name}_objects)
       add_library(${obj_target} OBJECT ${ARG_SOURCES})
@@ -108,14 +137,34 @@ function(algorithm_generate_targets
         ${ARG_INCLUDES}
       )
 
+      set(target_link_files)
+      if(ARG_NRF_EDGEAI)
+        target_include_directories(${obj_target} PRIVATE
+          ${ZEPHYR_SDK_EDGE_AI_MODULE_DIR}/include
+        )
+        set(target_link_files ${nrf_edgeai_lib})
+      endif()
+
       # Link all object files into a single relocatable object
       add_custom_command(
         OUTPUT
+          ${exported_sym_link_args}
           ${stripped_file}
           ${llext_file}
           ${inc_file}
         COMMAND ${CMAKE_COMMAND} -E make_directory ${target_folder}
-        COMMAND ${CMAKE_LINKER} -r $<TARGET_OBJECTS:${obj_target}> -o ${llext_file} -Map=${map_file}
+        COMMAND ${CMAKE_COMMAND}
+          -DREADELF=${CMAKE_READELF}
+          -DOUTPUT_FILE=${exported_sym_link_args}
+          -DOBJECT_FILES=$<JOIN:$<TARGET_OBJECTS:${obj_target}>,|>
+          -P ${ALGORITHM_BUILD_DIR}/exported_sym_link_args.cmake
+        COMMAND ${CMAKE_LINKER} -r
+          -T ${ALGORITHM_BUILD_DIR}/llext_sections.ld
+          $<TARGET_OBJECTS:${obj_target}>
+          @${exported_sym_link_args} --gc-sections
+          ${target_link_files}
+          -Map=${map_file}
+          -o ${llext_file}
         # Strip unneeded sections from the object file
         COMMAND ${CMAKE_OBJCOPY} --strip-unneeded
           --remove-section .comment
@@ -131,7 +180,10 @@ function(algorithm_generate_targets
           -P ${ALGORITHM_BUILD_DIR}/file2hex.cmake
         DEPENDS
           $<TARGET_OBJECTS:${obj_target}>
+          ${target_link_files}
           ${ALGORITHM_BUILD_DIR}/file2hex.cmake
+          ${ALGORITHM_BUILD_DIR}/exported_sym_link_args.cmake
+          ${ALGORITHM_BUILD_DIR}/llext_sections.ld
         BYPRODUCTS
           ${map_file}
         COMMAND_EXPAND_LISTS
