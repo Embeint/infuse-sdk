@@ -1,0 +1,21 @@
+common:
+  tags: algorithms
+  min_flash: 64
+  min_ram: 32
+  arch_allow: arm
+  filter: CONFIG_CPU_HAS_FPU
+  required_snippets:
+    - infuse
+  integration_platforms:
+    - mps2/an386      # Cortex-M4
+  harness: console
+  harness_config:
+    type: multi_line
+    ordered: true
+    regex:
+      - "Initialized model"
+      - "Inference anomaly score: [+-]?[0-9]+[.][0-9]{2}"
+      - "Inference anomaly score: [+-]?[0-9]+[.][0-9]{2}"
+      - "Inference anomaly score: [+-]?[0-9]+[.][0-9]{2}"
+tests:
+  algorithms.nrf_edge_ai: {}
