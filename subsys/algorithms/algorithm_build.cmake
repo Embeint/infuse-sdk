@@ -81,6 +81,7 @@ function(algorithm_generate_targets
       algorithm_target_name_core(${ALG_NAME} ${PROFILE_NAME} ${FP_MODE} target_name)
       algorithm_target_dir_core(${PROFILE_NAME} ${FP_MODE} ${ARG_OUTPUT_BASE} target_folder)
       set(llext_file ${target_folder}/${ALG_NAME}.llext)
+      set(map_file ${target_folder}/${ALG_NAME}.map)
       set(stripped_file ${target_folder}/${ALG_NAME}.llext.stripped)
       set(inc_file ${target_folder}/${ALG_NAME}.inc)
 
@@ -104,7 +105,7 @@ function(algorithm_generate_targets
           ${llext_file}
           ${inc_file}
         COMMAND ${CMAKE_COMMAND} -E make_directory ${target_folder}
-        COMMAND ${CMAKE_LINKER} -r $<TARGET_OBJECTS:${obj_target}> -o ${llext_file}
+        COMMAND ${CMAKE_LINKER} -r $<TARGET_OBJECTS:${obj_target}> -o ${llext_file} -Map=${map_file}
         # Strip unneeded sections from the object file
         COMMAND ${CMAKE_OBJCOPY} --strip-unneeded
           --remove-section .comment
@@ -120,6 +121,8 @@ function(algorithm_generate_targets
           -P ${ALGORITHM_BUILD_DIR}/file2hex.cmake
         DEPENDS
           ${obj_target}
+        BYPRODUCTS
+          ${map_file}
         COMMAND_EXPAND_LISTS
         VERBATIM
         COMMENT "Generating ${ALG_NAME} for configuration ${PROFILE_NAME}-${FP_MODE}"
