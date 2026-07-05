@@ -9,6 +9,8 @@ set(CFLAGS
   "-DLL_EXTENSION_BUILD"
   "-nodefaultlibs"
   "-std=c99"
+  # Optimizations
+  "-Os"
   # Stdlib
   "-specs=picolibc.specs"
   "-fno-common"
