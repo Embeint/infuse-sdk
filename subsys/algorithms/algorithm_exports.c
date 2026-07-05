@@ -100,6 +100,11 @@ EXPORT_GROUP_SYMBOL(INFUSE_ALG, lgammaf);
 EXPORT_GROUP_SYMBOL(INFUSE_ALG, log2f);
 EXPORT_GROUP_SYMBOL(INFUSE_ALG, hypotf);
 
+/* Float to double conversion to support `printk` */
+extern double __aeabi_f2d(float x);
+
+EXPORT_GROUP_SYMBOL(INFUSE_ALG, __aeabi_f2d);
+
 #ifndef CONFIG_FPU
 
 /* Single precision floating point to integer conversion */
