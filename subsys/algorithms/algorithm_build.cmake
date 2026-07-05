@@ -51,6 +51,16 @@ function(algorithm_target_dir
   set(${DIRECTORY_OUT} ${directory_out} PARENT_SCOPE)
 endfunction()
 
+# Determine the generated include file for the current application
+function(algorithm_target_inc
+    ALG_NAME          # Name of the algorithm
+    OUTPUT_BASE       # Base folder that algorithms are built into
+    FILE_OUT          # Generated include file path
+    )
+  algorithm_target_dir(${OUTPUT_BASE} directory_out)
+  set(${FILE_OUT} "${directory_out}/${ALG_NAME}.inc" PARENT_SCOPE)
+endfunction()
+
 # Generate targets to build a given algorithm for all application configurations
 function(algorithm_generate_targets
     ALG_NAME          # Name of the algorithm
@@ -120,14 +130,15 @@ function(algorithm_generate_targets
           -DOUTPUT_FILE=${inc_file}
           -P ${ALGORITHM_BUILD_DIR}/file2hex.cmake
         DEPENDS
-          ${obj_target}
+          $<TARGET_OBJECTS:${obj_target}>
+          ${ALGORITHM_BUILD_DIR}/file2hex.cmake
         BYPRODUCTS
           ${map_file}
         COMMAND_EXPAND_LISTS
         VERBATIM
         COMMENT "Generating ${ALG_NAME} for configuration ${PROFILE_NAME}-${FP_MODE}"
       )
-      add_custom_target(${target_name} ALL DEPENDS ${stripped_file})
+      add_custom_target(${target_name} ALL DEPENDS ${inc_file})
     endforeach()
   endforeach()
 endfunction()

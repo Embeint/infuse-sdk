@@ -29,6 +29,8 @@ if(CONFIG_TEST_ALGORITHM_BUILD_LLEXT)
   add_dependencies(app ${algorithm_target})
   # Add directory containing the raw hex of the algorithm to the include path
   algorithm_target_dir(${algorithm_base_dir} algorithm_dir)
+  algorithm_target_inc(${algorithm_name} ${algorithm_base_dir} algorithm_inc_file)
+  set_property(SOURCE src/main.c APPEND PROPERTY OBJECT_DEPENDS ${algorithm_inc_file})
   zephyr_include_directories(
     ${algorithm_dir}
   )
