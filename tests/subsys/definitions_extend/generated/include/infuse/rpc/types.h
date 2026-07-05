@@ -116,6 +116,8 @@ enum rpc_enum_file_action {
 	RPC_ENUM_FILE_ACTION_NRF91_MODEM_DIFF = 20,
 	/** File to copy to another device */
 	RPC_ENUM_FILE_ACTION_FILE_FOR_COPY = 30,
+	/** Write file to LittleFS */
+	RPC_ENUM_FILE_ACTION_WRITE_LITTLEFS = 31,
 };
 
 /** Infuse-IoT Bluetooth characteristics (Bitmask) */
@@ -136,6 +138,22 @@ enum rpc_enum_data_logger {
 	RPC_ENUM_DATA_LOGGER_FLASH_REMOVABLE = 2,
 	/** Networked UDP logger */
 	RPC_ENUM_DATA_LOGGER_UDP = 3,
+};
+
+/** TDF data Logger identifier */
+enum rpc_enum_tdf_data_logger {
+	/** Onboard flash TDF logger */
+	RPC_ENUM_TDF_DATA_LOGGER_FLASH_ONBOARD = 1,
+	/** Removable flash TDF logger (SD) */
+	RPC_ENUM_TDF_DATA_LOGGER_FLASH_REMOVABLE = 2,
+	/** Serial TDF logger */
+	RPC_ENUM_TDF_DATA_LOGGER_SERIAL = 4,
+	/** Networked UDP TDF logger */
+	RPC_ENUM_TDF_DATA_LOGGER_UDP = 8,
+	/** Bluetooth advertising TDF logger */
+	RPC_ENUM_TDF_DATA_LOGGER_BT_ADV = 16,
+	/** Bluetooth peripheral TDF logger */
+	RPC_ENUM_TDF_DATA_LOGGER_BT_PERIPH = 32,
 };
 
 /** Source for zperf data upload */
@@ -182,6 +200,18 @@ enum rpc_enum_support_status {
 	RPC_ENUM_SUPPORT_STATUS_SUPPORTED = 1,
 	/** Field support status is unknown */
 	RPC_ENUM_SUPPORT_STATUS_UNKNOWN = 255,
+};
+
+/** Folder identifier */
+enum rpc_enum_filesystem_folder {
+	/** Singleton files that don't fit in other locations */
+	RPC_ENUM_FILESYSTEM_FOLDER_GENERAL = 0,
+	/** Dynamic algorithms */
+	RPC_ENUM_FILESYSTEM_FOLDER_ALGORITHMS = 1,
+	/** GNSS assistance data */
+	RPC_ENUM_FILESYSTEM_FOLDER_A_GNSS = 2,
+	/** Files to copy to other devices */
+	RPC_ENUM_FILESYSTEM_FOLDER_COPY = 3,
 };
 
 /** MCUboot semantic versioning struct */
@@ -416,6 +446,34 @@ struct rpc_struct_thread_stats {
 	char name[];
 } __packed;
 
+/** IPv6 address */
+struct rpc_struct_data_logger_flushed {
+	/** Logger that was flushed */
+	uint8_t logger;
+	/** Number of bytes flushed */
+	uint16_t num;
+} __packed;
+
+/** Metadata associated with file on the filesystem */
+struct rpc_struct_filesystem_file_metadata {
+	/** Creation timestamp */
+	uint32_t timestamp;
+	/** Opaque identifier for cloud */
+	uint32_t identifier;
+	/** Data validation */
+	uint32_t crc;
+} __packed;
+
+/** Information about file on the filesystem */
+struct rpc_struct_filesystem_file_info {
+	/** File metadata */
+	struct rpc_struct_filesystem_file_metadata metadata;
+	/** Name of the file */
+	uint32_t name;
+	/** Length of the file */
+	uint32_t size;
+} __packed;
+
 /** Demo struct */
 struct rpc_struct_demo {
 	int8_t x;
@@ -494,10 +552,18 @@ enum rpc_builtin_id {
 	RPC_ID_ZPERF_UPLOAD = 31,
 	/** Download a file from a COAP server (Infuse-IoT DTLS protected) */
 	RPC_ID_COAP_DOWNLOAD_V2 = 32,
+	/** Download a file from a COAP server (Infuse-IoT DTLS protected) */
+	RPC_ID_COAP_DOWNLOAD_V3 = 33,
 	/** Write a file to the device */
 	RPC_ID_FILE_WRITE_BASIC = 40,
 	/** Write an annotation to the device */
 	RPC_ID_ANNOTATE = 41,
+	/** Write an annotation to the device */
+	RPC_ID_TDF_DATA_LOGGER_FLUSH = 42,
+	/** Enter/Exit shipping mode on a device */
+	RPC_ID_SHIPPING_MODE = 43,
+	/** Write a file to the device */
+	RPC_ID_FILE_WRITE = 44,
 	/** Connect to an Infuse-IoT Bluetooth device */
 	RPC_ID_BT_CONNECT_INFUSE = 50,
 	/** Disconnect from a Bluetooth device */
@@ -510,6 +576,10 @@ enum rpc_builtin_id {
 	RPC_ID_BT_MCUMGR_REBOOT = 54,
 	/** Store the current accelerometer vector as the gravity reference */
 	RPC_ID_GRAVITY_REFERENCE_UPDATE = 60,
+	/** Query files currently on the filesystem */
+	RPC_ID_FILESYSTEM_LS = 61,
+	/** Delete file currently on the filesystem */
+	RPC_ID_FILESYSTEM_RM = 62,
 	/** Retrieve U-blox AssistNow Zero Touch Provisioning credentials */
 	RPC_ID_UBX_ASSIST_NOW_ZTP_CREDS = 70,
 	/** Query current security state and validate identity */
@@ -826,7 +896,7 @@ struct rpc_data_logger_erase_request {
 	struct infuse_rpc_req_header header;
 	/** Data logger to erase */
 	uint8_t logger;
-	/** Erase entire logger space, even empty blocks */
+	/** Erase entire logger space, even empty blocks (0xAA == ignore init failures) */
 	uint8_t erase_empty;
 } __packed;
 
@@ -1074,6 +1144,41 @@ struct rpc_coap_download_v2_response {
 	uint32_t resource_crc;
 } __packed;
 
+/** Download a file from a COAP server (Infuse-IoT DTLS protected) */
+struct rpc_coap_download_v3_request {
+	struct infuse_rpc_req_header header;
+	/** COAP server address (e.g. coap.dev.infuse-iot.com) */
+	char server_address[48];
+	/** COAP server port */
+	uint16_t server_port;
+	/** COAP block timeout (Default 1000ms) */
+	uint16_t block_timeout_ms;
+	/** Block size to use (1024, 512, 256, 128, 64, 32, 16, 0 == auto) */
+	uint16_t block_size;
+	/** Action to apply to downloaded file */
+	uint8_t action;
+	/** File folder (for filesystem writes) */
+	uint8_t folder;
+	/** File name (for filesystem writes) */
+	uint32_t filename;
+	/** File identifier (for filesystem writes) */
+	uint32_t identifier;
+	/** Expected resource length (UINT32_MAX if unknown) */
+	uint32_t resource_len;
+	/** Expected resource CRC (UINT32_MAX if unknown) */
+	uint32_t resource_crc;
+	/** Path to file on COAP server (e.g. files/small_file) */
+	char resource[];
+} __packed;
+
+struct rpc_coap_download_v3_response {
+	struct infuse_rpc_rsp_header header;
+	/** Length of resource downloaded */
+	uint32_t resource_len;
+	/** CRC of resource downloaded */
+	uint32_t resource_crc;
+} __packed;
+
 /** Write a file to the device */
 struct rpc_file_write_basic_request {
 	struct infuse_rpc_req_header header;
@@ -1105,6 +1210,58 @@ struct rpc_annotate_request {
 
 struct rpc_annotate_response {
 	struct infuse_rpc_rsp_header header;
+} __packed;
+
+/** Write an annotation to the device */
+struct rpc_tdf_data_logger_flush_request {
+	struct infuse_rpc_req_header header;
+	/** TDF data loggers to flush */
+	uint8_t loggers;
+} __packed;
+
+struct rpc_tdf_data_logger_flush_response {
+	struct infuse_rpc_rsp_header header;
+	/** Number of loggers in response */
+	uint8_t num;
+	/** Flush status */
+	struct rpc_struct_data_logger_flushed flushed[];
+} __packed;
+
+/** Enter/Exit shipping mode on a device */
+struct rpc_shipping_mode_request {
+	struct infuse_rpc_req_header header;
+	/** Non-zero to enter shipping mode, zero to exit */
+	uint8_t enter;
+} __packed;
+
+struct rpc_shipping_mode_response {
+	struct infuse_rpc_rsp_header header;
+	/** Expected delay to enter/exit shipping mode */
+	uint32_t expected_delay_ms;
+} __packed;
+
+/** Write a file to the device */
+struct rpc_file_write_request {
+	struct infuse_rpc_req_header header;
+	struct infuse_rpc_req_data_header data_header;
+	/** Action to apply to written file */
+	uint8_t action;
+	/** File folder (for filesystem writes) */
+	uint8_t folder;
+	/** File name (for filesystem writes) */
+	uint32_t filename;
+	/** File identifier (for filesystem writes) */
+	uint32_t identifier;
+	/** Expected file CRC */
+	uint32_t file_crc;
+} __packed;
+
+struct rpc_file_write_response {
+	struct infuse_rpc_rsp_header header;
+	/** Number of bytes received */
+	uint32_t recv_len;
+	/** CRC of bytes received */
+	uint32_t recv_crc;
 } __packed;
 
 /** Connect to an Infuse-IoT Bluetooth device */
@@ -1233,6 +1390,38 @@ struct rpc_gravity_reference_update_response {
 	uint16_t num_samples;
 	/** Period between samples */
 	uint32_t sample_period_us;
+} __packed;
+
+/** Query files currently on the filesystem */
+struct rpc_filesystem_ls_request {
+	struct infuse_rpc_req_header header;
+	/** Folder to query */
+	uint8_t folder;
+	/** Skip first N files in response */
+	uint8_t skip;
+} __packed;
+
+struct rpc_filesystem_ls_response {
+	struct infuse_rpc_rsp_header header;
+	/** Total files in the folder */
+	uint8_t total_files;
+	/** Number of files in this response */
+	uint8_t contained_files;
+	/** File information */
+	struct rpc_struct_filesystem_file_info files[];
+} __packed;
+
+/** Delete file currently on the filesystem */
+struct rpc_filesystem_rm_request {
+	struct infuse_rpc_req_header header;
+	/** Folder that file exists in */
+	uint8_t folder;
+	/** File to delete */
+	uint32_t file;
+} __packed;
+
+struct rpc_filesystem_rm_response {
+	struct infuse_rpc_rsp_header header;
 } __packed;
 
 /** Retrieve U-blox AssistNow Zero Touch Provisioning credentials */
