@@ -220,6 +220,32 @@ struct kv_fixed_location {
 	struct gcs_location location;
 } __packed;
 
+/** Device is fixed indoors and should broadcast the fact */
+struct kv_broadcast_fixed_indoors {
+	/** Non-zero: Device is indoors */
+	uint8_t indoors;
+} __packed;
+
+/** State of LittleFS filesystem */
+struct kv_littlefs_fs_state {
+	/** On-disk filesystem version */
+	uint32_t disk_version;
+	/** Size of filesystem blocks in bytes */
+	uint32_t block_size;
+	/** Total number of blocks in the filesystem */
+	uint32_t block_count;
+	/** Blocks currently in use by the filesystem */
+	uint32_t blocks_used;
+} __packed;
+
+/** State of algorithms on the LittleFS filesystem */
+struct kv_littlefs_algorithms_state {
+	/** Number of algorithms on filesystem */
+	uint8_t count;
+	/** XOR of all file data CRCs */
+	uint32_t crc_xor;
+} __packed;
+
 /** WiFi network name */
 struct kv_wifi_ssid {
 	/** WiFi network name */
@@ -444,6 +470,16 @@ struct kv_gateway_bluetooth_forward_options {
 	uint8_t percent;
 } __packed;
 
+/** Version of the nRF Edge AI runtime */
+struct kv_nrf_edge_ai_runtime_version {
+	/** Major version */
+	uint8_t major;
+	/** Minor version */
+	uint8_t minor;
+	/** Patch version */
+	uint16_t patch;
+} __packed;
+
 /** Reference gravity vector for tilt calculations */
 struct kv_gravity_reference {
 	/** X axis component of gravity vector */
@@ -598,6 +634,12 @@ enum kv_builtin_id {
 	KV_KEY_SECONDARY_REMOTE_PUBLIC_KEY = 8,
 	/** Fixed global location of the device */
 	KV_KEY_FIXED_LOCATION = 10,
+	/** Device is fixed indoors and should broadcast the fact */
+	KV_KEY_BROADCAST_FIXED_INDOORS = 11,
+	/** State of LittleFS filesystem */
+	KV_KEY_LITTLEFS_FS_STATE = 12,
+	/** State of algorithms on the LittleFS filesystem */
+	KV_KEY_LITTLEFS_ALGORITHMS_STATE = 13,
 	/** WiFi network name */
 	KV_KEY_WIFI_SSID = 20,
 	/** WiFi network password */
@@ -638,6 +680,8 @@ enum kv_builtin_id {
 	KV_KEY_MEMFAULT_DISABLE = 54,
 	/** Forwarding configuration for Bluetooth advertising packets */
 	KV_KEY_GATEWAY_BLUETOOTH_FORWARD_OPTIONS = 55,
+	/** Version of the nRF Edge AI runtime */
+	KV_KEY_NRF_EDGE_AI_RUNTIME_VERSION = 56,
 	/** Reference gravity vector for tilt calculations */
 	KV_KEY_GRAVITY_REFERENCE = 60,
 	/** Array of points defining a closed polygon */
@@ -701,6 +745,9 @@ enum kv_builtin_size {
 	_KV_KEY_APPLICATION_ACTIVE_SIZE = sizeof(struct kv_application_active),
 	_KV_KEY_SECONDARY_REMOTE_PUBLIC_KEY_SIZE = sizeof(struct kv_secondary_remote_public_key),
 	_KV_KEY_FIXED_LOCATION_SIZE = sizeof(struct kv_fixed_location),
+	_KV_KEY_BROADCAST_FIXED_INDOORS_SIZE = sizeof(struct kv_broadcast_fixed_indoors),
+	_KV_KEY_LITTLEFS_FS_STATE_SIZE = sizeof(struct kv_littlefs_fs_state),
+	_KV_KEY_LITTLEFS_ALGORITHMS_STATE_SIZE = sizeof(struct kv_littlefs_algorithms_state),
 	_KV_KEY_EPACKET_UDP_PORT_SIZE = sizeof(struct kv_epacket_udp_port),
 	_KV_KEY_LTE_MODEM_IMEI_SIZE = sizeof(struct kv_lte_modem_imei),
 	_KV_KEY_LTE_NETWORKING_MODES_SIZE = sizeof(struct kv_lte_networking_modes),
@@ -712,6 +759,7 @@ enum kv_builtin_size {
 	_KV_KEY_MEMFAULT_DISABLE_SIZE = sizeof(struct kv_memfault_disable),
 	_KV_KEY_GATEWAY_BLUETOOTH_FORWARD_OPTIONS_SIZE =
 		sizeof(struct kv_gateway_bluetooth_forward_options),
+	_KV_KEY_NRF_EDGE_AI_RUNTIME_VERSION_SIZE = sizeof(struct kv_nrf_edge_ai_runtime_version),
 	_KV_KEY_GRAVITY_REFERENCE_SIZE = sizeof(struct kv_gravity_reference),
 	_KV_KEY_ALG_STATIONARY_WINDOWED_ARGS_SIZE = sizeof(struct kv_alg_stationary_windowed_args),
 	_KV_KEY_ALG_TILT_ARGS_SIZE = sizeof(struct kv_alg_tilt_args),
@@ -736,6 +784,9 @@ enum kv_builtin_size {
 #define _KV_KEY_BOARD_TARGET_TYPE struct kv_board_target
 #define _KV_KEY_SECONDARY_REMOTE_PUBLIC_KEY_TYPE struct kv_secondary_remote_public_key
 #define _KV_KEY_FIXED_LOCATION_TYPE struct kv_fixed_location
+#define _KV_KEY_BROADCAST_FIXED_INDOORS_TYPE struct kv_broadcast_fixed_indoors
+#define _KV_KEY_LITTLEFS_FS_STATE_TYPE struct kv_littlefs_fs_state
+#define _KV_KEY_LITTLEFS_ALGORITHMS_STATE_TYPE struct kv_littlefs_algorithms_state
 #define _KV_KEY_WIFI_SSID_TYPE struct kv_wifi_ssid
 #define _KV_KEY_WIFI_PSK_TYPE struct kv_wifi_psk
 #define _KV_KEY_WIFI_CHANNELS_TYPE struct kv_wifi_channels
@@ -756,6 +807,7 @@ enum kv_builtin_size {
 #define _KV_KEY_LED_DISABLE_DAILY_TIME_RANGE_TYPE struct kv_led_disable_daily_time_range
 #define _KV_KEY_MEMFAULT_DISABLE_TYPE struct kv_memfault_disable
 #define _KV_KEY_GATEWAY_BLUETOOTH_FORWARD_OPTIONS_TYPE struct kv_gateway_bluetooth_forward_options
+#define _KV_KEY_NRF_EDGE_AI_RUNTIME_VERSION_TYPE struct kv_nrf_edge_ai_runtime_version
 #define _KV_KEY_GRAVITY_REFERENCE_TYPE struct kv_gravity_reference
 #define _KV_KEY_GEOFENCE_TYPE struct kv_geofence
 #define _KV_KEY_ALG_STATIONARY_WINDOWED_ARGS_TYPE struct kv_alg_stationary_windowed_args
@@ -786,6 +838,12 @@ enum kv_builtin_size {
 	IF_ENABLED(CONFIG_KV_STORE_KEY_SECONDARY_REMOTE_PUBLIC_KEY, \
 		   (1 +)) \
 	IF_ENABLED(CONFIG_KV_STORE_KEY_FIXED_LOCATION, \
+		   (1 +)) \
+	IF_ENABLED(CONFIG_KV_STORE_KEY_BROADCAST_FIXED_INDOORS, \
+		   (1 +)) \
+	IF_ENABLED(CONFIG_KV_STORE_KEY_LITTLEFS_FS_STATE, \
+		   (1 +)) \
+	IF_ENABLED(CONFIG_KV_STORE_KEY_LITTLEFS_ALGORITHMS_STATE, \
 		   (1 +)) \
 	IF_ENABLED(CONFIG_KV_STORE_KEY_WIFI_SSID, \
 		   (1 +)) \
@@ -824,6 +882,8 @@ enum kv_builtin_size {
 	IF_ENABLED(CONFIG_KV_STORE_KEY_LED_DISABLE_DAILY_TIME_RANGE, \
 		   (1 +)) \
 	IF_ENABLED(CONFIG_KV_STORE_KEY_GATEWAY_BLUETOOTH_FORWARD_OPTIONS, \
+		   (1 +)) \
+	IF_ENABLED(CONFIG_KV_STORE_KEY_NRF_EDGE_AI_RUNTIME_VERSION, \
 		   (1 +)) \
 	IF_ENABLED(CONFIG_KV_STORE_KEY_GRAVITY_REFERENCE, \
 		   (1 +)) \
@@ -949,6 +1009,27 @@ static struct key_value_slot_definition _KV_SLOTS_ARRAY_DEFINE[] = {
 		.flags = KV_FLAGS_REFLECT,
 	},
 #endif /* CONFIG_KV_STORE_KEY_FIXED_LOCATION */
+#ifdef CONFIG_KV_STORE_KEY_BROADCAST_FIXED_INDOORS
+	{
+		.key = KV_KEY_BROADCAST_FIXED_INDOORS,
+		.range = 1,
+		.flags = KV_FLAGS_REFLECT,
+	},
+#endif /* CONFIG_KV_STORE_KEY_BROADCAST_FIXED_INDOORS */
+#ifdef CONFIG_KV_STORE_KEY_LITTLEFS_FS_STATE
+	{
+		.key = KV_KEY_LITTLEFS_FS_STATE,
+		.range = 1,
+		.flags = KV_FLAGS_REFLECT | KV_FLAGS_READ_ONLY,
+	},
+#endif /* CONFIG_KV_STORE_KEY_LITTLEFS_FS_STATE */
+#ifdef CONFIG_KV_STORE_KEY_LITTLEFS_ALGORITHMS_STATE
+	{
+		.key = KV_KEY_LITTLEFS_ALGORITHMS_STATE,
+		.range = 1,
+		.flags = KV_FLAGS_REFLECT | KV_FLAGS_READ_ONLY,
+	},
+#endif /* CONFIG_KV_STORE_KEY_LITTLEFS_ALGORITHMS_STATE */
 #ifdef CONFIG_KV_STORE_KEY_WIFI_SSID
 	{
 		.key = KV_KEY_WIFI_SSID,
@@ -1089,6 +1170,13 @@ static struct key_value_slot_definition _KV_SLOTS_ARRAY_DEFINE[] = {
 		.flags = KV_FLAGS_REFLECT,
 	},
 #endif /* CONFIG_KV_STORE_KEY_GATEWAY_BLUETOOTH_FORWARD_OPTIONS */
+#ifdef CONFIG_KV_STORE_KEY_NRF_EDGE_AI_RUNTIME_VERSION
+	{
+		.key = KV_KEY_NRF_EDGE_AI_RUNTIME_VERSION,
+		.range = 1,
+		.flags = KV_FLAGS_REFLECT,
+	},
+#endif /* CONFIG_KV_STORE_KEY_NRF_EDGE_AI_RUNTIME_VERSION */
 #ifdef CONFIG_KV_STORE_KEY_GRAVITY_REFERENCE
 	{
 		.key = KV_KEY_GRAVITY_REFERENCE,

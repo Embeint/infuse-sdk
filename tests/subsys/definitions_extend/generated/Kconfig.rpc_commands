@@ -347,6 +347,18 @@ config INFUSE_RPC_COMMAND_COAP_DOWNLOAD_V2_REQUIRED_AUTH
 	depends on INFUSE_RPC_COMMAND_COAP_DOWNLOAD_V2
 	default 2
 
+config INFUSE_RPC_COMMAND_COAP_DOWNLOAD_V3
+	bool "Enable RPC coap_download_v3"
+	depends on INFUSE_COAP
+	default y if INFUSE_SDK
+	help
+	  Download a file from a COAP server (Infuse-IoT DTLS protected)
+
+config INFUSE_RPC_COMMAND_COAP_DOWNLOAD_V3_REQUIRED_AUTH
+	int "Required authorisation level to run coap_download_v3"
+	depends on INFUSE_RPC_COMMAND_COAP_DOWNLOAD_V3
+	default 2
+
 config INFUSE_RPC_COMMAND_FILE_WRITE_BASIC
 	bool "Enable RPC file_write_basic"
 	default y if INFUSE_SDK
@@ -368,6 +380,39 @@ config INFUSE_RPC_COMMAND_ANNOTATE_REQUIRED_AUTH
 	int "Required authorisation level to run annotate"
 	depends on INFUSE_RPC_COMMAND_ANNOTATE
 	default 2
+
+config INFUSE_RPC_COMMAND_TDF_DATA_LOGGER_FLUSH
+	bool "Enable RPC tdf_data_logger_flush"
+	depends on TDF_DATA_LOGGER
+	default y if INFUSE_SDK
+	help
+	  Write an annotation to the device
+
+config INFUSE_RPC_COMMAND_TDF_DATA_LOGGER_FLUSH_REQUIRED_AUTH
+	int "Required authorisation level to run tdf_data_logger_flush"
+	depends on INFUSE_RPC_COMMAND_TDF_DATA_LOGGER_FLUSH
+	default 2
+
+config INFUSE_RPC_COMMAND_SHIPPING_MODE
+	bool "Enable RPC shipping_mode"
+	help
+	  Enter/Exit shipping mode on a device
+
+config INFUSE_RPC_COMMAND_SHIPPING_MODE_REQUIRED_AUTH
+	int "Required authorisation level to run shipping_mode"
+	depends on INFUSE_RPC_COMMAND_SHIPPING_MODE
+	default 2
+
+config INFUSE_RPC_COMMAND_FILE_WRITE
+	bool "Enable RPC file_write"
+	default y if INFUSE_SDK
+	help
+	  Write a file to the device
+
+config INFUSE_RPC_COMMAND_FILE_WRITE_REQUIRED_AUTH
+	int "Required authorisation level to run file_write"
+	depends on INFUSE_RPC_COMMAND_FILE_WRITE
+	default 1
 
 config INFUSE_RPC_COMMAND_BT_CONNECT_INFUSE
 	bool "Enable RPC bt_connect_infuse"
@@ -437,6 +482,30 @@ config INFUSE_RPC_COMMAND_GRAVITY_REFERENCE_UPDATE
 config INFUSE_RPC_COMMAND_GRAVITY_REFERENCE_UPDATE_REQUIRED_AUTH
 	int "Required authorisation level to run gravity_reference_update"
 	depends on INFUSE_RPC_COMMAND_GRAVITY_REFERENCE_UPDATE
+	default 2
+
+config INFUSE_RPC_COMMAND_FILESYSTEM_LS
+	bool "Enable RPC filesystem_ls"
+	depends on INFUSE_LITTLEFS
+	default y
+	help
+	  Query files currently on the filesystem
+
+config INFUSE_RPC_COMMAND_FILESYSTEM_LS_REQUIRED_AUTH
+	int "Required authorisation level to run filesystem_ls"
+	depends on INFUSE_RPC_COMMAND_FILESYSTEM_LS
+	default 2
+
+config INFUSE_RPC_COMMAND_FILESYSTEM_RM
+	bool "Enable RPC filesystem_rm"
+	depends on INFUSE_LITTLEFS
+	default y
+	help
+	  Delete file currently on the filesystem
+
+config INFUSE_RPC_COMMAND_FILESYSTEM_RM_REQUIRED_AUTH
+	int "Required authorisation level to run filesystem_rm"
+	depends on INFUSE_RPC_COMMAND_FILESYSTEM_RM
 	default 2
 
 config INFUSE_RPC_COMMAND_UBX_ASSIST_NOW_ZTP_CREDS

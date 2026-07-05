@@ -277,6 +277,13 @@ void rpc_command_runner(struct net_buf *request)
 		}
 		break;
 #endif /* CONFIG_INFUSE_RPC_COMMAND_COAP_DOWNLOAD_V2 */
+#ifdef CONFIG_INFUSE_RPC_COMMAND_COAP_DOWNLOAD_V3
+	case RPC_ID_COAP_DOWNLOAD_V3:
+		if (AUTHORISED(auth, COAP_DOWNLOAD_V3)) { /* GCOVR_EXCL_BR_LINE */
+			response = rpc_command_coap_download_v3(request);
+		}
+		break;
+#endif /* CONFIG_INFUSE_RPC_COMMAND_COAP_DOWNLOAD_V3 */
 #ifdef CONFIG_INFUSE_RPC_COMMAND_FILE_WRITE_BASIC
 	case RPC_ID_FILE_WRITE_BASIC:
 		if (AUTHORISED(auth, FILE_WRITE_BASIC)) { /* GCOVR_EXCL_BR_LINE */
@@ -291,6 +298,27 @@ void rpc_command_runner(struct net_buf *request)
 		}
 		break;
 #endif /* CONFIG_INFUSE_RPC_COMMAND_ANNOTATE */
+#ifdef CONFIG_INFUSE_RPC_COMMAND_TDF_DATA_LOGGER_FLUSH
+	case RPC_ID_TDF_DATA_LOGGER_FLUSH:
+		if (AUTHORISED(auth, TDF_DATA_LOGGER_FLUSH)) { /* GCOVR_EXCL_BR_LINE */
+			response = rpc_command_tdf_data_logger_flush(request);
+		}
+		break;
+#endif /* CONFIG_INFUSE_RPC_COMMAND_TDF_DATA_LOGGER_FLUSH */
+#ifdef CONFIG_INFUSE_RPC_COMMAND_SHIPPING_MODE
+	case RPC_ID_SHIPPING_MODE:
+		if (AUTHORISED(auth, SHIPPING_MODE)) { /* GCOVR_EXCL_BR_LINE */
+			response = rpc_command_shipping_mode(request);
+		}
+		break;
+#endif /* CONFIG_INFUSE_RPC_COMMAND_SHIPPING_MODE */
+#ifdef CONFIG_INFUSE_RPC_COMMAND_FILE_WRITE
+	case RPC_ID_FILE_WRITE:
+		if (AUTHORISED(auth, FILE_WRITE)) { /* GCOVR_EXCL_BR_LINE */
+			response = rpc_command_file_write(request);
+		}
+		break;
+#endif /* CONFIG_INFUSE_RPC_COMMAND_FILE_WRITE */
 #ifdef CONFIG_INFUSE_RPC_COMMAND_BT_CONNECT_INFUSE
 	case RPC_ID_BT_CONNECT_INFUSE:
 		if (AUTHORISED(auth, BT_CONNECT_INFUSE)) { /* GCOVR_EXCL_BR_LINE */
@@ -333,6 +361,20 @@ void rpc_command_runner(struct net_buf *request)
 		}
 		break;
 #endif /* CONFIG_INFUSE_RPC_COMMAND_GRAVITY_REFERENCE_UPDATE */
+#ifdef CONFIG_INFUSE_RPC_COMMAND_FILESYSTEM_LS
+	case RPC_ID_FILESYSTEM_LS:
+		if (AUTHORISED(auth, FILESYSTEM_LS)) { /* GCOVR_EXCL_BR_LINE */
+			response = rpc_command_filesystem_ls(request);
+		}
+		break;
+#endif /* CONFIG_INFUSE_RPC_COMMAND_FILESYSTEM_LS */
+#ifdef CONFIG_INFUSE_RPC_COMMAND_FILESYSTEM_RM
+	case RPC_ID_FILESYSTEM_RM:
+		if (AUTHORISED(auth, FILESYSTEM_RM)) { /* GCOVR_EXCL_BR_LINE */
+			response = rpc_command_filesystem_rm(request);
+		}
+		break;
+#endif /* CONFIG_INFUSE_RPC_COMMAND_FILESYSTEM_RM */
 #ifdef CONFIG_INFUSE_RPC_COMMAND_UBX_ASSIST_NOW_ZTP_CREDS
 	case RPC_ID_UBX_ASSIST_NOW_ZTP_CREDS:
 		if (AUTHORISED(auth, UBX_ASSIST_NOW_ZTP_CREDS)) { /* GCOVR_EXCL_BR_LINE */
