@@ -3,6 +3,15 @@
 file(GLOB PROFILE_FILES "${CMAKE_CURRENT_LIST_DIR}/profiles/profile_*.cmake")
 set(ALGORITHM_BUILD_DIR "${CMAKE_CURRENT_LIST_DIR}")
 
+# Determine the configuration name for any application
+function(target_name_core
+    CPU               # CPU type (cortex_m3, cortex_m4, etc)
+    FP                # Floating point ABI (hard, soft, softfp)
+    CONFIG_OUT        # Variable that the configuration name will be output in
+    )
+  set(${CONFIG_OUT} "${CPU}-${FP}" PARENT_SCOPE)
+endfunction()
+
 # Determine the target name for any application
 function(algorithm_target_name_core
     ALG_NAME          # Name of the algorithm
@@ -69,7 +78,7 @@ function(algorithm_generate_targets
   cmake_parse_arguments(ARG
     ""
     "OUTPUT_BASE"
-    "SOURCES;INCLUDES"
+    "SOURCES;INCLUDES;TARGET_WHITELIST"
     ${ARGN}
   )
 
@@ -90,6 +99,16 @@ function(algorithm_generate_targets
     foreach(FP_MODE IN LISTS PROFILE_FP_MODES)
       algorithm_target_name_core(${ALG_NAME} ${PROFILE_NAME} ${FP_MODE} target_name)
       algorithm_target_dir_core(${PROFILE_NAME} ${FP_MODE} ${ARG_OUTPUT_BASE} target_folder)
+      # Check if this target is allowed
+      if(ARG_TARGET_WHITELIST)
+        target_name_core(${PROFILE_NAME} ${FP_MODE} target_cfg)
+        list(FIND ARG_TARGET_WHITELIST ${target_cfg} target_index)
+        if(target_index EQUAL -1)
+          message(DEBUG "Skipping ${target_name} because
+                  it is not in whitelist: ${ARG_TARGET_WHITELIST}")
+          continue()
+        endif()
+      endif()
       set(llext_file ${target_folder}/${ALG_NAME}.llext)
       set(map_file ${target_folder}/${ALG_NAME}.map)
       set(stripped_file ${target_folder}/${ALG_NAME}.llext.stripped)
