@@ -164,6 +164,13 @@ int rpc_command_bt_file_copy_basic_run(struct rpc_bt_file_copy_basic_request *re
 		goto cleanup;
 	}
 
+	/* Check for early termination */
+	if (k_sem_take(&completion_ctx.done, K_NO_WAIT) == 0) {
+		/* Command terminated before first ACK */
+		rc = completion_ctx.rc;
+		goto cleanup;
+	}
+
 	/* Reduce timeout value for bulk data transfer */
 	rc = rpc_client_update_response_timeout(&client_ctx, request_id, K_SECONDS(1));
 	if (rc < 0) {
