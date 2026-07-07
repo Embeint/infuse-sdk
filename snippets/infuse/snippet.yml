@@ -73,6 +73,10 @@ boards:
     append:
       EXTRA_DTC_OVERLAY_FILE: boards/nrf9161dk_nrf9161_ns.overlay
       EXTRA_CONF_FILE: infuse_snippet.conf
+  nrf93m1dk/nrf54l15/cpuapp:
+    append:
+      EXTRA_DTC_OVERLAY_FILE: boards/nrf93m1dk_nrf54l15_cpuapp.overlay
+      EXTRA_CONF_FILE: infuse_snippet.conf
   tauro/nrf9151/ns:
     append:
       EXTRA_DTC_OVERLAY_FILE: boards/tauro_nrf9151_ns.overlay
