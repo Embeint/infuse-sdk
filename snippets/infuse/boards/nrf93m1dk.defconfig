@@ -1,0 +1,19 @@
+if BOARD_NRF93M1DK_NRF54L15_CPUAPP
+
+configdefault NETWORKING
+    default y if !MCUBOOT
+
+# We want to use the UART ASYNC API
+configdefault UART_ASYNC_API
+	default y
+configdefault UART_ASYNC_TX_CACHE_SIZE
+	default 64
+choice MODEM_BACKEND_UART_IMPL
+	default MODEM_BACKEND_UART_ASYNC_HWFC
+endchoice
+configdefault UART_30_NRF_TX_BUFFER_SIZE
+	default 1536
+configdefault UART_30_INTERRUPT_DRIVEN
+	default n
+
+endif # BOARD_NRF93M1DK_NRF54L15_CPUAPP
