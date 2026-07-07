@@ -259,7 +259,9 @@ static void bluetooth_adv_handler(struct net_buf *buf)
 	if (epacket_gateway_forward_filter(bt_forwarding_options.flags,
 					   bt_forwarding_options.percent, buf)) {
 		/* Forward packets that pass the filter */
-		epacket_gateway_receive_handler(udp, buf);
+		// epacket_gateway_receive_handler(udp, buf);
+		net_buf_unref(buf);
+
 	} else {
 		if (bt_forwarding_options.flags & FILTER_FORWARD_RSSI_FALLBACK) {
 			struct epacket_rx_metadata *meta = net_buf_user_data(buf);

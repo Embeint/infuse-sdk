@@ -111,6 +111,10 @@ FUNC_NORETURN static void cleanup_and_reboot(void)
 {
 	/* Flush any logs */
 	LOG_PANIC();
+
+	for (;;)
+		;
+
 	/* Trigger the reboot */
 	sys_reboot(SYS_REBOOT_WARM);
 }
