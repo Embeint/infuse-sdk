@@ -9,6 +9,9 @@
 		watchdog0 = &wdt31;
 	};
 
+	aliases {
+		die-temp0 = &temp;
+	};
 
 	/* End of application SRAM (not in shared SRAM) */
 	retained_mem_region: memory@2002EF00 {
