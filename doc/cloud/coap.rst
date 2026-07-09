@@ -3,7 +3,7 @@
 CoAP Server
 ###########
 
-The Infuse-IoT CoAP server hosts the following kinds of files:
+The Infuse-IoT `CoAP server`_ hosts the following kinds of files:
 
   * Application images for OTA device firmware upgrades (DFU)
   * Application diff files for optimised DFU
@@ -20,3 +20,5 @@ based on the Infuse-IoT ID associated with the DTLS identity.
 
 There is additionally one hardcoded Identity-PSK pair which has access
 solely to the hosted test files for the purposes of CI validation.
+
+.. _CoAP server: https://docs.infuse-cloud.io/docs/infuse-iot/connectivity#coap-files
