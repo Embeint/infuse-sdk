@@ -204,8 +204,8 @@ static void derive_shared_secret(psa_key_id_t root_key_id, const uint8_t public_
 				 struct infuse_key_info *key_info,
 				 mbedtls_svc_key_id_t shared_secret_storage_id)
 {
+	psa_key_attributes_t key_attributes = PSA_KEY_ATTRIBUTES_INIT;
 	uint8_t __maybe_unused shared_secret[32];
-	psa_key_attributes_t key_attributes;
 	size_t __maybe_unused olen;
 	psa_status_t status;
 	psa_key_id_t key_id;
