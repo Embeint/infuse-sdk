@@ -162,12 +162,12 @@ static psa_key_id_t generate_root_ecc_key_pair(void)
 		key_id = INFUSE_ROOT_ECC_KEY_ID;
 	} else {
 		LOG_DBG("Generating root identity");
-#ifdef ITS_AVAILABLE
 		/* Remove any existing root/derived keys */
-		(void)psa_its_remove(INFUSE_ROOT_ECC_KEY_ID);
+		(void)psa_destroy_key(INFUSE_ROOT_ECC_KEY_ID);
+		(void)psa_destroy_key(INFUSE_ROOT_ECC_SHARED_SECRET_KEY_ID);
+		(void)psa_destroy_key(INFUSE_ROOT_ECC_SECONDARY_SHARED_SECRET_KEY_ID);
+#ifdef ITS_AVAILABLE
 		(void)psa_its_remove(INFUSE_ROOT_ECC_PUBLIC_KEY_ID);
-		(void)psa_its_remove(INFUSE_ROOT_ECC_SHARED_SECRET_KEY_ID);
-		(void)psa_its_remove(INFUSE_ROOT_ECC_SECONDARY_SHARED_SECRET_KEY_ID);
 #endif /* ITS_AVAILABLE */
 #ifdef CONFIG_MODEM_KEY_MGMT
 		/* COAP PSK is also a derived key */
@@ -545,19 +545,12 @@ int infuse_security_init(void)
 
 int infuse_security_device_root_reset(void)
 {
-#ifdef ITS_AVAILABLE
 	psa_status_t status;
 
-	/* Delete the root keypair, `infuse_security_init` takes care of deleting all
-	 * cached persistent keys when it runs
-	 */
-	status = psa_its_remove(INFUSE_ROOT_ECC_KEY_ID);
+	status = psa_destroy_key(INFUSE_ROOT_ECC_KEY_ID);
 	if (status != PSA_SUCCESS) {
 		return -EIO;
 	}
-#else
-	/* Root keypair is not saved persistently  */
-#endif
 	return 0;
 }
 
@@ -725,21 +718,16 @@ psa_key_id_t infuse_security_secondary_device_sign_key(void)
 
 int infuse_security_secondary_device_key_reset(void)
 {
-#ifdef ITS_AVAILABLE
 	psa_status_t status;
 
-	status = psa_its_remove(INFUSE_ROOT_ECC_SECONDARY_SHARED_SECRET_KEY_ID);
+	status = psa_destroy_key(INFUSE_ROOT_ECC_SECONDARY_SHARED_SECRET_KEY_ID);
 	if (status == PSA_SUCCESS) {
 		return 0;
-	} else if (status == PSA_ERROR_DOES_NOT_EXIST) {
+	} else if (status == PSA_ERROR_INVALID_HANDLE) {
 		return -ENOENT;
 	} else {
 		return -EIO;
 	}
-#else
-	/* No cached information to delete */
-	return 0;
-#endif /* ITS_AVAILABLE */
 }
 
 #endif /* CONFIG_INFUSE_SECURITY_SECONDARY_REMOTE_ENABLE */
