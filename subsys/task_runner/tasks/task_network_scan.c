@@ -30,7 +30,9 @@ enum {
 
 #define WIFI_BSSID_MASK 0xFFFFFFFFFFF0ULL
 
+#ifdef CONFIG_LTE_LINK_CONTROL
 TDF_LTE_TAC_CELLS_VAR(tdf_lte_tac_cells_n, CONFIG_TASK_RUNNER_TASK_NETWORK_SCAN_LTE_MAX_NEIGHBOURS);
+#endif /* CONFIG_LTE_LINK_CONTROL */
 
 static struct {
 #ifdef CONFIG_LTE_LINK_CONTROL
@@ -193,7 +195,7 @@ static int wifi_scan_handle(const struct task_network_scan_args *args)
 wifi_done:
 	state.phase = PHASE_LTE_START;
 	if (state.manual_if_up) {
-		/* Disable interface if it we enabled it */
+		/* Disable interface if we enabled it */
 		(void)net_if_down(iface);
 	}
 	return rc;
@@ -330,7 +332,7 @@ void network_scan_task_fn(struct k_work *work)
 	const struct task_schedule *sch = task_schedule_from_data(task);
 	const struct task_network_scan_args *args = &sch->task_args.infuse.network_scan;
 	uint64_t epoch_time;
-	size_t len;
+	__maybe_unused size_t len;
 	int rc = 0;
 
 	state.running = task;
