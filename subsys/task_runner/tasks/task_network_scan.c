@@ -189,7 +189,7 @@ static int wifi_scan_handle(const struct task_network_scan_args *args)
 	}
 
 	rc = net_mgmt(NET_REQUEST_WIFI_SCAN, iface, &params, sizeof(struct wifi_scan_params));
-	LOG_INF("Requesting Wi-Fi AP scan (%d)", rc);
+	LOG_INF("Requested Wi-Fi AP scan on bands 0x%x (%d)", params.bands, rc);
 	return rc;
 
 wifi_done:
@@ -422,9 +422,14 @@ void network_scan_task_fn(struct k_work *work)
 
 	epoch_time = epoch_time_now();
 
+#ifdef CONFIG_WIFI
+	uint8_t aps_to_log =
+		args->wifi.max_aps > 0 ? MIN(state.aps_found, args->wifi.max_aps) : state.aps_found;
+#endif /* CONFIG_WIFI */
+
 	struct tdf_network_scan_count count = {
 #ifdef CONFIG_WIFI
-		.num_wifi = state.aps_found,
+		.num_wifi = aps_to_log,
 #endif /* CONFIG_WIFI */
 #ifdef CONFIG_LTE_LINK_CONTROL
 		.num_lte = state.gci_cells +
@@ -437,10 +442,10 @@ void network_scan_task_fn(struct k_work *work)
 			      &count);
 
 #ifdef CONFIG_WIFI
-	if (state.aps_found > 0) {
+	if (aps_to_log > 0) {
 		/* Individual APs in a TDF_ARRAY_TIME */
 		TASK_SCHEDULE_TDF_LOG_ARRAY(sch, TASK_NETWORK_SCAN_LOG_WIFI_AP, TDF_WIFI_AP_INFO,
-					    state.aps_found, epoch_time, 0, state.wifi_aps);
+					    aps_to_log, epoch_time, 0, state.wifi_aps);
 	}
 #endif /* CONFIG_WIFI */
 #ifdef CONFIG_LTE_LINK_CONTROL
