@@ -86,9 +86,9 @@ static void scan_result_handle(const struct wifi_scan_result *entry)
 
 	/* Filter out duplicate BSSIDs */
 	if (!(state.wifi_flags & TASK_NETWORK_SCAN_WIFI_FLAGS_INCLUDE_DUPLICATES)) {
-		temp = sys_get_be48(state.wifi_aps->bssid.val) & WIFI_BSSID_MASK;
-
 		for (int i = 0; i < state.aps_found; i++) {
+			temp = sys_get_be48(state.wifi_aps[i].bssid.val) & WIFI_BSSID_MASK;
+
 			if (bssid_masked == temp) {
 				LOG_DBG("%s %012llX: '%s'", "Duplicate BSSID", bssid, entry->ssid);
 				return;
