@@ -45,17 +45,17 @@ enum {
 	 * purposes. When set, multiple networks from the same AP will be reported anyway.
 	 */
 	TASK_NETWORK_SCAN_WIFI_FLAGS_INCLUDE_DUPLICATES = BIT(0),
-	/**
-	 * Reporting networks that use a locally administered BSSID is generally not useful for
-	 * localisation purposes. When set, locally administered BSSIDs' are reported anyway.
-	 */
-	TASK_NETWORK_SCAN_WIFI_FLAGS_INCLUDE_LOCALLY_ADMINISTERED = BIT(0),
 	/** If enabled, scan Wi-Fi channels over multiple calls in order of most to least
 	 * common. Scanning terminates as soon as @a desired_aps is reached.
 	 */
 	TASK_NETWORK_SCAN_WIFI_FLAGS_SCAN_PROGRESSIVE = BIT(1),
 	/** Active scanning, default is passive */
 	TASK_NETWORK_SCAN_WIFI_FLAGS_SCAN_ACTIVE = BIT(2),
+	/**
+	 * Reporting networks that use a locally administered BSSID is generally not useful for
+	 * localisation purposes. When set, locally administered BSSIDs' are reported anyway.
+	 */
+	TASK_NETWORK_SCAN_WIFI_FLAGS_INCLUDE_LOCALLY_ADMINISTERED = BIT(3),
 };
 
 /** @brief Network scan task arguments */
