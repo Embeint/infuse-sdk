@@ -213,7 +213,9 @@ static const struct net_wifi_mgmt_offload sim_wifi_api = {
 static struct wifi_sim_iface_data data;
 NET_DEVICE_OFFLOAD_INIT(sim_wifi_dev, "sim_wifi_dev", sim_wifi_dev_init, NULL, &data, NULL,
 			CONFIG_WIFI_INIT_PRIORITY, &sim_wifi_api, NET_ETH_MTU);
+#if defined(CONFIG_NET_CONNECTION_MANAGER_CONNECTIVITY_WIFI_MGMT)
 CONNECTIVITY_WIFI_MGMT_BIND(sim_wifi_dev);
+#endif
 
 void wifi_sim_in_network_range(bool in_range)
 {
