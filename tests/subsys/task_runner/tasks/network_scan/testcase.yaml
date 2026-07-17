@@ -1,0 +1,12 @@
+common:
+  min_flash: 64
+  min_ram: 32
+  required_snippets:
+    - infuse
+  platform_allow:
+    - native_sim
+  integration_platforms:
+    - native_sim
+
+tests:
+  task_runner.tasks.network_scan: {}
