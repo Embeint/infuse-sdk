@@ -1,0 +1,24 @@
+common:
+  tags: algorithms
+  min_flash: 64
+  min_ram: 32
+  platform_allow:
+    - mps2/an386      # Cortex-M4
+  integration_platforms:
+    - mps2/an386      # Cortex-M4
+  harness: console
+  harness_config:
+    type: multi_line
+    ordered: true
+    regex:
+      - "INIT"
+      - "RUN: 0 RUN\\*2.75: 0"
+      - "RUN: 1 RUN\\*2.75: 2"
+      - "RUN: 2 RUN\\*2.75: 5"
+tests:
+  algorithms.target_filtering.native:
+    extra_configs:
+      - CONFIG_TEST_ALGORITHM_BUILD_NATIVE=y
+  algorithms.target_filtering.llext:
+    extra_configs:
+      - CONFIG_TEST_ALGORITHM_BUILD_LLEXT=y

@@ -1,0 +1,16 @@
+# SPDX-License-Identifier: Apache-2.0
+
+choice TEST_ALGORITHM_BUILD_TYPE
+	prompt "How to build the algorithm"
+
+config TEST_ALGORITHM_BUILD_LLEXT
+	bool "Compile to llext file to load as elf"
+	select ALGORITHM_LLEXT_BUILTIN
+
+config TEST_ALGORITHM_BUILD_NATIVE
+	bool "Compile to run natively"
+	select ALGORITHM_LLEXT_NATIVE
+
+endchoice
+
+source "Kconfig.zephyr"
