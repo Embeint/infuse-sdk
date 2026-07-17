@@ -14,19 +14,34 @@
 #include <zephyr/device.h>
 #include <zephyr/net/conn_mgr/connectivity_wifi_mgmt.h>
 
+#include <infuse/drivers/wifi/wifi_sim.h>
+
 struct wifi_sim_iface_data {
+	struct scan_filter {
+		struct wifi_scan_params params;
+		char ssids[WIFI_MGMT_SCAN_SSID_FILT_MAX][WIFI_SSID_MAX_LEN + 1];
+		uint8_t ssid_lengths[WIFI_MGMT_SCAN_SSID_FILT_MAX];
+		uint8_t ssid_count;
+	} scan_filter;
 	struct k_work power_up;
 	struct k_work power_down;
+	struct k_work_delayable scan;
 	struct k_work_delayable connect_success;
 	struct k_work_delayable connect_failure;
 	struct k_work disconnect;
 	struct net_if *iface;
+	scan_result_cb_t scan_cb;
+	const struct wifi_scan_result *scan_results;
+	size_t scan_result_count;
 	bool ap_in_range;
+	bool scanning;
 	bool connecting;
 	bool connected;
 };
 
 LOG_MODULE_REGISTER(sim_wifi, LOG_LEVEL_INF);
+
+#define SIM_WIFI_SCAN_DELAY K_MSEC(100)
 
 static int offload_dummy_get(net_sa_family_t family, enum net_sock_type type,
 			     enum net_ip_protocol ip_proto, struct net_context **context)
@@ -46,6 +61,135 @@ static struct net_offload offload_dummy = {
 	.recv = NULL,
 	.put = NULL,
 };
+
+static void sim_wifi_scan_params_store(struct wifi_sim_iface_data *data,
+				       const struct wifi_scan_params *params)
+{
+	struct scan_filter *filter = &data->scan_filter;
+
+	memset(&filter->params, 0, sizeof(filter->params));
+	memset(filter->ssid_lengths, 0, sizeof(filter->ssid_lengths));
+	filter->ssid_count = 0;
+
+	if (params == NULL) {
+		return;
+	}
+
+	filter->params = *params;
+	memset(filter->params.ssids, 0, sizeof(filter->params.ssids));
+
+	for (int i = 0; i < WIFI_MGMT_SCAN_SSID_FILT_MAX; i++) {
+		size_t ssid_len;
+
+		if (params->ssids[i] == NULL) {
+			continue;
+		}
+		ssid_len = strlen(params->ssids[i]);
+		if (ssid_len > WIFI_SSID_MAX_LEN) {
+			filter->ssid_lengths[i] = UINT8_MAX;
+		} else {
+			memcpy(filter->ssids[i], params->ssids[i], ssid_len);
+			filter->ssids[i][ssid_len] = '\0';
+			filter->ssid_lengths[i] = ssid_len;
+			filter->params.ssids[i] = filter->ssids[i];
+		}
+		filter->ssid_count++;
+	}
+}
+
+static bool sim_wifi_scan_result_channel_requested(const struct scan_filter *filter,
+						   const struct wifi_scan_result *result)
+{
+	bool channel_filtered = false;
+
+	if ((filter->params.bands != 0) && !(filter->params.bands & BIT(result->band))) {
+		return false;
+	}
+
+	for (int i = 0; i < WIFI_MGMT_SCAN_CHAN_MAX_MANUAL; i++) {
+		const struct wifi_band_channel *chan = &filter->params.band_chan[i];
+
+		if (chan->channel == 0) {
+			continue;
+		}
+		channel_filtered = true;
+		if ((chan->band == result->band) && (chan->channel == result->channel)) {
+			return true;
+		}
+	}
+	return !channel_filtered;
+}
+
+static bool sim_wifi_scan_result_ssid_requested(const struct scan_filter *filter,
+						const struct wifi_scan_result *result)
+{
+	if (filter->ssid_count == 0) {
+		return true;
+	}
+
+	for (int i = 0; i < WIFI_MGMT_SCAN_SSID_FILT_MAX; i++) {
+		if (filter->ssid_lengths[i] != result->ssid_length) {
+			continue;
+		}
+		if (memcmp(filter->ssids[i], result->ssid, result->ssid_length) == 0) {
+			return true;
+		}
+	}
+	return false;
+}
+
+static bool sim_wifi_scan_result_requested(const struct scan_filter *filter,
+					   const struct wifi_scan_result *result)
+{
+	return sim_wifi_scan_result_channel_requested(filter, result) &&
+	       sim_wifi_scan_result_ssid_requested(filter, result);
+}
+
+static void sim_wifi_scan_work(struct k_work *work)
+{
+	struct k_work_delayable *delayable = k_work_delayable_from_work(work);
+	struct wifi_sim_iface_data *data =
+		CONTAINER_OF(delayable, struct wifi_sim_iface_data, scan);
+	scan_result_cb_t cb = data->scan_cb;
+	uint16_t emitted = 0;
+
+	LOG_INF("Delivering scan results");
+	for (size_t i = 0; i < data->scan_result_count; i++) {
+		const struct wifi_scan_result *result = &data->scan_results[i];
+
+		if (sim_wifi_scan_result_requested(&data->scan_filter, result)) {
+			cb(data->iface, 0, (struct wifi_scan_result *)result);
+			emitted++;
+			if ((data->scan_filter.params.max_bss_cnt != 0) &&
+			    (emitted >= data->scan_filter.params.max_bss_cnt)) {
+				break;
+			}
+		}
+	}
+
+	LOG_DBG("Scan results delivered");
+	data->scan_cb = NULL;
+	data->scanning = false;
+	cb(data->iface, 0, NULL);
+}
+
+static int sim_wifi_scan(const struct device *dev, struct wifi_scan_params *params,
+			 scan_result_cb_t cb)
+{
+	struct wifi_sim_iface_data *data = dev->data;
+
+	if (data->scanning) {
+		return -EBUSY;
+	}
+
+	data->scan_cb = cb;
+	sim_wifi_scan_params_store(data, params);
+	data->scanning = true;
+
+	LOG_INF("Scan will return up to %zu networks", data->scan_result_count);
+	k_work_schedule(&data->scan, SIM_WIFI_SCAN_DELAY);
+	return 0;
+}
 
 static void sim_wifi_connect_success_work(struct k_work *work)
 {
@@ -186,6 +330,7 @@ static int sim_wifi_dev_init(const struct device *dev)
 	data->ap_in_range = true;
 	k_work_init(&data->power_up, sim_wifi_power_up_work);
 	k_work_init(&data->power_down, sim_wifi_power_down_work);
+	k_work_init_delayable(&data->scan, sim_wifi_scan_work);
 	k_work_init_delayable(&data->connect_success, sim_wifi_connect_success_work);
 	k_work_init_delayable(&data->connect_failure, sim_wifi_connect_failure_work);
 	k_work_init(&data->disconnect, sim_wifi_disconnect_work);
@@ -199,6 +344,7 @@ static enum offloaded_net_if_types sim_wifi_get_type(void)
 }
 
 static const struct wifi_mgmt_ops sim_wifi_mgmt = {
+	.scan = sim_wifi_scan,
 	.connect = sim_wifi_connect,
 	.disconnect = sim_wifi_disconnect,
 };
@@ -224,6 +370,23 @@ void wifi_sim_in_network_range(bool in_range)
 
 	LOG_INF("AP is now %s", in_range ? "in range" : "out of range");
 	data->ap_in_range = in_range;
+}
+
+void wifi_sim_scan_results_set(const struct wifi_scan_result *results, size_t result_count)
+{
+	const struct device *dev = &DEVICE_NAME_GET(sim_wifi_dev);
+	struct wifi_sim_iface_data *data = dev->data;
+
+	data->scan_results = results;
+	data->scan_result_count = results == NULL ? 0 : result_count;
+}
+
+const struct wifi_scan_params *wifi_sim_scan_params_get(void)
+{
+	const struct device *dev = &DEVICE_NAME_GET(sim_wifi_dev);
+	struct wifi_sim_iface_data *data = dev->data;
+
+	return &data->scan_filter.params;
 }
 
 void wifi_sim_trigger_disconnect(void)
