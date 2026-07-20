@@ -10,7 +10,7 @@
 #ifndef INFUSE_SDK_INCLUDE_INFUSE_LIB_NRF_MODEM_LIB_SIM_H_
 #define INFUSE_SDK_INCLUDE_INFUSE_LIB_NRF_MODEM_LIB_SIM_H_
 
-#include <modem/pdn.h>
+#include <modem/lte_lc.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -22,7 +22,7 @@ extern "C" {
  * @param apn Access Point Name
  * @param family IP family
  */
-void nrf_modem_lib_sim_default_pdn_ctx(const char **apn, enum pdn_fam *family);
+void nrf_modem_lib_sim_default_pdn_ctx(const char **apn, enum lte_lc_pdn_family *family);
 
 /**
  * @brief Set reported signal strenth and quality

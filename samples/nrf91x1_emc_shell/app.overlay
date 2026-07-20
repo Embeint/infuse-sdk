@@ -1,0 +1,9 @@
+/*
+ * Copyright (c) 2026 Embeint Holdings Pty Ltd
+ * SPDX-License-Identifier: FSL-1.1-ALv2
+ *
+ * Infuse snippet not included in build, but we still need
+ * the devicetree based memory configuration.
+ */
+
+#include <common/nordic/modem_shmem.dtsi>

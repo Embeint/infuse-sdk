@@ -27,7 +27,6 @@
 #include <nrf_modem.h>
 #include <modem/nrf_modem_lib.h>
 #include <modem/lte_lc.h>
-#include <modem/pdn.h>
 
 K_SEM_DEFINE(reboot_request, 0, 1);
 
@@ -161,7 +160,7 @@ ZTEST(infuse_nrf_modem_monitor, test_integration)
 	struct lte_modem_network_state net_state;
 	struct nrf_modem_fault_info fault_info = {0};
 	char ipv4_addr[NET_IPV4_ADDR_LEN] = {0};
-	enum pdn_fam default_family;
+	enum lte_lc_pdn_family default_family;
 	const char *default_apn;
 	struct net_if_addr *added;
 	int rc;
@@ -213,14 +212,14 @@ ZTEST(infuse_nrf_modem_monitor, test_integration)
 	zassert_equal(LTE_LC_SYSTEM_MODE_LTEM_NBIOT_GPS, net_modes.modes);
 	zassert_equal(CONFIG_LTE_MODE_PREFERENCE_VALUE, net_modes.prefer);
 	kv_store_read(KV_KEY_LTE_PDP_CONFIG, &pdp_config, sizeof(pdp_config));
-	zassert_equal(PDN_FAM_IPV4V6, pdp_config.family);
+	zassert_equal(LTE_LC_PDN_FAM_IPV4V6, pdp_config.family);
 	zassert_mem_equal(CONFIG_INFUSE_MODEM_MONITOR_DEFAULT_PDP_APN, pdp_config.apn.value,
 			  strlen(CONFIG_INFUSE_MODEM_MONITOR_DEFAULT_PDP_APN));
 
 	nrf_modem_lib_sim_default_pdn_ctx(&default_apn, &default_family);
 	zassert_mem_equal(CONFIG_INFUSE_MODEM_MONITOR_DEFAULT_PDP_APN, default_apn,
 			  strlen(CONFIG_INFUSE_MODEM_MONITOR_DEFAULT_PDP_APN));
-	zassert_equal(PDN_FAM_IPV4V6, default_family);
+	zassert_equal(LTE_LC_PDN_FAM_IPV4V6, default_family);
 
 	lte_modem_monitor_network_state(&net_state);
 	zassert_equal(CELLULAR_REGISTRATION_NOT_REGISTERED, net_state.nw_reg_status);

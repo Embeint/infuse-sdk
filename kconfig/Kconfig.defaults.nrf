@@ -216,9 +216,19 @@ config ZEPHYR_NRF_MODULE
 	bool
 config SOC_NRF54LV10A
 	bool
+config SOC_NRF54LS05A
+	bool
+config SOC_NRF54LS05A_CPUAPP
+	bool
 config SOC_NRF54LS05B
 	bool
 config SOC_NRF54LS05B_CPUAPP
+	bool
+config SOC_NRF54LV10A
+	bool
+config SOC_NRF54LV10A_CPUAPP
+	bool
+config SOC_NRF54LV10A_CPUFLPR
 	bool
 config NORDIC_SECURITY_BACKEND
 	bool
