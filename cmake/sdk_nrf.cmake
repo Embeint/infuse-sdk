@@ -1,11 +1,10 @@
 # SDK-NRF helpers
 
-if (NOT CONFIG_BUILD_WITH_TFM)
-  if (CONFIG_NRF_OBERON)
+if(NOT CONFIG_BUILD_WITH_TFM)
+  if(CONFIG_NRF_OBERON)
     # Link Oberon MbedTLS backend
     add_library(mbedcrypto_common INTERFACE)
     target_link_libraries(mbedcrypto_common INTERFACE
-      mbedcrypto_oberon_mbedtls_imported
       mbedcrypto_oberon_imported
     )
     target_include_directories(mbedcrypto_common

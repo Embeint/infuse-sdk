@@ -42,10 +42,6 @@ configdefault MODEM_KEY_MGMT
 	default y if INFUSE_SECURITY
 configdefault NRF_MODEM_LIB_NET_IF_APPLICATION_ERROR_HANDLER
 	default y if INFUSE_NRF_MODEM_MONITOR
-configdefault NRF_MODEM_LIB_SHMEM_RX_SIZE
-	default 12288
-configdefault NRF_MODEM_LIB_SHMEM_TX_SIZE
-	default 10240
 choice NRF_MODEM_LIB_ON_FAULT
 	default NRF_MODEM_LIB_ON_FAULT_APPLICATION_SPECIFIC
 endchoice
@@ -216,9 +212,19 @@ config ZEPHYR_NRF_MODULE
 	bool
 config SOC_NRF54LV10A
 	bool
+config SOC_NRF54LS05A
+	bool
+config SOC_NRF54LS05A_CPUAPP
+	bool
 config SOC_NRF54LS05B
 	bool
 config SOC_NRF54LS05B_CPUAPP
+	bool
+config SOC_NRF54LV10A
+	bool
+config SOC_NRF54LV10A_CPUAPP
+	bool
+config SOC_NRF54LV10A_CPUFLPR
 	bool
 config NORDIC_SECURITY_BACKEND
 	bool

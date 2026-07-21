@@ -15,7 +15,6 @@
 #include <nrf_modem_at.h>
 #include <modem/lte_lc.h>
 #include <modem/nrf_modem_lib.h>
-#include <modem/pdn.h>
 
 LOG_MODULE_REGISTER(nrf_modem_sim, LOG_LEVEL_INF);
 
@@ -167,11 +166,12 @@ void nrf_modem_fault_handler(struct nrf_modem_fault_info *fault_info)
 }
 
 static char pdn_default_apn[32];
-static enum pdn_fam pdn_default_fam;
+static enum lte_lc_pdn_family pdn_default_fam;
 
-int pdn_ctx_configure(uint8_t cid, const char *apn, enum pdn_fam family, struct pdn_pdp_opt *opts)
+int pdn_ctx_configure(uint8_t cid, const char *apn, enum lte_lc_pdn_family family,
+		      struct lte_lc_pdn_pdp_context_opts *opt)
 {
-	ARG_UNUSED(opts);
+	ARG_UNUSED(opt);
 
 	if (cid != 0) {
 		return 0;
@@ -181,7 +181,7 @@ int pdn_ctx_configure(uint8_t cid, const char *apn, enum pdn_fam family, struct 
 	return 0;
 }
 
-void nrf_modem_lib_sim_default_pdn_ctx(const char **apn, enum pdn_fam *family)
+void nrf_modem_lib_sim_default_pdn_ctx(const char **apn, enum lte_lc_pdn_family *family)
 {
 	*apn = pdn_default_apn;
 	*family = pdn_default_fam;
