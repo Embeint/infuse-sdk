@@ -1,0 +1,45 @@
+/*
+ * Copyright (c) 2026 Embeint Holdings Pty Ltd
+ * SPDX-License-Identifier: FSL-1.1-ALv2
+ */
+
+
+/* Override default SRAM planning */
+/delete-node/ &sram0_ns_modem;
+/delete-node/ &sram0_ns_app;
+
+/* An extra 16kB of SRAM is required by the modem for trace functionality */
+&sram0_ns {
+	sram0_ns_modem: sram0_ns@0 {
+		/* Modem (shared) memory */
+		reg = <0x0 DT_SIZE_K(34)>;
+		#address-cells = <1>;
+		#size-cells = <1>;
+		ranges = <0x0 0x0 DT_SIZE_K(34)>;
+
+		cpuapp_cpucell_ipc_shm_ctrl: sram0_ns_modem@0 {
+			/* Modem IPC control */
+			reg = <0x0 0x728>;
+		};
+
+		cpuapp_cpucell_ipc_shm_heap: sram0_ns_modem@728 {
+			/* Modem IPC transmit */
+			reg = <0x728 0x20d8>;
+		};
+
+		cpucell_cpuapp_ipc_shm_heap: sram0_ns_modem@2800 {
+			/* Modem IPC receive */
+			reg = <0x2800 0x2000>;
+		};
+
+		cpucell_cpuapp_ipc_shm_trace: sram0_ns_modem@4800 {
+			/* Modem IPC receive */
+			reg = <0x4800 DT_SIZE_K(16)>;
+		};
+	};
+
+	sram0_ns_app: sram0_ns@6000 {
+		/* Non-Secure application memory */
+		reg = <0x6000 DT_SIZE_K(158)>;
+	};
+};

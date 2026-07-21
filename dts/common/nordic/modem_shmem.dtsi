@@ -14,8 +14,8 @@
 	 * - Lowest 64 kB SRAM allocated to Secure image (sram0_s).
 	 * - Upper 192 kB SRAM allocated to Non-Secure image (sram0_ns).
 	 * Of the memory allocated to the Non-Secure image
-	 * - 24 kB SRAM reserved for and used by the modem library (sram0_ns_modem).
-	 * - 168 kB allocated to the application (sram0_ns_app).
+	 * - 18 kB SRAM reserved for and used by the modem library (sram0_ns_modem).
+	 * - 174 kB allocated to the application (sram0_ns_app).
 	 */
 	sram0_s: sram@0 {
 		/* Secure image memory */
@@ -31,12 +31,30 @@
 
 		sram0_ns_modem: sram0_ns@0 {
 			/* Modem (shared) memory */
-			reg = <0x0 DT_SIZE_K(24)>;
+			reg = <0x0 DT_SIZE_K(18)>;
+			#address-cells = <1>;
+			#size-cells = <1>;
+			ranges = <0x0 0x0 DT_SIZE_K(18)>;
+
+			cpuapp_cpucell_ipc_shm_ctrl: sram0_ns_modem@0 {
+				/* Modem IPC control */
+				reg = <0x0 0x728>;
+			};
+
+			cpuapp_cpucell_ipc_shm_heap: sram0_ns_modem@728 {
+				/* Modem IPC transmit */
+				reg = <0x728 0x20d8>;
+			};
+
+			cpucell_cpuapp_ipc_shm_heap: sram0_ns_modem@2800 {
+				/* Modem IPC receive */
+				reg = <0x2800 0x2000>;
+			};
 		};
 
 		sram0_ns_app: sram0_ns@6000 {
 			/* Non-Secure application memory */
-			reg = <0x6000 DT_SIZE_K(168)>;
+			reg = <0x6000 DT_SIZE_K(174)>;
 		};
 	};
 };
