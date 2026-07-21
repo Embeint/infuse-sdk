@@ -27,7 +27,6 @@
 #include <infuse/tdf/util.h>
 
 #include <modem/at_monitor.h>
-#include <modem/pdn.h>
 #include <modem/nrf_modem_lib.h>
 #include <modem/lte_lc.h>
 #include <modem/modem_info.h>

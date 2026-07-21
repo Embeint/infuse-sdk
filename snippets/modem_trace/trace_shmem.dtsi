@@ -4,18 +4,4 @@
  * SPDX-License-Identifier: FSL-1.1-ALv2
  */
 
-/* Allocate more memory to the modem library to enable tracing */
-/delete-node/ &sram0_ns_modem;
-/delete-node/ &sram0_ns_app;
-
-&sram0_ns {
-	sram0_ns_modem: sram0_ns@0 {
-		/* Modem (shared) memory */
-		reg = <0x0 DT_SIZE_K(40)>;
-	};
-
-	sram0_ns_app: sram0_ns@a000 {
-		/* Non-Secure application memory */
-		reg = <0xa000 DT_SIZE_K(152)>;
-	};
-};
+#include <common/nordic/modem_shmem_trace.dtsi>
