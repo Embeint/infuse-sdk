@@ -291,6 +291,20 @@ static int infuse_common_boot(void)
 #endif /* CONFIG_BT_CONTROLLER_MANAGE*/
 #endif /* CONFIG_BT */
 
+	if ((device_id & INFUSE_LOCALLY_MANAGED_PREFIX) == INFUSE_LOCALLY_MANAGED_PREFIX) {
+		/* Authenticated commands can only be generated through the shared secret
+		 * derived from the Infuse-IoT Cloud keypair. If the device is not provisioned
+		 * in Infuse-IoT Cloud, it has no way to authenticate the provenance of the
+		 * public key and will refuse to generate the secret. This prevents most
+		 * management functionality from operating, such as RPCs and anything built
+		 * on top of that (KV Sync, Logger Download, etc).
+		 * An unprovisioned device is only useful for initial evaluation without a
+		 * cloud account, where data authenticated to the network level can be observed
+		 * over Bluetooth advertising.
+		 */
+		LOG_WRN("Device is unprovisioned (Locally managed ID), functionality restricted");
+	}
+
 	LOG_INF("\tVersion: %d.%d.%d+%08x", v.major, v.minor, v.revision, v.build_num);
 	LOG_INF("\t Device: %016llx", device_id);
 	LOG_INF("\t  Board: %s", CONFIG_BOARD_TARGET);
