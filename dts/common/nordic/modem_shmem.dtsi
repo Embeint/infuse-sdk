@@ -52,9 +52,9 @@
 			};
 		};
 
-		sram0_ns_app: sram0_ns@6000 {
+		sram0_ns_app: sram0_ns@4800 {
 			/* Non-Secure application memory */
-			reg = <0x6000 DT_SIZE_K(174)>;
+			reg = <0x4800 DT_SIZE_K(174)>;
 		};
 	};
 };
