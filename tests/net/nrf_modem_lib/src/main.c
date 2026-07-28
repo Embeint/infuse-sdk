@@ -221,6 +221,7 @@ ZTEST(infuse_nrf_modem_monitor, test_integration)
 			  strlen(CONFIG_INFUSE_MODEM_MONITOR_DEFAULT_PDP_APN));
 	zassert_equal(LTE_LC_PDN_FAM_IPV4V6, default_family);
 
+	zassert_false(lte_modem_monitor_is_registered());
 	lte_modem_monitor_network_state(&net_state);
 	zassert_equal(CELLULAR_REGISTRATION_NOT_REGISTERED, net_state.nw_reg_status);
 
@@ -235,6 +236,7 @@ ZTEST(infuse_nrf_modem_monitor, test_integration)
 	KV_STORE_READ(KV_KEY_LTE_SIM_IMSI, &imsi);
 	zassert_equal(atoll(CONFIG_INFUSE_NRF_MODEM_LIB_SIM_IMSI), imsi.imsi);
 
+	zassert_false(lte_modem_monitor_is_registered());
 	lte_modem_monitor_network_state(&net_state);
 	zassert_equal(CELLULAR_REGISTRATION_SEARCHING, net_state.nw_reg_status);
 	zassert_equal(0x702A, net_state.cell.tac);
@@ -270,6 +272,7 @@ ZTEST(infuse_nrf_modem_monitor, test_integration)
 		"+CEREG: 5,\"702A\",\"08C3BD0C\",7,,,\"00001000\",\"00101101\"\r\n");
 	k_sleep(K_SECONDS(1));
 
+	zassert_true(lte_modem_monitor_is_registered());
 	lte_modem_monitor_network_state(&net_state);
 	zassert_equal(CELLULAR_REGISTRATION_REGISTERED_ROAMING, net_state.nw_reg_status);
 	zassert_equal(0x702A, net_state.cell.tac);
@@ -304,6 +307,7 @@ ZTEST(infuse_nrf_modem_monitor, test_integration)
 	/* eDRX configuration */
 	nrf_modem_lib_sim_send_at("+CEDRXP: 4,\"0001\",\"0001\",\"0001\"\r\n");
 	k_sleep(K_SECONDS(1));
+	zassert_true(lte_modem_monitor_is_registered());
 	lte_modem_monitor_network_state(&net_state);
 	zassert_equal(CELLULAR_ACCESS_TECHNOLOGY_E_UTRAN, net_state.edrx_cfg.mode);
 	zassert_within(10.24f, net_state.edrx_cfg.edrx, 0.01f);
@@ -370,6 +374,7 @@ ZTEST(infuse_nrf_modem_monitor, test_integration)
 	nrf_modem_lib_sim_send_at("%USATEV: BIP Closed\r\n");
 	k_sleep(K_SECONDS(2));
 
+	zassert_true(lte_modem_monitor_is_registered());
 	lte_modem_monitor_network_state(&net_state);
 	zassert_equal(CELLULAR_ACCESS_TECHNOLOGY_E_UTRAN_NB_S1, net_state.lte_mode);
 	zassert_equal(0x702B, net_state.cell.tac);
@@ -394,11 +399,13 @@ ZTEST(infuse_nrf_modem_monitor, test_integration)
 	/* Back to searching */
 	nrf_modem_lib_sim_send_at("+CEREG: 2,\"702A\",\"08C3BD0C\",7\r\n");
 	k_sleep(K_SECONDS(1));
+	zassert_false(lte_modem_monitor_is_registered());
 
 	/* Registration gained then lost, no timeout */
 	nrf_modem_lib_sim_send_at(
 		"+CEREG: 5,\"702A\",\"08C3BD0C\",7,,,\"00001000\",\"00101101\"\r\n");
 	k_sleep(K_SECONDS(1));
+	zassert_true(lte_modem_monitor_is_registered());
 	nrf_modem_lib_sim_send_at("+CEREG: 2,\"702A\",\"08C3BD0C\",7\r\n");
 
 	rc = k_sem_take(&reboot_request,

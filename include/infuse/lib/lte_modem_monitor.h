@@ -127,6 +127,14 @@ struct lte_modem_network_state {
 bool lte_modem_monitor_is_at_safe(void);
 
 /**
+ * @brief Check if modem is currently registered to a network
+ *
+ * @retval true Modem is registered to a home or roaming network
+ * @retval false Modem is not registered
+ */
+bool lte_modem_monitor_is_registered(void);
+
+/**
  * @brief Get current network state
  *
  * @param state Network state
