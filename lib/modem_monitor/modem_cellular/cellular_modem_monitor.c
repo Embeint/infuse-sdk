@@ -41,6 +41,14 @@ bool lte_modem_monitor_is_at_safe(void)
 	return true;
 }
 
+bool lte_modem_monitor_is_registered(void)
+{
+	const enum cellular_registration_status status = monitor.network_state.nw_reg_status;
+
+	return (status == CELLULAR_REGISTRATION_REGISTERED_HOME) ||
+	       (status == CELLULAR_REGISTRATION_REGISTERED_ROAMING);
+}
+
 #ifdef CONFIG_INFUSE_MODEM_MONITOR_CONN_STATE_LOG
 void lte_modem_monitor_network_state_log(uint8_t tdf_logger_mask)
 {
