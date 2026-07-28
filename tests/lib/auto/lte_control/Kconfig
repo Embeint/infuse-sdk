@@ -1,0 +1,6 @@
+# Override symbols for testing
+
+config INFUSE_AUTO_LTE_CONTROL
+	bool "Test override without dependencies"
+
+source "Kconfig.zephyr"
