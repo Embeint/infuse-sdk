@@ -31,7 +31,6 @@ west release-build -r $RELEASE_FILE --skip-git
 
 if [ "$#" -eq 2 ]; then
     # Revert to original commit
-    START_COMMIT=`git -C $APP_DIR rev-parse HEAD`
     echo "Checking out: $START_COMMIT"
     git -C $APP_DIR checkout $START_COMMIT &> /dev/null
     west update > /dev/null
