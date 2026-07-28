@@ -68,6 +68,8 @@ struct infuse_state_cb {
 	/**
 	 * @brief Application state has been set.
 	 *
+	 * @note Callback run under spinlock
+	 *
 	 * @param state State that has been set
 	 * @param already State was already set
 	 * @param timeout Timeout for the state (0 for indefinite)
@@ -77,6 +79,8 @@ struct infuse_state_cb {
 
 	/**
 	 * @brief Application state has been cleared.
+	 *
+	 * @note Callback run under spinlock
 	 *
 	 * @param state State that has been cleared
 	 * @param user_ctx User context pointer
