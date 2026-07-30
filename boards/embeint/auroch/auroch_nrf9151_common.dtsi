@@ -57,7 +57,7 @@
 		gnss = &max_m10;
 		watchdog0 = &wdt0;
 		environmental0 = &sht4x;
-		environmental1 = &lps22hh;
+		environmental1 = &lps22hx;
 	};
 };
 
@@ -149,8 +149,8 @@
 		repeatability = <2>;
 	};
 
-	lps22hh: lps22hh@5c {
-		compatible = "st,lps22hh";
+	lps22hx: lps22hx@5c {
+		compatible = "st,lps22hx";
 		status = "okay";
 		reg = <0x5c>;
 		odr = <LPS22HH_DT_ODR_POWER_DOWN>;

@@ -134,7 +134,7 @@
 	zephyr,pm-device-runtime-auto;
 };
 
-&lps22hh {
+&lps22hx {
 	zephyr,pm-device-runtime-auto;
 };
 
