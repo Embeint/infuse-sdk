@@ -54,7 +54,7 @@
 		watchdog0 = &wdt31;
 		fuel-gauge0 = &fuel_gauge;
 		environmental0 = &sht4x;
-		environmental1 = &lps22hh;
+		environmental1 = &lps22hx;
 		imu0 = &lsm6dsv;
 		modem = &telit_le910c1;
 		gnss = &telit_le910c1_gnss;
@@ -212,8 +212,8 @@
 		repeatability = <2>;
 	};
 
-	lps22hh: lps22hh@5d {
-		compatible = "st,lps22hh";
+	lps22hx: lps22hx@5d {
+		compatible = "st,lps22hx";
 		status = "okay";
 		reg = <0x5d>;
 		odr = <LPS22HH_DT_ODR_POWER_DOWN>;
