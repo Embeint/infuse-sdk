@@ -357,7 +357,7 @@ static int gnss_configure(const struct device *gnss, const struct task_gnss_args
 	}
 
 #ifdef CONFIG_GNSS_UBX_M10
-	NET_BUF_SIMPLE_DEFINE(cfg_buf, 80);
+	NET_BUF_SIMPLE_DEFINE(cfg_buf, 100);
 	ubx_msg_prepare_valset(&cfg_buf,
 			       UBX_MSG_CFG_VALSET_LAYERS_RAM | UBX_MSG_CFG_VALSET_LAYERS_BBR);
 	/* Core location message */
@@ -374,15 +374,17 @@ static int gnss_configure(const struct device *gnss, const struct task_gnss_args
 		UBX_CFG_VALUE_APPEND(&cfg_buf, UBX_CFG_KEY_PM_OPERATEMODE,
 				     UBX_CFG_PM_OPERATEMODE_FULL);
 	} else {
-		/* Cyclic Tracking, entering POT ASAP, no acquisition timeout */
+		/* Cyclic Tracking, entering POT ASAP */
 		UBX_CFG_VALUE_APPEND(&cfg_buf, UBX_CFG_KEY_NAVSPG_OUTFIL_PACC, args->accuracy_m);
 		UBX_CFG_VALUE_APPEND(&cfg_buf, UBX_CFG_KEY_NAVSPG_OUTFIL_PDOP, args->position_dop);
 		UBX_CFG_VALUE_APPEND(&cfg_buf, UBX_CFG_KEY_PM_ONTIME, 0);
 		UBX_CFG_VALUE_APPEND(&cfg_buf, UBX_CFG_KEY_PM_UPDATEEPH, true);
 		if (args->mode.low_power.acquisition_timeout == 0) {
+			/* No acquisition timeout */
 			UBX_CFG_VALUE_APPEND(&cfg_buf, UBX_CFG_KEY_PM_MAXACQTIME, 0);
 			UBX_CFG_VALUE_APPEND(&cfg_buf, UBX_CFG_KEY_PM_DONOTENTEROFF, true);
 		} else {
+			/* Timeouts according to schedule */
 			UBX_CFG_VALUE_APPEND(&cfg_buf, UBX_CFG_KEY_PM_MAXACQTIME,
 					     args->mode.low_power.acquisition_timeout);
 			UBX_CFG_VALUE_APPEND(&cfg_buf, UBX_CFG_KEY_PM_ACQPERIOD,
