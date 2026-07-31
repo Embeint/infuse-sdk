@@ -52,6 +52,7 @@ struct gnss_run_state {
 	struct ubx_msg_nav_timegps latest_timegps;
 	struct k_poll_signal nav_pvt_rx;
 	struct k_poll_signal nav_timegps_rx;
+	struct k_poll_signal receiver_idle;
 	struct gnss_fix_timeout_state timeout_state;
 	uint64_t next_time_sync;
 	uint32_t task_start;
@@ -276,6 +277,19 @@ static bool nav_pvt_handle(struct gnss_run_state *state, const struct task_gnss_
 
 	/* Continue fix */
 	return false;
+}
+
+static int mon_rxr_cb(uint8_t message_class, uint8_t message_id, const void *payload,
+		      size_t payload_len, void *user_data)
+{
+	const struct ubx_msg_mon_rxr *rxr = payload;
+	struct gnss_run_state *state = user_data;
+
+	if (!(rxr->flags & UBX_MSG_MON_RXR_AWAKE)) {
+		/* Notify task thread receiver is going to sleep */
+		k_poll_signal_raise(&state->receiver_idle, 0);
+	}
+	return 0;
 }
 
 #ifdef CONFIG_TASK_RUNNER_GNSS_SATELLITE_INFO
@@ -514,6 +528,12 @@ void gnss_task_fn(const struct task_schedule *schedule, struct k_poll_signal *te
 		.message_cb = nav_pvt_cb,
 		.user_data = &run_state,
 	};
+	struct ubx_message_handler_ctx mon_rxr_handler_ctx = {
+		.message_class = UBX_MSG_CLASS_MON,
+		.message_id = UBX_MSG_ID_MON_RXR,
+		.message_cb = mon_rxr_cb,
+		.user_data = &run_state,
+	};
 	bool extint_force_active;
 	uint32_t data_timeout;
 	uint32_t max_sleep_s;
@@ -528,6 +548,7 @@ void gnss_task_fn(const struct task_schedule *schedule, struct k_poll_signal *te
 	gnss_timeout_reset(&run_state.timeout_state);
 	k_poll_signal_init(&run_state.nav_pvt_rx);
 	k_poll_signal_init(&run_state.nav_timegps_rx);
+	k_poll_signal_init(&run_state.receiver_idle);
 
 	LOG_DBG("Starting");
 
@@ -566,6 +587,9 @@ void gnss_task_fn(const struct task_schedule *schedule, struct k_poll_signal *te
 	/* Subscribe to NAV-PVT message */
 	ubx_modem_msg_subscribe(run_state.modem, &pvt_handler_ctx);
 
+	/* Subscribe to MON-RXR to be notified when modem goes idle */
+	ubx_modem_msg_subscribe(run_state.modem, &mon_rxr_handler_ctx);
+
 #ifdef CONFIG_TASK_RUNNER_GNSS_SATELLITE_INFO
 	struct ubx_message_handler_ctx sat_handler_ctx = {
 		.message_class = UBX_MSG_CLASS_NAV,
@@ -585,6 +609,8 @@ void gnss_task_fn(const struct task_schedule *schedule, struct k_poll_signal *te
 					 &run_state.nav_pvt_rx),
 		K_POLL_EVENT_INITIALIZER(K_POLL_TYPE_SIGNAL, K_POLL_MODE_NOTIFY_ONLY,
 					 &run_state.nav_timegps_rx),
+		K_POLL_EVENT_INITIALIZER(K_POLL_TYPE_SIGNAL, K_POLL_MODE_NOTIFY_ONLY,
+					 &run_state.receiver_idle),
 	};
 	int signaled, result;
 
@@ -629,6 +655,10 @@ void gnss_task_fn(const struct task_schedule *schedule, struct k_poll_signal *te
 			nav_timegps_handle(&run_state, args);
 			data_timeout = k_uptime_seconds() + max_sleep_s;
 		}
+		k_poll_signal_check(&run_state.receiver_idle, &signaled, &result);
+		if (signaled) {
+			k_poll_signal_reset(&run_state.receiver_idle);
+		}
 	}
 
 	/* Log at end of run for a location fix */
@@ -657,6 +687,7 @@ void gnss_task_fn(const struct task_schedule *schedule, struct k_poll_signal *te
 
 	/* Cleanup message subscription */
 	ubx_modem_msg_unsubscribe(run_state.modem, &pvt_handler_ctx);
+	ubx_modem_msg_unsubscribe(run_state.modem, &mon_rxr_handler_ctx);
 #ifdef CONFIG_TASK_RUNNER_GNSS_SATELLITE_INFO
 	ubx_modem_msg_unsubscribe(run_state.modem, &sat_handler_ctx);
 #endif /* CONFIG_TASK_RUNNER_GNSS_SATELLITE_INFO */
