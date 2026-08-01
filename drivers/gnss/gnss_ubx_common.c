@@ -176,6 +176,11 @@ void ubx_modem_extint_control(const struct device *dev, bool high)
 	gpio_pin_set_raw(cfg->extint_gpio.port, cfg->extint_gpio.pin, high ? 1 : 0);
 }
 
+void ubx_modem_extint_wake(const struct device *dev)
+{
+	return ubx_common_extint_wake(dev);
+}
+
 void ubx_common_extint_wake(const struct device *dev)
 {
 	const struct ubx_common_config *cfg = dev->config;
