@@ -11,6 +11,8 @@
 #ifndef INFUSE_GNSS_UBX_CFG_H_
 #define INFUSE_GNSS_UBX_CFG_H_
 
+#include <stdbool.h>
+
 #include <zephyr/net_buf.h>
 #include <zephyr/sys/byteorder.h>
 
@@ -1036,6 +1038,31 @@ static inline void ubx_msg_prepare_valget(struct net_buf_simple *buf, uint8_t la
 	valget->position = offset;
 }
 
+/** @cond INTERNAL_HIDDEN */
+
+static inline void _ubx_cfg_value_append_1bit(struct net_buf_simple *buf, bool value)
+{
+	net_buf_simple_add_u8(buf, value ? 0x01 : 0x00);
+}
+
+/**
+ * @brief Select value append function based on key size
+ *
+ * @param key_size Key size to select function for
+ */
+#define _UBX_CFG_VALUE_APPEND_FN(key_size)                                                         \
+	__builtin_choose_expr(                                                                     \
+		key_size == _UBX_CFG_KEY_SIZE_1BIT_, _ubx_cfg_value_append_1bit,                   \
+		__builtin_choose_expr(                                                             \
+			key_size == _UBX_CFG_KEY_SIZE_1BYTE, net_buf_simple_add_u8,                \
+			__builtin_choose_expr(                                                     \
+				key_size == _UBX_CFG_KEY_SIZE_2BYTE, net_buf_simple_add_le16,      \
+				__builtin_choose_expr(key_size == _UBX_CFG_KEY_SIZE_4BYTE,         \
+						      net_buf_simple_add_le32,                     \
+						      net_buf_simple_add_le64))))
+
+/** @endcond */
+
 /**
  * @brief Macro to append a configuration value to a buffer
  *
@@ -1048,24 +1075,10 @@ static inline void ubx_msg_prepare_valget(struct net_buf_simple *buf, uint8_t la
  * @param value Value
  */
 #define UBX_CFG_VALUE_APPEND(buf, key, value)                                                      \
-	net_buf_simple_add_le32(buf, key);                                                         \
-	switch (key & _UBX_CFG_KEY_SIZE_MASK) {                                                    \
-	case _UBX_CFG_KEY_SIZE_1BIT_:                                                              \
-		net_buf_simple_add_u8(buf, value ? 0x01 : 0x00);                                   \
-		break;                                                                             \
-	case _UBX_CFG_KEY_SIZE_1BYTE:                                                              \
-		net_buf_simple_add_u8(buf, value);                                                 \
-		break;                                                                             \
-	case _UBX_CFG_KEY_SIZE_2BYTE:                                                              \
-		net_buf_simple_add_le16(buf, value);                                               \
-		break;                                                                             \
-	case _UBX_CFG_KEY_SIZE_4BYTE:                                                              \
-		net_buf_simple_add_le32(buf, value);                                               \
-		break;                                                                             \
-	default:                                                                                   \
-		net_buf_simple_add_le64(buf, value);                                               \
-		break;                                                                             \
-	}
+	do {                                                                                       \
+		net_buf_simple_add_le32(buf, key);                                                 \
+		_UBX_CFG_VALUE_APPEND_FN(((key) & _UBX_CFG_KEY_SIZE_MASK))(buf, value);            \
+	} while (0)
 
 /** Configuration value structure as returned by parser */
 struct ubx_cfg_val {
