@@ -34,7 +34,7 @@ struct ubx_common_pm_fn {
 };
 
 struct ubx_common_config {
-	struct ubx_common_pm_fn pm_funcs;
+	const struct ubx_common_pm_fn *pm_funcs;
 	struct shared_device_dt_spec ant_switch;
 	struct gpio_dt_spec reset_gpio;
 	struct gpio_dt_spec extint_gpio;
@@ -66,16 +66,9 @@ struct ubx_common_data {
 #endif /* CONFIG_GNSS_U_BLOX_NO_API_COMPAT */
 };
 
-#define UBX_COMMON_CONFIG_INST(inst, standby_fn, resume_fn, setup_fn, fifo_poll_fn, mon_rxr_fn)    \
+#define UBX_COMMON_CONFIG_INST(inst, _pm_funcs)                                                    \
 	{                                                                                          \
-		.pm_funcs =                                                                        \
-			{                                                                          \
-				.software_standby = standby_fn,                                    \
-				.software_resume = resume_fn,                                      \
-				.port_setup = setup_fn,                                            \
-				.fifo_poll = fifo_poll_fn,                                         \
-				.mon_rxr = mon_rxr_fn,                                             \
-			},                                                                         \
+		.pm_funcs = _pm_funcs,                                                             \
 		.ant_switch = SHARED_DEVICE_DT_SPEC_INST_GET_OR(inst, antenna_switch, {0}),        \
 		.reset_gpio = GPIO_DT_SPEC_INST_GET(inst, reset_gpios),                            \
 		.extint_gpio = GPIO_DT_SPEC_INST_GET(inst, extint_gpios),                          \

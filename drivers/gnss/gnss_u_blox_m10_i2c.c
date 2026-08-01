@@ -532,11 +532,17 @@ static DEVICE_API(gnss, gnss_api) = {
 	.get_latest_timepulse = ubx_common_get_latest_timepulse,
 };
 
+static const struct ubx_common_pm_fn ubx_m10_i2c_pm_fn = {
+	.software_standby = ubx_m10_i2c_software_standby,
+	.software_resume = ubx_m10_i2c_software_resume,
+	.port_setup = ubx_m10_i2c_port_setup,
+	.fifo_poll = ubx_m10_fifo_poll,
+	.mon_rxr = ubx_m10_mon_rxr,
+};
+
 #define UBX_M10_I2C(inst)                                                                          \
 	static const struct ubx_m10_i2c_config ubx_m10_cfg_##inst = {                              \
-		.common = UBX_COMMON_CONFIG_INST(                                                  \
-			inst, ubx_m10_i2c_software_standby, ubx_m10_i2c_software_resume,           \
-			ubx_m10_i2c_port_setup, ubx_m10_fifo_poll, ubx_m10_mon_rxr),               \
+		.common = UBX_COMMON_CONFIG_INST(inst, &ubx_m10_i2c_pm_fn),                        \
 		.i2c = I2C_DT_SPEC_INST_GET(inst),                                                 \
 		.rf_lna_mode = DT_INST_ENUM_IDX(inst, rf_lna_mode),                                \
 	};                                                                                         \
