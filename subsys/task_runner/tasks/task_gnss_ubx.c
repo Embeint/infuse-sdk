@@ -317,12 +317,15 @@ static int nav_sat_cb(uint8_t message_class, uint8_t message_id, const void *pay
 }
 #endif /* CONFIG_TASK_RUNNER_GNSS_SATELLITE_INFO */
 
-/* extint_force_active:
- *    true: Modem is forced into ACTIVE mode while EXTINT is high
- *   false: Modem is not forced into any mode
+/* low_power_possible:
+ *    true: Modem can transition to a low power state (PSMCT or PSMOO)
+ *   false: Modem stays in full power state (PSMFF)
+ *  max_sleep_s:
+ *    If configured for low power operation, the maximum expectde duration between
+ *    modem wakeups in seconds.
  */
 static int gnss_configure(const struct device *gnss, const struct task_gnss_args *args,
-			  uint32_t *max_sleep_s, bool *extint_force_active)
+			  bool *low_power_possible, uint32_t *max_sleep_s)
 {
 	struct ubx_modem_data *modem = ubx_modem_data_get(gnss);
 	uint8_t run_target = (args->flags & TASK_GNSS_FLAGS_RUN_MASK);
@@ -332,7 +335,7 @@ static int gnss_configure(const struct device *gnss, const struct task_gnss_args
 	int rc;
 
 	/* Default modes, modem never sleeps */
-	*extint_force_active = false;
+	*low_power_possible = false;
 	*max_sleep_s = 0;
 
 	/* Constellation configuration if requested */
@@ -404,15 +407,11 @@ static int gnss_configure(const struct device *gnss, const struct task_gnss_args
 			UBX_CFG_VALUE_APPEND(&cfg_buf, UBX_CFG_KEY_PM_ACQPERIOD,
 					     args->mode.low_power.search_period);
 			UBX_CFG_VALUE_APPEND(&cfg_buf, UBX_CFG_KEY_PM_DONOTENTEROFF, false);
-
-			/* Force the modem out of backup mode when EXTINT is "high" so we can
-			 * talk to the modem when desired.
-			 */
-			UBX_CFG_VALUE_APPEND(&cfg_buf, UBX_CFG_KEY_PM_EXTINTWAKE, true);
-			*extint_force_active = true;
+			UBX_CFG_VALUE_APPEND(&cfg_buf, UBX_CFG_KEY_PM_EXTINTWAKE, false);
 
 			/* Modem can sleep for up to `search_period` seconds */
-			*max_sleep_s = args->mode.low_power.search_period + 2;
+			*low_power_possible = true;
+			*max_sleep_s = args->mode.low_power.search_period;
 		}
 
 		UBX_CFG_VALUE_APPEND(&cfg_buf, UBX_CFG_KEY_PM_OPERATEMODE,
@@ -473,25 +472,6 @@ static int gnss_configure(const struct device *gnss, const struct task_gnss_args
 	return rc;
 }
 
-static void extint_ctrl_reset(const struct device *gnss)
-{
-#ifdef CONFIG_GNSS_UBX_M10
-	struct ubx_modem_data *modem = ubx_modem_data_get(gnss);
-	int rc;
-
-	NET_BUF_SIMPLE_DEFINE(cfg_buf, 32);
-	ubx_msg_prepare_valset(&cfg_buf,
-			       UBX_MSG_CFG_VALSET_LAYERS_RAM | UBX_MSG_CFG_VALSET_LAYERS_BBR);
-	UBX_CFG_VALUE_APPEND(&cfg_buf, UBX_CFG_KEY_PM_EXTINTWAKE, false);
-
-	ubx_msg_finalise(&cfg_buf);
-	rc = ubx_modem_send_sync_acked(modem, &cfg_buf, K_MSEC(250));
-	if (rc < 0) {
-		LOG_WRN("Failed to reset EXTINT control");
-	}
-#endif /* CONFIG_GNSS_UBX_M10 */
-}
-
 static int retry_power_up(const struct device *gnss)
 {
 	int rc;
@@ -534,7 +514,7 @@ void gnss_task_fn(const struct task_schedule *schedule, struct k_poll_signal *te
 		.message_cb = mon_rxr_cb,
 		.user_data = &run_state,
 	};
-	bool extint_force_active;
+	bool low_power_possible;
 	uint32_t data_timeout;
 	uint32_t max_sleep_s;
 	int rc;
@@ -570,12 +550,12 @@ void gnss_task_fn(const struct task_schedule *schedule, struct k_poll_signal *te
 	}
 
 	/* Configure the modem according to the arguments */
-	rc = gnss_configure(gnss, args, &max_sleep_s, &extint_force_active);
+	rc = gnss_configure(gnss, args, &low_power_possible, &max_sleep_s);
 	if (rc < 0) {
 		rc = retry_power_up(gnss);
 		if (rc == 0) {
 			/* Try again */
-			(void)gnss_configure(gnss, args, &max_sleep_s, &extint_force_active);
+			(void)gnss_configure(gnss, args, &low_power_possible, &max_sleep_s);
 		} else {
 			/* Cycling the modem failed */
 			k_sleep(K_SECONDS(1));
@@ -612,28 +592,21 @@ void gnss_task_fn(const struct task_schedule *schedule, struct k_poll_signal *te
 		K_POLL_EVENT_INITIALIZER(K_POLL_TYPE_SIGNAL, K_POLL_MODE_NOTIFY_ONLY,
 					 &run_state.receiver_idle),
 	};
+	bool receiver_idle = false;
 	int signaled, result;
 
-	if (extint_force_active) {
-		/* Don't want to force modem active while running */
-		ubx_modem_extint_control(gnss, false);
-	}
 	data_timeout = k_uptime_seconds();
-
 	while (1) {
 		/* Block on the NAV-PVT callback and Task Runner requests */
 		if (k_poll(events, ARRAY_SIZE(events), K_SECONDS(2)) == -EAGAIN) {
-			if (k_uptime_seconds() >= data_timeout) {
+			if (!receiver_idle) {
+				/* Modem is expected to be awake, but no data has arrived */
+				LOG_WRN("Terminating due to %s", "no data");
+				break;
+			} else if (k_uptime_seconds() >= data_timeout) {
 				/* Data has not arrived within the expected time */
 				LOG_WRN("Terminating due to %s", "data timeout");
 				break;
-			}
-			if (max_sleep_s > 0) {
-				/* Modem is expected to sleep, poll to see if it is back awake.
-				 * Required since the comms interfaces also go to sleep (despite
-				 * the EXTENDEDTIMEOUT setting...)
-				 */
-				ubx_modem_fifo_poll(gnss);
 			}
 		}
 		k_poll_signal_check(terminate, &signaled, &result);
@@ -644,20 +617,29 @@ void gnss_task_fn(const struct task_schedule *schedule, struct k_poll_signal *te
 		k_poll_signal_check(&run_state.nav_pvt_rx, &signaled, &result);
 		if (signaled) {
 			k_poll_signal_reset(&run_state.nav_pvt_rx);
+			if (receiver_idle) {
+				LOG_INF("Receiver active");
+				receiver_idle = false;
+			}
 			if (nav_pvt_handle(&run_state, args)) {
 				break;
 			}
-			data_timeout = k_uptime_seconds() + max_sleep_s;
 		}
 		k_poll_signal_check(&run_state.nav_timegps_rx, &signaled, &result);
 		if (signaled) {
 			k_poll_signal_reset(&run_state.nav_timegps_rx);
+			if (receiver_idle) {
+				LOG_INF("Receiver active");
+				receiver_idle = false;
+			}
 			nav_timegps_handle(&run_state, args);
-			data_timeout = k_uptime_seconds() + max_sleep_s;
 		}
 		k_poll_signal_check(&run_state.receiver_idle, &signaled, &result);
 		if (signaled) {
 			k_poll_signal_reset(&run_state.receiver_idle);
+			receiver_idle = true;
+			data_timeout = k_uptime_seconds() + max_sleep_s + 2;
+			LOG_INF("Receiver idle");
 		}
 	}
 
@@ -692,12 +674,9 @@ void gnss_task_fn(const struct task_schedule *schedule, struct k_poll_signal *te
 	ubx_modem_msg_unsubscribe(run_state.modem, &sat_handler_ctx);
 #endif /* CONFIG_TASK_RUNNER_GNSS_SATELLITE_INFO */
 
-	if (extint_force_active) {
-		/* Modem could be in sleep mode, need to force active */
-		ubx_modem_extint_control(gnss, 1);
-		k_sleep(K_MSEC(250));
-		/* Stop EXTINT forcing the power state */
-		extint_ctrl_reset(gnss);
+	if (low_power_possible) {
+		/* Modem could be in sleep mode, wake via EXTINT pin */
+		ubx_modem_extint_wake(gnss);
 	}
 
 	/* Release power requirement */

@@ -120,6 +120,13 @@ void ubx_modem_fifo_poll(const struct device *dev);
 void ubx_modem_extint_control(const struct device *dev, bool high);
 
 /**
+ * @brief Trigger a wakeup of the UBX modem via EXTINT pin
+ *
+ * @param dev Modem device
+ */
+void ubx_modem_extint_wake(const struct device *dev);
+
+/**
  * @brief Initialise UBX modem handler
  *
  * @param modem Modem data structure
