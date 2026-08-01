@@ -269,3 +269,10 @@ void modem_backend_ublox_spi_use_data_ready_gpio(struct modem_backend_ublox_spi 
 	/* Trigger a query immediately in case line already high */
 	k_work_reschedule(&backend->common.fifo_read, K_NO_WAIT);
 }
+
+void modem_backend_ublox_spi_mon_rxr(struct modem_backend_ublox_spi *backend, bool awake)
+{
+	/* Not currently supported */
+	ARG_UNUSED(backend);
+	ARG_UNUSED(awake);
+}

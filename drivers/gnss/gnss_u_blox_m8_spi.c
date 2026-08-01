@@ -474,6 +474,14 @@ static void ubx_m8_fifo_poll(const struct device *dev)
 	k_work_reschedule(&data->spi_backend.common.fifo_read, K_NO_WAIT);
 }
 
+static void ubx_m8_mon_rxr(const struct device *dev, bool awake)
+{
+	struct ubx_m8_spi_data *data = dev->data;
+
+	/* Notify backend */
+	modem_backend_ublox_spi_mon_rxr(&data->spi_backend, awake);
+}
+
 static int ubx_m8_spi_init(const struct device *dev)
 {
 	const struct ubx_m8_spi_config *cfg = dev->config;
@@ -508,9 +516,9 @@ static DEVICE_API(gnss, gnss_api) = {
 
 #define UBX_M8_SPI(inst)                                                                           \
 	static const struct ubx_m8_spi_config ubx_m8_cfg_##inst = {                                \
-		.common = UBX_COMMON_CONFIG_INST(inst, ubx_m8_spi_software_standby,                \
-						 ubx_m8_spi_software_resume,                       \
-						 ubx_m8_spi_port_setup, ubx_m8_fifo_poll),         \
+		.common = UBX_COMMON_CONFIG_INST(                                                  \
+			inst, ubx_m8_spi_software_standby, ubx_m8_spi_software_resume,             \
+			ubx_m8_spi_port_setup, ubx_m8_fifo_poll, ubx_m8_mon_rxr),                  \
 		.spi = SPI_DT_SPEC_INST_GET(inst, SPI_WORD_SET(8) | SPI_TRANSFER_MSB),             \
 	};                                                                                         \
 	static struct ubx_m8_spi_data ubx_m8_data_##inst;                                          \

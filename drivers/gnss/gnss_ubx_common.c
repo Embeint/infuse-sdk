@@ -230,10 +230,15 @@ static int mon_rxr_handler(uint8_t message_class, uint8_t message_id, const void
 			   size_t payload_len, void *user_data)
 {
 	const struct ubx_msg_mon_rxr *mon_rxr = payload;
-	struct k_poll_signal *sig = user_data;
+	const struct device *dev = user_data;
+	const struct ubx_common_config *cfg = dev->config;
+	struct ubx_common_data *data = dev->data;
+
+	/* Notify backend on MON-RXR */
+	cfg->pm_funcs.mon_rxr(dev, mon_rxr->flags & UBX_MSG_MON_RXR_AWAKE);
 
 	LOG_DBG("MON-RXR: %02X", mon_rxr->flags);
-	return k_poll_signal_raise(sig, mon_rxr->flags);
+	return k_poll_signal_raise(&data->mon_rxr_signal, mon_rxr->flags);
 }
 
 int ubx_common_pm_control(const struct device *dev, enum pm_device_action action)
@@ -349,7 +354,7 @@ int ubx_common_init(const struct device *dev, struct modem_pipe *pipe)
 		.message_class = UBX_MSG_CLASS_MON,
 		.message_id = UBX_MSG_ID_MON_RXR,
 		.message_cb = mon_rxr_handler,
-		.user_data = &data->mon_rxr_signal,
+		.user_data = (void *)dev,
 	};
 	k_poll_signal_init(&data->mon_rxr_signal);
 	ubx_modem_msg_subscribe(&data->modem, &data->mon_rxr_handler);
