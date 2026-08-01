@@ -383,7 +383,19 @@ static int gnss_configure(const struct device *gnss, const struct task_gnss_args
 	/* Satellite information message */
 	UBX_CFG_VALUE_APPEND(&cfg_buf, UBX_CFG_KEY_MSGOUT_UBX_NAV_SAT_I2C, 1);
 #endif /* CONFIG_TASK_RUNNER_GNSS_SATELLITE_INFO */
+	/* Align timepulse to GPS time */
+	UBX_CFG_VALUE_APPEND(&cfg_buf, UBX_CFG_KEY_TP_TIMEGRID_TP1, UBX_CFG_TP_TIMEGRID_TP1_GPS);
+	/* Platform dynamics */
+	UBX_CFG_VALUE_APPEND(&cfg_buf, UBX_CFG_KEY_NAVSPG_DYNMODEL, dynamics);
+	ubx_msg_finalise(&cfg_buf);
+	rc = ubx_modem_send_sync_acked(modem, &cfg_buf, K_MSEC(250));
+	if (rc < 0) {
+		LOG_WRN("Failed to configure modem");
+	}
+
 	/* Power mode configuration */
+	ubx_msg_prepare_valset(&cfg_buf,
+			       UBX_MSG_CFG_VALSET_LAYERS_RAM | UBX_MSG_CFG_VALSET_LAYERS_BBR);
 	if (performance_mode) {
 		/* Normal mode tracking (default values) */
 		UBX_CFG_VALUE_APPEND(&cfg_buf, UBX_CFG_KEY_NAVSPG_OUTFIL_PACC, 100);
@@ -417,10 +429,6 @@ static int gnss_configure(const struct device *gnss, const struct task_gnss_args
 		UBX_CFG_VALUE_APPEND(&cfg_buf, UBX_CFG_KEY_PM_OPERATEMODE,
 				     UBX_CFG_PM_OPERATEMODE_PSMCT);
 	}
-	/* Align timepulse to GPS time */
-	UBX_CFG_VALUE_APPEND(&cfg_buf, UBX_CFG_KEY_TP_TIMEGRID_TP1, UBX_CFG_TP_TIMEGRID_TP1_GPS);
-	/* Platform dynamics */
-	UBX_CFG_VALUE_APPEND(&cfg_buf, UBX_CFG_KEY_NAVSPG_DYNMODEL, dynamics);
 
 	ubx_msg_finalise(&cfg_buf);
 	rc = ubx_modem_send_sync_acked(modem, &cfg_buf, K_MSEC(250));
