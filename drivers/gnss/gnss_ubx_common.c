@@ -166,7 +166,7 @@ void ubx_modem_fifo_poll(const struct device *dev)
 {
 	const struct ubx_common_config *cfg = dev->config;
 
-	cfg->pm_funcs.fifo_poll(dev);
+	cfg->pm_funcs->fifo_poll(dev);
 }
 
 void ubx_modem_extint_control(const struct device *dev, bool high)
@@ -235,7 +235,7 @@ static int mon_rxr_handler(uint8_t message_class, uint8_t message_id, const void
 	struct ubx_common_data *data = dev->data;
 
 	/* Notify backend on MON-RXR */
-	cfg->pm_funcs.mon_rxr(dev, mon_rxr->flags & UBX_MSG_MON_RXR_AWAKE);
+	cfg->pm_funcs->mon_rxr(dev, mon_rxr->flags & UBX_MSG_MON_RXR_AWAKE);
 
 	LOG_DBG("MON-RXR: %02X", mon_rxr->flags);
 	return k_poll_signal_raise(&data->mon_rxr_signal, mon_rxr->flags);
@@ -258,7 +258,7 @@ int ubx_common_pm_control(const struct device *dev, enum pm_device_action action
 							      GPIO_INT_DISABLE);
 		}
 		/* Put into low power mode */
-		rc = cfg->pm_funcs.software_standby(dev);
+		rc = cfg->pm_funcs->software_standby(dev);
 		if (rc < 0) {
 			LOG_WRN("Failed to go to standby mode");
 			/* It is important here that even if the modem backend reports a failure,
@@ -277,7 +277,7 @@ int ubx_common_pm_control(const struct device *dev, enum pm_device_action action
 		ubx_modem_software_standby(&data->modem);
 		break;
 	case PM_DEVICE_ACTION_RESUME:
-		rc = cfg->pm_funcs.software_resume(dev);
+		rc = cfg->pm_funcs->software_resume(dev);
 		if (rc < 0) {
 			LOG_WRN("Failed to resume");
 			return rc;
@@ -321,14 +321,14 @@ int ubx_common_pm_control(const struct device *dev, enum pm_device_action action
 			return rc;
 		}
 		/* Configure modem for comms */
-		rc = cfg->pm_funcs.port_setup(dev, hardware_reset);
+		rc = cfg->pm_funcs->port_setup(dev, hardware_reset);
 		if (rc < 0) {
 			LOG_INF("Failed to setup comms port");
 			modem_pipe_close(data->modem.pipe, K_SECONDS(2));
 			return rc;
 		}
 		/* Put into low power mode */
-		rc = cfg->pm_funcs.software_standby(dev);
+		rc = cfg->pm_funcs->software_standby(dev);
 		if (rc < 0) {
 			LOG_INF("Failed to go to standby mode");
 			modem_pipe_close(data->modem.pipe, K_SECONDS(2));

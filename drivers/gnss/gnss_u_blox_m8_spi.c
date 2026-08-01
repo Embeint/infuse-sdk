@@ -514,11 +514,17 @@ static DEVICE_API(gnss, gnss_api) = {
 	.get_latest_timepulse = ubx_common_get_latest_timepulse,
 };
 
+static const struct ubx_common_pm_fn ubx_m8_spi_pm_fn = {
+	.software_standby = ubx_m8_spi_software_standby,
+	.software_resume = ubx_m8_spi_software_resume,
+	.port_setup = ubx_m8_spi_port_setup,
+	.fifo_poll = ubx_m8_fifo_poll,
+	.mon_rxr = ubx_m8_mon_rxr,
+};
+
 #define UBX_M8_SPI(inst)                                                                           \
 	static const struct ubx_m8_spi_config ubx_m8_cfg_##inst = {                                \
-		.common = UBX_COMMON_CONFIG_INST(                                                  \
-			inst, ubx_m8_spi_software_standby, ubx_m8_spi_software_resume,             \
-			ubx_m8_spi_port_setup, ubx_m8_fifo_poll, ubx_m8_mon_rxr),                  \
+		.common = UBX_COMMON_CONFIG_INST(inst, &ubx_m8_spi_pm_fn),                         \
 		.spi = SPI_DT_SPEC_INST_GET(inst, SPI_WORD_SET(8) | SPI_TRANSFER_MSB),             \
 	};                                                                                         \
 	static struct ubx_m8_spi_data ubx_m8_data_##inst;                                          \
