@@ -58,6 +58,16 @@ modem_backend_ublox_i2c_init(struct modem_backend_ublox_i2c *backend,
  */
 void modem_backend_ublox_i2c_use_data_ready_gpio(struct modem_backend_ublox_i2c *backend);
 
+/**
+ * @brief MON-RXR message handler to track modem state
+ *
+ * @param backend Modem backend data structure
+ * @param awake True if modem is awake, false if asleep
+ * @param pm_active True if device is requested to be PM_ACTIVE, false otherwise
+ */
+void modem_backend_ublox_i2c_mon_rxr(struct modem_backend_ublox_i2c *backend, bool awake,
+				     bool pm_active);
+
 #ifdef __cplusplus
 }
 #endif

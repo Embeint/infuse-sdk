@@ -21,6 +21,7 @@ enum {
 	MODE_BOOTING = BIT(0),
 	MODE_POLLING = BIT(1),
 	MODE_CLOSED = BIT(2),
+	MODE_INACTIVE = BIT(3),
 };
 
 static void write_cb(struct rtio *r, const struct rtio_sqe *sqe, int res, void *arg)
@@ -120,9 +121,23 @@ static void fifo_bytes_pending_cb(struct rtio *r, const struct rtio_sqe *sqe, in
 
 	/* If in polling mode, or query failed */
 	if ((backend->common.flags & MODE_POLLING) || failed) {
-		/* Reschedule another data poll */
-		k_work_reschedule(&backend->common.fifo_read, backend->common.poll_period);
+		/* Reschedule another data poll, even if modem is asleep.
+		 * M10 I2C has a known bug where TX-READY will not assert after a sleep cycle, so we
+		 * need to poll in order to learn when the module is awake.
+		 */
+		k_timeout_t poll_period = (backend->common.flags & MODE_INACTIVE)
+						  ? K_MSEC(1000)
+						  : backend->common.poll_period;
+
+		k_work_reschedule(&backend->common.fifo_read, poll_period);
 	}
+
+	/* If the poll succeeded, the modem is no longer inactive */
+	if (!failed && (backend->common.flags & MODE_INACTIVE)) {
+		LOG_DBG("Modem ACTIVE");
+		backend->common.flags &= ~MODE_INACTIVE;
+	}
+
 	/* If we aren't running the FIFO read */
 	if (failed || (backend->common.bytes_pending == 0)) {
 		/* Release bus */
@@ -358,4 +373,24 @@ void modem_backend_ublox_i2c_use_data_ready_gpio(struct modem_backend_ublox_i2c 
 	(void)gpio_pin_interrupt_configure_dt(backend->common.data_ready, GPIO_INT_EDGE_TO_ACTIVE);
 	/* Trigger a query immediately in case line already high */
 	k_work_reschedule(&backend->common.fifo_read, K_NO_WAIT);
+}
+
+void modem_backend_ublox_i2c_mon_rxr(struct modem_backend_ublox_i2c *backend, bool awake,
+				     bool pm_active)
+{
+	LOG_DBG("MON-RXR: %s", awake ? "ACTIVE" : "INACTIVE");
+	if (awake) {
+		backend->common.flags &= ~MODE_INACTIVE;
+	} else {
+		backend->common.flags |= MODE_INACTIVE;
+		if (pm_active) {
+			/* Device is still in use by application but in the inactive state (PSMCT or
+			 * PSMOO).
+			 * Unfortunately the TX-READY pin never asserts until we initiate an I2C
+			 * transaction due to modem firmware bug, schedule a periodic poll so that
+			 * we are notified within 1 second of the modem waking up.
+			 */
+			k_work_reschedule(&backend->common.fifo_read, K_MSEC(1000));
+		}
+	}
 }

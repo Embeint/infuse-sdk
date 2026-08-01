@@ -60,6 +60,14 @@ modem_backend_ublox_spi_init(struct modem_backend_ublox_spi *backend,
  */
 void modem_backend_ublox_spi_use_data_ready_gpio(struct modem_backend_ublox_spi *backend);
 
+/**
+ * @brief MON-RXR message handler to track modem state
+ *
+ * @param backend Modem backend data structure
+ * @param awake True if modem is awake, false if asleep
+ */
+void modem_backend_ublox_spi_mon_rxr(struct modem_backend_ublox_spi *backend, bool awake);
+
 #ifdef __cplusplus
 }
 #endif
