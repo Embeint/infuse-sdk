@@ -218,18 +218,22 @@ static bool nav_pvt_handle(struct gnss_run_state *state, const struct task_gnss_
 	bool valid_time = (pvt->valid & time_validity) == time_validity;
 	bool valid_hacc = (pvt->h_acc <= (1000 * (uint32_t)args->accuracy_m));
 	bool valid_pdop = (pvt->p_dop <= (10 * (uint32_t)args->position_dop));
+	bool fix_ok = (pvt->flags & UBX_MSG_NAV_PVT_FLAGS_GNSS_FIX_OK) != 0;
+	uint8_t psm_state = (pvt->flags & UBX_MSG_NAV_PVT_FLAGS_PSM_MASK) >> 2;
 	bool not_running = !(state->flags & TIME_SYNC_RUNNING);
 	uint32_t runtime = k_uptime_seconds() - state->task_start;
 
 	/* Periodically print fix state */
 	if (k_uptime_seconds() % 30 == 0) {
-		LOG_INF("NAV-PVT: Lat: %9d Lon: %9d Height: %6d", pvt->lat, pvt->lon, pvt->height);
-		LOG_INF("         HAcc: %umm VAcc: %umm pDOP: %d NumSV: %d", pvt->h_acc, pvt->v_acc,
-			pvt->p_dop / 100, pvt->num_sv);
+		LOG_INF("NAV-PVT: Lat: %9d Lon: %9d Height: %6d Ok: %d", pvt->lat, pvt->lon,
+			pvt->height, fix_ok);
+		LOG_INF("         HAcc: %umm VAcc: %umm pDOP: %d NumSV: %d PSM: %d", pvt->h_acc,
+			pvt->v_acc, pvt->p_dop / 100, pvt->num_sv, psm_state);
 	} else {
-		LOG_DBG("NAV-PVT: Lat: %9d Lon: %9d Height: %6d", pvt->lat, pvt->lon, pvt->height);
-		LOG_DBG("         HAcc: %umm VAcc: %umm pDOP: %d NumSV: %d", pvt->h_acc, pvt->v_acc,
-			pvt->p_dop / 100, pvt->num_sv);
+		LOG_DBG("NAV-PVT: Lat: %9d Lon: %9d Height: %6d Ok: %d", pvt->lat, pvt->lon,
+			pvt->height, fix_ok);
+		LOG_DBG("         HAcc: %umm VAcc: %umm pDOP: %d NumSV: %d PSM: %d", pvt->h_acc,
+			pvt->v_acc, pvt->p_dop / 100, pvt->num_sv, psm_state);
 	}
 
 	if (run_target == TASK_GNSS_FLAGS_RUN_FOREVER) {
