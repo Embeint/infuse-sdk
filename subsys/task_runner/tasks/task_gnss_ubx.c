@@ -329,7 +329,7 @@ static int nav_sat_cb(uint8_t message_class, uint8_t message_id, const void *pay
  *    modem wakeups in seconds.
  */
 static int gnss_configure(const struct device *gnss, const struct task_gnss_args *args,
-			  bool *low_power_possible, uint32_t *max_sleep_s)
+			  uint16_t meas_rate, bool *low_power_possible, uint32_t *max_sleep_s)
 {
 	struct ubx_modem_data *modem = ubx_modem_data_get(gnss);
 	uint8_t run_target = (args->flags & TASK_GNSS_FLAGS_RUN_MASK);
@@ -391,6 +391,8 @@ static int gnss_configure(const struct device *gnss, const struct task_gnss_args
 	UBX_CFG_VALUE_APPEND(&cfg_buf, UBX_CFG_KEY_TP_TIMEGRID_TP1, UBX_CFG_TP_TIMEGRID_TP1_GPS);
 	/* Platform dynamics */
 	UBX_CFG_VALUE_APPEND(&cfg_buf, UBX_CFG_KEY_NAVSPG_DYNMODEL, dynamics);
+	/* Measurement rate */
+	UBX_CFG_VALUE_APPEND(&cfg_buf, UBX_CFG_KEY_RATE_MEAS, meas_rate);
 	ubx_msg_finalise(&cfg_buf);
 	rc = ubx_modem_send_sync_acked(modem, &cfg_buf, K_MSEC(250));
 	if (rc < 0) {
@@ -445,7 +447,7 @@ static int gnss_configure(const struct device *gnss, const struct task_gnss_args
 #ifdef CONFIG_GNSS_UBX_M8
 	NET_BUF_SIMPLE_DEFINE(msg_buf, 48);
 	const struct ubx_msg_cfg_rate cfg_rate = {
-		.meas_rate = 1000,
+		.meas_rate = meas_rate,
 		.nav_rate = 1,
 		.time_ref = UBX_MSG_CFG_RATE_TIME_REF_GPS,
 	};
@@ -530,6 +532,7 @@ void gnss_task_fn(const struct task_schedule *schedule, struct k_poll_signal *te
 	bool low_power_possible;
 	uint32_t data_timeout;
 	uint32_t max_sleep_s;
+	uint16_t meas_rate;
 	int rc;
 
 	run_state.dev = gnss;
@@ -562,13 +565,18 @@ void gnss_task_fn(const struct task_schedule *schedule, struct k_poll_signal *te
 		return;
 	}
 
+	/* Milliseconds between measurments according to args */
+	meas_rate = args->measurement_period_s == 0 ? 1 : MIN(args->measurement_period_s, 60);
+	meas_rate *= MSEC_PER_SEC;
+
 	/* Configure the modem according to the arguments */
-	rc = gnss_configure(gnss, args, &low_power_possible, &max_sleep_s);
+	rc = gnss_configure(gnss, args, meas_rate, &low_power_possible, &max_sleep_s);
 	if (rc < 0) {
 		rc = retry_power_up(gnss);
 		if (rc == 0) {
 			/* Try again */
-			(void)gnss_configure(gnss, args, &low_power_possible, &max_sleep_s);
+			(void)gnss_configure(gnss, args, meas_rate, &low_power_possible,
+					     &max_sleep_s);
 		} else {
 			/* Cycling the modem failed */
 			k_sleep(K_SECONDS(1));
@@ -611,7 +619,7 @@ void gnss_task_fn(const struct task_schedule *schedule, struct k_poll_signal *te
 	data_timeout = k_uptime_seconds();
 	while (1) {
 		/* Block on the NAV-PVT callback and Task Runner requests */
-		if (k_poll(events, ARRAY_SIZE(events), K_SECONDS(2)) == -EAGAIN) {
+		if (k_poll(events, ARRAY_SIZE(events), K_MSEC(meas_rate + 1000)) == -EAGAIN) {
 			if (!receiver_idle) {
 				/* Modem is expected to be awake, but no data has arrived */
 				LOG_WRN("Terminating due to %s", "no data");

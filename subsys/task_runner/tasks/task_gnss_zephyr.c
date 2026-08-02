@@ -226,6 +226,7 @@ void gnss_task_fn(const struct task_schedule *schedule, struct k_poll_signal *te
 	uint8_t run_target = (args->flags & TASK_GNSS_FLAGS_RUN_MASK);
 	struct gnss_run_state run_state = {0};
 	gnss_systems_t constellations;
+	uint16_t meas_rate;
 	uint8_t dynamics;
 	int rc;
 
@@ -243,6 +244,8 @@ void gnss_task_fn(const struct task_schedule *schedule, struct k_poll_signal *te
 	run_state.task_start = k_uptime_seconds();
 	cb_state = &run_state;
 	gnss_timeout_reset(&run_state.timeout_state);
+	meas_rate = args->measurement_period_s == 0 ? 1 : MIN(args->measurement_period_s, 60);
+	meas_rate *= MSEC_PER_SEC;
 
 	LOG_DBG("Starting");
 
@@ -307,7 +310,7 @@ void gnss_task_fn(const struct task_schedule *schedule, struct k_poll_signal *te
 	}
 
 	/* Configure output fix rate */
-	rc = gnss_set_fix_rate(gnss, 1000);
+	rc = gnss_set_fix_rate(gnss, meas_rate);
 	if (rc != 0) {
 		LOG_WRN("Failed to configure fix rate (%d)", rc);
 	}
@@ -322,7 +325,7 @@ void gnss_task_fn(const struct task_schedule *schedule, struct k_poll_signal *te
 
 	while (1) {
 		/* Block on the NAV-PVT callback and Task Runner requests */
-		if (k_poll(events, ARRAY_SIZE(events), K_SECONDS(2)) == -EAGAIN) {
+		if (k_poll(events, ARRAY_SIZE(events), K_MSEC(meas_rate + 1000)) == -EAGAIN) {
 			LOG_WRN("Terminating due to %s", "callback timeout");
 			break;
 		}

@@ -278,7 +278,8 @@
                 {"name": "accuracy_m", "type": "uint16_t", "description": "Accuracy in meters"},
                 {"name": "position_dop", "type": "uint16_t", "description": "Dilution of precision, scaled by 0.1"},
                 {"name": "mode", "type": "union schedule_union_task_gnss_mode_args", "description": "Mode-specific arguments selected by flags"},
-                {"name": "dynamic_model", "type": "uint8_t", "description": "Dynamic model from ubx_cfg_key_navspg_dynmodel"}
+                {"name": "dynamic_model", "type": "uint8_t", "description": "Dynamic model from ubx_cfg_key_navspg_dynmodel"},
+                {"name": "measurement_period_s", "type": "uint8_t", "description": "Number of seconds between GNSS measurements (0 == 1 second)"}
             ]
         },
         "5": {
