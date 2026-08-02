@@ -408,8 +408,9 @@ static int gnss_configure(const struct device *gnss, const struct task_gnss_args
 		UBX_CFG_VALUE_APPEND(&cfg_buf, UBX_CFG_KEY_NAVSPG_OUTFIL_PDOP, args->position_dop);
 		UBX_CFG_VALUE_APPEND(&cfg_buf, UBX_CFG_KEY_PM_ONTIME, 0);
 		UBX_CFG_VALUE_APPEND(&cfg_buf, UBX_CFG_KEY_PM_UPDATEEPH, true);
-		if (args->mode.low_power.acquisition_timeout == 0) {
-			/* No acquisition timeout */
+		if ((args->mode.low_power.acquisition_timeout == 0) &&
+		    (args->mode.low_power.search_period == 0)) {
+			/* No acquisition or search timeout */
 			UBX_CFG_VALUE_APPEND(&cfg_buf, UBX_CFG_KEY_PM_MAXACQTIME, 0);
 			UBX_CFG_VALUE_APPEND(&cfg_buf, UBX_CFG_KEY_PM_DONOTENTEROFF, true);
 		} else {
