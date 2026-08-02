@@ -39,6 +39,7 @@ static struct gnss_run_state {
 	uint64_t next_time_sync;
 	uint32_t time_acquired;
 	uint32_t task_start;
+	uint16_t fix_interval;
 	atomic_t events;
 	uint8_t flags;
 } state;
@@ -64,6 +65,14 @@ static int nrf9x_gnss_boot(const struct task_gnss_args *args)
 	uint32_t dynamics;
 	int rc;
 
+	state.fix_interval = args->measurement_period_s;
+	if (state.fix_interval == 0) {
+		state.fix_interval = 1;
+	} else if ((state.fix_interval > 1) && (state.fix_interval < 10)) {
+		LOG_WRN("nRF9x GNSS does not support rates between 2 and 9 seconds");
+		state.fix_interval = 1;
+	}
+
 	rc = lte_lc_func_mode_set(LTE_LC_FUNC_MODE_ACTIVATE_GNSS);
 	if (rc != 0) {
 		LOG_ERR("Failed to %s (%d)", "activate GNSS", rc);
@@ -79,7 +88,7 @@ static int nrf9x_gnss_boot(const struct task_gnss_args *args)
 		LOG_ERR("Failed to %s (%d)", "set use case", rc);
 		return rc;
 	}
-	rc = nrf_modem_gnss_fix_interval_set(1);
+	rc = nrf_modem_gnss_fix_interval_set(state.fix_interval);
 	if (rc != 0) {
 		LOG_ERR("Failed to %s (%d)", "set fix interval", rc);
 		return rc;
@@ -425,6 +434,6 @@ termination:
 		return;
 	}
 
-	/* Expect another callback within 2 seconds */
-	task_workqueue_reschedule(task, K_SECONDS(2));
+	/* Expect another callback according to the fix interval */
+	task_workqueue_reschedule(task, K_SECONDS(state.fix_interval + 1));
 }

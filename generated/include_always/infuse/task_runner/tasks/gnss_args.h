@@ -114,6 +114,8 @@ struct task_gnss_args {
 	union schedule_union_task_gnss_mode_args mode;
 	/** Dynamic model from ubx_cfg_key_navspg_dynmodel */
 	uint8_t dynamic_model;
+	/** Number of seconds between GNSS measurements (0 == 1 second) */
+	uint8_t measurement_period_s;
 } __packed;
 
 #ifdef __cplusplus
