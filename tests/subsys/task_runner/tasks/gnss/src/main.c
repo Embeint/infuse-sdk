@@ -12,6 +12,7 @@
 #include <zephyr/kernel.h>
 #include <zephyr/drivers/gnss.h>
 #include <zephyr/drivers/gnss/gnss_emul.h>
+#include <zephyr/pm/device_runtime.h>
 
 #include <infuse/time/epoch.h>
 #include <infuse/epacket/packet.h>
@@ -400,6 +401,62 @@ ZTEST(task_gnss, test_run_forever)
 	zassert_true(task_wait(thread, K_SECONDS(2)));
 }
 
+ZTEST(task_gnss, test_measurement_period_3_seconds)
+{
+#ifdef CONFIG_TASK_RUNNER_TASK_GNSS_NRF9X
+	ztest_test_skip();
+#else
+	struct gnss_pvt_emul_location emul_loc = {
+		.latitude = -270000100,
+		.longitude = 1530009000,
+		.height = 56412,
+		.h_acc = 500,
+		.v_acc = 500,
+		.t_acc = 5,
+		.p_dop = 10,
+		.num_sv = 8,
+	};
+	k_tid_t thread;
+
+	schedule.timeout_s = 0;
+	schedule.task_logging[0].loggers = TDF_DATA_LOGGER_SERIAL;
+	schedule.task_logging[0].tdf_mask = TASK_GNSS_LOG_LLHA;
+	schedule.task_args.gnss = (struct task_gnss_args){
+		.flags = TASK_GNSS_FLAGS_RUN_FOREVER,
+		.measurement_period_s = 3,
+	};
+
+	/* Start the thread */
+	thread = task_schedule(&data);
+
+	/* First location should be published promptly after startup. */
+	zassert_equal(0, k_sem_take(&location_published, K_MSEC(3500)));
+	k_sleep(K_TICKS(1));
+	expected_logging(-910000000, -1810000000, 0, INT32_MAX, INT32_MAX, 1);
+
+	/* Second location might come in early as well (emulators) */
+	zassert_equal(0, k_sem_take(&location_published, K_MSEC(3500)));
+	k_sleep(K_TICKS(1));
+	expected_logging(-910000000, -1810000000, 0, INT32_MAX, INT32_MAX, 1);
+
+	/* Set location for next report */
+	emul_gnss_pvt_configure(DEV, &emul_loc);
+
+	/* Measurement period is configured to 3 seconds. */
+	zassert_equal(-EAGAIN, k_sem_take(&location_published, K_MSEC(2500)));
+	zassert_equal(0, k_sem_take(&location_published, K_MSEC(1100)));
+	k_sleep(K_TICKS(1));
+	expected_logging(emul_loc.latitude, emul_loc.longitude, emul_loc.height, emul_loc.h_acc,
+			 emul_loc.v_acc, 1);
+
+	/* Until requested to stop */
+	k_poll_signal_raise(&data.terminate_signal, 0);
+
+	/* Thread should terminated */
+	zassert_true(task_wait(thread, K_SECONDS(2)));
+#endif /* CONFIG_TASK_RUNNER_TASK_GNSS_NRF9X */
+}
+
 ZTEST(task_gnss, test_location_fix)
 {
 	gnss_systems_t sys_default, sys_enabled;
@@ -734,4 +791,14 @@ static void logger_before(void *fixture)
 #endif /* CONFIG_GNSS_UBX_MODEM_EMUL */
 }
 
-ZTEST_SUITE(task_gnss, NULL, NULL, logger_before, NULL, NULL);
+static void run_after(void *fixture)
+{
+#ifdef CONFIG_GNSS_EMUL
+	/* Reset the fix rate between runs due to emulator quirks */
+	pm_device_runtime_get(DEV);
+	gnss_set_fix_rate(DEV, 1000);
+	pm_device_runtime_put(DEV);
+#endif /* CONFIG_GNSS_EMUL */
+}
+
+ZTEST_SUITE(task_gnss, NULL, NULL, logger_before, run_after, NULL);
