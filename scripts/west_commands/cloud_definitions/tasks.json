@@ -1,0 +1,315 @@
+{
+    "structs": {
+        "schedule_struct_task_imu_accelerometer": {
+            "description": "IMU accelerometer configuration",
+            "fields": [
+                {"name": "rate_hz", "type": "uint16_t", "description": "Sample rate in Hz"},
+                {"name": "range_g", "type": "uint8_t", "description": "Accelerometer measurement range in g"},
+                {"name": "pad", "type": "uint8_t", "description": "Structure padding"}
+            ]
+        },
+        "schedule_struct_task_imu_magnetometer": {
+            "description": "IMU magnetometer configuration",
+            "fields": [
+                {"name": "rate_hz", "type": "uint16_t", "description": "Sample rate in Hz"},
+                {"name": "range_gauss", "type": "uint8_t", "description": "Magnetometer measurement range in gauss"},
+                {"name": "pad", "type": "uint8_t", "description": "Structure padding"}
+            ]
+        },
+        "schedule_struct_task_imu_gyroscope": {
+            "description": "IMU gyroscope configuration",
+            "fields": [
+                {"name": "rate_hz", "type": "uint16_t", "description": "Sample rate in Hz"},
+                {"name": "range_dps", "type": "uint16_t", "description": "Gyroscope measurement range in degrees per second"},
+                {"name": "pad", "type": "uint8_t", "description": "Structure padding"}
+            ]
+        },
+        "schedule_struct_task_gnss_plateau_args": {
+            "description": "GNSS fix plateau detection arguments",
+            "fields": [
+                {"name": "min_accuracy_m", "type": "uint8_t", "description": "Plateau detection only enabled once accuracy reaches this level"},
+                {"name": "min_accuracy_improvement_m", "type": "uint8_t", "description": "Location accuracy must improve by at least this many meters"},
+                {"name": "timeout", "type": "uint8_t", "description": "Timeout for accuracy to improve by min_accuracy_improvement_m"}
+            ]
+        },
+        "schedule_struct_task_gnss_run_to_fix_args": {
+            "description": "GNSS run-to-location-fix specific arguments",
+            "fields": [
+                {"name": "any_fix_timeout", "type": "uint8_t", "description": "Terminate fix if this duration passes without any location information"},
+                {"name": "fix_plateau", "type": "struct schedule_struct_task_gnss_plateau_args", "description": "Plateau detection configuration"}
+            ]
+        },
+        "schedule_struct_task_gnss_low_power_args": {
+            "description": "GNSS low-power-mode specific arguments",
+            "fields": [
+                {"name": "acquisition_timeout", "type": "uint16_t", "description": "Duration to search for any GNSS signals, 0 for no timeout"},
+                {"name": "search_period", "type": "uint16_t", "description": "Period between acquisition searches on timeout"}
+            ]
+        },
+        "schedule_struct_task_network_scan_wifi_args": {
+            "description": "Network scan Wi-Fi access point scanning arguments",
+            "fields": [
+                {"name": "flags", "type": "enum schedule_enum_task_network_scan_wifi_flags", "description": "TASK_NETWORK_SCAN_WIFI_FLAGS_* value"},
+                {"name": "desired_aps", "type": "uint8_t", "description": "Number of unique access points wanted"},
+                {"name": "max_aps", "type": "uint8_t", "description": "Maximum number of access points to report"}
+            ]
+        },
+        "schedule_struct_task_network_scan_lte_args": {
+            "description": "Network scan LTE cell scanning arguments",
+            "fields": [
+                {"name": "desired_cells", "type": "uint8_t", "description": "Number of LTE cells wanted"}
+            ]
+        }
+    },
+    "unions": {
+        "schedule_union_task_gnss_mode_args": {
+            "description": "GNSS mode-specific argument overlay",
+            "fields": [
+                {"name": "run_to_fix", "type": "struct schedule_struct_task_gnss_run_to_fix_args", "description": "TASK_GNSS_FLAGS_RUN_TO_LOCATION_FIX specific arguments"},
+                {"name": "low_power", "type": "struct schedule_struct_task_gnss_low_power_args", "description": "TASK_GNSS_FLAGS_LOW_POWER_MODE specific arguments"}
+            ]
+        }
+    },
+    "enums": {
+        "schedule_enum_task_audio_dmic_logs": {
+            "description": "Digital microphone task TDF mask",
+            "type": "uint8_t",
+            "values": [
+                {"name": "METADATA", "bit": 0, "description": "Log audio metadata"},
+                {"name": "SAMPLES", "bit": 1, "description": "Log raw audio samples"}
+            ]
+        },
+        "schedule_enum_task_tdf_logger_logs": {
+            "description": "TDF logger task TDF mask",
+            "type": "uint16_t",
+            "values": [
+                {"name": "ANNOUNCE", "bit": 0, "description": "Log announcement TDFs"},
+                {"name": "BATTERY", "bit": 1, "description": "Log battery TDFs"},
+                {"name": "AMBIENT_ENV", "bit": 2, "description": "Log ambient environmental TDFs"},
+                {"name": "LOCATION", "bit": 3, "description": "Log location TDFs"},
+                {"name": "ACCEL", "bit": 4, "description": "Log accelerometer TDFs"},
+                {"name": "NET_CONN", "bit": 5, "description": "Log network connection TDFs"},
+                {"name": "CUSTOM", "bit": 6, "description": "Log custom TDFs"},
+                {"name": "SOC_TEMPERATURE", "bit": 7, "description": "Log SoC temperature TDFs"}
+            ]
+        },
+        "schedule_enum_task_tdf_logger_flags": {
+            "description": "TDF logger task operation flags",
+            "type": "uint8_t",
+            "values": [
+                {"name": "NO_FLUSH", "bit": 0, "description": "Do not flush logger after logging"}
+            ]
+        },
+        "schedule_enum_task_imu_flags": {
+            "description": "IMU task operation flags",
+            "type": "uint8_t",
+            "values": [
+                {"name": "LOW_POWER_MODE", "bit": 0, "description": "Run IMU in low power mode"}
+            ]
+        },
+        "schedule_enum_task_imu_logs": {
+            "description": "IMU task TDF mask",
+            "type": "uint8_t",
+            "values": [
+                {"name": "ACC", "bit": 0, "description": "Log accelerometer samples"},
+                {"name": "GYR", "bit": 1, "description": "Log gyroscope samples"},
+                {"name": "MAG", "bit": 2, "description": "Log magnetometer samples"}
+            ]
+        },
+        "schedule_enum_task_battery_logs": {
+            "description": "Battery task TDF mask",
+            "type": "uint8_t",
+            "values": [
+                {"name": "COMPLETE", "bit": 0, "description": "Log battery voltage, charge current and charge percentage"},
+                {"name": "VOLTAGE", "bit": 1, "description": "Log battery voltage"},
+                {"name": "SOC", "bit": 2, "description": "Log battery charge percentage"}
+            ]
+        },
+        "schedule_enum_task_environmental_logs": {
+            "description": "Environmental task TDF mask",
+            "type": "uint8_t",
+            "values": [
+                {"name": "TPH", "bit": 0, "description": "Log temperature, pressure and humidity"},
+                {"name": "T", "bit": 1, "description": "Log temperature"},
+                {"name": "P", "bit": 2, "description": "Log pressure"}
+            ]
+        },
+        "schedule_enum_task_gnss_logs": {
+            "description": "GNSS task TDF mask",
+            "type": "uint8_t",
+            "values": [
+                {"name": "LLHA", "bit": 0, "description": "Log latitude, longitude, height and accuracy"},
+                {"name": "FIX_INFO", "bit": 1, "description": "Log fix information"},
+                {"name": "PVT", "bit": 7, "description": "Log maximum information position, velocity and time"}
+            ]
+        },
+        "schedule_enum_task_gnss_constellations": {
+            "description": "GNSS constellation mask",
+            "type": "uint8_t",
+            "values": [
+                {"name": "GPS", "bit": 0, "description": "GPS constellation"},
+                {"name": "GLONASS", "bit": 1, "description": "GLONASS constellation"},
+                {"name": "GALILEO", "bit": 2, "description": "Galileo constellation"},
+                {"name": "BEIDOU", "bit": 3, "description": "BeiDou constellation"},
+                {"name": "QZSS", "bit": 4, "description": "QZSS constellation"},
+                {"name": "IRNSS", "bit": 5, "description": "IRNSS constellation"},
+                {"name": "SBAS", "bit": 6, "description": "SBAS constellation"},
+                {"name": "IMES", "bit": 7, "description": "IMES constellation"}
+            ]
+        },
+        "schedule_enum_task_gnss_flags": {
+            "description": "GNSS task operation flags",
+            "type": "uint8_t",
+            "values": [
+                {"name": "RUN_FOREVER", "value": 0, "description": "Runs until terminated by the scheduler"},
+                {"name": "RUN_TO_LOCATION_FIX", "value": 1, "description": "Terminates when the location is known to specified accuracy"},
+                {"name": "RUN_TO_TIME_SYNC", "value": 2, "description": "Terminates when the time has been synced"},
+                {"name": "RUN_MASK", "value": 3, "description": "Run-until mask"},
+                {"name": "LOW_POWER_MODE", "value": 0, "description": "Run GNSS in low power mode"},
+                {"name": "PERFORMANCE_MODE", "bit": 7, "description": "Run GNSS in performance mode"}
+            ]
+        },
+        "schedule_enum_task_network_scan_logs": {
+            "description": "Network scan task TDF mask",
+            "type": "uint8_t",
+            "values": [
+                {"name": "LTE_CELLS", "bit": 0, "description": "Log LTE TAC cells"},
+                {"name": "WIFI_AP", "bit": 1, "description": "Log Wi-Fi access point information"},
+                {"name": "COUNT", "bit": 2, "description": "Log network scan count"}
+            ]
+        },
+        "schedule_enum_task_network_scan_flags": {
+            "description": "Network scan task operation flags",
+            "type": "uint8_t",
+            "values": [
+                {"name": "LTE_CELLS", "bit": 0, "description": "Scan nearby LTE cells"},
+                {"name": "WIFI_CELLS", "bit": 1, "description": "Scan nearby Wi-Fi access points"},
+                {"name": "SKIP_LTE_IF_WIFI_GOOD", "bit": 7, "description": "Skip LTE scan if desired_aps Wi-Fi access points are found"}
+            ]
+        },
+        "schedule_enum_task_network_scan_wifi_flags": {
+            "description": "Network scan Wi-Fi operation flags",
+            "type": "uint8_t",
+            "values": [
+                {"name": "INCLUDE_DUPLICATES", "bit": 0, "description": "Report multiple networks from the same access point"},
+                {"name": "SCAN_PROGRESSIVE", "bit": 1, "description": "Scan Wi-Fi channels over multiple calls in order of most to least common"},
+                {"name": "SCAN_ACTIVE", "bit": 2, "description": "Use active scanning"},
+                {"name": "INCLUDE_LOCALLY_ADMINISTERED", "bit": 3, "description": "Report networks using locally administered BSSIDs"}
+            ]
+        },
+        "schedule_enum_task_bt_scanner_flags": {
+            "description": "Bluetooth scanner task operation flags",
+            "type": "uint8_t",
+            "values": [
+                {"name": "LOG_ENCRYPTED", "bit": 0, "description": "Log packets that failed to decrypt"},
+                {"name": "FILTER_DUPLICATES", "bit": 1, "description": "Only log each device once"},
+                {"name": "DEFER_LOGGING", "bit": 2, "description": "Log observed devices at task termination"}
+            ]
+        },
+        "schedule_enum_task_bt_scanner_logs": {
+            "description": "Bluetooth scanner task TDF mask",
+            "type": "uint8_t",
+            "values": [
+                {"name": "INFUSE_BT", "bit": 0, "description": "Log Infuse-IoT Bluetooth packets"}
+            ]
+        },
+        "schedule_enum_task_soc_temperature_logs": {
+            "description": "SoC temperature task TDF mask",
+            "type": "uint8_t",
+            "values": [
+                {"name": "T", "bit": 0, "description": "Log SoC temperature"}
+            ]
+        }
+    },
+    "definitions": {
+        "0": {
+            "name": "TDF_LOGGER",
+            "description": "TDF logger task arguments (@ref task_tdf_logger_args)",
+            "alternate_ids": {
+                "7": {
+                    "name": "TDF_LOGGER_ALT1",
+                    "description": "TDF logger alternate instance 1 task ID"
+                },
+                "8": {
+                    "name": "TDF_LOGGER_ALT2",
+                    "description": "TDF logger alternate instance 2 task ID"
+                }
+            },
+            "fields": [
+                {"name": "loggers", "type": "uint8_t", "description": "Mask of TDF_DATA_LOGGER_* to log to"},
+                {"name": "logging_period_ms", "type": "uint16_t", "description": "Reschedule next log in this many milliseconds"},
+                {"name": "random_delay_ms", "type": "uint16_t", "description": "Randomise delay before logging"},
+                {"name": "tdfs", "type": "enum schedule_enum_task_tdf_logger_logs", "description": "TDFs to log"},
+                {"name": "flags", "type": "enum schedule_enum_task_tdf_logger_flags", "description": "Operation flags"},
+                {"name": "per_run", "type": "uint8_t", "description": "Only log this many TDFs per run"}
+            ]
+        },
+        "1": {
+            "name": "IMU",
+            "description": "IMU task arguments (@ref task_imu_args)",
+            "fields": [
+                {"name": "accelerometer", "type": "struct schedule_struct_task_imu_accelerometer", "description": "Accelerometer configuration"},
+                {"name": "gyroscope", "type": "struct schedule_struct_task_imu_gyroscope", "description": "Gyroscope configuration"},
+                {"name": "magnetometer", "type": "struct schedule_struct_task_imu_magnetometer", "description": "Magnetometer configuration"},
+                {"name": "fifo_sample_buffer", "type": "uint16_t", "description": "Requested number of samples to buffer in FIFO"},
+                {"name": "num_buffers", "type": "uint8_t", "description": "Run for this many buffers then terminate"},
+                {"name": "flags", "type": "enum schedule_enum_task_imu_flags", "description": "Operational flags"}
+            ]
+        },
+        "2": {
+            "name": "BATTERY",
+            "description": "Battery task arguments (@ref task_battery_args)",
+            "fields": [
+                {"name": "repeat_interval_ms", "type": "uint16_t", "description": "Period between measurements, 0 for single shot mode"}
+            ]
+        },
+        "3": {
+            "name": "ENVIRONMENTAL",
+            "description": "Environmental task arguments (@ref task_environmental_args)",
+            "fields": []
+        },
+        "4": {
+            "name": "GNSS",
+            "description": "GNSS task arguments (@ref task_gnss_args)",
+            "fields": [
+                {"name": "constellations", "type": "enum schedule_enum_task_gnss_constellations", "description": "Constellations GNSS_SYSTEM_*, 0 for receiver default"},
+                {"name": "flags", "type": "enum schedule_enum_task_gnss_flags", "description": "Operational flags"},
+                {"name": "accuracy_m", "type": "uint16_t", "description": "Accuracy in meters"},
+                {"name": "position_dop", "type": "uint16_t", "description": "Dilution of precision, scaled by 0.1"},
+                {"name": "mode", "type": "union schedule_union_task_gnss_mode_args", "description": "Mode-specific arguments selected by flags"},
+                {"name": "dynamic_model", "type": "uint8_t", "description": "Dynamic model from ubx_cfg_key_navspg_dynmodel"}
+            ]
+        },
+        "5": {
+            "name": "NETWORK_SCAN",
+            "description": "Network scan task arguments (@ref task_network_scan_args)",
+            "fields": [
+                {"name": "flags", "type": "enum schedule_enum_task_network_scan_flags", "description": "Meta operation flags"},
+                {"name": "wifi", "type": "struct schedule_struct_task_network_scan_wifi_args", "description": "Wi-Fi AP scanning arguments"},
+                {"name": "lte", "type": "struct schedule_struct_task_network_scan_lte_args", "description": "LTE cell scanning arguments"}
+            ]
+        },
+        "6": {
+            "name": "BT_SCANNER",
+            "description": "Bluetooth scanner task arguments (@ref task_bt_scanner_args)",
+            "fields": [
+                {"name": "duration_ms", "type": "uint32_t", "description": "Scan duration in milliseconds"},
+                {"name": "max_logs", "type": "uint8_t", "description": "Maximum number of packets to log"},
+                {"name": "flags", "type": "enum schedule_enum_task_bt_scanner_flags", "description": "Operation flags"}
+            ]
+        },
+        "9": {
+            "name": "SOC_TEMPERATURE",
+            "description": "SoC temperature task arguments (@ref task_soc_temperature_args)",
+            "fields": []
+        },
+        "10": {
+            "name": "AUDIO_DMIC",
+            "description": "Digital microphone task arguments (@ref task_audio_dmic_args)",
+            "fields": [
+                {"name": "sample_rate_hz", "type": "uint32_t", "description": "Requested sample rate in Hz"},
+                {"name": "gain_db", "type": "int8_t", "description": "Sample gain in dB"}
+            ]
+        }
+    }
+}
