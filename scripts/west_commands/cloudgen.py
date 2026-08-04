@@ -2,6 +2,7 @@
 # Copyright (c) 2024 Embeint Holdings Pty Ltd
 
 import argparse
+import copy
 import importlib
 import json
 import pathlib
@@ -64,6 +65,7 @@ class cloudgen(WestCommand):
         self.tdfgen()
         self.kvgen()
         self.rpcgen()
+        self.tasksgen()
 
         print(f"Outputs written to '{self.generate_base.absolute()}'")
 
@@ -119,6 +121,201 @@ class cloudgen(WestCommand):
                     d["counted_by"] = field["counted_by"]
             else:
                 field["array"] = f"[{field['num']}]"
+
+    def _task_type_name(self, ctype: str, kind: str):
+        prefix = f"{kind} "
+        return ctype.removeprefix(prefix) if ctype.startswith(prefix) else None
+
+    def _task_enum_local_name(self, task_name: str, enum_name: str):
+        prefix = "schedule_enum_task_"
+        suffix = enum_name.removeprefix(prefix) if enum_name.startswith(prefix) else enum_name
+        task_prefix = f"{task_name.lower()}_"
+        if suffix.startswith(task_prefix):
+            suffix = suffix.removeprefix(task_prefix)
+        return f"task_{task_name.lower()}_{suffix}"
+
+    def _task_value_expr(self, value):
+        if "bit" in value:
+            return f"BIT({value['bit']})"
+        return value["value"]
+
+    def _task_prepare_enum(self, enum_info):
+        for value in enum_info["values"]:
+            value["value_expr"] = self._task_value_expr(value)
+
+    def _task_log_enum_name(self, task_name: str, task_defs):
+        task_base = task_name.lower()
+        enum_name = f"schedule_enum_task_{task_base}_logs"
+        if enum_name in task_defs["enums"]:
+            return enum_name
+
+        if "_alt" in task_base:
+            task_base = task_base.rsplit("_alt", 1)[0]
+            enum_name = f"schedule_enum_task_{task_base}_logs"
+            if enum_name in task_defs["enums"]:
+                return enum_name
+
+        return None
+
+    def _task_log_defines(self, task_name: str, task_defs):
+        enum_name = self._task_log_enum_name(task_name, task_defs)
+        if enum_name is None:
+            return []
+
+        return [
+            {
+                "name": f"TASK_{task_name.upper()}_LOG_{value['name']}",
+                "value": self._task_value_expr(value),
+                "description": value.get("description", ""),
+            }
+            for value in task_defs["enums"][enum_name]["values"]
+        ]
+
+    def _task_flag_defines(self, task_name: str, task_defs, skip_enums):
+        prefix = f"schedule_enum_task_{task_name.lower()}_"
+        defines = []
+        for enum_name, enum_info in task_defs["enums"].items():
+            if not enum_name.startswith(prefix) or enum_name.endswith("_logs") or enum_name in skip_enums:
+                continue
+            local_name = self._task_enum_local_name(task_name, enum_name)
+            value_prefix = local_name.upper()
+            for value in enum_info["values"]:
+                defines.append(
+                    {
+                        "name": f"{value_prefix}_{value['name']}",
+                        "value": self._task_value_expr(value),
+                        "description": value.get("description", ""),
+                    }
+                )
+        return defines
+
+    def _task_prepare_field(self, field, task_name: str, task_defs, task_enums):
+        field["render_type"] = field["type"]
+        self._array_postfix({}, field)
+
+        enum_name = self._task_type_name(field["type"], "enum")
+        if enum_name:
+            enum_info = task_defs["enums"][enum_name]
+            field["render_type"] = enum_info["type"]
+            if enum_name not in task_enums:
+                local_name = self._task_enum_local_name(task_name, enum_name)
+                task_enums[enum_name] = copy.deepcopy(enum_info)
+                task_enums[enum_name]["local_name"] = local_name
+                task_enums[enum_name]["value_prefix"] = local_name.upper()
+                self._task_prepare_enum(task_enums[enum_name])
+
+    def tasksgen(self):
+        task_def_file = self.definition_dir / "tasks.json"
+        task_args_template = self.env.get_template("task_args.h.jinja")
+        task_ids_template = self.env.get_template("task_ids.h.jinja")
+        infuse_task_args_template = self.env.get_template("infuse_task_args.h.jinja")
+        infuse_tasks_template = self.env.get_template("infuse_tasks.h.jinja")
+        task_args_output_base = self.generate_base / "include" / "infuse" / "task_runner" / "tasks"
+        task_args_output_base.mkdir(parents=True, exist_ok=True)
+        task_ids_output = task_args_output_base / "infuse_task_ids.h"
+        infuse_task_args_output = task_args_output_base / "infuse_task_args.h"
+        infuse_tasks_output = task_args_output_base / "infuse_tasks.h"
+
+        with task_def_file.open("r") as f:
+            task_defs = json.load(f)
+
+        task_defs.setdefault("structs", {})
+        task_defs.setdefault("unions", {})
+        task_defs.setdefault("enums", {})
+        task_defs.setdefault("definitions", {})
+
+        if self.extra_defs_base:
+            task_def_file_ext = self.extra_defs_base / "tasks.json"
+            if task_def_file_ext.exists():
+                with task_def_file_ext.open("r") as f:
+                    task_defs_ext = json.load(f)
+                for key in ["structs", "unions", "enums", "definitions"]:
+                    task_defs_ext.setdefault(key, {})
+                    for name in task_defs_ext[key]:
+                        assert name not in task_defs[key]
+                for key in ["structs", "unions", "enums", "definitions"]:
+                    task_defs[key].update(task_defs_ext[key])
+
+        task_defs["definitions"] = dict(sorted((int(k), v) for k, v in task_defs["definitions"].items()))
+        task_ids = {}
+        for task_id, task in task_defs["definitions"].items():
+            assert task_id not in task_ids, f"Duplicate task ID {task_id}"
+            task_ids[task_id] = task
+            for alt_id, alt in task.get("alternate_ids", {}).items():
+                alt_id = int(alt_id)
+                assert alt_id not in task_ids, f"Duplicate task ID {alt_id}"
+                task_ids[alt_id] = alt
+        task_ids = dict(sorted(task_ids.items()))
+
+        with task_ids_output.open("w") as f:
+            f.write(task_ids_template.render(tasks=task_ids))
+        self.clang_format(task_ids_output)
+
+        with infuse_task_args_output.open("w") as f:
+            f.write(infuse_task_args_template.render(tasks=task_defs["definitions"]))
+        self.clang_format(infuse_task_args_output)
+
+        with infuse_tasks_output.open("w") as f:
+            f.write(infuse_tasks_template.render(tasks=task_defs["definitions"]))
+        self.clang_format(infuse_tasks_output)
+
+        def collect_type(ctype, task_name, task_structs, task_unions, task_enums):
+            struct_name = self._task_type_name(ctype, "struct")
+            if struct_name:
+                if struct_name in task_structs:
+                    return
+                struct_info = copy.deepcopy(task_defs["structs"][struct_name])
+                for field in struct_info["fields"]:
+                    collect_type(field["type"], task_name, task_structs, task_unions, task_enums)
+                    self._task_prepare_field(field, task_name, task_defs, task_enums)
+                task_structs[struct_name] = struct_info
+                return
+
+            union_name = self._task_type_name(ctype, "union")
+            if union_name:
+                if union_name in task_unions:
+                    return
+                union_info = copy.deepcopy(task_defs["unions"][union_name])
+                for field in union_info["fields"]:
+                    collect_type(field["type"], task_name, task_structs, task_unions, task_enums)
+                    self._task_prepare_field(field, task_name, task_defs, task_enums)
+                task_unions[union_name] = union_info
+                return
+
+            enum_name = self._task_type_name(ctype, "enum")
+            if enum_name and enum_name not in task_enums:
+                enum_info = copy.deepcopy(task_defs["enums"][enum_name])
+                local_name = self._task_enum_local_name(task_name, enum_name)
+                enum_info["local_name"] = local_name
+                enum_info["value_prefix"] = local_name.upper()
+                self._task_prepare_enum(enum_info)
+                task_enums[enum_name] = enum_info
+
+        for task in task_defs["definitions"].values():
+            task = copy.deepcopy(task)
+            task_structs = {}
+            task_unions = {}
+            task_enums = {}
+
+            for field in task["fields"]:
+                collect_type(field["type"], task["name"], task_structs, task_unions, task_enums)
+                self._task_prepare_field(field, task["name"], task_defs, task_enums)
+
+            output = task_args_output_base / f"{task['name'].lower()}_args.h"
+            include_guard = f"INFUSE_SDK_INCLUDE_GENERATED_TASK_RUNNER_TASKS_{task['name'].upper()}_ARGS_H_"
+            with output.open("w") as f:
+                f.write(
+                    task_args_template.render(
+                        task=task,
+                        structs=task_structs,
+                        unions=task_unions,
+                        enums=task_enums.values(),
+                        log_defines=self._task_log_defines(task["name"], task_defs),
+                        flag_defines=self._task_flag_defines(task["name"], task_defs, task_enums),
+                        include_guard=include_guard,
+                    )
+                )
+            self.clang_format(output)
 
     def tdfgen(self):
         tdf_def_file = self.definition_dir / "tdf.json"
