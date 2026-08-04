@@ -72,7 +72,7 @@ need to be tweaked after deployment.
      {
       .task_id = TASK_ID_IMU,
       .validity = TASK_VALID_ALWAYS,
-      .task_args.infuse.imu =
+      .task_args.imu =
         {
           .accelerometer =
             {
@@ -89,9 +89,29 @@ need to be tweaked after deployment.
      },
    };
 
-Arguments for custom task implementations can be inserted into
-:c:struct:`task_schedule` with the
-:kconfig:option:`CONFIG_TASK_RUNNER_CUSTOM_TASK_DEFINITIONS` option.
+Task argument structures, task IDs, and task logging masks are generated from
+``scripts/west_commands/cloud_definitions/tasks.json`` by ``west cloudgen``.
+Generated headers are written under
+``generated/include/infuse/task_runner/tasks``. The task-specific argument
+headers define the ``struct task_<task>_args`` types and constants such as
+``TASK_<TASK>_LOG_*``. The common
+``generated/include/infuse/task_runner/tasks/infuse_task_args.h`` header
+combines them into :c:union:`task_arguments`, which is embedded directly
+as :c:member:`task_schedule.task_args`.
+
+Downstream applications can add task definitions by providing an extension
+``tasks.json`` to ``west cloudgen``:
+
+.. code-block:: console
+
+   west cloudgen -d path/to/extensions -o path/to/application
+
+Extension task definitions are merged with the built-in definitions.
+
+When a downstream task should be included by the generated
+``infuse_tasks.h`` aggregate header, the application should provide a matching
+task API header such as ``include/infuse/task_runner/tasks/<task>.h``. That
+header typically declares the task implementation entry points or helper macros.
 
 Updating Task Schedules
 ***********************
