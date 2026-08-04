@@ -41,7 +41,7 @@ static const struct task_schedule schedules[] = {
 	{
 		.task_id = TASK_ID_TDF_LOGGER,
 		.validity = TASK_VALID_ALWAYS,
-		.task_args.infuse.tdf_logger =
+		.task_args.tdf_logger =
 			{
 				.loggers = TDF_DATA_LOGGER_BT_ADV,
 				.logging_period_ms = 900,

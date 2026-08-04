@@ -71,7 +71,7 @@ static const struct task_schedule schedules[] = {
 					.tdf_mask = TASK_GNSS_LOG_PVT,
 				},
 			},
-		.task_args.infuse.gnss =
+		.task_args.gnss =
 			{
 				.constellations =
 					GNSS_SYSTEM_GPS | GNSS_SYSTEM_QZSS | GNSS_SYSTEM_SBAS,
@@ -85,7 +85,7 @@ static const struct task_schedule schedules[] = {
 	{
 		.task_id = TASK_ID_TDF_LOGGER,
 		.validity = TASK_VALID_ALWAYS,
-		.task_args.infuse.tdf_logger =
+		.task_args.tdf_logger =
 			{
 				.loggers = TDF_DATA_LOGGER_BT_ADV,
 				.logging_period_ms = 900,

@@ -29,7 +29,7 @@ static struct task_bt_scanner_mem {
 
 static bool bt_received(struct net_buf *buf, bool decrypted, void *user_ctx)
 {
-	const struct task_bt_scanner_args *args = &state.schedule->task_args.infuse.bt_scanner;
+	const struct task_bt_scanner_args *args = &state.schedule->task_args.bt_scanner;
 	struct epacket_rx_metadata *meta = net_buf_user_data(buf);
 
 	LOG_DBG("%llx: %012llx RSSI: %d dBm", meta->packet_device_id,
@@ -87,7 +87,7 @@ void task_bt_scanner_fn(struct k_work *work)
 	const struct device *interface = DEVICE_DT_GET_ANY(embeint_epacket_bt_adv);
 	struct task_data *task = task_data_from_work(work);
 	const struct task_schedule *sch = task_schedule_from_data(task);
-	const struct task_bt_scanner_args *args = &sch->task_args.infuse.bt_scanner;
+	const struct task_bt_scanner_args *args = &sch->task_args.bt_scanner;
 	int rc;
 
 	if (task->executor.workqueue.reschedule_counter > 0) {

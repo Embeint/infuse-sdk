@@ -39,7 +39,7 @@ static const struct task_schedule schedules[] = {
 		.periodicity_type = TASK_PERIODICITY_FIXED,
 		.timeout_s = 180,
 		.periodicity.fixed.period_s = 30,
-		.task_args.infuse.gnss =
+		.task_args.gnss =
 			{
 				.constellations = GNSS_SYSTEM_GPS | GNSS_SYSTEM_QZSS,
 				.flags = TASK_GNSS_FLAGS_LOW_POWER_MODE |
@@ -73,7 +73,7 @@ static const struct task_schedule schedules[] = {
 	{
 		.task_id = TASK_ID_TDF_LOGGER,
 		.validity = TASK_VALID_ALWAYS,
-		.task_args.infuse.tdf_logger =
+		.task_args.tdf_logger =
 			{
 				.loggers = TDF_DATA_LOGGER_BT_ADV,
 				.logging_period_ms = 900,

@@ -26,7 +26,8 @@ extern "C" {
  * @{
  */
 
-union infuse_task_arguments {
+union task_arguments {
+	uint8_t raw[16];
 {% for task in tasks.values() %}
 	struct task_{{ task['name'] | lower }}_args {{ task['name'] | lower }};
 {% endfor %}

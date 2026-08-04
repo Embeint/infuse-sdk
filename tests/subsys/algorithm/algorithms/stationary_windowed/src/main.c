@@ -118,7 +118,7 @@ ZTEST(alg_stationary, test_send)
 	};
 	k_tid_t imu_thread;
 
-	schedule[0].task_args.infuse.imu = (struct task_imu_args){
+	schedule[0].task_args.imu = (struct task_imu_args){
 		.accelerometer =
 			{
 				.range_g = 4,
@@ -173,8 +173,8 @@ ZTEST(alg_stationary, test_send)
 	k_sleep(K_SECONDS(30));
 	task_terminate(0);
 	zassert_equal(0, k_thread_join(imu_thread, K_SECONDS(2)));
-	schedule[0].task_args.infuse.imu.accelerometer.rate_hz = 10;
-	schedule[0].task_args.infuse.imu.fifo_sample_buffer = 10;
+	schedule[0].task_args.imu.accelerometer.rate_hz = 10;
+	schedule[0].task_args.imu.fifo_sample_buffer = 10;
 	imu_thread = task_schedule(0);
 	imu_emul_accelerometer_data_configure(DEV, 0.0f, 0.0f, 1.0f, 100);
 

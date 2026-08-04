@@ -180,7 +180,7 @@ void imu_task_fn(const struct task_schedule *schedule, struct k_poll_signal *ter
 		 void *imu_dev)
 {
 	const struct device *imu = imu_dev;
-	const struct task_imu_args *args = &schedule->task_args.infuse.imu;
+	const struct task_imu_args *args = &schedule->task_args.imu;
 	bool low_power_mode = args->flags & TASK_IMU_FLAGS_LOW_POWER_MODE;
 	struct imu_config config = {
 		.accelerometer =

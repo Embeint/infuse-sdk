@@ -330,7 +330,7 @@ void network_scan_task_fn(struct k_work *work)
 {
 	struct task_data *task = task_data_from_work(work);
 	const struct task_schedule *sch = task_schedule_from_data(task);
-	const struct task_network_scan_args *args = &sch->task_args.infuse.network_scan;
+	const struct task_network_scan_args *args = &sch->task_args.network_scan;
 	uint64_t epoch_time;
 	__maybe_unused size_t len;
 	int rc = 0;

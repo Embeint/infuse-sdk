@@ -225,10 +225,7 @@ struct task_schedule {
 	/** Task logging configuration */
 	struct task_schedule_tdf_logging task_logging[2];
 	/** Task specific arguments  */
-	union task_args {
-		uint8_t raw[16];
-		union infuse_task_arguments infuse;
-	} task_args;
+	union task_arguments task_args;
 } __packed;
 
 /** Events that can trigger callbacks */

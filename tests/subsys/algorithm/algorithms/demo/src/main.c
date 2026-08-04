@@ -100,7 +100,7 @@ ZTEST(alg_demo, test_event_generator)
 	k_tid_t imu_thread;
 	int tdfs_logged = 0;
 
-	schedule[0].task_args.infuse.imu = (struct task_imu_args){
+	schedule[0].task_args.imu = (struct task_imu_args){
 		.accelerometer =
 			{
 				.range_g = 4,
@@ -142,7 +142,7 @@ ZTEST(alg_demo, test_state_generator)
 	k_tid_t imu_thread;
 	int tdfs_logged;
 
-	schedule[0].task_args.infuse.imu = (struct task_imu_args){
+	schedule[0].task_args.imu = (struct task_imu_args){
 		.accelerometer =
 			{
 				.range_g = 4,
@@ -182,7 +182,7 @@ ZTEST(alg_demo, test_metric_generator)
 	k_tid_t imu_thread;
 	int tdfs_logged;
 
-	schedule[0].task_args.infuse.imu = (struct task_imu_args){
+	schedule[0].task_args.imu = (struct task_imu_args){
 		.accelerometer =
 			{
 				.range_g = 4,

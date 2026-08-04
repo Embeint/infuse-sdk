@@ -108,7 +108,7 @@ ZTEST(alg_stationary, test_send)
 	k_tid_t imu_thread;
 	float last;
 
-	schedule[0].task_args.infuse.imu = (struct task_imu_args){
+	schedule[0].task_args.imu = (struct task_imu_args){
 		.accelerometer =
 			{
 				.range_g = 4,

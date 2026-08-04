@@ -158,7 +158,7 @@ ZTEST(task_network_scan, test_wifi_scan_not_requested)
 	schedule = (struct task_schedule){
 		.task_id = TASK_ID_NETWORK_SCAN,
 		.validity = TASK_VALID_ALWAYS,
-		.task_args.infuse.network_scan =
+		.task_args.network_scan =
 			{
 				.flags = 0,
 			},
@@ -189,7 +189,7 @@ ZTEST(task_network_scan, test_wifi_scan_no_results)
 	schedule = (struct task_schedule){
 		.task_id = TASK_ID_NETWORK_SCAN,
 		.validity = TASK_VALID_ALWAYS,
-		.task_args.infuse.network_scan =
+		.task_args.network_scan =
 			{
 				.flags = TASK_NETWORK_SCAN_FLAGS_WIFI_CELLS,
 				.wifi.flags =
@@ -232,7 +232,7 @@ ZTEST(task_network_scan, test_wifi_scan_results)
 	schedule = (struct task_schedule){
 		.task_id = TASK_ID_NETWORK_SCAN,
 		.validity = TASK_VALID_ALWAYS,
-		.task_args.infuse.network_scan =
+		.task_args.network_scan =
 			{
 				.flags = TASK_NETWORK_SCAN_FLAGS_WIFI_CELLS,
 				.wifi.flags =
@@ -276,7 +276,7 @@ ZTEST(task_network_scan, test_wifi_scan_results)
 	}
 
 	/* Uncapped results  */
-	schedule.task_args.infuse.network_scan.wifi.max_aps = 0;
+	schedule.task_args.network_scan.wifi.max_aps = 0;
 	schedule.task_logging[0].tdf_mask =
 		TASK_NETWORK_SCAN_LOG_COUNT | TASK_NETWORK_SCAN_LOG_WIFI_AP;
 	task_schedule(&data);
@@ -292,7 +292,7 @@ ZTEST(task_network_scan, test_wifi_scan_results)
 	}
 
 	/* Limit the maximum reports */
-	schedule.task_args.infuse.network_scan.wifi.max_aps = 4;
+	schedule.task_args.network_scan.wifi.max_aps = 4;
 	task_schedule(&data);
 	k_sleep(K_MSEC(500));
 	expect_logging(TDF_DATA_LOGGER_SERIAL, true, true);
@@ -325,7 +325,7 @@ ZTEST(task_network_scan, test_wifi_scan_results_filtering)
 	schedule = (struct task_schedule){
 		.task_id = TASK_ID_NETWORK_SCAN,
 		.validity = TASK_VALID_ALWAYS,
-		.task_args.infuse.network_scan =
+		.task_args.network_scan =
 			{
 				.flags = TASK_NETWORK_SCAN_FLAGS_WIFI_CELLS,
 				.wifi.desired_aps = 3,
@@ -356,7 +356,7 @@ ZTEST(task_network_scan, test_wifi_scan_results_filtering)
 	zassert_mem_equal(wifi_results[6].mac, logged_wifi_ap_info[4].bssid.val, 6);
 
 	/* Only filter locally administered MACs */
-	schedule.task_args.infuse.network_scan.wifi.flags =
+	schedule.task_args.network_scan.wifi.flags =
 		TASK_NETWORK_SCAN_WIFI_FLAGS_INCLUDE_DUPLICATES;
 	task_schedule(&data);
 	k_sleep(K_MSEC(500));
@@ -371,7 +371,7 @@ ZTEST(task_network_scan, test_wifi_scan_results_filtering)
 	zassert_mem_equal(wifi_results[6].mac, logged_wifi_ap_info[5].bssid.val, 6);
 
 	/* Only filter duplicate MACs */
-	schedule.task_args.infuse.network_scan.wifi.flags =
+	schedule.task_args.network_scan.wifi.flags =
 		TASK_NETWORK_SCAN_WIFI_FLAGS_INCLUDE_LOCALLY_ADMINISTERED;
 	task_schedule(&data);
 	k_sleep(K_MSEC(500));
@@ -393,7 +393,7 @@ ZTEST(task_network_scan, test_wifi_scan_mode)
 	schedule = (struct task_schedule){
 		.task_id = TASK_ID_NETWORK_SCAN,
 		.validity = TASK_VALID_ALWAYS,
-		.task_args.infuse.network_scan =
+		.task_args.network_scan =
 			{
 				.flags = TASK_NETWORK_SCAN_FLAGS_WIFI_CELLS,
 				.wifi.desired_aps = 3,
@@ -416,8 +416,7 @@ ZTEST(task_network_scan, test_wifi_scan_mode)
 		      last_scan_params->bands);
 
 	/* Active when requested by schedule, still all bands */
-	schedule.task_args.infuse.network_scan.wifi.flags =
-		TASK_NETWORK_SCAN_WIFI_FLAGS_SCAN_ACTIVE;
+	schedule.task_args.network_scan.wifi.flags = TASK_NETWORK_SCAN_WIFI_FLAGS_SCAN_ACTIVE;
 	task_schedule(&data);
 	k_sleep(K_MSEC(500));
 	expect_logging(0, false, false);
@@ -433,7 +432,7 @@ ZTEST(task_network_scan, test_wifi_progressive_scan)
 	schedule = (struct task_schedule){
 		.task_id = TASK_ID_NETWORK_SCAN,
 		.validity = TASK_VALID_ALWAYS,
-		.task_args.infuse.network_scan =
+		.task_args.network_scan =
 			{
 				.flags = TASK_NETWORK_SCAN_FLAGS_WIFI_CELLS,
 				.wifi.flags = TASK_NETWORK_SCAN_WIFI_FLAGS_SCAN_PROGRESSIVE,
@@ -457,7 +456,7 @@ ZTEST(task_network_scan, test_wifi_progressive_scan)
 	zassert_equal(BIT(WIFI_FREQ_BAND_2_4_GHZ), last_scan_params->bands);
 
 	/* When many networks are desired, the progressive scan should proceed to the 5GHz scan */
-	schedule.task_args.infuse.network_scan.wifi.desired_aps = 10;
+	schedule.task_args.network_scan.wifi.desired_aps = 10;
 	task_schedule(&data);
 	k_sleep(K_MSEC(500));
 	expect_logging(0, false, false);
@@ -502,7 +501,7 @@ ZTEST(task_network_scan, test_wifi_invalid_bssid)
 	schedule = (struct task_schedule){
 		.task_id = TASK_ID_NETWORK_SCAN,
 		.validity = TASK_VALID_ALWAYS,
-		.task_args.infuse.network_scan =
+		.task_args.network_scan =
 			{
 				.flags = TASK_NETWORK_SCAN_FLAGS_WIFI_CELLS,
 				.wifi.desired_aps = 2,

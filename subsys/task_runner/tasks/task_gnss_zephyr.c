@@ -222,7 +222,7 @@ void gnss_task_fn(const struct task_schedule *schedule, struct k_poll_signal *te
 		  void *gnss_dev)
 {
 	const struct device *gnss = gnss_dev;
-	const struct task_gnss_args *args = &schedule->task_args.infuse.gnss;
+	const struct task_gnss_args *args = &schedule->task_args.gnss;
 	uint8_t run_target = (args->flags & TASK_GNSS_FLAGS_RUN_MASK);
 	struct gnss_run_state run_state = {0};
 	gnss_systems_t constellations;

@@ -294,7 +294,7 @@ ZTEST(task_gnss, test_time_fix)
 	schedule.timeout_s = 0;
 	schedule.task_logging[0].loggers = TDF_DATA_LOGGER_SERIAL;
 	schedule.task_logging[0].tdf_mask = 0;
-	schedule.task_args.infuse.gnss = (struct task_gnss_args){
+	schedule.task_args.gnss = (struct task_gnss_args){
 		.flags = TASK_GNSS_FLAGS_RUN_TO_TIME_SYNC,
 	};
 
@@ -368,7 +368,7 @@ ZTEST(task_gnss, test_run_forever)
 	schedule.timeout_s = 0;
 	schedule.task_logging[0].loggers = TDF_DATA_LOGGER_SERIAL;
 	schedule.task_logging[0].tdf_mask = TASK_GNSS_LOG_LLHA;
-	schedule.task_args.infuse.gnss = (struct task_gnss_args){
+	schedule.task_args.gnss = (struct task_gnss_args){
 		.flags = TASK_GNSS_FLAGS_RUN_FOREVER,
 	};
 
@@ -410,7 +410,7 @@ ZTEST(task_gnss, test_location_fix)
 	schedule.timeout_s = 0;
 	schedule.task_logging[0].loggers = TDF_DATA_LOGGER_SERIAL;
 	schedule.task_logging[0].tdf_mask = 0;
-	schedule.task_args.infuse.gnss = (struct task_gnss_args){
+	schedule.task_args.gnss = (struct task_gnss_args){
 		.flags = TASK_GNSS_FLAGS_RUN_TO_LOCATION_FIX,
 		.accuracy_m = 5,
 		.position_dop = 100,
@@ -452,7 +452,7 @@ ZTEST(task_gnss, test_location_fix_constellations)
 	schedule.timeout_s = 0;
 	schedule.task_logging[0].loggers = TDF_DATA_LOGGER_SERIAL;
 	schedule.task_logging[0].tdf_mask = 0;
-	schedule.task_args.infuse.gnss = (struct task_gnss_args){
+	schedule.task_args.gnss = (struct task_gnss_args){
 		.constellations = GNSS_SYSTEM_GPS | GNSS_SYSTEM_QZSS,
 		.flags = TASK_GNSS_FLAGS_RUN_TO_LOCATION_FIX,
 		.accuracy_m = 5,
@@ -492,7 +492,7 @@ ZTEST(task_gnss, test_location_fix_runner_terminate)
 	schedule.timeout_s = 0;
 	schedule.task_logging[0].loggers = TDF_DATA_LOGGER_SERIAL;
 	schedule.task_logging[0].tdf_mask = TASK_GNSS_LOG_LLHA;
-	schedule.task_args.infuse.gnss = (struct task_gnss_args){
+	schedule.task_args.gnss = (struct task_gnss_args){
 		.flags = TASK_GNSS_FLAGS_RUN_TO_LOCATION_FIX,
 		.accuracy_m = 5,
 		.position_dop = 100,
@@ -522,7 +522,7 @@ ZTEST(task_gnss, test_location_fix_plateau)
 	schedule.timeout_s = 0;
 	schedule.task_logging[0].loggers = TDF_DATA_LOGGER_SERIAL;
 	schedule.task_logging[0].tdf_mask = TASK_GNSS_LOG_LLHA;
-	schedule.task_args.infuse.gnss = (struct task_gnss_args){
+	schedule.task_args.gnss = (struct task_gnss_args){
 		.flags = TASK_GNSS_FLAGS_RUN_TO_LOCATION_FIX,
 		.accuracy_m = 5,
 		.position_dop = 100,
@@ -558,7 +558,7 @@ ZTEST(task_gnss, test_location_fix_plateau_timeout)
 	schedule.timeout_s = 0;
 	schedule.task_logging[0].loggers = TDF_DATA_LOGGER_SERIAL;
 	schedule.task_logging[0].tdf_mask = TASK_GNSS_LOG_LLHA;
-	schedule.task_args.infuse.gnss = (struct task_gnss_args){
+	schedule.task_args.gnss = (struct task_gnss_args){
 		.flags = TASK_GNSS_FLAGS_RUN_TO_LOCATION_FIX,
 		.accuracy_m = 5,
 		.position_dop = 100,
@@ -595,7 +595,7 @@ ZTEST(task_gnss, test_location_fix_plateau_min_accuracy)
 	schedule.timeout_s = 0;
 	schedule.task_logging[0].loggers = TDF_DATA_LOGGER_SERIAL;
 	schedule.task_logging[0].tdf_mask = TASK_GNSS_LOG_LLHA;
-	schedule.task_args.infuse.gnss = (struct task_gnss_args){
+	schedule.task_args.gnss = (struct task_gnss_args){
 		.flags = TASK_GNSS_FLAGS_RUN_TO_LOCATION_FIX,
 		.accuracy_m = 5,
 		.position_dop = 100,
@@ -636,7 +636,7 @@ ZTEST(task_gnss, test_location_fix_no_location_timeout)
 	schedule.timeout_s = 0;
 	schedule.task_logging[0].loggers = TDF_DATA_LOGGER_SERIAL;
 	schedule.task_logging[0].tdf_mask = TASK_GNSS_LOG_LLHA;
-	schedule.task_args.infuse.gnss = (struct task_gnss_args){
+	schedule.task_args.gnss = (struct task_gnss_args){
 		.flags = TASK_GNSS_FLAGS_RUN_TO_LOCATION_FIX,
 		.accuracy_m = 5,
 		.position_dop = 100,
@@ -674,7 +674,7 @@ ZTEST(task_gnss, test_pm_failure)
 	schedule.timeout_s = 0;
 	schedule.task_logging[0].loggers = TDF_DATA_LOGGER_SERIAL;
 	schedule.task_logging[0].tdf_mask = 0;
-	schedule.task_args.infuse.gnss = (struct task_gnss_args){
+	schedule.task_args.gnss = (struct task_gnss_args){
 		.flags = TASK_GNSS_FLAGS_RUN_TO_LOCATION_FIX,
 		.accuracy_m = 5,
 		.position_dop = 100,

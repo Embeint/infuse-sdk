@@ -41,7 +41,7 @@ static const struct task_schedule schedules[] = {
 					.tdf_mask = TASK_IMU_LOG_ACC | TASK_IMU_LOG_GYR,
 				},
 			},
-		.task_args.infuse.imu =
+		.task_args.imu =
 			{
 				.accelerometer =
 					{
@@ -60,7 +60,7 @@ static const struct task_schedule schedules[] = {
 	{
 		.task_id = TASK_ID_TDF_LOGGER,
 		.validity = TASK_VALID_ALWAYS,
-		.task_args.infuse.tdf_logger =
+		.task_args.tdf_logger =
 			{
 				.loggers = TDF_DATA_LOGGER_BT_ADV,
 				.logging_period_ms = 900,

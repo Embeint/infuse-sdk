@@ -67,7 +67,7 @@ ZTEST(task_imu, test_invalid_config)
 {
 	k_tid_t thread;
 
-	schedule.task_args.infuse.imu = (struct task_imu_args){
+	schedule.task_args.imu = (struct task_imu_args){
 		.accelerometer =
 			{
 				.range_g = 3,
@@ -154,7 +154,7 @@ static void test_imu(uint8_t range, uint16_t rate, uint16_t num_samples, uint8_t
 	uint16_t one_g;
 	k_tid_t thread;
 
-	schedule.task_args.infuse.imu = (struct task_imu_args){
+	schedule.task_args.imu = (struct task_imu_args){
 		.accelerometer =
 			{
 				.range_g = range,

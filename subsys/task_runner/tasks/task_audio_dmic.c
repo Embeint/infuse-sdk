@@ -47,7 +47,7 @@ void dmic_task_fn(const struct task_schedule *schedule, struct k_poll_signal *te
 		  void *dmic_config)
 {
 	const struct task_audio_dmic_config *config = dmic_config;
-	const struct task_audio_dmic_args *args = &schedule->task_args.infuse.audio_dmic;
+	const struct task_audio_dmic_args *args = &schedule->task_args.audio_dmic;
 	struct pcm_stream_cfg stream = {
 		.pcm_width = 16,
 		.mem_slab = &mem_slab,
