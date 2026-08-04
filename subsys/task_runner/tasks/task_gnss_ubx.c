@@ -379,14 +379,14 @@ static int gnss_configure(const struct device *gnss, const struct task_gnss_args
 		UBX_CFG_VALUE_APPEND(&cfg_buf, UBX_CFG_KEY_NAVSPG_OUTFIL_PDOP, args->position_dop);
 		UBX_CFG_VALUE_APPEND(&cfg_buf, UBX_CFG_KEY_PM_ONTIME, 0);
 		UBX_CFG_VALUE_APPEND(&cfg_buf, UBX_CFG_KEY_PM_UPDATEEPH, true);
-		if (args->low_power.acquisition_timeout == 0) {
+		if (args->mode.low_power.acquisition_timeout == 0) {
 			UBX_CFG_VALUE_APPEND(&cfg_buf, UBX_CFG_KEY_PM_MAXACQTIME, 0);
 			UBX_CFG_VALUE_APPEND(&cfg_buf, UBX_CFG_KEY_PM_DONOTENTEROFF, true);
 		} else {
 			UBX_CFG_VALUE_APPEND(&cfg_buf, UBX_CFG_KEY_PM_MAXACQTIME,
-					     args->low_power.acquisition_timeout);
+					     args->mode.low_power.acquisition_timeout);
 			UBX_CFG_VALUE_APPEND(&cfg_buf, UBX_CFG_KEY_PM_ACQPERIOD,
-					     args->low_power.search_period);
+					     args->mode.low_power.search_period);
 			UBX_CFG_VALUE_APPEND(&cfg_buf, UBX_CFG_KEY_PM_DONOTENTEROFF, false);
 
 			/* Force the modem out of backup mode when EXTINT is "high" so we can
@@ -396,7 +396,7 @@ static int gnss_configure(const struct device *gnss, const struct task_gnss_args
 			*extint_force_active = true;
 
 			/* Modem can sleep for up to `search_period` seconds */
-			*max_sleep_s = args->low_power.search_period + 2;
+			*max_sleep_s = args->mode.low_power.search_period + 2;
 		}
 
 		UBX_CFG_VALUE_APPEND(&cfg_buf, UBX_CFG_KEY_PM_OPERATEMODE,

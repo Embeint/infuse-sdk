@@ -18,10 +18,6 @@
 
 #include <infuse/task_runner/tasks/infuse_task_args.h>
 
-#ifdef CONFIG_TASK_RUNNER_CUSTOM_TASK_DEFINITIONS
-#include CONFIG_TASK_RUNNER_CUSTOM_TASK_DEFINITIONS_PATH
-#endif /* CONFIG_TASK_RUNNER_CUSTOM_TASK_DEFINITIONS */
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -232,9 +228,6 @@ struct task_schedule {
 	union task_args {
 		uint8_t raw[16];
 		union infuse_task_arguments infuse;
-#ifdef CONFIG_TASK_RUNNER_CUSTOM_TASK_DEFINITIONS
-		union custom_task_arguments custom;
-#endif /* CONFIG_TASK_RUNNER_CUSTOM_TASK_DEFINITIONS */
 	} task_args;
 } __packed;
 

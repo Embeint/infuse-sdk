@@ -19,6 +19,7 @@
 #include <infuse/fs/kv_types.h>
 #include <infuse/rpc/types.h>
 #include <infuse/rpc/commands.h>
+#include <infuse/task_runner/tasks/infuse_tasks.h>
 #include <infuse/tdf/tdf.h>
 #include <infuse/tdf/definitions.h>
 
@@ -146,6 +147,33 @@ ZTEST(definitions_extend, test_ext_kv_store)
 	zassert_true(kv_store_key_exists(KV_KEY_EXT2 + 0));
 	zassert_true(kv_store_key_exists(KV_KEY_EXT2 + 1));
 	zassert_false(kv_store_key_exists(KV_KEY_EXT3));
+}
+
+ZTEST(definitions_extend, test_ext_task)
+{
+	union infuse_task_arguments args = {
+		.ext1 =
+			{
+				.payload =
+					{
+						.count = 0x1234,
+						.mode = TASK_EXT1_MODE_TWO,
+					},
+				.flags = TASK_EXT1_FLAGS_ENABLED | TASK_EXT1_FLAGS_ALT_OUTPUT,
+				.samples = 3,
+			},
+	};
+
+	zassert_equal(42, TASK_ID_EXT1);
+	zassert_equal(43, TASK_ID_EXT1_ALT);
+	zassert_equal(BIT(0), TASK_EXT1_LOG_VALUE);
+	zassert_equal(BIT(2), TASK_EXT1_LOG_STATE);
+	zassert_equal(BIT(0), TASK_EXT1_FLAGS_ENABLED);
+	zassert_equal(BIT(3), TASK_EXT1_FLAGS_ALT_OUTPUT);
+	zassert_equal(sizeof(struct task_ext1_args), sizeof(args.ext1));
+	zassert_equal(0x1234, args.ext1.payload.count);
+	zassert_equal(TASK_EXT1_MODE_TWO, args.ext1.payload.mode);
+	zassert_equal(3, args.ext1.samples);
 }
 
 ZTEST_SUITE(definitions_extend, NULL, NULL, NULL, NULL, NULL);

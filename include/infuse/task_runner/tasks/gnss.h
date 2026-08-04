@@ -11,15 +11,29 @@
 #define INFUSE_SDK_INCLUDE_INFUSE_TASK_RUNNER_TASKS_GNSS_H_
 
 #include <zephyr/kernel.h>
+#include <zephyr/drivers/gnss.h>
 
 #include <infuse/task_runner/task.h>
 #include <infuse/task_runner/schedule.h>
 
+#include <infuse/task_runner/tasks/gnss_args.h>
 #include <infuse/task_runner/tasks/infuse_task_ids.h>
+
+/* UBLOX definitions are used since they are more specific than generic Zephyr */
+#include <infuse/gnss/ubx/cfg.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+BUILD_ASSERT((uint32_t)TASK_GNSS_CONSTELLATIONS_GPS == (uint32_t)GNSS_SYSTEM_GPS);
+BUILD_ASSERT((uint32_t)TASK_GNSS_CONSTELLATIONS_GLONASS == (uint32_t)GNSS_SYSTEM_GLONASS);
+BUILD_ASSERT((uint32_t)TASK_GNSS_CONSTELLATIONS_GALILEO == (uint32_t)GNSS_SYSTEM_GALILEO);
+BUILD_ASSERT((uint32_t)TASK_GNSS_CONSTELLATIONS_BEIDOU == (uint32_t)GNSS_SYSTEM_BEIDOU);
+BUILD_ASSERT((uint32_t)TASK_GNSS_CONSTELLATIONS_QZSS == (uint32_t)GNSS_SYSTEM_QZSS);
+BUILD_ASSERT((uint32_t)TASK_GNSS_CONSTELLATIONS_IRNSS == (uint32_t)GNSS_SYSTEM_IRNSS);
+BUILD_ASSERT((uint32_t)TASK_GNSS_CONSTELLATIONS_SBAS == (uint32_t)GNSS_SYSTEM_SBAS);
+BUILD_ASSERT((uint32_t)TASK_GNSS_CONSTELLATIONS_IMES == (uint32_t)GNSS_SYSTEM_IMES);
 
 #ifdef CONFIG_TASK_RUNNER_TASK_GNSS_THREAD
 

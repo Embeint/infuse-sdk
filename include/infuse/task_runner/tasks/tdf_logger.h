@@ -14,7 +14,6 @@
 #include <infuse/task_runner/schedule.h>
 
 #include <infuse/task_runner/tasks/infuse_task_ids.h>
-#include <infuse/task_runner/tasks/tdf_logger.h>
 
 #ifdef __cplusplus
 extern "C" {
