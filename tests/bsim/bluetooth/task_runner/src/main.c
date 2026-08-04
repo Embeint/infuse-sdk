@@ -137,7 +137,7 @@ static void main_bt_scanner_self_duration(void)
 	int logged = 0;
 
 	/* Set this tests parameters and run the task */
-	schedules[0].task_args.infuse.bt_scanner.duration_ms = 5000;
+	schedules[0].task_args.bt_scanner.duration_ms = 5000;
 	task_run();
 
 	/* Flush all logged data and get the packet */
@@ -178,7 +178,7 @@ static void main_bt_scanner_scan_4(void)
 
 	/* Set this tests parameters and run the task */
 	schedules[0].timeout_s = 5;
-	schedules[0].task_args.infuse.bt_scanner.max_logs = 4;
+	schedules[0].task_args.bt_scanner.max_logs = 4;
 	task_run();
 
 	/* Flush all logged data and get the packet */
@@ -219,7 +219,7 @@ static void main_bt_scanner_filter_duplicates(void)
 
 	/* Set this tests parameters and run the task */
 	schedules[0].timeout_s = 5;
-	schedules[0].task_args.infuse.bt_scanner.flags = TASK_BT_SCANNER_FLAGS_FILTER_DUPLICATES;
+	schedules[0].task_args.bt_scanner.flags = TASK_BT_SCANNER_FLAGS_FILTER_DUPLICATES;
 	task_run();
 
 	/* Flush all logged data and get the packet */
@@ -259,7 +259,7 @@ static void main_bt_scanner_defer_logging(void)
 
 	/* Set this tests parameters and run the task */
 	schedules[0].timeout_s = 5;
-	schedules[0].task_args.infuse.bt_scanner.flags = TASK_BT_SCANNER_FLAGS_DEFER_LOGGING;
+	schedules[0].task_args.bt_scanner.flags = TASK_BT_SCANNER_FLAGS_DEFER_LOGGING;
 	task_run();
 
 	/* Flush all logged data and get the packet */
@@ -301,7 +301,7 @@ static void main_bt_scanner_defer_filter(void)
 
 	/* Set this tests parameters and run the task */
 	schedules[0].timeout_s = 5;
-	schedules[0].task_args.infuse.bt_scanner.flags =
+	schedules[0].task_args.bt_scanner.flags =
 		TASK_BT_SCANNER_FLAGS_DEFER_LOGGING | TASK_BT_SCANNER_FLAGS_FILTER_DUPLICATES;
 	task_run();
 
@@ -344,8 +344,8 @@ static void main_bt_scanner_defer_filter_limit(void)
 
 	/* Set this tests parameters and run the task */
 	schedules[0].timeout_s = 5;
-	schedules[0].task_args.infuse.bt_scanner.max_logs = 3;
-	schedules[0].task_args.infuse.bt_scanner.flags =
+	schedules[0].task_args.bt_scanner.max_logs = 3;
+	schedules[0].task_args.bt_scanner.flags =
 		TASK_BT_SCANNER_FLAGS_DEFER_LOGGING | TASK_BT_SCANNER_FLAGS_FILTER_DUPLICATES;
 	task_run();
 
@@ -386,7 +386,7 @@ static void main_bt_scanner_defer_no_logs(void)
 
 	/* Set this tests parameters and run the task */
 	schedules[0].timeout_s = 5;
-	schedules[0].task_args.infuse.bt_scanner.flags = TASK_BT_SCANNER_FLAGS_DEFER_LOGGING;
+	schedules[0].task_args.bt_scanner.flags = TASK_BT_SCANNER_FLAGS_DEFER_LOGGING;
 	task_run();
 
 	/* Flush all logged data and get the packet */
@@ -409,7 +409,7 @@ static void main_bt_scanner_encrypted_log(void)
 
 	/* Set this tests parameters and run the task */
 	schedules[0].timeout_s = 5;
-	schedules[0].task_args.infuse.bt_scanner.flags = TASK_BT_SCANNER_FLAGS_LOG_ENCRYPTED;
+	schedules[0].task_args.bt_scanner.flags = TASK_BT_SCANNER_FLAGS_LOG_ENCRYPTED;
 	task_run();
 
 	/* Flush all logged data and get the packet */

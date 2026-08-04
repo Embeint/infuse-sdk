@@ -344,7 +344,7 @@ void gnss_task_fn(struct k_work *work)
 {
 	struct task_data *task = task_data_from_work(work);
 	const struct task_schedule *sch = task_schedule_from_data(task);
-	const struct task_gnss_args *args = &sch->task_args.infuse.gnss;
+	const struct task_gnss_args *args = &sch->task_args.gnss;
 	uint8_t run_target = (args->flags & TASK_GNSS_FLAGS_RUN_MASK);
 	bool terminate = false;
 	int rc;

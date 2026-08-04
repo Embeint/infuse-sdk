@@ -151,7 +151,7 @@ ZTEST(definitions_extend, test_ext_kv_store)
 
 ZTEST(definitions_extend, test_ext_task)
 {
-	union infuse_task_arguments args = {
+	union task_arguments args = {
 		.ext1 =
 			{
 				.payload =

@@ -262,7 +262,7 @@ void task_tdf_logger_fn(struct k_work *work)
 {
 	struct task_data *task = task_data_from_work(work);
 	const struct task_schedule *sch = task_schedule_from_data(task);
-	const struct task_tdf_logger_args *args = &sch->task_args.infuse.tdf_logger;
+	const struct task_tdf_logger_args *args = &sch->task_args.tdf_logger;
 	uint8_t *persistent = task_schedule_persistent_storage(task);
 	uint64_t log_timestamp;
 	uint32_t delay_ms;

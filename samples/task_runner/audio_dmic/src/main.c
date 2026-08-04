@@ -31,7 +31,7 @@ static const struct task_schedule schedules[] = {
 		/* Run for 8 seconds every 10 seconds */
 		.periodicity.lockout.lockout_s = TASK_RUNNER_LOCKOUT_IGNORE_FIRST | 10,
 		.timeout_s = 8,
-		.task_args.infuse.audio_dmic =
+		.task_args.audio_dmic =
 			{
 				.sample_rate_hz = 16000,
 				.gain_db = 20,
@@ -49,7 +49,7 @@ static const struct task_schedule schedules[] = {
 	{
 		.task_id = TASK_ID_TDF_LOGGER,
 		.validity = TASK_VALID_ALWAYS,
-		.task_args.infuse.tdf_logger =
+		.task_args.tdf_logger =
 			{
 				.loggers = TDF_DATA_LOGGER_BT_ADV,
 				.logging_period_ms = 900,

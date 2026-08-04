@@ -87,7 +87,7 @@ void battery_task_fn(struct k_work *work)
 {
 	struct task_data *task = task_data_from_work(work);
 	const struct task_schedule *sch = task_schedule_from_data(task);
-	const struct task_battery_args *args = &sch->task_args.infuse.battery;
+	const struct task_battery_args *args = &sch->task_args.battery;
 	const struct device *fuel_gauge = task->executor.workqueue.task_arg.const_arg;
 	struct tdf_battery_state tdf_battery = {0};
 	struct tdf_battery_voltage tdf_voltage;
@@ -101,7 +101,7 @@ void battery_task_fn(struct k_work *work)
 		return;
 	}
 
-	rc = task_battery_manual_run(fuel_gauge, &sch->task_args.infuse.battery, &tdf_battery);
+	rc = task_battery_manual_run(fuel_gauge, &sch->task_args.battery, &tdf_battery);
 	if (rc == 0) {
 		tdf_voltage.voltage = tdf_battery.voltage_mv;
 		tdf_soc.soc = tdf_battery.soc;

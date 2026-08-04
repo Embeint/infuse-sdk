@@ -44,7 +44,7 @@ static const struct task_schedule schedules[] = {
 		.validity = TASK_VALID_ALWAYS,
 		.periodicity_type = TASK_PERIODICITY_LOCKOUT,
 		.periodicity.lockout.lockout_s = 5,
-		.task_args.infuse.tdf_logger =
+		.task_args.tdf_logger =
 			{
 				.loggers = TDF_DATA_LOGGER_UDP,
 				.tdfs = TASK_TDF_LOGGER_LOG_ANNOUNCE | TASK_TDF_LOGGER_LOG_NET_CONN,
@@ -53,7 +53,7 @@ static const struct task_schedule schedules[] = {
 	{
 		.task_id = TASK_ID_TDF_LOGGER_ALT1,
 		.validity = TASK_VALID_PERMANENTLY_RUNS,
-		.task_args.infuse.tdf_logger =
+		.task_args.tdf_logger =
 			{
 				.loggers = TDF_DATA_LOGGER_BT_ADV,
 				.logging_period_ms = 4500,

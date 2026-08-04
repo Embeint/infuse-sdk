@@ -193,7 +193,7 @@ ZTEST(task_bat, test_periodic)
 		.periodicity_type = TASK_PERIODICITY_FIXED,
 		.periodicity.fixed.period_s = 10,
 		.timeout_s = 5,
-		.task_args.infuse.battery =
+		.task_args.battery =
 			{
 				.repeat_interval_ms = 990,
 			},

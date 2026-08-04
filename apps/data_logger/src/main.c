@@ -54,7 +54,7 @@ static const struct task_schedule schedules[] = {
 		.validity = TASK_VALID_ALWAYS,
 		.periodicity_type = TASK_PERIODICITY_LOCKOUT,
 		.periodicity.lockout.lockout_s = 5 * SEC_PER_MIN,
-		.task_args.infuse.tdf_logger =
+		.task_args.tdf_logger =
 			{
 				.loggers = TDF_DATA_LOGGER_UDP,
 				.tdfs = TASK_TDF_LOGGER_LOG_ANNOUNCE | TASK_TDF_LOGGER_LOG_BATTERY |
@@ -69,7 +69,7 @@ static const struct task_schedule schedules[] = {
 		.validity = TASK_VALID_ALWAYS,
 		.periodicity_type = TASK_PERIODICITY_LOCKOUT,
 		.periodicity.lockout.lockout_s = 2,
-		.task_args.infuse.tdf_logger =
+		.task_args.tdf_logger =
 			{
 				.loggers = TDF_DATA_LOGGER_BT_ADV | TDF_DATA_LOGGER_SERIAL,
 				.random_delay_ms = 1000,
@@ -89,7 +89,7 @@ static const struct task_schedule schedules[] = {
 					.tdf_mask = TASK_IMU_LOG_ACC | TASK_IMU_LOG_GYR,
 				},
 			},
-		.task_args.infuse.imu =
+		.task_args.imu =
 			{
 				.accelerometer =
 					{
@@ -117,7 +117,7 @@ static const struct task_schedule schedules[] = {
 					.tdf_mask = TASK_GNSS_LOG_PVT,
 				},
 			},
-		.task_args.infuse.gnss =
+		.task_args.gnss =
 			{
 				.flags = TASK_GNSS_FLAGS_RUN_FOREVER |
 					 TASK_GNSS_FLAGS_PERFORMANCE_MODE,

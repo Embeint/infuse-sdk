@@ -50,7 +50,7 @@ static const struct task_schedule schedules[] = {
 		.validity = TASK_VALID_ALWAYS,
 		.periodicity_type = TASK_PERIODICITY_LOCKOUT,
 		.periodicity.lockout.lockout_s = 5 * SEC_PER_MIN,
-		.task_args.infuse.tdf_logger =
+		.task_args.tdf_logger =
 			{
 				.loggers = TDF_DATA_LOGGER_UDP,
 				.tdfs = TASK_TDF_LOGGER_LOG_ANNOUNCE | TASK_TDF_LOGGER_LOG_BATTERY |
@@ -62,7 +62,7 @@ static const struct task_schedule schedules[] = {
 	{
 		.task_id = TASK_ID_TDF_LOGGER_ALT1,
 		.validity = TASK_VALID_PERMANENTLY_RUNS,
-		.task_args.infuse.tdf_logger =
+		.task_args.tdf_logger =
 			{
 				.loggers = TDF_DATA_LOGGER_BT_ADV,
 				.logging_period_ms = 1000,
@@ -103,14 +103,14 @@ static const struct task_schedule schedules[] = {
 					.tdf_mask = TASK_GNSS_LOG_LLHA | TASK_GNSS_LOG_FIX_INFO,
 				},
 			},
-		.task_args.infuse.gnss =
+		.task_args.gnss =
 			{
 				.flags = TASK_GNSS_FLAGS_RUN_TO_LOCATION_FIX |
 					 TASK_GNSS_FLAGS_PERFORMANCE_MODE,
 				/* FIX_OK: 1m accuracy, 10.0 PDOP */
 				.accuracy_m = 1,
 				.position_dop = 100,
-				.run_to_fix =
+				.mode.run_to_fix =
 					{
 						/* 1 minute to get some location knowledge */
 						.any_fix_timeout = SEC_PER_MIN,
@@ -133,7 +133,7 @@ static const struct task_schedule schedules[] = {
 		.validity = TASK_VALID_ALWAYS,
 		.timeout_s = 2 * SEC_PER_MIN,
 		.states_start = TASK_STATES_DEFINE(APP_STATES_GNSS_TRIGGER),
-		.task_args.infuse.gnss =
+		.task_args.gnss =
 			{
 				.flags = TASK_GNSS_FLAGS_RUN_TO_LOCATION_FIX |
 					 TASK_GNSS_FLAGS_PERFORMANCE_MODE,

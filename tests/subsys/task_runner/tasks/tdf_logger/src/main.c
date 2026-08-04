@@ -92,7 +92,7 @@ ZTEST(task_tdf_logger, test_log_before_data)
 	chan_loc->data->publish_count = 0;
 	chan_imu->data->publish_count = 0;
 
-	schedule.task_args.infuse.tdf_logger = (struct task_tdf_logger_args){
+	schedule.task_args.tdf_logger = (struct task_tdf_logger_args){
 		.loggers = TDF_DATA_LOGGER_SERIAL,
 		.tdfs = TASK_TDF_LOGGER_LOG_BATTERY | TASK_TDF_LOGGER_LOG_AMBIENT_ENV |
 			TASK_TDF_LOGGER_LOG_LOCATION | TASK_TDF_LOGGER_LOG_ACCEL,
@@ -111,7 +111,7 @@ ZTEST(task_tdf_logger, test_log_before_data)
 	zassert_is_null(pkt);
 #endif /* CONFIG_TASK_TDF_LOGGER_BATTERY_LOG_ZERO_ON_TIMEOUT */
 
-	schedule.task_args.infuse.tdf_logger = (struct task_tdf_logger_args){
+	schedule.task_args.tdf_logger = (struct task_tdf_logger_args){
 		.loggers = TDF_DATA_LOGGER_SERIAL,
 		.tdfs = TASK_TDF_LOGGER_LOG_ANNOUNCE,
 	};
@@ -136,7 +136,7 @@ ZTEST(task_tdf_logger, test_no_flush)
 
 	zassert_not_null(tx_queue);
 
-	schedule.task_args.infuse.tdf_logger = (struct task_tdf_logger_args){
+	schedule.task_args.tdf_logger = (struct task_tdf_logger_args){
 		.loggers = TDF_DATA_LOGGER_SERIAL,
 		.tdfs = TASK_TDF_LOGGER_LOG_ANNOUNCE,
 		.flags = TASK_TDF_LOGGER_FLAGS_NO_FLUSH,
@@ -164,7 +164,7 @@ ZTEST(task_tdf_logger, test_terminate)
 {
 	struct k_fifo *tx_queue = epacket_dummmy_transmit_fifo_get();
 
-	schedule.task_args.infuse.tdf_logger = (struct task_tdf_logger_args){
+	schedule.task_args.tdf_logger = (struct task_tdf_logger_args){
 		.loggers = TDF_DATA_LOGGER_SERIAL,
 		.tdfs = TASK_TDF_LOGGER_LOG_ANNOUNCE,
 		.random_delay_ms = 50000,
@@ -190,7 +190,7 @@ ZTEST(task_tdf_logger, test_delay)
 	uint32_t time_start, time_end;
 	struct net_buf *pkt;
 
-	schedule.task_args.infuse.tdf_logger = (struct task_tdf_logger_args){
+	schedule.task_args.tdf_logger = (struct task_tdf_logger_args){
 		.loggers = TDF_DATA_LOGGER_SERIAL,
 		.tdfs = TASK_TDF_LOGGER_LOG_ANNOUNCE,
 		.random_delay_ms = 1000,
@@ -218,7 +218,7 @@ ZTEST(task_tdf_logger, test_reschedule)
 	uint32_t start, now, last;
 	int cnt = 0;
 
-	schedule.task_args.infuse.tdf_logger = (struct task_tdf_logger_args){
+	schedule.task_args.tdf_logger = (struct task_tdf_logger_args){
 		.loggers = TDF_DATA_LOGGER_SERIAL,
 		.tdfs = TASK_TDF_LOGGER_LOG_ANNOUNCE,
 		.logging_period_ms = 500,
@@ -255,7 +255,7 @@ ZTEST(task_tdf_logger, test_announce)
 
 	zassert_not_null(tx_queue);
 
-	schedule.task_args.infuse.tdf_logger = (struct task_tdf_logger_args){
+	schedule.task_args.tdf_logger = (struct task_tdf_logger_args){
 		.loggers = TDF_DATA_LOGGER_SERIAL,
 		.tdfs = TASK_TDF_LOGGER_LOG_ANNOUNCE,
 	};
@@ -316,7 +316,7 @@ ZTEST(task_tdf_logger, test_battery)
 	/* Publish data */
 	zbus_chan_pub(chan_bat, &battery, K_FOREVER);
 
-	schedule.task_args.infuse.tdf_logger = (struct task_tdf_logger_args){
+	schedule.task_args.tdf_logger = (struct task_tdf_logger_args){
 		.loggers = TDF_DATA_LOGGER_SERIAL,
 		.tdfs = TASK_TDF_LOGGER_LOG_BATTERY,
 	};
@@ -365,7 +365,7 @@ ZTEST(task_tdf_logger, test_soc_temperature)
 	/* Publish data */
 	zbus_chan_pub(chan_soc_temp, &soc_temperature, K_FOREVER);
 
-	schedule.task_args.infuse.tdf_logger = (struct task_tdf_logger_args){
+	schedule.task_args.tdf_logger = (struct task_tdf_logger_args){
 		.loggers = TDF_DATA_LOGGER_SERIAL,
 		.tdfs = TASK_TDF_LOGGER_LOG_SOC_TEMPERATURE,
 	};
@@ -394,7 +394,7 @@ ZTEST(task_tdf_logger, test_ambient_env)
 	/* Publish data */
 	zbus_chan_pub(chan_env, &ambient, K_FOREVER);
 
-	schedule.task_args.infuse.tdf_logger = (struct task_tdf_logger_args){
+	schedule.task_args.tdf_logger = (struct task_tdf_logger_args){
 		.loggers = TDF_DATA_LOGGER_SERIAL,
 		.tdfs = TASK_TDF_LOGGER_LOG_AMBIENT_ENV,
 	};
@@ -480,7 +480,7 @@ ZTEST(task_tdf_logger, test_accelerometer)
 	zbus_chan_pub_stats_update(chan_imu);
 	zassert_equal(0, zbus_chan_finish(chan_imu));
 
-	schedule.task_args.infuse.tdf_logger = (struct task_tdf_logger_args){
+	schedule.task_args.tdf_logger = (struct task_tdf_logger_args){
 		.loggers = TDF_DATA_LOGGER_SERIAL,
 		.tdfs = TASK_TDF_LOGGER_LOG_ACCEL,
 	};
@@ -558,7 +558,7 @@ ZTEST(task_tdf_logger, test_location)
 	/* Publish data */
 	zbus_chan_pub(chan_loc, &location, K_FOREVER);
 
-	schedule.task_args.infuse.tdf_logger = (struct task_tdf_logger_args){
+	schedule.task_args.tdf_logger = (struct task_tdf_logger_args){
 		.loggers = TDF_DATA_LOGGER_SERIAL,
 		.tdfs = TASK_TDF_LOGGER_LOG_LOCATION,
 	};
@@ -604,7 +604,7 @@ ZTEST(task_tdf_logger, test_net_conn)
 
 	zassert_not_null(tx_queue);
 
-	schedule.task_args.infuse.tdf_logger = (struct task_tdf_logger_args){
+	schedule.task_args.tdf_logger = (struct task_tdf_logger_args){
 		.loggers = TDF_DATA_LOGGER_SERIAL,
 		.tdfs = TASK_TDF_LOGGER_LOG_NET_CONN,
 	};
@@ -647,7 +647,7 @@ ZTEST(task_tdf_logger, test_custom)
 
 	zassert_not_null(tx_queue);
 
-	schedule.task_args.infuse.tdf_logger = (struct task_tdf_logger_args){
+	schedule.task_args.tdf_logger = (struct task_tdf_logger_args){
 		.loggers = TDF_DATA_LOGGER_SERIAL,
 		.tdfs = TASK_TDF_LOGGER_LOG_CUSTOM,
 	};
@@ -700,7 +700,7 @@ ZTEST(task_tdf_logger, test_multi)
 	setup_multi();
 
 	/* Should log all 4 each run */
-	schedule.task_args.infuse.tdf_logger = (struct task_tdf_logger_args){
+	schedule.task_args.tdf_logger = (struct task_tdf_logger_args){
 		.loggers = TDF_DATA_LOGGER_SERIAL,
 		.tdfs = TASK_TDF_LOGGER_LOG_BATTERY | TASK_TDF_LOGGER_LOG_AMBIENT_ENV |
 			TASK_TDF_LOGGER_LOG_LOCATION | TASK_TDF_LOGGER_LOG_NET_CONN,
@@ -729,7 +729,7 @@ ZTEST(task_tdf_logger, test_multi_iteration)
 	setup_multi();
 
 	/* Should log 3 of 4 each run */
-	schedule.task_args.infuse.tdf_logger = (struct task_tdf_logger_args){
+	schedule.task_args.tdf_logger = (struct task_tdf_logger_args){
 		.loggers = TDF_DATA_LOGGER_SERIAL,
 		.tdfs = TASK_TDF_LOGGER_LOG_BATTERY | TASK_TDF_LOGGER_LOG_AMBIENT_ENV |
 			TASK_TDF_LOGGER_LOG_LOCATION | TASK_TDF_LOGGER_LOG_NET_CONN,

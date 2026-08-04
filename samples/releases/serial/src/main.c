@@ -31,7 +31,7 @@ static const struct task_schedule schedules[] = {
 		.validity = TASK_VALID_ALWAYS,
 		.periodicity_type = TASK_PERIODICITY_LOCKOUT,
 		.periodicity.lockout.lockout_s = 10,
-		.task_args.infuse.tdf_logger =
+		.task_args.tdf_logger =
 			{
 				.loggers = TDF_DATA_LOGGER_SERIAL,
 				.random_delay_ms = 1000,
