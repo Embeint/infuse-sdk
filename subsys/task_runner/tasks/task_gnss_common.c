@@ -17,13 +17,14 @@ LOG_MODULE_DECLARE(task_gnss, CONFIG_TASK_GNSS_LOG_LEVEL);
 bool gnss_run_to_fix_timeout(const struct task_gnss_args *args,
 			     struct gnss_fix_timeout_state *state, uint32_t h_acc, uint32_t runtime)
 {
-	const struct task_gnss_plateau_args *p_args = &args->run_to_fix.fix_plateau;
+	const struct schedule_struct_task_gnss_plateau_args *p_args =
+		&args->mode.run_to_fix.fix_plateau;
 	int32_t required_next_accuracy;
 	bool plateau_valid;
 
-	if (args->run_to_fix.any_fix_timeout) {
+	if (args->mode.run_to_fix.any_fix_timeout) {
 		/* Terminate if fix hasn't reached 10km accuracy by the initial timeout */
-		if ((h_acc > (10 * KM)) && (runtime >= args->run_to_fix.any_fix_timeout)) {
+		if ((h_acc > (10 * KM)) && (runtime >= args->mode.run_to_fix.any_fix_timeout)) {
 			LOG_INF("Terminating due to %s", "any fix timeout");
 			return true;
 		}

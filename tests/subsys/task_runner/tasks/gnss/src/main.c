@@ -526,7 +526,7 @@ ZTEST(task_gnss, test_location_fix_plateau)
 		.flags = TASK_GNSS_FLAGS_RUN_TO_LOCATION_FIX,
 		.accuracy_m = 5,
 		.position_dop = 100,
-		.run_to_fix =
+		.mode.run_to_fix =
 			{
 				.any_fix_timeout = SEC_PER_MIN,
 				.fix_plateau =
@@ -562,7 +562,7 @@ ZTEST(task_gnss, test_location_fix_plateau_timeout)
 		.flags = TASK_GNSS_FLAGS_RUN_TO_LOCATION_FIX,
 		.accuracy_m = 5,
 		.position_dop = 100,
-		.run_to_fix =
+		.mode.run_to_fix =
 			{
 				.any_fix_timeout = SEC_PER_MIN,
 				.fix_plateau =
@@ -599,7 +599,7 @@ ZTEST(task_gnss, test_location_fix_plateau_min_accuracy)
 		.flags = TASK_GNSS_FLAGS_RUN_TO_LOCATION_FIX,
 		.accuracy_m = 5,
 		.position_dop = 100,
-		.run_to_fix =
+		.mode.run_to_fix =
 			{
 				.any_fix_timeout = SEC_PER_MIN,
 				.fix_plateau =
@@ -640,7 +640,7 @@ ZTEST(task_gnss, test_location_fix_no_location_timeout)
 		.flags = TASK_GNSS_FLAGS_RUN_TO_LOCATION_FIX,
 		.accuracy_m = 5,
 		.position_dop = 100,
-		.run_to_fix =
+		.mode.run_to_fix =
 			{
 				.any_fix_timeout = 15,
 				.fix_plateau =

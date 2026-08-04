@@ -47,7 +47,7 @@ static const struct task_schedule schedules[] = {
 				.accuracy_m = 100,
 				.position_dop = 250,
 				.dynamic_model = UBX_CFG_NAVSPG_DYNMODEL_AUTOMOTIVE,
-				.low_power =
+				.mode.low_power =
 					{
 						.acquisition_timeout = 45,
 						.search_period = 60,

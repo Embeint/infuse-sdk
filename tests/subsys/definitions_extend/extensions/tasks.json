@@ -1,0 +1,55 @@
+{
+    "structs": {
+        "schedule_struct_task_ext1_payload": {
+            "description": "Extension task payload",
+            "fields": [
+                {"name": "count", "type": "uint16_t", "description": "Payload count"},
+                {"name": "mode", "type": "enum schedule_enum_task_ext1_mode", "description": "Payload mode"}
+            ]
+        }
+    },
+    "unions": {},
+    "enums": {
+        "schedule_enum_task_ext1_logs": {
+            "description": "Extension task TDF mask",
+            "type": "uint8_t",
+            "values": [
+                {"name": "VALUE", "bit": 0, "description": "Log extension values"},
+                {"name": "STATE", "bit": 2, "description": "Log extension state"}
+            ]
+        },
+        "schedule_enum_task_ext1_mode": {
+            "description": "Extension task mode",
+            "type": "uint8_t",
+            "values": [
+                {"name": "ONE", "value": 1, "description": "Mode one"},
+                {"name": "TWO", "value": 2, "description": "Mode two"}
+            ]
+        },
+        "schedule_enum_task_ext1_flags": {
+            "description": "Extension task flags",
+            "type": "uint8_t",
+            "values": [
+                {"name": "ENABLED", "bit": 0, "description": "Enable extension task"},
+                {"name": "ALT_OUTPUT", "bit": 3, "description": "Use alternate output"}
+            ]
+        }
+    },
+    "definitions": {
+        "42": {
+            "name": "EXT1",
+            "description": "Extension task arguments (@ref task_ext1_args)",
+            "alternate_ids": {
+                "43": {
+                    "name": "EXT1_ALT",
+                    "description": "Extension task alternate task ID"
+                }
+            },
+            "fields": [
+                {"name": "payload", "type": "struct schedule_struct_task_ext1_payload", "description": "Task payload"},
+                {"name": "flags", "type": "enum schedule_enum_task_ext1_flags", "description": "Task flags"},
+                {"name": "samples", "type": "uint8_t", "description": "Samples to collect"}
+            ]
+        }
+    }
+}
