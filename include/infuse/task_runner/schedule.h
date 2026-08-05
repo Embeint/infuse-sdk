@@ -228,6 +228,9 @@ struct task_schedule {
 	union task_arguments task_args;
 } __packed;
 
+/** Validate argument union hasn't expanded */
+BUILD_ASSERT(sizeof(union task_arguments) == 17);
+
 /** Events that can trigger callbacks */
 enum task_schedule_event {
 	/** Task associated with the schedule has been started */

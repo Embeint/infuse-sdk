@@ -27,7 +27,7 @@ extern "C" {
  */
 
 union task_arguments {
-	uint8_t raw[16];
+	uint8_t raw[17];
 {% for task in tasks.values() %}
 	struct task_{{ task['name'] | lower }}_args {{ task['name'] | lower }};
 {% endfor %}
