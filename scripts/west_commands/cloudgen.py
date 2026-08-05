@@ -42,11 +42,18 @@ class cloudgen(WestCommand):
             help="Output module for the generated files",
         )
         parser.add_argument("--defs", "-d", type=str, help="Folder containing extentsion definitions")
+        parser.add_argument(
+            "--skip-python-generation",
+            "--skip-python",
+            action="store_true",
+            help="Skip generation of Python definition files",
+        )
         return parser
 
     def do_run(self, args, unknown_args):
         self.extra_defs_base = pathlib.Path(args.defs) if args.defs else None
         self.output_base = pathlib.Path(args.output)
+        self.skip_python_generation = args.skip_python_generation
         self.generate_base = self.output_base / "generated"
         self.definition_dir = pathlib.Path(__file__).parent / "cloud_definitions"
         self.template_dir = pathlib.Path(__file__).parent / "templates"
@@ -323,9 +330,6 @@ class cloudgen(WestCommand):
         tdf_output = self.generate_base / "include" / "infuse" / "tdf" / "definitions.h"
         tdf_output.parent.mkdir(parents=True, exist_ok=True)
 
-        loader = importlib.util.find_spec("infuse_iot.generated.tdf_definitions")
-        tdf_definitions_template = self.env.get_template("tdf_definitions.py.jinja")
-        tdf_definitions_output = pathlib.Path(loader.origin)
         tdf_extensions_exist = False
 
         with tdf_def_file.open("r") as f:
@@ -358,6 +362,11 @@ class cloudgen(WestCommand):
 
         with tdf_output.open("w") as f:
             f.write(tdf_template.render(structs=tdf_defs["structs"], definitions=tdf_defs["definitions"]))
+
+        self.clang_format(tdf_output)
+
+        if self.skip_python_generation:
+            return
 
         def conv_formula(f):
             conv = f"self._{f['name']}"
@@ -392,6 +401,10 @@ class cloudgen(WestCommand):
             p = d.get("postfix", "")
             return {"name": f["name"], "fmt": fmt, "postfix": f'"{p}"'}
 
+        loader = importlib.util.find_spec("infuse_iot.generated.tdf_definitions")
+        tdf_definitions_template = self.env.get_template("tdf_definitions.py.jinja")
+        tdf_definitions_output = pathlib.Path(loader.origin)
+
         for x in ["structs", "definitions"]:
             for s in tdf_defs[x].values():
                 s["conversions"] = []
@@ -421,7 +434,6 @@ class cloudgen(WestCommand):
             generate(py_extensions, True)
             self.ruff_format(py_extensions)
 
-        self.clang_format(tdf_output)
         self.ruff_format(tdf_definitions_output)
 
     def kvgen(self):
@@ -433,10 +445,6 @@ class cloudgen(WestCommand):
 
         kv_kconfig_template = self.env.get_template("Kconfig.keys.jinja")
         kv_kconfig_output = self.generate_base / "Kconfig.kv_keys"
-
-        loader = importlib.util.find_spec("infuse_iot.generated.kv_definitions")
-        kv_py_template = self.env.get_template("kv_definitions.py.jinja")
-        kv_py_output = pathlib.Path(loader.origin)
 
         with kv_def_file.open("r") as f:
             kv_defs = json.load(f)
@@ -510,6 +518,15 @@ class cloudgen(WestCommand):
 
             f.write(kv_defs_template.render(structs=kv_defs["structs"], definitions=kv_defs["definitions"]))
 
+        self.clang_format(kv_defs_output)
+
+        if self.skip_python_generation:
+            return
+
+        loader = importlib.util.find_spec("infuse_iot.generated.kv_definitions")
+        kv_py_template = self.env.get_template("kv_definitions.py.jinja")
+        kv_py_output = pathlib.Path(loader.origin)
+
         for x in ["structs", "definitions"]:
             for s in kv_defs[x].values():
                 for f in s["fields"]:
@@ -531,7 +548,6 @@ class cloudgen(WestCommand):
             generate(py_extensions, True)
             self.ruff_format(py_extensions)
 
-        self.clang_format(kv_defs_output)
         self.ruff_format(kv_py_output)
 
     def rpcgen(self):
@@ -549,10 +565,6 @@ class cloudgen(WestCommand):
 
         rpc_runner_template = self.env.get_template("rpc_runner.c.jinja")
         rpc_runner_output = self.generate_base / "rpc_command_runner.c"
-
-        loader = importlib.util.find_spec("infuse_iot.generated.rpc_definitions")
-        rpc_defs_py_template = self.env.get_template("rpc_definitions.py.jinja")
-        rpc_defs_py_output = pathlib.Path(loader.origin)
 
         with rpc_def_file.open("r") as f:
             rpc_defs = json.load(f)
@@ -598,19 +610,6 @@ class cloudgen(WestCommand):
             for field in c["response_params"]:
                 enum_type_replace(field)
 
-        # Python type generation
-        for s in rpc_defs["structs"].values():
-            for field in s["fields"]:
-                field["py_name"] = field["name"]
-                field["py_type"] = self._py_type(field, False)
-        for e in rpc_defs["enums"].values():
-            for value in e["values"]:
-                value["py_name"] = value["name"]
-        for c in rpc_defs["commands"].values():
-            for sub in ["request_params", "response_params"]:
-                for field in c[sub]:
-                    field["py_type"] = self._py_type(field, False)
-
         with rpc_kconfig_output.open("w") as f:
             f.write(rpc_kconfig_template.render(commands=rpc_defs["commands"]))
 
@@ -628,6 +627,30 @@ class cloudgen(WestCommand):
                     commands=rpc_defs["commands"],
                 )
             )
+
+        self.clang_format(rpc_defs_output)
+        self.clang_format(rpc_commands_output)
+        self.clang_format(rpc_runner_output)
+
+        if self.skip_python_generation:
+            return
+
+        # Python type generation
+        for s in rpc_defs["structs"].values():
+            for field in s["fields"]:
+                field["py_name"] = field["name"]
+                field["py_type"] = self._py_type(field, False)
+        for e in rpc_defs["enums"].values():
+            for value in e["values"]:
+                value["py_name"] = value["name"]
+        for c in rpc_defs["commands"].values():
+            for sub in ["request_params", "response_params"]:
+                for field in c[sub]:
+                    field["py_type"] = self._py_type(field, False)
+
+        loader = importlib.util.find_spec("infuse_iot.generated.rpc_definitions")
+        rpc_defs_py_template = self.env.get_template("rpc_definitions.py.jinja")
+        rpc_defs_py_output = pathlib.Path(loader.origin)
 
         def generate(output: pathlib.Path, extensions: bool):
             any_enums = any([e.get("extension", False) == extensions for e in rpc_defs["enums"].values()])
@@ -648,7 +671,4 @@ class cloudgen(WestCommand):
             generate(py_extensions, True)
             self.ruff_format(py_extensions)
 
-        self.clang_format(rpc_defs_output)
-        self.clang_format(rpc_commands_output)
-        self.clang_format(rpc_runner_output)
         self.ruff_format(rpc_defs_py_output)
