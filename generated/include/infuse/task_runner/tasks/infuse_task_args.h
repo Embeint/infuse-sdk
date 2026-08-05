@@ -33,7 +33,7 @@ extern "C" {
  */
 
 union task_arguments {
-	uint8_t raw[16];
+	uint8_t raw[17];
 	struct task_tdf_logger_args tdf_logger;
 	struct task_imu_args imu;
 	struct task_battery_args battery;
