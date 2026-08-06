@@ -292,16 +292,26 @@ class cloudgen(WestCommand):
         task_defs.setdefault("unions", {})
         task_defs.setdefault("enums", {})
         task_defs.setdefault("definitions", {})
+        if "include_namespace" not in task_defs:
+            sys.exit(f"Missing include_namespace in '{task_def_file}'")
+        include_namespace = task_defs["include_namespace"]
+        for task in task_defs["definitions"].values():
+            task["include_namespace"] = include_namespace
 
         if self.extra_defs_base:
             task_def_file_ext = self.extra_defs_base / "tasks.json"
             if task_def_file_ext.exists():
                 with task_def_file_ext.open("r") as f:
                     task_defs_ext = json.load(f)
+                if "include_namespace" not in task_defs_ext:
+                    sys.exit(f"Missing include_namespace in '{task_def_file_ext}'")
                 for key in ["structs", "unions", "enums", "definitions"]:
                     task_defs_ext.setdefault(key, {})
                     for name in task_defs_ext[key]:
                         assert name not in task_defs[key]
+                include_namespace_ext = task_defs_ext["include_namespace"]
+                for task in task_defs_ext["definitions"].values():
+                    task["include_namespace"] = include_namespace_ext
                 for key in ["structs", "unions", "enums", "definitions"]:
                     task_defs[key].update(task_defs_ext[key])
 
