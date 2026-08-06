@@ -197,12 +197,6 @@ static void network_info_update(struct k_work *work)
 
 		monitor.network_state.cell.id = id;
 		monitor.network_state.cell.tac = tac;
-		monitor.network_state.psm_cfg.tau = -1;
-		monitor.network_state.psm_cfg.active_time = -1;
-		monitor.network_state.edrx_cfg.edrx = -1.0f;
-		monitor.network_state.edrx_cfg.ptw = -1.0f;
-		monitor.network_state.as_rai = UINT8_MAX;
-		monitor.network_state.cp_rai = UINT8_MAX;
 		goto state_logging;
 	}
 
@@ -387,9 +381,6 @@ static void lte_reg_handler(const struct lte_lc_evt *const evt)
 		/* Reset cached signal strength */
 		monitor.rsrp_cached = INT16_MIN;
 		monitor.rsrq_cached = INT8_MIN;
-		/* RAI support unknown */
-		monitor.network_state.as_rai = UINT8_MAX;
-		monitor.network_state.cp_rai = UINT8_MAX;
 		/* Set cell connected flag */
 		atomic_set_bit_to(&monitor.flags, FLAGS_CELL_CONNECTED,
 				  evt->cell.id <= LTE_LC_CELL_EUTRAN_ID_MAX);
