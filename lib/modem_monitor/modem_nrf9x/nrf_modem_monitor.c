@@ -32,6 +32,10 @@
 #include <modem/modem_info.h>
 #include <nrf_modem_at.h>
 
+#ifdef CONFIG_LTE_LC_PSM_MODULE
+#include "modules/psm.h"
+#endif /* CONFIG_LTE_LC_PSM_MODULE */
+
 #include "../modem_monitor.h"
 
 LOG_MODULE_DECLARE(modem_monitor, CONFIG_INFUSE_MODEM_MONITOR_LOG_LEVEL);
@@ -45,6 +49,18 @@ LOG_MODULE_DECLARE(modem_monitor, CONFIG_INFUSE_MODEM_MONITOR_LOG_LEVEL);
 	 : IS_ENABLED(CONFIG_LTE_NETWORK_MODE_LTE_M_NBIOT)     ? LTE_LC_SYSTEM_MODE_LTEM_NBIOT     \
 	 : IS_ENABLED(CONFIG_LTE_NETWORK_MODE_LTE_M_NBIOT_GPS) ? LTE_LC_SYSTEM_MODE_LTEM_NBIOT_GPS \
 							       : LTE_LC_SYSTEM_MODE_DEFAULT)
+
+#ifdef CONFIG_LTE_LC_PSM_MODULE
+#define XMONITOR_PSM_SCANF_FORMAT                                                                  \
+	"%*d,"    /* <rsrp>: ignored */                                                            \
+	"%*d,"    /* <snr>: ignored */                                                             \
+	"%*[^,]," /* <NW-provided_eDRX_value>: ignored */                                          \
+	"\"%8[01]\","                                                                              \
+	"\"%8[01]\","                                                                              \
+	"\"%8[01]\""
+#else
+#define XMONITOR_PSM_SCANF_FORMAT
+#endif /* CONFIG_LTE_LC_PSM_MODULE */
 
 enum {
 	FLAGS_MODEM_SLEEPING = 0,
@@ -132,6 +148,12 @@ static void network_info_update(struct k_work *work)
 	struct k_work_delayable *dwork = k_work_delayable_from_work(work);
 	static bool sim_card_queried;
 	char plmn[9] = {0};
+#ifdef CONFIG_LTE_LC_PSM_MODULE
+	char psm_active_time_str[9] = {0};
+	char psm_tau_ext_str[9] = {0};
+	char psm_tau_legacy_str[9] = {0};
+	struct lte_lc_psm_cfg psm_cfg;
+#endif /* CONFIG_LTE_LC_PSM_MODULE */
 	int rc;
 
 	/* This work is not time critical, run it later if the PDN connection is in progress */
@@ -197,11 +219,16 @@ static void network_info_update(struct k_work *work)
 				"%*[^,],"      /* <cell_id>: ignored */
 				"%" SCNu16 "," /* <phys_cell_id> */
 				"%" SCNu32 "," /* <EARFCN> */
-				,
+				XMONITOR_PSM_SCANF_FORMAT,
 				plmn, &monitor.network_state.band,
 				&monitor.network_state.cell.phys_cell_id,
+#ifdef CONFIG_LTE_LC_PSM_MODULE
+				&monitor.network_state.cell.earfcn, psm_active_time_str,
+				psm_tau_ext_str, psm_tau_legacy_str);
+#else
 				&monitor.network_state.cell.earfcn);
-	if (rc == 4) {
+#endif /* CONFIG_LTE_LC_PSM_MODULE */
+	if (rc >= 4) {
 		/* Parse MCC and MNC. The PLMN string is a 5 or 6 digit number surrounded by quotes.
 		 * The first 3 numeric characters are the MCC (Mobile Country Code).
 		 * The next 2 or 3 numeric characters are the MNC (Mobile Network Code).
@@ -217,6 +244,17 @@ static void network_info_update(struct k_work *work)
 		infuse_work_reschedule(dwork, K_SECONDS(1));
 		return;
 	}
+
+#ifdef CONFIG_LTE_LC_PSM_MODULE
+	if (rc == 7) {
+		/* Use the existing Nordic internal parsing logic */
+		rc = psm_parse(psm_active_time_str, psm_tau_ext_str, psm_tau_legacy_str, &psm_cfg);
+		if (rc == 0) {
+			monitor.network_state.psm_cfg.tau = psm_cfg.tau;
+			monitor.network_state.psm_cfg.active_time = psm_cfg.active_time;
+		}
+	}
+#endif /* CONFIG_LTE_LC_PSM_MODULE */
 
 state_logging:
 #ifdef CONFIG_INFUSE_MODEM_MONITOR_CONN_STATE_LOG
