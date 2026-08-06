@@ -284,10 +284,6 @@ class cloudgen(WestCommand):
         task_ids_output = task_args_output_base / "infuse_task_ids.h"
         infuse_task_args_output = task_args_output_base / "infuse_task_args.h"
         infuse_tasks_output = task_args_output_base / "infuse_tasks.h"
-        loader = importlib.util.find_spec("infuse_iot")
-        if loader is None or loader.submodule_search_locations is None:
-            sys.exit("Unable to locate infuse_iot package")
-        task_definitions_output = pathlib.Path(next(iter(loader.submodule_search_locations))) / "generated" / "tasks.py"
 
         with task_def_file.open("r") as f:
             task_defs = json.load(f)
@@ -438,6 +434,14 @@ class cloudgen(WestCommand):
                     field["py_type"] = self._task_py_type(field, task["name"], task_defs)
 
             python_tasks.append(task)
+
+        if self.skip_python_generation:
+            return
+
+        loader = importlib.util.find_spec("infuse_iot")
+        if loader is None or loader.submodule_search_locations is None:
+            sys.exit("Unable to locate infuse_iot package")
+        task_definitions_output = pathlib.Path(next(iter(loader.submodule_search_locations))) / "generated" / "tasks.py"
 
         with task_definitions_output.open("w", encoding="utf-8") as f:
             f.write(task_definitions_template.render(tasks=python_tasks))
