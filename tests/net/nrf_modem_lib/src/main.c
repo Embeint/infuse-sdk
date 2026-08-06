@@ -289,6 +289,21 @@ ZTEST(infuse_nrf_modem_monitor, test_integration)
 	zassert_equal(-1.0f, net_state.edrx_cfg.edrx);
 	zassert_equal(-1.0f, net_state.edrx_cfg.ptw);
 
+	/* Not registered invalidates PSM, but re-registration without CEREG PSM fields recovers */
+	nrf_modem_lib_sim_send_at("+CEREG: 0\r\n");
+	k_sleep(K_SECONDS(1));
+	lte_modem_monitor_network_state(&net_state);
+	zassert_equal(CELLULAR_REGISTRATION_NOT_REGISTERED, net_state.nw_reg_status);
+	zassert_equal(-1, net_state.psm_cfg.active_time);
+	zassert_equal(-1, net_state.psm_cfg.tau);
+
+	nrf_modem_lib_sim_send_at("+CEREG: 5,\"702A\",\"08C3BD0C\",7\r\n");
+	k_sleep(K_SECONDS(1));
+	lte_modem_monitor_network_state(&net_state);
+	zassert_equal(CELLULAR_REGISTRATION_REGISTERED_ROAMING, net_state.nw_reg_status);
+	zassert_equal(16, net_state.psm_cfg.active_time);
+	zassert_equal(46800, net_state.psm_cfg.tau);
+
 #ifdef CONFIG_INFUSE_MODEM_MONITOR_CONN_STATE_LOG
 	k_sleep(K_MSEC(10));
 	tdf_data_logger_flush(TDF_DATA_LOGGER_SERIAL);
