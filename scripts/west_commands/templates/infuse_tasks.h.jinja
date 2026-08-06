@@ -14,7 +14,7 @@
 
 /* Simple list of infuse tasks to simplify application includes */
 {% for task in tasks.values() %}
-#include <infuse/task_runner/tasks/{{ task['name'] | lower }}.h>
+#include <{{ task['include_namespace'] }}/task_runner/tasks/{{ task['name'] | lower }}.h>
 {% endfor %}
 
 #endif /* INFUSE_SDK_INCLUDE_GENERATED_TASK_RUNNER_TASKS_INFUSE_TASKS_H_ */

@@ -1,4 +1,5 @@
 {
+    "include_namespace": "infuse",
     "structs": {
         "schedule_struct_task_imu_accelerometer": {
             "description": "IMU accelerometer configuration",
