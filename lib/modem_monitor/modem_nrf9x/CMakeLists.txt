@@ -2,6 +2,12 @@
 
 zephyr_library_named(infuse_modem_nrf9x)
 
+if(CONFIG_LTE_LC_PSM_MODULE)
+  target_include_directories(
+    infuse_modem_nrf9x PRIVATE ${ZEPHYR_NRF_MODULE_DIR}/lib/lte_link_control/include
+  )
+endif()
+
 zephyr_library_sources(nrf_modem_monitor.c)
 
 if(CONFIG_INFUSE_NRF_MODEM_LIB_SIM)
