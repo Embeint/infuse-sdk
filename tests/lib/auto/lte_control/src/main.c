@@ -11,11 +11,16 @@
 #include <zephyr/kernel.h>
 #include <zephyr/net/net_if.h>
 #include <zephyr/net/net_l2.h>
+#include <zephyr/net_buf.h>
 #include <zephyr/ztest.h>
 
 #include <infuse/auto/lte_control.h>
+#include <infuse/data_logger/high_level/tdf.h>
+#include <infuse/epacket/interface/epacket_dummy.h>
 #include <infuse/lib/lte_modem_monitor.h>
 #include <infuse/states.h>
+#include <infuse/tdf/definitions.h>
+#include <infuse/tdf/tdf.h>
 
 K_SEM_DEFINE(disconnect_started, 0, 1);
 K_SEM_DEFINE(disconnect_continue, 0, 1);
@@ -80,6 +85,46 @@ static void expect_no_more_calls(void)
 	k_sleep(K_MSEC(20));
 	zassert_equal(connect_calls, test_ctx.connect_calls);
 	zassert_equal(disconnect_calls, test_ctx.disconnect_calls);
+}
+
+static void drain_tdf_logs(void)
+{
+	struct k_fifo *tx_queue = epacket_dummmy_transmit_fifo_get();
+	struct net_buf *pkt;
+
+	tdf_data_logger_flush(TDF_DATA_LOGGER_SERIAL);
+	while ((pkt = k_fifo_get(tx_queue, K_NO_WAIT)) != NULL) {
+		net_buf_unref(pkt);
+	}
+}
+
+static void expect_lte_control_log(uint8_t expected_enabled)
+{
+	struct k_fifo *tx_queue = epacket_dummmy_transmit_fifo_get();
+	struct tdf_lte_control *control;
+	struct tdf_parsed tdf;
+	struct net_buf *pkt;
+
+	tdf_data_logger_flush(TDF_DATA_LOGGER_SERIAL);
+	pkt = k_fifo_get(tx_queue, K_MSEC(10));
+	zassert_not_null(pkt);
+
+	net_buf_pull(pkt, sizeof(struct epacket_dummy_frame));
+	zassert_equal(0, tdf_parse_find_in_buf(pkt->data, pkt->len, TDF_LTE_CONTROL, &tdf));
+	zassert_equal(1, tdf.tdf_num);
+	control = tdf.data;
+	zassert_equal(expected_enabled, control->enabled);
+	zassert_is_null(k_fifo_get(tx_queue, K_MSEC(1)));
+
+	net_buf_unref(pkt);
+}
+
+static void expect_no_lte_control_log(void)
+{
+	struct k_fifo *tx_queue = epacket_dummmy_transmit_fifo_get();
+
+	tdf_data_logger_flush(TDF_DATA_LOGGER_SERIAL);
+	zassert_is_null(k_fifo_get(tx_queue, K_MSEC(1)));
 }
 
 ZTEST(lte_control, test_inactive_on_startup_does_not_connect)
@@ -204,6 +249,28 @@ ZTEST(lte_control, test_failed_connect_does_not_enable_give_up)
 	expect_no_more_calls();
 }
 
+ZTEST(lte_control, test_tdf_logging_connect_disconnect)
+{
+	auto_lte_control_init(TDF_DATA_LOGGER_SERIAL);
+
+	infuse_state_set(INFUSE_STATE_APPLICATION_ACTIVE);
+	wait_for_calls(1, 0);
+	expect_lte_control_log(1);
+
+	infuse_state_clear(INFUSE_STATE_APPLICATION_ACTIVE);
+	wait_for_calls(1, 1);
+	expect_lte_control_log(0);
+}
+
+ZTEST(lte_control, test_tdf_logging_uses_configured_loggers)
+{
+	auto_lte_control_init(0);
+
+	infuse_state_set(INFUSE_STATE_APPLICATION_ACTIVE);
+	wait_for_calls(1, 0);
+	expect_no_lte_control_log();
+}
+
 static void reset_counters(void)
 {
 	test_ctx.connect_calls = 0;
@@ -226,6 +293,7 @@ static void reset_lte_control_state(void *fixture)
 	test_ctx.block_disconnect = false;
 	k_sem_reset(&disconnect_started);
 	k_sem_reset(&disconnect_continue);
+	drain_tdf_logs();
 	reset_counters();
 }
 
