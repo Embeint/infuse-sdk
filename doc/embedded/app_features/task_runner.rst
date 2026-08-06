@@ -57,6 +57,207 @@ scheduling conditions in a compact form, for example:
      },
    };
 
+Common Scheduling Fields
+************************
+
+Each :c:struct:`task_schedule` contains the following common fields, independent
+of the task-specific arguments described in the next section:
+
+``task_id``
+  Identifies the task implementation that this schedule starts. Multiple
+  schedules can reference the same task ID, although only one schedule for a
+  task implementation can run at a time.
+
+``validity``
+  Controls when the schedule itself is valid. :c:enumerator:`TASK_VALID_ALWAYS`
+  is always eligible, :c:enumerator:`TASK_VALID_ACTIVE` is eligible only while
+  :c:enumerator:`INFUSE_STATE_APPLICATION_ACTIVE` is set, and
+  :c:enumerator:`TASK_VALID_INACTIVE` is eligible only while it is clear.
+  :c:enumerator:`TASK_VALID_PERMANENTLY_RUNS` bypasses normal entry and exit
+  checks and restarts the task if it terminates. The
+  :c:enumerator:`TASK_LOCKED` flag can be ORed into this field to prevent KV
+  store updates from replacing the schedule.
+
+``periodicity_type``
+  Selects which member of the ``periodicity`` union is used for start timing.
+  A zero value means there is no periodicity condition, so start timing is
+  controlled only by the other start conditions.
+
+``boot_lockout_minutes``
+  Prevents the task from starting until the application has been running for
+  this many minutes. A value of ``0`` disables the boot lockout.
+
+``timeout_s``
+  Requests task termination once the current run has lasted this many seconds.
+  A value of ``0`` disables timeout-based termination.
+
+``battery_start``
+  Optional battery charge thresholds for starting the task. ``lower`` requires
+  the battery percentage to be greater than or equal to the configured value,
+  while ``upper`` requires it to be less than or equal to the configured value.
+  A threshold value of ``0`` disables that side of the range.
+
+  Example:
+
+  .. code-block:: c
+
+     .battery_start.lower = 30,
+     .battery_start.upper = 80,
+
+  This schedule can only start when the battery charge is between 30% and 80%,
+  inclusive. If only ``lower`` was set, the task could start at 30% or above; if
+  only ``upper`` was set, it could start at 80% or below.
+
+``battery_terminate``
+  Optional battery charge thresholds for terminating the task. ``lower``
+  requests termination when the battery percentage is less than or equal to the
+  configured value, while ``upper`` requests termination when it is greater than
+  or equal to the configured value. A threshold value of ``0`` disables that
+  threshold.
+
+  Example:
+
+  .. code-block:: c
+
+     .battery_terminate.lower = 20,
+
+  Once the task is running, this requests termination if the battery charge
+  falls to 20% or below.
+
+``periodicity.fixed.period_s``
+  Used with :c:enumerator:`TASK_PERIODICITY_FIXED`. The task can start only
+  when the current global time is on an ``N`` second boundary.
+
+``periodicity.lockout.lockout_s``
+  Used with :c:enumerator:`TASK_PERIODICITY_LOCKOUT`. The task can start only
+  after this many seconds have elapsed since the schedule last started. OR in
+  :c:macro:`TASK_RUNNER_LOCKOUT_IGNORE_FIRST` to allow the first run to start
+  without waiting for the initial lockout period.
+
+  Example:
+
+  .. code-block:: c
+
+     .periodicity_type = TASK_PERIODICITY_LOCKOUT,
+     .periodicity.lockout.lockout_s =
+        TASK_RUNNER_LOCKOUT_IGNORE_FIRST | (30 * SEC_PER_MIN),
+
+  The first run may start as soon as the other start conditions pass. After
+  that, each run is separated from the previous start time by at least 30
+  minutes.
+
+``periodicity.after.schedule_idx`` and ``periodicity.after.duration_s``
+  Used with :c:enumerator:`TASK_PERIODICITY_AFTER`. The task can start
+  ``duration_s`` seconds after the schedule at ``schedule_idx`` terminates.
+
+  Example:
+
+  .. code-block:: c
+
+     .periodicity_type = TASK_PERIODICITY_AFTER,
+     .periodicity.after.schedule_idx = 0,
+     .periodicity.after.duration_s = 10,
+
+  This schedule can start 10 seconds after schedule index 0 terminates, assuming
+  the other start conditions are also satisfied.
+
+``periodicity.lockout_dynamic_battery``
+  Used with :c:enumerator:`TASK_PERIODICITY_LOCKOUT_DYNAMIC_BATTERY`. The
+  lockout behaves like :c:enumerator:`TASK_PERIODICITY_LOCKOUT`, but the
+  interval is derived from the current battery percentage. The lockout is
+  ``lockout_min`` at or below ``battery_min``, ``lockout_max`` at or above
+  ``battery_max``, and linearly interpolated between those points.
+
+  Example:
+
+  .. code-block:: c
+
+     .periodicity_type = TASK_PERIODICITY_LOCKOUT_DYNAMIC_BATTERY,
+     .periodicity.lockout_dynamic_battery =
+        {
+           .battery_min = 20,
+           .battery_max = 80,
+           .lockout_min = 60 * SEC_PER_MIN,
+           .lockout_max = 10 * SEC_PER_MIN,
+        },
+
+  At 20% battery or below, runs are separated by 60 minutes. At 80% battery or
+  above, runs are separated by 10 minutes. Between those thresholds, the lockout
+  is linearly interpolated, so a mid-range battery gives a mid-range lockout.
+
+``states_start_timeout_2x_s``
+  Optional fallback for the start state conditions. When non-zero,
+  ``states_start`` is treated as satisfied once twice this value in seconds has
+  elapsed since the schedule last started. Use
+  :c:macro:`TASK_STATES_START_TIMEOUT` when initialising this field.
+
+  Example:
+
+  .. code-block:: c
+
+     .states_start_timeout_2x_s = TASK_STATES_START_TIMEOUT(20 * SEC_PER_MIN),
+     .states_start = TASK_STATES_DEFINE(INFUSE_STATE_TIME_KNOWN),
+
+  The task can start when time is known. If that state is not set, the state
+  condition is still treated as satisfied once 20 minutes have elapsed since the
+  schedule last started.
+
+``states_start``
+  Application state conditions that must evaluate true before the task can
+  start. Construct this field with :c:macro:`TASK_STATES_DEFINE`; conditions are
+  ANDed by default, can be inverted with :c:macro:`TR_NOT`, and can be ORed with
+  :c:macro:`TR_OR`.
+
+  Example:
+
+  .. code-block:: c
+
+     .states_start = TASK_STATES_DEFINE(
+        TR_NOT | INFUSE_STATE_DEVICE_STATIONARY,
+        INFUSE_STATE_TIME_KNOWN),
+
+  The task can start only when the device is not stationary and the global time
+  is known.
+
+  .. code-block:: c
+
+     .states_start = TASK_STATES_DEFINE(
+        INFUSE_STATE_DEVICE_STARTED_MOVING,
+        TR_OR | INFUSE_STATE_HIGH_PRIORITY_UPLINK),
+
+  The task can start when either the device has started moving or a high
+  priority uplink is requested.
+
+``states_terminate``
+  Application state conditions that request task termination when they evaluate
+  true. This field uses the same :c:macro:`TASK_STATES_DEFINE`,
+  :c:macro:`TR_NOT`, and :c:macro:`TR_OR` helpers as ``states_start``.
+
+  Example:
+
+  .. code-block:: c
+
+     .states_terminate = TASK_STATES_DEFINE(INFUSE_STATE_DEVICE_STATIONARY),
+
+  Once the task is running, this requests termination when the device becomes
+  stationary.
+
+``task_logging``
+  Common logging configuration for task output. Each entry selects a set of TDF
+  loggers and a task-defined TDF mask. The task implementation decides which
+  masks are meaningful.
+
+  Example:
+
+  .. code-block:: c
+
+     .task_logging[0].loggers = TDF_DATA_LOGGER_SERIAL,
+     .task_logging[0].tdf_mask = TASK_GNSS_LOG_LLHA | TASK_GNSS_LOG_FIX_INFO,
+
+  The task may emit the LLHA and fix information TDFs to the serial logger. The
+  ``tdf_mask`` bits are task-specific, so the available values depend on the
+  selected ``task_id``.
+
 Task Arguments
 **************
 
@@ -150,6 +351,30 @@ flag to the :c:member:`task_schedule.validity` field of the schedule like below:
 
 This flag will prevent :c:func:`task_runner_schedules_load` from modifying the
 provided schedule, regardless of the value saved in the KV store.
+
+Inspecting Encoded Schedules
+****************************
+
+Encoded task schedules can be inspected with ``infuse schedule decode``. Pass
+the schedule payload as hex or base64 to print a readable description:
+
+.. code-block:: console
+
+   infuse schedule decode <schedule>
+
+Use ``--python`` to emit Python assignment lines instead. This is useful when
+turning an existing encoded schedule into a starting point for small edits:
+
+.. code-block:: console
+
+   infuse schedule decode --python <schedule>
+
+The ``python-tools/scripts/encode_task_schedule_example.py`` script shows the
+opposite flow: build an ``infuse_iot.task_runner.schedule.TaskSchedule`` in
+Python, set common fields, task logging, and task-specific arguments, then print
+the encoded bytes as hex or base64. Copy the decoded assignments into a similar
+script, adjust the fields of interest, and re-encode the schedule for a KV
+update or other deployment path.
 
 Task Schedule vs Task Implementation
 ************************************
