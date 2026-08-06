@@ -84,21 +84,21 @@ static void expect_no_more_calls(void)
 
 ZTEST(lte_control, test_inactive_on_startup_does_not_connect)
 {
-	auto_lte_control_init();
+	auto_lte_control_init(0);
 	expect_no_more_calls();
 }
 
 ZTEST(lte_control, test_active_on_startup_connects)
 {
 	infuse_state_set(INFUSE_STATE_APPLICATION_ACTIVE);
-	auto_lte_control_init();
+	auto_lte_control_init(0);
 	wait_for_calls(1, 0);
 	zassert_equal(expected_lte_iface(), test_ctx.last_connect_iface);
 }
 
 ZTEST(lte_control, test_application_active_state_controls_lte)
 {
-	auto_lte_control_init();
+	auto_lte_control_init(0);
 
 	infuse_state_set(INFUSE_STATE_APPLICATION_ACTIVE);
 	wait_for_calls(1, 0);
@@ -111,7 +111,7 @@ ZTEST(lte_control, test_application_active_state_controls_lte)
 
 ZTEST(lte_control, test_already_active_does_not_reconnect)
 {
-	auto_lte_control_init();
+	auto_lte_control_init(0);
 
 	infuse_state_set(INFUSE_STATE_APPLICATION_ACTIVE);
 	wait_for_calls(1, 0);
@@ -122,7 +122,7 @@ ZTEST(lte_control, test_already_active_does_not_reconnect)
 
 ZTEST(lte_control, test_give_up_disconnects_only_when_connect_requested_and_unregistered)
 {
-	auto_lte_control_init();
+	auto_lte_control_init(0);
 
 	auto_lte_control_give_up();
 	expect_no_more_calls();
@@ -144,7 +144,7 @@ ZTEST(lte_control, test_give_up_disconnects_only_when_connect_requested_and_unre
 
 ZTEST(lte_control, test_retry_connects_only_when_active_after_disconnect)
 {
-	auto_lte_control_init();
+	auto_lte_control_init(0);
 
 	infuse_state_set(INFUSE_STATE_APPLICATION_ACTIVE);
 	wait_for_calls(1, 0);
@@ -167,7 +167,7 @@ ZTEST(lte_control, test_retry_connects_only_when_active_after_disconnect)
 
 ZTEST(lte_control, test_retry_skips_when_not_previously_disconnected)
 {
-	auto_lte_control_init();
+	auto_lte_control_init(0);
 
 	infuse_state_set(INFUSE_STATE_APPLICATION_ACTIVE);
 	wait_for_calls(1, 0);
@@ -178,7 +178,7 @@ ZTEST(lte_control, test_retry_skips_when_not_previously_disconnected)
 
 ZTEST(lte_control, test_retry_connects_when_give_up_disconnect_is_pending)
 {
-	auto_lte_control_init();
+	auto_lte_control_init(0);
 
 	infuse_state_set(INFUSE_STATE_APPLICATION_ACTIVE);
 	wait_for_calls(1, 0);
@@ -194,7 +194,7 @@ ZTEST(lte_control, test_retry_connects_when_give_up_disconnect_is_pending)
 
 ZTEST(lte_control, test_failed_connect_does_not_enable_give_up)
 {
-	auto_lte_control_init();
+	auto_lte_control_init(0);
 	test_ctx.connect_rc = -EIO;
 
 	infuse_state_set(INFUSE_STATE_APPLICATION_ACTIVE);

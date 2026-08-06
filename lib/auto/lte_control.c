@@ -12,6 +12,9 @@
 
 #include <infuse/states.h>
 #include <infuse/lib/lte_modem_monitor.h>
+#include <infuse/data_logger/high_level/tdf.h>
+#include <infuse/tdf/definitions.h>
+#include <infuse/time/epoch.h>
 
 enum lte_request {
 	LTE_REQUEST_DISCONNECT,
@@ -25,6 +28,7 @@ static struct infuse_state_cb lte_control_state_cb;
 static atomic_t pending_request;
 static atomic_t last_request;
 static struct net_if *iface;
+static uint8_t tdf_loggers;
 
 LOG_MODULE_REGISTER(lte_control, CONFIG_INFUSE_AUTO_LTE_CONTROL_LOG_LEVEL);
 
@@ -47,6 +51,14 @@ static void lte_control_work_handler(struct k_work *work)
 
 static void lte_control_request(enum lte_request request)
 {
+	struct tdf_lte_control tdf = {
+		.enabled = request == LTE_REQUEST_CONNECT ? 1 : 0,
+	};
+
+	/* Log the request */
+	TDF_DATA_LOGGER_LOG(tdf_loggers, TDF_LTE_CONTROL, epoch_time_now(), &tdf);
+
+	/* Submit the request */
 	atomic_set(&pending_request, request);
 	k_work_submit(&lte_control_work);
 }
@@ -73,7 +85,7 @@ static void lte_control_state_cleared(enum infuse_state state, void *user_ctx)
 	}
 }
 
-void auto_lte_control_init(void)
+void auto_lte_control_init(uint8_t loggers)
 {
 #if defined(CONFIG_NRF_MODEM_LIB)
 	iface = net_if_get_first_by_type(&(NET_L2_GET_NAME(OFFLOADED_NETDEV)));
@@ -82,6 +94,9 @@ void auto_lte_control_init(void)
 #else
 #error Unknown LTE modem network interface
 #endif
+	/* TDF logging control */
+	tdf_loggers = loggers;
+
 	/* Callbacks when states change */
 	lte_control_state_cb.state_set = lte_control_state_set;
 	lte_control_state_cb.state_cleared = lte_control_state_cleared;

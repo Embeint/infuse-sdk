@@ -29,8 +29,10 @@ extern "C" {
  * @brief Initialise LTE control policy.
  *
  * @note Must be called by application `main` function to initialise behaviour, once only.
+ *
+ * @param loggers TDF loggers to log @ref TDF_LTE_CONTROL events to
  */
-void auto_lte_control_init(void);
+void auto_lte_control_init(uint8_t loggers);
 
 /**
  * @brief If the LTE modem has not yet registered to a network, give up
