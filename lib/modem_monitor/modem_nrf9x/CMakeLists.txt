@@ -1,13 +1,13 @@
 # Nordic LTE modem library integration
 
-infuse_sources(nrf_modem_monitor.c)
+zephyr_library_named(infuse_modem_nrf9x)
+
+zephyr_library_sources(nrf_modem_monitor.c)
 
 if(CONFIG_INFUSE_NRF_MODEM_LIB_SIM)
-  # ${NRFXLIB_DIR} is unavailable due to the cmake evaluation order
-  # This could be resolved with `depends: nrfxlib` in module.yml, but this causes other
-  # Kconfig priority issues.
-  zephyr_include_directories(${INFUSE_DIR}/../modules/nrfconnect/nrfxlib/nrf_modem/include)
-  infuse_sources(nrf_modem_lib_sim.c)
+  # Not scoped to the library, as tests may want to include "nrf_modem.h"
+  zephyr_include_directories(${ZEPHYR_NRFXLIB_MODULE_DIR}/nrf_modem/include)
+  zephyr_library_sources(nrf_modem_lib_sim.c)
 
   zephyr_linker_sources(RODATA nrf_modem_lib.ld)
 endif()
