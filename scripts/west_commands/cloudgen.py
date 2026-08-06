@@ -280,7 +280,9 @@ class cloudgen(WestCommand):
         infuse_tasks_template = self.env.get_template("infuse_tasks.h.jinja")
         task_definitions_template = self.env.get_template("task_definitions.py.jinja")
         task_args_output_base = self.generate_base / "include" / "infuse" / "task_runner" / "tasks"
+        task_args_always_output_base = self.generate_base / "include_always" / "infuse" / "task_runner" / "tasks"
         task_args_output_base.mkdir(parents=True, exist_ok=True)
+        task_args_always_output_base.mkdir(parents=True, exist_ok=True)
         task_ids_output = task_args_output_base / "infuse_task_ids.h"
         infuse_task_args_output = task_args_output_base / "infuse_task_args.h"
         infuse_tasks_output = task_args_output_base / "infuse_tasks.h"
@@ -297,6 +299,7 @@ class cloudgen(WestCommand):
         include_namespace = task_defs["include_namespace"]
         for task in task_defs["definitions"].values():
             task["include_namespace"] = include_namespace
+        custom_task_ids = set()
 
         if self.extra_defs_base:
             task_def_file_ext = self.extra_defs_base / "tasks.json"
@@ -314,6 +317,7 @@ class cloudgen(WestCommand):
                     task["include_namespace"] = include_namespace_ext
                 for key in ["structs", "unions", "enums", "definitions"]:
                     task_defs[key].update(task_defs_ext[key])
+                custom_task_ids = {int(task_id) for task_id in task_defs_ext["definitions"]}
 
         task_defs["definitions"] = dict(sorted((int(k), v) for k, v in task_defs["definitions"].items()))
         task_ids = {}
@@ -381,21 +385,23 @@ class cloudgen(WestCommand):
                 collect_type(field["type"], task["name"], task_structs, task_unions, task_enums)
                 self._task_prepare_field(field, task["name"], task_defs, task_enums)
 
-            output = task_args_output_base / f"{task['name'].lower()}_args.h"
-            include_guard = f"INFUSE_SDK_INCLUDE_GENERATED_TASK_RUNNER_TASKS_{task['name'].upper()}_ARGS_H_"
-            with output.open("w") as f:
-                f.write(
-                    task_args_template.render(
-                        task=task,
-                        structs=task_structs,
-                        unions=task_unions,
-                        enums=task_enums.values(),
-                        log_defines=self._task_log_defines(task["name"], task_defs),
-                        flag_defines=self._task_flag_defines(task["name"], task_defs, task_enums),
-                        include_guard=include_guard,
+            if not custom_task_ids or task_id in custom_task_ids:
+                output_base = task_args_output_base if custom_task_ids else task_args_always_output_base
+                output = output_base / f"{task['name'].lower()}_args.h"
+                include_guard = f"INFUSE_SDK_INCLUDE_GENERATED_TASK_RUNNER_TASKS_{task['name'].upper()}_ARGS_H_"
+                with output.open("w") as f:
+                    f.write(
+                        task_args_template.render(
+                            task=task,
+                            structs=task_structs,
+                            unions=task_unions,
+                            enums=task_enums.values(),
+                            log_defines=self._task_log_defines(task["name"], task_defs),
+                            flag_defines=self._task_flag_defines(task["name"], task_defs, task_enums),
+                            include_guard=include_guard,
+                        )
                     )
-                )
-            self.clang_format(output)
+                self.clang_format(output)
 
             task["id"] = task_id
             task["class_name"] = self._task_py_class(task["name"])

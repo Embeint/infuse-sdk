@@ -30,6 +30,7 @@ function(infuse_sources_ifndef feature_toggle)
 endfunction()
 
 zephyr_include_directories(include)
+zephyr_include_directories(generated/include_always)
 if(NOT CONFIG_INFUSE_DEFS_GENERATED_DOWNSTREAM)
   zephyr_include_directories(generated/include)
 endif()
