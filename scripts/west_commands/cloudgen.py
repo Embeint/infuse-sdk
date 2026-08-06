@@ -65,7 +65,6 @@ class cloudgen(WestCommand):
             trim_blocks=True,
             lstrip_blocks=True,
         )
-
         if self.extra_defs_base and not self.extra_defs_base.exists():
             sys.exit(f"Path '{self.extra_defs_base}' does not exist")
 
@@ -146,9 +145,71 @@ class cloudgen(WestCommand):
             return f"BIT({value['bit']})"
         return value["value"]
 
+    def _task_py_value_expr(self, value):
+        if "bit" in value:
+            return f"BIT({value['bit']})"
+        if value["value"] == 0 and value["name"].endswith("_MODE"):
+            return "0x00"
+        return value["value"]
+
+    def _snake_to_pascal(self, name: str):
+        return "".join(part.capitalize() for part in name.lower().split("_"))
+
+    def _task_py_class(self, task_name: str):
+        return f"Task{self._snake_to_pascal(task_name)}"
+
+    def _task_py_member_class(self, type_name: str, task_name: str):
+        task_base = task_name.lower()
+        for prefix in [
+            f"schedule_struct_task_{task_base}_",
+            f"schedule_union_task_{task_base}_",
+        ]:
+            if type_name.startswith(prefix):
+                type_name = type_name.removeprefix(prefix)
+                break
+        if type_name.endswith("_args"):
+            type_name = type_name.removesuffix("_args")
+        return f"{self._snake_to_pascal(type_name)}Args"
+
+    def _task_py_enum_class(self, enum_name: str, task_name: str, field_name: str | None = None):
+        if field_name == "flags":
+            return "Flags"
+        if field_name == "tdfs":
+            return "Tdfs"
+        local_name = self._task_enum_local_name(task_name, enum_name)
+        suffix = local_name.removeprefix(f"task_{task_name.lower()}_")
+        if suffix == "logs":
+            return "Logging"
+        if suffix == "flags":
+            return "Flags"
+        if suffix.endswith("_flags"):
+            suffix = suffix.removesuffix("_flags")
+        return self._snake_to_pascal(suffix)
+
+    def _task_py_type(self, field, task_name: str, task_defs):
+        py_type_field = copy.copy(field)
+        py_type_field.pop("num", None)
+        struct_name = self._task_type_name(field["type"], "struct")
+        if struct_name:
+            base = f"{self._task_py_class(task_name)}.{self._task_py_member_class(struct_name, task_name)}"
+        else:
+            union_name = self._task_type_name(field["type"], "union")
+            if union_name:
+                base = f"{self._task_py_class(task_name)}.{self._task_py_member_class(union_name, task_name)}"
+            else:
+                enum_name = self._task_type_name(field["type"], "enum")
+                if enum_name:
+                    py_type_field["type"] = task_defs["enums"][enum_name]["type"]
+                base = self._py_type(py_type_field, False)
+
+        if "num" in field:
+            return f"{field['num']} * {base}"
+        return base
+
     def _task_prepare_enum(self, enum_info):
         for value in enum_info["values"]:
             value["value_expr"] = self._task_value_expr(value)
+            value["py_value_expr"] = self._task_py_value_expr(value)
 
     def _task_log_enum_name(self, task_name: str, task_defs):
         task_base = task_name.lower()
@@ -217,11 +278,16 @@ class cloudgen(WestCommand):
         task_ids_template = self.env.get_template("task_ids.h.jinja")
         infuse_task_args_template = self.env.get_template("infuse_task_args.h.jinja")
         infuse_tasks_template = self.env.get_template("infuse_tasks.h.jinja")
+        task_definitions_template = self.env.get_template("task_definitions.py.jinja")
         task_args_output_base = self.generate_base / "include" / "infuse" / "task_runner" / "tasks"
         task_args_output_base.mkdir(parents=True, exist_ok=True)
         task_ids_output = task_args_output_base / "infuse_task_ids.h"
         infuse_task_args_output = task_args_output_base / "infuse_task_args.h"
         infuse_tasks_output = task_args_output_base / "infuse_tasks.h"
+        loader = importlib.util.find_spec("infuse_iot")
+        if loader is None or loader.submodule_search_locations is None:
+            sys.exit("Unable to locate infuse_iot package")
+        task_definitions_output = pathlib.Path(next(iter(loader.submodule_search_locations))) / "generated" / "tasks.py"
 
         with task_def_file.open("r") as f:
             task_defs = json.load(f)
@@ -298,7 +364,8 @@ class cloudgen(WestCommand):
                 self._task_prepare_enum(enum_info)
                 task_enums[enum_name] = enum_info
 
-        for task in task_defs["definitions"].values():
+        python_tasks = []
+        for task_id, task in task_defs["definitions"].items():
             task = copy.deepcopy(task)
             task_structs = {}
             task_unions = {}
@@ -323,6 +390,58 @@ class cloudgen(WestCommand):
                     )
                 )
             self.clang_format(output)
+
+            task["id"] = task_id
+            task["class_name"] = self._task_py_class(task["name"])
+            task["anonymous_fields"] = [field["name"] for field in task["fields"] if field["type"].startswith("union ")]
+            task["py_enums"] = []
+            seen_py_enum_classes = set()
+            task["logging_class_name"] = None
+            log_enum_name = self._task_log_enum_name(task["name"], task_defs)
+            if log_enum_name:
+                enum_info = copy.deepcopy(task_defs["enums"][log_enum_name])
+                enum_info["class_name"] = "Tdfs" if task["name"] == "TDF_LOGGER" else "Logging"
+                self._task_prepare_enum(enum_info)
+                task["py_enums"].append(enum_info)
+                seen_py_enum_classes.add(enum_info["class_name"])
+                task["logging_class_name"] = enum_info["class_name"]
+            for field in task["fields"]:
+                field["py_type"] = self._task_py_type(field, task["name"], task_defs)
+                enum_name = self._task_type_name(field["type"], "enum")
+                if enum_name:
+                    enum_info = copy.deepcopy(task_defs["enums"][enum_name])
+                    enum_info["class_name"] = self._task_py_enum_class(enum_name, task["name"], field["name"])
+                    if enum_info["class_name"] not in seen_py_enum_classes:
+                        self._task_prepare_enum(enum_info)
+                        task["py_enums"].append(enum_info)
+                        seen_py_enum_classes.add(enum_info["class_name"])
+            for idx, (alt_id, _alt) in enumerate(task.get("alternate_ids", {}).items(), 1):
+                task[f"alt{idx}_id"] = int(alt_id)
+
+            task["structs"] = task_structs
+            for name, info in task["structs"].items():
+                info["class_name"] = self._task_py_member_class(name, task["name"])
+                info["py_enums"] = []
+                for field in info["fields"]:
+                    field["py_type"] = self._task_py_type(field, task["name"], task_defs)
+                    enum_name = self._task_type_name(field["type"], "enum")
+                    if enum_name:
+                        enum_info = copy.deepcopy(task_defs["enums"][enum_name])
+                        enum_info["class_name"] = self._task_py_enum_class(enum_name, task["name"], field["name"])
+                        self._task_prepare_enum(enum_info)
+                        info["py_enums"].append(enum_info)
+
+            task["unions"] = task_unions
+            for name, info in task["unions"].items():
+                info["class_name"] = self._task_py_member_class(name, task["name"])
+                for field in info["fields"]:
+                    field["py_type"] = self._task_py_type(field, task["name"], task_defs)
+
+            python_tasks.append(task)
+
+        with task_definitions_output.open("w", encoding="utf-8") as f:
+            f.write(task_definitions_template.render(tasks=python_tasks))
+        self.ruff_format(task_definitions_output)
 
     def tdfgen(self):
         tdf_def_file = self.definition_dir / "tdf.json"
