@@ -50,7 +50,7 @@ static void lte_modem_lte_state(struct rpc_struct_lte_state_v2 *lte)
 	lte->cp_rai = state.cp_rai;
 
 	/* Current signal state */
-	(void)lte_modem_monitor_signal_quality(&rsrp, &rsrq, false);
+	(void)lte_modem_monitor_signal_quality(&rsrp, &rsrq, true);
 	lte->rsrp = rsrp;
 	lte->rsrq = rsrq;
 }
