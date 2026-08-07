@@ -9,6 +9,16 @@
             ]
         }
     },
+    "enums": {
+        "kv_enum_demo": {
+            "description": "Demo enum",
+            "type": "uint8_t",
+            "values": [
+                {"name": "A", "value": 0, "description": "Enum value A"},
+                {"name": "B", "value": 2, "description": "Enum value B"}
+            ]
+        }
+    },
     "definitions": {
         "32769": {
             "name": "EXT1",
@@ -31,7 +41,7 @@
             "name": "EXT3",
             "description": "Extension KV slot 3",
             "fields": [
-                {"name": "a", "type": "uint64_t"}
+                {"name": "a", "type": "enum kv_enum_demo"}
             ]
         }
     }

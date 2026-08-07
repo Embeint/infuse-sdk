@@ -147,6 +147,10 @@ ZTEST(definitions_extend, test_ext_kv_store)
 	zassert_true(kv_store_key_exists(KV_KEY_EXT2 + 0));
 	zassert_true(kv_store_key_exists(KV_KEY_EXT2 + 1));
 	zassert_false(kv_store_key_exists(KV_KEY_EXT3));
+
+	zassert_equal(0, KV_ENUM_DEMO_A);
+	zassert_equal(2, KV_ENUM_DEMO_B);
+	zassert_equal(1, sizeof(kv_ext3));
 }
 
 ZTEST(definitions_extend, test_ext_task)
