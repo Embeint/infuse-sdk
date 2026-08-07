@@ -135,6 +135,7 @@ ZTEST(task_runner_runner_kv, test_basic_behaviour)
 	uint32_t uptime = 0;
 	uint32_t iter = k_uptime_seconds() + 1;
 	int rc;
+	bool schedules_overwritten;
 
 	example_task_expected_block_rc = 1;
 	example_task_block_timeout = K_FOREVER;
@@ -142,8 +143,14 @@ ZTEST(task_runner_runner_kv, test_basic_behaviour)
 	expected_event = TASK_SCHEDULE_STARTED;
 
 	/* Initialise schedules */
-	task_runner_init(default_schedules, states, ARRAY_SIZE(default_schedules), app_tasks,
-			 app_tasks_data, ARRAY_SIZE(app_tasks));
+	schedules_overwritten =
+		task_runner_init(default_schedules, states, ARRAY_SIZE(default_schedules),
+				 app_tasks, app_tasks_data, ARRAY_SIZE(app_tasks));
+	zassert_true(schedules_overwritten);
+	schedules_overwritten =
+		task_runner_init(default_schedules, states, ARRAY_SIZE(default_schedules),
+				 app_tasks, app_tasks_data, ARRAY_SIZE(app_tasks));
+	zassert_false(schedules_overwritten);
 	states[1].event_cb = basic_schedule_callback;
 
 	/* Task should have started and still be running (60 second block period) */
