@@ -27,6 +27,18 @@ extern "C" {
  * @{
  */
 
+{% for name, info in enums.items() %}
+/** {{ info['description'] }} */
+enum {{ name }} {
+{% for value in info['values'] %}
+{% if 'description' in value %}
+	/** {{ value['description'] }} */
+{% endif %}
+	{{ name | upper }}_{{ value['name'] }} = {{ value['value'] }},
+{% endfor %}
+};
+
+{% endfor %}
 {% for name, info in structs.items() %}
 /** {{ info['description'] }} */
 struct {{ name }} {
