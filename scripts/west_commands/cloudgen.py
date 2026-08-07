@@ -128,6 +128,11 @@ class cloudgen(WestCommand):
             else:
                 field["array"] = f"[{field['num']}]"
 
+    def _enum_type_replace(self, field, enums):
+        if field["type"].startswith("enum "):
+            n = field["type"].removeprefix("enum ")
+            field["type"] = enums[n]["type"]
+
     def _task_type_name(self, ctype: str, kind: str):
         prefix = f"{kind} "
         return ctype.removeprefix(prefix) if ctype.startswith(prefix) else None
@@ -587,12 +592,14 @@ class cloudgen(WestCommand):
 
         with kv_def_file.open("r") as f:
             kv_defs = json.load(f)
+        kv_defs.setdefault("enums", {})
         if self.extra_defs_base:
             kv_def_file_ext = self.extra_defs_base / "kv_store.json"
             if kv_def_file_ext.exists():
                 kv_extensions_exist = True
                 with kv_def_file_ext.open("r") as f:
                     kv_defs_ext = json.load(f)
+                    kv_defs_ext.setdefault("enums", {})
                     # Ensure IDs sit in extension range
                     for kv_id, kv_def in kv_defs_ext["definitions"].items():
                         assert int(kv_id) > 32768
@@ -601,8 +608,13 @@ class cloudgen(WestCommand):
                     for struct_name, struct_def in kv_defs_ext["structs"].items():
                         assert struct_name not in kv_defs["structs"]
                         struct_def["extension"] = True
+                    # Ensure no enum name collisions
+                    for enum_name, enum_def in kv_defs_ext["enums"].items():
+                        assert enum_name not in kv_defs["enums"]
+                        enum_def["extension"] = True
                 # Merge extensions into base definitions
                 kv_defs["structs"].update(kv_defs_ext["structs"])
+                kv_defs["enums"].update(kv_defs_ext["enums"])
                 kv_defs["definitions"].update(kv_defs_ext["definitions"])
 
         kv_defs["definitions"] = {int(k): v for k, v in kv_defs["definitions"].items()}
@@ -655,7 +667,20 @@ class cloudgen(WestCommand):
                             field["flexible_type"] = s
                             d["flexible"] = True
 
-            f.write(kv_defs_template.render(structs=kv_defs["structs"], definitions=kv_defs["definitions"]))
+            for s in kv_defs["structs"].values():
+                for field in s["fields"]:
+                    self._enum_type_replace(field, kv_defs["enums"])
+            for d in kv_defs["definitions"].values():
+                for field in d["fields"]:
+                    self._enum_type_replace(field, kv_defs["enums"])
+
+            f.write(
+                kv_defs_template.render(
+                    structs=kv_defs["structs"],
+                    enums=kv_defs["enums"],
+                    definitions=kv_defs["definitions"],
+                )
+            )
 
         self.clang_format(kv_defs_output)
 
@@ -672,12 +697,15 @@ class cloudgen(WestCommand):
                     f["py_type"] = self._py_type(f, True)
 
         def generate(output: pathlib.Path, extensions: bool):
+            any_enums = any(e.get("extension", False) == extensions for e in kv_defs["enums"].values())
             with output.open("w", encoding="utf-8") as f:
                 f.write(
                     kv_py_template.render(
                         structs=kv_defs["structs"],
+                        enums=kv_defs["enums"],
                         definitions=kv_defs["definitions"],
                         extensions=extensions,
+                        has_enums=any_enums,
                     )
                 )
 
@@ -707,12 +735,14 @@ class cloudgen(WestCommand):
 
         with rpc_def_file.open("r") as f:
             rpc_defs = json.load(f)
+        rpc_defs.setdefault("enums", {})
         if self.extra_defs_base:
             rpc_def_file_ext = self.extra_defs_base / "rpc.json"
             if rpc_def_file_ext.exists():
                 rpc_extensions_exist = True
                 with rpc_def_file_ext.open("r") as f:
                     rpc_defs_ext = json.load(f)
+                    rpc_defs_ext.setdefault("enums", {})
                     # Ensure IDs sit in extension range
                     for rpc_id, rpc_def in rpc_defs_ext["commands"].items():
                         assert int(rpc_id) > 32768
@@ -721,8 +751,13 @@ class cloudgen(WestCommand):
                     for struct_name, struct_def in rpc_defs_ext["structs"].items():
                         assert struct_name not in rpc_defs["structs"]
                         struct_def["extension"] = True
+                    # Ensure no enum name collisions
+                    for enum_name, enum_def in rpc_defs_ext["enums"].items():
+                        assert enum_name not in rpc_defs["enums"]
+                        enum_def["extension"] = True
                 # Merge extensions into base definitions
                 rpc_defs["structs"].update(rpc_defs_ext["structs"])
+                rpc_defs["enums"].update(rpc_defs_ext["enums"])
                 rpc_defs["commands"].update(rpc_defs_ext["commands"])
 
         for d in rpc_defs["structs"].values():
@@ -734,20 +769,15 @@ class cloudgen(WestCommand):
             for field in d["response_params"]:
                 self._array_postfix(d, field)
 
-        def enum_type_replace(field):
-            if field["type"].startswith("enum"):
-                n = field["type"].removeprefix("enum ")
-                field["type"] = rpc_defs["enums"][n]["type"]
-
         # Swap enum types back to underlying type
         for s in rpc_defs["structs"].values():
             for field in s["fields"]:
-                enum_type_replace(field)
+                self._enum_type_replace(field, rpc_defs["enums"])
         for c in rpc_defs["commands"].values():
             for field in c["request_params"]:
-                enum_type_replace(field)
+                self._enum_type_replace(field, rpc_defs["enums"])
             for field in c["response_params"]:
-                enum_type_replace(field)
+                self._enum_type_replace(field, rpc_defs["enums"])
 
         with rpc_kconfig_output.open("w") as f:
             f.write(rpc_kconfig_template.render(commands=rpc_defs["commands"]))
