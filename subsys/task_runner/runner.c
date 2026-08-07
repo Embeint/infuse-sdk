@@ -93,11 +93,13 @@ IF_DISABLED(CONFIG_ZTEST, (static))
 int task_runner_schedules_load(
 	uint16_t schedules_id, const struct task_schedule *default_schedules,
 	uint8_t num_default_schedules,
-	struct task_schedule out_schedules[CONFIG_KV_STORE_KEY_TASK_SCHEDULES_RANGE])
+	struct task_schedule out_schedules[CONFIG_KV_STORE_KEY_TASK_SCHEDULES_RANGE],
+	bool *schedules_overwritten)
 {
 	struct kv_task_schedules_default_id default_id;
 	uint32_t expected_default_id;
 	int rc, num_eval = 0;
+	bool overwrite_kv;
 
 	if (num_default_schedules > CONFIG_KV_STORE_KEY_TASK_SCHEDULES_RANGE) {
 		LOG_WRN("More schedules provided than KV slots enabled (%d > %d)",
@@ -112,7 +114,11 @@ int task_runner_schedules_load(
 	atomic_set_bit(&runner_flags, FLAGS_TASKS_RELOADING);
 
 	rc = kv_store_read(KV_KEY_TASK_SCHEDULES_DEFAULT_ID, &default_id, sizeof(default_id));
-	if ((rc != sizeof(default_id)) || (default_id.set_id != expected_default_id)) {
+	overwrite_kv = (rc != sizeof(default_id)) || (default_id.set_id != expected_default_id);
+	if (schedules_overwritten != NULL) {
+		*schedules_overwritten = overwrite_kv;
+	}
+	if (overwrite_kv) {
 		/* Override KV store with provided schedules */
 		for (int i = 0; i < num_default_schedules; i++) {
 			/* Only write schedules that are valid */
@@ -245,11 +251,13 @@ static void init_schedules(uint8_t num_schedules, bool event_cb_reset)
 	}
 }
 
-void task_runner_init(const struct task_schedule *schedules,
+bool task_runner_init(const struct task_schedule *schedules,
 		      struct task_schedule_state *schedule_states, uint8_t num_schedules,
 		      const struct task_config *tasks, struct task_data *task_states,
 		      uint8_t num_tasks)
 {
+	bool schedules_overwritten = false;
+
 	sch_states = schedule_states;
 	tsk = tasks;
 	tsk_states = task_states;
@@ -262,7 +270,7 @@ void task_runner_init(const struct task_schedule *schedules,
 
 	/* Update default schedules from KV store */
 	sch_num = task_runner_schedules_load(CONFIG_TASK_RUNNER_DEFAULT_SCHEDULES_ID, schedules,
-					     num_schedules, sch);
+					     num_schedules, sch, &schedules_overwritten);
 	/* Register for notifications on KV store changes */
 	if (schedule_cb.value_changed == NULL) {
 		schedule_cb.value_changed = kv_value_changed;
@@ -276,6 +284,8 @@ void task_runner_init(const struct task_schedule *schedules,
 	/* Initialise the tasks and schedules */
 	init_tasks();
 	init_schedules(num_schedules, true);
+
+	return schedules_overwritten;
 }
 
 const struct task_schedule *task_schedule_from_data(struct task_data *data)
@@ -414,7 +424,7 @@ static bool iterate_handle_task_reload(void)
 		atomic_clear_bit(&runner_flags, FLAGS_TASKS_TERMINATING);
 
 		sch_num = task_runner_schedules_load(CONFIG_TASK_RUNNER_DEFAULT_SCHEDULES_ID,
-						     default_sch, default_num, sch);
+						     default_sch, default_num, sch, NULL);
 		init_schedules(default_num, false);
 	}
 	return false;
