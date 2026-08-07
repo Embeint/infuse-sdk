@@ -10,6 +10,7 @@
 #ifndef INFUSE_SDK_INCLUDE_INFUSE_TASK_RUNNER_RUNNER_H_
 #define INFUSE_SDK_INCLUDE_INFUSE_TASK_RUNNER_RUNNER_H_
 
+#include <stdbool.h>
 #include <stdint.h>
 
 #include <zephyr/sys/atomic.h>
@@ -37,8 +38,11 @@ extern "C" {
  * @param tasks Constant task configuration
  * @param task_states State for each task in @a task_config
  * @param num_tasks Number of tasks
+ *
+ * @retval true Existing schedule definitions were overwritten
+ * @retval false Existing schedule definitions were not overwritten
  */
-void task_runner_init(const struct task_schedule *schedules,
+bool task_runner_init(const struct task_schedule *schedules,
 		      struct task_schedule_state *schedule_states, uint8_t num_schedules,
 		      const struct task_config *tasks, struct task_data *task_states,
 		      uint8_t num_tasks);
