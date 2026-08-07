@@ -21,7 +21,8 @@
 int task_runner_schedules_load(
 	uint16_t schedules_id, const struct task_schedule *default_schedules,
 	uint8_t num_default_schedules,
-	struct task_schedule out_schedules[CONFIG_KV_STORE_KEY_TASK_SCHEDULES_RANGE]);
+	struct task_schedule out_schedules[CONFIG_KV_STORE_KEY_TASK_SCHEDULES_RANGE],
+	bool *schedules_overwritten);
 
 struct task_schedule out_schedules[CONFIG_KV_STORE_KEY_TASK_SCHEDULES_RANGE] = {0};
 
@@ -56,13 +57,16 @@ ZTEST(task_runner_schedules_kv, test_schedules_kv_invalid_not_written)
 		},
 	};
 	int num_eval;
+	bool schedules_overwritten;
 
 	zassert_false(kv_store_key_exists(KV_KEY_TASK_SCHEDULES_DEFAULT_ID));
 	zassert_false(kv_store_key_exists(KV_KEY_TASK_SCHEDULES + 0));
 	zassert_false(kv_store_key_exists(KV_KEY_TASK_SCHEDULES + 1));
 
-	num_eval = task_runner_schedules_load(10, schedules, ARRAY_SIZE(schedules), out_schedules);
+	num_eval = task_runner_schedules_load(10, schedules, ARRAY_SIZE(schedules), out_schedules,
+					      &schedules_overwritten);
 	zassert_equal(2, num_eval);
+	zassert_true(schedules_overwritten);
 
 	zassert_true(kv_store_key_exists(KV_KEY_TASK_SCHEDULES_DEFAULT_ID));
 	zassert_false(kv_store_key_exists(KV_KEY_TASK_SCHEDULES + 0));
@@ -77,26 +81,33 @@ ZTEST(task_runner_schedules_kv, test_schedules_kv_basic)
 		.periodicity.fixed.period_s = 10,
 	};
 	int num_eval;
+	bool schedules_overwritten;
 
 	zassert_false(kv_store_key_exists(KV_KEY_TASK_SCHEDULES_DEFAULT_ID));
 	zassert_false(kv_store_key_exists(KV_KEY_TASK_SCHEDULES + 0));
 
 	/* Schedule written to KV store after load */
-	num_eval = task_runner_schedules_load(10, &schedule, 1, out_schedules);
+	num_eval =
+		task_runner_schedules_load(10, &schedule, 1, out_schedules, &schedules_overwritten);
 	zassert_equal(1, num_eval);
+	zassert_true(schedules_overwritten);
 	zassert_true(kv_store_key_exists(KV_KEY_TASK_SCHEDULES_DEFAULT_ID));
 	zassert_true(kv_store_key_exists(KV_KEY_TASK_SCHEDULES + 0));
 
 	/* Updated values without changing the schedule ID are reverted */
 	schedule.periodicity.fixed.period_s = 15;
-	num_eval = task_runner_schedules_load(10, &schedule, 1, out_schedules);
+	num_eval =
+		task_runner_schedules_load(10, &schedule, 1, out_schedules, &schedules_overwritten);
 	zassert_equal(1, num_eval);
+	zassert_false(schedules_overwritten);
 	zassert_equal(10, out_schedules[0].periodicity.fixed.period_s);
 
 	/* Updated values with a changed schedule ID are preserved */
 	schedule.periodicity.fixed.period_s = 15;
-	num_eval = task_runner_schedules_load(11, &schedule, 1, out_schedules);
+	num_eval =
+		task_runner_schedules_load(11, &schedule, 1, out_schedules, &schedules_overwritten);
 	zassert_equal(1, num_eval);
+	zassert_true(schedules_overwritten);
 	zassert_equal(15, out_schedules[0].periodicity.fixed.period_s);
 
 	/* Writing a value directly is preserved */
@@ -105,8 +116,10 @@ ZTEST(task_runner_schedules_kv, test_schedules_kv_basic)
 		sizeof(struct task_schedule),
 		kv_store_write(KV_KEY_TASK_SCHEDULES + 0, &schedule, sizeof(struct task_schedule)));
 
-	num_eval = task_runner_schedules_load(11, &schedule, 1, out_schedules);
+	num_eval =
+		task_runner_schedules_load(11, &schedule, 1, out_schedules, &schedules_overwritten);
 	zassert_equal(1, num_eval);
+	zassert_false(schedules_overwritten);
 	zassert_equal(20, out_schedules[0].periodicity.fixed.period_s);
 	zassert_mem_equal(&schedule, &out_schedules[0], sizeof(struct task_schedule));
 
@@ -114,8 +127,10 @@ ZTEST(task_runner_schedules_kv, test_schedules_kv_basic)
 	schedule.validity |= TASK_LOCKED;
 	schedule.periodicity.fixed.period_s = 9;
 
-	num_eval = task_runner_schedules_load(11, &schedule, 1, out_schedules);
+	num_eval =
+		task_runner_schedules_load(11, &schedule, 1, out_schedules, &schedules_overwritten);
 	zassert_equal(1, num_eval);
+	zassert_false(schedules_overwritten);
 	zassert_equal(TASK_LOCKED | TASK_VALID_ALWAYS, schedule.validity);
 	zassert_equal(9, out_schedules[0].periodicity.fixed.period_s);
 }
@@ -125,6 +140,7 @@ ZTEST(task_runner_schedules_kv, test_schedules_kv_load_many)
 	struct task_schedule schedules[5] = {0};
 	struct task_schedule schedule_null = {0};
 	int num_eval;
+	bool schedules_overwritten;
 
 	for (int i = 0; i < ARRAY_SIZE(schedules); i++) {
 		schedules[i].validity = TASK_VALID_ACTIVE;
@@ -133,8 +149,10 @@ ZTEST(task_runner_schedules_kv, test_schedules_kv_load_many)
 	}
 
 	/* Write 5 schedules to the KV store */
-	num_eval = task_runner_schedules_load(10, schedules, ARRAY_SIZE(schedules), out_schedules);
+	num_eval = task_runner_schedules_load(10, schedules, ARRAY_SIZE(schedules), out_schedules,
+					      &schedules_overwritten);
 	zassert_equal(5, num_eval);
+	zassert_true(schedules_overwritten);
 
 	for (int i = 0; i < ARRAY_SIZE(schedules); i++) {
 		zassert_mem_equal(&schedules[i], &out_schedules[i], sizeof(struct task_schedule));
@@ -144,8 +162,10 @@ ZTEST(task_runner_schedules_kv, test_schedules_kv_load_many)
 	}
 
 	/* New schedule ID with fewer schedules should clear later values */
-	num_eval = task_runner_schedules_load(11, schedules, 3, out_schedules);
+	num_eval =
+		task_runner_schedules_load(11, schedules, 3, out_schedules, &schedules_overwritten);
 	zassert_equal(3, num_eval);
+	zassert_true(schedules_overwritten);
 	for (int i = 0; i < 3; i++) {
 		zassert_mem_equal(&schedules[i], &out_schedules[i], sizeof(struct task_schedule));
 		zassert_true(kv_store_key_exists(KV_KEY_TASK_SCHEDULES + i));
@@ -155,8 +175,10 @@ ZTEST(task_runner_schedules_kv, test_schedules_kv_load_many)
 	}
 
 	/* Providing more values now doesn't change anything without an ID change */
-	num_eval = task_runner_schedules_load(11, schedules, ARRAY_SIZE(schedules), out_schedules);
+	num_eval = task_runner_schedules_load(11, schedules, ARRAY_SIZE(schedules), out_schedules,
+					      &schedules_overwritten);
 	zassert_equal(3, num_eval);
+	zassert_false(schedules_overwritten);
 	for (int i = 0; i < 3; i++) {
 		zassert_mem_equal(&schedules[i], &out_schedules[i], sizeof(struct task_schedule));
 	}
@@ -169,6 +191,7 @@ ZTEST(task_runner_schedules_kv, test_schedules_kv_load_too_many)
 {
 	struct task_schedule schedules[2 * CONFIG_KV_STORE_KEY_TASK_SCHEDULES_RANGE] = {0};
 	int num_eval;
+	bool schedules_overwritten;
 
 	for (int i = 0; i < ARRAY_SIZE(schedules); i++) {
 		schedules[i].validity = TASK_VALID_ACTIVE;
@@ -177,8 +200,10 @@ ZTEST(task_runner_schedules_kv, test_schedules_kv_load_too_many)
 	}
 
 	/* Load with more default schedules than KV slots */
-	num_eval = task_runner_schedules_load(5, schedules, ARRAY_SIZE(schedules), out_schedules);
+	num_eval = task_runner_schedules_load(5, schedules, ARRAY_SIZE(schedules), out_schedules,
+					      &schedules_overwritten);
 	zassert_equal(CONFIG_KV_STORE_KEY_TASK_SCHEDULES_RANGE, num_eval);
+	zassert_true(schedules_overwritten);
 
 	/* Values should not be written past the end of enabled keys */
 	for (int i = 0; i < CONFIG_KV_STORE_KEY_TASK_SCHEDULES_RANGE; i++) {
@@ -194,6 +219,7 @@ ZTEST(task_runner_schedules_kv, test_schedules_kv_load_corrupt)
 	struct task_schedule schedules[5] = {0};
 	struct task_schedule schedule_null = {0};
 	int num_eval;
+	bool schedules_overwritten;
 
 	/* Write 5 schedules to the KV store */
 	for (int i = 0; i < 5; i++) {
@@ -201,15 +227,19 @@ ZTEST(task_runner_schedules_kv, test_schedules_kv_load_corrupt)
 		schedules[i].periodicity_type = TASK_PERIODICITY_LOCKOUT;
 		schedules[i].periodicity.lockout.lockout_s = 50 - i;
 	}
-	num_eval = task_runner_schedules_load(20, schedules, ARRAY_SIZE(schedules), out_schedules);
+	num_eval = task_runner_schedules_load(20, schedules, ARRAY_SIZE(schedules), out_schedules,
+					      &schedules_overwritten);
 	zassert_equal(ARRAY_SIZE(schedules), num_eval);
+	zassert_true(schedules_overwritten);
 
 	/* Intentionally corrupt stored schedule 3 */
 	zassert_equal(10, kv_store_write(KV_KEY_TASK_SCHEDULES + 2, &schedules[2], 10));
 
 	/* Load schedules again */
-	num_eval = task_runner_schedules_load(20, schedules, ARRAY_SIZE(schedules), out_schedules);
+	num_eval = task_runner_schedules_load(20, schedules, ARRAY_SIZE(schedules), out_schedules,
+					      &schedules_overwritten);
 	zassert_equal(ARRAY_SIZE(schedules), num_eval);
+	zassert_false(schedules_overwritten);
 	for (int i = 0; i < ARRAY_SIZE(schedules); i++) {
 		if (i == 2) {
 			/* Schedule 3 should be zeroed out */
@@ -223,8 +253,10 @@ ZTEST(task_runner_schedules_kv, test_schedules_kv_load_corrupt)
 
 	/* Intentionally corrupt last schedule */
 	zassert_equal(10, kv_store_write(KV_KEY_TASK_SCHEDULES + 4, &schedules[4], 10));
-	num_eval = task_runner_schedules_load(20, schedules, ARRAY_SIZE(schedules), out_schedules);
+	num_eval = task_runner_schedules_load(20, schedules, ARRAY_SIZE(schedules), out_schedules,
+					      &schedules_overwritten);
 	zassert_equal(ARRAY_SIZE(schedules) - 1, num_eval);
+	zassert_false(schedules_overwritten);
 }
 
 void test_init(void *fixture)
