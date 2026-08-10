@@ -58,9 +58,6 @@ bool task_schedule_validate(const struct task_schedule *schedule)
 {
 	uint8_t validity_masked = schedule->validity & _TASK_VALID_MASK;
 
-	if (validity_masked == 0) {
-		return false;
-	}
 	if (validity_masked >= _TASK_VALID_END) {
 		return false;
 	}
@@ -121,6 +118,9 @@ bool task_schedule_should_start(const struct task_schedule *schedule,
 	}
 
 	/* Valdity based on application state */
+	if (validity_masked == TASK_VALID_NEVER) {
+		return false;
+	}
 	if ((validity_masked == TASK_VALID_ACTIVE) && !is_active) {
 		return false;
 	}
@@ -195,6 +195,9 @@ bool task_schedule_should_terminate(const struct task_schedule *schedule,
 	}
 
 	/* Valdity based on application state */
+	if (validity_masked == TASK_VALID_NEVER) {
+		return true;
+	}
 	if ((validity_masked == TASK_VALID_ACTIVE) && !is_active) {
 		return true;
 	}

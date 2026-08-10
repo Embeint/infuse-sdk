@@ -49,7 +49,9 @@ ZTEST(task_runner_schedules_kv, test_schedules_kv_states_define)
 ZTEST(task_runner_schedules_kv, test_schedules_kv_invalid_not_written)
 {
 	struct task_schedule schedules[2] = {
-		{0},
+		{
+			.validity = _TASK_VALID_END,
+		},
 		{
 			.validity = TASK_VALID_ALWAYS,
 			.periodicity_type = TASK_PERIODICITY_FIXED,
