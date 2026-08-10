@@ -31,6 +31,8 @@ extern "C" {
 enum task_runner_valid_type {
 	/** Do not update definition from KV store */
 	TASK_LOCKED = 0x80,
+	/** Task is never valid */
+	TASK_VALID_NEVER = 0,
 	/** Task is always valid */
 	TASK_VALID_ALWAYS = 1,
 	/** Task is only valid when @ref INFUSE_STATE_APPLICATION_ACTIVE is set */
