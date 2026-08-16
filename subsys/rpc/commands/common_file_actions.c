@@ -82,7 +82,8 @@ static void cpatch_watchdog(uint32_t progress, uint32_t total)
 }
 
 static int flash_area_check_and_erase(struct rpc_common_file_actions_ctx *ctx, uint8_t partition_id,
-				      uint32_t *length, uint32_t crc, bool mcuboot_trailer)
+				      off_t partition_offset, uint32_t *length, uint32_t crc,
+				      bool mcuboot_trailer)
 {
 	uint32_t len = *length;
 	uint32_t current_crc;
@@ -97,26 +98,38 @@ static int flash_area_check_and_erase(struct rpc_common_file_actions_ctx *ctx, u
 
 	/* Check if file contents already match */
 	rc = pm_flash_area_open(partition_id, &ctx->fa);
-	if (rc == 0) {
-		if ((crc != UINT32_MAX) && (len != UINT32_MAX)) {
-			rc = flash_area_crc32(ctx->fa, 0, len, &current_crc, mem, mem_size);
-			if (current_crc == crc) {
-				ctx->crc = crc;
-				return FILE_ALREADY_PRESENT;
-			}
+	if (rc != 0) {
+		return rc;
+	}
+	if ((partition_offset < 0) || (partition_offset >= ctx->fa->fa_size)) {
+		/* Invalid offset */
+		rc = -EINVAL;
+		goto close_area;
+	}
+	if ((crc != UINT32_MAX) && (len != UINT32_MAX)) {
+		rc = flash_area_crc32(ctx->fa, partition_offset, len, &current_crc, mem, mem_size);
+		if (current_crc == crc) {
+			ctx->crc = crc;
+			return FILE_ALREADY_PRESENT;
 		}
-		/* Limit erase size to flash area size */
-		if (len == UINT32_MAX) {
-			len = ctx->fa->fa_size;
-			*length = len;
-		}
-		/* Erase space for image */
-		rc = infuse_dfu_image_erase(ctx->fa, len, cpatch_watchdog, mcuboot_trailer);
-		if (rc != 0) {
-			/* Close flash area */
-			(void)pm_flash_area_close(ctx->fa);
-			ctx->fa = NULL;
-		}
+	}
+	if (len == UINT32_MAX) {
+		len = ctx->fa->fa_size - partition_offset;
+		*length = len;
+	} else {
+	}
+	if (len > (ctx->fa->fa_size - partition_offset)) {
+		rc = -EINVAL;
+		goto close_area;
+	}
+	/* Erase space for image */
+	rc = infuse_dfu_image_erase(ctx->fa, partition_offset + len, cpatch_watchdog,
+				    mcuboot_trailer);
+close_area:
+	if (rc != 0) {
+		/* Close flash area */
+		(void)pm_flash_area_close(ctx->fa);
+		ctx->fa = NULL;
 	}
 	return rc;
 }
@@ -124,14 +137,14 @@ static int flash_area_check_and_erase(struct rpc_common_file_actions_ctx *ctx, u
 static int common_file_actions_stream_writer_init(struct rpc_common_file_actions_ctx *ctx,
 						  uint8_t partition_id,
 						  const struct device *partition_dev,
-						  off_t partition_offset, size_t file_len,
-						  uint32_t crc, bool trailer)
+						  off_t write_offset, off_t partition_offset,
+						  size_t file_len, uint32_t crc, bool trailer)
 {
 	const struct flash_parameters *params = flash_get_parameters(partition_dev);
 	int rc;
 
 	/* Setup flash for file to write */
-	rc = flash_area_check_and_erase(ctx, partition_id, &file_len, crc, trailer);
+	rc = flash_area_check_and_erase(ctx, partition_id, write_offset, &file_len, crc, trailer);
 	if (rc == FILE_ALREADY_PRESENT) {
 		return rc;
 	} else if (rc < 0) {
@@ -141,14 +154,14 @@ static int common_file_actions_stream_writer_init(struct rpc_common_file_actions
 	/* Round up write size to write alignment */
 	file_len = ROUND_UP(file_len, params->write_block_size);
 	return stream_flash_init(&ctx->stream_ctx, partition_dev, common_file_actions_write_buffer,
-				 sizeof(common_file_actions_write_buffer), partition_offset,
-				 file_len, NULL);
+				 sizeof(common_file_actions_write_buffer),
+				 partition_offset + write_offset, file_len, NULL);
 }
 
-#define STREAM_WRITER_INIT(ctx, partition, offset, length, crc, trailer)                           \
-	common_file_actions_stream_writer_init(                                                    \
-		ctx, PARTITION_ID(partition), PARTITION_DEVICE(partition),                         \
-		PARTITION_OFFSET(partition) + offset, length, crc, trailer)
+#define STREAM_WRITER_INIT(ctx, partition, write_offset, length, crc, trailer)                     \
+	common_file_actions_stream_writer_init(ctx, PARTITION_ID(partition),                       \
+					       PARTITION_DEVICE(partition), write_offset,          \
+					       PARTITION_OFFSET(partition), length, crc, trailer)
 
 #endif /* APP_IMG || APP_CPATCH || FILE_COPY_RAW */
 
@@ -203,7 +216,7 @@ int rpc_common_file_actions_start(struct rpc_common_file_actions_ctx *ctx,
 				  enum infuse_littlefs_folder fs_folder, uint32_t fs_file,
 				  uint32_t fs_identifier)
 {
-	__maybe_unused off_t offset;
+	__maybe_unused off_t write_offset;
 	int rc = 0;
 
 	ctx->fa = NULL;
@@ -222,8 +235,8 @@ int rpc_common_file_actions_start(struct rpc_common_file_actions_ctx *ctx,
 		break;
 #ifdef SUPPORT_APP_IMG
 	case RPC_ENUM_FILE_ACTION_APP_IMG:
-		offset = boot_get_image_start_offset(PARTITION_ID(slot1_partition));
-		rc = STREAM_WRITER_INIT(ctx, slot1_partition, offset, length, crc, true);
+		write_offset = boot_get_image_start_offset(PARTITION_ID(slot1_partition));
+		rc = STREAM_WRITER_INIT(ctx, slot1_partition, write_offset, length, crc, true);
 		break;
 #endif /* SUPPORT_APP_IMG */
 #ifdef SUPPORT_APP_CPATCH
