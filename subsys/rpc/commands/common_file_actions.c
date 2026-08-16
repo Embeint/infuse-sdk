@@ -108,6 +108,9 @@ static int flash_area_check_and_erase(struct rpc_common_file_actions_ctx *ctx, u
 	}
 	if ((crc != UINT32_MAX) && (len != UINT32_MAX)) {
 		rc = flash_area_crc32(ctx->fa, partition_offset, len, &current_crc, mem, mem_size);
+		if (rc < 0) {
+			goto close_area;
+		}
 		if (current_crc == crc) {
 			ctx->crc = crc;
 			return FILE_ALREADY_PRESENT;
