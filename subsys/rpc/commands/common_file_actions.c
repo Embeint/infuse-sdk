@@ -115,6 +115,7 @@ static int flash_area_check_and_erase(struct rpc_common_file_actions_ctx *ctx, u
 		if (rc != 0) {
 			/* Close flash area */
 			(void)pm_flash_area_close(ctx->fa);
+			ctx->fa = NULL;
 		}
 	}
 	return rc;
@@ -613,13 +614,19 @@ int rpc_common_file_actions_error_cleanup(struct rpc_common_file_actions_ctx *ct
 #endif /* SUPPORT_APP_CPATCH */
 	case RPC_ENUM_FILE_ACTION_APP_IMG:
 		/* Close the flash area */
-		pm_flash_area_close(ctx->fa);
+		if (ctx->fa != NULL) {
+			pm_flash_area_close(ctx->fa);
+			ctx->fa = NULL;
+		}
 		break;
 #endif /* SUPPORT_APP_IMG */
 #ifdef SUPPORT_FILE_COPY_RAW
 	case RPC_ENUM_FILE_ACTION_FILE_FOR_COPY:
 		/* Close the flash area */
-		pm_flash_area_close(ctx->fa);
+		if (ctx->fa != NULL) {
+			pm_flash_area_close(ctx->fa);
+			ctx->fa = NULL;
+		}
 		break;
 #endif /* SUPPORT_FILE_COPY_RAW */
 #ifdef SUPPORT_FILE_COPY_FS
