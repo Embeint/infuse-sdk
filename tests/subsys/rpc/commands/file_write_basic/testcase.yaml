@@ -30,6 +30,18 @@ tests:
     extra_configs:
       - CONFIG_INFUSE_RPC_COMMON_FILE_ACTIONS_WRITE_BUFFER=1024
       - CONFIG_INFUSE_RPC_SERVER_WORKING_MEMORY=1024
+  rpc.commands.file_write_basic.native.mcuboot_offset:
+    platform_allow:
+      - native_sim
+    integration_platforms:
+      - native_sim
+    extra_args:
+      - DTC_OVERLAY_FILE="./boards/native_sim.overlay;./mcuboot_offset.overlay"
+    extra_configs:
+      - CONFIG_BOOTLOADER_MCUBOOT=y
+      - CONFIG_IMG_MANAGER=y
+      - CONFIG_MCUBOOT_IMG_MANAGER=y
+      - CONFIG_MCUBOOT_BOOTLOADER_MODE_SWAP_USING_OFFSET=y
   # FILE_WRITE should behave the same way as FILE_WRITE_BASIC
   # for the non-filesystem actions
   rpc.commands.file_write_basic.fw:

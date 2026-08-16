@@ -12,6 +12,7 @@
 #include <zephyr/sys/crc.h>
 #include <zephyr/storage/flash_map.h>
 #include <zephyr/pm/device_runtime.h>
+#include <zephyr/dfu/mcuboot.h>
 
 #include <infuse/bluetooth/controller_manager.h>
 #include <infuse/dfu/helpers.h>
@@ -28,6 +29,7 @@
 
 static uint8_t fixed_payload[8192];
 static uint32_t fixed_payload_crc;
+static uint8_t cpatch_payload[8192];
 
 struct test_out {
 	int16_t cmd_rc;
@@ -92,11 +94,11 @@ __maybe_unused static void zassert_device_released(const struct device *dev)
 	zassert_equal(0, usage);
 }
 
-static struct test_out test_file_write_basic(uint8_t action, uint32_t total_send,
-					     uint8_t skip_after, uint8_t stop_after,
-					     uint8_t bad_id_after, uint8_t ack_period,
-					     bool too_much_data, bool expect_skip,
-					     const void *fixed_source)
+static struct test_out test_file_write_basic_declared(uint8_t action, uint32_t total_send,
+						      uint32_t declared_size, uint8_t skip_after,
+						      uint8_t stop_after, uint8_t bad_id_after,
+						      uint8_t ack_period, bool too_much_data,
+						      bool expect_skip, const void *fixed_source)
 {
 	const struct device *epacket_dummy = DEVICE_DT_GET(DT_NODELABEL(epacket_dummy));
 	struct k_fifo *tx_fifo = epacket_dummmy_transmit_fifo_get();
@@ -132,7 +134,7 @@ static struct test_out test_file_write_basic(uint8_t action, uint32_t total_send
 	header.type = INFUSE_RPC_CMD;
 	header.auth = EPACKET_AUTH_NETWORK;
 	req->header.request_id = request_id;
-	req->data_header.size = send_remaining;
+	req->data_header.size = declared_size;
 	req->data_header.rx_ack_period = ack_period;
 	req->action = action;
 	req->file_crc = crc;
@@ -261,6 +263,17 @@ early_rsp:
 	return ret;
 }
 
+static struct test_out test_file_write_basic(uint8_t action, uint32_t total_send,
+					     uint8_t skip_after, uint8_t stop_after,
+					     uint8_t bad_id_after, uint8_t ack_period,
+					     bool too_much_data, bool expect_skip,
+					     const void *fixed_source)
+{
+	return test_file_write_basic_declared(action, total_send, total_send, skip_after,
+					      stop_after, bad_id_after, ack_period, too_much_data,
+					      expect_skip, fixed_source);
+}
+
 void validate_flash_area(struct test_out *ret, uint8_t partition_id)
 {
 #if PARTITION_EXISTS(slot1_partition)
@@ -270,8 +283,44 @@ void validate_flash_area(struct test_out *ret, uint8_t partition_id)
 	uint32_t fa_crc;
 
 	zassert_equal(0, flash_area_open(partition_id, &fa));
-	zassert_equal(0, flash_area_crc32(fa, 0, ret->cmd_len, &fa_crc, buffer, sizeof(buffer)));
+	zassert_equal(0, flash_area_crc32(fa, boot_get_image_start_offset(partition_id),
+					  ret->cmd_len, &fa_crc, buffer, sizeof(buffer)));
 	zassert_equal(ret->cmd_crc, fa_crc, "CRC sent does not equal CRC written");
+	flash_area_close(fa);
+#endif /* PARTITION_EXISTS(slot1_partition) */
+}
+
+__maybe_unused static void validate_flash_area_offset(struct test_out *ret, uint8_t partition_id,
+						      off_t offset)
+{
+#if PARTITION_EXISTS(slot1_partition)
+	uint8_t buffer[128];
+	const struct flash_area *fa;
+	uint32_t fa_crc;
+
+	zassert_equal(0, flash_area_open(partition_id, &fa));
+	zassert_equal(0,
+		      flash_area_crc32(fa, offset, ret->cmd_len, &fa_crc, buffer, sizeof(buffer)));
+	zassert_equal(ret->cmd_crc, fa_crc, "CRC sent does not equal CRC written");
+	flash_area_close(fa);
+#endif /* PARTITION_EXISTS(slot1_partition) */
+}
+
+__maybe_unused static void fill_flash_area(uint8_t partition_id, uint8_t value)
+{
+#if PARTITION_EXISTS(slot1_partition)
+	uint8_t buffer[128];
+	const struct flash_area *fa;
+
+	memset(buffer, value, sizeof(buffer));
+
+	zassert_equal(0, flash_area_open(partition_id, &fa));
+	zassert_equal(0, flash_area_erase(fa, 0, fa->fa_size));
+	for (size_t offset = 0; offset < fa->fa_size; offset += sizeof(buffer)) {
+		size_t len = MIN(sizeof(buffer), fa->fa_size - offset);
+
+		zassert_equal(0, flash_area_write(fa, offset, buffer, len));
+	}
 	flash_area_close(fa);
 #endif /* PARTITION_EXISTS(slot1_partition) */
 }
@@ -403,8 +452,62 @@ ZTEST(rpc_command_file_write_basic, test_file_write_dfu)
 
 	zassert_device_released(slot1_dev);
 }
+
+ZTEST(rpc_command_file_write_basic, test_file_write_dfu_unknown_len_offset)
+{
+	size_t image_offset = boot_get_image_start_offset(PARTITION_ID(slot1_partition));
+	const struct device *slot1_dev = PARTITION_DEVICE(slot1_partition);
+	const struct flash_area *fa;
+	struct test_out ret;
+	uint32_t payload_len = 16000;
+
+	if (image_offset == 0) {
+		ztest_test_skip();
+	}
+
+	zassert_device_released(slot1_dev);
+	zassert_equal(0, flash_area_open(PARTITION_ID(slot1_partition), &fa));
+	zassert_true(payload_len <= fa->fa_size - image_offset);
+	flash_area_close(fa);
+
+	fill_flash_area(PARTITION_ID(slot1_partition), 0x00);
+
+	ret = test_file_write_basic_declared(RPC_ENUM_FILE_ACTION_APP_IMG, payload_len, UINT32_MAX,
+					     0, 0, 0, 0, false, false, NULL);
+	zassert_equal(-ETIMEDOUT, ret.cmd_rc);
+	zassert_equal(payload_len, ret.cmd_len);
+	zassert_equal(ret.written_crc, ret.cmd_crc);
+
+	zassert_equal(0, infuse_dfu_write_erase_call_count());
+	zassert_device_released(slot1_dev);
+}
+
+ZTEST(rpc_command_file_write_basic, test_file_write_dfu_too_large_releases_device)
+{
+	const struct device *slot1_dev = PARTITION_DEVICE(slot1_partition);
+	struct test_out ret;
+
+	zassert_device_released(slot1_dev);
+
+	ret = test_file_write_basic_declared(RPC_ENUM_FILE_ACTION_APP_IMG, 0, UINT32_MAX / 2, 0, 0,
+					     0, 0, false, false, NULL);
+	zassert_equal(-EINVAL, ret.cmd_rc);
+	zassert_equal(0, ret.cmd_len);
+	zassert_equal(0, infuse_dfu_write_erase_call_count());
+	zassert_device_released(slot1_dev);
+}
 #else
 ZTEST(rpc_command_file_write_basic, test_file_write_dfu)
+{
+	ztest_test_skip();
+}
+
+ZTEST(rpc_command_file_write_basic, test_file_write_dfu_unknown_len_offset)
+{
+	ztest_test_skip();
+}
+
+ZTEST(rpc_command_file_write_basic, test_file_write_dfu_too_large_releases_device)
 {
 	ztest_test_skip();
 }
@@ -412,17 +515,20 @@ ZTEST(rpc_command_file_write_basic, test_file_write_dfu)
 
 static uint8_t flash_copy_buffer[CONFIG_INFUSE_RPC_COMMON_FILE_ACTIONS_WRITE_BUFFER];
 
-static void flash_area_copy_wrapped(uint8_t partition_dst, uint8_t partition_src, uint32_t len,
-				    bool source_erase)
+static void flash_area_copy_wrapped(uint8_t partition_dst, off_t dst_offset, uint8_t partition_src,
+				    off_t src_offset, uint32_t len, bool source_erase)
 {
 	const struct flash_area *fa_dst, *fa_src;
+	size_t copy_len;
 
 	zassert_equal(0, flash_area_open(partition_dst, &fa_dst));
 	zassert_equal(0, flash_area_open(partition_src, &fa_src));
 
 	zassert_equal(0, flash_area_erase(fa_dst, 0, fa_dst->fa_size));
-	zassert_equal(0, flash_area_copy(fa_src, 0, fa_dst, 0, fa_dst->fa_size, flash_copy_buffer,
-					 sizeof(flash_copy_buffer)));
+	copy_len = MIN(fa_dst->fa_size - dst_offset, fa_src->fa_size - src_offset);
+	zassert_true(len <= copy_len);
+	zassert_equal(0, flash_area_copy(fa_src, src_offset, fa_dst, dst_offset, copy_len,
+					 flash_copy_buffer, sizeof(flash_copy_buffer)));
 
 	flash_area_close(fa_dst);
 	flash_area_close(fa_src);
@@ -433,12 +539,21 @@ struct patch_file {
 	uint8_t patch[5];
 } __packed hardcoded_patch;
 
+#define CPATCH_TAIL_WRITE_LEN 64
+
+struct patch_tail_file {
+	struct cpatch_header header;
+	uint8_t patch[10 + CPATCH_TAIL_WRITE_LEN];
+} __packed hardcoded_tail_patch;
+
 #if PARTITION_EXISTS(file_partition)
 ZTEST(rpc_command_file_write_basic, test_file_write_dfu_cpatch)
 {
 	const struct device *slot0_dev = PARTITION_DEVICE(slot0_partition);
 	const struct device *slot1_dev = PARTITION_DEVICE(slot1_partition);
 	struct test_out ret;
+	off_t slot0_offset = boot_get_image_start_offset(PARTITION_ID(slot0_partition));
+	off_t slot1_offset = boot_get_image_start_offset(PARTITION_ID(slot1_partition));
 
 	zassert_device_released(slot0_dev);
 	zassert_device_released(slot1_dev);
@@ -452,8 +567,8 @@ ZTEST(rpc_command_file_write_basic, test_file_write_dfu_cpatch)
 	validate_flash_area(&ret, PARTITION_ID(slot1_partition));
 
 	/* Copy the base image into partition0 and erase partition1 */
-	flash_area_copy_wrapped(PARTITION_ID(slot0_partition), PARTITION_ID(slot1_partition), 17023,
-				true);
+	flash_area_copy_wrapped(PARTITION_ID(slot0_partition), slot0_offset,
+				PARTITION_ID(slot1_partition), slot1_offset, 17023, true);
 
 	/* Construct patch file that just regenerates the original file */
 	hardcoded_patch.patch[0] = 48; /* COPY_LEN_U32 */
@@ -488,8 +603,9 @@ ZTEST(rpc_command_file_write_basic, test_file_write_dfu_cpatch)
 	uint32_t fa_crc;
 
 	zassert_equal(0, flash_area_open(PARTITION_ID(slot1_partition), &fa));
-	zassert_equal(0, flash_area_crc32(fa, 0, hardcoded_patch.header.output_file.length, &fa_crc,
-					  buffer, sizeof(buffer)));
+	zassert_equal(0,
+		      flash_area_crc32(fa, slot1_offset, hardcoded_patch.header.output_file.length,
+				       &fa_crc, buffer, sizeof(buffer)));
 	zassert_equal(hardcoded_patch.header.output_file.crc, fa_crc,
 		      "CRC constructed does not equal original CRC");
 	flash_area_close(fa);
@@ -510,12 +626,98 @@ ZTEST(rpc_command_file_write_basic, test_file_write_dfu_cpatch)
 	zassert_device_released(slot1_dev);
 }
 
+ZTEST(rpc_command_file_write_basic, test_file_write_dfu_cpatch_slot1_offset_erase)
+{
+	const struct device *slot0_dev = PARTITION_DEVICE(slot0_partition);
+	const struct device *slot1_dev = PARTITION_DEVICE(slot1_partition);
+	struct test_out ret;
+	off_t slot0_offset = boot_get_image_start_offset(PARTITION_ID(slot0_partition));
+	off_t slot1_offset = boot_get_image_start_offset(PARTITION_ID(slot1_partition));
+
+	zassert_device_released(slot0_dev);
+	zassert_device_released(slot1_dev);
+
+	/* Write a known image to partition1 */
+	ret = test_file_write_basic(RPC_ENUM_FILE_ACTION_APP_IMG, sizeof(cpatch_payload), 0, 0, 0,
+				    0, false, false, cpatch_payload);
+	zassert_equal(0, ret.cmd_rc);
+	zassert_equal(sizeof(cpatch_payload), ret.cmd_len);
+	zassert_equal(ret.written_crc, ret.cmd_crc);
+	validate_flash_area(&ret, PARTITION_ID(slot1_partition));
+
+	/* Copy the base image into partition0 and erase partition1 */
+	flash_area_copy_wrapped(PARTITION_ID(slot0_partition), slot0_offset,
+				PARTITION_ID(slot1_partition), slot1_offset, sizeof(cpatch_payload),
+				true);
+
+	/* Copy the input, then change the tail so stale slot1 data cannot mask under-erase. */
+	hardcoded_tail_patch.patch[0] = 48; /* COPY_LEN_U32 */
+	sys_put_le32(sizeof(cpatch_payload) - CPATCH_TAIL_WRITE_LEN,
+		     hardcoded_tail_patch.patch + 1);
+	hardcoded_tail_patch.patch[5] = 112; /* WRITE_LEN_U32 */
+	sys_put_le32(CPATCH_TAIL_WRITE_LEN, hardcoded_tail_patch.patch + 6);
+	memset(hardcoded_tail_patch.patch + 10, 0xA5, CPATCH_TAIL_WRITE_LEN);
+
+	uint32_t output_crc =
+		crc32_ieee(cpatch_payload, sizeof(cpatch_payload) - CPATCH_TAIL_WRITE_LEN);
+
+	output_crc = crc32_ieee_update(output_crc, hardcoded_tail_patch.patch + 10,
+				       CPATCH_TAIL_WRITE_LEN);
+
+	hardcoded_tail_patch.header.magic_value = CPATCH_MAGIC_NUMBER;
+	hardcoded_tail_patch.header.version_major = 1;
+	hardcoded_tail_patch.header.version_minor = 0;
+	hardcoded_tail_patch.header.input_file.length = sizeof(cpatch_payload);
+	hardcoded_tail_patch.header.input_file.crc = ret.written_crc;
+	hardcoded_tail_patch.header.output_file.length = sizeof(cpatch_payload);
+	hardcoded_tail_patch.header.output_file.crc = output_crc;
+	hardcoded_tail_patch.header.patch_file.length = sizeof(hardcoded_tail_patch.patch);
+	hardcoded_tail_patch.header.patch_file.crc =
+		crc32_ieee(hardcoded_tail_patch.patch, sizeof(hardcoded_tail_patch.patch));
+	hardcoded_tail_patch.header.header_crc =
+		crc32_ieee((const void *)&hardcoded_tail_patch.header,
+			   sizeof(hardcoded_tail_patch.header) - sizeof(uint32_t));
+
+	/* Write the patch file */
+	ret = test_file_write_basic(RPC_ENUM_FILE_ACTION_APP_CPATCH, sizeof(hardcoded_tail_patch),
+				    0, 0, 0, 0, false, false, &hardcoded_tail_patch);
+	zassert_equal(0, ret.cmd_rc);
+	zassert_equal(sizeof(hardcoded_tail_patch), ret.cmd_len);
+	zassert_equal(ret.written_crc, ret.cmd_crc);
+
+	/* Give command a chance to finish writing the patch */
+	k_sleep(K_MSEC(100));
+
+	uint8_t buffer[128];
+	const struct flash_area *fa;
+	uint32_t fa_crc;
+
+	zassert_equal(0, flash_area_open(PARTITION_ID(slot1_partition), &fa));
+	zassert_equal(0, flash_area_crc32(fa, slot1_offset,
+					  hardcoded_tail_patch.header.output_file.length, &fa_crc,
+					  buffer, sizeof(buffer)));
+	zassert_equal(hardcoded_tail_patch.header.output_file.crc, fa_crc,
+		      "CRC constructed does not equal patched output CRC");
+	flash_area_close(fa);
+
+	/* Balanced call count */
+	zassert_equal(0, infuse_dfu_write_erase_call_count());
+
+	zassert_device_released(slot0_dev);
+	zassert_device_released(slot1_dev);
+}
+
 #else
 
 ZTEST(rpc_command_file_write_basic, test_file_write_dfu_cpatch)
 {
 	(void)flash_area_copy_wrapped;
 
+	ztest_test_skip();
+}
+
+ZTEST(rpc_command_file_write_basic, test_file_write_dfu_cpatch_slot1_offset_erase)
+{
 	ztest_test_skip();
 }
 
@@ -793,6 +995,7 @@ void *file_write_basic_setup(void)
 {
 	sys_rand_get(fixed_payload, sizeof(fixed_payload));
 	fixed_payload_crc = crc32_ieee(fixed_payload, sizeof(fixed_payload));
+	sys_rand_get(cpatch_payload, sizeof(cpatch_payload));
 
 #ifdef CONFIG_INFUSE_LITTLEFS
 	(void)infuse_littlefs_init();
