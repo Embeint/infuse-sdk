@@ -134,7 +134,7 @@ int rpc_command_bt_file_copy_basic_run(struct rpc_bt_file_copy_basic_request *re
 	/* Queue the initiating command */
 	rc = rpc_client_command_queue(&client_ctx, RPC_ID_FILE_WRITE_BASIC, &write_req,
 				      sizeof(write_req), command_data_done, &completion_ctx,
-				      K_NO_WAIT, K_SECONDS(10));
+				      K_NO_WAIT, K_SECONDS(15));
 	if (rc < 0) {
 		LOG_WRN("Failed to queue initial command");
 		goto cleanup;
