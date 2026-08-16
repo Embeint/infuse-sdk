@@ -6,6 +6,8 @@
  * SPDX-License-Identifier: FSL-1.1-ALv2
  */
 
+#include <errno.h>
+
 #include <zephyr/net_buf.h>
 #include <zephyr/logging/log.h>
 #include <zephyr/sys/crc.h>
@@ -16,6 +18,17 @@
 #include <infuse/epacket/packet.h>
 
 LOG_MODULE_DECLARE(rpc_server, CONFIG_INFUSE_RPC_LOG_LEVEL);
+
+static int pull_data_error_to_rpc(int rc)
+{
+	switch (rc) {
+	case -EINVAL:
+		return INFUSE_RPC_ERROR_DATA_ALIGNMENT_ERROR;
+	case -ETIMEDOUT:
+	default:
+		return INFUSE_RPC_ERROR_DATA_RECEIVE_FAILED;
+	}
+}
 
 struct net_buf *rpc_command_data_receiver(struct net_buf *request)
 {
@@ -63,13 +76,14 @@ struct net_buf *rpc_command_data_receiver(struct net_buf *request)
 				rpc_server_pull_data(request_id, expected_offset, &rc, K_MSEC(500));
 		}
 		if (data_buf == NULL) {
+			rc = pull_data_error_to_rpc(rc);
 			goto end;
 		}
 		var_len = RPC_DATA_VAR_LEN(data_buf);
 		if (var_len > remaining) {
 			LOG_WRN("Received too much data %zu/%u", var_len, remaining);
 			net_buf_unref(data_buf);
-			rc = -EINVAL;
+			rc = INFUSE_RPC_ERROR_DATA_LENGTH_MISMATCH;
 			goto end;
 		}
 		data = (void *)data_buf->data;

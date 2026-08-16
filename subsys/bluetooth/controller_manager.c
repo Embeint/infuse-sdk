@@ -14,6 +14,7 @@
 #include <infuse/epacket/packet.h>
 #include <infuse/rpc/types.h>
 #include <infuse/rpc/client.h>
+#include <infuse/rpc/errors.h>
 #include <infuse/fs/kv_store.h>
 #include <infuse/fs/kv_types.h>
 
@@ -60,7 +61,7 @@ static void write_file_done(const struct net_buf *buf, void *user_data)
 {
 	if (buf == NULL) {
 		LOG_WRN("Write timed out");
-		write_rsp.header.return_code = -ETIMEDOUT;
+		write_rsp.header.return_code = INFUSE_RPC_ERROR_BT_RESPONSE_TIMEOUT;
 	} else {
 		const struct rpc_file_write_basic_response *rsp = (const void *)buf->data;
 

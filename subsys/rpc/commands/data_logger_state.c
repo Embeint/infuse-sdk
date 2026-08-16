@@ -28,12 +28,12 @@ static int data_logger_query(uint8_t logger_id, struct data_logger_state *state)
 		break;
 #endif /* CONFIG_DATA_LOGGER_EXFAT */
 	default:
-		return -ENODEV;
+		return INFUSE_RPC_ERROR_DEVICE_NOT_FOUND;
 	}
 
 	/* Ensure device logger_id properly */
 	if (!device_is_ready(logger)) {
-		return -EBADF;
+		return INFUSE_RPC_ERROR_DEVICE_NOT_READY;
 	}
 
 	/* Query logger state */

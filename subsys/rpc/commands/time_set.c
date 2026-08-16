@@ -27,6 +27,9 @@ struct net_buf *rpc_command_time_set(struct net_buf *request)
 
 	/* Set the time reference */
 	rc = epoch_time_set_reference(TIME_SOURCE_RPC, &sync);
+	if (rc < 0) {
+		rc = INFUSE_RPC_ERROR_TIME_SET_FAILED;
+	}
 
 	/* Allocate and return the response */
 	return rpc_response_simple_req(request, rc, &rsp, sizeof(rsp));

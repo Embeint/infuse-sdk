@@ -15,6 +15,7 @@
 #include <infuse/fs/kv_store.h>
 #include <infuse/fs/kv_types.h>
 #include <infuse/rpc/types.h>
+#include <infuse/rpc/errors.h>
 #include <infuse/epacket/packet.h>
 #include <infuse/epacket/interface/epacket_dummy.h>
 
@@ -72,7 +73,7 @@ ZTEST(rpc_command_kv_read, test_kv_read_bad_input)
 	keys[0] = KV_KEY_REBOOTS;
 	keys[1] = KV_KEY_WIFI_SSID;
 	send_kv_read_command(1000, keys, 2, 1);
-	rsp = expect_kv_read_response(1000, -EINVAL);
+	rsp = expect_kv_read_response(1000, INFUSE_RPC_ERROR_MALFORMED_REQUEST);
 	net_buf_unref(rsp);
 }
 
@@ -106,7 +107,7 @@ ZTEST(rpc_command_kv_read, test_single)
 			      sizeof(struct rpc_struct_kv_store_value),
 		      rsp->len);
 	zassert_equal(KV_KEY_WIFI_SSID, response->values[0].id);
-	zassert_equal(-ENOENT, response->values[0].len);
+	zassert_equal(INFUSE_RPC_ERROR_KV_KEY_NOT_FOUND, response->values[0].len);
 	net_buf_unref(rsp);
 
 	/* Read a single key that is disabled */
@@ -118,7 +119,7 @@ ZTEST(rpc_command_kv_read, test_single)
 			      sizeof(struct rpc_struct_kv_store_value),
 		      rsp->len);
 	zassert_equal(0x4567, response->values[0].id);
-	zassert_equal(-EACCES, response->values[0].len);
+	zassert_equal(INFUSE_RPC_ERROR_KV_KEY_NOT_ENABLED, response->values[0].len);
 	net_buf_unref(rsp);
 
 	/* Read a single key that is enabled, hasn't been written, has readback protection */
@@ -131,7 +132,7 @@ ZTEST(rpc_command_kv_read, test_single)
 			      sizeof(struct rpc_struct_kv_store_value),
 		      rsp->len);
 	zassert_equal(KV_KEY_WIFI_PSK, response->values[0].id);
-	zassert_equal(-EPERM, response->values[0].len);
+	zassert_equal(INFUSE_RPC_ERROR_READ_PROTECTED, response->values[0].len);
 	net_buf_unref(rsp);
 
 	/* Read a single key that is enabled, has been written, has readback protection */
@@ -144,7 +145,7 @@ ZTEST(rpc_command_kv_read, test_single)
 			      sizeof(struct rpc_struct_kv_store_value),
 		      rsp->len);
 	zassert_equal(KV_KEY_WIFI_PSK, response->values[0].id);
-	zassert_equal(-EPERM, response->values[0].len);
+	zassert_equal(INFUSE_RPC_ERROR_READ_PROTECTED, response->values[0].len);
 	net_buf_unref(rsp);
 }
 
@@ -207,7 +208,7 @@ ZTEST(rpc_command_kv_read, test_multi_invalid)
 	/* Test first value failed */
 	value = (void *)rsp->data;
 	zassert_equal(0x1234, value->id);
-	zassert_equal(-EACCES, value->len);
+	zassert_equal(INFUSE_RPC_ERROR_KV_KEY_NOT_ENABLED, value->len);
 	net_buf_pull(rsp, sizeof(struct rpc_struct_kv_store_value));
 
 	/* Test second value worked */
@@ -252,7 +253,7 @@ ZTEST(rpc_command_kv_read, test_too_large)
 	/* Test second value failed */
 	value = (void *)rsp->data;
 	zassert_equal(KV_KEY_WIFI_SSID, value->id);
-	zassert_equal(-ENOSPC, value->len);
+	zassert_equal(INFUSE_RPC_ERROR_RESPONSE_BUFFER_TOO_SMALL, value->len);
 	net_buf_pull(rsp, sizeof(struct rpc_struct_kv_store_value));
 
 	/* Should be no data left on buffer */

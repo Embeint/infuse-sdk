@@ -19,6 +19,7 @@
 #include <infuse/rpc/commands.h>
 #include <infuse/rpc/server.h>
 #include <infuse/rpc/types.h>
+#include <infuse/rpc/errors.h>
 #include <infuse/security.h>
 #include <infuse/fs/kv_store.h>
 #include <infuse/fs/littlefs.h>
@@ -187,7 +188,7 @@ ZTEST(rpc_command_file_write, test_file_write_for_copy_bad_folder)
 	/* FILE_FOR_COPY must specify the FOR_COPY folder */
 	ret = test_file_write(RPC_ENUM_FILE_ACTION_FILE_FOR_COPY, INFUSE_LFS_FOLDER_GENERAL, 10, 0,
 			      100, 0, NULL);
-	zassert_equal(-EINVAL, ret.cmd_rc);
+	zassert_equal(INFUSE_RPC_ERROR_INVALID_ARGUMENT, ret.cmd_rc);
 	zassert_equal(0, ret.cmd_len);
 	zassert_equal(0, ret.cmd_crc);
 

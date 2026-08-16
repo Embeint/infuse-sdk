@@ -8,6 +8,7 @@
 
 #include <zephyr/net_buf.h>
 #include <zephyr/logging/log.h>
+#include <zephyr/bluetooth/hci_types.h>
 
 #include <infuse/epacket/interface/epacket_bt_central.h>
 #include <infuse/rpc/commands.h>
@@ -51,6 +52,10 @@ struct net_buf *rpc_command_bt_connect_infuse(struct net_buf *request)
 		       sizeof(rsp.device_public_key));
 		rsp.network_id = security_info.network_id;
 		bt_conn_unref(conn);
+	} else {
+		rc = (rc == -ETIMEDOUT) || (rc == BT_HCI_ERR_UNKNOWN_CONN_ID)
+			     ? INFUSE_RPC_ERROR_BT_CONNECTION_TIMEOUT
+			     : INFUSE_RPC_ERROR_BT_CONNECT_FAILED;
 	}
 
 	/* Allocate and return the response */

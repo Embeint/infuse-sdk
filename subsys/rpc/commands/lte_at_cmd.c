@@ -35,11 +35,13 @@ struct net_buf *rpc_command_lte_at_cmd(struct net_buf *request)
 
 	/* Request must be NULL terminated */
 	if (request->data[request->len - 1] != '\0') {
-		return rpc_response_simple_req(request, -EINVAL, &rsp, sizeof(rsp));
+		return rpc_response_simple_req(request, INFUSE_RPC_ERROR_MALFORMED_REQUEST, &rsp,
+					       sizeof(rsp));
 	}
 #ifdef CONFIG_INFUSE_NRF_MODEM_MONITOR
 	if (!lte_modem_monitor_is_at_safe()) {
-		return rpc_response_simple_req(request, -EAGAIN, &rsp, sizeof(rsp));
+		return rpc_response_simple_req(request, INFUSE_RPC_ERROR_MODEM_AT_UNSAFE, &rsp,
+					       sizeof(rsp));
 	}
 #endif
 	/* Allocate response object */
@@ -52,6 +54,9 @@ struct net_buf *rpc_command_lte_at_cmd(struct net_buf *request)
 #ifdef CONFIG_NRF_MODEM_LIB
 	tail[0] = '\0';
 	rc = nrf_modem_at_cmd(tail, tailroom, "%s", req->cmd);
+	if (rc < 0) {
+		rc = INFUSE_RPC_ERROR_MODEM_AT_FAILED;
+	}
 #endif
 #ifdef CONFIG_MODEM_CELLULAR
 	rc = cellular_modem_at_cmd(tail, tailroom, req->cmd);

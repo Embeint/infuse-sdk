@@ -15,6 +15,7 @@
 #include <infuse/fs/kv_store.h>
 #include <infuse/fs/kv_types.h>
 #include <infuse/rpc/types.h>
+#include <infuse/rpc/errors.h>
 #include <infuse/epacket/packet.h>
 #include <infuse/epacket/interface/epacket_dummy.h>
 #include <infuse/drivers/watchdog.h>
@@ -150,7 +151,7 @@ ZTEST(rpc_command_fault, test_does_fault)
 		zassert_equal(INFUSE_REBOOT_HW_WATCHDOG, reboot_state.reason);
 		/* Unknown fault code */
 		send_fault_command(0x123456, 255);
-		expect_fault_response(0x123456, -EINVAL);
+		expect_fault_response(0x123456, INFUSE_RPC_ERROR_INVALID_ARGUMENT);
 		break;
 	default:
 		zassert_unreachable("Unexpected reboot count");

@@ -104,6 +104,9 @@ struct net_buf *rpc_command_bt_mcumgr_reboot(struct net_buf *request)
 	/* Create the connection */
 	rc = bt_conn_le_create(&peer, &create_param, &conn_param, &conn);
 	if (rc != 0) {
+		rc = (rc == -ETIMEDOUT) || (rc == BT_HCI_ERR_UNKNOWN_CONN_ID)
+			     ? INFUSE_RPC_ERROR_BT_CONNECTION_TIMEOUT
+			     : INFUSE_RPC_ERROR_BT_CONNECT_FAILED;
 		goto end;
 	}
 
@@ -118,13 +121,16 @@ struct net_buf *rpc_command_bt_mcumgr_reboot(struct net_buf *request)
 	/* Cleanup callbacks since we aren't sticking around until the connection end */
 	bt_conn_le_auto_setup(conn, NULL, NULL, BT_GAP_LE_PHY_NONE);
 	if (rc != 0) {
+		rc = (rc == -ETIMEDOUT) || (rc == BT_HCI_ERR_UNKNOWN_CONN_ID)
+			     ? INFUSE_RPC_ERROR_BT_CONNECTION_TIMEOUT
+			     : INFUSE_RPC_ERROR_BT_CONNECT_FAILED;
 		goto end;
 	}
 
 	/* Validate characteristic exists */
 	if (remote_info.value_handle == 0x0000) {
 		LOG_WRN("MCUMGR characteristic not found");
-		rc = -EBADF;
+		rc = INFUSE_RPC_ERROR_BT_CHARACTERISTIC_NOT_FOUND;
 		goto end;
 	}
 
@@ -153,6 +159,7 @@ struct net_buf *rpc_command_bt_mcumgr_reboot(struct net_buf *request)
 	k_poll_signal_reset(&sig);
 	rc = bt_gatt_write(conn, &params.params);
 	if (rc < 0) {
+		rc = INFUSE_RPC_ERROR_BT_GATT_WRITE_FAILED;
 		goto end;
 	}
 
@@ -160,6 +167,9 @@ struct net_buf *rpc_command_bt_mcumgr_reboot(struct net_buf *request)
 	k_poll(&poll_event, 1, K_FOREVER);
 	k_poll_signal_check(&sig, &signaled, &rc);
 	__ASSERT_NO_MSG(signaled != 0);
+	if (rc != 0) {
+		rc = INFUSE_RPC_ERROR_BT_GATT_WRITE_FAILED;
+	}
 
 end:
 	if (conn) {

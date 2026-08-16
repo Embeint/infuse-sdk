@@ -43,16 +43,19 @@ struct net_buf *rpc_command_annotate(struct net_buf *request)
 		break;
 #endif /* CONFIG_DATA_LOGGER_EXFAT */
 	default:
-		return rpc_response_simple_req(request, -ENODEV, &rsp, sizeof(rsp));
+		return rpc_response_simple_req(request, INFUSE_RPC_ERROR_DEVICE_NOT_FOUND, &rsp,
+					       sizeof(rsp));
 	}
 
 	if (!device_is_ready(logger)) {
-		return rpc_response_simple_req(request, -EBADF, &rsp, sizeof(rsp));
+		return rpc_response_simple_req(request, INFUSE_RPC_ERROR_DEVICE_NOT_READY, &rsp,
+					       sizeof(rsp));
 	}
 
 	if (extra_len == 0) {
 		/* No annotation payload */
-		return rpc_response_simple_req(request, -EINVAL, &rsp, sizeof(rsp));
+		return rpc_response_simple_req(request, INFUSE_RPC_ERROR_INVALID_ARGUMENT, &rsp,
+					       sizeof(rsp));
 	}
 
 	LOG_INF("Annotation: %s @ %u %d", req->annotation, req->timestamp, extra_len);
