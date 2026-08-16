@@ -158,6 +158,7 @@ int rpc_command_bt_file_copy_basic_run(struct rpc_bt_file_copy_basic_request *re
 	rpc_server_watchdog_feed();
 
 	/* Wait for initial ACK */
+	LOG_INF("Waiting ACK");
 	rc = rpc_client_ack_wait(&client_ctx, request_id, K_SECONDS(15));
 	if (rc < 0) {
 		LOG_WRN("Initial ACK not received");
@@ -168,6 +169,7 @@ int rpc_command_bt_file_copy_basic_run(struct rpc_bt_file_copy_basic_request *re
 	if (k_sem_take(&completion_ctx.done, K_NO_WAIT) == 0) {
 		/* Command terminated before first ACK */
 		rc = completion_ctx.rc;
+		LOG_INF("Early termination: %d", rc);
 		goto cleanup;
 	}
 
@@ -178,6 +180,8 @@ int rpc_command_bt_file_copy_basic_run(struct rpc_bt_file_copy_basic_request *re
 	}
 
 	work_mem = rpc_server_command_working_mem(&work_mem_size);
+
+	LOG_INF("Starting copy of %d bytes", load_params.total_len);
 
 	/* Push the data through the client, loaded from the flash area */
 	rc = rpc_client_data_queue_auto_load(&client_ctx, request_id, 0, work_mem, work_mem_size,
