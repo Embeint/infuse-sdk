@@ -373,6 +373,7 @@ static int finish_cpatch(struct rpc_common_file_actions_ctx *ctx)
 	struct cpatch_header header;
 	size_t mem_size, out_len;
 	uint32_t flash_offset;
+	uint32_t image_offset;
 	uint8_t *mem;
 	int rc;
 
@@ -394,12 +395,15 @@ static int finish_cpatch(struct rpc_common_file_actions_ctx *ctx)
 	if (rc < 0) {
 		goto cleanup;
 	}
+	image_offset = boot_get_image_start_offset(PARTITION_ID(slot1_partition));
 
 #if !defined(CONFIG_STREAM_FLASH_ERASE)
 
-	LOG_INF("Erasing %d bytes of secondary partition", header.output_file.length);
+	LOG_INF("Erasing %d bytes of secondary partition",
+		image_offset + header.output_file.length);
 	/* Erase space for image */
-	rc = infuse_dfu_image_erase(fa_output, header.output_file.length, cpatch_watchdog, true);
+	rc = infuse_dfu_image_erase(fa_output, image_offset + header.output_file.length,
+				    cpatch_watchdog, true);
 	if (rc < 0) {
 		goto cleanup;
 	}
@@ -421,8 +425,7 @@ static int finish_cpatch(struct rpc_common_file_actions_ctx *ctx)
 	/* Limit buffer size to common flash erase size */
 	mem_size = MIN(mem_size, 4096);
 	/* Required offset of the image in the flash area */
-	flash_offset = PARTITION_OFFSET(slot1_partition) +
-		       boot_get_image_start_offset(PARTITION_ID(slot1_partition));
+	flash_offset = PARTITION_OFFSET(slot1_partition) + image_offset;
 	rc = stream_flash_init(&stream_ctx, PARTITION_DEVICE(slot1_partition), mem, mem_size,
 			       flash_offset, out_len, NULL);
 	__ASSERT_NO_MSG(rc == 0);
