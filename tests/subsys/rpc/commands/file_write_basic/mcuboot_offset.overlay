@@ -1,0 +1,13 @@
+/ {
+	chosen {
+		zephyr,code-partition = &slot0_partition;
+	};
+};
+
+&slot0_partition {
+	compatible = "zephyr,mapped-partition";
+};
+
+&slot1_partition {
+	compatible = "zephyr,mapped-partition";
+};
