@@ -43,12 +43,14 @@ struct net_buf *rpc_command_gravity_reference_update(struct net_buf *request)
 	/* Discard the first buffer */
 	rc = k_sem_take(&chan_pub_sem, K_SECONDS(5));
 	if (rc < 0) {
+		rc = INFUSE_RPC_ERROR_NO_DATA;
 		goto unsub;
 	}
 
 	/* Wait for the next buffer */
 	rc = k_sem_take(&chan_pub_sem, K_SECONDS(5));
 	if (rc < 0) {
+		rc = INFUSE_RPC_ERROR_NO_DATA;
 		goto unsub;
 	}
 
@@ -59,7 +61,7 @@ struct net_buf *rpc_command_gravity_reference_update(struct net_buf *request)
 	imu = chan->message;
 
 	if (imu->accelerometer.num == 0) {
-		rc = -ENODATA;
+		rc = INFUSE_RPC_ERROR_NO_DATA;
 		zbus_chan_finish(chan);
 		goto unsub;
 	}
@@ -97,10 +99,13 @@ struct net_buf *rpc_command_gravity_reference_update(struct net_buf *request)
 	     (rsp.variance.z <= req->max_variance))) {
 		/* Write updated reference to KV store */
 		rc = KV_STORE_WRITE(KV_KEY_GRAVITY_REFERENCE, &gravity);
+		if (rc < 0) {
+			rc = INFUSE_RPC_ERROR_KV_WRITE_FAILED;
+		}
 	} else {
 		/* Variance out of bounds */
 		LOG_INF("Axis variance > %d", req->max_variance);
-		rc = -EIO;
+		rc = INFUSE_RPC_ERROR_DATA_VARIANCE_TOO_HIGH;
 	}
 
 unsub:

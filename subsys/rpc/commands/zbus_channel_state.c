@@ -25,11 +25,13 @@ struct net_buf *rpc_command_zbus_channel_state(struct net_buf *request)
 
 	if (chan == NULL) {
 		/* Bad channel ID */
-		return rpc_response_simple_req(request, -EBADF, &rsp, sizeof(rsp));
+		return rpc_response_simple_req(request, INFUSE_RPC_ERROR_CHANNEL_NOT_FOUND, &rsp,
+					       sizeof(rsp));
 	}
 	if (zbus_chan_pub_stats_count(chan) == 0) {
 		/* No data published yet */
-		return rpc_response_simple_req(request, -EAGAIN, &rsp, sizeof(rsp));
+		return rpc_response_simple_req(request, INFUSE_RPC_ERROR_CHANNEL_NO_DATA, &rsp,
+					       sizeof(rsp));
 	}
 
 #ifdef CONFIG_ZBUS_CHANNEL_PUBLISH_STATS

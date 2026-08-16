@@ -98,7 +98,8 @@ struct net_buf *rpc_command_bt_file_copy_coap(struct net_buf *request)
 	rc = epacket_bt_gatt_connect(&conn, &connect_params, &security_info, &already);
 	if (rc != 0) {
 		LOG_INF("Connection failed (%d)", rc);
-		rc = -ENOTCONN;
+		rc = rc == -ETIMEDOUT ? INFUSE_RPC_ERROR_BT_CONNECTION_TIMEOUT
+				      : INFUSE_RPC_ERROR_BT_CONNECT_FAILED;
 		goto end;
 	}
 

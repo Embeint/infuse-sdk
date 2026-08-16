@@ -62,6 +62,8 @@ struct net_buf *rpc_command_security_state(struct net_buf *request)
 		LOG_ERR("Failed to encrypt challenge response (%d)", status);
 		/* Don't forward any response on failure */
 		net_buf_remove_mem(rsp_buf, sizeof(*rsp));
+		((struct rpc_security_state_response *)rsp_buf->data)->header.return_code =
+			INFUSE_RPC_ERROR_CRYPTO_FAILED;
 	}
 
 	/* Clear sensitive information */

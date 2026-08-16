@@ -32,6 +32,7 @@
 #include <infuse/reboot.h>
 #include <infuse/rpc/types.h>
 #include <infuse/rpc/client.h>
+#include <infuse/rpc/errors.h>
 #include <infuse/security.h>
 #include <infuse/states.h>
 
@@ -680,7 +681,7 @@ static void main_gateway_rpcs(void)
 	/* Connect timeout, disconnect should error */
 	connect.conn_timeout_ms = 10;
 	send_rpc(3, RPC_ID_BT_CONNECT_INFUSE, &connect, sizeof(connect));
-	buf = expect_response(3, RPC_ID_BT_CONNECT_INFUSE, BT_HCI_ERR_UNKNOWN_CONN_ID);
+	buf = expect_response(3, RPC_ID_BT_CONNECT_INFUSE, INFUSE_RPC_ERROR_BT_CONNECTION_TIMEOUT);
 	if (buf == NULL) {
 		FAIL("Unexpected connection result\n");
 		return;
@@ -689,7 +690,7 @@ static void main_gateway_rpcs(void)
 	net_buf_unref(buf);
 
 	send_rpc(4, RPC_ID_BT_DISCONNECT, &disconnect, sizeof(disconnect));
-	buf = expect_response(4, RPC_ID_BT_DISCONNECT, -EINVAL);
+	buf = expect_response(4, RPC_ID_BT_DISCONNECT, INFUSE_RPC_ERROR_BT_NOT_CONNECTED);
 	if (buf == NULL) {
 		FAIL("Unexpected disconnection result\n");
 		return;
@@ -2423,7 +2424,7 @@ static void main_gateway_bt_file_copy(void)
 		FAIL("Unexpected command ID %d\n", rpc_rsp->command_id);
 		return;
 	}
-	if (rpc_rsp->return_code != -ENOTCONN) {
+	if (rpc_rsp->return_code != INFUSE_RPC_ERROR_BT_NOT_CONNECTED) {
 		FAIL("Unexpected command return code\n");
 		return;
 	}
@@ -2452,7 +2453,7 @@ static void main_gateway_bt_file_copy(void)
 		FAIL("Unexpected command ID %d\n", rpc_rsp->command_id);
 		return;
 	}
-	if (rpc_rsp->return_code != -ENOENT) {
+	if (rpc_rsp->return_code != INFUSE_RPC_ERROR_FILE_NOT_FOUND) {
 		FAIL("Unexpected command return code\n");
 		return;
 	}
@@ -2482,7 +2483,7 @@ static void main_gateway_bt_file_copy(void)
 		FAIL("Unexpected command ID %d\n", rpc_rsp->command_id);
 		return;
 	}
-	if (rpc_rsp->return_code != -EINVAL) {
+	if (rpc_rsp->return_code != INFUSE_RPC_ERROR_FILE_TOO_SMALL) {
 		FAIL("Unexpected command return code\n");
 		return;
 	}
@@ -2599,7 +2600,7 @@ static void main_gateway_mcumgr_reboot(void)
 	/* Non-existent device */
 	connect.peer.val[0] += 1;
 	send_rpc(500, RPC_ID_BT_MCUMGR_REBOOT, &connect, sizeof(connect));
-	buf = expect_response(500, RPC_ID_BT_MCUMGR_REBOOT, BT_HCI_ERR_UNKNOWN_CONN_ID);
+	buf = expect_response(500, RPC_ID_BT_MCUMGR_REBOOT, INFUSE_RPC_ERROR_BT_CONNECTION_TIMEOUT);
 	if (buf == NULL) {
 		FAIL("Failed to connect via RPC\n");
 		return;
@@ -2651,7 +2652,8 @@ static void main_gateway_mcumgr_none_reboot(void)
 
 	/* Device exists, but no MCUMGR characteristic */
 	send_rpc(600, RPC_ID_BT_MCUMGR_REBOOT, &connect, sizeof(connect));
-	buf = expect_response(600, RPC_ID_BT_MCUMGR_REBOOT, -EBADF);
+	buf = expect_response(600, RPC_ID_BT_MCUMGR_REBOOT,
+			      INFUSE_RPC_ERROR_BT_CHARACTERISTIC_NOT_FOUND);
 	if (buf == NULL) {
 		FAIL("Failed to connect via RPC\n");
 		return;

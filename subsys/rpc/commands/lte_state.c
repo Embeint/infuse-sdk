@@ -73,7 +73,8 @@ static struct net_buf *rpc_command_lte_state_common(struct net_buf *request, boo
 			     : sizeof(struct rpc_lte_state_response);
 
 	if (iface == NULL) {
-		return rpc_response_simple_req(request, -EINVAL, &rsp, rsp_size);
+		return rpc_response_simple_req(
+			request, INFUSE_RPC_ERROR_NETWORK_INTERFACE_NOT_FOUND, &rsp, rsp_size);
 	}
 
 	/* Common networking state */

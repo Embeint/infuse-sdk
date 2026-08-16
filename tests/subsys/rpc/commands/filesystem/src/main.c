@@ -15,6 +15,7 @@
 
 #include <infuse/types.h>
 #include <infuse/rpc/types.h>
+#include <infuse/rpc/errors.h>
 #include <infuse/epacket/packet.h>
 #include <infuse/epacket/interface/epacket_dummy.h>
 #include <infuse/fs/littlefs.h>
@@ -137,7 +138,7 @@ ZTEST(rpc_command_filesystem, test_filesystem_ls)
 
 	/* Folder doesn't exist yet */
 	send_filesystem_ls_command(0x1000, INFUSE_LFS_FOLDER_ALGORITHMS, 0);
-	rsp = expect_filesystem_ls_response(0x1000, -ENOENT, 0, 0);
+	rsp = expect_filesystem_ls_response(0x1000, INFUSE_RPC_ERROR_FILE_ITERATION_FAILED, 0, 0);
 	net_buf_unref(rsp);
 
 	/* Create a file, empty */
@@ -241,7 +242,7 @@ ZTEST(rpc_command_filesystem, test_filesystem_rm)
 
 	/* File doesn't exist yet */
 	send_filesystem_rm_command(0x2000, INFUSE_LFS_FOLDER_A_GNSS, 100);
-	expect_filesystem_rm_response(0x2000, -ENOENT);
+	expect_filesystem_rm_response(0x2000, INFUSE_RPC_ERROR_FILE_DELETE_FAILED);
 
 	/* Create some files */
 	rc = infuse_littlefs_file_create(INFUSE_LFS_FOLDER_A_GNSS, 100, &meta);

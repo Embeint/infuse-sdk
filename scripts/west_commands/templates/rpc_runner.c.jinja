@@ -17,6 +17,7 @@
 
 #include <infuse/epacket/interface.h>
 #include <infuse/epacket/packet.h>
+#include <infuse/rpc/errors.h>
 #include <infuse/rpc/types.h>
 #include <infuse/rpc/server.h>
 #include <infuse/rpc/commands_impl.h>
@@ -64,7 +65,7 @@ void rpc_command_runner(struct net_buf *request)
 	uint32_t key_id = metadata->key_identifier;
 	uint32_t request_id = req_header->request_id;
 	uint16_t command_id = req_header->command_id;
-	int16_t rc = -EACCES;
+	int16_t rc = INFUSE_RPC_ERROR_AUTHENTICATION_REQUIRED;
 
 	/* Reset command freed state */
 	command_freed = false;
@@ -83,7 +84,7 @@ void rpc_command_runner(struct net_buf *request)
 #endif /* CONFIG_INFUSE_RPC_COMMAND_{{ command['name'] | upper }} */
 {% endfor %}
 	default:
-		rc = -ENOTSUP;
+		rc = INFUSE_RPC_ERROR_INVALID_COMMAND;
 	};
 
 	/* Free the request */

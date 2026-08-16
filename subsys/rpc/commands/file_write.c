@@ -6,6 +6,7 @@
  * SPDX-License-Identifier: FSL-1.1-ALv2
  */
 
+#include <errno.h>
 #include <stdint.h>
 
 #include <zephyr/net_buf.h>
@@ -20,6 +21,17 @@
 #include "common_file_actions.h"
 
 LOG_MODULE_DECLARE(rpc_server, CONFIG_INFUSE_RPC_LOG_LEVEL);
+
+static int pull_data_error_to_rpc(int rc)
+{
+	switch (rc) {
+	case -EINVAL:
+		return INFUSE_RPC_ERROR_DATA_ALIGNMENT_ERROR;
+	case -ETIMEDOUT:
+	default:
+		return INFUSE_RPC_ERROR_DATA_RECEIVE_FAILED;
+	}
+}
 
 struct net_buf *rpc_command_file_write_impl(struct epacket_rx_metadata *rx_meta,
 					    uint32_t request_id, uint16_t rpc_id,
@@ -51,13 +63,13 @@ struct net_buf *rpc_command_file_write_impl(struct epacket_rx_metadata *rx_meta,
 	if ((rpc_id == RPC_ID_FILE_WRITE_BASIC) &&
 	    (action == RPC_ENUM_FILE_ACTION_WRITE_LITTLEFS)) {
 		LOG_WRN("FILE_WRITE_BASIC does not support WRITE_LITTLEFS");
-		rc = -EINVAL;
+		rc = INFUSE_RPC_ERROR_UNSUPPORTED_REQUEST;
 		goto error_no_cleanup;
 	}
 	if ((rpc_id == RPC_ID_FILE_WRITE) && (action == RPC_ENUM_FILE_ACTION_FILE_FOR_COPY) &&
 	    (req->folder != INFUSE_LFS_FOLDER_COPY)) {
 		LOG_WRN("FILE_FOR_COPY must use FOLDER_COPY");
-		rc = -EINVAL;
+		rc = INFUSE_RPC_ERROR_INVALID_ARGUMENT;
 		goto error_no_cleanup;
 	}
 
@@ -80,13 +92,14 @@ struct net_buf *rpc_command_file_write_impl(struct epacket_rx_metadata *rx_meta,
 	while (remaining > 0) {
 		data_buf = rpc_server_pull_data(request_id, expected_offset, &rc, K_MSEC(500));
 		if (data_buf == NULL) {
+			rc = pull_data_error_to_rpc(rc);
 			goto error;
 		}
 		var_len = RPC_DATA_VAR_LEN(data_buf);
 		if (var_len > remaining) {
 			LOG_WRN("Received too much data %zu/%u", var_len, remaining);
 			net_buf_unref(data_buf);
-			rc = -EINVAL;
+			rc = INFUSE_RPC_ERROR_DATA_LENGTH_MISMATCH;
 			goto error;
 		}
 		data = (void *)data_buf->data;
@@ -112,12 +125,12 @@ struct net_buf *rpc_command_file_write_impl(struct epacket_rx_metadata *rx_meta,
 
 	if (ctx.received != expected_len) {
 		LOG_ERR("Unexpected length received (%u != %u)", ctx.received, expected_len);
-		rc = -EINVAL;
+		rc = INFUSE_RPC_ERROR_DATA_UNEXPECTED_LENGTH_RECEIVED;
 		goto error;
 	}
 	if ((expected_crc != UINT32_MAX) && (ctx.crc != expected_crc)) {
 		LOG_ERR("Unexpected data CRC (%08X != %08X)", ctx.crc, expected_crc);
-		rc = -EINVAL;
+		rc = INFUSE_RPC_ERROR_DATA_CRC_MISMATCH;
 		goto error;
 	}
 

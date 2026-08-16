@@ -83,7 +83,8 @@ struct net_buf *rpc_command_wifi_scan(struct net_buf *request)
 
 	iface = net_if_get_first_wifi();
 	if (iface == NULL) {
-		return rpc_response_simple_req(request, -ENODEV, &rsp, sizeof(rsp));
+		return rpc_response_simple_req(
+			request, INFUSE_RPC_ERROR_NETWORK_INTERFACE_NOT_FOUND, &rsp, sizeof(rsp));
 	}
 
 	/* Request interface to come up if it is not already */
@@ -91,7 +92,9 @@ struct net_buf *rpc_command_wifi_scan(struct net_buf *request)
 		rc = net_if_up(iface);
 		if (rc != 0) {
 			LOG_ERR("Failed to bring up %s (%d)", iface->if_dev->dev->name, rc);
-			return rpc_response_simple_req(request, -ENODEV, &rsp, sizeof(rsp));
+			return rpc_response_simple_req(request,
+						       INFUSE_RPC_ERROR_NETWORK_INTERFACE_UP_FAILED,
+						       &rsp, sizeof(rsp));
 		}
 		manual_up = true;
 	}
@@ -111,6 +114,7 @@ struct net_buf *rpc_command_wifi_scan(struct net_buf *request)
 	LOG_INF("Requesting network scan");
 	rc = net_mgmt(NET_REQUEST_WIFI_SCAN, iface, &params, sizeof(struct wifi_scan_params));
 	if (rc != 0) {
+		rsp_p->header.return_code = INFUSE_RPC_ERROR_NETWORK_SCAN_START_FAILED;
 		goto done;
 	}
 

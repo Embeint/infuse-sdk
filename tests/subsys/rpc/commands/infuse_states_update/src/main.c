@@ -11,6 +11,7 @@
 #include <infuse/states.h>
 #include <infuse/types.h>
 #include <infuse/rpc/types.h>
+#include <infuse/rpc/errors.h>
 #include <infuse/epacket/packet.h>
 #include <infuse/epacket/interface/epacket_dummy.h>
 
@@ -82,7 +83,7 @@ ZTEST(rpc_command_infuse_states_update, test_invalid)
 	epacket_dummy_receive_extra(epacket_dummy, &header, &params, sizeof(params), (void *)states,
 				    5);
 
-	rsp = expect_infuse_states_update_response(1, -EINVAL);
+	rsp = expect_infuse_states_update_response(1, INFUSE_RPC_ERROR_MALFORMED_REQUEST);
 	net_buf_unref(rsp);
 }
 

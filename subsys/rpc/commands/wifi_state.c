@@ -26,7 +26,8 @@ struct net_buf *rpc_command_wifi_state(struct net_buf *request)
 	int rc;
 
 	if (iface == NULL) {
-		return rpc_response_simple_req(request, -EINVAL, &rsp, sizeof(rsp));
+		return rpc_response_simple_req(
+			request, INFUSE_RPC_ERROR_NETWORK_INTERFACE_NOT_FOUND, &rsp, sizeof(rsp));
 	}
 
 	/* Common networking state */

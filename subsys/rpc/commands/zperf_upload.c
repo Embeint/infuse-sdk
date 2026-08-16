@@ -29,28 +29,31 @@ static int data_logger_read(const struct device *logger, uint64_t byte_offset, u
 {
 	uint32_t block = byte_offset / 512;
 	struct data_logger_state state;
+	int rc;
 
 	/* Simplify implementation by not considering unaligned sizes and offsets */
 	if (((len != 512) && (len != 1024)) || (byte_offset % 512)) {
-		return -EINVAL;
+		return INFUSE_RPC_ERROR_INVALID_ARGUMENT;
 	}
 	/* Ensure device initialised properly */
 	if (!device_is_ready(logger)) {
-		return -EBADF;
+		return INFUSE_RPC_ERROR_DEVICE_NOT_READY;
 	}
 	data_logger_get_state(logger, &state);
 	if (state.block_size != 512) {
-		return -EBADF;
+		return INFUSE_RPC_ERROR_UNSUPPORTED_REQUEST;
 	}
 	if (state.current_block == 0) {
-		return -EINVAL;
+		return INFUSE_RPC_ERROR_NO_DATA;
 	}
 
 	/* Loop over blocks that have actually been written.
 	 * -1 to account for possible two block read.
 	 */
 	block %= (state.current_block - 1);
-	return data_logger_block_read(logger, block, 0, data, len);
+	rc = data_logger_block_read(logger, block, 0, data, len);
+
+	return rc < 0 ? INFUSE_RPC_ERROR_DATA_READ_FAILED : rc;
 }
 
 static int zperf_upload_data_loader(void *user_ctx, uint64_t offset, uint8_t *data, uint32_t len)
@@ -61,12 +64,20 @@ static int zperf_upload_data_loader(void *user_ctx, uint64_t offset, uint8_t *da
 	bool encrypt = !!(RPC_ENUM_ZPERF_DATA_SOURCE_ENCRYPT & *source);
 	__maybe_unused const struct device *logger = NULL;
 	size_t work_mem_size;
+	uint8_t *storage;
 	int rc;
 
 	/* Feed watchdog as upload duration can be requested as longer than the watchdog period */
 	rpc_server_watchdog_feed();
 
-	uint8_t *storage = encrypt ? rpc_server_command_working_mem(&work_mem_size) : data;
+	if (encrypt) {
+		storage = rpc_server_command_working_mem(&work_mem_size);
+		if (work_mem_size < len) {
+			return INFUSE_RPC_ERROR_RESPONSE_BUFFER_TOO_SMALL;
+		}
+	} else {
+		storage = data;
+	}
 
 	/* Populate the payload from the requested source */
 	switch (source_base) {
@@ -87,7 +98,7 @@ static int zperf_upload_data_loader(void *user_ctx, uint64_t offset, uint8_t *da
 		break;
 #endif /* CONFIG_DATA_LOGGER_EXFAT */
 	default:
-		return -EINVAL;
+		return INFUSE_RPC_ERROR_UNSUPPORTED_REQUEST;
 	}
 
 	if (logger != NULL) {
@@ -104,10 +115,6 @@ static int zperf_upload_data_loader(void *user_ctx, uint64_t offset, uint8_t *da
 		psa_status_t status;
 		size_t out_len;
 
-		if (work_mem_size < len) {
-			return -EINVAL;
-		}
-
 		/* Use the default UDP network key for encryption */
 		psa_key_id = epacket_key_id_get(EPACKET_KEY_NETWORK | EPACKET_KEY_INTERFACE_UDP,
 						infuse_security_network_key_identifier(),
@@ -123,7 +130,7 @@ static int zperf_upload_data_loader(void *user_ctx, uint64_t offset, uint8_t *da
 		status = psa_aead_encrypt(psa_key_id, PSA_ALG_CHACHA20_POLY1305, storage, 12, NULL,
 					  0, storage + 12, len - 24, data, len, &out_len);
 		if (status != PSA_SUCCESS) {
-			return -EIO;
+			return INFUSE_RPC_ERROR_DATA_WRITE_FAILED;
 		}
 	}
 	return 0;
@@ -159,7 +166,8 @@ struct net_buf *rpc_command_zperf_upload(struct net_buf *request)
 		       sizeof(peer_addr->sin6_addr.s6_addr));
 	} else {
 		LOG_WRN("%s type %d not supported", "Address", req->peer_address.sin_family);
-		return rpc_response_simple_req(request, -EINVAL, &rsp, sizeof(rsp));
+		return rpc_response_simple_req(request, INFUSE_RPC_ERROR_INVALID_ARGUMENT, &rsp,
+					       sizeof(rsp));
 	}
 
 	/* Upload request parameters */
@@ -187,13 +195,15 @@ struct net_buf *rpc_command_zperf_upload(struct net_buf *request)
 		rc = zperf_tcp_upload(&params, &results);
 	} else {
 		LOG_WRN("%s type %d not supported", "Protocol", sock_type);
-		return rpc_response_simple_if(interface, -EINVAL, &rsp, sizeof(rsp));
+		return rpc_response_simple_if(interface, INFUSE_RPC_ERROR_UNSUPPORTED_REQUEST, &rsp,
+					      sizeof(rsp));
 	}
 
 	if (rc != 0) {
 		rc = rc == -1 ? -errno : rc;
 		LOG_ERR("Upload failed (%d)", rc);
-		return rpc_response_simple_if(interface, rc, &rsp, sizeof(rsp));
+		return rpc_response_simple_if(interface, INFUSE_RPC_ERROR_DATA_WRITE_FAILED, &rsp,
+					      sizeof(rsp));
 	}
 	LOG_INF("zperf upload complete");
 

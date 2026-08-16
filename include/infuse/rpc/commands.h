@@ -16,6 +16,7 @@
 #include <zephyr/net_buf.h>
 
 #include <infuse/epacket/packet.h>
+#include <infuse/rpc/errors.h>
 
 #ifdef __cplusplus
 extern "C" {

@@ -6,6 +6,8 @@
  * SPDX-License-Identifier: FSL-1.1-ALv2
  */
 
+#include <errno.h>
+
 #include <zephyr/kernel.h>
 #include <zephyr/drivers/flash.h>
 #include <zephyr/logging/log.h>
@@ -34,7 +36,7 @@ static void command_data_done(const struct net_buf *buf, void *user_data)
 
 	if (buf == NULL) {
 		LOG_WRN("Write timed out");
-		ctx->rc = -ETIMEDOUT;
+		ctx->rc = INFUSE_RPC_ERROR_BT_RESPONSE_TIMEOUT;
 	} else {
 		const struct rpc_file_write_basic_response *rsp = (const void *)buf->data;
 
@@ -55,13 +57,16 @@ static int file_loader(void *user_data, uint32_t offset, void *data, size_t data
 
 	rc = infuse_littlefs_file_seek(offset);
 	if (rc < 0) {
-		return rc;
+		return INFUSE_RPC_ERROR_FILE_SEEK_FAILED;
 	}
-	return infuse_littlefs_file_read(data, data_len);
+	rc = infuse_littlefs_file_read(data, data_len);
+	return rc < 0 ? INFUSE_RPC_ERROR_FILE_READ_FAILED : rc;
 #else
 	const struct flash_area *fa = user_data;
 
-	return flash_area_read(fa, offset, data, data_len);
+	int rc = flash_area_read(fa, offset, data, data_len);
+
+	return rc < 0 ? INFUSE_RPC_ERROR_FLASH_READ_FAILED : rc;
 #endif
 }
 
@@ -102,11 +107,12 @@ int rpc_command_bt_file_copy_basic_run(struct rpc_bt_file_copy_basic_request *re
 	rc = infuse_littlefs_file_size(INFUSE_LFS_FOLDER_COPY, req->file_idx);
 	if (rc < 0) {
 		LOG_WRN("Failed to check file size (%d)", rc);
-		return rc;
+		return rc == -ENOENT ? INFUSE_RPC_ERROR_FILE_NOT_FOUND
+				     : INFUSE_RPC_ERROR_FILE_SIZE_FAILED;
 	} else if (rc < req->file_len) {
 		LOG_WRN("File %d is only %d bytes long, %d bytes requested", req->file_idx, rc,
 			req->file_len);
-		return -EINVAL;
+		return INFUSE_RPC_ERROR_FILE_TOO_SMALL;
 	}
 #else
 	const struct flash_area *fa = NULL;
@@ -123,7 +129,7 @@ int rpc_command_bt_file_copy_basic_run(struct rpc_bt_file_copy_basic_request *re
 	conn = bt_conn_lookup_addr_le(BT_ID_DEFAULT, &bluetooth_addr);
 	if (conn == NULL) {
 		LOG_WRN("Not connected");
-		return -ENOTCONN;
+		return INFUSE_RPC_ERROR_BT_NOT_CONNECTED;
 	}
 	bt_conn_unref(conn);
 
@@ -137,6 +143,7 @@ int rpc_command_bt_file_copy_basic_run(struct rpc_bt_file_copy_basic_request *re
 				      K_NO_WAIT, K_SECONDS(15));
 	if (rc < 0) {
 		LOG_WRN("Failed to queue initial command");
+		rc = INFUSE_RPC_ERROR_BT_COMMAND_QUEUE_FAILED;
 		goto cleanup;
 	}
 
@@ -146,6 +153,7 @@ int rpc_command_bt_file_copy_basic_run(struct rpc_bt_file_copy_basic_request *re
 	rc = infuse_littlefs_file_open(INFUSE_LFS_FOLDER_COPY, req->file_idx);
 	if (rc < 0) {
 		LOG_WRN("Failed to open file %d", req->file_idx);
+		rc = INFUSE_RPC_ERROR_FILE_OPEN_FAILED;
 		goto cleanup;
 	}
 #else
@@ -162,6 +170,7 @@ int rpc_command_bt_file_copy_basic_run(struct rpc_bt_file_copy_basic_request *re
 	rc = rpc_client_ack_wait(&client_ctx, request_id, K_SECONDS(15));
 	if (rc < 0) {
 		LOG_WRN("Initial ACK not received");
+		rc = INFUSE_RPC_ERROR_BT_NO_INITIAL_ACK;
 		goto cleanup;
 	}
 
@@ -176,6 +185,7 @@ int rpc_command_bt_file_copy_basic_run(struct rpc_bt_file_copy_basic_request *re
 	/* Reduce timeout value for bulk data transfer */
 	rc = rpc_client_update_response_timeout(&client_ctx, request_id, K_SECONDS(1));
 	if (rc < 0) {
+		rc = INFUSE_RPC_ERROR_BT_TIMEOUT_UPDATE_FAILED;
 		goto cleanup;
 	}
 
@@ -186,22 +196,30 @@ int rpc_command_bt_file_copy_basic_run(struct rpc_bt_file_copy_basic_request *re
 	/* Push the data through the client, loaded from the flash area */
 	rc = rpc_client_data_queue_auto_load(&client_ctx, request_id, 0, work_mem, work_mem_size,
 					     &load_params);
+	if (rc < 0) {
+		if (rc > _INFUSE_RPC_ERROR_BASE) {
+			rc = INFUSE_RPC_ERROR_BT_COMMAND_QUEUE_FAILED;
+		}
+		goto cleanup;
+	}
 
 	/* Wait for final RPC_RSP */
 	rc = k_sem_take(&completion_ctx.done, K_SECONDS(2));
 	if (rc == 0) {
 		rc = completion_ctx.rc;
+	} else {
+		rc = INFUSE_RPC_ERROR_BT_RESPONSE_TIMEOUT;
 	}
 	if (rc == 0) {
 		if (completion_ctx.write_rsp.recv_len != write_req.data_header.size) {
 			LOG_WRN("Unexpected length (%d != %d)", completion_ctx.write_rsp.recv_len,
 				write_req.data_header.size);
-			rc = -EIO;
+			rc = INFUSE_RPC_ERROR_BT_FILE_LENGTH_MISMATCH;
 		}
 		if (completion_ctx.write_rsp.recv_crc != write_req.file_crc) {
 			LOG_WRN("Unexpected CRC (%d != %d)", completion_ctx.write_rsp.recv_crc,
 				write_req.file_crc);
-			rc = -EIO;
+			rc = INFUSE_RPC_ERROR_BT_FILE_CRC_MISMATCH;
 		}
 	}
 

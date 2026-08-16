@@ -70,7 +70,7 @@ int rpc_command_coap_download_run(struct rpc_coap_download_v3_request *req, char
 	if ((req->action == RPC_ENUM_FILE_ACTION_WRITE_LITTLEFS) &&
 	    (req->header.command_id != RPC_ID_COAP_DOWNLOAD_V3)) {
 		LOG_ERR("RPC %d does not support WRITE_LITTLEFS", req->action);
-		rc = -EINVAL;
+		rc = INFUSE_RPC_ERROR_UNSUPPORTED_REQUEST;
 		goto error_no_cleanup;
 	}
 
@@ -97,6 +97,7 @@ int rpc_command_coap_download_run(struct rpc_coap_download_v3_request *req, char
 			     &address_len);
 	if (rc < 0) {
 		LOG_DBG("DNS failure (%d)", rc);
+		rc = INFUSE_RPC_ERROR_DNS_QUERY_FAILED;
 		goto error;
 	}
 
@@ -104,7 +105,7 @@ int rpc_command_coap_download_run(struct rpc_coap_download_v3_request *req, char
 	sock = zsock_socket(address.sa_family, SOCK_DGRAM, IPPROTO_DTLS_1_2);
 	if (sock < 0) {
 		LOG_DBG("zsock_socket failure (%d)", -errno);
-		rc = -errno;
+		rc = INFUSE_RPC_ERROR_SOCKET_CREATE_FAILED;
 		goto error;
 	}
 
@@ -112,7 +113,7 @@ int rpc_command_coap_download_run(struct rpc_coap_download_v3_request *req, char
 	if (zsock_setsockopt(sock, SOL_TLS, TLS_SEC_TAG_LIST, sec_tls_tags, sizeof(sec_tls_tags)) <
 	    0) {
 		LOG_DBG("zsock_setsockopt failure (%d)", -errno);
-		rc = -errno;
+		rc = INFUSE_RPC_ERROR_SOCKET_CONFIG_FAILED;
 		goto error;
 	}
 
@@ -123,7 +124,7 @@ int rpc_command_coap_download_run(struct rpc_coap_download_v3_request *req, char
 	if (zsock_setsockopt(sock, SOL_TLS, TLS_DTLS_HANDSHAKE_TIMEOUT_MAX, &timeout,
 			     sizeof(timeout)) < 0) {
 		LOG_DBG("zsock_setsockopt failure (%d)", -errno);
-		rc = -errno;
+		rc = INFUSE_RPC_ERROR_SOCKET_CONFIG_FAILED;
 		goto error;
 	}
 #endif /* CONFIG_NRF_MODEM_LIB */
@@ -132,7 +133,7 @@ int rpc_command_coap_download_run(struct rpc_coap_download_v3_request *req, char
 	rc = zsock_connect(sock, &address, address_len);
 	if (rc != 0) {
 		LOG_DBG("zsock_connect failure (%d)", -errno);
-		rc = -errno;
+		rc = INFUSE_RPC_ERROR_SOCKET_CONNECT_FAILED;
 		goto error;
 	}
 
@@ -143,6 +144,9 @@ int rpc_command_coap_download_run(struct rpc_coap_download_v3_request *req, char
 		rc = *downloaded;
 		*downloaded = 0;
 		LOG_DBG("infuse_coap_download failed (%d)", rc);
+		if (rc > _INFUSE_RPC_ERROR_BASE) {
+			rc = INFUSE_RPC_ERROR_COAP_DOWNLOAD_FAILED;
+		}
 		goto error;
 	}
 

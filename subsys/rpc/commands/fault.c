@@ -34,7 +34,7 @@ struct net_buf *rpc_command_fault(struct net_buf *request)
 	struct rpc_fault_request *req = (void *)request->data;
 	struct rpc_fault_response rsp = {0};
 	uint8_t *ptr __maybe_unused;
-	int rc = -EINVAL;
+	int rc = INFUSE_RPC_ERROR_INVALID_ARGUMENT;
 
 	LOG_INF("%s fault code %d", __func__, req->fault);
 	switch (req->fault) {

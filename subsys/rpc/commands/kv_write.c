@@ -6,6 +6,8 @@
  * SPDX-License-Identifier: FSL-1.1-ALv2
  */
 
+#include <errno.h>
+
 #include <zephyr/net_buf.h>
 #include <zephyr/logging/log.h>
 
@@ -35,7 +37,8 @@ struct net_buf *rpc_command_kv_write(struct net_buf *request)
 		if (offset > request->len) {
 			LOG_WRN("%s invalid buffer (idx %d key %d len %d)", __func__, i, v->id,
 				v->len);
-			return rpc_response_simple_req(request, -EINVAL, &rsp, sizeof(rsp));
+			return rpc_response_simple_req(request, INFUSE_RPC_ERROR_MALFORMED_REQUEST,
+						       &rsp, sizeof(rsp));
 		}
 	}
 
@@ -48,6 +51,11 @@ struct net_buf *rpc_command_kv_write(struct net_buf *request)
 
 		/* Check for read only protection */
 		rc = kv_store_external_read_only(v->id);
+		if (rc == -EACCES) {
+			rc = INFUSE_RPC_ERROR_KV_KEY_NOT_ENABLED;
+		} else if (rc < 0) {
+			rc = INFUSE_RPC_ERROR_WRITE_PROTECTED;
+		}
 
 #ifdef CONFIG_INFUSE_RPC_OPTION_KV_WRITE_APP_VALIDATE
 		if (rc == 0) {
@@ -56,7 +64,7 @@ struct net_buf *rpc_command_kv_write(struct net_buf *request)
 			/* Run application validation if read only check passed */
 			rc = infuse_rpc_command_kv_write_validate(meta, v->id, ptr, v->len)
 				     ? 0
-				     : -EINVAL;
+				     : INFUSE_RPC_ERROR_KV_WRITE_REJECTED;
 		}
 #endif /* CONFIG_INFUSE_RPC_OPTION_KV_WRITE_APP_VALIDATE */
 
@@ -65,10 +73,18 @@ struct net_buf *rpc_command_kv_write(struct net_buf *request)
 				/* Write the value */
 				LOG_DBG("Deleting key %d", v->id);
 				rc = kv_store_delete(v->id);
+				if (rc < 0) {
+					rc = rc == -EACCES ? INFUSE_RPC_ERROR_KV_KEY_NOT_ENABLED
+							   : INFUSE_RPC_ERROR_KV_DELETE_FAILED;
+				}
 			} else {
 				/* Write the value */
 				LOG_DBG("Writing key %d len %d", v->id, v->len);
 				rc = kv_store_write(v->id, v->data, v->len);
+				if (rc < 0) {
+					rc = rc == -EACCES ? INFUSE_RPC_ERROR_KV_KEY_NOT_ENABLED
+							   : INFUSE_RPC_ERROR_KV_WRITE_FAILED;
+				}
 			}
 		}
 		/* Push response onto the buffer.

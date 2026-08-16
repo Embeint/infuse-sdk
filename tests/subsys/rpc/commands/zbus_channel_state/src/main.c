@@ -13,6 +13,7 @@
 
 #include <infuse/types.h>
 #include <infuse/rpc/types.h>
+#include <infuse/rpc/errors.h>
 #include <infuse/epacket/packet.h>
 #include <infuse/epacket/interface/epacket_dummy.h>
 #include <infuse/zbus/channels.h>
@@ -74,11 +75,11 @@ ZTEST(rpc_command_zbus_channel_state, test_bad_channel_id)
 	struct net_buf *rsp;
 
 	send_zbus_channel_state_command(1000, ZBUS_CHAN_ID_INVALID);
-	rsp = expect_zbus_channel_state_response(1000, -EBADF);
+	rsp = expect_zbus_channel_state_response(1000, INFUSE_RPC_ERROR_CHANNEL_NOT_FOUND);
 	net_buf_unref(rsp);
 
 	send_zbus_channel_state_command(1001, 0x1234567);
-	rsp = expect_zbus_channel_state_response(1001, -EBADF);
+	rsp = expect_zbus_channel_state_response(1001, INFUSE_RPC_ERROR_CHANNEL_NOT_FOUND);
 	net_buf_unref(rsp);
 }
 
@@ -88,13 +89,13 @@ ZTEST(rpc_command_zbus_channel_state, test_not_yet_published)
 	struct net_buf *rsp;
 
 	send_zbus_channel_state_command(1002, INFUSE_ZBUS_CHAN_BATTERY);
-	rsp = expect_zbus_channel_state_response(1002, -EAGAIN);
+	rsp = expect_zbus_channel_state_response(1002, INFUSE_RPC_ERROR_CHANNEL_NO_DATA);
 	response = (void *)rsp->data;
 	zassert_equal(0, rsp->len - sizeof(*response));
 	net_buf_unref(rsp);
 
 	send_zbus_channel_state_command(1003, INFUSE_ZBUS_CHAN_AMBIENT_ENV);
-	rsp = expect_zbus_channel_state_response(1003, -EAGAIN);
+	rsp = expect_zbus_channel_state_response(1003, INFUSE_RPC_ERROR_CHANNEL_NO_DATA);
 	response = (void *)rsp->data;
 	zassert_equal(0, rsp->len - sizeof(*response));
 	net_buf_unref(rsp);

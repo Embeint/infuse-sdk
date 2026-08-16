@@ -82,6 +82,7 @@ class cloudgen(WestCommand):
 
         self.tdfgen()
         self.kvgen()
+        self.rpcerrorsgen()
         self.rpcgen()
         self.tasksgen()
 
@@ -728,6 +729,32 @@ class cloudgen(WestCommand):
             self.ruff_format(py_extensions)
 
         self.ruff_format(kv_py_output)
+
+    def rpcerrorsgen(self):
+        rpc_errors_file = self.definition_dir / "rpc_errors.json"
+        rpc_errors_template = self.env.get_template("rpc_errors.h.jinja")
+        rpc_errors_output = self.output_base / "include" / "infuse" / "rpc" / "errors.h"
+        rpc_errors_output.parent.mkdir(parents=True, exist_ok=True)
+
+        with rpc_errors_file.open("r") as f:
+            rpc_errors = json.load(f)
+
+        with rpc_errors_output.open("w") as f:
+            f.write(rpc_errors_template.render(errors=rpc_errors))
+
+        self.clang_format(rpc_errors_output)
+
+        if self.skip_python_generation:
+            return
+
+        loader = importlib.util.find_spec("infuse_iot.generated.rpc_errors")
+        rpc_errors_py_template = self.env.get_template("rpc_errors.py.jinja")
+        rpc_errors_py_output = pathlib.Path(loader.origin)
+
+        with rpc_errors_py_output.open("w", encoding="utf-8") as f:
+            f.write(rpc_errors_py_template.render(errors=rpc_errors))
+
+        self.ruff_format(rpc_errors_py_output)
 
     def rpcgen(self):
         rpc_def_file = self.definition_dir / "rpc.json"

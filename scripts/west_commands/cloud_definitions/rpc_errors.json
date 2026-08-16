@@ -1,0 +1,173 @@
+{
+    "base": -1000,
+    "groups": [
+        {
+            "description": "RPC protocol and request validation errors.",
+            "errors": [
+                {"name": "INVALID_COMMAND", "value": -1000},
+                {"name": "MALFORMED_REQUEST", "value": -1001},
+                {"name": "INVALID_ARGUMENT", "value": -1002},
+                {"name": "UNSUPPORTED_REQUEST", "value": -1003},
+                {"name": "RESPONSE_BUFFER_TOO_SMALL", "value": -1004}
+            ]
+        },
+        {
+            "description": "Device and generic data availability errors.",
+            "errors": [
+                {"name": "DEVICE_NOT_FOUND", "value": -1020},
+                {"name": "DEVICE_NOT_READY", "value": -1021},
+                {"name": "NO_DATA", "value": -1022}
+            ]
+        },
+        {
+            "description": "Data payload and data logger errors.",
+            "errors": [
+                {"name": "DATA_OUT_OF_RANGE", "value": -1040},
+                {"name": "DATA_LENGTH_MISMATCH", "value": -1041},
+                {"name": "DATA_CRC_MISMATCH", "value": -1042},
+                {"name": "DATA_READ_FAILED", "value": -1043},
+                {"name": "DATA_WRITE_FAILED", "value": -1044},
+                {"name": "DATA_ERASE_FAILED", "value": -1045},
+                {"name": "DATA_FLUSH_FAILED", "value": -1046},
+                {"name": "DATA_VALIDATE_FAILED", "value": -1047},
+                {"name": "DATA_VARIANCE_TOO_HIGH", "value": -1048},
+                {"name": "DATA_RECEIVE_FAILED", "value": -1049},
+                {"name": "DATA_ALIGNMENT_ERROR", "value": -1050},
+                {"name": "DATA_UNEXPECTED_LENGTH_RECEIVED", "value": -1051}
+            ]
+        },
+        {
+            "description": "File system errors.",
+            "errors": [
+                {"name": "FILE_ALREADY_PRESENT", "value": -1060},
+                {"name": "FILE_NOT_FOUND", "value": -1061},
+                {"name": "FILE_TOO_SMALL", "value": -1062},
+                {"name": "FILE_OPEN_FAILED", "value": -1063},
+                {"name": "FILE_CREATE_FAILED", "value": -1064},
+                {"name": "FILE_DELETE_FAILED", "value": -1065},
+                {"name": "FILE_CLOSE_FAILED", "value": -1066},
+                {"name": "FILE_READ_FAILED", "value": -1067},
+                {"name": "FILE_WRITE_FAILED", "value": -1068},
+                {"name": "FILE_SEEK_FAILED", "value": -1069},
+                {"name": "FILE_SIZE_FAILED", "value": -1070},
+                {"name": "FILE_METADATA_FAILED", "value": -1071},
+                {"name": "FILE_CRC_FAILED", "value": -1072},
+                {"name": "FILE_ITERATION_FAILED", "value": -1073}
+            ]
+        },
+        {
+            "description": "Flash storage errors.",
+            "errors": [
+                {"name": "FLASH_AREA_OPEN_FAILED", "value": -1080},
+                {"name": "FLASH_AREA_CLOSE_FAILED", "value": -1081},
+                {"name": "FLASH_ERASE_FAILED", "value": -1082},
+                {"name": "FLASH_READ_FAILED", "value": -1083},
+                {"name": "FLASH_WRITE_FAILED", "value": -1084},
+                {"name": "FLASH_FLUSH_FAILED", "value": -1085},
+                {"name": "FLASH_CRC_FAILED", "value": -1086},
+                {"name": "FLASH_DATA_TOO_LARGE", "value": -1087}
+            ]
+        },
+        {
+            "description": "Streaming, DFU, and patch application errors.",
+            "errors": [
+                {"name": "STREAM_INIT_FAILED", "value": -1100},
+                {"name": "DFU_PREPARE_FAILED", "value": -1101},
+                {"name": "DFU_FINISH_FAILED", "value": -1102},
+                {"name": "DFU_REBOOT_FAILED", "value": -1103},
+                {"name": "PATCH_ORIGINAL_OPEN_FAILED", "value": -1104},
+                {"name": "PATCH_OUTPUT_OPEN_FAILED", "value": -1105},
+                {"name": "PATCH_OUTPUT_ERASE_FAILED", "value": -1106},
+                {"name": "PATCH_VALIDATE_FAILED", "value": -1107},
+                {"name": "PATCH_APPLY_FAILED", "value": -1108}
+            ]
+        },
+        {
+            "description": "Bluetooth transport errors.",
+            "errors": [
+                {"name": "BT_NOT_CONNECTED", "value": -1120},
+                {"name": "BT_CONNECT_FAILED", "value": -1121},
+                {"name": "BT_CONNECTION_TIMEOUT", "value": -1122},
+                {"name": "BT_DISCONNECT_FAILED", "value": -1123},
+                {"name": "BT_COMMAND_QUEUE_FAILED", "value": -1124},
+                {"name": "BT_NO_INITIAL_ACK", "value": -1125},
+                {"name": "BT_TIMEOUT_UPDATE_FAILED", "value": -1126},
+                {"name": "BT_RESPONSE_TIMEOUT", "value": -1127},
+                {"name": "BT_REMOTE_ERROR", "value": -1128},
+                {"name": "BT_CHARACTERISTIC_NOT_FOUND", "value": -1129},
+                {"name": "BT_GATT_WRITE_FAILED", "value": -1130},
+                {"name": "BT_FILE_LENGTH_MISMATCH", "value": -1131},
+                {"name": "BT_FILE_CRC_MISMATCH", "value": -1132}
+            ]
+        },
+        {
+            "description": "Modem AT command errors.",
+            "errors": [
+                {"name": "MODEM_AT_UNSAFE", "value": -1140},
+                {"name": "MODEM_AT_FAILED", "value": -1141},
+                {"name": "MODEM_AT_CANCELLED", "value": -1142},
+                {"name": "MODEM_AT_TIMEOUT", "value": -1143},
+                {"name": "MODEM_AT_BUSY", "value": -1144}
+            ]
+        },
+        {
+            "description": "Network, socket, and CoAP errors.",
+            "errors": [
+                {"name": "NETWORK_INTERFACE_NOT_FOUND", "value": -1160},
+                {"name": "NETWORK_SCAN_START_FAILED", "value": -1161},
+                {"name": "NETWORK_INTERFACE_UP_FAILED", "value": -1162},
+                {"name": "DNS_QUERY_FAILED", "value": -1163},
+                {"name": "SOCKET_CREATE_FAILED", "value": -1164},
+                {"name": "SOCKET_CONFIG_FAILED", "value": -1165},
+                {"name": "SOCKET_CONNECT_FAILED", "value": -1166},
+                {"name": "COAP_DOWNLOAD_FAILED", "value": -1167}
+            ]
+        },
+        {
+            "description": "Security key and access protection errors.",
+            "errors": [
+                {"name": "AUTHENTICATION_REQUIRED", "value": -1180},
+                {"name": "READ_PROTECTED", "value": -1181},
+                {"name": "WRITE_PROTECTED", "value": -1182},
+                {"name": "CRYPTO_FAILED", "value": -1183},
+                {"name": "KEY_ACTION_UNSUPPORTED", "value": -1184},
+                {"name": "KEY_ID_UNSUPPORTED", "value": -1185},
+                {"name": "KEY_WRITE_FORBIDDEN", "value": -1186},
+                {"name": "KEY_RESET_FAILED", "value": -1187},
+                {"name": "KEY_DELETE_FAILED", "value": -1188},
+                {"name": "KEY_WRITE_FAILED", "value": -1189},
+                {"name": "AUTHORIZATION_DENIED", "value": -1190}
+            ]
+        },
+        {
+            "description": "Key-value store errors.",
+            "errors": [
+                {"name": "KV_KEY_NOT_ENABLED", "value": -1200},
+                {"name": "KV_KEY_NOT_FOUND", "value": -1201},
+                {"name": "KV_READ_FAILED", "value": -1202},
+                {"name": "KV_WRITE_FAILED", "value": -1203},
+                {"name": "KV_DELETE_FAILED", "value": -1204},
+                {"name": "KV_REFLECT_FAILED", "value": -1205},
+                {"name": "KV_WRITE_REJECTED", "value": -1206}
+            ]
+        },
+        {
+            "description": "Zbus channel errors.",
+            "errors": [
+                {"name": "CHANNEL_NOT_FOUND", "value": -1220},
+                {"name": "CHANNEL_NO_DATA", "value": -1221},
+                {"name": "CHANNEL_READ_FAILED", "value": -1222}
+            ]
+        },
+        {
+            "description": "Time and GNSS errors.",
+            "errors": [
+                {"name": "TIME_SET_FAILED", "value": -1240},
+                {"name": "GNSS_POWER_UP_FAILED", "value": -1241},
+                {"name": "GNSS_POLL_UNIQUE_ID_FAILED", "value": -1242},
+                {"name": "GNSS_POLL_VERSION_FAILED", "value": -1243},
+                {"name": "GNSS_UNEXPECTED_PAYLOAD", "value": -1244}
+            ]
+        }
+    ]
+}
