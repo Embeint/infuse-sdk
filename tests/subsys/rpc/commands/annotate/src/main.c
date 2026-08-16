@@ -14,6 +14,7 @@
 
 #include <infuse/types.h>
 #include <infuse/rpc/types.h>
+#include <infuse/rpc/errors.h>
 #include <infuse/tdf/tdf.h>
 #include <infuse/tdf/definitions.h>
 #include <infuse/epacket/packet.h>
@@ -89,19 +90,19 @@ ZTEST(rpc_command_annotate, test_annotate)
 
 	/* TDF logger that doesn't exist */
 	send_annotate_command(10, RPC_ENUM_DATA_LOGGER_FLASH_REMOVABLE, 0, "X");
-	rsp = expect_rpc_response(10, -ENODEV);
+	rsp = expect_rpc_response(10, INFUSE_RPC_ERROR_DEVICE_NOT_FOUND);
 	net_buf_unref(rsp);
 
 	/* TDF logger that failed to init */
 	flash_tdf_logger->state->init_res += 1;
 	send_annotate_command(11, RPC_ENUM_DATA_LOGGER_FLASH_ONBOARD, 0, "X");
-	rsp = expect_rpc_response(11, -EBADF);
+	rsp = expect_rpc_response(11, INFUSE_RPC_ERROR_DEVICE_NOT_READY);
 	net_buf_unref(rsp);
 	flash_tdf_logger->state->init_res -= 1;
 
 	/* No event string */
 	send_annotate_command(12, RPC_ENUM_DATA_LOGGER_FLASH_ONBOARD, 0, "");
-	rsp = expect_rpc_response(12, -EINVAL);
+	rsp = expect_rpc_response(12, INFUSE_RPC_ERROR_INVALID_ARGUMENT);
 	response = (void *)rsp->data;
 	net_buf_unref(rsp);
 

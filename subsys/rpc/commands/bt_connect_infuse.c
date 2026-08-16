@@ -51,6 +51,9 @@ struct net_buf *rpc_command_bt_connect_infuse(struct net_buf *request)
 		       sizeof(rsp.device_public_key));
 		rsp.network_id = security_info.network_id;
 		bt_conn_unref(conn);
+	} else {
+		rc = rc == -ETIMEDOUT ? INFUSE_RPC_ERROR_BT_CONNECTION_TIMEOUT
+				      : INFUSE_RPC_ERROR_BT_CONNECT_FAILED;
 	}
 
 	/* Allocate and return the response */

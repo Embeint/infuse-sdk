@@ -16,6 +16,7 @@
 #include <infuse/fs/kv_types.h>
 #include <infuse/rpc/commands/kv_write.h>
 #include <infuse/rpc/types.h>
+#include <infuse/rpc/errors.h>
 #include <infuse/epacket/packet.h>
 #include <infuse/epacket/interface/epacket_dummy.h>
 
@@ -82,7 +83,7 @@ ZTEST(rpc_command_kv_write, test_kv_write_bad_input)
 	value->len = sizeof(uint32_t);
 
 	send_kv_write_command(5, &values, 1);
-	rsp = expect_kv_write_response(5, -EINVAL, 0);
+	rsp = expect_kv_write_response(5, INFUSE_RPC_ERROR_MALFORMED_REQUEST, 0);
 	net_buf_unref(rsp);
 }
 
@@ -105,7 +106,7 @@ ZTEST(rpc_command_kv_write, test_kv_write_read_only)
 	send_kv_write_command(6, &values, 1);
 	rsp = expect_kv_write_response(6, 0, 1);
 	response = (void *)rsp->data;
-	zassert_equal(-EPERM, response->rc[0]);
+	zassert_equal(INFUSE_RPC_ERROR_WRITE_PROTECTED, response->rc[0]);
 	net_buf_unref(rsp);
 }
 
@@ -166,7 +167,7 @@ ZTEST(rpc_command_kv_write, test_kv_write_single)
 	send_kv_write_command(3, &values, 1);
 	rsp = expect_kv_write_response(3, 0, 1);
 	response = (void *)rsp->data;
-	zassert_equal(-EACCES, response->rc[0]);
+	zassert_equal(INFUSE_RPC_ERROR_KV_KEY_NOT_ENABLED, response->rc[0]);
 	net_buf_unref(rsp);
 }
 
@@ -311,7 +312,7 @@ ZTEST(rpc_command_kv_write, test_kv_write_app_validation)
 	send_kv_write_command(1, &values, 1);
 	rsp = expect_kv_write_response(1, 0, 1);
 	response = (void *)rsp->data;
-	zassert_equal(-EINVAL, response->rc[0]);
+	zassert_equal(INFUSE_RPC_ERROR_APPLICATION_VALIDATE_FAILED, response->rc[0]);
 	net_buf_unref(rsp);
 	zassert_false(kv_store_key_exists(KV_KEY_REBOOTS));
 
@@ -333,7 +334,7 @@ ZTEST(rpc_command_kv_write, test_kv_write_app_validation)
 	send_kv_write_command(3, &values, 1);
 	rsp = expect_kv_write_response(3, 0, 1);
 	response = (void *)rsp->data;
-	zassert_equal(-EINVAL, response->rc[0]);
+	zassert_equal(INFUSE_RPC_ERROR_APPLICATION_VALIDATE_FAILED, response->rc[0]);
 	net_buf_unref(rsp);
 	zassert_true(kv_store_key_exists(KV_KEY_REBOOTS));
 

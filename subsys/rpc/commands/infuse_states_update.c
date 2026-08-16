@@ -23,7 +23,8 @@ struct net_buf *rpc_command_infuse_states_update(struct net_buf *request)
 	/* Validate provided request */
 	expected_len = sizeof(*req) + (req->num * sizeof(struct rpc_struct_infuse_state));
 	if (expected_len != request->len) {
-		return rpc_response_simple_req(request, -EINVAL, &rsp, sizeof(rsp));
+		return rpc_response_simple_req(request, INFUSE_RPC_ERROR_MALFORMED_REQUEST, &rsp,
+					       sizeof(rsp));
 	}
 
 	/* Loop over provided states */

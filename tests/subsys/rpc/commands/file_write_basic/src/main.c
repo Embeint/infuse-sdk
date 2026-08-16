@@ -20,6 +20,7 @@
 #include <infuse/rpc/commands.h>
 #include <infuse/rpc/server.h>
 #include <infuse/rpc/types.h>
+#include <infuse/rpc/errors.h>
 #include <infuse/security.h>
 #include <infuse/fs/kv_store.h>
 #include <infuse/fs/littlefs.h>
@@ -360,7 +361,7 @@ ZTEST(rpc_command_file_write_basic, test_invalid_action)
 		rsp = (void *)(tx->data + sizeof(*tx_header));
 
 		zassert_equal(INFUSE_RPC_RSP, tx_header->type);
-		zassert_equal(-EINVAL, rsp->header.return_code);
+		zassert_equal(INFUSE_RPC_ERROR_UNSUPPORTED_REQUEST, rsp->header.return_code);
 
 		net_buf_unref(tx);
 		req.header.request_id += 1;
@@ -378,7 +379,7 @@ ZTEST(rpc_command_file_write_basic, test_invalid_action)
 	rsp = (void *)(tx->data + sizeof(*tx_header));
 
 	zassert_equal(INFUSE_RPC_RSP, tx_header->type);
-	zassert_equal(-EINVAL, rsp->header.return_code);
+	zassert_equal(INFUSE_RPC_ERROR_UNSUPPORTED_REQUEST, rsp->header.return_code);
 #endif /* !defined(CONFIG_TEST_FILE_WRITE) */
 }
 
@@ -474,7 +475,7 @@ ZTEST(rpc_command_file_write_basic, test_file_write_dfu_unknown_len_offset)
 
 	ret = test_file_write_basic_declared(RPC_ENUM_FILE_ACTION_APP_IMG, payload_len, UINT32_MAX,
 					     0, 0, 0, 0, false, false, NULL);
-	zassert_equal(-ETIMEDOUT, ret.cmd_rc);
+	zassert_equal(INFUSE_RPC_ERROR_DATA_RECEIVE_FAILED, ret.cmd_rc);
 	zassert_equal(payload_len, ret.cmd_len);
 	zassert_equal(ret.written_crc, ret.cmd_crc);
 
@@ -491,7 +492,7 @@ ZTEST(rpc_command_file_write_basic, test_file_write_dfu_too_large_releases_devic
 
 	ret = test_file_write_basic_declared(RPC_ENUM_FILE_ACTION_APP_IMG, 0, UINT32_MAX / 2, 0, 0,
 					     0, 0, false, false, NULL);
-	zassert_equal(-EINVAL, ret.cmd_rc);
+	zassert_equal(INFUSE_RPC_ERROR_FLASH_DATA_TOO_LARGE, ret.cmd_rc);
 	zassert_equal(0, ret.cmd_len);
 	zassert_equal(0, infuse_dfu_write_erase_call_count());
 	zassert_device_released(slot1_dev);
@@ -616,7 +617,7 @@ ZTEST(rpc_command_file_write_basic, test_file_write_dfu_cpatch)
 	/* Write the patch file, validate failure */
 	ret = test_file_write_basic(RPC_ENUM_FILE_ACTION_APP_CPATCH, sizeof(hardcoded_patch), 0, 0,
 				    0, 0, false, false, &hardcoded_patch);
-	zassert_equal(-EINVAL, ret.cmd_rc);
+	zassert_equal(INFUSE_RPC_ERROR_PATCH_VALIDATE_FAILED, ret.cmd_rc);
 	zassert_equal(sizeof(hardcoded_patch), ret.cmd_len);
 
 	/* Balanced call count */
@@ -823,7 +824,7 @@ ZTEST(rpc_command_file_write_basic, test_file_write_bt_ctlr)
 	bt_start_rc = -EIO;
 	ret = test_file_write_basic(RPC_ENUM_FILE_ACTION_BT_CTLR_IMG, 3000, 0, 0, 0, 0, false,
 				    false, NULL);
-	zassert_equal(-EIO, ret.cmd_rc);
+	zassert_equal(INFUSE_RPC_ERROR_BT_COMMAND_QUEUE_FAILED, ret.cmd_rc);
 	zassert_equal(3000, ret.cmd_len);
 	zassert_false(bt_in_progress);
 	bt_start_rc = 0;
@@ -831,13 +832,13 @@ ZTEST(rpc_command_file_write_basic, test_file_write_bt_ctlr)
 	bt_fail_after = 10;
 	ret = test_file_write_basic(RPC_ENUM_FILE_ACTION_BT_CTLR_IMG, 4000, 0, 0, 0, 0, false,
 				    false, NULL);
-	zassert_equal(-EIO, ret.cmd_rc);
+	zassert_equal(INFUSE_RPC_ERROR_BT_REMOTE_ERROR, ret.cmd_rc);
 	zassert_false(bt_in_progress);
 
 	bt_finish_rc = -EINVAL;
 	ret = test_file_write_basic(RPC_ENUM_FILE_ACTION_BT_CTLR_IMG, 3000, 0, 0, 0, 0, false,
 				    false, NULL);
-	zassert_equal(-EINVAL, ret.cmd_rc);
+	zassert_equal(INFUSE_RPC_ERROR_BT_REMOTE_ERROR, ret.cmd_rc);
 	zassert_equal(3000, ret.cmd_len);
 	zassert_equal(ret.written_crc, ret.cmd_crc);
 	zassert_false(bt_in_progress);
@@ -860,11 +861,11 @@ ZTEST(rpc_command_file_write_basic, test_lost_payload)
 	for (int i = 0; i <= CONFIG_EPACKET_BUFFERS_RX; i++) {
 		ret = test_file_write_basic(RPC_ENUM_FILE_ACTION_DISCARD, 1000, 5, 0, 0, 0, false,
 					    false, NULL);
-		zassert_equal(-EINVAL, ret.cmd_rc);
+		zassert_equal(INFUSE_RPC_ERROR_DATA_LENGTH_MISMATCH, ret.cmd_rc);
 		zassert_true(ret.cmd_len < 1000);
 		ret = test_file_write_basic(RPC_ENUM_FILE_ACTION_DISCARD, 1000, 10, 0, 0, 0, false,
 					    false, NULL);
-		zassert_equal(-EINVAL, ret.cmd_rc);
+		zassert_equal(INFUSE_RPC_ERROR_DATA_LENGTH_MISMATCH, ret.cmd_rc);
 		zassert_true(ret.cmd_len < 1000);
 	}
 }
@@ -877,11 +878,11 @@ ZTEST(rpc_command_file_write_basic, test_early_hangup)
 	for (int i = 0; i <= CONFIG_EPACKET_BUFFERS_RX; i++) {
 		ret = test_file_write_basic(RPC_ENUM_FILE_ACTION_DISCARD, 1000, 0, 3, 0, 0, false,
 					    false, NULL);
-		zassert_equal(-ETIMEDOUT, ret.cmd_rc);
+		zassert_equal(INFUSE_RPC_ERROR_DATA_RECEIVE_FAILED, ret.cmd_rc);
 		zassert_true(ret.cmd_len < 1000);
 		ret = test_file_write_basic(RPC_ENUM_FILE_ACTION_DISCARD, 1000, 0, 11, 0, 0, false,
 					    false, NULL);
-		zassert_equal(-ETIMEDOUT, ret.cmd_rc);
+		zassert_equal(INFUSE_RPC_ERROR_DATA_RECEIVE_FAILED, ret.cmd_rc);
 		zassert_true(ret.cmd_len < 1000);
 	}
 }
@@ -950,11 +951,11 @@ ZTEST(rpc_command_file_write_basic, test_everything_wrong)
 	for (int i = 0; i <= CONFIG_EPACKET_BUFFERS_RX; i++) {
 		ret = test_file_write_basic(RPC_ENUM_FILE_ACTION_DISCARD, 1000, 3, 0, 7, 1, false,
 					    false, NULL);
-		zassert_equal(-EINVAL, ret.cmd_rc);
+		zassert_equal(INFUSE_RPC_ERROR_DATA_LENGTH_MISMATCH, ret.cmd_rc);
 		zassert_true(ret.cmd_len < 1000);
 		ret = test_file_write_basic(RPC_ENUM_FILE_ACTION_DISCARD, 1000, 3, 0, 7, 2, false,
 					    false, NULL);
-		zassert_equal(-EINVAL, ret.cmd_rc);
+		zassert_equal(INFUSE_RPC_ERROR_DATA_LENGTH_MISMATCH, ret.cmd_rc);
 		zassert_true(ret.cmd_len < 1000);
 	}
 
@@ -967,11 +968,11 @@ ZTEST(rpc_command_file_write_basic, test_everything_wrong)
 	for (int i = 0; i <= CONFIG_EPACKET_BUFFERS_RX; i++) {
 		ret = test_file_write_basic(RPC_ENUM_FILE_ACTION_APP_IMG, 1000, 3, 0, 7, 1, false,
 					    false, NULL);
-		zassert_equal(-EINVAL, ret.cmd_rc);
+		zassert_equal(INFUSE_RPC_ERROR_DATA_LENGTH_MISMATCH, ret.cmd_rc);
 		zassert_true(ret.cmd_len < 1000);
 		ret = test_file_write_basic(RPC_ENUM_FILE_ACTION_APP_IMG, 1000, 3, 0, 7, 2, false,
 					    false, NULL);
-		zassert_equal(-EINVAL, ret.cmd_rc);
+		zassert_equal(INFUSE_RPC_ERROR_DATA_LENGTH_MISMATCH, ret.cmd_rc);
 		zassert_true(ret.cmd_len < 1000);
 	}
 
@@ -987,7 +988,7 @@ ZTEST(rpc_command_file_write_basic, test_push_too_much_data)
 	for (int i = 0; i <= CONFIG_EPACKET_BUFFERS_RX; i++) {
 		ret = test_file_write_basic(RPC_ENUM_FILE_ACTION_DISCARD, 1000, 0, 0, 0, 0, true,
 					    false, NULL);
-		zassert_equal(-EINVAL, ret.cmd_rc);
+		zassert_equal(INFUSE_RPC_ERROR_DATA_LENGTH_MISMATCH, ret.cmd_rc);
 	}
 }
 

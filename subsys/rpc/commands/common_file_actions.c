@@ -6,6 +6,8 @@
  * SPDX-License-Identifier: FSL-1.1-ALv2
  */
 
+#include <errno.h>
+
 #include <zephyr/kernel.h>
 #include <zephyr/drivers/flash.h>
 #include <zephyr/storage/flash_map.h>
@@ -60,8 +62,12 @@ __maybe_unused static int pm_flash_area_open(uint8_t id, const struct flash_area
 	if (rc == 0) {
 		/* Power up the flash device */
 		rc = pm_device_runtime_get((*fa)->fa_dev);
+		if (rc < 0) {
+			flash_area_close(*fa);
+			return INFUSE_RPC_ERROR_FLASH_AREA_OPEN_FAILED;
+		}
 	}
-	return rc;
+	return rc < 0 ? INFUSE_RPC_ERROR_FLASH_AREA_OPEN_FAILED : rc;
 }
 
 __maybe_unused static void pm_flash_area_close(const struct flash_area *fa)
@@ -103,12 +109,13 @@ static int flash_area_check_and_erase(struct rpc_common_file_actions_ctx *ctx, u
 	}
 	if ((partition_offset < 0) || (partition_offset >= ctx->fa->fa_size)) {
 		/* Invalid offset */
-		rc = -EINVAL;
+		rc = INFUSE_RPC_ERROR_DATA_OUT_OF_RANGE;
 		goto close_area;
 	}
 	if ((crc != UINT32_MAX) && (len != UINT32_MAX)) {
 		rc = flash_area_crc32(ctx->fa, partition_offset, len, &current_crc, mem, mem_size);
 		if (rc < 0) {
+			rc = INFUSE_RPC_ERROR_FLASH_CRC_FAILED;
 			goto close_area;
 		}
 		if (current_crc == crc) {
@@ -122,12 +129,15 @@ static int flash_area_check_and_erase(struct rpc_common_file_actions_ctx *ctx, u
 	} else {
 	}
 	if (len > (ctx->fa->fa_size - partition_offset)) {
-		rc = -EINVAL;
+		rc = INFUSE_RPC_ERROR_FLASH_DATA_TOO_LARGE;
 		goto close_area;
 	}
 	/* Erase space for image */
 	rc = infuse_dfu_image_erase(ctx->fa, partition_offset + len, cpatch_watchdog,
 				    mcuboot_trailer);
+	if (rc < 0) {
+		rc = INFUSE_RPC_ERROR_FLASH_ERASE_FAILED;
+	}
 close_area:
 	if (rc != 0) {
 		/* Close flash area */
@@ -156,9 +166,10 @@ static int common_file_actions_stream_writer_init(struct rpc_common_file_actions
 
 	/* Round up write size to write alignment */
 	file_len = ROUND_UP(file_len, params->write_block_size);
-	return stream_flash_init(&ctx->stream_ctx, partition_dev, common_file_actions_write_buffer,
-				 sizeof(common_file_actions_write_buffer),
-				 partition_offset + write_offset, file_len, NULL);
+	rc = stream_flash_init(&ctx->stream_ctx, partition_dev, common_file_actions_write_buffer,
+			       sizeof(common_file_actions_write_buffer),
+			       partition_offset + write_offset, file_len, NULL);
+	return rc < 0 ? INFUSE_RPC_ERROR_STREAM_INIT_FAILED : rc;
 }
 
 #define STREAM_WRITER_INIT(ctx, partition, write_offset, length, crc, trailer)                     \
@@ -181,6 +192,9 @@ static int littlefs_write_init(struct rpc_common_file_actions_ctx *ctx, uint32_t
 	/* Can only do duplicate detection if both length and CRC provided */
 	if ((crc != UINT32_MAX) && (length != UINT32_MAX)) {
 		rc = infuse_littlefs_file_size(ctx->fs_path.folder, ctx->fs_path.file);
+		if ((rc < 0) && (rc != -ENOENT)) {
+			return INFUSE_RPC_ERROR_FILE_SIZE_FAILED;
+		}
 		if (rc >= length) {
 			/* File is possibly long enough to match data */
 			mem = rpc_server_command_working_mem(&mem_size);
@@ -197,7 +211,8 @@ static int littlefs_write_init(struct rpc_common_file_actions_ctx *ctx, uint32_t
 	/* Delete any previous file */
 	(void)infuse_littlefs_file_delete(ctx->fs_path.folder, ctx->fs_path.file);
 	/* Create the new file */
-	return infuse_littlefs_file_create(ctx->fs_path.folder, ctx->fs_path.file, &ctx->fs_meta);
+	rc = infuse_littlefs_file_create(ctx->fs_path.folder, ctx->fs_path.file, &ctx->fs_meta);
+	return rc < 0 ? INFUSE_RPC_ERROR_FILE_CREATE_FAILED : rc;
 }
 
 #endif /* CONFIG_INFUSE_LITTLEFS */
@@ -261,17 +276,25 @@ int rpc_common_file_actions_start(struct rpc_common_file_actions_ctx *ctx,
 	case RPC_ENUM_FILE_ACTION_BT_CTLR_IMG:
 		rc = bt_controller_manager_file_write_start(&ctx->client_ctx,
 							    RPC_ENUM_FILE_ACTION_APP_IMG, length);
+		if (rc < 0) {
+			rc = INFUSE_RPC_ERROR_BT_COMMAND_QUEUE_FAILED;
+		}
 		break;
 	case RPC_ENUM_FILE_ACTION_BT_CTLR_CPATCH:
 		rc = bt_controller_manager_file_write_start(
 			&ctx->client_ctx, RPC_ENUM_FILE_ACTION_APP_CPATCH, length);
+		if (rc < 0) {
+			rc = INFUSE_RPC_ERROR_BT_COMMAND_QUEUE_FAILED;
+		}
 		break;
 #endif /* CONFIG_BT_CONTROLLER_MANAGER */
 #ifdef CONFIG_NRF_MODEM_LIB
 	case RPC_ENUM_FILE_ACTION_NRF91_MODEM_DIFF:
 		rc = infuse_dfu_nrf91_modem_delta_prepare();
 		if (rc > 0) {
-			rc = -EIO;
+			rc = INFUSE_RPC_ERROR_DFU_PREPARE_FAILED;
+		} else if (rc < 0) {
+			rc = INFUSE_RPC_ERROR_DFU_PREPARE_FAILED;
 		}
 		break;
 #endif /* CONFIG_NRF_MODEM_LIB */
@@ -281,7 +304,7 @@ int rpc_common_file_actions_start(struct rpc_common_file_actions_ctx *ctx,
 		break;
 #endif /* CONFIG_INFUSE_LITTLEFS */
 	default:
-		rc = -EINVAL;
+		rc = INFUSE_RPC_ERROR_UNSUPPORTED_REQUEST;
 	}
 
 #ifdef CONFIG_INFUSE_DFU_HELPERS
@@ -313,34 +336,49 @@ int rpc_common_file_actions_write(struct rpc_common_file_actions_ctx *ctx, uint3
 #endif /* SUPPORT_APP_CPATCH */
 	case RPC_ENUM_FILE_ACTION_APP_IMG:
 		rc = stream_flash_buffered_write(&ctx->stream_ctx, data, data_len, false);
+		if (rc < 0) {
+			rc = INFUSE_RPC_ERROR_FLASH_WRITE_FAILED;
+		}
 		break;
 #endif /* SUPPORT_APP_IMG */
 #ifdef SUPPORT_FILE_COPY_RAW
 	case RPC_ENUM_FILE_ACTION_FILE_FOR_COPY:
 		rc = stream_flash_buffered_write(&ctx->stream_ctx, data, data_len, false);
+		if (rc < 0) {
+			rc = INFUSE_RPC_ERROR_FLASH_WRITE_FAILED;
+		}
 		break;
 #endif /* SUPPORT_FILE_COPY_RAW */
 #ifdef SUPPORT_FILE_COPY_FS
 	case RPC_ENUM_FILE_ACTION_FILE_FOR_COPY:
 		rc = infuse_littlefs_file_write(data, data_len);
+		if (rc < 0) {
+			rc = INFUSE_RPC_ERROR_FILE_WRITE_FAILED;
+		}
 		break;
 #endif /* SUPPORT_FILE_COPY_FS */
 #ifdef CONFIG_INFUSE_LITTLEFS
 	case RPC_ENUM_FILE_ACTION_WRITE_LITTLEFS:
 		rc = infuse_littlefs_file_write(data, data_len);
+		if (rc < 0) {
+			rc = INFUSE_RPC_ERROR_FILE_WRITE_FAILED;
+		}
 		break;
 #endif /* CONFIG_INFUSE_LITTLEFS */
 #ifdef CONFIG_BT_CONTROLLER_MANAGER
 	case RPC_ENUM_FILE_ACTION_BT_CTLR_IMG:
 	case RPC_ENUM_FILE_ACTION_BT_CTLR_CPATCH:
 		rc = bt_controller_manager_file_write_next(ctx->client_ctx, offset, data, data_len);
+		if (rc < 0) {
+			rc = INFUSE_RPC_ERROR_BT_REMOTE_ERROR;
+		}
 		break;
 #endif /* CONFIG_BT_CONTROLLER_MANAGER */
 #ifdef CONFIG_NRF_MODEM_LIB
 	case RPC_ENUM_FILE_ACTION_NRF91_MODEM_DIFF:
 		rc = nrf_modem_delta_dfu_write(data, data_len);
-		if (rc > 0) {
-			rc = -EIO;
+		if (rc != 0) {
+			rc = INFUSE_RPC_ERROR_DATA_WRITE_FAILED;
 		}
 		break;
 #endif /* CONFIG_NRF_MODEM_LIB */
@@ -358,14 +396,17 @@ static int validate_cpatch(struct rpc_common_file_actions_ctx *ctx)
 	struct cpatch_header header;
 	int rc;
 
-	pm_flash_area_open(PARTITION_ID(slot0_partition), &fa_original);
+	rc = pm_flash_area_open(PARTITION_ID(slot0_partition), &fa_original);
+	if (rc < 0) {
+		return INFUSE_RPC_ERROR_FLASH_PATCH_ORIGINAL_OPEN_FAILED;
+	}
 
 	/* Start patch process */
 	rc = cpatch_patch_start(fa_original, ctx->fa, &header);
 	/* Cleanup files */
 	pm_flash_area_close(fa_original);
 
-	return rc;
+	return rc < 0 ? INFUSE_RPC_ERROR_PATCH_VALIDATE_FAILED : rc;
 }
 
 static int finish_cpatch(struct rpc_common_file_actions_ctx *ctx)
@@ -383,19 +424,25 @@ static int finish_cpatch(struct rpc_common_file_actions_ctx *ctx)
 	rc = pm_flash_area_open(PARTITION_ID(slot0_partition), &fa_original);
 	if (rc < 0) {
 		/* Nothing to cleanup */
-		return rc;
+		return INFUSE_RPC_ERROR_FLASH_PATCH_ORIGINAL_OPEN_FAILED;
 	}
 	rc = pm_flash_area_open(PARTITION_ID(slot1_partition), &fa_output);
 	if (rc < 0) {
 		/* Close the original FA, nothing else to cleanup */
 		pm_flash_area_close(fa_original);
-		return rc;
+		return INFUSE_RPC_ERROR_FLASH_PATCH_OUTPUT_OPEN_FAILED;
 	}
+	image_offset = boot_get_image_start_offset(PARTITION_ID(slot1_partition));
 	infuse_dfu_write_erase_start(fa_output);
 
 	/* Start patch process */
 	rc = cpatch_patch_start(fa_original, ctx->fa, &header);
 	if (rc < 0) {
+		rc = INFUSE_RPC_ERROR_PATCH_VALIDATE_FAILED;
+		goto cleanup;
+	}
+	if (header.output_file.length > (fa_output->fa_size - image_offset)) {
+		rc = INFUSE_RPC_ERROR_FLASH_DATA_TOO_LARGE;
 		goto cleanup;
 	}
 	image_offset = boot_get_image_start_offset(PARTITION_ID(slot1_partition));
@@ -408,6 +455,7 @@ static int finish_cpatch(struct rpc_common_file_actions_ctx *ctx)
 	rc = infuse_dfu_image_erase(fa_output, image_offset + header.output_file.length,
 				    cpatch_watchdog, true);
 	if (rc < 0) {
+		rc = INFUSE_RPC_ERROR_FLASH_PATCH_OUTPUT_ERASE_FAILED;
 		goto cleanup;
 	}
 	rpc_server_watchdog_feed();
@@ -437,6 +485,9 @@ static int finish_cpatch(struct rpc_common_file_actions_ctx *ctx)
 	LOG_INF("Applying %d byte patch file", header.patch_file.length);
 	rc = cpatch_patch_apply(fa_original, ctx->fa, &stream_ctx, &header, cpatch_watchdog);
 	LOG_INF("Patching result: %d", rc);
+	if (rc < 0) {
+		rc = INFUSE_RPC_ERROR_PATCH_APPLY_FAILED;
+	}
 
 cleanup:
 	/* Cleanup files */
@@ -471,7 +522,7 @@ int rpc_common_file_actions_finish(struct rpc_common_file_actions_ctx *ctx, bool
 		if (rc < 0) {
 			LOG_ERR("Could not flush remaining data");
 			pm_flash_area_close(ctx->fa);
-			return rc;
+			return INFUSE_RPC_ERROR_FLASH_FLUSH_FAILED;
 		}
 	}
 #endif /* APP_IMG || APP_CPATCH || FILE_COPY_RAW */
@@ -487,17 +538,17 @@ int rpc_common_file_actions_finish(struct rpc_common_file_actions_ctx *ctx, bool
 		rc = infuse_littlefs_file_close();
 		if (rc < 0) {
 			LOG_ERR("Could not close file (%d)", rc);
-			return rc;
+			return INFUSE_RPC_ERROR_FILE_CLOSE_FAILED;
 		}
 		rc = infuse_littlefs_file_crc32(ctx->fs_path.folder, ctx->fs_path.file, UINT32_MAX,
 						&data_crc, mem, mem_size);
 		if (rc < 0) {
 			LOG_ERR("Could not validate written data");
-			return rc;
+			return INFUSE_RPC_ERROR_FILE_CRC_FAILED;
 		} else if (ctx->crc != data_crc) {
 			LOG_ERR("CRC mismatch between received and written (%08X != %08X)",
 				ctx->crc, data_crc);
-			return -EBADE;
+			return INFUSE_RPC_ERROR_DATA_CRC_MISMATCH;
 		}
 	}
 #endif /* CONFIG_INFUSE_LITTLEFS */
@@ -519,12 +570,12 @@ int rpc_common_file_actions_finish(struct rpc_common_file_actions_ctx *ctx, bool
 		if (rc < 0) {
 			LOG_ERR("Could not validate written data");
 			pm_flash_area_close(ctx->fa);
-			return rc;
+			return INFUSE_RPC_ERROR_FLASH_CRC_FAILED;
 		} else if (ctx->crc != data_crc) {
 			LOG_ERR("CRC mismatch between received and written (%08X != %08X)",
 				ctx->crc, data_crc);
 			pm_flash_area_close(ctx->fa);
-			return -EBADE;
+			return INFUSE_RPC_ERROR_DATA_CRC_MISMATCH;
 		}
 	}
 #endif /* CONFIG_INFUSE_DFU_HELPERS */
@@ -580,14 +631,16 @@ int rpc_common_file_actions_finish(struct rpc_common_file_actions_ctx *ctx, bool
 							     &ctx->crc);
 		if (rc == 0) {
 			*dfu_reboot = true;
+		} else if (rc < 0) {
+			rc = INFUSE_RPC_ERROR_BT_REMOTE_ERROR;
 		}
 		break;
 #endif /* CONFIG_BT_CONTROLLER_MANAGER */
 #ifdef CONFIG_NRF_MODEM_LIB
 	case RPC_ENUM_FILE_ACTION_NRF91_MODEM_DIFF:
 		rc = infuse_dfu_nrf91_modem_delta_finish();
-		if (rc > 0) {
-			rc = -EIO;
+		if (rc != 0) {
+			rc = INFUSE_RPC_ERROR_DFU_FINISH_FAILED;
 		}
 		if (rc == 0) {
 			*dfu_reboot = true;
@@ -654,6 +707,9 @@ int rpc_common_file_actions_error_cleanup(struct rpc_common_file_actions_ctx *ct
 		ctx->fs_meta.timestamp = epoch_time_seconds(epoch_time_now());
 		ctx->fs_meta.crc = ctx->crc;
 		rc = infuse_littlefs_file_close();
+		if (rc < 0) {
+			rc = INFUSE_RPC_ERROR_FILE_CLOSE_FAILED;
+		}
 		break;
 #endif /* SUPPORT_FILE_COPY_FS */
 #ifdef CONFIG_INFUSE_LITTLEFS
@@ -662,6 +718,9 @@ int rpc_common_file_actions_error_cleanup(struct rpc_common_file_actions_ctx *ct
 		ctx->fs_meta.timestamp = epoch_time_seconds(epoch_time_now());
 		ctx->fs_meta.crc = ctx->crc;
 		rc = infuse_littlefs_file_close();
+		if (rc < 0) {
+			rc = INFUSE_RPC_ERROR_FILE_CLOSE_FAILED;
+		}
 		break;
 #endif /* CONFIG_INFUSE_LITTLEFS */
 #ifdef CONFIG_BT_CONTROLLER_MANAGER
@@ -670,14 +729,17 @@ int rpc_common_file_actions_error_cleanup(struct rpc_common_file_actions_ctx *ct
 		/* Finalise the write */
 		rc = bt_controller_manager_file_write_finish(ctx->client_ctx, &ctx->received,
 							     &ctx->crc);
+		if (rc < 0) {
+			rc = INFUSE_RPC_ERROR_BT_REMOTE_ERROR;
+		}
 		break;
 #endif /* CONFIG_BT_CONTROLLER_MANAGER */
 #ifdef CONFIG_NRF_MODEM_LIB
 	case RPC_ENUM_FILE_ACTION_NRF91_MODEM_DIFF:
 		/* Release modem resources */
 		rc = nrf_modem_delta_dfu_write_done();
-		if (rc > 0) {
-			rc = -EIO;
+		if (rc != 0) {
+			rc = INFUSE_RPC_ERROR_DFU_FINISH_FAILED;
 		}
 		break;
 #endif /* CONFIG_NRF_MODEM_LIB */

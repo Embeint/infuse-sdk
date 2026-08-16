@@ -32,12 +32,15 @@ struct net_buf *rpc_command_bt_disconnect(struct net_buf *request)
 	conn = bt_conn_lookup_addr_le(BT_ID_DEFAULT, &peer);
 	if (conn == NULL) {
 		/* No connection exists */
-		rc = -EINVAL;
+		rc = INFUSE_RPC_ERROR_BT_NOT_CONNECTED;
 		goto end;
 	}
 
 	/* Disconnect from the remote */
 	rc = bt_conn_disconnect_sync(conn);
+	if (rc < 0) {
+		rc = INFUSE_RPC_ERROR_BT_DISCONNECT_FAILED;
+	}
 
 	/* Unreference the connection object claimed in bt_conn_lookup_addr_le */
 	bt_conn_unref(conn);

@@ -50,7 +50,7 @@ static int do_read(struct common_state *state)
 
 	work_mem = rpc_server_command_working_mem(&work_mem_size);
 	if (work_mem_size < state->logger_state.block_size) {
-		return -ENOMEM;
+		return INFUSE_RPC_ERROR_RESPONSE_BUFFER_TOO_SMALL;
 	}
 
 	LOG_INF("Reading blocks %d-%d from %s", state->block_num,
@@ -70,6 +70,7 @@ static int do_read(struct common_state *state)
 		rc = data_logger_block_read(state->logger, state->block_num, 0, work_mem,
 					    state->logger_state.block_size);
 		if (rc < 0) {
+			rc = INFUSE_RPC_ERROR_DATA_READ_FAILED;
 			break;
 		}
 		block_remaining = state->logger_state.block_size - state->first_offset;
@@ -186,12 +187,12 @@ static int core_init(struct common_state *state, struct infuse_rpc_req_header *r
 		break;
 #endif /* CONFIG_DATA_LOGGER_SHIM */
 	default:
-		return -ENODEV;
+		return INFUSE_RPC_ERROR_DEVICE_NOT_FOUND;
 	}
 
 	/* Ensure device initialised properly */
 	if (!device_is_ready(state->logger)) {
-		return -EBADF;
+		return INFUSE_RPC_ERROR_DEVICE_NOT_READY;
 	}
 
 	/* Populate logger state */
@@ -223,7 +224,7 @@ struct net_buf *rpc_command_data_logger_read(struct net_buf *request)
 	if ((req->start_block < state.logger_state.earliest_block) ||
 	    (req->last_block >= state.logger_state.current_block) ||
 	    (req->last_block < req->start_block)) {
-		rc = -EINVAL;
+		rc = INFUSE_RPC_ERROR_DATA_OUT_OF_RANGE;
 		goto end;
 	}
 	state.blocks_remaining = req->last_block - req->start_block + 1;

@@ -14,6 +14,7 @@
 
 #include <infuse/types.h>
 #include <infuse/rpc/types.h>
+#include <infuse/rpc/errors.h>
 #include <infuse/security.h>
 #include <infuse/fs/kv_store.h>
 #include <infuse/epacket/packet.h>
@@ -214,13 +215,13 @@ static void basic_tests(const struct device *flash_logger, uint16_t rpc_id)
 
 	/* Data logger that doesn't exist */
 	send_data_logger_state_command(10, RPC_ENUM_DATA_LOGGER_FLASH_REMOVABLE, rpc_id);
-	rsp = expect_rpc_response(10, rpc_id, -ENODEV);
+	rsp = expect_rpc_response(10, rpc_id, INFUSE_RPC_ERROR_DEVICE_NOT_FOUND);
 	net_buf_unref(rsp);
 
 	/* Data logger that failed to init */
 	flash_logger->state->init_res += 1;
 	send_data_logger_state_command(11, RPC_ENUM_DATA_LOGGER_FLASH_ONBOARD, rpc_id);
-	rsp = expect_rpc_response(11, rpc_id, -EBADF);
+	rsp = expect_rpc_response(11, rpc_id, INFUSE_RPC_ERROR_DEVICE_NOT_READY);
 	net_buf_unref(rsp);
 	flash_logger->state->init_res -= 1;
 
@@ -302,24 +303,24 @@ ZTEST(rpc_command_data_logger, test_data_logger_read_invalid)
 
 	/* Non existent device */
 	send_data_logger_read_command(15, RPC_ENUM_DATA_LOGGER_FLASH_REMOVABLE, 0, 10);
-	rsp = expect_rpc_response(15, RPC_ID_DATA_LOGGER_READ, -ENODEV);
+	rsp = expect_rpc_response(15, RPC_ID_DATA_LOGGER_READ, INFUSE_RPC_ERROR_DEVICE_NOT_FOUND);
 	net_buf_unref(rsp);
 
 	/* Device that failed to init */
 	flash_logger->state->init_res += 1;
 	send_data_logger_read_command(30, RPC_ENUM_DATA_LOGGER_FLASH_REMOVABLE, 0, 10);
-	rsp = expect_rpc_response(30, RPC_ID_DATA_LOGGER_READ, -ENODEV);
+	rsp = expect_rpc_response(30, RPC_ID_DATA_LOGGER_READ, INFUSE_RPC_ERROR_DEVICE_NOT_FOUND);
 	net_buf_unref(rsp);
 	flash_logger->state->init_res -= 1;
 
 	/* More data than exists */
 	send_data_logger_read_command(16, RPC_ENUM_DATA_LOGGER_FLASH_ONBOARD, 0, 10);
-	rsp = expect_rpc_response(16, RPC_ID_DATA_LOGGER_READ, -EINVAL);
+	rsp = expect_rpc_response(16, RPC_ID_DATA_LOGGER_READ, INFUSE_RPC_ERROR_DATA_OUT_OF_RANGE);
 	net_buf_unref(rsp);
 
 	/* End before start */
 	send_data_logger_read_command(17, RPC_ENUM_DATA_LOGGER_FLASH_ONBOARD, 3, 1);
-	rsp = expect_rpc_response(17, RPC_ID_DATA_LOGGER_READ, -EINVAL);
+	rsp = expect_rpc_response(17, RPC_ID_DATA_LOGGER_READ, INFUSE_RPC_ERROR_DATA_OUT_OF_RANGE);
 	net_buf_unref(rsp);
 
 	/* Write 16 blocks */
@@ -332,7 +333,7 @@ ZTEST(rpc_command_data_logger, test_data_logger_read_invalid)
 
 	/* Data that no longer exists on device */
 	send_data_logger_read_command(18, RPC_ENUM_DATA_LOGGER_FLASH_ONBOARD, 2, 18);
-	rsp = expect_rpc_response(18, RPC_ID_DATA_LOGGER_READ, -EINVAL);
+	rsp = expect_rpc_response(18, RPC_ID_DATA_LOGGER_READ, INFUSE_RPC_ERROR_DATA_OUT_OF_RANGE);
 	net_buf_unref(rsp);
 }
 
@@ -661,10 +662,10 @@ ZTEST(rpc_command_data_logger, test_data_logger_read_chunks)
 	}
 
 	/* Request reads from 0 but that block doesn't exist */
-	run_logger_read_chunks(64, 1, chunks + 0, -ENOENT, 0);
+	run_logger_read_chunks(64, 1, chunks + 0, INFUSE_RPC_ERROR_DATA_READ_FAILED, 0);
 
 	/* Request reads from 0 as the second chunk but that block doesn't exist */
-	run_logger_read_chunks(62, 2, chunks + 3, -ENOENT, 512);
+	run_logger_read_chunks(62, 2, chunks + 3, INFUSE_RPC_ERROR_DATA_READ_FAILED, 512);
 }
 
 ZTEST(rpc_command_data_logger, test_data_logger_erase_invalid)
@@ -673,18 +674,21 @@ ZTEST(rpc_command_data_logger, test_data_logger_erase_invalid)
 	struct net_buf *rsp;
 
 	send_data_logger_erase_command(0x1234, UINT8_MAX, 0x00);
-	rsp = expect_rpc_response(0x1234, RPC_ID_DATA_LOGGER_ERASE, -ENODEV);
+	rsp = expect_rpc_response(0x1234, RPC_ID_DATA_LOGGER_ERASE,
+				  INFUSE_RPC_ERROR_DEVICE_NOT_FOUND);
 	net_buf_unref(rsp);
 
 	/* Pretend logger failed to initialise */
 	flash_logger->state->init_res += 1;
 	/* Try to erase */
 	send_data_logger_erase_command(0x1235, RPC_ENUM_DATA_LOGGER_FLASH_ONBOARD, 0x00);
-	rsp = expect_rpc_response(0x1235, RPC_ID_DATA_LOGGER_ERASE, -EBADF);
+	rsp = expect_rpc_response(0x1235, RPC_ID_DATA_LOGGER_ERASE,
+				  INFUSE_RPC_ERROR_DEVICE_NOT_READY);
 	net_buf_unref(rsp);
 	/* Try to erase full */
 	send_data_logger_erase_command(0x1236, RPC_ENUM_DATA_LOGGER_FLASH_ONBOARD, 0x01);
-	rsp = expect_rpc_response(0x1236, RPC_ID_DATA_LOGGER_ERASE, -EBADF);
+	rsp = expect_rpc_response(0x1236, RPC_ID_DATA_LOGGER_ERASE,
+				  INFUSE_RPC_ERROR_DEVICE_NOT_READY);
 	net_buf_unref(rsp);
 	/* Erase with override */
 	send_data_logger_erase_command(0x1237, RPC_ENUM_DATA_LOGGER_FLASH_ONBOARD, 0xAA);

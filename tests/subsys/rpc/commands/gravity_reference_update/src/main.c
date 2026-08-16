@@ -14,6 +14,7 @@
 #include <infuse/types.h>
 #include <infuse/drivers/imu.h>
 #include <infuse/rpc/types.h>
+#include <infuse/rpc/errors.h>
 #include <infuse/fs/kv_store.h>
 #include <infuse/fs/kv_types.h>
 #include <infuse/epacket/packet.h>
@@ -79,14 +80,14 @@ ZTEST(rpc_command_gravity_reference_update, test_data_timeout)
 
 	/* Request with no data being published */
 	send_gravity_reference_update_command(100, 0);
-	rsp = expect_gravity_reference_update_response(100, -EAGAIN);
+	rsp = expect_gravity_reference_update_response(100, INFUSE_RPC_ERROR_NO_DATA);
 	net_buf_unref(rsp);
 
 	/* Request with only one buffer published */
 	send_gravity_reference_update_command(101, 0);
 	k_sleep(K_MSEC(100));
 	zbus_chan_pub(CHAN, &base, K_FOREVER);
-	rsp = expect_gravity_reference_update_response(101, -EAGAIN);
+	rsp = expect_gravity_reference_update_response(101, INFUSE_RPC_ERROR_NO_DATA);
 	net_buf_unref(rsp);
 }
 
@@ -102,7 +103,7 @@ ZTEST(rpc_command_gravity_reference_update, test_data_no_acc)
 	zbus_chan_pub(CHAN, &base, K_FOREVER);
 	k_sleep(K_MSEC(100));
 	zbus_chan_pub(CHAN, &base, K_FOREVER);
-	rsp = expect_gravity_reference_update_response(102, -ENODATA);
+	rsp = expect_gravity_reference_update_response(102, INFUSE_RPC_ERROR_NO_DATA);
 	net_buf_unref(rsp);
 }
 
@@ -168,7 +169,7 @@ ZTEST(rpc_command_gravity_reference_update, test_variance_bad)
 	zbus_chan_pub(CHAN, &base, K_FOREVER);
 	k_sleep(K_MSEC(100));
 	zbus_chan_pub(CHAN, &base, K_FOREVER);
-	rsp = expect_gravity_reference_update_response(105, -EIO);
+	rsp = expect_gravity_reference_update_response(105, INFUSE_RPC_ERROR_VARIANCE_TOO_HIGH);
 	validate_data((void *)rsp->data, false);
 	net_buf_unref(rsp);
 
@@ -177,7 +178,7 @@ ZTEST(rpc_command_gravity_reference_update, test_variance_bad)
 	zbus_chan_pub(CHAN, &base, K_FOREVER);
 	k_sleep(K_MSEC(100));
 	zbus_chan_pub(CHAN, &base, K_FOREVER);
-	rsp = expect_gravity_reference_update_response(106, -EIO);
+	rsp = expect_gravity_reference_update_response(106, INFUSE_RPC_ERROR_VARIANCE_TOO_HIGH);
 	validate_data((void *)rsp->data, false);
 	net_buf_unref(rsp);
 
@@ -186,7 +187,7 @@ ZTEST(rpc_command_gravity_reference_update, test_variance_bad)
 	zbus_chan_pub(CHAN, &base, K_FOREVER);
 	k_sleep(K_MSEC(100));
 	zbus_chan_pub(CHAN, &base, K_FOREVER);
-	rsp = expect_gravity_reference_update_response(107, -EIO);
+	rsp = expect_gravity_reference_update_response(107, INFUSE_RPC_ERROR_VARIANCE_TOO_HIGH);
 	validate_data((void *)rsp->data, false);
 	net_buf_unref(rsp);
 }

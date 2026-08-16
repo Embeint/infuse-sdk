@@ -32,7 +32,7 @@ static int sec_uniqid_handler(uint8_t message_class, uint8_t message_id, const v
 	if (payload_len == sizeof(rsp->ubx_sec_uniqid)) {
 		memcpy(rsp->ubx_sec_uniqid, payload, sizeof(rsp->ubx_sec_uniqid));
 	} else {
-		rsp->header.return_code = -EINVAL;
+		rsp->header.return_code = INFUSE_RPC_ERROR_GNSS_UNEXPECTED_PAYLOAD;
 	}
 	return 0;
 }
@@ -62,13 +62,15 @@ struct net_buf *rpc_command_ubx_assist_now_ztp_creds(struct net_buf *request)
 	int rc;
 
 	if (!device_is_ready(gnss)) {
-		return rpc_response_simple_req(request, -ENODEV, &rsp, sizeof(rsp));
+		return rpc_response_simple_req(request, INFUSE_RPC_ERROR_DEVICE_NOT_READY, &rsp,
+					       sizeof(rsp));
 	}
 
 	/* Power up the modem */
 	rc = pm_device_runtime_get(gnss);
 	if (rc < 0) {
-		return rpc_response_simple_req(request, rc, &rsp, sizeof(rsp));
+		return rpc_response_simple_req(request, INFUSE_RPC_ERROR_GNSS_POWER_UP_FAILED, &rsp,
+					       sizeof(rsp));
 	}
 
 	/* Allocate response object (assuming success) */
@@ -79,7 +81,7 @@ struct net_buf *rpc_command_ubx_assist_now_ztp_creds(struct net_buf *request)
 	rc = ubx_modem_send_sync_raw_poll(modem, UBX_MSG_CLASS_SEC, UBX_MSG_ID_SEC_UNIQID,
 					  sec_uniqid_handler, &ctx, K_SECONDS(1));
 	if (rc != 0) {
-		rsp_ptr->header.return_code = rc;
+		rsp_ptr->header.return_code = INFUSE_RPC_ERROR_GNSS_SEC_UNIQID_FAILED;
 	}
 	if (rsp_ptr->header.return_code != 0) {
 		/* Command failed or unexpected data */
@@ -91,7 +93,7 @@ struct net_buf *rpc_command_ubx_assist_now_ztp_creds(struct net_buf *request)
 					  mon_ver_handler, &ctx, K_SECONDS(1));
 	if (rc != 0) {
 		/* Command failed */
-		rsp_ptr->header.return_code = rc;
+		rsp_ptr->header.return_code = INFUSE_RPC_ERROR_GNSS_MON_VER_FAILED;
 	}
 
 done:

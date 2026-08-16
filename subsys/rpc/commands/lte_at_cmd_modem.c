@@ -12,6 +12,8 @@
 
 #include <zephyr/modem/at/user_pipe.h>
 
+#include <infuse/rpc/errors.h>
+
 static struct modem_chat modem_chat_ctx;
 static uint8_t lte_at_chat_receive_buf[128];
 static uint8_t *lte_at_chat_argv_buf[2];
@@ -69,10 +71,10 @@ static void script_done_cb(struct modem_chat *chat, enum modem_chat_script_resul
 		cmd_ctx->rc = 0;
 		break;
 	case MODEM_CHAT_SCRIPT_RESULT_ABORT:
-		cmd_ctx->rc = -ECANCELED;
+		cmd_ctx->rc = INFUSE_RPC_ERROR_MODEM_AT_CANCELLED;
 		break;
 	case MODEM_CHAT_SCRIPT_RESULT_TIMEOUT:
-		cmd_ctx->rc = -EAGAIN;
+		cmd_ctx->rc = INFUSE_RPC_ERROR_MODEM_AT_TIMEOUT;
 		break;
 	}
 }
@@ -110,11 +112,14 @@ int cellular_modem_at_cmd(void *buf, size_t len, const char *cmd)
 	cmd_ctx.rc = modem_at_user_pipe_claim(&modem_chat_ctx, K_MSEC(200));
 	if (cmd_ctx.rc) {
 		*cmd_ctx.buf = '\0';
-		return cmd_ctx.rc;
+		return INFUSE_RPC_ERROR_MODEM_AT_BUSY;
 	}
 
 	modem_chat_ctx.user_data = &cmd_ctx;
 	cmd_ctx.rc = modem_chat_run_script(&modem_chat_ctx, &script);
+	if (cmd_ctx.rc < 0) {
+		cmd_ctx.rc = INFUSE_RPC_ERROR_MODEM_AT_FAILED;
+	}
 
 	/* Add NULL terminator */
 	*cmd_ctx.buf = '\0';

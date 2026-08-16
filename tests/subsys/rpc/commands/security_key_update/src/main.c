@@ -15,6 +15,7 @@
 #include <infuse/security.h>
 #include <infuse/rpc/commands/security_key_update.h>
 #include <infuse/rpc/types.h>
+#include <infuse/rpc/errors.h>
 #include <infuse/epacket/packet.h>
 #include <infuse/epacket/interface/epacket_dummy.h>
 #include <infuse/fs/kv_store.h>
@@ -118,20 +119,23 @@ ZTEST(rpc_command_security_key_update, test_invalid)
 	/* Bad key ID */
 	send_security_key_update_command(0x106, EPACKET_AUTH_DEVICE, 30,
 					 RPC_ENUM_KEY_ACTION_KEY_WRITE, 0x123456, bitstream, 5);
-	expect_security_key_update_response(0x106, EPACKET_AUTH_DEVICE, -EINVAL);
+	expect_security_key_update_response(0x106, EPACKET_AUTH_DEVICE,
+					    INFUSE_RPC_ERROR_KEY_ID_UNSUPPORTED);
 	zassert_equal(-EAGAIN, k_sem_take(&reboot_request, K_MSEC(100)));
 
 	/* Bad action */
 	send_security_key_update_command(0x210, EPACKET_AUTH_DEVICE, RPC_ENUM_KEY_ID_NETWORK_KEY, 2,
 					 0x123456, bitstream, 5);
-	expect_security_key_update_response(0x210, EPACKET_AUTH_DEVICE, -EINVAL);
+	expect_security_key_update_response(0x210, EPACKET_AUTH_DEVICE,
+					    INFUSE_RPC_ERROR_KEY_ACTION_UNSUPPORTED);
 	zassert_equal(-EAGAIN, k_sem_take(&reboot_request, K_MSEC(100)));
 
 	/* Writing to device public key */
 	send_security_key_update_command(0x107, EPACKET_AUTH_DEVICE,
 					 RPC_ENUM_KEY_ID_DEVICE_PUBLIC_KEY,
 					 RPC_ENUM_KEY_ACTION_KEY_WRITE, 0x123456, bitstream, 32);
-	expect_security_key_update_response(0x107, EPACKET_AUTH_DEVICE, -EPERM);
+	expect_security_key_update_response(0x107, EPACKET_AUTH_DEVICE,
+					    INFUSE_RPC_ERROR_KEY_WRITE_FORBIDDEN);
 	zassert_equal(-EAGAIN, k_sem_take(&reboot_request, K_MSEC(100)));
 }
 
@@ -208,7 +212,8 @@ ZTEST(rpc_command_security_key_update, test_primary_network_keys)
 	/* Delete again, no reboot */
 	send_security_key_update_command(0x102, EPACKET_AUTH_DEVICE, RPC_ENUM_KEY_ID_NETWORK_KEY,
 					 RPC_ENUM_KEY_ACTION_KEY_DELETE, 0x123456, bitstream, 4);
-	expect_security_key_update_response(0x102, EPACKET_AUTH_DEVICE, PSA_ERROR_DOES_NOT_EXIST);
+	expect_security_key_update_response(0x102, EPACKET_AUTH_DEVICE,
+					    INFUSE_RPC_ERROR_KEY_DELETE_FAILED);
 	zassert_equal(-EAGAIN, k_sem_take(&reboot_request, K_MSEC(100)));
 }
 
@@ -254,7 +259,8 @@ ZTEST(rpc_command_security_key_update, test_secondary_network_keys)
 	send_security_key_update_command(0x202, EPACKET_AUTH_DEVICE,
 					 RPC_ENUM_KEY_ID_SECONDARY_NETWORK_KEY,
 					 RPC_ENUM_KEY_ACTION_KEY_DELETE, 0x78AB32, bitstream, 0);
-	expect_security_key_update_response(0x202, EPACKET_AUTH_DEVICE, PSA_ERROR_DOES_NOT_EXIST);
+	expect_security_key_update_response(0x202, EPACKET_AUTH_DEVICE,
+					    INFUSE_RPC_ERROR_KEY_DELETE_FAILED);
 	zassert_equal(-EAGAIN, k_sem_take(&reboot_request, K_MSEC(100)));
 }
 
@@ -310,7 +316,8 @@ ZTEST(rpc_command_security_key_update, test_secondary_remote)
 	send_security_key_update_command(0x302, EPACKET_AUTH_NETWORK,
 					 RPC_ENUM_KEY_ID_SECONDARY_REMOTE_PUBLIC_KEY,
 					 RPC_ENUM_KEY_ACTION_KEY_WRITE, 0, bitstream, 2);
-	expect_security_key_update_response(0x302, EPACKET_AUTH_NETWORK, -EPERM);
+	expect_security_key_update_response(0x302, EPACKET_AUTH_NETWORK,
+					    INFUSE_RPC_ERROR_AUTHENTICATION_REQUIRED);
 	zassert_equal(-EAGAIN, k_sem_take(&reboot_request, K_MSEC(100)));
 
 	/* Key should not exist in PSA or KV store */

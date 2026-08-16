@@ -45,7 +45,7 @@ struct net_buf *rpc_command_data_logger_erase(struct net_buf *request)
 		break;
 #endif /* CONFIG_DATA_LOGGER_EXFAT */
 	default:
-		rc = -ENODEV;
+		rc = INFUSE_RPC_ERROR_DEVICE_NOT_FOUND;
 		goto end;
 	}
 
@@ -56,12 +56,15 @@ struct net_buf *rpc_command_data_logger_erase(struct net_buf *request)
 
 	/* Ensure device initialised properly */
 	if (!device_is_ready(logger) && !init_override) {
-		rc = -EBADF;
+		rc = INFUSE_RPC_ERROR_DEVICE_NOT_READY;
 		goto end;
 	}
 
 	/* Run the erase */
 	rc = data_logger_erase(logger, erase_all, erase_progress);
+	if (rc < 0) {
+		rc = INFUSE_RPC_ERROR_DATA_ERASE_FAILED;
+	}
 end:
 	return rpc_response_simple_if(interface, rc, &rsp, sizeof(rsp));
 }

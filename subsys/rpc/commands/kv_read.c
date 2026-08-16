@@ -6,6 +6,8 @@
  * SPDX-License-Identifier: FSL-1.1-ALv2
  */
 
+#include <errno.h>
+
 #include <zephyr/net_buf.h>
 #include <zephyr/logging/log.h>
 
@@ -28,7 +30,8 @@ struct net_buf *rpc_command_kv_read(struct net_buf *request)
 	/* Validate input parameters */
 	if ((req->num * sizeof(uint16_t)) != request->len) {
 		LOG_WRN("%s invalid input", __func__);
-		return rpc_response_simple_req(request, -EINVAL, &rsp, sizeof(rsp));
+		return rpc_response_simple_req(request, INFUSE_RPC_ERROR_MALFORMED_REQUEST, &rsp,
+					       sizeof(rsp));
 	}
 
 	/* Allocate response object */
@@ -44,21 +47,30 @@ struct net_buf *rpc_command_kv_read(struct net_buf *request)
 		val_hdr->id = net_buf_pull_le16(request);
 
 		/* Check for write only protection */
-		val_hdr->len = kv_store_external_write_only(val_hdr->id);
-		if (val_hdr->len == 0) {
+		int rc = kv_store_external_write_only(val_hdr->id);
+
+		if (rc == 0) {
 			/* Read the key value */
 			space = net_buf_tailroom(response);
 			LOG_DBG("%s reading key %u (max %zd)", __func__, val_hdr->id, space);
 			val_hdr->len = kv_store_read(val_hdr->id, net_buf_tail(response), space);
 			/* Not enough room in buffer for data */
 			if (val_hdr->len > space) {
-				val_hdr->len = -ENOSPC;
+				val_hdr->len = INFUSE_RPC_ERROR_RESPONSE_BUFFER_TOO_SMALL;
 				break;
 			}
 			/* Data read successful */
 			if (val_hdr->len > 0) {
 				net_buf_add(response, val_hdr->len);
+			} else if (val_hdr->len < 0) {
+				val_hdr->len = val_hdr->len == -ENOENT
+						       ? INFUSE_RPC_ERROR_KV_KEY_NOT_FOUND
+						       : INFUSE_RPC_ERROR_KV_READ_FAILED;
 			}
+		} else if (rc == -EACCES) {
+			val_hdr->len = INFUSE_RPC_ERROR_KV_KEY_NOT_ENABLED;
+		} else {
+			val_hdr->len = INFUSE_RPC_ERROR_READ_PROTECTED;
 		}
 	}
 	return response;

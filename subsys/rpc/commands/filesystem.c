@@ -41,11 +41,11 @@ static bool ls_cb(enum infuse_littlefs_folder folder, uint32_t file, void *user_
 	}
 	size = infuse_littlefs_file_size(folder, file);
 	if (size < 0) {
-		ctx->rsp->header.return_code = -EIO;
+		ctx->rsp->header.return_code = INFUSE_RPC_ERROR_FILE_SIZE_FAILED;
 		return false;
 	}
 	if (infuse_littlefs_file_metadata(folder, file, &meta) < 0) {
-		ctx->rsp->header.return_code = -EIO;
+		ctx->rsp->header.return_code = INFUSE_RPC_ERROR_FILE_METADATA_FAILED;
 		return false;
 	}
 	info = net_buf_add(ctx->buf, sizeof(*info));
@@ -74,7 +74,7 @@ struct net_buf *rpc_command_filesystem_ls(struct net_buf *request)
 	/* Iterate over all files in the folder */
 	rc = infuse_littlefs_folder_iter(req->folder, ls_cb, &ctx);
 	if (rc < 0) {
-		ctx.rsp->header.return_code = rc;
+		ctx.rsp->header.return_code = INFUSE_RPC_ERROR_FILE_ITERATION_FAILED;
 	}
 	return ctx.buf;
 }
@@ -87,6 +87,9 @@ struct net_buf *rpc_command_filesystem_rm(struct net_buf *request)
 
 	/* Attempt to delete the requested file */
 	rc = infuse_littlefs_file_delete(req->folder, req->file);
+	if (rc < 0) {
+		rc = INFUSE_RPC_ERROR_FILE_DELETE_FAILED;
+	}
 
 	/* Allocate and return the response */
 	return rpc_response_simple_req(request, rc, &rsp, sizeof(rsp));

@@ -16,6 +16,7 @@
 #include <infuse/epacket/packet.h>
 #include <infuse/epacket/interface/epacket_dummy.h>
 #include <infuse/rpc/commands.h>
+#include <infuse/rpc/errors.h>
 #include <infuse/rpc/server.h>
 #include <infuse/rpc/types.h>
 
@@ -100,7 +101,7 @@ ZTEST(rpc_server, test_invalid)
 	zassert_equal(EPACKET_AUTH_NETWORK, tx_header->auth);
 	zassert_equal(0x12345678, rsp_header->request_id);
 	zassert_equal(RPC_BUILTIN_END, rsp_header->command_id);
-	zassert_equal(-ENOTSUP, rsp_header->return_code);
+	zassert_equal(INFUSE_RPC_ERROR_INVALID_COMMAND, rsp_header->return_code);
 	zassert_equal(sizeof(*tx_header) + sizeof(*rsp_header), tx->len);
 	net_buf_unref(tx);
 
@@ -195,7 +196,7 @@ ZTEST(rpc_server, test_auth_level)
 	zassert_equal(INFUSE_RPC_RSP, tx_header->type);
 	zassert_equal(EPACKET_AUTH_NETWORK, tx_header->auth);
 	zassert_equal(header.key_identifier, tx_header->key_identifier);
-	zassert_equal(-EACCES, rsp->header.return_code);
+	zassert_equal(INFUSE_RPC_ERROR_AUTHENTICATION_REQUIRED, rsp->header.return_code);
 	net_buf_unref(tx);
 }
 
@@ -301,8 +302,6 @@ static void test_data_sender(uint32_t to_send, int dc_after)
 
 	epacket_dummy_receive(epacket_dummy, &header, payload,
 			      sizeof(struct rpc_data_sender_request));
-
-	printk("JSDKLF\n");
 	while (receiving) {
 		tx = k_fifo_get(tx_fifo, K_MSEC(100));
 		zassert_not_null(tx);
@@ -498,9 +497,11 @@ ack_handler:
 	zassert_equal(request_id, rsp->header.request_id);
 	zassert_equal(RPC_ID_DATA_RECEIVER, rsp->header.command_id);
 	if (had_stop) {
-		zassert_equal(-ETIMEDOUT, rsp->header.return_code);
+		zassert_equal(INFUSE_RPC_ERROR_DATA_RECEIVE_FAILED, rsp->header.return_code);
 	} else if (too_much_data || (unaligned_data && !accept_unaligned_data)) {
-		zassert_equal(-EINVAL, rsp->header.return_code);
+		zassert_equal(too_much_data ? INFUSE_RPC_ERROR_DATA_LENGTH_MISMATCH
+					    : INFUSE_RPC_ERROR_DATA_ALIGNMENT_ERROR,
+			      rsp->header.return_code);
 	} else {
 		zassert_equal(0, rsp->header.return_code);
 	}

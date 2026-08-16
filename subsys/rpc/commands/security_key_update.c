@@ -34,7 +34,7 @@ struct net_buf *rpc_command_security_key_update(struct net_buf *request)
 		key_ptr = NULL;
 		break;
 	default:
-		rc = -EINVAL;
+		rc = INFUSE_RPC_ERROR_KEY_ACTION_UNSUPPORTED;
 		goto end;
 	}
 
@@ -47,7 +47,7 @@ struct net_buf *rpc_command_security_key_update(struct net_buf *request)
 		 * be run
 		 */
 		if (!infuse_rpc_command_security_authorised(meta, req)) {
-			rc = -EPERM;
+			rc = INFUSE_RPC_ERROR_AUTHENTICATION_REQUIRED;
 			goto end;
 		}
 	}
@@ -56,19 +56,30 @@ struct net_buf *rpc_command_security_key_update(struct net_buf *request)
 	switch (req->key_id) {
 	case RPC_ENUM_KEY_ID_NETWORK_KEY:
 		rc = infuse_security_network_key_write(req->key_global_identifier, key_ptr);
+		if (rc < 0) {
+			rc = key_ptr == NULL ? INFUSE_RPC_ERROR_KEY_DELETE_FAILED
+					     : INFUSE_RPC_ERROR_KEY_WRITE_FAILED;
+		}
 		break;
 	case RPC_ENUM_KEY_ID_DEVICE_PUBLIC_KEY:
 		if (req->key_action == RPC_ENUM_KEY_ACTION_KEY_DELETE) {
 			/* Deleting the root keypair (forcing a refresh) is the only valid option */
 			rc = infuse_security_device_root_reset();
+			if (rc < 0) {
+				rc = INFUSE_RPC_ERROR_KEY_RESET_FAILED;
+			}
 		} else {
-			rc = -EPERM;
+			rc = INFUSE_RPC_ERROR_KEY_WRITE_FORBIDDEN;
 		}
 		break;
 #ifdef CONFIG_INFUSE_SECURITY_SECONDARY_NETWORK_ENABLE
 	case RPC_ENUM_KEY_ID_SECONDARY_NETWORK_KEY:
 		rc = infuse_security_secondary_network_key_write(req->key_global_identifier,
 								 key_ptr);
+		if (rc < 0) {
+			rc = key_ptr == NULL ? INFUSE_RPC_ERROR_KEY_DELETE_FAILED
+					     : INFUSE_RPC_ERROR_KEY_WRITE_FAILED;
+		}
 		break;
 #endif /* CONFIG_INFUSE_SECURITY_SECONDARY_NETWORK_ENABLE */
 #ifdef CONFIG_INFUSE_SECURITY_SECONDARY_REMOTE_ENABLE
@@ -77,21 +88,26 @@ struct net_buf *rpc_command_security_key_update(struct net_buf *request)
 		rc = infuse_security_secondary_device_key_reset();
 		rc = (rc == -ENOENT) ? 0 : rc;
 		if (rc < 0) {
+			rc = INFUSE_RPC_ERROR_KEY_RESET_FAILED;
 			goto end;
 		}
 
 		if (key_ptr == NULL) {
 			rc = kv_store_delete(KV_KEY_SECONDARY_REMOTE_PUBLIC_KEY);
+			if (rc < 0) {
+				rc = INFUSE_RPC_ERROR_KEY_DELETE_FAILED;
+			}
 		} else {
 			rc = kv_store_write(KV_KEY_SECONDARY_REMOTE_PUBLIC_KEY, key_ptr,
 					    sizeof(req->key_bitstream));
 			/* 0 on success */
-			rc = (rc == sizeof(req->key_bitstream)) ? 0 : rc;
+			rc = (rc == sizeof(req->key_bitstream)) ? 0
+								: INFUSE_RPC_ERROR_KEY_WRITE_FAILED;
 		}
 		break;
 #endif /* CONFIG_INFUSE_SECURITY_SECONDARY_REMOTE_ENABLE */
 	default:
-		rc = -EINVAL;
+		rc = INFUSE_RPC_ERROR_KEY_ID_UNSUPPORTED;
 	}
 
 	/* Trigger reboot if requested */
