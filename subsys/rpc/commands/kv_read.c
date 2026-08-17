@@ -48,7 +48,7 @@ struct net_buf *rpc_command_kv_read(struct net_buf *request)
 		if (val_hdr->len == 0) {
 			/* Read the key value */
 			space = net_buf_tailroom(response);
-			LOG_DBG("%s reading key %d (max %d)", __func__, val_hdr->id, space);
+			LOG_DBG("%s reading key %u (max %zd)", __func__, val_hdr->id, space);
 			val_hdr->len = kv_store_read(val_hdr->id, net_buf_tail(response), space);
 			/* Not enough room in buffer for data */
 			if (val_hdr->len > space) {
