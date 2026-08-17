@@ -109,7 +109,7 @@ int rpc_command_bt_file_copy_basic_run(struct rpc_bt_file_copy_basic_request *re
 		return -EINVAL;
 	}
 #else
-	const struct flash_area *fa;
+	const struct flash_area *fa = NULL;
 	uint8_t partition_id;
 
 	/* Data source */
@@ -209,7 +209,9 @@ cleanup:
 #ifdef CONFIG_INFUSE_LITTLEFS
 	(void)infuse_littlefs_file_close();
 #else
-	flash_area_close(fa);
+	if (fa != NULL) {
+		flash_area_close(fa);
+	}
 #endif
 	/* Unregister from callbacks */
 	rpc_client_cleanup(&client_ctx);
