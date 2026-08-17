@@ -84,7 +84,7 @@ struct net_buf *rpc_command_file_write_impl(struct epacket_rx_metadata *rx_meta,
 		}
 		var_len = RPC_DATA_VAR_LEN(data_buf);
 		if (var_len > remaining) {
-			LOG_WRN("Received too much data %d/%d", var_len, remaining);
+			LOG_WRN("Received too much data %zu/%u", var_len, remaining);
 			net_buf_unref(data_buf);
 			rc = -EINVAL;
 			goto error;
