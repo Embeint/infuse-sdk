@@ -178,32 +178,21 @@ static struct net_buf *rpc_command_coap_handle_response(struct net_buf *request,
 							struct rpc_coap_download_v3_response *rsp,
 							int rc, uint8_t action, bool dfu_reboot)
 {
-	const struct infuse_rpc_req_header *req_header = (const void *)request->data;
-	struct epacket_rx_metadata *req_meta = net_buf_user_data(request);
-	struct net_buf *response =
-		rpc_response_simple_if(req_meta->interface, rc, rsp, sizeof(*rsp));
+	__maybe_unused const struct infuse_rpc_req_header *req_header = (const void *)request->data;
+	struct net_buf *response = rpc_response_simple_req(request, rc, rsp, sizeof(*rsp));
 
-	if (!dfu_reboot) {
-		/* We're not rebooting, let the server send the response */
-		return response;
+	if (dfu_reboot) {
+#ifdef CONFIG_INFUSE_REBOOT
+		/* Schedule the reboot */
+		LOG_INF("File action complete, rebooting for DFU");
+		infuse_reboot_delayed(INFUSE_REBOOT_DFU, req_header->command_id, action,
+				      K_SECONDS(2));
+#else
+		LOG_WRN("INFUSE_REBOOT not enabled, cannot reboot");
+#endif /* CONFIG_INFUSE_REBOOT */
 	}
 
-	/* Queue the response before scheduling the reboot, as reboots start shutting down
-	 * networking interfaces.
-	 */
-	rpc_command_runner_early_response(req_meta, req_header->request_id, req_header->command_id,
-					  response);
-	/* Hopefully sufficient time for response to be transmitted */
-	k_sleep(K_MSEC(1000));
-#ifdef CONFIG_INFUSE_REBOOT
-	/* Schedule the reboot */
-	LOG_INF("File action complete, rebooting for DFU");
-	infuse_reboot_delayed(INFUSE_REBOOT_DFU, req_header->command_id, action, K_SECONDS(2));
-#else
-	LOG_WRN("INFUSE_REBOOT not enabled, cannot reboot");
-#endif /* CONFIG_INFUSE_REBOOT */
-	/* We sent the response, server should not send anything */
-	return NULL;
+	return response;
 }
 
 /* Responses are equivalent */
