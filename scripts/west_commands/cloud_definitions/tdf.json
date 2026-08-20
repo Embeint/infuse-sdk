@@ -628,6 +628,21 @@
             "fields": [
                 {"name": "enabled", "type": "uint8_t", "description": "0 is disabled, 1 is enabled"}
             ]
+        },
+        "64": {
+            "name": "LTE_SLEEP_ENTER",
+            "description": "LTE modem has entered sleep mode",
+            "fields": [
+                {"name": "type", "type": "uint8_t", "description": "Type of sleep mode that started (Values from lte_lc_modem_sleep_type)"}
+            ]
+        },
+        "65": {
+            "name": "LTE_SLEEP_EXIT",
+            "description": "LTE modem has exited sleep mode",
+            "fields": [
+                {"name": "type", "type": "uint8_t", "description": "Type of sleep mode that exited (Values from lte_lc_modem_sleep_type)"},
+                {"name": "duration_s", "type": "uint32_t", "description": "How long modem was in sleep mode for in seconds"}
+            ]
         }
     }
 }

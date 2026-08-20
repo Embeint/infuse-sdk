@@ -10,12 +10,12 @@ module-str = modem_mon
 source "subsys/logging/Kconfig.template.log_config"
 
 config INFUSE_MODEM_MONITOR_CONN_STATE_LOG
-	bool "Automatic logging of LTE connection state"
+	bool "Automatic logging of LTE connection events"
 	depends on INFUSE_EPOCH_TIME
 	depends on TDF_DATA_LOGGER
 	help
-	  Automatically log TDF_LTE_CONN_STATUS TDFs in response to registration
-	  state and cell tower changes. Output loggers must be configured with
+	  Automatically log TDFs in response to registration state, cell tower
+	  and sleep state changes. Output loggers must be configured with
 	  `lte_modem_monitor_configure`.
 
 config INFUSE_MODEM_MONITOR_CONNECTIVITY_TIMEOUT_SEC
