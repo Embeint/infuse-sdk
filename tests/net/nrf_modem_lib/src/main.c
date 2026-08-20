@@ -163,6 +163,8 @@ ZTEST(infuse_nrf_modem_monitor, test_integration)
 	enum lte_lc_pdn_family default_family;
 	const char *default_apn;
 	struct net_if_addr *added;
+	int16_t rsrp;
+	int8_t rsrq;
 	int rc;
 
 #ifdef CONFIG_INFUSE_MODEM_MONITOR_CONN_STATE_LOG
@@ -405,8 +407,21 @@ ZTEST(infuse_nrf_modem_monitor, test_integration)
 	nrf_modem_lib_sim_send_at("%XMODEMSLEEP: 1,46783975\r\n");
 	k_sleep(K_SECONDS(10));
 
+	nrf_modem_lib_sim_signal_strength(10, 40);
+	rc = lte_modem_monitor_signal_quality(&rsrp, &rsrq, false);
+	zassert_equal(0, rc);
+	zassert_equal(INT16_MIN, rsrp);
+	zassert_equal(INT8_MIN, rsrq);
+
 	/* Modem wakes */
 	nrf_modem_lib_sim_send_at("%XMODEMSLEEP: 1,0\r\n");
+	k_sleep(K_MSEC(10));
+
+	rc = lte_modem_monitor_signal_quality(&rsrp, &rsrq, false);
+	zassert_equal(0, rc);
+	zassert_equal(-101, rsrp);
+	zassert_equal(-15, rsrq);
+
 	/* IP connectivity goes down, reboot should be requested */
 	zassert_true(net_if_ipv4_addr_rm(iface, (struct in_addr *)&ipv4_addr));
 	rc = k_sem_take(&reboot_request,
