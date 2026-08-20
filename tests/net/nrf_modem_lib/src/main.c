@@ -168,21 +168,25 @@ ZTEST(infuse_nrf_modem_monitor, test_integration)
 	int rc;
 
 #ifdef CONFIG_INFUSE_MODEM_MONITOR_CONN_STATE_LOG
-	struct tdf_lte_conn_status *lte_conn_status;
 	struct k_fifo *tx_fifo = epacket_dummmy_transmit_fifo_get();
 	struct lte_modem_monitor_config modem_monitor_config = {
 		.conn_status_logger_mask = TDF_DATA_LOGGER_SERIAL,
+		.sleep_mode_enter_logger_mask = TDF_DATA_LOGGER_SERIAL,
+		.sleep_mode_exit_logger_mask = TDF_DATA_LOGGER_SERIAL,
 	};
 	struct tdf_parsed tdf;
 	struct net_buf *tx;
+	struct tdf_lte_conn_status *lte_conn_status;
+	struct tdf_lte_sleep_enter *sleep_enter;
+	struct tdf_lte_sleep_exit *sleep_exit;
 
 	zassert_not_null(tx_fifo);
 	tx = k_fifo_get(tx_fifo, K_MSEC(100));
 	zassert_is_null(tx);
 
-	/* Enable conn status logging */
+	/* Enable LTE state logging */
 	lte_modem_monitor_configure(&modem_monitor_config);
-#endif
+#endif /* CONFIG_INFUSE_MODEM_MONITOR_CONN_STATE_LOG */
 
 	zassert_false(kv_store_key_exists(KV_KEY_LTE_MODEM_MODEL));
 	zassert_false(kv_store_key_exists(KV_KEY_LTE_MODEM_FIRMWARE_REVISION));
@@ -407,6 +411,17 @@ ZTEST(infuse_nrf_modem_monitor, test_integration)
 	nrf_modem_lib_sim_send_at("%XMODEMSLEEP: 1,46783975\r\n");
 	k_sleep(K_SECONDS(10));
 
+#ifdef CONFIG_INFUSE_MODEM_MONITOR_CONN_STATE_LOG
+	tdf_data_logger_flush(TDF_DATA_LOGGER_SERIAL);
+	tx = k_fifo_get(tx_fifo, K_MSEC(100));
+	zassert_not_null(tx);
+	net_buf_pull(tx, sizeof(struct epacket_dummy_frame));
+	zassert_equal(0, tdf_parse_find_in_buf(tx->data, tx->len, TDF_LTE_SLEEP_ENTER, &tdf));
+	sleep_enter = tdf.data;
+	zassert_equal(LTE_LC_MODEM_SLEEP_PSM, sleep_enter->type);
+	net_buf_unref(tx);
+#endif /* CONFIG_INFUSE_MODEM_MONITOR_CONN_STATE_LOG */
+
 	nrf_modem_lib_sim_signal_strength(10, 40);
 	rc = lte_modem_monitor_signal_quality(&rsrp, &rsrq, false);
 	zassert_equal(0, rc);
@@ -421,6 +436,22 @@ ZTEST(infuse_nrf_modem_monitor, test_integration)
 	zassert_equal(0, rc);
 	zassert_equal(-101, rsrp);
 	zassert_equal(-15, rsrq);
+
+#ifdef CONFIG_INFUSE_MODEM_MONITOR_CONN_STATE_LOG
+	tdf_data_logger_flush(TDF_DATA_LOGGER_SERIAL);
+	tx = k_fifo_get(tx_fifo, K_MSEC(100));
+	zassert_not_null(tx);
+	net_buf_pull(tx, sizeof(struct epacket_dummy_frame));
+	zassert_equal(0, tdf_parse_find_in_buf(tx->data, tx->len, TDF_LTE_SLEEP_EXIT, &tdf));
+	sleep_exit = tdf.data;
+	zassert_equal(LTE_LC_MODEM_SLEEP_PSM, sleep_exit->type);
+	zassert_within(10, sleep_exit->duration_s, 1);
+	net_buf_unref(tx);
+
+	modem_monitor_config.sleep_mode_enter_logger_mask = 0;
+	modem_monitor_config.sleep_mode_exit_logger_mask = 0;
+	lte_modem_monitor_configure(&modem_monitor_config);
+#endif /* CONFIG_INFUSE_MODEM_MONITOR_CONN_STATE_LOG */
 
 	/* IP connectivity goes down, reboot should be requested */
 	zassert_true(net_if_ipv4_addr_rm(iface, (struct in_addr *)&ipv4_addr));
