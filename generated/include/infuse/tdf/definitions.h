@@ -790,6 +790,20 @@ struct tdf_lte_control {
 	uint8_t enabled;
 } __packed;
 
+/** LTE modem has entered sleep mode */
+struct tdf_lte_sleep_enter {
+	/** Type of sleep mode that exited (Values from lte_lc_modem_sleep_type) */
+	uint8_t type;
+} __packed;
+
+/** LTE modem has exited sleep mode */
+struct tdf_lte_sleep_exit {
+	/** Type of sleep mode that exited (Values from lte_lc_modem_sleep_type) */
+	uint8_t type;
+	/** How long modem was in sleep mode for in seconds */
+	uint32_t duration_s;
+} __packed;
+
 /** Infuse-IoT builtin TDF definitions */
 enum tdf_builtin_id {
 	/** Common announcement packet */
@@ -916,6 +930,10 @@ enum tdf_builtin_id {
 	TDF_AMBIENT_PRESSURE = 62,
 	/** LTE modem control state */
 	TDF_LTE_CONTROL = 63,
+	/** LTE modem has entered sleep mode */
+	TDF_LTE_SLEEP_ENTER = 64,
+	/** LTE modem has exited sleep mode */
+	TDF_LTE_SLEEP_EXIT = 65,
 	/** End of builtin TDF range */
 	TDF_BUILTIN_END = 1024,
 };
@@ -982,6 +1000,8 @@ enum tdf_builtin_id {
 #define _TDF_KVS_VALUE_CHANGED_TYPE           struct tdf_kvs_value_changed
 #define _TDF_AMBIENT_PRESSURE_TYPE            struct tdf_ambient_pressure
 #define _TDF_LTE_CONTROL_TYPE                 struct tdf_lte_control
+#define _TDF_LTE_SLEEP_ENTER_TYPE             struct tdf_lte_sleep_enter
+#define _TDF_LTE_SLEEP_EXIT_TYPE              struct tdf_lte_sleep_exit
 
 /** Size of builtin TDF definitions */
 enum tdf_builtin_size {
@@ -1045,6 +1065,8 @@ enum tdf_builtin_size {
 	_TDF_KVS_VALUE_CHANGED_SIZE = sizeof(struct tdf_kvs_value_changed),
 	_TDF_AMBIENT_PRESSURE_SIZE = sizeof(struct tdf_ambient_pressure),
 	_TDF_LTE_CONTROL_SIZE = sizeof(struct tdf_lte_control),
+	_TDF_LTE_SLEEP_ENTER_SIZE = sizeof(struct tdf_lte_sleep_enter),
+	_TDF_LTE_SLEEP_EXIT_SIZE = sizeof(struct tdf_lte_sleep_exit),
 };
 
 /** @endcond */

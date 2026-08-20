@@ -88,6 +88,9 @@ static struct {
 	int16_t rsrp_cached;
 	int8_t rsrq_cached;
 #ifdef CONFIG_INFUSE_MODEM_MONITOR_CONN_STATE_LOG
+	k_ticks_t sleep_enter_time;
+	uint8_t sleep_enter_loggers;
+	uint8_t sleep_exit_loggers;
 	uint8_t conn_status_loggers;
 #endif /* CONFIG_INFUSE_MODEM_MONITOR_CONN_STATE_LOG */
 } monitor;
@@ -127,6 +130,8 @@ void lte_modem_monitor_configure(const struct lte_modem_monitor_config *config)
 {
 #ifdef CONFIG_INFUSE_MODEM_MONITOR_CONN_STATE_LOG
 	monitor.conn_status_loggers = config->conn_status_logger_mask;
+	monitor.sleep_enter_loggers = config->sleep_mode_enter_logger_mask;
+	monitor.sleep_exit_loggers = config->sleep_mode_exit_logger_mask;
 #else
 	ARG_UNUSED(config);
 #endif /* CONFIG_INFUSE_MODEM_MONITOR_CONN_STATE_LOG */
@@ -414,11 +419,34 @@ static void lte_reg_handler(const struct lte_lc_evt *const evt)
 		LOG_DBG("    Type: %d", evt->modem_sleep.type);
 		LOG_DBG("     Dur: %lld", evt->modem_sleep.time);
 		atomic_set_bit(&monitor.flags, FLAGS_MODEM_SLEEPING);
+#ifdef CONFIG_INFUSE_MODEM_MONITOR_CONN_STATE_LOG
+		monitor.sleep_enter_time = k_uptime_ticks();
+		{
+			struct tdf_lte_sleep_enter tdf = {
+				.type = evt->modem_sleep.type,
+			};
+
+			TDF_DATA_LOGGER_LOG(monitor.sleep_enter_loggers, TDF_LTE_SLEEP_ENTER,
+					    epoch_time_now(), &tdf);
+		}
+#endif /* CONFIG_INFUSE_MODEM_MONITOR_CONN_STATE_LOG */
 		break;
 	case LTE_LC_EVT_MODEM_SLEEP_EXIT:
 		LOG_DBG("MODEM_SLEEP_EXIT");
 		LOG_DBG("    Type: %d", evt->modem_sleep.type);
 		atomic_clear_bit(&monitor.flags, FLAGS_MODEM_SLEEPING);
+#ifdef CONFIG_INFUSE_MODEM_MONITOR_CONN_STATE_LOG
+		{
+			struct tdf_lte_sleep_exit tdf = {
+				.type = evt->modem_sleep.type,
+				.duration_s = k_ticks_to_sec_floor32(k_uptime_ticks() -
+								     monitor.sleep_enter_time),
+			};
+
+			TDF_DATA_LOGGER_LOG(monitor.sleep_exit_loggers, TDF_LTE_SLEEP_EXIT,
+					    epoch_time_now(), &tdf);
+		}
+#endif /* CONFIG_INFUSE_MODEM_MONITOR_CONN_STATE_LOG */
 		break;
 	case LTE_LC_EVT_MODEM_EVENT:
 		LOG_DBG("MODEM_EVENT");

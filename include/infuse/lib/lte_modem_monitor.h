@@ -116,6 +116,10 @@ struct lte_modem_network_state {
 struct lte_modem_monitor_config {
 	/** TDF data logger mask to log @ref TDF_LTE_CONN_STATUS to */
 	uint8_t conn_status_logger_mask;
+	/** TDF data logger mask to log @ref TDF_LTE_SLEEP_ENTER to */
+	uint8_t sleep_mode_enter_logger_mask;
+	/** TDF data logger mask to log @ref TDF_LTE_SLEEP_EXIT to */
+	uint8_t sleep_mode_exit_logger_mask;
 };
 
 /**
