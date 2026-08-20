@@ -112,6 +112,19 @@ struct lte_modem_network_state {
 	uint8_t cp_rai;
 };
 
+/** Configuration options for the modem monitor */
+struct lte_modem_monitor_config {
+	/** TDF data logger mask to log @ref TDF_LTE_CONN_STATUS to */
+	uint8_t conn_status_logger_mask;
+};
+
+/**
+ * @brief Configure the modem monitor
+ *
+ * @param config Configuration options
+ */
+void lte_modem_monitor_configure(const struct lte_modem_monitor_config *config);
+
 /**
  * @brief Query whether it is currently safe to send AT commands
  *
@@ -140,15 +153,6 @@ bool lte_modem_monitor_is_registered(void);
  * @param state Network state
  */
 void lte_modem_monitor_network_state(struct lte_modem_network_state *state);
-
-/**
- * @brief Configure the modem monitor to automatically log network state changes
- *
- * Logs @ref TDF_LTE_CONN_STATUS on registration status and cell changes.
- *
- * @param tdf_logger_mask TDF data logger mask to log state changes to
- */
-void lte_modem_monitor_network_state_log(uint8_t tdf_logger_mask);
 
 /**
  * @brief Get current signal quality

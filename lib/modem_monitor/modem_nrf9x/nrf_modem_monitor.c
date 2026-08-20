@@ -88,7 +88,7 @@ static struct {
 	int16_t rsrp_cached;
 	int8_t rsrq_cached;
 #ifdef CONFIG_INFUSE_MODEM_MONITOR_CONN_STATE_LOG
-	uint8_t network_state_loggers;
+	uint8_t conn_status_loggers;
 #endif /* CONFIG_INFUSE_MODEM_MONITOR_CONN_STATE_LOG */
 } monitor;
 
@@ -123,12 +123,14 @@ bool lte_modem_monitor_is_at_safe(void)
 #endif /* CONFIG_SOC_NRF9160 */
 }
 
-#ifdef CONFIG_INFUSE_MODEM_MONITOR_CONN_STATE_LOG
-void lte_modem_monitor_network_state_log(uint8_t tdf_logger_mask)
+void lte_modem_monitor_configure(const struct lte_modem_monitor_config *config)
 {
-	monitor.network_state_loggers = tdf_logger_mask;
-}
+#ifdef CONFIG_INFUSE_MODEM_MONITOR_CONN_STATE_LOG
+	monitor.conn_status_loggers = config->conn_status_logger_mask;
+#else
+	ARG_UNUSED(config);
 #endif /* CONFIG_INFUSE_MODEM_MONITOR_CONN_STATE_LOG */
+}
 
 bool lte_modem_monitor_is_registered(void)
 {
@@ -252,7 +254,7 @@ static void network_info_update(struct k_work *work)
 
 state_logging:
 #ifdef CONFIG_INFUSE_MODEM_MONITOR_CONN_STATE_LOG
-	if (monitor.network_state_loggers) {
+	if (monitor.conn_status_loggers) {
 		struct tdf_lte_conn_status tdf;
 		int16_t rsrp;
 		int8_t rsrq;
@@ -262,7 +264,7 @@ state_logging:
 		/* Convert to TDF */
 		tdf_lte_conn_status_from_monitor(&monitor.network_state, &tdf, rsrp, rsrq);
 		/* Add to specified loggers */
-		TDF_DATA_LOGGER_LOG(monitor.network_state_loggers, TDF_LTE_CONN_STATUS,
+		TDF_DATA_LOGGER_LOG(monitor.conn_status_loggers, TDF_LTE_CONN_STATUS,
 				    epoch_time_now(), &tdf);
 	}
 #endif /* CONFIG_INFUSE_MODEM_MONITOR_CONN_STATE_LOG */

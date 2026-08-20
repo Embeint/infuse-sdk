@@ -324,6 +324,9 @@ int main(void)
 	struct kv_store_cb kv_cb = {
 		.value_changed = kv_value_changed,
 	};
+	struct lte_modem_monitor_config modem_monitor_config = {
+		.conn_status_logger_mask = TDF_DATA_LOGGER_FLASH,
+	};
 	struct lte_modem_network_state lte_state;
 	uint16_t udp_payload_size;
 	bool lte_modem_active;
@@ -371,7 +374,7 @@ int main(void)
 	tdf_reboot_info_log(TDF_DATA_LOGGER_FLASH | TDF_DATA_LOGGER_BT_ADV | TDF_DATA_LOGGER_UDP);
 
 	/* Log LTE connection events */
-	lte_modem_monitor_network_state_log(TDF_DATA_LOGGER_FLASH);
+	lte_modem_monitor_configure(&modem_monitor_config);
 
 	/* Configure time event logging */
 	auto_time_sync_log_configure(TDF_DATA_LOGGER_FLASH,

@@ -16,7 +16,7 @@ config INFUSE_MODEM_MONITOR_CONN_STATE_LOG
 	help
 	  Automatically log TDF_LTE_CONN_STATUS TDFs in response to registration
 	  state and cell tower changes. Output loggers must be configured with
-	  `lte_modem_monitor_network_state_log`.
+	  `lte_modem_monitor_configure`.
 
 config INFUSE_MODEM_MONITOR_CONNECTIVITY_TIMEOUT_SEC
 	int "Timeout for receiving L4 connectivity after registering on the network"
