@@ -1,0 +1,4 @@
+configdefault COVERAGE_GCOV_HEAP_SIZE
+	default 65536 if QEMU_TARGET
+
+source "Kconfig.zephyr"
