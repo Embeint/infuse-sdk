@@ -117,7 +117,24 @@ FUNC_NORETURN static void cleanup_and_reboot(void)
 
 static void delayed_do_reboot(struct k_work *work)
 {
+	struct k_work_delayable *dwork = k_work_delayable_from_work(work);
 	struct infuse_reboot_state state;
+	static bool done_net_down;
+
+	if (done_net_down == false) {
+		/* Never run this branch twice */
+		done_net_down = true;
+		/* Check if any networking interfaces need to be brought down */
+		if (networking_trigger_shutdown()) {
+			/* Networking interfaces shutting down, give them
+			 * a short duration to action the request before the
+			 * application reboots.
+			 */
+			k_work_reschedule(dwork, K_SECONDS(1));
+			return;
+		}
+	}
+
 	/* Update the first three state values in the retention as they depend on time */
 	state.epoch_time_source = epoch_time_get_source();
 	state.epoch_time = epoch_time_now();
@@ -190,9 +207,6 @@ void infuse_reboot_delayed(enum infuse_reboot_reason reason, uint32_t info1, uin
 	/* Set rebooting state */
 	infuse_state_set(INFUSE_STATE_REBOOTING);
 #endif
-
-	/* Request networking backends to shutdown while we're waiting to reboot */
-	networking_attempt_clean_shutdown();
 
 	/* Init the worker */
 	k_work_init_delayable(&reboot_worker, delayed_do_reboot);
