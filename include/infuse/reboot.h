@@ -145,6 +145,10 @@ _NORETURN void infuse_reboot(enum infuse_reboot_reason reason, uint32_t info1, u
 /**
  * @brief Trigger a system reboot in the future
  *
+ * @note If the application includes networking interfaces, the actual reboot delay can be
+ *       slightly longer than specified to give the interfaces a chance to cleanly shut down.
+ *       If this is not desired, the caller can use @ref infuse_reboot directly.
+ *
  * @param reason Reason the system is rebooting
  * @param info1 Generic information to identify/diagnose the reboot
  * @param info2 Generic information to identify/diagnose the reboot
