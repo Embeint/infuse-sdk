@@ -29,7 +29,7 @@ static struct {
 	struct lte_modem_network_state network_state;
 	struct kv_store_cb lte_kv_cb;
 #ifdef CONFIG_INFUSE_MODEM_MONITOR_CONN_STATE_LOG
-	uint8_t network_state_loggers;
+	uint8_t conn_status_loggers;
 #endif /* CONFIG_INFUSE_MODEM_MONITOR_CONN_STATE_LOG */
 	struct k_work_delayable shutdown_fallback;
 	bool at_link_dead;
@@ -49,12 +49,14 @@ bool lte_modem_monitor_is_registered(void)
 	       (status == CELLULAR_REGISTRATION_REGISTERED_ROAMING);
 }
 
-#ifdef CONFIG_INFUSE_MODEM_MONITOR_CONN_STATE_LOG
-void lte_modem_monitor_network_state_log(uint8_t tdf_logger_mask)
+void lte_modem_monitor_configure(const struct lte_modem_monitor_config *config)
 {
-	monitor.network_state_loggers = tdf_logger_mask;
-}
+#ifdef CONFIG_INFUSE_MODEM_MONITOR_CONN_STATE_LOG
+	monitor.conn_status_loggers = config->conn_status_logger_mask;
+#else
+	ARG_UNUSED(config);
 #endif /* CONFIG_INFUSE_MODEM_MONITOR_CONN_STATE_LOG */
+}
 
 int lte_modem_monitor_signal_quality(int16_t *rsrp, int8_t *rsrq, bool cached)
 {

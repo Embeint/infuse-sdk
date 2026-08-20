@@ -168,6 +168,9 @@ ZTEST(infuse_nrf_modem_monitor, test_integration)
 #ifdef CONFIG_INFUSE_MODEM_MONITOR_CONN_STATE_LOG
 	struct tdf_lte_conn_status *lte_conn_status;
 	struct k_fifo *tx_fifo = epacket_dummmy_transmit_fifo_get();
+	struct lte_modem_monitor_config modem_monitor_config = {
+		.conn_status_logger_mask = TDF_DATA_LOGGER_SERIAL,
+	};
 	struct tdf_parsed tdf;
 	struct net_buf *tx;
 
@@ -176,7 +179,7 @@ ZTEST(infuse_nrf_modem_monitor, test_integration)
 	zassert_is_null(tx);
 
 	/* Enable conn status logging */
-	lte_modem_monitor_network_state_log(TDF_DATA_LOGGER_SERIAL);
+	lte_modem_monitor_configure(&modem_monitor_config);
 #endif
 
 	zassert_false(kv_store_key_exists(KV_KEY_LTE_MODEM_MODEL));
@@ -350,7 +353,8 @@ ZTEST(infuse_nrf_modem_monitor, test_integration)
 	net_buf_unref(tx);
 
 	/* Disable conn status logging */
-	lte_modem_monitor_network_state_log(0);
+	modem_monitor_config.conn_status_logger_mask = 0;
+	lte_modem_monitor_configure(&modem_monitor_config);
 #endif
 
 	/* Back on the network, gain network connectivity this time */
