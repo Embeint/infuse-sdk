@@ -12,6 +12,7 @@ common:
   integration_platforms:
     - auroch/nrf9151/ns
     - kudu/nrf54l15/cpuapp
+    - nrf93m1dk/nrf54l15/cpuapp
 tests:
   sample.app.gateway_lte:
     tags: gateway
