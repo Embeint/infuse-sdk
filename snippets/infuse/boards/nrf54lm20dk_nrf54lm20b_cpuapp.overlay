@@ -11,10 +11,6 @@
 		infuse,reboot-state = &retention0;
 		infuse,kv-partition = &storage_partition;
 	};
-
-	aliases {
-		environmental0 = &temp;
-	};
 };
 
 #ifndef INFUSE_IS_BOOTLOADER
