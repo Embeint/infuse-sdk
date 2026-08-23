@@ -63,13 +63,13 @@ INFUSE_ZBUS_CHAN_DEFINE(INFUSE_ZBUS_CHAN_AMBIENT_ENV);
 INFUSE_ZBUS_CHAN_DEFINE(INFUSE_ZBUS_CHAN_LOCATION);
 static K_SEM_DEFINE(reboot_request, 0, 1);
 
-void infuse_reboot(enum infuse_reboot_reason reason, uint32_t info1, uint32_t info2)
+void infuse_reboot_hard(enum infuse_reboot_reason reason, uint32_t info1, uint32_t info2)
 {
 	k_sem_give(&reboot_request);
 }
 
-void infuse_reboot_delayed(enum infuse_reboot_reason reason, uint32_t info1, uint32_t info2,
-			   k_timeout_t delay)
+void infuse_reboot_schedule(enum infuse_reboot_reason reason, uint32_t info1, uint32_t info2,
+			    k_timeout_t delay)
 {
 	k_sem_give(&reboot_request);
 }

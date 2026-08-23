@@ -157,7 +157,7 @@ static void modem_shutdown_fallback(struct k_work *work)
 	const struct device *modem = DEVICE_DT_GET(DT_ALIAS(modem));
 
 	LOG_ERR("Clean modem shutdown timed out, rebooting");
-	infuse_reboot(INFUSE_REBOOT_LTE_MODEM_FAULT, (uintptr_t)modem, 0xA800DEAD);
+	infuse_reboot_hard(INFUSE_REBOOT_LTE_MODEM_FAULT, (uintptr_t)modem, 0xA800DEAD);
 }
 
 static void comms_check_result(const struct device *dev,
@@ -190,8 +190,8 @@ static void modem_suspended(const struct device *dev)
 		return;
 	}
 	LOG_WRN("Modem suspended, rebooting");
-	infuse_reboot_delayed(INFUSE_REBOOT_LTE_MODEM_FAULT, (uintptr_t)dev, 0xA700DEAD,
-			      K_SECONDS(2));
+	infuse_reboot_schedule(INFUSE_REBOOT_LTE_MODEM_FAULT, (uintptr_t)dev, 0xA700DEAD,
+			       K_SECONDS(2));
 }
 
 static void modem_event_cb(const struct device *dev, enum cellular_event evt, const void *payload,
@@ -236,8 +236,8 @@ static void lte_kv_value_changed(uint16_t key, const void *data, size_t data_len
 	 * The easiest way to achieve this is to reboot the application and let
 	 * infuse_modem_init configure it appropriately.
 	 */
-	infuse_reboot_delayed(INFUSE_REBOOT_CFG_CHANGE, KV_KEY_LTE_PDP_CONFIG, data_len,
-			      K_SECONDS(2));
+	infuse_reboot_schedule(INFUSE_REBOOT_CFG_CHANGE, KV_KEY_LTE_PDP_CONFIG, data_len,
+			       K_SECONDS(2));
 #else
 	LOG_WRN("No reboot support!");
 #endif /* CONFIG_INFUSE_REBOOT */

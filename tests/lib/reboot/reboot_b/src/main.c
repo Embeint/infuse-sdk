@@ -15,7 +15,7 @@
 #include <infuse/time/epoch.h>
 #include <infuse/drivers/watchdog.h>
 
-ZTEST(infuse_reboot, test_reboot)
+ZTEST(infuse_reboot_hard, test_reboot)
 {
 	KV_KEY_TYPE(KV_KEY_REBOOTS) reboots;
 	uintptr_t state_addr = DT_REG_ADDR(DT_GPARENT(DT_CHOSEN(infuse_reboot_state)));
@@ -36,8 +36,8 @@ ZTEST(infuse_reboot, test_reboot)
 		rc = infuse_reboot_state_query(&reboot_state);
 		zassert_equal(-ENOENT, rc);
 		/* Trigger reboot */
-		infuse_reboot(INFUSE_REBOOT_EXTERNAL_TRIGGER, 0, 0);
-		zassert_unreachable("infuse_reboot returned");
+		infuse_reboot_hard(INFUSE_REBOOT_EXTERNAL_TRIGGER, 0, 0);
+		zassert_unreachable("infuse_reboot_hard returned");
 		break;
 	case 2:
 		/* Corrupt a random byte in the retained memory */
@@ -47,7 +47,7 @@ ZTEST(infuse_reboot, test_reboot)
 		zassert_equal(-ENOENT, rc);
 		zassert_false(infuse_state_get(INFUSE_STATE_REBOOTING));
 		/* Schedule a delayed reboot, check state was set */
-		infuse_reboot_delayed(INFUSE_REBOOT_EXTERNAL_TRIGGER, 1000, 2000, K_SECONDS(3));
+		infuse_reboot_schedule(INFUSE_REBOOT_EXTERNAL_TRIGGER, 1000, 2000, K_SECONDS(3));
 		zassert_true(infuse_state_get(INFUSE_STATE_REBOOTING));
 		/* Set the time reference just before the reboot */
 		zassert_equal(0, k_sleep(K_MSEC(2500)));
@@ -117,4 +117,4 @@ void *test_init(void)
 	return NULL;
 }
 
-ZTEST_SUITE(infuse_reboot, NULL, test_init, NULL, NULL, NULL);
+ZTEST_SUITE(infuse_reboot_hard, NULL, test_init, NULL, NULL, NULL);

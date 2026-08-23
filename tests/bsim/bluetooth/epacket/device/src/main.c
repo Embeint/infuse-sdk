@@ -284,13 +284,13 @@ int infuse_reboot_state_query(struct infuse_reboot_state *state)
 	return -ENOENT;
 }
 
-void infuse_reboot(enum infuse_reboot_reason reason, uint32_t info1, uint32_t info2)
+void infuse_reboot_hard(enum infuse_reboot_reason reason, uint32_t info1, uint32_t info2)
 {
 	k_sem_give(&reboot_request);
 }
 
-void infuse_reboot_delayed(enum infuse_reboot_reason reason, uint32_t info1, uint32_t info2,
-			   k_timeout_t delay)
+void infuse_reboot_schedule(enum infuse_reboot_reason reason, uint32_t info1, uint32_t info2,
+			    k_timeout_t delay)
 {
 	k_sem_give(&reboot_request);
 }

@@ -185,7 +185,8 @@ void infuse_watchdog_expired(const struct device *dev, int channel_id)
 	 */
 }
 
-FUNC_NORETURN void infuse_reboot(enum infuse_reboot_reason reason, uint32_t info1, uint32_t info2)
+FUNC_NORETURN void infuse_reboot_hard(enum infuse_reboot_reason reason, uint32_t info1,
+				      uint32_t info2)
 {
 	/* Request networking backends to shutdown */
 	if (networking_attempt_clean_shutdown()) {
@@ -198,8 +199,8 @@ FUNC_NORETURN void infuse_reboot(enum infuse_reboot_reason reason, uint32_t info
 	cleanup_and_reboot();
 }
 
-void infuse_reboot_delayed(enum infuse_reboot_reason reason, uint32_t info1, uint32_t info2,
-			   k_timeout_t delay)
+void infuse_reboot_schedule(enum infuse_reboot_reason reason, uint32_t info1, uint32_t info2,
+			    k_timeout_t delay)
 {
 	static struct k_work_delayable reboot_worker;
 

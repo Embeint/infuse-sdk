@@ -26,5 +26,5 @@ void bt_ctlr_assert_handle(char *file, uint32_t line)
 	/* If that didn't work for whatever reason, reboot manually */
 #endif /* CONFIG_MEMFAULT */
 	/* Trigger a reboot */
-	infuse_reboot(INFUSE_REBOOT_BT_CTLR_FAULT, (uintptr_t)file, line);
+	infuse_reboot_hard(INFUSE_REBOOT_BT_CTLR_FAULT, (uintptr_t)file, line);
 }

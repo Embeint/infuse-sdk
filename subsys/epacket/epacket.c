@@ -128,8 +128,8 @@ static void buffer_exhaustion_timeout(struct k_work *work)
 	/* Trigger a reboot, referenced to the worker so we can determine
 	 * which buffer was the problem.
 	 */
-	infuse_reboot_delayed(INFUSE_REBOOT_SW_WATCHDOG, (uintptr_t)dwork,
-			      CONFIG_EPACKET_BUFFER_EXHAUSTION_TIMEOUT, K_SECONDS(2));
+	infuse_reboot_schedule(INFUSE_REBOOT_SW_WATCHDOG, (uintptr_t)dwork,
+			       CONFIG_EPACKET_BUFFER_EXHAUSTION_TIMEOUT, K_SECONDS(2));
 #else
 	k_oops();
 #endif /* CONFIG_INFUSE_REBOOT */

@@ -69,9 +69,9 @@ static void connectable_wdog_expiry(struct k_work *work)
 {
 #ifdef CONFIG_INFUSE_REBOOT
 	LOG_WRN("Connectable advertising watchdog expired, rebooting in 2 seconds...");
-	infuse_reboot_delayed(INFUSE_REBOOT_SW_WATCHDOG, (uintptr_t)connectable_wdog_expiry,
-			      CONFIG_EPACKET_INTERFACE_BT_ADV_CONNECTABLE_WATCHDOG_SEC,
-			      K_SECONDS(2));
+	infuse_reboot_schedule(INFUSE_REBOOT_SW_WATCHDOG, (uintptr_t)connectable_wdog_expiry,
+			       CONFIG_EPACKET_INTERFACE_BT_ADV_CONNECTABLE_WATCHDOG_SEC,
+			       K_SECONDS(2));
 #else
 	LOG_ERR("Connectable advertising watchdog expired, reboot not supported...");
 #endif
@@ -307,9 +307,9 @@ static void scan_rx_watchdog_expired(struct k_work *work)
 	scan_watchdog_timeouts += 1;
 	if ((scan_watchdog_timeouts >= 2) && (k_uptime_seconds() > reboot_age)) {
 #ifdef CONFIG_INFUSE_REBOOT
-		infuse_reboot_delayed(INFUSE_REBOOT_SW_WATCHDOG,
-				      (uintptr_t)scan_rx_watchdog_expired, scan_watchdog_timeouts,
-				      K_SECONDS(2));
+		infuse_reboot_schedule(INFUSE_REBOOT_SW_WATCHDOG,
+				       (uintptr_t)scan_rx_watchdog_expired, scan_watchdog_timeouts,
+				       K_SECONDS(2));
 #else
 		LOG_WRN("INFUSE_REBOOT not supported");
 #endif

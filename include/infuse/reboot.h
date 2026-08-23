@@ -134,28 +134,32 @@ struct infuse_reboot_state {
 /** @endcond */
 
 /**
- * @brief Trigger a system reboot
+ * @brief Trigger a hard (immediate) system reboot
+ *
+ * @note This function provides no opportunity for the system to cleanly shutdown, and
+ *       should only be used if continued operation of the application is no longer
+ *       possible (e.g. from fault handlers).
  *
  * @param reason Reason the system is rebooting
  * @param info1 Generic information to identify/diagnose the reboot
  * @param info2 Generic information to identify/diagnose the reboot
  */
-_NORETURN void infuse_reboot(enum infuse_reboot_reason reason, uint32_t info1, uint32_t info2);
+_NORETURN void infuse_reboot_hard(enum infuse_reboot_reason reason, uint32_t info1, uint32_t info2);
 
 /**
  * @brief Trigger a system reboot in the future
  *
  * @note If the application includes networking interfaces, the actual reboot delay can be
  *       slightly longer than specified to give the interfaces a chance to cleanly shut down.
- *       If this is not desired, the caller can use @ref infuse_reboot directly.
+ *       If this is not desired, the caller can use @ref infuse_reboot_hard directly.
  *
  * @param reason Reason the system is rebooting
  * @param info1 Generic information to identify/diagnose the reboot
  * @param info2 Generic information to identify/diagnose the reboot
  * @param delay Time delay or absolute time to execute the reboot
  */
-void infuse_reboot_delayed(enum infuse_reboot_reason reason, uint32_t info1, uint32_t info2,
-			   k_timeout_t delay);
+void infuse_reboot_schedule(enum infuse_reboot_reason reason, uint32_t info1, uint32_t info2,
+			    k_timeout_t delay);
 
 /**
  * @brief Query the reason for the previous reboot

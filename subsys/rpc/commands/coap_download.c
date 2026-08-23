@@ -185,8 +185,8 @@ static struct net_buf *rpc_command_coap_handle_response(struct net_buf *request,
 #ifdef CONFIG_INFUSE_REBOOT
 		/* Schedule the reboot */
 		LOG_INF("File action complete, rebooting for DFU");
-		infuse_reboot_delayed(INFUSE_REBOOT_DFU, req_header->command_id, action,
-				      K_SECONDS(2));
+		infuse_reboot_schedule(INFUSE_REBOOT_DFU, req_header->command_id, action,
+				       K_SECONDS(2));
 #else
 		LOG_WRN("INFUSE_REBOOT not enabled, cannot reboot");
 #endif /* CONFIG_INFUSE_REBOOT */

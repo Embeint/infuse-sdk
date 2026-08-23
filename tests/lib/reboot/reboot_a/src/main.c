@@ -20,7 +20,7 @@ static void null_dereference(void)
 	zassert_unreachable("Exception not triggered");
 }
 
-ZTEST(infuse_reboot, test_reboot)
+ZTEST(infuse_reboot_hard, test_reboot)
 {
 	KV_KEY_TYPE(KV_KEY_REBOOTS) reboots;
 	struct timeutil_sync_instant time_reference;
@@ -38,8 +38,8 @@ ZTEST(infuse_reboot, test_reboot)
 		rc = infuse_reboot_state_query(&reboot_state);
 		zassert_equal(-ENOENT, rc);
 		/* Trigger reboot */
-		infuse_reboot(INFUSE_REBOOT_RPC, 0x1234, 0x5678);
-		zassert_unreachable("infuse_reboot returned");
+		infuse_reboot_hard(INFUSE_REBOOT_RPC, 0x1234, 0x5678);
+		zassert_unreachable("infuse_reboot_hard returned");
 		break;
 	case 2:
 		/* Reboot state now exists */
@@ -59,8 +59,8 @@ ZTEST(infuse_reboot, test_reboot)
 		time_reference.ref = time_2025;
 		epoch_time_set_reference(TIME_SOURCE_NTP, &time_reference);
 		/* Trigger reboot */
-		infuse_reboot(INFUSE_REBOOT_HW_WATCHDOG, 4, 0);
-		zassert_unreachable("infuse_reboot returned");
+		infuse_reboot_hard(INFUSE_REBOOT_HW_WATCHDOG, 4, 0);
+		zassert_unreachable("infuse_reboot_hard returned");
 		break;
 	case 3:
 		/* Reboot state with time information */
@@ -129,4 +129,4 @@ void *test_init(void)
 	return NULL;
 }
 
-ZTEST_SUITE(infuse_reboot, NULL, test_init, NULL, NULL, NULL);
+ZTEST_SUITE(infuse_reboot_hard, NULL, test_init, NULL, NULL, NULL);

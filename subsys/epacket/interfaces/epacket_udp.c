@@ -95,8 +95,8 @@ static void udp_downlink_watchdog_expiry(struct k_work *work)
 {
 	LOG_WRN("Downlink watchdog expired");
 	/* Watchdog expired, reboot */
-	infuse_reboot(INFUSE_REBOOT_SW_WATCHDOG, (uintptr_t)udp_downlink_watchdog_expiry,
-		      CONFIG_EPACKET_INTERFACE_UDP_DOWNLINK_WATCHDOG_TIMEOUT);
+	infuse_reboot_hard(INFUSE_REBOOT_SW_WATCHDOG, (uintptr_t)udp_downlink_watchdog_expiry,
+			   CONFIG_EPACKET_INTERFACE_UDP_DOWNLINK_WATCHDOG_TIMEOUT);
 }
 
 static void if_admin_event_handler(struct net_mgmt_event_callback *cb, uint64_t event,
@@ -218,8 +218,8 @@ static void udp_core_read_loop(void)
 		if (buf == NULL) {
 #ifdef CONFIG_INFUSE_REBOOT
 			/* Could not claim a RX buffer even with an excessive timeout */
-			infuse_reboot_delayed(INFUSE_REBOOT_SW_WATCHDOG,
-					      (uintptr_t)udp_core_read_loop, 30, K_SECONDS(2));
+			infuse_reboot_schedule(INFUSE_REBOOT_SW_WATCHDOG,
+					       (uintptr_t)udp_core_read_loop, 30, K_SECONDS(2));
 			k_sleep(K_FOREVER);
 #else
 			LOG_ERR("UDP thread blocked on RX buffer");

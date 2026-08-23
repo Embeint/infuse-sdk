@@ -152,13 +152,13 @@ write_done:
 	if (dfu_reboot) {
 #ifdef CONFIG_INFUSE_REBOOT
 		/* The response has been queued, perform a short delay to allow the data to be sent
-		 * before infuse_reboot_delayed potentially starts shutting down interfaces.
+		 * before infuse_reboot_schedule potentially starts shutting down interfaces.
 		 */
 		k_sleep(K_MSEC(500));
 		/* Schedule the reboot in a few seconds time */
 		LOG_INF("File action complete, rebooting for DFU");
-		infuse_reboot_delayed(INFUSE_REBOOT_DFU, RPC_ID_FILE_WRITE_BASIC, action,
-				      K_SECONDS(2));
+		infuse_reboot_schedule(INFUSE_REBOOT_DFU, RPC_ID_FILE_WRITE_BASIC, action,
+				       K_SECONDS(2));
 #else
 		LOG_WRN("INFUSE_REBOOT not enabled, cannot reboot");
 #endif /* CONFIG_INFUSE_REBOOT */

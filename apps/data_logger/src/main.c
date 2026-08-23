@@ -200,7 +200,8 @@ static void dfu_exfat_run(void)
 			LOG_INF("New image copied");
 			if (boot_request_upgrade_multi(0, 0) == 0) {
 				LOG_INF("Rebooting into new image");
-				infuse_reboot(INFUSE_REBOOT_DFU, (uintptr_t)dfu_exfat_run, 0x00);
+				infuse_reboot_hard(INFUSE_REBOOT_DFU, (uintptr_t)dfu_exfat_run,
+						   0x00);
 			}
 		}
 	}

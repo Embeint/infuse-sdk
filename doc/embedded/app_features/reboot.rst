@@ -10,8 +10,13 @@ the Zephyr `Retention API`_ to achieve this.
 Reboot State Storage
 ********************
 
-The reboot integration is dependent on all reboots being routed through either :c:func:`infuse_reboot`
-or :c:func:`infuse_reboot_delayed`.
+The reboot integration is dependent on all reboots being routed through either :c:func:`infuse_reboot_hard`
+or :c:func:`infuse_reboot_schedule`.
+
+.. note::
+
+   :c:func:`infuse_reboot_schedule` is the preferred reboot path as it provides the opportunity for
+   software and hardware to cleanly shutdown, even if the delay is ``K_NO_WAIT``.
 
 Reboot State Querying
 *********************

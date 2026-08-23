@@ -96,9 +96,9 @@ struct net_buf *rpc_command_security_key_update(struct net_buf *request)
 
 	/* Trigger reboot if requested */
 	if ((rc == 0) && (req->reboot_delay > 0)) {
-		infuse_reboot_delayed(INFUSE_REBOOT_CFG_CHANGE,
-				      (uintptr_t)rpc_command_security_key_update, req->key_id,
-				      K_SECONDS(req->reboot_delay));
+		infuse_reboot_schedule(INFUSE_REBOOT_CFG_CHANGE,
+				       (uintptr_t)rpc_command_security_key_update, req->key_id,
+				       K_SECONDS(req->reboot_delay));
 	}
 
 end:

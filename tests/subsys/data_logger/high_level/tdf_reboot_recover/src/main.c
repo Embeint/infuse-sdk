@@ -95,7 +95,7 @@ static void log_corrupt_and_reboot(const struct device *tdf_logger, int corrupt_
 	if (fault) {
 		epoch_time_set_reference(TIME_SOURCE_NONE, NULL);
 	} else {
-		infuse_reboot(INFUSE_REBOOT_RPC, 0, 0);
+		infuse_reboot_hard(INFUSE_REBOOT_RPC, 0, 0);
 	}
 }
 
@@ -167,7 +167,7 @@ ZTEST(tdf_data_logger_recovery, test_logger_recovery)
 
 		tdf_data_logger_log_dev(tdf_logger, 10, sizeof(*buf), 0, buf);
 		tdf_data_logger_lock(tdf_logger);
-		infuse_reboot(INFUSE_REBOOT_UNKNOWN, 0, 0);
+		infuse_reboot_hard(INFUSE_REBOOT_UNKNOWN, 0, 0);
 		zassert_unreachable();
 	} else if (reboots.count == 3) {
 		/* If lock was taken over reboot data should be purged */
