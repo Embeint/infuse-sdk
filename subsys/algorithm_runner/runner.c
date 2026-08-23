@@ -269,8 +269,8 @@ static bool handle_alg_reload(struct algorithm_runner_algorithm *alg)
 		 * default values from the static variable. Force a reboot, which
 		 * will reset the configuration.
 		 */
-		infuse_reboot_delayed(INFUSE_REBOOT_CFG_CHANGE, alg->algorithm->algorithm_id,
-				      alg->algorithm->arguments_kv_key, K_SECONDS(2));
+		infuse_reboot_schedule(INFUSE_REBOOT_CFG_CHANGE, alg->algorithm->algorithm_id,
+				       alg->algorithm->arguments_kv_key, K_SECONDS(2));
 #endif /* CONFIG_INFUSE_REBOOT */
 		/* Reboot failed or is not enabled, unregister the algorithm,
 		 * nothing else we can do.

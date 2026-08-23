@@ -43,7 +43,7 @@ extern "C" {
  * if (dfu_exfat_app_upgrade_exists(logger, &upgrade_version) == 1) {
  *   if (dfu_exfat_app_upgrade_copy(logger, upgrade_version, upgrade_partition, NULL) == 0) {
  *     if (boot_request_upgrade_multi(0, 0) == 0) {
- *       infuse_reboot(INFUSE_REBOOT_DFU, 0x00, 0x00);
+ *       infuse_reboot_hard(INFUSE_REBOOT_DFU, 0x00, 0x00);
  *     }
  *   }
  * }

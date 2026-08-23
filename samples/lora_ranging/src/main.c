@@ -195,7 +195,7 @@ int main(void)
 			gpio_pin_toggle_dt(&led0);
 			k_sleep(K_SECONDS(1));
 		}
-		infuse_reboot(INFUSE_REBOOT_SW_WATCHDOG, (uintptr_t)dev, 0);
+		infuse_reboot_hard(INFUSE_REBOOT_SW_WATCHDOG, (uintptr_t)dev, 0);
 	}
 
 	/* Start the watchdog */

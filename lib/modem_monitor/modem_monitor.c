@@ -41,8 +41,8 @@ static void connectivity_timeout(struct k_work *work)
 	/* Interface has failed to gain IP connectivity, the safest option is to reboot */
 #ifdef CONFIG_INFUSE_REBOOT
 	LOG_ERR("Networking connectivity failed, rebooting in 2 seconds...");
-	infuse_reboot_delayed(INFUSE_REBOOT_SW_WATCHDOG, (uintptr_t)connectivity_timeout,
-			      CONFIG_INFUSE_MODEM_MONITOR_CONNECTIVITY_TIMEOUT_SEC, K_SECONDS(2));
+	infuse_reboot_schedule(INFUSE_REBOOT_SW_WATCHDOG, (uintptr_t)connectivity_timeout,
+			       CONFIG_INFUSE_MODEM_MONITOR_CONNECTIVITY_TIMEOUT_SEC, K_SECONDS(2));
 #else
 	LOG_ERR("Networking connectivity failed, no reboot support!");
 #endif /* CONFIG_INFUSE_REBOOT */

@@ -126,7 +126,7 @@ static void iface_down_handler(struct net_mgmt_event_callback *cb, uint64_t even
 	k_work_schedule(&grace_marker_work, K_MSEC(500));
 }
 
-ZTEST(infuse_reboot, test_delayed_network_shutdown)
+ZTEST(infuse_reboot_hard, test_delayed_network_shutdown)
 {
 	KV_KEY_TYPE(KV_KEY_REBOOTS) reboots;
 	struct infuse_reboot_state reboot_state;
@@ -160,7 +160,7 @@ ZTEST(infuse_reboot, test_delayed_network_shutdown)
 		state.schedule_uptime = k_uptime_get();
 		LOG_INF("scheduling delayed reboot at %lld ms with %lld ms delay",
 			state.schedule_uptime, k_ticks_to_ms_floor64(REBOOT_DELAY.ticks));
-		infuse_reboot_delayed(INFUSE_REBOOT_RPC, 0x1234, 0x5678, REBOOT_DELAY);
+		infuse_reboot_schedule(INFUSE_REBOOT_RPC, 0x1234, 0x5678, REBOOT_DELAY);
 
 		k_sleep(K_SECONDS(1));
 		LOG_INF("1 second after scheduling: admin_up=%d dormant=%d disconnect_calls=%d "
@@ -219,4 +219,4 @@ void *test_init(void)
 	return NULL;
 }
 
-ZTEST_SUITE(infuse_reboot, NULL, test_init, NULL, NULL, NULL);
+ZTEST_SUITE(infuse_reboot_hard, NULL, test_init, NULL, NULL, NULL);

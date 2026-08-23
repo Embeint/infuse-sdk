@@ -103,7 +103,7 @@ ZTEST(rpc_command_last_reboot, test_reboot_query)
 		zassert_equal(0, epoch_time_set_reference(TIME_SOURCE_GNSS, &reference));
 
 		/* Trigger a reboot with known params */
-		infuse_reboot(INFUSE_REBOOT_DFU, 0x1234, 0x98765432);
+		infuse_reboot_hard(INFUSE_REBOOT_DFU, 0x1234, 0x98765432);
 		zassert_unreachable("Test did not reboot");
 		break;
 	case 2:

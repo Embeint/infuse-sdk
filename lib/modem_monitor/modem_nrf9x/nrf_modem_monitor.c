@@ -499,7 +499,7 @@ static void lte_kv_value_changed(uint16_t key, const void *data, size_t data_len
 	 * The easiest way to achieve this is to reboot the application and let
 	 * infuse_modem_init configure it appropriately.
 	 */
-	infuse_reboot_delayed(INFUSE_REBOOT_CFG_CHANGE, key, data_len, K_SECONDS(2));
+	infuse_reboot_schedule(INFUSE_REBOOT_CFG_CHANGE, key, data_len, K_SECONDS(2));
 #else
 	LOG_WRN("No reboot support!");
 #endif /* CONFIG_INFUSE_REBOOT */
@@ -667,8 +667,8 @@ void lte_net_if_modem_fault_app_handler(struct nrf_modem_fault_info *fault_info)
 #ifdef CONFIG_INFUSE_REBOOT
 	/* Handling any fault properly is uncertain, safest option is to trigger a reboot */
 	LOG_ERR("Modem fault, rebooting in 2 seconds...");
-	infuse_reboot_delayed(INFUSE_REBOOT_LTE_MODEM_FAULT, fault_info->program_counter,
-			      fault_info->reason, K_SECONDS(2));
+	infuse_reboot_schedule(INFUSE_REBOOT_LTE_MODEM_FAULT, fault_info->program_counter,
+			       fault_info->reason, K_SECONDS(2));
 #else
 	LOG_ERR("Modem fault, no reboot support!");
 #endif /* CONFIG_INFUSE_REBOOT */

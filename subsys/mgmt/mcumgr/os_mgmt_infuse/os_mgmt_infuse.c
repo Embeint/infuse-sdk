@@ -73,7 +73,7 @@ static int os_mgmt_reset(struct smp_streamer *ctxt)
 	if (k_uptime_seconds() < CONFIG_MCUMGR_GRP_OS_INFUSE_RESET_MIN_UPTIME) {
 		return MGMT_ERR_EBUSY;
 	}
-	infuse_reboot_delayed(INFUSE_REBOOT_MCUMGR, 0x00, 0x00, K_MSEC(2000));
+	infuse_reboot_schedule(INFUSE_REBOOT_MCUMGR, 0x00, 0x00, K_MSEC(2000));
 	return MGMT_ERR_EOK;
 #else
 	return MGMT_ERR_ENOTSUP;

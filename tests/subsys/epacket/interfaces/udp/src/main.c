@@ -44,7 +44,7 @@ K_SEM_DEFINE(downlink_watchdog_expired, 0, 1);
 static enum infuse_reboot_reason reboot_reason;
 static struct epoch_time_cb time_callback;
 
-void infuse_reboot(enum infuse_reboot_reason reason, uint32_t info1, uint32_t info2)
+void infuse_reboot_hard(enum infuse_reboot_reason reason, uint32_t info1, uint32_t info2)
 {
 	reboot_reason = reason;
 	k_sem_give(&downlink_watchdog_expired);

@@ -322,8 +322,8 @@ ZTEST(memfault_integration, test_epacket_dump)
 		zassert_equal((enum infuse_reboot_reason)K_ERR_STACK_CHK_FAIL, reboot_state.reason);
 
 		/* Trigger a reboot that should result in secure fault info being provided */
-		infuse_reboot(K_ERR_ARM_SECURE_GENERIC, 0x1234, 0x5678);
-		zassert_unreachable("infuse_reboot did not result in reboot ");
+		infuse_reboot_hard(K_ERR_ARM_SECURE_GENERIC, 0x1234, 0x5678);
+		zassert_unreachable("infuse_reboot_hard did not result in reboot ");
 		break;
 	case 6:
 		/* Memfault should know about the secure fault due to our injection */

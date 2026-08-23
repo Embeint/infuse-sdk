@@ -92,7 +92,7 @@ ZTEST(common_boot, test_boot)
 		/* Should have no time source */
 		zassert_equal(TIME_SOURCE_NONE, epoch_time_get_source());
 		/* Trigger reboot */
-		infuse_reboot(INFUSE_REBOOT_EXTERNAL_TRIGGER, 0x12, 0x34);
+		infuse_reboot_hard(INFUSE_REBOOT_EXTERNAL_TRIGGER, 0x12, 0x34);
 		zassert_unreachable("Failed to reboot");
 		break;
 	case 2:
@@ -138,7 +138,7 @@ ZTEST(common_boot, test_boot)
 		rc = KV_STORE_WRITE(KV_KEY_INFUSE_APPLICATION_ID, &id);
 		zassert_equal(sizeof(id), rc);
 		resetting_with_bad_id = KV_FINAL_RESET_KEY;
-		infuse_reboot(INFUSE_REBOOT_EXTERNAL_TRIGGER, 0x56, 0x78);
+		infuse_reboot_hard(INFUSE_REBOOT_EXTERNAL_TRIGGER, 0x56, 0x78);
 		zassert_unreachable("Failed to reboot");
 		break;
 	default:
