@@ -13,7 +13,7 @@
 #include <zephyr/modem/at/user_pipe.h>
 
 static struct modem_chat modem_chat_ctx;
-static uint8_t lte_at_chat_receive_buf[128];
+static uint8_t lte_at_chat_receive_buf[CONFIG_MODEM_CELLULAR_USER_PIPE_BUFFER_SIZES];
 static uint8_t *lte_at_chat_argv_buf[2];
 struct ctx {
 	char *buf;
