@@ -98,13 +98,14 @@ int cellular_modem_at_cmd(void *buf, size_t len, const char *cmd)
 
 	modem_chat_script_chat_init(&chat_single);
 	modem_chat_script_chat_set_request(&chat_single, cmd);
-	modem_chat_script_chat_set_response_matches(&chat_single, chat_matches, 2);
+	modem_chat_script_chat_set_response_matches(&chat_single, chat_matches,
+						    ARRAY_SIZE(chat_matches));
 	modem_chat_script_chat_set_timeout(&chat_single, 2000);
 
 	modem_chat_script_init(&script);
 	modem_chat_script_set_script_chats(&script, &chat_single, 1);
 	modem_chat_script_set_callback(&script, script_done_cb);
-	modem_chat_script_set_abort_matches(&script, abort_matches, 1);
+	modem_chat_script_set_abort_matches(&script, abort_matches, ARRAY_SIZE(abort_matches));
 	modem_chat_script_set_timeout(&script, 2);
 
 	cmd_ctx.rc = modem_at_user_pipe_claim(&modem_chat_ctx, K_MSEC(200));
