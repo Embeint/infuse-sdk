@@ -430,3 +430,25 @@ static int infuse_common_boot(void)
 }
 
 SYS_INIT(infuse_common_boot, APPLICATION, CONFIG_INFUSE_COMMON_BOOT_INIT_PRIORITY);
+
+#ifdef CONFIG_KV_STORE_KEY_Z_DEVSTATE
+
+extern const struct device_state __device_states_start[];
+extern const struct device_state __device_states_end[];
+
+BUILD_ASSERT(sizeof(struct device_state) == sizeof(struct kv_device_state),
+	     "Kernel `device_state` object doesn't match KV definition");
+
+static int infuse_kv_z_devstate(void)
+{
+	ptrdiff_t array_size = (uintptr_t)__device_states_end - (uintptr_t)__device_states_start;
+	unsigned int num_states = array_size / sizeof(struct device_state);
+
+	LOG_DBG("Writing %zu z_devstate entries", num_states);
+	(void)kv_store_write(KV_KEY_Z_DEVSTATE, __device_states_start, array_size);
+	return 0;
+}
+
+SYS_INIT(infuse_kv_z_devstate, APPLICATION, 99);
+
+#endif /* CONFIG_KV_STORE_KEY_Z_DEVSTATE */
