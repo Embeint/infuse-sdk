@@ -28,11 +28,11 @@ extern "C" {
  */
 
 {% for name, info in enums.items() %}
-/** {{ info['description'] }} */
+{{ info['description'] | doxygen_comment }}
 enum {{ name }} {
 {% for value in info['values'] %}
 {% if 'description' in value %}
-	/** {{ value['description'] }} */
+{{ value['description'] | doxygen_comment('	') }}
 {% endif %}
 	{{ name | upper }}_{{ value['name'] }} = {{ value['value'] }},
 {% endfor %}
@@ -40,11 +40,11 @@ enum {{ name }} {
 
 {% endfor %}
 {% for name, info in structs.items() %}
-/** {{ info['description'] }} */
+{{ info['description'] | doxygen_comment }}
 struct {{ name }} {
 {% for field in info['fields'] %}
 	{% if 'description' in field %}
-		/** {{ field['description'] }} */
+{{ field['description'] | doxygen_comment('	') }}
 	{% endif %}
 	{{ field['type'] }} {{ field['name'] }}{{ field['array'] }};
 {% endfor %}
@@ -78,11 +78,11 @@ struct {{ name }} {
  */
 
 {% for info in definitions.values() %}
-/** {{ info['description'] }} */
+{{ info['description'] | doxygen_comment }}
 struct kv_{{ info['name'] | lower }} {
 {% for field in info['fields'] %}
 	{% if 'description' in field %}
-	/** {{ field['description'] }} */
+{{ field['description'] | doxygen_comment('	') }}
 	{% endif %}
 	{% if field['num'] == 0 %}
 	{% if info['fields']|length == 1 %}
@@ -118,7 +118,7 @@ struct kv_{{ info['name'] | lower }} {
 /* Infuse-IoT builtin KV definitions */
 enum kv_builtin_id {
 {% for key, info in definitions.items() %}
-	/** {{ info['description'] }} */
+{{ info['description'] | doxygen_comment('	') }}
 	KV_KEY_{{ info['name'] | upper }} = {{ key }},
 {% if 'range' in info %}
 #ifdef CONFIG_KV_STORE_KEY_{{ info['name'] }}_RANGE
