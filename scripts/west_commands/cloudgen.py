@@ -8,6 +8,7 @@ import json
 import pathlib
 import subprocess
 import sys
+import textwrap
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from west.commands import WestCommand
@@ -15,6 +16,16 @@ from west.commands import WestCommand
 EXPORT_DESCRIPTION = """\
 This command generates code from common definitions in Embeint cloud.
 """
+
+
+def doxygen_comment(description: str, indent: str = "") -> str:
+    prefix = f"{indent} * "
+    max_width = max(20, 100 - len(prefix.expandtabs(8)))
+    lines = textwrap.wrap(description, width=max_width)
+
+    if len(lines) == 1:
+        return f"{indent}/** {lines[0]} */"
+    return "\n".join([f"{indent}/**", *(f"{prefix}{line}" for line in lines), f"{indent} */"])
 
 
 class cloudgen(WestCommand):
@@ -65,6 +76,7 @@ class cloudgen(WestCommand):
             trim_blocks=True,
             lstrip_blocks=True,
         )
+        self.env.filters["doxygen_comment"] = doxygen_comment
         if self.extra_defs_base and not self.extra_defs_base.exists():
             sys.exit(f"Path '{self.extra_defs_base}' does not exist")
 
