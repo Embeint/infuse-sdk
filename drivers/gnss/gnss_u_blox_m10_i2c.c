@@ -443,7 +443,9 @@ static int ubx_m10_i2c_software_standby(const struct device *dev)
 static int ubx_m10_i2c_software_resume(const struct device *dev)
 {
 	NET_BUF_SIMPLE_DEFINE(cfg_buf, 64);
+	const struct ubx_m10_i2c_config *cfg = dev->config;
 	struct ubx_m10_i2c_data *data = dev->data;
+	int data_ready;
 	int rc = 0;
 
 	/* Wait until modem is ready to wake */
@@ -451,6 +453,17 @@ static int ubx_m10_i2c_software_resume(const struct device *dev)
 
 	/* Wake by generating an edge on the EXTINT pin */
 	ubx_common_extint_wake(dev);
+
+	/* Handle data ready already being asserted out of sleep.
+	 * Defensive programming as opposed to an observed behavioural mode.
+	 */
+	data_ready = gpio_pin_get_dt(&cfg->common.data_ready_gpio);
+	if (data_ready > 0) {
+		LOG_DBG("Data-ready asserted after wake");
+		k_work_reschedule(&data->i2c_backend.common.fifo_read, K_NO_WAIT);
+	} else if (data_ready < 0) {
+		LOG_WRN("Failed to read data-ready GPIO (%d)", data_ready);
+	}
 
 	/* Ublox-M10 apparently does not output MON-RXR on wake, despite the M10 interface
 	 * description saying it does. This is a confirmed bug with the I2C interface.

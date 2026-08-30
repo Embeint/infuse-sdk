@@ -402,12 +402,14 @@ static int ubx_m8_spi_software_standby(const struct device *dev)
 
 static int ubx_m8_spi_software_resume(const struct device *dev)
 {
+	const struct ubx_m8_spi_config *cfg = dev->config;
 	struct ubx_m8_spi_data *data = dev->data;
 	struct k_poll_event mon_rxr_events[] = {
 		K_POLL_EVENT_INITIALIZER(K_POLL_TYPE_SIGNAL, K_POLL_MODE_NOTIFY_ONLY,
 					 &data->common.mon_rxr_signal),
 	};
 	unsigned int signaled;
+	int data_ready;
 	int result;
 	int rc;
 
@@ -419,6 +421,17 @@ static int ubx_m8_spi_software_resume(const struct device *dev)
 
 	/* Wake by generating an edge on the EXTINT pin */
 	ubx_common_extint_wake(dev);
+
+	/* Handle data ready already being asserted out of sleep.
+	 * Defensive programming as opposed to an observed behavioural mode.
+	 */
+	data_ready = gpio_pin_get_dt(&cfg->common.data_ready_gpio);
+	if (data_ready > 0) {
+		LOG_DBG("Data-ready asserted after wake");
+		k_work_reschedule(&data->spi_backend.common.fifo_read, K_NO_WAIT);
+	} else if (data_ready < 0) {
+		LOG_WRN("Failed to read data-ready GPIO (%d)", data_ready);
+	}
 
 	/* Wait for the expected MON-RXR message */
 	rc = k_poll(mon_rxr_events, ARRAY_SIZE(mon_rxr_events), SYNC_MESSAGE_TIMEOUT);
