@@ -125,6 +125,14 @@ struct kv_algorithm_movement_threshold_args_v2 {
 	uint32_t continue_threshold_ug;
 } __packed;
 
+/** Initialisation results for a single device. Matches `struct device_state` from Zephyr */
+struct kv_device_state {
+	/** Device initialization return code (positive errno value) */
+	uint8_t init_res;
+	/** Indicates the device initialization function invoked */
+	uint8_t initialized;
+} __packed;
+
 /**
  * @}
  */
@@ -206,6 +214,23 @@ struct kv_secondary_remote_public_key {
 	/** Remote public key */
 	uint8_t public_key[32];
 } __packed;
+
+/** State of the `z_devstate` section after boot. Requires .map file to assign states to devices */
+struct kv_z_devstate {
+	/** `struct device_state` for first device in array */
+	struct kv_device_state first;
+	/** `struct device_state` for remaining devices */
+	struct kv_device_state remainder[];
+} __packed;
+
+/* clang-format off */
+/** Compile time definition for known array length */
+#define _KV_KEY_Z_DEVSTATE_VAR(num) \
+	struct { \
+		struct kv_device_state first; \
+		struct kv_device_state remainder[num]; \
+	} __packed
+/* clang-format on */
 
 /** Fixed global location of the device */
 struct kv_fixed_location {
@@ -610,6 +635,11 @@ enum kv_builtin_id {
 	KV_KEY_BOARD_TARGET = 7,
 	/** Storage of secondary remote public key */
 	KV_KEY_SECONDARY_REMOTE_PUBLIC_KEY = 8,
+	/**
+	 * State of the `z_devstate` section after boot. Requires .map file to assign states to
+	 * devices
+	 */
+	KV_KEY_Z_DEVSTATE = 9,
 	/** Fixed global location of the device */
 	KV_KEY_FIXED_LOCATION = 10,
 	/** Device is fixed indoors and should broadcast the fact */
@@ -746,6 +776,7 @@ enum kv_builtin_size {
 #define _KV_KEY_APPLICATION_ACTIVE_TYPE struct kv_application_active
 #define _KV_KEY_BOARD_TARGET_TYPE struct kv_board_target
 #define _KV_KEY_SECONDARY_REMOTE_PUBLIC_KEY_TYPE struct kv_secondary_remote_public_key
+#define _KV_KEY_Z_DEVSTATE_TYPE struct kv_z_devstate
 #define _KV_KEY_FIXED_LOCATION_TYPE struct kv_fixed_location
 #define _KV_KEY_BROADCAST_FIXED_INDOORS_TYPE struct kv_broadcast_fixed_indoors
 #define _KV_KEY_LITTLEFS_FS_STATE_TYPE struct kv_littlefs_fs_state
@@ -796,6 +827,8 @@ enum kv_builtin_size {
 	IF_ENABLED(CONFIG_KV_STORE_KEY_BOARD_TARGET, \
 		   (1 +)) \
 	IF_ENABLED(CONFIG_KV_STORE_KEY_SECONDARY_REMOTE_PUBLIC_KEY, \
+		   (1 +)) \
+	IF_ENABLED(CONFIG_KV_STORE_KEY_Z_DEVSTATE, \
 		   (1 +)) \
 	IF_ENABLED(CONFIG_KV_STORE_KEY_FIXED_LOCATION, \
 		   (1 +)) \
@@ -960,6 +993,13 @@ static struct key_value_slot_definition _KV_SLOTS_ARRAY_DEFINE[] = {
 		.flags = KV_FLAGS_REFLECT,
 	},
 #endif /* CONFIG_KV_STORE_KEY_SECONDARY_REMOTE_PUBLIC_KEY */
+#ifdef CONFIG_KV_STORE_KEY_Z_DEVSTATE
+	{
+		.key = KV_KEY_Z_DEVSTATE,
+		.range = 1,
+		.flags = KV_FLAGS_REFLECT | KV_FLAGS_READ_ONLY,
+	},
+#endif /* CONFIG_KV_STORE_KEY_Z_DEVSTATE */
 #ifdef CONFIG_KV_STORE_KEY_FIXED_LOCATION
 	{
 		.key = KV_KEY_FIXED_LOCATION,

@@ -81,6 +81,13 @@
                 {"name": "initial_threshold_ug", "type": "uint32_t", "description": "Magnitude this far away from 1G triggers the moving state"},
                 {"name": "continue_threshold_ug", "type": "uint32_t", "description": "Magnitude this far away from 1G continues the moving state"}
             ]
+        },
+        "kv_device_state": {
+            "description": "Initialisation results for a single device. Matches `struct device_state` from Zephyr",
+            "fields": [
+                {"name": "init_res", "type": "uint8_t", "description": "Device initialization return code (positive errno value)"},
+                {"name": "initialized", "type": "uint8_t", "description": "Indicates the device initialization function invoked"}
+            ]
         }
     },
     "definitions": {
@@ -164,6 +171,17 @@
             "default": "y",
             "fields": [
                 {"name": "public_key", "type": "uint8_t", "num": 32, "description": "Remote public key"}
+            ]
+        },
+        "9": {
+            "name": "Z_DEVSTATE",
+            "description": "State of the `z_devstate` section after boot. Requires .map file to assign states to devices",
+            "read_only": true,
+            "reflect": true,
+            "default": "y",
+            "fields": [
+                {"name": "first", "type": "struct kv_device_state", "description": "`struct device_state` for first device in array"},
+                {"name": "remainder", "type": "struct kv_device_state", "num": 0, "description": "`struct device_state` for remaining devices"}
             ]
         },
         "10": {
