@@ -235,6 +235,11 @@ static void fifo_read_start(struct k_work *work)
 	rc = rtio_submit(&i2c_rtio, 0);
 	if (rc < 0) {
 		LOG_ERR("Failed to submit RTIO (%d)", rc);
+		/* Release resources */
+		k_sem_give(&backend->common.bus_sem);
+		pm_device_runtime_put(backend->i2c->bus);
+		rtio_sqe_drop_all(&i2c_rtio);
+		/* Try again after a short delay */
 		k_work_reschedule(dwork, K_MSEC(100));
 	}
 }
@@ -312,6 +317,12 @@ static int modem_backend_ublox_i2c_transmit_double(void *data, const uint8_t *bu
 
 	/* Submit TX work */
 	rc = rtio_submit(&i2c_rtio, 0);
+	if (rc < 0) {
+		/* Release resources, as `write_cb` will not run */
+		k_sem_give(&backend->common.bus_sem);
+		pm_device_runtime_put(backend->i2c->bus);
+		rtio_sqe_drop_all(&i2c_rtio);
+	}
 	return rc == 0 ? size : rc;
 }
 

@@ -206,6 +206,12 @@ static int modem_backend_ublox_spi_transmit_double(void *data, const uint8_t *bu
 			       backend);
 	if (rc < 0) {
 		LOG_ERR("FIFO read trigger failed");
+		/* Release resources */
+		k_sem_give(&backend->common.bus_sem);
+#ifdef CONFIG_MODEM_BACKEND_U_BLOX_SPI_PM_MODE_BURST
+		pm_device_runtime_put(backend->spi->bus);
+
+#endif
 		return rc;
 	}
 	return total_size;
