@@ -792,7 +792,7 @@ struct tdf_lte_control {
 
 /** LTE modem has entered sleep mode */
 struct tdf_lte_sleep_enter {
-	/** Type of sleep mode that exited (Values from lte_lc_modem_sleep_type) */
+	/** Type of sleep mode that started (Values from lte_lc_modem_sleep_type) */
 	uint8_t type;
 } __packed;
 
