@@ -56,6 +56,8 @@ enum infuse_reboot_reason {
 	INFUSE_REBOOT_DFU = 135,
 	/** Bluetooth controller fault */
 	INFUSE_REBOOT_BT_CTLR_FAULT = 136,
+	/** Nordic MPSL fault */
+	INFUSE_REBOOT_MPSL_FAULT = 137,
 	/** Unknown reboot reason */
 	INFUSE_REBOOT_UNKNOWN = 255,
 } __packed;
