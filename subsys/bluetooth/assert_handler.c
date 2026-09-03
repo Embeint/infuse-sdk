@@ -28,3 +28,18 @@ void bt_ctlr_assert_handle(char *file, uint32_t line)
 	/* Trigger a reboot */
 	infuse_reboot(INFUSE_REBOOT_BT_CTLR_FAULT, (uintptr_t)file, line);
 }
+
+#ifdef CONFIG_MPSL_ASSERT_HANDLER
+void mpsl_assert_handle(const char *const file, const uint32_t line)
+{
+#ifdef CONFIG_MEMFAULT
+	/* Store the assert information with Memfault if enabled */
+	MEMFAULT_TRACE_EVENT_WITH_LOG(mpsl_fault, "%s:%u", file, line);
+	/* Assert so we get a backtrace */
+	MEMFAULT_ASSERT_WITH_REASON(line, kMfltRebootReason_Assert);
+	/* If that didn't work for whatever reason, reboot manually */
+#endif /* CONFIG_MEMFAULT */
+	/* Trigger a reboot */
+	infuse_reboot(INFUSE_REBOOT_MPSL_FAULT, (uintptr_t)file, line);
+}
+#endif /* CONFIG_MPSL_ASSERT_HANDLER */

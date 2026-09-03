@@ -16,6 +16,10 @@ configdefault LOG_TIMESTAMP_64BIT
 configdefault CLOCK_CONTROL_NRF_HFINT_CALIBRATION
 	default y if !MPSL
 
+# Custom handling of MPSL assertion failures to enable logging
+configdefault MPSL_ASSERT_HANDLER
+	default y if BT_INFUSE_ASSERT_HANDLER
+
 configdefault NRF_CC3XX_PLATFORM
 	default y
 
