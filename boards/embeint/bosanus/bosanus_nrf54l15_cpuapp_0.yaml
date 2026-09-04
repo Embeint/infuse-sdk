@@ -1,0 +1,21 @@
+identifier: bosanus@0/nrf54l15/cpuapp
+name: Bosanus CAT1bis LTE Gateway (R0)
+type: mcu
+arch: arm
+toolchain:
+  - gnuarmemb
+  - zephyr
+sysbuild: true
+ram: 255
+flash: 1524
+supported:
+  - adc
+  - ble
+  - counter
+  - gpio
+  - i2c
+  - retained_mem
+  - spi
+  - watchdog
+  - netif:modem
+vendor: embeint

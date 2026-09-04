@@ -1,0 +1,36 @@
+# Copyright (c) 2026 Embeint Inc
+# SPDX-License-Identifier: Apache-2.0
+
+if BOARD_BOSANUS_NRF54L15_CPUAPP
+
+configdefault ROM_START_OFFSET
+	default 0x800 if BOOTLOADER_MCUBOOT
+
+if NETWORKING
+
+# Constant latency to improve UART stability.
+# According to the datasheet this increases idle power consumption by 530 uA.
+# This is negligible compared to the consumption of the LTE CAT1bis modem.
+configdefault SOC_NRF_FORCE_CONSTLAT
+	default y
+configdefault NRFX_POWER
+	default y
+configdefault NRF_SYS_EVENT
+	default y
+
+# We want to use the UART ASYNC API
+configdefault UART_ASYNC_API
+	default y
+configdefault UART_ASYNC_TX_CACHE_SIZE
+	default 64
+choice MODEM_BACKEND_UART_IMPL
+	default MODEM_BACKEND_UART_ASYNC if BOARD_REVISION_0
+	default MODEM_BACKEND_UART_ASYNC_HWFC
+endchoice
+configdefault UART_00_NRF_TX_BUFFER_SIZE
+	default 1536
+configdefault UART_00_INTERRUPT_DRIVEN
+	default n
+endif # NETWORKING
+
+endif # BOARD_BOSANUS_NRF54L15_CPUAPP

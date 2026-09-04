@@ -1,0 +1,257 @@
+/*
+ * Copyright (c) 2026 Embeint Inc
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/* This file is common to the secure and non-secure domain */
+
+#include "bosanus-pinctrl.dtsi"
+#include <zephyr/dt-bindings/battery/battery.h>
+#include <zephyr/dt-bindings/sensor/lps22hh.h>
+#include <zephyr/dt-bindings/led/led.h>
+
+/ {
+	chosen {
+		zephyr,console = &rtt0;
+		zephyr,flash-controller = &rram_controller;
+		zephyr,flash = &cpuapp_rram;
+	};
+
+	rtt0: rtt_chan0 {
+		compatible = "segger,rtt-uart";
+		status = "okay";
+	};
+
+	fuel_gauge: fuel_gauge {
+		compatible = "zephyr,fuel-gauge-composite";
+		source-primary = <&bq25798>;
+		device-chemistry = "lithium-ion-polymer";
+		ocv-capacity-table-0 = <BATTERY_OCV_CURVE_LITHIUM_ION_POLYMER_DEFAULT>;
+		charge-full-design-microamp-hours = <13400000>;
+		fuel-gauge-channels;
+	};
+
+	modem_dcdc: modem_dcdc {
+		compatible = "power-domain-gpio";
+		enable-gpios = <&gpio2 9 GPIO_ACTIVE_HIGH>;
+		#power-domain-cells = <0>;
+		startup-delay-us = <100000>; /* wait for 100ms to stabilize dcdc supply */
+		off-on-delay-us = <500000>; /* wait for 500ms to stabilize main supply */
+	};
+
+	aliases {
+		led-controller0 = &lp5815;
+		watchdog0 = &wdt31;
+		fuel-gauge0 = &fuel_gauge;
+		environmental0 = &sht4x;
+		environmental1 = &lps22hx;
+		imu0 = &lsm6dsv;
+		modem = &nrf93m1;
+		gnss = &max_m11;
+	};
+};
+
+&cpuapp_sram {
+	status = "okay";
+};
+
+&lfxo {
+	load-capacitors = "internal";
+	load-capacitance-femtofarad = <9000>;
+};
+
+&hfxo {
+	load-capacitors = "internal";
+	load-capacitance-femtofarad = <9000>;
+};
+
+&regulators {
+	status = "okay";
+};
+
+&vregmain {
+	status = "okay";
+	regulator-initial-mode = <NRF5X_REG_MODE_DCDC>;
+};
+
+&grtc {
+	owned-channels = <0 1 2 3 4 5 6 7 8 9 10 11>;
+	/* Channels 7-11 reserved for Zero Latency IRQs, 3-4 for FLPR */
+	child-owned-channels = <3 4 7 8 9 10 11>;
+	status = "okay";
+};
+
+&gpio0 {
+	status = "okay";
+};
+
+&gpio1 {
+	status = "okay";
+};
+
+&gpio2 {
+	status = "okay";
+
+	modem-reset {
+		gpio-hog;
+		gpios = <6 GPIO_ACTIVE_HIGH>;
+		output-low;
+	};
+
+	modem-powerkey {
+		gpio-hog;
+		gpios = <10 GPIO_ACTIVE_HIGH>;
+		output-low;
+	};
+};
+
+&gpiote20 {
+	status = "okay";
+};
+
+&gpiote30 {
+	status = "okay";
+};
+
+&radio {
+	status = "okay";
+};
+
+&ieee802154 {
+	status = "okay";
+};
+
+&temp {
+	status = "okay";
+};
+
+&clock {
+	status = "okay";
+};
+
+&uart00 {
+	status = "okay";
+	pinctrl-0 = <&uart00_default>;
+	pinctrl-1 = <&uart00_sleep>;
+	pinctrl-names = "default", "sleep";
+	current-speed = <115200>;
+	hw-flow-control;
+
+	nrf93m1: nrf93m1 {
+		compatible = "nordic,nrf93m1";
+		power-domains = <&modem_dcdc>;
+		mdm-power-gpios = <&gpio2 10 GPIO_ACTIVE_HIGH>;
+		mdm-reset-gpios = <&gpio2 6 GPIO_ACTIVE_HIGH>;
+
+		mdm-ring-gpios = <&gpio1 3 GPIO_ACTIVE_HIGH>;
+		mdm-dtr-gpios = <&gpio2 7 GPIO_ACTIVE_HIGH>;
+		/* Not currently supported by driver.
+		 * mdm-status-gpios = <&gpio0 3 GPIO_ACTIVE_HIGH>;
+		 */
+	};
+};
+
+&spi20 {
+	status = "okay";
+	cs-gpios = <&gpio1 5 (GPIO_ACTIVE_LOW | GPIO_OPEN_DRAIN)>,
+		   <&gpio1 7 (GPIO_ACTIVE_LOW | GPIO_OPEN_DRAIN)>;
+	pinctrl-0 = <&spi20_default>;
+	pinctrl-1 = <&spi20_sleep>;
+	pinctrl-names = "default", "sleep";
+
+	lsm6dsv: lsm6dsv@0 {
+		compatible = "st,lsm6dsv16x";
+		status = "okay";
+		reg = <0>;
+		spi-max-frequency = <8000000>;
+		int1-gpios = <&gpio1 6 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>;
+	};
+
+	w25q128jw: w25q128jwpim@1 {
+		compatible = "jedec,spi-nor";
+		status = "okay";
+		reg = <1>;
+		spi-max-frequency = <8000000>;
+		size = <134217728>;
+		has-dpd;
+		t-enter-dpd = <3000>;
+		t-exit-dpd = <20000>;
+		jedec-id = [ef 40 18];
+	};
+};
+
+&i2c21 {
+	status = "okay";
+	pinctrl-0 = <&i2c21_default>;
+	pinctrl-1 = <&i2c21_sleep>;
+	pinctrl-names = "default", "sleep";
+
+	sht4x: sht4x@44 {
+		compatible = "sensirion,sht4x";
+		status = "okay";
+		reg = <0x44>;
+		repeatability = <2>;
+	};
+
+	lps22hx: lps22hx@5c {
+		compatible = "st,lps22hx";
+		status = "okay";
+		reg = <0x5c>;
+		odr = <LPS22HH_DT_ODR_POWER_DOWN>;
+	};
+
+	bq25798: bq25798@6b {
+		compatible = "ti,bq25798";
+		status = "okay";
+		reg = <0x6b>;
+		en-gpios = <&gpio0 2 GPIO_ACTIVE_LOW>;
+		int-gpios = <&gpio0 1 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
+		ts-rt1 = <5240>;
+		ts-rt2 = <30310>;
+		mppt-ratio = <81>;
+		vac-ovp = <26>;
+		input-current-limit = <999>;
+		v-in-dpm = <3000>;
+		acdrv1-en;
+		acdrv2-en;
+	};
+
+	lp5815: lp5815@2d {
+		compatible = "ti,lp5815";
+		reg = <0x2d>;
+		/* 1/4 of maximum current (~6mA) */
+		out0-current-max = <0x40>;
+		out1-current-max = <0x40>;
+		out2-current-max = <0x40>;
+
+		red_led: led_0 {
+			index = <0>;
+			color-mapping = <LED_COLOR_ID_RED>;
+		};
+		green_led: led_1 {
+			index = <1>;
+			color-mapping = <LED_COLOR_ID_GREEN>;
+		};
+		blue_led: led_2 {
+			index = <2>;
+			color-mapping = <LED_COLOR_ID_BLUE>;
+		};
+	};
+};
+
+&uart22 {
+	pinctrl-0 = <&uart22_default>;
+	pinctrl-1 = <&uart22_sleep>;
+	pinctrl-names = "default", "sleep";
+	current-speed = <115200>;
+	status = "okay";
+
+	max_m11: max_m11 {
+		compatible = "u-blox,m11-uart";
+		reset-gpios = <&gpio1 4 GPIO_ACTIVE_LOW>;
+		timepulse-gpios = <&gpio1 14 GPIO_ACTIVE_LOW>;
+		reset-gpios = <&gpio1 4 GPIO_ACTIVE_LOW>;
+		extint-gpios = <&gpio0 4 GPIO_ACTIVE_LOW>;
+	};
+};

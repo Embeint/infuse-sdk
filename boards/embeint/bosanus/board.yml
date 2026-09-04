@@ -1,0 +1,12 @@
+board:
+  name: bosanus
+  full_name: Bosanus CAT1bis LTE Gateway
+  vendor: embeint
+  socs:
+  - name: nrf54l15
+  revision:
+    format: number
+    default: "1"
+    revisions:
+    - name: "0"
+    - name: "1"

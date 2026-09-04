@@ -1,0 +1,37 @@
+/* R0 is the intial PoC hardware.
+ * In contrast to production hardware:
+ *     - MAX-M10S on I2C, instead of MAX-M11N on UART
+ *     - No HWFC on nRF93M1 due to schematic error
+ */
+
+/ {
+	aliases {
+		gnss = &max_m10;
+	};
+};
+
+/delete-node/ &max_m11;
+
+&uart00 {
+	/delete-property/ hw-flow-control;
+};
+
+&i2c21 {
+	status = "okay";
+
+	max_m10: max_m10@42 {
+		compatible = "u-blox,m10-i2c";
+		status = "okay";
+		reg = <0x42>;
+		timepulse-gpios = <&gpio1 14 GPIO_ACTIVE_LOW>;
+		reset-gpios = <&gpio1 4 GPIO_ACTIVE_LOW>;
+		extint-gpios = <&gpio0 4 GPIO_ACTIVE_LOW>;
+		data-ready-gpios = <&gpio1 13 GPIO_ACTIVE_LOW>;
+		data-ready-pio = <1>;
+	};
+};
+
+&uart22 {
+	/* No need for UART22 */
+	status = "disabled";
+};
