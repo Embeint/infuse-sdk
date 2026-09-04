@@ -1,0 +1,35 @@
+# Copyright (c) 2026 Embeint Inc
+# SPDX-License-Identifier: Apache-2.0
+
+if BOARD_BONASUS_NRF54L15_CPUAPP
+
+# Symbols set by the build system, declared for `check_compliance.py`
+config BOARD_REVISION_0
+	bool
+config BOARD_REVISION_1
+	bool
+
+configdefault ROM_START_OFFSET
+	default 0x800 if BOOTLOADER_MCUBOOT
+
+configdefault LED
+	default y
+
+if NETWORKING
+
+# We want to use the UART ASYNC API
+configdefault UART_ASYNC_API
+	default y
+configdefault UART_ASYNC_TX_CACHE_SIZE
+	default 64
+choice MODEM_BACKEND_UART_IMPL
+	default MODEM_BACKEND_UART_ASYNC if BOARD_REVISION_0
+	default MODEM_BACKEND_UART_ASYNC_HWFC
+endchoice
+configdefault UART_00_NRF_TX_BUFFER_SIZE
+	default 1536
+configdefault UART_00_INTERRUPT_DRIVEN
+	default n
+endif # NETWORKING
+
+endif # BOARD_BONASUS_NRF54L15_CPUAPP
