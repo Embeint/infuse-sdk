@@ -1,0 +1,6 @@
+if BOARD_BOSANUS_NRF54L15_CPUAPP
+
+configdefault NETWORKING
+    default y if !MCUBOOT
+
+endif # BOARD_BOSANUS_NRF54L15_CPUAPP
