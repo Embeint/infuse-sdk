@@ -306,6 +306,15 @@ struct net_buf *rpc_command_data_logger_read_chunks(struct net_buf *request)
 		goto end;
 	}
 
+	/* Sanity check request */
+	for (int i = 0; i < req->num_chunks; i++) {
+		info = &req->chunks[i];
+		if (info->start_offset >= state.logger_state.block_size) {
+			rc = INFUSE_RPC_ERROR_MALFORMED_REQUEST;
+			goto end;
+		}
+	}
+
 	/* Read out the chunks */
 	for (int i = 0; i < req->num_chunks; i++) {
 		info = &req->chunks[i];
