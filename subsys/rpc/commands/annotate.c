@@ -58,8 +58,6 @@ struct net_buf *rpc_command_annotate(struct net_buf *request)
 					       sizeof(rsp));
 	}
 
-	LOG_INF("Annotation: %s @ %u %d", req->annotation, req->timestamp, extra_len);
-
 	/* Relies on the RPC request parameters following the same form as the TDF definition:
 	 *     uint32_t gnss_timestamp;
 	 *     char event_str[];
@@ -67,6 +65,14 @@ struct net_buf *rpc_command_annotate(struct net_buf *request)
 	 */
 	tdf_data_logger_log_dev(logger, TDF_ANNOTATION, sizeof(struct tdf_annotation) + extra_len,
 				epoch_time_now(), &req->timestamp);
+
+	/* Ensure '%s' always sees a trailing NUL terminator */
+	if (net_buf_tailroom(request) > 0) {
+		net_buf_add_u8(request, '\0');
+	} else {
+		req->annotation[extra_len - 1] = '\0';
+	}
+	LOG_INF("Annotation: %s @ %u %d", req->annotation, req->timestamp, extra_len);
 
 	/* Allocate and return the response */
 	return rpc_response_simple_req(request, rc, &rsp, sizeof(rsp));
