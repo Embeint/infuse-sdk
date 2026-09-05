@@ -55,9 +55,11 @@ struct net_buf *rpc_command_last_reboot(struct net_buf *request)
 	response = rpc_response_simple_req(request, 0, &rsp, sizeof(rsp));
 
 	if (state.info_type == INFUSE_REBOOT_INFO_EXCEPTION_ESF) {
-		/* Push the exception stack frame into the response */
-		net_buf_add_mem(response, &state.info.exception_full,
-				sizeof(state.info.exception_full));
+		/* Push the exception stack frame into the response if there is space */
+		if (net_buf_tailroom(response) >= sizeof(state.info.exception_full)) {
+			net_buf_add_mem(response, &state.info.exception_full,
+					sizeof(state.info.exception_full));
+		}
 	}
 	return response;
 }
