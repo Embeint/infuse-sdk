@@ -54,9 +54,6 @@ struct net_buf *rpc_command_gravity_reference_update(struct net_buf *request)
 		goto unsub;
 	}
 
-	/* Unsub the waiter */
-	zbus_chan_rm_obs(chan, &waiter, K_FOREVER);
-
 	zbus_chan_claim(chan, K_FOREVER);
 	imu = chan->message;
 
