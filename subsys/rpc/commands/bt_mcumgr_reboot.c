@@ -113,7 +113,11 @@ struct net_buf *rpc_command_bt_mcumgr_reboot(struct net_buf *request)
 	/* Register for the connection to be automatically setup */
 	bt_conn_le_auto_setup(conn, &discovery, &callbacks, BT_GAP_LE_PHY_NONE);
 
-	/* Wait for connection process to complete */
+	/* Wait for connection process to complete.
+	 * Rely on the underlying layers providing the response, as we cannot return
+	 * before they do, as the stack variables would become corrupt. If the lower
+	 * layers do fail, rely on the watchdog to save us.
+	 */
 	k_poll(&poll_event, 1, K_FOREVER);
 	k_poll_signal_check(&sig, &signaled, &rc);
 	__ASSERT_NO_MSG(signaled != 0);
