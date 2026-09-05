@@ -85,6 +85,16 @@ ZTEST(rpc_command_kv_write, test_kv_write_bad_input)
 	send_kv_write_command(5, &values, 1);
 	rsp = expect_kv_write_response(5, INFUSE_RPC_ERROR_MALFORMED_REQUEST, 0);
 	net_buf_unref(rsp);
+
+	/* Negative lengths are invalid */
+	net_buf_simple_reset(&values);
+	value = net_buf_simple_add(&values, sizeof(*value));
+	value->id = KV_KEY_REBOOTS;
+	value->len = -1;
+
+	send_kv_write_command(6, &values, 1);
+	rsp = expect_kv_write_response(6, INFUSE_RPC_ERROR_INVALID_ARGUMENT, 0);
+	net_buf_unref(rsp);
 }
 
 ZTEST(rpc_command_kv_write, test_kv_write_read_only)
