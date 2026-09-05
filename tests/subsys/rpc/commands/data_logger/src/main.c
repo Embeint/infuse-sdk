@@ -709,6 +709,21 @@ ZTEST(rpc_command_data_logger, test_data_logger_read_chunks_invalid_length)
 	net_buf_unref(rsp);
 }
 
+ZTEST(rpc_command_data_logger, test_data_logger_read_chunks_invalid_offset)
+{
+	const struct rpc_struct_data_logger_chunk chunk = {
+		.start_block = 0,
+		.start_offset = 512,
+		.num_bytes = 1,
+	};
+	struct net_buf *rsp;
+
+	send_data_logger_read_chunks_command(0x4568, RPC_ENUM_DATA_LOGGER_FLASH_ONBOARD, 1, &chunk);
+	rsp = expect_rpc_response(0x4568, RPC_ID_DATA_LOGGER_READ_CHUNKS,
+				  INFUSE_RPC_ERROR_MALFORMED_REQUEST);
+	net_buf_unref(rsp);
+}
+
 ZTEST(rpc_command_data_logger, test_data_logger_erase_invalid)
 {
 	const struct device *flash_logger = DEVICE_DT_GET(DT_NODELABEL(data_logger_flash));
