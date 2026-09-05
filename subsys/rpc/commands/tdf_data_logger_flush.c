@@ -44,6 +44,10 @@ struct net_buf *rpc_command_tdf_data_logger_flush(struct net_buf *request)
 
 	/* Iterate over requested flushes */
 	while (remaining) {
+		if (net_buf_tailroom(response) < sizeof(*flushed)) {
+			/* No space to report result, so don't flush */
+			break;
+		}
 		offset = __builtin_ffs(remaining) - 1;
 		mask = 1 << offset;
 
