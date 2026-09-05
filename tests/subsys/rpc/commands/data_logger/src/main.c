@@ -143,6 +143,31 @@ static void send_data_logger_read_chunks_command(uint32_t request_id, uint8_t lo
 				    num_chunks * sizeof(*chunks));
 }
 
+static void
+send_data_logger_read_chunks_command_extra(uint32_t request_id, uint8_t logger, uint8_t num_chunks,
+					   const struct rpc_struct_data_logger_chunk *chunks,
+					   uint8_t actual_chunks)
+{
+	const struct device *epacket_dummy = DEVICE_DT_GET(DT_NODELABEL(epacket_dummy));
+	struct epacket_dummy_frame header = {
+		.type = INFUSE_RPC_CMD,
+		.auth = EPACKET_AUTH_DEVICE,
+		.flags = 0x0000,
+	};
+	struct rpc_data_logger_read_chunks_request params = {
+		.header =
+			{
+				.request_id = request_id,
+				.command_id = RPC_ID_DATA_LOGGER_READ_CHUNKS,
+			},
+		.logger = logger,
+		.num_chunks = num_chunks,
+	};
+
+	epacket_dummy_receive_extra(epacket_dummy, &header, &params, sizeof(params), chunks,
+				    actual_chunks * sizeof(*chunks));
+}
+
 static void send_tdf_data_logger_flush_command(uint32_t request_id, uint8_t loggers)
 {
 	const struct device *epacket_dummy = DEVICE_DT_GET(DT_NODELABEL(epacket_dummy));
@@ -666,6 +691,22 @@ ZTEST(rpc_command_data_logger, test_data_logger_read_chunks)
 
 	/* Request reads from 0 as the second chunk but that block doesn't exist */
 	run_logger_read_chunks(62, 2, chunks + 3, INFUSE_RPC_ERROR_DATA_READ_FAILED, 512);
+}
+
+ZTEST(rpc_command_data_logger, test_data_logger_read_chunks_invalid_length)
+{
+	const struct rpc_struct_data_logger_chunk chunk = {
+		.start_block = 0,
+		.start_offset = 0,
+		.num_bytes = 0,
+	};
+	struct net_buf *rsp;
+
+	send_data_logger_read_chunks_command_extra(0x4567, RPC_ENUM_DATA_LOGGER_FLASH_ONBOARD, 0,
+						   &chunk, 1);
+	rsp = expect_rpc_response(0x4567, RPC_ID_DATA_LOGGER_READ_CHUNKS,
+				  INFUSE_RPC_ERROR_MALFORMED_REQUEST);
+	net_buf_unref(rsp);
 }
 
 ZTEST(rpc_command_data_logger, test_data_logger_erase_invalid)

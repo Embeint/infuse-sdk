@@ -288,8 +288,17 @@ struct net_buf *rpc_command_data_logger_read_chunks(struct net_buf *request)
 	struct rpc_data_logger_read_chunks_request *req = (void *)request->data;
 	struct rpc_data_logger_read_chunks_response rsp = {0};
 	struct rpc_struct_data_logger_chunk *info;
+	size_t trailing_bytes = request->len - sizeof(*req);
+	size_t chunk_req_size = sizeof(struct rpc_struct_data_logger_chunk);
+	size_t full_requests = trailing_bytes / chunk_req_size;
 	struct common_state state;
 	int rc;
+
+	if ((req->num_chunks != full_requests) || (trailing_bytes % chunk_req_size)) {
+		state.interface = req_meta->interface;
+		rc = INFUSE_RPC_ERROR_MALFORMED_REQUEST;
+		goto end;
+	}
 
 	/* Commmon initialisation */
 	rc = core_init(&state, &req->header, req_meta, req->logger);
