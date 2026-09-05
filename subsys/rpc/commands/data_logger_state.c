@@ -27,6 +27,13 @@ static int data_logger_query(uint8_t logger_id, struct data_logger_state *state)
 		logger = DEVICE_DT_GET_ONE(embeint_data_logger_exfat);
 		break;
 #endif /* CONFIG_DATA_LOGGER_EXFAT */
+#ifdef CONFIG_DATA_LOGGER_SHIM
+	case RPC_ENUM_DATA_LOGGER_FLASH_ONBOARD:
+	case RPC_ENUM_DATA_LOGGER_FLASH_REMOVABLE:
+		/* Reroute to the shim logger if enabled */
+		logger = DEVICE_DT_GET_ONE(embeint_data_logger_shim);
+		break;
+#endif /* CONFIG_DATA_LOGGER_SHIM */
 	default:
 		return INFUSE_RPC_ERROR_DEVICE_NOT_FOUND;
 	}
