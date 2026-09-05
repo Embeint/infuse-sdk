@@ -121,6 +121,17 @@ struct net_buf *rpc_server_pull_data_unaligned(uint32_t request_id, uint32_t exp
 	return pull_data_core(request_id, expected_offset, err, timeout, false);
 }
 
+int rpc_server_pull_error_to_rpc_error(int err)
+{
+	switch (err) {
+	case -EINVAL:
+		return INFUSE_RPC_ERROR_DATA_ALIGNMENT_ERROR;
+	case -ETIMEDOUT:
+	default:
+		return INFUSE_RPC_ERROR_DATA_RECEIVE_FAILED;
+	}
+}
+
 static void send_ack(struct epacket_rx_metadata *rx_meta, uint32_t request_id, uint8_t num_offsets)
 {
 	struct infuse_rpc_data_ack *data_ack;
