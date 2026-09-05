@@ -307,8 +307,6 @@ static void test_data_sender(uint32_t to_send, int dc_after)
 		zassert_not_null(tx);
 		tx_header = (void *)tx->data;
 		zassert_equal(EPACKET_AUTH_DEVICE, tx_header->auth);
-		printk("%d %d %d\n", tx_header->type, header.key_identifier,
-		       tx_header->key_identifier);
 		zassert_equal(header.key_identifier, tx_header->key_identifier);
 
 		if (tx_header->type == INFUSE_RPC_RSP) {
@@ -466,6 +464,9 @@ ack_handler:
 					      sizeof(uint32_t);
 
 				tx_header = (void *)tx->data;
+				if (tx_header->type == INFUSE_RPC_RSP) {
+					goto rpc_rsp;
+				}
 				data_ack = (void *)(tx->data + sizeof(*tx_header));
 				zassert_equal(INFUSE_RPC_DATA_ACK, tx_header->type);
 				zassert_equal(infuse_security_network_key_identifier(),
@@ -485,6 +486,7 @@ ack_handler:
 	/* Wait for the final RPC_RSP */
 	tx = k_fifo_get(tx_fifo, K_MSEC(1000));
 	zassert_not_null(tx);
+rpc_rsp:
 	tx_header = (void *)tx->data;
 	if (ack_period && tx_header->type == INFUSE_RPC_DATA_ACK) {
 		/* One last DATA_ACK packet, jump back to that handler */
@@ -496,7 +498,10 @@ ack_handler:
 	zassert_equal(header.key_identifier, tx_header->key_identifier);
 	zassert_equal(request_id, rsp->header.request_id);
 	zassert_equal(RPC_ID_DATA_RECEIVER, rsp->header.command_id);
-	if (had_stop) {
+	if (had_skip) {
+		zassert_equal(INFUSE_RPC_ERROR_DATA_UNEXPECTED_OFFSET_RECEIVED,
+			      rsp->header.return_code);
+	} else if (had_stop) {
 		zassert_equal(INFUSE_RPC_ERROR_DATA_RECEIVE_FAILED, rsp->header.return_code);
 	} else if (too_much_data || (unaligned_data && !accept_unaligned_data)) {
 		zassert_equal(too_much_data ? INFUSE_RPC_ERROR_DATA_LENGTH_MISMATCH

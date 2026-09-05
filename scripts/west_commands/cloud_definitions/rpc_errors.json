@@ -33,7 +33,8 @@
                 {"name": "DATA_VARIANCE_TOO_HIGH", "value": -1048},
                 {"name": "DATA_RECEIVE_FAILED", "value": -1049},
                 {"name": "DATA_ALIGNMENT_ERROR", "value": -1050},
-                {"name": "DATA_UNEXPECTED_LENGTH_RECEIVED", "value": -1051}
+                {"name": "DATA_UNEXPECTED_LENGTH_RECEIVED", "value": -1051},
+                {"name": "DATA_UNEXPECTED_OFFSET_RECEIVED", "value": -1052}
             ]
         },
         {
