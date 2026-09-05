@@ -487,10 +487,17 @@ static void run_logger_read_available(uint16_t epacket_size, uint32_t start, uin
 	data_logger_get_state(flash_logger, &logger_state);
 
 	uint32_t actual_start = MAX(start, logger_state.earliest_block);
-	uint32_t actual_end = (num == UINT32_MAX) ? 7 : MIN(actual_start + num - 1, 7);
-	uint32_t start_offset = 512 * actual_start;
-	uint32_t num_bytes = 512 * (actual_end - actual_start + 1);
-	uint32_t flash_crc = crc32_ieee(flash_buffer + start_offset, num_bytes);
+	uint32_t num_blocks = 0;
+	uint32_t num_bytes = 0;
+	uint32_t flash_crc = 0;
+
+	if ((actual_start < logger_state.current_block) && (num > 0)) {
+		uint32_t blocks_to_end = logger_state.current_block - actual_start;
+
+		num_blocks = MIN(num, blocks_to_end);
+		num_bytes = 512 * num_blocks;
+		flash_crc = crc32_ieee(flash_buffer + (512 * actual_start), num_bytes);
+	}
 
 	zassert_equal(expected_bytes, num_bytes);
 
@@ -562,6 +569,7 @@ ZTEST(rpc_command_data_logger, test_data_logger_read_available)
 	run_logger_read_available(63, 0, 6, 0, 3072);
 	run_logger_read_available(61, 2, 2, 0, 1024);
 	run_logger_read_available(62, 2, UINT32_MAX, 0, 3072);
+	run_logger_read_available(64, 8, 4, 0, 0);
 
 	/* Write 2 more blocks, which will result in erases */
 	for (int i = 0; i < 2; i++) {
