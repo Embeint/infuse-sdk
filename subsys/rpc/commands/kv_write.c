@@ -32,6 +32,12 @@ struct net_buf *rpc_command_kv_write(struct net_buf *request)
 	for (int i = 0; i < req->num; i++) {
 		struct rpc_struct_kv_store_value *v = (void *)(request->data + offset);
 
+		if (offset + sizeof(*v) > request->len) {
+			LOG_WRN("%s truncated request (idx %d)", __func__, i);
+			return rpc_response_simple_req(request, INFUSE_RPC_ERROR_MALFORMED_REQUEST,
+						       &rsp, sizeof(rsp));
+		}
+
 		if (v->len < 0) {
 			LOG_WRN("%s invalid buffer (idx %d key %d len %d)", __func__, i, v->id,
 				v->len);
