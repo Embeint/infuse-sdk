@@ -31,6 +31,7 @@ static int data_logger_read(const struct device *logger, uint64_t byte_offset, u
 {
 	uint32_t block = byte_offset / 512;
 	struct data_logger_state state;
+	uint32_t initial_read;
 	int rc;
 
 	/* Simplify implementation by not considering unaligned sizes and offsets */
@@ -49,11 +50,17 @@ static int data_logger_read(const struct device *logger, uint64_t byte_offset, u
 		return INFUSE_RPC_ERROR_NO_DATA;
 	}
 
-	/* Loop over blocks that have actually been written.
-	 * -1 to account for possible two block read.
+	/* Loop over blocks that have actually been written, wrapping any overflow back to the
+	 * earliest data
 	 */
-	block %= (state.current_block - 1);
-	rc = data_logger_block_read(logger, block, 0, data, len);
+	block %= state.current_block;
+	initial_read = MIN(len, (state.current_block - block) * 512);
+
+	rc = data_logger_block_read(logger, block, 0, data, initial_read);
+	if ((rc == 0) && (initial_read < len)) {
+		rc = data_logger_block_read(logger, state.earliest_block, 0, data + initial_read,
+					    len - initial_read);
+	}
 
 	return rc < 0 ? INFUSE_RPC_ERROR_DATA_READ_FAILED : rc;
 }
