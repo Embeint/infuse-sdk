@@ -50,6 +50,10 @@ struct net_buf *rpc_command_lte_at_cmd(struct net_buf *request)
 
 	tail = net_buf_tail(rsp_buf);
 	tailroom = net_buf_tailroom(rsp_buf);
+	if (tailroom == 0) {
+		rc = INFUSE_RPC_ERROR_RESPONSE_BUFFER_TOO_SMALL;
+		goto error;
+	}
 
 #ifdef CONFIG_NRF_MODEM_LIB
 	tail[0] = '\0';
@@ -65,6 +69,7 @@ struct net_buf *rpc_command_lte_at_cmd(struct net_buf *request)
 	tail[tailroom - 1] = '\0';
 	net_buf_add(rsp_buf, strlen(tail));
 
+error:
 	/* Update return code on failure */
 	if (rc < 0) {
 		header->return_code = rc;
