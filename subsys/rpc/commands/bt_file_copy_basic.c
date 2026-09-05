@@ -80,6 +80,7 @@ int rpc_command_bt_file_copy_basic_run(struct rpc_bt_file_copy_basic_request *re
 	};
 	struct file_copy_ctx completion_ctx = {0};
 	struct rpc_client_ctx client_ctx;
+	__maybe_unused bool littlefs_opened = false;
 	struct bt_conn *conn;
 	uint32_t request_id;
 	size_t work_mem_size;
@@ -156,6 +157,7 @@ int rpc_command_bt_file_copy_basic_run(struct rpc_bt_file_copy_basic_request *re
 		rc = INFUSE_RPC_ERROR_FILE_OPEN_FAILED;
 		goto cleanup;
 	}
+	littlefs_opened = true;
 #else
 	rc = flash_area_open(partition_id, &fa);
 	__ASSERT_NO_MSG(rc == 0);
@@ -225,7 +227,9 @@ int rpc_command_bt_file_copy_basic_run(struct rpc_bt_file_copy_basic_request *re
 
 cleanup:
 #ifdef CONFIG_INFUSE_LITTLEFS
-	(void)infuse_littlefs_file_close();
+	if (littlefs_opened) {
+		(void)infuse_littlefs_file_close();
+	}
 #else
 	if (fa != NULL) {
 		flash_area_close(fa);
