@@ -96,6 +96,9 @@ static struct net_buf *pull_data_core(uint32_t request_id, uint32_t expected_off
 		}
 		if (data->offset != expected_offset) {
 			LOG_WRN("Missed data %08X-%08X", expected_offset, data->offset - 1);
+			net_buf_unref(buf);
+			*err = -EFAULT;
+			return NULL;
 		}
 		if (requires_aligned && (data->offset % sizeof(uint32_t))) {
 			LOG_WRN("Unaligned data offset %08X", data->offset);
@@ -126,6 +129,8 @@ int rpc_server_pull_error_to_rpc_error(int err)
 	switch (err) {
 	case -EINVAL:
 		return INFUSE_RPC_ERROR_DATA_ALIGNMENT_ERROR;
+	case -EFAULT:
+		return INFUSE_RPC_ERROR_DATA_UNEXPECTED_OFFSET_RECEIVED;
 	case -ETIMEDOUT:
 	default:
 		return INFUSE_RPC_ERROR_DATA_RECEIVE_FAILED;
