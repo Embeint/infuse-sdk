@@ -29,6 +29,7 @@ struct net_buf *rpc_command_security_state(struct net_buf *request)
 	struct rpc_security_state_response rsp_header = {0};
 	struct security_state_response_hw_id challenge_response;
 	struct security_state_response_hw_id_encrypted *rsp;
+	struct infuse_rpc_rsp_header *header;
 	struct net_buf *rsp_buf;
 	psa_status_t status;
 	size_t ad_len, olen;
@@ -41,6 +42,11 @@ struct net_buf *rpc_command_security_state(struct net_buf *request)
 
 	/* Allocate response */
 	rsp_buf = rpc_response_simple_req(request, 0, &rsp_header, sizeof(rsp_header));
+	header = (void *)rsp_buf->data;
+	if (net_buf_tailroom(rsp_buf) < sizeof(*rsp)) {
+		header->return_code = INFUSE_RPC_ERROR_RESPONSE_BUFFER_TOO_SMALL;
+		return rsp_buf;
+	}
 	rsp = net_buf_add(rsp_buf, sizeof(*rsp));
 
 	/* Populate hardware ID  */
