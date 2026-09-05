@@ -24,6 +24,8 @@
 
 LOG_MODULE_DECLARE(rpc_server, CONFIG_INFUSE_RPC_LOG_LEVEL);
 
+BUILD_ASSERT(CONFIG_NET_ZPERF_MAX_PACKET_SIZE >= 24);
+
 static int data_logger_read(const struct device *logger, uint64_t byte_offset, uint8_t *data,
 			    uint32_t len)
 {
@@ -71,6 +73,13 @@ static int zperf_upload_data_loader(void *user_ctx, uint64_t offset, uint8_t *da
 	rpc_server_watchdog_feed();
 
 	if (encrypt) {
+		/* Enforce minimum size on the requested length for encryption
+		 * BUILD_ASSERT on CONFIG_NET_ZPERF_MAX_PACKET_SIZE ensures that this doesn't result
+		 * in buffer overflows.
+		 */
+		if (len < 24) {
+			len = 24;
+		}
 		storage = rpc_server_command_working_mem(&work_mem_size);
 		if (work_mem_size < len) {
 			return INFUSE_RPC_ERROR_RESPONSE_BUFFER_TOO_SMALL;
