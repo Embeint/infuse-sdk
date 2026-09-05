@@ -52,8 +52,8 @@ struct net_buf *rpc_command_data_sender(struct net_buf *request)
 
 		/* Allocate the data packet */
 		data_buf = epacket_alloc_tx_for_interface(rx_meta.interface, K_FOREVER);
-		if (net_buf_tailroom(data_buf) == 0) {
-			/* Backend connection has been lost */
+		if (net_buf_tailroom(data_buf) <= sizeof(*data)) {
+			/* Backend connection has been lost, or no payload space */
 			net_buf_unref(data_buf);
 			break;
 		}
