@@ -38,7 +38,7 @@ struct net_buf *rpc_command_annotate(struct net_buf *request)
 		break;
 #endif /* CONFIG_DATA_LOGGER_EXFAT */
 #if defined(CONFIG_DATA_LOGGER_EPACKET) && DT_NODE_HAS_STATUS(DT_NODELABEL(tdf_logger_udp), okay)
-	case RPC_ENUM_DATA_LOGGER_FLASH_REMOVABLE:
+	case RPC_ENUM_DATA_LOGGER_UDP:
 		logger = DEVICE_DT_GET(DT_NODELABEL(tdf_logger_udp));
 		break;
 #endif /* CONFIG_DATA_LOGGER_EXFAT */
