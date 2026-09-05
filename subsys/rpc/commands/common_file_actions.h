@@ -28,6 +28,9 @@ struct rpc_common_file_actions_ctx {
 	uint32_t crc;
 	enum rpc_enum_file_action action;
 	bool needs_cleanup;
+#ifdef CONFIG_INFUSE_LITTLEFS
+	bool fs_open;
+#endif /* CONFIG_INFUSE_LITTLEFS */
 };
 
 #define FILE_ALREADY_PRESENT 1

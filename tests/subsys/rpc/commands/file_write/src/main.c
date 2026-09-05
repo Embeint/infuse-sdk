@@ -335,6 +335,41 @@ ZTEST(rpc_command_file_write, test_file_write_littlefs)
 	k_sleep(K_SECONDS(1));
 }
 
+ZTEST(rpc_command_file_write, test_file_write_littlefs_zero_length)
+{
+	struct infuse_littlefs_metadata meta;
+	uint32_t empty_file = 0xDEAD;
+	uint32_t second_file = 0xBEEF;
+	struct test_out ret;
+	int rc;
+
+	ret = test_file_write(RPC_ENUM_FILE_ACTION_WRITE_LITTLEFS, INFUSE_LFS_FOLDER_GENERAL,
+			      empty_file, 0x1000, 0, 0, fixed_payload);
+	zassert_equal(0, ret.cmd_rc);
+	zassert_equal(0, ret.cmd_len);
+	zassert_equal(0, ret.cmd_crc);
+
+	ret = test_file_write(RPC_ENUM_FILE_ACTION_WRITE_LITTLEFS, INFUSE_LFS_FOLDER_GENERAL,
+			      second_file, 0x1001, 1, 0, fixed_payload);
+	zassert_equal(0, ret.cmd_rc);
+	zassert_equal(1, ret.cmd_len);
+	zassert_equal(ret.written_crc, ret.cmd_crc);
+
+	rc = infuse_littlefs_file_size(INFUSE_LFS_FOLDER_GENERAL, empty_file);
+	zassert_equal(0, rc);
+	rc = infuse_littlefs_file_metadata(INFUSE_LFS_FOLDER_GENERAL, empty_file, &meta);
+	zassert_equal(0, rc);
+	zassert_equal(0x1000, meta.identifier);
+	zassert_equal(0, meta.crc);
+
+	rc = infuse_littlefs_file_size(INFUSE_LFS_FOLDER_GENERAL, second_file);
+	zassert_equal(1, rc);
+	rc = infuse_littlefs_file_metadata(INFUSE_LFS_FOLDER_GENERAL, second_file, &meta);
+	zassert_equal(0, rc);
+	zassert_equal(0x1001, meta.identifier);
+	zassert_equal(ret.written_crc, meta.crc);
+}
+
 void *file_write_setup(void)
 {
 	sys_rand_get(fixed_payload, sizeof(fixed_payload));

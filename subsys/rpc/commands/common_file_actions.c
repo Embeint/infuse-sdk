@@ -212,6 +212,9 @@ static int littlefs_write_init(struct rpc_common_file_actions_ctx *ctx, uint32_t
 	(void)infuse_littlefs_file_delete(ctx->fs_path.folder, ctx->fs_path.file);
 	/* Create the new file */
 	rc = infuse_littlefs_file_create(ctx->fs_path.folder, ctx->fs_path.file, &ctx->fs_meta);
+	if (rc == 0) {
+		ctx->fs_open = true;
+	}
 	return rc < 0 ? INFUSE_RPC_ERROR_FILE_CREATE_FAILED : rc;
 }
 
@@ -247,6 +250,9 @@ int rpc_common_file_actions_start(struct rpc_common_file_actions_ctx *ctx,
 	ctx->received = 0;
 	ctx->crc = 0;
 	ctx->needs_cleanup = false;
+#ifdef CONFIG_INFUSE_LITTLEFS
+	ctx->fs_open = false;
+#endif /* CONFIG_INFUSE_LITTLEFS */
 
 	switch (ctx->action) {
 	case RPC_ENUM_FILE_ACTION_DISCARD:
@@ -531,11 +537,11 @@ int rpc_common_file_actions_finish(struct rpc_common_file_actions_ctx *ctx, bool
 	bool is_littlefs = (ctx->action == RPC_ENUM_FILE_ACTION_FILE_FOR_COPY) ||
 			   (ctx->action == RPC_ENUM_FILE_ACTION_WRITE_LITTLEFS);
 
-	/* If 0 bytes were received, the file already existed on disk */
-	if (is_littlefs && (ctx->received > 0)) {
+	if (is_littlefs && ctx->fs_open) {
 		ctx->fs_meta.timestamp = epoch_time_seconds(epoch_time_now());
 		ctx->fs_meta.crc = ctx->crc;
 		rc = infuse_littlefs_file_close();
+		ctx->fs_open = false;
 		if (rc < 0) {
 			LOG_ERR("Could not close file (%d)", rc);
 			return INFUSE_RPC_ERROR_FILE_CLOSE_FAILED;
@@ -703,10 +709,14 @@ int rpc_common_file_actions_error_cleanup(struct rpc_common_file_actions_ctx *ct
 #endif /* SUPPORT_FILE_COPY_RAW */
 #ifdef SUPPORT_FILE_COPY_FS
 	case RPC_ENUM_FILE_ACTION_FILE_FOR_COPY:
+		if (!ctx->fs_open) {
+			break;
+		}
 		/* Close the file */
 		ctx->fs_meta.timestamp = epoch_time_seconds(epoch_time_now());
 		ctx->fs_meta.crc = ctx->crc;
 		rc = infuse_littlefs_file_close();
+		ctx->fs_open = false;
 		if (rc < 0) {
 			rc = INFUSE_RPC_ERROR_FILE_CLOSE_FAILED;
 		}
@@ -714,10 +724,14 @@ int rpc_common_file_actions_error_cleanup(struct rpc_common_file_actions_ctx *ct
 #endif /* SUPPORT_FILE_COPY_FS */
 #ifdef CONFIG_INFUSE_LITTLEFS
 	case RPC_ENUM_FILE_ACTION_WRITE_LITTLEFS:
+		if (!ctx->fs_open) {
+			break;
+		}
 		/* Close the file */
 		ctx->fs_meta.timestamp = epoch_time_seconds(epoch_time_now());
 		ctx->fs_meta.crc = ctx->crc;
 		rc = infuse_littlefs_file_close();
+		ctx->fs_open = false;
 		if (rc < 0) {
 			rc = INFUSE_RPC_ERROR_FILE_CLOSE_FAILED;
 		}
