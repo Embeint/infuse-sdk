@@ -75,11 +75,12 @@ struct net_buf *rpc_command_gravity_reference_update(struct net_buf *request)
 		statistics_update(&sz, s->z);
 		s++;
 	}
-	zbus_chan_finish(chan);
 
 	rsp.num_samples = imu->accelerometer.num;
 	rsp.sample_period_us = k_ticks_to_us_near32(imu->accelerometer.buffer_period_ticks) /
 			       imu->accelerometer.num;
+
+	zbus_chan_finish(chan);
 
 	/* Rounding down instead of nearest is fine */
 	rsp.reference.x = statistics_mean_rough(&sx);
