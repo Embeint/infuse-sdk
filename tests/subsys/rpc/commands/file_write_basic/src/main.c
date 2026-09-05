@@ -861,11 +861,11 @@ ZTEST(rpc_command_file_write_basic, test_lost_payload)
 	for (int i = 0; i <= CONFIG_EPACKET_BUFFERS_RX; i++) {
 		ret = test_file_write_basic(RPC_ENUM_FILE_ACTION_DISCARD, 1000, 5, 0, 0, 0, false,
 					    false, NULL);
-		zassert_equal(INFUSE_RPC_ERROR_DATA_UNEXPECTED_LENGTH_RECEIVED, ret.cmd_rc);
+		zassert_equal(INFUSE_RPC_ERROR_DATA_UNEXPECTED_OFFSET_RECEIVED, ret.cmd_rc);
 		zassert_true(ret.cmd_len < 1000);
 		ret = test_file_write_basic(RPC_ENUM_FILE_ACTION_DISCARD, 1000, 10, 0, 0, 0, false,
 					    false, NULL);
-		zassert_equal(INFUSE_RPC_ERROR_DATA_UNEXPECTED_LENGTH_RECEIVED, ret.cmd_rc);
+		zassert_equal(INFUSE_RPC_ERROR_DATA_UNEXPECTED_OFFSET_RECEIVED, ret.cmd_rc);
 		zassert_true(ret.cmd_len < 1000);
 	}
 }
@@ -951,11 +951,11 @@ ZTEST(rpc_command_file_write_basic, test_everything_wrong)
 	for (int i = 0; i <= CONFIG_EPACKET_BUFFERS_RX; i++) {
 		ret = test_file_write_basic(RPC_ENUM_FILE_ACTION_DISCARD, 1000, 3, 0, 7, 1, false,
 					    false, NULL);
-		zassert_equal(INFUSE_RPC_ERROR_DATA_UNEXPECTED_LENGTH_RECEIVED, ret.cmd_rc);
+		zassert_equal(INFUSE_RPC_ERROR_DATA_UNEXPECTED_OFFSET_RECEIVED, ret.cmd_rc);
 		zassert_true(ret.cmd_len < 1000);
 		ret = test_file_write_basic(RPC_ENUM_FILE_ACTION_DISCARD, 1000, 3, 0, 7, 2, false,
 					    false, NULL);
-		zassert_equal(INFUSE_RPC_ERROR_DATA_UNEXPECTED_LENGTH_RECEIVED, ret.cmd_rc);
+		zassert_equal(INFUSE_RPC_ERROR_DATA_UNEXPECTED_OFFSET_RECEIVED, ret.cmd_rc);
 		zassert_true(ret.cmd_len < 1000);
 	}
 
@@ -968,11 +968,11 @@ ZTEST(rpc_command_file_write_basic, test_everything_wrong)
 	for (int i = 0; i <= CONFIG_EPACKET_BUFFERS_RX; i++) {
 		ret = test_file_write_basic(RPC_ENUM_FILE_ACTION_APP_IMG, 1000, 3, 0, 7, 1, false,
 					    false, NULL);
-		zassert_equal(INFUSE_RPC_ERROR_DATA_UNEXPECTED_LENGTH_RECEIVED, ret.cmd_rc);
+		zassert_equal(INFUSE_RPC_ERROR_DATA_UNEXPECTED_OFFSET_RECEIVED, ret.cmd_rc);
 		zassert_true(ret.cmd_len < 1000);
 		ret = test_file_write_basic(RPC_ENUM_FILE_ACTION_APP_IMG, 1000, 3, 0, 7, 2, false,
 					    false, NULL);
-		zassert_equal(INFUSE_RPC_ERROR_DATA_UNEXPECTED_LENGTH_RECEIVED, ret.cmd_rc);
+		zassert_equal(INFUSE_RPC_ERROR_DATA_UNEXPECTED_OFFSET_RECEIVED, ret.cmd_rc);
 		zassert_true(ret.cmd_len < 1000);
 	}
 
