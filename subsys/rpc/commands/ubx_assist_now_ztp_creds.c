@@ -41,9 +41,14 @@ static int mon_ver_handler(uint8_t message_class, uint8_t message_id, const void
 			   size_t payload_len, void *user_data)
 {
 	struct cb_ctx *ctx = user_data;
-	size_t to_copy = payload_len - ctx->offset;
+	size_t to_copy;
 
-	to_copy = MIN(net_buf_tailroom(ctx->buf), to_copy);
+	if (ctx->offset < payload_len) {
+		to_copy = payload_len - ctx->offset;
+		to_copy = MIN(net_buf_tailroom(ctx->buf), to_copy);
+	} else {
+		to_copy = 0;
+	}
 	net_buf_add_mem(ctx->buf, (const uint8_t *)payload + ctx->offset, to_copy);
 	return 0;
 }
