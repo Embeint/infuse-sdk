@@ -195,8 +195,8 @@ static int littlefs_write_init(struct rpc_common_file_actions_ctx *ctx, uint32_t
 		if ((rc < 0) && (rc != -ENOENT)) {
 			return INFUSE_RPC_ERROR_FILE_SIZE_FAILED;
 		}
-		if (rc >= length) {
-			/* File is possibly long enough to match data */
+		if (rc == length) {
+			/* File is the right length to match data */
 			mem = rpc_server_command_working_mem(&mem_size);
 			rc = infuse_littlefs_file_crc32(ctx->fs_path.folder, ctx->fs_path.file,
 							length, &file_crc, mem, mem_size);
