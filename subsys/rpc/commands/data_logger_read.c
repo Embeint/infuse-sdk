@@ -248,8 +248,8 @@ struct net_buf *rpc_command_data_logger_read_available(struct net_buf *request)
 	struct rpc_data_logger_read_available_request *req = (void *)request->data;
 	struct rpc_data_logger_read_available_response rsp = {0};
 	struct common_state state;
+	uint32_t block_start = req->start_block;
 	uint32_t blocks_to_end;
-	uint32_t block_start;
 	int rc = 0;
 
 	/* Commmon initialisation */
@@ -260,6 +260,10 @@ struct net_buf *rpc_command_data_logger_read_available(struct net_buf *request)
 
 	/* If blocks earlier than present were requested, jump to earliest data */
 	block_start = MAX(req->start_block, state.logger_state.earliest_block);
+	if (req->start_block >= state.logger_state.current_block) {
+		/* No blocks to read */
+		goto populate_rsp;
+	}
 	state.block_num = block_start;
 	blocks_to_end = state.logger_state.current_block - state.block_num;
 	state.blocks_remaining = MIN(req->num_blocks, blocks_to_end);
@@ -270,6 +274,7 @@ struct net_buf *rpc_command_data_logger_read_available(struct net_buf *request)
 	/* Run the data logger read */
 	rc = do_read(&state);
 
+populate_rsp:
 	/* Populate output parameters */
 	data_logger_get_state(state.logger, &state.logger_state);
 	rsp.sent_crc = state.sent_crc;
