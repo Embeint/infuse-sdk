@@ -96,6 +96,14 @@ struct net_buf *rpc_server_pull_data_unaligned(uint32_t request_id, uint32_t exp
 					       int *err, k_timeout_t timeout);
 
 /**
+ * @brief Convert a stdlib error code from @ref rpc_server_pull_data to an RPC error code
+ *
+ * @param err Error code from @ref rpc_server_pull_data
+ * @return int RPC error code
+ */
+int rpc_server_pull_error_to_rpc_error(int err);
+
+/**
  * @brief Send initial @ref INFUSE_RPC_DATA_ACK to signify we are ready for data
  *
  * @param rx_meta Metadata of the request packet

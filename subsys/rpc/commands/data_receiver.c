@@ -19,17 +19,6 @@
 
 LOG_MODULE_DECLARE(rpc_server, CONFIG_INFUSE_RPC_LOG_LEVEL);
 
-static int pull_data_error_to_rpc(int rc)
-{
-	switch (rc) {
-	case -EINVAL:
-		return INFUSE_RPC_ERROR_DATA_ALIGNMENT_ERROR;
-	case -ETIMEDOUT:
-	default:
-		return INFUSE_RPC_ERROR_DATA_RECEIVE_FAILED;
-	}
-}
-
 struct net_buf *rpc_command_data_receiver(struct net_buf *request)
 {
 	struct infuse_rpc_data *data;
@@ -76,7 +65,7 @@ struct net_buf *rpc_command_data_receiver(struct net_buf *request)
 				rpc_server_pull_data(request_id, expected_offset, &rc, K_MSEC(500));
 		}
 		if (data_buf == NULL) {
-			rc = pull_data_error_to_rpc(rc);
+			rc = rpc_server_pull_error_to_rpc_error(rc);
 			goto end;
 		}
 		var_len = RPC_DATA_VAR_LEN(data_buf);
