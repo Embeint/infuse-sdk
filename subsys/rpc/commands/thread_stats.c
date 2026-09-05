@@ -34,10 +34,11 @@ retry:
 		/* Allocate new data message */
 		state->pending_buf =
 			epacket_alloc_tx_for_interface(state->rx_metadata->interface, K_FOREVER);
-		if (net_buf_tailroom(state->pending_buf) == 0) {
-			/* Backend connection has been lost */
-			state->pending_buf = NULL;
+		if (net_buf_tailroom(state->pending_buf) <
+		    (sizeof(state->data_header) + required_len)) {
+			/* Backend connection has been lost, or cannot fit the info */
 			net_buf_unref(state->pending_buf);
+			state->pending_buf = NULL;
 			return;
 		}
 		epacket_set_tx_metadata(state->pending_buf, state->rx_metadata->auth, 0x00,
