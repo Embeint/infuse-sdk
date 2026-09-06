@@ -54,6 +54,11 @@ struct net_buf *rpc_command_kv_write(struct net_buf *request)
 						       &rsp, sizeof(rsp));
 		}
 	}
+	if (offset != request->len) {
+		LOG_WRN("%s %d trailing request bytes", __func__, request->len - offset);
+		return rpc_response_simple_req(request, INFUSE_RPC_ERROR_MALFORMED_REQUEST, &rsp,
+					       sizeof(rsp));
+	}
 
 	/* Allocate response object */
 	response = rpc_response_simple_req(request, 0, &rsp, sizeof(rsp));
