@@ -74,8 +74,14 @@ struct net_buf *rpc_command_gravity_reference_update(struct net_buf *request)
 	}
 
 	rsp.num_samples = imu->accelerometer.num;
-	rsp.sample_period_us = k_ticks_to_us_near32(imu->accelerometer.buffer_period_ticks) /
-			       imu->accelerometer.num;
+	if (imu->accelerometer.num == 1) {
+		/* Unknown sample period */
+		rsp.sample_period_us = 0;
+	} else {
+		rsp.sample_period_us =
+			k_ticks_to_us_near32(imu->accelerometer.buffer_period_ticks) /
+			(imu->accelerometer.num - 1);
+	}
 
 	zbus_chan_finish(chan);
 
