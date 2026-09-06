@@ -22,8 +22,27 @@
 #include <infuse/rpc/server.h>
 #include <infuse/rpc/commands_impl.h>
 
-/* Authorised to run command */
-#define AUTHORISED(auth, name) (auth >= CONFIG_INFUSE_RPC_COMMAND_ ## name ## _REQUIRED_AUTH)
+typedef struct net_buf *(*rpc_command_handler_t)(struct net_buf *request);
+
+struct command_impl {
+	rpc_command_handler_t handler;
+	uint16_t command_id;
+	uint8_t required_auth;
+	uint8_t request_len;
+};
+
+static const struct command_impl command_impls[] = {
+{% for command in commands.values() %}
+#ifdef CONFIG_INFUSE_RPC_COMMAND_{{ command['name'] | upper }}
+	{
+		.handler = rpc_command_{{ command['name'] }},
+		.command_id = RPC_ID_{{ command['name'] | upper }},
+		.required_auth = CONFIG_INFUSE_RPC_COMMAND_{{ command['name'] | upper }}_REQUIRED_AUTH,
+		.request_len = sizeof(struct rpc_{{ command['name'] }}_request),
+	},
+#endif /* CONFIG_INFUSE_RPC_COMMAND_{{ command['name'] | upper }} */
+{% endfor %}
+};
 
 static bool command_freed;
 static bool response_sent;
@@ -65,7 +84,7 @@ void rpc_command_runner(struct net_buf *request)
 	uint32_t key_id = metadata->key_identifier;
 	uint32_t request_id = 0;
 	uint16_t command_id = 0;
-	int16_t rc = INFUSE_RPC_ERROR_AUTHENTICATION_REQUIRED;
+	int16_t rc = INFUSE_RPC_ERROR_INVALID_COMMAND;
 
 	/* Reset command freed state */
 	command_freed = false;
@@ -80,23 +99,23 @@ void rpc_command_runner(struct net_buf *request)
 
 	LOG_DBG("Handling RPC: %d Auth: %d", command_id, auth);
 
-	switch (command_id) {
-{% for command in commands.values() %}
-#ifdef CONFIG_INFUSE_RPC_COMMAND_{{ command['name'] | upper }}
-	case RPC_ID_{{ command['name'] | upper }}:
-		if (AUTHORISED(auth, {{ command['name'] | upper }})) { /* GCOVR_EXCL_BR_LINE */
-			if (request->len < sizeof(struct rpc_{{ command['name'] }}_request)) {
-				rc = INFUSE_RPC_ERROR_MALFORMED_REQUEST;
-			} else {
-				response = rpc_command_{{ command['name'] }}(request);
-			}
+	for (size_t i = 0; i < ARRAY_SIZE(command_impls); i++) {
+		const struct command_impl *impl = &command_impls[i];
+
+		if (impl->command_id != command_id) {
+			continue;
 		}
+		if (auth < impl->required_auth) { /* GCOVR_EXCL_BR_LINE */
+			rc = INFUSE_RPC_ERROR_AUTHENTICATION_REQUIRED;
+			goto respond;
+		}
+		if (request->len < impl->request_len) {
+			rc = INFUSE_RPC_ERROR_MALFORMED_REQUEST;
+			goto respond;
+		}
+		response = impl->handler(request);
 		break;
-#endif /* CONFIG_INFUSE_RPC_COMMAND_{{ command['name'] | upper }} */
-{% endfor %}
-	default:
-		rc = INFUSE_RPC_ERROR_INVALID_COMMAND;
-	};
+	}
 
 respond:
 	/* Free the request */
