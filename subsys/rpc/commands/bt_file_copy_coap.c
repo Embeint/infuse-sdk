@@ -73,8 +73,8 @@ struct net_buf *rpc_command_bt_file_copy_coap(struct net_buf *request)
 	rsp.resource_len = coap_rsp.resource_len;
 	rsp.resource_crc = coap_rsp.resource_crc;
 
-	if (downloaded == 0) {
-		/* Flash already matched the request, reuse the request */
+	if ((req->resource_len != UINT32_MAX) && (downloaded == 0)) {
+		/* Flash already matched the request, reuse the request values */
 		copy_req.file_len = coap_req.resource_len;
 		copy_req.file_crc = coap_req.resource_crc;
 	} else {
