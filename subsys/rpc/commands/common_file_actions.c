@@ -707,23 +707,13 @@ int rpc_common_file_actions_error_cleanup(struct rpc_common_file_actions_ctx *ct
 		}
 		break;
 #endif /* SUPPORT_FILE_COPY_RAW */
+#if defined(SUPPORT_FILE_COPY_FS) || defined(CONFIG_INFUSE_LITTLEFS)
 #ifdef SUPPORT_FILE_COPY_FS
 	case RPC_ENUM_FILE_ACTION_FILE_FOR_COPY:
-		if (!ctx->fs_open) {
-			break;
-		}
-		/* Close the file */
-		ctx->fs_meta.timestamp = epoch_time_seconds(epoch_time_now());
-		ctx->fs_meta.crc = ctx->crc;
-		rc = infuse_littlefs_file_close();
-		ctx->fs_open = false;
-		if (rc < 0) {
-			rc = INFUSE_RPC_ERROR_FILE_CLOSE_FAILED;
-		}
-		break;
 #endif /* SUPPORT_FILE_COPY_FS */
 #ifdef CONFIG_INFUSE_LITTLEFS
 	case RPC_ENUM_FILE_ACTION_WRITE_LITTLEFS:
+#endif /* CONFIG_INFUSE_LITTLEFS */
 		if (!ctx->fs_open) {
 			break;
 		}
@@ -736,7 +726,7 @@ int rpc_common_file_actions_error_cleanup(struct rpc_common_file_actions_ctx *ct
 			rc = INFUSE_RPC_ERROR_FILE_CLOSE_FAILED;
 		}
 		break;
-#endif /* CONFIG_INFUSE_LITTLEFS */
+#endif /* defined(SUPPORT_FILE_COPY_FS) || defined(CONFIG_INFUSE_LITTLEFS) */
 #ifdef CONFIG_BT_CONTROLLER_MANAGER
 	case RPC_ENUM_FILE_ACTION_BT_CTLR_IMG:
 	case RPC_ENUM_FILE_ACTION_BT_CTLR_CPATCH:
