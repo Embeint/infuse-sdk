@@ -120,6 +120,27 @@ ZTEST(rpc_command_kv_reflect_crcs, test_kv_reflect_crcs_overflow)
 	net_buf_unref(rsp);
 }
 
+ZTEST(rpc_command_kv_reflect_crcs, test_kv_reflect_crcs_offset_no_tailroom)
+{
+	struct rpc_kv_reflect_crcs_response *response;
+	struct net_buf *rsp;
+	size_t expect_len;
+
+	/* Limit payload size so no ID:CRC pairs fit. */
+	epacket_dummy_set_max_packet(24);
+
+	send_kv_reflect_crcs_command(1003, 1);
+	rsp = expect_kv_reflect_crcs_response(1003, 0);
+
+	response = (void *)rsp->data;
+	zassert_equal(0, response->num);
+	zassert_equal(KV_REFLECT_NUM - 1, response->remaining);
+	expect_len = sizeof(struct rpc_kv_reflect_crcs_response);
+	zassert_equal(expect_len, rsp->len);
+
+	net_buf_unref(rsp);
+}
+
 ZTEST(rpc_command_kv_reflect_crcs, test_kv_reflect_crcs_offset)
 {
 	struct rpc_kv_reflect_crcs_response *response;
