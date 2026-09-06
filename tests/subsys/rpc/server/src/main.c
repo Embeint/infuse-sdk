@@ -108,6 +108,39 @@ ZTEST(rpc_server, test_invalid)
 	zassert_is_null(k_fifo_get(tx_fifo, K_MSEC(100)));
 }
 
+ZTEST(rpc_server, test_malformed_fixed_request)
+{
+	const struct device *epacket_dummy = DEVICE_DT_GET(DT_NODELABEL(epacket_dummy));
+	struct k_fifo *tx_fifo = epacket_dummmy_transmit_fifo_get();
+	struct epacket_dummy_frame *tx_header, header = {0};
+	struct infuse_rpc_req_header req_header = {
+		.request_id = 0xABCDEF01,
+		.command_id = RPC_ID_DATA_SENDER,
+	};
+	struct infuse_rpc_rsp_header *rsp_header;
+	struct net_buf *tx;
+
+	zassert_not_null(tx_fifo);
+
+	header.type = INFUSE_RPC_CMD;
+	header.auth = EPACKET_AUTH_DEVICE;
+	epacket_dummy_receive(epacket_dummy, &header, &req_header, sizeof(req_header));
+
+	tx = k_fifo_get(tx_fifo, K_MSEC(100));
+	zassert_not_null(tx);
+	tx_header = (void *)tx->data;
+	rsp_header = (void *)(tx->data + sizeof(*tx_header));
+	zassert_equal(INFUSE_RPC_RSP, tx_header->type);
+	zassert_equal(EPACKET_AUTH_DEVICE, tx_header->auth);
+	zassert_equal(req_header.request_id, rsp_header->request_id);
+	zassert_equal(req_header.command_id, rsp_header->command_id);
+	zassert_equal(INFUSE_RPC_ERROR_MALFORMED_REQUEST, rsp_header->return_code);
+	zassert_equal(sizeof(*tx_header) + sizeof(*rsp_header), tx->len);
+	net_buf_unref(tx);
+
+	zassert_is_null(k_fifo_get(tx_fifo, K_MSEC(100)));
+}
+
 ZTEST(rpc_server, test_invalid_channel_closed)
 {
 	const struct device *epacket_dummy = DEVICE_DT_GET(DT_NODELABEL(epacket_dummy));
