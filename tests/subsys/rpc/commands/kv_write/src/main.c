@@ -95,6 +95,18 @@ ZTEST(rpc_command_kv_write, test_kv_write_bad_input)
 	send_kv_write_command(6, &values, 1);
 	rsp = expect_kv_write_response(6, INFUSE_RPC_ERROR_INVALID_ARGUMENT, 0);
 	net_buf_unref(rsp);
+
+	/* Extra bytes after declared values are malformed */
+	net_buf_simple_reset(&values);
+	value = net_buf_simple_add(&values, sizeof(*value));
+	value->id = KV_KEY_REBOOTS;
+	value->len = sizeof(uint32_t);
+	net_buf_simple_add_le32(&values, 542);
+	net_buf_simple_add_u8(&values, 0xAA);
+
+	send_kv_write_command(7, &values, 1);
+	rsp = expect_kv_write_response(7, INFUSE_RPC_ERROR_MALFORMED_REQUEST, 0);
+	net_buf_unref(rsp);
 }
 
 ZTEST(rpc_command_kv_write, test_kv_write_read_only)
@@ -336,6 +348,9 @@ ZTEST(rpc_command_kv_write, test_kv_write_app_validation)
 	zassert_true(kv_store_key_exists(KV_KEY_REBOOTS));
 
 	/* Delete that is not allowed */
+	net_buf_simple_reset(&values);
+	value = net_buf_simple_add(&values, sizeof(*value));
+	value->id = KV_KEY_REBOOTS;
 	value->len = 0;
 	expected_data = NULL;
 	expected_len = 0;
