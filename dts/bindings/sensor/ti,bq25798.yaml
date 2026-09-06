@@ -43,6 +43,20 @@ properties:
       Reducing this to 1A or less will give greater current resolution.
       Default is the POR value.
 
+  constant-charge-current-max-microamp:
+    type: int
+    default: 1000000
+    description:
+      Maximum constant input current, resolution = 10 mA.
+      Default is the POR value.
+
+  charge-term-current-microamp:
+    type: int
+    default: 200000
+    description:
+      Current for charge termination phase, resolution = 40 mA.
+      Default is the POR value.
+
   vac-ovp:
     type: int
     enum:
