@@ -30,6 +30,9 @@ static void modem_info_changed(const struct device *dev, const struct cellular_e
 	case CELLULAR_MODEM_INFO_IMEI:
 		VALIDATION_REPORT_INFO(TEST, "%16s: %s", "Modem IMEI", info);
 		break;
+	case CELLULAR_MODEM_INFO_SERIAL_NUMBER:
+		VALIDATION_REPORT_INFO(TEST, "%16s: %s", "Modem Serial", info);
+		break;
 	case CELLULAR_MODEM_INFO_MODEL_ID:
 		VALIDATION_REPORT_INFO(TEST, "%16s: %s", "Modem Model", info);
 		break;

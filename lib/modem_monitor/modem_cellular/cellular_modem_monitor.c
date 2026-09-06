@@ -91,9 +91,10 @@ static void modem_info_changed(const struct device *dev, const struct cellular_e
 			.imei = strtoull(info.value, NULL, 10),
 		};
 		(void)KV_STORE_WRITE(KV_KEY_LTE_MODEM_IMEI, &modem_imei);
-		/* All currently tested modems return the same value for AT+CGSN=0 and AT+CGSN=1 */
-		kv_store_write(KV_KEY_LTE_MODEM_ESN, &info, 1 + info.value_num);
 	} break;
+	case CELLULAR_MODEM_INFO_SERIAL_NUMBER:
+		kv_store_write(KV_KEY_LTE_MODEM_ESN, &info, 1 + info.value_num);
+		break;
 	case CELLULAR_MODEM_INFO_MODEL_ID:
 		kv_store_write(KV_KEY_LTE_MODEM_MODEL, &info, 1 + info.value_num);
 		break;
