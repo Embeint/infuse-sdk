@@ -36,6 +36,8 @@ struct bq25798_config {
 	uint16_t ntc_t0;
 	uint16_t v_sys_min;
 	uint16_t v_in_dpm;
+	uint16_t charge_current_ma;
+	uint16_t charge_term_current_ma;
 	uint16_t input_current_limit;
 	uint8_t mppt_ratio;
 	uint8_t acdrv_en_cfg;
@@ -71,6 +73,18 @@ static int bq25798_reg_write(const struct device *dev, uint8_t reg, uint8_t val)
 	};
 
 	return i2c_write_dt(&config->bus, buf, 2);
+}
+
+static int bq25798_reg_write_u16(const struct device *dev, uint8_t reg, uint16_t val)
+{
+	const struct bq25798_config *config = dev->config;
+	uint8_t buf[3] = {
+		reg,
+		val >> 8,
+		val & 0xFF,
+	};
+
+	return i2c_write_dt(&config->bus, buf, 3);
 }
 
 static const char *const status_str[] = {
@@ -235,7 +249,8 @@ static int bq25798_init(const struct device *dev)
 {
 	const struct bq25798_config *config = dev->config;
 	struct bq25798_data *data = dev->data;
-	uint8_t reg = 0;
+	uint16_t u16;
+	uint8_t u8;
 	int rc;
 
 	if (!i2c_is_ready_dt(&config->bus)) {
@@ -259,13 +274,13 @@ static int bq25798_init(const struct device *dev)
 	(void)gpio_pin_interrupt_configure_dt(&config->int_gpio, GPIO_INT_EDGE_TO_ACTIVE);
 
 	/* Validate communications */
-	rc = i2c_burst_read_dt(&config->bus, BQ25798_REG_PART_INFO, &reg, 1);
+	rc = i2c_burst_read_dt(&config->bus, BQ25798_REG_PART_INFO, &u8, 1);
 	if (rc != 0) {
 		LOG_ERR("Reg 0x%02X %s error (%d)", BQ25798_REG_PART_INFO, "read", rc);
 		return rc;
 	}
-	if (reg != BQ25798_PART_INFO_EXPECTED) {
-		LOG_ERR("Unexpected PART_INFO (%02X != %02X)", reg, BQ25798_PART_INFO_EXPECTED);
+	if (u8 != BQ25798_PART_INFO_EXPECTED) {
+		LOG_ERR("Unexpected PART_INFO (%02X != %02X)", u8, BQ25798_PART_INFO_EXPECTED);
 		return -ENODEV;
 	}
 
@@ -287,46 +302,58 @@ static int bq25798_init(const struct device *dev)
 		LOG_ERR("Reg 0x%02X %s error (%d)", BQ25798_REG_INPUT_VOLTAGE_LIM, "write", rc);
 		return rc;
 	}
-	rc = bq25798_reg_write(dev, BQ25798_REG_INPUT_CURRENT_LIM,
-			       config->input_current_limit / 10);
+	u16 = config->input_current_limit / 10;
+	rc = bq25798_reg_write_u16(dev, BQ25798_REG_INPUT_CURRENT_LIM, u16);
 	if (rc != 0) {
 		LOG_ERR("Reg 0x%02X %s error (%d)", BQ25798_REG_INPUT_CURRENT_LIM, "write", rc);
 		return rc;
 	}
+	u16 = config->charge_current_ma / 10;
+	rc = bq25798_reg_write_u16(dev, BQ25798_REG_CHARGE_CURRENT_LIM, u16);
+	if (rc != 0) {
+		LOG_ERR("Reg 0x%02X %s error (%d)", BQ25798_REG_CHARGE_CURRENT_LIM, "write", rc);
+		return rc;
+	}
+	u8 = MAX(1, config->charge_current_ma / 40);
+	rc = bq25798_reg_write(dev, BQ25798_REG_TERM_CONTROL, u8);
+	if (rc != 0) {
+		LOG_ERR("Reg 0x%02X %s error (%d)", BQ25798_REG_TERM_CONTROL, "write", rc);
+		return rc;
+	}
 
 	/* Disable the watchdog, configure over-voltage protection */
-	reg = config->vac_ovp | BQ25798_CHARGER_CONTROL_1_WD_RST |
-	      BQ25798_CHARGER_CONTROL_1_WD_DISABLE;
-	rc = bq25798_reg_write(dev, BQ25798_REG_CHARGER_CONTROL_1, reg);
+	u8 = config->vac_ovp | BQ25798_CHARGER_CONTROL_1_WD_RST |
+	     BQ25798_CHARGER_CONTROL_1_WD_DISABLE;
+	rc = bq25798_reg_write(dev, BQ25798_REG_CHARGER_CONTROL_1, u8);
 	if (rc != 0) {
 		LOG_ERR("Reg 0x%02X %s error (%d)", BQ25798_REG_CHARGER_CONTROL_1, "write", rc);
 		return rc;
 	}
 
 	/* Check FET detection */
-	rc = i2c_burst_read_dt(&config->bus, BQ25798_REG_CHARGER_STATUS_3, &reg, 1);
+	rc = i2c_burst_read_dt(&config->bus, BQ25798_REG_CHARGER_STATUS_3, &u8, 1);
 	if (rc != 0) {
 		LOG_ERR("Reg 0x%02X %s error (%d)", BQ25798_REG_CHARGER_STATUS_3, "read", rc);
 		return rc;
 	}
 	if ((config->acdrv_en_cfg & BQ25798_CHARGER_CONTROL_4_EN_ACDRV2) &&
-	    !(reg & BQ25798_CHARGER_STATUS_3_ACRB2)) {
+	    !(u8 & BQ25798_CHARGER_STATUS_3_ACRB2)) {
 		LOG_WRN("ACFET%d-RBFET%d requested but not present", 2, 2);
 	}
 	if ((config->acdrv_en_cfg & BQ25798_CHARGER_CONTROL_4_EN_ACDRV1) &&
-	    !(reg & BQ25798_CHARGER_STATUS_3_ACRB1)) {
+	    !(u8 & BQ25798_CHARGER_STATUS_3_ACRB1)) {
 		LOG_WRN("ACFET%d-RBFET%d requested but not present", 1, 1);
 	}
 
 	/* Configure ACFETs */
-	rc = i2c_burst_read_dt(&config->bus, BQ25798_REG_CHARGER_CONTROL_4, &reg, 1);
+	rc = i2c_burst_read_dt(&config->bus, BQ25798_REG_CHARGER_CONTROL_4, &u8, 1);
 	if (rc != 0) {
 		LOG_ERR("Reg 0x%02X %s error (%d)", BQ25798_REG_CHARGER_CONTROL_4, "read", rc);
 		return rc;
 	}
-	reg &= ~(BQ25798_CHARGER_CONTROL_4_EN_ACDRV1 | BQ25798_CHARGER_CONTROL_4_EN_ACDRV2);
-	reg |= config->acdrv_en_cfg;
-	rc = bq25798_reg_write(dev, BQ25798_REG_CHARGER_CONTROL_4, reg);
+	u8 &= ~(BQ25798_CHARGER_CONTROL_4_EN_ACDRV1 | BQ25798_CHARGER_CONTROL_4_EN_ACDRV2);
+	u8 |= config->acdrv_en_cfg;
+	rc = bq25798_reg_write(dev, BQ25798_REG_CHARGER_CONTROL_4, u8);
 	if (rc != 0) {
 		LOG_ERR("Reg 0x%02X %s error (%d)", BQ25798_REG_CHARGER_CONTROL_4, "write", rc);
 		return rc;
@@ -334,22 +361,22 @@ static int bq25798_init(const struct device *dev)
 
 	/* Configure MPPT */
 	if (config->mppt_ratio == MPPT_DISABLE) {
-		reg = BQ25798_MPPT_CONTROL_MPPT_DISABLE;
+		u8 = BQ25798_MPPT_CONTROL_MPPT_DISABLE;
 	} else {
-		reg = BQ25798_MPPT_CONTROL_MPPT_ENABLE | BQ25798_MPPT_CONTROL_VOC_PERIOD_30S |
-		      BQ25798_MPPT_CONTROL_VOC_DELAY_300MS |
-		      (config->mppt_ratio << BQ25798_MPPT_CONTROL_RATIO_OFFSET);
+		u8 = BQ25798_MPPT_CONTROL_MPPT_ENABLE | BQ25798_MPPT_CONTROL_VOC_PERIOD_30S |
+		     BQ25798_MPPT_CONTROL_VOC_DELAY_300MS |
+		     (config->mppt_ratio << BQ25798_MPPT_CONTROL_RATIO_OFFSET);
 	}
-	rc = bq25798_reg_write(dev, BQ25798_REG_MPPT_CONTROL, reg);
+	rc = bq25798_reg_write(dev, BQ25798_REG_MPPT_CONTROL, u8);
 	if (rc != 0) {
 		LOG_ERR("Reg 0x%02X %s error (%d)", BQ25798_REG_MPPT_CONTROL, "write", rc);
 		return rc;
 	}
 
 	/* Enable battery current measurement */
-	reg = BQ25798_CHARGER_CONTROL_5_EN_IBAT | BQ25798_CHARGER_CONTROL_5_IBAT_REG_DISABLE |
-	      BQ25798_CHARGER_CONTROL_5_EN_IINDPM | BQ25798_CHARGER_CONTROL_5_EN_EXTILIM;
-	rc = bq25798_reg_write(dev, BQ25798_REG_CHARGER_CONTROL_5, reg);
+	u8 = BQ25798_CHARGER_CONTROL_5_EN_IBAT | BQ25798_CHARGER_CONTROL_5_IBAT_REG_DISABLE |
+	     BQ25798_CHARGER_CONTROL_5_EN_IINDPM | BQ25798_CHARGER_CONTROL_5_EN_EXTILIM;
+	rc = bq25798_reg_write(dev, BQ25798_REG_CHARGER_CONTROL_5, u8);
 	if (rc != 0) {
 		LOG_ERR("Reg 0x%02X %s error (%d)", BQ25798_REG_CHARGER_CONTROL_5, "write", rc);
 		return rc;
@@ -358,14 +385,14 @@ static int bq25798_init(const struct device *dev)
 	/* Disable unused ADC channels to speed up conversion.
 	 * Note that VAC1, VAC2 and VBUS seem to be required for normal operation of the device.
 	 */
-	reg = BQ25798_ADC_FUNC_DISABLE_0_IBUS | BQ25798_ADC_FUNC_DISABLE_0_VSYS;
-	rc = bq25798_reg_write(dev, BQ25798_REG_ADC_FUNC_DISABLE_0, reg);
+	u8 = BQ25798_ADC_FUNC_DISABLE_0_IBUS | BQ25798_ADC_FUNC_DISABLE_0_VSYS;
+	rc = bq25798_reg_write(dev, BQ25798_REG_ADC_FUNC_DISABLE_0, u8);
 	if (rc != 0) {
 		LOG_ERR("Reg 0x%02X %s error (%d)", BQ25798_REG_ADC_FUNC_DISABLE_0, "write", rc);
 		return rc;
 	}
-	reg = BQ25798_ADC_FUNC_DISABLE_1_DP | BQ25798_ADC_FUNC_DISABLE_1_DM;
-	rc = bq25798_reg_write(dev, BQ25798_REG_ADC_FUNC_DISABLE_1, reg);
+	u8 = BQ25798_ADC_FUNC_DISABLE_1_DP | BQ25798_ADC_FUNC_DISABLE_1_DM;
+	rc = bq25798_reg_write(dev, BQ25798_REG_ADC_FUNC_DISABLE_1, u8);
 	if (rc != 0) {
 		LOG_ERR("Reg 0x%02X %s error (%d)", BQ25798_REG_ADC_FUNC_DISABLE_1, "write", rc);
 		return rc;
@@ -399,6 +426,9 @@ static DEVICE_API(sensor, bq25798_driver_api) = {
 		.ntc_t0 = DT_INST_PROP(inst, ntc_t0),                                              \
 		.v_sys_min = DT_INST_PROP(inst, v_sys_min),                                        \
 		.v_in_dpm = DT_INST_PROP(inst, v_in_dpm),                                          \
+		.charge_current_ma =                                                               \
+			DT_INST_PROP(inst, constant_charge_current_max_microamp) / 1000,           \
+		.charge_term_current_ma = DT_INST_PROP(inst, charge_term_current_microamp) / 1000, \
 		.input_current_limit = DT_INST_PROP(inst, input_current_limit),                    \
 		.mppt_ratio = DT_INST_ENUM_IDX_OR(inst, mppt_ratio, MPPT_DISABLE),                 \
 		.acdrv_en_cfg =                                                                    \
