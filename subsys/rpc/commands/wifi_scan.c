@@ -40,7 +40,12 @@ static void scan_result_handle(const struct wifi_scan_result *entry, struct net_
 	scan_result.channel = entry->channel;
 	scan_result.security = entry->security;
 	scan_result.rssi = entry->rssi;
-	memcpy(scan_result.bssid, entry->mac, entry->mac_length);
+	if (entry->mac_length == sizeof(scan_result.bssid)) {
+		memcpy(scan_result.bssid, entry->mac, sizeof(scan_result.bssid));
+	} else {
+		LOG_WRN("Unexpected BSSID length (%d)", entry->mac_length);
+		memset(scan_result.bssid, 0, sizeof(scan_result.bssid));
+	}
 	if ((entry->ssid_length > 0) && (entry->ssid[0] == '\x00')) {
 		/* Length reported but contents are NULL.
 		 * Eliminate the SSID to preserve packet space for actual SSIDs.
