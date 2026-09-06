@@ -122,7 +122,7 @@ static int bq25798_sample_fetch(const struct device *dev, enum sensor_channel ch
 		}
 	}
 	rc = i2c_burst_read_dt(&config->bus, BQ25798_REG_FAULT_STATUS_0, status, 2);
-	if (rc == 0) {
+	if ((rc == 0) && (status[0] || status[1])) {
 		LOG_HEXDUMP_DBG(status, 2, "Fault status registers");
 		if (status[0] & BQ25798_CHARGER_FAULT_0_VAC1_OVP) {
 			LOG_WRN("VAC%d over-voltage", 1);
