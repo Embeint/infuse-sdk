@@ -22,8 +22,417 @@
 #include <infuse/rpc/server.h>
 #include <infuse/rpc/commands_impl.h>
 
-/* Authorised to run command */
-#define AUTHORISED(auth, name) (auth >= CONFIG_INFUSE_RPC_COMMAND_##name##_REQUIRED_AUTH)
+typedef struct net_buf *(*rpc_command_handler_t)(struct net_buf *request);
+
+struct command_impl {
+	rpc_command_handler_t handler;
+	uint16_t command_id;
+	uint8_t required_auth;
+	uint8_t request_len;
+};
+
+static const struct command_impl command_impls[] = {
+#ifdef CONFIG_INFUSE_RPC_COMMAND_REBOOT
+	{
+		.handler = rpc_command_reboot,
+		.command_id = RPC_ID_REBOOT,
+		.required_auth = CONFIG_INFUSE_RPC_COMMAND_REBOOT_REQUIRED_AUTH,
+		.request_len = sizeof(struct rpc_reboot_request),
+	},
+#endif /* CONFIG_INFUSE_RPC_COMMAND_REBOOT */
+#ifdef CONFIG_INFUSE_RPC_COMMAND_FAULT
+	{
+		.handler = rpc_command_fault,
+		.command_id = RPC_ID_FAULT,
+		.required_auth = CONFIG_INFUSE_RPC_COMMAND_FAULT_REQUIRED_AUTH,
+		.request_len = sizeof(struct rpc_fault_request),
+	},
+#endif /* CONFIG_INFUSE_RPC_COMMAND_FAULT */
+#ifdef CONFIG_INFUSE_RPC_COMMAND_TIME_GET
+	{
+		.handler = rpc_command_time_get,
+		.command_id = RPC_ID_TIME_GET,
+		.required_auth = CONFIG_INFUSE_RPC_COMMAND_TIME_GET_REQUIRED_AUTH,
+		.request_len = sizeof(struct rpc_time_get_request),
+	},
+#endif /* CONFIG_INFUSE_RPC_COMMAND_TIME_GET */
+#ifdef CONFIG_INFUSE_RPC_COMMAND_TIME_SET
+	{
+		.handler = rpc_command_time_set,
+		.command_id = RPC_ID_TIME_SET,
+		.required_auth = CONFIG_INFUSE_RPC_COMMAND_TIME_SET_REQUIRED_AUTH,
+		.request_len = sizeof(struct rpc_time_set_request),
+	},
+#endif /* CONFIG_INFUSE_RPC_COMMAND_TIME_SET */
+#ifdef CONFIG_INFUSE_RPC_COMMAND_KV_WRITE
+	{
+		.handler = rpc_command_kv_write,
+		.command_id = RPC_ID_KV_WRITE,
+		.required_auth = CONFIG_INFUSE_RPC_COMMAND_KV_WRITE_REQUIRED_AUTH,
+		.request_len = sizeof(struct rpc_kv_write_request),
+	},
+#endif /* CONFIG_INFUSE_RPC_COMMAND_KV_WRITE */
+#ifdef CONFIG_INFUSE_RPC_COMMAND_KV_READ
+	{
+		.handler = rpc_command_kv_read,
+		.command_id = RPC_ID_KV_READ,
+		.required_auth = CONFIG_INFUSE_RPC_COMMAND_KV_READ_REQUIRED_AUTH,
+		.request_len = sizeof(struct rpc_kv_read_request),
+	},
+#endif /* CONFIG_INFUSE_RPC_COMMAND_KV_READ */
+#ifdef CONFIG_INFUSE_RPC_COMMAND_KV_REFLECT_CRCS
+	{
+		.handler = rpc_command_kv_reflect_crcs,
+		.command_id = RPC_ID_KV_REFLECT_CRCS,
+		.required_auth = CONFIG_INFUSE_RPC_COMMAND_KV_REFLECT_CRCS_REQUIRED_AUTH,
+		.request_len = sizeof(struct rpc_kv_reflect_crcs_request),
+	},
+#endif /* CONFIG_INFUSE_RPC_COMMAND_KV_REFLECT_CRCS */
+#ifdef CONFIG_INFUSE_RPC_COMMAND_ZBUS_CHANNEL_STATE
+	{
+		.handler = rpc_command_zbus_channel_state,
+		.command_id = RPC_ID_ZBUS_CHANNEL_STATE,
+		.required_auth = CONFIG_INFUSE_RPC_COMMAND_ZBUS_CHANNEL_STATE_REQUIRED_AUTH,
+		.request_len = sizeof(struct rpc_zbus_channel_state_request),
+	},
+#endif /* CONFIG_INFUSE_RPC_COMMAND_ZBUS_CHANNEL_STATE */
+#ifdef CONFIG_INFUSE_RPC_COMMAND_APPLICATION_INFO
+	{
+		.handler = rpc_command_application_info,
+		.command_id = RPC_ID_APPLICATION_INFO,
+		.required_auth = CONFIG_INFUSE_RPC_COMMAND_APPLICATION_INFO_REQUIRED_AUTH,
+		.request_len = sizeof(struct rpc_application_info_request),
+	},
+#endif /* CONFIG_INFUSE_RPC_COMMAND_APPLICATION_INFO */
+#ifdef CONFIG_INFUSE_RPC_COMMAND_WIFI_SCAN
+	{
+		.handler = rpc_command_wifi_scan,
+		.command_id = RPC_ID_WIFI_SCAN,
+		.required_auth = CONFIG_INFUSE_RPC_COMMAND_WIFI_SCAN_REQUIRED_AUTH,
+		.request_len = sizeof(struct rpc_wifi_scan_request),
+	},
+#endif /* CONFIG_INFUSE_RPC_COMMAND_WIFI_SCAN */
+#ifdef CONFIG_INFUSE_RPC_COMMAND_WIFI_STATE
+	{
+		.handler = rpc_command_wifi_state,
+		.command_id = RPC_ID_WIFI_STATE,
+		.required_auth = CONFIG_INFUSE_RPC_COMMAND_WIFI_STATE_REQUIRED_AUTH,
+		.request_len = sizeof(struct rpc_wifi_state_request),
+	},
+#endif /* CONFIG_INFUSE_RPC_COMMAND_WIFI_STATE */
+#ifdef CONFIG_INFUSE_RPC_COMMAND_LAST_REBOOT
+	{
+		.handler = rpc_command_last_reboot,
+		.command_id = RPC_ID_LAST_REBOOT,
+		.required_auth = CONFIG_INFUSE_RPC_COMMAND_LAST_REBOOT_REQUIRED_AUTH,
+		.request_len = sizeof(struct rpc_last_reboot_request),
+	},
+#endif /* CONFIG_INFUSE_RPC_COMMAND_LAST_REBOOT */
+#ifdef CONFIG_INFUSE_RPC_COMMAND_DATA_LOGGER_STATE
+	{
+		.handler = rpc_command_data_logger_state,
+		.command_id = RPC_ID_DATA_LOGGER_STATE,
+		.required_auth = CONFIG_INFUSE_RPC_COMMAND_DATA_LOGGER_STATE_REQUIRED_AUTH,
+		.request_len = sizeof(struct rpc_data_logger_state_request),
+	},
+#endif /* CONFIG_INFUSE_RPC_COMMAND_DATA_LOGGER_STATE */
+#ifdef CONFIG_INFUSE_RPC_COMMAND_DATA_LOGGER_READ
+	{
+		.handler = rpc_command_data_logger_read,
+		.command_id = RPC_ID_DATA_LOGGER_READ,
+		.required_auth = CONFIG_INFUSE_RPC_COMMAND_DATA_LOGGER_READ_REQUIRED_AUTH,
+		.request_len = sizeof(struct rpc_data_logger_read_request),
+	},
+#endif /* CONFIG_INFUSE_RPC_COMMAND_DATA_LOGGER_READ */
+#ifdef CONFIG_INFUSE_RPC_COMMAND_MEM_READ
+	{
+		.handler = rpc_command_mem_read,
+		.command_id = RPC_ID_MEM_READ,
+		.required_auth = CONFIG_INFUSE_RPC_COMMAND_MEM_READ_REQUIRED_AUTH,
+		.request_len = sizeof(struct rpc_mem_read_request),
+	},
+#endif /* CONFIG_INFUSE_RPC_COMMAND_MEM_READ */
+#ifdef CONFIG_INFUSE_RPC_COMMAND_INFUSE_STATES_QUERY
+	{
+		.handler = rpc_command_infuse_states_query,
+		.command_id = RPC_ID_INFUSE_STATES_QUERY,
+		.required_auth = CONFIG_INFUSE_RPC_COMMAND_INFUSE_STATES_QUERY_REQUIRED_AUTH,
+		.request_len = sizeof(struct rpc_infuse_states_query_request),
+	},
+#endif /* CONFIG_INFUSE_RPC_COMMAND_INFUSE_STATES_QUERY */
+#ifdef CONFIG_INFUSE_RPC_COMMAND_INFUSE_STATES_UPDATE
+	{
+		.handler = rpc_command_infuse_states_update,
+		.command_id = RPC_ID_INFUSE_STATES_UPDATE,
+		.required_auth = CONFIG_INFUSE_RPC_COMMAND_INFUSE_STATES_UPDATE_REQUIRED_AUTH,
+		.request_len = sizeof(struct rpc_infuse_states_update_request),
+	},
+#endif /* CONFIG_INFUSE_RPC_COMMAND_INFUSE_STATES_UPDATE */
+#ifdef CONFIG_INFUSE_RPC_COMMAND_DATA_LOGGER_ERASE
+	{
+		.handler = rpc_command_data_logger_erase,
+		.command_id = RPC_ID_DATA_LOGGER_ERASE,
+		.required_auth = CONFIG_INFUSE_RPC_COMMAND_DATA_LOGGER_ERASE_REQUIRED_AUTH,
+		.request_len = sizeof(struct rpc_data_logger_erase_request),
+	},
+#endif /* CONFIG_INFUSE_RPC_COMMAND_DATA_LOGGER_ERASE */
+#ifdef CONFIG_INFUSE_RPC_COMMAND_HEAP_STATS
+	{
+		.handler = rpc_command_heap_stats,
+		.command_id = RPC_ID_HEAP_STATS,
+		.required_auth = CONFIG_INFUSE_RPC_COMMAND_HEAP_STATS_REQUIRED_AUTH,
+		.request_len = sizeof(struct rpc_heap_stats_request),
+	},
+#endif /* CONFIG_INFUSE_RPC_COMMAND_HEAP_STATS */
+#ifdef CONFIG_INFUSE_RPC_COMMAND_LTE_AT_CMD
+	{
+		.handler = rpc_command_lte_at_cmd,
+		.command_id = RPC_ID_LTE_AT_CMD,
+		.required_auth = CONFIG_INFUSE_RPC_COMMAND_LTE_AT_CMD_REQUIRED_AUTH,
+		.request_len = sizeof(struct rpc_lte_at_cmd_request),
+	},
+#endif /* CONFIG_INFUSE_RPC_COMMAND_LTE_AT_CMD */
+#ifdef CONFIG_INFUSE_RPC_COMMAND_LTE_STATE
+	{
+		.handler = rpc_command_lte_state,
+		.command_id = RPC_ID_LTE_STATE,
+		.required_auth = CONFIG_INFUSE_RPC_COMMAND_LTE_STATE_REQUIRED_AUTH,
+		.request_len = sizeof(struct rpc_lte_state_request),
+	},
+#endif /* CONFIG_INFUSE_RPC_COMMAND_LTE_STATE */
+#ifdef CONFIG_INFUSE_RPC_COMMAND_DATA_LOGGER_READ_AVAILABLE
+	{
+		.handler = rpc_command_data_logger_read_available,
+		.command_id = RPC_ID_DATA_LOGGER_READ_AVAILABLE,
+		.required_auth = CONFIG_INFUSE_RPC_COMMAND_DATA_LOGGER_READ_AVAILABLE_REQUIRED_AUTH,
+		.request_len = sizeof(struct rpc_data_logger_read_available_request),
+	},
+#endif /* CONFIG_INFUSE_RPC_COMMAND_DATA_LOGGER_READ_AVAILABLE */
+#ifdef CONFIG_INFUSE_RPC_COMMAND_LTE_STATE_V2
+	{
+		.handler = rpc_command_lte_state_v2,
+		.command_id = RPC_ID_LTE_STATE_V2,
+		.required_auth = CONFIG_INFUSE_RPC_COMMAND_LTE_STATE_V2_REQUIRED_AUTH,
+		.request_len = sizeof(struct rpc_lte_state_v2_request),
+	},
+#endif /* CONFIG_INFUSE_RPC_COMMAND_LTE_STATE_V2 */
+#ifdef CONFIG_INFUSE_RPC_COMMAND_DATA_LOGGER_STATE_V2
+	{
+		.handler = rpc_command_data_logger_state_v2,
+		.command_id = RPC_ID_DATA_LOGGER_STATE_V2,
+		.required_auth = CONFIG_INFUSE_RPC_COMMAND_DATA_LOGGER_STATE_V2_REQUIRED_AUTH,
+		.request_len = sizeof(struct rpc_data_logger_state_v2_request),
+	},
+#endif /* CONFIG_INFUSE_RPC_COMMAND_DATA_LOGGER_STATE_V2 */
+#ifdef CONFIG_INFUSE_RPC_COMMAND_DATA_LOGGER_READ_CHUNKS
+	{
+		.handler = rpc_command_data_logger_read_chunks,
+		.command_id = RPC_ID_DATA_LOGGER_READ_CHUNKS,
+		.required_auth = CONFIG_INFUSE_RPC_COMMAND_DATA_LOGGER_READ_CHUNKS_REQUIRED_AUTH,
+		.request_len = sizeof(struct rpc_data_logger_read_chunks_request),
+	},
+#endif /* CONFIG_INFUSE_RPC_COMMAND_DATA_LOGGER_READ_CHUNKS */
+#ifdef CONFIG_INFUSE_RPC_COMMAND_THREAD_STATS
+	{
+		.handler = rpc_command_thread_stats,
+		.command_id = RPC_ID_THREAD_STATS,
+		.required_auth = CONFIG_INFUSE_RPC_COMMAND_THREAD_STATS_REQUIRED_AUTH,
+		.request_len = sizeof(struct rpc_thread_stats_request),
+	},
+#endif /* CONFIG_INFUSE_RPC_COMMAND_THREAD_STATS */
+#ifdef CONFIG_INFUSE_RPC_COMMAND_COAP_DOWNLOAD
+	{
+		.handler = rpc_command_coap_download,
+		.command_id = RPC_ID_COAP_DOWNLOAD,
+		.required_auth = CONFIG_INFUSE_RPC_COMMAND_COAP_DOWNLOAD_REQUIRED_AUTH,
+		.request_len = sizeof(struct rpc_coap_download_request),
+	},
+#endif /* CONFIG_INFUSE_RPC_COMMAND_COAP_DOWNLOAD */
+#ifdef CONFIG_INFUSE_RPC_COMMAND_ZPERF_UPLOAD
+	{
+		.handler = rpc_command_zperf_upload,
+		.command_id = RPC_ID_ZPERF_UPLOAD,
+		.required_auth = CONFIG_INFUSE_RPC_COMMAND_ZPERF_UPLOAD_REQUIRED_AUTH,
+		.request_len = sizeof(struct rpc_zperf_upload_request),
+	},
+#endif /* CONFIG_INFUSE_RPC_COMMAND_ZPERF_UPLOAD */
+#ifdef CONFIG_INFUSE_RPC_COMMAND_COAP_DOWNLOAD_V2
+	{
+		.handler = rpc_command_coap_download_v2,
+		.command_id = RPC_ID_COAP_DOWNLOAD_V2,
+		.required_auth = CONFIG_INFUSE_RPC_COMMAND_COAP_DOWNLOAD_V2_REQUIRED_AUTH,
+		.request_len = sizeof(struct rpc_coap_download_v2_request),
+	},
+#endif /* CONFIG_INFUSE_RPC_COMMAND_COAP_DOWNLOAD_V2 */
+#ifdef CONFIG_INFUSE_RPC_COMMAND_COAP_DOWNLOAD_V3
+	{
+		.handler = rpc_command_coap_download_v3,
+		.command_id = RPC_ID_COAP_DOWNLOAD_V3,
+		.required_auth = CONFIG_INFUSE_RPC_COMMAND_COAP_DOWNLOAD_V3_REQUIRED_AUTH,
+		.request_len = sizeof(struct rpc_coap_download_v3_request),
+	},
+#endif /* CONFIG_INFUSE_RPC_COMMAND_COAP_DOWNLOAD_V3 */
+#ifdef CONFIG_INFUSE_RPC_COMMAND_FILE_WRITE_BASIC
+	{
+		.handler = rpc_command_file_write_basic,
+		.command_id = RPC_ID_FILE_WRITE_BASIC,
+		.required_auth = CONFIG_INFUSE_RPC_COMMAND_FILE_WRITE_BASIC_REQUIRED_AUTH,
+		.request_len = sizeof(struct rpc_file_write_basic_request),
+	},
+#endif /* CONFIG_INFUSE_RPC_COMMAND_FILE_WRITE_BASIC */
+#ifdef CONFIG_INFUSE_RPC_COMMAND_ANNOTATE
+	{
+		.handler = rpc_command_annotate,
+		.command_id = RPC_ID_ANNOTATE,
+		.required_auth = CONFIG_INFUSE_RPC_COMMAND_ANNOTATE_REQUIRED_AUTH,
+		.request_len = sizeof(struct rpc_annotate_request),
+	},
+#endif /* CONFIG_INFUSE_RPC_COMMAND_ANNOTATE */
+#ifdef CONFIG_INFUSE_RPC_COMMAND_TDF_DATA_LOGGER_FLUSH
+	{
+		.handler = rpc_command_tdf_data_logger_flush,
+		.command_id = RPC_ID_TDF_DATA_LOGGER_FLUSH,
+		.required_auth = CONFIG_INFUSE_RPC_COMMAND_TDF_DATA_LOGGER_FLUSH_REQUIRED_AUTH,
+		.request_len = sizeof(struct rpc_tdf_data_logger_flush_request),
+	},
+#endif /* CONFIG_INFUSE_RPC_COMMAND_TDF_DATA_LOGGER_FLUSH */
+#ifdef CONFIG_INFUSE_RPC_COMMAND_SHIPPING_MODE
+	{
+		.handler = rpc_command_shipping_mode,
+		.command_id = RPC_ID_SHIPPING_MODE,
+		.required_auth = CONFIG_INFUSE_RPC_COMMAND_SHIPPING_MODE_REQUIRED_AUTH,
+		.request_len = sizeof(struct rpc_shipping_mode_request),
+	},
+#endif /* CONFIG_INFUSE_RPC_COMMAND_SHIPPING_MODE */
+#ifdef CONFIG_INFUSE_RPC_COMMAND_FILE_WRITE
+	{
+		.handler = rpc_command_file_write,
+		.command_id = RPC_ID_FILE_WRITE,
+		.required_auth = CONFIG_INFUSE_RPC_COMMAND_FILE_WRITE_REQUIRED_AUTH,
+		.request_len = sizeof(struct rpc_file_write_request),
+	},
+#endif /* CONFIG_INFUSE_RPC_COMMAND_FILE_WRITE */
+#ifdef CONFIG_INFUSE_RPC_COMMAND_BT_CONNECT_INFUSE
+	{
+		.handler = rpc_command_bt_connect_infuse,
+		.command_id = RPC_ID_BT_CONNECT_INFUSE,
+		.required_auth = CONFIG_INFUSE_RPC_COMMAND_BT_CONNECT_INFUSE_REQUIRED_AUTH,
+		.request_len = sizeof(struct rpc_bt_connect_infuse_request),
+	},
+#endif /* CONFIG_INFUSE_RPC_COMMAND_BT_CONNECT_INFUSE */
+#ifdef CONFIG_INFUSE_RPC_COMMAND_BT_DISCONNECT
+	{
+		.handler = rpc_command_bt_disconnect,
+		.command_id = RPC_ID_BT_DISCONNECT,
+		.required_auth = CONFIG_INFUSE_RPC_COMMAND_BT_DISCONNECT_REQUIRED_AUTH,
+		.request_len = sizeof(struct rpc_bt_disconnect_request),
+	},
+#endif /* CONFIG_INFUSE_RPC_COMMAND_BT_DISCONNECT */
+#ifdef CONFIG_INFUSE_RPC_COMMAND_BT_FILE_COPY_BASIC
+	{
+		.handler = rpc_command_bt_file_copy_basic,
+		.command_id = RPC_ID_BT_FILE_COPY_BASIC,
+		.required_auth = CONFIG_INFUSE_RPC_COMMAND_BT_FILE_COPY_BASIC_REQUIRED_AUTH,
+		.request_len = sizeof(struct rpc_bt_file_copy_basic_request),
+	},
+#endif /* CONFIG_INFUSE_RPC_COMMAND_BT_FILE_COPY_BASIC */
+#ifdef CONFIG_INFUSE_RPC_COMMAND_BT_FILE_COPY_COAP
+	{
+		.handler = rpc_command_bt_file_copy_coap,
+		.command_id = RPC_ID_BT_FILE_COPY_COAP,
+		.required_auth = CONFIG_INFUSE_RPC_COMMAND_BT_FILE_COPY_COAP_REQUIRED_AUTH,
+		.request_len = sizeof(struct rpc_bt_file_copy_coap_request),
+	},
+#endif /* CONFIG_INFUSE_RPC_COMMAND_BT_FILE_COPY_COAP */
+#ifdef CONFIG_INFUSE_RPC_COMMAND_BT_MCUMGR_REBOOT
+	{
+		.handler = rpc_command_bt_mcumgr_reboot,
+		.command_id = RPC_ID_BT_MCUMGR_REBOOT,
+		.required_auth = CONFIG_INFUSE_RPC_COMMAND_BT_MCUMGR_REBOOT_REQUIRED_AUTH,
+		.request_len = sizeof(struct rpc_bt_mcumgr_reboot_request),
+	},
+#endif /* CONFIG_INFUSE_RPC_COMMAND_BT_MCUMGR_REBOOT */
+#ifdef CONFIG_INFUSE_RPC_COMMAND_GRAVITY_REFERENCE_UPDATE
+	{
+		.handler = rpc_command_gravity_reference_update,
+		.command_id = RPC_ID_GRAVITY_REFERENCE_UPDATE,
+		.required_auth = CONFIG_INFUSE_RPC_COMMAND_GRAVITY_REFERENCE_UPDATE_REQUIRED_AUTH,
+		.request_len = sizeof(struct rpc_gravity_reference_update_request),
+	},
+#endif /* CONFIG_INFUSE_RPC_COMMAND_GRAVITY_REFERENCE_UPDATE */
+#ifdef CONFIG_INFUSE_RPC_COMMAND_FILESYSTEM_LS
+	{
+		.handler = rpc_command_filesystem_ls,
+		.command_id = RPC_ID_FILESYSTEM_LS,
+		.required_auth = CONFIG_INFUSE_RPC_COMMAND_FILESYSTEM_LS_REQUIRED_AUTH,
+		.request_len = sizeof(struct rpc_filesystem_ls_request),
+	},
+#endif /* CONFIG_INFUSE_RPC_COMMAND_FILESYSTEM_LS */
+#ifdef CONFIG_INFUSE_RPC_COMMAND_FILESYSTEM_RM
+	{
+		.handler = rpc_command_filesystem_rm,
+		.command_id = RPC_ID_FILESYSTEM_RM,
+		.required_auth = CONFIG_INFUSE_RPC_COMMAND_FILESYSTEM_RM_REQUIRED_AUTH,
+		.request_len = sizeof(struct rpc_filesystem_rm_request),
+	},
+#endif /* CONFIG_INFUSE_RPC_COMMAND_FILESYSTEM_RM */
+#ifdef CONFIG_INFUSE_RPC_COMMAND_UBX_ASSIST_NOW_ZTP_CREDS
+	{
+		.handler = rpc_command_ubx_assist_now_ztp_creds,
+		.command_id = RPC_ID_UBX_ASSIST_NOW_ZTP_CREDS,
+		.required_auth = CONFIG_INFUSE_RPC_COMMAND_UBX_ASSIST_NOW_ZTP_CREDS_REQUIRED_AUTH,
+		.request_len = sizeof(struct rpc_ubx_assist_now_ztp_creds_request),
+	},
+#endif /* CONFIG_INFUSE_RPC_COMMAND_UBX_ASSIST_NOW_ZTP_CREDS */
+#ifdef CONFIG_INFUSE_RPC_COMMAND_SECURITY_STATE
+	{
+		.handler = rpc_command_security_state,
+		.command_id = RPC_ID_SECURITY_STATE,
+		.required_auth = CONFIG_INFUSE_RPC_COMMAND_SECURITY_STATE_REQUIRED_AUTH,
+		.request_len = sizeof(struct rpc_security_state_request),
+	},
+#endif /* CONFIG_INFUSE_RPC_COMMAND_SECURITY_STATE */
+#ifdef CONFIG_INFUSE_RPC_COMMAND_SECURITY_KEY_UPDATE
+	{
+		.handler = rpc_command_security_key_update,
+		.command_id = RPC_ID_SECURITY_KEY_UPDATE,
+		.required_auth = CONFIG_INFUSE_RPC_COMMAND_SECURITY_KEY_UPDATE_REQUIRED_AUTH,
+		.request_len = sizeof(struct rpc_security_key_update_request),
+	},
+#endif /* CONFIG_INFUSE_RPC_COMMAND_SECURITY_KEY_UPDATE */
+#ifdef CONFIG_INFUSE_RPC_COMMAND_SECURITY_PUBLIC_KEYS
+	{
+		.handler = rpc_command_security_public_keys,
+		.command_id = RPC_ID_SECURITY_PUBLIC_KEYS,
+		.required_auth = CONFIG_INFUSE_RPC_COMMAND_SECURITY_PUBLIC_KEYS_REQUIRED_AUTH,
+		.request_len = sizeof(struct rpc_security_public_keys_request),
+	},
+#endif /* CONFIG_INFUSE_RPC_COMMAND_SECURITY_PUBLIC_KEYS */
+#ifdef CONFIG_INFUSE_RPC_COMMAND_DATA_SENDER
+	{
+		.handler = rpc_command_data_sender,
+		.command_id = RPC_ID_DATA_SENDER,
+		.required_auth = CONFIG_INFUSE_RPC_COMMAND_DATA_SENDER_REQUIRED_AUTH,
+		.request_len = sizeof(struct rpc_data_sender_request),
+	},
+#endif /* CONFIG_INFUSE_RPC_COMMAND_DATA_SENDER */
+#ifdef CONFIG_INFUSE_RPC_COMMAND_DATA_RECEIVER
+	{
+		.handler = rpc_command_data_receiver,
+		.command_id = RPC_ID_DATA_RECEIVER,
+		.required_auth = CONFIG_INFUSE_RPC_COMMAND_DATA_RECEIVER_REQUIRED_AUTH,
+		.request_len = sizeof(struct rpc_data_receiver_request),
+	},
+#endif /* CONFIG_INFUSE_RPC_COMMAND_DATA_RECEIVER */
+#ifdef CONFIG_INFUSE_RPC_COMMAND_ECHO
+	{
+		.handler = rpc_command_echo,
+		.command_id = RPC_ID_ECHO,
+		.required_auth = CONFIG_INFUSE_RPC_COMMAND_ECHO_REQUIRED_AUTH,
+		.request_len = sizeof(struct rpc_echo_request),
+	},
+#endif /* CONFIG_INFUSE_RPC_COMMAND_ECHO */
+};
 
 static bool command_freed;
 static bool response_sent;
@@ -66,7 +475,7 @@ void rpc_command_runner(struct net_buf *request)
 	uint32_t key_id = metadata->key_identifier;
 	uint32_t request_id = 0;
 	uint16_t command_id = 0;
-	int16_t rc = INFUSE_RPC_ERROR_AUTHENTICATION_REQUIRED;
+	int16_t rc = INFUSE_RPC_ERROR_INVALID_COMMAND;
 
 	/* Reset command freed state */
 	command_freed = false;
@@ -81,560 +490,23 @@ void rpc_command_runner(struct net_buf *request)
 
 	LOG_DBG("Handling RPC: %d Auth: %d", command_id, auth);
 
-	switch (command_id) {
-#ifdef CONFIG_INFUSE_RPC_COMMAND_REBOOT
-	case RPC_ID_REBOOT:
-		if (AUTHORISED(auth, REBOOT)) { /* GCOVR_EXCL_BR_LINE */
-			if (request->len < sizeof(struct rpc_reboot_request)) {
-				rc = INFUSE_RPC_ERROR_MALFORMED_REQUEST;
-			} else {
-				response = rpc_command_reboot(request);
-			}
+	for (size_t i = 0; i < ARRAY_SIZE(command_impls); i++) {
+		const struct command_impl *impl = &command_impls[i];
+
+		if (impl->command_id != command_id) {
+			continue;
 		}
-		break;
-#endif /* CONFIG_INFUSE_RPC_COMMAND_REBOOT */
-#ifdef CONFIG_INFUSE_RPC_COMMAND_FAULT
-	case RPC_ID_FAULT:
-		if (AUTHORISED(auth, FAULT)) { /* GCOVR_EXCL_BR_LINE */
-			if (request->len < sizeof(struct rpc_fault_request)) {
-				rc = INFUSE_RPC_ERROR_MALFORMED_REQUEST;
-			} else {
-				response = rpc_command_fault(request);
-			}
+		if (auth < impl->required_auth) { /* GCOVR_EXCL_BR_LINE */
+			rc = INFUSE_RPC_ERROR_AUTHENTICATION_REQUIRED;
+			goto respond;
 		}
-		break;
-#endif /* CONFIG_INFUSE_RPC_COMMAND_FAULT */
-#ifdef CONFIG_INFUSE_RPC_COMMAND_TIME_GET
-	case RPC_ID_TIME_GET:
-		if (AUTHORISED(auth, TIME_GET)) { /* GCOVR_EXCL_BR_LINE */
-			if (request->len < sizeof(struct rpc_time_get_request)) {
-				rc = INFUSE_RPC_ERROR_MALFORMED_REQUEST;
-			} else {
-				response = rpc_command_time_get(request);
-			}
+		if (request->len < impl->request_len) {
+			rc = INFUSE_RPC_ERROR_MALFORMED_REQUEST;
+			goto respond;
 		}
+		response = impl->handler(request);
 		break;
-#endif /* CONFIG_INFUSE_RPC_COMMAND_TIME_GET */
-#ifdef CONFIG_INFUSE_RPC_COMMAND_TIME_SET
-	case RPC_ID_TIME_SET:
-		if (AUTHORISED(auth, TIME_SET)) { /* GCOVR_EXCL_BR_LINE */
-			if (request->len < sizeof(struct rpc_time_set_request)) {
-				rc = INFUSE_RPC_ERROR_MALFORMED_REQUEST;
-			} else {
-				response = rpc_command_time_set(request);
-			}
-		}
-		break;
-#endif /* CONFIG_INFUSE_RPC_COMMAND_TIME_SET */
-#ifdef CONFIG_INFUSE_RPC_COMMAND_KV_WRITE
-	case RPC_ID_KV_WRITE:
-		if (AUTHORISED(auth, KV_WRITE)) { /* GCOVR_EXCL_BR_LINE */
-			if (request->len < sizeof(struct rpc_kv_write_request)) {
-				rc = INFUSE_RPC_ERROR_MALFORMED_REQUEST;
-			} else {
-				response = rpc_command_kv_write(request);
-			}
-		}
-		break;
-#endif /* CONFIG_INFUSE_RPC_COMMAND_KV_WRITE */
-#ifdef CONFIG_INFUSE_RPC_COMMAND_KV_READ
-	case RPC_ID_KV_READ:
-		if (AUTHORISED(auth, KV_READ)) { /* GCOVR_EXCL_BR_LINE */
-			if (request->len < sizeof(struct rpc_kv_read_request)) {
-				rc = INFUSE_RPC_ERROR_MALFORMED_REQUEST;
-			} else {
-				response = rpc_command_kv_read(request);
-			}
-		}
-		break;
-#endif /* CONFIG_INFUSE_RPC_COMMAND_KV_READ */
-#ifdef CONFIG_INFUSE_RPC_COMMAND_KV_REFLECT_CRCS
-	case RPC_ID_KV_REFLECT_CRCS:
-		if (AUTHORISED(auth, KV_REFLECT_CRCS)) { /* GCOVR_EXCL_BR_LINE */
-			if (request->len < sizeof(struct rpc_kv_reflect_crcs_request)) {
-				rc = INFUSE_RPC_ERROR_MALFORMED_REQUEST;
-			} else {
-				response = rpc_command_kv_reflect_crcs(request);
-			}
-		}
-		break;
-#endif /* CONFIG_INFUSE_RPC_COMMAND_KV_REFLECT_CRCS */
-#ifdef CONFIG_INFUSE_RPC_COMMAND_ZBUS_CHANNEL_STATE
-	case RPC_ID_ZBUS_CHANNEL_STATE:
-		if (AUTHORISED(auth, ZBUS_CHANNEL_STATE)) { /* GCOVR_EXCL_BR_LINE */
-			if (request->len < sizeof(struct rpc_zbus_channel_state_request)) {
-				rc = INFUSE_RPC_ERROR_MALFORMED_REQUEST;
-			} else {
-				response = rpc_command_zbus_channel_state(request);
-			}
-		}
-		break;
-#endif /* CONFIG_INFUSE_RPC_COMMAND_ZBUS_CHANNEL_STATE */
-#ifdef CONFIG_INFUSE_RPC_COMMAND_APPLICATION_INFO
-	case RPC_ID_APPLICATION_INFO:
-		if (AUTHORISED(auth, APPLICATION_INFO)) { /* GCOVR_EXCL_BR_LINE */
-			if (request->len < sizeof(struct rpc_application_info_request)) {
-				rc = INFUSE_RPC_ERROR_MALFORMED_REQUEST;
-			} else {
-				response = rpc_command_application_info(request);
-			}
-		}
-		break;
-#endif /* CONFIG_INFUSE_RPC_COMMAND_APPLICATION_INFO */
-#ifdef CONFIG_INFUSE_RPC_COMMAND_WIFI_SCAN
-	case RPC_ID_WIFI_SCAN:
-		if (AUTHORISED(auth, WIFI_SCAN)) { /* GCOVR_EXCL_BR_LINE */
-			if (request->len < sizeof(struct rpc_wifi_scan_request)) {
-				rc = INFUSE_RPC_ERROR_MALFORMED_REQUEST;
-			} else {
-				response = rpc_command_wifi_scan(request);
-			}
-		}
-		break;
-#endif /* CONFIG_INFUSE_RPC_COMMAND_WIFI_SCAN */
-#ifdef CONFIG_INFUSE_RPC_COMMAND_WIFI_STATE
-	case RPC_ID_WIFI_STATE:
-		if (AUTHORISED(auth, WIFI_STATE)) { /* GCOVR_EXCL_BR_LINE */
-			if (request->len < sizeof(struct rpc_wifi_state_request)) {
-				rc = INFUSE_RPC_ERROR_MALFORMED_REQUEST;
-			} else {
-				response = rpc_command_wifi_state(request);
-			}
-		}
-		break;
-#endif /* CONFIG_INFUSE_RPC_COMMAND_WIFI_STATE */
-#ifdef CONFIG_INFUSE_RPC_COMMAND_LAST_REBOOT
-	case RPC_ID_LAST_REBOOT:
-		if (AUTHORISED(auth, LAST_REBOOT)) { /* GCOVR_EXCL_BR_LINE */
-			if (request->len < sizeof(struct rpc_last_reboot_request)) {
-				rc = INFUSE_RPC_ERROR_MALFORMED_REQUEST;
-			} else {
-				response = rpc_command_last_reboot(request);
-			}
-		}
-		break;
-#endif /* CONFIG_INFUSE_RPC_COMMAND_LAST_REBOOT */
-#ifdef CONFIG_INFUSE_RPC_COMMAND_DATA_LOGGER_STATE
-	case RPC_ID_DATA_LOGGER_STATE:
-		if (AUTHORISED(auth, DATA_LOGGER_STATE)) { /* GCOVR_EXCL_BR_LINE */
-			if (request->len < sizeof(struct rpc_data_logger_state_request)) {
-				rc = INFUSE_RPC_ERROR_MALFORMED_REQUEST;
-			} else {
-				response = rpc_command_data_logger_state(request);
-			}
-		}
-		break;
-#endif /* CONFIG_INFUSE_RPC_COMMAND_DATA_LOGGER_STATE */
-#ifdef CONFIG_INFUSE_RPC_COMMAND_DATA_LOGGER_READ
-	case RPC_ID_DATA_LOGGER_READ:
-		if (AUTHORISED(auth, DATA_LOGGER_READ)) { /* GCOVR_EXCL_BR_LINE */
-			if (request->len < sizeof(struct rpc_data_logger_read_request)) {
-				rc = INFUSE_RPC_ERROR_MALFORMED_REQUEST;
-			} else {
-				response = rpc_command_data_logger_read(request);
-			}
-		}
-		break;
-#endif /* CONFIG_INFUSE_RPC_COMMAND_DATA_LOGGER_READ */
-#ifdef CONFIG_INFUSE_RPC_COMMAND_MEM_READ
-	case RPC_ID_MEM_READ:
-		if (AUTHORISED(auth, MEM_READ)) { /* GCOVR_EXCL_BR_LINE */
-			if (request->len < sizeof(struct rpc_mem_read_request)) {
-				rc = INFUSE_RPC_ERROR_MALFORMED_REQUEST;
-			} else {
-				response = rpc_command_mem_read(request);
-			}
-		}
-		break;
-#endif /* CONFIG_INFUSE_RPC_COMMAND_MEM_READ */
-#ifdef CONFIG_INFUSE_RPC_COMMAND_INFUSE_STATES_QUERY
-	case RPC_ID_INFUSE_STATES_QUERY:
-		if (AUTHORISED(auth, INFUSE_STATES_QUERY)) { /* GCOVR_EXCL_BR_LINE */
-			if (request->len < sizeof(struct rpc_infuse_states_query_request)) {
-				rc = INFUSE_RPC_ERROR_MALFORMED_REQUEST;
-			} else {
-				response = rpc_command_infuse_states_query(request);
-			}
-		}
-		break;
-#endif /* CONFIG_INFUSE_RPC_COMMAND_INFUSE_STATES_QUERY */
-#ifdef CONFIG_INFUSE_RPC_COMMAND_INFUSE_STATES_UPDATE
-	case RPC_ID_INFUSE_STATES_UPDATE:
-		if (AUTHORISED(auth, INFUSE_STATES_UPDATE)) { /* GCOVR_EXCL_BR_LINE */
-			if (request->len < sizeof(struct rpc_infuse_states_update_request)) {
-				rc = INFUSE_RPC_ERROR_MALFORMED_REQUEST;
-			} else {
-				response = rpc_command_infuse_states_update(request);
-			}
-		}
-		break;
-#endif /* CONFIG_INFUSE_RPC_COMMAND_INFUSE_STATES_UPDATE */
-#ifdef CONFIG_INFUSE_RPC_COMMAND_DATA_LOGGER_ERASE
-	case RPC_ID_DATA_LOGGER_ERASE:
-		if (AUTHORISED(auth, DATA_LOGGER_ERASE)) { /* GCOVR_EXCL_BR_LINE */
-			if (request->len < sizeof(struct rpc_data_logger_erase_request)) {
-				rc = INFUSE_RPC_ERROR_MALFORMED_REQUEST;
-			} else {
-				response = rpc_command_data_logger_erase(request);
-			}
-		}
-		break;
-#endif /* CONFIG_INFUSE_RPC_COMMAND_DATA_LOGGER_ERASE */
-#ifdef CONFIG_INFUSE_RPC_COMMAND_HEAP_STATS
-	case RPC_ID_HEAP_STATS:
-		if (AUTHORISED(auth, HEAP_STATS)) { /* GCOVR_EXCL_BR_LINE */
-			if (request->len < sizeof(struct rpc_heap_stats_request)) {
-				rc = INFUSE_RPC_ERROR_MALFORMED_REQUEST;
-			} else {
-				response = rpc_command_heap_stats(request);
-			}
-		}
-		break;
-#endif /* CONFIG_INFUSE_RPC_COMMAND_HEAP_STATS */
-#ifdef CONFIG_INFUSE_RPC_COMMAND_LTE_AT_CMD
-	case RPC_ID_LTE_AT_CMD:
-		if (AUTHORISED(auth, LTE_AT_CMD)) { /* GCOVR_EXCL_BR_LINE */
-			if (request->len < sizeof(struct rpc_lte_at_cmd_request)) {
-				rc = INFUSE_RPC_ERROR_MALFORMED_REQUEST;
-			} else {
-				response = rpc_command_lte_at_cmd(request);
-			}
-		}
-		break;
-#endif /* CONFIG_INFUSE_RPC_COMMAND_LTE_AT_CMD */
-#ifdef CONFIG_INFUSE_RPC_COMMAND_LTE_STATE
-	case RPC_ID_LTE_STATE:
-		if (AUTHORISED(auth, LTE_STATE)) { /* GCOVR_EXCL_BR_LINE */
-			if (request->len < sizeof(struct rpc_lte_state_request)) {
-				rc = INFUSE_RPC_ERROR_MALFORMED_REQUEST;
-			} else {
-				response = rpc_command_lte_state(request);
-			}
-		}
-		break;
-#endif /* CONFIG_INFUSE_RPC_COMMAND_LTE_STATE */
-#ifdef CONFIG_INFUSE_RPC_COMMAND_DATA_LOGGER_READ_AVAILABLE
-	case RPC_ID_DATA_LOGGER_READ_AVAILABLE:
-		if (AUTHORISED(auth, DATA_LOGGER_READ_AVAILABLE)) { /* GCOVR_EXCL_BR_LINE */
-			if (request->len < sizeof(struct rpc_data_logger_read_available_request)) {
-				rc = INFUSE_RPC_ERROR_MALFORMED_REQUEST;
-			} else {
-				response = rpc_command_data_logger_read_available(request);
-			}
-		}
-		break;
-#endif /* CONFIG_INFUSE_RPC_COMMAND_DATA_LOGGER_READ_AVAILABLE */
-#ifdef CONFIG_INFUSE_RPC_COMMAND_LTE_STATE_V2
-	case RPC_ID_LTE_STATE_V2:
-		if (AUTHORISED(auth, LTE_STATE_V2)) { /* GCOVR_EXCL_BR_LINE */
-			if (request->len < sizeof(struct rpc_lte_state_v2_request)) {
-				rc = INFUSE_RPC_ERROR_MALFORMED_REQUEST;
-			} else {
-				response = rpc_command_lte_state_v2(request);
-			}
-		}
-		break;
-#endif /* CONFIG_INFUSE_RPC_COMMAND_LTE_STATE_V2 */
-#ifdef CONFIG_INFUSE_RPC_COMMAND_DATA_LOGGER_STATE_V2
-	case RPC_ID_DATA_LOGGER_STATE_V2:
-		if (AUTHORISED(auth, DATA_LOGGER_STATE_V2)) { /* GCOVR_EXCL_BR_LINE */
-			if (request->len < sizeof(struct rpc_data_logger_state_v2_request)) {
-				rc = INFUSE_RPC_ERROR_MALFORMED_REQUEST;
-			} else {
-				response = rpc_command_data_logger_state_v2(request);
-			}
-		}
-		break;
-#endif /* CONFIG_INFUSE_RPC_COMMAND_DATA_LOGGER_STATE_V2 */
-#ifdef CONFIG_INFUSE_RPC_COMMAND_DATA_LOGGER_READ_CHUNKS
-	case RPC_ID_DATA_LOGGER_READ_CHUNKS:
-		if (AUTHORISED(auth, DATA_LOGGER_READ_CHUNKS)) { /* GCOVR_EXCL_BR_LINE */
-			if (request->len < sizeof(struct rpc_data_logger_read_chunks_request)) {
-				rc = INFUSE_RPC_ERROR_MALFORMED_REQUEST;
-			} else {
-				response = rpc_command_data_logger_read_chunks(request);
-			}
-		}
-		break;
-#endif /* CONFIG_INFUSE_RPC_COMMAND_DATA_LOGGER_READ_CHUNKS */
-#ifdef CONFIG_INFUSE_RPC_COMMAND_THREAD_STATS
-	case RPC_ID_THREAD_STATS:
-		if (AUTHORISED(auth, THREAD_STATS)) { /* GCOVR_EXCL_BR_LINE */
-			if (request->len < sizeof(struct rpc_thread_stats_request)) {
-				rc = INFUSE_RPC_ERROR_MALFORMED_REQUEST;
-			} else {
-				response = rpc_command_thread_stats(request);
-			}
-		}
-		break;
-#endif /* CONFIG_INFUSE_RPC_COMMAND_THREAD_STATS */
-#ifdef CONFIG_INFUSE_RPC_COMMAND_COAP_DOWNLOAD
-	case RPC_ID_COAP_DOWNLOAD:
-		if (AUTHORISED(auth, COAP_DOWNLOAD)) { /* GCOVR_EXCL_BR_LINE */
-			if (request->len < sizeof(struct rpc_coap_download_request)) {
-				rc = INFUSE_RPC_ERROR_MALFORMED_REQUEST;
-			} else {
-				response = rpc_command_coap_download(request);
-			}
-		}
-		break;
-#endif /* CONFIG_INFUSE_RPC_COMMAND_COAP_DOWNLOAD */
-#ifdef CONFIG_INFUSE_RPC_COMMAND_ZPERF_UPLOAD
-	case RPC_ID_ZPERF_UPLOAD:
-		if (AUTHORISED(auth, ZPERF_UPLOAD)) { /* GCOVR_EXCL_BR_LINE */
-			if (request->len < sizeof(struct rpc_zperf_upload_request)) {
-				rc = INFUSE_RPC_ERROR_MALFORMED_REQUEST;
-			} else {
-				response = rpc_command_zperf_upload(request);
-			}
-		}
-		break;
-#endif /* CONFIG_INFUSE_RPC_COMMAND_ZPERF_UPLOAD */
-#ifdef CONFIG_INFUSE_RPC_COMMAND_COAP_DOWNLOAD_V2
-	case RPC_ID_COAP_DOWNLOAD_V2:
-		if (AUTHORISED(auth, COAP_DOWNLOAD_V2)) { /* GCOVR_EXCL_BR_LINE */
-			if (request->len < sizeof(struct rpc_coap_download_v2_request)) {
-				rc = INFUSE_RPC_ERROR_MALFORMED_REQUEST;
-			} else {
-				response = rpc_command_coap_download_v2(request);
-			}
-		}
-		break;
-#endif /* CONFIG_INFUSE_RPC_COMMAND_COAP_DOWNLOAD_V2 */
-#ifdef CONFIG_INFUSE_RPC_COMMAND_COAP_DOWNLOAD_V3
-	case RPC_ID_COAP_DOWNLOAD_V3:
-		if (AUTHORISED(auth, COAP_DOWNLOAD_V3)) { /* GCOVR_EXCL_BR_LINE */
-			if (request->len < sizeof(struct rpc_coap_download_v3_request)) {
-				rc = INFUSE_RPC_ERROR_MALFORMED_REQUEST;
-			} else {
-				response = rpc_command_coap_download_v3(request);
-			}
-		}
-		break;
-#endif /* CONFIG_INFUSE_RPC_COMMAND_COAP_DOWNLOAD_V3 */
-#ifdef CONFIG_INFUSE_RPC_COMMAND_FILE_WRITE_BASIC
-	case RPC_ID_FILE_WRITE_BASIC:
-		if (AUTHORISED(auth, FILE_WRITE_BASIC)) { /* GCOVR_EXCL_BR_LINE */
-			if (request->len < sizeof(struct rpc_file_write_basic_request)) {
-				rc = INFUSE_RPC_ERROR_MALFORMED_REQUEST;
-			} else {
-				response = rpc_command_file_write_basic(request);
-			}
-		}
-		break;
-#endif /* CONFIG_INFUSE_RPC_COMMAND_FILE_WRITE_BASIC */
-#ifdef CONFIG_INFUSE_RPC_COMMAND_ANNOTATE
-	case RPC_ID_ANNOTATE:
-		if (AUTHORISED(auth, ANNOTATE)) { /* GCOVR_EXCL_BR_LINE */
-			if (request->len < sizeof(struct rpc_annotate_request)) {
-				rc = INFUSE_RPC_ERROR_MALFORMED_REQUEST;
-			} else {
-				response = rpc_command_annotate(request);
-			}
-		}
-		break;
-#endif /* CONFIG_INFUSE_RPC_COMMAND_ANNOTATE */
-#ifdef CONFIG_INFUSE_RPC_COMMAND_TDF_DATA_LOGGER_FLUSH
-	case RPC_ID_TDF_DATA_LOGGER_FLUSH:
-		if (AUTHORISED(auth, TDF_DATA_LOGGER_FLUSH)) { /* GCOVR_EXCL_BR_LINE */
-			if (request->len < sizeof(struct rpc_tdf_data_logger_flush_request)) {
-				rc = INFUSE_RPC_ERROR_MALFORMED_REQUEST;
-			} else {
-				response = rpc_command_tdf_data_logger_flush(request);
-			}
-		}
-		break;
-#endif /* CONFIG_INFUSE_RPC_COMMAND_TDF_DATA_LOGGER_FLUSH */
-#ifdef CONFIG_INFUSE_RPC_COMMAND_SHIPPING_MODE
-	case RPC_ID_SHIPPING_MODE:
-		if (AUTHORISED(auth, SHIPPING_MODE)) { /* GCOVR_EXCL_BR_LINE */
-			if (request->len < sizeof(struct rpc_shipping_mode_request)) {
-				rc = INFUSE_RPC_ERROR_MALFORMED_REQUEST;
-			} else {
-				response = rpc_command_shipping_mode(request);
-			}
-		}
-		break;
-#endif /* CONFIG_INFUSE_RPC_COMMAND_SHIPPING_MODE */
-#ifdef CONFIG_INFUSE_RPC_COMMAND_FILE_WRITE
-	case RPC_ID_FILE_WRITE:
-		if (AUTHORISED(auth, FILE_WRITE)) { /* GCOVR_EXCL_BR_LINE */
-			if (request->len < sizeof(struct rpc_file_write_request)) {
-				rc = INFUSE_RPC_ERROR_MALFORMED_REQUEST;
-			} else {
-				response = rpc_command_file_write(request);
-			}
-		}
-		break;
-#endif /* CONFIG_INFUSE_RPC_COMMAND_FILE_WRITE */
-#ifdef CONFIG_INFUSE_RPC_COMMAND_BT_CONNECT_INFUSE
-	case RPC_ID_BT_CONNECT_INFUSE:
-		if (AUTHORISED(auth, BT_CONNECT_INFUSE)) { /* GCOVR_EXCL_BR_LINE */
-			if (request->len < sizeof(struct rpc_bt_connect_infuse_request)) {
-				rc = INFUSE_RPC_ERROR_MALFORMED_REQUEST;
-			} else {
-				response = rpc_command_bt_connect_infuse(request);
-			}
-		}
-		break;
-#endif /* CONFIG_INFUSE_RPC_COMMAND_BT_CONNECT_INFUSE */
-#ifdef CONFIG_INFUSE_RPC_COMMAND_BT_DISCONNECT
-	case RPC_ID_BT_DISCONNECT:
-		if (AUTHORISED(auth, BT_DISCONNECT)) { /* GCOVR_EXCL_BR_LINE */
-			if (request->len < sizeof(struct rpc_bt_disconnect_request)) {
-				rc = INFUSE_RPC_ERROR_MALFORMED_REQUEST;
-			} else {
-				response = rpc_command_bt_disconnect(request);
-			}
-		}
-		break;
-#endif /* CONFIG_INFUSE_RPC_COMMAND_BT_DISCONNECT */
-#ifdef CONFIG_INFUSE_RPC_COMMAND_BT_FILE_COPY_BASIC
-	case RPC_ID_BT_FILE_COPY_BASIC:
-		if (AUTHORISED(auth, BT_FILE_COPY_BASIC)) { /* GCOVR_EXCL_BR_LINE */
-			if (request->len < sizeof(struct rpc_bt_file_copy_basic_request)) {
-				rc = INFUSE_RPC_ERROR_MALFORMED_REQUEST;
-			} else {
-				response = rpc_command_bt_file_copy_basic(request);
-			}
-		}
-		break;
-#endif /* CONFIG_INFUSE_RPC_COMMAND_BT_FILE_COPY_BASIC */
-#ifdef CONFIG_INFUSE_RPC_COMMAND_BT_FILE_COPY_COAP
-	case RPC_ID_BT_FILE_COPY_COAP:
-		if (AUTHORISED(auth, BT_FILE_COPY_COAP)) { /* GCOVR_EXCL_BR_LINE */
-			if (request->len < sizeof(struct rpc_bt_file_copy_coap_request)) {
-				rc = INFUSE_RPC_ERROR_MALFORMED_REQUEST;
-			} else {
-				response = rpc_command_bt_file_copy_coap(request);
-			}
-		}
-		break;
-#endif /* CONFIG_INFUSE_RPC_COMMAND_BT_FILE_COPY_COAP */
-#ifdef CONFIG_INFUSE_RPC_COMMAND_BT_MCUMGR_REBOOT
-	case RPC_ID_BT_MCUMGR_REBOOT:
-		if (AUTHORISED(auth, BT_MCUMGR_REBOOT)) { /* GCOVR_EXCL_BR_LINE */
-			if (request->len < sizeof(struct rpc_bt_mcumgr_reboot_request)) {
-				rc = INFUSE_RPC_ERROR_MALFORMED_REQUEST;
-			} else {
-				response = rpc_command_bt_mcumgr_reboot(request);
-			}
-		}
-		break;
-#endif /* CONFIG_INFUSE_RPC_COMMAND_BT_MCUMGR_REBOOT */
-#ifdef CONFIG_INFUSE_RPC_COMMAND_GRAVITY_REFERENCE_UPDATE
-	case RPC_ID_GRAVITY_REFERENCE_UPDATE:
-		if (AUTHORISED(auth, GRAVITY_REFERENCE_UPDATE)) { /* GCOVR_EXCL_BR_LINE */
-			if (request->len < sizeof(struct rpc_gravity_reference_update_request)) {
-				rc = INFUSE_RPC_ERROR_MALFORMED_REQUEST;
-			} else {
-				response = rpc_command_gravity_reference_update(request);
-			}
-		}
-		break;
-#endif /* CONFIG_INFUSE_RPC_COMMAND_GRAVITY_REFERENCE_UPDATE */
-#ifdef CONFIG_INFUSE_RPC_COMMAND_FILESYSTEM_LS
-	case RPC_ID_FILESYSTEM_LS:
-		if (AUTHORISED(auth, FILESYSTEM_LS)) { /* GCOVR_EXCL_BR_LINE */
-			if (request->len < sizeof(struct rpc_filesystem_ls_request)) {
-				rc = INFUSE_RPC_ERROR_MALFORMED_REQUEST;
-			} else {
-				response = rpc_command_filesystem_ls(request);
-			}
-		}
-		break;
-#endif /* CONFIG_INFUSE_RPC_COMMAND_FILESYSTEM_LS */
-#ifdef CONFIG_INFUSE_RPC_COMMAND_FILESYSTEM_RM
-	case RPC_ID_FILESYSTEM_RM:
-		if (AUTHORISED(auth, FILESYSTEM_RM)) { /* GCOVR_EXCL_BR_LINE */
-			if (request->len < sizeof(struct rpc_filesystem_rm_request)) {
-				rc = INFUSE_RPC_ERROR_MALFORMED_REQUEST;
-			} else {
-				response = rpc_command_filesystem_rm(request);
-			}
-		}
-		break;
-#endif /* CONFIG_INFUSE_RPC_COMMAND_FILESYSTEM_RM */
-#ifdef CONFIG_INFUSE_RPC_COMMAND_UBX_ASSIST_NOW_ZTP_CREDS
-	case RPC_ID_UBX_ASSIST_NOW_ZTP_CREDS:
-		if (AUTHORISED(auth, UBX_ASSIST_NOW_ZTP_CREDS)) { /* GCOVR_EXCL_BR_LINE */
-			if (request->len < sizeof(struct rpc_ubx_assist_now_ztp_creds_request)) {
-				rc = INFUSE_RPC_ERROR_MALFORMED_REQUEST;
-			} else {
-				response = rpc_command_ubx_assist_now_ztp_creds(request);
-			}
-		}
-		break;
-#endif /* CONFIG_INFUSE_RPC_COMMAND_UBX_ASSIST_NOW_ZTP_CREDS */
-#ifdef CONFIG_INFUSE_RPC_COMMAND_SECURITY_STATE
-	case RPC_ID_SECURITY_STATE:
-		if (AUTHORISED(auth, SECURITY_STATE)) { /* GCOVR_EXCL_BR_LINE */
-			if (request->len < sizeof(struct rpc_security_state_request)) {
-				rc = INFUSE_RPC_ERROR_MALFORMED_REQUEST;
-			} else {
-				response = rpc_command_security_state(request);
-			}
-		}
-		break;
-#endif /* CONFIG_INFUSE_RPC_COMMAND_SECURITY_STATE */
-#ifdef CONFIG_INFUSE_RPC_COMMAND_SECURITY_KEY_UPDATE
-	case RPC_ID_SECURITY_KEY_UPDATE:
-		if (AUTHORISED(auth, SECURITY_KEY_UPDATE)) { /* GCOVR_EXCL_BR_LINE */
-			if (request->len < sizeof(struct rpc_security_key_update_request)) {
-				rc = INFUSE_RPC_ERROR_MALFORMED_REQUEST;
-			} else {
-				response = rpc_command_security_key_update(request);
-			}
-		}
-		break;
-#endif /* CONFIG_INFUSE_RPC_COMMAND_SECURITY_KEY_UPDATE */
-#ifdef CONFIG_INFUSE_RPC_COMMAND_SECURITY_PUBLIC_KEYS
-	case RPC_ID_SECURITY_PUBLIC_KEYS:
-		if (AUTHORISED(auth, SECURITY_PUBLIC_KEYS)) { /* GCOVR_EXCL_BR_LINE */
-			if (request->len < sizeof(struct rpc_security_public_keys_request)) {
-				rc = INFUSE_RPC_ERROR_MALFORMED_REQUEST;
-			} else {
-				response = rpc_command_security_public_keys(request);
-			}
-		}
-		break;
-#endif /* CONFIG_INFUSE_RPC_COMMAND_SECURITY_PUBLIC_KEYS */
-#ifdef CONFIG_INFUSE_RPC_COMMAND_DATA_SENDER
-	case RPC_ID_DATA_SENDER:
-		if (AUTHORISED(auth, DATA_SENDER)) { /* GCOVR_EXCL_BR_LINE */
-			if (request->len < sizeof(struct rpc_data_sender_request)) {
-				rc = INFUSE_RPC_ERROR_MALFORMED_REQUEST;
-			} else {
-				response = rpc_command_data_sender(request);
-			}
-		}
-		break;
-#endif /* CONFIG_INFUSE_RPC_COMMAND_DATA_SENDER */
-#ifdef CONFIG_INFUSE_RPC_COMMAND_DATA_RECEIVER
-	case RPC_ID_DATA_RECEIVER:
-		if (AUTHORISED(auth, DATA_RECEIVER)) { /* GCOVR_EXCL_BR_LINE */
-			if (request->len < sizeof(struct rpc_data_receiver_request)) {
-				rc = INFUSE_RPC_ERROR_MALFORMED_REQUEST;
-			} else {
-				response = rpc_command_data_receiver(request);
-			}
-		}
-		break;
-#endif /* CONFIG_INFUSE_RPC_COMMAND_DATA_RECEIVER */
-#ifdef CONFIG_INFUSE_RPC_COMMAND_ECHO
-	case RPC_ID_ECHO:
-		if (AUTHORISED(auth, ECHO)) { /* GCOVR_EXCL_BR_LINE */
-			if (request->len < sizeof(struct rpc_echo_request)) {
-				rc = INFUSE_RPC_ERROR_MALFORMED_REQUEST;
-			} else {
-				response = rpc_command_echo(request);
-			}
-		}
-		break;
-#endif /* CONFIG_INFUSE_RPC_COMMAND_ECHO */
-	default:
-		rc = INFUSE_RPC_ERROR_INVALID_COMMAND;
-	};
+	}
 
 respond:
 	/* Free the request */
