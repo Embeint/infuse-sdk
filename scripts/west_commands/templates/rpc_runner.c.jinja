@@ -63,13 +63,20 @@ void rpc_command_runner(struct net_buf *request)
 	struct net_buf *response = NULL;
 	enum epacket_auth auth = metadata->auth;
 	uint32_t key_id = metadata->key_identifier;
-	uint32_t request_id = req_header->request_id;
-	uint16_t command_id = req_header->command_id;
+	uint32_t request_id = 0;
+	uint16_t command_id = 0;
 	int16_t rc = INFUSE_RPC_ERROR_AUTHENTICATION_REQUIRED;
 
 	/* Reset command freed state */
 	command_freed = false;
 	response_sent = false;
+
+	if (request->len < sizeof(*req_header)) {
+		rc = INFUSE_RPC_ERROR_MALFORMED_REQUEST;
+		goto respond;
+	}
+	request_id = req_header->request_id;
+	command_id = req_header->command_id;
 
 	LOG_DBG("Handling RPC: %d Auth: %d", command_id, auth);
 
@@ -78,7 +85,11 @@ void rpc_command_runner(struct net_buf *request)
 #ifdef CONFIG_INFUSE_RPC_COMMAND_{{ command['name'] | upper }}
 	case RPC_ID_{{ command['name'] | upper }}:
 		if (AUTHORISED(auth, {{ command['name'] | upper }})) { /* GCOVR_EXCL_BR_LINE */
-			response = rpc_command_{{ command['name'] }}(request);
+			if (request->len < sizeof(struct rpc_{{ command['name'] }}_request)) {
+				rc = INFUSE_RPC_ERROR_MALFORMED_REQUEST;
+			} else {
+				response = rpc_command_{{ command['name'] }}(request);
+			}
 		}
 		break;
 #endif /* CONFIG_INFUSE_RPC_COMMAND_{{ command['name'] | upper }} */
@@ -87,6 +98,7 @@ void rpc_command_runner(struct net_buf *request)
 		rc = INFUSE_RPC_ERROR_INVALID_COMMAND;
 	};
 
+respond:
 	/* Free the request */
 	if (!command_freed) {
 		net_buf_unref(request);
