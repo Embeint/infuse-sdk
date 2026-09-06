@@ -35,8 +35,11 @@ settings = {
     "editor.formatOnSave": True,
     "editor.defaultFormatter": "ms-vscode.cpptools",
     "C_Cpp.clang_format_style": "file:${workspaceFolder}/infuse-sdk/.clang-format",
-    "C_Cpp.files.exclude": {},
+    "C_Cpp.files.exclude": {
+        "**/twister-out*/**": True,
+    },
     "search.exclude": {
+        "**/twister-out*/**": True,
         "**/*.a": True,
         "**/*.o": True,
         "**/*.obj": True,
