@@ -245,7 +245,11 @@ class vscode(WestCommand):
     ):
         c_cpp_properties["configurations"][0]["compilerPath"] = cache.get("CMAKE_C_COMPILER")
         if include_path:
-            c_cpp_properties["configurations"][0]["includePath"] = [str(build_dir / "zephyr" / "include" / "generated")]
+            c_cpp_properties["configurations"][0]["includePath"] = [
+                str(build_dir / "zephyr" / "include" / "generated"),
+                f"{cache.get('ZEPHYR_BASE')}/include",
+                f"{cache.get('INFUSE_DIR')}/include",
+            ]
 
     def _tfm_build(self, build_dir: pathlib.Path, _cache: zcmake.CMakeCache):
         launch["configurations"][0]["executable"] = str(build_dir / "bin" / "tfm_s.elf")
@@ -470,9 +474,9 @@ class vscode(WestCommand):
             # Limit HAL file parsing based on the vendor to improve responsiveness
             exclude = {}
             if args.vendor == "nrf":
-                exclude["${workspaceFolder}/modules/hal/stm32/**"] = True
+                exclude[f"{args.workspace}/modules/hal/stm32/**"] = True
             elif args.vendor == "stm":
-                exclude["${workspaceFolder}/modules/hal/nordic/**"] = True
+                exclude[f"{args.workspace}/modules/hal/nordic/**"] = True
             settings["C_Cpp.files.exclude"] = exclude
 
             with (vscode_folder / "settings.json").open("w") as f:
