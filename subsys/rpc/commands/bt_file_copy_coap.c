@@ -6,6 +6,8 @@
  * SPDX-License-Identifier: FSL-1.1-ALv2
  */
 
+#include <string.h>
+
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
 #include <zephyr/bluetooth/conn.h>
@@ -22,6 +24,13 @@
 
 LOG_MODULE_DECLARE(rpc_server, CONFIG_INFUSE_RPC_LOG_LEVEL);
 
+static bool coap_request_strings_valid(const char *server_address, size_t server_address_len,
+				       const char *resource, size_t resource_len)
+{
+	return (memchr(server_address, '\0', server_address_len) != NULL) &&
+	       (memchr(resource, '\0', resource_len) != NULL);
+}
+
 struct net_buf *rpc_command_bt_file_copy_coap(struct net_buf *request)
 {
 	struct epacket_rx_metadata *req_meta = net_buf_user_data(request);
@@ -29,7 +38,14 @@ struct net_buf *rpc_command_bt_file_copy_coap(struct net_buf *request)
 	struct rpc_bt_file_copy_coap_request *req = (void *)request->data;
 	struct rpc_bt_file_copy_coap_response rsp = {0};
 	int downloaded;
+	size_t resource_len = RPC_REQUEST_VAR_LEN(request, struct rpc_bt_file_copy_coap_request);
 	int rc;
+
+	if (!coap_request_strings_valid(req->server_address, sizeof(req->server_address),
+					req->resource, resource_len)) {
+		return rpc_response_simple_if(rsp_interface, INFUSE_RPC_ERROR_MALFORMED_REQUEST,
+					      &rsp, sizeof(rsp));
+	}
 
 	/* Setup arguments for sub-commands */
 	struct rpc_coap_download_v3_request coap_req = {

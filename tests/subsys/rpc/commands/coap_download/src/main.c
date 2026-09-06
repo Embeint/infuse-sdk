@@ -214,6 +214,55 @@ static void expect_coap_download_response(uint32_t request_id, int16_t rc, uint3
 	net_buf_unref(rsp);
 }
 
+static void send_download_v3_raw(uint32_t request_id, bool terminate_server,
+				 bool terminate_resource)
+{
+	const struct device *epacket_dummy = DEVICE_DT_GET(DT_NODELABEL(epacket_dummy));
+	struct epacket_dummy_frame header = {
+		.type = INFUSE_RPC_CMD,
+		.auth = EPACKET_AUTH_DEVICE,
+		.flags = 0x0000,
+	};
+	struct rpc_coap_download_request_v3_send params = {
+		.core = {
+			.header =
+				{
+					.request_id = request_id,
+					.command_id = RPC_ID_COAP_DOWNLOAD_V3,
+				},
+			.server_port = 5684,
+			.action = RPC_ENUM_FILE_ACTION_DISCARD,
+			.resource_crc = UINT32_MAX,
+			.resource_len = UINT32_MAX,
+		}};
+	size_t resource_len;
+
+	if (terminate_server) {
+		strcpy(params.core.server_address, "coap.dev.infuse-iot.com");
+	} else {
+		memset(params.core.server_address, 's', sizeof(params.core.server_address));
+	}
+
+	if (terminate_resource) {
+		strcpy(params.resource, "file/small_file");
+		resource_len = strlen(params.resource) + 1;
+	} else {
+		memset(params.resource, 'r', sizeof(params.resource));
+		resource_len = sizeof(params.resource);
+	}
+
+	epacket_dummy_receive(epacket_dummy, &header, &params, sizeof(params.core) + resource_len);
+}
+
+ZTEST(rpc_command_coap_download, test_download_invalid_strings)
+{
+	send_download_v3_raw(0x5000, false, true);
+	expect_coap_download_response(0x5000, INFUSE_RPC_ERROR_MALFORMED_REQUEST, 0, 0);
+
+	send_download_v3_raw(0x5001, true, false);
+	expect_coap_download_response(0x5001, INFUSE_RPC_ERROR_MALFORMED_REQUEST, 0, 0);
+}
+
 ZTEST(rpc_command_coap_download, test_download_invalid)
 {
 	/* Bad actions */
