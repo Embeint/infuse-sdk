@@ -96,13 +96,18 @@ ZTEST(rpc_command_security_public_keys, test_security_public_keys)
 	zassert_equal(RPC_ENUM_KEY_ID_CLOUD_PUBLIC_KEY, response->public_keys[0].id);
 	net_buf_unref(rsp);
 
+	/* Skip past available keys with missing secondary */
+	send_security_public_keys_command(0x102, 2);
+	rsp = expect_security_public_keys_response(0x102, 2, 0);
+	net_buf_unref(rsp);
+
 	/* Add the secondary key */
 	sys_rand_get(remote.public_key, sizeof(remote.public_key));
 	zassert_equal(sizeof(remote), KV_STORE_WRITE(KV_KEY_SECONDARY_REMOTE_PUBLIC_KEY, &remote));
 
 	/* All 3 returned */
-	send_security_public_keys_command(0x102, 0);
-	rsp = expect_security_public_keys_response(0x102, 3, 3);
+	send_security_public_keys_command(0x103, 0);
+	rsp = expect_security_public_keys_response(0x103, 3, 3);
 	response = (void *)rsp->data;
 	zassert_equal(RPC_ENUM_KEY_ID_DEVICE_PUBLIC_KEY, response->public_keys[0].id);
 	zassert_equal(RPC_ENUM_KEY_ID_CLOUD_PUBLIC_KEY, response->public_keys[1].id);
@@ -113,16 +118,16 @@ ZTEST(rpc_command_security_public_keys, test_security_public_keys)
 	epacket_dummy_set_max_packet(100);
 
 	/* First 2 returned */
-	send_security_public_keys_command(0x103, 0);
-	rsp = expect_security_public_keys_response(0x103, 3, 2);
+	send_security_public_keys_command(0x104, 0);
+	rsp = expect_security_public_keys_response(0x104, 3, 2);
 	response = (void *)rsp->data;
 	zassert_equal(RPC_ENUM_KEY_ID_DEVICE_PUBLIC_KEY, response->public_keys[0].id);
 	zassert_equal(RPC_ENUM_KEY_ID_CLOUD_PUBLIC_KEY, response->public_keys[1].id);
 	net_buf_unref(rsp);
 
 	/* Query the missing one */
-	send_security_public_keys_command(0x103, 2);
-	rsp = expect_security_public_keys_response(0x103, 3, 1);
+	send_security_public_keys_command(0x105, 2);
+	rsp = expect_security_public_keys_response(0x105, 3, 1);
 	response = (void *)rsp->data;
 	zassert_equal(RPC_ENUM_KEY_ID_SECONDARY_REMOTE_PUBLIC_KEY, response->public_keys[0].id);
 	net_buf_unref(rsp);

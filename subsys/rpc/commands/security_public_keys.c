@@ -50,26 +50,31 @@ struct net_buf *rpc_command_security_public_keys(struct net_buf *request)
 	struct rpc_security_public_keys_response *rsp_p;
 	struct rpc_struct_public_key_info_256bit *key;
 	struct net_buf *rsp_buf;
+	uint8_t key_buf[32];
+	uint8_t key_idx = 0;
 
 	/* Allocate response */
 	rsp_buf = rpc_response_simple_req(request, 0, &rsp_header, sizeof(rsp_header));
 	rsp_p = (void *)rsp_buf->data;
-	rsp_p->keys_total = ARRAY_SIZE(public_key_list);
 
 	/* Iterate over public keys */
 	for (int i = 0; i < ARRAY_SIZE(public_key_list); i++) {
-		if ((i < req->skip) || (net_buf_tailroom(rsp_buf) < sizeof(*key))) {
+		if (public_key_list[i].retrieve(key_buf) != 0) {
 			continue;
 		}
-		key = net_buf_add(rsp_buf, sizeof(*key));
-		if (public_key_list[i].retrieve(key->key) == 0) {
-			key->id = public_key_list[i].id;
-			rsp_p->keys_included += 1;
-		} else {
-			/* Query failed, remove from output */
-			net_buf_remove_mem(rsp_buf, sizeof(*key));
-			rsp_p->keys_total -= 1;
+		rsp_p->keys_total += 1;
+
+		if (key_idx++ < req->skip) {
+			continue;
 		}
+		if (net_buf_tailroom(rsp_buf) < sizeof(*key)) {
+			continue;
+		}
+
+		key = net_buf_add(rsp_buf, sizeof(*key));
+		key->id = public_key_list[i].id;
+		memcpy(key->key, key_buf, sizeof(key->key));
+		rsp_p->keys_included += 1;
 	}
 
 	/* Return the response */
