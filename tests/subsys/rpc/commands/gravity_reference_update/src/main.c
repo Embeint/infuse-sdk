@@ -205,7 +205,7 @@ static void zbus_before(void *fixture)
 	base.header.accelerometer.offset = 0;
 	base.header.accelerometer.num = ARRAY_SIZE(base.samples);
 	base.header.accelerometer.buffer_period_ticks =
-		ARRAY_SIZE(base.samples) * k_us_to_ticks_near32(1000);
+		(ARRAY_SIZE(base.samples) - 1) * k_us_to_ticks_near32(1000);
 
 	/* Reset data to base */
 	zbus_chan_pub(CHAN, &base, K_FOREVER);
