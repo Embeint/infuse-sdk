@@ -169,4 +169,35 @@ ZTEST(rpc_command_infuse_states_query, test_basic)
 	net_buf_unref(rsp);
 }
 
+ZTEST(rpc_command_infuse_states_query, test_offset_no_tailroom)
+{
+	struct rpc_infuse_states_query_response *response;
+	struct net_buf *rsp;
+	size_t trailing;
+
+	infuse_state_clear(INFUSE_STATE_TIME_KNOWN);
+	infuse_state_clear(INFUSE_STATE_DEVICE_STATIONARY);
+	for (int i = 0; i < 10; i++) {
+		infuse_state_clear(INFUSE_STATES_APP_START + i);
+	}
+
+	infuse_state_set(INFUSE_STATE_TIME_KNOWN);
+	infuse_state_set(INFUSE_STATE_DEVICE_STATIONARY);
+	for (int i = 0; i < 10; i++) {
+		infuse_state_set(INFUSE_STATES_APP_START + i);
+	}
+
+	/* No state entries fit, but skipped entries should still be consumed */
+	epacket_dummy_set_max_packet(
+		EPACKET_INTERFACE_PACKET_OVERHEAD(DT_NODELABEL(epacket_dummy)) + sizeof(*response));
+
+	send_infuse_states_query_command(8, 2);
+	rsp = expect_infuse_states_query_response(8);
+	response = (void *)rsp->data;
+	trailing = rsp->len - sizeof(*response);
+	zassert_equal(0, trailing);
+	zassert_equal(12 - 2, response->remaining);
+	net_buf_unref(rsp);
+}
+
 ZTEST_SUITE(rpc_command_infuse_states_query, NULL, NULL, NULL, NULL, NULL);

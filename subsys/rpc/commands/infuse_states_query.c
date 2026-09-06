@@ -34,20 +34,23 @@ struct net_buf *rpc_command_infuse_states_query(struct net_buf *request)
 	/* Loop over state array */
 	for (int i = 0; i < ARRAY_SIZE(temp); i++) {
 		while (temp[i]) {
+			/* Find the next state set in the buffer */
+			index = __builtin_ffs(temp[i]) - 1;
+
+			if (req->offset) {
+				/* Skip leading states */
+				temp[i] ^= (1 << index);
+				req->offset -= 1;
+				continue;
+			}
+
 			/* Validate there is space for more states */
 			if (net_buf_tailroom(response) < sizeof(state)) {
 				goto done;
 			}
-			/* Find the next state set in the buffer */
-			index = __builtin_ffs(temp[i]) - 1;
+
 			/* Clear the state from the next iteration */
 			temp[i] ^= (1 << index);
-
-			if (req->offset) {
-				/* Skip leading states */
-				req->offset -= 1;
-				continue;
-			}
 
 			state.state = (i * 8 * sizeof(atomic_t)) + index;
 			timeout = infuse_state_get_timeout(state.state);
