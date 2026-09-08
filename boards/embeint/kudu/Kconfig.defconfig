@@ -8,16 +8,6 @@ configdefault ROM_START_OFFSET
 
 if NETWORKING
 
-# Constant latency to improve UART stability.
-# According to the datasheet this increases idle power consumption by 530 uA.
-# This is negligible compared to the consumption of the LTE CAT1 modem.
-configdefault SOC_NRF_FORCE_CONSTLAT
-	default y
-configdefault NRFX_POWER
-	default y
-configdefault NRF_SYS_EVENT
-	default y
-
 # Pull-up resistor is missing for SIMDET to work
 choice MODEM_CELLULAR_SIM_DETECTION
 	default MODEM_CELLULAR_SIM_DETECTION_FORCE_PRESENT
