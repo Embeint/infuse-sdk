@@ -6,11 +6,11 @@
 / {
 	chosen {
 		zephyr,bt-hci = &bt_hci_sdc;
-		watchdog0 = &wdt31;
 	};
 
 	aliases {
 		die-temp0 = &temp;
+		watchdog0 = &wdt31;
 	};
 
 	/* End of application SRAM (not in shared SRAM) */
