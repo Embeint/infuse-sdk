@@ -241,7 +241,9 @@
             "values": [
                 {"name": "FLASH_ONBOARD", "value": 1, "description": "Onboard flash logger"},
                 {"name": "FLASH_REMOVABLE", "value": 2, "description": "Removable flash logger (SD)"},
-                {"name": "UDP", "value": 3, "description": "Networked UDP logger"}
+                {"name": "UDP", "value": 3, "description": "Networked UDP logger"},
+                {"name": "SERIAL", "value": 4, "description": "Serial logger"},
+                {"name": "BT_PERIPHERAL", "value": 5, "description": "BT GATT peripheral logger"}
             ]
         },
         "rpc_enum_tdf_data_logger": {
