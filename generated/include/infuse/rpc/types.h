@@ -138,6 +138,10 @@ enum rpc_enum_data_logger {
 	RPC_ENUM_DATA_LOGGER_FLASH_REMOVABLE = 2,
 	/** Networked UDP logger */
 	RPC_ENUM_DATA_LOGGER_UDP = 3,
+	/** Serial logger */
+	RPC_ENUM_DATA_LOGGER_SERIAL = 4,
+	/** BT GATT peripheral logger */
+	RPC_ENUM_DATA_LOGGER_BT_PERIPHERAL = 5,
 };
 
 /** TDF data Logger identifier */

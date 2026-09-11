@@ -42,6 +42,17 @@ struct net_buf *rpc_command_annotate(struct net_buf *request)
 		logger = DEVICE_DT_GET(DT_NODELABEL(tdf_logger_udp));
 		break;
 #endif /* CONFIG_DATA_LOGGER_EXFAT */
+#if defined(CONFIG_DATA_LOGGER_EPACKET) && DT_NODE_HAS_STATUS(DT_NODELABEL(tdf_logger_serial), okay)
+	case RPC_ENUM_DATA_LOGGER_SERIAL:
+		logger = DEVICE_DT_GET(DT_NODELABEL(tdf_logger_serial));
+		break;
+#endif /* CONFIG_DATA_LOGGER_EXFAT */
+#if defined(CONFIG_DATA_LOGGER_EPACKET) &&                                                         \
+	DT_NODE_HAS_STATUS(DT_NODELABEL(tdf_logger_bt_peripheral), okay)
+	case RPC_ENUM_DATA_LOGGER_BT_PERIPHERAL:
+		logger = DEVICE_DT_GET(DT_NODELABEL(tdf_logger_bt_peripheral));
+		break;
+#endif /* CONFIG_DATA_LOGGER_EXFAT */
 	default:
 		return rpc_response_simple_req(request, INFUSE_RPC_ERROR_DEVICE_NOT_FOUND, &rsp,
 					       sizeof(rsp));
