@@ -857,6 +857,20 @@
                 {"name": "recv_crc", "type": "uint32_t", "description": "CRC of bytes received"}
             ]
         },
+        "45": {
+            "name": "nrf93m1_fota",
+            "description": "Perform a firmware update of the nRF93M1 modem",
+            "depends_on": "DT_HAS_NORDIC_NRF93M1_ENABLED",
+            "default": "y if INFUSE_SDK",
+            "default_auth": "EPACKET_AUTH_DEVICE",
+            "request_params": [
+                {"name": "url", "type": "char", "num": 0, "description": "HTTP/HTTPS URL"}
+            ],
+            "response_params": [
+                {"name": "cause", "type": "uint8_t", "description": "%HTTPFOTAD error cause"},
+                {"name": "detail", "type": "int32_t", "description": "%HTTPFOTAD error detail"}
+            ]
+        },
         "50": {
             "name": "bt_connect_infuse",
             "description": "Connect to an Infuse-IoT Bluetooth device",

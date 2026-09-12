@@ -414,6 +414,18 @@ config INFUSE_RPC_COMMAND_FILE_WRITE_REQUIRED_AUTH
 	depends on INFUSE_RPC_COMMAND_FILE_WRITE
 	default 1
 
+config INFUSE_RPC_COMMAND_NRF93M1_FOTA
+	bool "Enable RPC nrf93m1_fota"
+	depends on DT_HAS_NORDIC_NRF93M1_ENABLED
+	default y if INFUSE_SDK
+	help
+	  Perform a firmware update of the nRF93M1 modem
+
+config INFUSE_RPC_COMMAND_NRF93M1_FOTA_REQUIRED_AUTH
+	int "Required authorisation level to run nrf93m1_fota"
+	depends on INFUSE_RPC_COMMAND_NRF93M1_FOTA
+	default 2
+
 config INFUSE_RPC_COMMAND_BT_CONNECT_INFUSE
 	bool "Enable RPC bt_connect_infuse"
 	depends on EPACKET_INTERFACE_BT_CENTRAL

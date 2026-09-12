@@ -563,6 +563,8 @@ enum rpc_builtin_id {
 	RPC_ID_SHIPPING_MODE = 43,
 	/** Write a file to the device */
 	RPC_ID_FILE_WRITE = 44,
+	/** Perform a firmware update of the nRF93M1 modem */
+	RPC_ID_NRF93M1_FOTA = 45,
 	/** Connect to an Infuse-IoT Bluetooth device */
 	RPC_ID_BT_CONNECT_INFUSE = 50,
 	/** Disconnect from a Bluetooth device */
@@ -1259,6 +1261,21 @@ struct rpc_file_write_response {
 	uint32_t recv_len;
 	/** CRC of bytes received */
 	uint32_t recv_crc;
+} __packed;
+
+/** Perform a firmware update of the nRF93M1 modem */
+struct rpc_nrf93m1_fota_request {
+	struct infuse_rpc_req_header header;
+	/** HTTP/HTTPS URL */
+	char url[];
+} __packed;
+
+struct rpc_nrf93m1_fota_response {
+	struct infuse_rpc_rsp_header header;
+	/** %HTTPFOTAD error cause */
+	uint8_t cause;
+	/** %HTTPFOTAD error detail */
+	int32_t detail;
 } __packed;
 
 /** Connect to an Infuse-IoT Bluetooth device */
