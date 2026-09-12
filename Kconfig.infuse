@@ -34,6 +34,7 @@ rsource "kconfig/Kconfig.defaults.nrf"
 rsource "kconfig/Kconfig.defaults.stm32"
 rsource "kconfig/Kconfig.defaults.sensor"
 rsource "kconfig/Kconfig.defaults.log"
+rsource "kconfig/Kconfig.defaults.memfault"
 
 endif # INFUSE_SDK
 
