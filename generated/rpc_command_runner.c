@@ -312,6 +312,14 @@ static const struct command_impl command_impls[] = {
 		.request_len = sizeof(struct rpc_file_write_request),
 	},
 #endif /* CONFIG_INFUSE_RPC_COMMAND_FILE_WRITE */
+#ifdef CONFIG_INFUSE_RPC_COMMAND_NRF93M1_FOTA
+	{
+		.handler = rpc_command_nrf93m1_fota,
+		.command_id = RPC_ID_NRF93M1_FOTA,
+		.required_auth = CONFIG_INFUSE_RPC_COMMAND_NRF93M1_FOTA_REQUIRED_AUTH,
+		.request_len = sizeof(struct rpc_nrf93m1_fota_request),
+	},
+#endif /* CONFIG_INFUSE_RPC_COMMAND_NRF93M1_FOTA */
 #ifdef CONFIG_INFUSE_RPC_COMMAND_BT_CONNECT_INFUSE
 	{
 		.handler = rpc_command_bt_connect_infuse,
