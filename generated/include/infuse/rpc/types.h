@@ -128,6 +128,8 @@ enum rpc_enum_infuse_bt_characteristic {
 	RPC_ENUM_INFUSE_BT_CHARACTERISTIC_DATA = 2,
 	/** Serial log characteristic */
 	RPC_ENUM_INFUSE_BT_CHARACTERISTIC_LOGGING = 4,
+	/** Cloud uplink characteristic */
+	RPC_ENUM_INFUSE_BT_CHARACTERISTIC_CLOUD_UPLINK = 8,
 };
 
 /** Data Logger identifier */

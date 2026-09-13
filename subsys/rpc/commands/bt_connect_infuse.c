@@ -36,6 +36,8 @@ struct net_buf *rpc_command_bt_connect_infuse(struct net_buf *request)
 		.subscribe_commands = req->subscribe & RPC_ENUM_INFUSE_BT_CHARACTERISTIC_COMMAND,
 		.subscribe_data = req->subscribe & RPC_ENUM_INFUSE_BT_CHARACTERISTIC_DATA,
 		.subscribe_logging = req->subscribe & RPC_ENUM_INFUSE_BT_CHARACTERISTIC_LOGGING,
+		.subscribe_cloud_uplink =
+			req->subscribe & RPC_ENUM_INFUSE_BT_CHARACTERISTIC_CLOUD_UPLINK,
 	};
 	struct epacket_read_response security_info;
 	struct bt_conn *conn;
