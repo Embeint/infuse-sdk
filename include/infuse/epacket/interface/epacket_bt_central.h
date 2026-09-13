@@ -55,6 +55,8 @@ struct epacket_bt_gatt_connect_params {
 	bool subscribe_data;
 	/* Subscribe to the logging characteristic */
 	bool subscribe_logging;
+	/* Subscribe to the cloud uplink characteristic */
+	bool subscribe_cloud_uplink;
 };
 
 /**

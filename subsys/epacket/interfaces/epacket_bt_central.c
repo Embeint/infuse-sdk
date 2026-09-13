@@ -34,16 +34,21 @@ enum {
 	CHAR_COMMAND = 0,
 	CHAR_DATA = 1,
 	CHAR_LOGGING = 2,
+	CHAR_CLOUD_UPLINK = 3,
 	CHAR_NUM,
 };
 
 static const struct bt_uuid_128 command_uuid = BT_UUID_INIT_128(INFUSE_SERVICE_UUID_COMMAND_VAL);
 static const struct bt_uuid_128 data_uuid = BT_UUID_INIT_128(INFUSE_SERVICE_UUID_DATA_VAL);
 static const struct bt_uuid_128 logging_uuid = BT_UUID_INIT_128(INFUSE_SERVICE_UUID_LOGGING_VAL);
+static const struct bt_uuid_128 cloud_uplink_uuid =
+	BT_UUID_INIT_128(INFUSE_SERVICE_UUID_CLOUD_UPLINK_VAL);
 static const struct bt_uuid *infuse_iot_characteristics[CHAR_NUM] = {
 	[CHAR_COMMAND] = (const void *)&command_uuid,
 	[CHAR_DATA] = (const void *)&data_uuid,
 	[CHAR_LOGGING] = (const void *)&logging_uuid,
+	[CHAR_CLOUD_UPLINK] = (const void *)&cloud_uplink_uuid,
+
 };
 
 BT_CONN_AUTO_CACHE(infuse_iot_remote_cache, CHAR_NUM);
@@ -378,6 +383,11 @@ conn_created:
 	if (rc == 0 && (s->remote_info[CHAR_LOGGING].ccc_handle != 0)) {
 		rc = characteristic_subscribe(conn, &s->remote_info[CHAR_LOGGING],
 					      &s->subs[CHAR_LOGGING], params->subscribe_logging);
+	}
+	if (rc == 0 && (s->remote_info[CHAR_CLOUD_UPLINK].ccc_handle != 0)) {
+		rc = characteristic_subscribe(conn, &s->remote_info[CHAR_CLOUD_UPLINK],
+					      &s->subs[CHAR_CLOUD_UPLINK],
+					      params->subscribe_cloud_uplink);
 	}
 cleanup:
 	if (rc == 0) {
