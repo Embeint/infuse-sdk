@@ -32,7 +32,7 @@
 #include "memfault/core/trace_event.h"
 
 static char infuse_id_str[17];
-static char software_version[17];
+static char software_version[24];
 
 #if DT_NODE_EXISTS(DT_CHOSEN(infuse_memfault_epacket_dump))
 #define DUMP_INTERFACE DEVICE_DT_GET(DT_CHOSEN(infuse_memfault_epacket_dump))
