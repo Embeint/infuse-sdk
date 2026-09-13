@@ -119,6 +119,38 @@ ZTEST(epacket_serial, test_reconstructor_zero_length)
 	}
 }
 
+ZTEST(epacket_serial, test_reconstructor_reset)
+{
+	struct epacket_serial_frame_header header = {
+		.sync = {EPACKET_SERIAL_SYNC_A, EPACKET_SERIAL_SYNC_B},
+		.len = 60000,
+	};
+	uint8_t buffer[64];
+	struct net_buf *out;
+
+	for (int i = 0; i < sizeof(buffer); i++) {
+		buffer[i] = i + 1;
+	}
+
+	/* Feed in bad headers that would normally break the reconstructor, resetting each time */
+	for (int i = 0; i < 5; i++) {
+		epacket_serial_reconstruct(NULL, (void *)&header, sizeof(header), receive_handler);
+		epacket_serial_reconstruct(NULL, (void *)buffer, 10, receive_handler);
+		epacket_serial_reconstruct_reset(NULL);
+	}
+	zassert_is_null(k_fifo_get(&packet_queue, K_MSEC(100)));
+
+	/* Feed in a good packet */
+	header.len = 10;
+	epacket_serial_reconstruct(NULL, (void *)&header, sizeof(header), receive_handler);
+	epacket_serial_reconstruct(NULL, buffer, 10, receive_handler);
+	out = k_fifo_get(&packet_queue, K_MSEC(100));
+	zassert_not_null(out);
+	zassert_equal(header.len, out->len);
+	zassert_mem_equal(buffer, out->data, out->len);
+	net_buf_unref(out);
+}
+
 ZTEST(epacket_serial, test_reconstructor_key_req)
 {
 	struct epacket_serial_key_req {
