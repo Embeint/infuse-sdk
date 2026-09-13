@@ -32,6 +32,10 @@
 #define TOTAL_OVERHEAD  (ATT_HEADER_SIZE + PACKET_OVERHEAD)
 
 void epacket_bt_peripheral_logging_ccc_cfg_update(const struct bt_gatt_attr *attr, uint16_t value);
+#ifdef CONFIG_EPACKET_INTERFACE_BT_PERIPHERAL_CLOUD_UPLINK
+static void epacket_bt_peripheral_cloud_uplink_ccc_cfg_update(const struct bt_gatt_attr *attr,
+							      uint16_t value);
+#endif /* CONFIG_EPACKET_INTERFACE_BT_PERIPHERAL_CLOUD_UPLINK */
 
 static ssize_t read_both(struct bt_conn *conn, const struct bt_gatt_attr *attr, void *buf,
 			 uint16_t len, uint16_t offset);
@@ -67,15 +71,65 @@ BT_GATT_SERVICE_DEFINE(
 	BT_GATT_CCC(epacket_bt_peripheral_logging_ccc_cfg_update,
 		    BT_GATT_PERM_READ | BT_GATT_PERM_WRITE),
 #endif /* CONFIG_LOG_BACKEND_EPACKET_BT */
+#ifdef CONFIG_EPACKET_INTERFACE_BT_PERIPHERAL_CLOUD_UPLINK
+	BT_GATT_CHARACTERISTIC(INFUSE_SERVICE_UUID_CLOUD_UPLINK, BT_GATT_CHRC_NOTIFY,
+			       BT_GATT_PERM_READ, NULL, NULL, NULL),
+	BT_GATT_CCC(epacket_bt_peripheral_cloud_uplink_ccc_cfg_update,
+		    BT_GATT_PERM_READ | BT_GATT_PERM_WRITE),
+#endif /* CONFIG_EPACKET_INTERFACE_BT_PERIPHERAL_CLOUD_UPLINK */
 );
 
-#define CHRC_COMMAND 2
-#define CCC_COMMAND  3
-#define CHRC_DATA    5
-#define CCC_DATA     6
-#define CHRC_LOGGING 8
+#define CHRC_COMMAND      2
+#define CCC_COMMAND       3
+#define CHRC_DATA         5
+#define CCC_DATA          6
+#define CHRC_LOGGING      8
+#define CHRC_CLOUD_UPLINK (IS_ENABLED(CONFIG_LOG_BACKEND_EPACKET_BT) ? 11 : 8)
 
 LOG_MODULE_REGISTER(epacket_bt_peripheral, CONFIG_EPACKET_BT_PERIPHERAL_LOG_LEVEL);
+
+#ifdef CONFIG_EPACKET_INTERFACE_BT_PERIPHERAL_CLOUD_UPLINK
+
+static void epacket_bt_peripheral_cloud_uplink_ccc_cfg_update(const struct bt_gatt_attr *attr,
+							      uint16_t value)
+{
+	bool enabled = value == BT_GATT_CCC_NOTIFY;
+
+	ARG_UNUSED(attr);
+
+	LOG_DBG("Cloud uplink %s", enabled ? "enabled" : "disabled");
+}
+
+bool epacket_bt_peripheral_cloud_uplink_subscribed(const struct device *dev, struct bt_conn *conn)
+{
+	const struct bt_gatt_attr *attr = &infuse_svc.attrs[CHRC_CLOUD_UPLINK];
+
+	ARG_UNUSED(dev);
+
+	return bt_gatt_is_subscribed(conn, attr, BT_GATT_CCC_NOTIFY);
+}
+
+int epacket_bt_peripheral_cloud_uplink_send(const struct device *dev, struct bt_conn *conn,
+					    struct net_buf *buf)
+{
+	const struct bt_gatt_attr *attr = &infuse_svc.attrs[CHRC_CLOUD_UPLINK];
+	int rc;
+
+	/* Encrypt the payload */
+	if (epacket_bt_gatt_encrypt(buf) < 0) {
+		LOG_WRN("Failed to encrypt");
+		epacket_notify_tx_result(dev, buf, -EIO);
+		net_buf_unref(buf);
+		return -EIO;
+	}
+
+	rc = bt_gatt_notify(conn, attr, buf->data, buf->len);
+	epacket_notify_tx_result(dev, buf, rc);
+	net_buf_unref(buf);
+	return rc;
+}
+
+#endif /* CONFIG_EPACKET_INTERFACE_BT_PERIPHERAL_CLOUD_UPLINK */
 
 static void conn_mtu_query(struct bt_conn *conn, void *user_data)
 {
@@ -316,6 +370,10 @@ static int epacket_bt_peripheral_init(const struct device *dev)
 	__ASSERT(infuse_svc.attrs[CHRC_LOGGING].uuid->type == BT_UUID_TYPE_128,
 		 "Characteristic order changed");
 #endif /* CONFIG_LOG_BACKEND_EPACKET_BT */
+#ifdef CONFIG_EPACKET_INTERFACE_BT_PERIPHERAL_CLOUD_UPLINK
+	__ASSERT(infuse_svc.attrs[CHRC_CLOUD_UPLINK].uuid->type == BT_UUID_TYPE_128,
+		 "Characteristic order changed");
+#endif /* CONFIG_EPACKET_INTERFACE_BT_PERIPHERAL_CLOUD_UPLINK */
 
 	epacket_interface_common_init(dev);
 	return 0;
