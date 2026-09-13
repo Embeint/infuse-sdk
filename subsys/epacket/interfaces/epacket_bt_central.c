@@ -184,21 +184,33 @@ uint8_t epacket_bt_gatt_notify_recv_func(struct bt_conn *conn,
 	return BT_GATT_ITER_CONTINUE;
 }
 
-/* For now don't worry about waiting for the subscribe result.
- * We can assume that the subscription will take effect before we can use the connection.
- * If this is not the case, we can add blocking later.
- */
+static void characteristic_subscribe_result(struct bt_conn *conn, uint8_t err,
+					    struct bt_gatt_subscribe_params *params)
+{
+	uint8_t idx = bt_conn_index(conn);
+
+	k_poll_signal_raise(&infuse_conn[idx].sig, err);
+}
+
 static int characteristic_subscribe(struct bt_conn *conn,
 				    struct bt_gatt_remote_char *characteristic,
-				    struct bt_gatt_subscribe_params *params, int subscribe)
+				    struct bt_gatt_subscribe_params *params, int subscribe,
+				    bool wait)
 {
+	struct infuse_connection_state *s = &infuse_conn[bt_conn_index(conn)];
+	struct k_poll_event poll_event;
+	unsigned int signaled;
 	int rc;
 
 	params->value_handle = characteristic->value_handle;
 	params->ccc_handle = characteristic->ccc_handle;
 	params->value = subscribe ? BT_GATT_CCC_NOTIFY : 0;
-	params->subscribe = NULL;
+	params->subscribe = wait ? characteristic_subscribe_result : NULL;
 	params->notify = epacket_bt_gatt_notify_recv_func;
+
+	if (wait) {
+		k_poll_signal_reset(&s->sig);
+	}
 
 	if (subscribe) {
 		rc = bt_gatt_subscribe(conn, params);
@@ -211,6 +223,20 @@ static int characteristic_subscribe(struct bt_conn *conn,
 			rc = 0;
 		}
 	}
+	if (rc != 0 || !wait) {
+		return rc;
+	}
+
+	k_poll_signal_check(&s->sig, &signaled, &rc);
+	if ((signaled == 0) &&
+	    atomic_test_bit(params->flags, BT_GATT_SUBSCRIBE_FLAG_WRITE_PENDING)) {
+		poll_event = (struct k_poll_event)K_POLL_EVENT_INITIALIZER(
+			K_POLL_TYPE_SIGNAL, K_POLL_MODE_NOTIFY_ONLY, &s->sig);
+		k_poll(&poll_event, 1, K_FOREVER);
+		k_poll_signal_check(&s->sig, &signaled, &rc);
+	}
+	__ASSERT_NO_MSG(signaled != 0 ||
+			!atomic_test_bit(params->flags, BT_GATT_SUBSCRIBE_FLAG_WRITE_PENDING));
 	return rc;
 }
 
@@ -375,19 +401,20 @@ conn_created:
 
 	/* Setup requested subscriptions */
 	rc = characteristic_subscribe(conn, &s->remote_info[CHAR_COMMAND], &s->subs[CHAR_COMMAND],
-				      params->subscribe_commands);
+				      params->subscribe_commands, params->wait_subscriptions);
 	if (rc == 0) {
 		rc = characteristic_subscribe(conn, &s->remote_info[CHAR_DATA], &s->subs[CHAR_DATA],
-					      params->subscribe_data);
+					      params->subscribe_data, params->wait_subscriptions);
 	}
 	if (rc == 0 && (s->remote_info[CHAR_LOGGING].ccc_handle != 0)) {
 		rc = characteristic_subscribe(conn, &s->remote_info[CHAR_LOGGING],
-					      &s->subs[CHAR_LOGGING], params->subscribe_logging);
+					      &s->subs[CHAR_LOGGING], params->subscribe_logging,
+					      params->wait_subscriptions);
 	}
 	if (rc == 0 && (s->remote_info[CHAR_CLOUD_UPLINK].ccc_handle != 0)) {
-		rc = characteristic_subscribe(conn, &s->remote_info[CHAR_CLOUD_UPLINK],
-					      &s->subs[CHAR_CLOUD_UPLINK],
-					      params->subscribe_cloud_uplink);
+		rc = characteristic_subscribe(
+			conn, &s->remote_info[CHAR_CLOUD_UPLINK], &s->subs[CHAR_CLOUD_UPLINK],
+			params->subscribe_cloud_uplink, params->wait_subscriptions);
 	}
 cleanup:
 	if (rc == 0) {
