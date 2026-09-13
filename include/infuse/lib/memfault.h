@@ -38,6 +38,37 @@ struct memfault_chunk_header {
 } __packed;
 
 /**
+ * @brief Callback for sending a Memfault ePacket
+ *
+ * Ownership of @a buf transfers to the callback.
+ *
+ * @param dev ePacket interface to send on
+ * @param buf ePacket to send
+ * @param user_ctx User context pointer
+ *
+ * @retval 0 On success
+ * @retval -errno On failure
+ */
+typedef int (*infuse_memfault_epacket_send_cb)(const struct device *dev, struct net_buf *buf,
+					       void *user_ctx);
+
+/**
+ * @brief Send as many pending Memfault chunks over an ePacket interface as possible
+ *
+ * @param dev ePacket interface to dump to
+ * @param send_cb Callback used to send completed ePackets
+ * @param user_ctx User context pointer passed to @a send_cb
+ *
+ * @retval 0 When chunk dumping has completed
+ * @retval -ENODATA When no chunks are pending
+ * @retval -EAGAIN When function needs to be called again shortly due to buffer starvation
+ * @retval -errno Error from @a send_cb
+ */
+int infuse_memfault_dump_chunks_epacket_cb(const struct device *dev,
+					   infuse_memfault_epacket_send_cb send_cb,
+					   void *user_ctx);
+
+/**
  * @brief Send as many pending Memfault chunks over an ePacket interface as possible
  *
  * @param dev ePacket interface to dump to
