@@ -194,12 +194,22 @@ static void adv_set_complete(struct bt_le_ext_adv *adv, struct bt_le_ext_adv_sen
 	epacket_bt_adv_send_next_trigger();
 }
 
+static bool epacket_bt_adv_cloud_uplink_pending(void)
+{
+	return false;
+}
+
 static void epacket_bt_adv_send(const struct device *dev, struct net_buf *buf)
 {
 	struct epacket_tx_metadata *tx_meta = net_buf_user_data(buf);
 
 	/* Apply constant interface flags */
 	tx_meta->flags |= interface_flags;
+
+	/* Dynamically set `CLOUD_UPLINK_PENDING` flag */
+	if (epacket_bt_adv_cloud_uplink_pending()) {
+		tx_meta->flags |= EPACKET_FLAGS_BT_ADV_CLOUD_UPLINK_PENDING;
+	}
 
 	/* Encrypt the payload */
 	if (epacket_bt_adv_encrypt(buf) < 0) {

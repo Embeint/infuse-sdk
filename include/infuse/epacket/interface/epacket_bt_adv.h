@@ -35,6 +35,8 @@ extern "C" {
 enum epacket_flags_bt_adv {
 	/** Transmitting device is explicitly indoors */
 	EPACKET_FLAGS_BT_ADV_INDOORS = BIT(0),
+	/** Device has data pending for the cloud */
+	EPACKET_FLAGS_BT_ADV_CLOUD_UPLINK_PENDING = BIT(1),
 };
 
 /**
