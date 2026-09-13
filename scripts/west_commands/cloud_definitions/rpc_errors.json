@@ -98,7 +98,8 @@
                 {"name": "BT_CHARACTERISTIC_NOT_FOUND", "value": -1129},
                 {"name": "BT_GATT_WRITE_FAILED", "value": -1130},
                 {"name": "BT_FILE_LENGTH_MISMATCH", "value": -1131},
-                {"name": "BT_FILE_CRC_MISMATCH", "value": -1132}
+                {"name": "BT_FILE_CRC_MISMATCH", "value": -1132},
+                {"name": "BT_CHARACTERISTIC_NOT_SUBSCRIBED", "value": -1133}
             ]
         },
         {
