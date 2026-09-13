@@ -365,17 +365,29 @@ void memfault_reboot_reason_get(sResetBootupInfo *info)
 
 #ifdef CONFIG_EPACKET
 
-bool infuse_memfault_dump_chunks_epacket(const struct device *dev)
+static int infuse_memfault_epacket_queue(const struct device *dev, struct net_buf *buf,
+					 void *user_ctx)
+{
+	ARG_UNUSED(user_ctx);
+
+	epacket_queue(dev, buf);
+	return 0;
+}
+
+int infuse_memfault_dump_chunks_epacket_cb(const struct device *dev,
+					   infuse_memfault_epacket_send_cb send_cb,
+					   void *user_ctx)
 {
 	static uint8_t chunk_counter;
 	struct memfault_chunk_header *header;
 	struct net_buf *tx = NULL;
 	bool data_available;
 	size_t buf_len;
+	int rc;
 
 	/* No data to dump */
 	if (!memfault_packetizer_data_available()) {
-		return true;
+		return -ENODATA;
 	}
 
 #ifdef CONFIG_KV_STORE_KEY_MEMFAULT_DISABLE
@@ -391,7 +403,7 @@ bool infuse_memfault_dump_chunks_epacket(const struct device *dev)
 		while (memfault_packetizer_get_chunk(discard_buffer, &len)) {
 			len = sizeof(discard_buffer);
 		}
-		return true;
+		return 0;
 	}
 #endif /* CONFIG_KV_STORE_KEY_MEMFAULT_DISABLE */
 
@@ -400,12 +412,12 @@ bool infuse_memfault_dump_chunks_epacket(const struct device *dev)
 			tx = epacket_alloc_tx_for_interface(dev, K_NO_WAIT);
 			if (tx == NULL) {
 				/* Still work to do, but no buffers remaining */
-				return false;
+				return -EAGAIN;
 			}
 			if (net_buf_tailroom(tx) == 0) {
 				/* Interface has gone down, free the buffer and report complete */
 				net_buf_unref(tx);
-				return true;
+				return 0;
 			}
 		}
 
@@ -439,7 +451,10 @@ bool infuse_memfault_dump_chunks_epacket(const struct device *dev)
 			/* Set packet metadata and queue for transmission */
 			epacket_set_tx_metadata(tx, EPACKET_AUTH_DEVICE, 0, INFUSE_MEMFAULT_CHUNK,
 						EPACKET_ADDR_ALL);
-			epacket_queue(dev, tx);
+			rc = send_cb(dev, tx, user_ctx);
+			if (rc < 0) {
+				return rc;
+			}
 
 			/* Need another packet allocated */
 			tx = NULL;
@@ -451,11 +466,21 @@ bool infuse_memfault_dump_chunks_epacket(const struct device *dev)
 		/* Set packet metadata and queue for transmission */
 		epacket_set_tx_metadata(tx, EPACKET_AUTH_DEVICE, 0, INFUSE_MEMFAULT_CHUNK,
 					EPACKET_ADDR_ALL);
-		epacket_queue(dev, tx);
+		rc = send_cb(dev, tx, user_ctx);
+		if (rc < 0) {
+			return rc;
+		}
 	}
 
 	/* All packets dumped */
-	return true;
+	return 0;
+}
+
+bool infuse_memfault_dump_chunks_epacket(const struct device *dev)
+{
+	int rc = infuse_memfault_dump_chunks_epacket_cb(dev, infuse_memfault_epacket_queue, NULL);
+
+	return rc != -EAGAIN;
 }
 
 #endif /* CONFIG_EPACKET */
