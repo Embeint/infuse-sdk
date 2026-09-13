@@ -38,6 +38,13 @@ struct epacket_serial_frame_header {
 #define epacket_serial_frame epacket_v0_versioned_frame_format
 
 /**
+ * @brief Reset the internal state of @a epacket_serial_reconstruct
+ *
+ * @param dev Serial device
+ */
+void epacket_serial_reconstruct_reset(const struct device *dev);
+
+/**
  * @}
  */
 

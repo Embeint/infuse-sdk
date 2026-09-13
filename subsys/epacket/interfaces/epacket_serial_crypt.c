@@ -29,6 +29,7 @@ LOG_MODULE_DECLARE(epacket_serial, CONFIG_EPACKET_SERIAL_LOG_LEVEL);
 #endif
 
 static const uint8_t sync_bytes[2] = {EPACKET_SERIAL_SYNC_A, EPACKET_SERIAL_SYNC_B};
+static bool reconstructor_reset;
 
 static uint16_t epacket_serial_prefix_search(uint16_t pkt_idx, uint16_t *payload_remaining,
 					     uint8_t byte)
@@ -59,6 +60,13 @@ static uint16_t epacket_serial_prefix_search(uint16_t pkt_idx, uint16_t *payload
 	return pkt_idx + 1;
 }
 
+void epacket_serial_reconstruct_reset(const struct device *dev)
+{
+	ARG_UNUSED(dev);
+
+	reconstructor_reset = true;
+}
+
 void epacket_serial_reconstruct(const struct device *dev, uint8_t *buffer, size_t len,
 				void (*handler)(struct net_buf *))
 {
@@ -66,6 +74,17 @@ void epacket_serial_reconstruct(const struct device *dev, uint8_t *buffer, size_
 	static struct net_buf *rx_buffer;
 	static uint16_t payload_remaining;
 	static uint16_t pkt_idx;
+
+	/* Reset reconstructor if requested */
+	if (reconstructor_reset) {
+		if (rx_buffer) {
+			net_buf_unref(rx_buffer);
+		}
+		rx_buffer = NULL;
+		payload_remaining = 0;
+		pkt_idx = 0;
+		reconstructor_reset = false;
+	}
 
 	for (int i = 0; i < len; i++) {
 		/* Search for packet header */
