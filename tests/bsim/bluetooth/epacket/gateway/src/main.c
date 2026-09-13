@@ -574,6 +574,48 @@ static void main_gateway_connect_then_scan(void)
 	}
 }
 
+static K_FIFO_DEFINE(central_fifo);
+static const uint8_t cloud_uplink_payload[] = {0x63, 0x6C, 0x6F, 0x75, 0x64};
+
+void central_handler(struct net_buf *buf)
+{
+	k_fifo_put(&central_fifo, buf);
+}
+
+static void central_fifo_flush(void)
+{
+	struct net_buf *buf;
+
+	while ((buf = k_fifo_get(&central_fifo, K_NO_WAIT)) != NULL) {
+		net_buf_unref(buf);
+	}
+}
+
+static bool validate_cloud_uplink_buf(struct net_buf *buf)
+{
+	struct epacket_rx_metadata *meta = net_buf_user_data(buf);
+
+	LOG_INF("Received %d bytes %d packet", buf->len, meta->type);
+	if (meta->auth != EPACKET_AUTH_NETWORK) {
+		LOG_ERR("Unexpected authorisation (%d != %d)", meta->auth, EPACKET_AUTH_NETWORK);
+		return false;
+	}
+	if (meta->type != INFUSE_TDF) {
+		LOG_ERR("Unexpected packet type (%d != %d)", meta->type, INFUSE_TDF);
+		return false;
+	}
+	if (buf->len != sizeof(cloud_uplink_payload)) {
+		LOG_ERR("Unexpected payload length (%d != %d)", buf->len,
+			(int)sizeof(cloud_uplink_payload));
+		return false;
+	}
+	if (memcmp(buf->data, cloud_uplink_payload, sizeof(cloud_uplink_payload)) != 0) {
+		LOG_ERR("Unexpected payload");
+		return false;
+	}
+	return true;
+}
+
 static void send_rpc(uint32_t request_id, uint16_t command_id, void *params, size_t params_len)
 {
 	const struct device *epacket_dummy = DEVICE_DT_GET(DT_NODELABEL(epacket_dummy));
@@ -723,21 +765,96 @@ static void main_gateway_rpcs(void)
 	PASS("RPC connecter passed\n");
 }
 
-static K_FIFO_DEFINE(central_fifo);
-static const uint8_t cloud_uplink_payload[] = {0x63, 0x6C, 0x6F, 0x75, 0x64};
-
-void central_handler(struct net_buf *buf)
+static void main_gateway_rpcs_cloud_uplink(void)
 {
-	k_fifo_put(&central_fifo, buf);
-}
-
-static void central_fifo_flush(void)
-{
+	const struct device *epacket_central = DEVICE_DT_GET(DT_NODELABEL(epacket_bt_central));
 	struct net_buf *buf;
+	bt_addr_le_t addr;
 
-	while ((buf = k_fifo_get(&central_fifo, K_NO_WAIT)) != NULL) {
-		net_buf_unref(buf);
+	common_init();
+	central_fifo_flush();
+	epacket_set_receive_handler(epacket_central, central_handler);
+
+	if (observe_peers(&addr, 1) < 0) {
+		FAIL("Failed to observe peer\n");
+		return;
 	}
+
+	struct rpc_bt_connect_infuse_request connect = {
+		.peer =
+			{
+				.type = addr.type,
+				.val =
+					{
+						addr.a.val[0],
+						addr.a.val[1],
+						addr.a.val[2],
+						addr.a.val[3],
+						addr.a.val[4],
+						addr.a.val[5],
+					},
+			},
+		.conn_timeout_ms = 3000,
+		.subscribe = 0,
+		.inactivity_timeout_ms = 0,
+	};
+	struct rpc_bt_disconnect_request disconnect = {
+		.peer = connect.peer,
+	};
+
+	send_rpc(1, RPC_ID_BT_CONNECT_INFUSE, &connect, sizeof(connect));
+	buf = expect_response(1, RPC_ID_BT_CONNECT_INFUSE, 0);
+	if (buf == NULL) {
+		FAIL("Failed to connect via RPC\n");
+		return;
+	}
+	net_buf_unref(buf);
+
+	buf = k_fifo_get(&central_fifo, K_MSEC(1500));
+	if (buf != NULL) {
+		FAIL("Unexpected packet received without cloud uplink subscription\n");
+		return;
+	}
+
+	send_rpc(2, RPC_ID_BT_DISCONNECT, &disconnect, sizeof(disconnect));
+	buf = expect_response(2, RPC_ID_BT_DISCONNECT, 0);
+	if (buf == NULL) {
+		FAIL("Unexpected disconnection result\n");
+		return;
+	}
+	net_buf_unref(buf);
+	k_sleep(K_MSEC(100));
+
+	connect.subscribe = RPC_ENUM_INFUSE_BT_CHARACTERISTIC_CLOUD_UPLINK;
+	send_rpc(3, RPC_ID_BT_CONNECT_INFUSE, &connect, sizeof(connect));
+	buf = expect_response(3, RPC_ID_BT_CONNECT_INFUSE, 0);
+	if (buf == NULL) {
+		FAIL("Failed to connect via RPC with cloud uplink subscription\n");
+		return;
+	}
+	net_buf_unref(buf);
+
+	buf = k_fifo_get(&central_fifo, K_SECONDS(3));
+	if (buf == NULL) {
+		FAIL("No cloud uplink packet received\n");
+		return;
+	}
+	if (!validate_cloud_uplink_buf(buf)) {
+		FAIL("Invalid cloud uplink packet\n");
+		return;
+	}
+	net_buf_unref(buf);
+	central_fifo_flush();
+
+	send_rpc(4, RPC_ID_BT_DISCONNECT, &disconnect, sizeof(disconnect));
+	buf = expect_response(4, RPC_ID_BT_DISCONNECT, 0);
+	if (buf == NULL) {
+		FAIL("Unexpected disconnection result\n");
+		return;
+	}
+	net_buf_unref(buf);
+
+	PASS("RPC cloud uplink subscription passed\n");
 }
 
 static void main_gateway_connect_recv(void)
@@ -836,7 +953,6 @@ static void main_gateway_connect_cloud_uplink(void)
 		.subscribe_cloud_uplink = false,
 	};
 	struct epacket_read_response security_info;
-	struct epacket_rx_metadata *meta;
 	struct bt_conn *conn = NULL;
 	struct net_buf *buf;
 	bool already;
@@ -874,25 +990,8 @@ static void main_gateway_connect_cloud_uplink(void)
 				return;
 			}
 
-			meta = net_buf_user_data(buf);
-			LOG_INF("Received %d bytes %d packet", buf->len, meta->type);
-			if (meta->auth != EPACKET_AUTH_NETWORK) {
-				FAIL("Unexpected authorisation (%d != %d)\n", meta->auth,
-				     EPACKET_AUTH_NETWORK);
-				return;
-			}
-			if (meta->type != INFUSE_TDF) {
-				FAIL("Unexpected packet type (%d != %d)\n", meta->type, INFUSE_TDF);
-				return;
-			}
-			if (buf->len != sizeof(cloud_uplink_payload)) {
-				FAIL("Unexpected payload length (%d != %d)\n", buf->len,
-				     (int)sizeof(cloud_uplink_payload));
-				return;
-			}
-			if (memcmp(buf->data, cloud_uplink_payload, sizeof(cloud_uplink_payload)) !=
-			    0) {
-				FAIL("Unexpected payload\n");
+			if (!validate_cloud_uplink_buf(buf)) {
+				FAIL("Invalid cloud uplink packet\n");
 				return;
 			}
 			net_buf_unref(buf);
@@ -2844,6 +2943,13 @@ static const struct bst_test_instance epacket_gateway[] = {
 		.test_pre_init_f = test_init,
 		.test_tick_f = test_tick,
 		.test_main_f = main_gateway_rpcs,
+	},
+	{
+		.test_id = "epacket_bt_gateway_connect_rpc_cloud_uplink",
+		.test_descr = "Bluetooth gateway RPC cloud uplink subscription",
+		.test_pre_init_f = test_init,
+		.test_tick_f = test_tick,
+		.test_main_f = main_gateway_rpcs_cloud_uplink,
 	},
 	{
 		.test_id = "epacket_bt_gateway_connect_recv",
