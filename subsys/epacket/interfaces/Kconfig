@@ -188,6 +188,12 @@ config EPACKET_INTERFACE_BT_PERIPHERAL
 
 if EPACKET_INTERFACE_BT_PERIPHERAL
 
+config EPACKET_INTERFACE_BT_PERIPHERAL_CLOUD_UPLINK
+	bool "Bluetooth GATT characteristic for cloud uplink data"
+	help
+	  Bluetooth characterstic for data that explicitly wants to be forwarded up to the cloud,
+	  as opposed to the generic real-time data stream of the "DATA" characteristic.
+
 config EPACKET_INTERFACE_BT_PERIPHERAL_MAX_WAIT_MS
 	int "Maximum duration to wait for an ePacket buffer in the RX callback"
 	default 50

@@ -10,6 +10,7 @@
 #ifndef INFUSE_SDK_INCLUDE_INFUSE_EPACKET_INTERFACE_EPACKET_BT_PERIPHERAL_H_
 #define INFUSE_SDK_INCLUDE_INFUSE_EPACKET_INTERFACE_EPACKET_BT_PERIPHERAL_H_
 
+#include <stdbool.h>
 #include <stdint.h>
 
 #include <zephyr/toolchain.h>
@@ -28,6 +29,30 @@ extern "C" {
  */
 
 #define epacket_bt_peripheral_frame epacket_v0_versioned_frame_format
+
+/**
+ * @brief Check whether the CLOUD_UPLINK characteristic has been subscribed
+ *
+ * @param dev ePacket Bluetooth peripheral device
+ * @param conn Connection to check
+ *
+ * @return true if the attribute object has been subscribed.
+ */
+bool epacket_bt_peripheral_cloud_uplink_subscribed(const struct device *dev, struct bt_conn *conn);
+
+/**
+ * @brief Queue an ePacket on the CLOUD_UPLINK characteristic on a specific connection
+ *
+ * @param dev ePacket Bluetooth peripheral device
+ * @param conn Connection to queue packet on
+ * @param buf ePacket to queue
+ *
+ * @return 0 On success
+ * @retval -EIO On encryption error
+ * @retval -errno Other error code from @a bt_gatt_notify
+ */
+int epacket_bt_peripheral_cloud_uplink_send(const struct device *dev, struct bt_conn *conn,
+					    struct net_buf *buf);
 
 /**
  * @}
