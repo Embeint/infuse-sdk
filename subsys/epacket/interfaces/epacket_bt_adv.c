@@ -20,6 +20,10 @@
 #include <infuse/task_runner/runner.h>
 #include <infuse/time/epoch.h>
 
+#ifdef CONFIG_INFUSE_MEMFAULT
+#include "memfault/core/data_packetizer.h"
+#endif /* CONFIG_INFUSE_MEMFAULT */
+
 #include "epacket_internal.h"
 
 #define DT_DRV_COMPAT embeint_epacket_bt_adv
@@ -196,7 +200,15 @@ static void adv_set_complete(struct bt_le_ext_adv *adv, struct bt_le_ext_adv_sen
 
 static bool epacket_bt_adv_cloud_uplink_pending(void)
 {
+#ifdef CONFIG_EPACKET_INTERFACE_BT_PERIPHERAL_CLOUD_UPLINK
+#ifdef CONFIG_INFUSE_MEMFAULT
+	return memfault_packetizer_data_available();
+#else
 	return false;
+#endif /* CONFIG_INFUSE_MEMFAULT */
+#else
+	return false;
+#endif /* CONFIG_EPACKET_INTERFACE_BT_PERIPHERAL_CLOUD_UPLINK */
 }
 
 static void epacket_bt_adv_send(const struct device *dev, struct net_buf *buf)
