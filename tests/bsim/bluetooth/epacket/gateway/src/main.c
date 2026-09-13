@@ -447,6 +447,108 @@ static void main_gateway_connect(void)
 	PASS("Gateway connect passed\n");
 }
 
+static int connect_expect_duration(struct bt_conn **conn,
+				   struct epacket_bt_gatt_connect_params *params,
+				   struct epacket_read_response *security, bool expected_already,
+				   int64_t max_duration_ms)
+{
+	int64_t start_time = k_uptime_get();
+	bool already;
+	int rc;
+
+	rc = epacket_bt_gatt_connect(conn, params, security, &already);
+	if (rc != 0) {
+		FAIL("Failed to connect to peer (%d)\n", rc);
+		return rc;
+	}
+	if (already != expected_already) {
+		FAIL("Unexpected already status (%d != %d)\n", already, expected_already);
+		return -EINVAL;
+	}
+	if (k_uptime_get() - start_time > max_duration_ms) {
+		FAIL("Connection setup took too long (%lld ms)\n", k_uptime_get() - start_time);
+		return -ETIMEDOUT;
+	}
+	return 0;
+}
+
+static void main_gateway_connect_subscribe_wait(void)
+{
+	struct epacket_bt_gatt_connect_params params = {
+		.conn_params = BT_LE_CONN_PARAM_INIT(0x10, 0x15, 0, 400),
+		.inactivity_timeout = K_FOREVER,
+		.absolute_timeout = K_FOREVER,
+		.conn_timeout_ms = 3000,
+		.preferred_phy = BT_GAP_LE_PHY_NONE,
+		.subscribe_commands = true,
+		.subscribe_data = true,
+		.subscribe_logging = true,
+		.wait_subscriptions = true,
+	};
+	struct epacket_read_response security_info;
+	struct bt_conn *conn = NULL, *conn2 = NULL;
+	int rc;
+
+	common_init();
+	if (observe_peers(&params.peer, 1) < 0) {
+		FAIL("Failed to observe peer\n");
+		return;
+	}
+
+	/* Blocking path: wait for the CCC writes to complete. */
+	rc = connect_expect_duration(&conn, &params, &security_info, false, 5000);
+	if (rc != 0) {
+		return;
+	}
+
+	/* Fast path: subscription already exists, so no CCC write is pending. */
+	rc = connect_expect_duration(&conn2, &params, &security_info, true, 1000);
+	if (rc != 0) {
+		return;
+	}
+	bt_conn_unref(conn2);
+	conn2 = NULL;
+
+	/* Blocking path for unsubscribe. */
+	params.subscribe_commands = false;
+	params.subscribe_data = false;
+	params.subscribe_logging = false;
+	rc = connect_expect_duration(&conn2, &params, &security_info, true, 5000);
+	if (rc != 0) {
+		return;
+	}
+	bt_conn_unref(conn2);
+	conn2 = NULL;
+
+	/* Fast path: already unsubscribed, so there is nothing to wait on. */
+	rc = connect_expect_duration(&conn2, &params, &security_info, true, 1000);
+	if (rc != 0) {
+		return;
+	}
+	bt_conn_unref(conn2);
+	conn2 = NULL;
+
+	/* Non-blocking path still returns promptly when subscription work is requested. */
+	params.subscribe_commands = true;
+	params.subscribe_data = true;
+	params.subscribe_logging = true;
+	params.wait_subscriptions = false;
+	rc = connect_expect_duration(&conn2, &params, &security_info, true, 1000);
+	if (rc != 0) {
+		return;
+	}
+	bt_conn_unref(conn2);
+
+	rc = bt_conn_disconnect_sync(conn);
+	if (rc < 0) {
+		FAIL("Failed to disconnect from peer\n");
+		return;
+	}
+	bt_conn_unref(conn);
+
+	PASS("Gateway subscribe wait paths passed\n");
+}
+
 static void main_gateway_connect_multi(void)
 {
 	struct epacket_bt_gatt_connect_params params = {
@@ -2922,6 +3024,13 @@ static const struct bst_test_instance epacket_gateway[] = {
 		.test_pre_init_f = test_init,
 		.test_tick_f = test_tick,
 		.test_main_f = main_gateway_connect,
+	},
+	{
+		.test_id = "epacket_bt_gateway_connect_subscribe_wait",
+		.test_descr = "Connect to peer device, wait for subscription updates",
+		.test_pre_init_f = test_init,
+		.test_tick_f = test_tick,
+		.test_main_f = main_gateway_connect_subscribe_wait,
 	},
 	{
 		.test_id = "epacket_bt_gateway_connect_multi",

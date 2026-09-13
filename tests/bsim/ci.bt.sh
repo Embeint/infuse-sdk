@@ -32,6 +32,7 @@ RESULTS_FILE=${WORK_DIR}/bsim_results.bt.54.xml \
 TESTS_LIST=\
 "${EPACKET_TESTS}/bt_file_copy.sh \
 ${EPACKET_TESTS}/connect.sh \
+${EPACKET_TESTS}/connect_subscribe_wait.sh \
 ${EPACKET_TESTS}/scan.sh \
 ${EPACKET_TESTS}/legacy_connect.sh \
 ${EPACKET_TESTS}/mcumgr_reboot.sh" \
