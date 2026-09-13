@@ -14,7 +14,7 @@ config MEMFAULT_INFUSE_SOFTWARE_TYPE
 
 config MEMFAULT_INFUSE_HARDWARE_VERSION
 	string "Hardware version to report to Memfault"
-	default "$(BOARD)_$(BOARD_REVISION)$(BOARD_QUALIFIERS)" if "$(BOARD_REVISION)" != ""
+	default "$(BOARD)_$(BOARD_REVISION)/$(BOARD_QUALIFIERS)" if "$(BOARD_REVISION)" != ""
 	default BOARD_TARGET
 	help
 	  The Memfault Cloud does not accept '@' characters in the hardware version,
