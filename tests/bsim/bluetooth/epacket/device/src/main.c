@@ -27,6 +27,11 @@
 #include <infuse/work_q.h>
 #include <infuse/reboot.h>
 
+#ifdef CONFIG_INFUSE_MEMFAULT
+#include <memfault/core/data_packetizer.h>
+#include <memfault/core/trace_event.h>
+#endif /* CONFIG_INFUSE_MEMFAULT */
+
 #define FAIL(...)                                                                                  \
 	do {                                                                                       \
 		bst_result = Failed;                                                               \
@@ -383,6 +388,41 @@ static void main_epacket_bt_cloud_uplink(void)
 
 	PASS("Cloud uplink complete\n");
 }
+
+static void main_epacket_bt_cloud_uplink_pending(void)
+{
+#ifdef CONFIG_INFUSE_MEMFAULT
+	struct tdf_announce_v2 announce = {0};
+	uint8_t discard_buffer[128];
+	size_t len = sizeof(discard_buffer);
+
+	LOG_INF("Starting cloud uplink pending advertiser");
+
+	while (memfault_packetizer_get_chunk(discard_buffer, &len)) {
+		len = sizeof(discard_buffer);
+	}
+
+	for (int i = 0; i < 3; i++) {
+		announce.uptime = k_uptime_seconds();
+		TDF_DATA_LOGGER_LOG(TDF_DATA_LOGGER_BT_ADV, TDF_ANNOUNCE_V2, 0, &announce);
+		tdf_data_logger_flush(TDF_DATA_LOGGER_BT_ADV);
+		k_sleep(K_SECONDS(1));
+	}
+
+	MEMFAULT_TRACE_EVENT_WITH_STATUS(bt_ctlr_fault, 0x1234);
+
+	for (int i = 0; i < 8; i++) {
+		announce.uptime = k_uptime_seconds();
+		TDF_DATA_LOGGER_LOG(TDF_DATA_LOGGER_BT_ADV, TDF_ANNOUNCE_V2, 0, &announce);
+		tdf_data_logger_flush(TDF_DATA_LOGGER_BT_ADV);
+		k_sleep(K_SECONDS(1));
+	}
+
+	PASS("Cloud uplink pending advertising complete\n");
+#else
+	FAIL("Memfault not enabled\n");
+#endif /* CONFIG_INFUSE_MEMFAULT */
+}
 #endif /* CONFIG_EPACKET_INTERFACE_BT_PERIPHERAL_CLOUD_UPLINK */
 
 static void main_epacket_bt_name(void)
@@ -493,6 +533,13 @@ static const struct bst_test_instance ext_adv_advertiser[] = {
 		.test_pre_init_f = test_init,
 		.test_tick_f = test_tick,
 		.test_main_f = main_epacket_bt_cloud_uplink,
+	},
+	{
+		.test_id = "epacket_bt_cloud_uplink_pending",
+		.test_descr = "Advertise with cloud uplink pending flag",
+		.test_pre_init_f = test_init,
+		.test_tick_f = test_tick,
+		.test_main_f = main_epacket_bt_cloud_uplink_pending,
 	},
 #endif /* CONFIG_EPACKET_INTERFACE_BT_PERIPHERAL_CLOUD_UPLINK */
 	{
