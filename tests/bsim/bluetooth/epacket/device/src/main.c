@@ -9,6 +9,7 @@
 #include <zephyr/sys/byteorder.h>
 #include <zephyr/bluetooth/addr.h>
 #include <zephyr/bluetooth/bluetooth.h>
+#include <zephyr/bluetooth/conn.h>
 #include <zephyr/random/random.h>
 
 #include "bs_types.h"
@@ -18,6 +19,7 @@
 
 #include <infuse/bluetooth/legacy_adv.h>
 #include <infuse/epacket/interface.h>
+#include <infuse/epacket/interface/epacket_bt_peripheral.h>
 #include <infuse/epacket/packet.h>
 #include <infuse/data_logger/logger.h>
 #include <infuse/data_logger/high_level/tdf.h>
@@ -180,7 +182,6 @@ static K_SEM_DEFINE(tx_done, 0, 1);
 static const struct device *tx_cb_dev;
 static struct net_buf *tx_cb_pkt;
 static int tx_cb_result;
-
 static void tx_done_cb(const struct device *dev, struct net_buf *pkt, int result, void *user_data)
 {
 	tx_cb_dev = dev;
@@ -263,6 +264,126 @@ static void main_epacket_bt_periph_send_unconnected(void)
 
 	PASS("Send to unconnected passed\n");
 }
+
+#ifdef CONFIG_EPACKET_INTERFACE_BT_PERIPHERAL_CLOUD_UPLINK
+static const uint8_t cloud_uplink_payload[] = {0x63, 0x6C, 0x6F, 0x75, 0x64};
+
+static void conn_ref_connected(struct bt_conn *conn, void *user_data)
+{
+	struct bt_conn **conn_out = user_data;
+	struct bt_conn_info info;
+
+	if (*conn_out != NULL) {
+		return;
+	}
+	if (bt_conn_get_info(conn, &info) != 0) {
+		return;
+	}
+	if (info.state != BT_CONN_STATE_CONNECTED) {
+		return;
+	}
+
+	*conn_out = bt_conn_ref(conn);
+}
+
+static void main_epacket_bt_cloud_uplink(void)
+{
+	const struct device *epacket_bt_periph = DEVICE_DT_GET(DT_NODELABEL(epacket_bt_peripheral));
+	struct epacket_interface_cb interface_cb = {
+		.interface_state = peripheral_interface_state,
+	};
+	struct tdf_announce_v2 announce = {0};
+	struct net_buf *buf;
+	int successful_sends = 0;
+	int subscribed_checks = 0;
+	int unsubscribed_checks = 0;
+	int64_t deadline = k_uptime_get() + 12000;
+	int sends = 0;
+	int rc;
+	bool subscribed;
+
+	epacket_register_callback(epacket_bt_periph, &interface_cb);
+
+	while (k_uptime_get() < deadline) {
+		if (connection_notifications == disconnection_notifications) {
+			TDF_DATA_LOGGER_LOG(TDF_DATA_LOGGER_BT_ADV, TDF_ANNOUNCE_V2, 0, &announce);
+			tdf_data_logger_flush(TDF_DATA_LOGGER_BT_ADV);
+			k_sleep(K_MSEC(500));
+			continue;
+		}
+
+		struct bt_conn *cloud_conn = NULL;
+
+		bt_conn_foreach(BT_CONN_TYPE_LE, conn_ref_connected, &cloud_conn);
+		if (cloud_conn == NULL) {
+			FAIL("No connected peer\n");
+			return;
+		}
+		subscribed = epacket_bt_peripheral_cloud_uplink_subscribed(epacket_bt_periph,
+									   cloud_conn);
+		if (subscribed) {
+			subscribed_checks += 1;
+		} else {
+			unsubscribed_checks += 1;
+		}
+		bt_conn_unref(cloud_conn);
+
+		buf = epacket_alloc_tx_for_interface(epacket_bt_periph, K_FOREVER);
+		if (buf != NULL) {
+			epacket_set_tx_metadata(buf, EPACKET_AUTH_NETWORK, 0, INFUSE_TDF,
+						EPACKET_ADDR_ALL);
+			net_buf_add_mem(buf, cloud_uplink_payload, sizeof(cloud_uplink_payload));
+			epacket_set_tx_callback(buf, tx_done_cb, NULL);
+
+			rc = epacket_bt_peripheral_cloud_uplink_send(epacket_bt_periph, NULL, buf);
+			if ((rc != 0) && (rc != -ENOTCONN)) {
+				FAIL("Failed to send cloud uplink (%d)\n", rc);
+				return;
+			}
+			if (k_sem_take(&tx_done, K_SECONDS(1)) != 0) {
+				FAIL("No send callback\n");
+				return;
+			}
+			if (tx_cb_dev != epacket_bt_periph) {
+				FAIL("Bad device pointer\n");
+				return;
+			}
+			if (tx_cb_pkt == NULL) {
+				FAIL("Bad buffer pointer\n");
+				return;
+			}
+			if ((tx_cb_result != 0) && (tx_cb_result != -ENOTCONN)) {
+				FAIL("Unexpected result (%d)\n", tx_cb_result);
+				return;
+			}
+			if (tx_cb_result == 0) {
+				successful_sends += 1;
+			}
+			sends += 1;
+		}
+		k_sleep(K_MSEC(300));
+	}
+
+	if (sends == 0) {
+		FAIL("No cloud uplink packets sent\n");
+		return;
+	}
+	if (successful_sends == 0) {
+		FAIL("No cloud uplink packets notified\n");
+		return;
+	}
+	if (unsubscribed_checks == 0) {
+		FAIL("Cloud uplink never observed unsubscribed\n");
+		return;
+	}
+	if (subscribed_checks == 0) {
+		FAIL("Cloud uplink never observed subscribed\n");
+		return;
+	}
+
+	PASS("Cloud uplink complete\n");
+}
+#endif /* CONFIG_EPACKET_INTERFACE_BT_PERIPHERAL_CLOUD_UPLINK */
 
 static void main_epacket_bt_name(void)
 {
@@ -365,6 +486,15 @@ static const struct bst_test_instance ext_adv_advertiser[] = {
 		.test_tick_f = test_tick,
 		.test_main_f = main_epacket_bt_name,
 	},
+#ifdef CONFIG_EPACKET_INTERFACE_BT_PERIPHERAL_CLOUD_UPLINK
+	{
+		.test_id = "epacket_bt_cloud_uplink",
+		.test_descr = "Send data on the cloud uplink characteristic",
+		.test_pre_init_f = test_init,
+		.test_tick_f = test_tick,
+		.test_main_f = main_epacket_bt_cloud_uplink,
+	},
+#endif /* CONFIG_EPACKET_INTERFACE_BT_PERIPHERAL_CLOUD_UPLINK */
 	{
 		.test_id = "epacket_bt_connectable_wdog",
 		.test_descr = "Connectable Bluetooth advertising watchdog",

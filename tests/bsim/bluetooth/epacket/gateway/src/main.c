@@ -12,6 +12,8 @@
 #include <zephyr/random/random.h>
 #include <zephyr/bluetooth/hci_types.h>
 
+#include <string.h>
+
 #include "bs_types.h"
 #include "bs_tracing.h"
 #include "time_machine.h"
@@ -722,10 +724,20 @@ static void main_gateway_rpcs(void)
 }
 
 static K_FIFO_DEFINE(central_fifo);
+static const uint8_t cloud_uplink_payload[] = {0x63, 0x6C, 0x6F, 0x75, 0x64};
 
 void central_handler(struct net_buf *buf)
 {
 	k_fifo_put(&central_fifo, buf);
+}
+
+static void central_fifo_flush(void)
+{
+	struct net_buf *buf;
+
+	while ((buf = k_fifo_get(&central_fifo, K_NO_WAIT)) != NULL) {
+		net_buf_unref(buf);
+	}
 }
 
 static void main_gateway_connect_recv(void)
@@ -807,6 +819,97 @@ static void main_gateway_connect_recv(void)
 	}
 
 	PASS("Received TDF data from connected peer\n");
+}
+
+static void main_gateway_connect_cloud_uplink(void)
+{
+	const struct device *epacket_central = DEVICE_DT_GET(DT_NODELABEL(epacket_bt_central));
+	struct epacket_bt_gatt_connect_params params = {
+		.conn_params = BT_LE_CONN_PARAM_INIT(0x10, 0x15, 0, 400),
+		.inactivity_timeout = K_FOREVER,
+		.absolute_timeout = K_FOREVER,
+		.conn_timeout_ms = 3000,
+		.preferred_phy = BT_GAP_LE_PHY_NONE,
+		.subscribe_commands = false,
+		.subscribe_data = false,
+		.subscribe_logging = false,
+		.subscribe_cloud_uplink = false,
+	};
+	struct epacket_read_response security_info;
+	struct epacket_rx_metadata *meta;
+	struct bt_conn *conn = NULL;
+	struct net_buf *buf;
+	bool already;
+	int rc;
+
+	common_init();
+	central_fifo_flush();
+	epacket_set_receive_handler(epacket_central, central_handler);
+
+	if (observe_peers(&params.peer, 1) < 0) {
+		FAIL("Failed to observe peer\n");
+		return;
+	}
+
+	for (int i = 0; i < 2; i++) {
+		params.subscribe_cloud_uplink = i == 1;
+
+		rc = epacket_bt_gatt_connect(&conn, &params, &security_info, &already);
+		if (rc != 0) {
+			FAIL("Failed to connect to peer (%d)\n", rc);
+			return;
+		}
+
+		buf = k_fifo_get(&central_fifo,
+				 params.subscribe_cloud_uplink ? K_SECONDS(3) : K_MSEC(1500));
+		if (!params.subscribe_cloud_uplink) {
+			if (buf != NULL) {
+				FAIL("Unexpected packet received without cloud uplink "
+				     "subscription\n");
+				return;
+			}
+		} else {
+			if (buf == NULL) {
+				FAIL("No cloud uplink packet received\n");
+				return;
+			}
+
+			meta = net_buf_user_data(buf);
+			LOG_INF("Received %d bytes %d packet", buf->len, meta->type);
+			if (meta->auth != EPACKET_AUTH_NETWORK) {
+				FAIL("Unexpected authorisation (%d != %d)\n", meta->auth,
+				     EPACKET_AUTH_NETWORK);
+				return;
+			}
+			if (meta->type != INFUSE_TDF) {
+				FAIL("Unexpected packet type (%d != %d)\n", meta->type, INFUSE_TDF);
+				return;
+			}
+			if (buf->len != sizeof(cloud_uplink_payload)) {
+				FAIL("Unexpected payload length (%d != %d)\n", buf->len,
+				     (int)sizeof(cloud_uplink_payload));
+				return;
+			}
+			if (memcmp(buf->data, cloud_uplink_payload, sizeof(cloud_uplink_payload)) !=
+			    0) {
+				FAIL("Unexpected payload\n");
+				return;
+			}
+			net_buf_unref(buf);
+			central_fifo_flush();
+		}
+
+		rc = bt_conn_disconnect_sync(conn);
+		if (rc != 0) {
+			FAIL("Failed to disconnect from peer\n");
+			return;
+		}
+		bt_conn_unref(conn);
+		conn = NULL;
+		k_sleep(K_MSEC(100));
+	}
+
+	PASS("Received cloud uplink data from connected peer\n");
 }
 
 static void main_gateway_connect_idle_tx_timeout(void)
@@ -2748,6 +2851,13 @@ static const struct bst_test_instance epacket_gateway[] = {
 		.test_pre_init_f = test_init,
 		.test_tick_f = test_tick,
 		.test_main_f = main_gateway_connect_recv,
+	},
+	{
+		.test_id = "epacket_bt_gateway_connect_cloud_uplink",
+		.test_descr = "Connect to peer device and recv cloud uplink payloads",
+		.test_pre_init_f = test_init,
+		.test_tick_f = test_tick,
+		.test_main_f = main_gateway_connect_cloud_uplink,
 	},
 	{
 		.test_id = "epacket_bt_gateway_connect_idle_tx_timeout",
