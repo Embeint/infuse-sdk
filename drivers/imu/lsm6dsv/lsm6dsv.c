@@ -537,6 +537,289 @@ int lsm6dsv_data_read(const struct device *dev, struct imu_sample_array *samples
 	return 0;
 }
 
+#ifdef CONFIG_INFUSE_IMU_SELF_TEST
+
+static int lsm6dsv_wait_drdy(const struct device *dev, uint8_t bit)
+{
+	uint8_t reg_val;
+	int rc;
+
+	for (int i = 0; i < 10; i++) {
+		rc = lsm6dsv_reg_read(dev, LSM6DSV_REG_STATUS_REG, &reg_val, 1);
+		if (rc < 0) {
+			return rc;
+		}
+		if (reg_val & bit) {
+			return 0;
+		}
+		k_sleep(K_MSEC(10));
+	}
+	return -EAGAIN;
+}
+
+static int lsm6dsv_acc_average(const struct device *dev, int32_t average[3])
+{
+	const int num_average = 5;
+	int16_t raw[3];
+	int rc;
+
+	/* Discard first sample */
+	rc = lsm6dsv_wait_drdy(dev, LSM6DSV_STATUS_REG_XL_DRDY);
+	if (rc < 0) {
+		return rc;
+	}
+	rc = lsm6dsv_reg_read(dev, LSM6DSV_REG_OUTX_L_A, raw, sizeof(raw));
+	if (rc < 0) {
+		return rc;
+	}
+
+	for (int i = 0; i < num_average; i++) {
+		rc = lsm6dsv_wait_drdy(dev, LSM6DSV_STATUS_REG_XL_DRDY);
+		if (rc < 0) {
+			return rc;
+		}
+		rc = lsm6dsv_reg_read(dev, LSM6DSV_REG_OUTX_L_A, raw, sizeof(raw));
+		if (rc < 0) {
+			return rc;
+		}
+		average[0] += raw[0];
+		average[1] += raw[1];
+		average[2] += raw[2];
+	}
+
+	average[0] /= num_average;
+	average[1] /= num_average;
+	average[2] /= num_average;
+	return 0;
+}
+
+static int lsm6dsv_gyr_average(const struct device *dev, int32_t average[3])
+{
+	const int num_average = 5;
+	int16_t raw[3];
+	int rc;
+
+	/* Discard first sample */
+	rc = lsm6dsv_wait_drdy(dev, LSM6DSV_STATUS_REG_G_DRDY);
+	if (rc < 0) {
+		return rc;
+	}
+	rc = lsm6dsv_reg_read(dev, LSM6DSV_REG_OUTX_L_G, raw, sizeof(raw));
+	if (rc < 0) {
+		return rc;
+	}
+
+	for (int i = 0; i < num_average; i++) {
+		rc = lsm6dsv_wait_drdy(dev, LSM6DSV_STATUS_REG_G_DRDY);
+		if (rc < 0) {
+			return rc;
+		}
+		rc = lsm6dsv_reg_read(dev, LSM6DSV_REG_OUTX_L_G, raw, sizeof(raw));
+		if (rc < 0) {
+			return rc;
+		}
+		average[0] += raw[0];
+		average[1] += raw[1];
+		average[2] += raw[2];
+	}
+
+	average[0] /= num_average;
+	average[1] /= num_average;
+	average[2] /= num_average;
+	return 0;
+}
+
+/* Recommended accelerometer self-test procedure from AN5922 */
+static int lsm6dsv_self_test_acc(const struct device *dev)
+{
+	int32_t avg_base[3] = {0};
+	int32_t avg_positive[3] = {0};
+	int16_t mg_difference[3];
+	uint8_t reg_val;
+	int16_t one_g;
+	int rc = 0;
+
+	LOG_DBG("Starting ACC self-test procedure");
+
+	/* Base configuration, 4G, 60Hz*/
+	reg_val = LSM6DSV_CTRL1_ACC_ODR_60HZ | LSM6DSV_CTRL1_ACC_OP_MODE_HIGH_PERF;
+	rc |= lsm6dsv_reg_write(dev, LSM6DSV_REG_CTRL1, &reg_val, 1);
+	reg_val = 0x00;
+	rc |= lsm6dsv_reg_write(dev, LSM6DSV_REG_CTRL2, &reg_val, 1);
+	reg_val = LSM6DSV_CTRL3_IF_INC | LSM6DSV_CTRL3_BDU;
+	rc |= lsm6dsv_reg_write(dev, LSM6DSV_REG_CTRL3, &reg_val, 1);
+	reg_val = 0x00;
+	rc |= lsm6dsv_reg_write(dev, LSM6DSV_REG_CTRL4, &reg_val, 1);
+	rc |= lsm6dsv_reg_write(dev, LSM6DSV_REG_CTRL5, &reg_val, 1);
+	rc |= lsm6dsv_reg_write(dev, LSM6DSV_REG_CTRL6, &reg_val, 1);
+	rc |= lsm6dsv_reg_write(dev, LSM6DSV_REG_CTRL7, &reg_val, 1);
+	reg_val = LSM6DSV_CTRL8_ACC_RANGE_4G;
+	rc |= lsm6dsv_reg_write(dev, LSM6DSV_REG_CTRL8, &reg_val, 1);
+	reg_val = 0x00;
+	rc |= lsm6dsv_reg_write(dev, LSM6DSV_REG_CTRL9, &reg_val, 1);
+	rc |= lsm6dsv_reg_write(dev, LSM6DSV_REG_CTRL10, &reg_val, 1);
+	if (rc != 0) {
+		LOG_ERR("Failed to configure IMU for self-test mode");
+		rc = -EIO;
+		goto end;
+	}
+	k_sleep(K_MSEC(100));
+
+	/* Baseline readings */
+	rc = lsm6dsv_acc_average(dev, avg_base);
+	if (rc < 0) {
+		LOG_ERR("Failed to read base accelerometer data");
+		goto end;
+	}
+
+	/* Enable positive self-test */
+	reg_val = LSM6DSV_CTRL10_SELF_TEST_XL_POS;
+	rc = lsm6dsv_reg_write(dev, LSM6DSV_REG_CTRL10, &reg_val, 1);
+	if (rc < 0) {
+		LOG_ERR("Failed to enable self-test mode");
+		goto end;
+	}
+	k_sleep(K_MSEC(100));
+
+	/* Self-test readings */
+	rc = lsm6dsv_acc_average(dev, avg_positive);
+	if (rc < 0) {
+		LOG_ERR("Failed to read self-test accelerometer data");
+		goto end;
+	}
+
+	/* Compute difference between normal and self-test outputs */
+	one_g = imu_accelerometer_1g(4);
+	for (int i = 0; i < 3; i++) {
+		int32_t diff = (1000 * (avg_positive[i] - avg_base[i])) / one_g;
+
+		mg_difference[i] = diff < 0 ? -diff : diff;
+	}
+
+	/* Compare against datasheet specification */
+	if (!IN_RANGE(mg_difference[0], LSM6DSV_XL_SELF_TEST_MIN_MG, LSM6DSV_XL_SELF_TEST_MAX_MG) ||
+	    !IN_RANGE(mg_difference[1], LSM6DSV_XL_SELF_TEST_MIN_MG, LSM6DSV_XL_SELF_TEST_MAX_MG) ||
+	    !IN_RANGE(mg_difference[2], LSM6DSV_XL_SELF_TEST_MIN_MG, LSM6DSV_XL_SELF_TEST_MAX_MG)) {
+		LOG_ERR("ACC self-test failed: X:%6d Y:%6d Z:%6d", mg_difference[0],
+			mg_difference[1], mg_difference[2]);
+		rc = -EINVAL;
+		goto end;
+	}
+	LOG_DBG("Difference = X:%6d Y:%6d Z:%6d", mg_difference[0], mg_difference[1],
+		mg_difference[2]);
+
+end:
+	reg_val = 0x00;
+	(void)lsm6dsv_reg_write(dev, LSM6DSV_REG_CTRL10, &reg_val, 1);
+	(void)lsm6dsv_reg_write(dev, LSM6DSV_REG_CTRL1, &reg_val, 1);
+	return rc;
+}
+
+/* Recommended gyroscope self-test procedure from AN5922 */
+static int lsm6dsv_self_test_gyr(const struct device *dev)
+{
+	int32_t avg_base[3] = {0};
+	int32_t avg_positive[3] = {0};
+	int16_t dps_difference[3];
+	uint8_t reg_val;
+	int rc = 0;
+
+	LOG_DBG("Starting GYR self-test procedure");
+
+	/* Base configuration, 2000 dps, 240Hz */
+	reg_val = 0x00;
+	rc |= lsm6dsv_reg_write(dev, LSM6DSV_REG_CTRL1, &reg_val, 1);
+	reg_val = LSM6DSV_CTRL2_GYR_ODR_240HZ | LSM6DSV_CTRL2_GYR_OP_MODE_HIGH_PERF;
+	rc |= lsm6dsv_reg_write(dev, LSM6DSV_REG_CTRL2, &reg_val, 1);
+	reg_val = LSM6DSV_CTRL3_IF_INC | LSM6DSV_CTRL3_BDU;
+	rc |= lsm6dsv_reg_write(dev, LSM6DSV_REG_CTRL3, &reg_val, 1);
+	reg_val = 0x00;
+	rc |= lsm6dsv_reg_write(dev, LSM6DSV_REG_CTRL4, &reg_val, 1);
+	rc |= lsm6dsv_reg_write(dev, LSM6DSV_REG_CTRL5, &reg_val, 1);
+	reg_val = LSM6DSV_CTRL6_GYR_RANGE_2000DPS;
+	rc |= lsm6dsv_reg_write(dev, LSM6DSV_REG_CTRL6, &reg_val, 1);
+	reg_val = 0x00;
+	rc |= lsm6dsv_reg_write(dev, LSM6DSV_REG_CTRL7, &reg_val, 1);
+	rc |= lsm6dsv_reg_write(dev, LSM6DSV_REG_CTRL8, &reg_val, 1);
+	rc |= lsm6dsv_reg_write(dev, LSM6DSV_REG_CTRL9, &reg_val, 1);
+	rc |= lsm6dsv_reg_write(dev, LSM6DSV_REG_CTRL10, &reg_val, 1);
+	if (rc != 0) {
+		LOG_ERR("Failed to configure IMU for self-test mode");
+		rc = -EIO;
+		goto end;
+	}
+	k_sleep(K_MSEC(100));
+
+	/* Baseline readings */
+	rc = lsm6dsv_gyr_average(dev, avg_base);
+	if (rc < 0) {
+		LOG_ERR("Failed to read base gyroscope data");
+		goto end;
+	}
+
+	/* Enable positive self-test */
+	reg_val = LSM6DSV_CTRL10_SELF_TEST_G_POS;
+	rc = lsm6dsv_reg_write(dev, LSM6DSV_REG_CTRL10, &reg_val, 1);
+	if (rc < 0) {
+		LOG_ERR("Failed to enable self-test mode");
+		goto end;
+	}
+	k_sleep(K_MSEC(100));
+
+	/* Self-test readings */
+	rc = lsm6dsv_gyr_average(dev, avg_positive);
+	if (rc < 0) {
+		LOG_ERR("Failed to read self-test gyroscope data");
+		goto end;
+	}
+
+	/* Compute difference between normal and self-test outputs */
+	for (int i = 0; i < 3; i++) {
+		int32_t diff = (2000 * (avg_positive[i] - avg_base[i])) / (INT16_MAX + 1);
+
+		dps_difference[i] = diff < 0 ? -diff : diff;
+	}
+
+	/* Compare against datasheet specification */
+	if (!IN_RANGE(dps_difference[0], LSM6DSV_G_SELF_TEST_MIN_DPS,
+		      LSM6DSV_G_SELF_TEST_MAX_DPS) ||
+	    !IN_RANGE(dps_difference[1], LSM6DSV_G_SELF_TEST_MIN_DPS,
+		      LSM6DSV_G_SELF_TEST_MAX_DPS) ||
+	    !IN_RANGE(dps_difference[2], LSM6DSV_G_SELF_TEST_MIN_DPS,
+		      LSM6DSV_G_SELF_TEST_MAX_DPS)) {
+		LOG_ERR("GYR self-test failed: X:%6d Y:%6d Z:%6d", dps_difference[0],
+			dps_difference[1], dps_difference[2]);
+		rc = -EINVAL;
+		goto end;
+	}
+	LOG_DBG("Difference = X:%6d Y:%6d Z:%6d", dps_difference[0], dps_difference[1],
+		dps_difference[2]);
+
+end:
+	reg_val = 0x00;
+	(void)lsm6dsv_reg_write(dev, LSM6DSV_REG_CTRL10, &reg_val, 1);
+	(void)lsm6dsv_reg_write(dev, LSM6DSV_REG_CTRL2, &reg_val, 1);
+	return rc;
+}
+
+static int lsm6dsv_self_test(const struct device *dev)
+{
+	int rc;
+
+	rc = lsm6dsv_self_test_acc(dev);
+	if (rc < 0) {
+		goto end;
+	}
+	rc = lsm6dsv_self_test_gyr(dev);
+
+end:
+	(void)lsm6dsv_low_power_reset(dev);
+
+	return rc;
+}
+
+#endif /* CONFIG_INFUSE_IMU_SELF_TEST */
+
 static int lsm6dsv_pm_control(const struct device *dev, enum pm_device_action action)
 {
 	const struct lsm6dsv_config *config = dev->config;
@@ -601,6 +884,9 @@ struct infuse_imu_api lsm6dsv_imu_api = {
 	.configure = lsm6dsv_configure,
 	.data_wait = lsm6dsv_data_wait,
 	.data_read = lsm6dsv_data_read,
+#ifdef CONFIG_INFUSE_IMU_SELF_TEST
+	.self_test = lsm6dsv_self_test,
+#endif
 };
 
 /* Initializes a struct lsm6dsv_config for an instance on a SPI bus. */
