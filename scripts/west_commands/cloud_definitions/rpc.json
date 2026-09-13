@@ -938,7 +938,18 @@
             "default_auth": "EPACKET_AUTH_DEVICE",
             "request_params": [
                 {"name": "peer", "type": "struct rpc_struct_bt_addr_le", "description": "Bluetooth LE device to run reboot on"},
-                      {"name": "conn_timeout_ms", "type": "uint16_t", "description": "Connection timeout in milliseconds"}
+                {"name": "conn_timeout_ms", "type": "uint16_t", "description": "Connection timeout in milliseconds"}
+            ],
+            "response_params": [
+            ]
+        },
+        "55": {
+            "name": "bt_cloud_uplink",
+            "description": "Send all pending cloud uplink packets on the CLOUD_UPLINK characteristic",
+            "depends_on": "EPACKET_INTERFACE_BT_PERIPHERAL_CLOUD_UPLINK",
+            "default": "y if INFUSE_SDK",
+            "default_auth": "EPACKET_AUTH_NETWORK",
+            "request_params": [
             ],
             "response_params": [
             ]

@@ -352,6 +352,14 @@ static const struct command_impl command_impls[] = {
 		.request_len = sizeof(struct rpc_bt_mcumgr_reboot_request),
 	},
 #endif /* CONFIG_INFUSE_RPC_COMMAND_BT_MCUMGR_REBOOT */
+#ifdef CONFIG_INFUSE_RPC_COMMAND_BT_CLOUD_UPLINK
+	{
+		.handler = rpc_command_bt_cloud_uplink,
+		.command_id = RPC_ID_BT_CLOUD_UPLINK,
+		.required_auth = CONFIG_INFUSE_RPC_COMMAND_BT_CLOUD_UPLINK_REQUIRED_AUTH,
+		.request_len = sizeof(struct rpc_bt_cloud_uplink_request),
+	},
+#endif /* CONFIG_INFUSE_RPC_COMMAND_BT_CLOUD_UPLINK */
 #ifdef CONFIG_INFUSE_RPC_COMMAND_GRAVITY_REFERENCE_UPDATE
 	{
 		.handler = rpc_command_gravity_reference_update,

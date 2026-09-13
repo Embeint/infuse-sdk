@@ -573,6 +573,8 @@ enum rpc_builtin_id {
 	RPC_ID_BT_FILE_COPY_COAP = 53,
 	/** Connect to a Bluetooth device and run the MCUMGR reboot command */
 	RPC_ID_BT_MCUMGR_REBOOT = 54,
+	/** Send all pending cloud uplink packets on the CLOUD_UPLINK characteristic */
+	RPC_ID_BT_CLOUD_UPLINK = 55,
 	/** Store the current accelerometer vector as the gravity reference */
 	RPC_ID_GRAVITY_REFERENCE_UPDATE = 60,
 	/** Query files currently on the filesystem */
@@ -1367,6 +1369,15 @@ struct rpc_bt_mcumgr_reboot_request {
 } __packed;
 
 struct rpc_bt_mcumgr_reboot_response {
+	struct infuse_rpc_rsp_header header;
+} __packed;
+
+/** Send all pending cloud uplink packets on the CLOUD_UPLINK characteristic */
+struct rpc_bt_cloud_uplink_request {
+	struct infuse_rpc_req_header header;
+} __packed;
+
+struct rpc_bt_cloud_uplink_response {
 	struct infuse_rpc_rsp_header header;
 } __packed;
 
