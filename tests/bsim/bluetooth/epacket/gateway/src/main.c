@@ -61,11 +61,17 @@ static K_SEM_DEFINE(epacket_adv_received, 0, 1);
 static K_SEM_DEFINE(bt_connected, 0, 1);
 static K_SEM_DEFINE(bt_disconnected, 0, 1);
 static K_SEM_DEFINE(reboot_request, 0, 1);
+static K_FIFO_DEFINE(central_fifo);
 static uint64_t adv_infuse_id;
 static bt_addr_le_t adv_device;
 static atomic_t received_packets;
+static atomic_t cloud_uplink_pending_seen;
 
 LOG_MODULE_REGISTER(app, LOG_LEVEL_INF);
+
+static void central_handler(struct net_buf *buf);
+static void central_fifo_flush(void);
+static bool validate_memfault_cloud_uplink_buf(struct net_buf *buf);
 
 int infuse_reboot_state_query(struct infuse_reboot_state *state)
 {
@@ -104,6 +110,7 @@ static void common_init(void)
 	k_sem_reset(&bt_connected);
 	k_sem_reset(&bt_disconnected);
 	received_packets = 0;
+	cloud_uplink_pending_seen = 0;
 }
 
 static void epacket_bt_adv_receive_handler(struct net_buf *buf)
@@ -114,6 +121,9 @@ static void epacket_bt_adv_receive_handler(struct net_buf *buf)
 		meta->auth, buf->len, meta->rssi);
 	adv_infuse_id = meta->packet_device_id;
 	adv_device = meta->interface_address.bluetooth;
+	if (meta->flags & EPACKET_FLAGS_BT_ADV_CLOUD_UPLINK_PENDING) {
+		atomic_set(&cloud_uplink_pending_seen, 1);
+	}
 	atomic_inc(&received_packets);
 
 	net_buf_unref(buf);
@@ -280,6 +290,113 @@ static void main_gateway_scan_wdog(void)
 		PASS("Received %d packets despite 'broken' controller\n",
 		     atomic_get(&received_packets));
 	}
+}
+
+static void main_gateway_scan_cloud_uplink_pending(void)
+{
+	const struct device *epacket_bt_adv = DEVICE_DT_GET(DT_NODELABEL(epacket_bt_adv));
+	const struct device *epacket_central = DEVICE_DT_GET(DT_NODELABEL(epacket_bt_central));
+	struct epacket_bt_gatt_connect_params params = {
+		.conn_params = BT_LE_CONN_PARAM_INIT(0x10, 0x15, 0, 400),
+		.inactivity_timeout = K_FOREVER,
+		.absolute_timeout = K_FOREVER,
+		.conn_timeout_ms = 3000,
+		.preferred_phy = BT_GAP_LE_PHY_NONE,
+		.subscribe_commands = true,
+		.subscribe_data = false,
+		.subscribe_logging = false,
+		.subscribe_cloud_uplink = true,
+		.wait_subscriptions = true,
+	};
+	struct epacket_read_response security_info;
+	union epacket_interface_address if_address;
+	struct rpc_bt_cloud_uplink_request req = {0};
+	struct infuse_rpc_rsp_header *rsp;
+	struct rpc_client_ctx ctx;
+	struct bt_conn *conn = NULL;
+	struct net_buf *buf;
+	bool already;
+	int rc;
+
+	common_init();
+	central_fifo_flush();
+	epacket_set_receive_handler(epacket_bt_adv, epacket_bt_adv_receive_handler);
+	rc = epacket_receive(epacket_bt_adv, K_FOREVER);
+	if (rc < 0) {
+		FAIL("Failed to start ePacket receive (%d)\n", rc);
+		return;
+	}
+
+	k_sleep(K_MSEC(2500));
+	if (atomic_get(&cloud_uplink_pending_seen)) {
+		FAIL("Cloud uplink pending flag observed before Memfault data was pended\n");
+		return;
+	}
+
+	k_sem_reset(&epacket_adv_received);
+	for (int64_t deadline = k_uptime_get() + 8000;
+	     (k_uptime_get() < deadline) && !atomic_get(&cloud_uplink_pending_seen);) {
+		(void)k_sem_take(&epacket_adv_received, K_MSEC(500));
+	}
+
+	rc = epacket_receive(epacket_bt_adv, K_NO_WAIT);
+	if (rc < 0) {
+		FAIL("Failed to stop ePacket receive (%d)\n", rc);
+		return;
+	}
+
+	if (!atomic_get(&cloud_uplink_pending_seen)) {
+		FAIL("Cloud uplink pending flag not observed (%d packets)\n",
+		     atomic_get(&received_packets));
+		return;
+	}
+
+	params.peer = adv_device;
+	if_address.bluetooth = adv_device;
+	epacket_set_receive_handler(epacket_central, central_handler);
+	rpc_client_init(&ctx, epacket_central, if_address);
+
+	rc = epacket_bt_gatt_connect(&conn, &params, &security_info, &already);
+	if (rc != 0) {
+		FAIL("Failed to connect to peer with pending data (%d)\n", rc);
+		goto cleanup_client;
+	}
+
+	rc = rpc_client_command_sync(&ctx, RPC_ID_BT_CLOUD_UPLINK, &req, sizeof(req), K_NO_WAIT,
+				     K_SECONDS(5), &buf);
+	if (rc < 0) {
+		FAIL("Failed to run bt_cloud_uplink RPC (%d)\n", rc);
+		goto disconnect;
+	}
+	rsp = (void *)buf->data;
+	if (rsp->return_code != 0) {
+		FAIL("bt_cloud_uplink RPC returned %d\n", rsp->return_code);
+		net_buf_unref(buf);
+		goto disconnect;
+	}
+	net_buf_unref(buf);
+
+	buf = k_fifo_get(&central_fifo, K_SECONDS(2));
+	if (buf == NULL) {
+		FAIL("No Memfault cloud uplink data received\n");
+		goto disconnect;
+	}
+	if (!validate_memfault_cloud_uplink_buf(buf)) {
+		net_buf_unref(buf);
+		FAIL("Invalid Memfault cloud uplink data\n");
+		goto disconnect;
+	}
+	net_buf_unref(buf);
+
+	PASS("Cloud uplink pending flag observed and bt_cloud_uplink RPC succeeded\n");
+
+disconnect:
+	if (conn != NULL) {
+		(void)bt_conn_disconnect_sync(conn);
+		bt_conn_unref(conn);
+	}
+cleanup_client:
+	rpc_client_cleanup(&ctx);
 }
 
 #ifdef CONFIG_EPACKET_INTERFACE_BT_ADV_FALLBACK_SCAN_CALLBACK
@@ -676,10 +793,9 @@ static void main_gateway_connect_then_scan(void)
 	}
 }
 
-static K_FIFO_DEFINE(central_fifo);
 static const uint8_t cloud_uplink_payload[] = {0x63, 0x6C, 0x6F, 0x75, 0x64};
 
-void central_handler(struct net_buf *buf)
+static void central_handler(struct net_buf *buf)
 {
 	k_fifo_put(&central_fifo, buf);
 }
@@ -713,6 +829,22 @@ static bool validate_cloud_uplink_buf(struct net_buf *buf)
 	}
 	if (memcmp(buf->data, cloud_uplink_payload, sizeof(cloud_uplink_payload)) != 0) {
 		LOG_ERR("Unexpected payload");
+		return false;
+	}
+	return true;
+}
+
+static bool validate_memfault_cloud_uplink_buf(struct net_buf *buf)
+{
+	struct epacket_rx_metadata *meta = net_buf_user_data(buf);
+
+	LOG_INF("Received %d bytes %d packet", buf->len, meta->type);
+	if (meta->type != INFUSE_MEMFAULT_CHUNK) {
+		LOG_ERR("Unexpected packet type (%d != %d)", meta->type, INFUSE_MEMFAULT_CHUNK);
+		return false;
+	}
+	if (buf->len == 0) {
+		LOG_ERR("Empty Memfault payload");
 		return false;
 	}
 	return true;
@@ -3010,6 +3142,13 @@ static const struct bst_test_instance epacket_gateway[] = {
 		.test_pre_init_f = test_init,
 		.test_tick_f = test_tick,
 		.test_main_f = main_gateway_scan_wdog,
+	},
+	{
+		.test_id = "epacket_bt_gateway_scan_cloud_uplink_pending",
+		.test_descr = "Scan for cloud uplink pending flag",
+		.test_pre_init_f = test_init,
+		.test_tick_f = test_tick,
+		.test_main_f = main_gateway_scan_cloud_uplink_pending,
 	},
 	{
 		.test_id = "epacket_bt_gateway_scan_app_cb",
