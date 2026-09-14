@@ -512,6 +512,9 @@ void gnss_task_fn(const struct task_schedule *schedule, struct k_poll_signal *te
 		.message_cb = nav_pvt_cb,
 		.user_data = &run_state,
 	};
+	struct tdf_runtime_error tdf_error = {
+		.error_id = TASK_RUNNER_TASK_U32_ID(schedule->task_id),
+	};
 	bool extint_force_active;
 	uint32_t data_timeout;
 	uint32_t max_sleep_s;
@@ -531,18 +534,23 @@ void gnss_task_fn(const struct task_schedule *schedule, struct k_poll_signal *te
 
 	/* Request sensor to be powered */
 	rc = pm_device_runtime_get(gnss);
+	tdf_error.error_ctx = 0;
 	if ((rc < 0) && pm_device_is_powered(gnss)) {
 		/* Device is in software shutdown mode, try to recover communications */
 		LOG_WRN("Failed to request PM, resetting comms");
 		rc = ubx_modem_comms_reset(gnss);
+		tdf_error.error_ctx = 1;
 		if (rc == 0) {
 			/* Communications recovered, try PM again */
 			rc = pm_device_runtime_get(gnss);
+			tdf_error.error_ctx = 2;
 		}
 	}
 	if (rc < 0) {
 		k_sleep(K_SECONDS(1));
 		LOG_ERR("Terminating due to %s", "PM failure");
+		TASK_SCHEDULE_TDF_LOG(schedule, TASK_GNSS_LOG_ERROR, TDF_RUNTIME_ERROR,
+				      epoch_time_now(), &tdf_error);
 		return;
 	}
 
@@ -553,10 +561,19 @@ void gnss_task_fn(const struct task_schedule *schedule, struct k_poll_signal *te
 		if (rc == 0) {
 			/* Try again */
 			(void)gnss_configure(gnss, args, &max_sleep_s, &extint_force_active);
+			if (rc < 0) {
+				tdf_error.error_ctx = 3;
+				TASK_SCHEDULE_TDF_LOG(schedule, TASK_GNSS_LOG_ERROR,
+						      TDF_RUNTIME_ERROR, epoch_time_now(),
+						      &tdf_error);
+			}
 		} else {
 			/* Cycling the modem failed */
 			k_sleep(K_SECONDS(1));
 			LOG_ERR("Terminating due to %s", "power cycle failure");
+			tdf_error.error_ctx = 4;
+			TASK_SCHEDULE_TDF_LOG(schedule, TASK_GNSS_LOG_ERROR, TDF_RUNTIME_ERROR,
+					      epoch_time_now(), &tdf_error);
 			return;
 		}
 	}
@@ -598,6 +615,10 @@ void gnss_task_fn(const struct task_schedule *schedule, struct k_poll_signal *te
 			if (k_uptime_seconds() >= data_timeout) {
 				/* Data has not arrived within the expected time */
 				LOG_WRN("Terminating due to %s", "data timeout");
+				tdf_error.error_ctx = 6;
+				TASK_SCHEDULE_TDF_LOG(schedule, TASK_GNSS_LOG_ERROR,
+						      TDF_RUNTIME_ERROR, epoch_time_now(),
+						      &tdf_error);
 				break;
 			}
 			if (max_sleep_s > 0) {
@@ -671,6 +692,9 @@ void gnss_task_fn(const struct task_schedule *schedule, struct k_poll_signal *te
 	rc = pm_device_runtime_put(gnss);
 	if (rc < 0) {
 		LOG_ERR("PM put failure");
+		tdf_error.error_ctx = 6;
+		TASK_SCHEDULE_TDF_LOG(schedule, TASK_GNSS_LOG_ERROR, TDF_RUNTIME_ERROR,
+				      epoch_time_now(), &tdf_error);
 	}
 
 	/* Terminate thread */

@@ -24,6 +24,7 @@ extern "C" {
 enum {
 	TASK_GNSS_LOG_LLHA = BIT(0),
 	TASK_GNSS_LOG_FIX_INFO = BIT(1),
+	TASK_GNSS_LOG_ERROR = BIT(6),
 	/* Maximum information Position-Velocity-Time */
 	TASK_GNSS_LOG_PVT = BIT(7),
 };
