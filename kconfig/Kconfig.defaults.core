@@ -212,6 +212,11 @@ choice LORA_MODULE_BACKEND
 	default LORA_MODULE_BACKEND_LORA_BASICS_MODEM
 endchoice
 
+# USB
+configdefault UART_LINE_CTRL
+	# CDC port attach/detach exposed through DTR line state
+	default y if USBD_CDC_ACM_CLASS
+
 # RTT communications
 configdefault SEGGER_RTT_BUFFER_SIZE_UP
 	default 1024
