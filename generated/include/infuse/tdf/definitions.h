@@ -804,6 +804,21 @@ struct tdf_lte_sleep_exit {
 	uint32_t duration_s;
 } __packed;
 
+/** Device that failed to initialise on boot */
+struct tdf_device_init_error {
+	/** Return code of the init failure */
+	int8_t code;
+	/** Device that failed to init */
+	char name[];
+} __packed;
+
+/** Define a variant of tdf_device_init_error with a constant length */
+#define TDF_DEVICE_INIT_ERROR_VAR(_name, _count)                                                   \
+	struct _name {                                                                             \
+		int8_t code;                                                                       \
+		char name[_count];                                                                 \
+	} __packed;
+
 /** Infuse-IoT builtin TDF definitions */
 enum tdf_builtin_id {
 	/** Common announcement packet */
@@ -934,6 +949,8 @@ enum tdf_builtin_id {
 	TDF_LTE_SLEEP_ENTER = 64,
 	/** LTE modem has exited sleep mode */
 	TDF_LTE_SLEEP_EXIT = 65,
+	/** Device that failed to initialise on boot */
+	TDF_DEVICE_INIT_ERROR = 66,
 	/** End of builtin TDF range */
 	TDF_BUILTIN_END = 1024,
 };
@@ -1002,6 +1019,7 @@ enum tdf_builtin_id {
 #define _TDF_LTE_CONTROL_TYPE                 struct tdf_lte_control
 #define _TDF_LTE_SLEEP_ENTER_TYPE             struct tdf_lte_sleep_enter
 #define _TDF_LTE_SLEEP_EXIT_TYPE              struct tdf_lte_sleep_exit
+#define _TDF_DEVICE_INIT_ERROR_TYPE           struct tdf_device_init_error
 
 /** Size of builtin TDF definitions */
 enum tdf_builtin_size {
@@ -1067,6 +1085,7 @@ enum tdf_builtin_size {
 	_TDF_LTE_CONTROL_SIZE = sizeof(struct tdf_lte_control),
 	_TDF_LTE_SLEEP_ENTER_SIZE = sizeof(struct tdf_lte_sleep_enter),
 	_TDF_LTE_SLEEP_EXIT_SIZE = sizeof(struct tdf_lte_sleep_exit),
+	_TDF_DEVICE_INIT_ERROR_SIZE = sizeof(struct tdf_device_init_error),
 };
 
 /** @endcond */

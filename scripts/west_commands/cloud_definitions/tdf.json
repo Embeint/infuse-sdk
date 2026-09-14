@@ -643,6 +643,14 @@
                 {"name": "type", "type": "uint8_t", "description": "Type of sleep mode that exited (Values from lte_lc_modem_sleep_type)"},
                 {"name": "duration_s", "type": "uint32_t", "description": "How long modem was in sleep mode for in seconds"}
             ]
+        },
+        "66": {
+            "name": "DEVICE_INIT_ERROR",
+            "description": "Device that failed to initialise on boot",
+            "fields": [
+                {"name": "code", "type": "int8_t", "description": "Return code of the init failure"},
+                {"name": "name", "type": "char", "num": 0, "description": "Device that failed to init"}
+            ]
         }
     }
 }
