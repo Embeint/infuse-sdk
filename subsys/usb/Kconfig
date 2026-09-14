@@ -1,0 +1,64 @@
+# Copyright (c) 2026 Embeint Holdings Pty Ltd
+# SPDX-License-Identifier: FSL-1.1-ALv2
+
+menu "Infuse-IoT USB support"
+
+menuconfig INFUSE_CDC_ACM_SERIAL_INITIALIZE_AT_BOOT
+	bool "Initialize USB device and CDC ACM UART at boot"
+	depends on USBD_CDC_ACM_CLASS
+	depends on !CDC_ACM_SERIAL_INITIALIZE_AT_BOOT
+	help
+	  Infuse-owned equivalent of CDC_ACM_SERIAL_INITIALIZE_AT_BOOT.
+	  This is intended for applications that use the USB device-next CDC
+	  ACM UART as a serial backend and need Infuse to observe USB and CDC
+	  ACM state changes.
+
+if INFUSE_CDC_ACM_SERIAL_INITIALIZE_AT_BOOT
+
+config INFUSE_CDC_ACM_SERIAL_ENABLE_AT_BOOT
+	bool "USB device will be enabled at boot"
+	default y
+	help
+	  When disabled, the application is responsible for enabling/disabling
+	  the USB device.
+
+config INFUSE_CDC_ACM_SERIAL_MANUFACTURER_STRING
+	string "USB device manufacturer string descriptor"
+	default "Embeint"
+	help
+	  USB device manufacturer string descriptor.
+
+config INFUSE_CDC_ACM_SERIAL_PRODUCT_STRING
+	string "USB device product string descriptor"
+	default "Infuse-IoT Generic"
+	help
+	  USB device product string descriptor.
+
+config INFUSE_CDC_ACM_SERIAL_VID
+	hex "USB device Vendor ID"
+	default 0x2fe3
+	help
+	  USB vendor identifier. Zephyr default for development. MUST be changed
+	  for released products.
+
+config INFUSE_CDC_ACM_SERIAL_PID
+	hex "USB device Product ID"
+	default 0x0004
+	help
+	  USB product identifier.
+
+config INFUSE_CDC_ACM_SERIAL_SELF_POWERED
+	bool "USB device Self-powered attribute"
+	help
+	  Set the Self-powered attribute in the configuration.
+
+config INFUSE_CDC_ACM_SERIAL_MAX_POWER
+	int "USB device bMaxPower value"
+	default 125
+	range 0 250
+	help
+	  bMaxPower value in the configuration in 2 mA units.
+
+endif # INFUSE_CDC_ACM_SERIAL_INITIALIZE_AT_BOOT
+
+endmenu
