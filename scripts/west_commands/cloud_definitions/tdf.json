@@ -614,6 +614,14 @@
                 {"name": "key", "type": "uint16_t", "description": "KV Store key identifier"},
                 {"name": "value", "type": "uint8_t", "num": 0, "description": "New data value, empty for delete, '*' for write-only"}
             ]
+        },
+        "66": {
+            "name": "DEVICE_INIT_ERROR",
+            "description": "Device that failed to initialise on boot",
+            "fields": [
+                {"name": "code", "type": "uint8_t", "conversion": {"m": -1, "c": 0}, "description": "Return code of the init failure"},
+                {"name": "name", "type": "char", "num": 0, "description": "Device that failed to init"}
+            ]
         }
     }
 }

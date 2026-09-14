@@ -778,6 +778,21 @@ struct tdf_kvs_value_changed {
 		uint8_t value[_count];                                                             \
 	} __packed;
 
+/** Device that failed to initialise on boot */
+struct tdf_device_init_error {
+	/** Return code of the init failure */
+	uint8_t code;
+	/** Device that failed to init */
+	char name[];
+} __packed;
+
+/** Define a variant of tdf_device_init_error with a constant length */
+#define TDF_DEVICE_INIT_ERROR_VAR(_name, _count)                                                   \
+	struct _name {                                                                             \
+		uint8_t code;                                                                      \
+		char name[_count];                                                                 \
+	} __packed;
+
 /** Infuse-IoT builtin TDF definitions */
 enum tdf_builtin_id {
 	/** Common announcement packet */
@@ -900,6 +915,8 @@ enum tdf_builtin_id {
 	TDF_PCM_16BIT_CHAN_DUAL = 60,
 	/** Record of key value store data updates */
 	TDF_KVS_VALUE_CHANGED = 61,
+	/** Device that failed to initialise on boot */
+	TDF_DEVICE_INIT_ERROR = 66,
 	/** End of builtin TDF range */
 	TDF_BUILTIN_END = 1024,
 };
@@ -964,6 +981,7 @@ enum tdf_builtin_id {
 #define _TDF_PCM_16BIT_CHAN_RIGHT_TYPE        struct tdf_pcm_16bit_chan_right
 #define _TDF_PCM_16BIT_CHAN_DUAL_TYPE         struct tdf_pcm_16bit_chan_dual
 #define _TDF_KVS_VALUE_CHANGED_TYPE           struct tdf_kvs_value_changed
+#define _TDF_DEVICE_INIT_ERROR_TYPE           struct tdf_device_init_error
 
 /** Size of builtin TDF definitions */
 enum tdf_builtin_size {
@@ -1025,6 +1043,7 @@ enum tdf_builtin_size {
 	_TDF_PCM_16BIT_CHAN_RIGHT_SIZE = sizeof(struct tdf_pcm_16bit_chan_right),
 	_TDF_PCM_16BIT_CHAN_DUAL_SIZE = sizeof(struct tdf_pcm_16bit_chan_dual),
 	_TDF_KVS_VALUE_CHANGED_SIZE = sizeof(struct tdf_kvs_value_changed),
+	_TDF_DEVICE_INIT_ERROR_SIZE = sizeof(struct tdf_device_init_error),
 };
 
 /** @endcond */
