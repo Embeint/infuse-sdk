@@ -15,6 +15,8 @@
 #include <zephyr/logging/log.h>
 #include <zephyr/usb/usbd.h>
 
+#include <infuse/epacket/interface/epacket_serial.h>
+
 LOG_MODULE_REGISTER(infuse_cdc_acm_serial, CONFIG_USBD_LOG_LEVEL);
 
 USBD_DEVICE_DEFINE(infuse_cdc_acm_serial, DEVICE_DT_GET(DT_NODELABEL(zephyr_udc0)),
@@ -54,6 +56,14 @@ static void infuse_cdc_acm_msg_handler(struct usbd_context *const uds_ctx,
 		if (rc == 0) {
 			LOG_DBG("CDC ACM DTR %s", dtr ? "set" : "cleared");
 		}
+
+#ifdef CONFIG_EPACKET_INTERFACE_SERIAL
+		const struct device *epacket = DEVICE_DT_GET(DT_NODELABEL(epacket_serial));
+
+		/* Line state has changed, reset reconstructor state */
+		LOG_DBG("Resetting %s reconstructor", epacket->name);
+		epacket_serial_reconstruct_reset(epacket);
+#endif /* CONFIG_EPACKET_INTERFACE_SERIAL */
 	}
 }
 
