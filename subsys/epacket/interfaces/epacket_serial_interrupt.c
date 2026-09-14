@@ -186,6 +186,23 @@ static void epacket_serial_send(const struct device *dev, struct net_buf *buf)
 	struct epacket_serial_frame_header *header;
 	int rc;
 
+#ifdef CONFIG_UART_LINE_CTRL
+	if (config->backend_usb) {
+		uint32_t dtr = 0;
+
+		rc = uart_line_ctrl_get(config->backend, UART_LINE_CTRL_DTR, &dtr);
+		if ((rc == 0) && !dtr) {
+			/* Query succeeded and DTR not set.
+			 * USB port is not opened.
+			 */
+			LOG_DBG("Not connected, dropping");
+			epacket_notify_tx_result(dev, buf, -ENOTCONN);
+			net_buf_unref(buf);
+			return;
+		}
+	}
+#endif /* CONFIG_UART_LINE_CTRL */
+
 	/* Encrypt the payload */
 	if (epacket_serial_encrypt(buf) < 0) {
 		LOG_WRN("Failed to encrypt");
