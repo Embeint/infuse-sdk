@@ -38,7 +38,8 @@ static const struct task_schedule schedules[] = {
 		.task_logging =
 			{
 				{
-					.loggers = TDF_DATA_LOGGER_SERIAL,
+					.loggers = TDF_DATA_LOGGER_SERIAL |
+						   TDF_DATA_LOGGER_BT_PERIPHERAL,
 					.tdf_mask = TASK_GNSS_LOG_PVT,
 				},
 			},
@@ -62,7 +63,8 @@ static const struct task_schedule schedules[] = {
 		.task_logging =
 			{
 				{
-					.loggers = TDF_DATA_LOGGER_SERIAL,
+					.loggers = TDF_DATA_LOGGER_SERIAL |
+						   TDF_DATA_LOGGER_BT_PERIPHERAL,
 					.tdf_mask = TASK_BATTERY_LOG_COMPLETE,
 				},
 			},
