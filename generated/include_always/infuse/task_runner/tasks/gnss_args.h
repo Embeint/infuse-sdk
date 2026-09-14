@@ -26,6 +26,8 @@ enum {
 	TASK_GNSS_LOG_LLHA = BIT(0),
 	/** Log fix information */
 	TASK_GNSS_LOG_FIX_INFO = BIT(1),
+	/** Log runtime errors */
+	TASK_GNSS_LOG_ERROR = BIT(6),
 	/** Log maximum information position, velocity and time */
 	TASK_GNSS_LOG_PVT = BIT(7),
 };

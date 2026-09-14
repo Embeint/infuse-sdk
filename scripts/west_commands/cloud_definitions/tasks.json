@@ -141,6 +141,7 @@
             "values": [
                 {"name": "LLHA", "bit": 0, "description": "Log latitude, longitude, height and accuracy"},
                 {"name": "FIX_INFO", "bit": 1, "description": "Log fix information"},
+                {"name": "ERROR", "bit": 6, "description": "Log runtime errors"},
                 {"name": "PVT", "bit": 7, "description": "Log maximum information position, velocity and time"}
             ]
         },
