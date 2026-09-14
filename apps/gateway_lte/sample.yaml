@@ -11,6 +11,7 @@ common:
     - ble
   integration_platforms:
     - auroch/nrf9151/ns
+    - bonasus@0/nrf54l15/cpuapp
     - kudu/nrf54l15/cpuapp
     - nrf93m1dk/nrf54l15/cpuapp
 tests:
