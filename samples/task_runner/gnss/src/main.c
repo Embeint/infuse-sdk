@@ -102,11 +102,6 @@ int main(void)
 	/* Start the watchdog */
 	(void)infuse_watchdog_start();
 
-#ifdef CONFIG_NETWORKING
-	conn_mgr_all_if_up(true);
-	conn_mgr_all_if_connect(true);
-#endif /* CONFIG_NETWORKING */
-
 	/* Initialise task runner */
 	task_runner_init(schedules, states, ARRAY_SIZE(schedules), app_tasks, app_tasks_data,
 			 ARRAY_SIZE(app_tasks));
