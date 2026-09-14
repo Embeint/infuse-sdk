@@ -38,6 +38,13 @@ enum {
 	TASK_FLAG_ARG_IS_DEVICE = BIT(0),
 };
 
+/**
+ * @brief Construct unique 32 bit ID for a task for @ref tdf_runtime_error
+ *
+ * @param task_id Task ID from schedule definition
+ */
+#define TASK_RUNNER_TASK_U32_ID(task_id) (0x7A5A6600 | (task_id))
+
 typedef void (*task_runner_task_fn)(const struct task_schedule *schedule,
 				    struct k_poll_signal *terminate, void *arg);
 
