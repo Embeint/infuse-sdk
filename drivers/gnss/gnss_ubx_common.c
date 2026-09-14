@@ -265,7 +265,14 @@ int ubx_common_pm_control(const struct device *dev, enum pm_device_action action
 		/* Put into low power mode */
 		rc = cfg->pm_funcs->software_standby(dev);
 		if (rc < 0) {
-			LOG_WRN("Failed to go to standby mode");
+			LOG_WRN("Failed to go to standby mode, resetting comms");
+			/* Try a reset of the modem state */
+			(void)ubx_common_pm_control(dev, PM_DEVICE_ACTION_TURN_OFF);
+
+			rc = ubx_common_pm_control(dev, PM_DEVICE_ACTION_TURN_ON);
+			if (rc < 0) {
+				LOG_WRN("Failed to recover communications");
+			}
 			/* It is important here that even if the modem backend reports a failure,
 			 * that it is not propogated back to the PM subsystem. A failing SUSPEND
 			 * call results in the usage counter remaining at 1, which means that any
