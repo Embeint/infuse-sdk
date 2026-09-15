@@ -648,7 +648,7 @@
             "name": "DEVICE_INIT_ERROR",
             "description": "Device that failed to initialise on boot",
             "fields": [
-                {"name": "code", "type": "int8_t", "description": "Return code of the init failure"},
+                {"name": "code", "type": "uint8_t", "conversion": {"m": -1, "c": 0}, "description": "Return code of the init failure"},
                 {"name": "name", "type": "char", "num": 0, "description": "Device that failed to init"}
             ]
         }

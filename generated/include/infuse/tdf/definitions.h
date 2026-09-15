@@ -807,7 +807,7 @@ struct tdf_lte_sleep_exit {
 /** Device that failed to initialise on boot */
 struct tdf_device_init_error {
 	/** Return code of the init failure */
-	int8_t code;
+	uint8_t code;
 	/** Device that failed to init */
 	char name[];
 } __packed;
@@ -815,7 +815,7 @@ struct tdf_device_init_error {
 /** Define a variant of tdf_device_init_error with a constant length */
 #define TDF_DEVICE_INIT_ERROR_VAR(_name, _count)                                                   \
 	struct _name {                                                                             \
-		int8_t code;                                                                       \
+		uint8_t code;                                                                      \
 		char name[_count];                                                                 \
 	} __packed;
 
