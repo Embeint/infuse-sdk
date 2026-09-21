@@ -536,6 +536,7 @@ static const struct ubx_common_pm_fn ubx_m8_spi_pm_fn = {
 };
 
 #define UBX_M8_SPI(inst)                                                                           \
+	UBX_COMMON_BUILD_CHECKS(inst);                                                             \
 	static const struct ubx_m8_spi_config ubx_m8_cfg_##inst = {                                \
 		.common = UBX_COMMON_CONFIG_INST(inst, &ubx_m8_spi_pm_fn),                         \
 		.spi = SPI_DT_SPEC_INST_GET(inst, SPI_WORD_SET(8) | SPI_TRANSFER_MSB),             \

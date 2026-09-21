@@ -554,6 +554,7 @@ static const struct ubx_common_pm_fn ubx_m10_i2c_pm_fn = {
 };
 
 #define UBX_M10_I2C(inst)                                                                          \
+	UBX_COMMON_BUILD_CHECKS(inst);                                                             \
 	static const struct ubx_m10_i2c_config ubx_m10_cfg_##inst = {                              \
 		.common = UBX_COMMON_CONFIG_INST(inst, &ubx_m10_i2c_pm_fn),                        \
 		.i2c = I2C_DT_SPEC_INST_GET(inst),                                                 \

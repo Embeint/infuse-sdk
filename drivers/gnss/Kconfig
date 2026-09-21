@@ -66,6 +66,22 @@ config GNSS_U_BLOX_CONSTELLATION_API_COMPAT
 	bool "Retain compatibility with the Zephyr GNSS constellation functions"
 	depends on GNSS_U_BLOX_NO_API_COMPAT
 
+config GNSS_U_BLOX_IGNORE_STANDBY
+	bool "Don't transition to Software Standby in SUSPENDED state"
+	depends on POWER_DOMAIN
+	depends on PM_DEVICE_RUNTIME
+	help
+	  When the modem is the only device on a power-domain, transitioning to
+	  Software Standby between the TURN_ON and RESUME actions only serves to
+	  increase latency and introduce failure points. This is most useful when
+	  the GNSS backup power domain is supplied, as the receivers power state
+	  can be controlled directly through the primary power domain.
+
+	  With this option enabled the receiver remains fully active (tracking
+	  and outputting messages) while the device is SUSPENDED, so the power
+	  domain must only be enabled while the GNSS is in use. Each devicetree
+	  instance is required to have a `power-domains` property.
+
 config GNSS_U_BLOX_SATELLITES_COUNT
 	int "Maximum satellite count"
 	depends on GNSS_SATELLITES
