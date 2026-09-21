@@ -246,6 +246,7 @@ int ubx_common_pm_control(const struct device *dev, enum pm_device_action action
 	switch (action) {
 	case PM_DEVICE_ACTION_SUSPEND:
 		shared_device_release_dt(&cfg->ant_switch);
+#ifndef CONFIG_GNSS_U_BLOX_IGNORE_STANDBY
 		/* Disable timepulse interrupt */
 		if (cfg->timepulse_gpio.port != NULL) {
 			data->latest_timepulse = 0;
@@ -277,8 +278,10 @@ int ubx_common_pm_control(const struct device *dev, enum pm_device_action action
 		}
 		/* Notify modem layer */
 		ubx_modem_software_standby(&data->modem);
+#endif /* !CONFIG_GNSS_U_BLOX_IGNORE_STANDBY */
 		break;
 	case PM_DEVICE_ACTION_RESUME:
+#ifndef CONFIG_GNSS_U_BLOX_IGNORE_STANDBY
 		rc = cfg->pm_funcs.software_resume(dev);
 		if (rc < 0) {
 			LOG_WRN("Failed to resume");
@@ -290,6 +293,7 @@ int ubx_common_pm_control(const struct device *dev, enum pm_device_action action
 			(void)gpio_pin_interrupt_configure_dt(&cfg->timepulse_gpio,
 							      GPIO_INT_EDGE_TO_ACTIVE);
 		}
+#endif /* !CONFIG_GNSS_U_BLOX_IGNORE_STANDBY */
 		shared_device_request_dt(&cfg->ant_switch);
 		break;
 	case PM_DEVICE_ACTION_TURN_OFF:
@@ -329,6 +333,7 @@ int ubx_common_pm_control(const struct device *dev, enum pm_device_action action
 			modem_pipe_close(data->modem.pipe, K_SECONDS(2));
 			return rc;
 		}
+#ifndef CONFIG_GNSS_U_BLOX_IGNORE_STANDBY
 		/* Put into low power mode */
 		rc = cfg->pm_funcs.software_standby(dev);
 		if (rc < 0) {
@@ -336,6 +341,7 @@ int ubx_common_pm_control(const struct device *dev, enum pm_device_action action
 			modem_pipe_close(data->modem.pipe, K_SECONDS(2));
 			return rc;
 		}
+#endif /* !CONFIG_GNSS_U_BLOX_IGNORE_STANDBY */
 		break;
 	default:
 		return -ENOTSUP;
