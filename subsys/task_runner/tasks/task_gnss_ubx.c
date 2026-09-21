@@ -57,6 +57,7 @@ struct gnss_run_state {
 	uint32_t task_start;
 	uint32_t time_acquired;
 	uint8_t flags;
+	uint8_t timepulse_failures;
 };
 
 /* Expecting these two struct to be equivalent for logging purposes */
@@ -130,7 +131,17 @@ static void nav_timegps_handle(struct gnss_run_state *state, const struct task_g
 	/* Fine sync requires valid timepulse */
 	rc = gnss_get_latest_timepulse(state->dev, &timepulse);
 	if (rc != 0) {
-		return;
+		if (state->timepulse_failures++ < 3) {
+			return;
+		}
+		/* But if there is still no timepulse when accuracy has been better than 1us for
+		 * multiple seconds, assume it isn't ever coming. Use the current local reference.
+		 * Since TIME_SYNC_DONE is a requirement for RUN_TO_LOCATION_FIX to terminate,
+		 * this prevents a broken timepulse pin from always running for the maximum
+		 * duration.
+		 */
+		LOG_WRN("Timepulse failure");
+		timepulse = k_uptime_ticks();
 	}
 
 	struct timeutil_sync_instant sync = {
@@ -526,6 +537,7 @@ void gnss_task_fn(const struct task_schedule *schedule, struct k_poll_signal *te
 	run_state.best_fix.h_acc = UINT32_MAX;
 	run_state.task_start = k_uptime_seconds();
 	run_state.time_acquired = 0;
+	run_state.timepulse_failures = 0;
 	gnss_timeout_reset(&run_state.timeout_state);
 	k_poll_signal_init(&run_state.nav_pvt_rx);
 	k_poll_signal_init(&run_state.nav_timegps_rx);
