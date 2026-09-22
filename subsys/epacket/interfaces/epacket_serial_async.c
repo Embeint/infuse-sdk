@@ -45,9 +45,16 @@ static void uart_callback(const struct device *dev, struct uart_event *evt, void
 
 	switch (evt->type) {
 	case UART_TX_DONE:
-		LOG_DBG("TX_DONE: %p", data->pending_tx);
+	case UART_TX_ABORTED:
+		if (evt->type == UART_TX_DONE) {
+			LOG_DBG("TX_DONE: %p", data->pending_tx);
+			rc = 0;
+		} else {
+			LOG_DBG("TX_ABORTED: %p", data->pending_tx);
+			rc = -EAGAIN;
+		}
 		/* Notify TX result */
-		epacket_notify_tx_result(data->interface, data->pending_tx, 0);
+		epacket_notify_tx_result(data->interface, data->pending_tx, rc);
 		/* Free TX buffer */
 		net_buf_unref(data->pending_tx);
 		data->pending_tx = NULL;
