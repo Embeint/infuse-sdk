@@ -48,7 +48,6 @@
 		environmental1 = &lps22hx;
 		imu0 = &lsm6dsv;
 		modem = &nrf93m1;
-		gnss = &max_m11;
 	};
 };
 
@@ -255,10 +254,11 @@
 	pinctrl-1 = <&uart22_sleep>;
 	pinctrl-names = "default", "sleep";
 	current-speed = <115200>;
-	status = "okay";
+	status = "disabled";
 
 	max_m11: max_m11 {
 		compatible = "u-blox,m11-uart";
+		status = "disabled";
 		reset-gpios = <&gpio1 4 GPIO_ACTIVE_LOW>;
 		timepulse-gpios = <&gpio1 14 GPIO_ACTIVE_LOW>;
 		reset-gpios = <&gpio1 4 GPIO_ACTIVE_LOW>;
