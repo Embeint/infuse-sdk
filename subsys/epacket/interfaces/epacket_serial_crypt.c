@@ -115,7 +115,8 @@ void epacket_serial_reconstruct(const struct device *dev, uint8_t *buffer, size_
 
 		/* Add payload to buffer */
 		if (rx_buffer) {
-			net_buf_add_mem(rx_buffer, buffer + i, to_add);
+			net_buf_add_mem(rx_buffer, buffer + i,
+					MIN(to_add, net_buf_tailroom(rx_buffer)));
 		}
 		pkt_idx += to_add;
 		payload_remaining -= to_add;
