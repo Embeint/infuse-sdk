@@ -265,20 +265,87 @@ bool bt_central_packet_received(struct net_buf *buf, bool decrypted, void *user_
 INFUSE_WATCHDOG_REGISTER_SYS_INIT(forwarding_wdog, CONFIG_TASK_RUNNER_INFUSE_WATCHDOG, wdog_channel,
 				  loop_period);
 
-static void forward_auto_conn_processor(void *a, void *b, void *c)
+static void forward_auto_conn_process_one(struct net_buf *buf)
 {
-	const struct device *bt_central = DEVICE_DT_GET_ONE(embeint_epacket_bt_central);
-	static struct epacket_interface_cb bt_central_cb;
-	static struct bt_conn_cb conn_cb;
 	struct epacket_forward_auto_conn_header *hdr;
 	const struct device *forward_interface;
 	struct epacket_interface_address_bt_le *dest_encoded;
 	union epacket_interface_address dest;
 	uint16_t forward_payload, forward_max_size;
 	struct epacket_rx_metadata *meta;
-	struct net_buf *buf;
 	struct net_buf *tx;
 	int rc;
+
+	meta = net_buf_user_data(buf);
+
+	if (buf->len < (sizeof(*hdr) + sizeof(*dest_encoded))) {
+		LOG_WRN("Invalid auto conn header");
+		return;
+	}
+	hdr = net_buf_pull_mem(buf, sizeof(struct epacket_forward_auto_conn_header));
+	if (hdr->length < (sizeof(*hdr) + sizeof(*dest_encoded))) {
+		LOG_WRN("Invalid forwarding header");
+		return;
+	}
+
+	switch (hdr->interface) {
+	case EPACKET_INTERFACE_BT_CENTRAL:
+		forward_interface = DEVICE_DT_GET_ONE(embeint_epacket_bt_central);
+		break;
+	default:
+		LOG_WRN("Unknown interface ID: %d", hdr->interface);
+		return;
+	}
+
+	/* Only Bluetooth addresses are currently handled */
+	dest_encoded = net_buf_pull_mem(buf, sizeof(*dest_encoded));
+	dest.bluetooth.type = dest_encoded->type;
+	memcpy(dest.bluetooth.a.val, dest_encoded->addr, 6);
+
+	/* Validate requested payload exists in the buffer */
+	forward_payload = hdr->length - sizeof(*hdr) - sizeof(*dest_encoded);
+	if (buf->len < forward_payload) {
+		LOG_WRN("Insufficient payload bytes (%d < %d)", buf->len, forward_payload);
+		return;
+	}
+
+	/* Ensure we have a valid Bluetooth connection before sending */
+	rc = ensure_bt_connection(&dest, hdr->flags, (uint32_t)hdr->conn_timeout * MSEC_PER_SEC,
+				  K_SECONDS(hdr->conn_idle_timeout),
+				  K_SECONDS(hdr->conn_absolute_timeout));
+	if (rc != 0) {
+		if (hdr->flags & EPACKET_FORWARD_AUTO_CONN_DC_NOTIFICATION) {
+			send_conn_terminated(meta->interface, rc, &dest.bluetooth);
+		}
+		return;
+	}
+
+	/* Validate that forwarding interface can support required packet size */
+	forward_max_size = epacket_interface_max_packet_size(forward_interface);
+	if (forward_max_size < forward_payload) {
+		LOG_WRN("Insufficient packet size (%d < %d)", forward_max_size, forward_payload);
+		return;
+	}
+
+	/* Allocate buffer for forwarded message */
+	tx = epacket_alloc_tx(K_MSEC(10));
+	if (tx == NULL) {
+		LOG_WRN("Unable to allocate buffer");
+		return;
+	}
+
+	/* Copy across to the TX message, push to transmit queue */
+	epacket_set_tx_metadata(tx, EPACKET_AUTH_REMOTE_ENCRYPTED, 0, 0, dest);
+	net_buf_add_mem(tx, buf->data, forward_payload);
+	epacket_queue(forward_interface, tx);
+}
+
+static void forward_auto_conn_processor(void *a, void *b, void *c)
+{
+	const struct device *bt_central = DEVICE_DT_GET_ONE(embeint_epacket_bt_central);
+	static struct epacket_interface_cb bt_central_cb;
+	static struct bt_conn_cb conn_cb;
+	struct net_buf *buf;
 
 	k_thread_name_set(NULL, "auto_conn_forward");
 
@@ -292,76 +359,17 @@ static void forward_auto_conn_processor(void *a, void *b, void *c)
 	infuse_watchdog_thread_register(wdog_channel, _current);
 
 	for (;;) {
+		/* Get the buffer */
 		buf = k_fifo_get(&packet_queue, loop_period);
 		infuse_watchdog_feed(wdog_channel);
 		if (buf == NULL) {
 			continue;
 		}
-		meta = net_buf_user_data(buf);
 
-		if (buf->len < (sizeof(*hdr) + sizeof(*dest_encoded))) {
-			LOG_WRN("Invalid auto conn header");
-			goto cleanup;
-		}
-		hdr = net_buf_pull_mem(buf, sizeof(struct epacket_forward_auto_conn_header));
-		if (hdr->length < (sizeof(*hdr) + sizeof(*dest_encoded))) {
-			LOG_WRN("Invalid forwarding header");
-			goto cleanup;
-		}
+		/* Process the buffer */
+		forward_auto_conn_process_one(buf);
 
-		switch (hdr->interface) {
-		case EPACKET_INTERFACE_BT_CENTRAL:
-			forward_interface = bt_central;
-			break;
-		default:
-			LOG_WRN("Unknown interface ID: %d", hdr->interface);
-			goto cleanup;
-		}
-
-		/* Only Bluetooth addresses are currently handled */
-		dest_encoded = net_buf_pull_mem(buf, sizeof(*dest_encoded));
-		dest.bluetooth.type = dest_encoded->type;
-		memcpy(dest.bluetooth.a.val, dest_encoded->addr, 6);
-
-		/* Validate requested payload exists in the buffer */
-		forward_payload = hdr->length - sizeof(*hdr) - sizeof(*dest_encoded);
-		if (buf->len < forward_payload) {
-			LOG_WRN("Insufficient payload bytes (%d < %d)", buf->len, forward_payload);
-			goto cleanup;
-		}
-
-		/* Ensure we have a valid Bluetooth connection before sending */
-		rc = ensure_bt_connection(
-			&dest, hdr->flags, (uint32_t)hdr->conn_timeout * MSEC_PER_SEC,
-			K_SECONDS(hdr->conn_idle_timeout), K_SECONDS(hdr->conn_absolute_timeout));
-		if (rc != 0) {
-			if (hdr->flags & EPACKET_FORWARD_AUTO_CONN_DC_NOTIFICATION) {
-				send_conn_terminated(meta->interface, rc, &dest.bluetooth);
-			}
-			goto cleanup;
-		}
-
-		/* Validate that forwarding interface can support required packet size */
-		forward_max_size = epacket_interface_max_packet_size(forward_interface);
-		if (forward_max_size < forward_payload) {
-			LOG_WRN("Insufficient packet size (%d < %d)", forward_max_size,
-				forward_payload);
-			goto cleanup;
-		}
-
-		/* Allocate buffer for forwarded message */
-		tx = epacket_alloc_tx(K_MSEC(10));
-		if (tx == NULL) {
-			LOG_WRN("Unable to allocate buffer");
-			goto cleanup;
-		}
-
-		/* Copy across to the TX message, push to transmit queue */
-		epacket_set_tx_metadata(tx, EPACKET_AUTH_REMOTE_ENCRYPTED, 0, 0, dest);
-		net_buf_add_mem(tx, buf->data, forward_payload);
-		epacket_queue(forward_interface, tx);
-cleanup:
-		/* Free the provided buffer */
+		/* Free the buffer */
 		net_buf_unref(buf);
 
 		/* Feed watchdog before sleeping again */
