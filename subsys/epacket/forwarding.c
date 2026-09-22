@@ -34,18 +34,34 @@ static struct conn_state forwarding_state[CONFIG_BT_MAX_CONN];
 
 static void epacket_forward_direct(struct net_buf *buf)
 {
-	struct epacket_forward_header *hdr =
-		net_buf_pull_mem(buf, sizeof(struct epacket_forward_header));
+	struct epacket_forward_header *hdr;
 	const struct device *forward_interface;
 	struct epacket_interface_address_bt_le *dest_encoded;
 	union epacket_interface_address dest;
 	uint16_t forward_payload, forward_max_size;
 	struct net_buf *tx;
 
+	if (buf->len < (sizeof(*hdr) + sizeof(*dest_encoded))) {
+		LOG_WRN("Invalid forwarding header");
+		goto cleanup;
+	}
+	hdr = net_buf_pull_mem(buf, sizeof(*hdr));
+	if (hdr->length < (sizeof(*hdr) + sizeof(*dest_encoded))) {
+		LOG_WRN("Invalid forwarding header");
+		goto cleanup;
+	}
+
 	/* Only Bluetooth addresses are currently handled */
 	dest_encoded = net_buf_pull_mem(buf, sizeof(*dest_encoded));
 	dest.bluetooth.type = dest_encoded->type;
 	memcpy(dest.bluetooth.a.val, dest_encoded->addr, 6);
+
+	/* Validate requested payload exists in the buffer */
+	forward_payload = hdr->length - sizeof(*hdr) - sizeof(*dest_encoded);
+	if (buf->len < forward_payload) {
+		LOG_WRN("Insufficient payload bytes (%d < %d)", buf->len, forward_payload);
+		goto cleanup;
+	}
 
 	switch (hdr->interface) {
 	case EPACKET_INTERFACE_BT_CENTRAL:
@@ -58,7 +74,6 @@ static void epacket_forward_direct(struct net_buf *buf)
 
 	/* Validate that forwarding interface can support required packet size */
 	forward_max_size = epacket_interface_max_packet_size(forward_interface);
-	forward_payload = hdr->length - sizeof(*hdr) - 7;
 	if (forward_max_size < forward_payload) {
 		LOG_WRN("Insufficient packet size (%d < %d)", forward_max_size, forward_payload);
 		goto cleanup;
@@ -283,7 +298,16 @@ static void forward_auto_conn_processor(void *a, void *b, void *c)
 			continue;
 		}
 		meta = net_buf_user_data(buf);
+
+		if (buf->len < (sizeof(*hdr) + sizeof(*dest_encoded))) {
+			LOG_WRN("Invalid auto conn header");
+			goto cleanup;
+		}
 		hdr = net_buf_pull_mem(buf, sizeof(struct epacket_forward_auto_conn_header));
+		if (hdr->length < (sizeof(*hdr) + sizeof(*dest_encoded))) {
+			LOG_WRN("Invalid forwarding header");
+			goto cleanup;
+		}
 
 		switch (hdr->interface) {
 		case EPACKET_INTERFACE_BT_CENTRAL:
@@ -299,6 +323,13 @@ static void forward_auto_conn_processor(void *a, void *b, void *c)
 		dest.bluetooth.type = dest_encoded->type;
 		memcpy(dest.bluetooth.a.val, dest_encoded->addr, 6);
 
+		/* Validate requested payload exists in the buffer */
+		forward_payload = hdr->length - sizeof(*hdr) - sizeof(*dest_encoded);
+		if (buf->len < forward_payload) {
+			LOG_WRN("Insufficient payload bytes (%d < %d)", buf->len, forward_payload);
+			goto cleanup;
+		}
+
 		/* Ensure we have a valid Bluetooth connection before sending */
 		rc = ensure_bt_connection(
 			&dest, hdr->flags, (uint32_t)hdr->conn_timeout * MSEC_PER_SEC,
@@ -312,7 +343,6 @@ static void forward_auto_conn_processor(void *a, void *b, void *c)
 
 		/* Validate that forwarding interface can support required packet size */
 		forward_max_size = epacket_interface_max_packet_size(forward_interface);
-		forward_payload = hdr->length - sizeof(*hdr) - 7;
 		if (forward_max_size < forward_payload) {
 			LOG_WRN("Insufficient packet size (%d < %d)", forward_max_size,
 				forward_payload);
