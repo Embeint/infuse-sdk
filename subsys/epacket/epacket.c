@@ -326,7 +326,7 @@ static void epacket_handle_rx(struct net_buf *buf)
 #endif /* CONFIG_INFUSE_SECURITY */
 
 	/* Rate limit requests */
-	if (buf->data[0] == EPACKET_RATE_LIMIT_REQ_MAGIC) {
+	if ((buf->len > 0) && (buf->data[0] == EPACKET_RATE_LIMIT_REQ_MAGIC)) {
 		if (buf->len == sizeof(struct epacket_rate_limit_req)) {
 			struct epacket_rate_limit_req *req = (void *)buf->data;
 
