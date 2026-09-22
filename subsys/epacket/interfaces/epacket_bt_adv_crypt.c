@@ -77,6 +77,10 @@ bool epacket_bt_adv_is_epacket(uint8_t adv_type, struct net_buf_simple *buf)
 	if (adv_type != BT_GAP_ADV_TYPE_EXT_ADV) {
 		return false;
 	}
+	/* The ePacket advertising header is 11 bytes long. */
+	if (buf->len < 11) {
+		return false;
+	}
 	/* First field is always BT_DATA_FLAGS */
 	if (buf->data[0] != 2 || buf->data[1] != BT_DATA_FLAGS) {
 		return false;
