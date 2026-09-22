@@ -385,7 +385,7 @@ static inline void epacket_set_tx_metadata(struct net_buf *buf, enum epacket_aut
 
 	if (auth == EPACKET_AUTH_DEVICE) {
 		key_id = infuse_security_device_key_identifier();
-	} else if (EPACKET_AUTH_NETWORK) {
+	} else if (auth == EPACKET_AUTH_NETWORK) {
 		key_id = infuse_security_network_key_identifier();
 	}
 
