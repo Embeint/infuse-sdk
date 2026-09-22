@@ -141,7 +141,7 @@ static void receive_forward(const struct device *backhaul, struct net_buf *buf)
 			/* Initialise metadata */
 			epacket_set_tx_metadata(pending_buffer, EPACKET_AUTH_DEVICE, 0x00,
 						INFUSE_RECEIVED_EPACKET, EPACKET_ADDR_ALL);
-			if (meta->type != INFUSE_RPC_RSP) {
+			if (rx_type != INFUSE_RPC_RSP) {
 				/* Start the flush timeout */
 				k_work_reschedule(&pending_flush_worker, K_MSEC(max_hold));
 			} else {
