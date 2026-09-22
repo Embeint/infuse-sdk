@@ -145,6 +145,7 @@
 		slot1_partition: partition@0 {
 			compatible = "fixed-subpartitions";
 			label = "image-1";
+			/* 896kB */
 			reg = <0x00000000 0x000E0000>;
 			ranges = <0x0 0x0 0xE0000>;
 			#address-cells = <1>;
@@ -163,11 +164,13 @@
 		};
 		file_partition: partition@E0000 {
 			label = "files";
-			reg = <0x000E0000 0x00080000>;
+			/* 1MB maximum file */
+			reg = <0x000E0000 0x00100000>;
 		};
 		data_logger_partition: partition@160000 {
 			label = "data_logger";
-			reg = <0x00160000 0x000ea0000>;
+			/* ~14MB logs */
+			reg = <0x001E0000 0x000e20000>;
 		};
 	};
 };

@@ -125,11 +125,13 @@
 
 		file_partition: partition@0 {
 			label = "files";
-			reg = <0x00000000 0x00080000>;
+			/* 1MB maximum file */
+			reg = <0x00000000 0x00100000>;
 		};
-		data_logger_partition: partition@80000 {
+		data_logger_partition: partition@100000 {
 			label = "data_logger";
-			reg = <0x00080000 0x00F80000>;
+			/* 15MB logs */
+			reg = <0x00100000 0x00F00000>;
 		};
 	};
 };
