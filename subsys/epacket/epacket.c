@@ -238,12 +238,16 @@ int epacket_receive(const struct device *dev, k_timeout_t timeout)
 {
 	struct epacket_interface_common_data *data = dev->data;
 	const struct epacket_interface_api *api = dev->api;
+	struct k_work_sync sync;
 	int rc;
 
 	/* If not control is available there is nothing to do */
 	if (api->receive_ctrl == NULL) {
 		return -ENOTSUP;
 	}
+
+	/* Cancel any pending work and block until complete */
+	(void)k_work_cancel_delayable_sync(&data->receive_timeout, &sync);
 
 	/* Put receiving into desired state */
 	rc = api->receive_ctrl(dev, K_TIMEOUT_EQ(timeout, K_NO_WAIT) ? false : true);
@@ -257,7 +261,7 @@ int epacket_receive(const struct device *dev, k_timeout_t timeout)
 	}
 
 	/* Schedule the receive termination work */
-	return infuse_work_reschedule(&data->receive_timeout, timeout);
+	return infuse_work_schedule(&data->receive_timeout, timeout);
 }
 
 void epacket_raw_receive_handler(struct net_buf *buf)
