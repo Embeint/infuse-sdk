@@ -511,6 +511,11 @@ static void epacket_udp_decrypt_res(const struct device *dev, struct net_buf *bu
 {
 	struct epacket_rx_metadata *meta = net_buf_user_data(buf);
 
+	/* Don't perform housekeeping if the decrypt failed */
+	if (decrypt_res < 0) {
+		return;
+	}
+
 	/* If we don't have any time knowledge, use the server timestamp */
 	if (epoch_time_source_base(epoch_time_get_source()) == TIME_SOURCE_NONE) {
 		struct timeutil_sync_instant rx_sync_instant = {
