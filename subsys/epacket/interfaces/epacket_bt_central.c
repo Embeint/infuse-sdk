@@ -245,9 +245,9 @@ struct bt_conn *bt_conn_lookup_index(uint8_t index);
 
 static void do_disconnect(struct infuse_connection_state *s, char *reason)
 {
-
 	uint8_t state_idx = ARRAY_INDEX(infuse_conn, s);
 	struct bt_conn *conn = bt_conn_lookup_index(state_idx);
+	struct bt_conn_info info;
 	int rc;
 
 #ifdef CONFIG_ASSERT
@@ -258,6 +258,14 @@ static void do_disconnect(struct infuse_connection_state *s, char *reason)
 		return;
 	}
 #endif
+	/* Guard against a stale timeout from a previous connection triggering a disconnect
+	 * on a connection that was just recreated.
+	 */
+	if (bt_conn_get_info(conn, &info) != 0 || info.state != BT_CONN_STATE_CONNECTED) {
+		LOG_DBG("Connection %s is no longer connected", reason);
+		bt_conn_unref(conn);
+		return;
+	}
 
 	LOG_INF("Connection %s, disconnecting", reason);
 	/* Trigger the disconnection, no need to wait for it to complete */
@@ -299,6 +307,7 @@ int epacket_bt_gatt_connect(struct bt_conn **conn_out,
 	};
 	struct k_poll_event poll_event;
 	struct infuse_connection_state *s;
+	struct k_work_sync sync;
 	unsigned int signaled;
 	struct bt_conn *conn;
 	uint8_t idx;
@@ -330,9 +339,15 @@ int epacket_bt_gatt_connect(struct bt_conn **conn_out,
 	idx = bt_conn_index(conn);
 	s = &infuse_conn[idx];
 
+	/*
+	 * A bt_conn slot can be reused after its previous connection has gone
+	 * away. The disconnect callback normally cancels these timers, but make
+	 * reuse an explicit lifetime boundary.
+	 */
+	(void)k_work_cancel_delayable_sync(&s->idle_worker, &sync);
+	(void)k_work_cancel_delayable_sync(&s->term_worker, &sync);
+
 	k_poll_signal_init(&s->sig);
-	k_work_init_delayable(&s->idle_worker, bt_conn_idle);
-	k_work_init_delayable(&s->term_worker, bt_conn_timeout);
 	s->discovery.characteristics = infuse_iot_characteristics;
 	s->discovery.cache = &infuse_iot_remote_cache;
 	s->discovery.remote_info = s->remote_info;
@@ -565,8 +580,24 @@ cleanup:
 	}
 }
 
+static void connection_state_init(struct infuse_connection_state *s)
+{
+	k_work_init_delayable(&s->idle_worker, bt_conn_idle);
+	k_work_init_delayable(&s->term_worker, bt_conn_timeout);
+}
+
 static int epacket_bt_central_init(const struct device *dev)
 {
+	/*
+	 * The delayable work items are owned by a connection slot, not by an
+	 * individual connection.  Initialise them once: reinitialising a delayable
+	 * work item clears its embedded timeout node and is only valid when that node
+	 * is not queued.
+	 */
+	for (size_t i = 0; i < ARRAY_SIZE(infuse_conn); i++) {
+		connection_state_init(&infuse_conn[i]);
+	}
+
 	epacket_interface_common_init(dev);
 	return 0;
 }
