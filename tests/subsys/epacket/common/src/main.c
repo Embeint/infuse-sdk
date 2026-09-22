@@ -274,6 +274,15 @@ ZTEST(epacket_common, test_receive)
 	/* Cancel immediately */
 	zassert_equal(0, epacket_receive(epacket_dummy, K_NO_WAIT));
 	zassert_false(epacket_dummy_receive_scheduled());
+
+	/* A forever receive request must cancel a previous finite timeout. */
+	zassert_equal(1, epacket_receive(epacket_dummy, K_MSEC(100)));
+	zassert_equal(0, epacket_receive(epacket_dummy, K_FOREVER));
+	k_sleep(K_MSEC(200));
+	zassert_true(epacket_dummy_receive_scheduled());
+	/* Clean up the enabled receive state for subsequent tests. */
+	zassert_equal(0, epacket_receive(epacket_dummy, K_NO_WAIT));
+	zassert_false(epacket_dummy_receive_scheduled());
 }
 
 ZTEST(epacket_common, test_receive_no_impl)
