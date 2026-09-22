@@ -13,6 +13,7 @@
 #include <zephyr/random/random.h>
 #include <zephyr/bluetooth/bluetooth.h>
 #include <zephyr/bluetooth/uuid.h>
+#include <zephyr/sys/byteorder.h>
 
 #include <infuse/identifiers.h>
 #include <infuse/security.h>
@@ -256,6 +257,23 @@ ZTEST(epacket_bt_adv, test_epacket_detection)
 	/* Not extended advertising */
 	net_buf_simple_reset(&flat_buffer);
 	zassert_false(epacket_bt_adv_is_epacket(BT_GAP_ADV_TYPE_ADV_IND, &flat_buffer));
+
+	/* Flags only */
+	net_buf_simple_reset(&flat_buffer);
+	flat_buffer.len += bt_data_serialize(&flags, net_buf_simple_tail(&flat_buffer));
+	zassert_false(epacket_bt_adv_is_epacket(BT_GAP_ADV_TYPE_EXT_ADV, &flat_buffer));
+
+	/* A truncated packet must be rejected without reading beyond its logical end. */
+	mfg_data.company_code = sys_cpu_to_le16(0x0DE4);
+	net_buf_simple_reset(&flat_buffer);
+	flat_buffer.len += bt_data_serialize(&flags, net_buf_simple_tail(&flat_buffer));
+	flat_buffer.len += bt_data_serialize(&uuid16, net_buf_simple_tail(&flat_buffer));
+	flat_buffer.len += bt_data_serialize(&manu, net_buf_simple_tail(&flat_buffer));
+	for (size_t len = 0; len < 11; len++) {
+		flat_buffer.len = len;
+		zassert_false(epacket_bt_adv_is_epacket(BT_GAP_ADV_TYPE_EXT_ADV, &flat_buffer));
+		zassert_equal(len, flat_buffer.len);
+	}
 
 	/* First structure not AD flags */
 	net_buf_simple_reset(&flat_buffer);
