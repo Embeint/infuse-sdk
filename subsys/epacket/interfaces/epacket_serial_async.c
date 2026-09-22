@@ -133,7 +133,7 @@ static void epacket_serial_send(const struct device *dev, struct net_buf *buf)
 		return;
 	} else if (rc != 0) {
 		LOG_ERR("Failed to queue buffer (%d)", rc);
-		pm_device_runtime_put(dev);
+		pm_device_runtime_put(config->backend);
 		goto error;
 	}
 	data->pending_tx = buf;
