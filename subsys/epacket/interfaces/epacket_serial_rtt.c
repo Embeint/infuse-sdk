@@ -78,6 +78,7 @@ static void epacket_serial_send(const struct device *dev, struct net_buf *buf)
 
 	/* Push packet at RTT */
 	SEGGER_RTT_Write(0, buf->data, buf->len);
+	epacket_notify_tx_result(dev, buf, 0);
 	net_buf_unref(buf);
 
 	/* Small delay to give debugger a chance to read out the packet.
@@ -85,7 +86,6 @@ static void epacket_serial_send(const struct device *dev, struct net_buf *buf)
 	 * bursts of packets are sent due to the behaviour of SEGGER_RTT_Write.
 	 */
 	k_sleep(K_MSEC(5));
-	epacket_notify_tx_result(dev, buf, 0);
 }
 
 static int epacket_receive_control(const struct device *dev, bool enable)
