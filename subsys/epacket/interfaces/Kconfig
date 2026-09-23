@@ -89,6 +89,15 @@ config EPACKET_INTERFACE_UDP_ACK_COUNTDOWN
 	int "Number of unanswered ACKs to send before dropping server"
 	default 10
 
+config EPACKET_INTERFACE_UDP_SEND_TIMEOUT_MS
+	int "Socket send timeout in milliseconds"
+	range 1 600000
+	default 5000
+	help
+	  Maximum time a socket send operation may block. This timeout prevents
+	  an unresponsive network interface from blocking the ePacket processing
+	  thread indefinitely and exhausting the transmit buffer pool.
+
 config EPACKET_INTERFACE_UDP_DECRYPT_TX_FAILURES
 	bool "Decrypt encrypted payloads when a TX failure of an encrypted packet occurs"
 
