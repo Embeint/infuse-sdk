@@ -599,21 +599,29 @@ static void infuse_modem_init(int ret, void *ctx)
 		return;
 	}
 	/* Model identifier */
-	nrf_modem_at_scanf("AT+CGMM", "%64s\n", modem_info.value);
-	modem_info.value_num = strlen(modem_info.value) + 1;
-	(void)kv_store_write(KV_KEY_LTE_MODEM_MODEL, &modem_info, 1 + modem_info.value_num);
+	rc = nrf_modem_at_scanf("AT+CGMM", "%64s\n", modem_info.value);
+	if (rc == 1) {
+		modem_info.value_num = strlen(modem_info.value) + 1;
+		(void)kv_store_write(KV_KEY_LTE_MODEM_MODEL, &modem_info, 1 + modem_info.value_num);
+	}
 	/* Modem firmware revision */
-	nrf_modem_at_scanf("AT+CGMR", "%64s\n", modem_info.value);
-	modem_info.value_num = strlen(modem_info.value) + 1;
-	(void)kv_store_write(KV_KEY_LTE_MODEM_FIRMWARE_REVISION, &modem_info,
-			     1 + modem_info.value_num);
+	rc = nrf_modem_at_scanf("AT+CGMR", "%64s\n", modem_info.value);
+	if (rc == 1) {
+		modem_info.value_num = strlen(modem_info.value) + 1;
+		(void)kv_store_write(KV_KEY_LTE_MODEM_FIRMWARE_REVISION, &modem_info,
+				     1 + modem_info.value_num);
+	}
 	/* Modem ESN */
-	nrf_modem_at_scanf("AT+CGSN=0", "%64s\n", modem_info.value);
-	modem_info.value_num = strlen(modem_info.value) + 1;
-	(void)kv_store_write(KV_KEY_LTE_MODEM_ESN, &modem_info, 1 + modem_info.value_num);
+	rc = nrf_modem_at_scanf("AT+CGSN=0", "%64s\n", modem_info.value);
+	if (rc == 1) {
+		modem_info.value_num = strlen(modem_info.value) + 1;
+		(void)kv_store_write(KV_KEY_LTE_MODEM_ESN, &modem_info, 1 + modem_info.value_num);
+	}
 	/* Modem IMEI */
-	nrf_modem_at_scanf("AT+CGSN=1", "+CGSN: \"%" SCNu64 "\"\n", &modem_imei.imei);
-	(void)KV_STORE_WRITE(KV_KEY_LTE_MODEM_IMEI, &modem_imei);
+	rc = nrf_modem_at_scanf("AT+CGSN=1", "+CGSN: \"%" SCNu64 "\"\n", &modem_imei.imei);
+	if (rc == 1) {
+		(void)KV_STORE_WRITE(KV_KEY_LTE_MODEM_IMEI, &modem_imei);
+	}
 	/* Modem info has been stored */
 	modem_info_stored = true;
 
