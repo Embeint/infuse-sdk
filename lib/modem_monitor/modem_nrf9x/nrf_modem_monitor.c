@@ -256,8 +256,8 @@ int lte_modem_monitor_signal_quality(int16_t *rsrp, int8_t *rsrq, bool cached)
 	}
 
 	/* Query state from the modem */
-	rc = nrf_modem_at_scanf("AT+CESQ", "+CESQ: %*d,%*d,%*d,%*d,%" SCNu8 ",%" SCNu8, &rsrp_idx,
-				&rsrq_idx);
+	rc = nrf_modem_at_scanf("AT+CESQ", "+CESQ: %*d,%*d,%*d,%*d,%" SCNu8 ",%" SCNu8, &rsrq_idx,
+				&rsrp_idx);
 	if (rc != 2) {
 		return -EAGAIN;
 	}

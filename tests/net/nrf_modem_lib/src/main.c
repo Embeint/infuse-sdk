@@ -70,7 +70,7 @@ static void test_signal_strength(void)
 	zassert_equal(INT8_MIN, rsrq);
 
 	/* Let values be reported */
-	nrf_modem_lib_sim_signal_strength(32, 2);
+	nrf_modem_lib_sim_signal_strength(2, 32);
 	rc = lte_modem_monitor_signal_quality(&rsrp, &rsrq, false);
 	zassert_equal(0, rc);
 	zassert_equal(-139, rsrp);
@@ -107,7 +107,7 @@ static void test_at_safe(void)
 	zassert_false(lte_modem_monitor_is_at_safe());
 
 	/* Can't query signal quality while AT blocked */
-	nrf_modem_lib_sim_signal_strength(32, 2);
+	nrf_modem_lib_sim_signal_strength(2, 32);
 	rc = lte_modem_monitor_signal_quality(&rsrp, &rsrq, false);
 	zassert_equal(0, rc);
 	zassert_equal(INT16_MIN, rsrp);
