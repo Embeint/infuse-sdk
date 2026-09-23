@@ -488,8 +488,7 @@ static void lte_kv_value_changed(uint16_t key, const void *data, size_t data_len
 	 * The easiest way to achieve this is to reboot the application and let
 	 * infuse_modem_init configure it appropriately.
 	 */
-	infuse_reboot_delayed(INFUSE_REBOOT_CFG_CHANGE, KV_KEY_LTE_PDP_CONFIG, data_len,
-			      K_SECONDS(2));
+	infuse_reboot_delayed(INFUSE_REBOOT_CFG_CHANGE, key, data_len, K_SECONDS(2));
 #else
 	LOG_WRN("No reboot support!");
 #endif /* CONFIG_INFUSE_REBOOT */
