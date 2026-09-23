@@ -449,6 +449,19 @@ static void lte_reg_handler(const struct lte_lc_evt *const evt)
 		LOG_DBG("MODEM_EVENT");
 		LOG_DBG("   Event: %d", evt->modem_evt.type);
 		break;
+#ifdef CONFIG_LTE_LC_PDN_MODULE
+	case LTE_LC_EVT_PDN:
+		LOG_DBG("PDN");
+		LOG_DBG("   Event: %d", evt->pdn.type);
+		LOG_DBG("     CID: %d", evt->pdn.cid);
+		if (evt->pdn.type == LTE_LC_EVT_PDN_ESM_ERROR) {
+			LOG_DBG(" ESM Err: %d", evt->pdn.esm_err);
+		}
+		if (evt->pdn.type == LTE_LC_EVT_PDN_NETWORK_DETACH) {
+			LOG_DBG(" Profile: %d", evt->pdn.cellular_profile_id);
+		}
+		break;
+#endif /* CONFIG_LTE_LC_PDN_MODULE */
 	default:
 		LOG_DBG("LTE EVENT: %d", evt->type);
 		break;
