@@ -126,20 +126,32 @@ static void modem_info_changed(const struct device *dev, const struct cellular_e
 	}
 }
 
+static bool reg_status_is_registered(enum cellular_registration_status status)
+{
+	return (status == CELLULAR_REGISTRATION_REGISTERED_HOME) ||
+	       (status == CELLULAR_REGISTRATION_REGISTERED_ROAMING);
+}
+
 static void registration_status_changed(const struct device *dev,
 					const struct cellular_evt_registration_status *rs)
 {
+	bool was_registered;
+
 	/* Callback does not mean that status has necessarily changed (unsolicited CxREG) */
 	if (rs->status == monitor.network_state.nw_reg_status) {
 		return;
 	}
 
+	was_registered = reg_status_is_registered(monitor.network_state.nw_reg_status);
+
 	LOG_DBG("Registration status: %d", rs->status);
 	monitor.network_state.nw_reg_status = rs->status;
 
-	if ((rs->status == CELLULAR_REGISTRATION_REGISTERED_HOME) ||
-	    (rs->status == CELLULAR_REGISTRATION_REGISTERED_ROAMING)) {
-		modem_monitor_ip_connectivity_expected(true);
+	if (reg_status_is_registered(rs->status)) {
+		if (!was_registered) {
+			/* Don't restart timers if we switch between home and roaming */
+			modem_monitor_ip_connectivity_expected(true);
+		}
 	} else {
 		modem_monitor_ip_connectivity_expected(false);
 	}
