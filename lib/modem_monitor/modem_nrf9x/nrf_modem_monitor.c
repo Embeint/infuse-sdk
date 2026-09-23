@@ -499,7 +499,6 @@ static void infuse_modem_init(int ret, void *ctx)
 {
 	KV_STRUCT_KV_STRING_VAR(65) modem_info = {0};
 	KV_KEY_TYPE(KV_KEY_LTE_MODEM_IMEI) modem_imei;
-	static bool modem_info_stored;
 	uint8_t val;
 	int rc;
 
@@ -595,9 +594,6 @@ static void infuse_modem_init(int ret, void *ctx)
 		kv_store_register_callback(&lte_kv_cb);
 	}
 
-	if (modem_info_stored) {
-		return;
-	}
 	/* Model identifier */
 	rc = nrf_modem_at_scanf("AT+CGMM", "%64s\n", modem_info.value);
 	if (rc == 1) {
@@ -622,8 +618,6 @@ static void infuse_modem_init(int ret, void *ctx)
 	if (rc == 1) {
 		(void)KV_STORE_WRITE(KV_KEY_LTE_MODEM_IMEI, &modem_imei);
 	}
-	/* Modem info has been stored */
-	modem_info_stored = true;
 
 	/* Set default %XDATAPRFL value */
 	val = CONFIG_INFUSE_NRF_MODEM_DATA_PROFILE_DEFAULT;
