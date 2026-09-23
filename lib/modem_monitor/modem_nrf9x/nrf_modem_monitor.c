@@ -81,9 +81,6 @@ static struct {
 	 */
 	struct k_work_delayable update_work;
 	struct k_work signal_quality_work;
-	struct net_mgmt_event_callback mgmt_iface_cb;
-	struct k_work_delayable connectivity_timeout;
-	struct net_if *lte_net_if;
 	atomic_t flags;
 	int16_t rsrp_cached;
 	int8_t rsrq_cached;
