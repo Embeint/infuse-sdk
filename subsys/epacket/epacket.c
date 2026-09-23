@@ -59,7 +59,6 @@ k_tid_t epacket_rx_processor_thread;
 
 static K_FIFO_DEFINE(epacket_rx_queue);
 static K_FIFO_DEFINE(epacket_tx_queue);
-static const struct device *tx_device[CONFIG_EPACKET_BUFFERS_TX];
 static k_timeout_t loop_period = K_FOREVER;
 static int wdog_channel;
 static atomic_t rate_limit_delay;
@@ -227,8 +226,10 @@ int epacket_send_key_ids(const struct device *dev, k_timeout_t timeout)
 
 void epacket_queue(const struct device *dev, struct net_buf *buf)
 {
+	struct epacket_tx_metadata *meta = net_buf_user_data(buf);
+
 	/* Store transmit device */
-	tx_device[net_buf_id(buf)] = dev;
+	meta->interface = dev;
 
 	/* Push packet at processing queue */
 	k_fifo_put(&epacket_tx_queue, buf);
@@ -426,11 +427,12 @@ static void epacket_handle_rx(struct net_buf *buf)
 
 static void epacket_handle_tx(struct net_buf *buf)
 {
+	struct epacket_tx_metadata *meta = net_buf_user_data(buf);
 	const struct epacket_interface_api *api;
 	const struct device *dev;
 	size_t pool_max;
 
-	dev = tx_device[net_buf_id(buf)];
+	dev = meta->interface;
 	api = dev->api;
 	pool_max = net_buf_pool_get(buf->pool_id)->alloc->max_alloc_size;
 

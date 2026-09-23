@@ -69,6 +69,8 @@ struct epacket_tx_metadata {
 #ifdef CONFIG_EPACKET_BUFFERS_TX_DELAYABLE_WORK
 	struct k_work_delayable dwork;
 #endif
+	/* ePacket interface packet will be transmitted on */
+	const struct device *interface;
 	/* Callback run when TX completes */
 	epacket_tx_done_cb tx_done;
 	/* Context provided to @a tx_done */
