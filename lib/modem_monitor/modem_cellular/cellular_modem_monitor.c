@@ -77,9 +77,14 @@ void lte_modem_monitor_network_state(struct lte_modem_network_state *state)
 static void modem_info_changed(const struct device *dev, const struct cellular_evt_modem_info *mi)
 {
 	KV_STRUCT_KV_STRING_VAR(65) info;
+	int rc;
 
 	/* Pull the information to a local buffer */
-	(void)cellular_get_modem_info(dev, mi->field, info.value, sizeof(info.value));
+	rc = cellular_get_modem_info(dev, mi->field, info.value, sizeof(info.value));
+	if (rc != 0) {
+		LOG_WRN("Modem failed to return reported info for field %d (%d)", mi->field, rc);
+		return;
+	}
 	info.value_num = strlen(info.value) + 1;
 
 	LOG_DBG("%d: %s", mi->field, info.value);
