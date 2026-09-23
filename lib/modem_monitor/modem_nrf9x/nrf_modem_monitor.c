@@ -329,17 +329,28 @@ int lte_modem_monitor_connectivity_stats(int *tx_kbytes, int *rx_kbytes)
 	return rc == 2 ? 0 : -EIO;
 }
 
+static bool reg_status_is_registered(enum lte_lc_nw_reg_status status)
+{
+	return (status == LTE_LC_NW_REG_REGISTERED_HOME) ||
+	       (status == LTE_LC_NW_REG_REGISTERED_ROAMING);
+}
+
 static void lte_reg_handler(const struct lte_lc_evt *const evt)
 {
+	bool was_registered;
+
 	switch (evt->type) {
 	case LTE_LC_EVT_NW_REG_STATUS:
 		LOG_DBG("NW_REG_STATUS");
 		LOG_DBG("  STATUS: %d", evt->nw_reg_status);
+		was_registered = reg_status_is_registered(monitor.network_state.nw_reg_status);
 		monitor.network_state.nw_reg_status = evt->nw_reg_status;
 		/* Handle the connectivity watchdog */
-		if ((evt->nw_reg_status == LTE_LC_NW_REG_REGISTERED_HOME) ||
-		    (evt->nw_reg_status == LTE_LC_NW_REG_REGISTERED_ROAMING)) {
-			modem_monitor_ip_connectivity_expected(true);
+		if (reg_status_is_registered(evt->nw_reg_status)) {
+			if (!was_registered) {
+				/* Don't restart timers if we switch between home and roaming */
+				modem_monitor_ip_connectivity_expected(true);
+			}
 		} else {
 			modem_monitor_ip_connectivity_expected(false);
 		}
