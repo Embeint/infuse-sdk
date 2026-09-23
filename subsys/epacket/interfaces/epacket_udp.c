@@ -260,6 +260,11 @@ static int epacket_udp_loop(void *a, void *b, void *c)
 	const struct device *epacket_udp = DEVICE_DT_GET(DT_DRV_INST(0));
 	struct epacket_interface_common_data *data = epacket_udp->data;
 	struct net_sockaddr_in local_addr = {0};
+	const struct timeval send_timeout = {
+		.tv_sec = CONFIG_EPACKET_INTERFACE_UDP_SEND_TIMEOUT_MS / MSEC_PER_SEC,
+		.tv_usec = (CONFIG_EPACKET_INTERFACE_UDP_SEND_TIMEOUT_MS % MSEC_PER_SEC) *
+			   USEC_PER_MSEC,
+	};
 	struct epacket_interface_cb *cb;
 	bool first_connection = true;
 	int rc;
@@ -289,6 +294,16 @@ static int epacket_udp_loop(void *a, void *b, void *c)
 			MEMFAULT_METRIC_ADD(epacket_udp_sock_setup_error, 1);
 			LOG_ERR("Failed to open socket (%d)", errno);
 			goto socket_error;
+		}
+
+		/* Bound socket sends so a stalled network interface cannot block indefinitely */
+		rc = zsock_setsockopt(udp_state.sock, SOL_SOCKET, SO_SNDTIMEO, &send_timeout,
+				      sizeof(send_timeout));
+		if (rc < 0) {
+			/* Socket option may not be supported by the driver. Notify the developer
+			 * that the option is not available, but don't stop processing.
+			 */
+			LOG_WRN_ONCE("Failed to set send timeout (%d)", errno);
 		}
 		k_event_post(&udp_state.state, UDP_STATE_SOCKET_OPEN);
 		LOG_DBG("Opened %d", udp_state.sock);
