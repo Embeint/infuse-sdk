@@ -87,7 +87,9 @@ static void receive_forward(const struct device *backhaul, struct net_buf *buf)
 {
 	const uint32_t max_hold = CONFIG_EPACKET_RECEIVE_GROUPING_MAX_HOLD_MS;
 	struct epacket_rx_metadata *meta = net_buf_user_data(buf);
+	uint8_t rx_if_id = meta->interface_id;
 	uint8_t rx_type = meta->type;
+	k_timeout_t alloc_timeout;
 	static bool is_init;
 	struct net_buf *temp;
 	bool appended = false;
@@ -131,8 +133,16 @@ static void receive_forward(const struct device *backhaul, struct net_buf *buf)
 		return;
 	}
 
+	/* Bluetooth advertising data is not critical enough to block for */
+	alloc_timeout = (rx_if_id == EPACKET_INTERFACE_BT_ADV) ? K_NO_WAIT : K_FOREVER;
+
 	/* No pending buffer, allocate one */
-	temp = epacket_alloc_tx_for_interface(backhaul, K_FOREVER);
+	temp = epacket_alloc_tx_for_interface(backhaul, alloc_timeout);
+	if (temp == NULL) {
+		LOG_INF("Dropping advertising packet");
+		net_buf_unref(buf);
+		return;
+	}
 
 	K_SPINLOCK(&pending_lock) {
 		if (epacket_received_packet_append(temp, buf) == 0) {
@@ -162,7 +172,10 @@ static void receive_forward(const struct device *backhaul, struct net_buf *buf)
 
 static void receive_forward(const struct device *backhaul, struct net_buf *buf)
 {
-	struct net_buf *forward = epacket_alloc_tx_for_interface(backhaul, K_FOREVER);
+	struct epacket_rx_metadata *meta = net_buf_user_data(buf);
+	uint8_t rx_if_id = meta->interface_id;
+	k_timeout_t alloc_timeout;
+	struct net_buf *forward;
 
 #ifdef CONFIG_EPACKET_INTERFACE_BT_CENTRAL
 	if (epacket_num_buffers_free_tx() <= CONFIG_EPACKET_RATE_LIMIT_BUFFER_THRESHOLD) {
@@ -171,6 +184,16 @@ static void receive_forward(const struct device *backhaul, struct net_buf *buf)
 		epacket_bt_gatt_rate_limit_request(CONFIG_EPACKET_RATE_LIMIT_REQ_DURATION_MS);
 	}
 #endif /* CONFIG_EPACKET_INTERFACE_BT_CENTRAL */
+
+	/* Bluetooth advertising data is not critical enough to block for */
+	alloc_timeout = (rx_if_id == EPACKET_INTERFACE_BT_ADV) ? K_NO_WAIT : K_FOREVER;
+
+	forward = epacket_alloc_tx_for_interface(backhaul, alloc_timeout);
+	if (forward == NULL) {
+		LOG_INF("Dropping advertising packet");
+		net_buf_unref(buf);
+		return;
+	}
 
 	if (epacket_received_packet_append(forward, buf) == 0) {
 		/* Add metadata */
