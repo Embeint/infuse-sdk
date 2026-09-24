@@ -24,13 +24,25 @@
 
 LOG_MODULE_DECLARE(epacket, CONFIG_EPACKET_LOG_LEVEL);
 
+#define FORWARDING_INTERFACE_NODE DT_COMPAT_GET_ANY_STATUS_OKAY(embeint_epacket_bt_central)
+#define FORWARDING_BUFFER_SIZE                                                                     \
+	ROUND_UP(EPACKET_INTERFACE_MAX_PACKET(FORWARDING_INTERFACE_NODE), sizeof(void *))
+
 struct conn_state {
 	uint8_t flags;
 };
 
+NET_BUF_POOL_DEFINE(epacket_forwarding_pool, CONFIG_EPACKET_FORWARDING_BUFFERS,
+		    FORWARDING_BUFFER_SIZE, sizeof(struct epacket_tx_metadata), NULL);
+
 static K_FIFO_DEFINE(packet_queue);
 static const struct device *epacket_backhaul;
 static struct conn_state forwarding_state[CONFIG_BT_MAX_CONN];
+
+static struct net_buf *forwarding_buffer_alloc(void)
+{
+	return net_buf_alloc(&epacket_forwarding_pool, K_MSEC(10));
+}
 
 static void epacket_forward_direct(struct net_buf *buf)
 {
@@ -80,7 +92,7 @@ static void epacket_forward_direct(struct net_buf *buf)
 	}
 
 	/* Allocate buffer for forwarded message */
-	tx = epacket_alloc_tx(K_MSEC(10));
+	tx = forwarding_buffer_alloc();
 	if (tx == NULL) {
 		LOG_WRN("Unable to allocate buffer");
 		goto cleanup;
@@ -328,7 +340,7 @@ static void forward_auto_conn_process_one(struct net_buf *buf)
 	}
 
 	/* Allocate buffer for forwarded message */
-	tx = epacket_alloc_tx(K_MSEC(10));
+	tx = forwarding_buffer_alloc();
 	if (tx == NULL) {
 		LOG_WRN("Unable to allocate buffer");
 		return;

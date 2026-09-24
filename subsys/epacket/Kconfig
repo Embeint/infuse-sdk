@@ -79,6 +79,15 @@ config EPACKET_FORWARDING
 	bool "Support for handling ePacket forwarding packets"
 	depends on EPACKET_INTERFACE_BT_CENTRAL
 
+config EPACKET_FORWARDING_BUFFERS
+	int "Number of ePacket forwarding buffers"
+	depends on EPACKET_FORWARDING
+	range 1 16
+	default 3
+	help
+	  Number of dedicated transmit buffers used when forwarding packets to
+	  the Bluetooth GATT interface.
+
 config EPACKET_PACKET_SIZE_MAX
 	int "Maximum supported ePacket packet size"
 	range 64 2048
