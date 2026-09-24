@@ -1,4 +1,6 @@
 # LTE Gateway specific options
+#   PSM: Disabled
+#  eDRX: 20.48 sec cycle
 
 config LTE_GATEWAY_DEFAULT_MAXIMUM_UPLINK_THROUGHPUT_KBPS
 	int "Expected maximum throughput of the LTE link with good signal"
@@ -23,8 +25,20 @@ choice INFUSE_NRF_MODEM_MONITOR_MOBILITY
 endchoice
 configdefault LTE_PSM_REQ
 	default n
+configdefault LTE_EDRX_REQ
+	default y
+config LTE_EDRX_REQ_VALUE_LTE_M
+	default "0010"
 configdefault INFUSE_NRF_MODEM_DATA_PROFILE_DEFAULT
 	default 4
+
+#
+# Defaults for Modem Cellular gateways
+#
+configdefault MODEM_CELLULAR_REQUEST_EDRX
+	default y
+configdefault MODEM_CELLULAR_REQUEST_EDRX_VALUE_LTE
+	default "0010"
 
 # Constant latency to improve UART stability & responsiveness.
 # According to the datasheet this increases idle power consumption by 530 uA (nRF54L).
