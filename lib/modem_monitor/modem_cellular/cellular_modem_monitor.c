@@ -172,6 +172,13 @@ static void network_status_changed(const struct device *dev,
 	monitor.network_state.cell.rsrq = ns->cell.lte.rsrq;
 }
 
+static void edrx_changed(const struct device *dev, const struct cellular_evt_edrx_parameters *edrx)
+{
+	monitor.network_state.edrx_cfg.mode = edrx->access_tech;
+	monitor.network_state.edrx_cfg.edrx = edrx->edrx;
+	monitor.network_state.edrx_cfg.ptw = edrx->ptw;
+}
+
 static void modem_shutdown_fallback(struct k_work *work)
 {
 	const struct device *modem = DEVICE_DT_GET(DT_ALIAS(modem));
@@ -235,6 +242,9 @@ static void modem_event_cb(const struct device *dev, enum cellular_event evt, co
 	case CELLULAR_EVENT_MODEM_SUSPENDED:
 		modem_suspended(dev);
 		break;
+	case CELLULAR_EVENT_EDRX_PARAMETERS_CHANGED:
+		edrx_changed(dev, payload);
+		break;
 	default:
 		break;
 	}
@@ -269,7 +279,7 @@ int lte_modem_monitor_init(void)
 	const enum cellular_event cb_events =
 		CELLULAR_EVENT_MODEM_INFO_CHANGED | CELLULAR_EVENT_REGISTRATION_STATUS_CHANGED |
 		CELLULAR_EVENT_NETWORK_STATUS_CHANGED | CELLULAR_EVENT_MODEM_COMMS_CHECK_RESULT |
-		CELLULAR_EVENT_MODEM_SUSPENDED;
+		CELLULAR_EVENT_MODEM_SUSPENDED | CELLULAR_EVENT_EDRX_PARAMETERS_CHANGED;
 
 #ifdef CONFIG_INFUSE_MODEM_MONITOR_DEFAULT_PDP_APN_SET
 	KV_KEY_TYPE_VAR(KV_KEY_LTE_PDP_CONFIG, 32) pdp_config;
