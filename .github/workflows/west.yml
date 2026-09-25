@@ -53,10 +53,10 @@ jobs:
           path: infuse-sdk
           fetch-depth: 0
 
-      - name: Set up Python ${{ matrix.python-version }}
+      - name: Set up Python
         uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: 3.12
 
       - name: Install Python packages
         working-directory: infuse-sdk
