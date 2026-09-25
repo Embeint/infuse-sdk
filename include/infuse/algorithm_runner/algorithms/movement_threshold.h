@@ -43,7 +43,7 @@ struct algorithm_movement_threshold_data {
 
 /** Algorithm implementation, see @ref algorithm_run_fn */
 void algorithm_movement_threshold_fn(const struct zbus_channel *chan,
-				     const struct algorithm_common_config *common, const void *args,
+				     const struct infuse_algorithm *algorithm, const void *args,
 				     void *data);
 
 /**
@@ -57,10 +57,10 @@ void algorithm_movement_threshold_fn(const struct zbus_channel *chan,
 #define ALGORITHM_MOVEMENT_THRESHOLD_DEFINE(name, moving_for_, initial_threshold_ug_,              \
 					    continue_threshold_ug_)                                \
 	static void name##_wrapper(const struct zbus_channel *chan,                                \
-				   const struct algorithm_common_config *common, const void *args) \
+				   const struct infuse_algorithm *algorithm, const void *args)     \
 	{                                                                                          \
 		static struct algorithm_movement_threshold_data data;                              \
-		algorithm_movement_threshold_fn(chan, common, args, &data);                        \
+		algorithm_movement_threshold_fn(chan, algorithm, args, &data);                     \
 	}                                                                                          \
 	static struct kv_alg_movement_threshold_args_v2 name##_default_args = {                    \
 		.logging = {0},                                                                    \
@@ -71,7 +71,7 @@ void algorithm_movement_threshold_fn(const struct zbus_channel *chan,
 				.continue_threshold_ug = continue_threshold_ug_,                   \
 			},                                                                         \
 	};                                                                                         \
-	static const struct algorithm_common_config name = {                                       \
+	static const struct infuse_algorithm name = {                                              \
 		.fn = name##_wrapper,                                                              \
 		.algorithm_id = 0x15F20002,                                                        \
 		.zbus_channel = INFUSE_ZBUS_CHAN_IMU_ACC_MAG,                                      \

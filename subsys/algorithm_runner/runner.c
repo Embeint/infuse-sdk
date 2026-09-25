@@ -32,7 +32,7 @@ static sys_slist_t algorithms;
 static K_MUTEX_DEFINE(list_lock);
 
 struct algorithm_runner_algorithm {
-	const struct algorithm_common_config *config;
+	const struct infuse_algorithm *algorithm;
 	const struct zbus_channel *changed;
 	bool allocated;
 	bool reload;
@@ -49,7 +49,7 @@ static void new_zbus_data(const struct zbus_channel *chan)
 	bool run = false;
 
 	SYS_SLIST_FOR_EACH_CONTAINER(&algorithms, alg, node) {
-		if (alg->config->zbus_channel == chan->id) {
+		if (alg->algorithm->zbus_channel == chan->id) {
 			alg->changed = chan;
 			run = true;
 		}
@@ -72,31 +72,31 @@ static void exec_fn(struct k_work *work)
 
 		if (alg->reload) {
 			/* Configuration changed in KV store */
-			read_len =
-				kv_store_read(alg->config->arguments_kv_key, alg->config->arguments,
-					      alg->config->arguments_size);
-			if (read_len != alg->config->arguments_size) {
+			read_len = kv_store_read(alg->algorithm->arguments_kv_key,
+						 alg->algorithm->arguments,
+						 alg->algorithm->arguments_size);
+			if (read_len != alg->algorithm->arguments_size) {
 #ifdef CONFIG_INFUSE_REBOOT
 				/* Invalid written configuration, but we no-longer have the
 				 * default values from the static variable. Force a reboot, which
 				 * will reset the configuration.
 				 */
-				infuse_reboot_delayed(INFUSE_REBOOT_CFG_CHANGE,
-						      alg->config->algorithm_id,
-						      alg->config->arguments_kv_key, K_SECONDS(2));
+				infuse_reboot_delayed(
+					INFUSE_REBOOT_CFG_CHANGE, alg->algorithm->algorithm_id,
+					alg->algorithm->arguments_kv_key, K_SECONDS(2));
 #endif /* CONFIG_INFUSE_REBOOT */
 				/* Reboot failed or is not enabled, unregister the algorithm,
 				 * nothing else we can do.
 				 */
 				LOG_WRN("Invalid configuration for %08X, unregistering",
-					alg->config->algorithm_id);
+					alg->algorithm->algorithm_id);
 				sys_slist_find_and_remove(&algorithms, &alg->node);
 				alg->allocated = false;
 				continue;
 			}
 			/* Re-initialise the algorithm */
-			LOG_DBG("Re-initialising algorithm %08X", alg->config->algorithm_id);
-			alg->config->fn(NULL, alg->config, alg->config->arguments);
+			LOG_DBG("Re-initialising algorithm %08X", alg->algorithm->algorithm_id);
+			alg->algorithm->fn(NULL, alg->algorithm, alg->algorithm->arguments);
 			/* Don't reload again */
 			alg->reload = false;
 		}
@@ -105,11 +105,11 @@ static void exec_fn(struct k_work *work)
 		if (alg->changed == NULL) {
 			continue;
 		}
-		LOG_DBG("Running algorithm %08X on channel %08X", alg->config->algorithm_id,
+		LOG_DBG("Running algorithm %08X on channel %08X", alg->algorithm->algorithm_id,
 			alg->changed->id);
 		/* Run algorithm with the channel claimed */
 		zbus_chan_claim(alg->changed, K_FOREVER);
-		alg->config->fn(alg->changed, alg->config, alg->config->arguments);
+		alg->algorithm->fn(alg->changed, alg->algorithm, alg->algorithm->arguments);
 		/* Clear new data flag */
 		alg->changed = NULL;
 	}
@@ -125,7 +125,7 @@ static void alg_kv_value_changed(uint16_t key, const void *data, size_t data_len
 	/* Iterate over linked algorithms */
 	k_mutex_lock(&list_lock, K_FOREVER);
 	SYS_SLIST_FOR_EACH_CONTAINER(&algorithms, alg, node) {
-		if (key == alg->config->arguments_kv_key) {
+		if (key == alg->algorithm->arguments_kv_key) {
 			/* Arguments have changed, force a reload before next run */
 			alg->reload = true;
 		}
@@ -155,19 +155,19 @@ void algorithm_runner_init(void)
 	k_work_init(&runner, exec_fn);
 }
 
-int algorithm_runner_register(const struct algorithm_common_config *config)
+int algorithm_runner_register(const struct infuse_algorithm *algorithm)
 {
 	struct algorithm_runner_algorithm *alg = NULL;
 	int rc = 0;
 
-	if ((config == NULL) || (config->fn == NULL) ||
-	    ((config->arguments_size > 0) && (config->arguments == NULL))) {
+	if ((algorithm == NULL) || (algorithm->fn == NULL) ||
+	    ((algorithm->arguments_size > 0) && (algorithm->arguments == NULL))) {
 		return -EINVAL;
 	}
 
 	k_mutex_lock(&list_lock, K_FOREVER);
 	for (size_t i = 0; i < ARRAY_SIZE(algorithm_pool); i++) {
-		if (algorithm_pool[i].allocated && (algorithm_pool[i].config == config)) {
+		if (algorithm_pool[i].allocated && (algorithm_pool[i].algorithm == algorithm)) {
 			k_mutex_unlock(&list_lock);
 			return -EALREADY;
 		}
@@ -180,28 +180,28 @@ int algorithm_runner_register(const struct algorithm_common_config *config)
 		return -ENOMEM;
 	}
 	memset(alg, 0, sizeof(*alg));
-	alg->config = config;
+	alg->algorithm = algorithm;
 	alg->allocated = true;
 	k_mutex_unlock(&list_lock);
 
 #ifdef CONFIG_KV_STORE
-	if (config->arguments_kv_key > 0) {
-		rc = kv_store_key_data_size(config->arguments_kv_key);
-		if (rc == config->arguments_size) {
+	if (algorithm->arguments_kv_key > 0) {
+		rc = kv_store_key_data_size(algorithm->arguments_kv_key);
+		if (rc == algorithm->arguments_size) {
 			/* Configuration exists in KV store, load it */
-			rc = kv_store_read(config->arguments_kv_key, config->arguments,
-					   config->arguments_size);
+			rc = kv_store_read(algorithm->arguments_kv_key, algorithm->arguments,
+					   algorithm->arguments_size);
 		} else if ((rc < 0) && (rc != -ENOENT)) {
 			goto free_algorithm;
 		} else {
 			/* No configuration, or invalid size. Update from defaults */
-			rc = kv_store_write(config->arguments_kv_key, config->arguments,
-					    config->arguments_size);
+			rc = kv_store_write(algorithm->arguments_kv_key, algorithm->arguments,
+					    algorithm->arguments_size);
 		}
 		if (rc < 0) {
 			goto free_algorithm;
 		}
-		if (rc != config->arguments_size) {
+		if (rc != algorithm->arguments_size) {
 			rc = -EIO;
 			goto free_algorithm;
 		}
@@ -209,7 +209,7 @@ int algorithm_runner_register(const struct algorithm_common_config *config)
 #endif /* CONFIG_KV_STORE */
 
 	/* Initialise alg */
-	config->fn(NULL, config, config->arguments);
+	algorithm->fn(NULL, algorithm, algorithm->arguments);
 
 	/* Add to list of algorithms to be run */
 	k_mutex_lock(&list_lock, K_FOREVER);
@@ -225,19 +225,19 @@ free_algorithm:
 	return rc;
 }
 
-int algorithm_runner_unregister(const struct algorithm_common_config *config)
+int algorithm_runner_unregister(const struct infuse_algorithm *algorithm)
 {
 	struct algorithm_runner_algorithm *alg;
 	int rc = -ENOENT;
 
-	if (config == NULL) {
+	if (algorithm == NULL) {
 		return -EINVAL;
 	}
 
 	/* Remove from list of algorithms to be run */
 	k_mutex_lock(&list_lock, K_FOREVER);
 	SYS_SLIST_FOR_EACH_CONTAINER(&algorithms, alg, node) {
-		if (alg->config == config) {
+		if (alg->algorithm == algorithm) {
 			sys_slist_find_and_remove(&algorithms, &alg->node);
 			alg->allocated = false;
 			rc = 0;

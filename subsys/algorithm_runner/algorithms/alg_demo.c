@@ -24,8 +24,7 @@ TDF_ALGORITHM_OUTPUT_VAR(tdf_demo_state_output, 1);
 TDF_ALGORITHM_OUTPUT_VAR(tdf_demo_metric_output, 4);
 
 void algorithm_demo_event_fn(const struct zbus_channel *chan,
-			     const struct algorithm_common_config *common, const void *args,
-			     void *data)
+			     const struct infuse_algorithm *algorithm, const void *args, void *data)
 {
 	const struct algorithm_demo_common_args *a = args;
 	struct tdf_demo_event_output tdf;
@@ -47,7 +46,7 @@ void algorithm_demo_event_fn(const struct zbus_channel *chan,
 	LOG_INF("Event generated from %d%% chance", a->event_gen_chance);
 
 	/* Populate the event TDF */
-	tdf.algorithm_id = common->algorithm_id;
+	tdf.algorithm_id = algorithm->algorithm_id;
 	tdf.algorithm_version = 0;
 	tdf.output[0] = rand_100;
 
@@ -87,8 +86,7 @@ static const uint8_t demo_state_transitions[4][4] = {
 #endif /* CONFIG_ALGORITHM_RUNNER_ALG_DEMO_SLOW_TRANSITIONS */
 
 void algorithm_demo_state_fn(const struct zbus_channel *chan,
-			     const struct algorithm_common_config *common, const void *args,
-			     void *data)
+			     const struct infuse_algorithm *algorithm, const void *args, void *data)
 {
 	const struct algorithm_demo_common_args *a = args;
 	union algorithm_demo_common_data *d = data;
@@ -122,7 +120,7 @@ void algorithm_demo_state_fn(const struct zbus_channel *chan,
 		d->current_state = i;
 
 		/* Populate the event TDF */
-		tdf.algorithm_id = common->algorithm_id;
+		tdf.algorithm_id = algorithm->algorithm_id;
 		tdf.algorithm_version = 0;
 		tdf.output[0] = d->current_state;
 
@@ -136,7 +134,7 @@ void algorithm_demo_state_fn(const struct zbus_channel *chan,
 }
 
 void algorithm_demo_metric_fn(const struct zbus_channel *chan,
-			      const struct algorithm_common_config *common, const void *args,
+			      const struct infuse_algorithm *algorithm, const void *args,
 			      void *data)
 {
 	const struct algorithm_demo_common_args *a = args;
@@ -164,7 +162,7 @@ void algorithm_demo_metric_fn(const struct zbus_channel *chan,
 		LOG_INF("Metric: %d", metric);
 
 		/* Populate the metric TDF */
-		tdf.algorithm_id = common->algorithm_id;
+		tdf.algorithm_id = algorithm->algorithm_id;
 		tdf.algorithm_version = 0;
 		sys_put_le32(metric, tdf.output);
 

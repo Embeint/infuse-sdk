@@ -24,8 +24,8 @@ INFUSE_ZBUS_CHAN_DEFINE(INFUSE_ZBUS_CHAN_TILT);
 
 LOG_MODULE_REGISTER(alg_tilt, CONFIG_ALG_TILT_LOG_LEVEL);
 
-void algorithm_tilt_fn(const struct zbus_channel *chan,
-		       const struct algorithm_common_config *common, const void *args, void *data)
+void algorithm_tilt_fn(const struct zbus_channel *chan, const struct infuse_algorithm *algorithm,
+		       const void *args, void *data)
 {
 	const struct kv_alg_tilt_args *a = args;
 	struct algorithm_tilt_data *d = data;

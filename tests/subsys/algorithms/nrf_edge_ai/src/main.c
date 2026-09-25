@@ -27,7 +27,7 @@ static const uint8_t test_algorithm[] __aligned(sizeof(void *)) = {
 ZTEST(algorithm_runner_llext, test_loading)
 {
 	const struct zbus_channel *chan = INFUSE_ZBUS_CHAN_GET(INFUSE_ZBUS_CHAN_BATTERY);
-	const struct algorithm_common_config *cfg;
+	const struct infuse_algorithm *algorithm;
 	__maybe_unused int rc;
 
 	struct llext_buf_loader buf_loader =
@@ -40,26 +40,26 @@ ZTEST(algorithm_runner_llext, test_loading)
 	rc = llext_load(loader, "test_alg", &ext, &ldr_parm);
 	zassert_equal(0, rc);
 
-	/* Find the configuration struct that we expect to be exported */
-	cfg = llext_find_sym(&ext->exp_tab, "algorithm_config");
-	zassert_not_null(cfg);
+	/* Find the algorithm struct that we expect to be exported */
+	algorithm = llext_find_sym(&ext->exp_tab, "algorithm_config");
+	zassert_not_null(algorithm);
 
 	struct tdf_battery_state battery = {.voltage_mv = 3700, .current_ua = -100, .soc = 70};
 
 	zbus_chan_pub(chan, &battery, K_FOREVER);
 
-	/* Validate exported configuration */
-	zassert_equal(ALGORITHM_ID_EXPECTED, cfg->algorithm_id);
-	zassert_equal(ALGORITHM_ZBUS_EXPECTED, cfg->zbus_channel);
-	zassert_not_null(cfg->fn);
+	/* Validate exported algorithm */
+	zassert_equal(ALGORITHM_ID_EXPECTED, algorithm->algorithm_id);
+	zassert_equal(ALGORITHM_ZBUS_EXPECTED, algorithm->zbus_channel);
+	zassert_not_null(algorithm->fn);
 
 	/* Initialise state */
-	cfg->fn(NULL, cfg, NULL);
+	algorithm->fn(NULL, algorithm, NULL);
 
 	/* Run the function many times to trigger inference */
 	for (int i = 0; i < 500; i++) {
 		zassert_equal(0, zbus_chan_claim(chan, K_NO_WAIT));
-		cfg->fn(chan, cfg, NULL);
+		algorithm->fn(chan, algorithm, NULL);
 	}
 
 	/* Unload the ELF */

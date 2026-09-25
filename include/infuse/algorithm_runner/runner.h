@@ -38,7 +38,7 @@ void algorithm_runner_init(void);
  * @note Registering the algorithm will immediately call the implementation with `chan == NULL`
  *       to provide an opportunity to initialise runtime state.
  *
- * @param config Algorithm configuration to register
+ * @param algorithm Algorithm to register
  *
  * @retval 0 Algorithm registered
  * @retval -EINVAL Invalid algorithm configuration
@@ -46,18 +46,18 @@ void algorithm_runner_init(void);
  * @retval -ENOMEM No free algorithm registration slots
  * @return Negative error code from the KV store
  */
-int algorithm_runner_register(const struct algorithm_common_config *config);
+int algorithm_runner_register(const struct infuse_algorithm *algorithm);
 
 /**
  * @brief Unregister an algorithm from the runner
  *
- * @param config Algorithm configuration to unregister
+ * @param algorithm Algorithm to unregister
  *
  * @retval 0 Algorithm was found and unregistered
  * @retval -EINVAL Invalid algorithm configuration
  * @retval -ENOENT Algorithm was not registered with the runner
  */
-int algorithm_runner_unregister(const struct algorithm_common_config *config);
+int algorithm_runner_unregister(const struct infuse_algorithm *algorithm);
 
 /**
  * @brief Log a single TDF as requested by algorithm configuration

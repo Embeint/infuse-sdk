@@ -24,7 +24,7 @@ extern "C" {
  * @{
  */
 
-struct algorithm_common_config;
+struct infuse_algorithm;
 
 /**
  * @brief Algorithm implementation
@@ -34,15 +34,15 @@ struct algorithm_common_config;
  * has completed.
  *
  * @param chan Channel pointer corresponding to @a zbus_channel in
- * @ref algorithm_common_config. Value is NULL on the very first call to initialise data
+ * @ref infuse_algorithm. Value is NULL on the very first call to initialise data
  * structures.
  * @param common Pointer to common algorithm config
  * @param args Pointer to algorithm specific arguments
  */
 typedef void (*algorithm_run_fn)(const struct zbus_channel *chan,
-				 const struct algorithm_common_config *common, const void *args);
+				 const struct infuse_algorithm *algorithm, const void *args);
 
-struct algorithm_common_config {
+struct infuse_algorithm {
 	/* Unique algorithm identifier */
 	uint32_t algorithm_id;
 	/* Primary channel that triggers algorithm run */
@@ -60,7 +60,7 @@ struct algorithm_common_config {
 /**
  * @brief Export algorithm implementation
  *
- * @param symbol Instance of @ref algorithm_common_config to export
+ * @param symbol Instance of @ref infuse_algorithm to export
  */
 #define ALGORITHM_EXPORT(symbol) EXPORT_GROUP_SYMBOL_NAMED(INFUSE_ALG, symbol, algorithm_config);
 
