@@ -45,8 +45,7 @@ struct algorithm_tilt_data {
 
 /** Algorithm implementation, see @ref algorithm_run_fn */
 void algorithm_tilt_fn(const struct zbus_channel *chan,
-		       const struct algorithm_runner_common_config *common, const void *args,
-		       void *data);
+		       const struct algorithm_common_config *common, const void *args, void *data);
 
 /**
  * @brief Statically define an instance of the tilt algorithm
@@ -58,8 +57,14 @@ void algorithm_tilt_fn(const struct zbus_channel *chan,
  * @param one_g_valid_percent Accelerometer magnitude must be with N percent of 1G to use for tilt
  */
 #define ALGORITHM_TILT_DEFINE(name, loggers_, tdfs, filter_alpha, one_g_valid_percent)             \
-	static const struct algorithm_runner_common_config name##_config = {                       \
-		.impl = algorithm_tilt_fn,                                                         \
+	static void name##_wrapper(const struct zbus_channel *chan,                                \
+				   const struct algorithm_common_config *common, const void *args) \
+	{                                                                                          \
+		static struct algorithm_tilt_data data;                                            \
+		algorithm_tilt_fn(chan, common, args, &data);                                      \
+	}                                                                                          \
+	static const struct algorithm_common_config name##_config = {                              \
+		.fn = name##_wrapper,                                                              \
 		.algorithm_id = 0x15F20001,                                                        \
 		.zbus_channel = INFUSE_ZBUS_CHAN_IMU,                                              \
 		.arguments_size = sizeof(struct kv_alg_tilt_args),                                 \
@@ -77,11 +82,9 @@ void algorithm_tilt_fn(const struct zbus_channel *chan,
 				.one_g_percent = one_g_valid_percent,                              \
 			},                                                                         \
 	};                                                                                         \
-	static struct algorithm_tilt_data name##_data;                                             \
 	static struct algorithm_runner_algorithm name = {                                          \
 		.config = &name##_config,                                                          \
 		.arguments = &name##_default_args,                                                 \
-		.runtime_state = &name##_data,                                                     \
 	}
 
 /**

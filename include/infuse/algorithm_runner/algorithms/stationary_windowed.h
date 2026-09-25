@@ -41,7 +41,7 @@ struct algorithm_stationary_windowed_data {
 
 /** Algorithm implementation, see @ref algorithm_run_fn */
 void algorithm_stationary_windowed_fn(const struct zbus_channel *chan,
-				      const struct algorithm_runner_common_config *common,
+				      const struct algorithm_common_config *common,
 				      const void *args, void *data);
 
 /**
@@ -55,8 +55,14 @@ void algorithm_stationary_windowed_fn(const struct zbus_channel *chan,
  *                     moving.
  */
 #define ALGORITHM_STATIONARY_WINDOWED_DEFINE(name, loggers_, tdfs, window_seconds_, threshold_ug)  \
-	static const struct algorithm_runner_common_config name##_config = {                       \
-		.impl = algorithm_stationary_windowed_fn,                                          \
+	static void name##_wrapper(const struct zbus_channel *chan,                                \
+				   const struct algorithm_common_config *common, const void *args) \
+	{                                                                                          \
+		static struct algorithm_stationary_windowed_data data;                             \
+		algorithm_stationary_windowed_fn(chan, common, args, &data);                       \
+	}                                                                                          \
+	static const struct algorithm_common_config name##_config = {                              \
+		.fn = name##_wrapper,                                                              \
 		.algorithm_id = 0x15F20000,                                                        \
 		.zbus_channel = INFUSE_ZBUS_CHAN_IMU_ACC_MAG,                                      \
 		.arguments_size = sizeof(struct kv_alg_stationary_windowed_args),                  \
@@ -74,11 +80,9 @@ void algorithm_stationary_windowed_fn(const struct zbus_channel *chan,
 				.std_dev_threshold_ug = threshold_ug,                              \
 			},                                                                         \
 	};                                                                                         \
-	static struct algorithm_stationary_windowed_data name##_data;                              \
 	static struct algorithm_runner_algorithm name = {                                          \
 		.config = &name##_config,                                                          \
 		.arguments = &name##_default_args,                                                 \
-		.runtime_state = &name##_data,                                                     \
 	}
 
 /**

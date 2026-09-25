@@ -16,6 +16,7 @@
 #include <zephyr/sys/slist.h>
 #include <zephyr/zbus/zbus.h>
 
+#include <infuse/algorithms/implementation.h>
 #include <infuse/fs/kv_types.h>
 
 #ifdef __cplusplus
@@ -28,46 +29,11 @@ extern "C" {
  * @{
  */
 
-struct algorithm_runner_common_config;
-
-/**
- * @brief Algorithm implementation
- *
- * @warning The algorithm implementation ***MUST*** release the channel reference via @a
- * zbus_chan_finish before exiting. This should be done as soon as processing of the channel data
- * has completed.
- *
- * @param chan Channel pointer corresponding to @a zbus_channel in
- * @ref algorithm_runner_common_config. Value is NULL on the very first call to initialise data
- * structures.
- * @param common Pointer to common algorithm config
- * @param args Pointer to algorithm specific arguments
- * @param data Pointer to the mutable algorithm state
- */
-typedef void (*algorithm_run_fn)(const struct zbus_channel *chan,
-				 const struct algorithm_runner_common_config *common,
-				 const void *args, void *data);
-
-struct algorithm_runner_common_config {
-	/* Function that implements the algorithm */
-	algorithm_run_fn impl;
-	/* Unique algorithm identifier */
-	uint32_t algorithm_id;
-	/* Primary channel that triggers algorithm run */
-	uint32_t zbus_channel;
-	/* Size of the arguments structure */
-	uint16_t arguments_size;
-	/* KV Store key holding @a arguments (If > 0) */
-	uint16_t arguments_kv_key;
-} __packed;
-
 struct algorithm_runner_algorithm {
 	/* Algorithm configuration */
-	const struct algorithm_runner_common_config *config;
+	const struct algorithm_common_config *config;
 	/* Algorithm arguments */
 	void *arguments;
-	/* Algorithm runtime state */
-	void *runtime_state;
 	/* Internal state: new data on channel */
 	const struct zbus_channel *_changed;
 	/* Internal state: configuration has changed */

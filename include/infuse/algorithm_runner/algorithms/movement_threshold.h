@@ -43,8 +43,8 @@ struct algorithm_movement_threshold_data {
 
 /** Algorithm implementation, see @ref algorithm_run_fn */
 void algorithm_movement_threshold_fn(const struct zbus_channel *chan,
-				     const struct algorithm_runner_common_config *common,
-				     const void *args, void *data);
+				     const struct algorithm_common_config *common, const void *args,
+				     void *data);
 
 /**
  * @brief Statically define an instance of the movement threshold algorithm
@@ -56,8 +56,14 @@ void algorithm_movement_threshold_fn(const struct zbus_channel *chan,
  */
 #define ALGORITHM_MOVEMENT_THRESHOLD_DEFINE(name, moving_for_, initial_threshold_ug_,              \
 					    continue_threshold_ug_)                                \
-	static const struct algorithm_runner_common_config name##_config = {                       \
-		.impl = algorithm_movement_threshold_fn,                                           \
+	static void name##_wrapper(const struct zbus_channel *chan,                                \
+				   const struct algorithm_common_config *common, const void *args) \
+	{                                                                                          \
+		static struct algorithm_movement_threshold_data data;                              \
+		algorithm_movement_threshold_fn(chan, common, args, &data);                        \
+	}                                                                                          \
+	static const struct algorithm_common_config name##_config = {                              \
+		.fn = name##_wrapper,                                                              \
 		.algorithm_id = 0x15F20002,                                                        \
 		.zbus_channel = INFUSE_ZBUS_CHAN_IMU_ACC_MAG,                                      \
 		.arguments_size = sizeof(struct kv_alg_movement_threshold_args_v2),                \
@@ -72,11 +78,9 @@ void algorithm_movement_threshold_fn(const struct zbus_channel *chan,
 				.continue_threshold_ug = continue_threshold_ug_,                   \
 			},                                                                         \
 	};                                                                                         \
-	static struct algorithm_movement_threshold_data name##_data;                               \
 	static struct algorithm_runner_algorithm name = {                                          \
 		.config = &name##_config,                                                          \
 		.arguments = &name##_default_args,                                                 \
-		.runtime_state = &name##_data,                                                     \
 	}
 
 /**
