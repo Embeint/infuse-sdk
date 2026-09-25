@@ -52,17 +52,17 @@ union algorithm_demo_common_data {
 
 /** Algorithm implementation, see @ref algorithm_run_fn */
 void algorithm_demo_event_fn(const struct zbus_channel *chan,
-			     const struct algorithm_common_config *common, const void *args,
+			     const struct infuse_algorithm *algorithm, const void *args,
 			     void *data);
 
 /** Algorithm implementation, see @ref algorithm_run_fn */
 void algorithm_demo_state_fn(const struct zbus_channel *chan,
-			     const struct algorithm_common_config *common, const void *args,
+			     const struct infuse_algorithm *algorithm, const void *args,
 			     void *data);
 
 /** Algorithm implementation, see @ref algorithm_run_fn */
 void algorithm_demo_metric_fn(const struct zbus_channel *chan,
-			      const struct algorithm_common_config *common, const void *args,
+			      const struct infuse_algorithm *algorithm, const void *args,
 			      void *data);
 
 /**
@@ -78,10 +78,10 @@ void algorithm_demo_metric_fn(const struct zbus_channel *chan,
  */
 #define ALGORITHM_DEMO_EVENT_DEFINE(name, loggers_, tdfs, event_chance_percent)                    \
 	static void name##_wrapper(const struct zbus_channel *chan,                                \
-				   const struct algorithm_common_config *common, const void *args) \
+				   const struct infuse_algorithm *algorithm, const void *args)     \
 	{                                                                                          \
 		static union algorithm_demo_common_data data;                                      \
-		algorithm_demo_event_fn(chan, common, args, &data);                                \
+		algorithm_demo_event_fn(chan, algorithm, args, &data);                             \
 	}                                                                                          \
 	static struct algorithm_demo_common_args name##_default_args = {                           \
 		.logging =                                                                         \
@@ -91,7 +91,7 @@ void algorithm_demo_metric_fn(const struct zbus_channel *chan,
 			},                                                                         \
 		.event_gen_chance = event_chance_percent,                                          \
 	};                                                                                         \
-	static const struct algorithm_common_config name = {                                       \
+	static const struct infuse_algorithm name = {                                              \
 		.fn = name##_wrapper,                                                              \
 		.algorithm_id = 0xFFFFFFF0,                                                        \
 		.zbus_channel = INFUSE_ZBUS_CHAN_IMU,                                              \
@@ -110,10 +110,10 @@ void algorithm_demo_metric_fn(const struct zbus_channel *chan,
  */
 #define ALGORITHM_DEMO_STATE_DEFINE(name, loggers_, tdfs)                                          \
 	static void name##_wrapper(const struct zbus_channel *chan,                                \
-				   const struct algorithm_common_config *common, const void *args) \
+				   const struct infuse_algorithm *algorithm, const void *args)     \
 	{                                                                                          \
 		static union algorithm_demo_common_data data;                                      \
-		algorithm_demo_state_fn(chan, common, args, &data);                                \
+		algorithm_demo_state_fn(chan, algorithm, args, &data);                             \
 	}                                                                                          \
 	static struct algorithm_demo_common_args name##_default_args = {                           \
 		.logging =                                                                         \
@@ -122,7 +122,7 @@ void algorithm_demo_metric_fn(const struct zbus_channel *chan,
 				.tdf_mask = tdfs,                                                  \
 			},                                                                         \
 	};                                                                                         \
-	static const struct algorithm_common_config name = {                                       \
+	static const struct infuse_algorithm name = {                                              \
 		.fn = name##_wrapper,                                                              \
 		.algorithm_id = 0xFFFFFFF1,                                                        \
 		.zbus_channel = INFUSE_ZBUS_CHAN_IMU,                                              \
@@ -142,10 +142,10 @@ void algorithm_demo_metric_fn(const struct zbus_channel *chan,
  */
 #define ALGORITHM_DEMO_METRIC_DEFINE(name, loggers_, tdfs, metric_compute_len)                     \
 	static void name##_wrapper(const struct zbus_channel *chan,                                \
-				   const struct algorithm_common_config *common, const void *args) \
+				   const struct infuse_algorithm *algorithm, const void *args)     \
 	{                                                                                          \
 		static union algorithm_demo_common_data data;                                      \
-		algorithm_demo_metric_fn(chan, common, args, &data);                               \
+		algorithm_demo_metric_fn(chan, algorithm, args, &data);                            \
 	}                                                                                          \
 	static struct algorithm_demo_common_args name##_default_args = {                           \
 		.logging =                                                                         \
@@ -155,7 +155,7 @@ void algorithm_demo_metric_fn(const struct zbus_channel *chan,
 			},                                                                         \
 		.compute_metric_len = metric_compute_len,                                          \
 	};                                                                                         \
-	static const struct algorithm_common_config name = {                                       \
+	static const struct infuse_algorithm name = {                                              \
 		.fn = name##_wrapper,                                                              \
 		.algorithm_id = 0xFFFFFFF2,                                                        \
 		.zbus_channel = INFUSE_ZBUS_CHAN_IMU,                                              \

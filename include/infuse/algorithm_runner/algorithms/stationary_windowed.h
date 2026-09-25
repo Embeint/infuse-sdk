@@ -41,8 +41,8 @@ struct algorithm_stationary_windowed_data {
 
 /** Algorithm implementation, see @ref algorithm_run_fn */
 void algorithm_stationary_windowed_fn(const struct zbus_channel *chan,
-				      const struct algorithm_common_config *common,
-				      const void *args, void *data);
+				      const struct infuse_algorithm *algorithm, const void *args,
+				      void *data);
 
 /**
  * @brief Statically define an instance of the stationary windows algorithm
@@ -56,10 +56,10 @@ void algorithm_stationary_windowed_fn(const struct zbus_channel *chan,
  */
 #define ALGORITHM_STATIONARY_WINDOWED_DEFINE(name, loggers_, tdfs, window_seconds_, threshold_ug)  \
 	static void name##_wrapper(const struct zbus_channel *chan,                                \
-				   const struct algorithm_common_config *common, const void *args) \
+				   const struct infuse_algorithm *algorithm, const void *args)     \
 	{                                                                                          \
 		static struct algorithm_stationary_windowed_data data;                             \
-		algorithm_stationary_windowed_fn(chan, common, args, &data);                       \
+		algorithm_stationary_windowed_fn(chan, algorithm, args, &data);                    \
 	}                                                                                          \
 	static struct kv_alg_stationary_windowed_args name##_default_args = {                      \
 		.logging =                                                                         \
@@ -73,7 +73,7 @@ void algorithm_stationary_windowed_fn(const struct zbus_channel *chan,
 				.std_dev_threshold_ug = threshold_ug,                              \
 			},                                                                         \
 	};                                                                                         \
-	static const struct algorithm_common_config name = {                                       \
+	static const struct infuse_algorithm name = {                                              \
 		.fn = name##_wrapper,                                                              \
 		.algorithm_id = 0x15F20000,                                                        \
 		.zbus_channel = INFUSE_ZBUS_CHAN_IMU_ACC_MAG,                                      \

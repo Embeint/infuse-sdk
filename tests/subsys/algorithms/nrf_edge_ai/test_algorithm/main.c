@@ -14,20 +14,20 @@
 #include "nrf_edgeai_generated/nrf_edgeai_user_model.h"
 #include "algorithm_info.h"
 
-static void algorithm_fn(const struct zbus_channel *chan,
-			 const struct algorithm_common_config *common, const void *args);
+static void algorithm_fn(const struct zbus_channel *chan, const struct infuse_algorithm *algorithm,
+			 const void *args);
 
-const struct algorithm_common_config test_algorithm_config = {
+const struct infuse_algorithm test_algorithm = {
 	.algorithm_id = ALGORITHM_ID_EXPECTED,
 	.zbus_channel = ALGORITHM_ZBUS_EXPECTED,
 	.fn = algorithm_fn,
 };
-ALGORITHM_EXPORT(test_algorithm_config);
+ALGORITHM_EXPORT(test_algorithm);
 
 #define USER_UNIQ_INPUTS_NUM 2
 
-static void algorithm_fn(const struct zbus_channel *chan,
-			 const struct algorithm_common_config *common, const void *args)
+static void algorithm_fn(const struct zbus_channel *chan, const struct infuse_algorithm *algorithm,
+			 const void *args)
 {
 	const INFUSE_ZBUS_TYPE(INFUSE_ZBUS_CHAN_BATTERY) * data;
 	nrf_edgeai_t *user_model = nrf_edgeai_user_model();
