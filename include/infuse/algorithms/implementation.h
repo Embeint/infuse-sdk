@@ -24,6 +24,8 @@ extern "C" {
  * @{
  */
 
+struct algorithm_common_config;
+
 /**
  * @brief Algorithm implementation
  *
@@ -34,8 +36,11 @@ extern "C" {
  * @param chan Channel pointer corresponding to @a zbus_channel in
  * @ref algorithm_runner_common_config. Value is NULL on the very first call to initialise data
  * structures.
+ * @param common Pointer to common algorithm config
+ * @param args Pointer to algorithm specific arguments
  */
-typedef void (*algorithm_run_fn)(const struct zbus_channel *chan);
+typedef void (*algorithm_run_fn)(const struct zbus_channel *chan,
+				 const struct algorithm_common_config *common, const void *args);
 
 struct algorithm_common_config {
 	/* Unique algorithm identifier */

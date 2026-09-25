@@ -12,7 +12,8 @@
 #include "algorithm_info.h"
 #include "helper.h"
 
-static void algorithm_fn(const struct zbus_channel *chan);
+static void algorithm_fn(const struct zbus_channel *chan,
+			 const struct algorithm_common_config *common, const void *args);
 
 const struct algorithm_common_config test_algorithm_config = {
 	.algorithm_id = ALGORITHM_ID_EXPECTED,
@@ -25,7 +26,8 @@ struct algorithm_state {
 	uint32_t run_cnt;
 };
 
-static void algorithm_fn(const struct zbus_channel *chan)
+static void algorithm_fn(const struct zbus_channel *chan,
+			 const struct algorithm_common_config *common, const void *args)
 {
 	const INFUSE_ZBUS_TYPE(INFUSE_ZBUS_CHAN_BATTERY) * data;
 	static struct algorithm_state state;
