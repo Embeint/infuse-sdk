@@ -137,7 +137,6 @@ jobs:
       - name: Run Tests with Coverage Information
         run: |
           mkdir -p coverage/reports
-          pip install gcovr==6.0
           export ZEPHYR_BASE=${PWD}/zephyr
           $ZEPHYR_BASE/scripts/twister -i --force-color -N -v --filter runnable -p ${{ matrix.platform }} --coverage \
             -T infuse-sdk/tests --coverage-tool gcovr \
