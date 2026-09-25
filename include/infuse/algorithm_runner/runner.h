@@ -10,11 +10,8 @@
 #ifndef INFUSE_SDK_INCLUDE_INFUSE_ALGORITHM_RUNNER_RUNNER_H_
 #define INFUSE_SDK_INCLUDE_INFUSE_ALGORITHM_RUNNER_RUNNER_H_
 
+#include <stdbool.h>
 #include <stdint.h>
-
-#include <zephyr/toolchain.h>
-#include <zephyr/sys/slist.h>
-#include <zephyr/zbus/zbus.h>
 
 #include <infuse/algorithms/implementation.h>
 #include <infuse/fs/kv_types.h>
@@ -29,17 +26,6 @@ extern "C" {
  * @{
  */
 
-struct algorithm_runner_algorithm {
-	/* Algorithm configuration */
-	const struct algorithm_common_config *config;
-	/* Internal state: new data on channel */
-	const struct zbus_channel *_changed;
-	/* Internal state: configuration has changed */
-	bool _reload;
-	/* Internal state: list node object*/
-	sys_snode_t _node;
-};
-
 /**
  * @brief Initialise the algorithm runner
  *
@@ -53,19 +39,19 @@ void algorithm_runner_init(void);
  * @note Registering the algorithm will immediately call the implementation with `chan == NULL`
  *       to provide an opportunity to initialise runtime state.
  *
- * @param algorithm Algorithm to register
+ * @param config Algorithm configuration to register
  */
-void algorithm_runner_register(struct algorithm_runner_algorithm *algorithm);
+void algorithm_runner_register(const struct algorithm_common_config *config);
 
 /**
  * @brief Unregister an algorithm from the runner
  *
- * @param algorithm Algorithm to unregister
+ * @param config Algorithm configuration to unregister
  *
  * @retval true Algorithm was found and unregistered
  * @retval false Algorithm was not registered with the runner
  */
-bool algorithm_runner_unregister(struct algorithm_runner_algorithm *algorithm);
+bool algorithm_runner_unregister(const struct algorithm_common_config *config);
 
 /**
  * @brief Log a single TDF as requested by algorithm configuration

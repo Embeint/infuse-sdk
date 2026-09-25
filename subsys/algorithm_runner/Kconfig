@@ -7,6 +7,13 @@ config ALGORITHM_RUNNER
 
 if ALGORITHM_RUNNER
 
+config ALGORITHM_RUNNER_MAX_ALGORITHMS
+	int "Maximum number of registered algorithms"
+	default 8
+	range 1 32
+	help
+	  Maximum number of algorithms that can be registered concurrently.
+
 module = ALGORITHM_RUNNER
 module-str = Algorithm Runner
 source "subsys/logging/Kconfig.template.log_config"

@@ -73,16 +73,13 @@ void algorithm_stationary_windowed_fn(const struct zbus_channel *chan,
 				.std_dev_threshold_ug = threshold_ug,                              \
 			},                                                                         \
 	};                                                                                         \
-	static const struct algorithm_common_config name##_config = {                              \
+	static const struct algorithm_common_config name = {                                       \
 		.fn = name##_wrapper,                                                              \
 		.algorithm_id = 0x15F20000,                                                        \
 		.zbus_channel = INFUSE_ZBUS_CHAN_IMU_ACC_MAG,                                      \
 		.arguments = &name##_default_args,                                                 \
 		.arguments_size = sizeof(struct kv_alg_stationary_windowed_args),                  \
 		.arguments_kv_key = KV_KEY_ALG_STATIONARY_WINDOWED_ARGS,                           \
-	};                                                                                         \
-	static struct algorithm_runner_algorithm name = {                                          \
-		.config = &name##_config,                                                          \
 	}
 
 /**
