@@ -126,7 +126,7 @@ jobs:
           ccache -p
           ccache -z -s -vv
 
-      - if: github.event_name == 'pull_request'
+      - if: github.event_name == 'pull_request' && matrix.subset == 1
         name: Run Unit Tests with Twister (Pull Request)
         run: |
           export ZEPHYR_BASE=${PWD}/zephyr
