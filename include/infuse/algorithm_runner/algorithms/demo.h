@@ -81,7 +81,6 @@ void algorithm_demo_metric_fn(const struct zbus_channel *chan,
 		.algorithm_id = 0xFFFFFFF0,                                                        \
 		.zbus_channel = INFUSE_ZBUS_CHAN_IMU,                                              \
 		.arguments_size = sizeof(struct algorithm_demo_common_args),                       \
-		.state_size = sizeof(union algorithm_demo_common_data),                            \
 	};                                                                                         \
 	static struct algorithm_demo_common_args name##_default_args = {                           \
 		.logging =                                                                         \
@@ -113,7 +112,6 @@ void algorithm_demo_metric_fn(const struct zbus_channel *chan,
 		.algorithm_id = 0xFFFFFFF1,                                                        \
 		.zbus_channel = INFUSE_ZBUS_CHAN_IMU,                                              \
 		.arguments_size = sizeof(struct algorithm_demo_common_args),                       \
-		.state_size = sizeof(union algorithm_demo_common_data),                            \
 	};                                                                                         \
 	static struct algorithm_demo_common_args name##_default_args = {                           \
 		.logging =                                                                         \
@@ -145,7 +143,6 @@ void algorithm_demo_metric_fn(const struct zbus_channel *chan,
 		.algorithm_id = 0xFFFFFFF2,                                                        \
 		.zbus_channel = INFUSE_ZBUS_CHAN_IMU,                                              \
 		.arguments_size = sizeof(struct algorithm_demo_common_args),                       \
-		.state_size = sizeof(union algorithm_demo_common_data),                            \
 	};                                                                                         \
 	static struct algorithm_demo_common_args name##_default_args = {                           \
 		.logging =                                                                         \

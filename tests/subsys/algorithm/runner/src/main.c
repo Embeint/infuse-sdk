@@ -40,19 +40,16 @@ const struct algorithm_runner_common_config alg1_config = {
 	.algorithm_id = 0x12345678,
 	.zbus_channel = INFUSE_ZBUS_CHAN_BATTERY,
 	.arguments_size = sizeof(struct algorithm_args),
-	.state_size = sizeof(struct algorithm_state),
 	/* Use the TILT arguments key for testing */
 	.arguments_kv_key = KV_KEY_ALG_TILT_ARGS,
 };
 const struct algorithm_runner_common_config alg2_config = {
 	.algorithm_id = 0xAAAA0000,
 	.zbus_channel = INFUSE_ZBUS_CHAN_BATTERY,
-	.state_size = sizeof(struct algorithm_state),
 };
 const struct algorithm_runner_common_config alg3_config = {
 	.algorithm_id = 00001234,
 	.zbus_channel = INFUSE_ZBUS_CHAN_AMBIENT_ENV,
-	.state_size = sizeof(struct algorithm_state),
 };
 struct algorithm_state alg1_state = {0};
 struct algorithm_state alg2_state = {0};
