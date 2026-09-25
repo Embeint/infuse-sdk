@@ -70,6 +70,12 @@ const struct algorithm_common_config alg3_config = {
 	.algorithm_id = 00001234,
 	.zbus_channel = INFUSE_ZBUS_CHAN_AMBIENT_ENV,
 };
+const struct algorithm_common_config alg4_config = {
+	.fn = alg3_wrapper,
+	.algorithm_id = 0xFFFF1234,
+	.zbus_channel = INFUSE_ZBUS_CHAN_LOCATION,
+};
+const struct algorithm_common_config invalid_config = {0};
 struct algorithm_state alg1_state = {0};
 struct algorithm_state alg2_state = {0};
 struct algorithm_state alg3_state = {0};
@@ -144,15 +150,20 @@ ZTEST(algorithm_runner, test_running)
 
 	algorithm_runner_init();
 
+	zassert_equal(-EINVAL, algorithm_runner_register(NULL));
+	zassert_equal(-EINVAL, algorithm_runner_register(&invalid_config));
+	zassert_equal(-EINVAL, algorithm_runner_unregister(NULL));
 	zassert_equal(-ENOENT, kv_store_key_data_size(KV_KEY_ALG_TILT_ARGS));
 	alg1_state.expected_arg = alg1_args.arg;
 
-	zassert_false(algorithm_runner_unregister(&alg1_config));
-	zassert_false(algorithm_runner_unregister(&alg2_config));
-	zassert_false(algorithm_runner_unregister(&alg3_config));
-	algorithm_runner_register(&alg1_config);
-	algorithm_runner_register(&alg2_config);
-	algorithm_runner_register(&alg3_config);
+	zassert_equal(-ENOENT, algorithm_runner_unregister(&alg1_config));
+	zassert_equal(-ENOENT, algorithm_runner_unregister(&alg2_config));
+	zassert_equal(-ENOENT, algorithm_runner_unregister(&alg3_config));
+	zassert_ok(algorithm_runner_register(&alg1_config));
+	zassert_ok(algorithm_runner_register(&alg2_config));
+	zassert_ok(algorithm_runner_register(&alg3_config));
+	zassert_equal(-EALREADY, algorithm_runner_register(&alg1_config));
+	zassert_equal(-ENOMEM, algorithm_runner_register(&alg4_config));
 
 	/* Arguments written to specified key on registration */
 	zassert_equal(sizeof(alg1_args), kv_store_key_data_size(KV_KEY_ALG_TILT_ARGS));
@@ -202,7 +213,7 @@ ZTEST(algorithm_runner, test_running)
 	}
 
 	/* Unregister alg2, battery should no longer result in alg2 running  */
-	zassert_true(algorithm_runner_unregister(&alg2_config));
+	zassert_ok(algorithm_runner_unregister(&alg2_config));
 	zbus_chan_pub(INFUSE_ZBUS_CHAN_GET(INFUSE_ZBUS_CHAN_BATTERY), &battery, K_FOREVER);
 	k_sleep(K_MSEC(10));
 
@@ -210,8 +221,8 @@ ZTEST(algorithm_runner, test_running)
 	zassert_equal(9, alg2_state.run_cnt);
 
 	/* Unregister remaining algorithms, no more iteration */
-	zassert_true(algorithm_runner_unregister(&alg1_config));
-	zassert_true(algorithm_runner_unregister(&alg3_config));
+	zassert_ok(algorithm_runner_unregister(&alg1_config));
+	zassert_ok(algorithm_runner_unregister(&alg3_config));
 
 	zbus_chan_pub(INFUSE_ZBUS_CHAN_GET(INFUSE_ZBUS_CHAN_BATTERY), &battery, K_FOREVER);
 	zbus_chan_pub(INFUSE_ZBUS_CHAN_GET(INFUSE_ZBUS_CHAN_AMBIENT_ENV), &ambient_env, K_FOREVER);
@@ -221,9 +232,9 @@ ZTEST(algorithm_runner, test_running)
 	zassert_equal(9, alg2_state.run_cnt);
 	zassert_equal(2, alg3_state.run_cnt);
 
-	zassert_false(algorithm_runner_unregister(&alg1_config));
-	zassert_false(algorithm_runner_unregister(&alg2_config));
-	zassert_false(algorithm_runner_unregister(&alg3_config));
+	zassert_equal(-ENOENT, algorithm_runner_unregister(&alg1_config));
+	zassert_equal(-ENOENT, algorithm_runner_unregister(&alg2_config));
+	zassert_equal(-ENOENT, algorithm_runner_unregister(&alg3_config));
 
 	/* Incorrect length should be overwritten on registration */
 	uint8_t bad_value = -1;
@@ -232,9 +243,9 @@ ZTEST(algorithm_runner, test_running)
 		      kv_store_write(KV_KEY_ALG_TILT_ARGS, &bad_value, sizeof(bad_value)));
 
 	alg1_state.expected_chan = NULL;
-	algorithm_runner_register(&alg1_config);
+	zassert_ok(algorithm_runner_register(&alg1_config));
 	zassert_equal(sizeof(alg1_args), kv_store_key_data_size(KV_KEY_ALG_TILT_ARGS));
-	zassert_true(algorithm_runner_unregister(&alg1_config));
+	zassert_ok(algorithm_runner_unregister(&alg1_config));
 
 	/* KV value should be used */
 	struct algorithm_args args_updated = {
@@ -244,7 +255,7 @@ ZTEST(algorithm_runner, test_running)
 	zassert_equal(sizeof(args_updated),
 		      kv_store_write(KV_KEY_ALG_TILT_ARGS, &args_updated, sizeof(args_updated)));
 	alg1_state.expected_arg = args_updated.arg;
-	algorithm_runner_register(&alg1_config);
+	zassert_ok(algorithm_runner_register(&alg1_config));
 	zassert_equal(sizeof(alg1_args), kv_store_key_data_size(KV_KEY_ALG_TILT_ARGS));
 
 	/* Reset run counts */
@@ -278,7 +289,7 @@ ZTEST(algorithm_runner, test_running)
 	zassert_equal(0, k_sem_take(&reboot_request, K_MSEC(100)));
 
 	/* Algorithm should have been automatically unregistered */
-	zassert_false(algorithm_runner_unregister(&alg1_config));
+	zassert_equal(-ENOENT, algorithm_runner_unregister(&alg1_config));
 }
 
 ZTEST(algorithm_runner, test_logging)

@@ -10,7 +10,6 @@
 #ifndef INFUSE_SDK_INCLUDE_INFUSE_ALGORITHM_RUNNER_RUNNER_H_
 #define INFUSE_SDK_INCLUDE_INFUSE_ALGORITHM_RUNNER_RUNNER_H_
 
-#include <stdbool.h>
 #include <stdint.h>
 
 #include <infuse/algorithms/implementation.h>
@@ -40,18 +39,25 @@ void algorithm_runner_init(void);
  *       to provide an opportunity to initialise runtime state.
  *
  * @param config Algorithm configuration to register
+ *
+ * @retval 0 Algorithm registered
+ * @retval -EINVAL Invalid algorithm configuration
+ * @retval -EALREADY Algorithm is already registered
+ * @retval -ENOMEM No free algorithm registration slots
+ * @return Negative error code from the KV store
  */
-void algorithm_runner_register(const struct algorithm_common_config *config);
+int algorithm_runner_register(const struct algorithm_common_config *config);
 
 /**
  * @brief Unregister an algorithm from the runner
  *
  * @param config Algorithm configuration to unregister
  *
- * @retval true Algorithm was found and unregistered
- * @retval false Algorithm was not registered with the runner
+ * @retval 0 Algorithm was found and unregistered
+ * @retval -EINVAL Invalid algorithm configuration
+ * @retval -ENOENT Algorithm was not registered with the runner
  */
-bool algorithm_runner_unregister(const struct algorithm_common_config *config);
+int algorithm_runner_unregister(const struct algorithm_common_config *config);
 
 /**
  * @brief Log a single TDF as requested by algorithm configuration

@@ -119,7 +119,7 @@ ZTEST(alg_stationary, test_send)
 
 	/* Initialise algorithm runner */
 	algorithm_runner_init();
-	algorithm_runner_register(&test_alg);
+	zassert_ok(algorithm_runner_register(&test_alg));
 
 	/* Start with gravity aligned to Z axis */
 	gravity.x = 0;
