@@ -64,15 +64,15 @@ ZTEST(algorithm_runner_llext, test_loading)
 	zassert_not_null(cfg->fn);
 
 	/* Initialise state */
-	cfg->fn(NULL);
+	cfg->fn(NULL, cfg, NULL);
 
 	/* Run the function a few times */
 	zassert_equal(0, zbus_chan_claim(chan, K_NO_WAIT));
-	cfg->fn(chan);
+	cfg->fn(chan, cfg, NULL);
 	zassert_equal(0, zbus_chan_claim(chan, K_NO_WAIT));
-	cfg->fn(chan);
+	cfg->fn(chan, cfg, NULL);
 	zassert_equal(0, zbus_chan_claim(chan, K_NO_WAIT));
-	cfg->fn(chan);
+	cfg->fn(chan, cfg, NULL);
 
 #ifdef CONFIG_TEST_ALGORITHM_BUILD_LLEXT
 	/* Unload the ELF */

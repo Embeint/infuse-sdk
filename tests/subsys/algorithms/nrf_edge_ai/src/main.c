@@ -54,12 +54,12 @@ ZTEST(algorithm_runner_llext, test_loading)
 	zassert_not_null(cfg->fn);
 
 	/* Initialise state */
-	cfg->fn(NULL);
+	cfg->fn(NULL, cfg, NULL);
 
 	/* Run the function many times to trigger inference */
 	for (int i = 0; i < 500; i++) {
 		zassert_equal(0, zbus_chan_claim(chan, K_NO_WAIT));
-		cfg->fn(chan);
+		cfg->fn(chan, cfg, NULL);
 	}
 
 	/* Unload the ELF */
