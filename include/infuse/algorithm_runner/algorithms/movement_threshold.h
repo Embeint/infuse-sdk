@@ -71,16 +71,13 @@ void algorithm_movement_threshold_fn(const struct zbus_channel *chan,
 				.continue_threshold_ug = continue_threshold_ug_,                   \
 			},                                                                         \
 	};                                                                                         \
-	static const struct algorithm_common_config name##_config = {                              \
+	static const struct algorithm_common_config name = {                                       \
 		.fn = name##_wrapper,                                                              \
 		.algorithm_id = 0x15F20002,                                                        \
 		.zbus_channel = INFUSE_ZBUS_CHAN_IMU_ACC_MAG,                                      \
 		.arguments = &name##_default_args,                                                 \
 		.arguments_size = sizeof(struct kv_alg_movement_threshold_args_v2),                \
 		.arguments_kv_key = KV_KEY_ALG_MOVEMENT_THRESHOLD_ARGS_V2,                         \
-	};                                                                                         \
-	static struct algorithm_runner_algorithm name = {                                          \
-		.config = &name##_config,                                                          \
 	}
 
 /**
