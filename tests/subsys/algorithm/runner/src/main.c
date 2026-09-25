@@ -36,7 +36,12 @@ struct algorithm_state {
 	uint32_t run_cnt;
 };
 
+static void algorithm_impl(const struct zbus_channel *chan,
+			   const struct algorithm_runner_common_config *common, const void *args,
+			   void *data);
+
 const struct algorithm_runner_common_config alg1_config = {
+	.impl = algorithm_impl,
 	.algorithm_id = 0x12345678,
 	.zbus_channel = INFUSE_ZBUS_CHAN_BATTERY,
 	.arguments_size = sizeof(struct algorithm_args),
@@ -44,10 +49,12 @@ const struct algorithm_runner_common_config alg1_config = {
 	.arguments_kv_key = KV_KEY_ALG_TILT_ARGS,
 };
 const struct algorithm_runner_common_config alg2_config = {
+	.impl = algorithm_impl,
 	.algorithm_id = 0xAAAA0000,
 	.zbus_channel = INFUSE_ZBUS_CHAN_BATTERY,
 };
 const struct algorithm_runner_common_config alg3_config = {
+	.impl = algorithm_impl,
 	.algorithm_id = 00001234,
 	.zbus_channel = INFUSE_ZBUS_CHAN_AMBIENT_ENV,
 };
@@ -105,18 +112,15 @@ ZTEST(algorithm_runner, test_running)
 		.arg = 0x1234,
 	};
 	struct algorithm_runner_algorithm alg1 = {
-		.impl = algorithm_impl,
 		.config = &alg1_config,
 		.arguments = &args1,
 		.runtime_state = &alg1_state,
 	};
 	struct algorithm_runner_algorithm alg2 = {
-		.impl = algorithm_impl,
 		.config = &alg2_config,
 		.runtime_state = &alg2_state,
 	};
 	struct algorithm_runner_algorithm alg3 = {
-		.impl = algorithm_impl,
 		.config = &alg3_config,
 		.runtime_state = &alg3_state,
 	};

@@ -80,7 +80,7 @@ static void exec_fn(struct k_work *work)
 			}
 			/* Re-initialise the algorithm */
 			LOG_DBG("Re-initialising algorithm %08X", alg->config->algorithm_id);
-			alg->impl(NULL, alg->config, alg->arguments, alg->runtime_state);
+			alg->config->impl(NULL, alg->config, alg->arguments, alg->runtime_state);
 			/* Don't reload again */
 			alg->_reload = false;
 		}
@@ -93,7 +93,8 @@ static void exec_fn(struct k_work *work)
 			alg->_changed->id);
 		/* Run algorithm with the channel claimed */
 		zbus_chan_claim(alg->_changed, K_FOREVER);
-		alg->impl(alg->_changed, alg->config, alg->arguments, alg->runtime_state);
+		alg->config->impl(alg->_changed, alg->config, alg->arguments,
+				  alg->runtime_state);
 		/* Clear new data flag */
 		alg->_changed = NULL;
 	}
@@ -138,7 +139,7 @@ void algorithm_runner_init(void)
 
 void algorithm_runner_register(struct algorithm_runner_algorithm *alg)
 {
-	__ASSERT_NO_MSG(alg->impl != NULL);
+	__ASSERT_NO_MSG(alg->config->impl != NULL);
 
 #ifdef CONFIG_KV_STORE
 	if (alg->config->arguments_kv_key > 0) {
@@ -156,7 +157,7 @@ void algorithm_runner_register(struct algorithm_runner_algorithm *alg)
 #endif /* CONFIG_KV_STORE */
 
 	/* Initialise alg */
-	alg->impl(NULL, alg->config, alg->arguments, alg->runtime_state);
+	alg->config->impl(NULL, alg->config, alg->arguments, alg->runtime_state);
 
 	/* Add to list of algorithms to be run */
 	k_mutex_lock(&list_lock, K_FOREVER);
