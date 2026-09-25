@@ -24,7 +24,7 @@ TDF_ALGORITHM_OUTPUT_VAR(tdf_demo_state_output, 1);
 TDF_ALGORITHM_OUTPUT_VAR(tdf_demo_metric_output, 4);
 
 void algorithm_demo_event_fn(const struct zbus_channel *chan,
-			     const struct algorithm_runner_common_config *common, const void *args,
+			     const struct algorithm_common_config *common, const void *args,
 			     void *data)
 {
 	const struct algorithm_demo_common_args *a = args;
@@ -87,7 +87,7 @@ static const uint8_t demo_state_transitions[4][4] = {
 #endif /* CONFIG_ALGORITHM_RUNNER_ALG_DEMO_SLOW_TRANSITIONS */
 
 void algorithm_demo_state_fn(const struct zbus_channel *chan,
-			     const struct algorithm_runner_common_config *common, const void *args,
+			     const struct algorithm_common_config *common, const void *args,
 			     void *data)
 {
 	const struct algorithm_demo_common_args *a = args;
@@ -136,7 +136,7 @@ void algorithm_demo_state_fn(const struct zbus_channel *chan,
 }
 
 void algorithm_demo_metric_fn(const struct zbus_channel *chan,
-			      const struct algorithm_runner_common_config *common, const void *args,
+			      const struct algorithm_common_config *common, const void *args,
 			      void *data)
 {
 	const struct algorithm_demo_common_args *a = args;

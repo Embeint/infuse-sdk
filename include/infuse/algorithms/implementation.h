@@ -34,7 +34,7 @@ struct algorithm_common_config;
  * has completed.
  *
  * @param chan Channel pointer corresponding to @a zbus_channel in
- * @ref algorithm_runner_common_config. Value is NULL on the very first call to initialise data
+ * @ref algorithm_common_config. Value is NULL on the very first call to initialise data
  * structures.
  * @param common Pointer to common algorithm config
  * @param args Pointer to algorithm specific arguments

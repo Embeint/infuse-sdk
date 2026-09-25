@@ -23,7 +23,7 @@ INFUSE_ZBUS_CHAN_DEFINE(INFUSE_ZBUS_CHAN_MOVEMENT_STD_DEV);
 LOG_MODULE_REGISTER(alg_stationary, CONFIG_ALG_STATIONARY_WINDOWED_LOG_LEVEL);
 
 void algorithm_stationary_windowed_fn(const struct zbus_channel *chan,
-				      const struct algorithm_runner_common_config *common,
+				      const struct algorithm_common_config *common,
 				      const void *args, void *data)
 {
 	const struct kv_alg_stationary_windowed_args *a = args;

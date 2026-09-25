@@ -37,24 +37,31 @@ struct algorithm_state {
 };
 
 static void algorithm_impl(const struct zbus_channel *chan,
-			   const struct algorithm_runner_common_config *common, const void *args,
+			   const struct algorithm_common_config *common, const void *args,
 			   void *data);
 
-const struct algorithm_runner_common_config alg1_config = {
-	.impl = algorithm_impl,
+static void alg1_wrapper(const struct zbus_channel *chan,
+			 const struct algorithm_common_config *common, const void *args);
+static void alg2_wrapper(const struct zbus_channel *chan,
+			 const struct algorithm_common_config *common, const void *args);
+static void alg3_wrapper(const struct zbus_channel *chan,
+			 const struct algorithm_common_config *common, const void *args);
+
+const struct algorithm_common_config alg1_config = {
+	.fn = alg1_wrapper,
 	.algorithm_id = 0x12345678,
 	.zbus_channel = INFUSE_ZBUS_CHAN_BATTERY,
 	.arguments_size = sizeof(struct algorithm_args),
 	/* Use the TILT arguments key for testing */
 	.arguments_kv_key = KV_KEY_ALG_TILT_ARGS,
 };
-const struct algorithm_runner_common_config alg2_config = {
-	.impl = algorithm_impl,
+const struct algorithm_common_config alg2_config = {
+	.fn = alg2_wrapper,
 	.algorithm_id = 0xAAAA0000,
 	.zbus_channel = INFUSE_ZBUS_CHAN_BATTERY,
 };
-const struct algorithm_runner_common_config alg3_config = {
-	.impl = algorithm_impl,
+const struct algorithm_common_config alg3_config = {
+	.fn = alg3_wrapper,
 	.algorithm_id = 00001234,
 	.zbus_channel = INFUSE_ZBUS_CHAN_AMBIENT_ENV,
 };
@@ -79,7 +86,7 @@ void infuse_reboot_delayed(enum infuse_reboot_reason reason, uint32_t info1, uin
 }
 
 static void algorithm_impl(const struct zbus_channel *chan,
-			   const struct algorithm_runner_common_config *common, const void *args,
+			   const struct algorithm_common_config *common, const void *args,
 			   void *data)
 {
 	const struct algorithm_args *a = args;
@@ -106,6 +113,24 @@ static void algorithm_impl(const struct zbus_channel *chan,
 	d->run_cnt += 1;
 }
 
+static void alg1_wrapper(const struct zbus_channel *chan,
+			 const struct algorithm_common_config *common, const void *args)
+{
+	algorithm_impl(chan, common, args, &alg1_state);
+}
+
+static void alg2_wrapper(const struct zbus_channel *chan,
+			 const struct algorithm_common_config *common, const void *args)
+{
+	algorithm_impl(chan, common, args, &alg2_state);
+}
+
+static void alg3_wrapper(const struct zbus_channel *chan,
+			 const struct algorithm_common_config *common, const void *args)
+{
+	algorithm_impl(chan, common, args, &alg3_state);
+}
+
 ZTEST(algorithm_runner, test_running)
 {
 	struct algorithm_args args1 = {
@@ -114,15 +139,12 @@ ZTEST(algorithm_runner, test_running)
 	struct algorithm_runner_algorithm alg1 = {
 		.config = &alg1_config,
 		.arguments = &args1,
-		.runtime_state = &alg1_state,
 	};
 	struct algorithm_runner_algorithm alg2 = {
 		.config = &alg2_config,
-		.runtime_state = &alg2_state,
 	};
 	struct algorithm_runner_algorithm alg3 = {
 		.config = &alg3_config,
-		.runtime_state = &alg3_state,
 	};
 	struct tdf_battery_state battery = {0};
 	struct tdf_ambient_temp_pres_hum ambient_env = {0};

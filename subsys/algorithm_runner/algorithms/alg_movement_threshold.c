@@ -18,8 +18,8 @@
 LOG_MODULE_REGISTER(alg_movement, CONFIG_ALG_MOVEMENT_THRESHOLD_LOG_LEVEL);
 
 void algorithm_movement_threshold_fn(const struct zbus_channel *chan,
-				     const struct algorithm_runner_common_config *common,
-				     const void *args, void *data)
+				     const struct algorithm_common_config *common, const void *args,
+				     void *data)
 {
 	const struct kv_alg_movement_threshold_args_v2 *a = args;
 	struct algorithm_movement_threshold_data *d = data;
