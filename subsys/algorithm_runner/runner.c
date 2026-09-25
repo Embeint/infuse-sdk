@@ -58,8 +58,9 @@ static void exec_fn(struct k_work *work)
 
 		if (alg->_reload) {
 			/* Configuration changed in KV store */
-			read_len = kv_store_read(alg->config->arguments_kv_key, alg->arguments,
-						 alg->config->arguments_size);
+			read_len =
+				kv_store_read(alg->config->arguments_kv_key, alg->config->arguments,
+					      alg->config->arguments_size);
 			if (read_len != alg->config->arguments_size) {
 #ifdef CONFIG_INFUSE_REBOOT
 				/* Invalid written configuration, but we no-longer have the
@@ -80,7 +81,7 @@ static void exec_fn(struct k_work *work)
 			}
 			/* Re-initialise the algorithm */
 			LOG_DBG("Re-initialising algorithm %08X", alg->config->algorithm_id);
-			alg->config->fn(NULL, alg->config, alg->arguments);
+			alg->config->fn(NULL, alg->config, alg->config->arguments);
 			/* Don't reload again */
 			alg->_reload = false;
 		}
@@ -93,7 +94,7 @@ static void exec_fn(struct k_work *work)
 			alg->_changed->id);
 		/* Run algorithm with the channel claimed */
 		zbus_chan_claim(alg->_changed, K_FOREVER);
-		alg->config->fn(alg->_changed, alg->config, alg->arguments);
+		alg->config->fn(alg->_changed, alg->config, alg->config->arguments);
 		/* Clear new data flag */
 		alg->_changed = NULL;
 	}
@@ -145,18 +146,18 @@ void algorithm_runner_register(struct algorithm_runner_algorithm *alg)
 		if (kv_store_key_data_size(alg->config->arguments_kv_key) ==
 		    alg->config->arguments_size) {
 			/* Configuration exists in KV store, load it */
-			kv_store_read(alg->config->arguments_kv_key, alg->arguments,
+			kv_store_read(alg->config->arguments_kv_key, alg->config->arguments,
 				      alg->config->arguments_size);
 		} else {
 			/* No configuration, or invalid size. Update from defaults */
-			kv_store_write(alg->config->arguments_kv_key, alg->arguments,
+			kv_store_write(alg->config->arguments_kv_key, alg->config->arguments,
 				       alg->config->arguments_size);
 		}
 	}
 #endif /* CONFIG_KV_STORE */
 
 	/* Initialise alg */
-	alg->config->fn(NULL, alg->config, alg->arguments);
+	alg->config->fn(NULL, alg->config, alg->config->arguments);
 
 	/* Add to list of algorithms to be run */
 	k_mutex_lock(&list_lock, K_FOREVER);

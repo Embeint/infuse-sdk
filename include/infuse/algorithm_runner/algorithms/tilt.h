@@ -63,13 +63,6 @@ void algorithm_tilt_fn(const struct zbus_channel *chan,
 		static struct algorithm_tilt_data data;                                            \
 		algorithm_tilt_fn(chan, common, args, &data);                                      \
 	}                                                                                          \
-	static const struct algorithm_common_config name##_config = {                              \
-		.fn = name##_wrapper,                                                              \
-		.algorithm_id = 0x15F20001,                                                        \
-		.zbus_channel = INFUSE_ZBUS_CHAN_IMU,                                              \
-		.arguments_size = sizeof(struct kv_alg_tilt_args),                                 \
-		.arguments_kv_key = KV_KEY_ALG_TILT_ARGS,                                          \
-	};                                                                                         \
 	static struct kv_alg_tilt_args name##_default_args = {                                     \
 		.logging =                                                                         \
 			{                                                                          \
@@ -82,9 +75,16 @@ void algorithm_tilt_fn(const struct zbus_channel *chan,
 				.one_g_percent = one_g_valid_percent,                              \
 			},                                                                         \
 	};                                                                                         \
+	static const struct algorithm_common_config name##_config = {                              \
+		.fn = name##_wrapper,                                                              \
+		.algorithm_id = 0x15F20001,                                                        \
+		.zbus_channel = INFUSE_ZBUS_CHAN_IMU,                                              \
+		.arguments = &name##_default_args,                                                 \
+		.arguments_size = sizeof(struct kv_alg_tilt_args),                                 \
+		.arguments_kv_key = KV_KEY_ALG_TILT_ARGS,                                          \
+	};                                                                                         \
 	static struct algorithm_runner_algorithm name = {                                          \
 		.config = &name##_config,                                                          \
-		.arguments = &name##_default_args,                                                 \
 	}
 
 /**

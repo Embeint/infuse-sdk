@@ -47,10 +47,15 @@ static void alg2_wrapper(const struct zbus_channel *chan,
 static void alg3_wrapper(const struct zbus_channel *chan,
 			 const struct algorithm_common_config *common, const void *args);
 
+struct algorithm_args alg1_args = {
+	.arg = 0x1234,
+};
+
 const struct algorithm_common_config alg1_config = {
 	.fn = alg1_wrapper,
 	.algorithm_id = 0x12345678,
 	.zbus_channel = INFUSE_ZBUS_CHAN_BATTERY,
+	.arguments = &alg1_args,
 	.arguments_size = sizeof(struct algorithm_args),
 	/* Use the TILT arguments key for testing */
 	.arguments_kv_key = KV_KEY_ALG_TILT_ARGS,
@@ -133,12 +138,8 @@ static void alg3_wrapper(const struct zbus_channel *chan,
 
 ZTEST(algorithm_runner, test_running)
 {
-	struct algorithm_args args1 = {
-		.arg = 0x1234,
-	};
 	struct algorithm_runner_algorithm alg1 = {
 		.config = &alg1_config,
-		.arguments = &args1,
 	};
 	struct algorithm_runner_algorithm alg2 = {
 		.config = &alg2_config,
@@ -153,7 +154,7 @@ ZTEST(algorithm_runner, test_running)
 	algorithm_runner_init();
 
 	zassert_equal(-ENOENT, kv_store_key_data_size(KV_KEY_ALG_TILT_ARGS));
-	alg1_state.expected_arg = args1.arg;
+	alg1_state.expected_arg = alg1_args.arg;
 
 	zassert_false(algorithm_runner_unregister(&alg1));
 	zassert_false(algorithm_runner_unregister(&alg2));
@@ -163,7 +164,7 @@ ZTEST(algorithm_runner, test_running)
 	algorithm_runner_register(&alg3);
 
 	/* Arguments written to specified key on registration */
-	zassert_equal(sizeof(args1), kv_store_key_data_size(KV_KEY_ALG_TILT_ARGS));
+	zassert_equal(sizeof(alg1_args), kv_store_key_data_size(KV_KEY_ALG_TILT_ARGS));
 
 	/* Each should have been run once on registration with "chan == NULL" */
 	zassert_equal(1, alg1_state.run_cnt);
@@ -241,7 +242,7 @@ ZTEST(algorithm_runner, test_running)
 
 	alg1_state.expected_chan = NULL;
 	algorithm_runner_register(&alg1);
-	zassert_equal(sizeof(args1), kv_store_key_data_size(KV_KEY_ALG_TILT_ARGS));
+	zassert_equal(sizeof(alg1_args), kv_store_key_data_size(KV_KEY_ALG_TILT_ARGS));
 	zassert_true(algorithm_runner_unregister(&alg1));
 
 	/* KV value should be used */
@@ -253,7 +254,7 @@ ZTEST(algorithm_runner, test_running)
 		      kv_store_write(KV_KEY_ALG_TILT_ARGS, &args_updated, sizeof(args_updated)));
 	alg1_state.expected_arg = args_updated.arg;
 	algorithm_runner_register(&alg1);
-	zassert_equal(sizeof(args1), kv_store_key_data_size(KV_KEY_ALG_TILT_ARGS));
+	zassert_equal(sizeof(alg1_args), kv_store_key_data_size(KV_KEY_ALG_TILT_ARGS));
 
 	/* Reset run counts */
 	alg1_state.run_cnt = 0;
