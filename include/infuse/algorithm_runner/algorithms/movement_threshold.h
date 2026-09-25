@@ -57,6 +57,7 @@ void algorithm_movement_threshold_fn(const struct zbus_channel *chan,
 #define ALGORITHM_MOVEMENT_THRESHOLD_DEFINE(name, moving_for_, initial_threshold_ug_,              \
 					    continue_threshold_ug_)                                \
 	static const struct algorithm_runner_common_config name##_config = {                       \
+		.impl = algorithm_movement_threshold_fn,                                           \
 		.algorithm_id = 0x15F20002,                                                        \
 		.zbus_channel = INFUSE_ZBUS_CHAN_IMU_ACC_MAG,                                      \
 		.arguments_size = sizeof(struct kv_alg_movement_threshold_args_v2),                \
@@ -73,7 +74,6 @@ void algorithm_movement_threshold_fn(const struct zbus_channel *chan,
 	};                                                                                         \
 	static struct algorithm_movement_threshold_data name##_data;                               \
 	static struct algorithm_runner_algorithm name = {                                          \
-		.impl = algorithm_movement_threshold_fn,                                           \
 		.config = &name##_config,                                                          \
 		.arguments = &name##_default_args,                                                 \
 		.runtime_state = &name##_data,                                                     \

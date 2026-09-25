@@ -28,16 +28,7 @@ extern "C" {
  * @{
  */
 
-struct algorithm_runner_common_config {
-	/* Unique algorithm identifier */
-	uint32_t algorithm_id;
-	/* Primary channel that triggers algorithm run */
-	uint32_t zbus_channel;
-	/* Size of the arguments structure */
-	uint16_t arguments_size;
-	/* KV Store key holding @a arguments (If > 0) */
-	uint16_t arguments_kv_key;
-} __packed;
+struct algorithm_runner_common_config;
 
 /**
  * @brief Algorithm implementation
@@ -57,9 +48,20 @@ typedef void (*algorithm_run_fn)(const struct zbus_channel *chan,
 				 const struct algorithm_runner_common_config *common,
 				 const void *args, void *data);
 
-struct algorithm_runner_algorithm {
+struct algorithm_runner_common_config {
 	/* Function that implements the algorithm */
 	algorithm_run_fn impl;
+	/* Unique algorithm identifier */
+	uint32_t algorithm_id;
+	/* Primary channel that triggers algorithm run */
+	uint32_t zbus_channel;
+	/* Size of the arguments structure */
+	uint16_t arguments_size;
+	/* KV Store key holding @a arguments (If > 0) */
+	uint16_t arguments_kv_key;
+} __packed;
+
+struct algorithm_runner_algorithm {
 	/* Algorithm configuration */
 	const struct algorithm_runner_common_config *config;
 	/* Algorithm arguments */
