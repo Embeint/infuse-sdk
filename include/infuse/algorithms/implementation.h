@@ -47,6 +47,8 @@ struct algorithm_common_config {
 	uint32_t algorithm_id;
 	/* Primary channel that triggers algorithm run */
 	uint32_t zbus_channel;
+	/* Algorithm arguments */
+	void *arguments;
 	/* Size of the arguments structure */
 	uint16_t arguments_size;
 	/* KV Store key holding @a arguments (If > 0) */

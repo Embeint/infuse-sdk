@@ -32,8 +32,6 @@ extern "C" {
 struct algorithm_runner_algorithm {
 	/* Algorithm configuration */
 	const struct algorithm_common_config *config;
-	/* Algorithm arguments */
-	void *arguments;
 	/* Internal state: new data on channel */
 	const struct zbus_channel *_changed;
 	/* Internal state: configuration has changed */
