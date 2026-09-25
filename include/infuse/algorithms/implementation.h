@@ -55,7 +55,7 @@ struct algorithm_common_config {
 	uint16_t arguments_kv_key;
 	/* Function that implements the algorithm */
 	algorithm_run_fn fn;
-} __packed;
+};
 
 /**
  * @brief Export algorithm implementation
