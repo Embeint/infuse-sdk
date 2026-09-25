@@ -6,6 +6,7 @@
  * SPDX-License-Identifier: FSL-1.1-ALv2
  */
 
+#include <errno.h>
 #include <stdbool.h>
 #include <string.h>
 
@@ -154,28 +155,29 @@ void algorithm_runner_init(void)
 	k_work_init(&runner, exec_fn);
 }
 
-void algorithm_runner_register(const struct algorithm_common_config *config)
+int algorithm_runner_register(const struct algorithm_common_config *config)
 {
 	struct algorithm_runner_algorithm *alg = NULL;
+	int rc = 0;
 
-	__ASSERT_NO_MSG(config != NULL);
-	__ASSERT_NO_MSG(config->fn != NULL);
+	if ((config == NULL) || (config->fn == NULL) ||
+	    ((config->arguments_size > 0) && (config->arguments == NULL))) {
+		return -EINVAL;
+	}
 
 	k_mutex_lock(&list_lock, K_FOREVER);
 	for (size_t i = 0; i < ARRAY_SIZE(algorithm_pool); i++) {
 		if (algorithm_pool[i].allocated && (algorithm_pool[i].config == config)) {
-			__ASSERT(false, "Algorithm already registered");
 			k_mutex_unlock(&list_lock);
-			return;
+			return -EALREADY;
 		}
 		if ((alg == NULL) && !algorithm_pool[i].allocated) {
 			alg = &algorithm_pool[i];
 		}
 	}
-	__ASSERT(alg != NULL, "Maximum registered algorithms exceeded");
 	if (alg == NULL) {
 		k_mutex_unlock(&list_lock);
-		return;
+		return -ENOMEM;
 	}
 	memset(alg, 0, sizeof(*alg));
 	alg->config = config;
@@ -184,14 +186,24 @@ void algorithm_runner_register(const struct algorithm_common_config *config)
 
 #ifdef CONFIG_KV_STORE
 	if (config->arguments_kv_key > 0) {
-		if (kv_store_key_data_size(config->arguments_kv_key) == config->arguments_size) {
+		rc = kv_store_key_data_size(config->arguments_kv_key);
+		if (rc == config->arguments_size) {
 			/* Configuration exists in KV store, load it */
-			kv_store_read(config->arguments_kv_key, config->arguments,
-				      config->arguments_size);
+			rc = kv_store_read(config->arguments_kv_key, config->arguments,
+					   config->arguments_size);
+		} else if ((rc < 0) && (rc != -ENOENT)) {
+			goto free_algorithm;
 		} else {
 			/* No configuration, or invalid size. Update from defaults */
-			kv_store_write(config->arguments_kv_key, config->arguments,
-				       config->arguments_size);
+			rc = kv_store_write(config->arguments_kv_key, config->arguments,
+					    config->arguments_size);
+		}
+		if (rc < 0) {
+			goto free_algorithm;
+		}
+		if (rc != config->arguments_size) {
+			rc = -EIO;
+			goto free_algorithm;
 		}
 	}
 #endif /* CONFIG_KV_STORE */
@@ -203,25 +215,38 @@ void algorithm_runner_register(const struct algorithm_common_config *config)
 	k_mutex_lock(&list_lock, K_FOREVER);
 	sys_slist_append(&algorithms, &alg->node);
 	k_mutex_unlock(&list_lock);
+
+	return 0;
+
+free_algorithm:
+	k_mutex_lock(&list_lock, K_FOREVER);
+	alg->allocated = false;
+	k_mutex_unlock(&list_lock);
+	return rc;
 }
 
-bool algorithm_runner_unregister(const struct algorithm_common_config *config)
+int algorithm_runner_unregister(const struct algorithm_common_config *config)
 {
 	struct algorithm_runner_algorithm *alg;
-	bool found = false;
+	int rc = -ENOENT;
+
+	if (config == NULL) {
+		return -EINVAL;
+	}
 
 	/* Remove from list of algorithms to be run */
 	k_mutex_lock(&list_lock, K_FOREVER);
 	SYS_SLIST_FOR_EACH_CONTAINER(&algorithms, alg, node) {
 		if (alg->config == config) {
-			found = sys_slist_find_and_remove(&algorithms, &alg->node);
+			sys_slist_find_and_remove(&algorithms, &alg->node);
 			alg->allocated = false;
+			rc = 0;
 			break;
 		}
 	}
 	k_mutex_unlock(&list_lock);
 
-	return found;
+	return rc;
 }
 
 void algorithm_runner_tdf_log(const struct kv_algorithm_logging *logging, uint8_t tdf_mask,

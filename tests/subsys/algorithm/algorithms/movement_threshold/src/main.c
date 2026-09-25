@@ -101,7 +101,7 @@ ZTEST(alg_movement_threshold, test_impl)
 
 	/* Initialise algorithm runner */
 	algorithm_runner_init();
-	algorithm_runner_register(&test_alg);
+	zassert_ok(algorithm_runner_register(&test_alg));
 	infuse_state_register_callback(&state_cb);
 
 	/* Start with no movement */

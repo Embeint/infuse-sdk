@@ -111,7 +111,7 @@ ZTEST(alg_demo, test_event_generator)
 
 	/* Initialise algorithm runner */
 	algorithm_runner_init();
-	algorithm_runner_register(&test_alg_event);
+	zassert_ok(algorithm_runner_register(&test_alg_event));
 
 	/* Start with lots of movement */
 	imu_emul_accelerometer_data_configure(DEV, 0.0f, 0.0f, 1.0f, 800);
@@ -153,7 +153,7 @@ ZTEST(alg_demo, test_state_generator)
 
 	/* Initialise algorithm runner */
 	algorithm_runner_init();
-	algorithm_runner_register(&test_alg_state);
+	zassert_ok(algorithm_runner_register(&test_alg_state));
 
 	/* Start with lots of movement */
 	imu_emul_accelerometer_data_configure(DEV, 0.0f, 0.0f, 1.0f, 800);
@@ -193,7 +193,7 @@ ZTEST(alg_demo, test_metric_generator)
 
 	/* Initialise algorithm runner */
 	algorithm_runner_init();
-	algorithm_runner_register(&test_alg_metric);
+	zassert_ok(algorithm_runner_register(&test_alg_metric));
 
 	/* Start with lots of movement */
 	imu_emul_accelerometer_data_configure(DEV, 0.0f, 0.0f, 1.0f, 800);
