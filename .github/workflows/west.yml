@@ -27,9 +27,13 @@ jobs:
       options: '--entrypoint /bin/bash'
       volumes:
         - /repo-cache/embeint:/github/cache/embeint
+        - /repo-cache/ccache:/github/ccache
         - /repo-cache/pip-cache:/github/pip-cache
     env:
       PIP_CACHE_DIR: /github/pip-cache
+      CCACHE_DIR: /github/ccache
+      # `--specs` is ignored because ccache is unable to resolve the toolchain specs file path.
+      CCACHE_IGNOREOPTIONS: '-specs=* --specs=*'
       BASE_REF: ${{ github.base_ref }}
       ZEPHYR_TOOLCHAIN_VARIANT: zephyr
     steps:
