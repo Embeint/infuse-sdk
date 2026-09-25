@@ -60,7 +60,6 @@ void algorithm_movement_threshold_fn(const struct zbus_channel *chan,
 		.algorithm_id = 0x15F20002,                                                        \
 		.zbus_channel = INFUSE_ZBUS_CHAN_IMU_ACC_MAG,                                      \
 		.arguments_size = sizeof(struct kv_alg_movement_threshold_args_v2),                \
-		.state_size = sizeof(struct algorithm_movement_threshold_data),                    \
 		.arguments_kv_key = KV_KEY_ALG_MOVEMENT_THRESHOLD_ARGS_V2,                         \
 	};                                                                                         \
 	static struct kv_alg_movement_threshold_args_v2 name##_default_args = {                    \
