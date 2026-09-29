@@ -36,7 +36,7 @@ struct infuse_algorithm;
  * @param chan Channel pointer corresponding to @a zbus_channel in
  * @ref infuse_algorithm. Value is NULL on the very first call to initialise data
  * structures.
- * @param common Pointer to common algorithm config
+ * @param algorithm Pointer to algorithm config
  * @param args Pointer to algorithm specific arguments
  */
 typedef void (*algorithm_run_fn)(const struct zbus_channel *chan,
