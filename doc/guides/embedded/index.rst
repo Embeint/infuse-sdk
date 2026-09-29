@@ -12,6 +12,59 @@ Follow this guide to:
 
 .. _host_setup:
 
+Self-Contained Install Scripts
+******************************
+
+Infuse-IoT includes self-contained installer scripts to automatically install/create/fetch required host dependencies,
+virtual environments, and code repositories for some platforms. If you do not already have a working Zephyr install,
+we recommend using these scripts if available.
+
+Downloading the Infuse-IoT repository is not required before running the installers.
+
+.. tabs::
+
+    .. group-tab:: Windows (PowerShell)
+
+        Open PowerShell and run the following commands. The SDK and embedded code workspace are installed under
+        ``$HOME\infuse`` by default. If a different location is desired, change the ``$installRoot`` path.
+
+        .. code:: powershell
+
+            $installRoot = Join-Path $HOME "infuse"
+            $installerPath = Join-Path $env:TEMP "Install-Infuse-IoT.ps1"
+            Invoke-WebRequest `
+                -Uri "https://raw.githubusercontent.com/Embeint/infuse-sdk/main/scripts/install/Install-Infuse-IoT.ps1" `
+                -OutFile $installerPath `
+                -UseBasicParsing
+            & powershell.exe `
+                -NoProfile `
+                -ExecutionPolicy Bypass `
+                -File $installerPath `
+                -InstallRoot $installRoot `
+                -InstallHostDependencies
+
+        Activate the installed environment in each new PowerShell session with:
+
+        .. code:: powershell
+
+            & (Join-Path $HOME "infuse\Use-Infuse-IoT.ps1")
+
+        The activation script enables the Python virtual environment and changes to the Infuse-IoT workspace
+        directory.
+
+Installing SEGGER J-Link
+------------------------
+
+In order to program devices, the SEGGER J-Link tools must be installed. As they require agreeing to a License
+agreement, this cannot be automated. Download the appropriate installer and run before trying to program from
+the `official downloads page <https://www.segger.com/downloads/jlink/>`_.
+
+Next Steps
+----------
+
+If using an installer script, skip the manual installation sections below and continue with
+:ref:`embedded-setup-build-directory`.
+
 Setup and Install `Zephyr RTOS <https://www.zephyrproject.org/>`_
 *****************************************************************
 
@@ -127,6 +180,8 @@ Finally install any Python requirements:
 
 Infuse-IoT should now be installed, next steps include building and flashing an application to
 verify everything is working.
+
+.. _embedded-setup-build-directory:
 
 Setup Build Directory (Recommended)
 ***********************************
@@ -301,3 +356,4 @@ General Tips:
 .. _zephyr_sdk_releases: https://github.com/zephyrproject-rtos/sdk-ng/releases
 .. _nrf_util: https://docs.nordicsemi.com/bundle/nrfutil/page/guides/installing.html
 .. _stm32cubeprog: https://www.st.com/en/development-tools/stm32cubeprog.html
+.. _jlink_downloads: https://www.segger.com/downloads/jlink/
