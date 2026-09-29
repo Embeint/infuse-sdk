@@ -1,0 +1,147 @@
+# Copyright (c) 2026 Embeint Holdings Pty Ltd
+# SPDX-License-Identifier: FSL-1.1-ALv2
+
+name: Test install scripts
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/install-scripts.yml'
+      - 'scripts/install/Install-Infuse-IoT.ps1'
+  schedule:
+    # Run at 14:27 UTC every Monday.
+    - cron: '27 14 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  install-and-build-windows:
+    name: Install and build sample
+    runs-on: windows-latest
+    timeout-minutes: 180
+
+    steps:
+      - name: Download installer
+        shell: pwsh
+        env:
+          DEFAULT_REPOSITORY: ${{ github.repository }}
+          DEFAULT_REVISION: ${{ github.sha }}
+          PR_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name }}
+          PR_REVISION: ${{ github.event.pull_request.head.sha }}
+        run: |
+          $ErrorActionPreference = "Stop"
+          $sourceRepository = if ($env:PR_REPOSITORY) {
+              $env:PR_REPOSITORY
+          } else {
+              $env:DEFAULT_REPOSITORY
+          }
+          $sourceRevision = if ($env:PR_REVISION) {
+              $env:PR_REVISION
+          } else {
+              $env:DEFAULT_REVISION
+          }
+          $installerUrl = "https://raw.githubusercontent.com/" +
+              "$sourceRepository/$sourceRevision/" +
+              "scripts/install/Install-Infuse-IoT.ps1"
+          $installerPath = Join-Path `
+              -Path $env:RUNNER_TEMP `
+              -ChildPath "Install-Infuse-IoT.ps1"
+          Invoke-WebRequest -Uri $installerUrl -OutFile $installerPath
+
+      - name: Validate installer with Windows PowerShell 5.1
+        shell: powershell
+        run: |
+          Set-StrictMode -Version Latest
+          $ErrorActionPreference = "Stop"
+          $installerPath = Join-Path `
+              -Path $env:RUNNER_TEMP `
+              -ChildPath "Install-Infuse-IoT.ps1"
+
+          $tokens = $null
+          $parseErrors = $null
+          [System.Management.Automation.Language.Parser]::ParseFile(
+              $installerPath,
+              [ref]$tokens,
+              [ref]$parseErrors
+          ) | Out-Null
+
+          if ($parseErrors.Count -gt 0) {
+              $parseErrors | Format-List | Out-String | Write-Host
+              throw "Installer contains Windows PowerShell 5.1 syntax errors."
+          }
+
+      - name: Validate installer with PowerShell 7 and PSScriptAnalyzer
+        shell: pwsh
+        run: |
+          Set-StrictMode -Version Latest
+          $ErrorActionPreference = "Stop"
+          $installerPath = Join-Path `
+              -Path $env:RUNNER_TEMP `
+              -ChildPath "Install-Infuse-IoT.ps1"
+
+          $tokens = $null
+          $parseErrors = $null
+          [System.Management.Automation.Language.Parser]::ParseFile(
+              $installerPath,
+              [ref]$tokens,
+              [ref]$parseErrors
+          ) | Out-Null
+
+          if ($parseErrors.Count -gt 0) {
+              $parseErrors | Format-List | Out-String | Write-Host
+              throw "Installer contains PowerShell syntax errors."
+          }
+
+          Set-PSRepository -Name "PSGallery" -InstallationPolicy Trusted
+          Install-Module `
+              -Name "PSScriptAnalyzer" `
+              -Repository "PSGallery" `
+              -Scope CurrentUser `
+              -Force
+
+          $analysisResults = @(Invoke-ScriptAnalyzer -Path $installerPath)
+          if ($analysisResults.Count -gt 0) {
+              $analysisResults | Format-List | Out-String | Write-Host
+              throw "PSScriptAnalyzer reported one or more issues."
+          }
+
+      - name: Install Infuse-IoT development environment
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          $PSNativeCommandUseErrorActionPreference = $true
+          $installRoot = Join-Path `
+              -Path $env:RUNNER_TEMP `
+              -ChildPath "infuse-iot-install"
+          $installerPath = Join-Path `
+              -Path $env:RUNNER_TEMP `
+              -ChildPath "Install-Infuse-IoT.ps1"
+          & powershell.exe `
+              -NoProfile `
+              -ExecutionPolicy Bypass `
+              -File $installerPath `
+              -InstallRoot $installRoot `
+              -InstallHostDependencies
+
+      - name: Validate installed environment
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          $PSNativeCommandUseErrorActionPreference = $true
+          $installRoot = Join-Path `
+              -Path $env:RUNNER_TEMP `
+              -ChildPath "infuse-iot-install"
+          Set-ExecutionPolicy `
+              -Scope Process `
+              -ExecutionPolicy Bypass `
+              -Force
+          & (Join-Path -Path $installRoot -ChildPath "Use-Infuse-IoT.ps1")
+          nrfutil
+          infuse --help
+          west build -b nrf52840dk/nrf52840 infuse-sdk/samples/low_power
