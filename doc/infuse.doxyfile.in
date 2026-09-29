@@ -972,7 +972,8 @@ WARN_LOGFILE           =
 
 INPUT                  = @INFUSE_BASE@/doc/_doxygen/mainpage.md \
                          @INFUSE_BASE@/include/ \
-                         @INFUSE_BASE@/generated/include/
+                         @INFUSE_BASE@/generated/include/ \
+                         @INFUSE_BASE@/generated/include_always/
 
 # This tag can be used to specify the character encoding of the source files
 # that Doxygen parses. Internally Doxygen uses the UTF-8 encoding. Doxygen uses
