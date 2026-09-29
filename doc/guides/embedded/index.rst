@@ -64,7 +64,6 @@ Below is a list of the tools required for programmers for the microcontrollers s
 
     * Nordic: `nRF Util <nrf_util_>`_
     * STM32: `stm32cubeprog`_
-    * Nordic: `nRF Command Line Tools <nrf_cli_tools_>`_ (Deprecated)
 
 Ensure Zephyr's blinky example flashes to the board before continuing.
 
@@ -300,6 +299,5 @@ General Tips:
 .. _infuse_sdk: https://github.com/Embeint/infuse-sdk
 .. _zephyr_sdk: https://docs.zephyrproject.org/latest/develop/toolchains/zephyr_sdk.html#toolchain-zephyr-sdk-install
 .. _zephyr_sdk_releases: https://github.com/zephyrproject-rtos/sdk-ng/releases
-.. _nrf_cli_tools: https://www.nordicsemi.com/Products/Development-tools/nRF-Command-Line-Tools/Download
 .. _nrf_util: https://docs.nordicsemi.com/bundle/nrfutil/page/guides/installing.html
 .. _stm32cubeprog: https://www.st.com/en/development-tools/stm32cubeprog.html
