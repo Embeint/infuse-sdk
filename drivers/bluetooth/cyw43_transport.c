@@ -161,6 +161,10 @@ int cyw43_transport_open(struct cyw43_transport *t, const uint8_t *firmware, siz
 {
 	int rc;
 
+	/* Firmware download and both ready handshakes require exclusive bus
+	 * access. Wi-Fi can stall for the download plus 150 ms and two bounded
+	 * 300 ms waits. Open the transport at boot before starting network work.
+	 */
 	cyw43_bus_lock();
 	t->host_control = 0;
 	rc = firmware_load(t, firmware, len);

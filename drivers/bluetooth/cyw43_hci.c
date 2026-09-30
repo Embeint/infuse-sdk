@@ -34,6 +34,7 @@ struct cyw43_hci_data {
 BUILD_ASSERT(DT_NUM_INST_STATUS_OKAY(DT_DRV_COMPAT) == 1, "Only one CYW43 HCI is supported");
 
 BUILD_ASSERT(CONFIG_BT_HCI_CYW43_INIT_PRIORITY > CONFIG_WIFI_INIT_PRIORITY);
+BUILD_ASSERT(CONFIG_BT_HCI_CYW43_RX_PRIORITY < CONFIG_NUM_PREEMPT_PRIORITIES);
 
 static K_KERNEL_STACK_DEFINE(rx_stack, CONFIG_BT_HCI_CYW43_RX_STACK_SIZE);
 
@@ -130,7 +131,8 @@ static int cyw43_open(const struct device *dev, bt_hci_recv_t recv)
 	hci->recv = recv;
 	atomic_set(&hci->running, 1);
 	k_thread_create(&hci->thread, rx_stack, K_KERNEL_STACK_SIZEOF(rx_stack), receive_thread,
-			(void *)dev, NULL, NULL, K_PRIO_PREEMPT(2), 0, K_NO_WAIT);
+			(void *)dev, NULL, NULL, K_PRIO_PREEMPT(CONFIG_BT_HCI_CYW43_RX_PRIORITY), 0,
+			K_NO_WAIT);
 	k_thread_name_set(&hci->thread, "cyw43_hci_rx");
 	return 0;
 }
@@ -149,7 +151,7 @@ static int cyw43_close(const struct device *dev)
 static int cyw43_send(const struct device *dev, struct net_buf *buf)
 {
 	struct cyw43_hci_data *hci = dev->data;
-	int64_t deadline = k_uptime_get() + 1000;
+	int64_t deadline = k_uptime_get() + CONFIG_BT_HCI_CYW43_SEND_TIMEOUT_MS;
 	int rc;
 
 	if (!atomic_get(&hci->running)) {

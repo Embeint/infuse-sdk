@@ -139,6 +139,21 @@ rights for the selected Wi-Fi/CLM and Bluetooth images, including the
 upstream rights chain. The pinned upstream firmware README provides format
 details but no independent firmware licence.
 
+Power and startup limitations
+=============================
+
+The receive thread polls every 4 ms and calls into the bus wake path, keeping
+the shared bus active and waking the MCU 250 times per second. Host-wake
+interrupt-driven reception is a follow-up; this is not a low-power idle
+implementation. The receive priority and send timeout are Kconfig options.
+
+Bluetooth firmware download holds the shared mutex, including a 150 ms
+settling delay and two ready waits of up to 300 ms each. Wi-Fi operations can
+stall during this startup sequence. Enable Bluetooth before network traffic
+starts. The generated Murata 1YN compatibility NVRAM retains the profile used
+for hardware validation; it differs from the Pico driver's own NVRAM and
+still requires product calibration/profile qualification.
+
 Hardware validation (2026-09-30)
 ===============================
 
@@ -162,6 +177,8 @@ connections each negotiated ATT MTU 247 and delivered three decrypted
 survived the update from the diagnostic to the normal application. Provisioning
 storage was unchanged.
 
-Pico W and Pico 2 W application builds and 19 QEMU transport tests pass.
+Pico W and Pico 2 W application builds and 19 CYW43 QEMU transport tests pass.
+These are additional to the 11 entropy, provisioning and LED test cases
+reported in the original Pico USB support PR (#987).
 Sustained coexistence, radio range and end-to-end UDP/cloud delivery have not yet
 been verified.

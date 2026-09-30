@@ -158,7 +158,18 @@ static int infuse_cdc_acm_serial_init(void)
 }
 
 #ifdef CONFIG_INFUSE_CDC_ACM_SERIAL_INITIALIZE_EARLY
-SYS_INIT(infuse_cdc_acm_serial_init, POST_KERNEL, 79);
+/* The supported UDCs use the device priority. CDC ACM UART devices are
+ * PRE_KERNEL_1; their optional workqueue and the USB worker are POST_KERNEL.
+ */
+BUILD_ASSERT(CONFIG_USBD_THREAD_INIT_PRIO < CONFIG_INFUSE_CDC_ACM_SERIAL_EARLY_INIT_PRIORITY,
+	     "USB worker must initialize before early CDC ACM setup");
+BUILD_ASSERT(CONFIG_KERNEL_INIT_PRIORITY_DEVICE < CONFIG_INFUSE_CDC_ACM_SERIAL_EARLY_INIT_PRIORITY,
+	     "UDC must initialize before early CDC ACM setup");
+#ifdef CONFIG_USBD_CDC_ACM_WORKQUEUE
+BUILD_ASSERT(CONFIG_KERNEL_INIT_PRIORITY_DEFAULT < CONFIG_INFUSE_CDC_ACM_SERIAL_EARLY_INIT_PRIORITY,
+	     "CDC ACM workqueue must initialize before early CDC ACM setup");
+#endif
+SYS_INIT(infuse_cdc_acm_serial_init, POST_KERNEL, CONFIG_INFUSE_CDC_ACM_SERIAL_EARLY_INIT_PRIORITY);
 #else
 SYS_INIT(infuse_cdc_acm_serial_init, APPLICATION, CONFIG_APPLICATION_INIT_PRIORITY);
 #endif

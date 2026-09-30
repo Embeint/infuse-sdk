@@ -29,19 +29,19 @@ of the Wi-Fi packet pool. The build selects the Pico Wi-Fi firmware with ``btsdi
 matching CLM, plus the Bluetooth patch. The stock WHD Wi-Fi firmware lacks
 the shared-memory setup required by Bluetooth. Both blobs are fetched at a
 pinned revision with SHA-256 checks; their Raspberry Pi license is in
-``zephyr/blobs/LICENSE.cyw43`` and permits use on Raspberry Pi semiconductor
+``zephyr/blobs/LICENSE.RP`` and permits use on Raspberry Pi semiconductor
 parts. No alternate Bluetooth host stack is included.
 
 The pinned Murata NVRAM profile disables Bluetooth coexistence. The driver build
 generates a local copy with ``btc_mode=1`` and ``muxenab=0x100`` for the shared
-antenna. Imported Zephyr and HAL repositories are unchanged. This integration
+antenna. The imported Infineon HAL is unchanged. This integration
 uses the pinned WHD internals and linker wrappers; recheck arbitration and
 NVRAM generation when upgrading Zephyr or the Infineon HAL.
 
 The pinned AIROC buffer-release callback bypasses ``net_buf_unref()``, causing
 available-buffer accounting to become negative with ``NET_BUF_POOL_USAGE``.
-The Infuse Wi-Fi build substitutes a corrected local copy of that callback;
-imported sources remain unchanged.
+The pinned Embeint Zephyr fork fixes the callback directly with
+``net_buf_unref()``; no configure-time source rewrite is used.
 
 The snippet increases the system workqueue, network-management event and socket
 service stacks for association, WHD status queries and ePacket receive callbacks.
@@ -50,3 +50,19 @@ It enables native socket send timeouts for the UDP interface.
 The HCI transport supports commands, events and ACL data for BLE. SCO/audio,
 ISO and Bluetooth Classic are not supported. Continuous Wi-Fi/BLE coexistence
 and power consumption require hardware validation for the intended application.
+
+The Murata 1YN NVRAM is the compatibility profile selected by the pinned WHD
+integration for CYW43439. It is not a claim that the Pico uses a Murata module,
+nor the Pico cyw43-driver's ``wifi_nvram_43439.h``. This profile, with the two
+coexistence changes, passed both Pico W hardware tests. Calibration/profile
+qualification remains necessary before product release.
+
+Bluetooth reception currently polls every 4 ms, waking the MCU 250 times per
+second and repeatedly waking the shared bus. This prevents low-power idle;
+host-wake IRQ reception is a follow-up. Firmware download holds the shared bus
+through the 150 ms settling delay and two ready waits (up to 300 ms each), so
+Wi-Fi can stall during ``bt_enable()``. Initialize Bluetooth before network
+traffic starts. Receive priority and transmit-ring timeout are configurable.
+
+See :ref:`pico-wireless-licensing` for Raspberry Pi-only firmware use and the
+notices required with binary distributions.

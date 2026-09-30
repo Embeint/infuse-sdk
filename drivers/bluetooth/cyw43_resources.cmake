@@ -1,3 +1,4 @@
+# Copyright (c) 2026 Embeint Holdings Pty Ltd
 # SPDX-License-Identifier: FSL-1.1-ALv2
 # Select Pico Wi-Fi firmware with the btsdio shared-memory feature, its matching
 # CLM and the shared-antenna NVRAM settings. Leave the imported HAL untouched.
@@ -18,6 +19,13 @@ function(infuse_cyw43_resources_configure)
   set(nvram_source ${ZEPHYR_HAL_INFINEON_MODULE_DIR}/whd-expansion/WHD/COMPONENT_WIFI5/resources/nvram/COMPONENT_43439/COMPONENT_MURATA-1YN/cyfmac43439-1YN.txt)
   set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${nvram_source})
   file(READ ${nvram_source} nvram)
+  foreach(setting "btc_mode=0" "muxenab=0x11")
+    string(REGEX MATCHALL "(^|\n)${setting}(\r?\n|$)" matches "${nvram}")
+    list(LENGTH matches count)
+    if(NOT count EQUAL 1)
+      message(FATAL_ERROR "Murata NVRAM ${setting} changed; recheck Pico coexistence settings")
+    endif()
+  endforeach()
   string(REPLACE "btc_mode=0" "btc_mode=1" nvram "${nvram}")
   string(REPLACE "muxenab=0x11" "muxenab=0x100" nvram "${nvram}")
   set(nvram_path ${PROJECT_BINARY_DIR}/cyw43_pico_nvram.txt)
@@ -36,5 +44,8 @@ function(infuse_cyw43_resources_configure)
     CLM_IMAGE_NAME="${PROJECT_BINARY_DIR}/wifi.clm_blob" CLM_IMAGE_SIZE=${clm_size})
   zephyr_compile_definitions(NVRAM_IMAGE_NAME="${nvram_path}" NVRAM_IMAGE_SIZE=${nvram_size})
 endfunction()
-# Imported modules add their NVRAM definitions after Infuse is processed.
+# WHD consumes FW/CLM/NVRAM definitions from zephyr_interface, not a resource
+# target. Its imported module adds the stock definitions after Infuse runs.
+# Defer until the top-level configure finishes, then replace exactly those
+# definitions before generation. Recheck this ordering when updating the HAL.
 cmake_language(DEFER DIRECTORY ${CMAKE_SOURCE_DIR} CALL infuse_cyw43_resources_configure)

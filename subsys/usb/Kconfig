@@ -19,7 +19,17 @@ config INFUSE_CDC_ACM_SERIAL_INITIALIZE_EARLY
 	bool "Initialize USB before other POST_KERNEL peripherals"
 	help
 	  Make USB logs available during slow peripheral initialization. The USB
-	  worker, CDC ACM UART and UDC must initialize before priority 79.
+	  worker, CDC ACM workqueue and UDC must initialize before the configured
+	  early priority. CDC ACM UART devices initialize at PRE_KERNEL_1.
+
+config INFUSE_CDC_ACM_SERIAL_EARLY_INIT_PRIORITY
+	int "Early USB initialization priority"
+	depends on INFUSE_CDC_ACM_SERIAL_INITIALIZE_EARLY
+	range 0 99
+	default 79
+	help
+	  POST_KERNEL priority after the USB worker, CDC ACM workqueue and UDC.
+	  Initialization order is checked at build time.
 
 configdefault USBD_THREAD_INIT_PRIO
 	default 60 if INFUSE_CDC_ACM_SERIAL_INITIALIZE_EARLY

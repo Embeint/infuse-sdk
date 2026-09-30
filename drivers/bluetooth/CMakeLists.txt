@@ -25,5 +25,8 @@ if(CONFIG_BT_HCI_CYW43_INFUSE)
       whd_allow_wlan_bus_to_sleep whd_bus_send_buffer whd_bus_read_frame
       whd_bus_packet_available_to_read whd_bus_set_backplane_window)
     zephyr_ld_options(-Wl,--wrap=${symbol})
+    # --wrap alone silently stops intercepting a removed/renamed symbol.
+    # Require the real HAL definition at every link, including with LTO/GC.
+    zephyr_ld_options(-Wl,--require-defined=${symbol})
   endforeach()
 endif()

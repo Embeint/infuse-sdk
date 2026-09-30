@@ -28,5 +28,23 @@ config BT_HCI_CYW43_POLL_INTERVAL_MS
 	int "Bluetooth receive poll interval in milliseconds"
 	range 1 20
 	default 4
+	help
+	  Polling keeps the shared bus awake and wakes the MCU at this interval.
+	  Host-wake interrupt-driven reception is not implemented yet.
+
+config BT_HCI_CYW43_RX_PRIORITY
+	int "Bluetooth receive thread preemptive priority"
+	range 0 NUM_PREEMPT_PRIORITIES
+	default 2
+	help
+	  Prioritize HCI events over application work while allowing higher
+	  priority system threads to preempt reception.
+
+config BT_HCI_CYW43_SEND_TIMEOUT_MS
+	int "Bluetooth transmit ring wait timeout in milliseconds"
+	range 1 10000
+	default 1000
+	help
+	  Bound the time a caller waits for room in the controller transmit ring.
 
 endif
