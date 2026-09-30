@@ -111,6 +111,16 @@ int infuse_littlefs_fs_info(struct infuse_littlefs_fs_info *info);
  */
 void infuse_littlefs_register_cb(struct infuse_littlefs_cb *cb);
 
+/**
+ * @brief Unregister a previously registered LittleFS callback
+ *
+ * @param cb Callback struct to unregister
+ *
+ * @retval true Callback was registered and has been removed
+ * @retval false Callback was not registered
+ */
+bool infuse_littlefs_unregister_cb(struct infuse_littlefs_cb *cb);
+
 #ifdef CONFIG_ZTEST
 
 /**

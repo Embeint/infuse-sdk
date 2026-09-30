@@ -284,6 +284,17 @@ ZTEST(infuse_littlefs, test_standard_flow)
 	zassert_equal(0, rc);
 	zassert_equal(2, cb_count);
 
+	/* Unregistering prevents subsequent notifications */
+	zassert_true(infuse_littlefs_unregister_cb(&cb));
+	zassert_false(infuse_littlefs_unregister_cb(&cb));
+	rc = infuse_littlefs_file_create(INFUSE_LFS_FOLDER_A_GNSS, 0, &meta);
+	zassert_equal(0, rc);
+	rc = infuse_littlefs_file_close();
+	zassert_equal(0, rc);
+	rc = infuse_littlefs_file_delete(INFUSE_LFS_FOLDER_A_GNSS, 0);
+	zassert_equal(0, rc);
+	zassert_equal(2, cb_count);
+
 	/* Don't expect used blocks to decrease here, as the file is small enough that the overall
 	 * blocks used stays the same.
 	 */
