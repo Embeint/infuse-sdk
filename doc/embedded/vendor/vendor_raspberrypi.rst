@@ -90,3 +90,50 @@ firmware, and fetch it with::
 
 Pico W selects CYW43439 only when AIROC is enabled; the board defconfig does not
 force wireless support into USB-only builds.
+
+Wi-Fi and Bluetooth integration
+*******************************
+
+Use :ref:`snippet-infuse-pico-wireless` to enable both wireless interfaces, or
+build :ref:`sample-epacket-pico-wireless` for USB, BLE GATT and UDP
+telemetry. The snippet enables IPv4/DHCP and the existing KV-backed Wi-Fi
+connection manager. The USB-only sample continues to initialize the chip only
+for its LED.
+
+Bluetooth uses the CYW43439 shared SPI bus rather than the UART HCI transport.
+The SDK driver loads the Raspberry Pi Bluetooth patch firmware at
+``bt_enable()``, shares a recursive bus mutex with WHD, and uses bounded ring
+validation and stack-backed backplane transfers. The build enables shared-
+antenna coexistence in a generated copy of the pinned Murata NVRAM. Fetch the
+additional firmware with ``west blobs fetch infuse-sdk``. The build selects
+the Pico Wi-Fi firmware with ``btsdio`` support and its matching CLM. The stock
+WHD Wi-Fi firmware does not initialize the Bluetooth shared-memory region.
+The driver rejects a zero shared-memory base before writing ring indices,
+protecting Wi-Fi firmware from an incompatible image.
+
+Hardware validation (2026-09-30)
+===============================
+
+Pico W bring-up confirmed USB startup logs, the controller public address
+(Wi-Fi MAC + 1), legacy connectable advertising, Infuse GATT discovery, ATT
+MTU 247, and telemetry notifications. The CYW43439 rejects extended-advertising
+and extended-scan commands, so this integration uses legacy BLE and GATT.
+
+Using the Pico shared-bus Wi-Fi firmware confirmed scanning, WPA2 association
+and an IPv4 DHCP lease. Two BLE connections each negotiated ATT MTU 247 and
+received three telemetry notifications while Wi-Fi stayed connected. USB echo
+RPCs remained responsive, and the UDP interface opened its socket. The wireless
+snippet sizes the system workqueue, network management event and socket service
+stacks for these call paths. Bluetooth backplane accesses restore the chipcommon
+window required by WHD power-control accesses.
+
+Pico 2 W hardware validation also confirmed a Wi-Fi scan (20 access points),
+WPA2 association, IPv4 DHCP and USB echo. On the final application, two BLE
+connections each negotiated ATT MTU 247 and delivered three decrypted
+``ANNOUNCE_V2`` TDF notifications while Wi-Fi stayed connected. Network settings
+survived the update from the diagnostic to the normal application. Provisioning
+storage was unchanged.
+
+Pico W and Pico 2 W application builds and 19 QEMU transport tests pass.
+Sustained coexistence, radio range and end-to-end UDP/cloud delivery have not yet
+been verified.
