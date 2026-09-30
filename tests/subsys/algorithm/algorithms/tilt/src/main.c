@@ -251,6 +251,7 @@ static void test_after(void *fixture)
 {
 	/* Terminate IMU producer if its still running */
 	task_terminate(0);
+	algorithm_runner_reset();
 }
 
 ZTEST_SUITE(alg_stationary, NULL, NULL, test_before, test_after, NULL);

@@ -146,8 +146,6 @@ ZTEST(algorithm_runner, test_running)
 	struct tdf_ambient_temp_pres_hum ambient_env = {0};
 	struct tdf_gcs_wgs84_llha location = {0};
 
-	algorithm_runner_init();
-
 	zassert_equal(-EINVAL, algorithm_runner_register(NULL));
 	zassert_equal(-EINVAL, algorithm_runner_register(&invalid_algorithm));
 	zassert_equal(-EINVAL, algorithm_runner_unregister(NULL));
@@ -323,4 +321,16 @@ ZTEST(algorithm_runner, test_logging)
 	zassert_is_null(tx);
 }
 
-ZTEST_SUITE(algorithm_runner, NULL, NULL, NULL, NULL, NULL);
+static void test_before(void *fixture)
+{
+	ARG_UNUSED(fixture);
+	algorithm_runner_init();
+}
+
+static void test_after(void *fixture)
+{
+	ARG_UNUSED(fixture);
+	algorithm_runner_reset();
+}
+
+ZTEST_SUITE(algorithm_runner, NULL, NULL, test_before, test_after, NULL);
