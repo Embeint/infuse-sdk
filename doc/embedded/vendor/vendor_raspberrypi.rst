@@ -95,7 +95,7 @@ Wi-Fi and Bluetooth integration
 *******************************
 
 Use :ref:`snippet-infuse-pico-wireless` to enable both wireless interfaces, or
-build :ref:`sample-epacket-pico-wireless` for USB, BLE GATT and UDP
+build :ref:`sample-epacket-wireless` for USB, BLE GATT and UDP
 telemetry. The snippet enables IPv4/DHCP and the existing KV-backed Wi-Fi
 connection manager. The USB-only sample continues to initialize the chip only
 for its LED.
@@ -156,6 +156,10 @@ still requires product calibration/profile qualification.
 
 Hardware validation (2026-09-30)
 ===============================
+
+The results below were recorded before the generic sample rename and review
+hardening. The updated sample has been rebuilt for both Pico W targets and
+nRF7002 DK, but hardware validation has not been repeated for this revision.
 
 Pico W bring-up confirmed USB startup logs, the controller public address
 (Wi-Fi MAC + 1), legacy connectable advertising, Infuse GATT discovery, ATT

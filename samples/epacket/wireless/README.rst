@@ -1,15 +1,21 @@
-.. _sample-epacket-pico-wireless:
+.. _sample-epacket-wireless:
 
-Pico W wireless ePacket
-######################
+Wireless ePacket
+################
 
-This bare-board sample supports Pico W and Pico 2 W. Every five seconds it sends
-announce telemetry over USB, BLE GATT and Wi-Fi UDP, and blinks
-the onboard LED. GATT telemetry is available to a connected Infuse client. Legacy connectable
-advertising includes the Infuse service UUID and device name. The controller
-does not support Infuse extended-advertising telemetry.
-The Infuse common boot sequence enables Bluetooth; the Wi-Fi connection manager
-uses credentials stored in the KV store. USB remains available for logs and RPCs.
+This sample sends announce telemetry every five seconds over USB, BLE GATT
+and Wi-Fi UDP. It supports Pico W, Pico 2 W and nRF7002 DK application-core
+builds. Network credentials are stored in the usual Infuse KV keys.
+
+The optional ``status-led`` alias identifies a Zephyr LED API device; LED
+index 0 blinks when that alias is present. The Pico wireless overlay provides
+its CYW43439 LED through this alias. No board-specific GPIO code is needed.
+
+When the ePacket advertising interface is enabled, it owns connectable
+advertising and also broadcasts announce TDFs. Otherwise the sample starts
+legacy connectable advertising with the Infuse service UUID and restarts it
+after disconnect. The Pico controller supports the legacy/GATT path only;
+the Nordic build enables the normal extended-advertising interface.
 
 Build and flash
 ***************
@@ -19,13 +25,19 @@ Fetch the Wi-Fi and Bluetooth firmware::
    west blobs fetch hal_infineon --allow-regex '.*43439A0\.(bin|clm_blob)$'
    west blobs fetch infuse-sdk
 
-Build either board::
+Build any supported board::
 
-   west build -b rpi_pico/rp2040/w samples/epacket/pico_wireless -d build/pico-w-wireless
-   west build -b rpi_pico2/rp2350a/m33/w samples/epacket/pico_wireless -d build/pico2-w-wireless
+   west build -b rpi_pico/rp2040/w samples/epacket/wireless -d build/pico-w-wireless
+   west build -b rpi_pico2/rp2350a/m33/w samples/epacket/wireless -d build/pico2-w-wireless
+   west blobs fetch nrf_wifi
+   west build -b nrf7002dk/nrf5340/cpuapp samples/epacket/wireless -d build/nrf7002-wireless
 
-The application automatically includes ``infuse``, ``usb`` and
-``infuse-pico-wireless``. Hold BOOTSEL while connecting the board, then flash::
+The application includes ``infuse`` and ``usb`` on all boards. Only the two
+Pico W targets add ``infuse-pico-wireless``. The Nordic target uses its nRF70
+Wi-Fi driver and Bluetooth IPC HCI; an appropriate network-core controller
+image is required for hardware use. Its coverage here is build-only.
+
+For Pico boards, hold BOOTSEL while connecting, then flash::
 
    picotool load -v build/pico-w-wireless/zephyr/zephyr.uf2
    picotool reboot
@@ -54,7 +66,7 @@ it. Network/cloud delivery also requires the appropriate provisioning and keys.
 Validation
 **********
 
-Build coverage includes both W boards. The QEMU transport tests exercise ring
+Build coverage includes both Pico W boards and nRF7002 DK. The QEMU transport tests exercise ring
 wraparound, partial frames, malformed/oversized packets, transient and persistent
 invalid indices, invalid shared-memory bases, firmware bounds and bus failure
 propagation::

@@ -1,18 +1,19 @@
 sample:
-  description: USB, BLE GATT and Wi-Fi UDP on Pico W and Pico 2 W
-  name: ePacket Pico wireless
+  description: USB, BLE GATT and Wi-Fi UDP telemetry
+  name: ePacket wireless
 common:
   build_only: true
   required_snippets:
     - infuse
     - usb
-    - infuse-pico-wireless
   tags: epacket bluetooth wifi usb
   platform_allow:
     - rpi_pico/rp2040/w
     - rpi_pico2/rp2350a/m33/w
+    - nrf7002dk/nrf5340/cpuapp
   integration_platforms:
     - rpi_pico/rp2040/w
     - rpi_pico2/rp2350a/m33/w
+    - nrf7002dk/nrf5340/cpuapp
 tests:
-  sample.epacket.pico_wireless: {}
+  sample.epacket.wireless: {}

@@ -9,7 +9,6 @@
 #include <zephyr/kernel.h>
 #include <zephyr/bluetooth/bluetooth.h>
 #include <zephyr/bluetooth/conn.h>
-#include <zephyr/drivers/gpio.h>
 #include <zephyr/drivers/led.h>
 #include <zephyr/logging/log.h>
 #include <zephyr/sys/crc.h>
@@ -28,12 +27,10 @@
 
 LOG_MODULE_REGISTER(app, LOG_LEVEL_INF);
 
-#if DT_NODE_HAS_STATUS(DT_ALIAS(led0), okay)
-static const struct gpio_dt_spec led = GPIO_DT_SPEC_GET(DT_ALIAS(led0), gpios);
-#elif DT_NODE_HAS_STATUS(DT_ALIAS(wifi_led), okay)
-static const struct device *led = DEVICE_DT_GET(DT_ALIAS(wifi_led));
-#endif
+static const struct device *led = DEVICE_DT_GET_OR_NULL(DT_ALIAS(status_led));
 
+/* The ePacket advertising interface owns advertising when enabled. */
+#ifndef CONFIG_EPACKET_INTERFACE_BT_ADV
 static const struct bt_data advertising[] = {
 	BT_DATA_BYTES(BT_DATA_FLAGS, BT_LE_AD_GENERAL | BT_LE_AD_NO_BREDR),
 	BT_DATA_BYTES(BT_DATA_UUID16_ALL, BT_UUID_16_ENCODE(INFUSE_BT_SERVICE_UUID_VAL)),
@@ -65,6 +62,8 @@ static void connection_recycled(void)
 BT_CONN_CB_DEFINE(sample_conn_cb) = {
 	.recycled = connection_recycled,
 };
+
+#endif /* CONFIG_EPACKET_INTERFACE_BT_ADV */
 
 static struct net_mgmt_event_callback wifi_scan_cb;
 static uint32_t wifi_scan_results;
@@ -113,7 +112,8 @@ int main(void)
 	const struct device *bt_periph = DEVICE_DT_GET(DT_NODELABEL(epacket_bt_peripheral));
 	const struct device *udp = DEVICE_DT_GET(DT_NODELABEL(epacket_udp));
 	const uint32_t loggers =
-		TDF_DATA_LOGGER_SERIAL | TDF_DATA_LOGGER_BT_PERIPHERAL | TDF_DATA_LOGGER_UDP;
+		TDF_DATA_LOGGER_SERIAL | TDF_DATA_LOGGER_BT_PERIPHERAL | TDF_DATA_LOGGER_UDP |
+		(IS_ENABLED(CONFIG_EPACKET_INTERFACE_BT_ADV) ? TDF_DATA_LOGGER_BT_ADV : 0);
 	bool led_ready = false;
 	bool led_state = false;
 	int rc;
@@ -122,13 +122,8 @@ int main(void)
 		LOG_ERR("USB ePacket interface is not ready");
 		return -ENODEV;
 	}
-#if DT_NODE_HAS_STATUS(DT_ALIAS(led0), okay)
-	led_ready =
-		gpio_is_ready_dt(&led) && (gpio_pin_configure_dt(&led, GPIO_OUTPUT_INACTIVE) == 0);
-#elif DT_NODE_HAS_STATUS(DT_ALIAS(wifi_led), okay)
-	led_ready = device_is_ready(led);
-#endif
-	if (!led_ready) {
+	led_ready = led != NULL && device_is_ready(led);
+	if (led != NULL && !led_ready) {
 		LOG_WRN("Onboard LED unavailable; USB remains active");
 	}
 
@@ -143,7 +138,9 @@ int main(void)
 		LOG_ERR("Wireless ePacket interface is not ready");
 		return -ENODEV;
 	}
+#ifndef CONFIG_EPACKET_INTERFACE_BT_ADV
 	k_work_submit(&advertising_work);
+#endif
 
 	wifi_scan_if_unconfigured();
 
@@ -158,11 +155,7 @@ int main(void)
 	for (;;) {
 		if (led_ready) {
 			led_state = !led_state;
-#if DT_NODE_HAS_STATUS(DT_ALIAS(led0), okay)
-			rc = gpio_pin_set_dt(&led, led_state);
-#elif DT_NODE_HAS_STATUS(DT_ALIAS(wifi_led), okay)
 			rc = led_state ? led_on(led, 0) : led_off(led, 0);
-#endif
 			if (rc < 0) {
 				LOG_ERR("Onboard LED update failed (%d)", rc);
 				led_ready = false;
@@ -170,8 +163,8 @@ int main(void)
 		}
 		announce.uptime = k_uptime_seconds();
 		if ((announce.uptime % 5) == 0) {
-			LOG_INF("Pico %016" PRIx64 ": uptime %u s, reboots %u", id, announce.uptime,
-				reboots.count);
+			LOG_INF("Device %016" PRIx64 ": uptime %u s, reboots %u", id,
+				announce.uptime, reboots.count);
 			TDF_DATA_LOGGER_LOG(loggers, TDF_ANNOUNCE_V2, 0, &announce);
 			tdf_data_logger_flush(loggers);
 		}

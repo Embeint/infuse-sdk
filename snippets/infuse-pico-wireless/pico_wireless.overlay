@@ -42,7 +42,7 @@
 
 / {
 	aliases {
-		wifi-led = &wifi_led;
+		status-led = &wifi_led;
 	};
 };
 

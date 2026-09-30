@@ -2,6 +2,9 @@ name: usb
 
 boards:
   # Nordic Development kits
+  nrf7002dk/nrf5340/cpuapp:
+    append:
+      EXTRA_DTC_OVERLAY_FILE: nordic_usbd.overlay
   /nrf52.*/:
     append:
       EXTRA_DTC_OVERLAY_FILE: nordic_usbd.overlay

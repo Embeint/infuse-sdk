@@ -18,7 +18,7 @@ Fetch firmware before building::
    west blobs fetch infuse-sdk
    west build -b rpi_pico/rp2040/w -S infuse -S infuse-pico-wireless <application>
 
-See :ref:`sample-epacket-pico-wireless` for a complete USB/BLE/Wi-Fi example.
+See :ref:`sample-epacket-wireless` for a complete USB/BLE/Wi-Fi example.
 The USB-only sample retains its original configuration.
 
 Bluetooth requires the initialized Wi-Fi driver even when there are no network
