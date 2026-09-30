@@ -15,6 +15,15 @@ menuconfig INFUSE_CDC_ACM_SERIAL_INITIALIZE_AT_BOOT
 
 if INFUSE_CDC_ACM_SERIAL_INITIALIZE_AT_BOOT
 
+config INFUSE_CDC_ACM_SERIAL_INITIALIZE_EARLY
+	bool "Initialize USB before other POST_KERNEL peripherals"
+	help
+	  Make USB logs available during slow peripheral initialization. The USB
+	  worker, CDC ACM UART and UDC must initialize before priority 79.
+
+configdefault USBD_THREAD_INIT_PRIO
+	default 60 if INFUSE_CDC_ACM_SERIAL_INITIALIZE_EARLY
+
 config INFUSE_CDC_ACM_SERIAL_ENABLE_AT_BOOT
 	bool "USB device will be enabled at boot"
 	default y

@@ -157,4 +157,8 @@ static int infuse_cdc_acm_serial_init(void)
 	return 0;
 }
 
+#ifdef CONFIG_INFUSE_CDC_ACM_SERIAL_INITIALIZE_EARLY
+SYS_INIT(infuse_cdc_acm_serial_init, POST_KERNEL, 79);
+#else
 SYS_INIT(infuse_cdc_acm_serial_init, APPLICATION, CONFIG_APPLICATION_INIT_PRIORITY);
+#endif
