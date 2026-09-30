@@ -42,6 +42,9 @@ The pinned AIROC buffer-release callback bypasses ``net_buf_unref()``, causing
 available-buffer accounting to become negative with ``NET_BUF_POOL_USAGE``.
 The pinned Embeint Zephyr fork fixes the callback directly with
 ``net_buf_unref()``; no configure-time source rewrite is used.
+The fork also rejects duplicate Wi-Fi connect requests without marking an
+existing connection dormant or reporting a connection failure. This preserves
+DHCP and UDP recovery when a duplicate request is queued during reconnection.
 
 The snippet increases the system workqueue, network-management event and socket
 service stacks for association, WHD status queries and ePacket receive callbacks.
