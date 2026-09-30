@@ -158,7 +158,7 @@ void algorithm_runner_init(void)
 int algorithm_runner_register(const struct infuse_algorithm *algorithm)
 {
 	struct algorithm_runner_algorithm *alg = NULL;
-	int rc = 0;
+	__maybe_unused int rc = 0;
 
 	if ((algorithm == NULL) || (algorithm->fn == NULL) ||
 	    ((algorithm->arguments_size > 0) && (algorithm->arguments == NULL))) {
@@ -218,7 +218,9 @@ int algorithm_runner_register(const struct infuse_algorithm *algorithm)
 
 	return 0;
 
+#ifdef CONFIG_KV_STORE
 free_algorithm:
+#endif /* CONFIG_KV_STORE */
 	k_mutex_lock(&list_lock, K_FOREVER);
 	alg->allocated = false;
 	k_mutex_unlock(&list_lock);
