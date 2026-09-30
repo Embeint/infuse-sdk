@@ -72,6 +72,16 @@ int kv_store_reset(void);
 void kv_store_register_callback(struct kv_store_cb *cb);
 
 /**
+ * @brief Unregister a previously registered KV store callback
+ *
+ * @param cb Callback struct to unregister
+ *
+ * @retval true Callback was registered and has been removed
+ * @retval false Callback was not registered
+ */
+bool kv_store_unregister_callback(struct kv_store_cb *cb);
+
+/**
  * @brief Get the current KV store reflect CRC
  *
  * While this value does not change value, there have been no changes

@@ -56,6 +56,11 @@ void kv_store_register_callback(struct kv_store_cb *cb)
 	sys_slist_append(&cb_list, &cb->node);
 }
 
+bool kv_store_unregister_callback(struct kv_store_cb *cb)
+{
+	return sys_slist_find_and_remove(&cb_list, &cb->node);
+}
+
 bool kv_store_key_exists(uint16_t key)
 {
 	return zms_get_data_length(&fs, ID_PRE | key) > 0;

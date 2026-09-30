@@ -330,6 +330,12 @@ ZTEST(kv_store, test_callbacks)
 	zassert_not_null(ctx.data);
 	zassert_equal(sizeof(fallback), ctx.data_len);
 	zassert_equal(3, ctx.cb_cnt);
+
+	/* Unregistering prevents subsequent notifications */
+	zassert_true(kv_store_unregister_callback(&cb));
+	zassert_false(kv_store_unregister_callback(&cb));
+	(void)kv_store_delete(KV_KEY_REBOOTS);
+	zassert_equal(3, ctx.cb_cnt);
 }
 
 ZTEST(kv_store, test_kv_var_macro)
