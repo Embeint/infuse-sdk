@@ -516,6 +516,11 @@ void infuse_littlefs_register_cb(struct infuse_littlefs_cb *cb)
 	sys_slist_append(&cb_list, &cb->node);
 }
 
+bool infuse_littlefs_unregister_cb(struct infuse_littlefs_cb *cb)
+{
+	return sys_slist_find_and_remove(&cb_list, &cb->node);
+}
+
 #ifdef CONFIG_ZTEST
 
 void infuse_littfs_format(void)
