@@ -41,6 +41,10 @@ struct algorithm_runner_algorithm {
 
 static struct algorithm_runner_algorithm algorithm_pool[CONFIG_ALGORITHM_RUNNER_MAX_ALGORITHMS];
 
+#ifdef CONFIG_KV_STORE
+static struct kv_store_cb alg_kv_cb;
+#endif /* CONFIG_KV_STORE */
+
 LOG_MODULE_REGISTER(algorithm, CONFIG_ALGORITHM_RUNNER_LOG_LEVEL);
 
 static void new_zbus_data(const struct zbus_channel *chan)
@@ -138,14 +142,8 @@ static void alg_kv_value_changed(uint16_t key, const void *data, size_t data_len
 void algorithm_runner_init(void)
 {
 #ifdef CONFIG_KV_STORE
-	static struct kv_store_cb alg_kv_cb = {
-		.value_changed = alg_kv_value_changed,
-	};
-
-	/* Check is only to handle tests that call `algorithm_runner_init` multiple times */
-	if (runner.handler == NULL) {
-		kv_store_register_callback(&alg_kv_cb);
-	}
+	alg_kv_cb.value_changed = alg_kv_value_changed;
+	kv_store_register_callback(&alg_kv_cb);
 #endif /* CONFIG_KV_STORE */
 
 	k_mutex_lock(&list_lock, K_FOREVER);
@@ -154,6 +152,25 @@ void algorithm_runner_init(void)
 	k_mutex_unlock(&list_lock);
 	k_work_init(&runner, exec_fn);
 }
+
+#ifdef CONFIG_ZTEST
+void algorithm_runner_reset(void)
+{
+	struct k_work_sync sync;
+
+	/* Ensure the runner cannot access the algorithm list while it is reset. */
+	k_work_cancel_sync(&runner, &sync);
+
+#ifdef CONFIG_KV_STORE
+	kv_store_unregister_callback(&alg_kv_cb);
+#endif /* CONFIG_KV_STORE */
+
+	k_mutex_lock(&list_lock, K_FOREVER);
+	sys_slist_init(&algorithms);
+	memset(algorithm_pool, 0, sizeof(algorithm_pool));
+	k_mutex_unlock(&list_lock);
+}
+#endif /* CONFIG_ZTEST */
 
 int algorithm_runner_register(const struct infuse_algorithm *algorithm)
 {

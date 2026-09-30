@@ -109,8 +109,6 @@ ZTEST(alg_demo, test_event_generator)
 		.fifo_sample_buffer = 50,
 	};
 
-	/* Initialise algorithm runner */
-	algorithm_runner_init();
 	zassert_ok(algorithm_runner_register(&test_alg_event));
 
 	/* Start with lots of movement */
@@ -151,8 +149,6 @@ ZTEST(alg_demo, test_state_generator)
 		.fifo_sample_buffer = 50,
 	};
 
-	/* Initialise algorithm runner */
-	algorithm_runner_init();
 	zassert_ok(algorithm_runner_register(&test_alg_state));
 
 	/* Start with lots of movement */
@@ -191,8 +187,6 @@ ZTEST(alg_demo, test_metric_generator)
 		.fifo_sample_buffer = 50,
 	};
 
-	/* Initialise algorithm runner */
-	algorithm_runner_init();
 	zassert_ok(algorithm_runner_register(&test_alg_metric));
 
 	/* Start with lots of movement */
@@ -221,4 +215,16 @@ static void test_before(void *fixture)
 	task_runner_init(schedule, state, 1, config, data, 1);
 }
 
-ZTEST_SUITE(alg_demo, NULL, NULL, test_before, NULL, NULL);
+static void *test_setup(void)
+{
+	algorithm_runner_init();
+	return NULL;
+}
+
+static void test_after(void *fixture)
+{
+	ARG_UNUSED(fixture);
+	algorithm_runner_reset();
+}
+
+ZTEST_SUITE(alg_demo, NULL, test_setup, test_before, test_after, NULL);

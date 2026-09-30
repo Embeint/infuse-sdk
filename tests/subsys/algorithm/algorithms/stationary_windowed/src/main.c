@@ -231,4 +231,10 @@ static void test_before(void *fixture)
 	task_runner_init(schedule, state, 1, config, data, 1);
 }
 
-ZTEST_SUITE(alg_stationary, NULL, NULL, test_before, NULL, NULL);
+static void test_after(void *fixture)
+{
+	ARG_UNUSED(fixture);
+	algorithm_runner_reset();
+}
+
+ZTEST_SUITE(alg_stationary, NULL, NULL, test_before, test_after, NULL);

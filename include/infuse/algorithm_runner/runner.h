@@ -27,8 +27,6 @@ extern "C" {
 
 /**
  * @brief Initialise the algorithm runner
- *
- * Can be called multiple times to clear the list of registered algorithms.
  */
 void algorithm_runner_init(void);
 
@@ -71,6 +69,17 @@ int algorithm_runner_unregister(const struct infuse_algorithm *algorithm);
  */
 void algorithm_runner_tdf_log(const struct kv_algorithm_logging *logging, uint8_t tdf_mask,
 			      uint16_t tdf_id, uint8_t tdf_len, uint64_t time, const void *data);
+
+#ifdef CONFIG_ZTEST
+
+/**
+ * @brief Reset the algorithm runner to its boot state
+ *
+ * Unregisters all added algorithms
+ */
+void algorithm_runner_reset(void);
+
+#endif /* CONFIG_ZTEST */
 
 /**
  * @}
