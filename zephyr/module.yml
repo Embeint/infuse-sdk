@@ -8,3 +8,20 @@ build:
   kconfig: Kconfig.infuse
   sysbuild-cmake: sysbuild
   sysbuild-kconfig: sysbuild/Kconfig
+blobs:
+  - path: img/cyw43_btfw_43439.h
+    sha256: d05a8dca7e232ada470d8ed723edaa1ea78000098870f9b979d490d83ad35b22
+    type: img
+    version: 'dd7568229f3bf7a37737b9e1ef250c26efe75b23'
+    license-path: zephyr/blobs/LICENSE.cyw43
+    url: https://raw.githubusercontent.com/georgerobotics/cyw43-driver/dd7568229f3bf7a37737b9e1ef250c26efe75b23/firmware/cyw43_btfw_43439.h
+    description: CYW43439 Bluetooth shared-bus patch firmware for Raspberry Pi Pico W
+    doc-url: https://github.com/georgerobotics/cyw43-driver/blob/dd7568229f3bf7a37737b9e1ef250c26efe75b23/firmware/README.md
+  - path: img/wb43439A0_7_95_49_00_combined.h
+    sha256: 6b4b9a717c3c5d669b56a3bc38b58df3901f63e3a7363ccf5d74706460762176
+    type: img
+    version: 'dd7568229f3bf7a37737b9e1ef250c26efe75b23'
+    license-path: zephyr/blobs/LICENSE.cyw43
+    url: https://raw.githubusercontent.com/georgerobotics/cyw43-driver/dd7568229f3bf7a37737b9e1ef250c26efe75b23/firmware/wb43439A0_7_95_49_00_combined.h
+    description: CYW43439 Wi-Fi firmware and CLM with Bluetooth shared-bus support
+    doc-url: https://github.com/georgerobotics/cyw43-driver/blob/dd7568229f3bf7a37737b9e1ef250c26efe75b23/firmware/README.md
