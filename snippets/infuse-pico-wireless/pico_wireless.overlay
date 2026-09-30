@@ -1,0 +1,62 @@
+/* Copyright (c) 2026 Embeint Holdings Pty Ltd
+ * SPDX-License-Identifier: FSL-1.1-ALv2
+ */
+#include <common/infuse_bluetooth.dtsi>
+
+/ {
+	chosen {
+		zephyr,wifi = &cyw43_wifi;
+		zephyr,bt-hci = &cyw43_hci;
+	};
+
+	cyw43_hci: cyw43_hci {
+		compatible = "embeint,cyw43-bt-hci";
+		wifi = <&cyw43_wifi>;
+	};
+
+	epacket_udp: epacket_udp {
+		compatible = "embeint,epacket-udp";
+	};
+
+	data_logger_udp: data_logger_udp {
+		compatible = "embeint,data-logger-epacket", "embeint,data-logger";
+		epacket = <&epacket_udp>;
+		tdf_logger_udp: tdf_logger_udp {
+			compatible = "embeint,tdf-data-logger";
+		};
+	};
+};
+
+&pio0_spi0 {
+	cyw43_wifi: airoc-wifi@0 {
+		wifi_led: led {
+			compatible = "embeint,cyw43-led";
+			pin = <0>;
+		};
+	};
+};
+
+&cyw43_gpio {
+	status = "disabled";
+};
+
+/ {
+	aliases {
+		wifi-led = &wifi_led;
+	};
+};
+
+/* Infuse advertising telemetry requires extended advertising. Use GATT on
+ * the legacy-only CYW43439 controller; applications provide connectable AD.
+ */
+&epacket_bt_adv {
+	status = "disabled";
+};
+
+&data_logger_bt_adv {
+	status = "disabled";
+};
+
+&tdf_logger_bt_adv {
+	status = "disabled";
+};

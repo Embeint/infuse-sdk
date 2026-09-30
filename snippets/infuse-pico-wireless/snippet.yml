@@ -1,0 +1,10 @@
+name: infuse-pico-wireless
+boards:
+  rpi_pico/rp2040/w:
+    append:
+      EXTRA_DTC_OVERLAY_FILE: pico_wireless.overlay
+      EXTRA_CONF_FILE: pico_wireless.conf
+  rpi_pico2/rp2350a/m33/w:
+    append:
+      EXTRA_DTC_OVERLAY_FILE: pico_wireless.overlay
+      EXTRA_CONF_FILE: pico_wireless.conf
