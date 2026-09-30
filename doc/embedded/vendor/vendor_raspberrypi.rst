@@ -111,6 +111,34 @@ WHD Wi-Fi firmware does not initialize the Bluetooth shared-memory region.
 The driver rejects a zero shared-memory base before writing ring indices,
 protecting Wi-Fi firmware from an incompatible image.
 
+.. _pico-wireless-licensing:
+
+Firmware licensing and release notices
+======================================
+
+The shared-bus transport is derived from Raspberry Pi pico-sdk code and
+retains the Raspberry Pi and Embeint copyright notices and full BSD-3-Clause
+terms in its source. The firmware headers are imported from
+``georgerobotics/cyw43-driver`` under its Raspberry Pi-specific ``LICENSE.RP``
+grant. Keep ``SOC_FAMILY_RPI_PICO`` in the HCI driver's Kconfig dependencies:
+these blobs must only be used with Raspberry Pi semiconductor devices.
+
+For customer firmware releases containing these components, distribute
+``THIRD_PARTY_NOTICES.md``, ``zephyr/blobs/LICENSE.RP`` and
+``zephyr/blobs/LICENSE`` with the firmware documentation or other accompanying
+materials. The notice bundle reproduces the copyright notices, conditions
+and disclaimers required for binary redistribution. The upstream default
+``LICENSE`` is an alternative non-commercial grant, retained to satisfy the
+reference in ``LICENSE.RP``; it is not the grant selected by this integration.
+
+These are different terms from the stock ``hal_infineon`` firmware blobs.
+The selected headers carry a George Robotics notice while the controller
+firmware is supplied through the CYW43 driver repository. Before making this
+a product release path, the licensing owner must verify the redistribution
+rights for the selected Wi-Fi/CLM and Bluetooth images, including the
+upstream rights chain. The pinned upstream firmware README provides format
+details but no independent firmware licence.
+
 Hardware validation (2026-09-30)
 ===============================
 
