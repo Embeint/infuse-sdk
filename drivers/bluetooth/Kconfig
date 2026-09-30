@@ -1,0 +1,32 @@
+# Copyright (c) 2026 Embeint Holdings Pty Ltd
+# SPDX-License-Identifier: FSL-1.1-ALv2
+
+config BT_HCI_CYW43_INFUSE
+	bool "CYW43439 Bluetooth HCI over the AIROC shared SPI bus"
+	default y
+	depends on SOC_FAMILY_RPI_PICO
+	depends on BT && WIFI_AIROC && AIROC_WIFI_BUS_SPI && CYW43439
+	depends on DT_HAS_EMBEINT_CYW43_BT_HCI_ENABLED
+	help
+	  Share the initialized AIROC/WHD driver with the onboard Bluetooth
+	  controller. Requires the infuse-sdk Wi-Fi/shared-bus and Bluetooth firmware blobs.
+
+if BT_HCI_CYW43_INFUSE
+
+config BT_HCI_CYW43_INIT_PRIORITY
+	int "CYW43 HCI device initialization priority"
+	range 0 99
+	default 81
+	help
+	  Must be later than WIFI_INIT_PRIORITY. Firmware is loaded at bt_enable.
+
+config BT_HCI_CYW43_RX_STACK_SIZE
+	int "Bluetooth receive thread stack size"
+	default 2048
+
+config BT_HCI_CYW43_POLL_INTERVAL_MS
+	int "Bluetooth receive poll interval in milliseconds"
+	range 1 20
+	default 4
+
+endif

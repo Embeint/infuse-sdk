@@ -9,3 +9,5 @@ rsource "sensor/Kconfig"
 rsource "shared_device/Kconfig"
 rsource "watchdog/Kconfig"
 rsource "wifi/Kconfig"
+
+rsource "bluetooth/Kconfig"

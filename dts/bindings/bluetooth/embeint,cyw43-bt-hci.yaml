@@ -1,0 +1,15 @@
+# Copyright (c) 2026 Embeint Holdings Pty Ltd
+# SPDX-License-Identifier: FSL-1.1-ALv2
+
+description: CYW43439 Bluetooth HCI sharing an initialized AIROC Wi-Fi SPI bus
+compatible: "embeint,cyw43-bt-hci"
+include: bt-hci.yaml
+properties:
+  wifi:
+    type: phandle
+    required: true
+    description: The infineon,airoc-wifi device owning the shared SPI bus
+  bt-hci-name:
+    default: "CYW43439"
+  bt-hci-bus:
+    default: "spi"

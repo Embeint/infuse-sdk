@@ -9,3 +9,5 @@ add_subdirectory_ifdef(CONFIG_INFUSE_IMU imu)
 add_subdirectory_ifdef(CONFIG_LED led)
 add_subdirectory_ifdef(CONFIG_INFUSE_WATCHDOG watchdog)
 add_subdirectory_ifdef(CONFIG_WIFI wifi)
+
+add_subdirectory_ifdef(CONFIG_BT bluetooth)

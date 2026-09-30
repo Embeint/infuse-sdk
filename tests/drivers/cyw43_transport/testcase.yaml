@@ -1,0 +1,5 @@
+tests:
+  drivers.bluetooth.cyw43_transport:
+    tags: drivers bluetooth
+    platform_allow: [mps2/an385]
+    integration_platforms: [mps2/an385]
