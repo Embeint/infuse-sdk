@@ -52,6 +52,13 @@ void printk(const char *fmt, ...);
 /** time/epoch.h: See @a epoch_time_now */
 uint64_t epoch_time_now(void);
 
+/* kv_store/types.h: Opaque logging pointer */
+struct kv_algorithm_logging;
+
+/** algorithm_runner/runner.h: See @a algorithm_runner_tdf_log */
+void algorithm_runner_tdf_log(const struct kv_algorithm_logging *logging, uint8_t tdf_mask,
+			      uint16_t tdf_id, uint8_t tdf_len, uint64_t time, const void *data);
+
 /**
  * @}
  */

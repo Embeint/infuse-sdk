@@ -10,11 +10,12 @@
 #include <zephyr/llext/symbol.h>
 #include <zephyr/zbus/zbus.h>
 
+#include <infuse/algorithm_runner/runner.h>
 #include <infuse/time/epoch.h>
 
 #include <math.h>
 
-static int zbus_chan_read_no_wait(const struct zbus_channel *chan, void *msg)
+int zbus_chan_read_no_wait(const struct zbus_channel *chan, void *msg)
 {
 	return zbus_chan_read(chan, msg, K_NO_WAIT);
 }
@@ -34,6 +35,7 @@ EXPORT_GROUP_SYMBOL(INFUSE_ALG, zbus_chan_const_msg);
 EXPORT_GROUP_SYMBOL(INFUSE_ALG, zbus_chan_read_no_wait);
 EXPORT_GROUP_SYMBOL(INFUSE_ALG, zbus_chan_finish);
 EXPORT_GROUP_SYMBOL(INFUSE_ALG, epoch_time_now);
+EXPORT_GROUP_SYMBOL(INFUSE_ALG, algorithm_runner_tdf_log);
 
 /* Common single-precision math functions from 'math.h'
  * Excludes the Gauss error functions 'errf' and 'erfcf'
@@ -175,3 +177,13 @@ uint64_t epoch_time_now(void)
 	return 0;
 }
 #endif /* CONFIG_INFUSE_EPOCH_TIME */
+#ifndef CONFIG_TDF_DATA_LOGGER
+#include <infuse/tdf/tdf.h>
+
+void tdf_data_logger_log_core(uint8_t logger_mask, uint16_t tdf_id, uint8_t tdf_len,
+			      uint8_t tdf_num, enum tdf_data_format format, uint64_t time,
+			      uint32_t idx_period, const void *data)
+{
+	return;
+}
+#endif /* CONFIG_TDF_DATA_LOGGER */
