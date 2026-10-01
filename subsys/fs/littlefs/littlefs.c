@@ -84,7 +84,7 @@ int infuse_littlefs_file_size(enum infuse_littlefs_folder folder, uint32_t file)
 	}
 	if (atomic_get(&lfs_state.state) & LFS_STATE_FILE_ANY_OPENED) {
 		/* File already opened in the state */
-		return -EINVAL;
+		return -EBUSY;
 	}
 
 	k_mutex_lock(&lfs_state.access, K_FOREVER);
@@ -112,7 +112,7 @@ int infuse_littlefs_file_metadata(enum infuse_littlefs_folder folder, uint32_t f
 	}
 	if (atomic_get(&lfs_state.state) & LFS_STATE_FILE_ANY_OPENED) {
 		/* File already opened in the state */
-		return -EINVAL;
+		return -EBUSY;
 	}
 
 	k_mutex_lock(&lfs_state.access, K_FOREVER);
@@ -150,7 +150,7 @@ int infuse_littlefs_folder_iter(enum infuse_littlefs_folder folder, infuse_littl
 	}
 	if (atomic_get(&lfs_state.state) & LFS_STATE_FILE_ANY_OPENED) {
 		/* File already opened in the state */
-		return -EINVAL;
+		return -EBUSY;
 	}
 
 	k_mutex_lock(&lfs_state.access, K_FOREVER);
@@ -215,7 +215,7 @@ int infuse_littlefs_file_open(enum infuse_littlefs_folder folder, uint32_t file)
 	}
 	if (atomic_get(&lfs_state.state) & LFS_STATE_FILE_ANY_OPENED) {
 		/* File already opened in the state */
-		return -EINVAL;
+		return -EBUSY;
 	}
 	k_mutex_lock(&lfs_state.access, K_FOREVER);
 
@@ -279,7 +279,7 @@ int infuse_littlefs_file_create(enum infuse_littlefs_folder folder, uint32_t fil
 	}
 	if (atomic_get(&lfs_state.state) & LFS_STATE_FILE_ANY_OPENED) {
 		/* File already opened in the state */
-		return -EINVAL;
+		return -EBUSY;
 	}
 
 	k_mutex_lock(&lfs_state.access, K_FOREVER);
@@ -373,7 +373,7 @@ int infuse_littlefs_file_delete(enum infuse_littlefs_folder folder, uint32_t fil
 		return -EAGAIN;
 	}
 	if (atomic_get(&lfs_state.state) & LFS_STATE_FILE_ANY_OPENED) {
-		return -EINVAL;
+		return -EBUSY;
 	}
 	k_mutex_lock(&lfs_state.access, K_FOREVER);
 
@@ -434,7 +434,7 @@ int infuse_littlefs_fs_info(struct infuse_littlefs_fs_info *info)
 		return -EAGAIN;
 	}
 	if (atomic_get(&lfs_state.state) & LFS_STATE_FILE_ANY_OPENED) {
-		return -EINVAL;
+		return -EBUSY;
 	}
 
 	k_mutex_lock(&lfs_state.access, K_FOREVER);

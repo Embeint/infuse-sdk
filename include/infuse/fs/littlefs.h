@@ -99,7 +99,7 @@ int infuse_littlefs_init(void);
  *
  * @retval 0 on success
  * @retval -EAGAIN filesystem not mounted
- * @retval -EINVAL file open for reading or writing
+ * @retval -EBUSY file open for reading or writing
  * @retval -errno other negative error code on failure
  */
 int infuse_littlefs_fs_info(struct infuse_littlefs_fs_info *info);
@@ -143,6 +143,7 @@ void infuse_littlefs_reset(void);
  *
  * @retval >=0 size of the file in bytes
  * @retval -EAGAIN filesystem not mounted
+ * @retval -EBUSY other file open for reading or writing
  * @retval -ENOENT file does not exist
  * @retval -errno other negative error code on failure
  */
@@ -157,7 +158,7 @@ int infuse_littlefs_file_size(enum infuse_littlefs_folder folder, uint32_t file)
  *
  * @retval 0 on success
  * @retval -EAGAIN filesystem not mounted
- * @retval -EINVAL other file open for reading or writing
+ * @retval -EBUSY other file open for reading or writing
  * @retval -ENOENT file does not exist
  * @retval -errno other negative error code on failure
  */
@@ -185,7 +186,7 @@ typedef bool (*infuse_littlefs_file_cb)(enum infuse_littlefs_folder folder, uint
  *
  * @retval 0 on success
  * @retval -EAGAIN filesystem not mounted
- * @retval -EINVAL other file open for reading or writing
+ * @retval -EBUSY other file open for reading or writing
  * @retval -errno other negative error code on failure
  */
 int infuse_littlefs_folder_iter(enum infuse_littlefs_folder folder, infuse_littlefs_file_cb cb,
@@ -200,7 +201,7 @@ int infuse_littlefs_folder_iter(enum infuse_littlefs_folder folder, infuse_littl
  * @retval 0 on success
  * @retval -EAGAIN filesystem not mounted
  * @retval -ENOENT If file does not exist
- * @retval -EINVAL If previously open file is not yet closed
+ * @retval -EBUSY If previously open file is not yet closed
  * @retval -errno Other error code on failure
  */
 int infuse_littlefs_file_open(enum infuse_littlefs_folder folder, uint32_t file);
@@ -244,7 +245,7 @@ int infuse_littlefs_file_seek(uint32_t offset);
  * @retval 0 on success
  * @retval -EAGAIN filesystem not mounted
  * @retval -EEXIST If file already exists
- * @retval -EINVAL If previously open file is not yet closed
+ * @retval -EBUSY If previously open file is not yet closed
  * @retval -errno Other error code on failure
  */
 int infuse_littlefs_file_create(enum infuse_littlefs_folder folder, uint32_t file,
@@ -281,7 +282,7 @@ int infuse_littlefs_file_close(void);
  * @retval 0 on success
  * @retval -EAGAIN filesystem not mounted
  * @retval -ENOENT If file does not exist
- * @retval -EINVAL If previously open file is not yet closed
+ * @retval -EBUSY If previously open file is not yet closed
  * @retval -errno Other error code on failure
  */
 int infuse_littlefs_file_delete(enum infuse_littlefs_folder folder, uint32_t file);
@@ -303,7 +304,7 @@ int infuse_littlefs_file_delete(enum infuse_littlefs_folder folder, uint32_t fil
  * @retval 0 on success
  * @retval -EAGAIN filesystem not mounted
  * @retval -ENOENT If file does not exist
- * @retval -EINVAL If previously open file is not yet closed
+ * @retval -EBUSY If previously open file is not yet closed
  * @retval -errno Other error code on failure
  */
 int infuse_littlefs_file_crc32(enum infuse_littlefs_folder folder, uint32_t file, uint32_t max_len,
