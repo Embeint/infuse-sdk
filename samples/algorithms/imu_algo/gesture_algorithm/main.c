@@ -19,6 +19,7 @@ static void algorithm_fn(const struct zbus_channel *chan, const struct infuse_al
 
 const struct infuse_algorithm gesture_algorithm = {
 	.algorithm_id = 0x12349877,
+	.algorithm_version = 0,
 	.zbus_channel = INFUSE_ZBUS_CHAN_IMU,
 	.fn = algorithm_fn,
 };
@@ -59,8 +60,7 @@ static void algorithm_fn(const struct zbus_channel *chan, const struct infuse_al
 			printk("Failed to initialise model (%d)\n", res);
 		}
 		predicted_classes.algorithm_id = gesture_algorithm.algorithm_id;
-		predicted_classes.algorithm_version =
-			0; // to-do update when algorithm_version is added
+		predicted_classes.algorithm_version = gesture_algorithm.algorithm_version; // to-do update when algorithm_version is added
 
 		printk("Initialized model\n");
 		return;
@@ -79,6 +79,7 @@ static void algorithm_fn(const struct zbus_channel *chan, const struct infuse_al
 		input_sample[1] = (float)acc_sample->x;
 		input_sample[2] = (float)acc_sample->y;
 		input_sample[3] = (float)acc_sample->z;
+
 		/* Feed this sample pair into the model's windowing buffer */
 		res = nrf_edgeai_feed_inputs(user_model, input_sample, USER_UNIQ_INPUTS_NUM);
 		if (res == NRF_EDGEAI_ERR_INPROGRESS) {
@@ -112,9 +113,6 @@ static void algorithm_fn(const struct zbus_channel *chan, const struct infuse_al
 		}
 	}
 	if (inference_idx) {
-		predicted_classes.algorithm_id = gesture_algorithm.algorithm_id;
-		predicted_classes.algorithm_version =
-			0; // to-do update when algorithm_version is added
 		broadcast_inference(sizeof(struct tdf_algorithm_class_time_series) + inference_idx,
 				    inference_window_start, &predicted_classes);
 		inference_idx = 0;
