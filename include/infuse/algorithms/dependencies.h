@@ -49,6 +49,9 @@ int zbus_chan_finish(const struct zbus_channel *chan);
 /** printk.h: See @a printk */
 void printk(const char *fmt, ...);
 
+/** time/epoch.h: See @a epoch_time_now */
+uint64_t epoch_time_now(void);
+
 /**
  * @}
  */

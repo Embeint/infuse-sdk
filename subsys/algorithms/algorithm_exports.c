@@ -10,6 +10,8 @@
 #include <zephyr/llext/symbol.h>
 #include <zephyr/zbus/zbus.h>
 
+#include <infuse/time/epoch.h>
+
 #include <math.h>
 
 static int zbus_chan_read_no_wait(const struct zbus_channel *chan, void *msg)
@@ -31,6 +33,7 @@ EXPORT_GROUP_SYMBOL(INFUSE_ALG, zbus_chan_from_id);
 EXPORT_GROUP_SYMBOL(INFUSE_ALG, zbus_chan_const_msg);
 EXPORT_GROUP_SYMBOL(INFUSE_ALG, zbus_chan_read_no_wait);
 EXPORT_GROUP_SYMBOL(INFUSE_ALG, zbus_chan_finish);
+EXPORT_GROUP_SYMBOL(INFUSE_ALG, epoch_time_now);
 
 /* Common single-precision math functions from 'math.h'
  * Excludes the Gauss error functions 'errf' and 'erfcf'
@@ -164,3 +167,11 @@ EXPORT_GROUP_SYMBOL(FP_SOFT, __aeabi_fcmpgt);
 EXPORT_GROUP_SYMBOL(FP_SOFT, __aeabi_fcmpun);
 
 #endif /* CONFIG_FPU */
+
+/* Stubs for test configurations */
+#ifndef CONFIG_INFUSE_EPOCH_TIME
+uint64_t epoch_time_now(void)
+{
+	return 0;
+}
+#endif /* CONFIG_INFUSE_EPOCH_TIME */
