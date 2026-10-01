@@ -7,6 +7,15 @@ config ALGORITHM_RUNNER
 
 if ALGORITHM_RUNNER
 
+config ALGORITHM_RUNNER_LLEXT_LITTLEFS_LOADER
+	bool
+	depends on INFUSE_LITTLEFS
+	depends on LLEXT
+	default y
+	help
+	  Load LLEXT algorithms dynamically from the Infuse LittleFS
+	  filesystem.
+
 config ALGORITHM_RUNNER_MAX_ALGORITHMS
 	int "Maximum number of registered algorithms"
 	default 8
