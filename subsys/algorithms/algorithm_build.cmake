@@ -1,5 +1,39 @@
 # SPDX-License-Identifier: FSL-1.1-ALv2
 
+if(NOT CMAKE_C_COMPILER_LOADED)
+  if(NOT DEFINED ZEPHYR_SDK_INSTALL_DIR)
+    if(DEFINED ENV{ZEPHYR_SDK_INSTALL_DIR})
+      set(ZEPHYR_SDK_INSTALL_DIR "$ENV{ZEPHYR_SDK_INSTALL_DIR}")
+    else()
+      message(FATAL_ERROR
+        "ZEPHYR_SDK_INSTALL_DIR must be set before project() when building standalone")
+    endif()
+  endif()
+
+  set(ZEPHYR_SDK_TOOLCHAIN_DIR
+    "${ZEPHYR_SDK_INSTALL_DIR}/gnu/arm-zephyr-eabi/bin")
+  find_program(CMAKE_C_COMPILER arm-zephyr-eabi-gcc
+    HINTS ${ZEPHYR_SDK_TOOLCHAIN_DIR}
+    NO_DEFAULT_PATH
+    REQUIRED
+  )
+  find_program(CMAKE_LINKER arm-zephyr-eabi-ld
+    HINTS ${ZEPHYR_SDK_TOOLCHAIN_DIR}
+    NO_DEFAULT_PATH
+    REQUIRED
+  )
+  find_program(CMAKE_OBJCOPY arm-zephyr-eabi-objcopy
+    HINTS ${ZEPHYR_SDK_TOOLCHAIN_DIR}
+    NO_DEFAULT_PATH
+    REQUIRED
+  )
+  find_program(CMAKE_READELF arm-zephyr-eabi-readelf
+    HINTS ${ZEPHYR_SDK_TOOLCHAIN_DIR}
+    NO_DEFAULT_PATH
+    REQUIRED
+  )
+endif()
+
 file(GLOB PROFILE_FILES "${CMAKE_CURRENT_LIST_DIR}/profiles/profile_*.cmake")
 set(ALGORITHM_BUILD_DIR "${CMAKE_CURRENT_LIST_DIR}")
 
