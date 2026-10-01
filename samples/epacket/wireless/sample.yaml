@@ -12,7 +12,6 @@ common:
     - rpi_pico2/rp2350a/m33/w
     - nrf7002dk/nrf5340/cpuapp
   integration_platforms:
-    - rpi_pico/rp2040/w
     - rpi_pico2/rp2350a/m33/w
     - nrf7002dk/nrf5340/cpuapp
 tests:

@@ -97,14 +97,16 @@ Wi-Fi and Bluetooth integration
 Use :ref:`snippet-infuse-pico-wireless` to enable both wireless interfaces, or
 build :ref:`sample-epacket-wireless` for USB, BLE GATT and UDP
 telemetry. The snippet enables IPv4/DHCP and the existing KV-backed Wi-Fi
-connection manager. The USB-only sample continues to initialize the chip only
-for its LED.
+connection manager. USB-only builds leave the wireless chip disabled. The
+onboard LED uses ``gpio-leds`` on the CYW43 GPIO controller.
+RP2040 applications need another secure entropy source for Infuse security;
+Pico 2 W uses its hardware TRNG.
 
 Bluetooth uses the CYW43439 shared SPI bus rather than the UART HCI transport.
 The SDK driver loads the Raspberry Pi Bluetooth patch firmware at
 ``bt_enable()``, shares a recursive bus mutex with WHD, and uses bounded ring
-validation and stack-backed backplane transfers. The build enables shared-
-antenna coexistence in a generated copy of the pinned Murata NVRAM. Fetch the
+validation and stack-backed backplane transfers. The build enables shared antenna
+coexistence in a generated copy of the pinned Murata NVRAM. Fetch the
 additional firmware with ``west blobs fetch infuse-sdk``. The build selects
 the Pico Wi-Fi firmware with ``btsdio`` support and its matching CLM. The stock
 WHD Wi-Fi firmware does not initialize the Bluetooth shared-memory region.
@@ -158,8 +160,8 @@ Hardware validation (2026-09-30)
 ===============================
 
 The results below were recorded before the generic sample rename and review
-hardening. The updated sample has been rebuilt for both Pico W targets and
-nRF7002 DK, but hardware validation has not been repeated for this revision.
+hardening. Before the entropy-policy change, sample builds covered both Pico W targets
+and nRF7002 DK. Hardware validation has not been repeated for this revision.
 
 Pico W bring-up confirmed USB startup logs, the controller public address
 (Wi-Fi MAC + 1), legacy connectable advertising, Infuse GATT discovery, ATT
@@ -182,7 +184,8 @@ survived the update from the diagnostic to the normal application. Provisioning
 storage was unchanged.
 
 Pico W and Pico 2 W application builds and 19 CYW43 QEMU transport tests pass.
-These are additional to the 11 entropy, provisioning and LED test cases
-reported in the original Pico USB support PR (#987).
+The platform series also has QEMU tests for ROSC entropy, CYW43 GPIO and
+provisioning. Hardware validation has not been repeated after replacing the
+LED driver and changing the RP2040 entropy policy.
 Sustained coexistence, radio range and end-to-end UDP/cloud delivery have not yet
 been verified.

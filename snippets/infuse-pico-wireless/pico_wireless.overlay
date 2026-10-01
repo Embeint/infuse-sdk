@@ -21,6 +21,7 @@
 	data_logger_udp: data_logger_udp {
 		compatible = "embeint,data-logger-epacket", "embeint,data-logger";
 		epacket = <&epacket_udp>;
+
 		tdf_logger_udp: tdf_logger_udp {
 			compatible = "embeint,tdf-data-logger";
 		};
@@ -28,20 +29,20 @@
 };
 
 &pio0_spi0 {
-	cyw43_wifi: airoc-wifi@0 {
-		wifi_led: led {
-			compatible = "embeint,cyw43-led";
-			pin = <0>;
-		};
-	};
-};
-
-&cyw43_gpio {
-	status = "disabled";
+	cyw43_wifi: airoc-wifi@0 {};
 };
 
 / {
+	wifi_led: leds {
+		compatible = "gpio-leds";
+
+		wifi_led0: led_0 {
+			gpios = <&cyw43_gpio 0 GPIO_ACTIVE_HIGH>;
+		};
+	};
+
 	aliases {
+		led0 = &wifi_led0;
 		status-led = &wifi_led;
 	};
 };

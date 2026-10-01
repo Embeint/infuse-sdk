@@ -19,7 +19,11 @@ Fetch firmware before building::
    west build -b rpi_pico/rp2040/w -S infuse -S infuse-pico-wireless <application>
 
 See :ref:`sample-epacket-wireless` for a complete USB/BLE/Wi-Fi example.
-The USB-only sample retains its original configuration.
+USB-only builds leave wireless disabled. The onboard LED uses ``gpio-leds``
+over Zephyr's CYW43 GPIO controller; it needs the initialized wireless chip.
+RP2040 ROSC is not a secure entropy source. Pico W applications need another
+secure entropy source before enabling Infuse ePacket/security; the telemetry
+sample is supported on Pico 2 W with its TRNG.
 
 Bluetooth requires the initialized Wi-Fi driver even when there are no network
 credentials. The shared-bus HCI driver loads the Bluetooth patch at

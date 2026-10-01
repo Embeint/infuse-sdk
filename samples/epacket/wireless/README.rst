@@ -4,8 +4,10 @@ Wireless ePacket
 ################
 
 This sample sends announce telemetry every five seconds over USB, BLE GATT
-and Wi-Fi UDP. It supports Pico W, Pico 2 W and nRF7002 DK application-core
-builds. Network credentials are stored in the usual Infuse KV keys.
+and Wi-Fi UDP. It supports Pico 2 W and nRF7002 DK application-core builds.
+Pico W requires an additional secure entropy source; its ROSC driver leaves
+cryptographic randomness disabled. Network credentials are stored in the
+usual Infuse KV keys.
 
 The optional ``status-led`` alias identifies a Zephyr LED API device; LED
 index 0 blinks when that alias is present. The Pico wireless overlay provides
@@ -27,7 +29,6 @@ Fetch the Wi-Fi and Bluetooth firmware::
 
 Build any supported board::
 
-   west build -b rpi_pico/rp2040/w samples/epacket/wireless -d build/pico-w-wireless
    west build -b rpi_pico2/rp2350a/m33/w samples/epacket/wireless -d build/pico2-w-wireless
    west blobs fetch nrf_wifi
    west build -b nrf7002dk/nrf5340/cpuapp samples/epacket/wireless -d build/nrf7002-wireless
@@ -39,10 +40,10 @@ image is required for hardware use. Its coverage here is build-only.
 
 For Pico boards, hold BOOTSEL while connecting, then flash::
 
-   picotool load -v build/pico-w-wireless/zephyr/zephyr.uf2
+   picotool load -v build/pico2-w-wireless/zephyr/zephyr.uf2
    picotool reboot
 
-Provisioning and settings retain the flash layout from :ref:`sample-epacket-usb`
+Provisioning and settings retain the flash layout from :ref:`infuse-vendor-raspberrypi`
 and are excluded from UF2 images. Re-enter BOOTSEL manually for subsequent
 flashes. See :ref:`infuse-vendor-raspberrypi` for provisioning and identity.
 

@@ -19,7 +19,7 @@ clm_len = int(re.search(r"#define CYW43_CLM_LEN \((\d+)\)", header)[1])
 clm_offset = (fw_len + 511) // 512 * 512
 if len(image) != clm_offset + clm_len or b"-btsdio " not in image[:fw_len]:
     raise ValueError("Invalid combined firmware or missing Bluetooth shared-bus support")
-if image[clm_offset:clm_offset + 4] != b"BLOB":
+if image[clm_offset : clm_offset + 4] != b"BLOB":
     raise ValueError("Invalid CLM resource")
 for name, data in (("wifi.bin", image[:fw_len]), ("wifi.clm_blob", image[clm_offset:])):
     path = output / name
