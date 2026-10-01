@@ -87,6 +87,11 @@ uint64_t epoch_time_from_ticks(uint64_t ticks)
 	return civil;
 }
 
+uint64_t epoch_time_now(void)
+{
+	return epoch_time_from_ticks(k_uptime_ticks());
+}
+
 uint32_t epoch_period_from_array_ticks(uint64_t array_ticks, uint16_t array_num)
 {
 	if (array_num < 2) {
