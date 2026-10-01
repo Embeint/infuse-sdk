@@ -280,10 +280,7 @@ uint32_t epoch_period_from_array_ticks(uint64_t array_ticks, uint16_t array_num)
  *
  * @retval epoch_time Complete epoch time
  */
-static inline uint64_t epoch_time_now(void)
-{
-	return epoch_time_from_ticks(k_uptime_ticks());
-}
+uint64_t epoch_time_now(void);
 
 /**
  * @brief Convert a epoch time to a unix time calendar
