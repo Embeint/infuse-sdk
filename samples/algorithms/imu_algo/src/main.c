@@ -127,6 +127,7 @@ static void handle_led_clear(struct k_work *work)
 {
 	struct k_work_delayable *delayable_work = k_work_delayable_from_work(work);
 	struct led_handler *handler = CONTAINER_OF(delayable_work, struct led_handler, work);
+
 	gpio_pin_set_dt(handler->led, 0);
 }
 
@@ -154,6 +155,7 @@ struct data_logger_cb callbacks = {
 void broadcast_inference(uint8_t length, uint64_t start_ticks, const void *data)
 {
 	uint64_t epoch_time = epoch_time_from_ticks(start_ticks);
+
 	tdf_data_logger_log(TDF_DATA_LOGGER_BT_ADV | TDF_DATA_LOGGER_BT_PERIPHERAL,
 			    TDF_ALGORITHM_CLASS_TIME_SERIES, length, epoch_time, data);
 }
