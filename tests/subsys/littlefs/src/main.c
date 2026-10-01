@@ -24,6 +24,15 @@ static uint8_t test_file_contents[64];
 
 BUILD_ASSERT(IS_ENABLED(CONFIG_INFUSE_LITTLEFS), "LittleFS integration not enabled by default");
 
+static bool folder_iter_noop(enum infuse_littlefs_folder folder, uint32_t file, void *user_data)
+{
+	ARG_UNUSED(folder);
+	ARG_UNUSED(file);
+	ARG_UNUSED(user_data);
+
+	return true;
+}
+
 ZTEST(infuse_littlefs, test_init_double)
 {
 	int rc;
@@ -72,17 +81,26 @@ ZTEST(infuse_littlefs, test_create_api_usage_error)
 	rc = infuse_littlefs_file_create(INFUSE_LFS_FOLDER_GENERAL, 3, &meta);
 	zassert_equal(0, rc);
 	rc = infuse_littlefs_file_create(INFUSE_LFS_FOLDER_GENERAL, 3, &meta);
-	zassert_equal(-EINVAL, rc);
+	zassert_equal(-EBUSY, rc);
 	rc = infuse_littlefs_fs_info(&fs_state);
-	zassert_equal(-EINVAL, rc);
+	zassert_equal(-EBUSY, rc);
+	rc = infuse_littlefs_file_size(INFUSE_LFS_FOLDER_GENERAL, 3);
+	zassert_equal(-EBUSY, rc);
+	rc = infuse_littlefs_file_metadata(INFUSE_LFS_FOLDER_GENERAL, 3, &meta);
+	zassert_equal(-EBUSY, rc);
+	rc = infuse_littlefs_folder_iter(INFUSE_LFS_FOLDER_GENERAL, folder_iter_noop, NULL);
+	zassert_equal(-EBUSY, rc);
 	rc = infuse_littlefs_file_open(INFUSE_LFS_FOLDER_A_GNSS, 3);
-	zassert_equal(-EINVAL, rc);
+	zassert_equal(-EBUSY, rc);
+	rc = infuse_littlefs_file_crc32(INFUSE_LFS_FOLDER_GENERAL, 3, UINT32_MAX, &crc, buffer,
+					sizeof(buffer));
+	zassert_equal(-EBUSY, rc);
 	rc = infuse_littlefs_file_read(buffer, sizeof(buffer));
 	zassert_equal(-EINVAL, rc);
 	rc = infuse_littlefs_file_seek(0);
 	zassert_equal(-EINVAL, rc);
 	rc = infuse_littlefs_file_delete(INFUSE_LFS_FOLDER_A_GNSS, 3);
-	zassert_equal(-EINVAL, rc);
+	zassert_equal(-EBUSY, rc);
 	rc = infuse_littlefs_file_close();
 	zassert_equal(0, rc);
 
@@ -90,15 +108,15 @@ ZTEST(infuse_littlefs, test_create_api_usage_error)
 	rc = infuse_littlefs_file_open(INFUSE_LFS_FOLDER_GENERAL, 3);
 	zassert_equal(0, rc);
 	rc = infuse_littlefs_file_create(INFUSE_LFS_FOLDER_GENERAL, 3, &meta);
-	zassert_equal(-EINVAL, rc);
+	zassert_equal(-EBUSY, rc);
 	rc = infuse_littlefs_fs_info(&fs_state);
-	zassert_equal(-EINVAL, rc);
+	zassert_equal(-EBUSY, rc);
 	rc = infuse_littlefs_file_open(INFUSE_LFS_FOLDER_A_GNSS, 3);
-	zassert_equal(-EINVAL, rc);
+	zassert_equal(-EBUSY, rc);
 	rc = infuse_littlefs_file_write(buffer, sizeof(buffer));
 	zassert_equal(-EINVAL, rc);
 	rc = infuse_littlefs_file_delete(INFUSE_LFS_FOLDER_A_GNSS, 3);
-	zassert_equal(-EINVAL, rc);
+	zassert_equal(-EBUSY, rc);
 	rc = infuse_littlefs_file_close();
 	zassert_equal(0, rc);
 }

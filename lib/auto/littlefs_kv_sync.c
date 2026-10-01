@@ -62,7 +62,7 @@ static void fs_resync(struct k_work *work)
 	rc = infuse_littlefs_folder_iter(INFUSE_LFS_FOLDER_ALGORITHMS, alg_folder_cb, &alg_state);
 	if ((rc < 0) && (rc != -ENOENT)) {
 		/* Failed to iterate folder, most likely because of lock, try again after delay */
-		if (rc == -EINVAL) {
+		if (rc == -EBUSY) {
 			/* Don't spam the logs if it was the lock */
 			LOG_WRN("Failed to iterate algorithm folder (%d), rescheduling", rc);
 		} else if (rc == -EAGAIN) {
