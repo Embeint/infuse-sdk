@@ -1,6 +1,12 @@
 # SPDX-License-Identifier: FSL-1.1-ALv2
 
 if(NOT CMAKE_C_COMPILER_LOADED)
+  # Standalone algorithms are bare-metal ARM relocatable objects. Avoid host
+  # platform flags and executable link checks that require a runtime.
+  set(CMAKE_SYSTEM_NAME Generic)
+  set(CMAKE_SYSTEM_PROCESSOR arm)
+  set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
+
   if(NOT DEFINED ZEPHYR_SDK_INSTALL_DIR)
     if(DEFINED ENV{ZEPHYR_SDK_INSTALL_DIR})
       set(ZEPHYR_SDK_INSTALL_DIR "$ENV{ZEPHYR_SDK_INSTALL_DIR}")
@@ -130,6 +136,7 @@ function(algorithm_generate_targets
     message(FATAL_ERROR "algorithm_generate_targets requires SOURCES")
   endif()
 
+  set(generated_targets)
   foreach(PROFILE_FILE IN LISTS PROFILE_FILES)
     message(DEBUG "Profile file: ${PROFILE_FILE}")
 
@@ -213,6 +220,7 @@ function(algorithm_generate_targets
           -DOUTPUT_FILE=${inc_file}
           -P ${ALGORITHM_BUILD_DIR}/file2hex.cmake
         DEPENDS
+          ${obj_target}
           $<TARGET_OBJECTS:${obj_target}>
           ${target_link_files}
           ${ALGORITHM_BUILD_DIR}/file2hex.cmake
@@ -225,6 +233,13 @@ function(algorithm_generate_targets
         COMMENT "Generating ${ALG_NAME} for configuration ${PROFILE_NAME}-${FP_MODE}"
       )
       add_custom_target(${target_name} ALL DEPENDS ${inc_file})
+      list(APPEND generated_targets ${target_name})
     endforeach()
   endforeach()
+  if(ARG_NRF_EDGEAI AND NOT generated_targets)
+    message(FATAL_ERROR
+      "No nRF Edge AI algorithm targets could be generated. Set "
+      "ZEPHYR_SDK_EDGE_AI_MODULE_DIR to the sdk-edge-ai module directory "
+      "containing libraries for a supported CPU profile.")
+  endif()
 endfunction()
