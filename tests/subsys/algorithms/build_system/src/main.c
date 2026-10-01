@@ -14,11 +14,40 @@
 #include <zephyr/llext/buf_loader.h>
 
 #include <infuse/algorithms/implementation.h>
+#include <infuse/data_logger/high_level/tdf.h>
+#include <infuse/epacket/interface/epacket_dummy.h>
+#include <infuse/tdf/tdf.h>
 #include <infuse/zbus/channels.h>
 
 #include "algorithm_info.h"
 
+BUILD_ASSERT(ALGORITHM_LOGGER_EXPECTED == TDF_DATA_LOGGER_SERIAL);
+BUILD_ASSERT(ALGORITHM_TDF_ID_EXPECTED == TDF_BATTERY_STATE);
+
 INFUSE_ZBUS_CHAN_DEFINE(INFUSE_ZBUS_CHAN_BATTERY);
+
+static void validate_logged_battery(const struct tdf_battery_state *expected)
+{
+	struct k_fifo *tx_queue = epacket_dummmy_transmit_fifo_get();
+	struct tdf_buffer_state state;
+	struct tdf_parsed tdf;
+	struct net_buf *pkt;
+	int count = 0;
+
+	tdf_data_logger_flush(TDF_DATA_LOGGER_SERIAL);
+	while ((pkt = k_fifo_get(tx_queue, K_MSEC(10))) != NULL) {
+		net_buf_pull(pkt, sizeof(struct epacket_dummy_frame));
+		tdf_parse_start(&state, pkt->data, pkt->len);
+		while (tdf_parse(&state, &tdf) == 0) {
+			zassert_equal(TDF_BATTERY_STATE, tdf.tdf_id);
+			zassert_equal(sizeof(*expected), tdf.tdf_len);
+			zassert_mem_equal(expected, tdf.data, sizeof(*expected));
+			count += 1;
+		}
+		net_buf_unref(pkt);
+	}
+	zassert_equal(3, count, "Enabled mask should log once per algorithm invocation");
+}
 
 #ifdef CONFIG_TEST_ALGORITHM_BUILD_LLEXT
 static const uint8_t test_algorithm[] __aligned(sizeof(void *)) = {
@@ -73,6 +102,9 @@ ZTEST(algorithm_runner_llext, test_loading)
 	algorithm->fn(chan, algorithm, NULL);
 	zassert_equal(0, zbus_chan_claim(chan, K_NO_WAIT));
 	algorithm->fn(chan, algorithm, NULL);
+
+	/* The enabled call logs once per run; the disabled call must not log. */
+	validate_logged_battery(&battery);
 
 #ifdef CONFIG_TEST_ALGORITHM_BUILD_LLEXT
 	/* Unload the ELF */
