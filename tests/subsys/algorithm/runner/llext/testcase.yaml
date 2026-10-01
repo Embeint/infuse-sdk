@@ -1,0 +1,10 @@
+common:
+  tags: algorithm_runner
+  min_flash: 64
+  min_ram: 32
+  platform_allow:
+    - mps2/an385
+  integration_platforms:
+    - mps2/an385
+tests:
+  algorithm.runner.llext: {}
