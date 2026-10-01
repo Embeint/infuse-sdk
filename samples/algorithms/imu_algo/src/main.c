@@ -20,6 +20,7 @@
 #include <infuse/time/epoch.h>
 #include <infuse/fs/kv_store.h>
 #include <infuse/fs/kv_types.h>
+#include <infuse/fs/littlefs.h>
 #include <infuse/epacket/interface.h>
 #include <infuse/epacket/packet.h>
 #include <infuse/data_logger/high_level/tdf.h>
@@ -181,6 +182,20 @@ int main(void)
 
 	/* Start the watchdog */
 	(void)infuse_watchdog_start();
+
+#ifdef CONFIG_INFUSE_LITTLEFS
+	struct infuse_littlefs_fs_info fs_info;
+
+	/* Common boot may have already mounted the filesystem. */
+	rc = infuse_littlefs_fs_info(&fs_info);
+	if (rc == -EAGAIN) {
+		rc = infuse_littlefs_init();
+	}
+	if (rc < 0) {
+		LOG_ERR("Failed to initialise LittleFS (%d)", rc);
+		return rc;
+	}
+#endif /* CONFIG_INFUSE_LITTLEFS */
 
 #ifdef CONFIG_NETWORKING
 	conn_mgr_all_if_up(true);
