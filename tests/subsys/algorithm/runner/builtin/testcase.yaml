@@ -3,7 +3,7 @@ common:
   min_flash: 64
   min_ram: 32
 tests:
-  algorithm.runner:
+  algorithm.runner.builtin:
     platform_allow:
       - native_sim
       - mps2/an385
