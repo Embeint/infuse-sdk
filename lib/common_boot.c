@@ -19,7 +19,9 @@
 #include <infuse/fs/littlefs.h>
 #include <infuse/reboot.h>
 #include <infuse/time/epoch.h>
+#if defined(CONFIG_INFUSE_SECURITY) || defined(CONFIG_INFUSE_COMMON_BOOT_DEBUG_PORT_DISABLE)
 #include <infuse/security.h>
+#endif
 #include <infuse/drivers/watchdog.h>
 #include <infuse/bluetooth/controller_manager.h>
 

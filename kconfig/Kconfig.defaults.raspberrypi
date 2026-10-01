@@ -1,0 +1,43 @@
+# Infuse-IoT SDK Raspberry Pi defaults
+#
+# Copyright (c) 2026 Embeint Holdings Pty Ltd
+# SPDX-License-Identifier: FSL-1.1-ALv2
+
+if SOC_FAMILY_RPI_PICO
+
+configdefault HWINFO_RPI_PICO_CHIP_ID
+	# Match the RP2350 BOOTSEL serial number and picotool chipid.
+	default y
+
+configdefault ENTROPY_RP2040_ROSC
+	default y
+
+# RP2040 ROSC is not a cryptographic entropy source. Do not let Mbed TLS
+# select its timer-based test RNG through MBEDTLS_PSA_CRYPTO_LEGACY_RNG.
+# Applications with another secure source may enable these features.
+if SOC_SERIES_RP2040
+
+choice MBEDTLS_PSA_CRYPTO_RNG_SOURCE
+	# Enabling crypto must not silently fall back to test entropy.
+	default MBEDTLS_PSA_CRYPTO_EXTERNAL_RNG
+endchoice
+
+choice MBEDTLS_PSA_ITS_BACKEND
+	default MBEDTLS_PSA_ITS_BACKEND_SECURE_STORAGE
+endchoice
+
+configdefault MBEDTLS
+	default n
+
+configdefault EPACKET
+	default n
+
+configdefault DATA_LOGGER
+	default n
+
+configdefault INFUSE_RPC
+	default n
+
+endif # SOC_SERIES_RP2040
+
+endif # SOC_FAMILY_RPI_PICO
