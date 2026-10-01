@@ -45,6 +45,10 @@ typedef void (*algorithm_run_fn)(const struct zbus_channel *chan,
 struct infuse_algorithm {
 	/* Unique algorithm identifier */
 	uint32_t algorithm_id;
+	/* Algorithm implementation version */
+	uint16_t algorithm_version;
+	/* Currently unused struct padding */
+	uint16_t reserved;
 	/* Primary channel that triggers algorithm run */
 	uint32_t zbus_channel;
 	/* Algorithm arguments */
