@@ -60,7 +60,7 @@ static void algorithm_fn(const struct zbus_channel *chan, const struct infuse_al
 			printk("Failed to initialise model (%d)\n", res);
 		}
 		predicted_classes.algorithm_id = gesture_algorithm.algorithm_id;
-		predicted_classes.algorithm_version = gesture_algorithm.algorithm_version; // to-do update when algorithm_version is added
+		predicted_classes.algorithm_version = gesture_algorithm.algorithm_version;
 
 		printk("Initialized model\n");
 		return;
