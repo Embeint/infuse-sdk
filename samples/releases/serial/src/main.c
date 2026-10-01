@@ -53,7 +53,7 @@ int main(void)
 	/* Gateway receive handlers */
 	epacket_set_receive_handler(epacket_serial, serial_backhaul_handler);
 
-	/* Always listening on Bluetooth and serial */
+	/* Always listening on serial */
 	epacket_receive(epacket_serial, K_FOREVER);
 
 	/* Send key identifiers on boot */
@@ -67,16 +67,27 @@ int main(void)
 	task_runner_start_auto_iterate();
 
 #if DT_NODE_HAS_STATUS_OKAY(DT_ALIAS(led0))
-	const struct gpio_dt_spec led = GPIO_DT_SPEC_GET(DT_ALIAS(led0), gpios);
+	/* The LED controller may be omitted from a peripheral-free build. */
+	const struct gpio_dt_spec led = {
+		.port = device_get_binding(DEVICE_DT_NAME(DT_GPIO_CTLR(DT_ALIAS(led0), gpios))),
+		.pin = DT_GPIO_PIN(DT_ALIAS(led0), gpios),
+		.dt_flags = DT_GPIO_FLAGS(DT_ALIAS(led0), gpios),
+	};
+	int rc = gpio_is_ready_dt(&led) ? gpio_pin_configure_dt(&led, GPIO_OUTPUT_INACTIVE)
+					: -ENODEV;
 
-	/* Blink LED once a second as proof of life */
-	gpio_pin_configure_dt(&led, GPIO_OUTPUT_INACTIVE);
-	while (1) {
-		gpio_pin_set_dt(&led, 1);
+	/* Blink LED once a second as proof of life when it is available. */
+	while (rc == 0) {
+		rc = gpio_pin_set_dt(&led, 1);
+		if (rc < 0) {
+			break;
+		}
 		k_sleep(K_MSEC(10));
-		gpio_pin_set_dt(&led, 0);
+		rc = gpio_pin_set_dt(&led, 0);
 		k_sleep(K_MSEC(990));
 	}
+	LOG_WRN("Optional LED unavailable (%d)", rc);
+	k_sleep(K_FOREVER);
 #else
 	/* No more work to do in this context */
 	k_sleep(K_FOREVER);

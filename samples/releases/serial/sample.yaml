@@ -3,22 +3,34 @@ sample:
   name: serial
 common:
   build_only: true
-  filter: dt_compat_enabled("embeint,epacket-serial")
+  filter: CONFIG_EPACKET_INTERFACE_SERIAL
   required_snippets:
-    - infuse
+  - infuse
   depends_on:
-    - watchdog
-  integration_platforms:
-    - nrf52840dk/nrf52840
-    - nrf9160dk/nrf9160/ns
-    # Temporarily disable this due to a mismatch between snippet platform name
-    # discovery, twister name validations and board.yaml naming. Should be
-    # resolved on Zephyr 4.0.
-    # - nucleo_l432kc/stm32l432xx
+  - watchdog
 tests:
   sample.releases.serial:
     tags: gateway
+    integration_platforms:
+    - nrf52840dk/nrf52840
+    - nrf9160dk/nrf9160/ns
   sample.releases.serial.sysbuild:
     tags: gateway
     sysbuild: true
     filter: not CONFIG_BUILD_WITH_TFM
+    integration_platforms:
+    - nrf52840dk/nrf52840
+    - nrf9160dk/nrf9160/ns
+  sample.releases.serial.pico_usb:
+    tags:
+    - gateway
+    - usb
+    required_snippets:
+    - infuse
+    - usb
+    integration_platforms:
+    - rpi_pico2/rp2350a/m33
+    - rpi_pico2/rp2350a/m33/w
+    platform_allow:
+    - rpi_pico2/rp2350a/m33
+    - rpi_pico2/rp2350a/m33/w
