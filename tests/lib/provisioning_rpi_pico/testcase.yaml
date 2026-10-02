@@ -1,0 +1,7 @@
+tests:
+  lib.provisioning.rpi_pico:
+    tags: provisioning identifiers
+    platform_allow:
+      - mps2/an385
+    integration_platforms:
+      - mps2/an385
