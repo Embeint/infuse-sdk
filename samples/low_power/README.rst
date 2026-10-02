@@ -18,5 +18,6 @@ The other targets are ``rpi_pico/rp2040``, ``rpi_pico2/rp2350a/m33`` and
 keep the board active during idle-power validation. W-model onboard LEDs
 remain inactive, and no wireless firmware blobs are required.
 
-See :ref:`infuse-vendor-raspberrypi` for provisioning and the RP2040
-randomness limitation.
+Use ``samples/releases/serial`` with ``-S usb`` for USB logging, telemetry and
+RPC bring-up. See :ref:`infuse-vendor-raspberrypi` for provisioning and the
+RP2040 randomness limitation.

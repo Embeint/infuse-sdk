@@ -3,8 +3,10 @@
 Raspberry Pi Pico
 #################
 
-The ``infuse`` snippet supports Pico, Pico W, Pico 2 and Pico 2 W.
-Use ``samples/low_power`` for idle-power validation on all four boards.
+The ``infuse`` and ``usb`` snippets support Pico, Pico W, Pico 2 and Pico 2 W.
+Use ``samples/low_power`` without USB for idle-power validation, or
+``samples/releases/serial`` with ``-S usb`` for logging, telemetry and RPC
+on all four boards.
 The Pico HAL is imported at the revision pinned by the SDK's Zephyr manifest.
 
 Identity and storage
@@ -87,9 +89,10 @@ The CYW43 GPIO driver sends a mask/value pair and preserves unrelated pins.
 GPIO calls must run in thread context and report unavailable hardware or
 transport failures.
 
-Applications that leave networking and AIROC disabled need no wireless firmware
-blobs. Enable networking and Wi-Fi explicitly in a wireless profile, select the
-appropriate firmware, and fetch it with::
+USB-only applications leave networking and AIROC disabled and need no wireless
+firmware blobs. The serial sample continues without an unavailable LED. Enable
+networking and Wi-Fi explicitly in a wireless profile, select the appropriate
+firmware, and fetch it with::
 
    west blobs fetch hal_infineon --allow-regex '.*43439A0\.(bin|clm_blob)$'
 
