@@ -1,0 +1,10 @@
+# Copyright (c) 2026 Embeint Holdings Pty Ltd
+# SPDX-License-Identifier: FSL-1.1-ALv2
+
+board:
+  extend: esp32c6_lcd_1_47
+  variants:
+    - name: flash8m
+      qualifier: esp32c6/hpcore
+    - name: flash8m
+      qualifier: esp32c6/lpcore
