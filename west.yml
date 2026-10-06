@@ -16,12 +16,14 @@ manifest:
 
   projects:
     - name: zephyr
-      revision: 9abef55d250aeb34063db41b50735432af066473
+      # fix/esp32c6-board-ledc-4.4.1
+      revision: 4f8e293c46c71b2a4e789f8744365d5ec4db0bcf
       # Limit imported repositories to reduce clone time
       import:
         name-allowlist:
           - cmsis-dsp
           - cmsis_6
+          - hal_espressif
           - hal_nordic
           - hal_st
           - hal_stm32
