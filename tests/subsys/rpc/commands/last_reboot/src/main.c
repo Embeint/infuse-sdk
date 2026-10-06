@@ -137,6 +137,16 @@ ZTEST(rpc_command_last_reboot, test_reboot_query)
 		zassert_not_equal(0, response->epoch_time);
 		/* Expect a full exception stack frame to be part of the response */
 		zassert_equal(sizeof(struct arch_esf) / sizeof(uint32_t), esf_values);
+		struct arch_esf esf;
+
+		memcpy(&esf, response->esf, sizeof(esf));
+#ifdef CONFIG_ARM
+		zassert_equal(esf.basic.pc, response->param_1);
+		zassert_equal(esf.basic.lr, response->param_2);
+#elif defined(CONFIG_RISCV)
+		zassert_equal(esf.mepc, response->param_1);
+		zassert_equal(esf.ra, response->param_2);
+#endif
 		net_buf_unref(rsp);
 		break;
 	default:

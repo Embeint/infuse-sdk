@@ -51,8 +51,8 @@ ZTEST(tdf_util, test_bt_addr_conv)
 
 ZTEST(tdf_util, test_reboot_info)
 {
-	struct infuse_reboot_state state;
-	struct tdf_reboot_info tdf;
+	struct infuse_reboot_state state = {0};
+	struct tdf_reboot_info tdf = {0};
 
 	/* Generic storage */
 	state.reason = INFUSE_REBOOT_MCUMGR;
@@ -109,6 +109,19 @@ ZTEST(tdf_util, test_reboot_info)
 	zassert_equal(state.info.exception_full.basic.pc, tdf.param_1);
 	zassert_equal(state.info.exception_full.basic.lr, tdf.param_2);
 #endif /* CONFIG_ARM */
+#ifdef CONFIG_RISCV
+	state.reason = K_ERR_ARCH_START;
+	state.info_type = INFUSE_REBOOT_INFO_EXCEPTION_ESF;
+	state.info.exception_full.mepc = 0x42012344;
+	state.info.exception_full.ra = 0x42023456;
+	tdf_reboot_info_from_state(&state, &tdf);
+
+	zassert_equal(state.reason, tdf.reason);
+	zassert_equal(state.uptime, tdf.uptime);
+	zassert_equal(state.hardware_reason, tdf.hardware_flags);
+	zassert_equal(state.info.exception_full.mepc, tdf.param_1);
+	zassert_equal(state.info.exception_full.ra, tdf.param_2);
+#endif /* CONFIG_RISCV */
 #ifdef CONFIG_ARCH_POSIX
 	state.reason = K_ERR_ARCH_START;
 	state.info_type = INFUSE_REBOOT_INFO_EXCEPTION_ESF;
