@@ -178,9 +178,12 @@ static void reboot_info_print(int query_rc)
 #ifdef CONFIG_ARM
 		LOG_INF("\t      PC: %08X", reboot_state.info.exception_full.basic.pc);
 		LOG_INF("\t      LR: %08X", reboot_state.info.exception_full.basic.lr);
+#elif defined(CONFIG_RISCV)
+		LOG_INF("\t      PC: %08lX", reboot_state.info.exception_full.mepc);
+		LOG_INF("\t      RA: %08lX", reboot_state.info.exception_full.ra);
 #else
 		LOG_INF("\t     ESF: Unknown");
-#endif /* CONFIG_ARM */
+#endif
 		break;
 	case INFUSE_REBOOT_INFO_WATCHDOG:
 		LOG_INF("\t  Wdog 1: %08X", reboot_state.info.watchdog.info1);
