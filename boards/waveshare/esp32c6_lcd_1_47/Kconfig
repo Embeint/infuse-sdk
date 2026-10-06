@@ -1,0 +1,12 @@
+# Copyright (c) 2026 Embeint Holdings Pty Ltd
+# SPDX-License-Identifier: FSL-1.1-ALv2
+
+config HEAP_MEM_POOL_ADD_SIZE_BOARD
+	default 4096 if BOARD_ESP32C6_LCD_1_47_ESP32C6_HPCORE_FLASH8M
+	default 256 if BOARD_ESP32C6_LCD_1_47_ESP32C6_LPCORE_FLASH8M
+
+config DMA
+	default y if WS2812_STRIP_UART
+
+config COUNTER
+	default y if PM
