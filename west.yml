@@ -30,6 +30,7 @@ manifest:
           - hostap
           - libmetal
           - littlefs
+          - lvgl
           - lora-basics-modem
           - loramac-node
           - fatfs
