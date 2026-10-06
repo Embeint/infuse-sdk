@@ -32,6 +32,21 @@ of device metadata.
 
 Hardware provisioning is performed using the ``infuse provision`` command, see :ref:`python_provision`.
 
+ESP32-C6 identity storage
+=========================
+
+The hardware identifier is the six-byte factory base MAC. The 64-bit Infuse
+ID is stored little-endian in USER_DATA eFuse bits 0..63 and survives a full
+flash erase. Firmware only reads eFuses. A zero ID selects the local
+``0xffff`` namespace derived from the factory MAC; read failures and IDs in
+that reserved namespace return the invalid-ID sentinel.
+
+Provisioning uses the existing cloud hardware lookup to obtain the Infuse
+ID, then programs it once into a blank USER_DATA block and verifies the
+readback. Reserve the whole block: its Reed-Solomon encoding prevents later
+writes, including adding a custom MAC. Mutable configuration remains in KV
+storage.
+
 Associated Metadata
 ===================
 

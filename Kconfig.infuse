@@ -32,6 +32,7 @@ config INFUSE_APPLICATION_NAME
 rsource "kconfig/Kconfig.defaults.core"
 rsource "kconfig/Kconfig.defaults.nrf"
 rsource "kconfig/Kconfig.defaults.stm32"
+rsource "kconfig/Kconfig.defaults.espressif"
 rsource "kconfig/Kconfig.defaults.sensor"
 rsource "kconfig/Kconfig.defaults.log"
 rsource "kconfig/Kconfig.defaults.memfault"
