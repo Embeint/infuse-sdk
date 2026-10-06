@@ -9,6 +9,7 @@ choice EPACKET_INTERFACE_SERIAL_BACKEND
 	depends on EPACKET_CRYPTO
 	default EPACKET_INTERFACE_SERIAL_BACKEND_RTT if USE_SEGGER_RTT
 	default EPACKET_INTERFACE_SERIAL_BACKEND_INT if USB_CDC_ACM
+	default EPACKET_INTERFACE_SERIAL_BACKEND_INT if UART_ESP32
 	default EPACKET_INTERFACE_SERIAL_BACKEND_ASYNC if UART_ASYNC_API
 	default EPACKET_INTERFACE_SERIAL_BACKEND_INT
 
@@ -41,13 +42,15 @@ config EPACKET_INTERFACE_SERIAL_BACKEND_INT_SINGLE_BYTE_SEND
 	bool "Send serial ePacket frames one byte at a time"
 	depends on EPACKET_INTERFACE_SERIAL_BACKEND_INT
 	default y if UART_CMSDK_APB
+	default y if UART_ESP32
 	help
 	  By default, serial ePacket frames can only be sent when the entire
 	  frame can be transmitted at once, in order to prevent packet corruption
 	  due to interleaved bytes. Enabling this option allows sending frames one
 	  byte at a time, at the cost of introducing potential packet corruption.
-	  By default this is only enabled for the emulated UART backend, as it
-	  can send N bytes in a single IRQ loop due to its instantaneous send.
+	  Enabled for the emulated UART backend, which can send N bytes in a
+	  single IRQ loop, and ESP32 UARTs, which report readiness as a boolean
+	  rather than the number of bytes the FIFO can accept.
 
 config EPACKET_INTERFACE_SERIAL_BACKEND_ASYNC_RX_BUFFER
 	int "Size of the ePacket async receive buffers"
