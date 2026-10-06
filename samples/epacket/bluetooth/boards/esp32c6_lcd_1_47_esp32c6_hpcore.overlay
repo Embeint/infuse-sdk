@@ -1,0 +1,8 @@
+/* SPDX-License-Identifier: FSL-1.1-ALv2 */
+
+/* The pinned C6 radio driver cannot keep Bluetooth active in light sleep.
+ * Retain the PM framework and device PM without entering that system state.
+ */
+&cpu0 {
+	/delete-property/ cpu-power-states;
+};
