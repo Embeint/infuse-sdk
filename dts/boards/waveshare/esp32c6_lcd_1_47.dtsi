@@ -1,0 +1,177 @@
+/*
+ * Copyright (c) 2026 Embeint Holdings Pty Ltd
+ * SPDX-License-Identifier: FSL-1.1-ALv2
+ */
+
+#include <zephyr/dt-bindings/led/led.h>
+#include <zephyr/dt-bindings/mipi_dbi/mipi_dbi.h>
+#include <zephyr/dt-bindings/pwm/pwm.h>
+#include <boards/waveshare/esp32c6_lcd_1_47-pinctrl.dtsi>
+
+/ {
+	chosen {
+		zephyr,display = &lcd;
+		zephyr,led-strip = &rgb_led;
+		zephyr,wifi = &wifi;
+		zephyr,ieee802154 = &ieee802154;
+	};
+
+	aliases {
+		/delete-property/ led0;
+		led-strip = &rgb_led;
+		pwm-led0 = &lcd_backlight;
+		display-backlight = &lcd_backlight;
+		watchdog0 = &wdt0;
+		i2c-0 = &i2c0;
+	};
+
+	/delete-node/ leds;
+
+	backlight: backlight {
+		compatible = "pwm-leds";
+		lcd_backlight: lcd_backlight {
+			label = "LCD backlight";
+			pwms = <&ledc0 0 PWM_USEC(200) PWM_POLARITY_NORMAL>;
+		};
+	};
+
+	mipi_dbi {
+		compatible = "zephyr,mipi-dbi-spi";
+		spi-dev = <&spi2>;
+		dc-gpios = <&gpio0 15 GPIO_ACTIVE_HIGH>;
+		reset-gpios = <&gpio0 21 GPIO_ACTIVE_LOW>;
+		write-only;
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		lcd: lcd@0 {
+			compatible = "sitronix,st7789v";
+			reg = <0>;
+			mipi-max-frequency = <12000000>;
+			mipi-mode = "MIPI_DBI_MODE_SPI_4WIRE";
+			width = <172>;
+			height = <320>;
+			x-offset = <34>;
+			y-offset = <0>;
+			vcom = <0x1a>;
+			gctrl = <0x75>;
+			vrhs = <0x13>;
+			vdvs = <0x20>;
+			/* Match the vendor's final mirror_x=true, mirror_y=false setting. */
+			mdac = <0x40>;
+			lcm = <0x80>;
+			colmod = <0x55>;
+			gamma = <0x0f>;
+			porch-param = [0c 0c 00 33 33];
+			cmd2en-param = [01 ff];
+			pwctrl1-param = [a4 a1];
+			pvgam-param = [d0 0d 14 0d 0d 09 38 44 4e 3a 17 18 2f 30];
+			nvgam-param = [d0 09 0f 08 07 14 37 44 4d 38 15 16 2c 2e];
+			ram-param = [00 e8];
+			rgb-param = [cd 08 14];
+		};
+	};
+};
+
+/* UART1 generates WS2812 timing without occupying the shared LCD/SD SPI bus. */
+&uart1 {
+	status = "okay";
+	current-speed = <2400000>;
+	data-bits = <7>;
+	stop-bits = "1";
+	tx-invert;
+	pinctrl-0 = <&uart1_rgb>;
+	pinctrl-names = "default";
+	dmas = <&dma 1>, <&dma 0>;
+	dma-names = "tx", "rx";
+
+	rgb_led: rgb_led {
+		compatible = "worldsemi,ws2812-uart";
+		chain-length = <1>;
+		color-mapping = <LED_COLOR_ID_GREEN LED_COLOR_ID_RED LED_COLOR_ID_BLUE>;
+		one-symbol = <6>;
+		zero-symbol = <4>;
+		bits-per-symbol = <3>;
+		reset-delay = <280>;
+	};
+};
+
+&spi2 {
+	status = "okay";
+	pinctrl-0 = <&spi2_default>;
+	pinctrl-names = "default";
+	cs-gpios = <&gpio0 14 GPIO_ACTIVE_LOW>, <&gpio0 4 GPIO_ACTIVE_LOW>;
+	#address-cells = <1>;
+	#size-cells = <0>;
+
+	sdhc: sdhc@1 {
+		compatible = "zephyr,sdhc-spi-slot";
+		reg = <1>;
+		spi-max-frequency = <12000000>;
+		status = "okay";
+
+		mmc {
+			compatible = "zephyr,sdmmc-disk";
+			disk-name = "SD";
+			status = "okay";
+		};
+	};
+};
+
+&ledc0 {
+	status = "okay";
+	/* The backlight must continue its duty cycle during CPU light sleep. */
+	sleep-keep-alive;
+	pinctrl-0 = <&ledc0_default>;
+	pinctrl-names = "default";
+	#address-cells = <1>;
+	#size-cells = <0>;
+	channel@0 {
+		reg = <0>;
+		timer = <0>;
+	};
+};
+
+/* Optional external I2C devices on the exposed GPIO0/1 header pins. */
+&i2c0 {
+	clock-frequency = <I2C_BITRATE_FAST>;
+	pinctrl-0 = <&i2c0_default>;
+	pinctrl-names = "default";
+};
+
+&dma {
+	status = "okay";
+};
+
+&trng0 {
+	status = "okay";
+};
+
+&wdt0 {
+	status = "okay";
+};
+
+&wifi {
+	status = "okay";
+};
+
+&esp32_bt_hci {
+	status = "okay";
+};
+
+&ieee802154 {
+	status = "okay";
+};
+
+&adc0 {
+	status = "okay";
+};
+
+&coretemp {
+	status = "okay";
+};
+
+&rtc_timer {
+	status = "okay";
+	wakeup-source;
+};

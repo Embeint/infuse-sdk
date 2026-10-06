@@ -1,0 +1,16 @@
+# Copyright (c) 2026 Embeint Holdings Pty Ltd
+# SPDX-License-Identifier: FSL-1.1-ALv2
+identifier: esp32c6_lcd_1_47/esp32c6/lpcore/flash8m
+name: Waveshare ESP32-C6-LCD-1.47 LP core (8 MB)
+vendor: waveshare
+type: mcu
+arch: riscv
+toolchain:
+  - zephyr
+supported:
+  - cpu
+  - uart
+  - serial
+testing:
+  only_tags:
+    - introduction
