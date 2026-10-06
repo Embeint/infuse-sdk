@@ -95,6 +95,9 @@ jobs:
 
         west init -l . || true
         west config --global update.narrow true
+        if [ -e ../zephyr/.git ]; then
+          git -C ../zephyr reset --hard HEAD
+        fi
         west update --path-cache /github/cache/embeint
         west forall -c 'git reset --hard HEAD'
 
