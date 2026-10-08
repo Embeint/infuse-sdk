@@ -79,7 +79,7 @@ bool cartesian_point_in_polygon(struct cartesian_point_2d point,
 	int intersections = 0;
 
 	if (vertices < 3) {
-		/* Polygon requires at least 3 verticies */
+		/* Polygon requires at least 3 vertices */
 		return false;
 	}
 

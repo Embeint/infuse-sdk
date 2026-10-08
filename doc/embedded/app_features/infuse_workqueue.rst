@@ -10,7 +10,7 @@ workqueue for small durations (<100ms).
 .. warning::
 
     The Infuse workqueue is the context used by :c:func:`task_runner_start_auto_iterate`
-    and task runner workqueue tasks, so it is crtical that blocking operations complete
+    and task runner workqueue tasks, so it is critical that blocking operations complete
     within 1 second to ensure consistent application operation.
 
 API Reference

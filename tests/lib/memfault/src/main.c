@@ -249,7 +249,7 @@ ZTEST(memfault_integration, test_epacket_dump)
 		zassert_equal(0, rc);
 		zassert_equal((enum infuse_reboot_reason)K_ERR_ARM_USAGE_DIV_0,
 			      reboot_state.reason);
-		/* Trigger annother reboot */
+		/* Trigger another reboot */
 		send_fault_command(0, K_ERR_STACK_CHK_FAIL);
 		k_sleep(K_MSEC(100));
 		zassert_unreachable("K_ERR_STACK_CHK_FAIL did not trigger exception");
@@ -265,7 +265,7 @@ ZTEST(memfault_integration, test_epacket_dump)
 		rc = infuse_common_boot_last_reboot(&reboot_state);
 		zassert_equal(0, rc);
 		zassert_equal((enum infuse_reboot_reason)K_ERR_STACK_CHK_FAIL, reboot_state.reason);
-		/* Trigger annother reboot */
+		/* Trigger another reboot */
 		send_fault_command(0, K_ERR_STACK_CHK_FAIL);
 		k_sleep(K_MSEC(100));
 		zassert_unreachable("K_ERR_STACK_CHK_FAIL did not trigger exception");
@@ -281,7 +281,7 @@ ZTEST(memfault_integration, test_epacket_dump)
 		rc = infuse_common_boot_last_reboot(&reboot_state);
 		zassert_equal(0, rc);
 		zassert_equal((enum infuse_reboot_reason)K_ERR_STACK_CHK_FAIL, reboot_state.reason);
-		/* Trigger annother reboot */
+		/* Trigger another reboot */
 		send_fault_command(0, K_ERR_STACK_CHK_FAIL);
 		k_sleep(K_MSEC(100));
 		zassert_unreachable("K_ERR_STACK_CHK_FAIL did not trigger exception");
@@ -344,7 +344,7 @@ ZTEST(memfault_integration, test_epacket_dump)
 		/* Validate chunks are dumped (Reboot info should be small) */
 		expect_memfault_chunks(false, 200, 300);
 
-		/* Trigger annother fault */
+		/* Trigger another fault */
 		send_fault_command(0, K_ERR_STACK_CHK_FAIL);
 		k_sleep(K_MSEC(100));
 		zassert_unreachable("K_ERR_STACK_CHK_FAIL did not trigger exception");
@@ -373,7 +373,7 @@ ZTEST(memfault_integration, test_epacket_dump)
 		/* Run the interface state callback */
 		epacket_dummy_set_interface_state(epacket_dummy, false);
 
-		/* Trigger annother fault */
+		/* Trigger another fault */
 		send_fault_command(0, K_ERR_STACK_CHK_FAIL);
 		k_sleep(K_MSEC(100));
 		zassert_unreachable("K_ERR_STACK_CHK_FAIL did not trigger exception");

@@ -117,7 +117,7 @@ bool task_schedule_should_start(const struct task_schedule *schedule,
 		return false;
 	}
 
-	/* Valdity based on application state */
+	/* Validity based on application state */
 	if (validity_masked == TASK_VALID_NEVER) {
 		return false;
 	}
@@ -194,7 +194,7 @@ bool task_schedule_should_terminate(const struct task_schedule *schedule,
 		return true;
 	}
 
-	/* Valdity based on application state */
+	/* Validity based on application state */
 	if (validity_masked == TASK_VALID_NEVER) {
 		return true;
 	}

@@ -51,7 +51,7 @@ uint64_t vendor_infuse_device_id(void)
 
 #ifdef HAS_DEVICEADDR
 	if (readout.infuse_device_id == UINT64_MAX) {
-		/* Device not provisioned, generate a locally administered address fom the Bluetooth
+		/* Device not provisioned, generate a locally administered address from the Bluetooth
 		 * address
 		 */
 		const uint64_t bt_addr = BLUETOOTH_STATIC_RANDOM_PREFIX |

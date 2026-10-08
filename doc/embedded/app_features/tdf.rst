@@ -116,7 +116,7 @@ Diff Array
 
 The :c:enumerator:`TDF_ARRAY_DIFF` is an extension of :c:enumerator:`TDF_ARRAY_TIME`, which relies
 on struct fields being close in value to each other and implicit knowledge about the structure layout
-to achieve additional compression. Consider the following arbitarary TDF definition:
+to achieve additional compression. Consider the following arbitrary TDF definition:
 
 .. code-block:: c
 

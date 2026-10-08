@@ -25,7 +25,7 @@ extern "C" {
 /** @brief Test device ID with fixed keys that cloud knows about */
 #define INFUSE_TEST_DEVICE_ID 0xFFFFFFFFFFFFFFFDULL
 
-/** @brief Address prefix for locally managed addesses */
+/** @brief Address prefix for locally managed addresses */
 #define INFUSE_LOCALLY_MANAGED_PREFIX 0xFFFF000000000000ULL
 
 /** @brief Top two bits of a static random Bluetooth address must always be set */

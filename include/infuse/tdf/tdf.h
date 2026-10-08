@@ -41,7 +41,7 @@ enum tdf_data_format {
 	TDF_DATA_FORMAT_SINGLE,
 	/** Time array with period */
 	TDF_DATA_FORMAT_TIME_ARRAY,
-	/** Array based on sample indicies */
+	/** Array based on sample indices */
 	TDF_DATA_FORMAT_IDX_ARRAY,
 	/** 16 bit data, 8 bit diffs */
 	TDF_DATA_FORMAT_DIFF_ARRAY_16_8,

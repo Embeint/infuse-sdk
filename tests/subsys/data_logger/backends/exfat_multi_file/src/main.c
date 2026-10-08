@@ -108,7 +108,7 @@ static void test_sequence(bool reinit)
 #ifdef CONFIG_DISK_DRIVER_SDMMC
 	uint32_t max_blocks = 50;
 #else
-	/* We lose an unpredicable number of blocks to file allocation tables.
+	/* We lose an unpredictable number of blocks to file allocation tables.
 	 * Actual loss depends on the size of binary files vs partition size.
 	 * Treat 90% storage as a pass (due to small block sizes in testing).
 	 */
@@ -394,7 +394,7 @@ ZTEST(data_logger_exfat, test_reset)
 	data_logger_get_state(logger, &state);
 	zassert_equal(5, state.current_block);
 
-	/* Delete the sentinal file */
+	/* Delete the sentinel file */
 	snprintf(filename, sizeof(filename), "%s:DELETE_TO_RESET.txt", DISK_NAME);
 	zassert_equal(FR_OK, f_unlink(filename));
 

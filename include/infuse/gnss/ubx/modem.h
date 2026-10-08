@@ -305,7 +305,7 @@ int ubx_modem_send_async_poll(struct ubx_modem_data *modem, uint8_t message_clas
  * When CONFIG_GNSS_UBX_RAW_FRAME_HANDLER is enabled, the application must supply an
  * implementation of this function.
  *
- * @param frame Pointer to the receieved UBX frame
+ * @param frame Pointer to the received UBX frame
  * @param total_len Total length of the UBX frame (including headers + checksum)
  */
 void ubx_modem_raw_frame_handler(struct ubx_frame *frame, uint16_t total_len);

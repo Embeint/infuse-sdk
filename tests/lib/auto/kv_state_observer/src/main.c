@@ -104,7 +104,7 @@ ZTEST(kv_state_observer, test_led_suppress)
 	rc = KV_STORE_WRITE(KV_KEY_LED_DISABLE_DAILY_TIME_RANGE, &time_limits);
 	zassert_equal(sizeof(time_limits), rc);
 
-	/* Time is outside the supression window (just) */
+	/* Time is outside the suppression window (just) */
 	zassert_false(infuse_state_get(INFUSE_STATE_LED_SUPPRESS));
 
 	/* Naturally rolls over into suppression window */

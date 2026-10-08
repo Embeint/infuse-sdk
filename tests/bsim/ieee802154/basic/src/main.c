@@ -92,7 +92,7 @@ static int send(struct test_cfg *cfg)
 		goto end;
 	}
 
-	/* Data payload, 0xabcd pan ID, destination bradcast broadcast */
+	/* Data payload, 0xabcd pan ID, destination broadcast */
 	net_buf_add_mem(buf, mhr, sizeof(mhr));
 	net_buf_add_mem(buf, cfg->ieee_addr, sizeof(cfg->ieee_addr));
 	net_buf_add_mem(buf, data, sizeof(data));

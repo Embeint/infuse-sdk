@@ -5,7 +5,7 @@ ECDH Shared Secret Generation
 
 Demonstration of the shared secret generation through Elliptic-curve Diffie–Hellman.
 Both device and cloud end up with the same shared secret, with only the public keys being known.
-Device can regenerate local key-pair as often as it wishes, cloud can recalulate the shared secret
+Device can regenerate local key-pair as often as it wishes, cloud can recalculate the shared secret
 after only querying the public key.
 
 With a fixed key-pair for the cloud, the device can be sure of the authenticity of the data (has

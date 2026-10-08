@@ -542,7 +542,7 @@ static void main_connect_discover_nonexistant(void)
 		conn = NULL;
 	}
 
-	PASS("Connect discover nonexistant passed\n\n");
+	PASS("Connect discover nonexistent passed\n\n");
 }
 
 static void main_connect_discover_does_doesnt(void)

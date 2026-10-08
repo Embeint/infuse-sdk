@@ -12,8 +12,8 @@ and can therefore be parsed in isolation.
 Logger Types
 ************
 
-Peristent Loggers
-=================
+Persistent Loggers
+==================
 
 Persistent loggers save data to some location that enables data read-back. This
 is typically a SPI-NOR flash device or an external SD card (for high datarate

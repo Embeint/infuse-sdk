@@ -220,7 +220,7 @@ static int bq25798_channel_get(const struct device *dev, enum sensor_channel cha
 		rth = config->ts_rt1 / (inv_ts - 1 - config->ts_rt1_rt2_ratio);
 		/* Convert to temperature (Kelvin) */
 		val_float = config->ntc_beta / logf(rth / data->ts_log_divisor);
-		/* Report in degrees celcius */
+		/* Report in degrees Celsius */
 		rc = sensor_value_from_float(val, val_float - 273.15f);
 		break;
 	}

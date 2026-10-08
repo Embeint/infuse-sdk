@@ -42,7 +42,7 @@ void environmental_task_fn(struct k_work *work);
  * @param define_mem Define memory
  * @param define_config Define task
  * @param env_primary Environmental sensing device bound to task (Primary)
- * @param env_secondary Environmental sensing device bound to task (Seconday, optional)
+ * @param env_secondary Environmental sensing device bound to task (Secondary, optional)
  */
 #define ENVIRONMENTAL_TASK(define_mem, define_config, env_primary, env_secondary)                  \
 	IF_ENABLED(define_mem, (const struct task_environmental_devices _env_task_devices = {      \

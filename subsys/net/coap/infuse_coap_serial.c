@@ -67,7 +67,7 @@ int infuse_coap_download(int socket, const char *resource, size_t file_size,
 	coap_block_transfer_init(&blk_ctx, block_size, file_size);
 
 	while (next_block) {
-		/* Minimum work area size should gaurantee adding these headers cannot fail */
+		/* Minimum work area size should guarantee adding these headers cannot fail */
 		sys_rand_get(&tx_token, sizeof(tx_token));
 		pkt_id = coap_next_id();
 		rc = coap_packet_init(&request, working_mem, working_size, COAP_VERSION_1,

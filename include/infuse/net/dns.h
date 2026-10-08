@@ -66,7 +66,7 @@ struct infuse_async_dns_context {
 	infuse_async_dns_cb cb;
 	/* DNS query ID (Internal use) */
 	uint16_t _dns_id;
-	/* Arbitarary user context */
+	/* Arbitrary user context */
 	void *user_data;
 };
 

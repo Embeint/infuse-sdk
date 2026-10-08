@@ -22,7 +22,7 @@ algorithm that is more performant than alternative like AES-GCM while also
 being supported by industry standard cryptography libraries like `MbedTLS`_
 and `PSA`_.
 
-Asymmetric key agreement is perfomed through the Elliptic-Curve Diffie-Hellman
+Asymmetric key agreement is performed through the Elliptic-Curve Diffie-Hellman
 (`ECDH`_) protocol. The selected curve is `Curve25519`_, which is well
 supported, more efficient than the standard prime curves (P-256, etc), and free
 from any doubt about standards interference. Curve25519 also has a more compact
@@ -157,7 +157,7 @@ key, the message as a whole can still be signed with a MAC based on a private
 device key. This enables the Infuse cloud to validate the authenticity of the
 sending device despite the shared encryption key.
 
-Individual devices cannot valiate the MAC of received packets however, as they
+Individual devices cannot validate the MAC of received packets however, as they
 do not have access to the cloud private keys that are used to derive the remote
 devices signing key.
 
@@ -165,7 +165,7 @@ devices signing key.
 
     The MAC associated with a message may be truncated from its ideal size
     depending on the interface due to payload size considerations. If
-    truncated, the authenticity guarantees are neccesarily weakened,
+    truncated, the authenticity guarantees are necessarily weakened,
     potentially to the point that collision attacks are feasible. This is
     considered an acceptable tradeoff given the reduced sensitivity of any
     data encrypted to the network level.
@@ -261,7 +261,7 @@ can be compromised.
 
 If the shared symmetric key or device private key are suspected to be
 compromised, the device can regenerate a new EC key-pair. This will
-automatically change the shared symmetric key in an unpredicatable fashion,
+automatically change the shared symmetric key in an unpredictable fashion,
 securing future communications. If rotated autonomously (without cloud
 involvement), the cloud can automatically determine the key-pair has changed
 through observing the public key hash that is part of the message header. All
