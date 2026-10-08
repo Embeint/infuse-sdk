@@ -1,0 +1,15 @@
+# Infuse-IoT SDK Raspberry Pi defaults
+#
+# Copyright (c) 2026 Embeint Holdings Pty Ltd
+# SPDX-License-Identifier: FSL-1.1-ALv2
+
+if SOC_FAMILY_RPI_PICO
+
+configdefault HWINFO_RPI_PICO_CHIP_ID
+	# Match the RP2350 BOOTSEL serial number and picotool chipid.
+	default y
+
+configdefault ENTROPY_RP2040_ROSC
+	default y
+
+endif # SOC_FAMILY_RPI_PICO
