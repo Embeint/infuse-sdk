@@ -98,7 +98,7 @@ Specification Mandated Security
 -------------------------------
 
 For communications interfaces which have their own authentication and encryption mechanism
-defined as part of the specificiation (e.g. `LoRaWAN`_), the ePacket interface can re-use
+defined as part of the specification (e.g. `LoRaWAN`_), the ePacket interface can re-use
 those mechanisms to avoid inefficiencies (e.g. double encryption of payloads).
 
 API Reference

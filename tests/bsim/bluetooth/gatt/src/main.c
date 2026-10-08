@@ -185,7 +185,7 @@ static void conn_setup_cb(struct bt_conn *conn, int err, void *user_data)
 	k_poll_signal_raise(sig, -err);
 }
 
-static void main_connect_nonexistant(void)
+static void main_connect_nonexistent(void)
 {
 	struct k_poll_signal sig;
 	struct bt_conn_auto_setup_cb callbacks = {
@@ -460,7 +460,7 @@ static void main_connect_discover_name(void)
 	PASS("Connect discover name passed\n\n");
 }
 
-static void main_connect_discover_nonexistant(void)
+static void main_connect_discover_nonexistent(void)
 {
 	const struct bt_uuid_16 timezone_uuid = BT_UUID_INIT_16(BT_UUID_GATT_TZ_VAL);
 	struct k_poll_signal sig;
@@ -542,7 +542,7 @@ static void main_connect_discover_nonexistant(void)
 		conn = NULL;
 	}
 
-	PASS("Connect discover nonexistant passed\n\n");
+	PASS("Connect discover nonexistent passed\n\n");
 }
 
 static void main_connect_discover_does_doesnt(void)
@@ -1026,11 +1026,11 @@ void test_init(void)
 
 static const struct bst_test_instance gatt_gateway[] = {
 	{
-		.test_id = "gatt_connect_nonexistant",
+		.test_id = "gatt_connect_nonexistent",
 		.test_descr = "Try connecting to device that doesn't exist",
 		.test_pre_init_f = test_init,
 		.test_tick_f = test_tick,
-		.test_main_f = main_connect_nonexistant,
+		.test_main_f = main_connect_nonexistent,
 	},
 	{
 		.test_id = "gatt_connect_no_discovery",
@@ -1054,11 +1054,11 @@ static const struct bst_test_instance gatt_gateway[] = {
 		.test_main_f = main_connect_discover_name,
 	},
 	{
-		.test_id = "gatt_connect_discover_nonexistant",
+		.test_id = "gatt_connect_discover_nonexistent",
 		.test_descr = "Connect and discover characteristic that doesn't exist",
 		.test_pre_init_f = test_init,
 		.test_tick_f = test_tick,
-		.test_main_f = main_connect_discover_nonexistant,
+		.test_main_f = main_connect_discover_nonexistent,
 	},
 	{
 		.test_id = "gatt_connect_discover_does_doesnt",

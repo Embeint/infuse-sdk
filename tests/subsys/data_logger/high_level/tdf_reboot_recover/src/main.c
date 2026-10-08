@@ -59,7 +59,7 @@ struct logger_data {
 };
 
 /* Not all bytes will be detected, only the important ones */
-int corrupt_indicies[] = {
+int corrupt_indices[] = {
 	offsetof(struct logger_data, guard_head),
 	offsetof(struct logger_data, guard_tail),
 	offsetof(struct logger_data, tdf_state.time),
@@ -177,16 +177,16 @@ ZTEST(tdf_data_logger_recovery, test_logger_recovery)
 		/* Corrupt header guard */
 		log_corrupt_and_reboot(tdf_logger, 0, false);
 		zassert_unreachable();
-	} else if (reboots.count < (ARRAY_SIZE(corrupt_indicies) + 3)) {
+	} else if (reboots.count < (ARRAY_SIZE(corrupt_indices) + 3)) {
 		/* Corrupted data should be detected and purged */
 		zassert_equal(0, tdf_data_logger_flush_dev(tdf_logger));
 		zassert_is_null(k_fifo_get(sent_queue, K_MSEC(100)));
 
-		log_corrupt_and_reboot(tdf_logger, corrupt_indicies[reboots.count - 4], false);
+		log_corrupt_and_reboot(tdf_logger, corrupt_indices[reboots.count - 4], false);
 		zassert_unreachable();
 	}
 #ifdef TDF_REMOTE_SUPPORT
-	else if (reboots.count == (ARRAY_SIZE(corrupt_indicies) + 3)) {
+	else if (reboots.count == (ARRAY_SIZE(corrupt_indices) + 3)) {
 		zassert_equal(0, tdf_data_logger_flush_dev(tdf_logger));
 		zassert_is_null(k_fifo_get(sent_queue, K_MSEC(100)));
 
@@ -195,7 +195,7 @@ ZTEST(tdf_data_logger_recovery, test_logger_recovery)
 		/* Log TDFs and reboot */
 		log_corrupt_and_reboot(tdf_remote_logger, -1, false);
 		zassert_unreachable();
-	} else if (reboots.count == (ARRAY_SIZE(corrupt_indicies) + 4)) {
+	} else if (reboots.count == (ARRAY_SIZE(corrupt_indices) + 4)) {
 		/* If we flush now, we should get the 2 TDFs we logged on the previous boot */
 		zassert_true(tdf_data_logger_flush_dev(tdf_remote_logger) > 0);
 		buf = k_fifo_get(sent_queue, K_MSEC(100));
@@ -208,7 +208,7 @@ ZTEST(tdf_data_logger_recovery, test_logger_recovery)
 		log_corrupt_and_reboot(tdf_remote_logger, offsetof(struct logger_data, remote_id),
 				       false);
 		zassert_unreachable();
-	} else if (reboots.count < (2 * ARRAY_SIZE(corrupt_indicies))) {
+	} else if (reboots.count < (2 * ARRAY_SIZE(corrupt_indices))) {
 		/* Corrupted data should be detected and purged */
 		zassert_equal(0, tdf_data_logger_flush_dev(tdf_remote_logger));
 		zassert_is_null(k_fifo_get(sent_queue, K_MSEC(100)));
@@ -216,7 +216,7 @@ ZTEST(tdf_data_logger_recovery, test_logger_recovery)
 		tdf_data_logger_remote_id_set(tdf_remote_logger, 0x12345678);
 		log_corrupt_and_reboot(
 			tdf_remote_logger,
-			corrupt_indicies[reboots.count - ARRAY_SIZE(corrupt_indicies) - 4], false);
+			corrupt_indices[reboots.count - ARRAY_SIZE(corrupt_indices) - 4], false);
 		zassert_unreachable();
 	}
 #endif /* TDF_REMOTE_SUPPORT */

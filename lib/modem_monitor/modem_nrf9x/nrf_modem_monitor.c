@@ -590,7 +590,7 @@ static void infuse_modem_init(int ret, void *ctx)
 	if (rc == sizeof(modes)) {
 		rc = lte_lc_system_mode_set(modes.modes, modes.prefer);
 		if (rc != 0) {
-			LOG_WRN("Failed to set configurated LTE modes (%d, %d)", modes.modes,
+			LOG_WRN("Failed to set configured LTE modes (%d, %d)", modes.modes,
 				modes.prefer);
 		}
 	} else {

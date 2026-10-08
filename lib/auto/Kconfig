@@ -95,7 +95,7 @@ config INFUSE_AUTO_LTE_CONTROL
 if INFUSE_AUTO_LTE_CONTROL
 
 module = INFUSE_AUTO_LTE_CONTROL
-module-str = Automatical LTE state control
+module-str = Automatic LTE state control
 source "subsys/logging/Kconfig.template.log_config"
 
 endif # INFUSE_AUTO_LTE_CONTROL

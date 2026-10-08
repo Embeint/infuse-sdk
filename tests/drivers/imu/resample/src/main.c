@@ -37,7 +37,7 @@ ZTEST(imu_resample, test_linear_downsample_scaled_2_to_1)
 		sample_array[i].z = -1000 - (100 * i);
 	}
 
-	/* Indicies 0,2,4,6 should be written directly to output */
+	/* Indices 0,2,4,6 should be written directly to output */
 	consumed = imu_linear_downsample_scaled(&state, sample_array, 7);
 	zassert_equal(7, consumed);
 	zassert_equal(4, state.output_offset);
@@ -48,7 +48,7 @@ ZTEST(imu_resample, test_linear_downsample_scaled_2_to_1)
 		zassert_within(-1.0f - (i * 0.2f), resampled_z[i], 0.001f);
 	}
 
-	/* Indicies 1,3,5 should be written directly to output */
+	/* Indices 1,3,5 should be written directly to output */
 	state.output_offset = 0;
 	consumed = imu_linear_downsample_scaled(&state, sample_array + 7, 7);
 	zassert_equal(7, consumed);
@@ -60,7 +60,7 @@ ZTEST(imu_resample, test_linear_downsample_scaled_2_to_1)
 		zassert_within(-1.8f - (i * 0.2f), resampled_z[i], 0.001f);
 	}
 
-	/* Indicies 0,2,4,6 should be written directly to output */
+	/* Indices 0,2,4,6 should be written directly to output */
 	state.output_offset = 0;
 	consumed = imu_linear_downsample_scaled(&state, sample_array + 14, 7);
 	zassert_equal(7, consumed);

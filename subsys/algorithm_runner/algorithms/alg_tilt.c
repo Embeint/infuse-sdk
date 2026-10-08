@@ -100,7 +100,7 @@ void algorithm_tilt_fn(const struct zbus_channel *chan, const struct infuse_algo
 		 *
 		 * Switching to doubles would fix the issue, but would have severe performance
 		 * implications. Instead we just limit the values, which only takes effect at the
-		 * extreme tilts (0 and 180 degress)
+		 * extreme tilts (0 and 180 degrees)
 		 */
 		cosine = MIN(cosine, 1.0f);
 		cosine = MAX(cosine, -1.0f);

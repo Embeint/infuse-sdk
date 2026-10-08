@@ -274,11 +274,11 @@ int ubx_common_pm_control(const struct device *dev, enum pm_device_action action
 				LOG_WRN("Failed to recover communications");
 			}
 			/* It is important here that even if the modem backend reports a failure,
-			 * that it is not propogated back to the PM subsystem. A failing SUSPEND
+			 * that it is not propagated back to the PM subsystem. A failing SUSPEND
 			 * call results in the usage counter remaining at 1, which means that any
 			 * future attempts to use the device will not run the RESUME action. If the
 			 * device did actually go to standby mode but the MON-RXR notification was
-			 * missed, there is now no path to resuming communcations without an
+			 * missed, there is now no path to resuming communications without an
 			 * application power cycle. It is instead safer to clear the error, accept
 			 * the possibility that the modem is still drawing power (less likely than a
 			 * missed message), but allow future runs to operate.
@@ -415,7 +415,7 @@ int ubx_modem_comms_reset(const struct device *dev)
 	if (current_state != PM_DEVICE_STATE_SUSPENDED) {
 		return -EAGAIN;
 	}
-	/* Unitialise resources */
+	/* Uninitialise resources */
 	(void)ubx_common_pm_control(dev, PM_DEVICE_ACTION_TURN_OFF);
 	/* Wait a short duration */
 	k_sleep(K_MSEC(100));

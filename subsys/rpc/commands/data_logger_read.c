@@ -208,7 +208,7 @@ struct net_buf *rpc_command_data_logger_read(struct net_buf *request)
 	struct common_state state;
 	int rc = 0;
 
-	/* Commmon initialisation */
+	/* Common initialisation */
 	rc = core_init(&state, &req->header, req_meta, req->logger);
 	if (rc < 0) {
 		goto end;
@@ -252,7 +252,7 @@ struct net_buf *rpc_command_data_logger_read_available(struct net_buf *request)
 	uint32_t blocks_to_end;
 	int rc = 0;
 
-	/* Commmon initialisation */
+	/* Common initialisation */
 	rc = core_init(&state, &req->header, req_meta, req->logger);
 	if (rc < 0) {
 		goto end;
@@ -305,7 +305,7 @@ struct net_buf *rpc_command_data_logger_read_chunks(struct net_buf *request)
 		goto end;
 	}
 
-	/* Commmon initialisation */
+	/* Common initialisation */
 	rc = core_init(&state, &req->header, req_meta, req->logger);
 	if (rc < 0) {
 		goto end;

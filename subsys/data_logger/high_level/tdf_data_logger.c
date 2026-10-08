@@ -512,7 +512,7 @@ int tdf_data_logger_init(const struct device *dev)
 	/* Check if there is valid data sitting in RAM */
 	recovered = tdf_data_logger_valid_data_on_buffer(dev, &logger_state);
 
-	/* Uncondtionally reset lock semaphore */
+	/* Unconditionally reset lock semaphore */
 	k_sem_init(&data->lock, 1, 1);
 
 	if (!recovered) {

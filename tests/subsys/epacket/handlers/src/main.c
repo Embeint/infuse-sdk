@@ -457,7 +457,7 @@ ZTEST(epacket_handlers, test_gateway_forward)
 	base_len = buf_tx->len;
 	net_buf_unref(buf_tx);
 
-	/* A new packet should refesh the timeout */
+	/* A new packet should refresh the timeout */
 	buf_rx = create_received_tdf_packet(60, true);
 	epacket_gateway_receive_handler(epacket_dummy, buf_rx);
 	k_sleep(K_MSEC(max_hold / 2));

@@ -11,7 +11,7 @@ config INFUSE_WORKQUEUE_BLOCK_TEST
 if INFUSE_WORKQUEUE_BLOCK_TEST
 
 config WORKQUEUE_BLOCK_PERIODICITY_MIN_MS
-	int "Minimium milliseconds between workqueue blocks"
+	int "Minimum milliseconds between workqueue blocks"
 	default 2000
 
 config WORKQUEUE_BLOCK_PERIODICITY_MAX_MS
@@ -19,7 +19,7 @@ config WORKQUEUE_BLOCK_PERIODICITY_MAX_MS
 	default 3000
 
 config WORKQUEUE_BLOCK_DURATION_MIN_MS
-	int "Minimium milliseconds of workqueue blocks"
+	int "Minimum milliseconds of workqueue blocks"
 	default 500
 
 config WORKQUEUE_BLOCK_DURATION_MAX_MS

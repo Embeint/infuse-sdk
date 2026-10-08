@@ -156,7 +156,7 @@ ZTEST(tdf_data_logger, test_index_rollover)
 	zassert_equal(0, rc);
 
 	/* We expect 3 separate chunks logged across the two buffers.
-	 * Only the first one should have a timestamp, but indicies should be consistently
+	 * Only the first one should have a timestamp, but indices should be consistently
 	 * increasing.
 	 */
 	struct tdf_buffer_state state;
