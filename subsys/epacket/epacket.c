@@ -398,7 +398,7 @@ static void epacket_handle_rx(struct net_buf *buf)
 	}
 #ifdef CONFIG_INFUSE_SECURITY
 	if (rc == -2) {
-		/* Bad device key identifer, notify the sender */
+		/* Bad device key identifier, notify the sender */
 		if (epacket_send_key_ids(metadata->interface, K_NO_WAIT) != 0) {
 			LOG_WRN("Unable to respond to key ID request");
 		}

@@ -384,7 +384,7 @@ static int infuse_common_boot(void)
 #endif /* CONFIG_INFUSE_REBOOT */
 
 #if defined(CONFIG_NRF_MODEM_LIB) && !defined(CONFIG_NRF_MODEM_LIB_NET_IF_AUTO_START)
-	/* Feed all watchdog channels before intialising the modem library, as the init can
+	/* Feed all watchdog channels before initialising the modem library, as the init can
 	 * block while performing a DFU update, which can take a non-trivial amount of time.
 	 * Unfortuntely there is no way to do this asynchronously, so we hope the watchdog
 	 * period is configured to be long enough.

@@ -573,7 +573,7 @@ void gnss_task_fn(const struct task_schedule *schedule, struct k_poll_signal *te
 		return;
 	}
 
-	/* Milliseconds between measurments according to args */
+	/* Milliseconds between measurements according to args */
 	meas_rate = args->measurement_period_s == 0 ? 1 : MIN(args->measurement_period_s, 60);
 	meas_rate *= MSEC_PER_SEC;
 

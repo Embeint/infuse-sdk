@@ -49,7 +49,7 @@ void dmic_task_fn(const struct task_schedule *schedule, struct k_poll_signal *te
 	};                                                                                         \
 	struct k_thread dmic_thread_obj
 
-/* Helper macro for defining congiguration */
+/* Helper macro for defining configuration */
 #define _AUDIO_DMIC_CONFIG(dmic_node)                                                              \
 	{                                                                                          \
 		.name = "mic",                                                                     \

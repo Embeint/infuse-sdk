@@ -69,7 +69,7 @@ project to provide the required abstractions that makes this possible.
 Observability
 *************
 
-Debugging embedded devices can be a challenging endevour. Infuse-IoT aims to
+Debugging embedded devices can be a challenging endeavour. Infuse-IoT aims to
 provide as much visibility as possible into both the embedded SDK code and
 the flow of data through the cloud services to simplify this process and
 monitor standard operations.

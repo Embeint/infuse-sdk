@@ -58,7 +58,7 @@ the message authentication code.
       uint8_t authentication[16];
    } __packed;
 
-The format of encrpyted ciphertext depends on the packet type as described in the header.
+The format of encrypted ciphertext depends on the packet type as described in the header.
 The header itself has the following format:
 
 .. code-block:: c

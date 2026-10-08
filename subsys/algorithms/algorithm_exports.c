@@ -132,7 +132,7 @@ EXPORT_GROUP_SYMBOL(FP_SOFT, __aeabi_ui2f);
 EXPORT_GROUP_SYMBOL(FP_SOFT, __aeabi_l2f);
 EXPORT_GROUP_SYMBOL(FP_SOFT, __aeabi_ul2f);
 
-/* Single precision floating point arithemtic */
+/* Single precision floating point arithmetic */
 extern float __aeabi_fadd(float x, float y);
 extern float __aeabi_fdiv(float n, float d);
 extern float __aeabi_fmul(float x, float y);

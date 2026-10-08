@@ -1286,7 +1286,7 @@ static void main_gateway_connect_idle_rx_log_ignored(void)
 	bt_conn_unref(conn);
 	conn = NULL;
 
-	/* Expect the connection to disconnect within 2500 ms, since logging should not refesh
+	/* Expect the connection to disconnect within 2500 ms, since logging should not refresh
 	 * the inactivity timeout.
 	 */
 	rc = k_sem_take(&bt_disconnected, K_MSEC(2500));
@@ -2641,7 +2641,7 @@ static void main_gateway_bt_file_copy(void)
 #ifdef CONFIG_INFUSE_LITTLEFS
 	struct infuse_littlefs_metadata meta = {0};
 
-	/* Filesystem backend support arbitrary file indicies */
+	/* Filesystem backend support arbitrary file indices */
 	file_idx = 0xAA;
 
 	/* Write random data to the filesystem */
@@ -2735,7 +2735,7 @@ static void main_gateway_bt_file_copy(void)
 	net_buf_unref(buf);
 
 #ifdef CONFIG_INFUSE_LITTLEFS
-	/* Test tring to send a file we don't have */
+	/* Test trying to send a file we don't have */
 	file_copy_request.file_idx += 1;
 
 	epacket_dummy_receive(epacket_dummy, &dummy_header, &file_copy_request,
@@ -3175,14 +3175,14 @@ static const struct bst_test_instance epacket_gateway[] = {
 	},
 	{
 		.test_id = "epacket_bt_gateway_remote_rpc_forward_auto_conn_rate_throughput",
-		.test_descr = "Rate limiting intergration based on target throughput",
+		.test_descr = "Rate limiting integration based on target throughput",
 		.test_pre_init_f = test_init,
 		.test_tick_f = test_tick,
 		.test_main_f = main_gateway_remote_rpc_forward_auto_conn_rate_throughput,
 	},
 	{
 		.test_id = "epacket_bt_gateway_remote_rpc_forward_auto_conn_rate_limit",
-		.test_descr = "Rate limiting intergration based on pauses",
+		.test_descr = "Rate limiting integration based on pauses",
 		.test_pre_init_f = test_init,
 		.test_tick_f = test_tick,
 		.test_main_f = main_gateway_remote_rpc_forward_auto_conn_rate_limit,

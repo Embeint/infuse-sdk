@@ -179,7 +179,7 @@ struct lp581x_animation_engines_config {
  * @brief Configure LP581X animation engines
  *
  * The LP581X devices have 4 independent programmable animation engines. Each
- * engine has 4 steps, where each step runs a pattern programed by
+ * engine has 4 steps, where each step runs a pattern programmed by
  * @ref lp581x_animation_pattern_program.
  *
  * Animation engines must be programmed before starting the animation.

@@ -25,7 +25,7 @@ extern "C" {
 void nrf_modem_lib_sim_default_pdn_ctx(const char **apn, enum lte_lc_pdn_family *family);
 
 /**
- * @brief Set reported signal strenth and quality
+ * @brief Set reported signal strength and quality
  *
  * @param rsrp Raw RSRP index
  * @param rsrq Raw RSRQ index
