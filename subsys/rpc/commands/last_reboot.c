@@ -39,7 +39,10 @@ struct net_buf *rpc_command_last_reboot(struct net_buf *request)
 #ifdef CONFIG_ARM
 		rsp.param_1 = state.info.exception_full.basic.pc;
 		rsp.param_2 = state.info.exception_full.basic.lr;
-#endif /* CONFIG_ARM */
+#elif defined(CONFIG_RISCV)
+		rsp.param_1 = state.info.exception_full.mepc;
+		rsp.param_2 = state.info.exception_full.ra;
+#endif
 		break;
 	case INFUSE_REBOOT_INFO_WATCHDOG:
 		rsp.param_1 = state.info.watchdog.info1;

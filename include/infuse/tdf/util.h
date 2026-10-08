@@ -103,11 +103,14 @@ static inline void tdf_reboot_info_from_state(struct infuse_reboot_state *state,
 #ifdef CONFIG_ARM
 		info->param_1 = state->info.exception_full.basic.pc;
 		info->param_2 = state->info.exception_full.basic.lr;
+#elif defined(CONFIG_RISCV)
+		info->param_1 = state->info.exception_full.mepc;
+		info->param_2 = state->info.exception_full.ra;
 #else
 		/* Decoding ESF's is arch specific */
 		info->param_1 = 0;
 		info->param_2 = 0;
-#endif /* CONFIG_ARM */
+#endif
 	} else {
 		/* Generic, Exception Basic, Watchdog all have the same info layout */
 		info->param_1 = state->info.generic.info1;

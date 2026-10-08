@@ -1,0 +1,27 @@
+/* SPDX-License-Identifier: FSL-1.1-ALv2 */
+
+/ {
+	chosen {
+		/delete-property/ zephyr,console;
+		/delete-property/ zephyr,shell-uart;
+	};
+
+	epacket_serial {
+		status = "disabled";
+	};
+
+	data_logger_serial {
+		status = "disabled";
+		tdf_logger_serial {
+			status = "disabled";
+		};
+	};
+};
+
+&usb_serial {
+	status = "disabled";
+};
+
+&cpu0 {
+	cpu-power-states = <&light_sleep>;
+};
