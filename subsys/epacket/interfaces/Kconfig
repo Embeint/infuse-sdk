@@ -226,6 +226,14 @@ config EPACKET_INTERFACE_BT_CENTRAL
 
 if EPACKET_INTERFACE_BT_CENTRAL
 
+config EPACKET_INTERFACE_BT_CENTRAL_BUFFERS_RX
+	int "Number of dedicated Bluetooth central RX buffers"
+	range 0 16
+	default 0
+	help
+	  Number of receive buffers reserved for the Bluetooth central interface.
+	  A value of zero uses the shared ePacket RX buffer pool instead.
+
 module = EPACKET_BT_CENTRAL
 module-str = epacket_bt_central
 source "subsys/logging/Kconfig.template.log_config"
