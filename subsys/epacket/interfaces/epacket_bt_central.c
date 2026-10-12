@@ -306,6 +306,7 @@ int epacket_bt_gatt_connect(struct bt_conn **conn_out,
 		.timeout = params->conn_timeout_ms / 10,
 	};
 	struct k_poll_event poll_event;
+	struct k_poll_signal security_read_sig;
 	struct infuse_connection_state *s;
 	struct k_work_sync sync;
 	unsigned int signaled;
@@ -390,12 +391,16 @@ conn_created:
 				.single.offset = 0,
 			},
 		.rsp = security,
-		.sig = &s->sig,
+		.sig = &security_read_sig,
 	};
 
-	k_poll_signal_reset(&s->sig);
+	/* This signal belongs to this read. A connection can be reused concurrently by
+	 * multiple callers, so using the per-connection setup signal here could wake a
+	 * caller before its read callback has finished with the stack-based parameters.
+	 */
+	k_poll_signal_init(&security_read_sig);
 	poll_event = (struct k_poll_event)K_POLL_EVENT_INITIALIZER(
-		K_POLL_TYPE_SIGNAL, K_POLL_MODE_NOTIFY_ONLY, &s->sig);
+		K_POLL_TYPE_SIGNAL, K_POLL_MODE_NOTIFY_ONLY, &security_read_sig);
 
 	/* Read the data handle to get the security parameters */
 	rc = bt_gatt_read(conn, &security_read.params);
@@ -405,7 +410,7 @@ conn_created:
 
 	/* The bt_gatt_read_params structure MUST be valid until the callback is run */
 	k_poll(&poll_event, 1, K_FOREVER);
-	k_poll_signal_check(&s->sig, &signaled, &rc);
+	k_poll_signal_check(&security_read_sig, &signaled, &rc);
 	__ASSERT_NO_MSG(signaled != 0);
 	if (rc != 0) {
 		goto cleanup;
