@@ -2,5 +2,6 @@
 
 add_subdirectory_ifdef(CONFIG_SOC_FAMILY_NORDIC_NRF nordic)
 add_subdirectory_ifdef(CONFIG_SOC_FAMILY_STM32 stm32)
+add_subdirectory_ifdef(CONFIG_SOC_FAMILY_RPI_PICO raspberrypi)
 add_subdirectory_ifdef(CONFIG_SOC_POSIX posix)
 add_subdirectory_ifdef(CONFIG_QEMU_TARGET qemu)

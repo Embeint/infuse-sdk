@@ -105,3 +105,19 @@ boards:
     append:
       EXTRA_DTC_OVERLAY_FILE: boards/nucleo_l432kc_stm32l432xx.overlay
       EXTRA_CONF_FILE: infuse_snippet.conf
+  rpi_pico/rp2040:
+    append:
+      EXTRA_DTC_OVERLAY_FILE: boards/rpi_pico_rp2040.overlay
+      EXTRA_CONF_FILE: infuse_snippet.conf
+  rpi_pico/rp2040/w:
+    append:
+      EXTRA_DTC_OVERLAY_FILE: boards/rpi_pico_rp2040.overlay
+      EXTRA_CONF_FILE: infuse_snippet.conf
+  rpi_pico2/rp2350a/m33:
+    append:
+      EXTRA_DTC_OVERLAY_FILE: boards/rpi_pico2_rp2350a_m33.overlay
+      EXTRA_CONF_FILE: infuse_snippet.conf
+  rpi_pico2/rp2350a/m33/w:
+    append:
+      EXTRA_DTC_OVERLAY_FILE: boards/rpi_pico2_rp2350a_m33.overlay
+      EXTRA_CONF_FILE: infuse_snippet.conf

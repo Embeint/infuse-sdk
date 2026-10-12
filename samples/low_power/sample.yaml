@@ -10,6 +10,10 @@ common:
     - nrf5340dk/nrf5340/cpuapp
     - nrf5340dk/nrf5340/cpuapp/ns
     - nrf54l15dk/nrf54l15/cpuapp
+    - rpi_pico/rp2040
+    - rpi_pico/rp2040/w
+    - rpi_pico2/rp2350a/m33
+    - rpi_pico2/rp2350a/m33/w
 tests:
   sample.low_power:
     tags: validation

@@ -31,6 +31,7 @@ Supported Upstream Boards
  * `Nordic nRF9151 DK`_
  * `Nordic nRF9160 DK`_
  * `Nordic nRF9161 DK`_
+ * :ref:`Raspberry Pi Pico family <infuse-vendor-raspberrypi>`
  * `STM32 NUCLEO-L432KC`_
 
 Supported Infuse Boards

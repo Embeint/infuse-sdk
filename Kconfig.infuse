@@ -29,6 +29,7 @@ config INFUSE_APPLICATION_NAME
 	help
 	  Typically set by the `release-build` scripts.
 
+rsource "kconfig/Kconfig.defaults.raspberrypi"
 rsource "kconfig/Kconfig.defaults.core"
 rsource "kconfig/Kconfig.defaults.nrf"
 rsource "kconfig/Kconfig.defaults.stm32"

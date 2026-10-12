@@ -8,17 +8,33 @@ common:
     - infuse
   depends_on:
     - watchdog
-  integration_platforms:
-    - nrf52840dk/nrf52840
-    - nrf9160dk/nrf9160/ns
-    # Temporarily disable this due to a mismatch between snippet platform name
-    # discovery, twister name validations and board.yaml naming. Should be
-    # resolved on Zephyr 4.0.
-    # - nucleo_l432kc/stm32l432xx
 tests:
   sample.releases.serial:
     tags: gateway
+    integration_platforms:
+      - nrf52840dk/nrf52840
+      - nrf9160dk/nrf9160/ns
   sample.releases.serial.sysbuild:
     tags: gateway
     sysbuild: true
     filter: not CONFIG_BUILD_WITH_TFM
+    integration_platforms:
+      - nrf52840dk/nrf52840
+      - nrf9160dk/nrf9160/ns
+  sample.releases.serial.pico_usb:
+    tags:
+      - gateway
+      - usb
+    required_snippets:
+      - infuse
+      - usb
+    integration_platforms:
+      - rpi_pico/rp2040
+      - rpi_pico/rp2040/w
+      - rpi_pico2/rp2350a/m33
+      - rpi_pico2/rp2350a/m33/w
+    platform_allow:
+      - rpi_pico/rp2040
+      - rpi_pico/rp2040/w
+      - rpi_pico2/rp2350a/m33
+      - rpi_pico2/rp2350a/m33/w

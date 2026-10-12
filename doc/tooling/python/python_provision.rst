@@ -12,12 +12,12 @@ For a general description of provisioning on Infuse-Iot, see :ref:`platform-prov
 Running
 *******
 
-The only required argument for the tool is the SoC manufacturer (``--nrf`` or ``--stm``) so that
+The only required argument for the tool is the SoC manufacturer (``--nrf``, ``--stm`` or ``--rpi``) so that
 the appropriate programming tools can be loaded.
 
 .. code:: bash
 
-    infuse provision (--nrf | --stm)
+    infuse provision (--nrf | --stm | --rpi)
 
 By default, Infuse-IoT cloud will generate a random Infuse ID for the device when it is
 first provisioned. If a specific Infuse ID is desired, it can be provided through the ``--id``
@@ -42,3 +42,37 @@ as. If already known, these can be provided as command line arguments.
 
 If the hardware already exists in Infuse-IoT, the existing provisioning information will be
 re-flashed to the hardware.
+
+Use ``--dry-run`` to inspect the provisioning request without writing cloud records
+or flash. Dry runs still query cloud and hardware state, but do not reset the target.
+
+Raspberry Pi Pico over USB
+**************************
+
+Install `picotool <https://github.com/raspberrypi/picotool>`_ 2.3.1 or later and
+make it available on ``PATH``. On macOS, ``brew install picotool`` installs it.
+On Linux, install its USB access rules as described in the picotool documentation.
+
+Build and flash firmware using the Infuse Pico flash layout, then reconnect
+while holding BOOTSEL. Run::
+
+    infuse provision --rpi --organisation <organisation-uuid> --board <board-uuid>
+
+The cloud board's SoC must be ``rp2040`` for Pico/Pico W, or ``rp2350`` for
+Pico 2/Pico 2 W. The usual API credentials and optional ``--id`` and
+``--metadata`` arguments apply. If multiple boards are connected, select the
+intended one using the serial number reported by ``picotool info -d``::
+
+    infuse provision --rpi --usb-serial E66430A64B581E32
+
+The tool refuses ambiguous devices, unexpected flash sizes, conflicting IDs and
+nonempty invalid provisioning sectors. It verifies both the flash write and a
+separate readback before rebooting. A dry run writes neither cloud records nor
+flash; it still performs read-only cloud and hardware queries. A dry run or an
+already-matching ID leaves the Pico in BOOTSEL; use ``picotool reboot`` to run
+the application.
+
+Provisioned IDs live in a dedicated 4 KiB flash sector, separate from the
+application and KV storage. They survive normal UF2 updates, power loss and KV
+resets. This is not physically one-time-programmable storage; a full flash erase
+removes the local copy. See :ref:`infuse-vendor-raspberrypi` for the layout.

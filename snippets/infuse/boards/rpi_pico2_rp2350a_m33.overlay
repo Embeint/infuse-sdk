@@ -1,0 +1,46 @@
+/*
+ * Copyright (c) 2026 Embeint Holdings Pty Ltd
+ * SPDX-License-Identifier: FSL-1.1-ALv2
+ */
+
+#include "rpi_pico_common.dtsi"
+
+/ {
+	chosen {
+		zephyr,code-partition = &code_partition;
+	};
+};
+
+/delete-node/ &sram0;
+
+&{/soc} {
+	sram0: memory@20000100 {
+		compatible = "mmio-sram";
+		reg = <0x20000100 (DT_SIZE_K(520) - 0x100)>;
+	};
+};
+
+&flash0 {
+	partitions {
+		compatible = "fixed-partitions";
+		#address-cells = <1>;
+		#size-cells = <1>;
+
+		code_partition: partition@0 {
+			label = "code-partition";
+			reg = <0 0x3f7000>;
+			read-only;
+		};
+
+		infuse_provisioning: partition@3f7000 {
+			label = "infuse-provisioning";
+			reg = <0x3f7000 DT_SIZE_K(4)>;
+			read-only;
+		};
+
+		storage_partition: partition@3f8000 {
+			label = "storage";
+			reg = <0x3f8000 DT_SIZE_K(32)>;
+		};
+	};
+};
