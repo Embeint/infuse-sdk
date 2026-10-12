@@ -489,7 +489,8 @@ static bool tdf_data_logger_valid_data_on_buffer(const struct device *dev,
 	return false;
 }
 
-IF_DISABLED(CONFIG_ZTEST, (static))
+/* Optional backend dependencies may leave no device instances. */
+IF_DISABLED(CONFIG_ZTEST, (static __unused))
 int tdf_data_logger_init(const struct device *dev)
 {
 	const struct tdf_logger_config *config = dev->config;

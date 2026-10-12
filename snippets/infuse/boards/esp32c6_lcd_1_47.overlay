@@ -1,0 +1,53 @@
+/*
+ * Copyright (c) 2026 Embeint Holdings Pty Ltd
+ * SPDX-License-Identifier: FSL-1.1-ALv2
+ */
+
+#include <boards/waveshare/esp32c6_lcd_1_47.dtsi>
+#include <common/infuse_bluetooth.dtsi>
+
+/ {
+	chosen {
+		infuse,reboot-state = &infuse_retention;
+		infuse,kv-partition = &storage_partition;
+#ifdef INFUSE_IS_BOOTLOADER
+		zephyr,code-partition = &boot_partition;
+#endif
+	};
+
+#ifndef INFUSE_IS_BOOTLOADER
+	/* USB remains the human console; UART0 on GPIO16/17 carries binary ePackets. */
+	epacket_serial: epacket_serial {
+		compatible = "embeint,epacket-serial";
+		serial = <&uart0>;
+	};
+
+	data_logger_serial: data_logger_serial {
+		compatible = "embeint,data-logger-epacket", "embeint,data-logger";
+		epacket = <&epacket_serial>;
+		tdf_logger_serial: tdf_logger_serial {
+			compatible = "embeint,tdf-data-logger";
+		};
+	};
+
+	epacket_udp: epacket_udp {
+		compatible = "embeint,epacket-udp";
+	};
+
+	data_logger_udp: data_logger_udp {
+		compatible = "embeint,data-logger-epacket", "embeint,data-logger";
+		epacket = <&epacket_udp>;
+		tdf_logger_udp: tdf_logger_udp {
+			compatible = "embeint,tdf-data-logger";
+		};
+	};
+#endif /* INFUSE_IS_BOOTLOADER */
+};
+
+&retainedmem0 {
+	infuse_retention: retention@0 {
+		compatible = "zephyr,retention";
+		reg = <0 0x200>;
+		prefix = [de 03];
+	};
+};

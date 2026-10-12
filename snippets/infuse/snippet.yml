@@ -1,6 +1,10 @@
 name: infuse
 
 boards:
+  /esp32c6_lcd_1_47/esp32c6/hpcore(/flash8m)?/:
+    append:
+      EXTRA_DTC_OVERLAY_FILE: boards/esp32c6_lcd_1_47.overlay
+      EXTRA_CONF_FILE: infuse_snippet.conf
   /auroch(@.*)?/nrf9151/ns/:
     append:
       EXTRA_DTC_OVERLAY_FILE: boards/auroch_nrf9151_ns.overlay

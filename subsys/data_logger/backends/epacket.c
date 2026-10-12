@@ -59,8 +59,8 @@ static void epacket_interface_state(uint16_t current_max_payload, void *user_ctx
 	data_logger_common_block_size_changed(dev, current_max_payload);
 }
 
-/* Need to hook into this function when testing */
-IF_DISABLED(CONFIG_ZTEST, (static))
+/* Tests hook into initialization; optional interfaces may leave no device instances. */
+IF_DISABLED(CONFIG_ZTEST, (static __unused))
 int logger_epacket_init(const struct device *dev)
 {
 	const struct dl_epacket_config *config = dev->config;

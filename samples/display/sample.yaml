@@ -1,0 +1,23 @@
+sample:
+  name: Infuse display
+  description: Display the Infuse identity and uptime on LCD or e-paper panels
+common:
+  sysbuild: true
+  build_only: true
+  required_snippets:
+    - infuse
+  tags:
+    - display
+  filter: dt_chosen_enabled("zephyr,display")
+tests:
+  sample.display:
+    integration_platforms:
+      - esp32c6_lcd_1_47/esp32c6/hpcore
+      - esp32c6_lcd_1_47/esp32c6/hpcore/flash8m
+  sample.display.epaper:
+    platform_allow:
+      - nrf52840dk/nrf52840
+    integration_platforms:
+      - nrf52840dk/nrf52840
+    extra_args:
+      - SHIELD=waveshare_epaper_gdeh0213b1

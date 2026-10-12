@@ -1,0 +1,18 @@
+# Copyright (c) 2026 Embeint Holdings Pty Ltd
+# SPDX-License-Identifier: FSL-1.1-ALv2
+
+if SOC_FAMILY_ESPRESSIF_ESP32
+
+configdefault UART_INTERRUPT_DRIVEN
+	default y if SERIAL_ESP32_USB
+
+configdefault SHELL_BACKEND_SERIAL_FORCE_TX_BLOCKING_MODE
+	default y if SERIAL_ESP32_USB
+
+configdefault BT_HCI_VS
+	default n if BT_ESP32
+
+configdefault NET_SOCKETS_SERVICE_STACK_SIZE
+	default 2048 if WIFI_ESP32 && !NET_DHCPV4_SERVER && !(ZTEST && COVERAGE_GCOV)
+
+endif # SOC_FAMILY_ESPRESSIF_ESP32

@@ -12,12 +12,12 @@ For a general description of provisioning on Infuse-Iot, see :ref:`platform-prov
 Running
 *******
 
-The only required argument for the tool is the SoC manufacturer (``--nrf`` or ``--stm``) so that
+The only required argument for the tool is the SoC manufacturer (``--nrf``, ``--stm`` or ``--esp32c6``) so that
 the appropriate programming tools can be loaded.
 
 .. code:: bash
 
-    infuse provision (--nrf | --stm)
+    infuse provision (--nrf | --stm | --esp32c6)
 
 By default, Infuse-IoT cloud will generate a random Infuse ID for the device when it is
 first provisioned. If a specific Infuse ID is desired, it can be provided through the ``--id``
@@ -42,3 +42,21 @@ as. If already known, these can be provided as command line arguments.
 
 If the hardware already exists in Infuse-IoT, the existing provisioning information will be
 re-flashed to the hardware.
+
+ESP32-C6
+********
+
+Install ``infuse_iot[provisioning]`` and connect the C6 in ROM download mode.
+The tool reads the factory MAC as the hardware ID and programs the cloud's
+64-bit Infuse ID into USER_DATA eFuses. Existing matching IDs are left intact;
+conflicting IDs or nonblank USER_DATA blocks are rejected. ``espefuse`` asks
+for confirmation before the permanent write, and the result is read back.
+
+.. code:: bash
+
+    infuse provision --esp32c6 --port /dev/cu.usbmodem11301 \
+        --organisation <organisation-uuid> --board <board-uuid> --dry-run
+
+Remove ``--dry-run`` to provision. Use ``--id`` to request a specific Infuse
+ID; hardware already registered in the cloud retains its existing ID.
+``--dry-run`` performs no cloud creation or eFuse writes.
