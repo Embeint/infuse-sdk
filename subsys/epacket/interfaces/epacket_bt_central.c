@@ -79,7 +79,29 @@ struct epacket_bt_central_data {
 	struct epacket_interface_common_data common_data;
 };
 
+#if CONFIG_EPACKET_INTERFACE_BT_CENTRAL_BUFFERS_RX > 0
+NET_BUF_POOL_DEFINE(epacket_bt_central_rx_pool, CONFIG_EPACKET_INTERFACE_BT_CENTRAL_BUFFERS_RX,
+		    DT_INST_PROP(0, max_packet_size), sizeof(struct epacket_rx_metadata), NULL);
+#endif
+
 LOG_MODULE_REGISTER(epacket_bt_central, CONFIG_EPACKET_BT_CENTRAL_LOG_LEVEL);
+
+static struct net_buf *epacket_bt_central_alloc_rx(void)
+{
+#if CONFIG_EPACKET_INTERFACE_BT_CENTRAL_BUFFERS_RX > 0
+	struct net_buf *buf = net_buf_alloc(&epacket_bt_central_rx_pool, K_NO_WAIT);
+
+	if (buf != NULL) {
+		struct epacket_rx_metadata *meta = net_buf_user_data(buf);
+
+		/* Match the default state provided by epacket_alloc_rx(). */
+		meta->auth = EPACKET_AUTH_FAILURE;
+	}
+	return buf;
+#else
+	return epacket_alloc_rx(K_NO_WAIT);
+#endif
+}
 
 static void conn_setup_cb(struct bt_conn *conn, int err, void *user_data)
 {
@@ -143,7 +165,7 @@ uint8_t epacket_bt_gatt_notify_recv_func(struct bt_conn *conn,
 	}
 
 	LOG_DBG("Received %d bytes", length);
-	rx_buffer = epacket_alloc_rx(K_NO_WAIT);
+	rx_buffer = epacket_bt_central_alloc_rx();
 	if (rx_buffer == NULL) {
 		LOG_WRN("Buffer claim timeout");
 		return BT_GATT_ITER_CONTINUE;
