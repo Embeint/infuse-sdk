@@ -1163,6 +1163,85 @@ static void main_gateway_connect_recv(void)
 	PASS("Received TDF data from connected peer\n");
 }
 
+#if CONFIG_EPACKET_INTERFACE_BT_CENTRAL_BUFFERS_RX > 0
+static void main_gateway_connect_rx_pool(void)
+{
+	const struct device *epacket_central = DEVICE_DT_GET(DT_NODELABEL(epacket_bt_central));
+	struct epacket_bt_gatt_connect_params params = {
+		.conn_params = BT_LE_CONN_PARAM_INIT(0x10, 0x15, 0, 400),
+		.inactivity_timeout = K_FOREVER,
+		.absolute_timeout = K_FOREVER,
+		.conn_timeout_ms = 3000,
+		.preferred_phy = BT_GAP_LE_PHY_NONE,
+		.subscribe_data = true,
+	};
+	struct net_buf *shared_rx[CONFIG_EPACKET_BUFFERS_RX];
+	struct epacket_read_response security_info;
+	struct epacket_rx_metadata *meta;
+	struct bt_conn *conn = NULL;
+	struct net_buf *buf;
+	bool already;
+	int rc;
+
+	common_init();
+	central_fifo_flush();
+	epacket_set_receive_handler(epacket_central, central_handler);
+
+	if (observe_peers(&params.peer, 1) < 0) {
+		FAIL("Failed to observe peer\n");
+		return;
+	}
+
+	/* Hold every buffer in the shared RX pool. */
+	for (int i = 0; i < ARRAY_SIZE(shared_rx); i++) {
+		shared_rx[i] = epacket_alloc_rx(K_SECONDS(1));
+		if (shared_rx[i] == NULL) {
+			FAIL("Failed to claim shared RX buffer %d\n", i);
+			return;
+		}
+	}
+	if (epacket_num_buffers_free_rx() != 0) {
+		FAIL("Shared RX pool was not exhausted\n");
+		return;
+	}
+
+	rc = epacket_bt_gatt_connect(&conn, &params, &security_info, &already);
+	if (rc != 0) {
+		FAIL("Failed to connect to peer (%d)\n", rc);
+		return;
+	}
+
+	/* The notification must use the RX pool dedicated to the central interface. */
+	buf = k_fifo_get(&central_fifo, K_SECONDS(2));
+	if (buf == NULL) {
+		FAIL("No packet received while shared RX pool was exhausted\n");
+		return;
+	}
+	meta = net_buf_user_data(buf);
+	if (meta->auth != EPACKET_AUTH_NETWORK || meta->type != INFUSE_TDF) {
+		FAIL("Unexpected packet metadata (auth %d, type %d)\n", meta->auth, meta->type);
+		return;
+	}
+	if (epacket_num_buffers_free_rx() != 0) {
+		FAIL("Received packet used the shared RX pool\n");
+		return;
+	}
+	net_buf_unref(buf);
+
+	rc = bt_conn_disconnect_sync(conn);
+	bt_conn_unref(conn);
+	if (rc != 0) {
+		FAIL("Failed to disconnect from peer (%d)\n", rc);
+		return;
+	}
+	for (int i = 0; i < ARRAY_SIZE(shared_rx); i++) {
+		net_buf_unref(shared_rx[i]);
+	}
+
+	PASS("Received BT central packet with shared RX pool exhausted\n");
+}
+#endif /* CONFIG_EPACKET_INTERFACE_BT_CENTRAL_BUFFERS_RX > 0 */
+
 static void main_gateway_connect_cloud_uplink(void)
 {
 	const struct device *epacket_central = DEVICE_DT_GET(DT_NODELABEL(epacket_bt_central));
@@ -3197,6 +3276,15 @@ static const struct bst_test_instance epacket_gateway[] = {
 		.test_tick_f = test_tick,
 		.test_main_f = main_gateway_connect_recv,
 	},
+#if CONFIG_EPACKET_INTERFACE_BT_CENTRAL_BUFFERS_RX > 0
+	{
+		.test_id = "epacket_bt_gateway_connect_rx_pool",
+		.test_descr = "Receive from a peer with the shared RX pool exhausted",
+		.test_pre_init_f = test_init,
+		.test_tick_f = test_tick,
+		.test_main_f = main_gateway_connect_rx_pool,
+	},
+#endif /* CONFIG_EPACKET_INTERFACE_BT_CENTRAL_BUFFERS_RX > 0 */
 	{
 		.test_id = "epacket_bt_gateway_connect_cloud_uplink",
 		.test_descr = "Connect to peer device and recv cloud uplink payloads",
