@@ -98,6 +98,29 @@ static struct bt_conn_cb conn_cb = {
 	.disconnected = disconnected,
 };
 
+#define CONCURRENT_CONNECT_THREADS 2
+
+struct concurrent_connect_context {
+	struct epacket_bt_gatt_connect_params params;
+	struct epacket_read_response security;
+	struct bt_conn *conn;
+	struct k_sem done;
+	bool already;
+	int rc;
+};
+
+K_THREAD_STACK_ARRAY_DEFINE(concurrent_connect_stacks, CONCURRENT_CONNECT_THREADS, 2048);
+static struct k_thread concurrent_connect_threads[CONCURRENT_CONNECT_THREADS];
+
+static void concurrent_connect_thread(void *p1, void *p2, void *p3)
+{
+	struct concurrent_connect_context *context = p1;
+
+	context->rc = epacket_bt_gatt_connect(&context->conn, &context->params, &context->security,
+					      &context->already);
+	k_sem_give(&context->done);
+}
+
 static void common_init(void)
 {
 	k_sem_reset(&epacket_adv_received);
@@ -445,6 +468,94 @@ static void main_gateway_connect(void)
 	k_sleep(K_SECONDS(1));
 
 	PASS("Gateway connect passed\n");
+}
+
+static void main_gateway_connect_concurrent(void)
+{
+	struct epacket_bt_gatt_connect_params params = {
+		.conn_params = BT_LE_CONN_PARAM_INIT(0x10, 0x15, 0, 400),
+		.inactivity_timeout = K_FOREVER,
+		.absolute_timeout = K_FOREVER,
+		.conn_timeout_ms = 3000,
+		.preferred_phy = BT_GAP_LE_PHY_NONE,
+	};
+	struct concurrent_connect_context contexts[CONCURRENT_CONNECT_THREADS];
+	struct epacket_read_response expected_security;
+	struct bt_conn *conn = NULL;
+	bool high_priority_returned_early;
+	bool already;
+	int rc;
+
+	common_init();
+	if (observe_peers(&params.peer, 1) < 0) {
+		FAIL("Failed to observe peer\n");
+		return;
+	}
+
+	/* Establish the connection before testing concurrent reuse of it. */
+	rc = epacket_bt_gatt_connect(&conn, &params, &expected_security, &already);
+	if (rc != 0) {
+		FAIL("Failed to connect to peer (%d)\n", rc);
+		return;
+	}
+
+	for (int i = 0; i < CONCURRENT_CONNECT_THREADS; i++) {
+		contexts[i] = (struct concurrent_connect_context){
+			.params = params,
+		};
+		memset(&contexts[i].security, 0xA5, sizeof(contexts[i].security));
+		k_sem_init(&contexts[i].done, 0, 1);
+	}
+
+	/* Queue the lower-priority read first. Both reads used to wait on the same
+	 * per-connection signal, which wakes the highest-priority waiter regardless
+	 * of which read completed. The second caller could therefore return before
+	 * its own callback and leave stack-based GATT parameters pending.
+	 */
+	k_thread_create(&concurrent_connect_threads[0], concurrent_connect_stacks[0],
+			K_THREAD_STACK_SIZEOF(concurrent_connect_stacks[0]),
+			concurrent_connect_thread, &contexts[0], NULL, NULL, K_PRIO_PREEMPT(6), 0,
+			K_NO_WAIT);
+	k_sleep(K_MSEC(1));
+	k_thread_create(&concurrent_connect_threads[1], concurrent_connect_stacks[1],
+			K_THREAD_STACK_SIZEOF(concurrent_connect_stacks[1]),
+			concurrent_connect_thread, &contexts[1], NULL, NULL, K_PRIO_PREEMPT(5), 0,
+			K_NO_WAIT);
+
+	rc = k_sem_take(&contexts[1].done, K_SECONDS(5));
+	if (rc != 0) {
+		FAIL("High-priority concurrent connect timed out\n");
+		high_priority_returned_early = false;
+	} else {
+		high_priority_returned_early = memcmp(&contexts[1].security, &expected_security,
+						      sizeof(expected_security)) != 0;
+	}
+	if (k_sem_take(&contexts[0].done, K_SECONDS(5)) != 0) {
+		FAIL("Low-priority concurrent connect timed out\n");
+	}
+
+	for (int i = 0; i < CONCURRENT_CONNECT_THREADS; i++) {
+		(void)k_thread_join(&concurrent_connect_threads[i], K_SECONDS(1));
+		if (contexts[i].rc != 0 || !contexts[i].already) {
+			FAIL("Concurrent connect %d failed (%d, already %d)\n", i, contexts[i].rc,
+			     contexts[i].already);
+		}
+		if (contexts[i].conn != NULL) {
+			bt_conn_unref(contexts[i].conn);
+		}
+	}
+	if (high_priority_returned_early) {
+		FAIL("Concurrent connect returned before its GATT read completed\n");
+	}
+
+	rc = bt_conn_disconnect_sync(conn);
+	bt_conn_unref(conn);
+	if (rc < 0) {
+		FAIL("Failed to disconnect from peer\n");
+		return;
+	}
+
+	PASS("Concurrent gateway connects completed their own GATT reads\n");
 }
 
 static int connect_expect_duration(struct bt_conn **conn,
@@ -3024,6 +3135,13 @@ static const struct bst_test_instance epacket_gateway[] = {
 		.test_pre_init_f = test_init,
 		.test_tick_f = test_tick,
 		.test_main_f = main_gateway_connect,
+	},
+	{
+		.test_id = "epacket_bt_gateway_connect_concurrent",
+		.test_descr = "Concurrently reuse a connection",
+		.test_pre_init_f = test_init,
+		.test_tick_f = test_tick,
+		.test_main_f = main_gateway_connect_concurrent,
 	},
 	{
 		.test_id = "epacket_bt_gateway_connect_subscribe_wait",
