@@ -144,6 +144,57 @@ static void epacket_bt_adv_receive_handler(struct net_buf *buf)
 	k_sem_give(&epacket_adv_received);
 }
 
+static void send_rpc(uint32_t request_id, uint16_t command_id, void *params, size_t params_len)
+{
+	const struct device *epacket_dummy = DEVICE_DT_GET(DT_NODELABEL(epacket_dummy));
+	struct epacket_dummy_frame header = {
+		.type = INFUSE_RPC_CMD,
+		.auth = EPACKET_AUTH_DEVICE,
+		.flags = 0x0000,
+	};
+	struct infuse_rpc_req_header *h = params;
+
+	h->command_id = command_id;
+	h->request_id = request_id;
+
+	/* Push command at RPC server */
+	epacket_dummy_receive(epacket_dummy, &header, params, params_len);
+}
+
+static struct net_buf *expect_response(uint32_t request_id, uint16_t command_id, int rc)
+{
+	struct k_fifo *response_queue = epacket_dummmy_transmit_fifo_get();
+	struct infuse_rpc_rsp_header *response;
+	struct epacket_dummy_frame *frame;
+	struct net_buf *rsp;
+
+	/* Response was sent */
+	rsp = k_fifo_get(response_queue, K_SECONDS(10));
+	if (rsp == NULL) {
+		LOG_ERR("No response");
+		return NULL;
+	}
+	frame = net_buf_pull_mem(rsp, sizeof(struct epacket_dummy_frame));
+	if (frame->type != INFUSE_RPC_RSP) {
+		LOG_ERR("Unexpected response type (%d != %d)", INFUSE_RPC_RSP, frame->type);
+		return NULL;
+	}
+	response = (void *)rsp->data;
+
+	/* Parameters match what we expect */
+	if (request_id != response->request_id) {
+		LOG_ERR("Unexpected request ID (%08X != %08X)", response->request_id, request_id);
+		return NULL;
+	}
+	if (rc != response->return_code) {
+		LOG_ERR("Unexpected return code (%d != %d)", response->return_code, rc);
+		return NULL;
+	}
+
+	/* Return the response */
+	return rsp;
+}
+
 static void main_epacket_bt_basic_broadcast(void)
 {
 	struct tdf_announce_v2 announce = {0};
@@ -674,7 +725,10 @@ static void main_gateway_connect_multi(void)
 	};
 	struct epacket_read_response security_info;
 	struct bt_conn *conn1 = NULL, *conn2 = NULL;
+	struct rpc_bt_disconnect_request disconnect = {0};
+	struct bt_conn_info info;
 	bt_addr_le_t addr[2];
+	struct net_buf *buf;
 	bool already;
 	int rc;
 
@@ -711,24 +765,33 @@ static void main_gateway_connect_multi(void)
 
 		k_sleep(K_MSEC(500));
 
-		/* Terminate the connections */
-		rc = bt_conn_disconnect_sync(conn1);
-		if (rc != 0) {
-			FAIL("Failed to disconnect from first peer\n");
+		/* Terminate both connections through the wildcard RPC */
+		send_rpc(i + 1, RPC_ID_BT_DISCONNECT, &disconnect, sizeof(disconnect));
+		buf = expect_response(i + 1, RPC_ID_BT_DISCONNECT, 0);
+		if (buf == NULL) {
+			FAIL("Failed to disconnect from peers\n");
 			return;
 		}
+		net_buf_unref(buf);
+
+		rc = bt_conn_get_info(conn1, &info);
+		if (rc != 0 || info.state != BT_CONN_STATE_DISCONNECTED) {
+			FAIL("First peer still connected\n");
+			return;
+		}
+		rc = bt_conn_get_info(conn2, &info);
+		if (rc != 0 || info.state != BT_CONN_STATE_DISCONNECTED) {
+			FAIL("Second peer still connected\n");
+			return;
+		}
+
 		bt_conn_unref(conn1);
 		conn1 = NULL;
-		rc = bt_conn_disconnect_sync(conn2);
-		if (rc != 0) {
-			FAIL("Failed to disconnect from second peer\n");
-			return;
-		}
 		bt_conn_unref(conn2);
 		conn2 = NULL;
 	}
 
-	PASS("Received packets from advertiser\n");
+	PASS("Multi-connection test passed\n");
 }
 
 static void main_gateway_connect_then_scan(void)
@@ -827,57 +890,6 @@ static bool validate_cloud_uplink_buf(struct net_buf *buf)
 		return false;
 	}
 	return true;
-}
-
-static void send_rpc(uint32_t request_id, uint16_t command_id, void *params, size_t params_len)
-{
-	const struct device *epacket_dummy = DEVICE_DT_GET(DT_NODELABEL(epacket_dummy));
-	struct epacket_dummy_frame header = {
-		.type = INFUSE_RPC_CMD,
-		.auth = EPACKET_AUTH_DEVICE,
-		.flags = 0x0000,
-	};
-	struct infuse_rpc_req_header *h = params;
-
-	h->command_id = command_id;
-	h->request_id = request_id;
-
-	/* Push command at RPC server */
-	epacket_dummy_receive(epacket_dummy, &header, params, params_len);
-}
-
-static struct net_buf *expect_response(uint32_t request_id, uint16_t command_id, int rc)
-{
-	struct k_fifo *response_queue = epacket_dummmy_transmit_fifo_get();
-	struct infuse_rpc_rsp_header *response;
-	struct epacket_dummy_frame *frame;
-	struct net_buf *rsp;
-
-	/* Response was sent */
-	rsp = k_fifo_get(response_queue, K_SECONDS(10));
-	if (rsp == NULL) {
-		LOG_ERR("No response");
-		return NULL;
-	}
-	frame = net_buf_pull_mem(rsp, sizeof(struct epacket_dummy_frame));
-	if (frame->type != INFUSE_RPC_RSP) {
-		LOG_ERR("Unexpected response type (%d != %d)", INFUSE_RPC_RSP, frame->type);
-		return NULL;
-	}
-	response = (void *)rsp->data;
-
-	/* Parameters match what we expect */
-	if (request_id != response->request_id) {
-		LOG_ERR("Unexpected request ID (%08X != %08X)", response->request_id, request_id);
-		return NULL;
-	}
-	if (rc != response->return_code) {
-		LOG_ERR("Unexpected return code (%d != %d)", response->return_code, rc);
-		return NULL;
-	}
-
-	/* Return the response */
-	return rsp;
 }
 
 static void main_gateway_rpcs(void)
