@@ -27,21 +27,44 @@ LOG_MODULE_DECLARE(epacket, CONFIG_EPACKET_LOG_LEVEL);
 #define FORWARDING_INTERFACE_NODE DT_COMPAT_GET_ANY_STATUS_OKAY(embeint_epacket_bt_central)
 #define FORWARDING_BUFFER_SIZE                                                                     \
 	ROUND_UP(EPACKET_INTERFACE_MAX_PACKET(FORWARDING_INTERFACE_NODE), sizeof(void *))
+#define FORWARDING_MAX_CONN CONFIG_EPACKET_FORWARDING_MAX_CONNECTIONS
 
 struct conn_state {
-	uint8_t flags;
+	atomic_t flags;
+	atomic_t gateway_initiated;
 };
 
 NET_BUF_POOL_DEFINE(epacket_forwarding_pool, CONFIG_EPACKET_FORWARDING_BUFFERS,
 		    FORWARDING_BUFFER_SIZE, sizeof(struct epacket_tx_metadata), NULL);
 
 static K_FIFO_DEFINE(packet_queue);
+static K_SEM_DEFINE(gateway_connection_slots, FORWARDING_MAX_CONN, FORWARDING_MAX_CONN);
 static const struct device *epacket_backhaul;
 static struct conn_state forwarding_state[CONFIG_BT_MAX_CONN];
+
+INFUSE_WATCHDOG_REGISTER_SYS_INIT(forwarding_wdog, CONFIG_TASK_RUNNER_INFUSE_WATCHDOG, wdog_channel,
+				  loop_period);
 
 static struct net_buf *forwarding_buffer_alloc(void)
 {
 	return net_buf_alloc(&epacket_forwarding_pool, K_MSEC(10));
+}
+
+static void gateway_connection_slot_release(struct conn_state *state)
+{
+	if (atomic_cas(&state->gateway_initiated, true, false)) {
+		k_sem_give(&gateway_connection_slots);
+	}
+}
+
+static void gateway_connection_slot_take(void)
+{
+	/* Use a finite wait so the forwarding thread can continue to feed its watchdog
+	 * while all slots are occupied.
+	 */
+	while (k_sem_take(&gateway_connection_slots, K_SECONDS(1)) != 0) {
+		infuse_watchdog_feed(wdog_channel);
+	}
 }
 
 static void epacket_forward_direct(struct net_buf *buf)
@@ -140,20 +163,34 @@ static int ensure_bt_connection(union epacket_interface_address *address, uint8_
 		.subscribe_commands = true,
 		.subscribe_data = flags & EPACKET_FORWARD_AUTO_CONN_SUB_DATA,
 		.subscribe_logging = false,
+		.existing_only = true,
 	};
 	struct epacket_read_response security_info;
+	struct bt_conn_info conn_info;
 	struct bt_conn *conn = NULL;
 	struct conn_state *state;
+	uint8_t state_flags;
 	bool throughput_limit = false;
+	bool slot_claimed;
 	bool already;
 	int conn_idx;
 	int rc;
 
+	/* First try to reuse a connection without consuming a gateway slot. The connect
+	 * helper must not create one during this attempt, otherwise an external connection
+	 * disappearing here could bypass the gateway limit.
+	 */
+	slot_claimed = false;
+
 #ifdef CONFIG_KV_STORE_KEY_BLUETOOTH_THROUGHPUT_LIMIT
 	struct kv_bluetooth_throughput_limit limit = {0};
 
-	if ((KV_STORE_READ(KV_KEY_BLUETOOTH_THROUGHPUT_LIMIT, &limit) == sizeof(limit)) &&
-	    (limit.limit_kbps > 0) && (limit.limit_kbps < 500) &&
+	if (KV_STORE_READ(KV_KEY_BLUETOOTH_THROUGHPUT_LIMIT, &limit) != sizeof(limit)) {
+		limit.limit_kbps = 0;
+	}
+	throughput_limit = limit.limit_kbps > 0;
+
+	if (throughput_limit && (limit.limit_kbps < 500) &&
 	    (flags & EPACKET_FORWARD_AUTO_CONN_PRIORITISE_UPLINK)) {
 		/* A low throughput limit is requested together with uplink prioritisation.
 		 * Based on this we want to request the 1 Mbit PHY to provide a more stable
@@ -164,11 +201,51 @@ static int ensure_bt_connection(union epacket_interface_address *address, uint8_
 	}
 #endif /* CONFIG_KV_STORE_KEY_BLUETOOTH_THROUGHPUT_LIMIT */
 
-	/* Create the connection */
+	state_flags = flags & (EPACKET_FORWARD_AUTO_CONN_SINGLE_RPC |
+			       EPACKET_FORWARD_AUTO_CONN_DC_NOTIFICATION);
+	if (throughput_limit && (flags & EPACKET_FORWARD_AUTO_CONN_PRIORITISE_UPLINK)) {
+		state_flags |= EPACKET_FORWARD_AUTO_CONN_PRIORITISE_UPLINK;
+	}
+
+retry:
+	/* Reuse an existing connection, or create one after reserving a gateway slot. */
 	rc = epacket_bt_gatt_connect(&conn, &params, &security_info, &already);
 	if (rc != 0) {
+		if (params.existing_only && !already && (rc == -ENOTCONN)) {
+			gateway_connection_slot_take();
+			slot_claimed = true;
+			params.existing_only = false;
+			goto retry;
+		}
 		/* Connection failed */
+		if (slot_claimed) {
+			k_sem_give(&gateway_connection_slots);
+		}
 		return rc;
+	}
+	if (already && slot_claimed) {
+		/* Existing connections do not consume a gateway connection slot. */
+		k_sem_give(&gateway_connection_slots);
+		slot_claimed = false;
+	}
+	__ASSERT(already || slot_claimed, "Created connection without a gateway slot");
+
+	/* Record ownership before doing any further GATT operations so a concurrent
+	 * disconnect can return the slot. If the disconnect completed before the
+	 * ownership flag was stored, detect that state and return the slot here.
+	 */
+	conn_idx = bt_conn_index(conn);
+	state = &forwarding_state[conn_idx];
+	atomic_set(&state->flags, state_flags);
+	if (!already) {
+		atomic_set(&state->gateway_initiated, true);
+	}
+	if ((bt_conn_get_info(conn, &conn_info) != 0) ||
+	    (conn_info.state != BT_CONN_STATE_CONNECTED)) {
+		gateway_connection_slot_release(state);
+		atomic_set(&state->flags, 0);
+		bt_conn_unref(conn);
+		return -ENOTCONN;
 	}
 
 #ifdef CONFIG_KV_STORE_KEY_BLUETOOTH_THROUGHPUT_LIMIT
@@ -179,18 +256,10 @@ static int ensure_bt_connection(union epacket_interface_address *address, uint8_
 		if (rc != 0) {
 			LOG_WRN("Failed to request throughput limit (%d)", rc);
 		}
-		/* Uplink is known to be limited */
-		throughput_limit = true;
 	}
 #endif /* CONFIG_KV_STORE_KEY_BLUETOOTH_THROUGHPUT_LIMIT */
 
-	/* Store whether we should disconnect on receiving a RPC response */
-	conn_idx = bt_conn_index(conn);
-	state = &forwarding_state[conn_idx];
-	state->flags = flags & (EPACKET_FORWARD_AUTO_CONN_SINGLE_RPC |
-				EPACKET_FORWARD_AUTO_CONN_DC_NOTIFICATION);
 	if (throughput_limit && (flags & EPACKET_FORWARD_AUTO_CONN_PRIORITISE_UPLINK)) {
-		state->flags |= EPACKET_FORWARD_AUTO_CONN_PRIORITISE_UPLINK;
 		infuse_state_set_timeout(INFUSE_STATE_HIGH_PRIORITY_UPLINK, 2);
 	}
 
@@ -232,12 +301,13 @@ static void disconnected(struct bt_conn *conn, uint8_t reason)
 	int conn_id = bt_conn_index(conn);
 	struct conn_state *state = &forwarding_state[conn_id];
 
-	if (state->flags & EPACKET_FORWARD_AUTO_CONN_DC_NOTIFICATION) {
+	if (atomic_get(&state->flags) & EPACKET_FORWARD_AUTO_CONN_DC_NOTIFICATION) {
 		send_conn_terminated(epacket_backhaul, reason, bt_conn_get_dst(conn));
 	}
+	gateway_connection_slot_release(state);
 
 	/* Clear the masks */
-	state->flags = 0;
+	atomic_set(&state->flags, 0);
 }
 
 bool bt_central_packet_received(struct net_buf *buf, bool decrypted, void *user_ctx)
@@ -256,14 +326,14 @@ bool bt_central_packet_received(struct net_buf *buf, bool decrypted, void *user_
 	conn_id = bt_conn_index(conn);
 	state = &forwarding_state[conn_id];
 
-	if (state->flags & EPACKET_FORWARD_AUTO_CONN_PRIORITISE_UPLINK) {
+	if (atomic_get(&state->flags) & EPACKET_FORWARD_AUTO_CONN_PRIORITISE_UPLINK) {
 		/* Data received on the link, continue prioritising it */
 		infuse_state_set_timeout(INFUSE_STATE_HIGH_PRIORITY_UPLINK, 2);
 	}
 
 	/* Is this RPC_RSP received on a connection with EPACKET_FORWARD_AUTO_CONN_SINGLE_RPC */
 	if ((meta->type == INFUSE_RPC_RSP) &&
-	    (state->flags & EPACKET_FORWARD_AUTO_CONN_SINGLE_RPC)) {
+	    (atomic_get(&state->flags) & EPACKET_FORWARD_AUTO_CONN_SINGLE_RPC)) {
 		LOG_INF("Initiating disconnect due to RPC_RSP");
 		rc = bt_conn_disconnect(conn, BT_HCI_ERR_REMOTE_USER_TERM_CONN);
 		if (rc != 0) {
@@ -273,9 +343,6 @@ bool bt_central_packet_received(struct net_buf *buf, bool decrypted, void *user_
 	bt_conn_unref(conn);
 	return true;
 }
-
-INFUSE_WATCHDOG_REGISTER_SYS_INIT(forwarding_wdog, CONFIG_TASK_RUNNER_INFUSE_WATCHDOG, wdog_channel,
-				  loop_period);
 
 static void forward_auto_conn_process_one(struct net_buf *buf)
 {
