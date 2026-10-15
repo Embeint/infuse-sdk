@@ -28,6 +28,11 @@ tests:
       bsim_exe_name: tests_bsim_bluetooth_epacket_gateway_prj_knows_alt_conf
     extra_args:
       - EXTRA_CONF_FILE=prj_knows_alt.conf
+  bluetooth.epacket.gateway.conn_limit:
+    harness_config:
+      bsim_exe_name: tests_bsim_bluetooth_epacket_gateway_prj_conn_limit_conf
+    extra_args:
+      - EXTRA_CONF_FILE=prj_conn_limit.conf
   bluetooth.epacket.gateway.rx_pool:
     harness_config:
       bsim_exe_name: tests_bsim_bluetooth_epacket_gateway_prj_rx_pool_conf
