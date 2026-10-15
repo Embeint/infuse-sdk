@@ -13,6 +13,7 @@ tests:
       - netif
       - wifi
   net.dns.native:
+    tags: external_service
     platform_allow:
       - native_sim
     integration_platforms:

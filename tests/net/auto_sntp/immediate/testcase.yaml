@@ -13,6 +13,7 @@ tests:
       - netif
       - wifi
   net.auto_sntp.immediate.native.sync:
+    tags: external_service
     platform_allow:
       - native_sim
     integration_platforms:
@@ -51,6 +52,7 @@ tests:
         - "Sending request..."
         - "Unix time: (.*)"
   net.auto_sntp.immediate.native.async:
+    tags: external_service
     platform_allow:
       - native_sim
     integration_platforms:
