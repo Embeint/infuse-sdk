@@ -59,6 +59,8 @@ struct epacket_bt_gatt_connect_params {
 	bool subscribe_cloud_uplink;
 	/* Wait until subscriptions apply to return */
 	bool wait_subscriptions;
+	/* Only reuse an existing connection; return -ENOTCONN rather than creating one. */
+	bool existing_only;
 };
 
 /**
@@ -73,6 +75,7 @@ struct epacket_bt_gatt_connect_params {
  * @param already True if the connection already existed
  *
  * @retval 0 on success, *conn is valid
+ * @retval -ENOTCONN if existing_only is set and no connection exists
  * @retval >0 on HCI error, *conn is invalid
  * @retval <0 on Zephyr error, *conn is invalid
  */

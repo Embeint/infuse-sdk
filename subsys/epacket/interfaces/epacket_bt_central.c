@@ -338,6 +338,7 @@ int epacket_bt_gatt_connect(struct bt_conn **conn_out,
 	int rc = 0;
 
 	*conn_out = NULL;
+	*already = false;
 
 	/* Determine if connection already exists */
 	conn = bt_conn_lookup_addr_le(BT_ID_DEFAULT, &params->peer);
@@ -350,9 +351,11 @@ int epacket_bt_gatt_connect(struct bt_conn **conn_out,
 #endif /* CONFIG_MEMFAULT_INFUSE_METRICS_BT_CONNECTIONS */
 		goto conn_created;
 	}
+	if (params->existing_only) {
+		return -ENOTCONN;
+	}
 
 	/* Create the connection */
-	*already = false;
 	conn = NULL;
 	LOG_INF("Creating connection (timeout %d ms)", params->conn_timeout_ms);
 	rc = bt_conn_le_create(&params->peer, &create_param, &params->conn_params, &conn);
