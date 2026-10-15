@@ -88,9 +88,6 @@ ZTEST(infuse_coap, test_resource_errors)
 	int sock;
 	int rc;
 
-	/* Wait for the interface to come up */
-	zassert_equal(0, k_sem_take(&l4_up, IF_DELAY));
-
 	/* Open socket */
 	sock = socket_setup();
 
@@ -117,7 +114,6 @@ ZTEST(infuse_coap, test_resource_errors)
 
 	/* Close socket */
 	zassert_equal(0, zsock_close(sock));
-	k_sem_give(&l4_up);
 }
 
 ZTEST(infuse_coap, test_download)
@@ -125,9 +121,6 @@ ZTEST(infuse_coap, test_download)
 	struct cb_ctx context;
 	int sock;
 	int rc;
-
-	/* Wait for the interface to come up */
-	zassert_equal(0, k_sem_take(&l4_up, IF_DELAY));
 
 	/* Open socket */
 	sock = socket_setup();
@@ -172,7 +165,6 @@ ZTEST(infuse_coap, test_download)
 
 	/* Close socket */
 	zassert_equal(0, zsock_close(sock));
-	k_sem_give(&l4_up);
 }
 
 ZTEST(infuse_coap, test_separate_response)
@@ -181,9 +173,6 @@ ZTEST(infuse_coap, test_separate_response)
 	struct cb_ctx context;
 	int sock;
 	int rc;
-
-	/* Wait for the interface to come up */
-	zassert_equal(0, k_sem_take(&l4_up, IF_DELAY));
 
 	/* Open socket */
 	sock = socket_setup();
@@ -197,7 +186,6 @@ ZTEST(infuse_coap, test_separate_response)
 
 	/* Close socket */
 	zassert_equal(0, zsock_close(sock));
-	k_sem_give(&l4_up);
 }
 
 void *test_init(void)
@@ -229,6 +217,9 @@ void *test_init(void)
 	conn_mgr_all_if_up(true);
 	conn_mgr_all_if_connect(true);
 #endif /* CONFIG_NET_NATIVE_OFFLOADED_SOCKETS */
+
+	/* Wait for the interface to come up before running any tests */
+	zassert_equal(0, k_sem_take(&l4_up, IF_DELAY), "Timed out waiting for L4 connectivity");
 
 	return NULL;
 }

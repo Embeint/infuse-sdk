@@ -26,6 +26,11 @@
 K_SEM_DEFINE(l4_up, 0, 1);
 K_SEM_DEFINE(time_ref_updated, 0, 1);
 
+#ifdef CONFIG_NET_NATIVE_OFFLOADED_SOCKETS
+static struct net_if *iface;
+static struct in_addr addr;
+#endif /* CONFIG_NET_NATIVE_OFFLOADED_SOCKETS */
+
 static void l4_event_handler(struct net_mgmt_event_callback *cb, uint64_t mgmt_event,
 			     struct net_if *iface)
 {
@@ -68,31 +73,6 @@ ZTEST(auto_sntp, test_auto_sntp)
 	KV_STRING_CONST(sntp_invalid, "www.google.com");
 
 	struct timeutil_sync_instant reference;
-	static struct epoch_time_cb time_cb;
-
-	/* Remove any pending URLs */
-	(void)kv_store_delete(KV_KEY_NTP_SERVER_URL);
-
-	/* Register for time callbacks */
-	time_cb.reference_time_updated = reference_time_updated;
-	time_cb.user_ctx = &time_ref_updated;
-	epoch_time_register_callback(&time_cb);
-
-#ifdef CONFIG_NET_NATIVE_OFFLOADED_SOCKETS
-	struct net_if *iface = net_if_get_default();
-	struct in_addr addr;
-
-	/* Add the IP address to trigger NET_EVENT_L4_CONNECTED */
-	net_addr_pton(AF_INET, "192.0.2.1", &addr);
-	net_if_ipv4_addr_add(iface, &addr, NET_ADDR_MANUAL, 0);
-#else
-	/* Turn on all interfaces */
-	conn_mgr_all_if_up(true);
-	conn_mgr_all_if_connect(true);
-#endif /* CONFIG_NET_NATIVE_OFFLOADED_SOCKETS */
-
-	/* Wait for the interface to come up */
-	zassert_equal(0, k_sem_take(&l4_up, IF_DELAY));
 
 	/* Wait for time to be updated */
 	zassert_equal(0, k_sem_take(&time_ref_updated, K_SECONDS(2)));
@@ -158,6 +138,7 @@ ZTEST(auto_sntp, test_auto_sntp)
 void *test_init(void)
 {
 	static struct net_mgmt_event_callback mgmt_cb;
+	static struct epoch_time_cb time_cb;
 
 #ifdef CONFIG_WIFI
 	KV_STRING_CONST(ssid, CONFIG_WIFI_SSID);
@@ -171,6 +152,29 @@ void *test_init(void)
 		net_mgmt_init_event_callback(&mgmt_cb, l4_event_handler, NET_EVENT_L4_CONNECTED);
 		net_mgmt_add_event_callback(&mgmt_cb);
 	}
+
+	/* Remove any pending URLs */
+	(void)kv_store_delete(KV_KEY_NTP_SERVER_URL);
+
+	/* Register for time callbacks */
+	time_cb.reference_time_updated = reference_time_updated;
+	time_cb.user_ctx = &time_ref_updated;
+	epoch_time_register_callback(&time_cb);
+
+#ifdef CONFIG_NET_NATIVE_OFFLOADED_SOCKETS
+	iface = net_if_get_default();
+
+	/* Add the IP address to trigger NET_EVENT_L4_CONNECTED */
+	net_addr_pton(AF_INET, "192.0.2.1", &addr);
+	net_if_ipv4_addr_add(iface, &addr, NET_ADDR_MANUAL, 0);
+#else
+	/* Turn on all interfaces */
+	conn_mgr_all_if_up(true);
+	conn_mgr_all_if_connect(true);
+#endif /* CONFIG_NET_NATIVE_OFFLOADED_SOCKETS */
+
+	/* Wait for the interface to come up before running any tests */
+	zassert_equal(0, k_sem_take(&l4_up, IF_DELAY), "Timed out waiting for L4 connectivity");
 
 	return NULL;
 }

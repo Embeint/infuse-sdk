@@ -41,9 +41,6 @@ ZTEST(infuse_dns, test_dns_query)
 	struct net_sockaddr address;
 	net_socklen_t address_len;
 
-	/* Wait for the interface to come up */
-	zassert_equal(0, k_sem_take(&l4_up, IF_DELAY));
-
 	/* IPv4 lookups */
 	zassert_equal(
 		0, infuse_sync_dns("google.com", 80, AF_INET, SOCK_STREAM, &address, &address_len));
@@ -67,9 +64,6 @@ ZTEST(infuse_dns, test_dns_query)
 					     &address, &address_len));
 #endif /* !CONFIG_NET_NATIVE_OFFLOADED_SOCKETS */
 #endif /* defined(CONFIG_NET_IPV6) && !defined(CONFIG_WIFI) */
-
-	/* Interface is still up */
-	k_sem_give(&l4_up);
 }
 
 #ifdef CONFIG_INFUSE_DNS_ASYNC
@@ -114,9 +108,6 @@ ZTEST(infuse_dns, test_dns_query_async)
 		.user_data = &address_len,
 	};
 
-	/* Wait for the interface to come up */
-	zassert_equal(0, k_sem_take(&l4_up, IF_DELAY));
-
 	/* Invalid address families */
 	zassert_equal(-EINVAL, infuse_async_dns("google.com", AF_UNSPEC, &cb_ctx, 2000));
 	zassert_equal(-EINVAL, infuse_async_dns("google.com", AF_PACKET, &cb_ctx, 2000));
@@ -151,9 +142,6 @@ ZTEST(infuse_dns, test_dns_query_async)
 	zassert_equal(-EBUSY, k_sem_take(&async_success, K_NO_WAIT));
 	zassert_equal(-EBUSY, k_sem_take(&async_complete, K_NO_WAIT));
 #endif /* defined(CONFIG_NET_IPV6) && !defined(CONFIG_WIFI) */
-
-	/* Interface is still up */
-	k_sem_give(&l4_up);
 }
 
 #else
@@ -194,6 +182,9 @@ void *test_init(void)
 	conn_mgr_all_if_up(true);
 	conn_mgr_all_if_connect(true);
 #endif /* CONFIG_NET_NATIVE_OFFLOADED_SOCKETS */
+
+	/* Wait for the interface to come up before running any tests */
+	zassert_equal(0, k_sem_take(&l4_up, IF_DELAY), "Timed out waiting for L4 connectivity");
 
 	return NULL;
 }
