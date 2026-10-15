@@ -88,7 +88,8 @@ jobs:
           export ZEPHYR_BASE=${PWD}/zephyr
           $ZEPHYR_BASE/scripts/twister -i --force-color -N -v --filter runnable -p ${{ matrix.platform }} --coverage \
             -T infuse-sdk/tests --coverage-tool gcovr \
-            -e nano --coverage-basedir infuse-sdk \
+            --exclude-tag nano --exclude-tag external_service \
+            --coverage-basedir infuse-sdk \
             -x=CONFIG_TEST_EXTRA_STACK_SIZE=4096 \
             -x=CONFIG_COVERAGE_DUMP_PATH_EXCLUDE=\"*modules/crypto/*\"
 
@@ -108,6 +109,75 @@ jobs:
         with:
           name: Coverage Data (Subset ${{ matrix.normalized }})
           path: coverage/reports/${{ matrix.normalized }}.json
+          retention-days: 1
+
+  external-services:
+    name: External Service Tests
+    runs-on: self-hosted
+    container:
+      image: ghcr.io/zephyrproject-rtos/ci-repo-cache:v0.29.1.20260327
+      options: '--entrypoint /bin/bash'
+      volumes:
+        - /repo-cache/embeint:/github/cache/embeint
+        - /repo-cache/ccache:/github/ccache
+        - /repo-cache/pip-cache:/github/pip-cache
+    env:
+      PIP_CACHE_DIR: /github/pip-cache
+      CCACHE_DIR: /github/ccache
+      # `--specs` is ignored because ccache is unable to resolve the toolchain specs file path.
+      CCACHE_IGNOREOPTIONS: '-specs=* --specs=*'
+      BASE_REF: ${{ github.base_ref }}
+      ZEPHYR_TOOLCHAIN_VARIANT: zephyr
+    steps:
+      - name: Workspace cleanup
+        run: |
+          rm -rf ./{*,.*}
+          rm -rf infuse-sdk twister-out*
+
+      - name: Clone cached Embeint SDK repository
+        continue-on-error: true
+        run: |
+          git config --global --add safe.directory '*'
+          git clone --shared /github/cache/embeint/infuse-sdk infuse-sdk
+          cd infuse-sdk
+          git remote set-url origin ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}
+
+      - name: Checkout
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          path: infuse-sdk
+          fetch-depth: 0
+
+      - name: Set up Twister environment
+        uses: ./infuse-sdk/.github/actions/setup-twister
+
+      - name: Run External Service Tests with Coverage Information
+        run: |
+          mkdir -p coverage/reports
+          export ZEPHYR_BASE=${PWD}/zephyr
+          $ZEPHYR_BASE/scripts/twister -i --force-color -N -v --filter runnable -p native_sim --coverage --retry-failed 3 \
+            -T infuse-sdk/tests --coverage-tool gcovr \
+            --tag external_service --coverage-basedir infuse-sdk \
+            -x=CONFIG_TEST_EXTRA_STACK_SIZE=4096 \
+            -x=CONFIG_COVERAGE_DUMP_PATH_EXCLUDE=\"*modules/crypto/*\"
+
+      - name: Print ccache stats
+        if: always()
+        run: |
+          ccache -s -vv
+
+      - name: Rename coverage files
+        if: always()
+        run: |
+          mv twister-out/coverage.json coverage/reports/native_sim_external_services.json
+
+      - name: Upload Coverage Results
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: Coverage Data (External Services)
+          path: coverage/reports/native_sim_external_services.json
           retention-days: 1
 
   babblesim:
@@ -232,6 +302,7 @@ jobs:
     name: "Publish Coverage Results"
     needs:
       - twister
+      - external-services
       - babblesim
     runs-on: ubuntu-24.04
     # the codecov job might be skipped, we don't need to run this job then
