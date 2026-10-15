@@ -23,6 +23,9 @@
 #define IF_DELAY K_SECONDS(5)
 #endif
 
+#define GOOGLE_HOSTNAME  "google.com."
+#define INVALID_HOSTNAME "does-not-exist.invalid."
+
 K_SEM_DEFINE(l4_up, 0, 1);
 
 static void l4_event_handler(struct net_mgmt_event_callback *cb, uint64_t mgmt_event,
@@ -42,17 +45,17 @@ ZTEST(infuse_dns, test_dns_query)
 	net_socklen_t address_len;
 
 	/* IPv4 lookups */
-	zassert_equal(
-		0, infuse_sync_dns("google.com", 80, AF_INET, SOCK_STREAM, &address, &address_len));
+	zassert_equal(0, infuse_sync_dns(GOOGLE_HOSTNAME, 80, AF_INET, SOCK_STREAM, &address,
+					 &address_len));
 	zassert_equal(sizeof(struct net_sockaddr_in), address_len);
 
-	zassert_not_equal(0, infuse_sync_dns("not.a.real.address", 80, AF_INET, SOCK_STREAM,
-					     &address, &address_len));
+	zassert_not_equal(0, infuse_sync_dns(INVALID_HOSTNAME, 80, AF_INET, SOCK_STREAM, &address,
+					     &address_len));
 
 	/* Not working on WiFi network, not sure how to validate at runtime if this should work */
 #if defined(CONFIG_NET_IPV6) && !defined(CONFIG_WIFI)
 	/* IPv6 lookups */
-	zassert_equal(0, infuse_sync_dns("google.com", 80, AF_INET6, SOCK_STREAM, &address,
+	zassert_equal(0, infuse_sync_dns(GOOGLE_HOSTNAME, 80, AF_INET6, SOCK_STREAM, &address,
 					 &address_len));
 	zassert_equal(sizeof(struct net_sockaddr_in6), address_len);
 
@@ -60,8 +63,8 @@ ZTEST(infuse_dns, test_dns_query)
 	/* IPv6 queries through getaddrinfo to invalid addresses on POSIX can take a long time and
 	 * break the other tests for currently unknown reasons.
 	 */
-	zassert_not_equal(0, infuse_sync_dns("not.a.real.address", 80, AF_INET6, SOCK_STREAM,
-					     &address, &address_len));
+	zassert_not_equal(0, infuse_sync_dns(INVALID_HOSTNAME, 80, AF_INET6, SOCK_STREAM, &address,
+					     &address_len));
 #endif /* !CONFIG_NET_NATIVE_OFFLOADED_SOCKETS */
 #endif /* defined(CONFIG_NET_IPV6) && !defined(CONFIG_WIFI) */
 }
@@ -109,21 +112,21 @@ ZTEST(infuse_dns, test_dns_query_async)
 	};
 
 	/* Invalid address families */
-	zassert_equal(-EINVAL, infuse_async_dns("google.com", AF_UNSPEC, &cb_ctx, 2000));
-	zassert_equal(-EINVAL, infuse_async_dns("google.com", AF_PACKET, &cb_ctx, 2000));
-	zassert_equal(-EINVAL, infuse_async_dns("google.com", AF_CAN, &cb_ctx, 2000));
-	zassert_equal(-EINVAL, infuse_async_dns("google.com", AF_NET_MGMT, &cb_ctx, 2000));
-	zassert_equal(-EINVAL, infuse_async_dns("google.com", AF_LOCAL, &cb_ctx, 2000));
-	zassert_equal(-EINVAL, infuse_async_dns("google.com", AF_UNIX, &cb_ctx, 2000));
+	zassert_equal(-EINVAL, infuse_async_dns(GOOGLE_HOSTNAME, AF_UNSPEC, &cb_ctx, 2000));
+	zassert_equal(-EINVAL, infuse_async_dns(GOOGLE_HOSTNAME, AF_PACKET, &cb_ctx, 2000));
+	zassert_equal(-EINVAL, infuse_async_dns(GOOGLE_HOSTNAME, AF_CAN, &cb_ctx, 2000));
+	zassert_equal(-EINVAL, infuse_async_dns(GOOGLE_HOSTNAME, AF_NET_MGMT, &cb_ctx, 2000));
+	zassert_equal(-EINVAL, infuse_async_dns(GOOGLE_HOSTNAME, AF_LOCAL, &cb_ctx, 2000));
+	zassert_equal(-EINVAL, infuse_async_dns(GOOGLE_HOSTNAME, AF_UNIX, &cb_ctx, 2000));
 
 	/* IPv4 lookups */
-	zassert_equal(0, infuse_async_dns("google.com", AF_INET, &cb_ctx, 2000));
+	zassert_equal(0, infuse_async_dns(GOOGLE_HOSTNAME, AF_INET, &cb_ctx, 2000));
 	zassert_equal(0, k_sem_take(&async_success, K_SECONDS(2)));
 	zassert_equal(0, k_sem_take(&async_complete, K_MSEC(100)));
 	zassert_equal(-EBUSY, k_sem_take(&async_failure, K_NO_WAIT));
 	zassert_equal(sizeof(struct net_sockaddr_in), address_len);
 
-	zassert_equal(0, infuse_async_dns("not.a.real.address", AF_INET, &cb_ctx, 2000));
+	zassert_equal(0, infuse_async_dns(INVALID_HOSTNAME, AF_INET, &cb_ctx, 2000));
 	zassert_equal(0, k_sem_take(&async_failure, K_SECONDS(2)));
 	zassert_equal(-EBUSY, k_sem_take(&async_success, K_NO_WAIT));
 	zassert_equal(-EBUSY, k_sem_take(&async_complete, K_NO_WAIT));
@@ -131,13 +134,13 @@ ZTEST(infuse_dns, test_dns_query_async)
 	/* Not working on WiFi network, not sure how to validate at runtime if this should work */
 #if defined(CONFIG_NET_IPV6) && !defined(CONFIG_WIFI)
 	/* IPv6 lookups */
-	zassert_equal(0, infuse_async_dns("google.com", AF_INET6, &cb_ctx, 2000));
+	zassert_equal(0, infuse_async_dns(GOOGLE_HOSTNAME, AF_INET6, &cb_ctx, 2000));
 	zassert_equal(0, k_sem_take(&async_success, K_SECONDS(2)));
 	zassert_equal(0, k_sem_take(&async_complete, K_MSEC(100)));
 	zassert_equal(-EBUSY, k_sem_take(&async_failure, K_NO_WAIT));
 	zassert_equal(sizeof(struct net_sockaddr_in6), address_len);
 
-	zassert_equal(0, infuse_async_dns("not.a.real.address", AF_INET6, &cb_ctx, 2000));
+	zassert_equal(0, infuse_async_dns(INVALID_HOSTNAME, AF_INET6, &cb_ctx, 2000));
 	zassert_equal(0, k_sem_take(&async_failure, K_SECONDS(2)));
 	zassert_equal(-EBUSY, k_sem_take(&async_success, K_NO_WAIT));
 	zassert_equal(-EBUSY, k_sem_take(&async_complete, K_NO_WAIT));
