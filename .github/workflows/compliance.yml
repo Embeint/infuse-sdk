@@ -58,7 +58,7 @@ jobs:
         git rebase origin/${BASE_REF}
         git clean -f -d
         # debug
-        git log  --pretty=oneline | head -n 10
+        git log -n 10 --pretty=oneline
 
     - name: west setup
       working-directory: infuse-sdk
@@ -77,7 +77,7 @@ jobs:
         export ZEPHYR_BASE=$PWD/../zephyr
         # debug
         ls -la
-        git log  --pretty=oneline | head -n 10
+        git log -n 10 --pretty=oneline
         # Increase rename limit to allow for large PRs
         git config diff.renameLimit 10000
         excludes="-e Kconfig -e LicenseAndCopyrightCheck"

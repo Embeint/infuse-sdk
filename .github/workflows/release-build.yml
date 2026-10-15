@@ -76,7 +76,7 @@ jobs:
             git config --global user.name "Embeint CI"
             rm -fr ".git/rebase-apply"
             git rebase origin/${BASE_REF}
-            git log  --pretty=oneline | head -n 10
+            git log -n 10 --pretty=oneline
           fi
 
           west init -l . || true

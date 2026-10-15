@@ -53,7 +53,7 @@ jobs:
         export PATH=$PATH:$ZEPHYR_BASE/scripts
         # debug
         ls -la
-        git log  --pretty=oneline | head -n 10
+        git log -n 10 --pretty=oneline
         ./scripts/ci/guideline_check.py --output output.txt -c origin/${BASE_REF}..
 
     - name: check-warns
