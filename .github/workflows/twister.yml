@@ -169,6 +169,13 @@ jobs:
         with:
           install-actions-requirements: ${{ github.event_name == 'pull_request' }}
 
+      - name: DNS Checks
+        continue-on-error: true
+        run: |
+          cat /etc/resolv.conf
+          getent ahostsv4 google.com.
+          getent ahostsv6 google.com.
+
       - name: Run External Service Tests with Twister
         run: |
           export ZEPHYR_BASE=${PWD}/zephyr
