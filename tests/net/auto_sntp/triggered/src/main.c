@@ -65,35 +65,6 @@ static void reference_time_updated(enum epoch_time_source source, struct timeuti
 
 ZTEST(auto_sntp, test_auto_sntp_triggered)
 {
-	static struct epoch_time_cb time_cb;
-
-	/* Remove any pending URLs */
-	(void)kv_store_delete(KV_KEY_NTP_SERVER_URL);
-
-	/* Register for time callbacks */
-	time_cb.reference_time_updated = reference_time_updated;
-	time_cb.user_ctx = &time_ref_updated;
-	epoch_time_register_callback(&time_cb);
-
-	/* Trigger before interface is up */
-	sntp_auto_sync_point();
-
-#ifdef CONFIG_NET_NATIVE_OFFLOADED_SOCKETS
-	struct net_if *iface = net_if_get_default();
-	struct in_addr addr;
-
-	/* Add the IP address to trigger NET_EVENT_L4_CONNECTED */
-	net_addr_pton(AF_INET, "192.0.2.1", &addr);
-	net_if_ipv4_addr_add(iface, &addr, NET_ADDR_MANUAL, 0);
-#else
-	/* Turn on all interfaces */
-	conn_mgr_all_if_up(true);
-	conn_mgr_all_if_connect(true);
-#endif /* CONFIG_NET_NATIVE_OFFLOADED_SOCKETS */
-
-	/* Wait for the interface to come up */
-	zassert_equal(0, k_sem_take(&l4_up, IF_DELAY));
-
 	/* By default, nothing happens */
 	zassert_equal(-EAGAIN, k_sem_take(&time_ref_updated, K_SECONDS(2)));
 	zassert_false(kv_store_key_exists(KV_KEY_NTP_SERVER_URL));
@@ -124,6 +95,7 @@ ZTEST(auto_sntp, test_auto_sntp_triggered)
 void *test_init(void)
 {
 	static struct net_mgmt_event_callback mgmt_cb;
+	static struct epoch_time_cb time_cb;
 
 #ifdef CONFIG_WIFI
 	KV_STRING_CONST(ssid, CONFIG_WIFI_SSID);
@@ -137,6 +109,33 @@ void *test_init(void)
 		net_mgmt_init_event_callback(&mgmt_cb, l4_event_handler, NET_EVENT_L4_CONNECTED);
 		net_mgmt_add_event_callback(&mgmt_cb);
 	}
+
+	/* Remove any pending URLs */
+	(void)kv_store_delete(KV_KEY_NTP_SERVER_URL);
+
+	/* Register for time callbacks */
+	time_cb.reference_time_updated = reference_time_updated;
+	time_cb.user_ctx = &time_ref_updated;
+	epoch_time_register_callback(&time_cb);
+
+	/* Trigger before interface is up */
+	sntp_auto_sync_point();
+
+#ifdef CONFIG_NET_NATIVE_OFFLOADED_SOCKETS
+	struct net_if *iface = net_if_get_default();
+	struct in_addr addr;
+
+	/* Add the IP address to trigger NET_EVENT_L4_CONNECTED */
+	net_addr_pton(AF_INET, "192.0.2.1", &addr);
+	net_if_ipv4_addr_add(iface, &addr, NET_ADDR_MANUAL, 0);
+#else
+	/* Turn on all interfaces */
+	conn_mgr_all_if_up(true);
+	conn_mgr_all_if_connect(true);
+#endif /* CONFIG_NET_NATIVE_OFFLOADED_SOCKETS */
+
+	/* Wait for the interface to come up before running any tests */
+	zassert_equal(0, k_sem_take(&l4_up, IF_DELAY), "Timed out waiting for L4 connectivity");
 
 	return NULL;
 }

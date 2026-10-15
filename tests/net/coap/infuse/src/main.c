@@ -151,9 +151,6 @@ ZTEST(infuse_coap, test_timeout)
 	int sock;
 	int rc;
 
-	/* Wait for the interface to come up */
-	zassert_equal(0, k_sem_take(&l4_up, IF_DELAY));
-
 	/* Open socket */
 	sock = socket_setup();
 
@@ -172,7 +169,6 @@ ZTEST(infuse_coap, test_timeout)
 
 	/* Close socket */
 	zassert_equal(0, zsock_close(sock));
-	k_sem_give(&l4_up);
 }
 
 static int socket_to_close;
@@ -191,9 +187,6 @@ ZTEST(infuse_coap, test_socket_close)
 
 	k_work_init_delayable(&work, async_socket_close);
 
-	/* Wait for the interface to come up */
-	zassert_equal(0, k_sem_take(&l4_up, IF_DELAY));
-
 	/* Open socket */
 	sock = socket_setup();
 
@@ -207,8 +200,6 @@ ZTEST(infuse_coap, test_socket_close)
 	rc = infuse_coap_download(sock, "file/small_file", 0, data_cb, &context, work_area,
 				  sizeof(work_area), 0, 1000);
 	zassert_equal(-EBADF, rc);
-
-	k_sem_give(&l4_up);
 }
 
 ZTEST(infuse_coap, test_download)
@@ -216,9 +207,6 @@ ZTEST(infuse_coap, test_download)
 	struct cb_ctx context;
 	int sock;
 	int rc;
-
-	/* Wait for the interface to come up */
-	zassert_equal(0, k_sem_take(&l4_up, IF_DELAY));
 
 	/* Open socket */
 	sock = socket_setup();
@@ -270,7 +258,6 @@ ZTEST(infuse_coap, test_download)
 
 	/* Close socket */
 	zassert_equal(0, zsock_close(sock));
-	k_sem_give(&l4_up);
 }
 
 static int early_term_cb(uint32_t offset, const uint8_t *data, uint16_t data_len, void *context)
@@ -284,9 +271,6 @@ ZTEST(infuse_coap, test_download_early_terminate)
 	int sock;
 	int rc;
 
-	/* Wait for the interface to come up */
-	zassert_equal(0, k_sem_take(&l4_up, IF_DELAY));
-
 	/* Open socket */
 	sock = socket_setup();
 
@@ -297,7 +281,6 @@ ZTEST(infuse_coap, test_download_early_terminate)
 
 	/* Close socket */
 	zassert_equal(0, zsock_close(sock));
-	k_sem_give(&l4_up);
 }
 
 void *test_init(void)
@@ -333,6 +316,9 @@ void *test_init(void)
 	conn_mgr_all_if_up(true);
 	conn_mgr_all_if_connect(true);
 #endif /* CONFIG_NET_NATIVE_OFFLOADED_SOCKETS */
+
+	/* Wait for the interface to come up before running any tests */
+	zassert_equal(0, k_sem_take(&l4_up, IF_DELAY), "Timed out waiting for L4 connectivity");
 
 	return NULL;
 }
