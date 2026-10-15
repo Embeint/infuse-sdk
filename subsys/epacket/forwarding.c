@@ -38,7 +38,10 @@ NET_BUF_POOL_DEFINE(epacket_forwarding_pool, CONFIG_EPACKET_FORWARDING_BUFFERS,
 		    FORWARDING_BUFFER_SIZE, sizeof(struct epacket_tx_metadata), NULL);
 
 static K_FIFO_DEFINE(packet_queue);
+static K_FIFO_DEFINE(deferred_packet_queue);
 static K_SEM_DEFINE(gateway_connection_slots, FORWARDING_MAX_CONN, FORWARDING_MAX_CONN);
+static K_SEM_DEFINE(processor_wakeup, 0, 1);
+static atomic_t deferred_packet_count;
 static const struct device *epacket_backhaul;
 static struct conn_state forwarding_state[CONFIG_BT_MAX_CONN];
 
@@ -54,16 +57,7 @@ static void gateway_connection_slot_release(struct conn_state *state)
 {
 	if (atomic_cas(&state->gateway_initiated, true, false)) {
 		k_sem_give(&gateway_connection_slots);
-	}
-}
-
-static void gateway_connection_slot_take(void)
-{
-	/* Use a finite wait so the forwarding thread can continue to feed its watchdog
-	 * while all slots are occupied.
-	 */
-	while (k_sem_take(&gateway_connection_slots, K_SECONDS(1)) != 0) {
-		infuse_watchdog_feed(wdog_channel);
+		k_sem_give(&processor_wakeup);
 	}
 }
 
@@ -146,12 +140,13 @@ void epacket_packet_forward(struct net_buf *buf)
 	} else if (meta->type == INFUSE_EPACKET_FORWARD_AUTO_CONN) {
 		/* Push the buffer into the FIFO for the thread to handle */
 		k_fifo_put(&packet_queue, buf);
+		k_sem_give(&processor_wakeup);
 	}
 }
 
 static int ensure_bt_connection(union epacket_interface_address *address, uint8_t flags,
 				uint32_t conn_timeout_ms, k_timeout_t idle_timeout,
-				k_timeout_t absolute_timeout)
+				k_timeout_t absolute_timeout, bool *connection_deferred)
 {
 	struct epacket_bt_gatt_connect_params params = {
 		.conn_params = BT_LE_CONN_PARAM_INIT(0x10, 0x15, 0, 400),
@@ -175,6 +170,8 @@ static int ensure_bt_connection(union epacket_interface_address *address, uint8_
 	bool already;
 	int conn_idx;
 	int rc;
+
+	*connection_deferred = false;
 
 	/* First try to reuse a connection without consuming a gateway slot. The connect
 	 * helper must not create one during this attempt, otherwise an external connection
@@ -212,7 +209,10 @@ retry:
 	rc = epacket_bt_gatt_connect(&conn, &params, &security_info, &already);
 	if (rc != 0) {
 		if (params.existing_only && !already && (rc == -ENOTCONN)) {
-			gateway_connection_slot_take();
+			if (k_sem_take(&gateway_connection_slots, K_NO_WAIT) != 0) {
+				*connection_deferred = true;
+				return 0;
+			}
 			slot_claimed = true;
 			params.existing_only = false;
 			goto retry;
@@ -344,7 +344,7 @@ bool bt_central_packet_received(struct net_buf *buf, bool decrypted, void *user_
 	return true;
 }
 
-static void forward_auto_conn_process_one(struct net_buf *buf)
+static bool forward_auto_conn_process_one(struct net_buf *buf)
 {
 	struct epacket_forward_auto_conn_header *hdr;
 	const struct device *forward_interface;
@@ -353,18 +353,19 @@ static void forward_auto_conn_process_one(struct net_buf *buf)
 	uint16_t forward_payload, forward_max_size;
 	struct epacket_rx_metadata *meta;
 	struct net_buf *tx;
+	bool connection_deferred;
 	int rc;
 
 	meta = net_buf_user_data(buf);
 
 	if (buf->len < (sizeof(*hdr) + sizeof(*dest_encoded))) {
 		LOG_WRN("Invalid auto conn header");
-		return;
+		return false;
 	}
-	hdr = net_buf_pull_mem(buf, sizeof(struct epacket_forward_auto_conn_header));
+	hdr = (void *)buf->data;
 	if (hdr->length < (sizeof(*hdr) + sizeof(*dest_encoded))) {
 		LOG_WRN("Invalid forwarding header");
-		return;
+		return false;
 	}
 
 	switch (hdr->interface) {
@@ -373,50 +374,54 @@ static void forward_auto_conn_process_one(struct net_buf *buf)
 		break;
 	default:
 		LOG_WRN("Unknown interface ID: %d", hdr->interface);
-		return;
+		return false;
 	}
 
 	/* Only Bluetooth addresses are currently handled */
-	dest_encoded = net_buf_pull_mem(buf, sizeof(*dest_encoded));
+	dest_encoded = (void *)(buf->data + sizeof(*hdr));
 	dest.bluetooth.type = dest_encoded->type;
 	memcpy(dest.bluetooth.a.val, dest_encoded->addr, 6);
 
 	/* Validate requested payload exists in the buffer */
 	forward_payload = hdr->length - sizeof(*hdr) - sizeof(*dest_encoded);
-	if (buf->len < forward_payload) {
-		LOG_WRN("Insufficient payload bytes (%d < %d)", buf->len, forward_payload);
-		return;
+	if (buf->len < (sizeof(*hdr) + sizeof(*dest_encoded) + forward_payload)) {
+		LOG_WRN("Insufficient payload bytes");
+		return false;
 	}
 
 	/* Ensure we have a valid Bluetooth connection before sending */
 	rc = ensure_bt_connection(&dest, hdr->flags, (uint32_t)hdr->conn_timeout * MSEC_PER_SEC,
 				  K_SECONDS(hdr->conn_idle_timeout),
-				  K_SECONDS(hdr->conn_absolute_timeout));
+				  K_SECONDS(hdr->conn_absolute_timeout), &connection_deferred);
+	if (connection_deferred) {
+		return true;
+	}
 	if (rc != 0) {
 		if (hdr->flags & EPACKET_FORWARD_AUTO_CONN_DC_NOTIFICATION) {
 			send_conn_terminated(meta->interface, rc, &dest.bluetooth);
 		}
-		return;
+		return false;
 	}
 
 	/* Validate that forwarding interface can support required packet size */
 	forward_max_size = epacket_interface_max_packet_size(forward_interface);
 	if (forward_max_size < forward_payload) {
 		LOG_WRN("Insufficient packet size (%d < %d)", forward_max_size, forward_payload);
-		return;
+		return false;
 	}
 
 	/* Allocate buffer for forwarded message */
 	tx = forwarding_buffer_alloc();
 	if (tx == NULL) {
 		LOG_WRN("Unable to allocate buffer");
-		return;
+		return false;
 	}
 
 	/* Copy across to the TX message, push to transmit queue */
 	epacket_set_tx_metadata(tx, EPACKET_AUTH_REMOTE_ENCRYPTED, 0, 0, dest);
-	net_buf_add_mem(tx, buf->data, forward_payload);
+	net_buf_add_mem(tx, buf->data + sizeof(*hdr) + sizeof(*dest_encoded), forward_payload);
 	epacket_queue(forward_interface, tx);
+	return false;
 }
 
 static void forward_auto_conn_processor(void *a, void *b, void *c)
@@ -438,20 +443,42 @@ static void forward_auto_conn_processor(void *a, void *b, void *c)
 	infuse_watchdog_thread_register(wdog_channel, _current);
 
 	for (;;) {
-		/* Get the buffer */
-		buf = k_fifo_get(&packet_queue, loop_period);
+		/* Wake for new packets, released connection slots, or watchdog servicing. */
+		(void)k_sem_take(&processor_wakeup, loop_period);
 		infuse_watchdog_feed(wdog_channel);
-		if (buf == NULL) {
-			continue;
+
+		/* Always process newly arrived packets first so traffic for existing
+		 * connections is not blocked by packets waiting for a new connection.
+		 */
+		while ((buf = k_fifo_get(&packet_queue, K_NO_WAIT)) != NULL) {
+			if (forward_auto_conn_process_one(buf)) {
+				k_fifo_put(&deferred_packet_queue, buf);
+				atomic_inc(&deferred_packet_count);
+			} else {
+				net_buf_unref(buf);
+			}
+			infuse_watchdog_feed(wdog_channel);
 		}
 
-		/* Process the buffer */
-		forward_auto_conn_process_one(buf);
+		/* Retry each deferred packet at most once per wakeup. Packets that still
+		 * cannot claim a slot go back to the tail without causing a busy loop.
+		 */
+		atomic_val_t deferred = atomic_get(&deferred_packet_count);
 
-		/* Free the buffer */
-		net_buf_unref(buf);
+		for (atomic_val_t i = 0; i < deferred; i++) {
+			buf = k_fifo_get(&deferred_packet_queue, K_NO_WAIT);
+			if (buf == NULL) {
+				break;
+			}
+			if (forward_auto_conn_process_one(buf)) {
+				k_fifo_put(&deferred_packet_queue, buf);
+			} else {
+				atomic_dec(&deferred_packet_count);
+				net_buf_unref(buf);
+			}
+			infuse_watchdog_feed(wdog_channel);
+		}
 
-		/* Feed watchdog before sleeping again */
 		infuse_watchdog_feed(wdog_channel);
 	}
 }
