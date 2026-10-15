@@ -4,6 +4,7 @@ common:
   min_ram: 32
 tests:
   net.auto_sntp.triggered.native.sync:
+    tags: external_service
     platform_allow:
       - native_sim
     integration_platforms:
@@ -31,6 +32,7 @@ tests:
         - "Now: (.*) UTC"
         - "Ref: (.*) UTC"
   net.auto_sntp.triggered.native.async:
+    tags: external_service
     platform_allow:
       - native_sim
     integration_platforms:
