@@ -1781,6 +1781,64 @@ static struct net_buf *create_info_request(const struct device *interface,
 	return create_rpc_request(interface, request, sizeof(*request));
 }
 
+static int queue_auto_conn_info_request(const bt_addr_le_t *addr, uint32_t request_id)
+{
+	const struct device *epacket_dummy = DEVICE_DT_GET(DT_NODELABEL(epacket_dummy));
+	const struct device *epacket_central = DEVICE_DT_GET(DT_NODELABEL(epacket_bt_central));
+	struct rpc_application_info_request info_request = {
+		.header.command_id = RPC_ID_APPLICATION_INFO,
+		.header.request_id = request_id,
+	};
+	struct epacket_dummy_frame dummy_header = {
+		.type = INFUSE_EPACKET_FORWARD_AUTO_CONN,
+		.auth = EPACKET_AUTH_DEVICE,
+	};
+	struct forwarding_bt {
+		struct epacket_forward_auto_conn_header forward_header;
+		uint8_t bt_addr[7];
+	} __packed hdr;
+	struct net_buf *buf;
+
+	buf = create_info_request(epacket_central, &info_request);
+	if (buf == NULL) {
+		return -ENOMEM;
+	}
+
+	hdr.forward_header.interface = EPACKET_INTERFACE_BT_CENTRAL;
+	hdr.forward_header.length = sizeof(hdr) + buf->len;
+	hdr.forward_header.flags = 0;
+	hdr.forward_header.conn_timeout = 2;
+	hdr.forward_header.conn_idle_timeout = 10;
+	hdr.forward_header.conn_absolute_timeout = 10;
+	hdr.bt_addr[0] = addr->type;
+	memcpy(hdr.bt_addr + 1, addr->a.val, 6);
+
+	epacket_dummy_receive_extra(epacket_dummy, &dummy_header, &hdr, sizeof(hdr), buf->data,
+				    buf->len);
+	net_buf_unref(buf);
+	return 0;
+}
+
+static struct bt_conn *wait_for_connection(const bt_addr_le_t *addr, k_timeout_t timeout)
+{
+	k_timepoint_t end = sys_timepoint_calc(timeout);
+	struct bt_conn_info info;
+	struct bt_conn *conn;
+
+	do {
+		conn = bt_conn_lookup_addr_le(BT_ID_DEFAULT, addr);
+		if (conn != NULL) {
+			if ((bt_conn_get_info(conn, &info) == 0) &&
+			    (info.state == BT_CONN_STATE_CONNECTED)) {
+				return conn;
+			}
+			bt_conn_unref(conn);
+		}
+		k_sleep(K_MSEC(10));
+	} while (!sys_timepoint_expired(end));
+	return NULL;
+}
+
 static int check_info_response(struct net_buf *buf, struct rpc_application_info_request *request)
 {
 	struct epacket_dummy_frame *frame;
@@ -2025,6 +2083,133 @@ static void main_gateway_remote_rpc_forward_auto_conn(void)
 		k_sleep(K_MSEC(10));
 	}
 	PASS("RPC auto-conn forwarder passed\n");
+}
+
+static void main_gateway_remote_rpc_forward_auto_conn_limit(void)
+{
+	const struct device *epacket_dummy = DEVICE_DT_GET(DT_NODELABEL(epacket_dummy));
+	const struct device *epacket_central = DEVICE_DT_GET(DT_NODELABEL(epacket_bt_central));
+	struct k_fifo *response_queue = epacket_dummmy_transmit_fifo_get();
+	struct epacket_bt_gatt_connect_params external_params = {
+		.conn_params = BT_LE_CONN_PARAM_INIT(0x10, 0x15, 0, 400),
+		.inactivity_timeout = K_FOREVER,
+		.absolute_timeout = K_FOREVER,
+		.conn_timeout_ms = 2000,
+		.preferred_phy = BT_GAP_LE_PHY_2M,
+		.subscribe_commands = true,
+	};
+	struct epacket_read_response security_info;
+	struct bt_conn *connections[4] = {0};
+	struct net_buf *buf;
+	bt_addr_le_t peers[4];
+	bool already;
+	int rc;
+
+	common_init();
+	if (observe_peers(peers, ARRAY_SIZE(peers)) < 0) {
+		FAIL("Failed to observe peers\n");
+		return;
+	}
+
+	epacket_set_receive_handler(epacket_dummy, dummy_gateway_handler);
+	epacket_set_receive_handler(epacket_central, dummy_gateway_handler);
+
+	/* This connection is deliberately created outside the forwarding subsystem. */
+	external_params.peer = peers[0];
+	rc = epacket_bt_gatt_connect(&connections[0], &external_params, &security_info, &already);
+	if ((rc != 0) || already) {
+		FAIL("Failed to create external connection (%d, already %d)\n", rc, already);
+		goto cleanup;
+	}
+
+	for (int i = 1; i < 3; i++) {
+		if (queue_auto_conn_info_request(&peers[i], 0xAA000000 + i) < 0) {
+			FAIL("Failed to queue request %d\n", i);
+			goto cleanup;
+		}
+	}
+
+	connections[1] = wait_for_connection(&peers[1], K_SECONDS(3));
+	connections[2] = wait_for_connection(&peers[2], K_SECONDS(3));
+	if ((connections[1] == NULL) || (connections[2] == NULL)) {
+		FAIL("First two gateway connections were not created\n");
+		goto cleanup;
+	}
+	for (int i = 0; i < 2; i++) {
+		buf = k_fifo_get(response_queue, K_SECONDS(2));
+		if (buf == NULL) {
+			FAIL("Missing initial forwarded RPC response %d\n", i);
+			goto cleanup;
+		}
+		net_buf_unref(buf);
+	}
+
+	/* A request for the external connection must bypass the gateway slot wait. */
+	if (queue_auto_conn_info_request(&peers[0], 0xAA000002) < 0) {
+		FAIL("Failed to queue request for external peer\n");
+		goto cleanup;
+	}
+	buf = k_fifo_get(response_queue, K_SECONDS(2));
+	if (buf == NULL) {
+		FAIL("Request for external peer was blocked by connection limit\n");
+		goto cleanup;
+	}
+	net_buf_unref(buf);
+
+	if (queue_auto_conn_info_request(&peers[3], 0xAA000003) < 0) {
+		FAIL("Failed to queue request for third peer\n");
+		goto cleanup;
+	}
+
+	/* The third request must remain queued while both gateway slots are occupied. */
+	k_sleep(K_MSEC(500));
+	connections[3] = bt_conn_lookup_addr_le(BT_ID_DEFAULT, &peers[3]);
+	if (connections[3] != NULL) {
+		FAIL("Third gateway connection was created before a slot was released\n");
+		goto cleanup;
+	}
+
+	/* The deferred request must not block traffic for a gateway-connected peer. */
+	if (queue_auto_conn_info_request(&peers[2], 0xAA000004) < 0) {
+		FAIL("Failed to queue request for connected peer\n");
+		goto cleanup;
+	}
+	buf = k_fifo_get(response_queue, K_SECONDS(2));
+	if (buf == NULL) {
+		FAIL("Request for connected peer was blocked by deferred connection\n");
+		goto cleanup;
+	}
+	net_buf_unref(buf);
+
+	rc = bt_conn_disconnect_sync(connections[1]);
+	bt_conn_unref(connections[1]);
+	connections[1] = NULL;
+	if (rc != 0) {
+		FAIL("Failed to disconnect first peer (%d)\n", rc);
+		goto cleanup;
+	}
+
+	connections[3] = wait_for_connection(&peers[3], K_SECONDS(3));
+	if (connections[3] == NULL) {
+		FAIL("Third gateway connection was not created after slot release\n");
+		goto cleanup;
+	}
+	buf = k_fifo_get(response_queue, K_SECONDS(2));
+	if (buf == NULL) {
+		FAIL("Missing forwarded RPC response from third peer\n");
+		goto cleanup;
+	}
+	net_buf_unref(buf);
+
+	PASS("Gateway auto-connect concurrency limit passed\n");
+
+cleanup:
+	for (int i = 0; i < ARRAY_SIZE(connections); i++) {
+		if (connections[i] != NULL) {
+			(void)bt_conn_disconnect_sync(connections[i]);
+			bt_conn_unref(connections[i]);
+		}
+	}
 }
 
 static void main_gateway_remote_rpc_forward_auto_conn_single(void)
@@ -3355,6 +3540,13 @@ static const struct bst_test_instance epacket_gateway[] = {
 		.test_pre_init_f = test_init,
 		.test_tick_f = test_tick,
 		.test_main_f = main_gateway_remote_rpc_forward_auto_conn,
+	},
+	{
+		.test_id = "epacket_bt_gateway_remote_rpc_forward_auto_conn_limit",
+		.test_descr = "Limit gateway initiated auto-connections to two peers",
+		.test_pre_init_f = test_init,
+		.test_tick_f = test_tick,
+		.test_main_f = main_gateway_remote_rpc_forward_auto_conn_limit,
 	},
 	{
 		.test_id = "epacket_bt_gateway_remote_rpc_forward_auto_conn_single",
