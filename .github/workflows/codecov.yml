@@ -8,6 +8,7 @@ on:
     branches:
       - main
     paths:
+      - '.github/actions/setup-twister/**'
       - '.github/workflows/codecov.yml'
       - 'include/**'
       - 'lib/**'
@@ -84,55 +85,10 @@ jobs:
           path: infuse-sdk
           fetch-depth: 0
 
-      - name: Set up Python
-        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+      - name: Set up Twister environment
+        uses: ./infuse-sdk/.github/actions/setup-twister
         with:
-          python-version: 3.12
-
-      - name: Install Python packages
-        working-directory: infuse-sdk
-        run: |
-          pip install --cache-dir $PIP_CACHE_DIR -r scripts/requirements-actions.txt --require-hashes
-
-      - name: Environment Setup
-        working-directory: infuse-sdk
-        run: |
-          if [ "${{github.event_name}}" = "pull_request" ]; then
-            git config --global user.email "ci@embeint.com"
-            git config --global user.name "Embeint CI"
-            rm -fr ".git/rebase-apply"
-            git rebase origin/${BASE_REF}
-            git log  --pretty=oneline | head -n 10
-          fi
-
-          west init -l . || true
-          west config --global update.narrow true
-          west update --path-cache /github/cache/embeint 2>&1 1> west.update.log || west update --path-cache /github/cache/embeint 2>&1 1> west.update.log || ( rm -rf ../modules ../bootloader ../tools && west update --path-cache /github/cache/embeint)
-          west forall -c 'git reset --hard HEAD'
-
-          echo "ZEPHYR_SDK_INSTALL_DIR=/opt/toolchains/zephyr-sdk-$( cat SDK_VERSION )" >> $GITHUB_ENV
-
-      - name: Install Zephyr Python packages
-        working-directory: zephyr
-        run: |
-          pip install --cache-dir $PIP_CACHE_DIR -r scripts/requirements.txt
-
-      - name: Check Environment
-        run: |
-          cmake --version
-          gcc --version
-          ls -la /opt/toolchains
-          ls -la
-          echo "github.ref: ${{ github.ref }}"
-          echo "github.base_ref: ${{ github.base_ref }}"
-          echo "github.ref_name: ${{ github.ref_name }}"
-
-      - name: Set up ccache
-        run: |
-          mkdir -p ${CCACHE_DIR}
-          ccache -M 20G
-          ccache -p
-          ccache -z -s -vv
+          check-environment: 'true'
 
       - name: Run Tests with Coverage Information
         run: |
