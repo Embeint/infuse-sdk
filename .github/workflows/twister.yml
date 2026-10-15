@@ -45,7 +45,7 @@ jobs:
       # `--specs` is ignored because ccache is unable to resolve the toolchain specs file path.
       CCACHE_IGNOREOPTIONS: '-specs=* --specs=*'
       # Ignore nrf54l09pdk until upgrading to Zephyr v4.2, v4.1 and HAL v3.12.0 are incompatible
-      TWISTER_COMMON: ' --force-color --inline-logs -v -N -M --retry-failed 3 -P nrf54l09pdk/nrf54l09/cpuapp -P nrf54l20pdk/nrf54l20/cpuapp'
+      TWISTER_COMMON: ' --force-color --inline-logs -v -N -M --retry-failed 3 --exclude-tag external_service -P nrf54l09pdk/nrf54l09/cpuapp -P nrf54l20pdk/nrf54l20/cpuapp'
       DAILY_OPTIONS: ' -M --build-only --show-footprint'
       VENDOR_FILTER: ' --vendor nordic --vendor zephyr --vendor embeint '
       EXTRA_BOARDS: ' --platform qemu_cortex_m3 --platform qemu_cortex_m0 '
@@ -121,6 +121,59 @@ jobs:
           $ZEPHYR_BASE/scripts/twister --subset ${{matrix.subset}}/${{ strategy.job-total }} ${TWISTER_COMMON} ${VENDOR_FILTER} ${DAILY_OPTIONS} --all -T infuse-sdk/apps -T infuse-sdk/samples
           echo 'twister ${TWISTER_COMMON} ${DAILY_OPTIONS} --integration -T infuse-sdk/tests -T modules/nrfconnect/sdk-nrf'
           $ZEPHYR_BASE/scripts/twister --subset ${{matrix.subset}}/${{ strategy.job-total }} ${TWISTER_COMMON} ${DAILY_OPTIONS} --integration -T infuse-sdk/tests -T modules/nrfconnect/sdk-nrf
+
+      - name: Print ccache stats
+        if: always()
+        run: |
+          ccache -s -vv
+
+  external-services:
+    name: External Service Tests
+    runs-on: self-hosted
+    container:
+      image: ghcr.io/zephyrproject-rtos/ci-repo-cache:v0.29.1.20260327
+      options: '--entrypoint /bin/bash'
+      volumes:
+        - /repo-cache/embeint:/github/cache/embeint
+        - /repo-cache/ccache:/github/ccache
+        - /repo-cache/pip-cache:/github/pip-cache
+    env:
+      PIP_CACHE_DIR: /github/pip-cache
+      CCACHE_DIR: /github/ccache
+      # `--specs` is ignored because ccache is unable to resolve the toolchain specs file path.
+      CCACHE_IGNOREOPTIONS: '-specs=* --specs=*'
+      BASE_REF: ${{ github.base_ref }}
+      ZEPHYR_TOOLCHAIN_VARIANT: zephyr
+    steps:
+      - name: Workspace cleanup
+        run: |
+          rm -rf ./{*,.*}
+          rm -rf infuse-sdk twister-out*
+
+      - name: Clone cached Embeint SDK repository
+        continue-on-error: true
+        run: |
+          git config --global --add safe.directory '*'
+          git clone --shared /github/cache/embeint/infuse-sdk infuse-sdk
+          cd infuse-sdk
+          git remote set-url origin ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}
+
+      - name: Checkout
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          path: infuse-sdk
+          fetch-depth: 0
+
+      - name: Set up Twister environment
+        uses: ./infuse-sdk/.github/actions/setup-twister
+        with:
+          install-actions-requirements: ${{ github.event_name == 'pull_request' }}
+
+      - name: Run External Service Tests with Twister
+        run: |
+          export ZEPHYR_BASE=${PWD}/zephyr
+          $ZEPHYR_BASE/scripts/twister --force-color --inline-logs -v -N -M --retry-failed 3 --tag external_service --integration -T infuse-sdk/tests
 
       - name: Print ccache stats
         if: always()
