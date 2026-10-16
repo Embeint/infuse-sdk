@@ -437,6 +437,12 @@ int infuse_security_network_keys_load(void)
 		return rc;
 	}
 
+#ifdef CONFIG_KV_STORE_KEY_NETWORK_ID_PRIMARY
+	struct kv_network_id_primary primary = {network_info.key_id};
+
+	(void)KV_STORE_WRITE(KV_KEY_NETWORK_ID_PRIMARY, &primary);
+#endif /* CONFIG_KV_STORE_KEY_NETWORK_ID_PRIMARY */
+
 #ifdef CONFIG_INFUSE_SECURITY_SECONDARY_NETWORK_ENABLE
 	/* Load secondary network key */
 	rc = infuse_network_key_load(&secondary_network_info, INFUSE_ROOT_SECONDARY_NETWORK_KEY_ID,
@@ -445,6 +451,12 @@ int infuse_security_network_keys_load(void)
 		return rc;
 	}
 #endif /* CONFIG_INFUSE_SECURITY_SECONDARY_NETWORK_ENABLE */
+
+#ifdef CONFIG_KV_STORE_KEY_NETWORK_ID_SECONDARY
+	struct kv_network_id_secondary secondary = {secondary_network_info.key_id};
+
+	(void)KV_STORE_WRITE(KV_KEY_NETWORK_ID_SECONDARY, &secondary);
+#endif /* CONFIG_KV_STORE_KEY_NETWORK_ID_SECONDARY */
 
 	return 0;
 }

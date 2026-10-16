@@ -87,6 +87,20 @@ config KV_STORE_KEY_LITTLEFS_ALGORITHMS_STATE
 	help
 	  State of algorithms on the LittleFS filesystem
 
+config KV_STORE_KEY_NETWORK_ID_PRIMARY
+	bool "Enable KV key NETWORK_ID_PRIMARY"
+	depends on INFUSE_SECURITY
+	default y
+	help
+	  Identifier of the primary network
+
+config KV_STORE_KEY_NETWORK_ID_SECONDARY
+	bool "Enable KV key NETWORK_ID_SECONDARY"
+	depends on INFUSE_SECURITY_SECONDARY_NETWORK_ENABLE
+	default y
+	help
+	  Identifier of the secondary network
+
 config KV_STORE_KEY_WIFI_SSID
 	bool "Enable KV key WIFI_SSID"
 	default y if WIFI
