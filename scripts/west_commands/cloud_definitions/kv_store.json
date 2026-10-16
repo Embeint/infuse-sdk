@@ -227,6 +227,28 @@
                 {"name": "crc_xor", "type": "uint32_t",  "description": "XOR of all file data CRCs"}
             ]
         },
+        "14": {
+            "name": "NETWORK_ID_PRIMARY",
+            "description": "Identifier of the primary network",
+            "depends_on": "INFUSE_SECURITY",
+            "reflect": true,
+            "read_only": true,
+            "default": "y",
+            "fields": [
+                {"name": "id", "type": "uint32_t","display": {"fmt": "hex", "digits": 6},  "description": "Network identifier"}
+            ]
+        },
+        "15": {
+            "name": "NETWORK_ID_SECONDARY",
+            "description": "Identifier of the secondary network",
+            "depends_on": "INFUSE_SECURITY_SECONDARY_NETWORK_ENABLE",
+            "reflect": true,
+            "read_only": true,
+            "default": "y",
+            "fields": [
+                {"name": "id", "type": "uint32_t","display": {"fmt": "hex", "digits": 6},  "description": "Network identifier"}
+            ]
+        },
         "20": {
             "name": "WIFI_SSID",
             "description": "WiFi network name",

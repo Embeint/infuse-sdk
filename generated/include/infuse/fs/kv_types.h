@@ -264,6 +264,18 @@ struct kv_littlefs_algorithms_state {
 	uint32_t crc_xor;
 } __packed;
 
+/** Identifier of the primary network */
+struct kv_network_id_primary {
+	/** Network identifier */
+	uint32_t id;
+} __packed;
+
+/** Identifier of the secondary network */
+struct kv_network_id_secondary {
+	/** Network identifier */
+	uint32_t id;
+} __packed;
+
 /** WiFi network name */
 struct kv_wifi_ssid {
 	/** WiFi network name */
@@ -648,6 +660,10 @@ enum kv_builtin_id {
 	KV_KEY_LITTLEFS_FS_STATE = 12,
 	/** State of algorithms on the LittleFS filesystem */
 	KV_KEY_LITTLEFS_ALGORITHMS_STATE = 13,
+	/** Identifier of the primary network */
+	KV_KEY_NETWORK_ID_PRIMARY = 14,
+	/** Identifier of the secondary network */
+	KV_KEY_NETWORK_ID_SECONDARY = 15,
 	/** WiFi network name */
 	KV_KEY_WIFI_SSID = 20,
 	/** WiFi network password */
@@ -744,6 +760,8 @@ enum kv_builtin_size {
 	_KV_KEY_BROADCAST_FIXED_INDOORS_SIZE = sizeof(struct kv_broadcast_fixed_indoors),
 	_KV_KEY_LITTLEFS_FS_STATE_SIZE = sizeof(struct kv_littlefs_fs_state),
 	_KV_KEY_LITTLEFS_ALGORITHMS_STATE_SIZE = sizeof(struct kv_littlefs_algorithms_state),
+	_KV_KEY_NETWORK_ID_PRIMARY_SIZE = sizeof(struct kv_network_id_primary),
+	_KV_KEY_NETWORK_ID_SECONDARY_SIZE = sizeof(struct kv_network_id_secondary),
 	_KV_KEY_EPACKET_UDP_PORT_SIZE = sizeof(struct kv_epacket_udp_port),
 	_KV_KEY_LTE_MODEM_IMEI_SIZE = sizeof(struct kv_lte_modem_imei),
 	_KV_KEY_LTE_NETWORKING_MODES_SIZE = sizeof(struct kv_lte_networking_modes),
@@ -781,6 +799,8 @@ enum kv_builtin_size {
 #define _KV_KEY_BROADCAST_FIXED_INDOORS_TYPE struct kv_broadcast_fixed_indoors
 #define _KV_KEY_LITTLEFS_FS_STATE_TYPE struct kv_littlefs_fs_state
 #define _KV_KEY_LITTLEFS_ALGORITHMS_STATE_TYPE struct kv_littlefs_algorithms_state
+#define _KV_KEY_NETWORK_ID_PRIMARY_TYPE struct kv_network_id_primary
+#define _KV_KEY_NETWORK_ID_SECONDARY_TYPE struct kv_network_id_secondary
 #define _KV_KEY_WIFI_SSID_TYPE struct kv_wifi_ssid
 #define _KV_KEY_WIFI_PSK_TYPE struct kv_wifi_psk
 #define _KV_KEY_WIFI_CHANNELS_TYPE struct kv_wifi_channels
@@ -837,6 +857,10 @@ enum kv_builtin_size {
 	IF_ENABLED(CONFIG_KV_STORE_KEY_LITTLEFS_FS_STATE, \
 		   (1 +)) \
 	IF_ENABLED(CONFIG_KV_STORE_KEY_LITTLEFS_ALGORITHMS_STATE, \
+		   (1 +)) \
+	IF_ENABLED(CONFIG_KV_STORE_KEY_NETWORK_ID_PRIMARY, \
+		   (1 +)) \
+	IF_ENABLED(CONFIG_KV_STORE_KEY_NETWORK_ID_SECONDARY, \
 		   (1 +)) \
 	IF_ENABLED(CONFIG_KV_STORE_KEY_WIFI_SSID, \
 		   (1 +)) \
@@ -1028,6 +1052,20 @@ static struct key_value_slot_definition _KV_SLOTS_ARRAY_DEFINE[] = {
 		.flags = KV_FLAGS_REFLECT | KV_FLAGS_READ_ONLY,
 	},
 #endif /* CONFIG_KV_STORE_KEY_LITTLEFS_ALGORITHMS_STATE */
+#ifdef CONFIG_KV_STORE_KEY_NETWORK_ID_PRIMARY
+	{
+		.key = KV_KEY_NETWORK_ID_PRIMARY,
+		.range = 1,
+		.flags = KV_FLAGS_REFLECT | KV_FLAGS_READ_ONLY,
+	},
+#endif /* CONFIG_KV_STORE_KEY_NETWORK_ID_PRIMARY */
+#ifdef CONFIG_KV_STORE_KEY_NETWORK_ID_SECONDARY
+	{
+		.key = KV_KEY_NETWORK_ID_SECONDARY,
+		.range = 1,
+		.flags = KV_FLAGS_REFLECT | KV_FLAGS_READ_ONLY,
+	},
+#endif /* CONFIG_KV_STORE_KEY_NETWORK_ID_SECONDARY */
 #ifdef CONFIG_KV_STORE_KEY_WIFI_SSID
 	{
 		.key = KV_KEY_WIFI_SSID,

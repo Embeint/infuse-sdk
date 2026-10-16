@@ -37,13 +37,26 @@ static void default_init(void)
 	infuse_security_network_keys_load();
 }
 
+static void assert_network_ids(uint32_t primary_id, uint32_t secondary_id)
+{
+	struct kv_network_id_primary primary;
+	struct kv_network_id_secondary secondary;
+
+	zassert_equal(primary_id, infuse_security_network_key_identifier());
+	zassert_equal(secondary_id, infuse_security_secondary_network_key_identifier());
+
+	zassert_equal(sizeof(primary), KV_STORE_READ(KV_KEY_NETWORK_ID_PRIMARY, &primary));
+	zassert_equal(sizeof(secondary), KV_STORE_READ(KV_KEY_NETWORK_ID_SECONDARY, &secondary));
+	zassert_equal(primary_id, primary.id);
+	zassert_equal(secondary_id, secondary.id);
+}
+
 ZTEST(security, test_network_ids)
 {
 	default_init();
 
 	/* Default network IDs */
-	zassert_equal(0x000000, infuse_security_network_key_identifier());
-	zassert_equal(0xFFFFFF, infuse_security_secondary_network_key_identifier());
+	assert_network_ids(0x000000, 0xFFFFFF);
 }
 
 ZTEST(security, test_root_reset)
@@ -113,8 +126,7 @@ ZTEST(security, test_network_key_update)
 	infuse_security_network_keys_unload();
 	infuse_security_network_keys_load();
 
-	zassert_equal(key_id_1, infuse_security_network_key_identifier());
-	zassert_equal(key_id_2, infuse_security_secondary_network_key_identifier());
+	assert_network_ids(key_id_1, key_id_2);
 
 	/* Writing NULL deletes the key information */
 	rc = infuse_security_network_key_write(key_id_1, NULL);
@@ -128,8 +140,7 @@ ZTEST(security, test_network_key_update)
 
 	infuse_security_network_keys_unload();
 	infuse_security_network_keys_load();
-	zassert_equal(0x000000, infuse_security_network_key_identifier());
-	zassert_equal(0xFFFFFF, infuse_security_secondary_network_key_identifier());
+	assert_network_ids(0x000000, 0xFFFFFF);
 
 	/* Manually write bad data to the keys */
 	rc = psa_its_set(KV_KEY_SECURE_STORAGE_RESERVED + 3, sizeof(val), &val,
@@ -142,8 +153,7 @@ ZTEST(security, test_network_key_update)
 	/* Initialisation should fail and fallback to defaults */
 	infuse_security_network_keys_unload();
 	infuse_security_network_keys_load();
-	zassert_equal(0x000000, infuse_security_network_key_identifier());
-	zassert_equal(0xFFFFFF, infuse_security_secondary_network_key_identifier());
+	assert_network_ids(0x000000, 0xFFFFFF);
 }
 
 ZTEST(security, test_secondary_shared_secret)
