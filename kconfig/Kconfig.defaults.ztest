@@ -23,6 +23,14 @@ configdefault MBEDTLS_PSA_DRIVER_GET_ENTROPY
 
 endif # INFUSE_SECURITY || MBEDTLS
 
+configdefault COVERAGE_ALL
+	default n if INFUSE_SDK
+
+config COVERAGE_INFUSE_SDK
+	bool "Enable coverage testing of Infuse-SDK sources"
+	depends on COVERAGE && !COVERAGE_ALL
+	default y
+
 # Enable semihosting for QEMU if possible when testing coverage
 configdefault SEMIHOST
 	default y if COVERAGE && QEMU_TARGET
