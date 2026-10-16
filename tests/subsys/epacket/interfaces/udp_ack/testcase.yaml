@@ -5,6 +5,7 @@ common:
   run_sequential: true
 tests:
   epacket.interface.udp.ack:
+    tags: external_service
     platform_allow:
       - native_sim
     integration_platforms:
