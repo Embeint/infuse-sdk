@@ -1,0 +1,14 @@
+# Battery charger drivers
+
+# Copyright (c) 2026 Embeint Holdings Pty Ltd
+# SPDX-License-Identifier: Apache-2.0
+
+config CHARGER_BQ25798
+	bool "TI BQ25798 charger status"
+	default y
+	depends on DT_HAS_TI_BQ25798_CHARGER_ENABLED
+	depends on BQ25798
+	depends on CHARGER
+	help
+	  Enable the charger child device for the TI BQ25798. This device
+	  exposes the charge status and charge type reported by the BQ25798.
