@@ -10,21 +10,33 @@ endif()
 find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
 project(algorithms_imu_algo)
 
-target_sources(app PRIVATE
-  src/main.c
-)
+set(INFUSE_SDK_BASE ${CMAKE_CURRENT_LIST_DIR}/../../..)
 
-set(algorithm_src
-  ${CMAKE_CURRENT_LIST_DIR}/gesture_algorithm/main.c
-  ${CMAKE_CURRENT_LIST_DIR}/gesture_algorithm/nrf_edgeai_generated/nrf_edgeai_user_model.c
-)
-set(algorithm_inc
-  ${CMAKE_CURRENT_LIST_DIR}/include
-)
+if(CONFIG_TEST_ALGORITHM_BUILD_LLEXT OR CONFIG_TEST_ALGORITHM_BUILD_NATIVE)
+  # Configure bundled Algorithm build
+  set(ALGORITHM_DIR ${CMAKE_CURRENT_LIST_DIR}/../../algorithm/gesture_edge_ai)
+  set(algorithm_src
+    ${ALGORITHM_DIR}/main.c
+    ${ALGORITHM_DIR}/nrf_edgeai_generated/nrf_edgeai_user_model.c
+  )
+  set(algorithm_inc
+    ${CMAKE_CURRENT_LIST_DIR}/include
+  )
+
+  set(GESTURE_MODEL_DIR ${ALGORITHM_DIR}/nrf_edgeai_generated)
+  set(GESTURE_MODEL_MACROS_H ${ZEPHYR_BINARY_DIR}/include/generated/infuse/model_macros.h)
+
+  include(${INFUSE_SDK_BASE}/subsys/algorithms/nrf_edge_ai/export_model_macros.cmake)
+  export_model_macros(${GESTURE_MODEL_DIR}
+    ${ZEPHYR_BINARY_DIR}/include/generated/infuse/model_macros.h
+  )
+
+  list(APPEND algorithm_src ${GESTURE_MODEL_MACROS_H})
+  list(APPEND algorithm_inc ${ZEPHYR_BINARY_DIR}/include/generated/infuse)
+endif()
 
 if(CONFIG_TEST_ALGORITHM_BUILD_LLEXT)
-  set(INFUSE_SDK_BASE ${CMAKE_CURRENT_LIST_DIR}/../../..)
-
+  # Bundle algorithm via LLEXT
   include(${INFUSE_SDK_BASE}/subsys/algorithms/algorithm_build.cmake)
   set(algorithm_name gesture_algorithm)
   set(algorithm_base_dir "${PROJECT_BINARY_DIR}/llext")
