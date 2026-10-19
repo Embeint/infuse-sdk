@@ -7,8 +7,13 @@
 /* This file is common to the secure and non-secure domain */
 
 #include "kudu-pinctrl.dtsi"
-#include <zephyr/dt-bindings/battery/battery.h>
 #include <zephyr/dt-bindings/sensor/lps22hh.h>
+#include <infuse/dt-bindings/battery/battery.h>
+
+/* 1S4P pack with MI Protection Circuit Module */
+#define CELL_RES (BATTERY_INTERNAL_RESISTANCE_NCR18650B / 4)
+#define PCM_RES BATTERY_INTERNAL_RESISTANCE_MI_PCM_1SXP25
+#define BATTERY_PACK_RESISTANCE (CELL_RES + PCM_RES)
 
 / {
 	chosen {
@@ -41,9 +46,10 @@
 	fuel_gauge: fuel_gauge {
 		compatible = "zephyr,fuel-gauge-composite";
 		source-primary = <&bq25798>;
-		device-chemistry = "lithium-ion-polymer";
-		ocv-capacity-table-0 = <BATTERY_OCV_CURVE_LITHIUM_ION_POLYMER_DEFAULT>;
+		device-chemistry = "lithium-ion";
+		ocv-capacity-table-0 = <BATTERY_OCV_CURVE_LITHIUM_ION_NCR18650B>;
 		charge-full-design-microamp-hours = <13400000>;
+		factory-internal-resistance-micro-ohms = <(BATTERY_PACK_RESISTANCE)>;
 		fuel-gauge-channels;
 	};
 
@@ -229,7 +235,10 @@
 		ts-rt2 = <30310>;
 		mppt-ratio = <81>;
 		vac-ovp = <26>;
-		input-current-limit = <999>;
+		input-current-limit = <2500>;
+		/* 2A max charge current, 80mA termination */
+		constant-charge-current-max-microamp = <2000000>;
+		charge-term-current-microamp = <80000>;
 		v-in-dpm = <3000>;
 		acdrv1-en;
 		acdrv2-en;
