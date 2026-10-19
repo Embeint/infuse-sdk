@@ -52,6 +52,7 @@
 		charge-full-design-microamp-hours = <13400000>;
 		factory-internal-resistance-micro-ohms = <(BATTERY_PACK_RESISTANCE)>;
 		fuel-gauge-channels;
+		charger-status = <&bq25798_charger>;
 	};
 
 	aliases {
@@ -176,6 +177,10 @@
 		v-in-dpm = <3000>;
 		acdrv1-en;
 		acdrv2-en;
+
+		bq25798_charger: charger {
+			compatible = "ti,bq25798-charger";
+		};
 	};
 };
 

@@ -15,6 +15,9 @@ configdefault ROM_START_OFFSET
 configdefault LED
 	default y
 
+configdefault CHARGER
+	default y if FUEL_GAUGE_COMPOSITE
+
 if NETWORKING
 
 # We want to use the UART ASYNC API
