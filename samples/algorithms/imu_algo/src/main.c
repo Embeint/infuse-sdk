@@ -56,13 +56,13 @@ static const struct task_schedule schedules[] = {
 			{
 				.accelerometer =
 					{
-						.range_g = 2,
-						.rate_hz = 30,
+						.range_g = 4,
+						.rate_hz = 100,
 					},
 				.gyroscope =
 					{
 						.range_dps = 500,
-						.rate_hz = 15,
+						.rate_hz = 100,
 					},
 				.fifo_sample_buffer = 50,
 			},
