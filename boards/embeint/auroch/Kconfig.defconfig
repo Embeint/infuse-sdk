@@ -39,6 +39,9 @@ endif # BOARD_AUROCH_NRF9151_NS
 configdefault FUEL_GAUGE_COMPOSITE_DATA_VALIDITY_MS
 	default 500
 
+configdefault CHARGER
+	default y if FUEL_GAUGE_COMPOSITE
+
 endif
 
 if BOARD_AUROCH_NRF54L15_CPUAPP
