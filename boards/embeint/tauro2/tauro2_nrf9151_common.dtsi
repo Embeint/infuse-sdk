@@ -5,10 +5,15 @@
  */
 
 #include "tauro2_nrf9151_common-pinctrl.dtsi"
-#include <zephyr/dt-bindings/battery/battery.h>
 #include <zephyr/dt-bindings/input/input-event-codes.h>
 #include <zephyr/dt-bindings/sensor/lps22hh.h>
 #include <zephyr/dt-bindings/led/led.h>
+#include <infuse/dt-bindings/battery/battery.h>
+
+/* 1S3P pack with MI Protection Circuit Module */
+#define CELL_RES (BATTERY_INTERNAL_RESISTANCE_NCR18650B / 3)
+#define PCM_RES BATTERY_INTERNAL_RESISTANCE_MI_PCM_1SXP25
+#define BATTERY_PACK_RESISTANCE (CELL_RES + PCM_RES)
 
 / {
 	model = "Embeint Tauro2 nRF9151";
@@ -35,9 +40,10 @@
 		compatible = "zephyr,fuel-gauge-composite";
 		source-primary = <&ina236>;
 		source-secondary = <&nrf9x_batt>;
-		device-chemistry = "lithium-ion-polymer";
-		ocv-capacity-table-0 = <BATTERY_OCV_CURVE_LITHIUM_ION_POLYMER_DEFAULT>;
-		charge-full-design-microamp-hours = <13400000>;
+		device-chemistry = "lithium-ion";
+		ocv-capacity-table-0 = <BATTERY_OCV_CURVE_LITHIUM_ION_NCR18650B>;
+		charge-full-design-microamp-hours = <10050000>;
+		factory-internal-resistance-micro-ohms = <(BATTERY_PACK_RESISTANCE)>;
 		source-secondary-fallback;
 	};
 
