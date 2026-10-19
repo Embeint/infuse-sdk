@@ -1,0 +1,10 @@
+# Copyright (c) 2026 Embeint Holdings Pty Ltd
+# SPDX-License-Identifier: Apache-2.0
+
+description: Charger child device for the TI BQ25798
+
+compatible: "ti,bq25798-charger"
+
+on-bus: bq25798
+
+include: base.yaml

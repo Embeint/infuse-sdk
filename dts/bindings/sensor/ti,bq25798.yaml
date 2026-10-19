@@ -7,6 +7,8 @@ compatible: "ti,bq25798"
 
 include: [i2c-device.yaml]
 
+bus: bq25798
+
 properties:
   en-gpios:
     type: phandle-array
