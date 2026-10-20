@@ -43,12 +43,20 @@ int main(void)
 	epacket_send_key_ids(epacket_serial, K_FOREVER);
 #endif
 
+#if defined(CONFIG_EPACKET_INTERFACE_BT_ADV) && defined(CONFIG_INFUSE_SECURITY)
+	const struct device *epacket_bt_adv = DEVICE_DT_GET(DT_NODELABEL(epacket_bt_adv));
+#endif
+
 	/* Always want network connectivity */
 	conn_mgr_all_if_up(true);
 	conn_mgr_all_if_connect(true);
 
 	/* Loop forever, zperf runs from the RPC context */
 	for (;;) {
+#if defined(CONFIG_EPACKET_INTERFACE_BT_ADV) && defined(CONFIG_INFUSE_SECURITY)
+		/* Advertise identity so native_bt can discover the RPC endpoint. */
+		(void)epacket_send_key_ids(epacket_bt_adv, K_NO_WAIT);
+#endif
 		LOG_INF("Uptime: %6d seconds", k_uptime_seconds());
 		k_sleep(K_SECONDS(1));
 	}

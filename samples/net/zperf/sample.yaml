@@ -3,14 +3,26 @@ sample:
   name: infuse_zperf
 common:
   build_only: true
-  depends_on:
-    - netif
   required_snippets:
     - infuse
-  integration_platforms:
-    - nrf7002dk/nrf5340/cpuapp
   tags:
     - net
+    - wifi
     - zperf
 tests:
-  sample.net.zperf: {}
+  sample.net.zperf:
+    depends_on:
+      - netif
+    platform_exclude:
+      - esp32c6_lcd_1_47/esp32c6/hpcore
+      - esp32c6_lcd_1_47/esp32c6/hpcore/flash8m
+    integration_platforms:
+      - nrf7002dk/nrf5340/cpuapp
+  sample.net.zperf.esp32c6:
+    sysbuild: true
+    platform_allow:
+      - esp32c6_lcd_1_47/esp32c6/hpcore
+      - esp32c6_lcd_1_47/esp32c6/hpcore/flash8m
+    integration_platforms:
+      - esp32c6_lcd_1_47/esp32c6/hpcore
+      - esp32c6_lcd_1_47/esp32c6/hpcore/flash8m
