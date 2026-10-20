@@ -20,3 +20,7 @@ endchoice
 config BT_HCI_IPC_BOARD_TARGET_CPUCLUSTER
 	string
 	default "cpunet" if SOC_NRF5340_CPUAPP
+
+choice BOOT_SIGNATURE_TYPE
+	default BOOT_SIGNATURE_TYPE_ECDSA_P256 if SOC_SERIES_ESP32S3
+endchoice

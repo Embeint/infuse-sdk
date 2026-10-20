@@ -15,7 +15,10 @@ if(SB_CONFIG_BOOTLOADER_MCUBOOT)
   endif()
   # Ensure multithreading is always enabled in MCUBoot
   # External flash drivers and USB support depend on it
-  set(mcuboot_CONFIG_MULTITHREADING "y" CACHE INTERNAL "")
+  # The option has no prompt on Xtensa, where MCUboot disables it for Espressif SoCs
+  if(NOT SB_CONFIG_SOC_SERIES_ESP32S3)
+    set(mcuboot_CONFIG_MULTITHREADING "y" CACHE INTERNAL "")
+  endif()
   # Override ridiculous defaults forced by MCUBoot for nRF development kits
   # in the name of saving ROM that is wasted regardless.
   if(SB_CONFIG_BOARD_NRF7002DK OR SB_CONFIG_BOARD_NRF9160DK)
