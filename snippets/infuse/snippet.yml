@@ -1,6 +1,10 @@
 name: infuse
 
 boards:
+  esp32s3_touch_lcd_1_47/esp32s3/procpu:
+    append:
+      EXTRA_DTC_OVERLAY_FILE: boards/esp32s3_touch_lcd_1_47_esp32s3_procpu.overlay
+      EXTRA_CONF_FILE: infuse_snippet.conf
   /auroch(@.*)?/nrf9151/ns/:
     append:
       EXTRA_DTC_OVERLAY_FILE: boards/auroch_nrf9151_ns.overlay
