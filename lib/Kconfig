@@ -55,8 +55,8 @@ config INFUSE_CUSTOM_IDENTIFIERS
 	  custom storage locations and layouts.
 
 config INFUSE_PROVISIONING_ESP32_EFUSE
-	bool "Read ESP32-C6 Infuse ID from eFuses"
-	depends on SOC_ESP32C6 && INFUSE_SDK && !INFUSE_CUSTOM_IDENTIFIERS
+	bool "Read ESP32 Infuse ID from eFuses"
+	depends on (SOC_ESP32C6 || SOC_ESP32S3) && INFUSE_SDK && !INFUSE_CUSTOM_IDENTIFIERS
 	default y
 	help
 	  Read the little-endian 64-bit Infuse ID from USER_DATA bits 0..63.
