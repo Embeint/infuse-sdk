@@ -1,7 +1,7 @@
 # Infuse-IoT GNSS drivers
 
-zephyr_library()
-if (NOT CONFIG_GNSS_UBX_MODEM_EMUL)
+zephyr_library_amend()
+if(NOT CONFIG_GNSS_UBX_MODEM_EMUL)
   zephyr_library_sources_ifdef(CONFIG_GNSS_UBX_MODEM gnss_ubx_common.c)
   zephyr_library_sources_ifdef(CONFIG_GNSS_UBX_MODEM gnss_ubx_modem.c)
 endif()
