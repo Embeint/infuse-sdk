@@ -27,8 +27,6 @@ configdefault MODEM_DEDICATED_WORKQUEUE
 	default y
 configdefault MODEM_AT_USER_PIPE
 	default y
-configdefault NET_DRIVERS
-	default y
 configdefault NET_L2_PPP
 	default y
 configdefault NET_L2_PPP_OPTION_DNS_USE
