@@ -314,7 +314,7 @@ static int bq25798_init(const struct device *dev)
 		LOG_ERR("Reg 0x%02X %s error (%d)", BQ25798_REG_CHARGE_CURRENT_LIM, "write", rc);
 		return rc;
 	}
-	u8 = MAX(1, config->charge_current_ma / 40);
+	u8 = config->charge_term_current_ma / 40;
 	rc = bq25798_reg_write(dev, BQ25798_REG_TERM_CONTROL, u8);
 	if (rc != 0) {
 		LOG_ERR("Reg 0x%02X %s error (%d)", BQ25798_REG_TERM_CONTROL, "write", rc);
@@ -414,6 +414,8 @@ static DEVICE_API(sensor, bq25798_driver_api) = {
 };
 
 #define BQ25798_INIT(inst)                                                                         \
+	BUILD_ASSERT(IN_RANGE(DT_INST_PROP(inst, charge_term_current_microamp), 40000, 1000000),   \
+		     "charge-term-current-microamp must be in the range 40-1000mA");               \
 	static const struct bq25798_config bq25798_##inst##_config = {                             \
 		.bus = I2C_DT_SPEC_INST_GET(inst),                                                 \
 		.en_gpio = GPIO_DT_SPEC_INST_GET(inst, en_gpios),                                  \
