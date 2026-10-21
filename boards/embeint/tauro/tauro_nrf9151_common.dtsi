@@ -70,6 +70,9 @@
 		ocv-capacity-table-0 = <BATTERY_OCV_CURVE_LITHIUM_ION_NCR18650B>;
 		charge-full-design-microamp-hours = <10050000>;
 		factory-internal-resistance-micro-ohms = <(BATTERY_PACK_RESISTANCE)>;
+		charging-soc-estimator;
+		charging-current-threshold-microamp = <200000>;
+		ocv-relaxation-time-ms = <300000>;
 	};
 
 	aliases {

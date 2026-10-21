@@ -53,6 +53,9 @@
 		factory-internal-resistance-micro-ohms = <(BATTERY_PACK_RESISTANCE)>;
 		fuel-gauge-channels;
 		charger-status = <&bq25798_charger>;
+		charging-soc-estimator;
+		charging-current-threshold-microamp = <200000>;
+		ocv-relaxation-time-ms = <300000>;
 	};
 
 	aliases {
