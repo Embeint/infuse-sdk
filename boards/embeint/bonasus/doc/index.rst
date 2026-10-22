@@ -1,7 +1,7 @@
 .. _board_bonasus:
 
 Embeint Bonasus
-############
+###############
 
 Overview
 ********
