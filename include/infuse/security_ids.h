@@ -19,11 +19,10 @@ extern "C" {
 #endif
 
 /**
- * @brief Infuse security API
- * @defgroup infuse_security_apis Infuse security APIs
- * @ingroup infuse_security_crypto
+ * @addtogroup infuse_security_apis
  * @{
  */
+
 /**
  * @brief Get the current device key identifier
  *
