@@ -23,6 +23,7 @@ extern "C" {
  * @{
  */
 
+/** Infuse-IoT task identifiers */
 enum infuse_task_ids {
 	/** TDF logger task arguments (@ref task_tdf_logger_args) */
 	TASK_ID_TDF_LOGGER = 0,

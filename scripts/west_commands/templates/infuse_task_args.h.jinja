@@ -27,9 +27,12 @@ extern "C" {
  * @{
  */
 
+/** Arguments for any Infuse-IoT task */
 union task_arguments {
+	/** Raw argument storage */
 	uint8_t raw[17];
 {% for task in tasks.values() %}
+	/** Arguments for @ref TASK_ID_{{ task['name'] | upper }} */
 	struct task_{{ task['name'] | lower }}_args {{ task['name'] | lower }};
 {% endfor %}
 };

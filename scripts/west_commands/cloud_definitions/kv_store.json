@@ -25,25 +25,25 @@
         "kv_mcuboot_img_sem_ver": {
             "description": "MCUboot semantic versioning struct",
             "fields": [
-                {"name": "major", "type": "uint8_t"},
-                {"name": "minor", "type": "uint8_t"},
-                {"name": "revision", "type": "uint16_t"},
-                {"name": "build_num", "type": "uint32_t", "display": {"fmt": "hex", "digits": 8}}
+                {"name": "major", "type": "uint8_t", "description": "Major version"},
+                {"name": "minor", "type": "uint8_t", "description": "Minor version"},
+                {"name": "revision", "type": "uint16_t", "description": "Revision"},
+                {"name": "build_num", "type": "uint32_t", "display": {"fmt": "hex", "digits": 8}, "description": "Build number"}
             ]
         },
         "kv_range_u8": {
             "description": "Generic range structure",
             "fields": [
-                {"name": "lower", "type": "uint8_t"},
-                {"name": "upper", "type": "uint8_t"}
+                {"name": "lower", "type": "uint8_t", "description": "Lower bound"},
+                {"name": "upper", "type": "uint8_t", "description": "Upper bound"}
             ]
         },
         "kv_utc_hms": {
             "description": "UTC Hour-Minute-Second",
             "fields": [
-                {"name": "hour", "type": "uint8_t"},
-                {"name": "minute", "type": "uint8_t"},
-                {"name": "second", "type": "uint8_t"}
+                {"name": "hour", "type": "uint8_t", "description": "Hour (UTC)"},
+                {"name": "minute", "type": "uint8_t", "description": "Minute (UTC)"},
+                {"name": "second", "type": "uint8_t", "description": "Second (UTC)"}
             ]
         },
         "kv_algorithm_logging": {
@@ -95,7 +95,7 @@
             "name": "REBOOTS",
             "description": "Number of times device has rebooted",
             "fields": [
-                {"name": "count", "type": "uint32_t"}
+                {"name": "count", "type": "uint32_t", "description": "Number of reboots"}
             ]
         },
         "1": {
@@ -143,7 +143,7 @@
             "name": "INFUSE_APPLICATION_ID",
             "description": "CONFIG_INFUSE_APPLICATION_ID, store will be reset if the values don't match",
             "fields": [
-                {"name": "application_id", "type": "uint32_t", "display": {"fmt": "hex", "digits": 8}}
+                {"name": "application_id", "type": "uint32_t", "display": {"fmt": "hex", "digits": 8}, "description": "Application ID the store was created with"}
             ]
         },
         "6": {
