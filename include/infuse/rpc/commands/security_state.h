@@ -1,6 +1,6 @@
 /**
  * @file
- * @brief
+ * @brief security_state RPC response definitions
  * @copyright 2024 Embeint Holdings Pty Ltd
  * @author Jordan Yates <jordan@embeint.com>
  *
@@ -17,6 +17,11 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/**
+ * @addtogroup rpc_commands_apis
+ * @{
+ */
 
 enum {
 	CHALLENGE_RESPONSE_HARDWARE_ID = 0,
@@ -36,6 +41,10 @@ struct security_state_response_hw_id_encrypted {
 		uint8_t tag[16];
 	} __packed ciphertext;
 } __packed;
+
+/**
+ * @}
+ */
 
 #ifdef __cplusplus
 }

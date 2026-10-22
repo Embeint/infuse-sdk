@@ -19,12 +19,22 @@ extern "C" {
 #endif
 
 /**
+ * @defgroup data_logger_backend_epacket Data logger ePacket backend
+ * @ingroup infuse_data_logger
+ * @{
+ */
+
+/**
  * @brief Set ePacket flags for this backend
  *
  * @param dev ePacket data logger to configure
  * @param flags Bitmask of @ref epacket_flags or interface specific flags
  */
 void logger_epacket_flags_set(const struct device *dev, uint16_t flags);
+
+/**
+ * @}
+ */
 
 #ifdef __cplusplus
 }

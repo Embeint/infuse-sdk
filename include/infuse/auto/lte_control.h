@@ -26,6 +26,12 @@ extern "C" {
 #endif
 
 /**
+ * @defgroup lte_control_apis LTE connectivity control
+ * @ingroup infuse_auto
+ * @{
+ */
+
+/**
  * @brief Initialise LTE control policy.
  *
  * @note Must be called by application `main` function to initialise behaviour, once only.
@@ -52,6 +58,10 @@ void auto_lte_control_retry(void);
 void auto_lte_control_test_cleanup(void);
 
 #endif /* CONFIG_ZTEST */
+
+/**
+ * @}
+ */
 
 #ifdef __cplusplus
 }

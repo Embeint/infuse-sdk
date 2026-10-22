@@ -21,6 +21,11 @@
 extern "C" {
 #endif
 
+/**
+ * @addtogroup infuse_task_args_apis
+ * @{
+ */
+
 enum {
 	/** Log LTE TAC cells */
 	TASK_NETWORK_SCAN_LOG_LTE_CELLS = BIT(0),
@@ -77,6 +82,10 @@ struct task_network_scan_args {
 	/** LTE cell scanning arguments */
 	struct schedule_struct_task_network_scan_lte_args lte;
 } __packed;
+
+/**
+ * @}
+ */
 
 #ifdef __cplusplus
 }

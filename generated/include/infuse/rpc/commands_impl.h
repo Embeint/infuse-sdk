@@ -19,6 +19,11 @@ extern "C" {
 #endif
 
 /**
+ * @addtogroup rpc_commands_apis
+ * @{
+ */
+
+/**
  * @brief Run reboot RPC
  *
  * @param request @ref INFUSE_RPC_CMD packet to respond to
@@ -476,6 +481,10 @@ struct net_buf *rpc_command_data_receiver(struct net_buf *request);
  * @return struct net_buf* @ref INFUSE_RPC_RSP packet buffer
  */
 struct net_buf *rpc_command_echo(struct net_buf *request);
+
+/**
+ * @}
+ */
 
 #ifdef __cplusplus
 }

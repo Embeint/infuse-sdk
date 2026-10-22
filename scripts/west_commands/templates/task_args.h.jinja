@@ -21,6 +21,11 @@
 extern "C" {
 #endif
 
+/**
+ * @addtogroup infuse_task_args_apis
+ * @{
+ */
+
 {% if log_defines %}
 enum {
 {% for define in log_defines %}
@@ -90,6 +95,10 @@ struct task_{{ task['name'] | lower }}_args {
 {% endif %}
 {% endfor %}
 } __packed;
+
+/**
+ * @}
+ */
 
 #ifdef __cplusplus
 }

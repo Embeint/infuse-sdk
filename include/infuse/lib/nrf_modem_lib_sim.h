@@ -1,6 +1,6 @@
 /**
  * @file
- * @brief
+ * @brief Simulated nRF modem library control
  * @copyright 2025 Embeint Holdings Pty Ltd
  * @author Jordan Yates <jordan@embeint.com>
  *
@@ -15,6 +15,12 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/**
+ * @defgroup nrf_modem_lib_sim_apis Simulated nRF modem library
+ * @ingroup infuse_lib
+ * @{
+ */
 
 /**
  * @brief Query currently configured default PDN context
@@ -38,6 +44,10 @@ void nrf_modem_lib_sim_signal_strength(uint8_t rsrp, uint8_t rsrq);
  * @param msg AT message
  */
 void nrf_modem_lib_sim_send_at(const char *msg);
+
+/**
+ * @}
+ */
 
 #ifdef __cplusplus
 }

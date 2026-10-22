@@ -1,5 +1,7 @@
-/*
- * Copyright (c) 2024 Embeint Holdings Pty Ltd
+/**
+ * @file
+ * @brief u-blox modem SPI backend
+ * @copyright 2024 Embeint Holdings Pty Ltd
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -20,6 +22,11 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/**
+ * @addtogroup ubx_modem_backends
+ * @{
+ */
 
 struct modem_backend_ublox_spi {
 	/* Common backend */
@@ -67,6 +74,10 @@ void modem_backend_ublox_spi_use_data_ready_gpio(struct modem_backend_ublox_spi 
  * @param awake True if modem is awake, false if asleep
  */
 void modem_backend_ublox_spi_mon_rxr(struct modem_backend_ublox_spi *backend, bool awake);
+
+/**
+ * @}
+ */
 
 #ifdef __cplusplus
 }

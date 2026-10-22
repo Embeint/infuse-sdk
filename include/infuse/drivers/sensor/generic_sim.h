@@ -18,6 +18,12 @@ extern "C" {
 #endif
 
 /**
+ * @defgroup generic_sim_apis Simulated generic sensor
+ * @ingroup infuse_drivers
+ * @{
+ */
+
+/**
  * @brief Reset all channels back to unconfigured
  *
  * @param dev Generic simulator sensor device to reset
@@ -47,6 +53,10 @@ void generic_sim_func_rc(const struct device *dev, int resume_rc, int suspend_rc
  */
 int generic_sim_channel_set(const struct device *dev, enum sensor_channel chan,
 			    struct sensor_value val);
+
+/**
+ * @}
+ */
 
 #ifdef __cplusplus
 }

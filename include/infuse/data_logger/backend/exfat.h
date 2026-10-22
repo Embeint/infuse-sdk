@@ -18,6 +18,12 @@ extern "C" {
 #endif
 
 /**
+ * @defgroup data_logger_backend_exfat Data logger exFAT backend
+ * @ingroup infuse_data_logger
+ * @{
+ */
+
+/**
  * @brief Claim exFAT filesystem
  *
  * @param dev exFAT logging device to claim filesystem for
@@ -54,6 +60,10 @@ void logger_exfat_filesystem_release(const struct device *dev);
  * @retval -errno on failure
  */
 int logger_exfat_file_next(const struct device *dev);
+
+/**
+ * @}
+ */
 
 #ifdef __cplusplus
 }

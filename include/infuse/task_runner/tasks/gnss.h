@@ -26,6 +26,12 @@
 extern "C" {
 #endif
 
+/**
+ * @defgroup task_gnss_apis GNSS task
+ * @ingroup infuse_tasks
+ * @{
+ */
+
 BUILD_ASSERT((uint32_t)TASK_GNSS_CONSTELLATIONS_GPS == (uint32_t)GNSS_SYSTEM_GPS);
 BUILD_ASSERT((uint32_t)TASK_GNSS_CONSTELLATIONS_GLONASS == (uint32_t)GNSS_SYSTEM_GLONASS);
 BUILD_ASSERT((uint32_t)TASK_GNSS_CONSTELLATIONS_GALILEO == (uint32_t)GNSS_SYSTEM_GALILEO);
@@ -103,6 +109,10 @@ void gnss_task_fn(struct k_work *work);
 				    }}))
 
 #endif /* CONFIG_TASK_RUNNER_TASK_GNSS_WORKQUEUE */
+
+/**
+ * @}
+ */
 
 #ifdef __cplusplus
 }

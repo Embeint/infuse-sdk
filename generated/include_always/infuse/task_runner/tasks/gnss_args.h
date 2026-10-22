@@ -21,6 +21,11 @@
 extern "C" {
 #endif
 
+/**
+ * @addtogroup infuse_task_args_apis
+ * @{
+ */
+
 enum {
 	/** Log latitude, longitude, height and accuracy */
 	TASK_GNSS_LOG_LLHA = BIT(0),
@@ -119,6 +124,10 @@ struct task_gnss_args {
 	/** Number of seconds between GNSS measurements (0 == 1 second) */
 	uint8_t measurement_period_s;
 } __packed;
+
+/**
+ * @}
+ */
 
 #ifdef __cplusplus
 }

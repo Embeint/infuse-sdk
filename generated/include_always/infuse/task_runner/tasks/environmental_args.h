@@ -21,6 +21,11 @@
 extern "C" {
 #endif
 
+/**
+ * @addtogroup infuse_task_args_apis
+ * @{
+ */
+
 enum {
 	/** Log temperature, pressure and humidity */
 	TASK_ENVIRONMENTAL_LOG_TPH = BIT(0),
@@ -33,6 +38,10 @@ enum {
 /** Environmental task arguments (@ref task_environmental_args) */
 struct task_environmental_args {
 } __packed;
+
+/**
+ * @}
+ */
 
 #ifdef __cplusplus
 }

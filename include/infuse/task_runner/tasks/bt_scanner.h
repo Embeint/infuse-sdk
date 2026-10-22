@@ -20,6 +20,12 @@ extern "C" {
 #endif
 
 /**
+ * @defgroup task_bt_scanner_apis Bluetooth scanner task
+ * @ingroup infuse_tasks
+ * @{
+ */
+
+/**
  * @brief Bluetooth scanner runner function
  *
  * @param work Work object
@@ -40,6 +46,10 @@ void task_bt_scanner_fn(struct k_work *work);
 				    .executor.workqueue = {                                        \
 					    .worker_fn = task_bt_scanner_fn,                       \
 				    }}))
+
+/**
+ * @}
+ */
 
 #ifdef __cplusplus
 }

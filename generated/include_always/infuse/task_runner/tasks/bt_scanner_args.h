@@ -21,6 +21,11 @@
 extern "C" {
 #endif
 
+/**
+ * @addtogroup infuse_task_args_apis
+ * @{
+ */
+
 enum {
 	/** Log Infuse-IoT Bluetooth packets */
 	TASK_BT_SCANNER_LOG_INFUSE_BT = BIT(0),
@@ -45,6 +50,10 @@ struct task_bt_scanner_args {
 	/** Operation flags */
 	uint8_t flags;
 } __packed;
+
+/**
+ * @}
+ */
 
 #ifdef __cplusplus
 }

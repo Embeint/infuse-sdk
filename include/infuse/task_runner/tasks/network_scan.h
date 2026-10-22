@@ -24,6 +24,12 @@ extern "C" {
 #endif
 
 /**
+ * @defgroup task_network_scan_apis Network scan task
+ * @ingroup infuse_tasks
+ * @{
+ */
+
+/**
  * @brief Network scan task function
  *
  * @param work Delayable work item
@@ -44,6 +50,10 @@ void network_scan_task_fn(struct k_work *work);
 				    .executor.workqueue = {                                        \
 					    .worker_fn = network_scan_task_fn,                     \
 				    }}))
+
+/**
+ * @}
+ */
 
 #ifdef __cplusplus
 }

@@ -21,6 +21,11 @@
 extern "C" {
 #endif
 
+/**
+ * @addtogroup infuse_task_args_apis
+ * @{
+ */
+
 enum {
 	/** Log SoC temperature */
 	TASK_SOC_TEMPERATURE_LOG_T = BIT(0),
@@ -29,6 +34,10 @@ enum {
 /** SoC temperature task arguments (@ref task_soc_temperature_args) */
 struct task_soc_temperature_args {
 } __packed;
+
+/**
+ * @}
+ */
 
 #ifdef __cplusplus
 }

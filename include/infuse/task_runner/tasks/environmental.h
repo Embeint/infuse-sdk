@@ -21,6 +21,12 @@
 extern "C" {
 #endif
 
+/**
+ * @defgroup task_environmental_apis Environmental sensing task
+ * @ingroup infuse_tasks
+ * @{
+ */
+
 /** Configuration struct to hold multiple devices */
 struct task_environmental_devices {
 	/** Primary environmental sensor, used in preference to @a secondary */
@@ -56,6 +62,10 @@ void environmental_task_fn(struct k_work *work);
 				    .executor.workqueue = {                                        \
 					    .worker_fn = environmental_task_fn,                    \
 				    }}))
+
+/**
+ * @}
+ */
 
 #ifdef __cplusplus
 }

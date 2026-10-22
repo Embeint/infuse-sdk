@@ -21,6 +21,11 @@
 extern "C" {
 #endif
 
+/**
+ * @addtogroup infuse_task_args_apis
+ * @{
+ */
+
 enum {
 	/** Log battery voltage, charge current and charge percentage */
 	TASK_BATTERY_LOG_COMPLETE = BIT(0),
@@ -35,6 +40,10 @@ struct task_battery_args {
 	/** Period between measurements, 0 for single shot mode */
 	uint16_t repeat_interval_ms;
 } __packed;
+
+/**
+ * @}
+ */
 
 #ifdef __cplusplus
 }

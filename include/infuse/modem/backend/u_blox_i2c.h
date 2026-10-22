@@ -1,5 +1,7 @@
-/*
- * Copyright (c) 2024 Embeint Holdings Pty Ltd
+/**
+ * @file
+ * @brief u-blox modem I2C backend
+ * @copyright 2024 Embeint Holdings Pty Ltd
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -20,6 +22,11 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/**
+ * @addtogroup ubx_modem_backends
+ * @{
+ */
 
 struct modem_backend_ublox_i2c {
 	/* Common backend */
@@ -67,6 +74,10 @@ void modem_backend_ublox_i2c_use_data_ready_gpio(struct modem_backend_ublox_i2c 
  */
 void modem_backend_ublox_i2c_mon_rxr(struct modem_backend_ublox_i2c *backend, bool awake,
 				     bool pm_active);
+
+/**
+ * @}
+ */
 
 #ifdef __cplusplus
 }

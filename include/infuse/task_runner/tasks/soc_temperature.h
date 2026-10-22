@@ -22,6 +22,12 @@ extern "C" {
 #endif
 
 /**
+ * @defgroup task_soc_temperature_apis SoC temperature sensing task
+ * @ingroup infuse_tasks
+ * @{
+ */
+
+/**
  * @brief SoC temperature sensing task function
  *
  * @param work Delayable work item
@@ -44,6 +50,10 @@ void soc_temperature_task_fn(struct k_work *work);
 				    .executor.workqueue = {                                        \
 					    .worker_fn = soc_temperature_task_fn,                  \
 				    }}))
+
+/**
+ * @}
+ */
 
 #ifdef __cplusplus
 }

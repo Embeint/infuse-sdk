@@ -21,6 +21,11 @@
 extern "C" {
 #endif
 
+/**
+ * @addtogroup infuse_task_args_apis
+ * @{
+ */
+
 enum {
 	/** Log announcement TDFs */
 	TASK_TDF_LOGGER_LOG_ANNOUNCE = BIT(0),
@@ -81,6 +86,10 @@ struct task_tdf_logger_args {
 	/** Only log this many TDFs per run */
 	uint8_t per_run;
 } __packed;
+
+/**
+ * @}
+ */
 
 #ifdef __cplusplus
 }
