@@ -44,10 +44,12 @@ struct kv_store_cb {
 	 */
 	void (*value_changed)(uint16_t key, const void *data, size_t data_len, void *user_ctx);
 
-	/* User provided context pointer */
+	/** User provided context pointer */
 	void *user_ctx;
 
+	/** @cond INTERNAL_HIDDEN */
 	sys_snode_t node;
+	/** @endcond */
 };
 
 /**

@@ -23,73 +23,73 @@ extern "C" {
  * @{
  */
 
-/* Versioned data frame */
+/** @brief Versioned data frame */
 struct epacket_v0_versioned_frame_format {
-	/* AEAD associated data */
 	union {
 		struct {
-			/* Frame version */
+			/** Frame version */
 			uint8_t version;
-			/* Payload type */
+			/** Payload type */
 			uint8_t type;
-			/* Payload flags */
+			/** Payload flags */
 			uint16_t flags;
-			/* Network or device key identifier */
+			/** Network or device key identifier */
 			uint8_t key_identifier[3];
-			/* Infuse device ID (upper 4 bytes) */
+			/** Infuse device ID (upper 4 bytes) */
 			uint32_t device_id_upper;
 		} __packed;
+		/** Raw associated data bytes */
 		uint8_t raw[11];
-	} associated_data;
-	/* AEAD encryption nonce (IV) */
+	} associated_data; /**< AEAD associated data */
 	union {
 		struct {
-			/* Infuse device ID (lower 4 bytes) */
+			/** Infuse device ID (lower 4 bytes) */
 			uint32_t device_id_lower;
-			/* Local GPS time (seconds) */
+			/** Local GPS time (seconds) */
 			uint32_t gps_time;
-			/* Packet sequence number */
+			/** Packet sequence number */
 			uint16_t sequence;
-			/* Random entropy */
+			/** Random entropy */
 			uint16_t entropy;
 		} __packed;
+		/** Raw nonce bytes */
 		uint8_t raw[12];
-	} nonce;
-	/* Ciphertext + tag bytes */
+	} nonce; /**< AEAD encryption nonce (IV) */
+	/** Ciphertext + tag bytes */
 	uint8_t ciphertext_tag[];
 } __packed;
 
-/* Unversioned data frame */
+/** @brief Unversioned data frame */
 struct epacket_v0_unversioned_frame_format {
-	/* AEAD associated data */
 	union {
 		struct {
-			/* Payload type */
+			/** Payload type */
 			uint8_t type;
-			/* Payload flags */
+			/** Payload flags */
 			uint16_t flags;
-			/* Network or device key identifier */
+			/** Network or device key identifier */
 			uint8_t key_identifier[3];
-			/* Infuse device ID (upper 4 bytes) */
+			/** Infuse device ID (upper 4 bytes) */
 			uint32_t device_id_upper;
 		} __packed;
+		/** Raw associated data bytes */
 		uint8_t raw[10];
-	} associated_data;
-	/* AEAD encryption nonce (IV) */
+	} associated_data; /**< AEAD associated data */
 	union {
 		struct {
-			/* Infuse device ID (lower 4 bytes) */
+			/** Infuse device ID (lower 4 bytes) */
 			uint32_t device_id_lower;
-			/* Local GPS time (seconds) */
+			/** Local GPS time (seconds) */
 			uint32_t gps_time;
-			/* Packet sequence number */
+			/** Packet sequence number */
 			uint16_t sequence;
-			/* Random entropy */
+			/** Random entropy */
 			uint16_t entropy;
 		} __packed;
+		/** Raw nonce bytes */
 		uint8_t raw[12];
-	} nonce;
-	/* Ciphertext + tag bytes */
+	} nonce; /**< AEAD encryption nonce (IV) */
+	/** Ciphertext + tag bytes */
 	uint8_t ciphertext_tag[];
 } __packed;
 

@@ -26,6 +26,7 @@ extern "C" {
  * @{
  */
 
+/** @brief UBX GNSS constellation identifiers */
 enum ubx_gnss_id {
 	/** Global Positioning System (GPS) */
 	UBX_GNSS_ID_GPS = 0,

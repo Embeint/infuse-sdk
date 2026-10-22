@@ -31,6 +31,7 @@ extern "C" {
 
 /** IMU configuration struct */
 struct imu_config {
+	/** Accelerometer configuration */
 	struct {
 		/** Sample rate in Hertz */
 		uint16_t sample_rate_hz;
@@ -39,6 +40,7 @@ struct imu_config {
 		/** True for low power mode, false for performance */
 		bool low_power;
 	} accelerometer;
+	/** Gyroscope configuration */
 	struct {
 		/** Sample rate in Hertz */
 		uint16_t sample_rate_hz;
@@ -47,7 +49,9 @@ struct imu_config {
 		/** True for low power mode, false for performance */
 		bool low_power;
 	} gyroscope;
+	/** Magnetometer configuration */
 	struct {
+		/** Sample rate in Hertz */
 		uint16_t sample_rate_hz;
 	} magnetometer;
 	/** Requested number of samples to buffer in FIFO before raising interrupt */
@@ -66,13 +70,22 @@ struct imu_config_output {
 	uint32_t expected_interrupt_period_us;
 };
 
+/**
+ * @brief Infuse IMU driver API
+ *
+ * Implemented by IMU drivers, callers should use the wrapper functions below.
+ */
 struct infuse_imu_api {
+	/** Implementation of @ref imu_configure */
 	int (*configure)(const struct device *dev, const struct imu_config *config,
 			 struct imu_config_output *output);
+	/** Implementation of @ref imu_data_wait */
 	int (*data_wait)(const struct device *dev, k_timeout_t timeout);
+	/** Implementation of @ref imu_data_read */
 	int (*data_read)(const struct device *dev, struct imu_sample_array *samples,
 			 uint16_t max_samples);
 #if defined(CONFIG_INFUSE_IMU_SELF_TEST) || defined(__DOXYGEN__)
+	/** Implementation of @ref imu_self_test */
 	int (*self_test)(const struct device *dev);
 #endif /* defined(CONFIG_INFUSE_IMU_SELF_TEST) || defined(__DOXYGEN__) */
 };

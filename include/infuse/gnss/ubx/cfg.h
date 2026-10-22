@@ -130,6 +130,7 @@ enum _ubx_cfg_key_grp {
  * @{
  */
 
+/** @brief CFG-ANA configuration keys */
 enum ubx_cfg_key_ana {
 	_UBX_CFG_KEY_DEFINE(_UBX_CFG_KEY_SIZE_1BIT_, ANA, 0x01, USE_ANA),
 	_UBX_CFG_KEY_DEFINE(_UBX_CFG_KEY_SIZE_2BYTE, ANA, 0x02, ORBMAXERR),
@@ -145,6 +146,7 @@ enum ubx_cfg_key_ana {
  * @{
  */
 
+/** @brief CFG-BATCH configuration keys */
 enum ubx_cfg_key_batch {
 	_UBX_CFG_KEY_DEFINE(_UBX_CFG_KEY_SIZE_1BIT_, BATCH, 0x13, ENABLE),
 	_UBX_CFG_KEY_DEFINE(_UBX_CFG_KEY_SIZE_1BIT_, BATCH, 0x14, PIOENABLE),
@@ -166,6 +168,7 @@ enum ubx_cfg_key_batch {
  * @{
  */
 
+/** @brief CFG-BDS configuration keys */
 enum ubx_cfg_key_bds {
 	_UBX_CFG_KEY_DEFINE(_UBX_CFG_KEY_SIZE_1BIT_, BDS, 0x14, USE_GEO_PRN),
 };
@@ -180,6 +183,7 @@ enum ubx_cfg_key_bds {
  * @{
  */
 
+/** @brief CFG-HW configuration keys */
 enum ubx_cfg_key_hw {
 	_UBX_CFG_KEY_DEFINE(_UBX_CFG_KEY_SIZE_1BIT_, HW, 0x2E, ANT_CFG_VOLTCTRL),
 	_UBX_CFG_KEY_DEFINE(_UBX_CFG_KEY_SIZE_1BIT_, HW, 0x2F, ANT_CFG_SHORTDET),
@@ -199,11 +203,13 @@ enum ubx_cfg_key_hw {
 	_UBX_CFG_KEY_DEFINE(_UBX_CFG_KEY_SIZE_1BYTE, HW, 0x57, RF_LNA_MODE),
 };
 
+/** @brief Values for UBX_CFG_KEY_HW_ANT_SUP_ENGINE (antenna supervisor engine) */
 enum ubx_cfg_key_hw_ant_sup_engine {
 	UBX_CFG_HW_ANT_SUP_ENGINE_EXT = 0,
 	UBX_CFG_HW_ANT_SUP_ENGINE_MADC = 1,
 };
 
+/** @brief Values for UBX_CFG_KEY_HW_RF_LNA_MODE (internal LNA mode) */
 enum ubx_cfg_key_hw_rf_lna_mode {
 	UBX_CFG_HW_RF_LNA_MODE_NORMAL = 0,
 	UBX_CFG_HW_RF_LNA_MODE_LOWGAIN = 1,
@@ -220,6 +226,7 @@ enum ubx_cfg_key_hw_rf_lna_mode {
  * @{
  */
 
+/** @brief CFG-I2C configuration keys */
 enum ubx_cfg_key_i2c {
 	_UBX_CFG_KEY_DEFINE(_UBX_CFG_KEY_SIZE_1BYTE, I2C, 1, ADDRESS),
 	_UBX_CFG_KEY_DEFINE(_UBX_CFG_KEY_SIZE_1BIT_, I2C, 2, EXTENDEDTIMEOUT),
@@ -236,6 +243,7 @@ enum ubx_cfg_key_i2c {
  * @{
  */
 
+/** @brief CFG-I2CINPROT configuration keys */
 enum ubx_cfg_key_i2cinprot {
 	_UBX_CFG_KEY_DEFINE(_UBX_CFG_KEY_SIZE_1BIT_, I2CINPROT, 1, UBX),
 	_UBX_CFG_KEY_DEFINE(_UBX_CFG_KEY_SIZE_1BIT_, I2CINPROT, 2, NMEA),
@@ -251,6 +259,7 @@ enum ubx_cfg_key_i2cinprot {
  * @{
  */
 
+/** @brief CFG-I2COUTPROT configuration keys */
 enum ubx_cfg_key_i2coutprot {
 	_UBX_CFG_KEY_DEFINE(_UBX_CFG_KEY_SIZE_1BIT_, I2COUTPROT, 1, UBX),
 	_UBX_CFG_KEY_DEFINE(_UBX_CFG_KEY_SIZE_1BIT_, I2COUTPROT, 2, NMEA),
@@ -266,6 +275,7 @@ enum ubx_cfg_key_i2coutprot {
  * @{
  */
 
+/** @brief CFG-INFMSG configuration keys */
 enum ubx_cfg_key_infmsg {
 	_UBX_CFG_KEY_DEFINE(_UBX_CFG_KEY_SIZE_1BYTE, INFMSG, 0x01, UBX_I2C),
 	_UBX_CFG_KEY_DEFINE(_UBX_CFG_KEY_SIZE_1BYTE, INFMSG, 0x02, UBX_UART1),
@@ -275,7 +285,7 @@ enum ubx_cfg_key_infmsg {
 	_UBX_CFG_KEY_DEFINE(_UBX_CFG_KEY_SIZE_1BYTE, INFMSG, 0x0a, NMEA_SPI),
 };
 
-/* All messages in this class are always from this enum */
+/** @brief Values for all CFG-INFMSG keys (bitmask of enabled information message types) */
 enum ubx_cfg_key_infmsg_all {
 	UBX_CFG_INFMSG_ALL_ERROR = 0x01,
 	UBX_CFG_INFMSG_ALL_WARNING = 0x02,
@@ -294,6 +304,7 @@ enum ubx_cfg_key_infmsg_all {
  * @{
  */
 
+/** @brief CFG-ITFM configuration keys */
 enum ubx_cfg_key_itfm {
 	_UBX_CFG_KEY_DEFINE(_UBX_CFG_KEY_SIZE_1BYTE, ITFM, 0x01, BBTHRESHOLD),
 	_UBX_CFG_KEY_DEFINE(_UBX_CFG_KEY_SIZE_1BYTE, ITFM, 0x02, CWTHRESHOLD),
@@ -302,6 +313,7 @@ enum ubx_cfg_key_itfm {
 	_UBX_CFG_KEY_DEFINE(_UBX_CFG_KEY_SIZE_1BIT_, ITFM, 0x13, ENABLE_AUX),
 };
 
+/** @brief Values for UBX_CFG_KEY_ITFM_ANTSETTING (antenna setting) */
 enum ubx_cfg_key_itfm_antsetting {
 	UBX_CFG_ITFM_ANTSETTING_UNKNOWN = 0,
 	UBX_CFG_ITFM_ANTSETTING_PASSIVE = 1,
@@ -318,6 +330,7 @@ enum ubx_cfg_key_itfm_antsetting {
  * @{
  */
 
+/** @brief CFG-MOT configuration keys */
 enum ubx_cfg_key_mot {
 	_UBX_CFG_KEY_DEFINE(_UBX_CFG_KEY_SIZE_1BYTE, MOT, 0x38, GNSSSPEED_THRS),
 	_UBX_CFG_KEY_DEFINE(_UBX_CFG_KEY_SIZE_2BYTE, MOT, 0x3b, GNSSDIST_THRS),
@@ -343,6 +356,7 @@ enum ubx_cfg_key_mot {
 		_UBX_CFG_KEY_DEFINE(_UBX_CFG_KEY_SIZE_1BYTE, MSGOUT, (i2c_val + 1), name##_UART1), \
 		_UBX_CFG_KEY_DEFINE(_UBX_CFG_KEY_SIZE_1BYTE, MSGOUT, (i2c_val + 4), name##_SPI)
 
+/** @brief CFG-MSGOUT configuration keys */
 enum ubx_cfg_key_msgout {
 	_UBX_CFG_MSGOUT_KEY_DEFINE(0x00a6, NMEA_ID_DTM_I2C),
 	_UBX_CFG_MSGOUT_KEY_DEFINE(0x00aa, NMEA_ID_DTM_SPI),
@@ -453,6 +467,7 @@ enum ubx_cfg_key_msgout {
  * @{
  */
 
+/** @brief CFG-NAVSPG configuration keys */
 enum ubx_cfg_key_navspg {
 	_UBX_CFG_KEY_DEFINE(_UBX_CFG_KEY_SIZE_1BYTE, NAVSPG, 0x11, FIXMODE),
 	_UBX_CFG_KEY_DEFINE(_UBX_CFG_KEY_SIZE_1BIT_, NAVSPG, 0x13, INIFIX3D),
@@ -477,12 +492,14 @@ enum ubx_cfg_key_navspg {
 	_UBX_CFG_KEY_DEFINE(_UBX_CFG_KEY_SIZE_1BYTE, NAVSPG, 0xd6, SIGATTCOMP),
 };
 
+/** @brief Values for UBX_CFG_KEY_NAVSPG_FIXMODE (position fix mode) */
 enum ubx_cfg_key_navspg_fixmode {
 	UBX_CFG_NAVSPG_FIXMODE_2DONLY = 1,
 	UBX_CFG_NAVSPG_FIXMODE_3DONLY = 2,
 	UBX_CFG_NAVSPG_FIXMODE_AUTO = 3,
 };
 
+/** @brief Values for UBX_CFG_KEY_NAVSPG_UTCSTANDARD (UTC standard) */
 enum ubx_cfg_key_navspg_utcstandard {
 	/** Automatically selected based on receiver configuration */
 	UBX_CFG_NAVSPG_UTCSTANDARD_AUTO = 0,
@@ -506,29 +523,29 @@ enum ubx_cfg_key_navspg_utcstandard {
  * Documented limits are from MAX-M10S integration manual.
  */
 enum ubx_cfg_key_navspg_dynmodel {
-	/* Max Alt: 12 km Max Hor Vel: 310 m/s Max Ver Vel: 50 m/s */
+	/** Max Alt: 12 km Max Hor Vel: 310 m/s Max Ver Vel: 50 m/s */
 	UBX_CFG_NAVSPG_DYNMODEL_PORTABLE = 0,
-	/* Max Alt: 9 km Max Hor Vel: 10 m/s Max Ver Vel: 6 m/s */
+	/** Max Alt: 9 km Max Hor Vel: 10 m/s Max Ver Vel: 6 m/s */
 	UBX_CFG_NAVSPG_DYNMODEL_STATIONARY = 2,
-	/* Max Alt: 9 km Max Hor Vel: 30 m/s Max Ver Vel: 20 m/s */
+	/** Max Alt: 9 km Max Hor Vel: 30 m/s Max Ver Vel: 20 m/s */
 	UBX_CFG_NAVSPG_DYNMODEL_PEDESTRIAN = 3,
-	/* Max Alt: 6 km Max Hor Vel: 100 m/s Max Ver Vel: 15 m/s */
+	/** Max Alt: 6 km Max Hor Vel: 100 m/s Max Ver Vel: 15 m/s */
 	UBX_CFG_NAVSPG_DYNMODEL_AUTOMOTIVE = 4,
-	/* Max Alt: 0.5 km Max Hor Vel: 25 m/s Max Ver Vel: 5 m/s */
+	/** Max Alt: 0.5 km Max Hor Vel: 25 m/s Max Ver Vel: 5 m/s */
 	UBX_CFG_NAVSPG_DYNMODEL_SEA = 5,
-	/* Max Alt: 80 km Max Hor Vel: 100 m/s Max Ver Vel: 6400 m/s */
+	/** Max Alt: 80 km Max Hor Vel: 100 m/s Max Ver Vel: 6400 m/s */
 	UBX_CFG_NAVSPG_DYNMODEL_AIRBORNE1G = 6,
-	/* Max Alt: 80 km Max Hor Vel: 250 m/s Max Ver Vel: 10000 m/s */
+	/** Max Alt: 80 km Max Hor Vel: 250 m/s Max Ver Vel: 10000 m/s */
 	UBX_CFG_NAVSPG_DYNMODEL_AIRBORNE2G = 7,
-	/* Max Alt: 80 km Max Hor Vel: 500 m/s Max Ver Vel: 20000 m/s */
+	/** Max Alt: 80 km Max Hor Vel: 500 m/s Max Ver Vel: 20000 m/s */
 	UBX_CFG_NAVSPG_DYNMODEL_AIRBORNE4G = 8,
-	/* Max Alt: 9 km Max Hor Vel: 30 m/s Max Ver Vel: 20 m/s */
+	/** Max Alt: 9 km Max Hor Vel: 30 m/s Max Ver Vel: 20 m/s */
 	UBX_CFG_NAVSPG_DYNMODEL_WRIST = 9,
-	/* Unknown */
+	/** Unknown */
 	UBX_CFG_NAVSPG_DYNMODEL_BIKE = 10,
-	/* Unknown */
+	/** Unknown */
 	UBX_CFG_NAVSPG_DYNMODEL_MOWER = 11,
-	/* Unknown */
+	/** Unknown */
 	UBX_CFG_NAVSPG_DYNMODEL_ESCOOTER = 12,
 };
 
@@ -542,6 +559,7 @@ enum ubx_cfg_key_navspg_dynmodel {
  * @{
  */
 
+/** @brief CFG-NMEA configuration keys */
 enum ubx_cfg_key_nmea {
 	_UBX_CFG_KEY_DEFINE(_UBX_CFG_KEY_SIZE_1BYTE, NMEA, 0x01, PROTVER),
 	_UBX_CFG_KEY_DEFINE(_UBX_CFG_KEY_SIZE_1BYTE, NMEA, 0x02, MAXSVS),
@@ -568,11 +586,13 @@ enum ubx_cfg_key_nmea {
 	_UBX_CFG_KEY_DEFINE(_UBX_CFG_KEY_SIZE_2BYTE, NMEA, 0x33, BDSTALKERID),
 };
 
+/** @brief Values for UBX_CFG_KEY_NMEA_SVNUMBERING (satellite numbering) */
 enum ubx_cfg_key_nmea_svnumbering {
 	UBX_CFG_NMEA_SVNUMBERING_STRICT = 0,
 	UBX_CFG_NMEA_SVNUMBERING_EXTENDED = 1,
 };
 
+/** @brief Values for UBX_CFG_KEY_NMEA_MAINTALKERID (main talker ID) */
 enum ubx_cfg_key_nmea_maintalkerid {
 	UBX_CFG_NMEA_MAINTALKERID_AUTO = 0,
 	UBX_CFG_NMEA_MAINTALKERID_GP = 1,
@@ -583,6 +603,7 @@ enum ubx_cfg_key_nmea_maintalkerid {
 	UBX_CFG_NMEA_MAINTALKERID_GQ = 7,
 };
 
+/** @brief Values for UBX_CFG_KEY_NMEA_GSVTALKERID (talker ID for GSV messages) */
 enum ubx_cfg_key_nmea_gsvtalkerid {
 	UBX_CFG_NMEA_GSVTALKERID_GNSS = 0,
 	UBX_CFG_NMEA_GSVTALKERID_MAIN = 1,
@@ -598,6 +619,7 @@ enum ubx_cfg_key_nmea_gsvtalkerid {
  * @{
  */
 
+/** @brief CFG-ODO configuration keys */
 enum ubx_cfg_key_odo {
 	_UBX_CFG_KEY_DEFINE(_UBX_CFG_KEY_SIZE_1BIT_, ODO, 0x01, USE_ODO),
 	_UBX_CFG_KEY_DEFINE(_UBX_CFG_KEY_SIZE_1BIT_, ODO, 0x02, USE_COG),
@@ -610,6 +632,7 @@ enum ubx_cfg_key_odo {
 	_UBX_CFG_KEY_DEFINE(_UBX_CFG_KEY_SIZE_1BYTE, ODO, 0x32, COGLPGAIN),
 };
 
+/** @brief Values for UBX_CFG_KEY_ODO_PROFILE (odometer profile) */
 enum ubx_cfg_key_odo_profile {
 	UBX_CFG_ODO_PROFILE_RUN = 0,
 	UBX_CFG_ODO_PROFILE_CYCL = 1,
@@ -628,6 +651,7 @@ enum ubx_cfg_key_odo_profile {
  * @{
  */
 
+/** @brief CFG-PM configuration keys */
 enum ubx_cfg_key_pm {
 	_UBX_CFG_KEY_DEFINE(_UBX_CFG_KEY_SIZE_1BYTE, PM, 0x01, OPERATEMODE),
 	_UBX_CFG_KEY_DEFINE(_UBX_CFG_KEY_SIZE_4BYTE, PM, 0x02, POSUPDATEPERIOD),
@@ -646,6 +670,7 @@ enum ubx_cfg_key_pm {
 	_UBX_CFG_KEY_DEFINE(_UBX_CFG_KEY_SIZE_1BIT_, PM, 0x10, LIMITPEAKCURR),
 };
 
+/** @brief Values for UBX_CFG_KEY_PM_OPERATEMODE (power management mode) */
 enum ubx_cfg_key_pm_operatemode {
 	/** Normal operation, no power save mode active */
 	UBX_CFG_PM_OPERATEMODE_FULL = 0,
@@ -665,6 +690,7 @@ enum ubx_cfg_key_pm_operatemode {
  * @{
  */
 
+/** @brief CFG-QZSS configuration keys */
 enum ubx_cfg_key_qzss {
 	_UBX_CFG_KEY_DEFINE(_UBX_CFG_KEY_SIZE_1BIT_, QZSS, 0x05, USE_SLAS_DGNSS),
 	_UBX_CFG_KEY_DEFINE(_UBX_CFG_KEY_SIZE_1BIT_, QZSS, 0x06, USE_SLAS_TESTMODE),
@@ -682,12 +708,14 @@ enum ubx_cfg_key_qzss {
  * @{
  */
 
+/** @brief CFG-RATE configuration keys */
 enum ubx_cfg_key_rate {
 	_UBX_CFG_KEY_DEFINE(_UBX_CFG_KEY_SIZE_2BYTE, RATE, 1, MEAS),
 	_UBX_CFG_KEY_DEFINE(_UBX_CFG_KEY_SIZE_2BYTE, RATE, 2, NAV),
 	_UBX_CFG_KEY_DEFINE(_UBX_CFG_KEY_SIZE_1BYTE, RATE, 3, TIMEREF),
 };
 
+/** @brief Values for UBX_CFG_KEY_RATE_TIMEREF (time system measurements are aligned to) */
 enum ubx_cfg_key_rate_timeref {
 	UBX_CFG_RATE_TIMEREF_UTC = 0,
 	UBX_CFG_RATE_TIMEREF_GPS = 1,
@@ -707,6 +735,7 @@ enum ubx_cfg_key_rate_timeref {
  * @{
  */
 
+/** @brief CFG-RINV configuration keys */
 enum ubx_cfg_key_rinv {
 	_UBX_CFG_KEY_DEFINE(_UBX_CFG_KEY_SIZE_1BIT_, RINV, 0x01, DUMP),
 	_UBX_CFG_KEY_DEFINE(_UBX_CFG_KEY_SIZE_1BIT_, RINV, 0x02, BINARY),
@@ -727,6 +756,7 @@ enum ubx_cfg_key_rinv {
  * @{
  */
 
+/** @brief CFG-SBAS configuration keys */
 enum ubx_cfg_key_sbas {
 	_UBX_CFG_KEY_DEFINE(_UBX_CFG_KEY_SIZE_1BIT_, SBAS, 0x02, USE_TESTMODE),
 	_UBX_CFG_KEY_DEFINE(_UBX_CFG_KEY_SIZE_1BIT_, SBAS, 0x03, USE_RANGING),
@@ -735,6 +765,7 @@ enum ubx_cfg_key_sbas {
 	_UBX_CFG_KEY_DEFINE(_UBX_CFG_KEY_SIZE_8BYTE, SBAS, 0x06, PRNSCANMASK),
 };
 
+/** @brief Values for UBX_CFG_KEY_SBAS_PRNSCANMASK (SBAS PRNs to search for) */
 enum ubx_cfg_key_sbas_prnscanmask {
 	UBX_CFG_SBAS_PRNSCANMASK_ALL = 0x00,
 	UBX_CFG_SBAS_PRNSCANMASK_PRN120 = BIT64(0),
@@ -788,6 +819,7 @@ enum ubx_cfg_key_sbas_prnscanmask {
  * @{
  */
 
+/** @brief CFG-SEC configuration keys */
 enum ubx_cfg_key_sec {
 	_UBX_CFG_KEY_DEFINE(_UBX_CFG_KEY_SIZE_1BIT_, SEC, 0x09, CFG_LOCK),
 	_UBX_CFG_KEY_DEFINE(_UBX_CFG_KEY_SIZE_2BYTE, SEC, 0x0a, CFG_LOCK_UNLOCKGRP1),
@@ -804,6 +836,7 @@ enum ubx_cfg_key_sec {
  * @{
  */
 
+/** @brief CFG-SIGNAL configuration keys */
 enum ubx_cfg_key_signal {
 	_UBX_CFG_KEY_DEFINE(_UBX_CFG_KEY_SIZE_1BIT_, SIGNAL, 0x1f, GPS_ENA),
 	_UBX_CFG_KEY_DEFINE(_UBX_CFG_KEY_SIZE_1BIT_, SIGNAL, 0x01, GPS_L1CA_ENA),
@@ -831,6 +864,7 @@ enum ubx_cfg_key_signal {
  * @{
  */
 
+/** @brief CFG-SPI configuration keys */
 enum ubx_cfg_key_spi {
 	_UBX_CFG_KEY_DEFINE(_UBX_CFG_KEY_SIZE_1BYTE, SPI, 0x01, MAXFF),
 	_UBX_CFG_KEY_DEFINE(_UBX_CFG_KEY_SIZE_1BIT_, SPI, 0x02, CPOLARITY),
@@ -849,6 +883,7 @@ enum ubx_cfg_key_spi {
  * @{
  */
 
+/** @brief CFG-SPIINPROT configuration keys */
 enum ubx_cfg_key_spiinprot {
 	_UBX_CFG_KEY_DEFINE(_UBX_CFG_KEY_SIZE_1BIT_, SPIINPROT, 0x01, UBX),
 	_UBX_CFG_KEY_DEFINE(_UBX_CFG_KEY_SIZE_1BIT_, SPIINPROT, 0x02, NMEA),
@@ -864,6 +899,7 @@ enum ubx_cfg_key_spiinprot {
  * @{
  */
 
+/** @brief CFG-SPIOUTPROT configuration keys */
 enum ubx_cfg_key_spioutprot {
 	_UBX_CFG_KEY_DEFINE(_UBX_CFG_KEY_SIZE_1BIT_, SPIOUTPROT, 0x01, UBX),
 	_UBX_CFG_KEY_DEFINE(_UBX_CFG_KEY_SIZE_1BIT_, SPIOUTPROT, 0x02, NMEA),
@@ -879,6 +915,7 @@ enum ubx_cfg_key_spioutprot {
  * @{
  */
 
+/** @brief CFG-TP configuration keys */
 enum ubx_cfg_key_tp {
 	_UBX_CFG_KEY_DEFINE(_UBX_CFG_KEY_SIZE_1BYTE, TP, 0x23, PULSE_DEF),
 	_UBX_CFG_KEY_DEFINE(_UBX_CFG_KEY_SIZE_1BYTE, TP, 0x30, PULSE_LENGTH_DEF),
@@ -900,21 +937,25 @@ enum ubx_cfg_key_tp {
 	_UBX_CFG_KEY_DEFINE(_UBX_CFG_KEY_SIZE_1BYTE, TP, 0x0c, TIMEGRID_TP1),
 };
 
+/** @brief Values for UBX_CFG_KEY_TP_PULSE_DEF (time pulse period definition) */
 enum ubx_cfg_key_tp_pulse_def {
 	UBX_CFG_TP_PULSE_DEF_PERIOD = 0,
 	UBX_CFG_TP_PULSE_DEF_FREQ = 1,
 };
 
+/** @brief Values for UBX_CFG_KEY_TP_PULSE_LENGTH_DEF (time pulse length definition) */
 enum ubx_cfg_key_tp_pulse_length_def {
 	UBX_CFG_TP_PULSE_LENGTH_DEF_RATIO = 0,
 	UBX_CFG_TP_PULSE_LENGTH_DEF_LENGTH = 1,
 };
 
+/** @brief Values for UBX_CFG_KEY_TP_POL_TP1 (time pulse polarity) */
 enum ubx_cfg_key_tp_pol_tp1 {
 	UBX_CFG_TP_POL_TP1_FALLING_EDGE = 0,
 	UBX_CFG_TP_POL_TP1_RISING_EDGE = 1,
 };
 
+/** @brief Values for UBX_CFG_KEY_TP_TIMEGRID_TP1 (time pulse time grid) */
 enum ubx_cfg_key_tp_timegrid_tp1 {
 	UBX_CFG_TP_TIMEGRID_TP1_UTC = 0,
 	UBX_CFG_TP_TIMEGRID_TP1_GPS = 1,
@@ -935,6 +976,7 @@ enum ubx_cfg_key_tp_timegrid_tp1 {
  * @{
  */
 
+/** @brief CFG-TXREADY configuration keys */
 enum ubx_cfg_key_txready {
 	_UBX_CFG_KEY_DEFINE(_UBX_CFG_KEY_SIZE_1BIT_, TXREADY, 1, ENABLED),
 	_UBX_CFG_KEY_DEFINE(_UBX_CFG_KEY_SIZE_1BIT_, TXREADY, 2, POLARITY),
@@ -943,11 +985,13 @@ enum ubx_cfg_key_txready {
 	_UBX_CFG_KEY_DEFINE(_UBX_CFG_KEY_SIZE_1BYTE, TXREADY, 5, INTERFACE),
 };
 
+/** @brief Values for UBX_CFG_KEY_TXREADY_POLARITY (TX ready pin polarity) */
 enum ubx_cfg_key_rate_txready_polarity {
 	UBX_CFG_TXREADY_POLARITY_ACTIVE_HIGH = false,
 	UBX_CFG_TXREADY_POLARITY_ACTIVE_LOW = true,
 };
 
+/** @brief Values for UBX_CFG_KEY_TXREADY_INTERFACE (interface TX ready applies to) */
 enum ubx_cfg_key_rate_txready_interface {
 	UBX_CFG_TXREADY_INTERFACE_I2C = 0,
 	UBX_CFG_TXREADY_INTERFACE_SPI = 1,
@@ -963,6 +1007,7 @@ enum ubx_cfg_key_rate_txready_interface {
  * @{
  */
 
+/** @brief CFG-UART1 configuration keys */
 enum ubx_cfg_key_uart1 {
 	_UBX_CFG_KEY_DEFINE(_UBX_CFG_KEY_SIZE_4BYTE, UART1, 1, BAUDRATE),
 	_UBX_CFG_KEY_DEFINE(_UBX_CFG_KEY_SIZE_1BYTE, UART1, 2, STOPBITS),
@@ -981,6 +1026,7 @@ enum ubx_cfg_key_uart1 {
  * @{
  */
 
+/** @brief CFG-UART1INPROT configuration keys */
 enum ubx_cfg_key_uart1inprot {
 	_UBX_CFG_KEY_DEFINE(_UBX_CFG_KEY_SIZE_1BIT_, UART1INPROT, 0x01, UBX),
 	_UBX_CFG_KEY_DEFINE(_UBX_CFG_KEY_SIZE_1BIT_, UART1INPROT, 0x02, NMEA),
@@ -996,6 +1042,7 @@ enum ubx_cfg_key_uart1inprot {
  * @{
  */
 
+/** @brief CFG-UART1OUTPROT configuration keys */
 enum ubx_cfg_key_uart1outprot {
 	_UBX_CFG_KEY_DEFINE(_UBX_CFG_KEY_SIZE_1BIT_, UART1OUTPROT, 0x01, UBX),
 	_UBX_CFG_KEY_DEFINE(_UBX_CFG_KEY_SIZE_1BIT_, UART1OUTPROT, 0x02, NMEA),

@@ -38,9 +38,13 @@ extern "C" {
  * @{
  */
 
+/** Number of seconds in a minute */
 #define SECONDS_PER_MINUTE (60)
+/** Number of seconds in an hour */
 #define SECONDS_PER_HOUR   (60 * SECONDS_PER_MINUTE)
+/** Number of seconds in a day */
 #define SECONDS_PER_DAY    (24 * SECONDS_PER_HOUR)
+/** Number of seconds in a week */
 #define SECONDS_PER_WEEK   (7 * SECONDS_PER_DAY)
 
 /**
@@ -60,21 +64,21 @@ extern "C" {
  */
 #define INFUSE_EPOCH_TIME_TICKS_PER_SEC (UINT16_MAX + 1)
 
-/* Source of time knowledge */
+/** @brief Source of time knowledge */
 enum epoch_time_source {
-	/* No time knowledge */
+	/** No time knowledge */
 	TIME_SOURCE_NONE = 0,
-	/* Time from GNSS constellation (GPS, Beidou, etc) */
+	/** Time from GNSS constellation (GPS, Beidou, etc) */
 	TIME_SOURCE_GNSS,
-	/* Time from Network Time Protocol (IP) */
+	/** Time from Network Time Protocol (IP) */
 	TIME_SOURCE_NTP,
-	/* Time directly set by Remote Procedure Call */
+	/** Time directly set by Remote Procedure Call */
 	TIME_SOURCE_RPC,
-	/* Time from observed ePacket headers */
+	/** Time from observed ePacket headers */
 	TIME_SOURCE_EPACKET,
-	/* Unknown time source value */
+	/** Unknown time source value */
 	TIME_SOURCE_INVALID,
-	/* Time has been preserved across a reboot */
+	/** Time has been preserved across a reboot */
 	TIME_SOURCE_RECOVERED = 0x80,
 } __packed;
 
@@ -91,10 +95,12 @@ struct epoch_time_cb {
 				       struct timeutil_sync_instant old,
 				       struct timeutil_sync_instant new, void *user_ctx);
 
-	/* User provided context pointer */
+	/** User provided context pointer */
 	void *user_ctx;
 
+	/** @cond INTERNAL_HIDDEN */
 	sys_snode_t node;
+	/** @endcond */
 };
 
 /**

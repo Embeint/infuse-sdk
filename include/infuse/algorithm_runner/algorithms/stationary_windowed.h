@@ -35,10 +35,13 @@ enum {
 	ALGORITHM_STATIONARY_WINDOWED_LOG_WINDOW_STD_DEV = BIT(0),
 };
 
+/* Algorithm runtime state */
+/** @cond INTERNAL_HIDDEN */
 struct algorithm_stationary_windowed_data {
 	struct statistics_state stats;
 	uint32_t window_end;
 };
+/** @endcond */
 
 /** Algorithm implementation, see @ref algorithm_run_fn */
 void algorithm_stationary_windowed_fn(const struct zbus_channel *chan,

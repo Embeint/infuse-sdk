@@ -21,27 +21,27 @@
 
 /** @brief Common state for u-blox modem backends */
 struct modem_backend_common {
-	/* Pointer to data ready pin configuration */
+	/** Pointer to data ready pin configuration */
 	const struct gpio_dt_spec *data_ready;
-	/* Communication pipe */
+	/** Communication pipe */
 	struct modem_pipe pipe;
-	/* Ring buffer for holding pipe data stream */
+	/** Ring buffer for holding pipe data stream */
 	struct ring_buf pipe_ring_buf;
-	/* Worker that reads the FIFO */
+	/** Worker that reads the FIFO */
 	struct k_work_delayable fifo_read;
-	/* Signal to notify when FIFO read completes */
+	/** Signal to notify when FIFO read completes */
 	struct k_poll_signal read_result;
-	/* Callback for data ready GPIO */
+	/** Callback for data ready GPIO */
 	struct gpio_callback data_ready_cb;
-	/* Bus (RTIO SQE) contention semaphore */
+	/** Bus (RTIO SQE) contention semaphore */
 	struct k_sem bus_sem;
-	/* Duration between polls */
+	/** Duration between polls */
 	k_timeout_t poll_period;
-	/* Number of bytes pending on FIFO */
+	/** Number of bytes pending on FIFO */
 	uint16_t bytes_pending;
-	/* Internal state flags */
+	/** Internal state flags */
 	uint8_t flags;
-	/* Backing memory for pipe data stream */
+	/** Backing memory for pipe data stream */
 	uint8_t pipe_memory[CONFIG_GNSS_U_BLOX_PIPE_SIZE];
 };
 

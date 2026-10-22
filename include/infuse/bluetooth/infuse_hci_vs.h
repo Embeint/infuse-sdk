@@ -23,7 +23,9 @@ extern "C" {
  * @{
  */
 
+/** @brief Infuse-IoT vendor specific HCI command opcodes */
 enum infuse_hci_opcode_vs {
+	/** Send an ePacket over HCI */
 	INFUSE_HCI_OPCODE_CMD_VS_EPACKET = BT_OP(BT_OGF_VS, 0x00E0),
 };
 
@@ -35,11 +37,13 @@ typedef struct __PACKED __ALIGN(1) {
 	uint16_t flags;
 	/** @brief Sequence counter */
 	uint16_t sequence;
-	/* ePacket data payload */
+	/** @brief ePacket data payload */
 	uint8_t data[];
-} infuse_hci_cmd_vs_epacket_t;
+} infuse_hci_cmd_vs_epacket_t; /**< Infuse-IoT ePacket command parameter(s) */
 
+/** @brief Infuse-IoT vendor specific HCI event codes */
 enum infuse_hci_event_vs {
+	/** ePacket received over HCI */
 	INFUSE_HCI_EVT_VS_EPACKET = 0xE0,
 };
 

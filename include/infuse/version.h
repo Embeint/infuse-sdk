@@ -17,9 +17,13 @@
 #include "zephyr/app_version.h"
 #else
 /* Fallback for applications without VERSION file */
+/** Application major version (fallback when no VERSION file) */
 #define APP_VERSION_MAJOR 0
+/** Application minor version (fallback when no VERSION file) */
 #define APP_VERSION_MINOR 0
+/** Application patch level (fallback when no VERSION file) */
 #define APP_PATCHLEVEL    0
+/** Application tweak version (fallback when no VERSION file) */
 #define APP_TWEAK         0
 #endif
 
@@ -34,7 +38,7 @@ extern "C" {
  * @{
  */
 
-/* Use MCUboot semantic version definitions */
+/** Infuse version structure, uses the MCUboot semantic version definition */
 #define infuse_version mcuboot_img_sem_ver
 
 /**

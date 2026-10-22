@@ -24,25 +24,34 @@ extern "C" {
  * @{
  */
 
-/* Infuse-IoT official Bluetooth SIG 16bit service UUID */
+/** Infuse-IoT official Bluetooth SIG 16bit service UUID */
 #define INFUSE_BT_SERVICE_UUID_VAL 0xFC74
 
+/** Infuse-IoT Bluetooth service UUID */
 #define INFUSE_SERVICE_UUID BT_UUID_DECLARE_16(INFUSE_BT_SERVICE_UUID_VAL)
+/** Infuse-IoT command characteristic UUID value */
 #define INFUSE_SERVICE_UUID_COMMAND_VAL                                                            \
 	BT_UUID_128_ENCODE(0xDC0B71B7, INFUSE_BT_SERVICE_UUID_VAL, INFUSE_BT_SERVICE_UUID_VAL,     \
 			   0xAA01, 0x8ABA434A893D)
+/** Infuse-IoT command characteristic UUID */
 #define INFUSE_SERVICE_UUID_COMMAND BT_UUID_DECLARE_128(INFUSE_SERVICE_UUID_COMMAND_VAL)
+/** Infuse-IoT data characteristic UUID value */
 #define INFUSE_SERVICE_UUID_DATA_VAL                                                               \
 	BT_UUID_128_ENCODE(0xDC0B71B7, INFUSE_BT_SERVICE_UUID_VAL, INFUSE_BT_SERVICE_UUID_VAL,     \
 			   0xAA02, 0x8ABA434A893D)
+/** Infuse-IoT data characteristic UUID */
 #define INFUSE_SERVICE_UUID_DATA BT_UUID_DECLARE_128(INFUSE_SERVICE_UUID_DATA_VAL)
+/** Infuse-IoT logging characteristic UUID value */
 #define INFUSE_SERVICE_UUID_LOGGING_VAL                                                            \
 	BT_UUID_128_ENCODE(0xDC0B71B7, INFUSE_BT_SERVICE_UUID_VAL, INFUSE_BT_SERVICE_UUID_VAL,     \
 			   0xAA03, 0x8ABA434A893D)
+/** Infuse-IoT logging characteristic UUID */
 #define INFUSE_SERVICE_UUID_LOGGING BT_UUID_DECLARE_128(INFUSE_SERVICE_UUID_LOGGING_VAL)
+/** Infuse-IoT cloud uplink characteristic UUID value */
 #define INFUSE_SERVICE_UUID_CLOUD_UPLINK_VAL                                                       \
 	BT_UUID_128_ENCODE(0xDC0B71B7, INFUSE_BT_SERVICE_UUID_VAL, INFUSE_BT_SERVICE_UUID_VAL,     \
 			   0xAA04, 0x8ABA434A893D)
+/** Infuse-IoT cloud uplink characteristic UUID */
 #define INFUSE_SERVICE_UUID_CLOUD_UPLINK BT_UUID_DECLARE_128(INFUSE_SERVICE_UUID_CLOUD_UPLINK_VAL)
 
 /**
@@ -51,11 +60,11 @@ extern "C" {
  * Contains public security credentials for communicating with device.
  */
 struct epacket_read_response {
-	/* Cloud public ECC key */
+	/** Cloud public ECC key */
 	uint8_t cloud_public_key[32];
-	/* Device public ECC key */
+	/** Device public ECC key */
 	uint8_t device_public_key[32];
-	/* Current network ID */
+	/** Current network ID */
 	uint32_t network_id;
 } __packed;
 

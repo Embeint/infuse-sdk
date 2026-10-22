@@ -43,9 +43,9 @@ extern "C" {
 int infuse_sync_dns(const char *host, uint16_t port, int family, int socktype,
 		    struct net_sockaddr *addr, net_socklen_t *addrlen);
 
-/* One result for the DNS query (multiple results are possible) */
+/** One result for the DNS query (multiple results are possible) */
 #define INFUSE_ASYNC_DNS_RESULT   0
-/* DNS query has completed successfully */
+/** DNS query has completed successfully */
 #define INFUSE_ASYNC_DNS_COMPLETE 1
 
 struct infuse_async_dns_context;
@@ -63,11 +63,11 @@ typedef void (*infuse_async_dns_cb)(int result, struct net_sockaddr *addr, net_s
 
 /** Async query context for @ref infuse_async_dns */
 struct infuse_async_dns_context {
-	/* Callback to run on events */
+	/** Callback to run on events */
 	infuse_async_dns_cb cb;
-	/* DNS query ID (Internal use) */
+	/** DNS query ID (Internal use) */
 	uint16_t _dns_id;
-	/* Arbitrary user context */
+	/** Arbitrary user context */
 	void *user_data;
 };
 

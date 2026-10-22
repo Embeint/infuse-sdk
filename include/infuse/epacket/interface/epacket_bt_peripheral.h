@@ -29,6 +29,7 @@ extern "C" {
  * @{
  */
 
+/** Bluetooth GATT peripheral interface frame format, @ref epacket_v0_versioned_frame_format */
 #define epacket_bt_peripheral_frame epacket_v0_versioned_frame_format
 
 /**

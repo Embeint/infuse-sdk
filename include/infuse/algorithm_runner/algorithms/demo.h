@@ -34,22 +34,26 @@ enum {
 	ALGORITHM_DEMO_METRIC_LOG = BIT(0),
 };
 
+/** @brief Arguments common to the demonstration algorithms */
 struct algorithm_demo_common_args {
-	/* Common logging configuration */
+	/** Common logging configuration */
 	struct kv_algorithm_logging logging;
 	/* Algorithm specific arguments */
 	union {
-		/* Chance to emit an event on each buffer (%) */
+		/** Chance to emit an event on each buffer (%) */
 		uint8_t event_gen_chance;
-		/* Number of samples to compute metric over */
+		/** Number of samples to compute metric over */
 		uint16_t compute_metric_len;
 	} __packed;
 } __packed;
 
+/* Algorithm runtime state */
+/** @cond INTERNAL_HIDDEN */
 union algorithm_demo_common_data {
 	uint32_t processed;
 	uint8_t current_state;
 };
+/** @endcond */
 
 /** Algorithm implementation, see @ref algorithm_run_fn */
 void algorithm_demo_event_fn(const struct zbus_channel *chan,

@@ -23,11 +23,11 @@ extern "C" {
  * @{
  */
 
-/* Coordinate point */
+/** @brief Coordinate point */
 struct geodesy_coordinate {
-	/* Latitude, scaled by 1e7 */
+	/** Latitude, scaled by 1e7 */
 	int32_t latitude;
-	/* Longitude, scaled by 1e7 */
+	/** Longitude, scaled by 1e7 */
 	int32_t longitude;
 };
 

@@ -30,6 +30,7 @@ extern "C" {
  * @{
  */
 
+/** Infuse-IoT work queue */
 extern struct k_work_q infuse_iot_work_q;
 
 /** @brief Submit a work item to the Infuse-IoT queue.

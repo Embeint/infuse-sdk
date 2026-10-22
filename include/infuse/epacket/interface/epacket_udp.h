@@ -28,11 +28,12 @@ extern "C" {
  * @{
  */
 
+/** UDP interface frame format, @ref epacket_v0_unversioned_frame_format */
 #define epacket_udp_frame epacket_v0_unversioned_frame_format
 
 /** UDP specific packet flags */
 enum epacket_flags_udp {
-	/* Packet is a single transmission on the interface.
+	/** Packet is a single transmission on the interface.
 	 * This can be used for backends as a hint that the interface
 	 * can be dropped back to an idle state (e.g LTE RAI).
 	 * If this flag is set and additional packets are queued, there

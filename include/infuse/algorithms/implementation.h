@@ -43,24 +43,25 @@ struct infuse_algorithm;
 typedef void (*algorithm_run_fn)(const struct zbus_channel *chan,
 				 const struct infuse_algorithm *algorithm, const void *args);
 
+/** @brief Algorithm definition */
 struct infuse_algorithm {
-	/* Version of the `infuse_algorithm` struct */
+	/** Version of the `infuse_algorithm` struct */
 	uint8_t struct_version;
-	/* Currently unused struct padding */
+	/** Currently unused struct padding */
 	uint8_t reserved;
-	/* Algorithm implementation version */
+	/** Algorithm implementation version */
 	uint16_t algorithm_version;
-	/* Unique algorithm identifier */
+	/** Unique algorithm identifier */
 	uint32_t algorithm_id;
-	/* Primary channel that triggers algorithm run */
+	/** Primary channel that triggers algorithm run */
 	uint32_t zbus_channel;
-	/* Algorithm arguments */
+	/** Algorithm arguments */
 	void *arguments;
-	/* Size of the arguments structure */
+	/** Size of the arguments structure */
 	uint16_t arguments_size;
-	/* KV Store key holding @a arguments (If > 0) */
+	/** KV Store key holding @ref infuse_algorithm::arguments (If > 0) */
 	uint16_t arguments_kv_key;
-	/* Function that implements the algorithm */
+	/** Function that implements the algorithm */
 	algorithm_run_fn fn;
 };
 

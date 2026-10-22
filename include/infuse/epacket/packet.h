@@ -36,22 +36,29 @@ extern "C" {
  * @{
  */
 
+/**
+ * @brief ePacket authentication levels
+ */
 enum epacket_auth {
-	/* Packet failed to decrypt */
+	/** Packet failed to decrypt */
 	EPACKET_AUTH_FAILURE = 0,
-	/* Packet is encrypted for remote device */
+	/** Packet is encrypted for remote device */
 	EPACKET_AUTH_REMOTE_ENCRYPTED = 0,
+	/** Packet is encrypted with a network key */
 	EPACKET_AUTH_NETWORK = 1,
+	/** Packet is encrypted with a device key */
 	EPACKET_AUTH_DEVICE = 2,
 } __packed;
 
-/* Interface specific addresses */
+/**
+ * @brief Interface specific addresses
+ */
 union epacket_interface_address {
-	/* Bluetooth LE address */
+	/** Bluetooth LE address */
 	bt_addr_le_t bluetooth;
 };
 
-/* Empty interface address */
+/** Empty interface address */
 #define EPACKET_ADDR_ALL ((union epacket_interface_address){0})
 
 /**
@@ -65,72 +72,80 @@ union epacket_interface_address {
 typedef void (*epacket_tx_done_cb)(const struct device *dev, struct net_buf *pkt, int result,
 				   void *user_data);
 
-/* Metadata for packets that will be transmitted */
+/**
+ * @brief Metadata for packets that will be transmitted
+ */
 struct epacket_tx_metadata {
 #ifdef CONFIG_EPACKET_BUFFERS_TX_DELAYABLE_WORK
+	/** Work item for interfaces that delay packet transmission */
 	struct k_work_delayable dwork;
 #endif
-	/* ePacket interface packet will be transmitted on */
+	/** ePacket interface packet will be transmitted on */
 	const struct device *interface;
-	/* Callback run when TX completes */
+	/** Callback run when TX completes */
 	epacket_tx_done_cb tx_done;
-	/* Context provided to @a tx_done */
+	/** Context provided to @ref epacket_tx_metadata::tx_done */
 	void *tx_done_user_data;
-	/* Authentication level of packet */
+	/** Authentication level of packet */
 	enum epacket_auth auth;
-	/* Packet type */
+	/** Packet type */
 	enum infuse_type type;
-	/* Key identifier to use to encrypt packet for the auth level */
+	/** Key identifier to use to encrypt packet for the auth level */
 	uint32_t key_identifier;
-	/* Flags to apply to packet */
+	/** Flags to apply to packet (@ref epacket_flags) */
 	uint16_t flags;
-	/* Sequence number used for packet */
+	/** Sequence number used for packet */
 	uint16_t sequence;
-	/* Interface specific address */
+	/** Interface specific address */
 	union epacket_interface_address interface_address;
 };
 
-/* Metadata for packets that have been received */
+/**
+ * @brief Metadata for packets that have been received
+ */
 struct epacket_rx_metadata {
-	/* Device ID in packet */
+	/** Device ID in packet */
 	uint64_t packet_device_id;
-	/* Local time packet was received */
+	/** Local time packet was received (ticks) */
 	k_ticks_t rx_timestamp;
-	/* GPS time in packet */
+	/** GPS time in packet */
 	uint32_t packet_gps_time;
-	/* Key ID used by packet */
+	/** Key ID used by packet */
 	uint32_t key_identifier;
-	/* Authentication level of packet */
+	/** Authentication level of packet */
 	enum epacket_auth auth;
-	/* Type of packet */
+	/** Type of packet */
 	enum infuse_type type;
-	/* Flags associated with packet */
+	/** Flags associated with packet (@ref epacket_flags) */
 	uint16_t flags;
-	/* ePacket interface packet was received on */
+	/** ePacket interface packet was received on */
 	const struct device *interface;
-	/* Numerical ID for interface */
+	/** Numerical ID for interface */
 	enum epacket_interface_id interface_id;
-	/* Interface specific address */
+	/** Interface specific address */
 	union epacket_interface_address interface_address;
-	/* RSSI of packet (0 = 0dBm, 20 = 20dBm, etc) */
+	/** RSSI of packet (0 = 0dBm, 20 = 20dBm, etc) */
 	int16_t rssi;
-	/* Sequence number of packet */
+	/** Sequence number of packet */
 	uint16_t sequence;
 };
 
-/* Global ePacket flags */
+/**
+ * @brief Global ePacket flags
+ */
 enum epacket_flags {
-	/* Bit 15: Encryption Type */
+	/** Bit 15: Encryption type is device key */
 	EPACKET_FLAGS_ENCRYPTION_DEVICE = BIT(15),
+	/** Bit 15: Encryption type is network key */
 	EPACKET_FLAGS_ENCRYPTION_NETWORK = 0,
-	/* Bit 14: Transmitting device requests an ACK */
+	/** Bit 14: Transmitting device requests an ACK */
 	EPACKET_FLAGS_ACK_REQUEST = BIT(14),
-	/* Bit 13: Device can forward data to the cloud */
+	/** Bit 13: Device can forward data to the cloud */
 	EPACKET_FLAGS_CLOUD_FORWARDING = BIT(13),
-	/* Bit 12: Device sends its own data to the cloud */
+	/** Bit 12: Device sends its own data to the cloud */
 	EPACKET_FLAGS_CLOUD_SELF = BIT(12),
 	/* Bits 8-11: Reserved */
-	/* Bits 0-7: Interface specific */
+	/** Bits 0-7: Interface specific */
 	EPACKET_FLAGS_INTERFACE_MASK = 0x00FF,
 };
 
@@ -141,6 +156,7 @@ enum epacket_flags {
 
 /** Format of @ref INFUSE_KEY_IDS packet */
 struct epacket_key_ids_data {
+	/** 24 bit device key identifier */
 	uint8_t device_key_id[3];
 } __packed;
 
@@ -165,86 +181,92 @@ struct epacket_rate_throughput_req {
 
 /** Format of BLE address in @ref INFUSE_RECEIVED_EPACKET and @ref INFUSE_EPACKET_FORWARD */
 struct epacket_interface_address_bt_le {
+	/** Bluetooth LE address type */
 	uint8_t type;
+	/** Bluetooth LE address value */
 	uint8_t addr[6];
 } __packed;
 BUILD_ASSERT(sizeof(struct epacket_interface_address_bt_le) == 7);
 
 /** Common header for @ref INFUSE_RECEIVED_EPACKET */
 struct epacket_received_common_header {
-	/*    Bit 16: 1 when packet is still encrypted
+	/**
+	 *    Bit 15: 1 when packet is still encrypted,
 	 *            0 when packet is decrypted
-	 * Bits 0-15: Total length of headers + data
+	 * Bits 0-14: Total length of headers + data
 	 */
 	uint16_t len_encrypted;
-	/* Received packet signal strength (0 - val) */
+	/** Received packet signal strength, negated (0 - val) */
 	uint8_t rssi;
-	/* Value from `EPACKET_INTERFACE_*` */
+	/** Value from @ref epacket_interface_id */
 	uint8_t interface;
 } __packed;
 
 /** Header for @ref INFUSE_RECEIVED_EPACKET where packet was decrypted */
 struct epacket_received_decrypted_header {
-	/* Device ID in the packet */
+	/** Device ID in the packet */
 	uint64_t device_id;
-	/* GPS time in the packet */
+	/** GPS time in the packet */
 	uint32_t gps_time;
-	/* Packet type */
+	/** Packet type */
 	uint8_t type;
-	/* Packet flags */
+	/** Packet flags (@ref epacket_flags) */
 	uint16_t flags;
-	/* Sequence number */
+	/** Sequence number */
 	uint16_t sequence;
-	/* ID associated with the key */
+	/** ID associated with the key */
 	uint8_t key_id[3];
 } __packed;
 
 /** Common header for @ref INFUSE_EPACKET_FORWARD */
 struct epacket_forward_header {
-	/* Total length of this header + payload */
+	/** Total length of this header + payload */
 	uint16_t length;
-	/* Value from `EPACKET_INTERFACE_*` */
+	/** Value from @ref epacket_interface_id */
 	uint8_t interface;
-	/* Destination interface address + packet bytes */
+	/** Destination interface address + packet bytes */
 	uint8_t destination_payload[];
 } __packed;
 
+/**
+ * @brief Flags for @ref epacket_forward_auto_conn_header::flags
+ */
 enum epacket_forward_auto_conn_flags {
-	/* Automatically disconnect on the first received INFUSE_RPC_RSP */
+	/** Automatically disconnect on the first received @ref INFUSE_RPC_RSP */
 	EPACKET_FORWARD_AUTO_CONN_SINGLE_RPC = BIT(0),
-	/* Subscribe to data while connected */
+	/** Subscribe to data while connected */
 	EPACKET_FORWARD_AUTO_CONN_SUB_DATA = BIT(1),
-	/* Send a INFUSE_EPACKET_CONN_TERMINATED on connection terminated */
+	/** Send a @ref INFUSE_EPACKET_CONN_TERMINATED on connection terminated */
 	EPACKET_FORWARD_AUTO_CONN_DC_NOTIFICATION = BIT(2),
-	/* Prioritise uplink throughput to the connection associated with this request */
+	/** Prioritise uplink throughput to the connection associated with this request */
 	EPACKET_FORWARD_AUTO_CONN_PRIORITISE_UPLINK = BIT(3),
 } __packed;
 
 /** Common header for @ref INFUSE_EPACKET_FORWARD_AUTO_CONN */
 struct epacket_forward_auto_conn_header {
-	/* Total length of this header + payload */
+	/** Total length of this header + payload */
 	uint16_t length;
-	/* Value from `EPACKET_INTERFACE_*` */
+	/** Value from @ref epacket_interface_id */
 	uint8_t interface;
-	/* Value from `EPACKET_FORWARD_AUTO_CONN_` */
+	/** Flags from @ref epacket_forward_auto_conn_flags */
 	uint8_t flags;
-	/* Connection timeout (seconds) */
+	/** Connection timeout (seconds) */
 	uint8_t conn_timeout;
-	/* Connection idle timeout (seconds) */
+	/** Connection idle timeout (seconds) */
 	uint8_t conn_idle_timeout;
-	/* Unconditional connection timeout (seconds) */
+	/** Unconditional connection timeout (seconds) */
 	uint8_t conn_absolute_timeout;
-	/* Destination interface address + packet bytes */
+	/** Destination interface address + packet bytes */
 	uint8_t destination_payload[];
 } __packed;
 
 /** Packet for @ref INFUSE_EPACKET_CONN_TERMINATED */
 struct epacket_conn_terminated {
-	/* Value from `EPACKET_INTERFACE_*` */
+	/** Value from @ref epacket_interface_id */
 	uint8_t interface;
-	/* Reason that interface disconnected */
+	/** Reason that interface disconnected */
 	int16_t reason;
-	/* Interface address that disconnected */
+	/** Interface address that disconnected */
 	uint8_t address[];
 } __packed;
 

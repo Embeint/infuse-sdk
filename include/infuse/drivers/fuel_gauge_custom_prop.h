@@ -24,7 +24,9 @@ extern "C" {
  * @{
  */
 
+/** @brief Infuse-IoT custom fuel gauge property types */
 enum fuel_gauge_custom_prop_type {
+	/** Enable (non-zero) or disable (zero) hibernation mode, value in `sbs_mode` */
 	FUEL_GAUGE_HIBERNATION_EN = FUEL_GAUGE_CUSTOM_BEGIN,
 };
 

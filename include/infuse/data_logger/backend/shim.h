@@ -29,33 +29,53 @@ extern "C" {
 /** Data structure used for shim */
 struct data_logger_shim_function_data {
 	struct {
+		/** Number of times the write function has been called */
 		uint32_t num_calls;
+		/** Physical block of the last write */
 		uint32_t block;
+		/** Length of the last write */
 		uint16_t data_len;
+		/** Data type of the last write */
 		enum infuse_type data_type;
+		/** Value to return from the write function */
 		int rc;
-	} write;
+	} write; /**< Write function state */
 	struct {
+		/** Number of times the read function has been called */
 		uint32_t num_calls;
+		/** Physical block of the last read */
 		uint32_t block;
+		/** Block offset of the last read */
 		uint16_t block_offset;
+		/** Length of the last read */
 		uint16_t data_len;
+		/** Optional callback run on each read */
 		void (*read_cb)(uint32_t block, uint16_t block_offset, uint16_t data_len);
+		/** Value to return from the read function */
 		int rc;
-	} read;
+	} read; /**< Read function state */
 	struct {
+		/** Number of times the erase function has been called */
 		uint32_t num_calls;
+		/** First physical block of the last erase */
 		uint32_t phy_block;
+		/** Number of blocks in the last erase */
 		uint32_t num;
+		/** Optional semaphore the erase function waits on before returning */
 		struct k_sem *block_until;
+		/** Value to return from the erase function */
 		int rc;
-	} erase;
+	} erase; /**< Erase function state */
 	struct {
+		/** Number of times the reset function has been called */
 		uint32_t num_calls;
+		/** Block hint of the last reset */
 		uint32_t block_hint;
+		/** Optional semaphore the reset function waits on before returning */
 		struct k_sem *block_until;
+		/** Value to return from the reset function */
 		int rc;
-	} reset;
+	} reset; /**< Reset function state */
 };
 
 /**

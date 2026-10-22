@@ -30,6 +30,7 @@ extern "C" {
  * @{
  */
 
+/** @brief State of a TDF buffer being written or parsed */
 struct tdf_buffer_state {
 	/** Current buffer time */
 	uint64_t time;
@@ -37,6 +38,7 @@ struct tdf_buffer_state {
 	struct net_buf_simple buf;
 };
 
+/** @brief Format of the data in a TDF */
 enum tdf_data_format {
 	/** Single sample */
 	TDF_DATA_FORMAT_SINGLE,
@@ -56,6 +58,7 @@ enum tdf_data_format {
 	TDF_DATA_FORMAT_DIFF_PRECOMPUTED = 0x80,
 } __packed;
 
+/** @brief Parsed TDF information */
 struct tdf_parsed {
 	/** TDF time (0 for none) */
 	uint64_t time;
@@ -83,21 +86,31 @@ struct tdf_parsed {
 	void *data;
 };
 
+/** @brief Flags in the TDF header ID field */
 enum tdf_flags {
-	/** Timestamp flags */
+	/** No timestamp */
 	TDF_TIMESTAMP_NONE = 0x0000,
+	/** Absolute timestamp */
 	TDF_TIMESTAMP_ABSOLUTE = 0x4000,
+	/** 16 bit timestamp offset from the previous TDF */
 	TDF_TIMESTAMP_RELATIVE = 0x8000,
+	/** 24 bit signed timestamp offset from the previous TDF */
 	TDF_TIMESTAMP_EXTENDED_RELATIVE = 0xC000,
-	/** Special flags */
+	/** Not an array */
 	TDF_ARRAY_NONE = 0x0000,
+	/** Time array with period */
 	TDF_ARRAY_TIME = 0x1000,
+	/** Array of diffs from a base value */
 	TDF_ARRAY_DIFF = 0x2000,
+	/** Array based on sample indices */
 	TDF_ARRAY_IDX = 0x3000,
-	/** Masks */
+	/** Mask of all flag bits */
 	TDF_FLAGS_MASK = 0xF000,
+	/** Mask of timestamp flag bits */
 	TDF_TIMESTAMP_MASK = 0xC000,
+	/** Mask of array flag bits */
 	TDF_ARRAY_MASK = 0x3000,
+	/** Mask of TDF ID bits */
 	TDF_ID_MASK = 0x0FFF,
 };
 

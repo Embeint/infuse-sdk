@@ -27,12 +27,27 @@ extern "C" {
  */
 
 enum {
+	/** Wait for the button to transition to the active state */
 	VALIDATION_BUTTON_MODE_TRIGGER = BIT(0),
+	/** Wait for the button to transition to the inactive state */
 	VALIDATION_BUTTON_MODE_RELEASE = BIT(1),
+	/** Wait for both trigger and release transitions */
 	VALIDATION_BUTTON_MODE_BOTH =
 		VALIDATION_BUTTON_MODE_TRIGGER | VALIDATION_BUTTON_MODE_RELEASE,
 };
 
+/**
+ * @brief Validate that button transitions can be observed
+ *
+ * Waits up to @kconfig{CONFIG_INFUSE_VALIDATION_BUTTON_ACTION_TIMEOUT} seconds for the
+ * requested button transitions to occur.
+ *
+ * @param button Button GPIO specification
+ * @param flags Transitions to wait for (VALIDATION_BUTTON_MODE_*)
+ *
+ * @retval 0 On success
+ * @retval -errno On failure
+ */
 int infuse_validation_button(const struct gpio_dt_spec *button, uint8_t flags);
 
 /**

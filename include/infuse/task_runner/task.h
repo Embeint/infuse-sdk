@@ -46,6 +46,13 @@ enum {
  */
 #define TASK_RUNNER_TASK_U32_ID(task_id) (0x7A5A6600 | (task_id))
 
+/**
+ * @brief Function run by a thread executor task
+ *
+ * @param schedule Schedule that triggered the task
+ * @param terminate Signal raised when the task runner requests the task to terminate
+ * @param arg Task specific argument from @ref task_config::task_arg
+ */
 typedef void (*task_runner_task_fn)(const struct task_schedule *schedule,
 				    struct k_poll_signal *terminate, void *arg);
 
@@ -61,13 +68,18 @@ struct task_config {
 	uint8_t exec_type;
 	/** Task flags of type `TASK_FLAG_*` */
 	uint8_t flags;
-	/* Task specific argument */
+	/** Task specific argument */
 	union {
+		/** Argument as a device pointer (@ref TASK_FLAG_ARG_IS_DEVICE) */
 		const struct device *dev;
+		/** Argument as a constant pointer */
 		const void *const_arg;
+		/** Argument as a mutable pointer */
 		void *arg;
-	} task_arg;
+	} task_arg; /**< Task specific argument */
+	/** Executor specific configuration */
 	union {
+		/** Configuration for @ref TASK_EXECUTOR_THREAD */
 		struct {
 			/** Thread state storage */
 			struct k_thread *thread;
@@ -78,33 +90,37 @@ struct task_config {
 			/** Size of stack memory */
 			size_t stack_size;
 		} thread;
+		/** Configuration for @ref TASK_EXECUTOR_WORKQUEUE */
 		struct {
 			/** Handler function */
 			k_work_handler_t worker_fn;
 			/** Persistent state */
 			void *state;
 		} workqueue;
-	} executor;
+	} executor; /**< Executor specific configuration */
 };
 
 /**
  * @brief Task runtime state
  */
 struct task_data {
+	/** Executor specific state */
 	union {
 		/** Workqueue state storage */
 		struct {
-			/* Workqueue item */
+			/** Workqueue item */
 			struct k_work_delayable work;
-			/* Counter for the number of times the work has been rescheduled this run */
+			/** Number of times the work has been rescheduled this run */
 			int reschedule_counter;
-			/* Compile-time argument */
+			/** Compile-time argument */
 			union {
+				/** Argument as a constant pointer */
 				const void *const_arg;
+				/** Argument as a mutable pointer */
 				void *arg;
-			} task_arg;
+			} task_arg; /**< Compile-time argument */
 		} workqueue;
-	} executor;
+	} executor; /**< Executor specific state */
 	/** Thread termination signal */
 	struct k_poll_signal terminate_signal;
 	/** Schedule that triggered the task to run */

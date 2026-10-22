@@ -38,6 +38,7 @@ enum lte_rrc_mode {
 	LTE_RRC_MODE_CONNECTED = 1,
 };
 
+/** @brief LTE cell information */
 struct lte_cell {
 	/** Mobile Country Code. */
 	int mcc;
@@ -99,17 +100,25 @@ struct lte_edrx_cfg {
 	float ptw;
 };
 
+/** @brief Current LTE network state */
 struct lte_modem_network_state {
+	/** Network registration status */
 	enum cellular_registration_status nw_reg_status;
+	/** Current LTE access technology */
 	enum cellular_access_technology lte_mode;
+	/** Current RRC state */
 	enum lte_rrc_mode rrc_mode;
+	/** Power Saving Mode (PSM) configuration provided by the network */
 	struct lte_psm_cfg psm_cfg;
+	/** eDRX configuration provided by the network */
 	struct lte_edrx_cfg edrx_cfg;
+	/** Serving cell information */
 	struct lte_cell cell;
+	/** Current LTE band */
 	uint16_t band;
-	/* Access-Spectrum RAI support */
+	/** Access-Spectrum RAI support */
 	uint8_t as_rai;
-	/* Control-Plane RAI support */
+	/** Control-Plane RAI support */
 	uint8_t cp_rai;
 };
 

@@ -28,15 +28,16 @@ extern "C" {
  * @{
  */
 
+/** @brief Device control state and thresholds */
 struct soc_device_control_state {
 	/** @cond INTERNAL_HIDDEN */
 	sys_snode_t _node;
 	/** @endcond */
-	/* Device that is being controlled based on charge state */
+	/** Device that is being controlled based on charge state */
 	const struct device *device;
-	/* Enable device when charge state reaches at least this value */
+	/** Enable device when charge state reaches at least this value (%) */
 	uint8_t soc_enable;
-	/* Disable device when charge state falls below this value */
+	/** Disable device when charge state falls below this value (%) */
 	uint8_t soc_disable;
 	/** @cond INTERNAL_HIDDEN */
 	bool requested;
@@ -53,7 +54,8 @@ struct soc_device_control_state {
  *
  * @retval 0 On success
  * @retval -ENODEV If @a state does not contain a valid device
- * @retval -EINVAL On invalid @a soc_enable or @a soc_disable configuration
+ * @retval -EINVAL On invalid @ref soc_device_control_state::soc_enable or
+ *                 @ref soc_device_control_state::soc_disable configuration
  */
 int soc_device_control_register(struct soc_device_control_state *state);
 

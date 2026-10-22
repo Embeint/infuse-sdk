@@ -32,35 +32,36 @@ extern "C" {
  * @{
  */
 
+/** Bluetooth GATT central interface frame format, @ref epacket_v0_versioned_frame_format */
 #define epacket_bt_central_frame epacket_v0_versioned_frame_format
 
 /** @brief Parameters for @ref epacket_bt_gatt_connect */
 struct epacket_bt_gatt_connect_params {
-	/* Connection parameters to setup connection with */
+	/** Connection parameters to setup connection with */
 	struct bt_le_conn_param conn_params;
-	/* Peer device to connect to */
+	/** Peer device to connect to */
 	bt_addr_le_t peer;
-	/* Automatically disconnect if no data sent or received on the command or data
+	/** Automatically disconnect if no data sent or received on the command or data
 	 * characteristics for this long. K_FOREVER to disable.
 	 */
 	k_timeout_t inactivity_timeout;
-	/* Unconditionally terminate the connection after this long. K_FOREVER to disable. */
+	/** Unconditionally terminate the connection after this long. K_FOREVER to disable. */
 	k_timeout_t absolute_timeout;
-	/* Duration to wait while attempting to setup connection */
+	/** Duration to wait while attempting to setup connection */
 	uint32_t conn_timeout_ms;
-	/* Preferred PHY of the connection (BT_GAP_LE_PHY_*) */
+	/** Preferred PHY of the connection (BT_GAP_LE_PHY_*) */
 	uint8_t preferred_phy;
-	/* Subscribe to the command characteristic */
+	/** Subscribe to the command characteristic */
 	bool subscribe_commands;
-	/* Subscribe to the data characteristic */
+	/** Subscribe to the data characteristic */
 	bool subscribe_data;
-	/* Subscribe to the logging characteristic */
+	/** Subscribe to the logging characteristic */
 	bool subscribe_logging;
-	/* Subscribe to the cloud uplink characteristic */
+	/** Subscribe to the cloud uplink characteristic */
 	bool subscribe_cloud_uplink;
-	/* Wait until subscriptions apply to return */
+	/** Wait until subscriptions apply to return */
 	bool wait_subscriptions;
-	/* Only reuse an existing connection; return -ENOTCONN rather than creating one. */
+	/** Only reuse an existing connection; return -ENOTCONN rather than creating one. */
 	bool existing_only;
 };
 
