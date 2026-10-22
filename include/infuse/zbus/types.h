@@ -42,7 +42,9 @@ struct infuse_zbus_chan_tilt {
 	float cosine;
 };
 
+/** @brief Infuse-IoT zbus channel identifiers */
 enum infuse_zbus_channel_id {
+	/** Base value for Infuse-IoT channel identifiers */
 	INFUSE_ZBUS_CHAN_BASE = 0x43210000,
 	/** @brief Data type: @ref tdf_battery_state */
 	INFUSE_ZBUS_CHAN_BATTERY = INFUSE_ZBUS_CHAN_BASE + 0,

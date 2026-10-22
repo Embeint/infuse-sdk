@@ -29,6 +29,7 @@ extern "C" {
  * @{
  */
 
+/** @brief Conditions under which a schedule is valid */
 enum task_runner_valid_type {
 	/** Do not update definition from KV store */
 	TASK_LOCKED = 0x80,
@@ -48,6 +49,7 @@ enum task_runner_valid_type {
 	/** @endcond */
 };
 
+/** @brief Periodicity condition types for a schedule */
 enum task_runner_periodicity_type {
 	/** Task can only run on N second boundaries */
 	TASK_PERIODICITY_FIXED = 1,
@@ -146,7 +148,7 @@ struct task_schedule_tdf_logging {
  * from the metadata field.
  */
 struct task_schedule_state_conditions {
-	/* Metadata associated with states (inversion) */
+	/** Per-state metadata (bits 0-3: invert state, bits 4-7: OR with previous result) */
 	uint8_t metadata;
 	/** Array of states to test */
 	uint8_t states[4];
@@ -165,6 +167,7 @@ struct task_schedule_state_conditions {
  * Multiple schedules can exist for a single task.
  */
 struct task_schedule {
+	/** ID of the task this schedule runs */
 	uint8_t task_id;
 	/** TASK_VALID_* value */
 	uint8_t validity;
@@ -180,29 +183,33 @@ struct task_schedule {
 		uint8_t lower;
 		/** Start task if <= this charge */
 		uint8_t upper;
-	} __packed battery_start;
+	} __packed battery_start; /**< Battery charge thresholds to start the task */
 	/** Battery charge thresholds to terminate the task */
 	struct battery_terminate_thresholds {
 		/** Terminate task if <= this charge */
 		uint8_t lower;
 		/** Terminate task if >= this charge */
 		uint8_t upper;
-	} __packed battery_terminate;
+	} __packed battery_terminate; /**< Battery charge thresholds to terminate the task */
 	/** Periodicity parameters */
 	union periodicity_args {
 		/** Start on global N second boundaries */
 		struct periodicity_periodic {
+			/** Period between task starts (s) */
 			uint32_t period_s;
-		} __packed fixed;
+		} __packed fixed; /**< Parameters for @ref TASK_PERIODICITY_FIXED */
 		/** Start N seconds after task last started */
 		struct periodicity_lockout {
+			/** Minimum duration between task starts (s) */
 			uint32_t lockout_s;
-		} __packed lockout;
+		} __packed lockout; /**< Parameters for @ref TASK_PERIODICITY_LOCKOUT */
 		/** Start N seconds after another task finishes */
 		struct periodicity_after {
+			/** Index of the schedule to run after */
 			uint8_t schedule_idx;
+			/** Delay after the linked schedule terminates (s) */
 			uint16_t duration_s;
-		} __packed after;
+		} __packed after; /**< Parameters for @ref TASK_PERIODICITY_AFTER */
 		/**
 		 * Lockout for a variable duration based on battery state.
 		 * Lockout scales linearly between @a lockout_min and @a lockout_max
@@ -217,8 +224,8 @@ struct task_schedule {
 			uint8_t battery_min;
 			/** Upper battery threshold */
 			uint8_t battery_max;
-		} __packed lockout_dynamic_battery;
-	} periodicity;
+		} __packed lockout_dynamic_battery; /**< Dynamic battery lockout parameters */
+	} periodicity; /**< Parameters for @ref task_schedule::periodicity_type */
 	/** @a states_start will evaluate as true 2x this many seconds after last run started */
 	uint16_t states_start_timeout_2x_s;
 	/** Task start state conditions */

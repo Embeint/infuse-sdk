@@ -29,6 +29,7 @@ extern "C" {
  * @{
  */
 
+/** Maximum length of the thread name stored in @ref infuse_reboot_state */
 #define REBOOT_STATE_THREAD_NAME_MAX 8
 
 /** Enumeration of reboot reasons */
@@ -65,7 +66,7 @@ enum infuse_reboot_reason {
 
 /** Type of @ref infuse_reboot_info data */
 enum infuse_reboot_info_type {
-	/* Generic reboot, two uint32_t parameters */
+	/** Generic reboot, two uint32_t parameters */
 	INFUSE_REBOOT_INFO_GENERIC = 0,
 	/** Exception with only PC and LR info */
 	INFUSE_REBOOT_INFO_EXCEPTION_BASIC,
@@ -81,29 +82,26 @@ enum infuse_reboot_info_type {
  * Still use __packed so we can guarantee the compiler does not shift memory layout.
  */
 union infuse_reboot_info {
-	/* Generic reboot information */
 	struct {
 		/** Info 1 */
 		uint32_t info1;
 		/** Info 2 */
 		uint32_t info2;
-	} __packed generic;
-	/* Basic exception information */
+	} __packed generic; /**< Generic reboot information */
 	struct {
 		/** Program counter value at exception */
 		uint32_t program_counter;
 		/** Link register value at exception */
 		uint32_t link_register;
-	} __packed exception_basic;
-	/* Exception stack frame */
+	} __packed exception_basic; /**< Basic exception information */
+	/** Exception stack frame */
 	struct arch_esf exception_full;
-	/* Watchdog reboot information */
 	struct {
 		/** Watchdog info1 per @ref infuse_watchdog_thread_state_lookup */
 		uint32_t info1;
 		/** Watchdog info2 per @ref infuse_watchdog_thread_state_lookup */
 		uint32_t info2;
-	} __packed watchdog;
+	} __packed watchdog; /**< Watchdog reboot information */
 } __packed __aligned(16);
 
 /** Reboot state information */

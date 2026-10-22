@@ -27,18 +27,35 @@ extern "C" {
  * @{
  */
 
-/* Maximum packet size on an interface, limited by CONFIG_EPACKET_PACKET_SIZE_MAX */
+/**
+ * @brief Maximum packet size on an interface, limited by CONFIG_EPACKET_PACKET_SIZE_MAX
+ *
+ * @param node_id ePacket interface node identifier
+ */
 #define EPACKET_INTERFACE_MAX_PACKET(node_id)                                                      \
 	(MIN(CONFIG_EPACKET_PACKET_SIZE_MAX,                                                       \
 	     DT_PROP_OR(node_id, max_packet_size, CONFIG_EPACKET_PACKET_SIZE_MAX)))
-/* Overhead of the interface on packet size */
+/**
+ * @brief Overhead of the interface on packet size
+ *
+ * @param node_id ePacket interface node identifier
+ */
 #define EPACKET_INTERFACE_PACKET_OVERHEAD(node_id)                                                 \
 	(DT_PROP(node_id, header_size) + DT_PROP(node_id, footer_size))
-/* Get the maximum payload size for a given packet size */
+/**
+ * @brief Get the maximum payload size for a given packet size
+ *
+ * @param node_id ePacket interface node identifier
+ * @param packet_size Packet size to compute the payload size for
+ */
 #define EPACKET_INTERFACE_PAYLOAD_FROM_PACKET(node_id, packet_size)                                \
 	(MIN(packet_size, CONFIG_EPACKET_PACKET_SIZE_MAX) -                                        \
 	 EPACKET_INTERFACE_PACKET_OVERHEAD(node_id))
-/* Maximum payload size on an interface */
+/**
+ * @brief Maximum payload size on an interface
+ *
+ * @param node_id ePacket interface node identifier
+ */
 #define EPACKET_INTERFACE_MAX_PAYLOAD(node_id)                                                     \
 	(EPACKET_INTERFACE_PAYLOAD_FROM_PACKET(node_id, EPACKET_INTERFACE_MAX_PACKET(node_id)))
 
@@ -52,14 +69,23 @@ extern "C" {
  */
 #define EPACKET_INTERFACE_IS_COMPILED_IN(node_id) IS_ENABLED(DT_STRING_TOKEN(node_id, depends_on))
 
-/* Identifier for ePacket interface */
+/**
+ * @brief Identifier for ePacket interface
+ */
 enum epacket_interface_id {
+	/** Serial interface */
 	EPACKET_INTERFACE_SERIAL = 0,
+	/** UDP interface */
 	EPACKET_INTERFACE_UDP = 1,
+	/** Bluetooth advertising interface */
 	EPACKET_INTERFACE_BT_ADV = 2,
+	/** Bluetooth GATT peripheral interface */
 	EPACKET_INTERFACE_BT_PERIPHERAL = 3,
+	/** Bluetooth GATT central interface */
 	EPACKET_INTERFACE_BT_CENTRAL = 4,
+	/** HCI interface */
 	EPACKET_INTERFACE_HCI = 10,
+	/** Dummy interface for testing */
 	EPACKET_INTERFACE_DUMMY = 255,
 };
 
@@ -98,12 +124,17 @@ struct epacket_interface_cb {
 	 */
 	bool (*packet_received)(struct net_buf *buf, bool decrypted, void *user_ctx);
 
-	/* User provided context pointer */
+	/** User provided context pointer */
 	void *user_ctx;
 
+	/** @cond INTERNAL_HIDDEN */
 	sys_snode_t node;
+	/** @endcond */
 };
 
+/**
+ * @brief ePacket interface driver API
+ */
 struct epacket_interface_api {
 	/**
 	 * @brief Send a packet over the interface
@@ -138,7 +169,7 @@ struct epacket_interface_api {
 	/**
 	 * @brief Get current maximum packet size
 	 *
-	 * If not defined, @a max_packet_size from @ref epacket_interface_common_config is used
+	 * If not defined, @ref epacket_interface_common_config::max_packet_size is used
 	 *
 	 * @param dev Interface device
 	 *
@@ -156,17 +187,25 @@ typedef void (*epacket_receive_handler)(struct net_buf *packet);
 
 /** Common data struct for all interfaces. Must be first member in interface data struct */
 struct epacket_interface_common_data {
+	/** Handler run on packets received on the interface */
 	epacket_receive_handler receive_handler;
+	/** Work item that disables receiving at the end of an @ref epacket_receive window */
 	struct k_work_delayable receive_timeout;
+	/** Lock protecting @ref epacket_interface_common_data::callback_list */
 	struct k_spinlock callback_lock;
+	/** List of registered @ref epacket_interface_cb callbacks */
 	sys_slist_t callback_list;
+	/** Interface device this data belongs to */
 	const struct device *dev;
 };
 
 /** Common config struct for all interfaces. Must be first member in interface config struct */
 struct epacket_interface_common_config {
+	/** Maximum packet size on the interface */
 	uint16_t max_packet_size;
+	/** Size of the interface header on each packet */
 	uint8_t header_size;
+	/** Size of the interface footer on each packet */
 	uint8_t footer_size;
 };
 

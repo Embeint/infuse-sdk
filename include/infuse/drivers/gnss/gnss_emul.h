@@ -34,15 +34,23 @@ extern "C" {
  */
 void emul_gnss_ubx_dev_ptrs(const struct device *dev, int **pm_rc, int **comms_reset_cnt);
 
-/** Emulated GNSS parameters */
+/** @brief Emulated GNSS parameters, matching the UBX NAV-PVT field scaling */
 struct gnss_pvt_emul_location {
+	/** Latitude (1e-7 degrees) */
 	int32_t latitude;
+	/** Longitude (1e-7 degrees) */
 	int32_t longitude;
+	/** Height above ellipsoid (mm) */
 	int32_t height;
+	/** Horizontal accuracy estimate (mm) */
 	uint32_t h_acc;
+	/** Vertical accuracy estimate (mm) */
 	uint32_t v_acc;
+	/** Time accuracy estimate (ns) */
 	uint32_t t_acc;
+	/** Position DOP (0.01) */
 	uint16_t p_dop;
+	/** Number of satellites used in the navigation solution */
 	uint8_t num_sv;
 };
 

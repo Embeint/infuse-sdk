@@ -25,15 +25,19 @@ extern "C" {
  * @{
  */
 
-/* Point in 2D space */
+/** @brief Point in 2D space */
 struct cartesian_point_2d {
+	/** X coordinate */
 	int32_t x;
+	/** Y coordinate */
 	int32_t y;
 };
 
-/* Finite line in 2D space */
+/** @brief Finite line in 2D space */
 struct cartesian_line_2d {
+	/** First end point of the line */
 	struct cartesian_point_2d a;
+	/** Second end point of the line */
 	struct cartesian_point_2d b;
 };
 

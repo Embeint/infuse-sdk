@@ -28,23 +28,25 @@ extern "C" {
  * @{
  */
 
+/** @brief u-blox SPI modem backend state */
 struct modem_backend_ublox_spi {
-	/* Common backend */
+	/** Common backend */
 	struct modem_backend_common common;
-	/* Pointer to SPI configuration */
+	/** Pointer to SPI configuration */
 	const struct spi_dt_spec *spi;
-	/* Temporary RX buffer */
+	/** Temporary RX buffer */
 	uint8_t spi_rx[70];
 };
 
+/** @brief u-blox SPI modem backend configuration */
 struct modem_backend_ublox_spi_config {
-	/* Bus to use */
+	/** Bus to use */
 	const struct spi_dt_spec *spi;
-	/* GPIO that will transition to active when data is ready after @ref
+	/** GPIO that will transition to active when data is ready after @ref
 	 * modem_backend_ublox_spi_use_data_ready_gpio
 	 */
 	const struct gpio_dt_spec *data_ready;
-	/* Period to poll for data before @ref modem_backend_ublox_spi_use_data_ready_gpio */
+	/** Period to poll for data before @ref modem_backend_ublox_spi_use_data_ready_gpio */
 	k_timeout_t poll_period;
 };
 

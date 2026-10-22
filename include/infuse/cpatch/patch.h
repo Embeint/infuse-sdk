@@ -39,27 +39,27 @@ extern "C" {
 
 /** Expected values for various memory regions */
 struct cpatch_array_validation {
-	/* Length of the memory region in bytes */
+	/** Length of the memory region in bytes */
 	uint32_t length;
-	/* CRC32-IEEE of the memory region */
+	/** CRC32-IEEE of the memory region */
 	uint32_t crc;
 } __packed;
 
 /** CPatch file header */
 struct cpatch_header {
-	/* Expected to match @ref CPATCH_MAGIC_NUMBER */
+	/** Expected to match @ref CPATCH_MAGIC_NUMBER */
 	uint32_t magic_value;
-	/* Major version number of CPatch algorithm this file was generated for */
+	/** Major version number of CPatch algorithm this file was generated for */
 	uint8_t version_major;
-	/* Minor version number of CPatch algorithm this file was generated for */
+	/** Minor version number of CPatch algorithm this file was generated for */
 	uint8_t version_minor;
-	/* Input file validation */
+	/** Input file validation */
 	struct cpatch_array_validation input_file;
-	/* Output file validation */
+	/** Output file validation */
 	struct cpatch_array_validation output_file;
-	/* Patch data validation */
+	/** Patch data validation */
 	struct cpatch_array_validation patch_file;
-	/* CRC32-IEEE of the preceding data in the header */
+	/** CRC32-IEEE of the preceding data in the header */
 	uint32_t header_crc;
 } __packed;
 

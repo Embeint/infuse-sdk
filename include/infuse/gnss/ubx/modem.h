@@ -40,17 +40,20 @@ extern "C" {
 typedef int (*ubx_message_handler_t)(uint8_t message_class, uint8_t message_id, const void *payload,
 				     size_t payload_len, void *user_data);
 
+/** @brief Handler message class that matches messages of any class */
 #define UBX_MSG_CLASS_WILDCARD 0x00
+/** @brief Handler message ID that matches any message ID within the handler message class */
 #define UBX_MSG_ID_WILDCARD    0x00
 
+/** @brief Message handling flags for @ref ubx_message_handler_ctx::flags */
 enum ubx_message_handler_flags {
-	/* Message results in an ACK/NAK only */
+	/** Message results in an ACK/NAK only */
 	UBX_HANDLING_ACK = BIT(0),
-	/* Message results in a direct response only */
+	/** Message results in a direct response only */
 	UBX_HANDLING_RSP = BIT(1),
-	/* Message results in a response AND an ACK/NAK */
+	/** Message results in a response AND an ACK/NAK */
 	UBX_HANDLING_RSP_ACK = BIT(2),
-	/* Response callback wants the raw frame */
+	/** Response callback wants the raw frame */
 	UBX_HANDLING_RAW_FRAME_CB = BIT(3),
 };
 
@@ -78,19 +81,19 @@ struct ubx_message_handler_ctx {
  * @brief UBX modem state
  */
 struct ubx_modem_data {
-	/* Pipe for communications with underlying modem */
+	/** Pipe for communications with underlying modem */
 	struct modem_pipe *pipe;
-	/* Worker to read data */
+	/** Worker to read data */
 	struct k_work fifo_read_worker;
-	/* Notification that TX has completed */
+	/** Notification that TX has completed */
 	struct k_poll_signal tx_done;
-	/* List of message handlers */
+	/** List of message handlers */
 	sys_slist_t handlers;
-	/* Thread protection for handlers list */
+	/** Thread protection for handlers list */
 	struct k_sem handlers_sem;
-	/* Data buffer to read bytes into */
+	/** Data buffer to read bytes into */
 	uint8_t rx_buffer[CONFIG_GNSS_U_BLOX_MAX_MSG_SIZE];
-	/* Bytes pending in rx_buffer */
+	/** Bytes pending in rx_buffer */
 	uint16_t rx_buffer_pending;
 };
 

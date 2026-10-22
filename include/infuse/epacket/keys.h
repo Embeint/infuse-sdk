@@ -27,17 +27,31 @@ extern "C" {
  * @{
  */
 
+/**
+ * @brief ePacket key types
+ */
 enum epacket_key_type {
+	/** Network key */
 	EPACKET_KEY_NETWORK = 0,
+	/** Device key */
 	EPACKET_KEY_DEVICE = BIT(7),
 };
 
+/**
+ * @brief ePacket key interfaces
+ */
 enum epacket_key_interface {
+	/** Key for the serial interface */
 	EPACKET_KEY_INTERFACE_SERIAL = 0,
+	/** Key for the UDP interface */
 	EPACKET_KEY_INTERFACE_UDP = 1,
+	/** Key for the Bluetooth advertising interface */
 	EPACKET_KEY_INTERFACE_BT_ADV = 2,
+	/** Key for the Bluetooth GATT interfaces */
 	EPACKET_KEY_INTERFACE_BT_GATT = 3,
+	/** Number of key interfaces */
 	EPACKET_KEY_INTERFACE_NUM,
+	/** Mask of the interface bits in a key type */
 	EPACKET_KEY_INTERFACE_MASK = 0x7F,
 };
 

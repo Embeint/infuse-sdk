@@ -27,8 +27,11 @@ extern "C" {
 
 /** IMU sample struct */
 struct imu_sample {
+	/** X axis reading (raw sensor units, see @ref imu_sensor_meta::full_scale_range) */
 	int16_t x;
+	/** Y axis reading (raw sensor units, see @ref imu_sensor_meta::full_scale_range) */
 	int16_t y;
+	/** Z axis reading (raw sensor units, see @ref imu_sensor_meta::full_scale_range) */
 	int16_t z;
 };
 /* Validate __packed attribute is not required */
@@ -74,15 +77,15 @@ struct imu_sample_array {
 	static struct _anon_t_##name _anon_##name;                                                 \
 	static struct imu_sample_array *name = (void *)&_anon_##name
 
-/* Accelerometer magnitude broadcast structure */
+/** @brief Accelerometer magnitude broadcast structure */
 struct imu_magnitude_array {
-	/* Metadata for magnitude samples */
+	/** Metadata for magnitude samples */
 	struct imu_sensor_meta meta;
-	/* Linear array of all magnitudes */
+	/** Linear array of all magnitudes (raw sensor units) */
 	uint32_t magnitudes[];
 };
 
-/* Create type that holds a given number of IMU magnitude samples */
+/** @brief Create type that holds a given number of IMU magnitude samples */
 #define IMU_MAG_ARRAY_TYPE_DEFINE(type_name, max_samples)                                          \
 	struct type_name {                                                                         \
 		struct imu_sensor_meta meta;                                                       \

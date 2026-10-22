@@ -37,11 +37,11 @@ extern "C" {
  * @see SHARED_DEVICE_DT_SPEC_GET_OR
  */
 struct shared_device_dt_spec {
-	/* Pointer to the shared device */
+	/** Pointer to the shared device */
 	const struct device *shared;
-	/* State that is being requested */
+	/** State that is being requested */
 	uint8_t state;
-	/* Priority of the state request */
+	/** Priority of the state request */
 	uint8_t priority;
 };
 
@@ -178,8 +178,11 @@ struct shared_device_dt_spec {
 #define SHARED_DEVICE_DT_SPEC_INST_GET_OR(inst, prop, default_value)                               \
 	SHARED_DEVICE_DT_SPEC_INST_GET_BY_IDX_OR(inst, prop, 0, default_value)
 
+/** @brief Shared device driver API */
 struct shared_device_api {
+	/** Implementation of @ref shared_device_request */
 	int (*request)(const struct device *dev, uint8_t state_priority, uint8_t state);
+	/** Implementation of @ref shared_device_release */
 	int (*release)(const struct device *dev, uint8_t state_priority);
 };
 

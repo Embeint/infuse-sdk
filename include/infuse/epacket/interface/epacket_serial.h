@@ -27,15 +27,20 @@ extern "C" {
  * @{
  */
 
+/** First synchronisation byte of a serial frame */
 #define EPACKET_SERIAL_SYNC_A 0xD5
+/** Second synchronisation byte of a serial frame */
 #define EPACKET_SERIAL_SYNC_B 0xCA
 
-/* ePacket serial data frame header */
+/** @brief ePacket serial data frame header */
 struct epacket_serial_frame_header {
+	/** @ref EPACKET_SERIAL_SYNC_A, @ref EPACKET_SERIAL_SYNC_B */
 	uint8_t sync[2];
+	/** Length of the frame following this header */
 	uint16_t len;
 } __packed;
 
+/** Serial interface frame format, @ref epacket_v0_versioned_frame_format */
 #define epacket_serial_frame epacket_v0_versioned_frame_format
 
 /**

@@ -45,8 +45,11 @@ static inline uint32_t iir_filter_alpha_init(float alpha)
  * output of a DC input eventually equals that input.
  */
 struct iir_filter_single_pole_s16 {
+	/** Previous filter output */
 	int16_t y_prev;
+	/** Filter time constant, 0-1 scaled by (1 << 16) */
 	uint16_t alpha;
+	/** Accumulated fractional error from the previous step */
 	uint16_t error;
 };
 
@@ -97,8 +100,11 @@ static inline int16_t iir_filter_single_pole_s16_step(struct iir_filter_single_p
  * output of a DC input eventually equals that input.
  */
 struct iir_filter_single_pole_s32 {
+	/** Previous filter output */
 	int32_t y_prev;
+	/** Filter time constant, 0-1 scaled by (1 << 32) */
 	uint32_t alpha;
+	/** Accumulated fractional error from the previous step */
 	uint32_t error;
 };
 
@@ -146,8 +152,11 @@ static inline int32_t iir_filter_single_pole_s32_step(struct iir_filter_single_p
  * @brief Floating point IIR single-pole filter
  */
 struct iir_filter_single_pole_f32 {
+	/** Previous filter output */
 	float y_prev;
+	/** Filter time constant */
 	float alpha;
+	/** Precomputed (1 - alpha) */
 	float inv_alpha;
 };
 

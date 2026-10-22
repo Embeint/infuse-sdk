@@ -29,16 +29,17 @@ extern "C" {
  * @{
  */
 
+/** @brief Running statistics state */
 struct statistics_state {
-	/* Variance approximation */
+	/** Variance approximation */
 	int64_t v;
-	/* Variance correction factor */
+	/** Variance correction factor */
 	int64_t w;
-	/* Mean approximation */
+	/** Mean approximation */
 	int32_t m;
-	/* Mean fractional accumulation */
+	/** Mean fractional accumulation */
 	int32_t p;
-	/* Sequence count */
+	/** Sequence count */
 	uint32_t n;
 };
 

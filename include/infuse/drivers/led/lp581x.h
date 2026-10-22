@@ -27,6 +27,7 @@ extern "C" {
 /** Maximum number of LED channels */
 #define LP581X_MAX_LEDS 4
 
+/** @brief LP581x animation engine index */
 enum lp581x_engine {
 	LP581X_ENGINE_0 = 0,
 	LP581X_ENGINE_1 = 1,
@@ -36,6 +37,7 @@ enum lp581x_engine {
 	LP581X_NUM_ENGINES,
 } __packed;
 
+/** @brief LP581x animation pattern index */
 enum lp581x_pattern {
 	LP581X_PATTERN_0 = 0,
 	LP581X_PATTERN_1 = 1,

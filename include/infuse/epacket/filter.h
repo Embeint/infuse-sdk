@@ -26,6 +26,9 @@ extern "C" {
  * @{
  */
 
+/**
+ * @brief Packet forwarding filter flags
+ */
 enum epacket_filter_flags {
 	/** Only forward packets that successfully decrypted */
 	FILTER_FORWARD_ONLY_DECRYPTED = BIT(0),

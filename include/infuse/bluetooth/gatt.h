@@ -32,15 +32,15 @@ extern "C" {
  * as the GATT DB hash of the remote device remains constant.
  */
 struct bt_gatt_remote_char {
-	/* Start handle for the characteristic */
+	/** Start handle for the characteristic */
 	uint16_t attr_start_handle;
-	/* End handle for the characteristic */
+	/** End handle for the characteristic */
 	uint16_t attr_end_handle;
-	/* Handle for the value attribute */
+	/** Handle for the value attribute */
 	uint16_t value_handle;
-	/* Handle for the Client Characteristic Configuration (0 if doesn't exist) */
+	/** Handle for the Client Characteristic Configuration (0 if doesn't exist) */
 	uint16_t ccc_handle;
-	/* Characteristic properties (BT_GATT_CHRC_) */
+	/** Characteristic properties (`BT_GATT_CHRC_*`) */
 	uint8_t properties;
 };
 
@@ -48,11 +48,14 @@ struct bt_gatt_remote_char {
  * @brief Parameters for automatically setup connection
  */
 struct bt_conn_auto_setup_cb {
-	/* Run when connection has been successfully setup or failed */
+	/** Run when connection has been successfully setup or failed */
 	void (*conn_setup_cb)(struct bt_conn *conn, int err, void *user_data);
-	/* Run when connection has terminated, if @a conn_setup_cb has previously run */
+	/**
+	 * Run when connection has terminated, if
+	 * @ref bt_conn_auto_setup_cb::conn_setup_cb has previously run
+	 */
 	void (*conn_terminated_cb)(struct bt_conn *conn, int reason, void *user_data);
-	/* User data provided to callbacks */
+	/** User data provided to callbacks */
 	void *user_data;
 };
 
@@ -60,11 +63,11 @@ struct bt_conn_auto_setup_cb {
  * @brief Database cache to speed up repeat connections
  */
 struct bt_conn_auto_database_cache {
-	/* Cached GATT database hash value */
+	/** Cached GATT database hash value */
 	uint8_t db_hash[16];
-	/* Pointer to list of cached remote characteristics */
+	/** Pointer to list of cached remote characteristics */
 	struct bt_gatt_remote_char *remote_info;
-	/* Access spinlock */
+	/** Access spinlock */
 	struct k_spinlock lock;
 };
 
@@ -84,15 +87,15 @@ struct bt_conn_auto_database_cache {
  * @brief Characteristics to discover on the connection
  */
 struct bt_conn_auto_discovery {
-	/* List of UUIDs to discover */
+	/** List of UUIDs to discover */
 	const struct bt_uuid **characteristics;
-	/* Cached characteristics from previous connections */
+	/** Cached characteristics from previous connections */
 	struct bt_conn_auto_database_cache *cache;
-	/* Pointer to list of characteristics to discover */
+	/** Pointer to list of characteristics to discover */
 	struct bt_gatt_remote_char *remote_info;
-	/* Pending database hash */
+	/** Pending database hash */
 	uint8_t db_hash_pending[16];
-	/* Number of characteristics to discover */
+	/** Number of characteristics to discover */
 	uint8_t num_characteristics;
 };
 

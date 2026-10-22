@@ -34,35 +34,41 @@ extern "C" {
  */
 typedef void (*rpc_client_rsp_fn)(const struct net_buf *buf, void *user_data);
 
-/* Context associated with a single in-flight command */
+/** @brief Context associated with a single in-flight command */
 struct rpc_client_cmd_ctx {
-	/* Command timeout timer */
+	/** Command response timeout timer */
 	struct k_timer timeout;
-	/* Allow the next transmission */
+	/** Tokens allowing the next transmission */
 	struct k_sem tx_tokens;
-	/* Timeout for the response */
+	/** Timeout for the response */
 	k_timeout_t rsp_timeout;
-	/* Callback to run on completion */
+	/** Callback to run on completion */
 	rpc_client_rsp_fn cb;
-	/* Arbitrary user data for callback */
+	/** Arbitrary user data for callback */
 	void *user_data;
-	/* RPC request ID */
+	/** RPC request ID (0 when context is unused) */
 	uint32_t request_id;
-	/* RPC command ID */
+	/** RPC command ID */
 	uint16_t command_id;
-	/* Number of TX tokens to give on DATA_ACK */
+	/** Number of TX tokens to give on DATA_ACK */
 	uint16_t tx_tokens_on_ack;
-	/* Result of TX queuing */
+	/** Result of TX queuing */
 	int16_t tx_result;
 };
 
-/* RPC client context */
+/** @brief RPC client context */
 struct rpc_client_ctx {
+	/** ePacket interface commands are sent on */
 	const struct device *interface;
+	/** Interface address of the remote device */
 	union epacket_interface_address address;
+	/** Callback structure registered on @ref rpc_client_ctx::interface */
 	struct epacket_interface_cb interface_cb;
+	/** Contexts for in-flight commands */
 	struct rpc_client_cmd_ctx cmd_ctx[CONFIG_INFUSE_RPC_CLIENT_MAX_IN_FLIGHT];
+	/** Semaphore counting free command contexts */
 	struct k_sem cmd_ctx_sem;
+	/** Request ID of the most recently queued command */
 	uint32_t request_id;
 };
 
@@ -176,19 +182,19 @@ typedef int (*rpc_client_data_loader)(void *user_data, uint32_t offset, void *da
 int rpc_client_data_queue(struct rpc_client_ctx *ctx, uint32_t request_id, uint32_t offset,
 			  const void *data, size_t data_len);
 
-/** State for auto loader control */
+/** @brief State for auto loader control */
 struct rpc_client_auto_load_params {
-	/* Callback to load more data */
+	/** Callback to load more data */
 	rpc_client_data_loader loader;
-	/* Total length of data to send */
+	/** Total length of data to send (bytes) */
 	uint32_t total_len;
-	/* Duration to wait for each DATA_ACK */
+	/** Duration to wait for each DATA_ACK */
 	k_timeout_t ack_wait;
-	/* Specified DATA_ACK period */
+	/** Number of data packets sent per DATA_ACK (0 to not wait for DATA_ACKs) */
 	uint8_t ack_period;
-	/* Maximum number of pending DATA_ACK packets */
+	/** Maximum number of pending DATA_ACK packets */
 	uint8_t pipelining;
-	/* User data pointer for @a loader */
+	/** User data pointer for @ref rpc_client_auto_load_params::loader */
 	void *user_data;
 };
 

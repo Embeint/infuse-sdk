@@ -26,37 +26,45 @@ extern "C" {
  * @{
  */
 
+/**
+ * @brief Data logger state
+ */
 struct data_logger_state {
-	/* Bytes logged since reboot */
+	/** Bytes logged since reboot */
 	uint64_t bytes_logged;
-	/* Number of logical blocks on the logger */
+	/** Number of logical blocks on the logger */
 	uint32_t logical_blocks;
-	/* Number of physical blocks on the logger */
+	/** Number of physical blocks on the logger */
 	uint32_t physical_blocks;
-	/* Number of blocks present at boot */
+	/** Number of blocks present at boot */
 	uint32_t boot_block;
-	/* Number of logical blocks that have been written */
+	/** Number of logical blocks that have been written */
 	uint32_t current_block;
-	/* Earliest logical block that still exists on the logger */
+	/** Earliest logical block that still exists on the logger */
 	uint32_t earliest_block;
-	/* Minimum erase unit of the logger in bytes */
+	/** Minimum erase unit of the logger in bytes */
 	uint32_t erase_unit;
-	/* Size of a single block in bytes */
+	/** Size of a single block in bytes */
 	uint16_t block_size;
-	/* Number of bytes at the start of the block that should not contain data */
+	/** Number of bytes at the start of the block that should not contain data */
 	uint16_t block_overhead;
-	/* Writes require the full block size to be provided */
+	/** Writes require the full block size to be provided */
 	bool requires_full_block_write;
 };
 
-/* Header on every block logged to persistent storage */
+/**
+ * @brief Header on every block logged to persistent storage
+ */
 struct data_logger_persistent_block_header {
-	/* One byte wrap count (1 - 254) */
+	/** One byte wrap count (1 - 254) */
 	uint8_t block_wrap;
-	/* Type of block data */
+	/** Type of block data */
 	uint8_t block_type;
 } __packed;
 
+/**
+ * @brief Data logger event callback structure
+ */
 struct data_logger_cb {
 	/**
 	 * @brief Data logger has changed the maximum block size
@@ -87,10 +95,12 @@ struct data_logger_cb {
 	 */
 	void (*write_failure)(const struct device *dev, enum infuse_type data_type, const void *mem,
 			      uint16_t mem_len, int reason, void *user_data);
-	/* Arbitrary user data pointer */
+	/** Arbitrary user data pointer */
 	void *user_data;
+	/** @cond INTERNAL_HIDDEN */
 	/* Private list iteration field */
 	sys_snode_t node;
+	/** @endcond */
 };
 
 /**

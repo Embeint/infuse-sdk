@@ -34,6 +34,8 @@ extern "C" {
  * @{
  */
 
+/* Algorithm runtime state */
+/** @cond INTERNAL_HIDDEN */
 struct algorithm_movement_threshold_data {
 	uint32_t initial_threshold_low;
 	uint32_t initial_threshold_high;
@@ -41,6 +43,7 @@ struct algorithm_movement_threshold_data {
 	uint32_t continue_threshold_high;
 	uint8_t full_scale_range;
 };
+/** @endcond */
 
 /** Algorithm implementation, see @ref algorithm_run_fn */
 void algorithm_movement_threshold_fn(const struct zbus_channel *chan,

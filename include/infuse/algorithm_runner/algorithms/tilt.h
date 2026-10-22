@@ -36,6 +36,8 @@ enum {
 	ALGORITHM_TILT_LOG_ANGLE = BIT(0),
 };
 
+/* Algorithm runtime state */
+/** @cond INTERNAL_HIDDEN */
 struct algorithm_tilt_data {
 	struct iir_filter_single_pole_f32 filter;
 	struct kv_gravity_reference gravity;
@@ -43,6 +45,7 @@ struct algorithm_tilt_data {
 	uint16_t gravity_mag;
 	bool reference_valid;
 };
+/** @endcond */
 
 /** Algorithm implementation, see @ref algorithm_run_fn */
 void algorithm_tilt_fn(const struct zbus_channel *chan, const struct infuse_algorithm *algorithm,

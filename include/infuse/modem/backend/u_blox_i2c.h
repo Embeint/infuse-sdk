@@ -28,21 +28,23 @@ extern "C" {
  * @{
  */
 
+/** @brief u-blox I2C modem backend state */
 struct modem_backend_ublox_i2c {
-	/* Common backend */
+	/** Common backend */
 	struct modem_backend_common common;
-	/* Pointer to I2C configuration */
+	/** Pointer to I2C configuration */
 	const struct i2c_dt_spec *i2c;
 };
 
+/** @brief u-blox I2C modem backend configuration */
 struct modem_backend_ublox_i2c_config {
-	/* Bus to use */
+	/** Bus to use */
 	const struct i2c_dt_spec *i2c;
-	/* GPIO that will transition to active when data is ready after @ref
+	/** GPIO that will transition to active when data is ready after @ref
 	 * modem_backend_ublox_i2c_use_data_ready_gpio
 	 */
 	const struct gpio_dt_spec *data_ready;
-	/* Period to poll for data before @ref modem_backend_ublox_i2c_use_data_ready_gpio */
+	/** Period to poll for data before @ref modem_backend_ublox_i2c_use_data_ready_gpio */
 	k_timeout_t poll_period;
 };
 

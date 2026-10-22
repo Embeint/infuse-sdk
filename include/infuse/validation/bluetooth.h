@@ -24,10 +24,20 @@ extern "C" {
  */
 
 enum {
+	/** Validate that the Bluetooth stack can be enabled */
 	VALIDATION_BLUETOOTH_INIT = 0,
+	/** Transmit an advertising packet */
 	VALIDATION_BLUETOOTH_ADV_TX = BIT(0),
 };
 
+/**
+ * @brief Validate the behaviour of the Bluetooth stack
+ *
+ * @param flags Validation tests to run
+ *
+ * @retval 0 On success
+ * @retval -errno On failure
+ */
 int infuse_validation_bluetooth(uint8_t flags);
 
 /**

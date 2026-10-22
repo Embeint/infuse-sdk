@@ -33,30 +33,31 @@ extern "C" {
  * 128 - 255: Application specific states
  */
 enum infuse_state {
-	/* Device is about to reboot */
+	/** Device is about to reboot */
 	INFUSE_STATE_REBOOTING = 1,
-	/* Application is active according to KV-store values */
+	/** Application is active according to KV-store values */
 	INFUSE_STATE_APPLICATION_ACTIVE = 2,
-	/* Application has a valid time source */
+	/** Application has a valid time source */
 	INFUSE_STATE_TIME_KNOWN = 3,
-	/* Device is stationary (not moving) */
+	/** Device is stationary (not moving) */
 	INFUSE_STATE_DEVICE_STATIONARY = 4,
-	/* Device is currently sending high-priority data to the cloud */
+	/** Device is currently sending high-priority data to the cloud */
 	INFUSE_STATE_HIGH_PRIORITY_UPLINK = 5,
-	/* Device started moving */
+	/** Device started moving */
 	INFUSE_STATE_DEVICE_STARTED_MOVING = 6,
-	/* Device stopped moving */
+	/** Device stopped moving */
 	INFUSE_STATE_DEVICE_STOPPED_MOVING = 7,
-	/* Suppress LED activity */
+	/** Suppress LED activity */
 	INFUSE_STATE_LED_SUPPRESS = 8,
-	/* Device is moving (not stationary) */
+	/** Device is moving (not stationary) */
 	INFUSE_STATE_DEVICE_MOVING = 9,
-	/* Start of application-specific state range */
+	/** Start of application-specific state range */
 	INFUSE_STATES_APP_START = 128,
+	/** End of the state range */
 	INFUSE_STATES_END = UINT8_MAX
 };
 
-/* Required size of atomic array for Infuse-IoT application states */
+/** Required size of atomic array for Infuse-IoT application states */
 #define INFUSE_STATES_ARRAY_SIZE ATOMIC_BITMAP_SIZE(INFUSE_STATES_END + 1)
 
 /**
@@ -88,10 +89,12 @@ struct infuse_state_cb {
 	 */
 	void (*state_cleared)(enum infuse_state state, void *user_ctx);
 
-	/* User provided context pointer */
+	/** User provided context pointer */
 	void *user_ctx;
 
+	/** @cond INTERNAL_HIDDEN */
 	sys_snode_t node;
+	/** @endcond */
 };
 
 /**

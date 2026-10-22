@@ -29,9 +29,13 @@ extern "C" {
  * @{
  */
 
+/** @brief Digital microphone task configuration */
 struct task_audio_dmic_config {
+	/** Digital microphone device */
 	const struct device *dev;
+	/** PDM IO configuration */
 	struct pdm_io_cfg io_cfg;
+	/** PDM channel to record */
 	enum pdm_lr pdm_chan;
 };
 

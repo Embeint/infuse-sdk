@@ -34,7 +34,9 @@ extern "C" {
  * possible with a given packet/block size.
  */
 struct memfault_chunk_header {
+	/** Length of the chunk data following this header (bytes) */
 	uint16_t chunk_len;
+	/** Chunk counter, incremented for each chunk sent */
 	uint8_t chunk_cnt;
 } __packed;
 

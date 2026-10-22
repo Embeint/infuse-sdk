@@ -28,6 +28,7 @@ extern "C" {
  * @{
  */
 
+/** Bluetooth advertising interface frame format, @ref epacket_v0_versioned_frame_format */
 #define epacket_bt_adv_frame epacket_v0_versioned_frame_format
 
 /** Bluetooth advertising specific packet flags */

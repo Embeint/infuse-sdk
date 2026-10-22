@@ -37,6 +37,7 @@ enum infuse_littlefs_folder {
 	INFUSE_LFS_FOLDER_COPY = 3,
 };
 
+/** LittleFS custom attribute type used to store @ref infuse_littlefs_metadata */
 #define INFUSE_LITTLEFS_METADATA_TYPE 0x1F
 
 /** Metadata associated with all files */
@@ -82,7 +83,9 @@ struct infuse_littlefs_cb {
 	/** User provided context pointer */
 	void *user_data;
 
+	/** @cond INTERNAL_HIDDEN */
 	sys_snode_t node;
+	/** @endcond */
 };
 
 /**
