@@ -58,7 +58,7 @@ enum ubx_msg_class {
 };
 
 /**
- * @addtogroup UBX_MSG_CLASS_ACK
+ * @defgroup ubx_msg_class_ack UBX-ACK: Acknowledgement and negative acknowledgement messages
  * @ingroup ubx_message_protocol
  * @{
  */
@@ -87,7 +87,7 @@ BUILD_ASSERT(sizeof(struct ubx_msg_id_ack_nak) == 2);
  */
 
 /**
- * @addtogroup UBX_MSG_CLASS_CFG
+ * @defgroup ubx_msg_class_cfg UBX-CFG: Configuration input messages
  * @ingroup ubx_message_protocol
  * @{
  */
@@ -342,7 +342,7 @@ enum ubx_msg_cfg_valget_layer {
  */
 
 /**
- * @addtogroup UBX_MSG_CLASS_MON
+ * @defgroup ubx_msg_class_mon UBX-MON: Monitoring messages
  * @ingroup ubx_message_protocol
  * @{
  */
@@ -444,7 +444,7 @@ BUILD_ASSERT(sizeof(struct ubx_msg_mon_ver) == 40);
  */
 
 /**
- * @addtogroup UBX_MSG_CLASS_NAV
+ * @defgroup ubx_msg_class_nav UBX-NAV: Navigation solution messages
  * @ingroup ubx_message_protocol
  * @{
  */
@@ -762,7 +762,7 @@ enum ubx_msg_nav_timegps_valid {
  */
 
 /**
- * @addtogroup UBX_MSG_CLASS_RXM
+ * @defgroup ubx_msg_class_rxm UBX-RXM: Receiver manager messages
  * @ingroup ubx_message_protocol
  * @{
  */
@@ -805,7 +805,7 @@ enum ubx_msg_rxm_pmreq_wakeup {
  */
 
 /**
- * @addtogroup UBX_MSG_CLASS_SEC
+ * @defgroup ubx_msg_class_sec UBX-SEC: Security feature messages
  * @ingroup ubx_message_protocol
  * @{
  */

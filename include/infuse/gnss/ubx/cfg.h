@@ -125,7 +125,7 @@ enum _ubx_cfg_key_grp {
 	_UBX_CFG_KEY_NAME(group, name) = (size | (_UBX_CFG_KEY_GRP_##group) | id)
 
 /**
- * @addtogroup UBX_CFG_KEY_ANA
+ * @defgroup ubx_cfg_key_ana CFG-ANA: AssistNow Autonomous and Offline configuration
  * @ingroup ubx_cfg
  * @{
  */
@@ -140,7 +140,7 @@ enum ubx_cfg_key_ana {
  */
 
 /**
- * @addtogroup UBX_CFG_KEY_BATCH
+ * @defgroup ubx_cfg_key_batch CFG-BATCH: Batched output configuration
  * @ingroup ubx_cfg
  * @{
  */
@@ -161,7 +161,7 @@ enum ubx_cfg_key_batch {
  */
 
 /**
- * @addtogroup UBX_CFG_KEY_BDS
+ * @defgroup ubx_cfg_key_bds CFG-BDS: BeiDou system configuration
  * @ingroup ubx_cfg
  * @{
  */
@@ -175,7 +175,7 @@ enum ubx_cfg_key_bds {
  */
 
 /**
- * @addtogroup UBX_CFG_KEY_HW
+ * @defgroup ubx_cfg_key_hw CFG-HW: Hardware configuration
  * @ingroup ubx_cfg
  * @{
  */
@@ -215,7 +215,7 @@ enum ubx_cfg_key_hw_rf_lna_mode {
  */
 
 /**
- * @addtogroup UBX_CFG_KEY_I2C
+ * @defgroup ubx_cfg_key_i2c CFG-I2C: Configuration of the I2C interface
  * @ingroup ubx_cfg
  * @{
  */
@@ -231,7 +231,7 @@ enum ubx_cfg_key_i2c {
  */
 
 /**
- * @addtogroup UBX_CFG_KEY_I2CINPROT
+ * @defgroup ubx_cfg_key_i2cinprot CFG-I2CINPROT: I2C input protocol configuration
  * @ingroup ubx_cfg
  * @{
  */
@@ -246,7 +246,7 @@ enum ubx_cfg_key_i2cinprot {
  */
 
 /**
- * @addtogroup UBX_CFG_KEY_I2COUTPROT
+ * @defgroup ubx_cfg_key_i2coutprot CFG-I2COUTPROT: I2C output protocol configuration
  * @ingroup ubx_cfg
  * @{
  */
@@ -261,7 +261,7 @@ enum ubx_cfg_key_i2coutprot {
  */
 
 /**
- * @addtogroup UBX_CFG_KEY_INFMSG
+ * @defgroup ubx_cfg_key_infmsg CFG-INFMSG: Information message configuration
  * @ingroup ubx_cfg
  * @{
  */
@@ -289,7 +289,7 @@ enum ubx_cfg_key_infmsg_all {
  */
 
 /**
- * @addtogroup UBX_CFG_KEY_ITFM
+ * @defgroup ubx_cfg_key_itfm CFG-ITFM: Jamming and interference monitor configuration
  * @ingroup ubx_cfg
  * @{
  */
@@ -313,7 +313,7 @@ enum ubx_cfg_key_itfm_antsetting {
  */
 
 /**
- * @addtogroup UBX_CFG_KEY_MOT
+ * @defgroup ubx_cfg_key_mot CFG-MOT: Motion detector configuration
  * @ingroup ubx_cfg
  * @{
  */
@@ -328,7 +328,7 @@ enum ubx_cfg_key_mot {
  */
 
 /**
- * @addtogroup UBX_CFG_KEY_MSGOUT
+ * @defgroup ubx_cfg_key_msgout CFG-MSGOUT: Message output configuration
  * @ingroup ubx_cfg
  * @{
  */
@@ -448,7 +448,7 @@ enum ubx_cfg_key_msgout {
  */
 
 /**
- * @addtogroup UBX_CFG_KEY_NAVSPG
+ * @defgroup ubx_cfg_key_navspg CFG-NAVSPG: Standard precision navigation configuration
  * @ingroup ubx_cfg
  * @{
  */
@@ -537,7 +537,7 @@ enum ubx_cfg_key_navspg_dynmodel {
  */
 
 /**
- * @addtogroup UBX_CFG_KEY_NMEA
+ * @defgroup ubx_cfg_key_nmea CFG-NMEA: NMEA protocol configuration
  * @ingroup ubx_cfg
  * @{
  */
@@ -593,7 +593,7 @@ enum ubx_cfg_key_nmea_gsvtalkerid {
  */
 
 /**
- * @addtogroup UBX_CFG_KEY_ODO
+ * @defgroup ubx_cfg_key_odo CFG-ODO: Odometer and low-speed course over ground filter configuration
  * @ingroup ubx_cfg
  * @{
  */
@@ -623,7 +623,7 @@ enum ubx_cfg_key_odo_profile {
  */
 
 /**
- * @addtogroup UBX_CFG_KEY_PM
+ * @defgroup ubx_cfg_key_pm CFG-PM: Configuration for receiver power management
  * @ingroup ubx_cfg
  * @{
  */
@@ -660,7 +660,7 @@ enum ubx_cfg_key_pm_operatemode {
  */
 
 /**
- * @addtogroup UBX_CFG_KEY_QZSS
+ * @defgroup ubx_cfg_key_qzss CFG-QZSS: QZSS system configuration
  * @ingroup ubx_cfg
  * @{
  */
@@ -677,7 +677,7 @@ enum ubx_cfg_key_qzss {
  */
 
 /**
- * @addtogroup UBX_CFG_KEY_RATE
+ * @defgroup ubx_cfg_key_rate CFG-RATE: Navigation and measurement rate configuration
  * @ingroup ubx_cfg
  * @{
  */
@@ -702,7 +702,7 @@ enum ubx_cfg_key_rate_timeref {
  */
 
 /**
- * @addtogroup UBX_CFG_KEY_RINV
+ * @defgroup ubx_cfg_key_rinv CFG-RINV: Remote inventory
  * @ingroup ubx_cfg
  * @{
  */
@@ -722,7 +722,7 @@ enum ubx_cfg_key_rinv {
  */
 
 /**
- * @addtogroup UBX_CFG_KEY_SBAS
+ * @defgroup ubx_cfg_key_sbas CFG-SBAS: SBAS configuration
  * @ingroup ubx_cfg
  * @{
  */
@@ -783,7 +783,7 @@ enum ubx_cfg_key_sbas_prnscanmask {
  */
 
 /**
- * @addtogroup UBX_CFG_KEY_SEC
+ * @defgroup ubx_cfg_key_sec CFG-SEC: Security configuration
  * @ingroup ubx_cfg
  * @{
  */
@@ -799,7 +799,7 @@ enum ubx_cfg_key_sec {
  */
 
 /**
- * @addtogroup UBX_CFG_KEY_SIGNAL
+ * @defgroup ubx_cfg_key_signal CFG-SIGNAL: Satellite systems (GNSS) signal configuration
  * @ingroup ubx_cfg
  * @{
  */
@@ -826,7 +826,7 @@ enum ubx_cfg_key_signal {
  */
 
 /**
- * @addtogroup UBX_CFG_KEY_SPI
+ * @defgroup ubx_cfg_key_spi CFG-SPI: Configuration of the SPI interface
  * @ingroup ubx_cfg
  * @{
  */
@@ -844,7 +844,7 @@ enum ubx_cfg_key_spi {
  */
 
 /**
- * @addtogroup UBX_CFG_KEY_SPIINPROT
+ * @defgroup ubx_cfg_key_spiinprot CFG-SPIINPROT: SPI input protocol configuration
  * @ingroup ubx_cfg
  * @{
  */
@@ -859,7 +859,7 @@ enum ubx_cfg_key_spiinprot {
  */
 
 /**
- * @addtogroup UBX_CFG_KEY_SPIOUTPROT
+ * @defgroup ubx_cfg_key_spioutprot CFG-SPIOUTPROT: SPI output protocol configuration
  * @ingroup ubx_cfg
  * @{
  */
@@ -874,7 +874,7 @@ enum ubx_cfg_key_spioutprot {
  */
 
 /**
- * @addtogroup UBX_CFG_KEY_TP
+ * @defgroup ubx_cfg_key_tp CFG-TP: Time pulse configuration
  * @ingroup ubx_cfg
  * @{
  */
@@ -930,7 +930,7 @@ enum ubx_cfg_key_tp_timegrid_tp1 {
  */
 
 /**
- * @addtogroup UBX_CFG_KEY_TXREADY
+ * @defgroup ubx_cfg_key_txready CFG-TXREADY: TX ready configuration
  * @ingroup ubx_cfg
  * @{
  */
@@ -958,7 +958,7 @@ enum ubx_cfg_key_rate_txready_interface {
  */
 
 /**
- * @addtogroup UBX_CFG_KEY_UART1
+ * @defgroup ubx_cfg_key_uart1 CFG-UART1: Configuration of the UART1 interface
  * @ingroup ubx_cfg
  * @{
  */
@@ -976,7 +976,7 @@ enum ubx_cfg_key_uart1 {
  */
 
 /**
- * @addtogroup UBX_CFG_KEY_UART1INPROT
+ * @defgroup ubx_cfg_key_uart1inprot CFG-UART1INPROT: UART1 input protocol configuration
  * @ingroup ubx_cfg
  * @{
  */
@@ -991,7 +991,7 @@ enum ubx_cfg_key_uart1inprot {
  */
 
 /**
- * @addtogroup UBX_CFG_KEY_UART1OUTPROT
+ * @defgroup ubx_cfg_key_uart1outprot CFG-UART1OUTPROT: UART1 output protocol configuration
  * @ingroup ubx_cfg
  * @{
  */
