@@ -17,7 +17,7 @@ Infuse-IoT SDK Documentation
 Platform
 ********
 
-Infuse-IoT is a platform designed to make is simple to create ultra
+Infuse-IoT is a platform designed to make it simple to create ultra
 low-power Internet-of-Things (IoT) solutions. It is a collection of embedded
 software, cloud APIs, desktop tools and mobile libraries that enables rapid
 development, iteration and management.
