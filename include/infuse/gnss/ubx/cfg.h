@@ -24,6 +24,7 @@ extern "C" {
 
 /**
  * @defgroup ubx_cfg UBX Modem Configuration
+ * @ingroup infuse_ubx
  * @{
  *
  * Expected usage of configuration interface:

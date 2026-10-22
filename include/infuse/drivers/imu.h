@@ -25,6 +25,7 @@ extern "C" {
 /**
  * @brief Infuse IMU API
  * @defgroup infuse_imu_apis IMU API
+ * @ingroup infuse_drivers
  * @{
  */
 

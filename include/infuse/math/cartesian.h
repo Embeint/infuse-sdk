@@ -21,6 +21,7 @@ extern "C" {
 /**
  * @brief Cartesian math API
  * @defgroup cartesian_apis Cartesian math APIs
+ * @ingroup infuse_math
  * @{
  */
 

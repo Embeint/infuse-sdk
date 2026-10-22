@@ -23,6 +23,7 @@ extern "C" {
 /**
  * @brief Common TDF struct fields
  * @defgroup tdf_struct_definitions Common TDF struct fields
+ * @ingroup infuse_tdf
  * @{
  */
 
@@ -129,6 +130,7 @@ struct tdf_struct_wifi_network_params {
 /**
  * @brief Built-in TDF Structure Definitions
  * @defgroup builtin_tdf_definitions TDF Structure Definitions
+ * @ingroup infuse_tdf
  * @{
  */
 

@@ -26,6 +26,7 @@ extern "C" {
 /**
  * @brief Infuse-IoT Work Queue API
  * @defgroup infuse_work_q_apis Infuse-IoT Work Queue API
+ * @ingroup infuse_core
  * @{
  */
 

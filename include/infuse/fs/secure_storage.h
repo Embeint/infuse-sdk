@@ -17,6 +17,7 @@ extern "C" {
 /**
  * @brief secure_storage API
  * @defgroup secure_storage_apis secure_storage APIs
+ * @ingroup infuse_storage
  * @{
  */
 

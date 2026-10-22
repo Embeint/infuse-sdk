@@ -19,6 +19,7 @@ extern "C" {
 /**
  * @brief Infuse types
  * @defgroup infuse_types Infuse type
+ * @ingroup infuse_core
  * @{
  */
 

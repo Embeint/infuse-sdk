@@ -22,6 +22,7 @@ extern "C" {
 /**
  * @brief Algorithm runner API
  * @defgroup runner_apis Algorithm runner APIs
+ * @ingroup infuse_algorithm_runner
  * @{
  */
 

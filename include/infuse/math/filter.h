@@ -22,6 +22,7 @@ extern "C" {
 /**
  * @brief filter API
  * @defgroup filter_apis filter APIs
+ * @ingroup infuse_math
  * @{
  */
 

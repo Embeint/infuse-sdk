@@ -19,6 +19,7 @@ extern "C" {
 /**
  * @brief ePacket interface common API
  * @defgroup epacket_interface_common_apis ePacket interface common APIs
+ * @ingroup epacket_interface_apis
  * @{
  */
 

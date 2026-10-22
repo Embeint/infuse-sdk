@@ -19,6 +19,7 @@ extern "C" {
 /**
  * @brief infuse_hci_vs API
  * @defgroup infuse_hci_vs_apis infuse_hci_vs APIs
+ * @ingroup infuse_bluetooth
  * @{
  */
 

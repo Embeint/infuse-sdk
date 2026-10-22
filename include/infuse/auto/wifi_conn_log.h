@@ -21,6 +21,7 @@ extern "C" {
 /**
  * @brief wifi_conn_log API
  * @defgroup wifi_conn_log_apis wifi_conn_log APIs
+ * @ingroup infuse_auto
  * @{
  */
 

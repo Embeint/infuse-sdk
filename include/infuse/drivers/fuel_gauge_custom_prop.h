@@ -20,6 +20,7 @@ extern "C" {
 /**
  * @brief fuel_gauge_custom_prop API
  * @defgroup fuel_gauge_custom_prop_apis fuel_gauge_custom_prop APIs
+ * @ingroup infuse_drivers
  * @{
  */
 

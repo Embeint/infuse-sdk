@@ -30,6 +30,7 @@ extern "C" {
 /**
  * @brief cpatch patching API
  * @defgroup cpatch_patch_apis cpatch patching APIs
+ * @ingroup infuse_dfu
  * @{
  */
 

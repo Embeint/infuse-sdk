@@ -34,6 +34,7 @@ extern "C" {
 /**
  * @brief epoch_time API
  * @defgroup epoch_time_apis Epoch APIs
+ * @ingroup infuse_time
  * @{
  */
 

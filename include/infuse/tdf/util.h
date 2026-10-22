@@ -32,6 +32,7 @@ extern "C" {
 
 /**
  * @defgroup tdf_util_apis TDF util APIs
+ * @ingroup infuse_tdf
  * @{
  */
 

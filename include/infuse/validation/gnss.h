@@ -18,6 +18,7 @@ extern "C" {
 
 /**
  * @defgroup validation_gnss GNSS validation API
+ * @ingroup infuse_validation
  * @{
  */
 

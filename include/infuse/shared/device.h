@@ -21,6 +21,7 @@ extern "C" {
 /**
  * @brief Shared device API
  * @defgroup shared_device_apis Shared device APIs
+ * @ingroup infuse_core
  * @{
  */
 

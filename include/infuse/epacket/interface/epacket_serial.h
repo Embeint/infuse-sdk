@@ -23,6 +23,7 @@ extern "C" {
 /**
  * @brief epacket_serial API
  * @defgroup epacket_serial_apis epacket_serial APIs
+ * @ingroup epacket_interface_apis
  * @{
  */
 

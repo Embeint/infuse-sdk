@@ -24,6 +24,7 @@ extern "C" {
 /**
  * @brief Common KV struct fields
  * @defgroup kv_struct_definitions Common KV struct fields
+ * @ingroup kv_store_apis
  * @{
  */
 
@@ -140,6 +141,7 @@ struct kv_device_state {
 /**
  * @brief Built-in KV Structure Definitions
  * @defgroup builtin_kv_definitions KV Structure Definitions
+ * @ingroup kv_store_apis
  * @{
  */
 

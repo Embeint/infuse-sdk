@@ -21,6 +21,7 @@ extern "C" {
 /**
  * @brief gnss_emul API
  * @defgroup gnss_emul_apis emulated GNSS APIs
+ * @ingroup infuse_drivers
  * @{
  */
 

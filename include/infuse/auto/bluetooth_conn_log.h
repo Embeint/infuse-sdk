@@ -21,6 +21,7 @@ extern "C" {
 /**
  * @brief bluetooth_conn_log API
  * @defgroup bluetooth_conn_log_apis bluetooth_conn_log APIs
+ * @ingroup infuse_auto
  * @{
  */
 

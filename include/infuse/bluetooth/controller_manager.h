@@ -19,6 +19,7 @@ extern "C" {
 /**
  * @brief controller_manager API
  * @defgroup controller_manager_apis Bluetooth controller management APIs
+ * @ingroup infuse_bluetooth
  * @{
  */
 

@@ -25,6 +25,7 @@ extern "C" {
 /**
  * @brief Infuse reboot API
  * @defgroup infuse_reboot_apis Infuse reboot APIs
+ * @ingroup infuse_core
  * @{
  */
 

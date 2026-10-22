@@ -26,6 +26,7 @@ extern "C" {
 /**
  * @brief TDF data logger API
  * @defgroup tdf_data_logger_apis TDF data logger APIs
+ * @ingroup infuse_data_logger
  * @{
  */
 

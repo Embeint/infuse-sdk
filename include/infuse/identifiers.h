@@ -19,6 +19,7 @@ extern "C" {
 /**
  * @brief Infuse-IoT identifier API
  * @defgroup infuse_identifier_apis Infuse-IoT identifier APIs
+ * @ingroup infuse_core
  * @{
  */
 

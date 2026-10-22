@@ -32,6 +32,7 @@ extern "C" {
 /**
  * @brief ePacket packet API
  * @defgroup epacket_packet_apis ePacket packet APIs
+ * @ingroup infuse_epacket
  * @{
  */
 

@@ -22,6 +22,7 @@ extern "C" {
 
 /**
  * @defgroup time_sync_log_apis Auto: Time Sync Log
+ * @ingroup infuse_auto
  * @{
  */
 

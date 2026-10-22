@@ -22,6 +22,7 @@ extern "C" {
 /**
  * @brief wifi_sim API
  * @defgroup wifi_sim_apis wifi_sim APIs
+ * @ingroup infuse_drivers
  * @{
  */
 

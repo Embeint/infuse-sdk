@@ -22,6 +22,7 @@ extern "C" {
 
 /**
  * @defgroup validation_button Button validation API
+ * @ingroup infuse_validation
  * @{
  */
 

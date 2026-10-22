@@ -1,0 +1,102 @@
+/**
+ * @file
+ * @brief Top level groups for the Infuse-IoT API reference
+ * @copyright 2026 Embeint Holdings Pty Ltd
+ *
+ * SPDX-License-Identifier: FSL-1.1-ALv2
+ */
+
+/**
+ * @defgroup infuse_core Core
+ * @brief Core Infuse-IoT platform services
+ */
+
+/**
+ * @defgroup infuse_epacket ePacket
+ * @brief Encrypted packet transport
+ */
+
+/**
+ * @defgroup infuse_rpc Remote Procedure Calls
+ * @brief RPC client, server and command definitions
+ */
+
+/**
+ * @defgroup infuse_tdf Tagged Data Format
+ * @brief TDF encoding, decoding and definitions
+ */
+
+/**
+ * @defgroup infuse_data_logger Data Logger
+ * @brief Data logging frontends and backends
+ */
+
+/**
+ * @defgroup infuse_storage Storage
+ * @brief Persistent storage and filesystems
+ */
+
+/**
+ * @defgroup infuse_task_runner Task Runner
+ * @brief Scheduled task execution
+ */
+
+/**
+ * @defgroup infuse_algorithm_runner Algorithm Runner
+ * @brief Algorithm execution framework and built-in algorithms
+ */
+
+/**
+ * @defgroup infuse_auto Automatic Behaviours
+ * @brief Optional subsystems that run automatically once enabled
+ */
+
+/**
+ * @defgroup infuse_bluetooth Bluetooth
+ * @brief Bluetooth helpers and services
+ */
+
+/**
+ * @defgroup infuse_net Networking
+ * @brief IP networking helpers
+ */
+
+/**
+ * @defgroup infuse_security_crypto Security and Cryptography
+ * @brief Device security and cryptographic primitives
+ */
+
+/**
+ * @defgroup infuse_dfu Device Firmware Update
+ * @brief Firmware update and patching
+ */
+
+/**
+ * @defgroup infuse_time Time
+ * @brief Epoch time and timezones
+ */
+
+/**
+ * @defgroup infuse_zbus zbus
+ * @brief Infuse-IoT zbus channels and types
+ */
+
+/**
+ * @defgroup infuse_drivers Drivers
+ * @brief Infuse-IoT device drivers and driver APIs
+ */
+
+/**
+ * @defgroup infuse_ubx u-blox GNSS
+ * @brief UBX protocol definitions and modem communications
+ */
+
+/**
+ * @defgroup infuse_validation Validation
+ * @brief Hardware validation routines
+ */
+
+/**
+ * @defgroup infuse_lib Library Integrations
+ * @brief Integrations with third party libraries
+ */

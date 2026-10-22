@@ -20,6 +20,7 @@ extern "C" {
 
 /**
  * @defgroup ubx_message_protocol UBX Message Protocol
+ * @ingroup infuse_ubx
  * @{
  */
 

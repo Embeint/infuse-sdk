@@ -28,6 +28,7 @@ extern "C" {
 /**
  * @brief tilt API
  * @defgroup tilt_apis tilt APIs
+ * @ingroup infuse_algorithm_runner
  * @{
  */
 

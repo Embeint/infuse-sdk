@@ -22,6 +22,7 @@ extern "C" {
 /**
  * @brief Data Logger shim backend API
  * @defgroup data_logger_backend_shim Data Logger shim backend
+ * @ingroup infuse_data_logger
  * @{
  */
 

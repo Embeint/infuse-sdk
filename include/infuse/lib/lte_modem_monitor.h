@@ -24,6 +24,7 @@ extern "C" {
 /**
  * @brief nrf_modem_monitor API
  * @defgroup lte_modem_monitor_apis nrf_modem_monitor APIs
+ * @ingroup infuse_lib
  * @{
  */
 

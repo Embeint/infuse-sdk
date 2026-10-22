@@ -20,6 +20,7 @@ extern "C" {
 /**
  * @brief Infuse COAP API
  * @defgroup infuse_coap_apis Infuse COAP APIs
+ * @ingroup infuse_net
  * @{
  */
 

@@ -23,6 +23,7 @@ extern "C" {
 /**
  * @brief RPC packet headers
  * @defgroup rpc_packet_headers RPC packet headers
+ * @ingroup infuse_rpc
  * @{
  */
 
@@ -89,6 +90,7 @@ struct infuse_rpc_rsp_header {
 /**
  * @brief Common RPC struct fields
  * @defgroup rpc_struct_definitions Common RPC struct fields
+ * @ingroup infuse_rpc
  * @{
  */
 
@@ -488,6 +490,7 @@ struct rpc_struct_filesystem_file_info {
 /**
  * @brief Built-in RPC definitions
  * @defgroup builtin_rpc_definitions Built-in RPC definitions
+ * @ingroup infuse_rpc
  * @{
  */
 

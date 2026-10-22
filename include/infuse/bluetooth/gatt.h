@@ -21,6 +21,7 @@ extern "C" {
 
 /**
  * @defgroup infuse_gatt_apis Infuse-IoT GATT APIs
+ * @ingroup infuse_bluetooth
  * @{
  */
 

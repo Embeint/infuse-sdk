@@ -17,6 +17,7 @@ extern "C" {
 /**
  * @brief Automatic SNTP functionality
  * @defgroup auto_sntp_apis Automatic SNTP functionality
+ * @ingroup infuse_net
  * @{
  */
 

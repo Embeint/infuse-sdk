@@ -24,6 +24,7 @@ extern "C" {
 /**
  * @brief soc_device_control API
  * @defgroup soc_device_control_apis SoC Device Control API
+ * @ingroup infuse_auto
  * @{
  */
 

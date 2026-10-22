@@ -22,6 +22,7 @@ extern "C" {
 /**
  * @brief ePacket filter API
  * @defgroup epacket_filter_apis ePacket filter APIs
+ * @ingroup infuse_epacket
  * @{
  */
 

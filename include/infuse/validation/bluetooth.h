@@ -19,6 +19,7 @@ extern "C" {
 
 /**
  * @defgroup validation_bluetooth Bluetooth validation
+ * @ingroup infuse_validation
  * @{
  */
 

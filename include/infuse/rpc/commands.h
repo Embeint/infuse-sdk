@@ -25,6 +25,7 @@ extern "C" {
 /**
  * @brief RPC command implementation API
  * @defgroup rpc_commands_apis commands RPC command implementation API
+ * @ingroup infuse_rpc
  * @{
  */
 

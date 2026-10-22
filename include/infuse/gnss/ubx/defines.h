@@ -22,6 +22,7 @@ extern "C" {
 
 /**
  * @defgroup ubx_defines UBX Common Defines
+ * @ingroup infuse_ubx
  * @{
  */
 
