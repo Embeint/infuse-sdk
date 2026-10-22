@@ -1,5 +1,6 @@
 /**
  * @file
+ * @brief kv_write RPC application hooks
  * @copyright 2026 Embeint Holdings Pty Ltd
  * @author Jordan Yates <jordan@embeint.com>
  *
@@ -16,6 +17,11 @@ extern "C" {
 #endif
 
 /**
+ * @addtogroup rpc_commands_apis
+ * @{
+ */
+
+/**
  * @brief Application level validation of external KV writes
  *
  * @param meta Metadata of the request packet
@@ -28,6 +34,10 @@ extern "C" {
  */
 bool infuse_rpc_command_kv_write_validate(struct epacket_rx_metadata *meta, uint16_t key,
 					  const void *data, size_t len);
+
+/**
+ * @}
+ */
 
 #ifdef __cplusplus
 }

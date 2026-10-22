@@ -1,5 +1,7 @@
-/*
- * Copyright (c) 2025 Embeint Holdings Pty Ltd
+/**
+ * @file
+ * @brief Common u-blox modem backend state
+ * @copyright 2025 Embeint Holdings Pty Ltd
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -11,6 +13,13 @@
 #include <zephyr/modem/pipe.h>
 #include <zephyr/sys/ring_buffer.h>
 
+/**
+ * @defgroup ubx_modem_backends u-blox modem backends
+ * @ingroup infuse_ubx
+ * @{
+ */
+
+/** @brief Common state for u-blox modem backends */
 struct modem_backend_common {
 	/* Pointer to data ready pin configuration */
 	const struct gpio_dt_spec *data_ready;
@@ -35,3 +44,7 @@ struct modem_backend_common {
 	/* Backing memory for pipe data stream */
 	uint8_t pipe_memory[CONFIG_GNSS_U_BLOX_PIPE_SIZE];
 };
+
+/**
+ * @}
+ */

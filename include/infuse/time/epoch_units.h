@@ -17,6 +17,11 @@
 
 #define Z_HZ_epoch INFUSE_EPOCH_TIME_TICKS_PER_SEC
 
+/**
+ * @addtogroup epoch_time_apis
+ * @{
+ */
+
 /** @brief Convert seconds to epoch ticks. 32 bits. Truncates.
  *
  * Converts time values in seconds to epoch ticks.
@@ -856,5 +861,9 @@
  * @return The converted time value in ticks. uint64_t
  */
 #define k_epoch_to_ticks_ceil64(t) z_tmcvt_64(t, Z_HZ_epoch, Z_HZ_ticks, true, true, false)
+
+/**
+ * @}
+ */
 
 #endif /* INFUSE_SDK_INCLUDE_INFUSE_TIME_EPOCH_UNITS_H_ */

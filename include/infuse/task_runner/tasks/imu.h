@@ -23,6 +23,12 @@ extern "C" {
 #endif
 
 /**
+ * @defgroup task_imu_apis IMU task
+ * @ingroup infuse_tasks
+ * @{
+ */
+
+/**
  * @brief IMU task function
  *
  * @param schedule Schedule that triggered task
@@ -58,6 +64,10 @@ void imu_task_fn(const struct task_schedule *schedule, struct k_poll_signal *ter
 					   .stack_size = K_THREAD_STACK_SIZEOF(imu_stack_area),    \
 				   },                                                              \
 		   }))
+
+/**
+ * @}
+ */
 
 #ifdef __cplusplus
 }

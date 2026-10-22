@@ -20,6 +20,12 @@ extern "C" {
 #endif
 
 /**
+ * @defgroup task_tdf_logger_apis TDF logger task
+ * @ingroup infuse_tasks
+ * @{
+ */
+
+/**
  * @brief Application callback for custom TDF logging
  *
  * @param tdf_loggers TDF loggers to log to
@@ -98,6 +104,10 @@ void task_tdf_logger_manual_run(uint8_t tdf_loggers, uint64_t timestamp, uint16_
 #define TDF_LOGGER_ALT2_TASK(define_mem, define_config, custom_logger)                             \
 	_TDF_LOGGER_TASK_INSTANCE("tdfl2", TASK_ID_TDF_LOGGER_ALT2, define_mem, define_config,     \
 				  custom_logger)
+
+/**
+ * @}
+ */
 
 #ifdef __cplusplus
 }

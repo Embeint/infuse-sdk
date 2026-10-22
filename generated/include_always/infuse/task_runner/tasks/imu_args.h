@@ -21,6 +21,11 @@
 extern "C" {
 #endif
 
+/**
+ * @addtogroup infuse_task_args_apis
+ * @{
+ */
+
 enum {
 	/** Log accelerometer samples */
 	TASK_IMU_LOG_ACC = BIT(0),
@@ -81,6 +86,10 @@ struct task_imu_args {
 	/** Operational flags */
 	uint8_t flags;
 } __packed;
+
+/**
+ * @}
+ */
 
 #ifdef __cplusplus
 }

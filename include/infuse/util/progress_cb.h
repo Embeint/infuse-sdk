@@ -18,6 +18,8 @@ extern "C" {
 
 /**
  * @brief Common progress callback type definition
+ * @defgroup infuse_progress_cb_apis Progress callbacks
+ * @ingroup infuse_core
  * @{
  */
 

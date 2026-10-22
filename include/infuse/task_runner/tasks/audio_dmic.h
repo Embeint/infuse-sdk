@@ -23,6 +23,12 @@
 extern "C" {
 #endif
 
+/**
+ * @defgroup task_audio_dmic_apis Digital microphone task
+ * @ingroup infuse_tasks
+ * @{
+ */
+
 struct task_audio_dmic_config {
 	const struct device *dev;
 	struct pdm_io_cfg io_cfg;
@@ -75,6 +81,10 @@ void dmic_task_fn(const struct task_schedule *schedule, struct k_poll_signal *te
 #define AUDIO_DMIC_TASK(define_mem, define_config, dmic_node)                                      \
 	IF_ENABLED(define_mem, (_AUDIO_DMIC_MEM(dmic_node)))                                       \
 	IF_ENABLED(define_config, (_AUDIO_DMIC_CONFIG(dmic_node)))
+
+/**
+ * @}
+ */
 
 #ifdef __cplusplus
 }

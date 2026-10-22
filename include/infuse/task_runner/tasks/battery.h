@@ -24,6 +24,12 @@ extern "C" {
 #endif
 
 /**
+ * @defgroup task_battery_apis Battery measurement task
+ * @ingroup infuse_tasks
+ * @{
+ */
+
+/**
  * @brief Battery task function
  *
  * @param work Delayable work item
@@ -59,6 +65,10 @@ int task_battery_manual_run(const struct device *dev, const struct task_battery_
 				    .executor.workqueue = {                                        \
 					    .worker_fn = battery_task_fn,                          \
 				    }}))
+
+/**
+ * @}
+ */
 
 #ifdef __cplusplus
 }

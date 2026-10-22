@@ -21,6 +21,11 @@
 extern "C" {
 #endif
 
+/**
+ * @addtogroup infuse_task_args_apis
+ * @{
+ */
+
 enum {
 	/** Log audio metadata */
 	TASK_AUDIO_DMIC_LOG_METADATA = BIT(0),
@@ -35,6 +40,10 @@ struct task_audio_dmic_args {
 	/** Sample gain in dB */
 	int8_t gain_db;
 } __packed;
+
+/**
+ * @}
+ */
 
 #ifdef __cplusplus
 }

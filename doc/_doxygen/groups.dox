@@ -1,6 +1,6 @@
 /**
  * @file
- * @brief Top level groups for the Infuse-IoT API reference
+ * @brief Groups for the Infuse-IoT API reference that are not owned by a single header
  * @copyright 2026 Embeint Holdings Pty Ltd
  *
  * SPDX-License-Identifier: FSL-1.1-ALv2
@@ -39,6 +39,12 @@
 /**
  * @defgroup infuse_task_runner Task Runner
  * @brief Scheduled task execution
+ */
+
+/**
+ * @defgroup infuse_tasks Built-in tasks
+ * @ingroup infuse_task_runner
+ * @brief Tasks provided by Infuse-IoT
  */
 
 /**

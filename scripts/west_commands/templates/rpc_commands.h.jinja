@@ -18,6 +18,11 @@
 extern "C" {
 #endif
 
+/**
+ * @addtogroup rpc_commands_apis
+ * @{
+ */
+
 {% for command in commands.values() %}
 /**
  * @brief Run {{ command['name'] }} RPC
@@ -29,6 +34,10 @@ extern "C" {
 struct net_buf *rpc_command_{{ command['name'] }}(struct net_buf *request);
 
 {% endfor %}
+/**
+ * @}
+ */
+
 #ifdef __cplusplus
 }
 #endif

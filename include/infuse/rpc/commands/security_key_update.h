@@ -1,5 +1,6 @@
 /**
  * @file
+ * @brief security_key_update RPC application hooks
  * @copyright 2026 Embeint Holdings Pty Ltd
  * @author Jordan Yates <jordan@embeint.com>
  *
@@ -17,6 +18,11 @@ extern "C" {
 #endif
 
 /**
+ * @addtogroup rpc_commands_apis
+ * @{
+ */
+
+/**
  * @brief Application level authorisation check for `security_key_update`
  *
  * Only required if @a CONFIG_INFUSE_RPC_COMMAND_SECURITY_KEY_UPDATE_REQUIRED_AUTH
@@ -30,6 +36,10 @@ extern "C" {
  */
 bool infuse_rpc_command_security_authorised(struct epacket_rx_metadata *meta,
 					    struct rpc_security_key_update_request *req);
+
+/**
+ * @}
+ */
 
 #ifdef __cplusplus
 }

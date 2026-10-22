@@ -1,5 +1,6 @@
 /**
  * @file
+ * @brief RPC command runner
  * @copyright 2024 Embeint Holdings Pty Ltd
  * @author Jordan Yates <jordan@embeint.com>
  *
@@ -18,6 +19,11 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/**
+ * @addtogroup rpc_commands_apis
+ * @{
+ */
 
 /**
  * @brief Execute a command contained in the buffer
@@ -54,6 +60,10 @@ void rpc_command_runner_request_unref(struct net_buf *request);
  */
 void rpc_command_runner_early_response(struct epacket_rx_metadata *rx_meta, uint32_t request_id,
 				       uint16_t command_id, struct net_buf *response);
+
+/**
+ * @}
+ */
 
 #ifdef __cplusplus
 }
