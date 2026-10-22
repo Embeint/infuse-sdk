@@ -1,0 +1,46 @@
+# Infuse-IoT packaged algorithm loader
+
+config ALGORITHM_LOADER
+	bool "Infuse-IoT packaged algorithm loader"
+	depends on INFUSE_ALGORITHMS
+	depends on LLEXT
+	default y
+
+if ALGORITHM_LOADER
+
+config ALGORITHM_LOADER_LLEXT_LITTLEFS_LOADER
+	bool
+	depends on INFUSE_LITTLEFS
+	depends on LLEXT
+	default y
+	help
+	  Load LLEXT algorithms dynamically from the Infuse LittleFS
+	  filesystem.
+
+config ALGORITHM_LOADER_EXPOSE_SYMBOLS
+	bool "Expose required symbols for packaged algorithms when loaded"
+	select LLEXT_EXPORT_SYMBOL_GROUP_LIBC
+	default y
+	help
+	  Expose required symbols used for packaged algorithms when they're loaded.
+
+if ALGORITHM_LOADER_EXPOSE_SYMBOLS
+config LLEXT_EXPORT_SYMBOL_GROUP_INFUSE_ALG
+	bool "Infuse-IoT algorithm runner exports"
+	default y
+	help
+	  Export symbols (under the INFUSE_ALG group) for packaged algorithms.
+
+config LLEXT_EXPORT_SYMBOL_GROUP_FP_SOFT
+	bool "Software floating point library exports"
+	default y
+	help
+	  Export symbols (under the FP_SOFT group) for packaged algorithms.
+
+endif # ALGORITHM_LOADER_EXPOSE_SYMBOLS
+
+module = ALGORITHM_LOADER
+module-str = Algorithm Loader
+source "subsys/logging/Kconfig.template.log_config"
+
+endif # ALGORITHM_LOADER

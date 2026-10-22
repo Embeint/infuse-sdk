@@ -1,44 +1,28 @@
 # Infuse-IoT algorithm abstraction
 
 config INFUSE_ALGORITHMS
-	bool "Infuse-IoT algorithm support"
+	bool "Infuse-IoT algorithm abstraction"
+	depends on ZBUS_CHANNEL_ID
+	select INFUSE_WORKQ
+	help
+	  Subsystem to handle running arbitrary algorithms. Also optionally
+	  includes building and packaging algorithms to be dynamically deployed
+	  and loading at runtime.
 
 if INFUSE_ALGORITHMS
 
-config LLEXT_EXPORT_SYMBOL_GROUP_INFUSE_ALG
-	bool "Infuse-IoT algorithm runner exports"
+config ALGORITHM_RUNNER
+	bool "Infuse-IoT algorithm runner"
 	default y
 
-config LLEXT_EXPORT_SYMBOL_GROUP_FP_SOFT
-	bool "Software floating point library exports"
-	default y
 
-config INFUSE_ALGORITHM_LLEXT_BUILTIN
-	bool
-	help
-	  Application includes an LLEXT algorithm.
-
-config INFUSE_ALGORITHM_LLEXT_NATIVE
-	bool
-	help
-	  Application includes an LLEXT algorithm running
-	  natively (not loaded through LLEXT).
-
-config INFUSE_ALGORITHM_CPU_NAME
-	string
-	default "cortex_m0" if CPU_CORTEX_M0
-	default "cortex_m3" if CPU_CORTEX_M3
-	default "cortex_m4" if CPU_CORTEX_M4
-	default "cortex_m33" if CPU_CORTEX_M33
-	help
-	  Hidden helper option to calculate the library path
-
-config INFUSE_ALGORITHM_FLOAT_ABI_DIR
-	string
-	default "hard" if FPU && FP_HARDABI
-	default "softfp" if FPU && FP_SOFTABI
-	default "soft"
-	help
-	  Hidden helper option to calculate the library path
+config ALGORITHM_LOADER
+	bool "Infuse-IoT packaged algorithm loader"
+	default y if LLEXT
 
 endif # INFUSE_ALGORITHMS
+
+rsource "loader/Kconfig"
+rsource "packager/Kconfig"
+rsource "runner/Kconfig"
+rsource "samples/Kconfig"

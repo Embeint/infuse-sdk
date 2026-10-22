@@ -1,0 +1,21 @@
+# Infuse-IoT algorithm runner abstraction
+
+config ALGORITHM_RUNNER
+	bool "Infuse-IoT algorithm runner"
+	depends on INFUSE_ALGORITHMS
+	default y
+
+if ALGORITHM_RUNNER
+
+config ALGORITHM_RUNNER_MAX_ALGORITHMS
+	int "Maximum number of registered algorithms"
+	default 8
+	range 1 32
+	help
+	  Maximum number of algorithms that can be registered concurrently.
+
+module = ALGORITHM_RUNNER
+module-str = Algorithm Runner
+source "subsys/logging/Kconfig.template.log_config"
+
+endif # ALGORITHM_RUNNER

@@ -1,18 +1,18 @@
 /**
  * @file
  * @brief API that algorithms must implement
- * @copyright 2025 Embeint Holdings Pty Ltd
+ * @copyright 2026 Embeint Holdings Pty Ltd
  * @author Jordan Yates <jordan@embeint.com>
  *
  * SPDX-License-Identifier: FSL-1.1-ALv2
  */
 
-#ifndef INFUSE_SDK_INCLUDE_INFUSE_ALGORITHM_RUNNER_LLEXT_IMPLEMENTATION_H_
-#define INFUSE_SDK_INCLUDE_INFUSE_ALGORITHM_RUNNER_LLEXT_IMPLEMENTATION_H_
+#ifndef INFUSE_SDK_INCLUDE_INFUSE_ALGORITHMS_IMPLEMENTATION_H_
+#define INFUSE_SDK_INCLUDE_INFUSE_ALGORITHMS_IMPLEMENTATION_H_
 
 #include <zephyr/llext/symbol.h>
 
-#include <infuse/algorithms/dependencies.h>
+#include <infuse/algorithms/packager_dependencies.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -78,4 +78,4 @@ struct infuse_algorithm {
 }
 #endif
 
-#endif /* INFUSE_SDK_INCLUDE_INFUSE_ALGORITHM_RUNNER_LLEXT_IMPLEMENTATION_H_ */
+#endif /* INFUSE_SDK_INCLUDE_INFUSE_ALGORITHMS_IMPLEMENTATION_H_ */
