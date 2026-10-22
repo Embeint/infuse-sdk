@@ -20,8 +20,8 @@ extern "C" {
 #endif
 
 /**
- * @brief epacket_dummy API
- * @defgroup epacket_dummy_apis epacket_dummy APIs
+ * @brief ePacket dummy interface
+ * @defgroup epacket_dummy_apis ePacket dummy interface
  * @ingroup epacket_interface_apis
  * @{
  */

@@ -21,8 +21,8 @@ extern "C" {
 #endif
 
 /**
- * @brief task API
- * @defgroup task_apis task APIs
+ * @brief Task APIs
+ * @defgroup task_apis Task APIs
  * @ingroup infuse_task_runner
  * @{
  */

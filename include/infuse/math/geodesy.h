@@ -17,8 +17,8 @@ extern "C" {
 #endif
 
 /**
- * @brief geodesy API
- * @defgroup geodesy_apis geodesy APIs
+ * @brief Geodesy APIs
+ * @defgroup geodesy_apis Geodesy APIs
  * @ingroup infuse_math
  * @{
  */

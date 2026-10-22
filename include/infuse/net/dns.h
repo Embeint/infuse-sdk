@@ -20,7 +20,7 @@ extern "C" {
 
 /**
  * @brief Infuse DNS API
- * @defgroup infuse_dns_apis dns Infuse DNS APIs
+ * @defgroup infuse_dns_apis Infuse DNS APIs
  * @ingroup infuse_net
  * @{
  */

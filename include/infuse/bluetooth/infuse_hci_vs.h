@@ -17,8 +17,8 @@ extern "C" {
 #endif
 
 /**
- * @brief infuse_hci_vs API
- * @defgroup infuse_hci_vs_apis infuse_hci_vs APIs
+ * @brief Infuse-IoT HCI vendor specific commands
+ * @defgroup infuse_hci_vs_apis Infuse-IoT HCI vendor specific commands
  * @ingroup infuse_bluetooth
  * @{
  */

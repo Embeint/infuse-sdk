@@ -22,8 +22,8 @@ extern "C" {
 #endif
 
 /**
- * @brief demo API
- * @defgroup demo_apis demo APIs
+ * @brief Demonstration algorithms
+ * @defgroup demo_apis Demonstration algorithms
  * @ingroup infuse_algorithm_runner
  * @{
  */

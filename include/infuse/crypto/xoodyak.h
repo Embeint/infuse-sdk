@@ -18,8 +18,8 @@ extern "C" {
 #endif
 
 /**
- * @brief xoodyak API
- * @defgroup xoodyak_apis xoodyak APIs
+ * @brief Xoodyak APIs
+ * @defgroup xoodyak_apis Xoodyak APIs
  * @ingroup infuse_security_crypto
  * @{
  */

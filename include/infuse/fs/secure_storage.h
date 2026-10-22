@@ -15,8 +15,8 @@ extern "C" {
 #endif
 
 /**
- * @brief secure_storage API
- * @defgroup secure_storage_apis secure_storage APIs
+ * @brief Secure storage APIs
+ * @defgroup secure_storage_apis Secure storage APIs
  * @ingroup infuse_storage
  * @{
  */

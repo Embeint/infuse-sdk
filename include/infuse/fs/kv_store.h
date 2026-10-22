@@ -24,8 +24,8 @@ extern "C" {
 #endif
 
 /**
- * @brief kv_store API
- * @defgroup kv_store_apis kv_store APIs
+ * @brief Key-value store APIs
+ * @defgroup kv_store_apis Key-value store APIs
  * @ingroup infuse_storage
  * @{
  */

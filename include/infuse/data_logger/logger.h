@@ -21,7 +21,7 @@ extern "C" {
 
 /**
  * @brief Data logger API
- * @defgroup data_logger_apis data logger APIs
+ * @defgroup data_logger_apis Data logger APIs
  * @ingroup infuse_data_logger
  * @{
  */

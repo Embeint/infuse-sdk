@@ -22,8 +22,8 @@ extern "C" {
 #endif
 
 /**
- * @brief epacket_bt_adv API
- * @defgroup epacket_bt_adv_apis epacket_bt_adv APIs
+ * @brief ePacket Bluetooth advertising interface
+ * @defgroup epacket_bt_adv_apis ePacket Bluetooth advertising interface
  * @ingroup epacket_interface_apis
  * @{
  */

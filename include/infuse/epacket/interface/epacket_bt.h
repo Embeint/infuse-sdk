@@ -18,8 +18,8 @@ extern "C" {
 #endif
 
 /**
- * @brief epacket_bt API
- * @defgroup epacket_bt_apis epacket_bt APIs
+ * @brief ePacket Bluetooth common definitions
+ * @defgroup epacket_bt_apis ePacket Bluetooth common definitions
  * @ingroup epacket_interface_apis
  * @{
  */

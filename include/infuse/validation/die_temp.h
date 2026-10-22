@@ -17,7 +17,7 @@ extern "C" {
 #endif
 
 /**
- * @defgroup validation_die temp Die temperature validation API
+ * @defgroup validation_die_temp Die temperature validation API
  * @ingroup infuse_validation
  * @{
  */

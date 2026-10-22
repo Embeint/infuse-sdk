@@ -19,8 +19,8 @@ extern "C" {
 #endif
 
 /**
- * @brief wifi_conn_log API
- * @defgroup wifi_conn_log_apis wifi_conn_log APIs
+ * @brief Wi-Fi connection logging
+ * @defgroup wifi_conn_log_apis Wi-Fi connection logging
  * @ingroup infuse_auto
  * @{
  */
