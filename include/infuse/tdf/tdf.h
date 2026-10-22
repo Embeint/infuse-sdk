@@ -26,6 +26,7 @@ extern "C" {
 /**
  * @brief Tagged Data Format API
  * @defgroup tdf_apis Tagged Data Format APIs
+ * @ingroup infuse_tdf
  * @{
  */
 

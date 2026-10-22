@@ -18,6 +18,7 @@ extern "C" {
 
 /**
  * @defgroup validation_disk Disk validation API
+ * @ingroup infuse_validation
  * @{
  */
 

@@ -18,6 +18,7 @@ extern "C" {
 
 /**
  * @defgroup validation_dmic Digital microphone validation API
+ * @ingroup infuse_validation
  * @{
  */
 

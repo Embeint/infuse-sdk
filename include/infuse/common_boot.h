@@ -25,6 +25,7 @@ extern "C" {
 /**
  * @brief infuse_common_boot API
  * @defgroup infuse_common_boot_apis Common boot APIs
+ * @ingroup infuse_core
  * @{
  */
 

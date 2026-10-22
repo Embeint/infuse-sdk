@@ -26,6 +26,7 @@ extern "C" {
 /**
  * @brief Functions that Infuse-IoT algorithms can use
  * @defgroup infuse_algorithm_dependencies Infuse-IoT Algorithm Dependencies
+ * @ingroup infuse_algorithm_runner
  * @{
  */
 

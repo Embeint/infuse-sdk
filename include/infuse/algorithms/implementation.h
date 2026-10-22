@@ -21,6 +21,7 @@ extern "C" {
 /**
  * @brief Infuse-IoT Algorithm implementation API
  * @defgroup infuse_algorithm_llext_implementation Infuse-IoT Algorithm implementation API
+ * @ingroup infuse_algorithm_runner
  * @{
  */
 

@@ -21,6 +21,7 @@ extern "C" {
 
 /**
  * @defgroup memfault_apis Infuse-IoT Memfault APIs
+ * @ingroup infuse_lib
  * @{
  */
 

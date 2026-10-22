@@ -22,6 +22,7 @@ extern "C" {
 
 /**
  * @defgroup charger_control_apis Auto: Charger control
+ * @ingroup infuse_auto
  * @{
  */
 

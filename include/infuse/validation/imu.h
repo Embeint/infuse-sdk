@@ -21,6 +21,7 @@ extern "C" {
 
 /**
  * @defgroup validation_imu IMU validation API
+ * @ingroup infuse_validation
  * @{
  */
 

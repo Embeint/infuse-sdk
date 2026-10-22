@@ -18,6 +18,7 @@ extern "C" {
 
 /**
  * @defgroup validation_pwr Power validation API
+ * @ingroup infuse_validation
  * @{
  */
 

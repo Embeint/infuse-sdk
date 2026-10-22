@@ -24,6 +24,7 @@ extern "C" {
 /**
  * @brief epacket_udp API
  * @defgroup epacket_udp_apis epacket_udp APIs
+ * @ingroup epacket_interface_apis
  * @{
  */
 

@@ -23,6 +23,7 @@ extern "C" {
 
 /**
  * @defgroup dfu_helpers_apis Infuse DFU helper APIs
+ * @ingroup infuse_dfu
  * @{
  */
 

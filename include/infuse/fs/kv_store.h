@@ -26,6 +26,7 @@ extern "C" {
 /**
  * @brief kv_store API
  * @defgroup kv_store_apis kv_store APIs
+ * @ingroup infuse_storage
  * @{
  */
 

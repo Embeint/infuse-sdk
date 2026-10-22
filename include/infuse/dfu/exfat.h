@@ -28,6 +28,7 @@ extern "C" {
 
 /**
  * @defgroup dfu_exfat_apis DFU from SD card APIs
+ * @ingroup infuse_dfu
  * @{
  */
 

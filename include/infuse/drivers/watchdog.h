@@ -29,6 +29,7 @@ extern "C" {
 /**
  * @brief Infuse watchdog API
  * @defgroup infuse_watchdog_apis Infuse watchdog APIs
+ * @ingroup infuse_drivers
  * @{
  */
 

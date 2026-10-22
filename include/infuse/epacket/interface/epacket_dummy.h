@@ -22,6 +22,7 @@ extern "C" {
 /**
  * @brief epacket_dummy API
  * @defgroup epacket_dummy_apis epacket_dummy APIs
+ * @ingroup epacket_interface_apis
  * @{
  */
 

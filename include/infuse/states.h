@@ -22,6 +22,7 @@ extern "C" {
 
 /**
  * @defgroup states_apis Infuse-IoT application state APIs
+ * @ingroup infuse_core
  * @{
  */
 

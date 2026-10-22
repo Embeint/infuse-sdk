@@ -24,6 +24,7 @@ extern "C" {
 
 /**
  * @defgroup ubx_modem_apis UBX Modem Communications
+ * @ingroup infuse_ubx
  * @{
  */
 

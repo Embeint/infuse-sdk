@@ -21,6 +21,7 @@ extern "C" {
 /**
  * @brief IMU data types
  * @defgroup imu_data_types_apis IMU Data Types API
+ * @ingroup infuse_imu_apis
  * @{
  */
 

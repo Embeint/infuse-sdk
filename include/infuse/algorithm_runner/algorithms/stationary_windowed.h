@@ -27,6 +27,7 @@ extern "C" {
 /**
  * @brief stationary_windowed API
  * @defgroup stationary_windowed_apis stationary_windowed APIs
+ * @ingroup infuse_algorithm_runner
  * @{
  */
 

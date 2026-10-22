@@ -20,6 +20,7 @@ extern "C" {
 /**
  * @brief Advanced LP581x LED Controller configuration
  * @defgroup lp581x_apis LP581x LED Controller API
+ * @ingroup infuse_drivers
  * @{
  */
 

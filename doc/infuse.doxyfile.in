@@ -971,6 +971,7 @@ WARN_LOGFILE           =
 # Note: If this tag is empty the current directory is searched.
 
 INPUT                  = @INFUSE_BASE@/doc/_doxygen/mainpage.md \
+                         @INFUSE_BASE@/doc/_doxygen/groups.dox \
                          @INFUSE_BASE@/include/ \
                          @INFUSE_BASE@/generated/include/ \
                          @INFUSE_BASE@/generated/include_always/

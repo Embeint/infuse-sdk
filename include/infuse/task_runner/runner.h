@@ -26,6 +26,7 @@ extern "C" {
 /**
  * @brief Task Runner runner API
  * @defgroup task_runner_runner_apis Task Runner runner APIs
+ * @ingroup infuse_task_runner
  * @{
  */
 

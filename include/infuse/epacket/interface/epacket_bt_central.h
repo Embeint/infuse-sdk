@@ -28,6 +28,7 @@ extern "C" {
 /**
  * @brief epacket_bt_central API
  * @defgroup epacket_bt_central_apis epacket_bt_central APIs
+ * @ingroup epacket_interface_apis
  * @{
  */
 

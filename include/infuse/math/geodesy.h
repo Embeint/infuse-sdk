@@ -19,6 +19,7 @@ extern "C" {
 /**
  * @brief geodesy API
  * @defgroup geodesy_apis geodesy APIs
+ * @ingroup infuse_math
  * @{
  */
 

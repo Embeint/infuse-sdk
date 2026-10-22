@@ -21,6 +21,7 @@ extern "C" {
 /**
  * @brief Infuse zbus channels API
  * @defgroup infuse_zbus_channels_apis Infuse zbus channels APIs
+ * @ingroup infuse_zbus
  * @{
  */
 

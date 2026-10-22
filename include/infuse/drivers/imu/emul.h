@@ -19,6 +19,7 @@ extern "C" {
 /**
  * @brief IMU emul API
  * @defgroup imu_emul_apis emulated IMU APIs
+ * @ingroup infuse_imu_apis
  * @{
  */
 

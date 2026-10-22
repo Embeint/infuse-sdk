@@ -21,6 +21,7 @@ extern "C" {
 /**
  * @brief Infuse-IoT LittleFS wrapper
  * @defgroup infuse_littlefs_apis Infuse-IoT LittleFS wrapper
+ * @ingroup infuse_storage
  * @{
  */
 

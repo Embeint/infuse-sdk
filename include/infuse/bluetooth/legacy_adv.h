@@ -17,6 +17,7 @@ extern "C" {
 /**
  * @brief legacy_adv API
  * @defgroup legacy_adv_apis Bluetooth legacy advertising APIs
+ * @ingroup infuse_bluetooth
  * @{
  */
 

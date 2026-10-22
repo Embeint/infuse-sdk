@@ -20,6 +20,7 @@ extern "C" {
 /**
  * @brief hardware_unique_key API
  * @defgroup hardware_unique_key_apis hardware_unique_key APIs
+ * @ingroup infuse_security_crypto
  * @{
  */
 

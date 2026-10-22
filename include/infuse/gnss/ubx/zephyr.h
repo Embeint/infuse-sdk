@@ -23,6 +23,7 @@ extern "C" {
 
 /**
  * @defgroup ubx_zephyr_conv UBX Zephyr Conversions
+ * @ingroup infuse_ubx
  * @{
  */
 

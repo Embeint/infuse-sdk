@@ -20,6 +20,7 @@ extern "C" {
 /**
  * @brief Hamming error correction codes API
  * @defgroup hamming_apis Hamming error correcting codes APIs
+ * @ingroup infuse_math
  * @{
  */
 

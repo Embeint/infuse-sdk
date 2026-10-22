@@ -19,6 +19,7 @@ extern "C" {
 
 /**
  * @defgroup validation_lora LoRa validation API
+ * @ingroup infuse_validation
  * @{
  */
 

@@ -30,6 +30,7 @@ extern "C" {
 /**
  * @brief Infuse security API
  * @defgroup infuse_security_apis Infuse security APIs
+ * @ingroup infuse_security_crypto
  * @{
  */
 

@@ -25,6 +25,7 @@ extern "C" {
 /**
  * @brief ascon API
  * @defgroup ascon_apis ascon APIs
+ * @ingroup infuse_security_crypto
  * @{
  */
 

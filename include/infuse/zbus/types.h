@@ -22,6 +22,7 @@ extern "C" {
 /**
  * @brief Infuse zbus channel types
  * @defgroup infuse_zbus_channel_types Infuse zbus channel types
+ * @ingroup infuse_zbus
  * @{
  */
 

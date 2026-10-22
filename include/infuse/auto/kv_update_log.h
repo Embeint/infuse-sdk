@@ -19,6 +19,7 @@ extern "C" {
 /**
  * @brief kv_update_log API
  * @defgroup kv_update_log_apis Logging of Key Value Store data changes
+ * @ingroup infuse_auto
  * @{
  */
 

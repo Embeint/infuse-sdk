@@ -18,6 +18,7 @@ extern "C" {
 
 /**
  * @defgroup validation_wifi Wi-Fi validation API
+ * @ingroup infuse_validation
  * @{
  */
 

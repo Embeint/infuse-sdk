@@ -19,6 +19,7 @@ extern "C" {
 /**
  * @brief charge_accumulator API
  * @defgroup charge_accumulator_apis charge_accumulator APIs
+ * @ingroup infuse_auto
  * @{
  */
 

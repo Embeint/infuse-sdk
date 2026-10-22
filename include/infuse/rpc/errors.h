@@ -19,6 +19,7 @@ extern "C" {
 /**
  * @brief RPC error codes
  * @defgroup rpc_errors RPC error codes
+ * @ingroup infuse_rpc
  * @{
  */
 

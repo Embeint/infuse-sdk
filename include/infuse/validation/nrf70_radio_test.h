@@ -18,6 +18,7 @@ extern "C" {
 
 /**
  * @defgroup validation_nrf70_radio_test nRF70 validation API
+ * @ingroup infuse_validation
  * @{
  */
 

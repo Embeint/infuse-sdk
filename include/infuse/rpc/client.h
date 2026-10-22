@@ -22,6 +22,7 @@ extern "C" {
 
 /**
  * @defgroup rpc_client_apis RPC client APIs
+ * @ingroup infuse_rpc
  * @{
  */
 

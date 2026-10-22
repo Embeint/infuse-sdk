@@ -18,6 +18,7 @@ extern "C" {
 
 /**
  * @defgroup validation_flash Flash validation API
+ * @ingroup infuse_validation
  * @{
  */
 

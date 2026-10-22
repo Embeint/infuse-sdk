@@ -18,6 +18,7 @@ extern "C" {
 
 /**
  * @defgroup validation Core validation API
+ * @ingroup infuse_validation
  * @{
  */
 

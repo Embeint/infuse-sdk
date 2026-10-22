@@ -19,6 +19,7 @@ extern "C" {
 /**
  * @brief infuse_task_ids API
  * @defgroup infuse_task_ids_apis infuse_task_ids APIs
+ * @ingroup infuse_task_runner
  * @{
  */
 

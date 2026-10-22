@@ -30,6 +30,7 @@ extern "C" {
 /**
  * @brief Infuse version API
  * @defgroup infuse_version_apis version APIs
+ * @ingroup infuse_core
  * @{
  */
 

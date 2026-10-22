@@ -20,6 +20,7 @@ extern "C" {
 /**
  * @brief xoodyak API
  * @defgroup xoodyak_apis xoodyak APIs
+ * @ingroup infuse_security_crypto
  * @{
  */
 

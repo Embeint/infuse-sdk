@@ -24,6 +24,7 @@ extern "C" {
 
 /**
  * @defgroup validation_leds LEDs validation APIs
+ * @ingroup infuse_validation
  * @{
  */
 

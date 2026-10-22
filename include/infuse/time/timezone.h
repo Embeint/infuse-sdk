@@ -19,6 +19,7 @@ extern "C" {
 /**
  * @brief timezone API
  * @defgroup timezone_apis timezone APIs
+ * @ingroup infuse_time
  * @{
  */
 

@@ -18,6 +18,7 @@ extern "C" {
 
 /**
  * @defgroup validation_cellular_modem nRF modem validation API
+ * @ingroup infuse_validation
  * @{
  */
 

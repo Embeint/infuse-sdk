@@ -24,6 +24,7 @@ extern "C" {
 /**
  * @brief demo API
  * @defgroup demo_apis demo APIs
+ * @ingroup infuse_algorithm_runner
  * @{
  */
 

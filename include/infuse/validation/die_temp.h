@@ -18,6 +18,7 @@ extern "C" {
 
 /**
  * @defgroup validation_die temp Die temperature validation API
+ * @ingroup infuse_validation
  * @{
  */
 

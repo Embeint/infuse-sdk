@@ -20,6 +20,7 @@ extern "C" {
 /**
  * @brief Running statistics API
  * @defgroup statistics_apis Infuse-IoT running statistics APIs
+ * @ingroup infuse_math
  *
  * This API is a C implementation of the following paper, which is itself
  * inspired by the well known Welford's algorithm:
