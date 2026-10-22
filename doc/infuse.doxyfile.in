@@ -927,8 +927,10 @@ WARN_IF_UNDOC_ENUM_VAL = NO
 # the behavior will remain as with the setting FAIL_ON_WARNINGS.
 # Possible values are: NO, YES, FAIL_ON_WARNINGS and FAIL_ON_WARNINGS_PRINT.
 # The default value is: NO.
+# Set from the DOXYGEN_WARN_AS_ERROR environment variable (CI uses
+# FAIL_ON_WARNINGS), an unset variable results in the default value.
 
-WARN_AS_ERROR          = NO
+WARN_AS_ERROR          = $(DOXYGEN_WARN_AS_ERROR)
 
 # The WARN_FORMAT tag determines the format of the warning messages that Doxygen
 # can produce. The string should contain the $file, $line, and $text tags, which

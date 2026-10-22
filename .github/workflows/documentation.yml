@@ -123,6 +123,8 @@ jobs:
     - name: build-docs
       working-directory: infuse-sdk
       shell: bash
+      env:
+        DOXYGEN_WARN_AS_ERROR: FAIL_ON_WARNINGS
       run: |
         if [[ "$GITHUB_REF" =~ "refs/tags/v" ]]; then
           DOC_TAG="release"
