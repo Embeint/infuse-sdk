@@ -1,0 +1,92 @@
+/**
+ * @file
+ * @brief Infuse-IoT algorithm runner
+ * @copyright 2024 Embeint Holdings Pty Ltd
+ * @author Jordan Yates <jordan@embeint.com>
+ *
+ * SPDX-License-Identifier: FSL-1.1-ALv2
+ */
+
+#ifndef INFUSE_SDK_INCLUDE_INFUSE_ALGORITHMS__RUNNER_RUNNER_H_
+#define INFUSE_SDK_INCLUDE_INFUSE_ALGORITHMS_RUNNER_RUNNER_H_
+
+#include <stdint.h>
+
+#include <infuse/algorithms/implementation.h>
+#include <infuse/fs/kv_types.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/**
+ * @brief Algorithm runner API
+ * @defgroup runner_apis Algorithm runner APIs
+ * @{
+ */
+
+/**
+ * @brief Initialise the algorithm runner
+ */
+void algorithm_runner_init(void);
+
+/**
+ * @brief Register an algorithm with the runner
+ *
+ * @note Registering the algorithm will immediately call the implementation with `chan == NULL`
+ *       to provide an opportunity to initialise runtime state.
+ *
+ * @param algorithm Algorithm to register
+ *
+ * @retval 0 Algorithm registered
+ * @retval -EINVAL Invalid algorithm configuration
+ * @retval -EALREADY Algorithm is already registered
+ * @retval -ENOMEM No free algorithm registration slots
+ * @return Negative error code from the KV store
+ */
+int algorithm_runner_register(const struct infuse_algorithm *algorithm);
+
+/**
+ * @brief Unregister an algorithm from the runner
+ *
+ * @param algorithm Algorithm to unregister
+ *
+ * @retval 0 Algorithm was found and unregistered
+ * @retval -EINVAL Invalid algorithm configuration
+ * @retval -ENOENT Algorithm was not registered with the runner
+ */
+int algorithm_runner_unregister(const struct infuse_algorithm *algorithm);
+
+/**
+ * @brief Log a single TDF as requested by algorithm configuration
+ *
+ * @param logging Algorithm logging configuration
+ * @param tdf_mask Single TDF mask that corresponds to @a tdf_id
+ * @param tdf_id TDF sensor ID
+ * @param tdf_len Length of a single TDF
+ * @param time Epoch time associated with the TDF. 0 for no timestamp.
+ * @param data TDF data array
+ */
+void algorithm_runner_tdf_log(const struct kv_algorithm_logging *logging, uint8_t tdf_mask,
+			      uint16_t tdf_id, uint8_t tdf_len, uint64_t time, const void *data);
+
+#ifdef CONFIG_ZTEST
+
+/**
+ * @brief Reset the algorithm runner to its boot state
+ *
+ * Unregisters all added algorithms
+ */
+void algorithm_runner_reset(void);
+
+#endif /* CONFIG_ZTEST */
+
+/**
+ * @}
+ */
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* INFUSE_SDK_INCLUDE_INFUSE_ALGORITHMS_RUNNER_RUNNER_H_ */

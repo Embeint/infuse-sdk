@@ -1,6 +1,0 @@
-# Built-in Infuse-IoT algorithms
-
-infuse_sources_ifdef(CONFIG_ALGORITHM_RUNNER_ALG_DEMO alg_demo.c)
-infuse_sources_ifdef(CONFIG_ALGORITHM_RUNNER_ALG_STATIONARY_WINDOWED alg_stationary_windowed.c)
-infuse_sources_ifdef(CONFIG_ALGORITHM_RUNNER_ALG_TILT alg_tilt.c)
-infuse_sources_ifdef(CONFIG_ALGORITHM_RUNNER_ALG_MOVEMENT_THRESHOLD alg_movement_threshold.c)

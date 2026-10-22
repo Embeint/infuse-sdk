@@ -1,0 +1,20 @@
+sample:
+  description: Algorithms packager, loader and runner sample
+  name: IMU gestures sample
+common:
+  filter: dt_alias_exists("imu0")
+  build_only: true
+  required_snippets:
+    - infuse
+  integration_platforms:
+    - thingy53/nrf5340/cpuapp
+    - nrf54l15tag/nrf54l15/cpuapp
+  tags: app
+tests:
+  sample.algorithms.loader.imu_gestures: {}
+  sample.algorithms.loader.imu_gestures.packaged:
+    extra_configs:
+      - CONFIG_BUNDLE_PACKAGED_ALGORITHM=y
+  sample.algorithms.loader.imu_gestures.builtin:
+    extra_configs:
+      - CONFIG_BUNDLE_BUILTIN_ALGORITHM=y

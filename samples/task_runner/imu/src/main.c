@@ -24,8 +24,8 @@
 #include <infuse/task_runner/runner.h>
 #include <infuse/task_runner/tasks/infuse_tasks.h>
 
-#include <infuse/algorithm_runner/runner.h>
-#include <infuse/algorithm_runner/algorithms/tilt.h>
+#include <infuse/algorithms/runner/runner.h>
+#include <infuse/algorithms/runner/samples/tilt.h>
 
 LOG_MODULE_REGISTER(app, LOG_LEVEL_INF);
 

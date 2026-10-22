@@ -1,5 +1,4 @@
 rsource "algorithms/Kconfig"
-rsource "algorithm_runner/Kconfig"
 rsource "bluetooth/Kconfig"
 rsource "cpatch/Kconfig"
 rsource "data_logger/Kconfig"

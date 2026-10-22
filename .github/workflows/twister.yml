@@ -84,7 +84,14 @@ jobs:
       - name: Build standalone algorithm
         if: matrix.subset == 1
         run: |
-          cmake -S infuse-sdk/samples/algorithm/upside_down -B algorithm-build
+          cmake -S infuse-sdk/samples/algorithms/packager/samples/upside_down -B algorithm-build
+          cmake --build algorithm-build
+          rm -r algorithm-build
+
+      - name: Build nRF Edge AI algorithm
+        if: matrix.subset == 1
+        run: |
+          cmake -S infuse-sdk/samples/algorithms/packager/samples/nrf_edge_ai/imu_gestures/ -B algorithm-build
           cmake --build algorithm-build
           rm -r algorithm-build
 

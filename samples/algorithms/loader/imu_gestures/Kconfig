@@ -1,0 +1,14 @@
+# SPDX-License-Identifier: Apache-2.0
+
+config BUNDLE_PACKAGED_ALGORITHM
+	bool "Compile algorithm as llext and bundle with firmware"
+
+config BUNDLE_BUILTIN_ALGORITHM
+	bool "Compile algorithm natively in firmware without bundling as llext"
+
+config LLEXT_EXPORT_SYMBOL_GROUP_GESTURE_APP
+	bool "Export gesture app symbol group"
+	depends on BUNDLE_PACKAGED_ALGORITHM
+	default y
+
+source "Kconfig.zephyr"
