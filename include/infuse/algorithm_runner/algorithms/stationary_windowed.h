@@ -25,8 +25,8 @@ extern "C" {
 #endif
 
 /**
- * @brief stationary_windowed API
- * @defgroup stationary_windowed_apis stationary_windowed APIs
+ * @brief Windowed stationary detection algorithm
+ * @defgroup stationary_windowed_apis Windowed stationary detection algorithm
  * @ingroup infuse_algorithm_runner
  * @{
  */

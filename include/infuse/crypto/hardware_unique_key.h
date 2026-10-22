@@ -18,8 +18,8 @@ extern "C" {
 #endif
 
 /**
- * @brief hardware_unique_key API
- * @defgroup hardware_unique_key_apis hardware_unique_key APIs
+ * @brief Hardware unique key APIs
+ * @defgroup hardware_unique_key_apis Hardware unique key APIs
  * @ingroup infuse_security_crypto
  * @{
  */

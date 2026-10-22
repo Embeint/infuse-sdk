@@ -19,8 +19,8 @@ extern "C" {
 #endif
 
 /**
- * @brief bluetooth_conn_log API
- * @defgroup bluetooth_conn_log_apis bluetooth_conn_log APIs
+ * @brief Bluetooth connection logging
+ * @defgroup bluetooth_conn_log_apis Bluetooth connection logging
  * @ingroup infuse_auto
  * @{
  */

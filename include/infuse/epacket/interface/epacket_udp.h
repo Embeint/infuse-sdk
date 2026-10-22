@@ -22,8 +22,8 @@ extern "C" {
 #endif
 
 /**
- * @brief epacket_udp API
- * @defgroup epacket_udp_apis epacket_udp APIs
+ * @brief ePacket UDP interface
+ * @defgroup epacket_udp_apis ePacket UDP interface
  * @ingroup epacket_interface_apis
  * @{
  */

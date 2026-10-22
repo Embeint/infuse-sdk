@@ -22,8 +22,8 @@ extern "C" {
 #endif
 
 /**
- * @brief nrf_modem_monitor API
- * @defgroup lte_modem_monitor_apis nrf_modem_monitor APIs
+ * @brief LTE modem monitor APIs
+ * @defgroup lte_modem_monitor_apis LTE modem monitor APIs
  * @ingroup infuse_lib
  * @{
  */

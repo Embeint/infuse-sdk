@@ -17,7 +17,7 @@ extern "C" {
 #endif
 
 /**
- * @defgroup validation_cellular_modem nRF modem validation API
+ * @defgroup validation_cellular_modem Cellular modem validation API
  * @ingroup infuse_validation
  * @{
  */

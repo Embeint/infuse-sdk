@@ -29,7 +29,7 @@ extern "C" {
 
 /**
  * @brief Movement Threshold API
- * @defgroup movement_threshold_apis movement_threshold APIs
+ * @defgroup movement_threshold_apis Movement threshold algorithm
  * @ingroup infuse_algorithm_runner
  * @{
  */

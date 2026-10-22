@@ -17,8 +17,8 @@ extern "C" {
 #endif
 
 /**
- * @brief IMU emul API
- * @defgroup imu_emul_apis emulated IMU APIs
+ * @brief Emulated IMU APIs
+ * @defgroup imu_emul_apis Emulated IMU APIs
  * @ingroup infuse_imu_apis
  * @{
  */

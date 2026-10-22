@@ -20,8 +20,8 @@ extern "C" {
 #endif
 
 /**
- * @brief filter API
- * @defgroup filter_apis filter APIs
+ * @brief Data filtering APIs
+ * @defgroup filter_apis Data filtering APIs
  * @ingroup infuse_math
  * @{
  */

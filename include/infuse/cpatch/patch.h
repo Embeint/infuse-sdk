@@ -28,8 +28,8 @@ extern "C" {
 #endif
 
 /**
- * @brief cpatch patching API
- * @defgroup cpatch_patch_apis cpatch patching APIs
+ * @brief cpatch binary patching APIs
+ * @defgroup cpatch_patch_apis cpatch binary patching APIs
  * @ingroup infuse_dfu
  * @{
  */

@@ -26,8 +26,8 @@ extern "C" {
 #endif
 
 /**
- * @brief tilt API
- * @defgroup tilt_apis tilt APIs
+ * @brief Tilt algorithm
+ * @defgroup tilt_apis Tilt algorithm
  * @ingroup infuse_algorithm_runner
  * @{
  */

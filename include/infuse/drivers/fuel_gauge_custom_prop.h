@@ -18,8 +18,8 @@ extern "C" {
 #endif
 
 /**
- * @brief fuel_gauge_custom_prop API
- * @defgroup fuel_gauge_custom_prop_apis fuel_gauge_custom_prop APIs
+ * @brief Custom fuel gauge properties
+ * @defgroup fuel_gauge_custom_prop_apis Custom fuel gauge properties
  * @ingroup infuse_drivers
  * @{
  */

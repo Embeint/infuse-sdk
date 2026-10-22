@@ -23,8 +23,8 @@ extern "C" {
 #endif
 
 /**
- * @brief ascon API
- * @defgroup ascon_apis ascon APIs
+ * @brief Ascon APIs
+ * @defgroup ascon_apis Ascon APIs
  * @ingroup infuse_security_crypto
  * @{
  */

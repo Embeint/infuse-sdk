@@ -17,8 +17,8 @@ extern "C" {
 #endif
 
 /**
- * @brief charge_accumulator API
- * @defgroup charge_accumulator_apis charge_accumulator APIs
+ * @brief Battery charge accumulation
+ * @defgroup charge_accumulator_apis Battery charge accumulation
  * @ingroup infuse_auto
  * @{
  */

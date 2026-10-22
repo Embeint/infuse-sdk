@@ -17,8 +17,8 @@ extern "C" {
 #endif
 
 /**
- * @brief timezone API
- * @defgroup timezone_apis timezone APIs
+ * @brief Timezone APIs
+ * @defgroup timezone_apis Timezone APIs
  * @ingroup infuse_time
  * @{
  */

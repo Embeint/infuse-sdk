@@ -20,8 +20,8 @@ extern "C" {
 #endif
 
 /**
- * @brief wifi_sim API
- * @defgroup wifi_sim_apis wifi_sim APIs
+ * @brief Simulated Wi-Fi driver
+ * @defgroup wifi_sim_apis Simulated Wi-Fi driver
  * @ingroup infuse_drivers
  * @{
  */
