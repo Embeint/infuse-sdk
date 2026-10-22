@@ -3,44 +3,44 @@
         "rpc_struct_mcuboot_img_sem_ver": {
             "description": "MCUboot semantic versioning struct",
             "fields": [
-                {"name": "major", "type": "uint8_t"},
-                {"name": "minor", "type": "uint8_t"},
-                {"name": "revision", "type": "uint16_t"},
-                {"name": "build_num", "type": "uint32_t"}
+                {"name": "major", "type": "uint8_t", "description": "Major version"},
+                {"name": "minor", "type": "uint8_t", "description": "Minor version"},
+                {"name": "revision", "type": "uint16_t", "description": "Revision"},
+                {"name": "build_num", "type": "uint32_t", "description": "Build number"}
             ]
         },
         "rpc_struct_kv_store_value": {
             "description": "KV store data value",
             "fields": [
-                {"name": "id", "type": "uint16_t"},
-                {"name": "len", "type": "int16_t"},
-                {"name": "data", "type": "uint8_t", "num": 0, "counted_by": "len"}
+                {"name": "id", "type": "uint16_t", "description": "KV store key"},
+                {"name": "len", "type": "int16_t", "description": "Length of data, or a negative RPC error code on read failure"},
+                {"name": "data", "type": "uint8_t", "num": 0, "counted_by": "len", "description": "Value data"}
             ]
         },
         "rpc_struct_kv_store_crc": {
             "description": "KV store data CRC",
             "fields": [
-                {"name": "id", "type": "uint16_t"},
-                {"name": "crc", "type": "uint32_t"}
+                {"name": "id", "type": "uint16_t", "description": "KV store key"},
+                {"name": "crc", "type": "uint32_t", "description": "CRC32 (IEEE) of the stored value"}
             ]
         },
         "rpc_struct_bt_addr_le": {
             "description": "Bluetooth LE address",
             "fields": [
-                {"name": "type", "type": "enum rpc_enum_bt_le_addr_type"},
-                {"name": "val", "type": "uint8_t", "num": 6}
+                {"name": "type", "type": "enum rpc_enum_bt_le_addr_type", "description": "Address type"},
+                {"name": "val", "type": "uint8_t", "num": 6, "description": "Address bytes"}
             ]
         },
         "rpc_struct_ipv4_address": {
             "description": "IPv4 address",
             "fields": [
-                {"name": "addr", "type": "uint8_t", "num": 4}
+                {"name": "addr", "type": "uint8_t", "num": 4, "description": "Address bytes (network byte order)"}
             ]
         },
         "rpc_struct_ipv6_address": {
             "description": "IPv6 address",
             "fields": [
-                {"name": "addr", "type": "uint8_t", "num": 16}
+                {"name": "addr", "type": "uint8_t", "num": 16, "description": "Address bytes (network byte order)"}
             ]
         },
         "rpc_struct_network_state": {
@@ -167,16 +167,16 @@
             "description": "256 bit public key and identifier",
             "fields": [
                 {"name": "id", "type": "enum rpc_enum_key_id","description": "Public key identifier"},
-                {"name": "key", "type": "uint8_t", "num": 32}
+                {"name": "key", "type": "uint8_t", "num": 32, "description": "Public key"}
             ]
         },
         "rpc_struct_thread_stats": {
-            "description": "IPv6 address",
+            "description": "Thread statistics",
             "fields": [
-                {"name": "stack_size", "type": "uint32_t"},
-                {"name": "stack_used", "type": "uint32_t"},
-                {"name": "utilization", "type": "uint8_t"},
-                {"name": "name", "type": "char", "num": 0}
+                {"name": "stack_size", "type": "uint32_t", "description": "Thread stack size (bytes)"},
+                {"name": "stack_used", "type": "uint32_t", "description": "Peak thread stack usage (bytes)"},
+                {"name": "utilization", "type": "uint8_t", "description": "Thread CPU utilization, 0 if runtime stats are disabled (%)"},
+                {"name": "name", "type": "char", "num": 0, "description": "Null-terminated thread name"}
             ]
         },
         "rpc_struct_data_logger_flushed": {

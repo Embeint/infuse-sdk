@@ -65,22 +65,31 @@ struct kv_string {
 
 /** MCUboot semantic versioning struct */
 struct kv_mcuboot_img_sem_ver {
+	/** Major version */
 	uint8_t major;
+	/** Minor version */
 	uint8_t minor;
+	/** Revision */
 	uint16_t revision;
+	/** Build number */
 	uint32_t build_num;
 } __packed;
 
 /** Generic range structure */
 struct kv_range_u8 {
+	/** Lower bound */
 	uint8_t lower;
+	/** Upper bound */
 	uint8_t upper;
 } __packed;
 
 /** UTC Hour-Minute-Second */
 struct kv_utc_hms {
+	/** Hour (UTC) */
 	uint8_t hour;
+	/** Minute (UTC) */
 	uint8_t minute;
+	/** Second (UTC) */
 	uint8_t second;
 } __packed;
 
@@ -147,6 +156,7 @@ struct kv_device_state {
 
 /** Number of times device has rebooted */
 struct kv_reboots {
+	/** Number of reboots */
 	uint32_t count;
 } __packed;
 
@@ -188,6 +198,7 @@ struct kv_device_name {
 
 /** CONFIG_INFUSE_APPLICATION_ID, store will be reset if the values don't match */
 struct kv_infuse_application_id {
+	/** Application ID the store was created with */
 	uint32_t application_id;
 } __packed;
 
@@ -629,7 +640,7 @@ struct kv_secure_storage_reserved {
 	} __packed
 /* clang-format on */
 
-/* Infuse-IoT builtin KV definitions */
+/** Infuse-IoT builtin KV definitions */
 enum kv_builtin_id {
 	/** Number of times device has rebooted */
 	KV_KEY_REBOOTS = 0,

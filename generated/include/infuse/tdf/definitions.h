@@ -29,16 +29,23 @@ extern "C" {
 
 /** MCUboot semantic versioning struct */
 struct tdf_struct_mcuboot_img_sem_ver {
+	/** Major version */
 	uint8_t major;
+	/** Minor version */
 	uint8_t minor;
+	/** Revision */
 	uint16_t revision;
+	/** Build number */
 	uint32_t build_num;
 } __packed;
 
 /** Generic 3-axis sensor reading */
 struct tdf_struct_xyz_16bit {
+	/** X axis */
 	int16_t x;
+	/** Y axis */
 	int16_t y;
+	/** Z axis */
 	int16_t z;
 } __packed;
 

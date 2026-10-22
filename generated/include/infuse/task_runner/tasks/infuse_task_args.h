@@ -33,16 +33,27 @@ extern "C" {
  * @{
  */
 
+/** Arguments for any Infuse-IoT task */
 union task_arguments {
+	/** Raw argument storage */
 	uint8_t raw[17];
+	/** Arguments for @ref TASK_ID_TDF_LOGGER */
 	struct task_tdf_logger_args tdf_logger;
+	/** Arguments for @ref TASK_ID_IMU */
 	struct task_imu_args imu;
+	/** Arguments for @ref TASK_ID_BATTERY */
 	struct task_battery_args battery;
+	/** Arguments for @ref TASK_ID_ENVIRONMENTAL */
 	struct task_environmental_args environmental;
+	/** Arguments for @ref TASK_ID_GNSS */
 	struct task_gnss_args gnss;
+	/** Arguments for @ref TASK_ID_NETWORK_SCAN */
 	struct task_network_scan_args network_scan;
+	/** Arguments for @ref TASK_ID_BT_SCANNER */
 	struct task_bt_scanner_args bt_scanner;
+	/** Arguments for @ref TASK_ID_SOC_TEMPERATURE */
 	struct task_soc_temperature_args soc_temperature;
+	/** Arguments for @ref TASK_ID_AUDIO_DMIC */
 	struct task_audio_dmic_args audio_dmic;
 };
 

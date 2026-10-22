@@ -143,8 +143,10 @@ enum rpc_builtin_id {
 {% for id, info in commands.items() %}
 /** {{ info['description'] }} */
 struct rpc_{{ info['name'] }}_request {
+	/** Common RPC request header */
 	struct infuse_rpc_req_header header;
 {% if 'rpc_data' in info %}
+	/** Header for the @ref INFUSE_RPC_DATA transfer */
 	struct infuse_rpc_req_data_header data_header;
 {% endif %}
 {% for field in info['request_params'] %}
@@ -155,7 +157,9 @@ struct rpc_{{ info['name'] }}_request {
 {% endfor %}
 } __packed;
 
+/** Response to @ref rpc_{{ info['name'] }}_request */
 struct rpc_{{ info['name'] }}_response {
+	/** Common RPC response header */
 	struct infuse_rpc_rsp_header header;
 {% for field in info['response_params'] %}
 	{% if 'description' in field %}
