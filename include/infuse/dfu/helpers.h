@@ -70,6 +70,24 @@ int infuse_dfu_image_erase(const struct flash_area *fa, size_t image_len,
 			   infuse_progress_cb_t progress_cb, bool mcuboot_trailer);
 
 /**
+ * @brief Clear stale MCUboot metadata around an image already present in a flash area
+ *
+ * Clears any data before the image start offset (see @a boot_get_image_start_offset) and the
+ * MCUboot trailer, without modifying the image itself. Used when the image data already matches
+ * but an upgrade still needs to be requested.
+ *
+ * @param fa Flash area containing the image (must be already opened)
+ * @param image_end Offset of the end of the image within the flash area
+ *
+ * @retval 0 On success
+ * @retval -EINVAL Image overlaps the MCUboot trailer, metadata cannot be cleared in place
+ * @retval -ENOTSUP MCUboot trailer location unknown
+ * @retval -errno Error code from @a flash_get_page_info_by_offs or @a flash_area_flatten
+ *                on failure
+ */
+int infuse_dfu_image_metadata_clear(const struct flash_area *fa, size_t image_end);
+
+/**
  * @brief Prepare the nRF91 modem for a delta image upgrade
  *
  * @retval 0 On success

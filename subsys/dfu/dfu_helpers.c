@@ -55,6 +55,31 @@ void infuse_dfu_write_erase_finish(const struct flash_area *fa)
 #endif /* CONFIG_ZTEST */
 }
 
+/* Page aligned offset of the MCUboot trailer within the flash area */
+static int mcuboot_trailer_offset(const struct flash_area *fa, size_t *offset)
+{
+	const struct device *dev = flash_area_get_device(fa);
+	struct flash_pages_info page;
+	size_t off;
+	int rc;
+
+#if defined(CONFIG_MCUBOOT_IMG_MANAGER)
+	off = boot_get_trailer_status_offset(fa->fa_size);
+#elif defined(CONFIG_ZTEST)
+	/* Pretend there is a trailer 64 bytes from the end */
+	off = fa->fa_size - 64;
+#else
+	return -ENOTSUP;
+#endif
+
+	rc = flash_get_page_info_by_offs(dev, fa->fa_off + off, &page);
+	if (rc < 0) {
+		return rc;
+	}
+	*offset = page.start_offset - fa->fa_off;
+	return 0;
+}
+
 /* Implementation taken from zephyr_img_mgmt.c */
 int infuse_dfu_image_erase_wrapped(const struct flash_area *fa, size_t image_len,
 				   infuse_progress_cb_t progress_cb, bool mcuboot_trailer)
@@ -130,29 +155,16 @@ int infuse_dfu_image_erase_wrapped(const struct flash_area *fa, size_t image_len
 		return 0;
 	}
 
-#if defined(CONFIG_MCUBOOT_IMG_MANAGER)
-	off = boot_get_trailer_status_offset(fa->fa_size);
-	if (off < erase_size) {
-		/* Trailer area has already been erased */
+	rc = mcuboot_trailer_offset(fa, &off);
+	if (rc < 0) {
+		return rc;
+	}
+	/* Only erase the portion of the trailer area not already erased */
+	off = MAX(off, erase_size);
+	if (off >= fa->fa_size) {
 		return 0;
 	}
-	(void)flash_get_page_info_by_offs(dev, fa->fa_off + off, &page);
-	off = page.start_offset - fa->fa_off;
-	erase_size = fa->fa_size - off;
-
-	return flash_area_flatten(fa, off, erase_size);
-#elif defined(CONFIG_ZTEST)
-	/* Pretend there is a trailer 64 bytes from the end */
-	off = fa->fa_size - 64;
-
-	(void)flash_get_page_info_by_offs(dev, fa->fa_off + off, &page);
-	off = page.start_offset - fa->fa_off;
-	erase_size = fa->fa_size - off;
-
-	return flash_area_flatten(fa, off, erase_size);
-#else
-	return -ENOTSUP;
-#endif
+	return flash_area_flatten(fa, off, fa->fa_size - off);
 }
 
 int infuse_dfu_image_erase(const struct flash_area *fa, size_t image_len,
@@ -162,6 +174,35 @@ int infuse_dfu_image_erase(const struct flash_area *fa, size_t image_len,
 
 	infuse_dfu_write_erase_start(fa);
 	rc = infuse_dfu_image_erase_wrapped(fa, image_len, progress_cb, mcuboot_trailer);
+	infuse_dfu_write_erase_finish(fa);
+
+	return rc;
+}
+
+int infuse_dfu_image_metadata_clear(const struct flash_area *fa, size_t image_end)
+{
+	size_t image_start = boot_get_image_start_offset(fa->fa_id);
+	size_t trailer_off;
+	int rc;
+
+	rc = mcuboot_trailer_offset(fa, &trailer_off);
+	if (rc < 0) {
+		return rc;
+	}
+	if (image_end > trailer_off) {
+		/* Trailer cannot be cleared without erasing part of the image */
+		return -EINVAL;
+	}
+
+	infuse_dfu_write_erase_start(fa);
+	rc = 0;
+	if (image_start > 0) {
+		/* Previous image header with swap-using-offset */
+		rc = flash_area_flatten(fa, 0, image_start);
+	}
+	if (rc == 0) {
+		rc = flash_area_flatten(fa, trailer_off, fa->fa_size - trailer_off);
+	}
 	infuse_dfu_write_erase_finish(fa);
 
 	return rc;

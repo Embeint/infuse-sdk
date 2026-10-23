@@ -710,6 +710,25 @@ ZTEST(rpc_command_file_write_basic, test_file_write_dfu_cpatch_slot1_offset_eras
 
 #ifdef CONFIG_MCUBOOT_IMG_MANAGER
 
+/* Image present at the image start offset, stale metadata everywhere else in slot1 */
+static void write_image_with_stale_metadata(size_t image_offset, const void *image, size_t len)
+{
+	const struct device *dev = PARTITION_DEVICE(slot1_partition);
+	struct flash_pages_info page;
+	const struct flash_area *fa;
+
+	fill_flash_area(PARTITION_ID(slot1_partition), 0x00);
+
+	zassert_equal(0, flash_area_open(PARTITION_ID(slot1_partition), &fa));
+	zassert_equal(0,
+		      flash_get_page_info_by_offs(dev, fa->fa_off + image_offset + len - 1, &page));
+	zassert_equal(0,
+		      flash_area_erase(fa, image_offset,
+				       page.start_offset + page.size - fa->fa_off - image_offset));
+	zassert_equal(0, flash_area_write(fa, image_offset, image, len));
+	flash_area_close(fa);
+}
+
 static void validate_slot1_upgrade_requested(size_t image_offset)
 {
 	const struct flash_area *fa;
@@ -753,6 +772,18 @@ ZTEST(rpc_command_file_write_basic, test_file_write_dfu_stale_slot1_metadata)
 				    0, false, false, cpatch_payload);
 	zassert_equal(0, ret.cmd_rc);
 	zassert_equal(sizeof(cpatch_payload), ret.cmd_len);
+	validate_flash_area_offset(&ret, PARTITION_ID(slot1_partition), slot1_offset);
+	validate_slot1_upgrade_requested(slot1_offset);
+
+	/* Image already present (e.g. after a failed upgrade request), but stale metadata is
+	 * still around it. Duplicate detection must still result in an upgrade request.
+	 */
+	write_image_with_stale_metadata(slot1_offset, cpatch_payload, sizeof(cpatch_payload));
+	ret = test_file_write_basic(RPC_ENUM_FILE_ACTION_APP_IMG, sizeof(cpatch_payload), 0, 0, 0,
+				    0, false, true, cpatch_payload);
+	zassert_equal(0, ret.cmd_rc);
+	zassert_equal(0, ret.cmd_len);
+	ret.cmd_len = sizeof(cpatch_payload);
 	validate_flash_area_offset(&ret, PARTITION_ID(slot1_partition), slot1_offset);
 	validate_slot1_upgrade_requested(slot1_offset);
 
