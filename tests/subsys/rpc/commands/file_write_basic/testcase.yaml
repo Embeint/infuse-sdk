@@ -42,6 +42,34 @@ tests:
       - CONFIG_IMG_MANAGER=y
       - CONFIG_MCUBOOT_IMG_MANAGER=y
       - CONFIG_MCUBOOT_BOOTLOADER_MODE_SWAP_USING_OFFSET=y
+  # Flash that can be written without an erase (e.g. nRF54L RRAM)
+  rpc.commands.file_write_basic.native.mcuboot_offset.no_explicit_erase:
+    platform_allow:
+      - native_sim
+    integration_platforms:
+      - native_sim
+    extra_args:
+      - DTC_OVERLAY_FILE="./boards/native_sim.overlay;./mcuboot_offset.overlay"
+    extra_configs:
+      - CONFIG_BOOTLOADER_MCUBOOT=y
+      - CONFIG_IMG_MANAGER=y
+      - CONFIG_MCUBOOT_IMG_MANAGER=y
+      - CONFIG_MCUBOOT_BOOTLOADER_MODE_SWAP_USING_OFFSET=y
+      - CONFIG_FLASH_SIMULATOR_EXPLICIT_ERASE=n
+  # Patch output erased progressively by stream_flash
+  rpc.commands.file_write_basic.native.mcuboot_offset.stream_flash_erase:
+    platform_allow:
+      - native_sim
+    integration_platforms:
+      - native_sim
+    extra_args:
+      - DTC_OVERLAY_FILE="./boards/native_sim.overlay;./mcuboot_offset.overlay"
+    extra_configs:
+      - CONFIG_BOOTLOADER_MCUBOOT=y
+      - CONFIG_IMG_MANAGER=y
+      - CONFIG_MCUBOOT_IMG_MANAGER=y
+      - CONFIG_MCUBOOT_BOOTLOADER_MODE_SWAP_USING_OFFSET=y
+      - CONFIG_STREAM_FLASH_ERASE=y
   # FILE_WRITE should behave the same way as FILE_WRITE_BASIC
   # for the non-filesystem actions
   rpc.commands.file_write_basic.fw:
