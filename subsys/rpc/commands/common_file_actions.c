@@ -118,7 +118,13 @@ static int flash_area_check_and_erase(struct rpc_common_file_actions_ctx *ctx, u
 			rc = INFUSE_RPC_ERROR_FLASH_CRC_FAILED;
 			goto close_area;
 		}
-		if (current_crc == crc) {
+		/* Image data matching is not sufficient for an upgrade request to succeed, stale
+		 * MCUboot metadata around the image must also be cleared. If that cannot be done
+		 * without modifying the image, rewrite the image.
+		 */
+		if ((current_crc == crc) &&
+		    (!mcuboot_trailer ||
+		     (infuse_dfu_image_metadata_clear(ctx->fa, partition_offset + len) == 0))) {
 			ctx->crc = crc;
 			return FILE_ALREADY_PRESENT;
 		}
