@@ -62,6 +62,24 @@ class release_diff(WestCommand):
         )
         return parser
 
+    @staticmethod
+    def bootloader_mode(image_dir: pathlib.Path) -> str | None:
+        """MCUboot mode the application was built for (None if not using MCUboot)"""
+        config = image_dir / "zephyr" / ".config"
+        if not config.exists():
+            sys.exit(f"'{str(config)}' does not exist, can't validate bootloader mode")
+        prefix = "CONFIG_MCUBOOT_BOOTLOADER_MODE_"
+        with config.open("r", encoding="utf-8") as f:
+            for line in f:
+                name, _, value = line.strip().partition("=")
+                if not name.startswith(prefix) or value != "y":
+                    continue
+                mode = name.removeprefix(prefix)
+                # Options such as `HAS_NO_DOWNGRADE` are not part of the mode choice
+                if not mode.startswith("HAS_"):
+                    return mode
+        return None
+
     def do_generation(
         self,
         original_dir: pathlib.Path,
@@ -96,6 +114,13 @@ class release_diff(WestCommand):
         name_orig = self.manifest_original["application"]["primary"]
         name_out = self.manifest_output["application"]["primary"]
         ver_new = self.manifest_output["application"]["version"]
+
+        # The application must write updates in the format the bootloader expects. The bootloader
+        # is not updated by DFU, so the MCUboot mode can never change between releases.
+        mode_orig = self.bootloader_mode(original_dir / name_orig)
+        mode_new = self.bootloader_mode(output_dir / name_out)
+        if mode_orig != mode_new:
+            sys.exit(f"MCUboot bootloader mode does not match ({mode_orig} != {mode_new})")
 
         if self.manifest_original["application"]["sysbuild"]:
             filename = "zephyr.signed.bin"
