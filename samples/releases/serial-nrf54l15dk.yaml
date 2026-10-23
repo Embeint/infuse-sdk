@@ -4,3 +4,5 @@ output_prefix: release-sample-serial-nrf54l15
 board: nrf54l15dk/nrf54l15/cpuapp
 signing_key: ../../../bootloader/mcuboot/root-rsa-2048.pem
 network_key: ../../lib/security/default_network.yaml
+extra_sysbuild_configs:
+  - SB_CONFIG_MCUBOOT_MODE_SWAP_USING_MOVE=y
