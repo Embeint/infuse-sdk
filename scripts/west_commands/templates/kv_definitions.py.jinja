@@ -51,6 +51,7 @@ class structs:
         vla_counted_by = "{{ info['counted_by'] }}"
 {% endif %}
         _pack_ = 1
+        _layout_ = "ms"
 {% if name == "kv_string" %}
 
         def __str__(self) -> str:
@@ -91,6 +92,7 @@ class slots:
         vla_counted_by = "{{ info['counted_by'] }}"
 {% endif %}
         _pack_ = 1
+        _layout_ = "ms"
 
 {% endif %}
 {% endfor %}

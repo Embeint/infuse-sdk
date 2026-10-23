@@ -23,6 +23,7 @@ class structs:
 {% endfor %}
         ]
         _pack_ = 1
+        _layout_ = "ms"
         _postfix_ = {
 {% for fmt in info['displays'] %}
             "{{ fmt['name'] }}": {{ fmt['postfix'] }},
@@ -61,6 +62,7 @@ class readings:
 {% endfor %}
         ]
         _pack_ = 1
+        _layout_ = "ms"
         _postfix_ = {
 {% for fmt in info['displays'] %}
             "{{ fmt['name'] }}": {{ fmt['postfix'] }},
