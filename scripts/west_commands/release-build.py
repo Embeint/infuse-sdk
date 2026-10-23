@@ -105,6 +105,12 @@ class release_build(WestCommand):
         self.tfm_build = "/ns" in self.release["board"]
         # TF-M builds should not use sysbuild for now
         self.sysbuild = not self.tfm_build
+        if extra_sysbuild_configs := self.release.get("extra_sysbuild_configs"):
+            if not self.sysbuild:
+                sys.exit("ERROR: 'extra_sysbuild_configs' is not supported for TF-M builds")
+            for c in extra_sysbuild_configs:
+                if not c.startswith("SB_CONFIG_"):
+                    sys.exit(f"ERROR: Sysbuild config '{c}' does not start with 'SB_CONFIG_'")
         # Validate state of all manifest repositories
         self.validate_manifest_repos_state()
         # Expected application version
@@ -313,6 +319,9 @@ class release_build(WestCommand):
             build_cmd.extend(["-DCONFIG_LOG=n"])
         if extra_configs := self.release.get("extra_configs"):
             for c in extra_configs:
+                build_cmd.append(f"-D{c}")
+        if extra_sysbuild_configs := self.release.get("extra_sysbuild_configs"):
+            for c in extra_sysbuild_configs:
                 build_cmd.append(f"-D{c}")
         build_cmd.append("-DCONFIG_BUILD_OUTPUT_META=y")
 

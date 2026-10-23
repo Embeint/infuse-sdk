@@ -64,6 +64,13 @@ The ``.yaml`` file that configures the release has the following fields:
      - String
      - Override the application ``VERSION`` file. This is mostly useful for ``application_folder``'s
        that point outside the manifest repository.
+   * - ``extra_configs`` (Optional)
+     - List of strings
+     - Additional application Kconfig options (e.g. ``CONFIG_LOG=n``)
+   * - ``extra_sysbuild_configs`` (Optional)
+     - List of strings
+     - Additional sysbuild Kconfig options (e.g. ``SB_CONFIG_MCUBOOT_MODE_SWAP_USING_MOVE=y``).
+       Not supported for TF-M builds.
 
 .. note::
 
