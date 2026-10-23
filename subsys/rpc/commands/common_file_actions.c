@@ -424,6 +424,7 @@ static int finish_cpatch(struct rpc_common_file_actions_ctx *ctx)
 	size_t mem_size, out_len;
 	uint32_t flash_offset;
 	uint32_t image_offset;
+	size_t erase_len;
 	uint8_t *mem;
 	int rc;
 
@@ -453,19 +454,23 @@ static int finish_cpatch(struct rpc_common_file_actions_ctx *ctx)
 	}
 	image_offset = boot_get_image_start_offset(PARTITION_ID(slot1_partition));
 
-#if !defined(CONFIG_STREAM_FLASH_ERASE)
+#if defined(CONFIG_STREAM_FLASH_ERASE)
+	/* Image area is erased progressively by stream_flash, but stale MCUboot metadata
+	 * before the image and in the trailer must still be removed.
+	 */
+	erase_len = image_offset;
+#else
+	erase_len = image_offset + header.output_file.length;
+#endif /* defined(CONFIG_STREAM_FLASH_ERASE) */
 
-	LOG_INF("Erasing %d bytes of secondary partition",
-		image_offset + header.output_file.length);
+	LOG_INF("Erasing %zu bytes of secondary partition", erase_len);
 	/* Erase space for image */
-	rc = infuse_dfu_image_erase(fa_output, image_offset + header.output_file.length,
-				    cpatch_watchdog, true);
+	rc = infuse_dfu_image_erase(fa_output, erase_len, cpatch_watchdog, true);
 	if (rc < 0) {
 		rc = INFUSE_RPC_ERROR_PATCH_OUTPUT_ERASE_FAILED;
 		goto cleanup;
 	}
 	rpc_server_watchdog_feed();
-#endif /* !defined(CONFIG_STREAM_FLASH_ERASE) */
 
 	params = flash_get_parameters(fa_output->fa_dev);
 	out_len = header.output_file.length;

@@ -67,7 +67,7 @@ int infuse_dfu_image_erase_wrapped(const struct flash_area *fa, size_t image_len
 	size_t chunk_size;
 	size_t off;
 	off_t page_offset;
-	size_t erase_size;
+	size_t erase_size = 0;
 	int rc;
 
 	if (dev == NULL) {
@@ -78,37 +78,51 @@ int infuse_dfu_image_erase_wrapped(const struct flash_area *fa, size_t image_len
 	if (image_len > fa->fa_size) {
 		return -EINVAL;
 	}
-	page_offset = fa->fa_off + image_len - 1;
 
 	/* Check whether an explicit erase is needed or whether we can write directly */
 	fparams = flash_get_parameters(dev);
-	if (!(flash_params_get_erase_cap(fparams) & FLASH_ERASE_C_EXPLICIT)) {
-		return 0;
-	}
-
-	/* align requested erase size to the erase-block-size */
-	rc = flash_get_page_info_by_offs(dev, page_offset, &page);
-	if (rc < 0) {
-		return rc;
-	}
-	erase_size = page.start_offset + page.size - fa->fa_off;
-
-	/* Perform the erase */
-	max_chunk = progress_cb ? CONFIG_INFUSE_DFU_HELPERS_ERASE_CHUNK_SIZE : erase_size;
-	remaining = erase_size;
-	off = 0;
-	while (remaining) {
-		/* Erase next chunk */
-		chunk_size = MIN(max_chunk, remaining);
-		rc = flash_area_flatten(fa, off, chunk_size);
-		if (rc < 0) {
-			return rc;
+	if (flash_params_get_erase_cap(fparams) & FLASH_ERASE_C_EXPLICIT) {
+		if (image_len > 0) {
+			/* align requested erase size to the erase-block-size */
+			page_offset = fa->fa_off + image_len - 1;
+			rc = flash_get_page_info_by_offs(dev, page_offset, &page);
+			if (rc < 0) {
+				return rc;
+			}
+			erase_size = page.start_offset + page.size - fa->fa_off;
 		}
-		off += chunk_size;
-		remaining -= chunk_size;
-		/* Run provided callback */
-		if (progress_cb) {
-			progress_cb(off, erase_size);
+
+		/* Perform the erase */
+		max_chunk = progress_cb ? CONFIG_INFUSE_DFU_HELPERS_ERASE_CHUNK_SIZE : erase_size;
+		remaining = erase_size;
+		off = 0;
+		while (remaining) {
+			/* Erase next chunk */
+			chunk_size = MIN(max_chunk, remaining);
+			rc = flash_area_flatten(fa, off, chunk_size);
+			if (rc < 0) {
+				return rc;
+			}
+			off += chunk_size;
+			remaining -= chunk_size;
+			/* Run provided callback */
+			if (progress_cb) {
+				progress_cb(off, erase_size);
+			}
+		}
+	} else if (mcuboot_trailer) {
+		/* Image data can be written directly, but stale MCUboot metadata must still be
+		 * removed. With swap-using-offset, a completed upgrade leaves the previous image
+		 * (including its header) at the start of the secondary slot. MCUboot treats a
+		 * header in the first sector as an image loaded to the wrong address and erases
+		 * the slot instead of upgrading, so clear everything before the image start.
+		 */
+		erase_size = boot_get_image_start_offset(fa->fa_id);
+		if (erase_size > 0) {
+			rc = flash_area_flatten(fa, 0, erase_size);
+			if (rc < 0) {
+				return rc;
+			}
 		}
 	}
 

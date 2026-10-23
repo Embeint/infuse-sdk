@@ -50,13 +50,21 @@ void infuse_dfu_write_erase_finish(const struct flash_area *fa);
 /**
  * @brief Erase a flash area to be ready for a new image
  *
+ * If the flash device does not require an explicit erase, the image area is not erased.
+ * Stale MCUboot metadata (data before the image start offset and the trailer) is still
+ * cleared if @a mcuboot_trailer is set.
+ *
  * @param fa Flash area to erase (must be already opened)
- * @param image_len Length of image
+ * @param image_len Length of image, including any offset from the start of the area.
+ *                  Zero erases nothing beyond the MCUboot metadata.
  * @param progress_cb Optional progress callback
- * @param mcuboot_trailer Erase space for MCUBoot trailer
+ * @param mcuboot_trailer Clear stale MCUboot metadata: the MCUboot trailer, and on flash that
+ *                        does not require an explicit erase, any data before the image start
+ *                        offset (see @a boot_get_image_start_offset)
  *
  * @retval 0 On success
- * @retval -errno Error code from @a flash_area_erase on failure
+ * @retval -errno Error code from @a flash_get_page_info_by_offs or @a flash_area_flatten
+ *                on failure
  */
 int infuse_dfu_image_erase(const struct flash_area *fa, size_t image_len,
 			   infuse_progress_cb_t progress_cb, bool mcuboot_trailer);
