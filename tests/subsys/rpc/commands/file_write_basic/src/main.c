@@ -708,6 +708,109 @@ ZTEST(rpc_command_file_write_basic, test_file_write_dfu_cpatch_slot1_offset_eras
 	zassert_device_released(slot1_dev);
 }
 
+#ifdef CONFIG_MCUBOOT_IMG_MANAGER
+
+static void validate_slot1_upgrade_requested(size_t image_offset)
+{
+	const struct flash_area *fa;
+	uint8_t buffer[128];
+	uint8_t erased[128];
+
+	zassert_equal(0, flash_area_open(PARTITION_ID(slot1_partition), &fa));
+	memset(erased, flash_area_erased_val(fa), sizeof(erased));
+	/* No stale data before the image start (previous image header with swap-using-offset) */
+	for (size_t offset = 0; offset < image_offset; offset += sizeof(buffer)) {
+		size_t len = MIN(sizeof(buffer), image_offset - offset);
+
+		zassert_equal(0, flash_area_read(fa, offset, buffer, len));
+		zassert_mem_equal(erased, buffer, len, "Stale data at offset 0x%x", offset);
+	}
+	flash_area_close(fa);
+
+	/* Upgrade request was written over a clean trailer */
+	zassert_equal(BOOT_SWAP_TYPE_TEST, mcuboot_swap_type_multi(0));
+}
+
+ZTEST(rpc_command_file_write_basic, test_file_write_dfu_stale_slot1_metadata)
+{
+	const struct device *slot0_dev = PARTITION_DEVICE(slot0_partition);
+	const struct device *slot1_dev = PARTITION_DEVICE(slot1_partition);
+	off_t slot0_offset = boot_get_image_start_offset(PARTITION_ID(slot0_partition));
+	uint8_t buffer[128];
+	const struct flash_area *fa;
+	struct test_out ret;
+	size_t slot1_offset;
+	uint32_t fa_crc;
+
+	zassert_device_released(slot0_dev);
+	zassert_device_released(slot1_dev);
+
+	/* Contents of a previous upgrade (old image, trailer) left in the secondary slot */
+	fill_flash_area(PARTITION_ID(slot1_partition), 0x00);
+	slot1_offset = boot_get_image_start_offset(PARTITION_ID(slot1_partition));
+
+	ret = test_file_write_basic(RPC_ENUM_FILE_ACTION_APP_IMG, sizeof(cpatch_payload), 0, 0, 0,
+				    0, false, false, cpatch_payload);
+	zassert_equal(0, ret.cmd_rc);
+	zassert_equal(sizeof(cpatch_payload), ret.cmd_len);
+	validate_flash_area_offset(&ret, PARTITION_ID(slot1_partition), slot1_offset);
+	validate_slot1_upgrade_requested(slot1_offset);
+
+	/* Same again for a patch output to the secondary slot */
+	flash_area_copy_wrapped(PARTITION_ID(slot0_partition), slot0_offset,
+				PARTITION_ID(slot1_partition), slot1_offset, sizeof(cpatch_payload),
+				true);
+	fill_flash_area(PARTITION_ID(slot1_partition), 0x00);
+
+	/* Patch file that just regenerates the original file */
+	hardcoded_patch.patch[0] = 48; /* COPY_LEN_U32 */
+	sys_put_le32(sizeof(cpatch_payload), hardcoded_patch.patch + 1);
+
+	hardcoded_patch.header.magic_value = CPATCH_MAGIC_NUMBER;
+	hardcoded_patch.header.version_major = 1;
+	hardcoded_patch.header.version_minor = 0;
+	hardcoded_patch.header.input_file.length = sizeof(cpatch_payload);
+	hardcoded_patch.header.input_file.crc = ret.written_crc;
+	hardcoded_patch.header.output_file.length = sizeof(cpatch_payload);
+	hardcoded_patch.header.output_file.crc = ret.written_crc;
+	hardcoded_patch.header.patch_file.length = 5;
+	hardcoded_patch.header.patch_file.crc = crc32_ieee(hardcoded_patch.patch, 5);
+	hardcoded_patch.header.header_crc =
+		crc32_ieee((const void *)&hardcoded_patch.header,
+			   sizeof(hardcoded_patch.header) - sizeof(uint32_t));
+
+	ret = test_file_write_basic(RPC_ENUM_FILE_ACTION_APP_CPATCH, sizeof(hardcoded_patch), 0, 0,
+				    0, 0, false, false, &hardcoded_patch);
+	zassert_equal(0, ret.cmd_rc);
+	zassert_equal(sizeof(hardcoded_patch), ret.cmd_len);
+
+	/* Give command a chance to finish writing the patch */
+	k_sleep(K_MSEC(100));
+
+	zassert_equal(0, flash_area_open(PARTITION_ID(slot1_partition), &fa));
+	zassert_equal(0,
+		      flash_area_crc32(fa, slot1_offset, hardcoded_patch.header.output_file.length,
+				       &fa_crc, buffer, sizeof(buffer)));
+	zassert_equal(hardcoded_patch.header.output_file.crc, fa_crc);
+	flash_area_close(fa);
+	validate_slot1_upgrade_requested(slot1_offset);
+
+	/* Balanced call count */
+	zassert_equal(0, infuse_dfu_write_erase_call_count());
+
+	zassert_device_released(slot0_dev);
+	zassert_device_released(slot1_dev);
+}
+
+#else
+
+ZTEST(rpc_command_file_write_basic, test_file_write_dfu_stale_slot1_metadata)
+{
+	ztest_test_skip();
+}
+
+#endif /* CONFIG_MCUBOOT_IMG_MANAGER */
+
 #else
 
 ZTEST(rpc_command_file_write_basic, test_file_write_dfu_cpatch)
@@ -718,6 +821,11 @@ ZTEST(rpc_command_file_write_basic, test_file_write_dfu_cpatch)
 }
 
 ZTEST(rpc_command_file_write_basic, test_file_write_dfu_cpatch_slot1_offset_erase)
+{
+	ztest_test_skip();
+}
+
+ZTEST(rpc_command_file_write_basic, test_file_write_dfu_stale_slot1_metadata)
 {
 	ztest_test_skip();
 }
