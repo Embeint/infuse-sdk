@@ -9,6 +9,7 @@
 #include <stdio.h>
 
 #include <zephyr/devicetree.h>
+#include <zephyr/dfu/mcuboot.h>
 #include <zephyr/logging/log.h>
 #include <zephyr/pm/device_runtime.h>
 
@@ -108,6 +109,7 @@ int dfu_exfat_app_upgrade_copy(const struct device *dev, struct infuse_version u
 	const struct flash_area *fa;
 	uint8_t *block_buffer;
 	size_t block_size;
+	size_t image_offset;
 	size_t remaining;
 	off_t offset;
 	const char *disk;
@@ -147,8 +149,11 @@ int dfu_exfat_app_upgrade_copy(const struct device *dev, struct infuse_version u
 		goto close_file;
 	}
 
+	/* Image may not start at the beginning of the area (swap-using-offset) */
+	image_offset = boot_get_image_start_offset(flash_area_id);
+
 	/* Erase output area */
-	if (infuse_dfu_image_erase(fa, fno.fsize, erase_progress_cb, true) != 0) {
+	if (infuse_dfu_image_erase(fa, image_offset + fno.fsize, erase_progress_cb, true) != 0) {
 		rc = -EIO;
 		goto close_area;
 	}
@@ -167,7 +172,7 @@ int dfu_exfat_app_upgrade_copy(const struct device *dev, struct infuse_version u
 		}
 
 		/* Write data to output area */
-		if (flash_area_write(fa, offset, block_buffer, iter) != 0) {
+		if (flash_area_write(fa, image_offset + offset, block_buffer, iter) != 0) {
 			rc = -EIO;
 			break;
 		}
