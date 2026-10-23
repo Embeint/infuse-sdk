@@ -615,8 +615,12 @@ int rpc_common_file_actions_finish(struct rpc_common_file_actions_ctx *ctx, bool
 #if defined(CONFIG_MCUBOOT_UPGRADE_ONLY_AUTOMATIC)
 		*dfu_reboot = true;
 #elif defined(CONFIG_MCUBOOT_IMG_MANAGER)
-		if (boot_request_upgrade_multi(0, BOOT_UPGRADE_TEST) == 0) {
+		rc = boot_request_upgrade_multi(0, BOOT_UPGRADE_TEST);
+		if (rc == 0) {
 			*dfu_reboot = true;
+		} else {
+			LOG_ERR("Failed to request upgrade (%d)", rc);
+			rc = INFUSE_RPC_ERROR_DFU_FINISH_FAILED;
 		}
 #else
 		LOG_WRN("Cannot request application upgrade");
