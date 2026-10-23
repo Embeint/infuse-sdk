@@ -52,15 +52,18 @@ class {{ task['class_name'] }}:
 {% endfor %}
 {% endif %}
         _pack_ = 1
+        _layout_ = "ms"
 
 {% endfor %}
 {% for _name, info in task['unions'].items() %}
     class {{ info['class_name'] }}(ctypes.Union):
         _pack_ = 1
+        _layout_ = "ms"
 
 {% endfor %}
     class Args(ctypes.LittleEndianStructure):
         _pack_ = 1
+        _layout_ = "ms"
 {% if task['anonymous_fields'] %}
         _anonymous_ = (
 {% for field_name in task['anonymous_fields'] %}
@@ -123,6 +126,7 @@ class TaskArguments(ctypes.Union):
     }
 
     _pack_ = 1
+    _layout_ = "ms"
     _fields_ = [
         ("raw", ctypes.c_uint8 * 17),
 {% for task in tasks %}

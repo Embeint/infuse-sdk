@@ -30,6 +30,7 @@ class {{ name }}(VLACompatLittleEndianStruct):
     vla_counted_by = "{{ info['counted_by'] }}"
 {% endif %}
     _pack_ = 1
+    _layout_ = "ms"
 
 {% endif %}
 {% endfor %}
@@ -77,6 +78,7 @@ class {{ info['name'] }}(RPCDefinitionBase):
         vla_field = ("{{ info['request_params'][-1]['name'] }}", {{ info['request_params'][-1]['py_type'] }})
 {% endif %}
         _pack_ = 1
+        _layout_ = "ms"
 
     class response(VLACompatLittleEndianStruct):
         _fields_ = [
@@ -93,6 +95,7 @@ class {{ info['name'] }}(RPCDefinitionBase):
 {% endif %}
 {% endif %}
         _pack_ = 1
+        _layout_ = "ms"
 
 {% endif %}
 {% endfor -%}
