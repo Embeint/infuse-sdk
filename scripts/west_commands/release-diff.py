@@ -9,7 +9,7 @@ import yaml
 from west.commands import WestCommand
 
 try:
-    from infuse_iot.cpatch import cpatch
+    from infuse_iot.cpatch import Encoder, cpatch
 except ImportError:
     cpatch = None
 
@@ -63,22 +63,40 @@ class release_diff(WestCommand):
         return parser
 
     @staticmethod
-    def bootloader_mode(image_dir: pathlib.Path) -> str | None:
-        """MCUboot mode the application was built for (None if not using MCUboot)"""
+    def kconfig(image_dir: pathlib.Path) -> dict[str, str]:
+        """Kconfig options the application was built with"""
         config = image_dir / "zephyr" / ".config"
         if not config.exists():
-            sys.exit(f"'{str(config)}' does not exist, can't validate bootloader mode")
-        prefix = "CONFIG_MCUBOOT_BOOTLOADER_MODE_"
+            sys.exit(f"'{str(config)}' does not exist, can't validate application configuration")
+        options = {}
         with config.open("r", encoding="utf-8") as f:
             for line in f:
                 name, _, value = line.strip().partition("=")
-                if not name.startswith(prefix) or value != "y":
-                    continue
-                mode = name.removeprefix(prefix)
-                # Options such as `HAS_NO_DOWNGRADE` are not part of the mode choice
-                if not mode.startswith("HAS_"):
-                    return mode
+                if name.startswith("CONFIG_"):
+                    options[name] = value
+        return options
+
+    @staticmethod
+    def bootloader_mode(kconfig: dict[str, str]) -> str | None:
+        """MCUboot mode the application was built for (None if not using MCUboot)"""
+        prefix = "CONFIG_MCUBOOT_BOOTLOADER_MODE_"
+        for name, value in kconfig.items():
+            if not name.startswith(prefix) or value != "y":
+                continue
+            mode = name.removeprefix(prefix)
+            # Options such as `HAS_NO_DOWNGRADE` are not part of the mode choice
+            if not mode.startswith("HAS_"):
+                return mode
         return None
+
+    @staticmethod
+    def cpatch_encoder(kconfig: dict[str, str]) -> "Encoder":
+        """Most efficient encoder that the application applying the patch supports"""
+        if kconfig.get("CONFIG_INFUSE_CPATCH_VERSION_2") == "y":
+            if not hasattr(Encoder, "SHORTEST_PATH_DELTA"):
+                sys.exit("Original application supports CPatch version 2, update infuse-iot to generate it")
+            return Encoder.SHORTEST_PATH_DELTA
+        return Encoder.SHORTEST_PATH
 
     def do_generation(
         self,
@@ -117,8 +135,10 @@ class release_diff(WestCommand):
 
         # The application must write updates in the format the bootloader expects. The bootloader
         # is not updated by DFU, so the MCUboot mode can never change between releases.
-        mode_orig = self.bootloader_mode(original_dir / name_orig)
-        mode_new = self.bootloader_mode(output_dir / name_out)
+        kconfig_orig = self.kconfig(original_dir / name_orig)
+        kconfig_new = self.kconfig(output_dir / name_out)
+        mode_orig = self.bootloader_mode(kconfig_orig)
+        mode_new = self.bootloader_mode(kconfig_new)
         if mode_orig != mode_new:
             sys.exit(f"MCUboot bootloader mode does not match ({mode_orig} != {mode_new})")
 
@@ -161,13 +181,18 @@ class release_diff(WestCommand):
         if id_orig != id_new:
             print(f" 0x{id_orig:08x} -> 0x{id_new:08x}")
         print(f"{ver_orig} -> {ver_new}")
+        # The patch is applied by the original application, so it determines the supported format
+        encoder = self.cpatch_encoder(kconfig_orig)
         # The trailing TLV's can change on device, so exclude them from the original image knowledge
         with open(input_path, "rb") as f_input, open(output_path, "rb") as f_output:
-            patch = cpatch.generate(
-                f_input.read(-1)[:-input_tlv_len],
-                f_output.read(-1),
-                True,
-            )
+            bin_original = f_input.read(-1)[:-input_tlv_len]
+            bin_new = f_output.read(-1)
+        patch = cpatch.generate(bin_original, bin_new, True, encoder=encoder)
+
+        ratio = 100 * len(patch) / len(bin_new)
+        print(f"Original File: {len(bin_original):6d} bytes")
+        print(f"     New File: {len(bin_new):6d} bytes")
+        print(f"   Patch File: {len(patch):6d} bytes ({ratio:.2f}%)")
 
         release_dir = output_dir / "diffs"
         if id_orig != id_new:
@@ -187,7 +212,12 @@ class release_diff(WestCommand):
             print("")
             print("Tool Comparison:")
             with tempfile.TemporaryDirectory() as tmp:
-                print(f"\t  CPatch: {len(patch)} {100 * len(patch) / output_len:.2f}%")
+                print(f"\t  CPatch: {len(patch):6d} {100 * len(patch) / output_len:5.2f}% ({encoder.value}, used)")
+                for other in Encoder:
+                    if other == encoder:
+                        continue
+                    other_len = len(cpatch.generate(bin_original, bin_new, False, encoder=other))
+                    print(f"\t  CPatch: {other_len:6d} {100 * other_len / output_len:5.2f}% ({other.value})")
                 if shutil.which("jdiff") is not None:
                     diff_file = f"{tmp}/jdiff.patch"
                     subprocess.run(
@@ -195,7 +225,7 @@ class release_diff(WestCommand):
                         check=False,
                     )
                     jdiff_size = os.stat(diff_file).st_size
-                    print(f"\tJojoDiff: {jdiff_size} {100 * jdiff_size / output_len:.2f}%")
+                    print(f"\tJojoDiff: {jdiff_size:6d} {100 * jdiff_size / output_len:5.2f}%")
                 if shutil.which("bsdiff4") is not None:
                     diff_file = f"{tmp}/bsdiff4.patch"
                     subprocess.run(
@@ -203,7 +233,7 @@ class release_diff(WestCommand):
                         check=True,
                     )
                     bs_size = os.stat(diff_file).st_size
-                    print(f"\t bsdiff4: {bs_size} {100 * bs_size / output_len:.2f}%")
+                    print(f"\t bsdiff4: {bs_size:6d} {100 * bs_size / output_len:5.2f}%")
                 if shutil.which("xdelta") is not None:
                     diff_file = f"{tmp}/xdelta.patch"
                     subprocess.run(
@@ -217,7 +247,7 @@ class release_diff(WestCommand):
                         check=False,
                     )
                     x_size = os.stat(diff_file).st_size
-                    print(f"\t  xdelta: {x_size} {100 * x_size / output_len:.2f}%")
+                    print(f"\t  xdelta: {x_size:6d} {100 * x_size / output_len:5.2f}%")
 
     def do_run(self, args, _unknown_args):
         if cpatch is None:

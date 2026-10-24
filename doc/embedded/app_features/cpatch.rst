@@ -19,6 +19,19 @@ Features
   * No intermediate decompression step
   * Competitive compression ratio
 
+Patch Versions
+**************
+
+Version 2 patches add the ``PATCH_DELTA`` instruction, which efficiently encodes
+the relocated branch offsets and pointers that dominate the changes between
+firmware releases. Appliers that support version 2 enable
+:kconfig:option:`CONFIG_INFUSE_CPATCH_VERSION_2`.
+
+``west release-diff`` generates version 2 patches when the original release was
+built with :kconfig:option:`CONFIG_INFUSE_CPATCH_VERSION_2`, as the original
+application is the one applying the patch. Otherwise version 1 patches are
+generated, which all appliers support.
+
 Compression Tool Comparison
 ***************************
 
