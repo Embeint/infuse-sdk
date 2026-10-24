@@ -163,11 +163,14 @@ class release_diff(WestCommand):
         print(f"{ver_orig} -> {ver_new}")
         # The trailing TLV's can change on device, so exclude them from the original image knowledge
         with open(input_path, "rb") as f_input, open(output_path, "rb") as f_output:
-            patch = cpatch.generate(
-                f_input.read(-1)[:-input_tlv_len],
-                f_output.read(-1),
-                True,
-            )
+            bin_original = f_input.read(-1)[:-input_tlv_len]
+            bin_new = f_output.read(-1)
+        patch = cpatch.generate(bin_original, bin_new, True)
+
+        ratio = 100 * len(patch) / len(bin_new)
+        print(f"Original File: {len(bin_original):6d} bytes")
+        print(f"     New File: {len(bin_new):6d} bytes")
+        print(f"   Patch File: {len(patch):6d} bytes ({ratio:.2f}%)")
 
         release_dir = output_dir / "diffs"
         if id_orig != id_new:
