@@ -9,7 +9,7 @@ import yaml
 from west.commands import WestCommand
 
 try:
-    from infuse_iot.cpatch import cpatch
+    from infuse_iot.cpatch import Encoder, cpatch
 except ImportError:
     cpatch = None
 
@@ -165,7 +165,8 @@ class release_diff(WestCommand):
         with open(input_path, "rb") as f_input, open(output_path, "rb") as f_output:
             bin_original = f_input.read(-1)[:-input_tlv_len]
             bin_new = f_output.read(-1)
-        patch = cpatch.generate(bin_original, bin_new, True)
+        encoder = Encoder.SHORTEST_PATH
+        patch = cpatch.generate(bin_original, bin_new, True, encoder=encoder)
 
         ratio = 100 * len(patch) / len(bin_new)
         print(f"Original File: {len(bin_original):6d} bytes")
@@ -190,7 +191,12 @@ class release_diff(WestCommand):
             print("")
             print("Tool Comparison:")
             with tempfile.TemporaryDirectory() as tmp:
-                print(f"\t  CPatch: {len(patch)} {100 * len(patch) / output_len:.2f}%")
+                print(f"\t  CPatch: {len(patch):6d} {100 * len(patch) / output_len:5.2f}% ({encoder.value}, used)")
+                for other in Encoder:
+                    if other == encoder:
+                        continue
+                    other_len = len(cpatch.generate(bin_original, bin_new, False, encoder=other))
+                    print(f"\t  CPatch: {other_len:6d} {100 * other_len / output_len:5.2f}% ({other.value})")
                 if shutil.which("jdiff") is not None:
                     diff_file = f"{tmp}/jdiff.patch"
                     subprocess.run(
@@ -198,7 +204,7 @@ class release_diff(WestCommand):
                         check=False,
                     )
                     jdiff_size = os.stat(diff_file).st_size
-                    print(f"\tJojoDiff: {jdiff_size} {100 * jdiff_size / output_len:.2f}%")
+                    print(f"\tJojoDiff: {jdiff_size:6d} {100 * jdiff_size / output_len:5.2f}%")
                 if shutil.which("bsdiff4") is not None:
                     diff_file = f"{tmp}/bsdiff4.patch"
                     subprocess.run(
@@ -206,7 +212,7 @@ class release_diff(WestCommand):
                         check=True,
                     )
                     bs_size = os.stat(diff_file).st_size
-                    print(f"\t bsdiff4: {bs_size} {100 * bs_size / output_len:.2f}%")
+                    print(f"\t bsdiff4: {bs_size:6d} {100 * bs_size / output_len:5.2f}%")
                 if shutil.which("xdelta") is not None:
                     diff_file = f"{tmp}/xdelta.patch"
                     subprocess.run(
@@ -220,7 +226,7 @@ class release_diff(WestCommand):
                         check=False,
                     )
                     x_size = os.stat(diff_file).st_size
-                    print(f"\t  xdelta: {x_size} {100 * x_size / output_len:.2f}%")
+                    print(f"\t  xdelta: {x_size:6d} {100 * x_size / output_len:5.2f}%")
 
     def do_run(self, args, _unknown_args):
         if cpatch is None:
