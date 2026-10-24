@@ -5,9 +5,18 @@ config INFUSE_CPATCH
 	depends on STREAM_FLASH
 	depends on CRC
 	select INFUSE_CPATCH_VERSION_1
+	select INFUSE_CPATCH_VERSION_2
 
 config INFUSE_CPATCH_VERSION_1
 	bool
+	help
+	  Original set of patching instructions
+
+config INFUSE_CPATCH_VERSION_2
+	bool
+	help
+	  Addition of the PATCH_DELTA instruction. This reduces patch
+	  sizes by an average of 35%.
 
 if INFUSE_CPATCH
 
