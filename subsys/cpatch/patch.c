@@ -6,6 +6,8 @@
  * SPDX-License-Identifier: FSL-1.1-ALv2
  */
 
+#include <string.h>
+
 #include <zephyr/sys/byteorder.h>
 #include <zephyr/sys/crc.h>
 #include <zephyr/logging/log.h>
@@ -28,6 +30,7 @@ enum patch_opcode {
 	ADDR_SHIFT_S16 = 9 << 4,
 	ADDR_SET_U32 = 10 << 4,
 	PATCH = 11 << 4,
+	PATCH_DELTA = 12 << 4,
 	OPCODE_MASK = 0xF0,
 	DATA_MASK = 0x0F,
 };
@@ -38,7 +41,13 @@ enum opcode_family {
 	FAMILY_WRITE = 2,
 	FAMILY_PATCH = 3,
 	FAMILY_ADDR = 4,
+	FAMILY_PATCH_DELTA = 5,
 };
+
+/* PATCH_DELTA element addition values */
+#define DELTA_HISTORY_SIZE 14
+#define DELTA_EXPLICIT     14
+#define DELTA_NONE         15
 
 struct patch_state {
 	const struct flash_area *patch;
@@ -46,10 +55,18 @@ struct patch_state {
 	uint32_t operation_count;
 	uint32_t input_offset;
 	uint32_t patch_offset;
+	/* Most recently used PATCH_DELTA deltas, persists across the patch */
+	uint16_t delta_history[DELTA_HISTORY_SIZE];
 	uint8_t buffer[64];
 };
 
-#define CPATCH_MAJOR_VERSION 1
+#define CPATCH_MAJOR_VERSION       1
+/* Patches that can contain PATCH_DELTA instructions */
+#define CPATCH_MAJOR_VERSION_DELTA 2
+
+static const uint16_t delta_history_initial[DELTA_HISTORY_SIZE] = {
+	1, 0xFFFF, 2, 0xFFFE, 3, 0xFFFD, 4, 0xFFFC, 5, 0xFFFB, 6, 0xFFFA, 7, 0xFFF9,
+};
 
 static uint32_t progress_crc;
 
@@ -149,6 +166,79 @@ static int do_cpatch(const struct flash_area *input, struct stream_flash_ctx *ou
 	return 0;
 }
 
+static uint16_t delta_history_use(struct patch_state *state, uint8_t index, uint16_t delta)
+{
+	/* Explicit deltas evict the least recently used entry */
+	if (index != DELTA_EXPLICIT) {
+		delta = state->delta_history[index];
+	} else {
+		index = DELTA_HISTORY_SIZE - 1;
+	}
+	/* Move the delta to the front of the history */
+	memmove(&state->delta_history[1], &state->delta_history[0], index * sizeof(uint16_t));
+	state->delta_history[0] = delta;
+	return delta;
+}
+
+static int do_cpatch_delta(const struct flash_area *input, struct stream_flash_ctx *output,
+			   struct patch_state *state)
+{
+	uint8_t header, addition;
+	uint16_t delta = 0;
+	int rc;
+
+	while (true) {
+		rc = binary_patch_read(state, &header, 1);
+		if (rc < 0) {
+			return rc;
+		}
+		if (header == DELTA_NONE) {
+			/* COPY of 0 with no addition terminates the instruction */
+			break;
+		}
+		state->operation_count = header >> 4;
+		addition = header & DATA_MASK;
+		if (state->operation_count == 15) {
+			rc = binary_patch_read(state, state->buffer, 1);
+			if (rc < 0) {
+				return rc;
+			}
+			state->operation_count += state->buffer[0];
+		}
+		if (addition == DELTA_EXPLICIT) {
+			rc = binary_patch_read(state, state->buffer, 2);
+			if (rc < 0) {
+				return rc;
+			}
+			delta = sys_get_le16(state->buffer);
+		}
+		LOG_DBG("PATCH_DELTA_COPY: %d", state->operation_count);
+		rc = do_copy(input, output, state);
+		if (rc < 0) {
+			return rc;
+		}
+		if (addition == DELTA_NONE) {
+			continue;
+		}
+		delta = delta_history_use(state, addition, delta);
+		LOG_DBG("PATCH_DELTA_ADD: %04X", delta);
+
+		/* Add delta to the next halfword of the input */
+		rc = flash_area_read(input, state->input_offset, state->buffer, 2);
+		if (rc < 0) {
+			return rc;
+		}
+		sys_put_le16(sys_get_le16(state->buffer) + delta, state->buffer);
+		rc = stream_flash_buffered_write(output, state->buffer, 2, false);
+		if (rc < 0) {
+			return rc;
+		}
+		state->input_offset += 2;
+	}
+
+	return 0;
+}
+
 static int crc_update(uint8_t *buf, size_t len, size_t offset)
 {
 	progress_crc = crc32_ieee_update(progress_crc, buf, len);
@@ -225,6 +315,9 @@ static int opcode_fetch(struct patch_state *state)
 	case PATCH:
 		state->pending = FAMILY_PATCH;
 		break;
+	case PATCH_DELTA:
+		state->pending = FAMILY_PATCH_DELTA;
+		break;
 	default:
 		LOG_ERR("BAD OP: %d", op_code >> 4);
 		return -EINVAL;
@@ -259,6 +352,9 @@ static int opcode_run(const struct flash_area *input, struct stream_flash_ctx *o
 	case FAMILY_PATCH:
 		rc = do_cpatch(input, output, state);
 		break;
+	case FAMILY_PATCH_DELTA:
+		rc = do_cpatch_delta(input, output, state);
+		break;
 	default:
 		return -EINVAL;
 	}
@@ -284,9 +380,9 @@ int cpatch_patch_start(const struct flash_area *input, const struct flash_area *
 			CPATCH_MAGIC_NUMBER);
 		return -EINVAL;
 	}
-	if (header->version_major != CPATCH_MAJOR_VERSION) {
-		LOG_WRN("Header major version failure (%d != %d)", header->version_major,
-			CPATCH_MAJOR_VERSION);
+	if ((header->version_major != CPATCH_MAJOR_VERSION) &&
+	    (header->version_major != CPATCH_MAJOR_VERSION_DELTA)) {
+		LOG_WRN("Header major version failure (%d)", header->version_major);
 		return -EINVAL;
 	}
 	crc = crc32_ieee((void *)header, sizeof(*header) - sizeof(uint32_t));
@@ -331,6 +427,7 @@ int cpatch_patch_apply(const struct flash_area *input, const struct flash_area *
 
 	/* Loop over patch file */
 	state.patch = patch;
+	memcpy(state.delta_history, delta_history_initial, sizeof(state.delta_history));
 	while (state.patch_offset < header->patch_file.length) {
 		/* Fetch next opcode */
 		rc = opcode_fetch(&state);
