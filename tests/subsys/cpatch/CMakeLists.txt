@@ -10,8 +10,13 @@ target_compile_definitions(app PUBLIC PATCH_HELLO_TO_HELLO=${CMAKE_CURRENT_LIST_
 target_compile_definitions(app PUBLIC PATCH_HELLO_VALIDATION=${CMAKE_CURRENT_LIST_DIR}/patch/hello_world-validate.bin)
 target_compile_definitions(app PUBLIC PATCH_HELLO_BAD_LEN=${CMAKE_CURRENT_LIST_DIR}/patch/hello_world-bad-len.bin)
 target_compile_definitions(app PUBLIC PATCH_HELLO_BAD_CRC=${CMAKE_CURRENT_LIST_DIR}/patch/hello_world-bad-crc.bin)
+target_compile_definitions(app PUBLIC PATCH_HELLO_VALIDATION_DELTA=${CMAKE_CURRENT_LIST_DIR}/patch/hello_world-validate-delta.bin)
+target_compile_definitions(app PUBLIC PATCH_HELLO_BAD_LEN_DELTA=${CMAKE_CURRENT_LIST_DIR}/patch/hello_world-bad-len-delta.bin)
+target_compile_definitions(app PUBLIC PATCH_HELLO_BAD_CRC_DELTA=${CMAKE_CURRENT_LIST_DIR}/patch/hello_world-bad-crc-delta.bin)
 target_compile_definitions(app PUBLIC PATCH_HELLO_TO_PHILO=${CMAKE_CURRENT_LIST_DIR}/patch/hello_world-to-philosophers.bin)
 target_compile_definitions(app PUBLIC PATCH_PHILO_TO_HELLO=${CMAKE_CURRENT_LIST_DIR}/patch/philosophers-to-hello_world.bin)
+target_compile_definitions(app PUBLIC PATCH_HELLO_TO_PHILO_DELTA=${CMAKE_CURRENT_LIST_DIR}/patch/hello_world-to-philosophers-delta.bin)
+target_compile_definitions(app PUBLIC PATCH_PHILO_TO_HELLO_DELTA=${CMAKE_CURRENT_LIST_DIR}/patch/philosophers-to-hello_world-delta.bin)
 
 target_sources(app PRIVATE
   src/main.c
