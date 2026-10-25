@@ -2,3 +2,4 @@
 
 infuse_sources(patch.c)
 infuse_sources_ifdef(CONFIG_INFUSE_CPATCH_ENCODER_SHORTEST_PATH patch_shortest_path.c)
+infuse_sources_ifdef(CONFIG_INFUSE_CPATCH_ENCODER_STREAM_THUMB2 patch_stream_thumb2.c)

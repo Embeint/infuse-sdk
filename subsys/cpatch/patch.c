@@ -22,15 +22,63 @@ static uint32_t progress_crc;
 
 LOG_MODULE_REGISTER(binary_patch, CONFIG_CPATCH_LOG_LEVEL);
 
-int cpatch_patch_read(struct cpatch_ctx *ctx, uint8_t *ptr, size_t len)
+#ifdef CONFIG_INFUSE_CPATCH_READ_AHEAD
+/* Read from a file of `limit` bytes, through its read-ahead cache */
+static int cached_read(const struct flash_area *fa, struct cpatch_read_cache *cache, uint32_t limit,
+		       uint32_t offset, uint8_t *ptr, size_t len)
 {
+	uint32_t chunk;
 	int rc;
 
-	rc = flash_area_read(ctx->patch, sizeof(struct cpatch_header) + ctx->patch_offset, ptr,
-			     len);
+	while (len) {
+		if (offset >= cache->offset && offset < cache->offset + cache->len) {
+			chunk = MIN(len, cache->offset + cache->len - offset);
+			memcpy(ptr, &cache->data[offset - cache->offset], chunk);
+			offset += chunk;
+			ptr += chunk;
+			len -= chunk;
+			continue;
+		}
+		if (len > sizeof(cache->data)) {
+			/* Larger than the cache, read directly */
+			return flash_area_read(fa, offset, ptr, len);
+		}
+		/* Refill from the requested offset, without reading past the end of the file */
+		chunk = MAX(len, MIN(sizeof(cache->data), limit > offset ? limit - offset : 0));
+		rc = flash_area_read(fa, offset, cache->data, chunk);
+		if (rc < 0) {
+			cache->len = 0;
+			return rc;
+		}
+		cache->offset = offset;
+		cache->len = chunk;
+	}
+	return 0;
+}
+#endif /* CONFIG_INFUSE_CPATCH_READ_AHEAD */
+
+int cpatch_patch_read(struct cpatch_ctx *ctx, uint8_t *ptr, size_t len)
+{
+	uint32_t offset = sizeof(struct cpatch_header) + ctx->patch_offset;
 
 	ctx->patch_offset += len;
-	return rc;
+#ifdef CONFIG_INFUSE_CPATCH_READ_AHEAD
+	return cached_read(ctx->patch, &ctx->patch_cache,
+			   sizeof(struct cpatch_header) + ctx->header->patch_file.length, offset,
+			   ptr, len);
+#else
+	return flash_area_read(ctx->patch, offset, ptr, len);
+#endif /* CONFIG_INFUSE_CPATCH_READ_AHEAD */
+}
+
+int cpatch_input_read(struct cpatch_ctx *ctx, uint32_t offset, uint8_t *ptr, size_t len)
+{
+#ifdef CONFIG_INFUSE_CPATCH_READ_AHEAD
+	return cached_read(ctx->input, &ctx->input_cache, ctx->header->input_file.length, offset,
+			   ptr, len);
+#else
+	return flash_area_read(ctx->input, offset, ptr, len);
+#endif /* CONFIG_INFUSE_CPATCH_READ_AHEAD */
 }
 
 int cpatch_input_copy(struct cpatch_ctx *ctx, uint32_t len)
@@ -40,7 +88,7 @@ int cpatch_input_copy(struct cpatch_ctx *ctx, uint32_t len)
 
 	while (len) {
 		chunk = MIN(len, sizeof(ctx->buffer));
-		rc = flash_area_read(ctx->input, ctx->input_offset, ctx->buffer, chunk);
+		rc = cpatch_input_read(ctx, ctx->input_offset, ctx->buffer, chunk);
 		if (rc < 0) {
 			return rc;
 		}
@@ -99,6 +147,10 @@ static cpatch_instruction_set_t instruction_set_get(uint8_t version_major)
 	case CPATCH_MAJOR_VERSION_DELTA:
 		return cpatch_shortest_path_apply;
 #endif /* CONFIG_INFUSE_CPATCH_ENCODER_SHORTEST_PATH */
+#ifdef CONFIG_INFUSE_CPATCH_ENCODER_STREAM_THUMB2
+	case CPATCH_MAJOR_VERSION_STREAM_THUMB2:
+		return cpatch_stream_thumb2_apply;
+#endif /* CONFIG_INFUSE_CPATCH_ENCODER_STREAM_THUMB2 */
 	default:
 		return NULL;
 	}

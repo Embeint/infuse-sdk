@@ -169,7 +169,7 @@ static int do_cpatch_delta(struct patch_state *state)
 		LOG_DBG("PATCH_DELTA_ADD: %04X", delta);
 
 		/* Add delta to the next halfword of the input */
-		rc = flash_area_read(ctx->input, ctx->input_offset, ctx->buffer, 2);
+		rc = cpatch_input_read(ctx, ctx->input_offset, ctx->buffer, 2);
 		if (rc < 0) {
 			return rc;
 		}
