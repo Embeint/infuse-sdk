@@ -601,6 +601,11 @@ class release_build(WestCommand):
                 "mcumgr": "CONFIG_MCUMGR" in build_configs,
                 "memfault": "CONFIG_MEMFAULT" in build_configs,
                 "watchdog": "CONFIG_INFUSE_WATCHDOG" in build_configs,
+                "cpatch_versions": sorted(
+                    int(c.removeprefix("CONFIG_INFUSE_CPATCH_VERSION_"))
+                    for c in build_configs
+                    if c.startswith("CONFIG_INFUSE_CPATCH_VERSION_")
+                ),
             },
             "commands": [
                 c.removeprefix("CONFIG_INFUSE_RPC_COMMAND_").lower()
