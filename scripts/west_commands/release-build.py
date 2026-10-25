@@ -4,6 +4,7 @@
 import argparse
 import os
 import pathlib
+import pickle
 import re
 import shutil
 import subprocess
@@ -460,6 +461,43 @@ class release_build(WestCommand):
             else:
                 shutil.copytree(in_loc, out_loc, dirs_exist_ok=True)
 
+    def bootloader_info(self) -> dict:
+        if self.tfm_build:
+            # TF-M BL2 upgrade strategy is configured in the TF-M build
+            tfm_cache = zcmake.CMakeCache(str(self.build_app_dir / "tfm" / "CMakeCache.txt"))
+            mode = tfm_cache.get("MCUBOOT_UPGRADE_STRATEGY")
+        else:
+            mode = None
+            with (self.build_dir / "_sysbuild" / "autoconf.h").open("r") as f:
+                for line in f.readlines():
+                    s = line.strip().split(" ")
+                    if len(s) < 3:
+                        continue
+                    m = re.fullmatch(r"SB_CONFIG_MCUBOOT_MODE_(\w+)", s[1])
+                    if m is None or m[1] == "FIRMWARE_UPDATER_BOOT_MODE_ENTRANCE":
+                        continue
+                    mode = m[1]
+
+        # Load the application devicetree to determine the image slot locations
+        cache = zcmake.CMakeCache.from_build_dir(self.build_app_dir)
+        sys.path.insert(0, str(pathlib.Path(cache["ZEPHYR_BASE"]) / "scripts" / "dts" / "python-devicetree" / "src"))
+        with (self.build_app_dir / "zephyr" / "edt.pickle").open("rb") as f:
+            edt = pickle.load(f)
+
+        def slot_offset(label: str) -> None | int:
+            node = edt.label2node.get(label)
+            if node is None:
+                return None
+            # Raw unit address is the offset within the flash partitions node
+            # (Node.unit_addr and Node.regs are translated through parent ranges)
+            return int(node.name.split("@", 1)[1], 16)
+
+        return {
+            "mode": mode,
+            "primary_offset": slot_offset("slot0_partition"),
+            "secondary_offset": slot_offset("slot1_partition"),
+        }
+
     def export_build(self, build_configs: dict, version: str):
         board_normalised = self.release["board"].replace("/", "_")
         app_name = self.application.name
@@ -554,6 +592,7 @@ class release_build(WestCommand):
                 "hex": merged_hex,
                 "primary": primary_dir,
             },
+            "bootloader": self.bootloader_info(),
             "features": {
                 "bluetooth": "CONFIG_BT" in build_configs,
                 "bluetooth_controller": "CONFIG_HAS_BT_CTLR" in build_configs,
