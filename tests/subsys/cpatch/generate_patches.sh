@@ -12,6 +12,10 @@ python3 $DIFF_SCRIPT generate $HELLO $PHILO patch/hello_world-to-philosophers-de
     --encoder shortest-path-delta
 python3 $DIFF_SCRIPT generate $PHILO $HELLO patch/philosophers-to-hello_world-delta.bin \
     --encoder shortest-path-delta
+python3 $DIFF_SCRIPT generate $HELLO $PHILO patch/hello_world-to-philosophers-stream-thumb2.bin \
+    --encoder stream-thumb2
+python3 $DIFF_SCRIPT generate $PHILO $HELLO patch/philosophers-to-hello_world-stream-thumb2.bin \
+    --encoder stream-thumb2
 python3 $DIFF_SCRIPT validation $HELLO patch/hello_world-bad-len.bin --invalid-length
 python3 $DIFF_SCRIPT validation $HELLO patch/hello_world-bad-crc.bin --invalid-crc
 python3 $DIFF_SCRIPT validation $HELLO patch/hello_world-validate.bin
