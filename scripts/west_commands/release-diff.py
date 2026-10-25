@@ -92,6 +92,10 @@ class release_diff(WestCommand):
     @staticmethod
     def cpatch_encoder(kconfig: dict[str, str]) -> "Encoder":
         """Most efficient encoder that the application applying the patch supports"""
+        if kconfig.get("CONFIG_INFUSE_CPATCH_VERSION_3") == "y":
+            if not hasattr(Encoder, "STREAM_THUMB2"):
+                sys.exit("Original application supports CPatch version 3, update infuse-iot to generate it")
+            return Encoder.STREAM_THUMB2
         if kconfig.get("CONFIG_INFUSE_CPATCH_VERSION_2") == "y":
             if not hasattr(Encoder, "SHORTEST_PATH_DELTA"):
                 sys.exit("Original application supports CPatch version 2, update infuse-iot to generate it")
