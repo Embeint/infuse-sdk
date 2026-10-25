@@ -17,6 +17,8 @@ target_compile_definitions(app PUBLIC PATCH_HELLO_TO_PHILO=${CMAKE_CURRENT_LIST_
 target_compile_definitions(app PUBLIC PATCH_PHILO_TO_HELLO=${CMAKE_CURRENT_LIST_DIR}/patch/philosophers-to-hello_world.bin)
 target_compile_definitions(app PUBLIC PATCH_HELLO_TO_PHILO_DELTA=${CMAKE_CURRENT_LIST_DIR}/patch/hello_world-to-philosophers-delta.bin)
 target_compile_definitions(app PUBLIC PATCH_PHILO_TO_HELLO_DELTA=${CMAKE_CURRENT_LIST_DIR}/patch/philosophers-to-hello_world-delta.bin)
+target_compile_definitions(app PUBLIC PATCH_HELLO_TO_PHILO_STREAM_THUMB2=${CMAKE_CURRENT_LIST_DIR}/patch/hello_world-to-philosophers-stream-thumb2.bin)
+target_compile_definitions(app PUBLIC PATCH_PHILO_TO_HELLO_STREAM_THUMB2=${CMAKE_CURRENT_LIST_DIR}/patch/philosophers-to-hello_world-stream-thumb2.bin)
 
 target_sources(app PRIVATE
   src/main.c

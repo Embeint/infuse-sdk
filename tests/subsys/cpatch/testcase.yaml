@@ -6,3 +6,25 @@ tests:
       - native_sim
     integration_platforms:
       - native_sim
+  cpatch.patch.shortest_path_only:
+    platform_allow:
+      - native_sim
+    integration_platforms:
+      - native_sim
+    extra_configs:
+      - CONFIG_INFUSE_CPATCH_ENCODER_STREAM_THUMB2=n
+  cpatch.patch.stream_thumb2_minimal_cache:
+    platform_allow:
+      - native_sim
+    integration_platforms:
+      - native_sim
+    extra_configs:
+      - CONFIG_INFUSE_CPATCH_STREAM_THUMB2_MAP_CACHE_SIZE=1
+      - CONFIG_INFUSE_CPATCH_STREAM_THUMB2_MAP_INDEX_SIZE=8
+  cpatch.patch.stream_thumb2_no_regions:
+    platform_allow:
+      - native_sim
+    integration_platforms:
+      - native_sim
+    extra_configs:
+      - CONFIG_INFUSE_CPATCH_STREAM_THUMB2_REGIONS_MAX=0
