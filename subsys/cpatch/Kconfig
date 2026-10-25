@@ -4,8 +4,13 @@ config INFUSE_CPATCH
 	bool "Infuse-IoT constrained binary patching"
 	depends on STREAM_FLASH
 	depends on CRC
+
+config INFUSE_CPATCH_ENCODER_SHORTEST_PATH
+	bool "CPatch shortest-path encoder based patches"
+	depends on INFUSE_CPATCH
 	select INFUSE_CPATCH_VERSION_1
 	select INFUSE_CPATCH_VERSION_2
+	default y
 
 config INFUSE_CPATCH_VERSION_1
 	bool

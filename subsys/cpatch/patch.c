@@ -8,357 +8,106 @@
 
 #include <string.h>
 
-#include <zephyr/sys/byteorder.h>
 #include <zephyr/sys/crc.h>
 #include <zephyr/logging/log.h>
 
 #include <infuse/cpatch/patch.h>
 
+#include "patch_internal.h"
+
 /* Updates on every 4kB chunk */
 #define CALLBACK_CHUNK_MASK 0xFFFFF000
-
-enum patch_opcode {
-	COPY_LEN_U4 = 0 << 4,
-	COPY_LEN_U12 = 1 << 4,
-	COPY_LEN_U20 = 2 << 4,
-	COPY_LEN_U32 = 3 << 4,
-	WRITE_LEN_U4 = 4 << 4,
-	WRITE_LEN_U12 = 5 << 4,
-	WRITE_LEN_U20 = 6 << 4,
-	WRITE_LEN_U32 = 7 << 4,
-	ADDR_SHIFT_S8 = 8 << 4,
-	ADDR_SHIFT_S16 = 9 << 4,
-	ADDR_SET_U32 = 10 << 4,
-	PATCH = 11 << 4,
-	PATCH_DELTA = 12 << 4,
-	OPCODE_MASK = 0xF0,
-	DATA_MASK = 0x0F,
-};
-
-enum opcode_family {
-	FAMILY_NONE = 0,
-	FAMILY_COPY = 1,
-	FAMILY_WRITE = 2,
-	FAMILY_PATCH = 3,
-	FAMILY_ADDR = 4,
-	FAMILY_PATCH_DELTA = 5,
-};
-
-/* PATCH_DELTA element addition values */
-#define DELTA_HISTORY_SIZE 14
-#define DELTA_EXPLICIT     14
-#define DELTA_NONE         15
-
-struct patch_state {
-	const struct flash_area *patch;
-	enum opcode_family pending;
-	uint32_t operation_count;
-	uint32_t input_offset;
-	uint32_t patch_offset;
-	/* Most recently used PATCH_DELTA deltas, persists across the patch */
-	uint16_t delta_history[DELTA_HISTORY_SIZE];
-	uint8_t buffer[64];
-};
-
-#define CPATCH_MAJOR_VERSION       1
-/* Patches that can contain PATCH_DELTA instructions */
-#define CPATCH_MAJOR_VERSION_DELTA 2
-
-static const uint16_t delta_history_initial[DELTA_HISTORY_SIZE] = {
-	1, 0xFFFF, 2, 0xFFFE, 3, 0xFFFD, 4, 0xFFFC, 5, 0xFFFB, 6, 0xFFFA, 7, 0xFFF9,
-};
 
 static uint32_t progress_crc;
 
 LOG_MODULE_REGISTER(binary_patch, CONFIG_CPATCH_LOG_LEVEL);
 
-static int binary_patch_read(struct patch_state *state, uint8_t *ptr, size_t len)
+int cpatch_patch_read(struct cpatch_ctx *ctx, uint8_t *ptr, size_t len)
 {
 	int rc;
 
-	rc = flash_area_read(state->patch, sizeof(struct cpatch_header) + state->patch_offset, ptr,
+	rc = flash_area_read(ctx->patch, sizeof(struct cpatch_header) + ctx->patch_offset, ptr,
 			     len);
 
-	state->patch_offset += len;
+	ctx->patch_offset += len;
 	return rc;
 }
 
-static int do_copy(const struct flash_area *input, struct stream_flash_ctx *output,
-		   struct patch_state *state)
+int cpatch_input_copy(struct cpatch_ctx *ctx, uint32_t len)
 {
-	int len, rc;
+	uint32_t chunk;
+	int rc;
 
-	while (state->operation_count) {
-		len = MIN(state->operation_count, sizeof(state->buffer));
-		rc = flash_area_read(input, state->input_offset, state->buffer, len);
+	while (len) {
+		chunk = MIN(len, sizeof(ctx->buffer));
+		rc = flash_area_read(ctx->input, ctx->input_offset, ctx->buffer, chunk);
 		if (rc < 0) {
 			return rc;
 		}
-		rc = stream_flash_buffered_write(output, state->buffer, len, false);
+		rc = stream_flash_buffered_write(ctx->output, ctx->buffer, chunk, false);
 		if (rc < 0) {
 			return rc;
 		}
 		/* Update pointers */
-		state->input_offset += len;
-		state->operation_count -= len;
+		ctx->input_offset += chunk;
+		len -= chunk;
 	}
 
 	return 0;
 }
 
-static int do_write(const struct flash_area *input, struct stream_flash_ctx *output,
-		    struct patch_state *state)
+int cpatch_patch_write(struct cpatch_ctx *ctx, uint32_t len)
 {
-	int len, rc;
+	uint32_t chunk;
+	int rc;
 
-	while (state->operation_count) {
-		len = MIN(state->operation_count, sizeof(state->buffer));
-		rc = binary_patch_read(state, state->buffer, len);
+	while (len) {
+		chunk = MIN(len, sizeof(ctx->buffer));
+		rc = cpatch_patch_read(ctx, ctx->buffer, chunk);
 		if (rc < 0) {
 			return rc;
 		}
-		rc = stream_flash_buffered_write(output, state->buffer, len, false);
+		rc = stream_flash_buffered_write(ctx->output, ctx->buffer, chunk, false);
 		if (rc < 0) {
 			return rc;
 		}
 		/* Update pointers */
-		state->input_offset += len;
-		state->operation_count -= len;
+		ctx->input_offset += chunk;
+		len -= chunk;
 	}
 
 	return 0;
 }
 
-static int do_cpatch(const struct flash_area *input, struct stream_flash_ctx *output,
-		     struct patch_state *state)
+void cpatch_progress_update(struct cpatch_ctx *ctx)
 {
-	int rc;
+	uint32_t this_callback;
 
-	while (true) {
-		uint8_t len;
-
-		rc = binary_patch_read(state, &len, 1);
-		if (len == 0) {
-			break;
-		}
-		state->operation_count = len & 0x7F;
-		LOG_DBG("PATCH_COPY: %d", state->operation_count);
-		rc = do_copy(input, output, state);
-		if (rc < 0) {
-			return rc;
-		}
-		if (len & 0x80) {
-			state->operation_count = 1;
-		} else {
-			rc = binary_patch_read(state, &len, 1);
-			if (len == 0) {
-				break;
-			}
-			state->operation_count = len;
-		}
-		LOG_DBG("PATCH_WRITE: %d", state->operation_count);
-		rc = do_write(input, output, state);
-		if (rc < 0) {
-			return rc;
-		}
+	/* Run progress callback if we've passed a chunk boundary */
+	this_callback = stream_flash_bytes_written(ctx->output) & CALLBACK_CHUNK_MASK;
+	if (ctx->progress_cb && (this_callback != ctx->last_callback)) {
+		ctx->last_callback = this_callback;
+		ctx->progress_cb(ctx->last_callback, ctx->header->output_file.length);
 	}
-
-	return 0;
 }
 
-static uint16_t delta_history_use(struct patch_state *state, uint8_t index, uint16_t delta)
+static cpatch_instruction_set_t instruction_set_get(uint8_t version_major)
 {
-	/* Explicit deltas evict the least recently used entry */
-	if (index != DELTA_EXPLICIT) {
-		delta = state->delta_history[index];
-	} else {
-		index = DELTA_HISTORY_SIZE - 1;
+	switch (version_major) {
+#ifdef CONFIG_INFUSE_CPATCH_ENCODER_SHORTEST_PATH
+	case CPATCH_MAJOR_VERSION:
+	case CPATCH_MAJOR_VERSION_DELTA:
+		return cpatch_shortest_path_apply;
+#endif /* CONFIG_INFUSE_CPATCH_ENCODER_SHORTEST_PATH */
+	default:
+		return NULL;
 	}
-	/* Move the delta to the front of the history */
-	memmove(&state->delta_history[1], &state->delta_history[0], index * sizeof(uint16_t));
-	state->delta_history[0] = delta;
-	return delta;
-}
-
-static int do_cpatch_delta(const struct flash_area *input, struct stream_flash_ctx *output,
-			   struct patch_state *state)
-{
-	uint8_t header, addition;
-	uint16_t delta = 0;
-	int rc;
-
-	while (true) {
-		rc = binary_patch_read(state, &header, 1);
-		if (rc < 0) {
-			return rc;
-		}
-		if (header == DELTA_NONE) {
-			/* COPY of 0 with no addition terminates the instruction */
-			break;
-		}
-		state->operation_count = header >> 4;
-		addition = header & DATA_MASK;
-		if (state->operation_count == 15) {
-			rc = binary_patch_read(state, state->buffer, 1);
-			if (rc < 0) {
-				return rc;
-			}
-			state->operation_count += state->buffer[0];
-		}
-		if (addition == DELTA_EXPLICIT) {
-			rc = binary_patch_read(state, state->buffer, 2);
-			if (rc < 0) {
-				return rc;
-			}
-			delta = sys_get_le16(state->buffer);
-		}
-		LOG_DBG("PATCH_DELTA_COPY: %d", state->operation_count);
-		rc = do_copy(input, output, state);
-		if (rc < 0) {
-			return rc;
-		}
-		if (addition == DELTA_NONE) {
-			continue;
-		}
-		delta = delta_history_use(state, addition, delta);
-		LOG_DBG("PATCH_DELTA_ADD: %04X", delta);
-
-		/* Add delta to the next halfword of the input */
-		rc = flash_area_read(input, state->input_offset, state->buffer, 2);
-		if (rc < 0) {
-			return rc;
-		}
-		sys_put_le16(sys_get_le16(state->buffer) + delta, state->buffer);
-		rc = stream_flash_buffered_write(output, state->buffer, 2, false);
-		if (rc < 0) {
-			return rc;
-		}
-		state->input_offset += 2;
-	}
-
-	return 0;
 }
 
 static int crc_update(uint8_t *buf, size_t len, size_t offset)
 {
 	progress_crc = crc32_ieee_update(progress_crc, buf, len);
 	return 0;
-}
-
-static int opcode_fetch(struct patch_state *state)
-{
-	uint8_t op_code, op_data;
-	int rc;
-
-	rc = binary_patch_read(state, state->buffer, 1);
-	if (rc < 0) {
-		return rc;
-	}
-
-	op_code = state->buffer[0] & OPCODE_MASK;
-	op_data = state->buffer[0] & DATA_MASK;
-
-	switch (op_code) {
-	case COPY_LEN_U4:
-		state->pending = FAMILY_COPY;
-		state->operation_count = op_data;
-		break;
-	case COPY_LEN_U12:
-		rc = binary_patch_read(state, state->buffer, 1);
-		state->pending = FAMILY_COPY;
-		state->operation_count = (op_data << 8) | state->buffer[0];
-		break;
-	case COPY_LEN_U20:
-		rc = binary_patch_read(state, state->buffer, 2);
-		state->pending = FAMILY_COPY;
-		state->operation_count = (op_data << 16) | sys_get_le16(state->buffer);
-		break;
-	case COPY_LEN_U32:
-		rc = binary_patch_read(state, state->buffer, 4);
-		state->pending = FAMILY_COPY;
-		state->operation_count = sys_get_le32(state->buffer);
-		break;
-	case WRITE_LEN_U4:
-		state->pending = FAMILY_WRITE;
-		state->operation_count = op_data;
-		break;
-	case WRITE_LEN_U12:
-		rc = binary_patch_read(state, state->buffer, 1);
-		state->pending = FAMILY_WRITE;
-		state->operation_count = (op_data << 8) | state->buffer[0];
-		break;
-	case WRITE_LEN_U20:
-		rc = binary_patch_read(state, state->buffer, 2);
-		state->pending = FAMILY_WRITE;
-		state->operation_count = (op_data << 16) | sys_get_le16(state->buffer);
-		break;
-	case WRITE_LEN_U32:
-		rc = binary_patch_read(state, state->buffer, 4);
-		state->pending = FAMILY_WRITE;
-		state->operation_count = sys_get_le32(state->buffer);
-		break;
-	case ADDR_SHIFT_S8:
-		rc = binary_patch_read(state, state->buffer, 1);
-		state->pending = FAMILY_ADDR;
-		state->operation_count = state->input_offset + (int8_t)(state->buffer[0]);
-		break;
-	case ADDR_SHIFT_S16:
-		rc = binary_patch_read(state, state->buffer, 2);
-		state->pending = FAMILY_ADDR;
-		state->operation_count = state->input_offset + (int16_t)sys_get_le16(state->buffer);
-		break;
-	case ADDR_SET_U32:
-		rc = binary_patch_read(state, state->buffer, 4);
-		state->pending = FAMILY_ADDR;
-		state->operation_count = sys_get_le32(state->buffer);
-		break;
-	case PATCH:
-		state->pending = FAMILY_PATCH;
-		break;
-	case PATCH_DELTA:
-		state->pending = FAMILY_PATCH_DELTA;
-		break;
-	default:
-		LOG_ERR("BAD OP: %d", op_code >> 4);
-		return -EINVAL;
-	}
-	return rc;
-}
-
-static int opcode_run(const struct flash_area *input, struct stream_flash_ctx *output,
-		      struct patch_state *state)
-{
-	int rc = 0;
-
-	switch (state->pending) {
-	case FAMILY_ADDR:
-		LOG_DBG("ADDR: %08X", state->operation_count);
-		state->input_offset = state->operation_count;
-		break;
-	case FAMILY_COPY:
-		LOG_DBG("COPY: %d", state->operation_count);
-		if (state->operation_count == 0) {
-			return -EINVAL;
-		}
-		rc = do_copy(input, output, state);
-		break;
-	case FAMILY_WRITE:
-		LOG_DBG("WRITE: %d", state->operation_count);
-		if (state->operation_count == 0) {
-			return -EINVAL;
-		}
-		rc = do_write(input, output, state);
-		break;
-	case FAMILY_PATCH:
-		rc = do_cpatch(input, output, state);
-		break;
-	case FAMILY_PATCH_DELTA:
-		rc = do_cpatch_delta(input, output, state);
-		break;
-	default:
-		return -EINVAL;
-	}
-	return rc;
 }
 
 int cpatch_patch_start(const struct flash_area *input, const struct flash_area *patch,
@@ -380,8 +129,7 @@ int cpatch_patch_start(const struct flash_area *input, const struct flash_area *
 			CPATCH_MAGIC_NUMBER);
 		return -EINVAL;
 	}
-	if ((header->version_major != CPATCH_MAJOR_VERSION) &&
-	    (header->version_major != CPATCH_MAJOR_VERSION_DELTA)) {
+	if (instruction_set_get(header->version_major) == NULL) {
 		LOG_WRN("Header major version failure (%d)", header->version_major);
 		return -EINVAL;
 	}
@@ -418,33 +166,27 @@ int cpatch_patch_apply(const struct flash_area *input, const struct flash_area *
 		       struct stream_flash_ctx *output, struct cpatch_header *header,
 		       infuse_progress_cb_t progress_cb)
 {
-	struct patch_state state = {0};
-	uint32_t this_callback, last_callback = 0;
+	cpatch_instruction_set_t instruction_set = instruction_set_get(header->version_major);
+	struct cpatch_ctx ctx = {
+		.input = input,
+		.patch = patch,
+		.output = output,
+		.header = header,
+		.progress_cb = progress_cb,
+	};
 	int rc;
+
+	if (instruction_set == NULL) {
+		return -EINVAL;
+	}
 
 	output->callback = crc_update;
 	progress_crc = 0x00;
 
-	/* Loop over patch file */
-	state.patch = patch;
-	memcpy(state.delta_history, delta_history_initial, sizeof(state.delta_history));
-	while (state.patch_offset < header->patch_file.length) {
-		/* Fetch next opcode */
-		rc = opcode_fetch(&state);
-		if (rc < 0) {
-			return rc;
-		}
-		/* Run the instruction */
-		rc = opcode_run(input, output, &state);
-		if (rc < 0) {
-			return rc;
-		}
-		/* Run progress callback if we've passed a chunk boundary */
-		this_callback = stream_flash_bytes_written(output) & CALLBACK_CHUNK_MASK;
-		if (progress_cb && (this_callback != last_callback)) {
-			last_callback = this_callback;
-			progress_cb(last_callback, header->output_file.length);
-		}
+	/* Apply the patch instructions */
+	rc = instruction_set(&ctx);
+	if (rc < 0) {
+		return rc;
 	}
 
 	/* Flush any pending writes */
