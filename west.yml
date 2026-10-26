@@ -16,7 +16,8 @@ manifest:
 
   projects:
     - name: zephyr
-      revision: 22965f5b099131fd37a151f3e35faa65296572af
+      # fix/esp32c6-board-ledc-4.4.2
+      revision: 175660a093ef31543479c6a1024c366a7d3a4ecc
       # Limit imported repositories to reduce clone time
       import:
         name-allowlist:

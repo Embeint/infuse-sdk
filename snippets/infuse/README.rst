@@ -44,6 +44,7 @@ Supported Infuse Boards
  * :ref:`board_tauro` (nRF9151 + nRF52840)
  * :ref:`board_tauro_2` (nRF9151 + nRF54L15)
  * :ref:`board_kudu` (nRF54L15)
+ * :ref:`board_esp32c6_lcd_1_47` (ESP32-C6, 4 MB and 8 MB)
 
 Simulation Targets
 ******************
