@@ -32,6 +32,7 @@ Supported Upstream Boards
  * `Nordic nRF9160 DK`_
  * `Nordic nRF9161 DK`_
  * `STM32 NUCLEO-L432KC`_
+ * `Waveshare ESP32-S3-Touch-LCD-1.47`_
 
 Supported Infuse Boards
 ***********************
@@ -64,5 +65,6 @@ Simulation Targets
 .. _Nordic nRF9160 DK: https://www.nordicsemi.com/Products/Development-hardware/nRF9160-DK
 .. _Nordic nRF9161 DK: https://www.nordicsemi.com/Products/Development-hardware/nRF9161-DK
 .. _STM32 NUCLEO-L432KC: https://www.st.com/en/evaluation-tools/nucleo-l432kc.html
+.. _Waveshare ESP32-S3-Touch-LCD-1.47: https://www.waveshare.com/wiki/ESP32-S3-Touch-LCD-1.47
 .. _ARM V2M MPS2: https://docs.zephyrproject.org/latest/boards/arm/mps2/doc/mps2_an385.html
 .. _nRF52 BSIM: https://docs.zephyrproject.org/latest/boards/native/nrf_bsim/doc/nrf52_bsim.html

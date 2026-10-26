@@ -16,7 +16,8 @@ manifest:
 
   projects:
     - name: zephyr
-      revision: 22965f5b099131fd37a151f3e35faa65296572af
+      # 261020_waveshare_esp32s3_lcd
+      revision: 68a61ce8251959aa2fbd88e6a4cb9a6dda3adcf7
       # Limit imported repositories to reduce clone time
       import:
         name-allowlist:

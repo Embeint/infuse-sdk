@@ -1,0 +1,85 @@
+/*
+ * Copyright (c) 2026 Embeint Holdings Pty Ltd
+ * SPDX-License-Identifier: FSL-1.1-ALv2
+ */
+
+#include <common/infuse_bluetooth.dtsi>
+
+/ {
+	chosen {
+		infuse,reboot-state = &infuse_retention;
+		infuse,kv-partition = &storage_partition;
+		zephyr,wifi = &wifi;
+#ifdef INFUSE_IS_BOOTLOADER
+		zephyr,code-partition = &boot_partition;
+#endif
+	};
+
+	aliases {
+		display-backlight = &pwm_lcd0;
+	};
+
+	/* Last 512 bytes of RTC slow memory, retained across software resets */
+	rtc_retained: memory@50001e00 {
+		compatible = "zephyr,memory-region", "mmio-sram";
+		reg = <0x50001e00 0x200>;
+		ranges = <0x0 0x50001e00 0x200>;
+		zephyr,memory-region = "RTC_SLOW_RAM_RETAINED_MEM";
+		#address-cells = <1>;
+		#size-cells = <1>;
+
+		retainedmem0: retainedmem {
+			compatible = "zephyr,retained-ram";
+			ranges;
+			#address-cells = <1>;
+			#size-cells = <1>;
+
+			infuse_retention: retention@0 {
+				compatible = "zephyr,retention";
+				reg = <0x0 0x200>;
+				prefix = [de 03];
+			};
+		};
+	};
+
+#ifndef INFUSE_IS_BOOTLOADER
+	/* USB remains the human console; UART0 on the TX/RX header carries binary ePackets. */
+	epacket_serial: epacket_serial {
+		compatible = "embeint,epacket-serial";
+		serial = <&uart0>;
+	};
+
+	data_logger_serial: data_logger_serial {
+		compatible = "embeint,data-logger-epacket", "embeint,data-logger";
+		epacket = <&epacket_serial>;
+		tdf_logger_serial: tdf_logger_serial {
+			compatible = "embeint,tdf-data-logger";
+		};
+	};
+
+	epacket_udp: epacket_udp {
+		compatible = "embeint,epacket-udp";
+	};
+
+	data_logger_udp: data_logger_udp {
+		compatible = "embeint,data-logger-epacket", "embeint,data-logger";
+		epacket = <&epacket_udp>;
+		tdf_logger_udp: tdf_logger_udp {
+			compatible = "embeint,tdf-data-logger";
+		};
+	};
+#endif /* INFUSE_IS_BOOTLOADER */
+};
+
+/* Light sleep stops the USB Serial/JTAG console and is not coordinated with the
+ * radio drivers. Applications enabling it must also enable &rtc_timer as a
+ * wakeup source.
+ */
+&cpu0 {
+	/delete-property/ cpu-power-states;
+};
+
+&rtc_slow_ram {
+	/* Exclude the retained region from the linker's RTC slow memory */
+	reg = <0x50000000 0x1e00>;
+};
