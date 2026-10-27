@@ -520,6 +520,7 @@ static const struct gnss_driver_api gnss_api = {
 };
 
 #define UBX_M8_SPI(inst)                                                                           \
+	UBX_COMMON_BUILD_CHECKS(inst);                                                             \
 	static const struct ubx_m8_spi_config ubx_m8_cfg_##inst = {                                \
 		.common = UBX_COMMON_CONFIG_INST(inst, ubx_m8_spi_software_standby,                \
 						 ubx_m8_spi_software_resume,                       \

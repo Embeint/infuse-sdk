@@ -533,6 +533,7 @@ static const struct gnss_driver_api gnss_api = {
 };
 
 #define UBX_M10_I2C(inst)                                                                          \
+	UBX_COMMON_BUILD_CHECKS(inst);                                                             \
 	static const struct ubx_m10_i2c_config ubx_m10_cfg_##inst = {                              \
 		.common = UBX_COMMON_CONFIG_INST(inst, ubx_m10_i2c_software_standby,               \
 						 ubx_m10_i2c_software_resume,                      \

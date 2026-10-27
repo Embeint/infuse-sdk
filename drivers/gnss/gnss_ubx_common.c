@@ -246,13 +246,13 @@ int ubx_common_pm_control(const struct device *dev, enum pm_device_action action
 	switch (action) {
 	case PM_DEVICE_ACTION_SUSPEND:
 		shared_device_release_dt(&cfg->ant_switch);
-#ifndef CONFIG_GNSS_U_BLOX_IGNORE_STANDBY
 		/* Disable timepulse interrupt */
 		if (cfg->timepulse_gpio.port != NULL) {
 			data->latest_timepulse = 0;
 			(void)gpio_pin_interrupt_configure_dt(&cfg->timepulse_gpio,
 							      GPIO_INT_DISABLE);
 		}
+#ifndef CONFIG_GNSS_U_BLOX_IGNORE_STANDBY
 		/* Put into low power mode */
 		rc = cfg->pm_funcs.software_standby(dev);
 		if (rc < 0) {
@@ -287,13 +287,13 @@ int ubx_common_pm_control(const struct device *dev, enum pm_device_action action
 			LOG_WRN("Failed to resume");
 			return rc;
 		}
+#endif /* !CONFIG_GNSS_U_BLOX_IGNORE_STANDBY */
 		/* Enable timepulse interrupt */
 		if (cfg->timepulse_gpio.port != NULL) {
 			data->latest_timepulse = 0;
 			(void)gpio_pin_interrupt_configure_dt(&cfg->timepulse_gpio,
 							      GPIO_INT_EDGE_TO_ACTIVE);
 		}
-#endif /* !CONFIG_GNSS_U_BLOX_IGNORE_STANDBY */
 		shared_device_request_dt(&cfg->ant_switch);
 		break;
 	case PM_DEVICE_ACTION_TURN_OFF:
