@@ -82,6 +82,12 @@ struct ubx_common_data {
 		.data_ready_pio = DT_INST_PROP(inst, data_ready_pio),                              \
 	}
 
+/* Without a power domain the modem is powered permanently, so skipping standby keeps it active */
+#define UBX_COMMON_BUILD_CHECKS(inst)                                                              \
+	BUILD_ASSERT(!IS_ENABLED(CONFIG_GNSS_U_BLOX_IGNORE_STANDBY) ||                             \
+			     DT_INST_NODE_HAS_PROP(inst, power_domains),                           \
+		     "CONFIG_GNSS_U_BLOX_IGNORE_STANDBY requires a power domain")
+
 int ubx_common_init(const struct device *dev, struct modem_pipe *pipe);
 
 void ubx_common_extint_wake(const struct device *dev);
