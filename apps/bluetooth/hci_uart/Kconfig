@@ -12,11 +12,13 @@ configdefault INFUSE_CPATCH
 
 # Reduced RAM footprint on memory constrained platforms
 configdefault BT_MAX_CONN
+	default 4 if SOC_NRF54L05
 	default 4 if SOC_NRF52832
 	default 8 if SOC_NRF52833
 	default 16
 
 configdefault BT_EXT_ADV_MAX_ADV_SET
+	default 2 if SOC_NRF54L05
 	default 4 if SOC_NRF52832
 	default 6
 
@@ -33,5 +35,25 @@ configdefault BT_CTLR_SDC_TX_PACKET_COUNT
 
 configdefault BT_CTLR_SDC_RX_PACKET_COUNT
 	default 5
+
+# No logging or console output on ROM constrained platforms
+if SOC_NRF54L05
+
+configdefault LOG
+	default n
+
+configdefault PRINTK
+	default n
+
+configdefault BOOT_BANNER
+	default n
+
+configdefault EARLY_CONSOLE
+	default n
+
+configdefault STDOUT_CONSOLE
+	default n
+
+endif # SOC_NRF54L05
 
 source "Kconfig.zephyr"
