@@ -34,6 +34,9 @@ INFUSE_ZBUS_CHAN_DEFINE(INFUSE_ZBUS_CHAN_UBX_NAV_PVT);
 #define TIME_VALID_FLAGS                                                                           \
 	(UBX_MSG_NAV_TIMEGPS_VALID_TOW_VALID | UBX_MSG_NAV_TIMEGPS_VALID_WEEK_VALID)
 
+/* Consecutive NAV-TIMEGPS messages without a timepulse before giving up on fine sync */
+#define TIMEPULSE_MAX_FAILURES 3
+
 enum {
 	TIME_SYNC_RUNNING = BIT(0),
 	TIME_SYNC_DONE = BIT(1),
@@ -130,28 +133,32 @@ static void nav_timegps_handle(struct gnss_run_state *state, const struct task_g
 
 	/* Fine sync requires valid timepulse */
 	rc = gnss_get_latest_timepulse(state->dev, &timepulse);
-	if (rc != 0) {
-		if (state->timepulse_failures++ < 3) {
+	if (rc == 0) {
+		struct timeutil_sync_instant sync = {
+			.local = timepulse,
+			.ref = epoch_time,
+		};
+
+		LOG_INF("%s time sync @ GPS (%d.%d)", "Fine", timegps->week, timegps->itow);
+		/* Notify time library of sync */
+		(void)epoch_time_set_reference(TIME_SOURCE_GNSS, &sync);
+		state->timepulse_failures = 0;
+	} else {
+		if ((rc != -ENOTSUP) && (++state->timepulse_failures < TIMEPULSE_MAX_FAILURES)) {
 			return;
 		}
-		/* But if there is still no timepulse when accuracy has been better than 1us for
-		 * multiple seconds, assume it isn't ever coming. Use the current local reference.
-		 * Since TIME_SYNC_DONE is a requirement for RUN_TO_LOCATION_FIX to terminate,
-		 * this prevents a broken timepulse pin from always running for the maximum
-		 * duration.
+		/* If there is no timepulse pin, or there is still no timepulse after accuracy has
+		 * been better than 1us for multiple seconds, assume it isn't ever coming. Since
+		 * TIME_SYNC_DONE is a requirement for RUN_TO_LOCATION_FIX to terminate, this
+		 * prevents a broken timepulse pin from always running for the maximum duration.
+		 * The reference is not updated, as the coarse sync above already provides the
+		 * same accuracy when the existing reference is old.
 		 */
-		LOG_WRN("Timepulse failure");
-		timepulse = k_uptime_ticks();
+		if (rc != -ENOTSUP) {
+			LOG_WRN("No timepulse, skipping fine time sync");
+		}
+		state->timepulse_failures = 0;
 	}
-
-	struct timeutil_sync_instant sync = {
-		.local = timepulse,
-		.ref = epoch_time,
-	};
-
-	LOG_INF("%s time sync @ GPS (%d.%d)", "Fine", timegps->week, timegps->itow);
-	/* Notify time library of sync */
-	(void)epoch_time_set_reference(TIME_SOURCE_GNSS, &sync);
 	state->flags |= TIME_SYNC_DONE;
 	state->next_time_sync =
 		k_uptime_get() + (CONFIG_TASK_RUNNER_GNSS_TIME_RESYNC_PERIOD_SEC * MSEC_PER_SEC);
