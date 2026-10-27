@@ -68,4 +68,24 @@ configdefault BT_CTLR_CHANNEL_SOUNDING
 configdefault BT_CTLR_CHANNEL_SOUNDING_TEST
 	default n if SOC_NRF54L05
 
+# Periodic Advertising with Responses (only available on supported controllers)
+
+configdefault BT_PER_ADV
+	default y if BT_CTLR_ADV_PERIODIC_RSP_SUPPORT
+
+configdefault BT_PER_ADV_RSP
+	default y if BT_CTLR_ADV_PERIODIC_RSP_SUPPORT
+
+configdefault BT_PER_ADV_SYNC
+	default y if BT_CTLR_SYNC_PERIODIC_RSP_SUPPORT
+
+configdefault BT_PER_ADV_SYNC_RSP
+	default y if BT_CTLR_SYNC_PERIODIC_RSP_SUPPORT
+
+configdefault BT_PER_ADV_SYNC_TRANSFER_SENDER
+	default y if BT_CTLR_ADV_PERIODIC_RSP_SUPPORT || BT_CTLR_SYNC_PERIODIC_RSP_SUPPORT
+
+configdefault BT_PER_ADV_SYNC_TRANSFER_RECEIVER
+	default y if BT_CTLR_SYNC_PERIODIC_RSP_SUPPORT
+
 source "Kconfig.zephyr"
