@@ -61,4 +61,11 @@ configdefault STDOUT_CONSOLE
 
 endif # SOC_NRF54L05
 
+# Channel Sounding (only available on SoCs with radio support)
+configdefault BT_CTLR_CHANNEL_SOUNDING
+	default y
+
+configdefault BT_CTLR_CHANNEL_SOUNDING_TEST
+	default n if SOC_NRF54L05
+
 source "Kconfig.zephyr"
