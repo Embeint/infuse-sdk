@@ -2,8 +2,12 @@
 # Copyright (c) 2024 Embeint Holdings Pty Ltd
 
 import argparse
+import os
 import pathlib
+import shutil
+import subprocess
 import sys
+import tempfile
 
 import yaml
 from west.commands import WestCommand
@@ -11,7 +15,12 @@ from west.commands import WestCommand
 try:
     from infuse_iot.cpatch import Encoder, cpatch
 except ImportError:
+    Encoder = None
     cpatch = None
+
+# Encoders supported by the `cpatch` binary
+CPATCH_BIN_ENCODERS = ("shortest-path", "shortest-path-delta", "stream-thumb2")
+CPATCH_INSTALL = "cargo install --git https://github.com/Embeint/python-tools cpatch"
 
 EXPORT_DESCRIPTION = """\
 This command generates a diff file between two application releases.
@@ -27,6 +36,8 @@ class release_diff(WestCommand):
             EXPORT_DESCRIPTION,
             accepts_unknown_args=False,
         )
+        self.cpatch_bin = shutil.which("cpatch")
+        self.install_hint_shown = False
 
     def do_add_parser(self, parser_adder):
         parser = parser_adder.add_parser(
@@ -90,17 +101,40 @@ class release_diff(WestCommand):
         return None
 
     @staticmethod
-    def cpatch_encoder(kconfig: dict[str, str]) -> "Encoder":
+    def cpatch_encoder(kconfig: dict[str, str]) -> str:
         """Most efficient encoder that the application applying the patch supports"""
         if kconfig.get("CONFIG_INFUSE_CPATCH_VERSION_3") == "y":
-            if not hasattr(Encoder, "STREAM_THUMB2"):
-                sys.exit("Original application supports CPatch version 3, update infuse-iot to generate it")
-            return Encoder.STREAM_THUMB2
+            return "stream-thumb2"
         if kconfig.get("CONFIG_INFUSE_CPATCH_VERSION_2") == "y":
-            if not hasattr(Encoder, "SHORTEST_PATH_DELTA"):
-                sys.exit("Original application supports CPatch version 2, update infuse-iot to generate it")
-            return Encoder.SHORTEST_PATH_DELTA
-        return Encoder.SHORTEST_PATH
+            return "shortest-path-delta"
+        return "shortest-path"
+
+    def cpatch_generate(self, bin_original: bytes, bin_new: bytes, verbose: bool, encoder: str) -> bytes | None:
+        """Generate a patch with the `cpatch` binary if available, otherwise the Python library
+
+        Returns None if no available implementation supports the encoder.
+        """
+        if self.cpatch_bin is not None:
+            with tempfile.TemporaryDirectory() as tmp:
+                original_f = pathlib.Path(tmp) / "original.bin"
+                new_f = pathlib.Path(tmp) / "new.bin"
+                patch_f = pathlib.Path(tmp) / "patch.bin"
+                original_f.write_bytes(bin_original)
+                new_f.write_bytes(bin_new)
+                res = subprocess.run(
+                    [self.cpatch_bin, "generate", "--encoder", encoder, str(original_f), str(new_f), str(patch_f)],
+                    capture_output=True,
+                    text=True,
+                    check=False,
+                )
+                if res.returncode == 0:
+                    return patch_f.read_bytes()
+                # Older binaries may not support the encoder, fallback to the Python library
+                if "invalid encoder" not in res.stderr:
+                    sys.exit(f"cpatch failed:\n{res.stderr}")
+        if cpatch is not None and encoder in [e.value for e in Encoder]:
+            return cpatch.generate(bin_original, bin_new, verbose, encoder=Encoder(encoder))
+        return None
 
     def do_generation(
         self,
@@ -187,11 +221,19 @@ class release_diff(WestCommand):
         print(f"{ver_orig} -> {ver_new}")
         # The patch is applied by the original application, so it determines the supported format
         encoder = self.cpatch_encoder(kconfig_orig)
+        if encoder == "stream-thumb2" and self.cpatch_bin is None and not self.install_hint_shown:
+            print(f"`cpatch` binary not found, the Python '{encoder}' encoder is significantly slower")
+            print(f"Install the binary with: {CPATCH_INSTALL}")
+            self.install_hint_shown = True
         # The trailing TLV's can change on device, so exclude them from the original image knowledge
         with open(input_path, "rb") as f_input, open(output_path, "rb") as f_output:
             bin_original = f_input.read(-1)[:-input_tlv_len]
             bin_new = f_output.read(-1)
-        patch = cpatch.generate(bin_original, bin_new, True, encoder=encoder)
+        patch = self.cpatch_generate(bin_original, bin_new, True, encoder)
+        if patch is None:
+            sys.exit(
+                f"Original application supports CPatch encoder '{encoder}', update cpatch or infuse-iot to generate it"
+            )
 
         ratio = 100 * len(patch) / len(bin_new)
         print(f"Original File: {len(bin_original):6d} bytes")
@@ -207,21 +249,20 @@ class release_diff(WestCommand):
             f.write(patch)
 
         if tool_compare:
-            import os
-            import shutil
-            import subprocess
-            import tempfile
-
             output_len = os.stat(output_path).st_size
             print("")
             print("Tool Comparison:")
             with tempfile.TemporaryDirectory() as tmp:
-                print(f"\t  CPatch: {len(patch):6d} {100 * len(patch) / output_len:5.2f}% ({encoder.value}, used)")
-                for other in Encoder:
+                print(f"\t  CPatch: {len(patch):6d} {100 * len(patch) / output_len:5.2f}% ({encoder}, used)")
+                encoders = [*CPATCH_BIN_ENCODERS, *(e.value for e in Encoder or [])]
+                for other in dict.fromkeys(encoders):
                     if other == encoder:
                         continue
-                    other_len = len(cpatch.generate(bin_original, bin_new, False, encoder=other))
-                    print(f"\t  CPatch: {other_len:6d} {100 * other_len / output_len:5.2f}% ({other.value})")
+                    other_patch = self.cpatch_generate(bin_original, bin_new, False, other)
+                    if other_patch is None:
+                        continue
+                    other_len = len(other_patch)
+                    print(f"\t  CPatch: {other_len:6d} {100 * other_len / output_len:5.2f}% ({other})")
                 if shutil.which("jdiff") is not None:
                     diff_file = f"{tmp}/jdiff.patch"
                     subprocess.run(
@@ -254,8 +295,8 @@ class release_diff(WestCommand):
                     print(f"\t  xdelta: {x_size:6d} {100 * x_size / output_len:5.2f}%")
 
     def do_run(self, args, _unknown_args):
-        if cpatch is None:
-            sys.exit("infuse-iot.diff not found")
+        if cpatch is None and self.cpatch_bin is None:
+            sys.exit(f"Neither infuse-iot.cpatch or the `cpatch` binary found, install with: {CPATCH_INSTALL}")
 
         for original in args.input:
             self.do_generation(original, args.output, args.tool_compare, args.ignore_board)
