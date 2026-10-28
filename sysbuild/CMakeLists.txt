@@ -13,9 +13,10 @@ if(SB_CONFIG_BOOTLOADER_MCUBOOT)
     # infuse snippet should be applied to MCUBoot application
     set(mcuboot_SNIPPET "infuse" CACHE INTERNAL "")
   endif()
-  # Ensure multithreading is always enabled in MCUBoot
-  # External flash drivers and USB support depend on it
-  set(mcuboot_CONFIG_MULTITHREADING "y" CACHE INTERNAL "")
+  if(SB_CONFIG_INFUSE_MCUBOOT_MULTITHREADING)
+    # External flash drivers and USB support depend on multithreading
+    set(mcuboot_CONFIG_MULTITHREADING "y" CACHE INTERNAL "")
+  endif()
   # Override ridiculous defaults forced by MCUBoot for nRF development kits
   # in the name of saving ROM that is wasted regardless.
   if(SB_CONFIG_BOARD_NRF7002DK OR SB_CONFIG_BOARD_NRF9160DK)
