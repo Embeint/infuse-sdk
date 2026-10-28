@@ -17,6 +17,15 @@ choice BOOTLOADER
 	default BOOTLOADER_MCUBOOT if INFUSE_INTEGRATION
 endchoice
 
+config INFUSE_MCUBOOT_MULTITHREADING
+	bool "Force multithreading on in MCUboot"
+	default y
+	depends on INFUSE_INTEGRATION && BOOTLOADER_MCUBOOT
+	help
+	  External flash drivers and USB support in MCUboot depend on
+	  multithreading. Disable for internal-flash-only bootloaders to
+	  reduce ROM usage.
+
 config BT_HCI_IPC_BOARD_TARGET_CPUCLUSTER
 	string
 	default "cpunet" if SOC_NRF5340_CPUAPP
