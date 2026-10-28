@@ -1,0 +1,33 @@
+/*
+ * Maximise image slot sizes on the nRF54L05 (500 kB RRAM)
+ *
+ * Reduced bootloader partition and no storage partition.
+ * The secondary slot is one sector larger, as required by MCUboot swap-using-offset.
+ *
+ * Applied to both the application and MCUboot (see sysbuild.cmake).
+ */
+
+&cpuapp_rram {
+	/delete-node/ partitions;
+
+	partitions {
+		#address-cells = <1>;
+		#size-cells = <1>;
+
+		boot_partition: partition@0 {
+			compatible = "zephyr,mapped-partition";
+			label = "mcuboot";
+			reg = <0x0 DT_SIZE_K(24)>;
+		};
+		slot0_partition: partition@6000 {
+			compatible = "zephyr,mapped-partition";
+			label = "image-0";
+			reg = <0x6000 DT_SIZE_K(236)>;
+		};
+		slot1_partition: partition@41000 {
+			compatible = "zephyr,mapped-partition";
+			label = "image-1";
+			reg = <0x41000 DT_SIZE_K(240)>;
+		};
+	};
+};

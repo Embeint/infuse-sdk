@@ -1,0 +1,9 @@
+# ECDSA-P256 verification is smaller than RSA-2048 in MCUboot
+choice BOOT_SIGNATURE_TYPE
+	default BOOT_SIGNATURE_TYPE_ECDSA_P256 if "$(BOARD_QUALIFIERS)" = "nrf54l05/cpuapp"
+endchoice
+
+config INFUSE_MCUBOOT_MULTITHREADING
+	default n if "$(BOARD_QUALIFIERS)" = "nrf54l05/cpuapp"
+
+source "share/sysbuild/Kconfig"
