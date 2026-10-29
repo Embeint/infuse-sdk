@@ -94,11 +94,11 @@ ZTEST(rpc_command_annotate, test_annotate)
 	net_buf_unref(rsp);
 
 	/* TDF logger that failed to init */
-	flash_tdf_logger->state->init_res += 1;
+	flash_tdf_logger->state->initialized = false;
 	send_annotate_command(11, RPC_ENUM_DATA_LOGGER_FLASH_ONBOARD, 0, "X");
 	rsp = expect_rpc_response(11, INFUSE_RPC_ERROR_DEVICE_NOT_READY);
 	net_buf_unref(rsp);
-	flash_tdf_logger->state->init_res -= 1;
+	flash_tdf_logger->state->initialized = true;
 
 	/* No event string */
 	send_annotate_command(12, RPC_ENUM_DATA_LOGGER_FLASH_ONBOARD, 0, "");
