@@ -68,7 +68,7 @@ static void fifo_bytes_read_cb(struct rtio *r, const struct rtio_sqe *sqe, int r
 	rtio_cqe_release(r, rd_cqe);
 
 	/* Finish buffer put */
-	ring_buf_put_finish(&backend->common.pipe_ring_buf, backend->common.bytes_pending);
+	ring_buf_commit(&backend->common.pipe_ring_buf, backend->common.bytes_pending);
 
 	/* Release bus */
 	k_sem_give(&backend->common.bus_sem);
@@ -153,8 +153,9 @@ static void fifo_bytes_pending_cb(struct rtio *r, const struct rtio_sqe *sqe, in
 	uint8_t *output_buf;
 
 	/* Limit read to buffer claim size */
-	backend->common.bytes_pending = ring_buf_put_claim(
-		&backend->common.pipe_ring_buf, &output_buf, backend->common.bytes_pending);
+	backend->common.bytes_pending =
+		MIN(ring_buf_put_ptr(&backend->common.pipe_ring_buf, &output_buf, 0),
+		    backend->common.bytes_pending);
 
 	LOG_DBG("Pending: %d Reading: %d", pending, backend->common.bytes_pending);
 
