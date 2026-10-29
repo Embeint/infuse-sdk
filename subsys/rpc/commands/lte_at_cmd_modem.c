@@ -62,6 +62,7 @@ void match_callback(struct modem_chat *chat, char **argv, uint16_t argc, void *u
 }
 
 static void script_done_cb(struct modem_chat *chat, enum modem_chat_script_result result,
+			   const struct modem_chat_script_completion_info *info,
 			   void *user_data)
 {
 	struct ctx *cmd_ctx = user_data;
