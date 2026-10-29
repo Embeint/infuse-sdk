@@ -1,5 +1,7 @@
 common:
-  tags: infuse net
+  tags:
+    - infuse
+    - net
   min_flash: 64
   min_ram: 32
   platform_allow:
