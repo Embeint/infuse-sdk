@@ -7,6 +7,7 @@
  */
 
 #include <zephyr/logging/log.h>
+#include <zephyr/sys/minmax.h>
 #include <zephyr/zbus/zbus.h>
 
 #include <infuse/algorithm_runner/algorithms/stationary_windowed.h>
