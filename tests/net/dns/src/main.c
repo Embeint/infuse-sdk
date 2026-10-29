@@ -28,16 +28,21 @@
 
 K_SEM_DEFINE(l4_up, 0, 1);
 
-static void l4_event_handler(struct net_mgmt_event_callback *cb, uint64_t mgmt_event,
-			     struct net_if *iface)
+static void l4_event_handler(uint64_t mgmt_event, struct net_if *iface, void *info,
+			     size_t info_length, void *user_data)
 {
 	ARG_UNUSED(iface);
-	ARG_UNUSED(cb);
+	ARG_UNUSED(info);
+	ARG_UNUSED(info_length);
+	ARG_UNUSED(user_data);
 
 	if (mgmt_event == NET_EVENT_L4_CONNECTED) {
 		k_sem_give(&l4_up);
 	}
 }
+
+/* Statically registered so that connectivity gained during boot is not missed */
+NET_MGMT_REGISTER_EVENT_HANDLER(l4_events, NET_EVENT_L4_CONNECTED, l4_event_handler, NULL);
 
 ZTEST(infuse_dns, test_dns_query)
 {
@@ -158,8 +163,6 @@ ZTEST(infuse_dns, test_dns_query_async)
 
 void *test_init(void)
 {
-	static struct net_mgmt_event_callback mgmt_cb;
-
 #ifdef CONFIG_WIFI
 	KV_STRING_CONST(ssid, CONFIG_WIFI_SSID);
 	KV_STRING_CONST(psk, CONFIG_WIFI_PSK);
@@ -167,11 +170,6 @@ void *test_init(void)
 	kv_store_write(KV_KEY_WIFI_SSID, &ssid, sizeof(ssid));
 	kv_store_write(KV_KEY_WIFI_PSK, &psk, sizeof(psk));
 #endif /* CONFIG_WIFI */
-
-	if (IS_ENABLED(CONFIG_NET_CONNECTION_MANAGER)) {
-		net_mgmt_init_event_callback(&mgmt_cb, l4_event_handler, NET_EVENT_L4_CONNECTED);
-		net_mgmt_add_event_callback(&mgmt_cb);
-	}
 
 #ifdef CONFIG_NET_NATIVE_OFFLOADED_SOCKETS
 	struct net_if *iface = net_if_get_default();

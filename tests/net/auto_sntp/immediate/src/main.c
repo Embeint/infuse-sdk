@@ -31,16 +31,21 @@ static struct net_if *iface;
 static struct in_addr addr;
 #endif /* CONFIG_NET_NATIVE_OFFLOADED_SOCKETS */
 
-static void l4_event_handler(struct net_mgmt_event_callback *cb, uint64_t mgmt_event,
-			     struct net_if *iface)
+static void l4_event_handler(uint64_t mgmt_event, struct net_if *iface, void *info,
+			     size_t info_length, void *user_data)
 {
 	ARG_UNUSED(iface);
-	ARG_UNUSED(cb);
+	ARG_UNUSED(info);
+	ARG_UNUSED(info_length);
+	ARG_UNUSED(user_data);
 
 	if (mgmt_event == NET_EVENT_L4_CONNECTED) {
 		k_sem_give(&l4_up);
 	}
 }
+
+/* Statically registered so that connectivity gained during boot is not missed */
+NET_MGMT_REGISTER_EVENT_HANDLER(l4_events, NET_EVENT_L4_CONNECTED, l4_event_handler, NULL);
 
 static void reference_time_updated(enum epoch_time_source source, struct timeutil_sync_instant old,
 				   struct timeutil_sync_instant new, void *user_ctx)
@@ -137,7 +142,6 @@ ZTEST(auto_sntp, test_auto_sntp)
 
 void *test_init(void)
 {
-	static struct net_mgmt_event_callback mgmt_cb;
 	static struct epoch_time_cb time_cb;
 
 #ifdef CONFIG_WIFI
@@ -147,11 +151,6 @@ void *test_init(void)
 	kv_store_write(KV_KEY_WIFI_SSID, &ssid, sizeof(ssid));
 	kv_store_write(KV_KEY_WIFI_PSK, &psk, sizeof(psk));
 #endif /* CONFIG_WIFI */
-
-	if (IS_ENABLED(CONFIG_NET_CONNECTION_MANAGER)) {
-		net_mgmt_init_event_callback(&mgmt_cb, l4_event_handler, NET_EVENT_L4_CONNECTED);
-		net_mgmt_add_event_callback(&mgmt_cb);
-	}
 
 	/* Remove any pending URLs */
 	(void)kv_store_delete(KV_KEY_NTP_SERVER_URL);
