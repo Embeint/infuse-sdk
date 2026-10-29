@@ -11,11 +11,13 @@
 
 	partitions {
 		file_partition: partition@de000 {
+			compatible = "zephyr,mapped-partition";
 			label = "files";
 			reg = < 0xde000 0x1e000 >;
 		};
 
 		littlefs_partition: partition@100000 {
+			compatible = "zephyr,mapped-partition";
 			label = "littlefs";
 			reg = < 0x100000 0x20000 >;
 		};
