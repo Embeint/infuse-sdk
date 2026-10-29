@@ -39,23 +39,23 @@ int task_battery_manual_run(const struct device *dev, const struct task_battery_
 		return rc;
 	}
 
-	rc = fuel_gauge_get_prop(dev, FUEL_GAUGE_VOLTAGE, &value);
+	rc = fuel_gauge_get_prop(dev, FUEL_GAUGE_VOLTAGE_UV, &value);
 	if (rc < 0) {
 		LOG_ERR("Terminating due to %s", "fetch failure");
 		(void)pm_device_runtime_put(dev);
 		return rc;
 	}
-	tdf_battery->voltage_mv = value.voltage / 1000;
-	rc = fuel_gauge_get_prop(dev, FUEL_GAUGE_CURRENT, &value);
+	tdf_battery->voltage_mv = value.voltage_uv / 1000;
+	rc = fuel_gauge_get_prop(dev, FUEL_GAUGE_CURRENT_UA, &value);
 	if (rc == 0) {
-		tdf_battery->current_ua = value.current;
+		tdf_battery->current_ua = value.current_ua;
 	} else if ((rc < 0) && (rc != -ENOTSUP)) {
 		LOG_ERR("Charge current query failed (%d)", rc);
 		tdf_battery->current_ua = -1;
 	}
-	rc = fuel_gauge_get_prop(dev, FUEL_GAUGE_RELATIVE_STATE_OF_CHARGE, &value);
+	rc = fuel_gauge_get_prop(dev, FUEL_GAUGE_RELATIVE_STATE_OF_CHARGE_PCT, &value);
 	if (rc == 0) {
-		tdf_battery->soc = value.relative_state_of_charge;
+		tdf_battery->soc = value.relative_state_of_charge_pct;
 	} else if ((rc < 0) && (rc != -ENOTSUP)) {
 		LOG_ERR("SoC query failed (%d)", rc);
 		tdf_battery->soc = CONFIG_TASK_RUNNER_TASK_BATTERY_FALLBACK_SOC;
