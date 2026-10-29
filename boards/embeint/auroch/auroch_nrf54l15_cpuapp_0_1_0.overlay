@@ -1,3 +1,11 @@
+/* LFXTAL is causing issues with Bluetooth connections
+ * Use the internal RC oscillator until the root cause can be resolved
+ */
+&lfclk {
+	k32src = "rc";
+	k32src-accuracy-ppm = <250>;
+};
+
 /* Use LPUART for HCI link instead of SPI due to nRF54L15 pin issues */
 #ifndef INFUSE_IS_BOOTLOADER
 

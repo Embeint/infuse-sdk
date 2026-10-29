@@ -90,6 +90,14 @@
 	status = "okay";
 };
 
+&xo {
+	status = "okay";
+};
+
+&lfclk {
+	status = "okay";
+};
+
 &spi20 {
 	compatible = "nordic,nrf-spis";
 	status = "okay";
