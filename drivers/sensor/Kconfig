@@ -36,7 +36,7 @@ config BQ25798_FETCH_POOR_SOURCE_RETRY
 
 endif
 
-config PAC194X
+config PAC1941_1
 	bool "Microchip PAC194X single/multi-channel power monitor"
 	depends on DT_HAS_MICROCHIP_PAC1941_1_ENABLED
 	depends on SENSOR
