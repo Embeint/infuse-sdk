@@ -1,5 +1,7 @@
 common:
-  tags: data_logger tdf
+  tags:
+    - data_logger
+    - tdf
   expect_reboot: true
   platform_exclude:
     - native_sim

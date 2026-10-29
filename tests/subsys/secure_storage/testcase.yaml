@@ -1,5 +1,7 @@
 common:
-  tags: nvs psa
+  tags:
+    - nvs
+    - psa
   platform_allow:
     - native_sim
     - mps2/an385

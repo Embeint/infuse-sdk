@@ -1,5 +1,7 @@
 common:
-  tags: crypto epacket
+  tags:
+    - crypto
+    - epacket
   min_flash: 64
   min_ram: 32
   platform_allow:

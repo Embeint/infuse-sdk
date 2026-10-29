@@ -1,5 +1,7 @@
 common:
-  tags: net epacket
+  tags:
+    - net
+    - epacket
   min_flash: 64
   min_ram: 32
   run_sequential: true
