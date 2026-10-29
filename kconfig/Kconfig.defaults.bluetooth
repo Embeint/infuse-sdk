@@ -106,8 +106,6 @@ configdefault BT_CTLR_SDC_ALLOW_PARALLEL_SCANNING_AND_INITIATING
 configdefault BT_PHY_UPDATE
 	default y
 # But we don't want the PHY update to be triggered automatically by the stack
-configdefault BT_AUTO_PHY_UPDATE
-	default n
 choice BT_AUTO_PHY_CENTRAL
 	default BT_AUTO_PHY_CENTRAL_NONE
 endchoice
