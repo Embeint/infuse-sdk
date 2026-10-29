@@ -173,8 +173,8 @@ static void sim_wifi_scan_work(struct k_work *work)
 	cb(data->iface, 0, NULL);
 }
 
-static int sim_wifi_scan(const struct device *dev, struct wifi_scan_params *params,
-			 scan_result_cb_t cb)
+static int sim_wifi_scan(const struct device *dev, struct net_if *iface,
+			 struct wifi_scan_params *params, scan_result_cb_t cb)
 {
 	struct wifi_sim_iface_data *data = dev->data;
 
@@ -216,7 +216,8 @@ static void sim_wifi_connect_failure_work(struct k_work *work)
 	wifi_mgmt_raise_connect_result_event(data->iface, -ETIMEDOUT);
 }
 
-static int sim_wifi_connect(const struct device *dev, struct wifi_connect_req_params *params)
+static int sim_wifi_connect(const struct device *dev, struct net_if *iface,
+			    struct wifi_connect_req_params *params)
 {
 	struct wifi_sim_iface_data *data = dev->data;
 
@@ -258,7 +259,7 @@ static void sim_wifi_disconnect_work(struct k_work *work)
 	wifi_mgmt_raise_disconnect_result_event(data->iface, 0);
 }
 
-static int sim_wifi_disconnect(const struct device *dev)
+static int sim_wifi_disconnect(const struct device *dev, struct net_if *iface)
 {
 	struct wifi_sim_iface_data *data = dev->data;
 
