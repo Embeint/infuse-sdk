@@ -21,7 +21,7 @@
  * `algorithm_config` symbol. The exported algorithm ID must match @p file.
  *
  * On success, the caller owns the returned extension reference and must call
- * @ref llext_unload when it is no longer required. The algorithm pointer remains
+ * @a llext_unload when it is no longer required. The algorithm pointer remains
  * valid only while the extension is loaded.
  *
  * @param[in] file Algorithm file identifier

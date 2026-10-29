@@ -65,6 +65,8 @@ def main():
     for f in patch_set:
         if not f.path.endswith(".c") and not f.path.endswith(".h") or not os.path.exists(zephyr_base + "/" + f.path):
             continue
+        if "nrf_edgeai_generated" in f.path.split("/"):
+            continue
 
         for script in coccinelle_scripts:
             script_path = os.getenv("ZEPHYR_BASE") + "/" + script

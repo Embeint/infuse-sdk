@@ -24,4 +24,4 @@ jobs:
       with:
         # Default version shipped with `ms-vscode.cpptools`
         clang-format-version: '21'
-        exclude-regex: (lib/crypto/ascon)|(lib/crypto/XKCP)
+        exclude-regex: (lib/crypto/ascon)|(lib/crypto/XKCP)|(^|/)nrf_edgeai_generated/
