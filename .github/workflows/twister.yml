@@ -29,7 +29,7 @@ jobs:
   twister-run:
     runs-on: self-hosted
     container:
-      image: ghcr.io/zephyrproject-rtos/ci-repo-cache:v0.29.1.20260327
+      image: ghcr.io/zephyrproject-rtos/ci-repo-cache:v0.29.4.20260912
       options: '--entrypoint /bin/bash'
       volumes:
         - /repo-cache/embeint:/github/cache/embeint
@@ -44,7 +44,7 @@ jobs:
       CCACHE_DIR: /github/ccache
       # `--specs` is ignored because ccache is unable to resolve the toolchain specs file path.
       CCACHE_IGNOREOPTIONS: '-specs=* --specs=*'
-      TWISTER_COMMON: ' --force-color --inline-logs -v -N -M --retry-failed 3 --exclude-tag external_service'
+      TWISTER_COMMON: ' --force-color --inline-logs -v -N -M --retry-failed 3 --post-build-checks --exclude-tag external_service'
       DAILY_OPTIONS: ' -M --build-only --show-footprint'
       VENDOR_FILTER: ' --vendor nordic --vendor zephyr --vendor embeint '
       EXTRA_BOARDS: ' --platform qemu_cortex_m3 --platform qemu_cortex_m0 '
@@ -68,8 +68,9 @@ jobs:
           git remote set-url origin ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}
 
       - name: Checkout
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          persist-credentials: false
           ref: ${{ github.event.pull_request.head.sha }}
           path: infuse-sdk
           fetch-depth: 0
@@ -131,7 +132,7 @@ jobs:
     name: External Service Tests
     runs-on: self-hosted
     container:
-      image: ghcr.io/zephyrproject-rtos/ci-repo-cache:v0.29.1.20260327
+      image: ghcr.io/zephyrproject-rtos/ci-repo-cache:v0.29.4.20260912
       options: '--entrypoint /bin/bash'
       volumes:
         - /repo-cache/embeint:/github/cache/embeint
@@ -159,8 +160,9 @@ jobs:
           git remote set-url origin ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}
 
       - name: Checkout
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          persist-credentials: false
           ref: ${{ github.event.pull_request.head.sha }}
           path: infuse-sdk
           fetch-depth: 0
@@ -180,7 +182,7 @@ jobs:
       - name: Run External Service Tests with Twister
         run: |
           export ZEPHYR_BASE=${PWD}/zephyr
-          $ZEPHYR_BASE/scripts/twister --force-color --inline-logs -v -N -M --retry-failed 3 --tag external_service --integration -T infuse-sdk/tests
+          $ZEPHYR_BASE/scripts/twister --force-color --inline-logs -v -N -M --retry-failed 3 --post-build-checks --tag external_service --integration -T infuse-sdk/tests
 
       - name: Print ccache stats
         if: always()
