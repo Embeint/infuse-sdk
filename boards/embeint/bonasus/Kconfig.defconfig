@@ -25,10 +25,10 @@ configdefault UART_ASYNC_API
 	default y
 configdefault UART_ASYNC_TX_CACHE_SIZE
 	default 64
-choice MODEM_BACKEND_UART_IMPL
-	default MODEM_BACKEND_UART_ASYNC if BOARD_REVISION_0
-	default MODEM_BACKEND_UART_ASYNC_HWFC
-endchoice
+configdefault MODEM_BACKEND_UART_ASYNC
+	default y if BOARD_REVISION_0
+configdefault MODEM_BACKEND_UART_ASYNC_HWFC
+	default y if !BOARD_REVISION_0
 configdefault UART_00_NRF_TX_BUFFER_SIZE
 	default 1536
 configdefault UART_00_INTERRUPT_DRIVEN
