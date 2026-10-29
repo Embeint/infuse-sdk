@@ -9,6 +9,7 @@
 #include <zephyr/kernel.h>
 
 #include <tf-psa-crypto/drivers/external_integration.h>
+#include <mbedtls/platform_util.h>
 
 #include "ocrypto_chacha20_poly1305.h"
 #include "ocrypto_curve25519.h"
@@ -271,6 +272,21 @@ psa_driver_external_integration_hash_finish(psa_driver_external_integration_hash
 		return PSA_ERROR_NOT_SUPPORTED;
 	}
 
+	return PSA_SUCCESS;
+}
+
+psa_status_t psa_driver_external_integration_hash_clone(
+	const psa_driver_external_integration_hash_operation_t *source_ctx,
+	psa_driver_external_integration_hash_operation_t *target_ctx)
+{
+	*target_ctx = *source_ctx;
+	return PSA_SUCCESS;
+}
+
+psa_status_t
+psa_driver_external_integration_hash_abort(psa_driver_external_integration_hash_operation_t *ctx)
+{
+	mbedtls_platform_zeroize(ctx, sizeof(*ctx));
 	return PSA_SUCCESS;
 }
 
