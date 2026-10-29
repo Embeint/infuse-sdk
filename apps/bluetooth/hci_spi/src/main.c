@@ -86,7 +86,7 @@ const static struct spi_buf_set tx_bufs = {
  */
 static const struct device *const spi_hci_dev = DEVICE_DT_GET(DT_BUS(HCI_SPI_NODE));
 static struct spi_config spi_cfg = {
-	.operation = SPI_WORD_SET(8) | SPI_OP_MODE_SLAVE,
+	.operation = SPI_WORD_SET(8) | SPI_OP_MODE_PERIPHERAL,
 };
 
 /*
