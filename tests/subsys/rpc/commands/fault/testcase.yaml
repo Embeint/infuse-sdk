@@ -5,6 +5,7 @@ common:
   min_ram: 32
 tests:
   rpc.commands.fault:
+    ignore_faults: true
     expect_reboot: true
     platform_exclude:
       - native_sim
