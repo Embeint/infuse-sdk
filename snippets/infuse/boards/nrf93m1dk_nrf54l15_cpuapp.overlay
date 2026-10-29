@@ -135,3 +135,12 @@
 		};
 	};
 };
+
+#ifdef INFUSE_IS_BOOTLOADER
+
+/* Bootloader doesn't know about external flash */
+/delete-node/ &data_logger_flash;
+/delete-node/ &data_logger_partition;
+/delete-node/ &file_partition;
+
+#endif /* INFUSE_IS_BOOTLOADER */
