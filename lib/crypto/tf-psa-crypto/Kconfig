@@ -11,12 +11,17 @@ config PSA_CRYPTO_DRIVER_OBERON
 
 config TF_PSA_CRYPTO_OBERON_ACCELERATOR
 	bool "PSA crypto acceleration through the Oberon library"
-	select TF_PSA_CRYPTO_EXTERNAL_ACCELERATOR_INTEGRATION
 	depends on NRF_OBERON
 	default y
 	help
 	  The integration does not attempt to accelerate every algorithm supported
 	  by Oberon, only those commonly used by Infuse-IoT.
+
+configdefault TF_PSA_CRYPTO_DISPATCH_DIR
+	default "$(ZEPHYR_INFUSE_SDK_MODULE_DIR)/lib/crypto/tf-psa-crypto/dispatch" if TF_PSA_CRYPTO_OBERON_ACCELERATOR
+
+configdefault TF_PSA_CRYPTO_DRIVER_CONFIG_FILE
+	default "infuse/crypto/tf-psa-crypto/oberon_driver_config.h" if TF_PSA_CRYPTO_OBERON_ACCELERATOR
 
 config TF_PSA_CRYPTO_OBERON_ACCELERATOR_SHA
 	bool "Accelerate SHA algorithms"
