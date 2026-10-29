@@ -83,7 +83,7 @@ struct net_buf *rpc_command_thread_stats(struct net_buf *request)
 	};
 
 	/* Run the analyzer callback */
-	thread_analyzer_ud_run(thread_stats_cb, 0, &state);
+	thread_analyzer_run_with_user_data(thread_stats_cb, 0, &state);
 
 	/* Flush the last buffer */
 	if (state.pending_buf != NULL) {
