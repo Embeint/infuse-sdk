@@ -303,12 +303,8 @@ void *test_init(void)
 #endif /* CONFIG_WIFI */
 
 #ifdef CONFIG_NET_NATIVE_OFFLOADED_SOCKETS
-	struct net_if *iface = net_if_get_default();
-	struct in_addr addr;
-
-	/* Add the IP address to trigger NET_EVENT_L4_CONNECTED */
-	net_addr_pton(AF_INET, "192.0.2.1", &addr);
-	net_if_ipv4_addr_add(iface, &addr, NET_ADDR_MANUAL, 0);
+	/* Bring the interface up to trigger NET_EVENT_L4_CONNECTED */
+	net_if_up(net_if_get_default());
 #else
 	/* Turn on all interfaces */
 	conn_mgr_all_if_up(true);
