@@ -137,7 +137,7 @@ K_THREAD_DEFINE(sensor_thread, 2048, simple_sensor_validator, NULL, NULL, NULL, 
 #if defined(CONFIG_SPI_NOR)
 #define FLASH_COMPAT jedec_spi_nor
 #elif defined(CONFIG_FLASH_MSPI_NOR)
-#define FLASH_COMPAT jedec_mspi_nor
+#define FLASH_COMPAT jedec_nor
 #elif defined(CONFIG_SPI_NAND)
 #define FLASH_COMPAT jedec_spi_nand
 #endif
