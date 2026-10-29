@@ -155,34 +155,37 @@ static int modem_backend_ublox_spi_close(void *data)
 	return 0;
 }
 
-static int modem_backend_ublox_spi_transmit_double(void *data, const uint8_t *buf, size_t size,
-						   const uint8_t *extra_buf, size_t extra_size)
+/* Maximum number of fragments queued per `transmit_chain` call */
+#define MAX_TX_FRAGMENTS 2
+
+static int modem_backend_ublox_spi_transmit_chain(void *data,
+						  const struct modem_pipe_data_fragment *frags,
+						  size_t num_frags)
 {
 	struct modem_backend_ublox_spi *backend = data;
-	size_t total_size = size + extra_size;
+	struct spi_buf tx[MAX_TX_FRAGMENTS];
+	size_t total_size = 0;
 	const struct spi_buf rx = {
 		.buf = backend->spi_rx,
 		.len = sizeof(backend->spi_rx),
-	};
-	const struct spi_buf tx[2] = {
-		{
-			.buf = (uint8_t *)buf,
-			.len = size,
-		},
-		{
-			.buf = (uint8_t *)extra_buf,
-			.len = extra_size,
-		},
 	};
 	const struct spi_buf_set rxbs = {
 		.buffers = &rx,
 		.count = 1,
 	};
-	const struct spi_buf_set txbs = {
+	struct spi_buf_set txbs = {
 		.buffers = tx,
-		.count = extra_size == 0 ? 1 : 2,
+		.count = 0,
 	};
 	int rc;
+
+	/* Partial transmission is valid, only queue the fragments we have buffers for */
+	for (size_t i = 0; i < MIN(num_frags, MAX_TX_FRAGMENTS); i++) {
+		tx[i].buf = (uint8_t *)frags[i].data;
+		tx[i].len = frags[i].size;
+		total_size += frags[i].size;
+		txbs.count++;
+	}
 
 	if (total_size > sizeof(backend->spi_rx)) {
 		LOG_WRN("Payload too large (%d > %d)", total_size, sizeof(backend->spi_rx));
@@ -199,7 +202,9 @@ static int modem_backend_ublox_spi_transmit_double(void *data, const uint8_t *bu
 	pm_device_runtime_get(backend->spi->bus);
 #endif
 
-	LOG_HEXDUMP_DBG(buf, size, "TX");
+	for (size_t i = 0; i < txbs.count; i++) {
+		LOG_HEXDUMP_DBG(tx[i].buf, tx[i].len, "TX");
+	}
 
 	/* Submit TX work */
 	rc = spi_transceive_cb(backend->spi->bus, &backend->spi->config, &txbs, &rxbs, fifo_read_cb,
@@ -237,7 +242,7 @@ static void data_ready_gpio_callback(const struct device *dev, struct gpio_callb
 
 struct modem_pipe_api modem_backend_ublox_spi_api = {
 	.open = modem_backend_ublox_spi_open,
-	.transmit_double = modem_backend_ublox_spi_transmit_double,
+	.transmit_chain = modem_backend_ublox_spi_transmit_chain,
 	.receive = modem_backend_ublox_spi_receive,
 	.close = modem_backend_ublox_spi_close,
 };
