@@ -260,8 +260,8 @@ ZTEST(task_runner_runner, test_device_not_ready)
 	k_sleep(K_MSEC(10));
 	zassert_equal(1, example_device_run);
 
-	/* Set initialisation result to failed */
-	dev->state->init_res = -ENODEV;
+	/* Mark the device as failing initialisation */
+	dev->state->initialized = false;
 
 	/* Warning text should be output, should not run */
 	task_runner_init(schedules, states, ARRAY_SIZE(schedules), is_ready, is_ready_data,

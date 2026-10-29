@@ -244,11 +244,11 @@ static void basic_tests(const struct device *flash_logger, uint16_t rpc_id)
 	net_buf_unref(rsp);
 
 	/* Data logger that failed to init */
-	flash_logger->state->init_res += 1;
+	flash_logger->state->initialized = false;
 	send_data_logger_state_command(11, RPC_ENUM_DATA_LOGGER_FLASH_ONBOARD, rpc_id);
 	rsp = expect_rpc_response(11, rpc_id, INFUSE_RPC_ERROR_DEVICE_NOT_READY);
 	net_buf_unref(rsp);
-	flash_logger->state->init_res -= 1;
+	flash_logger->state->initialized = true;
 
 	/* Data logger that exists */
 	send_data_logger_state_command(10, RPC_ENUM_DATA_LOGGER_FLASH_ONBOARD, rpc_id);
@@ -332,11 +332,11 @@ ZTEST(rpc_command_data_logger, test_data_logger_read_invalid)
 	net_buf_unref(rsp);
 
 	/* Device that failed to init */
-	flash_logger->state->init_res += 1;
+	flash_logger->state->initialized = false;
 	send_data_logger_read_command(30, RPC_ENUM_DATA_LOGGER_FLASH_REMOVABLE, 0, 10);
 	rsp = expect_rpc_response(30, RPC_ID_DATA_LOGGER_READ, INFUSE_RPC_ERROR_DEVICE_NOT_FOUND);
 	net_buf_unref(rsp);
-	flash_logger->state->init_res -= 1;
+	flash_logger->state->initialized = true;
 
 	/* More data than exists */
 	send_data_logger_read_command(16, RPC_ENUM_DATA_LOGGER_FLASH_ONBOARD, 0, 10);
@@ -743,7 +743,7 @@ ZTEST(rpc_command_data_logger, test_data_logger_erase_invalid)
 	net_buf_unref(rsp);
 
 	/* Pretend logger failed to initialise */
-	flash_logger->state->init_res += 1;
+	flash_logger->state->initialized = false;
 	/* Try to erase */
 	send_data_logger_erase_command(0x1235, RPC_ENUM_DATA_LOGGER_FLASH_ONBOARD, 0x00);
 	rsp = expect_rpc_response(0x1235, RPC_ID_DATA_LOGGER_ERASE,
@@ -759,7 +759,7 @@ ZTEST(rpc_command_data_logger, test_data_logger_erase_invalid)
 	rsp = expect_rpc_response(0x1237, RPC_ID_DATA_LOGGER_ERASE, 0);
 	net_buf_unref(rsp);
 	/* Restore init result */
-	flash_logger->state->init_res -= 1;
+	flash_logger->state->initialized = true;
 }
 
 ZTEST(rpc_command_data_logger, test_data_logger_erase)
