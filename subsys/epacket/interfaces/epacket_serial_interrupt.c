@@ -171,7 +171,11 @@ static void interrupt_handler(const struct device *dev, void *user_data)
 {
 	const struct device *epacket_dev = user_data;
 
-	while (uart_irq_update(dev) && uart_irq_is_pending(dev)) {
+	while (true) {
+		uart_irq_update(dev);
+		if (uart_irq_is_pending(dev) <= 0) {
+			break;
+		}
 		if (uart_irq_rx_ready(dev)) {
 			uart_irq_rx_handle(epacket_dev, dev);
 		}
