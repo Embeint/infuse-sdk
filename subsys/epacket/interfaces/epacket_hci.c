@@ -11,6 +11,7 @@
 #include <zephyr/net_buf.h>
 #include <zephyr/bluetooth/buf.h>
 #include <zephyr/bluetooth/hci_vs.h>
+#include <zephyr/drivers/bluetooth.h>
 
 #include <infuse/epacket/packet.h>
 #include <infuse/epacket/interface.h>
@@ -82,9 +83,6 @@ static void infuse_hci_link_init(void)
 	hci_internal_user_cmd_handler_register(epacket_handler);
 }
 
-/* Inject buffer into controller output stream */
-int bt_hci_recv(const struct device *dev, struct net_buf *buf);
-
 static void epacket_hci_send(const struct device *dev, struct net_buf *buf)
 {
 	struct epacket_tx_metadata *meta = net_buf_user_data(buf);
@@ -113,9 +111,11 @@ static void epacket_hci_send(const struct device *dev, struct net_buf *buf)
 
 	LOG_HEXDUMP_DBG(evt->data, evt->len, "TX");
 
-	rc = bt_hci_recv(NULL, evt);
+	/* Inject buffer into controller output stream */
+	rc = bt_hci_recv_err(DEVICE_DT_GET(DT_CHOSEN(zephyr_bt_hci)), evt);
 	if (rc < 0) {
 		LOG_WRN("Failed to send (%d)", rc);
+		net_buf_unref(evt);
 	}
 	epacket_notify_tx_result(dev, buf, rc);
 	net_buf_unref(buf);
