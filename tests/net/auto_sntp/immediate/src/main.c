@@ -28,7 +28,6 @@ K_SEM_DEFINE(time_ref_updated, 0, 1);
 
 #ifdef CONFIG_NET_NATIVE_OFFLOADED_SOCKETS
 static struct net_if *iface;
-static struct in_addr addr;
 #endif /* CONFIG_NET_NATIVE_OFFLOADED_SOCKETS */
 
 static void l4_event_handler(uint64_t mgmt_event, struct net_if *iface, void *info,
@@ -116,8 +115,8 @@ ZTEST(auto_sntp, test_auto_sntp)
 	zassert_equal(0, k_sem_take(&time_ref_updated, K_SECONDS(2)));
 
 #ifdef CONFIG_NET_NATIVE_OFFLOADED_SOCKETS
-	/* Remove the IP address to trigger NET_EVENT_L4_DISCONNECTED */
-	zassert_true(net_if_ipv4_addr_rm(iface, &addr));
+	/* Take the interface down to trigger NET_EVENT_L4_DISCONNECTED */
+	zassert_equal(0, net_if_down(iface));
 
 	/* No more callbacks */
 	zassert_equal(-EAGAIN,
@@ -129,8 +128,8 @@ ZTEST(auto_sntp, test_auto_sntp)
 	zassert_equal(0, epoch_time_set_reference(TIME_SOURCE_GNSS, &reference));
 	k_sleep(K_SECONDS(CONFIG_SNTP_AUTO_RESYNC_AGE - 1));
 
-	/* Reconnect by adding IP address */
-	zassert_not_null(net_if_ipv4_addr_add(iface, &addr, NET_ADDR_MANUAL, 0));
+	/* Reconnect by bringing the interface up */
+	zassert_equal(0, net_if_up(iface));
 
 	/* Time sync shouldn't trigger immediately */
 	zassert_equal(-EAGAIN, k_sem_take(&time_ref_updated, K_MSEC(500)));
@@ -163,9 +162,8 @@ void *test_init(void)
 #ifdef CONFIG_NET_NATIVE_OFFLOADED_SOCKETS
 	iface = net_if_get_default();
 
-	/* Add the IP address to trigger NET_EVENT_L4_CONNECTED */
-	net_addr_pton(AF_INET, "192.0.2.1", &addr);
-	net_if_ipv4_addr_add(iface, &addr, NET_ADDR_MANUAL, 0);
+	/* Bring the interface up to trigger NET_EVENT_L4_CONNECTED */
+	net_if_up(iface);
 #else
 	/* Turn on all interfaces */
 	conn_mgr_all_if_up(true);
