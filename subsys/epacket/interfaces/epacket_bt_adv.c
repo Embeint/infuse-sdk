@@ -222,7 +222,6 @@ static void epacket_bt_adv_send(const struct device *dev, struct net_buf *buf)
 static void scan_cb(const bt_addr_le_t *addr, int8_t rssi, uint8_t adv_type,
 		    struct net_buf_simple *buf)
 {
-	const char *bt_addr_le_str(const bt_addr_le_t *addr);
 	struct epacket_rx_metadata *meta;
 	struct net_buf *rx_buffer;
 

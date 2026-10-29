@@ -57,8 +57,6 @@ BUILD_ASSERT(!IS_ENABLED(CONFIG_BT_PERIPHERAL) || IS_ENABLED(CONFIG_BT_AUTO_PHY_
 
 LOG_MODULE_REGISTER(infuse_gatt, LOG_LEVEL_INF);
 
-const char *bt_addr_le_str(const bt_addr_le_t *addr);
-
 #ifdef CONFIG_BT_GATT_CLIENT
 
 static const struct bt_uuid_16 ccc_uuid = BT_UUID_INIT_16(BT_UUID_GATT_CCC_VAL);

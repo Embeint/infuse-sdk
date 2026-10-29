@@ -221,7 +221,6 @@ static ssize_t read_both(struct bt_conn *conn, const struct bt_gatt_attr *attr, 
 static ssize_t write_both(struct bt_conn *conn, const struct bt_gatt_attr *attr, const void *buf,
 			  uint16_t len, uint16_t offset, uint8_t flags)
 {
-	const char *bt_addr_le_str(const bt_addr_le_t *addr);
 	const k_timeout_t timeout = K_MSEC(CONFIG_EPACKET_INTERFACE_BT_PERIPHERAL_MAX_WAIT_MS);
 	struct epacket_rx_metadata *meta;
 	struct net_buf *rx_buffer;
@@ -276,8 +275,6 @@ static void disconnected(struct bt_conn *conn, uint8_t reason)
 	/* Handle MTU change */
 	update_interface_state();
 }
-
-const char *bt_addr_le_str(const bt_addr_le_t *addr);
 
 static void epacket_bt_peripheral_send(const struct device *dev, struct net_buf *buf)
 {
