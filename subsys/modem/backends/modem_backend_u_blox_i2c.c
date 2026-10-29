@@ -274,46 +274,45 @@ static int modem_backend_ublox_i2c_close(void *data)
 	return 0;
 }
 
-static int modem_backend_ublox_i2c_transmit_double(void *data, const uint8_t *buf, size_t size,
-						   const uint8_t *extra_buf, size_t extra_size)
+/* Limited by the number of SQEs in `i2c_rtio` (one per fragment plus the callback) */
+#define MAX_TX_FRAGMENTS 2
+
+static int modem_backend_ublox_i2c_transmit_chain(void *data,
+						  const struct modem_pipe_data_fragment *frags,
+						  size_t num_frags)
 {
 	struct modem_backend_ublox_i2c *backend = data;
 	struct rtio_sqe *wr_sqe, *cb_sqe;
-	struct rtio_sqe *extra_sqe = NULL;
+	size_t total_size = 0;
 	int rc;
+
+	/* Partial transmission is valid, only queue the fragments we have SQEs for */
+	num_frags = MIN(num_frags, MAX_TX_FRAGMENTS);
 
 	if (k_sem_take(&backend->common.bus_sem, K_MSEC(100)) < 0) {
 		return -EAGAIN;
 	}
 
-	wr_sqe = rtio_sqe_acquire(&i2c_rtio);
-	if (extra_size > 0) {
-		extra_sqe = rtio_sqe_acquire(&i2c_rtio);
+	for (size_t i = 0; i < num_frags; i++) {
+		wr_sqe = rtio_sqe_acquire(&i2c_rtio);
+		__ASSERT_NO_MSG(wr_sqe != NULL);
+
+		rtio_sqe_prep_write(wr_sqe, &i2c_iodev, RTIO_PRIO_NORM, (uint8_t *)frags[i].data,
+				    frags[i].size, NULL);
+		wr_sqe->flags |= RTIO_SQE_CHAINED;
+		wr_sqe->iodev_flags |= RTIO_IODEV_I2C_STOP | RTIO_IODEV_I2C_RESTART;
+		total_size += frags[i].size;
+
+		LOG_HEXDUMP_DBG(frags[i].data, frags[i].size, "TX");
 	}
+
 	cb_sqe = rtio_sqe_acquire(&i2c_rtio);
-
-	__ASSERT_NO_MSG(wr_sqe != NULL);
-	__ASSERT_NO_MSG((extra_sqe != NULL) || (extra_size == 0));
 	__ASSERT_NO_MSG(cb_sqe != NULL);
-
-	rtio_sqe_prep_write(wr_sqe, &i2c_iodev, RTIO_PRIO_NORM, (uint8_t *)buf, size, NULL);
 	rtio_sqe_prep_callback(cb_sqe, write_cb, (void *)backend, NULL);
-
-	wr_sqe->flags |= RTIO_SQE_CHAINED;
 	cb_sqe->flags |= RTIO_SQE_NO_RESPONSE;
-	wr_sqe->iodev_flags |= RTIO_IODEV_I2C_STOP | RTIO_IODEV_I2C_RESTART;
-
-	if (extra_size > 0) {
-		rtio_sqe_prep_write(extra_sqe, &i2c_iodev, RTIO_PRIO_NORM, (uint8_t *)extra_buf,
-				    extra_size, NULL);
-		extra_sqe->flags |= RTIO_SQE_CHAINED;
-		extra_sqe->iodev_flags |= RTIO_IODEV_I2C_STOP | RTIO_IODEV_I2C_RESTART;
-	}
 
 	/* Power up I2C */
 	pm_device_runtime_get(backend->i2c->bus);
-
-	LOG_HEXDUMP_DBG(buf, size, "TX");
 
 	/* Submit TX work */
 	rc = rtio_submit(&i2c_rtio, 0);
@@ -323,7 +322,7 @@ static int modem_backend_ublox_i2c_transmit_double(void *data, const uint8_t *bu
 		pm_device_runtime_put(backend->i2c->bus);
 		rtio_sqe_drop_all(&i2c_rtio);
 	}
-	return rc == 0 ? size : rc;
+	return rc == 0 ? total_size : rc;
 }
 
 static int modem_backend_ublox_i2c_receive(void *data, uint8_t *buf, size_t size)
@@ -346,7 +345,7 @@ static void data_ready_gpio_callback(const struct device *dev, struct gpio_callb
 
 struct modem_pipe_api modem_backend_ublox_i2c_api = {
 	.open = modem_backend_ublox_i2c_open,
-	.transmit_double = modem_backend_ublox_i2c_transmit_double,
+	.transmit_chain = modem_backend_ublox_i2c_transmit_chain,
 	.receive = modem_backend_ublox_i2c_receive,
 	.close = modem_backend_ublox_i2c_close,
 };
