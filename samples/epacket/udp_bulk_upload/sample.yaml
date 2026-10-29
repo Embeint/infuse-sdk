@@ -7,13 +7,17 @@ common:
     - infuse
 tests:
   sample.epacket.udp_bulk_upload:
-    tags: net epacket
+    tags:
+      - net
+      - epacket
     platform_allow:
       - nrf7002dk/nrf5340/cpuapp
     integration_platforms:
       - nrf7002dk/nrf5340/cpuapp
   sample.epacket.udp_bulk_upload.nrf7002eb:
-    tags: net epacket
+    tags:
+      - net
+      - epacket
     sysbuild: true
     platform_allow:
       - thingy53/nrf5340/cpuapp
