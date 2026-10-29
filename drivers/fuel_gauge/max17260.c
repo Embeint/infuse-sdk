@@ -128,9 +128,9 @@ static int max17260_get_prop(const struct device *dev, fuel_gauge_prop_t prop,
 	}
 
 	switch (prop) {
-	case FUEL_GAUGE_FULL_CHARGE_CAPACITY:
+	case FUEL_GAUGE_FULL_CHARGE_CAPACITY_UAH:
 		if (config->charge_capacity_microamp_hours > 0) {
-			val->full_charge_capacity = config->charge_capacity_microamp_hours;
+			val->full_charge_capacity_uah = config->charge_capacity_microamp_hours;
 			rc = 0;
 		}
 		break;
@@ -140,24 +140,24 @@ static int max17260_get_prop(const struct device *dev, fuel_gauge_prop_t prop,
 			rc = 0;
 		}
 		break;
-	case FUEL_GAUGE_VOLTAGE:
+	case FUEL_GAUGE_VOLTAGE_UV:
 		rc = reg_read(dev, MAX17260_REG_VOLTAGE_CELL, &unsigned_reg);
-		val->voltage = reg_to_uv(unsigned_reg);
+		val->voltage_uv = reg_to_uv(unsigned_reg);
 		break;
-	case FUEL_GAUGE_ABSOLUTE_STATE_OF_CHARGE:
-	case FUEL_GAUGE_RELATIVE_STATE_OF_CHARGE:
+	case FUEL_GAUGE_ABSOLUTE_STATE_OF_CHARGE_PCT:
+	case FUEL_GAUGE_RELATIVE_STATE_OF_CHARGE_PCT:
 		/* Use manual OCV lookup table instead of the internal SoC tracking */
 		if (config->ocv_lookup_table[0] != -1) {
 			rc = reg_read(dev, MAX17260_REG_VOLTAGE_CELL, &unsigned_reg);
-			val->relative_state_of_charge =
+			val->relative_state_of_charge_pct =
 				battery_soc_lookup(config->ocv_lookup_table,
 						   reg_to_uv(unsigned_reg)) /
 				1000;
 		}
 		break;
-	case FUEL_GAUGE_CURRENT:
+	case FUEL_GAUGE_CURRENT_UA:
 		rc = reg_read(dev, MAX17260_REG_CURRENT, &signed_reg);
-		val->current = reg_to_ua(dev, signed_reg);
+		val->current_ua = reg_to_ua(dev, signed_reg);
 		break;
 	}
 	(void)pm_device_runtime_put(config->bus.bus);

@@ -48,16 +48,16 @@ int infuse_validation_pwr(const struct device *dev, uint8_t flags)
 	if (flags & VALIDATION_PWR_BATTERY_VOLTAGE) {
 		double voltage;
 
-		rc = fuel_gauge_get_prop(dev, FUEL_GAUGE_VOLTAGE, &val);
+		rc = fuel_gauge_get_prop(dev, FUEL_GAUGE_VOLTAGE_UV, &val);
 		if (rc < 0) {
 			VALIDATION_REPORT_ERROR(test, "Voltage get failed (%d)", rc);
 			goto driver_end;
 		}
-		voltage = (double)val.voltage / 1e6;
+		voltage = (double)val.voltage_uv / 1e6;
 		VALIDATION_REPORT_VALUE(test, "VOLTAGE", "%.03f", voltage);
 	}
 	if (flags & VALIDATION_PWR_BATTERY_SOC) {
-		rc = fuel_gauge_get_prop(dev, FUEL_GAUGE_RELATIVE_STATE_OF_CHARGE, &val);
+		rc = fuel_gauge_get_prop(dev, FUEL_GAUGE_RELATIVE_STATE_OF_CHARGE_PCT, &val);
 		if ((rc < 0) && (rc != -ENOTSUP)) {
 			VALIDATION_REPORT_ERROR(test, "SoC get failed (%d)", rc);
 			goto driver_end;
@@ -65,13 +65,13 @@ int infuse_validation_pwr(const struct device *dev, uint8_t flags)
 		if (rc == -ENOTSUP) {
 			rc = 0;
 		} else {
-			VALIDATION_REPORT_VALUE(test, "SOC", "%d", val.relative_state_of_charge);
+			VALIDATION_REPORT_VALUE(test, "SOC", "%d", val.relative_state_of_charge_pct);
 		}
 	}
 	if (flags & VALIDATION_PWR_BATTERY_CURRENT) {
 		double current;
 
-		rc = fuel_gauge_get_prop(dev, FUEL_GAUGE_CURRENT, &val);
+		rc = fuel_gauge_get_prop(dev, FUEL_GAUGE_CURRENT_UA, &val);
 		if ((rc < 0) && (rc != -ENOTSUP)) {
 			VALIDATION_REPORT_ERROR(test, "Charge current get failed (%d)", rc);
 			goto driver_end;
@@ -79,14 +79,14 @@ int infuse_validation_pwr(const struct device *dev, uint8_t flags)
 		if (rc == -ENOTSUP) {
 			rc = 0;
 		} else {
-			current = (double)val.current / 1e6;
+			current = (double)val.current_ua / 1e6;
 			VALIDATION_REPORT_VALUE(test, "CURRENT", "%.06f", current);
 		}
 	}
 	if (flags & VALIDATION_PWR_BATTERY_TEMPERATURE) {
 		double temperature;
 
-		rc = fuel_gauge_get_prop(dev, FUEL_GAUGE_TEMPERATURE, &val);
+		rc = fuel_gauge_get_prop(dev, FUEL_GAUGE_TEMPERATURE_DK, &val);
 		if ((rc < 0) && (rc != -ENOTSUP)) {
 			VALIDATION_REPORT_ERROR(test, "Temperature get failed (%d)", rc);
 			goto driver_end;
@@ -94,7 +94,7 @@ int infuse_validation_pwr(const struct device *dev, uint8_t flags)
 		if (rc == -ENOTSUP) {
 			rc = 0;
 		} else {
-			temperature = (double)val.temperature / 10.0;
+			temperature = (double)val.temperature_dk / 10.0;
 			VALIDATION_REPORT_VALUE(test, "TEMPERATURE", "%.01f", temperature - 273.0);
 		}
 	}
