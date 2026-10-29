@@ -31,7 +31,7 @@ jobs:
   twister:
     runs-on: self-hosted
     container:
-      image: ghcr.io/zephyrproject-rtos/ci-repo-cache:v0.29.1.20260327
+      image: ghcr.io/zephyrproject-rtos/ci-repo-cache:v0.29.4.20260912
       options: '--entrypoint /bin/bash'
       volumes:
         - /repo-cache/embeint:/github/cache/embeint
@@ -71,8 +71,9 @@ jobs:
           git remote set-url origin ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}
 
       - name: Checkout
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          persist-credentials: false
           ref: ${{ github.event.pull_request.head.sha }}
           path: infuse-sdk
           fetch-depth: 0
@@ -102,10 +103,11 @@ jobs:
         if: always()
         run: |
           mv twister-out/coverage.json coverage/reports/${{ matrix.normalized }}.json
+          python3 zephyr/scripts/ci/coverage/strip_function_pos.py coverage/reports/${{ matrix.normalized }}.json
 
       - name: Upload Coverage Results
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: Coverage Data (Subset ${{ matrix.normalized }})
           path: coverage/reports/${{ matrix.normalized }}.json
@@ -115,7 +117,7 @@ jobs:
     name: External Service Tests
     runs-on: self-hosted
     container:
-      image: ghcr.io/zephyrproject-rtos/ci-repo-cache:v0.29.1.20260327
+      image: ghcr.io/zephyrproject-rtos/ci-repo-cache:v0.29.4.20260912
       options: '--entrypoint /bin/bash'
       volumes:
         - /repo-cache/embeint:/github/cache/embeint
@@ -143,8 +145,9 @@ jobs:
           git remote set-url origin ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}
 
       - name: Checkout
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          persist-credentials: false
           ref: ${{ github.event.pull_request.head.sha }}
           path: infuse-sdk
           fetch-depth: 0
@@ -171,10 +174,11 @@ jobs:
         if: always()
         run: |
           mv twister-out/coverage.json coverage/reports/native_sim_external_services.json
+          python3 zephyr/scripts/ci/coverage/strip_function_pos.py coverage/reports/native_sim_external_services.json
 
       - name: Upload Coverage Results
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: Coverage Data (External Services)
           path: coverage/reports/native_sim_external_services.json
@@ -183,12 +187,14 @@ jobs:
   babblesim:
     runs-on: self-hosted
     container:
-      image: ghcr.io/zephyrproject-rtos/ci-repo-cache:v0.29.1.20260327
+      image: ghcr.io/zephyrproject-rtos/ci-repo-cache:v0.29.4.20260912
       options: '--entrypoint /bin/bash'
       volumes:
         - /repo-cache/embeint:/github/cache/embeint
         - /repo-cache/ccache:/github/ccache
+        - /repo-cache/pip-cache:/github/pip-cache
     env:
+      PIP_CACHE_DIR: /github/pip-cache
       CCACHE_DIR: /github/ccache
       # `--specs` is ignored because ccache is unable to resolve the toolchain specs file path.
       CCACHE_IGNOREOPTIONS: '-specs=* --specs=*'
@@ -212,54 +218,23 @@ jobs:
           git remote set-url origin ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}
 
       - name: Checkout
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          persist-credentials: false
           ref: ${{ github.event.pull_request.head.sha }}
           path: infuse-sdk
           fetch-depth: 0
 
-      - name: Environment Setup
-        working-directory: infuse-sdk
-        run: |
-          if [ "${{github.event_name}}" = "pull_request" ]; then
-            git config --global user.email "ci@embeint.com"
-            git config --global user.name "Embeint CI"
-            rm -fr ".git/rebase-apply"
-            git rebase origin/${BASE_REF}
-            git log -n 10 --pretty=oneline
-          fi
-
-          west init -l . || true
-          west config --global update.narrow true
-          west config manifest.group-filter -- +babblesim
-          west update --path-cache /github/cache/embeint 2>&1 1> west.update.log || west update --path-cache /github/cache/embeint 2>&1 1> west.update.log || ( rm -rf ../modules ../bootloader ../tools && west update --path-cache /github/cache/embeint)
-          west forall -c 'git reset --hard HEAD'
-
-          pip install gcovr==6.0
-
-          echo "ZEPHYR_SDK_INSTALL_DIR=/opt/toolchains/zephyr-sdk-$( cat SDK_VERSION )" >> $GITHUB_ENV
+      - name: Set up Twister environment
+        uses: ./infuse-sdk/.github/actions/setup-twister
+        with:
+          group-filter: '+babblesim'
+          check-environment: 'true'
 
       - name: BabbleSim build
         run: |
           cd ${BSIM_OUT_PATH}
           make everything -j 8
-
-      - name: Check Environment
-        run: |
-          cmake --version
-          gcc --version
-          ls -la /opt/toolchains
-          ls -la
-          echo "github.ref: ${{ github.ref }}"
-          echo "github.base_ref: ${{ github.base_ref }}"
-          echo "github.ref_name: ${{ github.ref_name }}"
-
-      - name: Set up ccache
-        run: |
-          mkdir -p ${CCACHE_DIR}
-          ccache -M 20G
-          ccache -p
-          ccache -z -s -vv
 
       - name: Run tests with BabbleSim
         run: |
@@ -289,9 +264,10 @@ jobs:
             --merge-mode-functions=separate --json \
             -o coverage/reports/nrf52_bsim.json \
             $WORK_DIR
+          python3 zephyr/scripts/ci/coverage/strip_function_pos.py coverage/reports/nrf52_bsim.json
 
       - name: Upload Coverage Results
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: Coverage Data (BabbleSim)
           path: coverage/reports/nrf52_bsim.json
@@ -305,17 +281,30 @@ jobs:
       - external-services
       - babblesim
     runs-on: ubuntu-24.04
+    timeout-minutes: 20
     # the codecov job might be skipped, we don't need to run this job then
     if: success() || failure()
 
     steps:
       - name: checkout
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          persist-credentials: false
           fetch-depth: 0
 
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: 3.12
+          cache: pip
+          cache-dependency-path: scripts/requirements-actions.txt
+
+      - name: Install Python packages
+        run: |
+          pip install -r scripts/requirements-actions.txt --require-hashes
+
       - name: Download Artifacts
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           path: coverage/reports
 
@@ -354,14 +343,13 @@ jobs:
       - name: Merge coverage files
         run: |
           cd ./coverage/reports
-          pip install gcovr==6.0
           gcovr ${{ steps.get-coverage-files.outputs.mergefiles }} --merge-mode-functions=separate --json merged.json
           gcovr ${{ steps.get-coverage-files.outputs.mergefiles }} --merge-mode-functions=separate --cobertura merged.xml
           ls -la .
 
       - name: Upload Merged Coverage Results and Report
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: Coverage Data and report
           path: |
@@ -371,7 +359,7 @@ jobs:
 
       - name: Upload coverage to Codecov
         if: always()
-        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
+        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./coverage/reports/merged.xml

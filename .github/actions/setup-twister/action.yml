@@ -11,13 +11,16 @@ inputs:
   check-environment:
     description: Print tool and GitHub environment diagnostics
     default: 'false'
+  group-filter:
+    description: Value passed to "west config manifest.group-filter", left unchanged when empty
+    default: ''
 
 runs:
   using: composite
   steps:
     - name: Set up Python
       if: inputs.install-actions-requirements == 'true'
-      uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+      uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
       with:
         python-version: 3.12
 
@@ -31,16 +34,24 @@ runs:
     - name: Initialize west workspace
       shell: bash
       working-directory: infuse-sdk
+      env:
+        GROUP_FILTER: ${{ inputs.group-filter }}
       run: |
+        git config --global http.version HTTP/1.1
         if [ "${{ github.event_name }}" = "pull_request" ]; then
           git config --global user.email "ci@embeint.com"
           git config --global user.name "Embeint CI"
           rm -fr ".git/rebase-apply"
+          rm -fr ".git/rebase-merge"
           git rebase origin/${BASE_REF}
+          git clean -f -d
           git log -n 10 --pretty=oneline
         fi
 
         west init -l . || true
+        if [ -n "${GROUP_FILTER}" ]; then
+          west config manifest.group-filter -- ${GROUP_FILTER}
+        fi
         west config --global update.narrow true
         west update --path-cache /github/cache/embeint 2>&1 1> west.update.log || west update --path-cache /github/cache/embeint 2>&1 1> west.update.log || ( rm -rf ../modules ../bootloader ../tools && west update --path-cache /github/cache/embeint)
         west forall -c 'git reset --hard HEAD'
