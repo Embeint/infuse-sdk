@@ -9,7 +9,11 @@
 #include <stdio.h>
 
 #ifdef CONFIG_SOC_NRF5340_CPUAPP
+#ifdef CONFIG_CLOCK_CONTROL_NRF
 #include <nrfx_clock.h>
+#else
+#include <nrfx_clock_hfclk.h>
+#endif /* CONFIG_CLOCK_CONTROL_NRF */
 #endif /* CONFIG_SOC_NRF5340_CPUAPP */
 
 #include <zephyr/kernel.h>
@@ -94,13 +98,17 @@ int main(void)
 	};
 
 #ifdef CONFIG_SOC_NRF5340_CPUAPP
+	/* For optimal performance, the CPU frequency needs to be set to 128 MHz */
+#ifdef CONFIG_CLOCK_CONTROL_NRF
 	int err;
 
-	/* For optimal performance, the CPU frequency needs to be set to 128 MHz */
 	err = nrfx_clock_divider_set(NRF_CLOCK_DOMAIN_HFCLK, NRF_CLOCK_HFCLK_DIV_1);
 	if (err != 0) {
 		LOG_WRN("Failed to set 128 MHz: 0x%08x", err);
 	}
+#else
+	nrfx_clock_hfclk_divider_set(NRF_CLOCK_HFCLK_DIV_1);
+#endif /* CONFIG_CLOCK_CONTROL_NRF */
 #endif /* CONFIG_SOC_NRF5340_CPUAPP */
 
 #if DT_NODE_HAS_STATUS_OKAY(DT_ALIAS(led0))
