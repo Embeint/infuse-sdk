@@ -74,6 +74,7 @@ static void fota_progress_callback(struct modem_chat *chat, char **argv, uint16_
 }
 
 static void fota_script_done_cb(struct modem_chat *chat, enum modem_chat_script_result result,
+				const struct modem_chat_script_completion_info *info,
 				void *user_data)
 {
 	struct fota_ctx *ctx = user_data;
