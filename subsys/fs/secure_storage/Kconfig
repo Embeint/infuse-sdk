@@ -6,6 +6,7 @@ config INFUSE_SECURE_STORAGE
 	bool "Infuse-IoT KV store based secure storage"
 	depends on !BUILD_WITH_TFM
 	depends on KV_STORE
+	select PSA_CRYPTO
 	select MBEDTLS
 	select MBEDTLS_PSA_CRYPTO_C
 	select MBEDTLS_PSA_CRYPTO_STORAGE_C
