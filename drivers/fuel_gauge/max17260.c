@@ -136,7 +136,7 @@ static int max17260_get_prop(const struct device *dev, fuel_gauge_prop_t prop,
 		break;
 	case FUEL_GAUGE_DESIGN_CAPACITY:
 		if (config->charge_capacity_microamp_hours > 0) {
-			val->full_charge_capacity = config->charge_capacity_microamp_hours / 1000;
+			val->design_cap = config->charge_capacity_microamp_hours / 1000;
 			rc = 0;
 		}
 		break;
