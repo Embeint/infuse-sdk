@@ -21,7 +21,7 @@ K_SEM_DEFINE(dns_ctx, CONFIG_DNS_NUM_CONCUR_QUERIES, CONFIG_DNS_NUM_CONCUR_QUERI
 
 static void dns_result_display(struct net_sockaddr *addr, const char *host, uint16_t dns_id)
 {
-	char addr_str[INET6_ADDRSTRLEN];
+	char addr_str[NET_INET6_ADDRSTRLEN];
 
 	zsock_inet_ntop(addr->sa_family, &net_sin(addr)->sin_addr, addr_str, sizeof(addr_str));
 	if (host != NULL) {
@@ -34,17 +34,17 @@ static void dns_result_display(struct net_sockaddr *addr, const char *host, uint
 static void sockaddr_port_assign(struct net_sockaddr *addr, uint16_t port)
 {
 #ifdef CONFIG_NET_IPV4
-	if (addr->sa_family == AF_INET) {
+	if (addr->sa_family == NET_AF_INET) {
 		struct net_sockaddr_in *ipv4 = (struct net_sockaddr_in *)addr;
 
-		ipv4->sin_port = htons(port);
+		ipv4->sin_port = net_htons(port);
 	}
 #endif /* CONFIG_NET_IPV4 */
 #ifdef CONFIG_NET_IPV6
-	if (addr->sa_family == AF_INET6) {
+	if (addr->sa_family == NET_AF_INET6) {
 		struct net_sockaddr_in6 *ipv6 = (struct net_sockaddr_in6 *)addr;
 
-		ipv6->sin6_port = htons(port);
+		ipv6->sin6_port = net_htons(port);
 	}
 #endif /* CONFIG_NET_IPV6 */
 }
@@ -146,9 +146,9 @@ int infuse_async_dns(const char *host, int family, struct infuse_async_dns_conte
 	enum dns_query_type query_type;
 	int rc;
 
-	if (family == AF_INET) {
+	if (family == NET_AF_INET) {
 		query_type = DNS_QUERY_TYPE_A;
-	} else if (family == AF_INET6) {
+	} else if (family == NET_AF_INET6) {
 		query_type = DNS_QUERY_TYPE_AAAA;
 	} else {
 		return -EINVAL;
