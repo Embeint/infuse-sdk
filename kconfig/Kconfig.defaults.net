@@ -50,6 +50,8 @@ configdefault NET_IPV4
 configdefault NET_IPV6
 	# Disabled due to IPV6 addresses not being removed on network down
 	default n if !NRF_MODEM_LIB
+configdefault NET_IPV4_ROUTE
+	default n
 
 configdefault NET_MAX_CONN
 	# DNS + SNTP + UDP + WPA_SUPP consume the default 4
