@@ -36,7 +36,13 @@ settings = {
     "editor.defaultFormatter": "ms-vscode.cpptools",
     "C_Cpp.clang_format_style": "file:${workspaceFolder}/infuse-sdk/.clang-format",
     "C_Cpp.files.exclude": {
-        "**/twister-out*/**": True,
+        "${workspaceFolder}/**/build": True,
+        "${workspaceFolder}/modules/hal": True,
+        "**/twister-*": True,
+    },
+    "files.watcherExclude": {
+        "**/twister-*/**": True,
+        "**/build/**": True,
     },
     "search.exclude": {
         "**/twister-out*/**": True,
@@ -68,6 +74,7 @@ settings = {
     },
     "[jinja]": {"editor.formatOnSave": False},
     "[python]": {"editor.defaultFormatter": "charliermarsh.ruff"},
+    "python.analysis.exclude": ["**/.*", "**/__pycache__", "zephyr", "modules", "twister-out*", "build"],
 }
 
 recommended_extensions = {
@@ -470,14 +477,6 @@ class vscode(WestCommand):
                 settings["search.exclude"]["twister-out*"] = True
                 # Default output prefix for `west release-build`
                 settings["search.exclude"]["release-*"] = True
-
-            # Limit HAL file parsing based on the vendor to improve responsiveness
-            exclude = {}
-            if args.vendor == "nrf":
-                exclude[f"{args.workspace}/modules/hal/stm32/**"] = True
-            elif args.vendor == "stm":
-                exclude[f"{args.workspace}/modules/hal/nordic/**"] = True
-            settings["C_Cpp.files.exclude"] = exclude
 
             with (vscode_folder / "settings.json").open("w") as f:
                 json.dump(settings, f, indent=4)
