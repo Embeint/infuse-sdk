@@ -4,7 +4,7 @@ config INFUSE_DNS
 	bool "Helper to synchronise DNS queries between modules"
 	depends on NET_SOCKETS
 	depends on DNS_RESOLVER || NET_SOCKETS_OFFLOAD
-	default y
+	default y if INFUSE_SDK_NETWORKING
 	help
 	  The DNS library can only handle `DNS_NUM_CONCUR_QUERIES`
 	  queries at once, returning errors otherwise. This library
