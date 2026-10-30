@@ -3,10 +3,10 @@ sample:
   name: nRF91x1 LTE modem EMC
 common:
   build_only: true
-  socs_allow:
-    - nrf9151
-    - nrf9161
-  filter: CONFIG_BUILD_WITH_TFM and dt_chosen_enabled("zephyr,shell-uart")
+  qualifiers_allow:
+    - nrf9151/ns
+    - nrf9161/ns
+  filter: dt_chosen_enabled("zephyr,shell-uart")
   integration_platforms:
     - nrf9161dk/nrf9161/ns
     - nrf9151dk/nrf9151/ns
