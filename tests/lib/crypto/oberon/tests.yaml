@@ -1,0 +1,24 @@
+common:
+  tags: crypto
+  min_flash: 128
+  min_ram: 16
+  # Oberon only provides libraries for Cortex-M CPUs.
+  # These emulated platforms run the cortex-m0 and cortex-m33 variants.
+  platform_allow:
+    - qemu_cortex_m0
+    - mps2/an521/cpu0
+  integration_platforms:
+    - qemu_cortex_m0
+    - mps2/an521/cpu0
+tests:
+  libraries.crypto.oberon.default:
+    extra_configs:
+      - CONFIG_TF_PSA_CRYPTO_OBERON_ACCELERATOR=y
+  libraries.crypto.oberon.all:
+    extra_configs:
+      - CONFIG_TF_PSA_CRYPTO_OBERON_ACCELERATOR=y
+      - CONFIG_TF_PSA_CRYPTO_OBERON_ACCELERATOR_SHA=y
+      - CONFIG_TF_PSA_CRYPTO_OBERON_ACCELERATOR_KEY_AGREEMENT=y
+  libraries.crypto.oberon.disabled:
+    extra_configs:
+      - CONFIG_TF_PSA_CRYPTO_OBERON_ACCELERATOR=n
