@@ -100,6 +100,8 @@ configdefault NET_SOCKETS_ENABLE_DTLS
 	default y
 configdefault MBEDTLS_KEY_EXCHANGE_PSK_ENABLED
 	default y
+configdefault MBEDTLS_SSL_SRV_C
+	default n
 configdefault PSA_WANT_KEY_TYPE_ECC_PUBLIC_KEY
 	default y if !BUILD_WITH_TFM
 configdefault PSA_WANT_ALG_TLS12_PSK_TO_MS
