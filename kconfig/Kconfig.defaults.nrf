@@ -186,17 +186,9 @@ configdefault NRF_WIFI_RX_STBC_HT
 	# Disable until fix available
 	default n
 
-# MbedTLS requirements for WiFi connectivity
-configdefault PSA_WANT_KEY_TYPE_AES
-	default y if NRF70_STA_MODE
-configdefault PSA_WANT_ALG_CMAC
-	default y if NRF70_STA_MODE
-configdefault PSA_WANT_ALG_ECDH
-	default y if NRF70_STA_MODE
-configdefault PSA_WANT_ALG_ECDSA
-	default y if NRF70_STA_MODE
-configdefault MBEDTLS_HASH_ALL_ENABLED
-	default y if NRF70_STA_MODE
+# Do not support legacy, insecure WPA1 by default
+configdefault WIFI_NM_WPA_SUPPLICANT_LEGACY_CRYPTO
+	default n
 
 # UART0 is the standard serial port on Nordic boards
 configdefault UART_0_NRF_TX_BUFFER_SIZE
