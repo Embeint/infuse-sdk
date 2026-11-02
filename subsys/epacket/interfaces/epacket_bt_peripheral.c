@@ -142,6 +142,10 @@ static void conn_mtu_query(struct bt_conn *conn, void *user_data)
 	if ((rc != 0) || (info.state != BT_CONN_STATE_CONNECTED)) {
 		return;
 	}
+	/* Connections where we are the central are not used by this interface */
+	if (info.role != BT_CONN_ROLE_PERIPHERAL) {
+		return;
+	}
 
 	/* Update state */
 	*smallest_mtu = MIN(*smallest_mtu, bt_gatt_get_mtu(conn));
