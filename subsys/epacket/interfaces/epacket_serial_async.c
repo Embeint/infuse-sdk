@@ -28,8 +28,10 @@ struct epacket_serial_config {
 struct epacket_serial_data {
 	struct epacket_interface_common_data common_data;
 	const struct device *interface;
+	/* Buffer currently being transmitted, protected by tx_lock */
 	struct net_buf *pending_tx;
 	struct k_fifo tx_queue;
+	struct k_spinlock tx_lock;
 	uint8_t async_rx_buffer[2][CONFIG_EPACKET_INTERFACE_SERIAL_BACKEND_ASYNC_RX_BUFFER];
 	volatile uint8_t async_rx_buffer_idx;
 };
@@ -40,6 +42,7 @@ static void uart_callback(const struct device *dev, struct uart_event *evt, void
 {
 	const struct device *epacket_dev = user_data;
 	struct epacket_serial_data *data = epacket_dev->data;
+	k_spinlock_key_t key;
 	struct net_buf *buf;
 	int rc;
 
@@ -53,26 +56,30 @@ static void uart_callback(const struct device *dev, struct uart_event *evt, void
 			LOG_DBG("TX_ABORTED: %p", data->pending_tx);
 			rc = -EAGAIN;
 		}
-		/* Notify TX result */
-		epacket_notify_tx_result(data->interface, data->pending_tx, rc);
-		/* Free TX buffer */
-		net_buf_unref(data->pending_tx);
-		data->pending_tx = NULL;
-		/* Release the serial port after a delay for transmission.
-		 * 50ms is 720 bytes at 115200 bps.
-		 */
-		pm_device_runtime_put_async(dev, K_MSEC(50));
-		/* Handle any queued buffers */
-		buf = k_fifo_get(&data->tx_queue, K_NO_WAIT);
-		if (buf != NULL) {
-			rc = uart_tx(dev, buf->data, buf->len, 0);
-			if (rc != 0) {
-				LOG_ERR("ISR TX failed (%d)", rc);
-				epacket_notify_tx_result(data->interface, buf, rc);
-				net_buf_unref(buf);
-			} else {
-				data->pending_tx = buf;
+		buf = data->pending_tx;
+		for (;;) {
+			/* Notify TX result */
+			epacket_notify_tx_result(data->interface, buf, rc);
+			/* Free TX buffer */
+			net_buf_unref(buf);
+			/* Release the serial port after a delay for transmission.
+			 * 50ms is 720 bytes at 115200 bps.
+			 */
+			pm_device_runtime_put_async(dev, K_MSEC(50));
+			/* Start the next queued buffer, if any */
+			key = k_spin_lock(&data->tx_lock);
+			buf = k_fifo_get(&data->tx_queue, K_NO_WAIT);
+			data->pending_tx = buf;
+			k_spin_unlock(&data->tx_lock, key);
+			if (buf == NULL) {
+				break;
 			}
+			rc = uart_tx(dev, buf->data, buf->len, 0);
+			if (rc == 0) {
+				break;
+			}
+			/* Failed to start, complete it and try the next buffer */
+			LOG_ERR("ISR TX failed (%d)", rc);
 		}
 		break;
 	case UART_RX_BUF_REQUEST:
@@ -102,6 +109,7 @@ static void epacket_serial_send(const struct device *dev, struct net_buf *buf)
 	const struct epacket_serial_config *config = dev->config;
 	struct epacket_serial_data *data = dev->data;
 	struct epacket_serial_frame_header *header;
+	k_spinlock_key_t key;
 	int rc;
 
 	/* Encrypt the payload */
@@ -125,18 +133,31 @@ static void epacket_serial_send(const struct device *dev, struct net_buf *buf)
 		goto error;
 	}
 
-	/* Queue packet for transmission */
-	rc = uart_tx(config->backend, buf->data, buf->len, SYS_FOREVER_US);
-	if (rc == -EBUSY) {
+	/* Queue the packet if a transmission is ongoing, the UART callback
+	 * will start it once the current transmission completes.
+	 */
+	key = k_spin_lock(&data->tx_lock);
+	if (data->pending_tx != NULL) {
 		LOG_DBG("Queuing buffer");
 		k_fifo_put(&data->tx_queue, buf);
+		k_spin_unlock(&data->tx_lock, key);
 		return;
-	} else if (rc != 0) {
+	}
+	/* Set before starting so that the UART callback can't see a NULL buffer */
+	data->pending_tx = buf;
+	k_spin_unlock(&data->tx_lock, key);
+
+	rc = uart_tx(config->backend, buf->data, buf->len, SYS_FOREVER_US);
+	if (rc != 0) {
 		LOG_ERR("Failed to queue buffer (%d)", rc);
+		/* No transmission ongoing, so the callback can't modify this. Only the
+		 * ePacket TX thread calls this function, so no other packet can have
+		 * been queued behind this buffer while the lock was released.
+		 */
+		data->pending_tx = NULL;
 		pm_device_runtime_put(config->backend);
 		goto error;
 	}
-	data->pending_tx = buf;
 	return;
 error:
 	epacket_notify_tx_result(dev, buf, rc);
