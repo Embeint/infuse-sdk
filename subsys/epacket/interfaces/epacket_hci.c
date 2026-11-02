@@ -130,6 +130,9 @@ static bool infuse_hci_evt_handler(struct net_buf_simple *evt_buf)
 {
 	struct bt_hci_evt_vs *evt;
 
+	if (evt_buf->len < sizeof(*evt)) {
+		return false;
+	}
 	evt = net_buf_simple_pull_mem(evt_buf, sizeof(*evt));
 
 	if (evt->subevent != INFUSE_HCI_EVT_VS_EPACKET) {
@@ -140,6 +143,12 @@ static bool infuse_hci_evt_handler(struct net_buf_simple *evt_buf)
 
 	struct net_buf *buf = epacket_alloc_rx(K_FOREVER);
 	struct epacket_rx_metadata *meta;
+
+	if (evt_buf->len > net_buf_tailroom(buf)) {
+		LOG_WRN("Packet too large (%d)", evt_buf->len);
+		net_buf_unref(buf);
+		return true;
+	}
 
 	meta = net_buf_user_data(buf);
 	meta->interface = DEVICE_DT_GET(DT_DRV_INST(0));
