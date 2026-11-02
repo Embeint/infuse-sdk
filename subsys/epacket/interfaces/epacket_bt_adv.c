@@ -250,6 +250,13 @@ static void scan_cb(const bt_addr_le_t *addr, int8_t rssi, uint8_t adv_type,
 		return;
 	}
 
+	/* Validate payload fits (depends on the scan and ePacket buffer sizes) */
+	if (buf->len > net_buf_tailroom(rx_buffer)) {
+		LOG_WRN("Packet too large from %s (%d)", bt_addr_le_str(addr), buf->len);
+		net_buf_unref(rx_buffer);
+		return;
+	}
+
 	/* Copy payload across */
 	net_buf_add_mem(rx_buffer, buf->data, buf->len);
 
