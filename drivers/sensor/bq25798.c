@@ -42,6 +42,7 @@ struct bq25798_config {
 	uint8_t mppt_ratio;
 	uint8_t acdrv_en_cfg;
 	uint8_t vac_ovp;
+	uint8_t timer_control;
 };
 
 struct bq25798_data {
@@ -330,6 +331,16 @@ static int bq25798_init(const struct device *dev)
 		return rc;
 	}
 
+	/* Configure the charge safety timer */
+	rc = i2c_reg_update_byte_dt(&config->bus, BQ25798_REG_TIMER_CONTROL,
+				    BQ25798_TIMER_CONTROL_EN_CHG_TMR |
+					    BQ25798_TIMER_CONTROL_CHG_TMR_MASK,
+				    config->timer_control);
+	if (rc != 0) {
+		LOG_ERR("Reg 0x%02X %s error (%d)", BQ25798_REG_TIMER_CONTROL, "update", rc);
+		return rc;
+	}
+
 	/* Check FET detection */
 	rc = i2c_burst_read_dt(&config->bus, BQ25798_REG_CHARGER_STATUS_3, &u8, 1);
 	if (rc != 0) {
@@ -438,6 +449,11 @@ static DEVICE_API(sensor, bq25798_driver_api) = {
 						       : 0) |                                      \
 			(DT_INST_PROP(inst, acdrv2_en) ? BQ25798_CHARGER_CONTROL_4_EN_ACDRV2 : 0), \
 		.vac_ovp = (DT_INST_ENUM_IDX(inst, vac_ovp) << 4),                                 \
+		.timer_control = DT_INST_ENUM_HAS_VALUE(inst, safety_timer, disable)               \
+					 ? 0                                                       \
+					 : (BQ25798_TIMER_CONTROL_EN_CHG_TMR |                     \
+					    (DT_INST_ENUM_IDX(inst, safety_timer)                  \
+					     << BQ25798_TIMER_CONTROL_CHG_TMR_OFFSET)),            \
 	};                                                                                         \
 	static struct bq25798_data bq25798_##inst##_data;                                          \
 	DEVICE_DT_INST_DEFINE(inst, bq25798_init, NULL, &bq25798_##inst##_data,                    \
