@@ -12,6 +12,8 @@
 
 #include <zephyr/net_buf.h>
 
+#include <infuse/epacket/interface.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -50,6 +52,21 @@ struct net_buf *epacket_encryption_scratch(void);
  * @param buf ePacket that was received
  */
 void epacket_raw_receive_handler(struct net_buf *buf);
+
+/** Serial packet reconstruction state */
+struct epacket_serial_reconstruct_state {
+	struct net_buf *rx_buffer;
+	uint16_t payload_remaining;
+	uint16_t pkt_idx;
+	uint8_t len_lsb;
+	bool reset;
+};
+
+/** Common data for serial backends, must be the first member of the backend data */
+struct epacket_serial_common_data {
+	struct epacket_interface_common_data common_data;
+	struct epacket_serial_reconstruct_state reconstruct;
+};
 
 /**
  * @brief Reconstruct serial packet from byte stream

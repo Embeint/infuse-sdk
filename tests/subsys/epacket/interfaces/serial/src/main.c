@@ -103,6 +103,54 @@ ZTEST(epacket_serial, test_reconstructor)
 	zassert_is_null(out);
 }
 
+ZTEST(epacket_serial, test_reconstructor_instances)
+{
+	static struct epacket_serial_common_data data_a, data_b;
+	static const struct device dev_a = {.name = "a", .data = &data_a};
+	static const struct device dev_b = {.name = "b", .data = &data_b};
+	struct epacket_serial_frame_header s = {
+		.sync = {EPACKET_SERIAL_SYNC_A, EPACKET_SERIAL_SYNC_B},
+		.len = 10,
+	};
+	struct epacket_rx_metadata *meta;
+	uint8_t buffer_a[10], buffer_b[10];
+	struct net_buf *out;
+
+	memset(buffer_a, 0xAA, sizeof(buffer_a));
+	memset(buffer_b, 0xBB, sizeof(buffer_b));
+
+	/* Interleaved partial packets on two instances */
+	epacket_serial_reconstruct(&dev_a, (void *)&s, sizeof(s), receive_handler);
+	epacket_serial_reconstruct(&dev_a, buffer_a, 5, receive_handler);
+	epacket_serial_reconstruct(&dev_b, (void *)&s, sizeof(s), receive_handler);
+	epacket_serial_reconstruct(&dev_b, buffer_b, 5, receive_handler);
+	zassert_is_null(k_fifo_get(&packet_queue, K_MSEC(100)));
+
+	/* Resetting one instance doesn't affect the other */
+	epacket_serial_reconstruct_reset(&dev_b);
+
+	epacket_serial_reconstruct(&dev_a, buffer_a + 5, 5, receive_handler);
+	out = k_fifo_get(&packet_queue, K_MSEC(100));
+	zassert_not_null(out);
+	meta = net_buf_user_data(out);
+	zassert_equal(&dev_a, meta->interface);
+	zassert_equal(s.len, out->len);
+	zassert_mem_equal(buffer_a, out->data, out->len);
+	net_buf_unref(out);
+
+	/* Instance B lost its partial packet, but receives the next one */
+	epacket_serial_reconstruct(&dev_b, buffer_b + 5, 5, receive_handler);
+	zassert_is_null(k_fifo_get(&packet_queue, K_MSEC(100)));
+	epacket_serial_reconstruct(&dev_b, (void *)&s, sizeof(s), receive_handler);
+	epacket_serial_reconstruct(&dev_b, buffer_b, sizeof(buffer_b), receive_handler);
+	out = k_fifo_get(&packet_queue, K_MSEC(100));
+	zassert_not_null(out);
+	meta = net_buf_user_data(out);
+	zassert_equal(&dev_b, meta->interface);
+	zassert_mem_equal(buffer_b, out->data, out->len);
+	net_buf_unref(out);
+}
+
 ZTEST(epacket_serial, test_reconstructor_zero_length)
 {
 	struct epacket_serial_frame_header header = {
