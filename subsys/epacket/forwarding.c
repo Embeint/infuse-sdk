@@ -389,6 +389,13 @@ static bool forward_auto_conn_process_one(struct net_buf *buf)
 		return false;
 	}
 
+	/* Validate that forwarding interface can support required packet size */
+	forward_max_size = epacket_interface_max_packet_size(forward_interface);
+	if (forward_max_size < forward_payload) {
+		LOG_WRN("Insufficient packet size (%d < %d)", forward_max_size, forward_payload);
+		return false;
+	}
+
 	/* Ensure we have a valid Bluetooth connection before sending */
 	rc = ensure_bt_connection(&dest, hdr->flags, (uint32_t)hdr->conn_timeout * MSEC_PER_SEC,
 				  K_SECONDS(hdr->conn_idle_timeout),
@@ -400,13 +407,6 @@ static bool forward_auto_conn_process_one(struct net_buf *buf)
 		if (hdr->flags & EPACKET_FORWARD_AUTO_CONN_DC_NOTIFICATION) {
 			send_conn_terminated(meta->interface, rc, &dest.bluetooth);
 		}
-		return false;
-	}
-
-	/* Validate that forwarding interface can support required packet size */
-	forward_max_size = epacket_interface_max_packet_size(forward_interface);
-	if (forward_max_size < forward_payload) {
-		LOG_WRN("Insufficient packet size (%d < %d)", forward_max_size, forward_payload);
 		return false;
 	}
 
