@@ -386,15 +386,15 @@ int epacket_unversioned_v0_tx_decrypt(struct net_buf *buf, uint8_t interface_key
 		scratch->len - sizeof(*frame), net_buf_tail(buf), net_buf_tailroom(buf), &out_len);
 
 	if (status != PSA_SUCCESS) {
-		/* Restore original buffer */
-		net_buf_add_mem(buf, &frame, sizeof(frame));
-		net_buf_add_mem(buf, scratch->data, scratch->len);
 		goto error;
 	}
 	net_buf_add(buf, out_len);
 	net_buf_unref(scratch);
 	return 0;
 error:
+	/* Restore original buffer (frame header is included in scratch) */
+	net_buf_reset(buf);
+	net_buf_add_mem(buf, scratch->data, scratch->len);
 	net_buf_unref(scratch);
 	return -1;
 }

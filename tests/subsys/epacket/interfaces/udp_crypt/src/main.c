@@ -202,6 +202,10 @@ static void test_encrypt_decrypt_tx_auth(enum epacket_auth auth)
 		tx_copy_buf->data[i]++;
 		rc = epacket_udp_tx_decrypt(tx_copy_buf);
 		zassert_true(rc < 0);
+		/* Original buffer is restored on failure */
+		zassert_equal(tx->len, tx_copy_buf->len);
+		tx_copy_buf->data[i]--;
+		zassert_mem_equal(tx->data, tx_copy_buf->data, tx->len);
 		net_buf_unref(tx_copy_buf);
 	}
 
