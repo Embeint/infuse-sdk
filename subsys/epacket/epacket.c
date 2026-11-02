@@ -190,8 +190,8 @@ void epacket_rate_limit_tx(k_ticks_t *last_call, uint16_t bytes_transmitted)
 	if (throughput_bps) {
 		k_ticks_t now = k_uptime_ticks();
 		uint32_t bits_sent = 8 * bytes_transmitted;
-		uint32_t expected_time_ticks =
-			(CONFIG_SYS_CLOCK_TICKS_PER_SEC * bits_sent) / throughput_bps;
+		k_ticks_t expected_time_ticks =
+			((uint64_t)CONFIG_SYS_CLOCK_TICKS_PER_SEC * bits_sent) / throughput_bps;
 		k_ticks_t actual_time_ticks = now - *last_call;
 		k_ticks_t to_wait = expected_time_ticks - actual_time_ticks;
 
