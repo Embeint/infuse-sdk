@@ -45,7 +45,7 @@ static atomic_t deferred_packet_count;
 static const struct device *epacket_backhaul;
 static struct conn_state forwarding_state[CONFIG_BT_MAX_CONN];
 
-INFUSE_WATCHDOG_REGISTER_SYS_INIT(forwarding_wdog, CONFIG_TASK_RUNNER_INFUSE_WATCHDOG, wdog_channel,
+INFUSE_WATCHDOG_REGISTER_SYS_INIT(forwarding_wdog, CONFIG_EPACKET_INFUSE_WATCHDOG, wdog_channel,
 				  loop_period);
 
 static struct net_buf *forwarding_buffer_alloc(void)
