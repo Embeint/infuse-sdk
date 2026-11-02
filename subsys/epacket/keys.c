@@ -145,7 +145,7 @@ psa_key_id_t epacket_key_id_get(uint8_t key_type, uint32_t key_identifier, uint3
 		rc = epacket_key_derive(base, info, strlen(info), key_rotation,
 					&storage[interface].id);
 		ticks = k_uptime_ticks() - ticks;
-		LOG_DBG("Generation took %d uS", k_cyc_to_us_near32(ticks));
+		LOG_DBG("Generation took %d uS", k_ticks_to_us_near32(ticks));
 		if (rc == 0) {
 			storage[interface].rotation = key_rotation;
 		} else {
