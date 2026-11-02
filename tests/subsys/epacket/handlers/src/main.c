@@ -317,6 +317,14 @@ ZTEST(epacket_handlers, test_echo_response)
 	zassert_equal(sizeof(struct epacket_dummy_frame) + 64, rx->len);
 	net_buf_unref(rx);
 
+	/* Echo request larger than the interface can currently send */
+	epacket_dummy_set_max_packet(sizeof(struct epacket_dummy_frame) + 32);
+	header.type = INFUSE_ECHO_REQ;
+	header.auth = EPACKET_AUTH_DEVICE;
+	epacket_dummy_receive(epacket_dummy, &header, payload, 64);
+	zassert_is_null(k_fifo_get(tx_fifo, K_MSEC(100)));
+	epacket_dummy_set_max_packet(UINT16_MAX);
+
 	/* Send an auth failure echo request */
 	header.type = INFUSE_ECHO_REQ;
 	header.auth = EPACKET_AUTH_FAILURE;
