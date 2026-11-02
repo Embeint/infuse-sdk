@@ -101,6 +101,10 @@ boards:
     append:
       EXTRA_DTC_OVERLAY_FILE: boards/thingy91x_nrf9151_ns.overlay
       EXTRA_CONF_FILE: infuse_snippet.conf
+  /mm(6|8)108_ekh05(@.*)?/stm32u585xx(/.*)?/:
+    append:
+      EXTRA_DTC_OVERLAY_FILE: boards/morsemicro_ekh05_stm32u585xx.overlay
+      EXTRA_CONF_FILE: infuse_snippet.conf
   nucleo_l432kc/stm32l432xx:
     append:
       EXTRA_DTC_OVERLAY_FILE: boards/nucleo_l432kc_stm32l432xx.overlay

@@ -1,0 +1,21 @@
+if BOARD_MM6108_EKH05 || BOARD_MM8108_EKH05
+
+configdefault NETWORKING
+    default y if !MCUBOOT
+
+configdefault WIFI
+    default y if NETWORKING
+
+# HaLow driver + chip firmware is large, optimise to fit in a MCUboot slot
+choice COMPILER_OPTIMIZATIONS
+    default SIZE_OPTIMIZATIONS if NETWORKING
+endchoice
+choice PICOLIBC_SOURCE
+    default PICOLIBC_USE_MODULE if NETWORKING
+endchoice
+
+# Patch file RAM disk doesn't need usage statistics
+configdefault FLASH_SIMULATOR_STATS
+    default n
+
+endif # BOARD_MM6108_EKH05 || BOARD_MM8108_EKH05
