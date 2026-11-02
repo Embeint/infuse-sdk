@@ -290,6 +290,27 @@ void epacket_notify_tx_result(const struct device *dev, struct net_buf *buf, int
 	}
 }
 
+#ifdef CONFIG_INFUSE_SECURITY
+static void key_ids_respond(const struct device *dev)
+{
+	static uint32_t prev_key_response = UINT32_MAX;
+	uint32_t uptime = k_uptime_seconds();
+
+	/* Limit responses to one per second to limit the number of packets
+	 * an unauthenticated peer can trigger.
+	 */
+	if (prev_key_response == uptime) {
+		LOG_WRN("Too many INFUSE_KEY_IDS requests");
+		return;
+	}
+	prev_key_response = uptime;
+
+	if (epacket_send_key_ids(dev, K_NO_WAIT) != 0) {
+		LOG_WRN("Unable to respond to key ID request");
+	}
+}
+#endif /* CONFIG_INFUSE_SECURITY */
+
 static void epacket_handle_rx(struct net_buf *buf)
 {
 	struct epacket_interface_common_data *interface_data;
@@ -307,24 +328,9 @@ static void epacket_handle_rx(struct net_buf *buf)
 	__ASSERT_NO_MSG(metadata->rx_timestamp >= 0);
 
 #ifdef CONFIG_INFUSE_SECURITY
-	static uint32_t prev_key_request;
-	uint32_t uptime = k_uptime_seconds();
-
 	/* Key ID request */
 	if ((buf->len == 1) && (buf->data[0] == EPACKET_KEY_ID_REQ_MAGIC)) {
-		/* Limit responses to one per second to limit the number of packets
-		 * an unauthenticated peer can trigger.
-		 */
-		if (prev_key_request == uptime) {
-			LOG_WRN("Too many INFUSE_KEY_IDS requests");
-			net_buf_unref(buf);
-			return;
-		}
-		prev_key_request = uptime;
-
-		if (epacket_send_key_ids(metadata->interface, K_NO_WAIT) != 0) {
-			LOG_WRN("Unable to respond to key ID request");
-		}
+		key_ids_respond(metadata->interface);
 		net_buf_unref(buf);
 		return;
 	}
@@ -399,9 +405,7 @@ static void epacket_handle_rx(struct net_buf *buf)
 #ifdef CONFIG_INFUSE_SECURITY
 	if (rc == -2) {
 		/* Bad device key identifier, notify the sender */
-		if (epacket_send_key_ids(metadata->interface, K_NO_WAIT) != 0) {
-			LOG_WRN("Unable to respond to key ID request");
-		}
+		key_ids_respond(metadata->interface);
 	}
 #endif /* CONFIG_INFUSE_SECURITY */
 
