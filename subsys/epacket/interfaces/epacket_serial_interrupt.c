@@ -32,9 +32,8 @@ struct epacket_serial_data {
 	struct k_fifo tx_fifo;
 	const struct device *interface;
 	atomic_t rx_enabled;
-#ifdef CONFIG_EPACKET_INTERFACE_SERIAL_BACKEND_INT_SINGLE_BYTE_SEND
+	/* Buffer to send before any in tx_fifo, protected by irq_lock */
 	struct net_buf *pending;
-#endif /* CONFIG_EPACKET_INTERFACE_SERIAL_BACKEND_INT_SINGLE_BYTE_SEND */
 };
 
 LOG_MODULE_REGISTER(epacket_serial, CONFIG_EPACKET_SERIAL_LOG_LEVEL);
@@ -53,6 +52,21 @@ static void disconnected_handler(struct k_work *work)
 	const struct epacket_serial_config *config = data->interface->config;
 	struct net_buf *buf;
 	int cnt = 0;
+
+#ifndef CONFIG_EPACKET_INTERFACE_SERIAL_BACKEND_INT_SINGLE_BYTE_SEND
+	/* Drop the buffer waiting for space first, it was queued first */
+	unsigned int key = irq_lock();
+
+	buf = data->pending;
+	data->pending = NULL;
+	irq_unlock(key);
+	if (buf) {
+		epacket_notify_tx_result(data->interface, buf, -ETIMEDOUT);
+		pm_device_runtime_put(config->backend);
+		net_buf_unref(buf);
+		cnt++;
+	}
+#endif /* CONFIG_EPACKET_INTERFACE_SERIAL_BACKEND_INT_SINGLE_BYTE_SEND */
 
 	do {
 		/* Drop any pending messages */
@@ -126,7 +140,8 @@ static void uart_irq_tx_handle(const struct device *epacket_dev, const struct de
 		int sent, required;
 
 		/* Only need to push if we have a packet */
-		buf = k_fifo_get(&data->tx_fifo, K_NO_WAIT);
+		buf = data->pending ? data->pending : k_fifo_get(&data->tx_fifo, K_NO_WAIT);
+		data->pending = NULL;
 		if (buf == NULL) {
 			uart_irq_tx_disable(uart_dev);
 			irq_unlock(key);
@@ -136,7 +151,8 @@ static void uart_irq_tx_handle(const struct device *epacket_dev, const struct de
 		required = buf->len;
 		if (available < required) {
 			LOG_WRN("Insufficient buffer space");
-			k_fifo_put(&data->tx_fifo, buf);
+			/* Retain the buffer to preserve packet ordering */
+			data->pending = buf;
 			uart_irq_tx_disable(uart_dev);
 			irq_unlock(key);
 			/* Reschedule the buffer flusher */
