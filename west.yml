@@ -13,6 +13,8 @@ manifest:
       url-base: https://github.com/memfault
     - name: ncs
       url-base: https://github.com/nrfconnect
+    - name: morsemicro
+      url-base: https://github.com/MorseMicro
 
   projects:
     - name: zephyr
@@ -52,6 +54,12 @@ manifest:
       path: modules/lib/memfault
       revision: 1.44.0
       remote: memfault
+    - name: mm-iot-zephyr
+      path: modules/lib/morsemicro
+      revision: 70007b9b9161c62c829d76baf3d022af6c8db2d2
+      remote: morsemicro
+      # Pulls in mm-iot-sdk and morse-firmware (chip firmware + BCF files)
+      submodules: true
 
   self:
     path: infuse-sdk
