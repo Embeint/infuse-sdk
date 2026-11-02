@@ -81,7 +81,7 @@ static K_WORK_DELAYABLE_DEFINE(connectable_wdog, connectable_wdog_expiry);
 
 #endif /* CONFIG_EPACKET_INTERFACE_BT_ADV_CONNECTABLE_WATCHDOG_SEC > 0 */
 
-static void bt_adv_broadcast(const struct device *dev, struct net_buf *pkt)
+static int bt_adv_broadcast(const struct device *dev, struct net_buf *pkt)
 {
 	struct bt_le_adv_param adv_param = {
 		.id = BT_ID_DEFAULT,
@@ -161,20 +161,24 @@ end:
 		adv_set = NULL;
 		adv_set_active = false;
 	}
+	return rc;
 }
 
 void epacket_bt_adv_send_next(void)
 {
 	struct net_buf *next;
 
-	next = k_fifo_get(&tx_buf_queue, K_NO_WAIT);
-	if (next) {
+	/* Continue through the queue if a broadcast fails to start, otherwise
+	 * the queued buffers would be stranded until another packet is sent.
+	 */
+	while ((next = k_fifo_get(&tx_buf_queue, K_NO_WAIT)) != NULL) {
 		LOG_DBG("Chaining next buf: %p", next);
-		bt_adv_broadcast(DEVICE_DT_INST_GET(0), next);
-	} else {
-		LOG_DBG("Adv chain complete");
-		adv_set_active = false;
+		if (bt_adv_broadcast(DEVICE_DT_INST_GET(0), next) == 0) {
+			return;
+		}
 	}
+	LOG_DBG("Adv chain complete");
+	adv_set_active = false;
 }
 
 static void adv_set_complete(struct bt_le_ext_adv *adv, struct bt_le_ext_adv_sent_info *info)
@@ -215,7 +219,7 @@ static void epacket_bt_adv_send(const struct device *dev, struct net_buf *buf)
 		k_fifo_put(&tx_buf_queue, buf);
 	} else {
 		/* Broadcast if not active */
-		bt_adv_broadcast(dev, buf);
+		(void)bt_adv_broadcast(dev, buf);
 	}
 }
 
