@@ -32,6 +32,7 @@ struct epacket_serial_data {
 	struct net_buf *pending_tx;
 	struct k_fifo tx_queue;
 	struct k_spinlock tx_lock;
+	atomic_t rx_enabled;
 	uint8_t async_rx_buffer[2][CONFIG_EPACKET_INTERFACE_SERIAL_BACKEND_ASYNC_RX_BUFFER];
 	volatile uint8_t async_rx_buffer_idx;
 };
@@ -177,12 +178,22 @@ static int epacket_receive_control(const struct device *dev, bool enable)
 	int32_t rx_timeout = IS_ENABLED(CONFIG_UART_STM32) ? 0 : 500;
 
 	LOG_DBG("%d", enable);
+	/* Only take or release the power reference on a state change */
+	if (!atomic_cas(&data->rx_enabled, !enable, enable)) {
+		return 0;
+	}
 	if (enable) {
 		rc = pm_device_runtime_get(config->backend);
 		if (rc == 0) {
+			data->async_rx_buffer_idx = 1;
 			rc = uart_rx_enable(config->backend, data->async_rx_buffer[0],
 					    sizeof(data->async_rx_buffer[0]), rx_timeout);
-			data->async_rx_buffer_idx = 1;
+			if (rc < 0) {
+				(void)pm_device_runtime_put(config->backend);
+			}
+		}
+		if (rc < 0) {
+			atomic_clear(&data->rx_enabled);
 		}
 	} else {
 		rc = uart_rx_disable(config->backend);

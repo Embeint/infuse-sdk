@@ -31,6 +31,7 @@ struct epacket_serial_data {
 	struct k_work_delayable dc_handler;
 	struct k_fifo tx_fifo;
 	const struct device *interface;
+	atomic_t rx_enabled;
 #ifdef CONFIG_EPACKET_INTERFACE_SERIAL_BACKEND_INT_SINGLE_BYTE_SEND
 	struct net_buf *pending;
 #endif /* CONFIG_EPACKET_INTERFACE_SERIAL_BACKEND_INT_SINGLE_BYTE_SEND */
@@ -239,6 +240,7 @@ static void epacket_serial_send(const struct device *dev, struct net_buf *buf)
 static int epacket_receive_control(const struct device *dev, bool enable)
 {
 	const struct epacket_serial_config *config = dev->config;
+	struct epacket_serial_data *data = dev->data;
 	int rc;
 
 	/* USB backend is always enabled */
@@ -246,13 +248,21 @@ static int epacket_receive_control(const struct device *dev, bool enable)
 		return 0;
 	}
 
+	/* Only take or release the power reference on a state change */
 	if (enable) {
+		if (!atomic_cas(&data->rx_enabled, false, true)) {
+			return 0;
+		}
 		rc = pm_device_runtime_get(config->backend);
 		if (rc < 0) {
+			atomic_clear(&data->rx_enabled);
 			return rc;
 		}
 		uart_irq_rx_enable(config->backend);
 	} else {
+		if (!atomic_cas(&data->rx_enabled, true, false)) {
+			return 0;
+		}
 		uart_irq_rx_disable(config->backend);
 		(void)pm_device_runtime_put(config->backend);
 	}
