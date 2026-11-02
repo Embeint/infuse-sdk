@@ -78,6 +78,10 @@ struct epacket_bt_gatt_connect_params {
  *
  * @retval 0 on success, *conn is valid
  * @retval -ENOTCONN if existing_only is set and no connection exists
+ * @retval -EINVAL if an existing connection was not created by this interface
+ * @retval -EIO if setup of an existing connection by another caller failed
+ * @retval -ETIMEDOUT if setup of an existing connection did not complete within the
+ *                    connection timeout
  * @retval >0 on HCI error, *conn is invalid
  * @retval <0 on Zephyr error, *conn is invalid
  */

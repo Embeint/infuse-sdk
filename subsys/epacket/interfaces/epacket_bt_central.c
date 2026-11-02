@@ -62,7 +62,17 @@ struct infuse_connection_state {
 	struct k_work_delayable term_worker;
 	k_timeout_t inactivity_timeout;
 	uint32_t network_id;
+	/* Result of the automatic connection setup (enum conn_setup_state) */
+	atomic_t setup_state;
 } infuse_conn[CONFIG_BT_MAX_CONN];
+
+enum conn_setup_state {
+	/* Connection in this slot was not created by this interface */
+	CONN_SETUP_NONE = 0,
+	CONN_SETUP_PENDING,
+	CONN_SETUP_READY,
+	CONN_SETUP_FAILED,
+};
 
 struct bt_gatt_read_params_user {
 	struct bt_gatt_read_params params;
@@ -107,6 +117,8 @@ static void conn_setup_cb(struct bt_conn *conn, int err, void *user_data)
 {
 	uint8_t idx = bt_conn_index(conn);
 
+	/* Allow other users of the connection to proceed */
+	atomic_set(&infuse_conn[idx].setup_state, err == 0 ? CONN_SETUP_READY : CONN_SETUP_FAILED);
 	/* Notify command handler */
 	k_poll_signal_raise(&infuse_conn[idx].sig, err);
 }
@@ -134,9 +146,48 @@ static void conn_terminated_cb(struct bt_conn *conn, int reason, void *user_data
 {
 	uint8_t idx = bt_conn_index(conn);
 
+	/* Connection slot no longer setup */
+	atomic_set(&infuse_conn[idx].setup_state, CONN_SETUP_NONE);
 	/* Cancel any pending timeouts */
 	k_work_cancel_delayable(&infuse_conn[idx].idle_worker);
 	k_work_cancel_delayable(&infuse_conn[idx].term_worker);
+}
+
+/* Wait for the setup of a connection created by another caller to complete */
+static int existing_conn_wait(struct bt_conn *conn, struct infuse_connection_state *s,
+			      uint32_t timeout_ms)
+{
+	k_timepoint_t end = sys_timepoint_calc(K_MSEC(timeout_ms));
+	struct bt_conn_info info;
+
+	for (;;) {
+		if (bt_conn_get_info(conn, &info) != 0) {
+			return -ENOTCONN;
+		}
+		/* Only connections created by this interface have been setup */
+		if (info.role != BT_CONN_ROLE_CENTRAL) {
+			return -EINVAL;
+		}
+		if (info.state == BT_CONN_STATE_CONNECTED) {
+			switch (atomic_get(&s->setup_state)) {
+			case CONN_SETUP_NONE:
+				return -EINVAL;
+			case CONN_SETUP_READY:
+				return 0;
+			case CONN_SETUP_FAILED:
+				return -EIO;
+			default:
+				break;
+			}
+		} else if (info.state != BT_CONN_STATE_CONNECTING) {
+			return -ENOTCONN;
+		}
+		/* Connection still being established or setup by another caller */
+		if (sys_timepoint_expired(end)) {
+			return -ETIMEDOUT;
+		}
+		k_sleep(K_MSEC(10));
+	}
 }
 
 void epacket_bt_gatt_notify_init(struct bt_conn *conn)
@@ -346,6 +397,13 @@ int epacket_bt_gatt_connect(struct bt_conn **conn_out,
 		*already = true;
 		idx = bt_conn_index(conn);
 		s = &infuse_conn[idx];
+		/* Connection may still be being setup by another caller */
+		rc = existing_conn_wait(conn, s, params->conn_timeout_ms);
+		if (rc < 0) {
+			/* Connection is not owned by this caller, don't disconnect it */
+			bt_conn_unref(conn);
+			return rc;
+		}
 #ifdef CONFIG_MEMFAULT_INFUSE_METRICS_BT_CONNECTIONS
 		(void)MEMFAULT_METRIC_ADD(epacket_bt_central_conn_already, 1);
 #endif /* CONFIG_MEMFAULT_INFUSE_METRICS_BT_CONNECTIONS */
@@ -364,6 +422,7 @@ int epacket_bt_gatt_connect(struct bt_conn **conn_out,
 	}
 	idx = bt_conn_index(conn);
 	s = &infuse_conn[idx];
+	atomic_set(&s->setup_state, CONN_SETUP_PENDING);
 
 	/*
 	 * A bt_conn slot can be reused after its previous connection has gone
@@ -468,6 +527,10 @@ cleanup:
 		/* Setup failed, attempt to cleanup connection */
 		if (conn) {
 			(void)bt_conn_disconnect(conn, BT_HCI_ERR_REMOTE_USER_TERM_CONN);
+			/* `conn_terminated_cb` doesn't run after a failed setup, clear the
+			 * state before the slot can be reused by another connection.
+			 */
+			(void)atomic_cas(&s->setup_state, CONN_SETUP_FAILED, CONN_SETUP_NONE);
 			bt_conn_unref(conn);
 		}
 	}
