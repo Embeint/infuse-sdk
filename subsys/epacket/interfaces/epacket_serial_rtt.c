@@ -28,7 +28,7 @@ struct epacket_serial_config {
 };
 
 struct epacket_serial_data {
-	struct epacket_interface_common_data common_data;
+	struct epacket_serial_common_data serial_common;
 	const struct device *interface;
 	struct k_work_delayable poll_work;
 };
