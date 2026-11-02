@@ -8,11 +8,16 @@
 
 #include <string.h>
 
+#include <soc.h>
+
 #include <infuse/identifiers.h>
 
 #ifdef CONFIG_SOC_SERIES_STM32L4X
+/* Not provided by the STM32L4 device headers */
 #define FLASH_OTP_BASE 0x1FFF7000
-#else
+#endif
+
+#ifndef FLASH_OTP_BASE
 #error Unknown SOC series
 #endif
 
