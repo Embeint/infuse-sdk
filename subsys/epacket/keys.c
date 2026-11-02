@@ -130,12 +130,14 @@ psa_key_id_t epacket_key_id_get(uint8_t key_type, uint32_t key_identifier, uint3
 		return PSA_KEY_ID_NULL;
 	}
 
-	/* Handle key rotation */
-	if (storage[interface].rotation != key_rotation) {
+	/* Handle key rotation (no key has been derived yet if the ID is NULL) */
+	if ((storage[interface].id == PSA_KEY_ID_NULL) ||
+	    (storage[interface].rotation != key_rotation)) {
 		info = key_info[interface];
 		/* Delete previous derived key */
 		if (storage[interface].id) {
 			epacket_key_delete(storage[interface].id);
+			storage[interface].id = PSA_KEY_ID_NULL;
 		}
 		LOG_INF("Regenerating derived key %02X (%s) for rotation %d", key_type, info,
 			key_rotation);
