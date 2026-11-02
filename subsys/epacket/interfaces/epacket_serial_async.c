@@ -33,11 +33,26 @@ struct epacket_serial_data {
 	struct k_fifo tx_queue;
 	struct k_spinlock tx_lock;
 	atomic_t rx_enabled;
+	/* Reception was stopped by the driver, only accessed from the UART callback */
+	bool rx_stopped;
 	uint8_t async_rx_buffer[2][CONFIG_EPACKET_INTERFACE_SERIAL_BACKEND_ASYNC_RX_BUFFER];
 	volatile uint8_t async_rx_buffer_idx;
 };
 
+/* STM32 driver flushes the DMA when the line IDLE interrupt fires if timeout == 0,
+ * which is ideal. Otherwise 1 byte at 115200 baud is 8 uS, 500 uS should be a good
+ * timeout value.
+ */
+#define RX_TIMEOUT_US (IS_ENABLED(CONFIG_UART_STM32) ? 0 : 500)
+
 LOG_MODULE_REGISTER(epacket_serial, CONFIG_EPACKET_SERIAL_LOG_LEVEL);
+
+static int rx_start(const struct device *dev, struct epacket_serial_data *data)
+{
+	data->async_rx_buffer_idx = 1;
+	return uart_rx_enable(dev, data->async_rx_buffer[0], sizeof(data->async_rx_buffer[0]),
+			      RX_TIMEOUT_US);
+}
 
 static void uart_callback(const struct device *dev, struct uart_event *evt, void *user_data)
 {
@@ -98,7 +113,27 @@ static void uart_callback(const struct device *dev, struct uart_event *evt, void
 		break;
 	case UART_RX_BUF_RELEASED:
 		break;
+	case UART_RX_STOPPED:
+		LOG_WRN("RX stopped (%d)", evt->data.rx_stop.reason);
+		data->rx_stopped = true;
+		break;
 	case UART_RX_DISABLED:
+		/* Restart reception if it was stopped by the driver (e.g. line error).
+		 * Disables requested through `epacket_receive_control` don't generate
+		 * `UART_RX_STOPPED`, and are restarted by the enable path instead.
+		 */
+		if (!data->rx_stopped) {
+			break;
+		}
+		data->rx_stopped = false;
+		if (atomic_get(&data->rx_enabled)) {
+			/* Discard any partial frame interrupted by the error */
+			epacket_serial_reconstruct_reset(epacket_dev);
+			rc = rx_start(dev, data);
+			if (rc < 0) {
+				LOG_ERR("Failed to restart RX (%d)", rc);
+			}
+		}
 		break;
 	default:
 		LOG_WRN("Unhandled event: %d", evt->type);
@@ -171,12 +206,6 @@ static int epacket_receive_control(const struct device *dev, bool enable)
 	struct epacket_serial_data *data = dev->data;
 	int rc;
 
-	/* STM32 driver flushes the DMA when the line IDLE interrupt fires if timeout == 0,
-	 * which is ideal. Otherwise 1 byte at 115200 baud is 8 uS, 500 uS should be a good
-	 * timeout value.
-	 */
-	int32_t rx_timeout = IS_ENABLED(CONFIG_UART_STM32) ? 0 : 500;
-
 	LOG_DBG("%d", enable);
 	/* Only take or release the power reference on a state change */
 	if (!atomic_cas(&data->rx_enabled, !enable, enable)) {
@@ -185,9 +214,7 @@ static int epacket_receive_control(const struct device *dev, bool enable)
 	if (enable) {
 		rc = pm_device_runtime_get(config->backend);
 		if (rc == 0) {
-			data->async_rx_buffer_idx = 1;
-			rc = uart_rx_enable(config->backend, data->async_rx_buffer[0],
-					    sizeof(data->async_rx_buffer[0]), rx_timeout);
+			rc = rx_start(config->backend, data);
 			if (rc < 0) {
 				(void)pm_device_runtime_put(config->backend);
 			}
