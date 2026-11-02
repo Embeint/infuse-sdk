@@ -47,6 +47,11 @@ void epacket_default_receive_handler(struct net_buf *buf)
 
 		if (echo == NULL) {
 			LOG_WRN("Failed to allocate echo response");
+		} else if (buf->len > net_buf_tailroom(echo)) {
+			/* Response size is limited by the current interface state */
+			LOG_WRN("Echo request too large (%d > %d)", buf->len,
+				net_buf_tailroom(echo));
+			net_buf_unref(echo);
 		} else {
 			epacket_set_tx_metadata(echo, meta->auth, 0, INFUSE_ECHO_RSP,
 						EPACKET_ADDR_ALL);
