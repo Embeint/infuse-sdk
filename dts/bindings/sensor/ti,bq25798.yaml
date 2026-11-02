@@ -71,6 +71,19 @@ properties:
       Input voltage over-voltage protection limit. Default of 7V is the
       chip default.
 
+  safety-timer:
+    type: string
+    enum:
+      - "5h"
+      - "8h"
+      - "12h"
+      - "24h"
+      - "Disable"
+    default: "12h"
+    description:
+      Fast charge safety timer duration. Charging is suspended if the safety
+      timer expires before charge termination. Default is the POR value.
+
   mppt-ratio:
     type: int
     enum:
