@@ -14,4 +14,14 @@ configdefault NRF_WIFI_DATA_HEAP_SIZE
 	def_int 40000
 endif
 
+# Picolibc source builds are smaller
+choice PICOLIBC_SOURCE
+    default PICOLIBC_USE_MODULE
+endchoice
+
+# WiFi HaLow is ROM heavy and not CPU limited
+choice COMPILER_OPTIMIZATIONS
+    default SPEED_OPTIMIZATIONS if !WIFI_MORSEMICRO
+endchoice
+
 source "Kconfig.zephyr"

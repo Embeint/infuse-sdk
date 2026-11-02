@@ -3,14 +3,21 @@ sample:
   name: infuse_zperf
 common:
   build_only: true
-  depends_on:
-    - netif
   required_snippets:
     - infuse
-  integration_platforms:
-    - nrf7002dk/nrf5340/cpuapp
   tags:
     - net
     - zperf
 tests:
-  sample.net.zperf: {}
+  sample.net.zperf:
+    depends_on:
+      - netif
+    integration_platforms:
+      - nrf7002dk/nrf5340/cpuapp
+  sample.net.zperf.halow:
+    sysbuild: true
+    platform_allow:
+      - mm6108_ekh05/stm32u585xx
+      - mm8108_ekh05/stm32u585xx
+    integration_platforms:
+      - mm8108_ekh05/stm32u585xx
