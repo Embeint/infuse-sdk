@@ -218,6 +218,7 @@
 		battery-undervoltage-lockout-millivolt = <2600>;
 		re-charge-threshold-millivolt = <100>;
 		vsys-target-regulation = "4V5";
+		safety-timer = "12h";
 		/*  EN: <&gpio0 11 GPIO_ACTIVE_LOW>
 		 */
 	};
