@@ -1,0 +1,23 @@
+#include <zephyr/dt-bindings/pwm/pwm.h>
+
+/ {
+	aliases {
+		buzzer = &buzzer;
+	};
+
+	fake_pwm: fake_pwm {
+		compatible = "zephyr,fake-pwm";
+		#pwm-cells = <2>;
+		frequency = <16000000>;
+	};
+
+	buzzer: buzzer {
+		compatible = "pwm-buzzer";
+		pwms = <&fake_pwm 0 PWM_HZ(2700)>;
+		zephyr,pm-device-runtime-auto;
+	};
+
+	epacket_dummy: epacket_dummy {
+		compatible = "embeint,epacket-dummy";
+	};
+};
