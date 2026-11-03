@@ -95,11 +95,11 @@ struct infuse_rpc_rsp_header {
  */
 
 {% for name, info in enums.items() %}
-/** {{ info['description'] }} */
+{{ info['description'] | doxygen_comment }}
 enum {{ name }} {
 {% for value in info['values'] %}
 {% if 'description' in value %}
-	/** {{ value['description'] }} */
+{{ value['description'] | doxygen_comment('	') }}
 {% endif %}
 	{{ name | upper }}_{{ value['name'] }} = {{ value['value'] }},
 {% endfor %}
@@ -107,11 +107,11 @@ enum {{ name }} {
 
 {% endfor %}
 {% for name, info in structs.items() %}
-/** {{ info['description'] }} */
+{{ info['description'] | doxygen_comment }}
 struct {{ name }} {
 {% for field in info['fields'] %}
 {% if 'description' in field %}
-	/** {{ field['description'] }} */
+{{ field['description'] | doxygen_comment('	') }}
 {% endif %}
 	{{ field['type'] }} {{ field['name'] }}{{ field['array'] }};
 {% endfor %}
@@ -141,7 +141,7 @@ enum rpc_builtin_id {
 };
 
 {% for id, info in commands.items() %}
-/** {{ info['description'] }} */
+{{ info['description'] | doxygen_comment }}
 struct rpc_{{ info['name'] }}_request {
 	/** Common RPC request header */
 	struct infuse_rpc_req_header header;
@@ -151,7 +151,7 @@ struct rpc_{{ info['name'] }}_request {
 {% endif %}
 {% for field in info['request_params'] %}
 	{% if 'description' in field %}
-	/** {{ field['description'] }} */
+{{ field['description'] | doxygen_comment('	') }}
 	{% endif %}
 	{{ field['type'] }} {{ field['name'] }}{{ field['array'] }};
 {% endfor %}
@@ -163,7 +163,7 @@ struct rpc_{{ info['name'] }}_response {
 	struct infuse_rpc_rsp_header header;
 {% for field in info['response_params'] %}
 	{% if 'description' in field %}
-	/** {{ field['description'] }} */
+{{ field['description'] | doxygen_comment('	') }}
 	{% endif %}
 	{{ field['type'] }} {{ field['name'] }}{{ field['array'] }};
 {% endfor %}

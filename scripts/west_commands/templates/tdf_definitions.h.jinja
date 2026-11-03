@@ -28,11 +28,11 @@ extern "C" {
  */
 
 {% for name, info in structs.items() %}
-/** {{ info['description'] }} */
+{{ info['description'] | doxygen_comment }}
 struct {{ name }} {
 {% for field in info['fields'] %}
 	{% if 'description' in field %}
-	/** {{ field['description'] }} */
+{{ field['description'] | doxygen_comment('	') }}
 	{% endif %}
 	{{ field['type'] }} {{ field['name'] }}{{ field["array"] }};
 {% endfor %}
@@ -52,11 +52,11 @@ struct {{ name }} {
 
 {% for id, info in definitions.items() %}
 {% if not info['only_flexible'] %}
-/** {{ info['description'] }} */
+{{ info['description'] | doxygen_comment }}
 struct tdf_{{ info['name'] | lower }} {
 {% for field in info['fields'] %}
 	{% if 'description' in field %}
-	/** {{ field['description'] }} */
+{{ field['description'] | doxygen_comment('	') }}
 	{% endif %}
 	{{ field['type'] }} {{ field['name'] }}{{ field["array"] }};
 {% endfor %}
@@ -81,7 +81,7 @@ struct tdf_{{ info['name'] | lower }} {
 /** Infuse-IoT builtin TDF definitions */
 enum tdf_builtin_id {
 {% for id, info in definitions.items() %}
-	/** {{ info['description'] }} */
+{{ info['description'] | doxygen_comment('	') }}
 	TDF_{{ info['name'] | upper }} = {{ id }},
 {% endfor %}
 	/** End of builtin TDF range */

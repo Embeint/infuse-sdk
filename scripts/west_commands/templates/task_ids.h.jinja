@@ -26,7 +26,7 @@ extern "C" {
 /** Infuse-IoT task identifiers */
 enum infuse_task_ids {
 {% for task_id, task in tasks.items() %}
-	/** {{ task['description'] }} */
+{{ task['description'] | doxygen_comment('	') }}
 	TASK_ID_{{ task['name'] | upper }} = {{ task_id }},
 {% endfor %}
 };
