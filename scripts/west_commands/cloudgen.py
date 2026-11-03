@@ -19,12 +19,13 @@ This command generates code from common definitions in Embeint cloud.
 
 
 def doxygen_comment(description: str, indent: str = "") -> str:
+    single = f"{indent}/** {description} */"
+    if len(single.expandtabs(8)) <= 100:
+        return single
+
     prefix = f"{indent} * "
     max_width = max(20, 100 - len(prefix.expandtabs(8)))
     lines = textwrap.wrap(description, width=max_width)
-
-    if len(lines) == 1:
-        return f"{indent}/** {lines[0]} */"
     return "\n".join([f"{indent}/**", *(f"{prefix}{line}" for line in lines), f"{indent} */"])
 
 

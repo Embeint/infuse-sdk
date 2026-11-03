@@ -29,25 +29,25 @@ extern "C" {
 {% if log_defines %}
 enum {
 {% for define in log_defines %}
-	/** {{ define['description'] }} */
+{{ define['description'] | doxygen_comment('	') }}
 	{{ define['name'] }} = {{ define['value'] }},
 {% endfor %}
 };
 
 {% endif %}
 {% for define in flag_defines %}
-/** {{ define['description'] }} */
+{{ define['description'] | doxygen_comment }}
 #define {{ define['name'] }} {{ define['value'] }}
 {% endfor %}
 {% if flag_defines %}
 
 {% endif %}
 {% for enum in enums %}
-/** {{ enum['description'] }} */
+{{ enum['description'] | doxygen_comment }}
 enum {{ enum['local_name'] }} {
 {% for value in enum['values'] %}
 {% if 'description' in value %}
-	/** {{ value['description'] }} */
+{{ value['description'] | doxygen_comment('	') }}
 {% endif %}
 	{{ enum['value_prefix'] }}_{{ value['name'] }} = {{ value['value_expr'] }},
 {% endfor %}
@@ -55,11 +55,11 @@ enum {{ enum['local_name'] }} {
 
 {% endfor %}
 {% for name, info in structs.items() %}
-/** {{ info['description'] }} */
+{{ info['description'] | doxygen_comment }}
 struct {{ name }} {
 {% for field in info['fields'] %}
 {% if 'description' in field %}
-	/** {{ field['description'] }} */
+{{ field['description'] | doxygen_comment('	') }}
 {% endif %}
 {% if field.get('anonymous', false) %}
 	{{ field['render_type'] }};
@@ -71,22 +71,22 @@ struct {{ name }} {
 
 {% endfor %}
 {% for name, info in unions.items() %}
-/** {{ info['description'] }} */
+{{ info['description'] | doxygen_comment }}
 union {{ name }} {
 {% for field in info['fields'] %}
 {% if 'description' in field %}
-	/** {{ field['description'] }} */
+{{ field['description'] | doxygen_comment('	') }}
 {% endif %}
 	{{ field['render_type'] }} {{ field['name'] }}{{ field['array'] }};
 {% endfor %}
 };
 
 {% endfor %}
-/** {{ task['description'] }} */
+{{ task['description'] | doxygen_comment }}
 struct task_{{ task['name'] | lower }}_args {
 {% for field in task['fields'] %}
 {% if 'description' in field %}
-	/** {{ field['description'] }} */
+{{ field['description'] | doxygen_comment('	') }}
 {% endif %}
 {% if field.get('anonymous', false) %}
 	{{ field['render_type'] }};
