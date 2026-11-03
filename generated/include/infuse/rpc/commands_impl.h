@@ -429,6 +429,15 @@ struct net_buf *rpc_command_filesystem_rm(struct net_buf *request);
 struct net_buf *rpc_command_ubx_assist_now_ztp_creds(struct net_buf *request);
 
 /**
+ * @brief Run audio_alert RPC
+ *
+ * @param request @ref INFUSE_RPC_CMD packet to respond to
+ *
+ * @return struct net_buf* @ref INFUSE_RPC_RSP packet buffer
+ */
+struct net_buf *rpc_command_audio_alert(struct net_buf *request);
+
+/**
  * @brief Run security_state RPC
  *
  * @param request @ref INFUSE_RPC_CMD packet to respond to

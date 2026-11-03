@@ -117,7 +117,8 @@ struct tdf_struct_wifi_network_params {
 	uint8_t channel;
 	/** https://w1.fi/wpa_supplicant/devel/defs_8h.html#a4aeb27c1e4abd046df3064ea9756f0bc */
 	uint8_t iface_mode;
-	/** WiFi link operating mode (https://en.wikipedia.org/wiki/Wi-Fi#Versions_and_generations)
+	/**
+	 * WiFi link operating mode (https://en.wikipedia.org/wiki/Wi-Fi#Versions_and_generations)
 	 */
 	uint8_t link_mode;
 	/** IEEE 802.11 security type */

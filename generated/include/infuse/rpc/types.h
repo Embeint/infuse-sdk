@@ -302,7 +302,9 @@ struct rpc_struct_wifi_state {
 	uint8_t channel;
 	/** https://w1.fi/wpa_supplicant/devel/defs_8h.html#a4aeb27c1e4abd046df3064ea9756f0bc */
 	uint8_t iface_mode;
-	/** WiFi link operating mode (https://en.wikipedia.org/wiki/Wi-Fi#Versions_and_generations) */
+	/**
+	 * WiFi link operating mode (https://en.wikipedia.org/wiki/Wi-Fi#Versions_and_generations)
+	 */
 	uint8_t link_mode;
 	/** IEEE 802.11 security type */
 	uint8_t security;
@@ -604,6 +606,8 @@ enum rpc_builtin_id {
 	RPC_ID_FILESYSTEM_RM = 62,
 	/** Retrieve U-blox AssistNow Zero Touch Provisioning credentials */
 	RPC_ID_UBX_ASSIST_NOW_ZTP_CREDS = 70,
+	/** Play an audio alert on the device */
+	RPC_ID_AUDIO_ALERT = 80,
 	/** Query current security state and validate identity */
 	RPC_ID_SECURITY_STATE = 30000,
 	/** Update key material */
@@ -1614,6 +1618,37 @@ struct rpc_ubx_assist_now_ztp_creds_response {
 	uint8_t ubx_sec_uniqid[18];
 	/** Raw UBX-MON-VER frame */
 	uint8_t ubx_mon_ver[];
+} __packed;
+
+/** Play an audio alert on the device */
+struct rpc_audio_alert_request {
+	/** Common RPC request header */
+	struct infuse_rpc_req_header header;
+	/** Audio frequency of the first burst (Hz) */
+	uint16_t frequency_hz;
+	/** Total duration of the alert (milliseconds) */
+	uint32_t duration_ms;
+	/** Length of each audio burst, up to burst_period_ms (milliseconds) */
+	uint16_t burst_length_ms;
+	/** Period between the start of each audio burst (milliseconds) */
+	uint16_t burst_period_ms;
+	/** Frequency change applied to each subsequent burst (Hz) */
+	int16_t burst_frequency_shift_hz;
+	/** Reset the frequency to frequency_hz after this many bursts (0 = never) */
+	uint16_t loop_after;
+	/** Audio volume (1 to 100 %), remains set after the alert */
+	uint8_t volume_percent;
+	/**
+	 * Respond once the alert has completed instead of immediately, duration_ms must be 10000 or
+	 * less (0 = respond immediately)
+	 */
+	uint8_t wait;
+} __packed;
+
+/** Response to @ref rpc_audio_alert_request */
+struct rpc_audio_alert_response {
+	/** Common RPC response header */
+	struct infuse_rpc_rsp_header header;
 } __packed;
 
 /** Query current security state and validate identity */

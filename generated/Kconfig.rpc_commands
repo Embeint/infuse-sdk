@@ -532,6 +532,18 @@ config INFUSE_RPC_COMMAND_UBX_ASSIST_NOW_ZTP_CREDS_REQUIRED_AUTH
 	depends on INFUSE_RPC_COMMAND_UBX_ASSIST_NOW_ZTP_CREDS
 	default 2
 
+config INFUSE_RPC_COMMAND_AUDIO_ALERT
+	bool "Enable RPC audio_alert"
+	depends on BUZZER && $(dt_alias_enabled,buzzer)
+	default y if INFUSE_SDK
+	help
+	  Play an audio alert on the device
+
+config INFUSE_RPC_COMMAND_AUDIO_ALERT_REQUIRED_AUTH
+	int "Required authorisation level to run audio_alert"
+	depends on INFUSE_RPC_COMMAND_AUDIO_ALERT
+	default 2
+
 config INFUSE_RPC_COMMAND_SECURITY_STATE
 	bool "Enable RPC security_state"
 	default y if INFUSE_SECURITY
