@@ -169,6 +169,13 @@
                 {"name": "GNSS_POLL_VERSION_FAILED", "value": -1243},
                 {"name": "GNSS_UNEXPECTED_PAYLOAD", "value": -1244}
             ]
+        },
+        {
+            "description": "Audio output errors.",
+            "errors": [
+                {"name": "AUDIO_VOLUME_SET_FAILED", "value": -1260},
+                {"name": "AUDIO_TONE_FAILED", "value": -1261}
+            ]
         }
     ]
 }

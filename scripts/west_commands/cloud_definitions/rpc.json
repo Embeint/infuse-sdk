@@ -1015,6 +1015,24 @@
                 {"name": "ubx_mon_ver", "type": "uint8_t", "num": 0, "description": "Raw UBX-MON-VER frame"}
             ]
         },
+        "80": {
+            "name": "audio_alert",
+            "description": "Play an audio alert on the device",
+            "default": "y if INFUSE_SDK",
+            "depends_on": "BUZZER && $(dt_alias_enabled,buzzer)",
+            "default_auth": "EPACKET_AUTH_DEVICE",
+            "request_params": [
+                {"name": "frequency_hz", "type": "uint16_t", "description": "Audio frequency of the first burst (Hz)"},
+                {"name": "duration_ms", "type": "uint32_t", "description": "Total duration of the alert (milliseconds)"},
+                {"name": "burst_length_ms", "type": "uint16_t", "description": "Length of each audio burst, up to burst_period_ms (milliseconds)"},
+                {"name": "burst_period_ms", "type": "uint16_t", "description": "Period between the start of each audio burst (milliseconds)"},
+                {"name": "burst_frequency_shift_hz", "type": "int16_t", "description": "Frequency change applied to each subsequent burst (Hz)"},
+                {"name": "loop_after", "type": "uint16_t", "description": "Reset the frequency to frequency_hz after this many bursts (0 = never)"},
+                {"name": "volume_percent", "type": "uint8_t", "description": "Audio volume (1 to 100 %), remains set after the alert"},
+                {"name": "wait", "type": "uint8_t", "description": "Respond once the alert has completed instead of immediately, duration_ms must be 10000 or less (0 = respond immediately)"}
+            ],
+            "response_params": []
+        },
         "30000": {
             "name": "security_state",
             "description": "Query current security state and validate identity",
