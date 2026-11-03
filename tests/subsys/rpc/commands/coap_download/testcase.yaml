@@ -1,5 +1,7 @@
 common:
-  tags: infuse
+  tags:
+    - external_service
+    - infuse
   min_flash: 64
   min_ram: 32
 tests:
