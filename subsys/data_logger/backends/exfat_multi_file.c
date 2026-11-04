@@ -69,6 +69,7 @@ static uint32_t disk_lba_from_block(const struct device *dev, uint32_t phy_block
 
 	/* Validate file was created correctly */
 	if (f_size(&fp) == 0) {
+		(void)f_close(&fp);
 		return LBA_NO_MEM;
 	}
 
@@ -323,9 +324,19 @@ static int logger_exfat_reset(const struct device *dev, uint32_t block_hint,
 		/* Unlink the file. This doesn't erase any data, but file creation handles
 		 * ensuring the file is in the right state once it is created again.
 		 */
-		LOG_DBG("Unlinking %s", fno.fname);
-		fr = f_unlink(fno.fname);
-		__ASSERT_NO_MSG(fr == FR_OK);
+		if (snprintf(filename, sizeof(filename), "%s:%s", config->disk, fno.fname) >=
+		    sizeof(filename)) {
+			/* Longer than any file we create */
+			LOG_WRN("Skipping %s", fno.fname);
+			continue;
+		}
+		LOG_DBG("Unlinking %s", filename);
+		fr = f_unlink(filename);
+		if (fr != FR_OK) {
+			LOG_ERR("Failed to unlink %s (%d)", filename, fr);
+			rc = -EIO;
+			break;
+		}
 
 		/* Run user callback */
 		blocks_erased += BLOCKS_PER_FILE;
