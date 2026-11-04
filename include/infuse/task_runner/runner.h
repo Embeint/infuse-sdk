@@ -33,9 +33,14 @@ extern "C" {
 /**
  * @brief Initialise the task runner with a schedule list
  *
- * @param schedules Task schedules to evaluate
- * @param schedule_states State for each schedule in @a schedules
- * @param num_schedules Number of schedules and states
+ * @note When @kconfig{CONFIG_KV_STORE_KEY_TASK_SCHEDULES} is enabled, schedules can be added
+ *       through the KV store beyond the @a num_schedules default schedules. In that case
+ *       @a schedule_states MUST contain @kconfig{CONFIG_KV_STORE_KEY_TASK_SCHEDULES_RANGE}
+ *       entries. Use @ref TASK_SCHEDULE_STATES_DEFINE to size the array correctly.
+ *
+ * @param schedules Default task schedules to evaluate
+ * @param schedule_states State for each schedule, see @ref TASK_SCHEDULE_STATES_DEFINE
+ * @param num_schedules Number of default schedules
  * @param tasks Constant task configuration
  * @param task_states State for each task in @a task_config
  * @param num_tasks Number of tasks
