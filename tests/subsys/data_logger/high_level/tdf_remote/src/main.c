@@ -114,18 +114,47 @@ ZTEST(tdf_data_logger_remote, test_id_change)
 	validate_tdf_remote(data_logger, 1, 0x12345678ABC0AAAA);
 }
 
+ZTEST(tdf_data_logger_remote, test_too_large_for_remote)
+{
+	const struct device *tdf_logger = DEVICE_DT_GET(DT_NODELABEL(tdf_logger_small));
+	const struct device *data_logger = DEVICE_DT_GET(DT_NODELABEL(data_logger_small));
+	struct data_logger_state state;
+	uint8_t tdf_data[245] = {0};
+	int rc;
+
+	rc = tdf_data_logger_remote_id_set(tdf_logger, 0x800012345678ABCD);
+	zassert_equal(0, rc);
+
+	/* Fits on an empty block, but not after the remote ID */
+	rc = tdf_data_logger_log_dev(tdf_logger, TDF_RANDOM, sizeof(tdf_data), 0, tdf_data);
+	zassert_equal(-ENOSPC, rc);
+
+	/* Logger still usable */
+	rc = tdf_data_logger_log_dev(tdf_logger, TDF_RANDOM, 17, 0, tdf_data);
+	zassert_equal(0, rc);
+	rc = tdf_data_logger_flush_dev(tdf_logger);
+	zassert_true(rc > 0);
+	data_logger_get_state(data_logger, &state);
+	zassert_equal(1, state.current_block);
+}
+
 void data_logger_reset(void *fixture)
 {
 	const struct device *tdf_logger = DEVICE_DT_GET(DT_NODELABEL(tdf_logger_flash));
 	const struct device *data_logger = DEVICE_DT_GET(DT_NODELABEL(data_logger_flash));
+	const struct device *tdf_small = DEVICE_DT_GET(DT_NODELABEL(tdf_logger_small));
+	const struct device *data_small = DEVICE_DT_GET(DT_NODELABEL(data_logger_small));
 
 	/* Clear any pending data */
 	tdf_data_logger_flush_dev(tdf_logger);
+	tdf_data_logger_flush_dev(tdf_small);
 
 	/* Erase amd reinitialise loggers */
 	memset(flash_buffer, 0xFF, flash_buffer_size);
 	logger_flash_map_init(data_logger);
 	tdf_data_logger_init(tdf_logger);
+	logger_flash_map_init(data_small);
+	tdf_data_logger_init(tdf_small);
 }
 
 static bool test_data_init(const void *global_state)
