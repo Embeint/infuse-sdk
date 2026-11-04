@@ -407,7 +407,7 @@
         "8": {
             "name": "zbus_channel_state",
             "description": "Query current state of zbus channel",
-            "depends_on": "ZBUS",
+            "depends_on": "ZBUS && ZBUS_CHANNEL_ID && ZBUS_CHANNEL_PUBLISH_STATS",
             "default": "y if INFUSE_SDK",
             "default_auth": "EPACKET_AUTH_DEVICE",
             "request_params": [

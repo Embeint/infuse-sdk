@@ -87,7 +87,7 @@ config INFUSE_RPC_COMMAND_KV_REFLECT_CRCS_REQUIRED_AUTH
 
 config INFUSE_RPC_COMMAND_ZBUS_CHANNEL_STATE
 	bool "Enable RPC zbus_channel_state"
-	depends on ZBUS
+	depends on ZBUS && ZBUS_CHANNEL_ID && ZBUS_CHANNEL_PUBLISH_STATS
 	default y if INFUSE_SDK
 	help
 	  Query current state of zbus channel
