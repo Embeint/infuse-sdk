@@ -19,6 +19,7 @@
 #include <infuse/rpc/command_runner.h>
 #include <infuse/rpc/types.h>
 #include <infuse/rpc/client.h>
+#include <infuse/rpc/server.h>
 
 #include "common_bt.h"
 
@@ -85,13 +86,18 @@ int rpc_command_bt_file_copy_basic_run(struct rpc_bt_file_copy_basic_request *re
 	uint32_t request_id;
 	size_t work_mem_size;
 	uint8_t *work_mem;
+	/* Remote must ACK at the same period that the local client releases packets on.
+	 * When not waiting on ACKs, still request an ACK per packet to extend the response
+	 * timeout during the transfer.
+	 */
+	uint8_t ack_period = MIN(req->ack_period, RPC_SERVER_MAX_ACK_PERIOD);
 	int rc = 0;
 
 	struct rpc_file_write_basic_request write_req = {
 		.data_header =
 			{
 				.size = req->file_len,
-				.rx_ack_period = 1,
+				.rx_ack_period = ack_period ? ack_period : 1,
 			},
 		.action = req->action,
 		.file_crc = req->file_crc,
@@ -100,7 +106,7 @@ int rpc_command_bt_file_copy_basic_run(struct rpc_bt_file_copy_basic_request *re
 		.loader = file_loader,
 		.total_len = write_req.data_header.size,
 		.ack_wait = K_SECONDS(1),
-		.ack_period = req->ack_period,
+		.ack_period = ack_period,
 		.pipelining = req->pipelining,
 	};
 
