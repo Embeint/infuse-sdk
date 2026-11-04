@@ -538,7 +538,8 @@ int rpc_common_file_actions_finish(struct rpc_common_file_actions_ctx *ctx, bool
 		rc = stream_flash_buffered_write(&ctx->stream_ctx, NULL, 0, true);
 		if (rc < 0) {
 			LOG_ERR("Could not flush remaining data");
-			pm_flash_area_close(ctx->fa);
+			/* Release erase resources and close the flash area */
+			(void)rpc_common_file_actions_error_cleanup(ctx);
 			return INFUSE_RPC_ERROR_FLASH_FLUSH_FAILED;
 		}
 	}
