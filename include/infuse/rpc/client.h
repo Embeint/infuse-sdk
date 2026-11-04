@@ -68,6 +68,8 @@ struct rpc_client_ctx {
 	struct rpc_client_cmd_ctx cmd_ctx[CONFIG_INFUSE_RPC_CLIENT_MAX_IN_FLIGHT];
 	/** Semaphore counting free command contexts */
 	struct k_sem cmd_ctx_sem;
+	/** Lock for claiming and releasing command contexts */
+	struct k_spinlock lock;
 	/** Request ID of the most recently queued command */
 	uint32_t request_id;
 };
