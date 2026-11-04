@@ -381,7 +381,7 @@ static int logger_exfat_range_hint(const struct device *dev, uint32_t *block_sta
 				   uint32_t *block_end)
 {
 	const struct dl_exfat_config *config = dev->config;
-	int last_file_idx = 0;
+	uint32_t last_file_idx = 0;
 	char filename[40];
 	char dir[20];
 	FILINFO fno;
@@ -395,7 +395,7 @@ static int logger_exfat_range_hint(const struct device *dev, uint32_t *block_sta
 	while (fr == FR_OK && fno.fname[0]) {
 		size_t fname_len = strlen(fno.fname);
 		char *fname_idx_ptr = fno.fname + fname_len - 10;
-		int fname_idx = atoi(fname_idx_ptr);
+		uint32_t fname_idx = strtoul(fname_idx_ptr, NULL, 10);
 
 		/* Only consider files that match the expected size */
 		if (fno.fsize == CONFIG_DATA_LOGGER_EXFAT_FILE_SIZE) {
@@ -414,7 +414,7 @@ static int logger_exfat_range_hint(const struct device *dev, uint32_t *block_sta
 		*block_start -= 1;
 	}
 
-	LOG_DBG("Search range hint: %d-%d", *block_start, *block_end);
+	LOG_DBG("Search range hint: %u-%u", *block_start, *block_end);
 	return 0;
 }
 
