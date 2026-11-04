@@ -150,20 +150,22 @@ static int flush_internal(const struct device *dev, bool locked)
 		return 0;
 	}
 
+	if (!locked) {
+		/* Lock access */
+		k_sem_take(&data->lock, K_FOREVER);
+	}
+
 #ifdef TDF_REMOTE_SUPPORT
 	if ((config->block_type == INFUSE_TDF_REMOTE) &&
 	    (data->tdf_state.buf.len == sizeof(uint64_t))) {
 		/* No data to log, but we need to update the remote ID */
 		net_buf_simple_remove_le64(&data->tdf_state.buf);
 		net_buf_simple_add_le64(&data->tdf_state.buf, data->remote_id);
-		return 0;
+		rc = 0;
+		goto unlock;
 	}
 #endif /* TDF_REMOTE_SUPPORT */
 
-	if (!locked) {
-		/* Lock access */
-		k_sem_take(&data->lock, K_FOREVER);
-	}
 	pending = data->tdf_state.buf.len;
 
 	/* Re-add the overhead */
@@ -195,6 +197,7 @@ static int flush_internal(const struct device *dev, bool locked)
 	if (config->block_type == INFUSE_TDF_REMOTE) {
 		net_buf_simple_add_le64(&data->tdf_state.buf, data->remote_id);
 	}
+unlock:
 #endif /* TDF_REMOTE_SUPPORT */
 
 	if (!locked) {
@@ -369,6 +372,7 @@ static void tdf_block_size_update(const struct device *logger, uint16_t block_si
 	const struct tdf_logger_config *config = dev->config;
 	struct tdf_logger_data *data = dev->data;
 	uint16_t limited = MIN(block_size, config->tdf_buffer_max_size);
+	uint8_t offset = 0;
 	bool is_diff;
 	uint8_t num;
 
@@ -385,8 +389,17 @@ static void tdf_block_size_update(const struct device *logger, uint16_t block_si
 		struct tdf_buffer_state state;
 		struct tdf_parsed tdf;
 
-		/* Snapshot the buffer state */
-		tdf_parse_start(&state, data->tdf_state.buf.data, data->tdf_state.buf.len);
+#ifdef TDF_REMOTE_SUPPORT
+		if (config->block_type == INFUSE_TDF_REMOTE) {
+			/* Skip the remote ID at the start of the buffer */
+			offset = sizeof(data->remote_id);
+		}
+#endif /* TDF_REMOTE_SUPPORT */
+		/* Snapshot the buffer state. TDFs are relogged into the same buffer, which is
+		 * safe as the relogged data never overtakes the data still to be parsed.
+		 */
+		tdf_parse_start(&state, data->tdf_state.buf.data + offset,
+				data->tdf_state.buf.len - offset);
 		/* Reset the loggers knowledge of pending data */
 		data->tdf_state.buf.size = limited;
 		tdf_buffer_state_reset(&data->tdf_state);
