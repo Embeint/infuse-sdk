@@ -21,6 +21,10 @@ LOG_MODULE_REGISTER(rpc_client, CONFIG_INFUSE_RPC_LOG_LEVEL);
 
 static struct rpc_client_cmd_ctx *find_cmd_ctx(struct rpc_client_ctx *ctx, uint32_t request_id)
 {
+	/* Request ID 0 denotes an unused context */
+	if (request_id == 0) {
+		return NULL;
+	}
 	for (int i = 0; i < ARRAY_SIZE(ctx->cmd_ctx); i++) {
 		struct rpc_client_cmd_ctx *c = &ctx->cmd_ctx[i];
 
