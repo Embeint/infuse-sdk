@@ -35,11 +35,11 @@ struct net_buf *rpc_command_infuse_states_query(struct net_buf *request)
 	for (int i = 0; i < ARRAY_SIZE(temp); i++) {
 		while (temp[i]) {
 			/* Find the next state set in the buffer */
-			index = __builtin_ffs(temp[i]) - 1;
+			index = __builtin_ffsl(temp[i]) - 1;
 
 			if (req->offset) {
 				/* Skip leading states */
-				temp[i] ^= (1 << index);
+				temp[i] ^= BIT(index);
 				req->offset -= 1;
 				continue;
 			}
@@ -50,7 +50,7 @@ struct net_buf *rpc_command_infuse_states_query(struct net_buf *request)
 			}
 
 			/* Clear the state from the next iteration */
-			temp[i] ^= (1 << index);
+			temp[i] ^= BIT(index);
 
 			state.state = (i * 8 * sizeof(atomic_t)) + index;
 			timeout = infuse_state_get_timeout(state.state);
@@ -70,7 +70,7 @@ struct net_buf *rpc_command_infuse_states_query(struct net_buf *request)
 done:
 	/* Determine number of remaining states */
 	for (int i = 0; i < ARRAY_SIZE(temp); i++) {
-		rp->remaining += POPCOUNT(temp[i]);
+		rp->remaining += __builtin_popcountl(temp[i]);
 	}
 
 	/* Return the response */
