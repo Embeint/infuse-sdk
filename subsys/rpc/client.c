@@ -395,6 +395,10 @@ int rpc_client_data_queue_auto_load(struct rpc_client_ctx *ctx, uint32_t request
 			rc = loader_params->loader(loader_params->user_data, offset, buffer,
 						   buffer_remaining);
 			if (rc < 0) {
+				if (data_buf != NULL) {
+					/* Free partially populated packet */
+					net_buf_unref(data_buf);
+				}
 				return rc;
 			}
 		}
