@@ -102,8 +102,10 @@ struct bt_conn_auto_discovery {
 /**
  * @brief Setup a connection with automatic MTU exchange and characteristic discovery
  *
- * This should be called immediately following @a bt_conn_le_create to ensure
- * that the context is setup correctly by the time the connection establishes.
+ * This should be called immediately following @a bt_conn_le_create. If the connection
+ * has already been established by the time this is called, the setup is started immediately.
+ * If the connection has already failed or terminated, @a conn_setup_cb is run immediately
+ * with -ENOTCONN.
  *
  * @param conn Connection object allocated by @a bt_conn_le_create
  * @param discovery Characteristic discovery configuration

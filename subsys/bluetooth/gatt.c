@@ -39,6 +39,7 @@ static struct bt_gatt_state {
 	struct bt_conn_auto_discovery *discovery;
 	uint8_t preferred_phy;
 	bool connect_cb_run;
+	bool setup_started;
 #endif /* CONFIG_BT_GATT_CLIENT */
 } state[CONFIG_BT_MAX_CONN];
 
@@ -65,16 +66,58 @@ static const struct bt_uuid_16 ccc_uuid = BT_UUID_INIT_16(BT_UUID_GATT_CCC_VAL);
 static const struct bt_uuid_16 db_hash_uuid = BT_UUID_INIT_16(BT_UUID_GATT_DB_HASH_VAL);
 static struct bt_gatt_exchange_params mtu_exchange_params;
 static struct bt_gatt_read_params db_read_params;
+/* Serialises callback registration against the connection callbacks */
+static struct k_spinlock setup_lock;
+
+static void central_conn_setup(struct bt_conn *conn);
 
 void bt_conn_le_auto_setup(struct bt_conn *conn, struct bt_conn_auto_discovery *discovery,
 			   const struct bt_conn_auto_setup_cb *callbacks, uint8_t preferred_phy)
 {
 	struct bt_gatt_state *s = &state[bt_conn_index(conn)];
+	struct bt_conn_info info;
+	bool start_setup = false;
+	bool failed = false;
+	__maybe_unused int rc;
 
-	s->connect_cb_run = false;
-	s->discovery = discovery;
-	s->cb = callbacks;
-	s->preferred_phy = preferred_phy;
+	K_SPINLOCK(&setup_lock) {
+		s->connect_cb_run = false;
+		s->setup_started = false;
+		s->discovery = discovery;
+		s->cb = callbacks;
+		s->preferred_phy = preferred_phy;
+
+		if (callbacks == NULL) {
+			/* Callbacks are being removed */
+			K_SPINLOCK_BREAK;
+		}
+
+		/* The connection may have completed before the callbacks were registered, in
+		 * which case the `connected` callback has, or will, skip the connection. The
+		 * connection state is updated before the connection callbacks are run.
+		 */
+		rc = bt_conn_get_info(conn, &info);
+		/* This can only possibly fail if the connection type is not BT_CONN_TYPE_LE */
+		__ASSERT_NO_MSG(rc == 0);
+		if (info.state == BT_CONN_STATE_CONNECTED) {
+			if (info.role == BT_CONN_ROLE_CENTRAL) {
+				s->setup_started = true;
+				start_setup = true;
+			}
+		} else if (info.state != BT_CONN_STATE_CONNECTING) {
+			/* Connection already failed or terminated */
+			s->connect_cb_run = true;
+			s->cb = NULL;
+			failed = true;
+		}
+	}
+
+	if (start_setup) {
+		central_conn_setup(conn);
+	} else if (failed) {
+		LOG_ERR("Connection setup failed (%d)", -ENOTCONN);
+		callbacks->conn_setup_cb(conn, -ENOTCONN, callbacks->user_data);
+	}
 }
 
 static void connection_done(struct bt_conn *conn)
@@ -496,7 +539,12 @@ static void connected(struct bt_conn *conn, uint8_t err)
 	} else {
 		LOG_WRN("Connection to %s failed (error 0x%02X)", bt_addr_le_str(dst), err);
 #ifdef CONFIG_BT_GATT_CLIENT
-		if (s->cb) {
+		bool report_error = false;
+
+		K_SPINLOCK(&setup_lock) {
+			report_error = s->cb != NULL;
+		}
+		if (report_error) {
 			connection_error(conn, err);
 		}
 #endif /* CONFIG_BT_GATT_CLIENT */
@@ -504,12 +552,19 @@ static void connected(struct bt_conn *conn, uint8_t err)
 	}
 
 #ifdef CONFIG_BT_GATT_CLIENT
+	bool start_setup = false;
 
-	/* Only handle connections initiated through bt_conn_le_auto_setup */
-	if (s->cb != NULL) {
-		if (info.role == BT_CONN_ROLE_CENTRAL) {
-			central_conn_setup(conn);
+	/* Only handle connections initiated through bt_conn_le_auto_setup, where the setup
+	 * has not already been started by bt_conn_le_auto_setup.
+	 */
+	K_SPINLOCK(&setup_lock) {
+		if ((s->cb != NULL) && (info.role == BT_CONN_ROLE_CENTRAL) && !s->setup_started) {
+			s->setup_started = true;
+			start_setup = true;
 		}
+	}
+	if (start_setup) {
+		central_conn_setup(conn);
 	}
 #endif /* CONFIG_BT_GATT_CLIENT */
 
@@ -532,18 +587,27 @@ static void disconnected(struct bt_conn *conn, uint8_t reason)
 	s->rssi_log = 0;
 #endif /* CONFIG_BT_CONN_AUTO_RSSI */
 #ifdef CONFIG_BT_GATT_CLIENT
-	if (s->cb) {
+	const struct bt_conn_auto_setup_cb *cb;
+	bool connect_cb_run;
+
+	/* Claim the callbacks so a concurrent bt_conn_le_auto_setup doesn't also report */
+	K_SPINLOCK(&setup_lock) {
+		cb = s->cb;
+		connect_cb_run = s->connect_cb_run;
+		s->connect_cb_run = true;
+		s->cb = NULL;
+	}
+	if (cb) {
 		/* Have we run `conn_setup_cb` yet?
 		 * We can expect this to happen with a PHY update procedure, which
 		 * doesn't have a result callback that can fail, and hence there is
 		 * nowhere to run `connection_error` from.
 		 */
-		if (!s->connect_cb_run) {
-			s->cb->conn_setup_cb(conn, reason, s->cb->user_data);
-		} else if (s->cb->conn_terminated_cb) {
-			s->cb->conn_terminated_cb(conn, reason, s->cb->user_data);
+		if (!connect_cb_run) {
+			cb->conn_setup_cb(conn, reason, cb->user_data);
+		} else if (cb->conn_terminated_cb) {
+			cb->conn_terminated_cb(conn, reason, cb->user_data);
 		}
-		s->cb = NULL;
 	}
 #endif /* CONFIG_BT_GATT_CLIENT */
 
