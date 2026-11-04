@@ -159,13 +159,10 @@ write_done:
 		k_sleep(K_MSEC(500));
 		/* Schedule the reboot in a few seconds time */
 		LOG_INF("File action complete, rebooting for DFU");
-		infuse_reboot_delayed(INFUSE_REBOOT_DFU, RPC_ID_FILE_WRITE_BASIC, action,
-				      K_SECONDS(2));
+		infuse_reboot_delayed(INFUSE_REBOOT_DFU, rpc_id, action, K_SECONDS(2));
 #else
 		LOG_WRN("INFUSE_REBOOT not enabled, cannot reboot");
 #endif /* CONFIG_INFUSE_REBOOT */
-
-		/* Give a  */
 	}
 
 	return NULL;
