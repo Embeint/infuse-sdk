@@ -18,6 +18,9 @@
 
 LOG_MODULE_DECLARE(rpc_server, CONFIG_INFUSE_RPC_LOG_LEVEL);
 
+/* Maximum number of bytes read by a single RPC, keeping data offsets and lengths in range */
+#define DATA_LOGGER_READ_MAX_BYTES (64 * 1024 * 1024)
+
 struct common_state {
 	const struct device *interface;
 	const struct device *logger;
@@ -200,12 +203,18 @@ static int core_init(struct common_state *state, struct infuse_rpc_req_header *r
 	return 0;
 }
 
+static uint32_t max_read_blocks(const struct common_state *state)
+{
+	return DATA_LOGGER_READ_MAX_BYTES / state->logger_state.block_size;
+}
+
 struct net_buf *rpc_command_data_logger_read(struct net_buf *request)
 {
 	struct epacket_rx_metadata *req_meta = net_buf_user_data(request);
 	struct rpc_data_logger_read_request *req = (void *)request->data;
 	struct rpc_data_logger_read_response rsp = {0};
 	struct common_state state;
+	bool unbounded = false;
 	int rc = 0;
 
 	/* Common initialisation */
@@ -218,6 +227,7 @@ struct net_buf *rpc_command_data_logger_read(struct net_buf *request)
 	/* If last block is unbounded, limit it to the data currently present */
 	if (req->last_block == UINT32_MAX) {
 		req->last_block = state.logger_state.current_block - 1;
+		unbounded = true;
 	}
 
 	/* Ensure requested data is in range */
@@ -228,6 +238,16 @@ struct net_buf *rpc_command_data_logger_read(struct net_buf *request)
 		goto end;
 	}
 	state.blocks_remaining = req->last_block - req->start_block + 1;
+
+	/* Enforce the maximum read size */
+	if (state.blocks_remaining > max_read_blocks(&state)) {
+		if (!unbounded) {
+			rc = INFUSE_RPC_ERROR_INVALID_ARGUMENT;
+			goto end;
+		}
+		/* Unbounded reads return the data up to the limit */
+		state.blocks_remaining = max_read_blocks(&state);
+	}
 
 	/* Free command as we no longer need it and this command can take a while */
 	rpc_command_runner_request_unref(request);
@@ -267,6 +287,8 @@ struct net_buf *rpc_command_data_logger_read_available(struct net_buf *request)
 	state.block_num = block_start;
 	blocks_to_end = state.logger_state.current_block - state.block_num;
 	state.blocks_remaining = MIN(req->num_blocks, blocks_to_end);
+	/* Enforce the maximum read size */
+	state.blocks_remaining = MIN(state.blocks_remaining, max_read_blocks(&state));
 
 	/* Free command as we no longer need it and this command can take a while */
 	rpc_command_runner_request_unref(request);
@@ -297,6 +319,7 @@ struct net_buf *rpc_command_data_logger_read_chunks(struct net_buf *request)
 	size_t chunk_req_size = sizeof(struct rpc_struct_data_logger_chunk);
 	size_t full_requests = trailing_bytes / chunk_req_size;
 	struct common_state state;
+	uint64_t total_bytes = 0;
 	int rc;
 
 	if ((req->num_chunks != full_requests) || (trailing_bytes % chunk_req_size)) {
@@ -318,6 +341,12 @@ struct net_buf *rpc_command_data_logger_read_chunks(struct net_buf *request)
 			rc = INFUSE_RPC_ERROR_MALFORMED_REQUEST;
 			goto end;
 		}
+		total_bytes += info->num_bytes;
+	}
+	/* Enforce the maximum read size */
+	if (total_bytes > DATA_LOGGER_READ_MAX_BYTES) {
+		rc = INFUSE_RPC_ERROR_INVALID_ARGUMENT;
+		goto end;
 	}
 
 	/* Read out the chunks */
