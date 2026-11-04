@@ -732,6 +732,42 @@ ZTEST(rpc_command_data_logger, test_data_logger_read_chunks_invalid_offset)
 	net_buf_unref(rsp);
 }
 
+ZTEST(rpc_command_data_logger, test_data_logger_read_chunks_too_large)
+{
+	const struct rpc_struct_data_logger_chunk chunks[] = {
+		{
+			.start_block = 0,
+			.start_offset = 0,
+			.num_bytes = 32 * 1024 * 1024,
+		},
+		{
+			.start_block = 0,
+			.start_offset = 0,
+			.num_bytes = (32 * 1024 * 1024) + 1,
+		},
+	};
+	const struct rpc_struct_data_logger_chunk chunk_max = {
+		.start_block = 0,
+		.start_offset = 0,
+		.num_bytes = UINT32_MAX,
+	};
+	struct net_buf *rsp;
+
+	/* Combined chunks over the read limit */
+	send_data_logger_read_chunks_command(0x4569, RPC_ENUM_DATA_LOGGER_FLASH_ONBOARD,
+					     ARRAY_SIZE(chunks), chunks);
+	rsp = expect_rpc_response(0x4569, RPC_ID_DATA_LOGGER_READ_CHUNKS,
+				  INFUSE_RPC_ERROR_INVALID_ARGUMENT);
+	net_buf_unref(rsp);
+
+	/* Single chunk over the read limit */
+	send_data_logger_read_chunks_command(0x456A, RPC_ENUM_DATA_LOGGER_FLASH_ONBOARD, 1,
+					     &chunk_max);
+	rsp = expect_rpc_response(0x456A, RPC_ID_DATA_LOGGER_READ_CHUNKS,
+				  INFUSE_RPC_ERROR_INVALID_ARGUMENT);
+	net_buf_unref(rsp);
+}
+
 ZTEST(rpc_command_data_logger, test_data_logger_erase_invalid)
 {
 	const struct device *flash_logger = DEVICE_DT_GET(DT_NODELABEL(data_logger_flash));
