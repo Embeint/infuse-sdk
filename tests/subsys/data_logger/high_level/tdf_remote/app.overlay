@@ -15,6 +15,17 @@
 		};
 	};
 
+	data_logger_small: data_logger_small {
+		compatible = "embeint,data-logger-flash-map", "embeint,data-logger";
+		partition = <&data_logger_small_partition>;
+		block-size = <256>;
+
+		tdf_logger_small: tdf_logger_small {
+			compatible = "embeint,tdf-data-logger";
+			tdf-remote;
+		};
+	};
+
 	sim_flash: sim_flash {
 		compatible = "zephyr,sim-flash";
 
@@ -24,7 +35,7 @@
 
 		flash_sim0: flash_sim@0 {
 			compatible = "soc-nv-flash";
-			reg = <0x00000000 DT_SIZE_K(4)>;
+			reg = <0x00000000 DT_SIZE_K(8)>;
 
 			erase-block-size = <1024>;
 			write-block-size = <4>;
@@ -37,6 +48,11 @@
 				data_logger_partition: partition@1000 {
 					label = "data_logger";
 					reg = <0x00000000 DT_SIZE_K(4)>;
+				};
+
+				data_logger_small_partition: partition@2000 {
+					label = "data_logger_small";
+					reg = <0x00001000 DT_SIZE_K(4)>;
 				};
 			};
 		};

@@ -263,6 +263,13 @@ relog:
 		if (rc < 0) {
 			return rc;
 		}
+		if (rc == 0) {
+			/* Nothing was flushed (e.g. only the remote ID is pending), so the TDF
+			 * will never fit on the block.
+			 */
+			LOG_WRN("%s TDF %d too large for block", dev->name, tdf_id);
+			return -ENOSPC;
+		}
 		goto relog;
 	} else if (rc < 0) {
 		LOG_WRN("%s failed to add (%d)", dev->name, rc);
