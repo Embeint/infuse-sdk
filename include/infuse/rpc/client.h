@@ -135,6 +135,7 @@ int rpc_client_update_response_timeout(struct rpc_client_ctx *ctx, uint32_t requ
  * @retval 0 If command pushed to remote device
  * @retval -EAGAIN If command context claim timed out
  * @retval -EINVAL If request params, callback or response timeout are invalid values
+ * @retval -EMSGSIZE If the command does not fit in the current interface payload
  */
 int rpc_client_command_queue(struct rpc_client_ctx *ctx, enum rpc_builtin_id cmd, void *req_params,
 			     size_t req_params_len, rpc_client_rsp_fn cb, void *user_data,
