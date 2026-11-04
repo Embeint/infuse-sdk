@@ -157,6 +157,18 @@ int rpc_command_coap_download_run(struct rpc_coap_download_v3_request *req, char
 		goto error;
 	}
 
+	/* Validate the downloaded data against any expected values before finishing */
+	if ((req->resource_len != UINT32_MAX) && (ctx.received != req->resource_len)) {
+		LOG_ERR("Unexpected length received (%u != %u)", ctx.received, req->resource_len);
+		rc = INFUSE_RPC_ERROR_DATA_UNEXPECTED_LENGTH_RECEIVED;
+		goto error;
+	}
+	if ((req->resource_crc != UINT32_MAX) && (ctx.crc != req->resource_crc)) {
+		LOG_ERR("Unexpected CRC received (%08X != %08X)", ctx.crc, req->resource_crc);
+		rc = INFUSE_RPC_ERROR_DATA_CRC_MISMATCH;
+		goto error;
+	}
+
 	/* Close the socket */
 	zsock_close(sock);
 
