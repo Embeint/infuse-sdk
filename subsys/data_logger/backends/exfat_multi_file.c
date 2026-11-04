@@ -232,29 +232,42 @@ static int logger_exfat_read(const struct device *dev, uint32_t phy_block, uint1
 	const struct dl_exfat_config *config = dev->config;
 	struct dl_exfat_data *data = dev->data;
 	bool aligned = ((uintptr_t)mem % sizeof(uint32_t)) == 0;
+	uint8_t *out = mem;
 	uint32_t disk_lba;
-	int rc;
+	uint16_t chunk;
+	int rc = 0;
 
 	(void)logger_exfat_filesystem_claim(dev, NULL, NULL, K_FOREVER);
-	disk_lba = disk_lba_from_block(dev, phy_block);
+	/* Reads can span multiple blocks (and therefore files) */
+	while (mem_len) {
+		chunk = MIN(mem_len, DATA_LOGGER_EXFAT_BLOCK_SIZE - block_offset);
+		disk_lba = disk_lba_from_block(dev, phy_block);
 
-	if ((disk_lba == LBA_NO_FILE) || (disk_lba == LBA_NO_MEM)) {
-		logger_exfat_filesystem_release(dev);
-		/* File does not exist on filesystem, set data to 0xFF and return */
-		memset(mem, 0xFF, mem_len);
-		return 0;
-	}
+		if ((disk_lba == LBA_NO_FILE) || (disk_lba == LBA_NO_MEM)) {
+			/* File does not exist on filesystem, set data to 0xFF */
+			memset(out, 0xFF, chunk);
+		} else {
+			LOG_DBG("Reading from logger block: %08X LBA: %08X", phy_block, disk_lba);
 
-	LOG_DBG("Reading from logger block: %08X LBA: %08X", phy_block, disk_lba);
-
-	if (aligned && (block_offset == 0) && (mem_len == DATA_LOGGER_EXFAT_BLOCK_SIZE)) {
-		/* Read directly into provided buffer */
-		rc = disk_access_read(config->disk, mem, disk_lba, 1);
-	} else {
-		/* Read complete block from file to device buffer */
-		rc = disk_access_read(config->disk, data->block_buffer, disk_lba, 1);
-		/* Memcpy required data out */
-		memcpy(mem, data->block_buffer + block_offset, mem_len);
+			if (aligned && (block_offset == 0) &&
+			    (chunk == DATA_LOGGER_EXFAT_BLOCK_SIZE)) {
+				/* Read directly into provided buffer */
+				rc = disk_access_read(config->disk, out, disk_lba, 1);
+			} else {
+				/* Read complete block from file to device buffer */
+				rc = disk_access_read(config->disk, data->block_buffer, disk_lba,
+						      1);
+				/* Memcpy required data out */
+				memcpy(out, data->block_buffer + block_offset, chunk);
+			}
+			if (rc < 0) {
+				break;
+			}
+		}
+		out += chunk;
+		mem_len -= chunk;
+		phy_block += 1;
+		block_offset = 0;
 	}
 	logger_exfat_filesystem_release(dev);
 	return rc;
