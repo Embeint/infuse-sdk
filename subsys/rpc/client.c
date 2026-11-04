@@ -38,30 +38,46 @@ static struct rpc_client_cmd_ctx *find_cmd_ctx(struct rpc_client_ctx *ctx, uint3
 static void run_callback(struct rpc_client_ctx *ctx, const struct net_buf *buf, uint16_t command_id,
 			 uint32_t request_id)
 {
-	struct rpc_client_cmd_ctx *c = find_cmd_ctx(ctx, request_id);
+	struct rpc_client_cmd_ctx *c;
+	rpc_client_rsp_fn fn = NULL;
+	void *user_data = NULL;
+	bool mismatch = false;
+
+	/* Claim the context under lock, as the response timeout runs in ISR context and
+	 * can race against the response being received.
+	 */
+	K_SPINLOCK(&ctx->lock) {
+		c = find_cmd_ctx(ctx, request_id);
+		if (c == NULL) {
+			K_SPINLOCK_BREAK;
+		}
+		if (command_id != c->command_id) {
+			mismatch = true;
+			K_SPINLOCK_BREAK;
+		}
+		/* Terminate the response timeout */
+		k_timer_stop(&c->timeout);
+
+		/* Cache context information */
+		fn = c->cb;
+		user_data = c->user_data;
+
+		/* Free the context information.
+		 * Performing this after the callback is incorrect
+		 * as the callback may lead to `rpc_client_cleanup`
+		 * before we get the chance to give the context semaphore.
+		 */
+		c->request_id = 0;
+	}
 
 	if (c == NULL) {
 		LOG_ERR("Unknown RPC_RSP: CMD=%d ID=0x%08X", command_id, request_id);
 		return;
 	}
-	if (command_id != c->command_id) {
+	if (mismatch) {
 		LOG_WRN("Mismatched command ID (%d != %d)", command_id, c->command_id);
 		return;
 	}
-
-	/* Terminate the response timeout */
-	k_timer_stop(&c->timeout);
-
-	/* Cache context information */
-	rpc_client_rsp_fn fn = c->cb;
-	void *user_data = c->user_data;
-
-	/* Free the context information.
-	 * Performing this after the callback is incorrect
-	 * as the callback may lead to `rpc_client_cleanup`
-	 * before we get the chance to give the context semaphore.
-	 */
-	c->request_id = 0;
 	k_sem_give(&c->tx_tokens);
 	k_sem_give(&ctx->cmd_ctx_sem);
 
@@ -131,6 +147,7 @@ void rpc_client_init(struct rpc_client_ctx *ctx, const struct device *dev,
 	ctx->interface_cb.packet_received = packet_received;
 	ctx->interface_cb.user_ctx = ctx;
 	ctx->request_id = sys_rand32_get();
+	ctx->lock = (struct k_spinlock){};
 	k_sem_init(&ctx->cmd_ctx_sem, ARRAY_SIZE(ctx->cmd_ctx), ARRAY_SIZE(ctx->cmd_ctx));
 	memset(ctx->cmd_ctx, 0x00, sizeof(ctx->cmd_ctx));
 
@@ -184,19 +201,23 @@ int rpc_client_command_queue(struct rpc_client_ctx *ctx, enum rpc_builtin_id cmd
 		return -EAGAIN;
 	}
 
-	/* Find free context buffer */
-	for (int i = 0; i < ARRAY_SIZE(ctx->cmd_ctx); i++) {
-		if (ctx->cmd_ctx[i].request_id == 0) {
-			ctx_idx = i;
-			break;
+	K_SPINLOCK(&ctx->lock) {
+		/* Find free context buffer */
+		for (int i = 0; i < ARRAY_SIZE(ctx->cmd_ctx); i++) {
+			if (ctx->cmd_ctx[i].request_id == 0) {
+				ctx_idx = i;
+				break;
+			}
 		}
-	}
-	__ASSERT_NO_MSG(ctx_idx != UINT8_MAX);
+		__ASSERT_NO_MSG(ctx_idx != UINT8_MAX);
 
-	/* Increment context ID */
-	ctx->request_id += 1;
-	if (ctx->request_id == 0) {
+		/* Increment context ID */
 		ctx->request_id += 1;
+		if (ctx->request_id == 0) {
+			ctx->request_id += 1;
+		}
+		/* Reserve the context */
+		ctx->cmd_ctx[ctx_idx].request_id = ctx->request_id;
 	}
 
 	/* Allocate buffer for command */
