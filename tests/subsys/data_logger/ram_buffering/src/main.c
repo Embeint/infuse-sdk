@@ -76,4 +76,37 @@ ZTEST(data_logger_ram_buffering, test_basic_buffer)
 	zassert_equal(10, state.current_block);
 }
 
+static void erase_progress(uint32_t blocks_erased)
+{
+	ARG_UNUSED(blocks_erased);
+}
+
+ZTEST(data_logger_ram_buffering, test_erase_discards_buffer)
+{
+	const struct device *logger = DEVICE_DT_GET(DT_NODELABEL(data_logger_flash));
+	struct data_logger_state state;
+
+	zassert_equal(0, data_logger_erase(logger, false, erase_progress));
+	data_logger_get_state(logger, &state);
+	zassert_equal(0, state.current_block);
+
+	/* Two blocks pending in the RAM buffer */
+	zassert_equal(0, data_logger_block_write(logger, 0x75, input_buffer, state.block_size));
+	zassert_equal(0, data_logger_block_write(logger, 0x76, input_buffer, state.block_size));
+	data_logger_get_state(logger, &state);
+	zassert_equal(0, state.current_block);
+
+	/* Erasing the logger also erases the pending data */
+	zassert_equal(0, data_logger_erase(logger, false, erase_progress));
+	zassert_equal(0, data_logger_flush(logger));
+	data_logger_get_state(logger, &state);
+	zassert_equal(0, state.current_block);
+
+	/* Logger continues to work */
+	zassert_equal(0, data_logger_block_write(logger, 0x77, input_buffer, state.block_size));
+	zassert_equal(0, data_logger_flush(logger));
+	data_logger_get_state(logger, &state);
+	zassert_equal(1, state.current_block);
+}
+
 ZTEST_SUITE(data_logger_ram_buffering, NULL, NULL, NULL, NULL, NULL);

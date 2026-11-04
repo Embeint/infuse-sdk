@@ -11,6 +11,7 @@
 
 #include <stdint.h>
 
+#include <zephyr/kernel.h>
 #include <zephyr/sys/slist.h>
 #include <zephyr/toolchain.h>
 
@@ -27,6 +28,8 @@ enum {
 
 /** Must be first member of data struct */
 struct data_logger_common_data {
+	/* Serialises block writes, flushes and reads against erases */
+	struct k_mutex lock;
 	sys_slist_t callbacks;
 	uint64_t bytes_logged;
 	uint32_t logical_blocks;
