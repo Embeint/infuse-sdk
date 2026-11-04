@@ -142,6 +142,7 @@ int logger_exfat_file_next(const struct device *dev)
 	uint32_t disk_lba;
 	int rc = 0;
 
+	k_mutex_lock(&data->common.lock, K_FOREVER);
 	(void)logger_exfat_filesystem_claim(dev, NULL, NULL, K_FOREVER);
 
 	in_current_block = data->common.current_block % BLOCKS_PER_FILE;
@@ -159,6 +160,7 @@ int logger_exfat_file_next(const struct device *dev)
 		}
 	}
 	logger_exfat_filesystem_release(dev);
+	k_mutex_unlock(&data->common.lock);
 	return rc;
 }
 
