@@ -244,6 +244,36 @@ ZTEST(task_tdf_logger, test_reschedule)
 	zassert_within(100 * MSEC_PER_SEC, last - start, 10 * MSEC_PER_SEC);
 }
 
+ZTEST(task_tdf_logger, test_reschedule_no_random_delay)
+{
+	struct k_fifo *tx_queue = epacket_dummmy_transmit_fifo_get();
+	struct net_buf *pkt;
+	uint32_t last, now;
+
+	schedule.task_args.tdf_logger = (struct task_tdf_logger_args){
+		.loggers = TDF_DATA_LOGGER_SERIAL,
+		.tdfs = TASK_TDF_LOGGER_LOG_ANNOUNCE,
+		.logging_period_ms = 500,
+	};
+
+	task_schedule(&data);
+	pkt = k_fifo_get(tx_queue, K_MSEC(100));
+	zassert_not_null(pkt);
+	net_buf_unref(pkt);
+	last = k_uptime_get_32();
+	for (int i = 0; i < 5; i++) {
+		pkt = k_fifo_get(tx_queue, K_MSEC(600));
+		now = k_uptime_get_32();
+		zassert_not_null(pkt);
+		net_buf_unref(pkt);
+		/* Logging period without any random delay */
+		zassert_true(now - last >= 500);
+		zassert_true(now - last < 550);
+		last = now;
+	}
+	task_terminate(&data);
+}
+
 ZTEST(task_tdf_logger, test_announce)
 {
 	struct k_fifo *tx_queue = epacket_dummmy_transmit_fifo_get();

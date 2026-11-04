@@ -69,6 +69,12 @@ void dmic_task_fn(const struct task_schedule *schedule, struct k_poll_signal *te
 							    : TDF_PCM_16BIT_CHAN_RIGHT;
 	int rc;
 
+	if (args->sample_rate_hz == 0) {
+		k_sleep(K_SECONDS(1));
+		LOG_ERR("Terminating due to %s", "invalid sample rate");
+		return;
+	}
+
 	cfg.channel.req_chan_map_lo = dmic_build_channel_map(0, 0, config->pdm_chan);
 	cfg.streams[0].pcm_rate = args->sample_rate_hz;
 	cfg.streams[0].block_size = BUFFER_SAMPLES * sizeof(int16_t);
