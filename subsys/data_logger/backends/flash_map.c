@@ -172,8 +172,13 @@ const struct data_logger_api data_logger_flash_map_api = {
 	.reset = logger_flash_map_reset,
 };
 
+#define DL_ERASE_SIZE(inst)                                                                        \
+	DT_PROP_OR(DT_GPARENT(DT_INST_PROP(inst, partition)), erase_block_size, 4096)
+
 #define DATA_LOGGER_DEFINE(inst)                                                                   \
 	BUILD_ASSERT(IS_POWER_OF_TWO(DT_INST_PROP(inst, block_size)));                             \
+	BUILD_ASSERT(DL_ERASE_SIZE(inst) % DT_INST_PROP(inst, block_size) == 0,                    \
+		     "Erase size must be a multiple of the block size");                           \
 	COMMON_CONFIG_PRE(inst);                                                                   \
 	static struct dl_flash_map_config config##inst = {                                         \
 		.common = COMMON_CONFIG_INIT(inst, DT_INST_PROP(inst, full_block_write), false,    \
@@ -181,8 +186,7 @@ const struct data_logger_api data_logger_flash_map_api = {
 		.flash_area_id = DT_PARTITION_ID(DT_INST_PROP(inst, partition)),                   \
 		.physical_blocks = (DT_REG_SIZE(DT_INST_PROP(inst, partition)) /                   \
 				    DT_INST_PROP(inst, block_size)),                               \
-		.erase_size = DT_PROP_OR(DT_GPARENT(DT_INST_PROP(inst, partition)),                \
-					 erase_block_size, 4096),                                  \
+		.erase_size = DL_ERASE_SIZE(inst),                                                 \
 		.max_block_size = DT_INST_PROP(inst, block_size),                                  \
 		.block_addr_shift = LOG2(DT_INST_PROP(inst, block_size)),                          \
 	};                                                                                         \
