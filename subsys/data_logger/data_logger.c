@@ -296,7 +296,7 @@ static int do_block_write_ram_buffer_single(const struct device *dev, enum infus
 		return -ENOMEM;
 	}
 
-	if (space > (sizeof(struct ram_buf_header) + block_len)) {
+	if (space >= (sizeof(struct ram_buf_header) + block_len)) {
 		/* Space for this block, add header and data to FIFO */
 		struct ram_buf_header header = {
 			.block_type = type,

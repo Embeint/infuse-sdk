@@ -458,6 +458,11 @@ static bool tdf_data_logger_valid_data_on_buffer(const struct device *dev,
 	if (data->tdf_state.buf.__buf != data->tdf_buffer) {
 		return false;
 	}
+	if ((data->tdf_state.buf.data < data->tdf_buffer) ||
+	    ((data->tdf_state.buf.data + data->tdf_state.buf.len) >
+	     (data->tdf_buffer + data->tdf_state.buf.size))) {
+		return false;
+	}
 	if (data->full_block_write != logger_state->requires_full_block_write) {
 		return false;
 	}

@@ -316,7 +316,9 @@ static int logger_exfat_reset(const struct device *dev, uint32_t block_hint,
 
 		/* Run user callback */
 		blocks_erased += BLOCKS_PER_FILE;
-		erase_progress(blocks_erased);
+		if (erase_progress) {
+			erase_progress(blocks_erased);
+		}
 	}
 
 	f_closedir(&dir);

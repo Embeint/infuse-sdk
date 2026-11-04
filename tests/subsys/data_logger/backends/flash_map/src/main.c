@@ -423,6 +423,12 @@ ZTEST(data_logger_flash_map, test_erase)
 	test_erase_blocks(5, false);
 	test_erase_blocks(state.physical_blocks / 2, false);
 	test_erase_blocks(3 * state.physical_blocks / 2, false);
+
+	/* Progress callback is optional */
+	zassert_equal(0, data_logger_block_write(logger, 3, input_buffer, state.block_size));
+	zassert_equal(0, data_logger_erase(logger, true, NULL));
+	data_logger_get_state(logger, &state);
+	zassert_equal(0, state.current_block);
 }
 
 ZTEST(data_logger_flash_map, test_erase_exclusion)
