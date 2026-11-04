@@ -92,24 +92,25 @@ static int logger_disk_access_reset(const struct device *dev, uint32_t block_hin
 	const uint16_t sector_chunks = CONFIG_DATA_LOGGER_DISK_ACCESS_ERASE_SECTOR_CHUNKS;
 	const struct dl_disk_access_config *config = dev->config;
 	struct dl_disk_access_data *data = dev->data;
+	uint32_t erase_sectors = data->common.erase_size / data->common.block_size;
 	uint32_t sectors_to_erase;
 	uint32_t sector = 0;
+	uint32_t chunk;
 	int rc;
 
-	sectors_to_erase = MIN(block_hint, data->common.physical_blocks);
-
-	ARG_UNUSED(block_hint);
+	/* Erases must cover complete erase units */
+	sectors_to_erase = MIN(ROUND_UP(block_hint, erase_sectors), data->common.physical_blocks);
 
 	while (sector < sectors_to_erase) {
-		/* Erase the chunk */
-		rc = disk_access_erase(config->disk, sector, sector_chunks,
-				       DISK_ACCESS_ERASE_PHYSICAL);
+		/* Erase the chunk, limited to the requested sectors */
+		chunk = MIN(sector_chunks, sectors_to_erase - sector);
+		rc = disk_access_erase(config->disk, sector, chunk, DISK_ACCESS_ERASE_PHYSICAL);
 		if (rc < 0) {
 			return rc;
 		}
 
 		/* Update state */
-		sector += sector_chunks;
+		sector += chunk;
 
 		/* Run user callback */
 		if (erase_progress) {
@@ -117,10 +118,7 @@ static int logger_disk_access_reset(const struct device *dev, uint32_t block_hin
 		}
 	}
 
-	ARG_UNUSED(erase_progress);
-
-	return disk_access_erase(config->disk, 0, data->common.physical_blocks,
-				 DISK_ACCESS_ERASE_PHYSICAL);
+	return 0;
 }
 
 /* Need to hook into this function when testing */
@@ -162,7 +160,9 @@ int logger_disk_access_init(const struct device *dev)
 
 	/* Setup common data structure */
 	data->common.physical_blocks = sector_count;
-	data->common.logical_blocks = sector_count * DATA_LOGGER_DISK_ACCESS_MAX_WRAPS;
+	/* Limit wraps on large disks so the logical block count fits in 32 bits */
+	data->common.logical_blocks =
+		MIN((uint64_t)sector_count * DATA_LOGGER_DISK_ACCESS_MAX_WRAPS, UINT32_MAX);
 	data->common.block_size = sector_size;
 	data->common.erase_size = erase_blocks * sector_size;
 	data->common.erase_val = 0xFF;

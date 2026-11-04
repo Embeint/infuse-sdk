@@ -158,9 +158,12 @@ ZTEST(data_logger_disk_access, test_standard_operation_reinit)
 
 static int erase_progress_calls;
 
+static uint32_t erase_progress_last;
+
 static void erase_progress(uint32_t blocks_erased)
 {
 	erase_progress_calls += 1;
+	erase_progress_last = blocks_erased;
 }
 
 static void test_erase_blocks(uint32_t logged_blocks)
@@ -218,6 +221,39 @@ ZTEST(data_logger_disk_access, test_erase)
 
 	test_erase_blocks(5);
 	test_erase_blocks(state.physical_blocks / 2);
+}
+
+ZTEST(data_logger_disk_access, test_erase_partial)
+{
+	const struct device *logger = DEVICE_DT_GET(DT_NODELABEL(data_logger_disk_access));
+	struct data_logger_state state;
+
+	zassert_equal(0, logger_disk_access_init(logger));
+	data_logger_get_state(logger, &state);
+	zassert_equal(0, state.current_block);
+
+	/* Write more blocks than a single erase chunk */
+	for (int i = 0; i < CONFIG_DATA_LOGGER_DISK_ACCESS_ERASE_SECTOR_CHUNKS + 5; i++) {
+		zassert_equal(0,
+			      data_logger_block_write(logger, 3, input_buffer, state.block_size));
+	}
+
+	/* Only the logged blocks are erased */
+	erase_progress_calls = 0;
+	zassert_equal(0, data_logger_erase(logger, false, erase_progress));
+	zassert_equal(2, erase_progress_calls);
+	zassert_equal(ROUND_UP(CONFIG_DATA_LOGGER_DISK_ACCESS_ERASE_SECTOR_CHUNKS + 5,
+			       state.erase_unit / state.block_size),
+		      erase_progress_last);
+
+	/* Erasing everything reports exactly the disk size */
+	zassert_equal(0, data_logger_erase(logger, true, erase_progress));
+	zassert_equal(state.physical_blocks, erase_progress_last);
+
+	/* No data after re-initialising */
+	zassert_equal(0, logger_disk_access_init(logger));
+	data_logger_get_state(logger, &state);
+	zassert_equal(0, state.current_block);
 }
 
 static bool test_data_init(const void *global_state)
