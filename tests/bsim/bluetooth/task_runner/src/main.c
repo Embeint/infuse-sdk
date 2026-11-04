@@ -6,6 +6,7 @@
 
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
+#include <zephyr/bluetooth/bluetooth.h>
 
 #include "bs_types.h"
 #include "bs_tracing.h"
@@ -399,6 +400,55 @@ static void main_bt_scanner_defer_no_logs(void)
 	}
 }
 
+static int callbacks_registered(sys_slist_t *list)
+{
+	sys_snode_t *node;
+	int count = 0;
+
+	/* Bounded in case the list has been corrupted into a loop */
+	SYS_SLIST_FOR_EACH_NODE(list, node) {
+		if (++count >= 16) {
+			break;
+		}
+	}
+	return count;
+}
+
+static void main_bt_scanner_receive_fail(void)
+{
+	const struct device *interface = DEVICE_DT_GET_ANY(embeint_epacket_bt_adv);
+	struct epacket_interface_common_data *data = interface->data;
+	struct bt_le_scan_param param = {
+		.type = BT_LE_SCAN_TYPE_PASSIVE,
+		.interval = BT_GAP_SCAN_FAST_INTERVAL,
+		.window = BT_GAP_SCAN_FAST_WINDOW,
+	};
+	int registered_before;
+	int registered;
+	int rc;
+
+	/* Scanning started outside of ePacket, so ePacket receive fails with -EALREADY */
+	rc = bt_le_scan_start(&param, NULL);
+	if (rc != 0) {
+		FAIL("Failed to start scanning (%d)\n", rc);
+		return;
+	}
+
+	/* Run the task multiple times */
+	registered_before = callbacks_registered(&data->callback_list);
+	schedules[0].timeout_s = 1;
+	schedules[0].periodicity.lockout.lockout_s = TASK_RUNNER_LOCKOUT_IGNORE_FIRST | 2;
+	task_run();
+
+	/* Failed runs should not leave the callback registered */
+	registered = callbacks_registered(&data->callback_list);
+	if (registered != registered_before) {
+		FAIL("Callbacks registered changed (%d -> %d)\n", registered_before, registered);
+	} else {
+		PASS("Task runner complete\n");
+	}
+}
+
 static void main_bt_scanner_encrypted_log(void)
 {
 	struct k_fifo *sent_queue = epacket_dummmy_transmit_fifo_get();
@@ -542,6 +592,13 @@ static const struct bst_test_instance ext_adv_advertiser[] = {
 		.test_pre_init_f = test_init,
 		.test_tick_f = test_tick,
 		.test_main_f = main_bt_scanner_encrypted_skip,
+	},
+	{
+		.test_id = "bt_scanner_receive_fail",
+		.test_descr = "Scan when ePacket receive cannot be started",
+		.test_pre_init_f = test_init,
+		.test_tick_f = test_tick,
+		.test_main_f = main_bt_scanner_receive_fail,
 	},
 	BSTEST_END_MARKER,
 };
