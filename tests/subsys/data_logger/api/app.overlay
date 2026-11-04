@@ -5,4 +5,10 @@
 		compatible = "embeint,data-logger-shim", "embeint,data-logger";
 		physical-blocks = <128>;
 	};
+
+	data_logger_shim_ram: data_logger_shim_ram {
+		compatible = "embeint,data-logger-shim", "embeint,data-logger";
+		physical-blocks = <128>;
+		extra-ram-buffer = <2048>;
+	};
 };
