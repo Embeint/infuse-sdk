@@ -29,6 +29,9 @@ extern "C" {
 /**
  * @brief Callback run when the response arrives
  *
+ * @note On response timeout (@a buf is NULL), the callback is run from the timer ISR.
+ *       Otherwise it is run from the ePacket receive thread.
+ *
  * @param buf Response packet if not NULL, NULL on timeout
  * @param user_data User data provided to @ref rpc_client_command_queue
  */
