@@ -46,6 +46,10 @@ struct net_buf *rpc_command_lte_at_cmd(struct net_buf *request)
 #endif
 	/* Allocate response object */
 	rsp_buf = rpc_response_simple_req(request, 0, &rsp, sizeof(rsp));
+	if (rsp_buf->len < sizeof(rsp)) {
+		/* Full response did not fit, nothing more to add */
+		return rsp_buf;
+	}
 	header = (void *)rsp_buf->data;
 
 	tail = net_buf_tail(rsp_buf);

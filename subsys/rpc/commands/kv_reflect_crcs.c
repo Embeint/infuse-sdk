@@ -29,6 +29,10 @@ struct net_buf *rpc_command_kv_reflect_crcs(struct net_buf *request)
 
 	/* Allocate response object */
 	response = rpc_response_simple_req(request, 0, &rsp, sizeof(rsp));
+	if (response->len < sizeof(rsp)) {
+		/* Full response did not fit, nothing more to add */
+		return response;
+	}
 	rp = (void *)response->data;
 
 	/* Iterate over slot definitions */

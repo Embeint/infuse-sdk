@@ -55,6 +55,10 @@ struct net_buf *rpc_command_security_public_keys(struct net_buf *request)
 
 	/* Allocate response */
 	rsp_buf = rpc_response_simple_req(request, 0, &rsp_header, sizeof(rsp_header));
+	if (rsp_buf->len < sizeof(rsp_header)) {
+		/* Full response did not fit, nothing more to add */
+		return rsp_buf;
+	}
 	rsp_p = (void *)rsp_buf->data;
 
 	/* Iterate over public keys */

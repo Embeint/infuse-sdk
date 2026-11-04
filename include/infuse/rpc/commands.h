@@ -32,6 +32,11 @@ extern "C" {
 /**
  * @brief Create an @ref INFUSE_RPC_RSP packet buffer for an interface
  *
+ * If @a response does not fit in the current interface payload, only the response header
+ * is added, with the return code set to @a rc if it is an error, otherwise
+ * @ref INFUSE_RPC_ERROR_RESPONSE_BUFFER_TOO_SMALL. No further data can be added to the
+ * buffer in this case. If the header does not fit, the buffer is returned empty.
+ *
  * @param interface Interface response will be sent on
  * @param rc Return code of the RPC
  * @param response RPC response struct
