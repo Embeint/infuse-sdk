@@ -132,6 +132,30 @@ ZTEST(rpc_command_kv_write, test_kv_write_read_only)
 	net_buf_unref(rsp);
 }
 
+ZTEST(rpc_command_kv_write, test_kv_write_secondary_remote_public_key)
+{
+	NET_BUF_SIMPLE_DEFINE(values, 128);
+	struct rpc_struct_kv_store_value *value;
+	struct rpc_kv_write_response *response;
+	struct net_buf *rsp;
+
+	(void)kv_store_delete(KV_KEY_SECONDARY_REMOTE_PUBLIC_KEY);
+
+	/* Key can only be updated through `security_key_update` */
+	net_buf_simple_reset(&values);
+	value = net_buf_simple_add(&values, sizeof(*value));
+	value->id = KV_KEY_SECONDARY_REMOTE_PUBLIC_KEY;
+	value->len = 32;
+	memset(net_buf_simple_add(&values, 32), 0xA5, 32);
+
+	send_kv_write_command(8, &values, 1);
+	rsp = expect_kv_write_response(8, 0, 1);
+	response = (void *)rsp->data;
+	zassert_equal(INFUSE_RPC_ERROR_WRITE_PROTECTED, response->rc[0]);
+	net_buf_unref(rsp);
+	zassert_false(kv_store_key_exists(KV_KEY_SECONDARY_REMOTE_PUBLIC_KEY));
+}
+
 ZTEST(rpc_command_kv_write, test_kv_write_single)
 {
 	KV_KEY_TYPE(KV_KEY_REBOOTS) reboots;

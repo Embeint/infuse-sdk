@@ -165,8 +165,9 @@
         },
         "8": {
             "name": "SECONDARY_REMOTE_PUBLIC_KEY",
-            "description": "Storage of secondary remote public key",
+            "description": "Storage of secondary remote public key (update through security_key_update)",
             "depends_on": "INFUSE_SECURITY_SECONDARY_REMOTE_ENABLE",
+            "read_only": true,
             "reflect": true,
             "default": "y",
             "fields": [
