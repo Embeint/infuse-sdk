@@ -33,8 +33,8 @@ struct net_buf *rpc_command_lte_at_cmd(struct net_buf *request)
 	uint8_t *tail;
 	int rc;
 
-	/* Request must be NULL terminated */
-	if (request->data[request->len - 1] != '\0') {
+	/* Command must be present and NULL terminated */
+	if ((request->len <= sizeof(*req)) || (request->data[request->len - 1] != '\0')) {
 		return rpc_response_simple_req(request, INFUSE_RPC_ERROR_MALFORMED_REQUEST, &rsp,
 					       sizeof(rsp));
 	}
