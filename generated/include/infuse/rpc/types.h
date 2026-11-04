@@ -578,7 +578,7 @@ enum rpc_builtin_id {
 	RPC_ID_FILE_WRITE_BASIC = 40,
 	/** Write an annotation to the device */
 	RPC_ID_ANNOTATE = 41,
-	/** Write an annotation to the device */
+	/** Flush pending data from TDF data loggers */
 	RPC_ID_TDF_DATA_LOGGER_FLUSH = 42,
 	/** Enter/Exit shipping mode on a device */
 	RPC_ID_SHIPPING_MODE = 43,
@@ -1334,7 +1334,7 @@ struct rpc_annotate_response {
 	struct infuse_rpc_rsp_header header;
 } __packed;
 
-/** Write an annotation to the device */
+/** Flush pending data from TDF data loggers */
 struct rpc_tdf_data_logger_flush_request {
 	/** Common RPC request header */
 	struct infuse_rpc_req_header header;

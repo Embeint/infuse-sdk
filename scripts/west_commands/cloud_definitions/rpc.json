@@ -816,7 +816,7 @@
         },
         "42": {
             "name": "tdf_data_logger_flush",
-            "description": "Write an annotation to the device",
+            "description": "Flush pending data from TDF data loggers",
             "default": "y if INFUSE_SDK",
             "depends_on": "TDF_DATA_LOGGER",
             "default_auth": "EPACKET_AUTH_DEVICE",

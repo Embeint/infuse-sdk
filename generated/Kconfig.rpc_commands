@@ -386,7 +386,7 @@ config INFUSE_RPC_COMMAND_TDF_DATA_LOGGER_FLUSH
 	depends on TDF_DATA_LOGGER
 	default y if INFUSE_SDK
 	help
-	  Write an annotation to the device
+	  Flush pending data from TDF data loggers
 
 config INFUSE_RPC_COMMAND_TDF_DATA_LOGGER_FLUSH_REQUIRED_AUTH
 	int "Required authorisation level to run tdf_data_logger_flush"
