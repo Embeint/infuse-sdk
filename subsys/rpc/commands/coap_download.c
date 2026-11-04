@@ -76,7 +76,7 @@ int rpc_command_coap_download_run(struct rpc_coap_download_v3_request *req, char
 
 	if ((req->action == RPC_ENUM_FILE_ACTION_WRITE_LITTLEFS) &&
 	    (req->header.command_id != RPC_ID_COAP_DOWNLOAD_V3)) {
-		LOG_ERR("RPC %d does not support WRITE_LITTLEFS", req->action);
+		LOG_ERR("RPC %d does not support WRITE_LITTLEFS", req->header.command_id);
 		rc = INFUSE_RPC_ERROR_UNSUPPORTED_REQUEST;
 		goto error_no_cleanup;
 	}
