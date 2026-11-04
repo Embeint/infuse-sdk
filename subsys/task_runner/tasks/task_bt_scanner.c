@@ -122,7 +122,8 @@ void task_bt_scanner_fn(struct k_work *work)
 	/* Start the receiving */
 	rc = epacket_receive(interface, K_FOREVER);
 	if (rc < 0) {
-		LOG_ERR("Failed to start receive");
+		LOG_ERR("Failed to start receive (%d)", rc);
+		epacket_unregister_callback(interface, &state.interface_cb);
 		return;
 	}
 
