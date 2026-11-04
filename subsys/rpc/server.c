@@ -50,6 +50,12 @@ struct net_buf *rpc_response_simple_if(const struct device *interface, int16_t r
 	if (net_buf_tailroom(response_buf) >= len) {
 		header = net_buf_add_mem(response_buf, response, len);
 		header->return_code = rc;
+	} else if (net_buf_tailroom(response_buf) >= sizeof(*header)) {
+		/* Full response doesn't fit, only return the header */
+		header = net_buf_add_mem(response_buf, response, sizeof(*header));
+		header->return_code = rc < 0 ? rc : INFUSE_RPC_ERROR_RESPONSE_BUFFER_TOO_SMALL;
+		/* Prevent commands from appending further data (restored on TX) */
+		response_buf->size = net_buf_headroom(response_buf) + response_buf->len;
 	}
 	return response_buf;
 }

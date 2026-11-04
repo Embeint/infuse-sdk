@@ -80,6 +80,10 @@ struct net_buf *rpc_command_ubx_assist_now_ztp_creds(struct net_buf *request)
 
 	/* Allocate response object (assuming success) */
 	ctx.buf = rpc_response_simple_req(request, 0, &rsp, sizeof(rsp));
+	if (ctx.buf->len < sizeof(rsp)) {
+		/* Full response did not fit, nothing more to add */
+		goto done;
+	}
 	rsp_ptr = (void *)ctx.buf->data;
 
 	/* Query and display system version information */

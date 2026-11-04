@@ -106,6 +106,13 @@ struct net_buf *rpc_command_wifi_scan(struct net_buf *request)
 
 	/* Allocate response object */
 	context.response = rpc_response_simple_req(request, 0, &rsp, sizeof(rsp));
+	if (context.response->len < sizeof(rsp)) {
+		/* Full response did not fit, nothing more to add */
+		if (manual_up) {
+			(void)net_if_down(iface);
+		}
+		return context.response;
+	}
 	rsp_p = (void *)context.response->data;
 
 	/* Free command as we don't need it and this command takes a while */

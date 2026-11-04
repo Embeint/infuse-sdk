@@ -60,6 +60,13 @@ void rpc_command_runner_early_response(struct epacket_rx_metadata *rx_meta, uint
 {
 	struct infuse_rpc_rsp_header *rsp_header;
 
+	response_sent = true;
+	if (response->len < sizeof(*rsp_header)) {
+		/* Response channel closed, or response header did not fit */
+		net_buf_unref(response);
+		return;
+	}
+
 	rsp_header = (void *)response->data;
 	rsp_header->request_id = request_id;
 	rsp_header->command_id = command_id;
@@ -69,7 +76,6 @@ void rpc_command_runner_early_response(struct epacket_rx_metadata *rx_meta, uint
 
 	/* Push response back over incoming interface */
 	epacket_queue(rx_meta->interface, response);
-	response_sent = true;
 }
 
 void rpc_command_runner(struct net_buf *request)
@@ -138,6 +144,10 @@ respond:
 		}
 		rsp_header = net_buf_add(response, sizeof(*rsp_header));
 		rsp_header->return_code = rc;
+	} else if (response->len < sizeof(*rsp_header)) {
+		/* Response channel closed, or response header did not fit */
+		net_buf_unref(response);
+		return;
 	} else {
 		rsp_header = (void *)response->data;
 	}

@@ -41,6 +41,10 @@ struct net_buf *rpc_command_tdf_data_logger_flush(struct net_buf *request)
 
 	/* Allocate response object */
 	response = rpc_response_simple_req(request, 0, &rsp, sizeof(rsp));
+	if (response->len < sizeof(rsp)) {
+		/* Full response did not fit, nothing more to add */
+		return response;
+	}
 	rsp_ptr = (void *)response->data;
 
 	/* Iterate over requested flushes */

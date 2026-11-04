@@ -69,6 +69,10 @@ struct net_buf *rpc_command_filesystem_ls(struct net_buf *request)
 
 	/* Allocate response object */
 	ctx.buf = rpc_response_simple_req(request, 0, &rsp, sizeof(rsp));
+	if (ctx.buf->len < sizeof(rsp)) {
+		/* Full response did not fit, nothing more to add */
+		return ctx.buf;
+	}
 	ctx.rsp = (void *)ctx.buf->data;
 
 	/* Iterate over all files in the folder */
