@@ -74,7 +74,7 @@ static struct net_buf *pull_data_core(uint32_t request_id, uint32_t expected_off
 	struct net_buf *buf;
 
 	/* Convert any relative timeout to absolute */
-	if (Z_TICK_ABS(timeout.ticks) < 0) {
+	if (!K_TIMEOUT_EQ(timeout, K_FOREVER) && (Z_TICK_ABS(timeout.ticks) < 0)) {
 		timeout = K_TIMEOUT_ABS_TICKS(k_uptime_ticks() + timeout.ticks);
 	}
 	*err = 0;
