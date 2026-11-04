@@ -65,19 +65,36 @@ static int logger_exfat_read(const struct device *dev, uint32_t phy_block, uint1
 	struct dl_exfat_data *data = dev->data;
 	bool aligned = ((uintptr_t)mem % sizeof(uint32_t)) == 0;
 	uint32_t disk_lba = data->cached_file_lba + phy_block;
-	int rc;
+	uint8_t *out = mem;
+	uint16_t chunk;
+	int rc = 0;
 
-	LOG_DBG("Reading from logger block: %08X LBA: %08X", phy_block, disk_lba);
+	(void)logger_exfat_filesystem_claim(dev, NULL, NULL, K_FOREVER);
+	/* Reads can span multiple blocks */
+	while (mem_len) {
+		chunk = MIN(mem_len, DATA_LOGGER_EXFAT_BLOCK_SIZE - block_offset);
 
-	if (aligned && (block_offset == 0) && (mem_len == DATA_LOGGER_EXFAT_BLOCK_SIZE)) {
-		/* Read directly into provided buffer */
-		rc = disk_access_read(config->disk, mem, disk_lba, 1);
-	} else {
-		/* Read complete block from file */
-		rc = disk_access_read(config->disk, data->block_buffer, disk_lba, 1);
-		/* Memcpy required data out */
-		memcpy(mem, data->block_buffer + block_offset, mem_len);
+		LOG_DBG("Reading from logger block: %08X LBA: %08X", phy_block, disk_lba);
+
+		if (aligned && (block_offset == 0) && (chunk == DATA_LOGGER_EXFAT_BLOCK_SIZE)) {
+			/* Read directly into provided buffer */
+			rc = disk_access_read(config->disk, out, disk_lba, 1);
+		} else {
+			/* Read complete block from file */
+			rc = disk_access_read(config->disk, data->block_buffer, disk_lba, 1);
+			/* Memcpy required data out */
+			memcpy(out, data->block_buffer + block_offset, chunk);
+		}
+		if (rc < 0) {
+			break;
+		}
+		out += chunk;
+		mem_len -= chunk;
+		phy_block += 1;
+		disk_lba += 1;
+		block_offset = 0;
 	}
+	logger_exfat_filesystem_release(dev);
 	return rc;
 }
 

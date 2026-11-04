@@ -49,20 +49,34 @@ static int logger_disk_access_read(const struct device *dev, uint32_t phy_block,
 	struct dl_disk_access_data *data = dev->data;
 	bool aligned = ((uintptr_t)mem % sizeof(uint32_t)) == 0;
 	const uint16_t block_size = data->common.block_size;
+	uint8_t *out = mem;
+	uint16_t chunk;
 	int rc;
 
-	LOG_DBG("Reading from logger block: %08X", phy_block);
+	/* Reads can span multiple blocks */
+	while (mem_len) {
+		chunk = MIN(mem_len, block_size - block_offset);
 
-	if (aligned && (block_offset == 0) && (mem_len == block_size)) {
-		/* Read directly into provided buffer */
-		rc = disk_access_read(config->disk, mem, phy_block, mem_len / block_size);
-	} else {
-		/* Read complete block from file */
-		rc = disk_access_read(config->disk, data->block_buffer, phy_block, 1);
-		/* Memcpy required data out */
-		memcpy(mem, data->block_buffer + block_offset, mem_len);
+		LOG_DBG("Reading from logger block: %08X", phy_block);
+
+		if (aligned && (block_offset == 0) && (chunk == block_size)) {
+			/* Read directly into provided buffer */
+			rc = disk_access_read(config->disk, out, phy_block, 1);
+		} else {
+			/* Read complete block from file */
+			rc = disk_access_read(config->disk, data->block_buffer, phy_block, 1);
+			/* Memcpy required data out */
+			memcpy(out, data->block_buffer + block_offset, chunk);
+		}
+		if (rc < 0) {
+			return rc;
+		}
+		out += chunk;
+		mem_len -= chunk;
+		phy_block += 1;
+		block_offset = 0;
 	}
-	return rc;
+	return 0;
 }
 
 static int logger_disk_access_erase(const struct device *dev, uint32_t phy_block, uint32_t num)

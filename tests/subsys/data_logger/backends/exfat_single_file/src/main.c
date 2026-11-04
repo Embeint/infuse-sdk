@@ -38,6 +38,46 @@ uint64_t vendor_infuse_device_id(void)
 
 int logger_exfat_init(const struct device *dev);
 
+ZTEST(data_logger_exfat, test_read_across_blocks)
+{
+	const struct device *logger = DEVICE_DT_GET(DT_NODELABEL(data_logger_exfat));
+	static uint8_t expected[1024];
+	struct data_logger_state state;
+	uint32_t start;
+
+	zassert_equal(0, logger_exfat_init(logger));
+	data_logger_get_state(logger, &state);
+	zassert_equal(512, state.block_size);
+	start = state.current_block;
+
+	/* Write blocks with distinct contents */
+	for (int i = 0; i < 20; i++) {
+		for (int j = 0; j < state.block_size; j++) {
+			input_buffer[j] = (uint8_t)((7 * i) + j);
+		}
+		zassert_equal(0,
+			      data_logger_block_write(logger, 4, input_buffer, state.block_size));
+	}
+
+	for (int i = 0; i < 19; i++) {
+		/* Expected contents of two consecutive blocks */
+		zassert_equal(0, data_logger_block_read(logger, start + i, 0, expected, 512));
+		zassert_equal(
+			0, data_logger_block_read(logger, start + i + 1, 0, expected + 512, 512));
+
+		/* Single read across both blocks */
+		memset(output_buffer, 0x00, sizeof(output_buffer));
+		zassert_equal(0, data_logger_block_read(logger, start + i, 0, output_buffer, 1024));
+		zassert_mem_equal(expected, output_buffer, 1024);
+
+		/* Unaligned read across the block boundary */
+		memset(output_buffer, 0x00, sizeof(output_buffer));
+		zassert_equal(
+			0, data_logger_block_read(logger, start + i, 100, output_buffer + 1, 600));
+		zassert_mem_equal(expected + 100, output_buffer + 1, 600);
+	}
+}
+
 ZTEST(data_logger_exfat, test_init_constants)
 {
 	const struct device *logger = DEVICE_DT_GET(DT_NODELABEL(data_logger_exfat));
