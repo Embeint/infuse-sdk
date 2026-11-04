@@ -388,6 +388,51 @@ ZTEST(tdf_data_logger, test_size_change_decrease)
 	zassert_is_null(k_fifo_get(sent_queue, K_MSEC(1)));
 }
 
+ZTEST(tdf_data_logger, test_remote_size_change_decrease)
+{
+	const struct device *dummy = DEVICE_DT_GET(DT_NODELABEL(epacket_dummy));
+	const struct device *logger = DEVICE_DT_GET(DT_NODELABEL(tdf_logger_remote));
+	struct k_fifo *sent_queue = epacket_dummmy_transmit_fifo_get();
+	uint8_t tdf_data[16] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
+	const uint64_t remote_id = 0x800012345678ABCD;
+	struct tdf_buffer_state state;
+	struct tdf_parsed parsed;
+	struct net_buf *buf;
+	int cnt = 0;
+	int rc;
+
+	zassert_equal(0, tdf_data_logger_remote_id_set(logger, remote_id));
+
+	/* Log 6 4 byte TDFs (42 bytes total) after the 8 byte remote ID */
+	for (int i = 0; i < 6; i++) {
+		rc = tdf_data_logger_log_dev(logger, TDF_RANDOM, 4, 0, tdf_data + i);
+		zassert_equal(0, rc);
+		zassert_is_null(k_fifo_get(sent_queue, K_MSEC(1)));
+	}
+
+	/* Reduce backend to 24 bytes payload (remote ID + 2 TDFs per block) */
+	epacket_dummy_set_max_packet(CONFIG_EPACKET_PACKET_SIZE_MAX - 40);
+	epacket_dummy_set_interface_state(dummy, true);
+	tdf_data_logger_flush_dev(logger);
+
+	/* Every packet starts with the remote ID and the TDFs are intact */
+	while ((buf = k_fifo_get(sent_queue, K_MSEC(1))) != NULL) {
+		net_buf_pull(buf, sizeof(struct epacket_dummy_frame));
+		zassert_true(buf->len > sizeof(remote_id));
+		zassert_equal(remote_id, net_buf_pull_le64(buf));
+
+		tdf_parse_start(&state, buf->data, buf->len);
+		while (tdf_parse(&state, &parsed) == 0) {
+			zassert_equal(TDF_RANDOM, parsed.tdf_id);
+			zassert_equal(4, parsed.tdf_len);
+			zassert_mem_equal(tdf_data + cnt, parsed.data, 4);
+			cnt += 1;
+		}
+		net_buf_unref(buf);
+	}
+	zassert_equal(6, cnt);
+}
+
 ZTEST(tdf_data_logger, test_diff_size_change_decrease)
 {
 	const struct device *dummy = DEVICE_DT_GET(DT_NODELABEL(epacket_dummy));
@@ -561,6 +606,8 @@ ZTEST(tdf_data_logger, test_backend_disconnect_after_reboot)
 	epacket_interface_common_init(dummy);
 	logger_epacket_init(data_logger);
 	tdf_data_logger_init(logger);
+	/* Re-initialising the data logger cleared all callback registrations */
+	tdf_data_logger_init(DEVICE_DT_GET(DT_NODELABEL(tdf_logger_remote)));
 
 	/* Even though we are disconnected, we should be able to continue filling the recovered
 	 * buffer.
@@ -592,8 +639,8 @@ void data_logger_reset(void *fixture)
 	epacket_dummy_set_max_packet(CONFIG_EPACKET_PACKET_SIZE_MAX);
 	epacket_dummy_set_interface_state(dummy, true);
 	tdf_data_logger_flush_dev(logger);
-	buf = k_fifo_get(sent_queue, K_MSEC(1));
-	if (buf != NULL) {
+	tdf_data_logger_flush_dev(DEVICE_DT_GET(DT_NODELABEL(tdf_logger_remote)));
+	while ((buf = k_fifo_get(sent_queue, K_MSEC(1))) != NULL) {
 		net_buf_unref(buf);
 	}
 }

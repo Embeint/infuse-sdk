@@ -6,6 +6,11 @@
 		tdf_logger_dummy: tdf_logger_dummy {
 			compatible = "embeint,tdf-data-logger";
 		};
+
+		tdf_logger_remote: tdf_logger_remote {
+			compatible = "embeint,tdf-data-logger";
+			tdf-remote;
+		};
 	};
 
 	epacket_dummy: epacket_dummy {
