@@ -174,7 +174,9 @@ struct net_buf *rpc_command_nrf93m1_fota(struct net_buf *request)
 	};
 	int rc;
 
-	if (request->data[request->len - 1] != '\0' || !valid_url(req->url)) {
+	/* URL must be present and NULL terminated */
+	if ((request->len <= sizeof(*req)) || (request->data[request->len - 1] != '\0') ||
+	    !valid_url(req->url)) {
 		return rpc_response_simple_req(request, INFUSE_RPC_ERROR_MALFORMED_REQUEST, &rsp,
 					       sizeof(rsp));
 	}
