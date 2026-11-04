@@ -264,11 +264,11 @@ int logger_exfat_init(const struct device *dev)
 	}
 
 #if CONFIG_DATA_LOGGER_EXFAT_LOG_LEVEL >= LOG_LEVEL_DBG
-	FILINFO fno;
 	DIR dj;
 
 	/* Search for number of files currently saved */
-	res = f_findfirst(&dj, &fno, disk_path, "infuse_*.bin");
+	snprintf(path, sizeof(path), "%s:", config->disk);
+	res = f_findfirst(&dj, &fno, path, "infuse_*.bin");
 	while (res == FR_OK && fno.fname[0]) {
 		LOG_DBG("Found: %s (%llu bytes)", fno.fname, fno.fsize);
 		res = f_findnext(&dj, &fno);

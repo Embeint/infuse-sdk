@@ -89,7 +89,10 @@ int logger_exfat_filesystem_common_init(const struct device *dev, const char *la
 	snprintf(path, sizeof(path), "%s:", config->disk);
 
 	/* Pre-erase the disk */
-	disk_access_ioctl(config->disk, DISK_IOCTL_GET_SECTOR_COUNT, &blocks);
+	if (disk_access_ioctl(config->disk, DISK_IOCTL_GET_SECTOR_COUNT, &blocks) != 0) {
+		LOG_ERR("Failed to query sector count");
+		return -EIO;
+	}
 	res = disk_access_erase(config->disk, 0, blocks, DISK_ACCESS_ERASE_PHYSICAL);
 	if (res != FR_OK) {
 		LOG_ERR("disk_access_erase failed: %d", res);
