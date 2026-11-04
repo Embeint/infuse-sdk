@@ -105,7 +105,9 @@ static int logger_flash_map_reset(const struct device *dev, uint32_t block_hint,
 		remaining -= to_erase;
 
 		/* Run user callback */
-		erase_progress(complete);
+		if (erase_progress) {
+			erase_progress(complete);
+		}
 	}
 	return 0;
 }

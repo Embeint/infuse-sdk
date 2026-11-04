@@ -150,7 +150,7 @@ struct data_logger_api {
 	 *
 	 * @param dev Logger device
 	 * @param block_hint Hint of how many blocks of data are currently logged
-	 * @param erase_progress Callback to periodically run with erase progress
+	 * @param erase_progress Optional callback to periodically run with erase progress
 	 *
 	 * @retval 0 on success
 	 * @retval -errno otherwise

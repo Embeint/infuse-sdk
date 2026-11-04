@@ -193,7 +193,7 @@ int data_logger_block_read(const struct device *dev, uint32_t block_idx, uint16_
  *
  * @param dev Data logger to erase
  * @param erase_all Run erase function on ALL blocks, not just those with data
- * @param erase_progress Callback periodically run with the erase progress
+ * @param erase_progress Optional callback periodically run with the erase progress
  *
  * @retval 0 on success
  * @retval -ENOTSUP erasing not supported by logger

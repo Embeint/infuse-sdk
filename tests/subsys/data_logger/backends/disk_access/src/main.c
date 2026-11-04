@@ -160,6 +160,12 @@ static void test_erase_blocks(uint32_t logged_blocks)
 	data_logger_get_state(logger, &state);
 	zassert_equal(0, state.boot_block);
 	zassert_equal(0, state.current_block);
+
+	/* Progress callback is optional */
+	zassert_equal(0, data_logger_block_write(logger, type, input_buffer, state.block_size));
+	zassert_equal(0, data_logger_erase(logger, true, NULL));
+	data_logger_get_state(logger, &state);
+	zassert_equal(0, state.current_block);
 }
 
 ZTEST(data_logger_disk_access, test_erase)

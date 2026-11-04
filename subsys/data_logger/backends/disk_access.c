@@ -98,7 +98,9 @@ static int logger_disk_access_reset(const struct device *dev, uint32_t block_hin
 		sector += sector_chunks;
 
 		/* Run user callback */
-		erase_progress(sector);
+		if (erase_progress) {
+			erase_progress(sector);
+		}
 	}
 
 	ARG_UNUSED(erase_progress);
