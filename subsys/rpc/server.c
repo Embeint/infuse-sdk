@@ -88,6 +88,11 @@ static struct net_buf *pull_data_core(uint32_t request_id, uint32_t expected_off
 			return NULL;
 		}
 		data = (void *)buf->data;
+		if (buf->len < sizeof(*data)) {
+			LOG_WRN("Malformed data packet (%d bytes)", buf->len);
+			net_buf_unref(buf);
+			continue;
+		}
 		if (data->request_id != request_id) {
 			LOG_WRN("Mismatched request ID (%08X != %08X)", data->request_id,
 				request_id);
