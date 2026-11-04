@@ -111,6 +111,7 @@ static int filesystem_init(const struct device *dev, const char *label, const ch
 	FRESULT res;
 	FATFS *fs;
 	FIL fp;
+	int rc;
 
 	/* Common filesystem init */
 	if (logger_exfat_filesystem_common_init(dev, label) < 0) {
@@ -119,7 +120,11 @@ static int filesystem_init(const struct device *dev, const char *label, const ch
 
 	/* Find free space on the disk */
 	snprintf(path, sizeof(path), "%s:", config->disk);
-	f_getfree(path, &fre_clust, &fs);
+	res = f_getfree(path, &fre_clust, &fs);
+	if (res != FR_OK) {
+		LOG_ERR("f_getfree failed: %d", res);
+		return -EIO;
+	}
 
 	fre_sect = fre_clust * fs->csize;
 	fsize = DATA_LOGGER_EXFAT_BLOCK_SIZE * (uint64_t)fre_sect;
@@ -134,6 +139,8 @@ static int filesystem_init(const struct device *dev, const char *label, const ch
 	res = f_expand(&fp, fsize, 1);
 	if (res != FR_OK) {
 		LOG_ERR("f_expand failed: %d %llx", res, fsize);
+		(void)f_close(&fp);
+		return -EIO;
 	}
 
 	/* Get start block address of file */
@@ -141,17 +148,15 @@ static int filesystem_init(const struct device *dev, const char *label, const ch
 	data->common.physical_blocks = fre_sect;
 
 	/* Erase the contents of the binary file */
-	if (res == FR_OK) {
-		res = disk_access_erase(config->disk, data->cached_file_lba,
-					data->common.physical_blocks, DISK_ACCESS_ERASE_PHYSICAL);
-		if (res != 0) {
-			LOG_ERR("Failed to erase file: %d", res);
-		}
+	rc = disk_access_erase(config->disk, data->cached_file_lba, data->common.physical_blocks,
+			       DISK_ACCESS_ERASE_PHYSICAL);
+	if (rc != 0) {
+		LOG_ERR("Failed to erase file: %d", rc);
 	}
 
 	/* Cleanup file */
 	(void)f_close(&fp);
-	return res;
+	return rc;
 }
 
 #ifdef CONFIG_PM_DEVICE
@@ -214,7 +219,11 @@ int logger_exfat_init(const struct device *dev)
 	if ((res == FR_NO_FILESYSTEM) || (!infuse_fs)) {
 		/* Handle standard mount failures */
 		LOG_WRN("Creating filesystem on '%s'", config->disk);
-		res = filesystem_init(dev, FILESYSTEM_LABEL, path);
+		rc = filesystem_init(dev, FILESYSTEM_LABEL, path);
+		if (rc < 0) {
+			LOG_ERR("Failed to create filesystem (%d)", rc);
+			return -EIO;
+		}
 	} else if (res == FR_OK) {
 		/* Filesystem mounted, get file information */
 		res = f_stat(path, &fno);
