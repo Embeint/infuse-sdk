@@ -401,12 +401,9 @@ static bool iterate_handle_task_reload(void)
 	if (atomic_test_and_clear_bit(&runner_flags, FLAGS_TRIGGER_SCHEDULE_RELOAD)) {
 		/* Schedules have changed in KV store, terminate all running schedules */
 		LOG_WRN("Schedules updated, terminating tasks");
-		for (int i = 0; i < sch_num; i++) {
-			struct task_schedule_state *state = &sch_states[i];
-			struct task_data *d = &tsk_states[state->task_idx];
-
-			if ((i == d->schedule_idx) && d->running) {
-				task_terminate(i);
+		for (int i = 0; i < tsk_num; i++) {
+			if (tsk_states[i].running) {
+				task_terminate(tsk_states[i].schedule_idx);
 			}
 		}
 		atomic_set_bit(&runner_flags, FLAGS_TASKS_TERMINATING);

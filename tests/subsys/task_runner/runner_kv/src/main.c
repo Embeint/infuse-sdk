@@ -254,8 +254,78 @@ ZTEST(task_runner_runner_kv, test_basic_behaviour)
 	}
 }
 
+ZTEST(task_runner_runner_kv, test_reload_invalid_schedule)
+{
+	INFUSE_STATES_ARRAY(app_states) = {0};
+	const struct task_schedule default_schedules[] = {
+		{
+			/* Task ID that does not exist */
+			.task_id = TASK_ID_NO_ARG,
+			.validity = TASK_VALID_ALWAYS,
+		},
+		{
+			.task_id = TASK_ID_SLEEPY,
+			.validity = TASK_VALID_ALWAYS,
+			.timeout_s = 60,
+			.task_args.raw = {0xAA},
+		},
+	};
+	struct task_schedule_state states[CONFIG_KV_STORE_KEY_TASK_SCHEDULES_RANGE] = {0};
+	struct task_schedule updated;
+	uint32_t gps_time = 7000;
+	uint32_t uptime = 0;
+	uint32_t iter = k_uptime_seconds() + 1;
+	int rc;
+
+	example_task_expected_block_rc = 1;
+	example_task_block_timeout = K_FOREVER;
+	example_task_expected_arg = default_schedules[1].task_args.raw[0];
+
+	task_runner_init(default_schedules, states, ARRAY_SIZE(default_schedules), app_tasks,
+			 app_tasks_data, ARRAY_SIZE(app_tasks));
+	zassert_equal(UINT8_MAX, states[0].task_idx);
+
+	/* Sleepy task starts */
+	task_runner_iterate(app_states, uptime++, gps_time++, 100);
+	k_sleep(K_TIMEOUT_ABS_SEC(iter++));
+	zassert_equal(1, example_task_run_cnt);
+	states[1].event_cb = basic_schedule_callback;
+	callback_count = 0;
+
+	/* Updating a schedule terminates only the running task */
+	memcpy(&updated, &default_schedules[1], sizeof(struct task_schedule));
+	updated.timeout_s = 5;
+	rc = kv_store_write(KV_KEY_TASK_SCHEDULES + 1, &updated, sizeof(struct task_schedule));
+	zassert_equal(sizeof(struct task_schedule), rc);
+
+	task_runner_iterate(app_states, uptime++, gps_time++, 100);
+	k_sleep(K_TIMEOUT_ABS_SEC(iter++));
+	zassert_equal(1, callback_count);
+	zassert_equal(TASK_SCHEDULE_TERMINATE_REQUEST, events_recv[0]);
+
+	/* Schedules reloaded, task restarted, invalid schedule still ignored */
+	task_runner_iterate(app_states, uptime++, gps_time++, 100);
+	k_sleep(K_TIMEOUT_ABS_SEC(iter++));
+	zassert_equal(3, callback_count);
+	zassert_equal(TASK_SCHEDULE_STOPPED, events_recv[1]);
+	zassert_equal(TASK_SCHEDULE_STARTED, events_recv[2]);
+	zassert_equal(2, example_task_run_cnt);
+	zassert_equal(UINT8_MAX, states[0].task_idx);
+}
+
 static void runner_before(void *fixture)
 {
+	struct k_work_delayable *workq_work = &app_tasks_data[1].executor.workqueue.work;
+	struct k_work_sync sync;
+
+	/* Terminate tasks a previous test left running */
+	if (app_tasks_data[0].running) {
+		k_poll_signal_raise(&app_tasks_data[0].terminate_signal, 0);
+		k_thread_join(&sleep_thread_obj, K_FOREVER);
+	}
+	if (k_work_delayable_busy_get(workq_work)) {
+		k_work_cancel_delayable_sync(workq_work, &sync);
+	}
 	example_task_block_timeout = K_NO_WAIT;
 	example_task_expected_block_rc = 0;
 	example_task_expected_arg = 0;
