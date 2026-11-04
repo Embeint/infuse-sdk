@@ -391,6 +391,40 @@ ZTEST(data_logger_api, test_flush)
 	zassert_equal(0, data->erase.num_calls);
 }
 
+ZTEST(data_logger_api, test_ram_buffer_full)
+{
+	const struct device *logger = DEVICE_DT_GET(DT_NODELABEL(data_logger_shim_ram));
+	struct data_logger_shim_function_data *data = data_logger_backend_shim_data_pointer(logger);
+	struct data_logger_state state;
+
+	if (!IS_ENABLED(CONFIG_DATA_LOGGER_RAM_BUFFER) ||
+	    IS_ENABLED(CONFIG_DATA_LOGGER_OFFLOAD_WRITES)) {
+		ztest_test_skip();
+	}
+
+	logger_shim_init(logger);
+	data_logger_get_state(logger, &state);
+	logger_shim_set_current_block(logger, state.logical_blocks - 2);
+
+	/* Space for two more blocks on the logger, both pending in RAM */
+	zassert_equal(0, data_logger_block_write(logger, 0x10, input_buffer, 512));
+	zassert_equal(0, data_logger_block_write(logger, 0x11, input_buffer, 512));
+	zassert_equal(0, data->write.num_calls);
+
+	/* No space left for a third block, even though the RAM buffer has space */
+	zassert_equal(-ENOMEM, data_logger_block_write(logger, 0x12, input_buffer, 512));
+
+	/* Flushing writes the two pending blocks */
+	zassert_equal(0, data_logger_flush(logger));
+	zassert_equal(2, data->write.num_calls);
+	data_logger_get_state(logger, &state);
+	zassert_equal(state.logical_blocks, state.current_block);
+
+	/* Logger is now full */
+	zassert_equal(-ENOMEM, data_logger_block_write(logger, 0x13, input_buffer, 512));
+	zassert_equal(2, data->write.num_calls);
+}
+
 static void test_before(void *ignored)
 {
 	const struct device *logger = DEVICE_DT_GET(DT_NODELABEL(data_logger_shim));
