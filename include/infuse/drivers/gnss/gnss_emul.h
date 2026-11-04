@@ -64,6 +64,13 @@ void emul_gnss_pvt_configure(const struct device *dev,
 			     struct gnss_pvt_emul_location *emul_location);
 
 /**
+ * @brief Raise an event on the emulated nRF9x GNSS event handler
+ *
+ * @param event Event to raise (`NRF_MODEM_GNSS_EVT_*`)
+ */
+void emul_gnss_nrf9x_event_raise(int event);
+
+/**
  * @}
  */
 

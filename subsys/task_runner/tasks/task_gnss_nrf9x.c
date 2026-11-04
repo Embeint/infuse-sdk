@@ -44,11 +44,17 @@ static struct gnss_run_state {
 	uint8_t flags;
 } state;
 
-LOG_MODULE_REGISTER(task_gnss, LOG_LEVEL_DBG);
+LOG_MODULE_REGISTER(task_gnss, CONFIG_TASK_GNSS_LOG_LEVEL);
 
 static void gnss_event_handler(int event)
 {
+	struct task_data *task = state.running_task;
+
 	LOG_DBG("GNSS event: %d", event);
+	if (task == NULL) {
+		/* Handler remains registered after the task terminates */
+		return;
+	}
 	if (event == NRF_MODEM_GNSS_EVT_PVT) {
 		state.interrupt_time = k_uptime_ticks();
 	}
@@ -57,7 +63,7 @@ static void gnss_event_handler(int event)
 		return;
 	}
 	atomic_set_bit(&state.events, event);
-	task_workqueue_reschedule(state.running_task, K_NO_WAIT);
+	task_workqueue_reschedule(task, K_NO_WAIT);
 }
 
 static int nrf9x_gnss_boot(const struct task_gnss_args *args)
@@ -377,6 +383,7 @@ void gnss_task_fn(struct k_work *work)
 		rc = nrf9x_gnss_boot(args);
 		if (rc < 0) {
 			state.running_task = NULL;
+			nrf9x_gnss_shutdown();
 		}
 		return;
 	}

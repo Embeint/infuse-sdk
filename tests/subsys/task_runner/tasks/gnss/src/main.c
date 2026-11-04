@@ -27,6 +27,10 @@
 #include <infuse/task_runner/runner.h>
 #include <infuse/task_runner/tasks/gnss.h>
 
+#ifdef CONFIG_TASK_RUNNER_TASK_GNSS_NRF9X
+#include <nrf_modem_gnss.h>
+#endif /* CONFIG_TASK_RUNNER_TASK_GNSS_NRF9X */
+
 #define DEV DEVICE_DT_GET(DT_ALIAS(gnss))
 GNSS_TASK(1, 0, DEV);
 struct task_config config = GNSS_TASK(0, 1, DEV);
@@ -569,6 +573,33 @@ ZTEST(task_gnss, test_location_fix_runner_terminate)
 
 	/* Time should be valid despite the early exit */
 	zassert_equal(TIME_SOURCE_GNSS, epoch_time_get_source());
+}
+
+ZTEST(task_gnss, test_event_after_terminate)
+{
+#ifndef CONFIG_TASK_RUNNER_TASK_GNSS_NRF9X
+	ztest_test_skip();
+#else
+	k_tid_t thread;
+
+	schedule.timeout_s = 0;
+	schedule.task_args.gnss = (struct task_gnss_args){
+		.flags = TASK_GNSS_FLAGS_RUN_FOREVER,
+	};
+
+	/* Run the task for a few seconds, then terminate it */
+	thread = task_schedule(&data);
+	k_sleep(K_SECONDS(3));
+	task_terminate(&data);
+	zassert_true(task_wait(thread, K_SECONDS(2)));
+
+	/* Events after termination should be ignored */
+	emul_gnss_nrf9x_event_raise(NRF_MODEM_GNSS_EVT_PVT);
+	emul_gnss_nrf9x_event_raise(NRF_MODEM_GNSS_EVT_BLOCKED);
+	zassert_false(k_work_delayable_is_pending(&data.executor.workqueue.work));
+	k_sleep(K_MSEC(100));
+	zassert_false(k_work_delayable_is_pending(&data.executor.workqueue.work));
+#endif /* CONFIG_TASK_RUNNER_TASK_GNSS_NRF9X */
 }
 
 ZTEST(task_gnss, test_location_fix_plateau)

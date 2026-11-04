@@ -80,6 +80,13 @@ static void nrf9x_interrupt_generator(struct k_work *work)
 			  K_TIMEOUT_ABS_MS(nrf9x_inst_data.next_interrupt));
 }
 
+void emul_gnss_nrf9x_event_raise(int event)
+{
+	if (nrf9x_inst_data.handler) {
+		nrf9x_inst_data.handler(event);
+	}
+}
+
 int lte_lc_func_mode_set(enum lte_lc_func_mode mode)
 {
 	return 0;
