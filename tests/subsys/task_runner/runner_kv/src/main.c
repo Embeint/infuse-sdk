@@ -130,7 +130,7 @@ ZTEST(task_runner_runner_kv, test_basic_behaviour)
 			.task_args.raw = {0xAA},
 		},
 	};
-	struct task_schedule_state states[ARRAY_SIZE(default_schedules)] = {0};
+	struct task_schedule_state states[CONFIG_KV_STORE_KEY_TASK_SCHEDULES_RANGE] = {0};
 	uint32_t gps_time = 7000;
 	uint32_t uptime = 0;
 	uint32_t iter = k_uptime_seconds() + 1;

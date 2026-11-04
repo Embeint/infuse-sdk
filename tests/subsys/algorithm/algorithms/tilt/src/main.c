@@ -32,7 +32,7 @@ IMU_TASK(1, 0, DEV);
 struct task_config config[1] = {IMU_TASK(0, 1, DEV)};
 struct task_data data[1];
 struct task_schedule schedule[1] = {{.task_id = TASK_ID_IMU}};
-struct task_schedule_state state[1];
+TASK_SCHEDULE_STATES_DEFINE(state, schedule);
 
 INFUSE_ZBUS_CHAN_DECLARE(INFUSE_ZBUS_CHAN_TILT);
 #define ZBUS_CHAN INFUSE_ZBUS_CHAN_GET(INFUSE_ZBUS_CHAN_TILT)
