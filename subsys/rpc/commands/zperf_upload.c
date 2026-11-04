@@ -24,6 +24,11 @@
 
 LOG_MODULE_DECLARE(rpc_server, CONFIG_INFUSE_RPC_LOG_LEVEL);
 
+/* The UDP uploader writes a datagram header (16 bytes) and client header (24 bytes) into each
+ * packet, but only raises packet sizes smaller than the datagram header to the minimum.
+ */
+#define ZPERF_UDP_MIN_PACKET_SIZE 40
+
 BUILD_ASSERT(CONFIG_NET_ZPERF_MAX_PACKET_SIZE >= 24);
 
 static int data_logger_read(const struct device *logger, uint64_t byte_offset, uint8_t *data,
@@ -206,6 +211,8 @@ struct net_buf *rpc_command_zperf_upload(struct net_buf *request)
 	request = NULL;
 
 	if (IS_ENABLED(CONFIG_NET_UDP) && (sock_type == SOCK_DGRAM)) {
+		/* Smaller sizes underflow the payload length passed to the data loader */
+		params.packet_size = MAX(params.packet_size, ZPERF_UDP_MIN_PACKET_SIZE);
 		LOG_INF("Starting zperf %s upload", "UDP");
 		rc = zperf_udp_upload(&params, &results);
 	} else if (IS_ENABLED(CONFIG_NET_TCP) && (sock_type == SOCK_STREAM)) {
