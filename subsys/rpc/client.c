@@ -109,8 +109,13 @@ static bool packet_received(struct net_buf *buf, bool decrypted, void *user_ctx)
 	}
 	if (meta->type == INFUSE_RPC_DATA_ACK) {
 		struct infuse_rpc_data_ack *ack = (void *)buf->data;
-		struct rpc_client_cmd_ctx *c = find_cmd_ctx(ctx, ack->request_id);
+		struct rpc_client_cmd_ctx *c;
 
+		if (buf->len < sizeof(*ack)) {
+			LOG_WRN("Malformed DATA_ACK (%d bytes)", buf->len);
+			return true;
+		}
+		c = find_cmd_ctx(ctx, ack->request_id);
 		if (c == NULL) {
 			LOG_WRN("DATA_ACK for unknown command %08X", ack->request_id);
 			return true;
@@ -128,8 +133,13 @@ static bool packet_received(struct net_buf *buf, bool decrypted, void *user_ctx)
 		irq_unlock(key);
 	} else if (meta->type == INFUSE_RPC_RSP) {
 		struct infuse_rpc_rsp_header *rsp_header = (void *)buf->data;
-		struct rpc_client_cmd_ctx *c = find_cmd_ctx(ctx, rsp_header->request_id);
+		struct rpc_client_cmd_ctx *c;
 
+		if (buf->len < sizeof(*rsp_header)) {
+			LOG_WRN("Malformed RPC_RSP (%d bytes)", buf->len);
+			return true;
+		}
+		c = find_cmd_ctx(ctx, rsp_header->request_id);
 		if (c == NULL) {
 			LOG_WRN("RPC_RSP for unknown command %08X", rsp_header->request_id);
 			return true;
@@ -240,6 +250,15 @@ int rpc_client_command_queue(struct rpc_client_ctx *ctx, enum rpc_builtin_id cmd
 	/* Allocate buffer for command */
 	cmd_buf = epacket_alloc_tx_for_interface(ctx->interface, K_FOREVER);
 	__ASSERT_NO_MSG(cmd_buf != NULL);
+	if (net_buf_tailroom(cmd_buf) < req_params_len) {
+		/* Command does not fit in the current interface payload */
+		net_buf_unref(cmd_buf);
+		K_SPINLOCK(&ctx->lock) {
+			ctx->cmd_ctx[ctx_idx].request_id = 0;
+		}
+		k_sem_give(&ctx->cmd_ctx_sem);
+		return -EMSGSIZE;
+	}
 
 	LOG_DBG("Command %d (request %08X, idx %d)", cmd, request_id, ctx_idx);
 
