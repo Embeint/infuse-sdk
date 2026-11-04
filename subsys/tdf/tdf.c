@@ -248,6 +248,14 @@ static struct tdf_array_header *tdf_add_array_header(struct tdf_buffer_state *st
 	return array_header_ptr;
 }
 
+static void tdf_add_data(struct tdf_buffer_state *state, const void *data, size_t len)
+{
+	/* `memmove` as relogging pending TDFs after a block size change copies data from
+	 * later in the same buffer.
+	 */
+	memmove(net_buf_simple_add(&state->buf, len), data, len);
+}
+
 int tdf_add_core(struct tdf_buffer_state *state, uint16_t tdf_id, uint8_t tdf_len, uint8_t tdf_num,
 		 uint64_t time, uint32_t idx_period, const void *data, enum tdf_data_format format)
 {
@@ -402,7 +410,7 @@ int tdf_add_core(struct tdf_buffer_state *state, uint16_t tdf_id, uint8_t tdf_le
 
 		if (diff_precomputed) {
 			/* Add the base TDF */
-			net_buf_simple_add_mem(&state->buf, data, tdf_len + total_diff_size);
+			tdf_add_data(state, data, tdf_len + total_diff_size);
 		} else {
 			tdf_diff_encode_t encode_fn = tdf_diff_encode_functions[format];
 			const uint8_t *current = data;
@@ -425,7 +433,7 @@ int tdf_add_core(struct tdf_buffer_state *state, uint16_t tdf_id, uint8_t tdf_le
 	} else {
 #endif /* CONFIG_TDF_DIFF */
 		/* Add TDF data */
-		net_buf_simple_add_mem(&state->buf, data, total_data);
+		tdf_add_data(state, data, total_data);
 #ifdef CONFIG_TDF_DIFF
 	}
 #endif /* CONFIG_TDF_DIFF */
