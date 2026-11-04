@@ -37,6 +37,7 @@ struct net_buf *rpc_command_tdf_data_logger_flush(struct net_buf *request)
 	struct net_buf *response;
 	uint8_t remaining = req->loggers;
 	uint8_t mask, offset;
+	int rc;
 
 	/* Allocate response object */
 	response = rpc_response_simple_req(request, 0, &rsp, sizeof(rsp));
@@ -56,7 +57,9 @@ struct net_buf *rpc_command_tdf_data_logger_flush(struct net_buf *request)
 			/* Flush each logger and record outputs */
 			flushed = net_buf_add(response, sizeof(*flushed));
 			flushed->logger = mask;
-			flushed->num = tdf_data_logger_flush_dev(logger);
+			rc = tdf_data_logger_flush_dev(logger);
+			/* No data was flushed on error */
+			flushed->num = MAX(rc, 0);
 			rsp_ptr->num += 1;
 		}
 		remaining ^= mask;
