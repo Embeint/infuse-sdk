@@ -38,7 +38,7 @@ struct net_buf *rpc_command_security_key_update(struct net_buf *request)
 		goto end;
 	}
 
-	/* Using EPACKET_AUTH_DEVICE instead of 2 doesn't work (preprocessor weirdness?) */
+	/* EPACKET_AUTH_DEVICE (2) is an enum value, which is not visible to the preprocessor */
 #if CONFIG_INFUSE_RPC_COMMAND_SECURITY_KEY_UPDATE_REQUIRED_AUTH < 2
 	struct epacket_rx_metadata *meta = net_buf_user_data(request);
 
