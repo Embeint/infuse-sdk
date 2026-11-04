@@ -685,7 +685,7 @@
         "26": {
             "name": "thread_stats",
             "description": "Query runtime thread statistics",
-            "depends_on": "THREAD_ANALYZER",
+            "depends_on": "THREAD_ANALYZER && THREAD_ANALYZER_RUN_UNLOCKED",
             "default": "y if INFUSE_SDK",
             "default_auth": "EPACKET_AUTH_DEVICE",
             "rpc_data": true,

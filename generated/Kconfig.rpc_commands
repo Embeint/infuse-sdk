@@ -301,7 +301,7 @@ config INFUSE_RPC_COMMAND_DATA_LOGGER_READ_CHUNKS_REQUIRED_AUTH
 
 config INFUSE_RPC_COMMAND_THREAD_STATS
 	bool "Enable RPC thread_stats"
-	depends on THREAD_ANALYZER
+	depends on THREAD_ANALYZER && THREAD_ANALYZER_RUN_UNLOCKED
 	default y if INFUSE_SDK
 	help
 	  Query runtime thread statistics
