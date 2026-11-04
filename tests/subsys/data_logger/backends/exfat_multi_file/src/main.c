@@ -94,6 +94,27 @@ ZTEST(data_logger_exfat, test_bad_label)
 	zassert_equal(0, state.earliest_block);
 }
 
+ZTEST(data_logger_exfat, test_long_label)
+{
+	const struct device *logger = DEVICE_DT_GET(DT_NODELABEL(data_logger_exfat));
+	/* Longest label exFAT supports */
+	const char *const long_label = DISK_NAME ":LONG_LABEL1";
+	struct data_logger_state state;
+
+	/* Init and write some data */
+	zassert_equal(0, logger_exfat_init(logger));
+	data_logger_get_state(logger, &state);
+	zassert_equal(0, data_logger_block_write(logger, 4, input_buffer, state.block_size));
+
+	/* Set the label and re-init the filesystem */
+	zassert_equal(FR_OK, f_setlabel(long_label));
+	zassert_equal(0, logger_exfat_init(logger));
+	/* Should be in a clean state again */
+	data_logger_get_state(logger, &state);
+	zassert_equal(0, state.current_block);
+	zassert_equal(0, state.earliest_block);
+}
+
 static void test_sequence(bool reinit)
 {
 	const struct device *logger = DEVICE_DT_GET(DT_NODELABEL(data_logger_exfat));
