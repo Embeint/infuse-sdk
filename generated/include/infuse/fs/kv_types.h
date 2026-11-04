@@ -222,7 +222,7 @@ struct kv_board_target {
 	} __packed
 /* clang-format on */
 
-/** Storage of secondary remote public key */
+/** Storage of secondary remote public key (update through security_key_update) */
 struct kv_secondary_remote_public_key {
 	/** Remote public key */
 	uint8_t public_key[32];
@@ -658,7 +658,7 @@ enum kv_builtin_id {
 	KV_KEY_APPLICATION_ACTIVE = 6,
 	/** Value of CONFIG_BOARD_TARGET */
 	KV_KEY_BOARD_TARGET = 7,
-	/** Storage of secondary remote public key */
+	/** Storage of secondary remote public key (update through security_key_update) */
 	KV_KEY_SECONDARY_REMOTE_PUBLIC_KEY = 8,
 	/**
 	 * State of the `z_devstate` section after boot. Requires .map file to assign states to
@@ -1027,7 +1027,7 @@ static struct key_value_slot_definition _KV_SLOTS_ARRAY_DEFINE[] = {
 	{
 		.key = KV_KEY_SECONDARY_REMOTE_PUBLIC_KEY,
 		.range = 1,
-		.flags = KV_FLAGS_REFLECT,
+		.flags = KV_FLAGS_REFLECT | KV_FLAGS_READ_ONLY,
 	},
 #endif /* CONFIG_KV_STORE_KEY_SECONDARY_REMOTE_PUBLIC_KEY */
 #ifdef CONFIG_KV_STORE_KEY_Z_DEVSTATE
