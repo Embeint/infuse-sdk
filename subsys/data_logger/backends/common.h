@@ -43,6 +43,7 @@ struct data_logger_common_data {
 	uint8_t flags;
 #ifdef CONFIG_DATA_LOGGER_RAM_BUFFER
 	size_t ram_buf_offset;
+	uint32_t ram_buf_blocks;
 #endif /* CONFIG_DATA_LOGGER_RAM_BUFFER */
 };
 
