@@ -115,22 +115,27 @@ static bool packet_received(struct net_buf *buf, bool decrypted, void *user_ctx)
 			LOG_WRN("Malformed DATA_ACK (%d bytes)", buf->len);
 			return true;
 		}
-		c = find_cmd_ctx(ctx, ack->request_id);
+		/* Context lookup under lock so that the response timeout can't release the
+		 * context before the timeout is extended.
+		 * Release semaphores under lock to prevent rescheduling until all released.
+		 */
+		K_SPINLOCK(&ctx->lock) {
+			c = find_cmd_ctx(ctx, ack->request_id);
+			if (c == NULL) {
+				K_SPINLOCK_BREAK;
+			}
+			/* ACK received, extend timeout */
+			k_timer_start(&c->timeout, c->rsp_timeout, K_FOREVER);
+
+			for (int i = 0; i < c->tx_tokens_on_ack; i++) {
+				k_sem_give(&c->tx_tokens);
+			}
+		}
 		if (c == NULL) {
 			LOG_WRN("DATA_ACK for unknown command %08X", ack->request_id);
 			return true;
 		}
-		/* ACK received, extend timeout */
 		LOG_DBG("ACK received for %08X", ack->request_id);
-		k_timer_start(&c->timeout, c->rsp_timeout, K_FOREVER);
-
-		/* Release semaphores under lock to prevent rescheduling until all released */
-		int key = irq_lock();
-
-		for (int i = 0; i < c->tx_tokens_on_ack; i++) {
-			k_sem_give(&c->tx_tokens);
-		}
-		irq_unlock(key);
 	} else if (meta->type == INFUSE_RPC_RSP) {
 		struct infuse_rpc_rsp_header *rsp_header = (void *)buf->data;
 		struct rpc_client_cmd_ctx *c;
@@ -172,16 +177,22 @@ void rpc_client_init(struct rpc_client_ctx *ctx, const struct device *dev,
 int rpc_client_update_response_timeout(struct rpc_client_ctx *ctx, uint32_t request_id,
 				       k_timeout_t timeout)
 {
-	struct rpc_client_cmd_ctx *c = find_cmd_ctx(ctx, request_id);
+	struct rpc_client_cmd_ctx *c;
 
-	if (c == NULL) {
-		return -EINVAL;
+	/* Context lookup under lock so that the response timeout can't release the
+	 * context before the timer is restarted.
+	 */
+	K_SPINLOCK(&ctx->lock) {
+		c = find_cmd_ctx(ctx, request_id);
+		if (c == NULL) {
+			K_SPINLOCK_BREAK;
+		}
+		/* Update stored value */
+		c->rsp_timeout = timeout;
+		/* Restart timer with new timeout */
+		k_timer_start(&c->timeout, c->rsp_timeout, K_FOREVER);
 	}
-	/* Update stored value */
-	c->rsp_timeout = timeout;
-	/* Restart timer with new timeout */
-	k_timer_start(&c->timeout, c->rsp_timeout, K_FOREVER);
-	return 0;
+	return c == NULL ? -EINVAL : 0;
 }
 
 static void command_tx_done_cb(const struct device *dev, struct net_buf *pkt, int result,
