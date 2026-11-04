@@ -144,6 +144,17 @@ ZTEST(data_logger_ram_buffering_disk, test_init_state)
 #endif /* CONFIG_DATA_LOGGER_EXFAT_MULTI_FILE */
 }
 
+static int write_success_count;
+
+static void write_success_cb(const struct device *dev, enum infuse_type data_type, void *user_data)
+{
+	write_success_count += 1;
+}
+
+static struct data_logger_cb logger_cb = {
+	.write_success = write_success_cb,
+};
+
 ZTEST(data_logger_ram_buffering_disk, test_flush)
 {
 	const struct device *logger = DEVICE_DT_GET(DT_NODELABEL(data_logger_exfat));
@@ -156,6 +167,8 @@ ZTEST(data_logger_ram_buffering_disk, test_flush)
 	zassert_equal(0, state.current_block);
 	zassert_equal(0, state.earliest_block);
 	zassert_not_equal(0, state.physical_blocks);
+	write_success_count = 0;
+	data_logger_register_cb(logger, &logger_cb);
 
 	/* Write two blocks to logger */
 	zassert_equal(0, data_logger_block_write(logger, 0x75, input_buffer, state.block_size));
@@ -163,12 +176,15 @@ ZTEST(data_logger_ram_buffering_disk, test_flush)
 	k_sleep(K_TICKS(1));
 	data_logger_get_state(logger, &state);
 	zassert_equal(0, state.current_block);
+	zassert_equal(0, write_success_count);
 
 	/* Run the flush command */
 	zassert_equal(0, data_logger_flush(logger));
 	k_sleep(K_TICKS(1));
 	data_logger_get_state(logger, &state);
 	zassert_equal(2, state.current_block);
+	/* Subscribers notified of each block */
+	zassert_equal(2, write_success_count);
 
 	/* Data should exist on the backend */
 	zassert_equal(0, data_logger_block_read(logger, 0, 0, output_buffer, state.block_size));

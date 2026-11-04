@@ -103,6 +103,12 @@ static int do_block_write(const struct device *dev, enum infuse_type type, void 
 	LOG_DBG("%s writing to logical block %u (Phy block %u)", dev->name, data->current_block,
 		phy_block);
 
+	/* Blocks buffered in RAM can reach this point after the logger has filled */
+	if (data->current_block >= data->logical_blocks) {
+		rc = -ENOMEM;
+		goto done;
+	}
+
 	/* Request backend to be powered */
 	rc = pm_device_runtime_get(dev);
 	if (rc < 0) {
@@ -163,8 +169,10 @@ static int do_ram_buffer_flush_burst(const struct device *dev)
 	struct data_logger_common_data *data = dev->data;
 	const struct data_logger_api *api = dev->api;
 	uint32_t pending = data->ram_buf_offset / data->block_size;
+	struct data_logger_persistent_block_header *header;
 	int64_t flush_end, flush_start = k_uptime_get();
 	int32_t flush_duration;
+	uint8_t *block;
 	int rc;
 
 	LOG_DBG("%s writing %d blocks to logical block %u", dev->name, pending,
@@ -172,27 +180,38 @@ static int do_ram_buffer_flush_burst(const struct device *dev)
 
 	/* Request backend to be powered */
 	rc = pm_device_runtime_get(dev);
-	if (rc < 0) {
-		/* Reset pending data, not much else we can do */
-		data->ram_buf_offset = 0;
-		return rc;
+	if (rc == 0) {
+		/* Do the burst write */
+		rc = api->write_burst(dev, data->current_block, pending, config->ram_buf_data);
+
+		/* Release device after a delay */
+		(void)pm_device_runtime_put_async(dev, K_MSEC(100));
+
+		/* Blocks have been consumed unless the backend was full */
+		if (rc != -ENOMEM) {
+			data->bytes_logged += pending * data->block_size;
+			data->current_block += pending;
+		}
 	}
-
-	/* Do the burst write */
-	rc = api->write_burst(dev, data->current_block, pending, config->ram_buf_data);
-
-	/* Release device after a delay */
-	(void)pm_device_runtime_put_async(dev, K_MSEC(100));
 
 	flush_end = k_uptime_get();
-	data->ram_buf_offset = 0;
 	flush_duration = flush_end - flush_start;
-	LOG_INF("%s -> Flushed %d blocks in %d ms", dev->name, pending, flush_duration);
+	LOG_INF("%s -> Flushed %d blocks in %d ms (%d)", dev->name, pending, flush_duration, rc);
 
-	if (rc != -ENOMEM) {
-		data->bytes_logged += pending * data->block_size;
-		data->current_block += pending;
+	/* Notify subscribers of the result for each block */
+	for (uint32_t i = 0; i < pending; i++) {
+		block = config->ram_buf_data + (i * data->block_size);
+		header = (void *)block;
+		if (rc == 0) {
+			handle_block_write_success(dev, header->block_type);
+		} else {
+			handle_block_write_fail(dev, header->block_type, block, data->block_size,
+						rc);
+		}
 	}
+
+	data->ram_buf_offset = 0;
+	data->ram_buf_blocks = 0;
 	return rc;
 }
 
@@ -230,7 +249,7 @@ static int do_block_write_ram_buffer_burst(const struct device *dev, enum infuse
 }
 #endif /* CONFIG_DATA_LOGGER_BURST_WRITES */
 
-static void do_ram_buffer_flush_single(const struct device *dev)
+static int do_ram_buffer_flush_single(const struct device *dev)
 {
 	const struct data_logger_common_config *config = dev->config;
 	struct data_logger_common_data *data = dev->data;
@@ -239,6 +258,7 @@ static void do_ram_buffer_flush_single(const struct device *dev)
 	struct ram_buf_header *hdr;
 	uint32_t offset = 0;
 	uint32_t flushed = 0;
+	int first_rc = 0;
 	int rc;
 
 	while (offset < data->ram_buf_offset) {
@@ -249,13 +269,18 @@ static void do_ram_buffer_flush_single(const struct device *dev)
 				    hdr->block_len);
 		offset += hdr->block_len;
 		flushed += 1;
+		if ((rc < 0) && (first_rc == 0)) {
+			first_rc = rc;
+		}
 
 		LOG_DBG("Flushed %d byte %02X block (%d)", hdr->block_len, hdr->block_type, rc);
 	}
 	flush_end = k_uptime_get();
 	data->ram_buf_offset = 0;
+	data->ram_buf_blocks = 0;
 	flush_duration = flush_end - flush_start;
 	LOG_INF("%s -> Flushed %d blocks in %d ms", dev->name, flushed, flush_duration);
+	return first_rc;
 }
 
 static int do_block_write_ram_buffer_single(const struct device *dev, enum infuse_type type,
@@ -264,6 +289,12 @@ static int do_block_write_ram_buffer_single(const struct device *dev, enum infus
 	const struct data_logger_common_config *config = dev->config;
 	struct data_logger_common_data *data = dev->data;
 	uint32_t space = config->ram_buf_len - data->ram_buf_offset;
+
+	/* Pending blocks have already claimed space on the logger */
+	if ((data->current_block + data->ram_buf_blocks) >= data->logical_blocks) {
+		handle_block_write_fail(dev, type, block, block_len, -ENOMEM);
+		return -ENOMEM;
+	}
 
 	if (space > (sizeof(struct ram_buf_header) + block_len)) {
 		/* Space for this block, add header and data to FIFO */
@@ -277,12 +308,15 @@ static int do_block_write_ram_buffer_single(const struct device *dev, enum infus
 		data->ram_buf_offset += sizeof(header);
 		memcpy(config->ram_buf_data + data->ram_buf_offset, block, block_len);
 		data->ram_buf_offset += block_len;
+		data->ram_buf_blocks += 1;
 		return 0;
 	} else if (data->ram_buf_offset == 0) {
 		/* No space in RAM buffer, no data logged, write per usual */
 	} else {
-		/* No space, data previously logged. Flush all pending data */
-		do_ram_buffer_flush_single(dev);
+		/* No space, data previously logged. Flush all pending data.
+		 * Failures have already been reported through the write callbacks.
+		 */
+		(void)do_ram_buffer_flush_single(dev);
 	}
 	return do_block_write(dev, type, block, block_len);
 }
@@ -315,8 +349,7 @@ static int do_ram_buffer_flush(const struct device *dev)
 		return do_ram_buffer_flush_burst(dev);
 	}
 #endif /* CONFIG_DATA_LOGGER_BURST_WRITES */
-	do_ram_buffer_flush_single(dev);
-	return 0;
+	return do_ram_buffer_flush_single(dev);
 }
 
 #endif /* CONFIG_DATA_LOGGER_RAM_BUFFER */
@@ -596,6 +629,7 @@ int data_logger_erase(const struct device *dev, bool erase_all,
 #ifdef CONFIG_DATA_LOGGER_RAM_BUFFER
 	/* Data pending in the RAM buffer is part of what is being erased */
 	data->ram_buf_offset = 0;
+	data->ram_buf_blocks = 0;
 #endif /* CONFIG_DATA_LOGGER_RAM_BUFFER */
 	k_mutex_unlock(&data->lock);
 
@@ -732,6 +766,10 @@ int data_logger_common_init(const struct device *dev)
 	data->current_block = 0;
 	data->earliest_block = 0;
 	data->flags = 0;
+#ifdef CONFIG_DATA_LOGGER_RAM_BUFFER
+	data->ram_buf_offset = 0;
+	data->ram_buf_blocks = 0;
+#endif /* CONFIG_DATA_LOGGER_RAM_BUFFER */
 
 #ifdef CONFIG_DATA_LOGGER_OFFLOAD_WRITES
 	{
