@@ -144,6 +144,8 @@ static void delayed_do_reboot(struct k_work *work)
 	cleanup_and_reboot();
 }
 
+static K_WORK_DELAYABLE_DEFINE(reboot_worker, delayed_do_reboot);
+
 void k_sys_fatal_error_handler(unsigned int reason, const struct arch_esf *esf)
 {
 	/* Store reboot metadata */
@@ -201,21 +203,16 @@ FUNC_NORETURN void infuse_reboot(enum infuse_reboot_reason reason, uint32_t info
 void infuse_reboot_delayed(enum infuse_reboot_reason reason, uint32_t info1, uint32_t info2,
 			   k_timeout_t delay)
 {
-	static struct k_work_delayable reboot_worker;
-
 #ifdef CONFIG_INFUSE_APPLICATION_STATES
 	/* Set rebooting state */
 	infuse_state_set(INFUSE_STATE_REBOOTING);
 #endif
 
-	/* Init the worker */
-	k_work_init_delayable(&reboot_worker, delayed_do_reboot);
-
 	/* Store initial reboot metadata */
 	reboot_state_store(reason, INFUSE_REBOOT_INFO_GENERIC, info1, info2, NULL);
 
-	/* Schedule the reboot */
-	k_work_schedule(&reboot_worker, delay);
+	/* Schedule the reboot, replacing the delay of any pending reboot */
+	k_work_reschedule(&reboot_worker, delay);
 }
 
 int infuse_reboot_state_query(struct infuse_reboot_state *state)
