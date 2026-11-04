@@ -321,12 +321,17 @@ static int do_ram_buffer_flush(const struct device *dev)
 
 #endif /* CONFIG_DATA_LOGGER_RAM_BUFFER */
 
-static int handle_block_write(const struct device *dev, enum infuse_type type, void *block,
-			      uint16_t block_len)
+static int handle_block_write_locked(const struct device *dev, enum infuse_type type, void *block,
+				     uint16_t block_len)
 {
 	const struct data_logger_common_config *config = dev->config;
 	struct data_logger_common_data *data = dev->data;
 	uint8_t unaligned, padding;
+
+	/* Blocks submitted before an erase started are dropped */
+	if (data->flags & DATA_LOGGER_FLAGS_ERASING) {
+		return 0;
+	}
 
 	/* Handle write alignment */
 	if (!config->requires_full_block_write && (config->block_write_align > 1)) {
@@ -349,6 +354,33 @@ static int handle_block_write(const struct device *dev, enum infuse_type type, v
 	/* Perform the block write */
 	return do_block_write(dev, type, block, block_len);
 }
+
+static int handle_block_write(const struct device *dev, enum infuse_type type, void *block,
+			      uint16_t block_len)
+{
+	struct data_logger_common_data *data = dev->data;
+	int rc;
+
+	k_mutex_lock(&data->lock, K_FOREVER);
+	rc = handle_block_write_locked(dev, type, block, block_len);
+	k_mutex_unlock(&data->lock);
+	return rc;
+}
+
+#ifdef CONFIG_DATA_LOGGER_RAM_BUFFER
+static int handle_ram_buffer_flush(const struct device *dev)
+{
+	struct data_logger_common_data *data = dev->data;
+	int rc = 0;
+
+	k_mutex_lock(&data->lock, K_FOREVER);
+	if (!(data->flags & DATA_LOGGER_FLAGS_ERASING)) {
+		rc = do_ram_buffer_flush(dev);
+	}
+	k_mutex_unlock(&data->lock);
+	return rc;
+}
+#endif /* CONFIG_DATA_LOGGER_RAM_BUFFER */
 
 #ifdef CONFIG_DATA_LOGGER_OFFLOAD_WRITES
 
@@ -378,7 +410,7 @@ static int logger_commit_thread_fn(void *a, void *b, void *c)
 			net_buf_unref(buf);
 
 			/* Perform the flush */
-			(void)do_ram_buffer_flush(dev);
+			(void)handle_ram_buffer_flush(dev);
 
 			/* Feed watchdog before sleeping again */
 			infuse_watchdog_feed(wdog_channel);
@@ -482,15 +514,19 @@ int data_logger_block_read(const struct device *dev, uint32_t block_idx, uint16_
 		return -ENOTSUP;
 	}
 
+	k_mutex_lock(&data->lock, K_FOREVER);
+
 	/* Check if logger is currently erasing */
 	if (data->flags & DATA_LOGGER_FLAGS_ERASING) {
-		return -EBUSY;
+		rc = -EBUSY;
+		goto unlock;
 	}
 
 	/* Data that does not exist */
 	if ((block_idx < data->earliest_block) || (end_logical >= data->current_block) ||
 	    (block_offset >= data->block_size)) {
-		return -ENOENT;
+		rc = -ENOENT;
+		goto unlock;
 	}
 
 	/* Read goes across the wrap boundary */
@@ -506,7 +542,7 @@ int data_logger_block_read(const struct device *dev, uint32_t block_idx, uint16_
 	/* Request backend to be powered */
 	rc = pm_device_runtime_get(dev);
 	if (rc < 0) {
-		return rc;
+		goto unlock;
 	}
 
 	/* Read block from backend */
@@ -524,6 +560,8 @@ int data_logger_block_read(const struct device *dev, uint32_t block_idx, uint16_
 	/* Release device after a delay */
 	(void)pm_device_runtime_put_async(dev, K_MSEC(100));
 
+unlock:
+	k_mutex_unlock(&data->lock);
 	return rc;
 }
 
@@ -547,18 +585,24 @@ int data_logger_erase(const struct device *dev, bool erase_all,
 		return rc;
 	}
 
+	/* Wait for any in-progress writes to complete, then block further writes */
+	k_mutex_lock(&data->lock, K_FOREVER);
+	data->flags |= DATA_LOGGER_FLAGS_ERASING;
 	if (erase_all) {
 		block_hint = data->physical_blocks;
 	} else {
 		block_hint = MIN(data->current_block, data->physical_blocks);
 	}
-
-	/* Set erasing flag */
-	data->flags |= DATA_LOGGER_FLAGS_ERASING;
+#ifdef CONFIG_DATA_LOGGER_RAM_BUFFER
+	/* Data pending in the RAM buffer is part of what is being erased */
+	data->ram_buf_offset = 0;
+#endif /* CONFIG_DATA_LOGGER_RAM_BUFFER */
+	k_mutex_unlock(&data->lock);
 
 	/* Erase the underlying logger */
 	rc = api->reset(dev, block_hint, erase_progress);
 
+	k_mutex_lock(&data->lock, K_FOREVER);
 	/* Reset block counters only on successful erase */
 	if (rc == 0) {
 		data->current_block = 0;
@@ -566,11 +610,12 @@ int data_logger_erase(const struct device *dev, bool erase_all,
 		data->boot_block = 0;
 	}
 
-	/* Release device */
-	(void)pm_device_runtime_put(dev);
-
 	/* Clear erasing flag */
 	data->flags &= ~DATA_LOGGER_FLAGS_ERASING;
+	k_mutex_unlock(&data->lock);
+
+	/* Release device */
+	(void)pm_device_runtime_put(dev);
 	return rc;
 }
 
@@ -597,7 +642,7 @@ int data_logger_flush(const struct device *dev)
 	ctx->flush = true;
 	k_fifo_put(&block_commit_fifo, buf);
 #else
-	rc = do_ram_buffer_flush(dev);
+	rc = handle_ram_buffer_flush(dev);
 #endif /* CONFIG_DATA_LOGGER_OFFLOAD_WRITES */
 #endif /* CONFIG_DATA_LOGGER_RAM_BUFFER */
 
@@ -679,6 +724,7 @@ int data_logger_common_init(const struct device *dev)
 	uint16_t erase_blocks;
 	int rc;
 
+	k_mutex_init(&data->lock);
 	sys_slist_init(&data->callbacks);
 
 	data->bytes_logged = 0;
