@@ -410,6 +410,16 @@ static void test_erase_blocks(uint32_t logged_blocks)
 	/* Expected number of callbacks */
 	zassert_equal(expected_files, erase_progress_calls);
 
+	/* Data files have been removed */
+	for (int i = 0; i < expected_files; i++) {
+		char filename[48];
+		FILINFO fno;
+
+		snprintf(filename, sizeof(filename), "%s:infuse_%016llx_%06d.bin", DISK_NAME,
+			 infuse_device_id(), i);
+		zassert_equal(FR_NO_FILE, f_stat(filename, &fno));
+	}
+
 	/* Blocks should be reset, not the bytes logged count */
 	data_logger_get_state(logger, &state);
 	zassert_equal(0, state.boot_block);
