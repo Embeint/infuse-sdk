@@ -97,6 +97,7 @@ int cellular_modem_at_cmd(void *buf, size_t len, const char *cmd)
 		/* Reserve one byte for the NULL terminator */
 		.len = len - 1,
 	};
+	int rc;
 
 	modem_chat_script_chat_init(&chat_single);
 	modem_chat_script_chat_set_request(&chat_single, cmd);
@@ -117,8 +118,11 @@ int cellular_modem_at_cmd(void *buf, size_t len, const char *cmd)
 	}
 
 	modem_chat_ctx.user_data = &cmd_ctx;
-	cmd_ctx.rc = modem_chat_run_script(&modem_chat_ctx, &script);
-	if (cmd_ctx.rc < 0) {
+	rc = modem_chat_run_script(&modem_chat_ctx, &script);
+	if ((rc < 0) && (rc != -EAGAIN)) {
+		/* Script failed to run. On -EAGAIN the script ran, and the result has already
+		 * been set by `script_done_cb`.
+		 */
 		cmd_ctx.rc = INFUSE_RPC_ERROR_MODEM_AT_FAILED;
 	}
 
