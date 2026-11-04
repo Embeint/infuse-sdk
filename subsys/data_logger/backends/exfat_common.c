@@ -41,7 +41,10 @@ DWORD get_fattime(void)
 bool logger_exfat_filesystem_is_infuse(const struct device *dev, const char *label)
 {
 	const struct dl_exfat_config *config = dev->config;
-	char fs_label[7] = {0};
+	/* `f_getlabel` writes the complete label, which for exFAT can be up to 11 characters.
+	 * FatFs requires 34 bytes to hold that in the worst case encoding (UTF-8).
+	 */
+	char fs_label[34] = {0};
 	char path[32];
 	FRESULT res;
 	FIL fp;
@@ -49,7 +52,7 @@ bool logger_exfat_filesystem_is_infuse(const struct device *dev, const char *lab
 	snprintf(path, sizeof(path), "%s:", config->disk);
 
 	res = f_getlabel(path, fs_label, NULL);
-	if (res != FR_OK || (strncmp(fs_label, label, 7) != 0)) {
+	if (res != FR_OK || (strcmp(fs_label, label) != 0)) {
 		LOG_ERR("Bad filesystem label '%s'", fs_label);
 		return false;
 	}
