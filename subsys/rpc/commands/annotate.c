@@ -63,8 +63,8 @@ struct net_buf *rpc_command_annotate(struct net_buf *request)
 					       sizeof(rsp));
 	}
 
-	if (extra_len == 0) {
-		/* No annotation payload */
+	if ((extra_len == 0) || ((sizeof(struct tdf_annotation) + extra_len) > UINT8_MAX)) {
+		/* No annotation payload, or too large to represent as a TDF */
 		return rpc_response_simple_req(request, INFUSE_RPC_ERROR_INVALID_ARGUMENT, &rsp,
 					       sizeof(rsp));
 	}
