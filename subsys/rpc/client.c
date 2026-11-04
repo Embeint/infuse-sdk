@@ -42,6 +42,7 @@ static void run_callback(struct rpc_client_ctx *ctx, const struct net_buf *buf, 
 	rpc_client_rsp_fn fn = NULL;
 	void *user_data = NULL;
 	bool mismatch = false;
+	bool release = false;
 
 	/* Claim the context under lock, as the response timeout runs in ISR context and
 	 * can race against the response being received.
@@ -68,6 +69,8 @@ static void run_callback(struct rpc_client_ctx *ctx, const struct net_buf *buf, 
 		 * before we get the chance to give the context semaphore.
 		 */
 		c->request_id = 0;
+		/* Context is released by `command_tx_done_cb` if the TX is still pending */
+		release = !c->tx_pending;
 	}
 
 	if (c == NULL) {
@@ -79,7 +82,9 @@ static void run_callback(struct rpc_client_ctx *ctx, const struct net_buf *buf, 
 		return;
 	}
 	k_sem_give(&c->tx_tokens);
-	k_sem_give(&ctx->cmd_ctx_sem);
+	if (release) {
+		k_sem_give(&ctx->cmd_ctx_sem);
+	}
 
 	/* Run the callback */
 	fn(buf, user_data);
@@ -173,10 +178,20 @@ static void command_tx_done_cb(const struct device *dev, struct net_buf *pkt, in
 			       void *user_data)
 {
 	struct rpc_client_cmd_ctx *c = user_data;
+	struct rpc_client_ctx *ctx = c->timeout.user_data;
+	bool release;
 
-	c->tx_result = result;
+	K_SPINLOCK(&ctx->lock) {
+		c->tx_result = result;
+		c->tx_pending = false;
+		/* Context was released while the TX was pending, it can now be reused */
+		release = c->request_id == 0;
+	}
 	/* Unblock command queue function */
 	k_sem_give(&c->tx_tokens);
+	if (release) {
+		k_sem_give(&ctx->cmd_ctx_sem);
+	}
 }
 
 int rpc_client_command_queue(struct rpc_client_ctx *ctx, enum rpc_builtin_id cmd, void *req_params,
@@ -187,6 +202,7 @@ int rpc_client_command_queue(struct rpc_client_ctx *ctx, enum rpc_builtin_id cmd
 	struct rpc_client_cmd_ctx *c;
 	uint8_t ctx_idx = UINT8_MAX;
 	struct net_buf *cmd_buf;
+	uint32_t request_id;
 	int rc;
 
 	__ASSERT_NO_MSG(ctx->interface != NULL);
@@ -204,7 +220,7 @@ int rpc_client_command_queue(struct rpc_client_ctx *ctx, enum rpc_builtin_id cmd
 	K_SPINLOCK(&ctx->lock) {
 		/* Find free context buffer */
 		for (int i = 0; i < ARRAY_SIZE(ctx->cmd_ctx); i++) {
-			if (ctx->cmd_ctx[i].request_id == 0) {
+			if ((ctx->cmd_ctx[i].request_id == 0) && !ctx->cmd_ctx[i].tx_pending) {
 				ctx_idx = i;
 				break;
 			}
@@ -218,13 +234,14 @@ int rpc_client_command_queue(struct rpc_client_ctx *ctx, enum rpc_builtin_id cmd
 		}
 		/* Reserve the context */
 		ctx->cmd_ctx[ctx_idx].request_id = ctx->request_id;
+		request_id = ctx->request_id;
 	}
 
 	/* Allocate buffer for command */
 	cmd_buf = epacket_alloc_tx_for_interface(ctx->interface, K_FOREVER);
 	__ASSERT_NO_MSG(cmd_buf != NULL);
 
-	LOG_DBG("Command %d (request %08X, idx %d)", cmd, ctx->request_id, ctx_idx);
+	LOG_DBG("Command %d (request %08X, idx %d)", cmd, request_id, ctx_idx);
 
 	/* Store command context */
 	c = &ctx->cmd_ctx[ctx_idx];
@@ -233,14 +250,15 @@ int rpc_client_command_queue(struct rpc_client_ctx *ctx, enum rpc_builtin_id cmd
 	c->timeout.user_data = ctx;
 	c->cb = cb;
 	c->user_data = user_data;
-	c->request_id = ctx->request_id;
+	c->request_id = request_id;
 	c->command_id = cmd;
 	c->rsp_timeout = response_timeout;
 	c->tx_tokens_on_ack = 1;
+	c->tx_pending = true;
 
 	/* Command header */
 	req_header->command_id = cmd;
-	req_header->request_id = ctx->request_id;
+	req_header->request_id = request_id;
 
 	/* Command payload */
 	net_buf_add_mem(cmd_buf, req_params, req_params_len);
@@ -257,6 +275,25 @@ int rpc_client_command_queue(struct rpc_client_ctx *ctx, enum rpc_builtin_id cmd
 	rc = k_sem_take(&c->tx_tokens, K_SECONDS(1));
 	if (rc == 0) {
 		rc = c->tx_result;
+	}
+	if (rc != 0) {
+		bool release = false;
+
+		/* Command failed to send, release the context so that the callback is not
+		 * run after the failure has been reported. If the TX is still pending, the
+		 * context is released by `command_tx_done_cb` instead.
+		 */
+		K_SPINLOCK(&ctx->lock) {
+			/* Context may have already been released by the response timeout */
+			if (c->request_id == request_id) {
+				k_timer_stop(&c->timeout);
+				c->request_id = 0;
+				release = !c->tx_pending;
+			}
+		}
+		if (release) {
+			k_sem_give(&ctx->cmd_ctx_sem);
+		}
 	}
 	return rc;
 }

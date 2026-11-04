@@ -54,6 +54,8 @@ struct rpc_client_cmd_ctx {
 	uint16_t tx_tokens_on_ack;
 	/** Result of TX queuing */
 	int16_t tx_result;
+	/** Command packet TX callback has not yet run (context cannot be reused) */
+	bool tx_pending;
 };
 
 /** @brief RPC client context */
