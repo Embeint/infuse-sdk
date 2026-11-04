@@ -100,9 +100,8 @@ struct net_buf *rpc_command_security_key_update(struct net_buf *request)
 		} else {
 			rc = kv_store_write(KV_KEY_SECONDARY_REMOTE_PUBLIC_KEY, key_ptr,
 					    sizeof(req->key_bitstream));
-			/* 0 on success */
-			rc = (rc == sizeof(req->key_bitstream)) ? 0
-								: INFUSE_RPC_ERROR_KEY_WRITE_FAILED;
+			/* 0 when the key is unchanged, length when written */
+			rc = (rc >= 0) ? 0 : INFUSE_RPC_ERROR_KEY_WRITE_FAILED;
 		}
 		break;
 #endif /* CONFIG_INFUSE_SECURITY_SECONDARY_REMOTE_ENABLE */
