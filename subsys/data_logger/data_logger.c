@@ -514,6 +514,10 @@ int data_logger_block_write(const struct device *dev, enum infuse_type type, voi
 	 * This resolves potential stack overflow from logging
 	 * in different contexts to different backends.
 	 */
+	if (block_len > CONFIG_DATA_LOGGER_OFFLOAD_MAX_BLOCK_SIZE) {
+		rc = -EINVAL;
+		goto error;
+	}
 	buf = net_buf_alloc(&block_queue_pool, K_FOREVER);
 	ctx = net_buf_user_data(buf);
 	ctx->dev = dev;
@@ -775,9 +779,11 @@ int data_logger_common_init(const struct device *dev)
 	{
 		const struct data_logger_common_config *config = dev->config;
 
-		if (!config->queued_writes) {
-			__ASSERT(data->block_size <= CONFIG_DATA_LOGGER_OFFLOAD_MAX_BLOCK_SIZE,
-				 "Block will not fit on queue");
+		if (!config->queued_writes &&
+		    (data->block_size > CONFIG_DATA_LOGGER_OFFLOAD_MAX_BLOCK_SIZE)) {
+			LOG_ERR("%s block size %d larger than offload limit %d", dev->name,
+				data->block_size, CONFIG_DATA_LOGGER_OFFLOAD_MAX_BLOCK_SIZE);
+			return -EINVAL;
 		}
 	}
 #endif
@@ -786,6 +792,14 @@ int data_logger_common_init(const struct device *dev)
 		/* Wireless loggers don't need further initialisation */
 		LOG_INF("Wireless logger %s", dev->name);
 		return 0;
+	}
+
+	/* Erases must cover a whole number of blocks */
+	if ((data->block_size == 0) || (data->erase_size < data->block_size) ||
+	    (data->erase_size % data->block_size)) {
+		LOG_ERR("%s erase size %d incompatible with block size %d", dev->name,
+			data->erase_size, data->block_size);
+		return -EINVAL;
 	}
 
 	/* Find start of data */
