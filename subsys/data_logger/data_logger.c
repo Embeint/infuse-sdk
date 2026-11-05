@@ -717,6 +717,8 @@ static int current_block_search(const struct device *dev, uint8_t counter)
 		if (temp.block_wrap == counter) {
 			low = mid + 1;
 			res = mid;
+		} else if (mid == 0) {
+			break;
 		} else {
 			high = mid - 1;
 		}
