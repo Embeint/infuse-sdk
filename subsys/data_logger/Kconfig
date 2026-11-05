@@ -58,6 +58,15 @@ config DATA_LOGGER_BURST_WRITES
 	  When multiple blocks are stored contiguously in RAM buffers, more efficient
 	  write operations may be available.
 
+config DATA_LOGGER_RECOVERY_SCAN_MAX_BLOCKS
+	int "Maximum logger size to scan when block headers are inconsistent"
+	default 65536
+	help
+	  When the block headers found at boot don't describe a consistent state,
+	  wrapping persistent loggers read the header of every block to find where
+	  to resume writing. Loggers with more blocks than this fail to initialise
+	  instead, and must be erased before use.
+
 module = DATA_LOGGER
 module-str = data logger
 source "subsys/logging/Kconfig.template.log_config"

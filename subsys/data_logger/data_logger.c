@@ -116,16 +116,21 @@ static int do_block_write(const struct device *dev, enum infuse_type type, void 
 	}
 
 	/* Erase next chunk if required */
-	if ((data->current_block >= data->physical_blocks) &&
+	if (((data->current_block >= data->physical_blocks) ||
+	     (data->flags & DATA_LOGGER_FLAGS_ERASE_BEFORE_WRITE)) &&
 	    ((data->current_block % erase_blocks) == 0)) {
+		/* Only chunks after the first wrap contain old data */
+		uint16_t old_blocks =
+			data->current_block >= data->physical_blocks ? erase_blocks : 0;
+
 		LOG_DBG("%s preparing block for write", dev->name);
 		/* Old data is no longer present as soon as we start erasing */
-		data->earliest_block += erase_blocks;
+		data->earliest_block += old_blocks;
 		/* Do the erase */
 		rc = api->erase(dev, phy_block, erase_blocks);
 		if (rc < 0) {
 			/* Restore previous value of `earliest_block` */
-			data->earliest_block -= erase_blocks;
+			data->earliest_block -= old_blocks;
 			LOG_ERR("%s failed to prepare block (%d)", dev->name, rc);
 			goto release;
 		}
@@ -704,6 +709,57 @@ static int block_wrap_read(const struct device *dev, uint32_t phy_block, uint8_t
 	return rc;
 }
 
+/* Returns 1 if every byte of the block equals `erase_val`, 0 if not */
+static int block_is_erased(const struct device *dev, uint32_t phy_block, uint8_t erase_val)
+{
+	struct data_logger_common_data *data = dev->data;
+	const struct data_logger_api *api = dev->api;
+	uint8_t chunk[32];
+	uint16_t len;
+	int rc;
+
+	for (uint16_t offset = 0; offset < data->block_size; offset += len) {
+		len = MIN(sizeof(chunk), data->block_size - offset);
+		rc = api->read(dev, phy_block, offset, chunk, len);
+		if (rc < 0) {
+			return rc;
+		}
+		for (int i = 0; i < len; i++) {
+			if (chunk[i] != erase_val) {
+				return 0;
+			}
+		}
+	}
+	return 1;
+}
+
+/* Returns 1 if the next block can be written at `phy_block` without overwriting data, 0 if not.
+ * When `relaxed` is false, a block that will be erased before writing must contain only
+ * erased or previous wrap data.
+ */
+static int write_position_valid(const struct device *dev, uint8_t counter, uint32_t phy_block,
+				bool relaxed)
+{
+	struct data_logger_common_data *data = dev->data;
+	uint16_t erase_blocks = data->erase_size / data->block_size;
+	uint8_t block_wrap;
+	int rc;
+
+	rc = block_wrap_read(dev, phy_block, &block_wrap);
+	if (rc < 0) {
+		return rc;
+	}
+	if ((counter > 1) && ((phy_block % erase_blocks) == 0)) {
+		/* Block will be erased before it is written */
+		return relaxed || block_wrap_erased(block_wrap) || (block_wrap == counter - 1);
+	}
+	if (!block_wrap_erased(block_wrap)) {
+		return 0;
+	}
+	/* The header alone does not show whether the block was partially written */
+	return block_is_erased(dev, phy_block, block_wrap);
+}
+
 /* Find the first block after `earliest_block` with valid data, skipping at most `max_search` */
 static int earliest_block_search(const struct device *dev, uint32_t max_search)
 {
@@ -732,7 +788,8 @@ static int earliest_block_search(const struct device *dev, uint32_t max_search)
 	return -EINVAL;
 }
 
-static int current_block_search(const struct device *dev, uint8_t counter)
+/* Returns -EINVAL if `verify` is set and the block headers are inconsistent */
+static int current_block_search(const struct device *dev, uint8_t counter, bool verify)
 {
 	struct data_logger_common_data *data = dev->data;
 	const struct data_logger_api *api = dev->api;
@@ -770,6 +827,14 @@ static int current_block_search(const struct device *dev, uint8_t counter)
 	}
 	data->current_block = ((counter - 1) * data->physical_blocks) + res + 1;
 
+	/* A corrupted header can mislead the search, check the next block is writable */
+	if (verify && (res + 1 < data->physical_blocks)) {
+		rc = write_position_valid(dev, counter, res + 1, false);
+		if (rc <= 0) {
+			return rc < 0 ? rc : -EINVAL;
+		}
+	}
+
 	/* Logger has not yet wrapped, all data still present */
 	if (counter == 1) {
 		data->earliest_block = 0;
@@ -783,8 +848,10 @@ static int current_block_search(const struct device *dev, uint8_t counter)
 	return earliest_block_search(dev, 2 * erase_blocks);
 }
 
-/* Find the logger state from the first and last block headers */
-static int logger_state_find(const struct device *dev, uint8_t first, uint8_t last)
+/* Find the logger state from the first and last block headers.
+ * Returns -EINVAL if `verify` is set and the block headers are inconsistent.
+ */
+static int logger_state_find(const struct device *dev, uint8_t first, uint8_t last, bool verify)
 {
 	struct data_logger_common_data *data = dev->data;
 	uint16_t erase_blocks = data->erase_size / data->block_size;
@@ -801,7 +868,7 @@ static int logger_state_find(const struct device *dev, uint8_t first, uint8_t la
 		return 0;
 	}
 
-	if (first == last) {
+	if (!verify && (first == last)) {
 		/* All blocks written with same wrap */
 		data->current_block = first * data->physical_blocks;
 		data->earliest_block = data->current_block - data->physical_blocks;
@@ -809,13 +876,120 @@ static int logger_state_find(const struct device *dev, uint8_t first, uint8_t la
 	}
 
 	/* Search for current block */
-	return current_block_search(dev, first);
+	return current_block_search(dev, first, verify);
+}
+
+/* Recover the logger state from inconsistent block headers by reading every header */
+static int logger_state_scan(const struct device *dev)
+{
+	struct data_logger_common_data *data = dev->data;
+	uint16_t erase_blocks = data->erase_size / data->block_size;
+	uint32_t run_len = 0, best_len = 0, num_erased = 0, num_newer = 0, num_older = 0;
+	uint32_t end_counter = 0, end_newer = 0, end_valid = 0;
+	uint8_t block_wrap, run_wrap = 0, counter = 0;
+	uint32_t phy_block;
+	int rc;
+
+	if (data->physical_blocks > CONFIG_DATA_LOGGER_RECOVERY_SCAN_MAX_BLOCKS) {
+		LOG_ERR("%s too large to scan for current state", dev->name);
+		return -EINVAL;
+	}
+
+	/* The longest run of identical headers is assumed to be valid data */
+	for (uint32_t i = 0; i < data->physical_blocks; i++) {
+		rc = block_wrap_read(dev, i, &block_wrap);
+		if (rc < 0) {
+			return rc;
+		}
+		if (block_wrap_erased(block_wrap)) {
+			num_erased += 1;
+			run_len = 0;
+			continue;
+		}
+		if ((run_len > 0) && (block_wrap == run_wrap)) {
+			run_len += 1;
+		} else {
+			run_wrap = block_wrap;
+			run_len = 1;
+		}
+		if (run_len > best_len) {
+			best_len = run_len;
+			counter = run_wrap;
+		}
+	}
+	if (best_len == 0) {
+		/* No valid data */
+		data->current_block = 0;
+		data->earliest_block = 0;
+		return 0;
+	}
+
+	/* That run is either the current wrap or the previous wrap */
+	for (uint32_t i = 0; i < data->physical_blocks; i++) {
+		rc = block_wrap_read(dev, i, &block_wrap);
+		if (rc < 0) {
+			return rc;
+		}
+		if (block_wrap_erased(block_wrap)) {
+			continue;
+		}
+		end_valid = i + 1;
+		if (block_wrap == counter) {
+			end_counter = i + 1;
+		} else if (block_wrap == counter + 1) {
+			end_newer = i + 1;
+			num_newer += 1;
+		} else if (block_wrap == counter - 1) {
+			num_older += 1;
+		}
+	}
+	if (num_newer > num_older) {
+		counter += 1;
+		end_counter = end_newer;
+	}
+
+	/* Every block of a logger that has wrapped has been written, except around the current
+	 * block. Otherwise the wrap counters came from corrupted or foreign data.
+	 */
+	if (num_erased > 2 * erase_blocks) {
+		counter = 1;
+		end_counter = end_valid;
+	}
+
+	/* Resume after the last block of the current wrap */
+	phy_block = end_counter;
+	if (counter == 1) {
+		/* Blocks are not erased before the first wrap, so nothing after the current
+		 * block can be trusted to be erased.
+		 */
+		phy_block = MIN(ROUND_UP(phy_block, erase_blocks), data->physical_blocks);
+		data->flags |= DATA_LOGGER_FLAGS_ERASE_BEFORE_WRITE;
+	} else if (phy_block < data->physical_blocks) {
+		rc = write_position_valid(dev, counter, phy_block, true);
+		if (rc < 0) {
+			return rc;
+		}
+		if (rc == 0) {
+			/* Skip to the next chunk, which is erased before it is written */
+			phy_block = MIN(ROUND_UP(phy_block, erase_blocks), data->physical_blocks);
+		}
+	}
+	data->current_block = ((counter - 1) * data->physical_blocks) + phy_block;
+	LOG_WRN("%s recovered to block %u", dev->name, data->current_block);
+
+	if (counter == 1) {
+		data->earliest_block = 0;
+		return 0;
+	}
+	data->earliest_block = data->current_block - data->physical_blocks;
+	return earliest_block_search(dev, data->physical_blocks);
 }
 
 int data_logger_common_init(const struct device *dev)
 {
 	struct data_logger_common_data *data = dev->data;
 	const struct data_logger_api *api = dev->api;
+	bool wrapping;
 	int rc;
 
 	k_mutex_init(&data->lock);
@@ -871,7 +1045,13 @@ int data_logger_common_init(const struct device *dev)
 		return rc;
 	}
 
-	rc = logger_state_find(dev, first.block_wrap, last.block_wrap);
+	/* Persistent loggers that wrap can verify the state against the erase rules */
+	wrapping = data->logical_blocks > data->physical_blocks;
+	rc = logger_state_find(dev, first.block_wrap, last.block_wrap, wrapping);
+	if ((rc == -EINVAL) && wrapping) {
+		LOG_WRN("%s inconsistent block headers, scanning all blocks", dev->name);
+		rc = logger_state_scan(dev);
+	}
 	if (rc < 0) {
 		LOG_ERR("%s failed to search for current state (%d)", dev->name, rc);
 		return rc;

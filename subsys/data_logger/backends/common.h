@@ -24,6 +24,8 @@ extern "C" {
 enum {
 	/** Data logger is currently being erased */
 	DATA_LOGGER_FLAGS_ERASING = BIT(0),
+	/** Erase each erase unit before writing to it, even before the first wrap */
+	DATA_LOGGER_FLAGS_ERASE_BEFORE_WRITE = BIT(1),
 };
 
 /** Must be first member of data struct */

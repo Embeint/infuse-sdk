@@ -70,11 +70,17 @@ ZTEST(data_logger_flash_map, test_init_erased)
 ZTEST(data_logger_flash_map, test_init_erased_invalid_start)
 {
 	const struct device *logger = DEVICE_DT_GET(NODE);
+	struct data_logger_state state;
 
 	/* Init all 0x00, set the first byte to a valid wrap count */
 	memset(flash_buffer, 0x00, flash_buffer_size);
 	flash_buffer[0] = 0x04;
-	zassert_equal(-EINVAL, logger_flash_map_init(logger));
+	zassert_equal(0, logger_flash_map_init(logger));
+
+	/* Foreign data is skipped up to the next erase unit */
+	data_logger_get_state(logger, &state);
+	zassert_equal(state.erase_unit / state.block_size, state.current_block);
+	zassert_equal(0, state.earliest_block);
 }
 
 ZTEST(data_logger_flash_map, test_init_part_written)
@@ -216,6 +222,101 @@ ZTEST(data_logger_flash_map, test_init_all_written_with_mid_erase)
 		      state.current_block);
 	zassert_equal(0x01 * state.physical_blocks + (state.physical_blocks / 2) + blocks_in_erase,
 		      state.earliest_block);
+}
+
+/* Blocks before `split` written with `wrap_new`, the rest with `wrap_old` */
+static void flash_layout(uint32_t block_size, uint8_t wrap_new, uint32_t split, uint8_t wrap_old)
+{
+	memset(flash_buffer, wrap_old, flash_buffer_size);
+	memset(flash_buffer, wrap_new, split * block_size);
+}
+
+/* Init must find the expected state, and the following blocks must be writable */
+static void corrupted_init_validate(uint32_t current, uint32_t earliest, uint32_t num_writes)
+{
+	const struct device *logger = DEVICE_DT_GET(NODE);
+	struct data_logger_state state;
+	int rc;
+
+	zassert_equal(0, logger_flash_map_init(logger));
+	data_logger_get_state(logger, &state);
+	zassert_equal(current, state.current_block);
+	zassert_equal(earliest, state.earliest_block);
+
+	/* Flash simulator rejects writes to blocks that are not erased */
+	for (int i = 0; i < num_writes; i++) {
+		rc = data_logger_block_write(logger, 0x10, input_buffer, state.block_size);
+		zassert_equal(0, rc);
+	}
+
+	/* Allow PM to release before the next init */
+	k_sleep(K_MSEC(200));
+}
+
+ZTEST(data_logger_flash_map, test_init_corrupted)
+{
+	const struct device *logger = DEVICE_DT_GET(NODE);
+	const uint8_t first_corruption[] = {0x02, 0x07, 0xFE};
+	struct data_logger_state state;
+	uint32_t phy, bs, eb, half, probe;
+
+	data_logger_get_state(logger, &state);
+	phy = state.physical_blocks;
+	bs = state.block_size;
+	eb = state.erase_unit / bs;
+	half = phy / 2;
+	/* First block read by the binary search */
+	probe = (phy - 1) / 2;
+	zassert_true(phy >= 4 * eb);
+	zassert_equal(0, half % eb);
+
+	/* First wrap, corrupted header on the first block read by the search */
+	flash_layout(bs, 0x01, phy - eb, 0xFF);
+	flash_buffer[probe * bs] = 0x00;
+	corrupted_init_validate(phy - eb, 0, eb);
+	flash_layout(bs, 0x01, phy - eb, 0xFF);
+	flash_buffer[probe * bs] = 0x03;
+	corrupted_init_validate(phy - eb, 0, eb);
+
+	/* Third wrap, corrupted header on the first block read by the search */
+	flash_layout(bs, 0x03, phy - eb, 0x02);
+	flash_buffer[probe * bs] = 0x02;
+	corrupted_init_validate(2 * phy + phy - eb, phy + phy - eb, eb);
+
+	/* Third wrap, corrupted header on the first block */
+	for (int i = 0; i < ARRAY_SIZE(first_corruption); i++) {
+		flash_layout(bs, 0x03, half, 0x02);
+		flash_buffer[0] = first_corruption[i];
+		corrupted_init_validate(2 * phy + half, phy + half, eb);
+	}
+
+	/* All blocks written with the same wrap, corrupted header on the first block read */
+	flash_layout(bs, 0x04, phy, 0x04);
+	flash_buffer[probe * bs] = 0x00;
+	corrupted_init_validate(4 * phy, 3 * phy, eb);
+
+	/* Interrupted erase of the first erase unit after a complete write */
+	flash_layout(bs, 0x02, phy, 0x02);
+	flash_buffer[0] = 0x0A;
+	for (int i = 1; i < eb; i++) {
+		flash_buffer[i * bs] = 0xFF;
+	}
+	corrupted_init_validate(2 * phy, phy, eb);
+
+	/* Interrupted write in the third wrap, next block erased */
+	flash_layout(bs, 0x03, half + 1, 0x02);
+	memset(flash_buffer + (half + 1) * bs, 0xFF, (eb - 1) * bs);
+	flash_buffer[(half + 1) * bs] = 0x7B;
+	corrupted_init_validate(2 * phy + half + eb, phy + half + eb, eb);
+
+	/* Interrupted write in the first wrap, foreign data in later blocks */
+	flash_layout(bs, 0x01, eb + 1, 0xFF);
+	flash_buffer[(eb + 1) * bs] = 0x7B;
+	flash_buffer[(phy - 1) * bs + 10] = 0x00;
+	corrupted_init_validate(2 * eb, 0, phy - 2 * eb);
+	data_logger_get_state(logger, &state);
+	zassert_equal(phy, state.current_block);
+	zassert_equal(0, state.earliest_block);
 }
 
 ZTEST(data_logger_flash_map, test_write_errors)
