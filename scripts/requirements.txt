@@ -1,2 +1,3 @@
 Jinja2
 simple-term-menu
+sbom-cve-check

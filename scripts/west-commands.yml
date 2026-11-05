@@ -30,3 +30,8 @@ west-commands:
       - name: release-diff
         class: release_diff
         help: Generate a binary diff between two releases
+  - file: scripts/west_commands/release-cve-check.py
+    commands:
+      - name: release-cve-check
+        class: release_cve_check
+        help: Run a CVE analysis over an Infuse-IoT application release
