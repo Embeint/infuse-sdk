@@ -197,7 +197,7 @@ ZTEST(data_logger_flash_map, test_init_all_written_with_mid_erase)
 
 	/* Init first half to 0x03, second half to 0x02 */
 	memset(flash_buffer, 0x03, half_flash);
-	memset(flash_buffer + half_flash, 0x04, half_flash);
+	memset(flash_buffer + half_flash, 0x02, half_flash);
 
 	/* Erase to the midpoint */
 	memset(flash_buffer + half_flash - state.erase_unit, 0x00, state.erase_unit);
@@ -211,7 +211,7 @@ ZTEST(data_logger_flash_map, test_init_all_written_with_mid_erase)
 
 	/* Init first half to 0x03, second half to 0x02 */
 	memset(flash_buffer, 0x03, half_flash);
-	memset(flash_buffer + half_flash, 0x04, half_flash);
+	memset(flash_buffer + half_flash, 0x02, half_flash);
 
 	/* Erase from the midpoint */
 	memset(flash_buffer + half_flash, 0x00, state.erase_unit);
@@ -256,7 +256,7 @@ static void corrupted_init_validate(uint32_t current, uint32_t earliest, uint32_
 ZTEST(data_logger_flash_map, test_init_corrupted)
 {
 	const struct device *logger = DEVICE_DT_GET(NODE);
-	const uint8_t first_corruption[] = {0x02, 0x07, 0xFE};
+	const uint8_t first_corruption[] = {0x00, 0xFF, 0x02, 0x07, 0xFE};
 	struct data_logger_state state;
 	uint32_t phy, bs, eb, half, probe;
 
@@ -293,6 +293,22 @@ ZTEST(data_logger_flash_map, test_init_corrupted)
 	/* All blocks written with the same wrap, corrupted header on the first block read */
 	flash_layout(bs, 0x04, phy, 0x04);
 	flash_buffer[probe * bs] = 0x00;
+	corrupted_init_validate(4 * phy, 3 * phy, eb);
+
+	/* First erase unit erased after a complete write, corrupted header on the last block */
+	flash_layout(bs, 0xFF, eb, 0x04);
+	flash_buffer[(phy - 1) * bs] = 0xF0;
+	corrupted_init_validate(4 * phy, 3 * phy + eb, eb);
+
+	/* Third wrap with only the first block written, corrupted header on that block */
+	flash_layout(bs, 0x03, 1, 0x02);
+	memset(flash_buffer + bs, 0xFF, (eb - 1) * bs);
+	flash_buffer[0] = 0x07;
+	corrupted_init_validate(2 * phy, phy, eb);
+
+	/* All blocks written with the same wrap, erased block on the first block read */
+	flash_layout(bs, 0x04, phy, 0x04);
+	memset(flash_buffer + probe * bs, 0xFF, bs);
 	corrupted_init_validate(4 * phy, 3 * phy, eb);
 
 	/* Interrupted erase of the first erase unit after a complete write */

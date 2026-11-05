@@ -855,12 +855,28 @@ static int logger_state_find(const struct device *dev, uint8_t first, uint8_t la
 {
 	struct data_logger_common_data *data = dev->data;
 	uint16_t erase_blocks = data->erase_size / data->block_size;
+	uint8_t block_wrap;
+	int rc;
 
 	if (block_wrap_erased(first)) {
 		if (block_wrap_erased(last)) {
 			/* Completely erased */
 			data->current_block = 0;
 			return 0;
+		}
+		if (verify) {
+			/* Rest of the first chunk must be erased, followed by the previous wrap */
+			for (uint32_t i = 1; (i <= erase_blocks) && (i < data->physical_blocks);
+			     i++) {
+				rc = block_wrap_read(dev, i, &block_wrap);
+				if (rc < 0) {
+					return rc;
+				}
+				if ((i < erase_blocks) ? !block_wrap_erased(block_wrap)
+						       : (block_wrap != last)) {
+					return -EINVAL;
+				}
+			}
 		}
 		/* First chunk has been erased after a complete write */
 		data->current_block = last * data->physical_blocks;
@@ -875,8 +891,19 @@ static int logger_state_find(const struct device *dev, uint8_t first, uint8_t la
 		return 0;
 	}
 
+	if (verify && !block_wrap_erased(last) && (first != last) && (first != last + 1)) {
+		/* Last block must be from the same or the previous wrap */
+		return -EINVAL;
+	}
+
 	/* Search for current block */
-	return current_block_search(dev, first, verify);
+	rc = current_block_search(dev, first, verify);
+	if ((rc == 0) && (first == last) &&
+	    (data->current_block != first * data->physical_blocks)) {
+		/* All blocks written with same wrap, but the search stopped early */
+		return -EINVAL;
+	}
+	return rc;
 }
 
 /* Recover the logger state from inconsistent block headers by reading every header */
