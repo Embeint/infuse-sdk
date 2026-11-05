@@ -1,0 +1,8 @@
+{
+  "@context": "https://openvex.dev/ns/v0.2.0",
+  "@id": "https://github.com/Embeint/infuse-sdk/scripts/vex/infuse-sdk.openvex.json",
+  "author": "Embeint Holdings Pty Ltd",
+  "timestamp": "2026-11-05T00:00:00Z",
+  "version": 1,
+  "statements": []
+}
