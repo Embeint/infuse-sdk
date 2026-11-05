@@ -12,6 +12,10 @@ on:
       - '!doc/**'
       - '!scripts/**'
       - 'scripts/west_commands/release-build.py'
+      - 'scripts/west_commands/release-cve-check.py'
+      - 'scripts/west_commands/cve_check.py'
+      - 'scripts/requirements-cve-check.txt'
+      - 'scripts/vex/**'
 
 permissions:
   contents: read
@@ -30,8 +34,11 @@ jobs:
         - /repo-cache/embeint:/github/cache/embeint
         - /repo-cache/ccache:/github/ccache
         - /repo-cache/pip-cache:/github/pip-cache
+        # NVD and CVE List databases (several GB), shared with cve-check.yml
+        - /repo-cache/sbom-cve-check:/github/cache/sbom-cve-check
     env:
       PIP_CACHE_DIR: /github/pip-cache
+      SBOM_CVE_CHECK_DATABASES_DIR: /github/cache/sbom-cve-check
       CCACHE_DIR: /github/ccache
       # `--specs` is ignored because ccache is unable to resolve the toolchain specs file path.
       CCACHE_IGNOREOPTIONS: '-specs=* --specs=*'
@@ -67,6 +74,8 @@ jobs:
         working-directory: infuse-sdk
         run: |
           pip install --cache-dir $PIP_CACHE_DIR -r scripts/requirements-actions.txt --require-hashes
+          pip install --cache-dir $PIP_CACHE_DIR --require-hashes \
+            -r scripts/requirements-cve-check.txt
 
       - name: Environment Setup
         working-directory: infuse-sdk
@@ -117,6 +126,11 @@ jobs:
           west release-build -r infuse-sdk/samples/releases/serial-nrf54l15dk.yaml --skip-git
           west release-build -r infuse-sdk/samples/releases/serial-nrf9160dk.yaml --skip-git
           west release-build -r infuse-sdk/samples/releases/serial-nucleo-l432kc.yaml --skip-git
+
+      - name: Test release CVE check
+        # Only checks that the analysis runs, vulnerable or untriaged CVEs do not fail the job
+        run: |
+          west release-cve-check -r release-sample-serial-nrf91-*
 
       - name: Cleanup
         if: always()
