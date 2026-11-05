@@ -687,13 +687,58 @@ int data_logger_flush(const struct device *dev)
 	return rc;
 }
 
+/* Wrap counters of 0x00 and 0xFF indicate a block that has not been written */
+static bool block_wrap_erased(uint8_t block_wrap)
+{
+	return (block_wrap == 0x00) || (block_wrap == 0xFF);
+}
+
+static int block_wrap_read(const struct device *dev, uint32_t phy_block, uint8_t *block_wrap)
+{
+	const struct data_logger_api *api = dev->api;
+	struct data_logger_persistent_block_header header;
+	int rc;
+
+	rc = api->read(dev, phy_block, 0, &header, sizeof(header));
+	*block_wrap = header.block_wrap;
+	return rc;
+}
+
+/* Find the first block after `earliest_block` with valid data, skipping at most `max_search` */
+static int earliest_block_search(const struct device *dev, uint32_t max_search)
+{
+	struct data_logger_common_data *data = dev->data;
+	uint32_t phy_block = data->earliest_block % data->physical_blocks;
+	uint8_t block_wrap;
+	int rc;
+
+	while (max_search--) {
+		rc = block_wrap_read(dev, phy_block, &block_wrap);
+		if (rc < 0) {
+			return rc;
+		}
+		if (!block_wrap_erased(block_wrap)) {
+			return 0;
+		}
+		data->earliest_block += 1;
+		if (++phy_block == data->physical_blocks) {
+			return 0;
+		}
+	}
+	/* This is typically seen on Nordic Development kits that ship with some
+	 * data on the first flash page but nothing else.
+	 */
+	LOG_WRN("Data search fail (Pre-existing data on flash?)");
+	return -EINVAL;
+}
+
 static int current_block_search(const struct device *dev, uint8_t counter)
 {
 	struct data_logger_common_data *data = dev->data;
 	const struct data_logger_api *api = dev->api;
-	struct data_logger_persistent_block_header temp;
+	uint16_t erase_blocks = data->erase_size / data->block_size;
 	uint32_t high, low, mid, res;
-	uint32_t max_search;
+	uint8_t block_wrap;
 	int rc = -ENOSYS;
 
 	if (api->search_hint) {
@@ -710,11 +755,11 @@ static int current_block_search(const struct device *dev, uint8_t counter)
 	/* Binary search for last block where block_wrap == counter */
 	while (low <= high) {
 		mid = (low + high) / 2;
-		rc = api->read(dev, mid, 0, &temp, sizeof(temp));
+		rc = block_wrap_read(dev, mid, &block_wrap);
 		if (rc < 0) {
 			return rc;
 		}
-		if (temp.block_wrap == counter) {
+		if (block_wrap == counter) {
 			low = mid + 1;
 			res = mid;
 		} else if (mid == 0) {
@@ -734,34 +779,43 @@ static int current_block_search(const struct device *dev, uint8_t counter)
 	/* Find next block with valid data */
 	__ASSERT_NO_MSG(data->current_block >= data->physical_blocks);
 	data->earliest_block = data->current_block - data->physical_blocks;
-	res = (data->earliest_block % data->physical_blocks);
 	/* Limit the search to a small multiple of the expected erase block */
-	max_search = 2 * (data->erase_size / data->block_size);
-	while (max_search--) {
-		rc = api->read(dev, res, 0, &temp, sizeof(temp));
-		if (rc < 0) {
-			return rc;
-		}
-		if ((temp.block_wrap != 0x00) && (temp.block_wrap != 0xFF)) {
+	return earliest_block_search(dev, 2 * erase_blocks);
+}
+
+/* Find the logger state from the first and last block headers */
+static int logger_state_find(const struct device *dev, uint8_t first, uint8_t last)
+{
+	struct data_logger_common_data *data = dev->data;
+	uint16_t erase_blocks = data->erase_size / data->block_size;
+
+	if (block_wrap_erased(first)) {
+		if (block_wrap_erased(last)) {
+			/* Completely erased */
+			data->current_block = 0;
 			return 0;
 		}
-		data->earliest_block += 1;
-		if (++res == data->physical_blocks) {
-			return 0;
-		}
+		/* First chunk has been erased after a complete write */
+		data->current_block = last * data->physical_blocks;
+		data->earliest_block = data->current_block - data->physical_blocks + erase_blocks;
+		return 0;
 	}
-	/* This is typically seen on Nordic Development kits that ship with some
-	 * data on the first flash page but nothing else.
-	 */
-	LOG_WRN("Data search fail (Pre-existing data on flash?)");
-	return -EINVAL;
+
+	if (first == last) {
+		/* All blocks written with same wrap */
+		data->current_block = first * data->physical_blocks;
+		data->earliest_block = data->current_block - data->physical_blocks;
+		return 0;
+	}
+
+	/* Search for current block */
+	return current_block_search(dev, first);
 }
 
 int data_logger_common_init(const struct device *dev)
 {
 	struct data_logger_common_data *data = dev->data;
 	const struct data_logger_api *api = dev->api;
-	uint16_t erase_blocks;
 	int rc;
 
 	k_mutex_init(&data->lock);
@@ -817,28 +871,10 @@ int data_logger_common_init(const struct device *dev)
 		return rc;
 	}
 
-	erase_blocks = data->erase_size / data->block_size;
-	if (first.block_wrap == last.block_wrap) {
-		/* Either completely erased, or all blocks written with same wrap */
-		if ((first.block_wrap == 0x00 || first.block_wrap == 0xFF)) {
-			/* Completely erased */
-			data->current_block = 0;
-		} else {
-			/* All blocks written with same wrap */
-			data->current_block = first.block_wrap * data->physical_blocks;
-			data->earliest_block = data->current_block - data->physical_blocks;
-		}
-	} else if ((first.block_wrap == 0x00 || first.block_wrap == 0xFF)) {
-		/* First chunk has been erased after a complete write */
-		data->current_block = last.block_wrap * data->physical_blocks;
-		data->earliest_block = data->current_block - data->physical_blocks + erase_blocks;
-	} else {
-		/* Search for current block */
-		rc = current_block_search(dev, first.block_wrap);
-		if (rc < 0) {
-			LOG_ERR("%s failed to search for current state (%d)", dev->name, rc);
-			return rc;
-		}
+	rc = logger_state_find(dev, first.block_wrap, last.block_wrap);
+	if (rc < 0) {
+		LOG_ERR("%s failed to search for current state (%d)", dev->name, rc);
+		return rc;
 	}
 
 	data->boot_block = data->current_block;
