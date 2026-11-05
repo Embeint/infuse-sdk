@@ -99,7 +99,9 @@ def issue_body(report: dict, new: list[dict], run_url: str | None) -> str:
 
 
 def main():
-    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter, allow_abbrev=False
+    )
     parser.add_argument("report", type=pathlib.Path, help="untriaged.json from workspace_cve_check.py")
     parser.add_argument("--label", default="cve-check", help="Label used to find previously reported CVEs")
     parser.add_argument(
