@@ -6,6 +6,7 @@
  * SPDX-License-Identifier: FSL-1.1-ALv2
  */
 
+#include <stdio.h>
 #include <stdlib.h>
 
 #include <zephyr/sys/atomic.h>
@@ -80,8 +81,19 @@ static struct {
 	 * time. Workaround this by running the commands in a different context.
 	 */
 	struct k_work_delayable update_work;
+	/* Signal quality is primarily updated through `%CESQ` notifications. The modem typically
+	 * emits a notification immediately before a cell change. If it didn't, this work item
+	 * seeds the value with a single `AT+CESQ` query, as the modem otherwise only emits a
+	 * notification when a threshold boundary is crossed.
+	 */
 	struct k_work signal_quality_work;
+	/* Uptime of the last `%CESQ` notification (0 if none received) */
+	int64_t cesq_notif_ticks;
 	atomic_t flags;
+	/* Most recently reported values (INT16_MIN/INT8_MIN when unknown) */
+	int16_t rsrp_current;
+	int8_t rsrq_current;
+	/* Most recent known values, reset on cell change */
 	int16_t rsrp_cached;
 	int8_t rsrq_cached;
 #ifdef CONFIG_INFUSE_MODEM_MONITOR_CONN_STATE_LOG
@@ -272,47 +284,85 @@ state_logging:
 #endif /* CONFIG_INFUSE_MODEM_MONITOR_CONN_STATE_LOG */
 }
 
+static void signal_quality_store(uint8_t rsrp_idx, uint8_t rsrq_idx)
+{
+	/* Convert from index to physical units if known */
+	monitor.rsrp_current = rsrp_idx == 255 ? INT16_MIN : RSRP_IDX_TO_DBM(rsrp_idx);
+	monitor.rsrq_current = rsrq_idx == 255 ? INT8_MIN : RSRQ_IDX_TO_DB(rsrq_idx);
+	if (rsrp_idx != 255) {
+		monitor.rsrp_cached = monitor.rsrp_current;
+	}
+	if (rsrq_idx != 255) {
+		monitor.rsrq_cached = monitor.rsrq_current;
+	}
+}
+
 static void signal_quality_update(struct k_work *work)
 {
-	int16_t rsrp;
-	int8_t rsrq;
+	uint8_t rsrp_idx;
+	uint8_t rsrq_idx;
+	int rc;
 
-	(void)lte_modem_monitor_signal_quality(&rsrp, &rsrq, false);
+	/* Seeding query is best effort, notifications will fill in the value later */
+	if (atomic_test_bit(&monitor.flags, FLAGS_MODEM_SLEEPING) ||
+	    !atomic_test_bit(&monitor.flags, FLAGS_CELL_CONNECTED) ||
+	    atomic_test_bit(&monitor.flags, FLAGS_PDN_CONN_IN_PROGRESS)) {
+		return;
+	}
+
+	rc = nrf_modem_at_scanf("AT+CESQ", "+CESQ: %*d,%*d,%*d,%*d,%" SCNu8 ",%" SCNu8, &rsrq_idx,
+				&rsrp_idx);
+	if (rc == 2) {
+		signal_quality_store(rsrp_idx, rsrq_idx);
+		LOG_DBG("+CESQ: RSRP %d dBm RSRQ %d dB", monitor.rsrp_current,
+			monitor.rsrq_current);
+	}
+}
+
+/* AT monitor for signal quality notifications (enabled with AT%CESQ=1) */
+AT_MONITOR(cesq_notification, "%CESQ", cesq_mon);
+
+static void cesq_mon(const char *notif)
+{
+	uint8_t rsrp_idx;
+	uint8_t rsrq_idx;
+
+	/* %CESQ: <rsrp>,<rsrp_threshold_index>,<rsrq>,<rsrq_threshold_index> */
+	if (sscanf(notif, "%%CESQ: %" SCNu8 ",%*d,%" SCNu8 ",%*d", &rsrp_idx, &rsrq_idx) != 2) {
+		LOG_WRN("Failed to parse: %s", notif);
+		return;
+	}
+	monitor.cesq_notif_ticks = k_uptime_ticks();
+	signal_quality_store(rsrp_idx, rsrq_idx);
+	LOG_DBG("%%CESQ: RSRP %d dBm RSRQ %d dB", monitor.rsrp_current, monitor.rsrq_current);
+}
+
+static bool cesq_notif_recent(void)
+{
+	return (monitor.cesq_notif_ticks != 0) &&
+	       ((k_uptime_ticks() - monitor.cesq_notif_ticks) < k_ms_to_ticks_ceil64(1000));
 }
 
 int lte_modem_monitor_signal_quality(int16_t *rsrp, int8_t *rsrq, bool cached)
 {
 	bool sleeping = atomic_test_bit(&monitor.flags, FLAGS_MODEM_SLEEPING);
 	bool connected = atomic_test_bit(&monitor.flags, FLAGS_CELL_CONNECTED);
-	bool pdn_in_progress = atomic_test_bit(&monitor.flags, FLAGS_PDN_CONN_IN_PROGRESS);
-	uint8_t rsrp_idx;
-	uint8_t rsrq_idx;
-	int rc;
 
 	*rsrp = cached ? monitor.rsrp_cached : INT16_MIN;
 	*rsrq = cached ? monitor.rsrq_cached : INT8_MIN;
 
-	/* If modem is sleeping or not connected to a cell, signal quality polling will fail */
-	if (sleeping || !connected || pdn_in_progress) {
-		LOG_DBG("Sleeping: %d Connected: %d PDN: %d", sleeping, connected, pdn_in_progress);
+	/* If modem is sleeping or not connected to a cell, there is no current signal quality */
+	if (sleeping || !connected) {
+		LOG_DBG("Sleeping: %d Connected: %d", sleeping, connected);
 		return 0;
 	}
 
-	/* Query state from the modem */
-	rc = nrf_modem_at_scanf("AT+CESQ", "+CESQ: %*d,%*d,%*d,%*d,%" SCNu8 ",%" SCNu8, &rsrq_idx,
-				&rsrp_idx);
-	if (rc != 2) {
-		return -EAGAIN;
+	/* Values are kept up to date by %CESQ notifications, no AT command required */
+	if (monitor.rsrp_current != INT16_MIN) {
+		*rsrp = monitor.rsrp_current;
 	}
-
-	/* Convert from index to physical units if known */
-	if (rsrp_idx != 255) {
-		*rsrp = RSRP_IDX_TO_DBM(rsrp_idx);
-		monitor.rsrp_cached = *rsrp;
-	}
-	if (rsrq_idx != 255) {
-		*rsrq = RSRQ_IDX_TO_DB(rsrq_idx);
-		monitor.rsrq_cached = *rsrq;
+	if (monitor.rsrq_current != INT8_MIN) {
+		*rsrq = monitor.rsrq_current;
 	}
 	return 0;
 }
@@ -381,10 +431,6 @@ static void lte_reg_handler(const struct lte_lc_evt *const evt)
 		LOG_DBG("RRC_UPDATE");
 		LOG_DBG("   State: %s", evt->rrc_mode == LTE_LC_RRC_MODE_IDLE ? "Idle" : "Active");
 		monitor.network_state.rrc_mode = evt->rrc_mode;
-		if (evt->rrc_mode == LTE_LC_RRC_MODE_CONNECTED) {
-			/* Update cached knowledge of signal strength */
-			infuse_work_submit(&monitor.signal_quality_work);
-		}
 		break;
 	case LTE_LC_EVT_CELL_UPDATE:
 		LOG_DBG("CELL_UPDATE");
@@ -393,16 +439,21 @@ static void lte_reg_handler(const struct lte_lc_evt *const evt)
 		/* Set cell info */
 		monitor.network_state.cell.tac = evt->cell.tac;
 		monitor.network_state.cell.id = evt->cell.id;
-		/* Reset cached signal strength */
-		monitor.rsrp_cached = INT16_MIN;
-		monitor.rsrq_cached = INT8_MIN;
 		/* Set cell connected flag */
 		atomic_set_bit_to(&monitor.flags, FLAGS_CELL_CONNECTED,
 				  evt->cell.id <= LTE_LC_CELL_EUTRAN_ID_MAX);
 		/* Request update of knowledge of network info */
 		infuse_work_reschedule(&monitor.update_work, K_NO_WAIT);
-		/* Update cached knowledge of signal strength */
-		infuse_work_submit(&monitor.signal_quality_work);
+		/* The modem typically reports signal quality for the new cell immediately
+		 * before the cell update. Only reset and explicitly query if it didn't.
+		 */
+		if (!cesq_notif_recent()) {
+			monitor.rsrp_current = INT16_MIN;
+			monitor.rsrq_current = INT8_MIN;
+			monitor.rsrp_cached = INT16_MIN;
+			monitor.rsrq_cached = INT8_MIN;
+			infuse_work_submit(&monitor.signal_quality_work);
+		}
 		break;
 	case LTE_LC_EVT_LTE_MODE_UPDATE:
 		LOG_DBG("LTE_MODE_UPDATE");
@@ -529,6 +580,10 @@ static void infuse_modem_init(int ret, void *ctx)
 
 	/* Enable connectivity stats */
 	rc = nrf_modem_at_printf("%s", "AT%XCONNSTAT=1");
+	__ASSERT_NO_MSG(rc == 0);
+
+	/* Subscribe to signal quality notifications */
+	rc = nrf_modem_at_printf("%s", "AT%CESQ=1");
 	__ASSERT_NO_MSG(rc == 0);
 
 #ifdef CONFIG_KV_STORE_KEY_LTE_PDP_CONFIG
@@ -688,6 +743,8 @@ int lte_modem_monitor_init(void)
 	monitor.network_state.edrx_cfg.ptw = -1.0f;
 	monitor.network_state.as_rai = UINT8_MAX;
 	monitor.network_state.cp_rai = UINT8_MAX;
+	monitor.rsrp_current = INT16_MIN;
+	monitor.rsrq_current = INT8_MIN;
 	monitor.rsrp_cached = INT16_MIN;
 	monitor.rsrq_cached = INT8_MIN;
 	/* Register handler */
