@@ -75,7 +75,7 @@ static void reference_time_updated(enum epoch_time_source source, struct timeuti
 ZTEST(auto_sntp, test_auto_sntp)
 {
 	KV_STRING_CONST(sntp_valid, CONFIG_SNTP_AUTO_DEFAULT_SERVER);
-	KV_STRING_CONST(sntp_invalid, "www.google.com");
+	KV_STRING_CONST(sntp_invalid, CONFIG_TEST_SNTP_UNRESPONSIVE_SERVER);
 
 	struct timeutil_sync_instant reference;
 
