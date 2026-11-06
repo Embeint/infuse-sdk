@@ -15,26 +15,13 @@ tests:
       - netif
       - wifi
   net.dns.native:
-    tags: external_service
     platform_allow:
       - native_sim
     integration_platforms:
       - native_sim
+    extra_configs:
+      # Local DNS server provided by pytest/conftest.py
+      - CONFIG_DNS_SERVER1="127.0.0.1:15353"
     extra_args:
       - OVERLAY_CONFIG="overlay-nsos.conf"
-    harness: console
-    harness_config:
-      type: multi_line
-      ordered: true
-      regex:
-        - "google.com. -> ([\\d\\.]+)"
-        - "does-not-exist.invalid. -> Lookup failed"
-        - "google.com. -> ([0-9A-Fa-f:]+)"
-        - "Started DNS query for 'google.com.' \\(ID [0-9A-F]{4}\\)"
-        - "[0-9A-F]{4} -> ([\\d\\.]+)"
-        - "Started DNS query for 'does-not-exist.invalid.' \\(ID [0-9A-F]{4}\\)"
-        - "[0-9A-F]{4} -> DNS resolving error"
-        - "Started DNS query for 'google.com.' \\(ID [0-9A-F]{4}\\)"
-        - "[0-9A-F]{4} -> ([0-9A-Fa-f:]+)"
-        - "Started DNS query for 'does-not-exist.invalid.' \\(ID [0-9A-F]{4}\\)"
-        - "[0-9A-F]{4} -> DNS resolving error"
+    harness: pytest
