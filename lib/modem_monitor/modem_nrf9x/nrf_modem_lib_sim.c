@@ -25,6 +25,7 @@ static nrf_modem_at_notif_handler_t at_handler;
 static bool is_init;
 static uint8_t rsrp_stored = 255;
 static uint8_t rsrq_stored = 255;
+static bool cesq_subscribed;
 
 int nrf_modem_at_sem_timeout_set(int timeout_ms)
 {
@@ -85,6 +86,12 @@ void nrf_modem_lib_sim_signal_strength(uint8_t rsrp, uint8_t rsrq)
 {
 	rsrp_stored = rsrp;
 	rsrq_stored = rsrq;
+
+	if (cesq_subscribed && (at_handler != NULL)) {
+		/* Threshold indices are not used by the monitor */
+		snprintf(output_buffer, sizeof(output_buffer), "%%CESQ: %d,0,%d,0\r\n", rsrp, rsrq);
+		at_handler(output_buffer);
+	}
 }
 
 int nrf_modem_at_printf(const char *fmt, ...)
@@ -97,6 +104,11 @@ int nrf_modem_at_printf(const char *fmt, ...)
 	va_end(args);
 
 	LOG_INF("%s: %s", __func__, input_buffer);
+	if (strcmp(input_buffer, "AT%CESQ=1") == 0) {
+		cesq_subscribed = true;
+	} else if (strcmp(input_buffer, "AT%CESQ=0") == 0) {
+		cesq_subscribed = false;
+	}
 	return 0;
 }
 

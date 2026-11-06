@@ -71,6 +71,7 @@ static void test_signal_strength(void)
 
 	/* Let values be reported */
 	nrf_modem_lib_sim_signal_strength(2, 32);
+	k_sleep(K_MSEC(10));
 	rc = lte_modem_monitor_signal_quality(&rsrp, &rsrq, false);
 	zassert_equal(0, rc);
 	zassert_equal(-139, rsrp);
@@ -82,6 +83,7 @@ static void test_signal_strength(void)
 
 	/* Revert to unknown, cache should be preserved */
 	nrf_modem_lib_sim_signal_strength(255, 255);
+	k_sleep(K_MSEC(10));
 	rc = lte_modem_monitor_signal_quality(&rsrp, &rsrq, false);
 	zassert_equal(0, rc);
 	zassert_equal(INT16_MIN, rsrp);
@@ -106,13 +108,15 @@ static void test_at_safe(void)
 	k_sleep(K_MSEC(10));
 	zassert_false(lte_modem_monitor_is_at_safe());
 
-	/* Can't query signal quality while AT blocked */
+	/* Signal quality still updated via notifications while AT blocked */
 	nrf_modem_lib_sim_signal_strength(2, 32);
+	k_sleep(K_MSEC(10));
 	rc = lte_modem_monitor_signal_quality(&rsrp, &rsrq, false);
 	zassert_equal(0, rc);
-	zassert_equal(INT16_MIN, rsrp);
-	zassert_equal(INT8_MIN, rsrq);
+	zassert_equal(-139, rsrp);
+	zassert_equal(-4, rsrq);
 	nrf_modem_lib_sim_signal_strength(255, 255);
+	k_sleep(K_MSEC(10));
 
 	/* BIP connected */
 	nrf_modem_lib_sim_send_at("%USATEV: BIP Connected\r\n");
@@ -164,6 +168,8 @@ ZTEST(infuse_nrf_modem_monitor, test_integration)
 	enum pdn_fam default_family;
 	const char *default_apn;
 	struct net_if_addr *added;
+	int16_t rsrp;
+	int8_t rsrq;
 	int rc;
 
 #ifdef CONFIG_INFUSE_MODEM_MONITOR_CONN_STATE_LOG
@@ -365,9 +371,25 @@ ZTEST(infuse_nrf_modem_monitor, test_integration)
 	/* Cell changes while BIP is pending */
 	nrf_modem_lib_sim_send_at("%USATEV: BIP Connecting\r\n");
 	k_sleep(K_MSEC(10));
+
+	/* No recent %CESQ notification, signal quality reset (and query skipped due to BIP) */
+	nrf_modem_lib_sim_send_at(
+		"+CEREG: 5,\"702C\",\"08C3BD0E\",9,,,\"00001000\",\"00101101\"\r\n");
+	k_sleep(K_MSEC(100));
+	rc = lte_modem_monitor_signal_quality(&rsrp, &rsrq, true);
+	zassert_equal(0, rc);
+	zassert_equal(INT16_MIN, rsrp);
+	zassert_equal(INT8_MIN, rsrq);
+
+	/* %CESQ notification immediately before the cell change is preserved */
+	nrf_modem_lib_sim_signal_strength(50, 20);
 	nrf_modem_lib_sim_send_at(
 		"+CEREG: 5,\"702B\",\"08C3BD0D\",9,,,\"00001000\",\"00101101\"\r\n");
 	k_sleep(K_SECONDS(1));
+	rc = lte_modem_monitor_signal_quality(&rsrp, &rsrq, false);
+	zassert_equal(0, rc);
+	zassert_equal(-91, rsrp);
+	zassert_equal(-10, rsrq);
 	nrf_modem_lib_sim_send_at("%USATEV: BIP Closed\r\n");
 	k_sleep(K_SECONDS(2));
 

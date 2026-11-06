@@ -27,6 +27,9 @@ void nrf_modem_lib_sim_default_pdn_ctx(const char **apn, enum pdn_fam *family);
 /**
  * @brief Set reported signal strenth and quality
  *
+ * Value is returned by subsequent `AT+CESQ` queries. If `AT%CESQ=1` has been
+ * run, a `%CESQ` notification is also generated.
+ *
  * @param rsrp Raw RSRP index
  * @param rsrq Raw RSRQ index
  */
