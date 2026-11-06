@@ -15,80 +15,36 @@ tests:
       - netif
       - wifi
   net.auto_sntp.immediate.native.sync:
-    tags: external_service
     platform_allow:
       - native_sim
     integration_platforms:
       - native_sim
+    timeout: 120
     extra_configs:
       - CONFIG_NATIVE_SIM_SLOWDOWN_TO_REAL_TIME=y
       - CONFIG_SNTP_AUTO_QUERY_TIMEOUT_MS=2000
       - CONFIG_INFUSE_DNS_ASYNC=n
+      # Local SNTP server provided by pytest/conftest.py
+      - CONFIG_SNTP_AUTO_DEFAULT_SERVER="127.0.0.1"
+      - CONFIG_TEST_SNTP_UNRESPONSIVE_SERVER="127.0.0.2"
+      - CONFIG_SNTP_AUTO_SERVER_PORT=12301
     extra_args:
       - OVERLAY_CONFIG="overlay-nsos.conf"
-    harness: console
-    harness_config:
-      type: multi_line
-      ordered: true
-      regex:
-        - "time.cloudflare.com -> (.*)"
-        - "Sending request..."
-        - "Unix time: (.*)"
-        - "Now: (.*) UTC"
-        - "www.google.com -> (.*)"
-        - "Sending request..."
-        - "SNTP query timeout"
-        - "www.google.com -> (.*)"
-        - "Sending request..."
-        - "SNTP query timeout"
-        - "Giving up SNTP queries after \\d failures"
-        - "time.cloudflare.com -> (.*)"
-        - "Sending request..."
-        - "Unix time: (.*)"
-        - "Now: (.*) UTC"
-        - "Using cached SNTP address"
-        - "Sending request..."
-        - "Unix time: (.*)"
-        - "Now: (.*) UTC"
-        - "Using cached SNTP address"
-        - "Sending request..."
-        - "Unix time: (.*)"
+    harness: pytest
   net.auto_sntp.immediate.native.async:
-    tags: external_service
     platform_allow:
       - native_sim
     integration_platforms:
       - native_sim
+    timeout: 120
     extra_configs:
       - CONFIG_NATIVE_SIM_SLOWDOWN_TO_REAL_TIME=y
       - CONFIG_SNTP_AUTO_QUERY_TIMEOUT_MS=2000
       - CONFIG_INFUSE_DNS_ASYNC=y
+      # Local SNTP server provided by pytest/conftest.py
+      - CONFIG_SNTP_AUTO_DEFAULT_SERVER="127.0.0.1"
+      - CONFIG_TEST_SNTP_UNRESPONSIVE_SERVER="127.0.0.2"
+      - CONFIG_SNTP_AUTO_SERVER_PORT=12302
     extra_args:
       - OVERLAY_CONFIG="overlay-nsos.conf"
-    harness: console
-    harness_config:
-      type: multi_line
-      ordered: true
-      regex:
-        - "/?/?/? -> (.*)"
-        - "Sending request..."
-        - "Unix time: (.*)"
-        - "Now: (.*) UTC"
-        - "/?/?/? -> (.*)"
-        - "Sending request..."
-        - "SNTP query timeout"
-        - "/?/?/? -> (.*)"
-        - "Sending request..."
-        - "SNTP query timeout"
-        - "Giving up SNTP queries after \\d failures"
-        - "/?/?/? -> (.*)"
-        - "Sending request..."
-        - "Unix time: (.*)"
-        - "Now: (.*) UTC"
-        - "Using cached SNTP address"
-        - "Sending request..."
-        - "Unix time: (.*)"
-        - "Now: (.*) UTC"
-        - "Using cached SNTP address"
-        - "Sending request..."
-        - "Unix time: (.*)"
+    harness: pytest
