@@ -30,7 +30,7 @@
 
 K_SEM_DEFINE(l4_up, 0, 1);
 
-const char *const coap_test_server = "coap.dev.infuse-iot.com";
+const char *const coap_test_server = CONFIG_TEST_COAP_SERVER;
 
 /* Hardcoded authentication that only has access to test files */
 const uint8_t test_identity[8] = {0xfd, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
@@ -86,8 +86,8 @@ static int socket_setup(void)
 	int rc;
 
 	/* IPv4 lookup */
-	zassert_equal(0, infuse_sync_dns(coap_test_server, 5684, AF_INET, SOCK_DGRAM, &address,
-					 &address_len));
+	zassert_equal(0, infuse_sync_dns(coap_test_server, CONFIG_TEST_COAP_SERVER_PORT, AF_INET,
+					 SOCK_DGRAM, &address, &address_len));
 
 	/* Create socket */
 	sock = zsock_socket(address.sa_family, SOCK_DGRAM, IPPROTO_DTLS_1_2);

@@ -5,6 +5,14 @@ configdefault INFUSE_SDK
 configdefault INFUSE_REBOOT
 	default y if SOC_FAMILY_NORDIC_NRF
 
+config TEST_COAP_SERVER
+	string "CoAP server to download test resources from"
+	default "coap.dev.infuse-iot.com"
+
+config TEST_COAP_SERVER_PORT
+	int "CoAP server DTLS port"
+	default 5684
+
 config WIFI_SSID
 	string "WiFi SSID"
 	depends on WIFI
