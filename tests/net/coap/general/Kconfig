@@ -2,6 +2,16 @@
 configdefault INFUSE_SDK
 	default y if SOC_FAMILY_NORDIC_NRF
 
+config TEST_COAP_SERVER
+	string "CoAP server to run tests against"
+	default "coap.me"
+	help
+	  Server providing the resources of the public coap.me test server.
+
+config TEST_COAP_SERVER_PORT
+	int "CoAP server UDP port"
+	default 5683
+
 config WIFI_SSID
 	string "WiFi SSID"
 	depends on WIFI
