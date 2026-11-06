@@ -16,6 +16,14 @@ config SNTP_AUTO_DEFAULT_SERVER
 	string "Default SNTP server"
 	default "time.cloudflare.com"
 
+config SNTP_AUTO_SERVER_PORT
+	int "UDP port of the SNTP server"
+	range 1 65535
+	default 123
+	help
+	  Port that SNTP queries are sent to. Only intended to be changed from
+	  the standard port for testing against local servers.
+
 config SNTP_AUTO_QUERY_TIMEOUT_MS
 	int "Maximum duration to wait for response from SNTP server"
 	default 4000

@@ -19,7 +19,7 @@
 #include <infuse/fs/kv_store.h>
 #include <infuse/fs/kv_types.h>
 
-#define SNTP_PORT 123
+#define SNTP_PORT CONFIG_SNTP_AUTO_SERVER_PORT
 
 static void sntp_service_handler(struct net_socket_service_event *sev);
 
