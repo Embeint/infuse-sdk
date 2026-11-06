@@ -25,6 +25,10 @@
 #include <infuse/time/epoch.h>
 #include <infuse/fs/littlefs.h>
 
+#define COAP_SERVER              CONFIG_TEST_COAP_SERVER
+#define COAP_PORT                CONFIG_TEST_COAP_SERVER_PORT
+#define COAP_SERVER_UNRESPONSIVE CONFIG_TEST_COAP_SERVER_UNRESPONSIVE
+
 struct rpc_coap_download_request_send {
 	struct rpc_coap_download_request core;
 	char resource[128];
@@ -230,7 +234,7 @@ static void send_download_v3_raw(uint32_t request_id, bool terminate_server,
 					.request_id = request_id,
 					.command_id = RPC_ID_COAP_DOWNLOAD_V3,
 				},
-			.server_port = 5684,
+			.server_port = COAP_PORT,
 			.action = RPC_ENUM_FILE_ACTION_DISCARD,
 			.resource_crc = UINT32_MAX,
 			.resource_len = UINT32_MAX,
@@ -238,7 +242,7 @@ static void send_download_v3_raw(uint32_t request_id, bool terminate_server,
 	size_t resource_len;
 
 	if (terminate_server) {
-		strcpy(params.core.server_address, "coap.dev.infuse-iot.com");
+		strcpy(params.core.server_address, COAP_SERVER);
 	} else {
 		memset(params.core.server_address, 's', sizeof(params.core.server_address));
 	}
@@ -266,35 +270,35 @@ ZTEST(rpc_command_coap_download, test_download_invalid_strings)
 ZTEST(rpc_command_coap_download, test_download_invalid)
 {
 	/* Bad actions */
-	send_download_command(1, "coap.dev.infuse-iot.com", 5684, 0, 5, "file/small", UINT32_MAX,
+	send_download_command(1, COAP_SERVER, COAP_PORT, 0, 5, "file/small", UINT32_MAX,
 			      UINT32_MAX);
 	expect_coap_download_response(1, INFUSE_RPC_ERROR_UNSUPPORTED_REQUEST, 0, 0);
-	send_download_command(2, "coap.dev.infuse-iot.com", 5684, 0, 5, "file/small", UINT32_MAX,
+	send_download_command(2, COAP_SERVER, COAP_PORT, 0, 5, "file/small", UINT32_MAX,
 			      UINT32_MAX);
 	expect_coap_download_response(2, INFUSE_RPC_ERROR_UNSUPPORTED_REQUEST, 0, 0);
 
 	/* Bad file */
-	send_download_command(5, "coap.dev.infuse-iot.com", 5684, 0, RPC_ENUM_FILE_ACTION_DISCARD,
+	send_download_command(5, COAP_SERVER, COAP_PORT, 0, RPC_ENUM_FILE_ACTION_DISCARD,
 			      "file/doesn't-exist", UINT32_MAX, UINT32_MAX);
 	expect_coap_download_response(5, INFUSE_RPC_ERROR_COAP_DOWNLOAD_FAILED, 0, 0);
 
 	/* Bad server */
-	send_download_command(3, "coap.dev.infuse-iot-none.com", 5684, 0,
+	send_download_command(3, "does-not-exist.invalid", COAP_PORT, 0,
 			      RPC_ENUM_FILE_ACTION_DISCARD, "file/small", UINT32_MAX, UINT32_MAX);
 	expect_coap_download_response(3, INFUSE_RPC_ERROR_DNS_QUERY_FAILED, 0, 0);
 
 	/* Bad port */
-	send_download_command(4, "coap.dev.infuse-iot.com", 1000, 0, RPC_ENUM_FILE_ACTION_DISCARD,
-			      "file/small", UINT32_MAX, UINT32_MAX);
+	send_download_command(4, COAP_SERVER, 1000, 0, RPC_ENUM_FILE_ACTION_DISCARD, "file/small",
+			      UINT32_MAX, UINT32_MAX);
 	expect_coap_download_response(4, INFUSE_RPC_ERROR_SOCKET_CONNECT_FAILED, 0, 0);
 
 	/* Connect failure */
-	send_download_command(6, "www.google.com", 5684, 0, RPC_ENUM_FILE_ACTION_DISCARD,
-			      "file/small", UINT32_MAX, UINT32_MAX);
+	send_download_command(6, COAP_SERVER_UNRESPONSIVE, COAP_PORT, 0,
+			      RPC_ENUM_FILE_ACTION_DISCARD, "file/small", UINT32_MAX, UINT32_MAX);
 	expect_coap_download_response(6, INFUSE_RPC_ERROR_SOCKET_CONNECT_FAILED, 0, 0);
 
 	/* Tiny timeout */
-	send_download_command(20, "coap.dev.infuse-iot.com", 5684, 1, RPC_ENUM_FILE_ACTION_DISCARD,
+	send_download_command(20, COAP_SERVER, COAP_PORT, 1, RPC_ENUM_FILE_ACTION_DISCARD,
 			      "file/small_file", UINT32_MAX, UINT32_MAX);
 	expect_coap_download_response(20, INFUSE_RPC_ERROR_COAP_DOWNLOAD_FAILED, 0, 0);
 
@@ -312,7 +316,7 @@ ZTEST(rpc_command_coap_download, test_download_invalid)
 	zassert_equal(0, tls_credential_delete(tag, TLS_CREDENTIAL_PSK_ID));
 
 	/* Basic discard download */
-	send_download_command(100, "coap.dev.infuse-iot.com", 5684, 0, RPC_ENUM_FILE_ACTION_DISCARD,
+	send_download_command(100, COAP_SERVER, COAP_PORT, 0, RPC_ENUM_FILE_ACTION_DISCARD,
 			      "file/small_file", UINT32_MAX, UINT32_MAX);
 	expect_coap_download_response(100, INFUSE_RPC_ERROR_SOCKET_CONFIG_FAILED, 0, 0);
 
@@ -322,7 +326,7 @@ ZTEST(rpc_command_coap_download, test_download_invalid)
 #endif /* CONFIG_TLS_CREDENTIALS */
 
 	/* Everything works after all the failures */
-	send_download_command(10, "coap.dev.infuse-iot.com", 5684, 0, RPC_ENUM_FILE_ACTION_DISCARD,
+	send_download_command(10, COAP_SERVER, COAP_PORT, 0, RPC_ENUM_FILE_ACTION_DISCARD,
 			      "file/small_file", UINT32_MAX, UINT32_MAX);
 	expect_coap_download_response(10, 0, 12, 0xb5289bef);
 }
@@ -337,37 +341,37 @@ ZTEST(rpc_command_coap_download, test_download)
 	flash_area_close(fa);
 
 	/* Basic discard download */
-	send_download_command(10, "coap.dev.infuse-iot.com", 5684, 0, RPC_ENUM_FILE_ACTION_DISCARD,
+	send_download_command(10, COAP_SERVER, COAP_PORT, 0, RPC_ENUM_FILE_ACTION_DISCARD,
 			      "file/small_file", UINT32_MAX, UINT32_MAX);
 	expect_coap_download_response(10, 0, 12, 0xb5289bef);
 
 	/* Larger discard download */
-	send_download_command(10, "coap.dev.infuse-iot.com", 5684, 0, RPC_ENUM_FILE_ACTION_DISCARD,
+	send_download_command(10, COAP_SERVER, COAP_PORT, 0, RPC_ENUM_FILE_ACTION_DISCARD,
 			      "file/med_file", UINT32_MAX, UINT32_MAX);
 	expect_coap_download_response(10, 0, 10030, 0x9919d24e);
 
 	/* Small DFU download of unknown length and size */
-	send_download_command(20, "coap.dev.infuse-iot.com", 5684, 0, RPC_ENUM_FILE_ACTION_APP_IMG,
+	send_download_command(20, COAP_SERVER, COAP_PORT, 0, RPC_ENUM_FILE_ACTION_APP_IMG,
 			      "file/small_file", UINT32_MAX, UINT32_MAX);
 	expect_coap_download_response(20, 0, 12, 0xb5289bef);
 
 	/* Download file contents for DFU */
-	send_download_command(10, "coap.dev.infuse-iot.com", 5684, 0, RPC_ENUM_FILE_ACTION_APP_IMG,
+	send_download_command(10, COAP_SERVER, COAP_PORT, 0, RPC_ENUM_FILE_ACTION_APP_IMG,
 			      "file/med_file", 10030, 0x9919d24e);
 	expect_coap_download_response(10, 0, 10030, 0x9919d24e);
 
 	/* Second time should detect file has already been downloaded */
-	send_download_command(11, "coap.dev.infuse-iot.com", 5684, 0, RPC_ENUM_FILE_ACTION_APP_IMG,
+	send_download_command(11, COAP_SERVER, COAP_PORT, 0, RPC_ENUM_FILE_ACTION_APP_IMG,
 			      "file/med_file", 10030, 0x9919d24e);
 	expect_coap_download_response(11, 0, 0, 0x9919d24e);
 
 	/* But if CRC not provided, file is downloaded again */
-	send_download_command(12, "coap.dev.infuse-iot.com", 5684, 0, RPC_ENUM_FILE_ACTION_APP_IMG,
+	send_download_command(12, COAP_SERVER, COAP_PORT, 0, RPC_ENUM_FILE_ACTION_APP_IMG,
 			      "file/med_file", 10030, UINT32_MAX);
 	expect_coap_download_response(12, 0, 10030, 0x9919d24e);
 
 	/* DFU requested too large */
-	send_download_command(20, "coap.dev.infuse-iot.com", 5684, 0, RPC_ENUM_FILE_ACTION_APP_IMG,
+	send_download_command(20, COAP_SERVER, COAP_PORT, 0, RPC_ENUM_FILE_ACTION_APP_IMG,
 			      "file/small_file", UINT32_MAX / 2, UINT32_MAX);
 	expect_coap_download_response(20, INFUSE_RPC_ERROR_FLASH_DATA_TOO_LARGE, 0, 0);
 
@@ -378,15 +382,13 @@ ZTEST(rpc_command_coap_download, test_download)
 ZTEST(rpc_command_coap_download, test_download_v2)
 {
 	/* Basic discard download */
-	send_download_v2_command(48, "coap.dev.infuse-iot.com", 5684, 0,
-				 RPC_ENUM_FILE_ACTION_DISCARD, "file/small_file", UINT32_MAX,
-				 UINT32_MAX, 0);
+	send_download_v2_command(48, COAP_SERVER, COAP_PORT, 0, RPC_ENUM_FILE_ACTION_DISCARD,
+				 "file/small_file", UINT32_MAX, UINT32_MAX, 0);
 	expect_coap_download_response(48, 0, 12, 0xb5289bef);
 
 	/* Larger discard download */
-	send_download_v2_command(50, "coap.dev.infuse-iot.com", 5684, 0,
-				 RPC_ENUM_FILE_ACTION_DISCARD, "file/med_file", UINT32_MAX,
-				 UINT32_MAX, 1024);
+	send_download_v2_command(50, COAP_SERVER, COAP_PORT, 0, RPC_ENUM_FILE_ACTION_DISCARD,
+				 "file/med_file", UINT32_MAX, UINT32_MAX, 1024);
 	expect_coap_download_response(50, 0, 10030, 0x9919d24e);
 }
 
@@ -396,19 +398,17 @@ ZTEST(rpc_command_coap_download, test_download_v3)
 	int rc;
 
 	/* Basic discard download */
-	send_download_v3_command(200, "coap.dev.infuse-iot.com", 5684, 0,
-				 RPC_ENUM_FILE_ACTION_DISCARD, 0, 0, 0, "file/small_file",
-				 UINT32_MAX, UINT32_MAX, 0);
+	send_download_v3_command(200, COAP_SERVER, COAP_PORT, 0, RPC_ENUM_FILE_ACTION_DISCARD, 0, 0,
+				 0, "file/small_file", UINT32_MAX, UINT32_MAX, 0);
 	expect_coap_download_response(200, 0, 12, 0xb5289bef);
 
 	/* Larger discard download */
-	send_download_v3_command(201, "coap.dev.infuse-iot.com", 5684, 0,
-				 RPC_ENUM_FILE_ACTION_DISCARD, 0, 0, 0, "file/med_file", UINT32_MAX,
-				 UINT32_MAX, 1024);
+	send_download_v3_command(201, COAP_SERVER, COAP_PORT, 0, RPC_ENUM_FILE_ACTION_DISCARD, 0, 0,
+				 0, "file/med_file", UINT32_MAX, UINT32_MAX, 1024);
 	expect_coap_download_response(201, 0, 10030, 0x9919d24e);
 
 	/* Write an algorithm */
-	send_download_v3_command(202, "coap.dev.infuse-iot.com", 5684, 0,
+	send_download_v3_command(202, COAP_SERVER, COAP_PORT, 0,
 				 RPC_ENUM_FILE_ACTION_WRITE_LITTLEFS, INFUSE_LFS_FOLDER_ALGORITHMS,
 				 0, 1000, "file/small_file", 12, 0xb5289bef, 512);
 	expect_coap_download_response(202, 0, 12, 0xb5289bef);
@@ -420,7 +420,7 @@ ZTEST(rpc_command_coap_download, test_download_v3)
 	zassert_equal(0xb5289bef, meta.crc);
 
 	/* Same algorithm again doesn't download data */
-	send_download_v3_command(203, "coap.dev.infuse-iot.com", 5684, 0,
+	send_download_v3_command(203, COAP_SERVER, COAP_PORT, 0,
 				 RPC_ENUM_FILE_ACTION_WRITE_LITTLEFS, INFUSE_LFS_FOLDER_ALGORITHMS,
 				 0, 1000, "file/small_file", 12, 0xb5289bef, 512);
 	expect_coap_download_response(203, 0, 0, 0xb5289bef);
@@ -432,7 +432,7 @@ ZTEST(rpc_command_coap_download, test_download_v3)
 	zassert_equal(0xb5289bef, meta.crc);
 
 	/* Different algorithm to same slot overwrites */
-	send_download_v3_command(204, "coap.dev.infuse-iot.com", 5684, 0,
+	send_download_v3_command(204, COAP_SERVER, COAP_PORT, 0,
 				 RPC_ENUM_FILE_ACTION_WRITE_LITTLEFS, INFUSE_LFS_FOLDER_ALGORITHMS,
 				 0, 1001, "file/med_file", 10030, 0x9919d24e, 1024);
 	expect_coap_download_response(204, 0, 10030, 0x9919d24e);
@@ -444,7 +444,7 @@ ZTEST(rpc_command_coap_download, test_download_v3)
 	zassert_equal(0x9919d24e, meta.crc);
 
 	/* Different algorithm */
-	send_download_v3_command(205, "coap.dev.infuse-iot.com", 5684, 0,
+	send_download_v3_command(205, COAP_SERVER, COAP_PORT, 0,
 				 RPC_ENUM_FILE_ACTION_WRITE_LITTLEFS, INFUSE_LFS_FOLDER_ALGORITHMS,
 				 5, 0x200, "file/small_file", 12, 0xb5289bef, 0);
 	expect_coap_download_response(205, 0, 12, 0xb5289bef);
@@ -456,7 +456,7 @@ ZTEST(rpc_command_coap_download, test_download_v3)
 	zassert_equal(0xb5289bef, meta.crc);
 
 	/* Non-algorithm folder */
-	send_download_v3_command(206, "coap.dev.infuse-iot.com", 5684, 0,
+	send_download_v3_command(206, COAP_SERVER, COAP_PORT, 0,
 				 RPC_ENUM_FILE_ACTION_WRITE_LITTLEFS, INFUSE_LFS_FOLDER_COPY, 100,
 				 0x201, "file/small_file", 12, 0xb5289bef, 0);
 	expect_coap_download_response(206, 0, 12, 0xb5289bef);
@@ -474,9 +474,9 @@ ZTEST(rpc_command_coap_download, test_download_v3_error_cleanup)
 	int rc;
 
 	/* Download request that will immediately timeout, file should be closed, but not deleted */
-	send_download_v3_command(20, "coap.dev.infuse-iot.com", 5684, 1,
-				 RPC_ENUM_FILE_ACTION_WRITE_LITTLEFS, INFUSE_LFS_FOLDER_ALGORITHMS,
-				 0, 1001, "file/med_file", 10030, 0x9919d24e, 1024);
+	send_download_v3_command(20, COAP_SERVER, COAP_PORT, 1, RPC_ENUM_FILE_ACTION_WRITE_LITTLEFS,
+				 INFUSE_LFS_FOLDER_ALGORITHMS, 0, 1001, "file/med_file", 10030,
+				 0x9919d24e, 1024);
 	expect_coap_download_response(20, INFUSE_RPC_ERROR_COAP_DOWNLOAD_FAILED, 0, 0);
 	rc = infuse_littlefs_file_size(INFUSE_LFS_FOLDER_ALGORITHMS, 0);
 	zassert_equal(0, rc);
@@ -489,12 +489,11 @@ ZTEST(rpc_command_coap_download, test_download_v3_error_cleanup)
 ZTEST(rpc_command_coap_download, test_download_littlefs_reject)
 {
 	/* ACTION_WRITE_LITTLEFS should be rejected for legacy RPCs */
-	send_download_command(99, "coap.dev.infuse-iot.com", 5684, 0,
-			      RPC_ENUM_FILE_ACTION_WRITE_LITTLEFS, "file/small_file", UINT32_MAX,
-			      UINT32_MAX);
+	send_download_command(99, COAP_SERVER, COAP_PORT, 0, RPC_ENUM_FILE_ACTION_WRITE_LITTLEFS,
+			      "file/small_file", UINT32_MAX, UINT32_MAX);
 	expect_coap_download_response(99, INFUSE_RPC_ERROR_UNSUPPORTED_REQUEST, 0, 0);
 
-	send_download_v2_command(100, "coap.dev.infuse-iot.com", 5684, 0,
+	send_download_v2_command(100, COAP_SERVER, COAP_PORT, 0,
 				 RPC_ENUM_FILE_ACTION_WRITE_LITTLEFS, "file/small_file", UINT32_MAX,
 				 UINT32_MAX, 0);
 	expect_coap_download_response(100, INFUSE_RPC_ERROR_UNSUPPORTED_REQUEST, 0, 0);
@@ -503,33 +502,33 @@ ZTEST(rpc_command_coap_download, test_download_littlefs_reject)
 ZTEST(rpc_command_coap_download, test_download_bt_ctlr)
 {
 #ifdef CONFIG_TEST_NATIVE_MOCK
-	send_download_command(15, "coap.dev.infuse-iot.com", 5684, 0,
-			      RPC_ENUM_FILE_ACTION_BT_CTLR_IMG, "file/med_file", 10030, UINT32_MAX);
+	send_download_command(15, COAP_SERVER, COAP_PORT, 0, RPC_ENUM_FILE_ACTION_BT_CTLR_IMG,
+			      "file/med_file", 10030, UINT32_MAX);
 	expect_coap_download_response(15, 0, 10030, 0x9919d24e);
 	zassert_false(bt_in_progress);
 
 	bt_start_rc = -EIO;
-	send_download_command(20, "coap.dev.infuse-iot.com", 5684, 0,
-			      RPC_ENUM_FILE_ACTION_BT_CTLR_IMG, "file/med_file", 10030, UINT32_MAX);
+	send_download_command(20, COAP_SERVER, COAP_PORT, 0, RPC_ENUM_FILE_ACTION_BT_CTLR_IMG,
+			      "file/med_file", 10030, UINT32_MAX);
 	expect_coap_download_response(20, INFUSE_RPC_ERROR_BT_COMMAND_QUEUE_FAILED, 0, 0);
 	zassert_false(bt_in_progress);
 	bt_start_rc = 0;
 
 	bt_fail_after = 10;
-	send_download_command(16, "coap.dev.infuse-iot.com", 5684, 0,
-			      RPC_ENUM_FILE_ACTION_BT_CTLR_IMG, "file/med_file", 10030, UINT32_MAX);
+	send_download_command(16, COAP_SERVER, COAP_PORT, 0, RPC_ENUM_FILE_ACTION_BT_CTLR_IMG,
+			      "file/med_file", 10030, UINT32_MAX);
 	expect_coap_download_response(16, INFUSE_RPC_ERROR_BT_REMOTE_ERROR, 0, 0);
 	zassert_false(bt_in_progress);
 
 	bt_finish_rc = -EINVAL;
-	send_download_command(30, "coap.dev.infuse-iot.com", 5684, 0,
-			      RPC_ENUM_FILE_ACTION_BT_CTLR_IMG, "file/med_file", 10030, UINT32_MAX);
+	send_download_command(30, COAP_SERVER, COAP_PORT, 0, RPC_ENUM_FILE_ACTION_BT_CTLR_IMG,
+			      "file/med_file", 10030, UINT32_MAX);
 	expect_coap_download_response(30, INFUSE_RPC_ERROR_BT_REMOTE_ERROR, 10030, 0x9919d24e);
 	zassert_false(bt_in_progress);
 	bt_finish_rc = 0;
 
-	send_download_command(17, "coap.dev.infuse-iot.com", 5684, 0,
-			      RPC_ENUM_FILE_ACTION_BT_CTLR_IMG, "file/med_file", 10030, UINT32_MAX);
+	send_download_command(17, COAP_SERVER, COAP_PORT, 0, RPC_ENUM_FILE_ACTION_BT_CTLR_IMG,
+			      "file/med_file", 10030, UINT32_MAX);
 	expect_coap_download_response(17, 0, 10030, 0x9919d24e);
 	zassert_false(bt_in_progress);
 	zassert_false(bt_in_progress);
@@ -562,13 +561,12 @@ ZTEST(rpc_command_coap_download, test_download_cpatch)
 	flash_area_close(fa_dst);
 
 	/* Attempting to run the patch file initially should fail due to invalid original data */
-	send_download_command(20, "coap.dev.infuse-iot.com", 5684, 0,
-			      RPC_ENUM_FILE_ACTION_APP_CPATCH, "file/hello_world-validate", 333,
-			      UINT32_MAX);
+	send_download_command(20, COAP_SERVER, COAP_PORT, 0, RPC_ENUM_FILE_ACTION_APP_CPATCH,
+			      "file/hello_world-validate", 333, UINT32_MAX);
 	expect_coap_download_response(20, INFUSE_RPC_ERROR_PATCH_VALIDATE_FAILED, 333, 0x8451810D);
 
 	/* Download the base image into partition1 */
-	send_download_command(21, "coap.dev.infuse-iot.com", 5684, 0, RPC_ENUM_FILE_ACTION_APP_IMG,
+	send_download_command(21, COAP_SERVER, COAP_PORT, 0, RPC_ENUM_FILE_ACTION_APP_IMG,
 			      "file/hello_world", 18940, UINT32_MAX);
 	expect_coap_download_response(21, 0, 18940, 0xE58FF061);
 
@@ -577,9 +575,8 @@ ZTEST(rpc_command_coap_download, test_download_cpatch)
 				18940);
 
 	/* Patch file should download and apply cleanly now */
-	send_download_command(22, "coap.dev.infuse-iot.com", 5684, 0,
-			      RPC_ENUM_FILE_ACTION_APP_CPATCH, "file/hello_world-validate", 333,
-			      UINT32_MAX);
+	send_download_command(22, COAP_SERVER, COAP_PORT, 0, RPC_ENUM_FILE_ACTION_APP_CPATCH,
+			      "file/hello_world-validate", 333, UINT32_MAX);
 	expect_coap_download_response(22, 0, 333, 0x8451810D);
 
 	/* Balanced call count */

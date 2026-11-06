@@ -5,4 +5,16 @@ config TEST_NATIVE_MOCK
 config BT_CONTROLLER_MANAGER
 	default y if TEST_NATIVE_MOCK
 
+config TEST_COAP_SERVER
+	string "CoAP server to download test resources from"
+	default "coap.dev.infuse-iot.com"
+
+config TEST_COAP_SERVER_PORT
+	int "CoAP server DTLS port"
+	default 5684
+
+config TEST_COAP_SERVER_UNRESPONSIVE
+	string "Server that resolves but never completes a DTLS handshake"
+	default "www.google.com"
+
 source "Kconfig.zephyr"

@@ -1,6 +1,5 @@
 common:
   tags:
-    - external_service
     - infuse
   min_flash: 64
   min_ram: 32
@@ -10,5 +9,11 @@ tests:
       - native_sim
     integration_platforms:
       - native_sim
+    extra_configs:
+      # Local CoAP server provided by pytest/conftest.py
+      - CONFIG_TEST_COAP_SERVER="127.0.0.1"
+      - CONFIG_TEST_COAP_SERVER_PORT=15687
+      - CONFIG_TEST_COAP_SERVER_UNRESPONSIVE="127.0.0.2"
     extra_args:
       - OVERLAY_CONFIG="overlay-nsos.conf"
+    harness: pytest
