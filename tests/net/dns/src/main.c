@@ -12,6 +12,7 @@
 #include <zephyr/net/net_if.h>
 #include <zephyr/net/conn_mgr_monitor.h>
 #include <zephyr/net/conn_mgr_connectivity.h>
+#include <zephyr/net/socket_offload.h>
 
 #include <infuse/fs/kv_store.h>
 #include <infuse/fs/kv_types.h>
@@ -64,13 +65,8 @@ ZTEST(infuse_dns, test_dns_query)
 					 &address_len));
 	zassert_equal(sizeof(struct net_sockaddr_in6), address_len);
 
-#ifndef CONFIG_NET_NATIVE_OFFLOADED_SOCKETS
-	/* IPv6 queries through getaddrinfo to invalid addresses on POSIX can take a long time and
-	 * break the other tests for currently unknown reasons.
-	 */
 	zassert_not_equal(0, infuse_sync_dns(INVALID_HOSTNAME, 80, AF_INET6, SOCK_STREAM, &address,
 					     &address_len));
-#endif /* !CONFIG_NET_NATIVE_OFFLOADED_SOCKETS */
 #endif /* defined(CONFIG_NET_IPV6) && !defined(CONFIG_WIFI) */
 }
 
@@ -174,6 +170,11 @@ void *test_init(void)
 #ifdef CONFIG_NET_NATIVE_OFFLOADED_SOCKETS
 	struct net_if *iface = net_if_get_default();
 	struct in_addr addr;
+
+	/* Resolve through the Zephyr DNS resolver (and therefore `CONFIG_DNS_SERVER1`) instead of
+	 * the host `getaddrinfo`, so that queries can be directed at the local test server.
+	 */
+	socket_offload_dns_enable(false);
 
 	/* Add the IP address to trigger NET_EVENT_L4_CONNECTED */
 	net_addr_pton(AF_INET, "192.0.2.1", &addr);
