@@ -15,20 +15,27 @@ tests:
       - netif
       - wifi
   net.coap.general.native:
-    build_only: true
     platform_allow:
       - native_sim
     integration_platforms:
       - native_sim
+    extra_configs:
+      # Local CoAP server provided by pytest/conftest.py
+      - CONFIG_TEST_COAP_SERVER="127.0.0.1"
+      - CONFIG_TEST_COAP_SERVER_PORT=15683
     extra_args:
       - OVERLAY_CONFIG="overlay-nsos.conf"
+    harness: pytest
   net.coap.general.native.serial:
-    build_only: true
     platform_allow:
       - native_sim
     integration_platforms:
       - native_sim
     extra_configs:
       - CONFIG_INFUSE_COAP_BACKEND_SERIAL=y
+      # Local CoAP server provided by pytest/conftest.py
+      - CONFIG_TEST_COAP_SERVER="127.0.0.1"
+      - CONFIG_TEST_COAP_SERVER_PORT=15686
     extra_args:
       - OVERLAY_CONFIG="overlay-nsos.conf"
+    harness: pytest

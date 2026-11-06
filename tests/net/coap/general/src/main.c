@@ -27,8 +27,8 @@
 
 K_SEM_DEFINE(l4_up, 0, 1);
 
-/* Static COAP test server run by TZI */
-const char *const coap_test_server = "coap.me";
+/* Server providing the resources of the coap.me test server run by TZI */
+const char *const coap_test_server = CONFIG_TEST_COAP_SERVER;
 uint8_t work_area[4096];
 
 struct cb_ctx {
@@ -76,8 +76,8 @@ static int socket_setup(void)
 	int sock;
 
 	/* IPv4 lookup */
-	zassert_equal(0, infuse_sync_dns(coap_test_server, 5683, AF_INET, SOCK_STREAM, &address,
-					 &address_len));
+	zassert_equal(0, infuse_sync_dns(coap_test_server, CONFIG_TEST_COAP_SERVER_PORT, AF_INET,
+					 SOCK_STREAM, &address, &address_len));
 
 	/* Create socket */
 	sock = zsock_socket(address.sa_family, SOCK_DGRAM, IPPROTO_UDP);
