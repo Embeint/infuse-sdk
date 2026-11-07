@@ -54,6 +54,14 @@ config INFUSE_CUSTOM_IDENTIFIERS
 	  Allowing other sources to supply an implementation of infuse_device_id allows for
 	  custom storage locations and layouts.
 
+config INFUSE_PROVISIONING_ESP32_EFUSE
+	bool "Read ESP32-C6 Infuse ID from eFuses"
+	depends on SOC_ESP32C6 && INFUSE_SDK && !INFUSE_CUSTOM_IDENTIFIERS
+	default y
+	help
+	  Read the little-endian 64-bit Infuse ID from USER_DATA bits 0..63.
+	  Blank eFuses select a locally managed ID derived from the factory MAC.
+
 if INFUSE_COMMON_BOOT
 
 config INFUSE_COMMON_BOOT_INIT_PRIORITY

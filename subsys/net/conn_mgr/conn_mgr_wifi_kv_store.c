@@ -229,6 +229,16 @@ static void wifi_mgmt_event_handler(struct net_mgmt_event_callback *cb, uint64_t
 
 	switch (mgmt_event) {
 	case NET_EVENT_WIFI_CONNECT_RESULT:
+		if ((status->conn_status != WIFI_STATUS_CONN_SUCCESS) &&
+		    (net_mgmt(NET_REQUEST_WIFI_IFACE_STATUS, iface, &iface_status,
+			      sizeof(struct wifi_iface_status)) == 0) &&
+		    (iface_status.state == WIFI_STATE_COMPLETED)) {
+			/* Some drivers (ESP32) report a redundant request as a failed
+			 * connection while the existing connection remains up.
+			 */
+			LOG_DBG("Ignoring failure while connected (%d)", status->conn_status);
+			break;
+		}
 		is_connected = status->conn_status == WIFI_STATUS_CONN_SUCCESS;
 		if (status->conn_status == WIFI_STATUS_CONN_SUCCESS) {
 			/* Cancel any pending work timeout */
