@@ -2,7 +2,56 @@
   "@context": "https://openvex.dev/ns/v0.2.0",
   "@id": "https://github.com/Embeint/infuse-sdk/scripts/vex/infuse-sdk.openvex.json",
   "author": "Embeint Holdings Pty Ltd",
-  "timestamp": "2026-11-05T00:00:00Z",
-  "version": 1,
-  "statements": []
+  "timestamp": "2026-11-06T23:44:11Z",
+  "version": 2,
+  "statements": [
+    {
+      "vulnerability": {
+        "name": "CVE-2025-24912"
+      },
+      "products": [
+        {
+          "@id": "cpe:2.3:a:w1.fi:hostapd:2.11:*:*:*:*:*:*:*",
+          "identifiers": {
+            "cpe23": "cpe:2.3:a:w1.fi:hostapd:2.11:*:*:*:*:*:*:*"
+          }
+        }
+      ],
+      "status": "affected",
+      "status_notes": "Vulnerable code is in hostapd RADIUS authentication (AP mode, CONFIG_WIFI_NM_HOSTAPD_AP); Infuse-IoT uses wpa_supplicant in station mode, which is not enabled by Infuse-IoT.",
+      "action_statement": "Fix will not be backported: not standard Infuse-IoT feature"
+    },
+    {
+      "vulnerability": {
+        "name": "CVE-2025-66442"
+      },
+      "products": [
+        {
+          "@id": "cpe:2.3:a:arm:mbed_tls:3.6.6:*:*:*:*:*:*:*",
+          "identifiers": {
+            "cpe23": "cpe:2.3:a:arm:mbed_tls:3.6.6:*:*:*:*:*:*:*"
+          }
+        }
+      ],
+      "status": "not_affected",
+      "justification": "vulnerable_code_not_present",
+      "impact_statement": "The timing side channel is only introduced when compiling with LLVM's select-optimize pass. Infuse-IoT (including the TF-M image that uses Mbed TLS 3.6) is built with the GCC based Zephyr SDK toolchain."
+    },
+    {
+      "vulnerability": {
+        "name": "CVE-2026-58374"
+      },
+      "products": [
+        {
+          "@id": "cpe:2.3:a:w1.fi:hostapd:2.11:*:*:*:*:*:*:*",
+          "identifiers": {
+            "cpe23": "cpe:2.3:a:w1.fi:hostapd:2.11:*:*:*:*:*:*:*"
+          }
+        }
+      ],
+      "status": "not_affected",
+      "justification": "vulnerable_code_not_present",
+      "impact_statement": "The vulnerable code is in hostapd AP-mode IEEE 802.11be Multi-Link Operation association processing (src/ap/ieee802_11_eht.c, CONFIG_IEEE80211BE), which the Zephyr hostap integration does not build."
+    }
+  ]
 }
