@@ -28,10 +28,12 @@
 
 LOG_MODULE_REGISTER(epacket_bt_adv, CONFIG_EPACKET_BT_ADV_LOG_LEVEL);
 
-static void adv_set_complete(struct bt_le_ext_adv *adv, struct bt_le_ext_adv_sent_info *info);
+static void adv_set_sent(struct bt_le_ext_adv *adv, struct bt_le_ext_adv_sent_info *info);
+static void adv_set_connected(struct bt_le_ext_adv *adv, struct bt_le_ext_adv_connected_info *info);
 
 static const struct bt_le_ext_adv_cb adv_cb = {
-	.sent = adv_set_complete,
+	.sent = adv_set_sent,
+	.connected = adv_set_connected,
 };
 static const struct bt_le_ext_adv_start_param adv_start_param = {
 	.timeout = 0,
@@ -181,7 +183,7 @@ void epacket_bt_adv_send_next(void)
 	adv_set_active = false;
 }
 
-static void adv_set_complete(struct bt_le_ext_adv *adv, struct bt_le_ext_adv_sent_info *info)
+static void adv_set_complete(struct bt_le_ext_adv *adv)
 {
 	uint8_t set_idx = bt_le_ext_adv_get_index(adv);
 	struct net_buf *curr;
@@ -196,6 +198,21 @@ static void adv_set_complete(struct bt_le_ext_adv *adv, struct bt_le_ext_adv_sen
 
 	/* Notify processing thread that epacket_bt_adv_send_next should be called */
 	epacket_bt_adv_send_next_trigger();
+}
+
+static void adv_set_sent(struct bt_le_ext_adv *adv, struct bt_le_ext_adv_sent_info *info)
+{
+	ARG_UNUSED(info);
+
+	adv_set_complete(adv);
+}
+
+static void adv_set_connected(struct bt_le_ext_adv *adv, struct bt_le_ext_adv_connected_info *info)
+{
+	ARG_UNUSED(info);
+
+	/* Accepting a connection disables the set before its event limit is reached. */
+	adv_set_complete(adv);
 }
 
 static void epacket_bt_adv_send(const struct device *dev, struct net_buf *buf)
