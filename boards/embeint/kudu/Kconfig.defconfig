@@ -11,11 +11,6 @@ configdefault CHARGER
 
 if NETWORKING
 
-# Pull-up resistor is missing for SIMDET to work
-choice MODEM_CELLULAR_SIM_DETECTION
-	default MODEM_CELLULAR_SIM_DETECTION_FORCE_PRESENT
-endchoice
-
 # We want to use the UART ASYNC API
 configdefault UART_ASYNC_API
 	default y

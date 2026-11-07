@@ -154,10 +154,13 @@
 	hw-flow-control;
 
 	telit_le910c1: telit_le910c1 {
-		compatible = "telit,le910cx-le";
+		compatible = "telit,le910c1tx";
 		status = "okay";
 		mdm-power-gpios = <&gpio2 3 (GPIO_ACTIVE_LOW | GPIO_OPEN_DRAIN)>;
 		mdm-reset-gpios = <&gpio0 1 (GPIO_ACTIVE_LOW | GPIO_OPEN_DRAIN)>;
+		mdm-status-gpios = <&gpio0 0 (GPIO_ACTIVE_HIGH)>;
+		/* Pull-up resistor is missing for SIMDET to work */
+		sim-detect = "force-present";
 		/*
 		 * Telit modem can in theory handle up to 3.75 Mbps.
 		 * While IP data appears to work fine at the high baudrate, for unknown
@@ -166,7 +169,7 @@
 		 * 921600 appears to be stable for hours
 		 * 3500000 normally fails within a few minutes
 		 */
-		target-speed = <921600>;
+		target-baudrate = <921600>;
 
 		telit_le910c1_gnss: telit_le910c1_gnss {
 			compatible = "telit,le910cx-gnss";
