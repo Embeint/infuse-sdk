@@ -10,6 +10,7 @@
 #include <zephyr/logging/log.h>
 
 #include <zephyr/bluetooth/bluetooth.h>
+#include <zephyr/bluetooth/att.h>
 #include <zephyr/bluetooth/uuid.h>
 #include <zephyr/bluetooth/gatt.h>
 #include <zephyr/bluetooth/conn.h>
@@ -27,9 +28,7 @@
 
 #define DT_DRV_COMPAT embeint_epacket_bt_peripheral
 
-#define ATT_HEADER_SIZE 3
 #define PACKET_OVERHEAD (DT_INST_PROP(0, header_size) + DT_INST_PROP(0, footer_size))
-#define TOTAL_OVERHEAD  (ATT_HEADER_SIZE + PACKET_OVERHEAD)
 
 void epacket_bt_peripheral_logging_ccc_cfg_update(const struct bt_gatt_attr *attr, uint16_t value);
 #ifdef CONFIG_EPACKET_INTERFACE_BT_PERIPHERAL_CLOUD_UPLINK
@@ -131,10 +130,11 @@ int epacket_bt_peripheral_cloud_uplink_send(const struct device *dev, struct bt_
 
 #endif /* CONFIG_EPACKET_INTERFACE_BT_PERIPHERAL_CLOUD_UPLINK */
 
-static void conn_mtu_query(struct bt_conn *conn, void *user_data)
+static void conn_notify_size_query(struct bt_conn *conn, void *user_data)
 {
-	uint16_t *smallest_mtu = user_data;
+	uint16_t *smallest_notify_size = user_data;
 	struct bt_conn_info info;
+	int notify_size;
 	int rc;
 
 	/* Only care about connected objects */
@@ -147,8 +147,13 @@ static void conn_mtu_query(struct bt_conn *conn, void *user_data)
 		return;
 	}
 
+	notify_size = bt_att_get_max_notify_size(conn, BT_ATT_CHAN_OPT_NONE);
+	if (notify_size < 0) {
+		return;
+	}
+
 	/* Update state */
-	*smallest_mtu = MIN(*smallest_mtu, bt_gatt_get_mtu(conn));
+	*smallest_notify_size = MIN(*smallest_notify_size, (uint16_t)notify_size);
 }
 
 static void update_interface_state(void)
@@ -156,17 +161,18 @@ static void update_interface_state(void)
 	const struct device *epacket_bt_peripheral = DEVICE_DT_GET(DT_DRV_INST(0));
 	struct epacket_bt_peripheral_data *data = epacket_bt_peripheral->data;
 	struct epacket_interface_cb *cb;
-	uint16_t smallest_mtu = UINT16_MAX;
+	uint16_t smallest_notify_size = UINT16_MAX;
 	uint16_t max_payload;
 
-	/* Find the smallest MTU */
-	bt_conn_foreach(BT_CONN_TYPE_LE, conn_mtu_query, &smallest_mtu);
-	if ((smallest_mtu <= TOTAL_OVERHEAD) || (smallest_mtu == UINT16_MAX)) {
+	/* Find the smallest notification size */
+	bt_conn_foreach(BT_CONN_TYPE_LE, conn_notify_size_query, &smallest_notify_size);
+	if ((smallest_notify_size <= PACKET_OVERHEAD) ||
+	    (smallest_notify_size == UINT16_MAX)) {
 		/* Payload too small, treat as disconnected */
-		smallest_mtu = 0;
+		smallest_notify_size = 0;
 	}
 
-	if (smallest_mtu == 0) {
+	if (smallest_notify_size == 0) {
 		if (data->last_notification == 0) {
 			/* Don't notify disconnected again */
 			return;
@@ -185,7 +191,7 @@ static void update_interface_state(void)
 	}
 
 	/* Subtract overheads */
-	max_payload = smallest_mtu - TOTAL_OVERHEAD;
+	max_payload = smallest_notify_size - PACKET_OVERHEAD;
 	/* Ignore if value hasn't changed */
 	if (data->last_notification == max_payload) {
 		return;
