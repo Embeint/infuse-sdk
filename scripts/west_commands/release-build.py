@@ -238,17 +238,9 @@ class release_build(WestCommand):
         v_hex_tweak = f"{prefix}+{commit_hash[:8]}"
         return v_int_tweak, v_hex_tweak
 
-    def do_spdx_init(self):
-        spdx_init_cmd = ["west", "spdx", "--init", "-d"]
-
-        # Prepare application directory for SPDX
-        proc = subprocess.run(spdx_init_cmd + [str(self.build_app_dir)], capture_output=True)
-        if proc.returncode != 0:
-            print("SPDX initialisation stderr:")
-            sys.exit(proc.stderr.decode("utf-8"))
-
     def do_spdx_generate(self):
-        spdx_cmd = ["west", "spdx", "-d"]
+        # The CMake file-based API query is requested by the build (CONFIG_BUILD_OUTPUT_META)
+        spdx_cmd = ["west", "spdx", "--spdx-version", "3.0", "-d"]
 
         # Generate SPDX output
         proc = subprocess.run(spdx_cmd + [str(self.build_app_dir)], capture_output=True)
@@ -326,7 +318,6 @@ class release_build(WestCommand):
                 build_cmd.append(f"-D{c}")
         build_cmd.append("-DCONFIG_BUILD_OUTPUT_META=y")
 
-        self.do_spdx_init()
         print("Run build: ", " ".join(build_cmd))
         proc = subprocess.run(build_cmd, capture_output=True)
         if proc.returncode != 0:
