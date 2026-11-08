@@ -89,9 +89,11 @@ static int bt_adv_broadcast(const struct device *dev, struct net_buf *pkt)
 		.id = BT_ID_DEFAULT,
 		.sid = 0U,
 		.secondary_max_skip = 0U,
-		.options = BT_LE_ADV_OPT_USE_IDENTITY | BT_LE_ADV_OPT_EXT_ADV | BT_LE_ADV_OPT_CONN,
+		.options = BT_LE_ADV_OPT_USE_IDENTITY | BT_LE_ADV_OPT_EXT_ADV | BT_LE_ADV_OPT_CONN |
+			   BT_LE_ADV_OPT_TX_POWER,
 		.interval_min = BT_GAP_ADV_FAST_INT_MIN_1,
 		.interval_max = BT_GAP_ADV_FAST_INT_MAX_1,
+		.tx_power = BT_HCI_LE_ADV_TX_POWER_MAX,
 		.peer = NULL,
 	};
 	struct bt_data *ad_data;
