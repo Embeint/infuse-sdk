@@ -419,12 +419,13 @@ termination:
 		/* Log at end of run for a location fix */
 		if (run_target == TASK_GNSS_FLAGS_RUN_TO_LOCATION_FIX) {
 			struct tdf_nrf9x_gnss_pvt *best = &state.best_fix;
-			struct tdf_gnss_fix_info fix_info = {
+			struct tdf_gnss_fix_info_v2 fix_info = {
 				.time_fix = state.time_acquired
 						    ? (state.time_acquired - state.task_start)
 						    : UINT16_MAX,
 				.location_fix = k_uptime_seconds() - state.task_start,
 				.num_sv = state.best_fix.num_sv,
+				.p_dop = state.best_fix.p_dop,
 			};
 			uint64_t epoch_time;
 
@@ -433,7 +434,7 @@ termination:
 			epoch_time = log_and_publish(&state, &state.best_fix);
 
 			/* Log fix information */
-			TASK_SCHEDULE_TDF_LOG(sch, TASK_GNSS_LOG_FIX_INFO, TDF_GNSS_FIX_INFO,
+			TASK_SCHEDULE_TDF_LOG(sch, TASK_GNSS_LOG_FIX_INFO, TDF_GNSS_FIX_INFO_V2,
 					      epoch_time, &fix_info);
 		}
 

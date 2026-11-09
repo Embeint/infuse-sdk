@@ -346,12 +346,13 @@ void gnss_task_fn(const struct task_schedule *schedule, struct k_poll_signal *te
 	/* Log at end of run for a location fix */
 	if (run_target == TASK_GNSS_FLAGS_RUN_TO_LOCATION_FIX) {
 		const struct gnss_data *fix = &run_state.gnss_data_latest;
-		struct tdf_gnss_fix_info fix_info = {
+		struct tdf_gnss_fix_info_v2 fix_info = {
 			.time_fix = run_state.time_acquired
 					    ? (run_state.time_acquired - run_state.task_start)
 					    : UINT16_MAX,
 			.location_fix = k_uptime_seconds() - run_state.task_start,
 			.num_sv = run_state.gnss_data_latest.info.satellites_cnt,
+			.p_dop = run_state.gnss_data_latest.info.hdop / 10,
 		};
 		int32_t lat = fix->nav_data.latitude / 100;
 		int32_t lon = fix->nav_data.longitude / 100;
@@ -368,7 +369,7 @@ void gnss_task_fn(const struct task_schedule *schedule, struct k_poll_signal *te
 		epoch_time = log_and_publish(&run_state, fix, h_acc);
 
 		/* Log fix information */
-		TASK_SCHEDULE_TDF_LOG(schedule, TASK_GNSS_LOG_FIX_INFO, TDF_GNSS_FIX_INFO,
+		TASK_SCHEDULE_TDF_LOG(schedule, TASK_GNSS_LOG_FIX_INFO, TDF_GNSS_FIX_INFO_V2,
 				      epoch_time, &fix_info);
 	}
 
