@@ -47,6 +47,7 @@ enum {
 	INFUSE_ROOT_NETWORK_KEY_ID,
 	INFUSE_ROOT_SECONDARY_NETWORK_KEY_ID,
 	INFUSE_ROOT_ECC_SECONDARY_SHARED_SECRET_KEY_ID,
+	INFUSE_CLOUD_PUBLIC_KEY_FINGERPRINT_ID,
 };
 
 struct infuse_key_info {
@@ -66,6 +67,10 @@ static uint8_t device_public_key[32];
 
 static struct infuse_key_info device_info;
 static struct infuse_key_info network_info;
+
+#ifdef ITS_AVAILABLE
+static bool cloud_key_fingerprint_needs_commit;
+#endif /* ITS_AVAILABLE */
 
 #ifdef CONFIG_INFUSE_SECURITY_SECONDARY_NETWORK_ENABLE
 
@@ -111,6 +116,87 @@ psa_key_attributes_t infuse_security_hkdf_attributes(void)
 
 	return key_attributes;
 }
+
+#ifdef ITS_AVAILABLE
+static int cloud_key_fingerprint_prepare(void)
+{
+	const uint64_t expected = INFUSE_CLOUD_PUBLIC_KEY_FINGERPRINT;
+	psa_key_attributes_t attributes = PSA_KEY_ATTRIBUTES_INIT;
+	uint64_t stored;
+	psa_status_t status;
+	size_t olen;
+
+	status = psa_its_get(INFUSE_CLOUD_PUBLIC_KEY_FINGERPRINT_ID, 0, sizeof(stored), &stored,
+			     &olen);
+	if ((status == PSA_SUCCESS) && (olen == sizeof(stored)) && (stored == expected)) {
+		cloud_key_fingerprint_needs_commit = false;
+		return 0;
+	}
+	if ((status != PSA_SUCCESS) && (status != PSA_ERROR_DOES_NOT_EXIST) &&
+	    (status != PSA_ERROR_BUFFER_TOO_SMALL)) {
+		LOG_ERR("Failed to read cloud key fingerprint (%d)", status);
+		return -EIO;
+	}
+
+	cloud_key_fingerprint_needs_commit = true;
+
+	/* Existing hosted devices using the default key predate fingerprint persistence. Adopt
+	 * their existing identity and commit the marker without rotating it.
+	 */
+	if ((status == PSA_ERROR_DOES_NOT_EXIST) &&
+	    (expected == INFUSE_CLOUD_PUBLIC_KEY_DEFAULT_FINGERPRINT)) {
+		LOG_INF("Adopting default cloud key fingerprint");
+		return 0;
+	}
+
+	/* A root identity on a missing/mismatched marker belongs to the previous cloud key. */
+	status = psa_get_key_attributes(INFUSE_ROOT_ECC_KEY_ID, &attributes);
+	if (status == PSA_SUCCESS) {
+		psa_reset_key_attributes(&attributes);
+		LOG_WRN("Cloud key fingerprint changed, rotating root identity");
+		status = psa_destroy_key(INFUSE_ROOT_ECC_KEY_ID);
+		if (status != PSA_SUCCESS) {
+			LOG_ERR("Failed to invalidate root identity (%d)", status);
+			return -EIO;
+		}
+	} else if (status != PSA_ERROR_INVALID_HANDLE) {
+		LOG_ERR("Failed to query root identity (%d)", status);
+		return -EIO;
+	}
+
+	return 0;
+}
+
+static int cloud_key_fingerprint_commit(void)
+{
+	const uint64_t fingerprint = INFUSE_CLOUD_PUBLIC_KEY_FINGERPRINT;
+	psa_status_t status;
+
+	if (!cloud_key_fingerprint_needs_commit) {
+		return 0;
+	}
+
+	status = psa_its_set(INFUSE_CLOUD_PUBLIC_KEY_FINGERPRINT_ID, sizeof(fingerprint),
+			     &fingerprint, PSA_STORAGE_FLAG_NONE);
+	if (status != PSA_SUCCESS) {
+		LOG_ERR("Failed to save cloud key fingerprint (%d)", status);
+		return -EIO;
+	}
+
+	cloud_key_fingerprint_needs_commit = false;
+	return 0;
+}
+#else
+static int cloud_key_fingerprint_prepare(void)
+{
+	return 0;
+}
+
+static int cloud_key_fingerprint_commit(void)
+{
+	return 0;
+}
+#endif /* ITS_AVAILABLE */
 
 static void device_public_key_export(void)
 {
@@ -499,6 +585,11 @@ int infuse_security_init(void)
 	}
 #endif /* CONFIG_INFUSE_SECURE_STORAGE */
 
+	rc = cloud_key_fingerprint_prepare();
+	if (rc < 0) {
+		return rc;
+	}
+
 	/* Create/import device root ECC key pair */
 	root_ecc_key_id = generate_root_ecc_key_pair();
 	if (root_ecc_key_id == PSA_KEY_ID_NULL) {
@@ -549,7 +640,13 @@ int infuse_security_init(void)
 	}
 
 	/* Load network keys */
-	return infuse_security_network_keys_load();
+	rc = infuse_security_network_keys_load();
+	if (rc < 0) {
+		return rc;
+	}
+
+	/* Only record the fingerprint once all key initialisation has succeeded. */
+	return cloud_key_fingerprint_commit();
 }
 
 int infuse_security_device_root_reset(void)

@@ -17,6 +17,10 @@
 #include <infuse/security.h>
 #include <infuse/fs/kv_store.h>
 #include <infuse/fs/kv_types.h>
+#include <infuse/cloud_public_key.h>
+
+/* Copied from the security module's internal storage ID sequence. */
+#define INFUSE_CLOUD_PUBLIC_KEY_FINGERPRINT_ID (KV_KEY_SECURE_STORAGE_RESERVED + 6)
 
 static int psa_free_infuse_init(void)
 {
@@ -98,6 +102,87 @@ ZTEST(security, test_root_reset)
 	rc = memcmp(root_public_key_initial, root_public_key_check,
 		    sizeof(root_public_key_initial));
 	zassert_not_equal(0, rc);
+}
+
+ZTEST(security, test_cloud_key_fingerprint_rotation)
+{
+	uint64_t fingerprint = INFUSE_CLOUD_PUBLIC_KEY_FINGERPRINT ^ 1;
+	uint64_t fingerprint_readback;
+	uint8_t root_public_key_initial[32];
+	uint8_t root_public_key_check[32];
+	uint32_t root_key_id_initial;
+	size_t olen;
+	int rc;
+
+	default_init();
+
+	root_key_id_initial = infuse_security_device_key_identifier();
+	zassert_equal(0, infuse_security_device_public_key(root_public_key_initial));
+
+	/* Simulate an upgrade from firmware built with a different cloud public key. */
+	zassert_equal(PSA_SUCCESS,
+		      psa_its_set(INFUSE_CLOUD_PUBLIC_KEY_FINGERPRINT_ID, sizeof(fingerprint),
+				  &fingerprint, PSA_STORAGE_FLAG_NONE));
+	zassert_equal(0, psa_free_infuse_init());
+
+	/* The root identity and derived key identifier must have changed. */
+	zassert_equal(0, infuse_security_device_public_key(root_public_key_check));
+	zassert_not_equal(root_key_id_initial, infuse_security_device_key_identifier());
+	zassert_not_equal(0, memcmp(root_public_key_initial, root_public_key_check,
+				    sizeof(root_public_key_initial)));
+
+	/* The current fingerprint is committed after successful initialisation. */
+	zassert_equal(PSA_SUCCESS,
+		      psa_its_get(INFUSE_CLOUD_PUBLIC_KEY_FINGERPRINT_ID, 0,
+				  sizeof(fingerprint_readback), &fingerprint_readback, &olen));
+	zassert_equal(sizeof(fingerprint_readback), olen);
+	zassert_equal(INFUSE_CLOUD_PUBLIC_KEY_FINGERPRINT, fingerprint_readback);
+
+	/* A subsequent boot with the same fingerprint retains the new identity. */
+	root_key_id_initial = infuse_security_device_key_identifier();
+	memcpy(root_public_key_initial, root_public_key_check, sizeof(root_public_key_initial));
+	zassert_equal(0, psa_free_infuse_init());
+	zassert_equal(0, infuse_security_device_public_key(root_public_key_check));
+	zassert_equal(root_key_id_initial, infuse_security_device_key_identifier());
+	rc = memcmp(root_public_key_initial, root_public_key_check,
+		    sizeof(root_public_key_initial));
+	zassert_equal(0, rc);
+}
+
+ZTEST(security, test_cloud_key_fingerprint_default_adoption)
+{
+	uint64_t fingerprint_readback;
+	uint8_t root_public_key_initial[32];
+	uint8_t root_public_key_check[32];
+	uint32_t root_key_id_initial;
+	size_t olen;
+
+	default_init();
+
+	root_key_id_initial = infuse_security_device_key_identifier();
+	zassert_equal(0, infuse_security_device_public_key(root_public_key_initial));
+
+	/* Firmware predating fingerprint persistence has an identity but no marker. */
+	zassert_equal(PSA_SUCCESS, psa_its_remove(INFUSE_CLOUD_PUBLIC_KEY_FINGERPRINT_ID));
+	zassert_equal(0, psa_free_infuse_init());
+
+	zassert_equal(0, infuse_security_device_public_key(root_public_key_check));
+#if INFUSE_CLOUD_PUBLIC_KEY_FINGERPRINT == INFUSE_CLOUD_PUBLIC_KEY_DEFAULT_FINGERPRINT
+	/* Hosted devices adopt existing identities derived from the default cloud key. */
+	zassert_equal(root_key_id_initial, infuse_security_device_key_identifier());
+	zassert_equal(0, memcmp(root_public_key_initial, root_public_key_check,
+				sizeof(root_public_key_initial)));
+#else
+	/* A device jumping directly to another key must still rotate its identity. */
+	zassert_not_equal(root_key_id_initial, infuse_security_device_key_identifier());
+	zassert_not_equal(0, memcmp(root_public_key_initial, root_public_key_check,
+				    sizeof(root_public_key_initial)));
+#endif
+	zassert_equal(PSA_SUCCESS,
+		      psa_its_get(INFUSE_CLOUD_PUBLIC_KEY_FINGERPRINT_ID, 0,
+				  sizeof(fingerprint_readback), &fingerprint_readback, &olen));
+	zassert_equal(sizeof(fingerprint_readback), olen);
+	zassert_equal(INFUSE_CLOUD_PUBLIC_KEY_FINGERPRINT, fingerprint_readback);
 }
 
 ZTEST(security, test_network_key_update)
