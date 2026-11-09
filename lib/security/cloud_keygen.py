@@ -25,6 +25,23 @@ with open(CLOUD_KEY_SCHEMA_PATH, encoding="utf-8") as f:
     cloud_key_schema = yaml.safe_load(f)
 
 
+def key_load(path: str) -> bytes:
+    with open(path, encoding="utf-8") as f:
+        key_info = yaml.safe_load(f)
+
+    try:
+        pykwalify.core.Core(source_data=key_info, schema_data=cloud_key_schema).validate()
+    except pykwalify.errors.SchemaError as e:
+        sys.exit(f"ERROR: Malformed cloud public key file: {path}\n{e}")
+
+    key = key_info["key"]
+    if not isinstance(key, bytes):
+        sys.exit(f"ERROR: Cloud public key in {path} must use the YAML !!binary type")
+    if len(key) != 32:
+        sys.exit(f"ERROR: Cloud public key in {path} must be exactly 32 bytes")
+    return key
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         prog="cloud_keygen",
@@ -32,27 +49,23 @@ if __name__ == "__main__":
         allow_abbrev=False,
     )
     parser.add_argument("--key", type=str, required=True, help="Path to key YAML file")
+    parser.add_argument(
+        "--default-key",
+        type=str,
+        required=True,
+        help="Path to the default hosted cloud public key YAML file",
+    )
     args = parser.parse_args()
 
-    with open(args.key, encoding="utf-8") as f:
-        key_info = yaml.safe_load(f)
-
-    try:
-        pykwalify.core.Core(source_data=key_info, schema_data=cloud_key_schema).validate()
-    except pykwalify.errors.SchemaError as e:
-        sys.exit(f"ERROR: Malformed cloud public key file: {args.key}\n{e}")
-
-    key = key_info["key"]
-    if not isinstance(key, bytes):
-        sys.exit(f"ERROR: Cloud public key in {args.key} must use the YAML !!binary type")
-    if len(key) != 32:
-        sys.exit(f"ERROR: Cloud public key in {args.key} must be exactly 32 bytes")
-
+    key = key_load(args.key)
+    default_key = key_load(args.default_key)
     fingerprint = int.from_bytes(hashlib.sha256(key).digest()[:8], byteorder="big")
+    default_fingerprint = int.from_bytes(hashlib.sha256(default_key).digest()[:8], byteorder="big")
 
     print(HEADER.format(args.key))
     print("/* First 64 bits of SHA-256, for build-time configuration selection only. */")
     print(f"#define INFUSE_CLOUD_PUBLIC_KEY_FINGERPRINT 0x{fingerprint:016X}ULL")
+    print(f"#define INFUSE_CLOUD_PUBLIC_KEY_DEFAULT_FINGERPRINT 0x{default_fingerprint:016X}ULL")
     print("")
     print("#ifdef INFUSE_CLOUD_PUBLIC_KEY_DEFINE")
     print("static const uint8_t infuse_cloud_public_key[32] = {")
