@@ -36,6 +36,7 @@ class release_build(WestCommand):
             EXPORT_DESCRIPTION,
             accepts_unknown_args=False,
         )
+        self.cloud_public_key: None | pathlib.Path = None
         self.network_key: None | pathlib.Path = None
         self.network_key_secondary: None | pathlib.Path = None
 
@@ -82,6 +83,12 @@ class release_build(WestCommand):
         self.signing_key = self._absolute_path(self.args.release.parent, self.release["signing_key"])
         if not self.signing_key.exists():
             sys.exit(f"ERROR: Signing key {self.signing_key} does not exist")
+        if key := self.release.get("cloud_public_key", None):
+            self.cloud_public_key = self._absolute_path(self.args.release.parent, key)
+            if not self.cloud_public_key.exists():
+                sys.exit(f"ERROR: Cloud public key {self.cloud_public_key} does not exist")
+        else:
+            self.cloud_public_key = None
         if key := self.release.get("network_key", None):
             self.network_key = self._absolute_path(self.args.release.parent, key)
             if not self.network_key.exists():
@@ -306,6 +313,8 @@ class release_build(WestCommand):
                 ]
             )
 
+        if self.cloud_public_key is not None:
+            build_cmd.extend([f'-DCONFIG_INFUSE_SECURITY_CLOUD_PUBLIC_KEY_FILE="{self.cloud_public_key}"'])
         if self.network_key is not None:
             build_cmd.extend([f'-DCONFIG_INFUSE_SECURITY_DEFAULT_NETWORK="{self.network_key}"'])
         if self.network_key_secondary is not None:
@@ -460,6 +469,30 @@ class release_build(WestCommand):
                 shutil.copy(in_loc, out_loc)
             else:
                 shutil.copytree(in_loc, out_loc, dirs_exist_ok=True)
+
+    def cloud_public_key_value(self, build_configs: dict) -> bytes | None:
+        """Return the effective cloud public key embedded in the application."""
+        configured = build_configs.get("CONFIG_INFUSE_SECURITY_CLOUD_PUBLIC_KEY_FILE")
+        if configured is None:
+            return None
+
+        configured_path = pathlib.Path(configured)
+        if configured_path.is_absolute():
+            key_path = configured_path
+        else:
+            security_dir = pathlib.Path(__file__).parent.parent.parent / "lib" / "security"
+            sdk_path = security_dir / configured_path
+            application_path = self.application / configured_path
+            if sdk_path.exists():
+                key_path = sdk_path
+            else:
+                key_path = application_path
+
+        with key_path.open("r", encoding="utf-8") as f:
+            key = yaml.safe_load(f)["key"]
+        if not isinstance(key, bytes) or len(key) != 32:
+            sys.exit(f"Cloud public key {key_path} is not a 32-byte YAML binary value")
+        return key
 
     def bootloader_info(self) -> dict:
         if self.tfm_build:
@@ -628,6 +661,10 @@ class release_build(WestCommand):
                 }
         if self.args.skip_git or self.args.ignore_git:
             manifest["configuration"]["dirty"] = True
+
+        cloud_public_key = self.cloud_public_key_value(build_configs)
+        if cloud_public_key is not None:
+            manifest["application"]["cloud_public_key"] = cloud_public_key.hex()
 
         if self.network_key is not None:
             with self.network_key.open("r", encoding="utf-8") as f:
