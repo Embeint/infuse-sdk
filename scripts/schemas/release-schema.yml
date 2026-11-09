@@ -16,6 +16,8 @@ mapping:
   signing_key:
     type: str
     required: true
+  cloud_public_key:
+    type: str
   snippets:
     type: str
   network_key:
