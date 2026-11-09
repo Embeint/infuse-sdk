@@ -21,6 +21,7 @@ except ImportError:
 # Encoders supported by the `cpatch` binary
 CPATCH_BIN_ENCODERS = ("shortest-path", "shortest-path-delta", "stream-thumb2")
 CPATCH_INSTALL = "cargo install --git https://github.com/Embeint/python-tools cpatch"
+DEFAULT_CLOUD_PUBLIC_KEY = "ca6632ab038172b6ef6a0540d08bc72e9cce293668dfa87cd51d64741c53e00a"
 
 EXPORT_DESCRIPTION = """\
 This command generates a diff file between two application releases.
@@ -109,6 +110,54 @@ class release_diff(WestCommand):
             return "shortest-path-delta"
         return "shortest-path"
 
+    @staticmethod
+    def kconfig_string(kconfig: dict[str, str], option: str) -> str | None:
+        """Return a Kconfig string value without its surrounding quotes."""
+        value = kconfig.get(option)
+        if value is None:
+            return None
+        if len(value) >= 2 and value[0] == value[-1] == '"':
+            return value[1:-1]
+        return value
+
+    @staticmethod
+    def cloud_public_key(manifest: dict) -> str:
+        """Cloud public key identity, including compatibility with legacy releases."""
+        return manifest["application"].get("cloud_public_key", DEFAULT_CLOUD_PUBLIC_KEY)
+
+    @classmethod
+    def udp_server(cls, kconfig: dict[str, str]) -> tuple[str, str] | None:
+        """Default ePacket UDP endpoint, if the interface was enabled."""
+        if kconfig.get("CONFIG_EPACKET_INTERFACE_UDP") != "y":
+            return None
+        url = cls.kconfig_string(kconfig, "CONFIG_EPACKET_INTERFACE_UDP_DEFAULT_URL")
+        port = kconfig.get("CONFIG_EPACKET_INTERFACE_UDP_DEFAULT_PORT")
+        if url is None or port is None:
+            return None
+        return url, port
+
+    @classmethod
+    def warn_configuration_changes(
+        cls,
+        manifest_orig: dict,
+        manifest_new: dict,
+        kconfig_orig: dict[str, str],
+        kconfig_new: dict[str, str],
+    ) -> None:
+        """Warn about server identity or endpoint changes requiring migration handling."""
+        cloud_key_orig = cls.cloud_public_key(manifest_orig)
+        cloud_key_new = cls.cloud_public_key(manifest_new)
+        if cloud_key_orig != cloud_key_new:
+            print(f"WARNING: Cloud public key changed ({cloud_key_orig[:12]}... -> {cloud_key_new[:12]}...)")
+
+        udp_orig = cls.udp_server(kconfig_orig)
+        udp_new = cls.udp_server(kconfig_new)
+        if udp_orig is not None and udp_new is not None and udp_orig != udp_new:
+            print(
+                "WARNING: Default ePacket UDP server changed "
+                f"({udp_orig[0]}:{udp_orig[1]} -> {udp_new[0]}:{udp_new[1]})"
+            )
+
     def cpatch_generate(self, bin_original: bytes, bin_new: bytes, verbose: bool, encoder: str) -> bytes | None:
         """Generate a patch with the `cpatch` binary if available, otherwise the Python library
 
@@ -175,6 +224,12 @@ class release_diff(WestCommand):
         # is not updated by DFU, so the MCUboot mode can never change between releases.
         kconfig_orig = self.kconfig(original_dir / name_orig)
         kconfig_new = self.kconfig(output_dir / name_out)
+        self.warn_configuration_changes(
+            self.manifest_original,
+            self.manifest_output,
+            kconfig_orig,
+            kconfig_new,
+        )
         mode_orig = self.bootloader_mode(kconfig_orig)
         mode_new = self.bootloader_mode(kconfig_new)
         if mode_orig != mode_new:
