@@ -7,6 +7,8 @@ add_subdirectory(hardware_unique_key)
 
 # Cloud public key generation from .yaml
 function(infuse_cloud_public_keygen INPUT_FILE OUTPUT_FILE)
+  set(DEFAULT_KEY_FILE ${CMAKE_CURRENT_LIST_DIR}/default_cloud_public_key.yaml)
+
   if(IS_ABSOLUTE ${INPUT_FILE})
     set(KEY_FILE ${INPUT_FILE})
   elseif(EXISTS ${CMAKE_CURRENT_LIST_DIR}/${INPUT_FILE})
@@ -24,8 +26,9 @@ function(infuse_cloud_public_keygen INPUT_FILE OUTPUT_FILE)
     ${PYTHON_EXECUTABLE}
     ${CMAKE_CURRENT_LIST_DIR}/cloud_keygen.py
     --key ${KEY_FILE}
+    --default-key ${DEFAULT_KEY_FILE}
     > ${OUTPUT_FILE}
-    DEPENDS ${KEY_FILE} ${CMAKE_CURRENT_LIST_DIR}/cloud_keygen.py
+    DEPENDS ${KEY_FILE} ${DEFAULT_KEY_FILE} ${CMAKE_CURRENT_LIST_DIR}/cloud_keygen.py
   )
   # Header is public, ensure it exists before any Zephyr library (including app) compiles
   add_custom_target(infuse_cloud_public_key_h DEPENDS ${OUTPUT_FILE})
