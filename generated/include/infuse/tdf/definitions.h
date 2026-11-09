@@ -829,6 +829,18 @@ struct tdf_device_init_error {
 		char name[_count];                                                                 \
 	} __packed;
 
+/** Metadata about a GNSS location fix */
+struct tdf_gnss_fix_info_v2 {
+	/** Duration it took for accurate time knowledge (seconds) */
+	uint16_t time_fix;
+	/** Duration it took for desired location knowledge (seconds) */
+	uint16_t location_fix;
+	/** Number of satellite vehicles used in location fix */
+	uint8_t num_sv;
+	/** Position DOP */
+	uint16_t p_dop;
+} __packed;
+
 /** Infuse-IoT builtin TDF definitions */
 enum tdf_builtin_id {
 	/** Common announcement packet */
@@ -961,6 +973,8 @@ enum tdf_builtin_id {
 	TDF_LTE_SLEEP_EXIT = 65,
 	/** Device that failed to initialise on boot */
 	TDF_DEVICE_INIT_ERROR = 66,
+	/** Metadata about a GNSS location fix */
+	TDF_GNSS_FIX_INFO_V2 = 67,
 	/** End of builtin TDF range */
 	TDF_BUILTIN_END = 1024,
 };
@@ -1030,6 +1044,7 @@ enum tdf_builtin_id {
 #define _TDF_LTE_SLEEP_ENTER_TYPE             struct tdf_lte_sleep_enter
 #define _TDF_LTE_SLEEP_EXIT_TYPE              struct tdf_lte_sleep_exit
 #define _TDF_DEVICE_INIT_ERROR_TYPE           struct tdf_device_init_error
+#define _TDF_GNSS_FIX_INFO_V2_TYPE            struct tdf_gnss_fix_info_v2
 
 /** Size of builtin TDF definitions */
 enum tdf_builtin_size {
@@ -1096,6 +1111,7 @@ enum tdf_builtin_size {
 	_TDF_LTE_SLEEP_ENTER_SIZE = sizeof(struct tdf_lte_sleep_enter),
 	_TDF_LTE_SLEEP_EXIT_SIZE = sizeof(struct tdf_lte_sleep_exit),
 	_TDF_DEVICE_INIT_ERROR_SIZE = sizeof(struct tdf_device_init_error),
+	_TDF_GNSS_FIX_INFO_V2_SIZE = sizeof(struct tdf_gnss_fix_info_v2),
 };
 
 /** @endcond */
