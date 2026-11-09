@@ -39,13 +39,16 @@ struct task_schedule schedule = {.validity = TASK_VALID_ALWAYS, .task_id = TASK_
 struct task_schedule_state state;
 
 #if defined(CONFIG_TASK_RUNNER_TASK_GNSS_UBX)
-#define NAV_PVT_CHANNEL INFUSE_ZBUS_CHAN_UBX_NAV_PVT
-#define NAV_PVT_NAME    INFUSE_ZBUS_NAME(INFUSE_ZBUS_CHAN_UBX_NAV_PVT)
+#define NAV_PVT_CHANNEL   INFUSE_ZBUS_CHAN_UBX_NAV_PVT
+#define NAV_PVT_NAME      INFUSE_ZBUS_NAME(INFUSE_ZBUS_CHAN_UBX_NAV_PVT)
+#define EXPECTED_FIX_PDOP 50
 #elif defined(CONFIG_TASK_RUNNER_TASK_GNSS_NRF9X)
-#define NAV_PVT_CHANNEL INFUSE_ZBUS_CHAN_NRF9X_NAV_PVT
-#define NAV_PVT_NAME    INFUSE_ZBUS_NAME(INFUSE_ZBUS_CHAN_NRF9X_NAV_PVT)
+#define NAV_PVT_CHANNEL   INFUSE_ZBUS_CHAN_NRF9X_NAV_PVT
+#define NAV_PVT_NAME      INFUSE_ZBUS_NAME(INFUSE_ZBUS_CHAN_NRF9X_NAV_PVT)
+#define EXPECTED_FIX_PDOP 500
 #elif defined(CONFIG_TASK_RUNNER_TASK_GNSS_ZEPHYR)
 /* No high resolution PVT channel */
+#define EXPECTED_FIX_PDOP 80
 #else
 #error Unknown GNSS task
 #endif
@@ -261,6 +264,30 @@ static void expected_no_logging(void)
 	zassert_is_null(k_fifo_get(tx_queue, K_MSEC(10)));
 }
 
+static void expected_fix_info(uint32_t duration, uint8_t num_sv, uint16_t p_dop)
+{
+	struct k_fifo *tx_queue = epacket_dummmy_transmit_fifo_get();
+	struct tdf_gnss_fix_info_v2 *fix_info;
+	struct tdf_parsed tdf;
+	struct net_buf *pkt;
+
+	tdf_data_logger_flush(TDF_DATA_LOGGER_SERIAL);
+	pkt = k_fifo_get(tx_queue, K_MSEC(10));
+	zassert_not_null(pkt);
+	net_buf_pull(pkt, sizeof(struct epacket_dummy_frame));
+
+	zassert_equal(0, tdf_parse_find_in_buf(pkt->data, pkt->len, TDF_GNSS_FIX_INFO_V2, &tdf));
+	fix_info = tdf.data;
+
+	zassert_not_equal(UINT16_MAX, fix_info->time_fix);
+	zassert_true(fix_info->time_fix <= fix_info->location_fix);
+	zassert_within(duration, fix_info->location_fix, 2);
+	zassert_equal(num_sv, fix_info->num_sv);
+	zassert_equal(p_dop, fix_info->p_dop);
+
+	net_buf_unref(pkt);
+}
+
 static void expected_logging(int32_t latitude, int32_t longitude, int32_t height, uint32_t h_acc,
 			     uint32_t v_acc, uint32_t h_acc_threshold)
 {
@@ -470,7 +497,7 @@ ZTEST(task_gnss, test_location_fix)
 
 	schedule.timeout_s = 0;
 	schedule.task_logging[0].loggers = TDF_DATA_LOGGER_SERIAL;
-	schedule.task_logging[0].tdf_mask = 0;
+	schedule.task_logging[0].tdf_mask = TASK_GNSS_LOG_FIX_INFO;
 	schedule.task_args.gnss = (struct task_gnss_args){
 		.flags = TASK_GNSS_FLAGS_RUN_TO_LOCATION_FIX,
 		.accuracy_m = 5,
@@ -491,7 +518,7 @@ ZTEST(task_gnss, test_location_fix)
 	/* Run the location fix with a quick plateau */
 	run_location_fix(thread, -270000000, 1530000000, 70 * M, 100 * M, 5 * M, 20 * M, 5 * M, 16);
 	expected_location_fix(thread, start, 55);
-	expected_no_logging();
+	expected_fix_info(55, 16, EXPECTED_FIX_PDOP);
 
 	/* Expect default constellations */
 #ifdef CONFIG_GNSS_EMUL
