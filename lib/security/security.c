@@ -25,6 +25,9 @@
 #include <infuse/fs/secure_storage.h>
 
 #include <infuse/network_key.h>
+#define INFUSE_CLOUD_PUBLIC_KEY_DEFINE
+#include <infuse/cloud_public_key.h>
+#undef INFUSE_CLOUD_PUBLIC_KEY_DEFINE
 
 #ifdef CONFIG_MODEM_KEY_MGMT
 #include "modem/modem_key_mgmt.h"
@@ -57,12 +60,6 @@ struct infuse_key_storage {
 } __packed;
 
 #define TLS_TAG_INFUSE_COAP 12
-
-static const uint8_t infuse_cloud_public_key[32] = {
-	0xca, 0x66, 0x32, 0xab, 0x03, 0x81, 0x72, 0xb6, 0xef, 0x6a, 0x05,
-	0x40, 0xd0, 0x8b, 0xc7, 0x2e, 0x9c, 0xce, 0x29, 0x36, 0x68, 0xdf,
-	0xa8, 0x7c, 0xd5, 0x1d, 0x64, 0x74, 0x1c, 0x53, 0xe0, 0x0a,
-};
 
 static psa_key_id_t root_ecc_key_id, device_sign_key;
 static uint8_t device_public_key[32];
