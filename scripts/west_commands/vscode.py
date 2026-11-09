@@ -36,9 +36,11 @@ settings = {
     "editor.defaultFormatter": "ms-vscode.cpptools",
     "C_Cpp.clang_format_style": "file:${workspaceFolder}/infuse-sdk/.clang-format",
     "C_Cpp.files.exclude": {
-        "${workspaceFolder}/**/build": True,
-        "${workspaceFolder}/modules/hal": True,
+        "**/build": True,
         "**/twister-*": True,
+        "**/bsim": True,
+        "**/modules/hal": True,
+        "**/.tox": True,
     },
     "files.watcherExclude": {
         "**/twister-*/**": True,
@@ -177,7 +179,6 @@ c_cpp_properties = {
     "configurations": [
         {
             "name": "Infuse-IoT",
-            "configurationProvider": "ms-vscode.cmake-tools",
             "compilerPath": "",
             "compileCommands": "",
             "includePath": [],
@@ -318,10 +319,8 @@ class vscode(WestCommand):
         launch["configurations"][0]["name"] = "QEMU Attach"
         launch["configurations"][0]["servertype"] = "external"
         launch["configurations"][0]["gdbTarget"] = "localhost:1234"
-        launch["configurations"][0]["serverpath"] = cache.get("QEMU")
         launch["configurations"][0]["gdbPath"] = cache.get("CMAKE_GDB")
         launch["configurations"][0]["objdumpPath"] = cache.get("CMAKE_OBJDUMP")
-        launch["configurations"][0]["runToEntryPoint"] = False
         launch["configurations"][0]["executable"] = str(build_dir / "zephyr" / "zephyr.elf")
 
         launch["configurations"][1]["name"] = "QEMU Launch"
@@ -329,7 +328,6 @@ class vscode(WestCommand):
         launch["configurations"][1]["serverpath"] = cache.get("QEMU")
         launch["configurations"][1]["gdbPath"] = cache.get("CMAKE_GDB")
         launch["configurations"][1]["objdumpPath"] = cache.get("CMAKE_OBJDUMP")
-        launch["configurations"][1]["runToEntryPoint"] = False
         launch["configurations"][1]["executable"] = str(build_dir / "zephyr" / "zephyr.elf")
 
     def _native(self, build_dir: pathlib.Path, cache: zcmake.CMakeCache):
