@@ -40,7 +40,7 @@ void tdf_diff_encode_16_8(int num_fields, const void *current, const void *next,
 	int8_t *diff = out;
 
 	for (int i = 0; i < num_fields; i++) {
-		diff[i] = UNALIGNED_GET(n) - UNALIGNED_GET(c);
+		UNALIGNED_PUT(UNALIGNED_GET(n) - UNALIGNED_GET(c), &diff[i]);
 		c++;
 		n++;
 	}
@@ -50,10 +50,10 @@ void tdf_diff_apply_16_8(uint8_t tdf_len, const void *base, void *out, void *dif
 {
 	const uint16_t *b = base;
 	uint16_t *o = out;
-	int8_t *d = diffs;
+	const int8_t *d = diffs;
 
 	for (int i = 0; i < (tdf_len / sizeof(uint16_t)); i++) {
-		o[i] = b[i] + d[i];
+		UNALIGNED_PUT(UNALIGNED_GET(&b[i]) + UNALIGNED_GET(&d[i]), &o[i]);
 	}
 }
 
@@ -85,7 +85,7 @@ void tdf_diff_encode_32_8(int num_fields, const void *current, const void *next,
 	int8_t *diff = out;
 
 	for (int i = 0; i < num_fields; i++) {
-		diff[i] = UNALIGNED_GET(n) - UNALIGNED_GET(c);
+		UNALIGNED_PUT(UNALIGNED_GET(n) - UNALIGNED_GET(c), &diff[i]);
 		c++;
 		n++;
 	}
@@ -95,10 +95,10 @@ void tdf_diff_apply_32_8(uint8_t tdf_len, const void *base, void *out, void *dif
 {
 	const uint32_t *b = base;
 	uint32_t *o = out;
-	int8_t *d = diffs;
+	const int8_t *d = diffs;
 
 	for (int i = 0; i < (tdf_len / sizeof(uint32_t)); i++) {
-		o[i] = b[i] + d[i];
+		UNALIGNED_PUT(UNALIGNED_GET(&b[i]) + UNALIGNED_GET(&d[i]), &o[i]);
 	}
 }
 
@@ -130,7 +130,7 @@ void tdf_diff_encode_32_16(int num_fields, const void *current, const void *next
 	int16_t *diff = out;
 
 	for (int i = 0; i < num_fields; i++) {
-		diff[i] = UNALIGNED_GET(n) - UNALIGNED_GET(c);
+		UNALIGNED_PUT(UNALIGNED_GET(n) - UNALIGNED_GET(c), &diff[i]);
 		c++;
 		n++;
 	}
@@ -140,9 +140,9 @@ void tdf_diff_apply_32_16(uint8_t tdf_len, const void *base, void *out, void *di
 {
 	const uint32_t *b = base;
 	uint32_t *o = out;
-	int16_t *d = diffs;
+	const int16_t *d = diffs;
 
 	for (int i = 0; i < (tdf_len / sizeof(uint32_t)); i++) {
-		o[i] = b[i] + d[i];
+		UNALIGNED_PUT(UNALIGNED_GET(&b[i]) + UNALIGNED_GET(&d[i]), &o[i]);
 	}
 }
