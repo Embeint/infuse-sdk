@@ -166,10 +166,10 @@ ZTEST(rpc_command_kv_reflect_crcs, test_kv_reflect_crcs_offset)
 
 static void *kv_setup(void)
 {
+	int kv_store_init(void);
 	KV_KEY_TYPE_VAR(KV_KEY_GEOFENCE, 2) geofence1 = {2, {{1, 2, 3}, {4, 5, 6}}};
 	KV_KEY_TYPE_VAR(KV_KEY_GEOFENCE, 2) geofence2 = {2, {{7, 8, 9}, {1, 2, 3}}};
 	KV_KEY_TYPE_VAR(KV_KEY_GEOFENCE, 2) geofence3 = {2, {{4, 5, 6}, {9, 8, 7}}};
-	int kv_store_init(void);
 
 	zassert_equal(0, kv_store_init());
 	zassert_equal(0, kv_store_reset());

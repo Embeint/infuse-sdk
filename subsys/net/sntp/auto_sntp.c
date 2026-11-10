@@ -196,8 +196,8 @@ error:
 
 static void sntp_work(struct k_work *work)
 {
-	struct k_work_delayable *delayable = k_work_delayable_from_work(work);
 	KV_STRING_CONST(ntp_default, CONFIG_SNTP_AUTO_DEFAULT_SERVER);
+	struct k_work_delayable *delayable = k_work_delayable_from_work(work);
 	KV_KEY_TYPE_VAR(KV_KEY_NTP_SERVER_URL, 64) ntp_server;
 	int rc;
 

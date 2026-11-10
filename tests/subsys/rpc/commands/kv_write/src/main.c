@@ -158,8 +158,8 @@ ZTEST(rpc_command_kv_write, test_kv_write_secondary_remote_public_key)
 
 ZTEST(rpc_command_kv_write, test_kv_write_single)
 {
-	KV_KEY_TYPE(KV_KEY_REBOOTS) reboots;
 	NET_BUF_SIMPLE_DEFINE(values, 128);
+	KV_KEY_TYPE(KV_KEY_REBOOTS) reboots;
 	struct rpc_struct_kv_store_value *value;
 	struct rpc_kv_write_response *response;
 	struct net_buf *rsp;
@@ -219,8 +219,8 @@ ZTEST(rpc_command_kv_write, test_kv_write_single)
 
 ZTEST(rpc_command_kv_write, test_kv_write_delete)
 {
-	KV_KEY_TYPE(KV_KEY_REBOOTS) reboots;
 	NET_BUF_SIMPLE_DEFINE(values, 128);
+	KV_KEY_TYPE(KV_KEY_REBOOTS) reboots;
 	struct rpc_struct_kv_store_value *value;
 	struct rpc_kv_write_response *response;
 	struct net_buf *rsp;
@@ -247,11 +247,11 @@ ZTEST(rpc_command_kv_write, test_kv_write_delete)
 
 ZTEST(rpc_command_kv_write, test_kv_write_multi)
 {
+	NET_BUF_SIMPLE_DEFINE(values, 128);
 	KV_STRING_CONST(test_string, "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
 	KV_KEY_TYPE_VAR(KV_KEY_WIFI_SSID, 64) ssid;
 	KV_KEY_TYPE(KV_KEY_FIXED_LOCATION) location = {0};
 	KV_KEY_TYPE(KV_KEY_REBOOTS) reboots;
-	NET_BUF_SIMPLE_DEFINE(values, 128);
 	struct rpc_struct_kv_store_value *value;
 	struct rpc_kv_write_response *response;
 	struct net_buf *rsp;
@@ -330,8 +330,8 @@ bool infuse_rpc_command_kv_write_validate(struct epacket_rx_metadata *meta, uint
 
 ZTEST(rpc_command_kv_write, test_kv_write_app_validation)
 {
-	KV_KEY_TYPE(KV_KEY_REBOOTS) reboots;
 	NET_BUF_SIMPLE_DEFINE(values, 128);
+	KV_KEY_TYPE(KV_KEY_REBOOTS) reboots;
 	struct rpc_struct_kv_store_value *value;
 	struct rpc_kv_write_response *response;
 	struct net_buf *rsp;
@@ -400,8 +400,8 @@ ZTEST(rpc_command_kv_write, test_kv_write_app_validation)
 
 ZTEST(rpc_command_kv_write, test_kv_write_reflect_too_large)
 {
-	const size_t max = CONFIG_KV_STORE_REFLECT_MAX_SIZE;
 	NET_BUF_SIMPLE_DEFINE(values, 128);
+	const size_t max = CONFIG_KV_STORE_REFLECT_MAX_SIZE;
 	struct rpc_struct_kv_store_value *value;
 	struct rpc_kv_write_response *response;
 	struct net_buf *rsp;
