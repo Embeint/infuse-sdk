@@ -674,6 +674,22 @@ ZTEST(tdf, test_invalid_sizes)
 		zassert_equal(-ENOSPC, rc);
 	}
 
+	/* Too large to ever fit as an index array (array header always present) */
+	for (int i = 27; i < 64; i++) {
+		rc = tdf_add_core(&state, 10, i, 1, 0, 0, input_buffer, TDF_DATA_FORMAT_IDX_ARRAY);
+		zassert_equal(-ENOSPC, rc);
+	}
+	for (int i = 21; i < 64; i++) {
+		rc = tdf_add_core(&state, 10, i, 1, 1000, 0, input_buffer,
+				  TDF_DATA_FORMAT_IDX_ARRAY);
+		zassert_equal(-ENOSPC, rc);
+	}
+	/* Largest index array that fits */
+	rc = tdf_add_core(&state, 10, 26, 1, 0, 0, input_buffer, TDF_DATA_FORMAT_IDX_ARRAY);
+	zassert_equal(1, rc);
+	zassert_equal(sizeof(buf), state.buf.len);
+	tdf_buffer_state_reset(&state);
+
 	/* Reserve space at start of buffer */
 	net_buf_simple_reserve(&state.buf, 2);
 

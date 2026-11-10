@@ -260,18 +260,21 @@ int tdf_add_core(struct tdf_buffer_state *state, uint16_t tdf_id, uint8_t tdf_le
 		 uint64_t time, uint32_t idx_period, const void *data, enum tdf_data_format format)
 {
 	struct tdf_array_header *array_header_ptr;
+	bool is_idx = format == TDF_DATA_FORMAT_IDX_ARRAY;
+	bool is_diff = false;
 	uint16_t buffer_remaining = net_buf_simple_tailroom(&state->buf);
 	uint16_t max_space = state->buf.size - (state->buf.data - state->buf.__buf);
-	uint16_t min_size =
-		sizeof(struct tdf_header) + (time ? sizeof(struct tdf_time) : 0) + tdf_len;
+	/* Smallest possible encoding: a single TDF, absolute timestamp if present, and the array
+	 * header that is always present for TDF_DATA_FORMAT_IDX_ARRAY.
+	 */
+	uint16_t min_size = sizeof(struct tdf_header) + (time ? sizeof(struct tdf_time) : 0) +
+			    (is_idx ? sizeof(struct tdf_array_header) : 0) + tdf_len;
 	uint16_t payload_space;
 	uint16_t total_header, total_data;
 	uint16_t array_header = 0;
 	uint16_t timestamp_header = 0;
 	int64_t timestamp_delta = 0;
 	uint16_t tdf_header = TDF_TIMESTAMP_NONE;
-	bool is_idx = format == TDF_DATA_FORMAT_IDX_ARRAY;
-	bool is_diff = false;
 	int rc;
 
 #ifdef CONFIG_TDF_DIFF
