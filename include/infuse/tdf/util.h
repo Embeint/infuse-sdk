@@ -93,7 +93,6 @@ static inline void tdf_reboot_info_from_state(struct infuse_reboot_state *state,
 
 #ifdef CONFIG_KV_STORE
 	KV_STORE_READ(KV_KEY_REBOOTS, &reboot);
-	info->count = reboot.count;
 #endif
 
 	info->reason = state->reason;
