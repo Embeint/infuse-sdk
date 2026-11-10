@@ -11,3 +11,6 @@ tests:
   rpc.commands.kv_write.user_validation:
     extra_configs:
       - CONFIG_INFUSE_RPC_OPTION_KV_WRITE_APP_VALIDATE=y
+  rpc.commands.kv_write.reflect_limit:
+    extra_configs:
+      - CONFIG_KV_STORE_REFLECT_MAX_SIZE=48

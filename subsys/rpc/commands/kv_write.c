@@ -100,9 +100,13 @@ static int handle_single_write(struct epacket_rx_metadata *meta,
 		/* Write the value */
 		LOG_DBG("Writing key %d len %d", v->id, v->len);
 		rc = kv_store_write(v->id, v->data, v->len);
-		if (rc < 0) {
-			rc = rc == -EACCES ? INFUSE_RPC_ERROR_KV_KEY_NOT_ENABLED
-					   : INFUSE_RPC_ERROR_KV_WRITE_FAILED;
+		if (rc == -EACCES) {
+			rc = INFUSE_RPC_ERROR_KV_KEY_NOT_ENABLED;
+		} else if (rc == -EFBIG) {
+			/* Value exceeds CONFIG_KV_STORE_REFLECT_MAX_SIZE */
+			rc = INFUSE_RPC_ERROR_KV_VALUE_TOO_LARGE;
+		} else if (rc < 0) {
+			rc = INFUSE_RPC_ERROR_KV_WRITE_FAILED;
 		}
 	}
 
