@@ -23,7 +23,7 @@ config INFUSE_HUK_NORDIC_KMU_CRACEN
 	depends on CRACEN_LIB_KMU
 	depends on !RISCV_CORE_NORDIC_VPR
 	depends on !BUILD_WITH_TFM
-	select SOC_NRF54LX_KMU_PUSH_AREA
+	select SOC_NRF54LX_KMU_PUSH_AREA if !$(dt_nodelabel_exists,kmu_push_area)
 
 config INFUSE_HUK_HWID_HASH
 	bool "SHA-256 hash of unique hardware identifier (Least secure)"

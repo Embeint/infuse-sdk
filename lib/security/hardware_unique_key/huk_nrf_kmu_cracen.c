@@ -6,6 +6,7 @@
  * SPDX-License-Identifier: FSL-1.1-ALv2
  */
 
+#include <zephyr/devicetree.h>
 #include <zephyr/random/random.h>
 
 #include <infuse/crypto/hardware_unique_key.h>
@@ -17,7 +18,25 @@ static psa_key_id_t huk_key_id;
 
 #define KMU_PUSH_AREA_SIZE 32
 
+#if DT_NODE_EXISTS(DT_NODELABEL(kmu_push_area))
+/* The KMU push area is reserved at the start of SRAM by devicetree. Slots
+ * provisioned by earlier releases push to this address, so it must not move.
+ */
+BUILD_ASSERT(DT_REG_SIZE(DT_NODELABEL(kmu_push_area)) >= KMU_PUSH_AREA_SIZE);
+static uint8_t *const kmu_push_area = (uint8_t *)DT_REG_ADDR(DT_NODELABEL(kmu_push_area));
+#else
 uint8_t kmu_push_area[KMU_PUSH_AREA_SIZE] __attribute__((section(".nrf_kmu_reserved_push_area")));
+#endif
+
+static bool kmu_push_area_empty(void)
+{
+	uint8_t acc = 0;
+
+	for (int i = 0; i < KMU_PUSH_AREA_SIZE; i++) {
+		acc |= kmu_push_area[i];
+	}
+	return acc == 0;
+}
 
 int hardware_unique_key_init(void)
 {
@@ -57,6 +76,7 @@ int hardware_unique_key_init(void)
 	}
 
 	/* Push key data to kmu_push_area */
+	memset(kmu_push_area, 0x00, KMU_PUSH_AREA_SIZE);
 	rc = lib_kmu_push_slot(0);
 	if (rc != LIB_KMU_SUCCESS) {
 		return -EIO;
@@ -65,10 +85,14 @@ int hardware_unique_key_init(void)
 	if (rc != LIB_KMU_SUCCESS) {
 		return -EIO;
 	}
+	/* Slots provisioned with a different destination push elsewhere */
+	if (kmu_push_area_empty()) {
+		return -EIO;
+	}
 
 	/* Import the key into PSA */
-	status = psa_import_key(&key_attributes, kmu_push_area, 32, &huk_key_id);
-	memset(kmu_push_area, 0x00, sizeof(kmu_push_area));
+	status = psa_import_key(&key_attributes, kmu_push_area, KMU_PUSH_AREA_SIZE, &huk_key_id);
+	memset(kmu_push_area, 0x00, KMU_PUSH_AREA_SIZE);
 	return status == PSA_SUCCESS ? 0 : -EINVAL;
 }
 
