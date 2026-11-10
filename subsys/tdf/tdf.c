@@ -217,7 +217,7 @@ static struct tdf_array_header *tdf_add_array_header(struct tdf_buffer_state *st
 						     struct tdf_header *header, uint8_t tdf_num,
 						     uint32_t idx_period, bool is_idx, bool is_diff)
 {
-	static struct tdf_array_header *array_header_ptr;
+	struct tdf_array_header *array_header_ptr;
 
 	if ((tdf_num <= 1) && !is_idx) {
 		/* No header needed */
