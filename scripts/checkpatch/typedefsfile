@@ -7,3 +7,4 @@ pinctrl_soc_pin_t
 io_rw_32
 \b[a-zA-Z_][a-zA-Z0-9_]*TypeDef
 Pwm
+KV_(?:KEY_TYPE|KEY_TYPE_VAR|STRUCT_[A-Z0-9_]+_VAR)\([^()]*\)\s*(?=\w)

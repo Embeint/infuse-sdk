@@ -394,10 +394,10 @@ ZTEST(kv_store, test_kv_reflect_slots)
 
 ZTEST(kv_store, test_kv_reflect_crc)
 {
-	KV_KEY_TYPE(KV_KEY_REBOOTS) reboots = {.count = 42};
-	KV_KEY_TYPE_VAR(KV_KEY_WIFI_PSK, 16) psk_read;
 	KV_STRING_CONST(psk, "psk_string");
 	KV_STRING_CONST(psk2, "psk_string_2");
+	KV_KEY_TYPE(KV_KEY_REBOOTS) reboots = {.count = 42};
+	KV_KEY_TYPE_VAR(KV_KEY_WIFI_PSK, 16) psk_read;
 	uint32_t reflect_crc, prev_crc, initial_crc;
 
 	/* Initial value */

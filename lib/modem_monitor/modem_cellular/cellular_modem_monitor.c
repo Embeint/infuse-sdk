@@ -282,7 +282,6 @@ int lte_modem_monitor_init(void)
 		CELLULAR_EVENT_MODEM_SUSPENDED | CELLULAR_EVENT_EDRX_PARAMETERS_CHANGED;
 
 #ifdef CONFIG_INFUSE_MODEM_MONITOR_DEFAULT_PDP_APN_SET
-	KV_KEY_TYPE_VAR(KV_KEY_LTE_PDP_CONFIG, 32) pdp_config;
 	const KV_KEY_TYPE_VAR(KV_KEY_LTE_PDP_CONFIG,
 			      sizeof(CONFIG_INFUSE_MODEM_MONITOR_DEFAULT_PDP_APN)) pdp_default = {
 		.apn =
@@ -297,6 +296,7 @@ int lte_modem_monitor_init(void)
 #error "MODEM_CELLULAR currently hardcoded to IPV4 only"
 #endif
 	};
+	KV_KEY_TYPE_VAR(KV_KEY_LTE_PDP_CONFIG, 32) pdp_config;
 
 	/* Read the configured value, falling back to the default */
 	(void)kv_store_read_fallback(KV_KEY_LTE_PDP_CONFIG, &pdp_config, sizeof(pdp_config),
