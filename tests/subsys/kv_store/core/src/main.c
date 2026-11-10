@@ -539,6 +539,112 @@ ZTEST(kv_store, test_zero_length)
 	zassert_equal(crc, kv_store_reflect_crc());
 }
 
+static int self_unregister_cnt;
+static int trailing_cnt;
+static struct kv_store_cb self_unregister_cb;
+
+static void self_unregister_callback(uint16_t key, const void *data, size_t data_len,
+				     void *user_ctx)
+{
+	self_unregister_cnt += 1;
+	zassert_true(kv_store_unregister_callback(&self_unregister_cb));
+}
+
+static void trailing_callback(uint16_t key, const void *data, size_t data_len, void *user_ctx)
+{
+	KV_KEY_TYPE(KV_KEY_REBOOTS) reboots = {.count = 1234};
+
+	trailing_cnt += 1;
+	if (key == KV_KEY_GEOFENCE) {
+		/* Writing from inside a callback must not deadlock */
+		zassert_equal(sizeof(reboots), KV_STORE_WRITE(KV_KEY_REBOOTS, &reboots));
+	}
+}
+
+ZTEST(kv_store, test_callback_reentrancy)
+{
+	static struct kv_store_cb trailing_cb = {.value_changed = trailing_callback};
+	KV_KEY_TYPE_VAR(KV_KEY_GEOFENCE, 1) geofence = {1, {{1, 2, 3}}};
+	KV_KEY_TYPE(KV_KEY_REBOOTS) reboots;
+
+	self_unregister_cb.value_changed = self_unregister_callback;
+	self_unregister_cnt = 0;
+	trailing_cnt = 0;
+	kv_store_register_callback(&self_unregister_cb);
+	kv_store_register_callback(&trailing_cb);
+
+	zassert_equal(sizeof(geofence), KV_STORE_WRITE(KV_KEY_GEOFENCE, &geofence));
+	/* Self-unregistering callback ran once, later callback still ran for both writes */
+	zassert_equal(1, self_unregister_cnt);
+	zassert_equal(2, trailing_cnt);
+	zassert_equal(sizeof(reboots), KV_STORE_READ(KV_KEY_REBOOTS, &reboots));
+	zassert_equal(1234, reboots.count);
+
+	zassert_true(kv_store_unregister_callback(&trailing_cb));
+	zassert_false(kv_store_unregister_callback(&self_unregister_cb));
+}
+
+K_THREAD_STACK_DEFINE(writer_stack, 2048);
+static struct k_thread writer_thread;
+static atomic_t writer_done;
+static int ordered_values[4];
+static int ordered_num;
+
+static KV_STRING_CONST(psk_first, "first_psk");
+static KV_STRING_CONST(psk_second, "second_psk_value");
+
+static void writer_fn(void *a, void *b, void *c)
+{
+	zassert_equal(sizeof(psk_second), KV_STORE_WRITE(KV_KEY_WIFI_PSK, &psk_second));
+	atomic_set(&writer_done, 1);
+}
+
+static void ordering_callback(uint16_t key, const void *data, size_t data_len, void *user_ctx)
+{
+	if ((key != KV_KEY_WIFI_PSK) || (ordered_num >= ARRAY_SIZE(ordered_values))) {
+		return;
+	}
+	ordered_values[ordered_num++] = data_len;
+	if (data_len == sizeof(psk_first)) {
+		/* Start a higher priority writer to the same key */
+		k_thread_create(&writer_thread, writer_stack, K_THREAD_STACK_SIZEOF(writer_stack),
+				writer_fn, NULL, NULL, NULL,
+				k_thread_priority_get(k_current_get()) - 1, 0, K_NO_WAIT);
+		/* Give the writer every opportunity to run (test thread may be cooperative) */
+		k_sleep(K_MSEC(10));
+		/* It must be blocked until this modification completes */
+		zassert_equal(0, atomic_get(&writer_done));
+	}
+}
+
+ZTEST(kv_store, test_modifications_serialised)
+{
+	static struct kv_store_cb cb = {.value_changed = ordering_callback};
+	KV_KEY_TYPE_VAR(KV_KEY_WIFI_PSK, 32) psk;
+	uint32_t crc;
+
+	atomic_set(&writer_done, 0);
+	ordered_num = 0;
+	kv_store_register_callback(&cb);
+
+	zassert_equal(sizeof(psk_first), KV_STORE_WRITE(KV_KEY_WIFI_PSK, &psk_first));
+	zassert_equal(0, k_thread_join(&writer_thread, K_SECONDS(1)));
+	zassert_equal(1, atomic_get(&writer_done));
+	zassert_true(kv_store_unregister_callback(&cb));
+
+	/* Callbacks delivered in write order, final value is the second write */
+	zassert_equal(2, ordered_num);
+	zassert_equal(sizeof(psk_first), ordered_values[0]);
+	zassert_equal(sizeof(psk_second), ordered_values[1]);
+	zassert_equal(sizeof(psk_second), KV_STORE_READ(KV_KEY_WIFI_PSK, &psk));
+	zassert_mem_equal(&psk_second, &psk, sizeof(psk_second));
+
+	/* Reflection state matches the stored value */
+	crc = kv_store_reflect_crc();
+	zassert_equal(0, kv_store_init());
+	zassert_equal(crc, kv_store_reflect_crc());
+}
+
 static void *kv_setup(void)
 {
 	kv_store_init();

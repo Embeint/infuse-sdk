@@ -18,7 +18,6 @@
 #include "kv_internal.h"
 
 static struct nvs_fs fs;
-static sys_slist_t cb_list;
 
 #define NVS_PARTITION        DT_CHOSEN(infuse_kv_partition)
 #define NVS_PARTITION_ID     DT_PARTITION_ID(NVS_PARTITION)
@@ -40,6 +39,7 @@ int kv_store_reset(void)
 	int rc;
 
 	LOG_INF("Resetting KV store");
+	kv_internal_lock();
 	rc = nvs_clear(&fs);
 	if (rc == 0) {
 		rc = nvs_mount(&fs);
@@ -48,17 +48,8 @@ int kv_store_reset(void)
 	} else {
 		LOG_WRN("Failed to reset KV store (%d)", rc);
 	}
+	kv_internal_unlock();
 	return rc;
-}
-
-void kv_store_register_callback(struct kv_store_cb *cb)
-{
-	sys_slist_append(&cb_list, &cb->node);
-}
-
-bool kv_store_unregister_callback(struct kv_store_cb *cb)
-{
-	return sys_slist_find_and_remove(&cb_list, &cb->node);
 }
 
 bool kv_store_key_exists(uint16_t key)
@@ -73,7 +64,6 @@ ssize_t kv_store_key_data_size(uint16_t key)
 
 ssize_t kv_store_delete(uint16_t key)
 {
-	struct kv_store_cb *cb;
 	size_t reflect_idx;
 	ssize_t rc;
 
@@ -83,9 +73,11 @@ ssize_t kv_store_delete(uint16_t key)
 	}
 	LOG_DBG("Erasing %04x", key);
 
+	kv_internal_lock();
 	/* Check if value exists */
 	if (nvs_read(&fs, key, NULL, 0) == -ENOENT) {
-		return -ENOENT;
+		rc = -ENOENT;
+		goto end;
 	}
 
 	/* Delete from NVS */
@@ -96,18 +88,15 @@ ssize_t kv_store_delete(uint16_t key)
 			kv_reflect_key_updated(reflect_idx, NULL, 0);
 		}
 		/* Notify interested parties of value deletion */
-		SYS_SLIST_FOR_EACH_CONTAINER(&cb_list, cb, node) {
-			if (cb->value_changed) {
-				cb->value_changed(key, NULL, 0, cb->user_ctx);
-			}
-		}
+		kv_internal_notify(key, NULL, 0);
 	}
+end:
+	kv_internal_unlock();
 	return rc;
 }
 
 ssize_t kv_store_write(uint16_t key, const void *data, size_t data_len)
 {
-	struct kv_store_cb *cb;
 	size_t reflect_idx;
 	ssize_t rc;
 
@@ -121,6 +110,7 @@ ssize_t kv_store_write(uint16_t key, const void *data, size_t data_len)
 	}
 	LOG_DBG("Writing to %04x", key);
 
+	kv_internal_lock();
 	/* Write to NVS */
 	rc = nvs_write(&fs, key, data, data_len);
 	if (rc > 0) {
@@ -129,12 +119,9 @@ ssize_t kv_store_write(uint16_t key, const void *data, size_t data_len)
 			kv_reflect_key_updated(reflect_idx, data, data_len);
 		}
 		/* Notify interested parties of value changes */
-		SYS_SLIST_FOR_EACH_CONTAINER(&cb_list, cb, node) {
-			if (cb->value_changed) {
-				cb->value_changed(key, data, rc, cb->user_ctx);
-			}
-		}
+		kv_internal_notify(key, data, rc);
 	}
+	kv_internal_unlock();
 	return rc;
 }
 
@@ -153,7 +140,6 @@ ssize_t kv_store_read(uint16_t key, void *data, size_t max_data_len)
 ssize_t kv_store_read_fallback(uint16_t key, void *data, size_t max_data_len, const void *fallback,
 			       size_t fallback_len)
 {
-	struct kv_store_cb *cb;
 	size_t reflect_idx;
 	ssize_t rc;
 
@@ -167,6 +153,8 @@ ssize_t kv_store_read_fallback(uint16_t key, void *data, size_t max_data_len, co
 	}
 	LOG_DBG("Read from %04x", key);
 
+	/* Hold the lock so a concurrent write is not overwritten by the fallback */
+	kv_internal_lock();
 	/* Try to read key value */
 	rc = nvs_read(&fs, key, data, max_data_len);
 	if (rc == -ENOENT) {
@@ -179,16 +167,12 @@ ssize_t kv_store_read_fallback(uint16_t key, void *data, size_t max_data_len, co
 				kv_reflect_key_updated(reflect_idx, fallback, fallback_len);
 			}
 			/* Notify interested parties of value write */
-			SYS_SLIST_FOR_EACH_CONTAINER(&cb_list, cb, node) {
-				if (cb->value_changed) {
-					cb->value_changed(key, fallback, fallback_len,
-							  cb->user_ctx);
-				}
-			}
+			kv_internal_notify(key, fallback, fallback_len);
 			/* Read data back out */
 			rc = nvs_read(&fs, key, data, max_data_len);
 		}
 	}
+	kv_internal_unlock();
 	return rc;
 }
 
@@ -199,12 +183,13 @@ int kv_store_init(void)
 	struct flash_pages_info info;
 	int rc;
 
+	kv_internal_lock();
 	fs.flash_device = NVS_PARTITION_DEVICE;
 	fs.offset = NVS_PARTITION_OFFSET;
 	rc = flash_get_page_info_by_offs(fs.flash_device, fs.offset, &info);
 	if (rc) {
 		LOG_ERR("No page info");
-		return rc;
+		goto end;
 	}
 	fs.sector_size = info.size;
 	fs.sector_count = NVS_PARTITION_SIZE / info.size;
@@ -223,6 +208,8 @@ int kv_store_init(void)
 	if (rc == 0) {
 		kv_reflect_init();
 	}
+end:
+	kv_internal_unlock();
 	return rc;
 }
 

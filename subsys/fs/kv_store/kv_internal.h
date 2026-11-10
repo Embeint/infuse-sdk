@@ -29,6 +29,30 @@ extern "C" {
 #endif
 
 /**
+ * @brief Lock the KV store for modification
+ *
+ * Serialises backend modifications, reflection updates and callback dispatch.
+ * The lock is recursive, so callbacks may call back into the KV store.
+ */
+void kv_internal_lock(void);
+
+/**
+ * @brief Unlock the KV store
+ */
+void kv_internal_unlock(void);
+
+/**
+ * @brief Notify registered callbacks of a value change
+ *
+ * @note Must be called with the KV store lock held.
+ *
+ * @param key Key that changed
+ * @param data Pointer to the new value, NULL on deletion
+ * @param data_len Length of the new value, 0 on deletion
+ */
+void kv_internal_notify(uint16_t key, const void *data, size_t data_len);
+
+/**
  * @brief Retrieve slot definitions
  *
  * @param num Number of slot definitions
