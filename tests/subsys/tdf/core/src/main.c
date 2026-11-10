@@ -957,8 +957,8 @@ ZTEST(tdf, test_tdf_parse_find_in_buf)
 
 	rc = TDF_ADD(&state, TDF_ACC_2G, 1, 1000, 0, &acc);
 	zassert_equal(1, rc);
-	rc = TDF_ADD(&state, TDF_GYR_125DPS, 1, 2000, 0, &gyr);
-	zassert_equal(1, rc);
+	/* Usable as an expression */
+	zassert_equal(1, TDF_ADD(&state, TDF_GYR_125DPS, 1, 2000, 0, &gyr));
 
 	/* TDFs that don't exist in the buffer */
 	zassert_equal(-ENOMEM,
