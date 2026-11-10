@@ -54,7 +54,8 @@ void kv_reflect_init(void)
 #if defined(CONFIG_KV_STORE_NVS)
 			rc = nvs_read(fs, key, read_buffer, sizeof(read_buffer));
 #elif defined(CONFIG_KV_STORE_ZMS)
-			rc = zms_read(fs, ID_PRE | key, read_buffer, sizeof(read_buffer));
+			/* Full stored length is required to detect oversized values */
+			rc = zms_read_hist(fs, ID_PRE | key, read_buffer, sizeof(read_buffer), 0);
 #endif
 			if (rc == -ENOENT) {
 				/* No data, CRC = 0*/

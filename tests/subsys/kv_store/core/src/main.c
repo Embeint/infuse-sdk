@@ -488,6 +488,34 @@ ZTEST(kv_store, test_kv_reflect_order_invariant)
 	zassert_equal(initial_crc, kv_store_reflect_crc());
 }
 
+ZTEST(kv_store, test_short_buffer_read)
+{
+	KV_KEY_TYPE_VAR(KV_KEY_GEOFENCE, 4) geofence = {4, {{1, 2, 3}, {4, 5, 6}}};
+	KV_KEY_TYPE_VAR(KV_KEY_GEOFENCE, 1) fallback = {1, {{7, 8, 9}}};
+	uint8_t small[8];
+
+	zassert_equal(sizeof(geofence), KV_STORE_WRITE(KV_KEY_GEOFENCE, &geofence));
+
+	/* Full stored length returned, regardless of backend, with a partial copy */
+	memset(small, 0x00, sizeof(small));
+	zassert_equal(sizeof(geofence), kv_store_read(KV_KEY_GEOFENCE, small, sizeof(small)));
+	zassert_mem_equal(&geofence, small, sizeof(small));
+
+	/* Same behaviour through the fallback API when the value exists */
+	memset(small, 0x00, sizeof(small));
+	zassert_equal(sizeof(geofence),
+		      kv_store_read_fallback(KV_KEY_GEOFENCE, small, sizeof(small), &fallback,
+					     sizeof(fallback)));
+	zassert_mem_equal(&geofence, small, sizeof(small));
+
+	/* And when the fallback is written */
+	memset(small, 0x00, sizeof(small));
+	zassert_equal(sizeof(fallback),
+		      kv_store_read_fallback(KV_KEY_GEOFENCE + 1, small, sizeof(small), &fallback,
+					     sizeof(fallback)));
+	zassert_mem_equal(&fallback, small, sizeof(small));
+}
+
 static void *kv_setup(void)
 {
 	kv_store_init();

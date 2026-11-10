@@ -133,6 +133,15 @@ ssize_t kv_store_write(uint16_t key, const void *data, size_t data_len)
 	return rc;
 }
 
+static ssize_t backend_read(uint16_t key, void *data, size_t max_data_len)
+{
+	/* zms_read() truncates the return value to max_data_len, while the KV store
+	 * API returns the full stored length (matching NVS). Read the latest entry
+	 * through zms_read_hist() to get that length.
+	 */
+	return zms_read_hist(&fs, ID_PRE | key, data, max_data_len, 0);
+}
+
 ssize_t kv_store_read(uint16_t key, void *data, size_t max_data_len)
 {
 	/* Validate key is enabled */
@@ -141,8 +150,8 @@ ssize_t kv_store_read(uint16_t key, void *data, size_t max_data_len)
 	}
 	LOG_DBG("Reading from %04x", key);
 
-	/* Read from NVS */
-	return zms_read(&fs, ID_PRE | key, data, max_data_len);
+	/* Read from ZMS */
+	return backend_read(key, data, max_data_len);
 }
 
 ssize_t kv_store_read_fallback(uint16_t key, void *data, size_t max_data_len, const void *fallback,
@@ -159,7 +168,7 @@ ssize_t kv_store_read_fallback(uint16_t key, void *data, size_t max_data_len, co
 	LOG_DBG("Read from %04x", key);
 
 	/* Try to read key value */
-	rc = zms_read(&fs, ID_PRE | key, data, max_data_len);
+	rc = backend_read(key, data, max_data_len);
 	if (rc == -ENOENT) {
 		LOG_DBG("Fallback on %04x", key);
 		/* Key doesn't exist, write fallback data */
@@ -177,7 +186,7 @@ ssize_t kv_store_read_fallback(uint16_t key, void *data, size_t max_data_len, co
 				}
 			}
 			/* Read data back out */
-			rc = zms_read(&fs, ID_PRE | key, data, max_data_len);
+			rc = backend_read(key, data, max_data_len);
 		}
 	}
 	return rc;
