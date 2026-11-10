@@ -577,6 +577,27 @@ ZTEST(tdf, test_add_multiple_reclaim_array_header)
 		zassert_equal(rc, parsed.tdf_num);
 		zassert_equal(-ENOMEM, tdf_parse(&parser, &parsed));
 	}
+
+	/* Space for exactly a single TDF, which is less than the array header requires */
+	for (int len = 1; len <= 3; len++) {
+		for (int with_time = 0; with_time <= 1; with_time++) {
+			uint64_t t = with_time ? 1000 : 0;
+			uint16_t size = 3 + (with_time ? 6 : 0) + len;
+
+			net_buf_simple_init_with_data(&state.buf, mem, size);
+			tdf_buffer_state_reset(&state);
+
+			rc = tdf_add(&state, 100, len, 8, t, 10, input_buffer);
+			zassert_equal(1, rc, "len %d time %d", len, with_time);
+			zassert_equal(size, state.buf.len);
+
+			tdf_parse_start(&parser, state.buf.data, state.buf.len);
+			zassert_equal(0, tdf_parse(&parser, &parsed));
+			zassert_equal(TDF_DATA_FORMAT_SINGLE, parsed.data_type);
+			zassert_equal(t, parsed.time);
+			zassert_equal(-ENOMEM, tdf_parse(&parser, &parsed));
+		}
+	}
 }
 
 ZTEST(tdf, test_add_no_time_to_time)

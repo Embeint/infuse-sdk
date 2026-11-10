@@ -348,10 +348,6 @@ int tdf_add_core(struct tdf_buffer_state *state, uint16_t tdf_id, uint8_t tdf_le
 		is_diff = false;
 	}
 	total_header = sizeof(struct tdf_header) + array_header + timestamp_header;
-	/* Validate we have some room for payload */
-	if (buffer_remaining <= total_header) {
-		return -ENOMEM;
-	}
 
 	/* Can complete payload fit? */
 	if (!is_diff) {
@@ -365,7 +361,8 @@ int tdf_add_core(struct tdf_buffer_state *state, uint16_t tdf_id, uint8_t tdf_le
 	}
 #endif /* CONFIG_TDF_DIFF */
 
-	payload_space = buffer_remaining - total_header;
+	/* The array header may not be required, so no space for payload is not yet an error */
+	payload_space = buffer_remaining > total_header ? buffer_remaining - total_header : 0;
 
 	if (payload_space < total_data) {
 		/* Evaluate how many TDF payloads can fit */
@@ -385,8 +382,8 @@ int tdf_add_core(struct tdf_buffer_state *state, uint16_t tdf_id, uint8_t tdf_le
 			/* Reclaim the time array header space and re-evaluate. Without the
 			 * array header only a single TDF can be logged.
 			 */
-			payload_space += sizeof(struct tdf_array_header);
-			can_fit = payload_space >= tdf_len ? 1 : 0;
+			can_fit =
+				buffer_remaining >= (total_header - array_header + tdf_len) ? 1 : 0;
 		}
 		if (can_fit == 0) {
 			return -ENOMEM;
