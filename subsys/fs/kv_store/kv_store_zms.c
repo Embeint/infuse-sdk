@@ -115,6 +115,10 @@ ssize_t kv_store_write(uint16_t key, const void *data, size_t data_len)
 	if (!kv_store_key_metadata(key, NULL, &reflect_idx)) {
 		return -EACCES;
 	}
+	/* A zero length write is a deletion in the backend, use kv_store_delete() */
+	if (data_len == 0) {
+		return -EINVAL;
+	}
 
 	/* Write to NVS */
 	rc = zms_write(&fs, ID_PRE | key, data, data_len);
@@ -164,6 +168,10 @@ ssize_t kv_store_read_fallback(uint16_t key, void *data, size_t max_data_len, co
 	/* Validate key is enabled */
 	if (!kv_store_key_metadata(key, NULL, &reflect_idx)) {
 		return -EACCES;
+	}
+	/* A zero length fallback cannot be stored */
+	if (fallback_len == 0) {
+		return -EINVAL;
 	}
 	LOG_DBG("Read from %04x", key);
 

@@ -516,6 +516,29 @@ ZTEST(kv_store, test_short_buffer_read)
 	zassert_mem_equal(&fallback, small, sizeof(small));
 }
 
+ZTEST(kv_store, test_zero_length)
+{
+	KV_KEY_TYPE_VAR(KV_KEY_GEOFENCE, 1) geofence = {1, {{1, 2, 3}}};
+	uint32_t crc;
+
+	zassert_equal(sizeof(geofence), KV_STORE_WRITE(KV_KEY_GEOFENCE, &geofence));
+	crc = kv_store_reflect_crc();
+
+	/* Zero length writes are rejected, value and reflection state unchanged */
+	zassert_equal(-EINVAL, kv_store_write(KV_KEY_GEOFENCE, &geofence, 0));
+	zassert_equal(sizeof(geofence), kv_store_key_data_size(KV_KEY_GEOFENCE));
+	zassert_equal(crc, kv_store_reflect_crc());
+
+	/* Disabled keys still report -EACCES */
+	zassert_equal(-EACCES, kv_store_write(UINT16_MAX, &geofence, 0));
+
+	/* Zero length fallback is rejected, nothing is written */
+	zassert_equal(-EINVAL, kv_store_read_fallback(KV_KEY_GEOFENCE + 1, &geofence,
+						      sizeof(geofence), &geofence, 0));
+	zassert_false(kv_store_key_exists(KV_KEY_GEOFENCE + 1));
+	zassert_equal(crc, kv_store_reflect_crc());
+}
+
 static void *kv_setup(void)
 {
 	kv_store_init();
