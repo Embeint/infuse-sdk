@@ -1395,6 +1395,45 @@ ZTEST(tdf_diff, test_precomputed_too_many_diffs)
 	zassert_equal(-ENOMEM, tdf_parse(&parser, &parsed));
 }
 
+ZTEST(tdf_diff, test_unaligned)
+{
+	const uint8_t formats[] = {
+		TDF_DATA_FORMAT_DIFF_ARRAY_16_8,
+		TDF_DATA_FORMAT_DIFF_ARRAY_32_8,
+		TDF_DATA_FORMAT_DIFF_ARRAY_32_16,
+	};
+	struct tdf_example_32 tdf_array[8];
+	uint8_t output[sizeof(struct tdf_example_32) + 1] __aligned(4);
+	struct tdf_buffer_state state;
+	struct tdf_buffer_state parser;
+	struct tdf_parsed parsed;
+	int rc;
+
+	for (int i = 0; i < ARRAY_SIZE(tdf_array); i++) {
+		tdf_array[i].x = 1000 + i;
+		tdf_array[i].y = -1000 - (2 * i);
+	}
+
+	for (int f = 0; f < ARRAY_SIZE(formats); f++) {
+		/* Odd buffer start, all multi-byte fields unaligned */
+		net_buf_simple_init_with_data(&state.buf, large_buf + 1, sizeof(large_buf) - 1);
+		tdf_buffer_state_reset(&state);
+		rc = tdf_add_core(&state, TDF_EXAMPLE_32, sizeof(struct tdf_example_32),
+				  ARRAY_SIZE(tdf_array), 0, 10, tdf_array, formats[f]);
+		zassert_equal(ARRAY_SIZE(tdf_array), rc);
+
+		tdf_parse_start(&parser, state.buf.data, state.buf.len);
+		zassert_equal(0, tdf_parse(&parser, &parsed));
+		zassert_equal(formats[f], parsed.data_type);
+		for (int i = 0; i < ARRAY_SIZE(tdf_array); i++) {
+			/* Unaligned output location */
+			rc = tdf_parse_diff_reconstruct(&parsed, output + 1, i);
+			zassert_equal(0, rc);
+			zassert_mem_equal(&tdf_array[i], output + 1, sizeof(tdf_array[i]));
+		}
+	}
+}
+
 ZTEST(tdf_diff, test_invalid_tdfs)
 {
 	struct tdf_example_16 tdf_array[128] = {0};
