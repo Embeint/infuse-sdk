@@ -30,7 +30,16 @@ extern "C" {
  * @{
  */
 
-/** @brief KV store callback structure. */
+/**
+ * @brief KV store callback structure.
+ *
+ * Callbacks run in the context of the thread modifying the KV store, with the
+ * KV store lock held. This ensures that callbacks for a key are delivered in
+ * the same order that the values were written. The lock is recursive, so
+ * callbacks may call KV store APIs, including unregistering themselves.
+ * Callbacks must not block on a resource held by another thread that may be
+ * waiting to modify the KV store.
+ */
 struct kv_store_cb {
 	/** @brief The value for a key has changed.
 	 *

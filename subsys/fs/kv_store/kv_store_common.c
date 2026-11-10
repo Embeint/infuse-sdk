@@ -9,10 +9,57 @@
 #include <stdlib.h>
 #include <errno.h>
 
+#include <zephyr/kernel.h>
+#include <zephyr/sys/slist.h>
 #include <zephyr/sys/util.h>
 
 #define _KV_SLOTS_ARRAY_DEFINE kv_store_slots_internal
 #include <infuse/fs/kv_types.h>
+#include <infuse/fs/kv_store.h>
+
+#include "kv_internal.h"
+
+static K_MUTEX_DEFINE(kv_lock);
+static sys_slist_t cb_list;
+
+void kv_internal_lock(void)
+{
+	k_mutex_lock(&kv_lock, K_FOREVER);
+}
+
+void kv_internal_unlock(void)
+{
+	k_mutex_unlock(&kv_lock);
+}
+
+void kv_internal_notify(uint16_t key, const void *data, size_t data_len)
+{
+	struct kv_store_cb *cb, *cbs;
+
+	/* Safe iteration allows a callback to unregister itself */
+	SYS_SLIST_FOR_EACH_CONTAINER_SAFE(&cb_list, cb, cbs, node) {
+		if (cb->value_changed) {
+			cb->value_changed(key, data, data_len, cb->user_ctx);
+		}
+	}
+}
+
+void kv_store_register_callback(struct kv_store_cb *cb)
+{
+	kv_internal_lock();
+	sys_slist_append(&cb_list, &cb->node);
+	kv_internal_unlock();
+}
+
+bool kv_store_unregister_callback(struct kv_store_cb *cb)
+{
+	bool removed;
+
+	kv_internal_lock();
+	removed = sys_slist_find_and_remove(&cb_list, &cb->node);
+	kv_internal_unlock();
+	return removed;
+}
 
 struct key_value_slot_definition *kv_internal_slot_definitions(size_t *num)
 {
