@@ -74,6 +74,7 @@ The Infuse-IoT SDK currently supports the following SoC series:
   * Nordic Semiconductor `nRF91`_
   * Nordic Semiconductor `nRF54L`_
   * ST Microelectronics `STM32L4x`_
+  * Espressif `ESP32-C6`_
   * ST Microelectronics `STM32WBx5`_ (Coming Soon)
 
 For a complete list of supported boards, see `builtin supported platforms`_.
@@ -89,6 +90,7 @@ For a complete list of supported boards, see `builtin supported platforms`_.
 .. _nRF54L: https://docs.nordicsemi.com/category/nrf-54L-series
 .. _nRF91: https://docs.nordicsemi.com/category/nrf-91-series
 .. _STM32L4x: https://www.st.com/en/microcontrollers-microprocessors/stm32l4-series.html
+.. _ESP32-C6: https://www.espressif.com/en/products/socs/esp32-c6
 .. _STM32WBx5: https://www.st.com/en/microcontrollers-microprocessors/stm32wbx5.html
 .. _builtin supported platforms: https://docs.dev.infuse-iot.com/latest/snippets/infuse/README.html
 .. _Trusted Firmware-M: https://www.trustedfirmware.org/projects/tf-m/

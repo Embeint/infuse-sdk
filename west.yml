@@ -22,6 +22,7 @@ manifest:
         name-allowlist:
           - cmsis-dsp
           - cmsis_6
+          - hal_espressif
           - hal_nordic
           - hal_st
           - hal_stm32
