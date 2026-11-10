@@ -548,6 +548,37 @@ ZTEST(tdf, test_add_multiple_2_to_1_exact)
 	run_test_case(tests, ARRAY_SIZE(tests), false);
 }
 
+ZTEST(tdf, test_add_multiple_reclaim_array_header)
+{
+	uint8_t mem[16];
+	struct tdf_buffer_state state;
+	struct tdf_buffer_state parser;
+	struct tdf_parsed parsed;
+	int rc;
+
+	/* Space for the base header, array header and a single byte of payload.
+	 * Reclaiming the array header must only ever result in a single TDF.
+	 */
+	for (int len = 1; len <= 4; len++) {
+		memset(mem, 0xAA, sizeof(mem));
+		net_buf_simple_init_with_data(&state.buf, mem, 7);
+		tdf_buffer_state_reset(&state);
+
+		rc = tdf_add(&state, 100, len, 8, 0, 10, input_buffer);
+		zassert_true(rc > 0);
+		zassert_true(state.buf.len <= 7);
+		for (int i = 7; i < sizeof(mem); i++) {
+			zassert_equal(0xAA, mem[i], "Buffer overrun at %d (len %d)", i, len);
+		}
+
+		tdf_parse_start(&parser, state.buf.data, state.buf.len);
+		zassert_equal(0, tdf_parse(&parser, &parsed));
+		zassert_equal(len, parsed.tdf_len);
+		zassert_equal(rc, parsed.tdf_num);
+		zassert_equal(-ENOMEM, tdf_parse(&parser, &parsed));
+	}
+}
+
 ZTEST(tdf, test_add_no_time_to_time)
 {
 	/* No timestamp then timestamp */
