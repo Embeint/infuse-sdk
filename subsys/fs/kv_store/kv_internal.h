@@ -73,6 +73,20 @@ struct key_value_slot_definition *kv_internal_slot_definitions(size_t *num);
 bool kv_store_key_metadata(uint16_t key, uint8_t *flags, size_t *reflect_idx);
 
 /**
+ * @brief Validate a value about to be written to the backend
+ *
+ * @param key Key to be written
+ * @param data_len Length of the value to be written
+ * @param reflect_idx Key reflection index, SIZE_MAX if reflection disabled
+ *
+ * @retval 0 Write is valid
+ * @retval -EACCES Key is not enabled
+ * @retval -EINVAL Zero length value
+ * @retval -EFBIG Reflected value larger than @kconfig{CONFIG_KV_STORE_REFLECT_MAX_SIZE}
+ */
+int kv_internal_write_validate(uint16_t key, size_t data_len, size_t *reflect_idx);
+
+/**
  * @brief Initialise KV reflection
  */
 void kv_reflect_init(void);

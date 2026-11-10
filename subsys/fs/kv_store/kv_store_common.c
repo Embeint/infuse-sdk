@@ -93,6 +93,23 @@ bool kv_store_key_metadata(uint16_t key, uint8_t *flags, size_t *reflect_idx)
 	return false;
 }
 
+int kv_internal_write_validate(uint16_t key, size_t data_len, size_t *reflect_idx)
+{
+	/* Validate key is enabled */
+	if (!kv_store_key_metadata(key, NULL, reflect_idx)) {
+		return -EACCES;
+	}
+	/* A zero length write is a deletion in the backend, use kv_store_delete() */
+	if (data_len == 0) {
+		return -EINVAL;
+	}
+	/* Reflected values must fit in the reflection read buffer */
+	if ((*reflect_idx != SIZE_MAX) && (data_len > CONFIG_KV_STORE_REFLECT_MAX_SIZE)) {
+		return -EFBIG;
+	}
+	return 0;
+}
+
 bool kv_store_key_enabled(uint16_t key)
 {
 	return kv_store_key_metadata(key, NULL, NULL);
