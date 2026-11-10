@@ -144,10 +144,11 @@ enum tdf_flags {
  * @retval -ENOMEM Insufficient space to add any TDFs to buffer
  */
 #define TDF_ADD(state, tdf_id, tdf_num, base_time, period, data)                                   \
-	tdf_add(state, tdf_id, sizeof(TDF_TYPE(tdf_id)), tdf_num, base_time, period, data);        \
-	do {                                                                                       \
-		__maybe_unused const TDF_TYPE(tdf_id) *_data = data;                               \
-	} while (0)
+	({                                                                                         \
+		const TDF_TYPE(tdf_id) *_tdf_data = data;                                          \
+		tdf_add(state, tdf_id, sizeof(TDF_TYPE(tdf_id)), tdf_num, base_time, period,       \
+			_tdf_data);                                                                \
+	})
 
 /**
  * @brief Reset a tdf_buffer_state struct
