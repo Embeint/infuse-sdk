@@ -1324,6 +1324,19 @@ ZTEST(tdf_diff, test_no_valid_diffs)
 	validate_diff_data(&state, TDF_DATA_FORMAT_TIME_ARRAY, ARRAY_SIZE(tdf_array) - 3,
 			   TDF_EXAMPLE_16, NULL, NULL, 0);
 
+	/* Only a single valid diff, as the second last pair. All TDFs in a single time array */
+	struct tdf_example_16 tdf_array2[5] = {
+		{.x = 0}, {.x = 1000}, {.x = 2000}, {.x = 2001}, {.x = 5000},
+	};
+
+	tdf_buffer_state_reset(&state);
+	handled = tdf_add_core(&state, TDF_EXAMPLE_16, sizeof(struct tdf_example_16),
+			       ARRAY_SIZE(tdf_array2), 0, 10, tdf_array2,
+			       TDF_DATA_FORMAT_DIFF_ARRAY_16_8);
+	zassert_equal(ARRAY_SIZE(tdf_array2), handled);
+	validate_diff_data(&state, TDF_DATA_FORMAT_TIME_ARRAY, ARRAY_SIZE(tdf_array2),
+			   TDF_EXAMPLE_16, NULL, NULL, 0);
+
 	/* Invalid diff type */
 	tdf_buffer_state_reset(&state);
 

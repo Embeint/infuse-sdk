@@ -151,9 +151,11 @@ static int tdf_num_valid_diffs(enum tdf_data_format diff_type, uint8_t tdf_len, 
 			p1 += tdf_len;
 		}
 		return i;
-	} else if (i == (tdf_num - 2)) {
-		/* No valid diffs found */
-		return -(i + 2);
+	} else if (i >= (tdf_num - 2)) {
+		/* No valid diffs found. The loop can exit with `i == tdf_num - 1` when the
+		 * final pair checked had a valid first diff but an invalid second diff.
+		 */
+		return -tdf_num;
 	}
 	/* Return the number of elements until the valid diff */
 	return -i;
