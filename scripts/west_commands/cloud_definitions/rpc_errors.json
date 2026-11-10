@@ -149,7 +149,8 @@
                 {"name": "KV_WRITE_FAILED", "value": -1203},
                 {"name": "KV_DELETE_FAILED", "value": -1204},
                 {"name": "KV_REFLECT_FAILED", "value": -1205},
-                {"name": "KV_WRITE_REJECTED", "value": -1206}
+                {"name": "KV_WRITE_REJECTED", "value": -1206},
+                {"name": "KV_VALUE_TOO_LARGE", "value": -1207}
             ]
         },
         {

@@ -398,6 +398,42 @@ ZTEST(rpc_command_kv_write, test_kv_write_app_validation)
 	zassert_false(kv_store_key_exists(KV_KEY_REBOOTS));
 }
 
+ZTEST(rpc_command_kv_write, test_kv_write_reflect_too_large)
+{
+	const size_t max = CONFIG_KV_STORE_REFLECT_MAX_SIZE;
+	NET_BUF_SIMPLE_DEFINE(values, 128);
+	struct rpc_struct_kv_store_value *value;
+	struct rpc_kv_write_response *response;
+	struct net_buf *rsp;
+
+	if ((2 * (sizeof(*value) + max + 1)) > values.size) {
+		ztest_test_skip();
+	}
+
+	(void)kv_store_delete(KV_KEY_WIFI_SSID);
+
+	/* Reflected key one byte over the limit, then exactly at the limit */
+	net_buf_simple_reset(&values);
+	value = net_buf_simple_add(&values, sizeof(*value));
+	value->id = KV_KEY_WIFI_SSID;
+	value->len = max + 1;
+	memset(net_buf_simple_add(&values, max + 1), 'a', max + 1);
+	value = net_buf_simple_add(&values, sizeof(*value));
+	value->id = KV_KEY_WIFI_SSID;
+	value->len = max;
+	memset(net_buf_simple_add(&values, max), 'b', max);
+
+	send_kv_write_command(1, &values, 2);
+	rsp = expect_kv_write_response(1, 0, 2);
+	response = (void *)rsp->data;
+	zassert_equal(INFUSE_RPC_ERROR_KV_VALUE_TOO_LARGE, response->rc[0]);
+	zassert_equal(max, response->rc[1]);
+	net_buf_unref(rsp);
+
+	zassert_equal(max, kv_store_key_data_size(KV_KEY_WIFI_SSID));
+	(void)kv_store_delete(KV_KEY_WIFI_SSID);
+}
+
 static void test_before(void *fixture)
 {
 	/* Reset validation state */
