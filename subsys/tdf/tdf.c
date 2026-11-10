@@ -316,21 +316,24 @@ int tdf_add_core(struct tdf_buffer_state *state, uint16_t tdf_id, uint8_t tdf_le
 		/* TDF length not a multiple of the diff */
 		return -EINVAL;
 	}
-	if (is_diff && tdf_num > 2) {
-		if (!diff_precomputed) {
-			/* Require that at least 2 valid diffs in a row exist to log as
-			 * TDF_ARRAY_DIFF. Otherwise, log up to that point as a normal
-			 * TDF_ARRAY_TIME
-			 */
-			int diffs = tdf_num_valid_diffs(format, tdf_len, tdf_num, data);
+	if (is_diff && diff_precomputed) {
+		/* Data is already in [base, diff...] form, which can be logged with any
+		 * number of diffs up to the limit of the array header.
+		 */
+		tdf_num = MIN(tdf_num, TDF_MAXIMUM_DIFFS);
+	} else if (is_diff && tdf_num > 2) {
+		/* Require that at least 2 valid diffs in a row exist to log as
+		 * TDF_ARRAY_DIFF. Otherwise, log up to that point as a normal
+		 * TDF_ARRAY_TIME
+		 */
+		int diffs = tdf_num_valid_diffs(format, tdf_len, tdf_num, data);
 
-			if (diffs < 0) {
-				/* No diff encoding */
-				is_diff = false;
-				tdf_num = -diffs;
-			} else {
-				tdf_num = 1 + diffs;
-			}
+		if (diffs < 0) {
+			/* No diff encoding */
+			is_diff = false;
+			tdf_num = -diffs;
+		} else {
+			tdf_num = 1 + diffs;
 		}
 	} else {
 		is_diff = false;

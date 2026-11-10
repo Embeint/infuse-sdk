@@ -1324,6 +1324,77 @@ ZTEST(tdf_diff, test_overflow)
 			   diff_1, sizeof(diff_1));
 }
 
+ZTEST(tdf_diff, test_precomputed_single_diff)
+{
+	struct tdf_example_16 tdf_array[4] = {0};
+	struct tdf_example_16 reconstructed;
+	struct tdf_buffer_state state, relog_state;
+	struct tdf_buffer_state parser;
+	struct tdf_parsed parsed;
+	int rc;
+
+	for (int i = 0; i < ARRAY_SIZE(tdf_array); i++) {
+		tdf_array[i].x = 100 + i;
+		tdf_array[i].y = -i;
+		tdf_array[i].z = 2 * i;
+	}
+
+	/* Space for the base TDF and a single diff */
+	net_buf_simple_init_with_data(&state.buf, large_buf, 3 + 3 + 6 + 3);
+	tdf_buffer_state_reset(&state);
+	rc = tdf_add_core(&state, TDF_EXAMPLE_16, sizeof(struct tdf_example_16),
+			  ARRAY_SIZE(tdf_array), 0, 10, tdf_array, TDF_DATA_FORMAT_DIFF_ARRAY_16_8);
+	zassert_equal(2, rc);
+
+	tdf_parse_start(&parser, state.buf.data, state.buf.len);
+	zassert_equal(0, tdf_parse(&parser, &parsed));
+	zassert_equal(TDF_DATA_FORMAT_DIFF_ARRAY_16_8, parsed.data_type);
+	zassert_equal(1, parsed.diff_info.num);
+
+	/* Relog as precomputed diffs */
+	net_buf_simple_init_with_data(&relog_state.buf, large_buf2, sizeof(large_buf2));
+	tdf_buffer_state_reset(&relog_state);
+	rc = tdf_add_core(&relog_state, parsed.tdf_id, parsed.tdf_len, 1 + parsed.diff_info.num,
+			  parsed.time, parsed.period, parsed.data,
+			  TDF_DATA_FORMAT_DIFF_PRECOMPUTED | parsed.data_type);
+	zassert_equal(2, rc);
+	zassert_equal(state.buf.len, relog_state.buf.len);
+	zassert_mem_equal(state.buf.data, relog_state.buf.data, state.buf.len);
+
+	tdf_parse_start(&parser, relog_state.buf.data, relog_state.buf.len);
+	zassert_equal(0, tdf_parse(&parser, &parsed));
+	zassert_equal(TDF_DATA_FORMAT_DIFF_ARRAY_16_8, parsed.data_type);
+	zassert_equal(1, parsed.diff_info.num);
+	for (int i = 0; i < 2; i++) {
+		zassert_equal(0, tdf_parse_diff_reconstruct(&parsed, &reconstructed, i));
+		zassert_mem_equal(&tdf_array[i], &reconstructed, sizeof(reconstructed));
+	}
+	zassert_equal(-ENOMEM, tdf_parse(&parser, &parsed));
+}
+
+ZTEST(tdf_diff, test_precomputed_too_many_diffs)
+{
+	uint8_t precomputed[sizeof(struct tdf_example_16) + 100 * 3] = {0};
+	struct tdf_buffer_state state;
+	struct tdf_buffer_state parser;
+	struct tdf_parsed parsed;
+	int rc;
+
+	/* Array header can only describe 63 diffs */
+	net_buf_simple_init_with_data(&state.buf, large_buf, sizeof(large_buf));
+	tdf_buffer_state_reset(&state);
+	rc = tdf_add_core(&state, TDF_EXAMPLE_16, sizeof(struct tdf_example_16), 101, 0, 10,
+			  precomputed,
+			  TDF_DATA_FORMAT_DIFF_PRECOMPUTED | TDF_DATA_FORMAT_DIFF_ARRAY_16_8);
+	zassert_equal(64, rc);
+
+	tdf_parse_start(&parser, state.buf.data, state.buf.len);
+	zassert_equal(0, tdf_parse(&parser, &parsed));
+	zassert_equal(TDF_DATA_FORMAT_DIFF_ARRAY_16_8, parsed.data_type);
+	zassert_equal(63, parsed.diff_info.num);
+	zassert_equal(-ENOMEM, tdf_parse(&parser, &parsed));
+}
+
 ZTEST(tdf_diff, test_invalid_tdfs)
 {
 	struct tdf_example_16 tdf_array[128] = {0};
