@@ -100,17 +100,9 @@ ssize_t kv_store_write(uint16_t key, const void *data, size_t data_len)
 	size_t reflect_idx;
 	ssize_t rc;
 
-	/* Validate key is enabled */
-	if (!kv_store_key_metadata(key, NULL, &reflect_idx)) {
-		return -EACCES;
-	}
-	/* A zero length write is a deletion in the backend, use kv_store_delete() */
-	if (data_len == 0) {
-		return -EINVAL;
-	}
-	/* Reflected values must fit in the reflection read buffer */
-	if ((reflect_idx != SIZE_MAX) && (data_len > CONFIG_KV_STORE_REFLECT_MAX_SIZE)) {
-		return -EFBIG;
+	rc = kv_internal_write_validate(key, data_len, &reflect_idx);
+	if (rc < 0) {
+		return rc;
 	}
 	LOG_DBG("Writing to %04x", key);
 
@@ -147,17 +139,10 @@ ssize_t kv_store_read_fallback(uint16_t key, void *data, size_t max_data_len, co
 	size_t reflect_idx;
 	ssize_t rc;
 
-	/* Validate key is enabled */
-	if (!kv_store_key_metadata(key, NULL, &reflect_idx)) {
-		return -EACCES;
-	}
-	/* A zero length fallback cannot be stored */
-	if (fallback_len == 0) {
-		return -EINVAL;
-	}
-	/* Reflected values must fit in the reflection read buffer */
-	if ((reflect_idx != SIZE_MAX) && (fallback_len > CONFIG_KV_STORE_REFLECT_MAX_SIZE)) {
-		return -EFBIG;
+	/* The fallback value may be written to the backend */
+	rc = kv_internal_write_validate(key, fallback_len, &reflect_idx);
+	if (rc < 0) {
+		return rc;
 	}
 	LOG_DBG("Read from %04x", key);
 
