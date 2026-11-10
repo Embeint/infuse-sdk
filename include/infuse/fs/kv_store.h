@@ -190,9 +190,10 @@ ssize_t kv_store_write(uint16_t key, const void *data, size_t data_len);
  * @param data Pointer to buffer for data
  * @param max_data_len Maximum size of data buffer
  *
- * @retval >0 length of data read
+ * @retval >0 length of the stored value. If this is larger than @a max_data_len,
+ *             only the first @a max_data_len bytes were copied into @a data.
  * @retval -EACCES if key is not enabled
- * @retval -errno value from @a nvs_read otherwise
+ * @retval -errno value from the storage backend otherwise
  */
 ssize_t kv_store_read(uint16_t key, void *data, size_t max_data_len);
 
@@ -217,7 +218,9 @@ ssize_t kv_store_read(uint16_t key, void *data, size_t max_data_len);
  * @param fallback Pointer to the fallback value
  * @param fallback_len Size of the fallback value
  *
- * @return ssize_t Size of read data
+ * @retval >0 length of the stored value, as for @ref kv_store_read
+ * @retval -EACCES if key is not enabled
+ * @retval -errno value from the storage backend otherwise
  */
 ssize_t kv_store_read_fallback(uint16_t key, void *data, size_t max_data_len, const void *fallback,
 			       size_t fallback_len);
