@@ -376,9 +376,11 @@ int tdf_add_core(struct tdf_buffer_state *state, uint16_t tdf_id, uint8_t tdf_le
 
 		/* Header may contain bytes we don't need */
 		if ((can_fit == 0) && (tdf_num > 1) && !is_idx) {
-			/* Reclaim the time array header space and re-evaluate */
+			/* Reclaim the time array header space and re-evaluate. Without the
+			 * array header only a single TDF can be logged.
+			 */
 			payload_space += sizeof(struct tdf_array_header);
-			can_fit = payload_space / tdf_len;
+			can_fit = payload_space >= tdf_len ? 1 : 0;
 		}
 		if (can_fit == 0) {
 			return -ENOMEM;
