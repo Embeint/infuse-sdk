@@ -108,6 +108,10 @@ ssize_t kv_store_write(uint16_t key, const void *data, size_t data_len)
 	if (data_len == 0) {
 		return -EINVAL;
 	}
+	/* Reflected values must fit in the reflection read buffer */
+	if ((reflect_idx != SIZE_MAX) && (data_len > CONFIG_KV_STORE_REFLECT_MAX_SIZE)) {
+		return -EFBIG;
+	}
 	LOG_DBG("Writing to %04x", key);
 
 	kv_internal_lock();
@@ -150,6 +154,10 @@ ssize_t kv_store_read_fallback(uint16_t key, void *data, size_t max_data_len, co
 	/* A zero length fallback cannot be stored */
 	if (fallback_len == 0) {
 		return -EINVAL;
+	}
+	/* Reflected values must fit in the reflection read buffer */
+	if ((reflect_idx != SIZE_MAX) && (fallback_len > CONFIG_KV_STORE_REFLECT_MAX_SIZE)) {
+		return -EFBIG;
 	}
 	LOG_DBG("Read from %04x", key);
 

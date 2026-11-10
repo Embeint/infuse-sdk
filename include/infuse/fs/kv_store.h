@@ -179,6 +179,8 @@ ssize_t kv_store_delete(uint16_t key);
  * @retval >0 length of data written
  * @retval -EACCES if key is not enabled
  * @retval -EINVAL if @a data_len is 0
+ * @retval -EFBIG if the key is reflected and @a data_len exceeds
+ *                @kconfig{CONFIG_KV_STORE_REFLECT_MAX_SIZE}
  * @retval -errno value from the storage backend otherwise
  */
 ssize_t kv_store_write(uint16_t key, const void *data, size_t data_len);
@@ -233,6 +235,8 @@ ssize_t kv_store_read(uint16_t key, void *data, size_t max_data_len);
  * @retval >0 length of the stored value, as for @ref kv_store_read
  * @retval -EACCES if key is not enabled
  * @retval -EINVAL if @a fallback_len is 0
+ * @retval -EFBIG if the key is reflected and @a fallback_len exceeds
+ *                @kconfig{CONFIG_KV_STORE_REFLECT_MAX_SIZE}
  * @retval -errno value from the storage backend otherwise
  */
 ssize_t kv_store_read_fallback(uint16_t key, void *data, size_t max_data_len, const void *fallback,

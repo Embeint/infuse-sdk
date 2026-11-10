@@ -9,6 +9,8 @@
 #include <zephyr/ztest.h>
 #include <zephyr/kernel.h>
 #include <zephyr/random/random.h>
+#include <zephyr/sys/byteorder.h>
+#include <zephyr/sys/crc.h>
 #include <zephyr/drivers/flash.h>
 #include <zephyr/storage/flash_map.h>
 
@@ -643,6 +645,71 @@ ZTEST(kv_store, test_modifications_serialised)
 	crc = kv_store_reflect_crc();
 	zassert_equal(0, kv_store_init());
 	zassert_equal(crc, kv_store_reflect_crc());
+}
+
+ZTEST(kv_store, test_kv_reflect_max_size)
+{
+	KV_KEY_TYPE_VAR(KV_KEY_GEOFENCE, 2) small = {2, {{1, 2, 3}, {4, 5, 6}}};
+	static uint8_t max[CONFIG_KV_STORE_REFLECT_MAX_SIZE];
+	static uint8_t big[CONFIG_KV_STORE_REFLECT_MAX_SIZE + 1];
+	uint32_t initial_crc, crc;
+
+	initial_crc = kv_store_reflect_crc();
+	max[0] = (sizeof(max) - 1) / sizeof(struct gcs_location);
+	big[0] = (sizeof(big) - 1) / sizeof(struct gcs_location);
+
+	/* Reflected values larger than the limit are rejected */
+	zassert_equal(-EFBIG, kv_store_write(KV_KEY_GEOFENCE, big, sizeof(big)));
+	zassert_false(kv_store_key_exists(KV_KEY_GEOFENCE));
+	zassert_equal(-EFBIG, kv_store_read_fallback(KV_KEY_GEOFENCE, &small, sizeof(small), big,
+						     sizeof(big)));
+	zassert_false(kv_store_key_exists(KV_KEY_GEOFENCE));
+	zassert_equal(initial_crc, kv_store_reflect_crc());
+
+	/* Non-reflected keys are not limited */
+	zassert_equal(sizeof(big), kv_store_write(KV_KEY_REBOOTS, big, sizeof(big)));
+
+	/* Values at the limit are accepted, and the CRC is stable across init */
+	zassert_equal(sizeof(max), kv_store_write(KV_KEY_GEOFENCE, max, sizeof(max)));
+	crc = kv_store_reflect_crc();
+	zassert_not_equal(initial_crc, crc);
+	zassert_equal(0, kv_store_init());
+	zassert_equal(crc, kv_store_reflect_crc());
+
+	/* Modifying the final byte changes the CRC */
+	max[sizeof(max) - 1] = 0xA5;
+	zassert_equal(sizeof(max), kv_store_write(KV_KEY_GEOFENCE, max, sizeof(max)));
+	zassert_not_equal(crc, kv_store_reflect_crc());
+}
+
+ZTEST(kv_store, test_kv_reflect_oversized_existing)
+{
+	static uint8_t big[CONFIG_KV_STORE_REFLECT_MAX_SIZE + 45];
+	uint32_t len_le = sys_cpu_to_le32(sizeof(big));
+	size_t reflect_idx;
+	uint32_t crc;
+	int rc;
+
+	/* Value written before the limit was enforced, bypassing the KV store API */
+#if defined(CONFIG_KV_STORE_NVS)
+	rc = nvs_write(kv_store_fs(), KV_KEY_GEOFENCE, big, sizeof(big));
+#else
+	rc = zms_write(kv_store_fs(), ID_PRE | KV_KEY_GEOFENCE, big, sizeof(big));
+#endif
+	zassert_equal(sizeof(big), rc);
+
+	/* Slot CRC is derived from the length, and stable across init */
+	zassert_equal(0, kv_store_init());
+	zassert_true(kv_store_key_metadata(KV_KEY_GEOFENCE, NULL, &reflect_idx));
+	zassert_equal(crc32_ieee((void *)&len_le, sizeof(len_le)), kv_reflect_key_crc(reflect_idx));
+	crc = kv_store_reflect_crc();
+	zassert_equal(0, kv_store_init());
+	zassert_equal(crc, kv_store_reflect_crc());
+
+	/* Value can still be read and deleted */
+	zassert_equal(sizeof(big), kv_store_key_data_size(KV_KEY_GEOFENCE));
+	zassert_equal(0, kv_store_delete(KV_KEY_GEOFENCE));
+	zassert_equal(0, kv_reflect_key_crc(reflect_idx));
 }
 
 static void *kv_setup(void)
