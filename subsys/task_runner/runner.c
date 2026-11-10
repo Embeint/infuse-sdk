@@ -23,6 +23,10 @@ enum task_runner_flags {
 };
 
 #ifdef CONFIG_KV_STORE_KEY_TASK_SCHEDULES
+/* TASK_SCHEDULES is a reflected key, larger values are rejected by the KV store */
+BUILD_ASSERT(sizeof(struct task_schedule) <= CONFIG_KV_STORE_REFLECT_MAX_SIZE,
+	     "struct task_schedule exceeds CONFIG_KV_STORE_REFLECT_MAX_SIZE");
+
 struct task_schedule sch[CONFIG_KV_STORE_KEY_TASK_SCHEDULES_RANGE];
 const struct task_schedule *default_sch;
 static uint8_t default_num;

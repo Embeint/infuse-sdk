@@ -37,6 +37,15 @@ config KV_STORE_INIT_PRIORITY
 	  KV store initialization priority. The default value of 55 is
 	  later than the default FLASH_INIT_PRIORITY value (50).
 
+config KV_STORE_REFLECT_MAX_SIZE
+	int "Maximum size of reflected values"
+	default 256
+	help
+	  Maximum size of values stored in slots with the reflect flag.
+	  Reflection CRCs are recomputed at boot by reading each value into a
+	  static buffer of this size, so larger values are rejected by
+	  kv_store_write() with -EFBIG. Increasing this costs RAM.
+
 config KV_STORE_ZMS_ID_PREFIX
 	hex "Prefix to apply to 16bit KV store IDs"
 	depends on KV_STORE_ZMS

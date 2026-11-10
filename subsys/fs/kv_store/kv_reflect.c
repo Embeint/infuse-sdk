@@ -11,6 +11,7 @@
 #include <zephyr/logging/log.h>
 #include <zephyr/sys/crc.h>
 #include <zephyr/sys/__assert.h>
+#include <zephyr/sys/byteorder.h>
 
 #include <infuse/fs/kv_store.h>
 #include <infuse/fs/kv_types.h>
@@ -19,6 +20,8 @@
 
 #if KV_REFLECT_NUM > 0
 static uint32_t value_crc_slots[KV_REFLECT_NUM];
+/* Static to keep it off the init stack, only used with the KV store lock held */
+static uint8_t read_buffer[CONFIG_KV_STORE_REFLECT_MAX_SIZE];
 #endif
 static uint32_t reflect_crc;
 
@@ -29,12 +32,27 @@ uint32_t kv_store_reflect_crc(void)
 	return reflect_crc;
 }
 
+#if KV_REFLECT_NUM > 0
+static uint32_t value_crc(const void *data, size_t len)
+{
+	if (len > CONFIG_KV_STORE_REFLECT_MAX_SIZE) {
+		/* Oversized values can only exist if they were written before the size
+		 * limit was enforced (or with a larger limit). They can't be read back
+		 * at boot, so CRC the length to keep the slot CRC stable across reboots.
+		 */
+		uint32_t len_le = sys_cpu_to_le32(len);
+
+		return crc32_ieee((const void *)&len_le, sizeof(len_le));
+	}
+	return crc32_ieee(data, len);
+}
+#endif /* KV_REFLECT_NUM > 0 */
+
 void kv_reflect_init(void)
 {
 #if KV_REFLECT_NUM > 0
 	struct key_value_slot_definition *defs;
 	void *fs = kv_store_fs();
-	uint8_t read_buffer[256];
 	uint16_t key, idx = 0;
 	size_t num;
 	int rc;
@@ -62,11 +80,11 @@ void kv_reflect_init(void)
 			} else if (rc < 0) {
 				/* Unexpected error */
 				LOG_WRN("Unexpected error reading %d (%d)", key, rc);
-			} else if (rc > sizeof(read_buffer)) {
-				/* Insufficient buffer size */
-				LOG_WRN("Key value %d too large for reflect (%d)", key, rc);
 			} else {
-				value_crc_slots[idx] = crc32_ieee(read_buffer, rc);
+				if (rc > sizeof(read_buffer)) {
+					LOG_WRN("Key value %d too large for reflect (%d)", key, rc);
+				}
+				value_crc_slots[idx] = value_crc(read_buffer, rc);
 			}
 			idx++;
 			key++;
@@ -86,7 +104,7 @@ void kv_reflect_key_updated(size_t reflect_idx, const void *data, size_t len)
 	if (data == NULL) {
 		value_crc_slots[reflect_idx] = 0x00;
 	} else {
-		value_crc_slots[reflect_idx] = crc32_ieee(data, len);
+		value_crc_slots[reflect_idx] = value_crc(data, len);
 	}
 	/* Recalculate global CRC */
 	reflect_crc = crc32_ieee((void *)value_crc_slots, sizeof(value_crc_slots));
