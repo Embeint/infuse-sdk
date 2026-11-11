@@ -64,16 +64,6 @@ struct cpatch_header {
 } __packed;
 
 /**
- * @brief Patching output progress callback
- *
- * @note The frequency and offsets of the callback progress depend
- *       on the patch file contents.
- *
- * @param output_offset Current patching progress
- */
-typedef void (*cpatch_progress_cb_t)(size_t output_offset);
-
-/**
  * @brief Validate patch file and input data region
  *
  * Ensures that the patch file is internally consistent, and that it can
