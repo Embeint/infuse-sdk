@@ -467,8 +467,9 @@ static int process_response(struct download_context *ctx, uint8_t *response_buf,
 	/* Initial response parsing */
 	rc = coap_packet_parse(&response, response_buf, response_len, NULL, 0);
 	if (rc < 0) {
-		LOG_ERR("Failed to parse CoAP response: %d", rc);
-		return rc;
+		/* Not a valid CoAP message, ignore */
+		LOG_WRN("Failed to parse CoAP response: %d", rc);
+		return 0;
 	}
 
 	/* Handle empty response (by ignoring) */

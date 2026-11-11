@@ -291,6 +291,10 @@ ZTEST(infuse_coap, test_download_bad_responses)
 		zassert_equal(0, context.cb_count);
 	}
 
+	/* Datagram too short to be a CoAP message is ignored */
+	rc = download(sock, "hello/junk", 0, "world", sizeof(work_area), 0, 1000, &context);
+	zassert_equal(5, rc);
+
 	zassert_equal(0, zsock_close(sock));
 }
 

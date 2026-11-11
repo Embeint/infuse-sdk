@@ -156,9 +156,13 @@ poll_retry:
 			continue;
 		}
 		received = zsock_recv(socket, working_mem, pkt_len, ZSOCK_MSG_DONTWAIT);
-		if (received <= 0) {
-			LOG_ERR("No data");
+		if (received < 0) {
+			LOG_ERR("Receive error (%d)", -errno);
 			return -EIO;
+		}
+		if (received == 0) {
+			/* Empty datagram */
+			goto poll_retry;
 		}
 #ifdef CONFIG_INFUSE_COAP_TEST_PACKET_DROP_BITMASK
 		if (BIT(rx_pkt_count % 32) & CONFIG_INFUSE_COAP_TEST_PACKET_DROP_BITMASK) {
@@ -222,6 +226,7 @@ poll_retry:
 			return rc;
 		}
 		total_received += payload_len;
+
 		/* Get next block address */
 		next_block = coap_next_block(&reply, &blk_ctx);
 	}
