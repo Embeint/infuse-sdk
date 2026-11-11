@@ -7,6 +7,7 @@
  */
 
 #include <stdio.h>
+#include <string.h>
 
 #include <zephyr/devicetree.h>
 #include <zephyr/dfu/mcuboot.h>
@@ -180,8 +181,10 @@ int dfu_exfat_app_upgrade_copy(const struct device *dev, struct infuse_version u
 	uint8_t *block_buffer;
 	size_t block_size;
 	size_t image_offset;
+	size_t image_size;
 	size_t remaining;
-	off_t offset;
+	size_t write_align;
+	size_t offset;
 	const char *disk;
 	char path[32];
 	int rc = 0;
@@ -236,28 +239,41 @@ int dfu_exfat_app_upgrade_copy(const struct device *dev, struct infuse_version u
 
 	/* Image may not start at the beginning of the area (swap-using-offset) */
 	image_offset = boot_get_image_start_offset(flash_area_id);
+	write_align = flash_area_align(fa);
+
+	/* Image must fit in the area, final chunk is padded to the write alignment */
+	if ((image_offset > fa->fa_size) || (fno.fsize > fa->fa_size - image_offset) ||
+	    (block_size % write_align != 0)) {
+		rc = -EFBIG;
+		goto close_area;
+	}
+	image_size = fno.fsize;
 
 	/* Erase output area */
-	if (infuse_dfu_image_erase(fa, image_offset + fno.fsize, erase_progress_cb, true) != 0) {
+	if (infuse_dfu_image_erase(fa, image_offset + image_size, erase_progress_cb, true) != 0) {
 		rc = -EIO;
 		goto close_area;
 	}
 
 	/* Copy data from filesystem to flash area */
+	infuse_dfu_write_erase_start(fa);
 	offset = 0;
-	remaining = fno.fsize;
+	remaining = image_size;
 	while (remaining) {
 		size_t iter = MIN(remaining, block_size);
+		size_t write_len = ROUND_UP(iter, write_align);
 		UINT read;
 
 		/* Read next chunk from file */
-		if (f_read(&fp, block_buffer, iter, &read) != FR_OK) {
+		if ((f_read(&fp, block_buffer, iter, &read) != FR_OK) || (read != iter)) {
 			rc = -EIO;
 			break;
 		}
+		/* Pad the final chunk to the write alignment */
+		memset(block_buffer + iter, flash_area_erased_val(fa), write_len - iter);
 
 		/* Write data to output area */
-		if (flash_area_write(fa, image_offset + offset, block_buffer, iter) != 0) {
+		if (flash_area_write(fa, image_offset + offset, block_buffer, write_len) != 0) {
 			rc = -EIO;
 			break;
 		}
@@ -266,9 +282,10 @@ int dfu_exfat_app_upgrade_copy(const struct device *dev, struct infuse_version u
 
 		/* Call progress callback if supplied */
 		if (write_progress_cb) {
-			write_progress_cb(offset, fno.fsize);
+			write_progress_cb(offset, image_size);
 		}
 	}
+	infuse_dfu_write_erase_finish(fa);
 
 close_area:
 	flash_area_close(fa);
