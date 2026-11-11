@@ -46,6 +46,7 @@ RESOURCES.update(
         "large/oversized": CoapResource(payload=LARGE, extra_payload=16),
         "hello/long_token": CoapResource(payload=b"world", token_len=8),
         "hello/short_token": CoapResource(payload=b"world", token_len=2),
+        "hello/junk": CoapResource(payload=b"world", junk_first=True),
     }
 )
 
