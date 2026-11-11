@@ -83,6 +83,9 @@ static int do_cpatch(struct patch_state *state)
 		uint8_t len;
 
 		rc = cpatch_patch_read(state->ctx, &len, 1);
+		if (rc < 0) {
+			return rc;
+		}
 		if (len == 0) {
 			break;
 		}
@@ -96,6 +99,9 @@ static int do_cpatch(struct patch_state *state)
 			state->operation_count = 1;
 		} else {
 			rc = cpatch_patch_read(state->ctx, &len, 1);
+			if (rc < 0) {
+				return rc;
+			}
 			if (len == 0) {
 				break;
 			}
