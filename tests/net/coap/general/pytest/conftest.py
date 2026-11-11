@@ -23,13 +23,16 @@ from infuse_pytest.coap_server import (  # noqa: E402
 # Delay before the separate response to the `separate` resource
 SEPARATE_DELAY = 3.0
 
+# Content of `large`, must match `large_data` in src/main.c
+LARGE = bytes((i * 31 + 7) & 0xFF for i in range(1700))
+
 # Subset of the resources of the coap.me test server used by the application
 RESOURCES = {
     "secret": CoapResource(code=CODE_UNAUTHORIZED),
     "location-query": CoapResource(code=CODE_METHOD_NOT_ALLOWED),
     "hello": b"world",
     "seg1/seg2/seg3": b"Matroshka",
-    "large": bytes((i * 31 + 7) & 0xFF for i in range(1700)),
+    "large": LARGE,
     "separate": CoapResource(payload=b"That took a long time", code=CODE_CONTENT, separate=SEPARATE_DELAY),
 }
 

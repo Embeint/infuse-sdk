@@ -32,6 +32,13 @@ extern "C" {
  */
 #define COAP_RSP_OVERHEAD (20 + 8 + 13 + 64 + 16)
 
+/* Minimum working memory required on top of the block size.
+ *
+ * Received datagrams only contain the CoAP message, which is the payload plus
+ * the CoAP header, token and options. This is the allowance for those fields.
+ */
+#define COAP_RSP_MIN_OVERHEAD 64
+
 /**
  * @brief Determine where the URI segments are for a resource string
  *
@@ -64,6 +71,9 @@ int ic_resource_path_append(struct coap_packet *request, const char *resource,
  * @param working_size Amount of working memory available
  * @param block_size Requested CoAP block size in bytes (0 == auto)
  * @param used_size Output CoAP block size
+ *
+ * Explicit block sizes are only accepted if @a working_size can hold the block
+ * plus @ref COAP_RSP_MIN_OVERHEAD bytes.
  *
  * @retval 0 On success
  * @retval -EINVAL Invalid @a block_size
