@@ -81,6 +81,18 @@ int ic_resource_path_append(struct coap_packet *request, const char *resource,
  */
 int ic_get_block_size(size_t working_size, uint16_t block_size, enum coap_block_size *used_size);
 
+/**
+ * @brief Acknowledge a confirmable response from the server
+ *
+ * Confirmable (separate) responses must be acknowledged with an empty ACK,
+ * otherwise the server retransmits them (RFC 7252, section 5.2.2).
+ * No-op if @a response is not confirmable.
+ *
+ * @param socket Socket connected to the server
+ * @param response Received response
+ */
+void ic_ack_if_confirmable(int socket, const struct coap_packet *response);
+
 #ifdef __cplusplus
 }
 #endif

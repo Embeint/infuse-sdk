@@ -196,6 +196,9 @@ poll_retry:
 			goto poll_retry;
 		}
 
+		/* Acknowledge separate responses, including duplicates of earlier responses */
+		ic_ack_if_confirmable(socket, &reply);
+
 		/* Compare response token to request token */
 		if ((coap_header_get_token(&reply, rx_token) != sizeof(tx_token)) ||
 		    (memcmp(rx_token, &tx_token, sizeof(tx_token)) != 0)) {
