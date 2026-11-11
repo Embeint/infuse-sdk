@@ -291,6 +291,20 @@ ZTEST(infuse_coap, test_download_bad_responses)
 		zassert_equal(0, context.cb_count);
 	}
 
+	/* Paths longer than 255 characters, within the per-segment limit */
+	static char long_path[200 + 1 + 100 + 1];
+
+	memset(long_path, 'a', 200);
+	long_path[200] = '/';
+	memset(long_path + 201, 'b', 100);
+	rc = download(sock, long_path, 0, NULL, sizeof(work_area), 0, 1000, &context);
+	zassert_equal(-404, rc);
+
+	/* Path segments are limited to 255 characters */
+	long_path[200] = 'a';
+	rc = download(sock, long_path, 0, NULL, sizeof(work_area), 0, 1000, &context);
+	zassert_equal(-EINVAL, rc);
+
 	/* Datagram too short to be a CoAP message is ignored */
 	rc = download(sock, "hello/junk", 0, "world", sizeof(work_area), 0, 1000, &context);
 	zassert_equal(5, rc);

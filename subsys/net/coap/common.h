@@ -39,17 +39,21 @@ extern "C" {
  */
 #define COAP_RSP_MIN_OVERHEAD 64
 
+/* Maximum length of a single Uri-Path option (RFC 7252, section 5.10) */
+#define COAP_URI_PATH_SEGMENT_MAX_LEN 255
+
 /**
  * @brief Determine where the URI segments are for a resource string
  *
  * @param resource Path to resource, e.g. seg1/seg2/seg3
- * @param component_starts Location to store start of each segment
+ * @param component_starts Location to store start of each segment, element 0 must be 0.
+ *                         One more element than the number of segments is used.
  * @param array_len Size of @a component_starts
  *
- * @retval >0 Number of array elements used
- * @retval -EINVAL Resource contains too many segments
+ * @retval >0 Number of segments
+ * @retval -EINVAL Resource contains too many segments, or a segment that is too long
  */
-int ic_resource_path_split(const char *resource, uint8_t *component_starts, uint8_t array_len);
+int ic_resource_path_split(const char *resource, uint16_t *component_starts, uint8_t array_len);
 
 /**
  * @brief Append the resource segments to the CoAP request
@@ -63,7 +67,7 @@ int ic_resource_path_split(const char *resource, uint8_t *component_starts, uint
  * @retval -errno Error code from @a coap_packet_append_option on failure
  */
 int ic_resource_path_append(struct coap_packet *request, const char *resource,
-			    uint8_t *component_starts, uint8_t num_components);
+			    const uint16_t *component_starts, uint8_t num_components);
 
 /**
  * @brief Convert a working memory size to a CoAP block size

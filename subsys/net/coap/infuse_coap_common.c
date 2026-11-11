@@ -25,14 +25,21 @@ LOG_MODULE_DECLARE(infuse_coap, CONFIG_INFUSE_COAP_LOG_LEVEL);
 #endif
 
 /* Determine the locations of '/' characters and encode into array */
-int ic_resource_path_split(const char *resource, uint8_t *component_starts, uint8_t array_len)
+int ic_resource_path_split(const char *resource, uint16_t *component_starts, uint8_t array_len)
 {
 	uint8_t num_paths = 1;
-	int i = 0;
+	size_t i = 0;
 
 	/* Scan through string for the '/' character */
-	while (resource[i] != '\0') {
-		if (resource[i] == '/') {
+	while (true) {
+		if ((resource[i] == '/') || (resource[i] == '\0')) {
+			if ((i - component_starts[num_paths - 1]) > COAP_URI_PATH_SEGMENT_MAX_LEN) {
+				/* Segment too long */
+				return -EINVAL;
+			}
+			if (resource[i] == '\0') {
+				break;
+			}
 			if (num_paths == (array_len - 1)) {
 				/* Too many path splits */
 				return -EINVAL;
@@ -49,7 +56,7 @@ int ic_resource_path_split(const char *resource, uint8_t *component_starts, uint
 
 /* Append resource path using splits from `resource_path_split` */
 int ic_resource_path_append(struct coap_packet *request, const char *resource,
-			    uint8_t *component_starts, uint8_t num_components)
+			    const uint16_t *component_starts, uint8_t num_components)
 {
 	int rc;
 

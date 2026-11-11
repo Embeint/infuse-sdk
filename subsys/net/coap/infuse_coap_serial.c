@@ -96,7 +96,7 @@ int infuse_coap_download(int socket, const char *resource, size_t file_size,
 	LOG_INF("Downloading: %s (Block size %d)", resource, block_size);
 
 	/* Pre-split the resource path into components */
-	uint8_t path_split[CONFIG_INFUSE_COAP_MAX_URI_SEGMENTS + 1] = {0};
+	uint16_t path_split[CONFIG_INFUSE_COAP_MAX_URI_SEGMENTS + 1] = {0};
 	int num_paths = ic_resource_path_split(resource, path_split, ARRAY_SIZE(path_split));
 
 	if (num_paths < 0) {
@@ -121,13 +121,18 @@ int infuse_coap_download(int socket, const char *resource, size_t file_size,
 				      COAP_TOKEN_MAX_LEN, (uint8_t *)&tx_token, COAP_METHOD_GET,
 				      pkt_id);
 		__ASSERT_NO_MSG(rc == 0);
-		rc = coap_append_block2_option(&request, &blk_ctx);
-		__ASSERT_NO_MSG(rc == 0);
 
-		/* Resource path is arbitrary length so can fail */
+		/* Options are added in ascending order (Uri-Path, then Block2).
+		 * Resource path is arbitrary length so can fail.
+		 */
 		rc = ic_resource_path_append(&request, resource, path_split, num_paths);
 		if (rc < 0) {
 			LOG_ERR("Path append failure");
+			return rc;
+		}
+		rc = coap_append_block2_option(&request, &blk_ctx);
+		if (rc < 0) {
+			LOG_ERR("Block2 append failure");
 			return rc;
 		}
 
