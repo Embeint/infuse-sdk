@@ -261,20 +261,18 @@ ZTEST(cpatch, test_philosophers_to_hello_world_stream_thumb2)
 	}
 }
 
-#ifdef CONFIG_INFUSE_CPATCH_ENCODER_STREAM_THUMB2
-
 #define STREAM_INPUT_LEN 64
 
-/* Apply stream patch data with valid CRCs to a known input file */
-static int test_stream_patch(const uint8_t *data, size_t len, const uint8_t *expected,
-			     size_t expected_len)
+/* Apply patch data with valid CRCs to a known input file */
+static int test_crafted_patch(uint8_t version, const uint8_t *data, size_t len,
+			      const uint8_t *expected, size_t expected_len)
 {
 	const struct flash_area *fa_original, *fa_patch;
 	uint8_t input[STREAM_INPUT_LEN];
 	struct stream_flash_ctx output_ctx;
 	struct cpatch_header header = {
 		.magic_value = CPATCH_MAGIC_NUMBER,
-		.version_major = 3,
+		.version_major = version,
 		.input_file = {.length = sizeof(input)},
 		.output_file = {.length = expected_len, .crc = crc32_ieee(expected, expected_len)},
 		.patch_file = {.length = len, .crc = crc32_ieee(data, len)},
@@ -309,6 +307,31 @@ static int test_stream_patch(const uint8_t *data, size_t len, const uint8_t *exp
 	return rc;
 }
 
+ZTEST(cpatch, test_shortest_path_malformed)
+{
+	const uint8_t expected[] = {0, 1, 2, 3, 4, 5, 6, 7};
+	/* COPY_LEN_U12 missing its length byte */
+	const uint8_t truncated[] = {0x08, 0x10};
+	/* PATCH copy length with no terminator */
+	const uint8_t patch_truncated[] = {0xB0, 0x01};
+
+	/* Instructions extending past the end of the patch data */
+	for (uint8_t version = 1; version <= 2; version++) {
+		zassert_equal(-EINVAL, test_crafted_patch(version, truncated, sizeof(truncated),
+							  expected, sizeof(expected)));
+		zassert_equal(-EINVAL, test_crafted_patch(version, patch_truncated,
+							  sizeof(patch_truncated), expected, 1));
+	}
+}
+
+#ifdef CONFIG_INFUSE_CPATCH_ENCODER_STREAM_THUMB2
+
+static int test_stream_patch(const uint8_t *data, size_t len, const uint8_t *expected,
+			     size_t expected_len)
+{
+	return test_crafted_patch(3, data, len, expected, expected_len);
+}
+
 ZTEST(cpatch, test_stream_thumb2_valid)
 {
 	/* No relocation, copy 8 bytes, then a single literal byte */
@@ -340,6 +363,7 @@ ZTEST(cpatch, test_stream_thumb2_malformed)
 		{"extended operation", {0x00, 0x0F}, 2},
 		{"varint too long", {0x00, 0xFF, 0x80, 0x80, 0x80, 0x80, 0x80}, 7},
 		{"literal past patch end", {0x00, 0x0C, 0x10}, 3},
+		{"truncated copy length", {0x00, 0xFF}, 2},
 	};
 
 	for (int i = 0; i < ARRAY_SIZE(cases); i++) {
