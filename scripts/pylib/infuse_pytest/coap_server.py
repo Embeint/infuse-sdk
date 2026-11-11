@@ -13,7 +13,7 @@ import hashlib
 import hmac
 import logging
 import struct
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 
 from .dtls_psk_server import DtlsPskServer
@@ -24,6 +24,7 @@ logger = logging.getLogger(__name__)
 COAP_VERSION = 1
 TYPE_CON = 0
 TYPE_ACK = 2
+TYPE_RST = 3
 CODE_EMPTY = 0x00
 CODE_GET = 0x01
 CODE_CONTENT = 0x45  # 2.05
@@ -161,6 +162,21 @@ class CoapResource:
     code: int = CODE_CONTENT
     # Respond with an empty ACK, followed by a separate response after this many seconds
     separate: float | None = None
+    # Misbehaviour for client robustness tests:
+    # Largest block size (SZX) the server uses, smaller requests are reduced (RFC 7959, section 2.4)
+    max_szx: int | None = None
+    # Include the Size2 option in block responses
+    size2: bool = True
+    # Respond with the block this many blocks after the requested block
+    block_offset: int = 0
+    # Extra bytes appended to each block payload, beyond the block size
+    extra_payload: int = 0
+    # Respond with the request token truncated or padded to this length
+    token_len: int | None = None
+    # Send a datagram too short to be a CoAP message before each response
+    junk_first: bool = False
+    # Reject requests with a Reset message
+    reset: bool = False
 
 
 @dataclass
@@ -178,6 +194,9 @@ class LocalCoapServer:
     dtls: bool = False
     latency: float = 0.025
     requests: list[tuple[str, int, int]] = field(default_factory=list)
+    # Message IDs of separate (confirmable) responses sent, and of empty ACKs received
+    separate_ids: list[int] = field(default_factory=list)
+    acks: list[int] = field(default_factory=list)
     _transport: UdpServer | None = None
     _next_msg_id: int = 0x4000
 
@@ -222,6 +241,7 @@ class LocalCoapServer:
         peer.send(encode_message(TYPE_ACK, CODE_EMPTY, req.msg_id, b"", []), delay=self.latency)
         self._next_msg_id = (self._next_msg_id + 1) & 0xFFFF
         msg = encode_message(TYPE_CON, code, self._next_msg_id, req.token, list(options), payload)
+        self.separate_ids.append(self._next_msg_id)
         peer.send(msg, delay=self.latency + delay)
 
     def _handle(self, peer, data: bytes) -> None:
@@ -232,6 +252,8 @@ class LocalCoapServer:
             return
         if req.msg_type != TYPE_CON:
             # ACKs to separate responses
+            if req.msg_type == TYPE_ACK and req.code == CODE_EMPTY:
+                self.acks.append(req.msg_id)
             return
         if req.code != CODE_GET:
             self._reply(peer, req, CODE_METHOD_NOT_ALLOWED)
@@ -252,22 +274,33 @@ class LocalCoapServer:
         elif isinstance(resource, bytes):
             resource = CoapResource(payload=resource)
 
+        if resource.reset:
+            peer.send(encode_message(TYPE_RST, CODE_EMPTY, req.msg_id, b"", []), delay=self.latency)
+            return
+        if resource.token_len is not None:
+            req = replace(req, token=(req.token + bytes(8))[: resource.token_len])
+        if resource.junk_first:
+            peer.send(b"\x40\x01", delay=self.latency)
+
         if resource.code != CODE_CONTENT:
             logger.info("%s: GET %s -> %d.%02d", peer.peer, path, resource.code >> 5, resource.code & 0x1F)
             options, payload = (), b""
         else:
+            if resource.max_szx is not None and szx > resource.max_szx:
+                num <<= szx - resource.max_szx
+                szx = resource.max_szx
+            num += resource.block_offset
             size = 1 << (szx + 4)
             start = num * size
             if start >= len(resource.payload) and not (start == 0 and len(resource.payload) == 0):
                 self._reply(peer, req, CODE_BAD_OPTION)
                 return
-            payload = resource.payload[start : start + size]
+            payload = resource.payload[start : start + size] + bytes(resource.extra_payload)
             more = start + size < len(resource.payload)
             logger.debug("%s: GET %s block %d/%d more=%d", peer.peer, path, num, size, more)
-            options = [
-                (OPTION_BLOCK2, _uint_bytes((num << 4) | (int(more) << 3) | szx)),
-                (OPTION_SIZE2, _uint_bytes(len(resource.payload))),
-            ]
+            options = [(OPTION_BLOCK2, _uint_bytes((num << 4) | (int(more) << 3) | szx))]
+            if resource.size2:
+                options.append((OPTION_SIZE2, _uint_bytes(len(resource.payload))))
 
         if resource.separate is not None:
             self._separate(peer, req, resource.separate, resource.code, options, payload)
