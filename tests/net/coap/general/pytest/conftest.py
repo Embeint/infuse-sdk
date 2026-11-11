@@ -33,6 +33,13 @@ RESOURCES = {
     "separate": CoapResource(payload=b"That took a long time", code=CODE_CONTENT, separate=SEPARATE_DELAY),
 }
 
+# Resources only provided by the local server, to test client behaviour
+RESOURCES.update(
+    {
+        "hello/long_token": CoapResource(payload=b"world", token_len=8),
+    }
+)
+
 
 @pytest.fixture(scope="session")
 def coap_server(device_object: DeviceAdapter) -> Generator[LocalCoapServer, None, None]:

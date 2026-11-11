@@ -172,6 +172,39 @@ ZTEST(infuse_coap, test_download)
 	zassert_equal(0, zsock_close(sock));
 }
 
+static int download(int sock, const char *resource, size_t file_size, const char *expected,
+		    size_t work_size, uint16_t block_size, int timeout_ms, struct cb_ctx *context)
+{
+	context->expected_data = expected;
+	context->expected_offset = 0;
+	context->cb_count = 0;
+	return infuse_coap_download(sock, resource, file_size, data_cb, context, work_area,
+				    work_size, block_size, timeout_ms);
+}
+
+/* Resources below are only provided by the local test server (pytest/conftest.py) */
+
+ZTEST(infuse_coap, test_download_bad_responses)
+{
+	struct cb_ctx context;
+	int sock;
+	int rc;
+
+	sock = socket_setup();
+
+	/* 8 byte token, longer than the parallel backend uses */
+	rc = download(sock, "hello/long_token", 0, "world", sizeof(work_area), 0, 100, &context);
+	if (IS_ENABLED(CONFIG_INFUSE_COAP_BACKEND_SERIAL)) {
+		/* Serial backend uses 8 byte tokens */
+		zassert_equal(5, rc);
+	} else {
+		zassert_equal(-ETIMEDOUT, rc);
+		zassert_equal(0, context.cb_count);
+	}
+
+	zassert_equal(0, zsock_close(sock));
+}
+
 ZTEST(infuse_coap, test_separate_response)
 {
 	uint8_t work_area[256];
