@@ -71,6 +71,7 @@ int infuse_coap_download(int socket, const char *resource, size_t file_size,
 	struct coap_block_context blk_ctx;
 	struct coap_packet request, reply;
 	struct zsock_pollfd pollfds[1];
+	uint16_t pkt_len = MIN(working_size, UINT16_MAX);
 	uint8_t rx_token[COAP_TOKEN_MAX_LEN];
 	uint64_t tx_token;
 	size_t next_block = UINT32_MAX;
@@ -110,9 +111,9 @@ int infuse_coap_download(int socket, const char *resource, size_t file_size,
 		/* Minimum work area size should guarantee adding these headers cannot fail */
 		sys_rand_get(&tx_token, sizeof(tx_token));
 		pkt_id = coap_next_id();
-		rc = coap_packet_init(&request, working_mem, working_size, COAP_VERSION_1,
-				      COAP_TYPE_CON, COAP_TOKEN_MAX_LEN, (uint8_t *)&tx_token,
-				      COAP_METHOD_GET, pkt_id);
+		rc = coap_packet_init(&request, working_mem, pkt_len, COAP_VERSION_1, COAP_TYPE_CON,
+				      COAP_TOKEN_MAX_LEN, (uint8_t *)&tx_token, COAP_METHOD_GET,
+				      pkt_id);
 		__ASSERT_NO_MSG(rc == 0);
 		rc = coap_append_block2_option(&request, &blk_ctx);
 		__ASSERT_NO_MSG(rc == 0);
@@ -150,7 +151,7 @@ poll_retry:
 			/* Start from top of loop again */
 			continue;
 		}
-		received = zsock_recv(socket, working_mem, working_size, ZSOCK_MSG_DONTWAIT);
+		received = zsock_recv(socket, working_mem, pkt_len, ZSOCK_MSG_DONTWAIT);
 		if (received <= 0) {
 			LOG_ERR("No data");
 			return -EIO;
