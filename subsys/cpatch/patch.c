@@ -66,6 +66,12 @@ int cpatch_patch_read(struct cpatch_ctx *ctx, uint8_t *ptr, size_t len)
 {
 	uint32_t offset = sizeof(struct cpatch_header) + ctx->patch_offset;
 
+	/* Instructions cannot extend past the end of the validated patch data */
+	if ((ctx->patch_offset > ctx->header->patch_file.length) ||
+	    (len > ctx->header->patch_file.length - ctx->patch_offset)) {
+		LOG_WRN("Patch data overrun");
+		return -EINVAL;
+	}
 	ctx->patch_offset += len;
 #ifdef CONFIG_INFUSE_CPATCH_READ_AHEAD
 	return cached_read(ctx->patch, &ctx->patch_cache,
