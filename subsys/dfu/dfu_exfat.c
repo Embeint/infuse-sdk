@@ -12,6 +12,7 @@
 #include <zephyr/dfu/mcuboot.h>
 #include <zephyr/logging/log.h>
 #include <zephyr/pm/device_runtime.h>
+#include <zephyr/sys/byteorder.h>
 
 #include <infuse/version.h>
 #include <infuse/data_logger/backend/exfat.h>
@@ -19,6 +20,24 @@
 #include <infuse/dfu/helpers.h>
 
 #include <ff.h>
+
+/* MCUboot image header (version 1) magic number */
+#define MCUBOOT_HEADER_MAGIC 0x96f3b83d
+#define MCUBOOT_HEADER_SIZE  32
+
+/* Leading fields of the MCUboot image header */
+struct mcuboot_raw_header {
+	uint32_t magic;
+	uint32_t load_address;
+	uint16_t header_size;
+	uint16_t protect_tlv_size;
+	uint32_t image_size;
+	uint32_t flags;
+	uint8_t major;
+	uint8_t minor;
+	uint16_t revision;
+	uint32_t build_num;
+} __packed;
 
 LOG_MODULE_REGISTER(dfu_exfat, LOG_LEVEL_INF);
 
@@ -105,10 +124,58 @@ int dfu_exfat_app_upgrade_exists(const struct device *dev, struct infuse_version
 	return rc;
 }
 
+/* Validate the MCUboot header at the start of the file against the expected version */
+static int file_header_validate(FIL *fp, FSIZE_t fsize, struct infuse_version *upgrade,
+				struct infuse_version *header_version)
+{
+	struct mcuboot_raw_header header;
+	UINT read;
+
+	if ((f_read(fp, &header, sizeof(header), &read) != FR_OK) || (read != sizeof(header)) ||
+	    (f_lseek(fp, 0) != FR_OK)) {
+		return -EIO;
+	}
+	if ((sys_le32_to_cpu(header.magic) != MCUBOOT_HEADER_MAGIC) ||
+	    (sys_le16_to_cpu(header.header_size) < MCUBOOT_HEADER_SIZE) ||
+	    ((uint64_t)sys_le16_to_cpu(header.header_size) + sys_le32_to_cpu(header.image_size) >
+	     fsize)) {
+		LOG_ERR("Invalid image header");
+		return -EINVAL;
+	}
+	*header_version = (struct infuse_version){
+		.major = header.major,
+		.minor = header.minor,
+		.revision = sys_le16_to_cpu(header.revision),
+		.build_num = sys_le32_to_cpu(header.build_num),
+	};
+	if (infuse_version_compare(upgrade, header_version) != 0) {
+		LOG_ERR("Image version %d.%d.%d does not match file name", header_version->major,
+			header_version->minor, header_version->revision);
+		return -EINVAL;
+	}
+	return 0;
+}
+
+/* Check whether the output slot already holds this exact image */
+static bool image_already_present(uint8_t flash_area_id, const struct infuse_version *version)
+{
+	struct mcuboot_img_header slot;
+
+	if ((boot_read_bank_header(flash_area_id, &slot, sizeof(slot)) != 0) ||
+	    (slot.mcuboot_version != 1)) {
+		return false;
+	}
+	return (slot.h.v1.sem_ver.major == version->major) &&
+	       (slot.h.v1.sem_ver.minor == version->minor) &&
+	       (slot.h.v1.sem_ver.revision == version->revision) &&
+	       (slot.h.v1.sem_ver.build_num == version->build_num);
+}
+
 int dfu_exfat_app_upgrade_copy(const struct device *dev, struct infuse_version upgrade,
 			       uint8_t flash_area_id, infuse_progress_cb_t erase_progress_cb,
 			       infuse_progress_cb_t write_progress_cb)
 {
+	struct infuse_version header_version;
 	const struct flash_area *fa;
 	uint8_t *block_buffer;
 	size_t block_size;
@@ -144,6 +211,21 @@ int dfu_exfat_app_upgrade_copy(const struct device *dev, struct infuse_version u
 	if (f_open(&fp, path, FA_OPEN_EXISTING | FA_READ) != FR_OK) {
 		rc = -EIO;
 		goto end;
+	}
+
+	/* File must contain an image of the version in its name */
+	rc = file_header_validate(&fp, fno.fsize, &upgrade, &header_version);
+	if (rc < 0) {
+		goto close_file;
+	}
+
+	/* An image that is already present was copied previously, and has been reverted, or
+	 * has not been requested. Copying and requesting it again could loop forever.
+	 */
+	if (image_already_present(flash_area_id, &header_version)) {
+		LOG_WRN("Image already present in output area");
+		rc = -EALREADY;
+		goto close_file;
 	}
 
 	/* Open output flash area */
