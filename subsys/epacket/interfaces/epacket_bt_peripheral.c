@@ -20,7 +20,6 @@
 #include <infuse/epacket/packet.h>
 #include <infuse/epacket/interface/epacket_bt_peripheral.h>
 #include <infuse/security.h>
-#include <infuse/task_runner/runner.h>
 #include <infuse/time/epoch.h>
 
 #include "epacket_internal.h"

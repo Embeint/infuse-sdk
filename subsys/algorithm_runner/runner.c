@@ -17,7 +17,7 @@
 
 #include <infuse/work_q.h>
 #include <infuse/algorithm_runner/runner.h>
-#include <infuse/task_runner/runner.h>
+#include <infuse/data_logger/high_level/tdf.h>
 #include <infuse/fs/kv_types.h>
 #include <infuse/fs/kv_store.h>
 #ifdef CONFIG_ALGORITHM_RUNNER_LLEXT_LITTLEFS_LOADER
