@@ -17,7 +17,6 @@
 #include <infuse/epacket/packet.h>
 #include <infuse/epacket/interface/epacket_bt_adv.h>
 #include <infuse/identifiers.h>
-#include <infuse/task_runner/runner.h>
 #include <infuse/time/epoch.h>
 
 #include "epacket_internal.h"

@@ -22,7 +22,6 @@
 #include <infuse/fs/kv_store.h>
 #include <infuse/fs/kv_types.h>
 #include <infuse/reboot.h>
-#include <infuse/task_runner/runner.h>
 #include <infuse/time/epoch.h>
 #include <infuse/data_logger/high_level/tdf.h>
 #include <infuse/tdf/definitions.h>

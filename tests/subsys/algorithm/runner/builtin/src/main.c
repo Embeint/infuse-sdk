@@ -22,7 +22,6 @@
 #include <infuse/math/statistics.h>
 #include <infuse/states.h>
 #include <infuse/reboot.h>
-#include <infuse/task_runner/runner.h>
 #include <infuse/zbus/channels.h>
 
 struct algorithm_args {

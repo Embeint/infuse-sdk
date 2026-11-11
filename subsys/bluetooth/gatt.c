@@ -19,7 +19,6 @@
 #include <infuse/work_q.h>
 #include <infuse/bluetooth/gatt.h>
 #include <infuse/time/epoch.h>
-#include <infuse/task_runner/runner.h>
 #include <infuse/data_logger/high_level/tdf.h>
 #include <infuse/states.h>
 #include <infuse/tdf/definitions.h>
