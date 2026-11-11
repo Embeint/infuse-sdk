@@ -1,5 +1,12 @@
 common:
-  tags: infuse
+  tags:
+    - rpc
+    - epacket
+    - kv_store
+    - security
+    - states
+    - tdf
+    - watchdog
   platform_allow:
     - native_sim
   integration_platforms:

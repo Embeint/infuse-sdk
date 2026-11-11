@@ -2,12 +2,30 @@ sample:
   description: Hardware validation application
   name: Hardware validation
 common:
+  tags:
+    - validation
+    - charger
+    - epacket
+    - gnss
+    - imu
+    - kv_store
+    - led
+    - logging
+    - mcumgr
+    - modem
+    - modem_monitor
+    - net
+    - rpc
+    - security
+    - sensor
+    - shared_device
+    - states
+    - tdf
   build_only: true
   required_snippets:
     - infuse
 tests:
   sample.validation:
-    tags: validation
     integration_platforms:
       - auroch/nrf9151/ns
       - kudu/nrf54l15/cpuapp
@@ -16,7 +34,6 @@ tests:
       - tauro2/nrf9151/ns
       - nrf54l15tag/nrf54l15/cpuapp
   sample.validation.nrf70_test:
-    tags: validation
     platform_allow:
       - nrf7002dk/nrf5340/cpuapp
     integration_platforms:

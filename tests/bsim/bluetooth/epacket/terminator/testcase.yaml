@@ -1,9 +1,20 @@
 common:
+  tags:
+    - epacket
+    - data_logger
+    - kv_store
+    - logging
+    - math
+    - reboot
+    - rpc
+    - security
+    - states
+    - task_runner
+    - tdf
+    - watchdog
   build_only: true
   required_snippets:
     - infuse
-  tags:
-    - bluetooth
   platform_allow:
     - nrf52_bsim/native
     - nrf54l15bsim/nrf54l15/cpuapp

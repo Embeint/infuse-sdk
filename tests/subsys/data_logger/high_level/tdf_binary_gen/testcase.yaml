@@ -1,7 +1,10 @@
 common:
   tags:
     - data_logger
+    - epacket
     - tdf
+    - time
+    - watchdog
   min_flash: 64
   min_ram: 32
 tests:

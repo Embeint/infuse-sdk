@@ -1,3 +1,15 @@
+common:
+  tags:
+    - definitions
+    - data_logger
+    - epacket
+    - gnss
+    - imu
+    - kv_store
+    - rpc
+    - states
+    - task_runner
+    - tdf
 tests:
   subsys.definitions_extend:
     platform_allow:
@@ -6,6 +18,5 @@ tests:
       - mps2/an385
     required_snippets:
       - infuse
-    tags: infuse
     min_flash: 64
     min_ram: 32

@@ -2,6 +2,25 @@ sample:
   description: Serial communications demo
   name: serial
 common:
+  tags:
+    - sample
+    - data_logger
+    - epacket
+    - gnss
+    - imu
+    - kv_store
+    - logging
+    - math
+    - mcumgr
+    - modem_monitor
+    - net
+    - rpc
+    - sensor
+    - states
+    - task_runner
+    - tdf
+    - watchdog
+    - zbus
   build_only: true
   filter: dt_compat_enabled("embeint,epacket-serial")
   required_snippets:
@@ -16,9 +35,7 @@ common:
     # resolved on Zephyr 4.0.
     # - nucleo_l432kc/stm32l432xx
 tests:
-  sample.releases.serial:
-    tags: gateway
+  sample.releases.serial: {}
   sample.releases.serial.sysbuild:
-    tags: gateway
     sysbuild: true
     filter: not CONFIG_BUILD_WITH_TFM

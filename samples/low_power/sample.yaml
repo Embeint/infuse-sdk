@@ -2,6 +2,15 @@ sample:
   description: Low power application
   name: Low power
 common:
+  tags:
+    - sample
+    - epacket
+    - kv_store
+    - logging
+    - mcumgr
+    - rpc
+    - states
+    - tdf
   build_only: true
   required_snippets:
     - infuse
@@ -11,10 +20,8 @@ common:
     - nrf5340dk/nrf5340/cpuapp/ns
     - nrf54l15dk/nrf54l15/cpuapp
 tests:
-  sample.low_power:
-    tags: validation
+  sample.low_power: {}
   sample.low_power.rtt:
-    tags: validation
     filter: CONFIG_HAS_SEGGER_RTT
     required_snippets:
       - rtt

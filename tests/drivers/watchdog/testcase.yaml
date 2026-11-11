@@ -1,5 +1,5 @@
 common:
-  tags: drivers
+  tags: watchdog
   min_flash: 64
   min_ram: 32
 tests:

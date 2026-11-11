@@ -1,7 +1,14 @@
 common:
   tags:
-    - crypto
     - epacket
+    - kv_store
+    - reboot
+    - rpc
+    - security
+    - states
+    - tdf
+    - time
+    - watchdog
   min_flash: 64
   min_ram: 32
 tests:

@@ -1,5 +1,11 @@
 common:
-  tags: tdf
+  tags:
+    - tdf
+    - bluetooth
+    - imu
+    - kv_store
+    - reboot
+    - time
   min_flash: 64
   min_ram: 32
 tests:

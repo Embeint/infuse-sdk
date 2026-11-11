@@ -2,12 +2,34 @@ sample:
   description: GNSS task runner sample (Low Power)
   name: GNSS task runner (Low Power)
 common:
+  tags:
+    - task_runner
+    - auto
+    - data_logger
+    - epacket
+    - gnss
+    - imu
+    - kv_store
+    - logging
+    - math
+    - mcumgr
+    - modem
+    - modem_monitor
+    - net
+    - rpc
+    - sensor
+    - shared_device
+    - states
+    - tdf
+    - time
+    - version
+    - watchdog
+    - zbus
   filter: dt_compat_enabled("u-blox,m10-i2c")
   build_only: true
   required_snippets:
     - infuse
 tests:
   sample.task_runner.gnss_low_power:
-    tags: app
     integration_platforms:
       - tauro/nrf9151/ns

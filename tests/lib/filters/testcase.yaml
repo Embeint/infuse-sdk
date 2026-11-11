@@ -1,6 +1,7 @@
+common:
+  tags: math
 tests:
   lib.math.filters:
     integration_platforms:
       - native_sim
       - qemu_cortex_m3
-    tags: infuse

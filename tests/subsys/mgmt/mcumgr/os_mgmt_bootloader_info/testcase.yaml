@@ -3,6 +3,17 @@
 #
 # SPDX-License-Identifier: FSL-1.1-ALv2
 #
+common:
+  tags:
+    - mcumgr
+    - epacket
+    - kv_store
+    - reboot
+    - rpc
+    - security
+    - states
+    - tdf
+    - time
 tests:
   mgmt.mcumgr.infuse_os.bootloader_info:
     required_snippets:

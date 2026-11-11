@@ -1,5 +1,9 @@
 common:
-  tags: algorithms
+  tags:
+    - algorithms
+    - tdf
+    - time
+    - zbus
   min_flash: 64
   min_ram: 32
   platform_allow:

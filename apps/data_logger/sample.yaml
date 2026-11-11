@@ -2,12 +2,39 @@ sample:
   description: Basic data logger
   name: Data Logger
 common:
+  tags:
+    - app
+    - auto
+    - bluetooth
+    - data_logger
+    - dfu
+    - epacket
+    - gnss
+    - imu
+    - kv_store
+    - logging
+    - math
+    - mcumgr
+    - memfault
+    - modem
+    - modem_monitor
+    - net
+    - reboot
+    - rpc
+    - sensor
+    - shared_device
+    - states
+    - task_runner
+    - tdf
+    - time
+    - version
+    - watchdog
+    - zbus
   build_only: true
   required_snippets:
     - infuse
 tests:
   sample.app.data_logger:
-    tags: app
     platform_allow:
       - thingy53/nrf5340/cpuapp/ns
       - thingy53/nrf5340/cpuapp
@@ -17,7 +44,6 @@ tests:
       - thingy53/nrf5340/cpuapp
       - tauro/nrf9151/ns
   sample.app.data_logger.wifi:
-    tags: app
     sysbuild: true
     filter: not CONFIG_BUILD_WITH_TFM
     extra_args:

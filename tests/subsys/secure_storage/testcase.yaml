@@ -1,7 +1,10 @@
 common:
   tags:
-    - nvs
-    - psa
+    - secure_storage
+    - crypto
+    - kv_store
+    - security
+    - tdf
   platform_allow:
     - native_sim
     - mps2/an385

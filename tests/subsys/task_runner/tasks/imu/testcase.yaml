@@ -1,5 +1,17 @@
 common:
-  tags: imu
+  tags:
+    - task_runner
+    - data_logger
+    - epacket
+    - imu
+    - kv_store
+    - math
+    - rpc
+    - states
+    - tdf
+    - time
+    - watchdog
+    - zbus
   min_flash: 64
   min_ram: 32
   required_snippets:

@@ -1,4 +1,18 @@
 common:
+  tags:
+    - task_runner
+    - data_logger
+    - epacket
+    - kv_store
+    - math
+    - modem_monitor
+    - net
+    - rpc
+    - states
+    - tdf
+    - time
+    - watchdog
+    - wifi
   min_flash: 64
   min_ram: 32
   required_snippets:

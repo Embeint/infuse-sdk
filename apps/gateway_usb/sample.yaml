@@ -2,6 +2,25 @@ sample:
   description: Bluetooth <-> USB bridge
   name: gateway USB
 common:
+  tags:
+    - app
+    - auto
+    - data_logger
+    - epacket
+    - gnss
+    - imu
+    - kv_store
+    - logging
+    - math
+    - mcumgr
+    - modem_monitor
+    - rpc
+    - states
+    - task_runner
+    - tdf
+    - usb
+    - watchdog
+    - zbus
   build_only: true
   required_snippets:
     - infuse
@@ -15,9 +34,7 @@ common:
     - nrf5340dk/nrf5340/cpuapp/ns
     - nrf54lm20dk/nrf54lm20b/cpuapp
 tests:
-  sample.app.gateway_usb:
-    tags: gateway
+  sample.app.gateway_usb: {}
   sample.app.gateway_usb.sysbuild:
-    tags: gateway
     sysbuild: true
     filter: not CONFIG_BUILD_WITH_TFM

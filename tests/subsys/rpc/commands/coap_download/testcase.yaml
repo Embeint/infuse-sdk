@@ -1,6 +1,20 @@
 common:
   tags:
-    - infuse
+    - rpc
+    - bluetooth
+    - common_boot
+    - cpatch
+    - dfu
+    - epacket
+    - kv_store
+    - littlefs
+    - modem_monitor
+    - net
+    - security
+    - states
+    - tdf
+    - time
+    - watchdog
   min_flash: 64
   min_ram: 32
 tests:

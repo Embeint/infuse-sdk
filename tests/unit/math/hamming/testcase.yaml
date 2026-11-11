@@ -1,5 +1,5 @@
+common:
+  tags: math
 tests:
   utilities.math.hamming:
-    tags:
-      - util
     type: unit

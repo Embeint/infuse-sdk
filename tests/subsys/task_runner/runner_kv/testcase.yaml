@@ -1,5 +1,13 @@
 common:
-  tags: task_runner
+  tags:
+    - task_runner
+    - epacket
+    - kv_store
+    - math
+    - rpc
+    - states
+    - tdf
+    - watchdog
   min_flash: 64
   min_ram: 32
 tests:

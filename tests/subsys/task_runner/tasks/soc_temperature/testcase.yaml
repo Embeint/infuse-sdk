@@ -1,4 +1,17 @@
 common:
+  tags:
+    - task_runner
+    - data_logger
+    - epacket
+    - kv_store
+    - math
+    - rpc
+    - sensor
+    - states
+    - tdf
+    - time
+    - watchdog
+    - zbus
   min_flash: 64
   min_ram: 32
   required_snippets:

@@ -2,6 +2,31 @@ sample:
   description: LTE tracker application
   name: LTE Tracker
 common:
+  tags:
+    - app
+    - auto
+    - bluetooth
+    - data_logger
+    - epacket
+    - gnss
+    - imu
+    - kv_store
+    - led
+    - logging
+    - math
+    - mcumgr
+    - modem
+    - modem_monitor
+    - net
+    - rpc
+    - sensor
+    - shared_device
+    - states
+    - task_runner
+    - tdf
+    - time
+    - watchdog
+    - zbus
   build_only: true
   required_snippets:
     - infuse
@@ -22,9 +47,7 @@ tests:
       - tauro/nrf9151/ns
       - tauro2/nrf9151/ns
       - thingy91x/nrf9151/ns
-    tags: app
   sample.app.lte_tracker.wifi_scanner:
-    tags: app
     sysbuild: true
     extra_args:
       - lte_tracker_SHIELD=nrf7002ek

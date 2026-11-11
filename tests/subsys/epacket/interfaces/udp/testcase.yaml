@@ -1,7 +1,15 @@
 common:
   tags:
-    - net
     - epacket
+    - kv_store
+    - net
+    - reboot
+    - rpc
+    - security
+    - states
+    - tdf
+    - time
+    - watchdog
   min_flash: 64
   min_ram: 32
   run_sequential: true

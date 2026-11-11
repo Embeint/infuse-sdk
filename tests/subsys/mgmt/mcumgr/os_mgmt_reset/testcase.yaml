@@ -4,6 +4,17 @@
 # SPDX-License-Identifier: FSL-1.1-ALv2
 #
 common:
+  tags:
+    - mcumgr
+    - common_boot
+    - epacket
+    - kv_store
+    - reboot
+    - rpc
+    - security
+    - states
+    - tdf
+    - time
   expect_reboot: true
   platform_exclude:
     - native_sim

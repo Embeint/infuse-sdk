@@ -2,12 +2,28 @@ sample:
   description: Power task runner sample
   name: Power task runner
 common:
+  tags:
+    - task_runner
+    - data_logger
+    - epacket
+    - gnss
+    - imu
+    - kv_store
+    - logging
+    - math
+    - modem_monitor
+    - rpc
+    - states
+    - tdf
+    - time
+    - version
+    - watchdog
+    - zbus
   filter: dt_alias_exists("fuel-gauge0") and dt_chosen_enabled("zephyr,bt-hci")
   build_only: true
   required_snippets:
     - infuse
 tests:
   sample.task_runner.power:
-    tags: app
     integration_platforms:
       - thingy53/nrf5340/cpuapp

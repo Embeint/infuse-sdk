@@ -1,5 +1,13 @@
 common:
-  tags: task_runner
+  tags:
+    - task_runner
+    - kv_store
+    - math
+    - states
+    - tdf
+    - time
+    - watchdog
+    - zbus
   min_flash: 64
   min_ram: 32
 tests:

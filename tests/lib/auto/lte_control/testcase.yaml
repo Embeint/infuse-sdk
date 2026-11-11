@@ -1,9 +1,18 @@
+common:
+  tags:
+    - auto
+    - data_logger
+    - epacket
+    - kv_store
+    - modem_monitor
+    - states
+    - tdf
+    - time
 tests:
   libraries.auto.lte_control:
     platform_allow:
       - native_sim
     integration_platforms:
       - native_sim
-    tags: infuse
     min_flash: 64
     min_ram: 32

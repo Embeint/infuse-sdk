@@ -1,7 +1,13 @@
 common:
   tags:
-    - infuse
+    - modem_monitor
+    - data_logger
+    - epacket
+    - kv_store
     - net
+    - reboot
+    - tdf
+    - time
   min_flash: 64
   min_ram: 32
   platform_allow:

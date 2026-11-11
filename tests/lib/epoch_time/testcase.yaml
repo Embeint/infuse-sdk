@@ -1,8 +1,12 @@
+common:
+  tags:
+    - time
+    - kv_store
+    - states
 tests:
   libraries.epoch_time:
     integration_platforms:
       - native_sim
       - qemu_cortex_m3
-    tags: infuse
     min_flash: 64
     min_ram: 32

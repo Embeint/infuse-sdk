@@ -2,22 +2,31 @@ sample:
   description: Bulk data upload test
   name: Bulk data upload
 common:
+  tags:
+    - epacket
+    - data_logger
+    - imu
+    - kv_store
+    - logging
+    - modem_monitor
+    - net
+    - reboot
+    - rpc
+    - security
+    - states
+    - tdf
+    - time
+    - watchdog
   build_only: true
   required_snippets:
     - infuse
 tests:
   sample.epacket.udp_bulk_upload:
-    tags:
-      - net
-      - epacket
     platform_allow:
       - nrf7002dk/nrf5340/cpuapp
     integration_platforms:
       - nrf7002dk/nrf5340/cpuapp
   sample.epacket.udp_bulk_upload.nrf7002eb:
-    tags:
-      - net
-      - epacket
     sysbuild: true
     platform_allow:
       - thingy53/nrf5340/cpuapp

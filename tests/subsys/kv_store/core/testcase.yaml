@@ -1,5 +1,7 @@
 common:
-  tags: nvs
+  tags:
+    - kv_store
+    - tdf
   platform_allow:
     - native_sim
     - qemu_cortex_m0

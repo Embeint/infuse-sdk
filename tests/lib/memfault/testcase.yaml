@@ -1,6 +1,17 @@
 common:
+  tags:
+    - memfault
+    - common_boot
+    - epacket
+    - kv_store
+    - modem_monitor
+    - reboot
+    - rpc
+    - states
+    - tdf
+    - time
+    - zbus
   arch_allow: arm
-  tags: infuse
   min_flash: 64
   min_ram: 32
 tests:

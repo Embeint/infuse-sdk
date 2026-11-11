@@ -1,5 +1,5 @@
 common:
-  tags: drivers
+  tags: shared_device
   min_flash: 64
   min_ram: 32
 tests:

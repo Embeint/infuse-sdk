@@ -2,24 +2,44 @@ sample:
   description: GNSS task runner sample
   name: GNSS task runner
 common:
+  tags:
+    - task_runner
+    - auto
+    - data_logger
+    - epacket
+    - gnss
+    - imu
+    - kv_store
+    - logging
+    - math
+    - mcumgr
+    - modem
+    - modem_monitor
+    - net
+    - rpc
+    - sensor
+    - shared_device
+    - states
+    - tdf
+    - time
+    - version
+    - watchdog
+    - zbus
   filter: dt_alias_exists("gnss")
   build_only: true
   required_snippets:
     - infuse
 tests:
   sample.task_runner.gnss:
-    tags: app
     integration_platforms:
       - thingy91x/nrf9151/ns
       - tauro/nrf9151/ns
   sample.task_runner.gnss.api_compat:
-    tags: app
     integration_platforms:
       - tauro/nrf9151/ns
     extra_configs:
       - CONFIG_GNSS_U_BLOX_NO_API_COMPAT=n
   sample.task_runner.gnss.sparkfun:
-    tags: app
     sysbuild: true
     depends_on: arduino_i2c
     integration_platforms:

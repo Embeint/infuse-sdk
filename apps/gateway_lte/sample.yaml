@@ -2,6 +2,33 @@ sample:
   description: Bluetooth <-> LTE bridge
   name: gateway LTE
 common:
+  tags:
+    - app
+    - auto
+    - bluetooth
+    - charger
+    - data_logger
+    - epacket
+    - gnss
+    - imu
+    - kv_store
+    - led
+    - logging
+    - math
+    - mcumgr
+    - memfault
+    - modem
+    - modem_monitor
+    - net
+    - reboot
+    - rpc
+    - sensor
+    - shared_device
+    - states
+    - task_runner
+    - tdf
+    - watchdog
+    - zbus
   build_only: true
   required_snippets:
     - infuse
@@ -15,9 +42,7 @@ common:
     - kudu/nrf54l15/cpuapp
     - nrf93m1dk/nrf54l15/cpuapp
 tests:
-  sample.app.gateway_lte:
-    tags: gateway
+  sample.app.gateway_lte: {}
   sample.app.gateway_lte.sysbuild:
-    tags: gateway
     sysbuild: true
     filter: not CONFIG_BUILD_WITH_TFM

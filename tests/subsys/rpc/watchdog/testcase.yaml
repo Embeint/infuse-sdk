@@ -1,5 +1,10 @@
 common:
-  tags: rpc
+  tags:
+    - rpc
+    - epacket
+    - task_runner
+    - tdf
+    - watchdog
   min_flash: 64
   min_ram: 32
 tests:

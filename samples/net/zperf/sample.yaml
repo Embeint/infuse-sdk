@@ -2,6 +2,15 @@ sample:
   description: Network performance measurement tool for Infuse-IoT
   name: infuse_zperf
 common:
+  tags:
+    - net
+    - epacket
+    - kv_store
+    - logging
+    - modem_monitor
+    - rpc
+    - states
+    - tdf
   build_only: true
   depends_on:
     - netif
@@ -9,8 +18,5 @@ common:
     - infuse
   integration_platforms:
     - nrf7002dk/nrf5340/cpuapp
-  tags:
-    - net
-    - zperf
 tests:
   sample.net.zperf: {}

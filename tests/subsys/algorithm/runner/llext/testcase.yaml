@@ -1,5 +1,13 @@
 common:
-  tags: algorithm_runner
+  tags:
+    - algorithm_runner
+    - algorithms
+    - data_logger
+    - kv_store
+    - littlefs
+    - reboot
+    - tdf
+    - zbus
   min_flash: 64
   min_ram: 32
   platform_allow:

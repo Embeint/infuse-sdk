@@ -1,5 +1,10 @@
 common:
-  tags: crypto
+  tags:
+    - security
+    - crypto
+    - kv_store
+    - secure_storage
+    - tdf
   min_flash: 64
   min_ram: 32
   platform_allow:
