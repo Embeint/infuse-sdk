@@ -90,7 +90,11 @@ int infuse_dfu_image_metadata_clear(const struct flash_area *fa, size_t image_en
 /**
  * @brief Prepare the nRF91 modem for a delta image upgrade
  *
+ * @note Watchdogs are fed while waiting for the modem DFU area to be erased.
+ *
  * @retval 0 On success
+ * @retval -ETIMEDOUT Erase did not complete within
+ *                    @kconfig{CONFIG_INFUSE_DFU_NRF91_MODEM_ERASE_TIMEOUT_SEC}
  * @retval -errno Error code from nrf_modem_delta_dfu_offset, nrf_modem_delta_dfu_erase or
  * nrf_modem_delta_dfu_write_init
  */
