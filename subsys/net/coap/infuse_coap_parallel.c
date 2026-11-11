@@ -604,6 +604,22 @@ static int process_response(struct download_context *ctx, uint8_t *response_buf,
 	return 0;
 }
 
+/* Time until the earliest in-flight request times out */
+static int poll_timeout_ms(struct download_context *ctx)
+{
+	int64_t earliest = INT64_MAX;
+
+	for (int i = 0; i < ARRAY_SIZE(ctx->requests); i++) {
+		if (ctx->requests[i].in_flight) {
+			earliest = MIN(earliest, ctx->requests[i].timeout);
+		}
+	}
+	if (earliest == INT64_MAX) {
+		return ctx->request_timeout_ms;
+	}
+	return (int)CLAMP(earliest - k_uptime_get(), 0, ctx->request_timeout_ms);
+}
+
 static void receive_data(struct download_context *ctx, struct zsock_pollfd *pollfds,
 			 uint8_t *rx_buffer, uint16_t rx_len)
 {
@@ -611,7 +627,7 @@ static void receive_data(struct download_context *ctx, struct zsock_pollfd *poll
 	int rc;
 
 	/* Wait for data to be available */
-	rc = zsock_poll(pollfds, 1, ctx->request_timeout_ms);
+	rc = zsock_poll(pollfds, 1, poll_timeout_ms(ctx));
 	if (rc < 0) {
 		ctx->error_code = -errno;
 		LOG_ERR("Poll error (%d)", ctx->error_code);

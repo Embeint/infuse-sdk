@@ -73,6 +73,8 @@ int infuse_coap_download(int socket, const char *resource, size_t file_size,
 	struct zsock_pollfd pollfds[1];
 	uint16_t pkt_len = MIN(working_size, UINT16_MAX);
 	uint8_t rx_token[COAP_TOKEN_MAX_LEN];
+	int64_t poll_remaining;
+	int64_t deadline;
 	uint64_t tx_token;
 	size_t next_block = UINT32_MAX;
 	int received, total_received = 0;
@@ -134,10 +136,12 @@ int infuse_coap_download(int socket, const char *resource, size_t file_size,
 			LOG_ERR("zsock_send failure (%d)", -errno);
 			return -errno;
 		}
+		deadline = k_uptime_get() + timeout_ms;
 
 poll_retry:
-		/* Wait for response */
-		rc = zsock_poll(pollfds, 1, timeout_ms);
+		/* Wait for response, ignored packets don't extend the timeout */
+		poll_remaining = CLAMP(deadline - k_uptime_get(), 0, timeout_ms);
+		rc = zsock_poll(pollfds, 1, (int)poll_remaining);
 		if (rc < 0) {
 			LOG_ERR("Poll error (%d)", -errno);
 			return -errno;
