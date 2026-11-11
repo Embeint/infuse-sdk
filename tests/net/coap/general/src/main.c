@@ -215,6 +215,23 @@ ZTEST(infuse_coap, test_download_work_area)
 	zassert_equal(0, zsock_close(sock));
 }
 
+ZTEST(infuse_coap, test_download_sizes)
+{
+	const char *large = (const char *)large_data;
+	struct cb_ctx context;
+	int sock;
+	int rc;
+
+	sock = socket_setup();
+
+	/* Server reduces the block size to 512 bytes */
+	rc = download(sock, "large/reduced", 0, large, sizeof(work_area), 1024, 1000, &context);
+	zassert_equal(sizeof(large_data), rc);
+	zassert_equal(4, context.cb_count);
+
+	zassert_equal(0, zsock_close(sock));
+}
+
 ZTEST(infuse_coap, test_download_bad_responses)
 {
 	struct cb_ctx context;
@@ -222,6 +239,11 @@ ZTEST(infuse_coap, test_download_bad_responses)
 	int rc;
 
 	sock = socket_setup();
+
+	/* Server responds with a different block to the one requested */
+	rc = download(sock, "large/wrong_block", 0, NULL, sizeof(work_area), 0, 1000, &context);
+	zassert_equal(-EBADMSG, rc);
+	zassert_equal(0, context.cb_count);
 
 	/* Token that doesn't match any request is ignored */
 	rc = download(sock, "hello/short_token", 0, NULL, sizeof(work_area), 0, 100, &context);
