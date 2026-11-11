@@ -111,14 +111,17 @@ int ic_get_block_size(size_t working_size, uint16_t block_size, enum coap_block_
 			*used_size = COAP_BLOCK_256;
 		} else if (working_size >= COAP_PKT_SIZE(128)) {
 			*used_size = COAP_BLOCK_128;
-		} else if (working_size >= 128) {
-			*used_size = COAP_BLOCK_64;
 		} else {
-			return -ENOMEM;
+			*used_size = COAP_BLOCK_64;
 		}
 		break;
 	default:
 		return -EINVAL;
+	}
+
+	/* Working memory must be able to receive a complete block response */
+	if (working_size < (coap_block_size_to_bytes(*used_size) + COAP_RSP_MIN_OVERHEAD)) {
+		return -ENOMEM;
 	}
 	return 0;
 }

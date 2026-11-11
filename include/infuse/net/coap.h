@@ -52,6 +52,7 @@ typedef int (*infuse_coap_data_cb)(uint32_t offset, const uint8_t *data, uint16_
  * @param timeout_ms Timeout waiting for each response from server
  *
  * @retval >=0 bytes downloaded on success
+ * @retval -ENOMEM @a working_size too small for @a block_size
  * @retval <0 error code on failure
  */
 int infuse_coap_download(int socket, const char *resource, size_t file_size,

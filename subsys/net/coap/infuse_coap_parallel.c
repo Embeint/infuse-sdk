@@ -69,6 +69,9 @@ struct download_context {
 	uint16_t block_size_bytes;
 	enum coap_block_size block_size;
 
+	/* Memory for sending requests and receiving responses */
+	uint16_t pkt_buffer_len;
+
 	/* File information */
 	size_t total_size;
 	size_t current_offset;
@@ -134,9 +137,13 @@ static int download_context_init(struct download_context *ctx, int sock, uint8_t
 		ctx->requests[i].completed = true;
 	}
 
-	/* Reserve the memory for requests and socket RX */
-	working_mem += (COAP_RSP_OVERHEAD + ctx->block_size_bytes);
-	work_remaining -= (COAP_RSP_OVERHEAD + ctx->block_size_bytes);
+	/* Reserve the memory for requests and socket RX.
+	 * ic_get_block_size() guarantees at least the block size plus COAP_RSP_MIN_OVERHEAD.
+	 */
+	__ASSERT_NO_MSG(working_size >= (ctx->block_size_bytes + COAP_RSP_MIN_OVERHEAD));
+	ctx->pkt_buffer_len = MIN(working_size, COAP_RSP_OVERHEAD + ctx->block_size_bytes);
+	working_mem += ctx->pkt_buffer_len;
+	work_remaining -= ctx->pkt_buffer_len;
 
 	/* Assign memory to the block buffers */
 	while ((work_remaining >= ctx->block_size_bytes) &&

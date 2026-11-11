@@ -30,6 +30,8 @@ K_SEM_DEFINE(l4_up, 0, 1);
 /* Server providing the resources of the coap.me test server run by TZI */
 const char *const coap_test_server = CONFIG_TEST_COAP_SERVER;
 uint8_t work_area[4096];
+/* Content of the "large" resources */
+uint8_t large_data[1700];
 
 struct cb_ctx {
 	const char *expected_data;
@@ -184,6 +186,35 @@ static int download(int sock, const char *resource, size_t file_size, const char
 
 /* Resources below are only provided by the local test server (pytest/conftest.py) */
 
+ZTEST(infuse_coap, test_download_work_area)
+{
+	const char *large = (const char *)large_data;
+	struct cb_ctx context;
+	int sock;
+	int rc;
+
+	sock = socket_setup();
+
+	/* Smallest work area, 64 byte blocks */
+	rc = download(sock, "large", 0, large, 128, 0, 1000, &context);
+	zassert_equal(sizeof(large_data), rc);
+	zassert_equal(27, context.cb_count);
+
+	/* Small work area with explicit block size, out of order blocks are buffered */
+	rc = download(sock, "large", 0, large, 1000, 256, 1000, &context);
+	zassert_equal(sizeof(large_data), rc);
+	zassert_equal(7, context.cb_count);
+
+	/* Explicit block sizes must fit in the work area */
+	rc = download(sock, "large", 0, large, 700, 1024, 1000, &context);
+	zassert_equal(-ENOMEM, rc);
+	zassert_equal(0, context.cb_count);
+	rc = download(sock, "large", 0, large, 64 + 64 - 1, 64, 1000, &context);
+	zassert_equal(-ENOMEM, rc);
+
+	zassert_equal(0, zsock_close(sock));
+}
+
 ZTEST(infuse_coap, test_download_bad_responses)
 {
 	struct cb_ctx context;
@@ -228,6 +259,10 @@ ZTEST(infuse_coap, test_separate_response)
 
 void *test_init(void)
 {
+	for (int i = 0; i < sizeof(large_data); i++) {
+		large_data[i] = (i * 31 + 7) & 0xFF;
+	}
+
 #ifdef CONFIG_WIFI
 	KV_STRING_CONST(ssid, CONFIG_WIFI_SSID);
 	KV_STRING_CONST(psk, CONFIG_WIFI_PSK);
