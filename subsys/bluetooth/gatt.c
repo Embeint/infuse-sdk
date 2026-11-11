@@ -343,7 +343,7 @@ uint8_t gatt_db_hash_cb(struct bt_conn *conn, uint8_t err, struct bt_gatt_read_p
 	struct bt_gatt_state *s = &state[bt_conn_index(conn)];
 	bool done = false;
 
-	if ((err) || (length != sizeof(s->discovery->cache->db_hash))) {
+	if (err || (length != sizeof(s->discovery->cache->db_hash))) {
 		LOG_WRN("Failed to read DB hash (%d)", err);
 	} else {
 		K_SPINLOCK(&s->discovery->cache->lock) {
