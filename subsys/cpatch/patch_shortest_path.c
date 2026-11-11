@@ -262,6 +262,10 @@ static int opcode_fetch(struct patch_state *state)
 		state->pending = FAMILY_PATCH;
 		break;
 	case PATCH_DELTA:
+		if (ctx->header->version_major < CPATCH_MAJOR_VERSION_DELTA) {
+			LOG_ERR("PATCH_DELTA in version %d patch", ctx->header->version_major);
+			return -EINVAL;
+		}
 		state->pending = FAMILY_PATCH_DELTA;
 		break;
 	default:

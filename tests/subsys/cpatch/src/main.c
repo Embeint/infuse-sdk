@@ -309,11 +309,18 @@ static int test_crafted_patch(uint8_t version, const uint8_t *data, size_t len,
 
 ZTEST(cpatch, test_shortest_path_malformed)
 {
+	/* COPY 8, then PATCH_DELTA terminated immediately */
+	const uint8_t delta[] = {0x08, 0xC0, 0x0F};
 	const uint8_t expected[] = {0, 1, 2, 3, 4, 5, 6, 7};
 	/* COPY_LEN_U12 missing its length byte */
 	const uint8_t truncated[] = {0x08, 0x10};
 	/* PATCH copy length with no terminator */
 	const uint8_t patch_truncated[] = {0xB0, 0x01};
+
+	/* PATCH_DELTA is only valid from version 2 */
+	zassert_equal(0, test_crafted_patch(2, delta, sizeof(delta), expected, sizeof(expected)));
+	zassert_equal(-EINVAL,
+		      test_crafted_patch(1, delta, sizeof(delta), expected, sizeof(expected)));
 
 	/* Instructions extending past the end of the patch data */
 	for (uint8_t version = 1; version <= 2; version++) {
