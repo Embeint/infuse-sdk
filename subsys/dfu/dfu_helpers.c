@@ -12,6 +12,7 @@
 #include <zephyr/dfu/mcuboot.h>
 
 #include <infuse/dfu/helpers.h>
+#include <infuse/drivers/watchdog.h>
 #include <infuse/epacket/interface/epacket_bt_adv.h>
 
 #ifdef CONFIG_NRF_MODEM_LIB
@@ -211,6 +212,8 @@ int infuse_dfu_image_metadata_clear(const struct flash_area *fa, size_t image_en
 #ifdef CONFIG_NRF_MODEM_LIB
 int infuse_dfu_nrf91_modem_delta_prepare(void)
 {
+	k_timepoint_t timeout =
+		sys_timepoint_calc(K_SECONDS(CONFIG_INFUSE_DFU_NRF91_MODEM_ERASE_TIMEOUT_SEC));
 	size_t offset;
 	int rc;
 
@@ -229,14 +232,21 @@ int infuse_dfu_nrf91_modem_delta_prepare(void)
 			return rc;
 		}
 	}
-	/* Wait for DFU system to be ready.
-	 * If for some reason the erase never finishes, the watchdog will catch us.
+	/* Wait for DFU system to be ready. The erase can take longer than the
+	 * watchdog period, so feed the watchdog while bounding the wait.
 	 */
 	while (offset != 0) {
 		rc = nrf_modem_delta_dfu_offset(&offset);
 		if ((rc != 0) && (rc != NRF_MODEM_DELTA_DFU_ERASE_PENDING)) {
 			return rc;
 		}
+		if (offset == 0) {
+			break;
+		}
+		if (sys_timepoint_expired(timeout)) {
+			return -ETIMEDOUT;
+		}
+		infuse_watchdog_feed_all();
 		k_sleep(K_MSEC(500));
 	}
 	/* Ready modem to receive the firmware update */
