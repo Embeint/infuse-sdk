@@ -16,9 +16,10 @@ config INFUSE_COAP_MAX_URI_SEGMENTS
 config INFUSE_COAP_MAX_TIMEOUTS
 	int "Maximum number of times to attempt reading a chunk"
 	default 3
+	range 1 255
 	help
-	  When polling for a chunk times out, the library will retry the
-	  download this many times before giving up.
+	  Maximum number of requests sent for each chunk. When the response
+	  to the final request times out, the download fails.
 
 choice INFUSE_COAP_BACKEND
 	prompt "Infuse CoAP download implementation"
