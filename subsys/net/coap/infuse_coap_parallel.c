@@ -60,7 +60,7 @@ struct download_context {
 
 	/* Resource metadata */
 	const char *resource;
-	uint8_t resource_split[CONFIG_INFUSE_COAP_MAX_URI_SEGMENTS + 1];
+	uint16_t resource_split[CONFIG_INFUSE_COAP_MAX_URI_SEGMENTS + 1];
 	int8_t num_resource_split;
 
 	/* Request block information */

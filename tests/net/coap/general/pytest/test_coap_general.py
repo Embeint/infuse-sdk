@@ -27,6 +27,9 @@ def test_coap_general(coap_server: LocalCoapServer, unlaunched_dut: DeviceAdapte
     attempts = [r for r in coap_server.requests if r[0] == "hello/short_token"]
     assert len(attempts) == 3, f"Unexpected attempts: {attempts}"
 
+    # Long paths are not truncated
+    assert any(p == "a" * 200 + "/" + "b" * 100 for p, _, _ in requested), "Long path not requested"
+
     # Separate responses were acknowledged
     logger.info("Separate responses: %s, ACKs: %s", coap_server.separate_ids, coap_server.acks)
     assert coap_server.separate_ids, "No separate responses sent"
