@@ -81,8 +81,8 @@ static int mcuboot_trailer_offset(const struct flash_area *fa, size_t *offset)
 }
 
 /* Implementation taken from zephyr_img_mgmt.c */
-int infuse_dfu_image_erase_wrapped(const struct flash_area *fa, size_t image_len,
-				   infuse_progress_cb_t progress_cb, bool mcuboot_trailer)
+static int infuse_dfu_image_erase_wrapped(const struct flash_area *fa, size_t image_len,
+					  infuse_progress_cb_t progress_cb, bool mcuboot_trailer)
 {
 	const struct device *dev = flash_area_get_device(fa);
 	const struct flash_parameters *fparams;
