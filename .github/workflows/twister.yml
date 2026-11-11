@@ -50,7 +50,8 @@ jobs:
       EXTRA_BOARDS: ' --platform qemu_cortex_m3 --platform qemu_cortex_m0 '
       UNIT_TESTING: ' --platform unit_testing '
       PR_OPTIONS: ' --clobber-output --integration'
-      COMMIT_RANGE: ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}
+      # Three-dot: changes since the merge base, so PRs behind main don't pick up main's changes
+      COMMIT_RANGE: ${{ github.event.pull_request.base.sha }}...${{ github.event.pull_request.head.sha }}
       BASE_REF: ${{ github.base_ref }}
       ZEPHYR_TOOLCHAIN_VARIANT: zephyr
     steps:
@@ -89,17 +90,29 @@ jobs:
           cmake --build algorithm-build
           rm -r algorithm-build
 
+      - if: github.event_name == 'pull_request'
+        name: Select tests from changed files
+        run: |
+          TEST_ROOTS=$(infuse-sdk/scripts/ci/test_plan.py -c ${COMMIT_RANGE} \
+            --full-root infuse-sdk --full-root modules/nrfconnect/sdk-nrf)
+          # sdk-nrf contains no unit tests
+          UNIT_ROOTS=$(echo "${TEST_ROOTS}" | { grep -vxF -- '-T modules/nrfconnect/sdk-nrf' || true; })
+          echo "UNIT_ROOTS=$(echo ${UNIT_ROOTS})" >> $GITHUB_ENV
+          echo "TEST_ROOTS=$(echo ${TEST_ROOTS})" >> $GITHUB_ENV
+
       - if: github.event_name == 'pull_request' && matrix.subset == 1
         name: Run Unit Tests with Twister (Pull Request)
         run: |
+          [ -n "${UNIT_ROOTS}" ] || { echo "No tests affected by this change"; exit 0; }
           export ZEPHYR_BASE=${PWD}/zephyr
-          $ZEPHYR_BASE/scripts/twister ${TWISTER_COMMON} ${UNIT_TESTING} -T infuse-sdk
+          $ZEPHYR_BASE/scripts/twister ${TWISTER_COMMON} ${UNIT_TESTING} ${UNIT_ROOTS}
 
       - if: github.event_name == 'pull_request'
         name: Run Tests with Twister (Pull Request)
         run: |
+          [ -n "${TEST_ROOTS}" ] || { echo "No tests affected by this change"; exit 0; }
           export ZEPHYR_BASE=${PWD}/zephyr
-          $ZEPHYR_BASE/scripts/twister --subset ${{matrix.subset}}/${{ strategy.job-total }} ${TWISTER_COMMON} ${PR_OPTIONS} -T infuse-sdk -T modules/nrfconnect/sdk-nrf
+          $ZEPHYR_BASE/scripts/twister --subset ${{matrix.subset}}/${{ strategy.job-total }} ${TWISTER_COMMON} ${PR_OPTIONS} ${TEST_ROOTS}
 
       - if: github.event_name == 'schedule'
         name: Run Unit Tests with Twister (Daily)

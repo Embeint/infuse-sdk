@@ -1,0 +1,191 @@
+# Copyright (c) 2026 Embeint Holdings Pty Ltd
+# SPDX-License-Identifier: FSL-1.1-ALv2
+#
+# Maps infuse-sdk source paths to test tags, for scripts/ci/test_plan.py.
+#
+# A changed file selects every test whose tags include any tag whose 'files'
+# match it (entries ending in '/' match directories by prefix). Tests list the
+# tag of their own area plus the tags of every area they depend on.
+#
+# A changed file that matches nothing here, is not inside a test/sample
+# directory, and is not in twister_ignore.txt triggers a full twister run.
+
+algorithm_runner:
+  files:
+    - include/infuse/algorithm_runner/
+    - subsys/algorithm_runner/
+algorithms:
+  files:
+    - include/infuse/algorithms/
+    - subsys/algorithms/
+audio:
+  files:
+    - drivers/audio/
+auto:
+  files:
+    - include/infuse/auto/
+    - lib/auto/
+bluetooth:
+  files:
+    - include/infuse/bluetooth/
+    - subsys/bluetooth/
+charger:
+  files:
+    - drivers/charger/
+common_boot:
+  files:
+    - include/infuse/common_boot.h
+    - lib/common_boot.c
+    - lib/common_boot_z_devstate.ld
+cpatch:
+  files:
+    - include/infuse/cpatch/
+    - subsys/cpatch/
+crypto:
+  files:
+    - include/infuse/crypto/
+    - lib/crypto/
+data_logger:
+  files:
+    - include/infuse/data_logger/
+    - subsys/data_logger/
+debug:
+  files:
+    - lib/debug/
+dfu:
+  files:
+    - include/infuse/dfu/
+    - subsys/dfu/
+epacket:
+  files:
+    - include/infuse/epacket/
+    - subsys/epacket/
+fuel_gauge:
+  files:
+    - drivers/fuel_gauge/
+    - include/infuse/drivers/fuel_gauge_custom_prop.h
+gnss:
+  files:
+    - drivers/gnss/
+    - include/infuse/drivers/gnss/
+    - include/infuse/gnss/
+imu:
+  files:
+    - drivers/imu/
+    - include/infuse/drivers/imu.h
+    - include/infuse/drivers/imu/
+kv_store:
+  files:
+    - generated/Kconfig.kv_keys
+    - generated/include/infuse/fs/kv_types.h
+    - include/infuse/fs/kv_store.h
+    - subsys/fs/kv_store/
+led:
+  files:
+    - drivers/led/
+    - include/infuse/drivers/led/
+littlefs:
+  files:
+    - include/infuse/fs/littlefs.h
+    - subsys/fs/littlefs/
+logging:
+  files:
+    - subsys/logging/
+math:
+  files:
+    - include/infuse/math/
+    - lib/math/
+mcumgr:
+  files:
+    - subsys/mgmt/
+memfault:
+  files:
+    - include/infuse/lib/memfault.h
+    - include/infuse/lib/memfault_config/
+    - lib/memfault/
+modem:
+  files:
+    - include/infuse/modem/
+    - subsys/modem/
+modem_monitor:
+  files:
+    - include/infuse/lib/lte_modem_monitor.h
+    - include/infuse/lib/lte_modem_monitor/
+    - include/infuse/lib/nrf_modem_lib_sim.h
+    - lib/modem_monitor/
+net:
+  files:
+    - include/infuse/net/
+    - subsys/net/
+reboot:
+  files:
+    - include/infuse/reboot.h
+    - include/infuse/reboot/
+    - lib/reboot.c
+rpc:
+  files:
+    - generated/Kconfig.rpc_commands
+    - generated/include/infuse/rpc/
+    - generated/rpc_command_runner.c
+    - include/infuse/rpc/
+    - subsys/rpc/
+secure_storage:
+  files:
+    - include/infuse/fs/secure_storage.h
+    - subsys/fs/secure_storage/
+security:
+  files:
+    - include/infuse/crypto/hardware_unique_key.h
+    - include/infuse/security.h
+    - include/infuse/security_ids.h
+    - lib/security/
+sensor:
+  files:
+    - drivers/sensor/
+    - include/infuse/drivers/sensor/
+shared_device:
+  files:
+    - drivers/shared_device/
+    - include/infuse/shared/
+states:
+  files:
+    - include/infuse/states.h
+    - lib/states/
+task_runner:
+  files:
+    - generated/include/infuse/task_runner/
+    - generated/include_always/infuse/task_runner/
+    - include/infuse/task_runner/
+    - subsys/task_runner/
+tdf:
+  files:
+    - generated/include/infuse/tdf/
+    - include/infuse/tdf/
+    - subsys/tdf/
+time:
+  files:
+    - include/infuse/time/
+    - lib/time/
+usb:
+  files:
+    - subsys/usb/
+validation:
+  files:
+    - include/infuse/validation/
+    - subsys/validation/
+version:
+  files:
+    - include/infuse/version.h
+    - lib/version.c
+watchdog:
+  files:
+    - drivers/watchdog/
+    - include/infuse/drivers/watchdog.h
+wifi:
+  files:
+    - drivers/wifi/
+    - include/infuse/drivers/wifi/
+zbus:
+  files:
+    - include/infuse/zbus/
+    - subsys/zbus/

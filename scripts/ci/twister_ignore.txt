@@ -1,0 +1,28 @@
+# Copyright (c) 2026 Embeint Holdings Pty Ltd
+# SPDX-License-Identifier: FSL-1.1-ALv2
+#
+# fnmatch patterns (relative to the infuse-sdk root) for files that can never
+# affect a twister result. Used by scripts/ci/test_plan.py.
+#
+# A pattern prefixed with `!` re-includes files matched by an earlier
+# pattern. The last matching pattern wins.
+*.md
+*.rst
+*.png
+*.jpg
+*.svg
+doc/*
+scripts/*
+.github/*
+# Changes to the twister CI itself are verified with a full run
+!.github/workflows/twister.yml
+!.github/actions/setup-twister/*
+LICENSE*
+LICENSES/*
+.checkpatch.conf
+.clang-format
+.codecov.yml
+.gitattributes
+.gitignore
+.sonarcloud.properties
+ruff.toml
