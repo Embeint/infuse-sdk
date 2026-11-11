@@ -7,6 +7,7 @@
 #include <stdbool.h>
 
 #include <infuse/algorithms/implementation.h>
+#include <infuse/drivers/imu/data_types.h>
 #include <infuse/zbus/types.h>
 
 #define ALGORITHM_ID 0x00000001
