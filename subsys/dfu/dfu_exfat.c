@@ -88,6 +88,9 @@ int dfu_exfat_app_upgrade_exists(const struct device *dev, struct infuse_version
 		return rc;
 	}
 
+	/* Only versions newer than the current application are upgrades */
+	*upgrade = app_current;
+
 	/* Claim the filesystem */
 	disk = logger_exfat_filesystem_claim(dev, NULL, NULL, K_FOREVER);
 
