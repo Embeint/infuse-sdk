@@ -12,6 +12,7 @@
 #include <zephyr/zbus/zbus.h>
 
 #include <infuse/auto/location_timezone.h>
+#include <infuse/tdf/definitions.h>
 #include <infuse/zbus/channels.h>
 
 INFUSE_ZBUS_CHAN_DEFINE(INFUSE_ZBUS_CHAN_LOCATION);

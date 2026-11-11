@@ -12,6 +12,7 @@
 #include <infuse/math/common.h>
 #include <infuse/time/epoch.h>
 #include <infuse/time/timezone.h>
+#include <infuse/tdf/definitions.h>
 #include <infuse/zbus/channels.h>
 
 static void new_location_data(const struct zbus_channel *chan);

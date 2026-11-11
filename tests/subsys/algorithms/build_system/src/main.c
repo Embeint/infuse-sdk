@@ -14,6 +14,7 @@
 #include <zephyr/llext/buf_loader.h>
 
 #include <infuse/algorithms/implementation.h>
+#include <infuse/tdf/definitions.h>
 #include <infuse/zbus/channels.h>
 
 #include "algorithm_info.h"
