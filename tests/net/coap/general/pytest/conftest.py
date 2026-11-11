@@ -41,6 +41,7 @@ RESOURCES.update(
     {
         "large/reduced": CoapResource(payload=LARGE, max_szx=5),
         "large/wrong_block": CoapResource(payload=LARGE, block_offset=1),
+        "large/oversized": CoapResource(payload=LARGE, extra_payload=16),
         "hello/long_token": CoapResource(payload=b"world", token_len=8),
         "hello/short_token": CoapResource(payload=b"world", token_len=2),
     }

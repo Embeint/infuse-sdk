@@ -245,6 +245,11 @@ ZTEST(infuse_coap, test_download_bad_responses)
 	zassert_equal(-EBADMSG, rc);
 	zassert_equal(0, context.cb_count);
 
+	/* Server responds with more data than the block size */
+	rc = download(sock, "large/oversized", 0, NULL, sizeof(work_area), 0, 1000, &context);
+	zassert_equal(-EBADMSG, rc);
+	zassert_equal(0, context.cb_count);
+
 	/* Token that doesn't match any request is ignored */
 	rc = download(sock, "hello/short_token", 0, NULL, sizeof(work_area), 0, 100, &context);
 	zassert_equal(-ETIMEDOUT, rc);

@@ -526,6 +526,11 @@ static int process_response(struct download_context *ctx, uint8_t *response_buf,
 				req->block_num, ctx->block_size_bytes);
 			return -EBADMSG;
 		}
+		/* Only the final block can be short, truncated datagrams are also short */
+		if ((payload_len > block_bytes) || (has_more && (payload_len != block_bytes))) {
+			LOG_ERR("Unexpected block length %d (more %d)", payload_len, has_more);
+			return -EBADMSG;
+		}
 	}
 	ctx->block_size_fixed = true;
 
@@ -681,13 +686,13 @@ int infuse_coap_download(int socket, const char *resource, size_t file_size,
 	/* Main download loop */
 	while (!is_download_complete(&ctx) && (ctx.error_code == 0)) {
 		/* Queue any requests we can */
-		queue_requests(&ctx, working_mem, working_size);
+		queue_requests(&ctx, working_mem, ctx.pkt_buffer_len);
 		if (ctx.error_code < 0) {
 			continue;
 		}
 
 		/* Wait for response */
-		receive_data(&ctx, &pollfds, working_mem, working_size);
+		receive_data(&ctx, &pollfds, working_mem, ctx.pkt_buffer_len);
 		if (ctx.error_code < 0) {
 			continue;
 		}
