@@ -134,6 +134,11 @@ static void cpatch_progress_cb(uint32_t progress, uint32_t total)
 	progress_cb_cnt += 1;
 }
 
+static int user_stream_cb(uint8_t *buf, size_t len, size_t offset)
+{
+	return 0;
+}
+
 static int test_binary_patch(bool small_output, bool callback)
 {
 	const struct flash_area *fa_original, *fa_patch;
@@ -151,7 +156,7 @@ static int test_binary_patch(bool small_output, bool callback)
 	output_size = small_output ? 4096 : PARTITION_SIZE(NEW_PARTITION);
 	rc = stream_flash_init(&output_ctx, PARTITION_DEVICE(NEW_PARTITION), output_scratch,
 			       sizeof(output_scratch), PARTITION_OFFSET(NEW_PARTITION), output_size,
-			       NULL);
+			       user_stream_cb);
 	zassert_equal(0, rc);
 
 	/* Run patch */
@@ -161,6 +166,8 @@ static int test_binary_patch(bool small_output, bool callback)
 	}
 	rc = cpatch_patch_apply(fa_original, fa_patch, &output_ctx, &header,
 				callback ? cpatch_progress_cb : NULL);
+	/* Stream callback is restored, whether or not patching succeeded */
+	zassert_equal_ptr(user_stream_cb, output_ctx.callback);
 
 	if (rc == 0 && callback) {
 		zassert_true(progress_cb_cnt > 0);

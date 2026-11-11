@@ -237,6 +237,7 @@ int cpatch_patch_apply(const struct flash_area *input, const struct flash_area *
 		.header = header,
 		.progress_cb = progress_cb,
 	};
+	stream_flash_callback_t user_callback = output->callback;
 	int rc;
 
 	if (instruction_set == NULL) {
@@ -249,13 +250,13 @@ int cpatch_patch_apply(const struct flash_area *input, const struct flash_area *
 	/* Apply the patch instructions */
 	rc = instruction_set(&ctx);
 	if (rc < 0) {
-		return rc;
+		goto end;
 	}
 
 	/* Flush any pending writes */
 	rc = stream_flash_buffered_write(output, NULL, 0, true);
 	if (rc < 0) {
-		return rc;
+		goto end;
 	}
 
 	/* Validate output */
@@ -264,8 +265,10 @@ int cpatch_patch_apply(const struct flash_area *input, const struct flash_area *
 		LOG_WRN("Output failure (%d != %d) || (%08X != %08X)",
 			stream_flash_bytes_written(output), header->output_file.length,
 			progress_crc, header->output_file.crc);
-		return -EINVAL;
+		rc = -EINVAL;
 	}
-
-	return 0;
+end:
+	/* Restore the callback of the caller */
+	output->callback = user_callback;
+	return rc;
 }
