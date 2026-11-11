@@ -176,6 +176,16 @@ ZTEST(dfu_exfat, test_dfu_image_find)
 	zassert_equal(-EALREADY, dfu_exfat_app_upgrade_copy(logger, upgrade_version,
 							    output_partition, NULL, NULL));
 
+	/* Names that are not exactly "{major}_{minor}_{revision}.bin" are ignored */
+	image_create(logger, "6_0_0.txt", 6, 0, 0, 0, 64);
+	image_create(logger, "6_0_1.bin.part", 6, 0, 1, 0, 64);
+	image_create(logger, "06_0_2.bin", 6, 0, 2, 0, 64);
+	image_create(logger, "6_00_3.bin", 6, 0, 3, 0, 64);
+	image_create(logger, "256_0_0.bin", 0, 0, 0, 0, 64);
+	image_create(logger, "6_0_65536.bin", 6, 0, 0, 0, 64);
+	image_create(logger, "+6_0_4.bin", 6, 0, 4, 0, 64);
+	upgrade_expect(logger, 5, 1, 0);
+
 	/* Image version must match the file name */
 	image_create(logger, "7_0_0.bin", 7, 0, 1, 0, 64);
 	upgrade_expect(logger, 7, 0, 0);

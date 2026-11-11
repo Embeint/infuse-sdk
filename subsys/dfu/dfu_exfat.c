@@ -8,6 +8,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <strings.h>
 
 #include <zephyr/devicetree.h>
 #include <zephyr/dfu/mcuboot.h>
@@ -40,13 +41,45 @@ struct mcuboot_raw_header {
 	uint32_t build_num;
 } __packed;
 
+/* Longest file name: "255_255_65535.bin" */
+#define VERSION_NAME_MAX sizeof("255_255_65535.bin")
+
 LOG_MODULE_REGISTER(dfu_exfat, LOG_LEVEL_INF);
+
+static void version_filename(char *name, size_t len, const struct infuse_version *version)
+{
+	snprintf(name, len, "%u_%u_%u.bin", version->major, version->minor, version->revision);
+}
+
+/* Parse "{major}_{minor}_{revision}.bin", rejecting any other name */
+static bool version_from_filename(const char *name, struct infuse_version *version)
+{
+	char canonical[VERSION_NAME_MAX];
+	unsigned int major, minor, revision;
+
+	if (sscanf(name, "%u_%u_%u", &major, &minor, &revision) != 3) {
+		return false;
+	}
+	if ((major > UINT8_MAX) || (minor > UINT8_MAX) || (revision > UINT16_MAX)) {
+		return false;
+	}
+	*version = (struct infuse_version){
+		.major = major,
+		.minor = minor,
+		.revision = revision,
+	};
+	/* Name must exactly match the name the copy will open (no signs, leading zeros or
+	 * trailing characters), ignoring case.
+	 */
+	version_filename(canonical, sizeof(canonical), version);
+	return strncasecmp(name, canonical, sizeof(canonical)) == 0;
+}
 
 static int highest_version_on_path(const char *path, struct infuse_version *app_current,
 				   struct infuse_version *app_upgrade)
 {
 	struct infuse_version file_version;
-	int cnt, rc = 0;
+	int rc = 0;
 	FILINFO fno;
 	FRESULT res;
 	DIR dir;
@@ -75,10 +108,7 @@ static int highest_version_on_path(const char *path, struct infuse_version *app_
 			continue;
 		} else {
 			/* File, scan for version number */
-			cnt = sscanf(fno.fname, "%" SCNu8 "_%" SCNu8 "_%" SCNu16 ".bin",
-				     &file_version.major, &file_version.minor,
-				     &file_version.revision);
-			if (cnt != 3) {
+			if (!version_from_filename(fno.fname, &file_version)) {
 				continue;
 			}
 			if (infuse_version_compare(app_current, &file_version) <= 0) {
@@ -176,6 +206,7 @@ int dfu_exfat_app_upgrade_copy(const struct device *dev, struct infuse_version u
 			       uint8_t flash_area_id, infuse_progress_cb_t erase_progress_cb,
 			       infuse_progress_cb_t write_progress_cb)
 {
+	char name[VERSION_NAME_MAX];
 	struct infuse_version header_version;
 	const struct flash_area *fa;
 	uint8_t *block_buffer;
@@ -201,8 +232,8 @@ int dfu_exfat_app_upgrade_copy(const struct device *dev, struct infuse_version u
 	disk = logger_exfat_filesystem_claim(dev, &block_buffer, &block_size, K_FOREVER);
 
 	/* Expected path of the upgrade file */
-	snprintf(path, sizeof(path), "%s:dfu/app/%d_%d_%d.bin", disk, upgrade.major, upgrade.minor,
-		 upgrade.revision);
+	version_filename(name, sizeof(name), &upgrade);
+	snprintf(path, sizeof(path), "%s:dfu/app/%s", disk, name);
 
 	/* Get upgrade file information */
 	if (f_stat(path, &fno) != FR_OK) {
