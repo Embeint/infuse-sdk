@@ -4,21 +4,10 @@
 name: Code Coverage with codecov
 
 on:
-  pull_request:
-    branches:
-      - main
-    paths:
-      - '.github/actions/setup-twister/**'
-      - '.github/workflows/codecov.yml'
-      - 'include/**'
-      - 'lib/**'
-      - 'subsys/**'
-      - 'tests/**'
-      - '**/Kconfig*'
-      - 'west.yml'
   schedule:
     # Run at 14:37 UTC every day
     - cron: '37 14 * * *'
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -54,7 +43,6 @@ jobs:
       CCACHE_DIR: /github/ccache
       # `--specs` is ignored because ccache is unable to resolve the toolchain specs file path.
       CCACHE_IGNOREOPTIONS: '-specs=* --specs=*'
-      BASE_REF: ${{ github.base_ref }}
       ZEPHYR_TOOLCHAIN_VARIANT: zephyr
     steps:
       - name: Workspace cleanup
@@ -73,7 +61,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
           path: infuse-sdk
           fetch-depth: 0
 
@@ -126,7 +113,6 @@ jobs:
       CCACHE_DIR: /github/ccache
       # `--specs` is ignored because ccache is unable to resolve the toolchain specs file path.
       CCACHE_IGNOREOPTIONS: '-specs=* --specs=*'
-      BASE_REF: ${{ github.base_ref }}
       ZEPHYR_TOOLCHAIN_VARIANT: zephyr
     steps:
       - name: Workspace cleanup
@@ -145,7 +131,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
           path: infuse-sdk
           fetch-depth: 0
 
@@ -192,7 +177,6 @@ jobs:
       CCACHE_DIR: /github/ccache
       # `--specs` is ignored because ccache is unable to resolve the toolchain specs file path.
       CCACHE_IGNOREOPTIONS: '-specs=* --specs=*'
-      BASE_REF: ${{ github.base_ref }}
       ZEPHYR_TOOLCHAIN_VARIANT: zephyr
       BSIM_OUT_PATH: /github/cache/embeint/tools/bsim
       BSIM_COMPONENTS_PATH: /github/cache/embeint/tools/bsim/components/
@@ -214,21 +198,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
           path: infuse-sdk
           fetch-depth: 0
 
       - name: Environment Setup
         working-directory: infuse-sdk
         run: |
-          if [ "${{github.event_name}}" = "pull_request" ]; then
-            git config --global user.email "ci@embeint.com"
-            git config --global user.name "Embeint CI"
-            rm -fr ".git/rebase-apply"
-            git rebase origin/${BASE_REF}
-            git log -n 10 --pretty=oneline
-          fi
-
           west init -l . || true
           west config --global update.narrow true
           west config manifest.group-filter -- +babblesim
@@ -251,7 +226,6 @@ jobs:
           ls -la /opt/toolchains
           ls -la
           echo "github.ref: ${{ github.ref }}"
-          echo "github.base_ref: ${{ github.base_ref }}"
           echo "github.ref_name: ${{ github.ref_name }}"
 
       - name: Set up ccache
