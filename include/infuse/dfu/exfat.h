@@ -42,7 +42,8 @@ extern "C" {
  * struct infuse_version upgrade_version;
  *
  * if (dfu_exfat_app_upgrade_exists(logger, &upgrade_version) == 1) {
- *   if (dfu_exfat_app_upgrade_copy(logger, upgrade_version, upgrade_partition, NULL) == 0) {
+ *   if (dfu_exfat_app_upgrade_copy(logger, upgrade_version, upgrade_partition, NULL,
+ *                                  NULL) == 0) {
  *     if (boot_request_upgrade_multi(0, 0) == 0) {
  *       infuse_reboot(INFUSE_REBOOT_DFU, 0x00, 0x00);
  *     }
