@@ -98,6 +98,9 @@ int cpatch_patch_start(const struct flash_area *input, const struct flash_area *
  * @note If `STREAM_FLASH_ERASE` is not enabled, the output flash area must be
  *       manually erased prior to calling this function.
  *
+ * @note The `callback` of @a output is used internally while patching and
+ *       restored before returning.
+ *
  * @param input Input file flash area
  * @param patch Patch file flash area
  * @param output Output stream flash context
