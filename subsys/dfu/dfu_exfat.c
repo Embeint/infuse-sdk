@@ -44,7 +44,7 @@ struct mcuboot_raw_header {
 /* Longest file name: "255_255_65535.bin" */
 #define VERSION_NAME_MAX sizeof("255_255_65535.bin")
 
-LOG_MODULE_REGISTER(dfu_exfat, LOG_LEVEL_INF);
+LOG_MODULE_REGISTER(dfu_exfat, CONFIG_INFUSE_DFU_EXFAT_LOG_LEVEL);
 
 static void version_filename(char *name, size_t len, const struct infuse_version *version)
 {

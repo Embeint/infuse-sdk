@@ -32,4 +32,12 @@ config INFUSE_DFU_EXFAT
 	  Enable functions to automate the process of upgrading firmware from a
 	  /dfu folder on a mounted filesystem.
 
+if INFUSE_DFU_EXFAT
+
+module = INFUSE_DFU_EXFAT
+module-str = infuse_dfu_exfat
+source "subsys/logging/Kconfig.template.log_config"
+
+endif # INFUSE_DFU_EXFAT
+
 endif # INFUSE_DFU_HELPERS
