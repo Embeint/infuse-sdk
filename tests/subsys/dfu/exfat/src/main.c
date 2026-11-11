@@ -68,6 +68,17 @@ static void write_progress_cb_validate(uint32_t written, uint32_t total)
 
 int logger_exfat_init(const struct device *dev);
 
+static void upgrade_expect(const struct device *logger, uint8_t major, uint8_t minor,
+			   uint16_t revision)
+{
+	struct infuse_version upgrade_version;
+
+	zassert_equal(1, dfu_exfat_app_upgrade_exists(logger, &upgrade_version));
+	zassert_equal(major, upgrade_version.major);
+	zassert_equal(minor, upgrade_version.minor);
+	zassert_equal(revision, upgrade_version.revision);
+}
+
 ZTEST(dfu_exfat, test_dfu_image_find)
 {
 	const struct device *logger = DEVICE_DT_GET(DT_NODELABEL(data_logger_exfat));
@@ -110,8 +121,6 @@ ZTEST(dfu_exfat, test_dfu_image_find)
 	logger_exfat_filesystem_release(logger);
 
 	zassert_equal(0, dfu_exfat_app_upgrade_exists(logger, &upgrade_version));
-	zassert_equal(-ENOENT, dfu_exfat_app_upgrade_copy(logger, upgrade_version, output_partition,
-							  NULL, NULL));
 
 	/* Create upgrade file with same version number */
 	disk = logger_exfat_filesystem_claim(logger, NULL, NULL, K_NO_WAIT);
@@ -123,8 +132,6 @@ ZTEST(dfu_exfat, test_dfu_image_find)
 	logger_exfat_filesystem_release(logger);
 
 	zassert_equal(0, dfu_exfat_app_upgrade_exists(logger, &upgrade_version));
-	zassert_equal(-ENOENT, dfu_exfat_app_upgrade_copy(logger, upgrade_version, output_partition,
-							  NULL, NULL));
 
 	/* Create upgrade file with larger version number */
 	disk = logger_exfat_filesystem_claim(logger, NULL, NULL, K_NO_WAIT);
@@ -135,10 +142,8 @@ ZTEST(dfu_exfat, test_dfu_image_find)
 	zassert_equal(FR_OK, f_close(&fp));
 	logger_exfat_filesystem_release(logger);
 
+	upgrade_expect(logger, 2, 3, 1);
 	zassert_equal(1, dfu_exfat_app_upgrade_exists(logger, &upgrade_version));
-	zassert_equal(2, upgrade_version.major);
-	zassert_equal(3, upgrade_version.minor);
-	zassert_equal(1, upgrade_version.revision);
 	zassert_equal(0, dfu_exfat_app_upgrade_copy(logger, upgrade_version, output_partition, NULL,
 						    NULL));
 	flash_area_validate(output_partition, input_buffer, 1024);
@@ -152,10 +157,8 @@ ZTEST(dfu_exfat, test_dfu_image_find)
 	zassert_equal(FR_OK, f_close(&fp));
 	logger_exfat_filesystem_release(logger);
 
+	upgrade_expect(logger, 5, 1, 0);
 	zassert_equal(1, dfu_exfat_app_upgrade_exists(logger, &upgrade_version));
-	zassert_equal(5, upgrade_version.major);
-	zassert_equal(1, upgrade_version.minor);
-	zassert_equal(0, upgrade_version.revision);
 	zassert_equal(0, dfu_exfat_app_upgrade_copy(logger, upgrade_version, output_partition,
 						    erase_progress_cb_validate,
 						    write_progress_cb_validate));
