@@ -39,6 +39,8 @@ RESOURCES = {
 # Resources only provided by the local server, to test client behaviour
 RESOURCES.update(
     {
+        "empty": b"",
+        "large/no_size2": CoapResource(payload=LARGE, size2=False),
         "large/reduced": CoapResource(payload=LARGE, max_szx=5),
         "large/wrong_block": CoapResource(payload=LARGE, block_offset=1),
         "large/oversized": CoapResource(payload=LARGE, extra_payload=16),

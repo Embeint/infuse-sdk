@@ -105,7 +105,11 @@ int infuse_coap_download(int socket, const char *resource, size_t file_size,
 	pollfds[0].fd = socket;
 	pollfds[0].events = ZSOCK_POLLIN;
 
-	coap_block_transfer_init(&blk_ctx, block_size, file_size);
+	/* The expected size is not passed to the block context, as it would cause a mismatching
+	 * server size to fail the download, or silently truncate it. Callers validate the result.
+	 */
+	ARG_UNUSED(file_size);
+	coap_block_transfer_init(&blk_ctx, block_size, 0);
 
 	while (next_block) {
 		/* Minimum work area size should guarantee adding these headers cannot fail */

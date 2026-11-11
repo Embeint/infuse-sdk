@@ -224,6 +224,32 @@ ZTEST(infuse_coap, test_download_sizes)
 
 	sock = socket_setup();
 
+	/* Zero length resource */
+	rc = download(sock, "empty", 0, NULL, sizeof(work_area), 0, 1000, &context);
+	zassert_equal(0, rc);
+
+	/* Expected size too small, the server size is used */
+	rc = download(sock, "large", 1000, large, sizeof(work_area), 256, 1000, &context);
+	zassert_equal(sizeof(large_data), rc);
+	zassert_equal(7, context.cb_count);
+
+	/* Server doesn't report a size, expected size too small */
+	rc = download(sock, "large/no_size2", 1000, large, sizeof(work_area), 256, 1000, &context);
+	zassert_equal(sizeof(large_data), rc);
+	zassert_equal(7, context.cb_count);
+
+	/* Server doesn't report a size, expected size too large.
+	 * Requests after the end of the resource fail.
+	 */
+	rc = download(sock, "large/no_size2", 3000, large, sizeof(work_area), 256, 1000, &context);
+	zassert_equal(sizeof(large_data), rc);
+	zassert_equal(7, context.cb_count);
+
+	/* Server doesn't report a size, unknown size */
+	rc = download(sock, "large/no_size2", 0, large, sizeof(work_area), 256, 1000, &context);
+	zassert_equal(sizeof(large_data), rc);
+	zassert_equal(7, context.cb_count);
+
 	/* Server reduces the block size to 512 bytes */
 	rc = download(sock, "large/reduced", 0, large, sizeof(work_area), 1024, 1000, &context);
 	zassert_equal(sizeof(large_data), rc);
