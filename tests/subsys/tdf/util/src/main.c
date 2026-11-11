@@ -12,8 +12,10 @@
 #include <zephyr/kernel.h>
 #include <zephyr/random/random.h>
 
+#include <infuse/bluetooth/tdf.h>
+#include <infuse/drivers/imu/tdf.h>
+#include <infuse/reboot/tdf.h>
 #include <infuse/tdf/tdf.h>
-#include <infuse/tdf/util.h>
 #include <infuse/time/epoch.h>
 #include <infuse/reboot.h>
 

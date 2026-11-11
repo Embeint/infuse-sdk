@@ -12,11 +12,11 @@
 
 #include <infuse/drivers/imu.h>
 #include <infuse/drivers/imu/data_types.h>
+#include <infuse/drivers/imu/tdf.h>
 #include <infuse/math/common.h>
 #include <infuse/task_runner/task.h>
 #include <infuse/task_runner/tasks/imu.h>
 #include <infuse/tdf/definitions.h>
-#include <infuse/tdf/util.h>
 #include <infuse/time/epoch.h>
 #include <infuse/zbus/channels.h>
 

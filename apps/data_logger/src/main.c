@@ -12,6 +12,7 @@
 #include <zephyr/pm/device_runtime.h>
 #include <zephyr/net/conn_mgr_connectivity.h>
 
+#include <infuse/reboot/tdf.h>
 #include <infuse/version.h>
 #include <infuse/auto/kv_update_log.h>
 #include <infuse/auto/time_sync_log.h>
@@ -26,7 +27,6 @@
 #include <infuse/lib/memfault.h>
 #include <infuse/data_logger/high_level/tdf.h>
 #include <infuse/tdf/definitions.h>
-#include <infuse/tdf/util.h>
 
 #include <infuse/task_runner/runner.h>
 #include <infuse/task_runner/tasks/infuse_tasks.h>

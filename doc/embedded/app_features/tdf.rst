@@ -461,6 +461,9 @@ API Reference
 *************
 
 .. doxygengroup:: tdf_apis
-.. doxygengroup:: tdf_util_apis
+.. doxygengroup:: imu_tdf_apis
+.. doxygengroup:: bluetooth_tdf_apis
+.. doxygengroup:: lte_modem_monitor_tdf_apis
+.. doxygengroup:: reboot_tdf_apis
 
 .. _The Big Night Out (Sommer et al, 2014): https://doi.org/10.1007/978-3-319-03071-5_2

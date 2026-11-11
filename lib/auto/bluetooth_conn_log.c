@@ -8,11 +8,12 @@
 
 #include <zephyr/bluetooth/conn.h>
 
+#include <infuse/bluetooth/tdf.h>
 #include <infuse/work_q.h>
 #include <infuse/auto/bluetooth_conn_log.h>
 #include <infuse/tdf/definitions.h>
-#include <infuse/tdf/util.h>
 #include <infuse/data_logger/high_level/tdf.h>
+#include <infuse/time/epoch.h>
 
 static struct tdf_bluetooth_connection tdf_bt_conn;
 static K_SEM_DEFINE(tdf_access, 1, 1);

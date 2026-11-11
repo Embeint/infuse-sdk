@@ -19,8 +19,8 @@
 #include <infuse/fs/kv_store.h>
 #include <infuse/fs/kv_types.h>
 #include <infuse/reboot.h>
+#include <infuse/reboot/tdf.h>
 #include <infuse/tdf/tdf.h>
-#include <infuse/tdf/util.h>
 
 #define DT_DRV_COMPAT embeint_tdf_data_logger
 #if DT_ANY_INST_HAS_BOOL_STATUS_OKAY(tdf_remote)

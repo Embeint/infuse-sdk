@@ -28,10 +28,11 @@
 #include <infuse/epacket/packet.h>
 #include <infuse/fs/kv_store.h>
 #include <infuse/fs/kv_types.h>
+#include <infuse/lib/lte_modem_monitor.h>
 #include <infuse/lib/memfault.h>
+#include <infuse/reboot/tdf.h>
 #include <infuse/states.h>
 #include <infuse/tdf/definitions.h>
-#include <infuse/tdf/util.h>
 
 #include <infuse/task_runner/runner.h>
 #include <infuse/task_runner/tasks/infuse_tasks.h>

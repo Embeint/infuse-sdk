@@ -13,8 +13,8 @@
 #include <infuse/work_q.h>
 #include <infuse/auto/wifi_conn_log.h>
 #include <infuse/tdf/definitions.h>
-#include <infuse/tdf/util.h>
 #include <infuse/data_logger/high_level/tdf.h>
+#include <infuse/time/epoch.h>
 
 #define WIFI_MGMT_EVENTS (NET_EVENT_WIFI_CONNECT_RESULT | NET_EVENT_WIFI_DISCONNECT_RESULT)
 

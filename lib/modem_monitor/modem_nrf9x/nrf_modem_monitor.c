@@ -16,6 +16,7 @@
 #include <zephyr/net/net_mgmt.h>
 #include <zephyr/sys/__assert.h>
 
+#include <infuse/lib/lte_modem_monitor/tdf.h>
 #include <infuse/work_q.h>
 #include <infuse/lib/lte_modem_monitor.h>
 #include <infuse/fs/kv_store.h>
@@ -25,7 +26,6 @@
 #include <infuse/time/epoch.h>
 #include <infuse/data_logger/high_level/tdf.h>
 #include <infuse/tdf/definitions.h>
-#include <infuse/tdf/util.h>
 
 #include <modem/at_monitor.h>
 #include <modem/nrf_modem_lib.h>
