@@ -75,6 +75,23 @@ static bool version_from_filename(const char *name, struct infuse_version *versi
 	return strncasecmp(name, canonical, sizeof(canonical)) == 0;
 }
 
+/* Claim the filesystem and construct a path on it */
+static const char *filesystem_claim(const struct device *dev, char *path, size_t path_len,
+				    const char *suffix, uint8_t **block_buffer, size_t *block_size)
+{
+	const char *disk;
+	int len;
+
+	disk = logger_exfat_filesystem_claim(dev, block_buffer, block_size, K_FOREVER);
+	len = snprintf(path, path_len, "%s:dfu/app%s", disk, suffix);
+	if (len >= path_len) {
+		LOG_ERR("Path too long for disk %s", disk);
+		logger_exfat_filesystem_release(dev);
+		return NULL;
+	}
+	return disk;
+}
+
 static int highest_version_on_path(const char *path, struct infuse_version *app_current,
 				   struct infuse_version *app_upgrade)
 {
@@ -128,8 +145,7 @@ static int highest_version_on_path(const char *path, struct infuse_version *app_
 int dfu_exfat_app_upgrade_exists(const struct device *dev, struct infuse_version *upgrade)
 {
 	struct infuse_version app_current = application_version_get();
-	const char *disk;
-	char path[32];
+	char path[48];
 	int rc;
 
 	/* Request backend to be powered */
@@ -142,14 +158,15 @@ int dfu_exfat_app_upgrade_exists(const struct device *dev, struct infuse_version
 	*upgrade = app_current;
 
 	/* Claim the filesystem */
-	disk = logger_exfat_filesystem_claim(dev, NULL, NULL, K_FOREVER);
+	if (filesystem_claim(dev, path, sizeof(path), "", NULL, NULL) == NULL) {
+		rc = -ENAMETOOLONG;
+	} else {
+		/* Check for application upgrades */
+		rc = highest_version_on_path(path, &app_current, upgrade);
+		/* Release the filesystem */
+		logger_exfat_filesystem_release(dev);
+	}
 
-	/* Check for application upgrades */
-	snprintf(path, sizeof(path), "%s:dfu/app", disk);
-	rc = highest_version_on_path(path, &app_current, upgrade);
-
-	/* Release the filesystem */
-	logger_exfat_filesystem_release(dev);
 	/* Release device after a delay */
 	(void)pm_device_runtime_put_async(dev, K_MSEC(100));
 	return rc;
@@ -206,7 +223,7 @@ int dfu_exfat_app_upgrade_copy(const struct device *dev, struct infuse_version u
 			       uint8_t flash_area_id, infuse_progress_cb_t erase_progress_cb,
 			       infuse_progress_cb_t write_progress_cb)
 {
-	char name[VERSION_NAME_MAX];
+	char name[VERSION_NAME_MAX + 1] = "/";
 	struct infuse_version header_version;
 	const struct flash_area *fa;
 	uint8_t *block_buffer;
@@ -216,8 +233,7 @@ int dfu_exfat_app_upgrade_copy(const struct device *dev, struct infuse_version u
 	size_t remaining;
 	size_t write_align;
 	size_t offset;
-	const char *disk;
-	char path[32];
+	char path[48];
 	int rc = 0;
 	FILINFO fno;
 	FIL fp;
@@ -228,12 +244,12 @@ int dfu_exfat_app_upgrade_copy(const struct device *dev, struct infuse_version u
 		return rc;
 	}
 
-	/* Claim the filesystem */
-	disk = logger_exfat_filesystem_claim(dev, &block_buffer, &block_size, K_FOREVER);
-
-	/* Expected path of the upgrade file */
-	version_filename(name, sizeof(name), &upgrade);
-	snprintf(path, sizeof(path), "%s:dfu/app/%s", disk, name);
+	/* Claim the filesystem, constructing the expected path of the upgrade file */
+	version_filename(name + 1, sizeof(name) - 1, &upgrade);
+	if (filesystem_claim(dev, path, sizeof(path), name, &block_buffer, &block_size) == NULL) {
+		rc = -ENAMETOOLONG;
+		goto release_device;
+	}
 
 	/* Get upgrade file information */
 	if (f_stat(path, &fno) != FR_OK) {
@@ -325,6 +341,7 @@ close_file:
 end:
 	/* Release the filesystem */
 	logger_exfat_filesystem_release(dev);
+release_device:
 	/* Release device after a delay */
 	(void)pm_device_runtime_put_async(dev, K_MSEC(100));
 	return rc;

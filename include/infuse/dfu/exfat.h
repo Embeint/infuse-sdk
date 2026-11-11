@@ -62,6 +62,7 @@ extern "C" {
  *
  * @retval 0 No valid upgrade file exists
  * @retval 1 Valid upgrade file exists, @a upgrade is valid
+ * @retval -ENAMETOOLONG Disk name too long to construct the path
  * @retval -errno On error
  */
 int dfu_exfat_app_upgrade_exists(const struct device *dev, struct infuse_version *upgrade);
