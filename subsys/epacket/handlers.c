@@ -12,8 +12,11 @@
 #include <infuse/types.h>
 #include <infuse/epacket/interface.h>
 #include <infuse/epacket/packet.h>
-#include <infuse/rpc/server.h>
 #include <infuse/states.h>
+
+#ifdef CONFIG_INFUSE_RPC
+#include <infuse/rpc/server.h>
+#endif /* CONFIG_INFUSE_RPC */
 
 #ifdef CONFIG_EPACKET_INTERFACE_BT_CENTRAL
 #include <infuse/epacket/interface/epacket_bt_central.h>
