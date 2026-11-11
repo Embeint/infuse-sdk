@@ -379,6 +379,22 @@ ZTEST(cpatch, test_stream_thumb2_malformed)
 	}
 }
 
+ZTEST(cpatch, test_stream_thumb2_map_order)
+{
+	/* Branch relocation map with 2 entries (u24 offset, i24 shift), no elements */
+	uint8_t patch[] = {0x01, 0x02, 0x00, 0x08, 0x00, 0x00, 0x04, 0x00,
+			   0x00, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00};
+
+	/* Sorted offsets */
+	zassert_equal(0, test_stream_patch(patch, sizeof(patch), NULL, 0));
+	/* Duplicate offsets */
+	patch[9] = 0x08;
+	zassert_equal(-EINVAL, test_stream_patch(patch, sizeof(patch), NULL, 0));
+	/* Decreasing offsets */
+	patch[9] = 0x04;
+	zassert_equal(-EINVAL, test_stream_patch(patch, sizeof(patch), NULL, 0));
+}
+
 #endif /* CONFIG_INFUSE_CPATCH_ENCODER_STREAM_THUMB2 */
 
 ZTEST(cpatch, test_output_overrun)
