@@ -147,16 +147,34 @@ static int patch_read_at(uint32_t offset, void *ptr, size_t len)
 	return flash_area_read(state.ctx->patch, sizeof(struct cpatch_header) + offset, ptr, len);
 }
 
-static int map_entry_start(const struct reloc_map *map, uint32_t entry, uint32_t *start)
+/* Validate that the entries of a map are sorted and build its index slots */
+static int map_index_build(struct reloc_map *map, uint16_t *slot)
 {
-	uint8_t raw[3];
+	uint32_t entry = 0, chunk, start;
+	int64_t previous = -1;
 	int rc;
 
-	rc = patch_read_at(map->patch_offset + MAP_ENTRY_LEN * entry, raw, sizeof(raw));
-	if (rc < 0) {
-		return rc;
+	map->index_start = *slot;
+	while (entry < map->count) {
+		chunk = MIN(map->count - entry, sizeof(state.entries) / MAP_ENTRY_LEN);
+		rc = patch_read_at(map->patch_offset + MAP_ENTRY_LEN * entry, state.entries,
+				   MAP_ENTRY_LEN * chunk);
+		if (rc < 0) {
+			return rc;
+		}
+		for (uint32_t i = 0; i < chunk; i++, entry++) {
+			start = sys_get_le24(&state.entries[MAP_ENTRY_LEN * i]);
+			/* Searches require strictly increasing offsets within the map */
+			if (start <= previous) {
+				LOG_WRN("Invalid map entry %d (%06X)", entry, start);
+				return -EINVAL;
+			}
+			previous = start;
+			if ((entry % state.index_stride) == 0) {
+				state.index[(*slot)++] = start;
+			}
+		}
 	}
-	*start = sys_get_le24(raw);
 	return 0;
 }
 
@@ -237,13 +255,9 @@ static int preamble_load(void)
 	state.index_stride = MAX(1, DIV_ROUND_UP(total, slots));
 	slot = 0;
 	for (int i = 0; i < state.num_maps; i++) {
-		map = &state.maps[i];
-		map->index_start = slot;
-		for (uint32_t entry = 0; entry < map->count; entry += state.index_stride) {
-			rc = map_entry_start(map, entry, &state.index[slot++]);
-			if (rc < 0) {
-				return rc;
-			}
+		rc = map_index_build(&state.maps[i], &slot);
+		if (rc < 0) {
+			return rc;
 		}
 	}
 	LOG_DBG("%d maps, %d entries, index stride %d", state.num_maps, total, state.index_stride);
