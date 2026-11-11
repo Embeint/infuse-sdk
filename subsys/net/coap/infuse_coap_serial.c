@@ -25,6 +25,45 @@ static uint32_t rx_pkt_count;
 
 LOG_MODULE_REGISTER(infuse_coap, CONFIG_INFUSE_COAP_LOG_LEVEL);
 
+/* Validate that a response contains the requested block before it is used */
+static int validate_block(const struct coap_packet *reply, const struct coap_block_context *ctx,
+			  uint16_t payload_len)
+{
+	uint32_t block_num;
+	bool has_more;
+	int size;
+
+	size = coap_get_block2_option(reply, &has_more, &block_num);
+	if (size == -ENOENT) {
+		/* No Block2 option, only valid if the entire resource is in this response */
+		if (ctx->current != 0) {
+			LOG_ERR("No Block2 option at offset %zu", ctx->current);
+			return -EBADMSG;
+		}
+		return 0;
+	}
+	if (size < 0) {
+		LOG_ERR("Invalid Block2 option (%d)", size);
+		return -EBADMSG;
+	}
+	/* Server can reduce the block size, but not increase it (RFC 7959, section 2.4) */
+	if (size > coap_block_size_to_bytes(ctx->block_size)) {
+		LOG_ERR("Block size increased to %d", size);
+		return -EBADMSG;
+	}
+	if (((size_t)block_num * size) != ctx->current) {
+		LOG_ERR("Unexpected block %u (size %d, offset %zu)", block_num, size, ctx->current);
+		return -EBADMSG;
+	}
+	/* Only the final block can be short, truncated datagrams are also short */
+	if ((payload_len > size) || (has_more && (payload_len != size))) {
+		LOG_ERR("Unexpected block length %d (size %d, more %d)", payload_len, size,
+			has_more);
+		return -EBADMSG;
+	}
+	return 0;
+}
+
 int infuse_coap_download(int socket, const char *resource, size_t file_size,
 			 infuse_coap_data_cb data_cb, void *user_context, uint8_t *working_mem,
 			 size_t working_size, uint16_t req_block_size, int timeout_ms)
@@ -32,7 +71,8 @@ int infuse_coap_download(int socket, const char *resource, size_t file_size,
 	struct coap_block_context blk_ctx;
 	struct coap_packet request, reply;
 	struct zsock_pollfd pollfds[1];
-	uint64_t tx_token, rx_token;
+	uint8_t rx_token[COAP_TOKEN_MAX_LEN];
+	uint64_t tx_token;
 	size_t next_block = UINT32_MAX;
 	int received, total_received = 0;
 	enum coap_block_size block_size;
@@ -125,7 +165,8 @@ poll_retry:
 #endif /* CONFIG_INFUSE_COAP_TEST_PACKET_DROP_BITMASK */
 		rc = coap_packet_parse(&reply, working_mem, received, NULL, 0);
 		if (rc < 0) {
-			LOG_ERR("Invalid data received");
+			LOG_WRN("Invalid data received (%d)", rc);
+			goto poll_retry;
 		}
 		response_code = coap_header_get_code(&reply);
 
@@ -136,9 +177,9 @@ poll_retry:
 		}
 
 		/* Compare response token to request token */
-		coap_header_get_token(&reply, (uint8_t *)&rx_token);
-		if (tx_token != rx_token) {
-			LOG_WRN("Mismatched token (%llu != %llu)", tx_token, rx_token);
+		if ((coap_header_get_token(&reply, rx_token) != sizeof(tx_token)) ||
+		    (memcmp(rx_token, &tx_token, sizeof(tx_token)) != 0)) {
+			LOG_WRN("Mismatched token");
 			goto poll_retry;
 		}
 
@@ -152,25 +193,30 @@ poll_retry:
 		/* Reset retry counter */
 		chunk_retries = 0;
 
-		/* Extract payload and run user callback */
+		/* Validate the payload before it is used */
 		const uint8_t *payload;
 		uint16_t payload_len;
 
 		payload = coap_packet_get_payload(&reply, &payload_len);
-		total_received += payload_len;
-		LOG_DBG("RX: %d PAYLOAD: %d", received, payload_len);
-
-		rc = data_cb(blk_ctx.current, payload, payload_len, user_context);
-		if (rc != 0) {
+		rc = validate_block(&reply, &blk_ctx, payload_len);
+		if (rc < 0) {
 			return rc;
 		}
 
-		/* Update expected next block */
+		/* Update block context from the response */
 		rc = coap_update_from_block(&reply, &blk_ctx);
 		if (rc < 0) {
 			LOG_ERR("coap_update_from_block %d", rc);
 			return -EIO;
 		}
+
+		/* Run user callback */
+		LOG_DBG("RX: %d PAYLOAD: %d", received, payload_len);
+		rc = data_cb(blk_ctx.current, payload, payload_len, user_context);
+		if (rc != 0) {
+			return rc;
+		}
+		total_received += payload_len;
 		/* Get next block address */
 		next_block = coap_next_block(&reply, &blk_ctx);
 	}

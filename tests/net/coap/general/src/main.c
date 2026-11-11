@@ -223,6 +223,11 @@ ZTEST(infuse_coap, test_download_bad_responses)
 
 	sock = socket_setup();
 
+	/* Token that doesn't match any request is ignored */
+	rc = download(sock, "hello/short_token", 0, NULL, sizeof(work_area), 0, 100, &context);
+	zassert_equal(-ETIMEDOUT, rc);
+	zassert_equal(0, context.cb_count);
+
 	/* 8 byte token, longer than the parallel backend uses */
 	rc = download(sock, "hello/long_token", 0, "world", sizeof(work_area), 0, 100, &context);
 	if (IS_ENABLED(CONFIG_INFUSE_COAP_BACKEND_SERIAL)) {
