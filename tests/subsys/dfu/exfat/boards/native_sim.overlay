@@ -11,6 +11,8 @@
 
 &flash0 {
 	reg = <0x00000000 DT_SIZE_K(2048 + 64)>;
+	/* Internal flash write alignment, image copies must pad the final chunk */
+	write-block-size = <4>;
 	partitions {
 		compatible = "fixed-partitions";
 		#address-cells = <1>;

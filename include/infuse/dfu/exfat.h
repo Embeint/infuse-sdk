@@ -83,6 +83,7 @@ int dfu_exfat_app_upgrade_exists(const struct device *dev, struct infuse_version
  * @retval -ENOENT Upgrade file does not exist
  * @retval -EINVAL File is not a MCUboot image of version @a upgrade
  * @retval -EALREADY Output area already contains the image
+ * @retval -EFBIG Image does not fit in the output area
  * @retval -errno Other error
  */
 int dfu_exfat_app_upgrade_copy(const struct device *dev, struct infuse_version upgrade,

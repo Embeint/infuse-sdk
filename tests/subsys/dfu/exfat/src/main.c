@@ -164,7 +164,7 @@ ZTEST(dfu_exfat, test_dfu_image_find)
 	zassert_equal(-EALREADY, dfu_exfat_app_upgrade_copy(logger, upgrade_version,
 							    output_partition, NULL, NULL));
 
-	/* Multiple larger version numbers */
+	/* Multiple larger version numbers, final chunk not aligned to the flash write size */
 	image_create(logger, "5_1_0.bin", 5, 1, 0, 0, 1569);
 	memcpy(expected, input_buffer, 1569);
 	upgrade_expect(logger, 5, 1, 0);
