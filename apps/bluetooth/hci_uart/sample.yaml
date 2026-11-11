@@ -2,11 +2,13 @@ sample:
   name: Bluetooth HCI UART
   description: Allows Zephyr to provide Bluetooth connectivity via UART
 common:
+  tags:
+    - app
+    - cpatch
+    - epacket
+    - rpc
   harness: bluetooth
   filter: dt_compat_enabled("zephyr,zephyr,bt-c2h-uart")
-  tags:
-    - uart
-    - bluetooth
   integration_platforms:
     - auroch@0.1.0/nrf54l15/cpuapp
 tests:

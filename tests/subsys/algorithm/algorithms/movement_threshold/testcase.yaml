@@ -1,5 +1,20 @@
 common:
-  tags: imu
+  tags:
+    - algorithm_runner
+    - algorithms
+    - data_logger
+    - epacket
+    - gnss
+    - imu
+    - kv_store
+    - littlefs
+    - math
+    - reboot
+    - rpc
+    - states
+    - task_runner
+    - tdf
+    - zbus
   min_flash: 64
   min_ram: 32
 tests:

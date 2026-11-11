@@ -2,12 +2,26 @@ sample:
   description: Bluetooth HCI link load test
   name: HCI Load Test
 common:
+  tags:
+    - bluetooth
+    - data_logger
+    - epacket
+    - gnss
+    - kv_store
+    - logging
+    - mcumgr
+    - modem_monitor
+    - net
+    - rpc
+    - sensor
+    - states
+    - tdf
+    - watchdog
   build_only: true
   required_snippets:
     - infuse
 tests:
   sample.bluetooth.hci_load:
-    tags: bluetooth
     platform_allow:
       - nrf9160dk/nrf9160/ns
     integration_platforms:

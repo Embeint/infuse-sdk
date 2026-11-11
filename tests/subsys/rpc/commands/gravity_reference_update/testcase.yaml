@@ -1,5 +1,13 @@
 common:
-  tags: infuse
+  tags:
+    - rpc
+    - epacket
+    - imu
+    - kv_store
+    - states
+    - tdf
+    - watchdog
+    - zbus
   min_flash: 64
   min_ram: 32
 tests:

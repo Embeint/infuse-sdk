@@ -1,5 +1,13 @@
 common:
-  tags: infuse
+  tags:
+    - rpc
+    - data_logger
+    - epacket
+    - kv_store
+    - states
+    - tdf
+    - time
+    - watchdog
   min_flash: 64
   min_ram: 32
 tests:

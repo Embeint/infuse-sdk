@@ -2,6 +2,15 @@ sample:
   description: Erase onboard flash
   name: Flash Erase
 
+common:
+  tags:
+    - sample
+    - epacket
+    - kv_store
+    - logging
+    - rpc
+    - states
+    - tdf
 tests:
   sample.flash_erase:
     build_only: true

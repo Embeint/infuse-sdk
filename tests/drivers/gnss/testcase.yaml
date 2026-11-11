@@ -2,6 +2,17 @@ sample:
   description: GNSS
   name: GNSS
 
+common:
+  tags:
+    - gnss
+    - epacket
+    - kv_store
+    - logging
+    - modem
+    - rpc
+    - shared_device
+    - states
+    - tdf
 tests:
   sample.gnss.sparkfun_sam_m10q:
     build_only: true

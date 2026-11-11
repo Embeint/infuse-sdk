@@ -1,9 +1,19 @@
 common:
+  tags:
+    - bluetooth
+    - auto
+    - data_logger
+    - epacket
+    - kv_store
+    - logging
+    - math
+    - rpc
+    - states
+    - task_runner
+    - tdf
   build_only: true
   required_snippets:
     - infuse
-  tags:
-    - bluetooth
   platform_allow:
     - nrf52_bsim/native
     - nrf54l15bsim/nrf54l15/cpuapp

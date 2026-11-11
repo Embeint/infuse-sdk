@@ -1,7 +1,13 @@
 common:
   tags:
-    - infuse
     - net
+    - epacket
+    - kv_store
+    - modem_monitor
+    - rpc
+    - security
+    - states
+    - tdf
   min_flash: 64
   min_ram: 32
 tests:

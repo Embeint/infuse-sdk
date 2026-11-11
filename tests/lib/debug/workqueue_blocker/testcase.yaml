@@ -1,5 +1,11 @@
 common:
-  tags: debug
+  tags:
+    - debug
+    - kv_store
+    - math
+    - states
+    - task_runner
+    - tdf
   min_flash: 64
   min_ram: 32
 tests:

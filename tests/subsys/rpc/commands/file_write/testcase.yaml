@@ -1,5 +1,17 @@
 common:
-  tags: infuse
+  tags:
+    - rpc
+    - bluetooth
+    - cpatch
+    - dfu
+    - epacket
+    - kv_store
+    - littlefs
+    - reboot
+    - security
+    - states
+    - tdf
+    - watchdog
   min_flash: 64
   min_ram: 32
 tests:

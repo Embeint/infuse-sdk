@@ -1,6 +1,7 @@
+common:
+  tags: version
 tests:
   libraries.version:
     integration_platforms:
       - native_sim
       - qemu_cortex_m3
-    tags: infuse

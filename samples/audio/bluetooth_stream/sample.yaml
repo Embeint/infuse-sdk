@@ -2,6 +2,24 @@ sample:
   description: Stream Audio over Bluetooth using TDF
   name: Audio Bluetooth Stream
 common:
+  tags:
+    - sample
+    - audio
+    - data_logger
+    - epacket
+    - gnss
+    - imu
+    - kv_store
+    - logging
+    - math
+    - modem_monitor
+    - rpc
+    - states
+    - task_runner
+    - tdf
+    - time
+    - watchdog
+    - zbus
   build_only: true
   required_snippets:
     - infuse
@@ -9,5 +27,4 @@ common:
   integration_platforms:
     - nrf52840dk/nrf52840
 tests:
-  sample.audio.bluetooth_stream:
-    tags: validation
+  sample.audio.bluetooth_stream: {}

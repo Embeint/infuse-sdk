@@ -2,11 +2,29 @@ sample:
   description: LoRa ranging sample
   name: lora_ranger
 common:
+  tags:
+    - sample
+    - bluetooth
+    - data_logger
+    - epacket
+    - gnss
+    - imu
+    - kv_store
+    - logging
+    - math
+    - modem_monitor
+    - reboot
+    - rpc
+    - states
+    - task_runner
+    - tdf
+    - time
+    - watchdog
+    - zbus
   filter: dt_alias_exists("lora0") and
     dt_nodelabel_enabled("led0") and
     dt_nodelabel_enabled("led1") and
     dt_nodelabel_enabled("led2")
-  tags: app
   build_only: true
   required_snippets:
     - infuse

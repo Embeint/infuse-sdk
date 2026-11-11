@@ -1,5 +1,9 @@
 common:
-  tags: dfu
+  tags:
+    - dfu
+    - data_logger
+    - kv_store
+    - version
   min_flash: 64
   min_ram: 32
 tests:

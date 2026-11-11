@@ -1,6 +1,14 @@
 common:
+  tags:
+    - rpc
+    - common_boot
+    - epacket
+    - kv_store
+    - reboot
+    - states
+    - tdf
+    - watchdog
   arch_allow: arm
-  tags: infuse
   min_flash: 64
   min_ram: 32
 tests:

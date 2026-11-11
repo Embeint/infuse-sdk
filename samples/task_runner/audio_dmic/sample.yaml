@@ -2,10 +2,24 @@ sample:
   description: Digital microphone task runner sample
   name: Digital microphone  task runner
 common:
+  tags:
+    - task_runner
+    - data_logger
+    - epacket
+    - imu
+    - kv_store
+    - math
+    - modem_monitor
+    - rpc
+    - states
+    - tdf
+    - time
+    - version
+    - watchdog
+    - zbus
   filter: dt_alias_exists("dmic-dev") and dt_chosen_enabled("zephyr,bt-hci")
   build_only: true
   required_snippets:
     - infuse
 tests:
-  sample.task_runner.audio_dmic:
-    tags: app
+  sample.task_runner.audio_dmic: {}

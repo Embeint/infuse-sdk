@@ -2,6 +2,12 @@ sample:
   description: Allows Zephyr to provide Bluetooth connectivity via SPI.
   name: Bluetooth HCI SPI
 common:
+  tags:
+    - app
+    - cpatch
+    - epacket
+    - kv_store
+    - rpc
   harness: bluetooth
   filter: dt_compat_enabled("zephyr,bt-hci-spi-slave")
   integration_platforms:
@@ -10,9 +16,6 @@ common:
     - tauro/nrf52840
   platform_exclude:
     - nrf9160dk@0.7.0/nrf52840
-  tags:
-    - bluetooth
-    - spi
 tests:
   sample.bluetooth.hci_spi:
     sysbuild: false

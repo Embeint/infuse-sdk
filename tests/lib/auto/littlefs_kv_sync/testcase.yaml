@@ -1,5 +1,9 @@
 common:
-  tags: fs
+  tags:
+    - auto
+    - kv_store
+    - littlefs
+    - tdf
   min_flash: 64
   min_ram: 32
 tests:

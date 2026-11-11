@@ -1,9 +1,17 @@
 common:
+  tags:
+    - ieee802154
+    - epacket
+    - kv_store
+    - math
+    - net
+    - rpc
+    - states
+    - task_runner
+    - tdf
   build_only: true
   required_snippets:
     - infuse
-  tags:
-    - bluetooth
   platform_allow:
     - nrf52_bsim/native
   harness: bsim

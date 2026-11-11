@@ -3,6 +3,7 @@ sample:
   name: Generic simulated sensor
 
 common:
+  tags: sensor
   sysbuild: true
   integration_platforms:
     - native_sim

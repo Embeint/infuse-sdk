@@ -1,7 +1,10 @@
 common:
   tags:
-    - infuse
     - net
+    - kv_store
+    - modem_monitor
+    - tdf
+    - wifi
 tests:
   net.conn_mgr.wifi_kv_store:
     platform_allow:

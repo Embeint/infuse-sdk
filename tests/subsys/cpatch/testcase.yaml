@@ -1,5 +1,5 @@
 common:
-  tags: infuse
+  tags: cpatch
 tests:
   cpatch.patch:
     platform_allow:

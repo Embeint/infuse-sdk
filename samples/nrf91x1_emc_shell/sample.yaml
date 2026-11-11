@@ -2,6 +2,14 @@ sample:
   description: nRF91x1 LTE modem EMC testing
   name: nRF91x1 LTE modem EMC
 common:
+  tags:
+    - sample
+    - epacket
+    - kv_store
+    - modem_monitor
+    - rpc
+    - states
+    - tdf
   build_only: true
   socs_allow:
     - nrf9151
@@ -11,5 +19,4 @@ common:
     - nrf9161dk/nrf9161/ns
     - nrf9151dk/nrf9151/ns
 tests:
-  sample.nrf91x1_emc_shell:
-    tags: validation
+  sample.nrf91x1_emc_shell: {}

@@ -1,9 +1,15 @@
 common:
+  tags:
+    - auto
+    - epacket
+    - kv_store
+    - states
+    - tdf
+    - time
   platform_allow:
     - native_sim
   integration_platforms:
     - native_sim
-  tags: infuse
   min_flash: 64
   min_ram: 32
 tests:

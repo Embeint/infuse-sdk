@@ -1,5 +1,14 @@
 common:
-  tags: infuse
+  tags:
+    - common_boot
+    - epacket
+    - kv_store
+    - reboot
+    - rpc
+    - security
+    - states
+    - tdf
+    - time
   min_flash: 64
   min_ram: 32
 tests:

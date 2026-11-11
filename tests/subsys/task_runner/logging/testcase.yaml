@@ -1,6 +1,8 @@
 common:
   tags:
+    - task_runner
     - data_logger
+    - epacket
     - tdf
   min_flash: 64
   min_ram: 32

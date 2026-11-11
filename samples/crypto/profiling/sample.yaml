@@ -2,6 +2,15 @@ sample:
   description: Profiling of cryptographic operations
   name: crypto_profiling
 common:
+  tags:
+    - crypto
+    - epacket
+    - kv_store
+    - logging
+    - mcumgr
+    - rpc
+    - states
+    - tdf
   platform_allow:
     - qemu_cortex_m3
     - native_sim
@@ -16,7 +25,6 @@ common:
     - nrf5340dk/nrf5340/cpuapp/ns
 tests:
   sample.app.crypto_profiling:
-    tags: crypto
     harness: console
     harness_config:
       type: multi_line

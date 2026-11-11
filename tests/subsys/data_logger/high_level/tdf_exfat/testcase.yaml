@@ -1,5 +1,10 @@
 common:
-  tags: data_logger
+  tags:
+    - data_logger
+    - epacket
+    - kv_store
+    - tdf
+    - watchdog
   min_flash: 64
   min_ram: 32
 tests:

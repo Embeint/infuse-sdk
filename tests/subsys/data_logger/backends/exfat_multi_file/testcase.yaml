@@ -1,5 +1,8 @@
 common:
-  tags: data_logger
+  tags:
+    - data_logger
+    - kv_store
+    - watchdog
   min_flash: 64
   min_ram: 32
 tests:

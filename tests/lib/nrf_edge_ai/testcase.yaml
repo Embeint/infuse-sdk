@@ -1,3 +1,11 @@
+common:
+  tags:
+    - nrf_edge_ai
+    - epacket
+    - kv_store
+    - rpc
+    - states
+    - tdf
 tests:
   libraries.nrf_edge_ai:
     arch_allow: arm
@@ -7,4 +15,3 @@ tests:
     integration_platforms:
       - nrf54l15dk/nrf54l15/cpuapp
       - mps2/an386
-    tags: infuse

@@ -1,5 +1,17 @@
 common:
-  tags: algorithm_runner
+  tags:
+    - algorithm_runner
+    - algorithms
+    - data_logger
+    - epacket
+    - imu
+    - kv_store
+    - littlefs
+    - math
+    - reboot
+    - states
+    - tdf
+    - zbus
   min_flash: 64
   min_ram: 32
 tests:

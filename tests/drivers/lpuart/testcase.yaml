@@ -2,6 +2,14 @@ sample:
   description: LPUART
   name: LPUART
 common:
+  tags:
+    - serial
+    - epacket
+    - kv_store
+    - logging
+    - rpc
+    - states
+    - tdf
   build_only: true
   platform_allow:
     - nrf52840dk/nrf52840

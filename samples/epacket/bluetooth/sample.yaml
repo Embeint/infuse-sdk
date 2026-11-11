@@ -2,22 +2,31 @@ sample:
   description: ePacket Bluetooth sample
   name: Bluetooth advertising and GATT
 common:
+  tags:
+    - epacket
+    - data_logger
+    - kv_store
+    - logging
+    - math
+    - mcumgr
+    - reboot
+    - rpc
+    - security
+    - states
+    - task_runner
+    - tdf
+    - version
+    - watchdog
   build_only: true
   required_snippets:
     - infuse
 tests:
   sample.epacket.bluetooth:
-    tags:
-      - bluetooth
-      - epacket
     platform_allow:
       - nrf52840dk/nrf52840
     integration_platforms:
       - nrf52840dk/nrf52840
   sample.epacket.bluetooth.sysbuild:
-    tags:
-      - bluetooth
-      - epacket
     sysbuild: true
     platform_allow:
       - nrf5340dk/nrf5340/cpuapp

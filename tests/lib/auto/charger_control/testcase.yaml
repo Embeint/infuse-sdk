@@ -1,9 +1,17 @@
+common:
+  tags:
+    - auto
+    - data_logger
+    - epacket
+    - kv_store
+    - tdf
+    - time
+    - zbus
 tests:
   libraries.auto.charge_control:
     platform_allow:
       - native_sim
     integration_platforms:
       - native_sim
-    tags: infuse
     min_flash: 64
     min_ram: 32

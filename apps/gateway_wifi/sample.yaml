@@ -2,6 +2,26 @@ sample:
   description: Bluetooth <-> WiFi bridge
   name: gateway WiFi
 common:
+  tags:
+    - app
+    - auto
+    - bluetooth
+    - data_logger
+    - epacket
+    - gnss
+    - imu
+    - kv_store
+    - logging
+    - math
+    - mcumgr
+    - modem_monitor
+    - net
+    - rpc
+    - states
+    - task_runner
+    - tdf
+    - watchdog
+    - zbus
   build_only: true
   filter: not CONFIG_BUILD_WITH_TFM
   required_snippets:
@@ -12,8 +32,6 @@ common:
   integration_platforms:
     - nrf7002dk/nrf5340/cpuapp
 tests:
-  sample.app.gateway_wifi:
-    tags: gateway
+  sample.app.gateway_wifi: {}
   sample.app.gateway_wifi.sysbuild:
-    tags: gateway
     sysbuild: true

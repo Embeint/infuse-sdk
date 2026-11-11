@@ -1,15 +1,21 @@
 common:
   tags:
     - drivers
-    - sensors
+    - charger
+    - fuel_gauge
+    - gnss
+    - imu
+    - led
+    - modem
+    - sensor
+    - shared_device
   platform_allow:
     - native_sim
   integration_platforms:
     - native_sim
   build_only: true
 tests:
-  infuse.build:
-    tags: sensors
+  infuse.build: {}
   infuse.build.pm:
     extra_configs:
       - CONFIG_PM_DEVICE=y

@@ -1,6 +1,22 @@
 sample:
   description: GNSS satellite signal monitoring
   name: UBX Signal Monitor
+common:
+  tags:
+    - gnss
+    - epacket
+    - imu
+    - kv_store
+    - logging
+    - mcumgr
+    - modem
+    - modem_monitor
+    - net
+    - rpc
+    - sensor
+    - shared_device
+    - states
+    - tdf
 tests:
   sample.gnss.ubx_signal_monitor:
     build_only: true
