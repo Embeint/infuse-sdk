@@ -388,6 +388,7 @@ static void queue_requests(struct download_context *ctx, uint8_t *tx_buffer, uin
 static int process_response(struct download_context *ctx, uint8_t *response_buf,
 			    size_t response_len)
 {
+	uint8_t token_buf[COAP_TOKEN_MAX_LEN];
 	struct block_request *req = NULL;
 	struct coap_packet response;
 	const uint8_t *payload;
@@ -411,12 +412,12 @@ static int process_response(struct download_context *ctx, uint8_t *response_buf,
 		return 0;
 	}
 
-	/* Get token to match with request */
-	payload_len = coap_header_get_token(&response, (void *)&token);
-	if (payload_len != sizeof(token)) {
-		LOG_ERR("Invalid token length %d %d", payload_len, sizeof(token));
-		return -EINVAL;
+	/* Get token to match with request (all requests use 4 byte tokens) */
+	if (coap_header_get_token(&response, token_buf) != sizeof(token)) {
+		LOG_WRN("Received response with unexpected token length");
+		return 0;
 	}
+	memcpy(&token, token_buf, sizeof(token));
 
 	/* Find matching request */
 	for (int i = 0; i < CONFIG_INFUSE_COAP_BACKEND_PARALLEL_MAX_IN_FLIGHT; i++) {
