@@ -613,8 +613,8 @@ static void receive_data(struct download_context *ctx, struct zsock_pollfd *poll
 	/* Wait for data to be available */
 	rc = zsock_poll(pollfds, 1, ctx->request_timeout_ms);
 	if (rc < 0) {
-		LOG_ERR("Poll error (%d)", -errno);
-		ctx->error_code = rc;
+		ctx->error_code = -errno;
+		LOG_ERR("Poll error (%d)", ctx->error_code);
 		return;
 	}
 	if (pollfds[0].revents & (ZSOCK_POLLHUP | ZSOCK_POLLNVAL)) {
@@ -624,7 +624,7 @@ static void receive_data(struct download_context *ctx, struct zsock_pollfd *poll
 		/* Read data into provided buffer */
 		received = zsock_recv(ctx->sock, rx_buffer, rx_len, 0);
 		if (received < 0) {
-			LOG_ERR("No data");
+			LOG_ERR("Receive error (%d)", -errno);
 			ctx->error_code = -EIO;
 			return;
 		}
