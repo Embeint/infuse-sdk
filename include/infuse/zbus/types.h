@@ -12,7 +12,6 @@
 
 #include <stdint.h>
 
-#include <infuse/drivers/imu/data_types.h>
 #include <infuse/tdf/definitions.h>
 
 #ifdef __cplusplus
@@ -42,7 +41,13 @@ struct infuse_zbus_chan_tilt {
 	float cosine;
 };
 
-/** @brief Infuse-IoT zbus channel identifiers */
+/**
+ * @brief Infuse-IoT zbus channel identifiers
+ *
+ * Channel data types are only required where a channel's data is accessed.
+ * Users of the IMU channels must include @c <infuse/drivers/imu/data_types.h>
+ * themselves, so that users of other channels do not depend on the IMU API.
+ */
 enum infuse_zbus_channel_id {
 	/** Base value for Infuse-IoT channel identifiers */
 	INFUSE_ZBUS_CHAN_BASE = 0x43210000,
