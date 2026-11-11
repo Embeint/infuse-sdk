@@ -21,6 +21,9 @@
 	aliases {
 		environmental0 = &bme688;
 		imu0 = &bmi270;
+		led0 = &led1_red;
+		led1 = &led1_green;
+		led2 = &led1_blue;
 	};
 };
 

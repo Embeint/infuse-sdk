@@ -89,6 +89,13 @@ jobs:
           cmake --build algorithm-build
           rm -r algorithm-build
 
+      - name: Build nRF Edge AI algorithm
+        if: matrix.subset == 1
+        run: |
+          cmake -S infuse-sdk/samples/algorithm/gesture_edge_ai/ -B algorithm-build
+          cmake --build algorithm-build
+          rm -r algorithm-build
+
       - if: github.event_name == 'pull_request' && matrix.subset == 1
         name: Run Unit Tests with Twister (Pull Request)
         run: |
