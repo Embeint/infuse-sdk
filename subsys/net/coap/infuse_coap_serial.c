@@ -183,6 +183,13 @@ poll_retry:
 		}
 		response_code = coap_header_get_code(&reply);
 
+		/* Server rejected the request */
+		if ((coap_header_get_type(&reply) == COAP_TYPE_RESET) &&
+		    (coap_header_get_id(&reply) == pkt_id)) {
+			LOG_ERR("Request reset by server");
+			return -ECONNRESET;
+		}
+
 		/* Empty response check first */
 		if (response_code == COAP_CODE_EMPTY) {
 			LOG_INF("Empty response, retrying poll");

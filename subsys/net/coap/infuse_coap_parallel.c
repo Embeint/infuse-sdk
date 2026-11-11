@@ -35,6 +35,7 @@ struct block_request {
 	int64_t timeout;
 	uint32_t block_num;
 	uint32_t token;
+	uint16_t msg_id;
 	uint8_t retries;
 	bool in_flight;
 	bool completed;
@@ -295,14 +296,16 @@ static int deliver_buffered_blocks(struct download_context *ctx)
 }
 
 /* Build CoAP GET request with block2 option */
-static int build_block_request(struct download_context *ctx, uint32_t block_num, uint32_t token,
+static int build_block_request(struct download_context *ctx, const struct block_request *req,
 			       uint8_t *buf, size_t buf_len)
 {
 	struct coap_packet request;
+	uint32_t block_num = req->block_num;
 	int rc;
 
-	rc = coap_packet_init(&request, buf, buf_len, COAP_VERSION_1, COAP_TYPE_CON, sizeof(token),
-			      (uint8_t *)&token, COAP_METHOD_GET, coap_next_id());
+	rc = coap_packet_init(&request, buf, buf_len, COAP_VERSION_1, COAP_TYPE_CON,
+			      sizeof(req->token), (const uint8_t *)&req->token, COAP_METHOD_GET,
+			      req->msg_id);
 	if (rc < 0) {
 		LOG_ERR("Failed to init CoAP packet: %d", rc);
 		return rc;
@@ -339,7 +342,8 @@ static int send_block_request(struct download_context *ctx, struct block_request
 	int len;
 
 	/* Create the request buffer */
-	len = build_block_request(ctx, req->block_num, req->token, buffer, buffer_len);
+	req->msg_id = coap_next_id();
+	len = build_block_request(ctx, req, buffer, buffer_len);
 	if (len < 0) {
 		return len;
 	}
@@ -469,6 +473,19 @@ static int process_response(struct download_context *ctx, uint8_t *response_buf,
 	if (rc < 0) {
 		/* Not a valid CoAP message, ignore */
 		LOG_WRN("Failed to parse CoAP response: %d", rc);
+		return 0;
+	}
+
+	/* Server rejected a request */
+	if (coap_header_get_type(&response) == COAP_TYPE_RESET) {
+		for (int i = 0; i < ARRAY_SIZE(ctx->requests); i++) {
+			if (!ctx->requests[i].completed &&
+			    (ctx->requests[i].msg_id == coap_header_get_id(&response))) {
+				LOG_ERR("Request for block %u reset by server",
+					ctx->requests[i].block_num);
+				return -ECONNRESET;
+			}
+		}
 		return 0;
 	}
 

@@ -47,6 +47,7 @@ RESOURCES.update(
         "hello/long_token": CoapResource(payload=b"world", token_len=8),
         "hello/short_token": CoapResource(payload=b"world", token_len=2),
         "hello/junk": CoapResource(payload=b"world", junk_first=True),
+        "hello/reset": CoapResource(payload=b"world", reset=True),
     }
 )
 
