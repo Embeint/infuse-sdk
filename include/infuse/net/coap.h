@@ -43,7 +43,9 @@ typedef int (*infuse_coap_data_cb)(uint32_t offset, const uint8_t *data, uint16_
  *
  * @param socket Socket already connected to remote server
  * @param resource Resource path URI, for example "path/to/resource"
- * @param file_size Size of the file that is being downloaded (0 if unknown)
+ * @param file_size Expected size of the file that is being downloaded (0 if unknown).
+ *                  Only used as a hint, the download completes when the server reports
+ *                  the final block and the return value is the number of bytes received.
  * @param data_cb Callback run on each data chunk received
  * @param user_context Arbitrary user context for @a data_cb
  * @param working_mem Memory buffer for sending/receiving packets with
@@ -52,6 +54,8 @@ typedef int (*infuse_coap_data_cb)(uint32_t offset, const uint8_t *data, uint16_
  * @param timeout_ms Timeout waiting for each response from server
  *
  * @retval >=0 bytes downloaded on success
+ * @retval -ENOMEM @a working_size too small for @a block_size
+ * @retval -EBADMSG Server response does not match the requested block
  * @retval <0 error code on failure
  */
 int infuse_coap_download(int socket, const char *resource, size_t file_size,

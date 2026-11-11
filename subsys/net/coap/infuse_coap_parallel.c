@@ -35,6 +35,7 @@ struct block_request {
 	int64_t timeout;
 	uint32_t block_num;
 	uint32_t token;
+	uint16_t msg_id;
 	uint8_t retries;
 	bool in_flight;
 	bool completed;
@@ -59,25 +60,38 @@ struct download_context {
 
 	/* Resource metadata */
 	const char *resource;
-	uint8_t resource_split[CONFIG_INFUSE_COAP_MAX_URI_SEGMENTS + 1];
+	uint16_t resource_split[CONFIG_INFUSE_COAP_MAX_URI_SEGMENTS + 1];
 	int8_t num_resource_split;
 
 	/* Request block information */
 	uint32_t next_token;
 	uint32_t next_block_to_request;
+	/* Number of blocks to request (0 == unknown) */
 	uint32_t total_blocks;
 	uint16_t block_size_bytes;
 	enum coap_block_size block_size;
+	/* Block size can only be changed by the server on the first response */
+	bool block_size_fixed;
+
+	/* Memory for sending requests and receiving responses */
+	uint16_t pkt_buffer_len;
 
 	/* File information */
-	size_t total_size;
+	size_t expected_size;
 	size_t current_offset;
+	bool final_delivered;
 
 	/* State tracking */
 	int request_timeout_ms;
 	int block_requests_max;
 	int block_requests_remaining;
 	int error_code;
+
+	/* Error response for a block after the next block to deliver.
+	 * Only reported if that block is needed (it may be after the end of the resource).
+	 */
+	uint32_t error_block;
+	int error_block_code;
 };
 
 #ifdef CONFIG_INFUSE_COAP_TEST_PACKET_DROP_BITMASK
@@ -118,10 +132,13 @@ static int download_context_init(struct download_context *ctx, int sock, uint8_t
 
 	ctx->sock = sock;
 	if (file_size > 0) {
-		ctx->total_size = file_size;
-		ctx->total_blocks =
-			ROUND_UP(file_size, ctx->block_size_bytes) / ctx->block_size_bytes;
+		/* Size provided by the caller is only used to limit requests, the download
+		 * completes on the final block reported by the server.
+		 */
+		ctx->expected_size = file_size;
+		ctx->total_blocks = DIV_ROUND_UP(file_size, ctx->block_size_bytes);
 	}
+	ctx->error_block = UINT32_MAX;
 
 	ctx->chunk_callback = callback;
 	ctx->user_data = user_data;
@@ -134,9 +151,13 @@ static int download_context_init(struct download_context *ctx, int sock, uint8_t
 		ctx->requests[i].completed = true;
 	}
 
-	/* Reserve the memory for requests and socket RX */
-	working_mem += (COAP_RSP_OVERHEAD + ctx->block_size_bytes);
-	work_remaining -= (COAP_RSP_OVERHEAD + ctx->block_size_bytes);
+	/* Reserve the memory for requests and socket RX.
+	 * ic_get_block_size() guarantees at least the block size plus COAP_RSP_MIN_OVERHEAD.
+	 */
+	__ASSERT_NO_MSG(working_size >= (ctx->block_size_bytes + COAP_RSP_MIN_OVERHEAD));
+	ctx->pkt_buffer_len = MIN(working_size, COAP_RSP_OVERHEAD + ctx->block_size_bytes);
+	working_mem += ctx->pkt_buffer_len;
+	work_remaining -= ctx->pkt_buffer_len;
 
 	/* Assign memory to the block buffers */
 	while ((work_remaining >= ctx->block_size_bytes) &&
@@ -196,17 +217,60 @@ static int buffer_block(struct download_context *ctx, uint32_t block_num, const 
 	return 0;
 }
 
+/* Deliver a block to the user callback, must be next_block_to_deliver */
+static int deliver_block(struct download_context *ctx, uint32_t block_num, const uint8_t *data,
+			 uint16_t len, bool more)
+{
+	int rc;
+
+	__ASSERT_NO_MSG(block_num == ctx->next_block_to_deliver);
+	LOG_DBG("Delivering block %u (%u bytes) to callback", block_num, len);
+
+	/* Call the user's callback */
+	rc = ctx->chunk_callback(ctx->current_offset, data, len, ctx->user_data);
+	if (rc < 0) {
+		LOG_ERR("Callback returned error: %d", rc);
+		return rc;
+	}
+
+	/* Advance to next block */
+	ctx->current_offset += len;
+	ctx->next_block_to_deliver++;
+	ctx->block_requests_remaining++;
+
+	if (!more) {
+		/* Final block of the resource */
+		ctx->final_delivered = true;
+		ctx->total_blocks = block_num + 1;
+		LOG_INF("Last block delivered, total size: %zu bytes", ctx->current_offset);
+
+		/* Any other buffered block is after the end of the resource */
+		for (int i = 0; i < ctx->block_buffers_max; i++) {
+			if (ctx->block_buffer[i].valid) {
+				LOG_ERR("Block %u received after final block %u",
+					ctx->block_buffer[i].block_num, block_num);
+				return -EBADMSG;
+			}
+		}
+	} else if ((ctx->total_blocks > 0) && (ctx->next_block_to_deliver >= ctx->total_blocks)) {
+		/* Expected size was too small, keep requesting until the final block */
+		LOG_WRN("Resource larger than expected (%u blocks)", ctx->total_blocks);
+		ctx->total_blocks = ctx->next_block_to_deliver + 1;
+	}
+	return 0;
+}
+
 /* Deliver all consecutive blocks starting from next_block_to_deliver */
 static int deliver_buffered_blocks(struct download_context *ctx)
 {
 	struct received_block *block;
-	int rc = 0;
+	int rc;
 	int slot;
 
-	while (true) {
+	while (!ctx->final_delivered) {
 		/* Find the next block to deliver */
 		slot = -1;
-		for (int i = 0; i < ARRAY_SIZE(ctx->block_buffer); i++) {
+		for (int i = 0; i < ctx->block_buffers_max; i++) {
 			if (ctx->block_buffer[i].valid &&
 			    ctx->block_buffer[i].block_num == ctx->next_block_to_deliver) {
 				slot = i;
@@ -218,45 +282,30 @@ static int deliver_buffered_blocks(struct download_context *ctx)
 			break;
 		}
 
+		/* Free the slot before delivery (contents remain valid until next RX) */
 		block = &ctx->block_buffer[slot];
+		block->valid = false;
 
-		LOG_DBG("Delivering block %u (%u bytes) to callback", block->block_num, block->len);
-
-		/* Call the user's callback */
-		rc = ctx->chunk_callback(ctx->current_offset, block->data, block->len,
-					 ctx->user_data);
+		rc = deliver_block(ctx, block->block_num, block->data, block->len, block->more);
 		if (rc < 0) {
-			LOG_ERR("Callback returned error: %d", rc);
-			ctx->error_code = rc;
 			return rc;
 		}
-
-		/* Update total size if this was the last block */
-		if (!block->more) {
-			ctx->total_size = ctx->current_offset + block->len;
-			ctx->total_blocks = block->block_num + 1;
-			LOG_INF("Last block delivered, total size: %zu bytes", ctx->total_size);
-		}
-
-		/* Mark slot as free and advance to next block */
-		block->valid = false;
-		ctx->current_offset += block->len;
-		ctx->next_block_to_deliver++;
-		ctx->block_requests_remaining++;
 	}
 
 	return 0;
 }
 
 /* Build CoAP GET request with block2 option */
-static int build_block_request(struct download_context *ctx, uint32_t block_num, uint32_t token,
+static int build_block_request(struct download_context *ctx, const struct block_request *req,
 			       uint8_t *buf, size_t buf_len)
 {
 	struct coap_packet request;
+	uint32_t block_num = req->block_num;
 	int rc;
 
-	rc = coap_packet_init(&request, buf, buf_len, COAP_VERSION_1, COAP_TYPE_CON, sizeof(token),
-			      (uint8_t *)&token, COAP_METHOD_GET, coap_next_id());
+	rc = coap_packet_init(&request, buf, buf_len, COAP_VERSION_1, COAP_TYPE_CON,
+			      sizeof(req->token), (const uint8_t *)&req->token, COAP_METHOD_GET,
+			      req->msg_id);
 	if (rc < 0) {
 		LOG_ERR("Failed to init CoAP packet: %d", rc);
 		return rc;
@@ -274,7 +323,6 @@ static int build_block_request(struct download_context *ctx, uint32_t block_num,
 	struct coap_block_context block_ctx = {
 		.block_size = ctx->block_size,
 		.current = block_num * ctx->block_size_bytes,
-		.total_size = ctx->total_size,
 	};
 
 	rc = coap_append_block2_option(&request, &block_ctx);
@@ -294,7 +342,8 @@ static int send_block_request(struct download_context *ctx, struct block_request
 	int len;
 
 	/* Create the request buffer */
-	len = build_block_request(ctx, req->block_num, req->token, buffer, buffer_len);
+	req->msg_id = coap_next_id();
+	len = build_block_request(ctx, req, buffer, buffer_len);
 	if (len < 0) {
 		return len;
 	}
@@ -337,8 +386,9 @@ static void queue_requests(struct download_context *ctx, uint8_t *tx_buffer, uin
 	int max_requests;
 	int rc;
 
-	/* Only 1 request until we know the total size */
-	max_requests = ctx->total_size == 0 ? 1 : ctx->block_requests_max;
+	/* Only 1 request until the block size is fixed and we know the total size */
+	max_requests =
+		(ctx->block_size_fixed && (ctx->total_blocks > 0)) ? ctx->block_requests_max : 1;
 
 	/* Send new requests for available slots */
 	for (int i = 0; i < max_requests; i++) {
@@ -365,8 +415,13 @@ static void queue_requests(struct download_context *ctx, uint8_t *tx_buffer, uin
 			continue;
 		}
 
+		/* Don't request blocks after one that has already failed */
+		if (ctx->next_block_to_request >= ctx->error_block) {
+			continue;
+		}
+
 		/* Check if we should request a block */
-		if ((ctx->total_size == 0) || (ctx->next_block_to_request < ctx->total_blocks)) {
+		if ((ctx->total_blocks == 0) || (ctx->next_block_to_request < ctx->total_blocks)) {
 			req->block_num = ctx->next_block_to_request++;
 			req->token = ctx->next_token++;
 			req->retries = 0;
@@ -382,26 +437,56 @@ static void queue_requests(struct download_context *ctx, uint8_t *tx_buffer, uin
 			ctx->block_requests_remaining--;
 		}
 	}
+	if (ctx->error_code < 0) {
+		return;
+	}
+
+	/* The download can only progress if a request is outstanding */
+	for (int i = 0; i < ARRAY_SIZE(ctx->requests); i++) {
+		if (ctx->requests[i].in_flight) {
+			return;
+		}
+	}
+	LOG_ERR("No requests in flight (next block %u)", ctx->next_block_to_deliver);
+	ctx->error_code = -EIO;
 }
 
 /* Process received CoAP response */
 static int process_response(struct download_context *ctx, uint8_t *response_buf,
 			    size_t response_len)
 {
+	uint8_t token_buf[COAP_TOKEN_MAX_LEN];
 	struct block_request *req = NULL;
 	struct coap_packet response;
 	const uint8_t *payload;
 	uint16_t payload_len;
 	uint8_t response_code;
+	uint32_t block_num;
 	uint32_t token;
-	uint8_t code;
+	bool has_more;
+	int block_bytes;
+	int size2;
 	int rc;
 
 	/* Initial response parsing */
 	rc = coap_packet_parse(&response, response_buf, response_len, NULL, 0);
 	if (rc < 0) {
-		LOG_ERR("Failed to parse CoAP response: %d", rc);
-		return rc;
+		/* Not a valid CoAP message, ignore */
+		LOG_WRN("Failed to parse CoAP response: %d", rc);
+		return 0;
+	}
+
+	/* Server rejected a request */
+	if (coap_header_get_type(&response) == COAP_TYPE_RESET) {
+		for (int i = 0; i < ARRAY_SIZE(ctx->requests); i++) {
+			if (!ctx->requests[i].completed &&
+			    (ctx->requests[i].msg_id == coap_header_get_id(&response))) {
+				LOG_ERR("Request for block %u reset by server",
+					ctx->requests[i].block_num);
+				return -ECONNRESET;
+			}
+		}
+		return 0;
 	}
 
 	/* Handle empty response (by ignoring) */
@@ -411,12 +496,15 @@ static int process_response(struct download_context *ctx, uint8_t *response_buf,
 		return 0;
 	}
 
-	/* Get token to match with request */
-	payload_len = coap_header_get_token(&response, (void *)&token);
-	if (payload_len != sizeof(token)) {
-		LOG_ERR("Invalid token length %d %d", payload_len, sizeof(token));
-		return -EINVAL;
+	/* Acknowledge separate responses, including duplicates of earlier responses */
+	ic_ack_if_confirmable(ctx->sock, &response);
+
+	/* Get token to match with request (all requests use 4 byte tokens) */
+	if (coap_header_get_token(&response, token_buf) != sizeof(token)) {
+		LOG_WRN("Received response with unexpected token length");
+		return 0;
 	}
+	memcpy(&token, token_buf, sizeof(token));
 
 	/* Find matching request */
 	for (int i = 0; i < CONFIG_INFUSE_COAP_BACKEND_PARALLEL_MAX_IN_FLIGHT; i++) {
@@ -432,26 +520,24 @@ static int process_response(struct download_context *ctx, uint8_t *response_buf,
 		return 0;
 	}
 
+	/* Mark request as completed */
+	req->completed = true;
+	req->in_flight = false;
+
 	/* Check response code */
-	code = coap_header_get_code(&response);
-	if (code != COAP_RESPONSE_CODE_CONTENT) {
-		return -(100 * (code >> 5) + (code & 0x1F));
-	}
-
-	/* Parse Block2 option */
-	uint32_t block_num;
-	bool has_more;
-	int size2;
-
-	rc = coap_get_block2_option(&response, &has_more, &block_num);
-	if (rc == -ENOENT) {
-		/* No block2 option, assume entire payload exists in the first packet */
-		LOG_DBG("No block2 option in response");
-		has_more = false;
-		block_num = 0;
-	} else if (rc < 0) {
-		LOG_ERR("Failed to parse Block2 option: %d", rc);
-		return rc;
+	if (response_code != COAP_RESPONSE_CODE_CONTENT) {
+		rc = -(100 * (response_code >> 5) + (response_code & 0x1F));
+		if (req->block_num == ctx->next_block_to_deliver) {
+			return rc;
+		}
+		/* Block may be after the end of the resource, only fail if it is needed */
+		LOG_DBG("Block %u failed with %d", req->block_num, rc);
+		if (req->block_num < ctx->error_block) {
+			ctx->error_block = req->block_num;
+			ctx->error_block_code = rc;
+		}
+		ctx->block_requests_remaining++;
+		return 0;
 	}
 
 	/* Get payload pointer */
@@ -461,45 +547,61 @@ static int process_response(struct download_context *ctx, uint8_t *response_buf,
 		return -EINVAL;
 	}
 
-	/* Set size knowledge if not known */
+	/* Parse Block2 option */
+	block_bytes = coap_get_block2_option(&response, &has_more, &block_num);
+	if ((block_bytes < 0) && (block_bytes != -ENOENT)) {
+		LOG_ERR("Failed to parse Block2 option: %d", block_bytes);
+		return -EBADMSG;
+	}
+	if (block_bytes == -ENOENT) {
+		/* No block2 option, only valid if the entire payload is in the first packet */
+		if (req->block_num != 0) {
+			LOG_ERR("No Block2 option for block %u", req->block_num);
+			return -EBADMSG;
+		}
+		LOG_DBG("No block2 option in response");
+		has_more = false;
+		block_num = 0;
+	} else {
+		if (!ctx->block_size_fixed && (block_bytes < ctx->block_size_bytes)) {
+			/* Server can reduce the block size on the first response (RFC 7959 2.4).
+			 * Block buffers are larger than the new size.
+			 */
+			LOG_INF("Server reduced block size to %d", block_bytes);
+			ctx->block_size = coap_bytes_to_block_size(block_bytes);
+			ctx->block_size_bytes = block_bytes;
+			if (ctx->expected_size > 0) {
+				ctx->total_blocks = DIV_ROUND_UP(ctx->expected_size, block_bytes);
+			}
+		}
+		if ((block_bytes != ctx->block_size_bytes) || (block_num != req->block_num)) {
+			LOG_ERR("Unexpected block %u/%d (requested %u/%d)", block_num, block_bytes,
+				req->block_num, ctx->block_size_bytes);
+			return -EBADMSG;
+		}
+		/* Only the final block can be short, truncated datagrams are also short */
+		if ((payload_len > block_bytes) || (has_more && (payload_len != block_bytes))) {
+			LOG_ERR("Unexpected block length %d (more %d)", payload_len, has_more);
+			return -EBADMSG;
+		}
+	}
+	ctx->block_size_fixed = true;
+
+	/* Size reported by the server takes priority over the expected size */
 	size2 = coap_get_option_int(&response, COAP_OPTION_SIZE2);
-	if ((ctx->total_size == 0) && (size2 != -ENOENT)) {
-		ctx->total_size = size2;
-		ctx->total_blocks = ROUND_UP(size2, ctx->block_size_bytes) / ctx->block_size_bytes;
-		LOG_INF("Size of download is %d bytes (%d blocks)", ctx->total_size,
-			ctx->total_blocks);
+	if ((size2 > 0) && (req->block_num == 0)) {
+		ctx->total_blocks = DIV_ROUND_UP(size2, ctx->block_size_bytes);
+		LOG_INF("Size of download is %d bytes (%d blocks)", size2, ctx->total_blocks);
 	}
 
 	LOG_DBG("Received block %u (%u bytes, more=%d)", block_num, payload_len, has_more);
 
-	/* Mark request as completed */
-	req->completed = true;
-	req->in_flight = false;
-
-	/* Check if this is the next block to deliver */
 	if (block_num == ctx->next_block_to_deliver) {
-		/* Deliver immediately */
-		LOG_DBG("Delivering block %u immediately (in order)", block_num);
-
-		rc = ctx->chunk_callback(ctx->current_offset, payload, payload_len, ctx->user_data);
+		/* Deliver immediately, then any buffered blocks that are now in sequence */
+		rc = deliver_block(ctx, block_num, payload, payload_len, has_more);
 		if (rc < 0) {
-			LOG_ERR("Callback returned error: %d", rc);
-			ctx->error_code = rc;
 			return rc;
 		}
-
-		/* Update total size if this was the last block */
-		if (!has_more) {
-			ctx->total_size = ctx->current_offset + payload_len;
-			ctx->total_blocks = block_num + 1;
-			LOG_INF("Last block delivered, total size: %zu bytes", ctx->total_size);
-		}
-
-		ctx->block_requests_remaining++;
-		ctx->current_offset += payload_len;
-		ctx->next_block_to_deliver++;
-
-		/* Try to deliver any buffered blocks that are now in sequence */
 		rc = deliver_buffered_blocks(ctx);
 		if (rc < 0) {
 			return rc;
@@ -511,12 +613,31 @@ static int process_response(struct download_context *ctx, uint8_t *response_buf,
 
 		rc = buffer_block(ctx, block_num, payload, payload_len, has_more);
 		if (rc < 0) {
-			ctx->error_code = rc;
 			return rc;
 		}
 	}
 
+	/* Fail if the next block to deliver has already failed */
+	if (!ctx->final_delivered && (ctx->next_block_to_deliver >= ctx->error_block)) {
+		return ctx->error_block_code;
+	}
 	return 0;
+}
+
+/* Time until the earliest in-flight request times out */
+static int poll_timeout_ms(struct download_context *ctx)
+{
+	int64_t earliest = INT64_MAX;
+
+	for (int i = 0; i < ARRAY_SIZE(ctx->requests); i++) {
+		if (ctx->requests[i].in_flight) {
+			earliest = MIN(earliest, ctx->requests[i].timeout);
+		}
+	}
+	if (earliest == INT64_MAX) {
+		return ctx->request_timeout_ms;
+	}
+	return (int)CLAMP(earliest - k_uptime_get(), 0, ctx->request_timeout_ms);
 }
 
 static void receive_data(struct download_context *ctx, struct zsock_pollfd *pollfds,
@@ -526,10 +647,10 @@ static void receive_data(struct download_context *ctx, struct zsock_pollfd *poll
 	int rc;
 
 	/* Wait for data to be available */
-	rc = zsock_poll(pollfds, 1, ctx->request_timeout_ms);
+	rc = zsock_poll(pollfds, 1, poll_timeout_ms(ctx));
 	if (rc < 0) {
-		LOG_ERR("Poll error (%d)", -errno);
-		ctx->error_code = rc;
+		ctx->error_code = -errno;
+		LOG_ERR("Poll error (%d)", ctx->error_code);
 		return;
 	}
 	if (pollfds[0].revents & (ZSOCK_POLLHUP | ZSOCK_POLLNVAL)) {
@@ -539,7 +660,7 @@ static void receive_data(struct download_context *ctx, struct zsock_pollfd *poll
 		/* Read data into provided buffer */
 		received = zsock_recv(ctx->sock, rx_buffer, rx_len, 0);
 		if (received < 0) {
-			LOG_ERR("No data");
+			LOG_ERR("Receive error (%d)", -errno);
 			ctx->error_code = -EIO;
 			return;
 		}
@@ -555,7 +676,7 @@ static void receive_data(struct download_context *ctx, struct zsock_pollfd *poll
 
 		/* Handle received data */
 		rc = process_response(ctx, rx_buffer, received);
-		if (rc < 0 && rc != -ENOENT) {
+		if (rc < 0) {
 			ctx->error_code = rc;
 		}
 	}
@@ -566,15 +687,15 @@ static void handle_timeouts(struct download_context *ctx)
 	int64_t now = k_uptime_get();
 
 	for (int i = 0; i < CONFIG_INFUSE_COAP_BACKEND_PARALLEL_MAX_IN_FLIGHT; i++) {
-		if (ctx->requests[i].in_flight && (now > ctx->requests[i].timeout)) {
-			if (ctx->requests[i].retries >= CONFIG_INFUSE_COAP_MAX_TIMEOUTS) {
+		if (ctx->requests[i].in_flight && (now >= ctx->requests[i].timeout)) {
+			/* Same attempt count as the serial backend */
+			if (++ctx->requests[i].retries >= CONFIG_INFUSE_COAP_MAX_TIMEOUTS) {
 				LOG_ERR("Max retries exceeded for block %u",
 					ctx->requests[i].block_num);
 				ctx->error_code = -ETIMEDOUT;
 			} else {
 				LOG_WRN("Timeout for block %u, retrying",
 					ctx->requests[i].block_num);
-				ctx->requests[i].retries++;
 				ctx->requests[i].in_flight = false;
 			}
 		}
@@ -583,25 +704,8 @@ static void handle_timeouts(struct download_context *ctx)
 
 static bool is_download_complete(struct download_context *ctx)
 {
-	/* Download is complete when we know the total size and have delivered all blocks */
-	if (ctx->total_size == 0) {
-		return false;
-	}
-
-	/* Check if we've delivered all blocks (no gaps, no buffered blocks) */
-	if (ctx->next_block_to_deliver < ctx->total_blocks) {
-		return false;
-	}
-
-	/* Verify no blocks are still buffered */
-	for (int i = 0; i < CONFIG_INFUSE_COAP_BACKEND_PARALLEL_MAX_IN_FLIGHT; i++) {
-		if (ctx->block_buffer[i].valid) {
-			return false;
-		}
-	}
-
-	/* All checks passed */
-	return true;
+	/* Download is complete once the final block has been delivered */
+	return ctx->final_delivered;
 }
 
 /* Main download function */
@@ -624,21 +728,17 @@ int infuse_coap_download(int socket, const char *resource, size_t file_size,
 	}
 
 	LOG_INF("Downloading: %s (Block size %d)", resource, ctx.block_size_bytes);
-	if (ctx.total_size > 0) {
-		LOG_INF("Size of download is %d bytes (%d blocks)", ctx.total_size,
-			ctx.total_blocks);
-	}
 
 	/* Main download loop */
 	while (!is_download_complete(&ctx) && (ctx.error_code == 0)) {
 		/* Queue any requests we can */
-		queue_requests(&ctx, working_mem, working_size);
+		queue_requests(&ctx, working_mem, ctx.pkt_buffer_len);
 		if (ctx.error_code < 0) {
 			continue;
 		}
 
 		/* Wait for response */
-		receive_data(&ctx, &pollfds, working_mem, working_size);
+		receive_data(&ctx, &pollfds, working_mem, ctx.pkt_buffer_len);
 		if (ctx.error_code < 0) {
 			continue;
 		}
@@ -652,7 +752,7 @@ int infuse_coap_download(int socket, const char *resource, size_t file_size,
 		return ctx.error_code;
 	}
 
-	LOG_INF("Download complete: %zu bytes delivered via callback", ctx.total_size);
+	LOG_INF("Download complete: %zu bytes delivered via callback", ctx.current_offset);
 
-	return ctx.total_size;
+	return ctx.current_offset;
 }

@@ -7,8 +7,12 @@
  */
 
 #include <zephyr/net/net_if.h>
+#include <zephyr/net/socket.h>
+#include <zephyr/logging/log.h>
 
 #include "common.h"
+
+LOG_MODULE_DECLARE(infuse_coap, CONFIG_INFUSE_COAP_LOG_LEVEL);
 
 #define COAP_PKT_SIZE(payload_size) ((payload_size) + COAP_RSP_OVERHEAD)
 
@@ -21,14 +25,21 @@
 #endif
 
 /* Determine the locations of '/' characters and encode into array */
-int ic_resource_path_split(const char *resource, uint8_t *component_starts, uint8_t array_len)
+int ic_resource_path_split(const char *resource, uint16_t *component_starts, uint8_t array_len)
 {
 	uint8_t num_paths = 1;
-	int i = 0;
+	size_t i = 0;
 
 	/* Scan through string for the '/' character */
-	while (resource[i] != '\0') {
-		if (resource[i] == '/') {
+	while (true) {
+		if ((resource[i] == '/') || (resource[i] == '\0')) {
+			if ((i - component_starts[num_paths - 1]) > COAP_URI_PATH_SEGMENT_MAX_LEN) {
+				/* Segment too long */
+				return -EINVAL;
+			}
+			if (resource[i] == '\0') {
+				break;
+			}
 			if (num_paths == (array_len - 1)) {
 				/* Too many path splits */
 				return -EINVAL;
@@ -45,7 +56,7 @@ int ic_resource_path_split(const char *resource, uint8_t *component_starts, uint
 
 /* Append resource path using splits from `resource_path_split` */
 int ic_resource_path_append(struct coap_packet *request, const char *resource,
-			    uint8_t *component_starts, uint8_t num_components)
+			    const uint16_t *component_starts, uint8_t num_components)
 {
 	int rc;
 
@@ -97,7 +108,7 @@ int ic_get_block_size(size_t working_size, uint16_t block_size, enum coap_block_
 			iface_mtu = net_if_get_mtu(iface);
 			if (iface_mtu > 0) {
 				/* Interface MTU is known, override the kconfig based decision */
-				supports_1kb = iface_mtu > COAP_PKT_SIZE(1024);
+				supports_1kb = iface_mtu >= COAP_PKT_SIZE(1024);
 				/* Also limit the buffer size */
 				working_size = MIN(working_size, iface_mtu);
 			}
@@ -111,14 +122,39 @@ int ic_get_block_size(size_t working_size, uint16_t block_size, enum coap_block_
 			*used_size = COAP_BLOCK_256;
 		} else if (working_size >= COAP_PKT_SIZE(128)) {
 			*used_size = COAP_BLOCK_128;
-		} else if (working_size >= 128) {
-			*used_size = COAP_BLOCK_64;
 		} else {
-			return -ENOMEM;
+			*used_size = COAP_BLOCK_64;
 		}
 		break;
 	default:
 		return -EINVAL;
 	}
+
+	/* Working memory must be able to receive a complete block response */
+	if (working_size < (coap_block_size_to_bytes(*used_size) + COAP_RSP_MIN_OVERHEAD)) {
+		return -ENOMEM;
+	}
 	return 0;
+}
+
+void ic_ack_if_confirmable(int socket, const struct coap_packet *response)
+{
+	uint8_t ack_buf[4];
+	struct coap_packet ack;
+	int rc;
+
+	if (coap_header_get_type(response) != COAP_TYPE_CON) {
+		return;
+	}
+
+	/* Empty ACK (no token) with the message ID of the response */
+	rc = coap_packet_init(&ack, ack_buf, sizeof(ack_buf), COAP_VERSION_1, COAP_TYPE_ACK, 0,
+			      NULL, COAP_CODE_EMPTY, coap_header_get_id(response));
+	if (rc == 0) {
+		rc = zsock_send(socket, ack.data, ack.offset, 0);
+	}
+	if (rc < 0) {
+		/* Not fatal, the server will retransmit the response */
+		LOG_WRN("Failed to ACK response (%d)", rc < -1 ? rc : -errno);
+	}
 }

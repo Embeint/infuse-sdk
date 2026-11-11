@@ -30,6 +30,8 @@ K_SEM_DEFINE(l4_up, 0, 1);
 /* Server providing the resources of the coap.me test server run by TZI */
 const char *const coap_test_server = CONFIG_TEST_COAP_SERVER;
 uint8_t work_area[4096];
+/* Content of the "large" resources */
+uint8_t large_data[1700];
 
 struct cb_ctx {
 	const char *expected_data;
@@ -172,6 +174,149 @@ ZTEST(infuse_coap, test_download)
 	zassert_equal(0, zsock_close(sock));
 }
 
+static int download(int sock, const char *resource, size_t file_size, const char *expected,
+		    size_t work_size, uint16_t block_size, int timeout_ms, struct cb_ctx *context)
+{
+	context->expected_data = expected;
+	context->expected_offset = 0;
+	context->cb_count = 0;
+	return infuse_coap_download(sock, resource, file_size, data_cb, context, work_area,
+				    work_size, block_size, timeout_ms);
+}
+
+/* Resources below are only provided by the local test server (pytest/conftest.py) */
+
+ZTEST(infuse_coap, test_download_work_area)
+{
+	const char *large = (const char *)large_data;
+	struct cb_ctx context;
+	int sock;
+	int rc;
+
+	sock = socket_setup();
+
+	/* Smallest work area, 64 byte blocks */
+	rc = download(sock, "large", 0, large, 128, 0, 1000, &context);
+	zassert_equal(sizeof(large_data), rc);
+	zassert_equal(27, context.cb_count);
+
+	/* Small work area with explicit block size, out of order blocks are buffered */
+	rc = download(sock, "large", 0, large, 1000, 256, 1000, &context);
+	zassert_equal(sizeof(large_data), rc);
+	zassert_equal(7, context.cb_count);
+
+	/* Explicit block sizes must fit in the work area */
+	rc = download(sock, "large", 0, large, 700, 1024, 1000, &context);
+	zassert_equal(-ENOMEM, rc);
+	zassert_equal(0, context.cb_count);
+	rc = download(sock, "large", 0, large, 64 + 64 - 1, 64, 1000, &context);
+	zassert_equal(-ENOMEM, rc);
+
+	zassert_equal(0, zsock_close(sock));
+}
+
+ZTEST(infuse_coap, test_download_sizes)
+{
+	const char *large = (const char *)large_data;
+	struct cb_ctx context;
+	int sock;
+	int rc;
+
+	sock = socket_setup();
+
+	/* Zero length resource */
+	rc = download(sock, "empty", 0, NULL, sizeof(work_area), 0, 1000, &context);
+	zassert_equal(0, rc);
+
+	/* Expected size too small, the server size is used */
+	rc = download(sock, "large", 1000, large, sizeof(work_area), 256, 1000, &context);
+	zassert_equal(sizeof(large_data), rc);
+	zassert_equal(7, context.cb_count);
+
+	/* Server doesn't report a size, expected size too small */
+	rc = download(sock, "large/no_size2", 1000, large, sizeof(work_area), 256, 1000, &context);
+	zassert_equal(sizeof(large_data), rc);
+	zassert_equal(7, context.cb_count);
+
+	/* Server doesn't report a size, expected size too large.
+	 * Requests after the end of the resource fail.
+	 */
+	rc = download(sock, "large/no_size2", 3000, large, sizeof(work_area), 256, 1000, &context);
+	zassert_equal(sizeof(large_data), rc);
+	zassert_equal(7, context.cb_count);
+
+	/* Server doesn't report a size, unknown size */
+	rc = download(sock, "large/no_size2", 0, large, sizeof(work_area), 256, 1000, &context);
+	zassert_equal(sizeof(large_data), rc);
+	zassert_equal(7, context.cb_count);
+
+	/* Server reduces the block size to 512 bytes */
+	rc = download(sock, "large/reduced", 0, large, sizeof(work_area), 1024, 1000, &context);
+	zassert_equal(sizeof(large_data), rc);
+	zassert_equal(4, context.cb_count);
+
+	zassert_equal(0, zsock_close(sock));
+}
+
+ZTEST(infuse_coap, test_download_bad_responses)
+{
+	struct cb_ctx context;
+	int sock;
+	int rc;
+
+	sock = socket_setup();
+
+	/* Server responds with a different block to the one requested */
+	rc = download(sock, "large/wrong_block", 0, NULL, sizeof(work_area), 0, 1000, &context);
+	zassert_equal(-EBADMSG, rc);
+	zassert_equal(0, context.cb_count);
+
+	/* Server responds with more data than the block size */
+	rc = download(sock, "large/oversized", 0, NULL, sizeof(work_area), 0, 1000, &context);
+	zassert_equal(-EBADMSG, rc);
+	zassert_equal(0, context.cb_count);
+
+	/* Token that doesn't match any request is ignored */
+	rc = download(sock, "hello/short_token", 0, NULL, sizeof(work_area), 0, 100, &context);
+	zassert_equal(-ETIMEDOUT, rc);
+	zassert_equal(0, context.cb_count);
+
+	/* 8 byte token, longer than the parallel backend uses */
+	rc = download(sock, "hello/long_token", 0, "world", sizeof(work_area), 0, 100, &context);
+	if (IS_ENABLED(CONFIG_INFUSE_COAP_BACKEND_SERIAL)) {
+		/* Serial backend uses 8 byte tokens */
+		zassert_equal(5, rc);
+	} else {
+		zassert_equal(-ETIMEDOUT, rc);
+		zassert_equal(0, context.cb_count);
+	}
+
+	/* Paths longer than 255 characters, within the per-segment limit */
+	static char long_path[200 + 1 + 100 + 1];
+
+	memset(long_path, 'a', 200);
+	long_path[200] = '/';
+	memset(long_path + 201, 'b', 100);
+	rc = download(sock, long_path, 0, NULL, sizeof(work_area), 0, 1000, &context);
+	zassert_equal(-404, rc);
+
+	/* Path segments are limited to 255 characters */
+	long_path[200] = 'a';
+	rc = download(sock, long_path, 0, NULL, sizeof(work_area), 0, 1000, &context);
+	zassert_equal(-EINVAL, rc);
+
+	/* Datagram too short to be a CoAP message is ignored */
+	rc = download(sock, "hello/junk", 0, "world", sizeof(work_area), 0, 1000, &context);
+	zassert_equal(5, rc);
+
+	/* Server rejects the request */
+	rc = download(sock, "hello/reset", 0, NULL, sizeof(work_area), 0, 1000, &context);
+	zassert_equal(-ECONNRESET, rc);
+	zassert_equal(0, context.cb_count);
+
+	zassert_equal(0, zsock_close(sock));
+}
+
 ZTEST(infuse_coap, test_separate_response)
 {
 	uint8_t work_area[256];
@@ -195,6 +340,10 @@ ZTEST(infuse_coap, test_separate_response)
 
 void *test_init(void)
 {
+	for (int i = 0; i < sizeof(large_data); i++) {
+		large_data[i] = (i * 31 + 7) & 0xFF;
+	}
+
 #ifdef CONFIG_WIFI
 	KV_STRING_CONST(ssid, CONFIG_WIFI_SSID);
 	KV_STRING_CONST(psk, CONFIG_WIFI_PSK);

@@ -23,15 +23,33 @@ from infuse_pytest.coap_server import (  # noqa: E402
 # Delay before the separate response to the `separate` resource
 SEPARATE_DELAY = 3.0
 
+# Content of `large`, must match `large_data` in src/main.c
+LARGE = bytes((i * 31 + 7) & 0xFF for i in range(1700))
+
 # Subset of the resources of the coap.me test server used by the application
 RESOURCES = {
     "secret": CoapResource(code=CODE_UNAUTHORIZED),
     "location-query": CoapResource(code=CODE_METHOD_NOT_ALLOWED),
     "hello": b"world",
     "seg1/seg2/seg3": b"Matroshka",
-    "large": bytes((i * 31 + 7) & 0xFF for i in range(1700)),
+    "large": LARGE,
     "separate": CoapResource(payload=b"That took a long time", code=CODE_CONTENT, separate=SEPARATE_DELAY),
 }
+
+# Resources only provided by the local server, to test client behaviour
+RESOURCES.update(
+    {
+        "empty": b"",
+        "large/no_size2": CoapResource(payload=LARGE, size2=False),
+        "large/reduced": CoapResource(payload=LARGE, max_szx=5),
+        "large/wrong_block": CoapResource(payload=LARGE, block_offset=1),
+        "large/oversized": CoapResource(payload=LARGE, extra_payload=16),
+        "hello/long_token": CoapResource(payload=b"world", token_len=8),
+        "hello/short_token": CoapResource(payload=b"world", token_len=2),
+        "hello/junk": CoapResource(payload=b"world", junk_first=True),
+        "hello/reset": CoapResource(payload=b"world", reset=True),
+    }
+)
 
 
 @pytest.fixture(scope="session")

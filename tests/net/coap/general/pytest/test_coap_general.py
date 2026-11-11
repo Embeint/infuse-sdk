@@ -23,6 +23,19 @@ def test_coap_general(coap_server: LocalCoapServer, unlaunched_dut: DeviceAdapte
     for path in ("secret", "invalid-path", "location-query", "hello", "seg1/seg2/seg3", "separate"):
         assert any(p == path for p, _, _ in requested), path
 
+    # Each block request is sent CONFIG_INFUSE_COAP_MAX_TIMEOUTS (3) times before failing
+    attempts = [r for r in coap_server.requests if r[0] == "hello/short_token"]
+    assert len(attempts) == 3, f"Unexpected attempts: {attempts}"
+
+    # Long paths are not truncated
+    assert any(p == "a" * 200 + "/" + "b" * 100 for p, _, _ in requested), "Long path not requested"
+
+    # Separate responses were acknowledged
+    logger.info("Separate responses: %s, ACKs: %s", coap_server.separate_ids, coap_server.acks)
+    assert coap_server.separate_ids, "No separate responses sent"
+    unacked = [i for i in coap_server.separate_ids if i not in coap_server.acks]
+    assert unacked == [], f"Separate responses not acknowledged: {unacked}"
+
     # Every block of the large resource was requested at each block size used
     for block_size in (1024, 512, 256):
         blocks = -(-1700 // block_size)
