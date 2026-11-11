@@ -222,6 +222,16 @@ enum rpc_enum_filesystem_folder {
 	RPC_ENUM_FILESYSTEM_FOLDER_COPY = 3,
 };
 
+/** Annotation type */
+enum rpc_enum_annotation_type {
+	/** Event annotation at a specific instant in time */
+	RPC_ENUM_ANNOTATION_TYPE_INSTANT = 0,
+	/** Event annotation over a relative duration */
+	RPC_ENUM_ANNOTATION_TYPE_DURATION = 1,
+	/** Event annotation over an absolute interval of time */
+	RPC_ENUM_ANNOTATION_TYPE_INTERVAL = 2,
+};
+
 /** MCUboot semantic versioning struct */
 struct rpc_struct_mcuboot_img_sem_ver {
 	/** Major version */
@@ -608,6 +618,10 @@ enum rpc_builtin_id {
 	RPC_ID_UBX_ASSIST_NOW_ZTP_CREDS = 70,
 	/** Play an audio alert on the device */
 	RPC_ID_AUDIO_ALERT = 80,
+	/** Register an annotation label to a known label ID */
+	RPC_ID_ANNOTATION_REGISTER = 81,
+	/** Write a labelled annotation to the device (v2) */
+	RPC_ID_ANNOTATE_V2 = 82,
 	/** Query current security state and validate identity */
 	RPC_ID_SECURITY_STATE = 30000,
 	/** Update key material */
@@ -1647,6 +1661,55 @@ struct rpc_audio_alert_request {
 
 /** Response to @ref rpc_audio_alert_request */
 struct rpc_audio_alert_response {
+	/** Common RPC response header */
+	struct infuse_rpc_rsp_header header;
+} __packed;
+
+/** Register an annotation label to a known label ID */
+struct rpc_annotation_register_request {
+	/** Common RPC request header */
+	struct infuse_rpc_req_header header;
+	/** Start/Instant timestamp (Infuse Epoch Ticks) that event was observed */
+	int64_t timestamp;
+	/** Data logger to write annotation to */
+	uint8_t logger;
+	/** Unique identifier for this annotation label */
+	uint32_t label_id;
+	/** Annotation label text */
+	char label[];
+} __packed;
+
+/** Response to @ref rpc_annotation_register_request */
+struct rpc_annotation_register_response {
+	/** Common RPC response header */
+	struct infuse_rpc_rsp_header header;
+} __packed;
+
+/** Write a labelled annotation to the device (v2) */
+struct rpc_annotate_v2_request {
+	/** Common RPC request header */
+	struct infuse_rpc_req_header header;
+	/** Start/Instant timestamp (Infuse Epoch Ticks) that event was observed */
+	int64_t timestamp;
+	/** Data logger to write annotation to */
+	uint8_t logger;
+	/** Type of annotation */
+	uint8_t type;
+	/**
+	 * Relative duration after timestamp when the event ends in Infuse Epoch Ticks (when `type
+	 * == DURATION`)
+	 */
+	uint32_t duration;
+	/** Absolute end time when the event ends in Infuse Epoch Ticks (when `type == INTERVAL`) */
+	int64_t interval_end;
+	/** Unique identifier for the annotation */
+	uint32_t label_id;
+	/** TDF IDs related to the annotation */
+	uint16_t TDF_IDs[];
+} __packed;
+
+/** Response to @ref rpc_annotate_v2_request */
+struct rpc_annotate_v2_response {
 	/** Common RPC response header */
 	struct infuse_rpc_rsp_header header;
 } __packed;

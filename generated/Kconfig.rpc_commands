@@ -544,6 +544,28 @@ config INFUSE_RPC_COMMAND_AUDIO_ALERT_REQUIRED_AUTH
 	depends on INFUSE_RPC_COMMAND_AUDIO_ALERT
 	default 2
 
+config INFUSE_RPC_COMMAND_ANNOTATION_REGISTER
+	bool "Enable RPC annotation_register"
+	depends on TDF_DATA_LOGGER
+	help
+	  Register an annotation label to a known label ID
+
+config INFUSE_RPC_COMMAND_ANNOTATION_REGISTER_REQUIRED_AUTH
+	int "Required authorisation level to run annotation_register"
+	depends on INFUSE_RPC_COMMAND_ANNOTATION_REGISTER
+	default 2
+
+config INFUSE_RPC_COMMAND_ANNOTATE_V2
+	bool "Enable RPC annotate_v2"
+	depends on TDF_DATA_LOGGER
+	help
+	  Write a labelled annotation to the device (v2)
+
+config INFUSE_RPC_COMMAND_ANNOTATE_V2_REQUIRED_AUTH
+	int "Required authorisation level to run annotate_v2"
+	depends on INFUSE_RPC_COMMAND_ANNOTATE_V2
+	default 2
+
 config INFUSE_RPC_COMMAND_SECURITY_STATE
 	bool "Enable RPC security_state"
 	default y if INFUSE_SECURITY

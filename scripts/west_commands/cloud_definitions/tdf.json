@@ -661,6 +661,40 @@
                 {"name": "num_sv", "type": "uint8_t", "description": "Number of satellite vehicles used in location fix"},
                 {"name": "p_dop", "type": "uint16_t", "description": "Position DOP", "conversion": {"m": 0.01, "c": 0}}
             ]
+        },
+        "68": {
+            "name": "ANNOTATION_V2_LABEL_MAPPING",
+            "description": "Mapping a label ID to a label text",
+            "fields": [
+                {"name": "label_id", "type": "uint32_t", "description": "Label identifier corresponding to the label"},
+                {"name": "label", "type": "char", "num": 0, "description": "Label text"}
+            ]
+        },
+        "69": {
+            "name": "ANNOTATION_V2_INSTANT",
+            "description": "Labelled annotation for a specific instant, timestamped by the TDF record",
+            "fields": [
+                {"name": "label_id", "type": "uint32_t", "description": "Label identifier for the annotation"},
+                {"name": "tdf_ids", "type": "uint16_t", "num": 0, "description": "TDF IDs related to the annotation"}
+            ]
+        },
+        "70": {
+            "name": "ANNOTATION_V2_DURATION",
+            "description": "Labelled annotation over a relative duration, starting from the TDF record timestamp",
+            "fields": [
+                {"name": "duration_ticks", "type": "uint32_t", "description": "Duration of the annotation in Infuse Epoch ticks (up to ~18h)"},
+                {"name": "label_id", "type": "uint32_t", "description": "Label identifier for the annotation"},
+                {"name": "tdf_ids", "type": "uint16_t", "num": 0, "description": "TDF IDs related to the annotation"}
+            ]
+        },
+        "71": {
+            "name": "ANNOTATION_V2_INTERVAL",
+            "description": "Labelled annotation over an absolute interval, started from the TDF record timestamp to the event_end",
+            "fields": [
+                {"name": "event_end", "type": "int64_t", "description": "End of the annotation in Infuse Epoch ticks"},
+                {"name": "label_id", "type": "uint32_t", "description": "Label identifier for the annotation"},
+                {"name": "tdf_ids", "type": "uint16_t", "num": 0, "description": "TDF IDs related to the annotation"}
+            ]
         }
     }
 }
