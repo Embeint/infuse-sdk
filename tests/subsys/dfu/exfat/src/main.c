@@ -17,6 +17,7 @@
 #include <zephyr/pm/device.h>
 #include <zephyr/pm/device_runtime.h>
 #include <zephyr/random/random.h>
+#include <zephyr/sys/byteorder.h>
 
 #include <infuse/data_logger/backend/exfat.h>
 #include <infuse/dfu/exfat.h>
@@ -68,6 +69,39 @@ static void write_progress_cb_validate(uint32_t written, uint32_t total)
 
 int logger_exfat_init(const struct device *dev);
 
+/* Write the first `len` bytes of input_buffer to a file */
+static void image_write(const struct device *logger, const char *name, size_t len)
+{
+	char disk_path[64];
+	const char *disk;
+	UINT written;
+	FIL fp;
+
+	disk = logger_exfat_filesystem_claim(logger, NULL, NULL, K_NO_WAIT);
+	snprintf(disk_path, sizeof(disk_path), "%s:dfu/app/%s", disk, name);
+	zassert_equal(FR_OK, f_open(&fp, disk_path, FA_CREATE_ALWAYS | FA_WRITE));
+	zassert_equal(FR_OK, f_write(&fp, input_buffer, len, &written));
+	zassert_equal(len, written);
+	zassert_equal(FR_OK, f_close(&fp));
+	logger_exfat_filesystem_release(logger);
+}
+
+/* Create a file containing a MCUboot image header followed by random data */
+static void image_create(const struct device *logger, const char *name, uint8_t major,
+			 uint8_t minor, uint16_t revision, uint32_t build_num, size_t len)
+{
+	zassert_true(len >= 32 && len <= sizeof(input_buffer));
+	sys_rand_get(input_buffer, len);
+	sys_put_le32(0x96f3b83d, input_buffer);
+	sys_put_le16(32, input_buffer + 8);
+	sys_put_le32(len - 32, input_buffer + 12);
+	input_buffer[20] = major;
+	input_buffer[21] = minor;
+	sys_put_le16(revision, input_buffer + 22);
+	sys_put_le32(build_num, input_buffer + 24);
+	image_write(logger, name, len);
+}
+
 static void upgrade_expect(const struct device *logger, uint8_t major, uint8_t minor,
 			   uint16_t revision)
 {
@@ -83,12 +117,11 @@ ZTEST(dfu_exfat, test_dfu_image_find)
 {
 	const struct device *logger = DEVICE_DT_GET(DT_NODELABEL(data_logger_exfat));
 	int output_partition = PARTITION_ID(slot1_partition);
-	struct infuse_version upgrade_version;
+	struct infuse_version upgrade_version = {0};
+	static uint8_t expected[sizeof(input_buffer)];
 	char disk_path[64];
 	const char *disk;
 	FILINFO info;
-	UINT written;
-	FIL fp;
 
 	/* Initialise filesystem */
 	zassert_equal(0, logger_exfat_init(logger));
@@ -112,57 +145,73 @@ ZTEST(dfu_exfat, test_dfu_image_find)
 							  NULL, NULL));
 
 	/* Create upgrade file with smaller version number */
-	disk = logger_exfat_filesystem_claim(logger, NULL, NULL, K_NO_WAIT);
-	snprintf(disk_path, sizeof(disk_path), "%s:dfu/app/1_7_12.bin", disk);
-	zassert_equal(FR_OK, f_open(&fp, disk_path, FA_CREATE_NEW | FA_WRITE));
-	sys_rand_get(input_buffer, sizeof(input_buffer));
-	zassert_equal(FR_OK, f_write(&fp, input_buffer, sizeof(input_buffer), &written));
-	zassert_equal(FR_OK, f_close(&fp));
-	logger_exfat_filesystem_release(logger);
-
+	image_create(logger, "1_7_12.bin", 1, 7, 12, 0, sizeof(input_buffer));
 	zassert_equal(0, dfu_exfat_app_upgrade_exists(logger, &upgrade_version));
 
 	/* Create upgrade file with same version number */
-	disk = logger_exfat_filesystem_claim(logger, NULL, NULL, K_NO_WAIT);
-	snprintf(disk_path, sizeof(disk_path), "%s:dfu/app/2_1_4.bin", disk);
-	zassert_equal(FR_OK, f_open(&fp, disk_path, FA_CREATE_NEW | FA_WRITE));
-	sys_rand_get(input_buffer, sizeof(input_buffer));
-	zassert_equal(FR_OK, f_write(&fp, input_buffer, sizeof(input_buffer), &written));
-	zassert_equal(FR_OK, f_close(&fp));
-	logger_exfat_filesystem_release(logger);
-
+	image_create(logger, "2_1_4.bin", 2, 1, 4, 0, sizeof(input_buffer));
 	zassert_equal(0, dfu_exfat_app_upgrade_exists(logger, &upgrade_version));
 
 	/* Create upgrade file with larger version number */
-	disk = logger_exfat_filesystem_claim(logger, NULL, NULL, K_NO_WAIT);
-	snprintf(disk_path, sizeof(disk_path), "%s:dfu/app/2_3_1.bin", disk);
-	zassert_equal(FR_OK, f_open(&fp, disk_path, FA_CREATE_NEW | FA_WRITE));
-	sys_rand_get(input_buffer, 1024);
-	zassert_equal(FR_OK, f_write(&fp, input_buffer, 1024, &written));
-	zassert_equal(FR_OK, f_close(&fp));
-	logger_exfat_filesystem_release(logger);
-
+	image_create(logger, "2_3_1.bin", 2, 3, 1, 0, 1024);
 	upgrade_expect(logger, 2, 3, 1);
 	zassert_equal(1, dfu_exfat_app_upgrade_exists(logger, &upgrade_version));
 	zassert_equal(0, dfu_exfat_app_upgrade_copy(logger, upgrade_version, output_partition, NULL,
 						    NULL));
 	flash_area_validate(output_partition, input_buffer, 1024);
 
-	/* Multiple larger version numbers */
-	disk = logger_exfat_filesystem_claim(logger, NULL, NULL, K_NO_WAIT);
-	snprintf(disk_path, sizeof(disk_path), "%s:dfu/app/5_1_0.bin", disk);
-	zassert_equal(FR_OK, f_open(&fp, disk_path, FA_CREATE_NEW | FA_WRITE));
-	sys_rand_get(input_buffer, 1569);
-	zassert_equal(FR_OK, f_write(&fp, input_buffer, 1569, &written));
-	zassert_equal(FR_OK, f_close(&fp));
-	logger_exfat_filesystem_release(logger);
+	/* Copying the same image again is rejected */
+	zassert_equal(-EALREADY, dfu_exfat_app_upgrade_copy(logger, upgrade_version,
+							    output_partition, NULL, NULL));
 
+	/* Multiple larger version numbers */
+	image_create(logger, "5_1_0.bin", 5, 1, 0, 0, 1569);
+	memcpy(expected, input_buffer, 1569);
 	upgrade_expect(logger, 5, 1, 0);
 	zassert_equal(1, dfu_exfat_app_upgrade_exists(logger, &upgrade_version));
 	zassert_equal(0, dfu_exfat_app_upgrade_copy(logger, upgrade_version, output_partition,
 						    erase_progress_cb_validate,
 						    write_progress_cb_validate));
-	flash_area_validate(output_partition, input_buffer, 1569);
+	flash_area_validate(output_partition, expected, 1569);
+	zassert_equal(-EALREADY, dfu_exfat_app_upgrade_copy(logger, upgrade_version,
+							    output_partition, NULL, NULL));
+
+	/* Image version must match the file name */
+	image_create(logger, "7_0_0.bin", 7, 0, 1, 0, 64);
+	upgrade_expect(logger, 7, 0, 0);
+	zassert_equal(1, dfu_exfat_app_upgrade_exists(logger, &upgrade_version));
+	zassert_equal(-EINVAL, dfu_exfat_app_upgrade_copy(logger, upgrade_version, output_partition,
+							  NULL, NULL));
+	flash_area_validate(output_partition, expected, 1569);
+
+	/* File must contain a MCUboot image */
+	image_create(logger, "7_0_0.bin", 7, 0, 0, 0, 64);
+	input_buffer[0] ^= 0xFF;
+	image_write(logger, "7_0_0.bin", 64);
+	zassert_equal(-EINVAL, dfu_exfat_app_upgrade_copy(logger, upgrade_version, output_partition,
+							  NULL, NULL));
+
+	/* Image claiming to be larger than the file */
+	image_create(logger, "7_0_0.bin", 7, 0, 0, 0, 64);
+	sys_put_le32(64, input_buffer + 12);
+	image_write(logger, "7_0_0.bin", 64);
+	zassert_equal(-EINVAL, dfu_exfat_app_upgrade_copy(logger, upgrade_version, output_partition,
+							  NULL, NULL));
+	flash_area_validate(output_partition, expected, 1569);
+
+	/* Valid image, upper case extension */
+	image_create(logger, "8_0_0.BIN", 8, 0, 0, 0, 1023);
+	upgrade_expect(logger, 8, 0, 0);
+	zassert_equal(1, dfu_exfat_app_upgrade_exists(logger, &upgrade_version));
+	zassert_equal(0, dfu_exfat_app_upgrade_copy(logger, upgrade_version, output_partition, NULL,
+						    NULL));
+	flash_area_validate(output_partition, input_buffer, 1023);
+
+	/* Same version with a different build number can be retried */
+	image_create(logger, "8_0_0.BIN", 8, 0, 0, 1, 1023);
+	zassert_equal(0, dfu_exfat_app_upgrade_copy(logger, upgrade_version, output_partition, NULL,
+						    NULL));
+	flash_area_validate(output_partition, input_buffer, 1023);
 }
 
 static bool test_data_init(const void *global_state)

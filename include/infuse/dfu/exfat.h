@@ -51,6 +51,9 @@ extern "C" {
  * }
  * @endcode
  *
+ * @note Only the file name is checked, the file contents are validated by
+ *       @ref dfu_exfat_app_upgrade_copy.
+ *
  * @param dev exFAT data logger device
  * @param upgrade Storage location for upgrade version
  *
@@ -63,6 +66,13 @@ int dfu_exfat_app_upgrade_exists(const struct device *dev, struct infuse_version
 /**
  * @brief Copy DFU file from filesystem onto flash area
  *
+ * The file must start with a MCUboot image header whose version matches @a upgrade.
+ *
+ * If the output area already contains the image from the file (same version and build
+ * number), it is not copied again. This is the case when a previous upgrade to the image
+ * was reverted by MCUboot, and prevents repeatedly copying and booting an image that does
+ * not run. To retry, provide an image with a different build number.
+ *
  * @param dev exFAT data logger device
  * @param upgrade New version from @ref dfu_exfat_app_upgrade_exists
  * @param flash_area_id Output flash area ID
@@ -70,7 +80,10 @@ int dfu_exfat_app_upgrade_exists(const struct device *dev, struct infuse_version
  * @param write_progress_cb Optional write progress callback
  *
  * @retval 0 On success
- * @retval -errno On error
+ * @retval -ENOENT Upgrade file does not exist
+ * @retval -EINVAL File is not a MCUboot image of version @a upgrade
+ * @retval -EALREADY Output area already contains the image
+ * @retval -errno Other error
  */
 int dfu_exfat_app_upgrade_copy(const struct device *dev, struct infuse_version upgrade,
 			       uint8_t flash_area_id, infuse_progress_cb_t erase_progress_cb,
