@@ -8,8 +8,8 @@
 
 #include <infuse/auto/time_sync_log.h>
 #include <infuse/data_logger/high_level/tdf.h>
+#include <infuse/reboot/tdf.h>
 #include <infuse/tdf/definitions.h>
-#include <infuse/tdf/util.h>
 #include <infuse/time/epoch.h>
 #include <infuse/reboot.h>
 

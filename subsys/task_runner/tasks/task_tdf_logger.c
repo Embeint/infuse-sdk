@@ -11,6 +11,8 @@
 #include <zephyr/sys/crc.h>
 #include <zephyr/zbus/zbus.h>
 
+#include <infuse/drivers/imu/tdf.h>
+#include <infuse/lib/lte_modem_monitor/tdf.h>
 #include <infuse/version.h>
 #include <infuse/data_logger/logger.h>
 #include <infuse/data_logger/high_level/tdf.h>
@@ -22,7 +24,6 @@
 #include <infuse/states.h>
 #include <infuse/tdf/tdf.h>
 #include <infuse/tdf/definitions.h>
-#include <infuse/tdf/util.h>
 #include <infuse/time/epoch.h>
 #include <infuse/zbus/channels.h>
 

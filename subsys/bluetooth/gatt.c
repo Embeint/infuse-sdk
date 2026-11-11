@@ -15,6 +15,7 @@
 #include <zephyr/sys/slist.h>
 #include <zephyr/kernel.h>
 
+#include <infuse/bluetooth/tdf.h>
 #include <infuse/work_q.h>
 #include <infuse/bluetooth/gatt.h>
 #include <infuse/time/epoch.h>
@@ -22,7 +23,6 @@
 #include <infuse/data_logger/high_level/tdf.h>
 #include <infuse/states.h>
 #include <infuse/tdf/definitions.h>
-#include <infuse/tdf/util.h>
 
 #ifdef CONFIG_MEMFAULT_INFUSE_METRICS_BT_CONNECTIONS
 #include <memfault/metrics/metrics.h>

@@ -13,7 +13,6 @@
 #include <infuse/task_runner/task.h>
 #include <infuse/task_runner/tasks/audio_dmic.h>
 #include <infuse/tdf/definitions.h>
-#include <infuse/tdf/util.h>
 #include <infuse/time/epoch.h>
 
 #define BUFFER_SAMPLES CONFIG_TASK_RUNNER_TASK_AUDIO_DMIC_BUFFER_SAMPLE

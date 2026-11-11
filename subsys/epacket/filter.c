@@ -9,7 +9,7 @@
 #include <infuse/epacket/filter.h>
 #include <infuse/epacket/packet.h>
 #include <infuse/tdf/definitions.h>
-#include <infuse/tdf/util.h>
+#include <infuse/tdf/tdf.h>
 
 #include <zephyr/random/random.h>
 
