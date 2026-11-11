@@ -651,15 +651,15 @@ static void handle_timeouts(struct download_context *ctx)
 	int64_t now = k_uptime_get();
 
 	for (int i = 0; i < CONFIG_INFUSE_COAP_BACKEND_PARALLEL_MAX_IN_FLIGHT; i++) {
-		if (ctx->requests[i].in_flight && (now > ctx->requests[i].timeout)) {
-			if (ctx->requests[i].retries >= CONFIG_INFUSE_COAP_MAX_TIMEOUTS) {
+		if (ctx->requests[i].in_flight && (now >= ctx->requests[i].timeout)) {
+			/* Same attempt count as the serial backend */
+			if (++ctx->requests[i].retries >= CONFIG_INFUSE_COAP_MAX_TIMEOUTS) {
 				LOG_ERR("Max retries exceeded for block %u",
 					ctx->requests[i].block_num);
 				ctx->error_code = -ETIMEDOUT;
 			} else {
 				LOG_WRN("Timeout for block %u, retrying",
 					ctx->requests[i].block_num);
-				ctx->requests[i].retries++;
 				ctx->requests[i].in_flight = false;
 			}
 		}
