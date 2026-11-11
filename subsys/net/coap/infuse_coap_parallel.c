@@ -496,6 +496,9 @@ static int process_response(struct download_context *ctx, uint8_t *response_buf,
 		return 0;
 	}
 
+	/* Acknowledge separate responses, including duplicates of earlier responses */
+	ic_ack_if_confirmable(ctx->sock, &response);
+
 	/* Get token to match with request (all requests use 4 byte tokens) */
 	if (coap_header_get_token(&response, token_buf) != sizeof(token)) {
 		LOG_WRN("Received response with unexpected token length");

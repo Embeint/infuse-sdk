@@ -7,8 +7,12 @@
  */
 
 #include <zephyr/net/net_if.h>
+#include <zephyr/net/socket.h>
+#include <zephyr/logging/log.h>
 
 #include "common.h"
+
+LOG_MODULE_DECLARE(infuse_coap, CONFIG_INFUSE_COAP_LOG_LEVEL);
 
 #define COAP_PKT_SIZE(payload_size) ((payload_size) + COAP_RSP_OVERHEAD)
 
@@ -124,4 +128,26 @@ int ic_get_block_size(size_t working_size, uint16_t block_size, enum coap_block_
 		return -ENOMEM;
 	}
 	return 0;
+}
+
+void ic_ack_if_confirmable(int socket, const struct coap_packet *response)
+{
+	uint8_t ack_buf[4];
+	struct coap_packet ack;
+	int rc;
+
+	if (coap_header_get_type(response) != COAP_TYPE_CON) {
+		return;
+	}
+
+	/* Empty ACK (no token) with the message ID of the response */
+	rc = coap_packet_init(&ack, ack_buf, sizeof(ack_buf), COAP_VERSION_1, COAP_TYPE_ACK, 0,
+			      NULL, COAP_CODE_EMPTY, coap_header_get_id(response));
+	if (rc == 0) {
+		rc = zsock_send(socket, ack.data, ack.offset, 0);
+	}
+	if (rc < 0) {
+		/* Not fatal, the server will retransmit the response */
+		LOG_WRN("Failed to ACK response (%d)", rc < -1 ? rc : -errno);
+	}
 }
