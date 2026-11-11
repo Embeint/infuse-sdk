@@ -1,12 +1,10 @@
 /**
  * @file
- * @brief
+ * @brief Internal helpers shared between the Infuse CoAP download backends
  * @copyright 2026 Embeint Holdings Pty Ltd
  * @author Jordan Yates <jordan@embeint.com>
  *
  * SPDX-License-Identifier: FSL-1.1-ALv2
- *
- * @details
  */
 
 #ifndef INFUSE_SDK_SUBSYS_NET_COAP_COMMON_H_
@@ -60,8 +58,8 @@ int ic_resource_path_split(const char *resource, uint16_t *component_starts, uin
  *
  * @param request CoAP request packet
  * @param resource Path to resource, e.g. seg1/seg2/seg3
- * @param component_starts Array populated by @ref resource_path_split
- * @param num_components Return value from @ref resource_path_split
+ * @param component_starts Array populated by @ref ic_resource_path_split
+ * @param num_components Return value from @ref ic_resource_path_split
  *
  * @retval 0 On success
  * @retval -errno Error code from @a coap_packet_append_option on failure
