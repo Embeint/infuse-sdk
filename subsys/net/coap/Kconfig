@@ -50,7 +50,9 @@ config INFUSE_COAP_BACKEND_PARALLEL_MAX_IN_FLIGHT
 config INFUSE_COAP_TEST_PACKET_DROP_BITMASK
 	int "Bitmask of received packets to drop while receiving to test retry logic"
 	depends on ZTEST
-	default 16389
+	default 0
+	help
+	  Bit N set drops every received packet whose index modulo 32 is N.
 
 module = INFUSE_COAP
 module-str = infuse_coap
