@@ -11,6 +11,9 @@
  *
  * Application firmware paths:
  *    /dfu/app/{v_new}.bin
+ *
+ * Version numbers are decimal without leading zeros, and the file must contain
+ * a MCUboot image of the same version (e.g. /dfu/app/1_2_10.bin contains v1.2.10).
  */
 
 #ifndef INFUSE_SDK_INCLUDE_INFUSE_DFU_EXFAT_H_
