@@ -10,6 +10,7 @@
 #include <zephyr/zbus/zbus.h>
 
 #include <infuse/auto/soc_device_control.h>
+#include <infuse/tdf/definitions.h>
 #include <infuse/zbus/channels.h>
 
 static void new_battery_data(const struct zbus_channel *chan);

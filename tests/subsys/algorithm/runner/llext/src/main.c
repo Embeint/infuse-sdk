@@ -13,6 +13,7 @@
 #include <infuse/work_q.h>
 #include <infuse/algorithm_runner/runner.h>
 #include <infuse/fs/littlefs.h>
+#include <infuse/tdf/definitions.h>
 #include <infuse/zbus/channels.h>
 
 #include "test_algorithm.h"

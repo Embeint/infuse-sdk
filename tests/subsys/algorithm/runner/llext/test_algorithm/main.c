@@ -7,6 +7,7 @@
 #include <stdbool.h>
 
 #include <infuse/algorithms/implementation.h>
+#include <infuse/tdf/definitions.h>
 #include <infuse/zbus/types.h>
 
 #define TEST_ALGORITHM_ID 0x12349876
