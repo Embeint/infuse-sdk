@@ -38,7 +38,8 @@ extern "C" {
  * @param addrlen Output length of address
  *
  * @retval 0 on success
- * @retval -errno on failure
+ * @retval -EAGAIN modem is temporarily unable to perform the query
+ * @retval <0 DNS_EAI_* error code from zsock_getaddrinfo
  */
 int infuse_sync_dns(const char *host, uint16_t port, int family, int socktype,
 		    struct net_sockaddr *addr, net_socklen_t *addrlen);
