@@ -66,6 +66,11 @@ struct epacket_bt_gatt_connect_params {
 	bool wait_subscriptions;
 	/** Only reuse an existing connection; return -ENOTCONN rather than creating one. */
 	bool existing_only;
+	/**
+	 * Limit of the local ATT MTU when creating a new connection (0 for no limit).
+	 * See @ref epacket_bt_gatt_forward_mtu.
+	 */
+	uint16_t att_mtu_limit;
 };
 
 /**
@@ -138,6 +143,21 @@ void epacket_bt_gatt_rate_limit_request(uint8_t delay_ms);
  * @retval -errno on error
  */
 int epacket_bt_gatt_rate_throughput_request(struct bt_conn *conn, uint16_t throughput_kbps);
+
+/**
+ * @brief ATT MTU limit for connections that are forwarded over a backhaul
+ *
+ * Packets received from Bluetooth connections are forwarded over the backhaul in an
+ * @ref INFUSE_RECEIVED_EPACKET, potentially still encrypted. Limiting the ATT MTU of a
+ * connection to this value ensures that every packet sent by the remote device can be
+ * forwarded over the backhaul in its current state.
+ *
+ * @param backhaul Backhaul interface packets from the connection are forwarded over
+ *
+ * @retval 0 if no limit is required, or the backhaul is not currently connected
+ * @retval mtu ATT MTU limit for the connection
+ */
+uint16_t epacket_bt_gatt_forward_mtu(const struct device *backhaul);
 
 /**
  * @}

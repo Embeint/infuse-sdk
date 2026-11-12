@@ -26,6 +26,10 @@
 #define DT_DRV_COMPAT embeint_epacket_bt_central
 
 #define PACKET_OVERHEAD (DT_INST_PROP(0, header_size) + DT_INST_PROP(0, footer_size))
+/* ATT opcode and handle on notifications */
+#define ATT_HEADER_SIZE 3
+/* Minimum ATT MTU on LE connections */
+#define ATT_MIN_MTU     23
 
 static void conn_setup_cb(struct bt_conn *conn, int err, void *user_data);
 static void conn_terminated_cb(struct bt_conn *conn, int reason, void *user_data);
@@ -64,6 +68,8 @@ struct infuse_connection_state {
 	uint32_t network_id;
 	/* Result of the automatic connection setup (enum conn_setup_state) */
 	atomic_t setup_state;
+	/* Local ATT MTU limit of the connection (0 for no limit) */
+	uint16_t att_mtu_limit;
 } infuse_conn[CONFIG_BT_MAX_CONN];
 
 enum conn_setup_state {
@@ -140,6 +146,17 @@ static uint8_t security_read_result(struct bt_conn *conn, uint8_t err,
 	}
 	k_poll_signal_raise(p->sig, rc);
 	return BT_GATT_ITER_STOP;
+}
+
+static uint16_t conn_att_mtu_limit(struct bt_conn *conn)
+{
+	struct infuse_connection_state *s = &infuse_conn[bt_conn_index(conn)];
+
+	/* Only limit connections created by this interface */
+	if (atomic_get(&s->setup_state) == CONN_SETUP_NONE) {
+		return 0;
+	}
+	return s->att_mtu_limit;
 }
 
 static void conn_terminated_cb(struct bt_conn *conn, int reason, void *user_data)
@@ -491,6 +508,8 @@ lookup:
 	}
 	idx = bt_conn_index(conn);
 	s = &infuse_conn[idx];
+	/* Queried through `conn_att_mtu_limit` when the ATT MTU exchange starts */
+	s->att_mtu_limit = params->att_mtu_limit;
 	atomic_set(&s->setup_state, CONN_SETUP_PENDING);
 
 	/*
@@ -684,6 +703,27 @@ int epacket_bt_gatt_rate_throughput_request(struct bt_conn *conn, uint16_t throu
 	return infuse_send_rate_request(conn, &request, sizeof(struct epacket_rate_throughput_req));
 }
 
+uint16_t epacket_bt_gatt_forward_mtu(const struct device *backhaul)
+{
+	const struct epacket_interface_common_config *config = backhaul->config;
+	/* Forwarding header in front of the received packet */
+	const uint16_t forward_overhead = sizeof(struct epacket_received_common_header) +
+					  sizeof(struct epacket_interface_address_bt_le);
+	uint16_t max_packet = epacket_interface_max_packet_size(backhaul);
+	uint16_t max_payload;
+
+	if (max_packet == 0) {
+		/* Backhaul not currently connected */
+		return 0;
+	}
+	max_payload = max_packet - config->header_size - config->footer_size;
+	if (max_payload < (forward_overhead + ATT_MIN_MTU - ATT_HEADER_SIZE)) {
+		return ATT_MIN_MTU;
+	}
+	/* Remote packets are notified with an ATT header */
+	return max_payload - forward_overhead + ATT_HEADER_SIZE;
+}
+
 static void epacket_bt_central_send(const struct device *dev, struct net_buf *buf)
 {
 	struct epacket_tx_metadata *meta = net_buf_user_data(buf);
@@ -751,6 +791,10 @@ cleanup:
 	}
 }
 
+static struct bt_gatt_cb gatt_cb = {
+	.att_mtu_limit = conn_att_mtu_limit,
+};
+
 static void connection_state_init(struct infuse_connection_state *s)
 {
 	k_work_init_delayable(&s->idle_worker, bt_conn_idle);
@@ -768,6 +812,7 @@ static int epacket_bt_central_init(const struct device *dev)
 	for (size_t i = 0; i < ARRAY_SIZE(infuse_conn); i++) {
 		connection_state_init(&infuse_conn[i]);
 	}
+	bt_gatt_cb_register(&gatt_cb);
 
 	epacket_interface_common_init(dev);
 	return 0;
