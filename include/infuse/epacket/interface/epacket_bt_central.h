@@ -42,10 +42,13 @@ struct epacket_bt_gatt_connect_params {
 	/** Peer device to connect to */
 	bt_addr_le_t peer;
 	/** Automatically disconnect if no data sent or received on the command or data
-	 * characteristics for this long. K_FOREVER to disable.
+	 * characteristics for this long. K_FOREVER to disable, or to keep the existing timeout
+	 * when reusing an existing connection.
 	 */
 	k_timeout_t inactivity_timeout;
-	/** Unconditionally terminate the connection after this long. K_FOREVER to disable. */
+	/** Unconditionally terminate the connection after this long. K_FOREVER to disable, or to
+	 * keep the existing timeout when reusing an existing connection.
+	 */
 	k_timeout_t absolute_timeout;
 	/** Duration to wait while attempting to setup connection */
 	uint32_t conn_timeout_ms;
