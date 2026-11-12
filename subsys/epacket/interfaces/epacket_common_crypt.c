@@ -213,7 +213,6 @@ int epacket_unversioned_v0_encrypt(struct net_buf *buf, uint8_t interface_key)
 	__ASSERT_NO_MSG(net_buf_headroom(buf) >=
 			sizeof(struct epacket_v0_unversioned_frame_format));
 
-	/* Only device auth used for direct UDP comms */
 	if (meta->auth == EPACKET_AUTH_NETWORK) {
 		epacket_key_id = EPACKET_KEY_NETWORK | interface_key;
 		meta->flags |= EPACKET_FLAGS_ENCRYPTION_NETWORK;

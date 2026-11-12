@@ -20,6 +20,16 @@
 
 #include "../subsys/epacket/interfaces/epacket_internal.h"
 
+/* Authentication the UDP interface is expected to apply to a packet */
+static enum epacket_auth expected_auth(enum epacket_auth requested, enum infuse_type type)
+{
+	if (IS_ENABLED(CONFIG_EPACKET_INTERFACE_UDP_DEVICE_AUTH_PREFERRED) &&
+	    (requested == EPACKET_AUTH_NETWORK) && (type != INFUSE_RPC_RSP)) {
+		return EPACKET_AUTH_DEVICE;
+	}
+	return requested;
+}
+
 ZTEST(epacket_udp_crypt, test_metadata)
 {
 	struct epacket_rx_metadata *meta;
@@ -56,11 +66,11 @@ ZTEST(epacket_udp_crypt, test_metadata)
 		rc = epacket_udp_decrypt(rx);
 		zassert_equal(0, rc);
 		meta = net_buf_user_data(rx);
-		zassert_equal(iter_auth, meta->auth);
+		zassert_equal(expected_auth(iter_auth, 0x10 + i), meta->auth);
 		zassert_equal(0x10 + i, meta->type);
 		zassert_equal(infuse_device_id(), meta->packet_device_id);
 		zassert_not_equal(0, meta->packet_gps_time);
-		if (iter_auth == EPACKET_AUTH_DEVICE) {
+		if (meta->auth == EPACKET_AUTH_DEVICE) {
 			zassert_equal(EPACKET_FLAGS_ENCRYPTION_DEVICE | i, meta->flags);
 			zassert_equal(infuse_security_device_key_identifier(),
 				      meta->key_identifier);
@@ -77,6 +87,48 @@ ZTEST(epacket_udp_crypt, test_metadata)
 		}
 	}
 	net_buf_unref(rx);
+}
+
+static void test_auth_selection(enum epacket_auth auth, enum infuse_type type)
+{
+	struct epacket_rx_metadata *meta;
+	struct net_buf *tx, *rx;
+	enum epacket_auth expected = expected_auth(auth, type);
+
+	tx = epacket_alloc_tx(K_NO_WAIT);
+	zassert_not_null(tx);
+	net_buf_reserve(tx, sizeof(struct epacket_udp_frame));
+	epacket_set_tx_metadata(tx, auth, 0, type, EPACKET_ADDR_ALL);
+	sys_rand_get(net_buf_add(tx, 16), 16);
+	zassert_equal(0, epacket_udp_encrypt(tx));
+
+	rx = epacket_alloc_rx(K_NO_WAIT);
+	zassert_not_null(rx);
+	net_buf_add_mem(rx, tx->data, tx->len);
+	net_buf_unref(tx);
+
+	zassert_equal(0, epacket_udp_decrypt(rx));
+	meta = net_buf_user_data(rx);
+	zassert_equal(expected, meta->auth);
+	zassert_equal(type, meta->type);
+	if (expected == EPACKET_AUTH_DEVICE) {
+		zassert_equal(EPACKET_FLAGS_ENCRYPTION_DEVICE, meta->flags);
+		zassert_equal(infuse_security_device_key_identifier(), meta->key_identifier);
+	} else {
+		zassert_equal(EPACKET_FLAGS_ENCRYPTION_NETWORK, meta->flags);
+		zassert_equal(infuse_security_network_key_identifier(), meta->key_identifier);
+	}
+	net_buf_unref(rx);
+}
+
+ZTEST(epacket_udp_crypt, test_auth_selection)
+{
+	/* RPC responses always retain the requested authentication */
+	test_auth_selection(EPACKET_AUTH_NETWORK, INFUSE_RPC_RSP);
+	test_auth_selection(EPACKET_AUTH_DEVICE, INFUSE_RPC_RSP);
+	/* Other packet types may be upgraded to device authentication */
+	test_auth_selection(EPACKET_AUTH_NETWORK, INFUSE_TDF);
+	test_auth_selection(EPACKET_AUTH_DEVICE, INFUSE_TDF);
 }
 
 ZTEST(epacket_udp_crypt, test_decrypt_error)

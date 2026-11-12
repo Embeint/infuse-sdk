@@ -141,6 +141,17 @@ source "subsys/logging/Kconfig.template.log_config"
 
 endif # EPACKET_INTERFACE_UDP
 
+config EPACKET_INTERFACE_UDP_DEVICE_AUTH_PREFERRED
+	bool "Encrypt UDP packets with the device key instead of the network key"
+	depends on EPACKET_INTERFACE_UDP || EPACKET_INTERFACE_ZTEST_PACKETS
+	default y
+	help
+	  Packets queued on the UDP interface with EPACKET_AUTH_NETWORK are
+	  instead encrypted with the device key, except for INFUSE_RPC_RSP
+	  packets, which keep the requested authentication. RPC responses are
+	  exempt so that cloud services can still query the device public key
+	  over the network key.
+
 config EPACKET_INTERFACE_BT_ADV
 	bool "ePacket Bluetooth advertising interface"
 	depends on DT_HAS_EMBEINT_EPACKET_BT_ADV_ENABLED
