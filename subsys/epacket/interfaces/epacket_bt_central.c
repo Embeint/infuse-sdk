@@ -190,6 +190,47 @@ static int existing_conn_wait(struct bt_conn *conn, struct infuse_connection_sta
 	}
 }
 
+/* Connection object is being torn down, but has not yet been released by the stack */
+static bool conn_terminating(struct bt_conn *conn)
+{
+	struct bt_conn_info info;
+
+	if (bt_conn_get_info(conn, &info) != 0) {
+		return false;
+	}
+	return (info.state == BT_CONN_STATE_DISCONNECTING) ||
+	       (info.state == BT_CONN_STATE_DISCONNECTED);
+}
+
+/* Cancel a timeout, returning the remaining duration (K_FOREVER if it was not pending) */
+static k_timeout_t timeout_claim(struct k_work_delayable *dwork)
+{
+	k_timeout_t remaining = K_FOREVER;
+	struct k_work_sync sync;
+
+	/* A timeout that has expired but not yet run is queued with no time remaining */
+	if (k_work_delayable_busy_get(dwork) & (K_WORK_DELAYED | K_WORK_QUEUED)) {
+		remaining = K_TICKS(k_work_delayable_remaining_get(dwork));
+	}
+	(void)k_work_cancel_delayable_sync(dwork, &sync);
+	return remaining;
+}
+
+/* Stop the timeouts of an existing connection so they can't disconnect it after it has been
+ * handed to a new caller. The remaining durations are returned so they can be restored.
+ */
+static bool existing_conn_timeouts_claim(struct bt_conn *conn, struct infuse_connection_state *s,
+					 k_timeout_t *idle_remaining, k_timeout_t *term_remaining)
+{
+	struct bt_conn_info info;
+
+	*idle_remaining = timeout_claim(&s->idle_worker);
+	*term_remaining = timeout_claim(&s->term_worker);
+
+	/* A timeout may have triggered a disconnection before it could be cancelled */
+	return (bt_conn_get_info(conn, &info) == 0) && (info.state == BT_CONN_STATE_CONNECTED);
+}
+
 void epacket_bt_gatt_notify_init(struct bt_conn *conn)
 {
 	struct infuse_connection_state *s;
@@ -378,9 +419,12 @@ int epacket_bt_gatt_connect(struct bt_conn **conn_out,
 		.window = BT_GAP_SCAN_FAST_WINDOW,
 		.timeout = params->conn_timeout_ms / 10,
 	};
+	k_timepoint_t terminate_end = sys_timepoint_calc(K_MSEC(params->conn_timeout_ms));
 	struct k_poll_event poll_event;
 	struct k_poll_signal security_read_sig;
 	struct infuse_connection_state *s;
+	k_timeout_t idle_remaining = K_FOREVER;
+	k_timeout_t term_remaining = K_FOREVER;
 	struct k_work_sync sync;
 	unsigned int signaled;
 	struct bt_conn *conn;
@@ -389,20 +433,45 @@ int epacket_bt_gatt_connect(struct bt_conn **conn_out,
 	int rc = 0;
 
 	*conn_out = NULL;
+
+lookup:
 	*already = false;
 
 	/* Determine if connection already exists */
 	conn = bt_conn_lookup_addr_le(BT_ID_DEFAULT, &params->peer);
+	if ((conn != NULL) && conn_terminating(conn)) {
+		/* A previous connection to the peer is being torn down (for example by the
+		 * inactivity timeout). A new connection can't be created until the stack has
+		 * released the old connection object, so wait for that to happen.
+		 */
+		bt_conn_unref(conn);
+		if (sys_timepoint_expired(terminate_end)) {
+			LOG_WRN("Previous connection not released");
+			return -ETIMEDOUT;
+		}
+		k_sleep(K_MSEC(10));
+		goto lookup;
+	}
 	if (conn != NULL) {
 		*already = true;
 		idx = bt_conn_index(conn);
 		s = &infuse_conn[idx];
 		/* Connection may still be being setup by another caller */
 		rc = existing_conn_wait(conn, s, params->conn_timeout_ms);
+		if ((rc == -ENOTCONN) && !sys_timepoint_expired(terminate_end)) {
+			/* Connection terminated while waiting */
+			bt_conn_unref(conn);
+			goto lookup;
+		}
 		if (rc < 0) {
 			/* Connection is not owned by this caller, don't disconnect it */
 			bt_conn_unref(conn);
 			return rc;
+		}
+		if (!existing_conn_timeouts_claim(conn, s, &idle_remaining, &term_remaining)) {
+			/* Connection timed out while being reused */
+			bt_conn_unref(conn);
+			goto lookup;
 		}
 #ifdef CONFIG_MEMFAULT_INFUSE_METRICS_BT_CONNECTIONS
 		(void)MEMFAULT_METRIC_ADD(epacket_bt_central_conn_already, 1);
@@ -455,14 +524,23 @@ int epacket_bt_gatt_connect(struct bt_conn **conn_out,
 	}
 
 conn_created:
-	/* Connection available, update the timeouts if specified */
-	s->inactivity_timeout = params->inactivity_timeout;
+	/* Connection available, update the timeouts if specified. The inactivity timeout of an
+	 * existing connection is kept unless overridden, so that activity continues to extend it.
+	 */
+	if (!*already || !K_TIMEOUT_EQ(params->inactivity_timeout, K_FOREVER)) {
+		s->inactivity_timeout = params->inactivity_timeout;
+	}
 	if (rc == 0) {
+		/* Apply the requested timeouts, or restore those of an existing connection */
 		if (!K_TIMEOUT_EQ(params->inactivity_timeout, K_FOREVER)) {
 			k_work_reschedule(&s->idle_worker, params->inactivity_timeout);
+		} else if (!K_TIMEOUT_EQ(idle_remaining, K_FOREVER)) {
+			k_work_reschedule(&s->idle_worker, idle_remaining);
 		}
 		if (!K_TIMEOUT_EQ(params->absolute_timeout, K_FOREVER)) {
 			k_work_reschedule(&s->term_worker, params->absolute_timeout);
+		} else if (!K_TIMEOUT_EQ(term_remaining, K_FOREVER)) {
+			k_work_reschedule(&s->term_worker, term_remaining);
 		}
 	}
 
