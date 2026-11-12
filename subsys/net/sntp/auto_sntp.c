@@ -19,7 +19,9 @@
 #include <infuse/fs/kv_store.h>
 #include <infuse/fs/kv_types.h>
 
-#define SNTP_PORT CONFIG_SNTP_AUTO_SERVER_PORT
+#define SNTP_PORT   CONFIG_SNTP_AUTO_SERVER_PORT
+/* Prefer IPv4 servers, unless IPv4 is not enabled */
+#define SNTP_FAMILY (IS_ENABLED(CONFIG_NET_IPV4) ? NET_AF_INET : NET_AF_INET6)
 
 enum sntp_query_state {
 	/* No query running */
@@ -291,7 +293,7 @@ static void sntp_work(struct k_work *work)
 
 	/* Results can be delivered before infuse_async_dns returns */
 	dns_waiting = true;
-	rc = infuse_async_dns(ntp_server.url.value, AF_INET, &sntp_dns_ctx, 10000);
+	rc = infuse_async_dns(ntp_server.url.value, SNTP_FAMILY, &sntp_dns_ctx, 10000);
 	if (rc < 0) {
 		LOG_ERR("DNS failed to start query for %s (%d)", ntp_server.url.value, rc);
 		if (dns_waiting) {
@@ -302,7 +304,7 @@ static void sntp_work(struct k_work *work)
 	return;
 #else
 	/* Get IP address from DNS */
-	rc = infuse_sync_dns(ntp_server.url.value, SNTP_PORT, AF_INET, SOCK_DGRAM,
+	rc = infuse_sync_dns(ntp_server.url.value, SNTP_PORT, SNTP_FAMILY, NET_SOCK_DGRAM,
 			     &sntp_addr_cached, &sntp_addrlen_cached);
 	if (rc < 0) {
 		LOG_ERR("DNS query failed for %s (%d)", ntp_server.url.value, rc);
