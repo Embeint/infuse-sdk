@@ -19,3 +19,10 @@ tests:
     integration_platforms:
       - native_sim
       - mps2/an385
+  epacket.interface.udp_crypt.network_auth:
+    platform_allow:
+      - native_sim
+    integration_platforms:
+      - native_sim
+    extra_configs:
+      - CONFIG_EPACKET_INTERFACE_UDP_DEVICE_AUTH_PREFERRED=n
