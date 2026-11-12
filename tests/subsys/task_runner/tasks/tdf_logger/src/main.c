@@ -61,7 +61,9 @@ ZBUS_CHAN_DEFINE_WITH_ID(INFUSE_ZBUS_NAME(INFUSE_ZBUS_CHAN_IMU), INFUSE_ZBUS_CHA
 #endif
 #define TDF_BATTERY_SIZE sizeof(TDF_BATTERY_STRUCT)
 
-#if DT_NODE_EXISTS(DT_NODELABEL(tdf_logger_removable))
+#if DT_NODE_EXISTS(DT_NODELABEL(tdf_logger_removable)) &&                                          \
+	(defined(CONFIG_TASK_TDF_LOGGER_ANNOUNCE_BLOCKS_AUTO) ||                                   \
+	 defined(CONFIG_TASK_TDF_LOGGER_ANNOUNCE_BLOCKS_REMOVABLE))
 #define ANNOUNCE_BASE_FLAGS BIT(0)
 #else
 #define ANNOUNCE_BASE_FLAGS 0x00
@@ -366,23 +368,39 @@ ZTEST(task_tdf_logger, test_announce_blocks)
 #if DT_NODE_EXISTS(DT_NODELABEL(tdf_logger_removable))
 	const struct device *flash = DEVICE_DT_GET(DT_NODELABEL(data_logger_flash));
 	const struct device *removable = DEVICE_DT_GET(DT_NODELABEL(data_logger_removable));
+	bool removable_used = IS_ENABLED(CONFIG_TASK_TDF_LOGGER_ANNOUNCE_BLOCKS_AUTO) ||
+			      IS_ENABLED(CONFIG_TASK_TDF_LOGGER_ANNOUNCE_BLOCKS_REMOVABLE);
+	bool flash_used = IS_ENABLED(CONFIG_TASK_TDF_LOGGER_ANNOUNCE_BLOCKS_AUTO) ||
+			  IS_ENABLED(CONFIG_TASK_TDF_LOGGER_ANNOUNCE_BLOCKS_FLASH);
 
 	logger_shim_set_current_block(flash, 10);
 	logger_shim_set_current_block(removable, 20);
 
-	/* Removable logger is preferred */
+	/* Both loggers ready, removable logger is preferred */
 	announce_run(&announce);
-	zassert_equal(BIT(0), announce.flags & BIT(0));
-	zassert_equal(20, announce.blocks);
+	if (removable_used) {
+		zassert_equal(BIT(0), announce.flags & BIT(0));
+		zassert_equal(20, announce.blocks);
+	} else {
+		zassert_equal(0, announce.flags & BIT(0));
+		zassert_equal(flash_used ? 10 : UINT32_MAX, announce.blocks);
+	}
 
-	/* Removable logger not ready, fall back to flash logger */
+	/* Removable logger not ready */
 	removable->state->init_res += 1;
 	announce_run(&announce);
 	zassert_equal(0, announce.flags & BIT(0));
-	zassert_equal(10, announce.blocks);
+	zassert_equal(flash_used ? 10 : UINT32_MAX, announce.blocks);
+
+	/* Flash logger not ready */
+	removable->state->init_res -= 1;
+	flash->state->init_res += 1;
+	announce_run(&announce);
+	zassert_equal(removable_used ? BIT(0) : 0, announce.flags & BIT(0));
+	zassert_equal(removable_used ? 20 : UINT32_MAX, announce.blocks);
 
 	/* Neither logger ready */
-	flash->state->init_res += 1;
+	removable->state->init_res += 1;
 	announce_run(&announce);
 	zassert_equal(0, announce.flags & BIT(0));
 	zassert_equal(UINT32_MAX, announce.blocks);
