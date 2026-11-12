@@ -38,8 +38,20 @@ def test_auto_sntp_triggered(sntp_server: LocalSntpServer, unlaunched_dut: Devic
     expect(lines, "Using cached SNTP address")
     expect_sync(lines)
 
+    # Unresponsive server: query, retry, give up
+    expect(lines, rf" -> {re.escape(sntp_server.unresponsive_addr)}\b")
+    expect(lines, "SNTP query timeout")
+    expect(lines, rf" -> {re.escape(sntp_server.unresponsive_addr)}\b")
+    expect(lines, "SNTP query timeout")
+    expect(lines, r"Giving up SNTP queries after \d failures")
+
+    # Next sync point after giving up queries the restored server
+    expect(lines, rf" -> {re.escape(sntp_server.responsive_addr)}\b")
+    expect_sync(lines)
+
     expect(lines, r"TESTSUITE auto_sntp succeeded")
 
     # Sync points before the interface was up or before the resync age did not query the server
-    logger.info("SNTP queries: %d answered", sntp_server.answered)
-    assert sntp_server.answered == 2
+    logger.info("SNTP queries: %d answered, %d ignored", sntp_server.answered, sntp_server.ignored)
+    assert sntp_server.answered == 3
+    assert sntp_server.ignored == 2

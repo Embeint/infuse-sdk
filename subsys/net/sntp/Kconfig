@@ -45,8 +45,10 @@ config SNTP_AUTO_RETRY_LIMIT
 	int "Maximum number of times to attempt a SNTP query"
 	default 3
 	help
-	  If the SNTP query fails this many times, it is halted until the next
-	  triggering event.
+	  If the SNTP query fails this many times in a row, retries stop. With
+	  SNTP_AUTO_IMMEDIATELY the next attempt happens after SNTP_AUTO_RESYNC_AGE
+	  (or on network reconnection), with SNTP_AUTO_SYNC_POINTS on the next sync
+	  point.
 
 choice SNTP_AUTO_MODE
 	prompt "When to send SNTP queries"
