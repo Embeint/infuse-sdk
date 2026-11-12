@@ -129,21 +129,23 @@ static void sntp_service_handler(struct net_socket_service_event *sev)
 	/* Cancel timeout */
 	k_work_cancel_delayable(&sntp_timeout);
 
-#ifdef CONFIG_SNTP_AUTO_IMMEDIATELY
-	/* Reschedule worker */
-	sntp_failures = 0;
-	k_work_reschedule(&sntp_worker, K_SECONDS(CONFIG_SNTP_AUTO_RESYNC_AGE));
-#endif /* CONFIG_SNTP_AUTO_IMMEDIATELY */
-
 	/* Read the response from the socket */
 	rc = sntp_read_async(sev, &s_time);
 	sntp_close_async(&service_auto_sntp);
 	atomic_set(&query_state, QUERY_IDLE);
 	if (rc != 0) {
-		LOG_WRN("Read failure");
+		LOG_WRN("Read failure (%d)", rc);
 		sntp_addrlen_cached = 0;
+		sntp_error_handle();
 		return;
 	}
+
+	sntp_failures = 0;
+#ifdef CONFIG_SNTP_AUTO_IMMEDIATELY
+	/* Reschedule worker */
+	k_work_reschedule(&sntp_worker, K_SECONDS(CONFIG_SNTP_AUTO_RESYNC_AGE));
+#endif /* CONFIG_SNTP_AUTO_IMMEDIATELY */
+
 	LOG_INF("Unix time: %llu (delay %d us)", s_time.seconds, s_time.rsp_delay_us);
 
 	/* Update reference instant */
