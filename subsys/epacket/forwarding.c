@@ -144,7 +144,8 @@ void epacket_packet_forward(struct net_buf *buf)
 	}
 }
 
-static int ensure_bt_connection(union epacket_interface_address *address, uint8_t flags,
+static int ensure_bt_connection(const struct device *backhaul,
+				union epacket_interface_address *address, uint8_t flags,
 				uint32_t conn_timeout_ms, k_timeout_t idle_timeout,
 				k_timeout_t absolute_timeout, bool *connection_deferred)
 {
@@ -159,6 +160,8 @@ static int ensure_bt_connection(union epacket_interface_address *address, uint8_
 		.subscribe_data = flags & EPACKET_FORWARD_AUTO_CONN_SUB_DATA,
 		.subscribe_logging = false,
 		.existing_only = true,
+		/* Packets from the device must fit within the backhaul */
+		.att_mtu_limit = epacket_bt_gatt_forward_mtu(backhaul),
 	};
 	struct epacket_read_response security_info;
 	struct bt_conn_info conn_info;
@@ -397,7 +400,8 @@ static bool forward_auto_conn_process_one(struct net_buf *buf)
 	}
 
 	/* Ensure we have a valid Bluetooth connection before sending */
-	rc = ensure_bt_connection(&dest, hdr->flags, (uint32_t)hdr->conn_timeout * MSEC_PER_SEC,
+	rc = ensure_bt_connection(meta->interface, &dest, hdr->flags,
+				  (uint32_t)hdr->conn_timeout * MSEC_PER_SEC,
 				  K_SECONDS(hdr->conn_idle_timeout),
 				  K_SECONDS(hdr->conn_absolute_timeout), &connection_deferred);
 	if (connection_deferred) {
