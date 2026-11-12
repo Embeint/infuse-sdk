@@ -2129,6 +2129,8 @@ static atomic_t relay_num_requesters;
 static atomic_t relay_originator_ready;
 static atomic_t relay_responses_received;
 static atomic_t relay_responses_invalid;
+/* Expected length of the responses received by the originator (0 for any) */
+static size_t relay_response_len;
 static struct {
 	bt_addr_le_t relay;
 	bt_addr_le_t devices[RELAY_MAX_CLIENTS];
@@ -2245,40 +2247,15 @@ static struct relay_client_state relay_clients_query(void)
 	return state;
 }
 
-static void relay_run(uint8_t clients, uint8_t iterations)
+static void relay_wait_originators(uint8_t clients)
 {
 	const struct device *epacket_bt_adv = DEVICE_DT_GET(DT_NODELABEL(epacket_bt_adv));
 	const struct device *epacket_periph = DEVICE_DT_GET(DT_NODELABEL(epacket_bt_peripheral));
-	const struct device *epacket_central = DEVICE_DT_GET(DT_NODELABEL(epacket_bt_central));
 	static const uint8_t adv_payload[] = {'r', 'e', 'l', 'a', 'y'};
 	static const uint8_t ready_payload[] = {'r', 'e', 'a', 'd', 'y'};
-	static struct epacket_interface_cb periph_cb = {
-		.tx_result = relay_backhaul_tx_result,
-		.packet_received = relay_backhaul_received,
-	};
-	static struct epacket_interface_cb central_cb = {
-		.packet_received = relay_downstream_received,
-	};
-	const uint32_t expected = clients * iterations;
 	struct relay_client_state state;
-	uint8_t clients_seen = 0;
 	k_timepoint_t timeout;
 	struct net_buf *buf;
-
-	common_init();
-	memset(relay_devices, 0, sizeof(relay_devices));
-	relay_num_devices = 0;
-	atomic_set(&relay_unexpected_rsp, 0);
-	atomic_set(&relay_backhaul_sent, 0);
-	atomic_set(&relay_num_requesters, 0);
-
-	/* Peripheral interface is the backhaul for both the forwarding requests and
-	 * the packets received from the downstream devices.
-	 */
-	epacket_register_callback(epacket_periph, &periph_cb);
-	epacket_register_callback(epacket_central, &central_cb);
-	epacket_set_receive_handler(epacket_periph, relay_backhaul_handler);
-	epacket_set_receive_handler(epacket_central, relay_backhaul_handler);
 
 	/* Advertise (connectable) until all the originators have connected */
 	LOG_INF("Relay advertising");
@@ -2308,6 +2285,39 @@ static void relay_run(uint8_t clients, uint8_t iterations)
 		epacket_queue(epacket_periph, buf);
 		k_sleep(K_MSEC(200));
 	}
+}
+
+static void relay_run(uint8_t clients, uint8_t iterations)
+{
+	const struct device *epacket_periph = DEVICE_DT_GET(DT_NODELABEL(epacket_bt_peripheral));
+	const struct device *epacket_central = DEVICE_DT_GET(DT_NODELABEL(epacket_bt_central));
+	static struct epacket_interface_cb periph_cb = {
+		.tx_result = relay_backhaul_tx_result,
+		.packet_received = relay_backhaul_received,
+	};
+	static struct epacket_interface_cb central_cb = {
+		.packet_received = relay_downstream_received,
+	};
+	const uint32_t expected = clients * iterations;
+	uint8_t clients_seen = 0;
+	k_timepoint_t timeout;
+
+	common_init();
+	memset(relay_devices, 0, sizeof(relay_devices));
+	relay_num_devices = 0;
+	atomic_set(&relay_unexpected_rsp, 0);
+	atomic_set(&relay_backhaul_sent, 0);
+	atomic_set(&relay_num_requesters, 0);
+
+	/* Peripheral interface is the backhaul for both the forwarding requests and
+	 * the packets received from the downstream devices.
+	 */
+	epacket_register_callback(epacket_periph, &periph_cb);
+	epacket_register_callback(epacket_central, &central_cb);
+	epacket_set_receive_handler(epacket_periph, relay_backhaul_handler);
+	epacket_set_receive_handler(epacket_central, relay_backhaul_handler);
+
+	relay_wait_originators(clients);
 
 	/* Wait for all the responses to be relayed back to the originators */
 	timeout = sys_timepoint_calc(K_SECONDS(10));
@@ -2403,12 +2413,6 @@ static bool relay_response_valid(struct net_buf *buf)
 	 * key, so validate the unencrypted associated data and the ciphertext length.
 	 * Responses are sent to all clients of the relay, so they may be for another originator.
 	 */
-	const size_t expected_len = sizeof(struct epacket_v0_versioned_frame_format) +
-				    sizeof(struct epacket_received_common_header) +
-				    sizeof(struct epacket_interface_address_bt_le) +
-				    sizeof(struct epacket_received_decrypted_header) +
-				    sizeof(struct rpc_application_info_response) +
-				    RELAY_CHACHA_TAG_LEN;
 	struct epacket_rx_metadata *meta = net_buf_user_data(buf);
 
 	if (meta->interface_id != EPACKET_INTERFACE_BT_CENTRAL) {
@@ -2428,8 +2432,8 @@ static bool relay_response_valid(struct net_buf *buf)
 		LOG_ERR("Backhaul packet not device encrypted");
 		return false;
 	}
-	if (buf->len != expected_len) {
-		LOG_ERR("Unexpected response length (%d != %d)", buf->len, expected_len);
+	if ((relay_response_len != 0) && (buf->len != relay_response_len)) {
+		LOG_ERR("Unexpected response length (%d != %d)", buf->len, relay_response_len);
 		return false;
 	}
 	return true;
@@ -2454,14 +2458,10 @@ static void relay_originator_handler(struct net_buf *buf)
 	net_buf_unref(buf);
 }
 
-static int relay_forward_auto_conn(const bt_addr_le_t *relay, const bt_addr_le_t *device,
-				   uint32_t request_id)
+static int relay_forward_rpc(const bt_addr_le_t *relay, const bt_addr_le_t *device, void *request,
+			     size_t request_len)
 {
 	const struct device *epacket_central = DEVICE_DT_GET(DT_NODELABEL(epacket_bt_central));
-	struct rpc_application_info_request info_request = {
-		.header.command_id = RPC_ID_APPLICATION_INFO,
-		.header.request_id = request_id,
-	};
 	union epacket_interface_address relay_address = {.bluetooth = *relay};
 	struct forwarding_bt {
 		struct epacket_forward_auto_conn_header forward_header;
@@ -2470,7 +2470,7 @@ static int relay_forward_auto_conn(const bt_addr_le_t *relay, const bt_addr_le_t
 	struct net_buf *inner, *outer;
 
 	/* RPC for the final device, network encrypted so the relay cannot inspect it */
-	inner = create_info_request(epacket_central, &info_request);
+	inner = create_rpc_request(epacket_central, request, request_len);
 	if (inner == NULL) {
 		return -ENOMEM;
 	}
@@ -2501,6 +2501,17 @@ static int relay_forward_auto_conn(const bt_addr_le_t *relay, const bt_addr_le_t
 
 	epacket_queue(epacket_central, outer);
 	return 0;
+}
+
+static int relay_forward_auto_conn(const bt_addr_le_t *relay, const bt_addr_le_t *device,
+				   uint32_t request_id)
+{
+	struct rpc_application_info_request info_request = {
+		.header.command_id = RPC_ID_APPLICATION_INFO,
+		.header.request_id = request_id,
+	};
+
+	return relay_forward_rpc(relay, device, &info_request, sizeof(info_request));
 }
 
 static int relay_wait_ready(k_timeout_t timeout)
@@ -2536,7 +2547,8 @@ static int relay_wait_responses(uint32_t target, k_timeout_t timeout)
 	return 0;
 }
 
-static void relay_originator_run(uint8_t client, uint8_t clients, uint8_t iterations)
+static int relay_originator_connect(uint8_t client, uint8_t clients, bt_addr_le_t *device,
+				    struct bt_conn **conn)
 {
 	const struct device *epacket_bt_adv = DEVICE_DT_GET(DT_NODELABEL(epacket_bt_adv));
 	const struct device *epacket_central = DEVICE_DT_GET(DT_NODELABEL(epacket_bt_central));
@@ -2552,8 +2564,7 @@ static void relay_originator_run(uint8_t client, uint8_t clients, uint8_t iterat
 		.wait_subscriptions = true,
 	};
 	struct epacket_read_response security_info;
-	struct bt_conn *conn = NULL;
-	bt_addr_le_t device, tmp;
+	bt_addr_le_t tmp;
 	bool already;
 	int rc;
 
@@ -2568,15 +2579,15 @@ static void relay_originator_run(uint8_t client, uint8_t clients, uint8_t iterat
 	epacket_set_receive_handler(epacket_bt_adv, relay_adv_receive_handler);
 	if (epacket_receive(epacket_bt_adv, K_FOREVER) < 0) {
 		FAIL("Failed to start scanning\n");
-		return;
+		return -1;
 	}
 	if (k_sem_take(&relay_peers_found, K_SECONDS(5)) < 0) {
 		FAIL("Failed to observe relay and devices\n");
-		return;
+		return -1;
 	}
 	if (epacket_receive(epacket_bt_adv, K_NO_WAIT) < 0) {
 		FAIL("Failed to stop scanning\n");
-		return;
+		return -1;
 	}
 	k_sleep(K_MSEC(10));
 
@@ -2587,19 +2598,38 @@ static void relay_originator_run(uint8_t client, uint8_t clients, uint8_t iterat
 		relay_peers.devices[0] = relay_peers.devices[1];
 		relay_peers.devices[1] = tmp;
 	}
-	device = relay_peers.devices[client];
+	*device = relay_peers.devices[client];
 
 	/* Connect to the relay */
 	epacket_set_receive_handler(epacket_central, relay_originator_handler);
 	params.peer = relay_peers.relay;
-	rc = epacket_bt_gatt_connect(&conn, &params, &security_info, &already);
+	rc = epacket_bt_gatt_connect(conn, &params, &security_info, &already);
 	if (rc != 0) {
 		FAIL("Failed to connect to relay (%d)\n", rc);
-		return;
+		return -1;
 	}
 
 	/* Wait until all originators are connected to the relay */
 	if (relay_wait_ready(K_SECONDS(5)) < 0) {
+		return -1;
+	}
+
+	return 0;
+}
+
+static void relay_originator_run(uint8_t client, uint8_t clients, uint8_t iterations)
+{
+	struct bt_conn *conn = NULL;
+	bt_addr_le_t device;
+	int rc;
+
+	/* Every response is an INFUSE_RPC_RSP to APPLICATION_INFO, encrypted by the relay */
+	relay_response_len = sizeof(struct epacket_v0_versioned_frame_format) +
+			     sizeof(struct epacket_received_common_header) +
+			     sizeof(struct epacket_interface_address_bt_le) +
+			     sizeof(struct epacket_received_decrypted_header) +
+			     sizeof(struct rpc_application_info_response) + RELAY_CHACHA_TAG_LEN;
+	if (relay_originator_connect(client, clients, &device, &conn) < 0) {
 		return;
 	}
 
@@ -2642,6 +2672,148 @@ static void relay_originator_run(uint8_t client, uint8_t clients, uint8_t iterat
 	}
 	PASS("Bluetooth relay originator %d received %ld responses\n", client,
 	     atomic_get(&relay_responses_received));
+}
+
+/*
+ * Bluetooth relay forwarding a data logger read, where the device streams INFUSE_RPC_DATA
+ * packets sized to the maximum payload of its connection to the relay. The relay limits the
+ * MTU of that connection so that every packet can be forwarded over its backhaul.
+ */
+#define RELAY_LOGGER_REQUEST_ID 0xDD000001
+#define RELAY_LOGGER_BLOCKS     8
+#define RELAY_LOGGER_SIZE       (RELAY_LOGGER_BLOCKS * 512)
+
+static atomic_t relay_downstream_rx;
+static atomic_t relay_logger_bytes;
+/* 0 for no response, 1 for success, -1 for failure */
+static atomic_t relay_logger_result;
+
+static bool relay_logger_downstream_received(struct net_buf *buf, bool decrypted, void *user_ctx)
+{
+	struct epacket_rx_metadata *meta = net_buf_user_data(buf);
+	struct infuse_rpc_rsp_header *rsp = (void *)buf->data;
+	struct infuse_rpc_data *data = (void *)buf->data;
+
+	atomic_inc(&relay_downstream_rx);
+	if (!decrypted) {
+		return true;
+	}
+	if ((meta->type == INFUSE_RPC_DATA) && (buf->len >= sizeof(*data)) &&
+	    (data->request_id == RELAY_LOGGER_REQUEST_ID)) {
+		atomic_add(&relay_logger_bytes, buf->len - sizeof(*data));
+	} else if ((meta->type == INFUSE_RPC_RSP) && (buf->len >= sizeof(*rsp)) &&
+		   (rsp->request_id == RELAY_LOGGER_REQUEST_ID)) {
+		atomic_set(&relay_logger_result, rsp->return_code == 0 ? 1 : -1);
+	}
+	/* Continue normal processing (forward to backhaul) */
+	return true;
+}
+
+static void main_gateway_relay_logger(void)
+{
+	const struct device *epacket_periph = DEVICE_DT_GET(DT_NODELABEL(epacket_bt_peripheral));
+	const struct device *epacket_central = DEVICE_DT_GET(DT_NODELABEL(epacket_bt_central));
+	static struct epacket_interface_cb periph_cb = {
+		.tx_result = relay_backhaul_tx_result,
+		.packet_received = relay_backhaul_received,
+	};
+	static struct epacket_interface_cb central_cb = {
+		.packet_received = relay_logger_downstream_received,
+	};
+	k_timepoint_t timeout;
+
+	common_init();
+	atomic_set(&relay_backhaul_sent, 0);
+	atomic_set(&relay_num_requesters, 0);
+	atomic_set(&relay_downstream_rx, 0);
+	atomic_set(&relay_logger_bytes, 0);
+	atomic_set(&relay_logger_result, 0);
+
+	epacket_register_callback(epacket_periph, &periph_cb);
+	epacket_register_callback(epacket_central, &central_cb);
+	epacket_set_receive_handler(epacket_periph, relay_backhaul_handler);
+	epacket_set_receive_handler(epacket_central, relay_backhaul_handler);
+
+	relay_wait_originators(1);
+
+	/* Wait for the read to complete, and every packet from the device to be forwarded */
+	timeout = sys_timepoint_calc(K_SECONDS(10));
+	while (((atomic_get(&relay_logger_result) == 0) ||
+		(atomic_get(&relay_backhaul_sent) < atomic_get(&relay_downstream_rx))) &&
+	       !sys_timepoint_expired(timeout)) {
+		k_sleep(K_MSEC(50));
+	}
+
+	epacket_unregister_callback(epacket_periph, &periph_cb);
+	epacket_unregister_callback(epacket_central, &central_cb);
+
+	if (atomic_get(&relay_logger_result) != 1) {
+		FAIL("Data logger read failed (%ld)\n", atomic_get(&relay_logger_result));
+		return;
+	}
+	if (atomic_get(&relay_logger_bytes) != RELAY_LOGGER_SIZE) {
+		FAIL("Unexpected data logger bytes (%ld != %d)\n", atomic_get(&relay_logger_bytes),
+		     RELAY_LOGGER_SIZE);
+		return;
+	}
+	if (atomic_get(&relay_backhaul_sent) != atomic_get(&relay_downstream_rx)) {
+		FAIL("Packets not forwarded to backhaul (%ld != %ld)\n",
+		     atomic_get(&relay_backhaul_sent), atomic_get(&relay_downstream_rx));
+		return;
+	}
+	PASS("Bluetooth relay forwarded %ld packets of data logger read\n",
+	     atomic_get(&relay_backhaul_sent));
+}
+
+static void main_gateway_relay_originator_logger(void)
+{
+	struct rpc_data_logger_read_request request = {
+		.header =
+			{
+				.command_id = RPC_ID_DATA_LOGGER_READ,
+				.request_id = RELAY_LOGGER_REQUEST_ID,
+			},
+		.data_header =
+			{
+				.size = RELAY_LOGGER_SIZE,
+				.rx_ack_period = 0,
+			},
+		.logger = RPC_ENUM_DATA_LOGGER_FLASH_ONBOARD,
+		.start_block = 0,
+		.last_block = RELAY_LOGGER_BLOCKS - 1,
+	};
+	struct bt_conn *conn = NULL;
+	bt_addr_le_t device;
+	atomic_val_t received;
+	int rc;
+
+	/* Data packets have varying lengths */
+	relay_response_len = 0;
+	if (relay_originator_connect(0, 1, &device, &conn) < 0) {
+		return;
+	}
+	if (relay_forward_rpc(&relay_peers.relay, &device, &request, sizeof(request)) < 0) {
+		return;
+	}
+
+	/* Wait for the forwarded packets to stop arriving */
+	do {
+		received = atomic_get(&relay_responses_received);
+		k_sleep(K_MSEC(1500));
+	} while (atomic_get(&relay_responses_received) != received);
+
+	rc = bt_conn_disconnect_sync(conn);
+	bt_conn_unref(conn);
+	if (rc < 0) {
+		FAIL("Failed to disconnect from relay\n");
+		return;
+	}
+	if ((received < 2) || (atomic_get(&relay_responses_invalid) > 0)) {
+		FAIL("Unexpected responses (%ld valid, %ld invalid)\n", received,
+		     atomic_get(&relay_responses_invalid));
+		return;
+	}
+	PASS("Bluetooth relay originator received %ld packets\n", received);
 }
 
 static void main_gateway_relay_originator(void)
@@ -4245,6 +4417,20 @@ static const struct bst_test_instance epacket_gateway[] = {
 		.test_pre_init_f = test_init,
 		.test_tick_f = test_tick,
 		.test_main_f = main_gateway_relay_originator,
+	},
+	{
+		.test_id = "epacket_bt_gateway_relay_logger",
+		.test_descr = "Bluetooth relay forwarding a data logger read",
+		.test_pre_init_f = test_init,
+		.test_tick_f = test_tick,
+		.test_main_f = main_gateway_relay_logger,
+	},
+	{
+		.test_id = "epacket_bt_gateway_relay_originator_logger",
+		.test_descr = "Data logger read through a Bluetooth relay",
+		.test_pre_init_f = test_init,
+		.test_tick_f = test_tick,
+		.test_main_f = main_gateway_relay_originator_logger,
 	},
 	{
 		.test_id = "epacket_bt_gateway_relay_dual",
