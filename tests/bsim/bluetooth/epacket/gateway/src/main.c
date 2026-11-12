@@ -2659,6 +2659,123 @@ static void main_gateway_relay_originator_b(void)
 	relay_originator_run(1, 2, RELAY_ITERATIONS);
 }
 
+static void auto_conn_idle_race_request(const bt_addr_le_t *addr, uint32_t request_id,
+					struct rpc_application_info_request *info_request)
+{
+	const struct device *epacket_dummy = DEVICE_DT_GET(DT_NODELABEL(epacket_dummy));
+	const struct device *epacket_central = DEVICE_DT_GET(DT_NODELABEL(epacket_bt_central));
+	struct epacket_dummy_frame dummy_header = {
+		.type = INFUSE_EPACKET_FORWARD_AUTO_CONN,
+		.auth = EPACKET_AUTH_DEVICE,
+	};
+	struct forwarding_bt {
+		struct epacket_forward_auto_conn_header forward_header;
+		uint8_t bt_addr[7];
+	} __packed hdr;
+	struct net_buf *buf;
+
+	info_request->header.command_id = RPC_ID_APPLICATION_INFO;
+	info_request->header.request_id = request_id;
+	buf = create_info_request(epacket_central, info_request);
+	if (buf == NULL) {
+		return;
+	}
+
+	hdr.forward_header.interface = EPACKET_INTERFACE_BT_CENTRAL;
+	hdr.forward_header.length = sizeof(hdr) + buf->len;
+	hdr.forward_header.flags = 0;
+	hdr.forward_header.conn_timeout = 2;
+	hdr.forward_header.conn_idle_timeout = 1;
+	hdr.forward_header.conn_absolute_timeout = 5;
+	hdr.bt_addr[0] = addr->type;
+	memcpy(hdr.bt_addr + 1, addr->a.val, 6);
+
+	epacket_dummy_receive_extra(epacket_dummy, &dummy_header, &hdr, sizeof(hdr), buf->data,
+				    buf->len);
+	net_buf_unref(buf);
+}
+
+static void main_gateway_remote_rpc_forward_auto_conn_idle_race(void)
+{
+	const struct device *epacket_dummy = DEVICE_DT_GET(DT_NODELABEL(epacket_dummy));
+	const struct device *epacket_central = DEVICE_DT_GET(DT_NODELABEL(epacket_bt_central));
+	struct k_fifo *response_queue = epacket_dummmy_transmit_fifo_get();
+	struct rpc_application_info_request info_request;
+	struct bt_conn_info info;
+	k_timepoint_t timeout;
+	struct bt_conn *conn;
+	struct net_buf *buf;
+	bt_addr_le_t addr;
+
+	common_init();
+	if (observe_peers(&addr, 1) < 0) {
+		FAIL("Failed to observe peer\n");
+		return;
+	}
+
+	epacket_set_receive_handler(epacket_dummy, dummy_gateway_handler);
+	epacket_set_receive_handler(epacket_central, dummy_gateway_handler);
+
+	/* Create the connection through the auto-conn forwarder */
+	auto_conn_idle_race_request(&addr, 0xAA000001, &info_request);
+	buf = k_fifo_get(response_queue, K_SECONDS(3));
+	if (buf == NULL) {
+		FAIL("Failed to receive first response\n");
+		return;
+	}
+	if (check_info_response(buf, &info_request) < 0) {
+		return;
+	}
+	net_buf_unref(buf);
+
+	/* Wait until the connection starts terminating due to the idle timeout */
+	conn = bt_conn_lookup_addr_le(BT_ID_DEFAULT, &addr);
+	if (conn == NULL) {
+		FAIL("Could not find associated connection\n");
+		return;
+	}
+	timeout = sys_timepoint_calc(K_SECONDS(3));
+	do {
+		if (sys_timepoint_expired(timeout)) {
+			FAIL("Connection did not start terminating\n");
+			bt_conn_unref(conn);
+			return;
+		}
+		k_sleep(K_USEC(500));
+		(void)bt_conn_get_info(conn, &info);
+	} while (info.state == BT_CONN_STATE_CONNECTED);
+	/* Our reference would prevent the stack from releasing the connection */
+	bt_conn_unref(conn);
+	if (info.state != BT_CONN_STATE_DISCONNECTING) {
+		FAIL("Missed the disconnecting window (%d)\n", info.state);
+		return;
+	}
+
+	/* Forward a request while the previous connection is being torn down */
+	LOG_INF("Forwarding during idle disconnect");
+	auto_conn_idle_race_request(&addr, 0xAA000002, &info_request);
+	buf = k_fifo_get(response_queue, K_SECONDS(3));
+	if (buf == NULL) {
+		FAIL("Request during idle disconnect was lost\n");
+		return;
+	}
+	if (check_info_response(buf, &info_request) < 0) {
+		return;
+	}
+	net_buf_unref(buf);
+
+	/* Wait for the new connection to idle out */
+	k_sleep(K_SECONDS(2));
+	conn = bt_conn_lookup_addr_le(BT_ID_DEFAULT, &addr);
+	if (conn != NULL) {
+		bt_conn_unref(conn);
+		FAIL("Connection did not idle out\n");
+		return;
+	}
+
+	PASS("RPC auto-conn forwarder during idle disconnect passed\n");
+}
+
 static void main_gateway_remote_rpc_forward_auto_conn_limit(void)
 {
 	const struct device *epacket_dummy = DEVICE_DT_GET(DT_NODELABEL(epacket_dummy));
@@ -4149,6 +4266,13 @@ static const struct bst_test_instance epacket_gateway[] = {
 		.test_pre_init_f = test_init,
 		.test_tick_f = test_tick,
 		.test_main_f = main_gateway_relay_originator_b,
+	},
+	{
+		.test_id = "epacket_bt_gateway_remote_rpc_forward_auto_conn_idle_race",
+		.test_descr = "Forward a request while the previous connection is idling out",
+		.test_pre_init_f = test_init,
+		.test_tick_f = test_tick,
+		.test_main_f = main_gateway_remote_rpc_forward_auto_conn_idle_race,
 	},
 	{
 		.test_id = "epacket_bt_gateway_remote_rpc_forward_auto_conn_limit",
