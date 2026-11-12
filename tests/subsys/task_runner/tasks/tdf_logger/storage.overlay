@@ -1,0 +1,19 @@
+/ {
+	data_logger_flash: data_logger_flash {
+		compatible = "embeint,data-logger-shim", "embeint,data-logger";
+		physical-blocks = <100>;
+
+		tdf_logger_flash: tdf_logger_flash {
+			compatible = "embeint,tdf-data-logger";
+		};
+	};
+
+	data_logger_removable: data_logger_removable {
+		compatible = "embeint,data-logger-shim", "embeint,data-logger";
+		physical-blocks = <100>;
+
+		tdf_logger_removable: tdf_logger_removable {
+			compatible = "embeint,tdf-data-logger";
+		};
+	};
+};

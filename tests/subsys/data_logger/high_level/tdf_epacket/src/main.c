@@ -45,6 +45,8 @@ ZTEST(tdf_data_logger, test_common)
 	zassert_equal(logger, tdf_data_logger_from_mask(TDF_DATA_LOGGER_SERIAL));
 	zassert_equal(NULL,
 		      tdf_data_logger_from_mask(TDF_DATA_LOGGER_SERIAL | TDF_DATA_LOGGER_UDP));
+	zassert_equal(DEVICE_DT_GET(DT_PARENT(DT_NODELABEL(tdf_logger_dummy))),
+		      tdf_data_logger_backend_get(logger));
 }
 
 ZTEST(tdf_data_logger, test_standard)
