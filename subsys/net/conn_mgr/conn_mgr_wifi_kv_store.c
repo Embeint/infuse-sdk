@@ -16,7 +16,9 @@
 #include <infuse/fs/kv_store.h>
 #include <infuse/fs/kv_types.h>
 
-#define WIFI_MGMT_EVENTS (NET_EVENT_WIFI_CONNECT_RESULT | NET_EVENT_WIFI_DISCONNECT_RESULT)
+#define WIFI_MGMT_EVENTS      (NET_EVENT_WIFI_CONNECT_RESULT | NET_EVENT_WIFI_DISCONNECT_RESULT)
+/* Maximum time to block the caller of `conn_mgr_if_connect` waiting for WPA supplicant */
+#define WPA_READY_CALLER_WAIT K_SECONDS(1)
 
 static struct net_mgmt_event_callback wifi_mgmt_cb;
 static struct k_work_delayable conn_config_changed;
@@ -82,6 +84,7 @@ static void conn_create_worker(struct k_work *work)
 		if (work == NULL) {
 			struct conn_mgr_conn_binding *const binding =
 				conn_mgr_if_get_binding(wifi_if);
+			k_timepoint_t end = sys_timepoint_calc(WPA_READY_CALLER_WAIT);
 
 			/* Called from `conn_mgr_if_connect` context, block until ready */
 			__ASSERT_NO_MSG(
@@ -89,10 +92,18 @@ static void conn_create_worker(struct k_work *work)
 
 			/* Wait until WPA ready (binding must be unlocked to allow WPA callbacks) */
 			conn_mgr_binding_unlock(binding);
-			while (!wpa_ready) {
+			while (!wpa_ready && !sys_timepoint_expired(end)) {
 				k_sleep(K_MSEC(5));
 			}
 			conn_mgr_binding_lock(binding);
+			if (!wpa_ready) {
+				/* Don't block the caller indefinitely, continue waiting on the
+				 * workqueue instead.
+				 */
+				LOG_WRN("WPA supplicant not ready, deferring connection");
+				k_work_reschedule(&conn_create, K_MSEC(5));
+				return;
+			}
 		} else {
 			k_work_reschedule(k_work_delayable_from_work(work), K_MSEC(5));
 			return;
