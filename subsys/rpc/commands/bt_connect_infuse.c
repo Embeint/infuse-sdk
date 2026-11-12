@@ -20,6 +20,7 @@ LOG_MODULE_DECLARE(rpc_server, CONFIG_INFUSE_RPC_LOG_LEVEL);
 
 struct net_buf *rpc_command_bt_connect_infuse(struct net_buf *request)
 {
+	struct epacket_rx_metadata *meta = net_buf_user_data(request);
 	struct rpc_bt_connect_infuse_request *req = (void *)request->data;
 	struct rpc_bt_connect_infuse_response rsp = {
 		.peer = req->peer,
@@ -38,6 +39,8 @@ struct net_buf *rpc_command_bt_connect_infuse(struct net_buf *request)
 		.subscribe_logging = req->subscribe & RPC_ENUM_INFUSE_BT_CHARACTERISTIC_LOGGING,
 		.subscribe_cloud_uplink =
 			req->subscribe & RPC_ENUM_INFUSE_BT_CHARACTERISTIC_CLOUD_UPLINK,
+		/* Packets from the device are forwarded back over the interface of the request */
+		.att_mtu_limit = epacket_bt_gatt_forward_mtu(meta->interface),
 	};
 	struct epacket_read_response security_info;
 	struct bt_conn *conn;
