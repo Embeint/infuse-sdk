@@ -97,6 +97,30 @@ ZTEST(auto_sntp, test_auto_sntp_triggered)
 	k_sleep(K_SECONDS(1));
 }
 
+ZTEST(auto_sntp, test_auto_sntp_triggered_give_up)
+{
+	KV_STRING_CONST(sntp_valid, CONFIG_SNTP_AUTO_DEFAULT_SERVER);
+	KV_STRING_CONST(sntp_invalid, CONFIG_TEST_SNTP_UNRESPONSIVE_SERVER);
+	int give_up_ms =
+		(2 * CONFIG_SNTP_AUTO_QUERY_TIMEOUT_MS) + CONFIG_SNTP_AUTO_RETRY_PERIOD_MS + 500;
+
+	BUILD_ASSERT(CONFIG_SNTP_AUTO_RETRY_LIMIT == 2);
+
+	/* Switch to a server that never responds, once a resync is required */
+	zassert_true(KV_STORE_WRITE(KV_KEY_NTP_SERVER_URL, &sntp_invalid) > 0);
+	k_sleep(K_SECONDS(CONFIG_SNTP_AUTO_RESYNC_AGE + 1));
+
+	/* Query times out, is retried once, then gives up */
+	sntp_auto_sync_point();
+	zassert_equal(-EAGAIN, k_sem_take(&time_ref_updated, K_MSEC(give_up_ms)));
+
+	/* Having given up, the next sync point starts a new query */
+	zassert_true(KV_STORE_WRITE(KV_KEY_NTP_SERVER_URL, &sntp_valid) > 0);
+	sntp_auto_sync_point();
+	zassert_equal(0, k_sem_take(&time_ref_updated, K_SECONDS(2)));
+	k_sleep(K_SECONDS(1));
+}
+
 void *test_init(void)
 {
 	static struct epoch_time_cb time_cb;

@@ -87,12 +87,15 @@ ZTEST(auto_sntp, test_auto_sntp)
 
 	zassert_true(KV_STORE_READ(KV_KEY_NTP_SERVER_URL, &ntp_server) > 0);
 
-	/* Change the SNTP server address to an invalid value, which should timeout twice in a row,
-	 * with a DNS requery in between
+	/* Change the SNTP server address to an invalid value. The query at the resync age should
+	 * timeout twice in a row (retried after the retry period, with a DNS requery in between),
+	 * then give up before the next resync.
 	 */
-	int timeout_ms = 2 * ((CONFIG_SNTP_AUTO_RESYNC_AGE * MSEC_PER_SEC) +
-			      CONFIG_SNTP_AUTO_QUERY_TIMEOUT_MS) +
-			 500;
+	int timeout_ms = (CONFIG_SNTP_AUTO_RESYNC_AGE * MSEC_PER_SEC) +
+			 (2 * CONFIG_SNTP_AUTO_QUERY_TIMEOUT_MS) +
+			 CONFIG_SNTP_AUTO_RETRY_PERIOD_MS + 500;
+
+	BUILD_ASSERT(CONFIG_SNTP_AUTO_RETRY_LIMIT == 2);
 
 	zassert_true(KV_STORE_WRITE(KV_KEY_NTP_SERVER_URL, &sntp_invalid) > 0);
 	zassert_equal(-EAGAIN, k_sem_take(&time_ref_updated, K_MSEC(timeout_ms)));

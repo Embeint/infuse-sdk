@@ -44,16 +44,21 @@ NET_SOCKET_SERVICE_SYNC_DEFINE_STATIC(service_auto_sntp, sntp_service_handler, 1
 
 LOG_MODULE_REGISTER(sntp_auto, CONFIG_SNTP_AUTO_LOG_LEVEL);
 
-static void sntp_error_handle(struct k_work_delayable *dwork)
+static void sntp_error_handle(void)
 {
 	if (++sntp_failures < CONFIG_SNTP_AUTO_RETRY_LIMIT) {
 		/* Failed to perform SNTP update, retry shortly */
-		k_work_reschedule(dwork, K_SECONDS(CONFIG_SNTP_AUTO_RESYNC_AGE));
-	} else {
-		LOG_INF("Giving up SNTP queries after %d failures", CONFIG_SNTP_AUTO_RETRY_LIMIT);
-		sntp_failures = 0;
-		k_work_reschedule(dwork, K_SECONDS(CONFIG_SNTP_AUTO_RESYNC_AGE));
+		k_work_reschedule(&sntp_worker, K_MSEC(CONFIG_SNTP_AUTO_RETRY_PERIOD_MS));
+		return;
 	}
+
+	LOG_INF("Giving up SNTP queries after %d failures", CONFIG_SNTP_AUTO_RETRY_LIMIT);
+	sntp_failures = 0;
+#ifdef CONFIG_SNTP_AUTO_IMMEDIATELY
+	/* Try again once the resync period has elapsed */
+	k_work_reschedule(&sntp_worker, K_SECONDS(CONFIG_SNTP_AUTO_RESYNC_AGE));
+#endif  /* CONFIG_SNTP_AUTO_IMMEDIATELY */
+	/* For CONFIG_SNTP_AUTO_SYNC_POINTS, wait for the next sync point */
 }
 
 static void l4_event_handler(struct net_mgmt_event_callback *cb, uint64_t event,
@@ -128,7 +133,7 @@ static void sntp_timeout_work(struct k_work *work)
 	/* Re-query the DNS */
 	sntp_addrlen_cached = 0;
 
-	sntp_error_handle(&sntp_worker);
+	sntp_error_handle();
 }
 
 static int sntp_start_async_query(struct net_sockaddr *addr, net_socklen_t addrlen)
@@ -158,7 +163,6 @@ static int sntp_start_async_query(struct net_sockaddr *addr, net_socklen_t addrl
 static void async_dns_cb(int result, struct net_sockaddr *addr, net_socklen_t addrlen,
 			 struct infuse_async_dns_context *ctx)
 {
-	struct k_work_delayable *delayable = ctx->user_data;
 	struct net_sockaddr_in *saddr_in;
 
 	if (result < 0) {
@@ -189,7 +193,7 @@ static void async_dns_cb(int result, struct net_sockaddr *addr, net_socklen_t ad
 
 	return;
 error:
-	sntp_error_handle(delayable);
+	sntp_error_handle();
 }
 
 #endif /* CONFIG_INFUSE_DNS_ASYNC */
@@ -197,7 +201,6 @@ error:
 static void sntp_work(struct k_work *work)
 {
 	KV_STRING_CONST(ntp_default, CONFIG_SNTP_AUTO_DEFAULT_SERVER);
-	struct k_work_delayable *delayable = k_work_delayable_from_work(work);
 	KV_KEY_TYPE_VAR(KV_KEY_NTP_SERVER_URL, 64) ntp_server;
 	int rc;
 
@@ -226,7 +229,7 @@ static void sntp_work(struct k_work *work)
 		.cb = async_dns_cb,
 	};
 
-	sntp_dns_ctx.user_data = delayable;
+	sntp_dns_ctx.user_data = &sntp_worker;
 
 	rc = infuse_async_dns(ntp_server.url.value, AF_INET, &sntp_dns_ctx, 10000);
 	if (rc < 0) {
@@ -253,7 +256,7 @@ static void sntp_work(struct k_work *work)
 #endif /* CONFIG_INFUSE_DNS_ASYNC */
 
 error:
-	sntp_error_handle(delayable);
+	sntp_error_handle();
 }
 
 static void kv_value_changed(uint16_t key, const void *data, size_t data_len, void *user_ctx)

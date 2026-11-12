@@ -12,4 +12,11 @@ config WIFI_PSK
 	depends on WIFI
 	default "test_psk"
 
+config TEST_SNTP_UNRESPONSIVE_SERVER
+	string "SNTP server that resolves but never responds"
+	default "www.google.com"
+	help
+	  Server written to the KV store to exercise the retry and give up paths.
+	  The address must resolve, but SNTP queries to it must go unanswered.
+
 source "Kconfig.zephyr"

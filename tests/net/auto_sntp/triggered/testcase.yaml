@@ -22,6 +22,7 @@ tests:
       - CONFIG_SNTP_AUTO_LOG_LEVEL_DBG=y
       # Local SNTP server provided by pytest/conftest.py
       - CONFIG_SNTP_AUTO_DEFAULT_SERVER="127.0.0.1"
+      - CONFIG_TEST_SNTP_UNRESPONSIVE_SERVER="127.0.0.2"
       - CONFIG_SNTP_AUTO_SERVER_PORT=12303
     extra_args:
       - OVERLAY_CONFIG="overlay-nsos.conf"
@@ -37,6 +38,7 @@ tests:
       - CONFIG_SNTP_AUTO_LOG_LEVEL_DBG=y
       # Local SNTP server provided by pytest/conftest.py
       - CONFIG_SNTP_AUTO_DEFAULT_SERVER="127.0.0.1"
+      - CONFIG_TEST_SNTP_UNRESPONSIVE_SERVER="127.0.0.2"
       - CONFIG_SNTP_AUTO_SERVER_PORT=12304
     extra_args:
       - OVERLAY_CONFIG="overlay-nsos.conf"
