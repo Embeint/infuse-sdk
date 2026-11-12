@@ -123,6 +123,13 @@ const struct device *tdf_data_logger_from_mask(uint8_t logger_mask)
 	return logger_mask_iter(&logger_mask);
 }
 
+const struct device *tdf_data_logger_backend_get(const struct device *dev)
+{
+	const struct tdf_logger_config *config = dev->config;
+
+	return config->logger;
+}
+
 int tdf_data_logger_block_bytes_pending(const struct device *dev)
 {
 	struct tdf_logger_data *data = dev->data;

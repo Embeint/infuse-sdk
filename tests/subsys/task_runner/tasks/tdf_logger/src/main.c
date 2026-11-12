@@ -15,6 +15,7 @@
 #include <infuse/epacket/packet.h>
 #include <infuse/epacket/interface/epacket_dummy.h>
 #include <infuse/data_logger/logger.h>
+#include <infuse/data_logger/backend/shim.h>
 #include <infuse/data_logger/high_level/tdf.h>
 #include <infuse/drivers/imu.h>
 #include <infuse/lib/lte_modem_monitor.h>
@@ -59,6 +60,12 @@ ZBUS_CHAN_DEFINE_WITH_ID(INFUSE_ZBUS_NAME(INFUSE_ZBUS_CHAN_IMU), INFUSE_ZBUS_CHA
 #error Unknown battery logging type
 #endif
 #define TDF_BATTERY_SIZE sizeof(TDF_BATTERY_STRUCT)
+
+#if DT_NODE_EXISTS(DT_NODELABEL(tdf_logger_removable))
+#define ANNOUNCE_BASE_FLAGS BIT(0)
+#else
+#define ANNOUNCE_BASE_FLAGS 0x00
+#endif
 
 static void task_schedule(struct task_data *data)
 {
@@ -306,7 +313,7 @@ ZTEST(task_tdf_logger, test_announce)
 	zassert_equal(k_uptime_seconds(), parsed->uptime);
 	zassert_equal(kv_store_reflect_crc(), parsed->kv_crc);
 	zassert_equal(1, parsed->reboots);
-	zassert_equal(0x00, parsed->flags);
+	zassert_equal(ANNOUNCE_BASE_FLAGS, parsed->flags);
 	net_buf_unref(pkt);
 
 	/* Bump reboot count, set into shipping mode */
@@ -327,8 +334,59 @@ ZTEST(task_tdf_logger, test_announce)
 	zassert_equal(k_uptime_seconds(), parsed->uptime);
 	zassert_equal(kv_store_reflect_crc(), parsed->kv_crc);
 	zassert_equal(5, parsed->reboots);
-	zassert_equal(BIT(7), parsed->flags);
+	zassert_equal(ANNOUNCE_BASE_FLAGS | BIT(7), parsed->flags);
 	net_buf_unref(pkt);
+}
+
+static void announce_run(struct tdf_announce_v2 *announce)
+{
+	struct k_fifo *tx_queue = epacket_dummmy_transmit_fifo_get();
+	struct net_buf *pkt;
+	struct tdf_parsed tdf;
+
+	schedule.task_args.tdf_logger = (struct task_tdf_logger_args){
+		.loggers = TDF_DATA_LOGGER_SERIAL,
+		.tdfs = TASK_TDF_LOGGER_LOG_ANNOUNCE,
+	};
+
+	task_schedule(&data);
+	pkt = k_fifo_get(tx_queue, K_MSEC(100));
+	zassert_not_null(pkt);
+	net_buf_pull(pkt, sizeof(struct epacket_dummy_frame));
+	zassert_equal(0, tdf_parse_find_in_buf(pkt->data, pkt->len, TDF_ANNOUNCE_V2, &tdf));
+	zassert_equal(sizeof(*announce), tdf.tdf_len);
+	memcpy(announce, tdf.data, sizeof(*announce));
+	net_buf_unref(pkt);
+}
+
+ZTEST(task_tdf_logger, test_announce_blocks)
+{
+	struct tdf_announce_v2 announce;
+
+#if DT_NODE_EXISTS(DT_NODELABEL(tdf_logger_removable))
+	const struct device *flash = DEVICE_DT_GET(DT_NODELABEL(data_logger_flash));
+	const struct device *removable = DEVICE_DT_GET(DT_NODELABEL(data_logger_removable));
+
+	logger_shim_set_current_block(flash, 10);
+	logger_shim_set_current_block(removable, 20);
+
+	/* Removable logger is preferred */
+	announce_run(&announce);
+	zassert_equal(BIT(0), announce.flags & BIT(0));
+	zassert_equal(20, announce.blocks);
+
+	/* Removable logger not ready */
+	removable->state->init_res += 1;
+	announce_run(&announce);
+	zassert_equal(BIT(0), announce.flags & BIT(0));
+	zassert_equal(UINT32_MAX, announce.blocks);
+	removable->state->init_res -= 1;
+#else
+	/* No storage loggers */
+	announce_run(&announce);
+	zassert_equal(0, announce.flags & BIT(0));
+	zassert_equal(0, announce.blocks);
+#endif
 }
 
 ZTEST(task_tdf_logger, test_battery)

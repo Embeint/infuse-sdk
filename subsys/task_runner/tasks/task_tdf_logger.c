@@ -36,6 +36,32 @@ INFUSE_ZBUS_CHAN_DECLARE(INFUSE_ZBUS_CHAN_BATTERY, INFUSE_ZBUS_CHAN_AMBIENT_ENV,
 
 LOG_MODULE_REGISTER(task_tdfl, CONFIG_TASK_TDF_LOGGER_LOG_LEVEL);
 
+static void announce_logger_state(struct tdf_announce_v2 *announce)
+{
+	const struct device *tdf_logger;
+	const struct device *logger;
+	struct data_logger_state state;
+
+	/* Prefer the removable logger if it exists, otherwise use the flash logger */
+	tdf_logger = tdf_data_logger_from_mask(TDF_DATA_LOGGER_REMOVABLE);
+	if (tdf_logger != NULL) {
+		announce->flags |= BIT(0);
+	} else {
+		tdf_logger = tdf_data_logger_from_mask(TDF_DATA_LOGGER_FLASH);
+	}
+	if (tdf_logger == NULL) {
+		return;
+	}
+
+	logger = tdf_data_logger_backend_get(tdf_logger);
+	if (!device_is_ready(logger)) {
+		announce->blocks = UINT32_MAX;
+		return;
+	}
+	data_logger_get_state(logger, &state);
+	announce->blocks = state.current_block;
+}
+
 static void log_announce(uint8_t loggers, uint64_t timestamp)
 {
 	KV_KEY_TYPE(KV_KEY_REBOOTS) reboots;
@@ -57,23 +83,7 @@ static void log_announce(uint8_t loggers, uint64_t timestamp)
 		.reboots = reboots.count,
 	};
 
-#if defined(CONFIG_DATA_LOGGER_EXFAT) || defined(CONFIG_DATA_LOGGER_FLASH_MAP)
-#if defined(CONFIG_DATA_LOGGER_EXFAT)
-	const struct device *logger = DEVICE_DT_GET(DT_NODELABEL(data_logger_exfat));
-
-	announce.flags |= BIT(0);
-#else
-	const struct device *logger = DEVICE_DT_GET(DT_NODELABEL(data_logger_flash));
-#endif
-	struct data_logger_state state;
-
-	if (device_is_ready(logger)) {
-		data_logger_get_state(logger, &state);
-		announce.blocks = state.current_block;
-	} else {
-		announce.blocks = UINT32_MAX;
-	}
-#endif /* defined(CONFIG_DATA_LOGGER_EXFAT) || defined(CONFIG_DATA_LOGGER_FLASH_MAP) */
+	announce_logger_state(&announce);
 #if defined(CONFIG_INFUSE_APPLICATION_STATES)
 	if (!infuse_state_get(INFUSE_STATE_APPLICATION_ACTIVE)) {
 		/* Device is not active */

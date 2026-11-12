@@ -258,6 +258,15 @@ int tdf_data_logger_flush_dev(const struct device *dev);
 const struct device *tdf_data_logger_from_mask(uint8_t logger_mask);
 
 /**
+ * @brief Get the data logger that a TDF logger writes blocks to
+ *
+ * @param dev TDF data logger
+ *
+ * @return Data logger backing @a dev
+ */
+const struct device *tdf_data_logger_backend_get(const struct device *dev);
+
+/**
  * @brief Flush any pending TDFs to multiple backends
  *
  * @param logger_mask Bitmask of loggers to flush (@ref tdf_data_logger_mask)

@@ -120,6 +120,7 @@ struct data_logger_cb {
 #define _DL_IS_EPACKET(node_id)     DT_NODE_HAS_COMPAT(node_id, embeint_data_logger_epacket)
 #define _DL_IS_EXFAT(node_id)       DT_NODE_HAS_COMPAT(node_id, embeint_data_logger_exfat)
 #define _DL_IS_DISK_ACCESS(node_id) DT_NODE_HAS_COMPAT(node_id, embeint_data_logger_disk_access)
+#define _DL_IS_SHIM(node_id)        DT_NODE_HAS_COMPAT(node_id, embeint_data_logger_shim)
 /** @endcond */
 
 /**
@@ -134,7 +135,8 @@ struct data_logger_cb {
 		    _DL_IS_EPACKET(node_id),                                                       \
 		    (EPACKET_INTERFACE_MAX_PAYLOAD(DT_PROP(node_id, epacket))),                    \
 		    _DL_IS_EXFAT(node_id), (512), _DL_IS_DISK_ACCESS(node_id),                     \
-		    (CONFIG_DATA_LOGGER_DISK_ACCESS_MAX_SECTOR_SIZE), ())
+		    (CONFIG_DATA_LOGGER_DISK_ACCESS_MAX_SECTOR_SIZE), _DL_IS_SHIM(node_id), (512), \
+		    ())
 
 /**
  * @brief Get the current data logger state
