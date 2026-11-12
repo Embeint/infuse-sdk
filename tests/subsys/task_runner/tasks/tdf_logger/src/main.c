@@ -375,17 +375,24 @@ ZTEST(task_tdf_logger, test_announce_blocks)
 	zassert_equal(BIT(0), announce.flags & BIT(0));
 	zassert_equal(20, announce.blocks);
 
-	/* Removable logger not ready */
+	/* Removable logger not ready, fall back to flash logger */
 	removable->state->init_res += 1;
 	announce_run(&announce);
-	zassert_equal(BIT(0), announce.flags & BIT(0));
+	zassert_equal(0, announce.flags & BIT(0));
+	zassert_equal(10, announce.blocks);
+
+	/* Neither logger ready */
+	flash->state->init_res += 1;
+	announce_run(&announce);
+	zassert_equal(0, announce.flags & BIT(0));
 	zassert_equal(UINT32_MAX, announce.blocks);
+	flash->state->init_res -= 1;
 	removable->state->init_res -= 1;
 #else
 	/* No storage loggers */
 	announce_run(&announce);
 	zassert_equal(0, announce.flags & BIT(0));
-	zassert_equal(0, announce.blocks);
+	zassert_equal(UINT32_MAX, announce.blocks);
 #endif
 }
 
