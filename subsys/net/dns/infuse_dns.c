@@ -107,8 +107,7 @@ static void dns_result_cb(enum dns_resolve_status status, struct dns_addrinfo *i
 
 	switch (status) {
 	case DNS_EAI_NODATA:
-		LOG_WRN("%04X -> Lookup failed (%d, %d)", context->_dns_id, DNS_EAI_NODATA,
-			DNS_EAI_NODATA);
+		LOG_WRN("%04X -> Lookup failed (%d)", context->_dns_id, status);
 		rc = -EINVAL;
 		goto done;
 	case DNS_EAI_ALLDONE:
