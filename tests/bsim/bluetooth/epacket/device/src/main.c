@@ -162,6 +162,37 @@ static void epacket_adv_load(struct k_work *work)
 	k_sem_give(&load_complete);
 }
 
+static void main_epacket_bt_relay_target(void)
+{
+	const struct device *epacket_bt_periph = DEVICE_DT_GET(DT_NODELABEL(epacket_bt_peripheral));
+	struct tdf_announce_v2 announce = {0};
+	struct epacket_interface_cb interface_cb = {
+		.interface_state = peripheral_interface_state,
+	};
+
+	epacket_register_callback(epacket_bt_periph, &interface_cb);
+
+	/* Frequent (connectable) advertising so that relays can connect quickly */
+	while (k_uptime_seconds() < 12) {
+		announce.uptime = k_uptime_seconds();
+		TDF_DATA_LOGGER_LOG(TDF_DATA_LOGGER_BT_ADV, TDF_ANNOUNCE_V2, 0, &announce);
+		tdf_data_logger_flush(TDF_DATA_LOGGER_BT_ADV);
+		k_sleep(K_MSEC(200 + (sys_rand32_get() % 20)));
+	}
+
+	epacket_unregister_callback(epacket_bt_periph, &interface_cb);
+	if (connection_notifications == 0) {
+		FAIL("No connections observed\n");
+		return;
+	}
+	if (connection_notifications != disconnection_notifications) {
+		FAIL("Unbalanced notifications\n");
+		return;
+	}
+
+	PASS("Relay target complete (%d connections)\n", connection_notifications);
+}
+
 static void main_epacket_bt_adv_loaded(void)
 {
 	struct k_work from_infuse;
@@ -464,6 +495,13 @@ static const struct bst_test_instance ext_adv_advertiser[] = {
 		.test_pre_init_f = test_init,
 		.test_tick_f = test_tick,
 		.test_main_f = main_epacket_bt_basic_broadcast,
+	},
+	{
+		.test_id = "epacket_bt_relay_target",
+		.test_descr = "Frequently advertising device that is the target of a relay",
+		.test_pre_init_f = test_init,
+		.test_tick_f = test_tick,
+		.test_main_f = main_epacket_bt_relay_target,
 	},
 	{
 		.test_id = "epacket_bt_adv_load",
