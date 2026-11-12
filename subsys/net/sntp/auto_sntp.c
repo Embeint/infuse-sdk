@@ -21,6 +21,17 @@
 
 #define SNTP_PORT CONFIG_SNTP_AUTO_SERVER_PORT
 
+enum sntp_query_state {
+	/* No query running */
+	QUERY_IDLE,
+	/* Query is being set up (KV store, DNS, socket) */
+	QUERY_SETUP,
+	/* Request sent, waiting for response or timeout */
+	QUERY_SENT,
+	/* Response received, being processed */
+	QUERY_READING,
+};
+
 static void sntp_service_handler(struct net_socket_service_event *sev);
 
 static struct kv_store_cb sntp_kv_cb;
@@ -31,6 +42,7 @@ static struct net_sockaddr sntp_addr_cached;
 static net_socklen_t sntp_addrlen_cached;
 static struct sntp_ctx sntp_context;
 static uint8_t sntp_failures;
+static atomic_t query_state = ATOMIC_INIT(QUERY_IDLE);
 
 #ifdef CONFIG_SNTP_AUTO_IMMEDIATELY
 static struct epoch_time_cb time_callback;
@@ -61,6 +73,18 @@ static void sntp_error_handle(void)
 	/* For CONFIG_SNTP_AUTO_SYNC_POINTS, wait for the next sync point */
 }
 
+static void sntp_query_abort(void)
+{
+	/* Only a sent request owns the socket and the timeout. Queries still being set up
+	 * run to completion, and fail or time out on their own.
+	 */
+	if (atomic_cas(&query_state, QUERY_SENT, QUERY_IDLE)) {
+		LOG_DBG("Aborting SNTP query");
+		k_work_cancel_delayable(&sntp_timeout);
+		sntp_close_async(&service_auto_sntp);
+	}
+}
+
 static void l4_event_handler(struct net_mgmt_event_callback *cb, uint64_t event,
 			     struct net_if *iface)
 {
@@ -70,6 +94,7 @@ static void l4_event_handler(struct net_mgmt_event_callback *cb, uint64_t event,
 	} else if (event == NET_EVENT_L4_DISCONNECTED) {
 		k_work_cancel_delayable(&sntp_worker);
 		l4_connected = false;
+		sntp_query_abort();
 	}
 #endif /* CONFIG_SNTP_AUTO_SYNC_POINTS */
 #ifdef CONFIG_SNTP_AUTO_IMMEDIATELY
@@ -85,6 +110,7 @@ static void l4_event_handler(struct net_mgmt_event_callback *cb, uint64_t event,
 		k_work_reschedule(&sntp_worker, delay);
 	} else if (event == NET_EVENT_L4_DISCONNECTED) {
 		k_work_cancel_delayable(&sntp_worker);
+		sntp_query_abort();
 	}
 #endif /* CONFIG_SNTP_AUTO_IMMEDIATELY */
 }
@@ -94,6 +120,11 @@ static void sntp_service_handler(struct net_socket_service_event *sev)
 	struct sntp_time s_time;
 	k_ticks_t ticks = k_uptime_ticks();
 	int rc;
+
+	/* Claim the query, unless it has already timed out or been aborted */
+	if (!atomic_cas(&query_state, QUERY_SENT, QUERY_READING)) {
+		return;
+	}
 
 	/* Cancel timeout */
 	k_work_cancel_delayable(&sntp_timeout);
@@ -107,6 +138,7 @@ static void sntp_service_handler(struct net_socket_service_event *sev)
 	/* Read the response from the socket */
 	rc = sntp_read_async(sev, &s_time);
 	sntp_close_async(&service_auto_sntp);
+	atomic_set(&query_state, QUERY_IDLE);
 	if (rc != 0) {
 		LOG_WRN("Read failure");
 		sntp_addrlen_cached = 0;
@@ -127,6 +159,11 @@ static void sntp_service_handler(struct net_socket_service_event *sev)
 
 static void sntp_timeout_work(struct k_work *work)
 {
+	/* Claim the query, unless the response has already arrived or it was aborted */
+	if (!atomic_cas(&query_state, QUERY_SENT, QUERY_IDLE)) {
+		return;
+	}
+
 	LOG_WRN("SNTP query timeout");
 	sntp_close_async(&service_auto_sntp);
 
@@ -136,6 +173,7 @@ static void sntp_timeout_work(struct k_work *work)
 	sntp_error_handle();
 }
 
+/* Called in QUERY_SETUP, always leaves QUERY_SENT on success or QUERY_IDLE on failure */
 static int sntp_start_async_query(struct net_sockaddr *addr, net_socklen_t addrlen)
 {
 	int rc;
@@ -143,38 +181,54 @@ static int sntp_start_async_query(struct net_sockaddr *addr, net_socklen_t addrl
 	rc = sntp_init_async(&sntp_context, addr, addrlen, &service_auto_sntp);
 	if (rc < 0) {
 		LOG_ERR("Failed to init ctx (%d)", rc);
+		atomic_set(&query_state, QUERY_IDLE);
 		return rc;
 	}
+
+	/* Timeout is started before sending so that it can't outlive a fast response */
+	k_work_reschedule(&sntp_timeout, K_MSEC(CONFIG_SNTP_AUTO_QUERY_TIMEOUT_MS));
+	atomic_set(&query_state, QUERY_SENT);
 
 	LOG_INF("Sending request...");
 	rc = sntp_send_async(&sntp_context);
 	if (rc == 0) {
-		k_work_schedule(&sntp_timeout, K_MSEC(CONFIG_SNTP_AUTO_QUERY_TIMEOUT_MS));
 		return 0;
 	}
 
 	LOG_ERR("Failed to send request (%d)", rc);
-	sntp_close_async(&service_auto_sntp);
+	if (atomic_cas(&query_state, QUERY_SENT, QUERY_IDLE)) {
+		k_work_cancel_delayable(&sntp_timeout);
+		sntp_close_async(&service_auto_sntp);
+	}
 	return rc;
 }
 
 #ifdef CONFIG_INFUSE_DNS_ASYNC
+
+/* DNS query is running and no result has been used yet */
+static bool dns_waiting;
 
 static void async_dns_cb(int result, struct net_sockaddr *addr, net_socklen_t addrlen,
 			 struct infuse_async_dns_context *ctx)
 {
 	struct net_sockaddr_in *saddr_in;
 
-	if (result < 0) {
-		LOG_ERR("SNTP DNS query failed (%d)", result);
-		goto error;
-	}
-
-	/* Next phase on first callback only */
-	if ((ctx->user_data == NULL) || (result == INFUSE_ASYNC_DNS_COMPLETE)) {
+	/* Only the first result is used, ignore everything after it */
+	if (!dns_waiting) {
 		return;
 	}
-	ctx->user_data = NULL;
+	dns_waiting = false;
+
+	if (result != INFUSE_ASYNC_DNS_RESULT) {
+		if (result == INFUSE_ASYNC_DNS_COMPLETE) {
+			LOG_ERR("SNTP DNS query returned no results");
+		} else {
+			LOG_ERR("SNTP DNS query failed (%d)", result);
+		}
+		atomic_set(&query_state, QUERY_IDLE);
+		sntp_error_handle();
+		return;
+	}
 
 	/* Async DNS doesn't populate the port */
 	BUILD_ASSERT(offsetof(struct net_sockaddr_in, sin_port) ==
@@ -188,12 +242,8 @@ static void async_dns_cb(int result, struct net_sockaddr *addr, net_socklen_t ad
 
 	/* Start the async SNTP query */
 	if (sntp_start_async_query(&sntp_addr_cached, sntp_addrlen_cached) < 0) {
-		goto error;
+		sntp_error_handle();
 	}
-
-	return;
-error:
-	sntp_error_handle();
 }
 
 #endif /* CONFIG_INFUSE_DNS_ASYNC */
@@ -204,15 +254,22 @@ static void sntp_work(struct k_work *work)
 	KV_KEY_TYPE_VAR(KV_KEY_NTP_SERVER_URL, 64) ntp_server;
 	int rc;
 
+	/* Only one query at a time */
+	if (!atomic_cas(&query_state, QUERY_IDLE, QUERY_SETUP)) {
+		LOG_DBG("SNTP query already running");
+		return;
+	}
+
 	if (sntp_addrlen_cached > 0) {
 		/* We still have a valid cached SNTP server address */
 		LOG_INF("Using cached SNTP address");
 		rc = sntp_start_async_query(&sntp_addr_cached, sntp_addrlen_cached);
-		if (rc == 0) {
-			return;
+		if (rc < 0) {
+			/* Failed to start the query, re-query the DNS on the retry */
+			sntp_addrlen_cached = 0;
+			sntp_error_handle();
 		}
-		/* Failed to start the query */
-		sntp_addrlen_cached = 0;
+		return;
 	}
 
 	/* Pull NTP server address from KV store */
@@ -229,12 +286,15 @@ static void sntp_work(struct k_work *work)
 		.cb = async_dns_cb,
 	};
 
-	sntp_dns_ctx.user_data = &sntp_worker;
-
+	/* Results can be delivered before infuse_async_dns returns */
+	dns_waiting = true;
 	rc = infuse_async_dns(ntp_server.url.value, AF_INET, &sntp_dns_ctx, 10000);
 	if (rc < 0) {
 		LOG_ERR("DNS failed to start query for %s (%d)", ntp_server.url.value, rc);
-		goto error;
+		if (dns_waiting) {
+			dns_waiting = false;
+			goto error;
+		}
 	}
 	return;
 #else
@@ -248,14 +308,14 @@ static void sntp_work(struct k_work *work)
 	}
 
 	/* Start the async SNTP query */
-	rc = sntp_start_async_query(&sntp_addr_cached, sntp_addrlen_cached);
-	if (rc == 0) {
-		return;
+	if (sntp_start_async_query(&sntp_addr_cached, sntp_addrlen_cached) < 0) {
+		sntp_error_handle();
 	}
-
+	return;
 #endif /* CONFIG_INFUSE_DNS_ASYNC */
 
 error:
+	atomic_set(&query_state, QUERY_IDLE);
 	sntp_error_handle();
 }
 
@@ -279,8 +339,7 @@ void sntp_auto_sync_point(void)
 		return;
 	}
 
-	if (k_work_delayable_is_pending(&sntp_worker) ||
-	    k_work_delayable_is_pending(&sntp_timeout)) {
+	if ((atomic_get(&query_state) != QUERY_IDLE) || k_work_delayable_is_pending(&sntp_worker)) {
 		/* SNTP query already running */
 		LOG_DBG("SNTP query already running");
 		return;
