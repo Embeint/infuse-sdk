@@ -1,0 +1,16 @@
+# Bluetooth Gateway specific options
+
+# Default RPCs (if hardware supports)
+configdefault INFUSE_RPC_COMMAND_BT_FILE_COPY_BASIC
+	default y
+
+# SoftDevice Controller: connectable advertising sets consume peripheral roles.
+# 2 backhaul clients + 2 connectable advertising sets, remaining 2 roles are central.
+configdefault BT_CTLR_SDC_PERIPHERAL_COUNT
+	default 4
+
+# Battery reporting (if hardware supports)
+configdefault TASK_RUNNER_TASK_BATTERY
+	default y if $(dt_alias_enabled,fuel-gauge0)
+
+source "Kconfig.zephyr"
