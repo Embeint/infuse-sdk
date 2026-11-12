@@ -47,6 +47,32 @@ endchoice
 config TASK_TDF_LOGGER_BATTERY_LOG_ZERO_ON_TIMEOUT
 	bool "When battery data has timed out send an all 0 TDF instead of no TDF"
 
+choice TASK_TDF_LOGGER_ANNOUNCE_BLOCKS
+	prompt "Logger block count reported in TDF_ANNOUNCE_V2"
+	default TASK_TDF_LOGGER_ANNOUNCE_BLOCKS_AUTO
+	help
+	  Data logger whose current block count is reported in the `blocks`
+	  field of `TDF_ANNOUNCE_V2`. BIT(0) of the `flags` field is set when
+	  the count is from the removable logger. `blocks` is `UINT32_MAX` when
+	  no selected logger is available.
+
+config TASK_TDF_LOGGER_ANNOUNCE_BLOCKS_AUTO
+	bool "Removable logger, falling back to the flash logger"
+	help
+	  Report the removable logger if it is ready, otherwise the flash
+	  logger.
+
+config TASK_TDF_LOGGER_ANNOUNCE_BLOCKS_REMOVABLE
+	bool "Removable logger only"
+
+config TASK_TDF_LOGGER_ANNOUNCE_BLOCKS_FLASH
+	bool "Flash logger only"
+
+config TASK_TDF_LOGGER_ANNOUNCE_BLOCKS_NONE
+	bool "Do not report a logger block count"
+
+endchoice
+
 endif # TASK_RUNNER_TASK_TDF_LOGGER
 
 config TASK_RUNNER_TASK_IMU

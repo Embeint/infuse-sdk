@@ -56,15 +56,20 @@ static bool announce_logger_try(struct tdf_announce_v2 *announce, uint8_t tdf_lo
 
 static void announce_logger_state(struct tdf_announce_v2 *announce)
 {
-	/* Prefer the removable logger, falling back to the flash logger if the
-	 * removable logger does not exist or is not ready (e.g. no SD card).
-	 */
-	if (announce_logger_try(announce, TDF_DATA_LOGGER_REMOVABLE)) {
+	/* Removable logger is preferred over the flash logger in AUTO mode */
+	if ((IS_ENABLED(CONFIG_TASK_TDF_LOGGER_ANNOUNCE_BLOCKS_AUTO) ||
+	     IS_ENABLED(CONFIG_TASK_TDF_LOGGER_ANNOUNCE_BLOCKS_REMOVABLE)) &&
+	    announce_logger_try(announce, TDF_DATA_LOGGER_REMOVABLE)) {
 		announce->flags |= BIT(0);
-	} else if (!announce_logger_try(announce, TDF_DATA_LOGGER_FLASH)) {
-		/* No logger state to report */
-		announce->blocks = UINT32_MAX;
+		return;
 	}
+	if ((IS_ENABLED(CONFIG_TASK_TDF_LOGGER_ANNOUNCE_BLOCKS_AUTO) ||
+	     IS_ENABLED(CONFIG_TASK_TDF_LOGGER_ANNOUNCE_BLOCKS_FLASH)) &&
+	    announce_logger_try(announce, TDF_DATA_LOGGER_FLASH)) {
+		return;
+	}
+	/* No logger state to report */
+	announce->blocks = UINT32_MAX;
 }
 
 static void log_announce(uint8_t loggers, uint64_t timestamp)

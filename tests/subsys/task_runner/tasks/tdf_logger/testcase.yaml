@@ -35,3 +35,21 @@ tests:
     extra_dtc_overlay_files:
       - app.overlay
       - storage.overlay
+  task_runner.tasks.tdf_logger.storage_removable:
+    extra_dtc_overlay_files:
+      - app.overlay
+      - storage.overlay
+    extra_configs:
+      - CONFIG_TASK_TDF_LOGGER_ANNOUNCE_BLOCKS_REMOVABLE=y
+  task_runner.tasks.tdf_logger.storage_flash:
+    extra_dtc_overlay_files:
+      - app.overlay
+      - storage.overlay
+    extra_configs:
+      - CONFIG_TASK_TDF_LOGGER_ANNOUNCE_BLOCKS_FLASH=y
+  task_runner.tasks.tdf_logger.storage_none:
+    extra_dtc_overlay_files:
+      - app.overlay
+      - storage.overlay
+    extra_configs:
+      - CONFIG_TASK_TDF_LOGGER_ANNOUNCE_BLOCKS_NONE=y
