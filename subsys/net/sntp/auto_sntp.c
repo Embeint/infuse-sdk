@@ -154,7 +154,8 @@ static void sntp_service_handler(struct net_socket_service_event *sev)
 		/* SNTP seconds fraction is [0, UINT32_MAX] */
 		.ref = epoch_time_from_unix(s_time.seconds, s_time.fraction >> 16),
 	};
-	if (epoch_time_set_reference(TIME_SOURCE_NTP, &sync_point) < 0) {
+	rc = epoch_time_set_reference(TIME_SOURCE_NTP, &sync_point);
+	if (rc < 0) {
 		LOG_ERR("Failed to set reference (%d)", rc);
 	}
 }
