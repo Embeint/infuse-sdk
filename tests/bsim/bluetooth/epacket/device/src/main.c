@@ -12,6 +12,8 @@
 #include <zephyr/bluetooth/conn.h>
 #include <zephyr/random/random.h>
 
+#include <string.h>
+
 #include "bs_types.h"
 #include "bs_tracing.h"
 #include "time_machine.h"
@@ -19,6 +21,7 @@
 
 #include <infuse/bluetooth/legacy_adv.h>
 #include <infuse/epacket/interface.h>
+#include <infuse/epacket/interface/common.h>
 #include <infuse/epacket/interface/epacket_bt_peripheral.h>
 #include <infuse/epacket/packet.h>
 #include <infuse/data_logger/logger.h>
@@ -162,13 +165,46 @@ static void epacket_adv_load(struct k_work *work)
 	k_sem_give(&load_complete);
 }
 
+/* Relays in these tests forward packets over a Bluetooth peripheral backhaul with the default
+ * maximum payload (247 byte ATT MTU, minus the ATT header and ePacket GATT overhead). Packets
+ * from the relay target are forwarded in an INFUSE_RECEIVED_EPACKET (forwarding header),
+ * potentially still encrypted (ePacket GATT overhead).
+ */
+#define GATT_OVERHEAD          (sizeof(struct epacket_v0_versioned_frame_format) + 16)
+#define RELAY_BACKHAUL_PAYLOAD (247 - 3 - GATT_OVERHEAD)
+#define RELAY_FORWARD_OVERHEAD                                                                     \
+	(sizeof(struct epacket_received_common_header) +                                           \
+	 sizeof(struct epacket_interface_address_bt_le))
+#define RELAY_TARGET_MAX_PAYLOAD (RELAY_BACKHAUL_PAYLOAD - RELAY_FORWARD_OVERHEAD - GATT_OVERHEAD)
+
+static uint16_t relay_target_max_payload;
+
+static void relay_target_interface_state(uint16_t current_max_payload, void *user_ctx)
+{
+	peripheral_interface_state(current_max_payload, user_ctx);
+	relay_target_max_payload = MAX(relay_target_max_payload, current_max_payload);
+}
+
 static void main_epacket_bt_relay_target(void)
 {
 	const struct device *epacket_bt_periph = DEVICE_DT_GET(DT_NODELABEL(epacket_bt_peripheral));
 	struct tdf_announce_v2 announce = {0};
 	struct epacket_interface_cb interface_cb = {
-		.interface_state = peripheral_interface_state,
+		.interface_state = relay_target_interface_state,
 	};
+
+#ifdef CONFIG_DATA_LOGGER_SHIM
+	const struct device *data_logger = DEVICE_DT_GET_ONE(embeint_data_logger_shim);
+	const uint32_t num_blocks =
+		DT_PROP(DT_COMPAT_GET_ANY_STATUS_OKAY(embeint_data_logger_shim), physical_blocks);
+	uint8_t block_data[16];
+
+	/* Logged data for relays to read */
+	for (int i = 0; i < num_blocks; i++) {
+		memset(block_data, i, sizeof(block_data));
+		data_logger_block_write(data_logger, i, block_data, sizeof(block_data));
+	}
+#endif /* CONFIG_DATA_LOGGER_SHIM */
 
 	epacket_register_callback(epacket_bt_periph, &interface_cb);
 
@@ -189,8 +225,15 @@ static void main_epacket_bt_relay_target(void)
 		FAIL("Unbalanced notifications\n");
 		return;
 	}
+	/* Relays limit the connection MTU so that every packet can be forwarded */
+	if (relay_target_max_payload != RELAY_TARGET_MAX_PAYLOAD) {
+		FAIL("Unexpected maximum payload (%d != %d)\n", relay_target_max_payload,
+		     RELAY_TARGET_MAX_PAYLOAD);
+		return;
+	}
 
-	PASS("Relay target complete (%d connections)\n", connection_notifications);
+	PASS("Relay target complete (%d connections, max payload %d)\n", connection_notifications,
+	     relay_target_max_payload);
 }
 
 static void main_epacket_bt_adv_loaded(void)
