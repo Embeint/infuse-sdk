@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+# Copyright (c) 2026 Embeint Holdings Pty Ltd
+# SPDX-License-Identifier: Apache-2.0
+
+# Originator -> Relay -> Device
+# The originator sends INFUSE_EPACKET_FORWARD_AUTO_CONN packets to the relay over Bluetooth.
+# The relay uses the Bluetooth peripheral interface as its backhaul, automatically connects
+# to the device and returns the RPC responses to the originator.
+
+source ${ZEPHYR_BASE}/tests/bsim/sh_common.source
+
+simulation_id="epacket_remote_rpc_forward_auto_conn_relay"
+verbosity_level=2
+
+cd ${BSIM_OUT_PATH}/bin
+
+Execute ./bs_${BOARD_TS}_tests_bsim_bluetooth_epacket_device_prj_conf \
+  -v=${verbosity_level} -s=${simulation_id} -d=0 -RealEncryption=0 \
+  -testid=epacket_bt_relay_target -rs=23
+
+Execute ./bs_${BOARD_TS}_tests_bsim_bluetooth_epacket_gateway_prj_conf \
+  -v=${verbosity_level} -s=${simulation_id} -d=1 -RealEncryption=0 \
+  -testid=epacket_bt_gateway_relay -rs=6
+
+Execute ./bs_${BOARD_TS}_tests_bsim_bluetooth_epacket_gateway_prj_conf \
+  -v=${verbosity_level} -s=${simulation_id} -d=2 -RealEncryption=0 \
+  -testid=epacket_bt_gateway_relay_originator -rs=48
+
+Execute ./bs_2G4_phy_v1 -v=${verbosity_level} -s=${simulation_id} \
+  -D=3 -sim_length=14e6 $@
+
+wait_for_background_jobs
