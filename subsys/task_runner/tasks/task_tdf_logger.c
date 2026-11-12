@@ -36,30 +36,35 @@ INFUSE_ZBUS_CHAN_DECLARE(INFUSE_ZBUS_CHAN_BATTERY, INFUSE_ZBUS_CHAN_AMBIENT_ENV,
 
 LOG_MODULE_REGISTER(task_tdfl, CONFIG_TASK_TDF_LOGGER_LOG_LEVEL);
 
-static void announce_logger_state(struct tdf_announce_v2 *announce)
+static bool announce_logger_try(struct tdf_announce_v2 *announce, uint8_t tdf_logger_mask)
 {
-	const struct device *tdf_logger;
+	const struct device *tdf_logger = tdf_data_logger_from_mask(tdf_logger_mask);
 	const struct device *logger;
 	struct data_logger_state state;
 
-	/* Prefer the removable logger if it exists, otherwise use the flash logger */
-	tdf_logger = tdf_data_logger_from_mask(TDF_DATA_LOGGER_REMOVABLE);
-	if (tdf_logger != NULL) {
-		announce->flags |= BIT(0);
-	} else {
-		tdf_logger = tdf_data_logger_from_mask(TDF_DATA_LOGGER_FLASH);
-	}
 	if (tdf_logger == NULL) {
-		return;
+		return false;
 	}
-
 	logger = tdf_data_logger_backend_get(tdf_logger);
 	if (!device_is_ready(logger)) {
-		announce->blocks = UINT32_MAX;
-		return;
+		return false;
 	}
 	data_logger_get_state(logger, &state);
 	announce->blocks = state.current_block;
+	return true;
+}
+
+static void announce_logger_state(struct tdf_announce_v2 *announce)
+{
+	/* Prefer the removable logger, falling back to the flash logger if the
+	 * removable logger does not exist or is not ready (e.g. no SD card).
+	 */
+	if (announce_logger_try(announce, TDF_DATA_LOGGER_REMOVABLE)) {
+		announce->flags |= BIT(0);
+	} else if (!announce_logger_try(announce, TDF_DATA_LOGGER_FLASH)) {
+		/* No logger state to report */
+		announce->blocks = UINT32_MAX;
+	}
 }
 
 static void log_announce(uint8_t loggers, uint64_t timestamp)
