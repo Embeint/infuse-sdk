@@ -55,7 +55,12 @@
 	};
 };
 
-/* MCUBoot support */
+/* MCUBoot support
+ *
+ * Bootloader partition sized for a minimal MCUboot build
+ * (see samples/releases/serial/sysbuild/mcuboot_minimal_stm32l4.conf).
+ * The secondary slot is one sector larger, as required by MCUboot swap-using-offset.
+ */
 &flash0 {
 	partitions {
 		ranges;
@@ -65,22 +70,22 @@
 		boot_partition: partition@0 {
 			compatible = "zephyr,mapped-partition";
 			label = "mcuboot";
-			reg = <0x00000000 0x0000A000>;
+			reg = <0x00000000 DT_SIZE_K(18)>;
 		};
-		slot0_partition: partition@a000 {
+		slot0_partition: partition@4800 {
 			compatible = "zephyr,mapped-partition";
 			label = "image-0";
-			reg = <0x0000A000 0x00018000>;
+			reg = <0x00004800 DT_SIZE_K(106)>;
 		};
-		slot1_partition: partition@22000 {
+		slot1_partition: partition@1f000 {
 			compatible = "zephyr,mapped-partition";
 			label = "image-1";
-			reg = <0x00022000 0x00018000>;
+			reg = <0x0001F000 DT_SIZE_K(108)>;
 		};
 		file_partition: partition@3a000 {
 			compatible = "zephyr,mapped-partition";
 			label = "files";
-			reg = <0x0003A000 0x00002000>;
+			reg = <0x0003A000 DT_SIZE_K(8)>;
 		};
 	};
 };
