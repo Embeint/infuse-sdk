@@ -209,7 +209,7 @@ static void conn_config_changed_worker(struct k_work *work)
 		/* Schedule the timeout if set */
 		timeout = conn_mgr_if_get_timeout(wifi_if);
 		if (timeout > CONN_MGR_IF_NO_TIMEOUT) {
-			k_work_schedule(&conn_timeout, K_SECONDS(timeout));
+			k_work_reschedule(&conn_timeout, K_SECONDS(timeout));
 		}
 	}
 }
@@ -284,7 +284,7 @@ static void wifi_mgmt_event_handler(struct net_mgmt_event_callback *cb, uint64_t
 			/* Schedule the timeout if set */
 			timeout = conn_mgr_if_get_timeout(wifi_if);
 			if (timeout > CONN_MGR_IF_NO_TIMEOUT) {
-				k_work_schedule(&conn_timeout, K_SECONDS(timeout));
+				k_work_reschedule(&conn_timeout, K_SECONDS(timeout));
 			}
 		} else {
 #ifdef CONFIG_WIFI_NM_WPA_SUPPLICANT
@@ -329,6 +329,13 @@ static int wifi_mgmt_connect(struct conn_mgr_conn_binding *const binding)
 		last_channel = UINT_MAX;
 	}
 
+	/* (Re)start the timeout if set. Started before the connection attempt so that
+	 * `conn_create_worker` can cancel it when there is no configuration.
+	 */
+	if (timeout > CONN_MGR_IF_NO_TIMEOUT) {
+		k_work_reschedule(&conn_timeout, K_SECONDS(timeout));
+	}
+
 	if (IS_ENABLED(CONFIG_CONN_MGR_WIFI_KV_STORE_CONNECT_CALLER_CONTEXT)) {
 		/* Run the connect call directly */
 		conn_create_worker(NULL);
@@ -337,10 +344,6 @@ static int wifi_mgmt_connect(struct conn_mgr_conn_binding *const binding)
 		k_work_schedule(&conn_create, K_NO_WAIT);
 	}
 
-	/* Schedule the timeout if set */
-	if (timeout > CONN_MGR_IF_NO_TIMEOUT) {
-		k_work_schedule(&conn_timeout, K_SECONDS(timeout));
-	}
 	/* Return immediately, function is required to be non-blocking */
 	return 0;
 }
@@ -355,8 +358,9 @@ static int wifi_mgmt_disconnect(struct conn_mgr_conn_binding *const binding)
 {
 	/* Connection no longer requested */
 	connection_requested = false;
-	/* Cancel any pending connection work */
+	/* Cancel any pending connection work and timeout */
 	k_work_cancel_delayable(&conn_create);
+	k_work_cancel_delayable(&conn_timeout);
 	/* Disconnect from the system workqueue */
 	k_work_submit(&conn_terminate);
 	/* Return immediately, function is required to be non-blocking */

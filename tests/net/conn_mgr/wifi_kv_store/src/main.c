@@ -165,6 +165,46 @@ ZTEST(wifi_kv_store, test_configured_on_boot_timeout)
 	zassert_false(net_if_is_carrier_ok(iface));
 }
 
+ZTEST(wifi_kv_store, test_timeout_restarted_on_reconnect)
+{
+	KV_STRING_CONST(ssid, CONFIG_WIFI_SIM_AP_SSID);
+	KV_STRING_CONST(psk, CONFIG_WIFI_SIM_AP_PSK);
+	struct net_if *iface = net_if_get_first_wifi();
+
+	validate_initial(iface);
+
+	zassert_equal(sizeof(ssid), kv_store_write(KV_KEY_WIFI_SSID, &ssid, sizeof(ssid)));
+	zassert_equal(sizeof(psk), kv_store_write(KV_KEY_WIFI_PSK, &psk, sizeof(psk)));
+	k_sleep(K_MSEC(200));
+
+	/* Not in range, so every attempt runs until the timeout */
+	wifi_sim_in_network_range(false);
+	zassert_equal(0, conn_mgr_if_set_timeout(iface, 4));
+
+	/* First connection attempt (T = 0) */
+	conn_mgr_all_if_up(true);
+	conn_mgr_all_if_connect(true);
+	k_sleep(K_SECONDS(1));
+	zassert_true(net_if_is_admin_up(iface));
+
+	/* Abandon the attempt (T = 1) */
+	conn_mgr_all_if_disconnect(true);
+	k_sleep(K_SECONDS(1));
+
+	/* Second connection attempt (T = 2) */
+	conn_mgr_all_if_up(true);
+	conn_mgr_all_if_connect(true);
+
+	/* The first attempt's timeout (T = 4) must not apply to the second attempt */
+	k_sleep(K_SECONDS(3));
+	zassert_true(net_if_is_admin_up(iface));
+
+	/* Second attempt times out (T = 6) */
+	k_sleep(K_SECONDS(2));
+	zassert_false(net_if_is_admin_up(iface));
+	zassert_false(net_if_is_carrier_ok(iface));
+}
+
 ZTEST(wifi_kv_store, test_configured_after_up)
 {
 	KV_STRING_CONST(ssid, CONFIG_WIFI_SIM_AP_SSID);
