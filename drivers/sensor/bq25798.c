@@ -425,6 +425,9 @@ static DEVICE_API(sensor, bq25798_driver_api) = {
 };
 
 #define BQ25798_INIT(inst)                                                                         \
+	BUILD_ASSERT(IN_RANGE(DT_INST_PROP(inst, v_in_dpm), 3600, 22000) &&                        \
+			     (DT_INST_PROP(inst, v_in_dpm) % 100 == 0),                            \
+		     "v-in-dpm must be 3600-22000mV in 100mV steps");                              \
 	BUILD_ASSERT(IN_RANGE(DT_INST_PROP(inst, charge_term_current_microamp), 40000, 1000000),   \
 		     "charge-term-current-microamp must be in the range 40-1000mA");               \
 	static const struct bq25798_config bq25798_##inst##_config = {                             \

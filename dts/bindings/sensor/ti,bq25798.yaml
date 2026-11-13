@@ -35,6 +35,7 @@ properties:
     default: 3600
     description:
       Minimum voltage target for the PMID supply in milliVolts.
+      Supports 100mV steps from 3600mV to 22000mV.
       Default is the POR value.
 
   input-current-limit:
