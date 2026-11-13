@@ -308,11 +308,15 @@ static uint8_t char_discover_cb(struct bt_conn *conn, const struct bt_gatt_attr 
 	struct bt_gatt_state *s = &state[bt_conn_index(conn)];
 	struct bt_gatt_remote_char *remote_char;
 	const struct bt_uuid *uuid;
+	bool matched = false;
 
 	LOG_DBG("ATTR Handle %d Value Handle %d Properties %02X", attr->handle, chrc->value_handle,
 		chrc->properties);
 
-	/* Determine if this characteristic is one we are looking for */
+	/* Determine if this characteristic is one we are looking for. All characteristics must
+	 * be iterated over, as the declaration also terminates the range of any characteristic
+	 * already found, regardless of its position in the list.
+	 */
 	for (int i = 0; i < s->discovery->num_characteristics; i++) {
 		uuid = s->discovery->characteristics[i];
 		remote_char = &s->discovery->remote_info[i];
@@ -325,11 +329,11 @@ static uint8_t char_discover_cb(struct bt_conn *conn, const struct bt_gatt_attr 
 			/* Already found */
 			continue;
 		}
-		if (bt_uuid_cmp(uuid, chrc->uuid) == 0) {
+		if (!matched && (bt_uuid_cmp(uuid, chrc->uuid) == 0)) {
 			remote_char->properties = chrc->properties;
 			remote_char->attr_start_handle = attr->handle;
 			remote_char->value_handle = chrc->value_handle;
-			break;
+			matched = true;
 		}
 	}
 
