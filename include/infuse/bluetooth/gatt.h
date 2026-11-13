@@ -118,21 +118,28 @@ void bt_conn_le_auto_setup(struct bt_conn *conn, struct bt_conn_auto_discovery *
 /**
  * @brief Trigger a disconnection and wait for it to complete
  *
+ * Waits up to 5 seconds for the disconnection to complete.
+ *
  * @param conn Connection object to disconnect
  *
  * @retval 0 on success
- * @retval -errno Error code @a bt_conn_disconnect
+ * @retval -EAGAIN disconnection did not complete within 5 seconds
+ * @retval -errno Error code from @a bt_conn_disconnect
  */
 int bt_conn_disconnect_sync(struct bt_conn *conn);
 
 /**
  * @brief Wait for a connection to disconnect, without initiating it
  *
+ * Returns immediately if the connection has already terminated. Connections that are still
+ * being established are not reported as terminated if the establishment fails.
+ *
  * @param conn Connection object to wait for
  * @param timeout Duration to wait for
  *
  * @retval 0 on success
- * @retval -errno Error code @a bt_conn_disconnect
+ * @retval -EBUSY @a timeout is K_NO_WAIT and the connection has not terminated
+ * @retval -EAGAIN connection did not terminate within @a timeout
  */
 int bt_conn_disconnect_wait(struct bt_conn *conn, k_timeout_t timeout);
 

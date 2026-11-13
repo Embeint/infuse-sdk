@@ -721,6 +721,7 @@ int bt_conn_disconnect_wait(struct bt_conn *conn, k_timeout_t timeout)
 	struct bt_disconnect_node node = {
 		.conn = conn,
 	};
+	struct bt_conn_info info;
 	int rc;
 
 	/* Initialise node for list */
@@ -729,8 +730,17 @@ int bt_conn_disconnect_wait(struct bt_conn *conn, k_timeout_t timeout)
 		sys_slist_append(&disconnect_list, &node.node);
 	}
 
+	/* The connection may have terminated before the node was registered. Checked after
+	 * registration so that a termination can't be missed between the two.
+	 */
+	rc = bt_conn_get_info(conn, &info);
+	if ((rc == 0) && (info.state == BT_CONN_STATE_DISCONNECTED)) {
+		goto end;
+	}
+
 	/* Wait for the connection to terminate */
 	rc = k_sem_take(&node.sem, timeout);
+end:
 	K_SPINLOCK(&disconnect_lock) {
 		sys_slist_find_and_remove(&disconnect_list, &node.node);
 	}
