@@ -36,15 +36,24 @@ int bt_controller_manager_init(void)
 
 	rc = rpc_client_command_sync(&ctx, RPC_ID_APPLICATION_INFO, &req, sizeof(req), K_NO_WAIT,
 				     K_MSEC(200), &buf);
+
+	/* Unregister from callbacks, regardless of the result, so that the context
+	 * can be safely re-initialised by later calls.
+	 */
+	rpc_client_cleanup(&ctx);
+
 	if (rc < 0) {
 		LOG_ERR("Failed to query version (%d)", rc);
 		return rc;
 	}
 
-	/* Unregister from callbacks */
-	rpc_client_cleanup(&ctx);
-
 	rsp = (void *)buf->data;
+	if ((buf->len < sizeof(*rsp)) || (rsp->header.return_code != 0)) {
+		LOG_ERR("Invalid version response (len %d rc %d)", buf->len,
+			buf->len >= sizeof(rsp->header) ? rsp->header.return_code : 0);
+		net_buf_unref(buf);
+		return -EIO;
+	}
 	bt_ctlr_ver.application = rsp->application_id;
 	bt_ctlr_ver.version.major = rsp->version.major;
 	bt_ctlr_ver.version.minor = rsp->version.minor;
