@@ -40,6 +40,8 @@ static struct bt_gatt_state {
 	bool connect_cb_run;
 	bool setup_started;
 	bool phy_update_pending;
+	/* `discovery->db_hash_pending` was read from the current connection */
+	bool db_hash_valid;
 	/* Next characteristic index to search for a CCC descriptor */
 	uint8_t ccc_search_idx;
 #endif /* CONFIG_BT_GATT_CLIENT */
@@ -250,8 +252,10 @@ static void descriptor_discovery(struct bt_conn *conn)
 			remote_char->value_handle, remote_char->ccc_handle);
 	}
 
-	/* Overwrite the cache if we found any of the requested characteristics */
-	if (any_found && s->discovery->cache) {
+	/* Overwrite the cache if we found any of the requested characteristics, and the
+	 * database hash of the remote device is known.
+	 */
+	if (any_found && s->discovery->cache && s->db_hash_valid) {
 		K_SPINLOCK(&s->discovery->cache->lock) {
 			/* Copy the DB hash */
 			memcpy(s->discovery->cache->db_hash, s->discovery->db_hash_pending,
@@ -359,6 +363,7 @@ uint8_t gatt_db_hash_cb(struct bt_conn *conn, uint8_t err, struct bt_gatt_read_p
 	struct bt_gatt_state *s = &state[bt_conn_index(conn)];
 	bool done = false;
 
+	s->db_hash_valid = false;
 	if (err || (length != sizeof(s->discovery->cache->db_hash))) {
 		LOG_WRN("Failed to read DB hash (%d)", err);
 	} else {
@@ -381,6 +386,7 @@ uint8_t gatt_db_hash_cb(struct bt_conn *conn, uint8_t err, struct bt_gatt_read_p
 		LOG_INF("Characteristic handles from %s", "discovery");
 		/* Cache the database hash while performing discovery */
 		memcpy(s->discovery->db_hash_pending, data, length);
+		s->db_hash_valid = true;
 	}
 
 	/* Start characteristic discovery */
