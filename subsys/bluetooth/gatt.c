@@ -40,6 +40,8 @@ static struct bt_gatt_state {
 	bool connect_cb_run;
 	bool setup_started;
 	bool phy_update_pending;
+	/* Next characteristic index to search for a CCC descriptor */
+	uint8_t ccc_search_idx;
 #endif /* CONFIG_BT_GATT_CLIENT */
 } state[CONFIG_BT_MAX_CONN];
 
@@ -193,8 +195,11 @@ static void descriptor_discovery(struct bt_conn *conn)
 	bool any_found = false;
 	int rc;
 
-	/* Find characteristic without CCC yet found */
-	for (int i = 0; i < s->discovery->num_characteristics; i++) {
+	/* Find the next characteristic without a CCC found. Each characteristic is only
+	 * searched once, as remote devices are not guaranteed to have a CCC for every
+	 * characteristic that claims to support notifications or indications.
+	 */
+	for (int i = s->ccc_search_idx; i < s->discovery->num_characteristics; i++) {
 		remote_char = &s->discovery->remote_info[i];
 
 		if (remote_char->attr_start_handle == 0x0000) {
@@ -209,8 +214,17 @@ static void descriptor_discovery(struct bt_conn *conn)
 			/* Notification and Indication not supported */
 			continue;
 		}
+		if (remote_char->attr_end_handle <= remote_char->attr_start_handle) {
+			/* No space for descriptors */
+			continue;
+		}
 
-		/* Set up the discovery parameters for characteristics */
+		/* Don't search this characteristic again */
+		s->ccc_search_idx = i + 1;
+
+		/* Set up the discovery parameters. Search to the end of the database so that
+		 * the CCC handles of later characteristics are found in the same procedure.
+		 */
 		descriptor_params.uuid = (struct bt_uuid *)&ccc_uuid;
 		descriptor_params.func = ccc_discover_cb;
 		descriptor_params.start_handle = remote_char->attr_start_handle + 1;
@@ -317,6 +331,7 @@ static void characteristic_discovery(struct bt_conn *conn)
 	int rc;
 
 	/* Reset cached handles */
+	s->ccc_search_idx = 0;
 	for (int i = 0; i < s->discovery->num_characteristics; i++) {
 		s->discovery->remote_info[i].attr_start_handle = 0x0000;
 		s->discovery->remote_info[i].attr_end_handle = BT_ATT_LAST_ATTRIBUTE_HANDLE;
