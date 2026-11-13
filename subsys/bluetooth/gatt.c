@@ -7,6 +7,7 @@
  */
 
 #include <zephyr/init.h>
+#include <zephyr/bluetooth/addr.h>
 #include <zephyr/bluetooth/conn.h>
 #include <zephyr/bluetooth/gatt.h>
 #include <zephyr/bluetooth/hci.h>
@@ -63,8 +64,6 @@ BUILD_ASSERT(!IS_ENABLED(CONFIG_BT_CENTRAL) || IS_ENABLED(CONFIG_BT_AUTO_PHY_CEN
 BUILD_ASSERT(!IS_ENABLED(CONFIG_BT_PERIPHERAL) || IS_ENABLED(CONFIG_BT_AUTO_PHY_PERIPHERAL_NONE));
 
 LOG_MODULE_REGISTER(infuse_gatt, LOG_LEVEL_INF);
-
-const char *bt_addr_le_str(const bt_addr_le_t *addr);
 
 #ifdef CONFIG_BT_GATT_CLIENT
 
@@ -381,8 +380,9 @@ static void characteristic_discovery(struct bt_conn *conn)
 	}
 }
 
-uint8_t gatt_db_hash_cb(struct bt_conn *conn, uint8_t err, struct bt_gatt_read_params *params,
-			const void *data, uint16_t length)
+static uint8_t gatt_db_hash_cb(struct bt_conn *conn, uint8_t err,
+			       struct bt_gatt_read_params *params, const void *data,
+			       uint16_t length)
 {
 	struct bt_gatt_state *s = &state[bt_conn_index(conn)];
 	bool done = false;
@@ -572,7 +572,7 @@ static void central_conn_setup(struct bt_conn *conn)
 
 static void connected(struct bt_conn *conn, uint8_t err)
 {
-	const bt_addr_le_t *dst = bt_conn_get_dst(conn);
+	char dst[BT_ADDR_LE_STR_LEN];
 	struct bt_gatt_state *s __maybe_unused = &state[bt_conn_index(conn)];
 	int rc __maybe_unused;
 
@@ -595,10 +595,11 @@ static void connected(struct bt_conn *conn, uint8_t err)
 #endif /* CONFIG_MEMFAULT_INFUSE_METRICS_BT_CONNECTIONS */
 #endif /* CONFIG_BT_GATT_CLIENT */
 
+	bt_addr_le_to_str(bt_conn_get_dst(conn), dst, sizeof(dst));
 	if (err == BT_HCI_ERR_SUCCESS) {
-		LOG_INF("Connected to %s", bt_addr_le_str(dst));
+		LOG_INF("Connected to %s", dst);
 	} else {
-		LOG_WRN("Connection to %s failed (error 0x%02X)", bt_addr_le_str(dst), err);
+		LOG_WRN("Connection to %s failed (error 0x%02X)", dst, err);
 #ifdef CONFIG_BT_GATT_CLIENT
 		bool report_error = false;
 
@@ -637,7 +638,7 @@ static void connected(struct bt_conn *conn, uint8_t err)
 
 static void disconnected(struct bt_conn *conn, uint8_t reason)
 {
-	const bt_addr_le_t *dst = bt_conn_get_dst(conn);
+	char dst[BT_ADDR_LE_STR_LEN];
 	struct bt_gatt_state *s = &state[bt_conn_index(conn)];
 
 	ARG_UNUSED(s);
@@ -673,7 +674,8 @@ static void disconnected(struct bt_conn *conn, uint8_t reason)
 	}
 #endif /* CONFIG_BT_GATT_CLIENT */
 
-	LOG_INF("Disconnected from %s (reason 0x%02X)", bt_addr_le_str(dst), reason);
+	bt_addr_le_to_str(bt_conn_get_dst(conn), dst, sizeof(dst));
+	LOG_INF("Disconnected from %s (reason 0x%02X)", dst, reason);
 
 	struct bt_disconnect_node *node, *nodes;
 
@@ -737,8 +739,31 @@ int bt_conn_disconnect_wait(struct bt_conn *conn, k_timeout_t timeout)
 
 #ifdef CONFIG_BT_CONN_AUTO_RSSI
 
-/* Internal API, but should be safe as it is just the opposite of `bt_conn_index` */
-struct bt_conn *bt_conn_lookup_index(uint8_t index);
+struct conn_index_lookup {
+	struct bt_conn *conn;
+	uint8_t index;
+};
+
+static void conn_index_match(struct bt_conn *conn, void *user_data)
+{
+	struct conn_index_lookup *lookup = user_data;
+
+	if ((lookup->conn == NULL) && (bt_conn_index(conn) == lookup->index)) {
+		lookup->conn = bt_conn_ref(conn);
+	}
+}
+
+/* Equivalent of the internal `bt_conn_lookup_index`, built on public APIs */
+static struct bt_conn *conn_lookup_index(uint8_t index)
+{
+	struct conn_index_lookup lookup = {
+		.conn = NULL,
+		.index = index,
+	};
+
+	bt_conn_foreach(BT_CONN_TYPE_LE, conn_index_match, &lookup);
+	return lookup.conn;
+}
 
 static void rssi_query_worker(struct k_work *work)
 {
@@ -748,7 +773,7 @@ static void rssi_query_worker(struct k_work *work)
 	struct bt_hci_cp_read_rssi *cp;
 	struct bt_hci_rp_read_rssi *rp;
 	uint8_t conn_idx = ARRAY_INDEX(state, conn_state);
-	struct bt_conn *conn = bt_conn_lookup_index(conn_idx);
+	struct bt_conn *conn = conn_lookup_index(conn_idx);
 	uint16_t handle;
 	int rc;
 
