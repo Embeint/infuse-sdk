@@ -822,7 +822,8 @@ static void rssi_query_worker(struct k_work *work)
 		return;
 	}
 
-	buf = bt_hci_cmd_alloc(K_FOREVER);
+	/* Don't block the shared workqueue waiting for a command buffer, try again next period */
+	buf = bt_hci_cmd_alloc(K_NO_WAIT);
 	if (!buf) {
 		LOG_DBG("Unable to allocate command buffer");
 		goto reschedule;
