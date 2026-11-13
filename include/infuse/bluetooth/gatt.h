@@ -48,11 +48,21 @@ struct bt_gatt_remote_char {
  * @brief Parameters for automatically setup connection
  */
 struct bt_conn_auto_setup_cb {
-	/** Run when connection has been successfully setup or failed */
+	/**
+	 * Run when connection has been successfully setup or failed
+	 *
+	 * @a err is one of:
+	 *   * 0 if the connection was setup successfully.
+	 *   * A positive HCI error code (`BT_HCI_ERR_*`) if the connection failed to be
+	 *     established, or terminated during the setup process.
+	 *   * A negative errno if a setup procedure failed (-EIO for ATT errors).
+	 */
 	void (*conn_setup_cb)(struct bt_conn *conn, int err, void *user_data);
 	/**
 	 * Run when connection has terminated, if
-	 * @ref bt_conn_auto_setup_cb::conn_setup_cb has previously run
+	 * @ref bt_conn_auto_setup_cb::conn_setup_cb has previously run.
+	 *
+	 * @a reason is the HCI disconnection reason (`BT_HCI_ERR_*`).
 	 */
 	void (*conn_terminated_cb)(struct bt_conn *conn, int reason, void *user_data);
 	/** User data provided to callbacks */

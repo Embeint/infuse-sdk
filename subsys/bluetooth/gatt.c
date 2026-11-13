@@ -171,13 +171,26 @@ static void connection_error(struct bt_conn *conn, int err)
 	}
 }
 
+/* GATT procedures report either positive ATT error codes or negative errno values. Convert
+ * ATT errors to an errno so they can't be confused with HCI error codes, which are reported
+ * through `conn_setup_cb` when the connection itself fails.
+ */
+static int att_err_to_errno(int err)
+{
+	if (err > 0) {
+		LOG_WRN("ATT error 0x%02X", err);
+		return -EIO;
+	}
+	return err;
+}
+
 static void descriptor_discovery(struct bt_conn *conn);
 
 static uint8_t ccc_discover_cb(struct bt_conn *conn, const struct bt_gatt_attr *attr,
 			       struct bt_gatt_discover_params *params, int err)
 {
 	if (err != 0) {
-		connection_error(conn, err);
+		connection_error(conn, att_err_to_errno(err));
 		return BT_GATT_ITER_STOP;
 	}
 	if (!attr) {
@@ -294,7 +307,7 @@ static uint8_t char_discover_cb(struct bt_conn *conn, const struct bt_gatt_attr 
 				struct bt_gatt_discover_params *params, int err)
 {
 	if (err != 0) {
-		connection_error(conn, err);
+		connection_error(conn, att_err_to_errno(err));
 		return BT_GATT_ITER_STOP;
 	}
 	if (!attr) {
@@ -425,7 +438,7 @@ static void mtu_exchange_cb(struct bt_conn *conn, uint8_t err,
 	int rc;
 
 	if (err) {
-		connection_error(conn, err);
+		connection_error(conn, att_err_to_errno(err));
 		return;
 	}
 
