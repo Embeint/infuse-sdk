@@ -35,6 +35,7 @@ properties:
     default: 3600
     description:
       Minimum voltage target for the PMID supply in milliVolts.
+      Supports 100mV steps from 3600mV to 22000mV.
       Default is the POR value.
 
   input-current-limit:
@@ -98,6 +99,8 @@ properties:
     description:
       Percentage of the open circuit voltage for the MPPT charger
       to aim for. Don't configure this property to disable MPPT.
+      The driver retries enabling MPPT on sample fetch after input loss or
+      low battery, once input power is good and the battery supports SYS.
 
   acdrv1-en:
     type: boolean
