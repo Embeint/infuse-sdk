@@ -1,0 +1,49 @@
+/* SPDX-License-Identifier: FSL-1.1-ALv2 */
+#include <zephyr/dt-bindings/gpio/gpio.h>
+
+/ {
+	test_gpio: gpio-emul {
+		compatible = "zephyr,gpio-emul";
+		gpio-controller;
+		#gpio-cells = <2>;
+		ngpios = <4>;
+		falling-edge;
+	};
+
+	test_i2c: i2c@11112222 {
+		compatible = "zephyr,i2c-emul-controller";
+		reg = <0x11112222 0x1000>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+		clock-frequency = <100000>;
+
+		charger: charger@6b {
+			compatible = "ti,bq25798";
+			reg = <0x6b>;
+			en-gpios = <&test_gpio 0 GPIO_ACTIVE_LOW>;
+			int-gpios = <&test_gpio 1 GPIO_ACTIVE_LOW>;
+			ts-rt1 = <5230>;
+			ts-rt2 = <30100>;
+			constant-charge-current-max-microamp = <4000000>;
+			charge-term-current-microamp = <200000>;
+			mppt-ratio = <81>;
+		};
+	};
+
+	test_i2c_disabled: i2c@11113333 {
+		compatible = "zephyr,i2c-emul-controller";
+		reg = <0x11113333 0x1000>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+		clock-frequency = <100000>;
+
+		charger_disabled: charger-disabled@6b {
+			compatible = "ti,bq25798";
+			reg = <0x6b>;
+			en-gpios = <&test_gpio 2 GPIO_ACTIVE_LOW>;
+			int-gpios = <&test_gpio 3 GPIO_ACTIVE_LOW>;
+			ts-rt1 = <5230>;
+			ts-rt2 = <30100>;
+		};
+	};
+};
