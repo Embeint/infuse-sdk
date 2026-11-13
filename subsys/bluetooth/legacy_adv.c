@@ -132,6 +132,11 @@ int bluetooth_legacy_advertising_run(void)
 {
 	int rc;
 
+	if (adv_set != NULL) {
+		/* Already running, callbacks must not be registered twice */
+		return -EALREADY;
+	}
+
 	/* Initialise work */
 	k_work_init_delayable(&start_advertising, start_advertising_work);
 
@@ -144,6 +149,9 @@ int bluetooth_legacy_advertising_run(void)
 	/* Update the Bluetooth device name */
 	rc = bluetooth_name_update();
 	if (rc) {
+		/* Release the advertising set so the function can be retried */
+		(void)bt_le_ext_adv_delete(adv_set);
+		adv_set = NULL;
 		return rc;
 	}
 

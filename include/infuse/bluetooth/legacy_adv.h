@@ -28,6 +28,7 @@ extern "C" {
  * This can help some legacy devices (and iOS) to connect.
  *
  * @retval 0 on success
+ * @retval -EALREADY legacy advertising has already been started
  * @retval -errno on error
  */
 int bluetooth_legacy_advertising_run(void);
