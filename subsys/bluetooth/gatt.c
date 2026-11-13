@@ -34,6 +34,8 @@ static struct bt_gatt_state {
 	int8_t rssi;
 #endif /* CONFIG_BT_CONN_AUTO_RSSI */
 #ifdef CONFIG_BT_GATT_CLIENT
+	/* Per connection as the exchange can be started from the `bt_conn_le_auto_setup` caller */
+	struct bt_gatt_exchange_params mtu_exchange_params;
 	const struct bt_conn_auto_setup_cb *cb;
 	struct bt_conn_auto_discovery *discovery;
 	uint8_t preferred_phy;
@@ -68,7 +70,6 @@ const char *bt_addr_le_str(const bt_addr_le_t *addr);
 
 static const struct bt_uuid_16 ccc_uuid = BT_UUID_INIT_16(BT_UUID_GATT_CCC_VAL);
 static const struct bt_uuid_16 db_hash_uuid = BT_UUID_INIT_16(BT_UUID_GATT_DB_HASH_VAL);
-static struct bt_gatt_exchange_params mtu_exchange_params;
 static struct bt_gatt_read_params db_read_params;
 /* Serialises callback registration against the connection callbacks */
 static struct k_spinlock setup_lock;
@@ -125,31 +126,50 @@ void bt_conn_le_auto_setup(struct bt_conn *conn, struct bt_conn_auto_discovery *
 	}
 }
 
+/* Setup can be started from the `bt_conn_le_auto_setup` caller while the connection callbacks
+ * run on the Bluetooth RX thread, so the right to run `conn_setup_cb` is claimed under
+ * `setup_lock` to guarantee it runs at most once.
+ */
 static void connection_done(struct bt_conn *conn)
 {
 	struct bt_gatt_state *s = &state[bt_conn_index(conn)];
+	const struct bt_conn_auto_setup_cb *cb = NULL;
 
-	/* We will call `conn_setup_cb` */
-	s->connect_cb_run = true;
+	K_SPINLOCK(&setup_lock) {
+		if ((s->cb != NULL) && !s->connect_cb_run) {
+			/* We will call `conn_setup_cb` */
+			s->connect_cb_run = true;
+			cb = s->cb;
+		}
+	}
 
 	/* Run user callback */
-	s->cb->conn_setup_cb(conn, 0, s->cb->user_data);
+	if (cb != NULL) {
+		cb->conn_setup_cb(conn, 0, cb->user_data);
+	}
 }
 
 static void connection_error(struct bt_conn *conn, int err)
 {
 	struct bt_gatt_state *s = &state[bt_conn_index(conn)];
+	const struct bt_conn_auto_setup_cb *cb = NULL;
 
 	LOG_ERR("Connection setup failed (%d)", err);
 
-	/* We will call `conn_setup_cb` */
-	s->connect_cb_run = true;
+	K_SPINLOCK(&setup_lock) {
+		if ((s->cb != NULL) && !s->connect_cb_run) {
+			/* We will call `conn_setup_cb` */
+			s->connect_cb_run = true;
+			cb = s->cb;
+		}
+		/* Clear state */
+		s->cb = NULL;
+	}
 
 	/* Run user callback */
-	s->cb->conn_setup_cb(conn, err, s->cb->user_data);
-
-	/* Clear state */
-	s->cb = NULL;
+	if (cb != NULL) {
+		cb->conn_setup_cb(conn, err, cb->user_data);
+	}
 }
 
 static void descriptor_discovery(struct bt_conn *conn);
@@ -455,8 +475,8 @@ static void phy_updated(struct bt_conn *conn, struct bt_conn_le_phy_info *param)
 	}
 
 	/* Continue setting up connection with MTU exchange */
-	mtu_exchange_params.func = mtu_exchange_cb;
-	rc = bt_gatt_exchange_mtu(conn, &mtu_exchange_params);
+	s->mtu_exchange_params.func = mtu_exchange_cb;
+	rc = bt_gatt_exchange_mtu(conn, &s->mtu_exchange_params);
 	if (rc < 0) {
 		connection_error(conn, rc);
 	}
@@ -527,6 +547,7 @@ static bool central_phy_request(struct bt_conn *conn)
 
 static void central_conn_setup(struct bt_conn *conn)
 {
+	struct bt_gatt_state *s = &state[bt_conn_index(conn)];
 	int rc;
 
 	/* First action, request PHY update if preferred PHY set */
@@ -536,8 +557,8 @@ static void central_conn_setup(struct bt_conn *conn)
 	}
 
 	/* First action if no PHY update, request MTU update */
-	mtu_exchange_params.func = mtu_exchange_cb;
-	rc = bt_gatt_exchange_mtu(conn, &mtu_exchange_params);
+	s->mtu_exchange_params.func = mtu_exchange_cb;
+	rc = bt_gatt_exchange_mtu(conn, &s->mtu_exchange_params);
 	if (rc < 0) {
 		connection_error(conn, rc);
 	}
