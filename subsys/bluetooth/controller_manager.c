@@ -6,6 +6,9 @@
  * SPDX-License-Identifier: FSL-1.1-ALv2
  */
 
+#include <string.h>
+
+#include <zephyr/kernel.h>
 #include <zephyr/random/random.h>
 #include <zephyr/logging/log.h>
 
@@ -92,6 +95,10 @@ int bt_controller_manager_file_write_start(uint32_t *context, uint8_t action, si
 	};
 	int rc;
 
+	/* Reset state from any previous write */
+	memset(&write_rsp, 0x00, sizeof(write_rsp));
+	k_sem_reset(&write_done);
+
 	rpc_client_init(&ctx, DEVICE_DT_GET(DT_INST(0, embeint_epacket_hci)), EPACKET_ADDR_ALL);
 
 	LOG_INF("Starting write process");
@@ -126,18 +133,22 @@ int bt_controller_manager_file_write_next(uint32_t context, uint32_t image_offse
 
 int bt_controller_manager_file_write_finish(uint32_t context, uint32_t *len, uint32_t *crc)
 {
-	if (context != 0) {
-		/* Completion may take many seconds (patching) */
-		(void)rpc_client_update_response_timeout(&ctx, context, K_SECONDS(20));
-
-		k_sem_take(&write_done, K_FOREVER);
-
-		*len = write_rsp.recv_len;
-		*crc = write_rsp.recv_crc;
-
-		/* Unregister from callbacks */
-		rpc_client_cleanup(&ctx);
+	if (context == 0) {
+		/* Write was never started, no result to report */
+		return -EINVAL;
 	}
+
+	/* Completion may take many seconds (patching) */
+	(void)rpc_client_update_response_timeout(&ctx, context, K_SECONDS(20));
+
+	k_sem_take(&write_done, K_FOREVER);
+
+	*len = write_rsp.recv_len;
+	*crc = write_rsp.recv_crc;
+
+	/* Unregister from callbacks */
+	rpc_client_cleanup(&ctx);
+
 	LOG_INF("File write finished");
 	return write_rsp.header.return_code;
 }

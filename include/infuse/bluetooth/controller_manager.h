@@ -65,7 +65,8 @@ int bt_controller_manager_file_write_next(uint32_t ctx, uint32_t image_offset,
  * @param crc Output CRC of data received by the controller
  *
  * @retval 0 On success
- * @retval -errno On error
+ * @retval -EINVAL @p ctx is 0 (write was not started)
+ * @retval -errno On error (local, or returned by the controller)
  */
 int bt_controller_manager_file_write_finish(uint32_t ctx, uint32_t *len, uint32_t *crc);
 
