@@ -51,7 +51,7 @@ config BT_INFUSE_LEGACY_ADV_INTERVAL_MAX
 	default 1200
 	help
 	  Maximum advertising interval for the legacy Bluetooth advertising set
-	  started by bluetooth_legacy_advertising_run. Valid range is from 10 ms
-	  to 10'240 ms
+	  started by bluetooth_legacy_advertising_run. Valid range is from 60 ms
+	  to 10'240 ms, and must be larger than BT_INFUSE_LEGACY_ADV_INTERVAL_MIN.
 
 endif # BT_HCI_HOST
