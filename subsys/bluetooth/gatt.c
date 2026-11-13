@@ -39,6 +39,7 @@ static struct bt_gatt_state {
 	uint8_t preferred_phy;
 	bool connect_cb_run;
 	bool setup_started;
+	bool phy_update_pending;
 #endif /* CONFIG_BT_GATT_CLIENT */
 } state[CONFIG_BT_MAX_CONN];
 
@@ -82,6 +83,7 @@ void bt_conn_le_auto_setup(struct bt_conn *conn, struct bt_conn_auto_discovery *
 	K_SPINLOCK(&setup_lock) {
 		s->connect_cb_run = false;
 		s->setup_started = false;
+		s->phy_update_pending = false;
 		s->discovery = discovery;
 		s->cb = callbacks;
 		s->preferred_phy = preferred_phy;
@@ -413,16 +415,21 @@ static void mtu_exchange_cb(struct bt_conn *conn, uint8_t err,
 
 static void phy_updated(struct bt_conn *conn, struct bt_conn_le_phy_info *param)
 {
-	struct bt_conn_info info;
+	struct bt_gatt_state *s = &state[bt_conn_index(conn)];
+	bool continue_setup;
 	int rc;
 
 	LOG_DBG("PHY updated: %02X %02X", param->rx_phy, param->tx_phy);
 
-	/* This can only possibly fail if the connection type is not BT_CONN_TYPE_LE */
-	rc = bt_conn_get_info(conn, &info);
-	__ASSERT_NO_MSG(rc == 0);
-	if (info.role != BT_CONN_ROLE_CENTRAL) {
-		/* We didn't initiate this connection */
+	/* Only continue the setup process if this is the result of the PHY update requested
+	 * by `central_phy_request`. PHY updates can also be initiated by the remote device or
+	 * other local users at any point in the connection.
+	 */
+	K_SPINLOCK(&setup_lock) {
+		continue_setup = s->phy_update_pending && (s->cb != NULL);
+		s->phy_update_pending = false;
+	}
+	if (!continue_setup) {
 		return;
 	}
 
@@ -464,7 +471,16 @@ static bool central_phy_request(struct bt_conn *conn)
 		.pref_tx_phy = s->preferred_phy,
 	};
 
+	/* Set before requesting in case the update completes before the call returns */
+	K_SPINLOCK(&setup_lock) {
+		s->phy_update_pending = true;
+	}
 	rc = bt_conn_le_phy_update(conn, &phy_params);
+	if (rc != 0) {
+		K_SPINLOCK(&setup_lock) {
+			s->phy_update_pending = false;
+		}
+	}
 	if (rc == 0) {
 		/* Waiting for PHY update callback */
 	} else if (rc == -EIO) {
@@ -594,6 +610,7 @@ static void disconnected(struct bt_conn *conn, uint8_t reason)
 		cb = s->cb;
 		connect_cb_run = s->connect_cb_run;
 		s->connect_cb_run = true;
+		s->phy_update_pending = false;
 		s->cb = NULL;
 	}
 	if (cb) {
