@@ -147,10 +147,11 @@ config EPACKET_INTERFACE_UDP_DEVICE_AUTH_PREFERRED
 	default y
 	help
 	  Packets queued on the UDP interface with EPACKET_AUTH_NETWORK are
-	  instead encrypted with the device key, except for INFUSE_RPC_RSP
-	  packets, which keep the requested authentication. RPC responses are
-	  exempt so that cloud services can still query the device public key
-	  over the network key.
+	  instead encrypted with the device key, except for INFUSE_RPC_RSP and
+	  INFUSE_KEY_IDS packets, which keep the requested authentication. These
+	  are exempt so that cloud services that do not yet know the device key
+	  can still learn the network and device key identifiers, and query the
+	  device public key over the network key.
 
 config EPACKET_INTERFACE_BT_ADV
 	bool "ePacket Bluetooth advertising interface"
