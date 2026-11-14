@@ -57,8 +57,8 @@ jobs:
     steps:
       - name: Workspace cleanup
         run: |
-          rm -rf ./{*,.*}
-          rm -rf infuse-sdk twister-out*
+          # Portable across `sh` and `bash`, removes dotfiles (e.g. `.west`) too
+          find . -mindepth 1 -maxdepth 1 -exec rm -rf {} +
 
       - name: Clone cached Embeint SDK repository
         continue-on-error: true
@@ -160,8 +160,8 @@ jobs:
     steps:
       - name: Workspace cleanup
         run: |
-          rm -rf ./{*,.*}
-          rm -rf infuse-sdk twister-out*
+          # Portable across `sh` and `bash`, removes dotfiles (e.g. `.west`) too
+          find . -mindepth 1 -maxdepth 1 -exec rm -rf {} +
 
       - name: Clone cached Embeint SDK repository
         continue-on-error: true
