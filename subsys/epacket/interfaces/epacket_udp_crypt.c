@@ -17,9 +17,12 @@ int epacket_udp_encrypt(struct net_buf *buf)
 {
 	struct epacket_tx_metadata *meta = net_buf_user_data(buf);
 
-	/* Upgrade network auth to device auth, except for RPC responses */
+	/* Upgrade network auth to device auth, except for packets the cloud needs to read
+	 * before it knows the device key (RPC responses and key identifiers).
+	 */
 	if (IS_ENABLED(CONFIG_EPACKET_INTERFACE_UDP_DEVICE_AUTH_PREFERRED) &&
-	    (meta->auth == EPACKET_AUTH_NETWORK) && (meta->type != INFUSE_RPC_RSP)) {
+	    (meta->auth == EPACKET_AUTH_NETWORK) && (meta->type != INFUSE_RPC_RSP) &&
+	    (meta->type != INFUSE_KEY_IDS)) {
 		meta->auth = EPACKET_AUTH_DEVICE;
 		meta->key_identifier = infuse_security_device_key_identifier();
 	}

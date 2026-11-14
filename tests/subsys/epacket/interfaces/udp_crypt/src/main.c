@@ -24,7 +24,8 @@
 static enum epacket_auth expected_auth(enum epacket_auth requested, enum infuse_type type)
 {
 	if (IS_ENABLED(CONFIG_EPACKET_INTERFACE_UDP_DEVICE_AUTH_PREFERRED) &&
-	    (requested == EPACKET_AUTH_NETWORK) && (type != INFUSE_RPC_RSP)) {
+	    (requested == EPACKET_AUTH_NETWORK) && (type != INFUSE_RPC_RSP) &&
+	    (type != INFUSE_KEY_IDS)) {
 		return EPACKET_AUTH_DEVICE;
 	}
 	return requested;
@@ -123,9 +124,11 @@ static void test_auth_selection(enum epacket_auth auth, enum infuse_type type)
 
 ZTEST(epacket_udp_crypt, test_auth_selection)
 {
-	/* RPC responses always retain the requested authentication */
+	/* RPC responses and key identifiers always retain the requested authentication */
 	test_auth_selection(EPACKET_AUTH_NETWORK, INFUSE_RPC_RSP);
 	test_auth_selection(EPACKET_AUTH_DEVICE, INFUSE_RPC_RSP);
+	test_auth_selection(EPACKET_AUTH_NETWORK, INFUSE_KEY_IDS);
+	test_auth_selection(EPACKET_AUTH_DEVICE, INFUSE_KEY_IDS);
 	/* Other packet types may be upgraded to device authentication */
 	test_auth_selection(EPACKET_AUTH_NETWORK, INFUSE_TDF);
 	test_auth_selection(EPACKET_AUTH_DEVICE, INFUSE_TDF);
