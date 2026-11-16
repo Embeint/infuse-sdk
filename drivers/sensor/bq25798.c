@@ -88,6 +88,74 @@ static int bq25798_reg_write_u16(const struct device *dev, uint8_t reg, uint16_t
 	return i2c_write_dt(&config->bus, buf, 3);
 }
 
+static uint8_t bq25798_mppt_control(const struct bq25798_config *config)
+{
+	if (config->mppt_ratio == MPPT_DISABLE) {
+		return BQ25798_MPPT_CONTROL_MPPT_DISABLE;
+	}
+
+	return BQ25798_MPPT_CONTROL_MPPT_ENABLE | BQ25798_MPPT_CONTROL_VOC_PERIOD_30S |
+	       BQ25798_MPPT_CONTROL_VOC_DELAY_300MS |
+	       (config->mppt_ratio << BQ25798_MPPT_CONTROL_RATIO_OFFSET);
+}
+
+static int bq25798_mppt_restore(const struct device *dev)
+{
+	const struct bq25798_config *config = dev->config;
+	uint8_t status[4];
+	uint8_t reg;
+	int rc;
+
+	if (config->mppt_ratio == MPPT_DISABLE) {
+		return 0;
+	}
+
+	rc = i2c_reg_read_byte_dt(&config->bus, BQ25798_REG_MPPT_CONTROL, &reg);
+	if ((rc != 0) || (reg & BQ25798_MPPT_CONTROL_MPPT_ENABLE)) {
+		return rc;
+	}
+
+	/* Input loss clears EN_MPPT. A depleted battery also rejects enable writes.
+	 * Do not interrupt conversion for a VOC measurement until the battery can support SYS.
+	 */
+	rc = i2c_burst_read_dt(&config->bus, BQ25798_REG_CHARGER_STATUS_0, status, sizeof(status));
+	if (rc != 0) {
+		return rc;
+	}
+	if (!(status[0] & BQ25798_CHARGER_STATUS_0_VBUS_PRESENT) ||
+	    !(status[0] & BQ25798_CHARGER_STATUS_0_POWER_GOOD) ||
+	    !(status[2] & BQ25798_CHARGER_STATUS_2_VBAT_PRESENT) ||
+	    (status[3] & BQ25798_CHARGER_STATUS_3_VSYS)) {
+		return 0;
+	}
+
+	rc = i2c_reg_read_byte_dt(&config->bus, BQ25798_REG_CHARGER_CONTROL_0, &reg);
+	if (rc != 0) {
+		return rc;
+	}
+	if (reg & (BQ25798_CHARGER_CONTROL_0_EN_HIZ | BQ25798_CHARGER_CONTROL_0_EN_ICO)) {
+		return 0;
+	}
+	rc = i2c_reg_read_byte_dt(&config->bus, BQ25798_REG_CHARGER_CONTROL_4, &reg);
+	if (rc != 0) {
+		return rc;
+	}
+	if (reg & BQ25798_CHARGER_CONTROL_4_FORCE_VINDPM_DET) {
+		return 0;
+	}
+
+	rc = bq25798_reg_write(dev, BQ25798_REG_MPPT_CONTROL, bq25798_mppt_control(config));
+	if (rc != 0) {
+		return rc;
+	}
+	/* Eligibility can change between status and write. Retry on a later fetch if rejected. */
+	rc = i2c_reg_read_byte_dt(&config->bus, BQ25798_REG_MPPT_CONTROL, &reg);
+	if ((rc == 0) && !(reg & BQ25798_MPPT_CONTROL_MPPT_ENABLE)) {
+		LOG_DBG("MPPT enable deferred");
+	}
+	return rc;
+}
+
 #ifdef CONFIG_BQ25798_FETCH_STATUS_CHECKS
 static const char *const status_str[] = {
 	"Not Charging",      "Trickle Charge", "Pre-Charge",    "Fast Charge (CC)",
@@ -160,6 +228,11 @@ static int bq25798_sample_fetch(const struct device *dev, enum sensor_channel ch
 		(void)bq25798_reg_write(dev, BQ25798_REG_CHARGER_CONTROL_0, reg);
 	}
 #endif /* CONFIG_BQ25798_FETCH_POOR_SOURCE_RETRY */
+
+	rc = bq25798_mppt_restore(dev);
+	if (rc != 0) {
+		return rc;
+	}
 
 	/* Clear an earlier conversion's latched ADC_DONE before starting a new one. */
 	rc = i2c_reg_read_byte_dt(&config->bus, BQ25798_REG_CHARGER_FLAG_2, &reg);
@@ -386,15 +459,8 @@ static int bq25798_init(const struct device *dev)
 		return rc;
 	}
 
-	/* Configure MPPT */
-	if (config->mppt_ratio == MPPT_DISABLE) {
-		u8 = BQ25798_MPPT_CONTROL_MPPT_DISABLE;
-	} else {
-		u8 = BQ25798_MPPT_CONTROL_MPPT_ENABLE | BQ25798_MPPT_CONTROL_VOC_PERIOD_30S |
-		     BQ25798_MPPT_CONTROL_VOC_DELAY_300MS |
-		     (config->mppt_ratio << BQ25798_MPPT_CONTROL_RATIO_OFFSET);
-	}
-	rc = bq25798_reg_write(dev, BQ25798_REG_MPPT_CONTROL, u8);
+	/* Configure MPPT; a rejected enable is retried during sample fetch. */
+	rc = bq25798_reg_write(dev, BQ25798_REG_MPPT_CONTROL, bq25798_mppt_control(config));
 	if (rc != 0) {
 		LOG_ERR("Reg 0x%02X %s error (%d)", BQ25798_REG_MPPT_CONTROL, "write", rc);
 		return rc;
