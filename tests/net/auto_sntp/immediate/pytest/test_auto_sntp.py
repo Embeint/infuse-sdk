@@ -50,15 +50,23 @@ def test_auto_sntp(sntp_server: LocalSntpServer, unlaunched_dut: DeviceAdapter):
     expect_dns(lines, sntp_server.unresponsive_addr)
     expect(lines, "Sending request...")
     first_timeout = expect(lines, "SNTP query timeout")
+    expect(lines, "Retrying SNTP query in 500 ms")
     expect_dns(lines, sntp_server.unresponsive_addr)
-    retry = expect(lines, "Sending request...")
+    first_retry = expect(lines, "Sending request...")
+    second_timeout = expect(lines, "SNTP query timeout")
+    expect(lines, "Retrying SNTP query in 1000 ms")
+    expect_dns(lines, sntp_server.unresponsive_addr)
+    second_retry = expect(lines, "Sending request...")
     expect(lines, "SNTP query timeout")
     expect(lines, r"Giving up SNTP queries after \d failures")
 
-    # Retry uses CONFIG_SNTP_AUTO_RETRY_PERIOD_MS (500 ms), not the resync age (3 s)
-    retry_delay = timestamp(retry) - timestamp(first_timeout)
-    logger.info("SNTP retry delay: %.3f s", retry_delay)
-    assert retry_delay < 1.5, f"SNTP retry took {retry_delay:.3f} s"
+    # First retry uses CONFIG_SNTP_AUTO_RETRY_PERIOD_MS (500 ms), not the resync age (3 s),
+    # and the period doubles for the second retry.
+    first_delay = timestamp(first_retry) - timestamp(first_timeout)
+    second_delay = timestamp(second_retry) - timestamp(second_timeout)
+    logger.info("SNTP retry delays: %.3f s, %.3f s", first_delay, second_delay)
+    assert 0.5 <= first_delay < 1.0, f"First SNTP retry took {first_delay:.3f} s"
+    assert 1.0 <= second_delay < 1.5, f"Second SNTP retry took {second_delay:.3f} s"
 
     # Server switched back to the default
     expect_dns(lines, sntp_server.responsive_addr)
@@ -77,4 +85,4 @@ def test_auto_sntp(sntp_server: LocalSntpServer, unlaunched_dut: DeviceAdapter):
     # Every query reached the local server
     logger.info("SNTP queries: %d answered, %d ignored", sntp_server.answered, sntp_server.ignored)
     assert sntp_server.answered == 4
-    assert sntp_server.ignored == 2
+    assert sntp_server.ignored == 3
