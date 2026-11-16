@@ -32,6 +32,11 @@ config SNTP_AUTO_RESYNC_AGE
 config SNTP_AUTO_RETRY_PERIOD_MS
 	int "How long to wait before retrying a failed SNTP query"
 	default 2000
+	help
+	  Wait before the first retry of a failed SNTP query. The wait doubles
+	  after each consecutive failure until it is at least one minute. The
+	  backoff is reset by a successful query, or when a new round of
+	  queries starts (network reconnection, resync timeout or sync point).
 
 config SNTP_AUTO_RETRY_LIMIT
 	int "Maximum number of times to attempt a SNTP query"
