@@ -168,6 +168,21 @@ int lte_modem_monitor_signal_quality(int16_t *rsrp, int8_t *rsrq, bool cached);
 int lte_modem_monitor_connectivity_stats(int *tx_kbytes, int *rx_kbytes);
 
 /**
+ * @brief Report the outcome of a DNS query
+ *
+ * Used to detect a broken data path while the interface reports IP connectivity.
+ * Queries that fail without an answer from the network start a timeout
+ * (@kconfig{CONFIG_INFUSE_MODEM_MONITOR_DNS_FAILURE_TIMEOUT_SEC}), which is cancelled
+ * by any answered query.
+ *
+ * @note Called automatically by the Infuse DNS helpers.
+ *
+ * @param answered True if the DNS server answered the query (including "no such name"),
+ *                 false if no answer was received.
+ */
+void lte_modem_monitor_dns_result(bool answered);
+
+/**
  * @}
  */
 
