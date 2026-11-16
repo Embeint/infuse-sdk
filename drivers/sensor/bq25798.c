@@ -88,10 +88,12 @@ static int bq25798_reg_write_u16(const struct device *dev, uint8_t reg, uint16_t
 	return i2c_write_dt(&config->bus, buf, 3);
 }
 
+#ifdef CONFIG_BQ25798_FETCH_STATUS_CHECKS
 static const char *const status_str[] = {
 	"Not Charging",      "Trickle Charge", "Pre-Charge",    "Fast Charge (CC)",
 	"Taper Charge (CV)", "Reserved",       "Top-off Timer", "Charge Termination",
 };
+#endif
 
 static int bq25798_sample_fetch(const struct device *dev, enum sensor_channel chan)
 {
@@ -159,7 +161,11 @@ static int bq25798_sample_fetch(const struct device *dev, enum sensor_channel ch
 	}
 #endif /* CONFIG_BQ25798_FETCH_POOR_SOURCE_RETRY */
 
-	/* Clear interrupts from other sources */
+	/* Clear an earlier conversion's latched ADC_DONE before starting a new one. */
+	rc = i2c_reg_read_byte_dt(&config->bus, BQ25798_REG_CHARGER_FLAG_2, &reg);
+	if (rc != 0) {
+		return rc;
+	}
 	(void)k_sem_take(&data->int_sem, K_NO_WAIT);
 
 	/* Enable the one-shot measurement */
@@ -170,15 +176,25 @@ static int bq25798_sample_fetch(const struct device *dev, enum sensor_channel ch
 		return rc;
 	}
 
-	/* Wait for the interrupt signifying completion */
-	LOG_DBG("Waiting for ADC completion");
-	rc = k_sem_take(&data->int_sem, K_MSEC(500));
-	if (rc != 0) {
-		/* Manually check the register to see if it was just an interrupt problem */
+	/* nINT is shared with charger status and fault events. Only ADC_DONE completes a fetch.
+	 * Keep one deadline so unrelated interrupts cannot extend the conversion timeout.
+	 */
+	k_timepoint_t deadline = sys_timepoint_calc(K_MSEC(500));
+
+	while (true) {
+		int wait_rc = k_sem_take(&data->int_sem, sys_timepoint_timeout(deadline));
+
 		rc = i2c_reg_read_byte_dt(&config->bus, BQ25798_REG_CHARGER_FLAG_2, &reg);
-		if ((rc == 0) && (reg & BQ25798_CHARGER_FLAG_2_ADC_DONE)) {
-			LOG_WRN("ADC interrupt did not fire");
-		} else {
+		if (rc != 0) {
+			return rc;
+		}
+		if (reg & BQ25798_CHARGER_FLAG_2_ADC_DONE) {
+			if (wait_rc != 0) {
+				LOG_WRN("ADC interrupt did not fire");
+			}
+			break;
+		}
+		if (sys_timepoint_expired(deadline)) {
 			LOG_ERR("ADC sampling failed");
 			return -EIO;
 		}
