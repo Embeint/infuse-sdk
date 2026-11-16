@@ -307,6 +307,15 @@
                 {"name": "A_GNSS", "value": 2, "description": "GNSS assistance data"},
                 {"name": "COPY", "value": 3, "description": "Files to copy to other devices"}
             ]
+        },
+        "rpc_enum_annotation_type": {
+            "description": "Annotation type",
+            "type": "uint8_t",
+            "values": [
+                {"name": "INSTANT", "value": 0, "description": "Event annotation at a specific instant in time"},
+                {"name": "DURATION", "value": 1, "description": "Event annotation over a relative duration"},
+                {"name": "INTERVAL", "value": 2, "description": "Event annotation over an absolute interval of time"}
+            ]
         }
     },
     "commands": {
@@ -1032,6 +1041,37 @@
                 {"name": "wait", "type": "uint8_t", "description": "Respond once the alert has completed instead of immediately, duration_ms must be 10000 or less (0 = respond immediately)"}
             ],
             "response_params": []
+        },
+        "81": {
+            "name": "annotation_register",
+            "description": "Register an annotation label to a known label ID",
+            "depends_on": "TDF_DATA_LOGGER",
+            "default_auth": "EPACKET_AUTH_DEVICE",
+            "request_params": [
+                {"name": "timestamp", "type": "int64_t", "description": "Start/Instant timestamp (Infuse Epoch Ticks) that event was observed"},
+                {"name": "logger", "type": "enum rpc_enum_data_logger", "description": "Data logger to write annotation to"},
+                {"name": "label_id", "type": "uint32_t", "description": "Unique identifier for this annotation label"},
+                {"name": "label", "type": "char", "num": 0, "description": "Annotation label text"}
+            ],
+            "response_params": [
+            ]
+        },
+        "82": {
+            "name": "annotate_v2",
+            "description": "Write a labelled annotation to the device (v2)",
+            "depends_on": "TDF_DATA_LOGGER",
+            "default_auth": "EPACKET_AUTH_DEVICE",
+            "request_params": [
+                {"name": "timestamp", "type": "int64_t", "description": "Start/Instant timestamp (Infuse Epoch Ticks) that event was observed"},
+                {"name": "logger", "type": "enum rpc_enum_data_logger", "description": "Data logger to write annotation to"},
+                {"name": "type", "type": "enum rpc_enum_annotation_type", "description": "Type of annotation"},
+                {"name": "duration", "type": "uint32_t", "description": "Relative duration after timestamp when the event ends in Infuse Epoch Ticks (when `type == DURATION`)"},
+                {"name": "interval_end", "type": "int64_t", "description": "Absolute end time when the event ends in Infuse Epoch Ticks (when `type == INTERVAL`)"},
+                {"name": "label_id", "type": "uint32_t", "description": "Unique identifier for the annotation"},
+                {"name": "TDF_IDs", "type": "uint16_t", "num": 0, "description": "TDF IDs related to the annotation"}
+            ],
+            "response_params": [
+            ]
         },
         "30000": {
             "name": "security_state",

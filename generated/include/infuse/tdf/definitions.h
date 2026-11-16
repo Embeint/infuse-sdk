@@ -841,6 +841,57 @@ struct tdf_gnss_fix_info_v2 {
 	uint16_t p_dop;
 } __packed;
 
+/** Labelled annotation for a specific instant, timestamped by the TDF record */
+struct tdf_annotation_v2_instant {
+	/** Label identifier for the annotation */
+	uint32_t label_id;
+	/** TDF IDs related to the annotation */
+	uint16_t tdf_ids[];
+} __packed;
+
+/** Define a variant of tdf_annotation_v2_instant with a constant length */
+#define TDF_ANNOTATION_V2_INSTANT_VAR(_name, _count)                                               \
+	struct _name {                                                                             \
+		uint32_t label_id;                                                                 \
+		uint16_t tdf_ids[_count];                                                          \
+	} __packed;
+
+/**
+ * Labelled annotation over an absolute interval, started from the TDF record timestamp to the
+ * event_end
+ */
+struct tdf_annotation_v2_interval {
+	/** End of the annotation in Infuse Epoch ticks */
+	int64_t event_end;
+	/** Label identifier for the annotation */
+	uint32_t label_id;
+	/** TDF IDs related to the annotation */
+	uint16_t tdf_ids[];
+} __packed;
+
+/** Define a variant of tdf_annotation_v2_interval with a constant length */
+#define TDF_ANNOTATION_V2_INTERVAL_VAR(_name, _count)                                              \
+	struct _name {                                                                             \
+		int64_t event_end;                                                                 \
+		uint32_t label_id;                                                                 \
+		uint16_t tdf_ids[_count];                                                          \
+	} __packed;
+
+/** Mapping a label ID to a label text */
+struct tdf_annotation_v2_label_mapping {
+	/** Label identifier corresponding to the label */
+	uint32_t label_id;
+	/** Label text */
+	char label[];
+} __packed;
+
+/** Define a variant of tdf_annotation_v2_label_mapping with a constant length */
+#define TDF_ANNOTATION_V2_LABEL_MAPPING_VAR(_name, _count)                                         \
+	struct _name {                                                                             \
+		uint32_t label_id;                                                                 \
+		char label[_count];                                                                \
+	} __packed;
+
 /** Infuse-IoT builtin TDF definitions */
 enum tdf_builtin_id {
 	/** Common announcement packet */
@@ -975,6 +1026,15 @@ enum tdf_builtin_id {
 	TDF_DEVICE_INIT_ERROR = 66,
 	/** Metadata about a GNSS location fix */
 	TDF_GNSS_FIX_INFO_V2 = 67,
+	/** Labelled annotation for a specific instant, timestamped by the TDF record */
+	TDF_ANNOTATION_V2_INSTANT = 68,
+	/**
+	 * Labelled annotation over an absolute interval, started from the TDF record timestamp to
+	 * the event_end
+	 */
+	TDF_ANNOTATION_V2_INTERVAL = 69,
+	/** Mapping a label ID to a label text */
+	TDF_ANNOTATION_V2_LABEL_MAPPING = 70,
 	/** End of builtin TDF range */
 	TDF_BUILTIN_END = 1024,
 };
@@ -1045,6 +1105,9 @@ enum tdf_builtin_id {
 #define _TDF_LTE_SLEEP_EXIT_TYPE              struct tdf_lte_sleep_exit
 #define _TDF_DEVICE_INIT_ERROR_TYPE           struct tdf_device_init_error
 #define _TDF_GNSS_FIX_INFO_V2_TYPE            struct tdf_gnss_fix_info_v2
+#define _TDF_ANNOTATION_V2_INSTANT_TYPE       struct tdf_annotation_v2_instant
+#define _TDF_ANNOTATION_V2_INTERVAL_TYPE      struct tdf_annotation_v2_interval
+#define _TDF_ANNOTATION_V2_LABEL_MAPPING_TYPE struct tdf_annotation_v2_label_mapping
 
 /** Size of builtin TDF definitions */
 enum tdf_builtin_size {
@@ -1112,6 +1175,9 @@ enum tdf_builtin_size {
 	_TDF_LTE_SLEEP_EXIT_SIZE = sizeof(struct tdf_lte_sleep_exit),
 	_TDF_DEVICE_INIT_ERROR_SIZE = sizeof(struct tdf_device_init_error),
 	_TDF_GNSS_FIX_INFO_V2_SIZE = sizeof(struct tdf_gnss_fix_info_v2),
+	_TDF_ANNOTATION_V2_INSTANT_SIZE = sizeof(struct tdf_annotation_v2_instant),
+	_TDF_ANNOTATION_V2_INTERVAL_SIZE = sizeof(struct tdf_annotation_v2_interval),
+	_TDF_ANNOTATION_V2_LABEL_MAPPING_SIZE = sizeof(struct tdf_annotation_v2_label_mapping),
 };
 
 /** @endcond */

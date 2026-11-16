@@ -400,6 +400,22 @@ static const struct command_impl command_impls[] = {
 		.request_len = sizeof(struct rpc_audio_alert_request),
 	},
 #endif /* CONFIG_INFUSE_RPC_COMMAND_AUDIO_ALERT */
+#ifdef CONFIG_INFUSE_RPC_COMMAND_ANNOTATION_REGISTER
+	{
+		.handler = rpc_command_annotation_register,
+		.command_id = RPC_ID_ANNOTATION_REGISTER,
+		.required_auth = CONFIG_INFUSE_RPC_COMMAND_ANNOTATION_REGISTER_REQUIRED_AUTH,
+		.request_len = sizeof(struct rpc_annotation_register_request),
+	},
+#endif /* CONFIG_INFUSE_RPC_COMMAND_ANNOTATION_REGISTER */
+#ifdef CONFIG_INFUSE_RPC_COMMAND_ANNOTATE_V2
+	{
+		.handler = rpc_command_annotate_v2,
+		.command_id = RPC_ID_ANNOTATE_V2,
+		.required_auth = CONFIG_INFUSE_RPC_COMMAND_ANNOTATE_V2_REQUIRED_AUTH,
+		.request_len = sizeof(struct rpc_annotate_v2_request),
+	},
+#endif /* CONFIG_INFUSE_RPC_COMMAND_ANNOTATE_V2 */
 #ifdef CONFIG_INFUSE_RPC_COMMAND_SECURITY_STATE
 	{
 		.handler = rpc_command_security_state,

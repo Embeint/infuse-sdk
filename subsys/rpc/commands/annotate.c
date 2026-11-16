@@ -6,6 +6,8 @@
  * SPDX-License-Identifier: FSL-1.1-ALv2
  */
 
+#include <inttypes.h>
+
 #include <zephyr/net_buf.h>
 #include <zephyr/logging/log.h>
 
@@ -18,55 +20,69 @@
 
 LOG_MODULE_DECLARE(rpc_server, CONFIG_INFUSE_RPC_LOG_LEVEL);
 
-struct net_buf *rpc_command_annotate(struct net_buf *request)
+static int validate_logger(const struct device **logger, uint16_t tdf_len, uint8_t logger_type)
 {
-	struct rpc_annotate_request *req = (void *)request->data;
-	struct rpc_annotate_response rsp = {};
-	const struct device *logger;
-	uint16_t extra_len = request->len - sizeof(*req);
-	int rc = 0;
-
-	switch (req->logger) {
+	switch (logger_type) {
 #ifdef CONFIG_DATA_LOGGER_FLASH_MAP
 	case RPC_ENUM_DATA_LOGGER_FLASH_ONBOARD:
-		logger = DEVICE_DT_GET(DT_NODELABEL(tdf_logger_flash));
+		*logger = DEVICE_DT_GET(DT_NODELABEL(tdf_logger_flash));
 		break;
 #endif /* CONFIG_DATA_LOGGER_FLASH_MAP */
 #ifdef CONFIG_DATA_LOGGER_EXFAT
 	case RPC_ENUM_DATA_LOGGER_FLASH_REMOVABLE:
-		logger = DEVICE_DT_GET(DT_NODELABEL(tdf_logger_removable));
+		*logger = DEVICE_DT_GET(DT_NODELABEL(tdf_logger_removable));
 		break;
 #endif /* CONFIG_DATA_LOGGER_EXFAT */
 #if defined(CONFIG_DATA_LOGGER_EPACKET) && DT_NODE_HAS_STATUS(DT_NODELABEL(tdf_logger_udp), okay)
 	case RPC_ENUM_DATA_LOGGER_UDP:
-		logger = DEVICE_DT_GET(DT_NODELABEL(tdf_logger_udp));
+		*logger = DEVICE_DT_GET(DT_NODELABEL(tdf_logger_udp));
 		break;
 #endif /* CONFIG_DATA_LOGGER_EXFAT */
 #if defined(CONFIG_DATA_LOGGER_EPACKET) && DT_NODE_HAS_STATUS(DT_NODELABEL(tdf_logger_serial), okay)
 	case RPC_ENUM_DATA_LOGGER_SERIAL:
-		logger = DEVICE_DT_GET(DT_NODELABEL(tdf_logger_serial));
+		*logger = DEVICE_DT_GET(DT_NODELABEL(tdf_logger_serial));
 		break;
 #endif /* CONFIG_DATA_LOGGER_EXFAT */
 #if defined(CONFIG_DATA_LOGGER_EPACKET) &&                                                         \
 	DT_NODE_HAS_STATUS(DT_NODELABEL(tdf_logger_bt_peripheral), okay)
 	case RPC_ENUM_DATA_LOGGER_BT_PERIPHERAL:
-		logger = DEVICE_DT_GET(DT_NODELABEL(tdf_logger_bt_peripheral));
+		*logger = DEVICE_DT_GET(DT_NODELABEL(tdf_logger_bt_peripheral));
 		break;
 #endif /* CONFIG_DATA_LOGGER_EXFAT */
 	default:
-		return rpc_response_simple_req(request, INFUSE_RPC_ERROR_DEVICE_NOT_FOUND, &rsp,
-					       sizeof(rsp));
+		return INFUSE_RPC_ERROR_DEVICE_NOT_FOUND;
 	}
 
-	if (!device_is_ready(logger)) {
-		return rpc_response_simple_req(request, INFUSE_RPC_ERROR_DEVICE_NOT_READY, &rsp,
-					       sizeof(rsp));
+	if (!device_is_ready(*logger)) {
+		return INFUSE_RPC_ERROR_DEVICE_NOT_READY;
 	}
 
-	if ((extra_len == 0) || ((sizeof(struct tdf_annotation) + extra_len) > UINT8_MAX)) {
-		/* No annotation payload, or too large to represent as a TDF */
+	if (tdf_len > UINT8_MAX) {
+		/* Too large to represent as a TDF */
+		return INFUSE_RPC_ERROR_DATA_UNEXPECTED_LENGTH_RECEIVED;
+	}
+	return 0;
+}
+
+struct net_buf *rpc_command_annotate(struct net_buf *request)
+{
+	struct rpc_annotate_response rsp = {};
+	struct rpc_annotate_request *req = (void *)request->data;
+	const struct device *logger;
+	int rc = 0;
+	uint16_t extra_len = request->len - sizeof(*req);
+	uint16_t tdf_len = sizeof(struct tdf_annotation) + extra_len;
+
+	if (extra_len == 0) {
+		/* Empty annotation string is not allowed. */
 		return rpc_response_simple_req(request, INFUSE_RPC_ERROR_INVALID_ARGUMENT, &rsp,
 					       sizeof(rsp));
+	}
+
+	rc = validate_logger(&logger, tdf_len, req->logger);
+
+	if (rc < 0) {
+		return rpc_response_simple_req(request, rc, &rsp, sizeof(rsp));
 	}
 
 	/* Relies on the RPC request parameters following the same form as the TDF definition:
@@ -74,8 +90,11 @@ struct net_buf *rpc_command_annotate(struct net_buf *request)
 	 *     char event_str[];
 	 * Assumption is validated through command testing.
 	 */
-	tdf_data_logger_log_dev(logger, TDF_ANNOTATION, sizeof(struct tdf_annotation) + extra_len,
-				epoch_time_now(), &req->timestamp);
+	rc = tdf_data_logger_log_dev(logger, TDF_ANNOTATION, tdf_len, epoch_time_now(),
+				     &req->timestamp);
+	if (rc < 0) {
+		return rpc_response_simple_req(request, rc, &rsp, sizeof(rsp));
+	}
 
 	/* Ensure '%s' always sees a trailing NUL terminator */
 	if (net_buf_tailroom(request) > 0) {
@@ -86,5 +105,111 @@ struct net_buf *rpc_command_annotate(struct net_buf *request)
 	LOG_INF("Annotation: %s @ %u %d", req->annotation, req->timestamp, extra_len);
 
 	/* Allocate and return the response */
+	return rpc_response_simple_req(request, rc, &rsp, sizeof(rsp));
+}
+
+struct net_buf *rpc_command_annotate_v2(struct net_buf *request)
+{
+	struct rpc_annotate_response rsp = {};
+	struct rpc_annotate_v2_request *req = (void *)request->data;
+	const struct device *logger;
+	int rc = 0;
+	uint16_t extra_len = request->len - sizeof(*req);
+	uint16_t tdf_len;
+
+	switch (req->type) {
+	case RPC_ENUM_ANNOTATION_TYPE_INSTANT:
+		tdf_len = sizeof(struct tdf_annotation_v2_instant) + extra_len;
+		break;
+	case RPC_ENUM_ANNOTATION_TYPE_DURATION:
+		/* Convert the relative duration into the absolute interval TDF representation. */
+		if (req->timestamp > (INT64_MAX - (int64_t)req->duration)) {
+			return rpc_response_simple_req(request, INFUSE_RPC_ERROR_INVALID_ARGUMENT,
+					       &rsp, sizeof(rsp));
+		}
+
+		req->interval_end = req->timestamp + (int64_t)req->duration;
+		tdf_len = sizeof(struct tdf_annotation_v2_interval) + extra_len;
+		break;
+	case RPC_ENUM_ANNOTATION_TYPE_INTERVAL:
+		if (req->interval_end == 0 || req->interval_end < req->timestamp) {
+			return rpc_response_simple_req(request, INFUSE_RPC_ERROR_INVALID_ARGUMENT,
+						       &rsp, sizeof(rsp));
+		}
+		tdf_len = sizeof(struct tdf_annotation_v2_interval) + extra_len;
+		break;
+	default:
+		return rpc_response_simple_req(request, INFUSE_RPC_ERROR_UNSUPPORTED_REQUEST, &rsp,
+					       sizeof(rsp));
+	}
+
+	/* All V2 TDFs end with uint16_t TDF IDs. */
+	if ((tdf_len % sizeof(uint16_t)) != 0) {
+		return rpc_response_simple_req(request, INFUSE_RPC_ERROR_INVALID_ARGUMENT, &rsp,
+					       sizeof(rsp));
+	}
+
+	rc = validate_logger(&logger, tdf_len, req->logger);
+
+	if (rc < 0) {
+		return rpc_response_simple_req(request, rc, &rsp, sizeof(rsp));
+	}
+
+	switch (req->type) {
+	case RPC_ENUM_ANNOTATION_TYPE_INSTANT:
+		rc = tdf_data_logger_log_dev(logger, TDF_ANNOTATION_V2_INSTANT, tdf_len,
+					     req->timestamp, &req->label_id);
+		break;
+	case RPC_ENUM_ANNOTATION_TYPE_DURATION:
+	case RPC_ENUM_ANNOTATION_TYPE_INTERVAL:
+		rc = tdf_data_logger_log_dev(logger, TDF_ANNOTATION_V2_INTERVAL, tdf_len,
+					     req->timestamp, &req->interval_end);
+		break;
+	}
+
+	if (rc < 0) {
+		return rpc_response_simple_req(request, rc, &rsp, sizeof(rsp));
+	}
+
+	return rpc_response_simple_req(request, rc, &rsp, sizeof(rsp));
+}
+
+struct net_buf *rpc_command_annotation_register(struct net_buf *request)
+{
+	struct rpc_annotate_response rsp = {};
+	struct rpc_annotation_register_request *req = (void *)request->data;
+	const struct device *logger;
+	int rc = 0;
+	uint16_t extra_len = request->len - sizeof(*req);
+	uint16_t tdf_len = sizeof(struct tdf_annotation_v2_label_mapping) + extra_len;
+
+	if (extra_len == 0) {
+		/* Empty annotation string is not allowed. */
+		return rpc_response_simple_req(request, INFUSE_RPC_ERROR_INVALID_ARGUMENT, &rsp,
+					       sizeof(rsp));
+	}
+
+	rc = validate_logger(&logger, tdf_len, req->logger);
+
+	if (rc < 0) {
+		return rpc_response_simple_req(request, rc, &rsp, sizeof(rsp));
+	}
+
+	rc = tdf_data_logger_log_dev(logger, TDF_ANNOTATION_V2_LABEL_MAPPING, tdf_len,
+				     req->timestamp, &req->label_id);
+
+	if (rc < 0) {
+		return rpc_response_simple_req(request, rc, &rsp, sizeof(rsp));
+	}
+
+	/* Ensure '%s' always sees a trailing NUL terminator */
+	if (net_buf_tailroom(request) > 0) {
+		net_buf_add_u8(request, '\0');
+	} else {
+		req->label[extra_len - 1] = '\0';
+	}
+	LOG_INF("Registered Annotation: %s @ %" PRId64 " %d", req->label, req->timestamp,
+		extra_len);
+
 	return rpc_response_simple_req(request, rc, &rsp, sizeof(rsp));
 }
