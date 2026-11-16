@@ -33,6 +33,24 @@ config INFUSE_MODEM_MONITOR_CONNECTIVITY_TIMEOUT_SEC
 	  being assigned to a PDP context other than 0, which the network stack
 	  integration fails to handle.
 
+config INFUSE_MODEM_MONITOR_DNS_FAILURE_TIMEOUT_SEC
+	int "Timeout for DNS queries to succeed while IP connectivity is reported"
+	default 900
+	help
+	  Once IP connectivity has been gained, DNS queries are expected to receive
+	  answers from the network. If DNS queries fail without receiving an answer
+	  for this duration, the assumption is that the data path through the
+	  network is broken and the application is rebooted. The timeout starts
+	  on the first failed query and is cancelled by any answered query (including
+	  answers that the name does not exist), or by losing registration or IP
+	  connectivity.
+
+	  The observed situation that causes this is a modem reporting an active
+	  PDP context with an IP address, while no data is actually exchanged with
+	  the network.
+
+	  A value of 0 disables the timeout.
+
 # Disable the hardcoded APN from Zephyr by default
 configdefault MODEM_CELLULAR_APN
 	default ""

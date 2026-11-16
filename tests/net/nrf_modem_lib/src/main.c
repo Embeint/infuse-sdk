@@ -520,6 +520,53 @@ ZTEST(infuse_nrf_modem_monitor, test_integration)
 	zassert_is_null(tx);
 #endif /* CONFIG_INFUSE_MODEM_MONITOR_CONN_STATE_LOG */
 
+	/* DNS failures without IP connectivity are ignored */
+	lte_modem_monitor_dns_result(false);
+	rc = k_sem_take(&reboot_request,
+			K_SECONDS(CONFIG_INFUSE_MODEM_MONITOR_DNS_FAILURE_TIMEOUT_SEC + 1));
+	zassert_equal(-EAGAIN, rc);
+
+	/* Gain network and IP connectivity */
+	nrf_modem_lib_sim_send_at(
+		"+CEREG: 5,\"702A\",\"08C3BD0C\",7,,,\"00001000\",\"00101101\"\r\n");
+	k_sleep(K_SECONDS(1));
+	rc = net_if_up(iface);
+	zassert_equal(0, rc);
+	added = net_if_ipv4_addr_add(iface, (struct in_addr *)&ipv4_addr, NET_ADDR_MANUAL, 0);
+	zassert_not_null(added);
+
+	/* Answered DNS queries don't start the timeout */
+	lte_modem_monitor_dns_result(true);
+	rc = k_sem_take(&reboot_request,
+			K_SECONDS(CONFIG_INFUSE_MODEM_MONITOR_DNS_FAILURE_TIMEOUT_SEC + 1));
+	zassert_equal(-EAGAIN, rc);
+
+	/* Failed DNS query starts the timeout, later failures don't extend it */
+	lte_modem_monitor_dns_result(false);
+	k_sleep(K_SECONDS(CONFIG_INFUSE_MODEM_MONITOR_DNS_FAILURE_TIMEOUT_SEC - 2));
+	lte_modem_monitor_dns_result(false);
+	rc = k_sem_take(&reboot_request, K_SECONDS(3));
+	zassert_equal(0, rc);
+
+	/* Answered DNS query cancels the timeout */
+	lte_modem_monitor_dns_result(false);
+	k_sleep(K_SECONDS(1));
+	lte_modem_monitor_dns_result(true);
+	rc = k_sem_take(&reboot_request,
+			K_SECONDS(CONFIG_INFUSE_MODEM_MONITOR_DNS_FAILURE_TIMEOUT_SEC + 1));
+	zassert_equal(-EAGAIN, rc);
+
+	/* Losing registration cancels the timeout */
+	lte_modem_monitor_dns_result(false);
+	k_sleep(K_SECONDS(1));
+	nrf_modem_lib_sim_send_at("+CEREG: 2,\"702A\",\"08C3BD0C\",7\r\n");
+	rc = k_sem_take(&reboot_request,
+			K_SECONDS(CONFIG_INFUSE_MODEM_MONITOR_DNS_FAILURE_TIMEOUT_SEC + 1));
+	zassert_equal(-EAGAIN, rc);
+	zassert_true(net_if_ipv4_addr_rm(iface, (struct in_addr *)&ipv4_addr));
+	rc = net_if_down(iface);
+	zassert_equal(0, rc);
+
 	/* Changing APN configuration should request a reboot */
 	memcpy(pdp_config.apn.value, "upd", 3);
 	zassert_equal(-EBUSY, k_sem_take(&reboot_request, K_NO_WAIT));

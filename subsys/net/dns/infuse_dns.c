@@ -31,6 +31,34 @@ static void dns_result_display(struct net_sockaddr *addr, const char *host, uint
 	}
 }
 
+static void dns_result_report(int rc)
+{
+#ifdef CONFIG_INFUSE_MODEM_MONITOR
+	switch (rc) {
+	case 0:
+	case DNS_EAI_NONAME:
+	case DNS_EAI_NODATA:
+	case DNS_EAI_INPROGRESS:
+	case DNS_EAI_ALLDONE:
+		/* DNS server answered the query (async results and completion included) */
+		lte_modem_monitor_dns_result(true);
+		break;
+	case DNS_EAI_AGAIN:
+	case DNS_EAI_FAIL:
+	case DNS_EAI_SYSTEM:
+	case DNS_EAI_CANCELED:
+		/* No answer received from the DNS server */
+		lte_modem_monitor_dns_result(false);
+		break;
+	default:
+		/* Local error, says nothing about the network */
+		break;
+	}
+#else
+	ARG_UNUSED(rc);
+#endif /* CONFIG_INFUSE_MODEM_MONITOR */
+}
+
 static void sockaddr_port_assign(struct net_sockaddr *addr, uint16_t port)
 {
 #ifdef CONFIG_NET_IPV4
@@ -73,6 +101,7 @@ int infuse_sync_dns(const char *host, uint16_t port, int family, int socktype,
 
 	/* Perform DNS query */
 	rc = zsock_getaddrinfo(host, NULL, &hints, &res);
+	dns_result_report(rc);
 	if (rc < 0) {
 		LOG_WRN("%s -> Lookup failed (%d, %d)", host, rc, errno);
 #ifdef CONFIG_DNS_RESOLVER
@@ -104,6 +133,8 @@ static void dns_result_cb(enum dns_resolve_status status, struct dns_addrinfo *i
 {
 	struct infuse_async_dns_context *context = user_data;
 	int rc;
+
+	dns_result_report(status);
 
 	switch (status) {
 	case DNS_EAI_NODATA:
