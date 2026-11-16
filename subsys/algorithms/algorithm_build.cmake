@@ -125,7 +125,7 @@ function(algorithm_generate_targets
   cmake_parse_arguments(ARG
     "NRF_EDGEAI"
     "OUTPUT_BASE"
-    "SOURCES;INCLUDES"
+    "SOURCES;INCLUDES;DEPENDS"
     ${ARGN}
   )
 
@@ -167,6 +167,9 @@ function(algorithm_generate_targets
 
       set(obj_target ${target_name}_objects)
       add_library(${obj_target} OBJECT ${ARG_SOURCES})
+      if(ARG_DEPENDS)
+        add_dependencies(${obj_target} ${ARG_DEPENDS})
+      endif()
       target_compile_options(${obj_target} PRIVATE
         ${CFLAGS}
         "-mfloat-abi=${FP_MODE}"
