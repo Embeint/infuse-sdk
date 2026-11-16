@@ -316,11 +316,20 @@ ZTEST(epacket_udp, test_udp_bad_dns)
 	/* Turn on the interface */
 	conn_mgr_all_if_up(true);
 
-	/* Interface should not report ready */
-	zassert_equal(-EAGAIN, k_sem_take(&if_state_change, K_MSEC(3500)));
+	/* Interface should not report ready. DNS retries at roughly 0, 1, 3, 7 and 15 seconds
+	 * as the backoff doubles.
+	 */
+	zassert_equal(-EAGAIN, k_sem_take(&if_state_change, K_SECONDS(10)));
 
 	/* Fix the URL */
 	kv_store_write(KV_KEY_EPACKET_UDP_URL, &udp_url_default, sizeof(udp_url_default));
+
+	/* Connection not restored until the next retry */
+	zassert_equal(-EAGAIN, k_sem_take(&if_state_change, K_SECONDS(3)));
+
+	/* Resetting L4 connectivity resets the backoff */
+	conn_mgr_all_if_down(false);
+	conn_mgr_all_if_up(true);
 
 	/* Connection should be good */
 	zassert_equal(0, k_sem_take(&if_state_change, K_MSEC(1500)));
