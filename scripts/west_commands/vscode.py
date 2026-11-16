@@ -359,9 +359,21 @@ class vscode(WestCommand):
             ]
 
     def _jlink_device_name(self, runners_yaml):
-        for arg in runners_yaml["args"]["jlink"]:
+        for arg in runners_yaml["args"].get("jlink", []):
             if arg.startswith("--device="):
                 return arg.removeprefix("--device=")
+        return None
+
+    def _kconfig_soc(self, build_dir: pathlib.Path):
+        if build_dir.parts[-1] == "tfm":
+            build_dir = build_dir.parent
+        config = build_dir / "zephyr" / ".config"
+        if not config.exists():
+            return None
+        with config.open("r", encoding="utf-8") as f:
+            for line in f:
+                if line.startswith("CONFIG_SOC="):
+                    return line.split("=", 1)[1].strip().strip('"')
         return None
 
     def _jlink_device(self, runners_yaml):
@@ -442,8 +454,10 @@ class vscode(WestCommand):
         launch["configurations"][0]["rtos"] = "Zephyr"
         launch["configurations"][1]["rtos"] = "Zephyr"
 
-        if device := self._jlink_device_name(runners_yaml):
-            svd_path = self._openocd_svd_search(vscode_folder, device.lower())
+        device = self._jlink_device_name(runners_yaml) or self._kconfig_soc(build_dir)
+        if device:
+            # Strip trailing wildcard characters from names like "stm32u585xx"
+            svd_path = self._openocd_svd_search(vscode_folder, device.lower().rstrip("x"))
             if svd_path is not None:
                 launch["configurations"][0]["svdFile"] = svd_path
                 launch["configurations"][1]["svdFile"] = svd_path
