@@ -23,6 +23,9 @@
 /* Prefer IPv4 servers, unless IPv4 is not enabled */
 #define SNTP_FAMILY (IS_ENABLED(CONFIG_NET_IPV4) ? NET_AF_INET : NET_AF_INET6)
 
+/* Retry period doubles on each failure until it is at least the maximum */
+#define SNTP_RETRY_BACKOFF_MAX_MS (60 * MSEC_PER_SEC)
+
 enum sntp_query_state {
 	/* No query running */
 	QUERY_IDLE,
@@ -58,11 +61,26 @@ NET_SOCKET_SERVICE_SYNC_DEFINE_STATIC(service_auto_sntp, sntp_service_handler, 1
 
 LOG_MODULE_REGISTER(sntp_auto, CONFIG_SNTP_AUTO_LOG_LEVEL);
 
+static uint32_t sntp_retry_delay_ms(void)
+{
+	uint32_t delay = CONFIG_SNTP_AUTO_RETRY_PERIOD_MS;
+
+	/* Double the retry period for each consecutive failure after the first */
+	for (int i = 1; (i < sntp_failures) && (delay < SNTP_RETRY_BACKOFF_MAX_MS); i++) {
+		delay *= 2;
+	}
+	return delay;
+}
+
 static void sntp_error_handle(void)
 {
+	uint32_t delay;
+
 	if (++sntp_failures < CONFIG_SNTP_AUTO_RETRY_LIMIT) {
-		/* Failed to perform SNTP update, retry shortly */
-		k_work_reschedule(&sntp_worker, K_MSEC(CONFIG_SNTP_AUTO_RETRY_PERIOD_MS));
+		/* Failed to perform SNTP update, retry after the backoff period */
+		delay = sntp_retry_delay_ms();
+		LOG_INF("Retrying SNTP query in %u ms", delay);
+		k_work_reschedule(&sntp_worker, K_MSEC(delay));
 		return;
 	}
 
