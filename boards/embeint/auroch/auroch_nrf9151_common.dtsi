@@ -177,7 +177,6 @@
 		mppt-ratio = <81>;
 		vac-ovp = <26>;
 		input-current-limit = <999>;
-		v-in-dpm = <3000>;
 		acdrv1-en;
 		acdrv2-en;
 
