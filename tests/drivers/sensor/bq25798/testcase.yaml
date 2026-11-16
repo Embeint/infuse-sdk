@@ -1,0 +1,17 @@
+common:
+  tags:
+    - drivers
+    - sensor
+    - bq25798
+  platform_allow:
+    - native_sim
+    - qemu_cortex_m3
+  integration_platforms:
+    - native_sim
+    - qemu_cortex_m3
+tests:
+  drivers.sensor.bq25798: {}
+  drivers.sensor.bq25798.no_status_retry:
+    extra_configs:
+      - CONFIG_BQ25798_FETCH_STATUS_CHECKS=n
+      - CONFIG_BQ25798_FETCH_POOR_SOURCE_RETRY=n
