@@ -342,11 +342,12 @@ K_THREAD_DEFINE(button_thread, 512, button_validator, NULL, NULL, NULL, 5, 0, 0)
 
 #ifdef CONFIG_INFUSE_VALIDATION_LEDS_GPIO
 #define GET_GPIO_SPEC(gpio_spec) GPIO_DT_SPEC_GET(gpio_spec, gpios)
+#define GPIO_LEDS_NODE           DT_COMPAT_GET_ANY_STATUS_OKAY(gpio_leds)
 static int leds_validator(void *a, void *b, void *c)
 {
 	/* clang-format off */
 	const struct gpio_dt_spec leds[] = {
-		DT_FOREACH_CHILD_STATUS_OKAY_SEP(DT_PATH(leds), GET_GPIO_SPEC, (,))};
+		DT_FOREACH_CHILD_STATUS_OKAY_SEP(GPIO_LEDS_NODE, GET_GPIO_SPEC, (,))};
 	/* clang-format on */
 
 	atomic_inc(&validators_registered);
