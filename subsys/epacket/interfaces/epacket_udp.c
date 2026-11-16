@@ -51,11 +51,16 @@
 
 #define CLAIM_TIMEOUT K_SECONDS(CONFIG_EPACKET_INTERFACE_UDP_RX_BUFFER_CLAIM_TIMEOUT)
 
+/* DNS retry period doubles on each failure until it is at least the maximum */
+#define DNS_BACKOFF_MIN_SEC 1
+#define DNS_BACKOFF_MAX_SEC 60
+
 enum {
 	UDP_STATE_L4_CONNECTED = BIT(0),
 	UDP_STATE_VALID_DNS = BIT(1),
 	UDP_STATE_SOCKET_OPEN = BIT(2),
 	UDP_STATE_CLIENTS_NOTIFIED_UP = BIT(3),
+	UDP_STATE_L4_RESET = BIT(4),
 };
 
 struct udp_state {
@@ -168,6 +173,8 @@ static void l4_event_handler(struct net_mgmt_event_callback *cb, uint64_t event,
 		k_event_post(&udp_state.state, UDP_STATE_L4_CONNECTED);
 	} else if (event == NET_EVENT_L4_DISCONNECTED) {
 		k_event_clear(&udp_state.state, UDP_STATE_L4_CONNECTED);
+		/* Reset DNS retry backoff (and abort any pending wait) */
+		k_event_post(&udp_state.state, UDP_STATE_L4_RESET);
 		cleanup_interface(DEVICE_DT_GET(DT_DRV_INST(0)));
 		LOG_INF("Network disconnected");
 	}
@@ -266,6 +273,7 @@ static int epacket_udp_loop(void *a, void *b, void *c)
 			   USEC_PER_MSEC,
 	};
 	struct epacket_interface_cb *cb;
+	uint32_t dns_backoff = DNS_BACKOFF_MIN_SEC;
 	bool first_connection = true;
 	int rc;
 
@@ -275,6 +283,10 @@ static int epacket_udp_loop(void *a, void *b, void *c)
 	for (;;) {
 		/* Wait until we have network connectivity */
 		k_event_wait(&udp_state.state, UDP_STATE_L4_CONNECTED, false, K_FOREVER);
+		if (k_event_clear(&udp_state.state, UDP_STATE_L4_RESET)) {
+			/* L4 connectivity was reset, retry DNS immediately on failure */
+			dns_backoff = DNS_BACKOFF_MIN_SEC;
+		}
 
 		/* Get IP address of UDP server */
 		if (!k_event_test(&udp_state.state, UDP_STATE_VALID_DNS)) {
@@ -282,9 +294,17 @@ static int epacket_udp_loop(void *a, void *b, void *c)
 			rc = epacket_udp_dns_query();
 			if (rc < 0) {
 				MEMFAULT_METRIC_ADD(epacket_udp_dns_failure, 1);
-				LOG_ERR("DNS lookup failed (%d)", rc);
-				goto socket_error;
+				LOG_ERR("DNS lookup failed (%d), retrying in %u sec", rc,
+					dns_backoff);
+				/* Wait before retrying, unless L4 connectivity is reset */
+				(void)k_event_wait(&udp_state.state, UDP_STATE_L4_RESET, false,
+						   K_SECONDS(dns_backoff));
+				if (dns_backoff < DNS_BACKOFF_MAX_SEC) {
+					dns_backoff *= 2;
+				}
+				continue;
 			}
+			dns_backoff = DNS_BACKOFF_MIN_SEC;
 			k_event_post(&udp_state.state, UDP_STATE_VALID_DNS);
 		}
 
