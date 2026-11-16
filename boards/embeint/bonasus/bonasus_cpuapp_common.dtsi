@@ -231,7 +231,7 @@
 		/* 2A max charge current, 80mA termination */
 		constant-charge-current-max-microamp = <2000000>;
 		charge-term-current-microamp = <80000>;
-		v-in-dpm = <3000>;
+		v-in-dpm = <3600>;
 		acdrv1-en;
 		acdrv2-en;
 
