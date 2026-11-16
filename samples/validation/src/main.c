@@ -346,7 +346,7 @@ static int leds_validator(void *a, void *b, void *c)
 {
 	/* clang-format off */
 	const struct gpio_dt_spec leds[] = {
-		DT_FOREACH_CHILD_STATUS_OKAY_SEP(DT_PATH(leds), GET_GPIO_SPEC, (,))};
+		DT_FOREACH_CHILD_STATUS_OKAY_SEP(DT_COMPAT_GET_ANY_STATUS_OKAY(gpio_leds), GET_GPIO_SPEC, (,))};
 	/* clang-format on */
 
 	atomic_inc(&validators_registered);
