@@ -137,10 +137,22 @@ ZTEST(infuse_littlefs, test_create_duplicate)
 	zassert_equal(0, rc);
 
 	/* Try to create it again */
-	rc = infuse_littlefs_file_create(INFUSE_LFS_FOLDER_GENERAL, 3, &meta);
+	struct infuse_littlefs_metadata meta_dup;
+
+	memset(&meta_dup, 0xAA, sizeof(meta_dup));
+	rc = infuse_littlefs_file_create(INFUSE_LFS_FOLDER_GENERAL, 3, &meta_dup);
 	zassert_equal(-EEXIST, rc);
 	rc = infuse_littlefs_file_close();
 	zassert_equal(-EINVAL, rc);
+
+	/* Opening the file must not write its metadata through the failed create's pointer */
+	rc = infuse_littlefs_file_open(INFUSE_LFS_FOLDER_GENERAL, 3);
+	zassert_equal(0, rc);
+	rc = infuse_littlefs_file_close();
+	zassert_equal(0, rc);
+	for (int i = 0; i < sizeof(meta_dup); i++) {
+		zassert_equal(0xAA, ((uint8_t *)&meta_dup)[i]);
+	}
 }
 
 static void file_created(enum infuse_littlefs_folder folder, uint32_t file,
