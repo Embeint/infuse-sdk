@@ -91,3 +91,9 @@ pax194x: pax1941@10 {
 	fsr-vbus-channel-1 = "0V to 9V";
 	fsr-vsense-channel-1 = "-100mV to 100mV";
 };
+
+test_i2c_iis328dq: iis328dq@11 {
+	compatible = "st,iis328dq";
+	reg = <0x11>;
+	int1-gpios = <&test_gpio 0 0>;
+};

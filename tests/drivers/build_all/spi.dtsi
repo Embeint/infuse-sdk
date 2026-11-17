@@ -48,3 +48,11 @@ test_spi_lsm6dso: lsm6dso@4 {
 	spi-max-frequency = <0>;
 	irq-gpios = <&test_gpio 0 0>;
 };
+
+test_spi_iis328dq: iis328dq@5 {
+	compatible = "st,iis328dq";
+	reg = <0x5>;
+	spi-max-frequency = <0>;
+	int2-gpios = <&test_gpio 0 0>;
+	drdy-int-pad = <2>;
+};
