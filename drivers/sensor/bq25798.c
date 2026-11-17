@@ -229,6 +229,7 @@ static int bq25798_channel_get(const struct device *dev, enum sensor_channel cha
 		val_signed = (int16_t)sys_be16_to_cpu(data->adc_regs.tdie);
 		/* 0.5 deg step size */
 		rc = sensor_value_from_milli(val, 500 * val_signed);
+		break;
 	default:
 		rc = -ENOTSUP;
 	}
