@@ -19,7 +19,8 @@ bool gnss_run_to_fix_timeout(const struct task_gnss_args *args,
 {
 	const struct schedule_struct_task_gnss_plateau_args *p_args =
 		&args->mode.run_to_fix.fix_plateau;
-	int32_t required_next_accuracy;
+	uint32_t required_improvement;
+	uint32_t required_next_accuracy;
 	bool plateau_valid;
 
 	if (args->mode.run_to_fix.any_fix_timeout) {
@@ -43,8 +44,13 @@ bool gnss_run_to_fix_timeout(const struct task_gnss_args *args,
 	}
 
 	/* Accuracy must improve by at least `min_accuracy_improvement_m` */
-	required_next_accuracy =
-		state->plateau_accuracy - (1000 * p_args->min_accuracy_improvement_m);
+	required_improvement = 1000 * (uint32_t)p_args->min_accuracy_improvement_m;
+	if (state->plateau_accuracy > required_improvement) {
+		required_next_accuracy = state->plateau_accuracy - required_improvement;
+	} else {
+		/* Can't improve by the required amount */
+		required_next_accuracy = 0;
+	}
 
 	if (h_acc <= required_next_accuracy) {
 		/* Accuracy improved, reset timeout and update current accuracy */
