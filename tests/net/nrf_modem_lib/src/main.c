@@ -493,6 +493,19 @@ ZTEST(infuse_nrf_modem_monitor, test_integration)
 	rc = k_sem_take(&reboot_request,
 			K_SECONDS(CONFIG_INFUSE_MODEM_MONITOR_DNS_FAILURE_TIMEOUT_SEC + 1));
 	zassert_equal(-EAGAIN, rc);
+
+	/* Registration regained while the interface stayed connected, no timeout */
+	nrf_modem_lib_sim_send_at(
+		"+CEREG: 5,\"702A\",\"08C3BD0C\",7,,,\"00001000\",\"00101101\"\r\n");
+	k_sleep(K_SECONDS(1));
+	lte_modem_monitor_network_state(&net_state);
+	zassert_equal(CELLULAR_REGISTRATION_REGISTERED_ROAMING, net_state.nw_reg_status);
+	rc = k_sem_take(&reboot_request,
+			K_SECONDS(CONFIG_INFUSE_MODEM_MONITOR_CONNECTIVITY_TIMEOUT_SEC + 1));
+	zassert_equal(-EAGAIN, rc);
+	nrf_modem_lib_sim_send_at("+CEREG: 2,\"702A\",\"08C3BD0C\",7\r\n");
+	k_sleep(K_SECONDS(1));
+
 	zassert_true(net_if_ipv4_addr_rm(iface, (struct in_addr *)&ipv4_addr));
 	rc = net_if_down(iface);
 	zassert_equal(0, rc);
