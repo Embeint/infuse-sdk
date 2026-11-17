@@ -182,12 +182,22 @@ static int validation_network_connect(struct net_if *iface, uint8_t flags)
 	struct wifi_connect_req_params params = {
 		.ssid = (const uint8_t *)CONFIG_INFUSE_VALIDATE_WIFI_SSID,
 		.ssid_length = strlen(CONFIG_INFUSE_VALIDATE_WIFI_SSID),
+#ifdef CONFIG_WIFI_MORSEMICRO
+		.sae_password = (const uint8_t *)CONFIG_INFUSE_VALIDATE_WIFI_PSK,
+		.sae_password_length = strlen(CONFIG_INFUSE_VALIDATE_WIFI_PSK),
+		.security = WIFI_SECURITY_TYPE_SAE,
+		/* WPA3-SAE mandates protected management frames */
+		.mfp = WIFI_MFP_REQUIRED,
+		.band = WIFI_FREQ_BAND_SUB_1_GHZ,
+		.timeout = 20,
+#else
 		.psk = (const uint8_t *)CONFIG_INFUSE_VALIDATE_WIFI_PSK,
 		.psk_length = strlen(CONFIG_INFUSE_VALIDATE_WIFI_PSK),
 		.security = WIFI_SECURITY_TYPE_PSK,
-		.channel = WIFI_CHANNEL_ANY,
 		.band = WIFI_FREQ_BAND_2_4_GHZ,
 		.timeout = 10,
+#endif /* CONFIG_WIFI_MORSEMICRO */
+		.channel = WIFI_CHANNEL_ANY,
 	};
 	struct net_mgmt_event_callback l4_cb;
 	struct wifi_iface_status wifi_status;
