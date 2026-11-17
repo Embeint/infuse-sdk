@@ -65,8 +65,12 @@ static int validation_mac_address(struct net_if *iface)
 
 static void scan_result_handle(const struct wifi_scan_result *entry)
 {
-	VALIDATION_REPORT_INFO(TEST, "Band %s Channel %3d RSSI %3d dBm SSID %s ",
-			       band_to_str[entry->band], entry->channel, entry->rssi, entry->ssid);
+	/* Drivers can report bands outside the table (e.g. WIFI_FREQ_BAND_UNKNOWN for HaLow) */
+	const char *band =
+		entry->band < ARRAY_SIZE(band_to_str) ? band_to_str[entry->band] : "UNKNOWN";
+
+	VALIDATION_REPORT_INFO(TEST, "Band %s Channel %3d RSSI %3d dBm SSID %s ", band,
+			       entry->channel, entry->rssi, entry->ssid);
 }
 
 static void scan_event_handler(struct net_mgmt_event_callback *cb, uint64_t mgmt_event,
