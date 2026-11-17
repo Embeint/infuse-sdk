@@ -35,6 +35,7 @@ static const char *const band_to_str[] = {
 	[WIFI_FREQ_BAND_2_4_GHZ] = "2.4 GHz",
 	[WIFI_FREQ_BAND_5_GHZ] = "  5 GHz",
 	[WIFI_FREQ_BAND_6_GHZ] = "  6 GHz",
+	[WIFI_FREQ_BAND_SUB_1_GHZ] = "Sub 1 GHz",
 };
 
 static K_SEM_DEFINE(l4_connected, 0, 1);
