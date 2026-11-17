@@ -69,8 +69,12 @@ static void scan_result_handle(const struct wifi_scan_result *entry)
 	const char *band =
 		entry->band < ARRAY_SIZE(band_to_str) ? band_to_str[entry->band] : "UNKNOWN";
 
-	VALIDATION_REPORT_INFO(TEST, "Band %s Channel %3d RSSI %3d dBm SSID %s ", band,
-			       entry->channel, entry->rssi, entry->ssid);
+	VALIDATION_REPORT_INFO(TEST,
+			       "Band %s Channel %3d RSSI %3d dBm BSSID "
+			       "%02x:%02x:%02x:%02x:%02x:%02x SSID %s ",
+			       band, entry->channel, entry->rssi, entry->mac[0], entry->mac[1],
+			       entry->mac[2], entry->mac[3], entry->mac[4], entry->mac[5],
+			       entry->ssid);
 }
 
 static void scan_event_handler(struct net_mgmt_event_callback *cb, uint64_t mgmt_event,
