@@ -331,7 +331,8 @@ int lis2dw12_data_read(const struct device *dev, struct imu_sample_array *sample
 	if (rc < 0) {
 		return rc;
 	}
-	extra_frames = acc_samples - data->fifo_threshold;
+	/* Fewer frames than the threshold can be read (e.g. after a FIFO reset) */
+	extra_frames = acc_samples > data->fifo_threshold ? acc_samples - data->fifo_threshold : 0;
 
 	/* Validate there is enough space for samples */
 	if (acc_samples > max_samples) {
