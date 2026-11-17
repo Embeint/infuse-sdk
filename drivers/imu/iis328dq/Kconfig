@@ -1,0 +1,47 @@
+# IIS328DQ 3 Axis Accelerometer configuration
+
+# Copyright (c) 2026 Embeint Holdings Pty Ltd
+# SPDX-License-Identifier: Apache-2.0
+
+DT_COMPAT_ST_IIS328DQ := st,iis328dq
+
+menuconfig INFUSE_IMU_IIS328DQ
+	bool "IIS328DQ Inertial measurement unit"
+	default y
+	depends on DT_HAS_ST_IIS328DQ_ENABLED
+	select I2C if $(dt_compat_on_bus,$(DT_COMPAT_ST_IIS328DQ),i2c)
+	select SPI if $(dt_compat_on_bus,$(DT_COMPAT_ST_IIS328DQ),spi)
+	help
+	  Enable driver for IIS328DQ IMU sensor. The device has no hardware FIFO,
+	  samples are buffered in software from the data ready interrupt.
+
+if INFUSE_IMU_IIS328DQ
+
+# Zephyr and Infuse driver conflict
+configdefault IIS328DQ
+	default n
+
+config IIS328DQ_BUS_I2C
+	bool
+	default y
+	depends on $(dt_compat_on_bus,$(DT_COMPAT_ST_IIS328DQ),i2c)
+
+config IIS328DQ_BUS_SPI
+	bool
+	default y
+	depends on $(dt_compat_on_bus,$(DT_COMPAT_ST_IIS328DQ),spi)
+
+config INFUSE_IMU_IIS328DQ_THREAD_STACK_SIZE
+	int "Stack size of the sample reading thread"
+	default 1024
+
+config INFUSE_IMU_IIS328DQ_THREAD_PRIORITY
+	int "Priority of the sample reading thread"
+	default -2
+	help
+	  The thread must run within one sample period of the data ready interrupt
+	  to avoid samples being overwritten. The thread only runs briefly to read
+	  each sample, so defaults to a cooperative priority to avoid being starved
+	  by long running computation in other threads.
+
+endif # INFUSE_IMU_IIS328DQ
