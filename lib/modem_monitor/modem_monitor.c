@@ -52,6 +52,11 @@ static void connectivity_timeout(struct k_work *work)
 		LOG_DBG("Timeout expired but connectivity not expected");
 		return;
 	}
+	if (atomic_test_bit(&generic_monitor.flags, FLAGS_L4_CONNECTED)) {
+		/* Interface connected before the timeout could be cancelled */
+		LOG_DBG("Timeout expired but interface connected");
+		return;
+	}
 
 	/* Interface has failed to gain IP connectivity */
 	connectivity_failed((uintptr_t)connectivity_timeout,
@@ -99,6 +104,13 @@ void modem_monitor_ip_connectivity_expected(bool expected)
 	if (expected) {
 		LOG_DBG("IP connectivity expected");
 		atomic_set_bit(&generic_monitor.flags, FLAGS_IP_CONN_EXPECTED);
+		if (atomic_test_bit(&generic_monitor.flags, FLAGS_L4_CONNECTED)) {
+			/* Interface stayed up while registration was briefly lost, no new
+			 * L4_IF_CONNECTED event will arrive to cancel the timeout.
+			 */
+			LOG_DBG("Interface already connected");
+			return;
+		}
 		k_work_reschedule(&generic_monitor.connectivity_timeout, CONNECTIVITY_TIMEOUT);
 	} else {
 		LOG_DBG("IP connectivity not expected");
