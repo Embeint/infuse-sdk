@@ -65,7 +65,8 @@ static void message_dispatch(struct emul_data *data, uint8_t msg_class, uint8_t 
 		 */
 		notify = (curr->message_class == UBX_MSG_CLASS_WILDCARD) ||
 			 ((msg_class == curr->message_class) &&
-			  ((msg_id == UBX_MSG_ID_WILDCARD) || (msg_id == curr->message_id)));
+			  ((curr->message_id == UBX_MSG_ID_WILDCARD) ||
+			   (msg_id == curr->message_id)));
 
 		if (notify) {
 			/* Remove from handler list if a single response */

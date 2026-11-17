@@ -121,7 +121,7 @@ static void ubx_msg_handle_non_ack(struct ubx_modem_data *modem, struct ubx_fram
 		 */
 		notify = (curr->message_class == UBX_MSG_CLASS_WILDCARD) ||
 			 ((frame->message_class == curr->message_class) &&
-			  ((frame->message_id == UBX_MSG_ID_WILDCARD) ||
+			  ((curr->message_id == UBX_MSG_ID_WILDCARD) ||
 			   (frame->message_id == curr->message_id)));
 
 		if (notify) {
