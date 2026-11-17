@@ -38,7 +38,7 @@ static void kv_update_log_value_changed(uint16_t key, const void *data, size_t d
 	}
 
 	(void)tdf_data_logger_log(kv_update_log_mask, TDF_KVS_VALUE_CHANGED,
-				  sizeof(uint16_t) + data_len, epoch_time_now(), &tdf);
+				  sizeof(uint16_t) + to_log, epoch_time_now(), &tdf);
 }
 
 void auto_kv_update_log_configure(uint8_t tdf_logger_mask)
