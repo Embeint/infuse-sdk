@@ -354,31 +354,57 @@ static int button_validator(void *a, void *b, void *c)
 K_THREAD_DEFINE(button_thread, 512, button_validator, NULL, NULL, NULL, 5, 0, 0);
 #endif /* CONFIG_INFUSE_VALIDATION_BUTTON_REQUIRE_MANUAL */
 
-#ifdef CONFIG_INFUSE_VALIDATION_LEDS_GPIO
+#if defined(CONFIG_INFUSE_VALIDATION_LEDS_GPIO) || defined(CONFIG_INFUSE_VALIDATION_LEDS_PWM)
 #define GET_GPIO_SPEC(gpio_spec) GPIO_DT_SPEC_GET(gpio_spec, gpios)
+#define GET_PWM_SPEC(pwm_spec)   PWM_DT_SPEC_GET(pwm_spec)
 #define GPIO_LEDS_NODE           DT_COMPAT_GET_ANY_STATUS_OKAY(gpio_leds)
+#define PWM_LEDS_NODE            DT_COMPAT_GET_ANY_STATUS_OKAY(pwm_leds)
 static int leds_validator(void *a, void *b, void *c)
 {
+	/* Register all validators up front so the main thread doesn't complete early */
+	if (IS_ENABLED(CONFIG_INFUSE_VALIDATION_LEDS_GPIO)) {
+		atomic_inc(&validators_registered);
+	}
+	if (IS_ENABLED(CONFIG_INFUSE_VALIDATION_LEDS_PWM)) {
+		atomic_inc(&validators_registered);
+	}
+
+#ifdef CONFIG_INFUSE_VALIDATION_LEDS_GPIO
 	/* clang-format off */
-	const struct gpio_dt_spec leds[] = {
+	const struct gpio_dt_spec gpio_leds[] = {
 		DT_FOREACH_CHILD_STATUS_OKAY_SEP(GPIO_LEDS_NODE, GET_GPIO_SPEC, (,))};
 	/* clang-format on */
 
-	atomic_inc(&validators_registered);
-
-	if (infuse_validation_leds_gpio(leds, ARRAY_SIZE(leds), VALIDATION_LEDS_OBSERVE_ONLY) ==
-	    0) {
+	if (infuse_validation_leds_gpio(gpio_leds, ARRAY_SIZE(gpio_leds),
+					VALIDATION_LEDS_OBSERVE_ONLY) == 0) {
 		atomic_inc(&validators_passed);
 	} else {
 		atomic_inc(&validators_failed);
 	}
 	atomic_inc(&validators_complete);
+#endif /* CONFIG_INFUSE_VALIDATION_LEDS_GPIO */
+
+#ifdef CONFIG_INFUSE_VALIDATION_LEDS_PWM
+	/* clang-format off */
+	const struct pwm_dt_spec pwm_leds[] = {
+		DT_FOREACH_CHILD_STATUS_OKAY_SEP(PWM_LEDS_NODE, GET_PWM_SPEC, (,))};
+	/* clang-format on */
+
+	if (infuse_validation_leds_pwm(pwm_leds, ARRAY_SIZE(pwm_leds),
+				       VALIDATION_LEDS_OBSERVE_ONLY) == 0) {
+		atomic_inc(&validators_passed);
+	} else {
+		atomic_inc(&validators_failed);
+	}
+	atomic_inc(&validators_complete);
+#endif /* CONFIG_INFUSE_VALIDATION_LEDS_PWM */
+
 	k_sem_give(&task_complete);
 	return 0;
 }
 
 K_THREAD_DEFINE(leds_thread, 1024, leds_validator, NULL, NULL, NULL, 5, 0, 0);
-#endif /* CONFIG_INFUSE_VALIDATION_LEDS_GPIO */
+#endif /* CONFIG_INFUSE_VALIDATION_LEDS_GPIO || CONFIG_INFUSE_VALIDATION_LEDS_PWM */
 
 #ifdef CONFIG_INFUSE_VALIDATION_LEDS_CONTROLLER
 static int leds_validator(void *a, void *b, void *c)

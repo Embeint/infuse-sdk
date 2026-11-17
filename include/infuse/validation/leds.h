@@ -16,6 +16,7 @@
 #include <zephyr/device.h>
 #include <zephyr/drivers/gpio.h>
 #include <zephyr/drivers/led.h>
+#include <zephyr/drivers/pwm.h>
 #include <zephyr/sys/util.h>
 
 #ifdef __cplusplus
@@ -43,6 +44,20 @@ enum {
  * @retval -errno On failure
  */
 int infuse_validation_leds_gpio(const struct gpio_dt_spec *leds, uint8_t num_leds, uint8_t flags);
+
+/**
+ * @brief Validate PWM LED devices
+ *
+ * Each LED is driven fully on (pulse width equal to the period) and then off.
+ *
+ * @param leds leds PWM specs to test
+ * @param num_leds number of LEDs in @p leds
+ * @param flags Validation tests to run
+ *
+ * @retval 0 On success
+ * @retval -errno On failure
+ */
+int infuse_validation_leds_pwm(const struct pwm_dt_spec *leds, uint8_t num_leds, uint8_t flags);
 
 /**
  * @brief Validate LED devices
