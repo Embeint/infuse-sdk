@@ -221,6 +221,9 @@ int infuse_littlefs_file_open(enum infuse_littlefs_folder folder, uint32_t file)
 
 	lfs_state.open.folder = folder;
 	lfs_state.open.file = file;
+	/* Metadata is not read back on open */
+	lfs_state.open.infuse_attr.buffer = NULL;
+	lfs_state.open.infuse_attr.size = 0;
 
 	path = file_path_construct(folder, file);
 	LOG_DBG("Opening file '%s'", path);
@@ -312,6 +315,9 @@ int infuse_littlefs_file_create(enum infuse_littlefs_folder folder, uint32_t fil
 	return 0;
 
 error:
+	/* Don't leave the attribute pointing at the caller's metadata */
+	lfs_state.open.infuse_attr.buffer = NULL;
+	lfs_state.open.infuse_attr.size = 0;
 	k_mutex_unlock(&lfs_state.access);
 	return lfs_to_errno(rc);
 }
