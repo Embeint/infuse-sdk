@@ -45,7 +45,8 @@ uint16_t math_sqrt32(uint32_t x)
 
 uint32_t math_sqrt64(uint64_t x)
 {
-	uint32_t rem = 0, root = 0;
+	/* `root` holds twice the partial result, so needs more than 32 bits */
+	uint64_t rem = 0, root = 0;
 
 	for (int i = 64 / 2; i > 0; i--) {
 		root <<= 1;

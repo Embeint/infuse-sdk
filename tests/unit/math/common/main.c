@@ -69,6 +69,24 @@ ZTEST(infuse_math, test_sqrt64)
 		/* Jump up by a bit */
 		i = (6 * i / 5) + 3333;
 	}
+
+	/* Beyond the precision of double, check r^2 <= x < (r + 1)^2 */
+	i = 1llu << 52;
+	while (true) {
+		uint64_t r = math_sqrt64(i);
+		uint64_t n = r + 1;
+
+		zassert_true(r * r <= i, "%llu", i);
+		zassert_true(n > i / n, "%llu", i);
+
+		if (i > (UINT64_MAX / 6)) {
+			break;
+		}
+		i = (6 * i / 5) + 3333;
+	}
+	zassert_equal(1518500249, math_sqrt64(1llu << 61));
+	zassert_equal(UINT32_MAX, math_sqrt64(UINT64_MAX));
+	zassert_equal(UINT32_MAX - 1, math_sqrt64(((uint64_t)UINT32_MAX * UINT32_MAX) - 1));
 }
 
 ZTEST(infuse_math, test_vector_xy_mag)
