@@ -494,7 +494,7 @@ static int gnss_configure(const struct device *gnss, const struct task_gnss_args
 		.rate = 1,
 	};
 
-	ubx_msg_simple(&msg_buf, UBX_MSG_CLASS_CFG, UBX_MSG_ID_CFG_RATE, &cfg_msg_sat,
+	ubx_msg_simple(&msg_buf, UBX_MSG_CLASS_CFG, UBX_MSG_ID_CFG_MSG, &cfg_msg_sat,
 		       sizeof(cfg_msg_sat));
 	rc = ubx_modem_send_sync_acked(modem, &msg_buf, K_MSEC(250));
 	if (rc < 0) {
