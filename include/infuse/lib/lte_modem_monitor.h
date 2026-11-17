@@ -162,6 +162,17 @@ bool lte_modem_monitor_is_at_safe(void);
 bool lte_modem_monitor_is_registered(void);
 
 /**
+ * @brief Get the current SIM card status
+ *
+ * @note The SIM card is only powered while the modem is active, so this will return
+ *       @a CELLULAR_SIM_STATUS_UNKNOWN until the modem has been enabled and has
+ *       attempted to initialise the SIM card.
+ *
+ * @return Current SIM card status
+ */
+enum cellular_sim_status lte_modem_monitor_sim_status(void);
+
+/**
  * @brief Get current network state
  *
  * @param state Network state
