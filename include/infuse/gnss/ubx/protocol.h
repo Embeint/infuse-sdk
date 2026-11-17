@@ -1208,6 +1208,28 @@ static inline void ubx_msg_prepare(struct net_buf_simple *buf, uint8_t msg_class
 }
 
 /**
+ * @brief Compute the UBX protocol checksum
+ *
+ * 8-bit Fletcher checksum over the message class, ID, length and payload.
+ *
+ * @param data Pointer to the message class field
+ * @param len Number of bytes to checksum (4 + payload length)
+ *
+ * @return CK_A in the low byte, CK_B in the high byte
+ */
+static inline uint16_t ubx_checksum(const uint8_t *data, size_t len)
+{
+	uint8_t ckA = 0;
+	uint8_t ckB = 0;
+
+	for (size_t i = 0; i < len; i++) {
+		ckA += data[i];
+		ckB += ckA;
+	}
+	return ((uint16_t)ckB << 8) | ckA;
+}
+
+/**
  * @brief Finalise a net_buf_simple to be used as a UBX protocol message
  *
  * Populates the header payload size and computes the message checksum.
@@ -1219,8 +1241,7 @@ static inline void ubx_msg_finalise(struct net_buf_simple *buf)
 	const unsigned int crc_start_idx = offsetof(struct ubx_frame, message_class);
 	struct ubx_frame *frame;
 	uint16_t payload_size;
-	uint8_t ckA = 0;
-	uint8_t ckB = 0;
+	uint16_t checksum;
 
 	frame = (void *)buf->data;
 	__ASSERT_NO_MSG(frame->preamble_sync_char_1 == UBX_PREAMBLE_SYNC_CHAR_1);
@@ -1229,14 +1250,9 @@ static inline void ubx_msg_finalise(struct net_buf_simple *buf)
 	/* Finish frame header */
 	frame->payload_size_low = payload_size;
 	frame->payload_size_high = payload_size >> 8;
-	/* Calculate frame CRC */
-	for (unsigned int i = crc_start_idx; i < buf->len; i++) {
-		ckA += buf->data[i];
-		ckB += ckA;
-	}
-	/* Append frame CRC */
-	net_buf_simple_add_u8(buf, ckA);
-	net_buf_simple_add_u8(buf, ckB);
+	/* Calculate and append frame checksum (CK_A, CK_B) */
+	checksum = ubx_checksum(buf->data + crc_start_idx, buf->len - crc_start_idx);
+	net_buf_simple_add_le16(buf, checksum);
 }
 
 /**

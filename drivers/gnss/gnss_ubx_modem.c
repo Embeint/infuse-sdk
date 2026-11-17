@@ -7,6 +7,7 @@
  */
 
 #include <zephyr/logging/log.h>
+#include <zephyr/sys/byteorder.h>
 
 #include <infuse/gnss/ubx/protocol.h>
 #include <infuse/gnss/ubx/modem.h>
@@ -169,10 +170,25 @@ static void ubx_msg_handle(struct ubx_modem_data *modem, struct ubx_frame *frame
 #endif /* CONFIG_GNSS_UBX_RAW_FRAME_HANDLER*/
 
 	if (frame->message_class == UBX_MSG_CLASS_ACK) {
+		if (payload_len != sizeof(struct ubx_msg_id_ack_ack)) {
+			LOG_WRN("RX MSG: %02X:%02X invalid length (%d)", frame->message_class,
+				frame->message_id, payload_len);
+			return;
+		}
 		ubx_msg_handle_ack(modem, frame, payload_len);
 	} else {
 		ubx_msg_handle_non_ack(modem, frame, payload_len);
 	}
+}
+
+static bool frame_checksum_valid(const struct ubx_frame *frame, uint16_t payload_len)
+{
+	/* Checksum covers class, ID, length and payload */
+	const size_t header_len = sizeof(*frame) - offsetof(struct ubx_frame, message_class);
+	const uint8_t *checksum = frame->payload_and_checksum + payload_len;
+
+	return sys_get_le16(checksum) ==
+	       ubx_checksum(&frame->message_class, header_len + payload_len);
 }
 
 static bool fifo_read_to_sync(struct ubx_modem_data *modem, struct ubx_frame *frame)
@@ -252,6 +268,15 @@ static void fifo_read_runner(struct k_work *work)
 		if (received != to_read) {
 			LOG_DBG("Waiting on %d", to_read - received);
 			return;
+		}
+
+		/* Validate frame checksum */
+		if (!frame_checksum_valid(frame, payload_len)) {
+			LOG_WRN("RX MSG: %02X:%02X invalid checksum", frame->message_class,
+				frame->message_id);
+			/* Drop the frame and search for the next sync bytes */
+			modem->rx_buffer_pending = 0;
+			continue;
 		}
 
 		LOG_DBG("RX MSG: CLS=0x%02x ID=0x%02x LEN=%d", frame->message_class,
