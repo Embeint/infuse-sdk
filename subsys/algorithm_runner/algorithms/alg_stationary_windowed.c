@@ -46,7 +46,7 @@ void algorithm_stationary_windowed_fn(const struct zbus_channel *chan,
 	magnitudes = zbus_chan_const_msg(chan);
 	one_g = imu_accelerometer_1g(magnitudes->meta.full_scale_range);
 	sample_rate = imu_sample_rate(&magnitudes->meta);
-	for (uint8_t i = 0; i < magnitudes->meta.num; i++) {
+	for (uint16_t i = 0; i < magnitudes->meta.num; i++) {
 		statistics_update(&d->stats, MIN(magnitudes->magnitudes[i], INT32_MAX));
 	}
 
