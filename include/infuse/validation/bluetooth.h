@@ -26,8 +26,10 @@ extern "C" {
 enum {
 	/** Validate that the Bluetooth stack can be enabled */
 	VALIDATION_BLUETOOTH_INIT = 0,
-	/** Transmit an advertising packet */
+	/** Transmit an extended advertising packet */
 	VALIDATION_BLUETOOTH_ADV_TX = BIT(0),
+	/** Transmit a legacy advertising packet */
+	VALIDATION_BLUETOOTH_LEGACY_ADV_TX = BIT(1),
 };
 
 /**

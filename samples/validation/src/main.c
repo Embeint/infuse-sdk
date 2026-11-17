@@ -389,11 +389,19 @@ static int leds_validator(void *a, void *b, void *c)
 K_THREAD_DEFINE(leds_thread, 1024, leds_validator, NULL, NULL, NULL, 5, 0, 0);
 #endif /* CONFIG_INFUSE_VALIDATION_LEDS_CONTROLLER */
 
-#if DT_NODE_EXISTS(DT_COMPAT_GET_ANY_STATUS_OKAY(embeint_epacket_bt_adv))
+#if CONFIG_BT
 static int bt_validator(void *a, void *b, void *c)
 {
+	uint8_t flags = VALIDATION_BLUETOOTH_INIT;
+
+#if DT_NODE_EXISTS(DT_COMPAT_GET_ANY_STATUS_OKAY(embeint_epacket_bt_adv))
+	flags |= VALIDATION_BLUETOOTH_ADV_TX;
+#else
+	flags |= VALIDATION_BLUETOOTH_LEGACY_ADV_TX;
+#endif /* DT_NODE_EXISTS(DT_COMPAT_GET_ANY_STATUS_OKAY(embeint_epacket_bt_adv)) */
+
 	atomic_inc(&validators_registered);
-	if (infuse_validation_bluetooth(VALIDATION_BLUETOOTH_ADV_TX) == 0) {
+	if (infuse_validation_bluetooth(flags) == 0) {
 		atomic_inc(&validators_passed);
 	} else {
 		atomic_inc(&validators_failed);
@@ -404,7 +412,7 @@ static int bt_validator(void *a, void *b, void *c)
 }
 
 K_THREAD_DEFINE(bt_thread, 2048, bt_validator, NULL, NULL, NULL, 5, 0, 0);
-#endif /* DT_NODE_EXISTS(DT_COMPAT_GET_ANY_STATUS_OKAY(embeint_epacket_bt_adv)) */
+#endif /* CONFIG_BT */
 
 static int validation_init(void)
 {

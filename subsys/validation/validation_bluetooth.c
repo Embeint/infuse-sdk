@@ -17,6 +17,13 @@
 
 #define TEST "BT"
 
+#define EPACKET_BT_ADV_NODE DT_COMPAT_GET_ANY_STATUS_OKAY(embeint_epacket_bt_adv)
+
+/* Duration to transmit legacy advertising packets for */
+#define LEGACY_ADV_DURATION K_MSEC(500)
+
+#if DT_NODE_EXISTS(EPACKET_BT_ADV_NODE)
+
 static K_SEM_DEFINE(tx_done, 0, 1);
 static int send_rc;
 
@@ -26,11 +33,70 @@ static void tx_done_cb(const struct device *dev, struct net_buf *buf, int result
 	k_sem_give(&tx_done);
 }
 
+static int validation_adv_tx(void)
+{
+	const struct device *dev = DEVICE_DT_GET(EPACKET_BT_ADV_NODE);
+	struct net_buf *pkt;
+
+	pkt = epacket_alloc_tx_for_interface(dev, K_FOREVER);
+	epacket_set_tx_metadata(pkt, EPACKET_AUTH_NETWORK, 0, INFUSE_ECHO_REQ, EPACKET_ADDR_ALL);
+	epacket_set_tx_callback(pkt, tx_done_cb, NULL);
+	net_buf_add_mem(pkt, "HELLO", 5);
+	epacket_queue(dev, pkt);
+
+	if (k_sem_take(&tx_done, K_SECONDS(1)) != 0) {
+		VALIDATION_REPORT_ERROR(TEST, "Advertising TX timeout");
+		return -ETIMEDOUT;
+	}
+	if (send_rc != 0) {
+		VALIDATION_REPORT_ERROR(TEST, "Advertising TX failed (%d)", send_rc);
+		return send_rc;
+	}
+	VALIDATION_REPORT_INFO(TEST, "Advertising TX succeeded");
+	return 0;
+}
+
+#else
+
+static int validation_adv_tx(void)
+{
+	VALIDATION_REPORT_ERROR(TEST, "No ePacket advertising interface");
+	return -ENOTSUP;
+}
+
+#endif /* DT_NODE_EXISTS(EPACKET_BT_ADV_NODE) */
+
+static int validation_legacy_adv_tx(void)
+{
+	const struct bt_data ad[] = {
+		BT_DATA_BYTES(BT_DATA_FLAGS, BT_LE_AD_NO_BREDR),
+		BT_DATA_BYTES(BT_DATA_MANUFACTURER_DATA, 'H', 'E', 'L', 'L', 'O'),
+	};
+	const struct bt_le_adv_param param =
+		BT_LE_ADV_PARAM_INIT(BT_LE_ADV_OPT_USE_IDENTITY, BT_GAP_ADV_FAST_INT_MIN_1,
+				     BT_GAP_ADV_FAST_INT_MAX_1, NULL);
+	int rc;
+
+	/* Legacy advertising has no completion callback, so validate that the controller
+	 * accepts the advertising data and transmits for a short duration.
+	 */
+	rc = bt_le_adv_start(&param, ad, ARRAY_SIZE(ad), NULL, 0);
+	if (rc != 0) {
+		VALIDATION_REPORT_ERROR(TEST, "Legacy advertising start failed (%d)", rc);
+		return rc;
+	}
+	k_sleep(LEGACY_ADV_DURATION);
+	rc = bt_le_adv_stop();
+	if (rc != 0) {
+		VALIDATION_REPORT_ERROR(TEST, "Legacy advertising stop failed (%d)", rc);
+		return rc;
+	}
+	VALIDATION_REPORT_INFO(TEST, "Legacy advertising TX succeeded");
+	return 0;
+}
+
 int infuse_validation_bluetooth(uint8_t flags)
 {
-	const struct device *dev =
-		DEVICE_DT_GET(DT_COMPAT_GET_ANY_STATUS_OKAY(embeint_epacket_bt_adv));
-	struct net_buf *pkt;
 	int rc;
 
 	VALIDATION_REPORT_INFO(TEST, "START");
@@ -61,24 +127,16 @@ int infuse_validation_bluetooth(uint8_t flags)
 #endif /* CONFIG_BT_CONTROLLER_MANAGE*/
 
 	if (flags & VALIDATION_BLUETOOTH_ADV_TX) {
-		pkt = epacket_alloc_tx_for_interface(dev, K_FOREVER);
-		epacket_set_tx_metadata(pkt, EPACKET_AUTH_NETWORK, 0, INFUSE_ECHO_REQ,
-					EPACKET_ADDR_ALL);
-		epacket_set_tx_callback(pkt, tx_done_cb, NULL);
-		net_buf_add_mem(pkt, "HELLO", 5);
-		epacket_queue(dev, pkt);
-
-		if (k_sem_take(&tx_done, K_SECONDS(1)) != 0) {
-			VALIDATION_REPORT_ERROR(TEST, "Advertising TX timeout");
-			rc = -ETIMEDOUT;
+		rc = validation_adv_tx();
+		if (rc != 0) {
 			goto test_end;
 		}
+	}
 
-		rc = send_rc;
-		if (send_rc == 0) {
-			VALIDATION_REPORT_INFO(TEST, "Advertising TX succeeded");
-		} else {
-			VALIDATION_REPORT_ERROR(TEST, "Advertising TX failed (%d)", send_rc);
+	if (flags & VALIDATION_BLUETOOTH_LEGACY_ADV_TX) {
+		rc = validation_legacy_adv_tx();
+		if (rc != 0) {
+			goto test_end;
 		}
 	}
 
