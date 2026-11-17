@@ -94,12 +94,17 @@ static int write_read_erase_page(const struct device *dev, size_t page, size_t p
 	}
 
 	/* Validate data is actually erased */
+	rc = 0;
 	for (int i = 0; i < sizeof(read_buffer); i++) {
 		if (read_buffer[i] != parameters->erase_value) {
 			VALIDATION_REPORT_ERROR(TEST,
 						"Data erased != Erase value (Offset %d: %02X)", i,
 						read_buffer[i]);
+			rc = -EINVAL;
 		}
+	}
+	if (rc < 0) {
+		return rc;
 	}
 
 	VALIDATION_REPORT_INFO(TEST, "Write-Read-Erase test passed");
@@ -128,9 +133,10 @@ int infuse_validation_flash(const struct device *dev, uint8_t flags)
 		goto test_end;
 	}
 
-	if (flash_get_page_info_by_idx(dev, 0, &info) < 0) {
+	rc = flash_get_page_info_by_idx(dev, 0, &info);
+	if (rc < 0) {
 		VALIDATION_REPORT_ERROR(TEST, "flash_get_page_info_by_idx (%d)", rc);
-		goto test_end;
+		goto power_down;
 	}
 	page_count = flash_get_page_count(dev);
 	VALIDATION_REPORT_VALUE(TEST, "PAGE_SIZE", "%d", info.size);
@@ -154,6 +160,7 @@ int infuse_validation_flash(const struct device *dev, uint8_t flags)
 		}
 	}
 
+power_down:
 	/* Power down device */
 	if (pm_device_runtime_put(dev) < 0) {
 		if (rc == 0) {
