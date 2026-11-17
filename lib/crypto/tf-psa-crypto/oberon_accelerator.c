@@ -396,6 +396,17 @@ psa_status_t psa_driver_external_integration_key_agreement(
 	}
 
 	ocrypto_curve25519_scalarmult(shared_secret, key_buffer, peer_key);
+
+	/* Reject the all-zero output of a low-order peer key (RFC 7748 6.1) */
+	uint8_t acc = 0;
+
+	for (size_t i = 0; i < ocrypto_curve25519_BYTES; i++) {
+		acc |= shared_secret[i];
+	}
+	if (acc == 0) {
+		return PSA_ERROR_INVALID_ARGUMENT;
+	}
+
 	*shared_secret_length = ocrypto_curve25519_BYTES;
 	return PSA_SUCCESS;
 #else
