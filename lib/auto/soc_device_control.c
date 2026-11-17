@@ -20,7 +20,8 @@ ZBUS_LISTENER_DEFINE(battery_listener, new_battery_data);
 ZBUS_CHAN_ADD_OBS(INFUSE_ZBUS_NAME(INFUSE_ZBUS_CHAN_BATTERY), battery_listener, 10);
 
 static sys_slist_t states = SYS_SLIST_STATIC_INIT(&states);
-static struct k_spinlock list_lock;
+/* Mutex, not a spinlock: PM runtime get/put can block in the device resume/suspend */
+static K_MUTEX_DEFINE(list_lock);
 
 int soc_device_control_register(struct soc_device_control_state *state)
 {
@@ -33,9 +34,9 @@ int soc_device_control_register(struct soc_device_control_state *state)
 	}
 
 	state->requested = false;
-	K_SPINLOCK(&list_lock) {
-		sys_slist_append(&states, &state->_node);
-	}
+	k_mutex_lock(&list_lock, K_FOREVER);
+	sys_slist_append(&states, &state->_node);
+	k_mutex_unlock(&list_lock);
 	return 0;
 }
 
@@ -43,12 +44,12 @@ bool soc_device_control_unregister(struct soc_device_control_state *state)
 {
 	bool removed;
 
-	K_SPINLOCK(&list_lock) {
-		removed = sys_slist_find_and_remove(&states, &state->_node);
-		if (removed && state->requested) {
-			pm_device_runtime_put(state->device);
-		}
+	k_mutex_lock(&list_lock, K_FOREVER);
+	removed = sys_slist_find_and_remove(&states, &state->_node);
+	if (removed && state->requested) {
+		pm_device_runtime_put(state->device);
 	}
+	k_mutex_unlock(&list_lock);
 	return removed;
 }
 
@@ -70,9 +71,9 @@ static void new_battery_data(const struct zbus_channel *chan)
 	const struct tdf_battery_state *battery = zbus_chan_const_msg(chan);
 	struct soc_device_control_state *state;
 
-	K_SPINLOCK(&list_lock) {
-		SYS_SLIST_FOR_EACH_CONTAINER(&states, state, _node) {
-			process_new_battery_data(battery, state);
-		}
+	k_mutex_lock(&list_lock, K_FOREVER);
+	SYS_SLIST_FOR_EACH_CONTAINER(&states, state, _node) {
+		process_new_battery_data(battery, state);
 	}
+	k_mutex_unlock(&list_lock);
 }

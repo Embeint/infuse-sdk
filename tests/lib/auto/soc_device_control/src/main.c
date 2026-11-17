@@ -23,6 +23,10 @@
 
 static int test_driver_action(const struct device *dev, enum pm_device_action action)
 {
+	/* Real drivers can block during transitions (e.g. power-domain-gpio startup delay) */
+	if ((action == PM_DEVICE_ACTION_RESUME) || (action == PM_DEVICE_ACTION_SUSPEND)) {
+		k_sleep(K_MSEC(1));
+	}
 	return 0;
 }
 
