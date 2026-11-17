@@ -212,12 +212,20 @@ int infuse_watchdog_thread_state_lookup(int wdog_channel, uint32_t *info1, uint3
 
 void infuse_watchdog_feed_all(void)
 {
+#ifdef CONFIG_INFUSE_WATCHDOG_SW_MULTICHANNEL
+	/* Only the global channel exists in hardware */
+	(void)wdt_feed(INFUSE_WATCHDOG_DEV, global_channel);
+#else
 	for (int i = 0; i < MAX_CHANNELS; i++) {
 		(void)wdt_feed(INFUSE_WATCHDOG_DEV, i);
-#ifdef CONFIG_INFUSE_WATCHDOG_SOFTWARE_WARNING
-		infuse_watchdog_software_feed(i);
-#endif /* CONFIG_INFUSE_WATCHDOG_SOFTWARE_WARNING */
 	}
+#endif /* CONFIG_INFUSE_WATCHDOG_SW_MULTICHANNEL */
+#ifdef CONFIG_INFUSE_WATCHDOG_SOFTWARE_WARNING
+	/* Only installed channels, uninstalled channels must never be marked as fed */
+	for (int i = 0; i <= channel_max; i++) {
+		infuse_watchdog_software_feed(i);
+	}
+#endif /* CONFIG_INFUSE_WATCHDOG_SOFTWARE_WARNING */
 }
 
 #ifdef CONFIG_INFUSE_WATCHDOG_SOFTWARE_WARNING

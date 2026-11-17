@@ -102,6 +102,13 @@ ZTEST(drivers_watchdog, test_watchdog)
 		infuse_watchdog_feed_all();
 		k_sleep(K_SECONDS(1));
 	}
+	/* Normal feeding still works after infuse_watchdog_feed_all (longer than the period) */
+	for (int i = 0; i < 6; i++) {
+		for (int j = 0; j < 4; j++) {
+			infuse_watchdog_feed(channels[j]);
+		}
+		k_sleep(K_MSEC(500));
+	}
 
 	/* Nothing should have expired */
 	zassert_equal(-EBUSY, k_sem_take(&watchdog_warning, K_NO_WAIT), "Warning fired early");
