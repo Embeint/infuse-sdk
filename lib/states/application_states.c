@@ -6,8 +6,8 @@
  * SPDX-License-Identifier: FSL-1.1-ALv2
  */
 
+#include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
-#include <zephyr/spinlock.h>
 #include <zephyr/sys/atomic.h>
 #include <zephyr/sys/slist.h>
 
@@ -21,8 +21,11 @@ struct timeout_state {
 static ATOMIC_DEFINE(application_states, INFUSE_STATES_END + 1);
 static struct timeout_state timeout_states[CONFIG_INFUSE_APPLICATION_STATES_MAX_TIMEOUTS];
 static uint32_t timeout_mask;
-static struct k_spinlock timeout_lock;
 static sys_slist_t cb_list = SYS_SLIST_STATIC_INIT(&cb_list);
+/* Serialises state updates and their notifications. Callbacks run with this held, so they may
+ * block, and as the mutex is recursive they may also update states themselves.
+ */
+static K_MUTEX_DEFINE(state_lock);
 
 BUILD_ASSERT(ARRAY_SIZE(application_states) == INFUSE_STATES_ARRAY_SIZE);
 
@@ -30,12 +33,41 @@ LOG_MODULE_REGISTER(states, CONFIG_INFUSE_APPLICATION_STATES_LOG_LEVEL);
 
 void infuse_state_register_callback(struct infuse_state_cb *cb)
 {
+	k_mutex_lock(&state_lock, K_FOREVER);
 	sys_slist_append(&cb_list, &cb->node);
+	k_mutex_unlock(&state_lock);
 }
 
 bool infuse_state_unregister_callback(struct infuse_state_cb *cb)
 {
-	return sys_slist_find_and_remove(&cb_list, &cb->node);
+	bool removed;
+
+	k_mutex_lock(&state_lock, K_FOREVER);
+	removed = sys_slist_find_and_remove(&cb_list, &cb->node);
+	k_mutex_unlock(&state_lock);
+	return removed;
+}
+
+static void notify_set(enum infuse_state state, bool already, uint16_t timeout)
+{
+	struct infuse_state_cb *cb, *cbs;
+
+	SYS_SLIST_FOR_EACH_CONTAINER_SAFE(&cb_list, cb, cbs, node) {
+		if (cb->state_set) {
+			cb->state_set(state, already, timeout, cb->user_ctx);
+		}
+	}
+}
+
+static void notify_cleared(enum infuse_state state)
+{
+	struct infuse_state_cb *cb, *cbs;
+
+	SYS_SLIST_FOR_EACH_CONTAINER_SAFE(&cb_list, cb, cbs, node) {
+		if (cb->state_cleared) {
+			cb->state_cleared(state, cb->user_ctx);
+		}
+	}
 }
 
 static uint8_t find_timeout_state(enum infuse_state state)
@@ -69,100 +101,82 @@ static void clear_timeout_state(enum infuse_state state)
 
 bool infuse_state_set(enum infuse_state state)
 {
-	struct infuse_state_cb *cb;
-	bool already_set = false;
+	bool already_set;
 
-	K_SPINLOCK(&timeout_lock) {
-		already_set = atomic_test_and_set_bit(application_states, state);
-		if (already_set == true) {
-			clear_timeout_state(state);
-		}
-		/* Notify registered callbacks */
-		SYS_SLIST_FOR_EACH_CONTAINER(&cb_list, cb, node) {
-			if (cb->state_set) {
-				cb->state_set(state, already_set, 0, cb->user_ctx);
-			}
-		}
+	k_mutex_lock(&state_lock, K_FOREVER);
+	already_set = atomic_test_and_set_bit(application_states, state);
+	if (already_set == true) {
+		clear_timeout_state(state);
 	}
+	notify_set(state, already_set, 0);
+	k_mutex_unlock(&state_lock);
 	LOG_DBG("%d", state);
 	return already_set;
 }
 
 bool infuse_state_set_timeout(enum infuse_state state, uint16_t timeout)
 {
-	struct infuse_state_cb *cb;
 	bool already_set = false;
+	uint8_t timeout_idx;
 
 	if (timeout == 0) {
 		return false;
 	}
 
-	K_SPINLOCK(&timeout_lock) {
-		uint8_t timeout_idx = find_timeout_state(state);
-
-		if (timeout_idx == UINT8_MAX) {
-			if (__builtin_popcount(timeout_mask) == ARRAY_SIZE(timeout_states)) {
-				LOG_WRN("Insufficient timeout contexts");
-				K_SPINLOCK_BREAK;
-			}
-			timeout_idx = __builtin_ffs(~timeout_mask) - 1;
-			already_set = atomic_test_and_set_bit(application_states, state);
-			timeout_mask |= BIT(timeout_idx);
-			timeout_states[timeout_idx].state = state;
-		} else {
-			already_set = true;
+	k_mutex_lock(&state_lock, K_FOREVER);
+	timeout_idx = find_timeout_state(state);
+	if (timeout_idx == UINT8_MAX) {
+		if (__builtin_popcount(timeout_mask) == ARRAY_SIZE(timeout_states)) {
+			LOG_WRN("Insufficient timeout contexts");
+			goto unlock;
 		}
-		timeout_states[timeout_idx].timeout = timeout;
-		/* Notify registered callbacks */
-		SYS_SLIST_FOR_EACH_CONTAINER(&cb_list, cb, node) {
-			if (cb->state_set) {
-				cb->state_set(state, already_set, timeout, cb->user_ctx);
-			}
-		}
+		timeout_idx = __builtin_ffs(~timeout_mask) - 1;
+		already_set = atomic_test_and_set_bit(application_states, state);
+		timeout_mask |= BIT(timeout_idx);
+		timeout_states[timeout_idx].state = state;
+	} else {
+		already_set = true;
 	}
+	timeout_states[timeout_idx].timeout = timeout;
+	notify_set(state, already_set, timeout);
 	LOG_DBG("%d for %d", state, timeout);
+unlock:
+	k_mutex_unlock(&state_lock);
 	return already_set;
 }
 
 int infuse_state_get_timeout(enum infuse_state state)
 {
 	uint8_t timeout_idx;
-	int rc = 0;
+	int rc;
 
-	K_SPINLOCK(&timeout_lock) {
-		if (atomic_test_bit(application_states, state)) {
-			timeout_idx = find_timeout_state(state);
-			if (timeout_idx == UINT8_MAX) {
-				/* No timeout */
-				rc = 0;
-			} else {
-				rc = timeout_states[timeout_idx].timeout;
-			}
+	k_mutex_lock(&state_lock, K_FOREVER);
+	if (atomic_test_bit(application_states, state)) {
+		timeout_idx = find_timeout_state(state);
+		if (timeout_idx == UINT8_MAX) {
+			/* No timeout */
+			rc = 0;
 		} else {
-			rc = -EINVAL;
+			rc = timeout_states[timeout_idx].timeout;
 		}
+	} else {
+		rc = -EINVAL;
 	}
+	k_mutex_unlock(&state_lock);
 	return rc;
 }
 
 bool infuse_state_clear(enum infuse_state state)
 {
-	struct infuse_state_cb *cb;
-	bool was_set = false;
+	bool was_set;
 
-	K_SPINLOCK(&timeout_lock) {
-		was_set = atomic_test_and_clear_bit(application_states, state);
-		if (was_set == true) {
-			clear_timeout_state(state);
-
-			/* Notify registered callbacks */
-			SYS_SLIST_FOR_EACH_CONTAINER(&cb_list, cb, node) {
-				if (cb->state_cleared) {
-					cb->state_cleared(state, cb->user_ctx);
-				}
-			}
-		}
+	k_mutex_lock(&state_lock, K_FOREVER);
+	was_set = atomic_test_and_clear_bit(application_states, state);
+	if (was_set == true) {
+		clear_timeout_state(state);
+		notify_cleared(state);
 	}
+	k_mutex_unlock(&state_lock);
 	LOG_DBG("%d", state);
 	return was_set;
 }
@@ -181,33 +195,34 @@ void infuse_states_snapshot(atomic_t snapshot[ATOMIC_BITMAP_SIZE(INFUSE_STATES_E
 
 void infuse_states_tick(atomic_t snapshot[INFUSE_STATES_ARRAY_SIZE])
 {
-	struct infuse_state_cb *cb;
+	uint8_t expired[ARRAY_SIZE(timeout_states)];
+	uint8_t num_expired = 0;
+	uint32_t mask;
 
-	K_SPINLOCK(&timeout_lock) {
-		uint32_t mask = timeout_mask;
+	k_mutex_lock(&state_lock, K_FOREVER);
+	/* Update all timeouts before notifying, as callbacks can modify the timeouts */
+	mask = timeout_mask;
+	while (mask) {
+		uint8_t first_used = __builtin_ffs(mask) - 1;
+		uint8_t state = timeout_states[first_used].state;
 
-		while (mask) {
-			uint8_t first_used = __builtin_ffs(mask) - 1;
-			uint8_t state = timeout_states[first_used].state;
+		mask ^= BIT(first_used);
 
-			mask ^= BIT(first_used);
-
-			if (!atomic_test_bit(snapshot, state)) {
-				continue;
-			}
-			if (--timeout_states[first_used].timeout > 0) {
-				continue;
-			}
-			atomic_clear_bit(application_states, state);
-			timeout_mask ^= BIT(first_used);
-			LOG_DBG("%d timed out", state);
-			/* Notify registered callbacks */
-			SYS_SLIST_FOR_EACH_CONTAINER(&cb_list, cb, node) {
-				if (cb->state_cleared) {
-					cb->state_cleared(state, cb->user_ctx);
-				}
-			}
-			timeout_states[first_used].state = 0;
+		if (!atomic_test_bit(snapshot, state)) {
+			continue;
 		}
+		if (--timeout_states[first_used].timeout > 0) {
+			continue;
+		}
+		atomic_clear_bit(application_states, state);
+		timeout_mask ^= BIT(first_used);
+		timeout_states[first_used].state = 0;
+		expired[num_expired++] = state;
+		LOG_DBG("%d timed out", state);
 	}
+	/* Notify registered callbacks */
+	for (int i = 0; i < num_expired; i++) {
+		notify_cleared(expired[i]);
+	}
+	k_mutex_unlock(&state_lock);
 }

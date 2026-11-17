@@ -307,6 +307,72 @@ ZTEST(application_states, test_callbacks)
 	zassert_equal(3, ctx.clear_count);
 }
 
+static void chained_state_set(enum infuse_state state, bool already, uint16_t timeout,
+			      void *user_ctx)
+{
+	uint32_t *count = user_ctx;
+
+	/* Callbacks are allowed to block */
+	k_sleep(K_MSEC(1));
+	*count += 1;
+
+	/* Callbacks are allowed to update other states */
+	if (state == INFUSE_STATE_TIME_KNOWN) {
+		zassert_false(infuse_state_set(INFUSE_STATE_DEVICE_MOVING));
+	}
+}
+
+static void chained_state_cleared(enum infuse_state state, void *user_ctx)
+{
+	uint32_t *count = user_ctx;
+
+	k_sleep(K_MSEC(1));
+	*count += 1;
+
+	/* Start a new timeout from the expiry of the previous one */
+	if (state == INFUSE_STATE_TIME_KNOWN) {
+		zassert_false(infuse_state_set_timeout(INFUSE_STATE_DEVICE_STATIONARY, 2));
+	}
+}
+
+ZTEST(application_states, test_callbacks_block_and_update)
+{
+	INFUSE_STATES_ARRAY(states);
+	uint32_t count = 0;
+	struct infuse_state_cb cb = {
+		.state_set = chained_state_set,
+		.state_cleared = chained_state_cleared,
+		.user_ctx = &count,
+	};
+
+	infuse_state_register_callback(&cb);
+
+	/* Setting a state from a callback runs the callbacks for that state too */
+	infuse_state_set_timeout(INFUSE_STATE_TIME_KNOWN, 1);
+	zassert_equal(2, count);
+	zassert_true(infuse_state_get(INFUSE_STATE_DEVICE_MOVING));
+
+	/* Expiry callback reuses the timeout slot that just expired */
+	infuse_states_snapshot(states);
+	infuse_states_tick(states);
+	zassert_false(infuse_state_get(INFUSE_STATE_TIME_KNOWN));
+	zassert_true(infuse_state_get(INFUSE_STATE_DEVICE_STATIONARY));
+	zassert_equal(2, infuse_state_get_timeout(INFUSE_STATE_DEVICE_STATIONARY));
+	/* Cleared + set */
+	zassert_equal(4, count);
+
+	/* New timeout counts down normally */
+	infuse_states_snapshot(states);
+	infuse_states_tick(states);
+	zassert_true(infuse_state_get(INFUSE_STATE_DEVICE_STATIONARY));
+	infuse_states_snapshot(states);
+	infuse_states_tick(states);
+	zassert_false(infuse_state_get(INFUSE_STATE_DEVICE_STATIONARY));
+	zassert_equal(5, count);
+
+	zassert_true(infuse_state_unregister_callback(&cb));
+}
+
 void test_init(void *fixture)
 {
 	for (int i = 0; i < UINT8_MAX; i++) {

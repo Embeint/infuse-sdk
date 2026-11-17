@@ -23,6 +23,10 @@ extern "C" {
 /**
  * @defgroup states_apis Infuse-IoT application state APIs
  * @ingroup infuse_core
+ *
+ * Functions that update states, query timeouts or manage callbacks take a mutex and must be
+ * called from thread context. @ref infuse_state_get and @ref infuse_states_snapshot can be
+ * called from any context.
  * @{
  */
 
@@ -70,7 +74,9 @@ struct infuse_state_cb {
 	/**
 	 * @brief Application state has been set.
 	 *
-	 * @note Callback run under spinlock
+	 * @note Callbacks are run in the context of the thread that updated the state, while
+	 *       holding the state lock. They may block and update other states, but blocking
+	 *       delays state updates from other threads.
 	 *
 	 * @param state State that has been set
 	 * @param already State was already set
@@ -82,7 +88,9 @@ struct infuse_state_cb {
 	/**
 	 * @brief Application state has been cleared.
 	 *
-	 * @note Callback run under spinlock
+	 * @note Callbacks are run in the context of the thread that updated the state, while
+	 *       holding the state lock. They may block and update other states, but blocking
+	 *       delays state updates from other threads.
 	 *
 	 * @param state State that has been cleared
 	 * @param user_ctx User context pointer
