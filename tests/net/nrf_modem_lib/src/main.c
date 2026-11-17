@@ -238,6 +238,27 @@ ZTEST(infuse_nrf_modem_monitor, test_integration)
 	lte_modem_monitor_network_state(&net_state);
 	zassert_equal(CELLULAR_REGISTRATION_NOT_REGISTERED, net_state.nw_reg_status);
 
+	/* SIM card status unknown until UICC state reported */
+	zassert_equal(CELLULAR_SIM_STATUS_UNKNOWN, lte_modem_monitor_sim_status());
+	nrf_modem_lib_sim_send_at("%XSIM: 0,1\r\n");
+	k_sleep(K_MSEC(10));
+	zassert_equal(CELLULAR_SIM_STATUS_PIN_REQUIRED, lte_modem_monitor_sim_status());
+	nrf_modem_lib_sim_send_at("%XSIM: 0,3\r\n");
+	k_sleep(K_MSEC(10));
+	zassert_equal(CELLULAR_SIM_STATUS_PUK_REQUIRED, lte_modem_monitor_sim_status());
+	nrf_modem_lib_sim_send_at("%XSIM: 0,7\r\n");
+	k_sleep(K_MSEC(10));
+	zassert_equal(CELLULAR_SIM_STATUS_LOCKED, lte_modem_monitor_sim_status());
+	nrf_modem_lib_sim_send_at("%XSIM: 0,9\r\n");
+	k_sleep(K_MSEC(10));
+	zassert_equal(CELLULAR_SIM_STATUS_FAILURE, lte_modem_monitor_sim_status());
+	nrf_modem_lib_sim_send_at("%XSIM: 0\r\n");
+	k_sleep(K_MSEC(10));
+	zassert_equal(CELLULAR_SIM_STATUS_UNKNOWN, lte_modem_monitor_sim_status());
+	nrf_modem_lib_sim_send_at("%XSIM: 1\r\n");
+	k_sleep(K_MSEC(10));
+	zassert_equal(CELLULAR_SIM_STATUS_READY, lte_modem_monitor_sim_status());
+
 	/* Searching for a second */
 	nrf_modem_lib_sim_send_at("+CEREG: 2,\"702A\",\"08C3BD0C\",7\r\n");
 	k_sleep(K_SECONDS(1));

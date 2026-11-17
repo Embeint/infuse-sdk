@@ -33,6 +33,7 @@ static struct {
 #endif /* CONFIG_INFUSE_MODEM_MONITOR_CONN_STATE_LOG */
 	struct k_work_delayable shutdown_fallback;
 	bool at_link_dead;
+	enum cellular_sim_status sim_status;
 } monitor;
 
 bool lte_modem_monitor_is_at_safe(void)
@@ -72,6 +73,11 @@ int lte_modem_monitor_signal_quality(int16_t *rsrp, int8_t *rsrq, bool cached)
 void lte_modem_monitor_network_state(struct lte_modem_network_state *state)
 {
 	*state = monitor.network_state;
+}
+
+enum cellular_sim_status lte_modem_monitor_sim_status(void)
+{
+	return monitor.sim_status;
 }
 
 static void modem_info_changed(const struct device *dev, const struct cellular_evt_modem_info *mi)
@@ -118,6 +124,10 @@ static void modem_info_changed(const struct device *dev, const struct cellular_e
 		}
 	} break;
 	case CELLULAR_MODEM_INFO_SIM_ICCID: {
+		/* ICCID can only be read from an initialised SIM card.
+		 * Fallback until modem drivers emit CELLULAR_EVENT_SIM_STATUS_CHANGED.
+		 */
+		monitor.sim_status = CELLULAR_SIM_STATUS_READY;
 		if (kv_store_write(KV_KEY_LTE_SIM_UICC, &info, 1 + info.value_num) > 0) {
 			/* Print value when first saved to KV store */
 			LOG_INF("UICC: %s", info.value);
@@ -179,6 +189,12 @@ static void edrx_changed(const struct device *dev, const struct cellular_evt_edr
 	monitor.network_state.edrx_cfg.ptw = edrx->ptw;
 }
 
+static void sim_status_changed(const struct device *dev, const struct cellular_evt_sim_status *ss)
+{
+	LOG_DBG("SIM status: %d", ss->status);
+	monitor.sim_status = ss->status;
+}
+
 static void modem_shutdown_fallback(struct k_work *work)
 {
 	const struct device *modem = DEVICE_DT_GET(DT_ALIAS(modem));
@@ -212,6 +228,9 @@ static void comms_check_result(const struct device *dev,
 
 static void modem_suspended(const struct device *dev)
 {
+	/* SIM card status is re-reported on next modem resume */
+	monitor.sim_status = CELLULAR_SIM_STATUS_UNKNOWN;
+
 	/* Don't reboot if the suspension wasn't due to the periodic script failing */
 	if (!monitor.at_link_dead) {
 		return;
@@ -244,6 +263,9 @@ static void modem_event_cb(const struct device *dev, enum cellular_event evt, co
 		break;
 	case CELLULAR_EVENT_EDRX_PARAMETERS_CHANGED:
 		edrx_changed(dev, payload);
+		break;
+	case CELLULAR_EVENT_SIM_STATUS_CHANGED:
+		sim_status_changed(dev, payload);
 		break;
 	default:
 		break;
@@ -279,7 +301,8 @@ int lte_modem_monitor_init(void)
 	const enum cellular_event cb_events =
 		CELLULAR_EVENT_MODEM_INFO_CHANGED | CELLULAR_EVENT_REGISTRATION_STATUS_CHANGED |
 		CELLULAR_EVENT_NETWORK_STATUS_CHANGED | CELLULAR_EVENT_MODEM_COMMS_CHECK_RESULT |
-		CELLULAR_EVENT_MODEM_SUSPENDED | CELLULAR_EVENT_EDRX_PARAMETERS_CHANGED;
+		CELLULAR_EVENT_MODEM_SUSPENDED | CELLULAR_EVENT_EDRX_PARAMETERS_CHANGED |
+		CELLULAR_EVENT_SIM_STATUS_CHANGED;
 
 #ifdef CONFIG_INFUSE_MODEM_MONITOR_DEFAULT_PDP_APN_SET
 	const KV_KEY_TYPE_VAR(KV_KEY_LTE_PDP_CONFIG,

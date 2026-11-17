@@ -89,6 +89,8 @@ static struct {
 	/* Uptime of the last `%CESQ` notification (0 if none received) */
 	int64_t cesq_notif_ticks;
 	atomic_t flags;
+	/* SIM card status from `%XSIM` notifications */
+	enum cellular_sim_status sim_status;
 	/* Most recently reported values (INT16_MIN/INT8_MIN when unknown) */
 	int16_t rsrp_current;
 	int8_t rsrq_current;
@@ -156,6 +158,51 @@ bool lte_modem_monitor_is_registered(void)
 void lte_modem_monitor_network_state(struct lte_modem_network_state *state)
 {
 	*state = monitor.network_state;
+}
+
+enum cellular_sim_status lte_modem_monitor_sim_status(void)
+{
+	return monitor.sim_status;
+}
+
+static enum cellular_sim_status xsim_cause_to_status(int cause)
+{
+	switch (cause) {
+	case 1: /* PIN required */
+	case 2: /* PIN2 required */
+		return CELLULAR_SIM_STATUS_PIN_REQUIRED;
+	case 3: /* PUK required (PIN blocked) */
+	case 4: /* PUK2 required (PIN2 blocked) */
+		return CELLULAR_SIM_STATUS_PUK_REQUIRED;
+	case 5: /* PUK blocked */
+	case 6: /* PUK2 blocked */
+	case 9: /* USIM card failure */
+		return CELLULAR_SIM_STATUS_FAILURE;
+	case 7: /* Device personalization blocked */
+	case 8: /* IMEI lock blocked */
+		return CELLULAR_SIM_STATUS_LOCKED;
+	default:
+		/* 0: No specific cause, 10: USIM card changed, 11: USIM profile changed */
+		return CELLULAR_SIM_STATUS_UNKNOWN;
+	}
+}
+
+/* AT monitor for UICC state notifications (enabled with AT%XSIM=1) */
+AT_MONITOR(xsim_notification, "%XSIM", xsim_mon);
+
+static void xsim_mon(const char *notif)
+{
+	int state;
+	int cause = 0;
+
+	/* %XSIM: <state>[,<cause>] (<cause> omitted when 0) */
+	if (sscanf(notif, "%%XSIM: %d,%d", &state, &cause) < 1) {
+		LOG_WRN("Failed to parse: %s", notif);
+		return;
+	}
+	LOG_DBG("UICC state: %d cause: %d", state, cause);
+	/* 1: UICC initialization OK, 0: UICC not initialized */
+	monitor.sim_status = state == 1 ? CELLULAR_SIM_STATUS_READY : xsim_cause_to_status(cause);
 }
 
 static void network_info_update(struct k_work *work)
@@ -567,6 +614,9 @@ static void infuse_modem_init(int ret, void *ctx)
 		return;
 	}
 
+	/* Fresh modem boot, SIM card has not yet been initialised */
+	monitor.sim_status = CELLULAR_SIM_STATUS_UNKNOWN;
+
 	/* Ensure modem commands don't block forever */
 	rc = nrf_modem_at_sem_timeout_set(CONFIG_INFUSE_NRF_MODEM_MONITOR_AT_TIMEOUT_MS);
 	__ASSERT_NO_MSG(rc == 0);
@@ -579,6 +629,10 @@ static void infuse_modem_init(int ret, void *ctx)
 
 	/* Enable connectivity stats */
 	rc = nrf_modem_at_printf("%s", "AT%XCONNSTAT=1");
+	__ASSERT_NO_MSG(rc == 0);
+
+	/* Subscribe to UICC state notifications */
+	rc = nrf_modem_at_printf("%s", "AT%XSIM=1");
 	__ASSERT_NO_MSG(rc == 0);
 
 	/* Subscribe to signal quality notifications */
