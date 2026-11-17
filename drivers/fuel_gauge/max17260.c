@@ -120,13 +120,15 @@ static int max17260_get_prop(const struct device *dev, fuel_gauge_prop_t prop,
 	const struct max17260_config *config = dev->config;
 	uint16_t unsigned_reg = 0;
 	int16_t signed_reg = 0;
-	int rc = -ENOTSUP;
+	int rc;
 
 	rc = pm_device_runtime_get(config->bus.bus);
 	if (rc < 0) {
 		return rc;
 	}
 
+	/* Properties that aren't supported (or not configured) leave this unchanged */
+	rc = -ENOTSUP;
 	switch (prop) {
 	case FUEL_GAUGE_FULL_CHARGE_CAPACITY:
 		if (config->charge_capacity_microamp_hours > 0) {
