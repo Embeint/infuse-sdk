@@ -320,6 +320,11 @@ int lis2dw12_data_read(const struct device *dev, struct imu_sample_array *sample
 	/* Read the FIFO data */
 	acc_samples = fifo_samples & LIS2DW_FIFO_SAMPLES_COUNT_MASK;
 	LOG_DBG("Reading %d samples", acc_samples);
+	if (acc_samples > LIS2DW12_FIFO_FRAME_SIZE) {
+		/* FIFO can't hold this many frames, register read is invalid */
+		LOG_WRN("Invalid FIFO sample count (%02x)", fifo_samples);
+		return -EIO;
+	}
 
 	rc = lis2dw12_reg_read(dev, LIS2DW12_REG_OUT_X_L, data->fifo_data_buffer,
 			       acc_samples * sizeof(struct lis2dw12_fifo_frame));
