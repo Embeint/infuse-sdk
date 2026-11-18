@@ -17,6 +17,8 @@
 
 #include <infuse/epacket/interface/common.h>
 
+struct net_if;
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -50,6 +52,30 @@ enum epacket_flags_udp {
  * @param flags Bitmask of @ref epacket_flags_udp flags
  */
 void epacket_udp_flags_set(uint16_t flags);
+
+/**
+ * @brief Cycle a network interface without resetting the downlink watchdog
+ *
+ * Takes the interface administratively down, back up, and then requests a connection.
+ * Intended for recovering the underlying hardware (e.g. forcing a SIM card to be
+ * re-evaluated), where the application still wants connectivity throughout.
+ * Unlike calling net_if_down() and net_if_up() directly, the downlink watchdog
+ * (@kconfig{CONFIG_EPACKET_INTERFACE_UDP_DOWNLINK_WATCHDOG}) is not cancelled or restarted.
+ *
+ * @note Admin state changes on non-persistent interfaces (no @a CONN_MGR_IF_PERSISTENT flag)
+ *       already leave a running watchdog untouched, so this only changes the watchdog
+ *       behaviour for persistent interfaces and interfaces without a connectivity binding.
+ *
+ * @warning Not thread-safe, concurrent cycles (of the same or different interfaces) are not
+ *          supported.
+ *
+ * @param iface Network interface to cycle
+ *
+ * @retval 0 on success
+ * @retval -ENETDOWN if the interface is not administratively up
+ * @retval -errno error code from net_if_down(), net_if_up() or conn_mgr_if_connect()
+ */
+int epacket_udp_interface_cycle(struct net_if *iface);
 
 #ifdef CONFIG_ZTEST
 

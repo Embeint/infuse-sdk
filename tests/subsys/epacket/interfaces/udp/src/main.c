@@ -226,6 +226,48 @@ ZTEST(epacket_udp, test_udp_ack)
 	zassert_equal(0, if_max_payload);
 }
 
+ZTEST(epacket_udp, test_udp_interface_cycle)
+{
+	struct net_if *iface = net_if_get_default();
+	uint32_t half = CONFIG_EPACKET_INTERFACE_UDP_DOWNLINK_WATCHDOG_TIMEOUT / 2;
+
+	/* Not valid while the interface is down */
+	zassert_equal(-ENETDOWN, epacket_udp_interface_cycle(iface));
+
+	k_timepoint_t wdog_quiet;
+
+	/* Turn on the interface, starting the watchdog. The watchdog expires between 1 second
+	 * and 1.1 seconds (if_state_change timeout) after the end of the quiet period.
+	 */
+	wdog_quiet = sys_timepoint_calc(
+		K_SECONDS(CONFIG_EPACKET_INTERFACE_UDP_DOWNLINK_WATCHDOG_TIMEOUT - 1));
+	conn_mgr_all_if_up(true);
+	zassert_equal(0, k_sem_take(&if_state_change, K_MSEC(100)));
+	zassert_true(if_max_payload > 0);
+
+	/* Cycle the interface part way through the watchdog period */
+	zassert_equal(-EAGAIN, k_sem_take(&downlink_watchdog_expired, K_SECONDS(half)));
+	zassert_equal(0, epacket_udp_interface_cycle(iface));
+	zassert_true(net_if_is_admin_up(iface));
+
+	/* Interface comes back after the cooling off period */
+	for (int i = 0; i < 20; i++) {
+		k_sleep(K_MSEC(100));
+		if (if_max_payload > 0) {
+			break;
+		}
+	}
+	zassert_true(if_max_payload > 0);
+
+	/* Watchdog expires at the original deadline, not a full period after the cycle.
+	 * Timing is relative to the original deadline, independent of reconnection latency.
+	 */
+	zassert_equal(-EAGAIN,
+		      k_sem_take(&downlink_watchdog_expired, sys_timepoint_timeout(wdog_quiet)));
+	zassert_equal(0, k_sem_take(&downlink_watchdog_expired, K_SECONDS(2)));
+	zassert_equal(INFUSE_REBOOT_SW_WATCHDOG, reboot_reason);
+}
+
 ZTEST(epacket_udp, test_udp_max_size)
 {
 	struct epacket_rx_metadata *rx_meta;
