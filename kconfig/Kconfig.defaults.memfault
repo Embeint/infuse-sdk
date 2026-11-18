@@ -51,7 +51,13 @@ config NRF_CLOUD_FOTA_POLL
 	bool
 config NRF_CLOUD_JWT_SOURCE_CUSTOM
 	bool
+config NRF_CLOUD_FOTA_FULL_MODEM_UPDATE
+	bool
 config MODEM_INFO
 	bool
 config MODEM_JWT
+	bool
+config DOWNLOADER
+	bool
+config WIFI_NRF71
 	bool
