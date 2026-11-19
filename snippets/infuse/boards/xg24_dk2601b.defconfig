@@ -1,0 +1,7 @@
+if BOARD_XG24_DK2601B
+
+# Only sample the BMP384 on request
+configdefault BMP388_FORCED_MODE
+    default y
+
+endif # BOARD_XG24_DK2601B

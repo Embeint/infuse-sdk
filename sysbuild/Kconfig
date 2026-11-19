@@ -17,6 +17,12 @@ choice BOOTLOADER
 	default BOOTLOADER_MCUBOOT if INFUSE_INTEGRATION
 endchoice
 
+# ECDSA P-256 results in a significantly smaller bootloader than the RSA default,
+# which does not fit in the MCUboot partition of Silicon Labs development kits.
+choice BOOT_SIGNATURE_TYPE
+	default BOOT_SIGNATURE_TYPE_ECDSA_P256 if INFUSE_INTEGRATION && SOC_FAMILY_SILABS_S2
+endchoice
+
 config INFUSE_MCUBOOT_MULTITHREADING
 	bool "Force multithreading on in MCUboot"
 	default y
