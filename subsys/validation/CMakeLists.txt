@@ -6,6 +6,7 @@ zephyr_library_sources_ifdef(CONFIG_EPACKET_INTERFACE_BT_ADV validation_bluetoot
 zephyr_library_sources_ifdef(CONFIG_INFUSE_IMU validation_imu.c)
 zephyr_library_sources_ifdef(CONFIG_SENSOR validation_die_temp.c)
 zephyr_library_sources_ifdef(CONFIG_SENSOR validation_env.c)
+zephyr_library_sources_ifdef(CONFIG_SENSOR validation_light.c)
 zephyr_library_sources_ifdef(CONFIG_SENSOR validation_pwr.c)
 zephyr_library_sources_ifdef(CONFIG_FLASH validation_flash.c)
 zephyr_library_sources_ifdef(CONFIG_DISK_DRIVER_SDMMC validation_disk.c)
