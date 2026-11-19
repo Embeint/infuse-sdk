@@ -5,6 +5,8 @@ import os
 import re
 import sys
 import textwrap
+import urllib.request
+import xml.etree.ElementTree as ET
 from pathlib import Path
 
 INFUSE_BASE = (Path(__file__).parents[1]).resolve()
@@ -61,6 +63,11 @@ with open(INFUSE_BASE / "VERSION") as f:
             version += "-" + extra
 
 release = version
+
+# parse Zephyr version from 'VERSION' file, used to link to matching Zephyr API docs
+with open(ZEPHYR_BASE / "VERSION") as f:
+    zephyr_version_vars = dict(re.findall(r"^(\w+)\s*=\s*(\S*)$", f.read(), re.MULTILINE))
+zephyr_version = ".".join(zephyr_version_vars[k] for k in ("VERSION_MAJOR", "VERSION_MINOR", "PATCHLEVEL"))
 
 # parse SDK version from 'SDK_VERSION' file
 with open(ZEPHYR_BASE / "SDK_VERSION") as f:
@@ -239,6 +246,80 @@ latex_engine = "xelatex"
 # -- Options for zephyr.doxyrunner plugin ---------------------------------
 
 doxyrunner_doxygen = os.environ.get("DOXYGEN_EXECUTABLE", "doxygen")
+
+
+def _zephyr_doxygen_tagfiles() -> str:
+    """Generate a Doxygen tag file so references to Zephyr APIs link to the Zephyr docs
+
+    The published Zephyr tag file is filtered down to the symbols Infuse actually mentions:
+
+    * Structs and unions are kept if their name appears in the Infuse headers. Their fields are
+      only kept if referenced as ``struct::field``, as common field names such as ``size`` or
+      ``data`` would otherwise generate false links.
+    * Group members (functions, macros, enums, ...) are kept if their name appears in the
+      Infuse headers, along with their containing group.
+    * File compounds are dropped, as they mostly contain libc types (``uint8_t``, ``bool``).
+    * Structs and unions that Infuse also defines are dropped, as Doxygen prefers the external
+      definition and would omit the Infuse one.
+    """
+    url = f"https://docs.zephyrproject.org/{zephyr_version}/doxygen/html"
+    upstream = ZEPHYR_BUILD / f"zephyr-{zephyr_version}-upstream.tag"
+    tagfile = ZEPHYR_BUILD / "zephyr-external.tag"
+
+    if not upstream.exists():
+        try:
+            with urllib.request.urlopen(f"{url}/zephyr.tag", timeout=60) as r:
+                data = r.read()
+        except OSError as e:
+            sys.stderr.write(f"Warning: Could not fetch Zephyr Doxygen tag file ({e})\n")
+            return ""
+        upstream.parent.mkdir(parents=True, exist_ok=True)
+        upstream.write_bytes(data)
+
+    try:
+        root = ET.parse(upstream).getroot()
+    except ET.ParseError as e:
+        sys.stderr.write(f"Warning: Could not parse Zephyr Doxygen tag file ({e})\n")
+        return ""
+
+    identifiers = set()
+    qualified_fields = set()
+    infuse_compounds = set()
+    # Must cover the INPUT list in infuse.doxyfile.in
+    doxygen_inputs = [INFUSE_BASE / "doc" / "_doxygen" / "mainpage.md", INFUSE_BASE / "doc" / "_doxygen" / "groups.dox"]
+    for include_dir in ("include", "generated/include", "generated/include_always"):
+        doxygen_inputs += (INFUSE_BASE / include_dir).rglob("*.h")
+    for path in doxygen_inputs:
+        text = path.read_text()
+        # Group names can contain '-' (e.g. 'sys-util')
+        identifiers.update(re.findall(r"[A-Za-z_][\w-]*", text))
+        identifiers.update(re.findall(r"\w+", text))
+        qualified_fields.update(re.findall(r"(\w+)::(\w+)", text))
+        infuse_compounds.update(re.findall(r"^\s*(?:struct|union)\s+(\w+)\s*\{", text, re.MULTILINE))
+
+    for compound in list(root):
+        kind = compound.get("kind")
+        name = compound.findtext("name")
+        if kind in ("struct", "union"):
+            if name not in identifiers or name in infuse_compounds:
+                root.remove(compound)
+                continue
+            for member in compound.findall("member"):
+                if (name, member.findtext("name")) not in qualified_fields:
+                    compound.remove(member)
+        elif kind == "group":
+            for member in compound.findall("member"):
+                if member.findtext("name") not in identifiers:
+                    compound.remove(member)
+            if name not in identifiers and compound.find("member") is None:
+                root.remove(compound)
+        else:
+            root.remove(compound)
+
+    ET.ElementTree(root).write(tagfile, encoding="utf-8", xml_declaration=True)
+    return f'"{tagfile} = {url}"'
+
+
 doxyrunner_projects = {
     "infuse": {
         "doxyfile": INFUSE_BASE / "doc" / "infuse.doxyfile.in",
@@ -248,6 +329,7 @@ doxyrunner_projects = {
             "INFUSE_BASE": str(INFUSE_BASE),
             "ZEPHYR_BASE": str(ZEPHYR_BASE),
             "ZEPHYR_VERSION": version,
+            "ZEPHYR_TAGFILES": _zephyr_doxygen_tagfiles(),
         },
         "outdir_var": "DOXY_OUT",
     },
