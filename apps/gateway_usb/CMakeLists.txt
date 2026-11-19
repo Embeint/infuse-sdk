@@ -2,10 +2,9 @@
 
 cmake_minimum_required(VERSION 3.20.0)
 
-# Infuse-IoT application
-if(NOT infuse IN_LIST SNIPPET)
-  set(SNIPPET infuse ${SNIPPET} CACHE STRING "" FORCE)
-endif()
+# Common serial gateway configuration
+include(${CMAKE_CURRENT_LIST_DIR}/../common/gateway_serial/gateway.cmake)
+
 if(NOT usb IN_LIST SNIPPET)
   # Force USB snippet to end to overwrite infuse defaults
   set(SNIPPET ${SNIPPET} usb CACHE STRING "" FORCE)
@@ -15,5 +14,5 @@ find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
 project(gateway_usb)
 
 target_sources(app PRIVATE
-  src/main.c
+  ${GATEWAY_COMMON_DIR}/src/main.c
 )

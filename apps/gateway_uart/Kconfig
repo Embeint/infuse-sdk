@@ -1,0 +1,5 @@
+# UART Gateway specific options
+
+rsource "../common/gateway_serial/Kconfig"
+
+source "Kconfig.zephyr"
