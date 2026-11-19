@@ -16,6 +16,8 @@ connection.
 On the host, the gateway is used through ``infuse gateway`` (see :ref:`python_gateways`), which
 then allows other ``infuse`` commands to interact with nearby Bluetooth devices.
 
+The application logic is shared with :ref:`gateway_uart` (see ``apps/common/gateway_serial``).
+
 Requirements
 ************
 
@@ -24,6 +26,8 @@ A board with Bluetooth and USB device support, for example:
 * ``nrf52840dk/nrf52840``
 * ``nrf5340dk/nrf5340/cpuapp``
 * ``nrf54lm20dk/nrf54lm20b/cpuapp``
+
+Boards without a native USB device interface should use :ref:`gateway_uart` instead.
 
 Building
 ********

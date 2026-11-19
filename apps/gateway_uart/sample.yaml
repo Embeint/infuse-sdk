@@ -1,0 +1,35 @@
+sample:
+  description: Bluetooth <-> UART bridge
+  name: gateway UART
+common:
+  tags:
+    - app
+    - auto
+    - data_logger
+    - epacket
+    - gnss
+    - imu
+    - kv_store
+    - logging
+    - math
+    - mcumgr
+    - modem_monitor
+    - rpc
+    - serial
+    - states
+    - task_runner
+    - tdf
+    - watchdog
+    - zbus
+  build_only: true
+  required_snippets:
+    - infuse
+  platform_exclude:
+    - native_sim
+  integration_platforms:
+    - nrf52840dk/nrf52840
+tests:
+  sample.app.gateway_uart: {}
+  sample.app.gateway_uart.sysbuild:
+    sysbuild: true
+    filter: not CONFIG_BUILD_WITH_TFM

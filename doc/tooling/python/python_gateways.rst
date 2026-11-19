@@ -45,7 +45,8 @@ Embedded Devices
 
 To create a bridge to a physically connected device, use the ``infuse gateway`` command.
 This command can be used both for applications that forward data over Bluetooth
-(``infuse-sdk/apps/gateway_usb``) or devices that only interact over the physical link.
+(``infuse-sdk/apps/gateway_usb`` or ``infuse-sdk/apps/gateway_uart``) or devices that only
+interact over the physical link.
 
 An appropriate connection backend must be provided to the tool depending on the physical
 connection:
