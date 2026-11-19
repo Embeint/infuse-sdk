@@ -151,7 +151,7 @@ enum tdf_flags {
 	})
 
 /**
- * @brief Reset a tdf_buffer_state struct
+ * @brief Reset a @ref tdf_buffer_state struct
  *
  * @param state struct to reset
  */

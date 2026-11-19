@@ -102,12 +102,12 @@ struct bt_conn_auto_discovery {
 /**
  * @brief Setup a connection with automatic MTU exchange and characteristic discovery
  *
- * This should be called immediately following @a bt_conn_le_create. If the connection
+ * This should be called immediately following @ref bt_conn_le_create. If the connection
  * has already been established by the time this is called, the setup is started immediately.
  * If the connection has already failed or terminated, @a conn_setup_cb is run immediately
  * with -ENOTCONN.
  *
- * @param conn Connection object allocated by @a bt_conn_le_create
+ * @param conn Connection object allocated by @ref bt_conn_le_create
  * @param discovery Characteristic discovery configuration
  * @param callbacks Callbacks to call on connection/disconnection
  * @param preferred_phy Bitmask of preferred PHYs to use for the connection `BT_GAP_LE_PHY_*`
@@ -121,7 +121,7 @@ void bt_conn_le_auto_setup(struct bt_conn *conn, struct bt_conn_auto_discovery *
  * @param conn Connection object to disconnect
  *
  * @retval 0 on success
- * @retval -errno Error code @a bt_conn_disconnect
+ * @retval -errno Error code @ref bt_conn_disconnect
  */
 int bt_conn_disconnect_sync(struct bt_conn *conn);
 
@@ -132,7 +132,7 @@ int bt_conn_disconnect_sync(struct bt_conn *conn);
  * @param timeout Duration to wait for
  *
  * @retval 0 on success
- * @retval -errno Error code @a bt_conn_disconnect
+ * @retval -errno Error code @ref bt_conn_disconnect
  */
 int bt_conn_disconnect_wait(struct bt_conn *conn, k_timeout_t timeout);
 

@@ -41,7 +41,7 @@ const struct zbus_channel *zbus_chan_from_id(uint32_t channel_id);
 const void *zbus_chan_const_msg(const struct zbus_channel *chan);
 #endif /* !CONFIG_ZBUS */
 
-/** zbus.h: @a zbus_chan_read with K_NO_WAIT timeout */
+/** zbus.h: @ref zbus_chan_read with K_NO_WAIT timeout */
 int zbus_chan_read_no_wait(const struct zbus_channel *chan, void *msg);
 
 /** zbus.h: See @a zbus_chan_finish */

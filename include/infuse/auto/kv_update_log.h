@@ -26,7 +26,7 @@ extern "C" {
 /**
  * @brief Automatically log Key Value Store data changes
  *
- * @note All calls to `kv_store_write` and `kv_store_delete` after this
+ * @note All calls to @ref kv_store_write and @ref kv_store_delete after this
  *       function call will result in logging. It is recommended to place
  *       this call after any functions that save default values to the KV
  *       store (e.g. @ref task_runner_init).

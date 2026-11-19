@@ -60,10 +60,10 @@ void infuse_dfu_write_erase_finish(const struct flash_area *fa);
  * @param progress_cb Optional progress callback
  * @param mcuboot_trailer Clear stale MCUboot metadata: the MCUboot trailer, and on flash that
  *                        does not require an explicit erase, any data before the image start
- *                        offset (see @a boot_get_image_start_offset)
+ *                        offset (see @ref boot_get_image_start_offset)
  *
  * @retval 0 On success
- * @retval -errno Error code from @a flash_get_page_info_by_offs or @a flash_area_flatten
+ * @retval -errno Error code from @ref flash_get_page_info_by_offs or @ref flash_area_flatten
  *                on failure
  */
 int infuse_dfu_image_erase(const struct flash_area *fa, size_t image_len,
@@ -72,7 +72,7 @@ int infuse_dfu_image_erase(const struct flash_area *fa, size_t image_len,
 /**
  * @brief Clear stale MCUboot metadata around an image already present in a flash area
  *
- * Clears any data before the image start offset (see @a boot_get_image_start_offset) and the
+ * Clears any data before the image start offset (see @ref boot_get_image_start_offset) and the
  * MCUboot trailer, without modifying the image itself. Used when the image data already matches
  * but an upgrade still needs to be requested.
  *
@@ -82,7 +82,7 @@ int infuse_dfu_image_erase(const struct flash_area *fa, size_t image_len,
  * @retval 0 On success
  * @retval -EINVAL Image overlaps the MCUboot trailer, metadata cannot be cleared in place
  * @retval -ENOTSUP MCUboot trailer location unknown
- * @retval -errno Error code from @a flash_get_page_info_by_offs or @a flash_area_flatten
+ * @retval -errno Error code from @ref flash_get_page_info_by_offs or @ref flash_area_flatten
  *                on failure
  */
 int infuse_dfu_image_metadata_clear(const struct flash_area *fa, size_t image_end);

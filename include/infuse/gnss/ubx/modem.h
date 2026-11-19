@@ -141,7 +141,7 @@ void ubx_modem_init(struct ubx_modem_data *modem, struct modem_pipe *pipe);
 /**
  * @brief Reset communications with the UBX modem
  *
- * Depends on the modem being in `PM_DEVICE_STATE_SUSPENDED`.
+ * Depends on the modem being in @ref PM_DEVICE_STATE_SUSPENDED.
  *
  * @param dev Modem device to reset communications for
  *

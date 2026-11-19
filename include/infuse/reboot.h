@@ -78,7 +78,7 @@ enum infuse_reboot_info_type {
 
 /**
  * Detailed information about the reboot location/cause
- * RISCV platforms have 16 byte alignment requirements for @a arch_esf.
+ * RISCV platforms have 16 byte alignment requirements for @ref arch_esf.
  * Still use __packed so we can guarantee the compiler does not shift memory layout.
  */
 union infuse_reboot_info {
@@ -170,7 +170,7 @@ void infuse_reboot_delayed(enum infuse_reboot_reason reason, uint32_t info1, uin
  *
  * @retval 0 On successful state query
  * @retval -ENOENT No stored state exists
- * @retval -errno Other error from @a retention_read
+ * @retval -errno Other error from @ref retention_read
  */
 int infuse_reboot_state_query(struct infuse_reboot_state *state);
 

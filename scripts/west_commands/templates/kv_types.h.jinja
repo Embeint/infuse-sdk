@@ -171,7 +171,7 @@ enum kv_builtin_size {
 /** Convert key ID to key type */
 #define KV_KEY_TYPE_VAR(key, num) _KV_KEY_TYPE_VAR_EXEC(_##key##_VAR, num)
 
-/** Helper for generating compile time constant `struct kv_string` */
+/** Helper for generating compile time constant @ref kv_string */
 #define KV_STRING_CONST(name, val) KV_STRUCT_KV_STRING_VAR(sizeof(val)) name = {sizeof(val), val};
 
 /** Flags that can be applied to a slot */

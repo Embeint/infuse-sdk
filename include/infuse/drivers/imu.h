@@ -226,7 +226,7 @@ static inline uint16_t imu_sample_rate(const struct imu_sensor_meta *meta)
  * @param meta Metadata for the relevant channel in a buffer
  * @param sample Sample index to get timestamp for
  *
- * @return k_ticks_t Timestamp for sample N in the buffer
+ * @return @ref k_ticks_t Timestamp for sample N in the buffer
  */
 static inline k_ticks_t imu_sample_timestamp(const struct imu_sensor_meta *meta, uint8_t sample)
 {

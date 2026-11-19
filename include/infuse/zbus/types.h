@@ -45,7 +45,7 @@ struct infuse_zbus_chan_tilt {
  * @brief Infuse-IoT zbus channel identifiers
  *
  * Channel data types are only required where a channel's data is accessed.
- * Users of the IMU channels must include @c <infuse/drivers/imu/data_types.h>
+ * Users of the IMU channels must include @ref infuse/drivers/imu/data_types.h
  * themselves, so that users of other channels do not depend on the IMU API.
  */
 enum infuse_zbus_channel_id {

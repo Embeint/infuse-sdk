@@ -7,9 +7,9 @@
  * SPDX-License-Identifier: FSL-1.1-ALv2
  *
  * @details
- * Only explicitly controls @a INFUSE_STATE_DEVICE_MOVING and
- * @a INFUSE_STATE_DEVICE_STARTED_MOVING, not the corresponding
- * @a INFUSE_STATE_DEVICE_STATIONARY and @a INFUSE_STATE_DEVICE_STOPPED_MOVING
+ * Only explicitly controls @ref INFUSE_STATE_DEVICE_MOVING and
+ * @ref INFUSE_STATE_DEVICE_STARTED_MOVING, not the corresponding
+ * @ref INFUSE_STATE_DEVICE_STATIONARY and @ref INFUSE_STATE_DEVICE_STOPPED_MOVING
  * states.
  */
 

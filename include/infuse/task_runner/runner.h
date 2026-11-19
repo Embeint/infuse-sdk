@@ -42,7 +42,7 @@ extern "C" {
  * @param schedule_states State for each schedule, see @ref TASK_SCHEDULE_STATES_DEFINE
  * @param num_schedules Number of default schedules
  * @param tasks Constant task configuration
- * @param task_states State for each task in @a task_config
+ * @param task_states State for each task in @ref task_config
  * @param num_tasks Number of tasks
  *
  * @retval true Existing schedule definitions were overwritten

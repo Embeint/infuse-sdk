@@ -51,7 +51,7 @@ bool epacket_bt_peripheral_cloud_uplink_subscribed(const struct device *dev, str
  *
  * @return 0 On success
  * @retval -EIO On encryption error
- * @retval -errno Other error code from @a bt_gatt_notify
+ * @retval -errno Other error code from @ref bt_gatt_notify
  */
 int epacket_bt_peripheral_cloud_uplink_send(const struct device *dev, struct bt_conn *conn,
 					    struct net_buf *buf);
