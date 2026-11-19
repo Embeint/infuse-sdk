@@ -65,10 +65,14 @@ extern "C" {
  * @param dependency Timeout only installed if @ref IS_ENABLED "IS_ENABLED(dependency)"
  * @param chan_name Name of the variable for the channel ID
  * @param period_name Name of the variable for the channel feed period
+ *
+ * @note Channels are installed at `POST_KERNEL` with priority
+ *       @kconfig{CONFIG_INFUSE_WATCHDOG_INSTALL_INIT_PRIORITY}, after the watchdog device
+ *       has been initialised.
  */
 #define INFUSE_WATCHDOG_REGISTER_SYS_INIT(name, dependency, chan_name, period_name)                \
 	static k_timeout_t period_name = K_FOREVER;                                                \
-	static int chan_name;                                                                      \
+	static int chan_name = -ENODEV;                                                            \
 	static int name##_register(void)                                                           \
 	{                                                                                          \
 		(void)period_name;                                                                 \
@@ -76,7 +80,7 @@ extern "C" {
 			IS_ENABLED(dependency) ? infuse_watchdog_install(&period_name) : -ENODEV;  \
 		return 0;                                                                          \
 	}                                                                                          \
-	SYS_INIT(name##_register, POST_KERNEL, 0);
+	SYS_INIT(name##_register, POST_KERNEL, CONFIG_INFUSE_WATCHDOG_INSTALL_INIT_PRIORITY);
 
 /**
  * @brief Function that is called just prior to watchdog expiry

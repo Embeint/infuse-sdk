@@ -53,14 +53,14 @@ k_tid_t epacket_processor_thread;
 K_THREAD_STACK_DEFINE(epacket_rx_stack_area, CONFIG_EPACKET_PROCESS_THREAD_STACK_SIZE);
 static struct k_thread epacket_rx_process_thread;
 static k_timeout_t loop_period_rx = K_FOREVER;
-static int wdog_channel_rx;
+static int wdog_channel_rx = -ENODEV;
 k_tid_t epacket_rx_processor_thread;
 #endif /* CONFIG_EPACKET_PROCESS_THREAD_SPLIT */
 
 static K_FIFO_DEFINE(epacket_rx_queue);
 static K_FIFO_DEFINE(epacket_tx_queue);
 static k_timeout_t loop_period = K_FOREVER;
-static int wdog_channel;
+static int wdog_channel = -ENODEV;
 static atomic_t rate_limit_delay;
 static atomic_t rate_limit_throughput;
 static uint16_t global_flags;
@@ -483,7 +483,7 @@ static void epacket_processor(void *a, void *b, void *c)
 #else
 	k_thread_name_set(NULL, "ep_proc");
 #endif
-	infuse_watchdog_thread_register(wdog_channel, _current);
+	/* Watchdog channel is registered against this thread in `epacket_watchdog_install` */
 	while (true) {
 		rc = k_poll(events, ARRAY_SIZE(events), loop_period);
 		infuse_watchdog_feed(wdog_channel);
@@ -534,7 +534,7 @@ static void epacket_processor_rx(void *a, void *b, void *c)
 	int rc;
 
 	k_thread_name_set(NULL, "ep_rx_proc");
-	infuse_watchdog_thread_register(wdog_channel_rx, _current);
+	/* Watchdog channel is registered against this thread in `epacket_watchdog_install` */
 	while (true) {
 		rc = k_poll(events, ARRAY_SIZE(events), loop_period_rx);
 		infuse_watchdog_feed(wdog_channel_rx);
@@ -558,9 +558,16 @@ static void epacket_processor_rx(void *a, void *b, void *c)
 
 static int epacket_boot(void)
 {
-	wdog_channel = IS_ENABLED(CONFIG_EPACKET_INFUSE_WATCHDOG)
-			       ? infuse_watchdog_install(&loop_period)
-			       : -ENODEV;
+#ifdef CONFIG_EPACKET_INFUSE_WATCHDOG
+	/* Processing threads start before the watchdog channels are installed (see
+	 * `epacket_watchdog_install`). Periodically wake from the start so that the
+	 * threads never block indefinitely once the channels exist.
+	 */
+	loop_period = INFUSE_WATCHDOG_FEED_PERIOD;
+#ifdef CONFIG_EPACKET_PROCESS_THREAD_SPLIT
+	loop_period_rx = INFUSE_WATCHDOG_FEED_PERIOD;
+#endif /* CONFIG_EPACKET_PROCESS_THREAD_SPLIT */
+#endif /* CONFIG_EPACKET_INFUSE_WATCHDOG */
 
 	epacket_processor_thread =
 		k_thread_create(&epacket_process_thread, epacket_stack_area,
@@ -568,10 +575,6 @@ static int epacket_boot(void)
 				NULL, NULL, 0, K_ESSENTIAL, K_NO_WAIT);
 
 #ifdef CONFIG_EPACKET_PROCESS_THREAD_SPLIT
-	wdog_channel_rx = IS_ENABLED(CONFIG_EPACKET_INFUSE_WATCHDOG)
-				  ? infuse_watchdog_install(&loop_period_rx)
-				  : -ENODEV;
-
 	epacket_rx_processor_thread =
 		k_thread_create(&epacket_rx_process_thread, epacket_rx_stack_area,
 				K_THREAD_STACK_SIZEOF(epacket_rx_stack_area), epacket_processor_rx,
@@ -581,3 +584,21 @@ static int epacket_boot(void)
 }
 
 SYS_INIT(epacket_boot, POST_KERNEL, 0);
+
+#ifdef CONFIG_EPACKET_INFUSE_WATCHDOG
+
+static int epacket_watchdog_install(void)
+{
+	/* Watchdog channels can only be installed once the watchdog device is initialised */
+	wdog_channel = infuse_watchdog_install(&loop_period);
+	infuse_watchdog_thread_register(wdog_channel, epacket_processor_thread);
+#ifdef CONFIG_EPACKET_PROCESS_THREAD_SPLIT
+	wdog_channel_rx = infuse_watchdog_install(&loop_period_rx);
+	infuse_watchdog_thread_register(wdog_channel_rx, epacket_rx_processor_thread);
+#endif /* CONFIG_EPACKET_PROCESS_THREAD_SPLIT */
+	return 0;
+}
+
+SYS_INIT(epacket_watchdog_install, POST_KERNEL, CONFIG_INFUSE_WATCHDOG_INSTALL_INIT_PRIORITY);
+
+#endif /* CONFIG_EPACKET_INFUSE_WATCHDOG */
