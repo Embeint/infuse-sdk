@@ -105,3 +105,7 @@ boards:
     append:
       EXTRA_DTC_OVERLAY_FILE: boards/nucleo_l432kc_stm32l432xx.overlay
       EXTRA_CONF_FILE: infuse_snippet.conf
+  xg24_dk2601b/efr32mg24b310f1536im48:
+    append:
+      EXTRA_DTC_OVERLAY_FILE: boards/xg24_dk2601b.overlay
+      EXTRA_CONF_FILE: infuse_snippet.conf

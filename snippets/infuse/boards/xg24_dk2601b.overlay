@@ -1,0 +1,146 @@
+/*
+ * Copyright (c) 2026 Embeint Holdings Pty Ltd
+ * SPDX-License-Identifier: FSL-1.1-ALv2
+ */
+
+#include <zephyr/dt-bindings/pinctrl/silabs/xg24-pinctrl.h>
+#include <common/infuse_bluetooth.dtsi>
+
+/ {
+	chosen {
+		infuse,reboot-state = &retention0;
+		infuse,kv-partition = &storage_partition;
+	};
+
+	aliases {
+		die-temp0 = &temp;
+		environmental0 = &si7021;
+		environmental1 = &bmp384;
+		imu0 = &icm20689;
+		light0 = &veml6035;
+		magn0 = &si7210;
+	};
+
+	epacket_serial: epacket_serial {
+		compatible = "embeint,epacket-serial";
+		serial = <&usart0>;
+	};
+
+	data_logger_serial: data_logger_serial {
+		compatible = "embeint,data-logger-epacket", "embeint,data-logger";
+		epacket = <&epacket_serial>;
+
+		tdf_logger_serial: tdf_logger_serial {
+			compatible = "embeint,tdf-data-logger";
+		};
+	};
+
+	data_logger_flash: data_logger_flash {
+		compatible = "embeint,data-logger-flash-map", "embeint,data-logger";
+		partition = <&data_logger_partition>;
+
+		tdf_logger_flash: tdf_logger_flash {
+			compatible = "embeint,tdf-data-logger";
+		};
+	};
+
+	/* End of application SRAM */
+	retained_mem_region: memory@2003FF00 {
+		compatible = "zephyr,memory-region", "mmio-sram";
+		reg = <0x2003FF00 0x100>;
+		zephyr,memory-region = "RetainedMem";
+		status = "okay";
+
+		retainedmem {
+			compatible = "zephyr,retained-ram";
+			status = "okay";
+			#address-cells = <1>;
+			#size-cells = <1>;
+
+			retention0: retention@0 {
+				compatible = "zephyr,retention";
+				status = "okay";
+				reg = <0x0 0x100>;
+				prefix = [DE 03];
+			};
+		};
+	};
+};
+
+&temp {
+	status = "okay";
+};
+
+/* DMA for SERIAL_ASYNC_API */
+&dma0 {
+	status = "okay";
+};
+
+&usart0 {
+	dmas = <&dma0 DMA_REQSEL_USART0TXBL>,
+	       <&dma0 DMA_REQSEL_USART0RXDATAV>;
+	dma-names = "tx", "rx";
+	zephyr,pm-device-runtime-auto;
+};
+&i2c0 {
+	zephyr,pm-device-runtime-auto;
+};
+&eusart1 {
+	zephyr,pm-device-runtime-auto;
+	/* IMU chip select (through the sensor isolation switch) */
+	cs-gpios = <&gpioc 0 GPIO_ACTIVE_LOW>, <&gpioa 7 GPIO_ACTIVE_LOW>;
+
+	icm20689: icm20689@1 {
+		compatible = "invensense,icm20689";
+		reg = <1>;
+		spi-max-frequency = <8000000>;
+		/* Pulled up to the sensor power rail */
+		int-gpios = <&gpiob 1 GPIO_ACTIVE_LOW>;
+		int-open-drain;
+	};
+};
+/* Only route the LED pins to the timer while PWM is in use */
+&pinctrl {
+	timer0_sleep: timer0_sleep {
+		group0 {
+			pins = <TIMER0_CC0_PD2>, <TIMER0_CC1_PA4>, <TIMER0_CC2_PB0>;
+			input-disable;
+		};
+	};
+};
+&timer0_pwm {
+	pinctrl-0 = <&timer0_default>;
+	pinctrl-1 = <&timer0_sleep>;
+	pinctrl-names = "default", "sleep";
+	zephyr,pm-device-runtime-auto;
+};
+&si7210 {
+	zephyr,pm-device-runtime-auto;
+};
+&mx25r32 {
+	partitions {
+		compatible = "fixed-partitions";
+		#address-cells = <1>;
+		#size-cells = <1>;
+
+		file_partition: partition@0 {
+			label = "files";
+			reg = <0x00000000 0x00080000>;
+		};
+		data_logger_partition: partition@80000 {
+			label = "data_logger";
+			reg = <0x00080000 0x00380000>;
+		};
+	};
+};
+
+#ifdef INFUSE_IS_BOOTLOADER
+
+/* Bootloader doesn't know about external flash */
+/delete-node/ &data_logger_flash;
+&mx25r32 {
+	status = "disabled";
+	/delete-node/ partitions;
+};
+
+#endif /* INFUSE_IS_BOOTLOADER */

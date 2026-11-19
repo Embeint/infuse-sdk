@@ -32,6 +32,7 @@ Supported Upstream Boards
  * `Nordic nRF9160 DK`_
  * `Nordic nRF9161 DK`_
  * `STM32 NUCLEO-L432KC`_
+ * `Silicon Labs xG24 Dev Kit`_
 
 Supported Infuse Boards
 ***********************
@@ -64,5 +65,6 @@ Simulation Targets
 .. _Nordic nRF9160 DK: https://www.nordicsemi.com/Products/Development-hardware/nRF9160-DK
 .. _Nordic nRF9161 DK: https://www.nordicsemi.com/Products/Development-hardware/nRF9161-DK
 .. _STM32 NUCLEO-L432KC: https://www.st.com/en/evaluation-tools/nucleo-l432kc.html
+.. _Silicon Labs xG24 Dev Kit: https://www.silabs.com/development-tools/wireless/efr32xg24-dev-kit
 .. _ARM V2M MPS2: https://docs.zephyrproject.org/latest/boards/arm/mps2/doc/mps2_an385.html
 .. _nRF52 BSIM: https://docs.zephyrproject.org/latest/boards/native/nrf_bsim/doc/nrf52_bsim.html
