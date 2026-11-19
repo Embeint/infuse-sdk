@@ -11,6 +11,19 @@ config INFUSE_WATCHDOG
 
 if INFUSE_WATCHDOG
 
+config INFUSE_WATCHDOG_INSTALL_INIT_PRIORITY
+	int "POST_KERNEL init priority for installing subsystem watchdog channels"
+	range 0 99
+	default 99
+	help
+	  Init priority of the channels installed by `INFUSE_WATCHDOG_REGISTER_SYS_INIT`.
+	  Must be after the `watchdog0` device has been initialised, as watchdog
+	  drivers are not required to support API calls before initialisation.
+	  Channels must also be installed before the watchdog is started with
+	  `infuse_watchdog_start`, which must therefore not be called before the
+	  APPLICATION init level. Channels are only used by threads, which start
+	  after all init levels.
+
 config INFUSE_WATCHDOG_SW_MULTICHANNEL
 	bool "Emulate multiple watchdog channels in software"
 	depends on INFUSE_WATCHDOG_SOFTWARE_WARNING
