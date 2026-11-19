@@ -64,7 +64,11 @@ struct tdf_{{ info['name'] | lower }} {
 {% endif %}
 
 {% if 'flexible' in info %}
+{% if info['only_flexible'] %}
 /** Define a variant of tdf_{{ info['name'] | lower }} with a constant length */
+{% else %}
+/** Define a variant of @ref tdf_{{ info['name'] | lower }} with a constant length */
+{% endif %}
 #define TDF_{{ info['name'] }}_VAR(_name, _count) \
 	struct _name { \
 {% for field in info['fields'] %}

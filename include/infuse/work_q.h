@@ -37,7 +37,7 @@ extern struct k_work_q infuse_iot_work_q;
  *
  * @param work pointer to the work item.
  *
- * @return as with k_work_submit_to_queue().
+ * @return as with @ref k_work_submit_to_queue.
  */
 static inline int infuse_work_submit(struct k_work *work)
 {
@@ -46,15 +46,15 @@ static inline int infuse_work_submit(struct k_work *work)
 
 /** @brief Submit an idle work item to the Infuse-IoT work queue after a delay.
  *
- * This is a thin wrapper around k_work_schedule_for_queue(), with all the API
+ * This is a thin wrapper around @ref k_work_schedule_for_queue, with all the API
  * characteristics of that function.
  *
  * @param dwork pointer to the delayable work item.
  *
  * @param delay the time to wait before submitting the work item.  If @c
- * K_NO_WAIT this is equivalent to k_work_submit_to_queue().
+ * K_NO_WAIT this is equivalent to @ref k_work_submit_to_queue.
  *
- * @return as with k_work_schedule_for_queue().
+ * @return as with @ref k_work_schedule_for_queue.
  */
 static inline int infuse_work_schedule(struct k_work_delayable *dwork, k_timeout_t delay)
 {
@@ -63,14 +63,14 @@ static inline int infuse_work_schedule(struct k_work_delayable *dwork, k_timeout
 
 /** @brief Reschedule a work item to the Infuse-IoT work queue after a delay.
  *
- * This is a thin wrapper around k_work_reschedule_for_queue(), with all the
+ * This is a thin wrapper around @ref k_work_reschedule_for_queue, with all the
  * API characteristics of that function.
  *
  * @param dwork pointer to the delayable work item.
  *
  * @param delay the time to wait before submitting the work item.
  *
- * @return as with k_work_reschedule_for_queue().
+ * @return as with @ref k_work_reschedule_for_queue.
  */
 static inline int infuse_work_reschedule(struct k_work_delayable *dwork, k_timeout_t delay)
 {

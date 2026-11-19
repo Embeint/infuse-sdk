@@ -30,11 +30,11 @@ struct infuse_algorithm;
 /**
  * @brief Algorithm implementation
  *
- * @warning The algorithm implementation ***MUST*** release the channel reference via @a
- * zbus_chan_finish before exiting. This should be done as soon as processing of the channel data
- * has completed.
+ * @warning The algorithm implementation ***MUST*** release the channel reference via
+ * @ref zbus_chan_finish before exiting. This should be done as soon as processing of the channel
+ * data has completed.
  *
- * @param chan Channel pointer corresponding to @a zbus_channel in
+ * @param chan Channel pointer corresponding to @ref zbus_channel in
  * @ref infuse_algorithm. Value is NULL on the very first call to initialise data
  * structures.
  * @param algorithm Pointer to algorithm config
@@ -45,7 +45,7 @@ typedef void (*algorithm_run_fn)(const struct zbus_channel *chan,
 
 /** @brief Algorithm definition */
 struct infuse_algorithm {
-	/** Version of the `infuse_algorithm` struct */
+	/** Version of the @ref infuse_algorithm struct */
 	uint8_t struct_version;
 	/** Currently unused struct padding */
 	uint8_t reserved;

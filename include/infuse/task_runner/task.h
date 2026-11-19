@@ -215,7 +215,7 @@ struct task_data {
 /* clang-format on */
 
 /**
- * @brief Get the parent task_data struct from the work pointer
+ * @brief Get the parent @ref task_data struct from the work pointer
  *
  * @param work Work pointer provided to handler
  *

@@ -99,7 +99,7 @@ enum task_runner_periodicity_type {
 /** @endcond */
 
 /**
- * @brief Helper for constructing a task_schedule_state_conditions struct
+ * @brief Helper for constructing a @ref task_schedule_state_conditions struct
  *
  * Each provided state can be optionally inverted (with @ref TR_NOT).
  * Each provided state is evaluated with the following priority:

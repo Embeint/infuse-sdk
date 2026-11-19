@@ -156,7 +156,7 @@ psa_key_id_t infuse_security_secondary_network_root_key(void);
 /**
  * @brief Get security tag for use with Infuse-IoT COAP server
  *
- * @return sec_tag_t Security tag for use with zsock_setsockopt
+ * @return @ref sec_tag_t Security tag for use with zsock_setsockopt
  */
 sec_tag_t infuse_security_coap_dtls_tag(void);
 

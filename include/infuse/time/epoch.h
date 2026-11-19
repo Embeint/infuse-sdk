@@ -303,7 +303,7 @@ void epoch_time_unix_calendar(uint64_t epoch_time, struct tm *calendar);
 /**
  * @brief Get the current source of epoch time knowledge
  *
- * @return enum epoch_time_source Current time source
+ * @return enum @ref epoch_time_source Current time source
  */
 enum epoch_time_source epoch_time_get_source(void);
 

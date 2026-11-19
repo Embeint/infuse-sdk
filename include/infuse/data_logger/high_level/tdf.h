@@ -79,7 +79,7 @@ enum tdf_data_logger_mask {
  * @param data TDF data array
  *
  * @retval 0 On success
- * @retval -errno Error code from @a tdf_add or @a tdf_data_logger_flush on error
+ * @retval -errno Error code from @ref tdf_add or @ref tdf_data_logger_flush on error
  */
 int tdf_data_logger_log_core_dev(const struct device *dev, uint16_t tdf_id, uint8_t tdf_len,
 				 uint8_t tdf_num, enum tdf_data_format format, uint64_t time,
@@ -114,7 +114,7 @@ void tdf_data_logger_log_core(uint8_t logger_mask, uint16_t tdf_id, uint8_t tdf_
  * @param data TDF data array
  *
  * @retval 0 On success
- * @retval -errno Error code from @a tdf_add or @a tdf_data_logger_flush on error
+ * @retval -errno Error code from @ref tdf_add or @ref tdf_data_logger_flush on error
  */
 static inline int tdf_data_logger_log_array_dev(const struct device *dev, uint16_t tdf_id,
 						uint8_t tdf_len, uint8_t tdf_num, uint64_t time,
@@ -153,7 +153,7 @@ static inline void tdf_data_logger_log_array(uint8_t logger_mask, uint16_t tdf_i
  * @param data TDF data
  *
  * @retval 0 On success
- * @retval -errno Error code from @a tdf_add or @a tdf_data_logger_flush on error
+ * @retval -errno Error code from @ref tdf_add or @ref tdf_data_logger_flush on error
  */
 static inline int tdf_data_logger_log_dev(const struct device *dev, uint16_t tdf_id,
 					  uint8_t tdf_len, uint64_t time, const void *data)
@@ -243,7 +243,7 @@ int tdf_data_logger_block_bytes_remaining(const struct device *dev);
  * @param dev Data logger
  *
  * @retval >=0 On success, number of bytes flushed
- * @retval -errno Error code from @a data_logger_block_write
+ * @retval -errno Error code from @ref data_logger_block_write
  */
 int tdf_data_logger_flush_dev(const struct device *dev);
 

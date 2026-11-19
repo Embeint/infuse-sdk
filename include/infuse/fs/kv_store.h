@@ -64,7 +64,7 @@ struct kv_store_cb {
 /**
  * @brief Get filesystem used by KV store
  *
- * @return void* `struct nvs_fs` pointer
+ * @return void* struct @ref nvs_fs pointer
  */
 void *kv_store_fs(void);
 
@@ -193,7 +193,7 @@ ssize_t kv_store_write(uint16_t key, const void *data, size_t data_len);
  * @param key Key to write to
  * @param data Pointer to value
  *
- * @return a value from @a kv_store_write
+ * @return a value from @ref kv_store_write
  */
 #define KV_STORE_WRITE(key, data) kv_store_write(key, data, sizeof(*data))
 
@@ -219,7 +219,7 @@ ssize_t kv_store_read(uint16_t key, void *data, size_t max_data_len);
  * @param key Key to read from
  * @param data Pointer to value
  *
- * @return a value from @a kv_store_read
+ * @return a value from @ref kv_store_read
  */
 #define KV_STORE_READ(key, data) kv_store_read(key, data, sizeof(*data))
 
@@ -249,7 +249,7 @@ ssize_t kv_store_read_fallback(uint16_t key, void *data, size_t max_data_len, co
  * @param data Pointer to value
  * @param fallback Pointer to fallback value
  *
- * @return a value from @a kv_store_read_fallback
+ * @return a value from @ref kv_store_read_fallback
  */
 #define KV_STORE_READ_FALLBACK(key, data, fallback)                                                \
 	kv_store_read_fallback(key, data, sizeof(*data), fallback, sizeof(*fallback))

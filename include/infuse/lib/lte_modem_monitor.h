@@ -88,7 +88,7 @@ struct lte_edrx_cfg {
 	/**
 	 * LTE mode for which the configuration is valid.
 	 *
-	 * If the mode is @a CELLULAR_ACCESS_TECHNOLOGY_UNKNOWN, access technology is not using
+	 * If the mode is @ref CELLULAR_ACCESS_TECHNOLOGY_UNKNOWN, access technology is not using
 	 * eDRX.
 	 */
 	enum cellular_access_technology mode;

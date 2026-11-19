@@ -35,9 +35,9 @@ void generic_sim_reset(const struct device *dev, bool reset_rc);
  * @brief Configure return value for generic sensor device
  *
  * @param dev Generic simulator sensor device to reset
- * @param resume_rc Return code for @a PM_DEVICE_ACTION_RESUME
- * @param suspend_rc Return code for @a PM_DEVICE_ACTION_SUSPEND
- * @param fetch_rc Return code for @a sensor_sample_fetch
+ * @param resume_rc Return code for @ref PM_DEVICE_ACTION_RESUME
+ * @param suspend_rc Return code for @ref PM_DEVICE_ACTION_SUSPEND
+ * @param fetch_rc Return code for @ref sensor_sample_fetch
  */
 void generic_sim_func_rc(const struct device *dev, int resume_rc, int suspend_rc, int fetch_rc);
 

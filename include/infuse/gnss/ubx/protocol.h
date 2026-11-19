@@ -1175,11 +1175,11 @@ BUILD_ASSERT(sizeof(struct ubx_msg_sec_uniqid) == 10);
  */
 
 /**
- * @brief Create a net_buf_simple large enough to hold a message
+ * @brief Create a @ref net_buf_simple large enough to hold a message
  *
  * @warning Only works for fixed length messages
  *
- * @param name Name of net_buf_simple
+ * @param name Name of @ref net_buf_simple
  * @param msg_type UBX message structure
  */
 #define UBX_MSG_BUF_DEFINE(name, msg_type)                                                         \
@@ -1187,7 +1187,7 @@ BUILD_ASSERT(sizeof(struct ubx_msg_sec_uniqid) == 10);
 			      (sizeof(struct ubx_frame) + sizeof(msg_type) + sizeof(uint16_t)))
 
 /**
- * @brief Prepare a net_buf_simple to be used as a UBX protocol message
+ * @brief Prepare a @ref net_buf_simple to be used as a UBX protocol message
  *
  * @param buf Buffer to prepare.
  * @param msg_class UBX protocol message class (@ref ubx_msg_class)
@@ -1230,7 +1230,7 @@ static inline uint16_t ubx_checksum(const uint8_t *data, size_t len)
 }
 
 /**
- * @brief Finalise a net_buf_simple to be used as a UBX protocol message
+ * @brief Finalise a @ref net_buf_simple to be used as a UBX protocol message
  *
  * Populates the header payload size and computes the message checksum.
  *
@@ -1256,7 +1256,7 @@ static inline void ubx_msg_finalise(struct net_buf_simple *buf)
 }
 
 /**
- * @brief Create a UBX message in a net_buf_simple
+ * @brief Create a UBX message in a @ref net_buf_simple
  *
  * @param buf Buffer to push message into
  * @param msg_class UBX protocol message class (@ref ubx_msg_class)

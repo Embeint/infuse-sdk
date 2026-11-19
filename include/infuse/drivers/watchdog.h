@@ -62,7 +62,7 @@ extern "C" {
  * @brief Install a watchdog timeout at boot
  *
  * @param name Unique prefix for constructed variables
- * @param dependency Timeout only installed if `IS_ENABLED(dependency)`
+ * @param dependency Timeout only installed if @ref IS_ENABLED "IS_ENABLED(dependency)"
  * @param chan_name Name of the variable for the channel ID
  * @param period_name Name of the variable for the channel feed period
  */
@@ -104,7 +104,7 @@ void infuse_watchdog_expired(const struct device *dev, int channel_id);
 /**
  * @brief Install an Infuse watchdog channel
  *
- * @return value from @a wdt_install_timeout
+ * @return value from @ref wdt_install_timeout
  */
 int infuse_watchdog_install(k_timeout_t *feed_period);
 
@@ -147,7 +147,7 @@ int infuse_watchdog_thread_state_lookup(int wdog_channel, uint32_t *info1, uint3
 /**
  * @brief Start the Infuse watchdog
  *
- * @return value from @a wdt_setup
+ * @return value from @ref wdt_setup
  */
 int infuse_watchdog_start(void);
 

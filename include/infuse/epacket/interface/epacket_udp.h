@@ -59,10 +59,10 @@ void epacket_udp_flags_set(uint16_t flags);
  * Takes the interface administratively down, back up, and then requests a connection.
  * Intended for recovering the underlying hardware (e.g. forcing a SIM card to be
  * re-evaluated), where the application still wants connectivity throughout.
- * Unlike calling net_if_down() and net_if_up() directly, the downlink watchdog
+ * Unlike calling @ref net_if_down and @ref net_if_up directly, the downlink watchdog
  * (@kconfig{CONFIG_EPACKET_INTERFACE_UDP_DOWNLINK_WATCHDOG}) is not cancelled or restarted.
  *
- * @note Admin state changes on non-persistent interfaces (no @a CONN_MGR_IF_PERSISTENT flag)
+ * @note Admin state changes on non-persistent interfaces (no @ref CONN_MGR_IF_PERSISTENT flag)
  *       already leave a running watchdog untouched, so this only changes the watchdog
  *       behaviour for persistent interfaces and interfaces without a connectivity binding.
  *
@@ -73,7 +73,7 @@ void epacket_udp_flags_set(uint16_t flags);
  *
  * @retval 0 on success
  * @retval -ENETDOWN if the interface is not administratively up
- * @retval -errno error code from net_if_down(), net_if_up() or conn_mgr_if_connect()
+ * @retval -errno error code from @ref net_if_down, @ref net_if_up or @ref conn_mgr_if_connect
  */
 int epacket_udp_interface_cycle(struct net_if *iface);
 
