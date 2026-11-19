@@ -61,6 +61,7 @@ configdefault UART_INTERRUPT_DRIVEN
 	default y if UART_NRFX
 configdefault UART_ASYNC_API
 	default y if UART_STM32
+	default y if UART_SILABS_USART || UART_SILABS_EUSART
 
 # Remote Procedure Calls
 configdefault INFUSE_RPC
