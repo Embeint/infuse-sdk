@@ -53,7 +53,7 @@ runs:
       if: inputs.fetch-blobs == 'true'
       shell: bash
       working-directory: infuse-sdk
-      run: west blobs fetch hal_nordic nrf_wifi
+      run: west blobs fetch hal_nordic hal_silabs nrf_wifi
 
     - name: Install Zephyr Python packages
       shell: bash
