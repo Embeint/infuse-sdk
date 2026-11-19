@@ -16,3 +16,8 @@ configdefault ZMS_LOG_LEVEL
 
 configdefault BT_LOG_LEVEL
 	default 2
+
+# Lazy FP context stacking reserves an extended exception frame on the thread
+# stack whenever an interrupt preempts the (FP using) log formatting.
+configdefault LOG_PROCESS_THREAD_STACK_SIZE
+	default 1024 if FPU_SHARING
