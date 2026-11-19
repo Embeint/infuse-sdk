@@ -40,9 +40,12 @@ extern "C" {
 #define INFUSE_WATCHDOG_FEED_PERIOD                                                                \
 	K_MSEC(CONFIG_INFUSE_WATCHDOG_PERIOD_MS - CONFIG_INFUSE_WATCHDOG_FEED_EARLY_MS)
 
+/** Watchdog does not support expiry callbacks in combination with SoC reset */
+#define _INFUSE_WATCHDOG_NO_CB                                                                     \
+	(IS_ENABLED(CONFIG_HAS_WDT_NO_CALLBACKS) || IS_ENABLED(CONFIG_WDT_GECKO))
+
 /** Watchdog expiry callback, if supported */
-#define _INFUSE_WATCHDOG_CB                                                                        \
-	COND_CODE_1(CONFIG_HAS_WDT_NO_CALLBACKS, (NULL), (infuse_watchdog_expired))
+#define _INFUSE_WATCHDOG_CB (_INFUSE_WATCHDOG_NO_CB ? NULL : infuse_watchdog_expired)
 
 /** Default timeout configuration for subsystems */
 #define INFUSE_WATCHDOG_DEFAULT_TIMEOUT_CFG                                                        \
