@@ -27,7 +27,7 @@ config INFUSE_WATCHDOG_INSTALL_INIT_PRIORITY
 config INFUSE_WATCHDOG_SW_MULTICHANNEL
 	bool "Emulate multiple watchdog channels in software"
 	depends on INFUSE_WATCHDOG_SOFTWARE_WARNING
-	default y if IWDG_STM32
+	default y if IWDG_STM32 || WDT_GECKO
 	help
 	  Multiple channels are emulated by feeding the hardware watchdog
 	  once all software channels have been fed at least once.
@@ -52,6 +52,8 @@ config INFUSE_WATCHDOG_SOFTWARE_WARNING
 	bool "Enable a software alarm that provides a pre-warning before hardware expiry"
 	default y if SOC_FAMILY_NORDIC_NRF && INFUSE_MEMFAULT
 	default y if HAS_WDT_NO_CALLBACKS
+	# Callbacks are only supported without SoC reset
+	default y if WDT_GECKO
 
 config INFUSE_WATCHDOG_SOFTWARE_WARNING_MS
 	int "Milliseconds before hardware expiry to trigger software warning"
