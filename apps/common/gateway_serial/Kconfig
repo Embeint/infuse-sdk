@@ -1,0 +1,5 @@
+# Common serial Bluetooth gateway options
+
+# Default RPCs (if hardware supports)
+configdefault INFUSE_RPC_COMMAND_BT_FILE_COPY_BASIC
+	default y
