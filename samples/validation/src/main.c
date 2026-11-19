@@ -25,6 +25,7 @@
 #include <infuse/validation/env.h>
 #include <infuse/validation/imu.h>
 #include <infuse/validation/leds.h>
+#include <infuse/validation/light.h>
 #include <infuse/validation/lora.h>
 #include <infuse/validation/pwr.h>
 #include <infuse/validation/flash.h>
@@ -93,6 +94,9 @@ static int simple_sensor_validator(void *a, void *b, void *c)
 	if (IS_ENABLED(DT_NODE_HAS_STATUS_OKAY(DT_ALIAS(environmental1)))) {
 		atomic_inc(&validators_registered);
 	}
+	if (IS_ENABLED(DT_NODE_HAS_STATUS_OKAY(DT_ALIAS(light0)))) {
+		atomic_inc(&validators_registered);
+	}
 	if (IS_ENABLED(DT_NODE_HAS_STATUS_OKAY(DT_ALIAS(fuel_gauge0)))) {
 		atomic_inc(&validators_registered);
 	}
@@ -113,6 +117,16 @@ static int simple_sensor_validator(void *a, void *b, void *c)
 #if DT_NODE_HAS_STATUS_OKAY(DT_ALIAS(environmental1))
 	env_validation_run(DEVICE_DT_GET(DT_ALIAS(environmental1)));
 #endif /* DT_NODE_HAS_STATUS_OKAY(DT_ALIAS(environmental1)) */
+
+#if DT_NODE_HAS_STATUS_OKAY(DT_ALIAS(light0))
+	if (infuse_validation_light(DEVICE_DT_GET(DT_ALIAS(light0)),
+				    VALIDATION_LIGHT_ILLUMINANCE) == 0) {
+		atomic_inc(&validators_passed);
+	} else {
+		atomic_inc(&validators_failed);
+	}
+	atomic_inc(&validators_complete);
+#endif /* DT_NODE_HAS_STATUS_OKAY(DT_ALIAS(light0)) */
 
 #if DT_NODE_HAS_STATUS_OKAY(DT_ALIAS(fuel_gauge0))
 	/* Give the fuel gauge a second to settle to steady state */
