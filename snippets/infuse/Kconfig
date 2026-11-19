@@ -22,5 +22,6 @@ rsource "boards/tauro.defconfig"
 rsource "boards/tauro2.defconfig"
 rsource "boards/thingy53.defconfig"
 rsource "boards/thingy91x.defconfig"
+rsource "boards/xg24_dk2601b.defconfig"
 
 endif # SNIPPET_INFUSE
