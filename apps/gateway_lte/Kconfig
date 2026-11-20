@@ -8,6 +8,18 @@ config LTE_GATEWAY_DEFAULT_MAXIMUM_UPLINK_THROUGHPUT_KBPS
 	default 175 if SOC_SERIES_NRF91
 	default 0
 
+config LTE_GATEWAY_DEFERRED_START_BATTERY_MV
+	int "Battery voltage required before enabling LTE and Bluetooth scanning (mV)"
+	depends on TASK_RUNNER_TASK_BATTERY
+	default 0
+	help
+	  When non-zero, the LTE interface is not brought up and Bluetooth
+	  advertising reception (scanning) is not started until the battery
+	  task reports a voltage greater than or equal to this value.
+	  Once the threshold has been reached the interfaces remain enabled,
+	  regardless of later battery measurements.
+	  A value of 0 enables the interfaces immediately on boot.
+
 # Default RPCs (if hardware supports)
 configdefault INFUSE_RPC_COMMAND_BT_FILE_COPY_BASIC
 	default y
