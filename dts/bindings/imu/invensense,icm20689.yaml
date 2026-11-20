@@ -1,0 +1,24 @@
+# Copyright (c) 2026 Embeint Holdings Pty Ltd
+# SPDX-License-Identifier: FSL-1.1-ALv2
+
+description: |
+  TDK InvenSense ICM-20689 6-axis motion tracking device
+
+compatible: "invensense,icm20689"
+
+include: [sensor-device.yaml, spi-device.yaml]
+
+properties:
+  int-gpios:
+    type: phandle-array
+    description: |
+      The INT pin, used to signal FIFO overflows. The device has no FIFO
+      watermark interrupt, so FIFO reads are scheduled from a timer.
+      The pin is driven active-low if the GPIO_ACTIVE_LOW flag is set,
+      otherwise active-high.
+
+  int-open-drain:
+    type: boolean
+    description: |
+      Configure the INT pin as an open-drain output, for when the line is
+      pulled up externally. Otherwise the pin is a push-pull output.
