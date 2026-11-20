@@ -1,0 +1,15 @@
+# Infuse-IoT SDK Silicon Labs defaults
+#
+# Copyright (c) 2026 Embeint Holdings Pty Ltd
+# SPDX-License-Identifier: FSL-1.1-ALv2
+
+if SOC_FAMILY_SILABS_S2
+
+# The SoC Kconfig defaults PM to n, which takes precedence over the
+# `configdefault` in Kconfig.defaults.core. Without PM the core never
+# enters EM2, idling in EM1 instead.
+config INFUSE_SILABS_DEFAULT_PM
+	def_bool y
+	imply PM
+
+endif # SOC_FAMILY_SILABS_S2
