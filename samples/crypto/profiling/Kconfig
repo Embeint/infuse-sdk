@@ -1,0 +1,7 @@
+# The DWT cycle counter does not count from the Non-Secure image
+# unless debug access is enabled (APPROTECT disabled). Use the
+# Nordic TIMER based timing functions instead when running under TF-M.
+configdefault CORTEX_M_DWT
+	default n if BUILD_WITH_TFM && SOC_FAMILY_NORDIC_NRF
+
+source "Kconfig.zephyr"

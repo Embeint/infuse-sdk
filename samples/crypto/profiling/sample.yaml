@@ -17,12 +17,14 @@ common:
     - nrf52840dk/nrf52840
     - nrf5340dk/nrf5340/cpuapp
     - nrf5340dk/nrf5340/cpuapp/ns
+    - nrf9151dk/nrf9151/ns
   integration_platforms:
     - qemu_cortex_m3
     - native_sim
     - nrf52840dk/nrf52840
     - nrf5340dk/nrf5340/cpuapp
     - nrf5340dk/nrf5340/cpuapp/ns
+    - nrf9151dk/nrf9151/ns
 tests:
   sample.app.crypto_profiling:
     harness: console
