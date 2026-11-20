@@ -1,0 +1,17 @@
+# Infuse-IoT C library tweaks
+
+config INFUSE_LIBC_FAST_MEM_FUNCTIONS
+	bool "Speed optimised memcpy and memset"
+	depends on ARM
+	depends on PICOLIBC_USE_TOOLCHAIN
+	depends on SIZE_OPTIMIZATIONS
+	default y
+	help
+	  When linking with -Os, GCC selects the size optimised ("space")
+	  picolibc multilib from the toolchain, in which memcpy and memset
+	  are implemented as byte-by-byte loops. Link the memcpy and memset
+	  objects from the speed optimised multilib instead, which copy and
+	  set memory a word at a time. The rest of the C library remains
+	  size optimised.
+
+	  This costs ~370 bytes of ROM on ARMv8-M.
