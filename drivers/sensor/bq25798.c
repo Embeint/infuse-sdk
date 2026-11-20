@@ -332,6 +332,10 @@ static int bq25798_channel_get(const struct device *dev, enum sensor_channel cha
 	case SENSOR_CHAN_GAUGE_TEMP: {
 		float rth, inv_ts;
 
+		if (!IS_ENABLED(CONFIG_BQ25798_TS_ADC)) {
+			return -ENOTSUP;
+		}
+
 		/* Inverted TS reading */
 		inv_ts = 1.0f / (sys_be16_to_cpu(data->adc_regs.ts) * 0.0976563f * 0.01f);
 		/* Equivalent resistance seen by ADC */
@@ -383,8 +387,10 @@ static int bq25798_init(const struct device *dev)
 		return -ENODEV;
 	}
 
-	/* Precompute constant divisor */
-	data->ts_log_divisor = config->ntc_r0 * expf(-config->ntc_beta / config->ntc_t0);
+	if (IS_ENABLED(CONFIG_BQ25798_TS_ADC)) {
+		/* Precompute constant divisor */
+		data->ts_log_divisor = config->ntc_r0 * expf(-config->ntc_beta / config->ntc_t0);
+	}
 
 	/* Initialise data structures */
 	data->dev = dev;
@@ -518,6 +524,9 @@ static int bq25798_init(const struct device *dev)
 	 * Note that VAC1, VAC2 and VBUS seem to be required for normal operation of the device.
 	 */
 	u8 = BQ25798_ADC_FUNC_DISABLE_0_IBUS | BQ25798_ADC_FUNC_DISABLE_0_VSYS;
+	if (!IS_ENABLED(CONFIG_BQ25798_TS_ADC)) {
+		u8 |= BQ25798_ADC_FUNC_DISABLE_0_TS;
+	}
 	rc = bq25798_reg_write(dev, BQ25798_REG_ADC_FUNC_DISABLE_0, u8);
 	if (rc != 0) {
 		LOG_ERR("Reg 0x%02X %s error (%d)", BQ25798_REG_ADC_FUNC_DISABLE_0, "write", rc);

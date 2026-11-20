@@ -34,6 +34,17 @@ config BQ25798_FETCH_POOR_SOURCE_RETRY
 	   Enabling this flag results in `sensor_fetch` retrying the
 	   source qualification if the charger is in poor source mode.
 
+config BQ25798_TS_ADC
+	bool "Measure battery temperature through the TS ADC channel"
+	default y if INFUSE_VALIDATION
+	help
+	  Convert the TS (thermistor) channel on each sample and report it
+	  through SENSOR_CHAN_GAUGE_TEMP. Disabled by default as the channel
+	  adds a conversion to every sample and keeps REGN powered in battery
+	  only mode, which also raises the battery voltage required for the
+	  ADC to run from 2.9V to 3.2V. JEITA charge temperature protection
+	  uses separate comparators and is unaffected.
+
 endif
 
 config PAC194X
