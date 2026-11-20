@@ -27,6 +27,7 @@
 #include <infuse/validation/leds.h>
 #include <infuse/validation/light.h>
 #include <infuse/validation/lora.h>
+#include <infuse/validation/magnetometer.h>
 #include <infuse/validation/pwr.h>
 #include <infuse/validation/flash.h>
 #include <infuse/validation/gnss.h>
@@ -97,6 +98,9 @@ static int simple_sensor_validator(void *a, void *b, void *c)
 	if (IS_ENABLED(DT_NODE_HAS_STATUS_OKAY(DT_ALIAS(light0)))) {
 		atomic_inc(&validators_registered);
 	}
+	if (IS_ENABLED(DT_NODE_HAS_STATUS_OKAY(DT_ALIAS(magn0)))) {
+		atomic_inc(&validators_registered);
+	}
 	if (IS_ENABLED(DT_NODE_HAS_STATUS_OKAY(DT_ALIAS(fuel_gauge0)))) {
 		atomic_inc(&validators_registered);
 	}
@@ -127,6 +131,16 @@ static int simple_sensor_validator(void *a, void *b, void *c)
 	}
 	atomic_inc(&validators_complete);
 #endif /* DT_NODE_HAS_STATUS_OKAY(DT_ALIAS(light0)) */
+
+#if DT_NODE_HAS_STATUS_OKAY(DT_ALIAS(magn0))
+	if (infuse_validation_magnetometer(DEVICE_DT_GET(DT_ALIAS(magn0)),
+					   VALIDATION_MAGNETOMETER_FIELD) == 0) {
+		atomic_inc(&validators_passed);
+	} else {
+		atomic_inc(&validators_failed);
+	}
+	atomic_inc(&validators_complete);
+#endif /* DT_NODE_HAS_STATUS_OKAY(DT_ALIAS(magn0)) */
 
 #if DT_NODE_HAS_STATUS_OKAY(DT_ALIAS(fuel_gauge0))
 	/* Give the fuel gauge a second to settle to steady state */
