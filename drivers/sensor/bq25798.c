@@ -521,7 +521,7 @@ static int bq25798_init(const struct device *dev)
 	}
 
 	/* Disable unused ADC channels to speed up conversion.
-	 * Note that VAC1, VAC2 and VBUS seem to be required for normal operation of the device.
+	 * VBUS is left enabled as it may be required for normal operation of the device.
 	 */
 	u8 = BQ25798_ADC_FUNC_DISABLE_0_IBUS | BQ25798_ADC_FUNC_DISABLE_0_VSYS;
 	if (!IS_ENABLED(CONFIG_BQ25798_TS_ADC)) {
@@ -532,7 +532,8 @@ static int bq25798_init(const struct device *dev)
 		LOG_ERR("Reg 0x%02X %s error (%d)", BQ25798_REG_ADC_FUNC_DISABLE_0, "write", rc);
 		return rc;
 	}
-	u8 = BQ25798_ADC_FUNC_DISABLE_1_DP | BQ25798_ADC_FUNC_DISABLE_1_DM;
+	u8 = BQ25798_ADC_FUNC_DISABLE_1_DP | BQ25798_ADC_FUNC_DISABLE_1_DM |
+	     BQ25798_ADC_FUNC_DISABLE_1_VAC2 | BQ25798_ADC_FUNC_DISABLE_1_VAC1;
 	rc = bq25798_reg_write(dev, BQ25798_REG_ADC_FUNC_DISABLE_1, u8);
 	if (rc != 0) {
 		LOG_ERR("Reg 0x%02X %s error (%d)", BQ25798_REG_ADC_FUNC_DISABLE_1, "write", rc);
