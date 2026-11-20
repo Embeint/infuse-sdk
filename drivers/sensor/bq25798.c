@@ -530,6 +530,36 @@ static int bq25798_init(const struct device *dev)
 		return rc;
 	}
 
+	/* Only interrupt on events that can make MPPT eligible again (power good, battery
+	 * present, leaving VSYSMIN regulation, ICO done) or that complete a sample (ADC_DONE).
+	 * A weak source such as a solar panel in low light repeatedly crosses the VAC present
+	 * threshold and collapses when connected, pulsing the presence and VBUS status flags.
+	 */
+	u8 = BQ25798_CHARGER_MASK_0_IINDPM | BQ25798_CHARGER_MASK_0_VINDPM |
+	     BQ25798_CHARGER_MASK_0_WD | BQ25798_CHARGER_MASK_0_POORSRC |
+	     BQ25798_CHARGER_MASK_0_AC2_PRESENT | BQ25798_CHARGER_MASK_0_AC1_PRESENT |
+	     BQ25798_CHARGER_MASK_0_VBUS_PRESENT;
+	rc = bq25798_reg_write(dev, BQ25798_REG_CHARGER_MASK_0, u8);
+	if (rc != 0) {
+		LOG_ERR("Reg 0x%02X %s error (%d)", BQ25798_REG_CHARGER_MASK_0, "write", rc);
+		return rc;
+	}
+	u8 = BQ25798_CHARGER_MASK_1_CHG | BQ25798_CHARGER_MASK_1_VBUS |
+	     BQ25798_CHARGER_MASK_1_TREG | BQ25798_CHARGER_MASK_1_BC12_DONE;
+	rc = bq25798_reg_write(dev, BQ25798_REG_CHARGER_MASK_1, u8);
+	if (rc != 0) {
+		LOG_ERR("Reg 0x%02X %s error (%d)", BQ25798_REG_CHARGER_MASK_1, "write", rc);
+		return rc;
+	}
+	u8 = BQ25798_CHARGER_MASK_2_DPDM_DONE | BQ25798_CHARGER_MASK_2_CHG_TMR |
+	     BQ25798_CHARGER_MASK_2_TRICH_TMR | BQ25798_CHARGER_MASK_2_PRECHG_TMR |
+	     BQ25798_CHARGER_MASK_2_TOPOFF_TMR;
+	rc = bq25798_reg_write(dev, BQ25798_REG_CHARGER_MASK_2, u8);
+	if (rc != 0) {
+		LOG_ERR("Reg 0x%02X %s error (%d)", BQ25798_REG_CHARGER_MASK_2, "write", rc);
+		return rc;
+	}
+
 	/* Disable temperature related interrupts (transient interrupts when sampling ADC) */
 	rc = bq25798_reg_write(dev, BQ25798_REG_CHARGER_MASK_3, 0x0F);
 	if (rc != 0) {
