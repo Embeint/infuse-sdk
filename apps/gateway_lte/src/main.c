@@ -16,6 +16,7 @@
 #include <zephyr/net/net_mgmt.h>
 #include <zephyr/net/conn_mgr_connectivity.h>
 #include <zephyr/pm/device_runtime.h>
+#include <zephyr/zbus/zbus.h>
 
 #include <infuse/auto/bluetooth_conn_log.h>
 #include <infuse/auto/time_sync_log.h>
@@ -33,6 +34,7 @@
 #include <infuse/reboot/tdf.h>
 #include <infuse/states.h>
 #include <infuse/tdf/definitions.h>
+#include <infuse/zbus/channels.h>
 
 #include <infuse/task_runner/runner.h>
 #include <infuse/task_runner/tasks/infuse_tasks.h>
@@ -180,6 +182,29 @@ static const struct kv_gateway_bluetooth_forward_options bt_forwarding_options_d
 	.percent = 256 / 4,
 };
 static struct kv_gateway_bluetooth_forward_options bt_forwarding_options;
+/* Bluetooth advertising reception has been enabled */
+static atomic_t bt_adv_rx_enabled;
+
+#if CONFIG_LTE_GATEWAY_DEFERRED_START_BATTERY_MV > 0
+static void new_battery_data(const struct zbus_channel *chan);
+
+INFUSE_ZBUS_CHAN_DECLARE(INFUSE_ZBUS_CHAN_BATTERY);
+ZBUS_LISTENER_DEFINE(battery_listener, new_battery_data);
+ZBUS_CHAN_ADD_OBS(INFUSE_ZBUS_NAME(INFUSE_ZBUS_CHAN_BATTERY), battery_listener, 5);
+
+static K_SEM_DEFINE(battery_threshold_reached, 0, 1);
+
+static void new_battery_data(const struct zbus_channel *chan)
+{
+	const struct tdf_battery_state *battery = zbus_chan_const_msg(chan);
+
+	if (battery->voltage_mv >= CONFIG_LTE_GATEWAY_DEFERRED_START_BATTERY_MV) {
+		/* Threshold reached, no further notifications required */
+		(void)zbus_obs_set_enable(&battery_listener, false);
+		k_sem_give(&battery_threshold_reached);
+	}
+}
+#endif /* CONFIG_LTE_GATEWAY_DEFERRED_START_BATTERY_MV > 0 */
 
 static void custom_tdf_logger(uint8_t tdf_loggers, uint64_t timestamp)
 {
@@ -226,7 +251,7 @@ static void state_cleared(enum infuse_state state, void *user_ctx)
 	const struct device *bt_adv = DEVICE_DT_GET(DT_NODELABEL(epacket_bt_adv));
 	int rc;
 
-	if (state != INFUSE_STATE_HIGH_PRIORITY_UPLINK) {
+	if ((state != INFUSE_STATE_HIGH_PRIORITY_UPLINK) || !atomic_get(&bt_adv_rx_enabled)) {
 		return;
 	}
 
@@ -308,6 +333,33 @@ static void led_pulse_dt(const struct gpio_dt_spec *spec, k_timeout_t pulse_dura
 	gpio_pin_set_dt(spec, 1);
 	k_sleep(pulse_duration);
 	gpio_pin_set_dt(spec, 0);
+}
+
+static void radios_enable(void)
+{
+	const struct device *bt_adv = DEVICE_DT_GET(DT_NODELABEL(epacket_bt_adv));
+	const struct device *udp = DEVICE_DT_GET(DT_NODELABEL(epacket_udp));
+
+	/* Listen on Bluetooth advertising and UDP */
+	atomic_set(&bt_adv_rx_enabled, true);
+	epacket_receive(udp, K_FOREVER);
+	epacket_receive(bt_adv, K_FOREVER);
+
+#ifdef CONFIG_MODEM_CELLULAR
+#if defined(CONFIG_NRF_MODEM_LIB)
+	struct net_if *iface = net_if_get_first_by_type(&(NET_L2_GET_NAME(OFFLOADED_NETDEV)));
+#elif defined(CONFIG_NET_L2_PPP)
+	struct net_if *iface = net_if_get_first_by_type(&(NET_L2_GET_NAME(PPP)));
+#else
+#error Unknown LTE modem network interface
+#endif
+	/* For now the Cellular Modem abstraction is not linked to a connection manager */
+	net_if_up(iface);
+#else
+	/* Turn on the interface */
+	conn_mgr_all_if_up(true);
+	conn_mgr_all_if_connect(true);
+#endif /* CONFIG_MODEM_CELLULAR */
 }
 
 int main(void)
@@ -395,32 +447,25 @@ int main(void)
 	epacket_set_receive_handler(bt_central, udp_backhaul_handler);
 	epacket_set_receive_handler(udp, udp_backhaul_handler);
 
-	/* Always listening on Bluetooth advertising and UDP */
-	epacket_receive(bt_adv, K_FOREVER);
-	epacket_receive(udp, K_FOREVER);
-
-#ifdef CONFIG_MODEM_CELLULAR
-#if defined(CONFIG_NRF_MODEM_LIB)
-	struct net_if *iface = net_if_get_first_by_type(&(NET_L2_GET_NAME(OFFLOADED_NETDEV)));
-#elif defined(CONFIG_NET_L2_PPP)
-	struct net_if *iface = net_if_get_first_by_type(&(NET_L2_GET_NAME(PPP)));
-#else
-#error Unknown LTE modem network interface
-#endif
-	/* For now the Cellular Modem abstraction is not linked to a connection manager */
-	net_if_up(iface);
-#else
-	/* Turn on the interface */
-	conn_mgr_all_if_up(true);
-	conn_mgr_all_if_connect(true);
-#endif /* CONFIG_MODEM_CELLULAR */
-
 	/* Initialise task runner */
 	task_runner_init(schedules, states, ARRAY_SIZE(schedules), app_tasks, app_tasks_data,
 			 ARRAY_SIZE(app_tasks));
 
 	/* Start auto iteration */
 	task_runner_start_auto_iterate();
+
+#if CONFIG_LTE_GATEWAY_DEFERRED_START_BATTERY_MV > 0
+	/* Wait for the battery task to report sufficient voltage */
+	LOG_INF("Waiting for battery >= %d mV", CONFIG_LTE_GATEWAY_DEFERRED_START_BATTERY_MV);
+	while (k_sem_take(&battery_threshold_reached, K_SECONDS(5)) != 0) {
+		/* Indicate that we are waiting */
+		led_pulse_dt(&led0, K_MSEC(50));
+	}
+	LOG_INF("Battery threshold reached, enabling LTE and Bluetooth scanning");
+#endif /* CONFIG_LTE_GATEWAY_DEFERRED_START_BATTERY_MV > 0 */
+
+	/* Enable LTE and Bluetooth scanning */
+	radios_enable();
 
 	/* Boot LED sequence */
 	for (int i = 0; i < 5; i++) {

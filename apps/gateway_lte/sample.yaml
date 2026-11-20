@@ -43,6 +43,9 @@ common:
     - nrf93m1dk/nrf54l15/cpuapp
 tests:
   sample.app.gateway_lte: {}
+  sample.app.gateway_lte.deferred_start:
+    extra_configs:
+      - CONFIG_LTE_GATEWAY_DEFERRED_START_BATTERY_MV=3600
   sample.app.gateway_lte.sysbuild:
     sysbuild: true
     filter: not CONFIG_BUILD_WITH_TFM
