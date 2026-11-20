@@ -1,0 +1,21 @@
+# SPDX-License-Identifier: Apache-2.0
+
+choice
+	prompt "Algorithm build type"
+	optional
+
+config TEST_ALGORITHM_BUILD_LLEXT
+	bool "Compile to llext file to load as elf"
+
+config TEST_ALGORITHM_BUILD_NATIVE
+	bool "Compile to run natively"
+	select NRF_EDGEAI
+
+endchoice
+
+config LLEXT_EXPORT_SYMBOL_GROUP_GESTURE_APP
+	bool "Export gesture app symbol group"
+	depends on TEST_ALGORITHM_BUILD_LLEXT || ALGORITHM_RUNNER_LLEXT_LITTLEFS_LOADER
+	default y
+
+source "Kconfig.zephyr"

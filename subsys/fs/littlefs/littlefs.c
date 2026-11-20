@@ -16,9 +16,12 @@
 #include "littlefs_api.h"
 #include "littlefs_util.h"
 
-#define LFS_PARTITION            DT_CHOSEN(infuse_littlefs_partition)
-#define LFS_PARTITION_ID         DT_FIXED_PARTITION_ID(LFS_PARTITION)
-#define LFS_PARTITION_DEVICE     DT_MEM_FROM_FIXED_PARTITION(LFS_PARTITION)
+#define LFS_PARTITION        DT_CHOSEN(infuse_littlefs_partition)
+#define LFS_PARTITION_ID     DT_FIXED_PARTITION_ID(LFS_PARTITION)
+#define LFS_PARTITION_MEMORY DT_MEM_FROM_FIXED_PARTITION(LFS_PARTITION)
+#define LFS_PARTITION_DEVICE                                                                       \
+	COND_CODE_1(DT_NODE_EXISTS(LFS_PARTITION_MEMORY), (LFS_PARTITION_MEMORY),                  \
+		    (DT_MTD_FROM_FIXED_PARTITION(LFS_PARTITION)))
 #define LFS_PARTITION_OFFSET     DT_REG_ADDR(LFS_PARTITION)
 #define LFS_PARTITION_SIZE       DT_REG_SIZE(LFS_PARTITION)
 #define LFS_PARTITION_BLOCK_SIZE DT_PROP(LFS_PARTITION_DEVICE, erase_block_size)
