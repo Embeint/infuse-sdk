@@ -77,8 +77,8 @@ static const struct task_schedule schedules[] = {
 	{
 		.task_id = TASK_ID_BATTERY,
 		.validity = TASK_VALID_ALWAYS,
-		.periodicity_type = TASK_PERIODICITY_FIXED,
-		.periodicity.fixed.period_s = 30,
+		.periodicity_type = TASK_PERIODICITY_LOCKOUT,
+		.periodicity.lockout.lockout_s = TASK_RUNNER_LOCKOUT_IGNORE_FIRST | 30,
 	},
 #if DT_NODE_HAS_STATUS_OKAY(DT_ALIAS(environmental0))
 	{
