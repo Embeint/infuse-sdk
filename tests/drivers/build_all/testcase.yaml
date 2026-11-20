@@ -19,3 +19,6 @@ tests:
   infuse.build.pm:
     extra_configs:
       - CONFIG_PM_DEVICE=y
+  infuse.build.imu_self_test:
+    extra_configs:
+      - CONFIG_INFUSE_IMU_SELF_TEST=y
