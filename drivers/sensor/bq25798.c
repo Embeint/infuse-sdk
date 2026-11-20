@@ -70,6 +70,9 @@ struct bq25798_data {
 
 LOG_MODULE_REGISTER(bq25798, CONFIG_SENSOR_LOG_LEVEL);
 
+/* Register reads that only exist to provide debug output */
+#define BQ25798_DEBUG_READS (CONFIG_SENSOR_LOG_LEVEL >= LOG_LEVEL_DBG)
+
 static int bq25798_reg_write(const struct device *dev, uint8_t reg, uint8_t val)
 {
 	const struct bq25798_config *config = dev->config;
@@ -116,8 +119,12 @@ static int bq25798_mppt_restore(const struct device *dev)
 	}
 
 	rc = i2c_reg_read_byte_dt(&config->bus, BQ25798_REG_MPPT_CONTROL, &reg);
-	if ((rc != 0) || (reg & BQ25798_MPPT_CONTROL_MPPT_ENABLE)) {
+	if (rc != 0) {
 		return rc;
+	}
+	if (reg & BQ25798_MPPT_CONTROL_MPPT_ENABLE) {
+		LOG_DBG("MPPT: enabled (%02X)", reg);
+		return 0;
 	}
 
 	/* Input loss clears EN_MPPT. A depleted battery also rejects enable writes.
@@ -127,10 +134,17 @@ static int bq25798_mppt_restore(const struct device *dev)
 	if (rc != 0) {
 		return rc;
 	}
+	LOG_DBG("MPPT: disabled (%02X), STAT0-3 %02X %02X %02X %02X", reg, status[0], status[1],
+		status[2], status[3]);
 	if (!(status[0] & BQ25798_CHARGER_STATUS_0_VBUS_PRESENT) ||
 	    !(status[0] & BQ25798_CHARGER_STATUS_0_POWER_GOOD) ||
 	    !(status[2] & BQ25798_CHARGER_STATUS_2_VBAT_PRESENT) ||
 	    (status[3] & BQ25798_CHARGER_STATUS_3_VSYS)) {
+		LOG_DBG("MPPT: not eligible (VBUS=%d PG=%d VBAT=%d VSYS_REG=%d)",
+			!!(status[0] & BQ25798_CHARGER_STATUS_0_VBUS_PRESENT),
+			!!(status[0] & BQ25798_CHARGER_STATUS_0_POWER_GOOD),
+			!!(status[2] & BQ25798_CHARGER_STATUS_2_VBAT_PRESENT),
+			!!(status[3] & BQ25798_CHARGER_STATUS_3_VSYS));
 		return 0;
 	}
 
@@ -139,6 +153,7 @@ static int bq25798_mppt_restore(const struct device *dev)
 		return rc;
 	}
 	if (reg & (BQ25798_CHARGER_CONTROL_0_EN_HIZ | BQ25798_CHARGER_CONTROL_0_EN_ICO)) {
+		LOG_DBG("MPPT: not eligible (CTRL0 %02X)", reg);
 		return 0;
 	}
 	rc = i2c_reg_read_byte_dt(&config->bus, BQ25798_REG_CHARGER_CONTROL_4, &reg);
@@ -146,6 +161,7 @@ static int bq25798_mppt_restore(const struct device *dev)
 		return rc;
 	}
 	if (reg & BQ25798_CHARGER_CONTROL_4_FORCE_VINDPM_DET) {
+		LOG_DBG("MPPT: not eligible (CTRL4 %02X)", reg);
 		return 0;
 	}
 
@@ -155,8 +171,9 @@ static int bq25798_mppt_restore(const struct device *dev)
 	}
 	/* Eligibility can change between status and write. A later interrupt retries rejects. */
 	rc = i2c_reg_read_byte_dt(&config->bus, BQ25798_REG_MPPT_CONTROL, &reg);
-	if ((rc == 0) && !(reg & BQ25798_MPPT_CONTROL_MPPT_ENABLE)) {
-		LOG_DBG("MPPT enable deferred");
+	if (rc == 0) {
+		LOG_DBG("MPPT: enable %s (%02X)",
+			(reg & BQ25798_MPPT_CONTROL_MPPT_ENABLE) ? "accepted" : "deferred", reg);
 	}
 	return rc;
 }
@@ -198,6 +215,8 @@ static int bq25798_sample_fetch(const struct device *dev, enum sensor_channel ch
 {
 	const struct bq25798_config *config = dev->config;
 	struct bq25798_data *data = dev->data;
+	int64_t start = BQ25798_DEBUG_READS ? k_uptime_get() : 0;
+	uint32_t wakes = 0;
 	uint8_t reg;
 	int rc;
 
@@ -267,6 +286,9 @@ static int bq25798_sample_fetch(const struct device *dev, enum sensor_channel ch
 	if (rc != 0) {
 		return rc;
 	}
+	if (reg & BQ25798_CHARGER_FLAG_2_ADC_DONE) {
+		LOG_DBG("Cleared stale ADC_DONE (FLAG2 %02X)", reg);
+	}
 	(void)k_sem_take(&data->int_sem, K_NO_WAIT);
 
 	/* Enable the one-shot measurement */
@@ -285,6 +307,7 @@ static int bq25798_sample_fetch(const struct device *dev, enum sensor_channel ch
 	while (true) {
 		int wait_rc = k_sem_take(&data->int_sem, sys_timepoint_timeout(deadline));
 
+		wakes++;
 		rc = i2c_reg_read_byte_dt(&config->bus, BQ25798_REG_CHARGER_FLAG_2, &reg);
 		if (rc != 0) {
 			return rc;
@@ -302,8 +325,21 @@ static int bq25798_sample_fetch(const struct device *dev, enum sensor_channel ch
 	}
 
 	/* Read the ADC results */
-	return i2c_burst_read_dt(&config->bus, BQ25798_REG_IBUS_ADC, (void *)&data->adc_regs,
-				 sizeof(data->adc_regs));
+	rc = i2c_burst_read_dt(&config->bus, BQ25798_REG_IBUS_ADC, (void *)&data->adc_regs,
+			       sizeof(data->adc_regs));
+	if (rc != 0) {
+		return rc;
+	}
+	LOG_DBG("ADC done after %u wake(s), %u ms", wakes, (uint32_t)(k_uptime_get() - start));
+
+	if (BQ25798_DEBUG_READS) {
+		/* MPPT rewrites VINDPM to VOC_PCT * VOC after each VOC measurement */
+		if (i2c_reg_read_byte_dt(&config->bus, BQ25798_REG_INPUT_VOLTAGE_LIM, &reg) == 0) {
+			LOG_DBG("VINDPM %u mV, VBUS %u mV", 100 * reg,
+				sys_be16_to_cpu(data->adc_regs.v_bus));
+		}
+	}
+	return 0;
 }
 
 static int bq25798_channel_get(const struct device *dev, enum sensor_channel chan,
@@ -575,6 +611,16 @@ static int bq25798_init(const struct device *dev)
 	if (rc != 0) {
 		LOG_ERR("Reg 0x%02X %s error (%d)", BQ25798_REG_CHARGER_MASK_3, "write", rc);
 		return rc;
+	}
+
+	if (BQ25798_DEBUG_READS) {
+		uint8_t vindpm = 0, mppt = 0;
+
+		/* VINDPM clamps to 3.6V minimum, a low battery rejects MPPT enable */
+		(void)i2c_reg_read_byte_dt(&config->bus, BQ25798_REG_INPUT_VOLTAGE_LIM, &vindpm);
+		(void)i2c_reg_read_byte_dt(&config->bus, BQ25798_REG_MPPT_CONTROL, &mppt);
+		LOG_DBG("VINDPM %u mV (cfg %u), MPPT %02X (cfg %02X)", 100 * vindpm,
+			config->v_in_dpm, mppt, bq25798_mppt_control(config));
 	}
 
 	return 0;
