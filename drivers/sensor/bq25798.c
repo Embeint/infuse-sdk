@@ -270,7 +270,7 @@ static int bq25798_sample_fetch(const struct device *dev, enum sensor_channel ch
 	(void)k_sem_take(&data->int_sem, K_NO_WAIT);
 
 	/* Enable the one-shot measurement */
-	reg = BQ25798_ADC_CONTROL_EN | BQ25798_ADC_CONTROL_ONE_SHOT | BQ25798_ADC_CONTROL_15_BIT;
+	reg = BQ25798_ADC_CONTROL_EN | BQ25798_ADC_CONTROL_ONE_SHOT | BQ25798_ADC_CONTROL_13_BIT;
 	rc = bq25798_reg_write(dev, BQ25798_REG_ADC_CONTROL, reg);
 	if (rc != 0) {
 		LOG_ERR("Failed to enable ADC (%d)", rc);
