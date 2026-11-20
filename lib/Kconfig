@@ -102,6 +102,7 @@ endif # INFUSE_COMMON_BOOT
 rsource "auto/Kconfig"
 rsource "crypto/Kconfig"
 rsource "debug/Kconfig"
+rsource "libc/Kconfig"
 rsource "math/Kconfig"
 rsource "memfault/Kconfig"
 rsource "modem_monitor/Kconfig"
