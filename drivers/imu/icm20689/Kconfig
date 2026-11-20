@@ -1,0 +1,13 @@
+# ICM-20689 6 Axis IMU configuration
+
+# Copyright (c) 2026 Embeint Holdings Pty Ltd
+# SPDX-License-Identifier: Apache-2.0
+
+config INFUSE_IMU_ICM20689
+	bool "ICM-20689 Inertial measurement unit"
+	default y
+	depends on DT_HAS_INVENSENSE_ICM20689_ENABLED
+	select SPI
+	select GPIO
+	help
+	  Enable driver for ICM-20689 IMU sensor
