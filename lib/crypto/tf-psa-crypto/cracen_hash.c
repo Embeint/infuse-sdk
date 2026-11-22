@@ -7,10 +7,12 @@
  *
  * Common handling of hash algorithms on the CRACEN CryptoMaster.
  *
- * Multi-part operations buffer the input into blocks. Each update runs at most one job,
- * processing the buffered block together with all complete blocks of the input that the DMA
- * can access directly. At least one byte is always kept buffered, so that the final job has
- * data to pad.
+ * Multi-part operations buffer the input into blocks. Each job processes the buffered block
+ * together with the following complete blocks of the input, always keeping at least one byte
+ * buffered so that the final job has data to pad. Input the DMA can access is read directly, in
+ * a single job. Other input (e.g. flash) is copied through a bounce buffer on the stack, with one
+ * job per CONFIG_TF_PSA_CRYPTO_CRACEN_HASH_BOUNCE_SIZE bytes, as the fixed cost of each job (CRACEN
+ * acquisition, power and state transfer) far exceeds the cost of hashing a single block.
  *
  * There is no software fallback (the builtin implementations are removed through
  * MBEDTLS_PSA_ACCEL_ALG_*). Acquiring the CRACEN always succeeds with
@@ -68,6 +70,36 @@ static size_t max_job_len(size_t block_sz)
 	return CM_DMA_MAX_LEN - (CM_DMA_MAX_LEN % block_sz);
 }
 
+#if CONFIG_TF_PSA_CRYPTO_CRACEN_HASH_BOUNCE_SIZE > 0
+/*
+ * Process ctx->buf and the leading complete blocks of @a len bytes of @a input (any memory)
+ * through the bounce buffer. Not inlined, so that the bounce buffer only occupies the stack while
+ * processing input the DMA cannot access.
+ */
+static __noinline int blocks_bounced(struct cracen_hash_ctx *ctx, size_t block_sz,
+				     const uint8_t *input, size_t len, size_t *consumed)
+{
+	uint8_t bounce[CONFIG_TF_PSA_CRYPTO_CRACEN_HASH_BOUNCE_SIZE] __aligned(4);
+	size_t n = MIN(len, (sizeof(bounce) / block_sz) * block_sz);
+	int rc;
+
+	memcpy(bounce, input, n);
+	rc = ctx->drv->blocks(ctx, bounce, n);
+	/* Input may be secret (e.g. HMAC key blocks) */
+	memset_s(bounce, sizeof(bounce), 0, n);
+	*consumed = n;
+	return rc;
+}
+#else
+static int blocks_bounced(struct cracen_hash_ctx *ctx, size_t block_sz, const uint8_t *input,
+			  size_t len, size_t *consumed)
+{
+	/* Buffered block only */
+	*consumed = 0;
+	return ctx->drv->blocks(ctx, input, 0);
+}
+#endif /* CONFIG_TF_PSA_CRYPTO_CRACEN_HASH_BOUNCE_SIZE > 0 */
+
 bool cracen_hash_supported(psa_algorithm_t alg)
 {
 	const struct cracen_hash_driver *drv;
@@ -97,15 +129,16 @@ int cracen_hash_update(struct cracen_hash_ctx *ctx, const uint8_t *input, size_t
 
 	while (len > 0) {
 		if (ctx->buf_len == block_sz) {
-			/* Process the buffered block and the complete input blocks the DMA can
-			 * access, always keeping at least one byte of the input for later.
+			/* Process the buffered block and the complete input blocks, always
+			 * keeping at least one byte of the input for later.
 			 */
-			direct = 0;
+			direct = ((len - 1) / block_sz) * block_sz;
 			if (cracen_cm_dma_accessible(input, len)) {
-				direct = MIN(((len - 1) / block_sz) * block_sz,
-					     max_job_len(block_sz));
+				direct = MIN(direct, max_job_len(block_sz));
+				rc = ctx->drv->blocks(ctx, input, direct);
+			} else {
+				rc = blocks_bounced(ctx, block_sz, input, direct, &direct);
 			}
-			rc = ctx->drv->blocks(ctx, input, direct);
 			if (rc != 0) {
 				return rc;
 			}

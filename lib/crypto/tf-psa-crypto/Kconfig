@@ -153,6 +153,18 @@ config TF_PSA_CRYPTO_CRACEN_HASH
 	help
 	  Common CRACEN CryptoMaster hash operation handling.
 
+config TF_PSA_CRYPTO_CRACEN_HASH_BOUNCE_SIZE
+	int "CRACEN hash bounce buffer size"
+	depends on TF_PSA_CRYPTO_CRACEN_HASH
+	range 0 4096
+	default 256
+	help
+	  Input that the CryptoMaster DMA cannot access (e.g. flash) is copied
+	  through a stack buffer of this size, so that each hardware job
+	  processes multiple blocks instead of one. The buffer only occupies
+	  the stack while such input is being hashed. Sizes smaller than the
+	  block size (64 to 144 bytes) process one block per job.
+
 config TF_PSA_CRYPTO_OBERON_ACCELERATOR_SHA
 	bool "Accelerate SHA algorithms"
 	depends on TF_PSA_CRYPTO_OBERON_ACCELERATOR
