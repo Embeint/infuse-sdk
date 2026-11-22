@@ -23,6 +23,7 @@ config CRYPTO_ASCON_INLINE_MODE
 
 config CRYPTO_ASCON_IMPL
 	string "ASCON implementation"
+	default "armv7m" if ARMV7_M_ARMV8_M_MAINLINE && FPU
 	default "armv7m_small" if ARMV7_M_ARMV8_M_MAINLINE
 	default "ref"
 	help
