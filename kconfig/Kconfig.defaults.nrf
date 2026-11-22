@@ -32,6 +32,11 @@ endchoice
 configdefault NRF_OBERON
 	default y if !BUILD_WITH_TFM
 
+# CRACEN accelerated ChaCha20-Poly1305 spins on the hardware, keep interrupts enabled
+choice NORDIC_CRACEN_SYNC
+	default NORDIC_CRACEN_SYNC_SEMAPHORE if TF_PSA_CRYPTO_CRACEN_CHACHA20_POLY1305
+endchoice
+
 # LTE defaults
 configdefault AT_MONITOR_HEAP_SIZE
 	default 1024 if TASK_RUNNER_TASK_NETWORK_SCAN

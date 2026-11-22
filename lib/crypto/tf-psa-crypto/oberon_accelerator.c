@@ -8,10 +8,12 @@
 
 #define __STDC_WANT_LIB_EXT1__ 1 /* Ask for the C11 memset_s() */
 
+#include <errno.h>
 #include <string.h>
 
 #include <zephyr/kernel.h>
 
+#include <mbedtls/constant_time.h>
 #include <tf-psa-crypto/drivers/external_integration.h>
 
 #include "ocrypto_chacha20_poly1305.h"
@@ -21,6 +23,10 @@
 #include "ocrypto_sha256.h"
 #include "ocrypto_sha384.h"
 #include "ocrypto_sha512.h"
+
+#ifdef CONFIG_TF_PSA_CRYPTO_CRACEN_CHACHA20_POLY1305
+#include "cracen_chachapoly.h"
+#endif /* CONFIG_TF_PSA_CRYPTO_CRACEN_CHACHA20_POLY1305 */
 
 /* Picolibc supports memset_s but doesn't define __STDC_LIB_EXT1__ */
 #if !defined(__STDC_LIB_EXT1__) && !defined(CONFIG_PICOLIBC)
@@ -309,6 +315,7 @@ psa_status_t psa_driver_external_integration_aead_encrypt(
 {
 #ifdef CONFIG_PSA_WANT_ALG_CHACHA20_POLY1305
 	size_t output_size;
+	int __maybe_unused rc;
 
 	if (alg != PSA_ALG_CHACHA20_POLY1305) {
 		return PSA_ERROR_NOT_SUPPORTED;
@@ -320,6 +327,25 @@ psa_status_t psa_driver_external_integration_aead_encrypt(
 	if (ciphertext_size < output_size) {
 		return PSA_ERROR_INVALID_ARGUMENT;
 	}
+
+#ifdef CONFIG_TF_PSA_CRYPTO_CRACEN_CHACHA20_POLY1305
+	if (cracen_chachapoly_supported(key_buffer, nonce, nonce_length, additional_data,
+					additional_data_length, plaintext, ciphertext,
+					plaintext_length)) {
+		rc = cracen_chachapoly_crypt(false, key_buffer, nonce, additional_data,
+					     additional_data_length, plaintext, plaintext_length,
+					     ciphertext, ciphertext + plaintext_length);
+		if (rc == 0) {
+			*ciphertext_length = output_size;
+			return PSA_SUCCESS;
+		}
+		if (rc != -ENOTSUP) {
+			/* Output (and input for in-place operations) may have been modified */
+			return PSA_ERROR_HARDWARE_FAILURE;
+		}
+		/* Operation not supported, fall back to the software implementation */
+	}
+#endif /* CONFIG_TF_PSA_CRYPTO_CRACEN_CHACHA20_POLY1305 */
 
 	ocrypto_chacha20_poly1305_encrypt(ciphertext + plaintext_length, ciphertext, plaintext,
 					  plaintext_length, additional_data, additional_data_length,
@@ -354,6 +380,38 @@ psa_status_t psa_driver_external_integration_aead_decrypt(
 	if (plaintext_size < ciphertext_no_tag) {
 		return PSA_ERROR_INVALID_ARGUMENT;
 	}
+
+#ifdef CONFIG_TF_PSA_CRYPTO_CRACEN_CHACHA20_POLY1305
+	if (cracen_chachapoly_supported(key_buffer, nonce, nonce_length, additional_data,
+					additional_data_length, ciphertext, plaintext,
+					ciphertext_no_tag)) {
+		uint8_t computed_tag[ocrypto_chacha20_poly1305_TAG_BYTES];
+		int diff = 0;
+
+		rc = cracen_chachapoly_crypt(true, key_buffer, nonce, additional_data,
+					     additional_data_length, ciphertext, ciphertext_no_tag,
+					     plaintext, computed_tag);
+		if (rc == 0) {
+			diff = mbedtls_ct_memcmp(computed_tag, tag, sizeof(computed_tag));
+		}
+		/* The valid tag for a forged ciphertext must not be left behind */
+		memset_s(computed_tag, sizeof(computed_tag), 0, sizeof(computed_tag));
+		if (rc == 0) {
+			if (diff != 0) {
+				memset(plaintext, 0, ciphertext_no_tag);
+				return PSA_ERROR_INVALID_SIGNATURE;
+			}
+			*plaintext_length = ciphertext_no_tag;
+			return PSA_SUCCESS;
+		}
+		if (rc != -ENOTSUP) {
+			/* Output (and input for in-place operations) may have been modified */
+			memset(plaintext, 0, ciphertext_no_tag);
+			return PSA_ERROR_HARDWARE_FAILURE;
+		}
+		/* Operation not supported, fall back to the software implementation */
+	}
+#endif /* CONFIG_TF_PSA_CRYPTO_CRACEN_CHACHA20_POLY1305 */
 
 	rc = ocrypto_chacha20_poly1305_decrypt(tag, plaintext, ciphertext, ciphertext_no_tag,
 					       additional_data, additional_data_length, nonce,

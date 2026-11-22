@@ -7,4 +7,5 @@ if(CONFIG_TF_PSA_CRYPTO_OBERON_ACCELERATOR)
   target_link_libraries(zephyr_interface INTERFACE oberon_accel)
   # Actual integration
   infuse_sources(oberon_accelerator.c)
+  infuse_sources_ifdef(CONFIG_TF_PSA_CRYPTO_CRACEN_CHACHA20_POLY1305 cracen_chachapoly.c)
 endif()
