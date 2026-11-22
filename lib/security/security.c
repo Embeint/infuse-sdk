@@ -100,6 +100,8 @@ static int memset_s(void *dest, size_t destsz, int ch, size_t count)
 
 	LOG_WRN_ONCE("%s not provided by stdlib", __func__);
 	memset(dest, ch, count);
+	/* Compiler barrier, as in picolibc, to prevent the clear being elided */
+	__asm__ volatile("" : : "r"(dest) : "memory");
 	return 0;
 }
 #endif /* !defined(__STDC_LIB_EXT1__) && !defined(CONFIG_PICOLIBC) */
