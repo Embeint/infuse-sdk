@@ -27,6 +27,9 @@
 #ifdef CONFIG_TF_PSA_CRYPTO_CRACEN_CHACHA20_POLY1305
 #include "cracen_chachapoly.h"
 #endif /* CONFIG_TF_PSA_CRYPTO_CRACEN_CHACHA20_POLY1305 */
+#ifdef CONFIG_TF_PSA_CRYPTO_CRACEN_HASH
+#include "cracen_hash.h"
+#endif /* CONFIG_TF_PSA_CRYPTO_CRACEN_HASH */
 
 /* Picolibc supports memset_s but doesn't define __STDC_LIB_EXT1__ */
 #if !defined(__STDC_LIB_EXT1__) && !defined(CONFIG_PICOLIBC)
@@ -96,6 +99,25 @@ psa_status_t psa_driver_external_integration_hash_compute(psa_algorithm_t alg, c
 							  size_t input_length, uint8_t *hash,
 							  size_t hash_size, size_t *hash_length)
 {
+#ifdef CONFIG_TF_PSA_CRYPTO_CRACEN_HASH
+	if (cracen_hash_supported(alg)) {
+		int rc;
+
+		if (hash_size < PSA_HASH_LENGTH(alg)) {
+			return PSA_ERROR_INVALID_ARGUMENT;
+		}
+		rc = cracen_hash_compute(alg, input, input_length, hash);
+		if (rc == -ENOTSUP) {
+			/* No builtin implementation to fall back to */
+			return PSA_ERROR_NOT_SUPPORTED;
+		}
+		if (rc != 0) {
+			return PSA_ERROR_HARDWARE_FAILURE;
+		}
+		*hash_length = PSA_HASH_LENGTH(alg);
+		return PSA_SUCCESS;
+	}
+#endif /* CONFIG_TF_PSA_CRYPTO_CRACEN_HASH */
 	switch (alg) {
 #ifdef CONFIG_TF_PSA_CRYPTO_OBERON_ACCELERATOR_SHA
 #ifdef CONFIG_PSA_WANT_ALG_SHA_1
@@ -155,6 +177,16 @@ psa_status_t
 psa_driver_external_integration_hash_setup(psa_driver_external_integration_hash_operation_t *ctx,
 					   psa_algorithm_t alg)
 {
+#ifdef CONFIG_TF_PSA_CRYPTO_CRACEN_HASH
+	if (cracen_hash_supported(alg)) {
+		if (cracen_hash_setup(&ctx->cracen, alg) != 0) {
+			/* Hash engine not present, no builtin implementation to fall back to */
+			return PSA_ERROR_NOT_SUPPORTED;
+		}
+		ctx->alg = alg;
+		return PSA_SUCCESS;
+	}
+#endif /* CONFIG_TF_PSA_CRYPTO_CRACEN_HASH */
 	switch (alg) {
 #ifdef CONFIG_TF_PSA_CRYPTO_OBERON_ACCELERATOR_SHA
 #ifdef PSA_WANT_ALG_SHA_1
@@ -195,6 +227,16 @@ psa_status_t
 psa_driver_external_integration_hash_update(psa_driver_external_integration_hash_operation_t *ctx,
 					    const uint8_t *input, size_t input_length)
 {
+#ifdef CONFIG_TF_PSA_CRYPTO_CRACEN_HASH
+	if (cracen_hash_supported(ctx->alg)) {
+		/* -ENOTSUP is only possible when updating from interrupt context while the
+		 * CRACEN is in use, which cannot be recovered from mid-operation.
+		 */
+		return cracen_hash_update(&ctx->cracen, input, input_length) == 0
+			       ? PSA_SUCCESS
+			       : PSA_ERROR_HARDWARE_FAILURE;
+	}
+#endif /* CONFIG_TF_PSA_CRYPTO_CRACEN_HASH */
 	switch (ctx->alg) {
 #ifdef CONFIG_TF_PSA_CRYPTO_OBERON_ACCELERATOR_SHA
 #ifdef PSA_WANT_ALG_SHA_1
@@ -234,6 +276,20 @@ psa_status_t
 psa_driver_external_integration_hash_finish(psa_driver_external_integration_hash_operation_t *ctx,
 					    uint8_t *hash, size_t hash_size, size_t *hash_length)
 {
+#ifdef CONFIG_TF_PSA_CRYPTO_CRACEN_HASH
+	if (cracen_hash_supported(ctx->alg)) {
+		size_t length = PSA_HASH_LENGTH(ctx->alg);
+
+		if (hash_size < length) {
+			return PSA_ERROR_INVALID_ARGUMENT;
+		}
+		if (cracen_hash_finish(&ctx->cracen, hash) != 0) {
+			return PSA_ERROR_HARDWARE_FAILURE;
+		}
+		*hash_length = length;
+		return PSA_SUCCESS;
+	}
+#endif /* CONFIG_TF_PSA_CRYPTO_CRACEN_HASH */
 	switch (ctx->alg) {
 #ifdef CONFIG_TF_PSA_CRYPTO_OBERON_ACCELERATOR_SHA
 #ifdef PSA_WANT_ALG_SHA_1

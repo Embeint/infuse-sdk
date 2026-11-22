@@ -46,6 +46,113 @@ config TF_PSA_CRYPTO_CRACEN_CHACHA20_POLY1305_SW_POLY1305
 	  Decryption where the plaintext overwrites the ciphertext falls back
 	  to the Oberon implementation.
 
+config TF_PSA_CRYPTO_CRACEN_SHA2
+	bool
+	default y if TF_PSA_CRYPTO_CRACEN_SHA224 || TF_PSA_CRYPTO_CRACEN_SHA256 || \
+		     TF_PSA_CRYPTO_CRACEN_SHA384 || TF_PSA_CRYPTO_CRACEN_SHA512
+	help
+	  Common CRACEN CryptoMaster SHA-2 support. Single and multi-part
+	  operations (including HMAC and HKDF) of the enabled algorithms run on
+	  the hash engine, with the calling thread spinning until each hardware
+	  job completes. The builtin software implementations of the enabled
+	  algorithms are removed. With NORDIC_CRACEN_SYNC_SEMAPHORE, operations
+	  from interrupt context fail if a thread is using the CRACEN at the time.
+
+	  The CRACEN implementations are both faster and have a smaller ROM
+	  footprint than the builtin software implementations they replace,
+	  which is why each algorithm is accelerated by default.
+
+config TF_PSA_CRYPTO_CRACEN_SHA224
+	bool "Accelerate SHA-224 with the CRACEN CryptoMaster"
+	depends on TF_PSA_CRYPTO_OBERON_ACCELERATOR
+	depends on PSA_WANT_ALG_SHA_224
+	depends on NORDIC_CRACEN
+	default y
+	help
+	  Run SHA-224 operations on the CRACEN, see TF_PSA_CRYPTO_CRACEN_SHA2.
+
+config TF_PSA_CRYPTO_CRACEN_SHA256
+	bool "Accelerate SHA-256 with the CRACEN CryptoMaster"
+	depends on TF_PSA_CRYPTO_OBERON_ACCELERATOR
+	depends on PSA_WANT_ALG_SHA_256
+	depends on NORDIC_CRACEN
+	default y
+	help
+	  Run SHA-256 operations on the CRACEN, see TF_PSA_CRYPTO_CRACEN_SHA2.
+
+config TF_PSA_CRYPTO_CRACEN_SHA384
+	bool "Accelerate SHA-384 with the CRACEN CryptoMaster"
+	depends on TF_PSA_CRYPTO_OBERON_ACCELERATOR
+	depends on PSA_WANT_ALG_SHA_384
+	depends on NORDIC_CRACEN
+	default y
+	help
+	  Run SHA-384 operations on the CRACEN, see TF_PSA_CRYPTO_CRACEN_SHA2.
+	  Enabling SHA-384 or SHA-512 increases the size of hash operation
+	  contexts to hold the larger block and state.
+
+config TF_PSA_CRYPTO_CRACEN_SHA512
+	bool "Accelerate SHA-512 with the CRACEN CryptoMaster"
+	depends on TF_PSA_CRYPTO_OBERON_ACCELERATOR
+	depends on PSA_WANT_ALG_SHA_512
+	depends on NORDIC_CRACEN
+	default y
+	help
+	  Run SHA-512 operations on the CRACEN, see TF_PSA_CRYPTO_CRACEN_SHA2.
+	  Enabling SHA-384 or SHA-512 increases the size of hash operation
+	  contexts to hold the larger block and state.
+
+config TF_PSA_CRYPTO_CRACEN_SHA3
+	bool
+	default y if TF_PSA_CRYPTO_CRACEN_SHA3_224 || TF_PSA_CRYPTO_CRACEN_SHA3_256 || \
+		     TF_PSA_CRYPTO_CRACEN_SHA3_384 || TF_PSA_CRYPTO_CRACEN_SHA3_512
+	help
+	  Common CRACEN CryptoMaster SHA-3 support, see TF_PSA_CRYPTO_CRACEN_SHA2.
+	  Enabling any SHA-3 algorithm increases the size of hash operation
+	  contexts to hold the Keccak state.
+
+config TF_PSA_CRYPTO_CRACEN_SHA3_224
+	bool "Accelerate SHA3-224 with the CRACEN CryptoMaster"
+	depends on TF_PSA_CRYPTO_OBERON_ACCELERATOR
+	depends on PSA_WANT_ALG_SHA3_224
+	depends on NORDIC_CRACEN
+	default y
+	help
+	  Run SHA3-224 operations on the CRACEN, see TF_PSA_CRYPTO_CRACEN_SHA3.
+
+config TF_PSA_CRYPTO_CRACEN_SHA3_256
+	bool "Accelerate SHA3-256 with the CRACEN CryptoMaster"
+	depends on TF_PSA_CRYPTO_OBERON_ACCELERATOR
+	depends on PSA_WANT_ALG_SHA3_256
+	depends on NORDIC_CRACEN
+	default y
+	help
+	  Run SHA3-256 operations on the CRACEN, see TF_PSA_CRYPTO_CRACEN_SHA3.
+
+config TF_PSA_CRYPTO_CRACEN_SHA3_384
+	bool "Accelerate SHA3-384 with the CRACEN CryptoMaster"
+	depends on TF_PSA_CRYPTO_OBERON_ACCELERATOR
+	depends on PSA_WANT_ALG_SHA3_384
+	depends on NORDIC_CRACEN
+	default y
+	help
+	  Run SHA3-384 operations on the CRACEN, see TF_PSA_CRYPTO_CRACEN_SHA3.
+
+config TF_PSA_CRYPTO_CRACEN_SHA3_512
+	bool "Accelerate SHA3-512 with the CRACEN CryptoMaster"
+	depends on TF_PSA_CRYPTO_OBERON_ACCELERATOR
+	depends on PSA_WANT_ALG_SHA3_512
+	depends on NORDIC_CRACEN
+	default y
+	help
+	  Run SHA3-512 operations on the CRACEN, see TF_PSA_CRYPTO_CRACEN_SHA3.
+
+config TF_PSA_CRYPTO_CRACEN_HASH
+	bool
+	default y if TF_PSA_CRYPTO_CRACEN_SHA2 || TF_PSA_CRYPTO_CRACEN_SHA3
+	help
+	  Common CRACEN CryptoMaster hash operation handling.
+
 config TF_PSA_CRYPTO_OBERON_ACCELERATOR_SHA
 	bool "Accelerate SHA algorithms"
 	depends on TF_PSA_CRYPTO_OBERON_ACCELERATOR
