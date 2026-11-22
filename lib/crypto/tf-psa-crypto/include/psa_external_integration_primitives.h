@@ -59,7 +59,7 @@ struct psa_driver_external_integration_hash_operation {
 #ifdef CONFIG_TF_PSA_CRYPTO_CRACEN_HASH
 		struct cracen_hash_ctx cracen;
 #endif
-#ifdef CONFIG_TF_PSA_CRYPTO_OBERON_ACCELERATOR_SHA
+#ifdef CONFIG_TF_PSA_CRYPTO_NRF_ACCELERATOR_SHA
 #ifdef PSA_WANT_ALG_SHA_1
 		ocrypto_sha1_ctx sha1_ctx;
 #endif
@@ -75,7 +75,7 @@ struct psa_driver_external_integration_hash_operation {
 #ifdef PSA_WANT_ALG_SHA_512
 		ocrypto_sha512_ctx sha512_ctx;
 #endif
-#endif /* CONFIG_TF_PSA_CRYPTO_OBERON_ACCELERATOR_SHA */
+#endif /* CONFIG_TF_PSA_CRYPTO_NRF_ACCELERATOR_SHA */
 	};
 };
 
