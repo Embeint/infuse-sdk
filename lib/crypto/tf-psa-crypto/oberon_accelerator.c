@@ -104,7 +104,7 @@ psa_status_t psa_driver_external_integration_hash_compute(psa_algorithm_t alg, c
 		int rc;
 
 		if (hash_size < PSA_HASH_LENGTH(alg)) {
-			return PSA_ERROR_INVALID_ARGUMENT;
+			return PSA_ERROR_BUFFER_TOO_SMALL;
 		}
 		rc = cracen_hash_compute(alg, input, input_length, hash);
 		if (rc == -ENOTSUP) {
@@ -123,7 +123,7 @@ psa_status_t psa_driver_external_integration_hash_compute(psa_algorithm_t alg, c
 #ifdef CONFIG_PSA_WANT_ALG_SHA_1
 	case PSA_ALG_SHA_1:
 		if (hash_size < ocrypto_sha1_BYTES) {
-			return PSA_ERROR_INVALID_ARGUMENT;
+			return PSA_ERROR_BUFFER_TOO_SMALL;
 		}
 		ocrypto_sha1(hash, input, input_length);
 		*hash_length = ocrypto_sha1_BYTES;
@@ -132,7 +132,7 @@ psa_status_t psa_driver_external_integration_hash_compute(psa_algorithm_t alg, c
 #ifdef CONFIG_PSA_WANT_ALG_SHA_224
 	case PSA_ALG_SHA_224:
 		if (hash_size < ocrypto_sha224_BYTES) {
-			return PSA_ERROR_INVALID_ARGUMENT;
+			return PSA_ERROR_BUFFER_TOO_SMALL;
 		}
 		ocrypto_sha224(hash, input, input_length);
 		*hash_length = ocrypto_sha224_BYTES;
@@ -141,7 +141,7 @@ psa_status_t psa_driver_external_integration_hash_compute(psa_algorithm_t alg, c
 #ifdef CONFIG_PSA_WANT_ALG_SHA_256
 	case PSA_ALG_SHA_256:
 		if (hash_size < ocrypto_sha256_BYTES) {
-			return PSA_ERROR_INVALID_ARGUMENT;
+			return PSA_ERROR_BUFFER_TOO_SMALL;
 		}
 		ocrypto_sha256(hash, input, input_length);
 		*hash_length = ocrypto_sha256_BYTES;
@@ -150,7 +150,7 @@ psa_status_t psa_driver_external_integration_hash_compute(psa_algorithm_t alg, c
 #ifdef CONFIG_PSA_WANT_ALG_SHA_384
 	case PSA_ALG_SHA_384:
 		if (hash_size < ocrypto_sha384_BYTES) {
-			return PSA_ERROR_INVALID_ARGUMENT;
+			return PSA_ERROR_BUFFER_TOO_SMALL;
 		}
 		ocrypto_sha384(hash, input, input_length);
 		*hash_length = ocrypto_sha384_BYTES;
@@ -159,7 +159,7 @@ psa_status_t psa_driver_external_integration_hash_compute(psa_algorithm_t alg, c
 #ifdef CONFIG_PSA_WANT_ALG_SHA_512
 	case PSA_ALG_SHA_512:
 		if (hash_size < ocrypto_sha512_BYTES) {
-			return PSA_ERROR_INVALID_ARGUMENT;
+			return PSA_ERROR_BUFFER_TOO_SMALL;
 		}
 		ocrypto_sha512(hash, input, input_length);
 		*hash_length = ocrypto_sha512_BYTES;
@@ -281,7 +281,7 @@ psa_driver_external_integration_hash_finish(psa_driver_external_integration_hash
 		size_t length = PSA_HASH_LENGTH(ctx->alg);
 
 		if (hash_size < length) {
-			return PSA_ERROR_INVALID_ARGUMENT;
+			return PSA_ERROR_BUFFER_TOO_SMALL;
 		}
 		if (cracen_hash_finish(&ctx->cracen, hash) != 0) {
 			return PSA_ERROR_HARDWARE_FAILURE;
@@ -295,7 +295,7 @@ psa_driver_external_integration_hash_finish(psa_driver_external_integration_hash
 #ifdef PSA_WANT_ALG_SHA_1
 	case PSA_ALG_SHA_1:
 		if (hash_size < ocrypto_sha1_BYTES) {
-			return PSA_ERROR_INVALID_ARGUMENT;
+			return PSA_ERROR_BUFFER_TOO_SMALL;
 		}
 		ocrypto_sha1_final(&ctx->sha1_ctx, hash);
 		*hash_length = ocrypto_sha1_BYTES;
@@ -304,7 +304,7 @@ psa_driver_external_integration_hash_finish(psa_driver_external_integration_hash
 #ifdef PSA_WANT_ALG_SHA_224
 	case PSA_ALG_SHA_224:
 		if (hash_size < ocrypto_sha224_BYTES) {
-			return PSA_ERROR_INVALID_ARGUMENT;
+			return PSA_ERROR_BUFFER_TOO_SMALL;
 		}
 		ocrypto_sha224_final(&ctx->sha224_ctx, hash);
 		*hash_length = ocrypto_sha224_BYTES;
@@ -313,7 +313,7 @@ psa_driver_external_integration_hash_finish(psa_driver_external_integration_hash
 #ifdef PSA_WANT_ALG_SHA_256
 	case PSA_ALG_SHA_256:
 		if (hash_size < ocrypto_sha256_BYTES) {
-			return PSA_ERROR_INVALID_ARGUMENT;
+			return PSA_ERROR_BUFFER_TOO_SMALL;
 		}
 		ocrypto_sha256_final(&ctx->sha256_ctx, hash);
 		*hash_length = ocrypto_sha256_BYTES;
@@ -322,7 +322,7 @@ psa_driver_external_integration_hash_finish(psa_driver_external_integration_hash
 #ifdef PSA_WANT_ALG_SHA_384
 	case PSA_ALG_SHA_384:
 		if (hash_size < ocrypto_sha384_BYTES) {
-			return PSA_ERROR_INVALID_ARGUMENT;
+			return PSA_ERROR_BUFFER_TOO_SMALL;
 		}
 		ocrypto_sha384_final(&ctx->sha384_ctx, hash);
 		*hash_length = ocrypto_sha384_BYTES;
@@ -331,7 +331,7 @@ psa_driver_external_integration_hash_finish(psa_driver_external_integration_hash
 #ifdef PSA_WANT_ALG_SHA_512
 	case PSA_ALG_SHA_512:
 		if (hash_size < ocrypto_sha512_BYTES) {
-			return PSA_ERROR_INVALID_ARGUMENT;
+			return PSA_ERROR_BUFFER_TOO_SMALL;
 		}
 		ocrypto_sha512_final(&ctx->sha512_ctx, hash);
 		*hash_length = ocrypto_sha512_BYTES;
@@ -381,7 +381,7 @@ psa_status_t psa_driver_external_integration_aead_encrypt(
 	}
 	output_size = plaintext_length + ocrypto_chacha20_poly1305_TAG_BYTES;
 	if (ciphertext_size < output_size) {
-		return PSA_ERROR_INVALID_ARGUMENT;
+		return PSA_ERROR_BUFFER_TOO_SMALL;
 	}
 
 #ifdef CONFIG_TF_PSA_CRYPTO_CRACEN_CHACHA20_POLY1305
@@ -430,11 +430,16 @@ psa_status_t psa_driver_external_integration_aead_decrypt(
 		return PSA_ERROR_NOT_SUPPORTED;
 	}
 
+	/* Ciphertext must contain at least the tag */
+	if (ciphertext_length < ocrypto_chacha20_poly1305_TAG_BYTES) {
+		return PSA_ERROR_INVALID_ARGUMENT;
+	}
+
 	const size_t ciphertext_no_tag = ciphertext_length - ocrypto_chacha20_poly1305_TAG_BYTES;
 	const uint8_t *tag = ciphertext + ciphertext_no_tag;
 
 	if (plaintext_size < ciphertext_no_tag) {
-		return PSA_ERROR_INVALID_ARGUMENT;
+		return PSA_ERROR_BUFFER_TOO_SMALL;
 	}
 
 #ifdef CONFIG_TF_PSA_CRYPTO_CRACEN_CHACHA20_POLY1305
@@ -532,7 +537,7 @@ psa_status_t psa_driver_external_integration_key_agreement(
 		return PSA_ERROR_INVALID_ARGUMENT;
 	}
 	if (shared_secret_size < ocrypto_curve25519_BYTES) {
-		return PSA_ERROR_INVALID_ARGUMENT;
+		return PSA_ERROR_BUFFER_TOO_SMALL;
 	}
 
 	ocrypto_curve25519_scalarmult(shared_secret, key_buffer, peer_key);
