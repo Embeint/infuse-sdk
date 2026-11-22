@@ -151,6 +151,7 @@ choice RNG_GENERATOR_CHOICE
 	# can still be obtained with sys_csrand_get.
 	default XOSHIRO_RANDOM_GENERATOR if ENTROPY_PSA_CRYPTO_RNG
 	default XOSHIRO_RANDOM_GENERATOR if ENTROPY_CC3XX
+	default XOSHIRO_RANDOM_GENERATOR if ENTROPY_NRF_CRACEN_CTR_DRBG
 endchoice
 
 # Trusted-Firmware M
