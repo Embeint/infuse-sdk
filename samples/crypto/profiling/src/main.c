@@ -28,7 +28,7 @@ static const uint16_t plaintext_lengths[] = {1, 16, 64, 128, 256, 512, 1024};
 uint8_t plaintext[1024];
 uint8_t ciphertext[1024 + 16];
 uint8_t decrypted[1024];
-uint8_t hash[32];
+uint8_t hash[PSA_HASH_MAX_SIZE];
 uint8_t signature[64];
 
 enum algorithms {
@@ -50,6 +50,13 @@ const char *const algorithm_names[] = {
 
 enum sign_alg {
 	SHA256 = 0,
+	SHA224,
+	SHA384,
+	SHA512,
+	SHA3_224,
+	SHA3_256,
+	SHA3_384,
+	SHA3_512,
 	HMAC_SHA256,
 	CMAC,
 	ECDSA_SHA256,
@@ -58,6 +65,13 @@ enum sign_alg {
 
 const char *const sign_algorithm_names[] = {
 	[SHA256] = "SHA256",
+	[SHA224] = "SHA224",
+	[SHA384] = "SHA384",
+	[SHA512] = "SHA512",
+	[SHA3_224] = "SHA3-224",
+	[SHA3_256] = "SHA3-256",
+	[SHA3_384] = "SHA3-384",
+	[SHA3_512] = "SHA3-512",
 	[HMAC_SHA256] = "HMAC-SHA256",
 	[ECDSA_SHA256] = "ECDSA-SHA256",
 	[CMAC] = "CMAC",
@@ -68,6 +82,34 @@ uint64_t decrypt_cycles[NUM_ALGORITHMS][ARRAY_SIZE(plaintext_lengths)][REPEATS] 
 uint64_t sign_cycles[NUM_SIGN_ALGORITHMS][ARRAY_SIZE(plaintext_lengths)][REPEATS] = {0};
 
 psa_key_id_t chacha_key_id, hmac_key_id, cmac_key_id, ecdsa_key_id;
+
+static const struct {
+	enum sign_alg id;
+	psa_algorithm_t alg;
+} hash_algorithms[] = {
+	{SHA256, PSA_ALG_SHA_256},
+#ifdef CONFIG_PSA_WANT_ALG_SHA_224
+	{SHA224, PSA_ALG_SHA_224},
+#endif /* CONFIG_PSA_WANT_ALG_SHA_224 */
+#ifdef CONFIG_PSA_WANT_ALG_SHA_384
+	{SHA384, PSA_ALG_SHA_384},
+#endif /* CONFIG_PSA_WANT_ALG_SHA_384 */
+#ifdef CONFIG_PSA_WANT_ALG_SHA_512
+	{SHA512, PSA_ALG_SHA_512},
+#endif /* CONFIG_PSA_WANT_ALG_SHA_512 */
+#ifdef CONFIG_PSA_WANT_ALG_SHA3_224
+	{SHA3_224, PSA_ALG_SHA3_224},
+#endif /* CONFIG_PSA_WANT_ALG_SHA3_224 */
+#ifdef CONFIG_PSA_WANT_ALG_SHA3_256
+	{SHA3_256, PSA_ALG_SHA3_256},
+#endif /* CONFIG_PSA_WANT_ALG_SHA3_256 */
+#ifdef CONFIG_PSA_WANT_ALG_SHA3_384
+	{SHA3_384, PSA_ALG_SHA3_384},
+#endif /* CONFIG_PSA_WANT_ALG_SHA3_384 */
+#ifdef CONFIG_PSA_WANT_ALG_SHA3_512
+	{SHA3_512, PSA_ALG_SHA3_512},
+#endif /* CONFIG_PSA_WANT_ALG_SHA3_512 */
+};
 
 static int key_setup(uint8_t key[32])
 {
@@ -277,17 +319,21 @@ int main(void)
 			decrypt_cycles[CHACHA20_POLY1305][i][r] =
 				timing_cycles_get(&start_time, &end_time);
 		}
-		for (int r = 0; r < REPEATS; r++) {
-			size_t hlen;
+		for (int h = 0; h < ARRAY_SIZE(hash_algorithms); h++) {
+			for (int r = 0; r < REPEATS; r++) {
+				size_t hlen;
 
-			start_time = timing_counter_get();
-			status = psa_hash_compute(PSA_ALG_SHA_256, plaintext, plaintext_lengths[i],
-						  hash, sizeof(hash), &hlen);
-			end_time = timing_counter_get();
-			if (status != PSA_SUCCESS) {
-				LOG_INF("psa_sign_hash failed! (Error: %d)", status);
+				start_time = timing_counter_get();
+				status = psa_hash_compute(hash_algorithms[h].alg, plaintext,
+							  plaintext_lengths[i], hash, sizeof(hash),
+							  &hlen);
+				end_time = timing_counter_get();
+				if (status != PSA_SUCCESS) {
+					LOG_INF("psa_hash_compute failed! (Error: %d)", status);
+				}
+				sign_cycles[hash_algorithms[h].id][i][r] =
+					timing_cycles_get(&start_time, &end_time);
 			}
-			sign_cycles[SHA256][i][r] = timing_cycles_get(&start_time, &end_time);
 		}
 		for (int r = 0; r < REPEATS; r++) {
 			size_t slen;
@@ -369,6 +415,17 @@ int main(void)
 	LOG_INF("");
 	LOG_INF("MAC/HASH Algorithms");
 	for (int i = 0; i < NUM_SIGN_ALGORITHMS; i++) {
+		bool measured = false;
+
+		/* Skip algorithms that are not enabled, and so were never measured */
+		for (int j = 0; j < ARRAY_SIZE(plaintext_lengths); j++) {
+			for (int k = 0; k < REPEATS; k++) {
+				measured |= sign_cycles[i][j][k] != 0;
+			}
+		}
+		if (!measured) {
+			continue;
+		}
 		LOG_INF("%s", sign_algorithm_names[i]);
 		LOG_INF("\t%6s | %17s", "Length", "Sign: Cycles (ns)");
 		for (int j = 0; j < ARRAY_SIZE(plaintext_lengths); j++) {
