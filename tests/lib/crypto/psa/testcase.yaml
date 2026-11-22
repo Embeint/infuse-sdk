@@ -1,0 +1,26 @@
+common:
+  tags: crypto
+  min_flash: 192
+  min_ram: 64
+  timeout: 120
+tests:
+  libraries.crypto.psa:
+    platform_allow:
+      - nrf9161dk/nrf9161/ns
+      - nrf9151dk/nrf9151/ns
+      - nrf54l15dk/nrf54l15/cpuapp
+      - nrf54lm20dk/nrf54lm20b/cpuapp
+    integration_platforms:
+      - nrf9151dk/nrf9151/ns
+      - nrf54l15dk/nrf54l15/cpuapp
+      - nrf54lm20dk/nrf54lm20b/cpuapp
+  libraries.crypto.psa.no_bounce:
+    # CRACEN hash input that the DMA cannot access is processed one block per job
+    platform_allow:
+      - nrf54l15dk/nrf54l15/cpuapp
+      - nrf54lm20dk/nrf54lm20b/cpuapp
+    integration_platforms:
+      - nrf54l15dk/nrf54l15/cpuapp
+      - nrf54lm20dk/nrf54lm20b/cpuapp
+    extra_configs:
+      - CONFIG_TF_PSA_CRYPTO_CRACEN_HASH_BOUNCE_SIZE=0
