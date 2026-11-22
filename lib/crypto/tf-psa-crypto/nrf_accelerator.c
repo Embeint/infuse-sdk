@@ -119,7 +119,7 @@ psa_status_t psa_driver_external_integration_hash_compute(psa_algorithm_t alg, c
 	}
 #endif /* CONFIG_TF_PSA_CRYPTO_CRACEN_HASH */
 	switch (alg) {
-#ifdef CONFIG_TF_PSA_CRYPTO_OBERON_ACCELERATOR_SHA
+#ifdef CONFIG_TF_PSA_CRYPTO_NRF_ACCELERATOR_SHA
 #ifdef CONFIG_PSA_WANT_ALG_SHA_1
 	case PSA_ALG_SHA_1:
 		if (hash_size < ocrypto_sha1_BYTES) {
@@ -165,7 +165,7 @@ psa_status_t psa_driver_external_integration_hash_compute(psa_algorithm_t alg, c
 		*hash_length = ocrypto_sha512_BYTES;
 		break;
 #endif /* CONFIG_PSA_WANT_ALG_SHA_384 */
-#endif /* CONFIG_TF_PSA_CRYPTO_OBERON_ACCELERATOR_SHA */
+#endif /* CONFIG_TF_PSA_CRYPTO_NRF_ACCELERATOR_SHA */
 	default:
 		return PSA_ERROR_NOT_SUPPORTED;
 	}
@@ -188,7 +188,7 @@ psa_driver_external_integration_hash_setup(psa_driver_external_integration_hash_
 	}
 #endif /* CONFIG_TF_PSA_CRYPTO_CRACEN_HASH */
 	switch (alg) {
-#ifdef CONFIG_TF_PSA_CRYPTO_OBERON_ACCELERATOR_SHA
+#ifdef CONFIG_TF_PSA_CRYPTO_NRF_ACCELERATOR_SHA
 #ifdef PSA_WANT_ALG_SHA_1
 	case PSA_ALG_SHA_1:
 		ocrypto_sha1_init(&ctx->sha1_ctx);
@@ -214,7 +214,7 @@ psa_driver_external_integration_hash_setup(psa_driver_external_integration_hash_
 		ocrypto_sha512_init(&ctx->sha512_ctx);
 		break;
 #endif
-#endif /* CONFIG_TF_PSA_CRYPTO_OBERON_ACCELERATOR_SHA */
+#endif /* CONFIG_TF_PSA_CRYPTO_NRF_ACCELERATOR_SHA */
 	default:
 		return PSA_ERROR_NOT_SUPPORTED;
 	}
@@ -238,7 +238,7 @@ psa_driver_external_integration_hash_update(psa_driver_external_integration_hash
 	}
 #endif /* CONFIG_TF_PSA_CRYPTO_CRACEN_HASH */
 	switch (ctx->alg) {
-#ifdef CONFIG_TF_PSA_CRYPTO_OBERON_ACCELERATOR_SHA
+#ifdef CONFIG_TF_PSA_CRYPTO_NRF_ACCELERATOR_SHA
 #ifdef PSA_WANT_ALG_SHA_1
 	case PSA_ALG_SHA_1:
 		ocrypto_sha1_update(&ctx->sha1_ctx, input, input_length);
@@ -264,7 +264,7 @@ psa_driver_external_integration_hash_update(psa_driver_external_integration_hash
 		ocrypto_sha512_update(&ctx->sha512_ctx, input, input_length);
 		break;
 #endif
-#endif /* CONFIG_TF_PSA_CRYPTO_OBERON_ACCELERATOR_SHA */
+#endif /* CONFIG_TF_PSA_CRYPTO_NRF_ACCELERATOR_SHA */
 	default:
 		return PSA_ERROR_NOT_SUPPORTED;
 	}
@@ -291,7 +291,7 @@ psa_driver_external_integration_hash_finish(psa_driver_external_integration_hash
 	}
 #endif /* CONFIG_TF_PSA_CRYPTO_CRACEN_HASH */
 	switch (ctx->alg) {
-#ifdef CONFIG_TF_PSA_CRYPTO_OBERON_ACCELERATOR_SHA
+#ifdef CONFIG_TF_PSA_CRYPTO_NRF_ACCELERATOR_SHA
 #ifdef PSA_WANT_ALG_SHA_1
 	case PSA_ALG_SHA_1:
 		if (hash_size < ocrypto_sha1_BYTES) {
@@ -337,7 +337,7 @@ psa_driver_external_integration_hash_finish(psa_driver_external_integration_hash
 		*hash_length = ocrypto_sha512_BYTES;
 		break;
 #endif
-#endif /* CONFIG_TF_PSA_CRYPTO_OBERON_ACCELERATOR_SHA */
+#endif /* CONFIG_TF_PSA_CRYPTO_NRF_ACCELERATOR_SHA */
 	default:
 		return PSA_ERROR_NOT_SUPPORTED;
 	}
@@ -515,7 +515,7 @@ psa_status_t psa_driver_external_integration_key_agreement(
 	psa_algorithm_t alg, const uint8_t *peer_key, size_t peer_key_length,
 	uint8_t *shared_secret, size_t shared_secret_size, size_t *shared_secret_length)
 {
-#ifdef CONFIG_TF_PSA_CRYPTO_OBERON_ACCELERATOR_KEY_AGREEMENT
+#ifdef CONFIG_TF_PSA_CRYPTO_NRF_ACCELERATOR_KEY_AGREEMENT
 	psa_key_type_t key_type;
 	size_t key_bits;
 
@@ -556,5 +556,5 @@ psa_status_t psa_driver_external_integration_key_agreement(
 	return PSA_SUCCESS;
 #else
 	return PSA_ERROR_NOT_SUPPORTED;
-#endif /* CONFIG_TF_PSA_CRYPTO_OBERON_ACCELERATOR_KEY_AGREEMENT */
+#endif /* CONFIG_TF_PSA_CRYPTO_NRF_ACCELERATOR_KEY_AGREEMENT */
 }
