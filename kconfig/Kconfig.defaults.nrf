@@ -32,9 +32,10 @@ endchoice
 configdefault NRF_OBERON
 	default y if !BUILD_WITH_TFM
 
-# CRACEN accelerated ChaCha20-Poly1305 spins on the hardware, keep interrupts enabled
+# CRACEN accelerated crypto spins on the hardware, keep interrupts enabled
 choice NORDIC_CRACEN_SYNC
-	default NORDIC_CRACEN_SYNC_SEMAPHORE if TF_PSA_CRYPTO_CRACEN_CHACHA20_POLY1305
+	default NORDIC_CRACEN_SYNC_SEMAPHORE if TF_PSA_CRYPTO_CRACEN_CHACHA20_POLY1305 || \
+					       TF_PSA_CRYPTO_CRACEN_SHA2 || TF_PSA_CRYPTO_CRACEN_SHA3
 endchoice
 
 # LTE defaults
