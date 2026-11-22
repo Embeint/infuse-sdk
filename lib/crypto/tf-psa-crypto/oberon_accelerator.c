@@ -6,6 +6,10 @@
  * SPDX-License-Identifier: FSL-1.1-ALv2
  */
 
+#define __STDC_WANT_LIB_EXT1__ 1 /* Ask for the C11 memset_s() */
+
+#include <string.h>
+
 #include <zephyr/kernel.h>
 
 #include <tf-psa-crypto/drivers/external_integration.h>
@@ -17,6 +21,11 @@
 #include "ocrypto_sha256.h"
 #include "ocrypto_sha384.h"
 #include "ocrypto_sha512.h"
+
+/* Picolibc supports memset_s but doesn't define __STDC_LIB_EXT1__ */
+#if !defined(__STDC_LIB_EXT1__) && !defined(CONFIG_PICOLIBC)
+#error "memset_s() is required to clear sensitive data"
+#endif
 
 psa_status_t psa_driver_external_integration_init(void)
 {
@@ -271,6 +280,23 @@ psa_driver_external_integration_hash_finish(psa_driver_external_integration_hash
 		return PSA_ERROR_NOT_SUPPORTED;
 	}
 
+	return PSA_SUCCESS;
+}
+
+psa_status_t psa_driver_external_integration_hash_clone(
+	const psa_driver_external_integration_hash_operation_t *source_ctx,
+	psa_driver_external_integration_hash_operation_t *target_ctx)
+{
+	/* All supported operation contexts are plain data */
+	memcpy(target_ctx, source_ctx, sizeof(*target_ctx));
+	return PSA_SUCCESS;
+}
+
+psa_status_t
+psa_driver_external_integration_hash_abort(psa_driver_external_integration_hash_operation_t *ctx)
+{
+	/* Clear any intermediate state (may be derived from a key, e.g. HMAC) */
+	memset_s(ctx, sizeof(*ctx), 0, sizeof(*ctx));
 	return PSA_SUCCESS;
 }
 
