@@ -95,6 +95,12 @@ static int bt_adv_broadcast(const struct device *dev, struct net_buf *pkt)
 	size_t num_ad;
 	int rc;
 
+#if CONFIG_EPACKET_INTERFACE_BT_ADV_CONNECTABLE_WATCHDOG_SEC > 0
+	/* Start the watchdog on the first attempt, even if the advertising set never starts */
+	k_work_schedule(&connectable_wdog,
+			K_SECONDS(CONFIG_EPACKET_INTERFACE_BT_ADV_CONNECTABLE_WATCHDOG_SEC));
+#endif /* CONFIG_EPACKET_INTERFACE_BT_ADV_CONNECTABLE_WATCHDOG_SEC */
+
 	/* Create the advertising set if it doesn't exist */
 	if (adv_set == NULL) {
 		rc = bt_le_ext_adv_create(&adv_param, &adv_cb, &adv_set);
@@ -374,12 +380,6 @@ static int epacket_bt_adv_init(const struct device *dev)
 	epacket_interface_common_init(dev);
 	epacket_bt_adv_ad_init();
 	k_fifo_init(&tx_buf_queue);
-
-#if CONFIG_EPACKET_INTERFACE_BT_ADV_CONNECTABLE_WATCHDOG_SEC > 0
-	/* Start connectable watchdog on boot */
-	k_work_reschedule(&connectable_wdog,
-			  K_SECONDS(CONFIG_EPACKET_INTERFACE_BT_ADV_CONNECTABLE_WATCHDOG_SEC));
-#endif /* CONFIG_EPACKET_INTERFACE_BT_ADV_CONNECTABLE_WATCHDOG_SEC */
 
 	return 0;
 }

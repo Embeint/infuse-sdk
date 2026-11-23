@@ -496,9 +496,17 @@ static void main_epacket_bt_connectable_wdog(void)
 {
 	const uint32_t wdog_period = CONFIG_EPACKET_INTERFACE_BT_ADV_CONNECTABLE_WATCHDOG_SEC;
 	struct tdf_announce_v2 announce = {0};
+	int64_t send_until;
+
+	/* Watchdog should not start until the first connectable transmission attempt */
+	if (k_sem_take(&reboot_request, K_SECONDS(wdog_period + 1)) != -EAGAIN) {
+		FAIL("Connectable watchdog started before first packet\n");
+		return;
+	}
 
 	/* Send packets for a while */
-	while (k_uptime_seconds() < (wdog_period + 2)) {
+	send_until = k_uptime_get() + (wdog_period + 2) * MSEC_PER_SEC;
+	while (k_uptime_get() < send_until) {
 		k_sleep(K_MSEC(500));
 		TDF_DATA_LOGGER_LOG(TDF_DATA_LOGGER_BT_ADV | TDF_DATA_LOGGER_BT_PERIPHERAL,
 				    TDF_ANNOUNCE_V2, 0, &announce);
