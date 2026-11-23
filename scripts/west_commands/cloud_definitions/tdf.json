@@ -661,6 +661,36 @@
                 {"name": "num_sv", "type": "uint8_t", "description": "Number of satellite vehicles used in location fix"},
                 {"name": "p_dop", "type": "uint16_t", "description": "Position DOP", "conversion": {"m": 0.01, "c": 0}}
             ]
+        },
+        "68": {
+            "name": "ENERGY_HARVESTER_STATE",
+            "description": "Most recent state of energy harvester input",
+            "fields": [
+                {"name": "voltage_mv", "type": "uint16_t", "description": "Harvester open-circuit voltage (millivolts)", "display": {"postfix": "mV"}},
+                {"name": "power_uw", "type": "uint32_t", "description": "Harvester incoming power (microWatts)", "conversion": {"m": 0.001, "c": 0}, "display": {"fmt": "float", "digits": 3, "postfix": "mW"}}
+            ]
+        },
+        "69": {
+            "name": "ENERGY_HARVESTER_ACCUMULATED",
+            "description": "Accumulated input from energy harvester",
+            "fields": [
+                {"name": "duration", "type": "uint16_t", "description": "Recovered energy integration duration (2x seconds)", "conversion": {"m": 2, "c": 0}},
+                {"name": "energy_uwh", "type": "uint32_t", "description": "Recovered energy (microWattHours)", "conversion": {"m": 0.001, "c": 0}, "display": {"fmt": "float", "digits": 3, "postfix": "mWh"}}
+            ]
+        },
+        "70": {
+            "name": "STORAGE_TEMPERATURE",
+            "description": "Temperature of battery/storage element",
+            "fields": [
+                {"name": "temperature", "type": "int16_t", "description": "Storage device temperature (centidegrees)", "conversion": {"m": 0.01, "c": 0}, "display": {"fmt": "float", "digits": 2, "postfix": "deg"}}
+            ]
+        },
+        "71": {
+            "name": "AMBIENT_LIGHT",
+            "description": "Ambient light level",
+            "fields": [
+                {"name": "illuminance", "type": "uint32_t", "description": "Ambient light illuminance (millilux)", "conversion": {"m": 0.001, "c": 0}, "display": {"fmt": "float", "digits": 3, "postfix": "lux"}}
+            ]
         }
     }
 }

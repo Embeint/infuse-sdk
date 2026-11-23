@@ -841,6 +841,34 @@ struct tdf_gnss_fix_info_v2 {
 	uint16_t p_dop;
 } __packed;
 
+/** Most recent state of energy harvester input */
+struct tdf_energy_harvester_state {
+	/** Harvester open-circuit voltage (millivolts) */
+	uint16_t voltage_mv;
+	/** Harvester incoming power (microWatts) */
+	uint32_t power_uw;
+} __packed;
+
+/** Accumulated input from energy harvester */
+struct tdf_energy_harvester_accumulated {
+	/** Recovered energy integration duration (2x seconds) */
+	uint16_t duration;
+	/** Recovered energy (microWattHours) */
+	uint32_t energy_uwh;
+} __packed;
+
+/** Temperature of battery/storage element */
+struct tdf_storage_temperature {
+	/** Storage device temperature (centidegrees) */
+	int16_t temperature;
+} __packed;
+
+/** Ambient light level */
+struct tdf_ambient_light {
+	/** Ambient light illuminance (millilux) */
+	uint32_t illuminance;
+} __packed;
+
 /** Infuse-IoT builtin TDF definitions */
 enum tdf_builtin_id {
 	/** Common announcement packet */
@@ -975,76 +1003,88 @@ enum tdf_builtin_id {
 	TDF_DEVICE_INIT_ERROR = 66,
 	/** Metadata about a GNSS location fix */
 	TDF_GNSS_FIX_INFO_V2 = 67,
+	/** Most recent state of energy harvester input */
+	TDF_ENERGY_HARVESTER_STATE = 68,
+	/** Accumulated input from energy harvester */
+	TDF_ENERGY_HARVESTER_ACCUMULATED = 69,
+	/** Temperature of battery/storage element */
+	TDF_STORAGE_TEMPERATURE = 70,
+	/** Ambient light level */
+	TDF_AMBIENT_LIGHT = 71,
 	/** End of builtin TDF range */
 	TDF_BUILTIN_END = 1024,
 };
 
 /** @cond INTERNAL_HIDDEN */
 
-#define _TDF_ANNOUNCE_TYPE                    struct tdf_announce
-#define _TDF_BATTERY_STATE_TYPE               struct tdf_battery_state
-#define _TDF_AMBIENT_TEMP_PRES_HUM_TYPE       struct tdf_ambient_temp_pres_hum
-#define _TDF_AMBIENT_TEMPERATURE_TYPE         struct tdf_ambient_temperature
-#define _TDF_TIME_SYNC_TYPE                   struct tdf_time_sync
-#define _TDF_REBOOT_INFO_TYPE                 struct tdf_reboot_info
-#define _TDF_ANNOUNCE_V2_TYPE                 struct tdf_announce_v2
-#define _TDF_SOC_TEMPERATURE_TYPE             struct tdf_soc_temperature
-#define _TDF_ACC_2G_TYPE                      struct tdf_acc_2g
-#define _TDF_ACC_4G_TYPE                      struct tdf_acc_4g
-#define _TDF_ACC_8G_TYPE                      struct tdf_acc_8g
-#define _TDF_ACC_16G_TYPE                     struct tdf_acc_16g
-#define _TDF_GYR_125DPS_TYPE                  struct tdf_gyr_125dps
-#define _TDF_GYR_250DPS_TYPE                  struct tdf_gyr_250dps
-#define _TDF_GYR_500DPS_TYPE                  struct tdf_gyr_500dps
-#define _TDF_GYR_1000DPS_TYPE                 struct tdf_gyr_1000dps
-#define _TDF_GYR_2000DPS_TYPE                 struct tdf_gyr_2000dps
-#define _TDF_GCS_WGS84_LLHA_TYPE              struct tdf_gcs_wgs84_llha
-#define _TDF_UBX_NAV_PVT_TYPE                 struct tdf_ubx_nav_pvt
-#define _TDF_LTE_CONN_STATUS_TYPE             struct tdf_lte_conn_status
-#define _TDF_GLOBALSTAR_PKT_TYPE              struct tdf_globalstar_pkt
-#define _TDF_ACC_MAGNITUDE_STD_DEV_TYPE       struct tdf_acc_magnitude_std_dev
-#define _TDF_ACTIVITY_METRIC_TYPE             struct tdf_activity_metric
-#define _TDF_ALGORITHM_OUTPUT_TYPE            struct tdf_algorithm_output
-#define _TDF_RUNTIME_ERROR_TYPE               struct tdf_runtime_error
-#define _TDF_CHARGER_EN_CONTROL_TYPE          struct tdf_charger_en_control
-#define _TDF_GNSS_FIX_INFO_TYPE               struct tdf_gnss_fix_info
-#define _TDF_BLUETOOTH_CONNECTION_TYPE        struct tdf_bluetooth_connection
-#define _TDF_BLUETOOTH_RSSI_TYPE              struct tdf_bluetooth_rssi
-#define _TDF_BLUETOOTH_DATA_THROUGHPUT_TYPE   struct tdf_bluetooth_data_throughput
-#define _TDF_ALGORITHM_CLASS_HISTOGRAM_TYPE   struct tdf_algorithm_class_histogram
-#define _TDF_ALGORITHM_CLASS_TIME_SERIES_TYPE struct tdf_algorithm_class_time_series
-#define _TDF_LTE_TAC_CELLS_TYPE               struct tdf_lte_tac_cells
-#define _TDF_WIFI_AP_INFO_TYPE                struct tdf_wifi_ap_info
-#define _TDF_DEVICE_TILT_TYPE                 struct tdf_device_tilt
-#define _TDF_NRF9X_GNSS_PVT_TYPE              struct tdf_nrf9x_gnss_pvt
-#define _TDF_BATTERY_CHARGE_ACCUMULATED_TYPE  struct tdf_battery_charge_accumulated
-#define _TDF_INFUSE_BLUETOOTH_RSSI_TYPE       struct tdf_infuse_bluetooth_rssi
-#define _TDF_ADC_RAW_8_TYPE                   struct tdf_adc_raw_8
-#define _TDF_ADC_RAW_16_TYPE                  struct tdf_adc_raw_16
-#define _TDF_ADC_RAW_32_TYPE                  struct tdf_adc_raw_32
-#define _TDF_ANNOTATION_TYPE                  struct tdf_annotation
-#define _TDF_LORA_RX_TYPE                     struct tdf_lora_rx
-#define _TDF_IDX_ARRAY_FREQ_TYPE              struct tdf_idx_array_freq
-#define _TDF_IDX_ARRAY_PERIOD_TYPE            struct tdf_idx_array_period
-#define _TDF_WIFI_CONNECTED_TYPE              struct tdf_wifi_connected
-#define _TDF_WIFI_CONNECTION_FAILED_TYPE      struct tdf_wifi_connection_failed
-#define _TDF_WIFI_DISCONNECTED_TYPE           struct tdf_wifi_disconnected
-#define _TDF_NETWORK_SCAN_COUNT_TYPE          struct tdf_network_scan_count
-#define _TDF_BATTERY_VOLTAGE_TYPE             struct tdf_battery_voltage
-#define _TDF_BATTERY_SOC_TYPE                 struct tdf_battery_soc
-#define _TDF_STATE_EVENT_SET_TYPE             struct tdf_state_event_set
-#define _TDF_STATE_EVENT_CLEARED_TYPE         struct tdf_state_event_cleared
-#define _TDF_STATE_DURATION_TYPE              struct tdf_state_duration
-#define _TDF_PCM_16BIT_CHAN_LEFT_TYPE         struct tdf_pcm_16bit_chan_left
-#define _TDF_PCM_16BIT_CHAN_RIGHT_TYPE        struct tdf_pcm_16bit_chan_right
-#define _TDF_PCM_16BIT_CHAN_DUAL_TYPE         struct tdf_pcm_16bit_chan_dual
-#define _TDF_KVS_VALUE_CHANGED_TYPE           struct tdf_kvs_value_changed
-#define _TDF_AMBIENT_PRESSURE_TYPE            struct tdf_ambient_pressure
-#define _TDF_LTE_CONTROL_TYPE                 struct tdf_lte_control
-#define _TDF_LTE_SLEEP_ENTER_TYPE             struct tdf_lte_sleep_enter
-#define _TDF_LTE_SLEEP_EXIT_TYPE              struct tdf_lte_sleep_exit
-#define _TDF_DEVICE_INIT_ERROR_TYPE           struct tdf_device_init_error
-#define _TDF_GNSS_FIX_INFO_V2_TYPE            struct tdf_gnss_fix_info_v2
+#define _TDF_ANNOUNCE_TYPE                     struct tdf_announce
+#define _TDF_BATTERY_STATE_TYPE                struct tdf_battery_state
+#define _TDF_AMBIENT_TEMP_PRES_HUM_TYPE        struct tdf_ambient_temp_pres_hum
+#define _TDF_AMBIENT_TEMPERATURE_TYPE          struct tdf_ambient_temperature
+#define _TDF_TIME_SYNC_TYPE                    struct tdf_time_sync
+#define _TDF_REBOOT_INFO_TYPE                  struct tdf_reboot_info
+#define _TDF_ANNOUNCE_V2_TYPE                  struct tdf_announce_v2
+#define _TDF_SOC_TEMPERATURE_TYPE              struct tdf_soc_temperature
+#define _TDF_ACC_2G_TYPE                       struct tdf_acc_2g
+#define _TDF_ACC_4G_TYPE                       struct tdf_acc_4g
+#define _TDF_ACC_8G_TYPE                       struct tdf_acc_8g
+#define _TDF_ACC_16G_TYPE                      struct tdf_acc_16g
+#define _TDF_GYR_125DPS_TYPE                   struct tdf_gyr_125dps
+#define _TDF_GYR_250DPS_TYPE                   struct tdf_gyr_250dps
+#define _TDF_GYR_500DPS_TYPE                   struct tdf_gyr_500dps
+#define _TDF_GYR_1000DPS_TYPE                  struct tdf_gyr_1000dps
+#define _TDF_GYR_2000DPS_TYPE                  struct tdf_gyr_2000dps
+#define _TDF_GCS_WGS84_LLHA_TYPE               struct tdf_gcs_wgs84_llha
+#define _TDF_UBX_NAV_PVT_TYPE                  struct tdf_ubx_nav_pvt
+#define _TDF_LTE_CONN_STATUS_TYPE              struct tdf_lte_conn_status
+#define _TDF_GLOBALSTAR_PKT_TYPE               struct tdf_globalstar_pkt
+#define _TDF_ACC_MAGNITUDE_STD_DEV_TYPE        struct tdf_acc_magnitude_std_dev
+#define _TDF_ACTIVITY_METRIC_TYPE              struct tdf_activity_metric
+#define _TDF_ALGORITHM_OUTPUT_TYPE             struct tdf_algorithm_output
+#define _TDF_RUNTIME_ERROR_TYPE                struct tdf_runtime_error
+#define _TDF_CHARGER_EN_CONTROL_TYPE           struct tdf_charger_en_control
+#define _TDF_GNSS_FIX_INFO_TYPE                struct tdf_gnss_fix_info
+#define _TDF_BLUETOOTH_CONNECTION_TYPE         struct tdf_bluetooth_connection
+#define _TDF_BLUETOOTH_RSSI_TYPE               struct tdf_bluetooth_rssi
+#define _TDF_BLUETOOTH_DATA_THROUGHPUT_TYPE    struct tdf_bluetooth_data_throughput
+#define _TDF_ALGORITHM_CLASS_HISTOGRAM_TYPE    struct tdf_algorithm_class_histogram
+#define _TDF_ALGORITHM_CLASS_TIME_SERIES_TYPE  struct tdf_algorithm_class_time_series
+#define _TDF_LTE_TAC_CELLS_TYPE                struct tdf_lte_tac_cells
+#define _TDF_WIFI_AP_INFO_TYPE                 struct tdf_wifi_ap_info
+#define _TDF_DEVICE_TILT_TYPE                  struct tdf_device_tilt
+#define _TDF_NRF9X_GNSS_PVT_TYPE               struct tdf_nrf9x_gnss_pvt
+#define _TDF_BATTERY_CHARGE_ACCUMULATED_TYPE   struct tdf_battery_charge_accumulated
+#define _TDF_INFUSE_BLUETOOTH_RSSI_TYPE        struct tdf_infuse_bluetooth_rssi
+#define _TDF_ADC_RAW_8_TYPE                    struct tdf_adc_raw_8
+#define _TDF_ADC_RAW_16_TYPE                   struct tdf_adc_raw_16
+#define _TDF_ADC_RAW_32_TYPE                   struct tdf_adc_raw_32
+#define _TDF_ANNOTATION_TYPE                   struct tdf_annotation
+#define _TDF_LORA_RX_TYPE                      struct tdf_lora_rx
+#define _TDF_IDX_ARRAY_FREQ_TYPE               struct tdf_idx_array_freq
+#define _TDF_IDX_ARRAY_PERIOD_TYPE             struct tdf_idx_array_period
+#define _TDF_WIFI_CONNECTED_TYPE               struct tdf_wifi_connected
+#define _TDF_WIFI_CONNECTION_FAILED_TYPE       struct tdf_wifi_connection_failed
+#define _TDF_WIFI_DISCONNECTED_TYPE            struct tdf_wifi_disconnected
+#define _TDF_NETWORK_SCAN_COUNT_TYPE           struct tdf_network_scan_count
+#define _TDF_BATTERY_VOLTAGE_TYPE              struct tdf_battery_voltage
+#define _TDF_BATTERY_SOC_TYPE                  struct tdf_battery_soc
+#define _TDF_STATE_EVENT_SET_TYPE              struct tdf_state_event_set
+#define _TDF_STATE_EVENT_CLEARED_TYPE          struct tdf_state_event_cleared
+#define _TDF_STATE_DURATION_TYPE               struct tdf_state_duration
+#define _TDF_PCM_16BIT_CHAN_LEFT_TYPE          struct tdf_pcm_16bit_chan_left
+#define _TDF_PCM_16BIT_CHAN_RIGHT_TYPE         struct tdf_pcm_16bit_chan_right
+#define _TDF_PCM_16BIT_CHAN_DUAL_TYPE          struct tdf_pcm_16bit_chan_dual
+#define _TDF_KVS_VALUE_CHANGED_TYPE            struct tdf_kvs_value_changed
+#define _TDF_AMBIENT_PRESSURE_TYPE             struct tdf_ambient_pressure
+#define _TDF_LTE_CONTROL_TYPE                  struct tdf_lte_control
+#define _TDF_LTE_SLEEP_ENTER_TYPE              struct tdf_lte_sleep_enter
+#define _TDF_LTE_SLEEP_EXIT_TYPE               struct tdf_lte_sleep_exit
+#define _TDF_DEVICE_INIT_ERROR_TYPE            struct tdf_device_init_error
+#define _TDF_GNSS_FIX_INFO_V2_TYPE             struct tdf_gnss_fix_info_v2
+#define _TDF_ENERGY_HARVESTER_STATE_TYPE       struct tdf_energy_harvester_state
+#define _TDF_ENERGY_HARVESTER_ACCUMULATED_TYPE struct tdf_energy_harvester_accumulated
+#define _TDF_STORAGE_TEMPERATURE_TYPE          struct tdf_storage_temperature
+#define _TDF_AMBIENT_LIGHT_TYPE                struct tdf_ambient_light
 
 /** Size of builtin TDF definitions */
 enum tdf_builtin_size {
@@ -1112,6 +1152,10 @@ enum tdf_builtin_size {
 	_TDF_LTE_SLEEP_EXIT_SIZE = sizeof(struct tdf_lte_sleep_exit),
 	_TDF_DEVICE_INIT_ERROR_SIZE = sizeof(struct tdf_device_init_error),
 	_TDF_GNSS_FIX_INFO_V2_SIZE = sizeof(struct tdf_gnss_fix_info_v2),
+	_TDF_ENERGY_HARVESTER_STATE_SIZE = sizeof(struct tdf_energy_harvester_state),
+	_TDF_ENERGY_HARVESTER_ACCUMULATED_SIZE = sizeof(struct tdf_energy_harvester_accumulated),
+	_TDF_STORAGE_TEMPERATURE_SIZE = sizeof(struct tdf_storage_temperature),
+	_TDF_AMBIENT_LIGHT_SIZE = sizeof(struct tdf_ambient_light),
 };
 
 /** @endcond */
