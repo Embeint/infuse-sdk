@@ -182,8 +182,10 @@ static const struct kv_gateway_bluetooth_forward_options bt_forwarding_options_d
 	.percent = 256 / 4,
 };
 static struct kv_gateway_bluetooth_forward_options bt_forwarding_options;
-/* Bluetooth advertising reception has been enabled */
-static atomic_t bt_adv_rx_enabled;
+/* UDP backhaul is currently connected */
+static atomic_t udp_backhaul_active;
+/* Serialise updates to the Bluetooth scanning state */
+static K_MUTEX_DEFINE(bt_scan_lock);
 
 #if CONFIG_LTE_GATEWAY_DEFERRED_START_BATTERY_MV > 0
 static void new_battery_data(const struct zbus_channel *chan);
@@ -216,9 +218,34 @@ static void custom_tdf_logger(uint8_t tdf_loggers, uint64_t timestamp)
 	}
 }
 
+static void bt_scan_update(void)
+{
+	const struct device *bt_adv = DEVICE_DT_GET(DT_NODELABEL(epacket_bt_adv));
+	static bool scanning;
+	bool desired;
+	int rc;
+
+	k_mutex_lock(&bt_scan_lock, K_FOREVER);
+	/* Only scan while packets can be forwarded and the uplink is not being prioritised */
+	desired = atomic_get(&udp_backhaul_active) &&
+		  !infuse_state_get(INFUSE_STATE_HIGH_PRIORITY_UPLINK);
+	if (desired != scanning) {
+		rc = epacket_receive(bt_adv, desired ? K_FOREVER : K_NO_WAIT);
+		LOG_INF("Bluetooth scanning %s (%d)", desired ? "started" : "stopped", rc);
+		if (rc == 0) {
+			scanning = desired;
+		}
+	}
+	k_mutex_unlock(&bt_scan_lock);
+}
+
 static void udp_interface_state(uint16_t current_max_payload, void *user_ctx)
 {
 	static bool first_conn = true;
+
+	/* Bluetooth scanning only runs while the backhaul is active */
+	atomic_set(&udp_backhaul_active, current_max_payload > 0);
+	bt_scan_update();
 
 	if (current_max_payload > 0 && first_conn) {
 		LOG_INF("Reboot announce");
@@ -235,28 +262,22 @@ static void udp_interface_state(uint16_t current_max_payload, void *user_ctx)
 
 static void state_set(enum infuse_state state, bool already, uint16_t timeout, void *user_ctx)
 {
-	const struct device *bt_adv = DEVICE_DT_GET(DT_NODELABEL(epacket_bt_adv));
-	int rc;
-
 	if ((state != INFUSE_STATE_HIGH_PRIORITY_UPLINK) || already) {
 		return;
 	}
 
-	rc = epacket_receive(bt_adv, K_NO_WAIT);
-	LOG_INF("Pausing scanning due to uplink (%d)", rc);
+	/* Pause scanning to prioritise the uplink */
+	bt_scan_update();
 }
 
 static void state_cleared(enum infuse_state state, void *user_ctx)
 {
-	const struct device *bt_adv = DEVICE_DT_GET(DT_NODELABEL(epacket_bt_adv));
-	int rc;
-
-	if ((state != INFUSE_STATE_HIGH_PRIORITY_UPLINK) || !atomic_get(&bt_adv_rx_enabled)) {
+	if (state != INFUSE_STATE_HIGH_PRIORITY_UPLINK) {
 		return;
 	}
 
-	rc = epacket_receive(bt_adv, K_FOREVER);
-	LOG_INF("Resuming scanning (%d)", rc);
+	/* Resume scanning if the backhaul is active */
+	bt_scan_update();
 }
 
 static void kv_value_changed(uint16_t key, const void *data, size_t data_len, void *user_ctx)
@@ -337,13 +358,10 @@ static void led_pulse_dt(const struct gpio_dt_spec *spec, k_timeout_t pulse_dura
 
 static void radios_enable(void)
 {
-	const struct device *bt_adv = DEVICE_DT_GET(DT_NODELABEL(epacket_bt_adv));
 	const struct device *udp = DEVICE_DT_GET(DT_NODELABEL(epacket_udp));
 
-	/* Listen on Bluetooth advertising and UDP */
-	atomic_set(&bt_adv_rx_enabled, true);
+	/* Listen on UDP, Bluetooth advertising is enabled once the backhaul is active */
 	epacket_receive(udp, K_FOREVER);
-	epacket_receive(bt_adv, K_FOREVER);
 
 #ifdef CONFIG_MODEM_CELLULAR
 #if defined(CONFIG_NRF_MODEM_LIB)
@@ -464,7 +482,7 @@ int main(void)
 	LOG_INF("Battery threshold reached, enabling LTE and Bluetooth scanning");
 #endif /* CONFIG_LTE_GATEWAY_DEFERRED_START_BATTERY_MV > 0 */
 
-	/* Enable LTE and Bluetooth scanning */
+	/* Enable LTE, Bluetooth scanning starts once the backhaul connects */
 	radios_enable();
 
 	/* Boot LED sequence */

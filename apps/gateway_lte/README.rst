@@ -8,8 +8,8 @@ Overview
 
 A core application that bridges Bluetooth devices to the Infuse-IoT cloud over an LTE network.
 
-* Bluetooth advertising packets are received continuously and a subset are forwarded to the cloud
-  (see `Bluetooth Forwarding`_).
+* Bluetooth advertising packets are received while the UDP backhaul is connected and a subset are
+  forwarded to the cloud (see `Bluetooth Forwarding`_).
 * Packets from Bluetooth connections (up to 4) are forwarded to the cloud.
 * Packets from the cloud are routed to the destination Bluetooth device.
 
@@ -60,8 +60,9 @@ that are dropped, the RSSI of the source device is still reported to the cloud.
 This behaviour is configured at runtime through the ``KV_KEY_GATEWAY_BLUETOOTH_FORWARD_OPTIONS``
 KV store key. Changes apply immediately, and deleting the key reverts to the defaults.
 
-While the ``INFUSE_STATE_HIGH_PRIORITY_UPLINK`` state is set, Bluetooth scanning is paused to
-prioritise the uplink.
+Bluetooth scanning only runs while the ePacket UDP backhaul is connected, as received packets
+cannot be forwarded otherwise. While the ``INFUSE_STATE_HIGH_PRIORITY_UPLINK`` state is set,
+Bluetooth scanning is also paused to prioritise the uplink.
 
 Periodic Behaviour
 ******************
