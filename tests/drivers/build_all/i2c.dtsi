@@ -91,3 +91,27 @@ pax194x: pax1941@10 {
 	fsr-vbus-channel-1 = "0V to 9V";
 	fsr-vsense-channel-1 = "-100mV to 100mV";
 };
+
+test_i2c_aem15820: aem15820@11 {
+	compatible = "epeas,aem15820";
+	reg = <0x11>;
+	int-gpios = <&test_gpio 0 0>;
+
+	sensor {
+		compatible = "epeas,aem15820-sensor";
+		apm-boost-lp-alpha-picowatt = <18040>;
+	};
+
+	charger {
+		compatible = "epeas,aem15820-charger";
+		apm-boost-lp;
+		source-regulation = "mppt";
+		mppt-ratio-percent = <80>;
+		source-low-millivolt = <300>;
+		vovdis-millivolt = <3000>;
+		vchrdy-millivolt = <3300>;
+		vovch-millivolt = <4200>;
+		ntc-r0 = <10000>;
+		charge-temp-min-millicelsius = <(-10000)>;
+	};
+};

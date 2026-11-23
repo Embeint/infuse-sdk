@@ -1,0 +1,19 @@
+common:
+  tags:
+    - drivers
+    - mfd
+    - sensor
+    - aem15820
+  platform_allow:
+    - native_sim
+    - qemu_cortex_m3
+  integration_platforms:
+    - native_sim
+    - qemu_cortex_m3
+tests:
+  drivers.mfd.aem15820: {}
+  drivers.mfd.aem15820.debug_log:
+    extra_configs:
+      - CONFIG_LOG=y
+      - CONFIG_MFD_LOG_LEVEL_DBG=y
+      - CONFIG_SENSOR_LOG_LEVEL_DBG=y

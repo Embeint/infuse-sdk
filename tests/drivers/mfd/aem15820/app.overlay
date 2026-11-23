@@ -1,0 +1,107 @@
+/* SPDX-License-Identifier: FSL-1.1-ALv2 */
+#include <zephyr/dt-bindings/gpio/gpio.h>
+
+/ {
+	test_gpio: aem15820-test-gpio {
+		compatible = "zephyr,gpio-emul";
+		gpio-controller;
+		#gpio-cells = <2>;
+		ngpios = <2>;
+		rising-edge;
+	};
+
+	test_i2c: i2c@11112222 {
+		compatible = "zephyr,i2c-emul-controller";
+		reg = <0x11112222 0x1000>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+		clock-frequency = <100000>;
+
+		pmic: pmic@61 {
+			compatible = "epeas,aem15820";
+			reg = <0x61>;
+			int-gpios = <&test_gpio 0 GPIO_ACTIVE_HIGH>;
+
+			pmic_sensor: sensor {
+				compatible = "epeas,aem15820-sensor";
+				apm-boost-lp-alpha-picowatt = <18040>;
+				apm-boost-hp-alpha-picowatt = <12000000>;
+				apm-load-alpha-picowatt = <2265>;
+			};
+
+			/* AEM15820_config.yaml */
+			pmic_charger: charger {
+				compatible = "epeas,aem15820-charger";
+				boost-lp-timing-multiplier = <3>;
+				boost-hp-timing-multiplier = <6>;
+				source-regulation = "mppt";
+				mppt-ratio-percent = <85>;
+				mppt-wait-us = <233000>;
+				mppt-period-ms = <14895>;
+				source-low-millivolt = <300>;
+				vovdis-millivolt = <3000>;
+				vchrdy-millivolt = <3300>;
+				vchrdy-buck-millivolt = <3300>;
+				vovch-millivolt = <4200>;
+				buck-output-millivolt = <1800>;
+				buck-timing-multiplier = <2>;
+				apm-boost-lp;
+				apm-boost-hp;
+				apm-load;
+				apm-mode = "counter";
+				apm-window-ms = <233>;
+				apm-accumulation = <1>;
+				ntc-r0 = <10000>;
+				ntc-beta = <3380>;
+				ntc-rdiv = <22000>;
+				charge-temp-min-millicelsius = <(-24930)>;
+				charge-temp-max-millicelsius = <69780>;
+				discharge-temp-min-millicelsius = <(-24930)>;
+				discharge-temp-max-millicelsius = <69780>;
+			};
+		};
+
+		/* No IRQ line or thermistor */
+		pmic_basic: pmic@62 {
+			compatible = "epeas,aem15820";
+			reg = <0x62>;
+
+			pmic_basic_sensor: sensor {
+				compatible = "epeas,aem15820-sensor";
+				apm-boost-lp-alpha-picowatt = <1000>;
+				apm-boost-hp-alpha-picowatt = <1000>;
+				/* LOAD monitor is not enabled on the charger */
+				apm-load-alpha-picowatt = <1000>;
+			};
+
+			/* Constant voltage regulation, no thermistor */
+			pmic_basic_charger: charger {
+				compatible = "epeas,aem15820-charger";
+				boost-hp-disable;
+				source-regulation = "constant-voltage";
+				source-cv-millivolt = <1500>;
+				vovdis-millivolt = <2500>;
+				vchrdy-millivolt = <2700>;
+				vovch-millivolt = <4594>;
+				chg5v-cv-millivolt = <4100>;
+				apm-boost-lp;
+				apm-boost-hp;
+				apm-chg5v;
+				apm-mode = "power";
+				apm-window-ms = <116>;
+				apm-accumulation = <3>;
+			};
+		};
+
+		/* Fails the part number check */
+		pmic_bad: pmic@63 {
+			compatible = "epeas,aem15820";
+			reg = <0x63>;
+			int-gpios = <&test_gpio 1 GPIO_ACTIVE_HIGH>;
+
+			pmic_bad_sensor: sensor {
+				compatible = "epeas,aem15820-sensor";
+			};
+		};
+	};
+};
