@@ -3,6 +3,16 @@
 # Copyright (c) 2026 Embeint Holdings Pty Ltd
 # SPDX-License-Identifier: Apache-2.0
 
+config CHARGER_AEM15820
+	bool "e-peas AEM15820 energy harvesting charger"
+	default y
+	depends on DT_HAS_EPEAS_AEM15820_CHARGER_ENABLED
+	depends on CHARGER
+	select MFD
+	help
+	  Enable the charger child device for the e-peas AEM15820. The
+	  devicetree configuration is applied to the device at boot.
+
 config CHARGER_BQ25798
 	bool "TI BQ25798 charger status"
 	default y

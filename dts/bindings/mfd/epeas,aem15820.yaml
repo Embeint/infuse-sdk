@@ -1,0 +1,40 @@
+# Copyright (c) 2026 Embeint Holdings Pty Ltd
+# SPDX-License-Identifier: FSL-1.1-ALv2
+
+description: |
+  e-peas AEM15820 energy harvesting PMIC
+
+  The core device mediates I2C register access and IRQ events for its child
+  devices (sensor, charger). The thermistor configuration is a
+  property of the charger child.
+
+  Example:
+
+    &i2c21 {
+      aem15820: pmic@61 {
+        compatible = "epeas,aem15820";
+        reg = <0x61>;
+        int-gpios = <&gpio1 13 GPIO_ACTIVE_HIGH>;
+
+        aem15820_sensor: sensor {
+          compatible = "epeas,aem15820-sensor";
+        };
+
+        aem15820_charger: charger {
+          compatible = "epeas,aem15820-charger";
+          ...
+        };
+      };
+    };
+
+compatible: "epeas,aem15820"
+
+include: [i2c-device.yaml]
+
+properties:
+  int-gpios:
+    type: phandle-array
+    description: |
+      IRQ output. The line rises on enabled events and is released when the
+      IRQFLGx registers are read. It is held low while the device is in
+      RESET STATE, so it should be GPIO_ACTIVE_HIGH.

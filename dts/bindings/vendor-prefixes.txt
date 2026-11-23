@@ -11,3 +11,4 @@
 # <vendor-prefix><TAB><Full name of vendor>
 
 embeint	Embeint Pty Ltd.
+epeas	e-peas SA

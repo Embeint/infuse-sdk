@@ -1,0 +1,267 @@
+# Copyright (c) 2026 Embeint Holdings Pty Ltd
+# SPDX-License-Identifier: FSL-1.1-ALv2
+
+description: |
+  Charger child device for the e-peas AEM15820.
+
+  The properties of this node are written to the configuration registers at
+  boot, switching the AEM15820 from configuration pins to I2C register
+  configuration. The configuration is re-applied whenever the device passes
+  through RESET STATE (requires int-gpios on the parent).
+
+  Must be a child node of an "epeas,aem15820" device.
+
+  Example (MPPT harvesting into a Li-ion cell, 1.8V LOAD output):
+
+    charger {
+      compatible = "epeas,aem15820-charger";
+      boost-lp-timing-multiplier = <3>;
+      boost-hp-timing-multiplier = <6>;
+      source-regulation = "mppt";
+      mppt-ratio-percent = <85>;
+      mppt-wait-us = <233000>;
+      mppt-period-ms = <14895>;
+      source-low-millivolt = <300>;
+      vovdis-millivolt = <3000>;
+      vchrdy-millivolt = <3300>;
+      vovch-millivolt = <4200>;
+      buck-output-millivolt = <1800>;
+      ntc-r0 = <10000>;
+    };
+
+compatible: "epeas,aem15820-charger"
+
+include: base.yaml
+
+properties:
+  # Boost converters (BSTLPCFG, BSTHPCFG)
+  boost-lp-disable:
+    type: boolean
+    description: |
+      Disable the low-power boost converter. The high-power boost converter
+      must also be disabled.
+
+  boost-lp-timing-multiplier:
+    type: int
+    default: 2
+    enum: [1, 2, 3, 4, 6, 8, 12, 16]
+    description: |
+      Low-power boost timing multiplier. Higher values increase the inductor
+      peak current. The low-power boost inductor must not be smaller than the
+      datasheet minimum for the selected multiplier (3.3 uH per x1), or the
+      device will be damaged. Default is the reset value.
+
+  boost-hp-disable:
+    type: boolean
+    description: Disable the high-power boost converter.
+
+  boost-hp-timing-multiplier:
+    type: int
+    default: 2
+    enum: [1, 2, 3, 4, 6, 8, 12, 16]
+    description: |
+      High-power boost timing multiplier. Limits depend on the external
+      high-power boost components. Default is the reset value.
+
+  # Source regulation (SRCREGU0, SRCREGU1, SRCLOW)
+  source-regulation:
+    type: string
+    required: true
+    enum:
+      - "constant-voltage"
+      - "mppt"
+    description: Source regulation mode.
+
+  source-cv-millivolt:
+    type: int
+    description: |
+      Source regulation voltage in constant voltage mode, rounded to the
+      nearest supported value (300 mV to 4318 mV). Must not be below half of
+      the source open-circuit voltage. Required for "constant-voltage".
+
+  mppt-ratio-percent:
+    type: int
+    enum: [50, 65, 70, 75, 80, 85]
+    description: |
+      MPPT ratio (VMPP / VOC). Required for "mppt", as the reset value is
+      reserved.
+
+  mppt-wait-us:
+    type: int
+    default: 1800
+    enum: [1800, 3600, 7300, 15000, 29000, 116000, 233000, 465000]
+    description: |
+      Time the source is left open-circuit before the VOC measurement.
+      Default is the reset value.
+
+  mppt-period-ms:
+    type: int
+    default: 116
+    enum: [116, 233, 465, 931, 1862, 3724, 7447, 14895]
+    description: |
+      Time between MPPT evaluations. A 116 ms period forces the APM window to
+      116 ms. Default is the reset value.
+
+  source-low-millivolt:
+    type: int
+    enum: [300, 360, 405, 510, 600]
+    description: |
+      Source voltage below which the device enters SLEEP STATE. Required for
+      "mppt", as the reset value is reserved. Not used in
+      "constant-voltage" mode.
+
+  # Storage element thresholds (VOVDIS, VCHRDY, VCHRDYBUCK, VOVCH)
+  vovdis-millivolt:
+    type: int
+    required: true
+    description: |
+      Storage element overdischarge threshold, 2400 mV to 3581 mV in
+      18.75 mV steps (rounded to nearest).
+
+  vchrdy-millivolt:
+    type: int
+    required: true
+    description: |
+      Storage element charge ready threshold, 2456 mV to 4312 mV in 18.75 mV
+      steps (rounded to nearest). Must be at least 100 mV above VOVDIS.
+
+  vchrdy-buck-millivolt:
+    type: int
+    description: |
+      Storage element voltage required to enable the buck converter,
+      2456 mV to 4312 mV in 18.75 mV steps (rounded to nearest). Defaults to
+      vchrdy-millivolt.
+
+  vovch-millivolt:
+    type: int
+    required: true
+    description: |
+      Storage element overcharge threshold, 2700 mV to 4594 mV in 18.75 mV
+      steps (rounded to nearest). Must be at least 100 mV above VCHRDY.
+
+  # Buck converter (BUCKCFG)
+  buck-output-millivolt:
+    type: int
+    default: 0
+    enum: [0, 600, 900, 1200, 1500, 1800, 2200, 2500, 2800, 3000, 3300]
+    description: |
+      LOAD output voltage, 0 disables the buck converter. The buck converter
+      must not be disabled once it has been enabled. Default is the reset
+      value (disabled).
+
+  buck-timing-multiplier:
+    type: int
+    default: 4
+    enum: [1, 2, 3, 4, 6, 8, 12, 16]
+    description: |
+      Buck timing multiplier. The buck inductor must not be smaller than the
+      datasheet minimum for the selected multiplier (1.7 uH at x1), or the
+      device will be damaged. Default is the I2C reset value.
+
+  # Average power monitoring (APM, APMACC)
+  apm-boost-lp:
+    type: boolean
+    description: Enable average power monitoring of the low-power boost.
+
+  apm-boost-hp:
+    type: boolean
+    description: Enable average power monitoring of the high-power boost.
+
+  apm-load:
+    type: boolean
+    description: Enable average power monitoring of the LOAD output.
+
+  apm-chg5v:
+    type: boolean
+    description: Enable average power monitoring of the 5V charger.
+
+  apm-mode:
+    type: string
+    default: "counter"
+    enum:
+      - "counter"
+      - "power"
+    description: |
+      APM mode for the low-power boost and LOAD monitors. The high-power
+      boost and 5V charger monitors always use counter mode.
+
+  apm-window-ms:
+    type: int
+    default: 233
+    enum: [233, 116]
+    description: APM computation window.
+
+  apm-accumulation:
+    type: int
+    default: 1
+    description: Number of APM windows to accumulate before APMDONE (1 to 256).
+
+  # 5V charger (CHG5V)
+  chg5v-disable:
+    type: boolean
+    description: Disable the 5V charger.
+
+  chg5v-cv-millivolt:
+    type: int
+    enum: [2650, 2750, 2850, 2950, 3050, 3150, 3250, 3300,
+           3350, 3400, 3450, 3500, 3550, 3600, 3650, 3700,
+           3750, 3800, 3850, 3900, 3950, 4000, 4050, 4100,
+           4150, 4200, 4250, 4300, 4400, 4500, 4600, 4700]
+    description: |
+      Enable the 5V charger constant voltage mode with this end of charge
+      voltage. Must be below VOVCH. Constant current only if not set.
+
+  # Thermal monitoring (TEMPxxx)
+  ntc-r0:
+    type: int
+    description: |
+      Resistance of the NTC thermistor (RTH) at 25 C in Ohms. Leave this
+      property out when the thermal monitoring is not used (TH_MON connected
+      to VINT), which also disables the thermal protection.
+
+  ntc-beta:
+    type: int
+    default: 3380
+    description: |
+      NTC thermistor B constant in Kelvin. Default is the datasheet
+      recommended thermistor.
+
+  ntc-rdiv:
+    type: int
+    default: 22000
+    description: |
+      Resistance of the divider resistor (RDIV) in series with the NTC
+      thermistor in Ohms. Default is the datasheet recommended value.
+
+  thermal-protection-disable:
+    type: boolean
+    description: |
+      Disable the thermal protection. The temperature is still measured if
+      the thermistor is connected.
+
+  # Negative temperatures are written as <(-24930)>
+  charge-temp-min-millicelsius:
+    type: int
+    description: |
+      Temperature below which the storage element is not charged. Default is
+      the reset value (-24.93 C with the recommended thermistor).
+
+  charge-temp-max-millicelsius:
+    type: int
+    description: |
+      Temperature above which the storage element is not charged. Default is
+      the reset value (69.78 C with the recommended thermistor).
+
+  discharge-temp-min-millicelsius:
+    type: int
+    description: |
+      Temperature below which the storage element is not discharged through
+      LOAD. Default is the reset value (-24.93 C with the recommended
+      thermistor).
+
+  discharge-temp-max-millicelsius:
+    type: int
+    description: |
+      Temperature above which the storage element is not discharged through
+      LOAD. Default is the reset value (69.78 C with the recommended
+      thermistor).

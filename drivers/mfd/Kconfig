@@ -1,0 +1,20 @@
+# Infuse-IoT multi-function device drivers
+
+# Copyright (c) 2026 Embeint Holdings Pty Ltd
+# SPDX-License-Identifier: FSL-1.1-ALv2
+
+config MFD_AEM15820
+	bool "e-peas AEM15820 energy harvesting PMIC"
+	default y
+	depends on DT_HAS_EPEAS_AEM15820_ENABLED
+	depends on MFD
+	depends on GPIO || $(dt_compat_any_has_prop,$(DT_COMPAT_EPEAS_AEM15820),int-gpios) = n
+	select I2C
+	help
+	  Enable the core driver for the e-peas AEM15820. The core driver
+	  mediates register access and IRQ events for the child devices.
+
+config MFD_AEM15820_INIT_PRIORITY
+	int "AEM15820 MFD initialization priority"
+	default MFD_INIT_PRIORITY
+	depends on MFD_AEM15820

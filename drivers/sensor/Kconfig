@@ -1,5 +1,12 @@
 # Infuse-IoT sensor drivers
 
+config AEM15820_SENSOR
+	bool "e-peas AEM15820 voltage and temperature monitoring"
+	depends on DT_HAS_EPEAS_AEM15820_SENSOR_ENABLED
+	depends on SENSOR
+	select MFD
+	default y
+
 config NRF9X_TEMP
 	bool "nRF91x internal SoC temperature"
 	depends on DT_HAS_NORDIC_NRF9X_TEMP_ENABLED

@@ -1,0 +1,45 @@
+# Copyright (c) 2026 Embeint Holdings Pty Ltd
+# SPDX-License-Identifier: FSL-1.1-ALv2
+
+description: |
+  Sensor child device for the e-peas AEM15820.
+
+  Reports the storage element (STO) voltage, the source (SRC) voltage, the
+  average power monitor (APM) values and the
+  thermistor temperature (if ntc-r0 is configured on the
+  "epeas,aem15820-charger" sibling node).
+
+  Must be a child node of an "epeas,aem15820" device.
+
+compatible: "epeas,aem15820-sensor"
+
+include: base.yaml
+
+properties:
+  apm-boost-lp-alpha-picowatt:
+    type: int
+    description: |
+      Alpha factor of the low-power boost APM, in picowatts per LSB. Converts
+      the APM register value (per window) into average power. Required to
+      report SENSOR_CHAN_AEM15820_BOOST_LP_POWER, along with apm-boost-lp on
+      the charger node.
+
+      The factor depends on the APM mode, window and timing multiplier, the
+      inductor and the board, and must be calibrated for the system. The same
+      formula is applied in counter mode, where alpha is the average power
+      of a single pulse per APM window (pulse energy / window duration).
+
+  apm-boost-hp-alpha-picowatt:
+    type: int
+    description: |
+      Alpha factor of the high-power boost APM, in picowatts per LSB. The
+      high-power boost APM always operates in counter mode. Required to
+      report SENSOR_CHAN_AEM15820_BOOST_HP_POWER, along with apm-boost-hp on
+      the charger node. See apm-boost-lp-alpha-picowatt.
+
+  apm-load-alpha-picowatt:
+    type: int
+    description: |
+      Alpha factor of the LOAD (buck converter) APM, in picowatts per LSB.
+      Required to report SENSOR_CHAN_AEM15820_LOAD_POWER, along with apm-load
+      on the charger node. See apm-boost-lp-alpha-picowatt.
