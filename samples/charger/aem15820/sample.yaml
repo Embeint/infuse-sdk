@@ -1,0 +1,21 @@
+sample:
+  description: e-peas AEM15820 energy harvesting demonstration application
+  name: AEM15820 Demo
+common:
+  tags:
+    - charger
+    - sensor
+    - epacket
+    - kv_store
+    - logging
+    - rpc
+    - states
+    - tdf
+  filter: dt_compat_enabled("epeas,aem15820-charger") and dt_compat_enabled("epeas,aem15820-sensor")
+  required_snippets:
+    - infuse
+  integration_platforms:
+    - nrf54l15dk/nrf54l15/cpuapp
+  build_only: true
+tests:
+  sample.charger.aem15820: {}
