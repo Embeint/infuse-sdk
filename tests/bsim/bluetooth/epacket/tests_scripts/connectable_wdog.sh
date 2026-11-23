@@ -14,6 +14,6 @@ Execute ./bs_${BOARD_TS}_tests_bsim_bluetooth_epacket_device_prj_wdog_conf \
   -testid=epacket_bt_connectable_wdog -rs=23
 
 Execute ./bs_2G4_phy_v1 -v=${verbosity_level} -s=${simulation_id} \
-  -D=1 -sim_length=10e6 $@
+  -D=1 -sim_length=15e6 $@
 
 wait_for_background_jobs

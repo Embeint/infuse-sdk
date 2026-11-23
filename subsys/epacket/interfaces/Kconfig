@@ -163,12 +163,13 @@ config EPACKET_INTERFACE_BT_ADV
 if EPACKET_INTERFACE_BT_ADV
 
 config EPACKET_INTERFACE_BT_ADV_CONNECTABLE_WATCHDOG_SEC
-	int "Watchdog timeout for successfully starting a connectable advertising set"
+	int "Watchdog timeout for connectable advertising availability"
 	default 3600
 	help
-	  If the interface is unable to create a connectable advertising set for this
-	  long, automatically reboot. This ensures it is always possible for Bluetooth
-	  gateways to get back into a device. Default is 1 hour. Set to 0 to disable.
+	  After the first transmission attempt, automatically reboot if the interface
+	  is unable to successfully start a connectable advertising set for this long.
+	  This ensures it is always possible for Bluetooth gateways to get back into a
+	  device. Default is 1 hour. Set to 0 to disable.
 
 config EPACKET_INTERFACE_BT_ADV_SCAN_WATCHDOG_SEC
 	int "If scanning, restart scanning if no advertising packets are seen in this period"
