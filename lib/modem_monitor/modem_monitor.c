@@ -87,12 +87,12 @@ static void l4_event_handler(struct net_mgmt_event_callback *cb, uint64_t mgmt_e
 	}
 	if (mgmt_event == NET_EVENT_L4_IF_CONNECTED) {
 		/* Interface is connected, cancel the timeout */
-		LOG_DBG("Interface %p is connected, cancelling timeout", iface);
+		LOG_INF("IP connectivity gained");
 		atomic_set_bit(&generic_monitor.flags, FLAGS_L4_CONNECTED);
 		k_work_cancel_delayable(&generic_monitor.connectivity_timeout);
 	} else if (mgmt_event == NET_EVENT_L4_IF_DISCONNECTED) {
 		/* Interface is disconnected, restart the timeout */
-		LOG_DBG("Interface %p is disconnected, restarting timeout", iface);
+		LOG_INF("IP connectivity lost");
 		atomic_clear_bit(&generic_monitor.flags, FLAGS_L4_CONNECTED);
 		k_work_cancel_delayable(&generic_monitor.dns_failure_timeout);
 		k_work_reschedule(&generic_monitor.connectivity_timeout, CONNECTIVITY_TIMEOUT);
@@ -102,7 +102,7 @@ static void l4_event_handler(struct net_mgmt_event_callback *cb, uint64_t mgmt_e
 void modem_monitor_ip_connectivity_expected(bool expected)
 {
 	if (expected) {
-		LOG_DBG("IP connectivity expected");
+		LOG_INF("IP connectivity expected");
 		atomic_set_bit(&generic_monitor.flags, FLAGS_IP_CONN_EXPECTED);
 		if (atomic_test_bit(&generic_monitor.flags, FLAGS_L4_CONNECTED)) {
 			/* Interface stayed up while registration was briefly lost, no new
@@ -113,7 +113,7 @@ void modem_monitor_ip_connectivity_expected(bool expected)
 		}
 		k_work_reschedule(&generic_monitor.connectivity_timeout, CONNECTIVITY_TIMEOUT);
 	} else {
-		LOG_DBG("IP connectivity not expected");
+		LOG_INF("IP connectivity not expected");
 		atomic_clear_bit(&generic_monitor.flags, FLAGS_IP_CONN_EXPECTED);
 		k_work_cancel_delayable(&generic_monitor.connectivity_timeout);
 		k_work_cancel_delayable(&generic_monitor.dns_failure_timeout);

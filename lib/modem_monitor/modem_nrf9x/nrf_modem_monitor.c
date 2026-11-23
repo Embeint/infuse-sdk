@@ -8,6 +8,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include <zephyr/sys/atomic.h>
 #include <zephyr/init.h>
@@ -751,6 +752,23 @@ static void infuse_modem_init(int ret, void *ctx)
 		LOG_ERR("AT%%REDMOB=%d (%d)", val, rc);
 	}
 }
+
+#if CONFIG_INFUSE_MODEM_MONITOR_LOG_LEVEL >= LOG_LEVEL_INF
+
+/* Output notifications verbatim for diagnosing connectivity loss. +CGEV covers PDN
+ * activation/deactivation and network detach, +CEREG covers registration changes
+ * and their reject causes.
+ */
+AT_MONITOR(cgev_notification, "+CGEV", at_notif_log);
+AT_MONITOR(cereg_notification, "+CEREG", at_notif_log);
+
+static void at_notif_log(const char *notif)
+{
+	/* Output the notification, minus the trailing newline */
+	LOG_INF("%.*s", (int)strcspn(notif, "\r\n"), notif);
+}
+
+#endif /* CONFIG_INFUSE_MODEM_MONITOR_LOG_LEVEL >= LOG_LEVEL_INF */
 
 #ifndef CONFIG_SOC_NRF9160
 
