@@ -28,6 +28,7 @@ common:
     - native_sim
   integration_platforms:
     - nrf52840dk/nrf52840
+    - xg24_dk2601b/efr32mg24b310f1536im48
 tests:
   sample.app.gateway_uart: {}
   sample.app.gateway_uart.sysbuild:
