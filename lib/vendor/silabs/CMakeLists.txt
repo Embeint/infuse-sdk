@@ -1,3 +1,4 @@
 # Infuse-IoT Silicon Labs specific implementations
 
 infuse_sources_ifndef(CONFIG_INFUSE_CUSTOM_IDENTIFIERS identifiers.c)
+infuse_sources_ifdef(CONFIG_INFUSE_COMMON_BOOT_DEBUG_PORT_DISABLE dap_disable.c)
