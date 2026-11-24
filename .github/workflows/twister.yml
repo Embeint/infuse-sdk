@@ -35,6 +35,7 @@ jobs:
         - /repo-cache/embeint:/github/cache/embeint
         - /repo-cache/ccache:/github/ccache
         - /repo-cache/pip-cache:/github/pip-cache
+        - /repo-cache/blobs:/github/cache/blobs
     strategy:
       fail-fast: false
       matrix:
