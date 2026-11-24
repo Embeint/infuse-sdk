@@ -37,7 +37,7 @@
 		aem15820_sensor: sensor {
 			compatible = "epeas,aem15820-sensor";
 			apm-boost-lp-alpha-picowatt = <18040>;
-			apm-boost-hp-alpha-picowatt = <12000000>;
+			apm-boost-hp-alpha-picowatt = <27840000>;
 			apm-load-alpha-picowatt = <2265>;
 		};
 

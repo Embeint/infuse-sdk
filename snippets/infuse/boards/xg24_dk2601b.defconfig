@@ -4,4 +4,8 @@ if BOARD_XG24_DK2601B
 configdefault BMP388_FORCED_MODE
     default y
 
+# SPI flash and IMU transfers use DMA instead of busy-waiting the CPU
+configdefault SPI_SILABS_EUSART_DMA
+    default y
+
 endif # BOARD_XG24_DK2601B

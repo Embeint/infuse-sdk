@@ -15,6 +15,7 @@
 #include <infuse/data_logger/high_level/tdf.h>
 #include <infuse/drivers/mfd/aem15820.h>
 #include <infuse/drivers/sensor/aem15820.h>
+#include <infuse/drivers/watchdog.h>
 #include <infuse/task_runner/tasks/tdf_logger.h>
 #include <infuse/tdf/definitions.h>
 #include <infuse/time/epoch.h>
@@ -33,9 +34,12 @@ BUILD_ASSERT(DT_SAME_NODE(DT_PARENT(CHARGER_NODE), DT_PARENT(SENSOR_NODE)),
 	(DT_PROP(CHARGER_NODE, apm_window_ms) * DT_PROP(CHARGER_NODE, apm_accumulation))
 #define REPORT_PERIOD K_SECONDS(5)
 
-/* Live loggers are flushed on every report, flash is written as blocks fill */
+/* Periodic reports are only sent to the live loggers, which are flushed on every report.
+ * A report is additionally written to flash each time an accumulation period completes,
+ * with flash blocks written as they fill.
+ */
 #define TDF_LOGGERS_LIVE (TDF_DATA_LOGGER_BT_ADV | TDF_DATA_LOGGER_SERIAL)
-#define TDF_LOGGERS      (TDF_LOGGERS_LIVE | TDF_DATA_LOGGER_FLASH)
+#define TDF_LOGGERS_ALL  (TDF_LOGGERS_LIVE | TDF_DATA_LOGGER_FLASH)
 
 /* Optional ambient light sensor, reported alongside the AEM15820 measurements */
 #define LIGHT_NODE DT_ALIAS(light0)
@@ -93,7 +97,7 @@ static int channel_get(const struct device *dev, int chan, int64_t *micro)
 	return rc;
 }
 
-static void report_ambient_light(uint64_t epoch_time)
+static void report_ambient_light(uint8_t loggers, uint64_t epoch_time)
 {
 #if DT_NODE_HAS_STATUS_OKAY(LIGHT_NODE)
 	const struct device *light = DEVICE_DT_GET(LIGHT_NODE);
@@ -111,13 +115,12 @@ static void report_ambient_light(uint64_t epoch_time)
 	}
 
 	light_tdf.illuminance = CLAMP(DIV_ROUND_CLOSEST(light_ulux, 1000), 0, UINT32_MAX);
-	LOG_INF("Ambient light %u.%03u lux", light_tdf.illuminance / 1000,
-		light_tdf.illuminance % 1000);
-	TDF_DATA_LOGGER_LOG(TDF_LOGGERS, TDF_AMBIENT_LIGHT, epoch_time, &light_tdf);
+	LOG_INF("Ambient light %6u lux", light_tdf.illuminance / 1000);
+	TDF_DATA_LOGGER_LOG(loggers, TDF_AMBIENT_LIGHT, epoch_time, &light_tdf);
 #endif /* DT_NODE_HAS_STATUS_OKAY(LIGHT_NODE) */
 }
 
-static void report_measurements(const struct device *sensor)
+static void report_measurements(const struct device *sensor, uint8_t loggers)
 {
 	struct tdf_energy_harvester_state harvester_tdf;
 	struct tdf_storage_temperature temperature_tdf;
@@ -179,16 +182,17 @@ static void report_measurements(const struct device *sensor)
 	/* Announce only needs to be sent live, first so it is in the first packet */
 	task_tdf_logger_manual_run(TDF_LOGGERS_LIVE, epoch_time, TASK_TDF_LOGGER_LOG_ANNOUNCE,
 				   NULL);
-	TDF_DATA_LOGGER_LOG(TDF_LOGGERS, TDF_BATTERY_STATE, epoch_time, &battery_tdf);
-	TDF_DATA_LOGGER_LOG(TDF_LOGGERS, TDF_ENERGY_HARVESTER_STATE, epoch_time, &harvester_tdf);
-	TDF_DATA_LOGGER_LOG(TDF_LOGGERS, TDF_ENERGY_HARVESTER_ACCUMULATED, epoch_time,
+	TDF_DATA_LOGGER_LOG(loggers, TDF_BATTERY_STATE, epoch_time, &battery_tdf);
+	TDF_DATA_LOGGER_LOG(loggers, TDF_ENERGY_HARVESTER_STATE, epoch_time, &harvester_tdf);
+	TDF_DATA_LOGGER_LOG(loggers, TDF_ENERGY_HARVESTER_ACCUMULATED, epoch_time,
 			    &accumulated_tdf);
-	TDF_DATA_LOGGER_LOG(TDF_LOGGERS, TDF_STORAGE_TEMPERATURE, epoch_time, &temperature_tdf);
-	report_ambient_light(epoch_time);
+	TDF_DATA_LOGGER_LOG(loggers, TDF_STORAGE_TEMPERATURE, epoch_time, &temperature_tdf);
+	report_ambient_light(loggers, epoch_time);
 	tdf_data_logger_flush(TDF_LOGGERS_LIVE);
 }
 
-static void energy_accumulate(uint64_t power_nw, uint32_t duration_ms)
+/* Returns true when an accumulation period has completed */
+static bool energy_accumulate(uint64_t power_nw, uint32_t duration_ms)
 {
 	minute_energy_nw_ms += power_nw * duration_ms;
 	minute_duration_ms += duration_ms;
@@ -199,13 +203,17 @@ static void energy_accumulate(uint64_t power_nw, uint32_t duration_ms)
 		accumulated_tdf.energy_uwh = DIV_ROUND_CLOSEST(minute_energy_nw_ms, NW_MS_PER_UWH);
 		minute_energy_nw_ms = 0;
 		minute_duration_ms = 0;
+		return true;
 	}
+	return false;
 }
 
-static void apm_window_complete(const struct device *sensor, uint32_t window_ms)
+/* Returns true when an accumulation period has completed */
+static bool apm_window_complete(const struct device *sensor, uint32_t window_ms)
 {
 	int64_t lp_nw, hp_nw, sto_uv;
 	uint64_t total_nah, lp_nwh, hp_nwh;
+	bool period_complete;
 	int rc;
 
 	/* Power channels are in mW, micro-mW is nW */
@@ -218,9 +226,9 @@ static void apm_window_complete(const struct device *sensor, uint32_t window_ms)
 	}
 	if ((rc != 0) || (sto_uv <= 0)) {
 		LOG_WRN("APM data unavailable (%d)", rc);
-		return;
+		return false;
 	}
-	energy_accumulate(lp_nw + hp_nw, window_ms);
+	period_complete = energy_accumulate(lp_nw + hp_nw, window_ms);
 
 	/* Charge into the storage element over the window, Q = P * t / VSTO.
 	 * fAh = nW * ms * 1e-12 / (uV * 1e-6) / 3600 * 1e15 = nW * ms * 1e7 / (uV * 36)
@@ -238,6 +246,7 @@ static void apm_window_complete(const struct device *sensor, uint32_t window_ms)
 		(uint32_t)(stored_fah / FAH_PER_MAH), (uint32_t)(total_nah % 1000000),
 		(uint32_t)(lp_nwh / 1000), (uint32_t)(lp_nwh % 1000), (uint32_t)(hp_nwh / 1000),
 		(uint32_t)(hp_nwh % 1000));
+	return period_complete;
 }
 
 static void led_blink(void)
@@ -255,9 +264,12 @@ int main(void)
 	const struct device *mfd = DEVICE_DT_GET(DT_PARENT(SENSOR_NODE));
 	const struct device *sensor = DEVICE_DT_GET(SENSOR_NODE);
 	const struct device *charger = DEVICE_DT_GET(CHARGER_NODE);
+	k_timeout_t wdog_period;
 	k_timepoint_t next_report;
+	int wdog_channel;
 	int64_t last_apm_ms = -1;
 	uint32_t window_ms;
+	bool persist;
 	int rc;
 
 	if (!device_is_ready(sensor) || !device_is_ready(charger)) {
@@ -281,8 +293,20 @@ int main(void)
 		return rc;
 	}
 
+	/* Watchdog the main loop. The loop wakes at least every REPORT_PERIOD, which is
+	 * much shorter than the watchdog period, so it is fed on every iteration.
+	 */
+	wdog_channel = infuse_watchdog_install(&wdog_period);
+	if (wdog_channel >= 0) {
+		infuse_watchdog_thread_register(wdog_channel, k_current_get());
+	}
+	(void)infuse_watchdog_start();
+
 	next_report = sys_timepoint_calc(K_NO_WAIT);
 	for (;;) {
+		if (wdog_channel >= 0) {
+			infuse_watchdog_feed(wdog_channel);
+		}
 		rc = k_sem_take(&apm_done, sys_timepoint_timeout(next_report));
 
 		/* Monitoring values are updated autonomously, fetch reads the latest */
@@ -290,6 +314,7 @@ int main(void)
 			LOG_ERR("Sample fetch failed");
 			continue;
 		}
+		persist = false;
 		if (rc == 0) {
 			/* The actual APM window deviates from the nominal value, so integrate the
 			 * average power over the measured time between completions (which covers
@@ -298,10 +323,13 @@ int main(void)
 			window_ms = (last_apm_ms < 0) ? APM_PERIOD_MS : (apm_done_ms - last_apm_ms);
 			last_apm_ms = apm_done_ms;
 			/* APM data is only valid until the next window completes */
-			apm_window_complete(sensor, window_ms);
+			persist = apm_window_complete(sensor, window_ms);
 		}
-		if (sys_timepoint_expired(next_report)) {
-			report_measurements(sensor);
+		/* Report immediately when an accumulation period completes, so that each
+		 * completed period is written to flash alongside the current measurements.
+		 */
+		if (persist || sys_timepoint_expired(next_report)) {
+			report_measurements(sensor, persist ? TDF_LOGGERS_ALL : TDF_LOGGERS_LIVE);
 			led_blink();
 			next_report = sys_timepoint_calc(REPORT_PERIOD);
 		}

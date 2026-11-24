@@ -71,7 +71,7 @@
 	status = "okay";
 };
 
-/* DMA for SERIAL_ASYNC_API */
+/* DMA for SERIAL_ASYNC_API and SPI */
 &dma0 {
 	status = "okay";
 };
@@ -87,6 +87,9 @@
 };
 &eusart1 {
 	zephyr,pm-device-runtime-auto;
+	dmas = <&dma0 DMA_REQSEL_EUSART1TXFL>,
+	       <&dma0 DMA_REQSEL_EUSART1RXFL>;
+	dma-names = "tx", "rx";
 	/* IMU chip select (through the sensor isolation switch) */
 	cs-gpios = <&gpioc 0 GPIO_ACTIVE_LOW>, <&gpioa 7 GPIO_ACTIVE_LOW>;
 
