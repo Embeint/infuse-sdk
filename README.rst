@@ -73,6 +73,7 @@ The Infuse-IoT SDK currently supports the following SoC series:
   * Nordic Semiconductor `nRF53`_
   * Nordic Semiconductor `nRF91`_
   * Nordic Semiconductor `nRF54L`_
+  * Silicon Labs `EFR32MG24`_
   * ST Microelectronics `STM32L4x`_
   * ST Microelectronics `STM32WBx5`_ (Coming Soon)
 
@@ -88,6 +89,7 @@ For a complete list of supported boards, see `builtin supported platforms`_.
 .. _nRF53: https://docs.nordicsemi.com/category/nrf-53-series
 .. _nRF54L: https://docs.nordicsemi.com/category/nrf-54L-series
 .. _nRF91: https://docs.nordicsemi.com/category/nrf-91-series
+.. _EFR32MG24: https://www.silabs.com/wireless/zigbee/efr32mg24-series-2-socs
 .. _STM32L4x: https://www.st.com/en/microcontrollers-microprocessors/stm32l4-series.html
 .. _STM32WBx5: https://www.st.com/en/microcontrollers-microprocessors/stm32wbx5.html
 .. _builtin supported platforms: https://docs.dev.infuse-iot.com/latest/snippets/infuse/README.html

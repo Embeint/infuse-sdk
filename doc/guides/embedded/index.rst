@@ -104,7 +104,7 @@ Installing the correct Toolchains
 While setting up Zephyr SDK, ensure to select the required toolchain(s) for your build targets.
 Below are a few relevant ones:
 
-    * ``arm-zephyr-eabi``: For ARM EABI targets such as Nordic nRF and STM32 boards (including QEMU targets).
+    * ``arm-zephyr-eabi``: For ARM EABI targets such as Nordic nRF, Silicon Labs and STM32 boards (including QEMU targets).
     * ``x86_64-zephyr-elf``: For x86 posix/native targets (Used for Babblesim, only valid on Linux).
 
 The SDK setup installer can be re-run to add additional toolchains at a later date if needed.
@@ -116,6 +116,7 @@ Install host tools required for your microcontroller and programmer (if you have
 Below is a list of the tools required for programmers for the microcontrollers supported by Infuse-Iot:
 
     * Nordic: `nRF Util <nrf_util_>`_
+    * Silicon Labs: `J-Link Software <jlink_downloads_>`_ or `Simplicity Commander <simplicity_commander_>`_
     * STM32: `stm32cubeprog`_
 
 Ensure Zephyr's blinky example flashes to the board before continuing.
@@ -355,5 +356,6 @@ General Tips:
 .. _zephyr_sdk: https://docs.zephyrproject.org/latest/develop/toolchains/zephyr_sdk.html#toolchain-zephyr-sdk-install
 .. _zephyr_sdk_releases: https://github.com/zephyrproject-rtos/sdk-ng/releases
 .. _nrf_util: https://docs.nordicsemi.com/bundle/nrfutil/page/guides/installing.html
+.. _simplicity_commander: https://www.silabs.com/developer-tools/simplicity-studio/simplicity-commander
 .. _stm32cubeprog: https://www.st.com/en/development-tools/stm32cubeprog.html
 .. _jlink_downloads: https://www.segger.com/downloads/jlink/
