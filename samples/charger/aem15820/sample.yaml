@@ -16,6 +16,7 @@ common:
     - infuse
   integration_platforms:
     - nrf54l15dk/nrf54l15/cpuapp
+    - xg24_dk2601b
   build_only: true
 tests:
   sample.charger.aem15820: {}

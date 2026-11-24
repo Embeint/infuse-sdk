@@ -1,0 +1,94 @@
+/*
+ * Copyright (c) 2026 Embeint Holdings Pty Ltd
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * AEM15820 EVK connected to the xG24 Dev Kit (BRD2601B) expansion header:
+ *   SCL: PC4 (EXP15, I2C0 shared with the onboard sensors)
+ *   SDA: PC5 (EXP16, I2C0 shared with the onboard sensors)
+ *   IRQ: PB2 (EXP3, shared with BTN0, which is removed)
+ *
+ * Port B pins retain their interrupt functionality in EM2, allowing the IRQ
+ * line to wake the SoC.
+ *
+ * The EVK must be configured for I2C operation with VDDIO matching the DK
+ * I/O voltage.
+ */
+
+/* PB2 is used as the AEM15820 IRQ line */
+/ {
+	aliases {
+		/delete-property/ sw0;
+	};
+};
+/delete-node/ &button0;
+
+&i2c0 {
+	aem15820: pmic@61 {
+		compatible = "epeas,aem15820";
+		reg = <0x61>;
+		int-gpios = <&gpiob 2 GPIO_ACTIVE_HIGH>;
+
+		/* APM alpha factors are the AEM15820 EVK defaults:
+		 *   Low-power boost:  1.804e-8 W/LSB
+		 *   High-power boost: 1.200e-5 W/LSB
+		 *   Buck (LOAD):      2.265e-9 W/LSB
+		 */
+		aem15820_sensor: sensor {
+			compatible = "epeas,aem15820-sensor";
+			apm-boost-lp-alpha-picowatt = <18040>;
+			apm-boost-hp-alpha-picowatt = <12000000>;
+			apm-load-alpha-picowatt = <2265>;
+		};
+
+		/* AEM15820 EVK default configuration (AEM15820_config.yaml):
+		 *   Boost LP:     enabled, TMULT x3
+		 *   Boost HP:     enabled, TMULT x6
+		 *   Source:       MPPT, 85% ratio, 233 ms wait, 14895 ms period
+		 *   Source low:   0.300 V
+		 *   VOVDIS:       3.000 V
+		 *   VCHRDY:       3.300 V
+		 *   VCHRDYBUCK:   3.300 V
+		 *   VOVCH:        4.200 V
+		 *   Buck:         1.8 V, TMULT x2
+		 *   APM:          BSTLP, BSTHP and LOAD, counter mode, 233 ms window,
+		 *                 no accumulation (CHG5V disabled)
+		 *   5V charger:   enabled, constant current only
+		 *   Temperature:  protection enabled, R0 = 10k, B = 3380, RDIV = 22k,
+		 *                 -24.93 C to 69.78 C for charge and discharge
+		 *   IRQ:          I2CRDY only (APMDONE is enabled by the application)
+		 *
+		 * Changed from the EVK defaults:
+		 *   APM:          5 accumulated windows (APMDONE every ~1 second)
+		 */
+		aem15820_charger: charger {
+			compatible = "epeas,aem15820-charger";
+			boost-lp-timing-multiplier = <3>;
+			boost-hp-timing-multiplier = <6>;
+			source-regulation = "mppt";
+			mppt-ratio-percent = <85>;
+			mppt-wait-us = <233000>;
+			mppt-period-ms = <14895>;
+			source-low-millivolt = <300>;
+			vovdis-millivolt = <3000>;
+			vchrdy-millivolt = <3300>;
+			vchrdy-buck-millivolt = <3300>;
+			vovch-millivolt = <4200>;
+			buck-output-millivolt = <1800>;
+			buck-timing-multiplier = <2>;
+			apm-boost-lp;
+			apm-boost-hp;
+			apm-load;
+			apm-mode = "power";
+			apm-window-ms = <233>;
+			apm-accumulation = <5>;
+			ntc-r0 = <10000>;
+			ntc-beta = <3380>;
+			ntc-rdiv = <22000>;
+			charge-temp-min-millicelsius = <(-24930)>;
+			charge-temp-max-millicelsius = <69780>;
+			discharge-temp-min-millicelsius = <(-24930)>;
+			discharge-temp-max-millicelsius = <69780>;
+		};
+	};
+};

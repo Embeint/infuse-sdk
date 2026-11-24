@@ -8,13 +8,16 @@
 
 #include <zephyr/kernel.h>
 #include <zephyr/device.h>
+#include <zephyr/drivers/gpio.h>
 #include <zephyr/drivers/sensor.h>
 #include <zephyr/logging/log.h>
 
 #include <infuse/data_logger/high_level/tdf.h>
 #include <infuse/drivers/mfd/aem15820.h>
 #include <infuse/drivers/sensor/aem15820.h>
+#include <infuse/task_runner/tasks/tdf_logger.h>
 #include <infuse/tdf/definitions.h>
+#include <infuse/time/epoch.h>
 
 #define CHARGER_NODE DT_COMPAT_GET_ANY_STATUS_OKAY(epeas_aem15820_charger)
 #define SENSOR_NODE  DT_COMPAT_GET_ANY_STATUS_OKAY(epeas_aem15820_sensor)
@@ -30,12 +33,23 @@ BUILD_ASSERT(DT_SAME_NODE(DT_PARENT(CHARGER_NODE), DT_PARENT(SENSOR_NODE)),
 	(DT_PROP(CHARGER_NODE, apm_window_ms) * DT_PROP(CHARGER_NODE, apm_accumulation))
 #define REPORT_PERIOD K_SECONDS(5)
 
-#define TDF_LOGGERS (TDF_DATA_LOGGER_BT_ADV | TDF_DATA_LOGGER_SERIAL)
+/* Live loggers are flushed on every report, flash is written as blocks fill */
+#define TDF_LOGGERS_LIVE (TDF_DATA_LOGGER_BT_ADV | TDF_DATA_LOGGER_SERIAL)
+#define TDF_LOGGERS      (TDF_LOGGERS_LIVE | TDF_DATA_LOGGER_FLASH)
+
+/* Optional ambient light sensor, reported alongside the AEM15820 measurements */
+#define LIGHT_NODE DT_ALIAS(light0)
+
+/* Optional LED, blinked on each report as a visual liveness indicator */
+#define LED_BLINK_DURATION K_MSEC(20)
+static const struct gpio_dt_spec led = GPIO_DT_SPEC_GET_OR(DT_ALIAS(led0), gpios, {0});
 
 /* The accumulated TDF contains the preceding complete minute. */
 #define ENERGY_ACCUMULATION_PERIOD_MS (60 * MSEC_PER_SEC)
 /* 1 uWh = 3.6e9 nW.ms */
 #define NW_MS_PER_UWH                 3600000000ULL
+/* 1 nWh = 3.6e6 nW.ms */
+#define NW_MS_PER_NWH                 3600000ULL
 
 /* 1 mAh = 1e12 fAh */
 #define FAH_PER_MAH 1000000000000ULL
@@ -47,6 +61,9 @@ static K_SEM_DEFINE(apm_done, 0, 1);
 static int64_t apm_done_ms;
 /* Charge stored through the boost converters since boot */
 static uint64_t stored_fah;
+/* Energy stored through each boost converter since boot */
+static uint64_t stored_lp_nw_ms;
+static uint64_t stored_hp_nw_ms;
 /* Energy accumulated in the current, incomplete minute */
 static uint64_t minute_energy_nw_ms;
 static uint32_t minute_duration_ms;
@@ -76,11 +93,37 @@ static int channel_get(const struct device *dev, int chan, int64_t *micro)
 	return rc;
 }
 
+static void report_ambient_light(uint64_t epoch_time)
+{
+#if DT_NODE_HAS_STATUS_OKAY(LIGHT_NODE)
+	const struct device *light = DEVICE_DT_GET(LIGHT_NODE);
+	struct tdf_ambient_light light_tdf;
+	int64_t light_ulux;
+	int rc;
+
+	rc = sensor_sample_fetch_chan(light, SENSOR_CHAN_LIGHT);
+	if (rc == 0) {
+		rc = channel_get(light, SENSOR_CHAN_LIGHT, &light_ulux);
+	}
+	if (rc != 0) {
+		LOG_ERR("Ambient light unavailable (%d)", rc);
+		return;
+	}
+
+	light_tdf.illuminance = CLAMP(DIV_ROUND_CLOSEST(light_ulux, 1000), 0, UINT32_MAX);
+	LOG_INF("Ambient light %u.%03u lux", light_tdf.illuminance / 1000,
+		light_tdf.illuminance % 1000);
+	TDF_DATA_LOGGER_LOG(TDF_LOGGERS, TDF_AMBIENT_LIGHT, epoch_time, &light_tdf);
+#endif /* DT_NODE_HAS_STATUS_OKAY(LIGHT_NODE) */
+}
+
 static void report_measurements(const struct device *sensor)
 {
 	struct tdf_energy_harvester_state harvester_tdf;
 	struct tdf_storage_temperature temperature_tdf;
-	int64_t sto_uv, src_uv, lp_nw, hp_nw, temperature_uc;
+	struct tdf_battery_state battery_tdf = {0};
+	int64_t sto_uv, src_uv, lp_nw, hp_nw, load_nw, temperature_uc;
+	uint64_t epoch_time;
 	int rc;
 
 	rc = channel_get(sensor, SENSOR_CHAN_VOLTAGE, &sto_uv);
@@ -97,8 +140,11 @@ static void report_measurements(const struct device *sensor)
 	if (rc == 0) {
 		rc = channel_get(sensor, SENSOR_CHAN_AEM15820_BOOST_HP_POWER, &hp_nw);
 	}
+	if (rc == 0) {
+		rc = channel_get(sensor, SENSOR_CHAN_AEM15820_LOAD_POWER, &load_nw);
+	}
 	if (rc != 0) {
-		LOG_ERR("Harvester power unavailable (%d)", rc);
+		LOG_ERR("APM power unavailable (%d)", rc);
 		return;
 	}
 	rc = channel_get(sensor, SENSOR_CHAN_GAUGE_TEMP, &temperature_uc);
@@ -119,11 +165,27 @@ static void report_measurements(const struct device *sensor)
 	/* Round microdegrees to centidegrees, including negative temperatures. */
 	temperature_tdf.temperature =
 		(temperature_uc + ((temperature_uc < 0) ? -5000 : 5000)) / 10000;
+	/* Approximate the storage element current from the net power flow into STO,
+	 * I = P / VSTO. uA = nW * 1e-9 / (uV * 1e-6) * 1e6 = nW * 1000 / uV.
+	 * Buck conversion losses are ignored, and state of charge is not estimated.
+	 */
+	battery_tdf.voltage_mv = DIV_ROUND_CLOSEST(sto_uv, 1000);
+	if (sto_uv > 0) {
+		battery_tdf.current_ua = ((lp_nw + hp_nw - load_nw) * 1000) / sto_uv;
+	}
 
-	TDF_DATA_LOGGER_LOG(TDF_LOGGERS, TDF_ENERGY_HARVESTER_STATE, 0, &harvester_tdf);
-	TDF_DATA_LOGGER_LOG(TDF_LOGGERS, TDF_ENERGY_HARVESTER_ACCUMULATED, 0, &accumulated_tdf);
-	TDF_DATA_LOGGER_LOG(TDF_LOGGERS, TDF_STORAGE_TEMPERATURE, 0, &temperature_tdf);
-	tdf_data_logger_flush(TDF_LOGGERS);
+	/* All measurements in the report share a single timestamp */
+	epoch_time = epoch_time_now();
+	/* Announce only needs to be sent live, first so it is in the first packet */
+	task_tdf_logger_manual_run(TDF_LOGGERS_LIVE, epoch_time, TASK_TDF_LOGGER_LOG_ANNOUNCE,
+				   NULL);
+	TDF_DATA_LOGGER_LOG(TDF_LOGGERS, TDF_BATTERY_STATE, epoch_time, &battery_tdf);
+	TDF_DATA_LOGGER_LOG(TDF_LOGGERS, TDF_ENERGY_HARVESTER_STATE, epoch_time, &harvester_tdf);
+	TDF_DATA_LOGGER_LOG(TDF_LOGGERS, TDF_ENERGY_HARVESTER_ACCUMULATED, epoch_time,
+			    &accumulated_tdf);
+	TDF_DATA_LOGGER_LOG(TDF_LOGGERS, TDF_STORAGE_TEMPERATURE, epoch_time, &temperature_tdf);
+	report_ambient_light(epoch_time);
+	tdf_data_logger_flush(TDF_LOGGERS_LIVE);
 }
 
 static void energy_accumulate(uint64_t power_nw, uint32_t duration_ms)
@@ -143,7 +205,7 @@ static void energy_accumulate(uint64_t power_nw, uint32_t duration_ms)
 static void apm_window_complete(const struct device *sensor, uint32_t window_ms)
 {
 	int64_t lp_nw, hp_nw, sto_uv;
-	uint64_t total_pah;
+	uint64_t total_nah, lp_nwh, hp_nwh;
 	int rc;
 
 	/* Power channels are in mW, micro-mW is nW */
@@ -164,12 +226,28 @@ static void apm_window_complete(const struct device *sensor, uint32_t window_ms)
 	 * fAh = nW * ms * 1e-12 / (uV * 1e-6) / 3600 * 1e15 = nW * ms * 1e7 / (uV * 36)
 	 */
 	stored_fah += ((lp_nw + hp_nw) * window_ms * 10000000) / (sto_uv * 36);
-	total_pah = stored_fah / 1000;
+	total_nah = stored_fah / 1000000;
+	stored_lp_nw_ms += lp_nw * window_ms;
+	stored_hp_nw_ms += hp_nw * window_ms;
+	lp_nwh = stored_lp_nw_ms / NW_MS_PER_NWH;
+	hp_nwh = stored_hp_nw_ms / NW_MS_PER_NWH;
 
-	LOG_INF("BOOST LP: %u.%03u uW, BOOST HP: %u.%03u uW, TOTAL: %u.%09u mAhr",
-		(uint32_t)(lp_nw / 1000), (uint32_t)(lp_nw % 1000), (uint32_t)(hp_nw / 1000),
-		(uint32_t)(hp_nw % 1000), (uint32_t)(stored_fah / FAH_PER_MAH),
-		(uint32_t)(total_pah % 1000000000));
+	LOG_INF("BOOST LP: %6u uW, BOOST HP: %6u uW, TOTAL: %u.%06u mAhr, LP: %u.%03u uWh, "
+		"HP: %u.%03u uWh",
+		(uint32_t)DIV_ROUND_CLOSEST(lp_nw, 1000), (uint32_t)DIV_ROUND_CLOSEST(hp_nw, 1000),
+		(uint32_t)(stored_fah / FAH_PER_MAH), (uint32_t)(total_nah % 1000000),
+		(uint32_t)(lp_nwh / 1000), (uint32_t)(lp_nwh % 1000), (uint32_t)(hp_nwh / 1000),
+		(uint32_t)(hp_nwh % 1000));
+}
+
+static void led_blink(void)
+{
+	if (led.port == NULL) {
+		return;
+	}
+	gpio_pin_set_dt(&led, 1);
+	k_sleep(LED_BLINK_DURATION);
+	gpio_pin_set_dt(&led, 0);
 }
 
 int main(void)
@@ -185,6 +263,12 @@ int main(void)
 	if (!device_is_ready(sensor) || !device_is_ready(charger)) {
 		LOG_ERR("AEM15820 not ready");
 		return -ENODEV;
+	}
+	if (led.port != NULL) {
+		rc = gpio_pin_configure_dt(&led, GPIO_OUTPUT_INACTIVE);
+		if (rc != 0) {
+			LOG_WRN("LED unavailable (%d)", rc);
+		}
 	}
 
 	/* Run the APM power integration from the APM window completion interrupt */
@@ -218,6 +302,7 @@ int main(void)
 		}
 		if (sys_timepoint_expired(next_report)) {
 			report_measurements(sensor);
+			led_blink();
 			next_report = sys_timepoint_calc(REPORT_PERIOD);
 		}
 	}
