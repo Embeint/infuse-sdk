@@ -33,6 +33,7 @@ tests:
       - tauro/nrf9151/ns
       - tauro2/nrf9151/ns
       - nrf54l15tag/nrf54l15/cpuapp
+      - xg24_dk2601b/efr32mg24b310f1536im48
   sample.validation.nrf70_test:
     platform_allow:
       - nrf7002dk/nrf5340/cpuapp

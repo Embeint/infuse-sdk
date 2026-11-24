@@ -19,6 +19,7 @@ common:
     - nrf5340dk/nrf5340/cpuapp
     - nrf5340dk/nrf5340/cpuapp/ns
     - nrf54l15dk/nrf54l15/cpuapp
+    - xg24_dk2601b/efr32mg24b310f1536im48
 tests:
   sample.low_power: {}
   sample.low_power.rtt:
