@@ -1,0 +1,6 @@
+# Default cloud public key, with an endpoint that resolves to the local relay
+# provided by pytest/conftest.py
+key: !!binary |
+  ymYyqwOBcrbvagVA0IvHLpzOKTZo36h81R1kdBxT4Ao=
+url: cloud.test
+port: 15301

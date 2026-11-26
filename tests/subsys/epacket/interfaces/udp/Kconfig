@@ -4,4 +4,8 @@ config EPACKET_INTERFACE_UDP_DOWNLINK_WATCHDOG
 	bool
 	default y
 
+config TEST_SHIM_CONTROL_PORT
+	int "Port of the pytest shim control channel on 127.0.0.1"
+	default 15302
+
 source "Kconfig.zephyr"
