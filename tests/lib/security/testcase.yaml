@@ -10,7 +10,7 @@ tests:
   lib.security: {}
   lib.security.alternate_cloud:
     extra_configs:
-      - CONFIG_INFUSE_SECURITY_CLOUD_PUBLIC_KEY_FILE="alternate_cloud_public_key.yaml"
+      - CONFIG_INFUSE_SECURITY_CLOUD_CONFIG_FILE="alternate_cloud_config.yaml"
   lib.security.secondary_remote:
     extra_configs:
       - CONFIG_INFUSE_SECURITY_SECONDARY_REMOTE_ENABLE=y

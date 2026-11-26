@@ -17,7 +17,7 @@
 #include <infuse/security.h>
 #include <infuse/fs/kv_store.h>
 #include <infuse/fs/kv_types.h>
-#include <infuse/cloud_public_key.h>
+#include <infuse/cloud_config.h>
 
 /* Copied from the security module's internal storage ID sequence. */
 #define INFUSE_CLOUD_PUBLIC_KEY_FINGERPRINT_ID (KV_KEY_SECURE_STORAGE_RESERVED + 6)

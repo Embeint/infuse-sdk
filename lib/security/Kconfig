@@ -14,16 +14,16 @@ config INFUSE_SECURITY_DEFAULT_NETWORK
 	string "Path to yaml file containing default network parameters"
 	default "default_network.yaml"
 
-config INFUSE_SECURITY_CLOUD_PUBLIC_KEY_FILE
-	string "Path to yaml file containing the cloud public key and endpoint"
-	default "default_cloud_public_key.yaml"
+config INFUSE_SECURITY_CLOUD_CONFIG_FILE
+	string "Path to yaml file containing the cloud configuration"
+	default "default_cloud_config.yaml"
 	help
 	  Path to a YAML file describing the Infuse-IoT cloud instance:
 	    key:  32-byte X25519 public key used to derive device credentials
 	          shared with the cloud (YAML !!binary).
 	    url:  Hostname of the cloud ePacket UDP server.
 	    port: Port of the cloud ePacket UDP server.
-	  The generated <infuse/cloud_public_key.h> header provides
+	  The generated <infuse/cloud_config.h> header provides
 	  INFUSE_CLOUD_PUBLIC_KEY_FINGERPRINT for application-specific build logic,
 	  and INFUSE_CLOUD_URL and INFUSE_CLOUD_PORT for the server endpoint.
 

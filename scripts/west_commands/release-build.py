@@ -307,7 +307,7 @@ class release_build(WestCommand):
             )
 
         if self.cloud_public_key is not None:
-            build_cmd.extend([f'-DCONFIG_INFUSE_SECURITY_CLOUD_PUBLIC_KEY_FILE="{self.cloud_public_key}"'])
+            build_cmd.extend([f'-DCONFIG_INFUSE_SECURITY_CLOUD_CONFIG_FILE="{self.cloud_public_key}"'])
         if self.network_key is not None:
             build_cmd.extend([f'-DCONFIG_INFUSE_SECURITY_DEFAULT_NETWORK="{self.network_key}"'])
         if self.network_key_secondary is not None:
@@ -462,7 +462,7 @@ class release_build(WestCommand):
 
     def cloud_configuration(self, build_configs: dict) -> dict | None:
         """Return the effective cloud configuration (key, url, port) embedded in the application."""
-        configured = build_configs.get("CONFIG_INFUSE_SECURITY_CLOUD_PUBLIC_KEY_FILE")
+        configured = build_configs.get("CONFIG_INFUSE_SECURITY_CLOUD_CONFIG_FILE")
         if configured is None:
             return None
 
