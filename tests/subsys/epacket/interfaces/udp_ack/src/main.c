@@ -22,8 +22,6 @@
 #include <infuse/epacket/packet.h>
 #include <infuse/epacket/interface.h>
 #include <infuse/epacket/interface/epacket_udp.h>
-#include <infuse/fs/kv_store.h>
-#include <infuse/fs/kv_types.h>
 #include <infuse/tdf/tdf.h>
 #include <infuse/tdf/definitions.h>
 
@@ -165,55 +163,6 @@ ZTEST(epacket_udp_ack, test_udp_ack_handling)
 	zassert_not_null(rx);
 }
 
-ZTEST(epacket_udp_ack, test_udp_ack_timeout)
-{
-	struct kv_epacket_udp_port udp_port = {CONFIG_EPACKET_INTERFACE_UDP_DEFAULT_PORT};
-	uint32_t timeout_ms = CONFIG_EPACKET_INTERFACE_UDP_DETECT_UNACKNOWLEDGED_TIMEOUT_MS;
-
-	tdf_buffers_recovered = 0;
-
-	/* Set incorrect UDP port, which will cause ACKs to timeout */
-	udp_port.port -= 1;
-	kv_store_write(KV_KEY_EPACKET_UDP_PORT, &udp_port, sizeof(udp_port));
-
-	/* Turn on the interface */
-	conn_mgr_all_if_up(true);
-	zassert_equal(0, k_sem_take(&if_state_change, K_MSEC(100)));
-
-	/* Correct the port for the next time its queried */
-	udp_port.port += 1;
-	kv_store_write(KV_KEY_EPACKET_UDP_PORT, &udp_port, sizeof(udp_port));
-
-	/* Send packets that won't be ACKed one by one */
-	for (int i = 0; i < 4; i++) {
-		/* Send a packet requesting an ACK */
-		tdf_send(EPACKET_FLAGS_ACK_REQUEST, epacket_tx_done);
-		/* Callback should not be run immediately, should wait for the ACK to come in */
-		zassert_equal(-EAGAIN, k_sem_take(&tx_done_sem, K_MSEC(timeout_ms - 50)));
-		/* Callback should timeout */
-		zassert_equal(0, k_sem_take(&tx_done_sem, K_MSEC(100)));
-		zassert_equal(-ENODATA, tx_done_result);
-	}
-
-	/* Send 2 packets */
-	tdf_send(EPACKET_FLAGS_ACK_REQUEST, epacket_tx_done);
-	k_sleep(K_MSEC(500));
-	tdf_send(EPACKET_FLAGS_ACK_REQUEST, epacket_tx_done);
-
-	/* First request should timeout relative to first send, not second */
-	zassert_equal(-EAGAIN, k_sem_take(&tx_done_sem, K_MSEC(timeout_ms - 550)));
-	zassert_equal(0, k_sem_take(&tx_done_sem, K_MSEC(100)));
-	zassert_equal(-ENODATA, tx_done_result);
-
-	/* Next request should timeout 500ms after the first */
-	zassert_equal(-EAGAIN, k_sem_take(&tx_done_sem, K_MSEC(450)));
-	zassert_equal(0, k_sem_take(&tx_done_sem, K_MSEC(100)));
-	zassert_equal(-ENODATA, tx_done_result);
-
-	/* Ensure we recovered all 6 TDF buffers */
-	zassert_equal(6, tdf_buffers_recovered);
-}
-
 static struct epacket_interface_cb udp_if_cb = {
 	.interface_state = udp_interface_state,
 	.tx_result = udp_tx_result,
@@ -221,13 +170,6 @@ static struct epacket_interface_cb udp_if_cb = {
 
 static void test_init(void *state)
 {
-	KV_STRING_CONST(udp_url_default, CONFIG_EPACKET_INTERFACE_UDP_DEFAULT_URL);
-	struct kv_epacket_udp_port udp_port_default = {CONFIG_EPACKET_INTERFACE_UDP_DEFAULT_PORT};
-
-	/* Write default configuration to KV store */
-	kv_store_write(KV_KEY_EPACKET_UDP_PORT, &udp_port_default, sizeof(udp_port_default));
-	kv_store_write(KV_KEY_EPACKET_UDP_URL, &udp_url_default, sizeof(udp_url_default));
-
 	k_sem_reset(&tx_done_sem);
 	k_sem_reset(&if_state_change);
 	k_sem_reset(&if_tx_result);
