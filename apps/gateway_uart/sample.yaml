@@ -22,6 +22,9 @@ common:
     - watchdog
     - zbus
   build_only: true
+  # Requires Bluetooth, and a serial backhaul that isn't RTT or USB (`gateway_usb`)
+  filter: CONFIG_BT and not dt_compat_enabled("segger,rtt-uart") and
+    not dt_compat_enabled("zephyr,cdc-acm-uart")
   required_snippets:
     - infuse
   platform_exclude:
