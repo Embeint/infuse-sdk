@@ -93,10 +93,14 @@ class release_diff(WestCommand):
         return manifest["application"].get("cloud_public_key", DEFAULT_CLOUD_PUBLIC_KEY)
 
     @classmethod
-    def udp_server(cls, kconfig: dict[str, str]) -> tuple[str, str] | None:
-        """Default ePacket UDP endpoint, if the interface was enabled."""
+    def udp_server(cls, manifest: dict, kconfig: dict[str, str]) -> tuple[str, str] | None:
+        """ePacket UDP endpoint, if the interface was enabled."""
         if kconfig.get("CONFIG_EPACKET_INTERFACE_UDP") != "y":
             return None
+        app = manifest["application"]
+        if "cloud_url" in app and "cloud_port" in app:
+            return app["cloud_url"], str(app["cloud_port"])
+        # Legacy releases configured the endpoint through Kconfig
         url = cls.kconfig_string(kconfig, "CONFIG_EPACKET_INTERFACE_UDP_DEFAULT_URL")
         port = kconfig.get("CONFIG_EPACKET_INTERFACE_UDP_DEFAULT_PORT")
         if url is None or port is None:
@@ -117,13 +121,10 @@ class release_diff(WestCommand):
         if cloud_key_orig != cloud_key_new:
             print(f"WARNING: Cloud public key changed ({cloud_key_orig[:12]}... -> {cloud_key_new[:12]}...)")
 
-        udp_orig = cls.udp_server(kconfig_orig)
-        udp_new = cls.udp_server(kconfig_new)
+        udp_orig = cls.udp_server(manifest_orig, kconfig_orig)
+        udp_new = cls.udp_server(manifest_new, kconfig_new)
         if udp_orig is not None and udp_new is not None and udp_orig != udp_new:
-            print(
-                "WARNING: Default ePacket UDP server changed "
-                f"({udp_orig[0]}:{udp_orig[1]} -> {udp_new[0]}:{udp_new[1]})"
-            )
+            print(f"WARNING: ePacket UDP server changed ({udp_orig[0]}:{udp_orig[1]} -> {udp_new[0]}:{udp_new[1]})")
 
     def do_generation(
         self,
