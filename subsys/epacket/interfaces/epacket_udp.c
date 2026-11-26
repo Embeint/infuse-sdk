@@ -17,7 +17,7 @@
 #include <zephyr/net/dns_resolve.h>
 #include <zephyr/random/random.h>
 
-#include <infuse/cloud_public_key.h>
+#include <infuse/cloud_config.h>
 #include <infuse/identifiers.h>
 #include <infuse/reboot.h>
 #include <infuse/time/epoch.h>

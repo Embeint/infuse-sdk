@@ -26,7 +26,7 @@
 
 #include <infuse/network_key.h>
 #define INFUSE_CLOUD_PUBLIC_KEY_DEFINE
-#include <infuse/cloud_public_key.h>
+#include <infuse/cloud_config.h>
 #undef INFUSE_CLOUD_PUBLIC_KEY_DEFINE
 
 #ifdef CONFIG_MODEM_KEY_MGMT
