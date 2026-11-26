@@ -6,6 +6,9 @@
 
 Answers A and AAAA queries for any name with fixed documentation addresses,
 except names under the reserved `.invalid` TLD, which return NXDOMAIN.
+
+Names in `answers` resolve to the given IPv4 address instead (with no AAAA
+records). While `fail` is set, every query returns NXDOMAIN.
 """
 
 import ipaddress
@@ -49,9 +52,18 @@ class LocalDnsServer:
     address: str
     port: int
     queries: list[tuple[str, str]] = field(default_factory=list)
+    # Name -> IPv4 address overrides
+    answers: dict[str, str] = field(default_factory=dict)
+    # Fail all queries while set
+    fail: bool = False
     _socket: socket.socket | None = None
     _stop: threading.Event = field(default_factory=threading.Event)
     _thread: threading.Thread | None = None
+
+    def __post_init__(self) -> None:
+        self._answers = {
+            name.lower().rstrip(".") + ".": ipaddress.IPv4Address(addr) for name, addr in self.answers.items()
+        }
 
     def start(self) -> None:
         # No SO_REUSEADDR: a concurrent run on the same port must fail loudly
@@ -105,12 +117,16 @@ class LocalDnsServer:
         self.queries.append((name, type_str))
         question = data[DNS_HEADER.size : end]
 
-        if name.lower().endswith(".invalid."):
+        if self.fail or name.lower().endswith(".invalid."):
             logger.info("NXDOMAIN %s %s", type_str, name)
             return DNS_HEADER.pack(txid, rsp_flags | RCODE_NXDOMAIN, 1, 0, 0, 0) + question
 
         rdata = None
-        if qclass == QCLASS_IN and qtype == QTYPE_A:
+        override = self._answers.get(name.lower())
+        if override is not None:
+            if qclass == QCLASS_IN and qtype == QTYPE_A:
+                rdata = override.packed
+        elif qclass == QCLASS_IN and qtype == QTYPE_A:
             rdata = ANSWER_A.packed
         elif qclass == QCLASS_IN and qtype == QTYPE_AAAA:
             rdata = ANSWER_AAAA.packed
