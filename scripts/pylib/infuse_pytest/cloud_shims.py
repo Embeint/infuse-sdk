@@ -5,7 +5,7 @@
 """Shims standing in for the network path between an application and the cloud.
 
 The application is built with:
-  * `CONFIG_INFUSE_SECURITY_CLOUD_PUBLIC_KEY_FILE` pointing at a cloud configuration
+  * `CONFIG_INFUSE_SECURITY_CLOUD_CONFIG_FILE` pointing at a cloud configuration
     using the default cloud public key, with a `url` that only the local DNS server
     resolves (to `127.0.0.1`), and the relay `port`.
   * `CONFIG_DNS_SERVER1` pointing at the local DNS server.
@@ -29,7 +29,7 @@ from .dns_server import LocalDnsServer
 from .shim_control import ShimControl
 
 INFUSE_SDK = Path(__file__).resolve().parents[3]
-DEFAULT_CLOUD = INFUSE_SDK / "lib" / "security" / "default_cloud_public_key.yaml"
+DEFAULT_CLOUD = INFUSE_SDK / "lib" / "security" / "default_cloud_config.yaml"
 LOCALHOST = "127.0.0.1"
 
 
@@ -60,7 +60,7 @@ def cloud_shims(build_dir: Path, test_dir: Path) -> Generator[CloudShims, None, 
     """
     config = ConfigReader(build_dir / "zephyr" / ".config")
 
-    cloud_file = Path(config.read("CONFIG_INFUSE_SECURITY_CLOUD_PUBLIC_KEY_FILE"))
+    cloud_file = Path(config.read("CONFIG_INFUSE_SECURITY_CLOUD_CONFIG_FILE"))
     if not cloud_file.is_absolute():
         cloud_file = test_dir / cloud_file
     cloud = _load_yaml(cloud_file)

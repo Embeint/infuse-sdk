@@ -17,7 +17,7 @@
 #include <zephyr/net/socket_offload.h>
 #include <zephyr/random/random.h>
 
-#include <infuse/cloud_public_key.h>
+#include <infuse/cloud_config.h>
 #include <infuse/reboot.h>
 #include <infuse/security.h>
 #include <infuse/epacket/keys.h>

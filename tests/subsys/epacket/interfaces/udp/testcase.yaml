@@ -22,7 +22,7 @@ tests:
       - native_sim
     extra_configs:
       # Local cloud relay, DNS server and control channel provided by pytest/conftest.py
-      - CONFIG_INFUSE_SECURITY_CLOUD_PUBLIC_KEY_FILE="cloud_local.yaml"
+      - CONFIG_INFUSE_SECURITY_CLOUD_CONFIG_FILE="cloud_local.yaml"
       - CONFIG_DNS_SERVER_IP_ADDRESSES=y
       - CONFIG_DNS_SERVER1="127.0.0.1:15354"
       - CONFIG_TEST_SHIM_CONTROL_PORT=15302
