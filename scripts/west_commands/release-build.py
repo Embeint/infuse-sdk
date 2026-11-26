@@ -470,8 +470,8 @@ class release_build(WestCommand):
             else:
                 shutil.copytree(in_loc, out_loc, dirs_exist_ok=True)
 
-    def cloud_public_key_value(self, build_configs: dict) -> bytes | None:
-        """Return the effective cloud public key embedded in the application."""
+    def cloud_configuration(self, build_configs: dict) -> dict | None:
+        """Return the effective cloud configuration (key, url, port) embedded in the application."""
         configured = build_configs.get("CONFIG_INFUSE_SECURITY_CLOUD_PUBLIC_KEY_FILE")
         if configured is None:
             return None
@@ -489,10 +489,13 @@ class release_build(WestCommand):
                 key_path = application_path
 
         with key_path.open("r", encoding="utf-8") as f:
-            key = yaml.safe_load(f)["key"]
+            cloud = yaml.safe_load(f)
+        key = cloud.get("key")
         if not isinstance(key, bytes) or len(key) != 32:
             sys.exit(f"Cloud public key {key_path} is not a 32-byte YAML binary value")
-        return key
+        if not isinstance(cloud.get("url"), str) or not isinstance(cloud.get("port"), int):
+            sys.exit(f"Cloud configuration {key_path} does not contain a valid 'url' and 'port'")
+        return cloud
 
     def bootloader_info(self) -> dict:
         if self.tfm_build:
@@ -662,9 +665,11 @@ class release_build(WestCommand):
         if self.args.skip_git or self.args.ignore_git:
             manifest["configuration"]["dirty"] = True
 
-        cloud_public_key = self.cloud_public_key_value(build_configs)
-        if cloud_public_key is not None:
-            manifest["application"]["cloud_public_key"] = cloud_public_key.hex()
+        cloud = self.cloud_configuration(build_configs)
+        if cloud is not None:
+            manifest["application"]["cloud_public_key"] = cloud["key"].hex()
+            manifest["application"]["cloud_url"] = cloud["url"]
+            manifest["application"]["cloud_port"] = cloud["port"]
 
         if self.network_key is not None:
             with self.network_key.open("r", encoding="utf-8") as f:
