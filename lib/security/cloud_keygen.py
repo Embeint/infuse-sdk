@@ -25,7 +25,7 @@ with open(CLOUD_KEY_SCHEMA_PATH, encoding="utf-8") as f:
     cloud_key_schema = yaml.safe_load(f)
 
 
-def key_load(path: str) -> bytes:
+def cloud_load(path: str) -> dict:
     with open(path, encoding="utf-8") as f:
         key_info = yaml.safe_load(f)
 
@@ -39,16 +39,16 @@ def key_load(path: str) -> bytes:
         sys.exit(f"ERROR: Cloud public key in {path} must use the YAML !!binary type")
     if len(key) != 32:
         sys.exit(f"ERROR: Cloud public key in {path} must be exactly 32 bytes")
-    return key
+    return key_info
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         prog="cloud_keygen",
-        description="Convert a cloud public key description to a header",
+        description="Convert a cloud description (public key and endpoint) to a header",
         allow_abbrev=False,
     )
-    parser.add_argument("--key", type=str, required=True, help="Path to key YAML file")
+    parser.add_argument("--key", type=str, required=True, help="Path to cloud YAML file")
     parser.add_argument(
         "--default-key",
         type=str,
@@ -57,8 +57,9 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    key = key_load(args.key)
-    default_key = key_load(args.default_key)
+    cloud = cloud_load(args.key)
+    key = cloud["key"]
+    default_key = cloud_load(args.default_key)["key"]
     fingerprint = int.from_bytes(hashlib.sha256(key).digest()[:8], byteorder="big")
     default_fingerprint = int.from_bytes(hashlib.sha256(default_key).digest()[:8], byteorder="big")
 
@@ -66,6 +67,10 @@ if __name__ == "__main__":
     print("/* First 64 bits of SHA-256, for build-time configuration selection only. */")
     print(f"#define INFUSE_CLOUD_PUBLIC_KEY_FINGERPRINT 0x{fingerprint:016X}ULL")
     print(f"#define INFUSE_CLOUD_PUBLIC_KEY_DEFAULT_FINGERPRINT 0x{default_fingerprint:016X}ULL")
+    print("")
+    print("/* Cloud server endpoint */")
+    print(f'#define INFUSE_CLOUD_URL "{cloud["url"]}"')
+    print(f"#define INFUSE_CLOUD_PORT {cloud['port']}")
     print("")
     print("#ifdef INFUSE_CLOUD_PUBLIC_KEY_DEFINE")
     print("static const uint8_t infuse_cloud_public_key[32] = {")
