@@ -278,7 +278,7 @@ struct kv_ntp_server_url {
 	} __packed
 /* clang-format on */
 
-/** ePacket UDP server hostname */
+/** ePacket UDP server hostname (set from INFUSE_SECURITY_CLOUD_PUBLIC_KEY_FILE) */
 struct kv_epacket_udp_url {
 	/** UDP server hostname */
 	struct kv_string server;
@@ -292,7 +292,7 @@ struct kv_epacket_udp_url {
 	} __packed
 /* clang-format on */
 
-/** ePacket UDP server port */
+/** ePacket UDP server port (set from INFUSE_SECURITY_CLOUD_PUBLIC_KEY_FILE) */
 struct kv_epacket_udp_port {
 	/** UDP server port */
 	uint32_t port;
@@ -592,9 +592,9 @@ enum kv_builtin_id {
 	KV_KEY_WIFI_CHANNELS = 22,
 	/** URL of the NTP server to use for time synchronisation */
 	KV_KEY_NTP_SERVER_URL = 30,
-	/** ePacket UDP server hostname */
+	/** ePacket UDP server hostname (set from INFUSE_SECURITY_CLOUD_PUBLIC_KEY_FILE) */
 	KV_KEY_EPACKET_UDP_URL = 31,
-	/** ePacket UDP server port */
+	/** ePacket UDP server port (set from INFUSE_SECURITY_CLOUD_PUBLIC_KEY_FILE) */
 	KV_KEY_EPACKET_UDP_PORT = 32,
 	/** Modem model as returned by AT+CGMM */
 	KV_KEY_LTE_MODEM_MODEL = 40,
@@ -958,14 +958,14 @@ static struct key_value_slot_definition _KV_SLOTS_ARRAY_DEFINE[] = {
 	{
 		.key = KV_KEY_EPACKET_UDP_URL,
 		.range = 1,
-		.flags = KV_FLAGS_REFLECT,
+		.flags = KV_FLAGS_REFLECT | KV_FLAGS_READ_ONLY,
 	},
 #endif /* CONFIG_KV_STORE_KEY_EPACKET_UDP_URL */
 #ifdef CONFIG_KV_STORE_KEY_EPACKET_UDP_PORT
 	{
 		.key = KV_KEY_EPACKET_UDP_PORT,
 		.range = 1,
-		.flags = KV_FLAGS_REFLECT,
+		.flags = KV_FLAGS_REFLECT | KV_FLAGS_READ_ONLY,
 	},
 #endif /* CONFIG_KV_STORE_KEY_EPACKET_UDP_PORT */
 #ifdef CONFIG_KV_STORE_KEY_LTE_MODEM_MODEL

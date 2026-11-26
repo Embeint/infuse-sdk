@@ -223,8 +223,9 @@
         },
         "31": {
             "name": "EPACKET_UDP_URL",
-            "description": "ePacket UDP server hostname",
+            "description": "ePacket UDP server hostname (set from INFUSE_SECURITY_CLOUD_PUBLIC_KEY_FILE)",
             "reflect": true,
+            "read_only": true,
             "default": "y if EPACKET_INTERFACE_UDP",
             "fields": [
                 {"name": "server", "type": "struct kv_string", "description": "UDP server hostname"}
@@ -232,8 +233,9 @@
         },
         "32": {
             "name": "EPACKET_UDP_PORT",
-            "description": "ePacket UDP server port",
+            "description": "ePacket UDP server port (set from INFUSE_SECURITY_CLOUD_PUBLIC_KEY_FILE)",
             "reflect": true,
+            "read_only": true,
             "default": "y if EPACKET_INTERFACE_UDP",
             "fields": [
                 {"name": "port", "type": "uint32_t", "description": "UDP server port"}

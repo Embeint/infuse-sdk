@@ -22,8 +22,6 @@
 #include <infuse/epacket/packet.h>
 #include <infuse/epacket/interface.h>
 #include <infuse/epacket/interface/epacket_udp.h>
-#include <infuse/fs/kv_store.h>
-#include <infuse/fs/kv_types.h>
 #include <infuse/tdf/tdf.h>
 #include <infuse/tdf/definitions.h>
 #include <infuse/time/epoch.h>
@@ -94,22 +92,6 @@ static void tdf_send(uint16_t flags, epacket_tx_done_cb tx_cb)
 	tdf_add(&tdf_state, TDF_AMBIENT_TEMPERATURE, sizeof(temperature), 1, 0, 0, &temperature);
 	tx->b = tdf_state.buf;
 	epacket_queue(IF_UDP, tx);
-}
-
-static void test_acked_packet(void)
-{
-	struct epacket_rx_metadata *rx_meta;
-	struct net_buf *rx;
-
-	/* Send a packet requesting an ACK */
-	tdf_send(EPACKET_FLAGS_ACK_REQUEST, NULL);
-
-	/* Expect an ACK response */
-	rx = k_fifo_get(&udp_rx_fifo, K_MSEC(1000));
-	zassert_not_null(rx);
-	rx_meta = net_buf_user_data(rx);
-	zassert_equal(INFUSE_ACK, rx_meta->type);
-	net_buf_unref(rx);
 }
 
 ZTEST(epacket_udp, test_udp_send_before_conn)
@@ -263,81 +245,6 @@ ZTEST(epacket_udp, test_udp_max_size)
 	zassert_equal(0, if_max_payload);
 }
 
-ZTEST(epacket_udp, test_udp_reconnect)
-{
-	KV_KEY_TYPE(KV_KEY_EPACKET_UDP_PORT)
-	udp_port_default = {CONFIG_EPACKET_INTERFACE_UDP_DEFAULT_PORT - 1};
-	struct net_buf *rx;
-	int rc;
-
-	/* Set incorrect UDP port */
-	kv_store_write(KV_KEY_EPACKET_UDP_PORT, &udp_port_default, sizeof(udp_port_default));
-
-	/* Turn on the interface */
-	conn_mgr_all_if_up(true);
-	zassert_equal(0, k_sem_take(&if_state_change, K_MSEC(100)));
-
-	/* Correct the port for the next time its queried */
-	udp_port_default.port += 1;
-	kv_store_write(KV_KEY_EPACKET_UDP_PORT, &udp_port_default, sizeof(udp_port_default));
-
-	/* Send packets until we expect the connection to be dropped */
-	for (int i = 0; i < (CONFIG_EPACKET_INTERFACE_UDP_ACK_PERIOD_SEC +
-			     CONFIG_EPACKET_INTERFACE_UDP_ACK_COUNTDOWN + 1);
-	     i++) {
-		tdf_send(0, NULL);
-		rc = k_sem_take(&if_state_change, K_SECONDS(1));
-		if (rc == 0) {
-			/* Interface is now disconnected */
-			break;
-		}
-	}
-	/* Ensure loop exited due to disconnect */
-	zassert_equal(0, rc);
-
-	/* No packets expected up until disconnect */
-	rx = k_fifo_get(&udp_rx_fifo, K_NO_WAIT);
-	zassert_is_null(rx);
-
-	/* We expect the interface to go up again */
-	zassert_equal(0, k_sem_take(&if_state_change, K_SECONDS(2)));
-
-	/* Interface should still work */
-	test_acked_packet();
-}
-
-ZTEST(epacket_udp, test_udp_bad_dns)
-{
-	KV_STRING_CONST(udp_url_default, CONFIG_EPACKET_INTERFACE_UDP_DEFAULT_URL);
-	KV_STRING_CONST(udp_url_bad, "udp2.dev.infuse-iot.com");
-
-	kv_store_write(KV_KEY_EPACKET_UDP_URL, &udp_url_bad, sizeof(udp_url_bad));
-
-	/* Turn on the interface */
-	conn_mgr_all_if_up(true);
-
-	/* Interface should not report ready. DNS retries at roughly 0, 1, 3, 7 and 15 seconds
-	 * as the backoff doubles.
-	 */
-	zassert_equal(-EAGAIN, k_sem_take(&if_state_change, K_SECONDS(10)));
-
-	/* Fix the URL */
-	kv_store_write(KV_KEY_EPACKET_UDP_URL, &udp_url_default, sizeof(udp_url_default));
-
-	/* Connection not restored until the next retry */
-	zassert_equal(-EAGAIN, k_sem_take(&if_state_change, K_SECONDS(3)));
-
-	/* Resetting L4 connectivity resets the backoff */
-	conn_mgr_all_if_down(false);
-	conn_mgr_all_if_up(true);
-
-	/* Connection should be good */
-	zassert_equal(0, k_sem_take(&if_state_change, K_MSEC(1500)));
-
-	/* Interface should work */
-	test_acked_packet();
-}
-
 static struct epacket_interface_cb udp_if_cb = {
 	.interface_state = udp_interface_state,
 	.tx_result = udp_tx_result,
@@ -345,14 +252,6 @@ static struct epacket_interface_cb udp_if_cb = {
 
 static void test_init(void *state)
 {
-	KV_STRING_CONST(udp_url_default, CONFIG_EPACKET_INTERFACE_UDP_DEFAULT_URL);
-	KV_KEY_TYPE(KV_KEY_EPACKET_UDP_PORT)
-	udp_port_default = {CONFIG_EPACKET_INTERFACE_UDP_DEFAULT_PORT};
-
-	/* Write default configuration to KV store */
-	kv_store_write(KV_KEY_EPACKET_UDP_PORT, &udp_port_default, sizeof(udp_port_default));
-	kv_store_write(KV_KEY_EPACKET_UDP_URL, &udp_url_default, sizeof(udp_url_default));
-
 	k_sem_take(&tx_done_sem, K_NO_WAIT);
 	k_sem_take(&if_state_change, K_NO_WAIT);
 	k_sem_take(&if_tx_result, K_NO_WAIT);

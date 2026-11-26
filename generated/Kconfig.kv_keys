@@ -95,13 +95,13 @@ config KV_STORE_KEY_EPACKET_UDP_URL
 	bool "Enable KV key EPACKET_UDP_URL"
 	default y if EPACKET_INTERFACE_UDP
 	help
-	  ePacket UDP server hostname
+	  ePacket UDP server hostname (set from INFUSE_SECURITY_CLOUD_PUBLIC_KEY_FILE)
 
 config KV_STORE_KEY_EPACKET_UDP_PORT
 	bool "Enable KV key EPACKET_UDP_PORT"
 	default y if EPACKET_INTERFACE_UDP
 	help
-	  ePacket UDP server port
+	  ePacket UDP server port (set from INFUSE_SECURITY_CLOUD_PUBLIC_KEY_FILE)
 
 config KV_STORE_KEY_LTE_MODEM_MODEL
 	bool "Enable KV key LTE_MODEM_MODEL"
