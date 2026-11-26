@@ -17,6 +17,7 @@
 #include <zephyr/net/dns_resolve.h>
 #include <zephyr/random/random.h>
 
+#include <infuse/cloud_public_key.h>
 #include <infuse/identifiers.h>
 #include <infuse/reboot.h>
 #include <infuse/time/epoch.h>
@@ -313,17 +314,8 @@ static void l4_event_handler(struct net_mgmt_event_callback *cb, uint64_t event,
 
 static int epacket_udp_dns_query(void)
 {
-	KV_STRING_CONST(udp_url_default, CONFIG_EPACKET_INTERFACE_UDP_DEFAULT_URL);
-	KV_KEY_TYPE(KV_KEY_EPACKET_UDP_PORT)
-	udp_port, udp_port_default = {CONFIG_EPACKET_INTERFACE_UDP_DEFAULT_PORT};
-	KV_KEY_TYPE_VAR(KV_KEY_EPACKET_UDP_URL, 64) udp_url;
-
-	/* Load configuration from KV store */
-	KV_STORE_READ_FALLBACK(KV_KEY_EPACKET_UDP_PORT, &udp_port, &udp_port_default);
-	KV_STORE_READ_FALLBACK(KV_KEY_EPACKET_UDP_URL, &udp_url, &udp_url_default);
-
 	/* Get IP address from DNS */
-	return infuse_sync_dns(udp_url.server.value, udp_port.port, AF_INET, SOCK_DGRAM,
+	return infuse_sync_dns(INFUSE_CLOUD_URL, INFUSE_CLOUD_PORT, AF_INET, SOCK_DGRAM,
 			       &udp_state.remote, &udp_state.remote_len);
 }
 
@@ -407,6 +399,19 @@ static int epacket_udp_loop(void *a, void *b, void *c)
 	uint32_t dns_backoff = DNS_BACKOFF_MIN_SEC;
 	bool first_connection = true;
 	int rc;
+
+	/* Server endpoint is fixed by the cloud configuration file at build time.
+	 * Mirror it into the (externally read-only) KV store so the endpoint is
+	 * visible through the KV interfaces. The KV values are informational only,
+	 * the driver always uses the build time values. Writes are no-ops if unchanged.
+	 * Static threads start after the APPLICATION init level, so this runs after
+	 * any KV store reset performed by `infuse_common_boot`.
+	 */
+	KV_STRING_CONST(udp_url, INFUSE_CLOUD_URL);
+	KV_KEY_TYPE(KV_KEY_EPACKET_UDP_PORT) udp_port = {INFUSE_CLOUD_PORT};
+
+	(void)KV_STORE_WRITE(KV_KEY_EPACKET_UDP_URL, &udp_url);
+	(void)KV_STORE_WRITE(KV_KEY_EPACKET_UDP_PORT, &udp_port);
 
 	local_addr.sin_family = AF_INET;
 	local_addr.sin_port = htons(6200);

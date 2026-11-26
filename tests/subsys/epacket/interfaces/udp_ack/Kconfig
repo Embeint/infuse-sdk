@@ -1,0 +1,5 @@
+config TEST_SHIM_CONTROL_PORT
+	int "Port of the pytest shim control channel on 127.0.0.1"
+	default 15312
+
+source "Kconfig.zephyr"

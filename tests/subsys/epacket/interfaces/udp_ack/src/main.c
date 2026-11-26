@@ -14,6 +14,7 @@
 #include <zephyr/net/conn_mgr_connectivity.h>
 #include <zephyr/net/tls_credentials.h>
 #include <zephyr/net/socket.h>
+#include <zephyr/net/socket_offload.h>
 #include <zephyr/random/random.h>
 
 #include <infuse/reboot.h>
@@ -28,6 +29,7 @@
 #include <infuse/tdf/definitions.h>
 
 #include "../subsys/epacket/interfaces/epacket_internal.h"
+#include "pytest_shim.h"
 
 #define IF_UDP DEVICE_DT_GET_ONE(embeint_epacket_udp)
 
@@ -167,22 +169,16 @@ ZTEST(epacket_udp_ack, test_udp_ack_handling)
 
 ZTEST(epacket_udp_ack, test_udp_ack_timeout)
 {
-	struct kv_epacket_udp_port udp_port = {CONFIG_EPACKET_INTERFACE_UDP_DEFAULT_PORT};
 	uint32_t timeout_ms = CONFIG_EPACKET_INTERFACE_UDP_DETECT_UNACKNOWLEDGED_TIMEOUT_MS;
 
 	tdf_buffers_recovered = 0;
 
-	/* Set incorrect UDP port, which will cause ACKs to timeout */
-	udp_port.port -= 1;
-	kv_store_write(KV_KEY_EPACKET_UDP_PORT, &udp_port, sizeof(udp_port));
+	/* Cloud is not responding, which will cause ACKs to timeout */
+	pytest_shim_command("cloud_drop 1");
 
 	/* Turn on the interface */
 	conn_mgr_all_if_up(true);
 	zassert_equal(0, k_sem_take(&if_state_change, K_MSEC(100)));
-
-	/* Correct the port for the next time its queried */
-	udp_port.port += 1;
-	kv_store_write(KV_KEY_EPACKET_UDP_PORT, &udp_port, sizeof(udp_port));
 
 	/* Send packets that won't be ACKed one by one */
 	for (int i = 0; i < 4; i++) {
@@ -221,13 +217,6 @@ static struct epacket_interface_cb udp_if_cb = {
 
 static void test_init(void *state)
 {
-	KV_STRING_CONST(udp_url_default, CONFIG_EPACKET_INTERFACE_UDP_DEFAULT_URL);
-	struct kv_epacket_udp_port udp_port_default = {CONFIG_EPACKET_INTERFACE_UDP_DEFAULT_PORT};
-
-	/* Write default configuration to KV store */
-	kv_store_write(KV_KEY_EPACKET_UDP_PORT, &udp_port_default, sizeof(udp_port_default));
-	kv_store_write(KV_KEY_EPACKET_UDP_URL, &udp_url_default, sizeof(udp_url_default));
-
 	k_sem_reset(&tx_done_sem);
 	k_sem_reset(&if_state_change);
 	k_sem_reset(&if_tx_result);
@@ -244,6 +233,7 @@ static void test_after(void *fixture)
 	conn_mgr_all_if_down(false);
 	k_sleep(K_MSEC(1010));
 	epacket_udp_dns_reset();
+	pytest_shim_command("cloud_drop 0");
 
 	do {
 		rx = k_fifo_get(&udp_rx_fifo, K_MSEC(100));
@@ -257,6 +247,11 @@ static void *testsuite_init(void)
 {
 	struct net_if *iface = net_if_get_default();
 	struct in_addr addr;
+
+	/* Resolve through the Zephyr DNS resolver (and therefore `CONFIG_DNS_SERVER1`) instead of
+	 * the host `getaddrinfo`, so that the cloud URL resolves to the local relay.
+	 */
+	socket_offload_dns_enable(false);
 
 	conn_mgr_all_if_down(false);
 	epacket_register_callback(IF_UDP, &udp_if_cb);

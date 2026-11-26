@@ -67,14 +67,6 @@ config EPACKET_INTERFACE_UDP
 
 if EPACKET_INTERFACE_UDP
 
-config EPACKET_INTERFACE_UDP_DEFAULT_URL
-	string "ePacket UDP default server URL"
-	default "udp.dev.infuse-iot.com"
-
-config EPACKET_INTERFACE_UDP_DEFAULT_PORT
-	int "ePacket UDP default server port"
-	default 3001
-
 config EPACKET_INTERFACE_UDP_ACK_PERIOD_SEC
 	int "Request an ACK from the server after N seconds of not receiving"
 	default 3600

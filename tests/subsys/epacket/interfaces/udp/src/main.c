@@ -14,8 +14,10 @@
 #include <zephyr/net/conn_mgr_connectivity.h>
 #include <zephyr/net/tls_credentials.h>
 #include <zephyr/net/socket.h>
+#include <zephyr/net/socket_offload.h>
 #include <zephyr/random/random.h>
 
+#include <infuse/cloud_public_key.h>
 #include <infuse/reboot.h>
 #include <infuse/security.h>
 #include <infuse/epacket/keys.h>
@@ -29,6 +31,7 @@
 #include <infuse/time/epoch.h>
 
 #include "../subsys/epacket/interfaces/epacket_internal.h"
+#include "pytest_shim.h"
 
 #define IF_UDP DEVICE_DT_GET_ONE(embeint_epacket_udp)
 
@@ -307,21 +310,15 @@ ZTEST(epacket_udp, test_udp_max_size)
 
 ZTEST(epacket_udp, test_udp_reconnect)
 {
-	KV_KEY_TYPE(KV_KEY_EPACKET_UDP_PORT)
-	udp_port_default = {CONFIG_EPACKET_INTERFACE_UDP_DEFAULT_PORT - 1};
 	struct net_buf *rx;
 	int rc;
 
-	/* Set incorrect UDP port */
-	kv_store_write(KV_KEY_EPACKET_UDP_PORT, &udp_port_default, sizeof(udp_port_default));
+	/* Cloud is not responding */
+	pytest_shim_command("cloud_drop 1");
 
 	/* Turn on the interface */
 	conn_mgr_all_if_up(true);
 	zassert_equal(0, k_sem_take(&if_state_change, K_MSEC(100)));
-
-	/* Correct the port for the next time its queried */
-	udp_port_default.port += 1;
-	kv_store_write(KV_KEY_EPACKET_UDP_PORT, &udp_port_default, sizeof(udp_port_default));
 
 	/* Send packets until we expect the connection to be dropped */
 	for (int i = 0; i < (CONFIG_EPACKET_INTERFACE_UDP_ACK_PERIOD_SEC +
@@ -341,6 +338,9 @@ ZTEST(epacket_udp, test_udp_reconnect)
 	rx = k_fifo_get(&udp_rx_fifo, K_NO_WAIT);
 	zassert_is_null(rx);
 
+	/* Cloud starts responding again */
+	pytest_shim_command("cloud_drop 0");
+
 	/* We expect the interface to go up again */
 	zassert_equal(0, k_sem_take(&if_state_change, K_SECONDS(2)));
 
@@ -348,12 +348,10 @@ ZTEST(epacket_udp, test_udp_reconnect)
 	test_acked_packet();
 }
 
-ZTEST(epacket_udp, test_udp_bad_dns)
+ZTEST(epacket_udp, test_udp_dns_failure)
 {
-	KV_STRING_CONST(udp_url_default, CONFIG_EPACKET_INTERFACE_UDP_DEFAULT_URL);
-	KV_STRING_CONST(udp_url_bad, "udp2.dev.infuse-iot.com");
-
-	kv_store_write(KV_KEY_EPACKET_UDP_URL, &udp_url_bad, sizeof(udp_url_bad));
+	/* DNS queries for the cloud fail */
+	pytest_shim_command("dns_fail 1");
 
 	/* Turn on the interface */
 	conn_mgr_all_if_up(true);
@@ -363,8 +361,8 @@ ZTEST(epacket_udp, test_udp_bad_dns)
 	 */
 	zassert_equal(-EAGAIN, k_sem_take(&if_state_change, K_SECONDS(10)));
 
-	/* Fix the URL */
-	kv_store_write(KV_KEY_EPACKET_UDP_URL, &udp_url_default, sizeof(udp_url_default));
+	/* DNS queries start succeeding */
+	pytest_shim_command("dns_fail 0");
 
 	/* Connection not restored until the next retry */
 	zassert_equal(-EAGAIN, k_sem_take(&if_state_change, K_SECONDS(3)));
@@ -387,14 +385,6 @@ static struct epacket_interface_cb udp_if_cb = {
 
 static void test_init(void *state)
 {
-	KV_STRING_CONST(udp_url_default, CONFIG_EPACKET_INTERFACE_UDP_DEFAULT_URL);
-	KV_KEY_TYPE(KV_KEY_EPACKET_UDP_PORT)
-	udp_port_default = {CONFIG_EPACKET_INTERFACE_UDP_DEFAULT_PORT};
-
-	/* Write default configuration to KV store */
-	kv_store_write(KV_KEY_EPACKET_UDP_PORT, &udp_port_default, sizeof(udp_port_default));
-	kv_store_write(KV_KEY_EPACKET_UDP_URL, &udp_url_default, sizeof(udp_url_default));
-
 	k_sem_take(&tx_done_sem, K_NO_WAIT);
 	k_sem_take(&if_state_change, K_NO_WAIT);
 	k_sem_take(&if_tx_result, K_NO_WAIT);
@@ -413,6 +403,8 @@ static void test_after(void *fixture)
 	conn_mgr_all_if_down(false);
 	k_sleep(K_MSEC(1010));
 	epacket_udp_dns_reset();
+	pytest_shim_command("cloud_drop 0");
+	pytest_shim_command("dns_fail 0");
 
 	do {
 		rx = k_fifo_get(&udp_rx_fifo, K_MSEC(100));
@@ -422,10 +414,32 @@ static void test_after(void *fixture)
 	} while (rx);
 }
 
+ZTEST(epacket_udp, test_kv_endpoint_boot_sync)
+{
+	KV_STRING_CONST(expected_url, INFUSE_CLOUD_URL);
+	KV_KEY_TYPE_VAR(KV_KEY_EPACKET_UDP_URL, 64) udp_url;
+	KV_KEY_TYPE(KV_KEY_EPACKET_UDP_PORT) udp_port;
+
+	/* Endpoint keys are populated from the cloud configuration on boot */
+	zassert_equal(sizeof(expected_url), KV_STORE_READ(KV_KEY_EPACKET_UDP_URL, &udp_url));
+	zassert_mem_equal(&expected_url, &udp_url, sizeof(expected_url));
+	zassert_equal(sizeof(udp_port), KV_STORE_READ(KV_KEY_EPACKET_UDP_PORT, &udp_port));
+	zassert_equal(INFUSE_CLOUD_PORT, udp_port.port);
+
+	/* Endpoint keys cannot be modified externally */
+	zassert_equal(-EPERM, kv_store_external_read_only(KV_KEY_EPACKET_UDP_URL));
+	zassert_equal(-EPERM, kv_store_external_read_only(KV_KEY_EPACKET_UDP_PORT));
+}
+
 static void *testsuite_init(void)
 {
 	struct net_if *iface = net_if_get_default();
 	struct in_addr addr;
+
+	/* Resolve through the Zephyr DNS resolver (and therefore `CONFIG_DNS_SERVER1`) instead of
+	 * the host `getaddrinfo`, so that the cloud URL resolves to the local relay.
+	 */
+	socket_offload_dns_enable(false);
 
 	conn_mgr_all_if_down(false);
 	epacket_register_callback(IF_UDP, &udp_if_cb);
