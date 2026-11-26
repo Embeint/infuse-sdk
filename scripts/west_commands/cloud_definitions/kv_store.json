@@ -290,7 +290,7 @@
         },
         "31": {
             "name": "EPACKET_UDP_URL",
-            "description": "ePacket UDP server hostname (set from INFUSE_SECURITY_CLOUD_PUBLIC_KEY_FILE)",
+            "description": "ePacket UDP server hostname (set from INFUSE_SECURITY_CLOUD_CONFIG_FILE)",
             "reflect": true,
             "read_only": true,
             "default": "y if EPACKET_INTERFACE_UDP",
@@ -300,7 +300,7 @@
         },
         "32": {
             "name": "EPACKET_UDP_PORT",
-            "description": "ePacket UDP server port (set from INFUSE_SECURITY_CLOUD_PUBLIC_KEY_FILE)",
+            "description": "ePacket UDP server port (set from INFUSE_SECURITY_CLOUD_CONFIG_FILE)",
             "reflect": true,
             "read_only": true,
             "default": "y if EPACKET_INTERFACE_UDP",
