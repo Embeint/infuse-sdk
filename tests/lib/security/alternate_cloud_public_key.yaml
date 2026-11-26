@@ -1,2 +1,4 @@
 key: !!binary |
   AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8=
+url: udp.example.com
+port: 4001
